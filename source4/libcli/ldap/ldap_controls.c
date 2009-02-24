@@ -28,12 +28,13 @@
 
 struct control_handler {
 	const char *oid;
-	bool (*decode)(void *mem_ctx, DATA_BLOB in, void **out);
+	bool (*decode)(void *mem_ctx, DATA_BLOB in, void *_out);
 	bool (*encode)(void *mem_ctx, void *in, DATA_BLOB *out);
 };
 
-static bool decode_server_sort_response(void *mem_ctx, DATA_BLOB in, void **out)
+static bool decode_server_sort_response(void *mem_ctx, DATA_BLOB in, void *_out)
 {
+	void **out = (void **)_out;
 	DATA_BLOB attr;
 	struct asn1_data *data = asn1_init(mem_ctx);
 	struct ldb_sort_resp_control *lsrc;
@@ -77,8 +78,9 @@ static bool decode_server_sort_response(void *mem_ctx, DATA_BLOB in, void **out)
 	return true;
 }
 
-static bool decode_server_sort_request(void *mem_ctx, DATA_BLOB in, void **out)
+static bool decode_server_sort_request(void *mem_ctx, DATA_BLOB in, void *_out)
 {
+	void **out = (void **)_out;
 	DATA_BLOB attr;
 	DATA_BLOB rule;
 	struct asn1_data *data = asn1_init(mem_ctx);
@@ -156,8 +158,9 @@ static bool decode_server_sort_request(void *mem_ctx, DATA_BLOB in, void **out)
 	return true;
 }
 
-static bool decode_extended_dn_request(void *mem_ctx, DATA_BLOB in, void **out)
+static bool decode_extended_dn_request(void *mem_ctx, DATA_BLOB in, void *_out)
 {
+	void **out = (void **)_out;
 	struct asn1_data *data;
 	struct ldb_extended_dn_control *ledc;
 
@@ -196,8 +199,9 @@ static bool decode_extended_dn_request(void *mem_ctx, DATA_BLOB in, void **out)
 	return true;
 }
 
-static bool decode_sd_flags_request(void *mem_ctx, DATA_BLOB in, void **out)
+static bool decode_sd_flags_request(void *mem_ctx, DATA_BLOB in, void *_out)
 {
+	void **out = (void **)_out;
 	struct asn1_data *data = asn1_init(mem_ctx);
 	struct ldb_sd_flags_control *lsdfc;
 
@@ -229,8 +233,9 @@ static bool decode_sd_flags_request(void *mem_ctx, DATA_BLOB in, void **out)
 	return true;
 }
 
-static bool decode_search_options_request(void *mem_ctx, DATA_BLOB in, void **out)
+static bool decode_search_options_request(void *mem_ctx, DATA_BLOB in, void *_out)
 {
+	void **out = (void **)_out;
 	struct asn1_data *data = asn1_init(mem_ctx);
 	struct ldb_search_options_control *lsoc;
 
@@ -262,8 +267,9 @@ static bool decode_search_options_request(void *mem_ctx, DATA_BLOB in, void **ou
 	return true;
 }
 
-static bool decode_paged_results_request(void *mem_ctx, DATA_BLOB in, void **out)
+static bool decode_paged_results_request(void *mem_ctx, DATA_BLOB in, void *_out)
 {
+	void **out = (void **)_out;
 	DATA_BLOB cookie;
 	struct asn1_data *data = asn1_init(mem_ctx);
 	struct ldb_paged_control *lprc;
@@ -310,8 +316,9 @@ static bool decode_paged_results_request(void *mem_ctx, DATA_BLOB in, void **out
 	return true;
 }
 
-static bool decode_dirsync_request(void *mem_ctx, DATA_BLOB in, void **out)
+static bool decode_dirsync_request(void *mem_ctx, DATA_BLOB in, void *_out)
 {
+	void **out = (void **)_out;
 	DATA_BLOB cookie;
 	struct asn1_data *data = asn1_init(mem_ctx);
 	struct ldb_dirsync_control *ldc;
@@ -365,8 +372,9 @@ static bool decode_dirsync_request(void *mem_ctx, DATA_BLOB in, void **out)
 /* seem that this controls has 2 forms one in case it is used with
  * a Search Request and another when used ina Search Response
  */
-static bool decode_asq_control(void *mem_ctx, DATA_BLOB in, void **out)
+static bool decode_asq_control(void *mem_ctx, DATA_BLOB in, void *_out)
 {
+	void **out = (void **)_out;
 	DATA_BLOB source_attribute;
 	struct asn1_data *data = asn1_init(mem_ctx);
 	struct ldb_asq_control *lac;
@@ -425,8 +433,9 @@ static bool decode_asq_control(void *mem_ctx, DATA_BLOB in, void **out)
 	return true;
 }
 
-static bool decode_domain_scope_request(void *mem_ctx, DATA_BLOB in, void **out)
+static bool decode_domain_scope_request(void *mem_ctx, DATA_BLOB in, void *_out)
 {
+	void **out = (void **)_out;
 	if (in.length != 0) {
 		return false;
 	}
@@ -434,8 +443,9 @@ static bool decode_domain_scope_request(void *mem_ctx, DATA_BLOB in, void **out)
 	return true;
 }
 
-static bool decode_notification_request(void *mem_ctx, DATA_BLOB in, void **out)
+static bool decode_notification_request(void *mem_ctx, DATA_BLOB in, void *_out)
 {
+	void **out = (void **)_out;
 	if (in.length != 0) {
 		return false;
 	}
@@ -443,8 +453,9 @@ static bool decode_notification_request(void *mem_ctx, DATA_BLOB in, void **out)
 	return true;
 }
 
-static bool decode_show_deleted_request(void *mem_ctx, DATA_BLOB in, void **out)
+static bool decode_show_deleted_request(void *mem_ctx, DATA_BLOB in, void *_out)
 {
+	void **out = (void **)_out;
 	if (in.length != 0) {
 		return false;
 	}
@@ -452,8 +463,9 @@ static bool decode_show_deleted_request(void *mem_ctx, DATA_BLOB in, void **out)
 	return true;
 }
 
-static bool decode_permissive_modify_request(void *mem_ctx, DATA_BLOB in, void **out)
+static bool decode_permissive_modify_request(void *mem_ctx, DATA_BLOB in, void *_out)
 {
+	void **out = (void **)_out;
 	if (in.length != 0) {
 		return false;
 	}
@@ -461,8 +473,9 @@ static bool decode_permissive_modify_request(void *mem_ctx, DATA_BLOB in, void *
 	return true;
 }
 
-static bool decode_manageDSAIT_request(void *mem_ctx, DATA_BLOB in, void **out)
+static bool decode_manageDSAIT_request(void *mem_ctx, DATA_BLOB in, void *_out)
 {
+	void **out = (void **)_out;
 	if (in.length != 0) {
 		return false;
 	}
@@ -470,8 +483,9 @@ static bool decode_manageDSAIT_request(void *mem_ctx, DATA_BLOB in, void **out)
 	return true;
 }
 
-static bool decode_vlv_request(void *mem_ctx, DATA_BLOB in, void **out)
+static bool decode_vlv_request(void *mem_ctx, DATA_BLOB in, void *_out)
 {
+	void **out = (void **)_out;
 	DATA_BLOB assertion_value, context_id;
 	struct asn1_data *data = asn1_init(mem_ctx);
 	struct ldb_vlv_req_control *lvrc;
@@ -582,8 +596,9 @@ static bool decode_vlv_request(void *mem_ctx, DATA_BLOB in, void **out)
 	return true;
 }
 
-static bool decode_vlv_response(void *mem_ctx, DATA_BLOB in, void **out)
+static bool decode_vlv_response(void *mem_ctx, DATA_BLOB in, void *_out)
 {
+	void **out = (void **)_out;
 	DATA_BLOB context_id;
 	struct asn1_data *data = asn1_init(mem_ctx);
 	struct ldb_vlv_resp_control *lvrc;
@@ -1132,7 +1147,7 @@ static bool encode_openldap_dereference(void *mem_ctx, void *in, DATA_BLOB *out)
 	return true;
 }
 
-static bool decode_openldap_dereference(void *mem_ctx, DATA_BLOB in, void **out)
+static bool decode_openldap_dereference(void *mem_ctx, DATA_BLOB in, void *_out)
 {
 	struct asn1_data *data = asn1_init(mem_ctx);
 	struct dsdb_openldap_dereference_result_control *control;
