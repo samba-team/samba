@@ -1505,7 +1505,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in] 	 uint32 offered,
 		[in] 	 uint32 client_major_version,
 		[in] 	 uint32 client_minor_version,
-		[out,unique] DATA_BLOB *info,
+		[out,unique,subcontext(4),subcontext_size(offered),switch_is(level)] spoolss_DriverInfo *info,
 		[out,ref] uint32 *needed,
 		[out,ref] uint32 *server_major_version,
 		[out,ref] uint32 *server_minor_version
