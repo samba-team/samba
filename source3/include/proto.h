@@ -5492,9 +5492,6 @@ WERROR rpccli_spoolss_enumprinterdrivers (struct rpc_pipe_client *cli,
 				       uint32 level, const char *env,
 				       uint32 *num_drivers,
 				       PRINTER_DRIVER_CTR *ctr);
-WERROR rpccli_spoolss_addprinterdriver (struct rpc_pipe_client *cli, 
-				     TALLOC_CTX *mem_ctx, uint32 level,
-				     PRINTER_DRIVER_CTR *ctr);
 WERROR rpccli_spoolss_addprinterex (struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				 uint32 level, PRINTER_INFO_CTR*ctr);
 WERROR rpccli_spoolss_enumforms(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
@@ -5941,9 +5938,6 @@ bool spool_io_printer_driver_info_level(const char *desc, SPOOL_PRINTER_DRIVER_I
 bool make_spoolss_q_addprinterdriver(TALLOC_CTX *mem_ctx,
 				SPOOL_Q_ADDPRINTERDRIVER *q_u, const char* srv_name, 
 				uint32 level, PRINTER_DRIVER_CTR *info);
-bool make_spoolss_driver_info_3(TALLOC_CTX *mem_ctx,
-	SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 **spool_drv_info,
-				DRIVER_INFO_3 *info3);
 bool make_spoolss_buffer5(TALLOC_CTX *mem_ctx, BUFFER5 *buf5, uint32 len, uint16 *src);
 bool spoolss_io_q_addprinterdriver(const char *desc, SPOOL_Q_ADDPRINTERDRIVER *q_u, prs_struct *ps, int depth);
 bool spoolss_io_r_addprinterdriver(const char *desc, SPOOL_R_ADDPRINTERDRIVER *q_u, prs_struct *ps, int depth);
@@ -6239,7 +6233,6 @@ bool init_service_op_table( void );
 
 /* The following definitions come from rpcclient/cmd_spoolss.c  */
 
-void set_drv_info_3_env (DRIVER_INFO_3 *info, const char *arch);
 
 /* The following definitions come from rpcclient/cmd_srvsvc.c  */
 

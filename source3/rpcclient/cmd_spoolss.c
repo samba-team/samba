@@ -1289,7 +1289,9 @@ static WERROR cmd_spoolss_getdriverdir(struct rpc_pipe_client *cli,
 /****************************************************************************
 ****************************************************************************/
 
-void set_drv_info_3_env (DRIVER_INFO_3 *info, const char *arch)
+static void set_drv_info_3_env(TALLOC_CTX *mem_ctx,
+			       struct spoolss_AddDriverInfo3 *info,
+			       const char *arch)
 {
 
 	int i;
@@ -1299,7 +1301,7 @@ void set_drv_info_3_env (DRIVER_INFO_3 *info, const char *arch)
 		if (strcmp(arch, archi_table[i].short_archi) == 0)
 		{
 			info->version = archi_table[i].version;
-			init_unistr (&info->architecture, archi_table[i].long_archi);
+			info->architecture = talloc_strdup(mem_ctx, archi_table[i].long_archi);
 			break;
 		}
 	}
@@ -1318,8 +1320,9 @@ void set_drv_info_3_env (DRIVER_INFO_3 *info, const char *arch)
  Needed to handle the empty parameter string denoted by "NULL"
  *************************************************************************/
 
-static char* get_driver_3_param (char* str, const char* delim, UNISTR* dest,
-				 char **saveptr)
+static char *get_driver_3_param(TALLOC_CTX *mem_ctx, char *str,
+				const char *delim, const char **dest,
+				char **saveptr)
 {
 	char	*ptr;
 
@@ -1330,70 +1333,80 @@ static char* get_driver_3_param (char* str, const char* delim, UNISTR* dest,
 	   parameter because two consecutive delimiters
 	   will not return an empty string.  See man strtok(3)
 	   for details */
-	if (ptr && (StrCaseCmp(ptr, "NULL") == 0))
+	if (ptr && (StrCaseCmp(ptr, "NULL") == 0)) {
 		ptr = NULL;
+	}
 
-	if (dest != NULL)
-		init_unistr(dest, ptr);
+	if (dest != NULL) {
+		*dest = talloc_strdup(mem_ctx, ptr);
+	}
 
 	return ptr;
 }
 
 /********************************************************************************
- fill in the members of a DRIVER_INFO_3 struct using a character
+ fill in the members of a spoolss_AddDriverInfo3 struct using a character
  string in the form of
  	 <Long Printer Name>:<Driver File Name>:<Data File Name>:\
 	     <Config File Name>:<Help File Name>:<Language Monitor Name>:\
 	     <Default Data Type>:<Comma Separated list of Files>
  *******************************************************************************/
-static bool init_drv_info_3_members ( TALLOC_CTX *mem_ctx, DRIVER_INFO_3 *info,
-                                      char *args )
+
+static bool init_drv_info_3_members(TALLOC_CTX *mem_ctx, struct spoolss_AddDriverInfo3 *r,
+                                    char *args)
 {
 	char	*str, *str2;
-	uint32	len, i;
+	int count = 0;
 	char *saveptr = NULL;
+	struct spoolss_StringArray *deps;
+	const char **file_array = NULL;
+	int i;
 
 	/* fill in the UNISTR fields */
-	str = get_driver_3_param (args, ":", &info->name, &saveptr);
-	str = get_driver_3_param (NULL, ":", &info->driverpath, &saveptr);
-	str = get_driver_3_param (NULL, ":", &info->datafile, &saveptr);
-	str = get_driver_3_param (NULL, ":", &info->configfile, &saveptr);
-	str = get_driver_3_param (NULL, ":", &info->helpfile, &saveptr);
-	str = get_driver_3_param (NULL, ":", &info->monitorname, &saveptr);
-	str = get_driver_3_param (NULL, ":", &info->defaultdatatype, &saveptr);
+	str = get_driver_3_param(mem_ctx, args, ":", &r->driver_name, &saveptr);
+	str = get_driver_3_param(mem_ctx, NULL, ":", &r->driver_path, &saveptr);
+	str = get_driver_3_param(mem_ctx, NULL, ":", &r->data_file, &saveptr);
+	str = get_driver_3_param(mem_ctx, NULL, ":", &r->config_file, &saveptr);
+	str = get_driver_3_param(mem_ctx, NULL, ":", &r->help_file, &saveptr);
+	str = get_driver_3_param(mem_ctx, NULL, ":", &r->monitor_name, &saveptr);
+	str = get_driver_3_param(mem_ctx, NULL, ":", &r->default_datatype, &saveptr);
 
 	/* <Comma Separated List of Dependent Files> */
 	/* save the beginning of the string */
-	str2 = get_driver_3_param (NULL, ":", NULL, &saveptr);
+	str2 = get_driver_3_param(mem_ctx, NULL, ":", NULL, &saveptr);
 	str = str2;
 
 	/* begin to strip out each filename */
 	str = strtok_r(str, ",", &saveptr);
-	len = 0;
-	while (str != NULL)
-	{
-		/* keep a cumlative count of the str lengths */
-		len += strlen(str)+1;
+
+	/* no dependent files, we are done */
+	if (!str) {
+		return true;
+	}
+
+	deps = talloc_zero(mem_ctx, struct spoolss_StringArray);
+	if (!deps) {
+		return false;
+	}
+
+	while (str != NULL) {
+		add_string_to_array(deps, str, &file_array, &count);
 		str = strtok_r(NULL, ",", &saveptr);
 	}
 
-	/* allocate the space; add one extra slot for a terminating NULL.
-	   Each filename is NULL terminated and the end contains a double
-	   NULL */
-	if ((info->dependentfiles=TALLOC_ARRAY(mem_ctx, uint16, len+1)) == NULL)
-	{
-		DEBUG(0,("init_drv_info_3_members: Unable to malloc memory for dependenfiles\n"));
-		return False;
+	deps->string = talloc_zero_array(deps, const char *, count + 1);
+	if (!deps->string) {
+		return false;
 	}
-	for (i=0; i<len; i++)
-	{
-		SSVAL(&info->dependentfiles[i], 0, str2[i]);
-	}
-	info->dependentfiles[len] = '\0';
 
-	return True;
+	for (i=0; i < count; i++) {
+		deps->string[i] = file_array[i];
+	}
+
+	r->dependent_files = deps;
+
+	return true;
 }
-
 
 /****************************************************************************
 ****************************************************************************/
@@ -1403,11 +1416,11 @@ static WERROR cmd_spoolss_addprinterdriver(struct rpc_pipe_client *cli,
                                              int argc, const char **argv)
 {
 	WERROR result;
+	NTSTATUS status;
 	uint32                  level = 3;
-	PRINTER_DRIVER_CTR	ctr;
-	DRIVER_INFO_3		info3;
+	struct spoolss_AddDriverInfoCtr info_ctr;
+	struct spoolss_AddDriverInfo3 info3;
 	const char		*arch;
-	fstring			driver_name;
 	char 			*driver_args;
 
 	/* parse the command arguments */
@@ -1422,15 +1435,16 @@ static WERROR cmd_spoolss_addprinterdriver(struct rpc_pipe_client *cli,
             return WERR_OK;
         }
 
-	/* Fill in the DRIVER_INFO_3 struct */
+	/* Fill in the spoolss_AddDriverInfo3 struct */
 	ZERO_STRUCT(info3);
-	if (!(arch = cmd_spoolss_get_short_archi(argv[1])))
-	{
+
+	arch = cmd_spoolss_get_short_archi(argv[1]);
+	if (!arch) {
 		printf ("Error Unknown architechture [%s]\n", argv[1]);
 		return WERR_INVALID_PARAM;
 	}
-	else
-		set_drv_info_3_env(&info3, arch);
+
+	set_drv_info_3_env(mem_ctx, &info3, arch);
 
 	driver_args = talloc_strdup( mem_ctx, argv[2] );
 	if (!init_drv_info_3_members(mem_ctx, &info3, driver_args ))
@@ -1448,14 +1462,19 @@ static WERROR cmd_spoolss_addprinterdriver(struct rpc_pipe_client *cli,
 	}
 
 
-	ctr.info3 = &info3;
-	result = rpccli_spoolss_addprinterdriver (cli, mem_ctx, level, &ctr);
+	info_ctr.level		= level;
+	info_ctr.info.info3	= &info3;
 
+	status = rpccli_spoolss_AddPrinterDriver(cli, mem_ctx,
+						 cli->srv_name_slash,
+						 &info_ctr,
+						 &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
 	if (W_ERROR_IS_OK(result)) {
-		rpcstr_pull(driver_name, info3.name.buffer,
-			    sizeof(driver_name), -1, STR_TERMINATE);
 		printf ("Printer Driver %s successfully installed.\n",
-			driver_name);
+			info3.driver_name);
 	}
 
 	return result;
