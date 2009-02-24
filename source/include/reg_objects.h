@@ -66,11 +66,7 @@ typedef struct {
 
 /* container for registry subkey names */
 
-struct regsubkey_ctr {
-	uint32          num_subkeys;
-	char            **subkeys;
-	int seqnum;
-};
+struct regsubkey_ctr;
 
 /*
  *
