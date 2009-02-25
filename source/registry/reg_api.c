@@ -524,14 +524,8 @@ WERROR reg_createkey(TALLOC_CTX *ctx, struct registry_key *parent,
 	err = fill_subkey_cache(create_parent);
 	if (!W_ERROR_IS_OK(err)) goto done;
 
-	err = regsubkey_ctr_addkey(create_parent->subkeys, path);
-	if (!W_ERROR_IS_OK(err)) goto done;
-
-	if (!store_reg_keys(create_parent->key, create_parent->subkeys)) {
-		TALLOC_FREE(create_parent->subkeys);
-		err = WERR_REG_IO_FAILURE;
-		goto done;
-	}
+	err = create_reg_subkey(key->key, path);
+	W_ERROR_NOT_OK_GOTO_DONE(err);
 
 	/*
 	 * Now open the newly created key
