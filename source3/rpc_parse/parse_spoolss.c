@@ -2005,32 +2005,6 @@ bool spoolss_io_q_getprinter(const char *desc, SPOOL_Q_GETPRINTER *q_u, prs_stru
 }
 
 /*******************************************************************
- * init a structure.
- ********************************************************************/
-
-bool make_spoolss_q_getprinter(
-	TALLOC_CTX *mem_ctx,
-	SPOOL_Q_GETPRINTER *q_u, 
-	const POLICY_HND *hnd, 
-	uint32 level, 
-	RPC_BUFFER *buffer, 
-	uint32 offered
-)
-{
-	if (q_u == NULL)
-	{
-		return False;
-	}
-	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
-
-	q_u->level=level;
-	q_u->buffer=buffer;
-	q_u->offered=offered;
-
-	return True;
-}
-
-/*******************************************************************
 ********************************************************************/  
 
 bool spoolss_io_r_enumjobs(const char *desc, SPOOL_R_ENUMJOBS *r_u, prs_struct *ps, int depth)
