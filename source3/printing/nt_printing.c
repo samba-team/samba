@@ -1381,7 +1381,8 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 				 goto error_exit;
 			}
 			old_create_time = st.st_mtime;
-			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", old_create_time));
+			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n",
+				(long)old_create_time));
 		}
 	}
 	close_file(NULL, fsp, NORMAL_CLOSE);
@@ -1432,7 +1433,8 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 				goto error_exit;
 			}
 			new_create_time = st.st_mtime;
-			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", new_create_time));
+			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n",
+				(long)new_create_time));
 		}
 	}
 	close_file(NULL, fsp, NORMAL_CLOSE);
