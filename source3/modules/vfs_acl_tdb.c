@@ -195,7 +195,7 @@ static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 	if (fsp && fsp->fh->fd != -1) {
 		ret = SMB_VFS_FSTAT(fsp, &sbuf);
 	} else {
-		if (lp_posix_pathnames()) {
+		if (fsp->posix_open) {
 			ret = SMB_VFS_LSTAT(handle->conn, name, &sbuf);
 		} else {
 			ret = SMB_VFS_STAT(handle->conn, name, &sbuf);
@@ -287,7 +287,7 @@ static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
 	if (fsp->fh->fd != -1) {
 		ret = SMB_VFS_FSTAT(fsp, &sbuf);
 	} else {
-		if (lp_posix_pathnames()) {
+		if (fsp->posix_open) {
 			ret = SMB_VFS_LSTAT(handle->conn, fsp->fsp_name, &sbuf);
 		} else {
 			ret = SMB_VFS_STAT(handle->conn, fsp->fsp_name, &sbuf);
@@ -513,7 +513,7 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 		if (fsp && !fsp->is_directory && fsp->fh->fd != -1) {
 			ret = SMB_VFS_FSTAT(fsp, &sbuf);
 		} else {
-			if (lp_posix_pathnames()) {
+			if (fsp->posix_open) {
 				ret = SMB_VFS_LSTAT(handle->conn,fname, &sbuf);
 			} else {
 				ret = SMB_VFS_STAT(handle->conn,fname, &sbuf);
@@ -763,7 +763,7 @@ static NTSTATUS fset_nt_acl_tdb(vfs_handle_struct *handle, files_struct *fsp,
 			return NT_STATUS_OK;
 		}
 		if (fsp->is_directory || fsp->fh->fd == -1) {
-			if (lp_posix_pathnames()) {
+			if (fsp->posix_open) {
 				ret = SMB_VFS_LSTAT(fsp->conn,fsp->fsp_name, &sbuf);
 			} else {
 				ret = SMB_VFS_STAT(fsp->conn,fsp->fsp_name, &sbuf);
@@ -893,7 +893,7 @@ static int sys_acl_set_fd_tdb(vfs_handle_struct *handle,
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
 
 	if (fsp->is_directory || fsp->fh->fd == -1) {
-		if (lp_posix_pathnames()) {
+		if (fsp->posix_open) {
 			ret = SMB_VFS_LSTAT(fsp->conn,fsp->fsp_name, &sbuf);
 		} else {
 			ret = SMB_VFS_STAT(fsp->conn,fsp->fsp_name, &sbuf);
