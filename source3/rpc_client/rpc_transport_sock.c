@@ -98,6 +98,12 @@ static NTSTATUS rpc_sock_read_recv(struct async_req *req, ssize_t *preceived)
 	return NT_STATUS_OK;
 }
 
+struct rpc_sock_write_state {
+	ssize_t sent;
+};
+
+static void rpc_sock_write_done(struct tevent_req *subreq);
+
 static struct async_req *rpc_sock_write_send(TALLOC_CTX *mem_ctx,
 					     struct event_context *ev,
 					     const uint8_t *data, size_t size,
@@ -105,19 +111,52 @@ static struct async_req *rpc_sock_write_send(TALLOC_CTX *mem_ctx,
 {
 	struct rpc_transport_sock_state *sock_transp = talloc_get_type_abort(
 		priv, struct rpc_transport_sock_state);
-	return async_send(mem_ctx, ev, sock_transp->fd, data, size, 0);
+	struct async_req *result;
+	struct tevent_req *subreq;
+	struct rpc_sock_write_state *state;
+
+	if (!async_req_setup(mem_ctx, &result, &state,
+			     struct rpc_sock_write_state)) {
+		return NULL;
+	}
+	subreq = async_send_send(state, ev, sock_transp->fd, data, size, 0);
+	if (subreq == NULL) {
+		goto fail;
+	}
+	subreq->async.fn = rpc_sock_write_done;
+	subreq->async.private_data = result;
+	return result;
+ fail:
+	TALLOC_FREE(result);
+	return NULL;
+}
+
+static void rpc_sock_write_done(struct tevent_req *subreq)
+{
+	struct async_req *req = talloc_get_type_abort(
+		subreq->async.private_data, struct async_req);
+	struct rpc_sock_write_state *state = talloc_get_type_abort(
+		req->private_data, struct rpc_sock_write_state);
+	int err;
+
+	state->sent = async_send_recv(subreq, &err);
+	if (state->sent == -1) {
+		async_req_nterror(req, map_nt_error_from_unix(err));
+		return;
+	}
+	async_req_done(req);
 }
 
 static NTSTATUS rpc_sock_write_recv(struct async_req *req, ssize_t *psent)
 {
-	ssize_t sent;
-	int sys_errno;
+	struct rpc_sock_write_state *state = talloc_get_type_abort(
+		req->private_data, struct rpc_sock_write_state);
+	NTSTATUS status;
 
-	sent = async_syscall_result_ssize_t(req, &sys_errno);
-	if (sent == -1) {
-		return map_nt_error_from_unix(sys_errno);
+	if (async_req_is_nterror(req, &status)) {
+		return status;
 	}
-	*psent = sent;
+	*psent = state->sent;
 	return NT_STATUS_OK;
 }
 
