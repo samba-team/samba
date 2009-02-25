@@ -83,6 +83,8 @@ continued to evolve, but you may particularly notice these areas
  the corrected IDL back into Samba4
  
  Fixes to allow use of C++ compilers and to increase portability
+
+ Fixed TLS (SSL) support with modern versions of GnuTLS
  
 These are just some of the highlights of the work done in the past 
 month.  More details can be found in our GIT history.
