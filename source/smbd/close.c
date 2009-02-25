@@ -467,6 +467,7 @@ static NTSTATUS update_write_time_on_close(struct files_struct *fsp)
 	SMB_STRUCT_STAT sbuf;
 	struct timespec ts[2];
 	NTSTATUS status;
+	int ret = -1;
 
 	ZERO_STRUCT(sbuf);
 	ZERO_STRUCT(ts);
@@ -481,13 +482,17 @@ static NTSTATUS update_write_time_on_close(struct files_struct *fsp)
 
 	/* Ensure we have a valid stat struct for the source. */
 	if (fsp->fh->fd != -1) {
-		if (SMB_VFS_FSTAT(fsp, &sbuf) == -1) {
-			return map_nt_error_from_unix(errno);
-		}
+		ret = SMB_VFS_FSTAT(fsp, &sbuf);
 	} else {
-		if (SMB_VFS_STAT(fsp->conn,fsp->fsp_name,&sbuf) == -1) {
-			return map_nt_error_from_unix(errno);
+		if (fsp->posix_open) {
+			ret = SMB_VFS_LSTAT(fsp->conn,fsp->fsp_name,&sbuf);
+		} else {
+			ret = SMB_VFS_STAT(fsp->conn,fsp->fsp_name,&sbuf);
 		}
+	}
+
+	if (ret == -1) {
+		return map_nt_error_from_unix(errno);
 	}
 
 	if (!VALID_STAT(sbuf)) {
@@ -575,6 +580,13 @@ static NTSTATUS close_normal_file(files_struct *fsp, enum file_close_type close_
 	 */
 
 	saved_status4 = update_write_time_on_close(fsp);
+	if (NT_STATUS_EQUAL(saved_status4, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		/* Someone renamed the file or a parent directory containing
+		 * this file. We can't do anything about this, we don't have
+		 * an "update timestamp by fd" call in POSIX. Eat the error. */
+
+		saved_status4 = NT_STATUS_OK;
+	}
 
 	if (NT_STATUS_IS_OK(status)) {
 		if (!NT_STATUS_IS_OK(saved_status1)) {
