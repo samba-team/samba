@@ -4952,6 +4952,7 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 ****************************************************************************/
 
 static NTSTATUS smb_set_file_dosmode(connection_struct *conn,
+				files_struct *fsp,
 				const char *fname,
 				SMB_STRUCT_STAT *psbuf,
 				uint32 dosmode)
@@ -4960,6 +4961,14 @@ static NTSTATUS smb_set_file_dosmode(connection_struct *conn,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
+	if (fsp) {
+		if (fsp->base_fsp) {
+			fname = fsp->base_fsp->fsp_name;
+		} else {
+			fname = fsp->fsp_name;
+		}
+	}
+		
 	if (dosmode) {
 		if (S_ISDIR(psbuf->st_mode)) {
 			dosmode |= aDIR;
@@ -5684,9 +5693,11 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 	/* Set the attributes */
 	dosmode = IVAL(pdata,32);
 	status = smb_set_file_dosmode(conn,
-					fname,
-					psbuf,
-					dosmode);
+				fsp,
+				fname,
+				psbuf,
+				dosmode);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
