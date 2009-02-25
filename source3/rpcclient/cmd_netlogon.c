@@ -1107,6 +1107,49 @@ static NTSTATUS cmd_netlogon_database_redo(struct rpc_pipe_client *cli,
 	return status;
 }
 
+static NTSTATUS cmd_netlogon_capabilities(struct rpc_pipe_client *cli,
+					  TALLOC_CTX *mem_ctx, int argc,
+					  const char **argv)
+{
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	struct netr_Authenticator credential;
+	struct netr_Authenticator return_authenticator;
+	union netr_Capabilities capabilities;
+	uint32_t level = 1;
+
+	if (argc > 2) {
+		fprintf(stderr, "Usage: %s <level>\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	if (argc == 2) {
+		level = atoi(argv[1]);
+	}
+
+#if 0
+	netlogon_creds_client_step(cli->dc, &credential);
+#else
+	ZERO_STRUCT(credential);
+#endif
+
+	status = rpccli_netr_LogonGetCapabilities(cli, mem_ctx,
+						  cli->desthost,
+						  global_myname(),
+						  &credential,
+						  &return_authenticator,
+						  level,
+						  &capabilities);
+#if 0
+	if (!netlogon_creds_client_check(cli->dc,
+					 &return_authenticator.cred)) {
+		DEBUG(0,("credentials chain check failed\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+#endif
+
+	return status;
+}
+
 /* List of commands exported by this module */
 
 struct cmd_set netlogon_commands[] = {
@@ -1134,6 +1177,7 @@ struct cmd_set netlogon_commands[] = {
 	{ "netrenumtrusteddomainsex", RPC_RTYPE_WERROR, NULL, cmd_netlogon_enumtrusteddomainsex, &ndr_table_netlogon.syntax_id, NULL, "Enumerate trusted domains",     "" },
 	{ "getdcsitecoverage", RPC_RTYPE_WERROR, NULL, cmd_netlogon_getdcsitecoverage, &ndr_table_netlogon.syntax_id, NULL, "Get the Site-Coverage from a DC",     "" },
 	{ "database_redo", RPC_RTYPE_NTSTATUS, cmd_netlogon_database_redo, NULL, &ndr_table_netlogon.syntax_id, NULL, "Replicate single object from a DC",     "" },
+	{ "capabilities", RPC_RTYPE_NTSTATUS, cmd_netlogon_capabilities, NULL, &ndr_table_netlogon.syntax_id, NULL, "Return Capabilities",     "" },
 
 	{ NULL }
 };
