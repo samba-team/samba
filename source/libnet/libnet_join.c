@@ -50,12 +50,6 @@
 #define LIBNET_UNJOIN_OUT_DUMP_CTX(ctx, r) \
 	LIBNET_UNJOIN_DUMP_CTX(ctx, r, NDR_OUT)
 
-#define W_ERROR_NOT_OK_GOTO_DONE(x) do { \
-	if (!W_ERROR_IS_OK(x)) {\
-		goto done;\
-	}\
-} while (0)
-
 /****************************************************************
 ****************************************************************/
 
