@@ -344,6 +344,8 @@ void ndr_print_spoolss_FormFlags(struct ndr_print *ndr, const char *name, enum s
 void ndr_print_spoolss_FormSize(struct ndr_print *ndr, const char *name, const struct spoolss_FormSize *r);
 void ndr_print_spoolss_FormArea(struct ndr_print *ndr, const char *name, const struct spoolss_FormArea *r);
 void ndr_print_spoolss_FormInfo1(struct ndr_print *ndr, const char *name, const struct spoolss_FormInfo1 *r);
+void ndr_print_spoolss_FormStringType(struct ndr_print *ndr, const char *name, uint32_t r);
+void ndr_print_spoolss_FormInfo2(struct ndr_print *ndr, const char *name, const struct spoolss_FormInfo2 *r);
 enum ndr_err_code ndr_push_spoolss_FormInfo(struct ndr_push *ndr, int ndr_flags, const union spoolss_FormInfo *r);
 enum ndr_err_code ndr_pull_spoolss_FormInfo(struct ndr_pull *ndr, int ndr_flags, union spoolss_FormInfo *r);
 void ndr_print_spoolss_FormInfo(struct ndr_print *ndr, const char *name, const union spoolss_FormInfo *r);
