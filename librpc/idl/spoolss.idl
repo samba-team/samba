@@ -1841,7 +1841,8 @@ import "misc.idl", "security.idl", "winreg.idl";
 		SERVER_ACCESS_ENUMERATE		= 0x00000002,
 		PRINTER_ACCESS_ADMINISTER	= 0x00000004,
 		PRINTER_ACCESS_USE		= 0x00000008,
-		JOB_ACCESS_ADMINISTER		= 0x00000010
+		JOB_ACCESS_ADMINISTER		= 0x00000010,
+		JOB_ACCESS_READ			= 0x00000020
 	} spoolss_AccessRights;
 
 	/* Access rights for print servers */
