@@ -131,6 +131,7 @@ typedef struct {
 	int 	(*fetch_subkeys)( const char *key, struct regsubkey_ctr *subkeys);
 	int 	(*fetch_values) ( const char *key, REGVAL_CTR *val );
 	bool 	(*store_subkeys)( const char *key, struct regsubkey_ctr *subkeys );
+	WERROR	(*create_subkey)(const char *key, const char *subkey);
 	bool 	(*store_values)( const char *key, REGVAL_CTR *val );
 	bool	(*reg_access_check)( const char *keyname, uint32 requested,
 				     uint32 *granted,
