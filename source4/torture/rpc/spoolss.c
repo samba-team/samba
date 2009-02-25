@@ -742,7 +742,8 @@ static bool test_ClosePrinter(struct torture_context *tctx,
 static bool test_GetForm(struct torture_context *tctx, 
 			 struct dcerpc_pipe *p, 
 			 struct policy_handle *handle, 
-			 const char *form_name)
+			 const char *form_name,
+			 uint32_t level)
 {
 	NTSTATUS status;
 	struct spoolss_GetForm r;
@@ -750,12 +751,12 @@ static bool test_GetForm(struct torture_context *tctx,
 
 	r.in.handle = handle;
 	r.in.form_name = form_name;
-	r.in.level = 1;
+	r.in.level = level;
 	r.in.buffer = NULL;
 	r.in.offered = 0;
 	r.out.needed = &needed;
 
-	torture_comment(tctx, "Testing GetForm\n");
+	torture_comment(tctx, "Testing GetForm level %d\n", r.in.level);
 
 	status = dcerpc_spoolss_GetForm(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "GetForm failed");
@@ -787,45 +788,54 @@ static bool test_EnumForms(struct torture_context *tctx,
 	bool ret = true;
 	uint32_t needed;
 	uint32_t count;
+	uint32_t levels[] = { 1, 2 };
+	int i;
 
-	r.in.handle = handle;
-	r.in.level = 1;
-	r.in.buffer = NULL;
-	r.in.offered = 0;
-	r.out.needed = &needed;
-	r.out.count = &count;
+	for (i=0; i<ARRAY_SIZE(levels); i++) {
 
-	torture_comment(tctx, "Testing EnumForms\n");
+		r.in.handle = handle;
+		r.in.level = levels[i];
+		r.in.buffer = NULL;
+		r.in.offered = 0;
+		r.out.needed = &needed;
+		r.out.count = &count;
 
-	status = dcerpc_spoolss_EnumForms(p, tctx, &r);
-	torture_assert_ntstatus_ok(tctx, status, "EnumForms failed");
-
-	if (print_server && W_ERROR_EQUAL(r.out.result, WERR_BADFID))
-		torture_fail(tctx, "EnumForms on the PrintServer isn't supported by test server (NT4)");
-
-	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-		union spoolss_FormInfo *info;
-		int j;
-		DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
-		data_blob_clear(&blob);
-		r.in.buffer = &blob;
-		r.in.offered = needed;
+		torture_comment(tctx, "Testing EnumForms level %d\n", levels[i]);
 
 		status = dcerpc_spoolss_EnumForms(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "EnumForms failed");
 
-		torture_assert(tctx, r.out.info, "No forms returned");
-
-		info = r.out.info;
-
-		for (j = 0; j < count; j++) {
-			if (!print_server) 
-				ret &= test_GetForm(tctx, p, handle, info[j].info1.form_name);
+		if ((r.in.level == 2) && (W_ERROR_EQUAL(r.out.result, WERR_UNKNOWN_LEVEL))) {
+			break;
 		}
+
+		if (print_server && W_ERROR_EQUAL(r.out.result, WERR_BADFID))
+			torture_fail(tctx, "EnumForms on the PrintServer isn't supported by test server (NT4)");
+
+		if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+			union spoolss_FormInfo *info;
+			int j;
+			DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
+			data_blob_clear(&blob);
+			r.in.buffer = &blob;
+			r.in.offered = needed;
+
+			status = dcerpc_spoolss_EnumForms(p, tctx, &r);
+
+			torture_assert(tctx, r.out.info, "No forms returned");
+
+			info = r.out.info;
+
+			for (j = 0; j < count; j++) {
+				if (!print_server)
+					ret &= test_GetForm(tctx, p, handle, info[j].info1.form_name, levels[i]);
+			}
+		}
+
+		torture_assert_ntstatus_ok(tctx, status, "EnumForms failed");
+
+		torture_assert_werr_ok(tctx, r.out.result, "EnumForms failed");
 	}
-
-	torture_assert_ntstatus_ok(tctx, status, "EnumForms failed");
-
-	torture_assert_werr_ok(tctx, r.out.result, "EnumForms failed");
 
 	return true;
 }
@@ -878,7 +888,7 @@ static bool test_AddForm(struct torture_context *tctx,
 
 	torture_assert_werr_ok(tctx, r.out.result, "AddForm failed");
 
-	if (!print_server) ret &= test_GetForm(tctx, p, handle, form_name);
+	if (!print_server) ret &= test_GetForm(tctx, p, handle, form_name, 1);
 
 	{
 		struct spoolss_SetForm sf;
@@ -902,7 +912,7 @@ static bool test_AddForm(struct torture_context *tctx,
 		torture_assert_werr_ok(tctx, r.out.result, "SetForm failed");
 	}
 
-	if (!print_server) ret &= test_GetForm(tctx, p, handle, form_name);
+	if (!print_server) ret &= test_GetForm(tctx, p, handle, form_name, 1);
 
 	if (!test_DeleteForm(tctx, p, handle, form_name)) {
 		ret = false;
