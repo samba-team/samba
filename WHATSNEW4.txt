@@ -69,8 +69,11 @@ In the time since Samba4 alpha6 was released in Janurary 2009, Samba has
 continued to evolve, but you may particularly notice these areas 
 (in no particular order):
 
- OpenLDAP Multi Master Replication can now also replicate the OpenLDAP
- configuration itself.
+ Multi Master Replication (MMR) configuration can now be generated 
+ for the OpenLDAP-Backend.
+
+ OpenLDAP-Online-Configuration (olc) can now be generated for the 
+ OpenLDAP-Backend. (OpenLDAP-Versions >=2.4.15 required).
 
  Support for Windows 7 beta as a member of the Samba4 domain
 
