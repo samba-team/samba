@@ -1526,14 +1526,8 @@ static WERROR cmd_spoolss_addprinterex(struct rpc_pipe_client *cli,
                                          int argc, const char **argv)
 {
 	WERROR result;
-	NTSTATUS status;
 	struct spoolss_SetPrinterInfoCtr info_ctr;
 	struct spoolss_SetPrinterInfo2 info2;
-	struct policy_handle handle;
-	struct spoolss_DevmodeContainer devmode_ctr;
-	struct sec_desc_buf sd;
-	struct spoolss_UserLevelCtr userlevel_ctr;
-	struct spoolss_UserLevel1 level1;
 
 	/* parse the command arguments */
 	if (argc != 5)
@@ -1543,9 +1537,7 @@ static WERROR cmd_spoolss_addprinterex(struct rpc_pipe_client *cli,
         }
 
 	/* Fill in the DRIVER_INFO_2 struct */
-	ZERO_STRUCT(devmode_ctr);
 	ZERO_STRUCT(info2);
-	ZERO_STRUCT(sd);
 
 	info2.printername	= argv[1];
 	info2.drivername	= argv[3];
@@ -1573,25 +1565,8 @@ static WERROR cmd_spoolss_addprinterex(struct rpc_pipe_client *cli,
 	info_ctr.level = 2;
 	info_ctr.info.info2 = &info2;
 
-	level1.size		= 28; /* wild guess */
-	level1.build		= 1381;
-	level1.major		= 2;
-	level1.minor		= 0;
-	level1.processor	= 0;
-	level1.client		= global_myname();
-	level1.user		= cli->auth->user_name;
-
-	userlevel_ctr.level = 1;
-	userlevel_ctr.user_info.level1 = &level1;
-
-	status = rpccli_spoolss_AddPrinterEx(cli, mem_ctx,
-					     cli->srv_name_slash,
-					     &info_ctr,
-					     &devmode_ctr,
-					     &sd,
-					     &userlevel_ctr,
-					     &handle,
-					     &result);
+	result = rpccli_spoolss_addprinterex(cli, mem_ctx,
+					     &info_ctr);
 	if (W_ERROR_IS_OK(result))
 		printf ("Printer %s successfully installed.\n", argv[1]);
 

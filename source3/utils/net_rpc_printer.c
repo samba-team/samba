@@ -2123,6 +2123,7 @@ NTSTATUS rpc_printer_migrate_printers_internals(struct net_context *c,
 	bool got_hnd_src = false;
 	bool got_hnd_dst = false;
 	struct rpc_pipe_client *pipe_hnd_dst = NULL;
+	struct spoolss_SetPrinterInfoCtr info_ctr;
 
 	DEBUG(3,("copying printers\n"));
 
@@ -2207,7 +2208,13 @@ NTSTATUS rpc_printer_migrate_printers_internals(struct net_context *c,
 		/* copy each src printer to a dst printer 1:1,
 		   maybe some values have to be changed though */
 		d_printf("creating printer: %s\n", printername);
-		result = rpccli_spoolss_addprinterex (pipe_hnd_dst, mem_ctx, level, &ctr_src);
+
+		info_ctr.level = level;
+		info_ctr.info.info2 = (struct spoolss_SetPrinterInfo2 *)&info_src.info2;
+
+		result = rpccli_spoolss_addprinterex(pipe_hnd_dst,
+						     mem_ctx,
+						     &info_ctr);
 
 		if (W_ERROR_IS_OK(result))
 			d_printf ("printer [%s] successfully added.\n", printername);
