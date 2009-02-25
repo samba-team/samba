@@ -1,4 +1,4 @@
-What's new in Samba 4 alpha6
+What's new in Samba 4 alpha7
 ============================
 
 Samba 4 is the ambitious next version of the Samba suite that is being
@@ -6,13 +6,13 @@ developed in parallel to the stable 3.0 series. The main emphasis in
 this branch is support for the Active Directory logon protocols used
 by Windows 2000 and above.
 
-Samba4 alpha6 follows on from the alpha release series we have been
+Samba4 alpha7 follows on from the alpha release series we have been
 publishing since September 2007
 
 WARNINGS
 ========
 
-Samba4 alpha6 is not a final Samba release.  That is more a reference
+Samba4 alpha7 is not a final Samba release.  That is more a reference
 to Samba4's lack of the features we expect you will need than a
 statement of code quality, but clearly it hasn't seen a broad
 deployment yet.  If you were to upgrade Samba3 (or indeed Windows) to
@@ -62,85 +62,30 @@ working on modules to map between AD-like behaviours and this backend.
 We are aiming for Samba 4 to be powerful frontend to large
 directories.
 
-CHANGES SINCE Alpha5
+CHANGES SINCE alpha6
 =====================
 
-In the time since Samba4 Alpha5 was released in June 2008, Samba has
+In the time since Samba4 alpha6 was released in Janurary 2009, Samba has
 continued to evolve, but you may particularly notice these areas 
 (in no particular order):
 
- The source code for various libraries that are used by both Samba 3 and 
- Samba 4 are now shared between the two rather than duplicated 
- (and being slightly diverged).
+ OpenLDAP Multi Master Replication can now also replicate the OpenLDAP
+ configuration itself.
 
- The tevent library has been split out and is now usable on its own.
+ Support for Windows 7 beta as a member of the Samba4 domain
 
- Several crash bugs and memory leaks in the registry library have been fixed.
+ Issues with the nesting of LDB transactions have been fixed
 
- The Python modules have been extended and are no longer generated using SWIG.
+ A number of internal libraries (tevent, auth in particular has been
+ updated for easier use outside Samba4
 
- Stream renames are now supported.
-
- The provision script now has an interactive mode.
-
- The (broken) copy of CTDB has been removed.
-
- More work towards supporting an OpenLDAP backend. 
-
- Initial work on using the Microsoft LDAP schema.
-
- The storage of schemas in LDB is now much more efficient.
-
- Support for extended DNs in LDB has been added.
-
- Incoming trusts are now supported.
-
- Compatibility of the registry server with several Windows versions has been 
- improved.
-
- Improvements to LSA.idl for better functionality in the usrmgr.exe.
-
- Improved handling of non-standard characters in passwords.
-
- The embedded JavaScript library has been removed in favor of Python.
-
- The WMI implementation has been re-added, but does not completely work yet.
-
- xpress compression is now supported in the NDR layer.
-
- The main binary is now named "samba" rather than "smbd".
-
- A simple script for setting the expiration of a user was added.
-
- The LDB library is now completely asynchronous internally.
-
- Various unknowns and correctness issues in the drsblobs and drsuapi RPC 
- interface implementations have been fixed.
-
- It is now possible to connect to an LDAP backend using SASL credentials.
-
- Multi-fragment NTtrans request support has been added.
-
- The DCE/RPC server can now listen on a separate pipe to allow DCE/RPC 
- connections forwarded from Samba 3. The user credentials are provided 
- by the client.
-
- A large number of bugs in the SMB2 implementation have been fixed.
-
- Auxiliary classes in LDAP schema conversion are now collapsed.
-
- Several tests have been added to the SMB testsuite.
-
- Object GUIDs in DCE/RPC connections are now dealt with properly.
-
- The correctness of the LSA and NETLOGON implementations has been 
- improved.
-
- Multi Master Replication configuration can now be generated 
- for OpenLDAP.
-
-These are just some of the highlights of the work done in the past few
-months.  More details can be found in our GIT history.
+ spoolss IDL updates to bring Samba3 to use PIDL code, and to merge
+ the corrected IDL back into Samba4
+ 
+ Fixes to allow use of C++ compilers and to increase portability
+ 
+These are just some of the highlights of the work done in the past 
+month.  More details can be found in our GIT history.
 
 
 CHANGES
@@ -163,17 +108,13 @@ KNOWN ISSUES
 
 - Clock Synchronisation is critical.  Many 'wrong password' errors are
   actually due to Kerberos objecting to a clock skew between client
-  and server.  (The NTP work in the previous alpha is partly to assist
+  and server.  (The NTP work in the previous alphas are partly to assist
   with this problem).
 
-- Samba4 alpha6 is currently only portable to recent Linux
+- Samba4 alpha7 is currently only portable to recent Linux
   distributions.  Work to return support for other Unix varients is
-  expected during the next alpha cycle
+  expected during the next alpha cycles
 
-- Samba4 alpha6 is incompatible with GnuTLS 2.0, found in Fedora 9 and
-  recent Ubuntu releases.  GnuTLS use may be disabled using the
-  --disable-gnutls argument to ./configure. (otherwise 'make test' and
-  LDAPS operations will hang).
 
 RUNNING Samba4
 ==============
