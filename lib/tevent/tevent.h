@@ -212,6 +212,15 @@ struct tevent_req {
 	void *private_state;
 
 	/**
+	 * @brief A function to overwrite the default print function
+	 *
+	 * The implementation doing the work may want to imeplement a
+	 * custom function to print the text representation of the async
+	 * request.
+	 */
+	char *(*private_print)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+
+	/**
 	 * @brief Internal state of the request
 	 *
 	 * Callers should only access this via functions and never directly.
@@ -266,6 +275,8 @@ struct tevent_req {
 		struct tevent_timer *timer;
 	} internal;
 };
+
+char *tevent_req_default_print(struct tevent_req *req, TALLOC_CTX *mem_ctx);
 
 char *tevent_req_print(TALLOC_CTX *mem_ctx, struct tevent_req *req);
 
