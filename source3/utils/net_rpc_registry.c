@@ -974,9 +974,12 @@ static bool write_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk,
 	struct regsubkey_ctr *subkeys = NULL;
 	int i;
 	char *path = NULL;
+	WERROR werr;
 
-	if ( !( subkeys = TALLOC_ZERO_P( infile->mem_ctx, struct regsubkey_ctr )) ) {
-		DEBUG(0,("write_registry_tree: talloc() failed!\n"));
+	werr = regsubkey_ctr_init(infile->mem_ctx, &subkeys);
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(0, ("write_registry_tree: regsubkey_ctr_init failed: "
+			  "%s\n", win_errstr(werr)));
 		return false;
 	}
 
