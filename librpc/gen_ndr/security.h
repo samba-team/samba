@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+#include "libcli/util/ntstatus.h"
+
 #include "librpc/gen_ndr/misc.h"
 #define dom_sid2 dom_sid
 #define dom_sid28 dom_sid

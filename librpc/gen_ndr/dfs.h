@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+#include "libcli/util/ntstatus.h"
+
 #include "librpc/gen_ndr/misc.h"
 #ifndef _HEADER_netdfs
 #define _HEADER_netdfs

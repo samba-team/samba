@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+#include "libcli/util/ntstatus.h"
+
 #include "librpc/gen_ndr/security.h"
 #ifndef _HEADER_xattr
 #define _HEADER_xattr

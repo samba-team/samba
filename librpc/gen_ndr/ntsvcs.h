@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+#include "libcli/util/ntstatus.h"
+
 #include "librpc/gen_ndr/winreg.h"
 #ifndef _HEADER_ntsvcs
 #define _HEADER_ntsvcs

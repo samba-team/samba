@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+#include "libcli/util/ntstatus.h"
+
 #include "librpc/gen_ndr/srvsvc.h"
 #include "librpc/gen_ndr/lsa.h"
 #ifndef _HEADER_wkssvc
