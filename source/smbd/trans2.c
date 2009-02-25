@@ -6382,7 +6382,7 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 		create_disp = FILE_OVERWRITE_IF;
 	} else if((wire_open_mode & SMB_O_CREAT) == SMB_O_CREAT) {
 		create_disp = FILE_OPEN_IF;
-	} else if (wire_open_mode == 0) {
+	} else if ((wire_open_mode & (SMB_O_CREAT | SMB_O_EXCL | SMB_O_TRUNC)) == 0) {
 		create_disp = FILE_OPEN;
 	} else {
 		DEBUG(5,("smb_posix_open: invalid create mode 0x%x\n",
