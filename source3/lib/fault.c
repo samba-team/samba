@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    Critical Fault handling
    Copyright (C) Andrew Tridgell 1992-1998
+   Copyright (C) Tim Prouty 2009
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -128,6 +129,87 @@ static char *get_default_corepath(const char *logbase, const char *progname)
 	return NULL;
 }
 
+/**
+ * Get the FreeBSD corepath.
+ *
+ * On FreeBSD the current working directory is ignored when creating a core
+ * file.  Instead the core directory is controlled via sysctl.  This consults
+ * the value of "kern.corefile" so the correct corepath can be printed out
+ * before dump_core() calls abort.
+ */
+#if (defined(FREEBSD) && defined(HAVE_SYSCTLBYNAME))
+static char *get_freebsd_corepath(void)
+{
+	char *tmp_corepath = NULL;
+	char *end = NULL;
+	size_t len = 128;
+	int ret;
+
+	/* Loop with increasing sizes so we don't allocate too much. */
+	do {
+		if (len > 1024)  {
+			goto err_out;
+		}
+
+		tmp_corepath = (char *)talloc_realloc(NULL, tmp_corepath,
+						      char, len);
+		if (!tmp_corepath) {
+			return NULL;
+		}
+
+		ret = sysctlbyname("kern.corefile", tmp_corepath, &len, NULL,
+				   0);
+		if (ret == -1) {
+			if (errno != ENOMEM) {
+				DEBUG(0, ("sysctlbyname failed getting "
+					  "kern.corefile %s\n",
+					  strerror(errno)));
+				goto err_out;
+			}
+
+			/* Not a large enough array, try a bigger one. */
+			len = len << 1;
+		}
+	} while (ret == -1);
+
+	/* Strip off the common filename expansion */
+	if ((end = strrchr_m(tmp_corepath, '/'))) {
+		*end = '\0';
+	}
+
+	return tmp_corepath;
+
+ err_out:
+	if (tmp_corepath) {
+		talloc_free(tmp_corepath);
+	}
+	return NULL;
+}
+#endif
+
+/**
+ * Try getting system-specific corepath if one exists.
+ *
+ * If the system doesn't define a corepath, then the default is used.
+ */
+static char *get_corepath(const char *logbase, const char *progname)
+{
+	char *tmp_corepath = NULL;
+
+	/* @todo: Add support for the linux corepath. */
+#if (defined(FREEBSD) && defined(HAVE_SYSCTLBYNAME))
+	tmp_corepath = get_freebsd_corepath();
+#endif
+
+	/* If this has been set correctly, we're done. */
+	if (tmp_corepath) {
+		return tmp_corepath;
+	}
+
+	/* Fall back to the default. */
+	return get_default_corepath(logbase, progname);
+}
+
 /*******************************************************************
 make all the preparations to safely dump a core file
 ********************************************************************/
@@ -156,7 +238,7 @@ void dump_core_setup(const char *progname)
 
 	SMB_ASSERT(progname != NULL);
 
-	corepath = get_default_corepath(logbase, progname);
+	corepath = get_corepath(logbase, progname);
 	if (!corepath) {
 		DEBUG(0, ("Unable to setup corepath for %s: %s\n", progname,
 			  strerror(errno)));
