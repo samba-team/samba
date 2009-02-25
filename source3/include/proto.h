@@ -5867,11 +5867,6 @@ uint32 spoolss_size_printprocdatatype_info_1(PRINTPROCDATATYPE_1 *info);
 uint32 spoolss_size_printer_enum_values(PRINTER_ENUM_VALUES *p);
 uint32 spoolss_size_printmonitor_info_1(PRINTMONITOR_1 *info);
 uint32 spoolss_size_printmonitor_info_2(PRINTMONITOR_2 *info);
-bool make_spoolss_q_getprinterdriver2(SPOOL_Q_GETPRINTERDRIVER2 *q_u, 
-			       const POLICY_HND *hnd,
-			       const fstring architecture,
-			       uint32 level, uint32 clientmajor, uint32 clientminor,
-			       RPC_BUFFER *buffer, uint32 offered);
 bool spoolss_io_q_getprinterdriver2(const char *desc, SPOOL_Q_GETPRINTERDRIVER2 *q_u, prs_struct *ps, int depth);
 bool spoolss_io_r_getprinterdriver2(const char *desc, SPOOL_R_GETPRINTERDRIVER2 *r_u, prs_struct *ps, int depth);
 bool make_spoolss_q_enumprinters(
@@ -5929,18 +5924,7 @@ bool spool_io_printer_info_level(const char *desc, SPOOL_PRINTER_INFO_LEVEL *il,
 bool spoolss_io_q_addprinterex(const char *desc, SPOOL_Q_ADDPRINTEREX *q_u, prs_struct *ps, int depth);
 bool spoolss_io_r_addprinterex(const char *desc, SPOOL_R_ADDPRINTEREX *r_u, 
 			       prs_struct *ps, int depth);
-bool spool_io_printer_driver_info_level_3(const char *desc, SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 **q_u, 
-                                          prs_struct *ps, int depth);
-bool spool_io_printer_driver_info_level_6(const char *desc, SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 **q_u, 
-                                          prs_struct *ps, int depth);
-bool smb_io_unibuffer(const char *desc, UNISTR2 *buffer, prs_struct *ps, int depth);
-bool spool_io_printer_driver_info_level(const char *desc, SPOOL_PRINTER_DRIVER_INFO_LEVEL *il, prs_struct *ps, int depth);
-bool make_spoolss_q_addprinterdriver(TALLOC_CTX *mem_ctx,
-				SPOOL_Q_ADDPRINTERDRIVER *q_u, const char* srv_name, 
-				uint32 level, PRINTER_DRIVER_CTR *info);
 bool make_spoolss_buffer5(TALLOC_CTX *mem_ctx, BUFFER5 *buf5, uint32 len, uint16 *src);
-bool spoolss_io_q_addprinterdriver(const char *desc, SPOOL_Q_ADDPRINTERDRIVER *q_u, prs_struct *ps, int depth);
-bool spoolss_io_r_addprinterdriver(const char *desc, SPOOL_R_ADDPRINTERDRIVER *q_u, prs_struct *ps, int depth);
 bool uni_2_asc_printer_info_2(const SPOOL_PRINTER_INFO_LEVEL_2 *uni,
                               NT_PRINTER_INFO_LEVEL_2  *d);
 bool spoolss_io_r_enumprintprocessors(const char *desc, SPOOL_R_ENUMPRINTPROCESSORS *r_u, prs_struct *ps, int depth);

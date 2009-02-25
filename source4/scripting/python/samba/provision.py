@@ -4,6 +4,7 @@
 
 # Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007-2008
 # Copyright (C) Andrew Bartlett <abartlet@samba.org> 2008
+# Copyright (C) Oliver Liebel <oliver@itc.li> 2008-2009
 #
 # Based on the original in EJS:
 # Copyright (C) Andrew Tridgell <tridge@samba.org> 2005
@@ -100,8 +101,6 @@ class ProvisionPaths(object):
         self.olcdir = None
         self.olslaptest = None
         self.olcseedldif = None
-        self.olcsyncprovdir = None
-        self.olcsyncprovfile = None
 
 
 class ProvisionNames(object):
@@ -278,10 +277,6 @@ def provision_paths_from_lp(lp, dnsdomain):
                                  "slapd.d")
     paths.olcseedldif = os.path.join(paths.ldapdir, 
                                  "olc_seed.ldif")
-    paths.olcsyncprovdir = os.path.join(paths.olcdir, 
-                                 "cn=config/olcDatabase={0}config")
-    paths.olcsyncprovfile = os.path.join(paths.olcsyncprovdir, 
-                                 "olcOverlay={0}syncprov.ldif")
     paths.hklm = "hklm.ldb"
     paths.hkcr = "hkcr.ldb"
     paths.hkcu = "hkcu.ldb"
@@ -1479,7 +1474,7 @@ def provision_backend(setup_dir=None, message=None,
           slapdcommand="Start slapd with:    slapd -F " + paths.olcdir + " -h \"" + ldapi_uri + " ldap://<FQHN>:<PORT>\"" 
 
         if ol_olc != "yes" and ol_mmr_urls is not None:
-          slapdcommand="Start slapd with:    slapd -F " + paths.ldapdir + "/slapd.conf -h \"" + ldapi_uri + " ldap://<FQHN>:<PORT>\""
+          slapdcommand="Start slapd with:    slapd -f " + paths.ldapdir + "/slapd.conf -h \"" + ldapi_uri + " ldap://<FQHN>:<PORT>\""
 
         if ol_olc == "yes" and ol_mmr_urls is not None:
           slapdcommand="Start slapd with:    slapd -F " + paths.olcdir + " -h \"" + ldapi_uri + " ldap://<FQHN>:<PORT>\""
@@ -1505,6 +1500,8 @@ def provision_backend(setup_dir=None, message=None,
 
     message("LDAP admin password: %s" % adminpass)
     message(slapdcommand)
+    if ol_olc == "yes" or ol_mmr_urls is not None:
+        message("Attention to slapd-Port: <PORT> must be different than 389!")
     assert isinstance(ldap_backend_type, str)
     assert isinstance(ldapuser, str)
     assert isinstance(adminpass, str)
@@ -1528,18 +1525,9 @@ def provision_backend(setup_dir=None, message=None,
           paths.olslaptest = str(ol_slaptest)
           olc_command = paths.olslaptest + " -f" + paths.slapdconf + " -F" +  paths.olcdir + " >/dev/null 2>&1"
           os.system(olc_command)
-          #os.remove(paths.slapdconf)        
-          # use line below for debugging during olc-conversion with slaptest 
+          os.remove(paths.slapdconf)        
+          # use line below for debugging during olc-conversion with slaptest, instead of olc_command above 
           #olc_command = paths.olslaptest + " -f" + paths.slapdconf + " -F" +  paths.olcdir"
-
-    # workaround, if overlay syncprov is was not created properly during conversion to cn=config.
-    # otherwise, cn=config won't be replicated
-    if ol_olc == "yes" and ol_mmr_urls is not None:
-        if not os.path.exists(paths.olcsyncprovdir):
-            os.makedirs(paths.olcsyncprovdir, 0770)
-            setup_file(setup_path("olcOverlay={0}syncprov.ldif"),
-                   os.path.join(paths.olcsyncprovdir, "olcOverlay={0}syncprov.ldif"), {})
-
 
 
 def create_phpldapadmin_config(path, setup_path, ldapi_uri):

@@ -95,6 +95,8 @@ int onefs_sys_create_file(connection_struct *conn,
 	uint32_t onefs_dos_attributes;
 	struct ifs_createfile_flags cf_flags = CF_FLAGS_NONE;
 
+	START_PROFILE(syscall_createfile);
+
 	/* Setup security descriptor and get secinfo. */
 	if (sd != NULL) {
 		NTSTATUS status;
@@ -196,6 +198,7 @@ int onefs_sys_create_file(connection_struct *conn,
 	}
 
  out:
+	END_PROFILE(syscall_createfile);
 	aclu_free_sd(pifs_sd, false);
 
 	return ret_fd;
@@ -307,6 +310,8 @@ ssize_t onefs_sys_sendfile(connection_struct *conn, int tofd, int fromfd,
 	bool atomic = false;
 	ssize_t ret = 0;
 
+	START_PROFILE_BYTES(syscall_sendfile, count);
+
 	if (lp_parm_bool(SNUM(conn), PARM_ONEFS_TYPE,
 			 PARM_ATOMIC_SENDFILE,
 			 PARM_ATOMIC_SENDFILE_DEFAULT)) {
@@ -320,6 +325,7 @@ ssize_t onefs_sys_sendfile(connection_struct *conn, int tofd, int fromfd,
 	/* If the sendfile wasn't atomic, we're done. */
 	if (!atomic) {
 		DEBUG(10, ("non-atomic sendfile read %ul bytes", ret));
+		END_PROFILE(syscall_sendfile);
 		return ret;
 	}
 
@@ -391,6 +397,7 @@ ssize_t onefs_sys_sendfile(connection_struct *conn, int tofd, int fromfd,
 
 	/* Handle case 1: short read -> truncated file. */
 	if (ret == 0) {
+		END_PROFILE(syscall_sendfile);
 		return ret;
 	}
 
@@ -402,6 +409,7 @@ ssize_t onefs_sys_sendfile(connection_struct *conn, int tofd, int fromfd,
 				 PARM_SENDFILE_LARGE_READS_DEFAULT)) {
 			DEBUG(3, ("Not attempting non-atomic large sendfile: "
 				  "%lu bytes\n", count));
+			END_PROFILE(syscall_sendfile);
 			return 0;
 		}
 
@@ -421,6 +429,7 @@ ssize_t onefs_sys_sendfile(connection_struct *conn, int tofd, int fromfd,
 			DEBUG(1, ("error on non-atomic large sendfile "
 				  "(%lu bytes): %s\n", count,
 				  strerror(errno)));
+			END_PROFILE(syscall_sendfile);
 			return ret;
 		}
 
@@ -439,9 +448,11 @@ ssize_t onefs_sys_sendfile(connection_struct *conn, int tofd, int fromfd,
 			if (lp_parm_bool(SNUM(conn), PARM_ONEFS_TYPE,
 				PARM_SENDFILE_SAFE,
 				PARM_SENDFILE_SAFE_DEFAULT)) {
+				END_PROFILE(syscall_sendfile);
 				return -1;
 			}
 
+			END_PROFILE(syscall_sendfile);
 			return ret;
 		}
 
@@ -455,6 +466,7 @@ ssize_t onefs_sys_sendfile(connection_struct *conn, int tofd, int fromfd,
 			  count, strerror(errno)));
 	}
 
+	END_PROFILE(syscall_sendfile);
 	return ret;
 }
 
@@ -509,10 +521,13 @@ ssize_t onefs_sys_recvfile(int fromfd, int tofd, SMB_OFF_T offset,
 	off_t rbytes;
 	off_t wbytes;
 
+	START_PROFILE_BYTES(syscall_recvfile, count);
+
 	DEBUG(10,("onefs_recvfile: from = %d, to = %d, offset=%llu, count = "
 		  "%lu\n", fromfd, tofd, offset, count));
 
 	if (count == 0) {
+		END_PROFILE(syscall_recvfile);
 		return 0;
 	}
 
@@ -624,6 +639,9 @@ ssize_t onefs_sys_recvfile(int fromfd, int tofd, SMB_OFF_T offset,
 	ret = total_wbytes;
 
 out:
+
+	END_PROFILE(syscall_recvfile);
+
 	/* Make sure we always try to drain the socket. */
 	if (!socket_drained && count - total_rbytes) {
 		int saved_errno = errno;
