@@ -6805,7 +6805,7 @@ WERROR regsubkey_ctr_init(TALLOC_CTX *mem_ctx, struct regsubkey_ctr **ctr);
 WERROR regsubkey_ctr_set_seqnum(struct regsubkey_ctr *ctr, int seqnum);
 int regsubkey_ctr_get_seqnum(struct regsubkey_ctr *ctr);
 WERROR regsubkey_ctr_addkey( struct regsubkey_ctr *ctr, const char *keyname );
-int regsubkey_ctr_delkey( struct regsubkey_ctr *ctr, const char *keyname );
+WERROR regsubkey_ctr_delkey( struct regsubkey_ctr *ctr, const char *keyname );
 bool regsubkey_ctr_key_exists( struct regsubkey_ctr *ctr, const char *keyname );
 int regsubkey_ctr_numkeys( struct regsubkey_ctr *ctr );
 char* regsubkey_ctr_specific_key( struct regsubkey_ctr *ctr, uint32 key_index );

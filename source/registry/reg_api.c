@@ -552,7 +552,6 @@ WERROR reg_deletekey(struct registry_key *parent, const char *path)
 	WERROR err;
 	TALLOC_CTX *mem_ctx;
 	char *name, *end;
-	int num_subkeys;
 	struct registry_key *tmp_key, *key;
 
 	if (!(mem_ctx = talloc_init("reg_createkey"))) return WERR_NOMEM;
@@ -598,10 +597,8 @@ WERROR reg_deletekey(struct registry_key *parent, const char *path)
 		goto error;
 	}
 
-	num_subkeys = regsubkey_ctr_numkeys(parent->subkeys);
-
-	if (regsubkey_ctr_delkey(parent->subkeys, name) == num_subkeys) {
-		err = WERR_BADFILE;
+	err = regsubkey_ctr_delkey(parent->subkeys, name);
+	if (!W_ERROR_IS_OK(err)) {
 		goto error;
 	}
 
@@ -1151,6 +1148,9 @@ static WERROR reg_deletekey_recursive_trans(TALLOC_CTX *ctx,
 	werr = reg_deletekey_recursive_internal(ctx, parent, path, del_key);
 
 	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(1, (__location__ " failed to delete key '%s' from key "
+			  "'%s': %s\n", path, parent->key->name,
+			  dos_errstr(werr)));
 		werr = regdb_transaction_cancel();
 		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG(0, ("reg_deletekey_recursive_trans: "
