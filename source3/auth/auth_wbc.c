@@ -74,7 +74,7 @@ static NTSTATUS check_wbc_security(const struct auth_context *auth_context,
 			 user_info->internal_username));
 		params.level = WBC_AUTH_USER_LEVEL_PLAIN;
 
-		params.password.plaintext = user_info->plaintext_password.data;
+		params.password.plaintext = (char *)user_info->plaintext_password.data;
 	} else {
 		DEBUG(3,("Checking encrypted password for %s.\n",
 			 user_info->internal_username));

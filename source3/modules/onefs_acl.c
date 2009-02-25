@@ -890,7 +890,7 @@ onefs_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 		  uint32 security_info_sent, SEC_DESC *psd)
 {
 	struct ifs_security_descriptor sd = {};
-	int fd;
+	int fd = -1;
 	bool fopened = false;
 	NTSTATUS status;
 
