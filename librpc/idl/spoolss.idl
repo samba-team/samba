@@ -1237,8 +1237,28 @@ import "misc.idl", "security.idl", "winreg.idl";
 		spoolss_FormArea area;
 	} spoolss_FormInfo1;
 
+	typedef [bitmap32bit] bitmap {
+		SPOOLSS_FORM_STRING_TYPE_NONE		= 0x00000001,
+		SPOOLSS_FORM_STRING_TYPE_MUI_DLL	= 0x00000002,
+		SPOOLSS_FORM_STRING_TYPE_LANG_PAIR	= 0x00000004
+	} spoolss_FormStringType;
+
+	typedef struct {
+		spoolss_FormFlags flags;
+		[relative] nstring *form_name;
+		spoolss_FormSize size;
+		spoolss_FormArea area;
+		[relative] nstring *keyword;
+		spoolss_FormStringType string_type;
+		[relative] nstring *mui_dll;
+		uint32 ressource_id;
+		[relative] nstring *display_name;
+		uint32 lang_id;
+	} spoolss_FormInfo2;
+
 	typedef [nodiscriminant,relative_base,public,gensize] union {
 		[case(1)] spoolss_FormInfo1 info1;
+		[case(2)] spoolss_FormInfo2 info2;
 		[default];
 	} spoolss_FormInfo;
 
