@@ -1269,8 +1269,22 @@ import "misc.idl", "security.idl", "winreg.idl";
 		spoolss_FormArea area;
 	} spoolss_AddFormInfo1;
 
+	typedef struct {
+		spoolss_FormFlags flags;
+		[string,charset(UTF16)] uint16 *form_name;
+		spoolss_FormSize size;
+		spoolss_FormArea area;
+		[string,charset(DOS)] uint8 *keyword;
+		spoolss_FormStringType string_type;
+		[string,charset(UTF16)] uint16 *mui_dll;
+		uint32 ressource_id;
+		[string,charset(UTF16)] uint16 *display_name;
+		uint32 lang_id;
+	} spoolss_AddFormInfo2;
+
 	typedef [switch_type(uint32)] union {
 		[case(1)] spoolss_AddFormInfo1 *info1;
+		[case(2)] spoolss_AddFormInfo2 *info2;
 	} spoolss_AddFormInfo;
 
 	WERROR spoolss_AddForm(
