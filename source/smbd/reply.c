@@ -2779,9 +2779,9 @@ void send_file_readbraw(connection_struct *conn,
 
 		return;
 	}
-#endif
 
 normal_readbraw:
+#endif
 
 	outbuf = TALLOC_ARRAY(NULL, char, nread+4);
 	if (!outbuf) {
