@@ -495,7 +495,13 @@ static int streams_depot_unlink(vfs_handle_struct *handle,  const char *fname)
 	 * We potentially need to delete the per-inode streams directory
 	 */
 
-	if (SMB_VFS_NEXT_STAT(handle, fname, &sbuf) == -1) {
+	if (lp_posix_pathnames()) {
+		ret = SMB_VFS_NEXT_LSTAT(handle, fname, &sbuf);
+	} else {
+		ret = SMB_VFS_NEXT_STAT(handle, fname, &sbuf);
+	}
+
+	if (ret == -1) {
 		return -1;
 	}
 
@@ -679,7 +685,11 @@ static NTSTATUS streams_depot_streaminfo(vfs_handle_struct *handle,
 		if (is_ntfs_stream_name(fname)) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
-		ret = SMB_VFS_NEXT_STAT(handle, fname, &sbuf);
+		if (lp_posix_pathnames()) {
+			ret = SMB_VFS_NEXT_LSTAT(handle, fname, &sbuf);
+		} else {
+			ret = SMB_VFS_NEXT_STAT(handle, fname, &sbuf);
+		}
 	}
 
 	if (ret == -1) {
