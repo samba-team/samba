@@ -137,6 +137,48 @@ WERROR rpccli_spoolss_getprinterdriver2(struct rpc_pipe_client *cli,
 	return werror;
 }
 
+/**********************************************************************
+ convencience wrapper around rpccli_spoolss_AddPrinterEx
+**********************************************************************/
+
+WERROR rpccli_spoolss_addprinterex(struct rpc_pipe_client *cli,
+				   TALLOC_CTX *mem_ctx,
+				   struct spoolss_SetPrinterInfoCtr *info_ctr)
+{
+	WERROR result;
+	NTSTATUS status;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	struct sec_desc_buf secdesc_ctr;
+	struct spoolss_UserLevelCtr userlevel_ctr;
+	struct spoolss_UserLevel1 level1;
+	struct policy_handle handle;
+
+	ZERO_STRUCT(devmode_ctr);
+	ZERO_STRUCT(secdesc_ctr);
+
+	level1.size		= 28;
+	level1.build		= 1381;
+	level1.major		= 2;
+	level1.minor		= 0;
+	level1.processor	= 0;
+	level1.client		= talloc_asprintf(mem_ctx, "\\\\%s", global_myname());
+	W_ERROR_HAVE_NO_MEMORY(level1.client);
+	level1.user		= cli->auth->user_name;
+
+	userlevel_ctr.level = 1;
+	userlevel_ctr.user_info.level1 = &level1;
+
+	status = rpccli_spoolss_AddPrinterEx(cli, mem_ctx,
+					     cli->srv_name_slash,
+					     info_ctr,
+					     &devmode_ctr,
+					     &secdesc_ctr,
+					     &userlevel_ctr,
+					     &handle,
+					     &result);
+	return result;
+}
+
 /*********************************************************************
  Decode various spoolss rpc's and info levels
  ********************************************************************/

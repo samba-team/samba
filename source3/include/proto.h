@@ -5476,6 +5476,9 @@ WERROR rpccli_spoolss_getprinterdriver2(struct rpc_pipe_client *cli,
 					union spoolss_DriverInfo *info,
 					uint32_t *server_major_version,
 					uint32_t *server_minor_version);
+WERROR rpccli_spoolss_addprinterex(struct rpc_pipe_client *cli,
+				   TALLOC_CTX *mem_ctx,
+				   struct spoolss_SetPrinterInfoCtr *info_ctr);
 WERROR rpccli_spoolss_enum_printers(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				 char *name, uint32 flags, uint32 level,
 				 uint32 *num_printers, PRINTER_INFO_CTR *ctr);
