@@ -1248,7 +1248,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[relative] nstring *form_name;
 		spoolss_FormSize size;
 		spoolss_FormArea area;
-		[relative] nstring *keyword;
+		[relative] astring *keyword;
 		spoolss_FormStringType string_type;
 		[relative] nstring *mui_dll;
 		uint32 ressource_id;
