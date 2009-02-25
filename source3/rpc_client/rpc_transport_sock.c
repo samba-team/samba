@@ -35,6 +35,12 @@ static int rpc_transport_sock_state_destructor(struct rpc_transport_sock_state *
 	return 0;
 }
 
+struct rpc_sock_read_state {
+	ssize_t received;
+};
+
+static void rpc_sock_read_done(struct tevent_req *subreq);
+
 static struct async_req *rpc_sock_read_send(TALLOC_CTX *mem_ctx,
 					    struct event_context *ev,
 					    uint8_t *data, size_t size,
@@ -42,22 +48,53 @@ static struct async_req *rpc_sock_read_send(TALLOC_CTX *mem_ctx,
 {
 	struct rpc_transport_sock_state *sock_transp = talloc_get_type_abort(
 		priv, struct rpc_transport_sock_state);
-	return async_recv(mem_ctx, ev, sock_transp->fd, data, size, 0);
+	struct async_req *result;
+	struct tevent_req *subreq;
+	struct rpc_sock_read_state *state;
+
+	if (!async_req_setup(mem_ctx, &result, &state,
+			     struct rpc_sock_read_state)) {
+		return NULL;
+	}
+
+	subreq = async_recv_send(state, ev, sock_transp->fd, data, size, 0);
+	if (subreq == NULL) {
+		goto fail;
+	}
+	subreq->async.fn = rpc_sock_read_done;
+	subreq->async.private_data = result;
+	return result;
+ fail:
+	TALLOC_FREE(result);
+	return NULL;
+}
+
+static void rpc_sock_read_done(struct tevent_req *subreq)
+{
+	struct async_req *req = talloc_get_type_abort(
+		subreq->async.private_data, struct async_req);
+	struct rpc_sock_read_state *state = talloc_get_type_abort(
+		req->private_data, struct rpc_sock_read_state);
+	int err;
+
+	state->received = async_recv_recv(subreq, &err);
+	if (state->received == -1) {
+		async_req_nterror(req, map_nt_error_from_unix(err));
+		return;
+	}
+	async_req_done(req);
 }
 
 static NTSTATUS rpc_sock_read_recv(struct async_req *req, ssize_t *preceived)
 {
-	ssize_t received;
-	int sys_errno;
+	struct rpc_sock_read_state *state = talloc_get_type_abort(
+		req->private_data, struct rpc_sock_read_state);
+	NTSTATUS status;
 
-	received = async_syscall_result_ssize_t(req, &sys_errno);
-	if (received == -1) {
-		return map_nt_error_from_unix(sys_errno);
+	if (async_req_is_nterror(req, &status)) {
+		return status;
 	}
-	if (received == 0) {
-		return NT_STATUS_END_OF_FILE;
-	}
-	*preceived = received;
+	*preceived = state->received;
 	return NT_STATUS_OK;
 }
 
