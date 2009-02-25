@@ -141,20 +141,8 @@
 
 /* Notify field types */
 
-#define NOTIFY_ONE_VALUE 1		/* Notify data is stored in value1 */
-#define NOTIFY_TWO_VALUE 2		/* Notify data is stored in value2 */
-#define NOTIFY_POINTER   3		/* Data is a pointer to a buffer */
-#define NOTIFY_STRING    4		/* Data is a pointer to a buffer w/length */
-#define NOTIFY_SECDESC   5		/* Data is a security descriptor */
-
 #define PRINTER_NOTIFY_TYPE 0x00
 #define JOB_NOTIFY_TYPE     0x01
-#define PRINT_TABLE_END     0xFF
-
-#define MAX_PRINTER_NOTIFY 26
-#define MAX_JOB_NOTIFY 24
-
-#define MAX_NOTIFY_TYPE_FOR_NOW 26
 
 #define PRINTER_NOTIFY_SERVER_NAME		0x00
 #define PRINTER_NOTIFY_PRINTER_NAME		0x01
@@ -322,19 +310,6 @@ typedef struct _printer_default
 PRINTER_DEFAULT;
 
 /********************************************/
-
-typedef struct s_header_type
-{
-	uint32 type;
-	union
-	{
-		uint32 value;
-		UNISTR string;
-	}
-	data;
-}
-HEADER_TYPE;
-
 
 typedef struct spool_q_getprinterdata
 {
