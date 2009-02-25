@@ -859,6 +859,72 @@ fail:
 	return false;
 }
 
+static WERROR regdb_create_subkey(const char *key, const char *subkey)
+{
+	WERROR werr;
+	struct regsubkey_ctr *subkeys;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
+
+	if (!regdb_key_is_base_key(key) && !regdb_key_exists(key)) {
+		werr = WERR_NOT_FOUND;
+		goto done;
+	}
+
+	werr = regsubkey_ctr_init(mem_ctx, &subkeys);
+	W_ERROR_NOT_OK_GOTO_DONE(werr);
+
+	if (regdb_fetch_keys(key, subkeys) < 0) {
+		werr = WERR_REG_IO_FAILURE;
+		goto done;
+	}
+
+	if (regsubkey_ctr_key_exists(subkeys, subkey)) {
+		werr = WERR_OK;
+		goto done;
+	}
+
+	talloc_free(subkeys);
+
+	werr = regdb_transaction_start();
+	W_ERROR_NOT_OK_GOTO_DONE(werr);
+
+	werr = regsubkey_ctr_init(mem_ctx, &subkeys);
+	W_ERROR_NOT_OK_GOTO(werr, cancel);
+
+	if (regdb_fetch_keys(key, subkeys) < 0) {
+		werr = WERR_REG_IO_FAILURE;
+		goto cancel;
+	}
+
+	werr = regsubkey_ctr_addkey(subkeys, subkey);
+	W_ERROR_NOT_OK_GOTO(werr, cancel);
+
+	if (!regdb_store_keys_internal(key, subkeys)) {
+		DEBUG(0, (__location__ " failed to store new subkey list for "
+			 "parent key %s\n", key));
+		werr = WERR_REG_IO_FAILURE;
+		goto cancel;
+	}
+
+	werr = regdb_transaction_commit();
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(0, (__location__ " failed to commit transaction: %s\n",
+			 win_errstr(werr)));
+	}
+
+	goto done;
+
+cancel:
+	werr = regdb_transaction_cancel();
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(0, (__location__ " failed to cancel transaction: %s\n",
+			 win_errstr(werr)));
+	}
+
+done:
+	talloc_free(mem_ctx);
+	return werr;
+}
 
 static TDB_DATA regdb_fetch_key_internal(TALLOC_CTX *mem_ctx, const char *key)
 {
@@ -1518,6 +1584,7 @@ REGISTRY_OPS regdb_ops = {
 	.fetch_values = regdb_fetch_values,
 	.store_subkeys = regdb_store_keys,
 	.store_values = regdb_store_values,
+	.create_subkey = regdb_create_subkey,
 	.get_secdesc = regdb_get_secdesc,
 	.set_secdesc = regdb_set_secdesc,
 	.subkeys_need_update = regdb_subkeys_need_update,
