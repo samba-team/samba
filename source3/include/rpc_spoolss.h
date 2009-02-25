@@ -123,7 +123,6 @@
 
 
 #define PRINTER_STATUS_OK               0x00000000
-#define JOB_ACCESS_READ			0x00000020
 
 /* JOB status codes. */
 
