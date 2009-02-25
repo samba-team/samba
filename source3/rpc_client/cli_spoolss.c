@@ -362,38 +362,6 @@ static bool decode_printer_info_3(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
 /**********************************************************************
 **********************************************************************/
 
-static bool decode_printer_info_7(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
-				uint32 returned, PRINTER_INFO_7 **info)
-{
-	uint32 i;
-	PRINTER_INFO_7  *inf;
-
-	if (returned) {
-		inf=TALLOC_ARRAY(mem_ctx, PRINTER_INFO_7, returned);
-		if (!inf) {
-			return False;
-		}
-		memset(inf, 0, returned*sizeof(PRINTER_INFO_7));
-	} else {
-		inf = NULL;
-	}
-
-	prs_set_offset(&buffer->prs,0);
-
-	for (i=0; i<returned; i++) {
-		if (!smb_io_printer_info_7("", buffer, &inf[i], 0)) {
-			return False;
-		}
-	}
-
-	*info=inf;
-	return True;
-}
-
-
-/**********************************************************************
-**********************************************************************/
-
 static bool decode_port_info_1(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
 			uint32 returned, PORT_INFO_1 **info)
 {
