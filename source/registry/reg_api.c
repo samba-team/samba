@@ -544,39 +544,36 @@ WERROR reg_createkey(TALLOC_CTX *ctx, struct registry_key *parent,
 WERROR reg_deletekey(struct registry_key *parent, const char *path)
 {
 	WERROR err;
-	TALLOC_CTX *mem_ctx;
 	char *name, *end;
 	struct registry_key *tmp_key, *key;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
-	if (!(mem_ctx = talloc_init("reg_createkey"))) return WERR_NOMEM;
-
-	if (!(name = talloc_strdup(mem_ctx, path))) {
+	name = talloc_strdup(mem_ctx, path);
+	if (name == NULL) {
 		err = WERR_NOMEM;
-		goto error;
+		goto done;
 	}
 
 	/* check if the key has subkeys */
 	err = reg_openkey(mem_ctx, parent, name, REG_KEY_READ, &key);
-	if (!W_ERROR_IS_OK(err)) {
-		goto error;
-	}
-	if (!W_ERROR_IS_OK(err = fill_subkey_cache(key))) {
-		goto error;
-	}
+	W_ERROR_NOT_OK_GOTO_DONE(err);
+
+	err = fill_subkey_cache(key);
+	W_ERROR_NOT_OK_GOTO_DONE(err);
+
 	if (regsubkey_ctr_numkeys(key->subkeys) > 0) {
 		err = WERR_ACCESS_DENIED;
-		goto error;
+		goto done;
 	}
 
 	/* no subkeys - proceed with delete */
-	if ((end = strrchr(name, '\\')) != NULL) {
+	end = strrchr(name, '\\');
+	if (end != NULL) {
 		*end = '\0';
 
 		err = reg_openkey(mem_ctx, parent, name,
 				  SEC_RIGHTS_CREATE_SUBKEY, &tmp_key);
-		if (!W_ERROR_IS_OK(err)) {
-			goto error;
-		}
+		W_ERROR_NOT_OK_GOTO_DONE(err);
 
 		parent = tmp_key;
 		name = end+1;
@@ -584,29 +581,26 @@ WERROR reg_deletekey(struct registry_key *parent, const char *path)
 
 	if (name[0] == '\0') {
 		err = WERR_INVALID_PARAM;
-		goto error;
+		goto done;
 	}
 
-	if (!W_ERROR_IS_OK(err = fill_subkey_cache(parent))) {
-		goto error;
-	}
+	err = fill_subkey_cache(parent);
+	W_ERROR_NOT_OK_GOTO_DONE(err);
 
 	err = regsubkey_ctr_delkey(parent->subkeys, name);
-	if (!W_ERROR_IS_OK(err)) {
-		goto error;
-	}
+	W_ERROR_NOT_OK_GOTO_DONE(err);
 
 	if (!store_reg_keys(parent->key, parent->subkeys)) {
 		TALLOC_FREE(parent->subkeys);
 		err = WERR_REG_IO_FAILURE;
-		goto error;
+		goto done;
 	}
 
 	regkey_set_secdesc(key->key, NULL);
 
 	err = WERR_OK;
 
- error:
+done:
 	TALLOC_FREE(mem_ctx);
 	return err;
 }
