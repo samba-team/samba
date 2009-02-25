@@ -1021,7 +1021,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	typedef [nodiscriminant,relative_base,gensize,public] union {
 		[case(1)] spoolss_PrintProcessorDirectoryInfo1 info1;
-		[default];
+		[default] spoolss_PrintProcessorDirectoryInfo1 info1;
 	} spoolss_PrintProcessorDirectoryInfo;
 
 	WERROR spoolss_GetPrintProcessorDirectory(
