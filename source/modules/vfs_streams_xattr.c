@@ -135,6 +135,7 @@ static bool streams_xattr_recheck(struct stream_io *sio)
 static int streams_xattr_fstat(vfs_handle_struct *handle, files_struct *fsp,
 			       SMB_STRUCT_STAT *sbuf)
 {
+	int ret = -1;
 	struct stream_io *io = (struct stream_io *)
 		VFS_FETCH_FSP_EXTENSION(handle, fsp);
 
@@ -148,7 +149,13 @@ static int streams_xattr_fstat(vfs_handle_struct *handle, files_struct *fsp,
 		return -1;
 	}
 
-	if (SMB_VFS_STAT(handle->conn, io->base, sbuf) == -1) {
+	if (lp_posix_pathnames()) {
+		ret = SMB_VFS_LSTAT(handle->conn, io->base, sbuf);
+	} else {
+		ret = SMB_VFS_STAT(handle->conn, io->base, sbuf);
+	}
+
+	if (ret == -1) {
 		return -1;
 	}
 
@@ -718,7 +725,11 @@ static NTSTATUS streams_xattr_streaminfo(vfs_handle_struct *handle,
 		if (is_ntfs_stream_name(fname)) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
-		ret = SMB_VFS_STAT(handle->conn, fname, &sbuf);
+		if (lp_posix_pathnames()) {
+			ret = SMB_VFS_LSTAT(handle->conn, fname, &sbuf);
+		} else {
+			ret = SMB_VFS_STAT(handle->conn, fname, &sbuf);
+		}
 	}
 
 	if (ret == -1) {
