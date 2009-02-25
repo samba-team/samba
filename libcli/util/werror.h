@@ -66,6 +66,12 @@ typedef uint32_t WERROR;
 	}\
 } while (0)
 
+#define W_ERROR_NOT_OK_GOTO(x, y) do {\
+	if (!W_ERROR_IS_OK(x)) {\
+		goto y;\
+	}\
+} while(0)
+
 /* these are win32 error codes. There are only a few places where
    these matter for Samba, primarily in the NT printing code */
 #define WERR_OK W_ERROR(0)
