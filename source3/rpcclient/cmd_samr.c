@@ -789,7 +789,6 @@ static NTSTATUS cmd_samr_enum_dom_users(struct rpc_pipe_client *cli,
 	struct samr_SamArray *dom_users = NULL;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	uint32 acb_mask = ACB_NORMAL;
-	bool got_connect_pol = False, got_domain_pol = False;
 
 	if ((argc < 1) || (argc > 3)) {
 		printf("Usage: %s [access_mask] [acb_mask]\n", argv[0]);
@@ -811,8 +810,6 @@ static NTSTATUS cmd_samr_enum_dom_users(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	got_connect_pol = True;
-
 	/* Get domain policy handle */
 
 	result = rpccli_samr_OpenDomain(cli, mem_ctx,
@@ -823,8 +820,6 @@ static NTSTATUS cmd_samr_enum_dom_users(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
-
-	got_domain_pol = True;
 
 	/* Enumerate domain users */
 
@@ -852,10 +847,10 @@ static NTSTATUS cmd_samr_enum_dom_users(struct rpc_pipe_client *cli,
 	} while (NT_STATUS_V(result) == NT_STATUS_V(STATUS_MORE_ENTRIES));
 
  done:
-	if (got_domain_pol)
+	if (is_valid_policy_hnd(&domain_pol))
 		rpccli_samr_Close(cli, mem_ctx, &domain_pol);
 
-	if (got_connect_pol)
+	if (is_valid_policy_hnd(&connect_pol))
 		rpccli_samr_Close(cli, mem_ctx, &connect_pol);
 
 	return result;
@@ -872,7 +867,6 @@ static NTSTATUS cmd_samr_enum_dom_groups(struct rpc_pipe_client *cli,
 	uint32 start_idx, size, num_dom_groups, i;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	struct samr_SamArray *dom_groups = NULL;
-	bool got_connect_pol = False, got_domain_pol = False;
 
 	if ((argc < 1) || (argc > 2)) {
 		printf("Usage: %s [access_mask]\n", argv[0]);
@@ -891,8 +885,6 @@ static NTSTATUS cmd_samr_enum_dom_groups(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	got_connect_pol = True;
-
 	/* Get domain policy handle */
 
 	result = rpccli_samr_OpenDomain(cli, mem_ctx,
@@ -903,8 +895,6 @@ static NTSTATUS cmd_samr_enum_dom_groups(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
-
-	got_domain_pol = True;
 
 	/* Enumerate domain groups */
 
@@ -930,10 +920,10 @@ static NTSTATUS cmd_samr_enum_dom_groups(struct rpc_pipe_client *cli,
 	} while (NT_STATUS_V(result) == NT_STATUS_V(STATUS_MORE_ENTRIES));
 
  done:
-	if (got_domain_pol)
+	if (is_valid_policy_hnd(&domain_pol))
 		rpccli_samr_Close(cli, mem_ctx, &domain_pol);
 
-	if (got_connect_pol)
+	if (is_valid_policy_hnd(&connect_pol))
 		rpccli_samr_Close(cli, mem_ctx, &connect_pol);
 
 	return result;
@@ -950,7 +940,6 @@ static NTSTATUS cmd_samr_enum_als_groups(struct rpc_pipe_client *cli,
 	uint32 start_idx, size, num_als_groups, i;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	struct samr_SamArray *als_groups = NULL;
-	bool got_connect_pol = False, got_domain_pol = False;
 
 	if ((argc < 2) || (argc > 3)) {
 		printf("Usage: %s builtin|domain [access mask]\n", argv[0]);
@@ -969,8 +958,6 @@ static NTSTATUS cmd_samr_enum_als_groups(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	got_connect_pol = True;
-
 	/* Get domain policy handle */
 
 	result = get_domain_handle(cli, mem_ctx, argv[1],
@@ -981,8 +968,6 @@ static NTSTATUS cmd_samr_enum_als_groups(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
-
-	got_domain_pol = True;
 
 	/* Enumerate alias groups */
 
@@ -1008,10 +993,10 @@ static NTSTATUS cmd_samr_enum_als_groups(struct rpc_pipe_client *cli,
 	} while (NT_STATUS_V(result) == NT_STATUS_V(STATUS_MORE_ENTRIES));
 
  done:
-	if (got_domain_pol)
+	if (is_valid_policy_hnd(&domain_pol))
 		rpccli_samr_Close(cli, mem_ctx, &domain_pol);
 
-	if (got_connect_pol)
+	if (is_valid_policy_hnd(&connect_pol))
 		rpccli_samr_Close(cli, mem_ctx, &connect_pol);
 
 	return result;
@@ -1027,7 +1012,6 @@ static NTSTATUS cmd_samr_enum_domains(struct rpc_pipe_client *cli,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 start_idx, size, num_entries, i;
 	uint32 access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	bool got_connect_pol = false;
 	struct samr_SamArray *sam = NULL;
 
 	if ((argc < 1) || (argc > 2)) {
@@ -1048,8 +1032,6 @@ static NTSTATUS cmd_samr_enum_domains(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
-
-	got_connect_pol = true;
 
 	/* Enumerate alias groups */
 
@@ -1075,7 +1057,7 @@ static NTSTATUS cmd_samr_enum_domains(struct rpc_pipe_client *cli,
 	} while (NT_STATUS_V(result) == NT_STATUS_V(STATUS_MORE_ENTRIES));
 
  done:
-	if (got_connect_pol) {
+	if (is_valid_policy_hnd(&connect_pol)) {
 		rpccli_samr_Close(cli, mem_ctx, &connect_pol);
 	}
 

@@ -212,6 +212,15 @@ struct tevent_req {
 	void *private_state;
 
 	/**
+	 * @brief A function to overwrite the default print function
+	 *
+	 * The implementation doing the work may want to imeplement a
+	 * custom function to print the text representation of the async
+	 * request.
+	 */
+	char *(*private_print)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+
+	/**
 	 * @brief Internal state of the request
 	 *
 	 * Callers should only access this via functions and never directly.
@@ -267,6 +276,8 @@ struct tevent_req {
 	} internal;
 };
 
+char *tevent_req_default_print(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+
 char *tevent_req_print(TALLOC_CTX *mem_ctx, struct tevent_req *req);
 
 struct tevent_req *_tevent_req_create(TALLOC_CTX *mem_ctx,
@@ -295,6 +306,9 @@ struct tevent_req *tevent_req_post(struct tevent_req *req,
 				   struct tevent_context *ev);
 
 bool tevent_req_is_in_progress(struct tevent_req *req);
+
+bool tevent_req_poll(struct tevent_req *req,
+		     struct tevent_context *ev);
 
 bool tevent_req_is_error(struct tevent_req *req,
 			 enum tevent_req_state *state,

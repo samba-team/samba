@@ -960,8 +960,27 @@ struct spoolss_FormInfo1 {
 	struct spoolss_FormArea area;
 };
 
+/* bitmap spoolss_FormStringType */
+#define SPOOLSS_FORM_STRING_TYPE_NONE ( 0x00000001 )
+#define SPOOLSS_FORM_STRING_TYPE_MUI_DLL ( 0x00000002 )
+#define SPOOLSS_FORM_STRING_TYPE_LANG_PAIR ( 0x00000004 )
+
+struct spoolss_FormInfo2 {
+	enum spoolss_FormFlags flags;
+	const char * form_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	struct spoolss_FormSize size;
+	struct spoolss_FormArea area;
+	const char * keyword;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	uint32_t string_type;
+	const char * mui_dll;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	uint32_t ressource_id;
+	const char * display_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	uint32_t lang_id;
+};
+
 union spoolss_FormInfo {
 	struct spoolss_FormInfo1 info1;/* [case] */
+	struct spoolss_FormInfo2 info2;/* [case(2)] */
 }/* [relative_base,gensize,public,nodiscriminant] */;
 
 struct spoolss_AddFormInfo1 {

@@ -1812,7 +1812,6 @@ static WERROR cmd_spoolss_addform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	WERROR werror;
 	NTSTATUS status;
 	const char *printername;
-	bool got_handle = False;
 	union spoolss_AddFormInfo info;
 	struct spoolss_AddFormInfo1 info1;
 
@@ -1833,8 +1832,6 @@ static WERROR cmd_spoolss_addform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 					       &handle);
 	if (!W_ERROR_IS_OK(werror))
 		goto done;
-
-	got_handle = True;
 
 	/* Dummy up some values for the form data */
 
@@ -1859,7 +1856,7 @@ static WERROR cmd_spoolss_addform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 					&werror);
 
  done:
-	if (got_handle)
+	if (is_valid_policy_hnd(&handle))
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
 
 	return werror;
@@ -1875,7 +1872,6 @@ static WERROR cmd_spoolss_setform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	WERROR werror;
 	NTSTATUS status;
 	const char *printername;
-	bool got_handle = False;
 	union spoolss_AddFormInfo info;
 	struct spoolss_AddFormInfo1 info1;
 
@@ -1896,8 +1892,6 @@ static WERROR cmd_spoolss_setform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 					       &handle);
 	if (!W_ERROR_IS_OK(werror))
 		goto done;
-
-	got_handle = True;
 
 	/* Dummy up some values for the form data */
 
@@ -1922,7 +1916,7 @@ static WERROR cmd_spoolss_setform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 					&werror);
 
  done:
-	if (got_handle)
+	if (is_valid_policy_hnd(&handle))
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
 
 	return werror;
@@ -1984,6 +1978,28 @@ static void display_form_info1(struct spoolss_FormInfo1 *r)
 /****************************************************************************
 ****************************************************************************/
 
+static void display_form_info2(struct spoolss_FormInfo2 *r)
+{
+	printf("%s\n" \
+		"\tflag: %s (%d)\n" \
+		"\twidth: %d, length: %d\n" \
+		"\tleft: %d, right: %d, top: %d, bottom: %d\n",
+		r->form_name, get_form_flag(r->flags), r->flags,
+		r->size.width, r->size.height,
+		r->area.left, r->area.right,
+		r->area.top, r->area.bottom);
+	printf("\tkeyword: %s\n", r->keyword);
+	printf("\tstring_type: 0x%08x\n", r->string_type);
+	printf("\tmui_dll: %s\n", r->mui_dll);
+	printf("\tressource_id: 0x%08x\n", r->ressource_id);
+	printf("\tdisplay_name: %s\n", r->display_name);
+	printf("\tlang_id: %d\n", r->lang_id);
+	printf("\n");
+}
+
+/****************************************************************************
+****************************************************************************/
+
 static WERROR cmd_spoolss_getform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				    int argc, const char **argv)
 {
@@ -1991,16 +2007,16 @@ static WERROR cmd_spoolss_getform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	WERROR werror;
 	NTSTATUS status;
 	const char *printername;
-	bool got_handle = False;
 	DATA_BLOB buffer;
 	uint32_t offered = 0;
 	union spoolss_FormInfo info;
 	uint32_t needed;
+	uint32_t level = 1;
 
 	/* Parse the command arguments */
 
-	if (argc != 3) {
-		printf ("Usage: %s <printer> <formname>\n", argv[0]);
+	if (argc < 3 || argc > 5) {
+		printf ("Usage: %s <printer> <formname> [level]\n", argv[0]);
 		return WERR_OK;
         }
 
@@ -2015,26 +2031,28 @@ static WERROR cmd_spoolss_getform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	if (!W_ERROR_IS_OK(werror))
 		goto done;
 
-	got_handle = True;
+	if (argc == 4) {
+		level = atoi(argv[3]);
+	}
 
 	/* Get the form */
 
 	status = rpccli_spoolss_GetForm(cli, mem_ctx,
 					&handle,
 					argv[2],
-					1,
+					level,
 					NULL,
 					offered,
 					&info,
 					&needed,
 					&werror);
 	if (W_ERROR_EQUAL(werror, WERR_INSUFFICIENT_BUFFER)) {
-		buffer = data_blob_talloc(mem_ctx, NULL, needed);
+		buffer = data_blob_talloc_zero(mem_ctx, needed);
 		offered = needed;
 		status = rpccli_spoolss_GetForm(cli, mem_ctx,
 						&handle,
 						argv[2],
-						1,
+						level,
 						&buffer,
 						offered,
 						&info,
@@ -2046,9 +2064,17 @@ static WERROR cmd_spoolss_getform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 		return werror;
 	}
 
-	display_form_info1(&info.info1);
+	switch (level) {
+	case 1:
+		display_form_info1(&info.info1);
+		break;
+	case 2:
+		display_form_info2(&info.info2);
+		break;
+	}
+
  done:
-	if (got_handle)
+	if (is_valid_policy_hnd(&handle))
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
 
 	return werror;
@@ -2065,7 +2091,6 @@ static WERROR cmd_spoolss_deleteform(struct rpc_pipe_client *cli,
 	WERROR werror;
 	NTSTATUS status;
 	const char *printername;
-	bool got_handle = False;
 
 	/* Parse the command arguments */
 
@@ -2085,8 +2110,6 @@ static WERROR cmd_spoolss_deleteform(struct rpc_pipe_client *cli,
 	if (!W_ERROR_IS_OK(werror))
 		goto done;
 
-	got_handle = True;
-
 	/* Delete the form */
 
 	status = rpccli_spoolss_DeleteForm(cli, mem_ctx,
@@ -2098,7 +2121,7 @@ static WERROR cmd_spoolss_deleteform(struct rpc_pipe_client *cli,
 	}
 
  done:
-	if (got_handle)
+	if (is_valid_policy_hnd(&handle))
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
 
 	return werror;
@@ -2114,7 +2137,6 @@ static WERROR cmd_spoolss_enum_forms(struct rpc_pipe_client *cli,
 	POLICY_HND handle;
 	WERROR werror;
 	const char *printername;
-	bool got_handle = False;
 	uint32 num_forms, level = 1, i;
 	FORM_1 *forms;
 
@@ -2136,8 +2158,6 @@ static WERROR cmd_spoolss_enum_forms(struct rpc_pipe_client *cli,
 	if (!W_ERROR_IS_OK(werror))
 		goto done;
 
-	got_handle = True;
-
 	/* Enumerate forms */
 
 	werror = rpccli_spoolss_enumforms(cli, mem_ctx, &handle, level, &num_forms, &forms);
@@ -2154,7 +2174,7 @@ static WERROR cmd_spoolss_enum_forms(struct rpc_pipe_client *cli,
 	}
 
  done:
-	if (got_handle)
+	if (is_valid_policy_hnd(&handle))
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
 
 	return werror;
