@@ -1814,11 +1814,13 @@ static WERROR cmd_spoolss_addform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	const char *printername;
 	union spoolss_AddFormInfo info;
 	struct spoolss_AddFormInfo1 info1;
+	struct spoolss_AddFormInfo2 info2;
+	uint32_t level = 1;
 
 	/* Parse the command arguments */
 
-	if (argc != 3) {
-		printf ("Usage: %s <printer> <formname>\n", argv[0]);
+	if (argc < 3 || argc > 5) {
+		printf ("Usage: %s <printer> <formname> [level]\n", argv[0]);
 		return WERR_OK;
         }
 
@@ -1835,23 +1837,51 @@ static WERROR cmd_spoolss_addform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 
 	/* Dummy up some values for the form data */
 
-	info1.flags		= FORM_USER;
-	info1.form_name		= argv[2];
-	info1.size.width	= 100;
-	info1.size.height	= 100;
-	info1.area.left		= 0;
-	info1.area.top		= 10;
-	info1.area.right	= 20;
-	info1.area.bottom	= 30;
+	if (argc == 4) {
+		level = atoi(argv[3]);
+	}
 
-	info.info1 = &info1;
+	switch (level) {
+	case 1:
+		info1.flags		= FORM_USER;
+		info1.form_name		= argv[2];
+		info1.size.width	= 100;
+		info1.size.height	= 100;
+		info1.area.left		= 0;
+		info1.area.top		= 10;
+		info1.area.right	= 20;
+		info1.area.bottom	= 30;
+
+		info.info1 = &info1;
+
+		break;
+	case 2:
+		info2.flags		= FORM_USER;
+		info2.form_name		= argv[2];
+		info2.size.width	= 100;
+		info2.size.height	= 100;
+		info2.area.left		= 0;
+		info2.area.top		= 10;
+		info2.area.right	= 20;
+		info2.area.bottom	= 30;
+		info2.keyword		= argv[2];
+		info2.string_type	= SPOOLSS_FORM_STRING_TYPE_NONE;
+		info2.mui_dll		= NULL;
+		info2.ressource_id	= 0;
+		info2.display_name	= argv[2];
+		info2.lang_id		= 0;
+
+		info.info2 = &info2;
+
+		break;
+	}
 
 	/* Add the form */
 
 
 	status = rpccli_spoolss_AddForm(cli, mem_ctx,
 					&handle,
-					1,
+					level,
 					info,
 					&werror);
 
