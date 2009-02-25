@@ -168,6 +168,69 @@ static bool test_EnumPorts(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_GetPrintProcessorDirectory(struct torture_context *tctx,
+					    struct dcerpc_pipe *p,
+					    struct test_spoolss_context *ctx)
+{
+	NTSTATUS status;
+	struct spoolss_GetPrintProcessorDirectory r;
+	struct {
+		uint16_t level;
+		const char *server;
+	} levels[] = {{
+			.level	= 1,
+			.server	= NULL
+		},{
+			.level	= 1,
+			.server	= ""
+		},{
+			.level	= 78,
+			.server	= ""
+		},{
+			.level	= 1,
+			.server	= talloc_asprintf(ctx, "\\\\%s", dcerpc_server_name(p))
+		},{
+			.level	= 1024,
+			.server	= talloc_asprintf(ctx, "\\\\%s", dcerpc_server_name(p))
+		}
+	};
+	int i;
+	uint32_t needed;
+
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		int level = levels[i].level;
+		DATA_BLOB blob;
+
+		r.in.server		= levels[i].server;
+		r.in.environment	= SPOOLSS_ARCHITECTURE_NT_X86;
+		r.in.level		= level;
+		r.in.buffer		= NULL;
+		r.in.offered		= 0;
+		r.out.needed		= &needed;
+
+		torture_comment(tctx, "Testing GetPrintProcessorDirectory level %u\n", r.in.level);
+
+		status = dcerpc_spoolss_GetPrintProcessorDirectory(p, ctx, &r);
+		torture_assert_ntstatus_ok(tctx, status,
+			"dcerpc_spoolss_GetPrintProcessorDirectory failed");
+		torture_assert_werr_equal(tctx, r.out.result, WERR_INSUFFICIENT_BUFFER,
+			"GetPrintProcessorDirectory unexpected return code");
+
+		blob = data_blob_talloc(ctx, NULL, needed);
+		data_blob_clear(&blob);
+		r.in.buffer = &blob;
+		r.in.offered = needed;
+
+		status = dcerpc_spoolss_GetPrintProcessorDirectory(p, ctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_GetPrintProcessorDirectory failed");
+
+		torture_assert_werr_ok(tctx, r.out.result, "GetPrintProcessorDirectory failed");
+	}
+
+	return true;
+}
+
+
 static bool test_GetPrinterDriverDirectory(struct torture_context *tctx, 
 					   struct dcerpc_pipe *p, 
 					   struct test_spoolss_context *ctx)
@@ -1831,6 +1894,7 @@ bool torture_rpc_spoolss(struct torture_context *torture)
 	ret &= test_AddForm(torture, p, &ctx->server_handle, true);
 	ret &= test_EnumPorts(torture, p, ctx);
 	ret &= test_GetPrinterDriverDirectory(torture, p, ctx);
+	ret &= test_GetPrintProcessorDirectory(torture, p, ctx);
 	ret &= test_EnumPrinterDrivers(torture, p, ctx);
 	ret &= test_EnumMonitors(torture, p, ctx);
 	ret &= test_EnumPrintProcessors(torture, p, ctx);
