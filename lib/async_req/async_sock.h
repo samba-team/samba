@@ -25,14 +25,6 @@
 bool async_req_is_errno(struct async_req *req, int *err);
 int async_req_simple_recv_errno(struct async_req *req);
 
-ssize_t async_syscall_result_ssize_t(struct async_req *req, int *perrno);
-size_t async_syscall_result_size_t(struct async_req *req, int *perrno);
-int async_syscall_result_int(struct async_req *req, int *perrno);
-
-struct async_req *async_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			     int fd, const void *buffer, size_t length,
-			     int flags);
-
 struct tevent_req *async_send_send(TALLOC_CTX *mem_ctx,
 				   struct tevent_context *ev,
 				   int fd, const void *buf, size_t len,
