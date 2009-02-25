@@ -546,7 +546,11 @@ static WERROR dcesrv_spoolss_EndDocPrinter(struct dcesrv_call_state *dce_call, T
 static WERROR dcesrv_spoolss_AddJob(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_AddJob *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	if (r->in.level != 1) {
+		return WERR_UNKNOWN_LEVEL;
+	}
+
+	return WERR_INVALID_PARAM;
 }
 
 
