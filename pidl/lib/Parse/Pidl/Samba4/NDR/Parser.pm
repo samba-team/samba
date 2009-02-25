@@ -2548,7 +2548,9 @@ sub GenerateIncludes($)
 	if (is_intree()) {
 		$self->pidl("#include \"includes.h\"");
 	} else {
+		$self->pidl("#ifndef _GNU_SOURCE");
 		$self->pidl("#define _GNU_SOURCE");
+		$self->pidl("#endif");
 		$self->pidl("#include <stdint.h>");
 		$self->pidl("#include <stdlib.h>");
 		$self->pidl("#include <stdio.h>");
