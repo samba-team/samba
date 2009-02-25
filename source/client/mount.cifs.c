@@ -650,7 +650,9 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 		} else if (strncmp(data, "exec", 4) == 0) {
 			*filesys_flags &= ~MS_NOEXEC;
 		} else if (strncmp(data, "guest", 5) == 0) {
-			got_password=1;
+			user_name = (char *)calloc(1, 1);
+			got_user = 1;
+			got_password = 1;
 		} else if (strncmp(data, "ro", 2) == 0) {
 			*filesys_flags |= MS_RDONLY;
 		} else if (strncmp(data, "rw", 2) == 0) {
@@ -1079,6 +1081,14 @@ int main(int argc, char ** argv)
 		}
 		mountpoint = argv[2];
 	} else {
+		if ((strcmp (argv[1], "--version") == 0) ||
+		    ((strcmp (argv[1], "-V") == 0))) {
+			printf ("mount.cifs version: %s.%s%s\n",
+			MOUNT_CIFS_VERSION_MAJOR,
+			MOUNT_CIFS_VERSION_MINOR,
+			MOUNT_CIFS_VENDOR_SUFFIX);
+			exit (0);
+		}
 		mount_cifs_usage();
 		exit(EX_USAGE);
 	}
