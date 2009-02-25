@@ -7,6 +7,7 @@
  *  Copyright (C) Jeremy Allison               2001-2002,
  *  Copyright (C) Gerald Carter		       2000-2004,
  *  Copyright (C) Tim Potter                   2001-2002.
+ *  Copyright (C) Guenther Deschner                 2009.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
