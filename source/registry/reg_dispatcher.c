@@ -100,6 +100,15 @@ bool store_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val )
 	return false;
 }
 
+WERROR create_reg_subkey(REGISTRY_KEY *key, const char *subkey)
+{
+	if (key->ops && key->ops->create_subkey) {
+		return key->ops->create_subkey(key->name, subkey);
+	}
+
+	return WERR_NOT_SUPPORTED;
+}
+
 /***********************************************************************
  High level wrapper function for enumerating registry subkeys
  Initialize the TALLOC_CTX if necessary

@@ -6767,6 +6767,7 @@ void reghook_dump_cache( int debuglevel );
 
 bool store_reg_keys( REGISTRY_KEY *key, struct regsubkey_ctr *subkeys );
 bool store_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val );
+WERROR create_reg_subkey(REGISTRY_KEY *key, const char *subkey);
 int fetch_reg_keys( REGISTRY_KEY *key, struct regsubkey_ctr *subkey_ctr );
 int fetch_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val );
 bool regkey_access_check( REGISTRY_KEY *key, uint32 requested, uint32 *granted,
