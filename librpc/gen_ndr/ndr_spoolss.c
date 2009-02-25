@@ -11356,6 +11356,9 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrintProcessorDirectoryInfo(struct n
 			break; }
 
 			default: {
+				NDR_CHECK(ndr_push_align(ndr, 4));
+				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+				NDR_CHECK(ndr_push_spoolss_PrintProcessorDirectoryInfo1(ndr, NDR_SCALARS, &r->info1));
 			break; }
 
 		}
@@ -11390,6 +11393,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrintProcessorDirectoryInfo(struct n
 			break; }
 
 			default: {
+				NDR_CHECK(ndr_pull_align(ndr, 4));
+				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+				NDR_CHECK(ndr_pull_spoolss_PrintProcessorDirectoryInfo1(ndr, NDR_SCALARS, &r->info1));
 			break; }
 
 		}
@@ -11420,6 +11426,7 @@ _PUBLIC_ void ndr_print_spoolss_PrintProcessorDirectoryInfo(struct ndr_print *nd
 		break;
 
 		default:
+			ndr_print_spoolss_PrintProcessorDirectoryInfo1(ndr, "info1", &r->info1);
 		break;
 
 	}
@@ -12271,7 +12278,7 @@ static enum ndr_err_code ndr_push_spoolss_FormInfo2(struct ndr_push *ndr, int nd
 		NDR_CHECK(ndr_push_spoolss_FormArea(ndr, NDR_SCALARS, &r->area));
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
 			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->keyword));
 			ndr->flags = _flags_save_string;
 		}
@@ -12303,7 +12310,7 @@ static enum ndr_err_code ndr_push_spoolss_FormInfo2(struct ndr_push *ndr, int nd
 		}
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
 			if (r->keyword) {
 				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->keyword));
 				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->keyword));
@@ -12361,7 +12368,7 @@ static enum ndr_err_code ndr_pull_spoolss_FormInfo2(struct ndr_pull *ndr, int nd
 		NDR_CHECK(ndr_pull_spoolss_FormArea(ndr, NDR_SCALARS, &r->area));
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
 			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_keyword));
 			if (_ptr_keyword) {
 				NDR_PULL_ALLOC(ndr, r->keyword);
@@ -12417,7 +12424,7 @@ static enum ndr_err_code ndr_pull_spoolss_FormInfo2(struct ndr_pull *ndr, int nd
 		}
 		{
 			uint32_t _flags_save_string = ndr->flags;
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
 			if (r->keyword) {
 				uint32_t _relative_save_offset;
 				_relative_save_offset = ndr->offset;
@@ -12683,6 +12690,183 @@ _PUBLIC_ void ndr_print_spoolss_AddFormInfo1(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_spoolss_AddFormInfo2(struct ndr_push *ndr, int ndr_flags, const struct spoolss_AddFormInfo2 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_spoolss_FormFlags(ndr, NDR_SCALARS, r->flags));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->form_name));
+		NDR_CHECK(ndr_push_spoolss_FormSize(ndr, NDR_SCALARS, &r->size));
+		NDR_CHECK(ndr_push_spoolss_FormArea(ndr, NDR_SCALARS, &r->area));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->keyword));
+		NDR_CHECK(ndr_push_spoolss_FormStringType(ndr, NDR_SCALARS, r->string_type));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->mui_dll));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->ressource_id));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->display_name));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->lang_id));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->form_name) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->form_name, CH_UTF16)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->form_name, CH_UTF16)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->form_name, ndr_charset_length(r->form_name, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		}
+		if (r->keyword) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->keyword, CH_DOS)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->keyword, CH_DOS)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->keyword, ndr_charset_length(r->keyword, CH_DOS), sizeof(uint8_t), CH_DOS));
+		}
+		if (r->mui_dll) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->mui_dll, CH_UTF16)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->mui_dll, CH_UTF16)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->mui_dll, ndr_charset_length(r->mui_dll, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		}
+		if (r->display_name) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->display_name, CH_UTF16)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->display_name, CH_UTF16)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->display_name, ndr_charset_length(r->display_name, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_AddFormInfo2(struct ndr_pull *ndr, int ndr_flags, struct spoolss_AddFormInfo2 *r)
+{
+	uint32_t _ptr_form_name;
+	TALLOC_CTX *_mem_save_form_name_0;
+	uint32_t _ptr_keyword;
+	TALLOC_CTX *_mem_save_keyword_0;
+	uint32_t _ptr_mui_dll;
+	TALLOC_CTX *_mem_save_mui_dll_0;
+	uint32_t _ptr_display_name;
+	TALLOC_CTX *_mem_save_display_name_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_spoolss_FormFlags(ndr, NDR_SCALARS, &r->flags));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_form_name));
+		if (_ptr_form_name) {
+			NDR_PULL_ALLOC(ndr, r->form_name);
+		} else {
+			r->form_name = NULL;
+		}
+		NDR_CHECK(ndr_pull_spoolss_FormSize(ndr, NDR_SCALARS, &r->size));
+		NDR_CHECK(ndr_pull_spoolss_FormArea(ndr, NDR_SCALARS, &r->area));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_keyword));
+		if (_ptr_keyword) {
+			NDR_PULL_ALLOC(ndr, r->keyword);
+		} else {
+			r->keyword = NULL;
+		}
+		NDR_CHECK(ndr_pull_spoolss_FormStringType(ndr, NDR_SCALARS, &r->string_type));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_mui_dll));
+		if (_ptr_mui_dll) {
+			NDR_PULL_ALLOC(ndr, r->mui_dll);
+		} else {
+			r->mui_dll = NULL;
+		}
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->ressource_id));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_display_name));
+		if (_ptr_display_name) {
+			NDR_PULL_ALLOC(ndr, r->display_name);
+		} else {
+			r->display_name = NULL;
+		}
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->lang_id));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->form_name) {
+			_mem_save_form_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->form_name, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->form_name));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->form_name));
+			if (ndr_get_array_length(ndr, &r->form_name) > ndr_get_array_size(ndr, &r->form_name)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->form_name), ndr_get_array_length(ndr, &r->form_name));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->form_name), sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->form_name, ndr_get_array_length(ndr, &r->form_name), sizeof(uint16_t), CH_UTF16));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_form_name_0, 0);
+		}
+		if (r->keyword) {
+			_mem_save_keyword_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->keyword, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->keyword));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->keyword));
+			if (ndr_get_array_length(ndr, &r->keyword) > ndr_get_array_size(ndr, &r->keyword)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->keyword), ndr_get_array_length(ndr, &r->keyword));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->keyword), sizeof(uint8_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->keyword, ndr_get_array_length(ndr, &r->keyword), sizeof(uint8_t), CH_DOS));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_keyword_0, 0);
+		}
+		if (r->mui_dll) {
+			_mem_save_mui_dll_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->mui_dll, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->mui_dll));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->mui_dll));
+			if (ndr_get_array_length(ndr, &r->mui_dll) > ndr_get_array_size(ndr, &r->mui_dll)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->mui_dll), ndr_get_array_length(ndr, &r->mui_dll));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->mui_dll), sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->mui_dll, ndr_get_array_length(ndr, &r->mui_dll), sizeof(uint16_t), CH_UTF16));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_mui_dll_0, 0);
+		}
+		if (r->display_name) {
+			_mem_save_display_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->display_name, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->display_name));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->display_name));
+			if (ndr_get_array_length(ndr, &r->display_name) > ndr_get_array_size(ndr, &r->display_name)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->display_name), ndr_get_array_length(ndr, &r->display_name));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->display_name), sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->display_name, ndr_get_array_length(ndr, &r->display_name), sizeof(uint16_t), CH_UTF16));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_display_name_0, 0);
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_AddFormInfo2(struct ndr_print *ndr, const char *name, const struct spoolss_AddFormInfo2 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_AddFormInfo2");
+	ndr->depth++;
+	ndr_print_spoolss_FormFlags(ndr, "flags", r->flags);
+	ndr_print_ptr(ndr, "form_name", r->form_name);
+	ndr->depth++;
+	if (r->form_name) {
+		ndr_print_string(ndr, "form_name", r->form_name);
+	}
+	ndr->depth--;
+	ndr_print_spoolss_FormSize(ndr, "size", &r->size);
+	ndr_print_spoolss_FormArea(ndr, "area", &r->area);
+	ndr_print_ptr(ndr, "keyword", r->keyword);
+	ndr->depth++;
+	if (r->keyword) {
+		ndr_print_string(ndr, "keyword", r->keyword);
+	}
+	ndr->depth--;
+	ndr_print_spoolss_FormStringType(ndr, "string_type", r->string_type);
+	ndr_print_ptr(ndr, "mui_dll", r->mui_dll);
+	ndr->depth++;
+	if (r->mui_dll) {
+		ndr_print_string(ndr, "mui_dll", r->mui_dll);
+	}
+	ndr->depth--;
+	ndr_print_uint32(ndr, "ressource_id", r->ressource_id);
+	ndr_print_ptr(ndr, "display_name", r->display_name);
+	ndr->depth++;
+	if (r->display_name) {
+		ndr_print_string(ndr, "display_name", r->display_name);
+	}
+	ndr->depth--;
+	ndr_print_uint32(ndr, "lang_id", r->lang_id);
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_spoolss_AddFormInfo(struct ndr_push *ndr, int ndr_flags, const union spoolss_AddFormInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -12691,6 +12875,10 @@ static enum ndr_err_code ndr_push_spoolss_AddFormInfo(struct ndr_push *ndr, int 
 		switch (level) {
 			case 1: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1));
+			break; }
+
+			case 2: {
+				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info2));
 			break; }
 
 			default:
@@ -12706,6 +12894,12 @@ static enum ndr_err_code ndr_push_spoolss_AddFormInfo(struct ndr_push *ndr, int 
 				}
 			break;
 
+			case 2:
+				if (r->info2) {
+					NDR_CHECK(ndr_push_spoolss_AddFormInfo2(ndr, NDR_SCALARS|NDR_BUFFERS, r->info2));
+				}
+			break;
+
 			default:
 				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 		}
@@ -12718,6 +12912,7 @@ static enum ndr_err_code ndr_pull_spoolss_AddFormInfo(struct ndr_pull *ndr, int 
 	int level;
 	uint32_t _level;
 	TALLOC_CTX *_mem_save_info1_0;
+	TALLOC_CTX *_mem_save_info2_0;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
@@ -12735,6 +12930,16 @@ static enum ndr_err_code ndr_pull_spoolss_AddFormInfo(struct ndr_pull *ndr, int 
 				}
 			break; }
 
+			case 2: {
+				uint32_t _ptr_info2;
+				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info2));
+				if (_ptr_info2) {
+					NDR_PULL_ALLOC(ndr, r->info2);
+				} else {
+					r->info2 = NULL;
+				}
+			break; }
+
 			default:
 				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 		}
@@ -12747,6 +12952,15 @@ static enum ndr_err_code ndr_pull_spoolss_AddFormInfo(struct ndr_pull *ndr, int 
 					NDR_PULL_SET_MEM_CTX(ndr, r->info1, 0);
 					NDR_CHECK(ndr_pull_spoolss_AddFormInfo1(ndr, NDR_SCALARS|NDR_BUFFERS, r->info1));
 					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info1_0, 0);
+				}
+			break;
+
+			case 2:
+				if (r->info2) {
+					_mem_save_info2_0 = NDR_PULL_GET_MEM_CTX(ndr);
+					NDR_PULL_SET_MEM_CTX(ndr, r->info2, 0);
+					NDR_CHECK(ndr_pull_spoolss_AddFormInfo2(ndr, NDR_SCALARS|NDR_BUFFERS, r->info2));
+					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info2_0, 0);
 				}
 			break;
 
@@ -12768,6 +12982,15 @@ _PUBLIC_ void ndr_print_spoolss_AddFormInfo(struct ndr_print *ndr, const char *n
 			ndr->depth++;
 			if (r->info1) {
 				ndr_print_spoolss_AddFormInfo1(ndr, "info1", r->info1);
+			}
+			ndr->depth--;
+		break;
+
+		case 2:
+			ndr_print_ptr(ndr, "info2", r->info2);
+			ndr->depth++;
+			if (r->info2) {
+				ndr_print_spoolss_AddFormInfo2(ndr, "info2", r->info2);
 			}
 			ndr->depth--;
 		break;
@@ -14852,6 +15075,7 @@ _PUBLIC_ void ndr_print_spoolss_AccessRights(struct ndr_print *ndr, const char *
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ACCESS_ADMINISTER", PRINTER_ACCESS_ADMINISTER, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ACCESS_USE", PRINTER_ACCESS_USE, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_ACCESS_ADMINISTER", JOB_ACCESS_ADMINISTER, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_ACCESS_READ", JOB_ACCESS_READ, r);
 	ndr->depth--;
 }
 
@@ -17341,7 +17565,7 @@ static enum ndr_err_code ndr_push_spoolss_GetPrintProcessorDirectory(struct ndr_
 				struct ndr_push *_ndr_info;
 				NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_info, 4, r->in.offered));
 				NDR_CHECK(ndr_push_set_switch_value(_ndr_info, r->out.info, r->in.level));
-				NDR_CHECK(ndr_push_spoolss_PrintProcessorDirectoryInfo(_ndr_info, NDR_SCALARS|NDR_BUFFERS, r->out.info));
+				NDR_CHECK(ndr_push_spoolss_PrintProcessorDirectoryInfo(_ndr_info, NDR_SCALARS, r->out.info));
 				NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_info, 4, r->in.offered));
 			}
 		}
@@ -17435,7 +17659,7 @@ static enum ndr_err_code ndr_pull_spoolss_GetPrintProcessorDirectory(struct ndr_
 				struct ndr_pull *_ndr_info;
 				NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_info, 4, r->in.offered));
 				NDR_CHECK(ndr_pull_set_switch_value(_ndr_info, r->out.info, r->in.level));
-				NDR_CHECK(ndr_pull_spoolss_PrintProcessorDirectoryInfo(_ndr_info, NDR_SCALARS|NDR_BUFFERS, r->out.info));
+				NDR_CHECK(ndr_pull_spoolss_PrintProcessorDirectoryInfo(_ndr_info, NDR_SCALARS, r->out.info));
 				NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_info, 4, r->in.offered));
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, 0);

@@ -351,6 +351,7 @@ enum ndr_err_code ndr_pull_spoolss_FormInfo(struct ndr_pull *ndr, int ndr_flags,
 void ndr_print_spoolss_FormInfo(struct ndr_print *ndr, const char *name, const union spoolss_FormInfo *r);
 size_t ndr_size_spoolss_FormInfo(const union spoolss_FormInfo *r, uint32_t level, struct smb_iconv_convenience *ic, int flags);
 void ndr_print_spoolss_AddFormInfo1(struct ndr_print *ndr, const char *name, const struct spoolss_AddFormInfo1 *r);
+void ndr_print_spoolss_AddFormInfo2(struct ndr_print *ndr, const char *name, const struct spoolss_AddFormInfo2 *r);
 void ndr_print_spoolss_AddFormInfo(struct ndr_print *ndr, const char *name, const union spoolss_AddFormInfo *r);
 void ndr_print_spoolss_PortInfo1(struct ndr_print *ndr, const char *name, const struct spoolss_PortInfo1 *r);
 void ndr_print_spoolss_PortType(struct ndr_print *ndr, const char *name, uint32_t r);

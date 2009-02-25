@@ -970,7 +970,7 @@ struct spoolss_FormInfo2 {
 	const char * form_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	struct spoolss_FormSize size;
 	struct spoolss_FormArea area;
-	const char * keyword;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * keyword;/* [relative,flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
 	uint32_t string_type;
 	const char * mui_dll;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	uint32_t ressource_id;
@@ -990,8 +990,22 @@ struct spoolss_AddFormInfo1 {
 	struct spoolss_FormArea area;
 };
 
+struct spoolss_AddFormInfo2 {
+	enum spoolss_FormFlags flags;
+	const char *form_name;/* [unique,charset(UTF16)] */
+	struct spoolss_FormSize size;
+	struct spoolss_FormArea area;
+	const char *keyword;/* [unique,charset(DOS)] */
+	uint32_t string_type;
+	const char *mui_dll;/* [unique,charset(UTF16)] */
+	uint32_t ressource_id;
+	const char *display_name;/* [unique,charset(UTF16)] */
+	uint32_t lang_id;
+};
+
 union spoolss_AddFormInfo {
 	struct spoolss_AddFormInfo1 *info1;/* [unique,case] */
+	struct spoolss_AddFormInfo2 *info2;/* [unique,case(2)] */
 }/* [switch_type(uint32)] */;
 
 struct spoolss_PortInfo1 {
@@ -1248,6 +1262,7 @@ struct spoolss_UserLevelCtr {
 #define PRINTER_ACCESS_ADMINISTER ( 0x00000004 )
 #define PRINTER_ACCESS_USE ( 0x00000008 )
 #define JOB_ACCESS_ADMINISTER ( 0x00000010 )
+#define JOB_ACCESS_READ ( 0x00000020 )
 
 /* bitmap spoolss_DeleteDriverFlags */
 #define DPD_DELETE_UNUSED_FILES ( 0x00000001 )
