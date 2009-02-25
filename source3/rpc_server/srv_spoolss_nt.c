@@ -8180,28 +8180,21 @@ WERROR _spoolss_GetPrinterDriverDirectory(pipes_struct *p,
 		return WERR_INVALID_PARAM;
 	}
 
-	if (r->in.offered > MAX_RPC_DATA_SIZE) {
-		return WERR_INVALID_PARAM;
-	}
-
-	DEBUG(4,("_spoolss_GetPrinterDriverDirectory\n"));
+	DEBUG(5,("_spoolss_GetPrinterDriverDirectory: level %d\n",
+		r->in.level));
 
 	*r->out.needed = 0;
 
-	switch (r->in.level) {
-	case 1:
-		werror = getprinterdriverdir_level_1(p->mem_ctx,
-						     r->in.server,
-						     r->in.environment,
-						     &r->out.info->info1,
-						     r->in.offered,
-						     r->out.needed);
-		if (!W_ERROR_IS_OK(werror)) {
-			TALLOC_FREE(r->out.info);
-		}
-		break;
-	default:
-		return WERR_UNKNOWN_LEVEL;
+	/* r->in.level is ignored */
+
+	werror = getprinterdriverdir_level_1(p->mem_ctx,
+					     r->in.server,
+					     r->in.environment,
+					     &r->out.info->info1,
+					     r->in.offered,
+					     r->out.needed);
+	if (!W_ERROR_IS_OK(werror)) {
+		TALLOC_FREE(r->out.info);
 	}
 
 	return werror;
@@ -9834,28 +9827,21 @@ WERROR _spoolss_GetPrintProcessorDirectory(pipes_struct *p,
 		return WERR_INVALID_PARAM;
 	}
 
-	if (r->in.offered > MAX_RPC_DATA_SIZE) {
-		return WERR_INVALID_PARAM;
-	}
-
-	DEBUG(5,("_spoolss_GetPrintProcessorDirectory\n"));
+	DEBUG(5,("_spoolss_GetPrintProcessorDirectory: level %d\n",
+		r->in.level));
 
 	*r->out.needed = 0;
 
-	switch (r->in.level) {
-	case 1:
-		result = getprintprocessordirectory_level_1(p->mem_ctx,
-							    r->in.server,
-							    r->in.environment,
-							    &r->out.info->info1,
-							    r->in.offered,
-							    r->out.needed);
-		if (!W_ERROR_IS_OK(result)) {
-			TALLOC_FREE(r->out.info);
-		}
-		break;
-	default:
-		result = WERR_UNKNOWN_LEVEL;
+	/* r->in.level is ignored */
+
+	result = getprintprocessordirectory_level_1(p->mem_ctx,
+						    r->in.server,
+						    r->in.environment,
+						    &r->out.info->info1,
+						    r->in.offered,
+						    r->out.needed);
+	if (!W_ERROR_IS_OK(result)) {
+		TALLOC_FREE(r->out.info);
 	}
 
 	return result;
