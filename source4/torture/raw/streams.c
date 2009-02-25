@@ -1535,6 +1535,121 @@ static bool test_stream_large_streaminfo(struct torture_context *tctx,
 	return ret;
 }
 
+/* Test the effect of setting attributes on a stream. */
+static bool test_stream_attributes(struct torture_context *tctx,
+					 struct smbcli_state *cli,
+					 TALLOC_CTX *mem_ctx)
+{
+	bool ret = true;
+	NTSTATUS status;
+	union smb_open io;
+	const char *fname = BASEDIR "\\stream_attr.txt";
+	const char *stream = "Stream One:$DATA";
+	const char *fname_stream;
+	int fnum = -1;
+	union smb_fileinfo finfo;
+	union smb_setfileinfo sfinfo;
+	time_t basetime = (time(NULL) - 86400) & ~1;
+
+	printf ("(%s) testing attribute setting on stream\n", __location__);
+
+	fname_stream = talloc_asprintf(mem_ctx, "%s:%s", fname, stream);
+
+	/* Create a file with a stream with attribute FILE_ATTRIBUTE_ARCHIVE. */
+	ret = create_file_with_stream(tctx, cli, mem_ctx, fname,
+				      fname_stream);
+	if (!ret) {
+		goto done;
+	}
+
+	ZERO_STRUCT(finfo);
+	finfo.generic.level = RAW_FILEINFO_BASIC_INFO;
+	finfo.generic.in.file.path = fname;
+	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	if (finfo.basic_info.out.attrib != FILE_ATTRIBUTE_ARCHIVE) {
+		printf("(%s) Incorrect attrib %x - should be %x\n", \
+		       __location__, (unsigned int)finfo.basic_info.out.attrib,
+			(unsigned int)FILE_ATTRIBUTE_ARCHIVE);
+		ret = false;
+		goto done;
+	}
+
+	/* Now open the stream name. */
+
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = (SEC_FILE_READ_DATA|SEC_FILE_WRITE_DATA|
+	    SEC_FILE_APPEND_DATA|SEC_STD_READ_CONTROL|SEC_FILE_WRITE_ATTRIBUTE);
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.file_attr = 0;
+	io.ntcreatex.in.share_access = 0;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname_stream;
+
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	fnum = io.ntcreatex.out.file.fnum;
+
+	/* Change the attributes + time on the stream fnum. */
+	ZERO_STRUCT(sfinfo);
+	sfinfo.basic_info.in.attrib = FILE_ATTRIBUTE_READONLY;
+	unix_to_nt_time(&sfinfo.basic_info.in.write_time, basetime);
+
+        sfinfo.generic.level = RAW_SFILEINFO_BASIC_INFORMATION;
+        sfinfo.generic.in.file.fnum = fnum;
+        status = smb_raw_setfileinfo(cli->tree, &sfinfo);
+        if (!NT_STATUS_EQUAL(status, NT_STATUS_OK)) { 
+                printf("(%s) %s - %s (should be %s)\n", __location__, "SETATTR", 
+                        nt_errstr(status), nt_errstr(NT_STATUS_OK));
+                ret = false;
+		goto done;
+        }
+
+	smbcli_close(cli->tree, fnum);
+	fnum = -1;
+
+	ZERO_STRUCT(finfo);
+	finfo.generic.level = RAW_FILEINFO_ALL_INFO;
+	finfo.generic.in.file.path = fname;
+	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("(%s) %s pathinfo - %s\n", __location__, "SETATTRE", nt_errstr(status));
+		ret = false;
+		goto done;
+	}
+
+	if (finfo.all_info.out.attrib != FILE_ATTRIBUTE_READONLY) {
+		printf("(%s) attrib incorrect. Was 0x%x, should be 0x%x\n",
+			__location__,
+			(unsigned int)finfo.all_info.out.attrib,
+			(unsigned int)FILE_ATTRIBUTE_READONLY);
+		ret = false;
+		goto done;
+	}
+
+	if (nt_time_to_unix(finfo.all_info.out.write_time) != basetime) {
+		printf("(%s) time incorrect.\n",
+			__location__);
+		ret = false;
+		goto done;
+	}
+
+ done:
+
+	if (fnum != -1) {
+		smbcli_close(cli->tree, fnum);
+	}
+	smbcli_unlink(cli->tree, fname);
+	return ret;
+}
+
 /* 
    basic testing of streams calls
 */
@@ -1566,6 +1681,10 @@ bool torture_raw_streams(struct torture_context *torture,
 	smb_raw_exit(cli->session);
 	ret &= test_stream_create_disposition(torture, cli, torture);
 	smb_raw_exit(cli->session);
+
+	ret &= test_stream_attributes(torture, cli, torture);
+	smb_raw_exit(cli->session);
+
 	/* ret &= test_stream_large_streaminfo(torture, cli, torture); */
 /* 	smb_raw_exit(cli->session); */
 
