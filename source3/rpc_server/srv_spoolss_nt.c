@@ -6619,6 +6619,10 @@ WERROR _spoolss_AddJob(pipes_struct *p,
 	/* this is what a NT server returns for AddJob. AddJob must fail on
 	 * non-local printers */
 
+	if (r->in.level != 1) {
+		return WERR_UNKNOWN_LEVEL;
+	}
+
 	return WERR_INVALID_PARAM;
 }
 
