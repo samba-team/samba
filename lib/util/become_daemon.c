@@ -66,10 +66,10 @@ _PUBLIC_ void close_low_fds(bool stderr_too)
  Become a daemon, discarding the controlling terminal.
 ****************************************************************************/
 
-_PUBLIC_ void become_daemon(bool Fork, bool no_process_group)
+_PUBLIC_ void become_daemon(bool do_fork, bool no_process_group)
 {
-	if (Fork) {
-		if (fork()) {
+	if (do_fork) {
+		if (sys_fork()) {
 			_exit(0);
 		}
 	}

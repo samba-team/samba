@@ -157,6 +157,13 @@ mkinclude $1
 "
 ])
 
+dnl
+dnl SMB_EXT_LIB() just specifies the details of the library.
+dnl Note: the library isn't enabled by default.
+dnl You need to enable it with SMB_ENABLE(name) if configure
+dnl find it should be used. E.g. it should not be enabled
+dnl if the library is present, but the header file is missing.
+dnl
 dnl SMB_EXT_LIB(name,libs,cflags,cppflags,ldflags)
 AC_DEFUN([SMB_EXT_LIB],
 [

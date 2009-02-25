@@ -147,16 +147,29 @@ struct wb_context *wb_context_init(TALLOC_CTX *mem_ctx)
 	return result;
 }
 
+struct wb_connect_state {
+	int dummy;
+};
+
+static void wbc_connect_connected(struct tevent_req *subreq);
+
 static struct async_req *wb_connect_send(TALLOC_CTX *mem_ctx,
-					 struct tevent_context *ev,
-					 struct wb_context *wb_ctx,
-					 const char *dir)
+					  struct tevent_context *ev,
+					  struct wb_context *wb_ctx,
+					  const char *dir)
 {
-	struct async_req *req;
+	struct async_req *result;
+	struct tevent_req *subreq;
+	struct wb_connect_state *state;
 	struct sockaddr_un sunaddr;
 	struct stat st;
 	char *path = NULL;
 	wbcErr wbc_err;
+
+	if (!async_req_setup(mem_ctx, &result, &state,
+			     struct wb_connect_state)) {
+		return NULL;
+	}
 
 	if (wb_ctx->fd != -1) {
 		close(wb_ctx->fd);
@@ -205,31 +218,44 @@ static struct async_req *wb_connect_send(TALLOC_CTX *mem_ctx,
 		goto post_status;
 	}
 
-	req = async_connect_send(mem_ctx, ev, wb_ctx->fd,
-				 (struct sockaddr *)&sunaddr,
-				 sizeof(sunaddr));
-	if (req == NULL) {
+	subreq = async_connect_send(mem_ctx, ev, wb_ctx->fd,
+				    (struct sockaddr *)&sunaddr,
+				    sizeof(sunaddr));
+	if (subreq == NULL) {
 		goto nomem;
 	}
-	if (!async_req_set_timeout(req, ev, timeval_set(30, 0))) {
-		TALLOC_FREE(req);
+	subreq->async.fn = wbc_connect_connected;
+	subreq->async.private_data = result;
+
+	if (!tevent_req_set_endtime(subreq, ev, timeval_current_ofs(30, 0))) {
 		goto nomem;
 	}
 
-	return req;
+	return result;
 
  nomem:
 	wbc_err = WBC_ERR_NO_MEMORY;
  post_status:
-	req = async_req_new(mem_ctx);
-	if (req == NULL) {
-		return NULL;
+	if (async_post_error(result, ev, wbc_err)) {
+		return result;
 	}
-	if (async_post_error(req, ev, wbc_err)) {
-		return req;
-	}
-	TALLOC_FREE(req);
+	TALLOC_FREE(result);
 	return NULL;
+}
+
+static void wbc_connect_connected(struct tevent_req *subreq)
+{
+	struct async_req *req = talloc_get_type_abort(
+		subreq->async.private_data, struct async_req);
+	int res, err;
+
+	res = async_connect_recv(subreq, &err);
+	TALLOC_FREE(subreq);
+	if (res == -1) {
+		async_req_error(req, map_wbc_err_from_errno(err));
+		return;
+	}
+	async_req_done(req);
 }
 
 static wbcErr wb_connect_recv(struct async_req *req)

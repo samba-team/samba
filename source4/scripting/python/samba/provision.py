@@ -4,6 +4,7 @@
 
 # Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007-2008
 # Copyright (C) Andrew Bartlett <abartlet@samba.org> 2008
+# Copyright (C) Oliver Liebel <oliver@itc.li> 2008-2009
 #
 # Based on the original in EJS:
 # Copyright (C) Andrew Tridgell <tridge@samba.org> 2005
@@ -26,6 +27,7 @@
 
 from base64 import b64encode
 import os
+import sys
 import pwd
 import grp
 import time
@@ -96,6 +98,9 @@ class ProvisionPaths(object):
         self.olmmron = None
         self.olmmrserveridsconf = None
         self.olmmrsyncreplconf = None
+        self.olcdir = None
+        self.olslaptest = None
+        self.olcseedldif = None
 
 
 class ProvisionNames(object):
@@ -268,6 +273,10 @@ def provision_paths_from_lp(lp, dnsdomain):
                                             "mmr_serverids.conf")
     paths.olmmrsyncreplconf = os.path.join(paths.ldapdir, 
                                            "mmr_syncrepl.conf")
+    paths.olcdir = os.path.join(paths.ldapdir, 
+                                 "slapd.d")
+    paths.olcseedldif = os.path.join(paths.ldapdir, 
+                                 "olc_seed.ldif")
     paths.hklm = "hklm.ldb"
     paths.hkcr = "hkcr.ldb"
     paths.hkcu = "hkcu.ldb"
@@ -1178,7 +1187,7 @@ def provision_backend(setup_dir=None, message=None,
                       rootdn=None, domaindn=None, schemadn=None, configdn=None,
                       domain=None, hostname=None, adminpass=None, root=None, serverrole=None, 
                       ldap_backend_type=None, ldap_backend_port=None,
-                      ol_mmr_urls=None):
+                      ol_mmr_urls=None,ol_olc=None,ol_slaptest=None):
 
     def setup_path(file):
         return os.path.join(setup_dir, file)
@@ -1204,6 +1213,19 @@ def provision_backend(setup_dir=None, message=None,
     if not os.path.exists(smbconf):
         make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole, 
                      targetdir)
+
+    # openldap-online-configuration: validation of olc and slaptest
+    if ol_olc == "yes" and ol_slaptest is None: 
+        sys.exit("Warning: OpenLDAP-Online-Configuration cant be setup without path to slaptest-Binary!")
+
+    if ol_olc == "yes" and ol_slaptest is not None:
+        ol_slaptest = ol_slaptest + "/slaptest"
+        if not os.path.exists(ol_slaptest):
+            message (ol_slaptest)
+            sys.exit("Warning: Given Path to slaptest-Binary does not exist!")
+    ###
+
+
 
     lp = param.LoadParm()
     lp.load(smbconf)
@@ -1306,19 +1328,20 @@ def provision_backend(setup_dir=None, message=None,
         mmr_syncrepl_schema_config = "" 
         mmr_syncrepl_config_config = "" 
         mmr_syncrepl_user_config = "" 
-        
+       
+ 
         if ol_mmr_urls is not None:
                 # For now, make these equal
                 mmr_pass = adminpass
 
-                 url_list=filter(None,ol_mmr_urls.split(' ')) 
+                url_list=filter(None,ol_mmr_urls.split(' ')) 
                 if (len(url_list) == 1):
                     url_list=filter(None,ol_mmr_urls.split(',')) 
                      
 
                 mmr_on_config = "MirrorMode On"
                 mmr_replicator_acl = "  by dn=cn=replicator,cn=samba read"
-                 serverid=0
+                serverid=0
                 for url in url_list:
                         serverid=serverid+1
                         mmr_serverids_config += read_and_sub_file(setup_path("mmr_serverids.conf"),
@@ -1327,25 +1350,67 @@ def provision_backend(setup_dir=None, message=None,
                         rid=serverid*10
                         rid=rid+1
                         mmr_syncrepl_schema_config += read_and_sub_file(setup_path("mmr_syncrepl.conf"),
-                                                                     {         "RID" : str(rid),
-                                                                            "MMRDN": names.schemadn,
-                                                                               "LDAPSERVER" : url,
+                                                                     {  "RID" : str(rid),
+                                                                        "MMRDN": names.schemadn,
+                                                                        "LDAPSERVER" : url,
                                                                         "MMR_PASSWORD": mmr_pass})
 
                         rid=rid+1
                         mmr_syncrepl_config_config += read_and_sub_file(setup_path("mmr_syncrepl.conf"),
-                                                                     {         "RID" : str(rid),
-                                                                            "MMRDN": names.configdn,
-                                                                               "LDAPSERVER" : url,
+                                                                     {  "RID" : str(rid),
+                                                                        "MMRDN": names.configdn,
+                                                                        "LDAPSERVER" : url,
                                                                         "MMR_PASSWORD": mmr_pass})
 
                         rid=rid+1
                         mmr_syncrepl_user_config += read_and_sub_file(setup_path("mmr_syncrepl.conf"),
-                                                                     {         "RID" : str(rid),
-                                                                            "MMRDN": names.domaindn,
-                                                                               "LDAPSERVER" : url,
+                                                                     {  "RID" : str(rid),
+                                                                        "MMRDN": names.domaindn,
+                                                                        "LDAPSERVER" : url,
                                                                         "MMR_PASSWORD": mmr_pass })
+        # olc = yes?
+        olc_config_pass = ""
+        olc_config_acl = ""
+        olc_syncrepl_config = ""
+        olc_mmr_config = "" 
+        if ol_olc == "yes":
+                olc_config_pass += read_and_sub_file(setup_path("olc_pass.conf"),
+                                                                { "OLC_PW": adminpass })
+                olc_config_acl += read_and_sub_file(setup_path("olc_acl.conf"),{})
+                
+            # if olc = yes + mmr = yes, generate cn=config-replication directives
+            # and  olc_seed.lif for the other mmr-servers
+                if ol_olc == "yes" and ol_mmr_urls is not None:
+                        serverid=0
+                        olc_serverids_config = ""
+                        olc_syncrepl_config = ""
+                        olc_syncrepl_seed_config = ""
+                        olc_mmr_config = "" 
+                        olc_mmr_config += read_and_sub_file(setup_path("olc_mmr.conf"),{})
+                        rid=1000
+                        for url in url_list:
+                                serverid=serverid+1
+                                olc_serverids_config += read_and_sub_file(setup_path("olc_serverid.conf"),
+                                                                     { "SERVERID" : str(serverid),
+                                                                       "LDAPSERVER" : url })
+                        
+                                rid=rid+1
+                                olc_syncrepl_config += read_and_sub_file(setup_path("olc_syncrepl.conf"),
+                                                                     {  "RID" : str(rid),
+                                                                        "LDAPSERVER" : url,
+                                                                        "MMR_PASSWORD": adminpass})
 
+                                olc_syncrepl_seed_config += read_and_sub_file(setup_path("olc_syncrepl_seed.conf"),
+                                                                     {  "RID" : str(rid),
+                                                                        "LDAPSERVER" : url})
+
+                                setup_file(setup_path("olc_seed.ldif"), paths.olcseedldif,
+                                                                     {"OLC_SERVER_ID_CONF": olc_serverids_config,
+                                                                      "OLC_PW": adminpass,
+                                                                      "OLC_SYNCREPL_CONF": olc_syncrepl_seed_config})
+        
+
+                # end olc
 
         setup_file(setup_path("slapd.conf"), paths.slapdconf,
                    {"DNSDOMAIN": names.dnsdomain,
@@ -1360,6 +1425,10 @@ def provision_backend(setup_dir=None, message=None,
                     "MMR_SYNCREPL_SCHEMA_CONFIG": mmr_syncrepl_schema_config,
                     "MMR_SYNCREPL_CONFIG_CONFIG": mmr_syncrepl_config_config,
                     "MMR_SYNCREPL_USER_CONFIG": mmr_syncrepl_user_config,
+                    "OLC_CONFIG_PASS": olc_config_pass,
+                    "OLC_SYNCREPL_CONFIG": olc_syncrepl_config,
+                    "OLC_CONFIG_ACL": olc_config_acl,
+                    "OLC_MMR_CONFIG": olc_mmr_config,
                     "REFINT_CONFIG": refint_config})
         setup_file(setup_path("modules.conf"), paths.modulesconf,
                    {"REALM": names.realm})
@@ -1382,12 +1451,11 @@ def provision_backend(setup_dir=None, message=None,
                                "LDAPTIME": timestring(int(time.time()))} )
         
         if ol_mmr_urls is not None:
-            setup_file(setup_path("cn=replicator.ldif"),
+           setup_file(setup_path("cn=replicator.ldif"),
                               os.path.join(paths.ldapdir, "db", "samba",  "cn=samba", "cn=replicator.ldif"),
                               {"MMR_PASSWORD_B64": b64encode(mmr_pass),
                                "UUID": str(uuid.uuid4()),
                                "LDAPTIME": timestring(int(time.time()))} )
-
 
 
         mapping = "schema-map-openldap-2.3"
@@ -1399,7 +1467,18 @@ def provision_backend(setup_dir=None, message=None,
         else:
             server_port_string = ""
 
-        slapdcommand="Start slapd with:    slapd -f " + paths.ldapdir + "/slapd.conf -h " + ldapi_uri + server_port_string
+        if ol_olc != "yes" and ol_mmr_urls is None:
+          slapdcommand="Start slapd with:    slapd -f " + paths.ldapdir + "/slapd.conf -h " + ldapi_uri + server_port_string
+
+        if ol_olc == "yes" and ol_mmr_urls is None:
+          slapdcommand="Start slapd with:    slapd -F " + paths.olcdir + " -h \"" + ldapi_uri + " ldap://<FQHN>:<PORT>\"" 
+
+        if ol_olc != "yes" and ol_mmr_urls is not None:
+          slapdcommand="Start slapd with:    slapd -f " + paths.ldapdir + "/slapd.conf -h \"" + ldapi_uri + " ldap://<FQHN>:<PORT>\""
+
+        if ol_olc == "yes" and ol_mmr_urls is not None:
+          slapdcommand="Start slapd with:    slapd -F " + paths.olcdir + " -h \"" + ldapi_uri + " ldap://<FQHN>:<PORT>\""
+
 
         ldapuser = "--username=samba-admin"
 
@@ -1421,6 +1500,8 @@ def provision_backend(setup_dir=None, message=None,
 
     message("LDAP admin password: %s" % adminpass)
     message(slapdcommand)
+    if ol_olc == "yes" or ol_mmr_urls is not None:
+        message("Attention to slapd-Port: <PORT> must be different than 389!")
     assert isinstance(ldap_backend_type, str)
     assert isinstance(ldapuser, str)
     assert isinstance(adminpass, str)
@@ -1435,6 +1516,18 @@ def provision_backend(setup_dir=None, message=None,
             "--domain=" + names.domain,
             "--server-role='" + serverrole + "'"]
     message("Run provision with: " + " ".join(args))
+
+
+    # if --ol-olc=yes, generate online-configuration in ../private/ldap/slapd.d 
+    if ol_olc == "yes":
+          if not os.path.isdir(paths.olcdir):
+             os.makedirs(paths.olcdir, 0770)
+          paths.olslaptest = str(ol_slaptest)
+          olc_command = paths.olslaptest + " -f" + paths.slapdconf + " -F" +  paths.olcdir + " >/dev/null 2>&1"
+          os.system(olc_command)
+          os.remove(paths.slapdconf)        
+          # use line below for debugging during olc-conversion with slaptest, instead of olc_command above 
+          #olc_command = paths.olslaptest + " -f" + paths.slapdconf + " -F" +  paths.olcdir"
 
 
 def create_phpldapadmin_config(path, setup_path, ldapi_uri):

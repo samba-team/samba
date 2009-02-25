@@ -581,7 +581,9 @@ static void smbldap_store_state(LDAP *ld, struct smbldap_state *smbldap_state)
 
 int smb_ldap_start_tls(LDAP *ldap_struct, int version)
 { 
+#ifdef LDAP_OPT_X_TLS
 	int rc;
+#endif
 	
 	if (lp_ldap_ssl() != LDAP_SSL_START_TLS) {
 		return LDAP_SUCCESS;

@@ -69,7 +69,8 @@ AC_CHECK_HEADERS([				\
 	ttyname.h				\
 	netinet/in.h				\
 	netinet/in6.h				\
-	netinet6/in6.h
+	netinet6/in6.h				\
+	libintl.h
 ])
 
 AC_CHECK_FUNCS([				\
@@ -168,6 +169,12 @@ AC_CHECK_LIB_EXT(util, OPENPTY_LIBS, openpty)
 SMB_ENABLE(OPENPTY,YES)
 
 SMB_EXT_LIB(OPENPTY,[${OPENPTY_LIBS}],[${OPENPTY_CFLAGS}],[${OPENPTY_CPPFLAGS}],[${OPENPTY_LDFLAGS}])
+
+AC_CHECK_LIB_EXT(intl, INTL_LIBS, gettext)
+
+SMB_ENABLE(INTL,YES)
+
+SMB_EXT_LIB(INTL, $INTL_LIBS)
 
 smb_save_LIBS=$LIBS
 RESOLV_LIBS=""

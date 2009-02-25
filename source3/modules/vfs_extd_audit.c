@@ -310,7 +310,7 @@ static int audit_chmod(vfs_handle_struct *handle, const char *path, mode_t mode)
 		       (result < 0) ? strerror(errno) : "");
 	}
 	DEBUG(1, ("vfs_extd_audit: chmod %s mode 0x%x %s %s\n",
-	       path, mode,
+	       path, (unsigned int)mode,
 	       (result < 0) ? "failed: " : "",
 	       (result < 0) ? strerror(errno) : ""));
 
@@ -330,7 +330,7 @@ static int audit_chmod_acl(vfs_handle_struct *handle, const char *path, mode_t m
 		       (result < 0) ? strerror(errno) : "");
 	}
 	DEBUG(1, ("vfs_extd_audit: chmod_acl %s mode 0x%x %s %s\n",
-	        path, mode,
+	        path, (unsigned int)mode,
 	       (result < 0) ? "failed: " : "",
 	       (result < 0) ? strerror(errno) : ""));
 
@@ -350,7 +350,7 @@ static int audit_fchmod(vfs_handle_struct *handle, files_struct *fsp, mode_t mod
 		       (result < 0) ? strerror(errno) : "");
 	}
 	DEBUG(1, ("vfs_extd_audit: fchmod %s mode 0x%x %s %s",
-	       fsp->fsp_name,  mode,
+	       fsp->fsp_name,  (unsigned int)mode,
 	       (result < 0) ? "failed: " : "",
 	       (result < 0) ? strerror(errno) : ""));
 
@@ -370,7 +370,7 @@ static int audit_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp, mode_t
 		       (result < 0) ? strerror(errno) : "");
 	}
 	DEBUG(1, ("vfs_extd_audit: fchmod_acl %s mode 0x%x %s %s",
-	       fsp->fsp_name,  mode,
+	       fsp->fsp_name,  (unsigned int)mode,
 	       (result < 0) ? "failed: " : "",
 	       (result < 0) ? strerror(errno) : ""));
 

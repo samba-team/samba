@@ -242,77 +242,32 @@ sub mk_openldap($$$)
 	$ENV{PATH} = "$olpath/usr/local/sbin:/usr/sbin:/sbin:$ENV{PATH}";
 
 	unlink($modconf);
+
+	#This code tries to guess what modules we need to load (if any) by trying different combinations in the modules.conf
+
+	# Try without any slapd modules
 	open(CONF, ">$modconf"); close(CONF);
 
 	if (system("slaptest -u -f $slapd_conf >&2") != 0) {
 		open(CONF, ">$modconf"); 
 		# enable slapd modules
 		print CONF "
-modulepath      $olroot/libexec/openldap
 moduleload	syncprov
 moduleload      memberof
 moduleload      refint
+moduleload      deref
 ";
 		close(CONF);
 	}
 	if (system("slaptest -u -f $slapd_conf >&2") != 0) {
 		open(CONF, ">$modconf"); 
-		# enable slapd modules
-		print CONF "
-modulepath      $olroot/libexec/openldap
-moduleload	back_hdb
-moduleload	syncprov
-moduleload      memberof
-moduleload      refint
-";
-		close(CONF);
-	}
-
-	if (system("slaptest -u -f $slapd_conf >&2") != 0) {
-		open(CONF, ">$modconf"); 
-		# enable slapd modules
+		# enable slapd modules, and the module for back_hdb
 		print CONF "
 moduleload	back_hdb
 moduleload	syncprov
 moduleload      memberof
 moduleload      refint
-";
-		close(CONF);
-	}
-
-	if (system("slaptest -u -f $slapd_conf >&2") != 0) {
-		open(CONF, ">$modconf"); 
-		# enable slapd modules
-		print CONF "
-modulepath	/usr/lib/ldap
-moduleload	back_hdb
-moduleload	syncprov
-moduleload      memberof
-moduleload      refint
-";
-		close(CONF);
-	}
-
-	if (system("slaptest -u -f $slapd_conf >&2") != 0) {
-		open(CONF, ">$modconf"); 
-		# enable slapd modules (Fedora layout)
-		print CONF "
-modulepath	/usr/lib/openldap
-moduleload	syncprov
-moduleload      memberof
-moduleload      refint
-";
-		close(CONF);
-	}
-
-	if (system("slaptest -u -f $slapd_conf >&2") != 0) {
-		open(CONF, ">$modconf"); 
-		# enable slapd modules (Fedora x86_64 layout)
-		print CONF "
-modulepath	/usr/lib64/openldap
-moduleload	syncprov
-moduleload      memberof
-moduleload      refint
+moduleload      deref
 ";
 		close(CONF);
 	}

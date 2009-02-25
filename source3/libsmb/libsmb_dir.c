@@ -1519,7 +1519,7 @@ SMBC_chmod_ctx(SMBCCTX *context,
 		return -1;
 	}
 
-	DEBUG(4, ("smbc_chmod(%s, 0%3o)\n", fname, newmode));
+	DEBUG(4, ("smbc_chmod(%s, 0%3o)\n", fname, (unsigned int)newmode));
 
 	if (SMBC_parse_path(frame,
                             context,

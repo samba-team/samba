@@ -31,6 +31,7 @@
 #include <stdint.h>
 #include <talloc.h>
 #include <sys/time.h>
+#include <stdbool.h>
 
 struct tevent_context;
 struct tevent_ops;

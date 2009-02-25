@@ -552,7 +552,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 	} spoolss_SetPrinterInfo2;
 
 	typedef struct {
-		security_descriptor *secdesc;
+		uint32 sec_desc_ptr;
 	} spoolss_SetPrinterInfo3;
 
 	typedef struct {
@@ -628,7 +628,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[string,charset(UTF16)] uint16 *driver_name;
 	} spoolss_AddDriverInfo1;
 
-	typedef [v1_enum] enum {
+	typedef [v1_enum,public] enum {
 		SPOOLSS_DRIVER_VERSION_9X	= 0,
 		SPOOLSS_DRIVER_VERSION_NT35	= 1,
 		SPOOLSS_DRIVER_VERSION_NT4	= 2,
@@ -700,7 +700,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		spoolss_StringArray *dependent_files;
 		[value(((ndr_size_spoolss_StringArray(previous_names, ndr->iconv_convenience, ndr->flags)-4)/2))] uint32 _ndr_size_previous_names;
 		spoolss_StringArray *previous_names;
-		NTTIME driver_data;
+		NTTIME driver_date;
 		hyper driver_version;
 		[string,charset(UTF16)] uint16 *manufacturer_name;
 		[string,charset(UTF16)] uint16 *manufacturer_url;
@@ -722,7 +722,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		spoolss_StringArray *dependent_files;
 		[value(((ndr_size_spoolss_StringArray(previous_names, ndr->iconv_convenience, ndr->flags)-4)/2))] uint32 _ndr_size_previous_names;
 		spoolss_StringArray *previous_names;
-		NTTIME driver_data;
+		NTTIME driver_date;
 		hyper driver_version;
 		[string,charset(UTF16)] uint16 *manufacturer_name;
 		[string,charset(UTF16)] uint16 *manufacturer_url;
@@ -759,11 +759,11 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in,ref] spoolss_AddDriverInfoCtr *info_ctr
 	);
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		[relative] nstring *driver_name;
 	} spoolss_DriverInfo1;
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		spoolss_DriverOSVersion version;
 		[relative] nstring *driver_name;
 		[relative] nstring *architecture;
@@ -772,7 +772,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[relative] nstring *config_file;
 	} spoolss_DriverInfo2;
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		spoolss_DriverOSVersion version;
 		[relative] nstring *driver_name;
 		[relative] nstring *architecture;
@@ -785,7 +785,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[relative] nstring *default_datatype;
 	} spoolss_DriverInfo3;
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		spoolss_DriverOSVersion version;
 		[relative] nstring *driver_name;
 		[relative] nstring *architecture;
@@ -799,7 +799,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[relative] nstring_array *previous_names;
 	} spoolss_DriverInfo4;
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		spoolss_DriverOSVersion version;
 		[relative] nstring *driver_name;
 		[relative] nstring *architecture;
@@ -811,7 +811,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		uint32 driver_version;
 	} spoolss_DriverInfo5;
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		spoolss_DriverOSVersion version;
 		[relative] nstring *driver_name;
 		[relative] nstring *architecture;
@@ -823,7 +823,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[relative] nstring *monitor_name;
 		[relative] nstring *default_datatype;
 		[relative] nstring_array *previous_names;
-		NTTIME driver_data;
+		NTTIME driver_date;
 		hyper driver_version;
 		[relative] nstring *manufacturer_name;
 		[relative] nstring *manufacturer_url;
@@ -831,7 +831,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[relative] nstring *provider;
 	} spoolss_DriverInfo6;
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		spoolss_DriverOSVersion version;
 		[relative] nstring *driver_name;
 		[relative] nstring *architecture;
@@ -843,7 +843,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[relative] nstring *default_datatype;
 		[relative] nstring_array *dependent_files;
 		[relative] nstring_array *previous_names;
-		NTTIME driver_data;
+		NTTIME driver_date;
 		hyper driver_version;
 		[relative] nstring *manufacturer_name;
 		[relative] nstring *manufacturer_url;
@@ -859,6 +859,37 @@ import "misc.idl", "security.idl", "winreg.idl";
 		hyper min_inbox_driver_ver_version;
 	} spoolss_DriverInfo8;
 
+	typedef [v1_enum] enum {
+		SPOOLSS_DRIVER_FILE_TYPE_RENDERING	= 0x00000000,
+		SPOOLSS_DRIVER_FILE_TYPE_CONFIGURATION	= 0x00000001,
+		SPOOLSS_DRIVER_FILE_TYPE_DATA		= 0x00000002,
+		SPOOLSS_DRIVER_FILE_TYPE_HELP		= 0x00000003,
+		SPOOLSS_DRIVER_FILE_TYPE_OTHER		= 0x00000004
+	} spoolss_DriverFileType;
+
+	typedef [public] struct {
+		[relative] nstring *file_name;
+		spoolss_DriverFileType file_type;
+		uint32 file_version;
+	} spoolss_DriverFileInfo;
+
+	typedef [public,gensize,nopush,nopull] struct {
+		spoolss_DriverOSVersion version;
+		[relative] nstring *driver_name;
+		[relative] nstring *architecture;
+		[relative] [size_is(file_count)] spoolss_DriverFileInfo *file_info;
+		uint32 file_count;
+		[relative] nstring *monitor_name;
+		[relative] nstring *default_datatype;
+		[relative] nstring_array *previous_names;
+		NTTIME driver_date;
+		hyper driver_version;
+		[relative] nstring *manufacturer_name;
+		[relative] nstring *manufacturer_url;
+		[relative] nstring *hardware_id;
+		[relative] nstring *provider;
+	} spoolss_DriverInfo101;
+
 	typedef [nodiscriminant,relative_base,public] union {
 		[case(1)] spoolss_DriverInfo1 info1;
 		[case(2)] spoolss_DriverInfo2 info2;
@@ -867,6 +898,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[case(5)] spoolss_DriverInfo5 info5;
 		[case(6)] spoolss_DriverInfo6 info6;
 		[case(8)] spoolss_DriverInfo8 info8;
+		[case(101)] spoolss_DriverInfo101 info101;
 		[default];
 	} spoolss_DriverInfo;
 
@@ -1086,6 +1118,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 	/******************/
 	/* Function: 0x1a */
 	const string SPOOLSS_ARCHITECTURE_NT_X86		= "Windows NT x86";
+	const string SPOOLSS_DEFAULT_SERVER_PATH		= "C:\\WINDOWS\\system32\\spool";
 
 	typedef [public,gensize] struct {
 		[value(ndr_size_spoolss_OSVersion(r,ndr->iconv_convenience,ndr->flags))] uint32 _ndr_size;
@@ -1472,7 +1505,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in] 	 uint32 offered,
 		[in] 	 uint32 client_major_version,
 		[in] 	 uint32 client_minor_version,
-		[out,unique] DATA_BLOB *info,
+		[out,unique,subcontext(4),subcontext_size(offered),switch_is(level)] spoolss_DriverInfo *info,
 		[out,ref] uint32 *needed,
 		[out,ref] uint32 *server_major_version,
 		[out,ref] uint32 *server_minor_version

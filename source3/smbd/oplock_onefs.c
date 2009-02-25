@@ -744,13 +744,13 @@ struct kernel_oplocks *onefs_init_kernel_oplocks(TALLOC_CTX *mem_ctx)
 	po.po_flags_on |= P_NON_BLOCKING_SEMLOCK;
 	if (setprocoptions(&po) != 0) {
 		DEBUG(0, ("setprocoptions failed: %s.\n", strerror(errno)));
-		goto err_out;
+		return NULL;
 	}
 
 	/* Setup the oplock contexts */
 	_ctx = talloc_zero(mem_ctx, struct kernel_oplocks);
 	if (!_ctx) {
-		goto err_out;
+		return NULL;
 	}
 
 	ctx = talloc_zero(_ctx, struct onefs_oplocks_context);
@@ -788,7 +788,6 @@ struct kernel_oplocks *onefs_init_kernel_oplocks(TALLOC_CTX *mem_ctx)
 
  err_out:
 	talloc_free(_ctx);
-	talloc_free(ctx);
 	return NULL;
 }
 

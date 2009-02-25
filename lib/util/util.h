@@ -134,6 +134,16 @@ apparent reason.
 _PUBLIC_ struct hostent *sys_gethostbyname(const char *name);
 _PUBLIC_ struct in_addr sys_inet_makeaddr(int net, int host);
 
+/**
+ * Wrapper for fork used to invalid pid cache.
+ **/
+_PUBLIC_ pid_t sys_fork(void);
+
+/**
+ * Wrapper for getpid. Ensures we only do a system call *once*.
+ **/
+_PUBLIC_ pid_t sys_getpid(void);
+
 /* The following definitions come from lib/util/genrand.c  */
 
 /**

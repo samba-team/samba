@@ -414,7 +414,7 @@ AC_SUBST(DYNEXP)
 
 dnl Add modules that have to be built by default here
 dnl These have to be built static:
-default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsarpc rpc_samr rpc_winreg rpc_initshutdown rpc_dssetup rpc_wkssvc rpc_svcctl rpc_ntsvcs rpc_netlogon rpc_netdfs rpc_srvsvc rpc_spoolss2 rpc_eventlog auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin auth_netlogond vfs_default nss_info_template"
+default_static_modules="pdb_smbpasswd pdb_tdbsam pdb_wbc_sam rpc_lsarpc rpc_samr rpc_winreg rpc_initshutdown rpc_dssetup rpc_wkssvc rpc_svcctl rpc_ntsvcs rpc_netlogon rpc_netdfs rpc_srvsvc rpc_spoolss2 rpc_eventlog auth_sam auth_unix auth_winbind auth_wbc auth_server auth_domain auth_builtin auth_netlogond vfs_default nss_info_template"
 
 dnl These are preferably build shared, and static if dlopen() is not available
 default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_full_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap vfs_expand_msdfs vfs_shadow_copy vfs_shadow_copy2 charset_CP850 charset_CP437 auth_script vfs_readahead vfs_xattr_tdb vfs_streams_xattr vfs_streams_depot vfs_acl_xattr vfs_acl_tdb vfs_smb_traffic_analyzer"
@@ -1088,7 +1088,7 @@ echo $samba_cv_HAVE_ONEFS
 if test x"$samba_cv_HAVE_ONEFS" = x"yes"; then
     AC_DEFINE(HAVE_ONEFS,1,[Whether building on Isilon OneFS])
     default_shared_modules="$default_shared_modules vfs_onefs vfs_onefs_shadow_copy perfcount_onefs"
-    default_static_modules="$default_static_modules auth_onefs_wb pdb_onefs_sam"
+    default_static_modules="$default_static_modules"
     ONEFS_LIBS="-lisi_acl -lisi_ecs -lisi_event -lisi_util"
     # Need to also add general libs for oplocks support
     save_LIBS="$save_LIBS -lisi_ecs -lisi_event -lisi_util -ldevstat"
@@ -6130,7 +6130,7 @@ SMB_MODULE(pdb_ldap, passdb/pdb_ldap.o passdb/pdb_nds.o, "bin/ldapsam.$SHLIBEXT"
 		   [ PASSDB_LIBS="$PASSDB_LIBS $LDAP_LIBS" ] )
 SMB_MODULE(pdb_smbpasswd, passdb/pdb_smbpasswd.o, "bin/smbpasswd.$SHLIBEXT", PDB)
 SMB_MODULE(pdb_tdbsam, passdb/pdb_tdb.o, "bin/tdbsam.$SHLIBEXT", PDB)
-SMB_MODULE(pdb_onefs_sam, passdb/pdb_onefs_sam.o, "bin/onefs_sam.$SHLIBEXT", PDB)
+SMB_MODULE(pdb_wbc_sam, passdb/pdb_wbc_sam.o, "bin/wbc_sam.$SHLIBEXT", PDB)
 SMB_SUBSYSTEM(PDB,passdb/pdb_interface.o)
 
 
@@ -6173,7 +6173,7 @@ SMB_SUBSYSTEM(CHARSET,lib/iconv.o)
 SMB_MODULE(auth_sam, \$(AUTH_SAM_OBJ), "bin/sam.$SHLIBEXT", AUTH)
 SMB_MODULE(auth_unix, \$(AUTH_UNIX_OBJ), "bin/unix.$SHLIBEXT", AUTH)
 SMB_MODULE(auth_winbind, \$(AUTH_WINBIND_OBJ), "bin/winbind.$SHLIBEXT", AUTH)
-SMB_MODULE(auth_onefs_wb, \$(AUTH_ONEFS_WB_OBJ), "bin/onefs_wb.$SHLIBEXT", AUTH)
+SMB_MODULE(auth_wbc, \$(AUTH_WBC_OBJ), "bin/wbc.$SHLIBEXT", AUTH)
 SMB_MODULE(auth_server, \$(AUTH_SERVER_OBJ), "bin/smbserver.$SHLIBEXT", AUTH)
 SMB_MODULE(auth_domain, \$(AUTH_DOMAIN_OBJ), "bin/domain.$SHLIBEXT", AUTH)
 SMB_MODULE(auth_builtin, \$(AUTH_BUILTIN_OBJ), "bin/builtin.$SHLIBEXT", AUTH)

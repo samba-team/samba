@@ -79,9 +79,11 @@ static SMB_STRUCT_DIR *skel_opendir(vfs_handle_struct *handle,  const char *fnam
 	return SMB_VFS_NEXT_OPENDIR(handle, fname, mask, attr);
 }
 
-static SMB_STRUCT_DIRENT *skel_readdir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
+static SMB_STRUCT_DIRENT *skel_readdir(vfs_handle_struct *handle,
+				       SMB_STRUCT_DIR *dirp,
+				       SMB_STRUCT_STAT *sbuf)
 {
-	return SMB_VFS_NEXT_READDIR(handle, dirp);
+	return SMB_VFS_NEXT_READDIR(handle, dirp, sbuf);
 }
 
 static void skel_seekdir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp, long offset)

@@ -1043,35 +1043,6 @@ static char **extract_args(TALLOC_CTX *mem_ctx, const char *command)
 }
 
 /**************************************************************************
- Wrapper for fork. Ensures that mypid is reset. Used so we can write
- a sys_getpid() that only does a system call *once*.
-****************************************************************************/
-
-static pid_t mypid = (pid_t)-1;
-
-pid_t sys_fork(void)
-{
-	pid_t forkret = fork();
-
-	if (forkret == (pid_t)0) /* Child - reset mypid so sys_getpid does a system call. */
-		mypid = (pid_t) -1;
-
-	return forkret;
-}
-
-/**************************************************************************
- Wrapper for getpid. Ensures we only do a system call *once*.
-****************************************************************************/
-
-pid_t sys_getpid(void)
-{
-	if (mypid == (pid_t)-1)
-		mypid = getpid();
-
-	return mypid;
-}
-
-/**************************************************************************
  Wrapper for popen. Safer as it doesn't search a path.
  Modified from the glibc sources.
  modified by tridge to return a file descriptor. We must kick our FILE* habit
@@ -2008,7 +1979,6 @@ static ssize_t solaris_read_xattr(int attrfd, void *value, size_t size)
 static ssize_t solaris_list_xattr(int attrdirfd, char *list, size_t size)
 {
 	ssize_t len = 0;
-	int stop = 0;
 	DIR *dirp;
 	struct dirent *de;
 	int newfd = dup(attrdirfd);
@@ -2080,7 +2050,7 @@ static int solaris_openat(int fildes, const char *path, int oflag, mode_t mode)
 {
 	int filedes = openat(fildes, path, oflag, mode);
 	if (filedes == -1) {
-		DEBUG(10,("openat FAILED: fd: %s, path: %s, errno: %s\n",filedes,path,strerror(errno)));
+		DEBUG(10,("openat FAILED: fd: %d, path: %s, errno: %s\n",filedes,path,strerror(errno)));
 		if (errno == EINVAL) {
 			errno = ENOTSUP;
 		} else {

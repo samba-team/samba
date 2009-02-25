@@ -75,6 +75,159 @@ WERROR rpccli_spoolss_openprinter_ex(struct rpc_pipe_client *cli,
 	return WERR_OK;
 }
 
+/**********************************************************************
+ convencience wrapper around rpccli_spoolss_GetPrinterDriver2
+**********************************************************************/
+
+WERROR rpccli_spoolss_getprinterdriver2(struct rpc_pipe_client *cli,
+					TALLOC_CTX *mem_ctx,
+					struct policy_handle *handle,
+					const char *architecture,
+					uint32_t level,
+					uint32_t offered,
+					uint32_t client_major_version,
+					uint32_t client_minor_version,
+					union spoolss_DriverInfo *info,
+					uint32_t *server_major_version,
+					uint32_t *server_minor_version)
+{
+	NTSTATUS status;
+	WERROR werror;
+	uint32_t needed;
+	DATA_BLOB buffer;
+
+	if (offered > 0) {
+		buffer = data_blob_talloc_zero(mem_ctx, offered);
+		W_ERROR_HAVE_NO_MEMORY(buffer.data);
+	}
+
+	status = rpccli_spoolss_GetPrinterDriver2(cli, mem_ctx,
+						  handle,
+						  architecture,
+						  level,
+						  (offered > 0) ? &buffer : NULL,
+						  offered,
+						  client_major_version,
+						  client_minor_version,
+						  info,
+						  &needed,
+						  server_major_version,
+						  server_minor_version,
+						  &werror);
+	if (W_ERROR_EQUAL(werror, WERR_INSUFFICIENT_BUFFER)) {
+		offered = needed;
+		buffer = data_blob_talloc_zero(mem_ctx, needed);
+		W_ERROR_HAVE_NO_MEMORY(buffer.data);
+
+		status = rpccli_spoolss_GetPrinterDriver2(cli, mem_ctx,
+							  handle,
+							  architecture,
+							  level,
+							  &buffer,
+							  offered,
+							  client_major_version,
+							  client_minor_version,
+							  info,
+							  &needed,
+							  server_major_version,
+							  server_minor_version,
+							  &werror);
+	}
+
+	return werror;
+}
+
+/**********************************************************************
+ convencience wrapper around rpccli_spoolss_AddPrinterEx
+**********************************************************************/
+
+WERROR rpccli_spoolss_addprinterex(struct rpc_pipe_client *cli,
+				   TALLOC_CTX *mem_ctx,
+				   struct spoolss_SetPrinterInfoCtr *info_ctr)
+{
+	WERROR result;
+	NTSTATUS status;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	struct sec_desc_buf secdesc_ctr;
+	struct spoolss_UserLevelCtr userlevel_ctr;
+	struct spoolss_UserLevel1 level1;
+	struct policy_handle handle;
+
+	ZERO_STRUCT(devmode_ctr);
+	ZERO_STRUCT(secdesc_ctr);
+
+	level1.size		= 28;
+	level1.build		= 1381;
+	level1.major		= 2;
+	level1.minor		= 0;
+	level1.processor	= 0;
+	level1.client		= talloc_asprintf(mem_ctx, "\\\\%s", global_myname());
+	W_ERROR_HAVE_NO_MEMORY(level1.client);
+	level1.user		= cli->auth->user_name;
+
+	userlevel_ctr.level = 1;
+	userlevel_ctr.user_info.level1 = &level1;
+
+	status = rpccli_spoolss_AddPrinterEx(cli, mem_ctx,
+					     cli->srv_name_slash,
+					     info_ctr,
+					     &devmode_ctr,
+					     &secdesc_ctr,
+					     &userlevel_ctr,
+					     &handle,
+					     &result);
+	return result;
+}
+
+/**********************************************************************
+ convencience wrapper around rpccli_spoolss_GetPrinter
+**********************************************************************/
+
+WERROR rpccli_spoolss_getprinter(struct rpc_pipe_client *cli,
+				 TALLOC_CTX *mem_ctx,
+				 struct policy_handle *handle,
+				 uint32_t level,
+				 uint32_t offered,
+				 union spoolss_PrinterInfo *info)
+{
+	NTSTATUS status;
+	WERROR werror;
+	DATA_BLOB buffer;
+	uint32_t needed;
+
+	if (offered > 0) {
+		buffer = data_blob_talloc_zero(mem_ctx, offered);
+		W_ERROR_HAVE_NO_MEMORY(buffer.data);
+	}
+
+	status = rpccli_spoolss_GetPrinter(cli, mem_ctx,
+					   handle,
+					   level,
+					   (offered > 0) ? &buffer : NULL,
+					   offered,
+					   info,
+					   &needed,
+					   &werror);
+
+	if (W_ERROR_EQUAL(werror, WERR_INSUFFICIENT_BUFFER)) {
+
+		offered = needed;
+		buffer = data_blob_talloc_zero(mem_ctx, offered);
+		W_ERROR_HAVE_NO_MEMORY(buffer.data);
+
+		status = rpccli_spoolss_GetPrinter(cli, mem_ctx,
+						   handle,
+						   level,
+						   &buffer,
+						   offered,
+						   info,
+						   &needed,
+						   &werror);
+	}
+
+	return werror;
+}
+
 /*********************************************************************
  Decode various spoolss rpc's and info levels
  ********************************************************************/
@@ -629,195 +782,6 @@ WERROR rpccli_spoolss_enum_ports(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 /**********************************************************************
 **********************************************************************/
 
-WERROR rpccli_spoolss_getprinter(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-			      POLICY_HND *pol, uint32 level, 
-			      PRINTER_INFO_CTR *ctr)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_GETPRINTER in;
-	SPOOL_R_GETPRINTER out;
-	RPC_BUFFER buffer;
-	uint32 offered;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-	/* Initialise input parameters */
-
-	offered = 0;
-	if (!rpcbuf_init(&buffer, offered, mem_ctx))
-		return WERR_NOMEM;
-	make_spoolss_q_getprinter( mem_ctx, &in, pol, level, &buffer, offered );
-	
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_GETPRINTER,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_getprinter,
-	            spoolss_io_r_getprinter, 
-	            WERR_GENERAL_FAILURE );
-
-	if ( W_ERROR_EQUAL( out.status, WERR_INSUFFICIENT_BUFFER ) ) {
-		offered = out.needed;
-		
-		ZERO_STRUCT(in);
-		ZERO_STRUCT(out);
-		
-		if (!rpcbuf_init(&buffer, offered, mem_ctx))
-			return WERR_NOMEM;
-		make_spoolss_q_getprinter( mem_ctx, &in, pol, level, &buffer, offered );
-
-		CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_GETPRINTER,
-		            in, out, 
-		            qbuf, rbuf,
-		            spoolss_io_q_getprinter,
-		            spoolss_io_r_getprinter, 
-		            WERR_GENERAL_FAILURE );
-	}
-	
-	if ( !W_ERROR_IS_OK(out.status) )
-		return out.status;
-		
-	switch (level) {
-	case 0:
-		if (!decode_printer_info_0(mem_ctx, out.buffer, 1, &ctr->printers_0)) {
-			return WERR_GENERAL_FAILURE;
-		}
-		break;
-	case 1:
-		if (!decode_printer_info_1(mem_ctx, out.buffer, 1, &ctr->printers_1)) {
-			return WERR_GENERAL_FAILURE;
-		}
-		break;
-	case 2:
-		if (!decode_printer_info_2(mem_ctx, out.buffer, 1, &ctr->printers_2)) {
-			return WERR_GENERAL_FAILURE;
-		}
-		break;
-	case 3:
-		if (!decode_printer_info_3(mem_ctx, out.buffer, 1, &ctr->printers_3)) {
-			return WERR_GENERAL_FAILURE;
-		}
-		break;
-	case 7:
-		if (!decode_printer_info_7(mem_ctx, out.buffer, 1, &ctr->printers_7)) {
-			return WERR_GENERAL_FAILURE;
-		}
-		break;
-	default:
-		return WERR_UNKNOWN_LEVEL;
-	}
-
-	return out.status;
-}
-
-/**********************************************************************
-**********************************************************************/
-
-WERROR rpccli_spoolss_setprinter(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-			      POLICY_HND *pol, uint32 level, 
-			      PRINTER_INFO_CTR *ctr, uint32 command)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_SETPRINTER in;
-	SPOOL_R_SETPRINTER out;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-	make_spoolss_q_setprinter( mem_ctx, &in, pol, level, ctr, command );
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_SETPRINTER,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_setprinter,
-	            spoolss_io_r_setprinter, 
-	            WERR_GENERAL_FAILURE );
-
-	return out.status;
-}
-
-/**********************************************************************
-**********************************************************************/
-
-WERROR rpccli_spoolss_getprinterdriver(struct rpc_pipe_client *cli, 
-				    TALLOC_CTX *mem_ctx, 
-				    POLICY_HND *pol, uint32 level, 
-				    const char *env, int version, PRINTER_DRIVER_CTR *ctr)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_GETPRINTERDRIVER2 in;
-        SPOOL_R_GETPRINTERDRIVER2 out;
-	RPC_BUFFER buffer;
-	fstring server;
-	uint32 offered;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-	fstrcpy(server, cli->desthost);
-	strupper_m(server);
-
-	offered = 0;
-	if (!rpcbuf_init(&buffer, offered, mem_ctx))
-		return WERR_NOMEM;
-	make_spoolss_q_getprinterdriver2( &in, pol, env, level, 
-		version, 2, &buffer, offered);
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_GETPRINTERDRIVER2,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_getprinterdriver2,
-	            spoolss_io_r_getprinterdriver2, 
-	            WERR_GENERAL_FAILURE );
-		    
-	if ( W_ERROR_EQUAL( out.status, WERR_INSUFFICIENT_BUFFER ) ) {
-		offered = out.needed;
-		
-		ZERO_STRUCT(in);
-		ZERO_STRUCT(out);
-		
-		if (!rpcbuf_init(&buffer, offered, mem_ctx))
-			return WERR_NOMEM;
-		make_spoolss_q_getprinterdriver2( &in, pol, env, level, 
-			version, 2, &buffer, offered);
-
-		CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_GETPRINTERDRIVER2,
-		            in, out, 
-		            qbuf, rbuf,
-		            spoolss_io_q_getprinterdriver2,
-		            spoolss_io_r_getprinterdriver2, 
-		            WERR_GENERAL_FAILURE );
-	}
-		
-	if ( !W_ERROR_IS_OK(out.status) )
-		return out.status;
-
-	switch (level) {
-	case 1:
-		if (!decode_printer_driver_1(mem_ctx, out.buffer, 1, &ctr->info1)) {
-			return WERR_GENERAL_FAILURE;
-		}
-		break;
-	case 2:
-		if (!decode_printer_driver_2(mem_ctx, out.buffer, 1, &ctr->info2)) {
-			return WERR_GENERAL_FAILURE;
-		}
-		break;
-	case 3:
-		if (!decode_printer_driver_3(mem_ctx, out.buffer, 1, &ctr->info3)) {
-			return WERR_GENERAL_FAILURE;
-		}
-		break;
-	default:
-		return WERR_UNKNOWN_LEVEL;
-	}
-
-	return out.status;	
-}
-
-/**********************************************************************
-**********************************************************************/
-
 WERROR rpccli_spoolss_enumprinterdrivers (struct rpc_pipe_client *cli, 
 				       TALLOC_CTX *mem_ctx,
 				       uint32 level, const char *env,
@@ -898,71 +862,6 @@ WERROR rpccli_spoolss_enumprinterdrivers (struct rpc_pipe_client *cli,
 	}
 
 	return out.status;
-}
-
-/**********************************************************************
-**********************************************************************/
-
-WERROR rpccli_spoolss_addprinterdriver (struct rpc_pipe_client *cli, 
-				     TALLOC_CTX *mem_ctx, uint32 level,
-				     PRINTER_DRIVER_CTR *ctr)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_ADDPRINTERDRIVER in;
-        SPOOL_R_ADDPRINTERDRIVER out;
-	fstring server;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-	
-        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
-        strupper_m(server);
-
-	make_spoolss_q_addprinterdriver( mem_ctx, &in, server, level, ctr );
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_ADDPRINTERDRIVER,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_addprinterdriver,
-	            spoolss_io_r_addprinterdriver, 
-	            WERR_GENERAL_FAILURE );
-
-	return out.status;		    
-}
-
-/**********************************************************************
-**********************************************************************/
-
-WERROR rpccli_spoolss_addprinterex (struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				 uint32 level, PRINTER_INFO_CTR*ctr)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_ADDPRINTEREX in;
-        SPOOL_R_ADDPRINTEREX out;
-	fstring server, client, user;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-	
-        slprintf(client, sizeof(fstring)-1, "\\\\%s", global_myname());
-        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
-	
-        strupper_m(client);
-        strupper_m(server);
-
-	fstrcpy  (user, cli->auth->user_name);
-
-	make_spoolss_q_addprinterex( mem_ctx, &in, server, client, 
-		user, level, ctr);
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_ADDPRINTEREX,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_addprinterex,
-	            spoolss_io_r_addprinterex, 
-	            WERR_GENERAL_FAILURE );
-
-	return out.status;	
 }
 
 /**********************************************************************
@@ -1406,5 +1305,4 @@ WERROR rpccli_spoolss_enumprinterkey(struct rpc_pipe_client *cli, TALLOC_CTX *me
 
 	return out.status;
 }
-
 /** @} **/

@@ -4,6 +4,7 @@
 # provision a Samba4 server
 # Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007-2008
 # Copyright (C) Andrew Bartlett <abartlet@samba.org> 2008
+# Copyright (C) Oliver Liebel <oliver@itc.li> 2008-2009
 #
 # Based on the original in EJS:
 # Copyright (C) Andrew Tridgell 2005
@@ -65,8 +66,12 @@ parser.add_option("--server-role", type="choice", metavar="ROLE",
 parser.add_option("--targetdir", type="string", metavar="DIR", 
 		          help="Set target directory")
 parser.add_option("--ol-mmr-urls", type="string", metavar="LDAPSERVER",
-                help="List of LDAP-URLS [ ldap://<FQDN>:port/  (where port != 389) ] separated with whitespaces for use with OpenLDAP-MMR")
-
+                help="List of LDAP-URLS [ ldap://<FQHN>:<PORT>/  (where <PORT> has to be different from 389!) ] separated with whitespaces for use with OpenLDAP-MMR (Multi-Master-Replication)")
+parser.add_option("--ol-olc", type="choice", metavar="OPENLDAP-OLC", 
+		help="To setup OpenLDAP-Backend with Online-Configuration [slapd.d] choose 'yes'. Note: Only OpenLDAP-Versions greater or equal 2.4.15 should be used!",
+		choices=["yes", "no"])
+parser.add_option("--ol-slaptest", type="string", metavar="SLAPTEST-PATH", 
+		help="Path to slaptest-binary [e.g.:'/usr/local/sbin']. Only for use with --ol-olc='yes'")
 
 opts = parser.parse_args()[0]
 
@@ -103,5 +108,7 @@ provision_backend(setup_dir=setup_dir, message=message, smbconf=smbconf, targetd
 		  root=opts.root, serverrole=server_role, 
 		  ldap_backend_type=opts.ldap_backend_type,
 		  ldap_backend_port=opts.ldap_backend_port,
-		  ol_mmr_urls=opts.ol_mmr_urls)
+		  ol_mmr_urls=opts.ol_mmr_urls,
+		  ol_olc=opts.ol_olc,
+		  ol_slaptest=opts.ol_slaptest)
 

@@ -18,8 +18,11 @@
    
 */
 
-#ifndef _SMB_LDAP_H
-#define _SMB_LDAP_H
+#ifndef _LIBCLI_LDAP_MESSAGE_H_
+#define _LIBCLI_LDAP_MESSAGE_H_
+
+#include "../libcli/ldap/ldap_errors.h"
+#include "lib/ldb/include/ldb.h"
 
 enum ldap_request_tag {
 	LDAP_TAG_BindRequest = 0,
@@ -49,26 +52,11 @@ enum ldap_auth_mechanism {
 	LDAP_AUTH_MECH_SASL = 3
 };
 
-#ifndef LDAP_SUCCESS
-enum ldap_result_code {
-	LDAP_SUCCESS = 0,
-	LDAP_SASL_BIND_IN_PROGRESS = 0x0e,
-	LDAP_INVALID_CREDENTIALS = 0x31,
-	LDAP_OTHER = 0x50
-};
-#endif /* LDAP_SUCCESS */
-
 struct ldap_Result {
 	int resultcode;
 	const char *dn;
 	const char *errormessage;
 	const char *referral;
-};
-
-struct ldap_attribute {
-	const char *name;
-	int num_values;
-	DATA_BLOB *values;
 };
 
 struct ldap_BindRequest {
@@ -79,7 +67,7 @@ struct ldap_BindRequest {
 		const char *password;
 		struct {
 			const char *mechanism;
-			DATA_BLOB secblob;
+			DATA_BLOB *secblob;/* optional */
 		} SASL;
 	} creds;
 };
@@ -87,12 +75,12 @@ struct ldap_BindRequest {
 struct ldap_BindResponse {
 	struct ldap_Result response;
 	union {
-		DATA_BLOB secblob;
+		DATA_BLOB *secblob;/* optional */
 	} SASL;
 };
 
 struct ldap_UnbindRequest {
-	uint8 __dummy;
+	uint8_t __dummy;
 };
 
 enum ldap_scope {
@@ -112,23 +100,22 @@ struct ldap_SearchRequest {
 	const char *basedn;
 	enum ldap_scope scope;
 	enum ldap_deref deref;
-	uint32 timelimit;
-	uint32 sizelimit;
+	uint32_t timelimit;
+	uint32_t sizelimit;
 	bool attributesonly;
-	char *filter;
+	struct ldb_parse_tree *tree;
 	int num_attributes;
-	const char **attributes;
+	const char * const *attributes;
 };
 
 struct ldap_SearchResEntry {
 	const char *dn;
 	int num_attributes;
-	struct ldap_attribute *attributes;
+	struct ldb_message_element *attributes;
 };
 
 struct ldap_SearchResRef {
-	int num_referrals;
-	const char **referrals;
+	const char *referral;
 };
 
 enum ldap_modify_type {
@@ -140,7 +127,7 @@ enum ldap_modify_type {
 
 struct ldap_mod {
 	enum ldap_modify_type type;
-	struct ldap_attribute attrib;
+	struct ldb_message_element attrib;
 };
 
 struct ldap_ModifyRequest {
@@ -152,7 +139,7 @@ struct ldap_ModifyRequest {
 struct ldap_AddRequest {
 	const char *dn;
 	int num_attributes;
-	struct ldap_attribute *attributes;
+	struct ldb_message_element *attributes;
 };
 
 struct ldap_DelRequest {
@@ -163,31 +150,32 @@ struct ldap_ModifyDNRequest {
 	const char *dn;
 	const char *newrdn;
 	bool deleteolddn;
-	const char *newsuperior;
+	const char *newsuperior;/* optional */
 };
 
 struct ldap_CompareRequest {
 	const char *dn;
 	const char *attribute;
-	const char *value;
+	DATA_BLOB value;
 };
 
 struct ldap_AbandonRequest {
-	uint32 messageid;
+	int messageid;
 };
 
 struct ldap_ExtendedRequest {
 	const char *oid;
-	DATA_BLOB value;
+	DATA_BLOB *value;/* optional */
 };
 
 struct ldap_ExtendedResponse {
 	struct ldap_Result response;
-	const char *name;
-	DATA_BLOB value;
+	const char *oid;/* optional */
+	DATA_BLOB *value;/* optional */
 };
 
 union ldap_Request {
+	struct ldap_Result 		GeneralResult;
 	struct ldap_BindRequest 	BindRequest;
 	struct ldap_BindResponse 	BindResponse;
 	struct ldap_UnbindRequest 	UnbindRequest;
@@ -210,46 +198,38 @@ union ldap_Request {
 	struct ldap_ExtendedResponse 	ExtendedResponse;
 };
 
-struct ldap_Control {
-	const char *oid;
-	bool        critical;
-	DATA_BLOB   value;
-};
 
 struct ldap_message {
-	TALLOC_CTX	       *mem_ctx;
-	uint32                  messageid;
-	uint8                   type;
-	union  ldap_Request     r;
-	int			num_controls;
-	struct ldap_Control    *controls;
+	int                     messageid;
+	enum ldap_request_tag   type;
+	union ldap_Request      r;
+	struct ldb_control    **controls;
+	bool                   *controls_decoded;
 };
 
-struct ldap_queue_entry {
-	struct ldap_queue_entry *next, *prev;
-	int msgid;
-	struct ldap_message *msg;
+struct ldap_control_handler {
+	const char *oid;
+	bool (*decode)(void *mem_ctx, DATA_BLOB in, void *_out);
+	bool (*encode)(void *mem_ctx, void *in, DATA_BLOB *out);
 };
 
-struct ldap_connection {
-	TALLOC_CTX *mem_ctx;
-	int sock;
-	int next_msgid;
-	char *host;
-	uint16 port;
-	bool ldaps;
+struct asn1_data;
 
-	const char *auth_dn;
-	const char *simple_pw;
+struct ldap_message *new_ldap_message(TALLOC_CTX *mem_ctx);
+NTSTATUS ldap_decode(struct asn1_data *data,
+		     const struct ldap_control_handler *control_handlers,
+		     struct ldap_message *msg);
+bool ldap_encode(struct ldap_message *msg,
+		 const struct ldap_control_handler *control_handlers,
+		 DATA_BLOB *result, TALLOC_CTX *mem_ctx);
+NTSTATUS ldap_full_packet(void *private_data, DATA_BLOB blob, size_t *packet_size);
 
-	/* Current outstanding search entry */
-	int searchid;
+bool asn1_read_OctetString_talloc(TALLOC_CTX *mem_ctx,
+				  struct asn1_data *data,
+				  const char **result);
 
-	/* List for incoming search entries */
-	struct ldap_queue_entry *search_entries;
+void ldap_decode_attribs_bare(TALLOC_CTX *mem_ctx, struct asn1_data *data,
+			      struct ldb_message_element **attributes,
+			      int *num_attributes);
 
-	/* Outstanding LDAP requests that have not yet been replied to */
-	struct ldap_queue_entry *outstanding;
-};
-
-#endif
+#endif 

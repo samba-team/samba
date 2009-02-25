@@ -290,6 +290,7 @@ bool profile_setup(struct messaging_context *msg_ctx, bool rdonly)
 	    "syscall_rmdir",		/* PR_VALUE_SYSCALL_RMDIR */
 	    "syscall_closedir",		/* PR_VALUE_SYSCALL_CLOSEDIR */
 	    "syscall_open",		/* PR_VALUE_SYSCALL_OPEN */
+	    "syscall_createfile",	/* PR_VALUE_SYSCALL_CREATEFILE */
 	    "syscall_close",		/* PR_VALUE_SYSCALL_CLOSE */
 	    "syscall_read",		/* PR_VALUE_SYSCALL_READ */
 	    "syscall_pread",		/* PR_VALUE_SYSCALL_PREAD */
@@ -299,6 +300,7 @@ bool profile_setup(struct messaging_context *msg_ctx, bool rdonly)
 	    "syscall_sendfile",		/* PR_VALUE_SYSCALL_SENDFILE */
 	    "syscall_recvfile",		/* PR_VALUE_SYSCALL_RECVFILE */
 	    "syscall_rename",		/* PR_VALUE_SYSCALL_RENAME */
+	    "syscall_rename_at",	/* PR_VALUE_SYSCALL_RENAME_AT */
 	    "syscall_fsync",		/* PR_VALUE_SYSCALL_FSYNC */
 	    "syscall_stat",		/* PR_VALUE_SYSCALL_STAT */
 	    "syscall_fstat",		/* PR_VALUE_SYSCALL_FSTAT */
@@ -323,6 +325,11 @@ bool profile_setup(struct messaging_context *msg_ctx, bool rdonly)
 	    "syscall_realpath",		/* PR_VALUE_SYSCALL_REALPATH */
 	    "syscall_get_quota",	/* PR_VALUE_SYSCALL_GET_QUOTA */
 	    "syscall_set_quota",	/* PR_VALUE_SYSCALL_SET_QUOTA */
+	    "syscall_get_sd",		/* PR_VALUE_SYSCALL_GET_SD */
+	    "syscall_set_sd",		/* PR_VALUE_SYSCALL_SET_SD */
+	    "syscall_brl_lock",		/* PR_VALUE_SYSCALL_BRL_LOCK */
+	    "syscall_brl_unlock",	/* PR_VALUE_SYSCALL_BRL_UNLOCK */
+	    "syscall_brl_cancel",	/* PR_VALUE_SYSCALL_BRL_CANCEL */
 	    "SMBmkdir",		/* PR_VALUE_SMBMKDIR */
 	    "SMBrmdir",		/* PR_VALUE_SMBRMDIR */
 	    "SMBopen",		/* PR_VALUE_SMBOPEN */

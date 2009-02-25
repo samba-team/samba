@@ -695,8 +695,13 @@ SEC_DESC *dup_sec_desc(TALLOC_CTX *ctx, const SEC_DESC *src);
 NTSTATUS marshall_sec_desc(TALLOC_CTX *mem_ctx,
 			   struct security_descriptor *secdesc,
 			   uint8 **data, size_t *len);
+NTSTATUS marshall_sec_desc_buf(TALLOC_CTX *mem_ctx,
+			       struct sec_desc_buf *secdesc_buf,
+			       uint8_t **data, size_t *len);
 NTSTATUS unmarshall_sec_desc(TALLOC_CTX *mem_ctx, uint8 *data, size_t len,
 			     struct security_descriptor **psecdesc);
+NTSTATUS unmarshall_sec_desc_buf(TALLOC_CTX *mem_ctx, uint8_t *data, size_t len,
+				 struct sec_desc_buf **psecdesc_buf);
 SEC_DESC *make_standard_sec_desc(TALLOC_CTX *ctx, const DOM_SID *owner_sid, const DOM_SID *grp_sid,
 				 SEC_ACL *dacl, size_t *sd_size);
 SEC_DESC_BUF *make_sec_desc_buf(TALLOC_CTX *ctx, size_t len, SEC_DESC *sec_desc);
@@ -972,8 +977,6 @@ struct passwd *sys_getpwnam(const char *name);
 struct passwd *sys_getpwuid(uid_t uid);
 struct group *sys_getgrnam(const char *name);
 struct group *sys_getgrgid(gid_t gid);
-pid_t sys_fork(void);
-pid_t sys_getpid(void);
 int sys_popen(const char *command);
 int sys_pclose(int fd);
 ssize_t sys_getxattr (const char *path, const char *name, void *value, size_t size);
@@ -1240,15 +1243,6 @@ bool is_valid_policy_hnd(const POLICY_HND *hnd);
 bool policy_hnd_equal(const struct policy_handle *hnd1,
 		      const struct policy_handle *hnd2);
 const char *strip_hostname(const char *s);
-struct async_req *read_pkt_send(TALLOC_CTX *mem_ctx,
-				struct event_context *ev,
-				int fd, size_t initial,
-				ssize_t (*more)(uint8_t *buf, size_t buflen,
-						void *priv),
-				void *priv);
-ssize_t read_pkt_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
-		      uint8_t **pbuf, int *perr);
-
 
 /* The following definitions come from lib/util_file.c  */
 
@@ -3114,7 +3108,7 @@ struct packet_struct *receive_dgram_packet(int fd, int t,
 bool match_mailslot_name(struct packet_struct *p, const char *mailslot_name);
 int matching_len_bits(unsigned char *p1, unsigned char *p2, size_t len);
 void sort_query_replies(char *data, int n, struct in_addr ip);
-int name_mangle( char *In, char *Out, char name_type );
+char *name_mangle(TALLOC_CTX *mem_ctx, char *In, char name_type);
 int name_extract(char *buf,int ofs, fstring name);
 int name_len(char *s1);
 
@@ -5471,31 +5465,36 @@ WERROR rpccli_spoolss_openprinter_ex(struct rpc_pipe_client *cli,
 				     const char *printername,
 				     uint32_t access_desired,
 				     struct policy_handle *handle);
+WERROR rpccli_spoolss_getprinterdriver2(struct rpc_pipe_client *cli,
+					TALLOC_CTX *mem_ctx,
+					struct policy_handle *handle,
+					const char *architecture,
+					uint32_t level,
+					uint32_t offered,
+					uint32_t client_major_version,
+					uint32_t client_minor_version,
+					union spoolss_DriverInfo *info,
+					uint32_t *server_major_version,
+					uint32_t *server_minor_version);
+WERROR rpccli_spoolss_addprinterex(struct rpc_pipe_client *cli,
+				   TALLOC_CTX *mem_ctx,
+				   struct spoolss_SetPrinterInfoCtr *info_ctr);
+WERROR rpccli_spoolss_getprinter(struct rpc_pipe_client *cli,
+				 TALLOC_CTX *mem_ctx,
+				 struct policy_handle *handle,
+				 uint32_t level,
+				 uint32_t offered,
+				 union spoolss_PrinterInfo *info);
 WERROR rpccli_spoolss_enum_printers(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				 char *name, uint32 flags, uint32 level,
 				 uint32 *num_printers, PRINTER_INFO_CTR *ctr);
 WERROR rpccli_spoolss_enum_ports(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			      uint32 level, uint32 *num_ports, PORT_INFO_CTR *ctr);
-WERROR rpccli_spoolss_getprinter(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-			      POLICY_HND *pol, uint32 level, 
-			      PRINTER_INFO_CTR *ctr);
-WERROR rpccli_spoolss_setprinter(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-			      POLICY_HND *pol, uint32 level, 
-			      PRINTER_INFO_CTR *ctr, uint32 command);
-WERROR rpccli_spoolss_getprinterdriver(struct rpc_pipe_client *cli, 
-				    TALLOC_CTX *mem_ctx, 
-				    POLICY_HND *pol, uint32 level, 
-				    const char *env, int version, PRINTER_DRIVER_CTR *ctr);
 WERROR rpccli_spoolss_enumprinterdrivers (struct rpc_pipe_client *cli, 
 				       TALLOC_CTX *mem_ctx,
 				       uint32 level, const char *env,
 				       uint32 *num_drivers,
 				       PRINTER_DRIVER_CTR *ctr);
-WERROR rpccli_spoolss_addprinterdriver (struct rpc_pipe_client *cli, 
-				     TALLOC_CTX *mem_ctx, uint32 level,
-				     PRINTER_DRIVER_CTR *ctr);
-WERROR rpccli_spoolss_addprinterex (struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				 uint32 level, PRINTER_INFO_CTR*ctr);
 WERROR rpccli_spoolss_enumforms(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			     POLICY_HND *handle, int level, uint32 *num_forms,
 			     FORM_1 **forms);
@@ -5806,17 +5805,7 @@ bool sec_io_desc_buf(const char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int
 
 bool spoolss_io_system_time(const char *desc, prs_struct *ps, int depth, SYSTEMTIME *systime);
 bool make_systemtime(SYSTEMTIME *systime, struct tm *unixtime);
-bool spool_io_user_level_1( const char *desc, prs_struct *ps, int depth, SPOOL_USER_1 *q_u );
 bool spoolss_io_devmode(const char *desc, prs_struct *ps, int depth, DEVICEMODE *devmode);
-bool make_spoolss_q_addprinterex( TALLOC_CTX *mem_ctx, SPOOL_Q_ADDPRINTEREX *q_u, 
-	const char *srv_name, const char* clientname, const char* user_name,
-	uint32 level, PRINTER_INFO_CTR *ctr);
-bool make_spoolss_printer_info_2(TALLOC_CTX *ctx, SPOOL_PRINTER_INFO_LEVEL_2 **spool_info2, 
-				PRINTER_INFO_2 *info);
-bool make_spoolss_printer_info_3(TALLOC_CTX *mem_ctx, SPOOL_PRINTER_INFO_LEVEL_3 **spool_info3, 
-				PRINTER_INFO_3 *info);
-bool make_spoolss_printer_info_7(TALLOC_CTX *mem_ctx, SPOOL_PRINTER_INFO_LEVEL_7 **spool_info7, 
-				PRINTER_INFO_7 *info);
 bool make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
 				   const POLICY_HND *handle,
 				   const char *valuename, uint32 size);
@@ -5869,11 +5858,6 @@ uint32 spoolss_size_printprocdatatype_info_1(PRINTPROCDATATYPE_1 *info);
 uint32 spoolss_size_printer_enum_values(PRINTER_ENUM_VALUES *p);
 uint32 spoolss_size_printmonitor_info_1(PRINTMONITOR_1 *info);
 uint32 spoolss_size_printmonitor_info_2(PRINTMONITOR_2 *info);
-bool make_spoolss_q_getprinterdriver2(SPOOL_Q_GETPRINTERDRIVER2 *q_u, 
-			       const POLICY_HND *hnd,
-			       const fstring architecture,
-			       uint32 level, uint32 clientmajor, uint32 clientminor,
-			       RPC_BUFFER *buffer, uint32 offered);
 bool spoolss_io_q_getprinterdriver2(const char *desc, SPOOL_Q_GETPRINTERDRIVER2 *q_u, prs_struct *ps, int depth);
 bool spoolss_io_r_getprinterdriver2(const char *desc, SPOOL_R_GETPRINTERDRIVER2 *r_u, prs_struct *ps, int depth);
 bool make_spoolss_q_enumprinters(
@@ -5891,19 +5875,6 @@ bool spoolss_io_q_enumprinters(const char *desc, SPOOL_Q_ENUMPRINTERS *q_u, prs_
 bool spoolss_io_r_enumprinters(const char *desc, SPOOL_R_ENUMPRINTERS *r_u, prs_struct *ps, int depth);
 bool spoolss_io_r_getprinter(const char *desc, SPOOL_R_GETPRINTER *r_u, prs_struct *ps, int depth);
 bool spoolss_io_q_getprinter(const char *desc, SPOOL_Q_GETPRINTER *q_u, prs_struct *ps, int depth);
-bool make_spoolss_q_getprinter(
-	TALLOC_CTX *mem_ctx,
-	SPOOL_Q_GETPRINTER *q_u, 
-	const POLICY_HND *hnd, 
-	uint32 level, 
-	RPC_BUFFER *buffer, 
-	uint32 offered
-);
-bool make_spoolss_q_setprinter(TALLOC_CTX *mem_ctx, SPOOL_Q_SETPRINTER *q_u, 
-				const POLICY_HND *hnd, uint32 level, PRINTER_INFO_CTR *info, 
-				uint32 command);
-bool spoolss_io_r_setprinter(const char *desc, SPOOL_R_SETPRINTER *r_u, prs_struct *ps, int depth);
-bool spoolss_io_q_setprinter(const char *desc, SPOOL_Q_SETPRINTER *q_u, prs_struct *ps, int depth);
 bool spoolss_io_r_enumjobs(const char *desc, SPOOL_R_ENUMJOBS *r_u, prs_struct *ps, int depth);
 bool make_spoolss_q_enumjobs(SPOOL_Q_ENUMJOBS *q_u, const POLICY_HND *hnd,
 				uint32 firstjob,
@@ -5923,31 +5894,7 @@ bool spoolss_io_q_enumforms(const char *desc, SPOOL_Q_ENUMFORMS *q_u, prs_struct
 bool spoolss_io_r_enumforms(const char *desc, SPOOL_R_ENUMFORMS *r_u, prs_struct *ps, int depth);
 bool spoolss_io_r_enumports(const char *desc, SPOOL_R_ENUMPORTS *r_u, prs_struct *ps, int depth);
 bool spoolss_io_q_enumports(const char *desc, SPOOL_Q_ENUMPORTS *q_u, prs_struct *ps, int depth);
-bool spool_io_printer_info_level_1(const char *desc, SPOOL_PRINTER_INFO_LEVEL_1 *il, prs_struct *ps, int depth);
-bool spool_io_printer_info_level_3(const char *desc, SPOOL_PRINTER_INFO_LEVEL_3 *il, prs_struct *ps, int depth);
-bool spool_io_printer_info_level_2(const char *desc, SPOOL_PRINTER_INFO_LEVEL_2 *il, prs_struct *ps, int depth);
-bool spool_io_printer_info_level_7(const char *desc, SPOOL_PRINTER_INFO_LEVEL_7 *il, prs_struct *ps, int depth);
-bool spool_io_printer_info_level(const char *desc, SPOOL_PRINTER_INFO_LEVEL *il, prs_struct *ps, int depth);
-bool spoolss_io_q_addprinterex(const char *desc, SPOOL_Q_ADDPRINTEREX *q_u, prs_struct *ps, int depth);
-bool spoolss_io_r_addprinterex(const char *desc, SPOOL_R_ADDPRINTEREX *r_u, 
-			       prs_struct *ps, int depth);
-bool spool_io_printer_driver_info_level_3(const char *desc, SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 **q_u, 
-                                          prs_struct *ps, int depth);
-bool spool_io_printer_driver_info_level_6(const char *desc, SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 **q_u, 
-                                          prs_struct *ps, int depth);
-bool smb_io_unibuffer(const char *desc, UNISTR2 *buffer, prs_struct *ps, int depth);
-bool spool_io_printer_driver_info_level(const char *desc, SPOOL_PRINTER_DRIVER_INFO_LEVEL *il, prs_struct *ps, int depth);
-bool make_spoolss_q_addprinterdriver(TALLOC_CTX *mem_ctx,
-				SPOOL_Q_ADDPRINTERDRIVER *q_u, const char* srv_name, 
-				uint32 level, PRINTER_DRIVER_CTR *info);
-bool make_spoolss_driver_info_3(TALLOC_CTX *mem_ctx,
-	SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 **spool_drv_info,
-				DRIVER_INFO_3 *info3);
 bool make_spoolss_buffer5(TALLOC_CTX *mem_ctx, BUFFER5 *buf5, uint32 len, uint16 *src);
-bool spoolss_io_q_addprinterdriver(const char *desc, SPOOL_Q_ADDPRINTERDRIVER *q_u, prs_struct *ps, int depth);
-bool spoolss_io_r_addprinterdriver(const char *desc, SPOOL_R_ADDPRINTERDRIVER *q_u, prs_struct *ps, int depth);
-bool uni_2_asc_printer_info_2(const SPOOL_PRINTER_INFO_LEVEL_2 *uni,
-                              NT_PRINTER_INFO_LEVEL_2  *d);
 bool spoolss_io_r_enumprintprocessors(const char *desc, SPOOL_R_ENUMPRINTPROCESSORS *r_u, prs_struct *ps, int depth);
 bool spoolss_io_q_enumprintprocessors(const char *desc, SPOOL_Q_ENUMPRINTPROCESSORS *q_u, prs_struct *ps, int depth);
 bool spoolss_io_r_enumprintprocdatatypes(const char *desc, SPOOL_R_ENUMPRINTPROCDATATYPES *r_u, prs_struct *ps, int depth);
@@ -6238,7 +6185,6 @@ bool init_service_op_table( void );
 
 /* The following definitions come from rpcclient/cmd_spoolss.c  */
 
-void set_drv_info_3_env (DRIVER_INFO_3 *info, const char *arch);
 
 /* The following definitions come from rpcclient/cmd_srvsvc.c  */
 

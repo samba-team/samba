@@ -953,7 +953,7 @@ struct open_socket_out_state {
 	int wait_nsec;
 };
 
-static void open_socket_out_connected(struct async_req *subreq);
+static void open_socket_out_connected(struct tevent_req *subreq);
 
 static int open_socket_out_state_destructor(struct open_socket_out_state *s)
 {
@@ -974,7 +974,8 @@ struct async_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 				       int timeout)
 {
 	char addr[INET6_ADDRSTRLEN];
-	struct async_req *result, *subreq;
+	struct async_req *result;
+	struct tevent_req *subreq;
 	struct open_socket_out_state *state;
 	NTSTATUS status;
 
@@ -1026,13 +1027,14 @@ struct async_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 				    (struct sockaddr *)&state->ss,
 				    state->salen);
 	if ((subreq == NULL)
-	    || !async_req_set_timeout(subreq, state->ev,
-				      timeval_set(0, state->wait_nsec))) {
+	    || !tevent_req_set_endtime(
+		    subreq, state->ev,
+		    timeval_current_ofs(0, state->wait_nsec))) {
 		status = NT_STATUS_NO_MEMORY;
 		goto post_status;
 	}
 	subreq->async.fn = open_socket_out_connected;
-	subreq->async.priv = result;
+	subreq->async.private_data = result;
 	return result;
 
  post_status:
@@ -1045,18 +1047,18 @@ struct async_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 	return NULL;
 }
 
-static void open_socket_out_connected(struct async_req *subreq)
+static void open_socket_out_connected(struct tevent_req *subreq)
 {
 	struct async_req *req = talloc_get_type_abort(
-		subreq->async.priv, struct async_req);
+		subreq->async.private_data, struct async_req);
 	struct open_socket_out_state *state = talloc_get_type_abort(
 		req->private_data, struct open_socket_out_state);
-	int err;
+	int ret;
 	int sys_errno;
 
-	err = async_connect_recv(subreq, &sys_errno);
+	ret = async_connect_recv(subreq, &sys_errno);
 	TALLOC_FREE(subreq);
-	if (err == 0) {
+	if (ret == 0) {
 		async_req_done(req);
 		return;
 	}
@@ -1083,13 +1085,14 @@ static void open_socket_out_connected(struct async_req *subreq)
 		if (async_req_nomem(subreq, req)) {
 			return;
 		}
-		if (!async_req_set_timeout(subreq, state->ev,
-					   timeval_set(0, state->wait_nsec))) {
+		if (!tevent_req_set_endtime(
+			    subreq, state->ev,
+			    timeval_current_ofs(0, state->wait_nsec))) {
 			async_req_error(req, ENOMEM);
 			return;
 		}
 		subreq->async.fn = open_socket_out_connected;
-		subreq->async.priv = req;
+		subreq->async.private_data = req;
 		return;
 	}
 

@@ -1642,6 +1642,7 @@ bool cli_session_request(struct cli_state *cli,
 {
 	char *p;
 	int len = 4;
+	char *tmp;
 
 	/* 445 doesn't have session request */
 	if (cli->port == 445)
@@ -1651,14 +1652,30 @@ bool cli_session_request(struct cli_state *cli,
 	memcpy(&(cli->called ), called , sizeof(*called ));
 
 	/* put in the destination name */
+
+	tmp = name_mangle(talloc_tos(), cli->called.name,
+			  cli->called.name_type);
+	if (tmp == NULL) {
+		return false;
+	}
+
 	p = cli->outbuf+len;
-	name_mangle(cli->called .name, p, cli->called .name_type);
-	len += name_len(p);
+	memcpy(p, tmp, name_len(tmp));
+	len += name_len(tmp);
+	TALLOC_FREE(tmp);
 
 	/* and my name */
+
+	tmp = name_mangle(talloc_tos(), cli->calling.name,
+			  cli->calling.name_type);
+	if (tmp == NULL) {
+		return false;
+	}
+
 	p = cli->outbuf+len;
-	name_mangle(cli->calling.name, p, cli->calling.name_type);
-	len += name_len(p);
+	memcpy(p, tmp, name_len(tmp));
+	len += name_len(tmp);
+	TALLOC_FREE(tmp);
 
 	/* send a session request (RFC 1002) */
 	/* setup the packet length
