@@ -25,8 +25,9 @@
 #define DBGC_CLASS DBGC_REGISTRY
 
 struct regsubkey_ctr {
-	uint32          num_subkeys;
+	uint32_t        num_subkeys;
 	char            **subkeys;
+	struct db_context *subkeys_hash;
 	int seqnum;
 };
 
@@ -53,6 +54,12 @@ WERROR regsubkey_ctr_init(TALLOC_CTX *mem_ctx, struct regsubkey_ctr **ctr)
 		return WERR_NOMEM;
 	}
 
+	(*ctr)->subkeys_hash = db_open_rbt(*ctr);
+	if ((*ctr)->subkeys_hash == NULL) {
+		talloc_free(*ctr);
+		return WERR_NOMEM;
+	}
+
 	return WERR_OK;
 }
 
@@ -76,6 +83,68 @@ int regsubkey_ctr_get_seqnum(struct regsubkey_ctr *ctr)
 	return ctr->seqnum;
 }
 
+static WERROR regsubkey_ctr_hash_keyname(struct regsubkey_ctr *ctr,
+					 const char *keyname,
+					 uint32 idx)
+{
+	WERROR werr;
+
+	werr = ntstatus_to_werror(dbwrap_store_bystring(ctr->subkeys_hash,
+						keyname,
+						make_tdb_data((uint8 *)&idx,
+							      sizeof(idx)),
+						TDB_REPLACE));
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(1, ("error hashing new key '%s' in container: %s\n",
+			  keyname, dos_errstr(werr)));
+	}
+
+	return werr;
+}
+
+static WERROR regsubkey_ctr_unhash_keyname(struct regsubkey_ctr *ctr,
+					   const char *keyname)
+{
+	WERROR werr;
+
+	werr = ntstatus_to_werror(dbwrap_delete_bystring(ctr->subkeys_hash,
+				  keyname));
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(1, ("error unhashing key '%s' in container: %s\n",
+			  keyname, dos_errstr(werr)));
+	}
+
+	return werr;
+}
+
+static WERROR regsubkey_ctr_index_for_keyname(struct regsubkey_ctr *ctr,
+					      const char *keyname,
+					      uint32 *idx)
+{
+	TDB_DATA data;
+
+	if ((ctr == NULL) || (keyname == NULL)) {
+		return WERR_INVALID_PARAM;
+	}
+
+	data = dbwrap_fetch_bystring(ctr->subkeys_hash, ctr, keyname);
+	if (data.dptr == NULL) {
+		return WERR_NOT_FOUND;
+	}
+
+	if (data.dsize != sizeof(*idx)) {
+		talloc_free(data.dptr);
+		return WERR_INVALID_DATATYPE;
+	}
+
+	if (idx != NULL) {
+		*idx = *(uint32 *)data.dptr;
+	}
+
+	talloc_free(data.dptr);
+	return WERR_OK;
+}
+
 /***********************************************************************
  Add a new key to the array
  **********************************************************************/
@@ -83,6 +152,7 @@ int regsubkey_ctr_get_seqnum(struct regsubkey_ctr *ctr)
 WERROR regsubkey_ctr_addkey( struct regsubkey_ctr *ctr, const char *keyname )
 {
 	char **newkeys;
+	WERROR werr;
 
 	if ( !keyname ) {
 		return WERR_OK;
@@ -108,6 +178,10 @@ WERROR regsubkey_ctr_addkey( struct regsubkey_ctr *ctr, const char *keyname )
 		 */
 		return WERR_NOMEM;
 	}
+
+	werr = regsubkey_ctr_hash_keyname(ctr, keyname, ctr->num_subkeys);
+	W_ERROR_NOT_OK_RETURN(werr);
+
 	ctr->num_subkeys++;
 
 	return WERR_OK;
@@ -117,30 +191,37 @@ WERROR regsubkey_ctr_addkey( struct regsubkey_ctr *ctr, const char *keyname )
  Delete a key from the array
  **********************************************************************/
 
-int regsubkey_ctr_delkey( struct regsubkey_ctr *ctr, const char *keyname )
+WERROR regsubkey_ctr_delkey( struct regsubkey_ctr *ctr, const char *keyname )
 {
-	int i;
+	WERROR werr;
+	uint32 idx, j;
 
-	if ( !keyname )
-		return ctr->num_subkeys;
+	if (keyname == NULL) {
+		return WERR_INVALID_PARAM;
+	}
 
 	/* make sure the keyname is actually already there */
 
-	for ( i=0; i<ctr->num_subkeys; i++ ) {
-		if ( strequal( ctr->subkeys[i], keyname ) )
-			break;
-	}
+	werr = regsubkey_ctr_index_for_keyname(ctr, keyname, &idx);
+	W_ERROR_NOT_OK_RETURN(werr);
 
-	if ( i == ctr->num_subkeys )
-		return ctr->num_subkeys;
+	werr = regsubkey_ctr_unhash_keyname(ctr, keyname);
+	W_ERROR_NOT_OK_RETURN(werr);
 
 	/* update if we have any keys left */
 	ctr->num_subkeys--;
-	if ( i < ctr->num_subkeys )
-		memmove(&ctr->subkeys[i], &ctr->subkeys[i+1],
-			sizeof(char*) * (ctr->num_subkeys-i));
+	if (idx < ctr->num_subkeys) {
+		memmove(&ctr->subkeys[idx], &ctr->subkeys[idx+1],
+			sizeof(char *) * (ctr->num_subkeys - idx));
 
-	return ctr->num_subkeys;
+		/* we have to re-hash rest of the array...  :-( */
+		for (j = idx; j < ctr->num_subkeys; j++) {
+			werr = regsubkey_ctr_hash_keyname(ctr, ctr->subkeys[j], j);
+			W_ERROR_NOT_OK_RETURN(werr);
+		}
+	}
+
+	return WERR_OK;
 }
 
 /***********************************************************************
@@ -149,18 +230,18 @@ int regsubkey_ctr_delkey( struct regsubkey_ctr *ctr, const char *keyname )
 
 bool regsubkey_ctr_key_exists( struct regsubkey_ctr *ctr, const char *keyname )
 {
-	int 	i;
+	WERROR werr;
 
 	if (!ctr->subkeys) {
 		return False;
 	}
 
-	for ( i=0; i<ctr->num_subkeys; i++ ) {
-		if ( strequal( ctr->subkeys[i],keyname ) )
-			return True;
+	werr = regsubkey_ctr_index_for_keyname(ctr, keyname, NULL);
+	if (!W_ERROR_IS_OK(werr)) {
+		return false;
 	}
 
-	return False;
+	return true;
 }
 
 /***********************************************************************
@@ -176,7 +257,7 @@ int regsubkey_ctr_numkeys( struct regsubkey_ctr *ctr )
  Retreive a specific key string
  **********************************************************************/
 
-char* regsubkey_ctr_specific_key( struct regsubkey_ctr *ctr, uint32 key_index )
+char* regsubkey_ctr_specific_key( struct regsubkey_ctr *ctr, uint32_t key_index )
 {
 	if ( ! (key_index < ctr->num_subkeys) )
 		return NULL;
