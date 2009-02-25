@@ -115,10 +115,12 @@ static NTSTATUS pdb_wbc_sam_enum_group_memberships(struct pdb_methods *methods,
 {
 	size_t i;
 	const char *username = pdb_get_username(user);
+	uint32_t num_groups;
 
-	if (!winbind_get_groups(mem_ctx, username, p_num_groups, pp_gids)) {
+	if (!winbind_get_groups(mem_ctx, username, &num_groups, pp_gids)) {
 		return NT_STATUS_NO_SUCH_USER;
 	}
+	*p_num_groups = num_groups;
 
 	if (*p_num_groups == 0) {
 		smb_panic("primary group missing");
