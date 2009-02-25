@@ -4693,6 +4693,10 @@ NTSTATUS pdb_nds_init(void);
 
 NTSTATUS pdb_smbpasswd_init(void) ;
 
+/* The following definitions come from passdb/pdb_wbc_sam.c  */
+
+NTSTATUS pdb_wbc_sam_init(void);
+
 /* The following definitions come from passdb/pdb_tdb.c  */
 
 bool init_sam_from_buffer_v2(struct samu *sampass, uint8 *buf, uint32 buflen);
