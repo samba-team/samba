@@ -296,6 +296,9 @@ struct tevent_req *tevent_req_post(struct tevent_req *req,
 
 bool tevent_req_is_in_progress(struct tevent_req *req);
 
+bool tevent_req_poll(struct tevent_req *req,
+		     struct tevent_context *ev);
+
 bool tevent_req_is_error(struct tevent_req *req,
 			 enum tevent_req_state *state,
 			 uint64_t *error);

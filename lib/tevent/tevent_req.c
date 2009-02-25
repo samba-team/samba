@@ -235,6 +235,21 @@ bool tevent_req_is_in_progress(struct tevent_req *req)
 	return false;
 }
 
+bool tevent_req_poll(struct tevent_req *req,
+		     struct tevent_context *ev)
+{
+	while (tevent_req_is_in_progress(req)) {
+		int ret;
+
+		ret = tevent_loop_once(ev);
+		if (ret != 0) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 bool tevent_req_is_error(struct tevent_req *req, enum tevent_req_state *state,
 			uint64_t *error)
 {
