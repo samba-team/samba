@@ -377,6 +377,49 @@ files_struct *file_find_print(void)
 }
 
 /****************************************************************************
+ Find any fsp open with a pathname below that of an already open path.
+****************************************************************************/
+
+bool file_find_subpath(files_struct *dir_fsp)
+{
+	files_struct *fsp;
+	size_t dlen;
+	char *d_fullname = talloc_asprintf(talloc_tos(),
+					"%s/%s",
+					dir_fsp->conn->connectpath,
+					dir_fsp->fsp_name);
+
+	if (!d_fullname) {
+		return false;
+	}
+
+	dlen = strlen(d_fullname);
+
+	for (fsp=Files;fsp;fsp=fsp->next) {
+		char *d1_fullname;
+
+		if (fsp == dir_fsp) {
+			continue;
+		}
+
+		d1_fullname = talloc_asprintf(talloc_tos(),
+					"%s/%s",
+					fsp->conn->connectpath,
+					fsp->fsp_name);
+
+		if (strnequal(d_fullname, d1_fullname, dlen)) {
+			TALLOC_FREE(d_fullname);
+			TALLOC_FREE(d1_fullname);
+			return true;
+		}
+		TALLOC_FREE(d1_fullname);
+	} 
+
+	TALLOC_FREE(d_fullname);
+	return false;
+}
+
+/****************************************************************************
  Sync open files on a connection.
 ****************************************************************************/
 
