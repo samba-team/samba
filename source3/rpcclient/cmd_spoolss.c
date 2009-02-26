@@ -2428,7 +2428,6 @@ static WERROR cmd_spoolss_enum_jobs(struct rpc_pipe_client *cli,
 {
 	WERROR result;
 	uint32 level = 1, num_jobs, i;
-	bool got_hnd = False;
 	const char *printername;
 	POLICY_HND hnd;
 	JOB_INFO_CTR ctr;
@@ -2451,8 +2450,6 @@ static WERROR cmd_spoolss_enum_jobs(struct rpc_pipe_client *cli,
 					       &hnd);
 	if (!W_ERROR_IS_OK(result))
 		goto done;
-
-	got_hnd = True;
 
 	/* Enumerate ports */
 
@@ -2477,7 +2474,7 @@ static WERROR cmd_spoolss_enum_jobs(struct rpc_pipe_client *cli,
 	}
 
 done:
-	if (got_hnd)
+	if (is_valid_policy_hnd(&hnd))
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &hnd, NULL);
 
 	return result;
@@ -2492,7 +2489,6 @@ static WERROR cmd_spoolss_enum_data( struct rpc_pipe_client *cli,
 {
 	WERROR result;
 	uint32 i=0, val_needed, data_needed;
-	bool got_hnd = False;
 	const char *printername;
 	POLICY_HND hnd;
 
@@ -2512,8 +2508,6 @@ static WERROR cmd_spoolss_enum_data( struct rpc_pipe_client *cli,
 	if (!W_ERROR_IS_OK(result))
 		goto done;
 
-	got_hnd = True;
-
 	/* Enumerate data */
 
 	result = rpccli_spoolss_enumprinterdata(cli, mem_ctx, &hnd, i, 0, 0,
@@ -2531,7 +2525,7 @@ static WERROR cmd_spoolss_enum_data( struct rpc_pipe_client *cli,
 		result = W_ERROR(ERRsuccess);
 
 done:
-	if (got_hnd)
+	if (is_valid_policy_hnd(&hnd))
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &hnd, NULL);
 
 	return result;
@@ -2546,7 +2540,6 @@ static WERROR cmd_spoolss_enum_data_ex( struct rpc_pipe_client *cli,
 {
 	WERROR result;
 	uint32 i;
-	bool got_hnd = False;
 	const char *printername;
 	const char *keyname = NULL;
 	POLICY_HND hnd;
@@ -2570,8 +2563,6 @@ static WERROR cmd_spoolss_enum_data_ex( struct rpc_pipe_client *cli,
 	if (!W_ERROR_IS_OK(result))
 		goto done;
 
-	got_hnd = True;
-
 	/* Enumerate subkeys */
 
 	if ( !(ctr = TALLOC_ZERO_P( mem_ctx, REGVAL_CTR )) )
@@ -2589,7 +2580,7 @@ static WERROR cmd_spoolss_enum_data_ex( struct rpc_pipe_client *cli,
 	TALLOC_FREE( ctr );
 
 done:
-	if (got_hnd)
+	if (is_valid_policy_hnd(&hnd))
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &hnd, NULL);
 
 	return result;
@@ -2603,7 +2594,6 @@ static WERROR cmd_spoolss_enum_printerkey( struct rpc_pipe_client *cli,
 					     const char **argv)
 {
 	WERROR result;
-	bool got_hnd = False;
 	const char *printername;
 	const char *keyname = NULL;
 	POLICY_HND hnd;
@@ -2630,8 +2620,6 @@ static WERROR cmd_spoolss_enum_printerkey( struct rpc_pipe_client *cli,
 	if (!W_ERROR_IS_OK(result))
 		goto done;
 
-	got_hnd = True;
-
 	/* Enumerate subkeys */
 
 	result = rpccli_spoolss_enumprinterkey(cli, mem_ctx, &hnd, keyname, &keylist, NULL);
@@ -2655,7 +2643,7 @@ done:
 
 	SAFE_FREE(keylist);
 
-	if (got_hnd)
+	if (is_valid_policy_hnd(&hnd))
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &hnd, NULL);
 
 	return result;
@@ -2671,7 +2659,6 @@ static WERROR cmd_spoolss_rffpcnex(struct rpc_pipe_client *cli,
 	const char *printername;
 	const char *clientname;
 	POLICY_HND hnd;
-	bool got_hnd = False;
 	WERROR result;
 	NTSTATUS status;
 	struct spoolss_NotifyOption option;
@@ -2694,8 +2681,6 @@ static WERROR cmd_spoolss_rffpcnex(struct rpc_pipe_client *cli,
 		printf("Error opening %s\n", argv[1]);
 		goto done;
 	}
-
-	got_hnd = True;
 
 	/* Create spool options */
 
@@ -2748,7 +2733,7 @@ static WERROR cmd_spoolss_rffpcnex(struct rpc_pipe_client *cli,
 	}
 
 done:
-	if (got_hnd)
+	if (is_valid_policy_hnd(&hnd))
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &hnd, NULL);
 
 	return result;
