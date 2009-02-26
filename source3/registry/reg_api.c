@@ -1062,6 +1062,7 @@ static WERROR reg_deletekey_recursive_internal(TALLOC_CTX *ctx,
 	WERROR werr = WERR_OK;
 	struct registry_key *key;
 	char *subkey_name = NULL;
+	uint32 i;
 
 	mem_ctx = talloc_new(ctx);
 	if (mem_ctx == NULL) {
@@ -1075,24 +1076,20 @@ static WERROR reg_deletekey_recursive_internal(TALLOC_CTX *ctx,
 		goto done;
 	}
 
-	while (W_ERROR_IS_OK(werr = reg_enumkey(mem_ctx, key, 0,
-						&subkey_name, NULL)))
-	{
-		werr = reg_deletekey_recursive_internal(mem_ctx, key,
-							subkey_name,
-							true);
-		if (!W_ERROR_IS_OK(werr)) {
-			goto done;
-		}
-	}
-	if (!W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, werr)) {
-		DEBUG(1, ("reg_deletekey_recursive_internal: "
-			  "Error enumerating subkeys: %s\n",
-			  win_errstr(werr)));
-		goto done;
-	}
+	werr = fill_subkey_cache(key);
+	W_ERROR_NOT_OK_GOTO_DONE(werr);
 
-	werr = WERR_OK;
+	/*
+	 * loop from top to bottom for perfomance:
+	 * this way, we need to rehash the regsubkey containers less
+	 */
+	for (i = regsubkey_ctr_numkeys(key->subkeys) ; i > 0; i--) {
+		subkey_name = regsubkey_ctr_specific_key(key->subkeys, i-1);
+		werr = reg_deletekey_recursive_internal(mem_ctx, key,
+					subkey_name,
+					true);
+		W_ERROR_NOT_OK_GOTO_DONE(werr);
+	}
 
 	if (del_key) {
 		/* now delete the actual key */
