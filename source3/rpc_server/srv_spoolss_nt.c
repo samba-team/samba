@@ -110,7 +110,7 @@ static int nt_printj_status(int v)
 	case LPQ_DELETED:
 		return JOB_STATUS_DELETED;
 	case LPQ_BLOCKED:
-		return JOB_STATUS_BLOCKED;
+		return JOB_STATUS_BLOCKED_DEVQ;
 	case LPQ_USER_INTERVENTION:
 		return JOB_STATUS_USER_INTERVENTION;
 	}
