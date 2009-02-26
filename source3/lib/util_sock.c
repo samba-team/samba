@@ -1057,7 +1057,6 @@ static void open_socket_out_connected(struct tevent_req *subreq)
 	ret = async_connect_recv(subreq, &sys_errno);
 	TALLOC_FREE(subreq);
 	if (ret == 0) {
-		DEBUG(0, ("calling tevent_req_done from open_socket_out_connected\n"));
 		tevent_req_done(req);
 		return;
 	}
