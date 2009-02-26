@@ -228,6 +228,58 @@ WERROR rpccli_spoolss_getprinter(struct rpc_pipe_client *cli,
 	return werror;
 }
 
+/**********************************************************************
+ convencience wrapper around rpccli_spoolss_GetJob
+**********************************************************************/
+
+WERROR rpccli_spoolss_getjob(struct rpc_pipe_client *cli,
+			     TALLOC_CTX *mem_ctx,
+			     struct policy_handle *handle,
+			     uint32_t job_id,
+			     uint32_t level,
+			     uint32_t offered,
+			     union spoolss_JobInfo *info)
+{
+	NTSTATUS status;
+	WERROR werror;
+	uint32_t needed;
+	DATA_BLOB buffer;
+
+	if (offered > 0) {
+		buffer = data_blob_talloc_zero(mem_ctx, offered);
+		W_ERROR_HAVE_NO_MEMORY(buffer.data);
+	}
+
+	status = rpccli_spoolss_GetJob(cli, mem_ctx,
+				       handle,
+				       job_id,
+				       level,
+				       (offered > 0) ? &buffer : NULL,
+				       offered,
+				       info,
+				       &needed,
+				       &werror);
+
+	if (W_ERROR_EQUAL(werror, WERR_INSUFFICIENT_BUFFER)) {
+		offered = needed;
+		buffer = data_blob_talloc_zero(mem_ctx, needed);
+		W_ERROR_HAVE_NO_MEMORY(buffer.data);
+
+		status = rpccli_spoolss_GetJob(cli, mem_ctx,
+					       handle,
+					       job_id,
+					       level,
+					       &buffer,
+					       offered,
+					       info,
+					       &needed,
+					       &werror);
+	}
+
+	return werror;
+}
+
+
 /*********************************************************************
  Decode various spoolss rpc's and info levels
  ********************************************************************/

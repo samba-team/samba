@@ -5497,6 +5497,13 @@ WERROR rpccli_spoolss_getprinter(struct rpc_pipe_client *cli,
 				 uint32_t level,
 				 uint32_t offered,
 				 union spoolss_PrinterInfo *info);
+WERROR rpccli_spoolss_getjob(struct rpc_pipe_client *cli,
+			     TALLOC_CTX *mem_ctx,
+			     struct policy_handle *handle,
+			     uint32_t job_id,
+			     uint32_t level,
+			     uint32_t offered,
+			     union spoolss_JobInfo *info);
 WERROR rpccli_spoolss_enum_printers(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				 char *name, uint32 flags, uint32 level,
 				 uint32 *num_printers, PRINTER_INFO_CTR *ctr);
