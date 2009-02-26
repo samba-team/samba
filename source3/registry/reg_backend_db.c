@@ -565,6 +565,35 @@ static WERROR regdb_delete_subkeylist(const char *keyname)
 	return regdb_delete_key_with_prefix(keyname, NULL);
 }
 
+static WERROR regdb_delete_key_lists(const char *keyname)
+{
+	WERROR werr;
+
+	werr = regdb_delete_values(keyname);
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(1, (__location__ " Deleting %s/%s failed: %s\n",
+			  REG_VALUE_PREFIX, keyname, win_errstr(werr)));
+		goto done;
+	}
+
+	werr = regdb_delete_secdesc(keyname);
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(1, (__location__ " Deleting %s/%s failed: %s\n",
+			  REG_SECDESC_PREFIX, keyname, win_errstr(werr)));
+		goto done;
+	}
+
+	werr = regdb_delete_subkeylist(keyname);
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(1, (__location__ " Deleting %s failed: %s\n",
+			  keyname, win_errstr(werr)));
+		goto done;
+	}
+
+done:
+	return werr;
+}
+
 /***********************************************************************
  Add subkey strings to the registry tdb under a defined key
  fmt is the same format as tdb_pack except this function only supports
@@ -779,37 +808,9 @@ bool regdb_store_keys(const char *key, struct regsubkey_ctr *ctr)
 		if (!path) {
 			goto cancel;
 		}
-		path = normalize_reg_path(ctx, path);
-		if (!path) {
-			goto cancel;
-		}
 
-		/* (a) Delete the value list for this key */
-
-		werr = regdb_delete_values(path);
-		if (!W_ERROR_IS_OK(werr)) {
-			DEBUG(1, (__location__ " Deleting %s/%s failed: %s\n",
-				  REG_VALUE_PREFIX, path, win_errstr(werr)));
-			goto cancel;
-		}
-
-		/* (b) Delete the secdesc for this key */
-
-		werr = regdb_delete_secdesc(path);
-		if (!W_ERROR_IS_OK(werr)) {
-			DEBUG(1, (__location__ " Deleting %s/%s failed: %s\n",
-				  REG_SECDESC_PREFIX, path, win_errstr(werr)));
-			goto cancel;
-		}
-
-		/* (c) Delete the list of subkeys of this key */
-
-		werr = regdb_delete_subkeylist(path);
-		if (!W_ERROR_IS_OK(werr)) {
-			DEBUG(1, (__location__ " Deleting %s failed: %s\n",
-				  path, win_errstr(werr)));
-			goto cancel;
-		}
+		werr = regdb_delete_key_lists(path);
+		W_ERROR_NOT_OK_GOTO(werr, cancel);
 
 		TALLOC_FREE(path);
 	}
