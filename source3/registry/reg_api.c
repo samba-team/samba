@@ -584,21 +584,7 @@ WERROR reg_deletekey(struct registry_key *parent, const char *path)
 		goto done;
 	}
 
-	err = fill_subkey_cache(parent);
-	W_ERROR_NOT_OK_GOTO_DONE(err);
-
-	err = regsubkey_ctr_delkey(parent->subkeys, name);
-	W_ERROR_NOT_OK_GOTO_DONE(err);
-
-	if (!store_reg_keys(parent->key, parent->subkeys)) {
-		TALLOC_FREE(parent->subkeys);
-		err = WERR_REG_IO_FAILURE;
-		goto done;
-	}
-
-	regkey_set_secdesc(key->key, NULL);
-
-	err = WERR_OK;
+	err = delete_reg_subkey(parent->key, name);
 
 done:
 	TALLOC_FREE(mem_ctx);
