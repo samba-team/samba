@@ -120,5 +120,46 @@ int _tsocket_address_create_socket(const struct tsocket_address *addr,
 	_tsocket_address_create_socket(addr, type, mem_ctx, sock,\
 				       __location__)
 
+/*
+ * BSD sockets: inet, inet6 and unix
+ */
+
+
+int _tsocket_address_inet_from_strings(TALLOC_CTX *mem_ctx,
+				       const char *fam,
+				       const char *addr,
+				       uint16_t port,
+				       struct tsocket_address **_addr,
+				       const char *location);
+#define tsocket_address_inet_from_strings(mem_ctx, fam, addr, port, _addr) \
+	_tsocket_address_inet_from_strings(mem_ctx, fam, addr, port, _addr, \
+					   __location__)
+
+char *tsocket_address_inet_addr_string(const struct tsocket_address *addr,
+				       TALLOC_CTX *mem_ctx);
+uint16_t tsocket_address_inet_port(const struct tsocket_address *addr);
+int tsocket_address_inet_set_port(struct tsocket_address *addr,
+				  uint16_t port);
+void tsocket_address_inet_set_broadcast(struct tsocket_address *addr,
+					bool broadcast);
+
+int _tsocket_address_unix_from_path(TALLOC_CTX *mem_ctx,
+				    const char *path,
+				    struct tsocket_address **_addr,
+				    const char *location);
+#define tsocket_address_unix_from_path(mem_ctx, path, _addr) \
+	_tsocket_address_unix_from_path(mem_ctx, path, _addr, \
+					__location__)
+char *tsocket_address_unix_path(const struct tsocket_address *addr,
+				TALLOC_CTX *mem_ctx);
+
+int _tsocket_context_bsd_wrap_existing(TALLOC_CTX *mem_ctx,
+				       int fd, bool close_on_disconnect,
+				       struct tsocket_context **_sock,
+				       const char *location);
+#define tsocket_context_bsd_wrap_existing(mem_ctx, fd, cod, _sock) \
+	_tsocket_context_bsd_wrap_existing(mem_ctx, fd, cod, _sock, \
+					   __location__)
+
 #endif /* _TSOCKET_H */
 
