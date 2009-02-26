@@ -8906,6 +8906,7 @@ files_struct *file_find_fsp(files_struct *orig_fsp);
 files_struct *file_find_di_first(struct file_id id);
 files_struct *file_find_di_next(files_struct *start_fsp);
 files_struct *file_find_print(void);
+bool file_find_subpath(files_struct *dir_fsp);
 void file_sync_all(connection_struct *conn);
 void file_free(files_struct *fsp);
 files_struct *file_fnum(uint16 fnum);
