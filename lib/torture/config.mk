@@ -3,7 +3,9 @@
 PUBLIC_DEPENDENCIES = \
 		LIBSAMBA-HOSTCONFIG \
 		LIBSAMBA-UTIL \
-		LIBTALLOC
+		LIBSAMBA-ERRORS \
+		LIBTALLOC \
+		LIBTEVENT
 CFLAGS = -I$(libtorturesrcdir) -I$(libtorturesrcdir)/../
 
 torture_VERSION = 0.0.1
