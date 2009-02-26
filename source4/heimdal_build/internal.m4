@@ -77,6 +77,7 @@ AC_CHECK_FUNCS([				\
 	atexit					\
 	cgetent					\
 	getprogname				\
+	setprogname				\
 	inet_aton				\
 	gethostname				\
 	getnameinfo				\
