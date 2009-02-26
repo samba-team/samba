@@ -294,14 +294,6 @@ typedef struct spool_r_getprinterdata
 }
 SPOOL_R_GETPRINTERDATA;
 
-typedef struct add_jobinfo_1
-{
-	UNISTR path;
-	uint32 job_number;
-}
-ADD_JOBINFO_1;
-
-
 /*
  * I'm really wondering how many different time formats
  * I will have to cope with
