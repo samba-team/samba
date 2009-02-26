@@ -40,6 +40,11 @@ static WERROR smbconf_create_subkey(const char *key, const char *subkey)
 	return regdb_ops.create_subkey(key, subkey);
 }
 
+static WERROR smbconf_delete_subkey(const char *key, const char *subkey)
+{
+	return regdb_ops.delete_subkey(key, subkey);
+}
+
 static int smbconf_fetch_values( const char *key, REGVAL_CTR *val )
 {
 	return regdb_ops.fetch_values(key, val);
@@ -85,6 +90,7 @@ REGISTRY_OPS smbconf_reg_ops = {
 	.store_subkeys = smbconf_store_keys,
 	.store_values = smbconf_store_values,
 	.create_subkey = smbconf_create_subkey,
+	.delete_subkey = smbconf_delete_subkey,
 	.reg_access_check = smbconf_reg_access_check,
 	.get_secdesc = smbconf_get_secdesc,
 	.set_secdesc = smbconf_set_secdesc,
