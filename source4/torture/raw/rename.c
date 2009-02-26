@@ -516,6 +516,91 @@ done:
 	return ret;
 }
 
+/*
+  test dir rename.
+*/
+static bool test_dir_rename(struct torture_context *tctx, struct smbcli_state *cli)
+{
+        union smb_open io;
+	union smb_rename ren_io;
+	NTSTATUS status;
+        const char *dname1 = BASEDIR "\\dir_for_rename";
+        const char *dname2 = BASEDIR "\\renamed_dir";
+        const char *fname = BASEDIR "\\dir_for_rename\\file.txt";
+	bool ret = true;
+	int fnum = -1;
+
+        printf("Checking rename on a directory containing an open file.\n");
+
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
+
+        /* create a directory */
+        smbcli_rmdir(cli->tree, dname1);
+        smbcli_rmdir(cli->tree, dname2);
+        smbcli_unlink(cli->tree, dname1);
+        smbcli_unlink(cli->tree, dname2);
+
+        ZERO_STRUCT(io);
+        io.generic.level = RAW_OPEN_NTCREATEX;
+        io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+        io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+        io.ntcreatex.in.alloc_size = 0;
+        io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+        io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
+        io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+        io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+        io.ntcreatex.in.fname = dname1;
+        status = smb_raw_open(cli->tree, tctx, &io);
+        CHECK_STATUS(status, NT_STATUS_OK);
+
+        fnum = io.ntcreatex.out.file.fnum;
+	smbcli_close(cli->tree, fnum);
+
+        /* Now create and hold open a file. */
+        ZERO_STRUCT(io);
+
+        io.generic.level = RAW_OPEN_NTCREATEX;
+        io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED;
+        io.ntcreatex.in.root_fid = 0;
+        io.ntcreatex.in.alloc_size = 0;
+        io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+        io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+        io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE | NTCREATEX_SHARE_ACCESS_DELETE;
+        io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+        io.ntcreatex.in.create_options = 0;
+        io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+        io.ntcreatex.in.security_flags = 0;
+        io.ntcreatex.in.fname = fname;
+
+        /* Create the file. */
+
+        status = smb_raw_open(cli->tree, tctx, &io);
+        CHECK_STATUS(status, NT_STATUS_OK);
+        fnum = io.ntcreatex.out.file.fnum;
+
+        /* Now try and rename the directory. */
+
+        ZERO_STRUCT(ren_io);
+	ren_io.generic.level = RAW_RENAME_RENAME;
+	ren_io.rename.in.pattern1 = dname1;
+	ren_io.rename.in.pattern2 = dname2;
+	ren_io.rename.in.attrib = 0;
+	
+	status = smb_raw_rename(cli->tree, &ren_io);
+	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+
+done:
+	
+	if (fnum != -1) {
+		smbcli_close(cli->tree, fnum);
+	}
+	smb_raw_exit(cli->session);
+	smbcli_deltree(cli->tree, BASEDIR);
+	return ret;
+}
+
 extern bool test_trans2rename(struct torture_context *tctx, struct smbcli_state *cli1, struct smbcli_state *cli2);
 extern bool test_nttransrename(struct torture_context *tctx, struct smbcli_state *cli1);
 
@@ -533,6 +618,7 @@ struct torture_suite *torture_raw_rename(TALLOC_CTX *mem_ctx)
 	torture_suite_add_1smb_test(suite, "nttransrename", test_nttransrename);
 	torture_suite_add_1smb_test(suite, "ntrename", test_ntrename);
 	torture_suite_add_1smb_test(suite, "osxrename", test_osxrename);
+	torture_suite_add_1smb_test(suite, "directory rename", test_dir_rename);
 
 	return suite;
 }
