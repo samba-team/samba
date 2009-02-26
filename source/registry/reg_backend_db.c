@@ -1551,7 +1551,6 @@ static WERROR regdb_set_secdesc(const char *key,
 {
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 	char *tdbkey;
-	NTSTATUS status;
 	WERROR err = WERR_NOMEM;
 	TDB_DATA tdbdata;
 
@@ -1568,27 +1567,18 @@ static WERROR regdb_set_secdesc(const char *key,
 
 	if (secdesc == NULL) {
 		/* assuming a delete */
-		status = dbwrap_trans_delete_bystring(regdb, tdbkey);
-		if (NT_STATUS_IS_OK(status)) {
-			err = WERR_OK;
-		} else {
-			err = ntstatus_to_werror(status);
-		}
+		err = ntstatus_to_werror(dbwrap_trans_delete_bystring(regdb,
+								      tdbkey));
 		goto done;
 	}
 
 	err = ntstatus_to_werror(marshall_sec_desc(mem_ctx, secdesc,
 						   &tdbdata.dptr,
 						   &tdbdata.dsize));
-	if (!W_ERROR_IS_OK(err)) {
-		goto done;
-	}
+	W_ERROR_NOT_OK_GOTO_DONE(err);
 
-	status = dbwrap_trans_store_bystring(regdb, tdbkey, tdbdata, 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		err = ntstatus_to_werror(status);
-		goto done;
-	}
+	err = ntstatus_to_werror(dbwrap_trans_store_bystring(regdb, tdbkey,
+							     tdbdata, 0));
 
  done:
 	TALLOC_FREE(mem_ctx);
