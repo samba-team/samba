@@ -4353,10 +4353,10 @@ static bool construct_printer_info_7(Printer_entry *print_hnd, PRINTER_INFO_7 *p
 		strupper_m(guid_str);
 		init_unistr(&printer->guid, guid_str);
 		SAFE_FREE(guid_str);
-		printer->action = SPOOL_DS_PUBLISH;
+		printer->action = DSPRINT_PUBLISH;
 	} else {
 		init_unistr(&printer->guid, "");
-		printer->action = SPOOL_DS_UNPUBLISH;
+		printer->action = DSPRINT_UNPUBLISH;
 	}
 
 	return True;

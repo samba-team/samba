@@ -428,11 +428,6 @@ typedef struct printer_info_6
 }
 PRINTER_INFO_6;
 
-#define SPOOL_DS_PUBLISH	1
-#define SPOOL_DS_UPDATE		2
-#define SPOOL_DS_UNPUBLISH	4
-#define SPOOL_DS_PENDING        0x80000000
-
 typedef struct printer_info_7
 {
 	UNISTR guid; /* text form of printer guid */

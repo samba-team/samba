@@ -1313,13 +1313,13 @@ static NTSTATUS rpc_printer_publish_internals_args(struct rpc_pipe_client *pipe_
 
 		/* check action and set string */
 		switch (action) {
-		case SPOOL_DS_PUBLISH:
+		case DSPRINT_PUBLISH:
 			action_str = "published";
 			break;
-		case SPOOL_DS_UPDATE:
+		case DSPRINT_UPDATE:
 			action_str = "updated";
 			break;
-		case SPOOL_DS_UNPUBLISH:
+		case DSPRINT_UNPUBLISH:
 			action_str = "unpublished";
 			break;
 		default:
@@ -1369,7 +1369,7 @@ NTSTATUS rpc_printer_publish_publish_internals(struct net_context *c,
 						int argc,
 						const char **argv)
 {
-	return rpc_printer_publish_internals_args(pipe_hnd, mem_ctx, argc, argv, SPOOL_DS_PUBLISH);
+	return rpc_printer_publish_internals_args(pipe_hnd, mem_ctx, argc, argv, DSPRINT_PUBLISH);
 }
 
 NTSTATUS rpc_printer_publish_unpublish_internals(struct net_context *c,
@@ -1381,7 +1381,7 @@ NTSTATUS rpc_printer_publish_unpublish_internals(struct net_context *c,
 						int argc,
 						const char **argv)
 {
-	return rpc_printer_publish_internals_args(pipe_hnd, mem_ctx, argc, argv, SPOOL_DS_UNPUBLISH);
+	return rpc_printer_publish_internals_args(pipe_hnd, mem_ctx, argc, argv, DSPRINT_UNPUBLISH);
 }
 
 NTSTATUS rpc_printer_publish_update_internals(struct net_context *c,
@@ -1393,7 +1393,7 @@ NTSTATUS rpc_printer_publish_update_internals(struct net_context *c,
 						int argc,
 						const char **argv)
 {
-	return rpc_printer_publish_internals_args(pipe_hnd, mem_ctx, argc, argv, SPOOL_DS_UPDATE);
+	return rpc_printer_publish_internals_args(pipe_hnd, mem_ctx, argc, argv, DSPRINT_UPDATE);
 }
 
 /**
@@ -1466,16 +1466,16 @@ NTSTATUS rpc_printer_publish_list_internals(struct net_context *c,
 		}
 		state = info.info7.action;
 		switch (state) {
-			case SPOOL_DS_PUBLISH:
+			case DSPRINT_PUBLISH:
 				printf("printer [%s] is published", sharename);
 				if (c->opt_verbose)
 					printf(", guid: %s", info.info7.guid);
 				printf("\n");
 				break;
-			case SPOOL_DS_UNPUBLISH:
+			case DSPRINT_UNPUBLISH:
 				printf("printer [%s] is unpublished\n", sharename);
 				break;
-			case SPOOL_DS_UPDATE:
+			case DSPRINT_UPDATE:
 				printf("printer [%s] is currently updating\n", sharename);
 				break;
 			default:
@@ -2348,7 +2348,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 			if (!net_spoolss_getprinter(pipe_hnd_dst, mem_ctx, &hnd_dst, 7, &info_dst_publish))
 				goto done;
 
-			info_dst_publish.info7.action = SPOOL_DS_PUBLISH;
+			info_dst_publish.info7.action = DSPRINT_PUBLISH;
 
 			/* ignore false from setprinter due to WERR_IO_PENDING */
 			net_spoolss_setprinter(pipe_hnd_dst, mem_ctx, &hnd_dst, 7, &info_dst_publish);
