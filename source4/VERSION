@@ -57,7 +57,7 @@ SAMBA_VERSION_TP_RELEASE=
 # e.g. SAMBA_VERSION_ALPHA_RELEASE=1                   #
 #  ->  "4.0.0alpha1"                                   #
 ########################################################
-SAMBA_VERSION_ALPHA_RELEASE=7
+SAMBA_VERSION_ALPHA_RELEASE=8
 
 ########################################################
 # For 'pre' releases the version will be               #
@@ -89,7 +89,7 @@ SAMBA_VERSION_RC_RELEASE=
 # e.g. SAMBA_VERSION_IS_SVN_SNAPSHOT=yes               #
 #  ->  "3.0.0-SVN-build-199"                           #
 ########################################################
-SAMBA_VERSION_IS_GIT_SNAPSHOT=no
+SAMBA_VERSION_IS_GIT_SNAPSHOT=yes
 
 ########################################################
 # This is for specifying a release nickname            #
