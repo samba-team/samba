@@ -378,6 +378,27 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x02 */
+
+	/* JOB status codes. */
+
+	const int JOB_STATUS_QUEUED = 0x0000;
+
+	typedef [bitmap32bit] bitmap {
+		JOB_STATUS_PAUSED		= 0x00000001,
+		JOB_STATUS_ERROR		= 0x00000002,
+		JOB_STATUS_DELETING		= 0x00000004,
+		JOB_STATUS_SPOOLING		= 0x00000008,
+		JOB_STATUS_PRINTING		= 0x00000010,
+		JOB_STATUS_OFFLINE		= 0x00000020,
+		JOB_STATUS_PAPEROUT		= 0x00000040,
+		JOB_STATUS_PRINTED		= 0x00000080,
+		JOB_STATUS_DELETED		= 0x00000100,
+		JOB_STATUS_BLOCKED_DEVQ		= 0x00000200,
+		JOB_STATUS_USER_INTERVENTION	= 0x00000400,
+		JOB_STATUS_RESTART		= 0x00000800,
+		JOB_STATUS_COMPLETE		= 0x00001000
+	} spoolss_JobStatus;
+
 	typedef struct {
 		uint32 job_id;
 		[relative] nstring *printer_name;
@@ -386,7 +407,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[relative] nstring *document_name;
 		[relative] nstring *data_type;
 		[relative] nstring *text_status;
-		uint32 status;
+		spoolss_JobStatus status;
 		uint32 priority;
 		uint32 position;
 		uint32 total_pages;
