@@ -5,7 +5,7 @@ PUBLIC_DEPENDENCIES = \
 		CHARSET EXECINFO
 
 LIBSAMBA-UTIL_OBJ_FILES = $(addprefix $(libutilsrcdir)/, \
-	xfile.o \
+		xfile.o \
 		debug.o \
 		fault.o \
 		signal.o \
@@ -67,6 +67,13 @@ WRAP_XATTR_OBJ_FILES = $(libutilsrcdir)/wrap_xattr.o
 PUBLIC_DEPENDENCIES = LIBTDB
 
 UTIL_TDB_OBJ_FILES = $(libutilsrcdir)/util_tdb.o
+
+[SUBSYSTEM::UTIL_TEVENT]
+PUBLIC_DEPENDENCIES = LIBTEVENT
+
+UTIL_TEVENT_OBJ_FILES = $(addprefix $(libutilsrcdir)/, \
+			tevent_unix.o \
+			tevent_ntstatus.o)
 
 [SUBSYSTEM::UTIL_LDB]
 PUBLIC_DEPENDENCIES = LIBLDB
