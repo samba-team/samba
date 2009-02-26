@@ -2422,6 +2422,47 @@ static void display_job_info_2(JOB_INFO_2 *job)
 /****************************************************************************
 ****************************************************************************/
 
+static void display_job_info1(struct spoolss_JobInfo1 *r)
+{
+	printf("%d: jobid[%d]: %s %s %s %d/%d pages\n", r->position, r->job_id,
+	       r->user_name, r->document_name, r->text_status, r->pages_printed,
+	       r->total_pages);
+}
+
+/****************************************************************************
+****************************************************************************/
+
+static void display_job_info2(struct spoolss_JobInfo2 *r)
+{
+	printf("%d: jobid[%d]: %s %s %s %d/%d pages, %d bytes\n",
+	       r->position, r->job_id,
+	       r->user_name, r->document_name, r->text_status, r->pages_printed,
+	       r->total_pages, r->size);
+}
+
+/****************************************************************************
+****************************************************************************/
+
+static void display_job_info3(struct spoolss_JobInfo3 *r)
+{
+	printf("jobid[%d], next_jobid[%d]\n",
+		r->job_id, r->next_job_id);
+}
+
+/****************************************************************************
+****************************************************************************/
+
+static void display_job_info4(struct spoolss_JobInfo4 *r)
+{
+	printf("%d: jobid[%d]: %s %s %s %d/%d pages, %d/%d bytes\n",
+	       r->position, r->job_id,
+	       r->user_name, r->document_name, r->text_status, r->pages_printed,
+	       r->total_pages, r->size, r->size_high);
+}
+
+/****************************************************************************
+****************************************************************************/
+
 static WERROR cmd_spoolss_enum_jobs(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx, int argc,
 				      const char **argv)
@@ -2479,6 +2520,83 @@ done:
 
 	return result;
 }
+
+/****************************************************************************
+****************************************************************************/
+
+static WERROR cmd_spoolss_get_job(struct rpc_pipe_client *cli,
+				  TALLOC_CTX *mem_ctx, int argc,
+				  const char **argv)
+{
+	WERROR result;
+	const char *printername;
+	struct policy_handle hnd;
+	uint32_t job_id;
+	uint32_t level = 1;
+	union spoolss_JobInfo info;
+
+	if (argc < 3 || argc > 4) {
+		printf("Usage: %s printername job_id [level]\n", argv[0]);
+		return WERR_OK;
+	}
+
+	job_id = atoi(argv[2]);
+
+	if (argc == 4) {
+		level = atoi(argv[3]);
+	}
+
+	/* Open printer handle */
+
+	RPCCLIENT_PRINTERNAME(printername, cli, argv[1]);
+
+	result = rpccli_spoolss_openprinter_ex(cli, mem_ctx,
+					       printername,
+					       SEC_FLAG_MAXIMUM_ALLOWED,
+					       &hnd);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	/* Enumerate ports */
+
+	result = rpccli_spoolss_getjob(cli, mem_ctx,
+				       &hnd,
+				       job_id,
+				       level,
+				       0,
+				       &info);
+
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	switch (level) {
+	case 1:
+		display_job_info1(&info.info1);
+		break;
+	case 2:
+		display_job_info2(&info.info2);
+		break;
+	case 3:
+		display_job_info3(&info.info3);
+		break;
+	case 4:
+		display_job_info4(&info.info4);
+		break;
+	default:
+		d_printf("unknown info level %d\n", level);
+		break;
+	}
+
+done:
+	if (is_valid_policy_hnd(&hnd)) {
+		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &hnd, NULL);
+	}
+
+	return result;
+}
+
 
 /****************************************************************************
 ****************************************************************************/
@@ -2954,6 +3072,7 @@ struct cmd_set spoolss_commands[] = {
 	{ "enumdataex",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_data_ex,	&syntax_spoolss, NULL, "Enumerate printer data for a key",    "" },
 	{ "enumkey",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_printerkey,	&syntax_spoolss, NULL, "Enumerate printer keys",              "" },
 	{ "enumjobs",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_jobs,          &syntax_spoolss, NULL, "Enumerate print jobs",                "" },
+	{ "getjob",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_get_job,		&syntax_spoolss, NULL, "Get print job",                       "" },
 	{ "enumports", 		RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_ports, 	&syntax_spoolss, NULL, "Enumerate printer ports",             "" },
 	{ "enumdrivers", 	RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_drivers, 	&syntax_spoolss, NULL, "Enumerate installed printer drivers", "" },
 	{ "enumprinters", 	RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_printers, 	&syntax_spoolss, NULL, "Enumerate printers",                  "" },
