@@ -3099,20 +3099,3 @@ bool make_spoolss_q_enumforms(SPOOL_Q_ENUMFORMS *q_u, POLICY_HND *handle,
 
 	return True;
 }
-
-/*******************************************************************
- * init a structure.
- ********************************************************************/
-
-bool make_spoolss_q_getjob(SPOOL_Q_GETJOB *q_u, POLICY_HND *handle, 
-			   uint32 jobid, uint32 level, RPC_BUFFER *buffer,
-			   uint32 offered)
-{
-        memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
-        q_u->jobid = jobid;
-        q_u->level = level;
-        q_u->buffer = buffer;
-        q_u->offered = offered;
-
-	return True;
-}
