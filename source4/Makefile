@@ -146,7 +146,7 @@ endif
 clean::
 	@find ../lib ../libcli ../librpc ../nsswitch -name '*.o' -o -name '*.ho' | xargs rm -f
 
-PUBLIC_HEADERS += $(srcdir)/version.h
+PUBLIC_HEADERS += ./version.h
 
 libraries:: $(STATIC_LIBS) $(SHARED_LIBS)
 modules:: $(PLUGINS)
