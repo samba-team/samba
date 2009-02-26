@@ -510,6 +510,61 @@ int regdb_get_seqnum(void)
 	return regdb->get_seqnum(regdb);
 }
 
+
+static WERROR regdb_delete_key_with_prefix(const char *keyname,
+					   const char *prefix)
+{
+	char *path;
+	WERROR werr = WERR_NOMEM;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
+
+	if (keyname == NULL) {
+		werr = WERR_INVALID_PARAM;
+		goto done;
+	}
+
+	if (prefix == NULL) {
+		path = discard_const_p(char, keyname);
+	} else {
+		path = talloc_asprintf(mem_ctx, "%s/%s", prefix, keyname);
+		if (path == NULL) {
+			goto done;
+		}
+	}
+
+	path = normalize_reg_path(mem_ctx, path);
+	if (path == NULL) {
+		goto done;
+	}
+
+	werr = ntstatus_to_werror(dbwrap_delete_bystring(regdb, path));
+
+	/* treat "not" found" as ok */
+	if (W_ERROR_EQUAL(werr, WERR_NOT_FOUND)) {
+		werr = WERR_OK;
+	}
+
+done:
+	talloc_free(mem_ctx);
+	return werr;
+}
+
+
+static WERROR regdb_delete_values(const char *keyname)
+{
+	return regdb_delete_key_with_prefix(keyname, REG_VALUE_PREFIX);
+}
+
+static WERROR regdb_delete_secdesc(const char *keyname)
+{
+	return regdb_delete_key_with_prefix(keyname, REG_SECDESC_PREFIX);
+}
+
+static WERROR regdb_delete_subkeylist(const char *keyname)
+{
+	return regdb_delete_key_with_prefix(keyname, NULL);
+}
+
 /***********************************************************************
  Add subkey strings to the registry tdb under a defined key
  fmt is the same format as tdb_pack except this function only supports
@@ -624,7 +679,6 @@ bool regdb_store_keys(const char *key, struct regsubkey_ctr *ctr)
 	struct regsubkey_ctr *subkeys = NULL, *old_subkeys = NULL;
 	char *oldkeyname = NULL;
 	TALLOC_CTX *ctx = talloc_stackframe();
-	NTSTATUS status;
 	WERROR werr;
 
 	if (!regdb_key_is_base_key(key) && !regdb_key_exists(key)) {
@@ -721,49 +775,6 @@ bool regdb_store_keys(const char *key, struct regsubkey_ctr *ctr)
 			continue;
 		}
 
-		/* (a) Delete the value list for this key */
-
-		path = talloc_asprintf(ctx, "%s/%s/%s",
-				REG_VALUE_PREFIX,
-				key,
-				oldkeyname );
-		if (!path) {
-			goto cancel;
-		}
-		path = normalize_reg_path(ctx, path);
-		if (!path) {
-			goto cancel;
-		}
-		/* Ignore errors here, we might have no values around */
-		dbwrap_delete_bystring(regdb, path);
-		TALLOC_FREE(path);
-
-		/* (b) Delete the secdesc for this key */
-
-		path = talloc_asprintf(ctx, "%s/%s/%s",
-				REG_SECDESC_PREFIX,
-				key,
-				oldkeyname );
-		if (!path) {
-			goto cancel;
-		}
-		path = normalize_reg_path(ctx, path);
-		if (!path) {
-			goto cancel;
-		}
-		status = dbwrap_delete_bystring(regdb, path);
-		/* Don't fail if there are no values around. */
-		if (!NT_STATUS_IS_OK(status) &&
-		    !NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND))
-		{
-			DEBUG(1, ("Deleting %s failed: %s\n", path,
-				  nt_errstr(status)));
-			goto cancel;
-		}
-		TALLOC_FREE(path);
-
-		/* (c) Delete the list of subkeys of this key */
-
 		path = talloc_asprintf(ctx, "%s/%s", key, oldkeyname);
 		if (!path) {
 			goto cancel;
@@ -772,15 +783,34 @@ bool regdb_store_keys(const char *key, struct regsubkey_ctr *ctr)
 		if (!path) {
 			goto cancel;
 		}
-		status = dbwrap_delete_bystring(regdb, path);
-		/* Don't fail if the subkey record was not found. */
-		if (!NT_STATUS_IS_OK(status) &&
-		    !NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND))
-		{
-			DEBUG(1, ("Deleting %s failed: %s\n", path,
-				  nt_errstr(status)));
+
+		/* (a) Delete the value list for this key */
+
+		werr = regdb_delete_values(path);
+		if (!W_ERROR_IS_OK(werr)) {
+			DEBUG(1, (__location__ " Deleting %s/%s failed: %s\n",
+				  REG_VALUE_PREFIX, path, dos_errstr(werr)));
 			goto cancel;
 		}
+
+		/* (b) Delete the secdesc for this key */
+
+		werr = regdb_delete_secdesc(path);
+		if (!W_ERROR_IS_OK(werr)) {
+			DEBUG(1, (__location__ " Deleting %s/%s failed: %s\n",
+				  REG_SECDESC_PREFIX, path, dos_errstr(werr)));
+			goto cancel;
+		}
+
+		/* (c) Delete the list of subkeys of this key */
+
+		werr = regdb_delete_subkeylist(path);
+		if (!W_ERROR_IS_OK(werr)) {
+			DEBUG(1, (__location__ " Deleting %s failed: %s\n",
+				  path, dos_errstr(werr)));
+			goto cancel;
+		}
+
 		TALLOC_FREE(path);
 	}
 
