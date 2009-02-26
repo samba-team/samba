@@ -412,13 +412,73 @@ import "misc.idl", "security.idl", "winreg.idl";
 		uint32 position;
 		uint32 total_pages;
 		uint32 pages_printed;
-		spoolss_Time time;
+		spoolss_Time submitted;
 	} spoolss_JobInfo1;
+
+	typedef struct {
+		uint32 job_id;
+		[relative] nstring *printer_name;
+		[relative] nstring *server_name;
+		[relative] nstring *user_name;
+		[relative] nstring *document_name;
+		[relative] nstring *notify_name;
+		[relative] nstring *data_type;
+		[relative] nstring *print_processor;
+		[relative] nstring *parameters;
+		[relative] nstring *driver_name;
+		[relative] spoolss_DeviceMode *devmode;
+		[relative] nstring *text_status;
+		[relative] security_descriptor *secdesc;
+		spoolss_JobStatus status;
+		uint32 priority;
+		uint32 position;
+		uint32 start_time;
+		uint32 until_time;
+		uint32 total_pages;
+		uint32 size;
+		spoolss_Time submitted;
+		uint32 time;
+		uint32 pages_printed;
+	} spoolss_JobInfo2;
+
+	typedef struct {
+		uint32 job_id;
+		uint32 next_job_id;
+		uint32 reserved;
+	} spoolss_JobInfo3;
+
+	typedef struct {
+		uint32 job_id;
+		[relative] nstring *printer_name;
+		[relative] nstring *server_name;
+		[relative] nstring *user_name;
+		[relative] nstring *document_name;
+		[relative] nstring *notify_name;
+		[relative] nstring *data_type;
+		[relative] nstring *print_processor;
+		[relative] nstring *parameters;
+		[relative] nstring *driver_name;
+		[relative] spoolss_DeviceMode *devmode;
+		[relative] nstring *text_status;
+		[relative] security_descriptor *secdesc;
+		spoolss_JobStatus status;
+		uint32 priority;
+		uint32 position;
+		uint32 start_time;
+		uint32 until_time;
+		uint32 total_pages;
+		uint32 size;
+		spoolss_Time submitted;
+		uint32 time;
+		uint32 pages_printed;
+		uint32 size_high;
+	} spoolss_JobInfo4;
 
 	typedef [nodiscriminant,relative_base,public] union {
 		[case(1)] spoolss_JobInfo1 info1;
-		[case(2)]; /* TODO */
-		[case(3)]; /* TODO */
+		[case(2)] spoolss_JobInfo2 info2;
+		[case(3)] spoolss_JobInfo3 info3;
+		[case(4)] spoolss_JobInfo4 info4;
 		[default];
 	} spoolss_JobInfo;
 
