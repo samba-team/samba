@@ -577,6 +577,8 @@ struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 #include "../talloc/talloc.h"
 
 #include "event.h"
+#include "../lib/util/tevent_unix.h"
+#include "../lib/util/tevent_ntstatus.h"
 
 #include "../lib/util/data_blob.h"
 #include "../lib/util/time.h"
