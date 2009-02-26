@@ -2520,6 +2520,40 @@ _PUBLIC_ void ndr_print_spoolss_DevmodeContainer(struct ndr_print *ndr, const ch
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_spoolss_JobStatus(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_JobStatus(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_JobStatus(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_PAUSED", JOB_STATUS_PAUSED, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_ERROR", JOB_STATUS_ERROR, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_DELETING", JOB_STATUS_DELETING, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_SPOOLING", JOB_STATUS_SPOOLING, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_PRINTING", JOB_STATUS_PRINTING, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_OFFLINE", JOB_STATUS_OFFLINE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_PAPEROUT", JOB_STATUS_PAPEROUT, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_PRINTED", JOB_STATUS_PRINTED, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_DELETED", JOB_STATUS_DELETED, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_BLOCKED_DEVQ", JOB_STATUS_BLOCKED_DEVQ, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_USER_INTERVENTION", JOB_STATUS_USER_INTERVENTION, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_RESTART", JOB_STATUS_RESTART, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_COMPLETE", JOB_STATUS_COMPLETE, r);
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_spoolss_JobInfo1(struct ndr_push *ndr, int ndr_flags, const struct spoolss_JobInfo1 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -2561,7 +2595,7 @@ static enum ndr_err_code ndr_push_spoolss_JobInfo1(struct ndr_push *ndr, int ndr
 			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->text_status));
 			ndr->flags = _flags_save_string;
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->status));
+		NDR_CHECK(ndr_push_spoolss_JobStatus(ndr, NDR_SCALARS, r->status));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->priority));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->position));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->total_pages));
@@ -2716,7 +2750,7 @@ static enum ndr_err_code ndr_pull_spoolss_JobInfo1(struct ndr_pull *ndr, int ndr
 			}
 			ndr->flags = _flags_save_string;
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->status));
+		NDR_CHECK(ndr_pull_spoolss_JobStatus(ndr, NDR_SCALARS, &r->status));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->priority));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->position));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->total_pages));
@@ -2859,7 +2893,7 @@ _PUBLIC_ void ndr_print_spoolss_JobInfo1(struct ndr_print *ndr, const char *name
 		ndr_print_string(ndr, "text_status", r->text_status);
 	}
 	ndr->depth--;
-	ndr_print_uint32(ndr, "status", r->status);
+	ndr_print_spoolss_JobStatus(ndr, "status", r->status);
 	ndr_print_uint32(ndr, "priority", r->priority);
 	ndr_print_uint32(ndr, "position", r->position);
 	ndr_print_uint32(ndr, "total_pages", r->total_pages);

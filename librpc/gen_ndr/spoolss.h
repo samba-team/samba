@@ -11,6 +11,7 @@
 #define _HEADER_spoolss
 
 #define PRINTER_ENUM_ICONMASK	( (PRINTER_ENUM_ICON1|PRINTER_ENUM_ICON2|PRINTER_ENUM_ICON3|PRINTER_ENUM_ICON4|PRINTER_ENUM_ICON5|PRINTER_ENUM_ICON6|PRINTER_ENUM_ICON7|PRINTER_ENUM_ICON8) )
+#define JOB_STATUS_QUEUED	( 0x0000 )
 #define SPOOLSS_ARCHITECTURE_NT_X86	( "Windows NT x86" )
 #define SPOOLSS_DEFAULT_SERVER_PATH	( "C:\\WINDOWS\\system32\\spool" )
 #define PRINTER_CHANGE_PRINTER	( 0x000000FF )
@@ -371,6 +372,21 @@ struct spoolss_DevmodeContainer {
 	uint32_t _ndr_size;/* [value(_ndr_size_spoolss_DeviceMode(devmode,ndr->iconv_convenience,ndr->flags))] */
 	struct spoolss_DeviceMode *devmode;/* [unique,subcontext_size(_ndr_size),subcontext(4)] */
 };
+
+/* bitmap spoolss_JobStatus */
+#define JOB_STATUS_PAUSED ( 0x00000001 )
+#define JOB_STATUS_ERROR ( 0x00000002 )
+#define JOB_STATUS_DELETING ( 0x00000004 )
+#define JOB_STATUS_SPOOLING ( 0x00000008 )
+#define JOB_STATUS_PRINTING ( 0x00000010 )
+#define JOB_STATUS_OFFLINE ( 0x00000020 )
+#define JOB_STATUS_PAPEROUT ( 0x00000040 )
+#define JOB_STATUS_PRINTED ( 0x00000080 )
+#define JOB_STATUS_DELETED ( 0x00000100 )
+#define JOB_STATUS_BLOCKED_DEVQ ( 0x00000200 )
+#define JOB_STATUS_USER_INTERVENTION ( 0x00000400 )
+#define JOB_STATUS_RESTART ( 0x00000800 )
+#define JOB_STATUS_COMPLETE ( 0x00001000 )
 
 struct spoolss_JobInfo1 {
 	uint32_t job_id;
