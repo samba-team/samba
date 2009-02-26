@@ -3518,7 +3518,7 @@ static bool search_notify(enum spoolss_NotifyType type,
 {
 	int i;
 
-	for (i = 0; ARRAY_SIZE(notify_info_data_table); i++) {
+	for (i = 0; i < ARRAY_SIZE(notify_info_data_table); i++) {
 		if (notify_info_data_table[i].type == type &&
 		    notify_info_data_table[i].field == field &&
 		    notify_info_data_table[i].fn != NULL) {
