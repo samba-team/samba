@@ -326,4 +326,25 @@ krb5_get_in_tkt_with_keytab (krb5_context context,
 			    ret_as_reply);
 }
 
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_425_conv_principal_ext(krb5_context context,
+			    const char *name,
+			    const char *instance,
+			    const char *realm,
+			    krb5_boolean (*func)(krb5_context, krb5_principal),
+			    krb5_boolean resolve,
+			    krb5_principal *principal)
+    KRB5_DEPRECATED
+{
+    return krb5_425_conv_principal_ext2(context,
+					name,
+					instance,
+					realm,
+					func ? convert_func : NULL,
+					func,
+					resolve,
+					principal);
+}
+
 #endif /* HEIMDAL_SMALLER */
