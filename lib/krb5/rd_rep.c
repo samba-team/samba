@@ -48,7 +48,6 @@ krb5_rd_rep(krb5_context context,
     krb5_crypto crypto;
 
     krb5_data_zero (&data);
-    ret = 0;
 
     ret = decode_AP_REP(inbuf->data, inbuf->length, &ap_rep, &len);
     if (ret)
