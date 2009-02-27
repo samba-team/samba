@@ -237,11 +237,19 @@ krb5_start_session(void)
     }
 
     ret = krb5_cc_copy_cache(context, ccache, ccache2);
+    if (ret) {
+	krb5_cc_destroy(context, ccache);
+	krb5_cc_destroy(context, ccache2);
+	return 1;
+    }
 
     ret = asprintf(&cc_name, "%s:%s", krb5_cc_get_type(context, ccache2),
 		   krb5_cc_get_name(context, ccache2));
-    if (ret == -1)
+    if (ret == -1) {
+	krb5_cc_destroy(context, ccache);
+	krb5_cc_destroy(context, ccache2);
 	errx(1, "malloc - out of memory");
+    }
     esetenv("KRB5CCNAME", cc_name, 1);
 
     /* convert creds? */
