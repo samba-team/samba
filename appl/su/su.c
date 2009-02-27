@@ -329,7 +329,6 @@ main(int argc, char **argv)
     char *shell;
 
     int ok = 0;
-    int kerberos_error=1;
 
     setprogname (argv[0]);
 
@@ -383,7 +382,7 @@ main(int argc, char **argv)
 
 #ifdef KRB5
     if(kerberos_flag && ok == 0 &&
-      (kerberos_error=krb5_verify(login_info, su_info, kerberos_instance)) == 0)
+       krb5_verify(login_info, su_info, kerberos_instance) == 0)
 	ok = 5;
 #endif
 
