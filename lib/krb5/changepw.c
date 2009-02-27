@@ -231,7 +231,7 @@ setpw_send_request (krb5_context context,
     *p++ = 0xff;
     *p++ = 0x80;
     *p++ = (ap_req_data.length >> 8) & 0xFF;
-    *p++ = (ap_req_data.length >> 0) & 0xFF;
+    *p   = (ap_req_data.length >> 0) & 0xFF;
 
     memset(&msghdr, 0, sizeof(msghdr));
     msghdr.msg_name       = NULL;
