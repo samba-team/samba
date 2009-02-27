@@ -1017,12 +1017,11 @@ scc_end_get (krb5_context context,
 {
     struct cred_ctx *ctx = *cursor;
     krb5_scache *s = SCACHE(id);
-    int ret;
 
     sqlite3_finalize(ctx->stmt);
     sqlite3_finalize(ctx->credstmt);
 
-    ret = exec_stmt(context, s->db, ctx->drop, 0);
+    exec_stmt(context, s->db, ctx->drop, 0);
 
     free(ctx->drop);
     free(ctx);
