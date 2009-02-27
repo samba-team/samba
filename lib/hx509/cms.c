@@ -473,6 +473,9 @@ hx509_cms_unenvelope(hx509_context context,
 	if (ret)
 	    goto out;
 	
+	if (flags & HX509_CMS_UE_ALLOW_WEAK)
+	    hx509_crypto_allow_weak(crypto);
+
 	if (params) {
 	    ret = hx509_crypto_set_params(context, crypto, params, &ivec);
 	    if (ret) {
@@ -575,6 +578,9 @@ hx509_cms_envelope_1(hx509_context context,
     ret = hx509_crypto_init(context, NULL, encryption_type, &crypto);
     if (ret)
 	goto out;
+
+    if (flags & HX509_CMS_EV_ALLOW_WEAK)
+	hx509_crypto_allow_weak(crypto);
 
     ret = hx509_crypto_set_random_key(crypto, &key);
     if (ret) {
