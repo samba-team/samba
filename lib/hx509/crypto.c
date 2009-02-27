@@ -2970,7 +2970,7 @@ _hx509_match_keys(hx509_cert c, hx509_private_key key)
     if (der_heim_oid_cmp(key->ops->key_oid, &asn1_oid_id_pkcs1_rsaEncryption) == 0)
 	return match_keys_rsa(c, key);
     if (der_heim_oid_cmp(key->ops->key_oid, &asn1_oid_id_ecPublicKey) == 0)
-	return return match_keys_ec(c, key);
+	return match_keys_ec(c, key);
     return 0;
 
 }
