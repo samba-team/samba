@@ -131,12 +131,12 @@ static NTSTATUS db_rbt_store(struct db_record *rec, TDB_DATA data, int flag)
 		 */
 	}
 
-	node = (struct db_rbt_node *)SMB_MALLOC(
+	node = (struct db_rbt_node *)talloc_size(rec_priv->db_ctx,
 		offsetof(struct db_rbt_node, data) + rec->key.dsize
 		+ data.dsize);
 
 	if (node == NULL) {
-		SAFE_FREE(rec_priv->node);
+		TALLOC_FREE(rec_priv->node);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -148,7 +148,7 @@ static NTSTATUS db_rbt_store(struct db_record *rec, TDB_DATA data, int flag)
 	db_rbt_parse_node(node, &this_key, &this_val);
 
 	memcpy(this_key.dptr, rec->key.dptr, node->keysize);
-	SAFE_FREE(rec_priv->node);
+	TALLOC_FREE(rec_priv->node);
 
 	memcpy(this_val.dptr, data.dptr, node->valuesize);
 
@@ -194,7 +194,7 @@ static NTSTATUS db_rbt_delete(struct db_record *rec)
 	}
 
 	rb_erase(&rec_priv->node->rb_node, &rec_priv->db_ctx->tree);
-	SAFE_FREE(rec_priv->node);
+	TALLOC_FREE(rec_priv->node);
 
 	return NT_STATUS_OK;
 }
