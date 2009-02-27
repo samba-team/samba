@@ -1012,6 +1012,8 @@ krb5_425_conv_principal_ext2(krb5_context context,
 	snprintf(host, sizeof(host), "%s.%s", instance, realm);
 	strlwr(host);
 	ret = krb5_make_principal(context, &pr, realm, name, host, NULL);
+	if (ret)
+	    return ret;
 	if((*func)(context, funcctx, pr)){
 	    *princ = pr;
 	    return 0;
