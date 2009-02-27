@@ -1459,7 +1459,6 @@ krb5_make_addrport (krb5_context context,
     *p++ = (2 >> 24) & 0xFF;
 
     memcpy (p, &port, 2);
-    p += 2;
 
     return 0;
 }
