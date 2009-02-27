@@ -672,8 +672,8 @@ VFS_ACL_XATTR_OBJ = modules/vfs_acl_xattr.o
 VFS_ACL_TDB_OBJ = modules/vfs_acl_tdb.o
 VFS_SMB_TRAFFIC_ANALYZER_OBJ = modules/vfs_smb_traffic_analyzer.o
 VFS_ONEFS_OBJ = modules/vfs_onefs.o modules/onefs_acl.o modules/onefs_system.o \
-		modules/onefs_open.o modules/onefs_streams.o modules/onefs_dir.c \
-		modules/onefs_cbrl.o modules/onefs_notify.o
+		modules/onefs_open.o modules/onefs_streams.o modules/onefs_dir.o \
+		modules/onefs_cbrl.o modules/onefs_notify.o modules/onefs_config.o
 VFS_ONEFS_SHADOW_COPY_OBJ = modules/vfs_onefs_shadow_copy.o modules/onefs_shadow_copy.o
 PERFCOUNT_ONEFS_OBJ = modules/perfcount_onefs.o
 PERFCOUNT_TEST_OBJ = modules/perfcount_test.o

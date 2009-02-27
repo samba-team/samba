@@ -32,7 +32,10 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "includes.h"
 #include "onefs.h"
+#include "onefs_config.h"
+#include "oplock_onefs.h"
 #include "smbd/globals.h"
 
 extern const struct generic_mapping file_generic_mapping;
