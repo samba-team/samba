@@ -937,6 +937,8 @@ krb5_425_conv_principal_ext2(krb5_context context,
     if(p){
 	instance = p;
 	ret = krb5_make_principal(context, &pr, realm, name, instance, NULL);
+	if (ret)
+	    return ret;
 	if(func == NULL || (*func)(context, funcctx, pr)){
 	    *princ = pr;
 	    return 0;
@@ -1091,6 +1093,8 @@ no_host:
 	name = p;
 
     ret = krb5_make_principal(context, &pr, realm, name, instance, NULL);
+    if (ret)
+	return ret;
     if(func == NULL || (*func)(context, funcctx, pr)){
 	*princ = pr;
 	return 0;
