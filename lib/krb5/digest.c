@@ -562,10 +562,8 @@ krb5_digest_set_authentication_user(krb5_context context,
     ret = krb5_copy_principal(context,
 			      authentication_user,
 			      &digest->request.authentication_user);
-    if (digest->request.authentication_user == NULL) {
-	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
-	return ENOMEM;
-    }
+    if (ret)
+	return ret;
     return 0;
 }
 
