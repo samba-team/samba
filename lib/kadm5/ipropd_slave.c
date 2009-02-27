@@ -342,7 +342,7 @@ receive_everything (krb5_context context, int fd,
 {
     int ret;
     krb5_data data;
-    int32_t vno;
+    int32_t vno = 0;
     int32_t opcode;
     krb5_storage *sp;
 
