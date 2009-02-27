@@ -968,6 +968,8 @@ add_enc_ts_padata(krb5_context context,
     if(salt == NULL) {
 	/* default to standard salt */
 	ret = krb5_get_pw_salt (context, client, &salt2);
+	if (ret)
+	    return ret;
 	salt = &salt2;
     }
     if (!enctypes) {
