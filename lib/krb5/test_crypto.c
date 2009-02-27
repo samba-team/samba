@@ -180,9 +180,6 @@ main(int argc, char **argv)
 	exit(0);
     }
 
-    argc -= optidx;
-    argv += optidx;
-
     salt.salttype = KRB5_PW_SALT;
     salt.saltvalue.data = NULL;
     salt.saltvalue.length = 0;
