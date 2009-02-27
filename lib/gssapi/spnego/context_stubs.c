@@ -599,7 +599,7 @@ out:
 
     gss_release_oid_set(&junk, &mechs);
 
-    return GSS_S_COMPLETE;
+    return ret;
 }
 
 OM_uint32 _gss_spnego_inquire_mechs_for_name (
