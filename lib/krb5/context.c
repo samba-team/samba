@@ -548,7 +548,7 @@ krb5_prepend_config_files(const char *filelist, char **pq, char ***ret_pp)
 	    krb5_free_config_files(pp);
 	    return ENOMEM;
 	}
-	l = strsep_copy(&p, ":", fn, l + 1);
+	(void)strsep_copy(&p, ":", fn, l + 1);
 	ret = add_file(&pp, &len, fn);
 	if (ret) {
 	    krb5_free_config_files(pp);
