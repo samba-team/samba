@@ -1184,6 +1184,8 @@ pk_rd_pa_reply_enckey(krb5_context context,
 	heim_octet_string out;
 
 	ret = hx509_cms_unwrap_ContentInfo(&content, &type, &out, NULL);
+	if (ret)
+	    goto out;
 	if (der_heim_oid_cmp(&type, oid_id_pkcs7_signedData())) {
 	    ret = EINVAL; /* XXX */
 	    krb5_set_error_message(context, ret,
