@@ -560,8 +560,7 @@ keychain_iter_end(hx509_context context,
     struct iter *iter = cursor;
 
     if (iter->certs) {
-	int ret;
-	ret = hx509_certs_end_seq(context, iter->certs, iter->cursor);
+	hx509_certs_end_seq(context, iter->certs, iter->cursor);
 	hx509_certs_free(&iter->certs);
     } else {
 	CFRelease(iter->searchRef);
