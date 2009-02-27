@@ -2744,6 +2744,8 @@ PBE_string2key(hx509_context context,
     if (ret)
 	goto out;
 
+    hx509_crypto_allow_weak(c);
+
     ret = hx509_crypto_set_key_data(c, key->data, key->length);
     if (ret) {
 	hx509_crypto_destroy(c);
