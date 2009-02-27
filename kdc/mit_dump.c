@@ -236,7 +236,6 @@ mit_prop_dump(void *arg, const char *file)
 
 	int num_tl_data;
 	int num_key_data;
-	int extra_data_length;
 	int attributes;
 
 	int tmp;
@@ -269,10 +268,10 @@ mit_prop_dump(void *arg, const char *file)
 	    warnx("line %d: bad base length %d != 38", lineno, tmp);
 	    continue;
 	}
-	q = nexttoken(&p); /* length of principal */
+	nexttoken(&p); /* length of principal */
 	num_tl_data = getint(&p); /* number of tl-data */
 	num_key_data = getint(&p); /* number of key-data */
-	extra_data_length = getint(&p);  /* length of extra data */
+	getint(&p);  /* length of extra data */
 	q = nexttoken(&p); /* principal name */
 	krb5_parse_name(pd->context, q, &ent.entry.principal);
 	attributes = getint(&p); /* attributes */
@@ -297,9 +296,9 @@ mit_prop_dump(void *arg, const char *file)
 	    ALLOC(ent.entry.pw_end);
 	    *ent.entry.pw_end = tmp;
 	}
-	q = nexttoken(&p); /* last auth */
-	q = nexttoken(&p); /* last failed auth */
-	q = nexttoken(&p); /* fail auth count */
+	nexttoken(&p); /* last auth */
+	nexttoken(&p); /* last failed auth */
+	nexttoken(&p); /* fail auth count */
 	for(i = 0; i < num_tl_data; i++) {
 	    unsigned long val;
 	    int tl_type, tl_length;
@@ -319,6 +318,9 @@ mit_prop_dump(void *arg, const char *file)
 		getdata(&p, buf, tl_length); /* data itself */
 		val = buf[0] | (buf[1] << 8) | (buf[2] << 16) | (buf[3] << 24);
 		ret = krb5_parse_name(pd->context, (char *)buf + 4, &princ);
+		if (ret)
+		    krb5_err(pd->context, 1, ret,
+			     "parse_name: %s", (char *)buf + 4);
 		free(buf);
 		ALLOC(ent.entry.modified_by);
 		ent.entry.modified_by->time = val;
@@ -360,12 +362,12 @@ mit_prop_dump(void *arg, const char *file)
 		} else {
 		    ent.entry.keys.val[i].salt->salt.length = 0;
 		    ent.entry.keys.val[i].salt->salt.data = NULL;
-		    tmp = getint(&p);	/* -1, if no data. */
+		    getint(&p);	/* -1, if no data. */
 		}
 		fix_salt(pd->context, &ent.entry, i);
 	    }
 	}
-	q = nexttoken(&p); /* extra data */
+	nexttoken(&p); /* extra data */
 	v5_prop(pd->context, NULL, &ent, arg);
     }
     fclose(f);
