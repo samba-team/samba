@@ -3334,7 +3334,8 @@ krb5_encrypt_iov_ivec(krb5_context context,
     memcpy(div->data.data, q, div->data.length);
     q += div->data.length;
 
-    memcpy(piv->data.data, q, pad_sz);
+    if (piv)
+	memcpy(piv->data.data, q, pad_sz);
     free(p);
 
     return ret;
