@@ -125,11 +125,11 @@ kt_purge(struct purge_options *opt, int argc, char **argv)
 	goto out;
     }
 
-    while((ret = krb5_kt_next_entry(context, keytab, &entry, &cursor)) == 0) {
+    while(krb5_kt_next_entry(context, keytab, &entry, &cursor) == 0) {
 	add_entry (entry.principal, entry.vno, entry.timestamp, &head);
 	krb5_kt_free_entry(context, &entry);
     }
-    ret = krb5_kt_end_seq_get(context, keytab, &cursor);
+    krb5_kt_end_seq_get(context, keytab, &cursor);
 
     judgement_day = time (NULL);
 
