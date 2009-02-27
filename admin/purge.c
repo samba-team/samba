@@ -139,7 +139,7 @@ kt_purge(struct purge_options *opt, int argc, char **argv)
 	goto out;
     }
 
-    while((ret = krb5_kt_next_entry(context, keytab, &entry, &cursor)) == 0) {
+    while(krb5_kt_next_entry(context, keytab, &entry, &cursor) == 0) {
 	struct e *e = get_entry (entry.principal, head);
 
 	if (e == NULL) {
