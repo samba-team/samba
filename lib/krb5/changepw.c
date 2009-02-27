@@ -84,7 +84,6 @@ chgpw_send_request (krb5_context context,
     krb5_data passwd_data;
     size_t len;
     u_char header[6];
-    u_char *p;
     struct iovec iov[3];
     struct msghdr msghdr;
 
@@ -120,13 +119,12 @@ chgpw_send_request (krb5_context context,
 	goto out2;
 
     len = 6 + ap_req_data.length + krb_priv_data.length;
-    p = header;
-    p[0] = (len >> 8) & 0xFF;
-    p[1] = (len >> 0) & 0xFF;
-    p[2] = 0;
-    p[3] = 1;
-    p[4] = (ap_req_data.length >> 8) & 0xFF;
-    p[5] = (ap_req_data.length >> 0) & 0xFF;
+    header[0] = (len >> 8) & 0xFF;
+    header[1] = (len >> 0) & 0xFF;
+    header[2] = 0;
+    header[3] = 1;
+    header[4] = (ap_req_data.length >> 8) & 0xFF;
+    header[5] = (ap_req_data.length >> 0) & 0xFF;
 
     memset(&msghdr, 0, sizeof(msghdr));
     msghdr.msg_name       = NULL;
