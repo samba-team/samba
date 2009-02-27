@@ -92,9 +92,6 @@ main(int argc, char **argv)
 	exit(0);
     }
 
-    argc -= optidx;
-    argv += optidx;
-
     ret = krb5_init_context(&context);
     if (ret)
 	errx (1, "krb5_init_context failed: %d", ret);
