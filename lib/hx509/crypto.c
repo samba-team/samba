@@ -2089,6 +2089,8 @@ _hx509_private_key_export(hx509_context context,
 
 struct hx509cipher {
     const char *name;
+    int flags;
+#define CIPHER_WEAK 1
     const heim_oid *(*oid_func)(void);
     const AlgorithmIdentifier *(*ai_func)(void);
     const EVP_CIPHER *(*evp_func)(void);
@@ -2100,6 +2102,8 @@ struct hx509cipher {
 
 struct hx509_crypto_data {
     char *name;
+    int flags;
+#define ALLOW_WEAK 1
     const struct hx509cipher *cipher;
     const EVP_CIPHER *c;
     heim_octet_string key;
@@ -2259,6 +2263,7 @@ CMSRC2CBCParam_set(hx509_context context, const heim_octet_string *param,
 static const struct hx509cipher ciphers[] = {
     {
 	"rc2-cbc",
+	CIPHER_WEAK,
 	oid_id_pkcs3_rc2_cbc,
 	NULL,
 	EVP_rc2_cbc,
@@ -2267,6 +2272,7 @@ static const struct hx509cipher ciphers[] = {
     },
     {
 	"rc2-cbc",
+	CIPHER_WEAK,
 	oid_id_rsadsi_rc2_cbc,
 	NULL,
 	EVP_rc2_cbc,
@@ -2275,6 +2281,7 @@ static const struct hx509cipher ciphers[] = {
     },
     {
 	"rc2-40-cbc",
+	CIPHER_WEAK,
 	oid_private_rc2_40,
 	NULL,
 	EVP_rc2_40_cbc,
@@ -2283,6 +2290,7 @@ static const struct hx509cipher ciphers[] = {
     },
     {
 	"des-ede3-cbc",
+	0,
 	oid_id_pkcs3_des_ede3_cbc,
 	NULL,
 	EVP_des_ede3_cbc,
@@ -2291,6 +2299,7 @@ static const struct hx509cipher ciphers[] = {
     },
     {
 	"des-ede3-cbc",
+	0,
 	oid_id_rsadsi_des_ede3_cbc,
 	hx509_crypto_des_rsdi_ede3_cbc,
 	EVP_des_ede3_cbc,
@@ -2299,6 +2308,7 @@ static const struct hx509cipher ciphers[] = {
     },
     {
 	"aes-128-cbc",
+	0,
 	oid_id_aes_128_cbc,
 	hx509_crypto_aes128_cbc,
 	EVP_aes_128_cbc,
@@ -2307,6 +2317,7 @@ static const struct hx509cipher ciphers[] = {
     },
     {
 	"aes-192-cbc",
+	0,
 	oid_id_aes_192_cbc,
 	NULL,
 	EVP_aes_192_cbc,
@@ -2315,6 +2326,7 @@ static const struct hx509cipher ciphers[] = {
     },
     {
 	"aes-256-cbc",
+	0,
 	oid_id_aes_256_cbc,
 	hx509_crypto_aes256_cbc,
 	EVP_aes_256_cbc,
@@ -2421,6 +2433,12 @@ hx509_crypto_set_key_name(hx509_crypto crypto, const char *name)
     return 0;
 }
 
+void
+hx509_crypto_allow_weak(hx509_crypto crypto)
+{
+    crypto->flags |= ALLOW_WEAK;
+}
+
 int
 hx509_crypto_set_key_data(hx509_crypto crypto, const void *data, size_t length)
 {
@@ -2517,6 +2535,10 @@ hx509_crypto_encrypt(hx509_crypto crypto,
 
     *ciphertext = NULL;
 
+    if ((crypto->cipher->flags & CIPHER_WEAK) &&
+	(crypto->flags & ALLOW_WEAK) == 0)
+	return HX509_CRYPTO_ALGORITHM_BEST_BEFORE;
+
     assert(EVP_CIPHER_iv_length(crypto->c) == ivec->length);
 
     EVP_CIPHER_CTX_init(&evp);
@@ -2594,6 +2616,10 @@ hx509_crypto_decrypt(hx509_crypto crypto,
 
     clear->data = NULL;
     clear->length = 0;
+
+    if ((crypto->cipher->flags & CIPHER_WEAK) &&
+	(crypto->flags & ALLOW_WEAK) == 0)
+	return HX509_CRYPTO_ALGORITHM_BEST_BEFORE;
 
     if (ivec && EVP_CIPHER_iv_length(crypto->c) < ivec->length)
 	return HX509_CRYPTO_INTERNAL_ERROR;
@@ -3097,7 +3123,9 @@ hx509_crypto_available(hx509_context context,
     if (bits & SIG_SECRET) {
 
 	for (i = 0; i < sizeof(ciphers)/sizeof(ciphers[0]); i++) {
-	
+
+	    if (ciphers[i].flags & CIPHER_WEAK)
+		continue;
 	    if (ciphers[i].ai_func == NULL)
 		continue;
 
