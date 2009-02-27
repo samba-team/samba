@@ -221,10 +221,10 @@ create_signature(krb5_context context,
     int ret, flags = 0;
 
     if (id->cert == NULL)
-	flags = HX509_CMS_SIGNATURE_NO_SIGNER;
+	flags |= HX509_CMS_SIGNATURE_NO_SIGNER;
 
     ret = hx509_cms_create_signed_1(id->hx509ctx,
-				    0,
+				    flags,
 				    eContentType,
 				    eContent->data,
 				    eContent->length,
