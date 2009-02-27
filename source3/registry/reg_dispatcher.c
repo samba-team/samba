@@ -161,7 +161,6 @@ bool regkey_access_check( REGISTRY_KEY *key, uint32 requested, uint32 *granted,
 	SEC_DESC *sec_desc;
 	NTSTATUS status;
 	WERROR err;
-	TALLOC_CTX *mem_ctx;
 
 	/* use the default security check if the backend has not defined its
 	 * own */
@@ -171,30 +170,20 @@ bool regkey_access_check( REGISTRY_KEY *key, uint32 requested, uint32 *granted,
 						  granted, token);
 	}
 
-	/*
-	 * The secdesc routines can't yet cope with a NULL talloc ctx sanely.
-	 */
-
-	if (!(mem_ctx = talloc_init("regkey_access_check"))) {
-		return false;
-	}
-
-	err = regkey_get_secdesc(mem_ctx, key, &sec_desc);
+	err = regkey_get_secdesc(talloc_tos(), key, &sec_desc);
 
 	if (!W_ERROR_IS_OK(err)) {
-		TALLOC_FREE(mem_ctx);
 		return false;
 	}
 
 	se_map_generic( &requested, &reg_generic_map );
 
 	status =se_access_check(sec_desc, token, requested, granted);
+	TALLOC_FREE(sec_desc);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(mem_ctx);
 		return false;
 	}
 
-	TALLOC_FREE(mem_ctx);
 	return NT_STATUS_IS_OK(status);
 }
 
