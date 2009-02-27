@@ -178,7 +178,7 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
     int ret, flags = 0;
 
     size_t sz;
-    void *p;
+    void *p = NULL;
 
     if (opt->missing_revoke_flag)
 	hx509_context_set_missing_revoke(context, 1);
@@ -187,6 +187,8 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
     lock_strings(lock, &opt->pass_strings);
 
     ret = hx509_verify_init_ctx(context, &ctx);
+    if (ret)
+	hx509_err(context, 1, ret, "hx509_verify_init_ctx");
 
     ret = hx509_certs_init(context, "MEMORY:cms-anchors", 0, NULL, &anchors);
     if (ret)
@@ -237,6 +239,12 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
 	    errx(1, "Content is not SignedData");
 	der_free_oid(&oid);
 
+	if (p == NULL)
+	    der_free_octet_string(&co);
+	else {
+	    rk_xfree(p);
+	    p = NULL;
+	}
 	co = uwco;
     }
 
@@ -247,8 +255,10 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
 
     ret = hx509_cms_verify_signed(context, ctx, flags, co.data, co.length, sd,
 				  store, &type, &c, &signers);
-    if (co.data != p)
+    if (p != co.data)
 	der_free_octet_string(&co);
+    else
+	rk_xfree(p);
     if (ret)
 	hx509_err(context, 1, ret, "hx509_cms_verify_signed");
 
@@ -279,10 +289,7 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
 	errx(1, "hx509_write_file: %d", ret);
 
     der_free_octet_string(&c);
-    if (opt->pem_flag)
-	der_free_octet_string(&co);
-    else
-	rk_xfree(p);
+
     if (sd)
 	_hx509_unmap_file_os(sd);
 
@@ -607,12 +614,16 @@ print_certificate(hx509_context hxcontext, hx509_cert cert, int verbose)
 	   _hx509_cert_private_key(cert) ? "yes" : "no");
 
     ret = hx509_cert_get_issuer(cert, &name);
+    if (ret)
+	errx(1, "hx509_cert_get_issuer");
     hx509_name_to_string(name, &str);
     hx509_name_free(&name);
     printf("    issuer:  \"%s\"\n", str);
     free(str);
 
     ret = hx509_cert_get_subject(cert, &name);
+    if (ret)
+	errx(1, "hx509_cert_get_subject");
     hx509_name_to_string(name, &str);
     hx509_name_free(&name);
     printf("    subject: \"%s\"\n", str);
@@ -1257,11 +1268,15 @@ request_create(struct request_create_options *opt, int argc, char **argv)
     for (i = 0; i < opt->email_strings.num_strings; i++) {
 	ret = _hx509_request_add_email(context, req,
 				       opt->email_strings.strings[i]);
+	if (ret)
+	    hx509_err(context, 1, ret, "hx509_request_add_email");
     }
 
     for (i = 0; i < opt->dnsname_strings.num_strings; i++) {
 	ret = _hx509_request_add_dns_name(context, req,
 					  opt->dnsname_strings.strings[i]);
+	if (ret)
+	    hx509_err(context, 1, ret, "hx509_request_add_dns_name");
     }
 
 
@@ -2014,6 +2029,8 @@ test_crypto(struct test_crypto_options *opt, int argc, char ** argv)
     hx509_verify_attach_anchors(vctx, certs);
 
     ret = hx509_certs_iter(context, certs, test_one_cert, vctx);
+    if (ret)
+	hx509_err(context, 1, ret, "hx509_cert_iter");
 
     hx509_certs_free(&certs);
 
