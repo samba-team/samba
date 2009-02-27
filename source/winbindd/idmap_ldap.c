@@ -944,6 +944,10 @@ static NTSTATUS idmap_ldap_unixids_to_sids(struct idmap_domain *dom,
 		multi = True;
 	}
 
+	for (i = 0; ids[i]; i++) {
+		ids[i]->status = ID_UNKNOWN;
+	}
+
 again:
 	if (multi) {
 
@@ -1171,6 +1175,10 @@ static NTSTATUS idmap_ldap_sids_to_unixids(struct idmap_domain *dom,
 	} else {
 		/* multiple mappings */
 		multi = True;
+	}
+
+	for (i = 0; ids[i]; i++) {
+		ids[i]->status = ID_UNKNOWN;
 	}
 
 again:
