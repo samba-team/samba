@@ -125,9 +125,11 @@ typedef enum {
 
 /* flags to hx509_cms_unenvelope */
 #define HX509_CMS_UE_DONT_REQUIRE_KU_ENCIPHERMENT	0x01
+#define HX509_CMS_UE_ALLOW_WEAK				0x02
 
 /* flags to hx509_cms_envelope_1 */
 #define HX509_CMS_EV_NO_KU_CHECK			0x01
+#define HX509_CMS_EV_ALLOW_WEAK				0x02
 
 /* flags to hx509_cms_verify_signed */
 #define HX509_CMS_VS_ALLOW_DATA_OID_MISMATCH		0x01
