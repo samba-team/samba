@@ -152,7 +152,6 @@ init_cred (krb5_context context,
 	   krb5_get_init_creds_opt *options)
 {
     krb5_error_code ret;
-    krb5_const_realm client_realm;
     int tmp;
     krb5_timestamp now;
 
@@ -168,8 +167,6 @@ init_cred (krb5_context context,
 	if (ret)
 	    goto out;
     }
-
-    client_realm = krb5_principal_get_realm (context, cred->client);
 
     if (start_time)
 	cred->times.starttime  = now + start_time;
