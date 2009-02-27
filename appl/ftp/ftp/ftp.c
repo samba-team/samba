@@ -167,6 +167,7 @@ login (char *host)
     char tmp[80];
     char defaultpass[128];
     char *userstr, *pass, *acctstr;
+    char *ruserstr, *rpass, *racctstr;
     int n, aflag = 0;
 
     char *myname = NULL;
@@ -175,7 +176,7 @@ login (char *host)
     if (pw != NULL)
 	myname = pw->pw_name;
 
-    userstr = pass = acctstr = 0;
+    ruserstr = rpass = racctstr = NULL;
 
     if(sec_login(host))
 	printf("\n*** Using plaintext user and password ***\n\n");
@@ -183,10 +184,14 @@ login (char *host)
 	printf("Authentication successful.\n\n");
     }
 
-    if (ruserpass (host, &userstr, &pass, &acctstr) < 0) {
+    if (ruserpass (host, &ruserstr, &rpass, &racctstr) < 0) {
 	code = -1;
 	return (0);
     }
+    userstr = ruserstr;
+    pass = rpass;
+    acctstr = racctstr;
+
     while (userstr == NULL) {
 	if (myname)
 	    printf ("Name (%s:%s): ", host, myname);
@@ -201,6 +206,9 @@ login (char *host)
 	    userstr = tmp;
     }
     strlcpy(username, userstr, sizeof(username));
+    if (ruserstr)
+	free(ruserstr);
+
     n = command("USER %s", userstr);
     if (n == COMPLETE)
        n = command("PASS dummy"); /* DK: Compatibility with gssftp daemon */
@@ -227,19 +235,25 @@ login (char *host)
 	    }
 	}
 	n = command ("PASS %s", pass);
+	if (rpass)
+	    free(rpass);
     }
     if (n == CONTINUE) {
 	aflag++;
+	UI_UTIL_read_pw_string (tmp, sizeof(tmp), "Account:", 0);
 	acctstr = tmp;
-	UI_UTIL_read_pw_string (acctstr, 128, "Account:", 0);
 	n = command ("ACCT %s", acctstr);
     }
     if (n != COMPLETE) {
+	if (racctstr)
+	    free(racctstr);
 	warnx ("Login failed.");
 	return (0);
     }
     if (!aflag && acctstr != NULL)
 	command ("ACCT %s", acctstr);
+    if (racctstr)
+	free(racctstr);
     if (proxy)
 	return (1);
     for (n = 0; n < macnum; ++n) {
