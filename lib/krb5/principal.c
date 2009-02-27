@@ -1067,6 +1067,8 @@ krb5_425_conv_principal_ext2(krb5_context context,
     snprintf(host, sizeof(host), "%s.%s", instance, p);
 local_host:
     ret = krb5_make_principal(context, &pr, realm, name, host, NULL);
+    if (ret)
+	return ret;
     if(func == NULL || (*func)(context, funcctx, pr)){
 	*princ = pr;
 	return 0;
@@ -1110,45 +1112,6 @@ convert_func(krb5_context conxtext, void *funcctx, krb5_principal principal)
     krb5_boolean (*func)(krb5_context, krb5_principal) = funcctx;
     return (*func)(conxtext, principal);
 }
-
-krb5_error_code KRB5_LIB_FUNCTION
-krb5_425_conv_principal_ext(krb5_context context,
-			    const char *name,
-			    const char *instance,
-			    const char *realm,
-			    krb5_boolean (*func)(krb5_context, krb5_principal),
-			    krb5_boolean resolve,
-			    krb5_principal *principal)
-{
-    return krb5_425_conv_principal_ext2(context,
-					name,
-					instance,
-					realm,
-					func ? convert_func : NULL,
-					func,
-					resolve,
-					principal);
-}
-
-
-
-krb5_error_code KRB5_LIB_FUNCTION
-krb5_425_conv_principal(krb5_context context,
-			const char *name,
-			const char *instance,
-			const char *realm,
-			krb5_principal *princ)
-{
-    krb5_boolean resolve = krb5_config_get_bool(context,
-						NULL,
-						"libdefaults",
-						"v4_instance_resolve",
-						NULL);
-
-    return krb5_425_conv_principal_ext(context, name, instance, realm,
-				       NULL, resolve, princ);
-}
-
 
 static int
 check_list(const krb5_config_binding *l, const char *name, const char **out)
