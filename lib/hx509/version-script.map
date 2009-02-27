@@ -83,6 +83,7 @@ HEIMDAL_X509_1.2 {
 		hx509_crl_sign;
 		hx509_crypto_aes128_cbc;
 		hx509_crypto_aes256_cbc;
+		hx509_crypto_allow_weak;
 		hx509_crypto_available;
 		hx509_crypto_decrypt;
 		hx509_crypto_des_rsdi_ede3_cbc;
