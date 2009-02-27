@@ -2433,6 +2433,10 @@ _krb5_pk_enterprise_cert(krb5_context context,
     }
 
     ret = hx509_query_alloc(hx509ctx, &q);
+    if (ret) {
+	hx509_certs_free(&certs);
+	return ret;
+    }
 
     hx509_query_match_option(q, HX509_QUERY_OPTION_PRIVATE_KEY);
     hx509_query_match_option(q, HX509_QUERY_OPTION_KU_DIGITALSIGNATURE);
@@ -2443,6 +2447,8 @@ _krb5_pk_enterprise_cert(krb5_context context,
     hx509_query_free(hx509ctx, q);
     hx509_certs_free(&certs);
 
+    if (ret)
+	return ret;
     if (enterprise_name == NULL)
 	return ENOENT; /* XXX */
 
