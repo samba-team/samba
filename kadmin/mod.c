@@ -84,7 +84,11 @@ add_constrained_delegation(krb5_context context,
 	
 	for (i = 0; i < strings->num_strings; i++) {
 	    ret = krb5_parse_name(context, strings->strings[i], &p);
+	    if (ret)
+		abort();
 	    ret = copy_Principal(p, &ext.data.u.allowed_to_delegate_to.val[i]);
+	    if (ret)
+		abort();
 	    krb5_free_principal(context, p);
 	}
     }
