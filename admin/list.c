@@ -88,7 +88,7 @@ do_list(struct list_options *opt, const char *keytab_str)
     rtbl_add_column_by_id(table, 5, "Aliases", 0);
     rtbl_set_separator(table, "  ");
 
-    while((ret = krb5_kt_next_entry(context, keytab, &entry, &cursor)) == 0){
+    while(krb5_kt_next_entry(context, keytab, &entry, &cursor) == 0){
 	char buf[1024], *s;
 
 	snprintf(buf, sizeof(buf), "%d", entry.vno);
