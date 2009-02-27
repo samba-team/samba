@@ -17,7 +17,7 @@
     this option.  </para>
 
     <para>Disabling this option will also disable the <command
-    moreinfo="none">client plaintext auth</command> option</para>
+    moreinfo="none">client plaintext auth</command> option.</para>
 
     <para>Likewise, if the <command moreinfo="none">client ntlmv2
     auth</command> parameter is enabled, then only NTLMv2 logins will be
