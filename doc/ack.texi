@@ -73,6 +73,7 @@ Bugfixes, documentation, encouragement, and code has been contributed by:
 @item Phil Fisher
 @item Rafal Malinowski
 @item Rainer Toebbicke
+@item Roman Divacky
 @item Richard Nyberg
 @item Sho Hosoda, 細田 将
 @item Stefan Metzmacher
