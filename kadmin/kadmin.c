@@ -132,7 +132,10 @@ get_privs(void *opt, int argc, char **argv)
 	krb5_warn(context, ret, "kadm5_get_privs");
     else{
 	ret =_kadm5_privs_to_string(privs, str, sizeof(str));
-	printf("%s\n", str);
+	if (ret == 0)
+	    printf("%s\n", str);
+	else
+	    printf("privs: 0x%x\n", (unsigned int)privs);
     }
     return 0;
 }
