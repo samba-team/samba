@@ -92,7 +92,7 @@ main(int argc, char **argv)
     krb5_error_code ret;
     char **files;
     int optidx = 0;
-    int e, i;
+    int i;
     krb5_log_facility *logfacility;
     krb5_keytab keytab;
 
@@ -102,8 +102,10 @@ main(int argc, char **argv)
     if (ret)
 	errx (1, "krb5_init_context failed: %d", ret);
 
-    while((e = getarg(args, num_args, argc, argv, &optidx)))
+    if (getarg(args, num_args, argc, argv, &optidx)) {
 	warnx("error at argument `%s'", argv[optidx]);
+	usage(1);
+    }
 
     if (help_flag)
 	usage (0);
