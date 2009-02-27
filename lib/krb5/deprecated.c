@@ -326,6 +326,12 @@ krb5_get_in_tkt_with_keytab (krb5_context context,
 			    ret_as_reply);
 }
 
+static krb5_boolean
+convert_func(krb5_context conxtext, void *funcctx, krb5_principal principal)
+{
+    krb5_boolean (*func)(krb5_context, krb5_principal) = funcctx;
+    return (*func)(conxtext, principal);
+}
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_425_conv_principal_ext(krb5_context context,
