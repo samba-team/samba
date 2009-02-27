@@ -789,7 +789,7 @@ NTSTATUS create_local_token(auth_serversupplied_info *server_info)
 }
 
 /*
- * Create an artificial NT token given just a username. (Initially indended
+ * Create an artificial NT token given just a username. (Initially intended
  * for force user)
  *
  * We go through lookup_name() to avoid problems we had with 'winbind use
@@ -839,12 +839,6 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 	if (type != SID_NAME_USER) {
 		DEBUG(1, ("%s is a %s, not a user\n", username,
 			  sid_type_lookup(type)));
-		goto done;
-	}
-
-	if (!sid_to_uid(&user_sid, uid)) {
-		DEBUG(1, ("sid_to_uid for %s (%s) failed\n",
-			  username, sid_string_dbg(&user_sid)));
 		goto done;
 	}
 
@@ -904,6 +898,12 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		 */
 
 	unix_user:
+
+		if (!sid_to_uid(&user_sid, uid)) {
+			DEBUG(1, ("sid_to_uid for %s (%s) failed\n",
+				  username, sid_string_dbg(&user_sid)));
+			goto done;
+		}
 
 		uid_to_unix_users_sid(*uid, &user_sid);
 
