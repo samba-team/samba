@@ -134,9 +134,6 @@ main(int argc, char **argv)
     if(client_str == NULL)
 	errx(1, "client is not set");
 
-    argc -= optidx;
-    argv += optidx;
-
     ret = krb5_init_context(&context);
     if (ret)
 	errx (1, "krb5_init_context failed: %d", ret);
