@@ -1108,13 +1108,6 @@ no_host:
     return HEIM_ERR_V4_PRINC_NO_CONV;
 }
 
-static krb5_boolean
-convert_func(krb5_context conxtext, void *funcctx, krb5_principal principal)
-{
-    krb5_boolean (*func)(krb5_context, krb5_principal) = funcctx;
-    return (*func)(conxtext, principal);
-}
-
 static int
 check_list(const krb5_config_binding *l, const char *name, const char **out)
 {
