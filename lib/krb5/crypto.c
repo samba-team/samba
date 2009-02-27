@@ -3440,9 +3440,7 @@ krb5_decrypt_iov_ivec(krb5_context context,
 
     memcpy(q, hiv->data.data, hiv->data.length);
     q += hiv->data.length;
-
     memcpy(q, div->data.data, div->data.length);
-    q += div->data.length;
 
     ret = _get_derived_key(context, crypto, ENCRYPTION_USAGE(usage), &dkey);
     if(ret) {
