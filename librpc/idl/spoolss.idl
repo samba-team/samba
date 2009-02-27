@@ -483,8 +483,85 @@ import "misc.idl", "security.idl", "winreg.idl";
 	} spoolss_JobInfo;
 
 	typedef struct {
+		uint32 job_id;
+		[string,charset(UTF16)] uint16 *printer_name;
+		[string,charset(UTF16)] uint16 *server_name;
+		[string,charset(UTF16)] uint16 *user_name;
+		[string,charset(UTF16)] uint16 *document_name;
+		[string,charset(UTF16)] uint16 *data_type;
+		[string,charset(UTF16)] uint16 *text_status;
+		spoolss_JobStatus status;
+		uint32 priority;
+		uint32 position;
+		uint32 total_pages;
+		uint32 pages_printed;
+		spoolss_Time submitted;
+	} spoolss_SetJobInfo1;
+
+	typedef struct {
+		uint32 job_id;
+		[string,charset(UTF16)] uint16 *printer_name;
+		[string,charset(UTF16)] uint16 *server_name;
+		[string,charset(UTF16)] uint16 *user_name;
+		[string,charset(UTF16)] uint16 *document_name;
+		[string,charset(UTF16)] uint16 *notify_name;
+		[string,charset(UTF16)] uint16 *data_type;
+		[string,charset(UTF16)] uint16 *print_processor;
+		[string,charset(UTF16)] uint16 *parameters;
+		[string,charset(UTF16)] uint16 *driver_name;
+		spoolss_DeviceMode *devmode;
+		[string,charset(UTF16)] uint16 *text_status;
+		security_descriptor *secdesc;
+		spoolss_JobStatus status;
+		uint32 priority;
+		uint32 position;
+		uint32 start_time;
+		uint32 until_time;
+		uint32 total_pages;
+		uint32 size;
+		spoolss_Time submitted;
+		uint32 time;
+		uint32 pages_printed;
+	} spoolss_SetJobInfo2;
+
+	typedef struct {
+		uint32 job_id;
+		[string,charset(UTF16)] uint16 *printer_name;
+		[string,charset(UTF16)] uint16 *server_name;
+		[string,charset(UTF16)] uint16 *user_name;
+		[string,charset(UTF16)] uint16 *document_name;
+		[string,charset(UTF16)] uint16 *notify_name;
+		[string,charset(UTF16)] uint16 *data_type;
+		[string,charset(UTF16)] uint16 *print_processor;
+		[string,charset(UTF16)] uint16 *parameters;
+		[string,charset(UTF16)] uint16 *driver_name;
+		spoolss_DeviceMode *devmode;
+		[string,charset(UTF16)] uint16 *text_status;
+		security_descriptor *secdesc;
+		spoolss_JobStatus status;
+		uint32 priority;
+		uint32 position;
+		uint32 start_time;
+		uint32 until_time;
+		uint32 total_pages;
+		uint32 size;
+		spoolss_Time submitted;
+		uint32 time;
+		uint32 pages_printed;
+		uint32 size_high;
+	} spoolss_SetJobInfo4;
+
+	typedef [public] union {
+		[case(1)] spoolss_SetJobInfo1 *info1;
+		[case(2)] spoolss_SetJobInfo2 *info2;
+		[case(3)] spoolss_JobInfo3    *info3;
+		[case(4)] spoolss_SetJobInfo4 *info4;
+		[default];
+	} spoolss_SetJobInfo;
+
+	typedef struct {
 		uint32 level;
-		[switch_is(level)] spoolss_JobInfo info;
+		[switch_is(level)] spoolss_SetJobInfo info;
 	} spoolss_JobInfoContainer;
 
 	typedef [v1_enum] enum {
