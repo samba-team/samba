@@ -113,7 +113,7 @@ print_cred(krb5_context context, krb5_creds *cred, rtbl_t ct, int do_flags)
 	    *sp++ = 'A';
 	if(cred->flags.b.hw_authent)
 	    *sp++ = 'H';
-	*sp++ = '\0';
+	*sp = '\0';
 	rtbl_add_column_entry(ct, COL_FLAGS, s);
     }
     free(str);
@@ -512,24 +512,29 @@ list_caches(void)
     rtbl_set_prefix(ct, "   ");
     rtbl_set_column_prefix(ct, COL_NAME, "");
 
-    while ((ret = krb5_cc_cache_next (context, cursor, &id)) == 0) {
+    while (krb5_cc_cache_next (context, cursor, &id) == 0) {
 	krb5_principal principal = NULL;
 	int expired = 0;
 	char *name;
 	time_t t;
 
 	ret = krb5_cc_get_principal(context, id, &principal);
-	if (ret == 0)
-	    expired = check_for_tgt (context, id, principal, &t);
+	if (ret)
+	    continue;
+
+	expired = check_for_tgt (context, id, principal, &t);
 
 	ret = krb5_cc_get_friendly_name(context, id, &name);
 	if (ret == 0) {
+	    const char *str;
 	    rtbl_add_column_entry(ct, COL_NAME, name);
 	    rtbl_add_column_entry(ct, COL_CACHENAME,
 				  krb5_cc_get_name(context, id));
-	    rtbl_add_column_entry(ct, COL_EXPIRES,
-				  expired ? N_(">>> Expired <<<", "") :
-				  printable_time(t));
+	    if (expired)
+		str = N_(">>> Expired <<<", "");
+	    else
+		str = printable_time(t);
+	    rtbl_add_column_entry(ct, COL_EXPIRES, str);
 	    free(name);
 	}
 	krb5_cc_close(context, id);
@@ -625,7 +630,6 @@ main (int argc, char **argv)
     }
 
     argc -= optidx;
-    argv += optidx;
 
     if (argc != 0)
 	usage (1);
