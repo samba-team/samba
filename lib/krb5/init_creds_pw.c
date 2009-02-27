@@ -535,7 +535,9 @@ change_password (krb5_context context,
 	      (int)result_string.length,
 	      result_string.length > 0 ? (char*)result_string.data : "");
 
-    ret = (*prompter) (context, data, NULL, p, 0, NULL);
+    /* return the result */
+    (*prompter) (context, data, NULL, p, 0, NULL);
+
     free (p);
     if (result_code == 0) {
 	strlcpy (newpw, buf1, newpw_sz);
