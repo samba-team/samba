@@ -500,7 +500,6 @@ acc_resolve(krb5_context context, krb5_ccache *id, const char *res)
     } else if (error == ccErrCCacheNotFound) {
 	a->ccache = NULL;
 	a->cache_name = NULL;
-	error = 0;
     } else {
 	*id = NULL;
 	return translate_cc_error(context, error);
