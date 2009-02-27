@@ -75,7 +75,7 @@ main(int argc, char **argv)
     krb5_authenticator authent;
     krb5_keytab keytab;
     int fd;
-    HDB *db;
+    HDB *db = NULL;
     int optidx = 0;
     char *tmp_db;
     krb5_log_facility *fac;
