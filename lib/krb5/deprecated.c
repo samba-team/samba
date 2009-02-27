@@ -347,4 +347,23 @@ krb5_425_conv_principal_ext(krb5_context context,
 					principal);
 }
 
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_425_conv_principal(krb5_context context,
+			const char *name,
+			const char *instance,
+			const char *realm,
+			krb5_principal *princ)
+    KRB5_DEPRECATED
+{
+    krb5_boolean resolve = krb5_config_get_bool(context,
+						NULL,
+						"libdefaults",
+						"v4_instance_resolve",
+						NULL);
+
+    return krb5_425_conv_principal_ext(context, name, instance, realm,
+				       NULL, resolve, princ);
+}
+
 #endif /* HEIMDAL_SMALLER */
