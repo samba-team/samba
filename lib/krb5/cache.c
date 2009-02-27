@@ -1151,7 +1151,7 @@ krb5_cc_cache_match (krb5_context context,
     if (ret)
 	return ret;
 
-    while ((ret = krb5_cccol_cursor_next (context, cursor, &cache)) == 0 && cache != NULL) {
+    while (krb5_cccol_cursor_next (context, cursor, &cache) == 0 && cache != NULL) {
 	krb5_principal principal;
 
 	ret = krb5_cc_get_principal(context, cache, &principal);
@@ -1541,7 +1541,7 @@ krb5_cccol_last_change_time(krb5_context context,
     if (ret)
 	return ret;
 
-    while ((ret = krb5_cccol_cursor_next (context, cursor, &id) && id) == 0) {
+    while (krb5_cccol_cursor_next(context, cursor, &id) == 0 && id != NULL) {
 
 	if (type && strcmp(krb5_cc_get_type(context, id), type) != 0)
 	    continue;
