@@ -1172,6 +1172,8 @@ krb5_store_creds_tag(krb5_storage *sp, krb5_creds *creds)
 	header |= SC_ADDRESSES;
 
     ret = krb5_store_int32(sp, header);
+    if (ret)
+	return ret;
 
     if (creds->client) {
 	ret = krb5_store_principal(sp, creds->client);
