@@ -811,15 +811,16 @@ meta(void)
     if ((c = TTYget()) == EOF)
 	return CSeof;
     /* Also include VT-100 arrows. */
-    if (c == '[' || c == 'O')
-	switch (c = TTYget()) {
-	default:	return ring_bell();
+    if (c == '[' || c == 'O') {
+	switch (TTYget()) {
 	case EOF:	return CSeof;
 	case 'A':	return h_prev();
 	case 'B':	return h_next();
 	case 'C':	return fd_char();
 	case 'D':	return bk_char();
 	}
+	return ring_bell();
+    }
 
     if (isdigit(c)) {
 	for (Repeat = c - '0'; (c = TTYget()) != EOF && isdigit(c); )
