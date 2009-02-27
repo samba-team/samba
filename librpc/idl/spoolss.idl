@@ -1449,10 +1449,44 @@ import "misc.idl", "security.idl", "winreg.idl";
 		uint32 reserved;
 	} spoolss_PortInfo2;
 
+	typedef [v1_enum] enum {
+		PORT_STATUS_CLEAR		= 0x00000000,
+		PORT_STATUS_OFFLINE		= 0x00000001,
+		PORT_STATUS_PAPER_JAM		= 0x00000002,
+		PORT_STATUS_PAPER_OUT		= 0x00000003,
+		PORT_STATUS_OUTPUT_BIN_FULL	= 0x00000004,
+		PORT_STATUS_PAPER_PROBLEM	= 0x00000005,
+		PORT_STATUS_NO_TONER		= 0x00000006,
+		PORT_STATUS_DOOR_OPEN		= 0x00000007,
+		PORT_STATUS_USER_INTERVENTION	= 0x00000008,
+		PORT_STATUS_OUT_OF_MEMORY	= 0x00000009,
+		PORT_STATUS_TONER_LOW		= 0x0000000A,
+		PORT_STATUS_WARMING_UP		= 0x0000000B,
+		PORT_STATUS_POWER_SAVE		= 0x0000000C
+	} spoolss_PortStatus;
+
+	typedef [v1_enum] enum {
+		PORT_STATUS_TYPE_ERROR		= 0x00000001,
+		PORT_STATUS_TYPE_WARNING	= 0x00000002,
+		PORT_STATUS_TYPE_INFO		= 0x00000003
+	} spoolss_PortSeverity;
+
+	typedef struct {
+		spoolss_PortStatus status;
+		[relative] nstring *status_string;
+		spoolss_PortSeverity severity;
+	} spoolss_PortInfo3;
+
+	typedef struct {
+		[relative] nstring *port_name;
+		DATA_BLOB monitor_data; /* relative ?? */
+	} spoolss_PortInfoFF;
+
 	typedef [nodiscriminant,relative_base,public] union {
 		[case(1)] spoolss_PortInfo1 info1;
 		[case(2)] spoolss_PortInfo2 info2;
-		[case(3)]; /* TODO */
+		[case(3)] spoolss_PortInfo3 info3;
+		[case(0xff)] spoolss_PortInfoFF infoFF;
 		[default];
 	} spoolss_PortInfo;
 
