@@ -121,12 +121,12 @@ chgpw_send_request (krb5_context context,
 
     len = 6 + ap_req_data.length + krb_priv_data.length;
     p = header;
-    *p++ = (len >> 8) & 0xFF;
-    *p++ = (len >> 0) & 0xFF;
-    *p++ = 0;
-    *p++ = 1;
-    *p++ = (ap_req_data.length >> 8) & 0xFF;
-    *p++ = (ap_req_data.length >> 0) & 0xFF;
+    p[0] = (len >> 8) & 0xFF;
+    p[1] = (len >> 0) & 0xFF;
+    p[2] = 0;
+    p[3] = 1;
+    p[4] = (ap_req_data.length >> 8) & 0xFF;
+    p[5] = (ap_req_data.length >> 0) & 0xFF;
 
     memset(&msghdr, 0, sizeof(msghdr));
     msghdr.msg_name       = NULL;
