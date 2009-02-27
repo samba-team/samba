@@ -88,9 +88,15 @@ check_time(krb5_context context, const char *path, char *data)
 static int
 check_numeric(krb5_context context, const char *path, char *data)
 {
-    long int v;
+    long v;
     char *end;
     v = strtol(data, &end, 0);
+
+    if ((v == LONG_MIN || v == LONG_MAX) && errno != 0) {
+	krb5_warnx(context, "%s: over/under flow for \"%s\"",
+		   path, data);
+	return 1;
+    }
     if(*end != '\0') {
 	krb5_warnx(context, "%s: failed to parse \"%s\" as a number",
 		   path, data);
