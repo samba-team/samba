@@ -1133,6 +1133,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
     struct krb5_pk_cert *host = NULL;
     krb5_data content;
     heim_oid contentType = { 0, NULL };
+    int flags = HX509_CMS_UE_DONT_REQUIRE_KU_ENCIPHERMENT;
 
     if (der_heim_oid_cmp(oid_id_pkcs7_envelopedData(), dataType)) {
 	krb5_set_error_message(context, EINVAL,
@@ -1140,9 +1141,12 @@ pk_rd_pa_reply_enckey(krb5_context context,
 	return EINVAL;
     }
 
+    if (ctx->type == PKINIT_WIN2K)
+	flags |= HX509_CMS_UE_ALLOW_WEAK;
+
     ret = hx509_cms_unenvelope(ctx->id->hx509ctx,
 			       ctx->id->certs,
-			       HX509_CMS_UE_DONT_REQUIRE_KU_ENCIPHERMENT,
+			       flags,
 			       indata->data,
 			       indata->length,
 			       NULL,
