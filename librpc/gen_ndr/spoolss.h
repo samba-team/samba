@@ -470,9 +470,85 @@ union spoolss_JobInfo {
 	struct spoolss_JobInfo4 info4;/* [case(4)] */
 }/* [relative_base,nodiscriminant,public] */;
 
+struct spoolss_SetJobInfo1 {
+	uint32_t job_id;
+	const char *printer_name;/* [unique,charset(UTF16)] */
+	const char *server_name;/* [unique,charset(UTF16)] */
+	const char *user_name;/* [unique,charset(UTF16)] */
+	const char *document_name;/* [unique,charset(UTF16)] */
+	const char *data_type;/* [unique,charset(UTF16)] */
+	const char *text_status;/* [unique,charset(UTF16)] */
+	uint32_t status;
+	uint32_t priority;
+	uint32_t position;
+	uint32_t total_pages;
+	uint32_t pages_printed;
+	struct spoolss_Time submitted;
+};
+
+struct spoolss_SetJobInfo2 {
+	uint32_t job_id;
+	const char *printer_name;/* [unique,charset(UTF16)] */
+	const char *server_name;/* [unique,charset(UTF16)] */
+	const char *user_name;/* [unique,charset(UTF16)] */
+	const char *document_name;/* [unique,charset(UTF16)] */
+	const char *notify_name;/* [unique,charset(UTF16)] */
+	const char *data_type;/* [unique,charset(UTF16)] */
+	const char *print_processor;/* [unique,charset(UTF16)] */
+	const char *parameters;/* [unique,charset(UTF16)] */
+	const char *driver_name;/* [unique,charset(UTF16)] */
+	struct spoolss_DeviceMode *devmode;/* [unique] */
+	const char *text_status;/* [unique,charset(UTF16)] */
+	struct security_descriptor *secdesc;/* [unique] */
+	uint32_t status;
+	uint32_t priority;
+	uint32_t position;
+	uint32_t start_time;
+	uint32_t until_time;
+	uint32_t total_pages;
+	uint32_t size;
+	struct spoolss_Time submitted;
+	uint32_t time;
+	uint32_t pages_printed;
+};
+
+struct spoolss_SetJobInfo4 {
+	uint32_t job_id;
+	const char *printer_name;/* [unique,charset(UTF16)] */
+	const char *server_name;/* [unique,charset(UTF16)] */
+	const char *user_name;/* [unique,charset(UTF16)] */
+	const char *document_name;/* [unique,charset(UTF16)] */
+	const char *notify_name;/* [unique,charset(UTF16)] */
+	const char *data_type;/* [unique,charset(UTF16)] */
+	const char *print_processor;/* [unique,charset(UTF16)] */
+	const char *parameters;/* [unique,charset(UTF16)] */
+	const char *driver_name;/* [unique,charset(UTF16)] */
+	struct spoolss_DeviceMode *devmode;/* [unique] */
+	const char *text_status;/* [unique,charset(UTF16)] */
+	struct security_descriptor *secdesc;/* [unique] */
+	uint32_t status;
+	uint32_t priority;
+	uint32_t position;
+	uint32_t start_time;
+	uint32_t until_time;
+	uint32_t total_pages;
+	uint32_t size;
+	struct spoolss_Time submitted;
+	uint32_t time;
+	uint32_t pages_printed;
+	uint32_t size_high;
+};
+
+union spoolss_SetJobInfo {
+	struct spoolss_SetJobInfo1 *info1;/* [unique,case] */
+	struct spoolss_SetJobInfo2 *info2;/* [unique,case(2)] */
+	struct spoolss_JobInfo3 *info3;/* [unique,case(3)] */
+	struct spoolss_SetJobInfo4 *info4;/* [unique,case(4)] */
+}/* [public] */;
+
 struct spoolss_JobInfoContainer {
 	uint32_t level;
-	union spoolss_JobInfo info;/* [switch_is(level)] */
+	union spoolss_SetJobInfo info;/* [switch_is(level)] */
 };
 
 enum spoolss_JobControl
@@ -1108,9 +1184,72 @@ struct spoolss_PortInfo2 {
 	uint32_t reserved;
 };
 
+enum spoolss_PortStatus
+#ifndef USE_UINT_ENUMS
+ {
+	PORT_STATUS_CLEAR=0x00000000,
+	PORT_STATUS_OFFLINE=0x00000001,
+	PORT_STATUS_PAPER_JAM=0x00000002,
+	PORT_STATUS_PAPER_OUT=0x00000003,
+	PORT_STATUS_OUTPUT_BIN_FULL=0x00000004,
+	PORT_STATUS_PAPER_PROBLEM=0x00000005,
+	PORT_STATUS_NO_TONER=0x00000006,
+	PORT_STATUS_DOOR_OPEN=0x00000007,
+	PORT_STATUS_USER_INTERVENTION=0x00000008,
+	PORT_STATUS_OUT_OF_MEMORY=0x00000009,
+	PORT_STATUS_TONER_LOW=0x0000000A,
+	PORT_STATUS_WARMING_UP=0x0000000B,
+	PORT_STATUS_POWER_SAVE=0x0000000C
+}
+#else
+ { __donnot_use_enum_spoolss_PortStatus=0x7FFFFFFF}
+#define PORT_STATUS_CLEAR ( 0x00000000 )
+#define PORT_STATUS_OFFLINE ( 0x00000001 )
+#define PORT_STATUS_PAPER_JAM ( 0x00000002 )
+#define PORT_STATUS_PAPER_OUT ( 0x00000003 )
+#define PORT_STATUS_OUTPUT_BIN_FULL ( 0x00000004 )
+#define PORT_STATUS_PAPER_PROBLEM ( 0x00000005 )
+#define PORT_STATUS_NO_TONER ( 0x00000006 )
+#define PORT_STATUS_DOOR_OPEN ( 0x00000007 )
+#define PORT_STATUS_USER_INTERVENTION ( 0x00000008 )
+#define PORT_STATUS_OUT_OF_MEMORY ( 0x00000009 )
+#define PORT_STATUS_TONER_LOW ( 0x0000000A )
+#define PORT_STATUS_WARMING_UP ( 0x0000000B )
+#define PORT_STATUS_POWER_SAVE ( 0x0000000C )
+#endif
+;
+
+enum spoolss_PortSeverity
+#ifndef USE_UINT_ENUMS
+ {
+	PORT_STATUS_TYPE_ERROR=0x00000001,
+	PORT_STATUS_TYPE_WARNING=0x00000002,
+	PORT_STATUS_TYPE_INFO=0x00000003
+}
+#else
+ { __donnot_use_enum_spoolss_PortSeverity=0x7FFFFFFF}
+#define PORT_STATUS_TYPE_ERROR ( 0x00000001 )
+#define PORT_STATUS_TYPE_WARNING ( 0x00000002 )
+#define PORT_STATUS_TYPE_INFO ( 0x00000003 )
+#endif
+;
+
+struct spoolss_PortInfo3 {
+	enum spoolss_PortStatus status;
+	const char * status_string;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	enum spoolss_PortSeverity severity;
+};
+
+struct spoolss_PortInfoFF {
+	const char * port_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	DATA_BLOB monitor_data;
+};
+
 union spoolss_PortInfo {
 	struct spoolss_PortInfo1 info1;/* [case] */
 	struct spoolss_PortInfo2 info2;/* [case(2)] */
+	struct spoolss_PortInfo3 info3;/* [case(3)] */
+	struct spoolss_PortInfoFF infoFF;/* [case(0xff)] */
 }/* [relative_base,nodiscriminant,public] */;
 
 struct spoolss_MonitorInfo1 {

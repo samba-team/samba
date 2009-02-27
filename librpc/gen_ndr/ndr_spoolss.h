@@ -243,6 +243,12 @@ void ndr_print_spoolss_JobInfo4(struct ndr_print *ndr, const char *name, const s
 enum ndr_err_code ndr_push_spoolss_JobInfo(struct ndr_push *ndr, int ndr_flags, const union spoolss_JobInfo *r);
 enum ndr_err_code ndr_pull_spoolss_JobInfo(struct ndr_pull *ndr, int ndr_flags, union spoolss_JobInfo *r);
 void ndr_print_spoolss_JobInfo(struct ndr_print *ndr, const char *name, const union spoolss_JobInfo *r);
+void ndr_print_spoolss_SetJobInfo1(struct ndr_print *ndr, const char *name, const struct spoolss_SetJobInfo1 *r);
+void ndr_print_spoolss_SetJobInfo2(struct ndr_print *ndr, const char *name, const struct spoolss_SetJobInfo2 *r);
+void ndr_print_spoolss_SetJobInfo4(struct ndr_print *ndr, const char *name, const struct spoolss_SetJobInfo4 *r);
+enum ndr_err_code ndr_push_spoolss_SetJobInfo(struct ndr_push *ndr, int ndr_flags, const union spoolss_SetJobInfo *r);
+enum ndr_err_code ndr_pull_spoolss_SetJobInfo(struct ndr_pull *ndr, int ndr_flags, union spoolss_SetJobInfo *r);
+void ndr_print_spoolss_SetJobInfo(struct ndr_print *ndr, const char *name, const union spoolss_SetJobInfo *r);
 void ndr_print_spoolss_JobInfoContainer(struct ndr_print *ndr, const char *name, const struct spoolss_JobInfoContainer *r);
 void ndr_print_spoolss_JobControl(struct ndr_print *ndr, const char *name, enum spoolss_JobControl r);
 void ndr_print_spoolss_PrinterControl(struct ndr_print *ndr, const char *name, enum spoolss_PrinterControl r);
@@ -360,6 +366,10 @@ void ndr_print_spoolss_AddFormInfo(struct ndr_print *ndr, const char *name, cons
 void ndr_print_spoolss_PortInfo1(struct ndr_print *ndr, const char *name, const struct spoolss_PortInfo1 *r);
 void ndr_print_spoolss_PortType(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_spoolss_PortInfo2(struct ndr_print *ndr, const char *name, const struct spoolss_PortInfo2 *r);
+void ndr_print_spoolss_PortStatus(struct ndr_print *ndr, const char *name, enum spoolss_PortStatus r);
+void ndr_print_spoolss_PortSeverity(struct ndr_print *ndr, const char *name, enum spoolss_PortSeverity r);
+void ndr_print_spoolss_PortInfo3(struct ndr_print *ndr, const char *name, const struct spoolss_PortInfo3 *r);
+void ndr_print_spoolss_PortInfoFF(struct ndr_print *ndr, const char *name, const struct spoolss_PortInfoFF *r);
 enum ndr_err_code ndr_push_spoolss_PortInfo(struct ndr_push *ndr, int ndr_flags, const union spoolss_PortInfo *r);
 enum ndr_err_code ndr_pull_spoolss_PortInfo(struct ndr_pull *ndr, int ndr_flags, union spoolss_PortInfo *r);
 void ndr_print_spoolss_PortInfo(struct ndr_print *ndr, const char *name, const union spoolss_PortInfo *r);
