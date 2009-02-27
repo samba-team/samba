@@ -1037,6 +1037,10 @@ krb5_425_conv_principal_ext2(krb5_context context,
 	for(d = domains; d && *d; d++){
 	    snprintf(host, sizeof(host), "%s.%s", instance, *d);
 	    ret = krb5_make_principal(context, &pr, realm, name, host, NULL);
+	    if (ret) {
+		krb5_config_free_strings(domains);
+		return ret;
+	    }
 	    if(func == NULL || (*func)(context, funcctx, pr)){
 		*princ = pr;
 		krb5_config_free_strings(domains);
