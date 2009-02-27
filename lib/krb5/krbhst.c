@@ -946,7 +946,7 @@ gethostlist(krb5_context context, const char *realm,
 	    return ENOMEM;
 	}
     }
-    (*hostlist)[nhost++] = NULL;
+    (*hostlist)[nhost] = NULL;
     krb5_krbhst_free(context, handle);
     return 0;
 }
