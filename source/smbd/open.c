@@ -2462,6 +2462,25 @@ NTSTATUS open_directory(connection_struct *conn,
 					fname,
 					access_mask,
 					&access_granted);
+
+		/* Were we trying to do a directory open
+		 * for delete and didn't get DELETE
+		 * access (only) ? Check if the
+		 * directory allows DELETE_CHILD.
+		 * See here:
+		 * http://blogs.msdn.com/oldnewthing/archive/2004/06/04/148426.aspx
+		 * for details. */
+
+		if ((NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) &&
+				(access_mask & DELETE_ACCESS) &&
+				(access_granted == DELETE_ACCESS) &&
+				can_delete_file_in_directory(conn, fname))) {
+			DEBUG(10,("open_directory: overrode ACCESS_DENIED "
+				"on directory %s\n",
+				fname ));
+			status = NT_STATUS_OK;
+		}
+
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10, ("open_directory: check_open_rights on "
 				"file  %s failed with %s\n",
