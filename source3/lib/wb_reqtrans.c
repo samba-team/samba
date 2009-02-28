@@ -288,7 +288,7 @@ static ssize_t wb_resp_more(uint8_t *buf, size_t buflen, void *private_data)
 			return -1;
 		}
 	}
-	return resp->length - 4;
+	return resp->length - buflen;
 }
 
 static void wb_resp_read_done(struct tevent_req *subreq)
