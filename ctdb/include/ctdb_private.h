@@ -1224,6 +1224,7 @@ int ctdb_ctrl_get_public_ipsv4(struct ctdb_context *ctdb,
 
 
 /* from takeover/system.c */
+uint32_t uint16_checksum(uint16_t *data, size_t n);
 int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface);
 bool ctdb_sys_have_ip(ctdb_sock_addr *addr);
 int ctdb_sys_send_tcp(const ctdb_sock_addr *dest, 
