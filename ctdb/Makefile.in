@@ -116,6 +116,8 @@ bin/smnotify: utils/smnotify/gen_xdr.o utils/smnotify/gen_smnotify.o utils/smnot
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ utils/smnotify/smnotify.o utils/smnotify/gen_xdr.o utils/smnotify/gen_smnotify.o $(POPT_OBJ) $(LIB_FLAGS)
 
+utils/smnotify/smnotify.o: utils/smnotify/smnotify.c utils/smnotify/smnotify.h
+
 utils/smnotify/smnotify.h:  utils/smnotify/smnotify.x
 	@echo Generating $@
 	rpcgen -h utils/smnotify/smnotify.x > utils/smnotify/smnotify.h
