@@ -1247,14 +1247,13 @@ static void np_write_trigger(struct async_req *req)
 	if (async_req_nomem(subreq, req)) {
 		return;
 	}
-	subreq->async.fn = np_write_done;
-	subreq->async.private_data = req;
+	tevent_req_set_callback(subreq, np_write_done, req);
 }
 
 static void np_write_done(struct tevent_req *subreq)
 {
-	struct async_req *req = talloc_get_type_abort(
-		subreq->async.private_data, struct async_req);
+	struct async_req *req =
+		tevent_req_callback_data(subreq, struct async_req);
 	struct np_write_state *state = talloc_get_type_abort(
 		req->private_data, struct np_write_state);
 	ssize_t received;
@@ -1398,14 +1397,13 @@ static void np_read_trigger(struct async_req *req)
 	if (async_req_nomem(subreq, req)) {
 		return;
 	}
-	subreq->async.fn = np_read_done;
-	subreq->async.private_data = req;
+	tevent_req_set_callback(subreq, np_read_done, req);
 }
 
 static void np_read_done(struct tevent_req *subreq)
 {
-	struct async_req *req = talloc_get_type_abort(
-		subreq->async.private_data, struct async_req);
+	struct async_req *req =
+		tevent_req_callback_data(subreq, struct async_req);
 	struct np_read_state *state = talloc_get_type_abort(
 		req->private_data, struct np_read_state);
 	ssize_t received;

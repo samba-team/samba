@@ -1033,8 +1033,7 @@ struct tevent_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 		    timeval_current_ofs(0, state->wait_nsec))) {
 		goto fail;
 	}
-	subreq->async.fn = open_socket_out_connected;
-	subreq->async.private_data = result;
+	tevent_req_set_callback(subreq, open_socket_out_connected, result);
 	return result;
 
  post_status:
@@ -1047,10 +1046,10 @@ struct tevent_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 
 static void open_socket_out_connected(struct tevent_req *subreq)
 {
-	struct tevent_req *req = talloc_get_type_abort(
-		subreq->async.private_data, struct tevent_req);
-	struct open_socket_out_state *state = talloc_get_type_abort(
-		req->private_state, struct open_socket_out_state);
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq, struct tevent_req);
+	struct open_socket_out_state *state =
+		tevent_req_data(req, struct open_socket_out_state);
 	int ret;
 	int sys_errno;
 
@@ -1089,8 +1088,7 @@ static void open_socket_out_connected(struct tevent_req *subreq)
 			tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
 			return;
 		}
-		subreq->async.fn = open_socket_out_connected;
-		subreq->async.private_data = req;
+		tevent_req_set_callback(subreq, open_socket_out_connected, req);
 		return;
 	}
 
@@ -1107,8 +1105,8 @@ static void open_socket_out_connected(struct tevent_req *subreq)
 
 NTSTATUS open_socket_out_recv(struct tevent_req *req, int *pfd)
 {
-	struct open_socket_out_state *state = talloc_get_type_abort(
-		req->private_state, struct open_socket_out_state);
+	struct open_socket_out_state *state =
+		tevent_req_data(req, struct open_socket_out_state);
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
@@ -1217,14 +1215,13 @@ static void open_socket_out_defer_waited(struct async_req *subreq)
 	if (async_req_nomem(subreq2, req)) {
 		return;
 	}
-	subreq2->async.fn = open_socket_out_defer_connected;
-	subreq2->async.private_data = req;
+	tevent_req_set_callback(subreq2, open_socket_out_defer_connected, req);
 }
 
 static void open_socket_out_defer_connected(struct tevent_req *subreq)
 {
-	struct async_req *req = talloc_get_type_abort(
-		subreq->async.private_data, struct async_req);
+	struct async_req *req =
+		tevent_req_callback_data(subreq, struct async_req);
 	struct open_socket_out_defer_state *state = talloc_get_type_abort(
 		req->private_data, struct open_socket_out_defer_state);
 	NTSTATUS status;

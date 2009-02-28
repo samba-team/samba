@@ -25,6 +25,99 @@
    License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
 
+struct tevent_req {
+	/**
+	 * @brief What to do on completion
+	 *
+	 * This is used for the user of an async request, fn is called when
+	 * the request completes, either successfully or with an error.
+	 */
+	struct {
+		/**
+		 * @brief Completion function
+		 * Completion function, to be filled by the API user
+		 */
+		tevent_req_fn fn;
+		/**
+		 * @brief Private data for the completion function
+		 */
+		void *private_data;
+	} async;
+
+	/**
+	 * @brief Private state pointer for the actual implementation
+	 *
+	 * The implementation doing the work for the async request needs to
+	 * keep around current data like for example a fd event. The user of
+	 * an async request should not touch this.
+	 */
+	void *data;
+
+	/**
+	 * @brief A function to overwrite the default print function
+	 *
+	 * The implementation doing the work may want to imeplement a
+	 * custom function to print the text representation of the async
+	 * request.
+	 */
+	tevent_req_print_fn private_print;
+
+	/**
+	 * @brief Internal state of the request
+	 *
+	 * Callers should only access this via functions and never directly.
+	 */
+	struct {
+		/**
+		 * @brief The talloc type of the data pointer
+		 *
+		 * This is filled by the tevent_req_create() macro.
+		 *
+		 * This for debugging only.
+		 */
+		const char *private_type;
+
+		/**
+		 * @brief The location where the request was created
+		 *
+		 * This uses the __location__ macro via the tevent_req_create()
+		 * macro.
+		 *
+		 * This for debugging only.
+		 */
+		const char *location;
+
+		/**
+		 * @brief The external state - will be queried by the caller
+		 *
+		 * While the async request is being processed, state will remain in
+		 * TEVENT_REQ_IN_PROGRESS. A request is finished if
+		 * req->state>=TEVENT_REQ_DONE.
+		 */
+		enum tevent_req_state state;
+
+		/**
+		 * @brief status code when finished
+		 *
+		 * This status can be queried in the async completion function. It
+		 * will be set to 0 when everything went fine.
+		 */
+		uint64_t error;
+
+		/**
+		 * @brief the timer event if tevent_req_post was used
+		 *
+		 */
+		struct tevent_timer *trigger;
+
+		/**
+		 * @brief the timer event if tevent_req_set_timeout was used
+		 *
+		 */
+		struct tevent_timer *timer;
+	} internal;
+};
+
 struct tevent_ops {
 	/* conntext init */
 	int (*context_init)(struct tevent_context *ev);

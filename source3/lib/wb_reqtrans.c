@@ -103,8 +103,7 @@ struct async_req *wb_req_read_send(TALLOC_CTX *mem_ctx,
 		goto nomem;
 	}
 
-	subreq->async.fn = wb_req_read_done;
-	subreq->async.private_data = result;
+	tevent_req_set_callback(subreq, wb_req_read_done, result);
 	return result;
  nomem:
 	TALLOC_FREE(result);
@@ -140,8 +139,8 @@ static ssize_t wb_req_more(uint8_t *buf, size_t buflen, void *private_data)
 
 static void wb_req_read_done(struct tevent_req *subreq)
 {
-	struct async_req *req = talloc_get_type_abort(
-		subreq->async.private_data, struct async_req);
+	struct async_req *req =
+		tevent_req_callback_data(subreq, struct async_req);
 	struct req_read_state *state = talloc_get_type_abort(
 		req->private_data, struct req_read_state);
 	int err;
@@ -213,8 +212,7 @@ struct async_req *wb_req_write_send(TALLOC_CTX *mem_ctx,
 	if (subreq == NULL) {
 		goto fail;
 	}
-	subreq->async.fn = wb_req_write_done;
-	subreq->async.private_data = result;
+	tevent_req_set_callback(wb_req_write_done, result);
 	return result;
 
  fail:
@@ -224,8 +222,8 @@ struct async_req *wb_req_write_send(TALLOC_CTX *mem_ctx,
 
 static void wb_req_write_done(struct tevent_req *subreq)
 {
-	struct async_req *req = talloc_get_type_abort(
-		subreq->async.private_data, struct async_req);
+	struct async_req *req =
+		tevent_req_callback_data(subreq, struct async_req);
 	int err;
 	ssize_t ret;
 
@@ -266,8 +264,7 @@ struct async_req *wb_resp_read_send(TALLOC_CTX *mem_ctx,
 	if (subreq == NULL) {
 		goto nomem;
 	}
-	subreq->async.fn = wb_resp_read_done;
-	subreq->async.private_data = result;
+	tevent_req_set_callback(subreq, wb_resp_read_done, result);
 	return result;
 
  nomem:
@@ -293,8 +290,8 @@ static ssize_t wb_resp_more(uint8_t *buf, size_t buflen, void *private_data)
 
 static void wb_resp_read_done(struct tevent_req *subreq)
 {
-	struct async_req *req = talloc_get_type_abort(
-		subreq->async.private_data, struct async_req);
+	struct async_req *req =
+		tevent_req_callback_data(subreq, struct async_req);
 	struct resp_read_state *state = talloc_get_type_abort(
 		req->private_data, struct resp_read_state);
 	uint8_t *buf;
@@ -367,8 +364,7 @@ struct async_req *wb_resp_write_send(TALLOC_CTX *mem_ctx,
 	if (subreq == NULL) {
 		goto fail;
 	}
-	subreq->async.fn = wb_resp_write_done;
-	subreq->async.private_data = result;
+	tevent_req_set_callback(subreq, wb_resp_write_done, result);
 	return result;
 
  fail:
@@ -378,8 +374,8 @@ struct async_req *wb_resp_write_send(TALLOC_CTX *mem_ctx,
 
 static void wb_resp_write_done(struct tevent_req *subreq)
 {
-	struct async_req *req = talloc_get_type_abort(
-		subreq->async.private_data, struct async_req);
+	struct async_req *req =
+		tevent_re_callback_data(subreq, struct async_req);
 	int err;
 	ssize_t ret;
 
