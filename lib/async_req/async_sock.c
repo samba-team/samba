@@ -268,8 +268,8 @@ struct tevent_req *async_connect_send(TALLOC_CTX *mem_ctx,
 
 	state->result = connect(fd, address, address_len);
 	if (state->result == 0) {
-		errno = 0;
-		goto post_errno;
+		tevent_req_done(result);
+		goto done;
 	}
 
 	/**
@@ -284,25 +284,22 @@ struct tevent_req *async_connect_send(TALLOC_CTX *mem_ctx,
 	      errno == EISCONN ||
 #endif
 	      errno == EAGAIN || errno == EINTR)) {
+		state->sys_errno = errno;
 		goto post_errno;
 	}
 
 	fde = tevent_add_fd(ev, state, fd, TEVENT_FD_READ | TEVENT_FD_WRITE,
 			   async_connect_connected, result);
 	if (fde == NULL) {
-		errno = ENOMEM;
+		state->sys_errno = ENOMEM;
 		goto post_errno;
 	}
 	return result;
 
  post_errno:
-	state->sys_errno = errno;
+	tevent_req_error(result, state->sys_errno);
+ done:
 	fcntl(fd, F_SETFL, state->old_sockflags);
-	if (state->sys_errno == 0) {
-		tevent_req_done(result);
-	} else {
-		tevent_req_error(result, state->sys_errno);
-	}
 	return tevent_req_post(result, ev);
 }
 
