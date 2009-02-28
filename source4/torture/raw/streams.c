@@ -1454,7 +1454,7 @@ static bool test_stream_create_disposition(struct torture_context *tctx,
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
-	if (!check_stream_list(cli, fname, 2, &default_stream_name)) {
+	if (!check_stream_list(cli, fname, 1, &default_stream_name)) {
 		goto done;
 	}
 
