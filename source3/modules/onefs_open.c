@@ -196,7 +196,7 @@ static NTSTATUS onefs_open_file(files_struct *fsp,
 						      &base, &stream);
 	}
 	/* It's a stream, so pass in the base_fd */
-	if (stream != NULL) {
+	if ((conn->fs_capabilities & FILE_NAMED_STREAMS) && stream != NULL) {
 		SMB_ASSERT(fsp->base_fsp);
 
 		/*

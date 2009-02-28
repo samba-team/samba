@@ -64,6 +64,8 @@ enum onefs_acl_wire_format
 #define PARM_DOT_SNAP_TILDE_DEFAULT true
 #define PARM_IGNORE_SACLS "ignore sacls"
 #define PARM_IGNORE_SACLS_DEFAULT false
+#define PARM_IGNORE_STREAMS "ignore streams"
+#define PARM_IGNORE_STREAMS_DEFAULT false
 #define PARM_MTIME_NOW		"mtime now files"
 #define PARM_MTIME_NOW_DEFAULT	NULL
 #define PARM_MTIME_STATIC	"mtime static files"
