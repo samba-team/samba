@@ -208,7 +208,7 @@ struct async_req *wb_req_write_send(TALLOC_CTX *mem_ctx,
 		count = 2;
 	}
 
-	subreq = writev_send(state, ev, fd, state->iov, count);
+	subreq = writev_send(state, ev, NULL, fd, state->iov, count);
 	if (subreq == NULL) {
 		goto fail;
 	}
@@ -360,7 +360,7 @@ struct async_req *wb_resp_write_send(TALLOC_CTX *mem_ctx,
 		count = 2;
 	}
 
-	subreq = writev_send(state, ev, fd, state->iov, count);
+	subreq = writev_send(state, ev, NULL, fd, state->iov, count);
 	if (subreq == NULL) {
 		goto fail;
 	}
