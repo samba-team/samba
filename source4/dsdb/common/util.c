@@ -1693,7 +1693,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 		if (convert_string_talloc_convenience(mem_ctx, lp_iconv_convenience(ldb_get_opaque(ctx, "loadparm")), 
 					  CH_UTF16, CH_UNIX, 
 					  new_password->data, new_password->length, 
-					  (void **)&new_pass, false) != -1) {
+					  (void **)&new_pass, NULL, false)) {
 			
 			
 			/* possibly check password complexity */

@@ -779,7 +779,6 @@ static WERROR dsdb_syntax_UNICODE_drsuapi_to_ldb(struct ldb_context *ldb,
 	W_ERROR_HAVE_NO_MEMORY(out->values);
 
 	for (i=0; i < out->num_values; i++) {
-		ssize_t ret;
 		char *str;
 
 		if (in->value_ctr.values[i].blob == NULL) {
@@ -790,13 +789,12 @@ static WERROR dsdb_syntax_UNICODE_drsuapi_to_ldb(struct ldb_context *ldb,
 			return WERR_FOOBAR;
 		}
 
-		ret = convert_string_talloc_convenience(out->values, 
+		if (!convert_string_talloc_convenience(out->values, 
 						schema->iconv_convenience, 
 									CH_UTF16, CH_UNIX,
 					    in->value_ctr.values[i].blob->data,
 					    in->value_ctr.values[i].blob->length,
-					    (void **)&str, false);
-		if (ret == -1) {
+					    (void **)&str, NULL, false)) {
 			return WERR_FOOBAR;
 		}
 
@@ -835,11 +833,10 @@ static WERROR dsdb_syntax_UNICODE_ldb_to_drsuapi(struct ldb_context *ldb,
 
 		out->value_ctr.values[i].blob	= &blobs[i];
 
-		ret = convert_string_talloc_convenience(blobs, schema->iconv_convenience, CH_UNIX, CH_UTF16,
+		if (!convert_string_talloc_convenience(blobs, schema->iconv_convenience, CH_UNIX, CH_UTF16,
 					    in->values[i].data,
 					    in->values[i].length,
-					    (void **)&blobs[i].data, false);
-		if (ret == -1) {
+					    (void **)&blobs[i].data, NULL, false)) {
 			return WERR_FOOBAR;
 		}
 		blobs[i].length = ret;
@@ -1145,7 +1142,6 @@ static WERROR dsdb_syntax_PRESENTATION_ADDRESS_drsuapi_to_ldb(struct ldb_context
 
 	for (i=0; i < out->num_values; i++) {
 		uint32_t len;
-		ssize_t ret;
 		char *str;
 
 		if (in->value_ctr.values[i].blob == NULL) {
@@ -1162,11 +1158,10 @@ static WERROR dsdb_syntax_PRESENTATION_ADDRESS_drsuapi_to_ldb(struct ldb_context
 			return WERR_FOOBAR;
 		}
 
-		ret = convert_string_talloc_convenience(out->values, schema->iconv_convenience, CH_UTF16, CH_UNIX,
+		if (!convert_string_talloc_convenience(out->values, schema->iconv_convenience, CH_UTF16, CH_UNIX,
 					    in->value_ctr.values[i].blob->data+4,
 					    in->value_ctr.values[i].blob->length-4,
-					    (void **)&str, false);
-		if (ret == -1) {
+					    (void **)&str, NULL, false)) {
 			return WERR_FOOBAR;
 		}
 
@@ -1202,15 +1197,14 @@ static WERROR dsdb_syntax_PRESENTATION_ADDRESS_ldb_to_drsuapi(struct ldb_context
 
 	for (i=0; i < in->num_values; i++) {
 		uint8_t *data;
-		ssize_t ret;
+		size_t ret;
 
 		out->value_ctr.values[i].blob	= &blobs[i];
 
-		ret = convert_string_talloc_convenience(blobs, schema->iconv_convenience, CH_UNIX, CH_UTF16,
+		if (!convert_string_talloc_convenience(blobs, schema->iconv_convenience, CH_UNIX, CH_UTF16,
 					    in->values[i].data,
 					    in->values[i].length,
-					    (void **)&data, false);
-		if (ret == -1) {
+					    (void **)&data, &ret, false)) {
 			return WERR_FOOBAR;
 		}
 

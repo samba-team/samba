@@ -30,7 +30,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 	char *as=NULL;
 	uint32_t len1, ofs, len2;
 	uint16_t len3;
-	int ret;
+	size_t ret;
 	charset_t chset = CH_UTF16;
 	unsigned byte_mul = 2;
 	unsigned flags = ndr->flags;
@@ -81,12 +81,11 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 		if (len2 == 0) {
 			as = talloc_strdup(ndr->current_mem_ctx, "");
 		} else {
-			ret = convert_string_talloc_convenience(ndr->current_mem_ctx,
+			if (!convert_string_talloc_convenience(ndr->current_mem_ctx,
 						    ndr->iconv_convenience, chset, CH_UNIX, 
 						    ndr->data+ndr->offset, 
 						    (len2 + c_len_term)*byte_mul,
-						    (void **)&as, false);
-			if (ret == -1) {
+						    (void **)&as, &ret, false)) {
 				return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
 						      "Bad character conversion");
 			}
@@ -118,13 +117,12 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 		if (len1 == 0) {
 			as = talloc_strdup(ndr->current_mem_ctx, "");
 		} else {
-			ret = convert_string_talloc_convenience(ndr->current_mem_ctx,
+			if (!convert_string_talloc_convenience(ndr->current_mem_ctx,
 						    ndr->iconv_convenience, 
 						    chset, CH_UNIX, 
 						    ndr->data+ndr->offset, 
 						    (len1 + c_len_term)*byte_mul,
-						    (void **)&as, false);
-			if (ret == -1) {
+						    (void **)&as, &ret, false)) {
 				return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
 						      "Bad character conversion");
 			}
@@ -157,13 +155,12 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 		if (len1 == 0) {
 			as = talloc_strdup(ndr->current_mem_ctx, "");
 		} else {
-			ret = convert_string_talloc_convenience(ndr->current_mem_ctx,
+			if (!convert_string_talloc_convenience(ndr->current_mem_ctx,
 						    ndr->iconv_convenience, 
 						    chset, CH_UNIX, 
 						    ndr->data+ndr->offset, 
 						    (len1 + c_len_term)*byte_mul,
-						    (void **)&as, false);
-			if (ret == -1) {
+						    (void **)&as, &ret, false)) {
 				return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
 						      "Bad character conversion");
 			}
@@ -192,13 +189,12 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 		if (len3 == 0) {
 			as = talloc_strdup(ndr->current_mem_ctx, "");
 		} else {
-			ret = convert_string_talloc_convenience(ndr->current_mem_ctx,
+			if (!convert_string_talloc_convenience(ndr->current_mem_ctx,
 						    ndr->iconv_convenience,
 						    chset, CH_UNIX, 
 						    ndr->data+ndr->offset, 
 						    (len3 + c_len_term)*byte_mul,
-						    (void **)&as, false);
-			if (ret == -1) {
+						    (void **)&as, &ret, false)) {
 				return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
 						      "Bad character conversion");
 			}
@@ -225,13 +221,12 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 		if (len3 == 0) {
 			as = talloc_strdup(ndr->current_mem_ctx, "");
 		} else {
-			ret = convert_string_talloc_convenience(ndr->current_mem_ctx,
+			if (!convert_string_talloc_convenience(ndr->current_mem_ctx,
 						    ndr->iconv_convenience, 
 						    chset, CH_UNIX, 
 						    ndr->data+ndr->offset, 
 						    len3,
-						    (void **)&as, false);
-			if (ret == -1) {
+						    (void **)&as, &ret, false)) {
 				return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
 						      "Bad character conversion");
 			}
@@ -246,12 +241,11 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 		} else {
 			len1 = utf16_len_n(ndr->data+ndr->offset, ndr->data_size - ndr->offset);
 		}
-		ret = convert_string_talloc_convenience(ndr->current_mem_ctx,
+		if (!convert_string_talloc_convenience(ndr->current_mem_ctx,
 					    ndr->iconv_convenience, chset, CH_UNIX, 
 					    ndr->data+ndr->offset, 
 					    len1,
-					    (void **)&as, false);
-		if (ret == -1) {
+					    (void **)&as, &ret, false)) {
 			return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
 					      "Bad character conversion");
 		}
@@ -271,13 +265,12 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 		if (len1 == 0) {
 			as = talloc_strdup(ndr->current_mem_ctx, "");
 		} else {
-			ret = convert_string_talloc_convenience(ndr->current_mem_ctx,
+			if (!convert_string_talloc_convenience(ndr->current_mem_ctx,
 						    ndr->iconv_convenience,
 						    chset, CH_UNIX, 
 						    ndr->data+ndr->offset, 
 						    len1,
-						    (void **)&as, false);
-			if (ret == -1) {
+						    (void **)&as, &ret, false)) {
 				return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
 						      "Bad character conversion");
 			}
@@ -301,7 +294,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 */
 _PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 {
-	ssize_t s_len, c_len, d_len;
+	size_t s_len, c_len, d_len;
 	int chset = CH_UTF16;
 	unsigned flags = ndr->flags;
 	unsigned byte_mul = 2;
@@ -334,8 +327,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, int ndr_flags, 
 	if (!(flags & LIBNDR_FLAG_STR_NOTERM)) {
 		s_len++;
 	}
-	d_len = convert_string_talloc_convenience(ndr, ndr->iconv_convenience, CH_UNIX, chset, s, s_len, (void **)&dest, false);
-	if (d_len == -1) {
+	if (!convert_string_talloc_convenience(ndr, ndr->iconv_convenience, CH_UNIX, chset, s, s_len, (void **)&dest, &d_len, false)) {
 		return ndr_push_error(ndr, NDR_ERR_CHARCNV, 
 				      "Bad character conversion");
 	}
@@ -656,7 +648,7 @@ _PUBLIC_ enum ndr_err_code ndr_check_string_terminator(struct ndr_pull *ndr, uin
 
 _PUBLIC_ enum ndr_err_code ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags, const char **var, uint32_t length, uint8_t byte_mul, charset_t chset)
 {
-	int ret;
+	size_t ret;
 	if (length == 0) {
 		*var = talloc_strdup(ndr->current_mem_ctx, "");
 		return NDR_ERR_SUCCESS;
@@ -668,13 +660,12 @@ _PUBLIC_ enum ndr_err_code ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags,
 
 	NDR_PULL_NEED_BYTES(ndr, length*byte_mul);
 
-	ret = convert_string_talloc_convenience(ndr->current_mem_ctx, 
+	if (!convert_string_talloc_convenience(ndr->current_mem_ctx, 
 				    ndr->iconv_convenience,
 				    chset, CH_UNIX, 
 				    ndr->data+ndr->offset, 
 				    length*byte_mul,
-				    discard_const_p(void *, var), false);
-	if (ret == -1) {
+				    discard_const_p(void *, var), &ret, false)) {
 		return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
 				      "Bad character conversion");
 	}
@@ -685,7 +676,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags,
 
 _PUBLIC_ enum ndr_err_code ndr_push_charset(struct ndr_push *ndr, int ndr_flags, const char *var, uint32_t length, uint8_t byte_mul, charset_t chset)
 {
-	ssize_t ret, required;
+	size_t ret, required;
 
 	if (NDR_BE(ndr) && chset == CH_UTF16) {
 		chset = CH_UTF16BE;
@@ -694,10 +685,9 @@ _PUBLIC_ enum ndr_err_code ndr_push_charset(struct ndr_push *ndr, int ndr_flags,
 	required = byte_mul * length;
 	
 	NDR_PUSH_NEED_BYTES(ndr, required);
-	ret = convert_string_convenience(ndr->iconv_convenience, CH_UNIX, chset, 
+	if (!convert_string_convenience(ndr->iconv_convenience, CH_UNIX, chset, 
 			     var, strlen(var),
-			     ndr->data+ndr->offset, required, false);
-	if (ret == -1) {
+			     ndr->data+ndr->offset, required, &ret, false)) {
 		return ndr_push_error(ndr, NDR_ERR_CHARCNV, 
 				      "Bad character conversion");
 	}

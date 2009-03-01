@@ -656,8 +656,8 @@ NTSTATUS smb2_pull_o16s16_string(struct smb2_request_buffer *buf, TALLOC_CTX *me
 {
 	DATA_BLOB blob;
 	NTSTATUS status;
-	ssize_t size;
 	void *vstr;
+	bool ret;
 
 	status = smb2_pull_o16s16_blob(buf, mem_ctx, ptr, &blob);
 	NT_STATUS_NOT_OK_RETURN(status);
@@ -675,11 +675,11 @@ NTSTATUS smb2_pull_o16s16_string(struct smb2_request_buffer *buf, TALLOC_CTX *me
 		return NT_STATUS_OK;
 	}
 
-	size = convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, 
-				     blob.data, blob.length, &vstr, false);
+	ret = convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, 
+				     blob.data, blob.length, &vstr, NULL, false);
 	data_blob_free(&blob);
 	(*str) = (char *)vstr;
-	if (size == -1) {
+	if (!ret) {
 		return NT_STATUS_ILLEGAL_CHARACTER;
 	}
 	return NT_STATUS_OK;
@@ -694,7 +694,7 @@ NTSTATUS smb2_push_o16s16_string(struct smb2_request_buffer *buf,
 {
 	DATA_BLOB blob;
 	NTSTATUS status;
-	ssize_t size;
+	bool ret;
 
 	if (str == NULL) {
 		return smb2_push_o16s16_blob(buf, ofs, data_blob(NULL, 0));
@@ -706,12 +706,12 @@ NTSTATUS smb2_push_o16s16_string(struct smb2_request_buffer *buf,
 		return smb2_push_o16s16_blob(buf, ofs, blob);
 	}
 
-	size = convert_string_talloc(buf->buffer, CH_UNIX, CH_UTF16, 
-				     str, strlen(str), (void **)&blob.data, false);
-	if (size == -1) {
+	ret = convert_string_talloc(buf->buffer, CH_UNIX, CH_UTF16, 
+				     str, strlen(str), (void **)&blob.data, &blob.length, 
+					 false);
+	if (!ret) {
 		return NT_STATUS_ILLEGAL_CHARACTER;
 	}
-	blob.length = size;
 
 	status = smb2_push_o16s16_blob(buf, ofs, blob);
 	data_blob_free(&blob);

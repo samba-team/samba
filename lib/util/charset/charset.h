@@ -115,10 +115,11 @@ ssize_t pull_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src);
 ssize_t push_string(void *dest, const char *src, size_t dest_len, int flags);
 ssize_t pull_string(char *dest, const void *src, size_t dest_len, size_t src_len, int flags);
 
-ssize_t convert_string_talloc(TALLOC_CTX *ctx, 
+bool convert_string_talloc(TALLOC_CTX *ctx, 
 				       charset_t from, charset_t to, 
 				       void const *src, size_t srclen, 
-				       void **dest, bool allow_badcharcnv);
+				       void **dest, size_t *converted_size, 
+					   bool allow_badcharcnv);
 
 size_t convert_string(charset_t from, charset_t to,
 				void const *src, size_t srclen, 
@@ -148,15 +149,16 @@ struct smb_iconv_convenience *smb_iconv_convenience_init(TALLOC_CTX *mem_ctx,
 							 const char *unix_charset,
 							 bool native_iconv);
 
-ssize_t convert_string_convenience(struct smb_iconv_convenience *ic,
+bool convert_string_convenience(struct smb_iconv_convenience *ic,
 				charset_t from, charset_t to,
 				void const *src, size_t srclen, 
-				void *dest, size_t destlen, bool allow_badcharcnv);
-ssize_t convert_string_talloc_convenience(TALLOC_CTX *ctx, 
+				void *dest, size_t destlen, size_t *converted_size,
+				bool allow_badcharcnv);
+bool convert_string_talloc_convenience(TALLOC_CTX *ctx, 
 				       struct smb_iconv_convenience *ic, 
 				       charset_t from, charset_t to, 
 				       void const *src, size_t srclen, 
-				       void **dest, bool allow_badcharcnv);
+				       void **dest, size_t *converted_size, bool allow_badcharcnv);
 /* iconv */
 smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode);
 int smb_iconv_close(smb_iconv_t cd);

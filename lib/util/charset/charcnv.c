@@ -186,7 +186,7 @@ convert:
 	destlen = 2 + (destlen*3);
 	ob = talloc_realloc(ctx, outbuf, char, destlen);
 	if (!ob) {
-		DEBUG(0, ("convert_string_talloc: realloc failed!\n"));
+		DEBUG(0, ("iconv_talloc: realloc failed!\n"));
 		talloc_free(outbuf);
 		return (size_t)-1;
 	} else {
@@ -237,10 +237,11 @@ convert:
  * @param destlen maximal length allowed for string
  * @returns the number of bytes occupied in the destination
  **/
-_PUBLIC_ ssize_t convert_string_convenience(struct smb_iconv_convenience *ic,
+_PUBLIC_ bool convert_string_convenience(struct smb_iconv_convenience *ic,
 				charset_t from, charset_t to,
 				void const *src, size_t srclen, 
-				void *dest, size_t destlen, bool allow_badcharcnv)
+				void *dest, size_t destlen, size_t *converted_size,
+				bool allow_badcharcnv)
 {
 	size_t i_len, o_len;
 	size_t retval;
@@ -249,7 +250,8 @@ _PUBLIC_ ssize_t convert_string_convenience(struct smb_iconv_convenience *ic,
 	smb_iconv_t descriptor;
 
 	if (allow_badcharcnv) {
-		return -1;
+		/* Not implemented yet */
+		return false;
 	}
 
 	if (srclen == (size_t)-1)
@@ -261,7 +263,8 @@ _PUBLIC_ ssize_t convert_string_convenience(struct smb_iconv_convenience *ic,
 		/* conversion not supported, use as is */
 		size_t len = MIN(srclen,destlen);
 		memcpy(dest,src,len);
-		return len;
+		*converted_size = len;
+		return true;
 	}
 
 	i_len=srclen;
@@ -272,7 +275,7 @@ _PUBLIC_ ssize_t convert_string_convenience(struct smb_iconv_convenience *ic,
 		switch(errno) {
 			case EINVAL:
 				reason="Incomplete multibyte sequence";
-				return -1;
+				return false;
 			case E2BIG:
 				reason="No more room"; 
 				if (from == CH_UNIX) {
@@ -285,14 +288,16 @@ _PUBLIC_ ssize_t convert_string_convenience(struct smb_iconv_convenience *ic,
 						 charset_name(ic, from), charset_name(ic, to),
 						 (int)srclen, (int)destlen));
 				}
-			       return -1;
+			       return false;
 			case EILSEQ:
 			       reason="Illegal multibyte sequence";
-			       return -1;
+			       return false;
 		}
 		/* smb_panic(reason); */
 	}
-	return destlen-o_len;
+	if (converted_size != NULL)
+		*converted_size = destlen-o_len;
+	return true;
 }
 	
 /**
@@ -305,21 +310,23 @@ _PUBLIC_ ssize_t convert_string_convenience(struct smb_iconv_convenience *ic,
  * @returns Size in bytes of the converted string; or -1 in case of error.
  **/
 
-_PUBLIC_ ssize_t convert_string_talloc_convenience(TALLOC_CTX *ctx, 
+_PUBLIC_ bool convert_string_talloc_convenience(TALLOC_CTX *ctx, 
 				       struct smb_iconv_convenience *ic, 
 				       charset_t from, charset_t to, 
 				       void const *src, size_t srclen, 
-				       void **dest, bool allow_badcharcnv)
+				       void **dest, size_t *converted_size, 
+					   bool allow_badcharcnv)
 {
 	smb_iconv_t descriptor;
+	ssize_t ret;
 
 	if (allow_badcharcnv)
-		return (size_t)-1;
+		return false; /* Not implemented yet */
 
 	*dest = NULL;
 
 	if (src == NULL || srclen == (size_t)-1 || srclen == 0)
-		return (size_t)-1;
+		return false;
 
 	descriptor = get_conv_handle(ic, from, to);
 
@@ -328,10 +335,15 @@ _PUBLIC_ ssize_t convert_string_talloc_convenience(TALLOC_CTX *ctx,
 		DEBUG(3, ("convert_string_talloc: conversion from %s to %s not supported!\n",
 			  charset_name(ic, from), 
 			  charset_name(ic, to)));
-		return -1;
+		return false;
 	}
 
-	return iconv_talloc(ctx, descriptor, src, srclen, dest);
+	ret = iconv_talloc(ctx, descriptor, src, srclen, dest);
+	if (ret == -1)
+		return false;
+	if (converted_size != NULL)
+		*converted_size = ret;
+	return true;
 }
 
 /*
