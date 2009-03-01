@@ -204,6 +204,21 @@ _PUBLIC_ void display_set_stderr(void);
 
 /* The following definitions come from lib/util/util_str.c  */
 
+bool next_token_talloc(TALLOC_CTX *ctx,
+			const char **ptr,
+			char **pp_buff,
+			const char *sep);
+
+/**
+ * Get the next token from a string, return false if none found.  Handles
+ * double-quotes.  This version does not trim leading separator characters
+ * before looking for a token.
+ */
+bool next_token_no_ltrim_talloc(TALLOC_CTX *ctx,
+			const char **ptr,
+			char **pp_buff,
+			const char *sep);
+
 
 /**
  Trim the specified elements off the front and back of a string.
