@@ -29,7 +29,6 @@
 
 #include <tevent.h>
 #include <stdbool.h>
-#include <tevent_util.h>
 
 typedef struct {
 	PyObject_HEAD
@@ -54,7 +53,8 @@ static PyObject *py_backend_list(PyObject *self)
     PyObject *ret;
     int i, len;
 
-    len = ev_str_list_length(backends);
+    for (len = 0; backends[len]; len++);
+
     ret = PyList_New(len);
     for (i = 0; i < len; i++)
         PyList_SetItem(ret, i, PyString_FromString(backends[i]));
