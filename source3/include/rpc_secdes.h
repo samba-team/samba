@@ -39,9 +39,6 @@
 #define	SEC_RIGHTS_RESET_PASSWD		SEC_RIGHTS_EXTENDED
 #define SEC_RIGHTS_FULL_CTRL		0xf01ff
 
-#define SEC_ACE_OBJECT_PRESENT           0x00000001 /* thanks for Jim McDonough <jmcd@us.ibm.com> */
-#define SEC_ACE_OBJECT_INHERITED_PRESENT 0x00000002
-
 /*
  * New Windows 2000 bits.
  */
