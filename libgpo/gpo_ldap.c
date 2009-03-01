@@ -18,6 +18,9 @@
  */
 
 #include "includes.h"
+#if _SAMBA_BUILD_ == 4
+#include "source4/libgpo/ads_convenience.h"
+#endif
 
 /****************************************************************
  parse the raw extension string into a GP_EXT structure
@@ -718,7 +721,7 @@ ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
 	ZERO_STRUCTP(gpo_list);
 
 	if (!dn) {
-		return ADS_ERROR(LDAP_PARAM_ERROR);
+		return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
 	DEBUG(10,("ads_get_gpo_list: getting GPO list for [%s]\n", dn));

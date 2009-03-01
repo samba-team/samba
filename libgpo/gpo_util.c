@@ -315,7 +315,7 @@ void dump_gpo(ADS_STRUCT *ads,
 
 	DEBUGADD(lvl,("security descriptor:\n"));
 
-	ads_disp_sd(ads, mem_ctx, gpo->security_descriptor);
+	NDR_PRINT_DEBUG(security_descriptor, gpo->security_descriptor);
 }
 
 /****************************************************************
