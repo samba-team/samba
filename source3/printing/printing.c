@@ -117,7 +117,9 @@ bool rap_to_pjobid(uint16 rap_jobid, fstring sharename, uint32 *pjobid)
 	if ( data.dptr && data.dsize == sizeof(struct rap_jobid_key) )
 	{
 		struct rap_jobid_key *jinfo = (struct rap_jobid_key*)data.dptr;
-		fstrcpy( sharename, jinfo->sharename );
+		if (sharename != NULL) {
+			fstrcpy( sharename, jinfo->sharename );
+		}
 		*pjobid = jinfo->jobid;
 		DEBUG(10,("rap_to_pjobid: jobid %u maps to RAP jobid %u\n",
 			(unsigned int)*pjobid, (unsigned int)rap_jobid));
