@@ -23,6 +23,8 @@
 #ifndef _DOM_SID_H_
 #define _DOM_SID_H_
 
+#include "librpc/gen_ndr/security.h"
+
 int dom_sid_compare(const struct dom_sid *sid1, const struct dom_sid *sid2);
 bool dom_sid_equal(const struct dom_sid *sid1, const struct dom_sid *sid2);
 bool dom_sid_parse(const char *sidstr, struct dom_sid *ret);

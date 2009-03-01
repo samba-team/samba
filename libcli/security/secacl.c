@@ -21,18 +21,22 @@
  */
 
 #include "includes.h"
+#include "libcli/security/security.h"
+
+#define  SEC_ACL_HEADER_SIZE (2 * sizeof(uint16_t) + sizeof(uint32_t))
 
 /*******************************************************************
  Create a SEC_ACL structure.  
 ********************************************************************/
 
-SEC_ACL *make_sec_acl(TALLOC_CTX *ctx, enum security_acl_revision revision,
-		      int num_aces, SEC_ACE *ace_list)
+struct security_acl *make_sec_acl(TALLOC_CTX *ctx, 
+								  enum security_acl_revision revision,
+								  int num_aces, struct security_ace *ace_list)
 {
-	SEC_ACL *dst;
+	struct security_acl *dst;
 	int i;
 
-	if((dst = TALLOC_ZERO_P(ctx,SEC_ACL)) == NULL)
+	if((dst = talloc_zero(ctx, struct security_acl)) == NULL)
 		return NULL;
 
 	dst->revision = revision;
@@ -46,7 +50,7 @@ SEC_ACL *make_sec_acl(TALLOC_CTX *ctx, enum security_acl_revision revision,
 	   positive number. */
 
 	if ((num_aces) && 
-            ((dst->aces = TALLOC_ARRAY(ctx, SEC_ACE, num_aces)) 
+            ((dst->aces = talloc_array(ctx, struct security_ace, num_aces)) 
              == NULL)) {
 		return NULL;
 	}
@@ -63,7 +67,7 @@ SEC_ACL *make_sec_acl(TALLOC_CTX *ctx, enum security_acl_revision revision,
  Duplicate a SEC_ACL structure.  
 ********************************************************************/
 
-SEC_ACL *dup_sec_acl(TALLOC_CTX *ctx, SEC_ACL *src)
+struct security_acl *dup_sec_acl(TALLOC_CTX *ctx, struct security_acl *src)
 {
 	if(src == NULL)
 		return NULL;
@@ -75,44 +79,44 @@ SEC_ACL *dup_sec_acl(TALLOC_CTX *ctx, SEC_ACL *src)
  Compares two SEC_ACL structures
 ********************************************************************/
 
-bool sec_acl_equal(SEC_ACL *s1, SEC_ACL *s2)
+bool sec_acl_equal(struct security_acl *s1, struct security_acl *s2)
 {
 	unsigned int i, j;
 
 	/* Trivial cases */
 
-	if (!s1 && !s2) return True;
-	if (!s1 || !s2) return False;
+	if (!s1 && !s2) return true;
+	if (!s1 || !s2) return false;
 
 	/* Check top level stuff */
 
 	if (s1->revision != s2->revision) {
 		DEBUG(10, ("sec_acl_equal(): revision differs (%d != %d)\n",
 			   s1->revision, s2->revision));
-		return False;
+		return false;
 	}
 
 	if (s1->num_aces != s2->num_aces) {
 		DEBUG(10, ("sec_acl_equal(): num_aces differs (%d != %d)\n",
 			   s1->revision, s2->revision));
-		return False;
+		return false;
 	}
 
 	/* The ACEs could be in any order so check each ACE in s1 against 
 	   each ACE in s2. */
 
 	for (i = 0; i < s1->num_aces; i++) {
-		bool found = False;
+		bool found = false;
 
 		for (j = 0; j < s2->num_aces; j++) {
 			if (sec_ace_equal(&s1->aces[i], &s2->aces[j])) {
-				found = True;
+				found = true;
 				break;
 			}
 		}
 
-		if (!found) return False;
+		if (!found) return false;
 	}
 
-	return True;
+	return true;
 }

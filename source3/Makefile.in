@@ -370,7 +370,8 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) \
 	  lib/conn_tdb.o lib/adt_tree.o lib/gencache.o \
 	  lib/module.o lib/events.o @LIBTEVENT_OBJ0@ \
 	  lib/ldap_escape.o @CHARSET_STATIC@ \
-	  lib/secdesc.o lib/util_seaccess.o lib/secace.o lib/secacl.o \
+	  lib/secdesc.o lib/util_seaccess.o ../libcli/security/secace.o \
+	  ../libcli/security/secacl.o \
 	  libads/krb5_errs.o lib/system_smbd.o lib/audit.o $(LIBNDR_OBJ) \
 	  lib/file_id.o lib/idmap_cache.o \
 	  ../libcli/security/dom_sid.o

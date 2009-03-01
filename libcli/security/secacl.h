@@ -1,7 +1,8 @@
 /*
    Unix SMB/CIFS implementation.
+   Samba utility functions
 
-   Copyright (C) Stefan Metzmacher 2006
+   Copyright (C) 2009 Jelmer Vernooij <jelmer@samba.org>
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,19 +18,16 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef _SECACL_H_
+#define _SECACL_H_
+
 #include "librpc/gen_ndr/security.h"
 
-enum security_user_level {
-	SECURITY_ANONYMOUS,
-	SECURITY_USER,
-	SECURITY_ADMINISTRATOR,
-	SECURITY_SYSTEM
-};
+struct security_acl *make_sec_acl(TALLOC_CTX *ctx, enum security_acl_revision revision,
+		      int num_aces, struct security_ace *ace_list);
+struct security_acl *dup_sec_acl(TALLOC_CTX *ctx, struct security_acl *src);
+bool sec_acl_equal(struct security_acl *s1, struct security_acl *s2);
 
-struct auth_session_info;
 
-/* Moved the dom_sid functions to the top level dir with manual proto header */
-#include "libcli/security/dom_sid.h"
-#include "libcli/security/secace.h"
-#include "libcli/security/secacl.h"
-#include "libcli/security/proto.h"
+#endif /*_SECACL_H_*/
+

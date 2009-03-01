@@ -1,6 +1,6 @@
 /* 
  *  Unix SMB/Netbios implementation.
- *  SEC_ACE handling functions
+ *  struct security_ace handling functions
  *  Copyright (C) Andrew Tridgell              1992-1998,
  *  Copyright (C) Jeremy R. Allison            1995-2003.
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1998,
@@ -21,56 +21,58 @@
  */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_security.h"
+#include "libcli/security/security.h"
 
-/*******************************************************************
- Check if ACE has OBJECT type.
-********************************************************************/
+#define  SEC_ACE_HEADER_SIZE (2 * sizeof(uint8_t) + sizeof(uint16_t) + sizeof(uint32_t))
 
-bool sec_ace_object(uint8 type)
+/**
+ * Check if ACE has OBJECT type.
+ */
+bool sec_ace_object(uint8_t type)
 {
 	if (type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT ||
             type == SEC_ACE_TYPE_ACCESS_DENIED_OBJECT ||
             type == SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT ||
             type == SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT) {
-		return True;
+		return true;
 	}
-	return False;
+	return false;
 }
 
-/*******************************************************************
- copy a SEC_ACE structure.
-********************************************************************/
-void sec_ace_copy(SEC_ACE *ace_dest, SEC_ACE *ace_src)
+/**
+ * copy a struct security_ace structure.
+ */
+void sec_ace_copy(struct security_ace *ace_dest, struct security_ace *ace_src)
 {
 	ace_dest->type  = ace_src->type;
 	ace_dest->flags = ace_src->flags;
 	ace_dest->size  = ace_src->size;
 	ace_dest->access_mask = ace_src->access_mask;
 	ace_dest->object = ace_src->object;
-	sid_copy(&ace_dest->trustee, &ace_src->trustee);
+	ace_dest->trustee = ace_src->trustee;
 }
 
 /*******************************************************************
- Sets up a SEC_ACE structure.
+ Sets up a struct security_ace structure.
 ********************************************************************/
 
-void init_sec_ace(SEC_ACE *t, const DOM_SID *sid, enum security_ace_type type,
-		  uint32_t mask, uint8 flag)
+void init_sec_ace(struct security_ace *t, const struct dom_sid *sid, enum security_ace_type type,
+		  uint32_t mask, uint8_t flag)
 {
 	t->type = type;
 	t->flags = flag;
 	t->size = ndr_size_dom_sid(sid, NULL, 0) + 8;
 	t->access_mask = mask;
 
-	ZERO_STRUCTP(&t->trustee);
-	sid_copy(&t->trustee, sid);
+	t->trustee = *sid;
 }
 
 /*******************************************************************
  adds new SID with its permissions to ACE list
 ********************************************************************/
 
-NTSTATUS sec_ace_add_sid(TALLOC_CTX *ctx, SEC_ACE **pp_new, SEC_ACE *old, unsigned *num, DOM_SID *sid, uint32 mask)
+NTSTATUS sec_ace_add_sid(TALLOC_CTX *ctx, struct security_ace **pp_new, struct security_ace *old, unsigned *num, struct dom_sid *sid, uint32_t mask)
 {
 	unsigned int i = 0;
 	
@@ -78,7 +80,7 @@ NTSTATUS sec_ace_add_sid(TALLOC_CTX *ctx, SEC_ACE **pp_new, SEC_ACE *old, unsign
 
 	*num += 1;
 	
-	if((pp_new[0] = TALLOC_ZERO_ARRAY(ctx, SEC_ACE, *num )) == 0)
+	if((pp_new[0] = talloc_zero_array(ctx, struct security_ace, *num )) == 0)
 		return NT_STATUS_NO_MEMORY;
 
 	for (i = 0; i < *num - 1; i ++)
@@ -88,7 +90,7 @@ NTSTATUS sec_ace_add_sid(TALLOC_CTX *ctx, SEC_ACE **pp_new, SEC_ACE *old, unsign
 	(*pp_new)[i].flags = 0;
 	(*pp_new)[i].size  = SEC_ACE_HEADER_SIZE + ndr_size_dom_sid(sid, NULL, 0);
 	(*pp_new)[i].access_mask = mask;
-	sid_copy(&(*pp_new)[i].trustee, sid);
+	(*pp_new)[i].trustee = *sid;
 	return NT_STATUS_OK;
 }
 
@@ -96,14 +98,14 @@ NTSTATUS sec_ace_add_sid(TALLOC_CTX *ctx, SEC_ACE **pp_new, SEC_ACE *old, unsign
   modify SID's permissions at ACL 
 ********************************************************************/
 
-NTSTATUS sec_ace_mod_sid(SEC_ACE *ace, size_t num, DOM_SID *sid, uint32 mask)
+NTSTATUS sec_ace_mod_sid(struct security_ace *ace, size_t num, struct dom_sid *sid, uint32_t mask)
 {
 	unsigned int i = 0;
 
 	if (!ace || !sid)  return NT_STATUS_INVALID_PARAMETER;
 
 	for (i = 0; i < num; i ++) {
-		if (sid_compare(&ace[i].trustee, sid) == 0) {
+		if (dom_sid_equal(&ace[i].trustee, sid)) {
 			ace[i].access_mask = mask;
 			return NT_STATUS_OK;
 		}
@@ -115,7 +117,7 @@ NTSTATUS sec_ace_mod_sid(SEC_ACE *ace, size_t num, DOM_SID *sid, uint32 mask)
  delete SID from ACL
 ********************************************************************/
 
-NTSTATUS sec_ace_del_sid(TALLOC_CTX *ctx, SEC_ACE **pp_new, SEC_ACE *old, uint32 *num, DOM_SID *sid)
+NTSTATUS sec_ace_del_sid(TALLOC_CTX *ctx, struct security_ace **pp_new, struct security_ace *old, uint32_t *num, struct dom_sid *sid)
 {
 	unsigned int i     = 0;
 	unsigned int n_del = 0;
@@ -123,14 +125,14 @@ NTSTATUS sec_ace_del_sid(TALLOC_CTX *ctx, SEC_ACE **pp_new, SEC_ACE *old, uint32
 	if (!ctx || !pp_new || !old || !sid || !num)  return NT_STATUS_INVALID_PARAMETER;
 
 	if (*num) {
-		if((pp_new[0] = TALLOC_ZERO_ARRAY(ctx, SEC_ACE, *num )) == 0)
+		if((pp_new[0] = talloc_zero_array(ctx, struct security_ace, *num )) == 0)
 			return NT_STATUS_NO_MEMORY;
 	} else {
 		pp_new[0] = NULL;
 	}
 
 	for (i = 0; i < *num; i ++) {
-		if (sid_compare(&old[i].trustee, sid) != 0)
+		if (!dom_sid_equal(&old[i].trustee, sid))
 			sec_ace_copy(&(*pp_new)[i], &old[i]);
 		else
 			n_del ++;
@@ -144,38 +146,38 @@ NTSTATUS sec_ace_del_sid(TALLOC_CTX *ctx, SEC_ACE **pp_new, SEC_ACE *old, uint32
 }
 
 /*******************************************************************
- Compares two SEC_ACE structures
+ Compares two struct security_ace structures
 ********************************************************************/
 
-bool sec_ace_equal(SEC_ACE *s1, SEC_ACE *s2)
+bool sec_ace_equal(struct security_ace *s1, struct security_ace *s2)
 {
 	/* Trivial case */
 
 	if (!s1 && !s2) {
-		return True;
+		return true;
 	}
 
 	if (!s1 || !s2) {
-		return False;
+		return false;
 	}
 
 	/* Check top level stuff */
 
 	if (s1->type != s2->type || s1->flags != s2->flags ||
 	    s1->access_mask != s2->access_mask) {
-		return False;
+		return false;
 	}
 
 	/* Check SID */
 
-	if (!sid_equal(&s1->trustee, &s2->trustee)) {
-		return False;
+	if (!dom_sid_equal(&s1->trustee, &s2->trustee)) {
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
-int nt_ace_inherit_comp( SEC_ACE *a1, SEC_ACE *a2)
+int nt_ace_inherit_comp( struct security_ace *a1, struct security_ace *a2)
 {
 	int a1_inh = a1->flags & SEC_ACE_FLAG_INHERITED_ACE;
 	int a2_inh = a2->flags & SEC_ACE_FLAG_INHERITED_ACE;
@@ -192,7 +194,7 @@ int nt_ace_inherit_comp( SEC_ACE *a1, SEC_ACE *a2)
   Comparison function to apply the order explained below in a group.
 *******************************************************************/
 
-int nt_ace_canon_comp( SEC_ACE *a1, SEC_ACE *a2)
+int nt_ace_canon_comp( struct security_ace *a1, struct security_ace *a2)
 {
 	if ((a1->type == SEC_ACE_TYPE_ACCESS_DENIED) &&
 				(a2->type != SEC_ACE_TYPE_ACCESS_DENIED))
@@ -247,7 +249,7 @@ The following describes the preferred order:
 
 ********************************************************************/
 
-void dacl_sort_into_canonical_order(SEC_ACE *srclist, unsigned int num_aces)
+void dacl_sort_into_canonical_order(struct security_ace *srclist, unsigned int num_aces)
 {
 	unsigned int i;
 
@@ -259,7 +261,7 @@ void dacl_sort_into_canonical_order(SEC_ACE *srclist, unsigned int num_aces)
 
 	/* Find the boundary between non-inherited ACEs. */
 	for (i = 0; i < num_aces; i++ ) {
-		SEC_ACE *curr_ace = &srclist[i];
+		struct security_ace *curr_ace = &srclist[i];
 
 		if (curr_ace->flags & SEC_ACE_FLAG_INHERITED_ACE)
 			break;
@@ -276,18 +278,4 @@ void dacl_sort_into_canonical_order(SEC_ACE *srclist, unsigned int num_aces)
 		qsort( &srclist[i], num_aces - i, sizeof(srclist[0]), QSORT_CAST nt_ace_canon_comp);
 }
 
-/*******************************************************************
- Check if this ACE has a SID in common with the token.
-********************************************************************/
 
-bool token_sid_in_ace(const NT_USER_TOKEN *token, const SEC_ACE *ace)
-{
-	size_t i;
-
-	for (i = 0; i < token->num_sids; i++) {
-		if (sid_equal(&ace->trustee, &token->user_sids[i]))
-			return True;
-	}
-
-	return False;
-}

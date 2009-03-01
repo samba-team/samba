@@ -594,7 +594,7 @@ struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 #include "trans2.h"
 #include "../libcli/util/error.h"
 #include "ntioctl.h"
-#include "../lib/util/charset/charset.h"
+#include "charset.h"
 #include "dynconfig.h"
 #include "util_getent.h"
 #include "debugparse.h"
@@ -703,6 +703,8 @@ enum flush_reason_enum {
 #ifndef NO_PROTO_H
 #include "proto.h"
 #endif
+#include "libcli/security/secace.h"
+#include "libcli/security/secacl.h"
 
 #if defined(HAVE_POSIX_ACLS)
 #include "modules/vfs_posixacl.h"
