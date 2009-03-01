@@ -17,6 +17,9 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef __GPO_H__
+#define __GPO_H__
+
 enum GPO_LINK_TYPE {
 	GP_LINK_UNKOWN	= 0,
 	GP_LINK_MACHINE	= 1,
@@ -59,7 +62,7 @@ struct GROUP_POLICY_OBJECT {
 	enum GPO_LINK_TYPE link_type;
 	const char *user_extensions;
 	const char *machine_extensions;
-	SEC_DESC *security_descriptor;
+	struct security_descriptor *security_descriptor;
 	struct GROUP_POLICY_OBJECT *next, *prev;
 };
 
@@ -155,4 +158,6 @@ struct gp_registry_context {
 #define GP_EXT_GUID_REGISTRY "35378EAC-683F-11D2-A89A-00C04FBBCFA2"
 #define GP_EXT_GUID_SCRIPTS  "42B5FAAE-6536-11D2-AE5A-0000F87571E3"
 
-#include "libgpo/gpext/gpext.h"
+#include "../libgpo/gpext/gpext.h"
+
+#endif

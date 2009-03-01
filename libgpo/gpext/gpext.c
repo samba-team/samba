@@ -18,6 +18,9 @@
  */
 
 #include "includes.h"
+#include "../libgpo/gpext/gpext.h"
+#include "librpc/gen_ndr/ndr_misc.h"
+#include "lib/util/dlinklist.h"
 
 static struct gp_extension *extensions = NULL;
 
@@ -103,7 +106,7 @@ NTSTATUS unregister_gp_extension(const char *name)
 	}
 
 	DLIST_REMOVE(extensions, ext);
-	TALLOC_FREE(ext);
+	talloc_free(ext);
 
 	DEBUG(2,("Successfully removed GP extension '%s'\n", name));
 
@@ -150,13 +153,13 @@ NTSTATUS register_gp_extension(TALLOC_CTX *gpext_ctx,
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	entry = TALLOC_ZERO_P(gpext_ctx, struct gp_extension);
+	entry = talloc_zero(gpext_ctx, struct gp_extension);
 	NT_STATUS_HAVE_NO_MEMORY(entry);
 
 	entry->name = talloc_strdup(gpext_ctx, name);
 	NT_STATUS_HAVE_NO_MEMORY(entry->name);
 
-	entry->guid = TALLOC_ZERO_P(gpext_ctx, struct GUID);
+	entry->guid = talloc_zero(gpext_ctx, struct GUID);
 	NT_STATUS_HAVE_NO_MEMORY(entry->guid);
 	status = GUID_from_string(guid, entry->guid);
 	NT_STATUS_NOT_OK_RETURN(status);
@@ -180,7 +183,7 @@ static NTSTATUS gp_extension_init_module(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct gp_extension *ext = NULL;
 
-	ext = TALLOC_ZERO_P(mem_ctx, struct gp_extension);
+	ext = talloc_zero(mem_ctx, struct gp_extension);
 	NT_STATUS_HAVE_NO_MEMORY(gpext);
 
 	ext->methods = get_methods_by_name(extensions, name);
@@ -211,7 +214,7 @@ static bool add_gp_extension_reg_entry_to_array(TALLOC_CTX *mem_ctx,
 						struct gp_extension_reg_entry **entries,
 						size_t *num)
 {
-	*entries = TALLOC_REALLOC_ARRAY(mem_ctx, *entries,
+	*entries = talloc_realloc(mem_ctx, *entries,
 					struct gp_extension_reg_entry,
 					(*num)+1);
 	if (*entries == NULL) {
@@ -234,7 +237,7 @@ static bool add_gp_extension_reg_info_entry_to_array(TALLOC_CTX *mem_ctx,
 						     struct gp_extension_reg_info_entry **entries,
 						     size_t *num)
 {
-	*entries = TALLOC_REALLOC_ARRAY(mem_ctx, *entries,
+	*entries = talloc_realloc(mem_ctx, *entries,
 					struct gp_extension_reg_info_entry,
 					(*num)+1);
 	if (*entries == NULL) {
@@ -262,10 +265,10 @@ static NTSTATUS gp_ext_info_add_reg(TALLOC_CTX *mem_ctx,
 	struct gp_extension_reg_entry *reg_entry = NULL;
 	struct registry_value *data = NULL;
 
-	reg_entry = TALLOC_ZERO_P(mem_ctx, struct gp_extension_reg_entry);
+	reg_entry = talloc_zero(mem_ctx, struct gp_extension_reg_entry);
 	NT_STATUS_HAVE_NO_MEMORY(reg_entry);
 
-	data = TALLOC_ZERO_P(mem_ctx, struct registry_value);
+	data = talloc_zero(mem_ctx, struct registry_value);
 	NT_STATUS_HAVE_NO_MEMORY(data);
 
 	data->type = type;

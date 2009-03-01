@@ -17,6 +17,11 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef __GPEXT_H__
+#define __GPEXT_H__
+
+#include "librpc/gen_ndr/winreg.h"
+
 #define KEY_WINLOGON_GPEXT_PATH "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon\\GPExtensions"
 
 #define SAMBA_SUBSYSTEM_GPEXT "gpext"
@@ -77,3 +82,5 @@ struct gp_extension_methods {
 
 	NTSTATUS (*shutdown)(void);
 };
+
+#endif /* __GPEXT_H__ */

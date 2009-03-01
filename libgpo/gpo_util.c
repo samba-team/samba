@@ -18,6 +18,8 @@
  */
 
 #include "includes.h"
+#include "../libgpo/gpo.h"
+#undef strdup
 
 #define DEFAULT_DOMAIN_POLICY "Default Domain Policy"
 #define DEFAULT_DOMAIN_CONTROLLERS_POLICY "Default Domain Controllers Policy"
@@ -471,7 +473,7 @@ ADS_STATUS gpo_process_a_gpo(ADS_STRUCT *ads,
 
 		if (extension_guid_filter &&
 		    !strequal(extension_guid_filter,
-		    	      gp_ext->extensions_guid[i])) {
+			      gp_ext->extensions_guid[i])) {
 			continue;
 		}
 
@@ -794,7 +796,7 @@ char *gpo_flag_str(uint32_t flags)
 	if (flags & GPO_INFO_FLAG_BACKGROUND)
 		fstrcat(str, "GPO_INFO_FLAG_BACKGROUND ");
 
-	return SMB_STRDUP(str);
+	return strdup(str);
 }
 
 /****************************************************************
@@ -807,7 +809,7 @@ NTSTATUS gp_find_file(TALLOC_CTX *mem_ctx,
 		      const char **filename_out)
 {
 	const char *tmp = NULL;
-	SMB_STRUCT_STAT sbuf;
+	struct stat sbuf;
 	const char *path = NULL;
 
 	if (flags & GPO_LIST_FLAG_MACHINE) {
@@ -820,7 +822,7 @@ NTSTATUS gp_find_file(TALLOC_CTX *mem_ctx,
 			      path, suffix);
 	NT_STATUS_HAVE_NO_MEMORY(tmp);
 
-	if (sys_stat(tmp, &sbuf) == 0) {
+	if (stat(tmp, &sbuf) == 0) {
 		*filename_out = tmp;
 		return NT_STATUS_OK;
 	}
