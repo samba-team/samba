@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #if _SAMBA_BUILD_ == 4
+#include "libgpo/gpo.h"
 #include "source4/libgpo/ads_convenience.h"
 #endif
 
@@ -42,12 +43,12 @@ bool ads_parse_gp_ext(TALLOC_CTX *mem_ctx,
 
 	DEBUG(20,("ads_parse_gp_ext: %s\n", extension_raw));
 
-	ext = TALLOC_ZERO_P(mem_ctx, struct GP_EXT);
+	ext = talloc_zero(mem_ctx, struct GP_EXT);
 	if (!ext) {
 		goto parse_error;
 	}
 
-	ext_list = str_list_make_v3(mem_ctx, extension_raw, "]");
+	ext_list = str_list_make(mem_ctx, extension_raw, "]");
 	if (!ext_list) {
 		goto parse_error;
 	}
@@ -59,13 +60,13 @@ bool ads_parse_gp_ext(TALLOC_CTX *mem_ctx,
 	ext->num_exts = i;
 
 	if (ext->num_exts) {
-		ext->extensions 	= TALLOC_ZERO_ARRAY(mem_ctx, char *,
+		ext->extensions 	= talloc_zero_array(mem_ctx, char *,
 							    ext->num_exts);
-		ext->extensions_guid	= TALLOC_ZERO_ARRAY(mem_ctx, char *,
+		ext->extensions_guid	= talloc_zero_array(mem_ctx, char *,
 							    ext->num_exts);
-		ext->snapins		= TALLOC_ZERO_ARRAY(mem_ctx, char *,
+		ext->snapins		= talloc_zero_array(mem_ctx, char *,
 							    ext->num_exts);
-		ext->snapins_guid	= TALLOC_ZERO_ARRAY(mem_ctx, char *,
+		ext->snapins_guid	= talloc_zero_array(mem_ctx, char *,
 							    ext->num_exts);
 	}
 
@@ -90,7 +91,7 @@ bool ads_parse_gp_ext(TALLOC_CTX *mem_ctx,
 			p++;
 		}
 
-		ext_strings = str_list_make_v3(mem_ctx, p, "}");
+		ext_strings = str_list_make(mem_ctx, p, "}");
 		if (ext_strings == NULL) {
 			goto parse_error;
 		}
@@ -140,8 +141,8 @@ bool ads_parse_gp_ext(TALLOC_CTX *mem_ctx,
 	ret = true;
 
  parse_error:
-	TALLOC_FREE(ext_list);
-	TALLOC_FREE(ext_strings);
+	talloc_free(ext_list);
+	talloc_free(ext_strings);
 
 	return ret;
 }
@@ -178,9 +179,9 @@ static ADS_STATUS gpo_parse_gplink(TALLOC_CTX *mem_ctx,
 	gp_link->num_links = i;
 
 	if (gp_link->num_links) {
-		gp_link->link_names = TALLOC_ZERO_ARRAY(mem_ctx, char *,
+		gp_link->link_names = talloc_zero_array(mem_ctx, char *,
 							gp_link->num_links);
-		gp_link->link_opts = TALLOC_ZERO_ARRAY(mem_ctx, uint32_t,
+		gp_link->link_opts = talloc_zero_array(mem_ctx, uint32_t,
 						       gp_link->num_links);
 	}
 
@@ -225,7 +226,7 @@ static ADS_STATUS gpo_parse_gplink(TALLOC_CTX *mem_ctx,
 	status = ADS_SUCCESS;
 
  parse_error:
-	TALLOC_FREE(link_list);
+	talloc_free(link_list);
 
 	return status;
 }
@@ -595,7 +596,7 @@ static ADS_STATUS add_gplink_to_gpo_list(ADS_STRUCT *ads,
 			DEBUG(10,("skipping GPO \"%s\" as object "
 				"has no access to it\n",
 				new_gpo->display_name));
-			TALLOC_FREE(new_gpo);
+			talloc_free(new_gpo);
 			continue;
 		}
 

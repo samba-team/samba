@@ -1676,6 +1676,7 @@ uint32 ads_uf2acb(uint32 uf);
 uint32 ads_uf2atype(uint32 uf);
 uint32 ads_gtype2atype(uint32 gtype);
 enum lsa_SidType ads_atype_map(uint32 atype);
+const char *ads_get_ldap_server_name(ADS_STRUCT *ads);
 
 /* The following definitions come from libads/authdata.c  */
 
@@ -1992,61 +1993,6 @@ ADS_STATUS ads_change_trust_account_password(ADS_STRUCT *ads, char *host_princip
 ADS_STATUS ads_guess_service_principal(ADS_STRUCT *ads,
 				       char **returned_principal);
 
-/* The following definitions come from libgpo/gpext/gpext.c  */
-
-struct gp_extension *get_gp_extension_list(void);
-NTSTATUS unregister_gp_extension(const char *name);
-NTSTATUS register_gp_extension(TALLOC_CTX *gpext_ctx,
-			       int version,
-			       const char *name,
-			       const char *guid,
-			       struct gp_extension_methods *methods);
-NTSTATUS gp_ext_info_add_entry(TALLOC_CTX *mem_ctx,
-			       const char *module,
-			       const char *ext_guid,
-			       struct gp_extension_reg_table *table,
-			       struct gp_extension_reg_info *info);
-NTSTATUS shutdown_gp_extensions(void);
-NTSTATUS init_gp_extensions(TALLOC_CTX *mem_ctx);
-NTSTATUS free_gp_extensions(void);
-void debug_gpext_header(int lvl,
-			const char *name,
-			uint32_t flags,
-			struct GROUP_POLICY_OBJECT *gpo,
-			const char *extension_guid,
-			const char *snapin_guid);
-NTSTATUS process_gpo_list_with_extension(ADS_STRUCT *ads,
-			   TALLOC_CTX *mem_ctx,
-			   uint32_t flags,
-			   const struct nt_user_token *token,
-			   struct GROUP_POLICY_OBJECT *gpo_list,
-			   const char *extension_guid,
-			   const char *snapin_guid);
-NTSTATUS gpext_process_extension(ADS_STRUCT *ads,
-				 TALLOC_CTX *mem_ctx,
-				 uint32_t flags,
-				 const struct nt_user_token *token,
-				 struct registry_key *root_key,
-				 struct GROUP_POLICY_OBJECT *gpo,
-				 const char *extension_guid,
-				 const char *snapin_guid);
-
-/* The following definitions come from libgpo/gpo_fetch.c  */
-
-NTSTATUS gpo_explode_filesyspath(TALLOC_CTX *mem_ctx,
-				 const char *file_sys_path,
-				 char **server,
-				 char **service,
-				 char **nt_path,
-				 char **unix_path);
-NTSTATUS gpo_fetch_files(TALLOC_CTX *mem_ctx,
-			 struct cli_state *cli,
-			 struct GROUP_POLICY_OBJECT *gpo);
-NTSTATUS gpo_get_sysvol_gpt_version(TALLOC_CTX *mem_ctx,
-				    const char *unix_path,
-				    uint32_t *sysvol_version,
-				    char **display_name);
-
 /* The following definitions come from libgpo/gpo_filesync.c  */
 
 NTSTATUS gpo_copy_file(TALLOC_CTX *mem_ctx,
@@ -2064,41 +2010,6 @@ NTSTATUS parse_gpt_ini(TALLOC_CTX *mem_ctx,
 		       const char *filename,
 		       uint32_t *version,
 		       char **display_name);
-
-/* The following definitions come from libgpo/gpo_ldap.c  */
-
-bool ads_parse_gp_ext(TALLOC_CTX *mem_ctx,
-		      const char *extension_raw,
-		      struct GP_EXT **gp_ext);
-ADS_STATUS ads_get_gpo_link(ADS_STRUCT *ads,
-			    TALLOC_CTX *mem_ctx,
-			    const char *link_dn,
-			    struct GP_LINK *gp_link_struct);
-ADS_STATUS ads_add_gpo_link(ADS_STRUCT *ads,
-			    TALLOC_CTX *mem_ctx,
-			    const char *link_dn,
-			    const char *gpo_dn,
-			    uint32_t gpo_opt);
-ADS_STATUS ads_delete_gpo_link(ADS_STRUCT *ads,
-			       TALLOC_CTX *mem_ctx,
-			       const char *link_dn,
-			       const char *gpo_dn);
-ADS_STATUS ads_get_gpo(ADS_STRUCT *ads,
-		       TALLOC_CTX *mem_ctx,
-		       const char *gpo_dn,
-		       const char *display_name,
-		       const char *guid_name,
-		       struct GROUP_POLICY_OBJECT *gpo);
-ADS_STATUS ads_get_sid_token(ADS_STRUCT *ads,
-			     TALLOC_CTX *mem_ctx,
-			     const char *dn,
-			     struct nt_user_token **token);
-ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
-			    TALLOC_CTX *mem_ctx,
-			    const char *dn,
-			    uint32_t flags,
-			    const struct nt_user_token *token,
-			    struct GROUP_POLICY_OBJECT **gpo_list);
 
 /* The following definitions come from libgpo/gpo_reg.c  */
 
@@ -2159,61 +2070,6 @@ WERROR reg_apply_registry_entry(TALLOC_CTX *mem_ctx,
 				const struct nt_user_token *token,
 				uint32_t flags);
 
-/* The following definitions come from libgpo/gpo_sec.c  */
-
-NTSTATUS gpo_apply_security_filtering(const struct GROUP_POLICY_OBJECT *gpo,
-				      const struct nt_user_token *token);
-
-/* The following definitions come from libgpo/gpo_util.c  */
-
-const char *cse_gpo_guid_string_to_name(const char *guid);
-const char *cse_gpo_name_to_guid_string(const char *name);
-const char *cse_snapin_gpo_guid_string_to_name(const char *guid);
-void dump_gp_ext(struct GP_EXT *gp_ext, int debuglevel);
-void dump_gpo(ADS_STRUCT *ads,
-	      TALLOC_CTX *mem_ctx,
-	      struct GROUP_POLICY_OBJECT *gpo,
-	      int debuglevel);
-void dump_gpo_list(ADS_STRUCT *ads,
-		   TALLOC_CTX *mem_ctx,
-		   struct GROUP_POLICY_OBJECT *gpo_list,
-		   int debuglevel);
-void dump_gplink(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, struct GP_LINK *gp_link);
-ADS_STATUS gpo_process_a_gpo(ADS_STRUCT *ads,
-			     TALLOC_CTX *mem_ctx,
-			     const struct nt_user_token *token,
-			     struct registry_key *root_key,
-			     struct GROUP_POLICY_OBJECT *gpo,
-			     const char *extension_guid_filter,
-			     uint32_t flags);
-ADS_STATUS gpo_process_gpo_list(ADS_STRUCT *ads,
-				TALLOC_CTX *mem_ctx,
-				const struct nt_user_token *token,
-				struct GROUP_POLICY_OBJECT *gpo_list,
-				const char *extensions_guid_filter,
-				uint32_t flags);
-NTSTATUS check_refresh_gpo(ADS_STRUCT *ads,
-			   TALLOC_CTX *mem_ctx,
-			   uint32_t flags,
-			   struct GROUP_POLICY_OBJECT *gpo,
-			   struct cli_state **cli_out);
-NTSTATUS check_refresh_gpo_list(ADS_STRUCT *ads,
-				TALLOC_CTX *mem_ctx,
-				uint32_t flags,
-				struct GROUP_POLICY_OBJECT *gpo_list);
-NTSTATUS gpo_get_unix_path(TALLOC_CTX *mem_ctx,
-			   struct GROUP_POLICY_OBJECT *gpo,
-			   char **unix_path);
-char *gpo_flag_str(uint32_t flags);
-NTSTATUS gp_find_file(TALLOC_CTX *mem_ctx,
-		      uint32_t flags,
-		      const char *filename,
-		      const char *suffix,
-		      const char **filename_out);
-ADS_STATUS gp_get_machine_token(ADS_STRUCT *ads,
-				TALLOC_CTX *mem_ctx,
-				const char *dn,
-				struct nt_user_token **token);
 
 #include "librpc/gen_ndr/ndr_dfs.h"
 #include "librpc/gen_ndr/ndr_dssetup.h"

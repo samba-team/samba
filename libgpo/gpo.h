@@ -20,6 +20,10 @@
 #ifndef __GPO_H__
 #define __GPO_H__
 
+#if _SAMBA_BUILD_ == 4
+#include "source4/libgpo/ads_convenience.h"
+#endif
+
 enum GPO_LINK_TYPE {
 	GP_LINK_UNKOWN	= 0,
 	GP_LINK_MACHINE	= 1,
@@ -158,6 +162,116 @@ struct gp_registry_context {
 #define GP_EXT_GUID_REGISTRY "35378EAC-683F-11D2-A89A-00C04FBBCFA2"
 #define GP_EXT_GUID_SCRIPTS  "42B5FAAE-6536-11D2-AE5A-0000F87571E3"
 #define ADS_EXTENDED_RIGHT_APPLY_GROUP_POLICY "edacfd8f-ffb3-11d1-b41d-00a0c968f939"
+
+
+struct cli_state;
+
+/* The following definitions come from libgpo/gpo_fetch.c  */
+
+NTSTATUS gpo_explode_filesyspath(TALLOC_CTX *mem_ctx,
+				 const char *file_sys_path,
+				 char **server,
+				 char **service,
+				 char **nt_path,
+				 char **unix_path);
+NTSTATUS gpo_fetch_files(TALLOC_CTX *mem_ctx,
+			 struct cli_state *cli,
+			 struct GROUP_POLICY_OBJECT *gpo);
+NTSTATUS gpo_get_sysvol_gpt_version(TALLOC_CTX *mem_ctx,
+				    const char *unix_path,
+				    uint32_t *sysvol_version,
+				    char **display_name);
+
+/* The following definitions come from libgpo/gpo_ldap.c  */
+
+bool ads_parse_gp_ext(TALLOC_CTX *mem_ctx,
+		      const char *extension_raw,
+		      struct GP_EXT **gp_ext);
+ADS_STATUS ads_get_gpo_link(ADS_STRUCT *ads,
+			    TALLOC_CTX *mem_ctx,
+			    const char *link_dn,
+			    struct GP_LINK *gp_link_struct);
+ADS_STATUS ads_add_gpo_link(ADS_STRUCT *ads,
+			    TALLOC_CTX *mem_ctx,
+			    const char *link_dn,
+			    const char *gpo_dn,
+			    uint32_t gpo_opt);
+ADS_STATUS ads_delete_gpo_link(ADS_STRUCT *ads,
+			       TALLOC_CTX *mem_ctx,
+			       const char *link_dn,
+			       const char *gpo_dn);
+ADS_STATUS ads_get_gpo(ADS_STRUCT *ads,
+		       TALLOC_CTX *mem_ctx,
+		       const char *gpo_dn,
+		       const char *display_name,
+		       const char *guid_name,
+		       struct GROUP_POLICY_OBJECT *gpo);
+ADS_STATUS ads_get_sid_token(ADS_STRUCT *ads,
+			     TALLOC_CTX *mem_ctx,
+			     const char *dn,
+			     struct nt_user_token **token);
+ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
+			    TALLOC_CTX *mem_ctx,
+			    const char *dn,
+			    uint32_t flags,
+			    const struct nt_user_token *token,
+			    struct GROUP_POLICY_OBJECT **gpo_list);
+
+/* The following definitions come from libgpo/gpo_sec.c  */
+
+NTSTATUS gpo_apply_security_filtering(const struct GROUP_POLICY_OBJECT *gpo,
+				      const struct nt_user_token *token);
+
+/* The following definitions come from libgpo/gpo_util.c  */
+
+const char *cse_gpo_guid_string_to_name(const char *guid);
+const char *cse_gpo_name_to_guid_string(const char *name);
+const char *cse_snapin_gpo_guid_string_to_name(const char *guid);
+void dump_gp_ext(struct GP_EXT *gp_ext, int debuglevel);
+void dump_gpo(ADS_STRUCT *ads,
+	      TALLOC_CTX *mem_ctx,
+	      struct GROUP_POLICY_OBJECT *gpo,
+	      int debuglevel);
+void dump_gpo_list(ADS_STRUCT *ads,
+		   TALLOC_CTX *mem_ctx,
+		   struct GROUP_POLICY_OBJECT *gpo_list,
+		   int debuglevel);
+void dump_gplink(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, struct GP_LINK *gp_link);
+ADS_STATUS gpo_process_a_gpo(ADS_STRUCT *ads,
+			     TALLOC_CTX *mem_ctx,
+			     const struct nt_user_token *token,
+			     struct registry_key *root_key,
+			     struct GROUP_POLICY_OBJECT *gpo,
+			     const char *extension_guid_filter,
+			     uint32_t flags);
+ADS_STATUS gpo_process_gpo_list(ADS_STRUCT *ads,
+				TALLOC_CTX *mem_ctx,
+				const struct nt_user_token *token,
+				struct GROUP_POLICY_OBJECT *gpo_list,
+				const char *extensions_guid_filter,
+				uint32_t flags);
+NTSTATUS check_refresh_gpo(ADS_STRUCT *ads,
+			   TALLOC_CTX *mem_ctx,
+			   uint32_t flags,
+			   struct GROUP_POLICY_OBJECT *gpo,
+			   struct cli_state **cli_out);
+NTSTATUS check_refresh_gpo_list(ADS_STRUCT *ads,
+				TALLOC_CTX *mem_ctx,
+				uint32_t flags,
+				struct GROUP_POLICY_OBJECT *gpo_list);
+NTSTATUS gpo_get_unix_path(TALLOC_CTX *mem_ctx,
+			   struct GROUP_POLICY_OBJECT *gpo,
+			   char **unix_path);
+char *gpo_flag_str(uint32_t flags);
+NTSTATUS gp_find_file(TALLOC_CTX *mem_ctx,
+		      uint32_t flags,
+		      const char *filename,
+		      const char *suffix,
+		      const char **filename_out);
+ADS_STATUS gp_get_machine_token(ADS_STRUCT *ads,
+				TALLOC_CTX *mem_ctx,
+				const char *dn,
+				struct nt_user_token **token);
 
 
 #include "../libgpo/gpext/gpext.h"

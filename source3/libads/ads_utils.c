@@ -148,3 +148,8 @@ enum lsa_SidType ads_atype_map(uint32 atype)
 	}
 	return SID_NAME_UNKNOWN;
 }
+
+const char *ads_get_ldap_server_name(ADS_STRUCT *ads)
+{
+	return ads->config.ldap_server_name;
+}

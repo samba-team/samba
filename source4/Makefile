@@ -106,6 +106,7 @@ ntp_signdsrcdir := ntp_signd
 wmisrcdir := lib/wmi
 tallocsrcdir := ../lib/talloc
 comsrcdir := $(srcdir)/lib/com
+libgpodir := libgpo
 
 include data.mk
 

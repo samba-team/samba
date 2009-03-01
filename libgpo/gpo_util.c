@@ -18,7 +18,11 @@
  */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_misc.h"
+#if _SAMBA_BUILD_ == 4
 #include "../libgpo/gpo.h"
+#include "source4/libgpo/ads_convenience.h"
+#endif
 #undef strdup
 
 #define DEFAULT_DOMAIN_POLICY "Default Domain Policy"
@@ -601,7 +605,7 @@ ADS_STATUS gpo_process_gpo_list(ADS_STRUCT *ads,
 
  done:
 	gp_free_reg_ctx(reg_ctx);
-	TALLOC_FREE(root_key);
+	talloc_free(root_key);
 	free_gp_extensions();
 
 	return status;
@@ -660,7 +664,7 @@ NTSTATUS check_refresh_gpo(ADS_STRUCT *ads,
 
 			result = cli_full_connection(&cli,
 					global_myname(),
-					ads->config.ldap_server_name,
+					ads_get_ldap_server_name(ads),
 					/* server */
 					NULL, 0,
 					share, "A:",
@@ -834,7 +838,7 @@ NTSTATUS gp_find_file(TALLOC_CTX *mem_ctx,
 			      path, suffix);
 	NT_STATUS_HAVE_NO_MEMORY(tmp);
 
-	if (sys_stat(tmp, &sbuf) == 0) {
+	if (stat(tmp, &sbuf) == 0) {
 		*filename_out = tmp;
 		return NT_STATUS_OK;
 	}

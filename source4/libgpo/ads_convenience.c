@@ -25,38 +25,43 @@
 #include "includes.h"
 #include "libnet/libnet.h"
 #include "librpc/gen_ndr/ndr_security.h"
-#include "libgpo/source/ads_convenience.h"
+#include "libgpo/ads_convenience.h"
+#include "param/param.h"
+#include "libcli/libcli.h"
+#include "ldb_wrap.h"
+
+static ADS_STATUS ads_connect(ADS_STRUCT *ads);
 
 WERROR ads_startup (struct libnet_context *netctx, ADS_STRUCT **ads)
 {
 	*ads = talloc(netctx, ADS_STRUCT);
-	*ads->netctx = netctx;
+	(*ads)->netctx = netctx;
 
 	ads_connect(*ads);
 
 	return WERR_OK;
 }
 
-ADS_STATUS ads_connect(ADS_STRUCT *ads)
+static ADS_STATUS ads_connect(ADS_STRUCT *ads)
 {
-	struct libnet_lookup_DCs *io;
+	struct libnet_LookupDCs *io;
 	char *url;
 
-	io = talloc_zero(ads, struct libnet_lookup_DCs);
+	io = talloc_zero(ads, struct libnet_LookupDCs);
 
 	/* We are looking for the PDC of the active domain. */
 	io->in.name_type = NBT_NAME_PDC;
 	io->in.domain_name = lp_workgroup(ads->netctx->lp_ctx);
-	libnet_lookupDCs(ads->netctx, ads, io);
+	libnet_LookupDCs(ads->netctx, ads, io);
 
-	url = talloc_asprintf(ads, "ldap://%s", io->out.dcs[0]);
+	url = talloc_asprintf(ads, "ldap://%s", io->out.dcs[0].name);
 	ads->ldbctx = ldb_wrap_connect(ads, ads->netctx->event_ctx, ads->netctx->lp_ctx,
 	                 url, NULL, ads->netctx->cred, 0, NULL);
 	if (ads->ldbctx == NULL) {
-		return ADS_STATUS_NT(NT_STATUS_UNSUCCESSFUL);
+		return ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
 	}
 
-	return ADS_STATUS_NT(NT_STATUS_OK);
+	return ADS_ERROR_NT(NT_STATUS_OK);
 }
 
 ADS_STATUS ads_search_dn(ADS_STRUCT *ads, LDAPMessage **res,
@@ -64,7 +69,7 @@ ADS_STATUS ads_search_dn(ADS_STRUCT *ads, LDAPMessage **res,
 {
 	ADS_STATUS status;
 
-	status.err_state = ldb_search(ads->ldbctx, ads, res,
+	status.err.rc = ldb_search(ads->ldbctx, ads, res,
 	                              ldb_dn_new(ads, ads->ldbctx, dn),
 	                              LDB_SCOPE_BASE,
                                       attrs,
@@ -81,8 +86,8 @@ const char * ads_get_dn(ADS_STRUCT *ads, LDAPMessage *res)
 
 bool ads_pull_sd(ADS_STRUCT *ads, TALLOC_CTX *ctx, LDAPMessage *res, const char *field, struct security_descriptor **sd)
 {
-	struct ldb_val *val;
-	struct ndr_err_code ndr_err;
+	const struct ldb_val *val;
+	enum ndr_err_code ndr_err;
 
 	val = ldb_msg_find_ldb_val(res->msgs[0], field);
 
@@ -103,18 +108,18 @@ bool ads_pull_sd(ADS_STRUCT *ads, TALLOC_CTX *ctx, LDAPMessage *res, const char 
 ADS_STATUS ads_search_retry_dn_sd_flags(ADS_STRUCT *ads, LDAPMessage **res, uint32_t sd_flags,
                                         const char *dn, const char **attrs)
 {
-	return ads_search_sd_flags(ads, dn, LDB_SCOPE_BASE, "(objectclass=*)", attrs, sd_flags, res);
+	return ads_do_search_all_sd_flags(ads, dn, LDB_SCOPE_BASE, "(objectclass=*)", attrs, sd_flags, res);
 }
 
-static ADS_STATUS ads_do_search_all_sd_flags (ADS_STRUCT *ads, const char *dn, int scope,
+ADS_STATUS ads_do_search_all_sd_flags (ADS_STRUCT *ads, const char *dn, int scope,
                                               const char *filter, const char **attrs,
                                               uint32_t sd_flags, LDAPMessage **res)
 {
-	int count = 3;
 	int rv;
 	struct ldb_request *req;
 	struct ldb_control **controls;
 	struct ldb_parse_tree *tree;
+	struct ldb_dn *ldb_dn;
 
 	controls = talloc_zero_array(ads, struct ldb_control *, 2);
 	controls[0] = talloc(ads, struct ldb_control);
@@ -124,13 +129,15 @@ static ADS_STATUS ads_do_search_all_sd_flags (ADS_STRUCT *ads, const char *dn, i
 
 	tree = ldb_parse_tree(ads, filter);
 
-	rv = ldb_build_search_req_ex(&req, ads->ldbctx, ads, res, dn, scope, tree, attrs, controls,
+	ldb_dn = ldb_dn_new(ads, ads->ldbctx, dn);
+
+	rv = ldb_build_search_req_ex(&req, ads->ldbctx, (TALLOC_CTX *)res, ldb_dn, scope, tree, attrs, controls,
 	                             res, ldb_search_default_callback, NULL);
 	if (rv != LDB_SUCCESS) {
 		talloc_free(*res);
 		talloc_free(req);
 		talloc_free(tree);
-		return ADS_STATUS(irv);
+		return ADS_ERROR(rv);
 	}
 	rv = ldb_request(ads->ldbctx, req);
 	if (rv == LDB_SUCCESS) {
@@ -139,7 +146,7 @@ static ADS_STATUS ads_do_search_all_sd_flags (ADS_STRUCT *ads, const char *dn, i
 
 	talloc_free(req);
 	talloc_free(tree);
-	return ADS_STATUS(rv);
+	return ADS_ERROR(rv);
 
 }
 
@@ -166,6 +173,7 @@ int ads_count_replies(ADS_STRUCT *ads, LDAPMessage *res)
 ADS_STATUS ads_msgfree(ADS_STRUCT *ads, LDAPMessage *res)
 {
 	talloc_free(res);
+	return ADS_ERROR_NT(NT_STATUS_OK);
 }
 
 /*
@@ -203,7 +211,7 @@ const char *ads_errstr(ADS_STATUS status)
 	case ENUM_ADS_ERROR_SYSTEM:
 		return strerror(status.err.rc);
 	case ENUM_ADS_ERROR_LDAP:
-		return msg;
+		return ldb_strerror(status.err.rc);
 	case ENUM_ADS_ERROR_NT:
 		return get_friendly_nt_error_msg(ads_ntstatus(status));
 	default:
