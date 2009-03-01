@@ -18,6 +18,8 @@
  */
 
 #include "includes.h"
+#include "system/filesys.h"
+#include "../libgpo/gpo.h"
 
 /****************************************************************
  explode the GPO CIFS URI into their components
@@ -71,7 +73,7 @@ NTSTATUS gpo_explode_filesyspath(TALLOC_CTX *mem_ctx,
 	*unix_path = talloc_strdup(mem_ctx, path);
 	NT_STATUS_HAVE_NO_MEMORY(*unix_path);
 
-	TALLOC_FREE(path);
+	talloc_free(path);
 	return NT_STATUS_OK;
 }
 
