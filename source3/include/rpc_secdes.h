@@ -77,7 +77,6 @@ typedef struct security_ace SEC_ACE;
 #ifndef _SEC_ACL
 /* SEC_ACL */
 typedef struct security_acl SEC_ACL;
-#define  SEC_ACL_HEADER_SIZE (2 * sizeof(uint16) + sizeof(uint32))
 #define _SEC_ACL
 #endif
 
