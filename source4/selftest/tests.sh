@@ -126,7 +126,7 @@ all_tests="$ncalrpc_tests $ncacn_np_tests $ncacn_ip_tcp_tests $slow_ncalrpc_test
 # Make sure all tests get run
 for t in `$smb4torture --list | grep "^RPC-"`
 do
-	echo $all_tests | grep $t  > /dev/null
+	echo $all_tests | grep "$t"  > /dev/null
 	if [ $? -ne 0 ]
 	then
 		auto_rpc_tests="$auto_rpc_tests $t"
@@ -174,7 +174,7 @@ done
 
 # Tests for the NET API
 
-net=`$smb4torture --list | grep ^NET-`
+net=`$smb4torture --list | grep "^NET-"`
 
 for t in $net; do
     plansmbtorturetest "$t" dc "\$SERVER[$VALIDATE]" -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" "$*"
