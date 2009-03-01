@@ -182,7 +182,7 @@ showflags::
 	@echo '  MDLD_FLAGS = $(MDLD_FLAGS)'
 	@echo '  SHLIBEXT   = $(SHLIBEXT)'
 
-base_srcdirs = $(srcdir) ../librpc/ ../lib/ ../libcli
+base_srcdirs = $(srcdir) ../librpc/ ../lib/ ../libcli ../libgpo
 
 etags:
 	etags $(ETAGS_OPTIONS) `find $(base_srcdirs) -name "*.[ch]"`
