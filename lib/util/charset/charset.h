@@ -28,9 +28,16 @@
 #include <talloc.h>
 
 /* this defines the charset types used in samba */
-typedef enum {CH_UTF16=0, CH_UNIX, CH_DOS, CH_UTF8, CH_UTF16BE, CH_UTF16MUNGED} charset_t;
+typedef enum {CH_UTF16LE=0, CH_UTF16=0, CH_UNIX, CH_DISPLAY, CH_DOS, CH_UTF8, CH_UTF16BE, CH_UTF16MUNGED} charset_t;
 
-#define NUM_CHARSETS 6
+#define NUM_CHARSETS 7
+
+/*
+ * SMB UCS2 (16-bit unicode) internal type.
+ * smb_ucs2_t is *always* in little endian format.
+ */
+
+typedef uint16_t smb_ucs2_t;
 
 /*
  *   for each charset we have a function that pulls from that charset to
@@ -50,6 +57,17 @@ struct charset_functions {
 typedef uint32_t codepoint_t;
 
 #define INVALID_CODEPOINT ((codepoint_t)-1)
+
+/*
+ * This is auxiliary struct used by source/script/gen-8-bit-gap.sh script
+ * during generation of an encoding table for charset module
+ *     */
+
+struct charset_gap_table {
+  uint16_t start;
+  uint16_t end;
+  int32_t idx;
+};
 
 
 /* generic iconv conversion structure */
@@ -106,12 +124,12 @@ bool strhaslower(const char *string);
 char *strrchr_m(const char *s, char c);
 char *strchr_m(const char *s, char c);
 
-ssize_t push_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src);
-ssize_t push_ucs2_talloc(TALLOC_CTX *ctx, void **dest, const char *src);
-ssize_t push_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src);
-ssize_t pull_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src);
-ssize_t pull_ucs2_talloc(TALLOC_CTX *ctx, char **dest, const void *src);
-ssize_t pull_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src);
+bool push_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src, size_t *converted_size);
+bool push_ucs2_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src, size_t *converted_size);
+bool push_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src, size_t *converted_size);
+bool pull_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src, size_t *converted_size);
+bool pull_ucs2_talloc(TALLOC_CTX *ctx, char **dest, const smb_ucs2_t *src, size_t *converted_size);
+bool pull_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src, size_t *converted_size);
 ssize_t push_string(void *dest, const char *src, size_t dest_len, int flags);
 ssize_t pull_string(char *dest, const void *src, size_t dest_len, size_t src_len, int flags);
 
@@ -170,5 +188,82 @@ smb_iconv_t smb_iconv_open_ex(TALLOC_CTX *mem_ctx, const char *tocode,
 
 void load_case_tables(void);
 bool charset_register_backend(const void *_funcs);
+
+/*
+ *   Define stub for charset module which implements 8-bit encoding with gaps.
+ *   Encoding tables for such module should be produced from glibc's CHARMAPs
+ *   using script source/script/gen-8bit-gap.sh
+ *   CHARSETNAME is CAPITALIZED charset name
+ *
+ *     */
+#define SMB_GENERATE_CHARSET_MODULE_8_BIT_GAP(CHARSETNAME) 					\
+static size_t CHARSETNAME ## _push(void *cd, const char **inbuf, size_t *inbytesleft,			\
+			 char **outbuf, size_t *outbytesleft) 					\
+{ 												\
+	while (*inbytesleft >= 2 && *outbytesleft >= 1) { 					\
+		int i; 										\
+		int done = 0; 									\
+												\
+		uint16 ch = SVAL(*inbuf,0); 							\
+												\
+		for (i=0; from_idx[i].start != 0xffff; i++) {					\
+			if ((from_idx[i].start <= ch) && (from_idx[i].end >= ch)) {		\
+				((unsigned char*)(*outbuf))[0] = from_ucs2[from_idx[i].idx+ch];	\
+				(*inbytesleft) -= 2;						\
+				(*outbytesleft) -= 1;						\
+				(*inbuf)  += 2;							\
+				(*outbuf) += 1;							\
+				done = 1;							\
+				break;								\
+			}									\
+		}										\
+		if (!done) {									\
+			errno = EINVAL;								\
+			return -1;								\
+		}										\
+												\
+	}											\
+												\
+	if (*inbytesleft == 1) {								\
+		errno = EINVAL;									\
+		return -1;									\
+	}											\
+												\
+	if (*inbytesleft > 1) {									\
+		errno = E2BIG;									\
+		return -1;									\
+	}											\
+												\
+	return 0;										\
+}												\
+												\
+static size_t CHARSETNAME ## _pull(void *cd, const char **inbuf, size_t *inbytesleft,				\
+			 char **outbuf, size_t *outbytesleft)					\
+{												\
+	while (*inbytesleft >= 1 && *outbytesleft >= 2) {					\
+		*(uint16*)(*outbuf) = to_ucs2[((unsigned char*)(*inbuf))[0]];			\
+		(*inbytesleft)  -= 1;								\
+		(*outbytesleft) -= 2;								\
+		(*inbuf)  += 1;									\
+		(*outbuf) += 2;									\
+	}											\
+												\
+	if (*inbytesleft > 0) {									\
+		errno = E2BIG;									\
+		return -1;									\
+	}											\
+												\
+	return 0;										\
+}												\
+												\
+struct charset_functions CHARSETNAME ## _functions = 						\
+		{#CHARSETNAME, CHARSETNAME ## _pull, CHARSETNAME ## _push};			\
+												\
+NTSTATUS charset_ ## CHARSETNAME ## _init(void);							\
+NTSTATUS charset_ ## CHARSETNAME ## _init(void)							\
+{												\
+	return smb_register_charset(& CHARSETNAME ## _functions);				\
+}												\
+
 
 #endif /* __CHARSET_H__ */

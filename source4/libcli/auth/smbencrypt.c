@@ -63,11 +63,12 @@ bool SMBencrypt(const char *passwd, const uint8_t *c8, uint8_t p24[24])
  
 bool E_md4hash(const char *passwd, uint8_t p16[16])
 {
-	int len;
-	void *wpwd;
+	size_t len;
+	smb_ucs2_t *wpwd;
+	bool ret;
 
-	len = push_ucs2_talloc(NULL, &wpwd, passwd);
-	if (len < 2) {
+	ret = push_ucs2_talloc(NULL, &wpwd, passwd, &len);
+	if (!ret || len < 2) {
 		/* We don't want to return fixed data, as most callers
 		 * don't check */
 		mdfour(p16, (const uint8_t *)passwd, strlen(passwd));
@@ -75,7 +76,7 @@ bool E_md4hash(const char *passwd, uint8_t p16[16])
 	}
 	
 	len -= 2;
-	mdfour(p16, wpwd, len);
+	mdfour(p16, (const uint8_t *)wpwd, len);
 
 	talloc_free(wpwd);
 	return true;
@@ -116,10 +117,11 @@ bool ntv2_owf_gen(const uint8_t owf[16],
 		  bool upper_case_domain, /* Transform the domain into UPPER case */
 		  uint8_t kr_buf[16])
 {
-	void *user;
-	void *domain;	
+	smb_ucs2_t *user;
+	smb_ucs2_t *domain;	
 	size_t user_byte_len;
 	size_t domain_byte_len;
+	bool ret;
 
 	HMACMD5Context ctx;
 	TALLOC_CTX *mem_ctx = talloc_init("ntv2_owf_gen for %s\\%s", domain_in, user_in); 
@@ -150,15 +152,15 @@ bool ntv2_owf_gen(const uint8_t owf[16],
 		}
 	}
 
-	user_byte_len = push_ucs2_talloc(mem_ctx, &user, user_in);
-	if (user_byte_len == (ssize_t)-1) {
+	ret = push_ucs2_talloc(mem_ctx, &user, user_in, &user_byte_len );
+	if (!ret) {
 		DEBUG(0, ("push_uss2_talloc() for user returned -1 (probably talloc() failure)\n"));
 		talloc_free(mem_ctx);
 		return false;
 	}
 
-	domain_byte_len = push_ucs2_talloc(mem_ctx, &domain, domain_in);
-	if (domain_byte_len == (ssize_t)-1) {
+	ret = push_ucs2_talloc(mem_ctx, &domain, domain_in, &domain_byte_len);
+	if (!ret) {
 		DEBUG(0, ("push_ucs2_talloc() for domain returned -1 (probably talloc() failure)\n"));
 		talloc_free(mem_ctx);
 		return false;
@@ -172,14 +174,14 @@ bool ntv2_owf_gen(const uint8_t owf[16],
 	domain_byte_len = domain_byte_len - 2;
 	
 	hmac_md5_init_limK_to_64(owf, 16, &ctx);
-	hmac_md5_update(user, user_byte_len, &ctx);
-	hmac_md5_update(domain, domain_byte_len, &ctx);
+	hmac_md5_update((const void *)user, user_byte_len, &ctx);
+	hmac_md5_update((const void *)domain, domain_byte_len, &ctx);
 	hmac_md5_final(kr_buf, &ctx);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("ntv2_owf_gen: user, domain, owfkey, kr\n"));
-	dump_data(100, user, user_byte_len);
-	dump_data(100, domain, domain_byte_len);
+	dump_data(100, (const void *)user, user_byte_len);
+	dump_data(100, (const void *)domain, domain_byte_len);
 	dump_data(100, owf, 16);
 	dump_data(100, kr_buf, 16);
 #endif

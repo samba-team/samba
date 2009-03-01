@@ -149,8 +149,6 @@ typedef union unid_t {
  * smb_ucs2_t is *always* in little endian format.
  */
 
-typedef uint16 smb_ucs2_t;
-
 #ifdef WORDS_BIGENDIAN
 #define UCS2_SHIFT 8
 #else

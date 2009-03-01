@@ -22,6 +22,7 @@
 #include "../lib/util/dlinklist.h"
 #include "system/iconv.h"
 #include "system/filesys.h"
+#undef strcasecmp
 
 
 /**
