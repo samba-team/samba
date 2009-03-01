@@ -18,6 +18,9 @@
  */
 
 #include "includes.h"
+#include "librpc/gen_ndr/security.h"
+#include "librpc/gen_ndr/ndr_misc.h"
+#include "../libgpo/gpo.h"
 
 /****************************************************************
 ****************************************************************/
@@ -41,12 +44,12 @@ static bool gpo_sd_check_agp_object_guid(const struct security_ace_object *objec
 		case SEC_ACE_OBJECT_TYPE_PRESENT:
 			if (GUID_equal(&object->type.type,
 				       &ext_right_apg_guid)) {
-				return True;
+				return true;
 			}
 		case SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT:
 			if (GUID_equal(&object->inherited_type.inherited_type,
 				       &ext_right_apg_guid)) {
-				return True;
+				return true;
 			}
 		default:
 			break;
@@ -58,7 +61,7 @@ static bool gpo_sd_check_agp_object_guid(const struct security_ace_object *objec
 /****************************************************************
 ****************************************************************/
 
-static bool gpo_sd_check_agp_object(const SEC_ACE *ace)
+static bool gpo_sd_check_agp_object(const struct security_ace *ace)
 {
 	if (!sec_ace_object(ace->type)) {
 		return false;
@@ -92,7 +95,7 @@ static bool gpo_sd_check_read_access_bits(uint32_t access_mask)
 /****************************************************************
 ****************************************************************/
 
-static NTSTATUS gpo_sd_check_ace_denied_object(const SEC_ACE *ace,
+static NTSTATUS gpo_sd_check_ace_denied_object(const struct security_ace *ace,
 					       const struct nt_user_token *token)
 {
 	if (gpo_sd_check_agp_object(ace) &&
@@ -110,7 +113,7 @@ static NTSTATUS gpo_sd_check_ace_denied_object(const SEC_ACE *ace,
 /****************************************************************
 ****************************************************************/
 
-static NTSTATUS gpo_sd_check_ace_allowed_object(const SEC_ACE *ace,
+static NTSTATUS gpo_sd_check_ace_allowed_object(const struct security_ace *ace,
 						const struct nt_user_token *token)
 {
 	if (gpo_sd_check_agp_object(ace) &&
@@ -128,7 +131,7 @@ static NTSTATUS gpo_sd_check_ace_allowed_object(const SEC_ACE *ace,
 /****************************************************************
 ****************************************************************/
 
-static NTSTATUS gpo_sd_check_ace(const SEC_ACE *ace,
+static NTSTATUS gpo_sd_check_ace(const struct security_ace *ace,
 				 const struct nt_user_token *token)
 {
 	switch (ace->type) {
@@ -147,8 +150,8 @@ static NTSTATUS gpo_sd_check_ace(const SEC_ACE *ace,
 NTSTATUS gpo_apply_security_filtering(const struct GROUP_POLICY_OBJECT *gpo,
 				      const struct nt_user_token *token)
 {
-	SEC_DESC *sd = gpo->security_descriptor;
-	SEC_ACL *dacl = NULL;
+	struct security_descriptor *sd = gpo->security_descriptor;
+	struct security_acl *dacl = NULL;
 	NTSTATUS status = NT_STATUS_ACCESS_DENIED;
 	int i;
 

@@ -56,4 +56,4 @@ mkinclude ../libcli/ldap/config.mk
 mkinclude ../libcli/auth/config.mk
 mkinclude ../libcli/drsuapi/config.mk
 mkinclude ../libcli/samsync/config.mk
-
+mkinclude ../libgpo/config.mk
