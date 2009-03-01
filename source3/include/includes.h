@@ -703,6 +703,8 @@ enum flush_reason_enum {
 #ifndef NO_PROTO_H
 #include "proto.h"
 #endif
+#include "libcli/security/secace.h"
+#include "libcli/security/secacl.h"
 
 #if defined(HAVE_POSIX_ACLS)
 #include "modules/vfs_posixacl.h"

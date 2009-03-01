@@ -650,28 +650,6 @@ ssize_t sys_recvfile(int fromfd,
 			size_t count);
 ssize_t drain_socket(int sockfd, size_t count);
 
-/* The following definitions come from lib/secace.c  */
-
-bool sec_ace_object(uint8 type);
-void sec_ace_copy(SEC_ACE *ace_dest, SEC_ACE *ace_src);
-void init_sec_ace(SEC_ACE *t, const DOM_SID *sid, enum security_ace_type type,
-		  uint32 mask, uint8 flag);
-NTSTATUS sec_ace_add_sid(TALLOC_CTX *ctx, SEC_ACE **pp_new, SEC_ACE *old, unsigned *num, DOM_SID *sid, uint32 mask);
-NTSTATUS sec_ace_mod_sid(SEC_ACE *ace, size_t num, DOM_SID *sid, uint32 mask);
-NTSTATUS sec_ace_del_sid(TALLOC_CTX *ctx, SEC_ACE **pp_new, SEC_ACE *old, uint32 *num, DOM_SID *sid);
-bool sec_ace_equal(SEC_ACE *s1, SEC_ACE *s2);
-int nt_ace_inherit_comp( SEC_ACE *a1, SEC_ACE *a2);
-int nt_ace_canon_comp( SEC_ACE *a1, SEC_ACE *a2);
-void dacl_sort_into_canonical_order(SEC_ACE *srclist, unsigned int num_aces);
-bool token_sid_in_ace(const NT_USER_TOKEN *token, const SEC_ACE *ace);
-
-/* The following definitions come from lib/secacl.c  */
-
-SEC_ACL *make_sec_acl(TALLOC_CTX *ctx, enum security_acl_revision revision,
-		      int num_aces, SEC_ACE *ace_list);
-SEC_ACL *dup_sec_acl(TALLOC_CTX *ctx, SEC_ACL *src);
-bool sec_acl_equal(SEC_ACL *s1, SEC_ACL *s2);
-
 /* The following definitions come from lib/secdesc.c  */
 
 bool sec_desc_equal(SEC_DESC *s1, SEC_DESC *s2);
@@ -1252,6 +1230,7 @@ NTSTATUS merge_nt_token(TALLOC_CTX *mem_ctx,
 			const struct nt_user_token *token_1,
 			const struct nt_user_token *token_2,
 			struct nt_user_token **token_out);
+bool token_sid_in_ace(const NT_USER_TOKEN *token, const SEC_ACE *ace);
 
 /* The following definitions come from lib/util_pw.c  */
 
