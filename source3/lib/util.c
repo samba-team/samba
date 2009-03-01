@@ -798,43 +798,6 @@ char *clean_name(TALLOC_CTX *ctx, const char *s)
 }
 
 /*******************************************************************
- Close the low 3 fd's and open dev/null in their place.
-********************************************************************/
-
-void close_low_fds(bool stderr_too)
-{
-#ifndef VALGRIND
-	int fd;
-	int i;
-
-	close(0);
-	close(1);
-
-	if (stderr_too)
-		close(2);
-
-	/* try and use up these file descriptors, so silly
-		library routines writing to stdout etc won't cause havoc */
-	for (i=0;i<3;i++) {
-		if (i == 2 && !stderr_too)
-			continue;
-
-		fd = sys_open("/dev/null",O_RDWR,0);
-		if (fd < 0)
-			fd = sys_open("/dev/null",O_WRONLY,0);
-		if (fd < 0) {
-			DEBUG(0,("Can't open /dev/null\n"));
-			return;
-		}
-		if (fd != i) {
-			DEBUG(0,("Didn't get file descriptor %d\n",i));
-			return;
-		}
-	}
-#endif
-}
-
-/*******************************************************************
  Write data into an fd at a given offset. Ignore seek errors.
 ********************************************************************/
 
@@ -924,36 +887,6 @@ void smb_msleep(unsigned int t)
 #endif
 }
 
-/****************************************************************************
- Become a daemon, discarding the controlling terminal.
-****************************************************************************/
-
-void become_daemon(bool Fork, bool no_process_group)
-{
-	if (Fork) {
-		if (sys_fork()) {
-			_exit(0);
-		}
-	}
-
-  /* detach from the terminal */
-#ifdef HAVE_SETSID
-	if (!no_process_group) setsid();
-#elif defined(TIOCNOTTY)
-	if (!no_process_group) {
-		int i = sys_open("/dev/tty", O_RDWR, 0);
-		if (i != -1) {
-			ioctl(i, (int) TIOCNOTTY, (char *)0);      
-			close(i);
-		}
-	}
-#endif /* HAVE_SETSID */
-
-	/* Close fd's 0,1,2. Needed if started by rsh */
-	close_low_fds(False);  /* Don't close stderr, let the debug system
-				  attach it to the logfile */
-}
-
 bool reinit_after_fork(struct messaging_context *msg_ctx,
 		       struct event_context *ev_ctx,
 		       bool parent_longlived)
@@ -965,6 +898,13 @@ bool reinit_after_fork(struct messaging_context *msg_ctx,
 	 * children do not get the same random
 	 * numbers as each other */
 	set_need_random_reseed();
+
+#ifdef WITH_MADVISE_PROTECTED
+	/* Protect parent process from being killed by kernel when system
+	 * memory is low.  Child processes can still be killed */
+	if(!parent_longlived)
+		madvise(NULL,0,MADV_PROTECT);
+#endif
 
 	/* tdb needs special fork handling */
 	if (tdb_reopen_all(parent_longlived ? 1 : 0) == -1) {
@@ -3204,103 +3144,4 @@ const char *strip_hostname(const char *s)
 	if (s[0] == '\\') s++;
 
 	return s;
-}
-
-struct read_pkt_state {
-	struct event_context *ev;
-	int fd;
-	uint8_t *buf;
-	ssize_t (*more)(uint8_t *buf, size_t buflen, void *priv);
-	void *priv;
-};
-
-static void read_pkt_done(struct async_req *subreq);
-
-struct async_req *read_pkt_send(TALLOC_CTX *mem_ctx,
-				struct event_context *ev,
-				int fd, size_t initial,
-				ssize_t (*more)(uint8_t *buf, size_t buflen,
-						void *priv),
-				void *priv)
-{
-	struct async_req *result, *subreq;
-	struct read_pkt_state *state;
-
-	if (!async_req_setup(mem_ctx, &result, &state,
-			     struct read_pkt_state)) {
-		return NULL;
-	}
-	state->ev = ev;
-	state->fd = fd;
-	state->more = more;
-
-	state->buf = talloc_array(state, uint8_t, initial);
-	if (state->buf == NULL) {
-		goto fail;
-	}
-	subreq = recvall_send(state, ev, fd, state->buf, initial, 0);
-	if (subreq == NULL) {
-		goto fail;
-	}
-	subreq->async.fn = read_pkt_done;
-	subreq->async.priv = result;
-	return result;
- fail:
-	TALLOC_FREE(result);
-	return NULL;
-}
-
-static void read_pkt_done(struct async_req *subreq)
-{
-	struct async_req *req = talloc_get_type_abort(
-		subreq->async.priv, struct async_req);
-	struct read_pkt_state *state = talloc_get_type_abort(
-		req->private_data, struct read_pkt_state);
-	size_t current_size;
-	ssize_t received;
-	ssize_t more;
-	int err;
-
-	received = recvall_recv(subreq, &err);
-	TALLOC_FREE(subreq);
-	if (received == -1) {
-		async_req_error(req, err);
-		return;
-	}
-	current_size = talloc_get_size(state->buf);
-
-	more = state->more(state->buf, current_size, state->priv);
-	if (more < 0) {
-		async_req_error(req, EIO);
-		return;
-	}
-	if (more == 0) {
-		async_req_done(req);
-		return;
-	}
-	state->buf = TALLOC_REALLOC_ARRAY(state, state->buf, uint8_t,
-					  current_size + more);
-	if (async_req_nomem(state->buf, req)) {
-		return;
-	}
-	subreq = recvall_send(state, state->ev, state->fd,
-			      state->buf + current_size, more, 0);
-	if (async_req_nomem(subreq, req)) {
-		return;
-	}
-	subreq->async.fn = read_pkt_done;
-	subreq->async.priv = req;
-}
-
-ssize_t read_pkt_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
-		      uint8_t **pbuf, int *perr)
-{
-	struct read_pkt_state *state = talloc_get_type_abort(
-		req->private_data, struct read_pkt_state);
-
-	if (async_req_is_errno(req, perr)) {
-		return -1;
-	}
-	*pbuf = talloc_move(mem_ctx, &state->buf);
-	return talloc_get_size(*pbuf);
 }

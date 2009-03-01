@@ -32,6 +32,7 @@
  *  Author: Simo Sorce
  */
 
+#include "ldb_includes.h"
 #include "ldb_module.h"
 
 struct message_store {

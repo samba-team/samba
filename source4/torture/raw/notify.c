@@ -561,7 +561,7 @@ static bool test_notify_mask(struct smbcli_state *cli, struct torture_context *t
 
 	tv = timeval_current_ofs(1000, 0);
 	t = timeval_to_nttime(&tv);
-		
+
 	/*
 	  get a handle on the directory
 	*/
@@ -1283,6 +1283,152 @@ done:
 	return ret;
 }
 
+/*
+   Test response when cached server events exceed single NT NOTFIY response
+   packet size.
+*/
+static bool test_notify_overflow(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+{
+	bool ret = true;
+	NTSTATUS status;
+	union smb_notify notify;
+	union smb_open io;
+	int fnum, fnum2;
+	int count = 100;
+	struct smbcli_request *req1;
+	int i;
+
+	printf("TESTING CHANGE NOTIFY EVENT OVERFLOW\n");
+
+	/* get a handle on the directory */
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_FILE_ALL;
+	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+	    NTCREATEX_SHARE_ACCESS_WRITE;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = BASEDIR;
+
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.file.fnum;
+
+	/* ask for a change notify, on name changes. */
+	notify.nttrans.level = RAW_NOTIFY_NTTRANS;
+	notify.nttrans.in.buffer_size = 1000;
+	notify.nttrans.in.completion_filter = FILE_NOTIFY_CHANGE_NAME;
+	notify.nttrans.in.file.fnum = fnum;
+
+	notify.nttrans.in.recursive = true;
+	req1 = smb_raw_changenotify_send(cli->tree, &notify);
+
+	/* cancel initial requests so the buffer is setup */
+	smb_raw_ntcancel(req1);
+	status = smb_raw_changenotify_recv(req1, mem_ctx, &notify);
+	CHECK_STATUS(status, NT_STATUS_CANCELLED);
+
+	/* open a lot of files, filling up the server side notify buffer */
+	printf("testing overflowed buffer notify on create of %d files\n",
+	       count);
+	for (i=0;i<count;i++) {
+		char *fname = talloc_asprintf(cli, BASEDIR "\\test%d.txt", i);
+		int fnum2 = smbcli_open(cli->tree, fname, O_CREAT|O_RDWR,
+					DENY_NONE);
+		if (fnum2 == -1) {
+			printf("Failed to create %s - %s\n",
+			       fname, smbcli_errstr(cli->tree));
+			ret = false;
+			goto done;
+		}
+		talloc_free(fname);
+		smbcli_close(cli->tree, fnum2);
+	}
+
+	/* expect that 0 events will be returned with NT_STATUS_OK */
+	req1 = smb_raw_changenotify_send(cli->tree, &notify);
+	status = smb_raw_changenotify_recv(req1, mem_ctx, &notify);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VAL(notify.nttrans.out.num_changes, 0);
+
+done:
+	smb_raw_exit(cli->session);
+	return ret;
+}
+
+/*
+   Test if notifications are returned for changes to the base directory.
+   They shouldn't be.
+*/
+static bool test_notify_basedir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+{
+	bool ret = true;
+	NTSTATUS status;
+	union smb_notify notify;
+	union smb_open io;
+	int fnum, fnum2;
+	int count = 100;
+	struct smbcli_request *req1;
+	int i;
+
+	printf("TESTING CHANGE NOTIFY BASEDIR EVENTS\n");
+
+	/* get a handle on the directory */
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_FILE_ALL;
+	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+	    NTCREATEX_SHARE_ACCESS_WRITE;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = BASEDIR;
+
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.file.fnum;
+
+	/* create a test file that will also be modified */
+	smbcli_close(cli->tree, smbcli_open(cli->tree, BASEDIR "\\tname1",
+					    O_CREAT, 0));
+
+	/* ask for a change notify, on attribute changes. */
+	notify.nttrans.level = RAW_NOTIFY_NTTRANS;
+	notify.nttrans.in.buffer_size = 1000;
+	notify.nttrans.in.completion_filter = FILE_NOTIFY_CHANGE_ATTRIBUTES;
+	notify.nttrans.in.file.fnum = fnum;
+	notify.nttrans.in.recursive = true;
+
+	req1 = smb_raw_changenotify_send(cli->tree, &notify);
+
+	/* set attribute on the base dir */
+	smbcli_setatr(cli->tree, BASEDIR, FILE_ATTRIBUTE_HIDDEN, 0);
+
+	/* set attribute on a file to assure we receive a notification */
+	smbcli_setatr(cli->tree, BASEDIR "\\tname1", FILE_ATTRIBUTE_HIDDEN, 0);
+	msleep(200);
+
+	/* check how many responses were given, expect only 1 for the file */
+	status = smb_raw_changenotify_recv(req1, mem_ctx, &notify);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VAL(notify.nttrans.out.num_changes, 1);
+	CHECK_VAL(notify.nttrans.out.changes[0].action, NOTIFY_ACTION_MODIFIED);
+	CHECK_WSTR(notify.nttrans.out.changes[0].name, "tname1", STR_UNICODE);
+
+done:
+	smb_raw_exit(cli->session);
+	return ret;
+}
+
 /* 
    basic testing of change notify
 */
@@ -1291,7 +1437,7 @@ bool torture_raw_notify(struct torture_context *torture,
 			struct smbcli_state *cli2)
 {
 	bool ret = true;
-		
+
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
 	}
@@ -1307,6 +1453,8 @@ bool torture_raw_notify(struct torture_context *torture,
 	ret &= test_notify_tcp_dis(torture);
 	ret &= test_notify_double(cli, torture);
 	ret &= test_notify_tree(cli, torture);
+	ret &= test_notify_overflow(cli, torture);
+	ret &= test_notify_basedir(cli, torture);
 
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);

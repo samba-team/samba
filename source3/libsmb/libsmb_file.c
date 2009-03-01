@@ -382,7 +382,7 @@ SMBC_write_ctx(SMBCCTX *context,
 		TALLOC_FREE(frame);
                 return -1;
         }
-        
+
 	/*d_printf(">>>write: resolving %s\n", path);*/
 	if (!cli_resolve_path(frame, "", file->srv->cli, path,
                               &targetcli, &targetpath)) {

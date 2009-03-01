@@ -454,7 +454,7 @@ static NTSTATUS cmd_eventlog_loginfo(struct rpc_pipe_client *cli,
 		return status;
 	}
 
-	status = rpccli_eventlog_GetLogIntormation(cli, mem_ctx,
+	status = rpccli_eventlog_GetLogInformation(cli, mem_ctx,
 						   &handle,
 						   0, /* level */
 						   buffer,
@@ -472,7 +472,7 @@ static NTSTATUS cmd_eventlog_loginfo(struct rpc_pipe_client *cli,
 		goto done;
 	}
 
-	status = rpccli_eventlog_GetLogIntormation(cli, mem_ctx,
+	status = rpccli_eventlog_GetLogInformation(cli, mem_ctx,
 						   &handle,
 						   0, /* level */
 						   buffer,

@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+#include "libcli/util/ntstatus.h"
+
 #include "librpc/gen_ndr/lsa.h"
 #ifndef _HEADER_initshutdown
 #define _HEADER_initshutdown

@@ -107,7 +107,7 @@ static const struct net_functable net_functable[] = {
 	{"vampire", "join and syncronise an AD domain onto the local server\n", net_vampire, net_vampire_usage},
 	{"samsync", "synchronise into the local ldb the sam of an NT4 domain\n", net_samsync_ldb, net_samsync_ldb_usage},
 	{"user", "manage user accounts\n", net_user, net_user_usage},
-	{"machinepw", "Get a machine password out of our SAM", net_machinepw,
+	{"machinepw", "Get a machine password out of our SAM\n", net_machinepw,
 	 net_machinepw_usage},
 	{NULL, NULL, NULL, NULL}
 };

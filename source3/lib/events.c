@@ -282,7 +282,7 @@ static void s3_event_debug(void *context, enum tevent_debug_level level,
 		samba_level = 2;
 		break;
 	case TEVENT_DEBUG_TRACE:
-		samba_level = 5;
+		samba_level = 10;
 		break;
 
 	};

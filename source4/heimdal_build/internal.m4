@@ -69,13 +69,15 @@ AC_CHECK_HEADERS([				\
 	ttyname.h				\
 	netinet/in.h				\
 	netinet/in6.h				\
-	netinet6/in6.h
+	netinet6/in6.h				\
+	libintl.h
 ])
 
 AC_CHECK_FUNCS([				\
 	atexit					\
 	cgetent					\
 	getprogname				\
+	setprogname				\
 	inet_aton				\
 	gethostname				\
 	getnameinfo				\
@@ -169,6 +171,12 @@ SMB_ENABLE(OPENPTY,YES)
 
 SMB_EXT_LIB(OPENPTY,[${OPENPTY_LIBS}],[${OPENPTY_CFLAGS}],[${OPENPTY_CPPFLAGS}],[${OPENPTY_LDFLAGS}])
 
+AC_CHECK_LIB_EXT(intl, INTL_LIBS, gettext)
+
+SMB_ENABLE(INTL,YES)
+
+SMB_EXT_LIB(INTL, $INTL_LIBS)
+
 smb_save_LIBS=$LIBS
 RESOLV_LIBS=""
 LIBS=""
@@ -261,16 +269,18 @@ SMB_ENABLE(compile_et, YES)
 
 # only add closefrom if needed
 SMB_ENABLE(HEIMDAL_ROKEN_CLOSEFROM, NO)
+SMB_ENABLE(HEIMDAL_ROKEN_CLOSEFROM_H, NO)
 if test t$ac_cv_func_closefrom != tyes; then
 	SMB_ENABLE(HEIMDAL_ROKEN_CLOSEFROM, YES)
+	SMB_ENABLE(HEIMDAL_ROKEN_CLOSEFROM_H, YES)
 fi
 
 # only add getprogname if needed
-SMB_ENABLE(HEIMDAL_ROKEN_GETPROGNAME, NO)
-SMB_ENABLE(HEIMDAL_ROKEN_GETPROGNAME_H, NO)
+SMB_ENABLE(HEIMDAL_ROKEN_PROGNAME, NO)
+SMB_ENABLE(HEIMDAL_ROKEN_PROGNAME_H, NO)
 if test t$ac_cv_func_getprogname != tyes; then
-	SMB_ENABLE(HEIMDAL_ROKEN_GETPROGNAME, YES)
-	SMB_ENABLE(HEIMDAL_ROKEN_GETPROGNAME_H, YES)
+	SMB_ENABLE(HEIMDAL_ROKEN_PROGNAME, YES)
+	SMB_ENABLE(HEIMDAL_ROKEN_PROGNAME_H, YES)
 fi
 
 VPATH="$VPATH:\$(HEIMDAL_VPATH)"

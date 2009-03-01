@@ -39,13 +39,14 @@ NTSTATUS check_plaintext_password(const char *smb_name, DATA_BLOB plaintext_pass
 {
 	struct auth_context *plaintext_auth_context = NULL;
 	auth_usersupplied_info *user_info = NULL;
-	const uint8 *chal;
+	uint8_t chal[8];
 	NTSTATUS nt_status;
 	if (!NT_STATUS_IS_OK(nt_status = make_auth_context_subsystem(&plaintext_auth_context))) {
 		return nt_status;
 	}
 
-	chal = plaintext_auth_context->get_ntlm_challenge(plaintext_auth_context);
+	plaintext_auth_context->get_ntlm_challenge(plaintext_auth_context,
+						   chal);
 
 	if (!make_user_info_for_reply(&user_info, 
 				      smb_name, lp_workgroup(), chal,

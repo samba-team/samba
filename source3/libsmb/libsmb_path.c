@@ -216,7 +216,7 @@ smbc_urlencode(char *dest,
  * are supported.
  */
 
-static const char *smbc_prefix = "smb:";
+#define SMBC_PREFIX "smb:"
 
 int
 SMBC_parse_path(TALLOC_CTX *ctx,
@@ -233,6 +233,7 @@ SMBC_parse_path(TALLOC_CTX *ctx,
 	char *s;
 	const char *p;
 	char *q, *r;
+	char *workgroup = NULL;
 	int len;
         
 	/* Ensure these returns are at least valid pointers. */
@@ -262,8 +263,8 @@ SMBC_parse_path(TALLOC_CTX *ctx,
 	s = talloc_strdup(ctx, fname);
         
 	/* see if it has the right prefix */
-	len = strlen(smbc_prefix);
-	if (strncmp(s,smbc_prefix,len) || (s[len] != '/' && s[len] != 0)) {
+	len = strlen(SMBC_PREFIX);
+	if (strncmp(s,SMBC_PREFIX,len) || (s[len] != '/' && s[len] != 0)) {
                 return -1; /* What about no smb: ? */
         }
         
@@ -332,7 +333,6 @@ SMBC_parse_path(TALLOC_CTX *ctx,
 		u = userinfo;
                 
 		if (strchr_m(u, ';')) {
-			char *workgroup;
 			next_token_no_ltrim_talloc(ctx, &u, &workgroup, ";");
 			if (!workgroup) {
 				return -1;
@@ -394,6 +394,19 @@ decoding:
 	(void) urldecode_talloc(ctx, pp_share, *pp_share);
 	(void) urldecode_talloc(ctx, pp_user, *pp_user);
 	(void) urldecode_talloc(ctx, pp_password, *pp_password);
+
+	if (!workgroup) {
+		workgroup = talloc_strdup(ctx, smbc_getWorkgroup(context));
+	}
+	if (!workgroup) {
+		return -1;
+	}
+
+	/* set the credentials to make DFS work */
+	smbc_set_credentials_with_fallback(context,
+				    	   workgroup,
+				    	   *pp_user,
+				    	   *pp_password);
         
 	return 0;
 }

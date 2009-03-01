@@ -70,8 +70,8 @@ class SubstituteVarTestCase(unittest.TestCase):
                 samba.substitute_var("foo ${bla} gsff", {"bar": "bla"}))
                 
     def test_check_all_substituted(self):
-    	samba.check_all_substituted("nothing to see here")
-    	self.assertRaises(Exception, samba.check_all_substituted, "Not subsituted: ${FOOBAR}")
+        samba.check_all_substituted("nothing to see here")
+        self.assertRaises(Exception, samba.check_all_substituted, "Not subsituted: ${FOOBAR}")
 
 
 class LdbExtensionTests(TestCaseInTempDir):

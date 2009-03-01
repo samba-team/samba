@@ -6,6 +6,8 @@ dnl Published under the GPL
 dnl
 dnl SMB_EXT_LIB_FROM_PKGCONFIG(name,pkg-config name,[ACTION-IF-FOUND],[ACTION-IF-NOT-FOUND])
 dnl
+dnl SMB_INCLUDED_LIB_PKGCONFIG(name,pkg-config name,[ACTION-IF-FOUND],[ACTION-IF-NOT-FOUND])
+dnl
 dnl SMB_EXT_LIB(name,libs,cflags,cppflags,ldflags)
 dnl
 dnl SMB_ENABLE(name,default_build)
@@ -125,6 +127,28 @@ AC_DEFUN([SMB_EXT_LIB_FROM_PKGCONFIG],
 	fi
 ])
 
+dnl SMB_INCLUDED_LIB_PKGCONFIG(name,pkg-config name,[ACTION-IF-FOUND],[ACTION-IF-NOT-FOUND])
+AC_DEFUN([SMB_INCLUDED_LIB_PKGCONFIG],
+[
+	AC_ARG_ENABLE([external-]translit($1,`A-Z',`a-z'),
+		AS_HELP_STRING([--enable-external-]translit($1,`A-Z',`a-z'), [Use external $1 instead of built-in (default=ifelse([$5],[],auto,$5))]), [], [enableval=ifelse([$5],[],auto,$5)])
+
+	if test $enableval = yes -o $enableval = auto; then
+		SMB_EXT_LIB_FROM_PKGCONFIG([$1], [$2], [$3], [
+			if test $enableval = yes; then
+				AC_MSG_ERROR([Unable to find external $1])
+			fi
+			enableval=no
+		])
+	fi
+	if test $enableval = no; then
+		ifelse([$4], [], [
+			  SMB_EXT_LIB($1)
+			  SMB_ENABLE($1, NO)
+		], [$4])
+	fi
+])
+
 dnl SMB_INCLUDE_MK(file)
 AC_DEFUN([SMB_INCLUDE_MK],
 [
@@ -133,6 +157,13 @@ mkinclude $1
 "
 ])
 
+dnl
+dnl SMB_EXT_LIB() just specifies the details of the library.
+dnl Note: the library isn't enabled by default.
+dnl You need to enable it with SMB_ENABLE(name) if configure
+dnl find it should be used. E.g. it should not be enabled
+dnl if the library is present, but the header file is missing.
+dnl
 dnl SMB_EXT_LIB(name,libs,cflags,cppflags,ldflags)
 AC_DEFUN([SMB_EXT_LIB],
 [

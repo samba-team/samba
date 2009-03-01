@@ -108,7 +108,7 @@ static void cldap_socket_recv(struct cldap_socket *cldap)
 	}
 
 	/* this initial decode is used to find the message id */
-	status = ldap_decode(asn1, ldap_msg);
+	status = ldap_decode(asn1, NULL, ldap_msg);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(2,("Failed to decode ldap message: %s\n", nt_errstr(status)));
 		talloc_free(tmp_ctx);
@@ -343,7 +343,7 @@ struct cldap_request *cldap_search_send(struct cldap_socket *cldap,
 		goto failed;
 	}
 
-	if (!ldap_encode(msg, &req->encoded, req)) {
+	if (!ldap_encode(msg, NULL, &req->encoded, req)) {
 		DEBUG(0,("Failed to encode cldap message to %s:%d\n",
 			 req->dest->addr, req->dest->port));
 		goto failed;
@@ -396,7 +396,7 @@ NTSTATUS cldap_reply_send(struct cldap_socket *cldap, struct cldap_reply *io)
 		msg->type = LDAP_TAG_SearchResultEntry;
 		msg->r.SearchResultEntry = *io->response;
 
-		if (!ldap_encode(msg, &blob1, req)) {
+		if (!ldap_encode(msg, NULL, &blob1, req)) {
 			DEBUG(0,("Failed to encode cldap message to %s:%d\n",
 				 req->dest->addr, req->dest->port));
 			status = NT_STATUS_INVALID_PARAMETER;
@@ -409,7 +409,7 @@ NTSTATUS cldap_reply_send(struct cldap_socket *cldap, struct cldap_reply *io)
 	msg->type = LDAP_TAG_SearchResultDone;
 	msg->r.SearchResultDone = *io->result;
 
-	if (!ldap_encode(msg, &blob2, req)) {
+	if (!ldap_encode(msg, NULL, &blob2, req)) {
 		DEBUG(0,("Failed to encode cldap message to %s:%d\n",
 			 req->dest->addr, req->dest->port));
 		status = NT_STATUS_INVALID_PARAMETER;
@@ -463,7 +463,7 @@ NTSTATUS cldap_search_recv(struct cldap_request *req,
 	ldap_msg = talloc(mem_ctx, struct ldap_message);
 	NT_STATUS_HAVE_NO_MEMORY(ldap_msg);
 
-	status = ldap_decode(req->asn1, ldap_msg);
+	status = ldap_decode(req->asn1, NULL, ldap_msg);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(2,("Failed to decode cldap search reply: %s\n", nt_errstr(status)));
 		talloc_free(req);
@@ -479,7 +479,7 @@ NTSTATUS cldap_search_recv(struct cldap_request *req,
 		*io->out.response = ldap_msg->r.SearchResultEntry;
 
 		/* decode the 2nd part */
-		status = ldap_decode(req->asn1, ldap_msg);
+		status = ldap_decode(req->asn1, NULL, ldap_msg);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(2,("Failed to decode cldap search result entry: %s\n", nt_errstr(status)));
 			talloc_free(req);

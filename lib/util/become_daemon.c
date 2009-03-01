@@ -28,14 +28,15 @@
 /*******************************************************************
  Close the low 3 fd's and open dev/null in their place.
 ********************************************************************/
-static void close_low_fds(bool stderr_too)
+
+_PUBLIC_ void close_low_fds(bool stderr_too)
 {
 #ifndef VALGRIND
 	int fd;
 	int i;
 
 	close(0);
-	close(1); 
+	close(1);
 
 	if (stderr_too)
 		close(2);
@@ -61,26 +62,26 @@ static void close_low_fds(bool stderr_too)
 #endif
 }
 
-/**
+/****************************************************************************
  Become a daemon, discarding the controlling terminal.
-**/
+****************************************************************************/
 
-_PUBLIC_ void become_daemon(bool Fork)
+_PUBLIC_ void become_daemon(bool do_fork, bool no_process_group)
 {
-	if (Fork) {
-		if (fork()) {
+	if (do_fork) {
+		if (sys_fork()) {
 			_exit(0);
 		}
 	}
 
-  /* detach from the terminal */
+	/* detach from the terminal */
 #ifdef HAVE_SETSID
-	setsid();
+	if (!no_process_group) setsid();
 #elif defined(TIOCNOTTY)
-	{
-		int i = open("/dev/tty", O_RDWR, 0);
+	if (!no_process_group) {
+		int i = sys_open("/dev/tty", O_RDWR, 0);
 		if (i != -1) {
-			ioctl(i, (int) TIOCNOTTY, (char *)0);      
+			ioctl(i, (int) TIOCNOTTY, (char *)0);
 			close(i);
 		}
 	}
@@ -90,4 +91,3 @@ _PUBLIC_ void become_daemon(bool Fork)
 	close_low_fds(false);  /* Don't close stderr, let the debug system
 				  attach it to the logfile */
 }
-

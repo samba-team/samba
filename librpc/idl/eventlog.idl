@@ -31,32 +31,6 @@ import "lsa.idl", "security.idl";
 		uint16 unknown0;
 		uint16 unknown1;
 	} eventlog_OpenUnknown0;
-	
-	typedef [flag(NDR_NOALIGN),public] struct {
-		uint32 size;
-		[charset(DOS),value("eLfL")] uint8 reserved[4];
-		uint32 record_number;
-		time_t time_generated;
-		time_t time_written;
-		uint32 event_id;
-		eventlogEventTypes event_type;
-		[range(0,256)] uint16 num_of_strings;
-		uint16 event_category;
-		uint16 reserved_flags;
-		uint32 closing_record_number;
-		uint32 stringoffset;
-		[value(ndr_size_dom_sid0(&sid, ndr->flags))] uint32 sid_size;
-		uint32 sid_offset;
-		uint32 data_length;
-		uint32 data_offset;
-		nstring source_name;
-		nstring computer_name;
-		[subcontext(0),subcontext_size(sid_size)] dom_sid0 sid;
-		nstring strings[num_of_strings];
-		astring raw_data;
-		[flag(NDR_ALIGN4)] DATA_BLOB _padding;
-		[value(size)] uint32 size2;
-	} eventlog_Record;
 
 	/* compat structure for samba3 on-disc eventlog format,
 	   this is *NOT* used on the wire. - gd */
@@ -314,7 +288,7 @@ import "lsa.idl", "security.idl";
 		boolean32 full;
 	} EVENTLOG_FULL_INFORMATION;
 
-	NTSTATUS eventlog_GetLogIntormation(
+	NTSTATUS eventlog_GetLogInformation(
 		[in] policy_handle *handle,
 		[in] uint32 level,
 		[out,ref] [size_is(buf_size)] uint8 *buffer,

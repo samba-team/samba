@@ -263,6 +263,15 @@ WERROR ntptr_EnumPrintProcessors(struct ntptr_context *ntptr, TALLOC_CTX *mem_ct
 	return ntptr->ops->EnumPrintProcessors(ntptr, mem_ctx, r);
 }
 
+WERROR ntptr_GetPrintProcessorDirectory(struct ntptr_context *ntptr, TALLOC_CTX *mem_ctx,
+					struct spoolss_GetPrintProcessorDirectory *r)
+{
+	if (!ntptr->ops->GetPrintProcessorDirectory) {
+		return WERR_NOT_SUPPORTED;
+	}
+	return ntptr->ops->GetPrintProcessorDirectory(ntptr, mem_ctx, r);
+}
+
 
 /* Printer functions */
 WERROR ntptr_EnumPrinters(struct ntptr_context *ntptr, TALLOC_CTX *mem_ctx,

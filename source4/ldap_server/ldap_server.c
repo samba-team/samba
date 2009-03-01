@@ -104,7 +104,7 @@ static void ldapsrv_process_message(struct ldapsrv_connection *conn,
 		bool ret;
 
 		msg = call->replies->msg;
-		if (!ldap_encode(msg, &b, call)) {
+		if (!ldap_encode(msg, samba_ldap_control_handlers(), &b, call)) {
 			DEBUG(0,("Failed to encode ldap reply of type %d\n", msg->type));
 			talloc_free(call);
 			return;
@@ -150,7 +150,7 @@ static NTSTATUS ldapsrv_decode(void *private_data, DATA_BLOB blob)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = ldap_decode(asn1, msg);
+	status = ldap_decode(asn1, samba_ldap_control_handlers(), msg);
 	if (!NT_STATUS_IS_OK(status)) {
 		asn1_free(asn1);
 		return status;

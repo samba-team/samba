@@ -31,6 +31,7 @@
 #include <stdint.h>
 #include <talloc.h>
 #include <sys/time.h>
+#include <stdbool.h>
 
 struct tevent_context;
 struct tevent_ops;
@@ -211,6 +212,15 @@ struct tevent_req {
 	void *private_state;
 
 	/**
+	 * @brief A function to overwrite the default print function
+	 *
+	 * The implementation doing the work may want to imeplement a
+	 * custom function to print the text representation of the async
+	 * request.
+	 */
+	char *(*private_print)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+
+	/**
 	 * @brief Internal state of the request
 	 *
 	 * Callers should only access this via functions and never directly.
@@ -266,6 +276,8 @@ struct tevent_req {
 	} internal;
 };
 
+char *tevent_req_default_print(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+
 char *tevent_req_print(TALLOC_CTX *mem_ctx, struct tevent_req *req);
 
 struct tevent_req *_tevent_req_create(TALLOC_CTX *mem_ctx,
@@ -295,6 +307,9 @@ struct tevent_req *tevent_req_post(struct tevent_req *req,
 
 bool tevent_req_is_in_progress(struct tevent_req *req);
 
+bool tevent_req_poll(struct tevent_req *req,
+		     struct tevent_context *ev);
+
 bool tevent_req_is_error(struct tevent_req *req,
 			 enum tevent_req_state *state,
 			 uint64_t *error);
@@ -322,6 +337,28 @@ struct timeval tevent_timeval_add(const struct timeval *tv, uint32_t secs,
 				  uint32_t usecs);
 
 struct timeval tevent_timeval_current_ofs(uint32_t secs, uint32_t usecs);
+
+struct tevent_queue;
+
+struct tevent_queue *_tevent_queue_create(TALLOC_CTX *mem_ctx,
+					  const char *name,
+					  const char *location);
+
+#define tevent_queue_create(_mem_ctx, _name) \
+	_tevent_queue_create((_mem_ctx), (_name), __location__)
+
+typedef void (*tevent_queue_trigger_fn_t)(struct tevent_req *req,
+					  void *private_data);
+bool tevent_queue_add(struct tevent_queue *queue,
+		      struct tevent_context *ev,
+		      struct tevent_req *req,
+		      tevent_queue_trigger_fn_t trigger,
+		      void *private_data);
+bool tevent_queue_start(struct tevent_queue *queue,
+			struct tevent_context *ev);
+void tevent_queue_stop(struct tevent_queue *queue);
+
+size_t tevent_queue_length(struct tevent_queue *queue);
 
 #ifdef TEVENT_COMPAT_DEFINES
 

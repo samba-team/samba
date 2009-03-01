@@ -26,14 +26,9 @@
 #include "libcli/ldap/ldap_proto.h"
 #include "dsdb/samdb/samdb.h"
 
-struct control_handler {
-	const char *oid;
-	bool (*decode)(void *mem_ctx, DATA_BLOB in, void **out);
-	bool (*encode)(void *mem_ctx, void *in, DATA_BLOB *out);
-};
-
-static bool decode_server_sort_response(void *mem_ctx, DATA_BLOB in, void **out)
+static bool decode_server_sort_response(void *mem_ctx, DATA_BLOB in, void *_out)
 {
+	void **out = (void **)_out;
 	DATA_BLOB attr;
 	struct asn1_data *data = asn1_init(mem_ctx);
 	struct ldb_sort_resp_control *lsrc;
@@ -77,8 +72,9 @@ static bool decode_server_sort_response(void *mem_ctx, DATA_BLOB in, void **out)
 	return true;
 }
 
-static bool decode_server_sort_request(void *mem_ctx, DATA_BLOB in, void **out)
+static bool decode_server_sort_request(void *mem_ctx, DATA_BLOB in, void *_out)
 {
+	void **out = (void **)_out;
 	DATA_BLOB attr;
 	DATA_BLOB rule;
 	struct asn1_data *data = asn1_init(mem_ctx);
@@ -156,8 +152,9 @@ static bool decode_server_sort_request(void *mem_ctx, DATA_BLOB in, void **out)
 	return true;
 }
 
-static bool decode_extended_dn_request(void *mem_ctx, DATA_BLOB in, void **out)
+static bool decode_extended_dn_request(void *mem_ctx, DATA_BLOB in, void *_out)
 {
+	void **out = (void **)_out;
 	struct asn1_data *data;
 	struct ldb_extended_dn_control *ledc;
 
@@ -196,8 +193,9 @@ static bool decode_extended_dn_request(void *mem_ctx, DATA_BLOB in, void **out)
 	return true;
 }
 
-static bool decode_sd_flags_request(void *mem_ctx, DATA_BLOB in, void **out)
+static bool decode_sd_flags_request(void *mem_ctx, DATA_BLOB in, void *_out)
 {
+	void **out = (void **)_out;
 	struct asn1_data *data = asn1_init(mem_ctx);
 	struct ldb_sd_flags_control *lsdfc;
 
@@ -229,8 +227,9 @@ static bool decode_sd_flags_request(void *mem_ctx, DATA_BLOB in, void **out)
 	return true;
 }
 
-static bool decode_search_options_request(void *mem_ctx, DATA_BLOB in, void **out)
+static bool decode_search_options_request(void *mem_ctx, DATA_BLOB in, void *_out)
 {
+	void **out = (void **)_out;
 	struct asn1_data *data = asn1_init(mem_ctx);
 	struct ldb_search_options_control *lsoc;
 
@@ -262,8 +261,9 @@ static bool decode_search_options_request(void *mem_ctx, DATA_BLOB in, void **ou
 	return true;
 }
 
-static bool decode_paged_results_request(void *mem_ctx, DATA_BLOB in, void **out)
+static bool decode_paged_results_request(void *mem_ctx, DATA_BLOB in, void *_out)
 {
+	void **out = (void **)_out;
 	DATA_BLOB cookie;
 	struct asn1_data *data = asn1_init(mem_ctx);
 	struct ldb_paged_control *lprc;
@@ -310,8 +310,9 @@ static bool decode_paged_results_request(void *mem_ctx, DATA_BLOB in, void **out
 	return true;
 }
 
-static bool decode_dirsync_request(void *mem_ctx, DATA_BLOB in, void **out)
+static bool decode_dirsync_request(void *mem_ctx, DATA_BLOB in, void *_out)
 {
+	void **out = (void **)_out;
 	DATA_BLOB cookie;
 	struct asn1_data *data = asn1_init(mem_ctx);
 	struct ldb_dirsync_control *ldc;
@@ -365,8 +366,9 @@ static bool decode_dirsync_request(void *mem_ctx, DATA_BLOB in, void **out)
 /* seem that this controls has 2 forms one in case it is used with
  * a Search Request and another when used ina Search Response
  */
-static bool decode_asq_control(void *mem_ctx, DATA_BLOB in, void **out)
+static bool decode_asq_control(void *mem_ctx, DATA_BLOB in, void *_out)
 {
+	void **out = (void **)_out;
 	DATA_BLOB source_attribute;
 	struct asn1_data *data = asn1_init(mem_ctx);
 	struct ldb_asq_control *lac;
@@ -425,7 +427,7 @@ static bool decode_asq_control(void *mem_ctx, DATA_BLOB in, void **out)
 	return true;
 }
 
-static bool decode_domain_scope_request(void *mem_ctx, DATA_BLOB in, void **out)
+static bool decode_domain_scope_request(void *mem_ctx, DATA_BLOB in, void *_out)
 {
 	if (in.length != 0) {
 		return false;
@@ -434,7 +436,7 @@ static bool decode_domain_scope_request(void *mem_ctx, DATA_BLOB in, void **out)
 	return true;
 }
 
-static bool decode_notification_request(void *mem_ctx, DATA_BLOB in, void **out)
+static bool decode_notification_request(void *mem_ctx, DATA_BLOB in, void *_out)
 {
 	if (in.length != 0) {
 		return false;
@@ -443,7 +445,7 @@ static bool decode_notification_request(void *mem_ctx, DATA_BLOB in, void **out)
 	return true;
 }
 
-static bool decode_show_deleted_request(void *mem_ctx, DATA_BLOB in, void **out)
+static bool decode_show_deleted_request(void *mem_ctx, DATA_BLOB in, void *_out)
 {
 	if (in.length != 0) {
 		return false;
@@ -452,7 +454,7 @@ static bool decode_show_deleted_request(void *mem_ctx, DATA_BLOB in, void **out)
 	return true;
 }
 
-static bool decode_permissive_modify_request(void *mem_ctx, DATA_BLOB in, void **out)
+static bool decode_permissive_modify_request(void *mem_ctx, DATA_BLOB in, void *_out)
 {
 	if (in.length != 0) {
 		return false;
@@ -461,7 +463,7 @@ static bool decode_permissive_modify_request(void *mem_ctx, DATA_BLOB in, void *
 	return true;
 }
 
-static bool decode_manageDSAIT_request(void *mem_ctx, DATA_BLOB in, void **out)
+static bool decode_manageDSAIT_request(void *mem_ctx, DATA_BLOB in, void *_out)
 {
 	if (in.length != 0) {
 		return false;
@@ -470,8 +472,9 @@ static bool decode_manageDSAIT_request(void *mem_ctx, DATA_BLOB in, void **out)
 	return true;
 }
 
-static bool decode_vlv_request(void *mem_ctx, DATA_BLOB in, void **out)
+static bool decode_vlv_request(void *mem_ctx, DATA_BLOB in, void *_out)
 {
+	void **out = (void **)_out;
 	DATA_BLOB assertion_value, context_id;
 	struct asn1_data *data = asn1_init(mem_ctx);
 	struct ldb_vlv_req_control *lvrc;
@@ -582,8 +585,9 @@ static bool decode_vlv_request(void *mem_ctx, DATA_BLOB in, void **out)
 	return true;
 }
 
-static bool decode_vlv_response(void *mem_ctx, DATA_BLOB in, void **out)
+static bool decode_vlv_response(void *mem_ctx, DATA_BLOB in, void *_out)
 {
+	void **out = (void **)_out;
 	DATA_BLOB context_id;
 	struct asn1_data *data = asn1_init(mem_ctx);
 	struct ldb_vlv_resp_control *lvrc;
@@ -1132,8 +1136,9 @@ static bool encode_openldap_dereference(void *mem_ctx, void *in, DATA_BLOB *out)
 	return true;
 }
 
-static bool decode_openldap_dereference(void *mem_ctx, DATA_BLOB in, void **out)
+static bool decode_openldap_dereference(void *mem_ctx, DATA_BLOB in, void *_out)
 {
+	void **out = (void **)_out;
 	struct asn1_data *data = asn1_init(mem_ctx);
 	struct dsdb_openldap_dereference_result_control *control;
 	struct dsdb_openldap_dereference_result **r = NULL;
@@ -1201,7 +1206,7 @@ static bool decode_openldap_dereference(void *mem_ctx, DATA_BLOB in, void **out)
 	return true;
 }
 
-struct control_handler ldap_known_controls[] = {
+static const struct ldap_control_handler ldap_known_controls[] = {
 	{ "1.2.840.113556.1.4.319", decode_paged_results_request, encode_paged_results_request },
 	{ "1.2.840.113556.1.4.529", decode_extended_dn_request, encode_extended_dn_request },
 	{ "1.2.840.113556.1.4.473", decode_server_sort_request, encode_server_sort_request },
@@ -1225,121 +1230,8 @@ struct control_handler ldap_known_controls[] = {
 	{ NULL, NULL, NULL }
 };
 
-bool ldap_decode_control_value(void *mem_ctx, DATA_BLOB value, struct ldb_control *ctrl)
+const struct ldap_control_handler *samba_ldap_control_handlers(void)
 {
-	int i;
-
-	for (i = 0; ldap_known_controls[i].oid != NULL; i++) {
-		if (strcmp(ldap_known_controls[i].oid, ctrl->oid) == 0) {
-			if (!ldap_known_controls[i].decode || !ldap_known_controls[i].decode(mem_ctx, value, &ctrl->data)) {
-				return false;
-			}
-			break;
-		}
-	}
-	if (ldap_known_controls[i].oid == NULL) {
-		return false;
-	}
-
-	return true;
+	return ldap_known_controls;
 }
 
-bool ldap_decode_control_wrapper(void *mem_ctx, struct asn1_data *data, struct ldb_control *ctrl, DATA_BLOB *value)
-{
-	DATA_BLOB oid;
-
-	if (!asn1_start_tag(data, ASN1_SEQUENCE(0))) {
-		return false;
-	}
-
-	if (!asn1_read_OctetString(data, mem_ctx, &oid)) {
-		return false;
-	}
-	ctrl->oid = talloc_strndup(mem_ctx, (char *)oid.data, oid.length);
-	if (!ctrl->oid) {
-		return false;
-	}
-
-	if (asn1_peek_tag(data, ASN1_BOOLEAN)) {
-		bool critical;
-		if (!asn1_read_BOOLEAN(data, &critical)) {
-			return false;
-		}
-		ctrl->critical = critical;
-	} else {
-		ctrl->critical = false;
-	}
-
-	ctrl->data = NULL;
-
-	if (!asn1_peek_tag(data, ASN1_OCTET_STRING)) {
-		*value = data_blob(NULL, 0);
-		goto end_tag;
-	}
-
-	if (!asn1_read_OctetString(data, mem_ctx, value)) {
-		return false;
-	}
-
-end_tag:
-	if (!asn1_end_tag(data)) {
-		return false;
-	}
-
-	return true;
-}
-
-bool ldap_encode_control(void *mem_ctx, struct asn1_data *data, struct ldb_control *ctrl)
-{
-	DATA_BLOB value;
-	int i;
-
-	for (i = 0; ldap_known_controls[i].oid != NULL; i++) {
-		if (strcmp(ldap_known_controls[i].oid, ctrl->oid) == 0) {
-			if (!ldap_known_controls[i].encode) {
-				if (ctrl->critical) {
-					return false;
-				} else {
-					/* not encoding this control */
-					return true;
-				}
-			}
-			if (!ldap_known_controls[i].encode(mem_ctx, ctrl->data, &value)) {
-				return false;
-			}
-			break;
-		}
-	}
-	if (ldap_known_controls[i].oid == NULL) {
-		return false;
-	}
-
-	if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) {
-		return false;
-	}
-
-	if (!asn1_write_OctetString(data, ctrl->oid, strlen(ctrl->oid))) {
-		return false;
-	}
-
-	if (ctrl->critical) {
-		if (!asn1_write_BOOLEAN(data, ctrl->critical)) {
-			return false;
-		}
-	}
-
-	if (!ctrl->data) {
-		goto pop_tag;
-	}
-
-	if (!asn1_write_OctetString(data, value.data, value.length)) {
-		return false;
-	}
-
-pop_tag:
-	if (!asn1_pop_tag(data)) {
-		return false;
-	}
-
-	return true;
-}

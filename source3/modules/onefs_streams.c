@@ -160,18 +160,26 @@ int onefs_rename(vfs_handle_struct *handle, const char *oldname,
 	char *nbase = NULL;
 	char *nsname = NULL;
 
+	START_PROFILE(syscall_rename_at);
+
 	frame = talloc_stackframe();
 
 	ret = onefs_is_stream(oldname, &obase, &osname, &old_is_stream);
-	if (ret)
+	if (ret) {
+		END_PROFILE(syscall_rename_at);
 		return ret;
+	}
 
 	ret = onefs_is_stream(newname, &nbase, &nsname, &new_is_stream);
-	if (ret)
+	if (ret) {
+		END_PROFILE(syscall_rename_at);
 		return ret;
+	}
 
 	if (!old_is_stream && !new_is_stream) {
-		return SMB_VFS_NEXT_RENAME(handle, oldname, newname);
+		ret = SMB_VFS_NEXT_RENAME(handle, oldname, newname);
+		END_PROFILE(syscall_rename_at);
+		return ret;
 	}
 
 	dir_fd = get_stream_dir_fd(handle->conn, obase, NULL);
@@ -192,6 +200,8 @@ int onefs_rename(vfs_handle_struct *handle, const char *oldname,
 	}
 
  done:
+	END_PROFILE(syscall_rename_at);
+
 	saved_errno = errno;
 	if (dir_fd >= 0) {
 		close(dir_fd);
@@ -220,7 +230,7 @@ static void merge_stat(SMB_STRUCT_STAT *stream_sbuf,
 static void onefs_adjust_stat_time(vfs_handle_struct *handle, const char *fname,
 				   SMB_STRUCT_STAT *sbuf)
 {
-	struct onefs_vfs_config cfg;
+	struct onefs_vfs_share_config cfg;
 	struct timeval tv_now = {0, 0};
 	bool static_mtime = False;
 	bool static_atime = False;

@@ -41,18 +41,32 @@ enum onefs_acl_wire_format
 #define PARM_ONEFS_TYPE "onefs"
 #define PARM_ACL_WIRE_FORMAT "acl wire format"
 #define PARM_ACL_WIRE_FORMAT_DEFAULT ACL_FORMAT_WINDOWS_SD
+#define PARM_ALLOW_EXECUTE_ALWAYS "allow execute always"
+#define PARM_ALLOW_EXECUTE_ALWAYS_DEFAULT false
 #define PARM_ATIME_NOW		"atime now files"
 #define PARM_ATIME_NOW_DEFAULT  NULL
 #define PARM_ATIME_STATIC	"atime static files"
 #define PARM_ATIME_STATIC_DEFAULT NULL
 #define PARM_ATIME_SLOP		"atime now slop"
 #define PARM_ATIME_SLOP_DEFAULT	 0
+#define PARM_ATOMIC_SENDFILE "atomic sendfile"
+#define PARM_ATOMIC_SENDFILE_DEFAULT true
 #define PARM_CREATOR_OWNER_GETS_FULL_CONTROL "creator owner gets full control"
 #define PARM_CREATOR_OWNER_GETS_FULL_CONTROL_DEFAULT true
 #define PARM_CTIME_NOW		"ctime now files"
 #define PARM_CTIME_NOW_DEFAULT  NULL
 #define PARM_CTIME_SLOP		"ctime now slop"
 #define PARM_CTIME_SLOP_DEFAULT	0
+#define PARM_DOT_SNAP_CHILD_ACCESSIBLE "dot snap child accessible"
+#define PARM_DOT_SNAP_CHILD_ACCESSIBLE_DEFAULT true
+#define PARM_DOT_SNAP_CHILD_VISIBLE "dot snap child visible"
+#define PARM_DOT_SNAP_CHILD_VISIBLE_DEFAULT false
+#define PARM_DOT_SNAP_ROOT_ACCESSIBLE "dot snap root accessible"
+#define PARM_DOT_SNAP_ROOT_ACCESSIBLE_DEFAULT true
+#define PARM_DOT_SNAP_ROOT_VISIBLE "dot snap root visible"
+#define PARM_DOT_SNAP_ROOT_VISIBLE_DEFAULT true
+#define PARM_DOT_SNAP_TILDE "dot snap tilde"
+#define PARM_DOT_SNAP_TILDE_DEFAULT true
 #define PARM_IGNORE_SACLS "ignore sacls"
 #define PARM_IGNORE_SACLS_DEFAULT false
 #define PARM_MTIME_NOW		"mtime now files"
@@ -63,6 +77,10 @@ enum onefs_acl_wire_format
 #define PARM_MTIME_SLOP_DEFAULT	0
 #define PARM_USE_READDIRPLUS "use readdirplus"
 #define PARM_USE_READDIRPLUS_DEFAULT true
+#define PARM_SENDFILE_LARGE_READS "sendfile large reads"
+#define PARM_SENDFILE_LARGE_READS_DEFAULT false
+#define PARM_SENDFILE_SAFE "sendfile safe"
+#define PARM_SENDFILE_SAFE_DEFAULT true
 #define PARM_SIMPLE_FILE_SHARING_COMPATIBILITY_MODE "simple file sharing compatibility mode"
 #define PARM_SIMPLE_FILE_SHARING_COMPATIBILITY_MODE_DEFAULT false
 #define PARM_UNMAPPABLE_SIDS_DENY_EVERYONE "unmappable sids deny everyone"
@@ -91,9 +109,9 @@ enum onefs_acl_wire_format
 
 #define ONEFS_VFS_CONFIG_FAKETIMESTAMPS	0x00000001
 
-struct onefs_vfs_config
+struct onefs_vfs_share_config
 {
-	int32 init_flags;
+	uint32_t init_flags;
 
 	/* data for fake timestamps */
 	int atime_slop;
@@ -117,6 +135,18 @@ struct onefs_vfs_config
 
 	/* Per-share list of files to fake the access time for. */
 	name_compare_entry *atime_static_list;
+};
+
+struct onefs_vfs_global_config
+{
+	uint32_t init_flags;
+
+	/* Snapshot options */
+	bool dot_snap_child_accessible;
+	bool dot_snap_child_visible;
+	bool dot_snap_root_accessible;
+	bool dot_snap_root_visible;
+	bool dot_snap_tilde;
 };
 
 /*
@@ -204,6 +234,15 @@ bool onefs_brl_cancel_windows(vfs_handle_struct *handle,
 			      struct lock_struct *plock,
 			      struct blocking_lock_record *blr);
 
+NTSTATUS onefs_notify_watch(vfs_handle_struct *vfs_handle,
+			    struct sys_notify_context *ctx,
+			    struct notify_entry *e,
+			    void (*callback)(struct sys_notify_context *ctx,
+					void *private_data,
+					struct notify_event *ev),
+			    void *private_data,
+			    void *handle_p);
+
 NTSTATUS onefs_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 			   uint32 security_info, SEC_DESC **ppdesc);
 
@@ -223,7 +262,7 @@ NTSTATUS onefs_split_ntfs_stream_name(TALLOC_CTX *mem_ctx, const char *fname,
 				      char **pbase, char **pstream);
 
 bool onefs_get_config(int snum, int config_type,
-		      struct onefs_vfs_config *cfg);
+		      struct onefs_vfs_share_config *cfg);
 
 int onefs_rdp_add_dir_state(connection_struct *conn, SMB_STRUCT_DIR *dirp);
 
@@ -245,7 +284,15 @@ int onefs_sys_create_file(connection_struct *conn,
 			  uint32_t ntfs_flags,
 			  int *granted_oplock);
 
+ssize_t onefs_sys_sendfile(connection_struct *conn, int tofd, int fromfd,
+			   const DATA_BLOB *header, SMB_OFF_T offset,
+			   size_t count);
+
 ssize_t onefs_sys_recvfile(int fromfd, int tofd, SMB_OFF_T offset,
 			   size_t count);
+
+void onefs_sys_config_enc(void);
+void onefs_sys_config_snap_opt(struct onefs_vfs_global_config *global_config);
+void onefs_sys_config_tilde(struct onefs_vfs_global_config *global_config);
 
 #endif /* _ONEFS_H */

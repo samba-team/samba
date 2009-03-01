@@ -255,6 +255,8 @@ NTSTATUS onefs_brl_lock_windows(vfs_handle_struct *handle,
 	struct onefs_cbrl_blr_state *bs;
 	NTSTATUS status;
 
+	START_PROFILE(syscall_brl_lock);
+
 	SMB_ASSERT(plock->lock_flav == WINDOWS_LOCK);
 	SMB_ASSERT(plock->lock_type != UNLOCK_LOCK);
 
@@ -301,10 +303,13 @@ NTSTATUS onefs_brl_lock_windows(vfs_handle_struct *handle,
 		/* ASYNC still in progress: The process_* calls will keep
 		 * calling even if we haven't gotten the lock. Keep erroring
 		 * without calling ifs_cbrl, or getting/setting an id. */
-		if (bs->state == ONEFS_CBRL_ASYNC)
+		if (bs->state == ONEFS_CBRL_ASYNC) {
 			goto failure;
-		else if (bs->state == ONEFS_CBRL_ERROR)
+		}
+		else if (bs->state == ONEFS_CBRL_ERROR) {
+			END_PROFILE(syscall_brl_lock);
 			return NT_STATUS_NO_MEMORY;
+		}
 
 		SMB_ASSERT(bs->state == ONEFS_CBRL_NONE);
 		async = true;
@@ -343,6 +348,9 @@ NTSTATUS onefs_brl_lock_windows(vfs_handle_struct *handle,
 	}
 
 failure:
+
+	END_PROFILE(syscall_brl_lock);
+
 	/* Failure - error or async. */
 	plock->context.smbpid = (uint32) ONEFS_BLOCKING_PID;
 
@@ -355,6 +363,9 @@ failure:
 	return status;
 
 success:
+
+	END_PROFILE(syscall_brl_lock);
+
 	/* Success. */
 	onefs_cbrl_enumerate_blq("onefs_brl_unlock_windows");
 	DEBUG(10, ("returning NT_STATUS_OK.\n"));
@@ -371,6 +382,8 @@ bool onefs_brl_unlock_windows(vfs_handle_struct *handle,
 	int error;
 	int fd = br_lck->fsp->fh->fd;
 
+	START_PROFILE(syscall_brl_unlock);
+
 	SMB_ASSERT(plock->lock_flav == WINDOWS_LOCK);
 	SMB_ASSERT(plock->lock_type == UNLOCK_LOCK);
 
@@ -378,6 +391,9 @@ bool onefs_brl_unlock_windows(vfs_handle_struct *handle,
 	error = ifs_cbrl(fd, CBRL_OP_UNLOCK, CBRL_NOTYPE,
 	    plock->start, plock->size, CBRL_NOTYPE, 0, plock->context.smbpid,
 	    plock->context.tid, plock->fnum);
+
+	END_PROFILE(syscall_brl_unlock);
+
 	if (error) {
 		DEBUG(10, ("returning false.\n"));
 		return false;
@@ -404,6 +420,8 @@ bool onefs_brl_cancel_windows(vfs_handle_struct *handle,
 	int fd = br_lck->fsp->fh->fd;
 	struct onefs_cbrl_blr_state *bs;
 
+	START_PROFILE(syscall_brl_cancel);
+
 	SMB_ASSERT(plock);
 	SMB_ASSERT(plock->lock_flav == WINDOWS_LOCK);
 	SMB_ASSERT(blr);
@@ -416,6 +434,7 @@ bool onefs_brl_cancel_windows(vfs_handle_struct *handle,
 	if (bs->state == ONEFS_CBRL_DONE) {
 		/* No-op. */
 		DEBUG(10, ("State=DONE, returning true\n"));
+		END_PROFILE(syscall_brl_cancel);
 		return true;
 	}
 
@@ -427,6 +446,9 @@ bool onefs_brl_cancel_windows(vfs_handle_struct *handle,
 	error = ifs_cbrl(fd, CBRL_OP_CANCEL, CBRL_NOTYPE, plock->start,
 	    plock->size, CBRL_NOTYPE, bs->id, plock->context.smbpid,
 	    plock->context.tid, plock->fnum);
+
+	END_PROFILE(syscall_brl_cancel);
+
 	if (error) {
 		DEBUG(10, ("returning false\n"));
 		bs->state = ONEFS_CBRL_ERROR;

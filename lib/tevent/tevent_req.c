@@ -28,14 +28,17 @@
 #include "tevent_util.h"
 
 /**
- * @brief Print an tevent_req structure in debug messages
- * @param[in] mem_ctx	The memory context for the result
+ * @brief The default print function for creating debug messages
  * @param[in] req	The request to be printed
+ * @param[in] mem_ctx	The memory context for the result
  * @retval		Text representation of req
  *
+ * The function should not be used by users of the asynx API,
+ * but custom print function can use it and append custom text
+ * to the string.
  */
 
-char *tevent_req_print(TALLOC_CTX *mem_ctx, struct tevent_req *req)
+char *tevent_req_default_print(struct tevent_req *req, TALLOC_CTX *mem_ctx)
 {
 	return talloc_asprintf(mem_ctx,
 			       "tevent_req[%p/%s]: state[%d] error[%lld (0x%llX)] "
@@ -48,6 +51,24 @@ char *tevent_req_print(TALLOC_CTX *mem_ctx, struct tevent_req *req)
 			       req->private_state,
 			       req->internal.timer
 			       );
+}
+
+/**
+ * @brief Print an tevent_req structure in debug messages
+ * @param[in] mem_ctx	The memory context for the result
+ * @param[in] req	The request to be printed
+ * @retval		Text representation of req
+ *
+ * This function should be used by callers of the async API
+ */
+
+char *tevent_req_print(TALLOC_CTX *mem_ctx, struct tevent_req *req)
+{
+	if (!req->private_print) {
+		return tevent_req_default_print(req, mem_ctx);
+	}
+
+	return req->private_print(req, mem_ctx);
 }
 
 /**
@@ -233,6 +254,21 @@ bool tevent_req_is_in_progress(struct tevent_req *req)
 	}
 
 	return false;
+}
+
+bool tevent_req_poll(struct tevent_req *req,
+		     struct tevent_context *ev)
+{
+	while (tevent_req_is_in_progress(req)) {
+		int ret;
+
+		ret = tevent_loop_once(ev);
+		if (ret != 0) {
+			return false;
+		}
+	}
+
+	return true;
 }
 
 bool tevent_req_is_error(struct tevent_req *req, enum tevent_req_state *state,

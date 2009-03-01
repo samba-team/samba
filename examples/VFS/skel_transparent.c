@@ -79,9 +79,11 @@ static SMB_STRUCT_DIR *skel_opendir(vfs_handle_struct *handle,  const char *fnam
 	return SMB_VFS_NEXT_OPENDIR(handle, fname, mask, attr);
 }
 
-static SMB_STRUCT_DIRENT *skel_readdir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
+static SMB_STRUCT_DIRENT *skel_readdir(vfs_handle_struct *handle,
+				       SMB_STRUCT_DIR *dirp,
+				       SMB_STRUCT_STAT *sbuf)
 {
-	return SMB_VFS_NEXT_READDIR(handle, dirp);
+	return SMB_VFS_NEXT_READDIR(handle, dirp, sbuf);
 }
 
 static void skel_seekdir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp, long offset)
@@ -284,9 +286,9 @@ static int skel_chflags(vfs_handle_struct *handle,  const char *path, uint flags
 }
 
 static struct file_id skel_file_id_create(vfs_handle_struct *handle,
-					  SMB_DEV_T dev, SMB_INO_T inode)
+					  const SMB_STRUCT_STAT *sbuf)
 {
-	return SMB_VFS_NEXT_FILE_ID_CREATE(handle, dev, inode);
+	return SMB_VFS_NEXT_FILE_ID_CREATE(handle, sbuf);
 }
 
 static NTSTATUS skel_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,

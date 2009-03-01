@@ -2677,12 +2677,24 @@ smbc_version(void);
  */
 
 void
-smbc_set_credentials(char *workgroup,
-                     char *user,
-                     char *password,
+smbc_set_credentials(const char *workgroup,
+                     const char *user,
+                     const char *password,
                      smbc_bool use_kerberos,
-                     char *signing_state);
+                     const char *signing_state);
 
+/*
+ * Wrapper around smbc_set_credentials.
+ * Used to set correct credentials that will
+ * be used to connect to DFS target share 
+ * in libsmbclient
+ */
+
+void
+smbc_set_credentials_with_fallback(SMBCCTX *ctx,
+		                   const char *workgroup,
+			     	   const char *user,
+			    	   const char *password);
 
 /**
  * @ingroup structure

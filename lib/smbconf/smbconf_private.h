@@ -68,6 +68,9 @@ struct smbconf_ops {
 			       uint32_t num_includes, const char **includes);
 	WERROR (*delete_includes)(struct smbconf_ctx *ctx,
 				  const char *service);
+	WERROR (*transaction_start)(struct smbconf_ctx *ctx);
+	WERROR (*transaction_commit)(struct smbconf_ctx *ctx);
+	WERROR (*transaction_cancel)(struct smbconf_ctx *ctx);
 };
 
 struct smbconf_ctx {

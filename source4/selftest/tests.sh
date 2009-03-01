@@ -23,6 +23,11 @@ then
 	PERL=perl
 fi
 
+if [ ! -n "$PYTHON" ]
+then
+	PYTHON=python
+fi
+
 plantest() {
 	name=$1
 	env=$2
@@ -394,7 +399,6 @@ then
 	plantest "nss.test using winbind" member $VALGRIND $nsstest4 $samba4bindir/shared/libnss_winbind.so
 fi
 
-PYTHON=/usr/bin/python
 SUBUNITRUN="$VALGRIND $PYTHON $samba4srcdir/scripting/bin/subunitrun"
 plantest "ldb.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/lib/ldb/tests/python/" $SUBUNITRUN api
 plantest "credentials.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/auth/credentials/tests" $SUBUNITRUN bindings

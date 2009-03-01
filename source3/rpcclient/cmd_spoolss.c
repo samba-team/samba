@@ -283,12 +283,10 @@ static void display_print_info_3(PRINTER_INFO_3 *i3)
 /****************************************************************************
 ****************************************************************************/
 
-static void display_print_info_7(PRINTER_INFO_7 *i7)
+static void display_print_info7(struct spoolss_PrinterInfo7 *r)
 {
-	fstring guid = "";
-	rpcstr_pull(guid, i7->guid.buffer,sizeof(guid), -1, STR_TERMINATE);
-	printf("\tguid:[%s]\n", guid);
-	printf("\taction:[0x%x]\n", i7->action);
+	printf("\tguid:[%s]\n", r->guid);
+	printf("\taction:[0x%x]\n", r->action);
 }
 
 
@@ -469,10 +467,13 @@ static WERROR cmd_spoolss_setprinter(struct rpc_pipe_client *cli,
 {
 	POLICY_HND 	pol;
 	WERROR		result;
+	NTSTATUS	status;
 	uint32 		info_level = 2;
-	bool 		opened_hnd = False;
-	PRINTER_INFO_CTR ctr;
+	union spoolss_PrinterInfo info;
+	struct spoolss_SetPrinterInfoCtr info_ctr;
 	const char	*printername, *comment = NULL;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	struct sec_desc_buf secdesc_ctr;
 
 	if (argc == 1 || argc > 3) {
 		printf("Usage: %s printername comment\n", argv[0]);
@@ -485,6 +486,9 @@ static WERROR cmd_spoolss_setprinter(struct rpc_pipe_client *cli,
 		comment = argv[2];
 	}
 
+	ZERO_STRUCT(devmode_ctr);
+	ZERO_STRUCT(secdesc_ctr);
+
 	RPCCLIENT_PRINTERNAME(printername, cli, argv[1]);
 
 	/* get a printer handle */
@@ -495,26 +499,34 @@ static WERROR cmd_spoolss_setprinter(struct rpc_pipe_client *cli,
 	if (!W_ERROR_IS_OK(result))
 		goto done;
 
-	opened_hnd = True;
-
 	/* Get printer info */
-        result = rpccli_spoolss_getprinter(cli, mem_ctx, &pol, info_level, &ctr);
-
+	result = rpccli_spoolss_getprinter(cli, mem_ctx,
+					   &pol,
+					   info_level,
+					   0,
+					   &info);
         if (!W_ERROR_IS_OK(result))
                 goto done;
 
 
 	/* Modify the comment. */
-	init_unistr(&ctr.printers_2->comment, comment);
-	ctr.printers_2->devmode = NULL;
-	ctr.printers_2->secdesc = NULL;
+	info.info2.comment = comment;
 
-	result = rpccli_spoolss_setprinter(cli, mem_ctx, &pol, info_level, &ctr, 0);
+	info_ctr.level = 2;
+	info_ctr.info.info2 = (struct spoolss_SetPrinterInfo2 *)&info.info2;
+
+	status = rpccli_spoolss_SetPrinter(cli, mem_ctx,
+					   &pol,
+					   &info_ctr,
+					   &devmode_ctr,
+					   &secdesc_ctr,
+					   0, /* command */
+					   &result);
 	if (W_ERROR_IS_OK(result))
 		printf("Success in setting comment.\n");
 
  done:
-	if (opened_hnd)
+	if (is_valid_policy_hnd(&pol))
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &pol, NULL);
 
 	return result;
@@ -529,11 +541,17 @@ static WERROR cmd_spoolss_setprintername(struct rpc_pipe_client *cli,
 {
 	POLICY_HND 	pol;
 	WERROR		result;
+	NTSTATUS	status;
 	uint32 		info_level = 2;
-	bool 		opened_hnd = False;
-	PRINTER_INFO_CTR ctr;
+	union spoolss_PrinterInfo info;
 	const char 	*printername,
 			*new_printername = NULL;
+	struct spoolss_SetPrinterInfoCtr info_ctr;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	struct sec_desc_buf secdesc_ctr;
+
+	ZERO_STRUCT(devmode_ctr);
+	ZERO_STRUCT(secdesc_ctr);
 
 	if (argc == 1 || argc > 3) {
 		printf("Usage: %s printername new_printername\n", argv[0]);
@@ -556,25 +574,35 @@ static WERROR cmd_spoolss_setprintername(struct rpc_pipe_client *cli,
 	if (!W_ERROR_IS_OK(result))
 		goto done;
 
-	opened_hnd = True;
-
 	/* Get printer info */
-        result = rpccli_spoolss_getprinter(cli, mem_ctx, &pol, info_level, &ctr);
-
+	result = rpccli_spoolss_getprinter(cli, mem_ctx,
+					   &pol,
+					   info_level,
+					   0,
+					   &info);
         if (!W_ERROR_IS_OK(result))
                 goto done;
 
 	/* Modify the printername. */
-	init_unistr(&ctr.printers_2->printername, new_printername);
-	ctr.printers_2->devmode = NULL;
-	ctr.printers_2->secdesc = NULL;
+	info.info2.printername = new_printername;
+	info.info2.devmode = NULL;
+	info.info2.secdesc = NULL;
 
-	result = rpccli_spoolss_setprinter(cli, mem_ctx, &pol, info_level, &ctr, 0);
+	info_ctr.level = info_level;
+	info_ctr.info.info2 = (struct spoolss_SetPrinterInfo2 *)&info.info2;
+
+	status = rpccli_spoolss_SetPrinter(cli, mem_ctx,
+					   &pol,
+					   &info_ctr,
+					   &devmode_ctr,
+					   &secdesc_ctr,
+					   0, /* command */
+					   &result);
 	if (W_ERROR_IS_OK(result))
 		printf("Success in setting printername.\n");
 
  done:
-	if (opened_hnd)
+	if (is_valid_policy_hnd(&pol))
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &pol, NULL);
 
 	return result;
@@ -590,9 +618,8 @@ static WERROR cmd_spoolss_getprinter(struct rpc_pipe_client *cli,
 	POLICY_HND 	pol;
 	WERROR          result;
 	uint32 		info_level = 1;
-	bool 		opened_hnd = False;
-	PRINTER_INFO_CTR ctr;
 	const char	*printername;
+	union spoolss_PrinterInfo info;
 
 	if (argc == 1 || argc > 3) {
 		printf("Usage: %s <printername> [level]\n", argv[0]);
@@ -615,18 +642,19 @@ static WERROR cmd_spoolss_getprinter(struct rpc_pipe_client *cli,
 	if (!W_ERROR_IS_OK(result))
 		goto done;
 
-	opened_hnd = True;
-
 	/* Get printer info */
 
-	result = rpccli_spoolss_getprinter(cli, mem_ctx, &pol, info_level, &ctr);
-
+	result = rpccli_spoolss_getprinter(cli, mem_ctx,
+					   &pol,
+					   info_level,
+					   0,
+					   &info);
 	if (!W_ERROR_IS_OK(result))
 		goto done;
 
 	/* Display printer info */
-
 	switch (info_level) {
+#if 0 /* FIXME GD */
 	case 0:
 		display_print_info_0(ctr.printers_0);
 		break;
@@ -639,16 +667,16 @@ static WERROR cmd_spoolss_getprinter(struct rpc_pipe_client *cli,
 	case 3:
 		display_print_info_3(ctr.printers_3);
 		break;
+#endif
 	case 7:
-		display_print_info_7(ctr.printers_7);
+		display_print_info7(&info.info7);
 		break;
 	default:
 		printf("unknown info level %d\n", info_level);
 		break;
 	}
-
  done:
-	if (opened_hnd)
+	if (is_valid_policy_hnd(&pol))
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &pol, NULL);
 
 	return result;
@@ -724,7 +752,6 @@ static WERROR cmd_spoolss_getprinterdata(struct rpc_pipe_client *cli,
 {
 	POLICY_HND 	pol;
 	WERROR          result;
-	bool 		opened_hnd = False;
 	fstring 	printername;
 	const char *valuename;
 	REGISTRY_VALUE value;
@@ -753,8 +780,6 @@ static WERROR cmd_spoolss_getprinterdata(struct rpc_pipe_client *cli,
 	if (!W_ERROR_IS_OK(result))
 		goto done;
 
-	opened_hnd = True;
-
 	/* Get printer info */
 
 	result = rpccli_spoolss_getprinterdata(cli, mem_ctx, &pol, valuename, &value);
@@ -769,7 +794,7 @@ static WERROR cmd_spoolss_getprinterdata(struct rpc_pipe_client *cli,
 
 
  done:
-	if (opened_hnd)
+	if (is_valid_policy_hnd(&pol))
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &pol, NULL);
 
 	return result;
@@ -785,7 +810,6 @@ static WERROR cmd_spoolss_getprinterdataex(struct rpc_pipe_client *cli,
 	POLICY_HND 	pol;
 	WERROR          result;
 	NTSTATUS	status;
-	bool 		opened_hnd = False;
 	fstring 	printername;
 	const char *valuename, *keyname;
 	REGISTRY_VALUE value;
@@ -820,8 +844,6 @@ static WERROR cmd_spoolss_getprinterdataex(struct rpc_pipe_client *cli,
 					       &pol);
 	if (!W_ERROR_IS_OK(result))
 		goto done;
-
-	opened_hnd = True;
 
 	/* Get printer info */
 
@@ -870,7 +892,7 @@ static WERROR cmd_spoolss_getprinterdataex(struct rpc_pipe_client *cli,
 	display_reg_value(value);
 
  done:
-	if (opened_hnd)
+	if (is_valid_policy_hnd(&pol))
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &pol, NULL);
 
 	return result;
@@ -989,6 +1011,68 @@ static void display_print_driver_3(DRIVER_INFO_3 *i1)
 /****************************************************************************
 ****************************************************************************/
 
+static void display_print_driver1(struct spoolss_DriverInfo1 *r)
+{
+	if (!r) {
+		return;
+	}
+
+	printf("Printer Driver Info 1:\n");
+	printf("\tDriver Name: [%s]\n\n", r->driver_name);
+}
+
+/****************************************************************************
+****************************************************************************/
+
+static void display_print_driver2(struct spoolss_DriverInfo2 *r)
+{
+	if (!r) {
+		return;
+	}
+
+	printf("Printer Driver Info 2:\n");
+	printf("\tVersion: [%x]\n", r->version);
+	printf("\tDriver Name: [%s]\n", r->driver_name);
+	printf("\tArchitecture: [%s]\n", r->architecture);
+	printf("\tDriver Path: [%s]\n", r->driver_path);
+	printf("\tDatafile: [%s]\n", r->data_file);
+	printf("\tConfigfile: [%s]\n\n", r->config_file);
+}
+
+/****************************************************************************
+****************************************************************************/
+
+static void display_print_driver3(struct spoolss_DriverInfo3 *r)
+{
+	int i;
+
+	if (!r) {
+		return;
+	}
+
+	printf("Printer Driver Info 3:\n");
+	printf("\tVersion: [%x]\n", r->version);
+	printf("\tDriver Name: [%s]\n", r->driver_name);
+	printf("\tArchitecture: [%s]\n", r->architecture);
+	printf("\tDriver Path: [%s]\n", r->driver_path);
+	printf("\tDatafile: [%s]\n", r->data_file);
+	printf("\tConfigfile: [%s]\n\n", r->config_file);
+	printf("\tHelpfile: [%s]\n\n", r->help_file);
+
+	for (i=0; r->dependent_files[i] != NULL; i++) {
+		printf("\tDependentfiles: [%s]\n", r->dependent_files[i]);
+	}
+
+	printf("\n");
+
+	printf("\tMonitorname: [%s]\n", r->monitor_name);
+	printf("\tDefaultdatatype: [%s]\n\n", r->default_datatype);
+}
+
+
+/****************************************************************************
+****************************************************************************/
+
 static WERROR cmd_spoolss_getdriver(struct rpc_pipe_client *cli,
                                       TALLOC_CTX *mem_ctx,
                                       int argc, const char **argv)
@@ -996,11 +1080,12 @@ static WERROR cmd_spoolss_getdriver(struct rpc_pipe_client *cli,
 	POLICY_HND 	pol;
 	WERROR          werror;
 	uint32		info_level = 3;
-	bool 		opened_hnd = False;
-	PRINTER_DRIVER_CTR 	ctr;
 	const char	*printername;
 	uint32		i;
 	bool		success = False;
+	union spoolss_DriverInfo info;
+	uint32_t server_major_version;
+	uint32_t server_minor_version;
 
 	if ((argc == 1) || (argc > 3))
 	{
@@ -1026,16 +1111,20 @@ static WERROR cmd_spoolss_getdriver(struct rpc_pipe_client *cli,
 		return werror;
 	}
 
-	opened_hnd = True;
-
 	/* loop through and print driver info level for each architecture */
 
 	for (i=0; archi_table[i].long_archi!=NULL; i++) {
 
-		werror = rpccli_spoolss_getprinterdriver( cli, mem_ctx, &pol, info_level,
-			archi_table[i].long_archi, archi_table[i].version,
-			&ctr);
-
+		werror = rpccli_spoolss_getprinterdriver2(cli, mem_ctx,
+							  &pol,
+							  archi_table[i].long_archi,
+							  info_level,
+							  0, /* offered */
+							  archi_table[i].version,
+							  2,
+							  &info,
+							  &server_major_version,
+							  &server_minor_version);
 		if (!W_ERROR_IS_OK(werror))
 			continue;
 
@@ -1047,13 +1136,13 @@ static WERROR cmd_spoolss_getdriver(struct rpc_pipe_client *cli,
 
 		switch (info_level) {
 		case 1:
-			display_print_driver_1 (ctr.info1);
+			display_print_driver1(&info.info1);
 			break;
 		case 2:
-			display_print_driver_2 (ctr.info2);
+			display_print_driver2(&info.info2);
 			break;
 		case 3:
-			display_print_driver_3 (ctr.info3);
+			display_print_driver3(&info.info3);
 			break;
 		default:
 			printf("unknown info level %d\n", info_level);
@@ -1063,7 +1152,7 @@ static WERROR cmd_spoolss_getdriver(struct rpc_pipe_client *cli,
 
 	/* Cleanup */
 
-	if (opened_hnd)
+	if (is_valid_policy_hnd(&pol))
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &pol, NULL);
 
 	if ( success )
@@ -1219,7 +1308,9 @@ static WERROR cmd_spoolss_getdriverdir(struct rpc_pipe_client *cli,
 /****************************************************************************
 ****************************************************************************/
 
-void set_drv_info_3_env (DRIVER_INFO_3 *info, const char *arch)
+static void set_drv_info_3_env(TALLOC_CTX *mem_ctx,
+			       struct spoolss_AddDriverInfo3 *info,
+			       const char *arch)
 {
 
 	int i;
@@ -1229,7 +1320,7 @@ void set_drv_info_3_env (DRIVER_INFO_3 *info, const char *arch)
 		if (strcmp(arch, archi_table[i].short_archi) == 0)
 		{
 			info->version = archi_table[i].version;
-			init_unistr (&info->architecture, archi_table[i].long_archi);
+			info->architecture = talloc_strdup(mem_ctx, archi_table[i].long_archi);
 			break;
 		}
 	}
@@ -1248,8 +1339,9 @@ void set_drv_info_3_env (DRIVER_INFO_3 *info, const char *arch)
  Needed to handle the empty parameter string denoted by "NULL"
  *************************************************************************/
 
-static char* get_driver_3_param (char* str, const char* delim, UNISTR* dest,
-				 char **saveptr)
+static char *get_driver_3_param(TALLOC_CTX *mem_ctx, char *str,
+				const char *delim, const char **dest,
+				char **saveptr)
 {
 	char	*ptr;
 
@@ -1260,70 +1352,80 @@ static char* get_driver_3_param (char* str, const char* delim, UNISTR* dest,
 	   parameter because two consecutive delimiters
 	   will not return an empty string.  See man strtok(3)
 	   for details */
-	if (ptr && (StrCaseCmp(ptr, "NULL") == 0))
+	if (ptr && (StrCaseCmp(ptr, "NULL") == 0)) {
 		ptr = NULL;
+	}
 
-	if (dest != NULL)
-		init_unistr(dest, ptr);
+	if (dest != NULL) {
+		*dest = talloc_strdup(mem_ctx, ptr);
+	}
 
 	return ptr;
 }
 
 /********************************************************************************
- fill in the members of a DRIVER_INFO_3 struct using a character
+ fill in the members of a spoolss_AddDriverInfo3 struct using a character
  string in the form of
  	 <Long Printer Name>:<Driver File Name>:<Data File Name>:\
 	     <Config File Name>:<Help File Name>:<Language Monitor Name>:\
 	     <Default Data Type>:<Comma Separated list of Files>
  *******************************************************************************/
-static bool init_drv_info_3_members ( TALLOC_CTX *mem_ctx, DRIVER_INFO_3 *info,
-                                      char *args )
+
+static bool init_drv_info_3_members(TALLOC_CTX *mem_ctx, struct spoolss_AddDriverInfo3 *r,
+                                    char *args)
 {
 	char	*str, *str2;
-	uint32	len, i;
+	int count = 0;
 	char *saveptr = NULL;
+	struct spoolss_StringArray *deps;
+	const char **file_array = NULL;
+	int i;
 
 	/* fill in the UNISTR fields */
-	str = get_driver_3_param (args, ":", &info->name, &saveptr);
-	str = get_driver_3_param (NULL, ":", &info->driverpath, &saveptr);
-	str = get_driver_3_param (NULL, ":", &info->datafile, &saveptr);
-	str = get_driver_3_param (NULL, ":", &info->configfile, &saveptr);
-	str = get_driver_3_param (NULL, ":", &info->helpfile, &saveptr);
-	str = get_driver_3_param (NULL, ":", &info->monitorname, &saveptr);
-	str = get_driver_3_param (NULL, ":", &info->defaultdatatype, &saveptr);
+	str = get_driver_3_param(mem_ctx, args, ":", &r->driver_name, &saveptr);
+	str = get_driver_3_param(mem_ctx, NULL, ":", &r->driver_path, &saveptr);
+	str = get_driver_3_param(mem_ctx, NULL, ":", &r->data_file, &saveptr);
+	str = get_driver_3_param(mem_ctx, NULL, ":", &r->config_file, &saveptr);
+	str = get_driver_3_param(mem_ctx, NULL, ":", &r->help_file, &saveptr);
+	str = get_driver_3_param(mem_ctx, NULL, ":", &r->monitor_name, &saveptr);
+	str = get_driver_3_param(mem_ctx, NULL, ":", &r->default_datatype, &saveptr);
 
 	/* <Comma Separated List of Dependent Files> */
 	/* save the beginning of the string */
-	str2 = get_driver_3_param (NULL, ":", NULL, &saveptr);
+	str2 = get_driver_3_param(mem_ctx, NULL, ":", NULL, &saveptr);
 	str = str2;
 
 	/* begin to strip out each filename */
 	str = strtok_r(str, ",", &saveptr);
-	len = 0;
-	while (str != NULL)
-	{
-		/* keep a cumlative count of the str lengths */
-		len += strlen(str)+1;
+
+	/* no dependent files, we are done */
+	if (!str) {
+		return true;
+	}
+
+	deps = talloc_zero(mem_ctx, struct spoolss_StringArray);
+	if (!deps) {
+		return false;
+	}
+
+	while (str != NULL) {
+		add_string_to_array(deps, str, &file_array, &count);
 		str = strtok_r(NULL, ",", &saveptr);
 	}
 
-	/* allocate the space; add one extra slot for a terminating NULL.
-	   Each filename is NULL terminated and the end contains a double
-	   NULL */
-	if ((info->dependentfiles=TALLOC_ARRAY(mem_ctx, uint16, len+1)) == NULL)
-	{
-		DEBUG(0,("init_drv_info_3_members: Unable to malloc memory for dependenfiles\n"));
-		return False;
+	deps->string = talloc_zero_array(deps, const char *, count + 1);
+	if (!deps->string) {
+		return false;
 	}
-	for (i=0; i<len; i++)
-	{
-		SSVAL(&info->dependentfiles[i], 0, str2[i]);
-	}
-	info->dependentfiles[len] = '\0';
 
-	return True;
+	for (i=0; i < count; i++) {
+		deps->string[i] = file_array[i];
+	}
+
+	r->dependent_files = deps;
+
+	return true;
 }
-
 
 /****************************************************************************
 ****************************************************************************/
@@ -1333,11 +1435,11 @@ static WERROR cmd_spoolss_addprinterdriver(struct rpc_pipe_client *cli,
                                              int argc, const char **argv)
 {
 	WERROR result;
+	NTSTATUS status;
 	uint32                  level = 3;
-	PRINTER_DRIVER_CTR	ctr;
-	DRIVER_INFO_3		info3;
+	struct spoolss_AddDriverInfoCtr info_ctr;
+	struct spoolss_AddDriverInfo3 info3;
 	const char		*arch;
-	fstring			driver_name;
 	char 			*driver_args;
 
 	/* parse the command arguments */
@@ -1352,15 +1454,16 @@ static WERROR cmd_spoolss_addprinterdriver(struct rpc_pipe_client *cli,
             return WERR_OK;
         }
 
-	/* Fill in the DRIVER_INFO_3 struct */
+	/* Fill in the spoolss_AddDriverInfo3 struct */
 	ZERO_STRUCT(info3);
-	if (!(arch = cmd_spoolss_get_short_archi(argv[1])))
-	{
+
+	arch = cmd_spoolss_get_short_archi(argv[1]);
+	if (!arch) {
 		printf ("Error Unknown architechture [%s]\n", argv[1]);
 		return WERR_INVALID_PARAM;
 	}
-	else
-		set_drv_info_3_env(&info3, arch);
+
+	set_drv_info_3_env(mem_ctx, &info3, arch);
 
 	driver_args = talloc_strdup( mem_ctx, argv[2] );
 	if (!init_drv_info_3_members(mem_ctx, &info3, driver_args ))
@@ -1378,14 +1481,19 @@ static WERROR cmd_spoolss_addprinterdriver(struct rpc_pipe_client *cli,
 	}
 
 
-	ctr.info3 = &info3;
-	result = rpccli_spoolss_addprinterdriver (cli, mem_ctx, level, &ctr);
+	info_ctr.level		= level;
+	info_ctr.info.info3	= &info3;
 
+	status = rpccli_spoolss_AddPrinterDriver(cli, mem_ctx,
+						 cli->srv_name_slash,
+						 &info_ctr,
+						 &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
 	if (W_ERROR_IS_OK(result)) {
-		rpcstr_pull(driver_name, info3.name.buffer,
-			    sizeof(driver_name), -1, STR_TERMINATE);
 		printf ("Printer Driver %s successfully installed.\n",
-			driver_name);
+			info3.driver_name);
 	}
 
 	return result;
@@ -1400,14 +1508,8 @@ static WERROR cmd_spoolss_addprinterex(struct rpc_pipe_client *cli,
                                          int argc, const char **argv)
 {
 	WERROR result;
-	NTSTATUS status;
 	struct spoolss_SetPrinterInfoCtr info_ctr;
 	struct spoolss_SetPrinterInfo2 info2;
-	struct policy_handle handle;
-	struct spoolss_DevmodeContainer devmode_ctr;
-	struct sec_desc_buf sd;
-	struct spoolss_UserLevelCtr userlevel_ctr;
-	struct spoolss_UserLevel1 level1;
 
 	/* parse the command arguments */
 	if (argc != 5)
@@ -1417,9 +1519,7 @@ static WERROR cmd_spoolss_addprinterex(struct rpc_pipe_client *cli,
         }
 
 	/* Fill in the DRIVER_INFO_2 struct */
-	ZERO_STRUCT(devmode_ctr);
 	ZERO_STRUCT(info2);
-	ZERO_STRUCT(sd);
 
 	info2.printername	= argv[1];
 	info2.drivername	= argv[3];
@@ -1447,25 +1547,8 @@ static WERROR cmd_spoolss_addprinterex(struct rpc_pipe_client *cli,
 	info_ctr.level = 2;
 	info_ctr.info.info2 = &info2;
 
-	level1.size		= 28; /* wild guess */
-	level1.build		= 1381;
-	level1.major		= 2;
-	level1.minor		= 0;
-	level1.processor	= 0;
-	level1.client		= global_myname();
-	level1.user		= cli->auth->user_name;
-
-	userlevel_ctr.level = 1;
-	userlevel_ctr.user_info.level1 = &level1;
-
-	status = rpccli_spoolss_AddPrinterEx(cli, mem_ctx,
-					     cli->srv_name_slash,
-					     &info_ctr,
-					     &devmode_ctr,
-					     &sd,
-					     &userlevel_ctr,
-					     &handle,
-					     &result);
+	result = rpccli_spoolss_addprinterex(cli, mem_ctx,
+					     &info_ctr);
 	if (W_ERROR_IS_OK(result))
 		printf ("Printer %s successfully installed.\n", argv[1]);
 
@@ -1481,11 +1564,16 @@ static WERROR cmd_spoolss_setdriver(struct rpc_pipe_client *cli,
 {
 	POLICY_HND		pol;
 	WERROR                  result;
+	NTSTATUS		status;
 	uint32			level = 2;
-	bool			opened_hnd = False;
-	PRINTER_INFO_CTR	ctr;
-	PRINTER_INFO_2		info2;
 	const char		*printername;
+	union spoolss_PrinterInfo info;
+	struct spoolss_SetPrinterInfoCtr info_ctr;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	struct sec_desc_buf secdesc_ctr;
+
+	ZERO_STRUCT(devmode_ctr);
+	ZERO_STRUCT(secdesc_ctr);
 
 	/* parse the command arguments */
 	if (argc != 3)
@@ -1505,15 +1593,13 @@ static WERROR cmd_spoolss_setdriver(struct rpc_pipe_client *cli,
 	if (!W_ERROR_IS_OK(result))
 		goto done;
 
-	opened_hnd = True;
-
 	/* Get printer info */
 
-	ZERO_STRUCT (info2);
-	ctr.printers_2 = &info2;
-
-	result = rpccli_spoolss_getprinter(cli, mem_ctx, &pol, level, &ctr);
-
+	result = rpccli_spoolss_getprinter(cli, mem_ctx,
+					   &pol,
+					   level,
+					   0,
+					   &info);
 	if (!W_ERROR_IS_OK(result)) {
 		printf ("Unable to retrieve printer information!\n");
 		goto done;
@@ -1521,10 +1607,17 @@ static WERROR cmd_spoolss_setdriver(struct rpc_pipe_client *cli,
 
 	/* Set the printer driver */
 
-	init_unistr(&ctr.printers_2->drivername, argv[2]);
+	info.info2.drivername = argv[2];
+	info_ctr.level = 2;
+	info_ctr.info.info2 = (struct spoolss_SetPrinterInfo2 *)&info.info2;
 
-	result = rpccli_spoolss_setprinter(cli, mem_ctx, &pol, level, &ctr, 0);
-
+	status = rpccli_spoolss_SetPrinter(cli, mem_ctx,
+					   &pol,
+					   &info_ctr,
+					   &devmode_ctr,
+					   &secdesc_ctr,
+					   0, /* command */
+					   &result);
 	if (!W_ERROR_IS_OK(result)) {
 		printf("SetPrinter call failed!\n");
 		goto done;;
@@ -1535,7 +1628,7 @@ static WERROR cmd_spoolss_setdriver(struct rpc_pipe_client *cli,
 done:
 	/* Cleanup */
 
-	if (opened_hnd)
+	if (is_valid_policy_hnd(&pol))
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &pol, NULL);
 
 	return result;
@@ -1719,14 +1812,15 @@ static WERROR cmd_spoolss_addform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	WERROR werror;
 	NTSTATUS status;
 	const char *printername;
-	bool got_handle = False;
 	union spoolss_AddFormInfo info;
 	struct spoolss_AddFormInfo1 info1;
+	struct spoolss_AddFormInfo2 info2;
+	uint32_t level = 1;
 
 	/* Parse the command arguments */
 
-	if (argc != 3) {
-		printf ("Usage: %s <printer> <formname>\n", argv[0]);
+	if (argc < 3 || argc > 5) {
+		printf ("Usage: %s <printer> <formname> [level]\n", argv[0]);
 		return WERR_OK;
         }
 
@@ -1741,32 +1835,58 @@ static WERROR cmd_spoolss_addform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	if (!W_ERROR_IS_OK(werror))
 		goto done;
 
-	got_handle = True;
-
 	/* Dummy up some values for the form data */
 
-	info1.flags		= FORM_USER;
-	info1.form_name		= argv[2];
-	info1.size.width	= 100;
-	info1.size.height	= 100;
-	info1.area.left		= 0;
-	info1.area.top		= 10;
-	info1.area.right	= 20;
-	info1.area.bottom	= 30;
+	if (argc == 4) {
+		level = atoi(argv[3]);
+	}
 
-	info.info1 = &info1;
+	switch (level) {
+	case 1:
+		info1.flags		= FORM_USER;
+		info1.form_name		= argv[2];
+		info1.size.width	= 100;
+		info1.size.height	= 100;
+		info1.area.left		= 0;
+		info1.area.top		= 10;
+		info1.area.right	= 20;
+		info1.area.bottom	= 30;
+
+		info.info1 = &info1;
+
+		break;
+	case 2:
+		info2.flags		= FORM_USER;
+		info2.form_name		= argv[2];
+		info2.size.width	= 100;
+		info2.size.height	= 100;
+		info2.area.left		= 0;
+		info2.area.top		= 10;
+		info2.area.right	= 20;
+		info2.area.bottom	= 30;
+		info2.keyword		= argv[2];
+		info2.string_type	= SPOOLSS_FORM_STRING_TYPE_NONE;
+		info2.mui_dll		= NULL;
+		info2.ressource_id	= 0;
+		info2.display_name	= argv[2];
+		info2.lang_id		= 0;
+
+		info.info2 = &info2;
+
+		break;
+	}
 
 	/* Add the form */
 
 
 	status = rpccli_spoolss_AddForm(cli, mem_ctx,
 					&handle,
-					1,
+					level,
 					info,
 					&werror);
 
  done:
-	if (got_handle)
+	if (is_valid_policy_hnd(&handle))
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
 
 	return werror;
@@ -1782,7 +1902,6 @@ static WERROR cmd_spoolss_setform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	WERROR werror;
 	NTSTATUS status;
 	const char *printername;
-	bool got_handle = False;
 	union spoolss_AddFormInfo info;
 	struct spoolss_AddFormInfo1 info1;
 
@@ -1803,8 +1922,6 @@ static WERROR cmd_spoolss_setform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 					       &handle);
 	if (!W_ERROR_IS_OK(werror))
 		goto done;
-
-	got_handle = True;
 
 	/* Dummy up some values for the form data */
 
@@ -1829,7 +1946,7 @@ static WERROR cmd_spoolss_setform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 					&werror);
 
  done:
-	if (got_handle)
+	if (is_valid_policy_hnd(&handle))
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
 
 	return werror;
@@ -1891,6 +2008,28 @@ static void display_form_info1(struct spoolss_FormInfo1 *r)
 /****************************************************************************
 ****************************************************************************/
 
+static void display_form_info2(struct spoolss_FormInfo2 *r)
+{
+	printf("%s\n" \
+		"\tflag: %s (%d)\n" \
+		"\twidth: %d, length: %d\n" \
+		"\tleft: %d, right: %d, top: %d, bottom: %d\n",
+		r->form_name, get_form_flag(r->flags), r->flags,
+		r->size.width, r->size.height,
+		r->area.left, r->area.right,
+		r->area.top, r->area.bottom);
+	printf("\tkeyword: %s\n", r->keyword);
+	printf("\tstring_type: 0x%08x\n", r->string_type);
+	printf("\tmui_dll: %s\n", r->mui_dll);
+	printf("\tressource_id: 0x%08x\n", r->ressource_id);
+	printf("\tdisplay_name: %s\n", r->display_name);
+	printf("\tlang_id: %d\n", r->lang_id);
+	printf("\n");
+}
+
+/****************************************************************************
+****************************************************************************/
+
 static WERROR cmd_spoolss_getform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				    int argc, const char **argv)
 {
@@ -1898,16 +2037,16 @@ static WERROR cmd_spoolss_getform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	WERROR werror;
 	NTSTATUS status;
 	const char *printername;
-	bool got_handle = False;
 	DATA_BLOB buffer;
 	uint32_t offered = 0;
 	union spoolss_FormInfo info;
 	uint32_t needed;
+	uint32_t level = 1;
 
 	/* Parse the command arguments */
 
-	if (argc != 3) {
-		printf ("Usage: %s <printer> <formname>\n", argv[0]);
+	if (argc < 3 || argc > 5) {
+		printf ("Usage: %s <printer> <formname> [level]\n", argv[0]);
 		return WERR_OK;
         }
 
@@ -1922,26 +2061,28 @@ static WERROR cmd_spoolss_getform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	if (!W_ERROR_IS_OK(werror))
 		goto done;
 
-	got_handle = True;
+	if (argc == 4) {
+		level = atoi(argv[3]);
+	}
 
 	/* Get the form */
 
 	status = rpccli_spoolss_GetForm(cli, mem_ctx,
 					&handle,
 					argv[2],
-					1,
+					level,
 					NULL,
 					offered,
 					&info,
 					&needed,
 					&werror);
 	if (W_ERROR_EQUAL(werror, WERR_INSUFFICIENT_BUFFER)) {
-		buffer = data_blob_talloc(mem_ctx, NULL, needed);
+		buffer = data_blob_talloc_zero(mem_ctx, needed);
 		offered = needed;
 		status = rpccli_spoolss_GetForm(cli, mem_ctx,
 						&handle,
 						argv[2],
-						1,
+						level,
 						&buffer,
 						offered,
 						&info,
@@ -1953,9 +2094,17 @@ static WERROR cmd_spoolss_getform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 		return werror;
 	}
 
-	display_form_info1(&info.info1);
+	switch (level) {
+	case 1:
+		display_form_info1(&info.info1);
+		break;
+	case 2:
+		display_form_info2(&info.info2);
+		break;
+	}
+
  done:
-	if (got_handle)
+	if (is_valid_policy_hnd(&handle))
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
 
 	return werror;
@@ -1972,7 +2121,6 @@ static WERROR cmd_spoolss_deleteform(struct rpc_pipe_client *cli,
 	WERROR werror;
 	NTSTATUS status;
 	const char *printername;
-	bool got_handle = False;
 
 	/* Parse the command arguments */
 
@@ -1992,8 +2140,6 @@ static WERROR cmd_spoolss_deleteform(struct rpc_pipe_client *cli,
 	if (!W_ERROR_IS_OK(werror))
 		goto done;
 
-	got_handle = True;
-
 	/* Delete the form */
 
 	status = rpccli_spoolss_DeleteForm(cli, mem_ctx,
@@ -2005,7 +2151,7 @@ static WERROR cmd_spoolss_deleteform(struct rpc_pipe_client *cli,
 	}
 
  done:
-	if (got_handle)
+	if (is_valid_policy_hnd(&handle))
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
 
 	return werror;
@@ -2021,7 +2167,6 @@ static WERROR cmd_spoolss_enum_forms(struct rpc_pipe_client *cli,
 	POLICY_HND handle;
 	WERROR werror;
 	const char *printername;
-	bool got_handle = False;
 	uint32 num_forms, level = 1, i;
 	FORM_1 *forms;
 
@@ -2043,8 +2188,6 @@ static WERROR cmd_spoolss_enum_forms(struct rpc_pipe_client *cli,
 	if (!W_ERROR_IS_OK(werror))
 		goto done;
 
-	got_handle = True;
-
 	/* Enumerate forms */
 
 	werror = rpccli_spoolss_enumforms(cli, mem_ctx, &handle, level, &num_forms, &forms);
@@ -2061,7 +2204,7 @@ static WERROR cmd_spoolss_enum_forms(struct rpc_pipe_client *cli,
 	}
 
  done:
-	if (got_handle)
+	if (is_valid_policy_hnd(&handle))
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
 
 	return werror;
@@ -2077,9 +2220,7 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
 	WERROR result;
 	const char *printername;
 	POLICY_HND pol;
-	bool opened_hnd = False;
-	PRINTER_INFO_CTR ctr;
-	PRINTER_INFO_0 info;
+	union spoolss_PrinterInfo info;
 	REGISTRY_VALUE value;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 
@@ -2127,17 +2268,16 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
 	if (!W_ERROR_IS_OK(result))
 		goto done;
 
-	opened_hnd = True;
-
-	ctr.printers_0 = &info;
-
-        result = rpccli_spoolss_getprinter(cli, mem_ctx, &pol, 0, &ctr);
-
+	result = rpccli_spoolss_getprinter(cli, mem_ctx,
+					   &pol,
+					   0,
+					   0,
+					   &info);
         if (!W_ERROR_IS_OK(result))
                 goto done;
 
 	printf("%s\n", current_timestring(tmp_ctx, True));
-	printf("\tchange_id (before set)\t:[0x%x]\n", info.change_id);
+	printf("\tchange_id (before set)\t:[0x%x]\n", info.info0.change_id);
 
 	/* Set the printer data */
 
@@ -2217,18 +2357,21 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
 	}
 	printf("\tSetPrinterData succeeded [%s: %s]\n", argv[3], argv[4]);
 
-        result = rpccli_spoolss_getprinter(cli, mem_ctx, &pol, 0, &ctr);
-
+	result = rpccli_spoolss_getprinter(cli, mem_ctx,
+					   &pol,
+					   0,
+					   0,
+					   &info);
         if (!W_ERROR_IS_OK(result))
                 goto done;
 
 	printf("%s\n", current_timestring(tmp_ctx, True));
-	printf("\tchange_id (after set)\t:[0x%x]\n", info.change_id);
+	printf("\tchange_id (after set)\t:[0x%x]\n", info.info0.change_id);
 
 done:
 	/* cleanup */
 	TALLOC_FREE(tmp_ctx);
-	if (opened_hnd)
+	if (is_valid_policy_hnd(&pol))
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &pol, NULL);
 
 	return result;
@@ -2279,13 +2422,53 @@ static void display_job_info_2(JOB_INFO_2 *job)
 /****************************************************************************
 ****************************************************************************/
 
+static void display_job_info1(struct spoolss_JobInfo1 *r)
+{
+	printf("%d: jobid[%d]: %s %s %s %d/%d pages\n", r->position, r->job_id,
+	       r->user_name, r->document_name, r->text_status, r->pages_printed,
+	       r->total_pages);
+}
+
+/****************************************************************************
+****************************************************************************/
+
+static void display_job_info2(struct spoolss_JobInfo2 *r)
+{
+	printf("%d: jobid[%d]: %s %s %s %d/%d pages, %d bytes\n",
+	       r->position, r->job_id,
+	       r->user_name, r->document_name, r->text_status, r->pages_printed,
+	       r->total_pages, r->size);
+}
+
+/****************************************************************************
+****************************************************************************/
+
+static void display_job_info3(struct spoolss_JobInfo3 *r)
+{
+	printf("jobid[%d], next_jobid[%d]\n",
+		r->job_id, r->next_job_id);
+}
+
+/****************************************************************************
+****************************************************************************/
+
+static void display_job_info4(struct spoolss_JobInfo4 *r)
+{
+	printf("%d: jobid[%d]: %s %s %s %d/%d pages, %d/%d bytes\n",
+	       r->position, r->job_id,
+	       r->user_name, r->document_name, r->text_status, r->pages_printed,
+	       r->total_pages, r->size, r->size_high);
+}
+
+/****************************************************************************
+****************************************************************************/
+
 static WERROR cmd_spoolss_enum_jobs(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx, int argc,
 				      const char **argv)
 {
 	WERROR result;
 	uint32 level = 1, num_jobs, i;
-	bool got_hnd = False;
 	const char *printername;
 	POLICY_HND hnd;
 	JOB_INFO_CTR ctr;
@@ -2308,8 +2491,6 @@ static WERROR cmd_spoolss_enum_jobs(struct rpc_pipe_client *cli,
 					       &hnd);
 	if (!W_ERROR_IS_OK(result))
 		goto done;
-
-	got_hnd = True;
 
 	/* Enumerate ports */
 
@@ -2334,11 +2515,88 @@ static WERROR cmd_spoolss_enum_jobs(struct rpc_pipe_client *cli,
 	}
 
 done:
-	if (got_hnd)
+	if (is_valid_policy_hnd(&hnd))
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &hnd, NULL);
 
 	return result;
 }
+
+/****************************************************************************
+****************************************************************************/
+
+static WERROR cmd_spoolss_get_job(struct rpc_pipe_client *cli,
+				  TALLOC_CTX *mem_ctx, int argc,
+				  const char **argv)
+{
+	WERROR result;
+	const char *printername;
+	struct policy_handle hnd;
+	uint32_t job_id;
+	uint32_t level = 1;
+	union spoolss_JobInfo info;
+
+	if (argc < 3 || argc > 4) {
+		printf("Usage: %s printername job_id [level]\n", argv[0]);
+		return WERR_OK;
+	}
+
+	job_id = atoi(argv[2]);
+
+	if (argc == 4) {
+		level = atoi(argv[3]);
+	}
+
+	/* Open printer handle */
+
+	RPCCLIENT_PRINTERNAME(printername, cli, argv[1]);
+
+	result = rpccli_spoolss_openprinter_ex(cli, mem_ctx,
+					       printername,
+					       SEC_FLAG_MAXIMUM_ALLOWED,
+					       &hnd);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	/* Enumerate ports */
+
+	result = rpccli_spoolss_getjob(cli, mem_ctx,
+				       &hnd,
+				       job_id,
+				       level,
+				       0,
+				       &info);
+
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	switch (level) {
+	case 1:
+		display_job_info1(&info.info1);
+		break;
+	case 2:
+		display_job_info2(&info.info2);
+		break;
+	case 3:
+		display_job_info3(&info.info3);
+		break;
+	case 4:
+		display_job_info4(&info.info4);
+		break;
+	default:
+		d_printf("unknown info level %d\n", level);
+		break;
+	}
+
+done:
+	if (is_valid_policy_hnd(&hnd)) {
+		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &hnd, NULL);
+	}
+
+	return result;
+}
+
 
 /****************************************************************************
 ****************************************************************************/
@@ -2349,7 +2607,6 @@ static WERROR cmd_spoolss_enum_data( struct rpc_pipe_client *cli,
 {
 	WERROR result;
 	uint32 i=0, val_needed, data_needed;
-	bool got_hnd = False;
 	const char *printername;
 	POLICY_HND hnd;
 
@@ -2369,8 +2626,6 @@ static WERROR cmd_spoolss_enum_data( struct rpc_pipe_client *cli,
 	if (!W_ERROR_IS_OK(result))
 		goto done;
 
-	got_hnd = True;
-
 	/* Enumerate data */
 
 	result = rpccli_spoolss_enumprinterdata(cli, mem_ctx, &hnd, i, 0, 0,
@@ -2388,7 +2643,7 @@ static WERROR cmd_spoolss_enum_data( struct rpc_pipe_client *cli,
 		result = W_ERROR(ERRsuccess);
 
 done:
-	if (got_hnd)
+	if (is_valid_policy_hnd(&hnd))
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &hnd, NULL);
 
 	return result;
@@ -2403,7 +2658,6 @@ static WERROR cmd_spoolss_enum_data_ex( struct rpc_pipe_client *cli,
 {
 	WERROR result;
 	uint32 i;
-	bool got_hnd = False;
 	const char *printername;
 	const char *keyname = NULL;
 	POLICY_HND hnd;
@@ -2427,8 +2681,6 @@ static WERROR cmd_spoolss_enum_data_ex( struct rpc_pipe_client *cli,
 	if (!W_ERROR_IS_OK(result))
 		goto done;
 
-	got_hnd = True;
-
 	/* Enumerate subkeys */
 
 	if ( !(ctr = TALLOC_ZERO_P( mem_ctx, REGVAL_CTR )) )
@@ -2446,7 +2698,7 @@ static WERROR cmd_spoolss_enum_data_ex( struct rpc_pipe_client *cli,
 	TALLOC_FREE( ctr );
 
 done:
-	if (got_hnd)
+	if (is_valid_policy_hnd(&hnd))
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &hnd, NULL);
 
 	return result;
@@ -2460,7 +2712,6 @@ static WERROR cmd_spoolss_enum_printerkey( struct rpc_pipe_client *cli,
 					     const char **argv)
 {
 	WERROR result;
-	bool got_hnd = False;
 	const char *printername;
 	const char *keyname = NULL;
 	POLICY_HND hnd;
@@ -2487,8 +2738,6 @@ static WERROR cmd_spoolss_enum_printerkey( struct rpc_pipe_client *cli,
 	if (!W_ERROR_IS_OK(result))
 		goto done;
 
-	got_hnd = True;
-
 	/* Enumerate subkeys */
 
 	result = rpccli_spoolss_enumprinterkey(cli, mem_ctx, &hnd, keyname, &keylist, NULL);
@@ -2512,7 +2761,7 @@ done:
 
 	SAFE_FREE(keylist);
 
-	if (got_hnd)
+	if (is_valid_policy_hnd(&hnd))
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &hnd, NULL);
 
 	return result;
@@ -2526,8 +2775,8 @@ static WERROR cmd_spoolss_rffpcnex(struct rpc_pipe_client *cli,
 				     const char **argv)
 {
 	const char *printername;
+	const char *clientname;
 	POLICY_HND hnd;
-	bool got_hnd = False;
 	WERROR result;
 	NTSTATUS status;
 	struct spoolss_NotifyOption option;
@@ -2550,8 +2799,6 @@ static WERROR cmd_spoolss_rffpcnex(struct rpc_pipe_client *cli,
 		printf("Error opening %s\n", argv[1]);
 		goto done;
 	}
-
-	got_hnd = True;
 
 	/* Create spool options */
 
@@ -2582,13 +2829,19 @@ static WERROR cmd_spoolss_rffpcnex(struct rpc_pipe_client *cli,
 	}
 	option.types[1].fields[0] = JOB_NOTIFY_PRINTER_NAME;
 
+	clientname = talloc_asprintf(mem_ctx, "\\\\%s", global_myname());
+	if (!clientname) {
+		result = WERR_NOMEM;
+		goto done;
+	}
+
 	/* Send rffpcnex */
 
 	status = rpccli_spoolss_RemoteFindFirstPrinterChangeNotifyEx(cli, mem_ctx,
 								     &hnd,
 								     0,
 								     0,
-								     cli->srv_name_slash,
+								     clientname,
 								     123,
 								     &option,
 								     &result);
@@ -2598,7 +2851,7 @@ static WERROR cmd_spoolss_rffpcnex(struct rpc_pipe_client *cli,
 	}
 
 done:
-	if (got_hnd)
+	if (is_valid_policy_hnd(&hnd))
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &hnd, NULL);
 
 	return result;
@@ -2610,12 +2863,16 @@ done:
 static bool compare_printer( struct rpc_pipe_client *cli1, POLICY_HND *hnd1,
                              struct rpc_pipe_client *cli2, POLICY_HND *hnd2 )
 {
-	PRINTER_INFO_CTR ctr1, ctr2;
+	union spoolss_PrinterInfo info1, info2;
 	WERROR werror;
 	TALLOC_CTX *mem_ctx = talloc_init("compare_printer");
 
 	printf("Retrieving printer propertiesfor %s...", cli1->desthost);
-	werror = rpccli_spoolss_getprinter( cli1, mem_ctx, hnd1, 2, &ctr1);
+	werror = rpccli_spoolss_getprinter(cli1, mem_ctx,
+					   hnd1,
+					   2,
+					   0,
+					   &info1);
 	if ( !W_ERROR_IS_OK(werror) ) {
 		printf("failed (%s)\n", win_errstr(werror));
 		talloc_destroy(mem_ctx);
@@ -2624,7 +2881,11 @@ static bool compare_printer( struct rpc_pipe_client *cli1, POLICY_HND *hnd1,
 	printf("ok\n");
 
 	printf("Retrieving printer properties for %s...", cli2->desthost);
-	werror = rpccli_spoolss_getprinter( cli2, mem_ctx, hnd2, 2, &ctr2);
+	werror = rpccli_spoolss_getprinter(cli2, mem_ctx,
+					   hnd2,
+					   2,
+					   0,
+					   &info2);
 	if ( !W_ERROR_IS_OK(werror) ) {
 		printf("failed (%s)\n", win_errstr(werror));
 		talloc_destroy(mem_ctx);
@@ -2643,7 +2904,7 @@ static bool compare_printer( struct rpc_pipe_client *cli1, POLICY_HND *hnd1,
 static bool compare_printer_secdesc( struct rpc_pipe_client *cli1, POLICY_HND *hnd1,
                                      struct rpc_pipe_client *cli2, POLICY_HND *hnd2 )
 {
-	PRINTER_INFO_CTR ctr1, ctr2;
+	union spoolss_PrinterInfo info1, info2;
 	WERROR werror;
 	TALLOC_CTX *mem_ctx = talloc_init("compare_printer_secdesc");
 	SEC_DESC *sd1, *sd2;
@@ -2651,7 +2912,11 @@ static bool compare_printer_secdesc( struct rpc_pipe_client *cli1, POLICY_HND *h
 
 
 	printf("Retrieving printer security for %s...", cli1->desthost);
-	werror = rpccli_spoolss_getprinter( cli1, mem_ctx, hnd1, 3, &ctr1);
+	werror = rpccli_spoolss_getprinter(cli1, mem_ctx,
+					   hnd1,
+					   3,
+					   0,
+					   &info1);
 	if ( !W_ERROR_IS_OK(werror) ) {
 		printf("failed (%s)\n", win_errstr(werror));
 		result = False;
@@ -2660,7 +2925,11 @@ static bool compare_printer_secdesc( struct rpc_pipe_client *cli1, POLICY_HND *h
 	printf("ok\n");
 
 	printf("Retrieving printer security for %s...", cli2->desthost);
-	werror = rpccli_spoolss_getprinter( cli2, mem_ctx, hnd2, 3, &ctr2);
+	werror = rpccli_spoolss_getprinter(cli2, mem_ctx,
+					   hnd2,
+					   3,
+					   0,
+					   &info2);
 	if ( !W_ERROR_IS_OK(werror) ) {
 		printf("failed (%s)\n", win_errstr(werror));
 		result = False;
@@ -2671,14 +2940,8 @@ static bool compare_printer_secdesc( struct rpc_pipe_client *cli1, POLICY_HND *h
 
 	printf("++ ");
 
-	if ( (ctr1.printers_3 != ctr2.printers_3) && (!ctr1.printers_3 || !ctr2.printers_3) ) {
-		printf("NULL PRINTER_INFO_3!\n");
-		result = False;
-		goto done;
-	}
-
-	sd1 = ctr1.printers_3->secdesc;
-	sd2 = ctr2.printers_3->secdesc;
+	sd1 = info1.info3.secdesc;
+	sd2 = info2.info3.secdesc;
 
 	if ( (sd1 != sd2) && ( !sd1 || !sd2 ) ) {
 		printf("NULL secdesc!\n");
@@ -2809,6 +3072,7 @@ struct cmd_set spoolss_commands[] = {
 	{ "enumdataex",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_data_ex,	&syntax_spoolss, NULL, "Enumerate printer data for a key",    "" },
 	{ "enumkey",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_printerkey,	&syntax_spoolss, NULL, "Enumerate printer keys",              "" },
 	{ "enumjobs",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_jobs,          &syntax_spoolss, NULL, "Enumerate print jobs",                "" },
+	{ "getjob",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_get_job,		&syntax_spoolss, NULL, "Get print job",                       "" },
 	{ "enumports", 		RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_ports, 	&syntax_spoolss, NULL, "Enumerate printer ports",             "" },
 	{ "enumdrivers", 	RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_drivers, 	&syntax_spoolss, NULL, "Enumerate installed printer drivers", "" },
 	{ "enumprinters", 	RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_printers, 	&syntax_spoolss, NULL, "Enumerate printers",                  "" },

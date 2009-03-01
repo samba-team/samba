@@ -255,7 +255,7 @@ HEIMDAL_GSSAPI_OBJ_FILES = \
 CFLAGS = -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/krb5 -I$(heimdalsrcdir)/lib/asn1 -I$(heimdalsrcdir)/lib/com_err 
 PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_PKINIT_ASN1 HEIMDAL_WIND \
 		HEIMDAL_KRB5_ASN1 HEIMDAL_HX509 HEIMDAL_HCRYPTO \
-		LIBNETIF LIBSAMBA-HOSTCONFIG
+		LIBNETIF LIBSAMBA-HOSTCONFIG INTL
 PUBLIC_DEPENDENCIES = HEIMDAL_COM_ERR
 # End SUBSYSTEM HEIMDAL_KRB5
 #######################
@@ -568,27 +568,36 @@ $(heimdalsrcdir)/lib/wind/bidi_table.h $(heimdalsrcdir)/lib/wind/bidi_table.c: $
 clean::
 	@rm -f $(heimdalsrcdir)/lib/wind/bidi_table.h $(heimdalsrcdir)/lib/wind/bidi_table.c
 
-[SUBSYSTEM::HEIMDAL_ROKEN_GETPROGNAME]
+[SUBSYSTEM::HEIMDAL_ROKEN_PROGNAME]
 
-HEIMDAL_ROKEN_GETPROGNAME_OBJ_FILES = $(heimdalsrcdir)/lib/roken/getprogname.o
-$(HEIMDAL_ROKEN_GETPROGNAME_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken  -I$(socketwrappersrcdir)
+HEIMDAL_ROKEN_PROGNAME_OBJ_FILES = \
+			$(heimdalsrcdir)/lib/roken/getprogname.o \
+			$(heimdalsrcdir)/lib/roken/setprogname.o
+$(HEIMDAL_ROKEN_PROGNAME_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken  -I$(socketwrappersrcdir)
 
 [SUBSYSTEM::HEIMDAL_ROKEN_CLOSEFROM] 
 
 HEIMDAL_ROKEN_CLOSEFROM_OBJ_FILES = $(heimdalsrcdir)/lib/roken/closefrom.o
 $(HEIMDAL_ROKEN_CLOSEFROM_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken  -I$(socketwrappersrcdir)
 
-[SUBSYSTEM::HEIMDAL_ROKEN_GETPROGNAME_H] 
+[SUBSYSTEM::HEIMDAL_ROKEN_PROGNAME_H]
 
-HEIMDAL_ROKEN_GETPROGNAME_H_OBJ_FILES = $(heimdalsrcdir)/lib/roken/getprogname.ho
-$(HEIMDAL_ROKEN_GETPROGNAME_H_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken  -I$(socketwrappersrcdir)
+HEIMDAL_ROKEN_PROGNAME_H_OBJ_FILES = \
+			$(heimdalsrcdir)/lib/roken/getprogname.ho \
+			$(heimdalsrcdir)/lib/roken/setprogname.ho
+$(HEIMDAL_ROKEN_PROGNAME_H_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken -DSOCKET_WRAPPER_DISABLE=1
+
+[SUBSYSTEM::HEIMDAL_ROKEN_CLOSEFROM_H]
+
+HEIMDAL_ROKEN_CLOSEFROM_H_OBJ_FILES = $(heimdalsrcdir)/lib/roken/closefrom.ho
+$(HEIMDAL_ROKEN_CLOSEFROM_H_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken -DSOCKET_WRAPPER_DISABLE=1
 
 #######################
 # Start SUBSYSTEM HEIMDAL_ROKEN
 [SUBSYSTEM::HEIMDAL_ROKEN]
 CFLAGS =  -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken -I$(socketwrappersrcdir)
 PRIVATE_DEPENDENCIES = \
-			HEIMDAL_ROKEN_GETPROGNAME \
+			HEIMDAL_ROKEN_PROGNAME \
 			HEIMDAL_ROKEN_CLOSEFROM \
 			RESOLV \
 			LIBREPLACE_NETWORK
@@ -615,7 +624,6 @@ HEIMDAL_ROKEN_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/roken/roken_gethostby.o \
 	$(heimdalsrcdir)/lib/roken/signal.o \
 	$(heimdalsrcdir)/lib/roken/vis.o \
-	$(heimdalsrcdir)/lib/roken/setprogname.o \
 	$(heimdalsrcdir)/lib/roken/strlwr.o \
 	$(heimdalsrcdir)/lib/roken/strsep_copy.o \
 	$(heimdalsrcdir)/lib/roken/strsep.o \
@@ -631,7 +639,17 @@ HEIMDAL_ROKEN_OBJ_FILES = \
 	$(heimdalbuildsrcdir)/replace.o
 
 $(HEIMDAL_ROKEN_OBJ_FILES) $(HEIMDAL_ROKEN_OBJ_FILES:.o=.d):: $(heimdalsrcdir)/lib/roken/roken.h
-$(HEIMDAL_ROKEN_OBJ_FILES:.o=.ho) $(HEIMDAL_ROKEN_OBJ_FILES:.o=.hd):: $(heimdalsrcdir)/lib/roken/roken.h
+
+[SUBSYSTEM::HEIMDAL_ROKEN_H]
+CFLAGS =  -I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/roken -DSOCKET_WRAPPER_DISABLE=1
+PRIVATE_DEPENDENCIES = \
+			HEIMDAL_ROKEN_PROGNAME_H \
+			HEIMDAL_ROKEN_CLOSEFROM_H \
+			RESOLV \
+			LIBREPLACE_NETWORK
+
+HEIMDAL_ROKEN_H_OBJ_FILES = $(HEIMDAL_ROKEN_OBJ_FILES:.o=.ho)
+$(HEIMDAL_ROKEN_H_OBJ_FILES:.ho=.hd):: $(heimdalsrcdir)/lib/roken/roken.h
 
 $(heimdalsrcdir)/lib/roken/roken.h:
 	@echo 'Creating $(heimdalsrcdir)/lib/roken/roken.h'
@@ -656,7 +674,7 @@ HEIMDAL_COM_ERR_OBJ_FILES = \
 # Start BINARY asn1_compile
 [BINARY::asn1_compile]
 USE_HOSTCC = YES
-PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN
+PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN_H
 
 ASN1C = $(builddir)/bin/asn1_compile
 
@@ -680,10 +698,9 @@ dist:: $(heimdalsrcdir)/lib/asn1/lex.c
 
 asn1_compile_OBJ_FILES = \
 	$(asn1_compile_ASN1_OBJ_FILES) \
-	$(heimdalsrcdir)/lib/vers/print_version.ho \
-	$(socketwrappersrcdir)/socket_wrapper.ho \
+	$(heimdalsrcdir)/lib/vers/print_version.ho
 
-$(asn1_compile_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/asn1 -I$(heimdalsrcdir)/lib/roken -I$(socketwrappersrcdir)
+$(asn1_compile_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/asn1 -I$(heimdalsrcdir)/lib/roken -DSOCKET_WRAPPER_DISABLE=1
 
 $(eval $(call heimdal_proto_header_template, \
   $(heimdalsrcdir)/lib/asn1/der-protos.h, \
@@ -699,7 +716,7 @@ $(eval $(call heimdal_proto_header_template, \
 # Start BINARY compile_et
 [BINARY::compile_et]
 USE_HOSTCC = YES
-PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN
+PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN_H
 # End BINARY compile_et
 #######################
 
@@ -708,10 +725,9 @@ ET_COMPILER = $(builddir)/bin/compile_et
 compile_et_OBJ_FILES = $(heimdalsrcdir)/lib/vers/print_version.ho \
 	$(heimdalsrcdir)/lib/com_err/parse.ho \
 	$(heimdalsrcdir)/lib/com_err/lex.ho \
-	$(heimdalsrcdir)/lib/com_err/compile_et.ho \
-	$(socketwrappersrcdir)/socket_wrapper.ho \
+	$(heimdalsrcdir)/lib/com_err/compile_et.ho
 
-$(compile_et_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/com_err -I$(heimdalsrcdir)/lib/roken  -I$(socketwrappersrcdir)
+$(compile_et_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/com_err -I$(heimdalsrcdir)/lib/roken -DSOCKET_WRAPPER_DISABLE=1
 
 $(heimdalsrcdir)/lib/com_err/lex.c:: $(heimdalsrcdir)/lib/com_err/parse.c
 dist:: $(heimdalsrcdir)/lib/com_err/lex.c

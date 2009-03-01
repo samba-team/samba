@@ -212,7 +212,7 @@ static void remove_child_pid(pid_t pid, bool unclean_shutdown)
 		/* a child terminated uncleanly so tickle all processes to see 
 		   if they can grab any of the pending locks
 		*/
-		DEBUG(3,(__location__ " Unclean shutdown of pid %u\n", pid));
+		DEBUG(3,(__location__ " Unclean shutdown of pid %u\n", (unsigned int)pid));
 		messaging_send_buf(smbd_messaging_context(), procid_self(), 
 				   MSG_SMB_BRL_VALIDATE, NULL, 0);
 		message_send_all(smbd_messaging_context(), 
@@ -359,10 +359,6 @@ static void smbd_accept_connection(struct tevent_context *ev,
 		/* Child code ... */
 		am_parent = 0;
 
-#ifdef WITH_MADVISE_PROTECTED
-		madvise(NULL,0,MADV_PROTECT);
-#endif
-
 		/* Stop zombies, the parent explicitly handles
 		 * them, counting worker smbds. */
 		CatchChild();
@@ -451,7 +447,6 @@ static bool smbd_open_one_socket(struct smbd_parent_context *parent,
 	if (s->fd == -1) {
 		DEBUG(0,("smbd_open_once_socket: open_socket_in: "
 			"%s\n", strerror(errno)));
-			close(s->fd);
 		TALLOC_FREE(s);
 		/*
 		 * We ignore an error here, as we've done before
@@ -735,7 +730,7 @@ void reload_printers(void)
 			DEBUG(3, ("removing stale printer %s\n", pname));
 
 			if (is_printer_published(NULL, snum, NULL))
-				nt_printer_publish(NULL, snum, SPOOL_DS_UNPUBLISH);
+				nt_printer_publish(NULL, snum, DSPRINT_UNPUBLISH);
 			del_a_printer(pname);
 			lp_killservice(snum);
 		}
@@ -1135,9 +1130,6 @@ extern void build_options(bool screen);
 	if (is_daemon && !interactive) {
 		DEBUG( 3, ( "Becoming a daemon.\n" ) );
 		become_daemon(Fork, no_process_group);
-#ifdef WITH_MADVISE_PROTECTED
-		madvise(NULL,0,MADV_PROTECT);
-#endif
 	}
 
 #if HAVE_SETPGID

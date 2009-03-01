@@ -203,10 +203,6 @@ WERROR smbconf_get_share(struct smbconf_ctx *ctx,
 			 const char *servicename,
 			 struct smbconf_service **service)
 {
-	if (!smbconf_share_exists(ctx, servicename)) {
-		return WERR_NO_SUCH_SERVICE;
-	}
-
 	return ctx->ops->get_share(ctx, mem_ctx, servicename, service);
 }
 
@@ -402,4 +398,19 @@ WERROR smbconf_delete_global_includes(struct smbconf_ctx *ctx)
 	}
 
 	return werr;
+}
+
+WERROR smbconf_transaction_start(struct smbconf_ctx *ctx)
+{
+	return ctx->ops->transaction_start(ctx);
+}
+
+WERROR smbconf_transaction_commit(struct smbconf_ctx *ctx)
+{
+	return ctx->ops->transaction_commit(ctx);
+}
+
+WERROR smbconf_transaction_cancel(struct smbconf_ctx *ctx)
+{
+	return ctx->ops->transaction_cancel(ctx);
 }

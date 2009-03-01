@@ -29,6 +29,7 @@
 
 #include "includes.h"
 #include "ldb_module.h"
+#include "dlinklist.h"
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_krb5.h"
 #include "system/kerberos.h"

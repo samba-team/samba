@@ -95,6 +95,8 @@ int onefs_sys_create_file(connection_struct *conn,
 	uint32_t onefs_dos_attributes;
 	struct ifs_createfile_flags cf_flags = CF_FLAGS_NONE;
 
+	START_PROFILE(syscall_createfile);
+
 	/* Setup security descriptor and get secinfo. */
 	if (sd != NULL) {
 		NTSTATUS status;
@@ -123,17 +125,53 @@ int onefs_sys_create_file(connection_struct *conn,
 	/* Convert samba dos flags to UF_DOS_* attributes. */
 	onefs_dos_attributes = dos_attributes_to_stat_dos_flags(dos_flags);
 
+	/**
+	 * Deal with kernel creating Default ACLs. (Isilon bug 47447.)
+	 *
+	 * 1) "nt acl support = no", default_acl = no
+	 * 2) "inherit permissions = yes", default_acl = no
+	 */
+	if (lp_nt_acl_support(SNUM(conn)) && !lp_inherit_perms(SNUM(conn)))
+		cf_flags = cf_flags_or(cf_flags, CF_FLAGS_DEFAULT_ACL);
+
+	/*
+	 * Some customer workflows require the execute bit to be ignored.
+	 */
+	if (lp_parm_bool(SNUM(conn), PARM_ONEFS_TYPE,
+			 PARM_ALLOW_EXECUTE_ALWAYS,
+			 PARM_ALLOW_EXECUTE_ALWAYS_DEFAULT) &&
+	    (open_access_mask & FILE_EXECUTE)) {
+
+		DEBUG(3, ("Stripping execute bit from %s: (0x%x)\n", path,
+			  open_access_mask));
+
+		/* Strip execute. */
+		open_access_mask &= ~FILE_EXECUTE;
+
+		/*
+		 * Add READ_DATA, so we're not left with desired_access=0. An
+		 * execute call should imply the client will read the data.
+		 */
+		open_access_mask |= FILE_READ_DATA;
+
+		DEBUGADD(3, ("New stripped access mask: 0x%x\n",
+			     open_access_mask));
+	}
+
 	DEBUG(10,("onefs_sys_create_file: base_fd = %d, "
-		  "open_access_mask = 0x%x, flags = 0x%x, mode = 0x%x, "
+		  "open_access_mask = 0x%x, flags = 0x%x, mode = 0%o, "
 		  "desired_oplock = %s, id = 0x%x, secinfo = 0x%x, sd = %p, "
-		  "dos_attributes = 0x%x, path = %s\n", base_fd,
+		  "dos_attributes = 0x%x, path = %s, "
+		  "default_acl=%s\n", base_fd,
 		  (unsigned int)open_access_mask,
 		  (unsigned int)flags,
 		  (unsigned int)mode,
 		  onefs_oplock_str(onefs_oplock),
 		  (unsigned int)id,
 		  (unsigned int)secinfo, sd,
-		  (unsigned int)onefs_dos_attributes, path));
+		  (unsigned int)onefs_dos_attributes, path,
+		  cf_flags_and_bool(cf_flags, CF_FLAGS_DEFAULT_ACL) ?
+		      "true" : "false"));
 
 	/* Initialize smlock struct for files/dirs but not internal opens */
 	if (!(oplock_request & INTERNAL_OPEN_ONLY)) {
@@ -143,15 +181,6 @@ int onefs_sys_create_file(connection_struct *conn,
 	}
 
 	smlock_dump(10, psml);
-
-	/**
-	 * Deal with kernel creating Default ACLs. (Isilon bug 47447.)
-	 *
-	 * 1) "nt acl support = no", default_acl = no
-	 * 2) "inherit permissions = yes", default_acl = no
-	 */
-	if (lp_nt_acl_support(SNUM(conn)) && !lp_inherit_perms(SNUM(conn)))
-		cf_flags = cf_flags_or(cf_flags, CF_FLAGS_DEFAULT_ACL);
 
 	ret_fd = ifs_createfile(base_fd, path,
 	    (enum ifs_ace_rights)open_access_mask, flags & ~O_ACCMODE, mode,
@@ -169,9 +198,276 @@ int onefs_sys_create_file(connection_struct *conn,
 	}
 
  out:
+	END_PROFILE(syscall_createfile);
 	aclu_free_sd(pifs_sd, false);
 
 	return ret_fd;
+}
+
+/**
+ * FreeBSD based sendfile implementation that allows for atomic semantics.
+ */
+static ssize_t onefs_sys_do_sendfile(int tofd, int fromfd,
+    const DATA_BLOB *header, SMB_OFF_T offset, size_t count, bool atomic)
+{
+	size_t total=0;
+	struct sf_hdtr hdr;
+	struct iovec hdtrl;
+	size_t hdr_len = 0;
+	int flags = 0;
+
+	if (atomic) {
+		flags = SF_ATOMIC;
+	}
+
+	hdr.headers = &hdtrl;
+	hdr.hdr_cnt = 1;
+	hdr.trailers = NULL;
+	hdr.trl_cnt = 0;
+
+	/* Set up the header iovec. */
+	if (header) {
+		hdtrl.iov_base = header->data;
+		hdtrl.iov_len = hdr_len = header->length;
+	} else {
+		hdtrl.iov_base = NULL;
+		hdtrl.iov_len = 0;
+	}
+
+	total = count;
+	while (total + hdtrl.iov_len) {
+		SMB_OFF_T nwritten;
+		int ret;
+
+		/*
+		 * FreeBSD sendfile returns 0 on success, -1 on error.
+		 * Remember, the tofd and fromfd are reversed..... :-).
+		 * nwritten includes the header data sent.
+		 */
+
+		do {
+			ret = sendfile(fromfd, tofd, offset, total, &hdr,
+				       &nwritten, flags);
+		} while (ret == -1 && errno == EINTR);
+
+		/* On error we're done. */
+		if (ret == -1) {
+			return -1;
+		}
+
+		/*
+		 * If this was an ATOMIC sendfile, nwritten doesn't
+		 * necessarily indicate an error.  It could mean count > than
+		 * what sendfile can handle atomically (usually 64K) or that
+		 * there was a short read due to the file being truncated.
+		 */
+		if (nwritten == 0) {
+			return atomic ? 0 : -1;
+		}
+
+		/*
+		 * An atomic sendfile should never send partial data!
+		 */
+		if (atomic && nwritten != total + hdtrl.iov_len) {
+			DEBUG(0,("Atomic sendfile() sent partial data: "
+				 "%llu of %d\n", nwritten,
+				 total + hdtrl.iov_len));
+			return -1;
+		}
+
+		/*
+		 * If this was a short (signal interrupted) write we may need
+		 * to subtract it from the header data, or null out the header
+		 * data altogether if we wrote more than hdtrl.iov_len bytes.
+		 * We change nwritten to be the number of file bytes written.
+		 */
+
+		if (hdtrl.iov_base && hdtrl.iov_len) {
+			if (nwritten >= hdtrl.iov_len) {
+				nwritten -= hdtrl.iov_len;
+				hdtrl.iov_base = NULL;
+				hdtrl.iov_len = 0;
+			} else {
+				hdtrl.iov_base =
+				    (caddr_t)hdtrl.iov_base + nwritten;
+				hdtrl.iov_len -= nwritten;
+				nwritten = 0;
+			}
+		}
+		total -= nwritten;
+		offset += nwritten;
+	}
+	return count + hdr_len;
+}
+
+/**
+ * Handles the subtleties of using sendfile with CIFS.
+ */
+ssize_t onefs_sys_sendfile(connection_struct *conn, int tofd, int fromfd,
+			   const DATA_BLOB *header, SMB_OFF_T offset,
+			   size_t count)
+{
+	bool atomic = false;
+	ssize_t ret = 0;
+
+	START_PROFILE_BYTES(syscall_sendfile, count);
+
+	if (lp_parm_bool(SNUM(conn), PARM_ONEFS_TYPE,
+			 PARM_ATOMIC_SENDFILE,
+			 PARM_ATOMIC_SENDFILE_DEFAULT)) {
+		atomic = true;
+	}
+
+	/* Try the sendfile */
+	ret = onefs_sys_do_sendfile(tofd, fromfd, header, offset, count,
+				    atomic);
+
+	/* If the sendfile wasn't atomic, we're done. */
+	if (!atomic) {
+		DEBUG(10, ("non-atomic sendfile read %ul bytes", ret));
+		END_PROFILE(syscall_sendfile);
+		return ret;
+	}
+
+	/*
+	 * Atomic sendfile takes care to not write anything to the socket
+	 * until all of the requested bytes have been read from the file.
+	 * There are two atomic cases that need to be handled.
+	 *
+	 *  1. The file was truncated causing less data to be read than was
+	 *     requested.  In this case, we return back to the caller to
+	 *     indicate 0 bytes were written to the socket.  This should
+	 *     prompt the caller to fallback to the standard read path: read
+	 *     the data, create a header that indicates how many bytes were
+	 *     actually read, and send the header/data back to the client.
+	 *
+	 *     This saves us from standard sendfile behavior of sending a
+	 *     header promising more data then will actually be sent.  The
+	 *     only two options are to close the socket and kill the client
+	 *     connection, or write a bunch of 0s.  Closing the client
+	 *     connection is bad because there could actually be multiple
+	 *     sessions multiplexed from the same client that are all dropped
+	 *     because of a truncate.  Writing the remaining data as 0s also
+	 *     isn't good, because the client will have an incorrect version
+	 *     of the file.  If the file is written back to the server, the 0s
+	 *     will be written back.  Fortunately, atomic sendfile allows us
+	 *     to avoid making this choice in most cases.
+	 *
+	 *  2. One downside of atomic sendfile, is that there is a limit on
+	 *     the number of bytes that can be sent atomically.  The kernel
+	 *     has a limited amount of mbuf space that it can read file data
+	 *     into without exhausting the system's mbufs, so a buffer of
+	 *     length xfsize is used.  The xfsize at the time of writing this
+	 *     is 64K.  xfsize bytes are read from the file, and subsequently
+	 *     written to the socket.  This makes it impossible to do the
+	 *     sendfile atomically for a byte count > xfsize.
+	 *
+	 *     To cope with large requests, atomic sendfile returns -1 with
+	 *     errno set to E2BIG.  Since windows maxes out at 64K writes,
+	 *     this is currently only a concern with non-windows clients.
+	 *     Posix extensions allow the full 24bit bytecount field to be
+	 *     used in ReadAndX, and clients such as smbclient and the linux
+	 *     cifs client can request up to 16MB reads!  There are a few
+	 *     options for handling large sendfile requests.
+	 *
+	 *	a. Fall back to the standard read path.  This is unacceptable
+	 *         because it would require prohibitively large mallocs.
+	 *
+	 *	b. Fall back to using samba's fake_send_file which emulates
+	 *	   the kernel sendfile in userspace.  This still has the same
+	 *	   problem of sending the header before all of the data has
+	 *	   been read, so it doesn't buy us anything, and has worse
+	 *	   performance than the kernel's zero-copy sendfile.
+	 *
+	 *	c. Use non-atomic sendfile syscall to attempt a zero copy
+	 *	   read, and hope that there isn't a short read due to
+	 *	   truncation.  In the case of a short read, there are two
+	 *	   options:
+	 *
+	 *	    1. Kill the client connection
+	 *
+	 *	    2. Write zeros to the socket for the remaining bytes
+	 *	       promised in the header.
+	 *
+	 *	   It is safer from a data corruption perspective to kill the
+	 *	   client connection, so this is our default behavior, but if
+	 *	   this causes problems this can be configured to write zeros
+	 *	   via smb.conf.
+	 */
+
+	/* Handle case 1: short read -> truncated file. */
+	if (ret == 0) {
+		END_PROFILE(syscall_sendfile);
+		return ret;
+	}
+
+	/* Handle case 2: large read. */
+	if (ret == -1 && errno == E2BIG) {
+
+		if (!lp_parm_bool(SNUM(conn), PARM_ONEFS_TYPE,
+				 PARM_SENDFILE_LARGE_READS,
+				 PARM_SENDFILE_LARGE_READS_DEFAULT)) {
+			DEBUG(3, ("Not attempting non-atomic large sendfile: "
+				  "%lu bytes\n", count));
+			END_PROFILE(syscall_sendfile);
+			return 0;
+		}
+
+		if (count < 0x10000) {
+			DEBUG(0, ("Count < 2^16 and E2BIG was returned! %lu",
+				  count));
+		}
+
+		DEBUG(10, ("attempting non-atomic large sendfile: %lu bytes\n",
+			   count));
+
+		/* Try a non-atomic sendfile. */
+		ret = onefs_sys_do_sendfile(tofd, fromfd, header, offset,
+					    count, false);
+		/* Real error: kill the client connection. */
+		if (ret == -1) {
+			DEBUG(1, ("error on non-atomic large sendfile "
+				  "(%lu bytes): %s\n", count,
+				  strerror(errno)));
+			END_PROFILE(syscall_sendfile);
+			return ret;
+		}
+
+		/* Short read: kill the client connection. */
+		if (ret != count + header->length) {
+			DEBUG(1, ("short read on non-atomic large sendfile "
+				  "(%lu of %lu bytes): %s\n", ret, count,
+				  strerror(errno)));
+
+			/*
+			 * Returning ret here would cause us to drop into the
+			 * codepath that calls sendfile_short_send, which
+			 * sends the client a bunch of zeros instead.
+			 * Returning -1 kills the connection.
+			 */
+			if (lp_parm_bool(SNUM(conn), PARM_ONEFS_TYPE,
+				PARM_SENDFILE_SAFE,
+				PARM_SENDFILE_SAFE_DEFAULT)) {
+				END_PROFILE(syscall_sendfile);
+				return -1;
+			}
+
+			END_PROFILE(syscall_sendfile);
+			return ret;
+		}
+
+		DEBUG(10, ("non-atomic large sendfile successful\n"));
+	}
+
+	/* There was error in the atomic sendfile. */
+	if (ret == -1) {
+		DEBUG(1, ("error on %s sendfile (%lu bytes): %s\n",
+			  atomic ? "atomic" : "non-atomic",
+			  count, strerror(errno)));
+	}
+
+	END_PROFILE(syscall_sendfile);
+	return ret;
 }
 
 /**
@@ -225,10 +521,13 @@ ssize_t onefs_sys_recvfile(int fromfd, int tofd, SMB_OFF_T offset,
 	off_t rbytes;
 	off_t wbytes;
 
+	START_PROFILE_BYTES(syscall_recvfile, count);
+
 	DEBUG(10,("onefs_recvfile: from = %d, to = %d, offset=%llu, count = "
 		  "%lu\n", fromfd, tofd, offset, count));
 
 	if (count == 0) {
+		END_PROFILE(syscall_recvfile);
 		return 0;
 	}
 
@@ -340,6 +639,9 @@ ssize_t onefs_sys_recvfile(int fromfd, int tofd, SMB_OFF_T offset,
 	ret = total_wbytes;
 
 out:
+
+	END_PROFILE(syscall_recvfile);
+
 	/* Make sure we always try to drain the socket. */
 	if (!socket_drained && count - total_rbytes) {
 		int saved_errno = errno;
@@ -353,4 +655,54 @@ out:
 	}
 
 	return ret;
+}
+
+/**
+ * Set the per-process encoding, ignoring errors.
+ */
+void onefs_sys_config_enc(void)
+{
+	int ret;
+
+	ret = enc_set_proc(ENC_UTF8);
+	if (ret) {
+		DEBUG(0, ("Setting process encoding failed: %s",
+			strerror(errno)));
+	}
+}
+
+/**
+ * Set the per-process .snpashot directory options, ignoring errors.
+ */
+void onefs_sys_config_snap_opt(struct onefs_vfs_global_config *global_config)
+{
+	struct ifs_dotsnap_options dso;
+	int ret;
+
+	dso.per_proc = 1;
+	dso.sub_accessible = global_config->dot_snap_child_accessible;
+	dso.sub_visible = global_config->dot_snap_child_visible;
+	dso.root_accessible = global_config->dot_snap_root_accessible;
+	dso.root_visible = global_config->dot_snap_root_visible;
+
+	ret = ifs_set_dotsnap_options(&dso);
+	if (ret) {
+		DEBUG(0, ("Setting snapshot visibility/accessibility "
+			"failed: %s", strerror(errno)));
+	}
+}
+
+/**
+ * Set the per-process flag saying whether or not to accept ~snapshot
+ * as an alternative name for .snapshot directories.
+ */
+void onefs_sys_config_tilde(struct onefs_vfs_global_config *global_config)
+{
+	int ret;
+
+	ret = ifs_tilde_snapshot(global_config->dot_snap_tilde);
+	if (ret) {
+		DEBUG(0, ("Setting snapshot tilde failed: %s",
+			strerror(errno)));
+	}
 }

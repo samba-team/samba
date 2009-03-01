@@ -209,7 +209,7 @@ static NTSTATUS smb_full_audit_notify_watch(struct vfs_handle_struct *handle,
 static int smb_full_audit_chflags(vfs_handle_struct *handle,
 			    const char *path, unsigned int flags);
 static struct file_id smb_full_audit_file_id_create(struct vfs_handle_struct *handle,
-						    SMB_DEV_T dev, SMB_INO_T inode);
+						    const SMB_STRUCT_STAT *sbuf);
 static NTSTATUS smb_full_audit_streaminfo(vfs_handle_struct *handle,
 					  struct files_struct *fsp,
 					  const char *fname,
@@ -1664,14 +1664,14 @@ static int smb_full_audit_chflags(vfs_handle_struct *handle,
 }
 
 static struct file_id smb_full_audit_file_id_create(struct vfs_handle_struct *handle,
-						    SMB_DEV_T dev, SMB_INO_T inode)
+						    const SMB_STRUCT_STAT *sbuf)
 {
 	struct file_id id_zero;
 	struct file_id result;
 
 	ZERO_STRUCT(id_zero);
 
-	result = SMB_VFS_NEXT_FILE_ID_CREATE(handle, dev, inode);
+	result = SMB_VFS_NEXT_FILE_ID_CREATE(handle, sbuf);
 
 	do_log(SMB_VFS_OP_FILE_ID_CREATE,
 	       !file_id_equal(&id_zero, &result),

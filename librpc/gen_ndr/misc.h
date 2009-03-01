@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+#include "libcli/util/ntstatus.h"
+
 #ifndef _HEADER_misc
 #define _HEADER_misc
 

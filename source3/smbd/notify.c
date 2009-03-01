@@ -214,6 +214,8 @@ NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
 
 	ZERO_STRUCT(e);
 	e.path = fullpath;
+	e.dir_fd = fsp->fh->fd;
+	e.dir_id = fsp->file_id;
 	e.filter = filter;
 	e.subdir_filter = 0;
 	if (recursive) {
@@ -370,13 +372,26 @@ static void notify_fsp(files_struct *fsp, uint32 action, const char *name)
 	if ((fsp->notify->num_changes > 1000) || (name == NULL)) {
 		/*
 		 * The real number depends on the client buf, just provide a
-		 * guard against a DoS here.
+		 * guard against a DoS here.  If name == NULL the CN backend is
+		 * alerting us to a problem.  Possibly dropped events.  Clear
+		 * queued changes and send the catch-all response to the client
+		 * if a request is pending.
 		 */
 		TALLOC_FREE(fsp->notify->changes);
 		fsp->notify->num_changes = -1;
+		if (fsp->notify->requests != NULL) {
+			change_notify_reply(fsp->conn,
+					    fsp->notify->requests->req,
+					    fsp->notify->requests->max_param,
+					    fsp->notify);
+			change_notify_remove_request(fsp->notify->requests);
+		}
 		return;
 	}
 
+	/* If we've exceeded the server side queue or received a NULL name
+	 * from the underlying CN implementation, don't queue up any more
+	 * requests until we can send a catch-all response to the client */
 	if (fsp->notify->num_changes == -1) {
 		return;
 	}

@@ -1249,7 +1249,7 @@ static bool init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_PROFILE_PATH), 
 			pdb_get_profile_path(sampass));
 
-	if (asprintf(&temp, "%li", pdb_get_logon_time(sampass)) < 0) {
+	if (asprintf(&temp, "%li", (long int)pdb_get_logon_time(sampass)) < 0) {
 		return false;
 	}
 	if (need_update(sampass, PDB_LOGONTIME))
@@ -1257,7 +1257,7 @@ static bool init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_LOGON_TIME), temp);
 	SAFE_FREE(temp);
 
-	if (asprintf(&temp, "%li", pdb_get_logoff_time(sampass)) < 0) {
+	if (asprintf(&temp, "%li", (long int)pdb_get_logoff_time(sampass)) < 0) {
 		return false;
 	}
 	if (need_update(sampass, PDB_LOGOFFTIME))
@@ -1265,7 +1265,7 @@ static bool init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_LOGOFF_TIME), temp);
 	SAFE_FREE(temp);
 
-	if (asprintf(&temp, "%li", pdb_get_kickoff_time(sampass)) < 0) {
+	if (asprintf(&temp, "%li", (long int)pdb_get_kickoff_time(sampass)) < 0) {
 		return false;
 	}
 	if (need_update(sampass, PDB_KICKOFFTIME))
@@ -1273,7 +1273,7 @@ static bool init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_KICKOFF_TIME), temp);
 	SAFE_FREE(temp);
 
-	if (asprintf(&temp, "%li", pdb_get_pass_can_change_time_noncalc(sampass)) < 0) {
+	if (asprintf(&temp, "%li", (long int)pdb_get_pass_can_change_time_noncalc(sampass)) < 0) {
 		return false;
 	}
 	if (need_update(sampass, PDB_CANCHANGETIME))
@@ -1281,7 +1281,7 @@ static bool init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_PWD_CAN_CHANGE), temp);
 	SAFE_FREE(temp);
 
-	if (asprintf(&temp, "%li", pdb_get_pass_must_change_time(sampass)) < 0) {
+	if (asprintf(&temp, "%li", (long int)pdb_get_pass_must_change_time(sampass)) < 0) {
 		return false;
 	}
 	if (need_update(sampass, PDB_MUSTCHANGETIME))
@@ -1361,7 +1361,7 @@ static bool init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 
 		if (need_update(sampass, PDB_PASSLASTSET)) {
 			if (asprintf(&temp, "%li",
-				pdb_get_pass_last_set_time(sampass)) < 0) {
+				(long int)pdb_get_pass_last_set_time(sampass)) < 0) {
 				return false;
 			}
 			smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, existing, mods,
@@ -1423,7 +1423,7 @@ static bool init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 				temp);
 			SAFE_FREE(temp);
 
-			if (asprintf(&temp, "%li", badtime) < 0) {
+			if (asprintf(&temp, "%li", (long int)badtime) < 0) {
 				return false;
 			}
 			smbldap_make_mod(
@@ -5941,7 +5941,7 @@ static bool ldapsam_set_trusteddom_pw(struct pdb_methods *methods,
 	smbldap_make_mod(priv2ld(ldap_state), entry, &mods, "sambaSID",
 			 sid_string_tos(sid));
 	smbldap_make_mod(priv2ld(ldap_state), entry, &mods, "sambaPwdLastSet",
-			 talloc_asprintf(talloc_tos(), "%li", time(NULL)));
+			 talloc_asprintf(talloc_tos(), "%li", (long int)time(NULL)));
 	smbldap_make_mod(priv2ld(ldap_state), entry, &mods,
 			 "sambaClearTextPassword", pwd);
 

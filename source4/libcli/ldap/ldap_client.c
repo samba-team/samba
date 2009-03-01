@@ -200,7 +200,7 @@ static NTSTATUS ldap_recv_handler(void *private_data, DATA_BLOB blob)
 		return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
 	}
 	
-	status = ldap_decode(asn1, msg);
+	status = ldap_decode(asn1, samba_ldap_control_handlers(), msg);
 	if (!NT_STATUS_IS_OK(status)) {
 		asn1_free(asn1);
 		return status;
@@ -608,7 +608,7 @@ _PUBLIC_ struct ldap_request *ldap_request_send(struct ldap_connection *conn,
 
 	msg->messageid = req->messageid;
 
-	if (!ldap_encode(msg, &req->data, req)) {
+	if (!ldap_encode(msg, samba_ldap_control_handlers(), &req->data, req)) {
 		status = NT_STATUS_INTERNAL_ERROR;
 		goto failed;		
 	}

@@ -24,9 +24,197 @@
 
 #include "includes.h"
 #include "../lib/util/asn1.h"
-#include "libcli/ldap/ldap.h"
-#include "libcli/ldap/ldap_proto.h"
+#include "../libcli/ldap/ldap_message.h"
 
+_PUBLIC_ struct ldap_message *new_ldap_message(TALLOC_CTX *mem_ctx)
+{
+	return talloc_zero(mem_ctx, struct ldap_message);
+}
+
+
+static bool add_value_to_attrib(TALLOC_CTX *mem_ctx, struct ldb_val *value,
+				struct ldb_message_element *attrib)
+{
+	attrib->values = talloc_realloc(mem_ctx,
+					attrib->values,
+					DATA_BLOB,
+					attrib->num_values+1);
+	if (attrib->values == NULL)
+		return false;
+
+	attrib->values[attrib->num_values].data = talloc_steal(attrib->values,
+							       value->data);
+	attrib->values[attrib->num_values].length = value->length;
+	attrib->num_values += 1;
+	return true;
+}
+
+static bool add_attrib_to_array_talloc(TALLOC_CTX *mem_ctx,
+				       const struct ldb_message_element *attrib,
+				       struct ldb_message_element **attribs,
+				       int *num_attribs)
+{
+	*attribs = talloc_realloc(mem_ctx,
+				  *attribs,
+				  struct ldb_message_element,
+				  *num_attribs+1);
+
+	if (*attribs == NULL)
+		return false;
+
+	(*attribs)[*num_attribs] = *attrib;
+	talloc_steal(*attribs, attrib->values);
+	talloc_steal(*attribs, attrib->name);
+	*num_attribs += 1;
+	return true;
+}
+
+static bool add_mod_to_array_talloc(TALLOC_CTX *mem_ctx,
+				    struct ldap_mod *mod,
+				    struct ldap_mod **mods,
+				    int *num_mods)
+{
+	*mods = talloc_realloc(mem_ctx, *mods, struct ldap_mod, (*num_mods)+1);
+
+	if (*mods == NULL)
+		return false;
+
+	(*mods)[*num_mods] = *mod;
+	*num_mods += 1;
+	return true;
+}
+
+static bool ldap_decode_control_value(void *mem_ctx, DATA_BLOB value,
+				      const struct ldap_control_handler *handlers,
+				      struct ldb_control *ctrl)
+{
+	int i;
+
+	if (!handlers) {
+		return true;
+	}
+
+	for (i = 0; handlers[i].oid != NULL; i++) {
+		if (strcmp(handlers[i].oid, ctrl->oid) == 0) {
+			if (!handlers[i].decode || !handlers[i].decode(mem_ctx, value, &ctrl->data)) {
+				return false;
+			}
+			break;
+		}
+	}
+	if (handlers[i].oid == NULL) {
+		return false;
+	}
+
+	return true;
+}
+
+static bool ldap_decode_control_wrapper(void *mem_ctx, struct asn1_data *data,
+					struct ldb_control *ctrl, DATA_BLOB *value)
+{
+	DATA_BLOB oid;
+
+	if (!asn1_start_tag(data, ASN1_SEQUENCE(0))) {
+		return false;
+	}
+
+	if (!asn1_read_OctetString(data, mem_ctx, &oid)) {
+		return false;
+	}
+	ctrl->oid = talloc_strndup(mem_ctx, (char *)oid.data, oid.length);
+	if (!ctrl->oid) {
+		return false;
+	}
+
+	if (asn1_peek_tag(data, ASN1_BOOLEAN)) {
+		bool critical;
+		if (!asn1_read_BOOLEAN(data, &critical)) {
+			return false;
+		}
+		ctrl->critical = critical;
+	} else {
+		ctrl->critical = false;
+	}
+
+	ctrl->data = NULL;
+
+	if (!asn1_peek_tag(data, ASN1_OCTET_STRING)) {
+		*value = data_blob(NULL, 0);
+		goto end_tag;
+	}
+
+	if (!asn1_read_OctetString(data, mem_ctx, value)) {
+		return false;
+	}
+
+end_tag:
+	if (!asn1_end_tag(data)) {
+		return false;
+	}
+
+	return true;
+}
+
+static bool ldap_encode_control(void *mem_ctx, struct asn1_data *data,
+				const struct ldap_control_handler *handlers,
+				struct ldb_control *ctrl)
+{
+	DATA_BLOB value;
+	int i;
+
+	if (!handlers) {
+		return false;
+	}
+
+	for (i = 0; handlers[i].oid != NULL; i++) {
+		if (strcmp(handlers[i].oid, ctrl->oid) == 0) {
+			if (!handlers[i].encode) {
+				if (ctrl->critical) {
+					return false;
+				} else {
+					/* not encoding this control */
+					return true;
+				}
+			}
+			if (!handlers[i].encode(mem_ctx, ctrl->data, &value)) {
+				return false;
+			}
+			break;
+		}
+	}
+	if (handlers[i].oid == NULL) {
+		return false;
+	}
+
+	if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) {
+		return false;
+	}
+
+	if (!asn1_write_OctetString(data, ctrl->oid, strlen(ctrl->oid))) {
+		return false;
+	}
+
+	if (ctrl->critical) {
+		if (!asn1_write_BOOLEAN(data, ctrl->critical)) {
+			return false;
+		}
+	}
+
+	if (!ctrl->data) {
+		goto pop_tag;
+	}
+
+	if (!asn1_write_OctetString(data, value.data, value.length)) {
+		return false;
+	}
+
+pop_tag:
+	if (!asn1_pop_tag(data)) {
+		return false;
+	}
+
+	return true;
+}
 
 static bool ldap_push_filter(struct asn1_data *data, struct ldb_parse_tree *tree)
 {
@@ -188,7 +376,9 @@ static void ldap_encode_response(struct asn1_data *data, struct ldap_Result *res
 	}
 }
 
-_PUBLIC_ bool ldap_encode(struct ldap_message *msg, DATA_BLOB *result, TALLOC_CTX *mem_ctx)
+_PUBLIC_ bool ldap_encode(struct ldap_message *msg,
+			  const struct ldap_control_handler *control_handlers,
+			  DATA_BLOB *result, TALLOC_CTX *mem_ctx)
 {
 	struct asn1_data *data = asn1_init(mem_ctx);
 	int i, j;
@@ -475,7 +665,9 @@ _PUBLIC_ bool ldap_encode(struct ldap_message *msg, DATA_BLOB *result, TALLOC_CT
 		asn1_push_tag(data, ASN1_CONTEXT(0));
 		
 		for (i = 0; msg->controls[i] != NULL; i++) {
-			if (!ldap_encode_control(mem_ctx, data, msg->controls[i])) {
+			if (!ldap_encode_control(mem_ctx, data,
+						 control_handlers,
+						 msg->controls[i])) {
 				return false;
 			}
 		}
@@ -867,13 +1059,13 @@ static struct ldb_parse_tree *ldap_decode_filter_tree(TALLOC_CTX *mem_ctx,
 				ret->u.extended.attr = talloc_strdup(ret, "*");
 			}
 			ret->u.extended.rule_id      = talloc_steal(ret, oid);
-			ret->u.extended.value.data   = talloc_steal(ret, value);
+			ret->u.extended.value.data   = (uint8_t *)talloc_steal(ret, value);
 			ret->u.extended.value.length = strlen(value);
 			ret->u.extended.dnAttributes = dnAttributes;
 		} else {
 			ret->operation               = LDB_OP_EQUALITY;
 			ret->u.equality.attr         = talloc_steal(ret, attr);
-			ret->u.equality.value.data   = talloc_steal(ret, value);
+			ret->u.equality.value.data   = (uint8_t *)talloc_steal(ret, value);
 			ret->u.equality.value.length = strlen(value);
 		}
 		if (!asn1_end_tag(data)) {
@@ -883,7 +1075,6 @@ static struct ldb_parse_tree *ldap_decode_filter_tree(TALLOC_CTX *mem_ctx,
 	}
 
 	default:
-		DEBUG(0,("Unsupported LDAP filter operation 0x%x\n", filter_tag));
 		goto failed;
 	}
 	
@@ -926,9 +1117,9 @@ void ldap_decode_attribs_bare(TALLOC_CTX *mem_ctx, struct asn1_data *data,
 }
 
 /* Decode a set of LDAP attributes, as found in a search entry */
-void ldap_decode_attribs(TALLOC_CTX *mem_ctx, struct asn1_data *data,
-			 struct ldb_message_element **attributes,
-			 int *num_attributes)
+static void ldap_decode_attribs(TALLOC_CTX *mem_ctx, struct asn1_data *data,
+				struct ldb_message_element **attributes,
+				int *num_attributes)
 {
 	asn1_start_tag(data, ASN1_SEQUENCE(0));
 	ldap_decode_attribs_bare(mem_ctx, data, 
@@ -938,7 +1129,9 @@ void ldap_decode_attribs(TALLOC_CTX *mem_ctx, struct asn1_data *data,
 
 /* This routine returns LDAP status codes */
 
-_PUBLIC_ NTSTATUS ldap_decode(struct asn1_data *data, struct ldap_message *msg)
+_PUBLIC_ NTSTATUS ldap_decode(struct asn1_data *data,
+			      const struct ldap_control_handler *control_handlers,
+			      struct ldap_message *msg)
 {
 	uint8_t tag;
 
@@ -1032,13 +1225,17 @@ _PUBLIC_ NTSTATUS ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 
 	case ASN1_APPLICATION(LDAP_TAG_SearchRequest): {
 		struct ldap_SearchRequest *r = &msg->r.SearchRequest;
+		int sizelimit, timelimit;
+		const char **attrs = NULL;
 		msg->type = LDAP_TAG_SearchRequest;
 		asn1_start_tag(data, tag);
 		asn1_read_OctetString_talloc(msg, data, &r->basedn);
 		asn1_read_enumerated(data, (int *)&(r->scope));
 		asn1_read_enumerated(data, (int *)&(r->deref));
-		asn1_read_Integer(data, &r->sizelimit);
-		asn1_read_Integer(data, &r->timelimit);
+		asn1_read_Integer(data, &sizelimit);
+		r->sizelimit = sizelimit;
+		asn1_read_Integer(data, &timelimit);
+		r->timelimit = timelimit;
 		asn1_read_BOOLEAN(data, &r->attributesonly);
 
 		r->tree = ldap_decode_filter_tree(msg, data);
@@ -1058,10 +1255,11 @@ _PUBLIC_ NTSTATUS ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 							  &attr))
 				return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
 			if (!add_string_to_array(msg, attr,
-						 &r->attributes,
+						 &attrs,
 						 &r->num_attributes))
 				return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
 		}
+		r->attributes = attrs;
 
 		asn1_end_tag(data);
 		asn1_end_tag(data);
@@ -1368,7 +1566,9 @@ _PUBLIC_ NTSTATUS ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 				return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
 			}
 			
-			if (!ldap_decode_control_value(ctrl, value, ctrl[i])) {
+			if (!ldap_decode_control_value(ctrl, value,
+						       control_handlers,
+						       ctrl[i])) {
 				if (ctrl[i]->critical) {
 					ctrl[i]->data = NULL;
 					decoded[i] = false;

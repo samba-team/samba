@@ -750,6 +750,47 @@ static WERROR sptr_GetPrinterForm(struct ntptr_GenericHandle *printer, TALLOC_CT
 	return WERR_OK;
 }
 
+static WERROR sptr_GetPrintProcessorDirectory(struct ntptr_context *ntptr, TALLOC_CTX *mem_ctx,
+					      struct spoolss_GetPrintProcessorDirectory *r)
+{
+	union spoolss_PrintProcessorDirectoryInfo *info;
+	const char *prefix;
+	const char *postfix;
+
+	/*
+	 * NOTE: normally r->in.level is 1, but both w2k3 and nt4 sp6a
+	 *        are ignoring the r->in.level completely, so we do :-)
+	 */
+
+	/*
+	 * TODO: check the server name is ours
+	 * - if it's a invalid UNC then return WERR_INVALID_NAME
+	 * - if it's the wrong host name return WERR_INVALID_PARAM
+	 * - if it's "" then we need to return a local WINDOWS path
+	 */
+	if (!r->in.server || !r->in.server[0]) {
+		prefix = "C:\\PRTPROCS";
+	} else {
+		prefix = talloc_asprintf(mem_ctx, "%s\\prnproc$", r->in.server);
+		W_ERROR_HAVE_NO_MEMORY(prefix);
+	}
+
+	if (r->in.environment && strcmp(SPOOLSS_ARCHITECTURE_NT_X86, r->in.environment) == 0) {
+		postfix = "W32X86";
+	} else {
+		return WERR_INVALID_ENVIRONMENT;
+	}
+
+	info = talloc(mem_ctx, union spoolss_PrintProcessorDirectoryInfo);
+	W_ERROR_HAVE_NO_MEMORY(info);
+
+	info->info1.directory_name	= talloc_asprintf(mem_ctx, "%s\\%s", prefix, postfix);
+	W_ERROR_HAVE_NO_MEMORY(info->info1.directory_name);
+
+	r->out.info = info;
+	return WERR_OK;
+}
+
 
 /*
   initialialise the simble ldb backend, registering ourselves with the ntptr subsystem
@@ -793,6 +834,8 @@ static const struct ntptr_ops ntptr_simple_ldb_ops = {
 	/* PrintProcessor functions */
 /*	.EnumPrintProcessors		= sptr_EnumPrintProcessors,
 */
+	.GetPrintProcessorDirectory	= sptr_GetPrintProcessorDirectory,
+
 	/* Printer functions */
 	.EnumPrinters			= sptr_EnumPrinters,
 	.OpenPrinter			= sptr_OpenPrinter,

@@ -27,7 +27,6 @@ extern enum protocol_types Protocol;
 static void get_challenge(uint8 buff[8])
 {
 	NTSTATUS nt_status;
-	const uint8 *cryptkey;
 
 	/* We might be called more than once, multiple negprots are
 	 * permitted */
@@ -42,8 +41,8 @@ static void get_challenge(uint8 buff[8])
 		smb_panic("cannot make_negprot_global_auth_context!");
 	}
 	DEBUG(10, ("get challenge: getting challenge\n"));
-	cryptkey = negprot_global_auth_context->get_ntlm_challenge(negprot_global_auth_context);
-	memcpy(buff, cryptkey, 8);
+	negprot_global_auth_context->get_ntlm_challenge(
+		negprot_global_auth_context, buff);
 }
 
 /****************************************************************************

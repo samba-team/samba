@@ -291,6 +291,32 @@ NTSTATUS marshall_sec_desc(TALLOC_CTX *mem_ctx,
 }
 
 /*******************************************************************
+ Convert a secdesc_buf into a byte stream
+********************************************************************/
+
+NTSTATUS marshall_sec_desc_buf(TALLOC_CTX *mem_ctx,
+			       struct sec_desc_buf *secdesc_buf,
+			       uint8_t **data, size_t *len)
+{
+	DATA_BLOB blob;
+	enum ndr_err_code ndr_err;
+
+	ndr_err = ndr_push_struct_blob(
+		&blob, mem_ctx, NULL, secdesc_buf,
+		(ndr_push_flags_fn_t)ndr_push_sec_desc_buf);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0, ("ndr_push_sec_desc_buf failed: %s\n",
+			  ndr_errstr(ndr_err)));
+		return ndr_map_error2ntstatus(ndr_err);;
+	}
+
+	*data = blob.data;
+	*len = blob.length;
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
  Parse a byte stream into a secdesc
 ********************************************************************/
 NTSTATUS unmarshall_sec_desc(TALLOC_CTX *mem_ctx, uint8 *data, size_t len,
@@ -323,6 +349,43 @@ NTSTATUS unmarshall_sec_desc(TALLOC_CTX *mem_ctx, uint8 *data, size_t len,
 	}
 
 	*psecdesc = result;
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
+ Parse a byte stream into a sec_desc_buf
+********************************************************************/
+
+NTSTATUS unmarshall_sec_desc_buf(TALLOC_CTX *mem_ctx, uint8_t *data, size_t len,
+				 struct sec_desc_buf **psecdesc_buf)
+{
+	DATA_BLOB blob;
+	enum ndr_err_code ndr_err;
+	struct sec_desc_buf *result;
+
+	if ((data == NULL) || (len == 0)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	result = TALLOC_ZERO_P(mem_ctx, struct sec_desc_buf);
+	if (result == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	blob = data_blob_const(data, len);
+
+	ndr_err = ndr_pull_struct_blob(
+		&blob, result, NULL, result,
+		(ndr_pull_flags_fn_t)ndr_pull_sec_desc_buf);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0, ("ndr_pull_sec_desc_buf failed: %s\n",
+			  ndr_errstr(ndr_err)));
+		TALLOC_FREE(result);
+		return ndr_map_error2ntstatus(ndr_err);;
+	}
+
+	*psecdesc_buf = result;
 	return NT_STATUS_OK;
 }
 

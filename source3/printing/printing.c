@@ -117,7 +117,9 @@ bool rap_to_pjobid(uint16 rap_jobid, fstring sharename, uint32 *pjobid)
 	if ( data.dptr && data.dsize == sizeof(struct rap_jobid_key) )
 	{
 		struct rap_jobid_key *jinfo = (struct rap_jobid_key*)data.dptr;
-		fstrcpy( sharename, jinfo->sharename );
+		if (sharename != NULL) {
+			fstrcpy( sharename, jinfo->sharename );
+		}
 		*pjobid = jinfo->jobid;
 		DEBUG(10,("rap_to_pjobid: jobid %u maps to RAP jobid %u\n",
 			(unsigned int)*pjobid, (unsigned int)rap_jobid));
@@ -447,7 +449,7 @@ static const struct {
 	{ LPQ_PAPEROUT, JOB_STATUS_PAPEROUT },
 	{ LPQ_PRINTED, JOB_STATUS_PRINTED },
 	{ LPQ_DELETED, JOB_STATUS_DELETED },
-	{ LPQ_BLOCKED, JOB_STATUS_BLOCKED },
+	{ LPQ_BLOCKED, JOB_STATUS_BLOCKED_DEVQ },
 	{ LPQ_USER_INTERVENTION, JOB_STATUS_USER_INTERVENTION },
 	{ -1, 0 }
 };

@@ -1381,7 +1381,8 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 				 goto error_exit;
 			}
 			old_create_time = st.st_mtime;
-			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", old_create_time));
+			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n",
+				(long)old_create_time));
 		}
 	}
 	close_file(NULL, fsp, NORMAL_CLOSE);
@@ -1432,7 +1433,8 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 				goto error_exit;
 			}
 			new_create_time = st.st_mtime;
-			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", new_create_time));
+			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n",
+				(long)new_create_time));
 		}
 	}
 	close_file(NULL, fsp, NORMAL_CLOSE);
@@ -3423,8 +3425,8 @@ WERROR nt_printer_publish(Printer_entry *print_hnd, int snum, int action)
 		goto done;
 
 	switch (action) {
-	case SPOOL_DS_PUBLISH:
-	case SPOOL_DS_UPDATE:
+	case DSPRINT_PUBLISH:
+	case DSPRINT_UPDATE:
 		/* set the DsSpooler info and attributes */
 		if (!(map_nt_printer_info2_to_dsspooler(printer->info_2))) {
 			win_rc = WERR_NOMEM;
@@ -3433,7 +3435,7 @@ WERROR nt_printer_publish(Printer_entry *print_hnd, int snum, int action)
 
 		printer->info_2->attributes |= PRINTER_ATTRIBUTE_PUBLISHED;
 		break;
-	case SPOOL_DS_UNPUBLISH:
+	case DSPRINT_UNPUBLISH:
 		printer->info_2->attributes ^= PRINTER_ATTRIBUTE_PUBLISHED;
 		break;
 	default:
@@ -3467,11 +3469,11 @@ WERROR nt_printer_publish(Printer_entry *print_hnd, int snum, int action)
 	}
 
 	switch (action) {
-	case SPOOL_DS_PUBLISH:
-	case SPOOL_DS_UPDATE:
+	case DSPRINT_PUBLISH:
+	case DSPRINT_UPDATE:
 		win_rc = nt_printer_publish_ads(ads, printer);
 		break;
-	case SPOOL_DS_UNPUBLISH:
+	case DSPRINT_UNPUBLISH:
 		win_rc = nt_printer_unpublish_ads(ads, printer);
 		break;
 	}
@@ -5408,11 +5410,12 @@ WERROR nt_printing_setsec(const char *sharename, SEC_DESC_BUF *secdesc_ctr)
 {
 	SEC_DESC_BUF *new_secdesc_ctr = NULL;
 	SEC_DESC_BUF *old_secdesc_ctr = NULL;
-	prs_struct ps;
-	bool prs_init_done = false;
 	TALLOC_CTX *mem_ctx = NULL;
 	TDB_DATA kbuf;
+	TDB_DATA dbuf;
+	DATA_BLOB blob;
 	WERROR status;
+	NTSTATUS nt_status;
 
 	mem_ctx = talloc_init("nt_printing_setsec");
 	if (mem_ctx == NULL)
@@ -5474,26 +5477,19 @@ WERROR nt_printing_setsec(const char *sharename, SEC_DESC_BUF *secdesc_ctr)
 
 	/* Store the security descriptor in a tdb */
 
-	if (!prs_init(&ps,
-		(uint32_t)ndr_size_security_descriptor(new_secdesc_ctr->sd,
-						     NULL, 0)
-		+ sizeof(SEC_DESC_BUF), mem_ctx, MARSHALL) ) {
-		status = WERR_NOMEM;
-		goto out;
-	}
-
-
-	prs_init_done = true;
-
-	if (!sec_io_desc_buf("nt_printing_setsec", &new_secdesc_ctr,
-			     &ps, 1)) {
-		status = WERR_BADFUNC;
+	nt_status = marshall_sec_desc_buf(mem_ctx, new_secdesc_ctr,
+					  &blob.data, &blob.length);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		status = ntstatus_to_werror(nt_status);
 		goto out;
 	}
 
 	kbuf = make_printers_secdesc_tdbkey(mem_ctx, sharename );
 
-	if (tdb_prs_store(tdb_printers, kbuf, &ps)==0) {
+	dbuf.dptr = (unsigned char *)blob.data;
+	dbuf.dsize = blob.length;
+
+	if (tdb_trans_store(tdb_printers, kbuf, dbuf, TDB_REPLACE)==0) {
 		status = WERR_OK;
 	} else {
 		DEBUG(1,("Failed to store secdesc for %s\n", sharename));
@@ -5501,12 +5497,10 @@ WERROR nt_printing_setsec(const char *sharename, SEC_DESC_BUF *secdesc_ctr)
 	}
 
 	/* Free malloc'ed memory */
+	talloc_free(blob.data);
 
  out:
 
-	if (prs_init_done) {
-		prs_mem_free(&ps);
-	}
 	if (mem_ctx)
 		talloc_destroy(mem_ctx);
 	return status;
@@ -5602,47 +5596,45 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 
 bool nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **secdesc_ctr)
 {
-	prs_struct ps;
 	TDB_DATA kbuf;
+	TDB_DATA dbuf;
+	DATA_BLOB blob;
 	char *temp;
+	NTSTATUS status;
 
 	if (strlen(sharename) > 2 && (temp = strchr(sharename + 2, '\\'))) {
 		sharename = temp + 1;
 	}
 
-	ZERO_STRUCT(ps);
-
 	/* Fetch security descriptor from tdb */
 
-	kbuf = make_printers_secdesc_tdbkey(ctx, sharename  );
+	kbuf = make_printers_secdesc_tdbkey(ctx, sharename);
 
-	if (tdb_prs_fetch(tdb_printers, kbuf, &ps, ctx)!=0 ||
-	    !sec_io_desc_buf("nt_printing_getsec", secdesc_ctr, &ps, 1)) {
+	dbuf = tdb_fetch(tdb_printers, kbuf);
+	if (dbuf.dptr) {
 
-		prs_mem_free(&ps);
+		status = unmarshall_sec_desc_buf(ctx, dbuf.dptr, dbuf.dsize,
+						 secdesc_ctr);
+		SAFE_FREE(dbuf.dptr);
 
-		DEBUG(4,("using default secdesc for %s\n", sharename));
-
-		if (!(*secdesc_ctr = construct_default_printer_sdb(ctx))) {
-			return False;
+		if (NT_STATUS_IS_OK(status)) {
+			return true;
 		}
-
-		/* Save default security descriptor for later */
-
-		if (!prs_init(&ps, (uint32_t)ndr_size_security_descriptor((*secdesc_ctr)->sd, NULL, 0) +
-			sizeof(SEC_DESC_BUF), ctx, MARSHALL))
-			return False;
-
-		if (sec_io_desc_buf("nt_printing_getsec", secdesc_ctr, &ps, 1)) {
-			tdb_prs_store(tdb_printers, kbuf, &ps);
-		}
-
-		prs_mem_free(&ps);
-
-		return True;
 	}
 
-	prs_mem_free(&ps);
+	*secdesc_ctr = construct_default_printer_sdb(ctx);
+	if (!*secdesc_ctr) {
+		return false;
+	}
+
+	status = marshall_sec_desc_buf(ctx, *secdesc_ctr,
+				       &blob.data, &blob.length);
+	if (NT_STATUS_IS_OK(status)) {
+		dbuf.dptr = (unsigned char *)blob.data;
+		dbuf.dsize = blob.length;
+		tdb_trans_store(tdb_printers, kbuf, dbuf, TDB_REPLACE);
+		talloc_free(blob.data);
+	}
 
 	/* If security descriptor is owned by S-1-1-0 and winbindd is up,
 	   this security descriptor has been created when winbindd was

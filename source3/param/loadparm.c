@@ -144,7 +144,6 @@ struct global {
 	int iAfsTokenLifetime;
 	char *szLogNtTokenCommand;
 	char *szUsernameMap;
-	bool bForceUsernameMap;
 	char *szLogonScript;
 	char *szLogonPath;
 	char *szLogonDrive;
@@ -1278,15 +1277,6 @@ static struct parm_struct parm_table[] = {
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
 		.ptr		= &Globals.szUsernameMap,
-		.special	= NULL,
-		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED,
-	},
-	{
-		.label		= "force username map",
-		.type		= P_BOOL,
-		.p_class	= P_GLOBAL,
-		.ptr		= &Globals.bForceUsernameMap,
 		.special	= NULL,
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
@@ -4657,6 +4647,41 @@ static void init_printer_values(struct service *pService)
 
 	}
 }
+/**
+ *  Function to return the default value for the maximum number of open
+ *  file descriptors permitted.  This function tries to consult the
+ *  kernel-level (sysctl) and ulimit (getrlimit()) values and goes
+ *  the smaller of those.
+ */
+static int max_open_files(void)
+{
+	int sysctl_max = MAX_OPEN_FILES;
+	int rlimit_max = MAX_OPEN_FILES;
+
+#ifdef HAVE_SYSCTLBYNAME
+	{
+		size_t size = sizeof(sysctl_max);
+		sysctlbyname("kern.maxfilesperproc", &sysctl_max, &size, NULL,
+			     0);
+	}
+#endif
+
+#if (defined(HAVE_GETRLIMIT) && defined(RLIMIT_NOFILE))
+	{
+		struct rlimit rl = {};
+
+		if (getrlimit(RLIMIT_NOFILE, &rl) == 0)
+			rlimit_max = rl.rlim_cur;
+
+#if defined(RLIM_INFINITY)
+		if(rl.rlim_cur == RLIM_INFINITY)
+			rlimit_max = MAX_OPEN_FILES;
+	}
+#endif
+#endif
+
+	return MIN(sysctl_max, rlimit_max);
+}
 
 /**
  * Common part of freeing allocated data for one parameter.
@@ -4880,7 +4905,7 @@ static void init_globals(bool first_time_only)
 	Globals.getwd_cache = true;
 	Globals.bLargeReadwrite = True;
 	Globals.max_log_size = 5000;
-	Globals.max_open_files = MAX_OPEN_FILES;
+	Globals.max_open_files = max_open_files();
 	Globals.open_files_db_hash_size = SMB_OPEN_DATABASE_TDB_HASH_SIZE;
 	Globals.maxprotocol = PROTOCOL_NT1;
 	Globals.minprotocol = PROTOCOL_CORE;
@@ -5210,7 +5235,6 @@ FN_GLOBAL_CONST_STRING(lp_afs_username_map, &Globals.szAfsUsernameMap)
 FN_GLOBAL_INTEGER(lp_afs_token_lifetime, &Globals.iAfsTokenLifetime)
 FN_GLOBAL_STRING(lp_log_nt_token_command, &Globals.szLogNtTokenCommand)
 FN_GLOBAL_STRING(lp_username_map, &Globals.szUsernameMap)
-FN_GLOBAL_BOOL(lp_force_username_map, &Globals.bForceUsernameMap)
 FN_GLOBAL_CONST_STRING(lp_logon_script, &Globals.szLogonScript)
 FN_GLOBAL_CONST_STRING(lp_logon_path, &Globals.szLogonPath)
 FN_GLOBAL_CONST_STRING(lp_logon_drive, &Globals.szLogonDrive)

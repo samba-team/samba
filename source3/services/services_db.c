@@ -91,7 +91,7 @@ static SEC_DESC* construct_service_sd( TALLOC_CTX *ctx )
 	SEC_ACE ace[4];
 	size_t i = 0;
 	SEC_DESC *sd = NULL;
-	SEC_ACL *acl = NULL;
+	SEC_ACL *theacl = NULL;
 	size_t sd_size;
 
 	/* basic access for Everyone */
@@ -109,12 +109,12 @@ static SEC_DESC* construct_service_sd( TALLOC_CTX *ctx )
 
 	/* create the security descriptor */
 
-	if ( !(acl = make_sec_acl(ctx, NT4_ACL_REVISION, i, ace)) )
+	if ( !(theacl = make_sec_acl(ctx, NT4_ACL_REVISION, i, ace)) )
 		return NULL;
 
 	if ( !(sd = make_sec_desc(ctx, SECURITY_DESCRIPTOR_REVISION_1,
 				  SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL,
-				  acl, &sd_size)) )
+				  theacl, &sd_size)) )
 		return NULL;
 
 	return sd;
@@ -332,14 +332,14 @@ static void fill_service_values( const char *name, REGVAL_CTR *values )
 /********************************************************************
 ********************************************************************/
 
-static void add_new_svc_name( REGISTRY_KEY *key_parent, REGSUBKEY_CTR *subkeys,
+static void add_new_svc_name( REGISTRY_KEY *key_parent, struct regsubkey_ctr *subkeys,
                               const char *name )
 {
 	REGISTRY_KEY *key_service = NULL, *key_secdesc = NULL;
 	WERROR wresult;
 	char *path = NULL;
 	REGVAL_CTR *values = NULL;
-	REGSUBKEY_CTR *svc_subkeys = NULL;
+	struct regsubkey_ctr *svc_subkeys = NULL;
 	SEC_DESC *sd = NULL;
 	DATA_BLOB sd_blob;
 	NTSTATUS status;
@@ -366,7 +366,8 @@ static void add_new_svc_name( REGISTRY_KEY *key_parent, REGSUBKEY_CTR *subkeys,
 
 	/* add the 'Security' key */
 
-	if ( !(svc_subkeys = TALLOC_ZERO_P( key_service, REGSUBKEY_CTR )) ) {
+	wresult = regsubkey_ctr_init(key_service, &svc_subkeys);
+	if (!W_ERROR_IS_OK(wresult)) {
 		DEBUG(0,("add_new_svc_name: talloc() failed!\n"));
 		TALLOC_FREE( key_service );
 		return;
@@ -444,7 +445,7 @@ void svcctl_init_keys( void )
 {
 	const char **service_list = lp_svcctl_list();
 	int i;
-	REGSUBKEY_CTR *subkeys = NULL;
+	struct regsubkey_ctr *subkeys = NULL;
 	REGISTRY_KEY *key = NULL;
 	WERROR wresult;
 
@@ -461,7 +462,8 @@ void svcctl_init_keys( void )
 
 	/* lookup the available subkeys */
 
-	if ( !(subkeys = TALLOC_ZERO_P( key, REGSUBKEY_CTR )) ) {
+	wresult = regsubkey_ctr_init(key, &subkeys);
+	if (!W_ERROR_IS_OK(wresult)) {
 		DEBUG(0,("svcctl_init_keys: talloc() failed!\n"));
 		TALLOC_FREE( key );
 		return;

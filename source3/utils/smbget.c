@@ -194,7 +194,8 @@ static int smb_download_dir(const char *base, const char *name, int resume)
 		}
 		
 		if(chmod(relname, remotestat.st_mode) < 0) {
-			fprintf(stderr, "Unable to change mode of local dir %s to %o\n", relname, remotestat.st_mode);
+			fprintf(stderr, "Unable to change mode of local dir %s to %o\n", relname,
+				(unsigned int)remotestat.st_mode);
 			smbc_closedir(dirhandle);
 			return 0;
 		}
@@ -471,7 +472,8 @@ static int smb_download_file(const char *base, const char *name, int recursive, 
 
 	if(keep_permissions && !send_stdout) {
 		if(fchmod(localhandle, remotestat.st_mode) < 0) {
-			fprintf(stderr, "Unable to change mode of local file %s to %o\n", path, remotestat.st_mode);
+			fprintf(stderr, "Unable to change mode of local file %s to %o\n", path,
+				(unsigned int)remotestat.st_mode);
 			smbc_close(remotehandle);
 			close(localhandle);
 			return 0;
@@ -487,7 +489,8 @@ static void clean_exit(void)
 {
 	char bs[100];
 	human_readable(total_bytes, bs, sizeof(bs));
-	if(!quiet)fprintf(stderr, "Downloaded %s in %lu seconds\n", bs, time(NULL) - total_start_time);
+	if(!quiet)fprintf(stderr, "Downloaded %s in %lu seconds\n", bs,
+		(unsigned long)(time(NULL) - total_start_time));
 	exit(0);
 }
 

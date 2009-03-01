@@ -88,7 +88,6 @@ NTSTATUS print_fsp_open(struct smb_request *req, connection_struct *conn,
 void print_fsp_end(files_struct *fsp, enum file_close_type close_type)
 {
 	uint32 jobid;
-	fstring sharename;
 
 	if (fsp->fh->private_options & FILE_DELETE_ON_CLOSE) {
 		/*
@@ -102,7 +101,7 @@ void print_fsp_end(files_struct *fsp, enum file_close_type close_type)
 		string_free(&fsp->fsp_name);
 	}
 
-	if (!rap_to_pjobid(fsp->rap_print_jobid, sharename, &jobid)) {
+	if (!rap_to_pjobid(fsp->rap_print_jobid, NULL, &jobid)) {
 		DEBUG(3,("print_fsp_end: Unable to convert RAP jobid %u to print jobid.\n",
 			(unsigned int)fsp->rap_print_jobid ));
 		return;

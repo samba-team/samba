@@ -132,6 +132,18 @@ static NTSTATUS fd_open(struct connection_struct *conn,
 	fsp->fh->fd = SMB_VFS_OPEN(conn,fname,fsp,flags,mode);
 	if (fsp->fh->fd == -1) {
 		status = map_nt_error_from_unix(errno);
+		if (errno == EMFILE) {
+			static time_t last_warned = 0L;
+
+			if (time((time_t *) NULL) > last_warned) {
+				DEBUG(0,("Too many open files, unable "
+					"to open more!  smbd's max "
+					"open files = %d\n",
+					lp_max_open_files()));
+				last_warned = time((time_t *) NULL);
+			}
+		}
+
 	}
 
 	DEBUG(10,("fd_open: name %s, flags = 0%o mode = 0%o, fd = %d. %s\n",
@@ -1428,7 +1440,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		   "create_disposition = 0x%x create_options=0x%x "
 		   "unix mode=0%o oplock_request=%d\n",
 		   fname, new_dos_attributes, access_mask, share_access,
-		   create_disposition, create_options, unx_mode,
+		   create_disposition, create_options, (unsigned int)unx_mode,
 		   oplock_request));
 
 	if ((req == NULL) && ((oplock_request & INTERNAL_OPEN_ONLY) == 0)) {
@@ -2445,6 +2457,25 @@ static NTSTATUS open_directory(connection_struct *conn,
 					fname,
 					access_mask,
 					&access_granted);
+
+		/* Were we trying to do a directory open
+		 * for delete and didn't get DELETE
+		 * access (only) ? Check if the
+		 * directory allows DELETE_CHILD.
+		 * See here:
+		 * http://blogs.msdn.com/oldnewthing/archive/2004/06/04/148426.aspx
+		 * for details. */
+
+		if ((NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) &&
+				(access_mask & DELETE_ACCESS) &&
+				(access_granted == DELETE_ACCESS) &&
+				can_delete_file_in_directory(conn, fname))) {
+			DEBUG(10,("open_directory: overrode ACCESS_DENIED "
+				"on directory %s\n",
+				fname ));
+			status = NT_STATUS_OK;
+		}
+
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10, ("open_directory: check_open_rights on "
 				"file %s failed with %s\n",
@@ -2597,8 +2628,8 @@ void msg_file_was_renamed(struct messaging_context *msg,
         }
 
 	/* Unpack the message. */
-	pull_file_id_16(frm, &id);
-	sharepath = &frm[16];
+	pull_file_id_24(frm, &id);
+	sharepath = &frm[24];
 	newname = sharepath + strlen(sharepath) + 1;
 	sp_len = strlen(sharepath);
 

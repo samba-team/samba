@@ -1042,9 +1042,20 @@ static int vfswrap_chflags(vfs_handle_struct *handle, const char *path, int flag
 #endif
 }
 
-static struct file_id vfswrap_file_id_create(struct vfs_handle_struct *handle, SMB_DEV_T dev, SMB_INO_T inode)
+static struct file_id vfswrap_file_id_create(struct vfs_handle_struct *handle,
+					     SMB_STRUCT_STAT *sbuf)
 {
-	return file_id_create_dev(dev, inode);
+	struct file_id key;
+
+	/* the ZERO_STRUCT ensures padding doesn't break using the key as a
+	 * blob */
+	ZERO_STRUCT(key);
+
+	key.devid = sbuf->st_dev;
+	key.inode = sbuf->st_ino;
+	/* key.extid is unused by default. */
+
+	return key;
 }
 
 static NTSTATUS vfswrap_streaminfo(vfs_handle_struct *handle,

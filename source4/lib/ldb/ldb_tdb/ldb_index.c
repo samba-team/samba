@@ -32,6 +32,7 @@
  */
 
 #include "ldb_tdb.h"
+#include "dlinklist.h"
 
 /*
   the idxptr code is a bit unusual. The way it works is to replace

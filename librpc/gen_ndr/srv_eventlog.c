@@ -1673,18 +1673,18 @@ static bool api_eventlog_WriteClusterEvents(pipes_struct *p)
 	return true;
 }
 
-static bool api_eventlog_GetLogIntormation(pipes_struct *p)
+static bool api_eventlog_GetLogInformation(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
-	struct eventlog_GetLogIntormation *r;
+	struct eventlog_GetLogInformation *r;
 
-	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_GETLOGINTORMATION];
+	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_GETLOGINFORMATION];
 
-	r = talloc(talloc_tos(), struct eventlog_GetLogIntormation);
+	r = talloc(talloc_tos(), struct eventlog_GetLogInformation);
 	if (r == NULL) {
 		return false;
 	}
@@ -1708,7 +1708,7 @@ static bool api_eventlog_GetLogIntormation(pipes_struct *p)
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_GetLogIntormation, r);
+		NDR_PRINT_IN_DEBUG(eventlog_GetLogInformation, r);
 	}
 
 	ZERO_STRUCT(r->out);
@@ -1724,7 +1724,7 @@ static bool api_eventlog_GetLogIntormation(pipes_struct *p)
 		return false;
 	}
 
-	r->out.result = _eventlog_GetLogIntormation(p, r);
+	r->out.result = _eventlog_GetLogInformation(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -1733,7 +1733,7 @@ static bool api_eventlog_GetLogIntormation(pipes_struct *p)
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_GetLogIntormation, r);
+		NDR_PRINT_OUT_DEBUG(eventlog_GetLogInformation, r);
 	}
 
 	push = ndr_push_init_ctx(r, NULL);
@@ -1934,7 +1934,7 @@ static struct api_struct api_eventlog_cmds[] =
 	{"EVENTLOG_REGISTERCLUSTERSVC", NDR_EVENTLOG_REGISTERCLUSTERSVC, api_eventlog_RegisterClusterSvc},
 	{"EVENTLOG_DEREGISTERCLUSTERSVC", NDR_EVENTLOG_DEREGISTERCLUSTERSVC, api_eventlog_DeregisterClusterSvc},
 	{"EVENTLOG_WRITECLUSTEREVENTS", NDR_EVENTLOG_WRITECLUSTEREVENTS, api_eventlog_WriteClusterEvents},
-	{"EVENTLOG_GETLOGINTORMATION", NDR_EVENTLOG_GETLOGINTORMATION, api_eventlog_GetLogIntormation},
+	{"EVENTLOG_GETLOGINFORMATION", NDR_EVENTLOG_GETLOGINFORMATION, api_eventlog_GetLogInformation},
 	{"EVENTLOG_FLUSHEVENTLOG", NDR_EVENTLOG_FLUSHEVENTLOG, api_eventlog_FlushEventLog},
 	{"EVENTLOG_REPORTEVENTANDSOURCEW", NDR_EVENTLOG_REPORTEVENTANDSOURCEW, api_eventlog_ReportEventAndSourceW},
 };
@@ -2138,8 +2138,8 @@ NTSTATUS rpc_eventlog_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			return NT_STATUS_OK;
 		}
 
-		case NDR_EVENTLOG_GETLOGINTORMATION: {
-			struct eventlog_GetLogIntormation *r = (struct eventlog_GetLogIntormation *)_r;
+		case NDR_EVENTLOG_GETLOGINFORMATION: {
+			struct eventlog_GetLogInformation *r = (struct eventlog_GetLogInformation *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.buffer = talloc_zero_array(mem_ctx, uint8_t, r->in.buf_size);
 			if (r->out.buffer == NULL) {
@@ -2151,7 +2151,7 @@ NTSTATUS rpc_eventlog_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			return NT_STATUS_NO_MEMORY;
 			}
 
-			r->out.result = _eventlog_GetLogIntormation(cli->pipes_struct, r);
+			r->out.result = _eventlog_GetLogInformation(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 

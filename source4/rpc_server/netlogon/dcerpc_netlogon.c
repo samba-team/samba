@@ -47,7 +47,8 @@ struct server_pipe_state {
 static NTSTATUS dcesrv_netr_ServerReqChallenge(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					struct netr_ServerReqChallenge *r)
 {
-	struct server_pipe_state *pipe_state = dce_call->context->private_data;
+	struct server_pipe_state *pipe_state =
+		(struct server_pipe_state *)dce_call->context->private_data;
 
 	ZERO_STRUCTP(r->out.return_credentials);
 
@@ -76,7 +77,8 @@ static NTSTATUS dcesrv_netr_ServerReqChallenge(struct dcesrv_call_state *dce_cal
 static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					 struct netr_ServerAuthenticate3 *r)
 {
-	struct server_pipe_state *pipe_state = dce_call->context->private_data;
+	struct server_pipe_state *pipe_state =
+		(struct server_pipe_state *)dce_call->context->private_data;
 	struct creds_CredentialState *creds;
 	void *sam_ctx;
 	struct samr_Password *mach_pwd;
@@ -148,7 +150,9 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 		}
 
 		/* pull the user attributes */
-		num_records = gendb_search(sam_ctx, mem_ctx, NULL, &msgs, trust_dom_attrs,
+		num_records = gendb_search((struct ldb_context *)sam_ctx,
+					   mem_ctx, NULL, &msgs,
+					   trust_dom_attrs,
 					   "(&(trustPartner=%s)(objectclass=trustedDomain))", 
 					   encoded_account);
 		
@@ -179,7 +183,8 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 	}
 	
 	/* pull the user attributes */
-	num_records = gendb_search(sam_ctx, mem_ctx, NULL, &msgs, attrs,
+	num_records = gendb_search((struct ldb_context *)sam_ctx, mem_ctx,
+				   NULL, &msgs, attrs,
 				   "(&(sAMAccountName=%s)(objectclass=user))", 
 				   ldb_binary_encode_string(mem_ctx, account_name));
 
@@ -848,13 +853,14 @@ static WERROR dcesrv_netr_GetDcName(struct dcesrv_call_state *dce_call, TALLOC_C
 		return WERR_DS_SERVICE_UNAVAILABLE;
 	}
 
-	domain_dn = samdb_domain_to_dn(sam_ctx, mem_ctx,
+	domain_dn = samdb_domain_to_dn((struct ldb_context *)sam_ctx, mem_ctx,
 				       r->in.domainname);
 	if (domain_dn == NULL) {
 		return WERR_DS_SERVICE_UNAVAILABLE;
 	}
 
-	ret = gendb_search_dn(sam_ctx, mem_ctx, domain_dn, &res, attrs);
+	ret = gendb_search_dn((struct ldb_context *)sam_ctx, mem_ctx,
+			      domain_dn, &res, attrs);
 	if (ret != 1) {
 		return WERR_NO_SUCH_DOMAIN;
 	}
@@ -1214,17 +1220,19 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call, TA
 
 	/* Win7-beta will send the domain name in the form the user typed, so we have to cope
 	   with both the short and long form here */
-	if (strcasecmp(r->in.domain_name, lp_workgroup(dce_call->conn->dce_ctx->lp_ctx)) == 0) {
+	if (r->in.domain_name == NULL || strcasecmp(r->in.domain_name, lp_workgroup(dce_call->conn->dce_ctx->lp_ctx)) == 0) {
 		r->in.domain_name = lp_realm(dce_call->conn->dce_ctx->lp_ctx);
 	}
 
-	domain_dn = samdb_dns_domain_to_dn(sam_ctx, mem_ctx,
+	domain_dn = samdb_dns_domain_to_dn((struct ldb_context *)sam_ctx,
+					   mem_ctx,
 					   r->in.domain_name);   
 	if (domain_dn == NULL) {
 		return WERR_DS_SERVICE_UNAVAILABLE;
 	}
 
-	ret = gendb_search_dn(sam_ctx, mem_ctx, domain_dn, &res, attrs);
+	ret = gendb_search_dn((struct ldb_context *)sam_ctx, mem_ctx,
+			      domain_dn, &res, attrs);
 	if (ret != 1) {
 		return WERR_NO_SUCH_DOMAIN;
 	}
@@ -1377,9 +1385,11 @@ static WERROR dcesrv_netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce
 		return WERR_GENERAL_FAILURE;
 	}
 
-	partitions_basedn = samdb_partitions_dn(sam_ctx, mem_ctx);
+	partitions_basedn = samdb_partitions_dn((struct ldb_context *)sam_ctx,
+						mem_ctx);
 
-	ret = gendb_search_dn(sam_ctx, mem_ctx, NULL, &dom_res, dom_attrs);
+	ret = gendb_search_dn((struct ldb_context *)sam_ctx, mem_ctx, NULL,
+			      &dom_res, dom_attrs);
 	if (ret == -1) {
 		return WERR_GENERAL_FAILURE;		
 	}
@@ -1387,7 +1397,8 @@ static WERROR dcesrv_netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce
 		return WERR_GENERAL_FAILURE;
 	}
 
-	ret = gendb_search(sam_ctx, mem_ctx, partitions_basedn, &ref_res, ref_attrs,
+	ret = gendb_search((struct ldb_context *)sam_ctx, mem_ctx,
+			   partitions_basedn, &ref_res, ref_attrs,
 			   "(&(objectClass=crossRef)(ncName=%s))",
 			   ldb_dn_get_linearized(dom_res[0]->dn));
 	if (ret == -1) {

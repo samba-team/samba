@@ -26,14 +26,14 @@
 
 #define ONEFS_DATA_FASTBUF	10
 
-struct onefs_vfs_config share_config[ONEFS_DATA_FASTBUF];
-struct onefs_vfs_config *pshare_config;
+struct onefs_vfs_share_config vfs_share_config[ONEFS_DATA_FASTBUF];
+struct onefs_vfs_share_config *pvfs_share_config;
 
-static void onefs_load_faketimestamp_config(struct vfs_handle_struct *handle,
-					    struct onefs_vfs_config *cfg)
+static void onefs_load_faketimestamp_config(struct connection_struct *conn,
+					    struct onefs_vfs_share_config *cfg)
 {
 	const char **parm;
-	int snum = SNUM(handle->conn);
+	int snum = SNUM(conn);
 
 	parm = lp_parm_string_list(snum, PARM_ONEFS_TYPE, PARM_ATIME_NOW,
 				   PARM_ATIME_NOW_DEFAULT);
@@ -83,46 +83,141 @@ static void onefs_load_faketimestamp_config(struct vfs_handle_struct *handle,
 				      PARM_MTIME_SLOP_DEFAULT);
 }
 
-
-static int onefs_load_config(struct vfs_handle_struct *handle)
+/**
+ * Set onefs-specific vfs global config parameters.
+ *
+ * Since changes in these parameters require calling syscalls, we only want to
+ * call them when the configuration actually changes.
+ */
+static void onefs_load_global_config(connection_struct *conn)
 {
-	int snum = SNUM(handle->conn);
+	static struct onefs_vfs_global_config global_config;
+	bool dot_snap_child_accessible;
+	bool dot_snap_child_visible;
+	bool dot_snap_root_accessible;
+	bool dot_snap_root_visible;
+	bool dot_snap_tilde;
+	bool reconfig_dso = false;
+	bool reconfig_tilde = false;
+
+	/* Check if this is the first time setting the config options. */
+	if (!(global_config.init_flags & ONEFS_VFS_CONFIG_INITIALIZED)) {
+		global_config.init_flags |= ONEFS_VFS_CONFIG_INITIALIZED;
+
+		/* Set process encoding */
+		onefs_sys_config_enc();
+
+		reconfig_dso = true;
+		reconfig_tilde = true;
+	}
+
+	/* Get the dot snap options from the conf. */
+	dot_snap_child_accessible =
+	    lp_parm_bool(SNUM(conn), PARM_ONEFS_TYPE,
+			 PARM_DOT_SNAP_CHILD_ACCESSIBLE,
+			 PARM_DOT_SNAP_CHILD_ACCESSIBLE_DEFAULT);
+	dot_snap_child_visible =
+	    lp_parm_bool(SNUM(conn), PARM_ONEFS_TYPE,
+			 PARM_DOT_SNAP_CHILD_VISIBLE,
+			 PARM_DOT_SNAP_CHILD_VISIBLE_DEFAULT);
+	dot_snap_root_accessible =
+	    lp_parm_bool(SNUM(conn), PARM_ONEFS_TYPE,
+			 PARM_DOT_SNAP_ROOT_ACCESSIBLE,
+			 PARM_DOT_SNAP_ROOT_ACCESSIBLE_DEFAULT);
+	dot_snap_root_visible =
+	    lp_parm_bool(SNUM(conn), PARM_ONEFS_TYPE,
+			 PARM_DOT_SNAP_ROOT_VISIBLE,
+			 PARM_DOT_SNAP_ROOT_VISIBLE_DEFAULT);
+	dot_snap_tilde =
+	    lp_parm_bool(SNUM(conn), PARM_ONEFS_TYPE,
+			 PARM_DOT_SNAP_TILDE,
+			 PARM_DOT_SNAP_TILDE_DEFAULT);
+
+	/* Check if any of the dot snap options need updating. */
+	if (dot_snap_child_accessible !=
+	    global_config.dot_snap_child_accessible) {
+		global_config.dot_snap_child_accessible =
+		    dot_snap_child_accessible;
+		reconfig_dso = true;
+	}
+	if (dot_snap_child_visible !=
+	    global_config.dot_snap_child_visible) {
+		global_config.dot_snap_child_visible =
+		    dot_snap_child_visible;
+		reconfig_dso = true;
+	}
+	if (dot_snap_root_accessible !=
+	    global_config.dot_snap_root_accessible) {
+		global_config.dot_snap_root_accessible =
+		    dot_snap_root_accessible;
+		reconfig_dso = true;
+	}
+	if (dot_snap_root_visible !=
+	    global_config.dot_snap_root_visible) {
+		global_config.dot_snap_root_visible =
+		    dot_snap_root_visible;
+		reconfig_dso = true;
+	}
+	if (dot_snap_tilde != global_config.dot_snap_tilde) {
+		global_config.dot_snap_tilde = dot_snap_tilde;
+		reconfig_tilde = true;
+	}
+
+	/* If a dot snap option has changed update the process.  */
+	if (reconfig_dso) {
+		onefs_sys_config_snap_opt(&global_config);
+	}
+
+	/* If the dot snap tilde option has changed update the process.  */
+	if (reconfig_tilde) {
+		onefs_sys_config_tilde(&global_config);
+	}
+}
+
+static int onefs_load_config(connection_struct *conn)
+{
+	int snum = SNUM(conn);
 	int share_count = lp_numservices();
 
-	if (!pshare_config) {
+	/* Share config */
+	if (!pvfs_share_config) {
 
 		if (share_count <= ONEFS_DATA_FASTBUF)
-			pshare_config = share_config;
+			pvfs_share_config = vfs_share_config;
 		else {
-			pshare_config =
-			    SMB_MALLOC_ARRAY(struct onefs_vfs_config,
+			pvfs_share_config =
+			    SMB_MALLOC_ARRAY(struct onefs_vfs_share_config,
 					     share_count);
-			if (!pshare_config) {
+			if (!pvfs_share_config) {
 				errno = ENOMEM;
 				return -1;
 			}
 
-			memset(pshare_config, 0,
-			    (sizeof(struct onefs_vfs_config) * share_count));
+			memset(pvfs_share_config, 0,
+			    (sizeof(struct onefs_vfs_share_config) *
+				    share_count));
 		}
 	}
 
-	if ((pshare_config[snum].init_flags &
+	if ((pvfs_share_config[snum].init_flags &
 		ONEFS_VFS_CONFIG_INITIALIZED) == 0) {
-			pshare_config[snum].init_flags =
+			pvfs_share_config[snum].init_flags =
 			    ONEFS_VFS_CONFIG_INITIALIZED;
-			onefs_load_faketimestamp_config(handle,
-						        &pshare_config[snum]);
+			onefs_load_faketimestamp_config(conn,
+						        &pvfs_share_config[snum]);
 	}
+
+	/* Global config */
+	onefs_load_global_config(conn);
 
 	return 0;
 }
 
 bool onefs_get_config(int snum, int config_type,
-		      struct onefs_vfs_config *cfg)
+		      struct onefs_vfs_share_config *cfg)
 {
-	if (share_config[snum].init_flags & config_type)
-		*cfg = share_config[snum];
+	if (vfs_share_config[snum].init_flags & config_type)
+		*cfg = vfs_share_config[snum];
 	else
 		return false;
 
@@ -132,10 +227,13 @@ bool onefs_get_config(int snum, int config_type,
 static int onefs_connect(struct vfs_handle_struct *handle, const char *service,
 			 const char *user)
 {
-	int ret = onefs_load_config(handle);
+	int ret;
 
-	if (ret)
+	ret = onefs_load_config(handle->conn);
+	if (ret) {
+		DEBUG(3, ("Load config failed: %s\n", strerror(errno)));
 		return ret;
+	}
 
 	return SMB_VFS_NEXT_CONNECT(handle, service, user);
 }
@@ -154,6 +252,19 @@ static int onefs_open(vfs_handle_struct *handle, const char *fname,
 	/* SMB_VFS_OPEN should never be called in vfs_onefs */
 	SMB_ASSERT(false);
 	return SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode);
+}
+
+static ssize_t onefs_sendfile(vfs_handle_struct *handle, int tofd,
+			      files_struct *fromfsp, const DATA_BLOB *header,
+			      SMB_OFF_T offset, size_t count)
+{
+	ssize_t result;
+
+	START_PROFILE_BYTES(syscall_sendfile, count);
+	result = onefs_sys_sendfile(handle->conn, tofd, fromfsp->fh->fd,
+				    header, offset, count);
+	END_PROFILE(syscall_sendfile);
+	return result;
 }
 
 static ssize_t onefs_recvfile(vfs_handle_struct *handle, int fromfd,
@@ -192,6 +303,22 @@ static uint64_t onefs_get_alloc_size(struct vfs_handle_struct *handle,
  out:
 	END_PROFILE(syscall_get_alloc_size);
 	return result;
+}
+
+static struct file_id onefs_file_id_create(struct vfs_handle_struct *handle,
+					     SMB_STRUCT_STAT *sbuf)
+{
+	struct file_id key;
+
+	/* the ZERO_STRUCT ensures padding doesn't break using the key as a
+	 * blob */
+	ZERO_STRUCT(key);
+
+	key.devid = sbuf->st_dev;
+	key.inode = sbuf->st_ino;
+	key.extid = sbuf->st_snapid;
+
+	return key;
 }
 
 static int onefs_statvfs(vfs_handle_struct *handle, const char *path,
@@ -324,6 +451,8 @@ static vfs_op_tuple onefs_ops[] = {
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(onefs_close), SMB_VFS_OP_CLOSE,
 	 SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(onefs_sendfile), SMB_VFS_OP_SENDFILE,
+	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(onefs_recvfile), SMB_VFS_OP_RECVFILE,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(onefs_rename), SMB_VFS_OP_RENAME,
@@ -342,6 +471,8 @@ static vfs_op_tuple onefs_ops[] = {
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(onefs_chflags), SMB_VFS_OP_CHFLAGS,
 	 SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(onefs_file_id_create), SMB_VFS_OP_FILE_ID_CREATE,
+	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(onefs_streaminfo), SMB_VFS_OP_STREAMINFO,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(onefs_brl_lock_windows), SMB_VFS_OP_BRL_LOCK_WINDOWS,
@@ -349,6 +480,8 @@ static vfs_op_tuple onefs_ops[] = {
 	{SMB_VFS_OP(onefs_brl_unlock_windows), SMB_VFS_OP_BRL_UNLOCK_WINDOWS,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(onefs_brl_cancel_windows), SMB_VFS_OP_BRL_CANCEL_WINDOWS,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(onefs_notify_watch), SMB_VFS_OP_NOTIFY_WATCH,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(onefs_fget_nt_acl), SMB_VFS_OP_FGET_NT_ACL,
 	 SMB_VFS_LAYER_OPAQUE},

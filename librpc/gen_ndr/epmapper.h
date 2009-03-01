@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+#include "libcli/util/ntstatus.h"
+
 #include "librpc/gen_ndr/misc.h"
 #ifndef _HEADER_epmapper
 #define _HEADER_epmapper

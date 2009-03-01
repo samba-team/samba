@@ -46,7 +46,10 @@
 #define _LDB_H_ 1
 /*! \endcond */
 
-#include "ldb_includes.h"
+#include <stdbool.h>
+#include "talloc.h"
+#include "tevent.h"
+#include "ldb_errors.h"
 
 /*
   major restrictions as compared to normal LDAP:

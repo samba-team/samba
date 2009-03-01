@@ -454,7 +454,19 @@ static WERROR dcesrv_spoolss_EnumPrintProcessors(struct dcesrv_call_state *dce_c
 static WERROR dcesrv_spoolss_GetPrintProcessorDirectory(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_GetPrintProcessorDirectory *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct ntptr_context *ntptr = talloc_get_type(dce_call->context->private_data, struct ntptr_context);
+	WERROR status;
+	struct smb_iconv_convenience *ic = lp_iconv_convenience(ntptr->lp_ctx);
+
+	status = dcesrv_spoolss_check_server_name(dce_call, mem_ctx, r->in.server);
+	W_ERROR_NOT_OK_RETURN(status);
+
+	status = ntptr_GetPrintProcessorDirectory(ntptr, mem_ctx, r);
+	W_ERROR_NOT_OK_RETURN(status);
+
+	*r->out.needed	= SPOOLSS_BUFFER_UNION(spoolss_PrintProcessorDirectoryInfo, ic, r->out.info, r->in.level);
+	r->out.info	= SPOOLSS_BUFFER_OK(r->out.info, NULL);
+	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 }
 
 
@@ -534,7 +546,11 @@ static WERROR dcesrv_spoolss_EndDocPrinter(struct dcesrv_call_state *dce_call, T
 static WERROR dcesrv_spoolss_AddJob(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_AddJob *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	if (r->in.level != 1) {
+		return WERR_UNKNOWN_LEVEL;
+	}
+
+	return WERR_INVALID_PARAM;
 }
 
 

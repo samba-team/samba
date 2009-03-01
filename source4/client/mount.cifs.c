@@ -313,8 +313,10 @@ int main(int argc, char ** argv)
 	FILE * pmntfile;
 
 	/* setlocale(LC_ALL, "");
+#if defined(LOCALEDIR)
 	bindtextdomain(PACKAGE, LOCALEDIR);
 	textdomain(PACKAGE); */
+#endif
 
 	if(argc && argv) {
 		thisprogram = argv[0];

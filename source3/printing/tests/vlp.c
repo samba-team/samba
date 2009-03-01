@@ -168,7 +168,7 @@ static int lpq_command(int argc, char **argv)
 		       job_list[i].size, 
 		       (i == 0 && job_list[i].status == LPQ_QUEUED) ? 
 		       LPQ_SPOOLING : job_list[i].status,
-		       job_list[i].submit_time, job_list[i].owner, 
+		       (long int)job_list[i].submit_time, job_list[i].owner, 
 		       job_list[i].jobname);
 		job_count++;
 	}

@@ -902,7 +902,7 @@ NTSTATUS rpccli_eventlog_WriteClusterEvents(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
-NTSTATUS rpccli_eventlog_GetLogIntormation(struct rpc_pipe_client *cli,
+NTSTATUS rpccli_eventlog_GetLogInformation(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx,
 					   struct policy_handle *handle /* [in] [ref] */,
 					   uint32_t level /* [in]  */,
@@ -910,7 +910,7 @@ NTSTATUS rpccli_eventlog_GetLogIntormation(struct rpc_pipe_client *cli,
 					   uint32_t buf_size /* [in] [range(0,1024)] */,
 					   uint32_t *bytes_needed /* [out] [ref] */)
 {
-	struct eventlog_GetLogIntormation r;
+	struct eventlog_GetLogInformation r;
 	NTSTATUS status;
 
 	/* In parameters */
@@ -919,13 +919,13 @@ NTSTATUS rpccli_eventlog_GetLogIntormation(struct rpc_pipe_client *cli,
 	r.in.buf_size = buf_size;
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(eventlog_GetLogIntormation, &r);
+		NDR_PRINT_IN_DEBUG(eventlog_GetLogInformation, &r);
 	}
 
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
-				NDR_EVENTLOG_GETLOGINTORMATION,
+				NDR_EVENTLOG_GETLOGINFORMATION,
 				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -933,7 +933,7 @@ NTSTATUS rpccli_eventlog_GetLogIntormation(struct rpc_pipe_client *cli,
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(eventlog_GetLogIntormation, &r);
+		NDR_PRINT_OUT_DEBUG(eventlog_GetLogInformation, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {

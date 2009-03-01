@@ -766,18 +766,13 @@ int vfs_ChDir(connection_struct *conn, const char *path)
  format. Note this can be called with conn == NULL.
 ********************************************************************/
 
-struct getwd_cache_key {
-	SMB_DEV_T dev;
-	SMB_INO_T ino;
-};
-
 char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 {
         char s[PATH_MAX+1];
 	SMB_STRUCT_STAT st, st2;
 	char *result;
 	DATA_BLOB cache_value;
-	struct getwd_cache_key key;
+	struct file_id key;
 
 	*s = 0;
 
@@ -797,9 +792,7 @@ char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 		goto nocache;
 	}
 
-	ZERO_STRUCT(key); /* unlikely, but possible padding */
-	key.dev = st.st_dev;
-	key.ino = st.st_ino;
+	key = vfs_file_id_from_sbuf(conn, &st);
 
 	if (!memcache_lookup(smbd_memcache(), GETWD_CACHE,
 			     data_blob_const(&key, sizeof(key)),
@@ -838,9 +831,7 @@ char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 	}
 
 	if (lp_getwd_cache() && VALID_STAT(st)) {
-		ZERO_STRUCT(key); /* unlikely, but possible padding */
-		key.dev = st.st_dev;
-		key.ino = st.st_ino;
+		key = vfs_file_id_from_sbuf(conn, &st);
 
 		memcache_add(smbd_memcache(), GETWD_CACHE,
 			     data_blob_const(&key, sizeof(key)),

@@ -630,11 +630,11 @@ smbc_version(void)
  * Set the credentials so DFS will work when following referrals.
  */
 void
-smbc_set_credentials(char *workgroup,
-                     char *user,
-                     char *password,
+smbc_set_credentials(const char *workgroup,
+                     const char *user,
+                     const char *password,
                      smbc_bool use_kerberos,
-                     char *signing_state)
+                     const char *signing_state)
 {
         struct user_auth_info *auth_info;
 
@@ -651,4 +651,40 @@ smbc_set_credentials(char *workgroup,
         set_global_myworkgroup(workgroup);
         cli_cm_set_credentials(auth_info);
 	TALLOC_FREE(auth_info);
+}
+
+void smbc_set_credentials_with_fallback(SMBCCTX *context,
+					const char *workgroup,
+					const char *user,
+					const char *password)
+{
+	smbc_bool use_kerberos = false;
+	const char *signing_state = "off";
+	
+	if (! context ||
+	    ! workgroup || ! *workgroup ||
+	    ! user || ! *user ||
+	    ! password || ! *password) {
+
+		return;
+	}
+
+	if (smbc_getOptionUseKerberos(context)) {
+		use_kerberos = True;
+	}
+
+	if (lp_client_signing()) {
+		signing_state = "on";
+	}
+
+	if (lp_client_signing() == Required) {
+		signing_state = "force";
+	}
+
+	smbc_set_credentials(workgroup, user, password,
+                             use_kerberos, signing_state);
+
+	if (smbc_getOptionFallbackAfterKerberos(context)) {
+		cli_cm_set_fallback_after_kerberos();
+	}
 }

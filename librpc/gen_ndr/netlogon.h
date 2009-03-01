@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+#include "libcli/util/ntstatus.h"
+
 #include "librpc/gen_ndr/misc.h"
 #include "librpc/gen_ndr/lsa.h"
 #include "librpc/gen_ndr/samr.h"

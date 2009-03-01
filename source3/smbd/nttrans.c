@@ -1856,6 +1856,8 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			return;
 		}
+
+		/* For backwards compatibility only store the dev/inode. */
 		push_file_id_16(pdata, &fsp->file_id);
 		memcpy(pdata+16,create_volume_objectid(conn,objid),16);
 		push_file_id_16(pdata+32, &fsp->file_id);

@@ -110,12 +110,10 @@ void debug_ntlmssp_flags(uint32 neg_flags)
  *
  */
 
-static const uint8 *get_challenge(const struct ntlmssp_state *ntlmssp_state)
+static void get_challenge(const struct ntlmssp_state *ntlmssp_state,
+			  uint8_t chal[8])
 {
-	static uchar chal[8];
-	generate_random_buffer(chal, sizeof(chal));
-
-	return chal;
+	generate_random_buffer(chal, 8);
 }
 
 /**
@@ -517,7 +515,7 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 	char *dnsdomname = NULL;
 	uint32 neg_flags = 0;
 	uint32 ntlmssp_command, chal_flags;
-	const uint8 *cryptkey;
+	uint8_t cryptkey[8];
 	const char *target_name;
 
 	/* parse the NTLMSSP packet */
@@ -541,7 +539,7 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 	ntlmssp_handle_neg_flags(ntlmssp_state, neg_flags, lp_lanman_auth());
 
 	/* Ask our caller what challenge they would like in the packet */
-	cryptkey = ntlmssp_state->get_challenge(ntlmssp_state);
+	ntlmssp_state->get_challenge(ntlmssp_state, cryptkey);
 
 	/* Check if we may set the challenge */
 	if (!ntlmssp_state->may_set_challenge(ntlmssp_state)) {

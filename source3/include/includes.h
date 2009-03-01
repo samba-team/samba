@@ -190,12 +190,12 @@ typedef int ber_int_t;
 #undef HAVE_LDAP
 #endif
 
-#if HAVE_GSSAPI_H
-#include <gssapi.h>
-#elif HAVE_GSSAPI_GSSAPI_H
+#if HAVE_GSSAPI_GSSAPI_H
 #include <gssapi/gssapi.h>
 #elif HAVE_GSSAPI_GSSAPI_GENERIC_H
 #include <gssapi/gssapi_generic.h>
+#elif HAVE_GSSAPI_H
+#include <gssapi.h>
 #endif
 
 #if HAVE_COM_ERR_H
@@ -577,6 +577,8 @@ struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 #include "../talloc/talloc.h"
 
 #include "event.h"
+#include "../lib/util/tevent_unix.h"
+#include "../lib/util/tevent_ntstatus.h"
 
 #include "../lib/util/data_blob.h"
 #include "../lib/util/time.h"
@@ -676,8 +678,6 @@ struct printjob;
 /* forward declarations from smbldap.c */
 
 #include "smbldap.h"
-
-#include "smb_ldap.h"
 
 /*
  * Reasons for cache flush.

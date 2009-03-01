@@ -4972,6 +4972,7 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 ****************************************************************************/
 
 static NTSTATUS smb_set_file_dosmode(connection_struct *conn,
+				files_struct *fsp,
 				const char *fname,
 				SMB_STRUCT_STAT *psbuf,
 				uint32 dosmode)
@@ -4980,6 +4981,14 @@ static NTSTATUS smb_set_file_dosmode(connection_struct *conn,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
+	if (fsp) {
+		if (fsp->base_fsp) {
+			fname = fsp->base_fsp->fsp_name;
+		} else {
+			fname = fsp->fsp_name;
+		}
+	}
+		
 	if (dosmode) {
 		if (S_ISDIR(psbuf->st_mode)) {
 			dosmode |= aDIR;
@@ -5723,11 +5732,10 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 
 	/* Set the attributes */
 	dosmode = IVAL(pdata,32);
-	status = smb_set_file_dosmode(conn, fname, psbuf, dosmode);
+	status = smb_set_file_dosmode(conn, fsp, fname, psbuf, dosmode);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-
 
 	/* access time */
 	ft.atime = interpret_long_date(pdata+8);
@@ -6415,6 +6423,8 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 		create_disp = FILE_OVERWRITE_IF;
 	} else if((wire_open_mode & SMB_O_CREAT) == SMB_O_CREAT) {
 		create_disp = FILE_OPEN_IF;
+	} else if ((wire_open_mode & (SMB_O_CREAT | SMB_O_EXCL | SMB_O_TRUNC)) == 0) {
+		create_disp = FILE_OPEN;
 	} else {
 		DEBUG(5,("smb_posix_open: invalid create mode 0x%x\n",
 			(unsigned int)wire_open_mode ));

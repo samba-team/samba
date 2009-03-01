@@ -60,6 +60,18 @@ typedef uint32_t WERROR;
 	}\
 } while (0)
 
+#define W_ERROR_NOT_OK_GOTO_DONE(x) do { \
+	if (!W_ERROR_IS_OK(x)) {\
+		goto done;\
+	}\
+} while (0)
+
+#define W_ERROR_NOT_OK_GOTO(x, y) do {\
+	if (!W_ERROR_IS_OK(x)) {\
+		goto y;\
+	}\
+} while(0)
+
 /* these are win32 error codes. There are only a few places where
    these matter for Samba, primarily in the NT printing code */
 #define WERR_OK W_ERROR(0)
@@ -136,6 +148,7 @@ typedef uint32_t WERROR;
 #define WERR_TIME_SKEW W_ERROR(1398)
 #define WERR_EVENTLOG_FILE_CORRUPT W_ERROR(1500)
 #define WERR_SERVER_UNAVAILABLE W_ERROR(1722)
+#define WERR_INVALID_USER_BUFFER W_ERROR(1784)
 #define WERR_NO_TRUST_SAM_ACCOUNT W_ERROR(1787)
 #define WERR_INVALID_FORM_NAME W_ERROR(1902)
 #define WERR_INVALID_FORM_SIZE W_ERROR(1903)

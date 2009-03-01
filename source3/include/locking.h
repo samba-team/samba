@@ -49,6 +49,7 @@ struct file_id {
 	   other than a dev_t for the device */
 	uint64_t devid;
 	uint64_t inode;
+	uint64_t extid; /* Support systems that use an extended id (e.g. snapshots). */
 };
 
 struct byte_range_lock {

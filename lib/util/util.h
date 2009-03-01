@@ -134,6 +134,16 @@ apparent reason.
 _PUBLIC_ struct hostent *sys_gethostbyname(const char *name);
 _PUBLIC_ struct in_addr sys_inet_makeaddr(int net, int host);
 
+/**
+ * Wrapper for fork used to invalid pid cache.
+ **/
+_PUBLIC_ pid_t sys_fork(void);
+
+/**
+ * Wrapper for getpid. Ensures we only do a system call *once*.
+ **/
+_PUBLIC_ pid_t sys_getpid(void);
+
 /* The following definitions come from lib/util/genrand.c  */
 
 /**
@@ -193,6 +203,21 @@ _PUBLIC_ void display_set_stderr(void);
 #endif
 
 /* The following definitions come from lib/util/util_str.c  */
+
+bool next_token_talloc(TALLOC_CTX *ctx,
+			const char **ptr,
+			char **pp_buff,
+			const char *sep);
+
+/**
+ * Get the next token from a string, return false if none found.  Handles
+ * double-quotes.  This version does not trim leading separator characters
+ * before looking for a token.
+ */
+bool next_token_no_ltrim_talloc(TALLOC_CTX *ctx,
+			const char **ptr,
+			char **pp_buff,
+			const char *sep);
 
 
 /**
@@ -724,12 +749,15 @@ _PUBLIC_ int idr_remove(struct idr_context *idp, int id);
 
 /* The following definitions come from lib/util/become_daemon.c  */
 
-#if _SAMBA_BUILD_ == 4
+/**
+ Close the low 3 fd's and open dev/null in their place
+**/
+_PUBLIC_ void close_low_fds(bool stderr_too);
+
 /**
  Become a daemon, discarding the controlling terminal.
 **/
-_PUBLIC_ void become_daemon(bool fork);
-#endif
+_PUBLIC_ void become_daemon(bool do_fork, bool no_process_group);
 
 /**
  * Load a ini-style file.

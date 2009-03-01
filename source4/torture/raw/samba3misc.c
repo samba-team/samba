@@ -672,6 +672,9 @@ bool torture_samba3_caseinsensitive(struct torture_context *torture)
 /*
  * Check that Samba3 correctly deals with conflicting posix byte range locks
  * on an underlying file
+ *
+ * Note: This test depends on "posix locking = yes".
+ * Note: To run this test, use "--option=torture:localdir=<LOCALDIR>"
  */
 
 bool torture_samba3_posixtimedlock(struct torture_context *tctx)

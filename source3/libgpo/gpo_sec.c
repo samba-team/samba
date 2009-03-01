@@ -38,12 +38,12 @@ static bool gpo_sd_check_agp_object_guid(const struct security_ace_object *objec
 	}
 
 	switch (object->flags) {
-		case SEC_ACE_OBJECT_PRESENT:
+		case SEC_ACE_OBJECT_TYPE_PRESENT:
 			if (GUID_equal(&object->type.type,
 				       &ext_right_apg_guid)) {
 				return True;
 			}
-		case SEC_ACE_OBJECT_INHERITED_PRESENT:
+		case SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT:
 			if (GUID_equal(&object->inherited_type.inherited_type,
 				       &ext_right_apg_guid)) {
 				return True;

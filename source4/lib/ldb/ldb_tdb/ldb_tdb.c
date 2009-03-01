@@ -865,6 +865,7 @@ static int ltdb_end_trans(struct ldb_module *module)
 	ltdb->in_transaction--;
 
 	if (ltdb_index_transaction_commit(module) != 0) {
+		tdb_transaction_cancel(ltdb->tdb);
 		return ltdb_err_map(tdb_error(ltdb->tdb));
 	}
 
@@ -883,6 +884,7 @@ static int ltdb_del_trans(struct ldb_module *module)
 	ltdb->in_transaction--;
 
 	if (ltdb_index_transaction_cancel(module) != 0) {
+		tdb_transaction_cancel(ltdb->tdb);
 		return ltdb_err_map(tdb_error(ltdb->tdb));
 	}
 
