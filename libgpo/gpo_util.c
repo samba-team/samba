@@ -557,7 +557,8 @@ ADS_STATUS gpo_process_gpo_list(ADS_STRUCT *ads,
 	if (!gp_ext_list) {
 		return ADS_ERROR_NT(NT_STATUS_DLL_INIT_FAILED);
 	}
-#if 0 /* Needs to be replaced with new patchfile_preg calls */
+/* FIXME Needs to be replaced with new patchfile_preg calls */
+#if 0
 	/* get the key here */
 	if (flags & GPO_LIST_FLAG_MACHINE) {
 		werr = gp_init_reg_ctx(mem_ctx, KEY_HKLM, REG_KEY_WRITE,
@@ -662,8 +663,8 @@ NTSTATUS check_refresh_gpo(ADS_STRUCT *ads,
 
 		DEBUG(1,("check_refresh_gpo: need to refresh GPO\n"));
 
+#if _SAMBA_BUILD == 3
 		if (*cli_out == NULL) {
-
 			result = cli_full_connection(&cli,
 					global_myname(),
 					ads_get_ldap_server_name(ads),
@@ -681,9 +682,11 @@ NTSTATUS check_refresh_gpo(ADS_STRUCT *ads,
 					nt_errstr(result)));
 				goto out;
 			}
-
 			*cli_out = cli;
 		}
+#else
+	/* TODO Implement */
+#endif
 
 		result = gpo_fetch_files(mem_ctx, cache_path, *cli_out, gpo);
 		if (!NT_STATUS_IS_OK(result)) {
@@ -731,6 +734,7 @@ NTSTATUS check_refresh_gpo(ADS_STRUCT *ads,
 
 NTSTATUS check_refresh_gpo_list(ADS_STRUCT *ads,
 				TALLOC_CTX *mem_ctx,
+				const char *cache_path,
 				uint32_t flags,
 				struct GROUP_POLICY_OBJECT *gpo_list)
 {
@@ -744,7 +748,7 @@ NTSTATUS check_refresh_gpo_list(ADS_STRUCT *ads,
 
 	for (gpo = gpo_list; gpo; gpo = gpo->next) {
 
-		result = check_refresh_gpo(ads, mem_ctx, flags, gpo, &cli);
+		result = check_refresh_gpo(ads, mem_ctx, cache_path, flags, gpo, &cli);
 		if (!NT_STATUS_IS_OK(result)) {
 			goto out;
 		}

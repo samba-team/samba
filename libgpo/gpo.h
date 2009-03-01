@@ -260,6 +260,7 @@ NTSTATUS check_refresh_gpo(ADS_STRUCT *ads,
 			   struct cli_state **cli_out);
 NTSTATUS check_refresh_gpo_list(ADS_STRUCT *ads,
 				TALLOC_CTX *mem_ctx,
+                                const char *cache_path,
 				uint32_t flags,
 				struct GROUP_POLICY_OBJECT *gpo_list);
 NTSTATUS gpo_get_unix_path(TALLOC_CTX *mem_ctx,
