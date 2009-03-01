@@ -69,7 +69,6 @@
 
 /* SEC_ACE */
 typedef struct security_ace SEC_ACE;
-#define  SEC_ACE_HEADER_SIZE (2 * sizeof(uint8) + sizeof(uint16) + sizeof(uint32))
 
 #ifndef ACL_REVISION
 #define ACL_REVISION 0x3
