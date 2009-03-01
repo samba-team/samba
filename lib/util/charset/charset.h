@@ -61,6 +61,7 @@ typedef struct smb_iconv_s {
 	size_t (*push)(void *cd, const char **inbuf, size_t *inbytesleft,
 		       char **outbuf, size_t *outbytesleft);
 	void *cd_direct, *cd_pull, *cd_push;
+	char *from_name, *to_name;
 } *smb_iconv_t;
 
 /* string manipulation flags */
@@ -119,7 +120,7 @@ ssize_t convert_string_talloc(TALLOC_CTX *ctx,
 				       void const *src, size_t srclen, 
 				       void **dest, bool allow_badcharcnv);
 
-ssize_t convert_string(charset_t from, charset_t to,
+size_t convert_string(charset_t from, charset_t to,
 				void const *src, size_t srclen, 
 				void *dest, size_t destlen, bool allow_badcharcnv);
 

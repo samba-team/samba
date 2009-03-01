@@ -167,10 +167,6 @@ typedef uint16 smb_ucs2_t;
 #define COPY_UCS2_CHAR(dest,src) (((unsigned char *)(dest))[0] = ((unsigned char *)(src))[0],\
 				((unsigned char *)(dest))[1] = ((unsigned char *)(src))[1], (dest))
 
-/* Large data type for manipulating uint32 unicode codepoints */
-typedef uint32 codepoint_t;
-#define INVALID_CODEPOINT ((codepoint_t)-1)
-
 /* pipe string names */
 #define PIPE_LANMAN   "\\PIPE\\LANMAN"
 
@@ -1830,18 +1826,6 @@ struct unix_error_map {
 #define MAP_TO_GUEST_ON_BAD_UID 	3
 
 #define SAFE_NETBIOS_CHARS ". -_"
-
-/* generic iconv conversion structure */
-typedef struct _smb_iconv_t {
-	size_t (*direct)(void *cd, const char **inbuf, size_t *inbytesleft,
-			 char **outbuf, size_t *outbytesleft);
-	size_t (*pull)(void *cd, const char **inbuf, size_t *inbytesleft,
-		       char **outbuf, size_t *outbytesleft);
-	size_t (*push)(void *cd, const char **inbuf, size_t *inbytesleft,
-		       char **outbuf, size_t *outbytesleft);
-	void *cd_direct, *cd_pull, *cd_push;
-	char *from_name, *to_name;
-} *smb_iconv_t;
 
 /* The maximum length of a trust account password.
    Used when we randomly create it, 15 char passwords

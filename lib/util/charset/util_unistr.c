@@ -950,7 +950,7 @@ _PUBLIC_ ssize_t pull_string(char *dest, const void *src, size_t dest_len, size_
  * @param destlen maximal length allowed for string
  * @returns the number of bytes occupied in the destination
  **/
-_PUBLIC_ ssize_t convert_string(charset_t from, charset_t to,
+_PUBLIC_ size_t convert_string(charset_t from, charset_t to,
 				void const *src, size_t srclen, 
 				void *dest, size_t destlen, bool allow_badcharcnv)
 {

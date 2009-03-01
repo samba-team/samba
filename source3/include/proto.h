@@ -528,15 +528,6 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 int gencache_lock_entry( const char *key );
 void gencache_unlock_entry( const char *key );
 
-/* The following definitions come from lib/iconv.c  */
-
-NTSTATUS smb_register_charset(struct charset_functions *funcs) ;
-size_t smb_iconv(smb_iconv_t cd, 
-		 const char **inbuf, size_t *inbytesleft,
-		 char **outbuf, size_t *outbytesleft);
-smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode);
-int smb_iconv_close (smb_iconv_t cd);
-
 /* The following definitions come from lib/interface.c  */
 
 bool ismyaddr(const struct sockaddr *ip);
