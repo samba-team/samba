@@ -240,13 +240,17 @@ convert:
 _PUBLIC_ ssize_t convert_string_convenience(struct smb_iconv_convenience *ic,
 				charset_t from, charset_t to,
 				void const *src, size_t srclen, 
-				void *dest, size_t destlen)
+				void *dest, size_t destlen, bool allow_badcharcnv)
 {
 	size_t i_len, o_len;
 	size_t retval;
 	const char* inbuf = (const char*)src;
 	char* outbuf = (char*)dest;
 	smb_iconv_t descriptor;
+
+	if (allow_badcharcnv) {
+		return -1;
+	}
 
 	if (srclen == (size_t)-1)
 		srclen = strlen(inbuf)+1;
@@ -305,9 +309,12 @@ _PUBLIC_ ssize_t convert_string_talloc_convenience(TALLOC_CTX *ctx,
 				       struct smb_iconv_convenience *ic, 
 				       charset_t from, charset_t to, 
 				       void const *src, size_t srclen, 
-				       void **dest)
+				       void **dest, bool allow_badcharcnv)
 {
 	smb_iconv_t descriptor;
+
+	if (allow_badcharcnv)
+		return (size_t)-1;
 
 	*dest = NULL;
 

@@ -418,7 +418,7 @@ static bool test_string2key(struct torture_context *tctx)
 
 	torture_comment(tctx, "converting random buffer\n");
 
-	ret = convert_string_talloc(mem_ctx, CH_UTF16MUNGED, CH_UTF8, (void *)buf, len*2, (void**)&dest);
+	ret = convert_string_talloc(mem_ctx, CH_UTF16MUNGED, CH_UTF8, (void *)buf, len*2, (void**)&dest, false);
 	if (ret == -1) {
 		torture_fail(tctx, "Failed to convert random buffer\n");
 	}
@@ -429,7 +429,7 @@ static bool test_string2key(struct torture_context *tctx)
 
 	torture_comment(tctx, "converting fixed buffer to UTF16\n");
 
-	ret = convert_string_talloc(mem_ctx, CH_UTF16MUNGED, CH_UTF16, (void *)le1, 20, (void**)&munged1);
+	ret = convert_string_talloc(mem_ctx, CH_UTF16MUNGED, CH_UTF16, (void *)le1, 20, (void**)&munged1, false);
 	if (ret == -1) {
 		torture_fail(tctx, "Failed to convert fixed buffer to UTF16_MUNGED\n");
 	}
@@ -438,7 +438,7 @@ static bool test_string2key(struct torture_context *tctx)
 
 	torture_comment(tctx, "converting fixed buffer to UTF8\n");
 
-	ret = convert_string_talloc(mem_ctx, CH_UTF16MUNGED, CH_UTF8, (void *)le1, 20, (void**)&out1);
+	ret = convert_string_talloc(mem_ctx, CH_UTF16MUNGED, CH_UTF8, (void *)le1, 20, (void**)&out1, false);
 	if (ret == -1) {
 		torture_fail(tctx, "Failed to convert fixed buffer to UTF8\n");
 	}

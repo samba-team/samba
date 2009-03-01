@@ -51,7 +51,7 @@ bool torture_utable(struct torture_context *tctx,
 		p = fname+strlen(fname);
 		len = convert_string_convenience(lp_iconv_convenience(tctx->lp_ctx), CH_UTF16, CH_UNIX, 
 				     c2, 2, 
-				     p, sizeof(fname)-strlen(fname));
+				     p, sizeof(fname)-strlen(fname), false);
 		p[len] = 0;
 		strncat(fname,"_a_long_extension",sizeof(fname)-1);
 
@@ -110,7 +110,7 @@ static char *form_name(struct smb_iconv_convenience *iconv_convenience, int c)
 
 	len = convert_string_convenience(iconv_convenience, CH_UTF16, CH_UNIX, 
 			     c2, 2, 
-			     p, sizeof(fname)-strlen(fname));
+			     p, sizeof(fname)-strlen(fname), false);
 	p[len] = 0;
 	return fname;
 }

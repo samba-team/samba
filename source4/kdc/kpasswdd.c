@@ -237,7 +237,7 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 					       CH_UTF8, CH_UTF16, 
 					       (const char *)input->data, 
 					       input->length,
-					       (void **)&password.data);
+					       (void **)&password.data, false);
 
 		if (pw_len == -1) {
 			return false;
@@ -285,7 +285,7 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 					       CH_UTF8, CH_UTF16, 
 					       (const char *)chpw.newpasswd.data, 
 					       chpw.newpasswd.length,
-					       (void **)&password.data);
+					       (void **)&password.data, false);
 		if (pw_len == -1) {
 			free_ChangePasswdDataMS(&chpw);
 			return false;

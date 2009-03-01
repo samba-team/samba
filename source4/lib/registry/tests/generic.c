@@ -54,7 +54,7 @@ static bool test_reg_val_data_string_sz(struct torture_context *ctx)
 {
 	DATA_BLOB db;
 	db.length = convert_string_talloc_convenience(ctx, lp_iconv_convenience(ctx->lp_ctx), CH_UTF8, CH_UTF16,
-					  "bla", 3, (void **)&db.data);
+					  "bla", 3, (void **)&db.data, false);
 	torture_assert_str_equal(ctx, "bla",
 				 reg_val_data_string(ctx, lp_iconv_convenience(ctx->lp_ctx), REG_SZ, db),
 				 "sz failed");
@@ -91,7 +91,7 @@ static bool test_reg_val_description(struct torture_context *ctx)
 	data.length = convert_string_talloc_convenience(ctx, lp_iconv_convenience(ctx->lp_ctx), CH_UTF8, CH_UTF16,
 					    "stationary traveller",
 					    strlen("stationary traveller"),
-					    (void **)&data.data);
+					    (void **)&data.data, false);
 	torture_assert_str_equal(ctx, "camel = REG_SZ : stationary traveller",
 				 reg_val_description(ctx, lp_iconv_convenience(ctx->lp_ctx), "camel", REG_SZ, data),
 				 "reg_val_description failed");
@@ -105,7 +105,7 @@ static bool test_reg_val_description_nullname(struct torture_context *ctx)
 	data.length = convert_string_talloc_convenience(ctx, lp_iconv_convenience(ctx->lp_ctx), CH_UTF8, CH_UTF16,
 					    "west berlin",
 					    strlen("west berlin"),
-					    (void **)&data.data);
+					    (void **)&data.data, false);
 	torture_assert_str_equal(ctx, "<No Name> = REG_SZ : west berlin",
 				 reg_val_description(ctx, lp_iconv_convenience(ctx->lp_ctx), NULL, REG_SZ, data),
 				 "description with null name failed");

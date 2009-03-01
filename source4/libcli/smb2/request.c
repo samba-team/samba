@@ -676,7 +676,7 @@ NTSTATUS smb2_pull_o16s16_string(struct smb2_request_buffer *buf, TALLOC_CTX *me
 	}
 
 	size = convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, 
-				     blob.data, blob.length, &vstr);
+				     blob.data, blob.length, &vstr, false);
 	data_blob_free(&blob);
 	(*str) = (char *)vstr;
 	if (size == -1) {
@@ -707,7 +707,7 @@ NTSTATUS smb2_push_o16s16_string(struct smb2_request_buffer *buf,
 	}
 
 	size = convert_string_talloc(buf->buffer, CH_UNIX, CH_UTF16, 
-				     str, strlen(str), (void **)&blob.data);
+				     str, strlen(str), (void **)&blob.data, false);
 	if (size == -1) {
 		return NT_STATUS_ILLEGAL_CHARACTER;
 	}

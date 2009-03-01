@@ -513,7 +513,7 @@ static size_t req_pull_ucs2(struct request_bufinfo *bufinfo, const char **dest, 
 		return src_len2 + alignment;
 	}
 
-	ret = convert_string_talloc(bufinfo->mem_ctx, CH_UTF16, CH_UNIX, src, src_len2, (void **)&dest2);
+	ret = convert_string_talloc(bufinfo->mem_ctx, CH_UTF16, CH_UNIX, src, src_len2, (void **)&dest2, false);
 
 	if (ret == -1) {
 		*dest = NULL;
@@ -562,7 +562,7 @@ static size_t req_pull_ascii(struct request_bufinfo *bufinfo, const char **dest,
 		src_len2++;
 	}
 
-	ret = convert_string_talloc(bufinfo->mem_ctx, CH_DOS, CH_UNIX, src, src_len2, (void **)&dest2);
+	ret = convert_string_talloc(bufinfo->mem_ctx, CH_DOS, CH_UNIX, src, src_len2, (void **)&dest2, false);
 
 	if (ret == -1) {
 		*dest = NULL;

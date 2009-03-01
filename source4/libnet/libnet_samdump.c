@@ -187,7 +187,7 @@ NTSTATUS libnet_SamDump(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 			}
 			if (convert_string_talloc_convenience(mem_ctx, lp_iconv_convenience(ctx->lp_ctx), CH_UTF16, CH_UNIX, 
 						  s->secret.data, s->secret.length, 
-						  (void **)&secret_string) == -1) {
+						  (void **)&secret_string, false) == -1) {
 				r->out.error_string = talloc_asprintf(mem_ctx, 
 								      "Could not convert secret for domain %s to a string",
 								      t->name);

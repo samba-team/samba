@@ -795,7 +795,7 @@ static WERROR dsdb_syntax_UNICODE_drsuapi_to_ldb(struct ldb_context *ldb,
 									CH_UTF16, CH_UNIX,
 					    in->value_ctr.values[i].blob->data,
 					    in->value_ctr.values[i].blob->length,
-					    (void **)&str);
+					    (void **)&str, false);
 		if (ret == -1) {
 			return WERR_FOOBAR;
 		}
@@ -838,7 +838,7 @@ static WERROR dsdb_syntax_UNICODE_ldb_to_drsuapi(struct ldb_context *ldb,
 		ret = convert_string_talloc_convenience(blobs, schema->iconv_convenience, CH_UNIX, CH_UTF16,
 					    in->values[i].data,
 					    in->values[i].length,
-					    (void **)&blobs[i].data);
+					    (void **)&blobs[i].data, false);
 		if (ret == -1) {
 			return WERR_FOOBAR;
 		}
@@ -1165,7 +1165,7 @@ static WERROR dsdb_syntax_PRESENTATION_ADDRESS_drsuapi_to_ldb(struct ldb_context
 		ret = convert_string_talloc_convenience(out->values, schema->iconv_convenience, CH_UTF16, CH_UNIX,
 					    in->value_ctr.values[i].blob->data+4,
 					    in->value_ctr.values[i].blob->length-4,
-					    (void **)&str);
+					    (void **)&str, false);
 		if (ret == -1) {
 			return WERR_FOOBAR;
 		}
@@ -1209,7 +1209,7 @@ static WERROR dsdb_syntax_PRESENTATION_ADDRESS_ldb_to_drsuapi(struct ldb_context
 		ret = convert_string_talloc_convenience(blobs, schema->iconv_convenience, CH_UNIX, CH_UTF16,
 					    in->values[i].data,
 					    in->values[i].length,
-					    (void **)&data);
+					    (void **)&data, false);
 		if (ret == -1) {
 			return WERR_FOOBAR;
 		}

@@ -1339,7 +1339,7 @@ static int setup_password_fields(struct setup_password_fields_io *io)
 		}
 		converted_pw_len = convert_string_talloc_convenience(io->ac, lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")), 
 							 CH_UTF8, CH_UTF16, io->n.cleartext_utf8->data, io->n.cleartext_utf8->length, 
-							 (void **)&cleartext_utf16_str);
+							 (void **)&cleartext_utf16_str, false);
 		if (converted_pw_len == -1) {
 			ldb_asprintf_errstring(ldb,
 					       "setup_password_fields: "
@@ -1357,7 +1357,7 @@ static int setup_password_fields(struct setup_password_fields_io *io)
 		}
 		converted_pw_len = convert_string_talloc_convenience(io->ac, lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")), 
 							 CH_UTF16MUNGED, CH_UTF8, io->n.cleartext_utf16->data, io->n.cleartext_utf16->length, 
-							 (void **)&cleartext_utf8_str);
+							 (void **)&cleartext_utf8_str, false);
 		if (converted_pw_len == -1) {
 			/* We can't bail out entirely, as these unconvertable passwords are frustratingly valid */
 			io->n.cleartext_utf8 = NULL;	
@@ -1383,7 +1383,7 @@ static int setup_password_fields(struct setup_password_fields_io *io)
 		char *cleartext_unix;
 		converted_pw_len = convert_string_talloc_convenience(io->ac, lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")), 
 							 CH_UTF8, CH_UNIX, io->n.cleartext_utf8->data, io->n.cleartext_utf8->length, 
-							 (void **)&cleartext_unix);
+							 (void **)&cleartext_unix, false);
 		if (converted_pw_len != -1) {
 			lm_hash = talloc(io->ac, struct samr_Password);
 			if (!lm_hash) {

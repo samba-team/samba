@@ -383,7 +383,7 @@ static bool test_EnumPrinterKey(struct torture_context *tctx,
 
 	convert_string_talloc_convenience(ctx, lp_iconv_convenience(tctx->lp_ctx), CH_UTF16,
 			CH_UNIX, epk.out.key_buffer, *epk.out.needed,
-			(void**)&ctx->printer_keys);
+			(void**)&ctx->printer_keys, false);
 
 	return true;
 }

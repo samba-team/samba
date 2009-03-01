@@ -65,7 +65,7 @@ _PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx,
 		case REG_SZ:
 			convert_string_talloc_convenience(mem_ctx, iconv_convenience, CH_UTF16, CH_UNIX,
 					      data.data, data.length,
-					      (void **)&ret);
+					      (void **)&ret, false);
 			return ret;
 		case REG_BINARY:
 			ret = data_blob_hex_string(mem_ctx, &data);
@@ -125,7 +125,7 @@ _PUBLIC_ bool reg_string_to_val(TALLOC_CTX *mem_ctx,
 		case REG_EXPAND_SZ:
       		data->length = convert_string_talloc_convenience(mem_ctx, iconv_convenience, CH_UNIX, CH_UTF16,
 						     data_str, strlen(data_str),
-						     (void **)&data->data);
+						     (void **)&data->data, false);
 			break;
 
 		case REG_DWORD: {
