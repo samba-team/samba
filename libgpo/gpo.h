@@ -153,7 +153,7 @@ struct gp_registry_entries {
 };
 
 struct gp_registry_context {
-	const struct nt_user_token *token;
+	const NT_USER_TOKEN *token;
 	const char *path;
 	struct registry_key *curr_key;
 };
@@ -169,12 +169,14 @@ struct cli_state;
 /* The following definitions come from libgpo/gpo_fetch.c  */
 
 NTSTATUS gpo_explode_filesyspath(TALLOC_CTX *mem_ctx,
+                                 const char *cache_path,
 				 const char *file_sys_path,
 				 char **server,
 				 char **service,
 				 char **nt_path,
 				 char **unix_path);
 NTSTATUS gpo_fetch_files(TALLOC_CTX *mem_ctx,
+                         const char *cache_path,
 			 struct cli_state *cli,
 			 struct GROUP_POLICY_OBJECT *gpo);
 NTSTATUS gpo_get_sysvol_gpt_version(TALLOC_CTX *mem_ctx,
@@ -209,18 +211,18 @@ ADS_STATUS ads_get_gpo(ADS_STRUCT *ads,
 ADS_STATUS ads_get_sid_token(ADS_STRUCT *ads,
 			     TALLOC_CTX *mem_ctx,
 			     const char *dn,
-			     struct nt_user_token **token);
+			     NT_USER_TOKEN **token);
 ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
 			    TALLOC_CTX *mem_ctx,
 			    const char *dn,
 			    uint32_t flags,
-			    const struct nt_user_token *token,
+			    const NT_USER_TOKEN *token,
 			    struct GROUP_POLICY_OBJECT **gpo_list);
 
 /* The following definitions come from libgpo/gpo_sec.c  */
 
 NTSTATUS gpo_apply_security_filtering(const struct GROUP_POLICY_OBJECT *gpo,
-				      const struct nt_user_token *token);
+				      const NT_USER_TOKEN *token);
 
 /* The following definitions come from libgpo/gpo_util.c  */
 
@@ -239,19 +241,20 @@ void dump_gpo_list(ADS_STRUCT *ads,
 void dump_gplink(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, struct GP_LINK *gp_link);
 ADS_STATUS gpo_process_a_gpo(ADS_STRUCT *ads,
 			     TALLOC_CTX *mem_ctx,
-			     const struct nt_user_token *token,
+			     const NT_USER_TOKEN *token,
 			     struct registry_key *root_key,
 			     struct GROUP_POLICY_OBJECT *gpo,
 			     const char *extension_guid_filter,
 			     uint32_t flags);
 ADS_STATUS gpo_process_gpo_list(ADS_STRUCT *ads,
 				TALLOC_CTX *mem_ctx,
-				const struct nt_user_token *token,
+				const NT_USER_TOKEN *token,
 				struct GROUP_POLICY_OBJECT *gpo_list,
 				const char *extensions_guid_filter,
 				uint32_t flags);
 NTSTATUS check_refresh_gpo(ADS_STRUCT *ads,
 			   TALLOC_CTX *mem_ctx,
+                           const char *cache_path,
 			   uint32_t flags,
 			   struct GROUP_POLICY_OBJECT *gpo,
 			   struct cli_state **cli_out);
@@ -271,7 +274,7 @@ NTSTATUS gp_find_file(TALLOC_CTX *mem_ctx,
 ADS_STATUS gp_get_machine_token(ADS_STRUCT *ads,
 				TALLOC_CTX *mem_ctx,
 				const char *dn,
-				struct nt_user_token **token);
+				NT_USER_TOKEN **token);
 
 
 #include "../libgpo/gpext/gpext.h"

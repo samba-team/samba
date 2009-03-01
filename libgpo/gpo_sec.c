@@ -18,9 +18,13 @@
  */
 
 #include "includes.h"
+#include "libcli/security/dom_sid.h"
+#if _SAMBA_BUILD_ == 4
+#include "libgpo/ads_convenience.h"
 #include "librpc/gen_ndr/security.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "../libgpo/gpo.h"
+#endif
 
 /****************************************************************
 ****************************************************************/
@@ -75,7 +79,11 @@ static bool gpo_sd_check_agp_object(const struct security_ace *ace)
 
 static bool gpo_sd_check_agp_access_bits(uint32_t access_mask)
 {
+#if _SAMBA_BUILD_ == 4
+	return (access_mask & SEC_ADS_CONTROL_ACCESS);
+#else
 	return (access_mask & SEC_RIGHTS_EXTENDED);
+#endif
 }
 
 #if 0
@@ -96,14 +104,18 @@ static bool gpo_sd_check_read_access_bits(uint32_t access_mask)
 ****************************************************************/
 
 static NTSTATUS gpo_sd_check_ace_denied_object(const struct security_ace *ace,
-					       const struct nt_user_token *token)
+					       const NT_USER_TOKEN *token)
 {
+	char *sid_str;
+
 	if (gpo_sd_check_agp_object(ace) &&
 	    gpo_sd_check_agp_access_bits(ace->access_mask) &&
 	    nt_token_check_sid(&ace->trustee, token)) {
+		sid_str = dom_sid_string(NULL, &ace->trustee);
 		DEBUG(10,("gpo_sd_check_ace_denied_object: "
 			"Access denied as of ace for %s\n",
-			sid_string_dbg(&ace->trustee)));
+			sid_str));
+		talloc_free(sid_str);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -114,14 +126,19 @@ static NTSTATUS gpo_sd_check_ace_denied_object(const struct security_ace *ace,
 ****************************************************************/
 
 static NTSTATUS gpo_sd_check_ace_allowed_object(const struct security_ace *ace,
-						const struct nt_user_token *token)
+						const NT_USER_TOKEN *token)
 {
+	char *sid_str;
+
 	if (gpo_sd_check_agp_object(ace) &&
 	    gpo_sd_check_agp_access_bits(ace->access_mask) &&
 	    nt_token_check_sid(&ace->trustee, token)) {
+		sid_str = dom_sid_string(NULL, &ace->trustee);
 		DEBUG(10,("gpo_sd_check_ace_allowed_object: "
 			"Access granted as of ace for %s\n",
-			sid_string_dbg(&ace->trustee)));
+			sid_str));
+		talloc_free(sid_str);
+
 		return NT_STATUS_OK;
 	}
 
@@ -132,7 +149,7 @@ static NTSTATUS gpo_sd_check_ace_allowed_object(const struct security_ace *ace,
 ****************************************************************/
 
 static NTSTATUS gpo_sd_check_ace(const struct security_ace *ace,
-				 const struct nt_user_token *token)
+				 const NT_USER_TOKEN *token)
 {
 	switch (ace->type) {
 		case SEC_ACE_TYPE_ACCESS_DENIED_OBJECT:
@@ -148,7 +165,7 @@ static NTSTATUS gpo_sd_check_ace(const struct security_ace *ace,
 ****************************************************************/
 
 NTSTATUS gpo_apply_security_filtering(const struct GROUP_POLICY_OBJECT *gpo,
-				      const struct nt_user_token *token)
+				      const NT_USER_TOKEN *token)
 {
 	struct security_descriptor *sd = gpo->security_descriptor;
 	struct security_acl *dacl = NULL;

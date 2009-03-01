@@ -47,6 +47,9 @@ typedef struct {
 	struct ldb_context *ldbctx;
 } ADS_STRUCT;
 
+
+typedef struct security_token NT_USER_TOKEN;
+
 typedef struct ldb_result LDAPMessage;
 typedef void ** ADS_MODLIST;
 
@@ -85,6 +88,7 @@ ADS_STATUS ads_msgfree(ADS_STRUCT *ads, LDAPMessage *res);
 NTSTATUS ads_ntstatus(ADS_STATUS status);
 ADS_STATUS ads_build_ldap_error(int ldb_error);
 ADS_STATUS ads_build_nt_error(NTSTATUS nt_status);
+bool nt_token_check_sid( const struct dom_sid *sid, const NT_USER_TOKEN *token);
 ADS_MODLIST ads_init_mods(TALLOC_CTX *ctx);
 ADS_STATUS ads_mod_str(TALLOC_CTX *ctx, ADS_MODLIST *mods, const char *name, const char *val);
 ADS_STATUS ads_gen_mod(ADS_STRUCT *ads, const char *mod_dn, ADS_MODLIST mods);

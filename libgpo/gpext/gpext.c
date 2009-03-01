@@ -586,7 +586,7 @@ NTSTATUS init_gp_extensions(TALLOC_CTX *mem_ctx)
 			}
 
 			if (!reg_ctx) {
-				struct nt_user_token *token;
+				NT_USER_TOKEN *token;
 
 				token = registry_create_system_token(mem_ctx);
 				NT_STATUS_HAVE_NO_MEMORY(token);
@@ -670,7 +670,7 @@ void debug_gpext_header(int lvl,
 NTSTATUS process_gpo_list_with_extension(ADS_STRUCT *ads,
 			   TALLOC_CTX *mem_ctx,
 			   uint32_t flags,
-			   const struct nt_user_token *token,
+			   const NT_USER_TOKEN *token,
 			   struct GROUP_POLICY_OBJECT *gpo_list,
 			   const char *extension_guid,
 			   const char *snapin_guid)
@@ -684,7 +684,7 @@ NTSTATUS process_gpo_list_with_extension(ADS_STRUCT *ads,
 NTSTATUS gpext_process_extension(ADS_STRUCT *ads,
 				 TALLOC_CTX *mem_ctx,
 				 uint32_t flags,
-				 const struct nt_user_token *token,
+				 const NT_USER_TOKEN *token,
 				 struct registry_key *root_key,
 				 struct GROUP_POLICY_OBJECT *gpo,
 				 const char *extension_guid,

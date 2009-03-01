@@ -26,6 +26,7 @@
 ****************************************************************/
 
 NTSTATUS gpo_explode_filesyspath(TALLOC_CTX *mem_ctx,
+                                 const char *cache_path,
 				 const char *file_sys_path,
 				 char **server,
 				 char **service,
@@ -61,11 +62,15 @@ NTSTATUS gpo_explode_filesyspath(TALLOC_CTX *mem_ctx,
 
 	if ((path = talloc_asprintf(mem_ctx,
 					"%s/%s",
-					cache_path(GPO_CACHE_DIR),
+					cache_path,
 					file_sys_path)) == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
+#if _SAMBA_BUILD_ == 4
+	path = string_sub_talloc(mem_ctx, path, "\\", "/");
+#else
 	path = talloc_string_sub(mem_ctx, path, "\\", "/");
+#endif
 	if (!path) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -82,16 +87,16 @@ NTSTATUS gpo_explode_filesyspath(TALLOC_CTX *mem_ctx,
 ****************************************************************/
 
 static NTSTATUS gpo_prepare_local_store(TALLOC_CTX *mem_ctx,
+                                        const char *cache_path,
 					const char *unix_path)
 {
-	const char *top_dir = cache_path(GPO_CACHE_DIR);
 	char *current_dir;
 	char *tok;
 
-	current_dir = talloc_strdup(mem_ctx, top_dir);
+	current_dir = talloc_strdup(mem_ctx, cache_path);
 	NT_STATUS_HAVE_NO_MEMORY(current_dir);
 
-	if ((mkdir(top_dir, 0644)) < 0 && errno != EEXIST) {
+	if ((mkdir(cache_path, 0644)) < 0 && errno != EEXIST) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -118,6 +123,7 @@ static NTSTATUS gpo_prepare_local_store(TALLOC_CTX *mem_ctx,
 ****************************************************************/
 
 NTSTATUS gpo_fetch_files(TALLOC_CTX *mem_ctx,
+                         const char *cache_path,
 			 struct cli_state *cli,
 			 struct GROUP_POLICY_OBJECT *gpo)
 {
@@ -125,12 +131,12 @@ NTSTATUS gpo_fetch_files(TALLOC_CTX *mem_ctx,
 	char *server, *service, *nt_path, *unix_path;
 	char *nt_ini_path, *unix_ini_path;
 
-	result = gpo_explode_filesyspath(mem_ctx, gpo->file_sys_path,
+	result = gpo_explode_filesyspath(mem_ctx, cache_path, gpo->file_sys_path,
 					 &server, &service, &nt_path,
 					 &unix_path);
 	NT_STATUS_NOT_OK_RETURN(result);
 
-	result = gpo_prepare_local_store(mem_ctx, unix_path);
+	result = gpo_prepare_local_store(mem_ctx, cache_path, unix_path);
 	NT_STATUS_NOT_OK_RETURN(result);
 
 	unix_ini_path = talloc_asprintf(mem_ctx, "%s/%s", unix_path, GPT_INI);

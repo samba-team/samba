@@ -441,7 +441,7 @@ static bool gpo_get_gp_ext_from_gpo(TALLOC_CTX *mem_ctx,
 
 ADS_STATUS gpo_process_a_gpo(ADS_STRUCT *ads,
 			     TALLOC_CTX *mem_ctx,
-			     const struct nt_user_token *token,
+			     const NT_USER_TOKEN *token,
 			     struct registry_key *root_key,
 			     struct GROUP_POLICY_OBJECT *gpo,
 			     const char *extension_guid_filter,
@@ -498,7 +498,7 @@ ADS_STATUS gpo_process_a_gpo(ADS_STRUCT *ads,
 
 static ADS_STATUS gpo_process_gpo_list_by_ext(ADS_STRUCT *ads,
 					      TALLOC_CTX *mem_ctx,
-					      const struct nt_user_token *token,
+					      const NT_USER_TOKEN *token,
 					      struct registry_key *root_key,
 					      struct GROUP_POLICY_OBJECT *gpo_list,
 					      const char *extensions_guid,
@@ -536,7 +536,7 @@ static ADS_STATUS gpo_process_gpo_list_by_ext(ADS_STRUCT *ads,
 
 ADS_STATUS gpo_process_gpo_list(ADS_STRUCT *ads,
 				TALLOC_CTX *mem_ctx,
-				const struct nt_user_token *token,
+				const NT_USER_TOKEN *token,
 				struct GROUP_POLICY_OBJECT *gpo_list,
 				const char *extensions_guid_filter,
 				uint32_t flags)
@@ -557,7 +557,7 @@ ADS_STATUS gpo_process_gpo_list(ADS_STRUCT *ads,
 	if (!gp_ext_list) {
 		return ADS_ERROR_NT(NT_STATUS_DLL_INIT_FAILED);
 	}
-
+#if 0 /* Needs to be replaced with new patchfile_preg calls */
 	/* get the key here */
 	if (flags & GPO_LIST_FLAG_MACHINE) {
 		werr = gp_init_reg_ctx(mem_ctx, KEY_HKLM, REG_KEY_WRITE,
@@ -568,6 +568,7 @@ ADS_STATUS gpo_process_gpo_list(ADS_STRUCT *ads,
 				       token,
 				       &reg_ctx);
 	}
+#endif
 	if (!W_ERROR_IS_OK(werr)) {
 		gp_free_reg_ctx(reg_ctx);
 		return ADS_ERROR_NT(werror_to_ntstatus(werr));
@@ -619,6 +620,7 @@ ADS_STATUS gpo_process_gpo_list(ADS_STRUCT *ads,
 
 NTSTATUS check_refresh_gpo(ADS_STRUCT *ads,
 			   TALLOC_CTX *mem_ctx,
+                           const char *cache_path,
 			   uint32_t flags,
 			   struct GROUP_POLICY_OBJECT *gpo,
 			   struct cli_state **cli_out)
@@ -632,7 +634,7 @@ NTSTATUS check_refresh_gpo(ADS_STRUCT *ads,
 	char *display_name = NULL;
 	struct cli_state *cli = NULL;
 
-	result = gpo_explode_filesyspath(mem_ctx, gpo->file_sys_path,
+	result = gpo_explode_filesyspath(mem_ctx, cache_path, gpo->file_sys_path,
 					 &server, &share, &nt_path, &unix_path);
 
 	if (!NT_STATUS_IS_OK(result)) {
@@ -683,7 +685,7 @@ NTSTATUS check_refresh_gpo(ADS_STRUCT *ads,
 			*cli_out = cli;
 		}
 
-		result = gpo_fetch_files(mem_ctx, *cli_out, gpo);
+		result = gpo_fetch_files(mem_ctx, cache_path, *cli_out, gpo);
 		if (!NT_STATUS_IS_OK(result)) {
 			goto out;
 		}
@@ -852,9 +854,9 @@ NTSTATUS gp_find_file(TALLOC_CTX *mem_ctx,
 ADS_STATUS gp_get_machine_token(ADS_STRUCT *ads,
 				TALLOC_CTX *mem_ctx,
 				const char *dn,
-				struct nt_user_token **token)
+				NT_USER_TOKEN **token)
 {
-	struct nt_user_token *ad_token = NULL;
+	NT_USER_TOKEN *ad_token = NULL;
 	ADS_STATUS status;
 	NTSTATUS ntstatus;
 

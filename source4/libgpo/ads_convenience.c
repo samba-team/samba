@@ -235,6 +235,31 @@ ADS_STATUS ads_build_nt_error(NTSTATUS nt_status)
 	return ret;
 }
 
+
+bool nt_token_check_sid( const struct dom_sid *sid, const NT_USER_TOKEN *token)
+{
+	int i;
+
+	if (!sid || !token) {
+		return false;
+	}
+
+	if (dom_sid_equal(sid, token->user_sid)) {
+		return true;
+	}
+	if (dom_sid_equal(sid, token->group_sid)) {
+		return true;
+	}
+	for (i = 0; i < token->num_sids; i++) {
+		if (dom_sid_equal(sid, token->sids[i])) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+
 /*
   FIXME
   Stub write functions, these do not do anything, though they should. -- Wilco
