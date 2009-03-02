@@ -511,6 +511,8 @@ static WERROR cmd_spoolss_setprinter(struct rpc_pipe_client *cli,
 
 	/* Modify the comment. */
 	info.info2.comment = comment;
+	info.info2.secdesc = NULL;
+	info.info2.devmode = NULL;
 
 	info_ctr.level = 2;
 	info_ctr.info.info2 = (struct spoolss_SetPrinterInfo2 *)&info.info2;
@@ -1608,6 +1610,9 @@ static WERROR cmd_spoolss_setdriver(struct rpc_pipe_client *cli,
 	/* Set the printer driver */
 
 	info.info2.drivername = argv[2];
+	info.info2.devmode = NULL;
+	info.info2.secdesc = NULL;
+
 	info_ctr.level = 2;
 	info_ctr.info.info2 = (struct spoolss_SetPrinterInfo2 *)&info.info2;
 
