@@ -207,12 +207,12 @@ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 	from = charsets;
 	to = charsets;
 
-	ret = SMB_MALLOC_P(smb_iconv_t);
+	ret = SMB_MALLOC_P(struct smb_iconv_s);
 	if (!ret) {
 		errno = ENOMEM;
 		return (smb_iconv_t)-1;
 	}
-	memset(ret, 0, sizeof(smb_iconv_t));
+	memset(ret, 0, sizeof(struct smb_iconv_s));
 
 	ret->from_name = SMB_STRDUP(fromcode);
 	ret->to_name = SMB_STRDUP(tocode);

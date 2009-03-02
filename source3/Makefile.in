@@ -366,7 +366,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) \
 	  lib/substitute.o lib/dbwrap_util.o \
 	  lib/ms_fnmatch.o lib/select.o lib/errmap_unix.o \
 	  lib/tallocmsg.o lib/dmallocmsg.o libsmb/smb_signing.o \
-	  ../lib/util/charset/iconv.o lib/pam_errors.o intl/lang_tdb.o \
+	  lib/iconv.o lib/pam_errors.o intl/lang_tdb.o \
 	  lib/conn_tdb.o lib/adt_tree.o lib/gencache.o \
 	  lib/module.o lib/events.o @LIBTEVENT_OBJ0@ \
 	  lib/ldap_escape.o @CHARSET_STATIC@ \
