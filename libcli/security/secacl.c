@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "libcli/security/secace.h"
 
 #define  SEC_ACL_HEADER_SIZE (2 * sizeof(uint16_t) + sizeof(uint32_t))
 
