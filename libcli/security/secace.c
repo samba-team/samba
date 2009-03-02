@@ -22,7 +22,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_security.h"
-#include "libcli/security/security.h"
+#include "libcli/security/dom_sid.h"
 
 #define  SEC_ACE_HEADER_SIZE (2 * sizeof(uint8_t) + sizeof(uint16_t) + sizeof(uint32_t))
 
