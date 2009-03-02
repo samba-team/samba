@@ -509,9 +509,9 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[string,charset(UTF16)] uint16 *print_processor;
 		[string,charset(UTF16)] uint16 *parameters;
 		[string,charset(UTF16)] uint16 *driver_name;
-		spoolss_DeviceMode *devmode;
+		uint32 _devmode_ptr; /* pointer to truncated devicemode */
 		[string,charset(UTF16)] uint16 *text_status;
-		security_descriptor *secdesc;
+		uint32 _secdesc_ptr;
 		spoolss_JobStatus status;
 		uint32 priority;
 		uint32 position;
@@ -535,9 +535,9 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[string,charset(UTF16)] uint16 *print_processor;
 		[string,charset(UTF16)] uint16 *parameters;
 		[string,charset(UTF16)] uint16 *driver_name;
-		spoolss_DeviceMode *devmode;
+		uint32 _devmode_ptr; /* pointer to truncated devicemode */
 		[string,charset(UTF16)] uint16 *text_status;
-		security_descriptor *secdesc;
+		uint32 _secdesc_ptr;
 		spoolss_JobStatus status;
 		uint32 priority;
 		uint32 position;
