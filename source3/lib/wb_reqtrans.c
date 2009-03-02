@@ -212,7 +212,7 @@ struct async_req *wb_req_write_send(TALLOC_CTX *mem_ctx,
 	if (subreq == NULL) {
 		goto fail;
 	}
-	tevent_req_set_callback(wb_req_write_done, result);
+	tevent_req_set_callback(subreq, wb_req_write_done, result);
 	return result;
 
  fail:
@@ -375,7 +375,7 @@ struct async_req *wb_resp_write_send(TALLOC_CTX *mem_ctx,
 static void wb_resp_write_done(struct tevent_req *subreq)
 {
 	struct async_req *req =
-		tevent_re_callback_data(subreq, struct async_req);
+		tevent_req_callback_data(subreq, struct async_req);
 	int err;
 	ssize_t ret;
 
