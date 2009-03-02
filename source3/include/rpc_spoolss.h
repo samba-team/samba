@@ -121,9 +121,6 @@
 #define SPL_XCV_MONITOR_LOCALMON  ",XcvMonitor Local Port"
 #define SPL_XCV_MONITOR_TCPMON    ",XcvMonitor Standard TCP/IP Port"
 
-
-#define PRINTER_STATUS_OK               0x00000000
-
 /* Notify field types */
 
 #define PRINTER_NOTIFY_TYPE 0x00
