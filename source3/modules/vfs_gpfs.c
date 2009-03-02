@@ -96,6 +96,11 @@ static int vfs_gpfs_get_real_filename(struct vfs_handle_struct *handle,
 
 	TALLOC_FREE(full_path);
 
+	if ((result == -1) && (errno == ENOSYS)) {
+		return SMB_VFS_NEXT_GET_REAL_FILENAME(
+			handle, path, name, mem_ctx, found_name);
+	}
+
 	if (result == -1) {
 		DEBUG(10, ("smbd_gpfs_get_realfilename_path returned %s\n",
 			   strerror(errno)));
