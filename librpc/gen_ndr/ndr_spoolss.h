@@ -211,6 +211,8 @@ void ndr_print_spoolss_ProcessorArchitecture(struct ndr_print *ndr, const char *
 void ndr_print_spoolss_ProcessorType(struct ndr_print *ndr, const char *name, enum spoolss_ProcessorType r);
 void ndr_print_spoolss_MajorVersion(struct ndr_print *ndr, const char *name, enum spoolss_MajorVersion r);
 void ndr_print_spoolss_MinorVersion(struct ndr_print *ndr, const char *name, enum spoolss_MinorVersion r);
+void ndr_print_spoolss_PrinterStatus(struct ndr_print *ndr, const char *name, uint32_t r);
+void ndr_print_spoolss_JobStatus(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_spoolss_PrinterInfo0(struct ndr_print *ndr, const char *name, const struct spoolss_PrinterInfo0 *r);
 void ndr_print_spoolss_DeviceModeFields(struct ndr_print *ndr, const char *name, uint32_t r);
 enum ndr_err_code ndr_push_spoolss_DeviceMode(struct ndr_push *ndr, int ndr_flags, const struct spoolss_DeviceMode *r);
@@ -222,7 +224,6 @@ enum ndr_err_code ndr_pull_spoolss_EnumPrinterFlags(struct ndr_pull *ndr, int nd
 void ndr_print_spoolss_EnumPrinterFlags(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_spoolss_PrinterInfo1(struct ndr_print *ndr, const char *name, const struct spoolss_PrinterInfo1 *r);
 void ndr_print_spoolss_PrinterAttributes(struct ndr_print *ndr, const char *name, uint32_t r);
-void ndr_print_spoolss_PrinterStatus(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_spoolss_PrinterInfo2(struct ndr_print *ndr, const char *name, const struct spoolss_PrinterInfo2 *r);
 void ndr_print_spoolss_PrinterInfo3(struct ndr_print *ndr, const char *name, const struct spoolss_PrinterInfo3 *r);
 void ndr_print_spoolss_PrinterInfo4(struct ndr_print *ndr, const char *name, const struct spoolss_PrinterInfo4 *r);
@@ -235,7 +236,6 @@ enum ndr_err_code ndr_push_spoolss_PrinterInfo(struct ndr_push *ndr, int ndr_fla
 enum ndr_err_code ndr_pull_spoolss_PrinterInfo(struct ndr_pull *ndr, int ndr_flags, union spoolss_PrinterInfo *r);
 void ndr_print_spoolss_PrinterInfo(struct ndr_print *ndr, const char *name, const union spoolss_PrinterInfo *r);
 void ndr_print_spoolss_DevmodeContainer(struct ndr_print *ndr, const char *name, const struct spoolss_DevmodeContainer *r);
-void ndr_print_spoolss_JobStatus(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_spoolss_JobInfo1(struct ndr_print *ndr, const char *name, const struct spoolss_JobInfo1 *r);
 void ndr_print_spoolss_JobInfo2(struct ndr_print *ndr, const char *name, const struct spoolss_JobInfo2 *r);
 void ndr_print_spoolss_JobInfo3(struct ndr_print *ndr, const char *name, const struct spoolss_JobInfo3 *r);

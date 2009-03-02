@@ -224,6 +224,86 @@ _PUBLIC_ void ndr_print_spoolss_MinorVersion(struct ndr_print *ndr, const char *
 	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
 
+static enum ndr_err_code ndr_push_spoolss_PrinterStatus(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_PrinterStatus(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_PrinterStatus(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_PAUSED", PRINTER_STATUS_PAUSED, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_ERROR", PRINTER_STATUS_ERROR, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_PENDING_DELETION", PRINTER_STATUS_PENDING_DELETION, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_PAPER_JAM", PRINTER_STATUS_PAPER_JAM, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_PAPER_OUT", PRINTER_STATUS_PAPER_OUT, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_MANUAL_FEED", PRINTER_STATUS_MANUAL_FEED, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_PAPER_PROBLEM", PRINTER_STATUS_PAPER_PROBLEM, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_OFFLINE", PRINTER_STATUS_OFFLINE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_IO_ACTIVE", PRINTER_STATUS_IO_ACTIVE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_BUSY", PRINTER_STATUS_BUSY, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_PRINTING", PRINTER_STATUS_PRINTING, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_OUTPUT_BIN_FULL", PRINTER_STATUS_OUTPUT_BIN_FULL, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_NOT_AVAILABLE", PRINTER_STATUS_NOT_AVAILABLE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_WAITING", PRINTER_STATUS_WAITING, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_PROCESSING", PRINTER_STATUS_PROCESSING, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_INITIALIZING", PRINTER_STATUS_INITIALIZING, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_WARMING_UP", PRINTER_STATUS_WARMING_UP, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_TONER_LOW", PRINTER_STATUS_TONER_LOW, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_NO_TONER", PRINTER_STATUS_NO_TONER, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_PAGE_PUNT", PRINTER_STATUS_PAGE_PUNT, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_USER_INTERVENTION", PRINTER_STATUS_USER_INTERVENTION, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_OUT_OF_MEMORY", PRINTER_STATUS_OUT_OF_MEMORY, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_DOOR_OPEN", PRINTER_STATUS_DOOR_OPEN, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_SERVER_UNKNOWN", PRINTER_STATUS_SERVER_UNKNOWN, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_POWER_SAVE", PRINTER_STATUS_POWER_SAVE, r);
+	ndr->depth--;
+}
+
+static enum ndr_err_code ndr_push_spoolss_JobStatus(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_JobStatus(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_JobStatus(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_PAUSED", JOB_STATUS_PAUSED, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_ERROR", JOB_STATUS_ERROR, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_DELETING", JOB_STATUS_DELETING, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_SPOOLING", JOB_STATUS_SPOOLING, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_PRINTING", JOB_STATUS_PRINTING, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_OFFLINE", JOB_STATUS_OFFLINE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_PAPEROUT", JOB_STATUS_PAPEROUT, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_PRINTED", JOB_STATUS_PRINTED, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_DELETED", JOB_STATUS_DELETED, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_BLOCKED_DEVQ", JOB_STATUS_BLOCKED_DEVQ, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_USER_INTERVENTION", JOB_STATUS_USER_INTERVENTION, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_RESTART", JOB_STATUS_RESTART, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_COMPLETE", JOB_STATUS_COMPLETE, r);
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_spoolss_PrinterInfo0(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PrinterInfo0 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -253,13 +333,13 @@ static enum ndr_err_code ndr_push_spoolss_PrinterInfo0(struct ndr_push *ndr, int
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->session_counter));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->num_error_out_of_paper));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->num_error_not_ready));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->job_error));
+		NDR_CHECK(ndr_push_spoolss_JobStatus(ndr, NDR_SCALARS, r->job_error));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->number_of_processors));
 		NDR_CHECK(ndr_push_spoolss_ProcessorType(ndr, NDR_SCALARS, r->processor_type));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->high_part_total_bytes));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->change_id));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->last_error));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->status));
+		NDR_CHECK(ndr_push_spoolss_PrinterStatus(ndr, NDR_SCALARS, r->status));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->enumerate_network_printers));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->c_setprinter));
 		NDR_CHECK(ndr_push_spoolss_ProcessorArchitecture(ndr, NDR_SCALARS, r->processor_architecture));
@@ -336,13 +416,13 @@ static enum ndr_err_code ndr_pull_spoolss_PrinterInfo0(struct ndr_pull *ndr, int
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->session_counter));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->num_error_out_of_paper));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->num_error_not_ready));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->job_error));
+		NDR_CHECK(ndr_pull_spoolss_JobStatus(ndr, NDR_SCALARS, &r->job_error));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->number_of_processors));
 		NDR_CHECK(ndr_pull_spoolss_ProcessorType(ndr, NDR_SCALARS, &r->processor_type));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->high_part_total_bytes));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->change_id));
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->last_error));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->status));
+		NDR_CHECK(ndr_pull_spoolss_PrinterStatus(ndr, NDR_SCALARS, &r->status));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->enumerate_network_printers));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->c_setprinter));
 		NDR_CHECK(ndr_pull_spoolss_ProcessorArchitecture(ndr, NDR_SCALARS, &r->processor_architecture));
@@ -415,13 +495,13 @@ _PUBLIC_ void ndr_print_spoolss_PrinterInfo0(struct ndr_print *ndr, const char *
 	ndr_print_uint32(ndr, "session_counter", r->session_counter);
 	ndr_print_uint32(ndr, "num_error_out_of_paper", r->num_error_out_of_paper);
 	ndr_print_uint32(ndr, "num_error_not_ready", r->num_error_not_ready);
-	ndr_print_uint32(ndr, "job_error", r->job_error);
+	ndr_print_spoolss_JobStatus(ndr, "job_error", r->job_error);
 	ndr_print_uint32(ndr, "number_of_processors", r->number_of_processors);
 	ndr_print_spoolss_ProcessorType(ndr, "processor_type", r->processor_type);
 	ndr_print_uint32(ndr, "high_part_total_bytes", r->high_part_total_bytes);
 	ndr_print_uint32(ndr, "change_id", r->change_id);
 	ndr_print_WERROR(ndr, "last_error", r->last_error);
-	ndr_print_uint32(ndr, "status", r->status);
+	ndr_print_spoolss_PrinterStatus(ndr, "status", r->status);
 	ndr_print_uint32(ndr, "enumerate_network_printers", r->enumerate_network_printers);
 	ndr_print_uint32(ndr, "c_setprinter", r->c_setprinter);
 	ndr_print_spoolss_ProcessorArchitecture(ndr, "processor_architecture", r->processor_architecture);
@@ -892,52 +972,6 @@ _PUBLIC_ void ndr_print_spoolss_PrinterAttributes(struct ndr_print *ndr, const c
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ATTRIBUTE_PUBLISHED", PRINTER_ATTRIBUTE_PUBLISHED, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ATTRIBUTE_FAX", PRINTER_ATTRIBUTE_FAX, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ATTRIBUTE_TS", PRINTER_ATTRIBUTE_TS, r);
-	ndr->depth--;
-}
-
-static enum ndr_err_code ndr_push_spoolss_PrinterStatus(struct ndr_push *ndr, int ndr_flags, uint32_t r)
-{
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
-	return NDR_ERR_SUCCESS;
-}
-
-static enum ndr_err_code ndr_pull_spoolss_PrinterStatus(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
-{
-	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
-	*r = v;
-	return NDR_ERR_SUCCESS;
-}
-
-_PUBLIC_ void ndr_print_spoolss_PrinterStatus(struct ndr_print *ndr, const char *name, uint32_t r)
-{
-	ndr_print_uint32(ndr, name, r);
-	ndr->depth++;
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_PAUSED", PRINTER_STATUS_PAUSED, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_ERROR", PRINTER_STATUS_ERROR, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_PENDING_DELETION", PRINTER_STATUS_PENDING_DELETION, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_PAPER_JAM", PRINTER_STATUS_PAPER_JAM, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_PAPER_OUT", PRINTER_STATUS_PAPER_OUT, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_MANUAL_FEED", PRINTER_STATUS_MANUAL_FEED, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_PAPER_PROBLEM", PRINTER_STATUS_PAPER_PROBLEM, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_OFFLINE", PRINTER_STATUS_OFFLINE, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_IO_ACTIVE", PRINTER_STATUS_IO_ACTIVE, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_BUSY", PRINTER_STATUS_BUSY, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_PRINTING", PRINTER_STATUS_PRINTING, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_OUTPUT_BIN_FULL", PRINTER_STATUS_OUTPUT_BIN_FULL, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_NOT_AVAILABLE", PRINTER_STATUS_NOT_AVAILABLE, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_WAITING", PRINTER_STATUS_WAITING, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_PROCESSING", PRINTER_STATUS_PROCESSING, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_INITIALIZING", PRINTER_STATUS_INITIALIZING, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_WARMING_UP", PRINTER_STATUS_WARMING_UP, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_TONER_LOW", PRINTER_STATUS_TONER_LOW, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_NO_TONER", PRINTER_STATUS_NO_TONER, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_PAGE_PUNT", PRINTER_STATUS_PAGE_PUNT, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_USER_INTERVENTION", PRINTER_STATUS_USER_INTERVENTION, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_OUT_OF_MEMORY", PRINTER_STATUS_OUT_OF_MEMORY, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_DOOR_OPEN", PRINTER_STATUS_DOOR_OPEN, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_SERVER_UNKNOWN", PRINTER_STATUS_SERVER_UNKNOWN, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_STATUS_POWER_SAVE", PRINTER_STATUS_POWER_SAVE, r);
 	ndr->depth--;
 }
 
@@ -2517,40 +2551,6 @@ _PUBLIC_ void ndr_print_spoolss_DevmodeContainer(struct ndr_print *ndr, const ch
 		ndr_print_spoolss_DeviceMode(ndr, "devmode", r->devmode);
 	}
 	ndr->depth--;
-	ndr->depth--;
-}
-
-static enum ndr_err_code ndr_push_spoolss_JobStatus(struct ndr_push *ndr, int ndr_flags, uint32_t r)
-{
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
-	return NDR_ERR_SUCCESS;
-}
-
-static enum ndr_err_code ndr_pull_spoolss_JobStatus(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
-{
-	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
-	*r = v;
-	return NDR_ERR_SUCCESS;
-}
-
-_PUBLIC_ void ndr_print_spoolss_JobStatus(struct ndr_print *ndr, const char *name, uint32_t r)
-{
-	ndr_print_uint32(ndr, name, r);
-	ndr->depth++;
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_PAUSED", JOB_STATUS_PAUSED, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_ERROR", JOB_STATUS_ERROR, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_DELETING", JOB_STATUS_DELETING, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_SPOOLING", JOB_STATUS_SPOOLING, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_PRINTING", JOB_STATUS_PRINTING, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_OFFLINE", JOB_STATUS_OFFLINE, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_PAPEROUT", JOB_STATUS_PAPEROUT, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_PRINTED", JOB_STATUS_PRINTED, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_DELETED", JOB_STATUS_DELETED, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_BLOCKED_DEVQ", JOB_STATUS_BLOCKED_DEVQ, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_USER_INTERVENTION", JOB_STATUS_USER_INTERVENTION, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_RESTART", JOB_STATUS_RESTART, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_STATUS_COMPLETE", JOB_STATUS_COMPLETE, r);
 	ndr->depth--;
 }
 
@@ -4595,9 +4595,9 @@ static enum ndr_err_code ndr_push_spoolss_SetJobInfo2(struct ndr_push *ndr, int 
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->print_processor));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->parameters));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->driver_name));
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->devmode));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->_devmode_ptr));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->text_status));
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->secdesc));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->_secdesc_ptr));
 		NDR_CHECK(ndr_push_spoolss_JobStatus(ndr, NDR_SCALARS, r->status));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->priority));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->position));
@@ -4664,17 +4664,11 @@ static enum ndr_err_code ndr_push_spoolss_SetJobInfo2(struct ndr_push *ndr, int 
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->driver_name, CH_UTF16)));
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->driver_name, ndr_charset_length(r->driver_name, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
-		if (r->devmode) {
-			NDR_CHECK(ndr_push_spoolss_DeviceMode(ndr, NDR_SCALARS, r->devmode));
-		}
 		if (r->text_status) {
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->text_status, CH_UTF16)));
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->text_status, CH_UTF16)));
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->text_status, ndr_charset_length(r->text_status, CH_UTF16), sizeof(uint16_t), CH_UTF16));
-		}
-		if (r->secdesc) {
-			NDR_CHECK(ndr_push_security_descriptor(ndr, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -4700,12 +4694,8 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo2(struct ndr_pull *ndr, int 
 	TALLOC_CTX *_mem_save_parameters_0;
 	uint32_t _ptr_driver_name;
 	TALLOC_CTX *_mem_save_driver_name_0;
-	uint32_t _ptr_devmode;
-	TALLOC_CTX *_mem_save_devmode_0;
 	uint32_t _ptr_text_status;
 	TALLOC_CTX *_mem_save_text_status_0;
-	uint32_t _ptr_secdesc;
-	TALLOC_CTX *_mem_save_secdesc_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->job_id));
@@ -4763,24 +4753,14 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo2(struct ndr_pull *ndr, int 
 		} else {
 			r->driver_name = NULL;
 		}
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_devmode));
-		if (_ptr_devmode) {
-			NDR_PULL_ALLOC(ndr, r->devmode);
-		} else {
-			r->devmode = NULL;
-		}
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->_devmode_ptr));
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_text_status));
 		if (_ptr_text_status) {
 			NDR_PULL_ALLOC(ndr, r->text_status);
 		} else {
 			r->text_status = NULL;
 		}
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_secdesc));
-		if (_ptr_secdesc) {
-			NDR_PULL_ALLOC(ndr, r->secdesc);
-		} else {
-			r->secdesc = NULL;
-		}
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->_secdesc_ptr));
 		NDR_CHECK(ndr_pull_spoolss_JobStatus(ndr, NDR_SCALARS, &r->status));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->priority));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->position));
@@ -4901,12 +4881,6 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo2(struct ndr_pull *ndr, int 
 			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->driver_name, ndr_get_array_length(ndr, &r->driver_name), sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_driver_name_0, 0);
 		}
-		if (r->devmode) {
-			_mem_save_devmode_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->devmode, 0);
-			NDR_CHECK(ndr_pull_spoolss_DeviceMode(ndr, NDR_SCALARS, r->devmode));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_devmode_0, 0);
-		}
 		if (r->text_status) {
 			_mem_save_text_status_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->text_status, 0);
@@ -4918,12 +4892,6 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo2(struct ndr_pull *ndr, int 
 			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->text_status), sizeof(uint16_t)));
 			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->text_status, ndr_get_array_length(ndr, &r->text_status), sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_text_status_0, 0);
-		}
-		if (r->secdesc) {
-			_mem_save_secdesc_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->secdesc, 0);
-			NDR_CHECK(ndr_pull_security_descriptor(ndr, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_secdesc_0, 0);
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -4988,24 +4956,14 @@ _PUBLIC_ void ndr_print_spoolss_SetJobInfo2(struct ndr_print *ndr, const char *n
 		ndr_print_string(ndr, "driver_name", r->driver_name);
 	}
 	ndr->depth--;
-	ndr_print_ptr(ndr, "devmode", r->devmode);
-	ndr->depth++;
-	if (r->devmode) {
-		ndr_print_spoolss_DeviceMode(ndr, "devmode", r->devmode);
-	}
-	ndr->depth--;
+	ndr_print_uint32(ndr, "_devmode_ptr", r->_devmode_ptr);
 	ndr_print_ptr(ndr, "text_status", r->text_status);
 	ndr->depth++;
 	if (r->text_status) {
 		ndr_print_string(ndr, "text_status", r->text_status);
 	}
 	ndr->depth--;
-	ndr_print_ptr(ndr, "secdesc", r->secdesc);
-	ndr->depth++;
-	if (r->secdesc) {
-		ndr_print_security_descriptor(ndr, "secdesc", r->secdesc);
-	}
-	ndr->depth--;
+	ndr_print_uint32(ndr, "_secdesc_ptr", r->_secdesc_ptr);
 	ndr_print_spoolss_JobStatus(ndr, "status", r->status);
 	ndr_print_uint32(ndr, "priority", r->priority);
 	ndr_print_uint32(ndr, "position", r->position);
@@ -5033,9 +4991,9 @@ static enum ndr_err_code ndr_push_spoolss_SetJobInfo4(struct ndr_push *ndr, int 
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->print_processor));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->parameters));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->driver_name));
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->devmode));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->_devmode_ptr));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->text_status));
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->secdesc));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->_secdesc_ptr));
 		NDR_CHECK(ndr_push_spoolss_JobStatus(ndr, NDR_SCALARS, r->status));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->priority));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->position));
@@ -5103,17 +5061,11 @@ static enum ndr_err_code ndr_push_spoolss_SetJobInfo4(struct ndr_push *ndr, int 
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->driver_name, CH_UTF16)));
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->driver_name, ndr_charset_length(r->driver_name, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
-		if (r->devmode) {
-			NDR_CHECK(ndr_push_spoolss_DeviceMode(ndr, NDR_SCALARS, r->devmode));
-		}
 		if (r->text_status) {
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->text_status, CH_UTF16)));
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->text_status, CH_UTF16)));
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->text_status, ndr_charset_length(r->text_status, CH_UTF16), sizeof(uint16_t), CH_UTF16));
-		}
-		if (r->secdesc) {
-			NDR_CHECK(ndr_push_security_descriptor(ndr, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -5139,12 +5091,8 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo4(struct ndr_pull *ndr, int 
 	TALLOC_CTX *_mem_save_parameters_0;
 	uint32_t _ptr_driver_name;
 	TALLOC_CTX *_mem_save_driver_name_0;
-	uint32_t _ptr_devmode;
-	TALLOC_CTX *_mem_save_devmode_0;
 	uint32_t _ptr_text_status;
 	TALLOC_CTX *_mem_save_text_status_0;
-	uint32_t _ptr_secdesc;
-	TALLOC_CTX *_mem_save_secdesc_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->job_id));
@@ -5202,24 +5150,14 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo4(struct ndr_pull *ndr, int 
 		} else {
 			r->driver_name = NULL;
 		}
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_devmode));
-		if (_ptr_devmode) {
-			NDR_PULL_ALLOC(ndr, r->devmode);
-		} else {
-			r->devmode = NULL;
-		}
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->_devmode_ptr));
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_text_status));
 		if (_ptr_text_status) {
 			NDR_PULL_ALLOC(ndr, r->text_status);
 		} else {
 			r->text_status = NULL;
 		}
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_secdesc));
-		if (_ptr_secdesc) {
-			NDR_PULL_ALLOC(ndr, r->secdesc);
-		} else {
-			r->secdesc = NULL;
-		}
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->_secdesc_ptr));
 		NDR_CHECK(ndr_pull_spoolss_JobStatus(ndr, NDR_SCALARS, &r->status));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->priority));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->position));
@@ -5341,12 +5279,6 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo4(struct ndr_pull *ndr, int 
 			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->driver_name, ndr_get_array_length(ndr, &r->driver_name), sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_driver_name_0, 0);
 		}
-		if (r->devmode) {
-			_mem_save_devmode_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->devmode, 0);
-			NDR_CHECK(ndr_pull_spoolss_DeviceMode(ndr, NDR_SCALARS, r->devmode));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_devmode_0, 0);
-		}
 		if (r->text_status) {
 			_mem_save_text_status_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->text_status, 0);
@@ -5358,12 +5290,6 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo4(struct ndr_pull *ndr, int 
 			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->text_status), sizeof(uint16_t)));
 			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->text_status, ndr_get_array_length(ndr, &r->text_status), sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_text_status_0, 0);
-		}
-		if (r->secdesc) {
-			_mem_save_secdesc_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->secdesc, 0);
-			NDR_CHECK(ndr_pull_security_descriptor(ndr, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_secdesc_0, 0);
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -5428,24 +5354,14 @@ _PUBLIC_ void ndr_print_spoolss_SetJobInfo4(struct ndr_print *ndr, const char *n
 		ndr_print_string(ndr, "driver_name", r->driver_name);
 	}
 	ndr->depth--;
-	ndr_print_ptr(ndr, "devmode", r->devmode);
-	ndr->depth++;
-	if (r->devmode) {
-		ndr_print_spoolss_DeviceMode(ndr, "devmode", r->devmode);
-	}
-	ndr->depth--;
+	ndr_print_uint32(ndr, "_devmode_ptr", r->_devmode_ptr);
 	ndr_print_ptr(ndr, "text_status", r->text_status);
 	ndr->depth++;
 	if (r->text_status) {
 		ndr_print_string(ndr, "text_status", r->text_status);
 	}
 	ndr->depth--;
-	ndr_print_ptr(ndr, "secdesc", r->secdesc);
-	ndr->depth++;
-	if (r->secdesc) {
-		ndr_print_security_descriptor(ndr, "secdesc", r->secdesc);
-	}
-	ndr->depth--;
+	ndr_print_uint32(ndr, "_secdesc_ptr", r->_secdesc_ptr);
 	ndr_print_spoolss_JobStatus(ndr, "status", r->status);
 	ndr_print_uint32(ndr, "priority", r->priority);
 	ndr_print_uint32(ndr, "position", r->position);
