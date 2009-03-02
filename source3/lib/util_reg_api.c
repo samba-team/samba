@@ -92,7 +92,7 @@ WERROR registry_pull_value(TALLOC_CTX *mem_ctx,
 		}
 
 		if (!convert_string_talloc(value, CH_UTF16LE, CH_UNIX, tmp,
-					   length+2, &value->v.sz.str,
+					   length+2, (void **)&value->v.sz.str,
 					   &value->v.sz.len, False)) {
 			SAFE_FREE(tmp);
 			err = WERR_INVALID_PARAM;

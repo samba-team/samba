@@ -19,10 +19,13 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "includes.h"
 #include "onefs.h"
+#include "onefs_config.h"
 
 #include <isi_acl/isi_acl_util.h>
 #include <ifs/ifs_syscalls.h>
+#include <sys/isi_acl.h>
 
 const struct enum_list enum_onefs_acl_wire_format[] = {
 	{ACL_FORMAT_RAW,  "No Format"},

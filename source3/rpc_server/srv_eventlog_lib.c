@@ -936,7 +936,7 @@ NTSTATUS evlog_tdb_entry_to_evt_entry(TALLOC_CTX *mem_ctx,
 		size_t len;
 		if (!convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX,
 					   t->sid.data, t->sid.length,
-					   &sid_str, &len, false)) {
+					   (void **)&sid_str, &len, false)) {
 			return NT_STATUS_INVALID_SID;
 		}
 		if (len > 0) {

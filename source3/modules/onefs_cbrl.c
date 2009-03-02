@@ -18,6 +18,7 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "includes.h"
 #include "onefs.h"
 
 #include <ifs/ifs_syscalls.h>
