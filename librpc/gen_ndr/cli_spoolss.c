@@ -14,7 +14,7 @@ NTSTATUS rpccli_spoolss_EnumPrinters(struct rpc_pipe_client *cli,
 				     DATA_BLOB *buffer /* [in] [unique] */,
 				     uint32_t offered /* [in]  */,
 				     uint32_t *count /* [out] [ref] */,
-				     union spoolss_PrinterInfo *info /* [out] [unique,switch_is(level),size_is(*count)] */,
+				     union spoolss_PrinterInfo **info /* [out] [ref,switch_is(level),size_is(*count)] */,
 				     uint32_t *needed /* [out] [ref] */,
 				     WERROR *werror)
 {
@@ -52,9 +52,7 @@ NTSTATUS rpccli_spoolss_EnumPrinters(struct rpc_pipe_client *cli,
 
 	/* Return variables */
 	*count = *r.out.count;
-	if (info && r.out.info) {
-		memcpy(info, r.out.info, *count * sizeof(*info));
-	}
+	memcpy(info, r.out.info, *count * sizeof(*info));
 	*needed = *r.out.needed;
 
 	/* Return result */
@@ -231,7 +229,7 @@ NTSTATUS rpccli_spoolss_EnumJobs(struct rpc_pipe_client *cli,
 				 DATA_BLOB *buffer /* [in] [unique] */,
 				 uint32_t offered /* [in]  */,
 				 uint32_t *count /* [out] [ref] */,
-				 union spoolss_JobInfo *info /* [out] [unique,switch_is(level),size_is(*count)] */,
+				 union spoolss_JobInfo **info /* [out] [ref,switch_is(level),size_is(*count)] */,
 				 uint32_t *needed /* [out] [ref] */,
 				 WERROR *werror)
 {
@@ -270,9 +268,7 @@ NTSTATUS rpccli_spoolss_EnumJobs(struct rpc_pipe_client *cli,
 
 	/* Return variables */
 	*count = *r.out.count;
-	if (info && r.out.info) {
-		memcpy(info, r.out.info, *count * sizeof(*info));
-	}
+	memcpy(info, r.out.info, *count * sizeof(*info));
 	*needed = *r.out.needed;
 
 	/* Return result */
@@ -526,7 +522,7 @@ NTSTATUS rpccli_spoolss_EnumPrinterDrivers(struct rpc_pipe_client *cli,
 					   DATA_BLOB *buffer /* [in] [unique] */,
 					   uint32_t offered /* [in]  */,
 					   uint32_t *count /* [out] [ref] */,
-					   union spoolss_DriverInfo *info /* [out] [unique,switch_is(level),size_is(*count)] */,
+					   union spoolss_DriverInfo **info /* [out] [ref,switch_is(level),size_is(*count)] */,
 					   uint32_t *needed /* [out] [ref] */,
 					   WERROR *werror)
 {
@@ -564,9 +560,7 @@ NTSTATUS rpccli_spoolss_EnumPrinterDrivers(struct rpc_pipe_client *cli,
 
 	/* Return variables */
 	*count = *r.out.count;
-	if (info && r.out.info) {
-		memcpy(info, r.out.info, *count * sizeof(*info));
-	}
+	memcpy(info, r.out.info, *count * sizeof(*info));
 	*needed = *r.out.needed;
 
 	/* Return result */
@@ -779,7 +773,7 @@ NTSTATUS rpccli_spoolss_EnumPrintProcessors(struct rpc_pipe_client *cli,
 					    DATA_BLOB *buffer /* [in] [unique] */,
 					    uint32_t offered /* [in]  */,
 					    uint32_t *count /* [out] [ref] */,
-					    union spoolss_PrintProcessorInfo *info /* [out] [unique,switch_is(level),size_is(*count)] */,
+					    union spoolss_PrintProcessorInfo **info /* [out] [ref,switch_is(level),size_is(*count)] */,
 					    uint32_t *needed /* [out] [ref] */,
 					    WERROR *werror)
 {
@@ -817,9 +811,7 @@ NTSTATUS rpccli_spoolss_EnumPrintProcessors(struct rpc_pipe_client *cli,
 
 	/* Return variables */
 	*count = *r.out.count;
-	if (info && r.out.info) {
-		memcpy(info, r.out.info, *count * sizeof(*info));
-	}
+	memcpy(info, r.out.info, *count * sizeof(*info));
 	*needed = *r.out.needed;
 
 	/* Return result */
@@ -1699,7 +1691,7 @@ NTSTATUS rpccli_spoolss_EnumForms(struct rpc_pipe_client *cli,
 				  DATA_BLOB *buffer /* [in] [unique] */,
 				  uint32_t offered /* [in]  */,
 				  uint32_t *count /* [out] [ref] */,
-				  union spoolss_FormInfo *info /* [out] [unique,switch_is(level),size_is(*count)] */,
+				  union spoolss_FormInfo **info /* [out] [ref,switch_is(level),size_is(*count)] */,
 				  uint32_t *needed /* [out] [ref] */,
 				  WERROR *werror)
 {
@@ -1736,9 +1728,7 @@ NTSTATUS rpccli_spoolss_EnumForms(struct rpc_pipe_client *cli,
 
 	/* Return variables */
 	*count = *r.out.count;
-	if (info && r.out.info) {
-		memcpy(info, r.out.info, *count * sizeof(*info));
-	}
+	memcpy(info, r.out.info, *count * sizeof(*info));
 	*needed = *r.out.needed;
 
 	/* Return result */
@@ -1756,7 +1746,7 @@ NTSTATUS rpccli_spoolss_EnumPorts(struct rpc_pipe_client *cli,
 				  DATA_BLOB *buffer /* [in] [unique] */,
 				  uint32_t offered /* [in]  */,
 				  uint32_t *count /* [out] [ref] */,
-				  union spoolss_PortInfo *info /* [out] [unique,switch_is(level),size_is(*count)] */,
+				  union spoolss_PortInfo **info /* [out] [ref,switch_is(level),size_is(*count)] */,
 				  uint32_t *needed /* [out] [ref] */,
 				  WERROR *werror)
 {
@@ -1793,9 +1783,7 @@ NTSTATUS rpccli_spoolss_EnumPorts(struct rpc_pipe_client *cli,
 
 	/* Return variables */
 	*count = *r.out.count;
-	if (info && r.out.info) {
-		memcpy(info, r.out.info, *count * sizeof(*info));
-	}
+	memcpy(info, r.out.info, *count * sizeof(*info));
 	*needed = *r.out.needed;
 
 	/* Return result */
@@ -1813,7 +1801,7 @@ NTSTATUS rpccli_spoolss_EnumMonitors(struct rpc_pipe_client *cli,
 				     DATA_BLOB *buffer /* [in] [unique] */,
 				     uint32_t offered /* [in]  */,
 				     uint32_t *count /* [out] [ref] */,
-				     union spoolss_MonitorInfo *info /* [out] [unique,switch_is(level),size_is(*count)] */,
+				     union spoolss_MonitorInfo **info /* [out] [ref,switch_is(level),size_is(*count)] */,
 				     uint32_t *needed /* [out] [ref] */,
 				     WERROR *werror)
 {
@@ -1850,9 +1838,7 @@ NTSTATUS rpccli_spoolss_EnumMonitors(struct rpc_pipe_client *cli,
 
 	/* Return variables */
 	*count = *r.out.count;
-	if (info && r.out.info) {
-		memcpy(info, r.out.info, *count * sizeof(*info));
-	}
+	memcpy(info, r.out.info, *count * sizeof(*info));
 	*needed = *r.out.needed;
 
 	/* Return result */
