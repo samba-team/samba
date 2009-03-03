@@ -659,8 +659,19 @@ union swrap_packet_ip {
 		uint32_t	dest_addr;
 	} v4;
 #define SWRAP_PACKET_IP_V4_SIZE 20
+	struct {
+		uint8_t		ver_prio;
+		uint8_t		flow_label_high;
+		uint16_t	flow_label_low;
+		uint16_t	payload_length;
+		uint8_t		next_header;
+		uint8_t		hop_limit;
+		uint8_t		src_addr[16];
+		uint8_t		dest_addr[16];
+	} v6;
+#define SWRAP_PACKET_IP_V6_SIZE 40
 };
-#define SWRAP_PACKET_IP_SIZE 20
+#define SWRAP_PACKET_IP_SIZE 40
 
 union swrap_packet_payload {
 	struct {
@@ -689,6 +700,13 @@ union swrap_packet_payload {
 		uint32_t	unused;
 	} icmp4;
 #define SWRAP_PACKET_PAYLOAD_ICMP4_SIZE 8
+	struct {
+		uint8_t		type;
+		uint8_t		code;
+		uint16_t	checksum;
+		uint32_t	unused;
+	} icmp6;
+#define SWRAP_PACKET_PAYLOAD_ICMP6_SIZE 8
 };
 #define SWRAP_PACKET_PAYLOAD_SIZE 20
 
@@ -730,6 +748,9 @@ static const char *socket_wrapper_pcap_file(void)
 	if (sizeof(i.v4) != SWRAP_PACKET_IP_V4_SIZE) {
 		return NULL;
 	}
+	if (sizeof(i.v6) != SWRAP_PACKET_IP_V6_SIZE) {
+		return NULL;
+	}
 	if (sizeof(p) != SWRAP_PACKET_PAYLOAD_SIZE) {
 		return NULL;
 	}
@@ -740,6 +761,9 @@ static const char *socket_wrapper_pcap_file(void)
 		return NULL;
 	}
 	if (sizeof(p.icmp4) != SWRAP_PACKET_PAYLOAD_ICMP4_SIZE) {
+		return NULL;
+	}
+	if (sizeof(p.icmp6) != SWRAP_PACKET_PAYLOAD_ICMP6_SIZE) {
 		return NULL;
 	}
 
@@ -781,6 +805,10 @@ static uint8_t *swrap_packet_init(struct timeval *tval,
 	uint8_t protocol = 0, icmp_protocol = 0;
 	const struct sockaddr_in *src_in;
 	const struct sockaddr_in *dest_in;
+#ifdef HAVE_IPV6
+	const struct sockaddr_in6 *src_in6;
+	const struct sockaddr_in6 *dest_in6;
+#endif
 	uint16_t src_port;
 	uint16_t dest_port;
 
@@ -792,6 +820,15 @@ static uint8_t *swrap_packet_init(struct timeval *tval,
 		dest_port = dest_in->sin_port;
 		ip_hdr_len = sizeof(ip->v4);
 		break;
+#ifdef HAVE_IPV6
+	case AF_INET6:
+		src_in6 = (const struct sockaddr_in6 *)src;
+		dest_in6 = (const struct sockaddr_in6 *)dest;
+		src_port = src_in6->sin6_port;
+		dest_port = dest_in6->sin6_port;
+		ip_hdr_len = sizeof(ip->v6);
+		break;
+#endif
 	default:
 		return NULL;
 	}
@@ -815,11 +852,21 @@ static uint8_t *swrap_packet_init(struct timeval *tval,
 
 	if (unreachable) {
 		icmp_protocol = protocol;
-		protocol = 0x01; /* ICMP */
+		switch (src->sa_family) {
+		case AF_INET:
+			protocol = 0x01; /* ICMPv4 */
+			icmp_hdr_len = ip_hdr_len + sizeof(pay->icmp4);
+			break;
+#ifdef HAVE_IPV6
+		case AF_INET6:
+			protocol = 0x3A; /* ICMPv6 */
+			icmp_hdr_len = ip_hdr_len + sizeof(pay->icmp6);
+			break;
+#endif
+		}
 		if (wire_len > 64 ) {
 			icmp_truncate_len = wire_len - 64;
 		}
-		icmp_hdr_len = ip_hdr_len + sizeof(pay->icmp4);
 		wire_hdr_len += icmp_hdr_len;
 		wire_len += icmp_hdr_len;
 	}
@@ -858,6 +905,18 @@ static uint8_t *swrap_packet_init(struct timeval *tval,
 		ip->v4.dest_addr	= dest_in->sin_addr.s_addr;
 		buf += SWRAP_PACKET_IP_V4_SIZE;
 		break;
+#ifdef HAVE_IPV6
+	case AF_INET6:
+		ip->v6.ver_prio		= 0x60; /* version 4 and 5 * 32 bit words */
+		ip->v6.flow_label_high	= 0x00;
+		ip->v6.flow_label_low	= 0x0000;
+		ip->v6.payload_length	= htons(wire_len - icmp_truncate_len);//TODO
+		ip->v6.next_header	= protocol;
+		memcpy(ip->v6.src_addr, src_in6->sin6_addr.s6_addr, 16);
+		memcpy(ip->v6.dest_addr, dest_in6->sin6_addr.s6_addr, 16);
+		buf += SWRAP_PACKET_IP_V6_SIZE;
+		break;
+#endif
 	}
 
 	if (unreachable) {
@@ -888,6 +947,29 @@ static uint8_t *swrap_packet_init(struct timeval *tval,
 			src_port = dest_in->sin_port;
 			dest_port = src_in->sin_port;
 			break;
+#ifdef HAVE_IPV6
+		case AF_INET6:
+			pay->icmp6.type		= 0x01; /* destination unreachable */
+			pay->icmp6.code		= 0x03; /* address unreachable */
+			pay->icmp6.checksum	= htons(0x0000);
+			pay->icmp6.unused	= htonl(0x00000000);
+			buf += SWRAP_PACKET_PAYLOAD_ICMP6_SIZE;
+
+			/* set the ip header in the ICMP payload */
+			ip = (union swrap_packet_ip *)buf;
+			ip->v6.ver_prio		= 0x60; /* version 4 and 5 * 32 bit words */
+			ip->v6.flow_label_high	= 0x00;
+			ip->v6.flow_label_low	= 0x0000;
+			ip->v6.payload_length	= htons(wire_len - icmp_truncate_len);//TODO
+			ip->v6.next_header	= protocol;
+			memcpy(ip->v6.src_addr, dest_in6->sin6_addr.s6_addr, 16);
+			memcpy(ip->v6.dest_addr, src_in6->sin6_addr.s6_addr, 16);
+			buf += SWRAP_PACKET_IP_V6_SIZE;
+
+			src_port = dest_in6->sin6_port;
+			dest_port = src_in6->sin6_port;
+			break;
+#endif
 		}
 	}
 
@@ -972,6 +1054,8 @@ static uint8_t *swrap_marshall_packet(struct socket_info *si,
 
 	switch (si->family) {
 	case AF_INET:
+		break;
+	case AF_INET6:
 		break;
 	default:
 		return NULL;
