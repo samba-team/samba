@@ -1781,7 +1781,7 @@ _PUBLIC_ ssize_t swrap_recv(int s, void *buf, size_t len, int flags)
 		swrap_dump_packet(si, NULL, SWRAP_RECV_RST, NULL, 0);
 	} else if (ret == 0) { /* END OF FILE */
 		swrap_dump_packet(si, NULL, SWRAP_RECV_RST, NULL, 0);
-	} else {
+	} else if (ret > 0) {
 		swrap_dump_packet(si, NULL, SWRAP_RECV, buf, ret);
 	}
 
