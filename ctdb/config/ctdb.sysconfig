@@ -46,6 +46,7 @@
 # of them are available during each monitoring interval.
 # In that case this check can be disabled
 # CTDB_SAMBA_SKIP_SHARE_CHECK=yes
+# CTDB_NFS_SKIP_SHARE_CHECK=yes
 
 # specify which ports we should check that there is a daemon listening to
 # by default we use testparm and look in smb.conf to figure out.
