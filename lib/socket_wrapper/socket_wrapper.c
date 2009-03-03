@@ -510,7 +510,9 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 
 		cmp = in->sin6_addr;
 		cmp.s6_addr[15] = 0;
-		if (IN6_ARE_ADDR_EQUAL(&swrap_ipv6, &cmp)) {
+		if (IN6_IS_ADDR_UNSPECIFIED(&in->sin6_addr)) {
+			iface = socket_wrapper_default_iface();
+		} else if (IN6_ARE_ADDR_EQUAL(&swrap_ipv6, &cmp)) {
 			iface = in->sin6_addr.s6_addr[15];
 		} else {
 			errno = EADDRNOTAVAIL;
