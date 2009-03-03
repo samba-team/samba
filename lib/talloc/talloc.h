@@ -102,6 +102,7 @@ typedef void TALLOC_CTX;
 
 #define talloc_set_type(ptr, type) talloc_set_name_const(ptr, #type)
 #define talloc_get_type(ptr, type) (type *)talloc_check_name(ptr, #type)
+#define talloc_get_type_abort(ptr, type) (type *)_talloc_get_type_abort(ptr, #type, __location__)
 
 #define talloc_find_parent_bytype(ptr, type) (type *)talloc_find_parent_byname(ptr, #type)
 
@@ -129,6 +130,7 @@ void *talloc_named(const void *context, size_t size,
 void *talloc_named_const(const void *context, size_t size, const char *name);
 const char *talloc_get_name(const void *ptr);
 void *talloc_check_name(const void *ptr, const char *name);
+void *_talloc_get_type_abort(const void *ptr, const char *name, const char *location);
 void *talloc_parent(const void *ptr);
 const char *talloc_parent_name(const void *ptr);
 void *talloc_init(const char *fmt, ...) PRINTF_ATTRIBUTE(1,2);
