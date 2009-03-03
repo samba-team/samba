@@ -33,7 +33,7 @@ check() {
 }
 
 
-ldbsearch="$BUILDDIR/bin/ldbsearch$EXEEXT"
+ldbsearch="$VALGRIND $BUILDDIR/bin/ldbsearch$EXEEXT"
 
 check "RootDSE" $ldbsearch $CONFIGURATION $options --basedn='' -H $p://$SERVER -s base DUMMY=x dnsHostName highestCommittedUSN || failed=`expr $failed + 1`
 
