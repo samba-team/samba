@@ -636,69 +636,75 @@ struct swrap_file_hdr {
 };
 #define SWRAP_FILE_HDR_SIZE 24
 
-struct swrap_packet {
-	struct {
-		uint32_t seconds;
-		uint32_t micro_seconds;
-		uint32_t recorded_length;
-		uint32_t full_length;
-	} frame;
-#define SWRAP_PACKET__FRAME_SIZE 16
-
-	struct {
-		struct {
-			uint8_t		ver_hdrlen;
-			uint8_t		tos;
-			uint16_t	packet_length;
-			uint16_t	identification;
-			uint8_t		flags;
-			uint8_t		fragment;
-			uint8_t		ttl;
-			uint8_t		protocol;
-			uint16_t	hdr_checksum;
-			uint32_t	src_addr;
-			uint32_t	dest_addr;
-		} hdr;
-#define SWRAP_PACKET__IP_HDR_SIZE 20
-
-		union {
-			struct {
-				uint16_t	source_port;
-				uint16_t	dest_port;
-				uint32_t	seq_num;
-				uint32_t	ack_num;
-				uint8_t		hdr_length;
-				uint8_t		control;
-				uint16_t	window;
-				uint16_t	checksum;
-				uint16_t	urg;
-			} tcp;
-#define SWRAP_PACKET__IP_P_TCP_SIZE 20
-			struct {
-				uint16_t	source_port;
-				uint16_t	dest_port;
-				uint16_t	length;
-				uint16_t	checksum;
-			} udp;
-#define SWRAP_PACKET__IP_P_UDP_SIZE 8
-			struct {
-				uint8_t		type;
-				uint8_t		code;
-				uint16_t	checksum;
-				uint32_t	unused;
-			} icmp;
-#define SWRAP_PACKET__IP_P_ICMP_SIZE 8
-		} p;
-	} ip;
+struct swrap_packet_frame {
+	uint32_t seconds;
+	uint32_t micro_seconds;
+	uint32_t recorded_length;
+	uint32_t full_length;
 };
-#define SWRAP_PACKET_SIZE 56
+#define SWRAP_PACKET_FRAME_SIZE 16
+
+union swrap_packet_ip {
+	struct {
+		uint8_t		ver_hdrlen;
+		uint8_t		tos;
+		uint16_t	packet_length;
+		uint16_t	identification;
+		uint8_t		flags;
+		uint8_t		fragment;
+		uint8_t		ttl;
+		uint8_t		protocol;
+		uint16_t	hdr_checksum;
+		uint32_t	src_addr;
+		uint32_t	dest_addr;
+	} v4;
+#define SWRAP_PACKET_IP_V4_SIZE 20
+};
+#define SWRAP_PACKET_IP_SIZE 20
+
+union swrap_packet_payload {
+	struct {
+		uint16_t	source_port;
+		uint16_t	dest_port;
+		uint32_t	seq_num;
+		uint32_t	ack_num;
+		uint8_t		hdr_length;
+		uint8_t		control;
+		uint16_t	window;
+		uint16_t	checksum;
+		uint16_t	urg;
+	} tcp;
+#define SWRAP_PACKET_PAYLOAD_TCP_SIZE 20
+	struct {
+		uint16_t	source_port;
+		uint16_t	dest_port;
+		uint16_t	length;
+		uint16_t	checksum;
+	} udp;
+#define SWRAP_PACKET_PAYLOAD_UDP_SIZE 8
+	struct {
+		uint8_t		type;
+		uint8_t		code;
+		uint16_t	checksum;
+		uint32_t	unused;
+	} icmp4;
+#define SWRAP_PACKET_PAYLOAD_ICMP4_SIZE 8
+};
+#define SWRAP_PACKET_PAYLOAD_SIZE 20
+
+#define SWRAP_PACKET_MIN_ALLOC \
+	(SWRAP_PACKET_FRAME_SIZE + \
+	 SWRAP_PACKET_IP_SIZE + \
+	 SWRAP_PACKET_PAYLOAD_SIZE)
 
 static const char *socket_wrapper_pcap_file(void)
 {
 	static int initialized = 0;
 	static const char *s = NULL;
-	static const struct swrap_file_hdr h = { 0, };
-	static const struct swrap_packet p = { { 0, }, { { 0, }, { { 0, } } } };
+	static const struct swrap_file_hdr h;
+	static const struct swrap_packet_frame f;
+	static const union swrap_packet_ip i;
+	static const union swrap_packet_payload p;
 
 	if (initialized == 1) {
 		return s;
@@ -715,22 +721,25 @@ static const char *socket_wrapper_pcap_file(void)
 	if (sizeof(h) != SWRAP_FILE_HDR_SIZE) {
 		return NULL;
 	}
-	if (sizeof(p) != SWRAP_PACKET_SIZE) {
+	if (sizeof(f) != SWRAP_PACKET_FRAME_SIZE) {
 		return NULL;
 	}
-	if (sizeof(p.frame) != SWRAP_PACKET__FRAME_SIZE) {
+	if (sizeof(i) != SWRAP_PACKET_IP_SIZE) {
 		return NULL;
 	}
-	if (sizeof(p.ip.hdr) != SWRAP_PACKET__IP_HDR_SIZE) {
+	if (sizeof(i.v4) != SWRAP_PACKET_IP_V4_SIZE) {
 		return NULL;
 	}
-	if (sizeof(p.ip.p.tcp) != SWRAP_PACKET__IP_P_TCP_SIZE) {
+	if (sizeof(p) != SWRAP_PACKET_PAYLOAD_SIZE) {
 		return NULL;
 	}
-	if (sizeof(p.ip.p.udp) != SWRAP_PACKET__IP_P_UDP_SIZE) {
+	if (sizeof(p.tcp) != SWRAP_PACKET_PAYLOAD_TCP_SIZE) {
 		return NULL;
 	}
-	if (sizeof(p.ip.p.icmp) != SWRAP_PACKET__IP_P_ICMP_SIZE) {
+	if (sizeof(p.udp) != SWRAP_PACKET_PAYLOAD_UDP_SIZE) {
+		return NULL;
+	}
+	if (sizeof(p.icmp4) != SWRAP_PACKET_PAYLOAD_ICMP4_SIZE) {
 		return NULL;
 	}
 
@@ -744,41 +753,45 @@ static const char *socket_wrapper_pcap_file(void)
 	return s;
 }
 
-static struct swrap_packet *swrap_packet_init(struct timeval *tval,
-					      const struct sockaddr_in *src_addr,
-					      const struct sockaddr_in *dest_addr,
-					      int socket_type,
-					      const unsigned char *payload,
-					      size_t payload_len,
-					      unsigned long tcp_seqno,
-					      unsigned long tcp_ack,
-					      unsigned char tcp_ctl,
-					      int unreachable,
-					      size_t *_packet_len)
+static uint8_t *swrap_packet_init(struct timeval *tval,
+				  const struct sockaddr_in *src_addr,
+				  const struct sockaddr_in *dest_addr,
+				  int socket_type,
+				  const unsigned char *payload,
+				  size_t payload_len,
+				  unsigned long tcp_seqno,
+				  unsigned long tcp_ack,
+				  unsigned char tcp_ctl,
+				  int unreachable,
+				  size_t *_packet_len)
 {
-	struct swrap_packet *ret;
-	struct swrap_packet *packet;
+	uint8_t *base;
+	uint8_t *buf;
+	struct swrap_packet_frame *frame;
+	union swrap_packet_ip *ip;
+	union swrap_packet_payload *pay;
 	size_t packet_len;
 	size_t alloc_len;
-	size_t nonwire_len = sizeof(packet->frame);
+	size_t nonwire_len = sizeof(*frame);
 	size_t wire_hdr_len = 0;
 	size_t wire_len = 0;
+	size_t ip_hdr_len = sizeof(ip->v4);
 	size_t icmp_hdr_len = 0;
 	size_t icmp_truncate_len = 0;
-	unsigned char protocol = 0, icmp_protocol = 0;
-	unsigned short src_port = src_addr->sin_port;
-	unsigned short dest_port = dest_addr->sin_port;
+	uint8_t protocol = 0, icmp_protocol = 0;
+	uint16_t src_port = src_addr->sin_port;
+	uint16_t dest_port = dest_addr->sin_port;
 
 	switch (socket_type) {
 	case SOCK_STREAM:
 		protocol = 0x06; /* TCP */
-		wire_hdr_len = sizeof(packet->ip.hdr) + sizeof(packet->ip.p.tcp);
+		wire_hdr_len = ip_hdr_len + sizeof(pay->tcp);
 		wire_len = wire_hdr_len + payload_len;
 		break;
 
 	case SOCK_DGRAM:
 		protocol = 0x11; /* UDP */
-		wire_hdr_len = sizeof(packet->ip.hdr) + sizeof(packet->ip.p.udp);
+		wire_hdr_len = ip_hdr_len + sizeof(pay->udp);
 		wire_len = wire_hdr_len + payload_len;
 		break;
 
@@ -792,94 +805,103 @@ static struct swrap_packet *swrap_packet_init(struct timeval *tval,
 		if (wire_len > 64 ) {
 			icmp_truncate_len = wire_len - 64;
 		}
-		icmp_hdr_len = sizeof(packet->ip.hdr) + sizeof(packet->ip.p.icmp);
+		icmp_hdr_len = ip_hdr_len + sizeof(pay->icmp4);
 		wire_hdr_len += icmp_hdr_len;
 		wire_len += icmp_hdr_len;
 	}
 
 	packet_len = nonwire_len + wire_len;
 	alloc_len = packet_len;
-	if (alloc_len < sizeof(struct swrap_packet)) {
-		alloc_len = sizeof(struct swrap_packet);
+	if (alloc_len < SWRAP_PACKET_MIN_ALLOC) {
+		alloc_len = SWRAP_PACKET_MIN_ALLOC;
 	}
-	ret = (struct swrap_packet *)malloc(alloc_len);
-	if (!ret) return NULL;
 
-	packet = ret;
+	base = (uint8_t *)malloc(alloc_len);
+	if (!base) return NULL;
 
-	packet->frame.seconds		= tval->tv_sec;
-	packet->frame.micro_seconds	= tval->tv_usec;
-	packet->frame.recorded_length	= wire_len - icmp_truncate_len;
-	packet->frame.full_length	= wire_len - icmp_truncate_len;
+	buf = base;
 
-	packet->ip.hdr.ver_hdrlen	= 0x45; /* version 4 and 5 * 32 bit words */
-	packet->ip.hdr.tos		= 0x00;
-	packet->ip.hdr.packet_length	= htons(wire_len - icmp_truncate_len);
-	packet->ip.hdr.identification	= htons(0xFFFF);
-	packet->ip.hdr.flags		= 0x40; /* BIT 1 set - means don't fraqment */
-	packet->ip.hdr.fragment		= htons(0x0000);
-	packet->ip.hdr.ttl		= 0xFF;
-	packet->ip.hdr.protocol		= protocol;
-	packet->ip.hdr.hdr_checksum	= htons(0x0000);
-	packet->ip.hdr.src_addr		= src_addr->sin_addr.s_addr;
-	packet->ip.hdr.dest_addr	= dest_addr->sin_addr.s_addr;
+	frame = (struct swrap_packet_frame *)buf;
+	frame->seconds		= tval->tv_sec;
+	frame->micro_seconds	= tval->tv_usec;
+	frame->recorded_length	= wire_len - icmp_truncate_len;
+	frame->full_length	= wire_len - icmp_truncate_len;
+	buf += SWRAP_PACKET_FRAME_SIZE;
+
+	ip = (union swrap_packet_ip *)buf;
+	ip->v4.ver_hdrlen	= 0x45; /* version 4 and 5 * 32 bit words */
+	ip->v4.tos		= 0x00;
+	ip->v4.packet_length	= htons(wire_len - icmp_truncate_len);
+	ip->v4.identification	= htons(0xFFFF);
+	ip->v4.flags		= 0x40; /* BIT 1 set - means don't fraqment */
+	ip->v4.fragment		= htons(0x0000);
+	ip->v4.ttl		= 0xFF;
+	ip->v4.protocol		= protocol;
+	ip->v4.hdr_checksum	= htons(0x0000);
+	ip->v4.src_addr		= src_addr->sin_addr.s_addr;
+	ip->v4.dest_addr	= dest_addr->sin_addr.s_addr;
+	buf += SWRAP_PACKET_IP_V4_SIZE;
 
 	if (unreachable) {
-		packet->ip.p.icmp.type		= 0x03; /* destination unreachable */
-		packet->ip.p.icmp.code		= 0x01; /* host unreachable */
-		packet->ip.p.icmp.checksum	= htons(0x0000);
-		packet->ip.p.icmp.unused	= htonl(0x00000000);
+		pay = (union swrap_packet_payload *)buf;
+		pay->icmp4.type		= 0x03; /* destination unreachable */
+		pay->icmp4.code		= 0x01; /* host unreachable */
+		pay->icmp4.checksum	= htons(0x0000);
+		pay->icmp4.unused	= htonl(0x00000000);
+		buf += SWRAP_PACKET_PAYLOAD_ICMP4_SIZE;
 
 		/* set the ip header in the ICMP payload */
-		packet = (struct swrap_packet *)(((unsigned char *)ret) + icmp_hdr_len);
-		packet->ip.hdr.ver_hdrlen	= 0x45; /* version 4 and 5 * 32 bit words */
-		packet->ip.hdr.tos		= 0x00;
-		packet->ip.hdr.packet_length	= htons(wire_len - icmp_hdr_len);
-		packet->ip.hdr.identification	= htons(0xFFFF);
-		packet->ip.hdr.flags		= 0x40; /* BIT 1 set - means don't fraqment */
-		packet->ip.hdr.fragment		= htons(0x0000);
-		packet->ip.hdr.ttl		= 0xFF;
-		packet->ip.hdr.protocol		= icmp_protocol;
-		packet->ip.hdr.hdr_checksum	= htons(0x0000);
-		packet->ip.hdr.src_addr		= dest_addr->sin_addr.s_addr;
-		packet->ip.hdr.dest_addr	= src_addr->sin_addr.s_addr;
+		ip = (union swrap_packet_ip *)buf;
+		ip->v4.ver_hdrlen	= 0x45; /* version 4 and 5 * 32 bit words */
+		ip->v4.tos		= 0x00;
+		ip->v4.packet_length	= htons(wire_len - icmp_hdr_len);
+		ip->v4.identification	= htons(0xFFFF);
+		ip->v4.flags		= 0x40; /* BIT 1 set - means don't fraqment */
+		ip->v4.fragment		= htons(0x0000);
+		ip->v4.ttl		= 0xFF;
+		ip->v4.protocol		= icmp_protocol;
+		ip->v4.hdr_checksum	= htons(0x0000);
+		ip->v4.src_addr		= dest_addr->sin_addr.s_addr;
+		ip->v4.dest_addr	= src_addr->sin_addr.s_addr;
+		buf += SWRAP_PACKET_IP_V4_SIZE;
 
 		src_port = dest_addr->sin_port;
 		dest_port = src_addr->sin_port;
 	}
 
+	pay = (union swrap_packet_payload *)buf;
+
 	switch (socket_type) {
 	case SOCK_STREAM:
-		packet->ip.p.tcp.source_port	= src_port;
-		packet->ip.p.tcp.dest_port	= dest_port;
-		packet->ip.p.tcp.seq_num	= htonl(tcp_seqno);
-		packet->ip.p.tcp.ack_num	= htonl(tcp_ack);
-		packet->ip.p.tcp.hdr_length	= 0x50; /* 5 * 32 bit words */
-		packet->ip.p.tcp.control	= tcp_ctl;
-		packet->ip.p.tcp.window		= htons(0x7FFF);
-		packet->ip.p.tcp.checksum	= htons(0x0000);
-		packet->ip.p.tcp.urg		= htons(0x0000);
+		pay->tcp.source_port	= src_port;
+		pay->tcp.dest_port	= dest_port;
+		pay->tcp.seq_num	= htonl(tcp_seqno);
+		pay->tcp.ack_num	= htonl(tcp_ack);
+		pay->tcp.hdr_length	= 0x50; /* 5 * 32 bit words */
+		pay->tcp.control	= tcp_ctl;
+		pay->tcp.window		= htons(0x7FFF);
+		pay->tcp.checksum	= htons(0x0000);
+		pay->tcp.urg		= htons(0x0000);
+		buf += SWRAP_PACKET_PAYLOAD_TCP_SIZE;
 
 		break;
 
 	case SOCK_DGRAM:
-		packet->ip.p.udp.source_port	= src_addr->sin_port;
-		packet->ip.p.udp.dest_port	= dest_addr->sin_port;
-		packet->ip.p.udp.length		= htons(8 + payload_len);
-		packet->ip.p.udp.checksum	= htons(0x0000);
+		pay->udp.source_port	= src_addr->sin_port;
+		pay->udp.dest_port	= dest_addr->sin_port;
+		pay->udp.length		= htons(8 + payload_len);
+		pay->udp.checksum	= htons(0x0000);
+		buf += SWRAP_PACKET_PAYLOAD_UDP_SIZE;
 
 		break;
 	}
 
 	if (payload && payload_len > 0) {
-		unsigned char *p = (unsigned char *)ret;
-		p += nonwire_len;
-		p += wire_hdr_len;
-		memcpy(p, payload, payload_len);
+		memcpy(buf, payload, payload_len);
 	}
 
 	*_packet_len = packet_len - icmp_truncate_len;
-	return ret;
+	return base;
 }
 
 static int swrap_get_pcap_fd(const char *fname)
@@ -911,11 +933,11 @@ static int swrap_get_pcap_fd(const char *fname)
 	return fd;
 }
 
-static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
-								  const struct sockaddr *addr,
-								  enum swrap_packet_type type,
-								  const void *buf, size_t len,
-								  size_t *packet_len)
+static uint8_t *swrap_marshall_packet(struct socket_info *si,
+				      const struct sockaddr *addr,
+				      enum swrap_packet_type type,
+				      const void *buf, size_t len,
+				      size_t *packet_len)
 {
 	const struct sockaddr_in *src_addr;
 	const struct sockaddr_in *dest_addr;
@@ -1171,13 +1193,13 @@ static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
 				   packet_len);
 }
 
-static void swrap_dump_packet(struct socket_info *si, 
-							  const struct sockaddr *addr,
-							  enum swrap_packet_type type,
-							  const void *buf, size_t len)
+static void swrap_dump_packet(struct socket_info *si,
+			      const struct sockaddr *addr,
+			      enum swrap_packet_type type,
+			      const void *buf, size_t len)
 {
 	const char *file_name;
-	struct swrap_packet *packet;
+	uint8_t *packet;
 	size_t packet_len = 0;
 	int fd;
 
