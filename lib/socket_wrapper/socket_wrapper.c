@@ -754,10 +754,10 @@ static const char *socket_wrapper_pcap_file(void)
 }
 
 static uint8_t *swrap_packet_init(struct timeval *tval,
-				  const struct sockaddr_in *src_addr,
-				  const struct sockaddr_in *dest_addr,
+				  const struct sockaddr *src,
+				  const struct sockaddr *dest,
 				  int socket_type,
-				  const unsigned char *payload,
+				  const uint8_t *payload,
 				  size_t payload_len,
 				  unsigned long tcp_seqno,
 				  unsigned long tcp_ack,
@@ -775,12 +775,26 @@ static uint8_t *swrap_packet_init(struct timeval *tval,
 	size_t nonwire_len = sizeof(*frame);
 	size_t wire_hdr_len = 0;
 	size_t wire_len = 0;
-	size_t ip_hdr_len = sizeof(ip->v4);
+	size_t ip_hdr_len = 0;
 	size_t icmp_hdr_len = 0;
 	size_t icmp_truncate_len = 0;
 	uint8_t protocol = 0, icmp_protocol = 0;
-	uint16_t src_port = src_addr->sin_port;
-	uint16_t dest_port = dest_addr->sin_port;
+	const struct sockaddr_in *src_in;
+	const struct sockaddr_in *dest_in;
+	uint16_t src_port;
+	uint16_t dest_port;
+
+	switch (src->sa_family) {
+	case AF_INET:
+		src_in = (const struct sockaddr_in *)src;
+		dest_in = (const struct sockaddr_in *)dest;
+		src_port = src_in->sin_port;
+		dest_port = dest_in->sin_port;
+		ip_hdr_len = sizeof(ip->v4);
+		break;
+	default:
+		return NULL;
+	}
 
 	switch (socket_type) {
 	case SOCK_STREAM:
@@ -829,44 +843,52 @@ static uint8_t *swrap_packet_init(struct timeval *tval,
 	buf += SWRAP_PACKET_FRAME_SIZE;
 
 	ip = (union swrap_packet_ip *)buf;
-	ip->v4.ver_hdrlen	= 0x45; /* version 4 and 5 * 32 bit words */
-	ip->v4.tos		= 0x00;
-	ip->v4.packet_length	= htons(wire_len - icmp_truncate_len);
-	ip->v4.identification	= htons(0xFFFF);
-	ip->v4.flags		= 0x40; /* BIT 1 set - means don't fraqment */
-	ip->v4.fragment		= htons(0x0000);
-	ip->v4.ttl		= 0xFF;
-	ip->v4.protocol		= protocol;
-	ip->v4.hdr_checksum	= htons(0x0000);
-	ip->v4.src_addr		= src_addr->sin_addr.s_addr;
-	ip->v4.dest_addr	= dest_addr->sin_addr.s_addr;
-	buf += SWRAP_PACKET_IP_V4_SIZE;
-
-	if (unreachable) {
-		pay = (union swrap_packet_payload *)buf;
-		pay->icmp4.type		= 0x03; /* destination unreachable */
-		pay->icmp4.code		= 0x01; /* host unreachable */
-		pay->icmp4.checksum	= htons(0x0000);
-		pay->icmp4.unused	= htonl(0x00000000);
-		buf += SWRAP_PACKET_PAYLOAD_ICMP4_SIZE;
-
-		/* set the ip header in the ICMP payload */
-		ip = (union swrap_packet_ip *)buf;
+	switch (src->sa_family) {
+	case AF_INET:
 		ip->v4.ver_hdrlen	= 0x45; /* version 4 and 5 * 32 bit words */
 		ip->v4.tos		= 0x00;
-		ip->v4.packet_length	= htons(wire_len - icmp_hdr_len);
+		ip->v4.packet_length	= htons(wire_len - icmp_truncate_len);
 		ip->v4.identification	= htons(0xFFFF);
 		ip->v4.flags		= 0x40; /* BIT 1 set - means don't fraqment */
 		ip->v4.fragment		= htons(0x0000);
 		ip->v4.ttl		= 0xFF;
-		ip->v4.protocol		= icmp_protocol;
+		ip->v4.protocol		= protocol;
 		ip->v4.hdr_checksum	= htons(0x0000);
-		ip->v4.src_addr		= dest_addr->sin_addr.s_addr;
-		ip->v4.dest_addr	= src_addr->sin_addr.s_addr;
+		ip->v4.src_addr		= src_in->sin_addr.s_addr;
+		ip->v4.dest_addr	= dest_in->sin_addr.s_addr;
 		buf += SWRAP_PACKET_IP_V4_SIZE;
+		break;
+	}
 
-		src_port = dest_addr->sin_port;
-		dest_port = src_addr->sin_port;
+	if (unreachable) {
+		pay = (union swrap_packet_payload *)buf;
+		switch (src->sa_family) {
+		case AF_INET:
+			pay->icmp4.type		= 0x03; /* destination unreachable */
+			pay->icmp4.code		= 0x01; /* host unreachable */
+			pay->icmp4.checksum	= htons(0x0000);
+			pay->icmp4.unused	= htonl(0x00000000);
+			buf += SWRAP_PACKET_PAYLOAD_ICMP4_SIZE;
+
+			/* set the ip header in the ICMP payload */
+			ip = (union swrap_packet_ip *)buf;
+			ip->v4.ver_hdrlen	= 0x45; /* version 4 and 5 * 32 bit words */
+			ip->v4.tos		= 0x00;
+			ip->v4.packet_length	= htons(wire_len - icmp_hdr_len);
+			ip->v4.identification	= htons(0xFFFF);
+			ip->v4.flags		= 0x40; /* BIT 1 set - means don't fraqment */
+			ip->v4.fragment		= htons(0x0000);
+			ip->v4.ttl		= 0xFF;
+			ip->v4.protocol		= icmp_protocol;
+			ip->v4.hdr_checksum	= htons(0x0000);
+			ip->v4.src_addr		= dest_in->sin_addr.s_addr;
+			ip->v4.dest_addr	= src_in->sin_addr.s_addr;
+			buf += SWRAP_PACKET_IP_V4_SIZE;
+
+			src_port = dest_in->sin_port;
+			dest_port = src_in->sin_port;
+			break;
+		}
 	}
 
 	pay = (union swrap_packet_payload *)buf;
@@ -887,8 +909,8 @@ static uint8_t *swrap_packet_init(struct timeval *tval,
 		break;
 
 	case SOCK_DGRAM:
-		pay->udp.source_port	= src_addr->sin_port;
-		pay->udp.dest_port	= dest_addr->sin_port;
+		pay->udp.source_port	= src_port;
+		pay->udp.dest_port	= dest_port;
 		pay->udp.length		= htons(8 + payload_len);
 		pay->udp.checksum	= htons(0x0000);
 		buf += SWRAP_PACKET_PAYLOAD_UDP_SIZE;
@@ -939,8 +961,8 @@ static uint8_t *swrap_marshall_packet(struct socket_info *si,
 				      const void *buf, size_t len,
 				      size_t *packet_len)
 {
-	const struct sockaddr_in *src_addr;
-	const struct sockaddr_in *dest_addr;
+	const struct sockaddr *src_addr;
+	const struct sockaddr *dest_addr;
 	unsigned long tcp_seqno = 0;
 	unsigned long tcp_ack = 0;
 	unsigned char tcp_ctl = 0;
@@ -959,8 +981,8 @@ static uint8_t *swrap_marshall_packet(struct socket_info *si,
 	case SWRAP_CONNECT_SEND:
 		if (si->type != SOCK_STREAM) return NULL;
 
-		src_addr = (const struct sockaddr_in *)si->myname;
-		dest_addr = (const struct sockaddr_in *)addr;
+		src_addr = si->myname;
+		dest_addr = addr;
 
 		tcp_seqno = si->io.pck_snd;
 		tcp_ack = si->io.pck_rcv;
@@ -973,8 +995,8 @@ static uint8_t *swrap_marshall_packet(struct socket_info *si,
 	case SWRAP_CONNECT_RECV:
 		if (si->type != SOCK_STREAM) return NULL;
 
-		dest_addr = (const struct sockaddr_in *)si->myname;
-		src_addr = (const struct sockaddr_in *)addr;
+		dest_addr = si->myname;
+		src_addr = addr;
 
 		tcp_seqno = si->io.pck_rcv;
 		tcp_ack = si->io.pck_snd;
@@ -987,8 +1009,8 @@ static uint8_t *swrap_marshall_packet(struct socket_info *si,
 	case SWRAP_CONNECT_UNREACH:
 		if (si->type != SOCK_STREAM) return NULL;
 
-		dest_addr = (const struct sockaddr_in *)si->myname;
-		src_addr = (const struct sockaddr_in *)addr;
+		dest_addr = si->myname;
+		src_addr = addr;
 
 		/* Unreachable: resend the data of SWRAP_CONNECT_SEND */
 		tcp_seqno = si->io.pck_snd - 1;
@@ -1001,8 +1023,8 @@ static uint8_t *swrap_marshall_packet(struct socket_info *si,
 	case SWRAP_CONNECT_ACK:
 		if (si->type != SOCK_STREAM) return NULL;
 
-		src_addr = (const struct sockaddr_in *)si->myname;
-		dest_addr = (const struct sockaddr_in *)addr;
+		src_addr = si->myname;
+		dest_addr = addr;
 
 		tcp_seqno = si->io.pck_snd;
 		tcp_ack = si->io.pck_rcv;
@@ -1013,8 +1035,8 @@ static uint8_t *swrap_marshall_packet(struct socket_info *si,
 	case SWRAP_ACCEPT_SEND:
 		if (si->type != SOCK_STREAM) return NULL;
 
-		dest_addr = (const struct sockaddr_in *)si->myname;
-		src_addr = (const struct sockaddr_in *)addr;
+		dest_addr = si->myname;
+		src_addr = addr;
 
 		tcp_seqno = si->io.pck_rcv;
 		tcp_ack = si->io.pck_snd;
@@ -1027,8 +1049,8 @@ static uint8_t *swrap_marshall_packet(struct socket_info *si,
 	case SWRAP_ACCEPT_RECV:
 		if (si->type != SOCK_STREAM) return NULL;
 
-		src_addr = (const struct sockaddr_in *)si->myname;
-		dest_addr = (const struct sockaddr_in *)addr;
+		src_addr = si->myname;
+		dest_addr = addr;
 
 		tcp_seqno = si->io.pck_snd;
 		tcp_ack = si->io.pck_rcv;
@@ -1041,8 +1063,8 @@ static uint8_t *swrap_marshall_packet(struct socket_info *si,
 	case SWRAP_ACCEPT_ACK:
 		if (si->type != SOCK_STREAM) return NULL;
 
-		dest_addr = (const struct sockaddr_in *)si->myname;
-		src_addr = (const struct sockaddr_in *)addr;
+		dest_addr = si->myname;
+		src_addr = addr;
 
 		tcp_seqno = si->io.pck_rcv;
 		tcp_ack = si->io.pck_snd;
@@ -1051,8 +1073,8 @@ static uint8_t *swrap_marshall_packet(struct socket_info *si,
 		break;
 
 	case SWRAP_SEND:
-		src_addr = (const struct sockaddr_in *)si->myname;
-		dest_addr = (const struct sockaddr_in *)si->peername;
+		src_addr = si->myname;
+		dest_addr = si->peername;
 
 		tcp_seqno = si->io.pck_snd;
 		tcp_ack = si->io.pck_rcv;
@@ -1063,8 +1085,8 @@ static uint8_t *swrap_marshall_packet(struct socket_info *si,
 		break;
 
 	case SWRAP_SEND_RST:
-		dest_addr = (const struct sockaddr_in *)si->myname;
-		src_addr = (const struct sockaddr_in *)si->peername;
+		dest_addr = si->myname;
+		src_addr = si->peername;
 
 		if (si->type == SOCK_DGRAM) {
 			return swrap_marshall_packet(si, si->peername,
@@ -1079,8 +1101,8 @@ static uint8_t *swrap_marshall_packet(struct socket_info *si,
 		break;
 
 	case SWRAP_PENDING_RST:
-		dest_addr = (const struct sockaddr_in *)si->myname;
-		src_addr = (const struct sockaddr_in *)si->peername;
+		dest_addr = si->myname;
+		src_addr = si->peername;
 
 		if (si->type == SOCK_DGRAM) {
 			return NULL;
@@ -1093,8 +1115,8 @@ static uint8_t *swrap_marshall_packet(struct socket_info *si,
 		break;
 
 	case SWRAP_RECV:
-		dest_addr = (const struct sockaddr_in *)si->myname;
-		src_addr = (const struct sockaddr_in *)si->peername;
+		dest_addr = si->myname;
+		src_addr = si->peername;
 
 		tcp_seqno = si->io.pck_rcv;
 		tcp_ack = si->io.pck_snd;
@@ -1105,8 +1127,8 @@ static uint8_t *swrap_marshall_packet(struct socket_info *si,
 		break;
 
 	case SWRAP_RECV_RST:
-		dest_addr = (const struct sockaddr_in *)si->myname;
-		src_addr = (const struct sockaddr_in *)si->peername;
+		dest_addr = si->myname;
+		src_addr = si->peername;
 
 		if (si->type == SOCK_DGRAM) {
 			return NULL;
@@ -1119,24 +1141,24 @@ static uint8_t *swrap_marshall_packet(struct socket_info *si,
 		break;
 
 	case SWRAP_SENDTO:
-		src_addr = (const struct sockaddr_in *)si->myname;
-		dest_addr = (const struct sockaddr_in *)addr;
+		src_addr = si->myname;
+		dest_addr = addr;
 
 		si->io.pck_snd += len;
 
 		break;
 
 	case SWRAP_SENDTO_UNREACH:
-		dest_addr = (const struct sockaddr_in *)si->myname;
-		src_addr = (const struct sockaddr_in *)addr;
+		dest_addr = si->myname;
+		src_addr = addr;
 
 		unreachable = 1;
 
 		break;
 
 	case SWRAP_RECVFROM:
-		dest_addr = (const struct sockaddr_in *)si->myname;
-		src_addr = (const struct sockaddr_in *)addr;
+		dest_addr = si->myname;
+		src_addr = addr;
 
 		si->io.pck_rcv += len;
 
@@ -1145,8 +1167,8 @@ static uint8_t *swrap_marshall_packet(struct socket_info *si,
 	case SWRAP_CLOSE_SEND:
 		if (si->type != SOCK_STREAM) return NULL;
 
-		src_addr = (const struct sockaddr_in *)si->myname;
-		dest_addr = (const struct sockaddr_in *)si->peername;
+		src_addr = si->myname;
+		dest_addr = si->peername;
 
 		tcp_seqno = si->io.pck_snd;
 		tcp_ack = si->io.pck_rcv;
@@ -1159,8 +1181,8 @@ static uint8_t *swrap_marshall_packet(struct socket_info *si,
 	case SWRAP_CLOSE_RECV:
 		if (si->type != SOCK_STREAM) return NULL;
 
-		dest_addr = (const struct sockaddr_in *)si->myname;
-		src_addr = (const struct sockaddr_in *)si->peername;
+		dest_addr = si->myname;
+		src_addr = si->peername;
 
 		tcp_seqno = si->io.pck_rcv;
 		tcp_ack = si->io.pck_snd;
@@ -1173,8 +1195,8 @@ static uint8_t *swrap_marshall_packet(struct socket_info *si,
 	case SWRAP_CLOSE_ACK:
 		if (si->type != SOCK_STREAM) return NULL;
 
-		src_addr = (const struct sockaddr_in *)si->myname;
-		dest_addr = (const struct sockaddr_in *)si->peername;
+		src_addr = si->myname;
+		dest_addr = si->peername;
 
 		tcp_seqno = si->io.pck_snd;
 		tcp_ack = si->io.pck_rcv;
@@ -1188,9 +1210,9 @@ static uint8_t *swrap_marshall_packet(struct socket_info *si,
 	swrapGetTimeOfDay(&tv);
 
 	return swrap_packet_init(&tv, src_addr, dest_addr, si->type,
-				   (const unsigned char *)buf, len,
-				   tcp_seqno, tcp_ack, tcp_ctl, unreachable,
-				   packet_len);
+				 (const uint8_t *)buf, len,
+				 tcp_seqno, tcp_ack, tcp_ctl, unreachable,
+				 packet_len);
 }
 
 static void swrap_dump_packet(struct socket_info *si,
