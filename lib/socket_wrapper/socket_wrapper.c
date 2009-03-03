@@ -145,7 +145,16 @@
 
 #define MAX_WRAPPED_INTERFACES 16
 
-#define SW_IPV6_ADDRESS 1
+#ifdef HAVE_IPV6
+/*
+ * FD00::5357:5FXX
+ */
+static const struct in6_addr swrap_ipv6 =
+{ { {
+0xFD,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+0x00,0x00,0x00,0x00,0x53,0x57,0x5F,0x00
+} } };
+#endif
 
 static struct sockaddr *sockaddr_dup(const void *data, socklen_t len)
 {
@@ -295,7 +304,8 @@ static int convert_un_in(const struct sockaddr_un *un, struct sockaddr *in, sock
 
 		memset(in2, 0, sizeof(*in2));
 		in2->sin6_family = AF_INET6;
-		in2->sin6_addr.s6_addr[0] = SW_IPV6_ADDRESS;
+		in2->sin6_addr = swrap_ipv6;
+		in2->sin6_addr.s6_addr[15] = iface;
 		in2->sin6_port = htons(prt);
 
 		*len = sizeof(*in2);
@@ -367,6 +377,7 @@ static int convert_in_un_remote(struct socket_info *si, const struct sockaddr *i
 	case AF_INET6: {
 		const struct sockaddr_in6 *in = 
 		    (const struct sockaddr_in6 *)inaddr;
+		struct in6_addr cmp;
 
 		switch (si->type) {
 		case SOCK_STREAM:
@@ -380,8 +391,16 @@ static int convert_in_un_remote(struct socket_info *si, const struct sockaddr *i
 		/* XXX no multicast/broadcast */
 
 		prt = ntohs(in->sin6_port);
-		iface = SW_IPV6_ADDRESS;
-		
+
+		cmp = in->sin6_addr;
+		cmp.s6_addr[15] = 0;
+		if (IN6_ARE_ADDR_EQUAL(&swrap_ipv6, &cmp)) {
+			iface = in->sin6_addr.s6_addr[15];
+		} else {
+			errno = ENETUNREACH;
+			return -1;
+		}
+
 		break;
 	}
 #endif
@@ -474,6 +493,7 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 	case AF_INET6: {
 		const struct sockaddr_in6 *in = 
 		    (const struct sockaddr_in6 *)inaddr;
+		struct in6_addr cmp;
 
 		switch (si->type) {
 		case SOCK_STREAM:
@@ -487,13 +507,21 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 		/* XXX no multicast/broadcast */
 
 		prt = ntohs(in->sin6_port);
-		iface = SW_IPV6_ADDRESS;
-		
+
+		cmp = in->sin6_addr;
+		cmp.s6_addr[15] = 0;
+		if (IN6_ARE_ADDR_EQUAL(&swrap_ipv6, &cmp)) {
+			iface = in->sin6_addr.s6_addr[15];
+		} else {
+			errno = EADDRNOTAVAIL;
+			return -1;
+		}
+
 		break;
 	}
 #endif
 	default:
-		errno = ENETUNREACH;
+		errno = EADDRNOTAVAIL;
 		return -1;
 	}
 
@@ -1560,13 +1588,14 @@ static int swrap_auto_bind(struct socket_info *si)
 		    	type = SOCKET_TYPE_CHAR_UDP_V6;
 			break;
 		default:
-		    errno = ESOCKTNOSUPPORT;
-		    return -1;
+			errno = ESOCKTNOSUPPORT;
+			return -1;
 		}
 
 		memset(&in6, 0, sizeof(in6));
 		in6.sin6_family = AF_INET6;
-		in6.sin6_addr.s6_addr[0] = SW_IPV6_ADDRESS;
+		in6.sin6_addr = swrap_ipv6;
+		in6.sin6_addr.s6_addr[15] = socket_wrapper_default_iface();
 		si->myname_len = sizeof(in6);
 		si->myname = sockaddr_dup(&in6, si->myname_len);
 		break;
