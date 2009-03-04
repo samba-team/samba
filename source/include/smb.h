@@ -597,6 +597,12 @@ typedef struct connection_struct {
 	 */
 	struct auth_serversupplied_info *server_info;
 
+	/*
+	 * If the "force group" parameter is set, this is the primary gid that
+	 * may be used in the users token, depending on the vuid using this tid.
+	 */
+	gid_t force_group_gid;
+
 	char client_address[INET6_ADDRSTRLEN]; /* String version of client IP address. */
 
 	uint16 vuid; /* vuid of user who *opened* this connection, or UID_FIELD_INVALID */
