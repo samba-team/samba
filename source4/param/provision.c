@@ -34,6 +34,7 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 			struct provision_settings *settings, 
 			struct provision_result *result)
 {
+	char *configfile;
 	PyObject *provision_mod, *provision_dict, *provision_fn, *py_result, *parameters;
 	
 	DEBUG(0,("Provision for Become-DC test using python\n"));
@@ -76,8 +77,11 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 		 settings->targetdir));
 	parameters = PyDict_New();
 
-	PyDict_SetItemString(parameters, "smbconf", 
-			     PyString_FromString(lp_configfile(lp_ctx)));
+	configfile = lp_configfile(lp_ctx);
+	if (configfile != NULL) {
+		PyDict_SetItemString(parameters, "smbconf", 
+				     PyString_FromString(configfile));
+	}
 
 	PyDict_SetItemString(parameters, "rootdn", 
 						 PyString_FromString(settings->root_dn_str));
