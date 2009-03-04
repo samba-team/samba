@@ -226,10 +226,6 @@ WERROR smbconf_set_parameter(struct smbconf_ctx *ctx,
 			     const char *param,
 			     const char *valstr)
 {
-	if (!smbconf_share_exists(ctx, service)) {
-		return WERR_NO_SUCH_SERVICE;
-	}
-
 	return ctx->ops->set_parameter(ctx, service, param, valstr);
 }
 
@@ -265,10 +261,6 @@ WERROR smbconf_get_parameter(struct smbconf_ctx *ctx,
 		return WERR_INVALID_PARAM;
 	}
 
-	if (!smbconf_share_exists(ctx, service)) {
-		return WERR_NO_SUCH_SERVICE;
-	}
-
 	return ctx->ops->get_parameter(ctx, mem_ctx, service, param, valstr);
 }
 
@@ -299,10 +291,6 @@ WERROR smbconf_get_global_parameter(struct smbconf_ctx *ctx,
 WERROR smbconf_delete_parameter(struct smbconf_ctx *ctx,
 				const char *service, const char *param)
 {
-	if (!smbconf_share_exists(ctx, service)) {
-		return WERR_NO_SUCH_SERVICE;
-	}
-
 	return ctx->ops->delete_parameter(ctx, service, param);
 }
 
@@ -329,10 +317,6 @@ WERROR smbconf_get_includes(struct smbconf_ctx *ctx,
 			    const char *service,
 			    uint32_t *num_includes, char ***includes)
 {
-	if (!smbconf_share_exists(ctx, service)) {
-		return WERR_NO_SUCH_SERVICE;
-	}
-
 	return ctx->ops->get_includes(ctx, mem_ctx, service, num_includes,
 				      includes);
 }
@@ -356,10 +340,6 @@ WERROR smbconf_set_includes(struct smbconf_ctx *ctx,
 			    const char *service,
 			    uint32_t num_includes, const char **includes)
 {
-	if (!smbconf_share_exists(ctx, service)) {
-		return WERR_NO_SUCH_SERVICE;
-	}
-
 	return ctx->ops->set_includes(ctx, service, num_includes, includes);
 }
 
@@ -381,10 +361,6 @@ WERROR smbconf_set_global_includes(struct smbconf_ctx *ctx,
 
 WERROR smbconf_delete_includes(struct smbconf_ctx *ctx, const char *service)
 {
-	if (!smbconf_share_exists(ctx, service)) {
-		return WERR_NO_SUCH_SERVICE;
-	}
-
 	return ctx->ops->delete_includes(ctx, service);
 }
 
