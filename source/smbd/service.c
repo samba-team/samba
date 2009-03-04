@@ -834,6 +834,14 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 			*pstatus = status;
 			return NULL;
 		}
+
+		/*
+		 * We need to cache this gid, to use within
+ 		 * change_to_user() separately from the conn->server_info
+ 		 * struct. We only use conn->server_info directly if
+ 		 * "force_user" was set.
+ 		 */
+		conn->force_group_gid = conn->server_info->utok.gid;
 	}
 
 	conn->vuid = (vuser != NULL) ? vuser->vuid : UID_FIELD_INVALID;

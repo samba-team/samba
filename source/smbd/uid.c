@@ -256,6 +256,8 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 
 	if((group_c = *lp_force_group(snum))) {
 
+		SMB_ASSERT(conn->force_group_gid != (gid_t)-1);
+
 		if(group_c == '+') {
 
 			/*
@@ -268,15 +270,18 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 			int i;
 			for (i = 0; i < num_groups; i++) {
 				if (group_list[i]
-				    == conn->server_info->utok.gid) {
-					gid = conn->server_info->utok.gid;
+				    == conn->force_group_gid) {
+					conn->server_info->utok.gid =
+						conn->force_group_gid;
+					gid = conn->force_group_gid;
 					gid_to_sid(&conn->server_info->ptok
 						   ->user_sids[1], gid);
 					break;
 				}
 			}
 		} else {
-			gid = conn->server_info->utok.gid;
+			conn->server_info->utok.gid = conn->force_group_gid;
+			gid = conn->force_group_gid;
 			gid_to_sid(&conn->server_info->ptok->user_sids[1],
 				   gid);
 		}
