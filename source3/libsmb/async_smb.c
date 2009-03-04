@@ -861,7 +861,7 @@ static NTSTATUS validate_smb_crypto(struct cli_state *cli, char *pdu)
 
 static void handle_incoming_pdu(struct cli_state *cli)
 {
-	struct cli_request *req;
+	struct cli_request *req, *next;
 	uint16_t mid;
 	size_t raw_pdu_len, buf_len, pdu_len, rest_len;
 	char *pdu;
@@ -978,8 +978,11 @@ static void handle_incoming_pdu(struct cli_state *cli)
 	DEBUG(10, ("handle_incoming_pdu: Aborting with %s\n",
 		   nt_errstr(status)));
 
-	for (req = cli->outstanding_requests; req; req = req->next) {
-		async_req_nterror(req->async[0], status);
+	for (req = cli->outstanding_requests; req; req = next) {
+		next = req->next;
+		if (req->num_async) {
+			async_req_nterror(req->async[0], status);
+		}
 	}
 	return;
 }
