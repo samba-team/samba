@@ -899,13 +899,6 @@ bool reinit_after_fork(struct messaging_context *msg_ctx,
 	 * numbers as each other */
 	set_need_random_reseed();
 
-#ifdef WITH_MADVISE_PROTECTED
-	/* Protect parent process from being killed by kernel when system
-	 * memory is low.  Child processes can still be killed */
-	if(!parent_longlived)
-		madvise(NULL,0,MADV_PROTECT);
-#endif
-
 	/* tdb needs special fork handling */
 	if (tdb_reopen_all(parent_longlived ? 1 : 0) == -1) {
 		DEBUG(0,("tdb_reopen_all failed.\n"));
