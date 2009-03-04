@@ -121,9 +121,9 @@ static struct ctdb_marshall_buffer *db_ctdb_marshall_add(TALLOC_CTX *mem_ctx,
 {
 	struct ctdb_rec_data *r;
 	size_t m_size, r_size;
-	struct ctdb_marshall_buffer *m2;
+	struct ctdb_marshall_buffer *m2 = NULL;
 
-	r = db_ctdb_marshall_record(mem_ctx, reqid, key, header, data);
+	r = db_ctdb_marshall_record(talloc_tos(), reqid, key, header, data);
 	if (r == NULL) {
 		talloc_free(m);
 		return NULL;
@@ -133,7 +133,7 @@ static struct ctdb_marshall_buffer *db_ctdb_marshall_add(TALLOC_CTX *mem_ctx,
 		m = (struct ctdb_marshall_buffer *)talloc_zero_size(
 			mem_ctx, offsetof(struct ctdb_marshall_buffer, data));
 		if (m == NULL) {
-			return NULL;
+			goto done;
 		}
 		m->db_id = db_id;
 	}
@@ -145,15 +145,15 @@ static struct ctdb_marshall_buffer *db_ctdb_marshall_add(TALLOC_CTX *mem_ctx,
 		mem_ctx, m,  m_size + r_size);
 	if (m2 == NULL) {
 		talloc_free(m);
-		return NULL;
+		goto done;
 	}
 
 	memcpy(m_size + (uint8_t *)m2, r, r_size);
 
-	talloc_free(r);
-
 	m2->count++;
 
+done:
+	talloc_free(r);
 	return m2;
 }
 
