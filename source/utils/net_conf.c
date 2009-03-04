@@ -331,12 +331,6 @@ static int net_conf_import(struct net_context *c, struct smbconf_ctx *conf_ctx,
 			 "would import the following configuration:\n\n");
 	}
 
-	werr = smbconf_transaction_start(conf_ctx);
-	if (!W_ERROR_IS_OK(werr)) {
-		d_printf("error starting transaction: %s\n", win_errstr(werr));
-		goto done;
-	}
-
 	if (servicename != NULL) {
 		struct smbconf_service *service = NULL;
 
@@ -366,11 +360,44 @@ static int net_conf_import(struct net_context *c, struct smbconf_ctx *conf_ctx,
 				goto cancel;
 			}
 		}
+
+		/*
+		 * Wrap the importing of shares into a transaction,
+		 * but only 100 at a time, in order to serve memory.
+		 * The allocated memory accumulates across the actions
+		 * within the transaction, and for me, some 1500
+		 * imported shares, the MAX_TALLOC_SIZE of 256 MB
+		 * was exceeded.
+		 */
+		werr = smbconf_transaction_start(conf_ctx);
+		if (!W_ERROR_IS_OK(werr)) {
+			d_printf("error starting transaction: %s\n",
+				 win_errstr(werr));
+			goto done;
+		}
+
 		for (sidx = 0; sidx < num_shares; sidx++) {
 			werr = import_process_service(c, conf_ctx,
 						      services[sidx]);
 			if (!W_ERROR_IS_OK(werr)) {
 				goto cancel;
+			}
+
+			if (sidx % 100) {
+				continue;
+			}
+
+			werr = smbconf_transaction_commit(conf_ctx);
+			if (!W_ERROR_IS_OK(werr)) {
+				d_printf("error committing transaction: %s\n",
+					 win_errstr(werr));
+				goto done;
+			}
+			werr = smbconf_transaction_start(conf_ctx);
+			if (!W_ERROR_IS_OK(werr)) {
+				d_printf("error starting transaction: %s\n",
+					 win_errstr(werr));
+				goto done;
 			}
 		}
 	}
