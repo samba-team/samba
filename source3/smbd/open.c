@@ -2719,7 +2719,7 @@ struct case_semantics_state *set_posix_case_semantics(TALLOC_CTX *mem_ctx,
  * If that works, delete them all by setting the delete on close and close.
  */
 
-static NTSTATUS open_streams_for_delete(connection_struct *conn,
+NTSTATUS open_streams_for_delete(connection_struct *conn,
 					const char *fname)
 {
 	struct stream_struct *stream_info;
@@ -2777,13 +2777,15 @@ static NTSTATUS open_streams_for_delete(connection_struct *conn,
 			goto fail;
 		}
 
-		status = create_file_unixpath
-			(conn,			/* conn */
+		status = SMB_VFS_CREATE_FILE(
+			 conn,			/* conn */
 			 NULL,			/* req */
+			 0,			/* root_dir_fid */
 			 streamname,		/* fname */
+			 0,			/* create_file_flags */
 			 DELETE_ACCESS,		/* access_mask */
-			 FILE_SHARE_READ | FILE_SHARE_WRITE
-			 | FILE_SHARE_DELETE,	/* share_access */
+			 (FILE_SHARE_READ |	/* share_access */
+			     FILE_SHARE_WRITE | FILE_SHARE_DELETE),
 			 FILE_OPEN,		/* create_disposition*/
 			 NTCREATEX_OPTIONS_PRIVATE_STREAM_DELETE, /* create_options */
 			 FILE_ATTRIBUTE_NORMAL,	/* file_attributes */

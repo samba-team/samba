@@ -6723,6 +6723,8 @@ void msg_file_was_renamed(struct messaging_context *msg,
 struct case_semantics_state;
 struct case_semantics_state *set_posix_case_semantics(TALLOC_CTX *mem_ctx,
 						      connection_struct *conn);
+NTSTATUS open_streams_for_delete(connection_struct *conn,
+				 const char *fname);
 NTSTATUS create_file_default(connection_struct *conn,
 			     struct smb_request *req,
 			     uint16_t root_dir_fid,
