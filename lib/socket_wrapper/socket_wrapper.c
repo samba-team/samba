@@ -831,11 +831,11 @@ static uint8_t *swrap_packet_init(struct timeval *tval,
 	size_t icmp_hdr_len = 0;
 	size_t icmp_truncate_len = 0;
 	uint8_t protocol = 0, icmp_protocol = 0;
-	const struct sockaddr_in *src_in;
-	const struct sockaddr_in *dest_in;
+	const struct sockaddr_in *src_in = NULL;
+	const struct sockaddr_in *dest_in = NULL;
 #ifdef HAVE_IPV6
-	const struct sockaddr_in6 *src_in6;
-	const struct sockaddr_in6 *dest_in6;
+	const struct sockaddr_in6 *src_in6 = NULL;
+	const struct sockaddr_in6 *dest_in6 = NULL;
 #endif
 	uint16_t src_port;
 	uint16_t dest_port;
