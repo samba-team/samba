@@ -1136,7 +1136,8 @@ def provision(setup_dir, message, session_info,
     message("NetBIOS Domain: %s" % names.domain)
     message("DNS Domain:     %s" % names.dnsdomain)
     message("DOMAIN SID:     %s" % str(domainsid))
-    message("Admin password: %s" % adminpass)
+    if samdb_fill == FILL_FULL:
+        message("Admin password: %s" % adminpass)
 
     result = ProvisionResult()
     result.domaindn = domaindn
