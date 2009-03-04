@@ -4668,7 +4668,9 @@ static int max_open_files(void)
 
 #if (defined(HAVE_GETRLIMIT) && defined(RLIMIT_NOFILE))
 	{
-		struct rlimit rl = {};
+		struct rlimit rl;
+
+		ZERO_STRUCT(rl);
 
 		if (getrlimit(RLIMIT_NOFILE, &rl) == 0)
 			rlimit_max = rl.rlim_cur;
