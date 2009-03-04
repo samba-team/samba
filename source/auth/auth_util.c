@@ -702,7 +702,6 @@ NTSTATUS create_local_token(auth_serversupplied_info *server_info)
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(mem_ctx);
 		return status;
 	}
 	
