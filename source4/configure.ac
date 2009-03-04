@@ -42,7 +42,7 @@ AC_CONFIG_FILES(param/samba-hostconfig.pc)
 AC_CONFIG_FILES(librpc/dcerpc_samr.pc)
 AC_CONFIG_FILES(librpc/dcerpc_atsvc.pc)
 
-SMB_INCLUDED_LIB_PKGCONFIG(LIBTALLOC, talloc >= 1.2.0, [],
+SMB_INCLUDED_LIB_PKGCONFIG(LIBTALLOC, talloc >= 1.2.1, [],
 	[
 		m4_include(../lib/talloc/libtalloc.m4)
 		SMB_INCLUDE_MK(../lib/talloc/config.mk)
