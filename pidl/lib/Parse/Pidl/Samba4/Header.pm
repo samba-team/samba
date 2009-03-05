@@ -407,6 +407,9 @@ sub Parse($)
 	}
 	pidl "#include <stdint.h>\n";
 	pidl "\n";
+	# FIXME: Include this only if NTSTATUS was actually used
+	pidl choose_header("libcli/util/ntstatus.h", "core/ntstatus.h") . "\n";
+	pidl "\n";
 
 	foreach (@{$ndr}) {
 		($_->{TYPE} eq "CPP_QUOTE") && HeaderQuote($_);

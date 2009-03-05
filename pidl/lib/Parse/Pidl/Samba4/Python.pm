@@ -275,7 +275,24 @@ sub PythonStruct($$$$$$)
 		$self->pidl("if (!PyArg_ParseTuple(args, \"s#:__ndr_unpack__\", &blob.data, &blob.length))");
 		$self->pidl("\treturn NULL;");
 		$self->pidl("");
-		$self->pidl("err = ndr_pull_struct_blob_all(&blob, py_talloc_get_mem_ctx(py_obj), NULL, object, (ndr_pull_flags_fn_t)ndr_pull_$name);");
+
+		# This disgusting hack works around the fact that ndr_pull_struct_blob_all will always fail on structures with relative pointers.  
+                # So, map ndr_unpack to ndr_pull_struct_blob_all only if we don't have any relative pointers in this
+		my $got_relative = 0;
+		if ($#{$d->{ELEMENTS}} > -1) {
+		        foreach my $e (@{$d->{ELEMENTS}}) {
+			        my $l = $e->{LEVELS}[0];
+				if ($l->{TYPE} eq "POINTER" and ($l->{POINTER_TYPE} eq "relative")) {
+				        $got_relative = 1;
+					last;
+				}
+			}
+		}
+		if ($got_relative == 0) {
+		        $self->pidl("err = ndr_pull_struct_blob_all(&blob, py_talloc_get_mem_ctx(py_obj), NULL, object, (ndr_pull_flags_fn_t)ndr_pull_$name);");
+		} else {
+		        $self->pidl("err = ndr_pull_struct_blob(&blob, py_talloc_get_mem_ctx(py_obj), NULL, object, (ndr_pull_flags_fn_t)ndr_pull_$name);");
+		}
 		$self->pidl("if (err != NDR_ERR_SUCCESS) {");
 		$self->indent;
 		$self->pidl("PyErr_SetNdrError(err);");

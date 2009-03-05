@@ -201,11 +201,11 @@ userAccountControl: %u
         glue.dsdb_attach_schema_from_ldif_file(self, pf, df)
 
     def set_invocation_id(self, invocation_id):
-    	"""Set the invocation id for this SamDB handle.
-    	
-    	:param invocation_id: GUID of the invocation id.
-    	"""
-    	glue.dsdb_set_ntds_invocation_id(self, invocation_id)
+        """Set the invocation id for this SamDB handle.
+        
+        :param invocation_id: GUID of the invocation id.
+        """
+        glue.dsdb_set_ntds_invocation_id(self, invocation_id)
 
     def setexpiry(self, user, expiry_seconds, noexpiry):
         """Set the password expiry for a user

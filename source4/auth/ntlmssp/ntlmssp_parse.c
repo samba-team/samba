@@ -44,14 +44,15 @@ bool msrpc_gen(TALLOC_CTX *mem_ctx,
 	       DATA_BLOB *blob,
 	       const char *format, ...)
 {
-	int i;
-	ssize_t n;
+	int i, j;
+	bool ret;
 	va_list ap;
 	char *s;
 	uint8_t *b;
 	int head_size=0, data_size=0;
 	int head_ofs, data_ofs;
 	int *intargs;
+	size_t n;
 
 	DATA_BLOB *pointers;
 
@@ -65,8 +66,9 @@ bool msrpc_gen(TALLOC_CTX *mem_ctx,
 		case 'U':
 			s = va_arg(ap, char *);
 			head_size += 8;
-			n = push_ucs2_talloc(pointers, (void **)&pointers[i].data, s);
-			if (n == -1) {
+			ret = push_ucs2_talloc(pointers, (smb_ucs2_t **)&pointers[i].data, 
+								   s, &n);
+			if (!ret) {
 				return false;
 			}
 			pointers[i].length = n;
@@ -76,8 +78,9 @@ bool msrpc_gen(TALLOC_CTX *mem_ctx,
 		case 'A':
 			s = va_arg(ap, char *);
 			head_size += 8;
-			n = push_ascii_talloc(pointers, (char **)&pointers[i].data, s);
-			if (n == -1) {
+			ret = push_ascii_talloc(pointers, (char **)&pointers[i].data, s,
+									&n);
+			if (!ret) {
 				return false;
 			}
 			pointers[i].length = n;
@@ -85,11 +88,12 @@ bool msrpc_gen(TALLOC_CTX *mem_ctx,
 			data_size += pointers[i].length;
 			break;
 		case 'a':
-			n = va_arg(ap, int);
-			intargs[i] = n;
+			j = va_arg(ap, int);
+			intargs[i] = j;
 			s = va_arg(ap, char *);
-			n = push_ucs2_talloc(pointers, (void **)&pointers[i].data, s);
-			if (n == -1) {
+			ret = push_ucs2_talloc(pointers, (smb_ucs2_t **)&pointers[i].data, 
+								   s, &n);
+			if (!ret) {
 				return false;
 			}
 			pointers[i].length = n;
@@ -110,8 +114,8 @@ bool msrpc_gen(TALLOC_CTX *mem_ctx,
 			head_size += pointers[i].length;
 			break;
 		case 'd':
-			n = va_arg(ap, int);
-			intargs[i] = n;
+			j = va_arg(ap, int);
+			intargs[i] = j;
 			head_size += 4;
 			break;
 		case 'C':
@@ -145,8 +149,8 @@ bool msrpc_gen(TALLOC_CTX *mem_ctx,
 			data_ofs += n;
 			break;
 		case 'a':
-			n = intargs[i];
-			SSVAL(blob->data, data_ofs, n); data_ofs += 2;
+			j = intargs[i];
+			SSVAL(blob->data, data_ofs, j); data_ofs += 2;
 
 			n = pointers[i].length;
 			SSVAL(blob->data, data_ofs, n); data_ofs += 2;
@@ -156,8 +160,8 @@ bool msrpc_gen(TALLOC_CTX *mem_ctx,
 			data_ofs += n;
 			break;
 		case 'd':
-			n = intargs[i];
-			SIVAL(blob->data, head_ofs, n); 
+			j = intargs[i];
+			SIVAL(blob->data, head_ofs, j); 
 			head_ofs += 4;
 			break;
 		case 'b':

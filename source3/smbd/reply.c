@@ -2214,6 +2214,16 @@ static NTSTATUS can_rename(connection_struct *conn, files_struct *fsp,
 	}
 
 	if (S_ISDIR(pst->st_mode)) {
+		if (fsp->posix_open) {
+			return NT_STATUS_OK;
+		}
+
+		/* If no pathnames are open below this
+		   directory, allow the rename. */
+
+		if (file_find_subpath(fsp)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
 		return NT_STATUS_OK;
 	}
 
@@ -2808,9 +2818,9 @@ static void send_file_readbraw(connection_struct *conn,
 		}
 		return;
 	}
-#endif
 
 normal_readbraw:
+#endif
 
 	outbuf = TALLOC_ARRAY(NULL, char, nread+4);
 	if (!outbuf) {

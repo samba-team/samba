@@ -19,10 +19,13 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "includes.h"
 #include "onefs.h"
+#include "onefs_config.h"
 
 #include <isi_acl/isi_acl_util.h>
 #include <ifs/ifs_syscalls.h>
+#include <sys/isi_acl.h>
 
 const struct enum_list enum_onefs_acl_wire_format[] = {
 	{ACL_FORMAT_RAW,  "No Format"},
@@ -272,9 +275,6 @@ onefs_samba_acl_to_acl(SEC_ACL *samba_acl, struct ifs_security_acl **acl,
 	if (*ignore_aces == false)
 		if (aclu_initialize_acl(acl, aces, num_aces))
 			goto err_free;
-
-	if (aclu_initialize_acl(acl, aces, num_aces))
-		goto err_free;
 
 	/* Currently aclu_initialize_acl should copy the aces over, allowing
 	 * us to immediately free */
@@ -614,6 +614,8 @@ onefs_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	bool fopened = false;
 	NTSTATUS status = NT_STATUS_OK;
 
+	START_PROFILE(syscall_get_sd);
+
 	*ppdesc = NULL;
 
 	DEBUG(5, ("Getting sd for file %s. security_info=%u\n",
@@ -753,6 +755,9 @@ onefs_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	DEBUG(5, ("Finished retrieving/canonicalizing SD!\n"));
 	/* FALLTHROUGH */
 out:
+
+	END_PROFILE(syscall_get_sd);
+
 	if (alloced && sd) {
 		if (new_aces_alloced && sd->dacl->aces)
 			SAFE_FREE(sd->dacl->aces);
@@ -888,9 +893,11 @@ onefs_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 		  uint32 security_info_sent, SEC_DESC *psd)
 {
 	struct ifs_security_descriptor sd = {};
-	int fd;
+	int fd = -1;
 	bool fopened = false;
 	NTSTATUS status;
+
+	START_PROFILE(syscall_set_sd);
 
 	DEBUG(5,("Setting SD on file %s.\n", fsp->fsp_name ));
 
@@ -898,8 +905,8 @@ onefs_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 				      SNUM(handle->conn));
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3, ("SD initialization failure: %s", nt_errstr(status)));
-		return status;
+		DEBUG(3, ("SD initialization failure: %s\n", nt_errstr(status)));
+		goto out;
 	}
 
 	fd = fsp->fh->fd;
@@ -938,6 +945,8 @@ onefs_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 
 	/* FALLTHROUGH */
 out:
+	END_PROFILE(syscall_set_sd);
+
 	if (fopened)
 		close(fd);
 

@@ -730,7 +730,7 @@ void reload_printers(void)
 			DEBUG(3, ("removing stale printer %s\n", pname));
 
 			if (is_printer_published(NULL, snum, NULL))
-				nt_printer_publish(NULL, snum, SPOOL_DS_UNPUBLISH);
+				nt_printer_publish(NULL, snum, DSPRINT_UNPUBLISH);
 			del_a_printer(pname);
 			lp_killservice(snum);
 		}

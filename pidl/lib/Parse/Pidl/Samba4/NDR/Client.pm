@@ -131,7 +131,9 @@ sub Parse($$$$)
 	if (is_intree()) {
 		$res .= "#include \"includes.h\"\n";
 	} else {
+		$res .= "#ifndef _GNU_SOURCE\n";
 		$res .= "#define _GNU_SOURCE\n";
+		$res .= "#endif\n";
 		$res .= "#include <stdio.h>\n";
 		$res .= "#include <stdbool.h>\n";
 		$res .= "#include <stdlib.h>\n";

@@ -140,6 +140,7 @@ find_again:
 		return NULL;
 	}
 	conn->cnum = i;
+	conn->force_group_gid = (gid_t)-1;
 
 	bitmap_set(bmap, i);
 

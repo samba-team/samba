@@ -115,3 +115,19 @@ NTSTATUS merge_nt_token(TALLOC_CTX *mem_ctx,
 
 	return NT_STATUS_OK;
 }
+
+/*******************************************************************
+ Check if this ACE has a SID in common with the token.
+********************************************************************/
+
+bool token_sid_in_ace(const NT_USER_TOKEN *token, const struct security_ace *ace)
+{
+	size_t i;
+
+	for (i = 0; i < token->num_sids; i++) {
+		if (sid_equal(&ace->trustee, &token->user_sids[i]))
+			return true;
+	}
+
+	return false;
+}

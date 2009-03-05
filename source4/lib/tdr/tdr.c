@@ -130,7 +130,7 @@ NTSTATUS tdr_print_uint32(struct tdr_print *tdr, const char *name, uint32_t *v)
 
 NTSTATUS tdr_pull_charset(struct tdr_pull *tdr, TALLOC_CTX *ctx, const char **v, uint32_t length, uint32_t el_size, charset_t chset)
 {
-	int ret;
+	size_t ret;
 
 	if (length == -1) {
 		switch (chset) {
@@ -153,9 +153,7 @@ NTSTATUS tdr_pull_charset(struct tdr_pull *tdr, TALLOC_CTX *ctx, const char **v,
 
 	TDR_PULL_NEED_BYTES(tdr, el_size*length);
 	
-	ret = convert_string_talloc_convenience(ctx, tdr->iconv_convenience, chset, CH_UNIX, tdr->data.data+tdr->offset, el_size*length, discard_const_p(void *, v));
-
-	if (ret == -1) {
+	if (!convert_string_talloc_convenience(ctx, tdr->iconv_convenience, chset, CH_UNIX, tdr->data.data+tdr->offset, el_size*length, discard_const_p(void *, v), &ret, false)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -166,7 +164,7 @@ NTSTATUS tdr_pull_charset(struct tdr_pull *tdr, TALLOC_CTX *ctx, const char **v,
 
 NTSTATUS tdr_push_charset(struct tdr_push *tdr, const char **v, uint32_t length, uint32_t el_size, charset_t chset)
 {
-	ssize_t ret, required;
+	size_t ret, required;
 
 	if (length == -1) {
 		length = strlen(*v) + 1; /* Extra element for null character */
@@ -175,9 +173,7 @@ NTSTATUS tdr_push_charset(struct tdr_push *tdr, const char **v, uint32_t length,
 	required = el_size * length;
 	TDR_PUSH_NEED_BYTES(tdr, required);
 
-	ret = convert_string_convenience(tdr->iconv_convenience, CH_UNIX, chset, *v, strlen(*v), tdr->data.data+tdr->data.length, required);
-
-	if (ret == -1) {
+	if (!convert_string_convenience(tdr->iconv_convenience, CH_UNIX, chset, *v, strlen(*v), tdr->data.data+tdr->data.length, required, &ret, false)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 

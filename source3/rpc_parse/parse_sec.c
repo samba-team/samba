@@ -73,11 +73,11 @@ static bool sec_io_ace(const char *desc, SEC_ACE *psa, prs_struct *ps,
 		if (!prs_uint32("obj_flags", ps, depth, &psa->object.object.flags))
 			return False;
 
-		if (psa->object.object.flags & SEC_ACE_OBJECT_PRESENT)
+		if (psa->object.object.flags & SEC_ACE_OBJECT_TYPE_PRESENT)
 			if (!smb_io_uuid("obj_guid", &psa->object.object.type.type, ps,depth))
 				return False;
 
-		if (psa->object.object.flags & SEC_ACE_OBJECT_INHERITED_PRESENT)
+		if (psa->object.object.flags & SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT)
 			if (!smb_io_uuid("inh_guid", &psa->object.object.inherited_type.inherited_type, ps,depth))
 				return False;
 

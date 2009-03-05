@@ -80,7 +80,7 @@ static WERROR construct_registry_sd(TALLOC_CTX *ctx, SEC_DESC **psd)
  High level wrapper function for storing registry subkeys
  ***********************************************************************/
 
-bool store_reg_keys( REGISTRY_KEY *key, REGSUBKEY_CTR *subkeys )
+bool store_reg_keys( REGISTRY_KEY *key, struct regsubkey_ctr *subkeys )
 {
 	if (key->ops && key->ops->store_subkeys)
 		return key->ops->store_subkeys(key->name, subkeys);
@@ -100,12 +100,30 @@ bool store_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val )
 	return false;
 }
 
+WERROR create_reg_subkey(REGISTRY_KEY *key, const char *subkey)
+{
+	if (key->ops && key->ops->create_subkey) {
+		return key->ops->create_subkey(key->name, subkey);
+	}
+
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR delete_reg_subkey(REGISTRY_KEY *key, const char *subkey)
+{
+	if (key->ops && key->ops->delete_subkey) {
+		return key->ops->delete_subkey(key->name, subkey);
+	}
+
+	return WERR_NOT_SUPPORTED;
+}
+
 /***********************************************************************
  High level wrapper function for enumerating registry subkeys
  Initialize the TALLOC_CTX if necessary
  ***********************************************************************/
 
-int fetch_reg_keys( REGISTRY_KEY *key, REGSUBKEY_CTR *subkey_ctr )
+int fetch_reg_keys( REGISTRY_KEY *key, struct regsubkey_ctr *subkey_ctr )
 {
 	int result = -1;
 
@@ -143,7 +161,6 @@ bool regkey_access_check( REGISTRY_KEY *key, uint32 requested, uint32 *granted,
 	SEC_DESC *sec_desc;
 	NTSTATUS status;
 	WERROR err;
-	TALLOC_CTX *mem_ctx;
 
 	/* use the default security check if the backend has not defined its
 	 * own */
@@ -153,30 +170,20 @@ bool regkey_access_check( REGISTRY_KEY *key, uint32 requested, uint32 *granted,
 						  granted, token);
 	}
 
-	/*
-	 * The secdesc routines can't yet cope with a NULL talloc ctx sanely.
-	 */
-
-	if (!(mem_ctx = talloc_init("regkey_access_check"))) {
-		return false;
-	}
-
-	err = regkey_get_secdesc(mem_ctx, key, &sec_desc);
+	err = regkey_get_secdesc(talloc_tos(), key, &sec_desc);
 
 	if (!W_ERROR_IS_OK(err)) {
-		TALLOC_FREE(mem_ctx);
 		return false;
 	}
 
 	se_map_generic( &requested, &reg_generic_map );
 
 	status =se_access_check(sec_desc, token, requested, granted);
+	TALLOC_FREE(sec_desc);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(mem_ctx);
 		return false;
 	}
 
-	TALLOC_FREE(mem_ctx);
 	return NT_STATUS_IS_OK(status);
 }
 
@@ -216,7 +223,7 @@ WERROR regkey_set_secdesc(REGISTRY_KEY *key,
  * Check whether the in-memory version of the subkyes of a
  * registry key needs update from disk.
  */
-bool reg_subkeys_need_update(REGISTRY_KEY *key, REGSUBKEY_CTR *subkeys)
+bool reg_subkeys_need_update(REGISTRY_KEY *key, struct regsubkey_ctr *subkeys)
 {
 	if (key->ops && key->ops->subkeys_need_update)
 	{

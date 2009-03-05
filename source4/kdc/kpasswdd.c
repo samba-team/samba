@@ -61,12 +61,11 @@ static bool kpasswdd_make_error_reply(struct kdc_server *kdc,
 				     DATA_BLOB *error_blob) 
 {
 	char *error_string_utf8;
-	ssize_t len;
+	size_t len;
 	
 	DEBUG(result_code ? 3 : 10, ("kpasswdd: %s\n", error_string));
 
-	len = push_utf8_talloc(mem_ctx, &error_string_utf8, error_string);
-	if (len == -1) {
+	if (!push_utf8_talloc(mem_ctx, &error_string_utf8, error_string, &len)) {
 		return false;
 	}
 
@@ -219,7 +218,7 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 				    DATA_BLOB *reply)
 {
 	struct auth_session_info *session_info;
-	ssize_t pw_len;
+	size_t pw_len;
 
 	if (!NT_STATUS_IS_OK(gensec_session_info(gensec_security, 
 						 &session_info))) {
@@ -233,13 +232,11 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 	case KRB5_KPASSWD_VERS_CHANGEPW:
 	{
 		DATA_BLOB password;
-		pw_len = convert_string_talloc_convenience(mem_ctx, lp_iconv_convenience(kdc->task->lp_ctx), 
+		if (!convert_string_talloc_convenience(mem_ctx, lp_iconv_convenience(kdc->task->lp_ctx), 
 					       CH_UTF8, CH_UTF16, 
 					       (const char *)input->data, 
 					       input->length,
-					       (void **)&password.data);
-
-		if (pw_len == -1) {
+					       (void **)&password.data, &pw_len, false)) {
 			return false;
 		}
 		password.length = pw_len;
@@ -281,12 +278,11 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 							reply);
 		}
 		
-		pw_len = convert_string_talloc_convenience(mem_ctx, lp_iconv_convenience(kdc->task->lp_ctx), 
+		if (!convert_string_talloc_convenience(mem_ctx, lp_iconv_convenience(kdc->task->lp_ctx), 
 					       CH_UTF8, CH_UTF16, 
 					       (const char *)chpw.newpasswd.data, 
 					       chpw.newpasswd.length,
-					       (void **)&password.data);
-		if (pw_len == -1) {
+					       (void **)&password.data, &pw_len, false)) {
 			free_ChangePasswdDataMS(&chpw);
 			return false;
 		}

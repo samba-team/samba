@@ -46,16 +46,7 @@
 #define _LDB_H_ 1
 /*! \endcond */
 
-#ifndef bool
-typedef int bool;
-#endif
-#ifndef true
-#define true 1
-#endif
-#ifndef false
-#define false 0
-#endif
-
+#include <stdbool.h>
 #include "talloc.h"
 #include "tevent.h"
 #include "ldb_errors.h"

@@ -304,6 +304,11 @@ static NTSTATUS idmap_ad_unixids_to_sids(struct idmap_domain *dom, struct id_map
 	char *u_filter = NULL;
 	char *g_filter = NULL;
 
+	/* initialize the status to avoid suprise */
+	for (i = 0; ids[i]; i++) {
+		ids[i]->status = ID_UNKNOWN;
+	}
+	
 	/* Only do query if we are online */
 	if (idmap_is_offline())	{
 		return NT_STATUS_FILE_IS_OFFLINE;
@@ -515,6 +520,11 @@ static NTSTATUS idmap_ad_sids_to_unixids(struct idmap_domain *dom, struct id_map
 	int count;
 	int i;
 	char *sidstr;
+
+	/* initialize the status to avoid suprise */
+	for (i = 0; ids[i]; i++) {
+		ids[i]->status = ID_UNKNOWN;
+	}
 
 	/* Only do query if we are online */
 	if (idmap_is_offline())	{

@@ -8,7 +8,7 @@ MANPAGES=$*
 
 for I in $MANPAGES
 do
-	SECTION=`echo $I | grep -o '.$'`
+	SECTION=`echo -n $I | sed "s/.*\(.\)$/\1/"
 	FNAME=$MANDIR/man$SECTION/$I
 	if test -f $FNAME; then
 	  echo Deleting $FNAME

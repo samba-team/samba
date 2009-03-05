@@ -20,122 +20,21 @@
 
 #include "includes.h"
 #include "onefs.h"
+#include "onefs_config.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
 
-#define ONEFS_DATA_FASTBUF	10
-
-struct onefs_vfs_config share_config[ONEFS_DATA_FASTBUF];
-struct onefs_vfs_config *pshare_config;
-
-static void onefs_load_faketimestamp_config(struct vfs_handle_struct *handle,
-					    struct onefs_vfs_config *cfg)
-{
-	const char **parm;
-	int snum = SNUM(handle->conn);
-
-	parm = lp_parm_string_list(snum, PARM_ONEFS_TYPE, PARM_ATIME_NOW,
-				   PARM_ATIME_NOW_DEFAULT);
-
-	if (parm) {
-		cfg->init_flags |= ONEFS_VFS_CONFIG_FAKETIMESTAMPS;
-		set_namearray(&cfg->atime_now_list,*parm);
-	}
-
-	parm = lp_parm_string_list(snum, PARM_ONEFS_TYPE, PARM_CTIME_NOW,
-				   PARM_CTIME_NOW_DEFAULT);
-
-	if (parm) {
-		cfg->init_flags |= ONEFS_VFS_CONFIG_FAKETIMESTAMPS;
-		set_namearray(&cfg->ctime_now_list,*parm);
-	}
-
-	parm = lp_parm_string_list(snum, PARM_ONEFS_TYPE, PARM_MTIME_NOW,
-				   PARM_MTIME_NOW_DEFAULT);
-
-	if (parm) {
-		cfg->init_flags |= ONEFS_VFS_CONFIG_FAKETIMESTAMPS;
-		set_namearray(&cfg->mtime_now_list,*parm);
-	}
-
-	parm = lp_parm_string_list(snum, PARM_ONEFS_TYPE, PARM_ATIME_STATIC,
-				   PARM_ATIME_STATIC_DEFAULT);
-
-	if (parm) {
-		cfg->init_flags |= ONEFS_VFS_CONFIG_FAKETIMESTAMPS;
-		set_namearray(&cfg->atime_static_list,*parm);
-	}
-
-	parm = lp_parm_string_list(snum, PARM_ONEFS_TYPE, PARM_MTIME_STATIC,
-				   PARM_MTIME_STATIC_DEFAULT);
-
-	if (parm) {
-		cfg->init_flags |= ONEFS_VFS_CONFIG_FAKETIMESTAMPS;
-		set_namearray(&cfg->mtime_static_list,*parm);
-	}
-
-	cfg->atime_slop = lp_parm_int(snum, PARM_ONEFS_TYPE, PARM_ATIME_SLOP,
-				      PARM_ATIME_SLOP_DEFAULT);
-	cfg->ctime_slop = lp_parm_int(snum, PARM_ONEFS_TYPE, PARM_CTIME_SLOP,
-				      PARM_CTIME_SLOP_DEFAULT);
-	cfg->mtime_slop = lp_parm_int(snum, PARM_ONEFS_TYPE, PARM_MTIME_SLOP,
-				      PARM_MTIME_SLOP_DEFAULT);
-}
-
-
-static int onefs_load_config(struct vfs_handle_struct *handle)
-{
-	int snum = SNUM(handle->conn);
-	int share_count = lp_numservices();
-
-	if (!pshare_config) {
-
-		if (share_count <= ONEFS_DATA_FASTBUF)
-			pshare_config = share_config;
-		else {
-			pshare_config =
-			    SMB_MALLOC_ARRAY(struct onefs_vfs_config,
-					     share_count);
-			if (!pshare_config) {
-				errno = ENOMEM;
-				return -1;
-			}
-
-			memset(pshare_config, 0,
-			    (sizeof(struct onefs_vfs_config) * share_count));
-		}
-	}
-
-	if ((pshare_config[snum].init_flags &
-		ONEFS_VFS_CONFIG_INITIALIZED) == 0) {
-			pshare_config[snum].init_flags =
-			    ONEFS_VFS_CONFIG_INITIALIZED;
-			onefs_load_faketimestamp_config(handle,
-						        &pshare_config[snum]);
-	}
-
-	return 0;
-}
-
-bool onefs_get_config(int snum, int config_type,
-		      struct onefs_vfs_config *cfg)
-{
-	if (share_config[snum].init_flags & config_type)
-		*cfg = share_config[snum];
-	else
-		return false;
-
-	return true;
-}
-
 static int onefs_connect(struct vfs_handle_struct *handle, const char *service,
 			 const char *user)
 {
-	int ret = onefs_load_config(handle);
+	int ret;
 
-	if (ret)
+	ret = onefs_load_config(handle->conn);
+	if (ret) {
+		DEBUG(3, ("Load config failed: %s\n", strerror(errno)));
 		return ret;
+	}
 
 	return SMB_VFS_NEXT_CONNECT(handle, service, user);
 }
@@ -323,7 +222,14 @@ static int onefs_ntimes(vfs_handle_struct *handle, const char *fname,
 
 static uint32_t onefs_fs_capabilities(struct vfs_handle_struct *handle)
 {
-	return SMB_VFS_NEXT_FS_CAPABILITIES(handle) | FILE_NAMED_STREAMS;
+	uint32_t result = 0;
+
+	if (!lp_parm_bool(SNUM(handle->conn), PARM_ONEFS_TYPE,
+		PARM_IGNORE_STREAMS, PARM_IGNORE_STREAMS_DEFAULT)) {
+		result |= FILE_NAMED_STREAMS;
+	}
+
+	return result | SMB_VFS_NEXT_FS_CAPABILITIES(handle);
 }
 
 static vfs_op_tuple onefs_ops[] = {

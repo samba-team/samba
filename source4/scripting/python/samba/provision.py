@@ -53,7 +53,7 @@ def find_setup_dir():
     """Find the setup directory used by provision."""
     dirname = os.path.dirname(__file__)
     if "/site-packages/" in dirname:
-        prefix = dirname[:dirname.index("/site-packages/")]
+        prefix = "/".join(dirname[:dirname.index("/site-packages/")].split("/")[:-2])
         for suffix in ["share/setup", "share/samba/setup", "setup"]:
             ret = os.path.join(prefix, suffix)
             if os.path.isdir(ret):
@@ -1132,7 +1132,8 @@ def provision(setup_dir, message, session_info,
     message("NetBIOS Domain: %s" % names.domain)
     message("DNS Domain:     %s" % names.dnsdomain)
     message("DOMAIN SID:     %s" % str(domainsid))
-    message("Admin password: %s" % adminpass)
+    if samdb_fill == FILL_FULL:
+        message("Admin password: %s" % adminpass)
 
     result = ProvisionResult()
     result.domaindn = domaindn
@@ -1365,7 +1366,7 @@ def provision_backend(setup_dir=None, message=None,
                                                                         "MMRDN": names.domaindn,
                                                                         "LDAPSERVER" : url,
                                                                         "MMR_PASSWORD": mmr_pass })
-	# olc = yes?
+        # olc = yes?
         olc_config_pass = ""
         olc_config_acl = ""
         olc_syncrepl_config = ""

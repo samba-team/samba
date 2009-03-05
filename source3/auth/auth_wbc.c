@@ -1,7 +1,8 @@
 /*
    Unix SMB/CIFS implementation.
 
-   Winbind authentication mechnism, customized for onefs
+   Winbind client authentication mechanism designed to defer all
+   authentication to the winbind daemon.
 
    Copyright (C) Tim Potter 2000
    Copyright (C) Andrew Bartlett 2001 - 2002
@@ -21,6 +22,21 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/* This auth module is very similar to auth_winbind with 3 distinct
+ * differences.
+ *
+ *      1) Does not fallback to another auth module if winbindd is unavailable
+ *      2) Does not validate the domain of the user
+ *      3) Handles unencrypted passwords
+ *
+ * The purpose of this module is to defer all authentication decisions (ie:
+ * local user vs NIS vs LDAP vs AD; encrypted vs plaintext) to the wbc
+ * compatible daemon.  This centeralizes all authentication decisions to a
+ * single provider.
+ *
+ * This auth backend is most useful when used in conjunction with pdb_wbc_sam.
+ */
+
 #include "includes.h"
 
 #undef DBGC_CLASS
@@ -28,7 +44,7 @@
 
 /* Authenticate a user with a challenge/response */
 
-static NTSTATUS check_onefs_wb_security(const struct auth_context *auth_context,
+static NTSTATUS check_wbc_security(const struct auth_context *auth_context,
 				       void *my_private_data,
 				       TALLOC_CTX *mem_ctx,
 				       const auth_usersupplied_info *user_info,
@@ -58,7 +74,7 @@ static NTSTATUS check_onefs_wb_security(const struct auth_context *auth_context,
 			 user_info->internal_username));
 		params.level = WBC_AUTH_USER_LEVEL_PLAIN;
 
-		params.password.plaintext = user_info->plaintext_password.data;
+		params.password.plaintext = (char *)user_info->plaintext_password.data;
 	} else {
 		DEBUG(3,("Checking encrypted password for %s.\n",
 			 user_info->internal_username));
@@ -116,19 +132,19 @@ static NTSTATUS check_onefs_wb_security(const struct auth_context *auth_context,
 }
 
 /* module initialisation */
-static NTSTATUS auth_init_onefs_wb(struct auth_context *auth_context, const char *param, auth_methods **auth_method)
+static NTSTATUS auth_init_wbc(struct auth_context *auth_context, const char *param, auth_methods **auth_method)
 {
 	if (!make_auth_methods(auth_context, auth_method)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	(*auth_method)->name = "onefs_wb";
-	(*auth_method)->auth = check_onefs_wb_security;
+	(*auth_method)->name = "wbc";
+	(*auth_method)->auth = check_wbc_security;
 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS auth_onefs_wb_init(void)
+NTSTATUS auth_wbc_init(void)
 {
-	return smb_register_auth(AUTH_INTERFACE_VERSION, "onefs_wb", auth_init_onefs_wb);
+	return smb_register_auth(AUTH_INTERFACE_VERSION, "wbc", auth_init_wbc);
 }

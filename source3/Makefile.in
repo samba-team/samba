@@ -340,7 +340,7 @@ UTIL_OBJ = ../lib/util/rbtree.o ../lib/util/signal.o ../lib/util/time.o \
 		   ../lib/util/params.o ../lib/util/talloc_stack.o \
 		   ../lib/util/genrand.o ../lib/util/util_net.o \
 		   ../lib/util/become_daemon.o ../lib/util/system.o \
-		   ../lib/util/tevent_unix.o
+		   ../lib/util/tevent_unix.o ../lib/util/tevent_ntstatus.o
 
 CRYPTO_OBJ = ../lib/crypto/crc32.o ../lib/crypto/md5.o \
 			 ../lib/crypto/hmacmd5.o ../lib/crypto/arcfour.o \
@@ -366,11 +366,12 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) \
 	  lib/substitute.o lib/dbwrap_util.o \
 	  lib/ms_fnmatch.o lib/select.o lib/errmap_unix.o \
 	  lib/tallocmsg.o lib/dmallocmsg.o libsmb/smb_signing.o \
-	  lib/iconv.o lib/pam_errors.o intl/lang_tdb.o lib/conn_tdb.o \
-	  lib/adt_tree.o lib/gencache.o \
+	  lib/iconv.o lib/pam_errors.o intl/lang_tdb.o \
+	  lib/conn_tdb.o lib/adt_tree.o lib/gencache.o \
 	  lib/module.o lib/events.o @LIBTEVENT_OBJ0@ \
 	  lib/ldap_escape.o @CHARSET_STATIC@ \
-	  lib/secdesc.o lib/util_seaccess.o lib/secace.o lib/secacl.o \
+	  lib/secdesc.o lib/util_seaccess.o ../libcli/security/secace.o \
+	  ../libcli/security/secacl.o \
 	  libads/krb5_errs.o lib/system_smbd.o lib/audit.o $(LIBNDR_OBJ) \
 	  lib/file_id.o lib/idmap_cache.o \
 	  ../libcli/security/dom_sid.o
@@ -671,8 +672,8 @@ VFS_ACL_XATTR_OBJ = modules/vfs_acl_xattr.o
 VFS_ACL_TDB_OBJ = modules/vfs_acl_tdb.o
 VFS_SMB_TRAFFIC_ANALYZER_OBJ = modules/vfs_smb_traffic_analyzer.o
 VFS_ONEFS_OBJ = modules/vfs_onefs.o modules/onefs_acl.o modules/onefs_system.o \
-		modules/onefs_open.o modules/onefs_streams.o modules/onefs_dir.c \
-		modules/onefs_cbrl.o modules/onefs_notify.o
+		modules/onefs_open.o modules/onefs_streams.o modules/onefs_dir.o \
+		modules/onefs_cbrl.o modules/onefs_notify.o modules/onefs_config.o
 VFS_ONEFS_SHADOW_COPY_OBJ = modules/vfs_onefs_shadow_copy.o modules/onefs_shadow_copy.o
 PERFCOUNT_ONEFS_OBJ = modules/perfcount_onefs.o
 PERFCOUNT_TEST_OBJ = modules/perfcount_test.o
@@ -689,7 +690,7 @@ AUTH_SAM_OBJ = auth/auth_sam.o
 AUTH_SERVER_OBJ = auth/auth_server.o
 AUTH_UNIX_OBJ = auth/auth_unix.o
 AUTH_WINBIND_OBJ = auth/auth_winbind.o
-AUTH_ONEFS_WB_OBJ = auth/auth_onefs_wb.o
+AUTH_WBC_OBJ = auth/auth_wbc.o
 AUTH_SCRIPT_OBJ = auth/auth_script.o
 AUTH_NETLOGOND_OBJ = auth/auth_netlogond.o
 
@@ -2207,7 +2208,7 @@ installliblua:: installdirs liblua
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) $(LIBLUA_SHARED_TARGET_SONAME) $(DESTDIR)$(LIBDIR)
 	@rm -f $(DESTDIR)$(LIBDIR)/`basename $(LIBLUA_SHARED_TARGET)`
-	-if test -e $(LIBLUA_SHARED_TARGET_SONAME) ; then \
+	-if test -f $(LIBLUA_SHARED_TARGET_SONAME) ; then \
 		ln -f -s `basename $(LIBLUA_SHARED_TARGET_SONAME)` \
 			$(DESTDIR)$(LIBDIR)/`basename $(LIBLUA_SHARED_TARGET)` ; \
 	fi
@@ -2355,9 +2356,9 @@ bin/winbind.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_WINBIND_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(AUTH_WINBIND_OBJ)
 
-bin/onefs_wb.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_ONEFS_WB_OBJ)
+bin/wbc.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_WBC_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(AUTH_ONEFS_WB_OBJ)
+	@$(SHLD_MODULE) $(AUTH_WBC_OBJ)
 
 bin/unix.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_UNIX_OBJ)
 	@echo "Building plugin $@"
@@ -2375,9 +2376,9 @@ bin/tdbsam.@SHLIBEXT@: $(BINARY_PREREQS) passdb/pdb_tdb.o
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) passdb/pdb_tdb.o
 
-bin/onefs_sam.@SHLIBEXT@: $(BINARY_PREREQS) passdb/pdb_onefs_sam.o
+bin/wbc_sam.@SHLIBEXT@: $(BINARY_PREREQS) passdb/pdb_wbc_sam.o
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) passdb/pdb_onefs_sam.o
+	@$(SHLD_MODULE) passdb/pdb_wbc_sam.o
 
 bin/smbpasswd.@SHLIBEXT@: $(BINARY_PREREQS) passdb/pdb_smbpasswd.o
 	@echo "Building plugin $@"

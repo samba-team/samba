@@ -33,6 +33,7 @@
  * CompletionFilter and WatchTree of open SMB requests, and return notify
  * events back to the proper SMB requests */
 
+#include "includes.h"
 #include "onefs.h"
 
 #include <ifs/ifs_types.h>

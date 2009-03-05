@@ -327,10 +327,12 @@ struct addrinfo {
 #endif
 
 #ifdef SOCKET_WRAPPER
+#ifndef SOCKET_WRAPPER_DISABLE
 #ifndef SOCKET_WRAPPER_NOT_REPLACE
 #define SOCKET_WRAPPER_REPLACE
-#endif
+#endif /* SOCKET_WRAPPER_NOT_REPLACE */
 #include "../socket_wrapper/socket_wrapper.h"
-#endif
+#endif /* SOCKET_WRAPPER_DISABLE */
+#endif /* SOCKET_WRAPPER */
 
 #endif

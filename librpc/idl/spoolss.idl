@@ -66,6 +66,56 @@ import "misc.idl", "security.idl", "winreg.idl";
 		SPOOLSS_MINOR_VERSION_ME		= 0x0000005a
 	} spoolss_MinorVersion;
 
+	const int PRINTER_STATUS_OK		= 0x00000000;
+
+	typedef bitmap {
+		PRINTER_STATUS_PAUSED		= 0x00000001,
+		PRINTER_STATUS_ERROR		= 0x00000002,
+		PRINTER_STATUS_PENDING_DELETION	= 0x00000004,
+		PRINTER_STATUS_PAPER_JAM	= 0x00000008,
+		PRINTER_STATUS_PAPER_OUT	= 0x00000010,
+		PRINTER_STATUS_MANUAL_FEED	= 0x00000020,
+		PRINTER_STATUS_PAPER_PROBLEM	= 0x00000040,
+		PRINTER_STATUS_OFFLINE		= 0x00000080,
+		PRINTER_STATUS_IO_ACTIVE	= 0x00000100,
+		PRINTER_STATUS_BUSY		= 0x00000200,
+		PRINTER_STATUS_PRINTING		= 0x00000400,
+		PRINTER_STATUS_OUTPUT_BIN_FULL	= 0x00000800,
+		PRINTER_STATUS_NOT_AVAILABLE	= 0x00001000,
+		PRINTER_STATUS_WAITING		= 0x00002000,
+		PRINTER_STATUS_PROCESSING	= 0x00004000,
+		PRINTER_STATUS_INITIALIZING	= 0x00008000,
+		PRINTER_STATUS_WARMING_UP	= 0x00010000,
+		PRINTER_STATUS_TONER_LOW	= 0x00020000,
+		PRINTER_STATUS_NO_TONER		= 0x00040000,
+		PRINTER_STATUS_PAGE_PUNT	= 0x00080000,
+		PRINTER_STATUS_USER_INTERVENTION= 0x00100000,
+		PRINTER_STATUS_OUT_OF_MEMORY	= 0x00200000,
+		PRINTER_STATUS_DOOR_OPEN	= 0x00400000,
+		PRINTER_STATUS_SERVER_UNKNOWN	= 0x00800000,
+		PRINTER_STATUS_POWER_SAVE	= 0x01000000
+	} spoolss_PrinterStatus;
+
+	/* JOB status codes. */
+
+	const int JOB_STATUS_QUEUED = 0x0000;
+
+	typedef [bitmap32bit] bitmap {
+		JOB_STATUS_PAUSED		= 0x00000001,
+		JOB_STATUS_ERROR		= 0x00000002,
+		JOB_STATUS_DELETING		= 0x00000004,
+		JOB_STATUS_SPOOLING		= 0x00000008,
+		JOB_STATUS_PRINTING		= 0x00000010,
+		JOB_STATUS_OFFLINE		= 0x00000020,
+		JOB_STATUS_PAPEROUT		= 0x00000040,
+		JOB_STATUS_PRINTED		= 0x00000080,
+		JOB_STATUS_DELETED		= 0x00000100,
+		JOB_STATUS_BLOCKED_DEVQ		= 0x00000200,
+		JOB_STATUS_USER_INTERVENTION	= 0x00000400,
+		JOB_STATUS_RESTART		= 0x00000800,
+		JOB_STATUS_COMPLETE		= 0x00001000
+	} spoolss_JobStatus;
+
 	typedef struct {
 		[relative] nstring *printername;
 		[relative] nstring *servername;
@@ -82,13 +132,13 @@ import "misc.idl", "security.idl", "winreg.idl";
 		uint32 session_counter;
 		uint32 num_error_out_of_paper;
 		uint32 num_error_not_ready;
-		uint32 job_error;
+		spoolss_JobStatus job_error;
 		uint32 number_of_processors;
 		spoolss_ProcessorType processor_type;
 		uint32 high_part_total_bytes;
 		uint32 change_id;
 		WERROR last_error;
-		uint32 status;
+		spoolss_PrinterStatus status;
 		uint32 enumerate_network_printers;
 		uint32 c_setprinter;
 		spoolss_ProcessorArchitecture processor_architecture;
@@ -224,34 +274,6 @@ import "misc.idl", "security.idl", "winreg.idl";
 		PRINTER_ATTRIBUTE_TS			= 0x00008000
 	} spoolss_PrinterAttributes;
 
-	typedef bitmap {
-		PRINTER_STATUS_PAUSED		= 0x00000001,
-		PRINTER_STATUS_ERROR		= 0x00000002,
-		PRINTER_STATUS_PENDING_DELETION	= 0x00000004,
-		PRINTER_STATUS_PAPER_JAM	= 0x00000008,
-		PRINTER_STATUS_PAPER_OUT	= 0x00000010,
-		PRINTER_STATUS_MANUAL_FEED	= 0x00000020,
-		PRINTER_STATUS_PAPER_PROBLEM	= 0x00000040,
-		PRINTER_STATUS_OFFLINE		= 0x00000080,
-		PRINTER_STATUS_IO_ACTIVE	= 0x00000100,
-		PRINTER_STATUS_BUSY		= 0x00000200,
-		PRINTER_STATUS_PRINTING		= 0x00000400,
-		PRINTER_STATUS_OUTPUT_BIN_FULL	= 0x00000800,
-		PRINTER_STATUS_NOT_AVAILABLE	= 0x00001000,
-		PRINTER_STATUS_WAITING		= 0x00002000,
-		PRINTER_STATUS_PROCESSING	= 0x00004000,
-		PRINTER_STATUS_INITIALIZING	= 0x00008000,
-		PRINTER_STATUS_WARMING_UP	= 0x00010000,
-		PRINTER_STATUS_TONER_LOW	= 0x00020000,
-		PRINTER_STATUS_NO_TONER		= 0x00040000,
-		PRINTER_STATUS_PAGE_PUNT	= 0x00080000,
-		PRINTER_STATUS_USER_INTERVENTION= 0x00100000,
-		PRINTER_STATUS_OUT_OF_MEMORY	= 0x00200000,
-		PRINTER_STATUS_DOOR_OPEN	= 0x00400000,
-		PRINTER_STATUS_SERVER_UNKNOWN	= 0x00800000,
-		PRINTER_STATUS_POWER_SAVE	= 0x01000000
-	} spoolss_PrinterStatus;
-
 	typedef struct {
 		[relative] nstring *servername;
 		[relative] nstring *printername;
@@ -378,6 +400,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x02 */
+
 	typedef struct {
 		uint32 job_id;
 		[relative] nstring *printer_name;
@@ -386,24 +409,161 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[relative] nstring *document_name;
 		[relative] nstring *data_type;
 		[relative] nstring *text_status;
-		uint32 status;
+		spoolss_JobStatus status;
 		uint32 priority;
 		uint32 position;
 		uint32 total_pages;
 		uint32 pages_printed;
-		spoolss_Time time;
+		spoolss_Time submitted;
 	} spoolss_JobInfo1;
+
+	typedef struct {
+		uint32 job_id;
+		[relative] nstring *printer_name;
+		[relative] nstring *server_name;
+		[relative] nstring *user_name;
+		[relative] nstring *document_name;
+		[relative] nstring *notify_name;
+		[relative] nstring *data_type;
+		[relative] nstring *print_processor;
+		[relative] nstring *parameters;
+		[relative] nstring *driver_name;
+		[relative] spoolss_DeviceMode *devmode;
+		[relative] nstring *text_status;
+		[relative] security_descriptor *secdesc;
+		spoolss_JobStatus status;
+		uint32 priority;
+		uint32 position;
+		uint32 start_time;
+		uint32 until_time;
+		uint32 total_pages;
+		uint32 size;
+		spoolss_Time submitted;
+		uint32 time;
+		uint32 pages_printed;
+	} spoolss_JobInfo2;
+
+	typedef struct {
+		uint32 job_id;
+		uint32 next_job_id;
+		uint32 reserved;
+	} spoolss_JobInfo3;
+
+	typedef struct {
+		uint32 job_id;
+		[relative] nstring *printer_name;
+		[relative] nstring *server_name;
+		[relative] nstring *user_name;
+		[relative] nstring *document_name;
+		[relative] nstring *notify_name;
+		[relative] nstring *data_type;
+		[relative] nstring *print_processor;
+		[relative] nstring *parameters;
+		[relative] nstring *driver_name;
+		[relative] spoolss_DeviceMode *devmode;
+		[relative] nstring *text_status;
+		[relative] security_descriptor *secdesc;
+		spoolss_JobStatus status;
+		uint32 priority;
+		uint32 position;
+		uint32 start_time;
+		uint32 until_time;
+		uint32 total_pages;
+		uint32 size;
+		spoolss_Time submitted;
+		uint32 time;
+		uint32 pages_printed;
+		uint32 size_high;
+	} spoolss_JobInfo4;
 
 	typedef [nodiscriminant,relative_base,public] union {
 		[case(1)] spoolss_JobInfo1 info1;
-		[case(2)]; /* TODO */
-		[case(3)]; /* TODO */
+		[case(2)] spoolss_JobInfo2 info2;
+		[case(3)] spoolss_JobInfo3 info3;
+		[case(4)] spoolss_JobInfo4 info4;
 		[default];
 	} spoolss_JobInfo;
 
 	typedef struct {
+		uint32 job_id;
+		[string,charset(UTF16)] uint16 *printer_name;
+		[string,charset(UTF16)] uint16 *server_name;
+		[string,charset(UTF16)] uint16 *user_name;
+		[string,charset(UTF16)] uint16 *document_name;
+		[string,charset(UTF16)] uint16 *data_type;
+		[string,charset(UTF16)] uint16 *text_status;
+		spoolss_JobStatus status;
+		uint32 priority;
+		uint32 position;
+		uint32 total_pages;
+		uint32 pages_printed;
+		spoolss_Time submitted;
+	} spoolss_SetJobInfo1;
+
+	typedef struct {
+		uint32 job_id;
+		[string,charset(UTF16)] uint16 *printer_name;
+		[string,charset(UTF16)] uint16 *server_name;
+		[string,charset(UTF16)] uint16 *user_name;
+		[string,charset(UTF16)] uint16 *document_name;
+		[string,charset(UTF16)] uint16 *notify_name;
+		[string,charset(UTF16)] uint16 *data_type;
+		[string,charset(UTF16)] uint16 *print_processor;
+		[string,charset(UTF16)] uint16 *parameters;
+		[string,charset(UTF16)] uint16 *driver_name;
+		uint32 _devmode_ptr; /* pointer to truncated devicemode */
+		[string,charset(UTF16)] uint16 *text_status;
+		uint32 _secdesc_ptr;
+		spoolss_JobStatus status;
+		uint32 priority;
+		uint32 position;
+		uint32 start_time;
+		uint32 until_time;
+		uint32 total_pages;
+		uint32 size;
+		spoolss_Time submitted;
+		uint32 time;
+		uint32 pages_printed;
+	} spoolss_SetJobInfo2;
+
+	typedef struct {
+		uint32 job_id;
+		[string,charset(UTF16)] uint16 *printer_name;
+		[string,charset(UTF16)] uint16 *server_name;
+		[string,charset(UTF16)] uint16 *user_name;
+		[string,charset(UTF16)] uint16 *document_name;
+		[string,charset(UTF16)] uint16 *notify_name;
+		[string,charset(UTF16)] uint16 *data_type;
+		[string,charset(UTF16)] uint16 *print_processor;
+		[string,charset(UTF16)] uint16 *parameters;
+		[string,charset(UTF16)] uint16 *driver_name;
+		uint32 _devmode_ptr; /* pointer to truncated devicemode */
+		[string,charset(UTF16)] uint16 *text_status;
+		uint32 _secdesc_ptr;
+		spoolss_JobStatus status;
+		uint32 priority;
+		uint32 position;
+		uint32 start_time;
+		uint32 until_time;
+		uint32 total_pages;
+		uint32 size;
+		spoolss_Time submitted;
+		uint32 time;
+		uint32 pages_printed;
+		uint32 size_high;
+	} spoolss_SetJobInfo4;
+
+	typedef [public] union {
+		[case(1)] spoolss_SetJobInfo1 *info1;
+		[case(2)] spoolss_SetJobInfo2 *info2;
+		[case(3)] spoolss_JobInfo3    *info3;
+		[case(4)] spoolss_SetJobInfo4 *info4;
+		[default];
+	} spoolss_SetJobInfo;
+
+	typedef struct {
 		uint32 level;
-		[switch_is(level)] spoolss_JobInfo info;
+		[switch_is(level)] spoolss_SetJobInfo info;
 	} spoolss_JobInfoContainer;
 
 	typedef [v1_enum] enum {
@@ -413,7 +573,9 @@ import "misc.idl", "security.idl", "winreg.idl";
 		SPOOLSS_JOB_CONTROL_RESTART		= 4,
 		SPOOLSS_JOB_CONTROL_DELETE		= 5,
 		SPOOLSS_JOB_CONTROL_SEND_TO_PRINTER	= 6,
-		SPOOLSS_JOB_CONTROL_LAST_PAGE_EJECTED	= 7
+		SPOOLSS_JOB_CONTROL_LAST_PAGE_EJECTED	= 7,
+		SPOOLSS_JOB_CONTROL_RETAIN		= 8,
+		SPOOLSS_JOB_CONTROL_RELEASE		= 9
 	} spoolss_JobControl;
 
 	WERROR spoolss_SetJob(
@@ -1021,7 +1183,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	typedef [nodiscriminant,relative_base,gensize,public] union {
 		[case(1)] spoolss_PrintProcessorDirectoryInfo1 info1;
-		[default];
+		[default] spoolss_PrintProcessorDirectoryInfo1 info1;
 	} spoolss_PrintProcessorDirectoryInfo;
 
 	WERROR spoolss_GetPrintProcessorDirectory(
@@ -1237,8 +1399,28 @@ import "misc.idl", "security.idl", "winreg.idl";
 		spoolss_FormArea area;
 	} spoolss_FormInfo1;
 
+	typedef [bitmap32bit] bitmap {
+		SPOOLSS_FORM_STRING_TYPE_NONE		= 0x00000001,
+		SPOOLSS_FORM_STRING_TYPE_MUI_DLL	= 0x00000002,
+		SPOOLSS_FORM_STRING_TYPE_LANG_PAIR	= 0x00000004
+	} spoolss_FormStringType;
+
+	typedef struct {
+		spoolss_FormFlags flags;
+		[relative] nstring *form_name;
+		spoolss_FormSize size;
+		spoolss_FormArea area;
+		[relative] astring *keyword;
+		spoolss_FormStringType string_type;
+		[relative] nstring *mui_dll;
+		uint32 ressource_id;
+		[relative] nstring *display_name;
+		uint32 lang_id;
+	} spoolss_FormInfo2;
+
 	typedef [nodiscriminant,relative_base,public,gensize] union {
 		[case(1)] spoolss_FormInfo1 info1;
+		[case(2)] spoolss_FormInfo2 info2;
 		[default];
 	} spoolss_FormInfo;
 
@@ -1249,8 +1431,22 @@ import "misc.idl", "security.idl", "winreg.idl";
 		spoolss_FormArea area;
 	} spoolss_AddFormInfo1;
 
+	typedef struct {
+		spoolss_FormFlags flags;
+		[string,charset(UTF16)] uint16 *form_name;
+		spoolss_FormSize size;
+		spoolss_FormArea area;
+		[string,charset(DOS)] uint8 *keyword;
+		spoolss_FormStringType string_type;
+		[string,charset(UTF16)] uint16 *mui_dll;
+		uint32 ressource_id;
+		[string,charset(UTF16)] uint16 *display_name;
+		uint32 lang_id;
+	} spoolss_AddFormInfo2;
+
 	typedef [switch_type(uint32)] union {
 		[case(1)] spoolss_AddFormInfo1 *info1;
+		[case(2)] spoolss_AddFormInfo2 *info2;
 	} spoolss_AddFormInfo;
 
 	WERROR spoolss_AddForm(
@@ -1332,10 +1528,44 @@ import "misc.idl", "security.idl", "winreg.idl";
 		uint32 reserved;
 	} spoolss_PortInfo2;
 
+	typedef [v1_enum] enum {
+		PORT_STATUS_CLEAR		= 0x00000000,
+		PORT_STATUS_OFFLINE		= 0x00000001,
+		PORT_STATUS_PAPER_JAM		= 0x00000002,
+		PORT_STATUS_PAPER_OUT		= 0x00000003,
+		PORT_STATUS_OUTPUT_BIN_FULL	= 0x00000004,
+		PORT_STATUS_PAPER_PROBLEM	= 0x00000005,
+		PORT_STATUS_NO_TONER		= 0x00000006,
+		PORT_STATUS_DOOR_OPEN		= 0x00000007,
+		PORT_STATUS_USER_INTERVENTION	= 0x00000008,
+		PORT_STATUS_OUT_OF_MEMORY	= 0x00000009,
+		PORT_STATUS_TONER_LOW		= 0x0000000A,
+		PORT_STATUS_WARMING_UP		= 0x0000000B,
+		PORT_STATUS_POWER_SAVE		= 0x0000000C
+	} spoolss_PortStatus;
+
+	typedef [v1_enum] enum {
+		PORT_STATUS_TYPE_ERROR		= 0x00000001,
+		PORT_STATUS_TYPE_WARNING	= 0x00000002,
+		PORT_STATUS_TYPE_INFO		= 0x00000003
+	} spoolss_PortSeverity;
+
+	typedef struct {
+		spoolss_PortStatus status;
+		[relative] nstring *status_string;
+		spoolss_PortSeverity severity;
+	} spoolss_PortInfo3;
+
+	typedef struct {
+		[relative] nstring *port_name;
+		DATA_BLOB monitor_data; /* relative ?? */
+	} spoolss_PortInfoFF;
+
 	typedef [nodiscriminant,relative_base,public] union {
 		[case(1)] spoolss_PortInfo1 info1;
 		[case(2)] spoolss_PortInfo2 info2;
-		[case(3)]; /* TODO */
+		[case(3)] spoolss_PortInfo3 info3;
+		[case(0xff)] spoolss_PortInfoFF infoFF;
 		[default];
 	} spoolss_PortInfo;
 
@@ -1807,7 +2037,8 @@ import "misc.idl", "security.idl", "winreg.idl";
 		SERVER_ACCESS_ENUMERATE		= 0x00000002,
 		PRINTER_ACCESS_ADMINISTER	= 0x00000004,
 		PRINTER_ACCESS_USE		= 0x00000008,
-		JOB_ACCESS_ADMINISTER		= 0x00000010
+		JOB_ACCESS_ADMINISTER		= 0x00000010,
+		JOB_ACCESS_READ			= 0x00000020
 	} spoolss_AccessRights;
 
 	/* Access rights for print servers */

@@ -30,5 +30,6 @@ struct auth_session_info;
 
 /* Moved the dom_sid functions to the top level dir with manual proto header */
 #include "libcli/security/dom_sid.h"
-
+#include "libcli/security/secace.h"
+#include "libcli/security/secacl.h"
 #include "libcli/security/proto.h"

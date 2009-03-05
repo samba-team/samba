@@ -42,7 +42,7 @@ static NTSTATUS unicode_open(struct torture_context *tctx,
 {
 	union smb_open io;
 	char *fname, *fname2=NULL, *ucs_name;
-	int i;
+	size_t i;
 	NTSTATUS status;
 
 	ucs_name = talloc_size(mem_ctx, (1+u_name_len)*2);
@@ -56,8 +56,7 @@ static NTSTATUS unicode_open(struct torture_context *tctx,
 	}
 	SSVAL(ucs_name, i*2, 0);
 
-	i = convert_string_talloc_convenience(ucs_name, lp_iconv_convenience(tctx->lp_ctx), CH_UTF16, CH_UNIX, ucs_name, (1+u_name_len)*2, (void **)&fname);
-	if (i == -1) {
+	if (!convert_string_talloc_convenience(ucs_name, lp_iconv_convenience(tctx->lp_ctx), CH_UTF16, CH_UNIX, ucs_name, (1+u_name_len)*2, (void **)&fname, &i, false)) {
 		torture_comment(tctx, "Failed to convert UCS2 Name into unix - convert_string_talloc() failure\n");
 		talloc_free(ucs_name);
 		return NT_STATUS_NO_MEMORY;

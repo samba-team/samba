@@ -806,6 +806,30 @@ void *talloc_check_name(const void *ptr, const char *name)
 	return NULL;
 }
 
+static void talloc_abort_type_missmatch(const char *location,
+					const char *name,
+					const char *expected)
+{
+	TALLOC_ABORT("Type missmatch");
+}
+
+void *_talloc_get_type_abort(const void *ptr, const char *name, const char *location)
+{
+	const char *pname;
+
+	if (unlikely(ptr == NULL)) {
+		talloc_abort_type_missmatch(location, NULL, name);
+		return NULL;
+	}
+
+	pname = talloc_get_name(ptr);
+	if (likely(pname == name || strcmp(pname, name) == 0)) {
+		return discard_const_p(void, ptr);
+	}
+
+	talloc_abort_type_missmatch(location, pname, name);
+	return NULL;
+}
 
 /*
   this is for compatibility with older versions of talloc

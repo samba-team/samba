@@ -159,6 +159,11 @@ static NTSTATUS _idmap_adex_get_sid_from_id(struct
 	NTSTATUS nt_status;
         struct likewise_cell *cell;
 
+	/* initialize the status to avoid suprise */
+	for (i = 0; ids[i]; i++) {
+		ids[i]->status = ID_UNKNOWN;
+	}
+	
 	nt_status = _idmap_adex_init(dom, NULL);
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
@@ -207,6 +212,11 @@ static NTSTATUS _idmap_adex_get_id_from_sid(struct
 	NTSTATUS nt_status;
         struct likewise_cell *cell;
 
+	/* initialize the status to avoid suprise */
+	for (i = 0; ids[i]; i++) {
+		ids[i]->status = ID_UNKNOWN;
+	}
+	
 	nt_status = _idmap_adex_init(dom, NULL);
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;

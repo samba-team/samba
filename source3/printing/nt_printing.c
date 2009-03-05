@@ -1381,7 +1381,8 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 				 goto error_exit;
 			}
 			old_create_time = st.st_mtime;
-			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", old_create_time));
+			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n",
+				(long)old_create_time));
 		}
 	}
 	close_file(NULL, fsp, NORMAL_CLOSE);
@@ -1432,7 +1433,8 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 				goto error_exit;
 			}
 			new_create_time = st.st_mtime;
-			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", new_create_time));
+			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n",
+				(long)new_create_time));
 		}
 	}
 	close_file(NULL, fsp, NORMAL_CLOSE);
@@ -3423,8 +3425,8 @@ WERROR nt_printer_publish(Printer_entry *print_hnd, int snum, int action)
 		goto done;
 
 	switch (action) {
-	case SPOOL_DS_PUBLISH:
-	case SPOOL_DS_UPDATE:
+	case DSPRINT_PUBLISH:
+	case DSPRINT_UPDATE:
 		/* set the DsSpooler info and attributes */
 		if (!(map_nt_printer_info2_to_dsspooler(printer->info_2))) {
 			win_rc = WERR_NOMEM;
@@ -3433,7 +3435,7 @@ WERROR nt_printer_publish(Printer_entry *print_hnd, int snum, int action)
 
 		printer->info_2->attributes |= PRINTER_ATTRIBUTE_PUBLISHED;
 		break;
-	case SPOOL_DS_UNPUBLISH:
+	case DSPRINT_UNPUBLISH:
 		printer->info_2->attributes ^= PRINTER_ATTRIBUTE_PUBLISHED;
 		break;
 	default:
@@ -3467,11 +3469,11 @@ WERROR nt_printer_publish(Printer_entry *print_hnd, int snum, int action)
 	}
 
 	switch (action) {
-	case SPOOL_DS_PUBLISH:
-	case SPOOL_DS_UPDATE:
+	case DSPRINT_PUBLISH:
+	case DSPRINT_UPDATE:
 		win_rc = nt_printer_publish_ads(ads, printer);
 		break;
-	case SPOOL_DS_UNPUBLISH:
+	case DSPRINT_UNPUBLISH:
 		win_rc = nt_printer_unpublish_ads(ads, printer);
 		break;
 	}

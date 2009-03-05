@@ -28,14 +28,17 @@
 #include "tevent_util.h"
 
 /**
- * @brief Print an tevent_req structure in debug messages
- * @param[in] mem_ctx	The memory context for the result
+ * @brief The default print function for creating debug messages
  * @param[in] req	The request to be printed
+ * @param[in] mem_ctx	The memory context for the result
  * @retval		Text representation of req
  *
+ * The function should not be used by users of the asynx API,
+ * but custom print function can use it and append custom text
+ * to the string.
  */
 
-char *tevent_req_print(TALLOC_CTX *mem_ctx, struct tevent_req *req)
+char *tevent_req_default_print(struct tevent_req *req, TALLOC_CTX *mem_ctx)
 {
 	return talloc_asprintf(mem_ctx,
 			       "tevent_req[%p/%s]: state[%d] error[%lld (0x%llX)] "
@@ -44,10 +47,28 @@ char *tevent_req_print(TALLOC_CTX *mem_ctx, struct tevent_req *req)
 			       req->internal.state,
 			       (unsigned long long)req->internal.error,
 			       (unsigned long long)req->internal.error,
-			       talloc_get_name(req->private_state),
-			       req->private_state,
+			       talloc_get_name(req->data),
+			       req->data,
 			       req->internal.timer
 			       );
+}
+
+/**
+ * @brief Print an tevent_req structure in debug messages
+ * @param[in] mem_ctx	The memory context for the result
+ * @param[in] req	The request to be printed
+ * @retval		Text representation of req
+ *
+ * This function should be used by callers of the async API
+ */
+
+char *tevent_req_print(TALLOC_CTX *mem_ctx, struct tevent_req *req)
+{
+	if (!req->private_print) {
+		return tevent_req_default_print(req, mem_ctx);
+	}
+
+	return req->private_print(req, mem_ctx);
 }
 
 /**
@@ -60,14 +81,14 @@ char *tevent_req_print(TALLOC_CTX *mem_ctx, struct tevent_req *req)
  */
 
 struct tevent_req *_tevent_req_create(TALLOC_CTX *mem_ctx,
-				    void *pstate,
-				    size_t state_size,
+				    void *pdata,
+				    size_t data_size,
 				    const char *type,
 				    const char *location)
 {
 	struct tevent_req *req;
-	void **ppstate = (void **)pstate;
-	void *state;
+	void **ppdata = (void **)pdata;
+	void *data;
 
 	req = talloc_zero(mem_ctx, struct tevent_req);
 	if (req == NULL) {
@@ -77,16 +98,16 @@ struct tevent_req *_tevent_req_create(TALLOC_CTX *mem_ctx,
 	req->internal.location		= location;
 	req->internal.state		= TEVENT_REQ_IN_PROGRESS;
 
-	state = talloc_size(req, state_size);
-	if (state == NULL) {
+	data = talloc_size(req, data_size);
+	if (data == NULL) {
 		talloc_free(req);
 		return NULL;
 	}
-	talloc_set_name_const(state, type);
+	talloc_set_name_const(data, type);
 
-	req->private_state = state;
+	req->data = data;
 
-	*ppstate = state;
+	*ppdata = data;
 	return req;
 }
 
@@ -235,6 +256,21 @@ bool tevent_req_is_in_progress(struct tevent_req *req)
 	return false;
 }
 
+bool tevent_req_poll(struct tevent_req *req,
+		     struct tevent_context *ev)
+{
+	while (tevent_req_is_in_progress(req)) {
+		int ret;
+
+		ret = tevent_loop_once(ev);
+		if (ret != 0) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 bool tevent_req_is_error(struct tevent_req *req, enum tevent_req_state *state,
 			uint64_t *error)
 {
@@ -278,3 +314,23 @@ bool tevent_req_set_endtime(struct tevent_req *req,
 	return true;
 }
 
+void tevent_req_set_callback(struct tevent_req *req, tevent_req_fn fn, void *pvt)
+{
+	req->async.fn = fn;
+	req->async.private_data = pvt;
+}
+
+void *_tevent_req_callback_data(struct tevent_req *req)
+{
+	return req->async.private_data;
+}
+
+void *_tevent_req_data(struct tevent_req *req)
+{
+	return req->data;
+}
+
+void tevent_req_set_print_fn(struct tevent_req *req, tevent_req_print_fn fn)
+{
+	req->private_print = fn;
+}

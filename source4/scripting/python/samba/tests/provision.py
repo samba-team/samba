@@ -56,7 +56,7 @@ class ProvisionTestCase(samba.tests.TestCaseInTempDir):
                            machinepass="machinepass", dnsdomain="example.com")
             self.assertEquals(1, 
                     len(secrets_ldb.search("samAccountName=krbtgt,flatname=EXAMPLE,CN=Principals")))
-	    self.assertEquals("keytab.path",
+            self.assertEquals("keytab.path",
                     secrets_ldb.searchone(basedn="flatname=EXAMPLE,CN=primary domains", 
                                           expression="(privateKeytab=*)", 
                                           attribute="privateKeytab"))

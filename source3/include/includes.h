@@ -577,14 +577,12 @@ struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 #include "../talloc/talloc.h"
 
 #include "event.h"
+#include "../lib/util/tevent_unix.h"
+#include "../lib/util/tevent_ntstatus.h"
 
 #include "../lib/util/data_blob.h"
 #include "../lib/util/time.h"
 #include "../lib/util/asn1.h"
-
-/* And a little extension. Abort on type mismatch */
-#define talloc_get_type_abort(ptr, type) \
-	(type *)talloc_check_name_abort(ptr, #type)
 
 #include "ads.h"
 #include "ads_dns.h"
@@ -592,7 +590,7 @@ struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 #include "trans2.h"
 #include "../libcli/util/error.h"
 #include "ntioctl.h"
-#include "charset.h"
+#include "../lib/util/charset/charset.h"
 #include "dynconfig.h"
 #include "util_getent.h"
 #include "debugparse.h"
@@ -701,6 +699,8 @@ enum flush_reason_enum {
 #ifndef NO_PROTO_H
 #include "proto.h"
 #endif
+#include "libcli/security/secace.h"
+#include "libcli/security/secacl.h"
 
 #if defined(HAVE_POSIX_ACLS)
 #include "modules/vfs_posixacl.h"

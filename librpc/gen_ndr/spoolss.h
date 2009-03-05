@@ -2,12 +2,16 @@
 
 #include <stdint.h>
 
+#include "libcli/util/ntstatus.h"
+
 #include "librpc/gen_ndr/misc.h"
 #include "librpc/gen_ndr/security.h"
 #include "librpc/gen_ndr/winreg.h"
 #ifndef _HEADER_spoolss
 #define _HEADER_spoolss
 
+#define PRINTER_STATUS_OK	( 0x00000000 )
+#define JOB_STATUS_QUEUED	( 0x0000 )
 #define PRINTER_ENUM_ICONMASK	( (PRINTER_ENUM_ICON1|PRINTER_ENUM_ICON2|PRINTER_ENUM_ICON3|PRINTER_ENUM_ICON4|PRINTER_ENUM_ICON5|PRINTER_ENUM_ICON6|PRINTER_ENUM_ICON7|PRINTER_ENUM_ICON8) )
 #define SPOOLSS_ARCHITECTURE_NT_X86	( "Windows NT x86" )
 #define SPOOLSS_DEFAULT_SERVER_PATH	( "C:\\WINDOWS\\system32\\spool" )
@@ -116,6 +120,48 @@ enum spoolss_MinorVersion
 #define SPOOLSS_MINOR_VERSION_ME ( 0x0000005a )
 #endif
 ;
+
+/* bitmap spoolss_PrinterStatus */
+#define PRINTER_STATUS_PAUSED ( 0x00000001 )
+#define PRINTER_STATUS_ERROR ( 0x00000002 )
+#define PRINTER_STATUS_PENDING_DELETION ( 0x00000004 )
+#define PRINTER_STATUS_PAPER_JAM ( 0x00000008 )
+#define PRINTER_STATUS_PAPER_OUT ( 0x00000010 )
+#define PRINTER_STATUS_MANUAL_FEED ( 0x00000020 )
+#define PRINTER_STATUS_PAPER_PROBLEM ( 0x00000040 )
+#define PRINTER_STATUS_OFFLINE ( 0x00000080 )
+#define PRINTER_STATUS_IO_ACTIVE ( 0x00000100 )
+#define PRINTER_STATUS_BUSY ( 0x00000200 )
+#define PRINTER_STATUS_PRINTING ( 0x00000400 )
+#define PRINTER_STATUS_OUTPUT_BIN_FULL ( 0x00000800 )
+#define PRINTER_STATUS_NOT_AVAILABLE ( 0x00001000 )
+#define PRINTER_STATUS_WAITING ( 0x00002000 )
+#define PRINTER_STATUS_PROCESSING ( 0x00004000 )
+#define PRINTER_STATUS_INITIALIZING ( 0x00008000 )
+#define PRINTER_STATUS_WARMING_UP ( 0x00010000 )
+#define PRINTER_STATUS_TONER_LOW ( 0x00020000 )
+#define PRINTER_STATUS_NO_TONER ( 0x00040000 )
+#define PRINTER_STATUS_PAGE_PUNT ( 0x00080000 )
+#define PRINTER_STATUS_USER_INTERVENTION ( 0x00100000 )
+#define PRINTER_STATUS_OUT_OF_MEMORY ( 0x00200000 )
+#define PRINTER_STATUS_DOOR_OPEN ( 0x00400000 )
+#define PRINTER_STATUS_SERVER_UNKNOWN ( 0x00800000 )
+#define PRINTER_STATUS_POWER_SAVE ( 0x01000000 )
+
+/* bitmap spoolss_JobStatus */
+#define JOB_STATUS_PAUSED ( 0x00000001 )
+#define JOB_STATUS_ERROR ( 0x00000002 )
+#define JOB_STATUS_DELETING ( 0x00000004 )
+#define JOB_STATUS_SPOOLING ( 0x00000008 )
+#define JOB_STATUS_PRINTING ( 0x00000010 )
+#define JOB_STATUS_OFFLINE ( 0x00000020 )
+#define JOB_STATUS_PAPEROUT ( 0x00000040 )
+#define JOB_STATUS_PRINTED ( 0x00000080 )
+#define JOB_STATUS_DELETED ( 0x00000100 )
+#define JOB_STATUS_BLOCKED_DEVQ ( 0x00000200 )
+#define JOB_STATUS_USER_INTERVENTION ( 0x00000400 )
+#define JOB_STATUS_RESTART ( 0x00000800 )
+#define JOB_STATUS_COMPLETE ( 0x00001000 )
 
 struct spoolss_PrinterInfo0 {
 	const char * printername;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
@@ -263,33 +309,6 @@ struct spoolss_PrinterInfo1 {
 #define PRINTER_ATTRIBUTE_FAX ( 0x00004000 )
 #define PRINTER_ATTRIBUTE_TS ( 0x00008000 )
 
-/* bitmap spoolss_PrinterStatus */
-#define PRINTER_STATUS_PAUSED ( 0x00000001 )
-#define PRINTER_STATUS_ERROR ( 0x00000002 )
-#define PRINTER_STATUS_PENDING_DELETION ( 0x00000004 )
-#define PRINTER_STATUS_PAPER_JAM ( 0x00000008 )
-#define PRINTER_STATUS_PAPER_OUT ( 0x00000010 )
-#define PRINTER_STATUS_MANUAL_FEED ( 0x00000020 )
-#define PRINTER_STATUS_PAPER_PROBLEM ( 0x00000040 )
-#define PRINTER_STATUS_OFFLINE ( 0x00000080 )
-#define PRINTER_STATUS_IO_ACTIVE ( 0x00000100 )
-#define PRINTER_STATUS_BUSY ( 0x00000200 )
-#define PRINTER_STATUS_PRINTING ( 0x00000400 )
-#define PRINTER_STATUS_OUTPUT_BIN_FULL ( 0x00000800 )
-#define PRINTER_STATUS_NOT_AVAILABLE ( 0x00001000 )
-#define PRINTER_STATUS_WAITING ( 0x00002000 )
-#define PRINTER_STATUS_PROCESSING ( 0x00004000 )
-#define PRINTER_STATUS_INITIALIZING ( 0x00008000 )
-#define PRINTER_STATUS_WARMING_UP ( 0x00010000 )
-#define PRINTER_STATUS_TONER_LOW ( 0x00020000 )
-#define PRINTER_STATUS_NO_TONER ( 0x00040000 )
-#define PRINTER_STATUS_PAGE_PUNT ( 0x00080000 )
-#define PRINTER_STATUS_USER_INTERVENTION ( 0x00100000 )
-#define PRINTER_STATUS_OUT_OF_MEMORY ( 0x00200000 )
-#define PRINTER_STATUS_DOOR_OPEN ( 0x00400000 )
-#define PRINTER_STATUS_SERVER_UNKNOWN ( 0x00800000 )
-#define PRINTER_STATUS_POWER_SAVE ( 0x01000000 )
-
 struct spoolss_PrinterInfo2 {
 	const char * servername;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * printername;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
@@ -383,16 +402,154 @@ struct spoolss_JobInfo1 {
 	uint32_t position;
 	uint32_t total_pages;
 	uint32_t pages_printed;
-	struct spoolss_Time time;
+	struct spoolss_Time submitted;
+};
+
+struct spoolss_JobInfo2 {
+	uint32_t job_id;
+	const char * printer_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * server_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * user_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * document_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * notify_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * data_type;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * print_processor;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * parameters;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * driver_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	struct spoolss_DeviceMode *devmode;/* [relative] */
+	const char * text_status;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	struct security_descriptor *secdesc;/* [relative] */
+	uint32_t status;
+	uint32_t priority;
+	uint32_t position;
+	uint32_t start_time;
+	uint32_t until_time;
+	uint32_t total_pages;
+	uint32_t size;
+	struct spoolss_Time submitted;
+	uint32_t time;
+	uint32_t pages_printed;
+};
+
+struct spoolss_JobInfo3 {
+	uint32_t job_id;
+	uint32_t next_job_id;
+	uint32_t reserved;
+};
+
+struct spoolss_JobInfo4 {
+	uint32_t job_id;
+	const char * printer_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * server_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * user_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * document_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * notify_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * data_type;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * print_processor;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * parameters;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * driver_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	struct spoolss_DeviceMode *devmode;/* [relative] */
+	const char * text_status;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	struct security_descriptor *secdesc;/* [relative] */
+	uint32_t status;
+	uint32_t priority;
+	uint32_t position;
+	uint32_t start_time;
+	uint32_t until_time;
+	uint32_t total_pages;
+	uint32_t size;
+	struct spoolss_Time submitted;
+	uint32_t time;
+	uint32_t pages_printed;
+	uint32_t size_high;
 };
 
 union spoolss_JobInfo {
 	struct spoolss_JobInfo1 info1;/* [case] */
+	struct spoolss_JobInfo2 info2;/* [case(2)] */
+	struct spoolss_JobInfo3 info3;/* [case(3)] */
+	struct spoolss_JobInfo4 info4;/* [case(4)] */
 }/* [relative_base,nodiscriminant,public] */;
+
+struct spoolss_SetJobInfo1 {
+	uint32_t job_id;
+	const char *printer_name;/* [unique,charset(UTF16)] */
+	const char *server_name;/* [unique,charset(UTF16)] */
+	const char *user_name;/* [unique,charset(UTF16)] */
+	const char *document_name;/* [unique,charset(UTF16)] */
+	const char *data_type;/* [unique,charset(UTF16)] */
+	const char *text_status;/* [unique,charset(UTF16)] */
+	uint32_t status;
+	uint32_t priority;
+	uint32_t position;
+	uint32_t total_pages;
+	uint32_t pages_printed;
+	struct spoolss_Time submitted;
+};
+
+struct spoolss_SetJobInfo2 {
+	uint32_t job_id;
+	const char *printer_name;/* [unique,charset(UTF16)] */
+	const char *server_name;/* [unique,charset(UTF16)] */
+	const char *user_name;/* [unique,charset(UTF16)] */
+	const char *document_name;/* [unique,charset(UTF16)] */
+	const char *notify_name;/* [unique,charset(UTF16)] */
+	const char *data_type;/* [unique,charset(UTF16)] */
+	const char *print_processor;/* [unique,charset(UTF16)] */
+	const char *parameters;/* [unique,charset(UTF16)] */
+	const char *driver_name;/* [unique,charset(UTF16)] */
+	uint32_t _devmode_ptr;
+	const char *text_status;/* [unique,charset(UTF16)] */
+	uint32_t _secdesc_ptr;
+	uint32_t status;
+	uint32_t priority;
+	uint32_t position;
+	uint32_t start_time;
+	uint32_t until_time;
+	uint32_t total_pages;
+	uint32_t size;
+	struct spoolss_Time submitted;
+	uint32_t time;
+	uint32_t pages_printed;
+};
+
+struct spoolss_SetJobInfo4 {
+	uint32_t job_id;
+	const char *printer_name;/* [unique,charset(UTF16)] */
+	const char *server_name;/* [unique,charset(UTF16)] */
+	const char *user_name;/* [unique,charset(UTF16)] */
+	const char *document_name;/* [unique,charset(UTF16)] */
+	const char *notify_name;/* [unique,charset(UTF16)] */
+	const char *data_type;/* [unique,charset(UTF16)] */
+	const char *print_processor;/* [unique,charset(UTF16)] */
+	const char *parameters;/* [unique,charset(UTF16)] */
+	const char *driver_name;/* [unique,charset(UTF16)] */
+	uint32_t _devmode_ptr;
+	const char *text_status;/* [unique,charset(UTF16)] */
+	uint32_t _secdesc_ptr;
+	uint32_t status;
+	uint32_t priority;
+	uint32_t position;
+	uint32_t start_time;
+	uint32_t until_time;
+	uint32_t total_pages;
+	uint32_t size;
+	struct spoolss_Time submitted;
+	uint32_t time;
+	uint32_t pages_printed;
+	uint32_t size_high;
+};
+
+union spoolss_SetJobInfo {
+	struct spoolss_SetJobInfo1 *info1;/* [unique,case] */
+	struct spoolss_SetJobInfo2 *info2;/* [unique,case(2)] */
+	struct spoolss_JobInfo3 *info3;/* [unique,case(3)] */
+	struct spoolss_SetJobInfo4 *info4;/* [unique,case(4)] */
+}/* [public] */;
 
 struct spoolss_JobInfoContainer {
 	uint32_t level;
-	union spoolss_JobInfo info;/* [switch_is(level)] */
+	union spoolss_SetJobInfo info;/* [switch_is(level)] */
 };
 
 enum spoolss_JobControl
@@ -404,7 +561,9 @@ enum spoolss_JobControl
 	SPOOLSS_JOB_CONTROL_RESTART=4,
 	SPOOLSS_JOB_CONTROL_DELETE=5,
 	SPOOLSS_JOB_CONTROL_SEND_TO_PRINTER=6,
-	SPOOLSS_JOB_CONTROL_LAST_PAGE_EJECTED=7
+	SPOOLSS_JOB_CONTROL_LAST_PAGE_EJECTED=7,
+	SPOOLSS_JOB_CONTROL_RETAIN=8,
+	SPOOLSS_JOB_CONTROL_RELEASE=9
 }
 #else
  { __donnot_use_enum_spoolss_JobControl=0x7FFFFFFF}
@@ -415,6 +574,8 @@ enum spoolss_JobControl
 #define SPOOLSS_JOB_CONTROL_DELETE ( 5 )
 #define SPOOLSS_JOB_CONTROL_SEND_TO_PRINTER ( 6 )
 #define SPOOLSS_JOB_CONTROL_LAST_PAGE_EJECTED ( 7 )
+#define SPOOLSS_JOB_CONTROL_RETAIN ( 8 )
+#define SPOOLSS_JOB_CONTROL_RELEASE ( 9 )
 #endif
 ;
 
@@ -958,8 +1119,27 @@ struct spoolss_FormInfo1 {
 	struct spoolss_FormArea area;
 };
 
+/* bitmap spoolss_FormStringType */
+#define SPOOLSS_FORM_STRING_TYPE_NONE ( 0x00000001 )
+#define SPOOLSS_FORM_STRING_TYPE_MUI_DLL ( 0x00000002 )
+#define SPOOLSS_FORM_STRING_TYPE_LANG_PAIR ( 0x00000004 )
+
+struct spoolss_FormInfo2 {
+	enum spoolss_FormFlags flags;
+	const char * form_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	struct spoolss_FormSize size;
+	struct spoolss_FormArea area;
+	const char * keyword;/* [relative,flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
+	uint32_t string_type;
+	const char * mui_dll;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	uint32_t ressource_id;
+	const char * display_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	uint32_t lang_id;
+};
+
 union spoolss_FormInfo {
 	struct spoolss_FormInfo1 info1;/* [case] */
+	struct spoolss_FormInfo2 info2;/* [case(2)] */
 }/* [relative_base,gensize,public,nodiscriminant] */;
 
 struct spoolss_AddFormInfo1 {
@@ -969,8 +1149,22 @@ struct spoolss_AddFormInfo1 {
 	struct spoolss_FormArea area;
 };
 
+struct spoolss_AddFormInfo2 {
+	enum spoolss_FormFlags flags;
+	const char *form_name;/* [unique,charset(UTF16)] */
+	struct spoolss_FormSize size;
+	struct spoolss_FormArea area;
+	const char *keyword;/* [unique,charset(DOS)] */
+	uint32_t string_type;
+	const char *mui_dll;/* [unique,charset(UTF16)] */
+	uint32_t ressource_id;
+	const char *display_name;/* [unique,charset(UTF16)] */
+	uint32_t lang_id;
+};
+
 union spoolss_AddFormInfo {
 	struct spoolss_AddFormInfo1 *info1;/* [unique,case] */
+	struct spoolss_AddFormInfo2 *info2;/* [unique,case(2)] */
 }/* [switch_type(uint32)] */;
 
 struct spoolss_PortInfo1 {
@@ -991,9 +1185,72 @@ struct spoolss_PortInfo2 {
 	uint32_t reserved;
 };
 
+enum spoolss_PortStatus
+#ifndef USE_UINT_ENUMS
+ {
+	PORT_STATUS_CLEAR=0x00000000,
+	PORT_STATUS_OFFLINE=0x00000001,
+	PORT_STATUS_PAPER_JAM=0x00000002,
+	PORT_STATUS_PAPER_OUT=0x00000003,
+	PORT_STATUS_OUTPUT_BIN_FULL=0x00000004,
+	PORT_STATUS_PAPER_PROBLEM=0x00000005,
+	PORT_STATUS_NO_TONER=0x00000006,
+	PORT_STATUS_DOOR_OPEN=0x00000007,
+	PORT_STATUS_USER_INTERVENTION=0x00000008,
+	PORT_STATUS_OUT_OF_MEMORY=0x00000009,
+	PORT_STATUS_TONER_LOW=0x0000000A,
+	PORT_STATUS_WARMING_UP=0x0000000B,
+	PORT_STATUS_POWER_SAVE=0x0000000C
+}
+#else
+ { __donnot_use_enum_spoolss_PortStatus=0x7FFFFFFF}
+#define PORT_STATUS_CLEAR ( 0x00000000 )
+#define PORT_STATUS_OFFLINE ( 0x00000001 )
+#define PORT_STATUS_PAPER_JAM ( 0x00000002 )
+#define PORT_STATUS_PAPER_OUT ( 0x00000003 )
+#define PORT_STATUS_OUTPUT_BIN_FULL ( 0x00000004 )
+#define PORT_STATUS_PAPER_PROBLEM ( 0x00000005 )
+#define PORT_STATUS_NO_TONER ( 0x00000006 )
+#define PORT_STATUS_DOOR_OPEN ( 0x00000007 )
+#define PORT_STATUS_USER_INTERVENTION ( 0x00000008 )
+#define PORT_STATUS_OUT_OF_MEMORY ( 0x00000009 )
+#define PORT_STATUS_TONER_LOW ( 0x0000000A )
+#define PORT_STATUS_WARMING_UP ( 0x0000000B )
+#define PORT_STATUS_POWER_SAVE ( 0x0000000C )
+#endif
+;
+
+enum spoolss_PortSeverity
+#ifndef USE_UINT_ENUMS
+ {
+	PORT_STATUS_TYPE_ERROR=0x00000001,
+	PORT_STATUS_TYPE_WARNING=0x00000002,
+	PORT_STATUS_TYPE_INFO=0x00000003
+}
+#else
+ { __donnot_use_enum_spoolss_PortSeverity=0x7FFFFFFF}
+#define PORT_STATUS_TYPE_ERROR ( 0x00000001 )
+#define PORT_STATUS_TYPE_WARNING ( 0x00000002 )
+#define PORT_STATUS_TYPE_INFO ( 0x00000003 )
+#endif
+;
+
+struct spoolss_PortInfo3 {
+	enum spoolss_PortStatus status;
+	const char * status_string;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	enum spoolss_PortSeverity severity;
+};
+
+struct spoolss_PortInfoFF {
+	const char * port_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	DATA_BLOB monitor_data;
+};
+
 union spoolss_PortInfo {
 	struct spoolss_PortInfo1 info1;/* [case] */
 	struct spoolss_PortInfo2 info2;/* [case(2)] */
+	struct spoolss_PortInfo3 info3;/* [case(3)] */
+	struct spoolss_PortInfoFF infoFF;/* [case(0xff)] */
 }/* [relative_base,nodiscriminant,public] */;
 
 struct spoolss_MonitorInfo1 {
@@ -1227,6 +1484,7 @@ struct spoolss_UserLevelCtr {
 #define PRINTER_ACCESS_ADMINISTER ( 0x00000004 )
 #define PRINTER_ACCESS_USE ( 0x00000008 )
 #define JOB_ACCESS_ADMINISTER ( 0x00000010 )
+#define JOB_ACCESS_READ ( 0x00000020 )
 
 /* bitmap spoolss_DeleteDriverFlags */
 #define DPD_DELETE_UNUSED_FILES ( 0x00000001 )

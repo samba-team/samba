@@ -763,7 +763,7 @@ bool convert_string_allocate(TALLOC_CTX *ctx, charset_t from, charset_t to,
  * converted.
  */
 bool convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
-			   void const *src, size_t srclen, void *dst,
+			   void const *src, size_t srclen, void **dst,
 			   size_t *converted_size, bool allow_bad_conv)
 {
 	void **dest = (void **)dst;

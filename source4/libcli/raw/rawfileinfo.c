@@ -49,7 +49,7 @@ NTSTATUS smbcli_parse_stream_info(DATA_BLOB blob, TALLOC_CTX *mem_ctx,
 	while (blob.length - ofs >= 24) {
 		uint_t n = io->num_streams;
 		uint32_t nlen, len;
-		ssize_t size;
+		bool ret;
 		void *vstr;
 		io->streams = 
 			talloc_realloc(mem_ctx, io->streams, struct stream_struct, n+1);
@@ -62,10 +62,10 @@ NTSTATUS smbcli_parse_stream_info(DATA_BLOB blob, TALLOC_CTX *mem_ctx,
 		if (nlen > blob.length - (ofs + 24)) {
 			return NT_STATUS_INFO_LENGTH_MISMATCH;
 		}
-		size = convert_string_talloc(io->streams, 
+		ret = convert_string_talloc(io->streams, 
 					     CH_UTF16, CH_UNIX,
-					     blob.data+ofs+24, nlen, &vstr);
-		if (size == -1) {
+					     blob.data+ofs+24, nlen, &vstr, NULL, false);
+		if (!ret) {
 			return NT_STATUS_ILLEGAL_CHARACTER;
 		}
 		io->streams[n].stream_name.s = (const char *)vstr;

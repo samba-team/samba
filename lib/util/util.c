@@ -541,21 +541,6 @@ void *malloc_array(size_t el_size, unsigned int count)
 	return realloc_array(NULL, el_size, count, false);
 }
 
-_PUBLIC_ void *talloc_check_name_abort(const void *ptr, const char *name)
-{
-        void *result;
-
-        result = talloc_check_name(ptr, name);
-        if (result != NULL)
-                return result;
-
-        DEBUG(0, ("Talloc type mismatch, expected %s, got %s\n",
-                  name, talloc_get_name(ptr)));
-        smb_panic("talloc type mismatch");
-        /* Keep the compiler happy */
-        return NULL;
-}
-
 /**
  Trim the specified elements off the front and back of a string.
 **/
@@ -834,6 +819,106 @@ _PUBLIC_ size_t utf16_len_n(const void *src, size_t n)
 	}
 
 	return len;
+}
+
+/**
+ * @file
+ * @brief String utilities.
+ **/
+
+static bool next_token_internal_talloc(TALLOC_CTX *ctx,
+				const char **ptr,
+                                char **pp_buff,
+                                const char *sep,
+                                bool ltrim)
+{
+	char *s;
+	char *saved_s;
+	char *pbuf;
+	bool quoted;
+	size_t len=1;
+
+	*pp_buff = NULL;
+	if (!ptr) {
+		return(false);
+	}
+
+	s = (char *)*ptr;
+
+	/* default to simple separators */
+	if (!sep) {
+		sep = " \t\n\r";
+	}
+
+	/* find the first non sep char, if left-trimming is requested */
+	if (ltrim) {
+		while (*s && strchr_m(sep,*s)) {
+			s++;
+		}
+	}
+
+	/* nothing left? */
+	if (!*s) {
+		return false;
+	}
+
+	/* When restarting we need to go from here. */
+	saved_s = s;
+
+	/* Work out the length needed. */
+	for (quoted = false; *s &&
+			(quoted || !strchr_m(sep,*s)); s++) {
+		if (*s == '\"') {
+			quoted = !quoted;
+		} else {
+			len++;
+		}
+	}
+
+	/* We started with len = 1 so we have space for the nul. */
+	*pp_buff = talloc_array(ctx, char, len);
+	if (!*pp_buff) {
+		return false;
+	}
+
+	/* copy over the token */
+	pbuf = *pp_buff;
+	s = saved_s;
+	for (quoted = false; *s &&
+			(quoted || !strchr_m(sep,*s)); s++) {
+		if ( *s == '\"' ) {
+			quoted = !quoted;
+		} else {
+			*pbuf++ = *s;
+		}
+	}
+
+	*ptr = (*s) ? s+1 : s;
+	*pbuf = 0;
+
+	return true;
+}
+
+bool next_token_talloc(TALLOC_CTX *ctx,
+			const char **ptr,
+			char **pp_buff,
+			const char *sep)
+{
+	return next_token_internal_talloc(ctx, ptr, pp_buff, sep, true);
+}
+
+/*
+ * Get the next token from a string, return false if none found.  Handles
+ * double-quotes.  This version does not trim leading separator characters
+ * before looking for a token.
+ */
+
+bool next_token_no_ltrim_talloc(TALLOC_CTX *ctx,
+			const char **ptr,
+			char **pp_buff,
+			const char *sep)
+{
+	return next_token_internal_talloc(ctx, ptr, pp_buff, sep, false);
 }
 
 

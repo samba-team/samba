@@ -31,7 +31,7 @@
 #include <stdint.h>
 #include <talloc.h>
 #include <sys/time.h>
-#include <../lib/replace/replace.h>
+#include <stdbool.h>
 
 struct tevent_context;
 struct tevent_ops;
@@ -183,89 +183,24 @@ enum tevent_req_state {
  * finished. This can happen while the completion function is called.
  */
 
-struct tevent_req {
-	/**
-	 * @brief What to do on completion
-	 *
-	 * This is used for the user of an async request, fn is called when
-	 * the request completes, either successfully or with an error.
-	 */
-	struct {
-		/**
-		 * @brief Completion function
-		 * Completion function, to be filled by the API user
-		 */
-		void (*fn)(struct tevent_req *);
-		/**
-		 * @brief Private data for the completion function
-		 */
-		void *private_data;
-	} async;
+struct tevent_req;
 
-	/**
-	 * @brief Private state pointer for the actual implementation
-	 *
-	 * The implementation doing the work for the async request needs a
-	 * current state like for example a fd event. The user of an async
-	 * request should not touch this.
-	 */
-	void *private_state;
+typedef void (*tevent_req_fn)(struct tevent_req *);
 
-	/**
-	 * @brief Internal state of the request
-	 *
-	 * Callers should only access this via functions and never directly.
-	 */
-	struct {
-		/**
-		 * @brief The talloc type of the private_state pointer
-		 *
-		 * This is filled by the tevent_req_create() macro.
-		 *
-		 * This for debugging only.
-		 */
-		const char *private_type;
+void tevent_req_set_callback(struct tevent_req *req, tevent_req_fn fn, void *pvt);
+void *_tevent_req_callback_data(struct tevent_req *req);
+void *_tevent_req_data(struct tevent_req *req);
 
-		/**
-		 * @brief The location where the request was created
-		 *
-		 * This uses the __location__ macro via the tevent_req_create()
-		 * macro.
-		 *
-		 * This for debugging only.
-		 */
-		const char *location;
+#define tevent_req_callback_data(_req, _type) \
+	talloc_get_type_abort(_tevent_req_callback_data(_req), _type)
+#define tevent_req_data(_req, _type) \
+	talloc_get_type_abort(_tevent_req_data(_req), _type)
 
-		/**
-		 * @brief The external state - will be queried by the caller
-		 *
-		 * While the async request is being processed, state will remain in
-		 * TEVENT_REQ_IN_PROGRESS. A request is finished if
-		 * req->state>=TEVENT_REQ_DONE.
-		 */
-		enum tevent_req_state state;
+typedef char *(*tevent_req_print_fn)(struct tevent_req *, TALLOC_CTX *);
 
-		/**
-		 * @brief status code when finished
-		 *
-		 * This status can be queried in the async completion function. It
-		 * will be set to 0 when everything went fine.
-		 */
-		uint64_t error;
+void tevent_req_set_print_fn(struct tevent_req *req, tevent_req_print_fn fn);
 
-		/**
-		 * @brief the timer event if tevent_req_post was used
-		 *
-		 */
-		struct tevent_timer *trigger;
-
-		/**
-		 * @brief the timer event if tevent_req_set_timeout was used
-		 *
-		 */
-		struct tevent_timer *timer;
-	} internal;
-};
+char *tevent_req_default_print(struct tevent_req *req, TALLOC_CTX *mem_ctx);
 
 char *tevent_req_print(TALLOC_CTX *mem_ctx, struct tevent_req *req);
 
@@ -296,6 +231,9 @@ struct tevent_req *tevent_req_post(struct tevent_req *req,
 
 bool tevent_req_is_in_progress(struct tevent_req *req);
 
+bool tevent_req_poll(struct tevent_req *req,
+		     struct tevent_context *ev);
+
 bool tevent_req_is_error(struct tevent_req *req,
 			 enum tevent_req_state *state,
 			 uint64_t *error);
@@ -323,6 +261,28 @@ struct timeval tevent_timeval_add(const struct timeval *tv, uint32_t secs,
 				  uint32_t usecs);
 
 struct timeval tevent_timeval_current_ofs(uint32_t secs, uint32_t usecs);
+
+struct tevent_queue;
+
+struct tevent_queue *_tevent_queue_create(TALLOC_CTX *mem_ctx,
+					  const char *name,
+					  const char *location);
+
+#define tevent_queue_create(_mem_ctx, _name) \
+	_tevent_queue_create((_mem_ctx), (_name), __location__)
+
+typedef void (*tevent_queue_trigger_fn_t)(struct tevent_req *req,
+					  void *private_data);
+bool tevent_queue_add(struct tevent_queue *queue,
+		      struct tevent_context *ev,
+		      struct tevent_req *req,
+		      tevent_queue_trigger_fn_t trigger,
+		      void *private_data);
+bool tevent_queue_start(struct tevent_queue *queue,
+			struct tevent_context *ev);
+void tevent_queue_stop(struct tevent_queue *queue);
+
+size_t tevent_queue_length(struct tevent_queue *queue);
 
 #ifdef TEVENT_COMPAT_DEFINES
 

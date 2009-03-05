@@ -39,9 +39,6 @@
 #define	SEC_RIGHTS_RESET_PASSWD		SEC_RIGHTS_EXTENDED
 #define SEC_RIGHTS_FULL_CTRL		0xf01ff
 
-#define SEC_ACE_OBJECT_PRESENT           0x00000001 /* thanks for Jim McDonough <jmcd@us.ibm.com> */
-#define SEC_ACE_OBJECT_INHERITED_PRESENT 0x00000002
-
 /*
  * New Windows 2000 bits.
  */
@@ -72,7 +69,6 @@
 
 /* SEC_ACE */
 typedef struct security_ace SEC_ACE;
-#define  SEC_ACE_HEADER_SIZE (2 * sizeof(uint8) + sizeof(uint16) + sizeof(uint32))
 
 #ifndef ACL_REVISION
 #define ACL_REVISION 0x3
@@ -81,7 +77,6 @@ typedef struct security_ace SEC_ACE;
 #ifndef _SEC_ACL
 /* SEC_ACL */
 typedef struct security_acl SEC_ACL;
-#define  SEC_ACL_HEADER_SIZE (2 * sizeof(uint16) + sizeof(uint32))
 #define _SEC_ACL
 #endif
 

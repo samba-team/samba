@@ -25,14 +25,24 @@
 
 extern REGISTRY_OPS regdb_ops;		/* these are the default */
 
-static int smbconf_fetch_keys( const char *key, REGSUBKEY_CTR *subkey_ctr )
+static int smbconf_fetch_keys( const char *key, struct regsubkey_ctr *subkey_ctr )
 {
 	return regdb_ops.fetch_subkeys(key, subkey_ctr);
 }
 
-static bool smbconf_store_keys( const char *key, REGSUBKEY_CTR *subkeys )
+static bool smbconf_store_keys( const char *key, struct regsubkey_ctr *subkeys )
 {
 	return regdb_ops.store_subkeys(key, subkeys);
+}
+
+static WERROR smbconf_create_subkey(const char *key, const char *subkey)
+{
+	return regdb_ops.create_subkey(key, subkey);
+}
+
+static WERROR smbconf_delete_subkey(const char *key, const char *subkey)
+{
+	return regdb_ops.delete_subkey(key, subkey);
 }
 
 static int smbconf_fetch_values( const char *key, REGVAL_CTR *val )
@@ -79,6 +89,8 @@ REGISTRY_OPS smbconf_reg_ops = {
 	.fetch_values = smbconf_fetch_values,
 	.store_subkeys = smbconf_store_keys,
 	.store_values = smbconf_store_values,
+	.create_subkey = smbconf_create_subkey,
+	.delete_subkey = smbconf_delete_subkey,
 	.reg_access_check = smbconf_reg_access_check,
 	.get_secdesc = smbconf_get_secdesc,
 	.set_secdesc = smbconf_set_secdesc,

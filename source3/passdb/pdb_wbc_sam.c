@@ -1,6 +1,8 @@
 /*
    Unix SMB/CIFS implementation.
-   Password and authentication handling for wbclient
+
+   Password and authentication handling by wbclient
+
    Copyright (C) Andrew Bartlett			2002
    Copyright (C) Jelmer Vernooij			2002
    Copyright (C) Simo Sorce				2003
@@ -21,12 +23,25 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/* This passdb module retrieves full passdb information for local users and
+ * groups from a wbclient compatible daemon.
+ *
+ * The purpose of this module is to defer all SAM authorization information
+ * storage and retrieval to a wbc compatible daemon.
+ *
+ * This passdb backend is most useful when used in conjunction with auth_wbc.
+ *
+ * A few current limitations of this module are:
+ *   - read only interface
+ *   - no privileges
+ */
+
 #include "includes.h"
 
 /***************************************************************************
   Default implementations of some functions.
  ****************************************************************************/
-static NTSTATUS _pdb_onefs_sam_getsampw(struct pdb_methods *methods,
+static NTSTATUS _pdb_wbc_sam_getsampw(struct pdb_methods *methods,
 				       struct samu *user,
 				       const struct passwd *pwd)
 {
@@ -44,29 +59,29 @@ static NTSTATUS _pdb_onefs_sam_getsampw(struct pdb_methods *methods,
 	return result;
 }
 
-static NTSTATUS pdb_onefs_sam_getsampwnam(struct pdb_methods *methods, struct samu *user, const char *sname)
+static NTSTATUS pdb_wbc_sam_getsampwnam(struct pdb_methods *methods, struct samu *user, const char *sname)
 {
-	return _pdb_onefs_sam_getsampw(methods, user, winbind_getpwnam(sname));
+	return _pdb_wbc_sam_getsampw(methods, user, winbind_getpwnam(sname));
 }
 
-static NTSTATUS pdb_onefs_sam_getsampwsid(struct pdb_methods *methods, struct samu *user, const DOM_SID *sid)
+static NTSTATUS pdb_wbc_sam_getsampwsid(struct pdb_methods *methods, struct samu *user, const DOM_SID *sid)
 {
-	return _pdb_onefs_sam_getsampw(methods, user, winbind_getpwsid(sid));
+	return _pdb_wbc_sam_getsampw(methods, user, winbind_getpwsid(sid));
 }
 
-static bool pdb_onefs_sam_uid_to_sid(struct pdb_methods *methods, uid_t uid,
+static bool pdb_wbc_sam_uid_to_sid(struct pdb_methods *methods, uid_t uid,
 				   DOM_SID *sid)
 {
 	return winbind_uid_to_sid(sid, uid);
 }
 
-static bool pdb_onefs_sam_gid_to_sid(struct pdb_methods *methods, gid_t gid,
+static bool pdb_wbc_sam_gid_to_sid(struct pdb_methods *methods, gid_t gid,
 				   DOM_SID *sid)
 {
 	return winbind_gid_to_sid(sid, gid);
 }
 
-static bool pdb_onefs_sam_sid_to_id(struct pdb_methods *methods,
+static bool pdb_wbc_sam_sid_to_id(struct pdb_methods *methods,
 				  const DOM_SID *sid,
 				  union unid_t *id, enum lsa_SidType *type)
 {
@@ -82,7 +97,7 @@ static bool pdb_onefs_sam_sid_to_id(struct pdb_methods *methods,
 	return true;
 }
 
-static NTSTATUS pdb_onefs_sam_enum_group_members(struct pdb_methods *methods,
+static NTSTATUS pdb_wbc_sam_enum_group_members(struct pdb_methods *methods,
 					       TALLOC_CTX *mem_ctx,
 					       const DOM_SID *group,
 					       uint32 **pp_member_rids,
@@ -91,7 +106,7 @@ static NTSTATUS pdb_onefs_sam_enum_group_members(struct pdb_methods *methods,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS pdb_onefs_sam_enum_group_memberships(struct pdb_methods *methods,
+static NTSTATUS pdb_wbc_sam_enum_group_memberships(struct pdb_methods *methods,
 						   TALLOC_CTX *mem_ctx,
 						   struct samu *user,
 						   DOM_SID **pp_sids,
@@ -100,10 +115,12 @@ static NTSTATUS pdb_onefs_sam_enum_group_memberships(struct pdb_methods *methods
 {
 	size_t i;
 	const char *username = pdb_get_username(user);
+	uint32_t num_groups;
 
-	if (!winbind_get_groups(mem_ctx, username, p_num_groups, pp_gids)) {
+	if (!winbind_get_groups(mem_ctx, username, &num_groups, pp_gids)) {
 		return NT_STATUS_NO_SUCH_USER;
 	}
+	*p_num_groups = num_groups;
 
 	if (*p_num_groups == 0) {
 		smb_panic("primary group missing");
@@ -123,7 +140,7 @@ static NTSTATUS pdb_onefs_sam_enum_group_memberships(struct pdb_methods *methods
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS pdb_onefs_sam_lookup_rids(struct pdb_methods *methods,
+static NTSTATUS pdb_wbc_sam_lookup_rids(struct pdb_methods *methods,
 					const DOM_SID *domain_sid,
 					int num_rids,
 					uint32 *rids,
@@ -164,23 +181,23 @@ done:
 	return result;
 }
 
-static NTSTATUS pdb_onefs_sam_get_account_policy(struct pdb_methods *methods, int policy_index, uint32 *value)
+static NTSTATUS pdb_wbc_sam_get_account_policy(struct pdb_methods *methods, int policy_index, uint32 *value)
 {
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
-static NTSTATUS pdb_onefs_sam_set_account_policy(struct pdb_methods *methods, int policy_index, uint32 value)
+static NTSTATUS pdb_wbc_sam_set_account_policy(struct pdb_methods *methods, int policy_index, uint32 value)
 {
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
-static bool pdb_onefs_sam_search_groups(struct pdb_methods *methods,
+static bool pdb_wbc_sam_search_groups(struct pdb_methods *methods,
 				      struct pdb_search *search)
 {
 	return false;
 }
 
-static bool pdb_onefs_sam_search_aliases(struct pdb_methods *methods,
+static bool pdb_wbc_sam_search_aliases(struct pdb_methods *methods,
 				       struct pdb_search *search,
 				       const DOM_SID *sid)
 {
@@ -188,7 +205,7 @@ static bool pdb_onefs_sam_search_aliases(struct pdb_methods *methods,
 	return false;
 }
 
-static bool pdb_onefs_sam_get_trusteddom_pw(struct pdb_methods *methods,
+static bool pdb_wbc_sam_get_trusteddom_pw(struct pdb_methods *methods,
 					  const char *domain,
 					  char **pwd,
 					  DOM_SID *sid,
@@ -198,7 +215,7 @@ static bool pdb_onefs_sam_get_trusteddom_pw(struct pdb_methods *methods,
 
 }
 
-static bool pdb_onefs_sam_set_trusteddom_pw(struct pdb_methods *methods,
+static bool pdb_wbc_sam_set_trusteddom_pw(struct pdb_methods *methods,
 					  const char *domain,
 					  const char *pwd,
 					  const DOM_SID *sid)
@@ -206,13 +223,13 @@ static bool pdb_onefs_sam_set_trusteddom_pw(struct pdb_methods *methods,
 	return false;
 }
 
-static bool pdb_onefs_sam_del_trusteddom_pw(struct pdb_methods *methods,
+static bool pdb_wbc_sam_del_trusteddom_pw(struct pdb_methods *methods,
 					  const char *domain)
 {
 	return false;
 }
 
-static NTSTATUS pdb_onefs_sam_enum_trusteddoms(struct pdb_methods *methods,
+static NTSTATUS pdb_wbc_sam_enum_trusteddoms(struct pdb_methods *methods,
 					     TALLOC_CTX *mem_ctx,
 					     uint32 *num_domains,
 					     struct trustdom_info ***domains)
@@ -230,7 +247,7 @@ static bool _make_group_map(struct pdb_methods *methods, const char *domain, con
 	return true;
 }
 
-static NTSTATUS pdb_onefs_sam_getgrsid(struct pdb_methods *methods, GROUP_MAP *map,
+static NTSTATUS pdb_wbc_sam_getgrsid(struct pdb_methods *methods, GROUP_MAP *map,
 				 DOM_SID sid)
 {
 	NTSTATUS result = NT_STATUS_OK;
@@ -269,7 +286,7 @@ done:
 	return result;
 }
 
-static NTSTATUS pdb_onefs_sam_getgrgid(struct pdb_methods *methods, GROUP_MAP *map,
+static NTSTATUS pdb_wbc_sam_getgrgid(struct pdb_methods *methods, GROUP_MAP *map,
 				 gid_t gid)
 {
 	NTSTATUS result = NT_STATUS_OK;
@@ -309,7 +326,7 @@ done:
 	return result;
 }
 
-static NTSTATUS pdb_onefs_sam_getgrnam(struct pdb_methods *methods, GROUP_MAP *map,
+static NTSTATUS pdb_wbc_sam_getgrnam(struct pdb_methods *methods, GROUP_MAP *map,
 				 const char *name)
 {
 	NTSTATUS result = NT_STATUS_OK;
@@ -347,7 +364,7 @@ done:
 	return result;
 }
 
-static NTSTATUS pdb_onefs_sam_enum_group_mapping(struct pdb_methods *methods,
+static NTSTATUS pdb_wbc_sam_enum_group_mapping(struct pdb_methods *methods,
 					   const DOM_SID *sid, enum lsa_SidType sid_name_use,
 					   GROUP_MAP **pp_rmap, size_t *p_num_entries,
 					   bool unix_only)
@@ -355,21 +372,21 @@ static NTSTATUS pdb_onefs_sam_enum_group_mapping(struct pdb_methods *methods,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS pdb_onefs_sam_get_aliasinfo(struct pdb_methods *methods,
+static NTSTATUS pdb_wbc_sam_get_aliasinfo(struct pdb_methods *methods,
 				   const DOM_SID *sid,
 				   struct acct_info *info)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS pdb_onefs_sam_enum_aliasmem(struct pdb_methods *methods,
+static NTSTATUS pdb_wbc_sam_enum_aliasmem(struct pdb_methods *methods,
 				   const DOM_SID *alias, DOM_SID **pp_members,
 				   size_t *p_num_members)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS pdb_onefs_sam_alias_memberships(struct pdb_methods *methods,
+static NTSTATUS pdb_wbc_sam_alias_memberships(struct pdb_methods *methods,
 				       TALLOC_CTX *mem_ctx,
 				       const DOM_SID *domain_sid,
 				       const DOM_SID *members,
@@ -384,7 +401,7 @@ static NTSTATUS pdb_onefs_sam_alias_memberships(struct pdb_methods *methods,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS pdb_init_onefs_sam(struct pdb_methods **pdb_method, const char *location)
+static NTSTATUS pdb_init_wbc_sam(struct pdb_methods **pdb_method, const char *location)
 {
 	NTSTATUS result;
 
@@ -392,34 +409,34 @@ static NTSTATUS pdb_init_onefs_sam(struct pdb_methods **pdb_method, const char *
 		return result;
 	}
 
-	(*pdb_method)->name = "onefs_sam";
+	(*pdb_method)->name = "wbc_sam";
 
-	(*pdb_method)->getsampwnam = pdb_onefs_sam_getsampwnam;
-	(*pdb_method)->getsampwsid = pdb_onefs_sam_getsampwsid;
+	(*pdb_method)->getsampwnam = pdb_wbc_sam_getsampwnam;
+	(*pdb_method)->getsampwsid = pdb_wbc_sam_getsampwsid;
 
-	(*pdb_method)->getgrsid = pdb_onefs_sam_getgrsid;
-	(*pdb_method)->getgrgid = pdb_onefs_sam_getgrgid;
-	(*pdb_method)->getgrnam = pdb_onefs_sam_getgrnam;
-	(*pdb_method)->enum_group_mapping = pdb_onefs_sam_enum_group_mapping;
-	(*pdb_method)->enum_group_members = pdb_onefs_sam_enum_group_members;
-	(*pdb_method)->enum_group_memberships = pdb_onefs_sam_enum_group_memberships;
-	(*pdb_method)->get_aliasinfo = pdb_onefs_sam_get_aliasinfo;
-	(*pdb_method)->enum_aliasmem = pdb_onefs_sam_enum_aliasmem;
-	(*pdb_method)->enum_alias_memberships = pdb_onefs_sam_alias_memberships;
-	(*pdb_method)->lookup_rids = pdb_onefs_sam_lookup_rids;
-	(*pdb_method)->get_account_policy = pdb_onefs_sam_get_account_policy;
-	(*pdb_method)->set_account_policy = pdb_onefs_sam_set_account_policy;
-	(*pdb_method)->uid_to_sid = pdb_onefs_sam_uid_to_sid;
-	(*pdb_method)->gid_to_sid = pdb_onefs_sam_gid_to_sid;
-	(*pdb_method)->sid_to_id = pdb_onefs_sam_sid_to_id;
+	(*pdb_method)->getgrsid = pdb_wbc_sam_getgrsid;
+	(*pdb_method)->getgrgid = pdb_wbc_sam_getgrgid;
+	(*pdb_method)->getgrnam = pdb_wbc_sam_getgrnam;
+	(*pdb_method)->enum_group_mapping = pdb_wbc_sam_enum_group_mapping;
+	(*pdb_method)->enum_group_members = pdb_wbc_sam_enum_group_members;
+	(*pdb_method)->enum_group_memberships = pdb_wbc_sam_enum_group_memberships;
+	(*pdb_method)->get_aliasinfo = pdb_wbc_sam_get_aliasinfo;
+	(*pdb_method)->enum_aliasmem = pdb_wbc_sam_enum_aliasmem;
+	(*pdb_method)->enum_alias_memberships = pdb_wbc_sam_alias_memberships;
+	(*pdb_method)->lookup_rids = pdb_wbc_sam_lookup_rids;
+	(*pdb_method)->get_account_policy = pdb_wbc_sam_get_account_policy;
+	(*pdb_method)->set_account_policy = pdb_wbc_sam_set_account_policy;
+	(*pdb_method)->uid_to_sid = pdb_wbc_sam_uid_to_sid;
+	(*pdb_method)->gid_to_sid = pdb_wbc_sam_gid_to_sid;
+	(*pdb_method)->sid_to_id = pdb_wbc_sam_sid_to_id;
 
-	(*pdb_method)->search_groups = pdb_onefs_sam_search_groups;
-	(*pdb_method)->search_aliases = pdb_onefs_sam_search_aliases;
+	(*pdb_method)->search_groups = pdb_wbc_sam_search_groups;
+	(*pdb_method)->search_aliases = pdb_wbc_sam_search_aliases;
 
-	(*pdb_method)->get_trusteddom_pw = pdb_onefs_sam_get_trusteddom_pw;
-	(*pdb_method)->set_trusteddom_pw = pdb_onefs_sam_set_trusteddom_pw;
-	(*pdb_method)->del_trusteddom_pw = pdb_onefs_sam_del_trusteddom_pw;
-	(*pdb_method)->enum_trusteddoms  = pdb_onefs_sam_enum_trusteddoms;
+	(*pdb_method)->get_trusteddom_pw = pdb_wbc_sam_get_trusteddom_pw;
+	(*pdb_method)->set_trusteddom_pw = pdb_wbc_sam_set_trusteddom_pw;
+	(*pdb_method)->del_trusteddom_pw = pdb_wbc_sam_del_trusteddom_pw;
+	(*pdb_method)->enum_trusteddoms  = pdb_wbc_sam_enum_trusteddoms;
 
 	(*pdb_method)->private_data = NULL;
 	(*pdb_method)->free_private_data = NULL;
@@ -427,7 +444,7 @@ static NTSTATUS pdb_init_onefs_sam(struct pdb_methods **pdb_method, const char *
 	return NT_STATUS_OK;
 }
 
-NTSTATUS pdb_onefs_sam_init(void)
+NTSTATUS pdb_wbc_sam_init(void)
 {
-	return smb_register_passdb(PASSDB_INTERFACE_VERSION, "onefs_sam", pdb_init_onefs_sam);
+	return smb_register_passdb(PASSDB_INTERFACE_VERSION, "wbc_sam", pdb_init_wbc_sam);
 }

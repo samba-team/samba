@@ -186,20 +186,26 @@ static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 	TDB_DATA data;
 	struct file_id id;
 	struct db_context *db;
+	int ret = -1;
 	SMB_STRUCT_STAT sbuf;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION);
 
 	if (fsp && fsp->fh->fd != -1) {
-		if (SMB_VFS_FSTAT(fsp, &sbuf) == -1) {
-			return map_nt_error_from_unix(errno);
-		}
+		ret = SMB_VFS_FSTAT(fsp, &sbuf);
 	} else {
-		if (SMB_VFS_STAT(handle->conn, name, &sbuf) == -1) {
-			return map_nt_error_from_unix(errno);
+		if (fsp && fsp->posix_open) {
+			ret = SMB_VFS_LSTAT(handle->conn, name, &sbuf);
+		} else {
+			ret = SMB_VFS_STAT(handle->conn, name, &sbuf);
 		}
 	}
+
+	if (ret == -1) {
+		return map_nt_error_from_unix(errno);
+	}
+
 	id = vfs_file_id_from_sbuf(handle->conn, &sbuf);
 
 	/* For backwards compatibility only store the dev/inode. */
@@ -270,6 +276,7 @@ static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
 	TDB_DATA data;
 	struct db_context *db;
 	struct db_record *rec;
+	int ret = -1;
 
 	DEBUG(10,("store_acl_blob_fsp: storing blob length %u on file %s\n",
 			(unsigned int)pblob->length, fsp->fsp_name));
@@ -278,14 +285,19 @@ static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION);
 
 	if (fsp->fh->fd != -1) {
-		if (SMB_VFS_FSTAT(fsp, &sbuf) == -1) {
-			return map_nt_error_from_unix(errno);
-		}
+		ret = SMB_VFS_FSTAT(fsp, &sbuf);
 	} else {
-		if (SMB_VFS_STAT(handle->conn, fsp->fsp_name, &sbuf) == -1) {
-			return map_nt_error_from_unix(errno);
+		if (fsp->posix_open) {
+			ret = SMB_VFS_LSTAT(handle->conn, fsp->fsp_name, &sbuf);
+		} else {
+			ret = SMB_VFS_STAT(handle->conn, fsp->fsp_name, &sbuf);
 		}
 	}
+
+	if (ret == -1) {
+		return map_nt_error_from_unix(errno);
+	}
+
 	id = vfs_file_id_from_sbuf(handle->conn, &sbuf);
 
 	/* For backwards compatibility only store the dev/inode. */
@@ -316,6 +328,7 @@ static NTSTATUS store_acl_blob_pathname(vfs_handle_struct *handle,
 	SMB_STRUCT_STAT sbuf;
 	struct db_context *db;
 	struct db_record *rec;
+	int ret = -1;
 
 	DEBUG(10,("store_acl_blob_pathname: storing blob "
 			"length %u on file %s\n",
@@ -324,7 +337,13 @@ static NTSTATUS store_acl_blob_pathname(vfs_handle_struct *handle,
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION);
 
-	if (SMB_VFS_STAT(handle->conn, fname, &sbuf) == -1) {
+	if (lp_posix_pathnames()) {
+		ret = SMB_VFS_LSTAT(handle->conn, fname, &sbuf);
+	} else {
+		ret = SMB_VFS_STAT(handle->conn, fname, &sbuf);
+	}
+
+	if (ret == -1) {
 		return map_nt_error_from_unix(errno);
 	}
 
@@ -494,7 +513,11 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 		if (fsp && !fsp->is_directory && fsp->fh->fd != -1) {
 			ret = SMB_VFS_FSTAT(fsp, &sbuf);
 		} else {
-			ret = SMB_VFS_STAT(handle->conn,fname, &sbuf);
+			if (fsp && fsp->posix_open) {
+				ret = SMB_VFS_LSTAT(handle->conn,fname, &sbuf);
+			} else {
+				ret = SMB_VFS_STAT(handle->conn,fname, &sbuf);
+			}
 		}
 		if (ret == -1) {
 			return map_nt_error_from_unix(errno);
@@ -583,11 +606,17 @@ static int unlink_acl_tdb(vfs_handle_struct *handle, const char *path)
 {
 	SMB_STRUCT_STAT sbuf;
 	struct db_context *db;
-	int ret;
+	int ret = -1;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
 
-	if (SMB_VFS_STAT(handle->conn, path, &sbuf) == -1) {
+	if (lp_posix_pathnames()) {
+		ret = SMB_VFS_LSTAT(handle->conn, path, &sbuf);
+	} else {
+		ret = SMB_VFS_STAT(handle->conn, path, &sbuf);
+	}
+
+	if (ret == -1) {
 		return -1;
 	}
 
@@ -626,11 +655,17 @@ static int rmdir_acl_tdb(vfs_handle_struct *handle, const char *path)
 
 	SMB_STRUCT_STAT sbuf;
 	struct db_context *db;
-	int ret;
+	int ret = -1;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
 
-	if (SMB_VFS_STAT(handle->conn, path, &sbuf) == -1) {
+	if (lp_posix_pathnames()) {
+		ret = SMB_VFS_LSTAT(handle->conn, path, &sbuf);
+	} else {
+		ret = SMB_VFS_STAT(handle->conn, path, &sbuf);
+	}
+
+	if (ret == -1) {
 		return -1;
 	}
 
@@ -728,7 +763,11 @@ static NTSTATUS fset_nt_acl_tdb(vfs_handle_struct *handle, files_struct *fsp,
 			return NT_STATUS_OK;
 		}
 		if (fsp->is_directory || fsp->fh->fd == -1) {
-			ret = SMB_VFS_STAT(fsp->conn,fsp->fsp_name, &sbuf);
+			if (fsp->posix_open) {
+				ret = SMB_VFS_LSTAT(fsp->conn,fsp->fsp_name, &sbuf);
+			} else {
+				ret = SMB_VFS_STAT(fsp->conn,fsp->fsp_name, &sbuf);
+			}
 		} else {
 			ret = SMB_VFS_FSTAT(fsp, &sbuf);
 		}
@@ -813,11 +852,17 @@ static int sys_acl_set_file_tdb(vfs_handle_struct *handle,
 {
 	SMB_STRUCT_STAT sbuf;
 	struct db_context *db;
-	int ret;
+	int ret = -1;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
 
-	if (SMB_VFS_STAT(handle->conn, path, &sbuf) == -1) {
+	if (lp_posix_pathnames()) {
+		ret = SMB_VFS_LSTAT(handle->conn, path, &sbuf);
+	} else {
+		ret = SMB_VFS_STAT(handle->conn, path, &sbuf);
+	}
+
+	if (ret == -1) {
 		return -1;
 	}
 
@@ -848,7 +893,11 @@ static int sys_acl_set_fd_tdb(vfs_handle_struct *handle,
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
 
 	if (fsp->is_directory || fsp->fh->fd == -1) {
-		ret = SMB_VFS_STAT(fsp->conn,fsp->fsp_name, &sbuf);
+		if (fsp->posix_open) {
+			ret = SMB_VFS_LSTAT(fsp->conn,fsp->fsp_name, &sbuf);
+		} else {
+			ret = SMB_VFS_STAT(fsp->conn,fsp->fsp_name, &sbuf);
+		}
 	} else {
 		ret = SMB_VFS_FSTAT(fsp, &sbuf);
 	}

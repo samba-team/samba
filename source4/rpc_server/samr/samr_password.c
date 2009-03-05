@@ -196,7 +196,7 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, 
 	DATA_BLOB lm_pwd_blob;
 	uint8_t new_lm_hash[16];
 	struct samr_Password lm_verifier;
-	ssize_t unicode_pw_len;
+	size_t unicode_pw_len;
 
 	if (pwbuf == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -251,22 +251,21 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, 
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 		
-	if (convert_string_talloc_convenience(mem_ctx, lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx), 
+	if (!convert_string_talloc_convenience(mem_ctx, lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx), 
 				  CH_DOS, CH_UNIX, 
 				  (const char *)new_password.data, 
 				  new_password.length,
-				  (void **)&new_pass) == -1) {
+				  (void **)&new_pass, NULL, false)) {
 		DEBUG(3,("samr: failed to convert incoming password buffer to unix charset\n"));
 		ldb_transaction_cancel(sam_ctx);
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
-	unicode_pw_len = convert_string_talloc_convenience(mem_ctx, lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx), 
+	if (!convert_string_talloc_convenience(mem_ctx, lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx), 
 					       CH_DOS, CH_UTF16, 
 					       (const char *)new_password.data, 
 					       new_password.length,
-					       (void **)&new_unicode_password.data);
-	if (unicode_pw_len == -1) {
+					       (void **)&new_unicode_password.data, &unicode_pw_len, false)) {
 		DEBUG(3,("samr: failed to convert incoming password buffer to UTF16 charset\n"));
 		ldb_transaction_cancel(sam_ctx);
 		return NT_STATUS_WRONG_PASSWORD;
@@ -429,11 +428,11 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	 * this) */
 	if (lm_pwd && r->in.lm_verifier != NULL) {
 		char *new_pass;
-		if (convert_string_talloc_convenience(mem_ctx, lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx), 
+		if (!convert_string_talloc_convenience(mem_ctx, lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx), 
 					  CH_UTF16, CH_UNIX, 
 					  (const char *)new_password.data, 
 					  new_password.length,
-					  (void **)&new_pass) != -1) {
+					  (void **)&new_pass, NULL, false)) {
 			E_deshash(new_pass, new_lm_hash);
 			E_old_pw_hash(new_nt_hash, lm_pwd->hash, lm_verifier.hash);
 			if (memcmp(lm_verifier.hash, r->in.lm_verifier->hash, 16) != 0) {

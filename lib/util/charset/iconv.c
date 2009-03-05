@@ -22,6 +22,7 @@
 #include "../lib/util/dlinklist.h"
 #include "system/iconv.h"
 #include "system/filesys.h"
+#undef strcasecmp
 
 
 /**
@@ -49,6 +50,7 @@
 
 static size_t ascii_pull  (void *,const char **, size_t *, char **, size_t *);
 static size_t ascii_push  (void *,const char **, size_t *, char **, size_t *);
+static size_t latin1_push (void *,const char **, size_t *, char **, size_t *);
 static size_t utf8_pull   (void *,const char **, size_t *, char **, size_t *);
 static size_t utf8_push   (void *,const char **, size_t *, char **, size_t *);
 static size_t utf16_munged_pull(void *,const char **, size_t *, char **, size_t *);
@@ -72,6 +74,8 @@ static const struct charset_functions builtin_functions[] = {
 	{"UTF16_MUNGED",   utf16_munged_pull,  iconv_copy},
 
 	{"ASCII", ascii_pull, ascii_push},
+	{"646", ascii_pull, ascii_push},
+	{"ISO-8859-1", ascii_pull, latin1_push},
 	{"UCS2-HEX", ucs2hex_pull, ucs2hex_push}
 };
 
@@ -340,6 +344,32 @@ static size_t ascii_push(void *cd, const char **inbuf, size_t *inbytesleft,
 	return ir_count;
 }
 
+static size_t latin1_push(void *cd, const char **inbuf, size_t *inbytesleft,
+			 char **outbuf, size_t *outbytesleft)
+{
+	int ir_count=0;
+
+	while (*inbytesleft >= 2 && *outbytesleft >= 1) {
+		(*outbuf)[0] = (*inbuf)[0];
+		if ((*inbuf)[1]) ir_count++;
+		(*inbytesleft)  -= 2;
+		(*outbytesleft) -= 1;
+		(*inbuf)  += 2;
+		(*outbuf) += 1;
+	}
+
+	if (*inbytesleft == 1) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (*inbytesleft > 1) {
+		errno = E2BIG;
+		return -1;
+	}
+	
+	return ir_count;
+}
 
 static size_t ucs2hex_pull(void *cd, const char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)

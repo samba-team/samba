@@ -1220,7 +1220,7 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call, TA
 
 	/* Win7-beta will send the domain name in the form the user typed, so we have to cope
 	   with both the short and long form here */
-	if (strcasecmp(r->in.domain_name, lp_workgroup(dce_call->conn->dce_ctx->lp_ctx)) == 0) {
+	if (r->in.domain_name == NULL || strcasecmp(r->in.domain_name, lp_workgroup(dce_call->conn->dce_ctx->lp_ctx)) == 0) {
 		r->in.domain_name = lp_realm(dce_call->conn->dce_ctx->lp_ctx);
 	}
 

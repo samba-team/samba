@@ -74,6 +74,7 @@ struct spoolss_EnumForms;
 struct spoolss_EnumPorts;
 struct spoolss_EnumPrintProcessors;
 struct spoolss_XcvData;
+struct spoolss_GetPrintProcessorDirectory;
 
 /* the ntptr operations structure - contains function pointers to 
    the backend implementations of each operation */
@@ -144,6 +145,8 @@ struct ntptr_ops {
 	/* PrintProcessor functions */
 	WERROR (*EnumPrintProcessors)(struct ntptr_context *ntptr, TALLOC_CTX *mem_ctx,
 				      struct spoolss_EnumPrintProcessors *r);
+	WERROR (*GetPrintProcessorDirectory)(struct ntptr_context *ntptr, TALLOC_CTX *mem_ctx,
+					     struct spoolss_GetPrintProcessorDirectory *r);
 
 	/* Printer functions */
 	WERROR (*EnumPrinters)(struct ntptr_context *ntptr, TALLOC_CTX *mem_ctx,

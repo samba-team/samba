@@ -1307,7 +1307,7 @@ static int setup_password_fields(struct setup_password_fields_io *io)
 	struct ldb_context *ldb;
 	bool ok;
 	int ret;
-	ssize_t converted_pw_len;
+	size_t converted_pw_len;
 
 	ldb = ldb_module_get_ctx(io->ac->module);
 
@@ -1337,10 +1337,9 @@ static int setup_password_fields(struct setup_password_fields_io *io)
 			ldb_oom(ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		converted_pw_len = convert_string_talloc_convenience(io->ac, lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")), 
+		if (!convert_string_talloc_convenience(io->ac, lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")), 
 							 CH_UTF8, CH_UTF16, io->n.cleartext_utf8->data, io->n.cleartext_utf8->length, 
-							 (void **)&cleartext_utf16_str);
-		if (converted_pw_len == -1) {
+							 (void **)&cleartext_utf16_str, &converted_pw_len, false)) {
 			ldb_asprintf_errstring(ldb,
 					       "setup_password_fields: "
 					       "failed to generate UTF16 password from cleartext UTF8 password");
@@ -1355,10 +1354,9 @@ static int setup_password_fields(struct setup_password_fields_io *io)
 			ldb_oom(ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		converted_pw_len = convert_string_talloc_convenience(io->ac, lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")), 
+		if (!convert_string_talloc_convenience(io->ac, lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")), 
 							 CH_UTF16MUNGED, CH_UTF8, io->n.cleartext_utf16->data, io->n.cleartext_utf16->length, 
-							 (void **)&cleartext_utf8_str);
-		if (converted_pw_len == -1) {
+							 (void **)&cleartext_utf8_str, &converted_pw_len, false)) {
 			/* We can't bail out entirely, as these unconvertable passwords are frustratingly valid */
 			io->n.cleartext_utf8 = NULL;	
 			talloc_free(cleartext_utf8_blob);
@@ -1381,10 +1379,9 @@ static int setup_password_fields(struct setup_password_fields_io *io)
 	if (io->n.cleartext_utf8) {
 		struct samr_Password *lm_hash;
 		char *cleartext_unix;
-		converted_pw_len = convert_string_talloc_convenience(io->ac, lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")), 
+		if (convert_string_talloc_convenience(io->ac, lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")), 
 							 CH_UTF8, CH_UNIX, io->n.cleartext_utf8->data, io->n.cleartext_utf8->length, 
-							 (void **)&cleartext_unix);
-		if (converted_pw_len != -1) {
+							 (void **)&cleartext_unix, &converted_pw_len, false)) {
 			lm_hash = talloc(io->ac, struct samr_Password);
 			if (!lm_hash) {
 				ldb_oom(ldb);

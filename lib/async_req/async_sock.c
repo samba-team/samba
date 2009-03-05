@@ -30,45 +30,6 @@
 #endif
 
 /**
- * Discriminator for async_syscall_state
- */
-enum async_syscall_type {
-	ASYNC_SYSCALL_SEND,
-	ASYNC_SYSCALL_RECV,
-};
-
-/**
- * Holder for syscall arguments and the result
- */
-
-struct async_syscall_state {
-	enum async_syscall_type syscall_type;
-	struct tevent_fd *fde;
-
-	union {
-		struct param_send {
-			int fd;
-			const void *buffer;
-			size_t length;
-			int flags;
-		} param_send;
-		struct param_recv {
-			int fd;
-			void *buffer;
-			size_t length;
-			int flags;
-		} param_recv;
-	} param;
-
-	union {
-		ssize_t result_ssize_t;
-		size_t result_size_t;
-		int result_int;
-	} result;
-	int sys_errno;
-};
-
-/**
  * @brief Map async_req states to unix-style errnos
  * @param[in]  req	The async req to get the state from
  * @param[out] err	Pointer to take the unix-style errno
@@ -117,267 +78,6 @@ int async_req_simple_recv_errno(struct async_req *req)
 	return 0;
 }
 
-/**
- * @brief Create a new async syscall req
- * @param[in] mem_ctx	The memory context to hang the result off
- * @param[in] ev	The event context to work from
- * @param[in] type	Which syscall will this be
- * @param[in] pstate	Where to put the newly created private_data state
- * @retval The new request
- *
- * This is a helper function to prepare a new struct async_req with an
- * associated struct async_syscall_state. The async_syscall_state will be put
- * into the async_req as private_data.
- */
-
-static struct async_req *async_syscall_new(TALLOC_CTX *mem_ctx,
-					   struct tevent_context *ev,
-					   enum async_syscall_type type,
-					   struct async_syscall_state **pstate)
-{
-	struct async_req *result;
-	struct async_syscall_state *state;
-
-	if (!async_req_setup(mem_ctx, &result, &state,
-			     struct async_syscall_state)) {
-		return NULL;
-	}
-	state->syscall_type = type;
-
-	result->private_data = state;
-
-	*pstate = state;
-
-	return result;
-}
-
-/**
- * @brief Create a new async syscall req based on a fd
- * @param[in] mem_ctx	The memory context to hang the result off
- * @param[in] ev	The event context to work from
- * @param[in] type	Which syscall will this be
- * @param[in] fd	The file descriptor we work on
- * @param[in] fde_flags TEVENT_FD_READ/WRITE -- what are we interested in?
- * @param[in] fde_cb	The callback function for the file descriptor event
- * @param[in] pstate	Where to put the newly created private_data state
- * @retval The new request
- *
- * This is a helper function to prepare a new struct async_req with an
- * associated struct async_syscall_state and an associated file descriptor
- * event.
- */
-
-static struct async_req *async_fde_syscall_new(
-	TALLOC_CTX *mem_ctx,
-	struct tevent_context *ev,
-	enum async_syscall_type type,
-	int fd,
-	uint16_t fde_flags,
-	void (*fde_cb)(struct tevent_context *ev,
-		       struct tevent_fd *fde, uint16_t flags,
-		       void *priv),
-	struct async_syscall_state **pstate)
-{
-	struct async_req *result;
-	struct async_syscall_state *state;
-
-	result = async_syscall_new(mem_ctx, ev, type, &state);
-	if (result == NULL) {
-		return NULL;
-	}
-
-	state->fde = tevent_add_fd(ev, state, fd, fde_flags, fde_cb, result);
-	if (state->fde == NULL) {
-		TALLOC_FREE(result);
-		return NULL;
-	}
-	*pstate = state;
-	return result;
-}
-
-/**
- * Retrieve a ssize_t typed result from an async syscall
- * @param[in] req	The syscall that has just finished
- * @param[out] perrno	Where to put the syscall's errno
- * @retval The return value from the asynchronously called syscall
- */
-
-ssize_t async_syscall_result_ssize_t(struct async_req *req, int *perrno)
-{
-	struct async_syscall_state *state = talloc_get_type_abort(
-		req->private_data, struct async_syscall_state);
-
-	*perrno = state->sys_errno;
-	return state->result.result_ssize_t;
-}
-
-/**
- * Retrieve a size_t typed result from an async syscall
- * @param[in] req	The syscall that has just finished
- * @param[out] perrno	Where to put the syscall's errno
- * @retval The return value from the asynchronously called syscall
- */
-
-size_t async_syscall_result_size_t(struct async_req *req, int *perrno)
-{
-	struct async_syscall_state *state = talloc_get_type_abort(
-		req->private_data, struct async_syscall_state);
-
-	*perrno = state->sys_errno;
-	return state->result.result_size_t;
-}
-
-/**
- * Retrieve a int typed result from an async syscall
- * @param[in] req	The syscall that has just finished
- * @param[out] perrno	Where to put the syscall's errno
- * @retval The return value from the asynchronously called syscall
- */
-
-int async_syscall_result_int(struct async_req *req, int *perrno)
-{
-	struct async_syscall_state *state = talloc_get_type_abort(
-		req->private_data, struct async_syscall_state);
-
-	*perrno = state->sys_errno;
-	return state->result.result_int;
-}
-
-/**
- * fde event handler for the "send" syscall
- * @param[in] ev	The event context that sent us here
- * @param[in] fde	The file descriptor event associated with the send
- * @param[in] flags	Can only be TEVENT_FD_WRITE here
- * @param[in] priv	private data, "struct async_req *" in this case
- */
-
-static void async_send_callback(struct tevent_context *ev,
-				struct tevent_fd *fde, uint16_t flags,
-				void *priv)
-{
-	struct async_req *req = talloc_get_type_abort(
-		priv, struct async_req);
-	struct async_syscall_state *state = talloc_get_type_abort(
-		req->private_data, struct async_syscall_state);
-	struct param_send *p = &state->param.param_send;
-
-	if (state->syscall_type != ASYNC_SYSCALL_SEND) {
-		async_req_error(req, EIO);
-		return;
-	}
-
-	state->result.result_ssize_t = send(p->fd, p->buffer, p->length,
-					    p->flags);
-	state->sys_errno = errno;
-
-	TALLOC_FREE(state->fde);
-
-	async_req_done(req);
-}
-
-/**
- * Async version of send(2)
- * @param[in] mem_ctx	The memory context to hang the result off
- * @param[in] ev	The event context to work from
- * @param[in] fd	The socket to send to
- * @param[in] buffer	The buffer to send
- * @param[in] length	How many bytes to send
- * @param[in] flags	flags passed to send(2)
- *
- * This function is a direct counterpart of send(2)
- */
-
-struct async_req *async_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			     int fd, const void *buffer, size_t length,
-			     int flags)
-{
-	struct async_req *result;
-	struct async_syscall_state *state;
-
-	result = async_fde_syscall_new(
-		mem_ctx, ev, ASYNC_SYSCALL_SEND,
-		fd, TEVENT_FD_WRITE, async_send_callback,
-		&state);
-	if (result == NULL) {
-		return NULL;
-	}
-
-	state->param.param_send.fd = fd;
-	state->param.param_send.buffer = buffer;
-	state->param.param_send.length = length;
-	state->param.param_send.flags = flags;
-
-	return result;
-}
-
-/**
- * fde event handler for the "recv" syscall
- * @param[in] ev	The event context that sent us here
- * @param[in] fde	The file descriptor event associated with the recv
- * @param[in] flags	Can only be TEVENT_FD_READ here
- * @param[in] priv	private data, "struct async_req *" in this case
- */
-
-static void async_recv_callback(struct tevent_context *ev,
-				struct tevent_fd *fde, uint16_t flags,
-				void *priv)
-{
-	struct async_req *req = talloc_get_type_abort(
-		priv, struct async_req);
-	struct async_syscall_state *state = talloc_get_type_abort(
-		req->private_data, struct async_syscall_state);
-	struct param_recv *p = &state->param.param_recv;
-
-	if (state->syscall_type != ASYNC_SYSCALL_RECV) {
-		async_req_error(req, EIO);
-		return;
-	}
-
-	state->result.result_ssize_t = recv(p->fd, p->buffer, p->length,
-					    p->flags);
-	state->sys_errno = errno;
-
-	TALLOC_FREE(state->fde);
-
-	async_req_done(req);
-}
-
-/**
- * Async version of recv(2)
- * @param[in] mem_ctx	The memory context to hang the result off
- * @param[in] ev	The event context to work from
- * @param[in] fd	The socket to recv from
- * @param[in] buffer	The buffer to recv into
- * @param[in] length	How many bytes to recv
- * @param[in] flags	flags passed to recv(2)
- *
- * This function is a direct counterpart of recv(2)
- */
-
-struct async_req *async_recv(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			     int fd, void *buffer, size_t length,
-			     int flags)
-{
-	struct async_req *result;
-	struct async_syscall_state *state;
-
-	result = async_fde_syscall_new(
-		mem_ctx, ev, ASYNC_SYSCALL_RECV,
-		fd, TEVENT_FD_READ, async_recv_callback,
-		&state);
-
-	if (result == NULL) {
-		return NULL;
-	}
-
-	state->param.param_recv.fd = fd;
-	state->param.param_recv.buffer = buffer;
-	state->param.param_recv.length = length;
-	state->param.param_recv.flags = flags;
-
-	return result;
-}
-
 struct async_send_state {
 	int fd;
 	const void *buf;
@@ -423,8 +123,8 @@ static void async_send_handler(struct tevent_context *ev,
 {
 	struct tevent_req *req = talloc_get_type_abort(
 		private_data, struct tevent_req);
-	struct async_send_state *state = talloc_get_type_abort(
-		req->private_state, struct async_send_state);
+	struct async_send_state *state =
+		tevent_req_data(req, struct async_send_state);
 
 	state->sent = send(state->fd, state->buf, state->len, state->flags);
 	if (state->sent == -1) {
@@ -436,8 +136,8 @@ static void async_send_handler(struct tevent_context *ev,
 
 ssize_t async_send_recv(struct tevent_req *req, int *perrno)
 {
-	struct async_send_state *state = talloc_get_type_abort(
-		req->private_state, struct async_send_state);
+	struct async_send_state *state =
+		tevent_req_data(req, struct async_send_state);
 
 	if (tevent_req_is_unix_error(req, perrno)) {
 		return -1;
@@ -489,8 +189,8 @@ static void async_recv_handler(struct tevent_context *ev,
 {
 	struct tevent_req *req = talloc_get_type_abort(
 		private_data, struct tevent_req);
-	struct async_recv_state *state = talloc_get_type_abort(
-		req->private_state, struct async_recv_state);
+	struct async_recv_state *state =
+		tevent_req_data(req, struct async_recv_state);
 
 	state->received = recv(state->fd, state->buf, state->len,
 			       state->flags);
@@ -503,8 +203,8 @@ static void async_recv_handler(struct tevent_context *ev,
 
 ssize_t async_recv_recv(struct tevent_req *req, int *perrno)
 {
-	struct async_recv_state *state = talloc_get_type_abort(
-		req->private_state, struct async_recv_state);
+	struct async_recv_state *state =
+		tevent_req_data(req, struct async_recv_state);
 
 	if (tevent_req_is_unix_error(req, perrno)) {
 		return -1;
@@ -568,8 +268,8 @@ struct tevent_req *async_connect_send(TALLOC_CTX *mem_ctx,
 
 	state->result = connect(fd, address, address_len);
 	if (state->result == 0) {
-		errno = 0;
-		goto post_errno;
+		tevent_req_done(result);
+		goto done;
 	}
 
 	/**
@@ -584,25 +284,22 @@ struct tevent_req *async_connect_send(TALLOC_CTX *mem_ctx,
 	      errno == EISCONN ||
 #endif
 	      errno == EAGAIN || errno == EINTR)) {
+		state->sys_errno = errno;
 		goto post_errno;
 	}
 
 	fde = tevent_add_fd(ev, state, fd, TEVENT_FD_READ | TEVENT_FD_WRITE,
 			   async_connect_connected, result);
 	if (fde == NULL) {
-		errno = ENOMEM;
+		state->sys_errno = ENOMEM;
 		goto post_errno;
 	}
 	return result;
 
  post_errno:
-	state->sys_errno = errno;
+	tevent_req_error(result, state->sys_errno);
+ done:
 	fcntl(fd, F_SETFL, state->old_sockflags);
-	if (state->sys_errno == 0) {
-		tevent_req_done(result);
-	} else {
-		tevent_req_error(result, state->sys_errno);
-	}
 	return tevent_req_post(result, ev);
 }
 
@@ -620,8 +317,8 @@ static void async_connect_connected(struct tevent_context *ev,
 {
 	struct tevent_req *req = talloc_get_type_abort(
 		priv, struct tevent_req);
-	struct async_connect_state *state = talloc_get_type_abort(
-		req->private_state, struct async_connect_state);
+	struct async_connect_state *state =
+		tevent_req_data(req, struct async_connect_state);
 
 	TALLOC_FREE(fde);
 
@@ -655,8 +352,8 @@ static void async_connect_connected(struct tevent_context *ev,
 
 int async_connect_recv(struct tevent_req *req, int *perrno)
 {
-	struct async_connect_state *state = talloc_get_type_abort(
-		req->private_state, struct async_connect_state);
+	struct async_connect_state *state =
+		tevent_req_data(req, struct async_connect_state);
 	int err;
 
 	fcntl(state->fd, F_SETFL, state->old_sockflags);
@@ -723,8 +420,8 @@ static void writev_handler(struct tevent_context *ev, struct tevent_fd *fde,
 {
 	struct tevent_req *req = talloc_get_type_abort(
 		private_data, struct tevent_req);
-	struct writev_state *state = talloc_get_type_abort(
-		req->private_state, struct writev_state);
+	struct writev_state *state =
+		tevent_req_data(req, struct writev_state);
 	size_t to_write, written;
 	int i;
 
@@ -770,8 +467,8 @@ static void writev_handler(struct tevent_context *ev, struct tevent_fd *fde,
 
 ssize_t writev_recv(struct tevent_req *req, int *perrno)
 {
-	struct writev_state *state = talloc_get_type_abort(
-		req->private_state, struct writev_state);
+	struct writev_state *state =
+		tevent_req_data(req, struct writev_state);
 
 	if (tevent_req_is_unix_error(req, perrno)) {
 		return -1;
@@ -834,8 +531,8 @@ static void read_packet_handler(struct tevent_context *ev,
 {
 	struct tevent_req *req = talloc_get_type_abort(
 		private_data, struct tevent_req);
-	struct read_packet_state *state = talloc_get_type_abort(
-		req->private_state, struct read_packet_state);
+	struct read_packet_state *state =
+		tevent_req_data(req, struct read_packet_state);
 	size_t total = talloc_get_size(state->buf);
 	ssize_t nread, more;
 	uint8_t *tmp;
@@ -887,8 +584,8 @@ static void read_packet_handler(struct tevent_context *ev,
 ssize_t read_packet_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			 uint8_t **pbuf, int *perrno)
 {
-	struct read_packet_state *state = talloc_get_type_abort(
-		req->private_state, struct read_packet_state);
+	struct read_packet_state *state =
+		tevent_req_data(req, struct read_packet_state);
 
 	if (tevent_req_is_unix_error(req, perrno)) {
 		return -1;

@@ -656,7 +656,7 @@ static ssize_t push_ascii(void *dest, const char *src, size_t dest_len, int flag
 	if (flags & (STR_TERMINATE | STR_TERMINATE_ASCII))
 		src_len++;
 
-	return convert_string(CH_UNIX, CH_DOS, src, src_len, dest, dest_len);
+	return convert_string(CH_UNIX, CH_DOS, src, src_len, dest, dest_len, false);
 }
 
 /**
@@ -668,11 +668,11 @@ static ssize_t push_ascii(void *dest, const char *src, size_t dest_len, int flag
  * @returns The number of bytes occupied by the string in the destination
  *         or -1 in case of error.
  **/
-_PUBLIC_ ssize_t push_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
+_PUBLIC_ bool push_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src, size_t *converted_size)
 {
 	size_t src_len = strlen(src)+1;
 	*dest = NULL;
-	return convert_string_talloc(ctx, CH_UNIX, CH_DOS, src, src_len, (void **)dest);
+	return convert_string_talloc(ctx, CH_UNIX, CH_DOS, src, src_len, (void **)dest, converted_size, false);
 }
 
 
@@ -706,7 +706,7 @@ static ssize_t pull_ascii(char *dest, const void *src, size_t dest_len, size_t s
 		}
 	}
 
-	ret = convert_string(CH_DOS, CH_UNIX, src, src_len, dest, dest_len);
+	ret = convert_string(CH_DOS, CH_UNIX, src, src_len, dest, dest_len, false);
 
 	if (dest_len)
 		dest[MIN(ret, dest_len-1)] = 0;
@@ -759,7 +759,7 @@ static ssize_t push_ucs2(void *dest, const char *src, size_t dest_len, int flags
 	/* ucs2 is always a multiple of 2 bytes */
 	dest_len &= ~1;
 
-	ret = convert_string(CH_UNIX, CH_UTF16, src, src_len, dest, dest_len);
+	ret = convert_string(CH_UNIX, CH_UTF16, src, src_len, dest, dest_len, false);
 	if (ret == (size_t)-1) {
 		return 0;
 	}
@@ -779,11 +779,11 @@ static ssize_t push_ucs2(void *dest, const char *src, size_t dest_len, int flags
  * @returns The number of bytes occupied by the string in the destination
  *         or -1 in case of error.
  **/
-_PUBLIC_ ssize_t push_ucs2_talloc(TALLOC_CTX *ctx, void **dest, const char *src)
+_PUBLIC_ bool push_ucs2_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src, size_t *converted_size)
 {
 	size_t src_len = strlen(src)+1;
 	*dest = NULL;
-	return convert_string_talloc(ctx, CH_UNIX, CH_UTF16, src, src_len, dest);
+	return convert_string_talloc(ctx, CH_UNIX, CH_UTF16, src, src_len, (void **)dest, converted_size, false);
 }
 
 
@@ -795,11 +795,11 @@ _PUBLIC_ ssize_t push_ucs2_talloc(TALLOC_CTX *ctx, void **dest, const char *src)
  * @returns The number of bytes occupied by the string in the destination
  **/
 
-_PUBLIC_ ssize_t push_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
+_PUBLIC_ bool push_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src, size_t *converted_size)
 {
 	size_t src_len = strlen(src)+1;
 	*dest = NULL;
-	return convert_string_talloc(ctx, CH_UNIX, CH_UTF8, src, src_len, (void **)dest);
+	return convert_string_talloc(ctx, CH_UNIX, CH_UTF8, src, src_len, (void **)dest, converted_size, false);
 }
 
 /**
@@ -835,7 +835,7 @@ static size_t pull_ucs2(char *dest, const void *src, size_t dest_len, size_t src
 	if (src_len != (size_t)-1)
 		src_len &= ~1;
 	
-	ret = convert_string(CH_UTF16, CH_UNIX, src, src_len, dest, dest_len);
+	ret = convert_string(CH_UTF16, CH_UNIX, src, src_len, dest, dest_len, false);
 	if (dest_len)
 		dest[MIN(ret, dest_len-1)] = 0;
 
@@ -850,11 +850,11 @@ static size_t pull_ucs2(char *dest, const void *src, size_t dest_len, size_t src
  * @returns The number of bytes occupied by the string in the destination
  **/
 
-_PUBLIC_ ssize_t pull_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
+_PUBLIC_ bool pull_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src, size_t *converted_size)
 {
 	size_t src_len = strlen(src)+1;
 	*dest = NULL;
-	return convert_string_talloc(ctx, CH_DOS, CH_UNIX, src, src_len, (void **)dest);
+	return convert_string_talloc(ctx, CH_DOS, CH_UNIX, src, src_len, (void **)dest, converted_size, false);
 }
 
 /**
@@ -865,11 +865,11 @@ _PUBLIC_ ssize_t pull_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src
  * @returns The number of bytes occupied by the string in the destination
  **/
 
-_PUBLIC_ ssize_t pull_ucs2_talloc(TALLOC_CTX *ctx, char **dest, const void *src)
+_PUBLIC_ bool pull_ucs2_talloc(TALLOC_CTX *ctx, char **dest, const smb_ucs2_t *src, size_t *converted_size)
 {
 	size_t src_len = utf16_len(src);
 	*dest = NULL;
-	return convert_string_talloc(ctx, CH_UTF16, CH_UNIX, src, src_len, (void **)dest);
+	return convert_string_talloc(ctx, CH_UTF16, CH_UNIX, src, src_len, (void **)dest, converted_size, false);
 }
 
 /**
@@ -880,11 +880,11 @@ _PUBLIC_ ssize_t pull_ucs2_talloc(TALLOC_CTX *ctx, char **dest, const void *src)
  * @returns The number of bytes occupied by the string in the destination
  **/
 
-_PUBLIC_ ssize_t pull_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src)
+_PUBLIC_ bool pull_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src, size_t *converted_size)
 {
 	size_t src_len = strlen(src)+1;
 	*dest = NULL;
-	return convert_string_talloc(ctx, CH_UTF8, CH_UNIX, src, src_len, (void **)dest);
+	return convert_string_talloc(ctx, CH_UTF8, CH_UNIX, src, src_len, (void **)dest, converted_size, false);
 }
 
 /**
@@ -950,13 +950,18 @@ _PUBLIC_ ssize_t pull_string(char *dest, const void *src, size_t dest_len, size_
  * @param destlen maximal length allowed for string
  * @returns the number of bytes occupied in the destination
  **/
-_PUBLIC_ ssize_t convert_string(charset_t from, charset_t to,
+_PUBLIC_ size_t convert_string(charset_t from, charset_t to,
 				void const *src, size_t srclen, 
-				void *dest, size_t destlen)
+				void *dest, size_t destlen, 
+				bool allow_badcharcnv)
 {
-	return convert_string_convenience(get_iconv_convenience(), from, to, 
+	size_t ret;
+	if (!convert_string_convenience(get_iconv_convenience(), from, to, 
 									  src, srclen,
-									  dest, destlen);
+									  dest, destlen, &ret,
+									  allow_badcharcnv))
+		return -1;
+	return ret;
 }
 
 /**
@@ -964,18 +969,22 @@ _PUBLIC_ ssize_t convert_string(charset_t from, charset_t to,
  *
  * @param srclen length of source buffer.
  * @param dest always set at least to NULL
+ * @param converted_size Size in bytes of the converted string
  * @note -1 is not accepted for srclen.
  *
- * @returns Size in bytes of the converted string; or -1 in case of error.
+ * @returns boolean indication whether the conversion succeeded
  **/
 
-_PUBLIC_ ssize_t convert_string_talloc(TALLOC_CTX *ctx, 
+_PUBLIC_ bool convert_string_talloc(TALLOC_CTX *ctx, 
 				       charset_t from, charset_t to, 
 				       void const *src, size_t srclen, 
-				       void **dest)
+				       void **dest, size_t *converted_size, 
+					   bool allow_badcharcnv)
 {
 	return convert_string_talloc_convenience(ctx, get_iconv_convenience(),
-											 from, to, src, srclen, dest);
+											 from, to, src, srclen, dest,
+											 converted_size, 
+											 allow_badcharcnv);
 }
 
 

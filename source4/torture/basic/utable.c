@@ -32,7 +32,8 @@ bool torture_utable(struct torture_context *tctx,
 	const char *alt_name;
 	int fnum;
 	uint8_t c2[4];
-	int c, len, fd;
+	int c, fd;
+	size_t len;
 	int chars_allowed=0, alt_allowed=0;
 	uint8_t valid[0x10000];
 
@@ -49,9 +50,9 @@ bool torture_utable(struct torture_context *tctx,
 		SSVAL(c2, 0, c);
 		strncpy(fname, "\\utable\\x", sizeof(fname)-1);
 		p = fname+strlen(fname);
-		len = convert_string_convenience(lp_iconv_convenience(tctx->lp_ctx), CH_UTF16, CH_UNIX, 
+		convert_string_convenience(lp_iconv_convenience(tctx->lp_ctx), CH_UTF16, CH_UNIX, 
 				     c2, 2, 
-				     p, sizeof(fname)-strlen(fname));
+				     p, sizeof(fname)-strlen(fname), &len, false);
 		p[len] = 0;
 		strncat(fname,"_a_long_extension",sizeof(fname)-1);
 
@@ -102,15 +103,15 @@ static char *form_name(struct smb_iconv_convenience *iconv_convenience, int c)
 	static char fname[256];
 	uint8_t c2[4];
 	char *p;
-	int len;
+	size_t len;
 
 	strncpy(fname, "\\utable\\", sizeof(fname)-1);
 	p = fname+strlen(fname);
 	SSVAL(c2, 0, c);
 
-	len = convert_string_convenience(iconv_convenience, CH_UTF16, CH_UNIX, 
+	convert_string_convenience(iconv_convenience, CH_UTF16, CH_UNIX, 
 			     c2, 2, 
-			     p, sizeof(fname)-strlen(fname));
+			     p, sizeof(fname)-strlen(fname), &len, false);
 	p[len] = 0;
 	return fname;
 }

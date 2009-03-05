@@ -224,8 +224,7 @@ static struct async_req *wb_connect_send(TALLOC_CTX *mem_ctx,
 	if (subreq == NULL) {
 		goto nomem;
 	}
-	subreq->async.fn = wbc_connect_connected;
-	subreq->async.private_data = result;
+	tevent_req_set_callback(subreq, wbc_connect_connected, result);
 
 	if (!tevent_req_set_endtime(subreq, ev, timeval_current_ofs(30, 0))) {
 		goto nomem;
@@ -245,8 +244,8 @@ static struct async_req *wb_connect_send(TALLOC_CTX *mem_ctx,
 
 static void wbc_connect_connected(struct tevent_req *subreq)
 {
-	struct async_req *req = talloc_get_type_abort(
-		subreq->async.private_data, struct async_req);
+	struct async_req *req =
+		tevent_req_callback_data(subreq, struct async_req);
 	int res, err;
 
 	res = async_connect_recv(subreq, &err);

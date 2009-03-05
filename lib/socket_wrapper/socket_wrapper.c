@@ -145,7 +145,16 @@
 
 #define MAX_WRAPPED_INTERFACES 16
 
-#define SW_IPV6_ADDRESS 1
+#ifdef HAVE_IPV6
+/*
+ * FD00::5357:5FXX
+ */
+static const struct in6_addr swrap_ipv6 =
+{ { {
+0xFD,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+0x00,0x00,0x00,0x00,0x53,0x57,0x5F,0x00
+} } };
+#endif
 
 static struct sockaddr *sockaddr_dup(const void *data, socklen_t len)
 {
@@ -295,7 +304,8 @@ static int convert_un_in(const struct sockaddr_un *un, struct sockaddr *in, sock
 
 		memset(in2, 0, sizeof(*in2));
 		in2->sin6_family = AF_INET6;
-		in2->sin6_addr.s6_addr[0] = SW_IPV6_ADDRESS;
+		in2->sin6_addr = swrap_ipv6;
+		in2->sin6_addr.s6_addr[15] = iface;
 		in2->sin6_port = htons(prt);
 
 		*len = sizeof(*in2);
@@ -367,6 +377,7 @@ static int convert_in_un_remote(struct socket_info *si, const struct sockaddr *i
 	case AF_INET6: {
 		const struct sockaddr_in6 *in = 
 		    (const struct sockaddr_in6 *)inaddr;
+		struct in6_addr cmp;
 
 		switch (si->type) {
 		case SOCK_STREAM:
@@ -380,8 +391,16 @@ static int convert_in_un_remote(struct socket_info *si, const struct sockaddr *i
 		/* XXX no multicast/broadcast */
 
 		prt = ntohs(in->sin6_port);
-		iface = SW_IPV6_ADDRESS;
-		
+
+		cmp = in->sin6_addr;
+		cmp.s6_addr[15] = 0;
+		if (IN6_ARE_ADDR_EQUAL(&swrap_ipv6, &cmp)) {
+			iface = in->sin6_addr.s6_addr[15];
+		} else {
+			errno = ENETUNREACH;
+			return -1;
+		}
+
 		break;
 	}
 #endif
@@ -474,6 +493,7 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 	case AF_INET6: {
 		const struct sockaddr_in6 *in = 
 		    (const struct sockaddr_in6 *)inaddr;
+		struct in6_addr cmp;
 
 		switch (si->type) {
 		case SOCK_STREAM:
@@ -487,13 +507,21 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 		/* XXX no multicast/broadcast */
 
 		prt = ntohs(in->sin6_port);
-		iface = SW_IPV6_ADDRESS;
-		
+
+		cmp = in->sin6_addr;
+		cmp.s6_addr[15] = 0;
+		if (IN6_ARE_ADDR_EQUAL(&swrap_ipv6, &cmp)) {
+			iface = in->sin6_addr.s6_addr[15];
+		} else {
+			errno = EADDRNOTAVAIL;
+			return -1;
+		}
+
 		break;
 	}
 #endif
 	default:
-		errno = ENETUNREACH;
+		errno = EADDRNOTAVAIL;
 		return -1;
 	}
 
@@ -636,69 +664,93 @@ struct swrap_file_hdr {
 };
 #define SWRAP_FILE_HDR_SIZE 24
 
-struct swrap_packet {
-	struct {
-		uint32_t seconds;
-		uint32_t micro_seconds;
-		uint32_t recorded_length;
-		uint32_t full_length;
-	} frame;
-#define SWRAP_PACKET__FRAME_SIZE 16
-
-	struct {
-		struct {
-			uint8_t		ver_hdrlen;
-			uint8_t		tos;
-			uint16_t	packet_length;
-			uint16_t	identification;
-			uint8_t		flags;
-			uint8_t		fragment;
-			uint8_t		ttl;
-			uint8_t		protocol;
-			uint16_t	hdr_checksum;
-			uint32_t	src_addr;
-			uint32_t	dest_addr;
-		} hdr;
-#define SWRAP_PACKET__IP_HDR_SIZE 20
-
-		union {
-			struct {
-				uint16_t	source_port;
-				uint16_t	dest_port;
-				uint32_t	seq_num;
-				uint32_t	ack_num;
-				uint8_t		hdr_length;
-				uint8_t		control;
-				uint16_t	window;
-				uint16_t	checksum;
-				uint16_t	urg;
-			} tcp;
-#define SWRAP_PACKET__IP_P_TCP_SIZE 20
-			struct {
-				uint16_t	source_port;
-				uint16_t	dest_port;
-				uint16_t	length;
-				uint16_t	checksum;
-			} udp;
-#define SWRAP_PACKET__IP_P_UDP_SIZE 8
-			struct {
-				uint8_t		type;
-				uint8_t		code;
-				uint16_t	checksum;
-				uint32_t	unused;
-			} icmp;
-#define SWRAP_PACKET__IP_P_ICMP_SIZE 8
-		} p;
-	} ip;
+struct swrap_packet_frame {
+	uint32_t seconds;
+	uint32_t micro_seconds;
+	uint32_t recorded_length;
+	uint32_t full_length;
 };
-#define SWRAP_PACKET_SIZE 56
+#define SWRAP_PACKET_FRAME_SIZE 16
+
+union swrap_packet_ip {
+	struct {
+		uint8_t		ver_hdrlen;
+		uint8_t		tos;
+		uint16_t	packet_length;
+		uint16_t	identification;
+		uint8_t		flags;
+		uint8_t		fragment;
+		uint8_t		ttl;
+		uint8_t		protocol;
+		uint16_t	hdr_checksum;
+		uint32_t	src_addr;
+		uint32_t	dest_addr;
+	} v4;
+#define SWRAP_PACKET_IP_V4_SIZE 20
+	struct {
+		uint8_t		ver_prio;
+		uint8_t		flow_label_high;
+		uint16_t	flow_label_low;
+		uint16_t	payload_length;
+		uint8_t		next_header;
+		uint8_t		hop_limit;
+		uint8_t		src_addr[16];
+		uint8_t		dest_addr[16];
+	} v6;
+#define SWRAP_PACKET_IP_V6_SIZE 40
+};
+#define SWRAP_PACKET_IP_SIZE 40
+
+union swrap_packet_payload {
+	struct {
+		uint16_t	source_port;
+		uint16_t	dest_port;
+		uint32_t	seq_num;
+		uint32_t	ack_num;
+		uint8_t		hdr_length;
+		uint8_t		control;
+		uint16_t	window;
+		uint16_t	checksum;
+		uint16_t	urg;
+	} tcp;
+#define SWRAP_PACKET_PAYLOAD_TCP_SIZE 20
+	struct {
+		uint16_t	source_port;
+		uint16_t	dest_port;
+		uint16_t	length;
+		uint16_t	checksum;
+	} udp;
+#define SWRAP_PACKET_PAYLOAD_UDP_SIZE 8
+	struct {
+		uint8_t		type;
+		uint8_t		code;
+		uint16_t	checksum;
+		uint32_t	unused;
+	} icmp4;
+#define SWRAP_PACKET_PAYLOAD_ICMP4_SIZE 8
+	struct {
+		uint8_t		type;
+		uint8_t		code;
+		uint16_t	checksum;
+		uint32_t	unused;
+	} icmp6;
+#define SWRAP_PACKET_PAYLOAD_ICMP6_SIZE 8
+};
+#define SWRAP_PACKET_PAYLOAD_SIZE 20
+
+#define SWRAP_PACKET_MIN_ALLOC \
+	(SWRAP_PACKET_FRAME_SIZE + \
+	 SWRAP_PACKET_IP_SIZE + \
+	 SWRAP_PACKET_PAYLOAD_SIZE)
 
 static const char *socket_wrapper_pcap_file(void)
 {
 	static int initialized = 0;
 	static const char *s = NULL;
-	static const struct swrap_file_hdr h = { 0, };
-	static const struct swrap_packet p = { { 0, }, { { 0, }, { { 0, } } } };
+	static const struct swrap_file_hdr h;
+	static const struct swrap_packet_frame f;
+	static const union swrap_packet_ip i;
+	static const union swrap_packet_payload p;
 
 	if (initialized == 1) {
 		return s;
@@ -715,22 +767,31 @@ static const char *socket_wrapper_pcap_file(void)
 	if (sizeof(h) != SWRAP_FILE_HDR_SIZE) {
 		return NULL;
 	}
-	if (sizeof(p) != SWRAP_PACKET_SIZE) {
+	if (sizeof(f) != SWRAP_PACKET_FRAME_SIZE) {
 		return NULL;
 	}
-	if (sizeof(p.frame) != SWRAP_PACKET__FRAME_SIZE) {
+	if (sizeof(i) != SWRAP_PACKET_IP_SIZE) {
 		return NULL;
 	}
-	if (sizeof(p.ip.hdr) != SWRAP_PACKET__IP_HDR_SIZE) {
+	if (sizeof(i.v4) != SWRAP_PACKET_IP_V4_SIZE) {
 		return NULL;
 	}
-	if (sizeof(p.ip.p.tcp) != SWRAP_PACKET__IP_P_TCP_SIZE) {
+	if (sizeof(i.v6) != SWRAP_PACKET_IP_V6_SIZE) {
 		return NULL;
 	}
-	if (sizeof(p.ip.p.udp) != SWRAP_PACKET__IP_P_UDP_SIZE) {
+	if (sizeof(p) != SWRAP_PACKET_PAYLOAD_SIZE) {
 		return NULL;
 	}
-	if (sizeof(p.ip.p.icmp) != SWRAP_PACKET__IP_P_ICMP_SIZE) {
+	if (sizeof(p.tcp) != SWRAP_PACKET_PAYLOAD_TCP_SIZE) {
+		return NULL;
+	}
+	if (sizeof(p.udp) != SWRAP_PACKET_PAYLOAD_UDP_SIZE) {
+		return NULL;
+	}
+	if (sizeof(p.icmp4) != SWRAP_PACKET_PAYLOAD_ICMP4_SIZE) {
+		return NULL;
+	}
+	if (sizeof(p.icmp6) != SWRAP_PACKET_PAYLOAD_ICMP6_SIZE) {
 		return NULL;
 	}
 
@@ -744,41 +805,72 @@ static const char *socket_wrapper_pcap_file(void)
 	return s;
 }
 
-static struct swrap_packet *swrap_packet_init(struct timeval *tval,
-					      const struct sockaddr_in *src_addr,
-					      const struct sockaddr_in *dest_addr,
-					      int socket_type,
-					      const unsigned char *payload,
-					      size_t payload_len,
-					      unsigned long tcp_seqno,
-					      unsigned long tcp_ack,
-					      unsigned char tcp_ctl,
-					      int unreachable,
-					      size_t *_packet_len)
+static uint8_t *swrap_packet_init(struct timeval *tval,
+				  const struct sockaddr *src,
+				  const struct sockaddr *dest,
+				  int socket_type,
+				  const uint8_t *payload,
+				  size_t payload_len,
+				  unsigned long tcp_seqno,
+				  unsigned long tcp_ack,
+				  unsigned char tcp_ctl,
+				  int unreachable,
+				  size_t *_packet_len)
 {
-	struct swrap_packet *ret;
-	struct swrap_packet *packet;
+	uint8_t *base;
+	uint8_t *buf;
+	struct swrap_packet_frame *frame;
+	union swrap_packet_ip *ip;
+	union swrap_packet_payload *pay;
 	size_t packet_len;
 	size_t alloc_len;
-	size_t nonwire_len = sizeof(packet->frame);
+	size_t nonwire_len = sizeof(*frame);
 	size_t wire_hdr_len = 0;
 	size_t wire_len = 0;
+	size_t ip_hdr_len = 0;
 	size_t icmp_hdr_len = 0;
 	size_t icmp_truncate_len = 0;
-	unsigned char protocol = 0, icmp_protocol = 0;
-	unsigned short src_port = src_addr->sin_port;
-	unsigned short dest_port = dest_addr->sin_port;
+	uint8_t protocol = 0, icmp_protocol = 0;
+	const struct sockaddr_in *src_in = NULL;
+	const struct sockaddr_in *dest_in = NULL;
+#ifdef HAVE_IPV6
+	const struct sockaddr_in6 *src_in6 = NULL;
+	const struct sockaddr_in6 *dest_in6 = NULL;
+#endif
+	uint16_t src_port;
+	uint16_t dest_port;
+
+	switch (src->sa_family) {
+	case AF_INET:
+		src_in = (const struct sockaddr_in *)src;
+		dest_in = (const struct sockaddr_in *)dest;
+		src_port = src_in->sin_port;
+		dest_port = dest_in->sin_port;
+		ip_hdr_len = sizeof(ip->v4);
+		break;
+#ifdef HAVE_IPV6
+	case AF_INET6:
+		src_in6 = (const struct sockaddr_in6 *)src;
+		dest_in6 = (const struct sockaddr_in6 *)dest;
+		src_port = src_in6->sin6_port;
+		dest_port = dest_in6->sin6_port;
+		ip_hdr_len = sizeof(ip->v6);
+		break;
+#endif
+	default:
+		return NULL;
+	}
 
 	switch (socket_type) {
 	case SOCK_STREAM:
 		protocol = 0x06; /* TCP */
-		wire_hdr_len = sizeof(packet->ip.hdr) + sizeof(packet->ip.p.tcp);
+		wire_hdr_len = ip_hdr_len + sizeof(pay->tcp);
 		wire_len = wire_hdr_len + payload_len;
 		break;
 
 	case SOCK_DGRAM:
 		protocol = 0x11; /* UDP */
-		wire_hdr_len = sizeof(packet->ip.hdr) + sizeof(packet->ip.p.udp);
+		wire_hdr_len = ip_hdr_len + sizeof(pay->udp);
 		wire_len = wire_hdr_len + payload_len;
 		break;
 
@@ -788,98 +880,160 @@ static struct swrap_packet *swrap_packet_init(struct timeval *tval,
 
 	if (unreachable) {
 		icmp_protocol = protocol;
-		protocol = 0x01; /* ICMP */
+		switch (src->sa_family) {
+		case AF_INET:
+			protocol = 0x01; /* ICMPv4 */
+			icmp_hdr_len = ip_hdr_len + sizeof(pay->icmp4);
+			break;
+#ifdef HAVE_IPV6
+		case AF_INET6:
+			protocol = 0x3A; /* ICMPv6 */
+			icmp_hdr_len = ip_hdr_len + sizeof(pay->icmp6);
+			break;
+#endif
+		}
 		if (wire_len > 64 ) {
 			icmp_truncate_len = wire_len - 64;
 		}
-		icmp_hdr_len = sizeof(packet->ip.hdr) + sizeof(packet->ip.p.icmp);
 		wire_hdr_len += icmp_hdr_len;
 		wire_len += icmp_hdr_len;
 	}
 
 	packet_len = nonwire_len + wire_len;
 	alloc_len = packet_len;
-	if (alloc_len < sizeof(struct swrap_packet)) {
-		alloc_len = sizeof(struct swrap_packet);
+	if (alloc_len < SWRAP_PACKET_MIN_ALLOC) {
+		alloc_len = SWRAP_PACKET_MIN_ALLOC;
 	}
-	ret = (struct swrap_packet *)malloc(alloc_len);
-	if (!ret) return NULL;
 
-	packet = ret;
+	base = (uint8_t *)malloc(alloc_len);
+	if (!base) return NULL;
 
-	packet->frame.seconds		= tval->tv_sec;
-	packet->frame.micro_seconds	= tval->tv_usec;
-	packet->frame.recorded_length	= wire_len - icmp_truncate_len;
-	packet->frame.full_length	= wire_len - icmp_truncate_len;
+	buf = base;
 
-	packet->ip.hdr.ver_hdrlen	= 0x45; /* version 4 and 5 * 32 bit words */
-	packet->ip.hdr.tos		= 0x00;
-	packet->ip.hdr.packet_length	= htons(wire_len - icmp_truncate_len);
-	packet->ip.hdr.identification	= htons(0xFFFF);
-	packet->ip.hdr.flags		= 0x40; /* BIT 1 set - means don't fraqment */
-	packet->ip.hdr.fragment		= htons(0x0000);
-	packet->ip.hdr.ttl		= 0xFF;
-	packet->ip.hdr.protocol		= protocol;
-	packet->ip.hdr.hdr_checksum	= htons(0x0000);
-	packet->ip.hdr.src_addr		= src_addr->sin_addr.s_addr;
-	packet->ip.hdr.dest_addr	= dest_addr->sin_addr.s_addr;
+	frame = (struct swrap_packet_frame *)buf;
+	frame->seconds		= tval->tv_sec;
+	frame->micro_seconds	= tval->tv_usec;
+	frame->recorded_length	= wire_len - icmp_truncate_len;
+	frame->full_length	= wire_len - icmp_truncate_len;
+	buf += SWRAP_PACKET_FRAME_SIZE;
+
+	ip = (union swrap_packet_ip *)buf;
+	switch (src->sa_family) {
+	case AF_INET:
+		ip->v4.ver_hdrlen	= 0x45; /* version 4 and 5 * 32 bit words */
+		ip->v4.tos		= 0x00;
+		ip->v4.packet_length	= htons(wire_len - icmp_truncate_len);
+		ip->v4.identification	= htons(0xFFFF);
+		ip->v4.flags		= 0x40; /* BIT 1 set - means don't fraqment */
+		ip->v4.fragment		= htons(0x0000);
+		ip->v4.ttl		= 0xFF;
+		ip->v4.protocol		= protocol;
+		ip->v4.hdr_checksum	= htons(0x0000);
+		ip->v4.src_addr		= src_in->sin_addr.s_addr;
+		ip->v4.dest_addr	= dest_in->sin_addr.s_addr;
+		buf += SWRAP_PACKET_IP_V4_SIZE;
+		break;
+#ifdef HAVE_IPV6
+	case AF_INET6:
+		ip->v6.ver_prio		= 0x60; /* version 4 and 5 * 32 bit words */
+		ip->v6.flow_label_high	= 0x00;
+		ip->v6.flow_label_low	= 0x0000;
+		ip->v6.payload_length	= htons(wire_len - icmp_truncate_len);//TODO
+		ip->v6.next_header	= protocol;
+		memcpy(ip->v6.src_addr, src_in6->sin6_addr.s6_addr, 16);
+		memcpy(ip->v6.dest_addr, dest_in6->sin6_addr.s6_addr, 16);
+		buf += SWRAP_PACKET_IP_V6_SIZE;
+		break;
+#endif
+	}
 
 	if (unreachable) {
-		packet->ip.p.icmp.type		= 0x03; /* destination unreachable */
-		packet->ip.p.icmp.code		= 0x01; /* host unreachable */
-		packet->ip.p.icmp.checksum	= htons(0x0000);
-		packet->ip.p.icmp.unused	= htonl(0x00000000);
+		pay = (union swrap_packet_payload *)buf;
+		switch (src->sa_family) {
+		case AF_INET:
+			pay->icmp4.type		= 0x03; /* destination unreachable */
+			pay->icmp4.code		= 0x01; /* host unreachable */
+			pay->icmp4.checksum	= htons(0x0000);
+			pay->icmp4.unused	= htonl(0x00000000);
+			buf += SWRAP_PACKET_PAYLOAD_ICMP4_SIZE;
 
-		/* set the ip header in the ICMP payload */
-		packet = (struct swrap_packet *)(((unsigned char *)ret) + icmp_hdr_len);
-		packet->ip.hdr.ver_hdrlen	= 0x45; /* version 4 and 5 * 32 bit words */
-		packet->ip.hdr.tos		= 0x00;
-		packet->ip.hdr.packet_length	= htons(wire_len - icmp_hdr_len);
-		packet->ip.hdr.identification	= htons(0xFFFF);
-		packet->ip.hdr.flags		= 0x40; /* BIT 1 set - means don't fraqment */
-		packet->ip.hdr.fragment		= htons(0x0000);
-		packet->ip.hdr.ttl		= 0xFF;
-		packet->ip.hdr.protocol		= icmp_protocol;
-		packet->ip.hdr.hdr_checksum	= htons(0x0000);
-		packet->ip.hdr.src_addr		= dest_addr->sin_addr.s_addr;
-		packet->ip.hdr.dest_addr	= src_addr->sin_addr.s_addr;
+			/* set the ip header in the ICMP payload */
+			ip = (union swrap_packet_ip *)buf;
+			ip->v4.ver_hdrlen	= 0x45; /* version 4 and 5 * 32 bit words */
+			ip->v4.tos		= 0x00;
+			ip->v4.packet_length	= htons(wire_len - icmp_hdr_len);
+			ip->v4.identification	= htons(0xFFFF);
+			ip->v4.flags		= 0x40; /* BIT 1 set - means don't fraqment */
+			ip->v4.fragment		= htons(0x0000);
+			ip->v4.ttl		= 0xFF;
+			ip->v4.protocol		= icmp_protocol;
+			ip->v4.hdr_checksum	= htons(0x0000);
+			ip->v4.src_addr		= dest_in->sin_addr.s_addr;
+			ip->v4.dest_addr	= src_in->sin_addr.s_addr;
+			buf += SWRAP_PACKET_IP_V4_SIZE;
 
-		src_port = dest_addr->sin_port;
-		dest_port = src_addr->sin_port;
+			src_port = dest_in->sin_port;
+			dest_port = src_in->sin_port;
+			break;
+#ifdef HAVE_IPV6
+		case AF_INET6:
+			pay->icmp6.type		= 0x01; /* destination unreachable */
+			pay->icmp6.code		= 0x03; /* address unreachable */
+			pay->icmp6.checksum	= htons(0x0000);
+			pay->icmp6.unused	= htonl(0x00000000);
+			buf += SWRAP_PACKET_PAYLOAD_ICMP6_SIZE;
+
+			/* set the ip header in the ICMP payload */
+			ip = (union swrap_packet_ip *)buf;
+			ip->v6.ver_prio		= 0x60; /* version 4 and 5 * 32 bit words */
+			ip->v6.flow_label_high	= 0x00;
+			ip->v6.flow_label_low	= 0x0000;
+			ip->v6.payload_length	= htons(wire_len - icmp_truncate_len);//TODO
+			ip->v6.next_header	= protocol;
+			memcpy(ip->v6.src_addr, dest_in6->sin6_addr.s6_addr, 16);
+			memcpy(ip->v6.dest_addr, src_in6->sin6_addr.s6_addr, 16);
+			buf += SWRAP_PACKET_IP_V6_SIZE;
+
+			src_port = dest_in6->sin6_port;
+			dest_port = src_in6->sin6_port;
+			break;
+#endif
+		}
 	}
+
+	pay = (union swrap_packet_payload *)buf;
 
 	switch (socket_type) {
 	case SOCK_STREAM:
-		packet->ip.p.tcp.source_port	= src_port;
-		packet->ip.p.tcp.dest_port	= dest_port;
-		packet->ip.p.tcp.seq_num	= htonl(tcp_seqno);
-		packet->ip.p.tcp.ack_num	= htonl(tcp_ack);
-		packet->ip.p.tcp.hdr_length	= 0x50; /* 5 * 32 bit words */
-		packet->ip.p.tcp.control	= tcp_ctl;
-		packet->ip.p.tcp.window		= htons(0x7FFF);
-		packet->ip.p.tcp.checksum	= htons(0x0000);
-		packet->ip.p.tcp.urg		= htons(0x0000);
+		pay->tcp.source_port	= src_port;
+		pay->tcp.dest_port	= dest_port;
+		pay->tcp.seq_num	= htonl(tcp_seqno);
+		pay->tcp.ack_num	= htonl(tcp_ack);
+		pay->tcp.hdr_length	= 0x50; /* 5 * 32 bit words */
+		pay->tcp.control	= tcp_ctl;
+		pay->tcp.window		= htons(0x7FFF);
+		pay->tcp.checksum	= htons(0x0000);
+		pay->tcp.urg		= htons(0x0000);
+		buf += SWRAP_PACKET_PAYLOAD_TCP_SIZE;
 
 		break;
 
 	case SOCK_DGRAM:
-		packet->ip.p.udp.source_port	= src_addr->sin_port;
-		packet->ip.p.udp.dest_port	= dest_addr->sin_port;
-		packet->ip.p.udp.length		= htons(8 + payload_len);
-		packet->ip.p.udp.checksum	= htons(0x0000);
+		pay->udp.source_port	= src_port;
+		pay->udp.dest_port	= dest_port;
+		pay->udp.length		= htons(8 + payload_len);
+		pay->udp.checksum	= htons(0x0000);
+		buf += SWRAP_PACKET_PAYLOAD_UDP_SIZE;
 
 		break;
 	}
 
 	if (payload && payload_len > 0) {
-		unsigned char *p = (unsigned char *)ret;
-		p += nonwire_len;
-		p += wire_hdr_len;
-		memcpy(p, payload, payload_len);
+		memcpy(buf, payload, payload_len);
 	}
 
 	*_packet_len = packet_len - icmp_truncate_len;
-	return ret;
+	return base;
 }
 
 static int swrap_get_pcap_fd(const char *fname)
@@ -911,14 +1065,14 @@ static int swrap_get_pcap_fd(const char *fname)
 	return fd;
 }
 
-static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
-								  const struct sockaddr *addr,
-								  enum swrap_packet_type type,
-								  const void *buf, size_t len,
-								  size_t *packet_len)
+static uint8_t *swrap_marshall_packet(struct socket_info *si,
+				      const struct sockaddr *addr,
+				      enum swrap_packet_type type,
+				      const void *buf, size_t len,
+				      size_t *packet_len)
 {
-	const struct sockaddr_in *src_addr;
-	const struct sockaddr_in *dest_addr;
+	const struct sockaddr *src_addr;
+	const struct sockaddr *dest_addr;
 	unsigned long tcp_seqno = 0;
 	unsigned long tcp_ack = 0;
 	unsigned char tcp_ctl = 0;
@@ -929,6 +1083,8 @@ static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
 	switch (si->family) {
 	case AF_INET:
 		break;
+	case AF_INET6:
+		break;
 	default:
 		return NULL;
 	}
@@ -937,8 +1093,8 @@ static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
 	case SWRAP_CONNECT_SEND:
 		if (si->type != SOCK_STREAM) return NULL;
 
-		src_addr = (const struct sockaddr_in *)si->myname;
-		dest_addr = (const struct sockaddr_in *)addr;
+		src_addr = si->myname;
+		dest_addr = addr;
 
 		tcp_seqno = si->io.pck_snd;
 		tcp_ack = si->io.pck_rcv;
@@ -951,8 +1107,8 @@ static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
 	case SWRAP_CONNECT_RECV:
 		if (si->type != SOCK_STREAM) return NULL;
 
-		dest_addr = (const struct sockaddr_in *)si->myname;
-		src_addr = (const struct sockaddr_in *)addr;
+		dest_addr = si->myname;
+		src_addr = addr;
 
 		tcp_seqno = si->io.pck_rcv;
 		tcp_ack = si->io.pck_snd;
@@ -965,8 +1121,8 @@ static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
 	case SWRAP_CONNECT_UNREACH:
 		if (si->type != SOCK_STREAM) return NULL;
 
-		dest_addr = (const struct sockaddr_in *)si->myname;
-		src_addr = (const struct sockaddr_in *)addr;
+		dest_addr = si->myname;
+		src_addr = addr;
 
 		/* Unreachable: resend the data of SWRAP_CONNECT_SEND */
 		tcp_seqno = si->io.pck_snd - 1;
@@ -979,8 +1135,8 @@ static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
 	case SWRAP_CONNECT_ACK:
 		if (si->type != SOCK_STREAM) return NULL;
 
-		src_addr = (const struct sockaddr_in *)si->myname;
-		dest_addr = (const struct sockaddr_in *)addr;
+		src_addr = si->myname;
+		dest_addr = addr;
 
 		tcp_seqno = si->io.pck_snd;
 		tcp_ack = si->io.pck_rcv;
@@ -991,8 +1147,8 @@ static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
 	case SWRAP_ACCEPT_SEND:
 		if (si->type != SOCK_STREAM) return NULL;
 
-		dest_addr = (const struct sockaddr_in *)si->myname;
-		src_addr = (const struct sockaddr_in *)addr;
+		dest_addr = si->myname;
+		src_addr = addr;
 
 		tcp_seqno = si->io.pck_rcv;
 		tcp_ack = si->io.pck_snd;
@@ -1005,8 +1161,8 @@ static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
 	case SWRAP_ACCEPT_RECV:
 		if (si->type != SOCK_STREAM) return NULL;
 
-		src_addr = (const struct sockaddr_in *)si->myname;
-		dest_addr = (const struct sockaddr_in *)addr;
+		src_addr = si->myname;
+		dest_addr = addr;
 
 		tcp_seqno = si->io.pck_snd;
 		tcp_ack = si->io.pck_rcv;
@@ -1019,8 +1175,8 @@ static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
 	case SWRAP_ACCEPT_ACK:
 		if (si->type != SOCK_STREAM) return NULL;
 
-		dest_addr = (const struct sockaddr_in *)si->myname;
-		src_addr = (const struct sockaddr_in *)addr;
+		dest_addr = si->myname;
+		src_addr = addr;
 
 		tcp_seqno = si->io.pck_rcv;
 		tcp_ack = si->io.pck_snd;
@@ -1029,8 +1185,8 @@ static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
 		break;
 
 	case SWRAP_SEND:
-		src_addr = (const struct sockaddr_in *)si->myname;
-		dest_addr = (const struct sockaddr_in *)si->peername;
+		src_addr = si->myname;
+		dest_addr = si->peername;
 
 		tcp_seqno = si->io.pck_snd;
 		tcp_ack = si->io.pck_rcv;
@@ -1041,8 +1197,8 @@ static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
 		break;
 
 	case SWRAP_SEND_RST:
-		dest_addr = (const struct sockaddr_in *)si->myname;
-		src_addr = (const struct sockaddr_in *)si->peername;
+		dest_addr = si->myname;
+		src_addr = si->peername;
 
 		if (si->type == SOCK_DGRAM) {
 			return swrap_marshall_packet(si, si->peername,
@@ -1057,8 +1213,8 @@ static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
 		break;
 
 	case SWRAP_PENDING_RST:
-		dest_addr = (const struct sockaddr_in *)si->myname;
-		src_addr = (const struct sockaddr_in *)si->peername;
+		dest_addr = si->myname;
+		src_addr = si->peername;
 
 		if (si->type == SOCK_DGRAM) {
 			return NULL;
@@ -1071,8 +1227,8 @@ static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
 		break;
 
 	case SWRAP_RECV:
-		dest_addr = (const struct sockaddr_in *)si->myname;
-		src_addr = (const struct sockaddr_in *)si->peername;
+		dest_addr = si->myname;
+		src_addr = si->peername;
 
 		tcp_seqno = si->io.pck_rcv;
 		tcp_ack = si->io.pck_snd;
@@ -1083,8 +1239,8 @@ static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
 		break;
 
 	case SWRAP_RECV_RST:
-		dest_addr = (const struct sockaddr_in *)si->myname;
-		src_addr = (const struct sockaddr_in *)si->peername;
+		dest_addr = si->myname;
+		src_addr = si->peername;
 
 		if (si->type == SOCK_DGRAM) {
 			return NULL;
@@ -1097,24 +1253,24 @@ static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
 		break;
 
 	case SWRAP_SENDTO:
-		src_addr = (const struct sockaddr_in *)si->myname;
-		dest_addr = (const struct sockaddr_in *)addr;
+		src_addr = si->myname;
+		dest_addr = addr;
 
 		si->io.pck_snd += len;
 
 		break;
 
 	case SWRAP_SENDTO_UNREACH:
-		dest_addr = (const struct sockaddr_in *)si->myname;
-		src_addr = (const struct sockaddr_in *)addr;
+		dest_addr = si->myname;
+		src_addr = addr;
 
 		unreachable = 1;
 
 		break;
 
 	case SWRAP_RECVFROM:
-		dest_addr = (const struct sockaddr_in *)si->myname;
-		src_addr = (const struct sockaddr_in *)addr;
+		dest_addr = si->myname;
+		src_addr = addr;
 
 		si->io.pck_rcv += len;
 
@@ -1123,8 +1279,8 @@ static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
 	case SWRAP_CLOSE_SEND:
 		if (si->type != SOCK_STREAM) return NULL;
 
-		src_addr = (const struct sockaddr_in *)si->myname;
-		dest_addr = (const struct sockaddr_in *)si->peername;
+		src_addr = si->myname;
+		dest_addr = si->peername;
 
 		tcp_seqno = si->io.pck_snd;
 		tcp_ack = si->io.pck_rcv;
@@ -1137,8 +1293,8 @@ static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
 	case SWRAP_CLOSE_RECV:
 		if (si->type != SOCK_STREAM) return NULL;
 
-		dest_addr = (const struct sockaddr_in *)si->myname;
-		src_addr = (const struct sockaddr_in *)si->peername;
+		dest_addr = si->myname;
+		src_addr = si->peername;
 
 		tcp_seqno = si->io.pck_rcv;
 		tcp_ack = si->io.pck_snd;
@@ -1151,8 +1307,8 @@ static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
 	case SWRAP_CLOSE_ACK:
 		if (si->type != SOCK_STREAM) return NULL;
 
-		src_addr = (const struct sockaddr_in *)si->myname;
-		dest_addr = (const struct sockaddr_in *)si->peername;
+		src_addr = si->myname;
+		dest_addr = si->peername;
 
 		tcp_seqno = si->io.pck_snd;
 		tcp_ack = si->io.pck_rcv;
@@ -1166,18 +1322,18 @@ static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
 	swrapGetTimeOfDay(&tv);
 
 	return swrap_packet_init(&tv, src_addr, dest_addr, si->type,
-				   (const unsigned char *)buf, len,
-				   tcp_seqno, tcp_ack, tcp_ctl, unreachable,
-				   packet_len);
+				 (const uint8_t *)buf, len,
+				 tcp_seqno, tcp_ack, tcp_ctl, unreachable,
+				 packet_len);
 }
 
-static void swrap_dump_packet(struct socket_info *si, 
-							  const struct sockaddr *addr,
-							  enum swrap_packet_type type,
-							  const void *buf, size_t len)
+static void swrap_dump_packet(struct socket_info *si,
+			      const struct sockaddr *addr,
+			      enum swrap_packet_type type,
+			      const void *buf, size_t len)
 {
 	const char *file_name;
-	struct swrap_packet *packet;
+	uint8_t *packet;
 	size_t packet_len = 0;
 	int fd;
 
@@ -1432,13 +1588,14 @@ static int swrap_auto_bind(struct socket_info *si)
 		    	type = SOCKET_TYPE_CHAR_UDP_V6;
 			break;
 		default:
-		    errno = ESOCKTNOSUPPORT;
-		    return -1;
+			errno = ESOCKTNOSUPPORT;
+			return -1;
 		}
 
 		memset(&in6, 0, sizeof(in6));
 		in6.sin6_family = AF_INET6;
-		in6.sin6_addr.s6_addr[0] = SW_IPV6_ADDRESS;
+		in6.sin6_addr = swrap_ipv6;
+		in6.sin6_addr.s6_addr[15] = socket_wrapper_default_iface();
 		si->myname_len = sizeof(in6);
 		si->myname = sockaddr_dup(&in6, si->myname_len);
 		break;
@@ -1781,7 +1938,7 @@ _PUBLIC_ ssize_t swrap_recv(int s, void *buf, size_t len, int flags)
 		swrap_dump_packet(si, NULL, SWRAP_RECV_RST, NULL, 0);
 	} else if (ret == 0) { /* END OF FILE */
 		swrap_dump_packet(si, NULL, SWRAP_RECV_RST, NULL, 0);
-	} else {
+	} else if (ret > 0) {
 		swrap_dump_packet(si, NULL, SWRAP_RECV, buf, ret);
 	}
 

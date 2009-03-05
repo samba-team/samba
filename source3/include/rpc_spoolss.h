@@ -121,41 +121,10 @@
 #define SPL_XCV_MONITOR_LOCALMON  ",XcvMonitor Local Port"
 #define SPL_XCV_MONITOR_TCPMON    ",XcvMonitor Standard TCP/IP Port"
 
-
-#define PRINTER_STATUS_OK               0x00000000
-#define JOB_ACCESS_READ			0x00000020
-
-/* JOB status codes. */
-
-#define JOB_STATUS_QUEUED               0x0000
-#define JOB_STATUS_PAUSED		0x0001
-#define JOB_STATUS_ERROR		0x0002
-#define JOB_STATUS_DELETING		0x0004
-#define JOB_STATUS_SPOOLING		0x0008
-#define JOB_STATUS_PRINTING		0x0010
-#define JOB_STATUS_OFFLINE		0x0020
-#define JOB_STATUS_PAPEROUT		0x0040
-#define JOB_STATUS_PRINTED		0x0080
-#define JOB_STATUS_DELETED		0x0100
-#define JOB_STATUS_BLOCKED		0x0200
-#define JOB_STATUS_USER_INTERVENTION	0x0400
-
 /* Notify field types */
-
-#define NOTIFY_ONE_VALUE 1		/* Notify data is stored in value1 */
-#define NOTIFY_TWO_VALUE 2		/* Notify data is stored in value2 */
-#define NOTIFY_POINTER   3		/* Data is a pointer to a buffer */
-#define NOTIFY_STRING    4		/* Data is a pointer to a buffer w/length */
-#define NOTIFY_SECDESC   5		/* Data is a security descriptor */
 
 #define PRINTER_NOTIFY_TYPE 0x00
 #define JOB_NOTIFY_TYPE     0x01
-#define PRINT_TABLE_END     0xFF
-
-#define MAX_PRINTER_NOTIFY 26
-#define MAX_JOB_NOTIFY 24
-
-#define MAX_NOTIFY_TYPE_FOR_NOW 26
 
 #define PRINTER_NOTIFY_SERVER_NAME		0x00
 #define PRINTER_NOTIFY_PRINTER_NAME		0x01
@@ -261,25 +230,6 @@ PRINTER_MESSAGE_INFO;
 #define DRIVER_MAX_VERSION		4
 
 
-/* this struct is undocumented */
-/* thanks to the ddk ... */
-typedef struct {
-	uint32 size;		/* length of user_name & client_name + 2? */
-	UNISTR2 *client_name;
-	UNISTR2 *user_name;
-	uint32 build;
-	uint32 major;
-	uint32 minor;
-	uint32 processor;
-} SPOOL_USER_1;
-
-typedef struct {
-	uint32 level;
-	union {
-		SPOOL_USER_1 *user1;
-	} user;
-} SPOOL_USER_CTR;
-
 /* 
  * Devicemode structure
  */
@@ -342,19 +292,6 @@ typedef struct _printer_default
 PRINTER_DEFAULT;
 
 /********************************************/
-
-typedef struct s_header_type
-{
-	uint32 type;
-	union
-	{
-		uint32 value;
-		UNISTR string;
-	}
-	data;
-}
-HEADER_TYPE;
-
 
 typedef struct spool_q_getprinterdata
 {
@@ -487,11 +424,6 @@ typedef struct printer_info_6
 	uint32 status;
 }
 PRINTER_INFO_6;
-
-#define SPOOL_DS_PUBLISH	1
-#define SPOOL_DS_UPDATE		2
-#define SPOOL_DS_UNPUBLISH	4
-#define SPOOL_DS_PENDING        0x80000000
 
 typedef struct printer_info_7
 {
@@ -872,114 +804,7 @@ typedef struct spool_r_enumforms
 }
 SPOOL_R_ENUMFORMS;
 
-typedef struct spool_printer_info_level_1
-{
-	uint32 flags;
-	uint32 description_ptr;
-	uint32 name_ptr;
-	uint32 comment_ptr;
-	UNISTR2 description;
-	UNISTR2 name;
-	UNISTR2 comment;	
-} SPOOL_PRINTER_INFO_LEVEL_1;
-
-typedef struct spool_printer_info_level_2
-{
-	uint32 servername_ptr;
-	uint32 printername_ptr;
-	uint32 sharename_ptr;
-	uint32 portname_ptr;
-	uint32 drivername_ptr;
-	uint32 comment_ptr;
-	uint32 location_ptr;
-	uint32 devmode_ptr;
-	uint32 sepfile_ptr;
-	uint32 printprocessor_ptr;
-	uint32 datatype_ptr;
-	uint32 parameters_ptr;
-	uint32 secdesc_ptr;
-	uint32 attributes;
-	uint32 priority;
-	uint32 default_priority;
-	uint32 starttime;
-	uint32 untiltime;
-	uint32 status;
-	uint32 cjobs;
-	uint32 averageppm;
-	UNISTR2 servername;
-	UNISTR2 printername;
-	UNISTR2 sharename;
-	UNISTR2 portname;
-	UNISTR2 drivername;
-	UNISTR2 comment;
-	UNISTR2 location;
-	UNISTR2 sepfile;
-	UNISTR2 printprocessor;
-	UNISTR2 datatype;
-	UNISTR2 parameters;
-}
-SPOOL_PRINTER_INFO_LEVEL_2;
-
-typedef struct spool_printer_info_level_3
-{
-	uint32 secdesc_ptr;
-}
-SPOOL_PRINTER_INFO_LEVEL_3;
-
-typedef struct spool_printer_info_level_7
-{
-	uint32 guid_ptr;
-	uint32 action;
-	UNISTR2 guid;
-}
-SPOOL_PRINTER_INFO_LEVEL_7;
-
-typedef struct spool_printer_info_level
-{
-	uint32 level;
-	uint32 info_ptr;
-	SPOOL_PRINTER_INFO_LEVEL_1 *info_1;
-	SPOOL_PRINTER_INFO_LEVEL_2 *info_2;
-	SPOOL_PRINTER_INFO_LEVEL_3 *info_3;
-	SPOOL_PRINTER_INFO_LEVEL_7 *info_7;
-}
-SPOOL_PRINTER_INFO_LEVEL;
-
-typedef struct spool_q_setprinter
-{
-	POLICY_HND handle;
-	uint32 level;
-	SPOOL_PRINTER_INFO_LEVEL info;
-	SEC_DESC_BUF *secdesc_ctr;
-	DEVMODE_CTR devmode_ctr;
-
-	uint32 command;
-
-}
-SPOOL_Q_SETPRINTER;
-
-typedef struct spool_r_setprinter
-{
-	WERROR status;
-}
-SPOOL_R_SETPRINTER;
-
 /********************************************/
-
-typedef struct {
-	UNISTR2 *server_name;
-	uint32 level;
-	SPOOL_PRINTER_INFO_LEVEL info;
-	DEVMODE_CTR devmode_ctr;
-	SEC_DESC_BUF *secdesc_ctr;
-	uint32 user_switch;
-	SPOOL_USER_CTR user_ctr;
-} SPOOL_Q_ADDPRINTEREX;
-
-typedef struct {
-	POLICY_HND handle;
-	WERROR status;
-} SPOOL_R_ADDPRINTEREX;
 
 typedef struct spool_q_enumprintprocessors
 {

@@ -586,9 +586,15 @@ sub ParseElementPushLevel
 		my $length = ParseExpr($l->{LENGTH_IS}, $env, $e->{ORIGINAL});
 		my $counter = "cntr_$e->{NAME}_$l->{LEVEL_INDEX}";
 
+		my $array_pointless = ($length eq "0");
+
+		if ($array_pointless) {
+			warning($e->{ORIGINAL}, "pointless array `$e->{NAME}' will always have size 0");
+		}
+
 		$var_name = get_array_element($var_name, $counter);
 
-		if (($primitives and not $l->{IS_DEFERRED}) or ($deferred and $l->{IS_DEFERRED})) {
+		if ((($primitives and not $l->{IS_DEFERRED}) or ($deferred and $l->{IS_DEFERRED})) and not $array_pointless) {
 			$self->pidl("for ($counter = 0; $counter < $length; $counter++) {");
 			$self->indent;
 			$self->ParseElementPushLevel($e, GetNextLevel($e, $l), $ndr, $var_name, $env, 1, 0);
@@ -596,7 +602,7 @@ sub ParseElementPushLevel
 			$self->pidl("}");
 		}
 
-		if ($deferred and ContainsDeferred($e, $l)) {
+		if ($deferred and ContainsDeferred($e, $l) and not $array_pointless) {
 			$self->pidl("for ($counter = 0; $counter < $length; $counter++) {");
 			$self->indent;
 			$self->ParseElementPushLevel($e, GetNextLevel($e, $l), $ndr, $var_name, $env, 0, 1);
@@ -2548,7 +2554,9 @@ sub GenerateIncludes($)
 	if (is_intree()) {
 		$self->pidl("#include \"includes.h\"");
 	} else {
+		$self->pidl("#ifndef _GNU_SOURCE");
 		$self->pidl("#define _GNU_SOURCE");
+		$self->pidl("#endif");
 		$self->pidl("#include <stdint.h>");
 		$self->pidl("#include <stdlib.h>");
 		$self->pidl("#include <stdio.h>");

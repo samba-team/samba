@@ -110,7 +110,7 @@ static int nt_printj_status(int v)
 	case LPQ_DELETED:
 		return JOB_STATUS_DELETED;
 	case LPQ_BLOCKED:
-		return JOB_STATUS_BLOCKED;
+		return JOB_STATUS_BLOCKED_DEVQ;
 	case LPQ_USER_INTERVENTION:
 		return JOB_STATUS_USER_INTERVENTION;
 	}
@@ -3486,7 +3486,6 @@ static const struct s_notify_info_data_table notify_info_data_table[] =
 { JOB_NOTIFY_TYPE,     JOB_NOTIFY_TOTAL_PAGES,             "JOB_NOTIFY_TOTAL_PAGES",             NOTIFY_TABLE_DWORD,    spoolss_notify_total_pages },
 { JOB_NOTIFY_TYPE,     JOB_NOTIFY_PAGES_PRINTED,           "JOB_NOTIFY_PAGES_PRINTED",           NOTIFY_TABLE_DWORD,    spoolss_notify_pages_printed },
 { JOB_NOTIFY_TYPE,     JOB_NOTIFY_TOTAL_BYTES,             "JOB_NOTIFY_TOTAL_BYTES",             NOTIFY_TABLE_DWORD,    spoolss_notify_job_size },
-{ PRINT_TABLE_END, 0x0, NULL, 0x0, NULL },
 };
 
 /*******************************************************************
@@ -3519,7 +3518,7 @@ static bool search_notify(enum spoolss_NotifyType type,
 {
 	int i;
 
-	for (i = 0; notify_info_data_table[i].type != PRINT_TABLE_END; i++) {
+	for (i = 0; i < ARRAY_SIZE(notify_info_data_table); i++) {
 		if (notify_info_data_table[i].type == type &&
 		    notify_info_data_table[i].field == field &&
 		    notify_info_data_table[i].fn != NULL) {
@@ -4354,10 +4353,10 @@ static bool construct_printer_info_7(Printer_entry *print_hnd, PRINTER_INFO_7 *p
 		strupper_m(guid_str);
 		init_unistr(&printer->guid, guid_str);
 		SAFE_FREE(guid_str);
-		printer->action = SPOOL_DS_PUBLISH;
+		printer->action = DSPRINT_PUBLISH;
 	} else {
 		init_unistr(&printer->guid, "");
-		printer->action = SPOOL_DS_UNPUBLISH;
+		printer->action = DSPRINT_UNPUBLISH;
 	}
 
 	return True;
@@ -6619,6 +6618,10 @@ WERROR _spoolss_AddJob(pipes_struct *p,
 	/* this is what a NT server returns for AddJob. AddJob must fail on
 	 * non-local printers */
 
+	if (r->in.level != 1) {
+		return WERR_UNKNOWN_LEVEL;
+	}
+
 	return WERR_INVALID_PARAM;
 }
 
@@ -8180,28 +8183,21 @@ WERROR _spoolss_GetPrinterDriverDirectory(pipes_struct *p,
 		return WERR_INVALID_PARAM;
 	}
 
-	if (r->in.offered > MAX_RPC_DATA_SIZE) {
-		return WERR_INVALID_PARAM;
-	}
-
-	DEBUG(4,("_spoolss_GetPrinterDriverDirectory\n"));
+	DEBUG(5,("_spoolss_GetPrinterDriverDirectory: level %d\n",
+		r->in.level));
 
 	*r->out.needed = 0;
 
-	switch (r->in.level) {
-	case 1:
-		werror = getprinterdriverdir_level_1(p->mem_ctx,
-						     r->in.server,
-						     r->in.environment,
-						     &r->out.info->info1,
-						     r->in.offered,
-						     r->out.needed);
-		if (!W_ERROR_IS_OK(werror)) {
-			TALLOC_FREE(r->out.info);
-		}
-		break;
-	default:
-		return WERR_UNKNOWN_LEVEL;
+	/* r->in.level is ignored */
+
+	werror = getprinterdriverdir_level_1(p->mem_ctx,
+					     r->in.server,
+					     r->in.environment,
+					     &r->out.info->info1,
+					     r->in.offered,
+					     r->out.needed);
+	if (!W_ERROR_IS_OK(werror)) {
+		TALLOC_FREE(r->out.info);
 	}
 
 	return werror;
@@ -9834,28 +9830,21 @@ WERROR _spoolss_GetPrintProcessorDirectory(pipes_struct *p,
 		return WERR_INVALID_PARAM;
 	}
 
-	if (r->in.offered > MAX_RPC_DATA_SIZE) {
-		return WERR_INVALID_PARAM;
-	}
-
-	DEBUG(5,("_spoolss_GetPrintProcessorDirectory\n"));
+	DEBUG(5,("_spoolss_GetPrintProcessorDirectory: level %d\n",
+		r->in.level));
 
 	*r->out.needed = 0;
 
-	switch (r->in.level) {
-	case 1:
-		result = getprintprocessordirectory_level_1(p->mem_ctx,
-							    r->in.server,
-							    r->in.environment,
-							    &r->out.info->info1,
-							    r->in.offered,
-							    r->out.needed);
-		if (!W_ERROR_IS_OK(result)) {
-			TALLOC_FREE(r->out.info);
-		}
-		break;
-	default:
-		result = WERR_UNKNOWN_LEVEL;
+	/* r->in.level is ignored */
+
+	result = getprintprocessordirectory_level_1(p->mem_ctx,
+						    r->in.server,
+						    r->in.environment,
+						    &r->out.info->info1,
+						    r->in.offered,
+						    r->out.needed);
+	if (!W_ERROR_IS_OK(result)) {
+		TALLOC_FREE(r->out.info);
 	}
 
 	return result;
