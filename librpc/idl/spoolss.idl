@@ -379,7 +379,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		 * and the array has no size in front
 		 */
 		[out,ref] uint32 *count,
-		[out,ref,switch_is(level),size_is(*count)] spoolss_PrinterInfo **info,
+		[out,ref,switch_is(level),size_is(,*count)] spoolss_PrinterInfo **info,
 		[out,ref] uint32 *needed
 	);
 
@@ -623,7 +623,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in,unique] DATA_BLOB *buffer,
 		[in] 	 uint32 offered,
 		[out,ref] uint32 *count,
-		[out,ref,switch_is(level),size_is(*count)] spoolss_JobInfo **info,
+		[out,ref,switch_is(level),size_is(,*count)] spoolss_JobInfo **info,
 		[out,ref] uint32 *needed
 	);
 
@@ -1088,7 +1088,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
 		[out,ref] uint32 *count,
-		[out,ref,switch_is(level),size_is(*count)] spoolss_DriverInfo **info,
+		[out,ref,switch_is(level),size_is(,*count)] spoolss_DriverInfo **info,
 		[out,ref] uint32 *needed
 	);
 
@@ -1171,7 +1171,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
 		[out,ref] uint32 *count,
-		[out,ref,switch_is(level),size_is(*count)] spoolss_PrintProcessorInfo **info,
+		[out,ref,switch_is(level),size_is(,*count)] spoolss_PrintProcessorInfo **info,
 		[out,ref] uint32 *needed
 	);
 
@@ -1505,7 +1505,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in,unique] DATA_BLOB *buffer,
 		[in] 	 uint32 offered,
 		[out,ref] uint32 *count,
-		[out,ref,switch_is(level),size_is(*count)] spoolss_FormInfo **info,
+		[out,ref,switch_is(level),size_is(,*count)] spoolss_FormInfo **info,
 		[out,ref] uint32 *needed
 	);
 
@@ -1591,7 +1591,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
 		[out,ref] uint32 *count,
-		[out,ref,switch_is(level),size_is(*count)] spoolss_PortInfo **info,
+		[out,ref,switch_is(level),size_is(,*count)] spoolss_PortInfo **info,
 		[out,ref] uint32 *needed
 	);
 
@@ -1633,7 +1633,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
 		[out,ref] uint32 *count,
-		[out,ref,switch_is(level),size_is(*count)] spoolss_MonitorInfo **info,
+		[out,ref,switch_is(level),size_is(,*count)] spoolss_MonitorInfo **info,
 		[out,ref] uint32 *needed
 	);
 
