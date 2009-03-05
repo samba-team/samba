@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 #
 # create schema.ldif (as a string) from WSPP documentation
 #
@@ -252,3 +253,17 @@ def read_ms_schema(attr_file, classes_file, dump_attributes = True, dump_classes
         classes_ldif = __parse_schema_file(classes_file, "classSchema")
 
     return attr_ldif + "\n\n" + classes_ldif + "\n\n"
+
+if __name__ == '__main__':
+    import sys
+
+    try:
+        attr_file = sys.argv[1]
+        classes_file = sys.argv[2]
+    except IndexError:
+        print >>sys.stderr, "Usage: %s attr-file.txt classes-file.txt" % (sys.argv[0])
+        sys.exit(1)
+        
+    print read_ms_schema(attr_file, classes_file)
+
+        
