@@ -76,6 +76,15 @@ static NTSTATUS check_open_rights(struct connection_struct *conn,
 
 	*access_granted = 0;
 
+	if (conn->server_info->utok.uid == 0 || conn->admin_user) {
+		/* I'm sorry sir, I didn't know you were root... */
+		*access_granted = access_mask;
+		if (access_mask & SEC_FLAG_MAXIMUM_ALLOWED) {
+			*access_granted |= FILE_GENERIC_ALL;
+		}
+		return NT_STATUS_OK;
+	}
+
 	status = SMB_VFS_GET_NT_ACL(conn, fname,
 			(OWNER_SECURITY_INFORMATION |
 			GROUP_SECURITY_INFORMATION |
