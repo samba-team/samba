@@ -50,5 +50,4 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const
 					void (*usage)(void));
 
 
-struct ldb_control **parse_controls(void *mem_ctx, char **control_strings);
 int handle_controls_reply(struct ldb_control **reply, struct ldb_control **request);
