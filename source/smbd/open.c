@@ -2391,6 +2391,14 @@ NTSTATUS open_directory(connection_struct *conn,
 		return status;
 	}
 
+	/* We need to support SeSecurityPrivilege for this. */
+	if (access_mask & SEC_RIGHT_SYSTEM_SECURITY) {
+		DEBUG(10, ("open_directory: open on %s "
+			"failed - SEC_RIGHT_SYSTEM_SECURITY denied.\n",
+			fname));
+		return NT_STATUS_PRIVILEGE_NOT_HELD;
+	}
+
 	switch( create_disposition ) {
 		case FILE_OPEN:
 
@@ -2921,6 +2929,20 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 	if ((access_mask & SEC_RIGHT_SYSTEM_SECURITY) &&
 	    !user_has_privileges(current_user.nt_user_token,
 				 &se_security)) {
+		status = NT_STATUS_PRIVILEGE_NOT_HELD;
+		goto fail;
+	}
+#else
+	/* We need to support SeSecurityPrivilege for this. */
+	if (access_mask & SEC_RIGHT_SYSTEM_SECURITY) {
+		status = NT_STATUS_PRIVILEGE_NOT_HELD;
+		goto fail;
+	}
+	/* Don't allow a SACL set from an NTtrans create until we
+	 * support SeSecurityPrivilege. */
+	if (!VALID_STAT(sbuf) &&
+			lp_nt_acl_support(SNUM(conn)) &&
+			sd && (sd->sacl != NULL)) {
 		status = NT_STATUS_PRIVILEGE_NOT_HELD;
 		goto fail;
 	}
