@@ -92,16 +92,3 @@ oLschema2ldif_OBJ_FILES = $(addprefix $(utilssrcdir)/, oLschema2ldif.o)
 
 MANPAGES += $(utilssrcdir)/man/oLschema2ldif.1
 
-################################################
-# Start BINARY  ad2oLschema
-[BINARY::ad2oLschema]
-INSTALLDIR = BINDIR
-PRIVATE_DEPENDENCIES = \
-		LIBLDB_CMDLINE SAMDB 
-# End BINARY ad2oLschema
-################################################
-
-ad2oLschema_OBJ_FILES = $(addprefix $(utilssrcdir)/, ad2oLschema.o)
-
-MANPAGES += $(utilssrcdir)/man/ad2oLschema.1
-

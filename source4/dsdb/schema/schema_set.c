@@ -277,7 +277,7 @@ void dsdb_make_schema_global(struct ldb_context *ldb)
  * schema itself to the directory.
  */
 
-WERROR dsdb_attach_schema_from_ldif_file(struct ldb_context *ldb, const char *pf, const char *df)
+WERROR dsdb_attach_schema_from_ldif(struct ldb_context *ldb, const char *pf, const char *df)
 {
 	struct ldb_ldif *ldif;
 	struct ldb_message *msg;

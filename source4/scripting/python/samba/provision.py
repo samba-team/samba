@@ -1245,7 +1245,7 @@ def provision_backend(setup_dir=None, message=None,
     except OSError:
         pass
 
-    schemadb = Ldb(schemadb_path, lp=lp)
+    schemadb = SamDB(schemadb_path, lp=lp)
  
     prefixmap = open(setup_path("prefixMap.txt"), 'r').read()
 
@@ -1263,10 +1263,8 @@ def provision_backend(setup_dir=None, message=None,
                            "PREFIXMAP_B64": b64encode(prefixmap)
                            })
     
-    setup_add_ldif(schemadb, setup_path("schema_samba4.ldif"), 
-                   {"SCHEMADN": names.schemadn })
-
-    data = get_schema_data(setup_path, {"SCHEMADN": names.schemadn})
+    data = load_schema(setup_path, schemadb, names.schemadn, names.netbiosname, 
+                       names.configdn, DEFAULTSITE, names.serverdn)
     schemadb.add_ldif(data)
 
     if ldap_backend_type == "fedora-ds":
@@ -1480,10 +1478,10 @@ def provision_backend(setup_dir=None, message=None,
 
         ldapuser = "--username=samba-admin"
 
-            
-    schema_command = "bin/ad2oLschema --option=convert:target=" + ldap_backend_type + " -I " + setup_path(mapping) + " -H tdb://" + schemadb_path + " -O " + os.path.join(paths.ldapdir, backend_schema)
-            
-    os.system(schema_command)
+
+    backend_schema_data = schemadb.convert_schema_to_openldap(ldap_backend_type, open(setup_path(mapping), 'r').read())
+    assert backend_schema_data is not None
+    open(os.path.join(paths.ldapdir, backend_schema), 'w').write(backend_schema_data)
 
     message("Your %s Backend for Samba4 is now configured, and is ready to be started" % ldap_backend_type)
     message("Server Role:         %s" % serverrole)
@@ -1646,7 +1644,7 @@ def create_krb5_conf(path, setup_path, dnsdomain, hostname, realm):
 
 
 def load_schema(setup_path, samdb, schemadn, netbiosname, configdn, sitename,
-                serverdn, servername):
+                serverdn):
     """Load schema for the SamDB.
     
     :param samdb: Load a schema into a SamDB.
@@ -1655,7 +1653,6 @@ def load_schema(setup_path, samdb, schemadn, netbiosname, configdn, sitename,
     :param netbiosname: NetBIOS name of the host.
     :param configdn: DN of the configuration
     :param serverdn: DN of the server
-    :param servername: Host name of the server
 
     Returns the schema data loaded, to avoid double-parsing when then needing to add it to the db
     """
@@ -1674,7 +1671,6 @@ def load_schema(setup_path, samdb, schemadn, netbiosname, configdn, sitename,
                     "DEFAULTSITE": sitename,
                     "PREFIXMAP_B64": prefixmap,
                     "SERVERDN": serverdn,
-                    "SERVERNAME": servername,
     })
     check_all_substituted(head_data)
     samdb.attach_schema_from_ldif(head_data, schema_data)
@@ -1685,6 +1681,8 @@ def get_schema_data(setup_path, subst_vars = None):
 
     :param setup_path: Setup path function.
     :param subst_vars: Optional variables to substitute in the file.
+
+    Returns the schema data after substitution
     """ 
 
     # this data used to be read from schema.ldif

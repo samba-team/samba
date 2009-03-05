@@ -198,7 +198,10 @@ userAccountControl: %u
         glue.samdb_set_domain_sid(self, sid)
 
     def attach_schema_from_ldif(self, pf, df):
-        glue.dsdb_attach_schema_from_ldif_file(self, pf, df)
+        glue.dsdb_attach_schema_from_ldif(self, pf, df)
+
+    def convert_schema_to_openldap(self, target, mapping):
+        return glue.dsdb_convert_schema_to_openldap(self, target, mapping)
 
     def set_invocation_id(self, invocation_id):
         """Set the invocation id for this SamDB handle.
