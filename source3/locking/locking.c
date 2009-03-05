@@ -1295,7 +1295,7 @@ NTSTATUS can_set_delete_on_close(files_struct *fsp, bool delete_on_close,
  (Should this be in locking.c.... ?).
 *************************************************************************/
 
-static UNIX_USER_TOKEN *copy_unix_token(TALLOC_CTX *ctx, UNIX_USER_TOKEN *tok)
+static UNIX_USER_TOKEN *copy_unix_token(TALLOC_CTX *ctx, const UNIX_USER_TOKEN *tok)
 {
 	UNIX_USER_TOKEN *cpy;
 
@@ -1326,7 +1326,7 @@ static UNIX_USER_TOKEN *copy_unix_token(TALLOC_CTX *ctx, UNIX_USER_TOKEN *tok)
  Replace the delete on close token.
 ****************************************************************************/
 
-void set_delete_on_close_token(struct share_mode_lock *lck, UNIX_USER_TOKEN *tok)
+void set_delete_on_close_token(struct share_mode_lock *lck, const UNIX_USER_TOKEN *tok)
 {
 	TALLOC_FREE(lck->delete_token); /* Also deletes groups... */
 
@@ -1346,7 +1346,7 @@ void set_delete_on_close_token(struct share_mode_lock *lck, UNIX_USER_TOKEN *tok
  lck entry. This function is used when the lock is already granted.
 ****************************************************************************/
 
-void set_delete_on_close_lck(struct share_mode_lock *lck, bool delete_on_close, UNIX_USER_TOKEN *tok)
+void set_delete_on_close_lck(struct share_mode_lock *lck, bool delete_on_close, const UNIX_USER_TOKEN *tok)
 {
 	if (lck->delete_on_close != delete_on_close) {
 		set_delete_on_close_token(lck, tok);
@@ -1358,8 +1358,9 @@ void set_delete_on_close_lck(struct share_mode_lock *lck, bool delete_on_close, 
 	}
 }
 
-bool set_delete_on_close(files_struct *fsp, bool delete_on_close, UNIX_USER_TOKEN *tok)
+bool set_delete_on_close(files_struct *fsp, bool delete_on_close, const UNIX_USER_TOKEN *tok)
 {
+	UNIX_USER_TOKEN *tok_copy = NULL;
 	struct share_mode_lock *lck;
 	
 	DEBUG(10,("set_delete_on_close: %s delete on close flag for "
@@ -1371,6 +1372,16 @@ bool set_delete_on_close(files_struct *fsp, bool delete_on_close, UNIX_USER_TOKE
 				  NULL);
 	if (lck == NULL) {
 		return False;
+	}
+
+	if (fsp->conn->admin_user) {
+		tok_copy = copy_unix_token(lck, tok);
+		tok_copy->uid = (uid_t)0;
+		if (tok_copy == NULL) {
+			TALLOC_FREE(lck);
+			return false;
+		}
+		tok = tok_copy;
 	}
 
 	set_delete_on_close_lck(lck, delete_on_close, tok);
