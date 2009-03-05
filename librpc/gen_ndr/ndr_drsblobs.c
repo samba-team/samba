@@ -1856,7 +1856,6 @@ _PUBLIC_ void ndr_print_package_PrimaryKerberosKey4(struct ndr_print *ndr, const
 static enum ndr_err_code ndr_push_package_PrimaryKerberosCtr4(struct ndr_push *ndr, int ndr_flags, const struct package_PrimaryKerberosCtr4 *r)
 {
 	uint32_t cntr_keys_0;
-	uint32_t cntr_service_keys_0;
 	uint32_t cntr_old_keys_0;
 	uint32_t cntr_older_keys_0;
 	if (ndr_flags & NDR_SCALARS) {
