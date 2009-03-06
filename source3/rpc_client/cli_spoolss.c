@@ -674,34 +674,6 @@ static bool decode_jobs_2(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
 /**********************************************************************
 **********************************************************************/
 
-static bool decode_forms_1(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
-			   uint32 num_forms, FORM_1 **forms)
-{
-	int i;
-
-	if (num_forms) {
-		*forms = TALLOC_ARRAY(mem_ctx, FORM_1, num_forms);
-		if (*forms == NULL) {
-			return False;
-		}
-	} else {
-		*forms = NULL;
-	}
-
-	prs_set_offset(&buffer->prs,0);
-
-	for (i = 0; i < num_forms; i++) {
-		if (!smb_io_form_1("", buffer, &((*forms)[i]), 0)) {
-			return False;
-		}
-	}
-
-	return True;
-}
-
-/**********************************************************************
-**********************************************************************/
-
 WERROR rpccli_spoolss_enum_printers(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				 char *name, uint32 flags, uint32 level,
 				 uint32 *num_printers, PRINTER_INFO_CTR *ctr)
@@ -930,64 +902,6 @@ WERROR rpccli_spoolss_enumprinterdrivers (struct rpc_pipe_client *cli,
 		default:
 			return WERR_UNKNOWN_LEVEL;
 		}
-	}
-
-	return out.status;
-}
-
-/**********************************************************************
-**********************************************************************/
-
-WERROR rpccli_spoolss_enumforms(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-			     POLICY_HND *handle, int level, uint32 *num_forms,
-			     FORM_1 **forms)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_ENUMFORMS in;
-	SPOOL_R_ENUMFORMS out;
-	RPC_BUFFER buffer;
-	uint32 offered;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-	offered = 0;
-	if (!rpcbuf_init(&buffer, offered, mem_ctx))
-		return WERR_NOMEM;
-	make_spoolss_q_enumforms( &in, handle, level, &buffer, offered );
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_ENUMFORMS,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_enumforms,
-	            spoolss_io_r_enumforms, 
-	            WERR_GENERAL_FAILURE );
-
-	if ( W_ERROR_EQUAL( out.status, WERR_INSUFFICIENT_BUFFER ) ) {
-		offered = out.needed;
-		
-		ZERO_STRUCT(in);
-		ZERO_STRUCT(out);
-
-		if (!rpcbuf_init(&buffer, offered, mem_ctx))
-			return WERR_NOMEM;
-		make_spoolss_q_enumforms( &in, handle, level, &buffer, offered );
-
-		CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_ENUMFORMS,
-		            in, out, 
-		            qbuf, rbuf,
-		            spoolss_io_q_enumforms,
-		            spoolss_io_r_enumforms, 
-		            WERR_GENERAL_FAILURE );
-	}
-
-	if (!W_ERROR_IS_OK(out.status))
-		return out.status;
-
-	*num_forms = out.numofforms;
-	
-	if (!decode_forms_1(mem_ctx, out.buffer, *num_forms, forms)) {
-		return WERR_GENERAL_FAILURE;
 	}
 
 	return out.status;

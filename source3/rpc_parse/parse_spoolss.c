@@ -3083,19 +3083,3 @@ bool spoolss_io_r_enumprinterdataex(const char *desc, SPOOL_R_ENUMPRINTERDATAEX 
 		return False;
 	return True;
 }
-
-/*******************************************************************
- * init a structure.
- ********************************************************************/
-
-bool make_spoolss_q_enumforms(SPOOL_Q_ENUMFORMS *q_u, POLICY_HND *handle, 
-			      uint32 level, RPC_BUFFER *buffer,
-			      uint32 offered)
-{
-        memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
-        q_u->level = level;
-        q_u->buffer=buffer;
-        q_u->offered=offered;
-
-	return True;
-}
