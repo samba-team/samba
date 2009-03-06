@@ -151,7 +151,7 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 	zero_sockaddr(&ss);
 
 	/* have to open a new connection */
-	if (!(c=cli_initialise())) {
+	if (!(c=cli_initialise_ex(cm_creds.signing_state))) {
 		d_printf("Connection to %s failed\n", server_n);
 		if (c) {
 			cli_shutdown(c);
@@ -177,7 +177,6 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 	c->protocol = max_protocol;
 	c->use_kerberos = cm_creds.use_kerberos;
 	c->fallback_after_kerberos = cm_creds.fallback_after_kerberos;
-	cli_setup_signing_state(c, cm_creds.signing_state);
 
 	if (!cli_session_request(c, &calling, &called)) {
 		char *p;

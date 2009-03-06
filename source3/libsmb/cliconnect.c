@@ -1949,7 +1949,7 @@ NTSTATUS cli_start_connection(struct cli_state **output_cli,
 	if (!my_name) 
 		my_name = global_myname();
 
-	if (!(cli = cli_initialise())) {
+	if (!(cli = cli_initialise_ex(signing_state))) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -1996,8 +1996,6 @@ again:
 		}
 		return NT_STATUS_BAD_NETWORK_NAME;
 	}
-
-	cli_setup_signing_state(cli, signing_state);
 
 	if (flags & CLI_FULL_CONNECTION_DONT_SPNEGO)
 		cli->use_spnego = False;

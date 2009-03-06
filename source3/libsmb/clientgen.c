@@ -428,7 +428,7 @@ void cli_init_creds(struct cli_state *cli, const char *username, const char *dom
  Set the signing state (used from the command line).
 ****************************************************************************/
 
-void cli_setup_signing_state(struct cli_state *cli, int signing_state)
+static void cli_setup_signing_state(struct cli_state *cli, int signing_state)
 {
 	if (signing_state == Undefined)
 		return;
@@ -449,7 +449,7 @@ void cli_setup_signing_state(struct cli_state *cli, int signing_state)
  Initialise a client structure. Always returns a malloc'ed struct.
 ****************************************************************************/
 
-struct cli_state *cli_initialise(void)
+struct cli_state *cli_initialise_ex(int signing_state)
 {
 	struct cli_state *cli = NULL;
 
@@ -511,6 +511,7 @@ struct cli_state *cli_initialise(void)
 
 	/* initialise signing */
 	cli_null_set_signing(cli);
+	cli_setup_signing_state(cli, signing_state);
 
 	cli->initialised = 1;
 
@@ -524,6 +525,11 @@ struct cli_state *cli_initialise(void)
         SAFE_FREE(cli->outbuf);
 	SAFE_FREE(cli);
         return NULL;
+}
+
+struct cli_state *cli_initialise(void)
+{
+	return cli_initialise_ex(Undefined);
 }
 
 /****************************************************************************
