@@ -8823,76 +8823,85 @@ WERROR _spoolss_EnumPrintProcessors(pipes_struct *p,
 }
 
 /****************************************************************************
+ fill_printprocdatatype1
+****************************************************************************/
+
+static WERROR fill_printprocdatatype1(TALLOC_CTX *mem_ctx,
+				      struct spoolss_PrintProcDataTypesInfo1 *r,
+				      const char *name_array)
+{
+	r->name_array = talloc_strdup(mem_ctx, name_array);
+	W_ERROR_HAVE_NO_MEMORY(r->name_array);
+
+	return WERR_OK;
+}
+
+/****************************************************************************
  enumprintprocdatatypes level 1.
 ****************************************************************************/
 
-static WERROR enumprintprocdatatypes_level_1(RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enumprintprocdatatypes_level_1(TALLOC_CTX *mem_ctx,
+					     union spoolss_PrintProcDataTypesInfo **info_p,
+					     uint32_t offered,
+					     uint32_t *needed,
+					     uint32_t *count)
 {
-	PRINTPROCDATATYPE_1 *info_1=NULL;
-	WERROR result = WERR_OK;
+	WERROR result;
+	union spoolss_PrintProcDataTypesInfo *info;
 
-	if((info_1 = SMB_MALLOC_P(PRINTPROCDATATYPE_1)) == NULL)
-		return WERR_NOMEM;
+	info = TALLOC_ARRAY(mem_ctx, union spoolss_PrintProcDataTypesInfo, 1);
+	W_ERROR_HAVE_NO_MEMORY(info);
 
-	(*returned) = 0x1;
+	*count = 1;
 
-	init_unistr(&info_1->name, "RAW");
+	result = fill_printprocdatatype1(info, &info[0].info1, "RAW");
+	if (!W_ERROR_IS_OK(result)) {
+		goto out;
+	}
 
-	*needed += spoolss_size_printprocdatatype_info_1(info_1);
+	*needed += ndr_size_spoolss_PrintProcDataTypesInfo1(&info[0].info1, NULL, 0);
 
 	if (*needed > offered) {
 		result = WERR_INSUFFICIENT_BUFFER;
 		goto out;
 	}
 
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
+ out:
+	if (!W_ERROR_IS_OK(result)) {
+		TALLOC_FREE(info);
+		*count = 0;
+		return result;
 	}
 
-	smb_io_printprocdatatype_info_1("", buffer, info_1, 0);
+	*info_p = info;
 
-out:
-	SAFE_FREE(info_1);
-
-	if ( !W_ERROR_IS_OK(result) )
-		*returned = 0;
-
-	return result;
+	return WERR_OK;
 }
 
-/****************************************************************************
-****************************************************************************/
+/****************************************************************
+ _spoolss_EnumPrintProcDataTypes
+****************************************************************/
 
-WERROR _spoolss_enumprintprocdatatypes(pipes_struct *p, SPOOL_Q_ENUMPRINTPROCDATATYPES *q_u, SPOOL_R_ENUMPRINTPROCDATATYPES *r_u)
+WERROR _spoolss_EnumPrintProcDataTypes(pipes_struct *p,
+				       struct spoolss_EnumPrintProcDataTypes *r)
 {
-	uint32 level = q_u->level;
-	RPC_BUFFER *buffer = NULL;
-	uint32 offered = q_u->offered;
-	uint32 *needed = &r_u->needed;
-	uint32 *returned = &r_u->returned;
-
 	/* that's an [in out] buffer */
 
-	if (!q_u->buffer && (offered!=0)) {
+	if (!r->in.buffer && (r->in.offered != 0)) {
 		return WERR_INVALID_PARAM;
 	}
 
-	if (offered > MAX_RPC_DATA_SIZE) {
-		return WERR_INVALID_PARAM;
-	}
+	DEBUG(5,("_spoolss_EnumPrintProcDataTypes\n"));
 
-	rpcbuf_move(q_u->buffer, &r_u->buffer);
-	buffer = r_u->buffer;
+	*r->out.count = 0;
+	*r->out.needed = 0;
+	*r->out.info = NULL;
 
- 	DEBUG(5,("_spoolss_enumprintprocdatatypes\n"));
-
-	*returned=0;
-	*needed=0;
-
-	switch (level) {
+	switch (r->in.level) {
 	case 1:
-		return enumprintprocdatatypes_level_1(buffer, offered, needed, returned);
+		return enumprintprocdatatypes_level_1(p->mem_ctx, r->out.info,
+						      r->in.offered, r->out.needed,
+						      r->out.count);
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
@@ -10442,17 +10451,6 @@ WERROR _spoolss_AddPrintProvidor(pipes_struct *p,
 
 WERROR _spoolss_DeletePrintProvidor(pipes_struct *p,
 				    struct spoolss_DeletePrintProvidor *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_EnumPrintProcDataTypes
-****************************************************************/
-
-WERROR _spoolss_EnumPrintProcDataTypes(pipes_struct *p,
-				       struct spoolss_EnumPrintProcDataTypes *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
