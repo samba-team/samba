@@ -1977,27 +1977,6 @@ static const char *get_form_flag(int form_flag)
 /****************************************************************************
 ****************************************************************************/
 
-static void display_form(FORM_1 *form)
-{
-	fstring form_name = "";
-
-	if (form->name.buffer)
-		rpcstr_pull(form_name, form->name.buffer,
-			    sizeof(form_name), -1, STR_TERMINATE);
-
-	printf("%s\n" \
-		"\tflag: %s (%d)\n" \
-		"\twidth: %d, length: %d\n" \
-		"\tleft: %d, right: %d, top: %d, bottom: %d\n\n",
-		form_name, get_form_flag(form->flag), form->flag,
-		form->width, form->length,
-		form->left, form->right,
-		form->top, form->bottom);
-}
-
-/****************************************************************************
-****************************************************************************/
-
 static void display_form_info1(struct spoolss_FormInfo1 *r)
 {
 	printf("%s\n" \
@@ -2173,12 +2152,12 @@ static WERROR cmd_spoolss_enum_forms(struct rpc_pipe_client *cli,
 	WERROR werror;
 	const char *printername;
 	uint32 num_forms, level = 1, i;
-	FORM_1 *forms;
+	union spoolss_FormInfo *forms;
 
 	/* Parse the command arguments */
 
-	if (argc != 2) {
-		printf ("Usage: %s <printer>\n", argv[0]);
+	if (argc < 2 || argc > 4) {
+		printf ("Usage: %s <printer> [level]\n", argv[0]);
 		return WERR_OK;
         }
 
@@ -2193,9 +2172,18 @@ static WERROR cmd_spoolss_enum_forms(struct rpc_pipe_client *cli,
 	if (!W_ERROR_IS_OK(werror))
 		goto done;
 
+	if (argc == 3) {
+		level = atoi(argv[2]);
+	}
+
 	/* Enumerate forms */
 
-	werror = rpccli_spoolss_enumforms(cli, mem_ctx, &handle, level, &num_forms, &forms);
+	werror = rpccli_spoolss_enumforms(cli, mem_ctx,
+					  &handle,
+					  level,
+					  0,
+					  &num_forms,
+					  &forms);
 
 	if (!W_ERROR_IS_OK(werror))
 		goto done;
@@ -2203,9 +2191,14 @@ static WERROR cmd_spoolss_enum_forms(struct rpc_pipe_client *cli,
 	/* Display output */
 
 	for (i = 0; i < num_forms; i++) {
-
-		display_form(&forms[i]);
-
+		switch (level) {
+		case 1:
+			display_form_info1(&forms[i].info1);
+			break;
+		case 2:
+			display_form_info2(&forms[i].info2);
+			break;
+		}
 	}
 
  done:
