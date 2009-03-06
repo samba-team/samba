@@ -7277,73 +7277,65 @@ static WERROR fill_form_info_1(TALLOC_CTX *mem_ctx,
 	return WERR_OK;
 }
 
-/****************************************************************************
-****************************************************************************/
+/****************************************************************
+ _spoolss_EnumForms
+****************************************************************/
 
-WERROR _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMFORMS *r_u)
+WERROR _spoolss_EnumForms(pipes_struct *p,
+			  struct spoolss_EnumForms *r)
 {
-	uint32 level = q_u->level;
-	RPC_BUFFER *buffer = NULL;
-	uint32 offered = q_u->offered;
-	uint32 *needed = &r_u->needed;
-	uint32 *numofforms = &r_u->numofforms;
-	uint32 numbuiltinforms;
-
 	nt_forms_struct *list=NULL;
 	nt_forms_struct *builtinlist=NULL;
-	FORM_1 *forms_1;
-	int buffer_size=0;
+	union spoolss_FormInfo *info;
+	uint32_t count;
+	uint32_t numbuiltinforms;
+	size_t buffer_size = 0;
 	int i;
+
+	*r->out.count = 0;
 
 	/* that's an [in out] buffer */
 
-	if (!q_u->buffer && (offered!=0) ) {
+	if (!r->in.buffer && (r->in.offered != 0) ) {
 		return WERR_INVALID_PARAM;
 	}
 
-	if (offered > MAX_RPC_DATA_SIZE) {
-		return WERR_INVALID_PARAM;
-	}
-
-	rpcbuf_move(q_u->buffer, &r_u->buffer);
-	buffer = r_u->buffer;
-
-	DEBUG(4,("_spoolss_enumforms\n"));
-	DEBUGADD(5,("Offered buffer size [%d]\n", offered));
-	DEBUGADD(5,("Info level [%d]\n",          level));
+	DEBUG(4,("_spoolss_EnumForms\n"));
+	DEBUGADD(5,("Offered buffer size [%d]\n", r->in.offered));
+	DEBUGADD(5,("Info level [%d]\n",          r->in.level));
 
 	numbuiltinforms = get_builtin_ntforms(&builtinlist);
 	DEBUGADD(5,("Number of builtin forms [%d]\n",     numbuiltinforms));
-	*numofforms = get_ntforms(&list);
-	DEBUGADD(5,("Number of user forms [%d]\n",     *numofforms));
-	*numofforms += numbuiltinforms;
+	count = get_ntforms(&list);
+	DEBUGADD(5,("Number of user forms [%d]\n",     count));
+	count += numbuiltinforms;
 
-	if (*numofforms == 0) {
+	if (count == 0) {
 		SAFE_FREE(builtinlist);
 		SAFE_FREE(list);
 		return WERR_NO_MORE_ITEMS;
 	}
 
-	switch (level) {
-	case 1:
-		if ((forms_1=SMB_MALLOC_ARRAY(FORM_1, *numofforms)) == NULL) {
-			SAFE_FREE(builtinlist);
-			SAFE_FREE(list);
-			*numofforms=0;
-			return WERR_NOMEM;
-		}
+	info = TALLOC_ARRAY(p->mem_ctx, union spoolss_FormInfo, count);
+	if (!info) {
+		SAFE_FREE(builtinlist);
+		SAFE_FREE(list);
+		return WERR_NOMEM;
+	}
 
+	switch (r->in.level) {
+	case 1:
 		/* construct the list of form structures */
 		for (i=0; i<numbuiltinforms; i++) {
 			DEBUGADD(6,("Filling form number [%d]\n",i));
-			fill_form_1(&forms_1[i], &builtinlist[i]);
+			fill_form_info_1(info, &info[i].info1, &builtinlist[i]);
 		}
 
 		SAFE_FREE(builtinlist);
 
-		for (; i<*numofforms; i++) {
+		for (; i<count; i++) {
 			DEBUGADD(6,("Filling form number [%d]\n",i));
-			fill_form_1(&forms_1[i], &list[i-numbuiltinforms]);
+			fill_form_info_1(info, &info[i].info1, &list[i-numbuiltinforms]);
 		}
 
 		SAFE_FREE(list);
@@ -7351,38 +7343,22 @@ WERROR _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMF
 		/* check the required size. */
 		for (i=0; i<numbuiltinforms; i++) {
 			DEBUGADD(6,("adding form [%d]'s size\n",i));
-			buffer_size += spoolss_size_form_1(&forms_1[i]);
+			buffer_size += ndr_size_spoolss_FormInfo1(&info[i].info1, NULL, 0);
 		}
-		for (; i<*numofforms; i++) {
+		for (; i<count; i++) {
 			DEBUGADD(6,("adding form [%d]'s size\n",i));
-			buffer_size += spoolss_size_form_1(&forms_1[i]);
+			buffer_size += ndr_size_spoolss_FormInfo1(&info[i].info1, NULL, 0);
 		}
 
-		*needed=buffer_size;
+		*r->out.needed = buffer_size;
 
-		if (*needed > offered) {
-			SAFE_FREE(forms_1);
-			*numofforms=0;
+		if (*r->out.needed > r->in.offered) {
+			TALLOC_FREE(info);
 			return WERR_INSUFFICIENT_BUFFER;
 		}
 
-		if (!rpcbuf_alloc_size(buffer, buffer_size)){
-			SAFE_FREE(forms_1);
-			*numofforms=0;
-			return WERR_NOMEM;
-		}
-
-		/* fill the buffer with the form structures */
-		for (i=0; i<numbuiltinforms; i++) {
-			DEBUGADD(6,("adding form [%d] to buffer\n",i));
-			smb_io_form_1("", buffer, &forms_1[i], 0);
-		}
-		for (; i<*numofforms; i++) {
-			DEBUGADD(6,("adding form [%d] to buffer\n",i));
-			smb_io_form_1("", buffer, &forms_1[i], 0);
-		}
-
-		SAFE_FREE(forms_1);
+		*r->out.count = count;
+		*r->out.info = info;
 
 		return WERR_OK;
 
@@ -10307,17 +10283,6 @@ WERROR _spoolss_SetPrinterData(pipes_struct *p,
 
 WERROR _spoolss_WaitForPrinterChange(pipes_struct *p,
 				     struct spoolss_WaitForPrinterChange *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_EnumForms
-****************************************************************/
-
-WERROR _spoolss_EnumForms(pipes_struct *p,
-			  struct spoolss_EnumForms *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
