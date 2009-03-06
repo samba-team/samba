@@ -1392,7 +1392,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		uint32 bottom;
 	} spoolss_FormArea;
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		spoolss_FormFlags flags;
 		[relative] nstring *form_name;
 		spoolss_FormSize size;
@@ -1405,7 +1405,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		SPOOLSS_FORM_STRING_TYPE_LANG_PAIR	= 0x00000004
 	} spoolss_FormStringType;
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		spoolss_FormFlags flags;
 		[relative] nstring *form_name;
 		spoolss_FormSize size;
