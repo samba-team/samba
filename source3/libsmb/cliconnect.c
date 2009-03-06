@@ -379,6 +379,7 @@ static NTSTATUS cli_session_setup_nt1(struct cli_state *cli, const char *user,
 	DATA_BLOB session_key = data_blob_null;
 	NTSTATUS result;
 	char *p;
+	bool ok;
 
 	if (passlen == 0) {
 		/* do nothing - guest login */
@@ -436,11 +437,7 @@ static NTSTATUS cli_session_setup_nt1(struct cli_state *cli, const char *user,
 			SMBsesskeygen_ntv1(nt_hash, NULL, session_key.data);
 #endif
 		}
-#ifdef LANMAN_ONLY
-		cli_simple_set_signing(cli, session_key, lm_response); 
-#else
-		cli_simple_set_signing(cli, session_key, nt_response); 
-#endif
+		cli_temp_set_signing(cli);
 	} else {
 		/* pre-encrypted password supplied.  Only used for 
 		   security=server, can't do
@@ -490,6 +487,22 @@ static NTSTATUS cli_session_setup_nt1(struct cli_state *cli, const char *user,
 	if (cli_is_error(cli)) {
 		result = cli_nt_error(cli);
 		goto end;
+	}
+
+#ifdef LANMAN_ONLY
+	ok = cli_simple_set_signing(cli, session_key, lm_response);
+#else
+	ok = cli_simple_set_signing(cli, session_key, nt_response);
+#endif
+	if (ok) {
+		/* 'resign' the last message, so we get the right sequence numbers
+		   for checking the first reply from the server */
+		cli_calculate_sign_mac(cli, cli->outbuf);
+
+		if (!cli_check_sign_mac(cli, cli->inbuf)) {
+			result = NT_STATUS_ACCESS_DENIED;
+			goto end;
+		}
 	}
 
 	/* use the returned vuid from now on */
