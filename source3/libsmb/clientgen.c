@@ -425,33 +425,15 @@ void cli_init_creds(struct cli_state *cli, const char *username, const char *dom
 }
 
 /****************************************************************************
- Set the signing state (used from the command line).
-****************************************************************************/
-
-static void cli_setup_signing_state(struct cli_state *cli, int signing_state)
-{
-	if (signing_state == Undefined)
-		return;
-
-	if (signing_state == false) {
-		cli->sign_info.allow_smb_signing = false;
-		cli->sign_info.mandatory_signing = false;
-		return;
-	}
-
-	cli->sign_info.allow_smb_signing = true;
-
-	if (signing_state == Required) 
-		cli->sign_info.mandatory_signing = true;
-}
-
-/****************************************************************************
  Initialise a client structure. Always returns a malloc'ed struct.
+ Set the signing state (used from the command line).
 ****************************************************************************/
 
 struct cli_state *cli_initialise_ex(int signing_state)
 {
 	struct cli_state *cli = NULL;
+	bool allow_smb_signing = false;
+	bool mandatory_signing = false;
 
 	/* Check the effective uid - make sure we are not setuid */
 	if (is_setuid_root()) {
@@ -490,12 +472,27 @@ struct cli_state *cli_initialise_ex(int signing_state)
 	if (getenv("CLI_FORCE_DOSERR"))
 		cli->force_dos_errors = true;
 
-	if (lp_client_signing()) 
-		cli->sign_info.allow_smb_signing = true;
+	if (lp_client_signing()) {
+		allow_smb_signing = true;
+	}
 
-	if (lp_client_signing() == Required) 
-		cli->sign_info.mandatory_signing = true;
-                                   
+	if (lp_client_signing() == Required) {
+		mandatory_signing = true;
+	}
+
+	if (signing_state != Undefined) {
+		allow_smb_signing = true;
+	}
+
+	if (signing_state == false) {
+		allow_smb_signing = false;
+		mandatory_signing = false;
+	}
+
+	if (signing_state == Required) {
+		mandatory_signing = true;
+	}
+
 	if (!cli->outbuf || !cli->inbuf)
                 goto error;
 
@@ -510,8 +507,9 @@ struct cli_state *cli_initialise_ex(int signing_state)
 #endif
 
 	/* initialise signing */
+	cli->sign_info.allow_smb_signing = allow_smb_signing;
+	cli->sign_info.mandatory_signing = mandatory_signing;
 	cli_null_set_signing(cli);
-	cli_setup_signing_state(cli, signing_state);
 
 	cli->initialised = 1;
 
