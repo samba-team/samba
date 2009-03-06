@@ -3112,6 +3112,61 @@ static WERROR cmd_spoolss_enum_procs(struct rpc_pipe_client *cli,
 	return werror;
 }
 
+static void display_proc_data_types_info1(struct spoolss_PrintProcDataTypesInfo1 *r)
+{
+	printf("name_array: %s\n", r->name_array);
+}
+
+static WERROR cmd_spoolss_enum_proc_data_types(struct rpc_pipe_client *cli,
+					       TALLOC_CTX *mem_ctx, int argc,
+					       const char **argv)
+{
+	WERROR werror;
+	const char *print_processor_name = "winprint";
+	uint32_t num_procs, level = 1, i;
+	union spoolss_PrintProcDataTypesInfo *procs;
+
+	/* Parse the command arguments */
+
+	if (argc < 1 || argc > 4) {
+		printf ("Usage: %s [environment] [level]\n", argv[0]);
+		return WERR_OK;
+        }
+
+	if (argc >= 2) {
+		print_processor_name = argv[1];
+	}
+
+	if (argc == 3) {
+		level = atoi(argv[2]);
+	}
+
+	/* Enumerate Print Processor Data Types */
+
+	werror = rpccli_spoolss_enumprintprocessordatatypes(cli, mem_ctx,
+							    cli->srv_name_slash,
+							    print_processor_name,
+							    level,
+							    0,
+							    &num_procs,
+							    &procs);
+	if (!W_ERROR_IS_OK(werror))
+		goto done;
+
+	/* Display output */
+
+	for (i = 0; i < num_procs; i++) {
+		switch (level) {
+		case 1:
+			display_proc_data_types_info1(&procs[i].info1);
+			break;
+		}
+	}
+
+ done:
+	return werror;
+}
+
 /* List of commands exported by this module */
 struct cmd_set spoolss_commands[] = {
 
@@ -3148,6 +3203,7 @@ struct cmd_set spoolss_commands[] = {
 	{ "rffpcnex",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_rffpcnex,           &syntax_spoolss, NULL, "Rffpcnex test", "" },
 	{ "printercmp",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_printercmp,         &syntax_spoolss, NULL, "Printer comparison test", "" },
 	{ "enumprocs",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_procs,         &syntax_spoolss, NULL, "Enumerate Print Processors",          "" },
+	{ "enumprocdatatypes",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_proc_data_types, &syntax_spoolss, NULL, "Enumerate Print Processor Data Types", "" },
 
 	{ NULL }
 };
