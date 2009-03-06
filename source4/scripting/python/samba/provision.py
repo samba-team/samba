@@ -1246,26 +1246,32 @@ def provision_backend(setup_dir=None, message=None,
         pass
 
     schemadb = SamDB(schemadb_path, lp=lp)
+    schemadb.transaction_start()
+    try:
  
-    prefixmap = open(setup_path("prefixMap.txt"), 'r').read()
+        prefixmap = open(setup_path("prefixMap.txt"), 'r').read()
 
-    setup_add_ldif(schemadb, setup_path("provision_schema_basedn.ldif"), 
-                   {"SCHEMADN": names.schemadn,
-                    "ACI": "#",
-                    })
-    setup_modify_ldif(schemadb, 
-                      setup_path("provision_schema_basedn_modify.ldif"), \
-                          {"SCHEMADN": names.schemadn,
-                           "NETBIOSNAME": names.netbiosname,
-                           "DEFAULTSITE": DEFAULTSITE,
-                           "CONFIGDN": names.configdn,
-                           "SERVERDN": names.serverdn,
-                           "PREFIXMAP_B64": b64encode(prefixmap)
-                           })
-    
-    data = load_schema(setup_path, schemadb, names.schemadn, names.netbiosname, 
-                       names.configdn, DEFAULTSITE, names.serverdn)
-    schemadb.add_ldif(data)
+        setup_add_ldif(schemadb, setup_path("provision_schema_basedn.ldif"), 
+                       {"SCHEMADN": names.schemadn,
+                        "ACI": "#",
+                        })
+        setup_modify_ldif(schemadb, 
+                          setup_path("provision_schema_basedn_modify.ldif"), \
+                              {"SCHEMADN": names.schemadn,
+                               "NETBIOSNAME": names.netbiosname,
+                               "DEFAULTSITE": DEFAULTSITE,
+                               "CONFIGDN": names.configdn,
+                               "SERVERDN": names.serverdn,
+                               "PREFIXMAP_B64": b64encode(prefixmap)
+                               })
+        
+        data = load_schema(setup_path, schemadb, names.schemadn, names.netbiosname, 
+                           names.configdn, DEFAULTSITE, names.serverdn)
+        schemadb.add_ldif(data)
+    except:
+        schemadb.transaction_cancel()
+        raise
+    schemadb.transaction_commit()
 
     if ldap_backend_type == "fedora-ds":
         if ldap_backend_port is not None:
