@@ -829,52 +829,6 @@ bool smb_io_printer_info_7(const char *desc, RPC_BUFFER *buffer, PRINTER_INFO_7 
 }
 
 /*******************************************************************
- Parse a PORT_INFO_1 structure.
-********************************************************************/  
-
-bool smb_io_port_info_1(const char *desc, RPC_BUFFER *buffer, PORT_INFO_1 *info, int depth)
-{
-	prs_struct *ps=&buffer->prs;
-
-	prs_debug(ps, depth, desc, "smb_io_port_info_1");
-	depth++;	
-	
-	buffer->struct_start=prs_offset(ps);
-	
-	if (!smb_io_relstr("port_name", buffer, depth, &info->port_name))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
- Parse a PORT_INFO_2 structure.
-********************************************************************/  
-
-bool smb_io_port_info_2(const char *desc, RPC_BUFFER *buffer, PORT_INFO_2 *info, int depth)
-{
-	prs_struct *ps=&buffer->prs;
-
-	prs_debug(ps, depth, desc, "smb_io_port_info_2");
-	depth++;	
-	
-	buffer->struct_start=prs_offset(ps);
-	
-	if (!smb_io_relstr("port_name", buffer, depth, &info->port_name))
-		return False;
-	if (!smb_io_relstr("monitor_name", buffer, depth, &info->monitor_name))
-		return False;
-	if (!smb_io_relstr("description", buffer, depth, &info->description))
-		return False;
-	if (!prs_uint32("port_type", ps, depth, &info->port_type))
-		return False;
-	if (!prs_uint32("reserved", ps, depth, &info->reserved))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
  Parse a DRIVER_INFO_1 structure.
 ********************************************************************/
 
@@ -1748,24 +1702,6 @@ bool make_spoolss_q_enumprinters(
 }
 
 /*******************************************************************
- * init a structure.
- ********************************************************************/
-
-bool make_spoolss_q_enumports(SPOOL_Q_ENUMPORTS *q_u, 
-				fstring servername, uint32 level, 
-				RPC_BUFFER *buffer, uint32 offered)
-{
-	q_u->name_ptr = (servername != NULL) ? 1 : 0;
-	init_buf_unistr2(&q_u->name, &q_u->name_ptr, servername);
-
-	q_u->level=level;
-	q_u->buffer=buffer;
-	q_u->offered=offered;
-
-	return True;
-}
-
-/*******************************************************************
  * read a structure.
  * called from spoolss_enumprinters (srv_spoolss.c)
  ********************************************************************/
@@ -2061,68 +1997,6 @@ bool spoolss_io_q_enumprinterdrivers(const char *desc, SPOOL_Q_ENUMPRINTERDRIVER
 	if (!prs_align(ps))
 		return False;
 		
-	if (!prs_uint32("offered", ps, depth, &q_u->offered))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
- Parse a SPOOL_R_ENUMPORTS structure.
-********************************************************************/  
-
-bool spoolss_io_r_enumports(const char *desc, SPOOL_R_ENUMPORTS *r_u, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "spoolss_io_r_enumports");
-	depth++;
-
-	if (!prs_align(ps))
-		return False;
-		
-	if (!prs_rpcbuffer_p("", ps, depth, &r_u->buffer))
-		return False;
-
-	if (!prs_align(ps))
-		return False;
-		
-	if (!prs_uint32("needed", ps, depth, &r_u->needed))
-		return False;
-		
-	if (!prs_uint32("returned", ps, depth, &r_u->returned))
-		return False;
-		
-	if (!prs_werror("status", ps, depth, &r_u->status))
-		return False;
-
-	return True;		
-}
-
-/*******************************************************************
-********************************************************************/  
-
-bool spoolss_io_q_enumports(const char *desc, SPOOL_Q_ENUMPORTS *q_u, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "");
-	depth++;
-
-	if (!prs_align(ps))
-		return False;
-
-	if (!prs_uint32("", ps, depth, &q_u->name_ptr))
-		return False;
-	if (!smb_io_unistr2("", &q_u->name,True,ps,depth))
-		return False;
-
-	if (!prs_align(ps))
-		return False;
-	if (!prs_uint32("level", ps, depth, &q_u->level))
-		return False;
-		
-	if (!prs_rpcbuffer_p("", ps, depth, &q_u->buffer))
-		return False;
-
-	if (!prs_align(ps))
-		return False;
 	if (!prs_uint32("offered", ps, depth, &q_u->offered))
 		return False;
 

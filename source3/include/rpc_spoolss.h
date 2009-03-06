@@ -699,43 +699,6 @@ typedef struct s_port_info_2
 }
 PORT_INFO_2;
 
-/* Port Type bits */
-#define PORT_TYPE_WRITE         0x0001
-#define PORT_TYPE_READ          0x0002
-#define PORT_TYPE_REDIRECTED    0x0004
-#define PORT_TYPE_NET_ATTACHED  0x0008
-
-typedef struct spool_q_enumports
-{
-	uint32 name_ptr;
-	UNISTR2 name;
-	uint32 level;
-	RPC_BUFFER *buffer;
-	uint32 offered;
-}
-SPOOL_Q_ENUMPORTS;
-
-typedef struct port_info_ctr_info
-{
-	union
-	{
-		PORT_INFO_1 *info_1;
-		PORT_INFO_2 *info_2;
-	}
-	port;
-
-}
-PORT_INFO_CTR;
-
-typedef struct spool_r_enumports
-{
-	RPC_BUFFER *buffer;
-	uint32 needed;		/* bytes needed */
-	uint32 returned;	/* number of printers */
-	WERROR status;
-}
-SPOOL_R_ENUMPORTS;
-
 typedef struct job_info_info
 {
 	union
