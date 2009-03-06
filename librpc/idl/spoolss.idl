@@ -1597,11 +1597,11 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x24 */
-	typedef struct {
+	typedef [public,gensize] struct {
 		[relative] nstring *monitor_name;
 	} spoolss_MonitorInfo1;
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		[relative] nstring *monitor_name;
 		[relative] nstring *environment;
 		[relative] nstring *dll_name;
