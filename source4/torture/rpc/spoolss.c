@@ -568,6 +568,57 @@ static bool test_EnumPrintProcessors(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_EnumPrintProcDataTypes(struct torture_context *tctx,
+					struct dcerpc_pipe *p,
+					struct test_spoolss_context *ctx)
+{
+	NTSTATUS status;
+	struct spoolss_EnumPrintProcDataTypes r;
+	uint16_t levels[] = { 1 };
+	int i, j;
+
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		int level = levels[i];
+		DATA_BLOB blob;
+		uint32_t needed;
+		uint32_t count;
+		union spoolss_PrintProcDataTypesInfo *info;
+
+		r.in.servername = "";
+		r.in.print_processor_name = "winprint";
+		r.in.level = level;
+		r.in.buffer = NULL;
+		r.in.offered = 0;
+		r.out.needed = &needed;
+		r.out.count = &count;
+		r.out.info = &info;
+
+		torture_comment(tctx, "Testing EnumPrintProcDataTypes level %u\n", r.in.level);
+
+		status = dcerpc_spoolss_EnumPrintProcDataTypes(p, ctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_EnumPrintProcDataType failed");
+		if (W_ERROR_IS_OK(r.out.result)) {
+			/* TODO: do some more checks here */
+			continue;
+		}
+		torture_assert_werr_equal(tctx, r.out.result, WERR_INSUFFICIENT_BUFFER,
+			"EnumPrintProcDataTypes unexpected return code");
+
+		blob = data_blob_talloc(ctx, NULL, needed);
+		data_blob_clear(&blob);
+		r.in.buffer = &blob;
+		r.in.offered = needed;
+
+		status = dcerpc_spoolss_EnumPrintProcDataTypes(p, ctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_EnumPrintProcDataTypes failed");
+
+		torture_assert_werr_ok(tctx, r.out.result, "EnumPrintProcDataTypes failed");
+	}
+
+	return true;
+}
+
+
 static bool test_EnumPrinters(struct torture_context *tctx, 
 			      struct dcerpc_pipe *p,
 			      struct test_spoolss_context *ctx)
@@ -1951,6 +2002,7 @@ bool torture_rpc_spoolss(struct torture_context *torture)
 	ret &= test_EnumPrinterDrivers(torture, p, ctx);
 	ret &= test_EnumMonitors(torture, p, ctx);
 	ret &= test_EnumPrintProcessors(torture, p, ctx);
+	ret &= test_EnumPrintProcDataTypes(torture, p, ctx);
 	ret &= test_EnumPrinters(torture, p, ctx);
 	ret &= test_OpenPrinter_badname(torture, p, "__INVALID_PRINTER__");
 	ret &= test_OpenPrinter_badname(torture, p, "\\\\__INVALID_HOST__");
