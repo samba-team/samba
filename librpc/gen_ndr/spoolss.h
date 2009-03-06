@@ -1169,7 +1169,7 @@ union spoolss_AddFormInfo {
 
 struct spoolss_PortInfo1 {
 	const char * port_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
-};
+}/* [gensize,public] */;
 
 /* bitmap spoolss_PortType */
 #define SPOOLSS_PORT_TYPE_WRITE ( 0x00000001 )
@@ -1183,7 +1183,7 @@ struct spoolss_PortInfo2 {
 	const char * description;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	uint32_t port_type;
 	uint32_t reserved;
-};
+}/* [gensize,public] */;
 
 enum spoolss_PortStatus
 #ifndef USE_UINT_ENUMS
@@ -1239,12 +1239,12 @@ struct spoolss_PortInfo3 {
 	enum spoolss_PortStatus status;
 	const char * status_string;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	enum spoolss_PortSeverity severity;
-};
+}/* [gensize,public] */;
 
 struct spoolss_PortInfoFF {
 	const char * port_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	DATA_BLOB monitor_data;
-};
+}/* [gensize,public] */;
 
 union spoolss_PortInfo {
 	struct spoolss_PortInfo1 info1;/* [case] */

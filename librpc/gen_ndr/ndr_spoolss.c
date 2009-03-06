@@ -15627,7 +15627,7 @@ _PUBLIC_ void ndr_print_spoolss_AddFormInfo(struct ndr_print *ndr, const char *n
 	}
 }
 
-static enum ndr_err_code ndr_push_spoolss_PortInfo1(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PortInfo1 *r)
+_PUBLIC_ enum ndr_err_code ndr_push_spoolss_PortInfo1(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PortInfo1 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -15652,7 +15652,7 @@ static enum ndr_err_code ndr_push_spoolss_PortInfo1(struct ndr_push *ndr, int nd
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_spoolss_PortInfo1(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PortInfo1 *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PortInfo1(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PortInfo1 *r)
 {
 	uint32_t _ptr_port_name;
 	TALLOC_CTX *_mem_save_port_name_0;
@@ -15704,6 +15704,11 @@ _PUBLIC_ void ndr_print_spoolss_PortInfo1(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
+_PUBLIC_ size_t ndr_size_spoolss_PortInfo1(const struct spoolss_PortInfo1 *r, struct smb_iconv_convenience *ic, int flags)
+{
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_spoolss_PortInfo1, ic);
+}
+
 static enum ndr_err_code ndr_push_spoolss_PortType(struct ndr_push *ndr, int ndr_flags, uint32_t r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
@@ -15729,7 +15734,7 @@ _PUBLIC_ void ndr_print_spoolss_PortType(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_spoolss_PortInfo2(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PortInfo2 *r)
+_PUBLIC_ enum ndr_err_code ndr_push_spoolss_PortInfo2(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PortInfo2 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -15786,7 +15791,7 @@ static enum ndr_err_code ndr_push_spoolss_PortInfo2(struct ndr_push *ndr, int nd
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_spoolss_PortInfo2(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PortInfo2 *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PortInfo2(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PortInfo2 *r)
 {
 	uint32_t _ptr_port_name;
 	TALLOC_CTX *_mem_save_port_name_0;
@@ -15912,6 +15917,11 @@ _PUBLIC_ void ndr_print_spoolss_PortInfo2(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
+_PUBLIC_ size_t ndr_size_spoolss_PortInfo2(const struct spoolss_PortInfo2 *r, struct smb_iconv_convenience *ic, int flags)
+{
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_spoolss_PortInfo2, ic);
+}
+
 static enum ndr_err_code ndr_push_spoolss_PortStatus(struct ndr_push *ndr, int ndr_flags, enum spoolss_PortStatus r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
@@ -15974,7 +15984,7 @@ _PUBLIC_ void ndr_print_spoolss_PortSeverity(struct ndr_print *ndr, const char *
 	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
 
-static enum ndr_err_code ndr_push_spoolss_PortInfo3(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PortInfo3 *r)
+_PUBLIC_ enum ndr_err_code ndr_push_spoolss_PortInfo3(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PortInfo3 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -16001,7 +16011,7 @@ static enum ndr_err_code ndr_push_spoolss_PortInfo3(struct ndr_push *ndr, int nd
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_spoolss_PortInfo3(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PortInfo3 *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PortInfo3(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PortInfo3 *r)
 {
 	uint32_t _ptr_status_string;
 	TALLOC_CTX *_mem_save_status_string_0;
@@ -16057,7 +16067,12 @@ _PUBLIC_ void ndr_print_spoolss_PortInfo3(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_spoolss_PortInfoFF(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PortInfoFF *r)
+_PUBLIC_ size_t ndr_size_spoolss_PortInfo3(const struct spoolss_PortInfo3 *r, struct smb_iconv_convenience *ic, int flags)
+{
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_spoolss_PortInfo3, ic);
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_spoolss_PortInfoFF(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PortInfoFF *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -16083,7 +16098,7 @@ static enum ndr_err_code ndr_push_spoolss_PortInfoFF(struct ndr_push *ndr, int n
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_spoolss_PortInfoFF(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PortInfoFF *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PortInfoFF(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PortInfoFF *r)
 {
 	uint32_t _ptr_port_name;
 	TALLOC_CTX *_mem_save_port_name_0;
@@ -16135,6 +16150,11 @@ _PUBLIC_ void ndr_print_spoolss_PortInfoFF(struct ndr_print *ndr, const char *na
 	ndr->depth--;
 	ndr_print_DATA_BLOB(ndr, "monitor_data", r->monitor_data);
 	ndr->depth--;
+}
+
+_PUBLIC_ size_t ndr_size_spoolss_PortInfoFF(const struct spoolss_PortInfoFF *r, struct smb_iconv_convenience *ic, int flags)
+{
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_spoolss_PortInfoFF, ic);
 }
 
 _PUBLIC_ enum ndr_err_code ndr_push_spoolss_PortInfo(struct ndr_push *ndr, int ndr_flags, const union spoolss_PortInfo *r)
