@@ -1714,7 +1714,40 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x33 */
-	[todo] WERROR spoolss_EnumPrintProcDataTypes(
+
+	typedef [public,gensize] struct {
+		[relative] nstring *name_array;
+	} spoolss_PrintProcDataTypesInfo1;
+
+	typedef [nodiscriminant,relative_base,public] union {
+		[case(1)] spoolss_PrintProcDataTypesInfo1 info1;
+		[default];
+	} spoolss_PrintProcDataTypesInfo;
+
+	[public,noopnum,noprint] WERROR _spoolss_EnumPrintProcDataTypes(
+		[in,unique] [string,charset(UTF16)] uint16 *servername,
+		[in,unique] [string,charset(UTF16)] uint16 *print_processor_name,
+		[in] uint32 level,
+		[in,unique] DATA_BLOB *buffer,
+		[in] uint32 offered,
+		[out,unique] DATA_BLOB *info,
+		[out,ref] uint32 *needed,
+		[out,ref] uint32 *count
+	);
+	[public,noopnum,noprint] void __spoolss_EnumPrintProcDataTypes(
+		[in] uint32 level,
+		[in] uint32 count,
+		[out,switch_is(level)] spoolss_PrintProcDataTypesInfo info[count]
+	);
+	[nopull,nopush] WERROR spoolss_EnumPrintProcDataTypes(
+		[in,unique] [string,charset(UTF16)] uint16 *servername,
+		[in,unique] [string,charset(UTF16)] uint16 *print_processor_name,
+		[in] uint32 level,
+		[in,unique] DATA_BLOB *buffer,
+		[in] uint32 offered,
+		[out,ref] uint32 *count,
+		[out,ref,switch_is(level),size_is(,*count)] spoolss_PrintProcDataTypesInfo **info,
+		[out,ref] uint32 *needed
 	);
 
 	/******************/
