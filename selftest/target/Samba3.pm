@@ -144,6 +144,7 @@ sub setup_member($$$)
 
 	my $member_options = "
 	security = domain
+	server signing = on
 ";
 	my $ret = $self->provision($prefix,
 				   "LOCALMEMBER3",
