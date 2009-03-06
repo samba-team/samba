@@ -139,6 +139,8 @@ static bool test_EnumPorts(struct torture_context *tctx,
 
 		torture_assert_werr_ok(tctx, r.out.result, "EnumPorts failed");
 
+		torture_assert(tctx, info, "EnumPorts returned no info");
+
 		ctx->port_count[level]	= count;
 		ctx->ports[level]	= info;
 	}
