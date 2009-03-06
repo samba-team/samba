@@ -3057,6 +3057,61 @@ done:
 	return WERR_OK;
 }
 
+static void display_proc_info1(struct spoolss_PrintProcessorInfo1 *r)
+{
+	printf("print_processor_name: %s\n", r->print_processor_name);
+}
+
+static WERROR cmd_spoolss_enum_procs(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx, int argc,
+				     const char **argv)
+{
+	WERROR werror;
+	const char *environment = SPOOLSS_ARCHITECTURE_NT_X86;
+	uint32_t num_procs, level = 1, i;
+	union spoolss_PrintProcessorInfo *procs;
+
+	/* Parse the command arguments */
+
+	if (argc < 1 || argc > 4) {
+		printf ("Usage: %s [environment] [level]\n", argv[0]);
+		return WERR_OK;
+        }
+
+	if (argc >= 2) {
+		environment = argv[1];
+	}
+
+	if (argc == 3) {
+		level = atoi(argv[2]);
+	}
+
+	/* Enumerate Print Processors */
+
+	werror = rpccli_spoolss_enumprintprocessors(cli, mem_ctx,
+						    cli->srv_name_slash,
+						    environment,
+						    level,
+						    0,
+						    &num_procs,
+						    &procs);
+	if (!W_ERROR_IS_OK(werror))
+		goto done;
+
+	/* Display output */
+
+	for (i = 0; i < num_procs; i++) {
+		switch (level) {
+		case 1:
+			display_proc_info1(&procs[i].info1);
+			break;
+		}
+	}
+
+ done:
+	return werror;
+}
+
 /* List of commands exported by this module */
 struct cmd_set spoolss_commands[] = {
 
@@ -3092,6 +3147,7 @@ struct cmd_set spoolss_commands[] = {
 	{ "setprinterdata",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_setprinterdata,     &syntax_spoolss, NULL, "Set REG_SZ printer data",             "" },
 	{ "rffpcnex",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_rffpcnex,           &syntax_spoolss, NULL, "Rffpcnex test", "" },
 	{ "printercmp",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_printercmp,         &syntax_spoolss, NULL, "Printer comparison test", "" },
+	{ "enumprocs",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_procs,         &syntax_spoolss, NULL, "Enumerate Print Processors",          "" },
 
 	{ NULL }
 };
