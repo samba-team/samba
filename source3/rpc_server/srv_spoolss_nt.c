@@ -7244,21 +7244,6 @@ WERROR _spoolss_enumprinterdrivers( pipes_struct *p, SPOOL_Q_ENUMPRINTERDRIVERS 
 /****************************************************************************
 ****************************************************************************/
 
-static void fill_form_1(FORM_1 *form, nt_forms_struct *list)
-{
-	form->flag=list->flag;
-	init_unistr(&form->name, list->name);
-	form->width=list->width;
-	form->length=list->length;
-	form->left=list->left;
-	form->top=list->top;
-	form->right=list->right;
-	form->bottom=list->bottom;
-}
-
-/****************************************************************************
-****************************************************************************/
-
 static WERROR fill_form_info_1(TALLOC_CTX *mem_ctx,
 			       struct spoolss_FormInfo1 *form,
 			       nt_forms_struct *list)

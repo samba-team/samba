@@ -5818,7 +5818,6 @@ bool smb_io_printer_driver_info_3(const char *desc, RPC_BUFFER *buffer, DRIVER_I
 bool smb_io_printer_driver_info_6(const char *desc, RPC_BUFFER *buffer, DRIVER_INFO_6 *info, int depth);
 bool smb_io_job_info_1(const char *desc, RPC_BUFFER *buffer, JOB_INFO_1 *info, int depth);
 bool smb_io_job_info_2(const char *desc, RPC_BUFFER *buffer, JOB_INFO_2 *info, int depth);
-bool smb_io_form_1(const char *desc, RPC_BUFFER *buffer, FORM_1 *info, int depth);
 bool smb_io_port_1(const char *desc, RPC_BUFFER *buffer, PORT_INFO_1 *info, int depth);
 bool smb_io_port_2(const char *desc, RPC_BUFFER *buffer, PORT_INFO_2 *info, int depth);
 bool smb_io_printprocessor_info_1(const char *desc, RPC_BUFFER *buffer, PRINTPROCESSOR_1 *info, int depth);
@@ -5840,7 +5839,6 @@ uint32 spoolss_size_printer_driver_info_3(DRIVER_INFO_3 *info);
 uint32 spoolss_size_printer_driver_info_6(DRIVER_INFO_6 *info);
 uint32 spoolss_size_job_info_1(JOB_INFO_1 *info);
 uint32 spoolss_size_job_info_2(JOB_INFO_2 *info);
-uint32 spoolss_size_form_1(FORM_1 *info);
 uint32 spoolss_size_port_info_1(PORT_INFO_1 *info);
 uint32 spoolss_size_port_info_2(PORT_INFO_2 *info);
 uint32 spoolss_size_printprocessor_info_1(PRINTPROCESSOR_1 *info);
@@ -5880,8 +5878,6 @@ bool make_spoolss_q_enumprinterdrivers(SPOOL_Q_ENUMPRINTERDRIVERS *q_u,
                                 uint32 level,
                                 RPC_BUFFER *buffer, uint32 offered);
 bool spoolss_io_q_enumprinterdrivers(const char *desc, SPOOL_Q_ENUMPRINTERDRIVERS *q_u, prs_struct *ps, int depth);
-bool spoolss_io_q_enumforms(const char *desc, SPOOL_Q_ENUMFORMS *q_u, prs_struct *ps, int depth);
-bool spoolss_io_r_enumforms(const char *desc, SPOOL_R_ENUMFORMS *r_u, prs_struct *ps, int depth);
 bool spoolss_io_r_enumports(const char *desc, SPOOL_R_ENUMPORTS *r_u, prs_struct *ps, int depth);
 bool spoolss_io_q_enumports(const char *desc, SPOOL_Q_ENUMPORTS *q_u, prs_struct *ps, int depth);
 bool make_spoolss_buffer5(TALLOC_CTX *mem_ctx, BUFFER5 *buf5, uint32 len, uint16 *src);

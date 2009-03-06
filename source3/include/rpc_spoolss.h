@@ -769,41 +769,6 @@ typedef struct spool_r_enumprinterdrivers
 }
 SPOOL_R_ENUMPRINTERDRIVERS;
 
-#define FORM_USER    0
-#define FORM_BUILTIN 1
-#define FORM_PRINTER 2
-
-typedef struct spool_form_1
-{
-	uint32 flag;
-	UNISTR name;
-	uint32 width;
-	uint32 length;
-	uint32 left;
-	uint32 top;
-	uint32 right;
-	uint32 bottom;
-}
-FORM_1;
-
-typedef struct spool_q_enumforms
-{
-	POLICY_HND handle;
-	uint32 level;
-	RPC_BUFFER *buffer;
-	uint32 offered;
-}
-SPOOL_Q_ENUMFORMS;
-
-typedef struct spool_r_enumforms
-{
-	RPC_BUFFER *buffer;
-	uint32 needed;
-	uint32 numofforms;
-	WERROR status;
-}
-SPOOL_R_ENUMFORMS;
-
 /********************************************/
 
 typedef struct spool_q_enumprintprocessors

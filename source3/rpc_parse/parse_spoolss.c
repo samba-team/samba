@@ -1136,40 +1136,6 @@ bool smb_io_job_info_2(const char *desc, RPC_BUFFER *buffer, JOB_INFO_2 *info, i
 }
 
 /*******************************************************************
-********************************************************************/  
-
-bool smb_io_form_1(const char *desc, RPC_BUFFER *buffer, FORM_1 *info, int depth)
-{
-	prs_struct *ps=&buffer->prs;
-	
-	prs_debug(ps, depth, desc, "smb_io_form_1");
-	depth++;
-		
-	buffer->struct_start=prs_offset(ps);
-	
-	if (!prs_uint32("flag", ps, depth, &info->flag))
-		return False;
-		
-	if (!smb_io_relstr("name", buffer, depth, &info->name))
-		return False;
-
-	if (!prs_uint32("width", ps, depth, &info->width))
-		return False;
-	if (!prs_uint32("length", ps, depth, &info->length))
-		return False;
-	if (!prs_uint32("left", ps, depth, &info->left))
-		return False;
-	if (!prs_uint32("top", ps, depth, &info->top))
-		return False;
-	if (!prs_uint32("right", ps, depth, &info->right))
-		return False;
-	if (!prs_uint32("bottom", ps, depth, &info->bottom))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
  Parse a PORT_INFO_1 structure.
 ********************************************************************/  
 
@@ -1640,26 +1606,6 @@ uint32 spoolss_size_job_info_2(JOB_INFO_2 *info)
 	size+=size_of_systemtime( &info->submitted );
 	size+=size_of_uint32( &info->timeelapsed );
 	size+=size_of_uint32( &info->pagesprinted );
-
-	return size;
-}
-
-/*******************************************************************
-return the size required by a struct in the stream
-********************************************************************/
-
-uint32 spoolss_size_form_1(FORM_1 *info)
-{
-	int size=0;
-
-	size+=size_of_uint32( &info->flag );
-	size+=size_of_relative_string( &info->name );
-	size+=size_of_uint32( &info->width );
-	size+=size_of_uint32( &info->length );
-	size+=size_of_uint32( &info->left );
-	size+=size_of_uint32( &info->top );
-	size+=size_of_uint32( &info->right );
-	size+=size_of_uint32( &info->bottom );
 
 	return size;
 }
@@ -2176,62 +2122,6 @@ bool spoolss_io_q_enumprinterdrivers(const char *desc, SPOOL_Q_ENUMPRINTERDRIVER
 		return False;
 		
 	if (!prs_uint32("offered", ps, depth, &q_u->offered))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-********************************************************************/  
-
-bool spoolss_io_q_enumforms(const char *desc, SPOOL_Q_ENUMFORMS *q_u, prs_struct *ps, int depth)
-{
-
-	prs_debug(ps, depth, desc, "spoolss_io_q_enumforms");
-	depth++;
-
-	if (!prs_align(ps))
-		return False;			
-	if (!smb_io_pol_hnd("printer handle",&q_u->handle,ps,depth))
-		return False;		
-	if (!prs_uint32("level", ps, depth, &q_u->level))
-		return False;	
-	
-	if (!prs_rpcbuffer_p("", ps, depth, &q_u->buffer))
-		return False;
-
-	if (!prs_align(ps))
-		return False;
-	if (!prs_uint32("offered", ps, depth, &q_u->offered))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-********************************************************************/  
-
-bool spoolss_io_r_enumforms(const char *desc, SPOOL_R_ENUMFORMS *r_u, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "spoolss_io_r_enumforms");
-	depth++;
-
-	if (!prs_align(ps))
-		return False;
-		
-	if (!prs_rpcbuffer_p("", ps, depth, &r_u->buffer))
-		return False;
-
-	if (!prs_align(ps))
-		return False;
-		
-	if (!prs_uint32("size of buffer needed", ps, depth, &r_u->needed))
-		return False;
-		
-	if (!prs_uint32("numofforms", ps, depth, &r_u->numofforms))
-		return False;
-		
-	if (!prs_werror("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
