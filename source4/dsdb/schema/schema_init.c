@@ -808,6 +808,12 @@ WERROR dsdb_class_from_ldb(const struct dsdb_schema *schema,
 
 #define dsdb_oom(error_string, mem_ctx) *error_string = talloc_asprintf(mem_ctx, "dsdb out of memory at %s:%d\n", __FILE__, __LINE__)
 
+/* 
+ Create a DSDB schema from the ldb results provided.  This is called
+ directly when the schema is provisioned from an on-disk LDIF file, or
+ from dsdb_schema_from_schema_dn below
+*/
+
 int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 				 struct smb_iconv_convenience *iconv_convenience, 
 				 struct ldb_result *schema_res,
@@ -908,96 +914,9 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 	return LDB_SUCCESS;
 }
 
-/* This recursive load of the objectClasses presumes that they
- * everything is in a strict subClassOf hirarchy.  
- *
- * We load this in order so we produce certain outputs (such as the
- * exported schema for openldap, and sorted objectClass attribute) 'in
- * order' */
-
-static int fetch_oc_recursive(struct ldb_context *ldb, struct ldb_dn *schemadn, 
-			      TALLOC_CTX *mem_ctx, 
-			      struct ldb_result *search_from,
-			      struct ldb_result *res_list)
-{
-	int i;
-	int ret = 0;
-	for (i=0; i < search_from->count; i++) {
-		struct ldb_result *res;
-		const char *name = ldb_msg_find_attr_as_string(search_from->msgs[i], 
-							       "lDAPDisplayname", NULL);
-
-		ret = ldb_search(ldb, mem_ctx, &res,
-					schemadn, LDB_SCOPE_SUBTREE, NULL,
-					"(&(&(objectClass=classSchema)(subClassOf=%s))(!(lDAPDisplayName=%s)))",
-					name, name);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-		
-		res_list->msgs = talloc_realloc(res_list, res_list->msgs, 
-						struct ldb_message *, res_list->count + 2);
-		if (!res_list->msgs) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		res_list->msgs[res_list->count] = talloc_move(res_list, 
-							      &search_from->msgs[i]);
-		res_list->count++;
-		res_list->msgs[res_list->count] = NULL;
-
-		if (res->count > 0) {
-			ret = fetch_oc_recursive(ldb, schemadn, mem_ctx, res, res_list); 
-		}
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-	}
-	return ret;
-}
-
-static int fetch_objectclass_schema(struct ldb_context *ldb, struct ldb_dn *schemadn, 
-				    TALLOC_CTX *mem_ctx, 
-				    struct ldb_result **objectclasses_res,
-				    char **error_string)
-{
-	TALLOC_CTX *local_ctx = talloc_new(mem_ctx);
-	struct ldb_result *top_res, *ret_res;
-	int ret;
-	if (!local_ctx) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	
-	/* Download 'top' */
-	ret = ldb_search(ldb, local_ctx, &top_res,
-			 schemadn, LDB_SCOPE_SUBTREE, NULL,
-			 "(&(objectClass=classSchema)(lDAPDisplayName=top))");
-	if (ret != LDB_SUCCESS) {
-		*error_string = talloc_asprintf(mem_ctx, 
-						"dsdb_schema: failed to search for top classSchema object: %s",
-						ldb_errstring(ldb));
-		return ret;
-	}
-
-	if (top_res->count != 1) {
-		*error_string = talloc_asprintf(mem_ctx, 
-						"dsdb_schema: failed to find top classSchema object");
-		return LDB_ERR_NO_SUCH_OBJECT;
-	}
-
-	ret_res = talloc_zero(local_ctx, struct ldb_result);
-	if (!ret_res) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ret = fetch_oc_recursive(ldb, schemadn, local_ctx, top_res, ret_res); 
-
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	*objectclasses_res = talloc_move(mem_ctx, &ret_res);
-	return ret;
-}
+/*
+  Given an LDB, and the DN, return a populated schema
+*/
 
 int dsdb_schema_from_schema_dn(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 			       struct smb_iconv_convenience *iconv_convenience, 
@@ -1053,7 +972,7 @@ int dsdb_schema_from_schema_dn(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 	 */
 	ret = ldb_search(ldb, tmp_ctx, &a_res,
 			 schema_dn, LDB_SCOPE_ONELEVEL, NULL,
-			 "(objectClass=attributeSchema)");
+			 "(objectCategory=attributeSchema)");
 	if (ret != LDB_SUCCESS) {
 		*error_string_out = talloc_asprintf(mem_ctx, 
 				       "dsdb_schema: failed to search attributeSchema objects: %s",
@@ -1065,10 +984,13 @@ int dsdb_schema_from_schema_dn(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 	/*
 	 * load the objectClass definitions
 	 */
-	ret = fetch_objectclass_schema(ldb, schema_dn, tmp_ctx, &c_res, &error_string);
+	ret = ldb_search(ldb, tmp_ctx, &c_res,
+			 schema_dn, LDB_SCOPE_ONELEVEL, NULL,
+			 "(objectCategory=classSchema)");
 	if (ret != LDB_SUCCESS) {
 		*error_string_out = talloc_asprintf(mem_ctx, 
-				       "Failed to fetch objectClass schema elements: %s", error_string);
+				       "dsdb_schema: failed to search attributeSchema objects: %s",
+				       ldb_errstring(ldb));
 		talloc_free(tmp_ctx);
 		return ret;
 	}
