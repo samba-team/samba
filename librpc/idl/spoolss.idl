@@ -1509,7 +1509,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[out,ref] uint32 *needed
 	);
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		[relative] nstring *port_name;
 	} spoolss_PortInfo1;
 
@@ -1520,7 +1520,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		SPOOLSS_PORT_TYPE_NET_ATTACHED  = 0x00000008
 	} spoolss_PortType;
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		[relative] nstring *port_name;
 		[relative] nstring *monitor_name;
 		[relative] nstring *description;
@@ -1550,13 +1550,13 @@ import "misc.idl", "security.idl", "winreg.idl";
 		PORT_STATUS_TYPE_INFO		= 0x00000003
 	} spoolss_PortSeverity;
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		spoolss_PortStatus status;
 		[relative] nstring *status_string;
 		spoolss_PortSeverity severity;
 	} spoolss_PortInfo3;
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		[relative] nstring *port_name;
 		DATA_BLOB monitor_data; /* relative ?? */
 	} spoolss_PortInfoFF;
