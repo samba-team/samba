@@ -2151,7 +2151,7 @@ bool api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in, uint32 *p_ss
 	auth_len = p->hdr.auth_len;
 
 	if (auth_len < RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN ||
-			auth_len < RPC_HEADER_LEN +
+			auth_len > RPC_HEADER_LEN +
 					RPC_HDR_REQ_LEN +
 					RPC_HDR_AUTH_LEN +
 					auth_len) {
