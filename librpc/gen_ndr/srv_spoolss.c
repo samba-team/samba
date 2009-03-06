@@ -51,7 +51,7 @@ static bool api_spoolss_EnumPrinters(pipes_struct *p)
 		return false;
 	}
 
-	r->out.info = talloc_zero_array(r, union spoolss_PrinterInfo *, *r->out.count);
+	r->out.info = talloc_zero(r, union spoolss_PrinterInfo *);
 	if (r->out.info == NULL) {
 		talloc_free(r);
 		return false;
@@ -382,7 +382,7 @@ static bool api_spoolss_EnumJobs(pipes_struct *p)
 		return false;
 	}
 
-	r->out.info = talloc_zero_array(r, union spoolss_JobInfo *, *r->out.count);
+	r->out.info = talloc_zero(r, union spoolss_JobInfo *);
 	if (r->out.info == NULL) {
 		talloc_free(r);
 		return false;
@@ -852,7 +852,7 @@ static bool api_spoolss_EnumPrinterDrivers(pipes_struct *p)
 		return false;
 	}
 
-	r->out.info = talloc_zero_array(r, union spoolss_DriverInfo *, *r->out.count);
+	r->out.info = talloc_zero(r, union spoolss_DriverInfo *);
 	if (r->out.info == NULL) {
 		talloc_free(r);
 		return false;
@@ -1249,7 +1249,7 @@ static bool api_spoolss_EnumPrintProcessors(pipes_struct *p)
 		return false;
 	}
 
-	r->out.info = talloc_zero_array(r, union spoolss_PrintProcessorInfo *, *r->out.count);
+	r->out.info = talloc_zero(r, union spoolss_PrintProcessorInfo *);
 	if (r->out.info == NULL) {
 		talloc_free(r);
 		return false;
@@ -2731,7 +2731,7 @@ static bool api_spoolss_EnumForms(pipes_struct *p)
 		return false;
 	}
 
-	r->out.info = talloc_zero_array(r, union spoolss_FormInfo *, *r->out.count);
+	r->out.info = talloc_zero(r, union spoolss_FormInfo *);
 	if (r->out.info == NULL) {
 		talloc_free(r);
 		return false;
@@ -2823,7 +2823,7 @@ static bool api_spoolss_EnumPorts(pipes_struct *p)
 		return false;
 	}
 
-	r->out.info = talloc_zero_array(r, union spoolss_PortInfo *, *r->out.count);
+	r->out.info = talloc_zero(r, union spoolss_PortInfo *);
 	if (r->out.info == NULL) {
 		talloc_free(r);
 		return false;
@@ -2915,7 +2915,7 @@ static bool api_spoolss_EnumMonitors(pipes_struct *p)
 		return false;
 	}
 
-	r->out.info = talloc_zero_array(r, union spoolss_MonitorInfo *, *r->out.count);
+	r->out.info = talloc_zero(r, union spoolss_MonitorInfo *);
 	if (r->out.info == NULL) {
 		talloc_free(r);
 		return false;
@@ -7551,7 +7551,7 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			return NT_STATUS_NO_MEMORY;
 			}
 
-			r->out.info = talloc_zero_array(mem_ctx, union spoolss_PrinterInfo *, *r->out.count);
+			r->out.info = talloc_zero(mem_ctx, union spoolss_PrinterInfo *);
 			if (r->out.info == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
@@ -7608,7 +7608,7 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			return NT_STATUS_NO_MEMORY;
 			}
 
-			r->out.info = talloc_zero_array(mem_ctx, union spoolss_JobInfo *, *r->out.count);
+			r->out.info = talloc_zero(mem_ctx, union spoolss_JobInfo *);
 			if (r->out.info == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
@@ -7671,7 +7671,7 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			return NT_STATUS_NO_MEMORY;
 			}
 
-			r->out.info = talloc_zero_array(mem_ctx, union spoolss_DriverInfo *, *r->out.count);
+			r->out.info = talloc_zero(mem_ctx, union spoolss_DriverInfo *);
 			if (r->out.info == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
@@ -7728,7 +7728,7 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			return NT_STATUS_NO_MEMORY;
 			}
 
-			r->out.info = talloc_zero_array(mem_ctx, union spoolss_PrintProcessorInfo *, *r->out.count);
+			r->out.info = talloc_zero(mem_ctx, union spoolss_PrintProcessorInfo *);
 			if (r->out.info == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
@@ -7923,7 +7923,7 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			return NT_STATUS_NO_MEMORY;
 			}
 
-			r->out.info = talloc_zero_array(mem_ctx, union spoolss_FormInfo *, *r->out.count);
+			r->out.info = talloc_zero(mem_ctx, union spoolss_FormInfo *);
 			if (r->out.info == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
@@ -7945,7 +7945,7 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			return NT_STATUS_NO_MEMORY;
 			}
 
-			r->out.info = talloc_zero_array(mem_ctx, union spoolss_PortInfo *, *r->out.count);
+			r->out.info = talloc_zero(mem_ctx, union spoolss_PortInfo *);
 			if (r->out.info == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
@@ -7967,7 +7967,7 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			return NT_STATUS_NO_MEMORY;
 			}
 
-			r->out.info = talloc_zero_array(mem_ctx, union spoolss_MonitorInfo *, *r->out.count);
+			r->out.info = talloc_zero(mem_ctx, union spoolss_MonitorInfo *);
 			if (r->out.info == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}

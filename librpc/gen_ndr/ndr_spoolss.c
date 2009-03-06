@@ -18374,7 +18374,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull___spoolss_EnumPrinters(struct ndr_pull *ndr,
 
 _PUBLIC_ void ndr_print_spoolss_EnumPrinters(struct ndr_print *ndr, const char *name, int flags, const struct spoolss_EnumPrinters *r)
 {
-	uint32_t cntr_info_1;
+	uint32_t cntr_info_2;
 	ndr_print_struct(ndr, name, "spoolss_EnumPrinters");
 	ndr->depth++;
 	if (flags & NDR_SET_VALUES) {
@@ -18409,20 +18409,20 @@ _PUBLIC_ void ndr_print_spoolss_EnumPrinters(struct ndr_print *ndr, const char *
 		ndr->depth--;
 		ndr_print_ptr(ndr, "info", r->out.info);
 		ndr->depth++;
-		ndr->print(ndr, "%s: ARRAY(%d)", "info", (int)*r->out.count);
+		ndr_print_ptr(ndr, "info", *r->out.info);
 		ndr->depth++;
-		for (cntr_info_1=0;cntr_info_1<*r->out.count;cntr_info_1++) {
-			char *idx_1=NULL;
-			if (asprintf(&idx_1, "[%d]", cntr_info_1) != -1) {
-				ndr_print_ptr(ndr, "info", r->out.info[cntr_info_1]);
-				ndr->depth++;
-				if (r->out.info[cntr_info_1]) {
-					ndr_print_set_switch_value(ndr, r->out.info[cntr_info_1], r->in.level);
-					ndr_print_spoolss_PrinterInfo(ndr, "info", r->out.info[cntr_info_1]);
+		if (*r->out.info) {
+			ndr->print(ndr, "%s: ARRAY(%d)", "info", (int)*r->out.count);
+			ndr->depth++;
+			for (cntr_info_2=0;cntr_info_2<*r->out.count;cntr_info_2++) {
+				char *idx_2=NULL;
+				if (asprintf(&idx_2, "[%d]", cntr_info_2) != -1) {
+					ndr_print_set_switch_value(ndr, &(*r->out.info)[cntr_info_2], r->in.level);
+					ndr_print_spoolss_PrinterInfo(ndr, "info", &(*r->out.info)[cntr_info_2]);
+					free(idx_2);
 				}
-				ndr->depth--;
-				free(idx_1);
 			}
+			ndr->depth--;
 		}
 		ndr->depth--;
 		ndr->depth--;
@@ -18956,7 +18956,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull___spoolss_EnumJobs(struct ndr_pull *ndr, int
 
 _PUBLIC_ void ndr_print_spoolss_EnumJobs(struct ndr_print *ndr, const char *name, int flags, const struct spoolss_EnumJobs *r)
 {
-	uint32_t cntr_info_1;
+	uint32_t cntr_info_2;
 	ndr_print_struct(ndr, name, "spoolss_EnumJobs");
 	ndr->depth++;
 	if (flags & NDR_SET_VALUES) {
@@ -18990,20 +18990,20 @@ _PUBLIC_ void ndr_print_spoolss_EnumJobs(struct ndr_print *ndr, const char *name
 		ndr->depth--;
 		ndr_print_ptr(ndr, "info", r->out.info);
 		ndr->depth++;
-		ndr->print(ndr, "%s: ARRAY(%d)", "info", (int)*r->out.count);
+		ndr_print_ptr(ndr, "info", *r->out.info);
 		ndr->depth++;
-		for (cntr_info_1=0;cntr_info_1<*r->out.count;cntr_info_1++) {
-			char *idx_1=NULL;
-			if (asprintf(&idx_1, "[%d]", cntr_info_1) != -1) {
-				ndr_print_ptr(ndr, "info", r->out.info[cntr_info_1]);
-				ndr->depth++;
-				if (r->out.info[cntr_info_1]) {
-					ndr_print_set_switch_value(ndr, r->out.info[cntr_info_1], r->in.level);
-					ndr_print_spoolss_JobInfo(ndr, "info", r->out.info[cntr_info_1]);
+		if (*r->out.info) {
+			ndr->print(ndr, "%s: ARRAY(%d)", "info", (int)*r->out.count);
+			ndr->depth++;
+			for (cntr_info_2=0;cntr_info_2<*r->out.count;cntr_info_2++) {
+				char *idx_2=NULL;
+				if (asprintf(&idx_2, "[%d]", cntr_info_2) != -1) {
+					ndr_print_set_switch_value(ndr, &(*r->out.info)[cntr_info_2], r->in.level);
+					ndr_print_spoolss_JobInfo(ndr, "info", &(*r->out.info)[cntr_info_2]);
+					free(idx_2);
 				}
-				ndr->depth--;
-				free(idx_1);
 			}
+			ndr->depth--;
 		}
 		ndr->depth--;
 		ndr->depth--;
@@ -19648,7 +19648,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull___spoolss_EnumPrinterDrivers(struct ndr_pull
 
 _PUBLIC_ void ndr_print_spoolss_EnumPrinterDrivers(struct ndr_print *ndr, const char *name, int flags, const struct spoolss_EnumPrinterDrivers *r)
 {
-	uint32_t cntr_info_1;
+	uint32_t cntr_info_2;
 	ndr_print_struct(ndr, name, "spoolss_EnumPrinterDrivers");
 	ndr->depth++;
 	if (flags & NDR_SET_VALUES) {
@@ -19688,20 +19688,20 @@ _PUBLIC_ void ndr_print_spoolss_EnumPrinterDrivers(struct ndr_print *ndr, const 
 		ndr->depth--;
 		ndr_print_ptr(ndr, "info", r->out.info);
 		ndr->depth++;
-		ndr->print(ndr, "%s: ARRAY(%d)", "info", (int)*r->out.count);
+		ndr_print_ptr(ndr, "info", *r->out.info);
 		ndr->depth++;
-		for (cntr_info_1=0;cntr_info_1<*r->out.count;cntr_info_1++) {
-			char *idx_1=NULL;
-			if (asprintf(&idx_1, "[%d]", cntr_info_1) != -1) {
-				ndr_print_ptr(ndr, "info", r->out.info[cntr_info_1]);
-				ndr->depth++;
-				if (r->out.info[cntr_info_1]) {
-					ndr_print_set_switch_value(ndr, r->out.info[cntr_info_1], r->in.level);
-					ndr_print_spoolss_DriverInfo(ndr, "info", r->out.info[cntr_info_1]);
+		if (*r->out.info) {
+			ndr->print(ndr, "%s: ARRAY(%d)", "info", (int)*r->out.count);
+			ndr->depth++;
+			for (cntr_info_2=0;cntr_info_2<*r->out.count;cntr_info_2++) {
+				char *idx_2=NULL;
+				if (asprintf(&idx_2, "[%d]", cntr_info_2) != -1) {
+					ndr_print_set_switch_value(ndr, &(*r->out.info)[cntr_info_2], r->in.level);
+					ndr_print_spoolss_DriverInfo(ndr, "info", &(*r->out.info)[cntr_info_2]);
+					free(idx_2);
 				}
-				ndr->depth--;
-				free(idx_1);
 			}
+			ndr->depth--;
 		}
 		ndr->depth--;
 		ndr->depth--;
@@ -20349,7 +20349,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull___spoolss_EnumPrintProcessors(struct ndr_pul
 
 _PUBLIC_ void ndr_print_spoolss_EnumPrintProcessors(struct ndr_print *ndr, const char *name, int flags, const struct spoolss_EnumPrintProcessors *r)
 {
-	uint32_t cntr_info_1;
+	uint32_t cntr_info_2;
 	ndr_print_struct(ndr, name, "spoolss_EnumPrintProcessors");
 	ndr->depth++;
 	if (flags & NDR_SET_VALUES) {
@@ -20389,20 +20389,20 @@ _PUBLIC_ void ndr_print_spoolss_EnumPrintProcessors(struct ndr_print *ndr, const
 		ndr->depth--;
 		ndr_print_ptr(ndr, "info", r->out.info);
 		ndr->depth++;
-		ndr->print(ndr, "%s: ARRAY(%d)", "info", (int)*r->out.count);
+		ndr_print_ptr(ndr, "info", *r->out.info);
 		ndr->depth++;
-		for (cntr_info_1=0;cntr_info_1<*r->out.count;cntr_info_1++) {
-			char *idx_1=NULL;
-			if (asprintf(&idx_1, "[%d]", cntr_info_1) != -1) {
-				ndr_print_ptr(ndr, "info", r->out.info[cntr_info_1]);
-				ndr->depth++;
-				if (r->out.info[cntr_info_1]) {
-					ndr_print_set_switch_value(ndr, r->out.info[cntr_info_1], r->in.level);
-					ndr_print_spoolss_PrintProcessorInfo(ndr, "info", r->out.info[cntr_info_1]);
+		if (*r->out.info) {
+			ndr->print(ndr, "%s: ARRAY(%d)", "info", (int)*r->out.count);
+			ndr->depth++;
+			for (cntr_info_2=0;cntr_info_2<*r->out.count;cntr_info_2++) {
+				char *idx_2=NULL;
+				if (asprintf(&idx_2, "[%d]", cntr_info_2) != -1) {
+					ndr_print_set_switch_value(ndr, &(*r->out.info)[cntr_info_2], r->in.level);
+					ndr_print_spoolss_PrintProcessorInfo(ndr, "info", &(*r->out.info)[cntr_info_2]);
+					free(idx_2);
 				}
-				ndr->depth--;
-				free(idx_1);
 			}
+			ndr->depth--;
 		}
 		ndr->depth--;
 		ndr->depth--;
@@ -22179,7 +22179,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull___spoolss_EnumForms(struct ndr_pull *ndr, in
 
 _PUBLIC_ void ndr_print_spoolss_EnumForms(struct ndr_print *ndr, const char *name, int flags, const struct spoolss_EnumForms *r)
 {
-	uint32_t cntr_info_1;
+	uint32_t cntr_info_2;
 	ndr_print_struct(ndr, name, "spoolss_EnumForms");
 	ndr->depth++;
 	if (flags & NDR_SET_VALUES) {
@@ -22211,20 +22211,20 @@ _PUBLIC_ void ndr_print_spoolss_EnumForms(struct ndr_print *ndr, const char *nam
 		ndr->depth--;
 		ndr_print_ptr(ndr, "info", r->out.info);
 		ndr->depth++;
-		ndr->print(ndr, "%s: ARRAY(%d)", "info", (int)*r->out.count);
+		ndr_print_ptr(ndr, "info", *r->out.info);
 		ndr->depth++;
-		for (cntr_info_1=0;cntr_info_1<*r->out.count;cntr_info_1++) {
-			char *idx_1=NULL;
-			if (asprintf(&idx_1, "[%d]", cntr_info_1) != -1) {
-				ndr_print_ptr(ndr, "info", r->out.info[cntr_info_1]);
-				ndr->depth++;
-				if (r->out.info[cntr_info_1]) {
-					ndr_print_set_switch_value(ndr, r->out.info[cntr_info_1], r->in.level);
-					ndr_print_spoolss_FormInfo(ndr, "info", r->out.info[cntr_info_1]);
+		if (*r->out.info) {
+			ndr->print(ndr, "%s: ARRAY(%d)", "info", (int)*r->out.count);
+			ndr->depth++;
+			for (cntr_info_2=0;cntr_info_2<*r->out.count;cntr_info_2++) {
+				char *idx_2=NULL;
+				if (asprintf(&idx_2, "[%d]", cntr_info_2) != -1) {
+					ndr_print_set_switch_value(ndr, &(*r->out.info)[cntr_info_2], r->in.level);
+					ndr_print_spoolss_FormInfo(ndr, "info", &(*r->out.info)[cntr_info_2]);
+					free(idx_2);
 				}
-				ndr->depth--;
-				free(idx_1);
 			}
+			ndr->depth--;
 		}
 		ndr->depth--;
 		ndr->depth--;
@@ -22402,7 +22402,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull___spoolss_EnumPorts(struct ndr_pull *ndr, in
 
 _PUBLIC_ void ndr_print_spoolss_EnumPorts(struct ndr_print *ndr, const char *name, int flags, const struct spoolss_EnumPorts *r)
 {
-	uint32_t cntr_info_1;
+	uint32_t cntr_info_2;
 	ndr_print_struct(ndr, name, "spoolss_EnumPorts");
 	ndr->depth++;
 	if (flags & NDR_SET_VALUES) {
@@ -22436,20 +22436,20 @@ _PUBLIC_ void ndr_print_spoolss_EnumPorts(struct ndr_print *ndr, const char *nam
 		ndr->depth--;
 		ndr_print_ptr(ndr, "info", r->out.info);
 		ndr->depth++;
-		ndr->print(ndr, "%s: ARRAY(%d)", "info", (int)*r->out.count);
+		ndr_print_ptr(ndr, "info", *r->out.info);
 		ndr->depth++;
-		for (cntr_info_1=0;cntr_info_1<*r->out.count;cntr_info_1++) {
-			char *idx_1=NULL;
-			if (asprintf(&idx_1, "[%d]", cntr_info_1) != -1) {
-				ndr_print_ptr(ndr, "info", r->out.info[cntr_info_1]);
-				ndr->depth++;
-				if (r->out.info[cntr_info_1]) {
-					ndr_print_set_switch_value(ndr, r->out.info[cntr_info_1], r->in.level);
-					ndr_print_spoolss_PortInfo(ndr, "info", r->out.info[cntr_info_1]);
+		if (*r->out.info) {
+			ndr->print(ndr, "%s: ARRAY(%d)", "info", (int)*r->out.count);
+			ndr->depth++;
+			for (cntr_info_2=0;cntr_info_2<*r->out.count;cntr_info_2++) {
+				char *idx_2=NULL;
+				if (asprintf(&idx_2, "[%d]", cntr_info_2) != -1) {
+					ndr_print_set_switch_value(ndr, &(*r->out.info)[cntr_info_2], r->in.level);
+					ndr_print_spoolss_PortInfo(ndr, "info", &(*r->out.info)[cntr_info_2]);
+					free(idx_2);
 				}
-				ndr->depth--;
-				free(idx_1);
 			}
+			ndr->depth--;
 		}
 		ndr->depth--;
 		ndr->depth--;
@@ -22627,7 +22627,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull___spoolss_EnumMonitors(struct ndr_pull *ndr,
 
 _PUBLIC_ void ndr_print_spoolss_EnumMonitors(struct ndr_print *ndr, const char *name, int flags, const struct spoolss_EnumMonitors *r)
 {
-	uint32_t cntr_info_1;
+	uint32_t cntr_info_2;
 	ndr_print_struct(ndr, name, "spoolss_EnumMonitors");
 	ndr->depth++;
 	if (flags & NDR_SET_VALUES) {
@@ -22661,20 +22661,20 @@ _PUBLIC_ void ndr_print_spoolss_EnumMonitors(struct ndr_print *ndr, const char *
 		ndr->depth--;
 		ndr_print_ptr(ndr, "info", r->out.info);
 		ndr->depth++;
-		ndr->print(ndr, "%s: ARRAY(%d)", "info", (int)*r->out.count);
+		ndr_print_ptr(ndr, "info", *r->out.info);
 		ndr->depth++;
-		for (cntr_info_1=0;cntr_info_1<*r->out.count;cntr_info_1++) {
-			char *idx_1=NULL;
-			if (asprintf(&idx_1, "[%d]", cntr_info_1) != -1) {
-				ndr_print_ptr(ndr, "info", r->out.info[cntr_info_1]);
-				ndr->depth++;
-				if (r->out.info[cntr_info_1]) {
-					ndr_print_set_switch_value(ndr, r->out.info[cntr_info_1], r->in.level);
-					ndr_print_spoolss_MonitorInfo(ndr, "info", r->out.info[cntr_info_1]);
+		if (*r->out.info) {
+			ndr->print(ndr, "%s: ARRAY(%d)", "info", (int)*r->out.count);
+			ndr->depth++;
+			for (cntr_info_2=0;cntr_info_2<*r->out.count;cntr_info_2++) {
+				char *idx_2=NULL;
+				if (asprintf(&idx_2, "[%d]", cntr_info_2) != -1) {
+					ndr_print_set_switch_value(ndr, &(*r->out.info)[cntr_info_2], r->in.level);
+					ndr_print_spoolss_MonitorInfo(ndr, "info", &(*r->out.info)[cntr_info_2]);
+					free(idx_2);
 				}
-				ndr->depth--;
-				free(idx_1);
 			}
+			ndr->depth--;
 		}
 		ndr->depth--;
 		ndr->depth--;

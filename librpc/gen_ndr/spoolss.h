@@ -1597,7 +1597,7 @@ struct spoolss_EnumPrinters {
 
 	struct {
 		uint32_t *count;/* [ref] */
-		union spoolss_PrinterInfo **info;/* [ref,switch_is(level),size_is(*count)] */
+		union spoolss_PrinterInfo **info;/* [ref,switch_is(level),size_is(,*count)] */
 		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
@@ -1699,7 +1699,7 @@ struct spoolss_EnumJobs {
 
 	struct {
 		uint32_t *count;/* [ref] */
-		union spoolss_JobInfo **info;/* [ref,switch_is(level),size_is(*count)] */
+		union spoolss_JobInfo **info;/* [ref,switch_is(level),size_is(,*count)] */
 		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
@@ -1816,7 +1816,7 @@ struct spoolss_EnumPrinterDrivers {
 
 	struct {
 		uint32_t *count;/* [ref] */
-		union spoolss_DriverInfo **info;/* [ref,switch_is(level),size_is(*count)] */
+		union spoolss_DriverInfo **info;/* [ref,switch_is(level),size_is(,*count)] */
 		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
@@ -1922,7 +1922,7 @@ struct spoolss_EnumPrintProcessors {
 
 	struct {
 		uint32_t *count;/* [ref] */
-		union spoolss_PrintProcessorInfo **info;/* [ref,switch_is(level),size_is(*count)] */
+		union spoolss_PrintProcessorInfo **info;/* [ref,switch_is(level),size_is(,*count)] */
 		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
@@ -2283,7 +2283,7 @@ struct spoolss_EnumForms {
 
 	struct {
 		uint32_t *count;/* [ref] */
-		union spoolss_FormInfo **info;/* [ref,switch_is(level),size_is(*count)] */
+		union spoolss_FormInfo **info;/* [ref,switch_is(level),size_is(,*count)] */
 		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
@@ -2332,7 +2332,7 @@ struct spoolss_EnumPorts {
 
 	struct {
 		uint32_t *count;/* [ref] */
-		union spoolss_PortInfo **info;/* [ref,switch_is(level),size_is(*count)] */
+		union spoolss_PortInfo **info;/* [ref,switch_is(level),size_is(,*count)] */
 		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
@@ -2381,7 +2381,7 @@ struct spoolss_EnumMonitors {
 
 	struct {
 		uint32_t *count;/* [ref] */
-		union spoolss_MonitorInfo **info;/* [ref,switch_is(level),size_is(*count)] */
+		union spoolss_MonitorInfo **info;/* [ref,switch_is(level),size_is(,*count)] */
 		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
