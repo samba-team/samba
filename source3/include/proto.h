@@ -5497,6 +5497,13 @@ WERROR rpccli_spoolss_enumprintprocessordatatypes(struct rpc_pipe_client *cli,
 						  uint32_t offered,
 						  uint32_t *count,
 						  union spoolss_PrintProcDataTypesInfo **info);
+WERROR rpccli_spoolss_enumports(struct rpc_pipe_client *cli,
+				TALLOC_CTX *mem_ctx,
+				const char *servername,
+				uint32_t level,
+				uint32_t offered,
+				uint32_t *count,
+				union spoolss_PortInfo **info);
 WERROR rpccli_spoolss_enum_printers(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				 char *name, uint32 flags, uint32 level,
 				 uint32 *num_printers, PRINTER_INFO_CTR *ctr);
