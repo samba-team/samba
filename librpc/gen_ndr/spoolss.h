@@ -1014,7 +1014,7 @@ union spoolss_DriverDirectoryInfo {
 
 struct spoolss_PrintProcessorInfo1 {
 	const char * print_processor_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
-};
+}/* [gensize,public] */;
 
 union spoolss_PrintProcessorInfo {
 	struct spoolss_PrintProcessorInfo1 info1;/* [case] */

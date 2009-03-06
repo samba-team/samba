@@ -13749,7 +13749,7 @@ _PUBLIC_ size_t ndr_size_spoolss_DriverDirectoryInfo(const union spoolss_DriverD
 	return ndr_size_union(r, flags, level, (ndr_push_flags_fn_t)ndr_push_spoolss_DriverDirectoryInfo, ic);
 }
 
-static enum ndr_err_code ndr_push_spoolss_PrintProcessorInfo1(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PrintProcessorInfo1 *r)
+_PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrintProcessorInfo1(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PrintProcessorInfo1 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -13774,7 +13774,7 @@ static enum ndr_err_code ndr_push_spoolss_PrintProcessorInfo1(struct ndr_push *n
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_spoolss_PrintProcessorInfo1(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PrintProcessorInfo1 *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrintProcessorInfo1(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PrintProcessorInfo1 *r)
 {
 	uint32_t _ptr_print_processor_name;
 	TALLOC_CTX *_mem_save_print_processor_name_0;
@@ -13824,6 +13824,11 @@ _PUBLIC_ void ndr_print_spoolss_PrintProcessorInfo1(struct ndr_print *ndr, const
 	}
 	ndr->depth--;
 	ndr->depth--;
+}
+
+_PUBLIC_ size_t ndr_size_spoolss_PrintProcessorInfo1(const struct spoolss_PrintProcessorInfo1 *r, struct smb_iconv_convenience *ic, int flags)
+{
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_spoolss_PrintProcessorInfo1, ic);
 }
 
 _PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrintProcessorInfo(struct ndr_push *ndr, int ndr_flags, const union spoolss_PrintProcessorInfo *r)
