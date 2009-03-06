@@ -3159,6 +3159,66 @@ static WERROR cmd_spoolss_enum_proc_data_types(struct rpc_pipe_client *cli,
 	return werror;
 }
 
+static void display_monitor1(const struct spoolss_MonitorInfo1 *r)
+{
+	printf("monitor_name: %s\n", r->monitor_name);
+}
+
+static void display_monitor2(const struct spoolss_MonitorInfo2 *r)
+{
+	printf("monitor_name: %s\n", r->monitor_name);
+	printf("environment: %s\n", r->environment);
+	printf("dll_name: %s\n", r->dll_name);
+}
+
+static WERROR cmd_spoolss_enum_monitors(struct rpc_pipe_client *cli,
+					TALLOC_CTX *mem_ctx, int argc,
+					const char **argv)
+{
+	WERROR werror;
+	uint32_t count, level = 1, i;
+	union spoolss_MonitorInfo *info;
+
+	/* Parse the command arguments */
+
+	if (argc > 2) {
+		printf("Usage: %s [level]\n", argv[0]);
+		return WERR_OK;
+	}
+
+	if (argc == 2) {
+		level = atoi(argv[1]);
+	}
+
+	/* Enumerate Print Monitors */
+
+	werror = rpccli_spoolss_enummonitors(cli, mem_ctx,
+					     cli->srv_name_slash,
+					     level,
+					     0,
+					     &count,
+					     &info);
+	if (!W_ERROR_IS_OK(werror)) {
+		goto done;
+	}
+
+	/* Display output */
+
+	for (i = 0; i < count; i++) {
+		switch (level) {
+		case 1:
+			display_monitor1(&info[i].info1);
+			break;
+		case 2:
+			display_monitor2(&info[i].info2);
+			break;
+		}
+	}
+
+ done:
+	return werror;
+}
+
 /* List of commands exported by this module */
 struct cmd_set spoolss_commands[] = {
 
@@ -3196,6 +3256,7 @@ struct cmd_set spoolss_commands[] = {
 	{ "printercmp",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_printercmp,         &syntax_spoolss, NULL, "Printer comparison test", "" },
 	{ "enumprocs",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_procs,         &syntax_spoolss, NULL, "Enumerate Print Processors",          "" },
 	{ "enumprocdatatypes",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_proc_data_types, &syntax_spoolss, NULL, "Enumerate Print Processor Data Types", "" },
+	{ "enummonitors",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_monitors,      &syntax_spoolss, NULL, "Enumerate Print Monitors", "" },
 
 	{ NULL }
 };
