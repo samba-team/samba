@@ -405,6 +405,39 @@ uint32_t ndr_size_spoolss_EnumPrinterProcessors_info(TALLOC_CTX *mem_ctx, struct
 }
 
 /*
+  spoolss_EnumPrintProcessors
+*/
+enum ndr_err_code ndr_push_spoolss_EnumPrintProcDataTypes(struct ndr_push *ndr, int flags, const struct spoolss_EnumPrintProcDataTypes *r)
+{
+	NDR_SPOOLSS_PUSH_ENUM(spoolss_EnumPrintProcDataTypes,{
+		_r.in.servername		= r->in.servername;
+		_r.in.print_processor_name	= r->in.print_processor_name;
+	},{
+		_r.in.servername		= r->in.servername;
+		_r.in.print_processor_name	= r->in.print_processor_name;
+	});
+	return NDR_ERR_SUCCESS;
+}
+
+enum ndr_err_code ndr_pull_spoolss_EnumPrintProcDataTypes(struct ndr_pull *ndr, int flags, struct spoolss_EnumPrintProcDataTypes *r)
+{
+	NDR_SPOOLSS_PULL_ENUM(spoolss_EnumPrintProcDataTypes,{
+		r->in.servername		= _r.in.servername;
+		r->in.print_processor_name	= _r.in.print_processor_name;
+	},{
+		_r.in.servername		= r->in.servername;
+		_r.in.print_processor_name	= r->in.print_processor_name;
+	});
+	return NDR_ERR_SUCCESS;
+}
+
+uint32_t ndr_size_spoolss_EnumPrintProcDataTypes_info(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience,
+						      uint32_t level, uint32_t count, union spoolss_PrintProcDataTypesInfo *info)
+{
+	NDR_SPOOLSS_SIZE_ENUM(spoolss_EnumPrintProcDataTypes);
+}
+
+/*
   spoolss_GetPrinterData
 */
 enum ndr_err_code ndr_push_spoolss_GetPrinterData(struct ndr_push *ndr, int flags, const struct spoolss_GetPrinterData *r)
