@@ -1,170 +1,71 @@
                    =============================
-                   Release Notes for Samba 3.3.1
-			  February, 24 2009
+                   Release Notes for Samba 3.3.2
+			   March, 09 2009
                    =============================
 
 This is the latest bugfix release release of the Samba 3.3 series.
 
-Major enhancements in Samba 3.3.1 include:
+Major enhancements in Samba 3.3.2 include:
 
-     * Fix net ads join when "ldap ssl = start tls" (bug #6073).
-     * Fix renaming/deleting of files using Windows clients (bug #6082).
-     * Fix renaming/deleting a "not matching/resolving" symlink (bug #6090).
-     * Fix remotely adding a share via the Windows MMC.
+     * Fix "force group" (bug #6155).
+     * Fix guest authentication in setups with "security = share" and
+      "guest ok = yes" when Winbind is running.
+     * Fix corruptions of source path in tar mode of smbclient (bug #6161).
 
 
 ######################################################################
 Changes
 #######
 
-smb.conf changes
-----------------
 
-    Parameter Name                      Description     Default
-    --------------                      -----------     -------
-    ldap ssl ads			New		No
-
-
-Changes since 3.3.0:
+Changes since 3.3.1:
 --------------------
 
 
 o   Jeremy Allison <jra@samba.org>
-    * BUG 6082: Fix renaming/deleting of files using Windows clients.
-    * BUG 6069: Fix build with too many arguments.
-    * BUG 6090: Fix renaming/deleting a "not matching/resolving" symlink.
-    * BUG 6099: Try to fix domain join of Win7 Beta.
-    * BUG 6117: Fix core dump of pdbedit -a.
-    * BUG 6133: Fix deletion of non-ACL files on Solaris/ZFS/NFSv4 ACL
-      filesystem.
-    * Fix Coverity IDs 115, 116, 117, 602.
-    * Fix warning (bad handler prototype).
-    * Unify the detection of the timespec code in configure.in, and the
-      application of it in time.c.
-    * Correctly use chroot().
-    * Parameterize in local.h the MAX_RPC_DATA_SIZE, and ensure that "offered"
-      read from the rpc packet in spoolss is under that size.
-    * Backport the semantics of when to delete alternate data streams on a file
-      truncate.
-    * Fix printf warnings.
-    * Fix warnings on Solaris.
+    * BUG 6082: Fix renaming and deleting of directories using Windows clients.
+    * BUG 6154: Make ZFS honor admin users.
+    * BUG 6155: Fix "force group".
+    * BUG 6160: Fix saving of files on Samba share using MS Office 2007
+    * BUG 6161: Fix corruptions of source path in tar mode of smbclient.
+    * Fix some NetBSD warnings.
+    * Fix bug in processing of open modes in POSIX open.
+    * Fix use of streams modules with CIFSFS client.
+    * Ensure ACL modules work with POSIX paths.
+    * Use fsp->posix_open in preference if we have it.
+    * Fix more POSIX path lstat calls.
 
 
-o   Michael Adam <obnox@samba.org>
-    * BUG 6066: netinet/ip.h present but cannot be compiled on Solaris.
-    * BUG 6073: Prevent ads_connect() from using SSL unless explicitly
-      requested.
-    * Fix 'getent passwd' to allocate new uids.
-    * Fix 'getent group' to allocate new gids.
-    * Remove check for sharename being a username in 'net conf
-      addshare'.
+o   Steven Danneman <steven.danneman@isilon.com>
+    * Fix guest authentication in setups with "security = share" and "guest ok =
+      yes" when Winbind is running.
 
 
-o   Guenther Deschner <gd@samba.org>
-    * Fix Coverity ID 848.
-    * Remove unused ENUM_HND from 'net'.
-    * Fix getform command asprintf return code in rpcclient.
-    * Fix memleak in get_remote_printer_publishing_data().
-    * Remove duplicate prototypes for generated rpc server functions.
+o   Steve French <smfrench@gmail.com>
+    * BUG 4640: Fix guest mounts in mount.cifs.
+    * Fix displaying the version string properly when no other parameters passed
+      in in mount.cifs.
 
 
-o   Holger Hetterich <hhetter@novell.com>
-    * Enable total anonymization in vfs_smb_traffic_analyzer.
-
-
-o   Bjoern Jacke <bj@sernet.de>
-    * Fix build with external dns_sd libraries.
-    * Fix configure check "sub-second timestamps without struct timespec".
-    * Add configure check for AIX style sub-second resolution support.
-    * Add configure check for Tru64 sub-second timestamp resolution.
-    * Add Tru64 sub-second resolution timestamp support.
-    * Enable IPv6 support for NetBSD and FreeBSD.
-    * Use correct BSD evironment variable.
-
-
-o   Guenter Kukkukk <linux@kukkukk.com>
-    * Don't try and delete a default ACL from a file.
+o   Björn Jacke <bj@sernet.de>
+    * Prefer gssapi header files from subdirectory.
 
 
 o   Volker Lendecke <vl@samba.org>
-    * BUG 5798: CFLAGS info lost in configure.
-    * Fix Coverity IDs 740, 742, 744, 745, 876, 879, 880.
-    * Fix remotely adding a share via the Windows MMC.
-    * Avoid valgrind errors.
-    * Fix 'net rpc join' for users with the SeMachineAccountPrivilege.
-    * Fix resume handle for _samr_EnumDomainGroups.
-    * Fix a buffer handling bug when adding lots of registry keys.
-    * Fix a O(n^2) algorithm in regdb_fetch_keys().
-
-
-o   Jeff Layton <jlayton@redhat.com>
-    * Initialize rc to 0 in main in mount.cifs.
-
-
-o   Derrell Lipman <derrell.lipman@unwireduniverse.com>
-    * BUG 6069: Add a fstatvfs function for libsmbclient.
-    * Eliminate compiler warnings.
-
-
-o   Glenn Machin <gmachin@sandia.gov>
-    * Don't miss an absolute pathname as a kerberos keytab path.
-
-
-o   Stefan Metzmacher <metze@samba.org>
-    * BUG 6100: Implement _netr_LogonGetCapabilities() with
-      NT_STATUS_NOT_IMPLEMENTED.
-    * Make Samba work with older ctdb versions.
-    * Add S-1-22-X-Y sids to the local token.
-
-
-o   Lars Mueller <lars@samba.org>
-    * Conditional install of the cifs.upcall man page.
-    * Adjust regex to match variable names including underscores.
-
-
-o   Shirish Pargaonkar <shirishpargaonkar@gmail.com>
-    * BUG 4370: Clean-up entries in /etc/mtab after unmount.
-    * Add fakemount (-f) and nomtab (-n) flags to mount.cifs.
-
-
-o   Ted Percival <ted.percival@quest.com>
-    * Fix a crash during name resolution.
+    * BUG 6124: Fix the build on IRIX.
 
 
 o   Tim Prouty <tprouty@samba.org>
-    * Fix "assignment discards qualifiers from pointer target type"
-      warnings.
-    * Fix SMB_VFS_RECVFILE/SENDFILE macros.
+    * Fix creation of core files.
 
 
-o   Karolin Seeger <kseeger@samba.org>
-    * Change "ldap ssl:ads" parameter to "ldap ssl ads".
-    * Add manpages for vfs_acl_xattr and vfs_acl_tdb.
-
-
-o   Dan Sledz <dsledz@isilon.com>
-    * Fix double free caused by incorrect talloc_steal usage.
-
-
-o   Simo Sorce <idra@samba.org>
-    * Build ldbrename.
-
-
-o   Aravind Srinivasan <aravind.srinivasan@isilon.com>
-    * Make nmbd check all available interfaces for WINS before failing.
-
-
-o   Miguel Suarez <Miguel.Suarez@stratus.com>
-    * Fix compilation of vfs_default on systems that do not support utimes().
-
-
-o   Yasuma Takeda <yasuma@osstech.co.jp>
-    * BUG 5920: Fix the calculation of the memcpy length.
-    * BUG 6098: Fix ads_find_dc() in setups with "security = domain".
+o   Dan Sledz <dan.sledz@isilon.com>
+    * Fix first mapping of uids/gids in Winbind.
 
 
 o   Bo Yang <boyang@novell.com>
-    * Make libsmbclient work with DFS.
+    * Initialize the id_map status in idmap_ldap to avoid surprise.
+    * Fix initialization of idmap status.
 
 
 ######################################################################
