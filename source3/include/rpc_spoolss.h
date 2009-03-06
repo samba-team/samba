@@ -734,40 +734,6 @@ SPOOL_R_ENUMPRINTERDRIVERS;
 
 /********************************************/
 
-typedef struct printmonitor_1
-{
-	UNISTR name;
-}
-PRINTMONITOR_1;
-
-typedef struct printmonitor_2
-{
-	UNISTR name;
-	UNISTR environment;
-	UNISTR dll_name;
-}
-PRINTMONITOR_2;
-
-typedef struct spool_q_enumprintmonitors
-{
-	uint32 name_ptr;
-	UNISTR2 name;
-	uint32 level;
-	RPC_BUFFER *buffer;
-	uint32 offered;
-}
-SPOOL_Q_ENUMPRINTMONITORS;
-
-typedef struct spool_r_enumprintmonitors
-{
-	RPC_BUFFER *buffer;
-	uint32 needed;
-	uint32 returned;
-	WERROR status;
-}
-SPOOL_R_ENUMPRINTMONITORS;
-
-
 typedef struct spool_q_enumprinterdata
 {
 	POLICY_HND handle;

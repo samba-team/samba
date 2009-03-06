@@ -1136,46 +1136,6 @@ bool smb_io_port_2(const char *desc, RPC_BUFFER *buffer, PORT_INFO_2 *info, int 
 }
 
 /*******************************************************************
-********************************************************************/  
-
-bool smb_io_printmonitor_info_1(const char *desc, RPC_BUFFER *buffer, PRINTMONITOR_1 *info, int depth)
-{
-	prs_struct *ps=&buffer->prs;
-
-	prs_debug(ps, depth, desc, "smb_io_printmonitor_info_1");
-	depth++;	
-
-	buffer->struct_start=prs_offset(ps);
-
-	if (!smb_io_relstr("name", buffer, depth, &info->name))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-********************************************************************/  
-
-bool smb_io_printmonitor_info_2(const char *desc, RPC_BUFFER *buffer, PRINTMONITOR_2 *info, int depth)
-{
-	prs_struct *ps=&buffer->prs;
-
-	prs_debug(ps, depth, desc, "smb_io_printmonitor_info_2");
-	depth++;	
-
-	buffer->struct_start=prs_offset(ps);
-
-	if (!smb_io_relstr("name", buffer, depth, &info->name))
-		return False;
-	if (!smb_io_relstr("environment", buffer, depth, &info->environment))
-		return False;
-	if (!smb_io_relstr("dll_name", buffer, depth, &info->dll_name))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
 return the size required by a struct in the stream
 ********************************************************************/  
 
@@ -1575,32 +1535,6 @@ uint32 spoolss_size_printer_enum_values(PRINTER_ENUM_VALUES *p)
 	
 	size += size_of_uint32(&p->type);
 		       
-	return size;
-}
-
-/*******************************************************************
-return the size required by a struct in the stream
-********************************************************************/  
-
-uint32 spoolss_size_printmonitor_info_1(PRINTMONITOR_1 *info)
-{
-	int size=0;
-	size+=size_of_relative_string( &info->name );
-
-	return size;
-}
-
-/*******************************************************************
-return the size required by a struct in the stream
-********************************************************************/  
-
-uint32 spoolss_size_printmonitor_info_2(PRINTMONITOR_2 *info)
-{
-	int size=0;
-	size+=size_of_relative_string( &info->name);
-	size+=size_of_relative_string( &info->environment);
-	size+=size_of_relative_string( &info->dll_name);
-
 	return size;
 }
 
@@ -2025,70 +1959,6 @@ bool make_spoolss_buffer5(TALLOC_CTX *mem_ctx, BUFFER5 *buf5, uint32 len, uint16
 	}
 	
 	return True;
-}
-
-/*******************************************************************
- Parse a SPOOL_Q_ENUMPRINTMONITORS structure.
-********************************************************************/  
-
-bool spoolss_io_q_enumprintmonitors(const char *desc, SPOOL_Q_ENUMPRINTMONITORS *q_u, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "spoolss_io_q_enumprintmonitors");
-	depth++;
-
-	if (!prs_align(ps))
-		return False;
-		
-	if (!prs_uint32("name_ptr", ps, depth, &q_u->name_ptr))
-		return False;
-	if (!smb_io_unistr2("name", &q_u->name, True, ps, depth))
-		return False;
-		
-	if (!prs_align(ps))
-		return False;
-				
-	if (!prs_uint32("level", ps, depth, &q_u->level))
-		return False;
-		
-	if(!prs_rpcbuffer_p("", ps, depth, &q_u->buffer))
-		return False;
-
-	if (!prs_align(ps))
-		return False;
-
-	if (!prs_uint32("offered", ps, depth, &q_u->offered))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-********************************************************************/  
-
-bool spoolss_io_r_enumprintmonitors(const char *desc, SPOOL_R_ENUMPRINTMONITORS *r_u, prs_struct *ps, int depth)
-{		
-	prs_debug(ps, depth, desc, "spoolss_io_r_enumprintmonitors");
-	depth++;
-
-	if (!prs_align(ps))
-		return False;
-		
-	if (!prs_rpcbuffer_p("", ps, depth, &r_u->buffer))
-		return False;
-
-	if (!prs_align(ps))
-		return False;
-		
-	if (!prs_uint32("needed", ps, depth, &r_u->needed))
-		return False;
-		
-	if (!prs_uint32("returned", ps, depth, &r_u->returned))
-		return False;
-		
-	if (!prs_werror("status", ps, depth, &r_u->status))
-		return False;
-
-	return True;		
 }
 
 /*******************************************************************
