@@ -1297,10 +1297,17 @@ struct async_req *cli_tcon_andx_send(TALLOC_CTX *mem_ctx,
 	return result;
 
  access_denied:
-	result = async_req_new(mem_ctx);
-	if (async_post_ntstatus(result, ev, NT_STATUS_ACCESS_DENIED)) {
-		return result;
+	{
+		struct cli_request *state;
+		if (!async_req_setup(mem_ctx, &result, &state,
+				     struct cli_request)) {
+			goto fail;
+		}
+		if (async_post_ntstatus(result, ev, NT_STATUS_ACCESS_DENIED)) {
+			return result;
+		}
 	}
+ fail:
 	TALLOC_FREE(result);
 	return NULL;
 }
