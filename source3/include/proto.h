@@ -5828,7 +5828,6 @@ bool smb_io_job_info_1(const char *desc, RPC_BUFFER *buffer, JOB_INFO_1 *info, i
 bool smb_io_job_info_2(const char *desc, RPC_BUFFER *buffer, JOB_INFO_2 *info, int depth);
 bool smb_io_port_1(const char *desc, RPC_BUFFER *buffer, PORT_INFO_1 *info, int depth);
 bool smb_io_port_2(const char *desc, RPC_BUFFER *buffer, PORT_INFO_2 *info, int depth);
-bool smb_io_printprocdatatype_info_1(const char *desc, RPC_BUFFER *buffer, PRINTPROCDATATYPE_1 *info, int depth);
 bool smb_io_printmonitor_info_1(const char *desc, RPC_BUFFER *buffer, PRINTMONITOR_1 *info, int depth);
 bool smb_io_printmonitor_info_2(const char *desc, RPC_BUFFER *buffer, PRINTMONITOR_2 *info, int depth);
 uint32 spoolss_size_printer_info_0(PRINTER_INFO_0 *info);
@@ -5848,7 +5847,6 @@ uint32 spoolss_size_job_info_1(JOB_INFO_1 *info);
 uint32 spoolss_size_job_info_2(JOB_INFO_2 *info);
 uint32 spoolss_size_port_info_1(PORT_INFO_1 *info);
 uint32 spoolss_size_port_info_2(PORT_INFO_2 *info);
-uint32 spoolss_size_printprocdatatype_info_1(PRINTPROCDATATYPE_1 *info);
 uint32 spoolss_size_printer_enum_values(PRINTER_ENUM_VALUES *p);
 uint32 spoolss_size_printmonitor_info_1(PRINTMONITOR_1 *info);
 uint32 spoolss_size_printmonitor_info_2(PRINTMONITOR_2 *info);
@@ -5887,8 +5885,6 @@ bool spoolss_io_q_enumprinterdrivers(const char *desc, SPOOL_Q_ENUMPRINTERDRIVER
 bool spoolss_io_r_enumports(const char *desc, SPOOL_R_ENUMPORTS *r_u, prs_struct *ps, int depth);
 bool spoolss_io_q_enumports(const char *desc, SPOOL_Q_ENUMPORTS *q_u, prs_struct *ps, int depth);
 bool make_spoolss_buffer5(TALLOC_CTX *mem_ctx, BUFFER5 *buf5, uint32 len, uint16 *src);
-bool spoolss_io_r_enumprintprocdatatypes(const char *desc, SPOOL_R_ENUMPRINTPROCDATATYPES *r_u, prs_struct *ps, int depth);
-bool spoolss_io_q_enumprintprocdatatypes(const char *desc, SPOOL_Q_ENUMPRINTPROCDATATYPES *q_u, prs_struct *ps, int depth);
 bool spoolss_io_q_enumprintmonitors(const char *desc, SPOOL_Q_ENUMPRINTMONITORS *q_u, prs_struct *ps, int depth);
 bool spoolss_io_r_enumprintmonitors(const char *desc, SPOOL_R_ENUMPRINTMONITORS *r_u, prs_struct *ps, int depth);
 bool spoolss_io_r_enumprinterdata(const char *desc, SPOOL_R_ENUMPRINTERDATA *r_u, prs_struct *ps, int depth);
