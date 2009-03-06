@@ -1513,6 +1513,7 @@ int process_tar(void)
 
 					if (strrchr_m(cliplist[i], '\\')) {
 						char *p;
+						char saved_char;
 						char *saved_dir = talloc_strdup(ctx,
 									client_get_cur_dir());
 						if (!saved_dir) {
@@ -1531,12 +1532,27 @@ int process_tar(void)
 						if (!tarmac) {
 							return 1;
 						}
+						/*
+						 * Strip off the last \\xxx
+						 * xxx element of tarmac to set
+						 * it as current directory.
+						 */
 						p = strrchr_m(tarmac, '\\');
 						if (!p) {
 							return 1;
 						}
+						saved_char = p[1];
 						p[1] = '\0';
+
 						client_set_cur_dir(tarmac);
+
+						/*
+						 * Restore the character we
+						 * just replaced to
+						 * put the pathname
+						 * back as it was.
+						 */
+						p[1] = saved_char;
 
 						DEBUG(5, ("process_tar, do_list with tarmac: %s\n", tarmac));
 						do_list(tarmac,attribute,do_tar, False, True);
