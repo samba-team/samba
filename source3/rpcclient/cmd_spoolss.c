@@ -1848,7 +1848,7 @@ static WERROR cmd_spoolss_addform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 
 	switch (level) {
 	case 1:
-		info1.flags		= FORM_USER;
+		info1.flags		= SPOOLSS_FORM_USER;
 		info1.form_name		= argv[2];
 		info1.size.width	= 100;
 		info1.size.height	= 100;
@@ -1861,7 +1861,7 @@ static WERROR cmd_spoolss_addform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 
 		break;
 	case 2:
-		info2.flags		= FORM_USER;
+		info2.flags		= SPOOLSS_FORM_USER;
 		info2.form_name		= argv[2];
 		info2.size.width	= 100;
 		info2.size.height	= 100;
@@ -1930,7 +1930,7 @@ static WERROR cmd_spoolss_setform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 
 	/* Dummy up some values for the form data */
 
-	info1.flags		= FORM_PRINTER;
+	info1.flags		= SPOOLSS_FORM_PRINTER;
 	info1.size.width	= 100;
 	info1.size.height	= 100;
 	info1.area.left		= 0;
@@ -1963,11 +1963,11 @@ static WERROR cmd_spoolss_setform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 static const char *get_form_flag(int form_flag)
 {
 	switch (form_flag) {
-	case FORM_USER:
+	case SPOOLSS_FORM_USER:
 		return "FORM_USER";
-	case FORM_BUILTIN:
+	case SPOOLSS_FORM_BUILTIN:
 		return "FORM_BUILTIN";
-	case FORM_PRINTER:
+	case SPOOLSS_FORM_PRINTER:
 		return "FORM_PRINTER";
 	default:
 		return "unknown";

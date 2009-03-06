@@ -1768,7 +1768,7 @@ NTSTATUS rpc_printer_migrate_forms_internals(struct net_context *c,
 
 			/* only migrate FORM_PRINTER types, according to jerry
 			   FORM_BUILTIN-types are hard-coded in samba */
-			if (forms[f].info1.flags != FORM_PRINTER)
+			if (forms[f].info1.flags != SPOOLSS_FORM_PRINTER)
 				continue;
 
 			if (c->opt_verbose)
