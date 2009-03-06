@@ -7446,9 +7446,14 @@ WERROR _spoolss_GetForm(pipes_struct *p,
 /****************************************************************************
 ****************************************************************************/
 
-static void fill_port_1(PORT_INFO_1 *port, const char *name)
+static WERROR fill_port_1(TALLOC_CTX *mem_ctx,
+			  struct spoolss_PortInfo1 *r,
+			  const char *name)
 {
-	init_unistr(&port->port_name, name);
+	r->port_name = talloc_strdup(mem_ctx, name);
+	W_ERROR_HAVE_NO_MEMORY(r->port_name);
+
+	return WERR_OK;
 }
 
 /****************************************************************************
@@ -7456,13 +7461,23 @@ static void fill_port_1(PORT_INFO_1 *port, const char *name)
  somehow.
 ****************************************************************************/
 
-static void fill_port_2(PORT_INFO_2 *port, const char *name)
+static WERROR fill_port_2(TALLOC_CTX *mem_ctx,
+			  struct spoolss_PortInfo2 *r,
+			  const char *name)
 {
-	init_unistr(&port->port_name, name);
-	init_unistr(&port->monitor_name, "Local Monitor");
-	init_unistr(&port->description, SPL_LOCAL_PORT );
-	port->port_type=PORT_TYPE_WRITE;
-	port->reserved=0x0;
+	r->port_name = talloc_strdup(mem_ctx, name);
+	W_ERROR_HAVE_NO_MEMORY(r->port_name);
+
+	r->monitor_name = talloc_strdup(mem_ctx, "Local Monitor");
+	W_ERROR_HAVE_NO_MEMORY(r->monitor_name);
+
+	r->description = talloc_strdup(mem_ctx, SPL_LOCAL_PORT); /* FIXME */
+	W_ERROR_HAVE_NO_MEMORY(r->description);
+
+	r->port_type = SPOOLSS_PORT_TYPE_WRITE;
+	r->reserved = 0;
+
+	return WERR_OK;
 }
 
 
@@ -7530,9 +7545,13 @@ WERROR enumports_hook(TALLOC_CTX *ctx, int *count, char ***lines )
  enumports level 1.
 ****************************************************************************/
 
-static WERROR enumports_level_1(RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enumports_level_1(TALLOC_CTX *mem_ctx,
+				union spoolss_PortInfo **info_p,
+				uint32_t offered,
+				uint32_t *needed,
+				uint32_t *count)
 {
-	PORT_INFO_1 *ports=NULL;
+	union spoolss_PortInfo *info = NULL;
 	int i=0;
 	WERROR result = WERR_OK;
 	char **qlines = NULL;
@@ -7540,31 +7559,31 @@ static WERROR enumports_level_1(RPC_BUFFER *buffer, uint32 offered, uint32 *need
 
 	result = enumports_hook(talloc_tos(), &numlines, &qlines );
 	if (!W_ERROR_IS_OK(result)) {
-		TALLOC_FREE(qlines);
-		return result;
+		goto out;
 	}
 
-	if(numlines) {
-		if((ports=SMB_MALLOC_ARRAY( PORT_INFO_1, numlines )) == NULL) {
-			DEBUG(10,("Returning WERR_NOMEM [%s]\n",
-				  win_errstr(WERR_NOMEM)));
-			TALLOC_FREE(qlines);
-			return WERR_NOMEM;
+	if (numlines) {
+		info = TALLOC_ARRAY(mem_ctx, union spoolss_PortInfo, numlines);
+		if (!info) {
+			DEBUG(10,("Returning WERR_NOMEM\n"));
+			result = WERR_NOMEM;
+			goto out;
 		}
 
 		for (i=0; i<numlines; i++) {
 			DEBUG(6,("Filling port number [%d] with port [%s]\n", i, qlines[i]));
-			fill_port_1(&ports[i], qlines[i]);
+			result = fill_port_1(info, &info[i].info1, qlines[i]);
+			if (!W_ERROR_IS_OK(result)) {
+				goto out;
+			}
 		}
 	}
 	TALLOC_FREE(qlines);
 
-	*returned = numlines;
-
 	/* check the required size. */
-	for (i=0; i<*returned; i++) {
+	for (i=0; i<numlines; i++) {
 		DEBUGADD(6,("adding port [%d]'s size\n", i));
-		*needed += spoolss_size_port_info_1(&ports[i]);
+		*needed += ndr_size_spoolss_PortInfo1(&info[i].info1, NULL, 0);
 	}
 
 	if (*needed > offered) {
@@ -7572,64 +7591,64 @@ static WERROR enumports_level_1(RPC_BUFFER *buffer, uint32 offered, uint32 *need
 		goto out;
 	}
 
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
-	}
-
-	/* fill the buffer with the ports structures */
-	for (i=0; i<*returned; i++) {
-		DEBUGADD(6,("adding port [%d] to buffer\n", i));
-		smb_io_port_1("", buffer, &ports[i], 0);
-	}
-
 out:
-	SAFE_FREE(ports);
+	if (!W_ERROR_IS_OK(result)) {
+		TALLOC_FREE(info);
+		TALLOC_FREE(qlines);
+		*count = 0;
+		*info_p = NULL;
+		return result;
+	}
 
-	if ( !W_ERROR_IS_OK(result) )
-		*returned = 0;
+	*info_p = info;
+	*count = numlines;
 
-	return result;
+	return WERR_OK;
 }
 
 /****************************************************************************
  enumports level 2.
 ****************************************************************************/
 
-static WERROR enumports_level_2(RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enumports_level_2(TALLOC_CTX *mem_ctx,
+				union spoolss_PortInfo **info_p,
+				uint32_t offered,
+				uint32_t *needed,
+				uint32_t *count)
 {
-	PORT_INFO_2 *ports=NULL;
+	union spoolss_PortInfo *info = NULL;
 	int i=0;
 	WERROR result = WERR_OK;
 	char **qlines = NULL;
 	int numlines = 0;
 
 	result = enumports_hook(talloc_tos(), &numlines, &qlines );
-	if ( !W_ERROR_IS_OK(result)) {
-		TALLOC_FREE(qlines);
-		return result;
+	if (!W_ERROR_IS_OK(result)) {
+		goto out;
 	}
 
-	if(numlines) {
-		if((ports=SMB_MALLOC_ARRAY( PORT_INFO_2, numlines)) == NULL) {
-			TALLOC_FREE(qlines);
-			return WERR_NOMEM;
+	if (numlines) {
+		info = TALLOC_ARRAY(mem_ctx, union spoolss_PortInfo, numlines);
+		if (!info) {
+			DEBUG(10,("Returning WERR_NOMEM\n"));
+			result = WERR_NOMEM;
+			goto out;
 		}
 
 		for (i=0; i<numlines; i++) {
 			DEBUG(6,("Filling port number [%d] with port [%s]\n", i, qlines[i]));
-			fill_port_2(&(ports[i]), qlines[i]);
+			result = fill_port_2(info, &info[i].info2, qlines[i]);
+			if (!W_ERROR_IS_OK(result)) {
+				goto out;
+			}
 		}
 	}
-
 	TALLOC_FREE(qlines);
 
-	*returned = numlines;
-
 	/* check the required size. */
-	for (i=0; i<*returned; i++) {
+	for (i=0; i<numlines; i++) {
 		DEBUGADD(6,("adding port [%d]'s size\n", i));
-		*needed += spoolss_size_port_info_2(&ports[i]);
+		*needed += ndr_size_spoolss_PortInfo2(&info[i].info2, NULL, 0);
 	}
 
 	if (*needed > offered) {
@@ -7637,61 +7656,49 @@ static WERROR enumports_level_2(RPC_BUFFER *buffer, uint32 offered, uint32 *need
 		goto out;
 	}
 
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
-	}
-
-	/* fill the buffer with the ports structures */
-	for (i=0; i<*returned; i++) {
-		DEBUGADD(6,("adding port [%d] to buffer\n", i));
-		smb_io_port_2("", buffer, &ports[i], 0);
-	}
-
 out:
-	SAFE_FREE(ports);
+	if (!W_ERROR_IS_OK(result)) {
+		TALLOC_FREE(info);
+		TALLOC_FREE(qlines);
+		*count = 0;
+		*info_p = NULL;
+		return result;
+	}
 
-	if ( !W_ERROR_IS_OK(result) )
-		*returned = 0;
+	*info_p = info;
+	*count = numlines;
 
-	return result;
+	return WERR_OK;
 }
 
-/****************************************************************************
- enumports.
-****************************************************************************/
+/****************************************************************
+ _spoolss_EnumPorts
+****************************************************************/
 
-WERROR _spoolss_enumports( pipes_struct *p, SPOOL_Q_ENUMPORTS *q_u, SPOOL_R_ENUMPORTS *r_u)
+WERROR _spoolss_EnumPorts(pipes_struct *p,
+			  struct spoolss_EnumPorts *r)
 {
-	uint32 level = q_u->level;
-	RPC_BUFFER *buffer = NULL;
-	uint32 offered = q_u->offered;
-	uint32 *needed = &r_u->needed;
-	uint32 *returned = &r_u->returned;
-
 	/* that's an [in out] buffer */
 
-	if (!q_u->buffer && (offered!=0)) {
+	if (!r->in.buffer && (r->in.offered != 0)) {
 		return WERR_INVALID_PARAM;
 	}
 
-	if (offered > MAX_RPC_DATA_SIZE) {
-		return WERR_INVALID_PARAM;
-	}
+	DEBUG(4,("_spoolss_EnumPorts\n"));
 
-	rpcbuf_move(q_u->buffer, &r_u->buffer);
-	buffer = r_u->buffer;
+	*r->out.count = 0;
+	*r->out.needed = 0;
+	*r->out.info = NULL;
 
-	DEBUG(4,("_spoolss_enumports\n"));
-
-	*returned=0;
-	*needed=0;
-
-	switch (level) {
+	switch (r->in.level) {
 	case 1:
-		return enumports_level_1(buffer, offered, needed, returned);
+		return enumports_level_1(p->mem_ctx, r->out.info,
+					 r->in.offered, r->out.needed,
+					 r->out.count);
 	case 2:
-		return enumports_level_2(buffer, offered, needed, returned);
+		return enumports_level_2(p->mem_ctx, r->out.info,
+					 r->in.offered, r->out.needed,
+					 r->out.count);
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
@@ -10275,17 +10282,6 @@ WERROR _spoolss_SetPrinterData(pipes_struct *p,
 
 WERROR _spoolss_WaitForPrinterChange(pipes_struct *p,
 				     struct spoolss_WaitForPrinterChange *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_EnumPorts
-****************************************************************/
-
-WERROR _spoolss_EnumPorts(pipes_struct *p,
-			  struct spoolss_EnumPorts *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
