@@ -1356,6 +1356,10 @@ const struct unix_error_map unix_nt_errmap[] = {
 #ifdef ENOSYS
 	{ ENOSYS,	NT_STATUS_INVALID_SYSTEM_SERVICE },
 #endif
+#ifdef ECANCELED
+	{ ECANCELED, 	NT_STATUS_CANCELLED },
+#endif
+
 	{ 0, NT_STATUS_UNSUCCESSFUL }
 };
 
