@@ -865,7 +865,7 @@ void srv_defer_sign_response(uint16 mid)
  cancelled by mid. This should never find one....
 ************************************************************/
 
-void srv_cancel_sign_response(uint16 mid)
+void srv_cancel_sign_response(uint16 mid, bool cancel)
 {
 	struct smb_basic_signing_context *data;
 	uint32 dummy_seq;
@@ -884,7 +884,9 @@ void srv_cancel_sign_response(uint16 mid)
 		;
 
 	/* cancel doesn't send a reply so doesn't burn a sequence number. */
-	data->send_seq_num -= 1;
+	if (cancel) {
+		data->send_seq_num -= 1;
+	}
 }
 
 /***********************************************************

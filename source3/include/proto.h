@@ -3209,7 +3209,7 @@ bool srv_oplock_set_signing(bool onoff);
 bool srv_check_sign_mac(const char *inbuf, bool must_be_ok);
 void srv_calculate_sign_mac(char *outbuf);
 void srv_defer_sign_response(uint16 mid);
-void srv_cancel_sign_response(uint16 mid);
+void srv_cancel_sign_response(uint16 mid, bool cancel);
 void srv_set_signing_negotiated(void);
 bool srv_is_signing_active(void);
 bool srv_is_signing_negotiated(void);
