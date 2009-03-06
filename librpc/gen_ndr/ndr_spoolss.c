@@ -14765,7 +14765,7 @@ _PUBLIC_ void ndr_print_spoolss_FormArea(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_spoolss_FormInfo1(struct ndr_push *ndr, int ndr_flags, const struct spoolss_FormInfo1 *r)
+_PUBLIC_ enum ndr_err_code ndr_push_spoolss_FormInfo1(struct ndr_push *ndr, int ndr_flags, const struct spoolss_FormInfo1 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -14793,7 +14793,7 @@ static enum ndr_err_code ndr_push_spoolss_FormInfo1(struct ndr_push *ndr, int nd
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_spoolss_FormInfo1(struct ndr_pull *ndr, int ndr_flags, struct spoolss_FormInfo1 *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_FormInfo1(struct ndr_pull *ndr, int ndr_flags, struct spoolss_FormInfo1 *r)
 {
 	uint32_t _ptr_form_name;
 	TALLOC_CTX *_mem_save_form_name_0;
@@ -14851,6 +14851,11 @@ _PUBLIC_ void ndr_print_spoolss_FormInfo1(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
+_PUBLIC_ size_t ndr_size_spoolss_FormInfo1(const struct spoolss_FormInfo1 *r, struct smb_iconv_convenience *ic, int flags)
+{
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_spoolss_FormInfo1, ic);
+}
+
 static enum ndr_err_code ndr_push_spoolss_FormStringType(struct ndr_push *ndr, int ndr_flags, uint32_t r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
@@ -14875,7 +14880,7 @@ _PUBLIC_ void ndr_print_spoolss_FormStringType(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_spoolss_FormInfo2(struct ndr_push *ndr, int ndr_flags, const struct spoolss_FormInfo2 *r)
+_PUBLIC_ enum ndr_err_code ndr_push_spoolss_FormInfo2(struct ndr_push *ndr, int ndr_flags, const struct spoolss_FormInfo2 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -14951,7 +14956,7 @@ static enum ndr_err_code ndr_push_spoolss_FormInfo2(struct ndr_push *ndr, int nd
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_spoolss_FormInfo2(struct ndr_pull *ndr, int ndr_flags, struct spoolss_FormInfo2 *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_FormInfo2(struct ndr_pull *ndr, int ndr_flags, struct spoolss_FormInfo2 *r)
 {
 	uint32_t _ptr_form_name;
 	TALLOC_CTX *_mem_save_form_name_0;
@@ -15118,6 +15123,11 @@ _PUBLIC_ void ndr_print_spoolss_FormInfo2(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 	ndr_print_uint32(ndr, "lang_id", r->lang_id);
 	ndr->depth--;
+}
+
+_PUBLIC_ size_t ndr_size_spoolss_FormInfo2(const struct spoolss_FormInfo2 *r, struct smb_iconv_convenience *ic, int flags)
+{
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_spoolss_FormInfo2, ic);
 }
 
 _PUBLIC_ enum ndr_err_code ndr_push_spoolss_FormInfo(struct ndr_push *ndr, int ndr_flags, const union spoolss_FormInfo *r)

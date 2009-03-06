@@ -1117,7 +1117,7 @@ struct spoolss_FormInfo1 {
 	const char * form_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	struct spoolss_FormSize size;
 	struct spoolss_FormArea area;
-};
+}/* [gensize,public] */;
 
 /* bitmap spoolss_FormStringType */
 #define SPOOLSS_FORM_STRING_TYPE_NONE ( 0x00000001 )
@@ -1135,7 +1135,7 @@ struct spoolss_FormInfo2 {
 	uint32_t ressource_id;
 	const char * display_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	uint32_t lang_id;
-};
+}/* [gensize,public] */;
 
 union spoolss_FormInfo {
 	struct spoolss_FormInfo1 info1;/* [case] */
