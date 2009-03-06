@@ -10064,7 +10064,7 @@ WERROR _spoolss_XcvData(pipes_struct *p,
 			struct spoolss_XcvData *r)
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
-	DATA_BLOB out_data;
+	DATA_BLOB out_data = data_blob_null;
 	WERROR werror;
 
 	if (!Printer) {
