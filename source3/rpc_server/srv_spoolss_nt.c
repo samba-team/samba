@@ -8915,25 +8915,72 @@ WERROR _spoolss_EnumPrintProcDataTypes(pipes_struct *p,
 }
 
 /****************************************************************************
+ fill_monitor_1
+****************************************************************************/
+
+static WERROR fill_monitor_1(TALLOC_CTX *mem_ctx,
+			     struct spoolss_MonitorInfo1 *r,
+			     const char *monitor_name)
+{
+	r->monitor_name			= talloc_strdup(mem_ctx, monitor_name);
+	W_ERROR_HAVE_NO_MEMORY(r->monitor_name);
+
+	return WERR_OK;
+}
+
+/****************************************************************************
+ fill_monitor_2
+****************************************************************************/
+
+static WERROR fill_monitor_2(TALLOC_CTX *mem_ctx,
+			     struct spoolss_MonitorInfo2 *r,
+			     const char *monitor_name,
+			     const char *environment,
+			     const char *dll_name)
+{
+	r->monitor_name			= talloc_strdup(mem_ctx, monitor_name);
+	W_ERROR_HAVE_NO_MEMORY(r->monitor_name);
+	r->environment			= talloc_strdup(mem_ctx, environment);
+	W_ERROR_HAVE_NO_MEMORY(r->environment);
+	r->dll_name			= talloc_strdup(mem_ctx, dll_name);
+	W_ERROR_HAVE_NO_MEMORY(r->dll_name);
+
+	return WERR_OK;
+}
+
+/****************************************************************************
  enumprintmonitors level 1.
 ****************************************************************************/
 
-static WERROR enumprintmonitors_level_1(RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enumprintmonitors_level_1(TALLOC_CTX *mem_ctx,
+					union spoolss_MonitorInfo **info_p,
+					uint32_t offered,
+					uint32_t *needed,
+					uint32_t *count)
 {
-	PRINTMONITOR_1 *info_1;
+	union spoolss_MonitorInfo *info;
 	WERROR result = WERR_OK;
 	int i;
 
-	if((info_1 = SMB_MALLOC_ARRAY(PRINTMONITOR_1, 2)) == NULL)
-		return WERR_NOMEM;
+	info = TALLOC_ARRAY(mem_ctx, union spoolss_MonitorInfo, 2);
+	W_ERROR_HAVE_NO_MEMORY(info);
 
-	*returned = 2;
+	*count = 2;
 
-	init_unistr(&(info_1[0].name), SPL_LOCAL_PORT );
-	init_unistr(&(info_1[1].name), SPL_TCPIP_PORT );
+	result = fill_monitor_1(info, &info[0].info1,
+				SPL_LOCAL_PORT /* FIXME */);
+	if (!W_ERROR_IS_OK(result)) {
+		goto out;
+	}
 
-	for ( i=0; i<*returned; i++ ) {
-		*needed += spoolss_size_printmonitor_info_1(&info_1[i]);
+	result = fill_monitor_1(info, &info[1].info1,
+				SPL_TCPIP_PORT /* FIXME */);
+	if (!W_ERROR_IS_OK(result)) {
+		goto out;
+	}
+
+	for (i=0; i<*count; i++) {
+		*needed += ndr_size_spoolss_MonitorInfo1(&info[i].info1, NULL, 0);
 	}
 
 	if (*needed > offered) {
@@ -8941,49 +8988,55 @@ static WERROR enumprintmonitors_level_1(RPC_BUFFER *buffer, uint32 offered, uint
 		goto out;
 	}
 
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
-	}
-
-	for ( i=0; i<*returned; i++ ) {
-		smb_io_printmonitor_info_1("", buffer, &info_1[i], 0);
-	}
-
 out:
-	SAFE_FREE(info_1);
+	if (!W_ERROR_IS_OK(result)) {
+		TALLOC_FREE(info);
+		*count = 0;
+		return result;
+	}
 
-	if ( !W_ERROR_IS_OK(result) )
-		*returned = 0;
+	*info_p = info;
 
-	return result;
+	return WERR_OK;
 }
 
 /****************************************************************************
  enumprintmonitors level 2.
 ****************************************************************************/
 
-static WERROR enumprintmonitors_level_2(RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enumprintmonitors_level_2(TALLOC_CTX *mem_ctx,
+					union spoolss_MonitorInfo **info_p,
+					uint32_t offered,
+					uint32_t *needed,
+					uint32_t *count)
 {
-	PRINTMONITOR_2 *info_2;
+	union spoolss_MonitorInfo *info;
 	WERROR result = WERR_OK;
 	int i;
 
-	if((info_2 = SMB_MALLOC_ARRAY(PRINTMONITOR_2, 2)) == NULL)
-		return WERR_NOMEM;
+	info = TALLOC_ARRAY(mem_ctx, union spoolss_MonitorInfo, 2);
+	W_ERROR_HAVE_NO_MEMORY(info);
 
-	*returned = 2;
+	*count = 2;
 
-	init_unistr( &(info_2[0].name), SPL_LOCAL_PORT );
-	init_unistr( &(info_2[0].environment), "Windows NT X86" );
-	init_unistr( &(info_2[0].dll_name), "localmon.dll" );
+	result = fill_monitor_2(info, &info[0].info2,
+				SPL_LOCAL_PORT, /* FIXME */
+				"Windows NT X86", /* FIXME */
+				"localmon.dll");
+	if (!W_ERROR_IS_OK(result)) {
+		goto out;
+	}
 
-	init_unistr( &(info_2[1].name), SPL_TCPIP_PORT );
-	init_unistr( &(info_2[1].environment), "Windows NT X86" );
-	init_unistr( &(info_2[1].dll_name), "tcpmon.dll" );
+	result = fill_monitor_2(info, &info[1].info2,
+				SPL_TCPIP_PORT, /* FIXME */
+				"Windows NT X86", /* FIXME */
+				"tcpmon.dll");
+	if (!W_ERROR_IS_OK(result)) {
+		goto out;
+	}
 
-	for ( i=0; i<*returned; i++ ) {
-		*needed += spoolss_size_printmonitor_info_2(&info_2[i]);
+	for (i=0; i<*count; i++) {
+		*needed += ndr_size_spoolss_MonitorInfo2(&info[i].info2, NULL, 0);
 	}
 
 	if (*needed > offered) {
@@ -8991,49 +9044,32 @@ static WERROR enumprintmonitors_level_2(RPC_BUFFER *buffer, uint32 offered, uint
 		goto out;
 	}
 
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
-	}
-
-	for ( i=0; i<*returned; i++ ) {
-		smb_io_printmonitor_info_2("", buffer, &info_2[i], 0);
-	}
-
 out:
-	SAFE_FREE(info_2);
+	if (!W_ERROR_IS_OK(result)) {
+		TALLOC_FREE(info);
+		*count = 0;
+		return result;
+	}
 
-	if ( !W_ERROR_IS_OK(result) )
-		*returned = 0;
+	*info_p = info;
 
-	return result;
+	return WERR_OK;
 }
 
-/****************************************************************************
-****************************************************************************/
+/****************************************************************
+ _spoolss_EnumMonitors
+****************************************************************/
 
-WERROR _spoolss_enumprintmonitors(pipes_struct *p, SPOOL_Q_ENUMPRINTMONITORS *q_u, SPOOL_R_ENUMPRINTMONITORS *r_u)
+WERROR _spoolss_EnumMonitors(pipes_struct *p,
+			     struct spoolss_EnumMonitors *r)
 {
-	uint32 level = q_u->level;
-	RPC_BUFFER *buffer = NULL;
-	uint32 offered = q_u->offered;
-	uint32 *needed = &r_u->needed;
-	uint32 *returned = &r_u->returned;
-
 	/* that's an [in out] buffer */
 
-	if (!q_u->buffer && (offered!=0)) {
+	if (!r->in.buffer && (r->in.offered != 0)) {
 		return WERR_INVALID_PARAM;
 	}
 
-	if (offered > MAX_RPC_DATA_SIZE) {
-		return WERR_INVALID_PARAM;
-	}
-
-	rpcbuf_move(q_u->buffer, &r_u->buffer);
-	buffer = r_u->buffer;
-
- 	DEBUG(5,("spoolss_enumprintmonitors\n"));
+	DEBUG(5,("_spoolss_EnumMonitors\n"));
 
 	/*
 	 * Enumerate the print monitors ...
@@ -9042,14 +9078,19 @@ WERROR _spoolss_enumprintmonitors(pipes_struct *p, SPOOL_Q_ENUMPRINTMONITORS *q_
 	 * and I can use my nice printer checker.
 	 */
 
-	*returned=0;
-	*needed=0;
+	*r->out.count = 0;
+	*r->out.needed = 0;
+	*r->out.info = NULL;
 
-	switch (level) {
+	switch (r->in.level) {
 	case 1:
-		return enumprintmonitors_level_1(buffer, offered, needed, returned);
+		return enumprintmonitors_level_1(p->mem_ctx, r->out.info,
+						 r->in.offered, r->out.needed,
+						 r->out.count);
 	case 2:
-		return enumprintmonitors_level_2(buffer, offered, needed, returned);
+		return enumprintmonitors_level_2(p->mem_ctx, r->out.info,
+						 r->in.offered, r->out.needed,
+						 r->out.count);
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
@@ -10282,17 +10323,6 @@ WERROR _spoolss_SetPrinterData(pipes_struct *p,
 
 WERROR _spoolss_WaitForPrinterChange(pipes_struct *p,
 				     struct spoolss_WaitForPrinterChange *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_EnumMonitors
-****************************************************************/
-
-WERROR _spoolss_EnumMonitors(pipes_struct *p,
-			     struct spoolss_EnumMonitors *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
