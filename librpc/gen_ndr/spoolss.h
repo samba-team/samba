@@ -1255,13 +1255,13 @@ union spoolss_PortInfo {
 
 struct spoolss_MonitorInfo1 {
 	const char * monitor_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
-};
+}/* [gensize,public] */;
 
 struct spoolss_MonitorInfo2 {
 	const char * monitor_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * environment;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * dll_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
-};
+}/* [gensize,public] */;
 
 union spoolss_MonitorInfo {
 	struct spoolss_MonitorInfo1 info1;/* [case] */

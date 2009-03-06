@@ -16313,7 +16313,7 @@ _PUBLIC_ void ndr_print_spoolss_PortInfo(struct ndr_print *ndr, const char *name
 	}
 }
 
-static enum ndr_err_code ndr_push_spoolss_MonitorInfo1(struct ndr_push *ndr, int ndr_flags, const struct spoolss_MonitorInfo1 *r)
+_PUBLIC_ enum ndr_err_code ndr_push_spoolss_MonitorInfo1(struct ndr_push *ndr, int ndr_flags, const struct spoolss_MonitorInfo1 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -16338,7 +16338,7 @@ static enum ndr_err_code ndr_push_spoolss_MonitorInfo1(struct ndr_push *ndr, int
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_spoolss_MonitorInfo1(struct ndr_pull *ndr, int ndr_flags, struct spoolss_MonitorInfo1 *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_MonitorInfo1(struct ndr_pull *ndr, int ndr_flags, struct spoolss_MonitorInfo1 *r)
 {
 	uint32_t _ptr_monitor_name;
 	TALLOC_CTX *_mem_save_monitor_name_0;
@@ -16390,7 +16390,12 @@ _PUBLIC_ void ndr_print_spoolss_MonitorInfo1(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_spoolss_MonitorInfo2(struct ndr_push *ndr, int ndr_flags, const struct spoolss_MonitorInfo2 *r)
+_PUBLIC_ size_t ndr_size_spoolss_MonitorInfo1(const struct spoolss_MonitorInfo1 *r, struct smb_iconv_convenience *ic, int flags)
+{
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_spoolss_MonitorInfo1, ic);
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_spoolss_MonitorInfo2(struct ndr_push *ndr, int ndr_flags, const struct spoolss_MonitorInfo2 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -16445,7 +16450,7 @@ static enum ndr_err_code ndr_push_spoolss_MonitorInfo2(struct ndr_push *ndr, int
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_spoolss_MonitorInfo2(struct ndr_pull *ndr, int ndr_flags, struct spoolss_MonitorInfo2 *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_MonitorInfo2(struct ndr_pull *ndr, int ndr_flags, struct spoolss_MonitorInfo2 *r)
 {
 	uint32_t _ptr_monitor_name;
 	TALLOC_CTX *_mem_save_monitor_name_0;
@@ -16565,6 +16570,11 @@ _PUBLIC_ void ndr_print_spoolss_MonitorInfo2(struct ndr_print *ndr, const char *
 	}
 	ndr->depth--;
 	ndr->depth--;
+}
+
+_PUBLIC_ size_t ndr_size_spoolss_MonitorInfo2(const struct spoolss_MonitorInfo2 *r, struct smb_iconv_convenience *ic, int flags)
+{
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_spoolss_MonitorInfo2, ic);
 }
 
 _PUBLIC_ enum ndr_err_code ndr_push_spoolss_MonitorInfo(struct ndr_push *ndr, int ndr_flags, const union spoolss_MonitorInfo *r)

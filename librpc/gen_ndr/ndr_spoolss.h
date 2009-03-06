@@ -394,8 +394,14 @@ size_t ndr_size_spoolss_PortInfoFF(const struct spoolss_PortInfoFF *r, struct sm
 enum ndr_err_code ndr_push_spoolss_PortInfo(struct ndr_push *ndr, int ndr_flags, const union spoolss_PortInfo *r);
 enum ndr_err_code ndr_pull_spoolss_PortInfo(struct ndr_pull *ndr, int ndr_flags, union spoolss_PortInfo *r);
 void ndr_print_spoolss_PortInfo(struct ndr_print *ndr, const char *name, const union spoolss_PortInfo *r);
+enum ndr_err_code ndr_push_spoolss_MonitorInfo1(struct ndr_push *ndr, int ndr_flags, const struct spoolss_MonitorInfo1 *r);
+enum ndr_err_code ndr_pull_spoolss_MonitorInfo1(struct ndr_pull *ndr, int ndr_flags, struct spoolss_MonitorInfo1 *r);
 void ndr_print_spoolss_MonitorInfo1(struct ndr_print *ndr, const char *name, const struct spoolss_MonitorInfo1 *r);
+size_t ndr_size_spoolss_MonitorInfo1(const struct spoolss_MonitorInfo1 *r, struct smb_iconv_convenience *ic, int flags);
+enum ndr_err_code ndr_push_spoolss_MonitorInfo2(struct ndr_push *ndr, int ndr_flags, const struct spoolss_MonitorInfo2 *r);
+enum ndr_err_code ndr_pull_spoolss_MonitorInfo2(struct ndr_pull *ndr, int ndr_flags, struct spoolss_MonitorInfo2 *r);
 void ndr_print_spoolss_MonitorInfo2(struct ndr_print *ndr, const char *name, const struct spoolss_MonitorInfo2 *r);
+size_t ndr_size_spoolss_MonitorInfo2(const struct spoolss_MonitorInfo2 *r, struct smb_iconv_convenience *ic, int flags);
 enum ndr_err_code ndr_push_spoolss_MonitorInfo(struct ndr_push *ndr, int ndr_flags, const union spoolss_MonitorInfo *r);
 enum ndr_err_code ndr_pull_spoolss_MonitorInfo(struct ndr_pull *ndr, int ndr_flags, union spoolss_MonitorInfo *r);
 void ndr_print_spoolss_MonitorInfo(struct ndr_print *ndr, const char *name, const union spoolss_MonitorInfo *r);
