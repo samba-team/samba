@@ -771,33 +771,6 @@ SPOOL_R_ENUMPRINTERDRIVERS;
 
 /********************************************/
 
-typedef struct spool_q_enumprintprocessors
-{
-	uint32 name_ptr;
-	UNISTR2 name;
-	uint32 environment_ptr;
-	UNISTR2 environment;
-	uint32 level;
-	RPC_BUFFER *buffer;
-	uint32 offered;
-}
-SPOOL_Q_ENUMPRINTPROCESSORS;
-
-typedef struct printprocessor_1
-{
-	UNISTR name;
-}
-PRINTPROCESSOR_1;
-
-typedef struct spool_r_enumprintprocessors
-{
-	RPC_BUFFER *buffer;
-	uint32 needed;
-	uint32 returned;
-	WERROR status;
-}
-SPOOL_R_ENUMPRINTPROCESSORS;
-
 typedef struct spool_q_enumprintprocdatatypes
 {
 	uint32 name_ptr;
