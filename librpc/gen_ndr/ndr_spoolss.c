@@ -16650,6 +16650,172 @@ _PUBLIC_ void ndr_print_spoolss_MonitorInfo(struct ndr_print *ndr, const char *n
 	}
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrintProcDataTypesInfo1(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PrintProcDataTypesInfo1 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->name_array));
+			ndr->flags = _flags_save_string;
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->name_array) {
+				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->name_array));
+				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->name_array));
+			}
+			ndr->flags = _flags_save_string;
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrintProcDataTypesInfo1(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PrintProcDataTypesInfo1 *r)
+{
+	uint32_t _ptr_name_array;
+	TALLOC_CTX *_mem_save_name_array_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_name_array));
+			if (_ptr_name_array) {
+				NDR_PULL_ALLOC(ndr, r->name_array);
+				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->name_array, _ptr_name_array));
+			} else {
+				r->name_array = NULL;
+			}
+			ndr->flags = _flags_save_string;
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->name_array) {
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
+				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->name_array));
+				_mem_save_name_array_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->name_array, 0);
+				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->name_array));
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_name_array_0, 0);
+				ndr->offset = _relative_save_offset;
+			}
+			ndr->flags = _flags_save_string;
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_PrintProcDataTypesInfo1(struct ndr_print *ndr, const char *name, const struct spoolss_PrintProcDataTypesInfo1 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_PrintProcDataTypesInfo1");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "name_array", r->name_array);
+	ndr->depth++;
+	if (r->name_array) {
+		ndr_print_string(ndr, "name_array", r->name_array);
+	}
+	ndr->depth--;
+	ndr->depth--;
+}
+
+_PUBLIC_ size_t ndr_size_spoolss_PrintProcDataTypesInfo1(const struct spoolss_PrintProcDataTypesInfo1 *r, struct smb_iconv_convenience *ic, int flags)
+{
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_spoolss_PrintProcDataTypesInfo1, ic);
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrintProcDataTypesInfo(struct ndr_push *ndr, int ndr_flags, const union spoolss_PrintProcDataTypesInfo *r)
+{
+	uint32_t _save_relative_base_offset = ndr_push_get_relative_base_offset(ndr);
+	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
+		switch (level) {
+			case 1: {
+				NDR_CHECK(ndr_push_align(ndr, 4));
+				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+				NDR_CHECK(ndr_push_spoolss_PrintProcDataTypesInfo1(ndr, NDR_SCALARS, &r->info1));
+			break; }
+
+			default: {
+			break; }
+
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_setup_relative_base_offset2(ndr, r));
+		switch (level) {
+			case 1:
+				NDR_CHECK(ndr_push_spoolss_PrintProcDataTypesInfo1(ndr, NDR_BUFFERS, &r->info1));
+			break;
+
+			default:
+			break;
+
+		}
+	}
+	ndr_push_restore_relative_base_offset(ndr, _save_relative_base_offset);
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrintProcDataTypesInfo(struct ndr_pull *ndr, int ndr_flags, union spoolss_PrintProcDataTypesInfo *r)
+{
+	uint32_t _save_relative_base_offset = ndr_pull_get_relative_base_offset(ndr);
+	int level;
+	level = ndr_pull_get_switch_value(ndr, r);
+	if (ndr_flags & NDR_SCALARS) {
+		switch (level) {
+			case 1: {
+				NDR_CHECK(ndr_pull_align(ndr, 4));
+				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+				NDR_CHECK(ndr_pull_spoolss_PrintProcDataTypesInfo1(ndr, NDR_SCALARS, &r->info1));
+			break; }
+
+			default: {
+			break; }
+
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		NDR_CHECK(ndr_pull_setup_relative_base_offset2(ndr, r));
+		switch (level) {
+			case 1:
+				NDR_CHECK(ndr_pull_spoolss_PrintProcDataTypesInfo1(ndr, NDR_BUFFERS, &r->info1));
+			break;
+
+			default:
+			break;
+
+		}
+	}
+	ndr_pull_restore_relative_base_offset(ndr, _save_relative_base_offset);
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_PrintProcDataTypesInfo(struct ndr_print *ndr, const char *name, const union spoolss_PrintProcDataTypesInfo *r)
+{
+	int level;
+	level = ndr_print_get_switch_value(ndr, r);
+	ndr_print_union(ndr, name, level, "spoolss_PrintProcDataTypesInfo");
+	switch (level) {
+		case 1:
+			ndr_print_spoolss_PrintProcDataTypesInfo1(ndr, "info1", &r->info1);
+		break;
+
+		default:
+		break;
+
+	}
+}
+
 static enum ndr_err_code ndr_push_spoolss_PrinterChangeFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
@@ -23320,28 +23486,198 @@ _PUBLIC_ void ndr_print_spoolss_DeletePrintProvidor(struct ndr_print *ndr, const
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_spoolss_EnumPrintProcDataTypes(struct ndr_push *ndr, int flags, const struct spoolss_EnumPrintProcDataTypes *r)
+_PUBLIC_ enum ndr_err_code ndr_push__spoolss_EnumPrintProcDataTypes(struct ndr_push *ndr, int flags, const struct _spoolss_EnumPrintProcDataTypes *r)
 {
 	if (flags & NDR_IN) {
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.servername));
+		if (r->in.servername) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.servername, CH_UTF16)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.servername, CH_UTF16)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.servername, ndr_charset_length(r->in.servername, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		}
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.print_processor_name));
+		if (r->in.print_processor_name) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.print_processor_name, CH_UTF16)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.print_processor_name, CH_UTF16)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.print_processor_name, ndr_charset_length(r->in.print_processor_name, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.level));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.buffer));
+		if (r->in.buffer) {
+			NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS, *r->in.buffer));
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.offered));
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.info));
+		if (r->out.info) {
+			NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS, *r->out.info));
+		}
+		if (r->out.needed == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.needed));
+		if (r->out.count == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.count));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_spoolss_EnumPrintProcDataTypes(struct ndr_pull *ndr, int flags, struct spoolss_EnumPrintProcDataTypes *r)
+_PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumPrintProcDataTypes(struct ndr_pull *ndr, int flags, struct _spoolss_EnumPrintProcDataTypes *r)
 {
+	uint32_t _ptr_servername;
+	uint32_t _ptr_print_processor_name;
+	uint32_t _ptr_buffer;
+	uint32_t _ptr_info;
+	TALLOC_CTX *_mem_save_servername_0;
+	TALLOC_CTX *_mem_save_print_processor_name_0;
+	TALLOC_CTX *_mem_save_buffer_0;
+	TALLOC_CTX *_mem_save_info_0;
+	TALLOC_CTX *_mem_save_needed_0;
+	TALLOC_CTX *_mem_save_count_0;
 	if (flags & NDR_IN) {
+		ZERO_STRUCT(r->out);
+
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_servername));
+		if (_ptr_servername) {
+			NDR_PULL_ALLOC(ndr, r->in.servername);
+		} else {
+			r->in.servername = NULL;
+		}
+		if (r->in.servername) {
+			_mem_save_servername_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->in.servername, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.servername));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.servername));
+			if (ndr_get_array_length(ndr, &r->in.servername) > ndr_get_array_size(ndr, &r->in.servername)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.servername), ndr_get_array_length(ndr, &r->in.servername));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.servername), sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.servername, ndr_get_array_length(ndr, &r->in.servername), sizeof(uint16_t), CH_UTF16));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_servername_0, 0);
+		}
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_print_processor_name));
+		if (_ptr_print_processor_name) {
+			NDR_PULL_ALLOC(ndr, r->in.print_processor_name);
+		} else {
+			r->in.print_processor_name = NULL;
+		}
+		if (r->in.print_processor_name) {
+			_mem_save_print_processor_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->in.print_processor_name, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.print_processor_name));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.print_processor_name));
+			if (ndr_get_array_length(ndr, &r->in.print_processor_name) > ndr_get_array_size(ndr, &r->in.print_processor_name)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.print_processor_name), ndr_get_array_length(ndr, &r->in.print_processor_name));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.print_processor_name), sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.print_processor_name, ndr_get_array_length(ndr, &r->in.print_processor_name), sizeof(uint16_t), CH_UTF16));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_print_processor_name_0, 0);
+		}
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.level));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_buffer));
+		if (_ptr_buffer) {
+			NDR_PULL_ALLOC(ndr, r->in.buffer);
+		} else {
+			r->in.buffer = NULL;
+		}
+		if (r->in.buffer) {
+			_mem_save_buffer_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->in.buffer, 0);
+			NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, r->in.buffer));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_buffer_0, 0);
+		}
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.offered));
+		NDR_PULL_ALLOC(ndr, r->out.needed);
+		ZERO_STRUCTP(r->out.needed);
+		NDR_PULL_ALLOC(ndr, r->out.count);
+		ZERO_STRUCTP(r->out.count);
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info));
+		if (_ptr_info) {
+			NDR_PULL_ALLOC(ndr, r->out.info);
+		} else {
+			r->out.info = NULL;
+		}
+		if (r->out.info) {
+			_mem_save_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->out.info, 0);
+			NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, r->out.info));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, 0);
+		}
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.needed);
+		}
+		_mem_save_needed_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.needed, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.needed));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_needed_0, LIBNDR_FLAG_REF_ALLOC);
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.count);
+		}
+		_mem_save_count_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.count, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.count));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_count_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push___spoolss_EnumPrintProcDataTypes(struct ndr_push *ndr, int flags, const struct __spoolss_EnumPrintProcDataTypes *r)
+{
+	uint32_t cntr_info_0;
+	if (flags & NDR_IN) {
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.level));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.count));
+	}
+	if (flags & NDR_OUT) {
+		for (cntr_info_0 = 0; cntr_info_0 < r->in.count; cntr_info_0++) {
+			NDR_CHECK(ndr_push_set_switch_value(ndr, &r->out.info[cntr_info_0], r->in.level));
+			NDR_CHECK(ndr_push_spoolss_PrintProcDataTypesInfo(ndr, NDR_SCALARS, &r->out.info[cntr_info_0]));
+		}
+		for (cntr_info_0 = 0; cntr_info_0 < r->in.count; cntr_info_0++) {
+			NDR_CHECK(ndr_push_spoolss_PrintProcDataTypesInfo(ndr, NDR_BUFFERS, &r->out.info[cntr_info_0]));
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull___spoolss_EnumPrintProcDataTypes(struct ndr_pull *ndr, int flags, struct __spoolss_EnumPrintProcDataTypes *r)
+{
+	uint32_t cntr_info_0;
+	TALLOC_CTX *_mem_save_info_0;
+	if (flags & NDR_IN) {
+		ZERO_STRUCT(r->out);
+
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.level));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.count));
+	}
+	if (flags & NDR_OUT) {
+		NDR_PULL_ALLOC_N(ndr, r->out.info, r->in.count);
+		_mem_save_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.info, 0);
+		for (cntr_info_0 = 0; cntr_info_0 < r->in.count; cntr_info_0++) {
+			NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->out.info[cntr_info_0], r->in.level));
+			NDR_CHECK(ndr_pull_spoolss_PrintProcDataTypesInfo(ndr, NDR_SCALARS, &r->out.info[cntr_info_0]));
+		}
+		for (cntr_info_0 = 0; cntr_info_0 < r->in.count; cntr_info_0++) {
+			NDR_CHECK(ndr_pull_spoolss_PrintProcDataTypesInfo(ndr, NDR_BUFFERS, &r->out.info[cntr_info_0]));
+		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, 0);
 	}
 	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_spoolss_EnumPrintProcDataTypes(struct ndr_print *ndr, const char *name, int flags, const struct spoolss_EnumPrintProcDataTypes *r)
 {
+	uint32_t cntr_info_2;
 	ndr_print_struct(ndr, name, "spoolss_EnumPrintProcDataTypes");
 	ndr->depth++;
 	if (flags & NDR_SET_VALUES) {
@@ -23350,11 +23686,58 @@ _PUBLIC_ void ndr_print_spoolss_EnumPrintProcDataTypes(struct ndr_print *ndr, co
 	if (flags & NDR_IN) {
 		ndr_print_struct(ndr, "in", "spoolss_EnumPrintProcDataTypes");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "servername", r->in.servername);
+		ndr->depth++;
+		if (r->in.servername) {
+			ndr_print_string(ndr, "servername", r->in.servername);
+		}
+		ndr->depth--;
+		ndr_print_ptr(ndr, "print_processor_name", r->in.print_processor_name);
+		ndr->depth++;
+		if (r->in.print_processor_name) {
+			ndr_print_string(ndr, "print_processor_name", r->in.print_processor_name);
+		}
+		ndr->depth--;
+		ndr_print_uint32(ndr, "level", r->in.level);
+		ndr_print_ptr(ndr, "buffer", r->in.buffer);
+		ndr->depth++;
+		if (r->in.buffer) {
+			ndr_print_DATA_BLOB(ndr, "buffer", *r->in.buffer);
+		}
+		ndr->depth--;
+		ndr_print_uint32(ndr, "offered", r->in.offered);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_EnumPrintProcDataTypes");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "count", r->out.count);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "count", *r->out.count);
+		ndr->depth--;
+		ndr_print_ptr(ndr, "info", r->out.info);
+		ndr->depth++;
+		ndr_print_ptr(ndr, "info", *r->out.info);
+		ndr->depth++;
+		if (*r->out.info) {
+			ndr->print(ndr, "%s: ARRAY(%d)", "info", (int)*r->out.count);
+			ndr->depth++;
+			for (cntr_info_2=0;cntr_info_2<*r->out.count;cntr_info_2++) {
+				char *idx_2=NULL;
+				if (asprintf(&idx_2, "[%d]", cntr_info_2) != -1) {
+					ndr_print_set_switch_value(ndr, &(*r->out.info)[cntr_info_2], r->in.level);
+					ndr_print_spoolss_PrintProcDataTypesInfo(ndr, "info", &(*r->out.info)[cntr_info_2]);
+					free(idx_2);
+				}
+			}
+			ndr->depth--;
+		}
+		ndr->depth--;
+		ndr->depth--;
+		ndr_print_ptr(ndr, "needed", r->out.needed);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "needed", *r->out.needed);
+		ndr->depth--;
 		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}

@@ -4022,6 +4022,25 @@ static bool api_spoolss_EnumPrintProcDataTypes(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(spoolss_EnumPrintProcDataTypes, r);
 	}
 
+	ZERO_STRUCT(r->out);
+	r->out.count = talloc_zero(r, uint32_t);
+	if (r->out.count == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	r->out.info = talloc_zero(r, union spoolss_PrintProcDataTypesInfo *);
+	if (r->out.info == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	r->out.needed = talloc_zero(r, uint32_t);
+	if (r->out.needed == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
 	r->out.result = _spoolss_EnumPrintProcDataTypes(p, r);
 
 	if (p->rng_fault_state) {
@@ -8067,6 +8086,22 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 
 		case NDR_SPOOLSS_ENUMPRINTPROCDATATYPES: {
 			struct spoolss_EnumPrintProcDataTypes *r = (struct spoolss_EnumPrintProcDataTypes *)_r;
+			ZERO_STRUCT(r->out);
+			r->out.count = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.count == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.info = talloc_zero(mem_ctx, union spoolss_PrintProcDataTypesInfo *);
+			if (r->out.info == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.needed = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.needed == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
 			r->out.result = _spoolss_EnumPrintProcDataTypes(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
