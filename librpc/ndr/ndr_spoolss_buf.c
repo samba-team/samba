@@ -52,9 +52,9 @@
 	_r.out.needed	= r->out.needed;\
 	_r.out.count	= r->out.count;\
 	_r.out.result	= r->out.result;\
-	if (r->out.info && !r->in.buffer) {\
+	if (r->out.info && *r->out.info && !r->in.buffer) {\
 		return ndr_push_error(ndr, NDR_ERR_BUFSIZE,\
-			"SPOOLSS Buffer: r->out.info but there's no r->in.buffer");\
+			"SPOOLSS Buffer: *r->out.info but there's no r->in.buffer");\
 	}\
 	if (r->in.buffer) {\
 		DATA_BLOB _data_blob_info;\
@@ -65,7 +65,7 @@
 			struct __##fn __r;\
 			__r.in.level	= r->in.level;\
 			__r.in.count	= *r->out.count;\
-			__r.out.info	= r->out.info;\
+			__r.out.info	= *r->out.info;\
 			NDR_CHECK(ndr_push___##fn(_ndr_info, flags, &__r)); \
 		}\
 		if (r->in.offered > _ndr_info->offset) {\
@@ -111,6 +111,8 @@
 			"SPOOLSS Buffer: r->in.offered[%u] doesn't match length of r->in.buffer[%u]",\
 			(unsigned)r->in.offered, (unsigned)r->in.buffer->length);\
 	}\
+	NDR_PULL_ALLOC(ndr, r->out.info);\
+	ZERO_STRUCTP(r->out.info);\
 } while(0)
 
 #define NDR_SPOOLSS_PULL_ENUM_OUT(fn) do { \
@@ -120,12 +122,17 @@
 	_r.out.needed	= r->out.needed;\
 	_r.out.count	= r->out.count;\
 	NDR_CHECK(ndr_pull__##fn(ndr, flags, &_r));\
-	r->out.info	= NULL;\
+	if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {\
+		NDR_PULL_ALLOC(ndr, r->out.info);\
+	}\
+	*r->out.info = NULL;\
 	r->out.needed	= _r.out.needed;\
 	r->out.count	= _r.out.count;\
 	r->out.result	= _r.out.result;\
 	if (_r.out.info) {\
-		struct ndr_pull *_ndr_info = ndr_pull_init_blob(_r.out.info, ndr, ndr->iconv_convenience);\
+		struct ndr_pull *_ndr_info;\
+		NDR_PULL_ALLOC(ndr, *r->out.info);\
+		_ndr_info = ndr_pull_init_blob(_r.out.info, *r->out.info, ndr->iconv_convenience);\
 		NDR_ERR_HAVE_NO_MEMORY(_ndr_info);\
 		_ndr_info->flags= ndr->flags;\
 		if (r->in.offered != _ndr_info->data_size) {\
@@ -139,7 +146,7 @@
 			__r.in.count	= *r->out.count;\
 			__r.out.info	= NULL;\
 			NDR_CHECK(ndr_pull___##fn(_ndr_info, flags, &__r));\
-			r->out.info	= __r.out.info;\
+			*r->out.info	= __r.out.info;\
 		}\
 	}\
 } while(0)
