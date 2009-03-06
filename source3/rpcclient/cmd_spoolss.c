@@ -359,55 +359,45 @@ static WERROR cmd_spoolss_enum_printers(struct rpc_pipe_client *cli,
 /****************************************************************************
 ****************************************************************************/
 
-static void display_port_info_1(PORT_INFO_1 *i1)
+static void display_port_info_1(struct spoolss_PortInfo1 *r)
 {
-	fstring buffer;
-
-	rpcstr_pull(buffer, i1->port_name.buffer, sizeof(buffer), -1, STR_TERMINATE);
-	printf("\tPort Name:\t[%s]\n", buffer);
+	printf("\tPort Name:\t[%s]\n", r->port_name);
 }
 
 /****************************************************************************
 ****************************************************************************/
 
-static void display_port_info_2(PORT_INFO_2 *i2)
+static void display_port_info_2(struct spoolss_PortInfo2 *r)
 {
-	fstring buffer;
-
-	rpcstr_pull(buffer, i2->port_name.buffer, sizeof(buffer), -1, STR_TERMINATE);
-	printf("\tPort Name:\t[%s]\n", buffer);
-	rpcstr_pull(buffer, i2->monitor_name.buffer, sizeof(buffer), -1, STR_TERMINATE);
-
-	printf("\tMonitor Name:\t[%s]\n", buffer);
-	rpcstr_pull(buffer, i2->description.buffer, sizeof(buffer), -1, STR_TERMINATE);
-
-	printf("\tDescription:\t[%s]\n", buffer);
+	printf("\tPort Name:\t[%s]\n", r->port_name);
+	printf("\tMonitor Name:\t[%s]\n", r->monitor_name);
+	printf("\tDescription:\t[%s]\n", r->description);
 	printf("\tPort Type:\t" );
-	if ( i2->port_type ) {
+	if (r->port_type) {
 		int comma = 0; /* hack */
 		printf( "[" );
-		if ( i2->port_type & PORT_TYPE_READ ) {
+		if (r->port_type & SPOOLSS_PORT_TYPE_READ) {
 			printf( "Read" );
 			comma = 1;
 		}
-		if ( i2->port_type & PORT_TYPE_WRITE ) {
+		if (r->port_type & SPOOLSS_PORT_TYPE_WRITE) {
 			printf( "%sWrite", comma ? ", " : "" );
 			comma = 1;
 		}
 		/* These two have slightly different interpretations
 		 on 95/98/ME but I'm disregarding that for now */
-		if ( i2->port_type & PORT_TYPE_REDIRECTED ) {
+		if (r->port_type & SPOOLSS_PORT_TYPE_REDIRECTED) {
 			printf( "%sRedirected", comma ? ", " : "" );
 			comma = 1;
 		}
-		if ( i2->port_type & PORT_TYPE_NET_ATTACHED ) {
+		if (r->port_type & SPOOLSS_PORT_TYPE_NET_ATTACHED) {
 			printf( "%sNet-Attached", comma ? ", " : "" );
 		}
 		printf( "]\n" );
 	} else {
 		printf( "[Unset]\n" );
 	}
-	printf("\tReserved:\t[%d]\n", i2->reserved);
+	printf("\tReserved:\t[%d]\n", r->reserved);
 	printf("\n");
 }
 
@@ -420,8 +410,8 @@ static WERROR cmd_spoolss_enum_ports(struct rpc_pipe_client *cli,
 {
 	WERROR         		result;
 	uint32                  info_level = 1;
-	PORT_INFO_CTR 		ctr;
 	uint32 			returned;
+	union spoolss_PortInfo *info;
 
 	if (argc > 2) {
 		printf("Usage: %s [level]\n", argv[0]);
@@ -433,20 +423,22 @@ static WERROR cmd_spoolss_enum_ports(struct rpc_pipe_client *cli,
 
 	/* Enumerate ports */
 
-	ZERO_STRUCT(ctr);
-
-	result = rpccli_spoolss_enum_ports(cli, mem_ctx, info_level, &returned, &ctr);
-
+	result = rpccli_spoolss_enumports(cli, mem_ctx,
+					  cli->srv_name_slash,
+					  info_level,
+					  0,
+					  &returned,
+					  &info);
 	if (W_ERROR_IS_OK(result)) {
 		int i;
 
 		for (i = 0; i < returned; i++) {
 			switch (info_level) {
 			case 1:
-				display_port_info_1(&ctr.port.info_1[i]);
+				display_port_info_1(&info[i].info1);
 				break;
 			case 2:
-				display_port_info_2(&ctr.port.info_2[i]);
+				display_port_info_2(&info[i].info2);
 				break;
 			default:
 				printf("unknown info level %d\n", info_level);
