@@ -214,21 +214,23 @@ case $cmd in
 		touch $CTDB_BASE/state/samba/periodic_cleanup
 	}
 
-	testparm_background_update
+	[ "$CTDB_SAMBA_SKIP_SHARE_CHECK" = "yes" ] || {
+		testparm_background_update
 
-	testparm_cat | egrep '^WARNING|^ERROR|^Unknown' && {
-	    testparm_foreground_update
-	    testparm_cat | egrep '^WARNING|^ERROR|^Unknown' && {
-		echo "ERROR: testparm shows smb.conf is not clean"
-		exit 1
-	    }
-	}
+		testparm_cat | egrep '^WARNING|^ERROR|^Unknown' && {
+		    testparm_foreground_update
+		    testparm_cat | egrep '^WARNING|^ERROR|^Unknown' && {
+			echo "ERROR: testparm shows smb.conf is not clean"
+			exit 1
+		    }
+		}
 
-	smb_dirs=`testparm_cat | egrep '^[[:space:]]*path = ' | cut -d= -f2`
-	ctdb_check_directories_probe "Samba" $smb_dirs || {
-	    testparm_foreground_update
-	    smb_dirs=`testparm_cat | egrep '^[[:space:]]*path = ' | cut -d= -f2`
-	    ctdb_check_directories "Samba" $smb_dirs
+		smb_dirs=`testparm_cat | egrep '^[[:space:]]*path = ' | cut -d= -f2`
+		ctdb_check_directories_probe "Samba" $smb_dirs || {
+		    testparm_foreground_update
+		    smb_dirs=`testparm_cat | egrep '^[[:space:]]*path = ' | cut -d= -f2`
+		    ctdb_check_directories "Samba" $smb_dirs
+		}
 	}
 
 	smb_ports="$CTDB_SAMBA_CHECK_PORTS"

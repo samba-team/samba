@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.71
+Version: 1.0.73
 Release: 1
 Epoch: 0
 License: GNU GPL version 3
@@ -128,6 +128,14 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Wed Mar 4 2009 : Version 1.0.73
+ - Add possibility to disable the check of shares for NFS and Samba
+ - From Sumit Bose, fix dependencies so make -j works
+* Wed Feb 18 2009 : Version 1.0.72
+ - Updates to test scripts by martin s
+ - Adding a COPYING file
+ - Use netstat to check for services and ports and fallback to netcat
+   only if netstat is unavailable.
 * Mon Feb 2 2009 : Version 1.0.71
  - Additional ipv6 fixes from Michael Adams
 * Fri Jan 16 2009 : Version 1.0.70

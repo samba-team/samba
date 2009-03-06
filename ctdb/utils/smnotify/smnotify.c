@@ -24,7 +24,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include "smnotify.h"
-#include "../../lib/popt/popt.h"
+#include "popt.h"
 
 static char *client       = NULL;
 static const char *ip     = NULL;
