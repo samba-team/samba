@@ -4082,6 +4082,73 @@ static void free_dev_mode(DEVICEMODE *dev)
 	SAFE_FREE(dev);
 }
 
+/****************************************************************************
+ Convert an NT_DEVICEMODE to a spoolss_DeviceMode structure.  Both pointers
+ should be valid upon entry
+****************************************************************************/
+
+static WERROR convert_nt_devicemode_new(TALLOC_CTX *mem_ctx,
+					struct spoolss_DeviceMode *r,
+					const NT_DEVICEMODE *ntdevmode)
+{
+	if (!r || !ntdevmode) {
+		return WERR_INVALID_PARAM;
+	}
+
+	r->devicename		= talloc_strdup(mem_ctx, ntdevmode->devicename);
+	W_ERROR_HAVE_NO_MEMORY(r->devicename);
+
+	r->specversion		= ntdevmode->specversion;
+	r->driverversion	= ntdevmode->driverversion;
+	r->size			= ntdevmode->size;
+	r->__driverextra_length	= ntdevmode->driverextra;
+	r->fields		= ntdevmode->fields;
+
+	r->orientation		= ntdevmode->orientation;
+	r->papersize		= ntdevmode->papersize;
+	r->paperlength		= ntdevmode->paperlength;
+	r->paperwidth		= ntdevmode->paperwidth;
+	r->scale		= ntdevmode->scale;
+	r->copies		= ntdevmode->copies;
+	r->defaultsource	= ntdevmode->defaultsource;
+	r->printquality		= ntdevmode->printquality;
+	r->color		= ntdevmode->color;
+	r->duplex		= ntdevmode->duplex;
+	r->yresolution		= ntdevmode->yresolution;
+	r->ttoption		= ntdevmode->ttoption;
+	r->collate		= ntdevmode->collate;
+
+	r->formname		= talloc_strdup(mem_ctx, ntdevmode->formname);
+	W_ERROR_HAVE_NO_MEMORY(r->formname);
+
+	/* all 0 below are values that have not been set in the old parsing/copy
+	 * function, maybe they should... - gd */
+
+	r->logpixels		= 0;
+	r->bitsperpel		= 0;
+	r->pelswidth		= 0;
+	r->pelsheight		= 0;
+	r->displayflags		= 0;
+	r->displayfrequency	= 0;
+	r->icmmethod		= ntdevmode->icmmethod;
+	r->icmintent		= ntdevmode->icmintent;
+	r->mediatype		= ntdevmode->mediatype;
+	r->dithertype		= ntdevmode->dithertype;
+	r->reserved1		= 0;
+	r->reserved2		= 0;
+	r->panningwidth		= 0;
+	r->panningheight	= 0;
+
+	if (ntdevmode->nt_dev_private != NULL) {
+		r->driverextra_data = data_blob_talloc(mem_ctx,
+			ntdevmode->nt_dev_private,
+			ntdevmode->driverextra);
+		W_ERROR_HAVE_NO_MEMORY(r->driverextra_data.data);
+	}
+
+	return WERR_OK;
+}
+
 
 /****************************************************************************
  Convert an NT_DEVICEMODE to a DEVICEMODE structure.  Both pointers
@@ -4127,6 +4194,48 @@ static bool convert_nt_devicemode( DEVICEMODE *devmode, NT_DEVICEMODE *ntdevmode
 	}
 
 	return True;
+}
+
+/****************************************************************************
+ Create a spoolss_DeviceMode struct. Returns talloced memory.
+****************************************************************************/
+
+struct spoolss_DeviceMode *construct_dev_mode_new(TALLOC_CTX *mem_ctx,
+						  const char *servicename)
+{
+	WERROR result;
+	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
+	struct spoolss_DeviceMode *devmode = NULL;
+
+	DEBUG(7,("construct_dev_mode_new\n"));
+
+	DEBUGADD(8,("getting printer characteristics\n"));
+
+	if (!W_ERROR_IS_OK(get_a_printer(NULL, &printer, 2, servicename)))
+		return NULL;
+
+	if (!printer->info_2->devmode) {
+		DEBUG(5, ("BONG! There was no device mode!\n"));
+		goto done;
+	}
+
+	devmode = TALLOC_ZERO_P(mem_ctx, struct spoolss_DeviceMode);
+	if (!devmode) {
+		DEBUG(2,("construct_dev_mode_new: talloc fail.\n"));
+		goto done;
+	}
+
+	DEBUGADD(8,("loading DEVICEMODE\n"));
+
+	result = convert_nt_devicemode_new(mem_ctx, devmode, printer->info_2->devmode);
+	if (!W_ERROR_IS_OK(result)) {
+		TALLOC_FREE(devmode);
+	}
+
+done:
+	free_a_printer(&printer,2);
+
+	return devmode;
 }
 
 /****************************************************************************

@@ -6110,6 +6110,8 @@ void construct_info_data(struct spoolss_Notify *info_data,
 			 enum spoolss_Field field,
 			 int id);
 DEVICEMODE *construct_dev_mode(const char *servicename);
+struct spoolss_DeviceMode *construct_dev_mode_new(TALLOC_CTX *mem_ctx,
+						  const char *servicename);
 WERROR _spoolss_enumprinters( pipes_struct *p, SPOOL_Q_ENUMPRINTERS *q_u, SPOOL_R_ENUMPRINTERS *r_u);
 WERROR _spoolss_getprinter(pipes_struct *p, SPOOL_Q_GETPRINTER *q_u, SPOOL_R_GETPRINTER *r_u);
 WERROR _spoolss_getprinterdriver2(pipes_struct *p, SPOOL_Q_GETPRINTERDRIVER2 *q_u, SPOOL_R_GETPRINTERDRIVER2 *r_u);
