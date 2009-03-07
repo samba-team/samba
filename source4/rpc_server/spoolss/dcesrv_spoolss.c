@@ -1001,7 +1001,7 @@ static WERROR dcesrv_spoolss_DeletePrintProvidor(struct dcesrv_call_state *dce_c
 static WERROR dcesrv_spoolss_EnumPrintProcDataTypes(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_EnumPrintProcDataTypes *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	return WERR_OK;
 }
 
 

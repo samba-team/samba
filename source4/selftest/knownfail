@@ -36,7 +36,6 @@ rpc.netlogon.*.GetPassword
 rpc.netlogon.*.GetTrustPasswords
 rpc.netlogon.*.DatabaseRedo
 rpc.netlogon.*.ServerGetTrustInfo
-rpc.spoolss.*.EnumPrintProcDataTypes		# not implemented yet
 base.charset.*.Testing partial surrogate
 .*net.api.delshare.*				# DelShare isn't implemented yet
 rap.*netservergetinfo
