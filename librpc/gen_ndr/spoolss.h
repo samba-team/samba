@@ -403,7 +403,7 @@ struct spoolss_JobInfo1 {
 	uint32_t total_pages;
 	uint32_t pages_printed;
 	struct spoolss_Time submitted;
-};
+}/* [gensize,public] */;
 
 struct spoolss_JobInfo2 {
 	uint32_t job_id;
@@ -429,13 +429,13 @@ struct spoolss_JobInfo2 {
 	struct spoolss_Time submitted;
 	uint32_t time;
 	uint32_t pages_printed;
-};
+}/* [gensize,public] */;
 
 struct spoolss_JobInfo3 {
 	uint32_t job_id;
 	uint32_t next_job_id;
 	uint32_t reserved;
-};
+}/* [gensize,public] */;
 
 struct spoolss_JobInfo4 {
 	uint32_t job_id;
@@ -462,14 +462,14 @@ struct spoolss_JobInfo4 {
 	uint32_t time;
 	uint32_t pages_printed;
 	uint32_t size_high;
-};
+}/* [gensize,public] */;
 
 union spoolss_JobInfo {
 	struct spoolss_JobInfo1 info1;/* [case] */
 	struct spoolss_JobInfo2 info2;/* [case(2)] */
 	struct spoolss_JobInfo3 info3;/* [case(3)] */
 	struct spoolss_JobInfo4 info4;/* [case(4)] */
-}/* [relative_base,nodiscriminant,public] */;
+}/* [relative_base,gensize,public,nodiscriminant] */;
 
 struct spoolss_SetJobInfo1 {
 	uint32_t job_id;

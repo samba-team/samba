@@ -2554,7 +2554,7 @@ _PUBLIC_ void ndr_print_spoolss_DevmodeContainer(struct ndr_print *ndr, const ch
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_spoolss_JobInfo1(struct ndr_push *ndr, int ndr_flags, const struct spoolss_JobInfo1 *r)
+_PUBLIC_ enum ndr_err_code ndr_push_spoolss_JobInfo1(struct ndr_push *ndr, int ndr_flags, const struct spoolss_JobInfo1 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -2661,7 +2661,7 @@ static enum ndr_err_code ndr_push_spoolss_JobInfo1(struct ndr_push *ndr, int ndr
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_spoolss_JobInfo1(struct ndr_pull *ndr, int ndr_flags, struct spoolss_JobInfo1 *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_JobInfo1(struct ndr_pull *ndr, int ndr_flags, struct spoolss_JobInfo1 *r)
 {
 	uint32_t _ptr_printer_name;
 	TALLOC_CTX *_mem_save_printer_name_0;
@@ -2902,7 +2902,12 @@ _PUBLIC_ void ndr_print_spoolss_JobInfo1(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_spoolss_JobInfo2(struct ndr_push *ndr, int ndr_flags, const struct spoolss_JobInfo2 *r)
+_PUBLIC_ size_t ndr_size_spoolss_JobInfo1(const struct spoolss_JobInfo1 *r, struct smb_iconv_convenience *ic, int flags)
+{
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_spoolss_JobInfo1, ic);
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_spoolss_JobInfo2(struct ndr_push *ndr, int ndr_flags, const struct spoolss_JobInfo2 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -3083,7 +3088,7 @@ static enum ndr_err_code ndr_push_spoolss_JobInfo2(struct ndr_push *ndr, int ndr
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_spoolss_JobInfo2(struct ndr_pull *ndr, int ndr_flags, struct spoolss_JobInfo2 *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_JobInfo2(struct ndr_pull *ndr, int ndr_flags, struct spoolss_JobInfo2 *r)
 {
 	uint32_t _ptr_printer_name;
 	TALLOC_CTX *_mem_save_printer_name_0;
@@ -3522,7 +3527,12 @@ _PUBLIC_ void ndr_print_spoolss_JobInfo2(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_spoolss_JobInfo3(struct ndr_push *ndr, int ndr_flags, const struct spoolss_JobInfo3 *r)
+_PUBLIC_ size_t ndr_size_spoolss_JobInfo2(const struct spoolss_JobInfo2 *r, struct smb_iconv_convenience *ic, int flags)
+{
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_spoolss_JobInfo2, ic);
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_spoolss_JobInfo3(struct ndr_push *ndr, int ndr_flags, const struct spoolss_JobInfo3 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -3535,7 +3545,7 @@ static enum ndr_err_code ndr_push_spoolss_JobInfo3(struct ndr_push *ndr, int ndr
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_spoolss_JobInfo3(struct ndr_pull *ndr, int ndr_flags, struct spoolss_JobInfo3 *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_JobInfo3(struct ndr_pull *ndr, int ndr_flags, struct spoolss_JobInfo3 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -3558,7 +3568,12 @@ _PUBLIC_ void ndr_print_spoolss_JobInfo3(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_spoolss_JobInfo4(struct ndr_push *ndr, int ndr_flags, const struct spoolss_JobInfo4 *r)
+_PUBLIC_ size_t ndr_size_spoolss_JobInfo3(const struct spoolss_JobInfo3 *r, struct smb_iconv_convenience *ic, int flags)
+{
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_spoolss_JobInfo3, ic);
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_spoolss_JobInfo4(struct ndr_push *ndr, int ndr_flags, const struct spoolss_JobInfo4 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -3740,7 +3755,7 @@ static enum ndr_err_code ndr_push_spoolss_JobInfo4(struct ndr_push *ndr, int ndr
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_spoolss_JobInfo4(struct ndr_pull *ndr, int ndr_flags, struct spoolss_JobInfo4 *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_JobInfo4(struct ndr_pull *ndr, int ndr_flags, struct spoolss_JobInfo4 *r)
 {
 	uint32_t _ptr_printer_name;
 	TALLOC_CTX *_mem_save_printer_name_0;
@@ -4181,6 +4196,11 @@ _PUBLIC_ void ndr_print_spoolss_JobInfo4(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
+_PUBLIC_ size_t ndr_size_spoolss_JobInfo4(const struct spoolss_JobInfo4 *r, struct smb_iconv_convenience *ic, int flags)
+{
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_spoolss_JobInfo4, ic);
+}
+
 _PUBLIC_ enum ndr_err_code ndr_push_spoolss_JobInfo(struct ndr_push *ndr, int ndr_flags, const union spoolss_JobInfo *r)
 {
 	uint32_t _save_relative_base_offset = ndr_push_get_relative_base_offset(ndr);
@@ -4333,6 +4353,11 @@ _PUBLIC_ void ndr_print_spoolss_JobInfo(struct ndr_print *ndr, const char *name,
 		break;
 
 	}
+}
+
+_PUBLIC_ size_t ndr_size_spoolss_JobInfo(const union spoolss_JobInfo *r, uint32_t level, struct smb_iconv_convenience *ic, int flags)
+{
+	return ndr_size_union(r, flags, level, (ndr_push_flags_fn_t)ndr_push_spoolss_JobInfo, ic);
 }
 
 static enum ndr_err_code ndr_push_spoolss_SetJobInfo1(struct ndr_push *ndr, int ndr_flags, const struct spoolss_SetJobInfo1 *r)
