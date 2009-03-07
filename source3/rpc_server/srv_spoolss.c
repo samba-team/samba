@@ -351,27 +351,7 @@ static bool api_spoolss_addjob(pipes_struct *p)
 
 static bool api_spoolss_enumjobs(pipes_struct *p)
 {
-	SPOOL_Q_ENUMJOBS q_u;
-	SPOOL_R_ENUMJOBS r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if (!spoolss_io_q_enumjobs("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_enumjobs: unable to unmarshall SPOOL_Q_ENUMJOBS.\n"));
-		return False;
-	}
-
-	r_u.status = _spoolss_enumjobs(p, &q_u, &r_u);
-
-	if (!spoolss_io_r_enumjobs("",&r_u,rdata,0)) {
-		DEBUG(0,("spoolss_io_r_enumjobs: unable to marshall SPOOL_R_ENUMJOBS.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_spoolss_call(p, NDR_SPOOLSS_ENUMJOBS);
 }
 
 /****************************************************************************

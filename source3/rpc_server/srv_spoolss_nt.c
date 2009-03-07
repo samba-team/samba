@@ -6745,6 +6745,104 @@ WERROR _spoolss_AddJob(pipes_struct *p,
 }
 
 /****************************************************************************
+fill_job_info1
+****************************************************************************/
+
+static WERROR fill_job_info1(TALLOC_CTX *mem_ctx,
+			     struct spoolss_JobInfo1 *r,
+			     const print_queue_struct *queue,
+			     int position, int snum,
+			     const NT_PRINTER_INFO_LEVEL *ntprinter)
+{
+	struct tm *t;
+
+	t = gmtime(&queue->time);
+
+	r->job_id		= queue->job;
+
+	r->printer_name		= talloc_strdup(mem_ctx, lp_servicename(snum));
+	W_ERROR_HAVE_NO_MEMORY(r->printer_name);
+	r->server_name		= talloc_strdup(mem_ctx, ntprinter->info_2->servername);
+	W_ERROR_HAVE_NO_MEMORY(r->server_name);
+	r->user_name		= talloc_strdup(mem_ctx, queue->fs_user);
+	W_ERROR_HAVE_NO_MEMORY(r->user_name);
+	r->document_name	= talloc_strdup(mem_ctx, queue->fs_file);
+	W_ERROR_HAVE_NO_MEMORY(r->document_name);
+	r->data_type		= talloc_strdup(mem_ctx, "RAW");
+	W_ERROR_HAVE_NO_MEMORY(r->data_type);
+	r->text_status		= talloc_strdup(mem_ctx, "");
+	W_ERROR_HAVE_NO_MEMORY(r->text_status);
+
+	r->status		= nt_printj_status(queue->status);
+	r->priority		= queue->priority;
+	r->position		= position;
+	r->total_pages		= queue->page_count;
+	r->pages_printed	= 0; /* ??? */
+
+	init_systemtime(&r->submitted, t);
+
+	return WERR_OK;
+}
+
+/****************************************************************************
+fill_job_info2
+****************************************************************************/
+
+static WERROR fill_job_info2(TALLOC_CTX *mem_ctx,
+			     struct spoolss_JobInfo2 *r,
+			     const print_queue_struct *queue,
+			     int position, int snum,
+			     const NT_PRINTER_INFO_LEVEL *ntprinter,
+			     struct spoolss_DeviceMode *devmode)
+{
+	struct tm *t;
+
+	t = gmtime(&queue->time);
+
+	r->job_id		= queue->job;
+
+	r->printer_name		= talloc_strdup(mem_ctx, lp_servicename(snum));
+	W_ERROR_HAVE_NO_MEMORY(r->printer_name);
+	r->server_name		= talloc_strdup(mem_ctx, ntprinter->info_2->servername);
+	W_ERROR_HAVE_NO_MEMORY(r->server_name);
+	r->user_name		= talloc_strdup(mem_ctx, queue->fs_user);
+	W_ERROR_HAVE_NO_MEMORY(r->user_name);
+	r->document_name	= talloc_strdup(mem_ctx, queue->fs_file);
+	W_ERROR_HAVE_NO_MEMORY(r->document_name);
+	r->notify_name		= talloc_strdup(mem_ctx, queue->fs_user);
+	W_ERROR_HAVE_NO_MEMORY(r->notify_name);
+	r->data_type		= talloc_strdup(mem_ctx, "RAW");
+	W_ERROR_HAVE_NO_MEMORY(r->data_type);
+	r->print_processor	= talloc_strdup(mem_ctx, "winprint");
+	W_ERROR_HAVE_NO_MEMORY(r->print_processor);
+	r->parameters		= talloc_strdup(mem_ctx, "");
+	W_ERROR_HAVE_NO_MEMORY(r->parameters);
+	r->driver_name		= talloc_strdup(mem_ctx, ntprinter->info_2->drivername);
+	W_ERROR_HAVE_NO_MEMORY(r->driver_name);
+
+	r->devmode		= devmode;
+
+	r->text_status		= talloc_strdup(mem_ctx, "");
+	W_ERROR_HAVE_NO_MEMORY(r->text_status);
+
+	r->secdesc		= NULL;
+
+	r->status		= nt_printj_status(queue->status);
+	r->priority		= queue->priority;
+	r->position		= position;
+	r->start_time		= 0;
+	r->until_time		= 0;
+	r->total_pages		= queue->page_count;
+	r->size			= queue->size;
+	init_systemtime(&r->submitted, t);
+	r->time			= 0;
+	r->pages_printed	= 0; /* ??? */
+
+	return WERR_OK;
+}
+
+
+/****************************************************************************
 ****************************************************************************/
 
 static void fill_job_info_1(JOB_INFO_1 *job_info, const print_queue_struct *queue,
@@ -6819,177 +6917,176 @@ static bool fill_job_info_2(JOB_INFO_2 *job_info, const print_queue_struct *queu
  Enumjobs at level 1.
 ****************************************************************************/
 
-static WERROR enumjobs_level1(const print_queue_struct *queue, int snum,
+static WERROR enumjobs_level1(TALLOC_CTX *mem_ctx,
+			      const print_queue_struct *queue,
+			      uint32_t num_queues, int snum,
                               const NT_PRINTER_INFO_LEVEL *ntprinter,
-			      RPC_BUFFER *buffer, uint32 offered,
-			      uint32 *needed, uint32 *returned)
+			      union spoolss_JobInfo **info_p,
+			      uint32_t *count)
 {
-	JOB_INFO_1 *info;
+	union spoolss_JobInfo *info;
 	int i;
 	WERROR result = WERR_OK;
 
-	info=SMB_MALLOC_ARRAY(JOB_INFO_1,*returned);
-	if (info==NULL) {
-		*returned=0;
-		return WERR_NOMEM;
+	info = TALLOC_ARRAY(mem_ctx, union spoolss_JobInfo, num_queues);
+	W_ERROR_HAVE_NO_MEMORY(info);
+
+	*count = num_queues;
+
+	for (i=0; i<*count; i++) {
+		result = fill_job_info1(info,
+					&info[i].info1,
+					&queue[i],
+					i,
+					snum,
+					ntprinter);
+		if (!W_ERROR_IS_OK(result)) {
+			goto out;
+		}
 	}
 
-	for (i=0; i<*returned; i++)
-		fill_job_info_1( &info[i], &queue[i], i, snum, ntprinter );
-
-	/* check the required size. */
-	for (i=0; i<*returned; i++)
-		(*needed) += spoolss_size_job_info_1(&info[i]);
-
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
+ out:
+	if (!W_ERROR_IS_OK(result)) {
+		TALLOC_FREE(info);
+		*count = 0;
+		return result;
 	}
 
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
-	}
+	*info_p = info;
 
-	/* fill the buffer with the structures */
-	for (i=0; i<*returned; i++)
-		smb_io_job_info_1("", buffer, &info[i], 0);
-
-out:
-	/* clear memory */
-	SAFE_FREE(info);
-
-	if ( !W_ERROR_IS_OK(result) )
-		*returned = 0;
-
-	return result;
+	return WERR_OK;
 }
 
 /****************************************************************************
  Enumjobs at level 2.
 ****************************************************************************/
 
-static WERROR enumjobs_level2(const print_queue_struct *queue, int snum,
+static WERROR enumjobs_level2(TALLOC_CTX *mem_ctx,
+			      const print_queue_struct *queue,
+			      uint32_t num_queues, int snum,
                               const NT_PRINTER_INFO_LEVEL *ntprinter,
-			      RPC_BUFFER *buffer, uint32 offered,
-			      uint32 *needed, uint32 *returned)
+			      union spoolss_JobInfo **info_p,
+			      uint32_t *count)
 {
-	JOB_INFO_2 *info = NULL;
+	union spoolss_JobInfo *info;
 	int i;
 	WERROR result = WERR_OK;
-	DEVICEMODE *devmode = NULL;
 
-	if ( !(info = SMB_MALLOC_ARRAY(JOB_INFO_2,*returned)) ) {
-		*returned=0;
-		return WERR_NOMEM;
+	info = TALLOC_ARRAY(mem_ctx, union spoolss_JobInfo, num_queues);
+	W_ERROR_HAVE_NO_MEMORY(info);
+
+	*count = num_queues;
+
+	for (i=0; i<*count; i++) {
+
+		struct spoolss_DeviceMode *devmode;
+
+		devmode = construct_dev_mode_new(info, lp_const_servicename(snum));
+		if (!devmode) {
+			result = WERR_NOMEM;
+			goto out;
+		}
+
+		result = fill_job_info2(info,
+					&info[i].info2,
+					&queue[i],
+					i,
+					snum,
+					ntprinter,
+					devmode);
+		if (!W_ERROR_IS_OK(result)) {
+			goto out;
+		}
 	}
 
-	/* this should not be a failure condition if the devmode is NULL */
-
-	devmode = construct_dev_mode(lp_const_servicename(snum));
-
-	for (i=0; i<*returned; i++)
-		fill_job_info_2(&(info[i]), &queue[i], i, snum, ntprinter, devmode);
-
-	/* check the required size. */
-	for (i=0; i<*returned; i++)
-		(*needed) += spoolss_size_job_info_2(&info[i]);
-
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
+ out:
+	if (!W_ERROR_IS_OK(result)) {
+		TALLOC_FREE(info);
+		*count = 0;
+		return result;
 	}
 
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
-	}
+	*info_p = info;
 
-	/* fill the buffer with the structures */
-	for (i=0; i<*returned; i++)
-		smb_io_job_info_2("", buffer, &info[i], 0);
-
-out:
-	free_devmode(devmode);
-	SAFE_FREE(info);
-
-	if ( !W_ERROR_IS_OK(result) )
-		*returned = 0;
-
-	return result;
-
+	return WERR_OK;
 }
 
-/****************************************************************************
- Enumjobs.
-****************************************************************************/
+/****************************************************************
+ _spoolss_EnumJobs
+****************************************************************/
 
-WERROR _spoolss_enumjobs( pipes_struct *p, SPOOL_Q_ENUMJOBS *q_u, SPOOL_R_ENUMJOBS *r_u)
+WERROR _spoolss_EnumJobs(pipes_struct *p,
+			 struct spoolss_EnumJobs *r)
 {
-	POLICY_HND *handle = &q_u->handle;
-	uint32 level = q_u->level;
-	RPC_BUFFER *buffer = NULL;
-	uint32 offered = q_u->offered;
-	uint32 *needed = &r_u->needed;
-	uint32 *returned = &r_u->returned;
-	WERROR wret;
+	WERROR result;
 	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
 	int snum;
 	print_status_struct prt_status;
-	print_queue_struct *queue=NULL;
+	print_queue_struct *queue = NULL;
+	uint32_t count;
 
 	/* that's an [in out] buffer */
 
-	if (!q_u->buffer && (offered!=0)) {
+	if (!r->in.buffer && (r->in.offered != 0)) {
 		return WERR_INVALID_PARAM;
 	}
 
-	if (offered > MAX_RPC_DATA_SIZE) {
-		return WERR_INVALID_PARAM;
-	}
+	DEBUG(4,("_spoolss_EnumJobs\n"));
 
-	rpcbuf_move(q_u->buffer, &r_u->buffer);
-	buffer = r_u->buffer;
-
-	DEBUG(4,("_spoolss_enumjobs\n"));
-
-	*needed=0;
-	*returned=0;
+	*r->out.needed = 0;
+	*r->out.count = 0;
+	*r->out.info = NULL;
 
 	/* lookup the printer snum and tdb entry */
 
-	if (!get_printer_snum(p, handle, &snum, NULL))
+	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
 		return WERR_BADFID;
+	}
 
-	wret = get_a_printer(NULL, &ntprinter, 2, lp_servicename(snum));
-	if ( !W_ERROR_IS_OK(wret) )
-		return wret;
+	result = get_a_printer(NULL, &ntprinter, 2, lp_servicename(snum));
+	if (!W_ERROR_IS_OK(result)) {
+		return result;
+	}
 
-	*returned = print_queue_status(snum, &queue, &prt_status);
-	DEBUGADD(4,("count:[%d], status:[%d], [%s]\n", *returned, prt_status.status, prt_status.message));
+	count = print_queue_status(snum, &queue, &prt_status);
+	DEBUGADD(4,("count:[%d], status:[%d], [%s]\n",
+		count, prt_status.status, prt_status.message));
 
-	if (*returned == 0) {
+	if (count == 0) {
 		SAFE_FREE(queue);
 		free_a_printer(&ntprinter, 2);
 		return WERR_OK;
 	}
 
-	switch (level) {
+	switch (r->in.level) {
 	case 1:
-		wret = enumjobs_level1(queue, snum, ntprinter, buffer, offered, needed, returned);
+		result = enumjobs_level1(p->mem_ctx, queue, count, snum,
+					 ntprinter, r->out.info, r->out.count);
 		break;
 	case 2:
-		wret = enumjobs_level2(queue, snum, ntprinter, buffer, offered, needed, returned);
+		result = enumjobs_level2(p->mem_ctx, queue, count, snum,
+					 ntprinter, r->out.info, r->out.count);
 		break;
 	default:
-		*returned=0;
-		wret = WERR_UNKNOWN_LEVEL;
+		result = WERR_UNKNOWN_LEVEL;
 		break;
 	}
 
 	SAFE_FREE(queue);
-	free_a_printer( &ntprinter, 2 );
-	return wret;
+	free_a_printer(&ntprinter, 2);
+
+	if (!W_ERROR_IS_OK(result)) {
+		return result;
+	}
+
+	*r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(p->mem_ctx,
+						     spoolss_EnumJobs, NULL,
+						     *r->out.info, r->in.level,
+						     *r->out.count);
+	*r->out.info	= SPOOLSS_BUFFER_OK(*r->out.info, NULL);
+	*r->out.count	= SPOOLSS_BUFFER_OK(*r->out.count, 0);
+
+	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 }
 
 /****************************************************************
@@ -10348,17 +10445,6 @@ WERROR _spoolss_EnumPrinters(pipes_struct *p,
 
 WERROR _spoolss_GetJob(pipes_struct *p,
 		       struct spoolss_GetJob *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_EnumJobs
-****************************************************************/
-
-WERROR _spoolss_EnumJobs(pipes_struct *p,
-			 struct spoolss_EnumJobs *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
