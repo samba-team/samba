@@ -401,7 +401,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 	/******************/
 	/* Function: 0x02 */
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		uint32 job_id;
 		[relative] nstring *printer_name;
 		[relative] nstring *server_name;
@@ -417,7 +417,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		spoolss_Time submitted;
 	} spoolss_JobInfo1;
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		uint32 job_id;
 		[relative] nstring *printer_name;
 		[relative] nstring *server_name;
@@ -443,13 +443,13 @@ import "misc.idl", "security.idl", "winreg.idl";
 		uint32 pages_printed;
 	} spoolss_JobInfo2;
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		uint32 job_id;
 		uint32 next_job_id;
 		uint32 reserved;
 	} spoolss_JobInfo3;
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		uint32 job_id;
 		[relative] nstring *printer_name;
 		[relative] nstring *server_name;
@@ -476,7 +476,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		uint32 size_high;
 	} spoolss_JobInfo4;
 
-	typedef [nodiscriminant,relative_base,public] union {
+	typedef [nodiscriminant,relative_base,public,gensize] union {
 		[case(1)] spoolss_JobInfo1 info1;
 		[case(2)] spoolss_JobInfo2 info2;
 		[case(3)] spoolss_JobInfo3 info3;
