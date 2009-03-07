@@ -825,60 +825,6 @@ static bool decode_printer_driver_3(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
 /**********************************************************************
 **********************************************************************/
 
-static bool decode_jobs_1(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
-			  uint32 num_jobs, JOB_INFO_1 **jobs)
-{
-	uint32 i;
-
-	if (num_jobs) {
-		*jobs = TALLOC_ARRAY(mem_ctx, JOB_INFO_1, num_jobs);
-		if (*jobs == NULL) {
-			return False;
-		}
-	} else {
-		*jobs = NULL;
-	}
-	prs_set_offset(&buffer->prs,0);
-
-	for (i = 0; i < num_jobs; i++) {
-		if (!smb_io_job_info_1("", buffer, &((*jobs)[i]), 0)) {
-			return False;
-		}
-	}
-
-	return True;
-}
-
-/**********************************************************************
-**********************************************************************/
-
-static bool decode_jobs_2(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
-			  uint32 num_jobs, JOB_INFO_2 **jobs)
-{
-	uint32 i;
-
-	if (num_jobs) {
-		*jobs = TALLOC_ARRAY(mem_ctx, JOB_INFO_2, num_jobs);
-		if (*jobs == NULL) {
-			return False;
-		}
-	} else {
-		*jobs = NULL;
-	}
-	prs_set_offset(&buffer->prs,0);
-
-	for (i = 0; i < num_jobs; i++) {
-		if (!smb_io_job_info_2("", buffer, &((*jobs)[i]), 0)) {
-			return False;
-		}
-	}
-
-	return True;
-}
-
-/**********************************************************************
-**********************************************************************/
-
 WERROR rpccli_spoolss_enum_printers(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				 char *name, uint32 flags, uint32 level,
 				 uint32 *num_printers, PRINTER_INFO_CTR *ctr)
@@ -1036,78 +982,6 @@ WERROR rpccli_spoolss_enumprinterdrivers (struct rpc_pipe_client *cli,
 			return WERR_UNKNOWN_LEVEL;
 		}
 	}
-
-	return out.status;
-}
-
-/**********************************************************************
-**********************************************************************/
-
-WERROR rpccli_spoolss_enumjobs(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-			    POLICY_HND *hnd, uint32 level, uint32 firstjob, 
-			    uint32 num_jobs, uint32 *returned, JOB_INFO_CTR *ctr)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_ENUMJOBS in;
-	SPOOL_R_ENUMJOBS out;
-	RPC_BUFFER buffer;
-	uint32 offered;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-	offered = 0;
-	if (!rpcbuf_init(&buffer, offered, mem_ctx))
-		return WERR_NOMEM;
-	make_spoolss_q_enumjobs( &in, hnd, firstjob, num_jobs, level, 
-		&buffer, offered );
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_ENUMJOBS,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_enumjobs,
-	            spoolss_io_r_enumjobs, 
-	            WERR_GENERAL_FAILURE );
-
-	if ( W_ERROR_EQUAL( out.status, WERR_INSUFFICIENT_BUFFER ) ) {
-		offered = out.needed;
-		
-		ZERO_STRUCT(in);
-		ZERO_STRUCT(out);
-
-		if (!rpcbuf_init(&buffer, offered, mem_ctx))
-			return WERR_NOMEM;
-		make_spoolss_q_enumjobs( &in, hnd, firstjob, num_jobs, level, 
-			&buffer, offered );
-
-		CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_ENUMJOBS,
-		            in, out, 
-		            qbuf, rbuf,
-		            spoolss_io_q_enumjobs,
-		            spoolss_io_r_enumjobs, 
-		            WERR_GENERAL_FAILURE );
-	}
-
-	if (!W_ERROR_IS_OK(out.status))
-		return out.status;
-		
-	switch(level) {
-	case 1:
-		if (!decode_jobs_1(mem_ctx, out.buffer, out.returned, &ctr->job.job_info_1)) {
-			return WERR_GENERAL_FAILURE;
-		}
-		break;
-	case 2:
-		if (!decode_jobs_2(mem_ctx, out.buffer, out.returned, &ctr->job.job_info_2)) {
-			return WERR_GENERAL_FAILURE;
-		}
-		break;
-	default:
-		DEBUG(3, ("unsupported info level %d", level));
-		return WERR_UNKNOWN_LEVEL;
-	}
-	
-	*returned = out.returned;
 
 	return out.status;
 }
