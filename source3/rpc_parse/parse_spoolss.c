@@ -1715,29 +1715,6 @@ bool spoolss_io_r_enumjobs(const char *desc, SPOOL_R_ENUMJOBS *r_u, prs_struct *
 /*******************************************************************
 ********************************************************************/  
 
-bool make_spoolss_q_enumjobs(SPOOL_Q_ENUMJOBS *q_u, const POLICY_HND *hnd,
-				uint32 firstjob,
-				uint32 numofjobs,
-				uint32 level,
-				RPC_BUFFER *buffer,
-				uint32 offered)
-{
-	if (q_u == NULL)
-	{
-		return False;
-	}
-	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
-	q_u->firstjob = firstjob;
-	q_u->numofjobs = numofjobs;
-	q_u->level = level;
-	q_u->buffer= buffer;
-	q_u->offered = offered;
-	return True;
-}
-
-/*******************************************************************
-********************************************************************/  
-
 bool spoolss_io_q_enumjobs(const char *desc, SPOOL_Q_ENUMJOBS *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_q_enumjobs");
