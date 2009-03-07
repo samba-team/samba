@@ -1090,52 +1090,6 @@ bool smb_io_job_info_2(const char *desc, RPC_BUFFER *buffer, JOB_INFO_2 *info, i
 }
 
 /*******************************************************************
- Parse a PORT_INFO_1 structure.
-********************************************************************/  
-
-bool smb_io_port_1(const char *desc, RPC_BUFFER *buffer, PORT_INFO_1 *info, int depth)
-{
-	prs_struct *ps=&buffer->prs;
-
-	prs_debug(ps, depth, desc, "smb_io_port_1");
-	depth++;
-
-	buffer->struct_start=prs_offset(ps);
-
-	if(!smb_io_relstr("port_name", buffer, depth, &info->port_name))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
- Parse a PORT_INFO_2 structure.
-********************************************************************/  
-
-bool smb_io_port_2(const char *desc, RPC_BUFFER *buffer, PORT_INFO_2 *info, int depth)
-{
-	prs_struct *ps=&buffer->prs;
-
-	prs_debug(ps, depth, desc, "smb_io_port_2");
-	depth++;
-
-	buffer->struct_start=prs_offset(ps);
-
-	if(!smb_io_relstr("port_name", buffer, depth, &info->port_name))
-		return False;
-	if(!smb_io_relstr("monitor_name", buffer, depth, &info->monitor_name))
-		return False;
-	if(!smb_io_relstr("description", buffer, depth, &info->description))
-		return False;
-	if(!prs_uint32("port_type", ps, depth, &info->port_type))
-		return False;
-	if(!prs_uint32("reserved", ps, depth, &info->reserved))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
 return the size required by a struct in the stream
 ********************************************************************/  
 
@@ -1484,37 +1438,6 @@ uint32 spoolss_size_job_info_2(JOB_INFO_2 *info)
 	size+=size_of_systemtime( &info->submitted );
 	size+=size_of_uint32( &info->timeelapsed );
 	size+=size_of_uint32( &info->pagesprinted );
-
-	return size;
-}
-
-/*******************************************************************
-return the size required by a struct in the stream
-********************************************************************/  
-
-uint32 spoolss_size_port_info_1(PORT_INFO_1 *info)
-{
-	int size=0;
-
-	size+=size_of_relative_string( &info->port_name );
-
-	return size;
-}
-
-/*******************************************************************
-return the size required by a struct in the stream
-********************************************************************/  
-
-uint32 spoolss_size_port_info_2(PORT_INFO_2 *info)
-{
-	int size=0;
-
-	size+=size_of_relative_string( &info->port_name );
-	size+=size_of_relative_string( &info->monitor_name );
-	size+=size_of_relative_string( &info->description );
-
-	size+=size_of_uint32( &info->port_type );
-	size+=size_of_uint32( &info->reserved );
 
 	return size;
 }

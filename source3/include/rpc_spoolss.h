@@ -683,22 +683,6 @@ typedef struct spool_r_enumjobs
 }
 SPOOL_R_ENUMJOBS;
 
-typedef struct s_port_info_1
-{
-	UNISTR port_name;
-}
-PORT_INFO_1;
-
-typedef struct s_port_info_2
-{
-	UNISTR port_name;
-	UNISTR monitor_name;
-	UNISTR description;
-	uint32 port_type;
-	uint32 reserved;
-}
-PORT_INFO_2;
-
 typedef struct job_info_info
 {
 	union
