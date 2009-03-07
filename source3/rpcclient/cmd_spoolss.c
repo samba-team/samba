@@ -2370,48 +2370,6 @@ done:
 /****************************************************************************
 ****************************************************************************/
 
-static void display_job_info_1(JOB_INFO_1 *job)
-{
-	fstring username = "", document = "", text_status = "";
-
-	rpcstr_pull(username, job->username.buffer,
-		    sizeof(username), -1, STR_TERMINATE);
-
-	rpcstr_pull(document, job->document.buffer,
-		    sizeof(document), -1, STR_TERMINATE);
-
-	rpcstr_pull(text_status, job->text_status.buffer,
-		    sizeof(text_status), -1, STR_TERMINATE);
-
-	printf("%d: jobid[%d]: %s %s %s %d/%d pages\n", job->position, job->jobid,
-	       username, document, text_status, job->pagesprinted,
-	       job->totalpages);
-}
-
-/****************************************************************************
-****************************************************************************/
-
-static void display_job_info_2(JOB_INFO_2 *job)
-{
-	fstring username = "", document = "", text_status = "";
-
-	rpcstr_pull(username, job->username.buffer,
-		    sizeof(username), -1, STR_TERMINATE);
-
-	rpcstr_pull(document, job->document.buffer,
-		    sizeof(document), -1, STR_TERMINATE);
-
-	rpcstr_pull(text_status, job->text_status.buffer,
-		    sizeof(text_status), -1, STR_TERMINATE);
-
-	printf("%d: jobid[%d]: %s %s %s %d/%d pages, %d bytes\n", job->position, job->jobid,
-	       username, document, text_status, job->pagesprinted,
-	       job->totalpages, job->size);
-}
-
-/****************************************************************************
-****************************************************************************/
-
 static void display_job_info1(struct spoolss_JobInfo1 *r)
 {
 	printf("%d: jobid[%d]: %s %s %s %d/%d pages\n", r->position, r->job_id,
@@ -2458,18 +2416,19 @@ static WERROR cmd_spoolss_enum_jobs(struct rpc_pipe_client *cli,
 				      const char **argv)
 {
 	WERROR result;
-	uint32 level = 1, num_jobs, i;
+	uint32_t level = 1, count, i;
 	const char *printername;
 	POLICY_HND hnd;
-	JOB_INFO_CTR ctr;
+	union spoolss_JobInfo *info;
 
 	if (argc < 2 || argc > 3) {
 		printf("Usage: %s printername [level]\n", argv[0]);
 		return WERR_OK;
 	}
 
-	if (argc == 3)
+	if (argc == 3) {
 		level = atoi(argv[2]);
+	}
 
 	/* Open printer handle */
 
@@ -2484,19 +2443,25 @@ static WERROR cmd_spoolss_enum_jobs(struct rpc_pipe_client *cli,
 
 	/* Enumerate ports */
 
-	result = rpccli_spoolss_enumjobs(cli, mem_ctx, &hnd, level, 0, 1000,
-		&num_jobs, &ctr);
-
-	if (!W_ERROR_IS_OK(result))
+	result = rpccli_spoolss_enumjobs(cli, mem_ctx,
+					 &hnd,
+					 0, /* firstjob */
+					 1000, /* numjobs */
+					 level,
+					 0,
+					 &count,
+					 &info);
+	if (!W_ERROR_IS_OK(result)) {
 		goto done;
+	}
 
-	for (i = 0; i < num_jobs; i++) {
-		switch(level) {
+	for (i = 0; i < count; i++) {
+		switch (level) {
 		case 1:
-			display_job_info_1(&ctr.job.job_info_1[i]);
+			display_job_info1(&info[i].info1);
 			break;
 		case 2:
-			display_job_info_2(&ctr.job.job_info_2[i]);
+			display_job_info2(&info[i].info2);
 			break;
 		default:
 			d_printf("unknown info level %d\n", level);
@@ -2505,8 +2470,9 @@ static WERROR cmd_spoolss_enum_jobs(struct rpc_pipe_client *cli,
 	}
 
 done:
-	if (is_valid_policy_hnd(&hnd))
+	if (is_valid_policy_hnd(&hnd)) {
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &hnd, NULL);
+	}
 
 	return result;
 }
