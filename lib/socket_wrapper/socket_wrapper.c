@@ -1536,8 +1536,10 @@ static int autobind_start;
 /* using sendto() or connect() on an unbound socket would give the
    recipient no way to reply, as unlike UDP and TCP, a unix domain
    socket can't auto-assign emphemeral port numbers, so we need to
-   assign it here */
-static int swrap_auto_bind(struct socket_info *si)
+   assign it here.
+   Note: this might change the family from ipv6 to ipv4
+*/
+static int swrap_auto_bind(struct socket_info *si, int family)
 {
 	struct sockaddr_un un_addr;
 	int i;
@@ -1555,7 +1557,7 @@ static int swrap_auto_bind(struct socket_info *si)
 
 	un_addr.sun_family = AF_UNIX;
 
-	switch (si->family) {
+	switch (family) {
 	case AF_INET: {
 		struct sockaddr_in in;
 
@@ -1583,6 +1585,11 @@ static int swrap_auto_bind(struct socket_info *si)
 #ifdef HAVE_IPV6
 	case AF_INET6: {
 		struct sockaddr_in6 in6;
+
+		if (si->family != family) {
+			errno = ENETUNREACH;
+			return -1;
+		}
 
 		switch (si->type) {
 		case SOCK_STREAM:
@@ -1634,6 +1641,7 @@ static int swrap_auto_bind(struct socket_info *si)
 		return -1;
 	}
 
+	si->family = family;
 	set_port(si->family, port, si->myname);
 
 	return 0;
@@ -1651,7 +1659,7 @@ _PUBLIC_ int swrap_connect(int s, const struct sockaddr *serv_addr, socklen_t ad
 	}
 
 	if (si->bound == 0) {
-		ret = swrap_auto_bind(si);
+		ret = swrap_auto_bind(si, serv_addr->sa_family);
 		if (ret == -1) return -1;
 	}
 
@@ -1872,7 +1880,7 @@ _PUBLIC_ ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags, con
 		break;
 	case SOCK_DGRAM:
 		if (si->bound == 0) {
-			ret = swrap_auto_bind(si);
+			ret = swrap_auto_bind(si, si->family);
 			if (ret == -1) return -1;
 		}
 		
