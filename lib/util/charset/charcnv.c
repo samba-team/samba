@@ -169,9 +169,10 @@ static smb_iconv_t get_conv_handle(struct smb_iconv_convenience *ic,
 _PUBLIC_ ssize_t iconv_talloc(TALLOC_CTX *ctx, 
 				       smb_iconv_t cd,
 				       void const *src, size_t srclen, 
-				       void **dest)
+				       void *dst)
 {
 	size_t i_len, o_len, destlen;
+	void **dest = (void **)dst;
 	size_t retval;
 	const char *inbuf = (const char *)src;
 	char *outbuf, *ob;
@@ -314,9 +315,10 @@ _PUBLIC_ bool convert_string_talloc_convenience(TALLOC_CTX *ctx,
 				       struct smb_iconv_convenience *ic, 
 				       charset_t from, charset_t to, 
 				       void const *src, size_t srclen, 
-				       void **dest, size_t *converted_size, 
+				       void *dst, size_t *converted_size, 
 					   bool allow_badcharcnv)
 {
+	void **dest = (void **)dst;
 	smb_iconv_t descriptor;
 	ssize_t ret;
 

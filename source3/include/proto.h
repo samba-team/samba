@@ -347,9 +347,6 @@ size_t convert_string(charset_t from, charset_t to,
 bool convert_string_allocate(TALLOC_CTX *ctx, charset_t from, charset_t to,
 			     void const *src, size_t srclen, void *dst,
 			     size_t *converted_size, bool allow_bad_conv);
-bool convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
-			   void const *src, size_t srclen, void **dst,
-			   size_t *converted_size, bool allow_bad_conv);
 size_t unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen);
 char *strdup_upper(const char *s);
 char *talloc_strdup_upper(TALLOC_CTX *ctx, const char *s);
