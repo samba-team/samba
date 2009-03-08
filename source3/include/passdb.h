@@ -186,7 +186,6 @@ enum pdb_search_type {
 };
 
 struct pdb_search {
-	TALLOC_CTX *mem_ctx;
 	enum pdb_search_type type;
 	struct samr_displayentry *cache;
 	uint32 num_entries;

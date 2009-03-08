@@ -320,7 +320,7 @@ static bool winbindd_setup_sig_usr2_handler(void)
 
 	se = tevent_add_signal(winbind_event_context(),
 			       winbind_event_context(),
-			       SIGCHLD, 0,
+			       SIGUSR2, 0,
 			       winbindd_sig_usr2_handler,
 			       NULL);
 	if (!se) {

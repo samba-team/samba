@@ -2386,6 +2386,14 @@ static NTSTATUS open_directory(connection_struct *conn,
 		return status;
 	}
 
+	/* We need to support SeSecurityPrivilege for this. */
+	if (access_mask & SEC_RIGHT_SYSTEM_SECURITY) {
+		DEBUG(10, ("open_directory: open on %s "
+			"failed - SEC_RIGHT_SYSTEM_SECURITY denied.\n",
+			fname));
+		return NT_STATUS_PRIVILEGE_NOT_HELD;
+	}
+
 	switch( create_disposition ) {
 		case FILE_OPEN:
 
@@ -2719,7 +2727,7 @@ struct case_semantics_state *set_posix_case_semantics(TALLOC_CTX *mem_ctx,
  * If that works, delete them all by setting the delete on close and close.
  */
 
-static NTSTATUS open_streams_for_delete(connection_struct *conn,
+NTSTATUS open_streams_for_delete(connection_struct *conn,
 					const char *fname)
 {
 	struct stream_struct *stream_info;
@@ -2777,13 +2785,15 @@ static NTSTATUS open_streams_for_delete(connection_struct *conn,
 			goto fail;
 		}
 
-		status = create_file_unixpath
-			(conn,			/* conn */
+		status = SMB_VFS_CREATE_FILE(
+			 conn,			/* conn */
 			 NULL,			/* req */
+			 0,			/* root_dir_fid */
 			 streamname,		/* fname */
+			 0,			/* create_file_flags */
 			 DELETE_ACCESS,		/* access_mask */
-			 FILE_SHARE_READ | FILE_SHARE_WRITE
-			 | FILE_SHARE_DELETE,	/* share_access */
+			 (FILE_SHARE_READ |	/* share_access */
+			     FILE_SHARE_WRITE | FILE_SHARE_DELETE),
 			 FILE_OPEN,		/* create_disposition*/
 			 NTCREATEX_OPTIONS_PRIVATE_STREAM_DELETE, /* create_options */
 			 FILE_ATTRIBUTE_NORMAL,	/* file_attributes */
@@ -2926,6 +2936,20 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	if ((access_mask & SEC_RIGHT_SYSTEM_SECURITY) &&
 	    !user_has_privileges(current_user.nt_user_token,
 				 &se_security)) {
+		status = NT_STATUS_PRIVILEGE_NOT_HELD;
+		goto fail;
+	}
+#else
+	/* We need to support SeSecurityPrivilege for this. */
+	if (access_mask & SEC_RIGHT_SYSTEM_SECURITY) {
+		status = NT_STATUS_PRIVILEGE_NOT_HELD;
+		goto fail;
+	}
+	/* Don't allow a SACL set from an NTtrans create until we
+	 * support SeSecurityPrivilege. */
+	if (!VALID_STAT(sbuf) &&
+			lp_nt_acl_support(SNUM(conn)) &&
+			sd && (sd->sacl != NULL)) {
 		status = NT_STATUS_PRIVILEGE_NOT_HELD;
 		goto fail;
 	}

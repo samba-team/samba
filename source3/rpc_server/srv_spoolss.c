@@ -431,27 +431,7 @@ static bool api_spoolss_getform(pipes_struct *p)
 
 static bool api_spoolss_enumforms(pipes_struct *p)
 {
-	SPOOL_Q_ENUMFORMS q_u;
-	SPOOL_R_ENUMFORMS r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if (!spoolss_io_q_enumforms("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_enumforms: unable to unmarshall SPOOL_Q_ENUMFORMS.\n"));
-		return False;
-	}
-
-	r_u.status = _spoolss_enumforms(p, &q_u, &r_u);
-
-	if (!spoolss_io_r_enumforms("",&r_u,rdata,0)) {
-		DEBUG(0,("spoolss_io_r_enumforms: unable to marshall SPOOL_R_ENUMFORMS.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_spoolss_call(p, NDR_SPOOLSS_ENUMFORMS);
 }
 
 /****************************************************************************
@@ -459,27 +439,7 @@ static bool api_spoolss_enumforms(pipes_struct *p)
 
 static bool api_spoolss_enumports(pipes_struct *p)
 {
-	SPOOL_Q_ENUMPORTS q_u;
-	SPOOL_R_ENUMPORTS r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!spoolss_io_q_enumports("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_enumports: unable to unmarshall SPOOL_Q_ENUMPORTS.\n"));
-		return False;
-	}
-
-	r_u.status = _spoolss_enumports(p, &q_u, &r_u);
-
-	if (!spoolss_io_r_enumports("",&r_u,rdata,0)) {
-		DEBUG(0,("spoolss_io_r_enumports: unable to marshall SPOOL_R_ENUMPORTS.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_spoolss_call(p, NDR_SPOOLSS_ENUMPORTS);
 }
 
 /****************************************************************************
@@ -597,27 +557,7 @@ static bool api_spoolss_setform(pipes_struct *p)
 
 static bool api_spoolss_enumprintprocessors(pipes_struct *p)
 {
-	SPOOL_Q_ENUMPRINTPROCESSORS q_u;
-	SPOOL_R_ENUMPRINTPROCESSORS r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-	
-	if(!spoolss_io_q_enumprintprocessors("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_enumprintprocessors: unable to unmarshall SPOOL_Q_ENUMPRINTPROCESSORS.\n"));
-		return False;
-	}
-	
-	r_u.status = _spoolss_enumprintprocessors(p, &q_u, &r_u);
-
-	if(!spoolss_io_r_enumprintprocessors("", &r_u, rdata, 0)) {
-		DEBUG(0,("spoolss_io_r_enumprintprocessors: unable to marshall SPOOL_R_ENUMPRINTPROCESSORS.\n"));
-		return False;
-	}
-	
-	return True;
+	return proxy_spoolss_call(p, NDR_SPOOLSS_ENUMPRINTPROCESSORS);
 }
 
 /****************************************************************************
@@ -633,27 +573,7 @@ static bool api_spoolss_addprintprocessor(pipes_struct *p)
 
 static bool api_spoolss_enumprintprocdatatypes(pipes_struct *p)
 {
-	SPOOL_Q_ENUMPRINTPROCDATATYPES q_u;
-	SPOOL_R_ENUMPRINTPROCDATATYPES r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-	
-	if(!spoolss_io_q_enumprintprocdatatypes("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_enumprintprocdatatypes: unable to unmarshall SPOOL_Q_ENUMPRINTPROCDATATYPES.\n"));
-		return False;
-	}
-	
-	r_u.status = _spoolss_enumprintprocdatatypes(p, &q_u, &r_u);
-
-	if(!spoolss_io_r_enumprintprocdatatypes("", &r_u, rdata, 0)) {
-		DEBUG(0,("spoolss_io_r_enumprintprocdatatypes: unable to marshall SPOOL_R_ENUMPRINTPROCDATATYPES.\n"));
-		return False;
-	}
-	
-	return True;
+	return proxy_spoolss_call(p, NDR_SPOOLSS_ENUMPRINTPROCDATATYPES);
 }
 
 /****************************************************************************
@@ -661,27 +581,7 @@ static bool api_spoolss_enumprintprocdatatypes(pipes_struct *p)
 
 static bool api_spoolss_enumprintmonitors(pipes_struct *p)
 {
-	SPOOL_Q_ENUMPRINTMONITORS q_u;
-	SPOOL_R_ENUMPRINTMONITORS r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-	
-	if (!spoolss_io_q_enumprintmonitors("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_enumprintmonitors: unable to unmarshall SPOOL_Q_ENUMPRINTMONITORS.\n"));
-		return False;
-	}
-		
-	r_u.status = _spoolss_enumprintmonitors(p, &q_u, &r_u);
-
-	if (!spoolss_io_r_enumprintmonitors("", &r_u, rdata, 0)) {
-		DEBUG(0,("spoolss_io_r_enumprintmonitors: unable to marshall SPOOL_R_ENUMPRINTMONITORS.\n"));
-		return False;
-	}
-	
-	return True;
+	return proxy_spoolss_call(p, NDR_SPOOLSS_ENUMMONITORS);
 }
 
 /****************************************************************************

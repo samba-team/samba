@@ -33,7 +33,12 @@ uint32_t ndr_size_spoolss_EnumMonitors_info(TALLOC_CTX *mem_ctx, struct smb_icon
 enum ndr_err_code ndr_push_spoolss_EnumPrintProcessors(struct ndr_push *ndr, int flags, const struct spoolss_EnumPrintProcessors *r);
 enum ndr_err_code ndr_pull_spoolss_EnumPrintProcessors(struct ndr_pull *ndr, int flags, struct spoolss_EnumPrintProcessors *r);
 uint32_t ndr_size_spoolss_EnumPrinterProcessors_info(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience,
-													 uint32_t level, uint32_t count, union spoolss_PrintProcessorInfo *info);
+												 uint32_t level, uint32_t count, union spoolss_PrintProcessorInfo *info);
+enum ndr_err_code ndr_push_spoolss_EnumPrintProcDataTypes(struct ndr_push *ndr, int flags, const struct spoolss_EnumPrintProcDataTypes *r);
+enum ndr_err_code ndr_pull_spoolss_EnumPrintProcDataTypes(struct ndr_pull *ndr, int flags, struct spoolss_EnumPrintProcDataTypes *r);
+uint32_t ndr_size_spoolss_EnumPrintProcDataTypes_info(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience,
+						      uint32_t level, uint32_t count, union spoolss_PrintProcDataTypesInfo *info);
+
 enum ndr_err_code ndr_push_spoolss_GetPrinterData(struct ndr_push *ndr, int flags, const struct spoolss_GetPrinterData *r);
 enum ndr_err_code ndr_pull_spoolss_GetPrinterData(struct ndr_pull *ndr, int flags, struct spoolss_GetPrinterData *r);
 enum ndr_err_code ndr_push_spoolss_SetPrinterData(struct ndr_push *ndr, int flags, const struct spoolss_SetPrinterData *r);

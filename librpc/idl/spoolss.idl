@@ -379,7 +379,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		 * and the array has no size in front
 		 */
 		[out,ref] uint32 *count,
-		[out,unique,switch_is(level),size_is(*count)] spoolss_PrinterInfo *info,
+		[out,ref,switch_is(level),size_is(,*count)] spoolss_PrinterInfo **info,
 		[out,ref] uint32 *needed
 	);
 
@@ -623,7 +623,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in,unique] DATA_BLOB *buffer,
 		[in] 	 uint32 offered,
 		[out,ref] uint32 *count,
-		[out,unique,switch_is(level),size_is(*count)] spoolss_JobInfo *info,
+		[out,ref,switch_is(level),size_is(,*count)] spoolss_JobInfo **info,
 		[out,ref] uint32 *needed
 	);
 
@@ -1088,7 +1088,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
 		[out,ref] uint32 *count,
-		[out,unique,switch_is(level),size_is(*count)] spoolss_DriverInfo *info,
+		[out,ref,switch_is(level),size_is(,*count)] spoolss_DriverInfo **info,
 		[out,ref] uint32 *needed
 	);
 
@@ -1140,7 +1140,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x0f */
-	typedef struct {
+	typedef [public,gensize] struct {
 		[relative] nstring *print_processor_name;
 	} spoolss_PrintProcessorInfo1;
 
@@ -1171,7 +1171,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
 		[out,ref] uint32 *count,
-		[out,unique,switch_is(level),size_is(*count)] spoolss_PrintProcessorInfo *info,
+		[out,ref,switch_is(level),size_is(,*count)] spoolss_PrintProcessorInfo **info,
 		[out,ref] uint32 *needed
 	);
 
@@ -1392,7 +1392,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		uint32 bottom;
 	} spoolss_FormArea;
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		spoolss_FormFlags flags;
 		[relative] nstring *form_name;
 		spoolss_FormSize size;
@@ -1405,7 +1405,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		SPOOLSS_FORM_STRING_TYPE_LANG_PAIR	= 0x00000004
 	} spoolss_FormStringType;
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		spoolss_FormFlags flags;
 		[relative] nstring *form_name;
 		spoolss_FormSize size;
@@ -1505,11 +1505,11 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in,unique] DATA_BLOB *buffer,
 		[in] 	 uint32 offered,
 		[out,ref] uint32 *count,
-		[out,unique,switch_is(level),size_is(*count)] spoolss_FormInfo *info,
+		[out,ref,switch_is(level),size_is(,*count)] spoolss_FormInfo **info,
 		[out,ref] uint32 *needed
 	);
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		[relative] nstring *port_name;
 	} spoolss_PortInfo1;
 
@@ -1520,7 +1520,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		SPOOLSS_PORT_TYPE_NET_ATTACHED  = 0x00000008
 	} spoolss_PortType;
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		[relative] nstring *port_name;
 		[relative] nstring *monitor_name;
 		[relative] nstring *description;
@@ -1550,13 +1550,13 @@ import "misc.idl", "security.idl", "winreg.idl";
 		PORT_STATUS_TYPE_INFO		= 0x00000003
 	} spoolss_PortSeverity;
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		spoolss_PortStatus status;
 		[relative] nstring *status_string;
 		spoolss_PortSeverity severity;
 	} spoolss_PortInfo3;
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		[relative] nstring *port_name;
 		DATA_BLOB monitor_data; /* relative ?? */
 	} spoolss_PortInfoFF;
@@ -1591,17 +1591,17 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
 		[out,ref] uint32 *count,
-		[out,unique,switch_is(level),size_is(*count)] spoolss_PortInfo *info,
+		[out,ref,switch_is(level),size_is(,*count)] spoolss_PortInfo **info,
 		[out,ref] uint32 *needed
 	);
 
 	/******************/
 	/* Function: 0x24 */
-	typedef struct {
+	typedef [public,gensize] struct {
 		[relative] nstring *monitor_name;
 	} spoolss_MonitorInfo1;
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		[relative] nstring *monitor_name;
 		[relative] nstring *environment;
 		[relative] nstring *dll_name;
@@ -1633,7 +1633,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
 		[out,ref] uint32 *count,
-		[out,unique,switch_is(level),size_is(*count)] spoolss_MonitorInfo *info,
+		[out,ref,switch_is(level),size_is(,*count)] spoolss_MonitorInfo **info,
 		[out,ref] uint32 *needed
 	);
 
@@ -1714,7 +1714,40 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x33 */
-	[todo] WERROR spoolss_EnumPrintProcDataTypes(
+
+	typedef [public,gensize] struct {
+		[relative] nstring *name_array;
+	} spoolss_PrintProcDataTypesInfo1;
+
+	typedef [nodiscriminant,relative_base,public] union {
+		[case(1)] spoolss_PrintProcDataTypesInfo1 info1;
+		[default];
+	} spoolss_PrintProcDataTypesInfo;
+
+	[public,noopnum,noprint] WERROR _spoolss_EnumPrintProcDataTypes(
+		[in,unique] [string,charset(UTF16)] uint16 *servername,
+		[in,unique] [string,charset(UTF16)] uint16 *print_processor_name,
+		[in] uint32 level,
+		[in,unique] DATA_BLOB *buffer,
+		[in] uint32 offered,
+		[out,unique] DATA_BLOB *info,
+		[out,ref] uint32 *needed,
+		[out,ref] uint32 *count
+	);
+	[public,noopnum,noprint] void __spoolss_EnumPrintProcDataTypes(
+		[in] uint32 level,
+		[in] uint32 count,
+		[out,switch_is(level)] spoolss_PrintProcDataTypesInfo info[count]
+	);
+	[nopull,nopush] WERROR spoolss_EnumPrintProcDataTypes(
+		[in,unique] [string,charset(UTF16)] uint16 *servername,
+		[in,unique] [string,charset(UTF16)] uint16 *print_processor_name,
+		[in] uint32 level,
+		[in,unique] DATA_BLOB *buffer,
+		[in] uint32 offered,
+		[out,ref] uint32 *count,
+		[out,ref,switch_is(level),size_is(,*count)] spoolss_PrintProcDataTypesInfo **info,
+		[out,ref] uint32 *needed
 	);
 
 	/******************/

@@ -955,14 +955,18 @@ static bool net_spoolss_enumforms(struct rpc_pipe_client *pipe_hnd,
 				TALLOC_CTX *mem_ctx,
 				POLICY_HND *hnd,
 				int level,
-				uint32 *num_forms,
-				FORM_1 **forms)
+				uint32_t *num_forms,
+				union spoolss_FormInfo **forms)
 {
 	WERROR result;
 
 	/* enumforms call */
-	result = rpccli_spoolss_enumforms(pipe_hnd, mem_ctx, hnd, level, num_forms, forms);
-
+	result = rpccli_spoolss_enumforms(pipe_hnd, mem_ctx,
+					  hnd,
+					  level,
+					  0,
+					  num_forms,
+					  forms);
 	if (!W_ERROR_IS_OK(result)) {
 		printf("could not enum forms: %s\n", win_errstr(result));
 		return false;
@@ -1685,8 +1689,8 @@ NTSTATUS rpc_printer_migrate_forms_internals(struct net_context *c,
 	POLICY_HND hnd_src, hnd_dst;
 	PRINTER_INFO_CTR ctr_enum;
 	union spoolss_PrinterInfo info_dst;
-	uint32 num_forms;
-	FORM_1 *forms;
+	uint32_t num_forms;
+	union spoolss_FormInfo *forms;
 	struct cli_state *cli_dst = NULL;
 
 	ZERO_STRUCT(ctr_enum);
@@ -1760,34 +1764,19 @@ NTSTATUS rpc_printer_migrate_forms_internals(struct net_context *c,
 		for (f = 0; f < num_forms; f++) {
 
 			union spoolss_AddFormInfo info;
-			struct spoolss_AddFormInfo1 info1;
-			fstring form_name;
 			NTSTATUS status;
 
 			/* only migrate FORM_PRINTER types, according to jerry
 			   FORM_BUILTIN-types are hard-coded in samba */
-			if (forms[f].flag != FORM_PRINTER)
+			if (forms[f].info1.flags != SPOOLSS_FORM_PRINTER)
 				continue;
-
-			if (forms[f].name.buffer)
-				rpcstr_pull(form_name, forms[f].name.buffer,
-					sizeof(form_name), -1, STR_TERMINATE);
 
 			if (c->opt_verbose)
 				d_printf("\tmigrating form # %d [%s] of type [%d]\n",
-					f, form_name, forms[f].flag);
+					f, forms[f].info1.form_name,
+					forms[f].info1.flags);
 
-			/* is there a more elegant way to do that ? */
-			info1.flags 		= FORM_PRINTER;
-			info1.size.width	= forms[f].width;
-			info1.size.height	= forms[f].length;
-			info1.area.left		= forms[f].left;
-			info1.area.top		= forms[f].top;
-			info1.area.right	= forms[f].right;
-			info1.area.bottom	= forms[f].bottom;
-			info1.form_name		= form_name;
-
-			info.info1 = &info1;
+			info.info1 = (struct spoolss_AddFormInfo1 *)&forms[f].info1;
 
 			/* FIXME: there might be something wrong with samba's
 			   builtin-forms */
@@ -1798,11 +1787,12 @@ NTSTATUS rpc_printer_migrate_forms_internals(struct net_context *c,
 							&result);
 			if (!W_ERROR_IS_OK(result)) {
 				d_printf("\tAddForm form %d: [%s] refused.\n",
-					f, form_name);
+					f, forms[f].info1.form_name);
 				continue;
 			}
 
-			DEBUGADD(1,("\tAddForm of [%s] succeeded\n", form_name));
+			DEBUGADD(1,("\tAddForm of [%s] succeeded\n",
+				forms[f].info1.form_name));
 		}
 
 

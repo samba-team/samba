@@ -259,7 +259,7 @@ static WERROR sptr_EnumPrintServerForms(struct ntptr_GenericHandle *server, TALL
 		return WERR_UNKNOWN_LEVEL;
 	}
 
-	r->out.info	= info;
+	*r->out.info	= info;
 	*r->out.count	= count;
 	return WERR_OK;
 }
@@ -587,7 +587,7 @@ static WERROR sptr_EnumPrinters(struct ntptr_context *ntptr, TALLOC_CTX *mem_ctx
 		return WERR_UNKNOWN_LEVEL;
 	}
 
-	r->out.info	= info;
+	*r->out.info	= info;
 	*r->out.count	= count;
 	return WERR_OK;
 }
@@ -645,7 +645,7 @@ static WERROR sptr_EnumPorts(struct ntptr_context *ntptr, TALLOC_CTX *mem_ctx,
 		return WERR_UNKNOWN_LEVEL;
 	}
 
-	r->out.info	= info;
+	*r->out.info	= info;
 	*r->out.count	= count;
 	return WERR_OK;
 }
@@ -692,7 +692,7 @@ static WERROR sptr_EnumMonitors(struct ntptr_context *ntptr, TALLOC_CTX *mem_ctx
 		return WERR_UNKNOWN_LEVEL;
 	}
 
-	r->out.info	= info;
+	*r->out.info	= info;
 	*r->out.count	= count;
 	return WERR_OK;
 }

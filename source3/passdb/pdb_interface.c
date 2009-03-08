@@ -1709,24 +1709,25 @@ static NTSTATUS pdb_default_lookup_names(struct pdb_methods *methods,
 }
 #endif
 
-struct pdb_search *pdb_search_init(enum pdb_search_type type)
+static int pdb_search_destructor(struct pdb_search *search)
 {
-	TALLOC_CTX *mem_ctx;
+	if (!search->search_ended) {
+		search->search_end(search);
+	}
+	return 0;
+}
+
+struct pdb_search *pdb_search_init(TALLOC_CTX *mem_ctx,
+				   enum pdb_search_type type)
+{
 	struct pdb_search *result;
 
-	mem_ctx = talloc_init("pdb_search");
-	if (mem_ctx == NULL) {
-		DEBUG(0, ("talloc_init failed\n"));
-		return NULL;
-	}
-
-	result = TALLOC_P(mem_ctx, struct pdb_search);
+	result = talloc(mem_ctx, struct pdb_search);
 	if (result == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		return NULL;
 	}
 
-	result->mem_ctx = mem_ctx;
 	result->type = type;
 	result->cache = NULL;
 	result->num_entries = 0;
@@ -1736,6 +1737,8 @@ struct pdb_search *pdb_search_init(enum pdb_search_type type)
 	/* Segfault appropriately if not initialized */
 	result->next_entry = NULL;
 	result->search_end = NULL;
+
+	talloc_set_destructor(result, pdb_search_destructor);
 
 	return result;
 }
@@ -1783,8 +1786,7 @@ static bool next_entry_groups(struct pdb_search *s,
 
 	sid_peek_rid(&map->sid, &rid);
 
-	fill_displayentry(s->mem_ctx, rid, 0, map->nt_name, NULL, map->comment,
-			  entry);
+	fill_displayentry(s, rid, 0, map->nt_name, NULL, map->comment, entry);
 
 	state->current_group += 1;
 	return True;
@@ -1802,7 +1804,7 @@ static bool pdb_search_grouptype(struct pdb_search *search,
 {
 	struct group_search *state;
 
-	state = TALLOC_P(search->mem_ctx, struct group_search);
+	state = talloc(search, struct group_search);
 	if (state == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		return False;
@@ -1853,7 +1855,7 @@ static struct samr_displayentry *pdb_search_getentry(struct pdb_search *search,
 			break;
 		}
 
-		ADD_TO_LARGE_ARRAY(search->mem_ctx, struct samr_displayentry,
+		ADD_TO_LARGE_ARRAY(search, struct samr_displayentry,
 				   entry, &search->cache, &search->num_entries,
 				   &search->cache_size);
 	}
@@ -1861,52 +1863,54 @@ static struct samr_displayentry *pdb_search_getentry(struct pdb_search *search,
 	return (search->num_entries > idx) ? &search->cache[idx] : NULL;
 }
 
-struct pdb_search *pdb_search_users(uint32 acct_flags)
+struct pdb_search *pdb_search_users(TALLOC_CTX *mem_ctx, uint32 acct_flags)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
 	struct pdb_search *result;
 
-	result = pdb_search_init(PDB_USER_SEARCH);
+	result = pdb_search_init(mem_ctx, PDB_USER_SEARCH);
 	if (result == NULL) {
 		return NULL;
 	}
 
 	if (!pdb->search_users(pdb, result, acct_flags)) {
-		talloc_destroy(result->mem_ctx);
+		TALLOC_FREE(result);
 		return NULL;
 	}
 	return result;
 }
 
-struct pdb_search *pdb_search_groups(void)
+struct pdb_search *pdb_search_groups(TALLOC_CTX *mem_ctx)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
 	struct pdb_search *result;
 
-	result = pdb_search_init(PDB_GROUP_SEARCH);
+	result = pdb_search_init(mem_ctx, PDB_GROUP_SEARCH);
 	if (result == NULL) {
 		 return NULL;
 	}
 
 	if (!pdb->search_groups(pdb, result)) {
-		talloc_destroy(result->mem_ctx);
+		TALLOC_FREE(result);
 		return NULL;
 	}
 	return result;
 }
 
-struct pdb_search *pdb_search_aliases(const DOM_SID *sid)
+struct pdb_search *pdb_search_aliases(TALLOC_CTX *mem_ctx, const DOM_SID *sid)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
 	struct pdb_search *result;
 
 	if (pdb == NULL) return NULL;
 
-	result = pdb_search_init(PDB_ALIAS_SEARCH);
-	if (result == NULL) return NULL;
+	result = pdb_search_init(mem_ctx, PDB_ALIAS_SEARCH);
+	if (result == NULL) {
+		return NULL;
+	}
 
 	if (!pdb->search_aliases(pdb, result, sid)) {
-		talloc_destroy(result->mem_ctx);
+		TALLOC_FREE(result);
 		return NULL;
 	}
 	return result;
@@ -1933,17 +1937,6 @@ uint32 pdb_search_entries(struct pdb_search *search,
 		return 0;
 
 	return search->num_entries - start_idx;
-}
-
-void pdb_search_destroy(struct pdb_search *search)
-{
-	if (search == NULL)
-		return;
-
-	if (!search->search_ended)
-		search->search_end(search);
-
-	talloc_destroy(search->mem_ctx);
 }
 
 /*******************************************************************

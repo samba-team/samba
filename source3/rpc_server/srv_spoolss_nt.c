@@ -7244,21 +7244,6 @@ WERROR _spoolss_enumprinterdrivers( pipes_struct *p, SPOOL_Q_ENUMPRINTERDRIVERS 
 /****************************************************************************
 ****************************************************************************/
 
-static void fill_form_1(FORM_1 *form, nt_forms_struct *list)
-{
-	form->flag=list->flag;
-	init_unistr(&form->name, list->name);
-	form->width=list->width;
-	form->length=list->length;
-	form->left=list->left;
-	form->top=list->top;
-	form->right=list->right;
-	form->bottom=list->bottom;
-}
-
-/****************************************************************************
-****************************************************************************/
-
 static WERROR fill_form_info_1(TALLOC_CTX *mem_ctx,
 			       struct spoolss_FormInfo1 *form,
 			       nt_forms_struct *list)
@@ -7277,73 +7262,65 @@ static WERROR fill_form_info_1(TALLOC_CTX *mem_ctx,
 	return WERR_OK;
 }
 
-/****************************************************************************
-****************************************************************************/
+/****************************************************************
+ _spoolss_EnumForms
+****************************************************************/
 
-WERROR _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMFORMS *r_u)
+WERROR _spoolss_EnumForms(pipes_struct *p,
+			  struct spoolss_EnumForms *r)
 {
-	uint32 level = q_u->level;
-	RPC_BUFFER *buffer = NULL;
-	uint32 offered = q_u->offered;
-	uint32 *needed = &r_u->needed;
-	uint32 *numofforms = &r_u->numofforms;
-	uint32 numbuiltinforms;
-
 	nt_forms_struct *list=NULL;
 	nt_forms_struct *builtinlist=NULL;
-	FORM_1 *forms_1;
-	int buffer_size=0;
+	union spoolss_FormInfo *info;
+	uint32_t count;
+	uint32_t numbuiltinforms;
+	size_t buffer_size = 0;
 	int i;
+
+	*r->out.count = 0;
 
 	/* that's an [in out] buffer */
 
-	if (!q_u->buffer && (offered!=0) ) {
+	if (!r->in.buffer && (r->in.offered != 0) ) {
 		return WERR_INVALID_PARAM;
 	}
 
-	if (offered > MAX_RPC_DATA_SIZE) {
-		return WERR_INVALID_PARAM;
-	}
-
-	rpcbuf_move(q_u->buffer, &r_u->buffer);
-	buffer = r_u->buffer;
-
-	DEBUG(4,("_spoolss_enumforms\n"));
-	DEBUGADD(5,("Offered buffer size [%d]\n", offered));
-	DEBUGADD(5,("Info level [%d]\n",          level));
+	DEBUG(4,("_spoolss_EnumForms\n"));
+	DEBUGADD(5,("Offered buffer size [%d]\n", r->in.offered));
+	DEBUGADD(5,("Info level [%d]\n",          r->in.level));
 
 	numbuiltinforms = get_builtin_ntforms(&builtinlist);
 	DEBUGADD(5,("Number of builtin forms [%d]\n",     numbuiltinforms));
-	*numofforms = get_ntforms(&list);
-	DEBUGADD(5,("Number of user forms [%d]\n",     *numofforms));
-	*numofforms += numbuiltinforms;
+	count = get_ntforms(&list);
+	DEBUGADD(5,("Number of user forms [%d]\n",     count));
+	count += numbuiltinforms;
 
-	if (*numofforms == 0) {
+	if (count == 0) {
 		SAFE_FREE(builtinlist);
 		SAFE_FREE(list);
 		return WERR_NO_MORE_ITEMS;
 	}
 
-	switch (level) {
-	case 1:
-		if ((forms_1=SMB_MALLOC_ARRAY(FORM_1, *numofforms)) == NULL) {
-			SAFE_FREE(builtinlist);
-			SAFE_FREE(list);
-			*numofforms=0;
-			return WERR_NOMEM;
-		}
+	info = TALLOC_ARRAY(p->mem_ctx, union spoolss_FormInfo, count);
+	if (!info) {
+		SAFE_FREE(builtinlist);
+		SAFE_FREE(list);
+		return WERR_NOMEM;
+	}
 
+	switch (r->in.level) {
+	case 1:
 		/* construct the list of form structures */
 		for (i=0; i<numbuiltinforms; i++) {
 			DEBUGADD(6,("Filling form number [%d]\n",i));
-			fill_form_1(&forms_1[i], &builtinlist[i]);
+			fill_form_info_1(info, &info[i].info1, &builtinlist[i]);
 		}
 
 		SAFE_FREE(builtinlist);
 
-		for (; i<*numofforms; i++) {
+		for (; i<count; i++) {
 			DEBUGADD(6,("Filling form number [%d]\n",i));
-			fill_form_1(&forms_1[i], &list[i-numbuiltinforms]);
+			fill_form_info_1(info, &info[i].info1, &list[i-numbuiltinforms]);
 		}
 
 		SAFE_FREE(list);
@@ -7351,38 +7328,22 @@ WERROR _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMF
 		/* check the required size. */
 		for (i=0; i<numbuiltinforms; i++) {
 			DEBUGADD(6,("adding form [%d]'s size\n",i));
-			buffer_size += spoolss_size_form_1(&forms_1[i]);
+			buffer_size += ndr_size_spoolss_FormInfo1(&info[i].info1, NULL, 0);
 		}
-		for (; i<*numofforms; i++) {
+		for (; i<count; i++) {
 			DEBUGADD(6,("adding form [%d]'s size\n",i));
-			buffer_size += spoolss_size_form_1(&forms_1[i]);
+			buffer_size += ndr_size_spoolss_FormInfo1(&info[i].info1, NULL, 0);
 		}
 
-		*needed=buffer_size;
+		*r->out.needed = buffer_size;
 
-		if (*needed > offered) {
-			SAFE_FREE(forms_1);
-			*numofforms=0;
+		if (*r->out.needed > r->in.offered) {
+			TALLOC_FREE(info);
 			return WERR_INSUFFICIENT_BUFFER;
 		}
 
-		if (!rpcbuf_alloc_size(buffer, buffer_size)){
-			SAFE_FREE(forms_1);
-			*numofforms=0;
-			return WERR_NOMEM;
-		}
-
-		/* fill the buffer with the form structures */
-		for (i=0; i<numbuiltinforms; i++) {
-			DEBUGADD(6,("adding form [%d] to buffer\n",i));
-			smb_io_form_1("", buffer, &forms_1[i], 0);
-		}
-		for (; i<*numofforms; i++) {
-			DEBUGADD(6,("adding form [%d] to buffer\n",i));
-			smb_io_form_1("", buffer, &forms_1[i], 0);
-		}
-
-		SAFE_FREE(forms_1);
+		*r->out.count = count;
+		*r->out.info = info;
 
 		return WERR_OK;
 
@@ -7485,9 +7446,14 @@ WERROR _spoolss_GetForm(pipes_struct *p,
 /****************************************************************************
 ****************************************************************************/
 
-static void fill_port_1(PORT_INFO_1 *port, const char *name)
+static WERROR fill_port_1(TALLOC_CTX *mem_ctx,
+			  struct spoolss_PortInfo1 *r,
+			  const char *name)
 {
-	init_unistr(&port->port_name, name);
+	r->port_name = talloc_strdup(mem_ctx, name);
+	W_ERROR_HAVE_NO_MEMORY(r->port_name);
+
+	return WERR_OK;
 }
 
 /****************************************************************************
@@ -7495,13 +7461,23 @@ static void fill_port_1(PORT_INFO_1 *port, const char *name)
  somehow.
 ****************************************************************************/
 
-static void fill_port_2(PORT_INFO_2 *port, const char *name)
+static WERROR fill_port_2(TALLOC_CTX *mem_ctx,
+			  struct spoolss_PortInfo2 *r,
+			  const char *name)
 {
-	init_unistr(&port->port_name, name);
-	init_unistr(&port->monitor_name, "Local Monitor");
-	init_unistr(&port->description, SPL_LOCAL_PORT );
-	port->port_type=PORT_TYPE_WRITE;
-	port->reserved=0x0;
+	r->port_name = talloc_strdup(mem_ctx, name);
+	W_ERROR_HAVE_NO_MEMORY(r->port_name);
+
+	r->monitor_name = talloc_strdup(mem_ctx, "Local Monitor");
+	W_ERROR_HAVE_NO_MEMORY(r->monitor_name);
+
+	r->description = talloc_strdup(mem_ctx, SPL_LOCAL_PORT); /* FIXME */
+	W_ERROR_HAVE_NO_MEMORY(r->description);
+
+	r->port_type = SPOOLSS_PORT_TYPE_WRITE;
+	r->reserved = 0;
+
+	return WERR_OK;
 }
 
 
@@ -7569,9 +7545,13 @@ WERROR enumports_hook(TALLOC_CTX *ctx, int *count, char ***lines )
  enumports level 1.
 ****************************************************************************/
 
-static WERROR enumports_level_1(RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enumports_level_1(TALLOC_CTX *mem_ctx,
+				union spoolss_PortInfo **info_p,
+				uint32_t offered,
+				uint32_t *needed,
+				uint32_t *count)
 {
-	PORT_INFO_1 *ports=NULL;
+	union spoolss_PortInfo *info = NULL;
 	int i=0;
 	WERROR result = WERR_OK;
 	char **qlines = NULL;
@@ -7579,31 +7559,31 @@ static WERROR enumports_level_1(RPC_BUFFER *buffer, uint32 offered, uint32 *need
 
 	result = enumports_hook(talloc_tos(), &numlines, &qlines );
 	if (!W_ERROR_IS_OK(result)) {
-		TALLOC_FREE(qlines);
-		return result;
+		goto out;
 	}
 
-	if(numlines) {
-		if((ports=SMB_MALLOC_ARRAY( PORT_INFO_1, numlines )) == NULL) {
-			DEBUG(10,("Returning WERR_NOMEM [%s]\n",
-				  win_errstr(WERR_NOMEM)));
-			TALLOC_FREE(qlines);
-			return WERR_NOMEM;
+	if (numlines) {
+		info = TALLOC_ARRAY(mem_ctx, union spoolss_PortInfo, numlines);
+		if (!info) {
+			DEBUG(10,("Returning WERR_NOMEM\n"));
+			result = WERR_NOMEM;
+			goto out;
 		}
 
 		for (i=0; i<numlines; i++) {
 			DEBUG(6,("Filling port number [%d] with port [%s]\n", i, qlines[i]));
-			fill_port_1(&ports[i], qlines[i]);
+			result = fill_port_1(info, &info[i].info1, qlines[i]);
+			if (!W_ERROR_IS_OK(result)) {
+				goto out;
+			}
 		}
 	}
 	TALLOC_FREE(qlines);
 
-	*returned = numlines;
-
 	/* check the required size. */
-	for (i=0; i<*returned; i++) {
+	for (i=0; i<numlines; i++) {
 		DEBUGADD(6,("adding port [%d]'s size\n", i));
-		*needed += spoolss_size_port_info_1(&ports[i]);
+		*needed += ndr_size_spoolss_PortInfo1(&info[i].info1, NULL, 0);
 	}
 
 	if (*needed > offered) {
@@ -7611,64 +7591,64 @@ static WERROR enumports_level_1(RPC_BUFFER *buffer, uint32 offered, uint32 *need
 		goto out;
 	}
 
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
-	}
-
-	/* fill the buffer with the ports structures */
-	for (i=0; i<*returned; i++) {
-		DEBUGADD(6,("adding port [%d] to buffer\n", i));
-		smb_io_port_1("", buffer, &ports[i], 0);
-	}
-
 out:
-	SAFE_FREE(ports);
+	if (!W_ERROR_IS_OK(result)) {
+		TALLOC_FREE(info);
+		TALLOC_FREE(qlines);
+		*count = 0;
+		*info_p = NULL;
+		return result;
+	}
 
-	if ( !W_ERROR_IS_OK(result) )
-		*returned = 0;
+	*info_p = info;
+	*count = numlines;
 
-	return result;
+	return WERR_OK;
 }
 
 /****************************************************************************
  enumports level 2.
 ****************************************************************************/
 
-static WERROR enumports_level_2(RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enumports_level_2(TALLOC_CTX *mem_ctx,
+				union spoolss_PortInfo **info_p,
+				uint32_t offered,
+				uint32_t *needed,
+				uint32_t *count)
 {
-	PORT_INFO_2 *ports=NULL;
+	union spoolss_PortInfo *info = NULL;
 	int i=0;
 	WERROR result = WERR_OK;
 	char **qlines = NULL;
 	int numlines = 0;
 
 	result = enumports_hook(talloc_tos(), &numlines, &qlines );
-	if ( !W_ERROR_IS_OK(result)) {
-		TALLOC_FREE(qlines);
-		return result;
+	if (!W_ERROR_IS_OK(result)) {
+		goto out;
 	}
 
-	if(numlines) {
-		if((ports=SMB_MALLOC_ARRAY( PORT_INFO_2, numlines)) == NULL) {
-			TALLOC_FREE(qlines);
-			return WERR_NOMEM;
+	if (numlines) {
+		info = TALLOC_ARRAY(mem_ctx, union spoolss_PortInfo, numlines);
+		if (!info) {
+			DEBUG(10,("Returning WERR_NOMEM\n"));
+			result = WERR_NOMEM;
+			goto out;
 		}
 
 		for (i=0; i<numlines; i++) {
 			DEBUG(6,("Filling port number [%d] with port [%s]\n", i, qlines[i]));
-			fill_port_2(&(ports[i]), qlines[i]);
+			result = fill_port_2(info, &info[i].info2, qlines[i]);
+			if (!W_ERROR_IS_OK(result)) {
+				goto out;
+			}
 		}
 	}
-
 	TALLOC_FREE(qlines);
 
-	*returned = numlines;
-
 	/* check the required size. */
-	for (i=0; i<*returned; i++) {
+	for (i=0; i<numlines; i++) {
 		DEBUGADD(6,("adding port [%d]'s size\n", i));
-		*needed += spoolss_size_port_info_2(&ports[i]);
+		*needed += ndr_size_spoolss_PortInfo2(&info[i].info2, NULL, 0);
 	}
 
 	if (*needed > offered) {
@@ -7676,61 +7656,49 @@ static WERROR enumports_level_2(RPC_BUFFER *buffer, uint32 offered, uint32 *need
 		goto out;
 	}
 
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
-	}
-
-	/* fill the buffer with the ports structures */
-	for (i=0; i<*returned; i++) {
-		DEBUGADD(6,("adding port [%d] to buffer\n", i));
-		smb_io_port_2("", buffer, &ports[i], 0);
-	}
-
 out:
-	SAFE_FREE(ports);
+	if (!W_ERROR_IS_OK(result)) {
+		TALLOC_FREE(info);
+		TALLOC_FREE(qlines);
+		*count = 0;
+		*info_p = NULL;
+		return result;
+	}
 
-	if ( !W_ERROR_IS_OK(result) )
-		*returned = 0;
+	*info_p = info;
+	*count = numlines;
 
-	return result;
+	return WERR_OK;
 }
 
-/****************************************************************************
- enumports.
-****************************************************************************/
+/****************************************************************
+ _spoolss_EnumPorts
+****************************************************************/
 
-WERROR _spoolss_enumports( pipes_struct *p, SPOOL_Q_ENUMPORTS *q_u, SPOOL_R_ENUMPORTS *r_u)
+WERROR _spoolss_EnumPorts(pipes_struct *p,
+			  struct spoolss_EnumPorts *r)
 {
-	uint32 level = q_u->level;
-	RPC_BUFFER *buffer = NULL;
-	uint32 offered = q_u->offered;
-	uint32 *needed = &r_u->needed;
-	uint32 *returned = &r_u->returned;
-
 	/* that's an [in out] buffer */
 
-	if (!q_u->buffer && (offered!=0)) {
+	if (!r->in.buffer && (r->in.offered != 0)) {
 		return WERR_INVALID_PARAM;
 	}
 
-	if (offered > MAX_RPC_DATA_SIZE) {
-		return WERR_INVALID_PARAM;
-	}
+	DEBUG(4,("_spoolss_EnumPorts\n"));
 
-	rpcbuf_move(q_u->buffer, &r_u->buffer);
-	buffer = r_u->buffer;
+	*r->out.count = 0;
+	*r->out.needed = 0;
+	*r->out.info = NULL;
 
-	DEBUG(4,("_spoolss_enumports\n"));
-
-	*returned=0;
-	*needed=0;
-
-	switch (level) {
+	switch (r->in.level) {
 	case 1:
-		return enumports_level_1(buffer, offered, needed, returned);
+		return enumports_level_1(p->mem_ctx, r->out.info,
+					 r->in.offered, r->out.needed,
+					 r->out.count);
 	case 2:
-		return enumports_level_2(buffer, offered, needed, returned);
+		return enumports_level_2(p->mem_ctx, r->out.info,
+					 r->in.offered, r->out.needed,
+					 r->out.count);
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
@@ -8770,69 +8738,75 @@ done:
 }
 
 /****************************************************************************
+ fill_print_processor1
+****************************************************************************/
+
+static WERROR fill_print_processor1(TALLOC_CTX *mem_ctx,
+				    struct spoolss_PrintProcessorInfo1 *r,
+				    const char *print_processor_name)
+{
+	r->print_processor_name = talloc_strdup(mem_ctx, print_processor_name);
+	W_ERROR_HAVE_NO_MEMORY(r->print_processor_name);
+
+	return WERR_OK;
+}
+
+/****************************************************************************
  enumprintprocessors level 1.
 ****************************************************************************/
 
-static WERROR enumprintprocessors_level_1(RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enumprintprocessors_level_1(TALLOC_CTX *mem_ctx,
+					  union spoolss_PrintProcessorInfo **info_p,
+					  uint32_t offered,
+					  uint32_t *needed,
+					  uint32_t *count)
 {
-	PRINTPROCESSOR_1 *info_1=NULL;
-	WERROR result = WERR_OK;
+	union spoolss_PrintProcessorInfo *info;
+	WERROR result;
 
-	if((info_1 = SMB_MALLOC_P(PRINTPROCESSOR_1)) == NULL)
-		return WERR_NOMEM;
+	info = TALLOC_ARRAY(mem_ctx, union spoolss_PrintProcessorInfo, 1);
+	W_ERROR_HAVE_NO_MEMORY(info);
 
-	(*returned) = 0x1;
+	*count = 1;
 
-	init_unistr(&info_1->name, "winprint");
+	result = fill_print_processor1(info, &info[0].info1, "winprint");
+	if (!W_ERROR_IS_OK(result)) {
+		goto out;
+	}
 
-	*needed += spoolss_size_printprocessor_info_1(info_1);
+	*needed += ndr_size_spoolss_PrintProcessorInfo1(&info[0].info1, NULL, 0);
 
 	if (*needed > offered) {
 		result = WERR_INSUFFICIENT_BUFFER;
 		goto out;
 	}
 
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
+ out:
+	if (!W_ERROR_IS_OK(result)) {
+		TALLOC_FREE(info);
+		*count = 0;
+		return result;
 	}
 
-	smb_io_printprocessor_info_1("", buffer, info_1, 0);
+	*info_p = info;
 
-out:
-	SAFE_FREE(info_1);
-
-	if ( !W_ERROR_IS_OK(result) )
-		*returned = 0;
-
-	return result;
+	return WERR_OK;
 }
 
-/****************************************************************************
-****************************************************************************/
+/****************************************************************
+ _spoolss_EnumPrintProcessors
+****************************************************************/
 
-WERROR _spoolss_enumprintprocessors(pipes_struct *p, SPOOL_Q_ENUMPRINTPROCESSORS *q_u, SPOOL_R_ENUMPRINTPROCESSORS *r_u)
+WERROR _spoolss_EnumPrintProcessors(pipes_struct *p,
+				    struct spoolss_EnumPrintProcessors *r)
 {
-	uint32 level = q_u->level;
-	RPC_BUFFER *buffer = NULL;
-	uint32 offered = q_u->offered;
-	uint32 *needed = &r_u->needed;
-	uint32 *returned = &r_u->returned;
-
 	/* that's an [in out] buffer */
 
-	if (!q_u->buffer && (offered!=0)) {
+	if (!r->in.buffer && (r->in.offered != 0)) {
 		return WERR_INVALID_PARAM;
 	}
 
-	if (offered > MAX_RPC_DATA_SIZE) {
-		return WERR_INVALID_PARAM;
-	}
-
-	rpcbuf_move(q_u->buffer, &r_u->buffer);
-	buffer = r_u->buffer;
-
- 	DEBUG(5,("spoolss_enumprintprocessors\n"));
+	DEBUG(5,("_spoolss_EnumPrintProcessors\n"));
 
 	/*
 	 * Enumerate the print processors ...
@@ -8841,113 +8815,172 @@ WERROR _spoolss_enumprintprocessors(pipes_struct *p, SPOOL_Q_ENUMPRINTPROCESSORS
 	 * and I can use my nice printer checker.
 	 */
 
-	*returned=0;
-	*needed=0;
+	*r->out.count = 0;
+	*r->out.needed = 0;
+	*r->out.info = NULL;
 
-	switch (level) {
+	switch (r->in.level) {
 	case 1:
-		return enumprintprocessors_level_1(buffer, offered, needed, returned);
+		return enumprintprocessors_level_1(p->mem_ctx, r->out.info,
+						   r->in.offered, r->out.needed,
+						   r->out.count);
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
+}
+
+/****************************************************************************
+ fill_printprocdatatype1
+****************************************************************************/
+
+static WERROR fill_printprocdatatype1(TALLOC_CTX *mem_ctx,
+				      struct spoolss_PrintProcDataTypesInfo1 *r,
+				      const char *name_array)
+{
+	r->name_array = talloc_strdup(mem_ctx, name_array);
+	W_ERROR_HAVE_NO_MEMORY(r->name_array);
+
+	return WERR_OK;
 }
 
 /****************************************************************************
  enumprintprocdatatypes level 1.
 ****************************************************************************/
 
-static WERROR enumprintprocdatatypes_level_1(RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enumprintprocdatatypes_level_1(TALLOC_CTX *mem_ctx,
+					     union spoolss_PrintProcDataTypesInfo **info_p,
+					     uint32_t offered,
+					     uint32_t *needed,
+					     uint32_t *count)
 {
-	PRINTPROCDATATYPE_1 *info_1=NULL;
-	WERROR result = WERR_OK;
+	WERROR result;
+	union spoolss_PrintProcDataTypesInfo *info;
 
-	if((info_1 = SMB_MALLOC_P(PRINTPROCDATATYPE_1)) == NULL)
-		return WERR_NOMEM;
+	info = TALLOC_ARRAY(mem_ctx, union spoolss_PrintProcDataTypesInfo, 1);
+	W_ERROR_HAVE_NO_MEMORY(info);
 
-	(*returned) = 0x1;
+	*count = 1;
 
-	init_unistr(&info_1->name, "RAW");
+	result = fill_printprocdatatype1(info, &info[0].info1, "RAW");
+	if (!W_ERROR_IS_OK(result)) {
+		goto out;
+	}
 
-	*needed += spoolss_size_printprocdatatype_info_1(info_1);
+	*needed += ndr_size_spoolss_PrintProcDataTypesInfo1(&info[0].info1, NULL, 0);
 
 	if (*needed > offered) {
 		result = WERR_INSUFFICIENT_BUFFER;
 		goto out;
 	}
 
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
+ out:
+	if (!W_ERROR_IS_OK(result)) {
+		TALLOC_FREE(info);
+		*count = 0;
+		return result;
 	}
 
-	smb_io_printprocdatatype_info_1("", buffer, info_1, 0);
+	*info_p = info;
 
-out:
-	SAFE_FREE(info_1);
-
-	if ( !W_ERROR_IS_OK(result) )
-		*returned = 0;
-
-	return result;
+	return WERR_OK;
 }
 
-/****************************************************************************
-****************************************************************************/
+/****************************************************************
+ _spoolss_EnumPrintProcDataTypes
+****************************************************************/
 
-WERROR _spoolss_enumprintprocdatatypes(pipes_struct *p, SPOOL_Q_ENUMPRINTPROCDATATYPES *q_u, SPOOL_R_ENUMPRINTPROCDATATYPES *r_u)
+WERROR _spoolss_EnumPrintProcDataTypes(pipes_struct *p,
+				       struct spoolss_EnumPrintProcDataTypes *r)
 {
-	uint32 level = q_u->level;
-	RPC_BUFFER *buffer = NULL;
-	uint32 offered = q_u->offered;
-	uint32 *needed = &r_u->needed;
-	uint32 *returned = &r_u->returned;
-
 	/* that's an [in out] buffer */
 
-	if (!q_u->buffer && (offered!=0)) {
+	if (!r->in.buffer && (r->in.offered != 0)) {
 		return WERR_INVALID_PARAM;
 	}
 
-	if (offered > MAX_RPC_DATA_SIZE) {
-		return WERR_INVALID_PARAM;
-	}
+	DEBUG(5,("_spoolss_EnumPrintProcDataTypes\n"));
 
-	rpcbuf_move(q_u->buffer, &r_u->buffer);
-	buffer = r_u->buffer;
+	*r->out.count = 0;
+	*r->out.needed = 0;
+	*r->out.info = NULL;
 
- 	DEBUG(5,("_spoolss_enumprintprocdatatypes\n"));
-
-	*returned=0;
-	*needed=0;
-
-	switch (level) {
+	switch (r->in.level) {
 	case 1:
-		return enumprintprocdatatypes_level_1(buffer, offered, needed, returned);
+		return enumprintprocdatatypes_level_1(p->mem_ctx, r->out.info,
+						      r->in.offered, r->out.needed,
+						      r->out.count);
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
 }
 
 /****************************************************************************
+ fill_monitor_1
+****************************************************************************/
+
+static WERROR fill_monitor_1(TALLOC_CTX *mem_ctx,
+			     struct spoolss_MonitorInfo1 *r,
+			     const char *monitor_name)
+{
+	r->monitor_name			= talloc_strdup(mem_ctx, monitor_name);
+	W_ERROR_HAVE_NO_MEMORY(r->monitor_name);
+
+	return WERR_OK;
+}
+
+/****************************************************************************
+ fill_monitor_2
+****************************************************************************/
+
+static WERROR fill_monitor_2(TALLOC_CTX *mem_ctx,
+			     struct spoolss_MonitorInfo2 *r,
+			     const char *monitor_name,
+			     const char *environment,
+			     const char *dll_name)
+{
+	r->monitor_name			= talloc_strdup(mem_ctx, monitor_name);
+	W_ERROR_HAVE_NO_MEMORY(r->monitor_name);
+	r->environment			= talloc_strdup(mem_ctx, environment);
+	W_ERROR_HAVE_NO_MEMORY(r->environment);
+	r->dll_name			= talloc_strdup(mem_ctx, dll_name);
+	W_ERROR_HAVE_NO_MEMORY(r->dll_name);
+
+	return WERR_OK;
+}
+
+/****************************************************************************
  enumprintmonitors level 1.
 ****************************************************************************/
 
-static WERROR enumprintmonitors_level_1(RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enumprintmonitors_level_1(TALLOC_CTX *mem_ctx,
+					union spoolss_MonitorInfo **info_p,
+					uint32_t offered,
+					uint32_t *needed,
+					uint32_t *count)
 {
-	PRINTMONITOR_1 *info_1;
+	union spoolss_MonitorInfo *info;
 	WERROR result = WERR_OK;
 	int i;
 
-	if((info_1 = SMB_MALLOC_ARRAY(PRINTMONITOR_1, 2)) == NULL)
-		return WERR_NOMEM;
+	info = TALLOC_ARRAY(mem_ctx, union spoolss_MonitorInfo, 2);
+	W_ERROR_HAVE_NO_MEMORY(info);
 
-	*returned = 2;
+	*count = 2;
 
-	init_unistr(&(info_1[0].name), SPL_LOCAL_PORT );
-	init_unistr(&(info_1[1].name), SPL_TCPIP_PORT );
+	result = fill_monitor_1(info, &info[0].info1,
+				SPL_LOCAL_PORT /* FIXME */);
+	if (!W_ERROR_IS_OK(result)) {
+		goto out;
+	}
 
-	for ( i=0; i<*returned; i++ ) {
-		*needed += spoolss_size_printmonitor_info_1(&info_1[i]);
+	result = fill_monitor_1(info, &info[1].info1,
+				SPL_TCPIP_PORT /* FIXME */);
+	if (!W_ERROR_IS_OK(result)) {
+		goto out;
+	}
+
+	for (i=0; i<*count; i++) {
+		*needed += ndr_size_spoolss_MonitorInfo1(&info[i].info1, NULL, 0);
 	}
 
 	if (*needed > offered) {
@@ -8955,49 +8988,55 @@ static WERROR enumprintmonitors_level_1(RPC_BUFFER *buffer, uint32 offered, uint
 		goto out;
 	}
 
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
-	}
-
-	for ( i=0; i<*returned; i++ ) {
-		smb_io_printmonitor_info_1("", buffer, &info_1[i], 0);
-	}
-
 out:
-	SAFE_FREE(info_1);
+	if (!W_ERROR_IS_OK(result)) {
+		TALLOC_FREE(info);
+		*count = 0;
+		return result;
+	}
 
-	if ( !W_ERROR_IS_OK(result) )
-		*returned = 0;
+	*info_p = info;
 
-	return result;
+	return WERR_OK;
 }
 
 /****************************************************************************
  enumprintmonitors level 2.
 ****************************************************************************/
 
-static WERROR enumprintmonitors_level_2(RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enumprintmonitors_level_2(TALLOC_CTX *mem_ctx,
+					union spoolss_MonitorInfo **info_p,
+					uint32_t offered,
+					uint32_t *needed,
+					uint32_t *count)
 {
-	PRINTMONITOR_2 *info_2;
+	union spoolss_MonitorInfo *info;
 	WERROR result = WERR_OK;
 	int i;
 
-	if((info_2 = SMB_MALLOC_ARRAY(PRINTMONITOR_2, 2)) == NULL)
-		return WERR_NOMEM;
+	info = TALLOC_ARRAY(mem_ctx, union spoolss_MonitorInfo, 2);
+	W_ERROR_HAVE_NO_MEMORY(info);
 
-	*returned = 2;
+	*count = 2;
 
-	init_unistr( &(info_2[0].name), SPL_LOCAL_PORT );
-	init_unistr( &(info_2[0].environment), "Windows NT X86" );
-	init_unistr( &(info_2[0].dll_name), "localmon.dll" );
+	result = fill_monitor_2(info, &info[0].info2,
+				SPL_LOCAL_PORT, /* FIXME */
+				"Windows NT X86", /* FIXME */
+				"localmon.dll");
+	if (!W_ERROR_IS_OK(result)) {
+		goto out;
+	}
 
-	init_unistr( &(info_2[1].name), SPL_TCPIP_PORT );
-	init_unistr( &(info_2[1].environment), "Windows NT X86" );
-	init_unistr( &(info_2[1].dll_name), "tcpmon.dll" );
+	result = fill_monitor_2(info, &info[1].info2,
+				SPL_TCPIP_PORT, /* FIXME */
+				"Windows NT X86", /* FIXME */
+				"tcpmon.dll");
+	if (!W_ERROR_IS_OK(result)) {
+		goto out;
+	}
 
-	for ( i=0; i<*returned; i++ ) {
-		*needed += spoolss_size_printmonitor_info_2(&info_2[i]);
+	for (i=0; i<*count; i++) {
+		*needed += ndr_size_spoolss_MonitorInfo2(&info[i].info2, NULL, 0);
 	}
 
 	if (*needed > offered) {
@@ -9005,49 +9044,32 @@ static WERROR enumprintmonitors_level_2(RPC_BUFFER *buffer, uint32 offered, uint
 		goto out;
 	}
 
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
-	}
-
-	for ( i=0; i<*returned; i++ ) {
-		smb_io_printmonitor_info_2("", buffer, &info_2[i], 0);
-	}
-
 out:
-	SAFE_FREE(info_2);
+	if (!W_ERROR_IS_OK(result)) {
+		TALLOC_FREE(info);
+		*count = 0;
+		return result;
+	}
 
-	if ( !W_ERROR_IS_OK(result) )
-		*returned = 0;
+	*info_p = info;
 
-	return result;
+	return WERR_OK;
 }
 
-/****************************************************************************
-****************************************************************************/
+/****************************************************************
+ _spoolss_EnumMonitors
+****************************************************************/
 
-WERROR _spoolss_enumprintmonitors(pipes_struct *p, SPOOL_Q_ENUMPRINTMONITORS *q_u, SPOOL_R_ENUMPRINTMONITORS *r_u)
+WERROR _spoolss_EnumMonitors(pipes_struct *p,
+			     struct spoolss_EnumMonitors *r)
 {
-	uint32 level = q_u->level;
-	RPC_BUFFER *buffer = NULL;
-	uint32 offered = q_u->offered;
-	uint32 *needed = &r_u->needed;
-	uint32 *returned = &r_u->returned;
-
 	/* that's an [in out] buffer */
 
-	if (!q_u->buffer && (offered!=0)) {
+	if (!r->in.buffer && (r->in.offered != 0)) {
 		return WERR_INVALID_PARAM;
 	}
 
-	if (offered > MAX_RPC_DATA_SIZE) {
-		return WERR_INVALID_PARAM;
-	}
-
-	rpcbuf_move(q_u->buffer, &r_u->buffer);
-	buffer = r_u->buffer;
-
- 	DEBUG(5,("spoolss_enumprintmonitors\n"));
+	DEBUG(5,("_spoolss_EnumMonitors\n"));
 
 	/*
 	 * Enumerate the print monitors ...
@@ -9056,14 +9078,19 @@ WERROR _spoolss_enumprintmonitors(pipes_struct *p, SPOOL_Q_ENUMPRINTMONITORS *q_
 	 * and I can use my nice printer checker.
 	 */
 
-	*returned=0;
-	*needed=0;
+	*r->out.count = 0;
+	*r->out.needed = 0;
+	*r->out.info = NULL;
 
-	switch (level) {
+	switch (r->in.level) {
 	case 1:
-		return enumprintmonitors_level_1(buffer, offered, needed, returned);
+		return enumprintmonitors_level_1(p->mem_ctx, r->out.info,
+						 r->in.offered, r->out.needed,
+						 r->out.count);
 	case 2:
-		return enumprintmonitors_level_2(buffer, offered, needed, returned);
+		return enumprintmonitors_level_2(p->mem_ctx, r->out.info,
+						 r->in.offered, r->out.needed,
+						 r->out.count);
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
@@ -10103,7 +10130,7 @@ WERROR _spoolss_XcvData(pipes_struct *p,
 			struct spoolss_XcvData *r)
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
-	DATA_BLOB out_data;
+	DATA_BLOB out_data = data_blob_null;
 	WERROR werror;
 
 	if (!Printer) {
@@ -10258,17 +10285,6 @@ WERROR _spoolss_GetPrinterDriver(pipes_struct *p,
 }
 
 /****************************************************************
- _spoolss_EnumPrintProcessors
-****************************************************************/
-
-WERROR _spoolss_EnumPrintProcessors(pipes_struct *p,
-				    struct spoolss_EnumPrintProcessors *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
  _spoolss_ReadPrinter
 ****************************************************************/
 
@@ -10307,39 +10323,6 @@ WERROR _spoolss_SetPrinterData(pipes_struct *p,
 
 WERROR _spoolss_WaitForPrinterChange(pipes_struct *p,
 				     struct spoolss_WaitForPrinterChange *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_EnumForms
-****************************************************************/
-
-WERROR _spoolss_EnumForms(pipes_struct *p,
-			  struct spoolss_EnumForms *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_EnumPorts
-****************************************************************/
-
-WERROR _spoolss_EnumPorts(pipes_struct *p,
-			  struct spoolss_EnumPorts *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_EnumMonitors
-****************************************************************/
-
-WERROR _spoolss_EnumMonitors(pipes_struct *p,
-			     struct spoolss_EnumMonitors *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
@@ -10494,17 +10477,6 @@ WERROR _spoolss_AddPrintProvidor(pipes_struct *p,
 
 WERROR _spoolss_DeletePrintProvidor(pipes_struct *p,
 				    struct spoolss_DeletePrintProvidor *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_EnumPrintProcDataTypes
-****************************************************************/
-
-WERROR _spoolss_EnumPrintProcDataTypes(pipes_struct *p,
-				       struct spoolss_EnumPrintProcDataTypes *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;

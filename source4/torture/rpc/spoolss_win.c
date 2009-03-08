@@ -188,6 +188,7 @@ static bool test_EnumPrinters(struct torture_context *tctx,
 	DATA_BLOB blob = data_blob_talloc_zero(ctx, initial_blob_size);
 	uint32_t needed;
 	uint32_t count;
+	union spoolss_PrinterInfo *info;
 
 	ep.in.flags = PRINTER_ENUM_NAME;
 	ep.in.server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
@@ -196,6 +197,7 @@ static bool test_EnumPrinters(struct torture_context *tctx,
 	ep.in.offered = initial_blob_size;
 	ep.out.needed = &needed;
 	ep.out.count = &count;
+	ep.out.info = &info;
 
 	status = dcerpc_spoolss_EnumPrinters(p, ctx, &ep);
 	torture_assert_ntstatus_ok(tctx, status, "EnumPrinters failed.");
@@ -211,7 +213,7 @@ static bool test_EnumPrinters(struct torture_context *tctx,
 	torture_assert_werr_ok(tctx, ep.out.result, "EnumPrinters failed.");
 
 	ctx->printer_count = count;
-	ctx->printer_info = ep.out.info;
+	ctx->printer_info = info;
 
 	torture_comment(tctx, "Found %d printer(s).\n", ctx->printer_count);
 
@@ -264,6 +266,7 @@ static bool test_EnumJobs(struct torture_context *tctx,
 	DATA_BLOB blob = data_blob_talloc_zero(tctx, 1024);
 	uint32_t needed;
 	uint32_t count;
+	union spoolss_JobInfo *info;
 
 	torture_comment(tctx, "Test EnumJobs\n");
 
@@ -273,6 +276,7 @@ static bool test_EnumJobs(struct torture_context *tctx,
 	ej.in.offered = 1024;
 	ej.out.needed = &needed;
 	ej.out.count = &count;
+	ej.out.info = &info;
 
 	status = dcerpc_spoolss_EnumJobs(p, tctx, &ej);
 	torture_assert_ntstatus_ok(tctx, status, "EnumJobs failed");
@@ -323,6 +327,7 @@ static bool test_EnumForms(struct torture_context *tctx,
 	DATA_BLOB blob = data_blob_talloc_zero(tctx, initial_blob_size);
 	uint32_t needed;
 	uint32_t count;
+	union spoolss_FormInfo *info;
 
 	torture_comment(tctx, "Testing EnumForms\n");
 
@@ -332,6 +337,7 @@ static bool test_EnumForms(struct torture_context *tctx,
 	ef.in.offered = initial_blob_size;
 	ef.out.needed = &needed;
 	ef.out.count = &count;
+	ef.out.info = &info;
 
 	status = dcerpc_spoolss_EnumForms(p, tctx, &ef);
 	torture_assert_ntstatus_ok(tctx, status, "EnumForms failed");
