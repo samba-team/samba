@@ -74,6 +74,13 @@
 # There is no default.
 # CTDB_INIT_STYLE=redhat
 
+# The following are specific Samba init scripts / services that you
+# can override from auto-detection.
+# There are no defaults.
+# CTDB_SERVICE_SMB=smb
+# CTDB_SERVICE_NMB=nmb
+# CTDB_SERVICE_WINBIND=winbind
+
 # you may wish to raise the file descriptor limit for ctdb
 # use a ulimit command here. ctdb needs one file descriptor per
 # connected client (ie. one per connected client in Samba)
