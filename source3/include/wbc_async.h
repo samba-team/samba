@@ -43,11 +43,10 @@ wbcErr async_req_simple_recv_wbcerr(struct async_req *req);
 bool tevent_req_is_wbcerr(struct tevent_req *req, wbcErr *pwbc_err);
 wbcErr tevent_req_simple_recv_wbcerr(struct tevent_req *req);
 
-struct async_req *wb_req_read_send(TALLOC_CTX *mem_ctx,
-				   struct tevent_context *ev,
-				   int fd, size_t max_extra_data);
-
-wbcErr wb_req_read_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
+struct tevent_req *wb_req_read_send(TALLOC_CTX *mem_ctx,
+				    struct tevent_context *ev,
+				    int fd, size_t max_extra_data);
+wbcErr wb_req_read_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			struct winbindd_request **preq);
 
 struct tevent_req *wb_req_write_send(TALLOC_CTX *mem_ctx,
