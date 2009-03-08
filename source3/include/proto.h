@@ -3181,7 +3181,7 @@ void cli_free_enc_buffer(struct cli_state *cli, char *buf);
 NTSTATUS cli_decrypt_message(struct cli_state *cli);
 NTSTATUS cli_encrypt_message(struct cli_state *cli, char *buf, char **buf_out);
 
-/* The following definitions come from libsmb/smb_signing.c  */
+/* The following definitions come from libsmb/clisigning.c  */
 
 bool cli_simple_set_signing(struct cli_state *cli,
 			    const DATA_BLOB user_session_key,
