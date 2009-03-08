@@ -415,17 +415,16 @@ static void wb_open_pipe_ping_done(struct tevent_req *subreq);
 static void wb_open_pipe_getpriv_done(struct tevent_req *subreq);
 static void wb_open_pipe_connect_priv_done(struct tevent_req *subreq);
 
-static struct async_req *wb_open_pipe_send(TALLOC_CTX *mem_ctx,
-					   struct tevent_context *ev,
-					   struct wb_context *wb_ctx,
-					   bool need_priv)
+static struct tevent_req *wb_open_pipe_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct wb_context *wb_ctx,
+					    bool need_priv)
 {
-	struct async_req *result;
-	struct tevent_req *subreq;
+	struct tevent_req *result, *subreq;
 	struct wb_open_pipe_state *state;
 
-	if (!async_req_setup(mem_ctx, &result, &state,
-			     struct wb_open_pipe_state)) {
+	result = tevent_req_create(mem_ctx, &state, struct wb_open_pipe_state);
+	if (result == NULL) {
 		return NULL;
 	}
 	state->wb_ctx = wb_ctx;
@@ -452,17 +451,17 @@ static struct async_req *wb_open_pipe_send(TALLOC_CTX *mem_ctx,
 
 static void wb_open_pipe_connect_nonpriv_done(struct tevent_req *subreq)
 {
-	struct async_req *req = tevent_req_callback_data(
-		subreq, struct async_req);
-	struct wb_open_pipe_state *state = talloc_get_type_abort(
-		req->private_data, struct wb_open_pipe_state);
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct wb_open_pipe_state *state = tevent_req_data(
+		req, struct wb_open_pipe_state);
 	wbcErr wbc_err;
 
 	wbc_err = wb_connect_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!WBC_ERROR_IS_OK(wbc_err)) {
 		state->wb_ctx->is_priv = true;
-		async_req_error(req, wbc_err);
+		tevent_req_error(req, wbc_err);
 		return;
 	}
 
@@ -471,7 +470,7 @@ static void wb_open_pipe_connect_nonpriv_done(struct tevent_req *subreq)
 
 	subreq = wb_int_trans_send(state, state->ev, NULL, state->wb_ctx->fd,
 				   &state->wb_req);
-	if (async_req_nomem(subreq, req)) {
+	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
 	tevent_req_set_callback(subreq, wb_open_pipe_ping_done, req);
@@ -479,22 +478,22 @@ static void wb_open_pipe_connect_nonpriv_done(struct tevent_req *subreq)
 
 static void wb_open_pipe_ping_done(struct tevent_req *subreq)
 {
-	struct async_req *req = tevent_req_callback_data(
-		subreq, struct async_req);
-	struct wb_open_pipe_state *state = talloc_get_type_abort(
-		req->private_data, struct wb_open_pipe_state);
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct wb_open_pipe_state *state = tevent_req_data(
+		req, struct wb_open_pipe_state);
 	struct winbindd_response *wb_resp;
 	wbcErr wbc_err;
 
 	wbc_err = wb_int_trans_recv(subreq, state, &wb_resp);
 	TALLOC_FREE(subreq);
 	if (!WBC_ERROR_IS_OK(wbc_err)) {
-		async_req_error(req, wbc_err);
+		tevent_req_error(req, wbc_err);
 		return;
 	}
 
 	if (!state->need_priv) {
-		async_req_done(req);
+		tevent_req_done(req);
 		return;
 	}
 
@@ -502,7 +501,7 @@ static void wb_open_pipe_ping_done(struct tevent_req *subreq)
 
 	subreq = wb_int_trans_send(state, state->ev, NULL, state->wb_ctx->fd,
 				   &state->wb_req);
-	if (async_req_nomem(subreq, req)) {
+	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
 	tevent_req_set_callback(subreq, wb_open_pipe_getpriv_done, req);
@@ -510,17 +509,17 @@ static void wb_open_pipe_ping_done(struct tevent_req *subreq)
 
 static void wb_open_pipe_getpriv_done(struct tevent_req *subreq)
 {
-	struct async_req *req = tevent_req_callback_data(
-		subreq, struct async_req);
-	struct wb_open_pipe_state *state = talloc_get_type_abort(
-		req->private_data, struct wb_open_pipe_state);
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct wb_open_pipe_state *state = tevent_req_data(
+		req, struct wb_open_pipe_state);
 	struct winbindd_response *wb_resp = NULL;
 	wbcErr wbc_err;
 
 	wbc_err = wb_int_trans_recv(subreq, state, &wb_resp);
 	TALLOC_FREE(subreq);
 	if (!WBC_ERROR_IS_OK(wbc_err)) {
-		async_req_error(req, wbc_err);
+		tevent_req_error(req, wbc_err);
 		return;
 	}
 
@@ -530,7 +529,7 @@ static void wb_open_pipe_getpriv_done(struct tevent_req *subreq)
 	subreq = wb_connect_send(state, state->ev, state->wb_ctx,
 				  (char *)wb_resp->extra_data.data);
 	TALLOC_FREE(wb_resp);
-	if (async_req_nomem(subreq, req)) {
+	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
 	tevent_req_set_callback(subreq, wb_open_pipe_connect_priv_done, req);
@@ -538,25 +537,25 @@ static void wb_open_pipe_getpriv_done(struct tevent_req *subreq)
 
 static void wb_open_pipe_connect_priv_done(struct tevent_req *subreq)
 {
-	struct async_req *req = tevent_req_callback_data(
-		subreq, struct async_req);
-	struct wb_open_pipe_state *state = talloc_get_type_abort(
-		req->private_data, struct wb_open_pipe_state);
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct wb_open_pipe_state *state = tevent_req_data(
+		req, struct wb_open_pipe_state);
 	wbcErr wbc_err;
 
 	wbc_err = wb_connect_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!WBC_ERROR_IS_OK(wbc_err)) {
-		async_req_error(req, wbc_err);
+		tevent_req_error(req, wbc_err);
 		return;
 	}
 	state->wb_ctx->is_priv = true;
-	async_req_done(req);
+	tevent_req_done(req);
 }
 
-static wbcErr wb_open_pipe_recv(struct async_req *req)
+static wbcErr wb_open_pipe_recv(struct tevent_req *req)
 {
-	return async_req_simple_recv_wbcerr(req);
+	return tevent_req_simple_recv_wbcerr(req);
 }
 
 struct wb_trans_state {
@@ -569,7 +568,7 @@ struct wb_trans_state {
 	bool need_priv;
 };
 
-static void wb_trans_connect_done(struct async_req *subreq);
+static void wb_trans_connect_done(struct tevent_req *subreq);
 static void wb_trans_done(struct tevent_req *subreq);
 static void wb_trans_retry_wait_done(struct async_req *subreq);
 
@@ -582,15 +581,12 @@ static void wb_trigger_trans(struct async_req *req)
 	if ((state->wb_ctx->fd == -1)
 	    || (state->need_priv && !state->wb_ctx->is_priv)) {
 
-		struct async_req *subreq2;
-
-		subreq2 = wb_open_pipe_send(state, state->ev, state->wb_ctx,
-					    state->need_priv);
-		if (async_req_nomem(subreq2, req)) {
+		subreq = wb_open_pipe_send(state, state->ev, state->wb_ctx,
+					   state->need_priv);
+		if (async_req_nomem(subreq, req)) {
 			return;
 		}
-		subreq2->async.fn = wb_trans_connect_done;
-		subreq2->async.priv = req;
+		tevent_req_set_callback(subreq, wb_trans_connect_done, req);
 		return;
 	}
 
@@ -682,6 +678,7 @@ static void wb_trans_retry_wait_done(struct async_req *subreq)
 		subreq->async.priv, struct async_req);
 	struct wb_trans_state *state = talloc_get_type_abort(
 		req->private_data, struct wb_trans_state);
+	struct tevent_req *subreq2;
 	bool ret;
 
 	ret = async_wait_recv(subreq);
@@ -691,19 +688,18 @@ static void wb_trans_retry_wait_done(struct async_req *subreq)
 		return;
 	}
 
-	subreq = wb_open_pipe_send(state, state->ev, state->wb_ctx,
-				   state->need_priv);
-	if (async_req_nomem(subreq, req)) {
+	subreq2 = wb_open_pipe_send(state, state->ev, state->wb_ctx,
+				    state->need_priv);
+	if (async_req_nomem(subreq2, req)) {
 		return;
 	}
-	subreq->async.fn = wb_trans_connect_done;
-	subreq->async.priv = req;
+	tevent_req_set_callback(subreq2, wb_trans_connect_done, req);
 }
 
-static void wb_trans_connect_done(struct async_req *subreq)
+static void wb_trans_connect_done(struct tevent_req *subreq)
 {
-	struct async_req *req = talloc_get_type_abort(
-		subreq->async.priv, struct async_req);
+	struct async_req *req = tevent_req_callback_data(
+		subreq, struct async_req);
 	struct wb_trans_state *state = talloc_get_type_abort(
 		req->private_data, struct wb_trans_state);
 	struct tevent_req *subreq2;
