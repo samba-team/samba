@@ -259,31 +259,6 @@ static wbcErr wb_connect_recv(struct tevent_req *req)
 	return tevent_req_simple_recv_wbcerr(req);
 }
 
-static struct winbindd_request *winbindd_request_copy(
-	TALLOC_CTX *mem_ctx,
-	const struct winbindd_request *req)
-{
-	struct winbindd_request *result;
-
-	result = (struct winbindd_request *)TALLOC_MEMDUP(
-		mem_ctx, req, sizeof(struct winbindd_request));
-	if (result == NULL) {
-		return NULL;
-	}
-
-	if (result->extra_len == 0) {
-		return result;
-	}
-
-	result->extra_data.data = (char *)TALLOC_MEMDUP(
-		result, result->extra_data.data, result->extra_len);
-	if (result->extra_data.data == NULL) {
-		TALLOC_FREE(result);
-		return NULL;
-	}
-	return result;
-}
-
 struct wb_int_trans_state {
 	struct tevent_context *ev;
 	int fd;
@@ -600,7 +575,7 @@ static void wb_trigger_trans(struct async_req *req)
 
 struct async_req *wb_trans_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 				struct wb_context *wb_ctx, bool need_priv,
-				const struct winbindd_request *wb_req)
+				struct winbindd_request *wb_req)
 {
 	struct async_req *result;
 	struct wb_trans_state *state;
@@ -611,10 +586,7 @@ struct async_req *wb_trans_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	}
 	state->wb_ctx = wb_ctx;
 	state->ev = ev;
-	state->wb_req = winbindd_request_copy(state, wb_req);
-	if (state->wb_req == NULL) {
-		goto fail;
-	}
+	state->wb_req = wb_req;
 	state->num_retries = 10;
 	state->need_priv = need_priv;
 
