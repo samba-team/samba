@@ -298,7 +298,8 @@ static void wb_int_trans_write_done(struct tevent_req *subreq);
 static void wb_int_trans_read_done(struct tevent_req *subreq);
 
 static struct async_req *wb_int_trans_send(TALLOC_CTX *mem_ctx,
-					   struct tevent_context *ev, int fd,
+					   struct tevent_context *ev,
+					   struct tevent_queue *queue, int fd,
 					   struct winbindd_request *wb_req)
 {
 	struct async_req *result;
@@ -325,7 +326,7 @@ static struct async_req *wb_int_trans_send(TALLOC_CTX *mem_ctx,
 	state->wb_req->length = sizeof(struct winbindd_request);
 	state->wb_req->pid = getpid();
 
-	subreq = wb_req_write_send(state, state->ev, NULL, state->fd,
+	subreq = wb_req_write_send(state, state->ev, queue, state->fd,
 				   state->wb_req);
 	if (subreq == NULL) {
 		goto fail;
@@ -476,7 +477,7 @@ static void wb_open_pipe_connect_nonpriv_done(struct async_req *subreq)
 	ZERO_STRUCT(state->wb_req);
 	state->wb_req.cmd = WINBINDD_INTERFACE_VERSION;
 
-	subreq = wb_int_trans_send(state, state->ev, state->wb_ctx->fd,
+	subreq = wb_int_trans_send(state, state->ev, NULL, state->wb_ctx->fd,
 				   &state->wb_req);
 	if (async_req_nomem(subreq, req)) {
 		return;
@@ -509,7 +510,7 @@ static void wb_open_pipe_ping_done(struct async_req *subreq)
 
 	state->wb_req.cmd = WINBINDD_PRIV_PIPE_DIR;
 
-	subreq = wb_int_trans_send(state, state->ev, state->wb_ctx->fd,
+	subreq = wb_int_trans_send(state, state->ev, NULL, state->wb_ctx->fd,
 				   &state->wb_req);
 	if (async_req_nomem(subreq, req)) {
 		return;
@@ -605,7 +606,7 @@ static void wb_trigger_trans(struct async_req *req)
 		return;
 	}
 
-	subreq = wb_int_trans_send(state, state->ev, state->wb_ctx->fd,
+	subreq = wb_int_trans_send(state, state->ev, NULL, state->wb_ctx->fd,
 				   state->wb_req);
 	if (async_req_nomem(subreq, req)) {
 		return;
@@ -727,7 +728,7 @@ static void wb_trans_connect_done(struct async_req *subreq)
 		return;
 	}
 
-	subreq = wb_int_trans_send(state, state->ev, state->wb_ctx->fd,
+	subreq = wb_int_trans_send(state, state->ev, NULL, state->wb_ctx->fd,
 				   state->wb_req);
 	if (async_req_nomem(subreq, req)) {
 		return;
