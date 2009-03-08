@@ -294,7 +294,7 @@ struct wb_int_trans_state {
 	struct winbindd_response *wb_resp;
 };
 
-static void wb_int_trans_write_done(struct async_req *subreq);
+static void wb_int_trans_write_done(struct tevent_req *subreq);
 static void wb_int_trans_read_done(struct async_req *subreq);
 
 static struct async_req *wb_int_trans_send(TALLOC_CTX *mem_ctx,
@@ -302,7 +302,7 @@ static struct async_req *wb_int_trans_send(TALLOC_CTX *mem_ctx,
 					   struct winbindd_request *wb_req)
 {
 	struct async_req *result;
-	struct async_req *subreq;
+	struct tevent_req *subreq;
 	struct wb_int_trans_state *state;
 
 	if (!async_req_setup(mem_ctx, &result, &state,
@@ -325,12 +325,12 @@ static struct async_req *wb_int_trans_send(TALLOC_CTX *mem_ctx,
 	state->wb_req->length = sizeof(struct winbindd_request);
 	state->wb_req->pid = getpid();
 
-	subreq = wb_req_write_send(state, state->ev, state->fd, state->wb_req);
+	subreq = wb_req_write_send(state, state->ev, NULL, state->fd,
+				   state->wb_req);
 	if (subreq == NULL) {
 		goto fail;
 	}
-	subreq->async.fn = wb_int_trans_write_done;
-	subreq->async.priv = result;
+	tevent_req_set_callback(subreq, wb_int_trans_write_done, result);
 
 	return result;
 
@@ -339,12 +339,13 @@ static struct async_req *wb_int_trans_send(TALLOC_CTX *mem_ctx,
 	return NULL;
 }
 
-static void wb_int_trans_write_done(struct async_req *subreq)
+static void wb_int_trans_write_done(struct tevent_req *subreq)
 {
-	struct async_req *req = talloc_get_type_abort(
-		subreq->async.priv, struct async_req);
+	struct async_req *req = tevent_req_callback_data(
+		subreq, struct async_req);
 	struct wb_int_trans_state *state = talloc_get_type_abort(
 		req->private_data, struct wb_int_trans_state);
+	struct async_req *subreq2;
 	wbcErr wbc_err;
 
 	wbc_err = wb_req_write_recv(subreq);
@@ -354,12 +355,12 @@ static void wb_int_trans_write_done(struct async_req *subreq)
 		return;
 	}
 
-	subreq = wb_resp_read_send(state, state->ev, state->fd);
-	if (subreq == NULL) {
-		async_req_error(req, WBC_ERR_NO_MEMORY);
+	subreq2 = wb_resp_read_send(state, state->ev, state->fd);
+	if (async_req_nomem(subreq2, req)) {
+		return;
 	}
-	subreq->async.fn = wb_int_trans_read_done;
-	subreq->async.priv = req;
+	subreq2->async.fn = wb_int_trans_read_done;
+	subreq2->async.priv = req;
 }
 
 static void wb_int_trans_read_done(struct async_req *subreq)

@@ -222,17 +222,17 @@ struct req_write_state {
 
 static void wb_req_write_done(struct tevent_req *subreq);
 
-struct async_req *wb_req_write_send(TALLOC_CTX *mem_ctx,
-				    struct tevent_context *ev, int fd,
-				    struct winbindd_request *wb_req)
+struct tevent_req *wb_req_write_send(TALLOC_CTX *mem_ctx,
+				     struct tevent_context *ev,
+				     struct tevent_queue *queue, int fd,
+				     struct winbindd_request *wb_req)
 {
-	struct async_req *result;
-	struct tevent_req *subreq;
+	struct tevent_req *result, *subreq;
 	struct req_write_state *state;
 	int count = 1;
 
-	if (!async_req_setup(mem_ctx, &result, &state,
-			     struct req_write_state)) {
+	result = tevent_req_create(mem_ctx, &state, struct req_write_state);
+	if (result == NULL) {
 		return NULL;
 	}
 
@@ -245,7 +245,7 @@ struct async_req *wb_req_write_send(TALLOC_CTX *mem_ctx,
 		count = 2;
 	}
 
-	subreq = writev_send(state, ev, NULL, fd, state->iov, count);
+	subreq = writev_send(state, ev, queue, fd, state->iov, count);
 	if (subreq == NULL) {
 		goto fail;
 	}
@@ -259,23 +259,23 @@ struct async_req *wb_req_write_send(TALLOC_CTX *mem_ctx,
 
 static void wb_req_write_done(struct tevent_req *subreq)
 {
-	struct async_req *req =
-		tevent_req_callback_data(subreq, struct async_req);
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
 	int err;
 	ssize_t ret;
 
 	ret = writev_recv(subreq, &err);
 	TALLOC_FREE(subreq);
 	if (ret < 0) {
-		async_req_error(req, map_wbc_err_from_errno(err));
+		tevent_req_error(req, map_wbc_err_from_errno(err));
 		return;
 	}
-	async_req_done(req);
+	tevent_req_done(req);
 }
 
-wbcErr wb_req_write_recv(struct async_req *req)
+wbcErr wb_req_write_recv(struct tevent_req *req)
 {
-	return async_req_simple_recv_wbcerr(req);
+	return tevent_req_simple_recv_wbcerr(req);
 }
 
 struct resp_read_state {

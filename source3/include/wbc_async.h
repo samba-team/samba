@@ -50,11 +50,11 @@ struct async_req *wb_req_read_send(TALLOC_CTX *mem_ctx,
 wbcErr wb_req_read_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
 			struct winbindd_request **preq);
 
-struct async_req *wb_req_write_send(TALLOC_CTX *mem_ctx,
-				    struct tevent_context *ev, int fd,
-				    struct winbindd_request *wb_req);
-
-wbcErr wb_req_write_recv(struct async_req *req);
+struct tevent_req *wb_req_write_send(TALLOC_CTX *mem_ctx,
+				     struct tevent_context *ev,
+				     struct tevent_queue *queue, int fd,
+				     struct winbindd_request *wb_req);
+wbcErr wb_req_write_recv(struct tevent_req *req);
 
 struct async_req *wb_resp_read_send(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev, int fd);
