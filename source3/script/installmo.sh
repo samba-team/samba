@@ -35,7 +35,7 @@ for dir in $SRCDIR/locale/*; do
 		if test "$mode" = 'install'; then
 			echo "Installing $f as $FNAME"
 			touch "$FNAME"
-			$MSGFMT "$f" -f -o "$FNAME"
+			$MSGFMT -f -o "$FNAME" "$f"
 			if test ! -f "$FNAME"; then
 				echo "Cannot install $FNAME. Does $USER have privileges?"
 				exit 1
