@@ -25,11 +25,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-struct req_read_state {
-	struct winbindd_request *wb_req;
-	size_t max_extra_data;
-};
-
 bool async_req_is_wbcerr(struct async_req *req, wbcErr *pwbc_err)
 {
 	enum async_req_state state;
@@ -117,6 +112,11 @@ wbcErr tevent_req_simple_recv_wbcerr(struct tevent_req *req)
 
 	return WBC_ERR_SUCCESS;
 }
+
+struct req_read_state {
+	struct winbindd_request *wb_req;
+	size_t max_extra_data;
+};
 
 static ssize_t wb_req_more(uint8_t *buf, size_t buflen, void *private_data);
 static void wb_req_read_done(struct tevent_req *subreq);
