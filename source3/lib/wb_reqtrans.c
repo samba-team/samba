@@ -81,6 +81,43 @@ wbcErr async_req_simple_recv_wbcerr(struct async_req *req)
 	return WBC_ERR_SUCCESS;
 }
 
+bool tevent_req_is_wbcerr(struct tevent_req *req, wbcErr *pwbc_err)
+{
+	enum tevent_req_state state;
+	uint64_t error;
+	if (!tevent_req_is_error(req, &state, &error)) {
+		*pwbc_err = WBC_ERR_SUCCESS;
+		return false;
+	}
+
+	switch (state) {
+	case TEVENT_REQ_USER_ERROR:
+		*pwbc_err = error;
+		break;
+	case TEVENT_REQ_TIMED_OUT:
+		*pwbc_err = WBC_ERR_UNKNOWN_FAILURE;
+		break;
+	case TEVENT_REQ_NO_MEMORY:
+		*pwbc_err = WBC_ERR_NO_MEMORY;
+		break;
+	default:
+		*pwbc_err = WBC_ERR_UNKNOWN_FAILURE;
+		break;
+	}
+	return true;
+}
+
+wbcErr tevent_req_simple_recv_wbcerr(struct tevent_req *req)
+{
+	wbcErr wbc_err;
+
+	if (tevent_req_is_wbcerr(req, &wbc_err)) {
+		return wbc_err;
+	}
+
+	return WBC_ERR_SUCCESS;
+}
+
 static ssize_t wb_req_more(uint8_t *buf, size_t buflen, void *private_data);
 static void wb_req_read_done(struct tevent_req *subreq);
 
