@@ -202,6 +202,7 @@ struct socket_info
 	int bound;
 	int bcast;
 	int is_server;
+	int connected;
 
 	char *path;
 	char *tmp_path;
@@ -1487,6 +1488,7 @@ _PUBLIC_ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	child_si->protocol = parent_si->protocol;
 	child_si->bound = 1;
 	child_si->is_server = 1;
+	child_si->connected = 1;
 
 	child_si->peername_len = len;
 	child_si->peername = sockaddr_dup(my_addr, len);
@@ -1674,7 +1676,14 @@ _PUBLIC_ int swrap_connect(int s, const struct sockaddr *serv_addr, socklen_t ad
 	if (ret == 0) {
 		si->peername_len = addrlen;
 		si->peername = sockaddr_dup(serv_addr, addrlen);
+		si->connected = 1;
+	}
 
+	if (si->type != SOCK_STREAM) {
+		return ret;
+	}
+
+	if (ret == 0) {
 		swrap_dump_packet(si, serv_addr, SWRAP_CONNECT_RECV, NULL, 0);
 		swrap_dump_packet(si, serv_addr, SWRAP_CONNECT_ACK, NULL, 0);
 	} else {
@@ -1803,9 +1812,16 @@ _PUBLIC_ ssize_t swrap_recvfrom(int s, void *buf, size_t len, int flags, struct 
 	socklen_t un_addrlen = sizeof(un_addr);
 	int ret;
 	struct socket_info *si = find_socket_info(s);
+	struct sockaddr_storage ss;
+	socklen_t ss_len = sizeof(ss);
 
 	if (!si) {
 		return real_recvfrom(s, buf, len, flags, from, fromlen);
+	}
+
+	if (!from) {
+		from = (struct sockaddr *)&ss;
+		fromlen = &ss_len;
 	}
 
 	len = MIN(len, 1500);
@@ -1836,6 +1852,16 @@ _PUBLIC_ ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags, con
 
 	if (!si) {
 		return real_sendto(s, buf, len, flags, to, tolen);
+	}
+
+	if (si->connected) {
+		if (to) {
+			errno = EISCONN;
+			return -1;
+		}
+
+		to = si->peername;
+		tolen = si->peername_len;
 	}
 
 	len = MIN(len, 1500);
