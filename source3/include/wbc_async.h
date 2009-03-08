@@ -60,10 +60,9 @@ struct tevent_req *wb_resp_read_send(TALLOC_CTX *mem_ctx,
 wbcErr wb_resp_read_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			 struct winbindd_response **presp);
 
-struct async_req *wb_resp_write_send(TALLOC_CTX *mem_ctx,
-				    struct tevent_context *ev, int fd,
-				    struct winbindd_response *wb_resp);
-
-wbcErr wb_resp_write_recv(struct async_req *req);
+struct tevent_req *wb_resp_write_send(TALLOC_CTX *mem_ctx,
+				      struct tevent_context *ev, int fd,
+				      struct winbindd_response *wb_resp);
+wbcErr wb_resp_write_recv(struct tevent_req *req);
 
 #endif /*_WBC_ASYNC_H_*/
