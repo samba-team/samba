@@ -5217,6 +5217,163 @@ WERROR _spoolss_getprinter(pipes_struct *p, SPOOL_Q_GETPRINTER *q_u, SPOOL_R_GET
 }
 
 /********************************************************************
+ ********************************************************************/
+
+static const char **string_array_from_driver_info(TALLOC_CTX *mem_ctx,
+						  fstring *fstring_array,
+						  const char *cservername)
+{
+	int i, num_strings = 0;
+	const char **array = NULL;
+
+	for (i=0; fstring_array && fstring_array[i][0] != '\0'; i++) {
+
+		const char *str = talloc_asprintf(mem_ctx, "\\\\%s%s",
+						  cservername, fstring_array[i]);
+		if (!str) {
+			TALLOC_FREE(array);
+			return NULL;
+		}
+
+
+		if (!add_string_to_array(mem_ctx, str, &array, &num_strings)) {
+			TALLOC_FREE(array);
+			return NULL;
+		}
+	}
+
+	if (i > 0) {
+		ADD_TO_ARRAY(mem_ctx, const char *, NULL,
+			     &array, &num_strings);
+	}
+
+	return array;
+}
+
+/********************************************************************
+ * fill a spoolss_DriverInfo1 struct
+ ********************************************************************/
+
+static WERROR fill_printer_driver_info1(TALLOC_CTX *mem_ctx,
+					struct spoolss_DriverInfo1 *r,
+					const NT_PRINTER_DRIVER_INFO_LEVEL *driver,
+					const char *servername,
+					const char *architecture)
+{
+	r->driver_name		= talloc_strdup(mem_ctx, driver->info_3->name);
+	W_ERROR_HAVE_NO_MEMORY(r->driver_name);
+
+	return WERR_OK;
+}
+
+/********************************************************************
+ * fill a spoolss_DriverInfo2 struct
+ ********************************************************************/
+
+static WERROR fill_printer_driver_info2(TALLOC_CTX *mem_ctx,
+					struct spoolss_DriverInfo2 *r,
+					const NT_PRINTER_DRIVER_INFO_LEVEL *driver,
+					const char *servername)
+
+{
+	const char *cservername = canon_servername(servername);
+
+	r->version		= driver->info_3->cversion;
+
+	r->driver_name		= talloc_strdup(mem_ctx, driver->info_3->name);
+	W_ERROR_HAVE_NO_MEMORY(r->driver_name);
+	r->architecture		= talloc_strdup(mem_ctx, driver->info_3->environment);
+	W_ERROR_HAVE_NO_MEMORY(r->architecture);
+
+	if (strlen(driver->info_3->driverpath)) {
+		r->driver_path	= talloc_asprintf(mem_ctx, "\\\\%s%s",
+				cservername, driver->info_3->driverpath);
+	} else {
+		r->driver_path	= talloc_strdup(mem_ctx, "");
+	}
+	W_ERROR_HAVE_NO_MEMORY(r->driver_path);
+
+	if (strlen(driver->info_3->datafile)) {
+		r->data_file	= talloc_asprintf(mem_ctx, "\\\\%s%s",
+				cservername, driver->info_3->datafile);
+	} else {
+		r->data_file	= talloc_strdup(mem_ctx, "");
+	}
+	W_ERROR_HAVE_NO_MEMORY(r->data_file);
+
+	if (strlen(driver->info_3->configfile)) {
+		r->config_file	= talloc_asprintf(mem_ctx, "\\\\%s%s",
+				cservername, driver->info_3->configfile);
+	} else {
+		r->config_file	= talloc_strdup(mem_ctx, "");
+	}
+	W_ERROR_HAVE_NO_MEMORY(r->config_file);
+
+	return WERR_OK;
+}
+
+/********************************************************************
+ * fill a spoolss_DriverInfo3 struct
+ ********************************************************************/
+
+static WERROR fill_printer_driver_info3(TALLOC_CTX *mem_ctx,
+					struct spoolss_DriverInfo3 *r,
+					const NT_PRINTER_DRIVER_INFO_LEVEL *driver,
+					const char *servername)
+{
+	const char *cservername = canon_servername(servername);
+
+	r->version		= driver->info_3->cversion;
+
+	r->driver_name		= talloc_strdup(mem_ctx, driver->info_3->name);
+	W_ERROR_HAVE_NO_MEMORY(r->driver_name);
+	r->architecture		= talloc_strdup(mem_ctx, driver->info_3->environment);
+	W_ERROR_HAVE_NO_MEMORY(r->architecture);
+
+	if (strlen(driver->info_3->driverpath)) {
+		r->driver_path	= talloc_asprintf(mem_ctx, "\\\\%s%s",
+				cservername, driver->info_3->driverpath);
+	} else {
+		r->driver_path	= talloc_strdup(mem_ctx, "");
+	}
+	W_ERROR_HAVE_NO_MEMORY(r->driver_path);
+
+	if (strlen(driver->info_3->datafile)) {
+		r->data_file	= talloc_asprintf(mem_ctx, "\\\\%s%s",
+				cservername, driver->info_3->datafile);
+	} else {
+		r->data_file	= talloc_strdup(mem_ctx, "");
+	}
+	W_ERROR_HAVE_NO_MEMORY(r->data_file);
+
+	if (strlen(driver->info_3->configfile)) {
+		r->config_file	= talloc_asprintf(mem_ctx, "\\\\%s%s",
+				cservername, driver->info_3->configfile);
+	} else {
+		r->config_file	= talloc_strdup(mem_ctx, "");
+	}
+	W_ERROR_HAVE_NO_MEMORY(r->config_file);
+
+	if (strlen(driver->info_3->helpfile)) {
+		r->help_file	= talloc_asprintf(mem_ctx, "\\\\%s%s",
+				cservername, driver->info_3->helpfile);
+	} else {
+		r->help_file	= talloc_strdup(mem_ctx, "");
+	}
+	W_ERROR_HAVE_NO_MEMORY(r->config_file);
+
+	r->monitor_name		= talloc_strdup(mem_ctx, driver->info_3->monitorname);
+	W_ERROR_HAVE_NO_MEMORY(r->monitor_name);
+	r->default_datatype	= talloc_strdup(mem_ctx, driver->info_3->defaultdatatype);
+	W_ERROR_HAVE_NO_MEMORY(r->default_datatype);
+
+	r->dependent_files = string_array_from_driver_info(mem_ctx,
+							   driver->info_3->dependentfiles,
+							   cservername);
+	return WERR_OK;
+}
+
+/********************************************************************
  * fill a DRIVER_INFO_1 struct
  ********************************************************************/
 
@@ -7078,311 +7235,298 @@ WERROR _spoolss_SetJob(pipes_struct *p,
  Enumerates all printer drivers at level 1.
 ****************************************************************************/
 
-static WERROR enumprinterdrivers_level1(const char *servername, fstring architecture, RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enumprinterdrivers_level1(TALLOC_CTX *mem_ctx,
+					const char *servername,
+					const char *architecture,
+					union spoolss_DriverInfo **info_p,
+					uint32_t *count)
 {
 	int i;
 	int ndrivers;
-	uint32 version;
+	uint32_t version;
 	fstring *list = NULL;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
-	DRIVER_INFO_1 *driver_info_1=NULL;
+	union spoolss_DriverInfo *info = NULL;
 	WERROR result = WERR_OK;
 
-	*returned=0;
+	*count = 0;
 
 	for (version=0; version<DRIVER_MAX_VERSION; version++) {
-		list=NULL;
-		ndrivers=get_ntdrivers(&list, architecture, version);
-		DEBUGADD(4,("we have:[%d] drivers in environment [%s] and version [%d]\n", ndrivers, architecture, version));
+		list = NULL;
+		ndrivers = get_ntdrivers(&list, architecture, version);
+		DEBUGADD(4,("we have:[%d] drivers in environment [%s] and version [%d]\n",
+			ndrivers, architecture, version));
 
-		if(ndrivers == -1) {
-			SAFE_FREE(driver_info_1);
-			return WERR_NOMEM;
+		if (ndrivers == -1) {
+			result = WERR_NOMEM;
+			goto out;
 		}
 
-		if(ndrivers != 0) {
-			if((driver_info_1=SMB_REALLOC_ARRAY(driver_info_1, DRIVER_INFO_1, *returned+ndrivers )) == NULL) {
-				DEBUG(0,("enumprinterdrivers_level1: failed to enlarge driver info buffer!\n"));
-				SAFE_FREE(list);
-				return WERR_NOMEM;
+		if (ndrivers != 0) {
+			info = TALLOC_REALLOC_ARRAY(mem_ctx, info,
+						    union spoolss_DriverInfo,
+						    *count + ndrivers);
+			if (!info) {
+				DEBUG(0,("enumprinterdrivers_level1: "
+					"failed to enlarge driver info buffer!\n"));
+				result = WERR_NOMEM;
+				goto out;
 			}
 		}
 
 		for (i=0; i<ndrivers; i++) {
-			WERROR status;
 			DEBUGADD(5,("\tdriver: [%s]\n", list[i]));
 			ZERO_STRUCT(driver);
-			status = get_a_printer_driver(&driver, 3, list[i],
+			result = get_a_printer_driver(&driver, 3, list[i],
 						      architecture, version);
-			if (!W_ERROR_IS_OK(status)) {
-				SAFE_FREE(list);
-				SAFE_FREE(driver_info_1);
-				return status;
+			if (!W_ERROR_IS_OK(result)) {
+				goto out;
 			}
-			fill_printer_driver_info_1(&driver_info_1[*returned+i], driver, servername, architecture );
+			result = fill_printer_driver_info1(info, &info[*count+i].info1,
+							   &driver, servername,
+							   architecture);
+			if (!W_ERROR_IS_OK(result)) {
+				free_a_printer_driver(driver, 3);
+				goto out;
+			}
 			free_a_printer_driver(driver, 3);
 		}
 
-		*returned+=ndrivers;
+		*count += ndrivers;
 		SAFE_FREE(list);
 	}
 
-	/* check the required size. */
-	for (i=0; i<*returned; i++) {
-		DEBUGADD(6,("adding driver [%d]'s size\n",i));
-		*needed += spoolss_size_printer_driver_info_1(&driver_info_1[i]);
+ out:
+	SAFE_FREE(list);
+
+	if (!W_ERROR_IS_OK(result)) {
+		TALLOC_FREE(info);
+		*count = 0;
+		return result;
 	}
 
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
-	}
+	*info_p = info;
 
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
-	}
-
-	/* fill the buffer with the driver structures */
-	for (i=0; i<*returned; i++) {
-		DEBUGADD(6,("adding driver [%d] to buffer\n",i));
-		smb_io_printer_driver_info_1("", buffer, &driver_info_1[i], 0);
-	}
-
-out:
-	SAFE_FREE(driver_info_1);
-
-	if ( !W_ERROR_IS_OK(result) )
-		*returned = 0;
-
-	return result;
+	return WERR_OK;
 }
 
 /****************************************************************************
  Enumerates all printer drivers at level 2.
 ****************************************************************************/
 
-static WERROR enumprinterdrivers_level2(const char *servername, fstring architecture, RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enumprinterdrivers_level2(TALLOC_CTX *mem_ctx,
+					const char *servername,
+					const char *architecture,
+					union spoolss_DriverInfo **info_p,
+					uint32_t *count)
 {
 	int i;
 	int ndrivers;
-	uint32 version;
+	uint32_t version;
 	fstring *list = NULL;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
-	DRIVER_INFO_2 *driver_info_2=NULL;
+	union spoolss_DriverInfo *info = NULL;
 	WERROR result = WERR_OK;
 
-	*returned=0;
+	*count = 0;
 
 	for (version=0; version<DRIVER_MAX_VERSION; version++) {
-		list=NULL;
-		ndrivers=get_ntdrivers(&list, architecture, version);
-		DEBUGADD(4,("we have:[%d] drivers in environment [%s] and version [%d]\n", ndrivers, architecture, version));
+		list = NULL;
+		ndrivers = get_ntdrivers(&list, architecture, version);
+		DEBUGADD(4,("we have:[%d] drivers in environment [%s] and version [%d]\n",
+			ndrivers, architecture, version));
 
-		if(ndrivers == -1) {
-			SAFE_FREE(driver_info_2);
-			return WERR_NOMEM;
+		if (ndrivers == -1) {
+			result = WERR_NOMEM;
+			goto out;
 		}
 
-		if(ndrivers != 0) {
-			if((driver_info_2=SMB_REALLOC_ARRAY(driver_info_2, DRIVER_INFO_2, *returned+ndrivers )) == NULL) {
-				DEBUG(0,("enumprinterdrivers_level2: failed to enlarge driver info buffer!\n"));
-				SAFE_FREE(list);
-				return WERR_NOMEM;
+		if (ndrivers != 0) {
+			info = TALLOC_REALLOC_ARRAY(mem_ctx, info,
+						    union spoolss_DriverInfo,
+						    *count + ndrivers);
+			if (!info) {
+				DEBUG(0,("enumprinterdrivers_level2: "
+					"failed to enlarge driver info buffer!\n"));
+				result = WERR_NOMEM;
+				goto out;
 			}
 		}
 
 		for (i=0; i<ndrivers; i++) {
-			WERROR status;
-
 			DEBUGADD(5,("\tdriver: [%s]\n", list[i]));
 			ZERO_STRUCT(driver);
-			status = get_a_printer_driver(&driver, 3, list[i],
+			result = get_a_printer_driver(&driver, 3, list[i],
 						      architecture, version);
-			if (!W_ERROR_IS_OK(status)) {
-				SAFE_FREE(list);
-				SAFE_FREE(driver_info_2);
-				return status;
+			if (!W_ERROR_IS_OK(result)) {
+				goto out;
 			}
-			fill_printer_driver_info_2(&driver_info_2[*returned+i], driver, servername);
+			result = fill_printer_driver_info2(info, &info[*count+i].info2,
+							   &driver, servername);
+			if (!W_ERROR_IS_OK(result)) {
+				free_a_printer_driver(driver, 3);
+				goto out;
+			}
 			free_a_printer_driver(driver, 3);
 		}
 
-		*returned+=ndrivers;
+		*count += ndrivers;
 		SAFE_FREE(list);
 	}
 
-	/* check the required size. */
-	for (i=0; i<*returned; i++) {
-		DEBUGADD(6,("adding driver [%d]'s size\n",i));
-		*needed += spoolss_size_printer_driver_info_2(&(driver_info_2[i]));
+ out:
+	SAFE_FREE(list);
+
+	if (!W_ERROR_IS_OK(result)) {
+		TALLOC_FREE(info);
+		*count = 0;
+		return result;
 	}
 
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
-	}
+	*info_p = info;
 
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
-	}
-
-	/* fill the buffer with the form structures */
-	for (i=0; i<*returned; i++) {
-		DEBUGADD(6,("adding driver [%d] to buffer\n",i));
-		smb_io_printer_driver_info_2("", buffer, &(driver_info_2[i]), 0);
-	}
-
-out:
-	SAFE_FREE(driver_info_2);
-
-	if ( !W_ERROR_IS_OK(result) )
-		*returned = 0;
-
-	return result;
+	return WERR_OK;
 }
 
 /****************************************************************************
  Enumerates all printer drivers at level 3.
 ****************************************************************************/
 
-static WERROR enumprinterdrivers_level3(const char *servername, fstring architecture, RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enumprinterdrivers_level3(TALLOC_CTX *mem_ctx,
+					const char *servername,
+					const char *architecture,
+					union spoolss_DriverInfo **info_p,
+					uint32_t *count)
 {
 	int i;
 	int ndrivers;
-	uint32 version;
+	uint32_t version;
 	fstring *list = NULL;
-	DRIVER_INFO_3 *driver_info_3=NULL;
+	union spoolss_DriverInfo *info = NULL;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
 	WERROR result = WERR_OK;
 
-	*returned=0;
+	*count = 0;
 
 	for (version=0; version<DRIVER_MAX_VERSION; version++) {
-		list=NULL;
-		ndrivers=get_ntdrivers(&list, architecture, version);
-		DEBUGADD(4,("we have:[%d] drivers in environment [%s] and version [%d]\n", ndrivers, architecture, version));
+		list = NULL;
+		ndrivers = get_ntdrivers(&list, architecture, version);
+		DEBUGADD(4,("we have:[%d] drivers in environment [%s] and version [%d]\n",
+			ndrivers, architecture, version));
 
-		if(ndrivers == -1) {
-			SAFE_FREE(driver_info_3);
-			return WERR_NOMEM;
+		if (ndrivers == -1) {
+			result = WERR_NOMEM;
+			goto out;
 		}
 
-		if(ndrivers != 0) {
-			if((driver_info_3=SMB_REALLOC_ARRAY(driver_info_3, DRIVER_INFO_3, *returned+ndrivers )) == NULL) {
-				DEBUG(0,("enumprinterdrivers_level3: failed to enlarge driver info buffer!\n"));
-				SAFE_FREE(list);
-				return WERR_NOMEM;
+		if (ndrivers != 0) {
+			info = TALLOC_REALLOC_ARRAY(mem_ctx, info,
+						    union spoolss_DriverInfo,
+						    *count + ndrivers);
+			if (!info) {
+				DEBUG(0,("enumprinterdrivers_level3: "
+					"failed to enlarge driver info buffer!\n"));
+				result = WERR_NOMEM;
+				goto out;
 			}
 		}
 
 		for (i=0; i<ndrivers; i++) {
-			WERROR status;
-
 			DEBUGADD(5,("\tdriver: [%s]\n", list[i]));
 			ZERO_STRUCT(driver);
-			status = get_a_printer_driver(&driver, 3, list[i],
+			result = get_a_printer_driver(&driver, 3, list[i],
 						      architecture, version);
-			if (!W_ERROR_IS_OK(status)) {
-				SAFE_FREE(list);
-				SAFE_FREE(driver_info_3);
-				return status;
+			if (!W_ERROR_IS_OK(result)) {
+				goto out;
 			}
-			fill_printer_driver_info_3(&driver_info_3[*returned+i], driver, servername);
+			result = fill_printer_driver_info3(info, &info[*count+i].info3,
+							   &driver, servername);
+			if (!W_ERROR_IS_OK(result)) {
+				free_a_printer_driver(driver, 3);
+				goto out;
+			}
+
 			free_a_printer_driver(driver, 3);
 		}
 
-		*returned+=ndrivers;
+		*count += ndrivers;
 		SAFE_FREE(list);
 	}
 
-	/* check the required size. */
-	for (i=0; i<*returned; i++) {
-		DEBUGADD(6,("adding driver [%d]'s size\n",i));
-		*needed += spoolss_size_printer_driver_info_3(&driver_info_3[i]);
+ out:
+	SAFE_FREE(list);
+
+	if (!W_ERROR_IS_OK(result)) {
+		TALLOC_FREE(info);
+		*count = 0;
+		return result;
 	}
 
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
-	}
+	*info_p = info;
 
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
-	}
-
-	/* fill the buffer with the driver structures */
-	for (i=0; i<*returned; i++) {
-		DEBUGADD(6,("adding driver [%d] to buffer\n",i));
-		smb_io_printer_driver_info_3("", buffer, &driver_info_3[i], 0);
-	}
-
-out:
-	for (i=0; i<*returned; i++) {
-		SAFE_FREE(driver_info_3[i].dependentfiles);
-	}
-
-	SAFE_FREE(driver_info_3);
-
-	if ( !W_ERROR_IS_OK(result) )
-		*returned = 0;
-
-	return result;
+	return WERR_OK;
 }
 
-/****************************************************************************
- Enumerates all printer drivers.
-****************************************************************************/
+/****************************************************************
+ _spoolss_EnumPrinterDrivers
+****************************************************************/
 
-WERROR _spoolss_enumprinterdrivers( pipes_struct *p, SPOOL_Q_ENUMPRINTERDRIVERS *q_u, SPOOL_R_ENUMPRINTERDRIVERS *r_u)
+WERROR _spoolss_EnumPrinterDrivers(pipes_struct *p,
+				   struct spoolss_EnumPrinterDrivers *r)
 {
-	uint32 level = q_u->level;
-	RPC_BUFFER *buffer = NULL;
-	uint32 offered = q_u->offered;
-	uint32 *needed = &r_u->needed;
-	uint32 *returned = &r_u->returned;
 	const char *cservername;
-	fstring servername;
-	fstring architecture;
+	WERROR result;
 
 	/* that's an [in out] buffer */
 
-	if (!q_u->buffer && (offered!=0)) {
+	if (!r->in.buffer && (r->in.offered != 0)) {
 		return WERR_INVALID_PARAM;
 	}
 
-	if (offered > MAX_RPC_DATA_SIZE) {
-		return WERR_INVALID_PARAM;
-	}
+	DEBUG(4,("_spoolss_EnumPrinterDrivers\n"));
 
-	rpcbuf_move(q_u->buffer, &r_u->buffer);
-	buffer = r_u->buffer;
+	*r->out.needed = 0;
+	*r->out.count = 0;
+	*r->out.info = NULL;
 
-	DEBUG(4,("_spoolss_enumprinterdrivers\n"));
+	cservername = canon_servername(r->in.server);
 
-	*needed   = 0;
-	*returned = 0;
-
-	unistr2_to_ascii(architecture, &q_u->environment, sizeof(architecture));
-	unistr2_to_ascii(servername, &q_u->name, sizeof(servername));
-
-	cservername = canon_servername(servername);
-
-	if (!is_myname_or_ipaddr(cservername))
+	if (!is_myname_or_ipaddr(cservername)) {
 		return WERR_UNKNOWN_PRINTER_DRIVER;
+	}
 
-	switch (level) {
+	switch (r->in.level) {
 	case 1:
-		return enumprinterdrivers_level1(cservername, architecture, buffer, offered, needed, returned);
+		result = enumprinterdrivers_level1(p->mem_ctx, cservername,
+						   r->in.environment,
+						   r->out.info, r->out.count);
+		break;
 	case 2:
-		return enumprinterdrivers_level2(cservername, architecture, buffer, offered, needed, returned);
+		result = enumprinterdrivers_level2(p->mem_ctx, cservername,
+						   r->in.environment,
+						   r->out.info, r->out.count);
+		break;
 	case 3:
-		return enumprinterdrivers_level3(cservername, architecture, buffer, offered, needed, returned);
+		result = enumprinterdrivers_level3(p->mem_ctx, cservername,
+						   r->in.environment,
+						   r->out.info, r->out.count);
+		break;
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
+
+	if (!W_ERROR_IS_OK(result)) {
+		return result;
+	}
+
+	*r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(p->mem_ctx,
+						     spoolss_EnumPrinterDrivers, NULL,
+						     *r->out.info, r->in.level,
+						     *r->out.count);
+	*r->out.info	= SPOOLSS_BUFFER_OK(*r->out.info, NULL);
+	*r->out.count	= SPOOLSS_BUFFER_OK(*r->out.count, 0);
+
+	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 }
 
 /****************************************************************************
@@ -10347,17 +10491,6 @@ WERROR _spoolss_AddPrinter(pipes_struct *p,
 
 WERROR _spoolss_GetPrinter(pipes_struct *p,
 			   struct spoolss_GetPrinter *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_EnumPrinterDrivers
-****************************************************************/
-
-WERROR _spoolss_EnumPrinterDrivers(pipes_struct *p,
-				   struct spoolss_EnumPrinterDrivers *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
