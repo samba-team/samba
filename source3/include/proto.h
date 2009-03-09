@@ -5843,8 +5843,6 @@ bool smb_io_printer_driver_info_1(const char *desc, RPC_BUFFER *buffer, DRIVER_I
 bool smb_io_printer_driver_info_2(const char *desc, RPC_BUFFER *buffer, DRIVER_INFO_2 *info, int depth) ;
 bool smb_io_printer_driver_info_3(const char *desc, RPC_BUFFER *buffer, DRIVER_INFO_3 *info, int depth);
 bool smb_io_printer_driver_info_6(const char *desc, RPC_BUFFER *buffer, DRIVER_INFO_6 *info, int depth);
-bool smb_io_job_info_1(const char *desc, RPC_BUFFER *buffer, JOB_INFO_1 *info, int depth);
-bool smb_io_job_info_2(const char *desc, RPC_BUFFER *buffer, JOB_INFO_2 *info, int depth);
 uint32 spoolss_size_printer_info_0(PRINTER_INFO_0 *info);
 uint32 spoolss_size_printer_info_1(PRINTER_INFO_1 *info);
 uint32 spoolss_size_printer_info_2(PRINTER_INFO_2 *info);
@@ -5858,8 +5856,6 @@ uint32 spoolss_size_printer_driver_info_2(DRIVER_INFO_2 *info);
 uint32 spoolss_size_string_array(uint16 *string);
 uint32 spoolss_size_printer_driver_info_3(DRIVER_INFO_3 *info);
 uint32 spoolss_size_printer_driver_info_6(DRIVER_INFO_6 *info);
-uint32 spoolss_size_job_info_1(JOB_INFO_1 *info);
-uint32 spoolss_size_job_info_2(JOB_INFO_2 *info);
 uint32 spoolss_size_printer_enum_values(PRINTER_ENUM_VALUES *p);
 bool spoolss_io_q_getprinterdriver2(const char *desc, SPOOL_Q_GETPRINTERDRIVER2 *q_u, prs_struct *ps, int depth);
 bool spoolss_io_r_getprinterdriver2(const char *desc, SPOOL_R_GETPRINTERDRIVER2 *r_u, prs_struct *ps, int depth);
@@ -5875,8 +5871,6 @@ bool spoolss_io_q_enumprinters(const char *desc, SPOOL_Q_ENUMPRINTERS *q_u, prs_
 bool spoolss_io_r_enumprinters(const char *desc, SPOOL_R_ENUMPRINTERS *r_u, prs_struct *ps, int depth);
 bool spoolss_io_r_getprinter(const char *desc, SPOOL_R_GETPRINTER *r_u, prs_struct *ps, int depth);
 bool spoolss_io_q_getprinter(const char *desc, SPOOL_Q_GETPRINTER *q_u, prs_struct *ps, int depth);
-bool spoolss_io_r_enumjobs(const char *desc, SPOOL_R_ENUMJOBS *r_u, prs_struct *ps, int depth);
-bool spoolss_io_q_enumjobs(const char *desc, SPOOL_Q_ENUMJOBS *q_u, prs_struct *ps, int depth);
 bool spoolss_io_r_enumprinterdrivers(const char *desc, SPOOL_R_ENUMPRINTERDRIVERS *r_u, prs_struct *ps, int depth);
 bool make_spoolss_q_enumprinterdrivers(SPOOL_Q_ENUMPRINTERDRIVERS *q_u,
                                 const char *name,
@@ -5897,8 +5891,6 @@ bool make_spoolss_q_setprinterdata(SPOOL_Q_SETPRINTERDATA *q_u, const POLICY_HND
 				   char* value, uint32 data_type, char* data, uint32 data_size);
 bool spoolss_io_q_setprinterdata(const char *desc, SPOOL_Q_SETPRINTERDATA *q_u, prs_struct *ps, int depth);
 bool spoolss_io_r_setprinterdata(const char *desc, SPOOL_R_SETPRINTERDATA *r_u, prs_struct *ps, int depth);
-bool spoolss_io_r_getjob(const char *desc, SPOOL_R_GETJOB *r_u, prs_struct *ps, int depth);
-bool spoolss_io_q_getjob(const char *desc, SPOOL_Q_GETJOB *q_u, prs_struct *ps, int depth);
 void free_devmode(DEVICEMODE *devmode);
 void free_printer_info_1(PRINTER_INFO_1 *printer);
 void free_printer_info_2(PRINTER_INFO_2 *printer);
@@ -5907,7 +5899,6 @@ void free_printer_info_4(PRINTER_INFO_4 *printer);
 void free_printer_info_5(PRINTER_INFO_5 *printer);
 void free_printer_info_6(PRINTER_INFO_6 *printer);
 void free_printer_info_7(PRINTER_INFO_7 *printer);
-void free_job_info_2(JOB_INFO_2 *job);
 bool make_spoolss_q_enumprinterkey(SPOOL_Q_ENUMPRINTERKEY *q_u, 
 				   POLICY_HND *hnd, const char *key, 
 				   uint32 size);
@@ -6121,7 +6112,6 @@ WERROR _spoolss_enumprinterdrivers( pipes_struct *p, SPOOL_Q_ENUMPRINTERDRIVERS 
 WERROR enumports_hook(TALLOC_CTX *ctx, int *count, char ***lines );
 WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, SPOOL_R_ENUMPRINTERDATA *r_u);
 WERROR _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SPOOL_R_SETPRINTERDATA *r_u);
-WERROR _spoolss_getjob( pipes_struct *p, SPOOL_Q_GETJOB *q_u, SPOOL_R_GETJOB *r_u);
 WERROR _spoolss_enumprinterkey(pipes_struct *p, SPOOL_Q_ENUMPRINTERKEY *q_u, SPOOL_R_ENUMPRINTERKEY *r_u);
 WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_u, SPOOL_R_ENUMPRINTERDATAEX *r_u);
 
