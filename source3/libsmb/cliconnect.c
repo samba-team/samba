@@ -505,11 +505,7 @@ static NTSTATUS cli_session_setup_nt1(struct cli_state *cli, const char *user,
 	ok = cli_simple_set_signing(cli, session_key, nt_response);
 #endif
 	if (ok) {
-		/* 'resign' the last message, so we get the right sequence numbers
-		   for checking the first reply from the server */
-		cli_calculate_sign_mac(cli, cli->outbuf);
-
-		if (!cli_check_sign_mac(cli, cli->inbuf)) {
+		if (!cli_check_sign_mac(cli, cli->inbuf, 1)) {
 			result = NT_STATUS_ACCESS_DENIED;
 			goto end;
 		}
@@ -747,11 +743,7 @@ static ADS_STATUS cli_session_setup_kerberos(struct cli_state *cli, const char *
 	if (cli_simple_set_signing(
 		    cli, session_key_krb5, data_blob_null)) {
 
-		/* 'resign' the last message, so we get the right sequence numbers
-		   for checking the first reply from the server */
-		cli_calculate_sign_mac(cli, cli->outbuf);
-
-		if (!cli_check_sign_mac(cli, cli->inbuf)) {
+		if (!cli_check_sign_mac(cli, cli->inbuf, 1)) {
 			nt_status = NT_STATUS_ACCESS_DENIED;
 			goto nt_error;
 		}
@@ -873,11 +865,7 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 		if (cli_simple_set_signing(
 			    cli, ntlmssp_state->session_key, data_blob_null)) {
 
-			/* 'resign' the last message, so we get the right sequence numbers
-			   for checking the first reply from the server */
-			cli_calculate_sign_mac(cli, cli->outbuf);
-
-			if (!cli_check_sign_mac(cli, cli->inbuf)) {
+			if (!cli_check_sign_mac(cli, cli->inbuf, 1)) {
 				nt_status = NT_STATUS_ACCESS_DENIED;
 			}
 		}
@@ -1540,13 +1528,16 @@ NTSTATUS cli_negprot_recv(struct async_req *req)
 
 	cli->protocol = prots[protnum].prot;
 
-	if ((cli->protocol < PROTOCOL_NT1) && cli->sign_info.mandatory_signing) {
+	if ((cli->protocol < PROTOCOL_NT1) &&
+	    client_is_signing_mandatory(cli)) {
 		DEBUG(0,("cli_negprot: SMB signing is mandatory and the selected protocol level doesn't support it.\n"));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	if (cli->protocol >= PROTOCOL_NT1) {    
 		struct timespec ts;
+		bool negotiated_smb_signing = false;
+
 		/* NT protocol */
 		cli->sec_mode = CVAL(vwv + 1, 0);
 		cli->max_mux = SVAL(vwv + 1, 1);
@@ -1579,22 +1570,24 @@ NTSTATUS cli_negprot_recv(struct async_req *req)
 
 		if (cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_REQUIRED) {
 			/* Fail if server says signing is mandatory and we don't want to support it. */
-			if (!cli->sign_info.allow_smb_signing) {
+			if (!client_is_signing_allowed(cli)) {
 				DEBUG(0,("cli_negprot: SMB signing is mandatory and we have disabled it.\n"));
 				return NT_STATUS_ACCESS_DENIED;
 			}
-			cli->sign_info.negotiated_smb_signing = True;
-			cli->sign_info.mandatory_signing = True;
-		} else if (cli->sign_info.mandatory_signing && cli->sign_info.allow_smb_signing) {
+			negotiated_smb_signing = true;
+		} else if (client_is_signing_mandatory(cli) && client_is_signing_allowed(cli)) {
 			/* Fail if client says signing is mandatory and the server doesn't support it. */
 			if (!(cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_ENABLED)) {
 				DEBUG(1,("cli_negprot: SMB signing is mandatory and the server doesn't support it.\n"));
 				return NT_STATUS_ACCESS_DENIED;
 			}
-			cli->sign_info.negotiated_smb_signing = True;
-			cli->sign_info.mandatory_signing = True;
+			negotiated_smb_signing = true;
 		} else if (cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_ENABLED) {
-			cli->sign_info.negotiated_smb_signing = True;
+			negotiated_smb_signing = true;
+		}
+
+		if (negotiated_smb_signing) {
+			cli_set_signing_negotiated(cli);
 		}
 
 		if (cli->capabilities & (CAP_LARGE_READX|CAP_LARGE_WRITEX)) {

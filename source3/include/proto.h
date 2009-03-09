@@ -2410,6 +2410,10 @@ bool receive_getdc_response(TALLOC_CTX *mem_ctx,
 int cli_set_message(char *buf,int num_words,int num_bytes,bool zero);
 unsigned int cli_set_timeout(struct cli_state *cli, unsigned int timeout);
 void cli_set_port(struct cli_state *cli, int port);
+bool cli_state_seqnum_persistent(struct cli_state *cli,
+				 uint16_t mid);
+bool cli_state_seqnum_remove(struct cli_state *cli,
+			     uint16_t mid);
 bool cli_receive_smb(struct cli_state *cli);
 ssize_t cli_receive_smb_data(struct cli_state *cli, char *buffer, size_t len);
 bool cli_receive_smb_readX_header(struct cli_state *cli);
@@ -3186,14 +3190,13 @@ NTSTATUS cli_encrypt_message(struct cli_state *cli, char *buf, char **buf_out);
 bool cli_simple_set_signing(struct cli_state *cli,
 			    const DATA_BLOB user_session_key,
 			    const DATA_BLOB response);
-bool cli_null_set_signing(struct cli_state *cli);
 bool cli_temp_set_signing(struct cli_state *cli);
-void cli_free_signing_context(struct cli_state *cli);
-void cli_calculate_sign_mac(struct cli_state *cli, char *buf);
-bool cli_check_sign_mac(struct cli_state *cli, char *buf);
-bool client_set_trans_sign_state_on(struct cli_state *cli, uint16 mid);
-bool client_set_trans_sign_state_off(struct cli_state *cli, uint16 mid);
+void cli_calculate_sign_mac(struct cli_state *cli, char *buf, uint32_t *seqnum);
+bool cli_check_sign_mac(struct cli_state *cli, const char *buf, uint32_t seqnum);
 bool client_is_signing_on(struct cli_state *cli);
+bool client_is_signing_allowed(struct cli_state *cli);
+bool client_is_signing_mandatory(struct cli_state *cli);
+void cli_set_signing_negotiated(struct cli_state *cli);
 
 /* The following definitions come from smbd/signing.c  */
 

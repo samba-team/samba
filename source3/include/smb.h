@@ -1849,21 +1849,6 @@ struct ip_service {
 /* Special name type used to cause a _kerberos DNS lookup. */
 #define KDC_NAME_TYPE 0xDCDC
 
-/* Used by the SMB signing functions. */
-
-typedef struct smb_sign_info {
-	void (*sign_outgoing_message)(char *outbuf, struct smb_sign_info *si);
-	bool (*check_incoming_message)(const char *inbuf, struct smb_sign_info *si, bool must_be_ok);
-	void (*free_signing_context)(struct smb_sign_info *si);
-	void *signing_context;
-
-	bool negotiated_smb_signing;
-	bool allow_smb_signing;
-	bool doing_signing;
-	bool mandatory_signing;
-	bool seen_valid; /* Have I ever seen a validly signed packet? */
-} smb_sign_info;
-
 struct ea_struct {
 	uint8 flags;
 	char *name;
