@@ -424,10 +424,10 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 
 	ret = ldb_module_send_entry(ac->req, msg, NULL);
 	if (ret != LDB_SUCCESS) {
-		ac->callback_failed = true;
+		ac->request_terminated = true;
 		/* the callback failed, abort the operation */
 		return -1;
-	}	
+	}
 
 	return 0;
 }
@@ -544,7 +544,7 @@ int ltdb_search(struct ltdb_context *ctx)
 		/* Check if we got just a normal error.
 		 * In that case proceed to a full search unless we got a
 		 * callback error */
-		if ( ! ctx->callback_failed && ret != LDB_SUCCESS) {
+		if ( ! ctx->request_terminated && ret != LDB_SUCCESS) {
 			/* Not indexed, so we need to do a full scan */
 			ret = ltdb_search_full(ctx);
 			if (ret != LDB_SUCCESS) {
