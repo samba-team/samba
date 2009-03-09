@@ -193,7 +193,7 @@ struct spoolss_PrinterInfo0 {
 	uint32_t ref_ic;
 	uint32_t reserved2;
 	uint32_t reserved3;
-};
+}/* [gensize,public] */;
 
 /* bitmap spoolss_DeviceModeFields */
 #define DEVMODE_ORIENTATION ( 0x00000001 )
@@ -289,7 +289,7 @@ struct spoolss_PrinterInfo1 {
 	const char * name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * description;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * comment;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
-};
+}/* [gensize,public] */;
 
 /* bitmap spoolss_PrinterAttributes */
 #define PRINTER_ATTRIBUTE_QUEUED ( 0x00000001 )
@@ -331,17 +331,17 @@ struct spoolss_PrinterInfo2 {
 	uint32_t status;
 	uint32_t cjobs;
 	uint32_t averageppm;
-};
+}/* [gensize,public] */;
 
 struct spoolss_PrinterInfo3 {
 	struct security_descriptor *secdesc;/* [relative,subcontext(0)] */
-};
+}/* [gensize,public] */;
 
 struct spoolss_PrinterInfo4 {
 	const char * printername;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * servername;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	uint32_t attributes;
-};
+}/* [gensize,public] */;
 
 struct spoolss_PrinterInfo5 {
 	const char * printername;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
@@ -349,11 +349,11 @@ struct spoolss_PrinterInfo5 {
 	uint32_t attributes;
 	uint32_t device_not_selected_timeout;
 	uint32_t transmission_retry_timeout;
-};
+}/* [gensize,public] */;
 
 struct spoolss_PrinterInfo6 {
 	uint32_t status;
-};
+}/* [gensize,public] */;
 
 /* bitmap spoolss_DsPrintAction */
 #define DSPRINT_PUBLISH ( 0x00000001 )
@@ -365,7 +365,7 @@ struct spoolss_PrinterInfo6 {
 struct spoolss_PrinterInfo7 {
 	const char * guid;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	uint32_t action;
-};
+}/* [gensize,public] */;
 
 struct spoolss_DeviceModeInfo {
 	struct spoolss_DeviceMode *devmode;/* [relative,subcontext(0)] */
@@ -382,7 +382,7 @@ union spoolss_PrinterInfo {
 	struct spoolss_PrinterInfo7 info7;/* [case(7)] */
 	struct spoolss_DeviceModeInfo info8;/* [case(8)] */
 	struct spoolss_DeviceModeInfo info9;/* [case(9)] */
-}/* [relative_base,nodiscriminant,public] */;
+}/* [relative_base,gensize,public,nodiscriminant] */;
 
 struct spoolss_DevmodeContainer {
 	uint32_t _ndr_size;/* [value(_ndr_size_spoolss_DeviceMode(devmode,ndr->iconv_convenience,ndr->flags))] */
