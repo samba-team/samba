@@ -4,7 +4,7 @@
 # information that is created by mkversion in advance.
 #
 # This is a standalone wrapper for update-pkginfo, which
-# is ususally called from release-scripts/create-tarball.
+# is usually called from release-scripts/create-tarball.
 # This allows for testing some aspects of packaging without
 # the need to go through all of create-tarball.
 #
