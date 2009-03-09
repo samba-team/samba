@@ -6086,7 +6086,6 @@ void construct_info_data(struct spoolss_Notify *info_data,
 DEVICEMODE *construct_dev_mode(const char *servicename);
 struct spoolss_DeviceMode *construct_dev_mode_new(TALLOC_CTX *mem_ctx,
 						  const char *servicename);
-WERROR _spoolss_enumprinters( pipes_struct *p, SPOOL_Q_ENUMPRINTERS *q_u, SPOOL_R_ENUMPRINTERS *r_u);
 WERROR _spoolss_getprinter(pipes_struct *p, SPOOL_Q_GETPRINTER *q_u, SPOOL_R_GETPRINTER *r_u);
 WERROR add_port_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, const char *portname, const char *uri );
 bool add_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, NT_PRINTER_INFO_LEVEL *printer);
