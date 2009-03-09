@@ -304,7 +304,7 @@ _PUBLIC_ void ndr_print_spoolss_JobStatus(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_spoolss_PrinterInfo0(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PrinterInfo0 *r)
+_PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrinterInfo0(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PrinterInfo0 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -371,7 +371,7 @@ static enum ndr_err_code ndr_push_spoolss_PrinterInfo0(struct ndr_push *ndr, int
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_spoolss_PrinterInfo0(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PrinterInfo0 *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrinterInfo0(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PrinterInfo0 *r)
 {
 	uint32_t _ptr_printername;
 	TALLOC_CTX *_mem_save_printername_0;
@@ -510,6 +510,11 @@ _PUBLIC_ void ndr_print_spoolss_PrinterInfo0(struct ndr_print *ndr, const char *
 	ndr_print_uint32(ndr, "reserved2", r->reserved2);
 	ndr_print_uint32(ndr, "reserved3", r->reserved3);
 	ndr->depth--;
+}
+
+_PUBLIC_ size_t ndr_size_spoolss_PrinterInfo0(const struct spoolss_PrinterInfo0 *r, struct smb_iconv_convenience *ic, int flags)
+{
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_spoolss_PrinterInfo0, ic);
 }
 
 static enum ndr_err_code ndr_push_spoolss_DeviceModeFields(struct ndr_push *ndr, int ndr_flags, uint32_t r)
@@ -758,7 +763,7 @@ _PUBLIC_ void ndr_print_spoolss_EnumPrinterFlags(struct ndr_print *ndr, const ch
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_spoolss_PrinterInfo1(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PrinterInfo1 *r)
+_PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrinterInfo1(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PrinterInfo1 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -814,7 +819,7 @@ static enum ndr_err_code ndr_push_spoolss_PrinterInfo1(struct ndr_push *ndr, int
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_spoolss_PrinterInfo1(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PrinterInfo1 *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrinterInfo1(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PrinterInfo1 *r)
 {
 	uint32_t _ptr_name;
 	TALLOC_CTX *_mem_save_name_0;
@@ -938,6 +943,11 @@ _PUBLIC_ void ndr_print_spoolss_PrinterInfo1(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
+_PUBLIC_ size_t ndr_size_spoolss_PrinterInfo1(const struct spoolss_PrinterInfo1 *r, struct smb_iconv_convenience *ic, int flags)
+{
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_spoolss_PrinterInfo1, ic);
+}
+
 static enum ndr_err_code ndr_push_spoolss_PrinterAttributes(struct ndr_push *ndr, int ndr_flags, uint32_t r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
@@ -975,7 +985,7 @@ _PUBLIC_ void ndr_print_spoolss_PrinterAttributes(struct ndr_print *ndr, const c
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_spoolss_PrinterInfo2(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PrinterInfo2 *r)
+_PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrinterInfo2(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PrinterInfo2 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -1178,7 +1188,7 @@ static enum ndr_err_code ndr_push_spoolss_PrinterInfo2(struct ndr_push *ndr, int
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_spoolss_PrinterInfo2(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PrinterInfo2 *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrinterInfo2(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PrinterInfo2 *r)
 {
 	uint32_t _ptr_servername;
 	TALLOC_CTX *_mem_save_servername_0;
@@ -1656,7 +1666,12 @@ _PUBLIC_ void ndr_print_spoolss_PrinterInfo2(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_spoolss_PrinterInfo3(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PrinterInfo3 *r)
+_PUBLIC_ size_t ndr_size_spoolss_PrinterInfo2(const struct spoolss_PrinterInfo2 *r, struct smb_iconv_convenience *ic, int flags)
+{
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_spoolss_PrinterInfo2, ic);
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrinterInfo3(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PrinterInfo3 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -1676,7 +1691,7 @@ static enum ndr_err_code ndr_push_spoolss_PrinterInfo3(struct ndr_push *ndr, int
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_spoolss_PrinterInfo3(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PrinterInfo3 *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrinterInfo3(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PrinterInfo3 *r)
 {
 	uint32_t _ptr_secdesc;
 	TALLOC_CTX *_mem_save_secdesc_0;
@@ -1723,7 +1738,12 @@ _PUBLIC_ void ndr_print_spoolss_PrinterInfo3(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_spoolss_PrinterInfo4(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PrinterInfo4 *r)
+_PUBLIC_ size_t ndr_size_spoolss_PrinterInfo3(const struct spoolss_PrinterInfo3 *r, struct smb_iconv_convenience *ic, int flags)
+{
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_spoolss_PrinterInfo3, ic);
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrinterInfo4(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PrinterInfo4 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -1764,7 +1784,7 @@ static enum ndr_err_code ndr_push_spoolss_PrinterInfo4(struct ndr_push *ndr, int
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_spoolss_PrinterInfo4(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PrinterInfo4 *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrinterInfo4(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PrinterInfo4 *r)
 {
 	uint32_t _ptr_printername;
 	TALLOC_CTX *_mem_save_printername_0;
@@ -1853,7 +1873,12 @@ _PUBLIC_ void ndr_print_spoolss_PrinterInfo4(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_spoolss_PrinterInfo5(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PrinterInfo5 *r)
+_PUBLIC_ size_t ndr_size_spoolss_PrinterInfo4(const struct spoolss_PrinterInfo4 *r, struct smb_iconv_convenience *ic, int flags)
+{
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_spoolss_PrinterInfo4, ic);
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrinterInfo5(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PrinterInfo5 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -1896,7 +1921,7 @@ static enum ndr_err_code ndr_push_spoolss_PrinterInfo5(struct ndr_push *ndr, int
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_spoolss_PrinterInfo5(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PrinterInfo5 *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrinterInfo5(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PrinterInfo5 *r)
 {
 	uint32_t _ptr_printername;
 	TALLOC_CTX *_mem_save_printername_0;
@@ -1989,7 +2014,12 @@ _PUBLIC_ void ndr_print_spoolss_PrinterInfo5(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_spoolss_PrinterInfo6(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PrinterInfo6 *r)
+_PUBLIC_ size_t ndr_size_spoolss_PrinterInfo5(const struct spoolss_PrinterInfo5 *r, struct smb_iconv_convenience *ic, int flags)
+{
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_spoolss_PrinterInfo5, ic);
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrinterInfo6(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PrinterInfo6 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -2000,7 +2030,7 @@ static enum ndr_err_code ndr_push_spoolss_PrinterInfo6(struct ndr_push *ndr, int
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_spoolss_PrinterInfo6(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PrinterInfo6 *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrinterInfo6(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PrinterInfo6 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -2017,6 +2047,11 @@ _PUBLIC_ void ndr_print_spoolss_PrinterInfo6(struct ndr_print *ndr, const char *
 	ndr->depth++;
 	ndr_print_spoolss_PrinterStatus(ndr, "status", r->status);
 	ndr->depth--;
+}
+
+_PUBLIC_ size_t ndr_size_spoolss_PrinterInfo6(const struct spoolss_PrinterInfo6 *r, struct smb_iconv_convenience *ic, int flags)
+{
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_spoolss_PrinterInfo6, ic);
 }
 
 static enum ndr_err_code ndr_push_spoolss_DsPrintAction(struct ndr_push *ndr, int ndr_flags, uint32_t r)
@@ -2045,7 +2080,7 @@ _PUBLIC_ void ndr_print_spoolss_DsPrintAction(struct ndr_print *ndr, const char 
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_spoolss_PrinterInfo7(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PrinterInfo7 *r)
+_PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrinterInfo7(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PrinterInfo7 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -2071,7 +2106,7 @@ static enum ndr_err_code ndr_push_spoolss_PrinterInfo7(struct ndr_push *ndr, int
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_spoolss_PrinterInfo7(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PrinterInfo7 *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrinterInfo7(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PrinterInfo7 *r)
 {
 	uint32_t _ptr_guid;
 	TALLOC_CTX *_mem_save_guid_0;
@@ -2123,6 +2158,11 @@ _PUBLIC_ void ndr_print_spoolss_PrinterInfo7(struct ndr_print *ndr, const char *
 	ndr->depth--;
 	ndr_print_spoolss_DsPrintAction(ndr, "action", r->action);
 	ndr->depth--;
+}
+
+_PUBLIC_ size_t ndr_size_spoolss_PrinterInfo7(const struct spoolss_PrinterInfo7 *r, struct smb_iconv_convenience *ic, int flags)
+{
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_spoolss_PrinterInfo7, ic);
 }
 
 static enum ndr_err_code ndr_push_spoolss_DeviceModeInfo(struct ndr_push *ndr, int ndr_flags, const struct spoolss_DeviceModeInfo *r)
@@ -2488,6 +2528,11 @@ _PUBLIC_ void ndr_print_spoolss_PrinterInfo(struct ndr_print *ndr, const char *n
 		break;
 
 	}
+}
+
+_PUBLIC_ size_t ndr_size_spoolss_PrinterInfo(const union spoolss_PrinterInfo *r, uint32_t level, struct smb_iconv_convenience *ic, int flags)
+{
+	return ndr_size_union(r, flags, level, (ndr_push_flags_fn_t)ndr_push_spoolss_PrinterInfo, ic);
 }
 
 static enum ndr_err_code ndr_push_spoolss_DevmodeContainer(struct ndr_push *ndr, int ndr_flags, const struct spoolss_DevmodeContainer *r)
