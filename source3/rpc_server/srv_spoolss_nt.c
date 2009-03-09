@@ -4482,96 +4482,213 @@ static bool construct_printer_info_7(Printer_entry *print_hnd, PRINTER_INFO_7 *p
 }
 
 /********************************************************************
+ * construct_printer_info1
+ * fill a spoolss_PrinterInfo1 struct
+********************************************************************/
+
+static WERROR construct_printer_info1(TALLOC_CTX *mem_ctx,
+				      const NT_PRINTER_INFO_LEVEL *ntprinter,
+				      uint32_t flags,
+				      struct spoolss_PrinterInfo1 *r,
+				      int snum)
+{
+	char *chaine = NULL;
+	r->flags		= flags;
+
+	if (*ntprinter->info_2->comment == '\0') {
+		r->comment	= talloc_strdup(mem_ctx, lp_comment(snum));
+		chaine = talloc_asprintf(mem_ctx,
+				"%s,%s,%s", ntprinter->info_2->printername,
+				ntprinter->info_2->drivername, lp_comment(snum));
+	} else {
+		r->comment	= talloc_strdup(mem_ctx, ntprinter->info_2->comment); /* saved comment */
+		chaine = talloc_asprintf(mem_ctx,
+				"%s,%s,%s", ntprinter->info_2->printername,
+				ntprinter->info_2->drivername, ntprinter->info_2->comment);
+	}
+	W_ERROR_HAVE_NO_MEMORY(chaine);
+	W_ERROR_HAVE_NO_MEMORY(r->comment);
+
+	r->description		= talloc_strdup(mem_ctx, chaine);
+	W_ERROR_HAVE_NO_MEMORY(r->description);
+	r->name			= talloc_strdup(mem_ctx, ntprinter->info_2->printername);
+	W_ERROR_HAVE_NO_MEMORY(r->name);
+
+	return WERR_OK;
+}
+
+/********************************************************************
+ * construct_printer_info2
+ * fill a spoolss_PrinterInfo2 struct
+********************************************************************/
+
+static WERROR construct_printer_info2(TALLOC_CTX *mem_ctx,
+				      const NT_PRINTER_INFO_LEVEL *ntprinter,
+				      struct spoolss_PrinterInfo2 *r,
+				      int snum)
+{
+	int count;
+
+	print_status_struct status;
+
+	count = print_queue_length(snum, &status);
+
+	r->servername		= talloc_strdup(mem_ctx, ntprinter->info_2->servername);
+	W_ERROR_HAVE_NO_MEMORY(r->servername);
+	r->printername		= talloc_strdup(mem_ctx, ntprinter->info_2->printername);
+	W_ERROR_HAVE_NO_MEMORY(r->printername);
+	r->sharename		= talloc_strdup(mem_ctx, lp_servicename(snum));
+	W_ERROR_HAVE_NO_MEMORY(r->sharename);
+	r->portname		= talloc_strdup(mem_ctx, ntprinter->info_2->portname);
+	W_ERROR_HAVE_NO_MEMORY(r->portname);
+	r->drivername		= talloc_strdup(mem_ctx, ntprinter->info_2->drivername);
+	W_ERROR_HAVE_NO_MEMORY(r->drivername);
+
+	if (*ntprinter->info_2->comment == '\0') {
+		r->comment	= talloc_strdup(mem_ctx, lp_comment(snum));
+	} else {
+		r->comment	= talloc_strdup(mem_ctx, ntprinter->info_2->comment);
+	}
+	W_ERROR_HAVE_NO_MEMORY(r->comment);
+
+	r->location		= talloc_strdup(mem_ctx, ntprinter->info_2->location);
+	W_ERROR_HAVE_NO_MEMORY(r->location);
+	r->sepfile		= talloc_strdup(mem_ctx, ntprinter->info_2->sepfile);
+	W_ERROR_HAVE_NO_MEMORY(r->sepfile);
+	r->printprocessor	= talloc_strdup(mem_ctx, ntprinter->info_2->printprocessor);
+	W_ERROR_HAVE_NO_MEMORY(r->printprocessor);
+	r->datatype		= talloc_strdup(mem_ctx, ntprinter->info_2->datatype);
+	W_ERROR_HAVE_NO_MEMORY(r->datatype);
+	r->parameters		= talloc_strdup(mem_ctx, ntprinter->info_2->parameters);
+	W_ERROR_HAVE_NO_MEMORY(r->parameters);
+
+	r->attributes		= ntprinter->info_2->attributes;
+
+	r->priority		= ntprinter->info_2->priority;
+	r->defaultpriority	= ntprinter->info_2->default_priority;
+	r->starttime		= ntprinter->info_2->starttime;
+	r->untiltime		= ntprinter->info_2->untiltime;
+	r->status		= nt_printq_status(status.status);
+	r->cjobs		= count;
+	r->averageppm		= ntprinter->info_2->averageppm;
+
+	r->devmode = construct_dev_mode_new(mem_ctx, lp_const_servicename(snum));
+	if (!r->devmode) {
+		DEBUG(8,("Returning NULL Devicemode!\n"));
+	}
+
+	r->secdesc		= NULL;
+
+	if (ntprinter->info_2->secdesc_buf && ntprinter->info_2->secdesc_buf->sd_size != 0) {
+		/* don't use talloc_steal() here unless you do a deep steal of all
+		   the SEC_DESC members */
+
+		r->secdesc	= dup_sec_desc(mem_ctx, ntprinter->info_2->secdesc_buf->sd);
+	}
+
+	return WERR_OK;
+}
+
+/********************************************************************
  Spoolss_enumprinters.
 ********************************************************************/
 
-static WERROR enum_all_printers_info_1(uint32 flags, RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enum_all_printers_info_1(TALLOC_CTX *mem_ctx,
+				       uint32_t flags,
+				       union spoolss_PrinterInfo **info_p,
+				       uint32_t *count)
 {
 	int snum;
-	int i;
-	int n_services=lp_numservices();
-	PRINTER_INFO_1 *printers=NULL;
-	PRINTER_INFO_1 current_prt;
+	int n_services = lp_numservices();
+	union spoolss_PrinterInfo *info = NULL;
 	WERROR result = WERR_OK;
 
 	DEBUG(4,("enum_all_printers_info_1\n"));
 
+	*count = 0;
+
 	for (snum=0; snum<n_services; snum++) {
 		if (lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) ) {
+
+			NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
+			struct spoolss_PrinterInfo1 info1;
+
 			DEBUG(4,("Found a printer in smb.conf: %s[%x]\n", lp_servicename(snum), snum));
 
-			if (construct_printer_info_1(NULL, flags, &current_prt, snum)) {
-				if((printers=SMB_REALLOC_ARRAY(printers, PRINTER_INFO_1, *returned +1)) == NULL) {
-					DEBUG(2,("enum_all_printers_info_1: failed to enlarge printers buffer!\n"));
-					*returned=0;
-					return WERR_NOMEM;
-				}
-				DEBUG(4,("ReAlloced memory for [%d] PRINTER_INFO_1\n", *returned));
-
-				memcpy(&printers[*returned], &current_prt, sizeof(PRINTER_INFO_1));
-				(*returned)++;
+			result = get_a_printer(NULL, &ntprinter, 2, lp_const_servicename(snum));
+			if (!W_ERROR_IS_OK(result)) {
+				continue;
 			}
+
+			result = construct_printer_info1(info, ntprinter, flags, &info1, snum);
+			free_a_printer(&ntprinter,2);
+			if (!W_ERROR_IS_OK(result)) {
+				continue;
+			}
+
+			info = TALLOC_REALLOC_ARRAY(mem_ctx, info,
+						    union spoolss_PrinterInfo,
+						    *count + 1);
+			if (!info) {
+				DEBUG(2,("enum_all_printers_info_1: failed to enlarge printers buffer!\n"));
+				result = WERR_NOMEM;
+				goto out;
+			}
+
+			DEBUG(4,("ReAlloced memory for [%d] PRINTER_INFO_1\n", *count));
+
+			info[*count].info1 = info1;
+			(*count)++;
 		}
 	}
 
-	/* check the required size. */
-	for (i=0; i<*returned; i++)
-		(*needed) += spoolss_size_printer_info_1(&printers[i]);
-
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
+ out:
+	if (!W_ERROR_IS_OK(result)) {
+		TALLOC_FREE(info);
+		*count = 0;
+		return result;
 	}
 
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
-	}
+	*info_p = info;
 
-	/* fill the buffer with the structures */
-	for (i=0; i<*returned; i++)
-		smb_io_printer_info_1("", buffer, &printers[i], 0);
-
-out:
-	/* clear memory */
-
-	SAFE_FREE(printers);
-
-	if ( !W_ERROR_IS_OK(result) )
-		*returned = 0;
-
-	return result;
+	return WERR_OK;
 }
 
 /********************************************************************
  enum_all_printers_info_1_local.
 *********************************************************************/
 
-static WERROR enum_all_printers_info_1_local(RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enum_all_printers_info_1_local(TALLOC_CTX *mem_ctx,
+					     union spoolss_PrinterInfo **info,
+					     uint32_t *count)
 {
 	DEBUG(4,("enum_all_printers_info_1_local\n"));
 
-	return enum_all_printers_info_1(PRINTER_ENUM_ICON8, buffer, offered, needed, returned);
+	return enum_all_printers_info_1(mem_ctx, PRINTER_ENUM_ICON8, info, count);
 }
 
 /********************************************************************
  enum_all_printers_info_1_name.
 *********************************************************************/
 
-static WERROR enum_all_printers_info_1_name(fstring name, RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enum_all_printers_info_1_name(TALLOC_CTX *mem_ctx,
+					    const char *name,
+					    union spoolss_PrinterInfo **info,
+					    uint32_t *count)
 {
-	char *s = name;
+	const char *s = name;
 
 	DEBUG(4,("enum_all_printers_info_1_name\n"));
 
-	if ((name[0] == '\\') && (name[1] == '\\'))
+	if ((name[0] == '\\') && (name[1] == '\\')) {
 		s = name + 2;
-
-	if (is_myname_or_ipaddr(s)) {
-		return enum_all_printers_info_1(PRINTER_ENUM_ICON8, buffer, offered, needed, returned);
 	}
-	else
+
+	if (!is_myname_or_ipaddr(s)) {
 		return WERR_INVALID_NAME;
+	}
+
+	return enum_all_printers_info_1(mem_ctx, PRINTER_ENUM_ICON8, info, count);
 }
 
 #if 0 	/* JERRY -- disabled for now.  Don't think this is used, tested, or correct */
@@ -4642,9 +4759,12 @@ out:
  enum_all_printers_info_1_network.
 *********************************************************************/
 
-static WERROR enum_all_printers_info_1_network(fstring name, RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enum_all_printers_info_1_network(TALLOC_CTX *mem_ctx,
+					       const char *name,
+					       union spoolss_PrinterInfo **info,
+					       uint32_t *count)
 {
-	char *s = name;
+	const char *s = name;
 
 	DEBUG(4,("enum_all_printers_info_1_network\n"));
 
@@ -4656,13 +4776,15 @@ static WERROR enum_all_printers_info_1_network(fstring name, RPC_BUFFER *buffer,
 	   listed. Windows responds to this call with a
 	   WERR_CAN_NOT_COMPLETE so we should do the same. */
 
-	if (name[0] == '\\' && name[1] == '\\')
+	if (name[0] == '\\' && name[1] == '\\') {
 		 s = name + 2;
+	}
 
-	if (is_myname_or_ipaddr(s))
+	if (is_myname_or_ipaddr(s)) {
 		 return WERR_CAN_NOT_COMPLETE;
+	}
 
-	return enum_all_printers_info_1(PRINTER_ENUM_NAME, buffer, offered, needed, returned);
+	return enum_all_printers_info_1(mem_ctx, PRINTER_ENUM_NAME, info, count);
 }
 
 /********************************************************************
@@ -4671,92 +4793,94 @@ static WERROR enum_all_printers_info_1_network(fstring name, RPC_BUFFER *buffer,
  * called from api_spoolss_enumprinters (see this to understand)
  ********************************************************************/
 
-static WERROR enum_all_printers_info_2(RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enum_all_printers_info_2(TALLOC_CTX *mem_ctx,
+				       union spoolss_PrinterInfo **info_p,
+				       uint32_t *count)
 {
 	int snum;
-	int i;
-	int n_services=lp_numservices();
-	PRINTER_INFO_2 *printers=NULL;
-	PRINTER_INFO_2 current_prt;
+	int n_services = lp_numservices();
+	union spoolss_PrinterInfo *info = NULL;
 	WERROR result = WERR_OK;
 
-	*returned = 0;
+	*count = 0;
 
 	for (snum=0; snum<n_services; snum++) {
-		if (lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) ) {
+		if (lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum)) {
+
+			struct spoolss_PrinterInfo2 info2;
+			NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
+
 			DEBUG(4,("Found a printer in smb.conf: %s[%x]\n", lp_servicename(snum), snum));
 
-			if (construct_printer_info_2(NULL, &current_prt, snum)) {
-				if ( !(printers=SMB_REALLOC_ARRAY(printers, PRINTER_INFO_2, *returned +1)) ) {
-					DEBUG(2,("enum_all_printers_info_2: failed to enlarge printers buffer!\n"));
-					*returned = 0;
-					return WERR_NOMEM;
-				}
-
-				DEBUG(4,("ReAlloced memory for [%d] PRINTER_INFO_2\n", *returned + 1));
-
-				memcpy(&printers[*returned], &current_prt, sizeof(PRINTER_INFO_2));
-
-				(*returned)++;
+			result = get_a_printer(NULL, &ntprinter, 2, lp_const_servicename(snum));
+			if (!W_ERROR_IS_OK(result)) {
+				continue;
 			}
+
+			result = construct_printer_info2(info, ntprinter, &info2, snum);
+			free_a_printer(&ntprinter, 2);
+			if (!W_ERROR_IS_OK(result)) {
+				continue;
+			}
+
+			info = TALLOC_REALLOC_ARRAY(mem_ctx, info,
+						    union spoolss_PrinterInfo,
+						    *count + 1);
+			if (!info) {
+				DEBUG(2,("enum_all_printers_info_2: failed to enlarge printers buffer!\n"));
+				result = WERR_NOMEM;
+				goto out;
+			}
+
+			DEBUG(4,("ReAlloced memory for [%d] PRINTER_INFO_2\n", *count + 1));
+
+			info[*count].info2 = info2;
+
+			(*count)++;
 		}
 	}
 
-	/* check the required size. */
-	for (i=0; i<*returned; i++)
-		(*needed) += spoolss_size_printer_info_2(&printers[i]);
-
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
+ out:
+	if (!W_ERROR_IS_OK(result)) {
+		TALLOC_FREE(info);
+		*count = 0;
+		return result;
 	}
 
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
-	}
+	*info_p = info;
 
-	/* fill the buffer with the structures */
-	for (i=0; i<*returned; i++)
-		smb_io_printer_info_2("", buffer, &(printers[i]), 0);
-
-out:
-	/* clear memory */
-
-	for (i=0; i<*returned; i++)
-		free_devmode(printers[i].devmode);
-
-	SAFE_FREE(printers);
-
-	if ( !W_ERROR_IS_OK(result) )
-		*returned = 0;
-
-	return result;
+	return WERR_OK;
 }
 
 /********************************************************************
  * handle enumeration of printers at level 1
  ********************************************************************/
 
-static WERROR enumprinters_level1( uint32 flags, fstring name,
-			         RPC_BUFFER *buffer, uint32 offered,
-			         uint32 *needed, uint32 *returned)
+static WERROR enumprinters_level1(TALLOC_CTX *mem_ctx,
+				  uint32_t flags,
+				  const char *name,
+				  union spoolss_PrinterInfo **info,
+				  uint32_t *count)
 {
 	/* Not all the flags are equals */
 
-	if (flags & PRINTER_ENUM_LOCAL)
-		return enum_all_printers_info_1_local(buffer, offered, needed, returned);
+	if (flags & PRINTER_ENUM_LOCAL) {
+		return enum_all_printers_info_1_local(mem_ctx, info, count);
+	}
 
-	if (flags & PRINTER_ENUM_NAME)
-		return enum_all_printers_info_1_name(name, buffer, offered, needed, returned);
+	if (flags & PRINTER_ENUM_NAME) {
+		return enum_all_printers_info_1_name(mem_ctx, name, info, count);
+	}
 
 #if 0	/* JERRY - disabled for now */
-	if (flags & PRINTER_ENUM_REMOTE)
-		return enum_all_printers_info_1_remote(name, buffer, offered, needed, returned);
+	if (flags & PRINTER_ENUM_REMOTE) {
+		return enum_all_printers_info_1_remote(mem_ctx, name, info, count);
+	}
 #endif
 
-	if (flags & PRINTER_ENUM_NETWORK)
-		return enum_all_printers_info_1_network(name, buffer, offered, needed, returned);
+	if (flags & PRINTER_ENUM_NETWORK) {
+		return enum_all_printers_info_1_network(mem_ctx, name, info, count);
+	}
 
 	return WERR_OK; /* NT4sp5 does that */
 }
@@ -4765,23 +4889,27 @@ static WERROR enumprinters_level1( uint32 flags, fstring name,
  * handle enumeration of printers at level 2
  ********************************************************************/
 
-static WERROR enumprinters_level2( uint32 flags, const char *servername,
-			         RPC_BUFFER *buffer, uint32 offered,
-			         uint32 *needed, uint32 *returned)
+static WERROR enumprinters_level2(TALLOC_CTX *mem_ctx,
+				  uint32_t flags,
+				  const char *servername,
+				  union spoolss_PrinterInfo **info,
+				  uint32_t *count)
 {
 	if (flags & PRINTER_ENUM_LOCAL) {
-			return enum_all_printers_info_2(buffer, offered, needed, returned);
+		return enum_all_printers_info_2(mem_ctx, info, count);
 	}
 
 	if (flags & PRINTER_ENUM_NAME) {
-		if (is_myname_or_ipaddr(canon_servername(servername)))
-			return enum_all_printers_info_2(buffer, offered, needed, returned);
-		else
+		if (!is_myname_or_ipaddr(canon_servername(servername))) {
 			return WERR_INVALID_NAME;
+		}
+
+		return enum_all_printers_info_2(mem_ctx, info, count);
 	}
 
-	if (flags & PRINTER_ENUM_REMOTE)
+	if (flags & PRINTER_ENUM_REMOTE) {
 		return WERR_UNKNOWN_LEVEL;
+	}
 
 	return WERR_OK;
 }
@@ -4790,49 +4918,37 @@ static WERROR enumprinters_level2( uint32 flags, const char *servername,
  * handle enumeration of printers at level 5
  ********************************************************************/
 
-static WERROR enumprinters_level5( uint32 flags, const char *servername,
-			         RPC_BUFFER *buffer, uint32 offered,
-			         uint32 *needed, uint32 *returned)
+static WERROR enumprinters_level5(TALLOC_CTX *mem_ctx,
+				  uint32_t flags,
+				  const char *servername,
+				  union spoolss_PrinterInfo **info,
+				  uint32_t *count)
 {
-/*	return enum_all_printers_info_5(buffer, offered, needed, returned);*/
+/*	return enum_all_printers_info_5(mem_ctx, info, offered, needed, count);*/
 	return WERR_OK;
 }
 
-/********************************************************************
- * api_spoolss_enumprinters
- *
- * called from api_spoolss_enumprinters (see this to understand)
- ********************************************************************/
+/****************************************************************
+ _spoolss_EnumPrinters
+****************************************************************/
 
-WERROR _spoolss_enumprinters( pipes_struct *p, SPOOL_Q_ENUMPRINTERS *q_u, SPOOL_R_ENUMPRINTERS *r_u)
+WERROR _spoolss_EnumPrinters(pipes_struct *p,
+			     struct spoolss_EnumPrinters *r)
 {
-	uint32 flags = q_u->flags;
-	UNISTR2 *servername = &q_u->servername;
-	uint32 level = q_u->level;
-	RPC_BUFFER *buffer = NULL;
-	uint32 offered = q_u->offered;
-	uint32 *needed = &r_u->needed;
-	uint32 *returned = &r_u->returned;
-
-	fstring name;
+	const char *name;
+	WERROR result;
 
 	/* that's an [in out] buffer */
 
-	if (!q_u->buffer && (offered!=0)) {
+	if (!r->in.buffer && (r->in.offered != 0)) {
 		return WERR_INVALID_PARAM;
 	}
 
-	if (offered > MAX_RPC_DATA_SIZE) {
-		return WERR_INVALID_PARAM;
-	}
+	DEBUG(4,("_spoolss_EnumPrinters\n"));
 
-	rpcbuf_move(q_u->buffer, &r_u->buffer);
-	buffer = r_u->buffer;
-
-	DEBUG(4,("_spoolss_enumprinters\n"));
-
-	*needed=0;
-	*returned=0;
+	*r->out.needed = 0;
+	*r->out.count = 0;
+	*r->out.info = NULL;
 
 	/*
 	 * Level 1:
@@ -4847,21 +4963,42 @@ WERROR _spoolss_enumprinters( pipes_struct *p, SPOOL_Q_ENUMPRINTERS *q_u, SPOOL_
 	 * Level 5: same as Level 2
 	 */
 
-	unistr2_to_ascii(name, servername, sizeof(name));
-	strupper_m(name);
+	name = talloc_strdup_upper(p->mem_ctx, r->in.server);
+	W_ERROR_HAVE_NO_MEMORY(name);
 
-	switch (level) {
+	switch (r->in.level) {
 	case 1:
-		return enumprinters_level1(flags, name, buffer, offered, needed, returned);
+		result = enumprinters_level1(p->mem_ctx, r->in.flags, name,
+					     r->out.info, r->out.count);
+		break;
 	case 2:
-		return enumprinters_level2(flags, name, buffer, offered, needed, returned);
+		result = enumprinters_level2(p->mem_ctx, r->in.flags, name,
+					     r->out.info, r->out.count);
+		break;
 	case 5:
-		return enumprinters_level5(flags, name, buffer, offered, needed, returned);
+		result = enumprinters_level5(p->mem_ctx, r->in.flags, name,
+					     r->out.info, r->out.count);
+		break;
 	case 3:
 	case 4:
+		result = WERR_OK; /* ??? */
 		break;
+	default:
+		return WERR_UNKNOWN_LEVEL;
 	}
-	return WERR_UNKNOWN_LEVEL;
+
+	if (!W_ERROR_IS_OK(result)) {
+		return result;
+	}
+
+	*r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(p->mem_ctx,
+						     spoolss_EnumPrinters, NULL,
+						     *r->out.info, r->in.level,
+						     *r->out.count);
+	*r->out.info	= SPOOLSS_BUFFER_OK(*r->out.info, NULL);
+	*r->out.count	= SPOOLSS_BUFFER_OK(*r->out.count, 0);
+
+	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 }
 
 /****************************************************************************
@@ -10215,17 +10352,6 @@ WERROR _spoolss_AddPrintProcessor(pipes_struct *p,
 	   driver --jerry */
 
 	return WERR_OK;
-}
-
-/****************************************************************
- _spoolss_EnumPrinters
-****************************************************************/
-
-WERROR _spoolss_EnumPrinters(pipes_struct *p,
-			     struct spoolss_EnumPrinters *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
 }
 
 /****************************************************************
