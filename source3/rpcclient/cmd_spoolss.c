@@ -1163,68 +1163,73 @@ static WERROR cmd_spoolss_enum_drivers(struct rpc_pipe_client *cli,
                                          int argc, const char **argv)
 {
 	WERROR werror = WERR_OK;
-	uint32          info_level = 1;
-	PRINTER_DRIVER_CTR 	ctr;
-	uint32		i, j,
-			returned;
+	uint32_t        level = 1;
+	union spoolss_DriverInfo *info;
+	uint32_t	i, j, count;
 
 	if (argc > 2) {
 		printf("Usage: enumdrivers [level]\n");
 		return WERR_OK;
 	}
 
-	if (argc == 2)
-		info_level = atoi(argv[1]);
+	if (argc == 2) {
+		level = atoi(argv[1]);
+	}
 
 
 	/* loop through and print driver info level for each architecture */
 	for (i=0; archi_table[i].long_archi!=NULL; i++) {
 		/* check to see if we already asked for this architecture string */
 
-		if ( i>0 && strequal(archi_table[i].long_archi, archi_table[i-1].long_archi) )
+		if (i>0 && strequal(archi_table[i].long_archi, archi_table[i-1].long_archi)) {
 			continue;
+		}
 
-		werror = rpccli_spoolss_enumprinterdrivers(
-			cli, mem_ctx, info_level,
-			archi_table[i].long_archi, &returned, &ctr);
+		werror = rpccli_spoolss_enumprinterdrivers(cli, mem_ctx,
+							   cli->srv_name_slash,
+							   archi_table[i].long_archi,
+							   level,
+							   0,
+							   &count,
+							   &info);
 
 		if (W_ERROR_V(werror) == W_ERROR_V(WERR_INVALID_ENVIRONMENT)) {
-			printf ("Server does not support environment [%s]\n",
+			printf("Server does not support environment [%s]\n",
 				archi_table[i].long_archi);
 			werror = WERR_OK;
 			continue;
 		}
 
-		if (returned == 0)
+		if (count == 0) {
 			continue;
+		}
 
 		if (!W_ERROR_IS_OK(werror)) {
-			printf ("Error getting driver for environment [%s] - %d\n",
+			printf("Error getting driver for environment [%s] - %d\n",
 				archi_table[i].long_archi, W_ERROR_V(werror));
 			continue;
 		}
 
-		printf ("\n[%s]\n", archi_table[i].long_archi);
-		switch (info_level)
-		{
+		printf("\n[%s]\n", archi_table[i].long_archi);
 
+		switch (level) {
 		case 1:
-			for (j=0; j < returned; j++) {
-				display_print_driver_1 (&ctr.info1[j]);
+			for (j=0; j < count; j++) {
+				display_print_driver1(&info[j].info1);
 			}
 			break;
 		case 2:
-			for (j=0; j < returned; j++) {
-				display_print_driver_2 (&ctr.info2[j]);
+			for (j=0; j < count; j++) {
+				display_print_driver2(&info[j].info2);
 			}
 			break;
 		case 3:
-			for (j=0; j < returned; j++) {
-				display_print_driver_3 (&ctr.info3[j]);
+			for (j=0; j < count; j++) {
+				display_print_driver3(&info[j].info3);
 			}
 			break;
 		default:
-			printf("unknown info level %d\n", info_level);
+			printf("unknown info level %d\n", level);
 			return WERR_UNKNOWN_LEVEL;
 		}
 	}
