@@ -606,27 +606,6 @@ typedef struct systemtime
 }
 SYSTEMTIME;
 
-typedef struct spool_q_enumprinterdrivers
-{
-	uint32 name_ptr;
-	UNISTR2 name;
-	uint32 environment_ptr;
-	UNISTR2 environment;
-	uint32 level;
-	RPC_BUFFER *buffer;
-	uint32 offered;
-}
-SPOOL_Q_ENUMPRINTERDRIVERS;
-
-typedef struct spool_r_enumprinterdrivers
-{
-	RPC_BUFFER *buffer;
-	uint32 needed;
-	uint32 returned;
-	WERROR status;
-}
-SPOOL_R_ENUMPRINTERDRIVERS;
-
 /********************************************/
 
 typedef struct spool_q_enumprinterdata
