@@ -65,6 +65,9 @@
 # should ctdb manage starting/stopping the NFS service
 # CTDB_MANAGES_NFS=yes
 
+# should ctdb manage starting/stopping the Apache web server httpd?
+# CTDB_MANAGES_HTTPD
+
 # The init style (redhat/suse/ubuntu...) is usually auto-detected.
 # The names of init scripts of services managed by CTDB are set
 # based on the detected init style. You can override the init style
