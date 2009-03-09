@@ -18,6 +18,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 
 #include "includes.h"
+#include "winbindd.h"
+#include "winbindd_proto.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP
@@ -36,7 +38,8 @@ NTSTATUS idmap_uid_to_sid(const char *domname, DOM_SID *sid, uid_t uid)
 	DEBUG(10,("idmap_uid_to_sid: uid = [%lu], domain = '%s'\n",
 		  (unsigned long)uid, domname?domname:"NULL"));
 
-	if (idmap_cache_find_uid2sid(uid, sid, &expired)) {
+	if (winbindd_use_idmap_cache()
+	    && idmap_cache_find_uid2sid(uid, sid, &expired)) {
 		DEBUG(10, ("idmap_cache_find_uid2sid found %d%s\n", uid,
 			   expired ? " (expired)": ""));
 		if (expired && idmap_is_online()) {
@@ -63,14 +66,18 @@ backend:
 	}
 
 	if (map.status != ID_MAPPED) {
-		struct dom_sid null_sid;
-		ZERO_STRUCT(null_sid);
-		idmap_cache_set_sid2uid(&null_sid, uid);
+		if (winbindd_use_idmap_cache()) {
+			struct dom_sid null_sid;
+			ZERO_STRUCT(null_sid);
+			idmap_cache_set_sid2uid(&null_sid, uid);
+		}
 		DEBUG(10, ("uid [%lu] not mapped\n", (unsigned long)uid));
 		return NT_STATUS_NONE_MAPPED;
 	}
 
-	idmap_cache_set_sid2uid(sid, uid);
+	if (winbindd_use_idmap_cache()) {
+		idmap_cache_set_sid2uid(sid, uid);
+	}
 
 	return NT_STATUS_OK;
 }
@@ -89,7 +96,8 @@ NTSTATUS idmap_gid_to_sid(const char *domname, DOM_SID *sid, gid_t gid)
 	DEBUG(10,("idmap_gid_to_si: gid = [%lu], domain = '%s'\n",
 		  (unsigned long)gid, domname?domname:"NULL"));
 
-	if (idmap_cache_find_gid2sid(gid, sid, &expired)) {
+	if (winbindd_use_idmap_cache()
+	    && idmap_cache_find_gid2sid(gid, sid, &expired)) {
 		DEBUG(10, ("idmap_cache_find_gid2sid found %d%s\n", gid,
 			   expired ? " (expired)": ""));
 		if (expired && idmap_is_online()) {
@@ -116,14 +124,18 @@ backend:
 	}
 
 	if (map.status != ID_MAPPED) {
-		struct dom_sid null_sid;
-		ZERO_STRUCT(null_sid);
-		idmap_cache_set_sid2uid(&null_sid, gid);
+		if (winbindd_use_idmap_cache()) {
+			struct dom_sid null_sid;
+			ZERO_STRUCT(null_sid);
+			idmap_cache_set_sid2uid(&null_sid, gid);
+		}
 		DEBUG(10, ("gid [%lu] not mapped\n", (unsigned long)gid));
 		return NT_STATUS_NONE_MAPPED;
 	}
 
-	idmap_cache_set_sid2gid(sid, gid);
+	if (winbindd_use_idmap_cache()) {
+		idmap_cache_set_sid2gid(sid, gid);
+	}
 
 	return NT_STATUS_OK;
 }
@@ -142,7 +154,8 @@ NTSTATUS idmap_sid_to_uid(const char *dom_name, DOM_SID *sid, uid_t *uid)
 	DEBUG(10,("idmap_sid_to_uid: sid = [%s], domain = '%s'\n",
 		  sid_string_dbg(sid), dom_name));
 
-	if (idmap_cache_find_sid2uid(sid, uid, &expired)) {
+	if (winbindd_use_idmap_cache()
+	    && idmap_cache_find_sid2uid(sid, uid, &expired)) {
 		DEBUG(10, ("idmap_cache_find_sid2uid found %d%s\n",
 			   (int)(*uid), expired ? " (expired)": ""));
 		if (expired && idmap_is_online()) {
@@ -171,7 +184,9 @@ backend:
 				   map.status,
 				   map.xid.type,
 				   map.xid.id));
-			idmap_cache_set_sid2uid(sid, -1);
+			if (winbindd_use_idmap_cache()) {
+				idmap_cache_set_sid2uid(sid, -1);
+			}
 			return NT_STATUS_NONE_MAPPED;
 		}
 		goto done;
@@ -182,7 +197,9 @@ backend:
 		 * We had the task to go to a specific domain which
 		 * could not answer our request. Fail.
 		 */
-		idmap_cache_set_sid2uid(sid, -1);
+		if (winbindd_use_idmap_cache()) {
+			idmap_cache_set_sid2uid(sid, -1);
+		}
 		return NT_STATUS_NONE_MAPPED;
 	}
 
@@ -191,13 +208,17 @@ backend:
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(10, ("idmap_new_mapping failed: %s\n",
 			   nt_errstr(ret)));
-		idmap_cache_set_sid2uid(sid, -1);
+		if (winbindd_use_idmap_cache()) {
+			idmap_cache_set_sid2uid(sid, -1);
+		}
 		return ret;
 	}
 
 done:
 	*uid = (uid_t)map.xid.id;
-	idmap_cache_set_sid2uid(sid, *uid);
+	if (winbindd_use_idmap_cache()) {
+		idmap_cache_set_sid2uid(sid, *uid);
+	}
 	return NT_STATUS_OK;
 }
 
@@ -215,7 +236,8 @@ NTSTATUS idmap_sid_to_gid(const char *domname, DOM_SID *sid, gid_t *gid)
 	DEBUG(10,("idmap_sid_to_gid: sid = [%s], domain = '%s'\n",
 		  sid_string_dbg(sid), domname));
 
-	if (idmap_cache_find_sid2gid(sid, gid, &expired)) {
+	if (winbindd_use_idmap_cache()
+	    && idmap_cache_find_sid2gid(sid, gid, &expired)) {
 		DEBUG(10, ("idmap_cache_find_sid2gid found %d%s\n",
 			   (int)(*gid), expired ? " (expired)": ""));
 		if (expired && idmap_is_online()) {
@@ -243,7 +265,9 @@ backend:
 				   map.status,
 				   map.xid.type,
 				   map.xid.id));
-			idmap_cache_set_sid2gid(sid, -1);
+			if (winbindd_use_idmap_cache()) {
+				idmap_cache_set_sid2gid(sid, -1);
+			}
 			return NT_STATUS_NONE_MAPPED;
 		}
 		goto done;
@@ -254,7 +278,9 @@ backend:
 		 * We had the task to go to a specific domain which
 		 * could not answer our request. Fail.
 		 */
-		idmap_cache_set_sid2uid(sid, -1);
+		if (winbindd_use_idmap_cache()) {
+			idmap_cache_set_sid2uid(sid, -1);
+		}
 		return NT_STATUS_NONE_MAPPED;
 	}
 
@@ -263,12 +289,16 @@ backend:
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(10, ("idmap_new_mapping failed: %s\n",
 			   nt_errstr(ret)));
-		idmap_cache_set_sid2gid(sid, -1);
+		if (winbindd_use_idmap_cache()) {
+			idmap_cache_set_sid2gid(sid, -1);
+		}
 		return ret;
 	}
 
 done:
 	*gid = map.xid.id;
-	idmap_cache_set_sid2gid(sid, *gid);
+	if (winbindd_use_idmap_cache()) {
+		idmap_cache_set_sid2gid(sid, *gid);
+	}
 	return NT_STATUS_OK;
 }
