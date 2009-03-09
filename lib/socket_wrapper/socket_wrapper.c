@@ -1,6 +1,6 @@
 /*
  * Copyright (C) Jelmer Vernooij 2005,2008 <jelmer@samba.org>
- * Copyright (C) Stefan Metzmacher 2006 <metze@samba.org>
+ * Copyright (C) Stefan Metzmacher 2006-2009 <metze@samba.org>
  *
  * All rights reserved.
  * 
@@ -121,6 +121,8 @@
 #define real_ioctl ioctl
 #define real_recv recv
 #define real_send send
+#define real_readv readv
+#define real_writev writev
 #define real_socket socket
 #define real_close close
 #endif
@@ -1698,13 +1700,7 @@ _PUBLIC_ int swrap_connect(int s, const struct sockaddr *serv_addr, socklen_t ad
 		si->peername_len = addrlen;
 		si->peername = sockaddr_dup(serv_addr, addrlen);
 		si->connected = 1;
-	}
 
-	if (si->type != SOCK_STREAM) {
-		return ret;
-	}
-
-	if (ret == 0) {
 		swrap_dump_packet(si, serv_addr, SWRAP_CONNECT_RECV, NULL, 0);
 		swrap_dump_packet(si, serv_addr, SWRAP_CONNECT_ACK, NULL, 0);
 	} else {
@@ -2013,6 +2009,128 @@ _PUBLIC_ ssize_t swrap_send(int s, const void *buf, size_t len, int flags)
 		swrap_dump_packet(si, NULL, SWRAP_SEND_RST, NULL, 0);
 	} else {
 		swrap_dump_packet(si, NULL, SWRAP_SEND, buf, ret);
+	}
+
+	return ret;
+}
+
+int swrap_readv(int s, const struct iovec *vector, size_t count)
+{
+	int ret;
+	struct socket_info *si = find_socket_info(s);
+	struct iovec v;
+
+	if (!si) {
+		return real_readv(s, vector, count);
+	}
+
+	/* we read 1500 bytes as maximum */
+	if (count > 0) {
+		size_t i, len = 0;
+
+		for (i=0; i < count; i++) {
+			size_t nlen;
+			nlen = len + vector[i].iov_len;
+			if (nlen > 1500) {
+				break;
+			}
+		}
+		count = i;
+		if (count == 0) {
+			v = vector[0];
+			v.iov_len = MIN(v.iov_len, 1500);
+			vector = &v;
+			count = 1;
+		}
+	}
+
+	ret = real_readv(s, vector, count);
+	if (ret == -1 && errno != EAGAIN && errno != ENOBUFS) {
+		swrap_dump_packet(si, NULL, SWRAP_RECV_RST, NULL, 0);
+	} else if (ret == 0) { /* END OF FILE */
+		swrap_dump_packet(si, NULL, SWRAP_RECV_RST, NULL, 0);
+	} else if (ret > 0) {
+		uint8_t *buf;
+		off_t ofs = 0;
+		size_t i;
+
+		/* we capture it as one single packet */
+		buf = (uint8_t *)malloc(ret);
+		if (!buf) {
+			/* we just not capture the packet */
+			errno = 0;
+			return ret;
+		}
+
+		for (i=0; i < count; i++) {
+			memcpy(buf + ofs,
+			       vector[i].iov_base,
+			       vector[i].iov_len);
+			ofs += vector[i].iov_len;
+		}
+
+		swrap_dump_packet(si, NULL, SWRAP_RECV, buf, ret);
+		free(buf);
+	}
+
+	return ret;
+}
+
+int swrap_writev(int s, const struct iovec *vector, size_t count)
+{
+	int ret;
+	struct socket_info *si = find_socket_info(s);
+	struct iovec v;
+
+	if (!si) {
+		return real_writev(s, vector, count);
+	}
+
+	/* we write 1500 bytes as maximum */
+	if (count > 0) {
+		size_t i, len = 0;
+
+		for (i=0; i < count; i++) {
+			size_t nlen;
+			nlen = len + vector[i].iov_len;
+			if (nlen > 1500) {
+				break;
+			}
+		}
+		count = i;
+		if (count == 0) {
+			v = vector[0];
+			v.iov_len = MIN(v.iov_len, 1500);
+			vector = &v;
+			count = 1;
+		}
+	}
+
+	ret = real_writev(s, vector, count);
+	if (ret == -1) {
+		swrap_dump_packet(si, NULL, SWRAP_SEND_RST, NULL, 0);
+	} else {
+		uint8_t *buf;
+		off_t ofs = 0;
+		size_t i;
+
+		/* we capture it as one single packet */
+		buf = (uint8_t *)malloc(ret);
+		if (!buf) {
+			/* we just not capture the packet */
+			errno = 0;
+			return ret;
+		}
+
+		for (i=0; i < count; i++) {
+			memcpy(buf + ofs,
+			       vector[i].iov_base,
+			       vector[i].iov_len);
+			ofs += vector[i].iov_len;
+		}
+
+		swrap_dump_packet(si, NULL, SWRAP_SEND, buf, ret);
+		free(buf);
 	}
 
 	return ret;
