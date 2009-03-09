@@ -651,6 +651,59 @@ WERROR rpccli_spoolss_enumprinterdrivers(struct rpc_pipe_client *cli,
 	return werror;
 }
 
+/**********************************************************************
+ convencience wrapper around rpccli_spoolss_EnumPrinters
+**********************************************************************/
+
+WERROR rpccli_spoolss_enumprinters(struct rpc_pipe_client *cli,
+				   TALLOC_CTX *mem_ctx,
+				   uint32_t flags,
+				   const char *server,
+				   uint32_t level,
+				   uint32_t offered,
+				   uint32_t *count,
+				   union spoolss_PrinterInfo **info)
+{
+	NTSTATUS status;
+	WERROR werror;
+	uint32_t needed;
+	DATA_BLOB buffer;
+
+	if (offered > 0) {
+		buffer = data_blob_talloc_zero(mem_ctx, offered);
+		W_ERROR_HAVE_NO_MEMORY(buffer.data);
+	}
+
+	status = rpccli_spoolss_EnumPrinters(cli, mem_ctx,
+					     flags,
+					     server,
+					     level,
+					     (offered > 0) ? &buffer : NULL,
+					     offered,
+					     count,
+					     info,
+					     &needed,
+					     &werror);
+
+	if (W_ERROR_EQUAL(werror, WERR_INSUFFICIENT_BUFFER)) {
+		offered = needed;
+		buffer = data_blob_talloc_zero(mem_ctx, needed);
+		W_ERROR_HAVE_NO_MEMORY(buffer.data);
+
+		status = rpccli_spoolss_EnumPrinters(cli, mem_ctx,
+						     flags,
+						     server,
+						     level,
+						     (offered > 0) ? &buffer : NULL,
+						     offered,
+						     count,
+						     info,
+						     &needed,
+						     &werror);
+	}
+
+	return werror;
+}
 
 /*********************************************************************
  Decode various spoolss rpc's and info levels
