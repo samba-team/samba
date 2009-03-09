@@ -432,17 +432,6 @@ typedef struct printer_info_7
 }
 PRINTER_INFO_7;
 
-typedef struct spool_q_enumprinters
-{
-	uint32 flags;
-	uint32 servername_ptr;
-	UNISTR2 servername;
-	uint32 level;
-	RPC_BUFFER *buffer;
-	uint32 offered;
-}
-SPOOL_Q_ENUMPRINTERS;
-
 typedef struct printer_info_ctr_info
 {
 	PRINTER_INFO_0 *printers_0;
@@ -454,16 +443,6 @@ typedef struct printer_info_ctr_info
 	PRINTER_INFO_7 *printers_7;
 }
 PRINTER_INFO_CTR;
-
-typedef struct spool_r_enumprinters
-{
-	RPC_BUFFER *buffer;
-	uint32 needed;		/* bytes needed */
-	uint32 returned;	/* number of printers */
-	WERROR status;
-}
-SPOOL_R_ENUMPRINTERS;
-
 
 typedef struct spool_q_getprinter
 {

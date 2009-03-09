@@ -5860,8 +5860,6 @@ uint32 spoolss_size_printer_info_3(PRINTER_INFO_3 *info);
 uint32 spoolss_size_printer_info_7(PRINTER_INFO_7 *info);
 uint32 spoolss_size_string_array(uint16 *string);
 uint32 spoolss_size_printer_enum_values(PRINTER_ENUM_VALUES *p);
-bool spoolss_io_q_enumprinters(const char *desc, SPOOL_Q_ENUMPRINTERS *q_u, prs_struct *ps, int depth);
-bool spoolss_io_r_enumprinters(const char *desc, SPOOL_R_ENUMPRINTERS *r_u, prs_struct *ps, int depth);
 bool spoolss_io_r_getprinter(const char *desc, SPOOL_R_GETPRINTER *r_u, prs_struct *ps, int depth);
 bool spoolss_io_q_getprinter(const char *desc, SPOOL_Q_GETPRINTER *q_u, prs_struct *ps, int depth);
 bool make_spoolss_buffer5(TALLOC_CTX *mem_ctx, BUFFER5 *buf5, uint32 len, uint16 *src);
