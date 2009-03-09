@@ -77,62 +77,6 @@ static void display_print_driver3(struct spoolss_DriverInfo3 *r)
 	printf("\tDefaultdatatype: [%s]\n\n", r->default_datatype);
 }
 
-static void display_print_driver_3(DRIVER_INFO_3 *i1)
-{
-	fstring name = "";
-	fstring architecture = "";
-	fstring driverpath = "";
-	fstring datafile = "";
-	fstring configfile = "";
-	fstring helpfile = "";
-	fstring dependentfiles = "";
-	fstring monitorname = "";
-	fstring defaultdatatype = "";
-
-	int length=0;
-	bool valid = true;
-
-	if (i1 == NULL)
-		return;
-
-	rpcstr_pull(name, i1->name.buffer, sizeof(name), -1, STR_TERMINATE);
-	rpcstr_pull(architecture, i1->architecture.buffer, sizeof(architecture), -1, STR_TERMINATE);
-	rpcstr_pull(driverpath, i1->driverpath.buffer, sizeof(driverpath), -1, STR_TERMINATE);
-	rpcstr_pull(datafile, i1->datafile.buffer, sizeof(datafile), -1, STR_TERMINATE);
-	rpcstr_pull(configfile, i1->configfile.buffer, sizeof(configfile), -1, STR_TERMINATE);
-	rpcstr_pull(helpfile, i1->helpfile.buffer, sizeof(helpfile), -1, STR_TERMINATE);
-	rpcstr_pull(monitorname, i1->monitorname.buffer, sizeof(monitorname), -1, STR_TERMINATE);
-	rpcstr_pull(defaultdatatype, i1->defaultdatatype.buffer, sizeof(defaultdatatype), -1, STR_TERMINATE);
-
-	d_printf ("Printer Driver Info 3:\n");
-	d_printf ("\tVersion: [%x]\n", i1->version);
-	d_printf ("\tDriver Name: [%s]\n",name);
-	d_printf ("\tArchitecture: [%s]\n", architecture);
-	d_printf ("\tDriver Path: [%s]\n", driverpath);
-	d_printf ("\tDatafile: [%s]\n", datafile);
-	d_printf ("\tConfigfile: [%s]\n", configfile);
-	d_printf ("\tHelpfile: [%s]\n\n", helpfile);
-
-	while (valid) {
-		rpcstr_pull(dependentfiles, i1->dependentfiles+length, sizeof(dependentfiles), -1, STR_TERMINATE);
-
-		length+=strlen(dependentfiles)+1;
-
-		if (strlen(dependentfiles) > 0) {
-			d_printf ("\tDependentfiles: [%s]\n", dependentfiles);
-		} else {
-			valid = false;
-		}
-	}
-
-	printf ("\n");
-
-	d_printf ("\tMonitorname: [%s]\n", monitorname);
-	d_printf ("\tDefaultdatatype: [%s]\n\n", defaultdatatype);
-
-	return;
-}
-
 static void display_reg_value(const char *subkey, REGISTRY_VALUE value)
 {
 	char *text;
