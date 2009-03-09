@@ -348,6 +348,7 @@ fi
 %{_mandir}/man1/vfstest.1*
 %{_mandir}/man5/smbpasswd.5*
 %{_mandir}/man7/samba.7*
+%{_mandir}/man7/winbind_krb5_locator.7*
 %{_mandir}/man8/nmbd.8*
 %{_mandir}/man8/pdbedit.8*
 %{_mandir}/man8/smbd.8*
@@ -396,6 +397,7 @@ fi
 
 %{_bindir}/rpcclient
 %{_bindir}/smbcacls
+%{_bindir}/sharesec
 %{_bindir}/findsmb
 %{_bindir}/smbcquotas
 %{_bindir}/nmblookup
@@ -417,6 +419,7 @@ fi
 %{_mandir}/man1/nmblookup.1*
 %{_mandir}/man1/rpcclient.1*
 %{_mandir}/man1/smbcacls.1*
+%{_mandir}/man1/sharesec.1*
 %{_mandir}/man1/smbclient.1*
 %{_mandir}/man1/smbtar.1*
 %{_mandir}/man1/smbtree.1*
@@ -437,6 +440,7 @@ fi
 %attr(755,root,root) /%{_libarch}/libnss_winbind.so*
 %attr(755,root,root) /%{_libarch}/security/pam_winbind.so
 %attr(755,root,root) /%{_libarch}/security/pam_smbpass.so
+/usr/share/locale/de/LC_MESSAGES/pam_winbind.mo
 
 %{_includedir}/libsmbclient.h
 %{_libarchdir}/libsmbclient.*
@@ -464,6 +468,7 @@ fi
 %{_bindir}/ldbdel
 %{_bindir}/ldbedit
 %{_bindir}/ldbmodify
+%{_bindir}/ldbrename
 %{_bindir}/ldbsearch
 
 %{_mandir}/man1/profiles.1*
@@ -478,6 +483,7 @@ fi
 %{_mandir}/man1/ldbdel.1*
 %{_mandir}/man1/ldbedit.1*
 %{_mandir}/man1/ldbmodify.1*
+%{_mandir}/man1/ldbrename.1*
 %{_mandir}/man1/ldbsearch.1*
 
 %changelog
