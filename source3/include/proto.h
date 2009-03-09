@@ -3194,16 +3194,22 @@ bool cli_check_sign_mac(struct cli_state *cli, char *buf);
 bool client_set_trans_sign_state_on(struct cli_state *cli, uint16 mid);
 bool client_set_trans_sign_state_off(struct cli_state *cli, uint16 mid);
 bool client_is_signing_on(struct cli_state *cli);
-bool srv_oplock_set_signing(bool onoff);
-bool srv_check_sign_mac(const char *inbuf, bool must_be_ok);
-void srv_calculate_sign_mac(char *outbuf);
-void srv_defer_sign_response(uint16 mid);
-void srv_cancel_sign_response(uint16 mid, bool cancel);
-void srv_set_signing_negotiated(void);
-bool srv_is_signing_active(void);
-bool srv_is_signing_negotiated(void);
-bool srv_signing_started(void);
-void srv_set_signing(const DATA_BLOB user_session_key, const DATA_BLOB response);
+
+/* The following definitions come from smbd/signing.c  */
+
+struct smbd_server_connection;
+bool srv_check_sign_mac(struct smbd_server_connection *conn,
+			const char *inbuf, uint32_t *seqnum);
+void srv_calculate_sign_mac(struct smbd_server_connection *conn,
+			    char *outbuf, uint32_t seqnum);
+void srv_cancel_sign_response(struct smbd_server_connection *conn);
+bool srv_init_signing(struct smbd_server_connection *conn);
+void srv_set_signing_negotiated(struct smbd_server_connection *conn);
+bool srv_is_signing_active(struct smbd_server_connection *conn);
+bool srv_is_signing_negotiated(struct smbd_server_connection *conn);
+void srv_set_signing(struct smbd_server_connection *conn,
+		     const DATA_BLOB user_session_key,
+		     const DATA_BLOB response);
 
 /* The following definitions come from libsmb/smbdes.c  */
 
@@ -4347,7 +4353,7 @@ const char *lp_printcapname(void);
 bool lp_disable_spoolss( void );
 void lp_set_spoolss_state( uint32 state );
 uint32 lp_get_spoolss_state( void );
-bool lp_use_sendfile(int snum);
+bool lp_use_sendfile(int snum, struct smb_signing_state *signing_state);
 void set_use_sendfile(int snum, bool val);
 void set_store_dos_attributes(int snum, bool val);
 void lp_set_mangling_method(const char *new_method);
@@ -6722,7 +6728,9 @@ SEC_DESC *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname);
 
 void smbd_setup_sig_term_handler(void);
 void smbd_setup_sig_hup_handler(void);
-bool srv_send_smb(int fd, char *buffer, bool do_encrypt,
+bool srv_send_smb(int fd, char *buffer,
+		  bool no_signing, uint32_t seqnum,
+		  bool do_encrypt,
 		  struct smb_perfcount_data *pcd);
 int srv_set_message(char *buf,
                         int num_words,

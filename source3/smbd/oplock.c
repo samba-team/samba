@@ -361,7 +361,6 @@ void process_oplock_async_level2_break_message(struct messaging_context *msg_ctx
 	struct share_mode_entry msg;
 	files_struct *fsp;
 	char *break_msg;
-	bool sign_state;
 
 	if (data->data == NULL) {
 		DEBUG(0, ("Got NULL buffer\n"));
@@ -423,19 +422,13 @@ void process_oplock_async_level2_break_message(struct messaging_context *msg_ctx
 		wait_before_sending_break();
 	}
 
-	/* Save the server smb signing state. */
-	sign_state = srv_oplock_set_signing(False);
-
 	show_msg(break_msg);
 	if (!srv_send_smb(smbd_server_fd(),
-			break_msg,
+			break_msg, false, 0,
 			IS_CONN_ENCRYPTED(fsp->conn),
 			NULL)) {
 		exit_server_cleanly("oplock_break: srv_send_smb failed.");
 	}
-
-	/* Restore the sign state to what it was. */
-	srv_oplock_set_signing(sign_state);
 
 	TALLOC_FREE(break_msg);
 
@@ -457,7 +450,6 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 	files_struct *fsp;
 	char *break_msg;
 	bool break_to_level2 = False;
-	bool sign_state;
 
 	if (data->data == NULL) {
 		DEBUG(0, ("Got NULL buffer\n"));
@@ -530,19 +522,13 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 		wait_before_sending_break();
 	}
 
-	/* Save the server smb signing state. */
-	sign_state = srv_oplock_set_signing(False);
-
 	show_msg(break_msg);
 	if (!srv_send_smb(smbd_server_fd(),
-			break_msg,
+			break_msg, false, 0,
 			IS_CONN_ENCRYPTED(fsp->conn),
 			NULL)) {
 		exit_server_cleanly("oplock_break: srv_send_smb failed.");
 	}
-
-	/* Restore the sign state to what it was. */
-	srv_oplock_set_signing(sign_state);
 
 	TALLOC_FREE(break_msg);
 
@@ -570,7 +556,6 @@ static void process_kernel_oplock_break(struct messaging_context *msg_ctx,
 	unsigned long file_id;
 	files_struct *fsp;
 	char *break_msg;
-	bool sign_state;
 
 	if (data->data == NULL) {
 		DEBUG(0, ("Got NULL buffer\n"));
@@ -610,19 +595,13 @@ static void process_kernel_oplock_break(struct messaging_context *msg_ctx,
 		exit_server("Could not talloc break_msg\n");
 	}
 
-	/* Save the server smb signing state. */
-	sign_state = srv_oplock_set_signing(False);
-
 	show_msg(break_msg);
 	if (!srv_send_smb(smbd_server_fd(),
-			break_msg,
+			break_msg, false, 0,
 			IS_CONN_ENCRYPTED(fsp->conn),
 			NULL)) {
 		exit_server_cleanly("oplock_break: srv_send_smb failed.");
 	}
-
-	/* Restore the sign state to what it was. */
-	srv_oplock_set_signing(sign_state);
 
 	TALLOC_FREE(break_msg);
 

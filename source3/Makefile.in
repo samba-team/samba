@@ -733,7 +733,7 @@ SMBD_OBJ_SRV = smbd/files.o smbd/chgpasswd.o smbd/connection.o \
 	       smbd/change_trust_pw.o smbd/fake_file.o \
 	       smbd/quotas.o smbd/ntquotas.o $(AFS_OBJ) smbd/msdfs.o \
 	       $(AFS_SETTOKEN_OBJ) smbd/aio.o smbd/statvfs.o \
-	       smbd/dmapi.o \
+	       smbd/dmapi.o smbd/signing.o \
 	       smbd/file_access.o \
 	       smbd/dnsregister.o smbd/globals.o \
 	       $(MANGLE_OBJ) @VFS_STATIC@

@@ -621,6 +621,7 @@ struct smb_request {
 	uint16 flags2;
 	uint16 smbpid;
 	uint16 mid;
+	uint32_t seqnum;
 	uint16 vuid;
 	uint16 tid;
 	uint8  wct;
@@ -722,6 +723,7 @@ struct pending_message_list {
 	struct timeval request_time; /* When was this first issued? */
 	struct timed_event *te;
 	struct smb_perfcount_data pcd;
+	uint32_t seqnum;
 	bool encrypted;
 	DATA_BLOB buf;
 	DATA_BLOB private_data;

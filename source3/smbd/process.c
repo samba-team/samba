@@ -32,16 +32,20 @@ static void construct_reply_common(struct smb_request *req, const char *inbuf,
  Send an smb to a fd.
 ****************************************************************************/
 
-bool srv_send_smb(int fd, char *buffer, bool do_encrypt,
-	          struct smb_perfcount_data *pcd)
+bool srv_send_smb(int fd, char *buffer,
+		  bool do_signing, uint32_t seqnum,
+		  bool do_encrypt,
+		  struct smb_perfcount_data *pcd)
 {
 	size_t len = 0;
 	size_t nwritten=0;
 	ssize_t ret;
 	char *buf_out = buffer;
 
-	/* Sign the outgoing packet if required. */
-	srv_calculate_sign_mac(buf_out);
+	if (do_signing) {
+		/* Sign the outgoing packet if required. */
+		srv_calculate_sign_mac(smbd_server_conn, buf_out, seqnum);
+	}
 
 	if (do_encrypt) {
 		NTSTATUS status = srv_encrypt_buffer(buffer, &buf_out);
@@ -275,7 +279,7 @@ static NTSTATUS receive_smb_raw_talloc(TALLOC_CTX *mem_ctx, int fd,
 	if (CVAL(lenbuf,0) == 0 && min_recv_size &&
 	    (smb_len_large(lenbuf) > /* Could be a UNIX large writeX. */
 		(min_recv_size + STANDARD_WRITE_AND_X_HEADER_SIZE)) &&
-	    !srv_is_signing_active()) {
+	    !srv_is_signing_active(smbd_server_conn)) {
 
 		return receive_smb_raw_talloc_partial_read(
 			mem_ctx, lenbuf, fd, buffer, timeout, p_unread, plen);
@@ -311,7 +315,8 @@ static NTSTATUS receive_smb_raw_talloc(TALLOC_CTX *mem_ctx, int fd,
 static NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,	int fd,
 				   char **buffer, unsigned int timeout,
 				   size_t *p_unread, bool *p_encrypted,
-				   size_t *p_len)
+				   size_t *p_len,
+				   uint32_t *seqnum)
 {
 	size_t len = 0;
 	NTSTATUS status;
@@ -336,7 +341,7 @@ static NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,	int fd,
 	}
 
 	/* Check the incoming SMB signature. */
-	if (!srv_check_sign_mac(*buffer, true)) {
+	if (!srv_check_sign_mac(smbd_server_conn, *buffer, seqnum)) {
 		DEBUG(0, ("receive_smb: SMB Signature verification failed on "
 			  "incoming packet!\n"));
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
@@ -366,6 +371,7 @@ void init_smb_request(struct smb_request *req,
 	req->flags2 = SVAL(inbuf, smb_flg2);
 	req->smbpid = SVAL(inbuf, smb_pid);
 	req->mid    = SVAL(inbuf, smb_mid);
+	req->seqnum = 0;
 	req->vuid   = SVAL(inbuf, smb_uid);
 	req->tid    = SVAL(inbuf, smb_tid);
 	req->wct    = CVAL(inbuf, smb_wct);
@@ -401,7 +407,8 @@ void init_smb_request(struct smb_request *req,
 
 static void process_smb(struct smbd_server_connection *conn,
 			uint8_t *inbuf, size_t nread, size_t unread_bytes,
-			bool encrypted, struct smb_perfcount_data *deferred_pcd);
+			uint32_t seqnum, bool encrypted,
+			struct smb_perfcount_data *deferred_pcd);
 
 static void smbd_deferred_open_timer(struct event_context *ev,
 				     struct timed_event *te,
@@ -427,7 +434,7 @@ static void smbd_deferred_open_timer(struct event_context *ev,
 
 	process_smb(smbd_server_conn, inbuf,
 		    msg->buf.length, 0,
-		    msg->encrypted, &msg->pcd);
+		    msg->seqnum, msg->encrypted, &msg->pcd);
 }
 
 /****************************************************************************
@@ -458,6 +465,7 @@ static bool push_queued_message(struct smb_request *req,
 	}
 
 	msg->request_time = request_time;
+	msg->seqnum = req->seqnum;
 	msg->encrypted = req->encrypted;
 	SMB_PERFCOUNT_DEFER_OP(&req->pcd, &msg->pcd);
 
@@ -1362,7 +1370,7 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 ****************************************************************************/
 
 static void construct_reply(char *inbuf, int size, size_t unread_bytes,
-			    bool encrypted,
+			    uint32_t seqnum, bool encrypted,
 			    struct smb_perfcount_data *deferred_pcd)
 {
 	connection_struct *conn;
@@ -1374,6 +1382,7 @@ static void construct_reply(char *inbuf, int size, size_t unread_bytes,
 
 	init_smb_request(req, (uint8 *)inbuf, unread_bytes, encrypted);
 	req->inbuf  = (uint8_t *)talloc_move(req, &inbuf);
+	req->seqnum = seqnum;
 
 	/* we popped this message off the queue - keep original perf data */
 	if (deferred_pcd)
@@ -1405,6 +1414,7 @@ static void construct_reply(char *inbuf, int size, size_t unread_bytes,
 
 	if (!srv_send_smb(smbd_server_fd(),
 			(char *)req->outbuf,
+			true, req->seqnum+1,
 			IS_CONN_ENCRYPTED(conn)||req->encrypted,
 			&req->pcd)) {
 		exit_server_cleanly("construct_reply: srv_send_smb failed.");
@@ -1420,7 +1430,8 @@ static void construct_reply(char *inbuf, int size, size_t unread_bytes,
 ****************************************************************************/
 static void process_smb(struct smbd_server_connection *conn,
 			uint8_t *inbuf, size_t nread, size_t unread_bytes,
-			bool encrypted, struct smb_perfcount_data *deferred_pcd)
+			uint32_t seqnum, bool encrypted,
+			struct smb_perfcount_data *deferred_pcd)
 {
 	int msg_type = CVAL(inbuf,0);
 
@@ -1442,7 +1453,7 @@ static void process_smb(struct smbd_server_connection *conn,
 
 	show_msg((char *)inbuf);
 
-	construct_reply((char *)inbuf,nread,unread_bytes,encrypted,deferred_pcd);
+	construct_reply((char *)inbuf,nread,unread_bytes,seqnum,encrypted,deferred_pcd);
 	trans_num++;
 
 done:
@@ -1637,6 +1648,7 @@ void chain_reply(struct smb_request *req)
 			   talloc_get_size(req->chain_outbuf) - 4);
 
 		if (!srv_send_smb(smbd_server_fd(), (char *)req->chain_outbuf,
+				  true, req->seqnum+1,
 				  IS_CONN_ENCRYPTED(req->conn)
 				  ||req->encrypted,
 				  &req->pcd)) {
@@ -1761,6 +1773,7 @@ void chain_reply(struct smb_request *req)
 	show_msg((char *)(req->chain_outbuf));
 
 	if (!srv_send_smb(smbd_server_fd(), (char *)req->chain_outbuf,
+			  true, req->seqnum+1,
 			  IS_CONN_ENCRYPTED(req->conn)||req->encrypted,
 			  &req->pcd)) {
 		exit_server_cleanly("construct_reply: srv_send_smb failed.");
@@ -1830,6 +1843,7 @@ static void smbd_server_connection_read_handler(struct smbd_server_connection *c
 	bool encrypted = false;
 	TALLOC_CTX *mem_ctx = talloc_tos();
 	NTSTATUS status;
+	uint32_t seqnum;
 
 	/* TODO: make this completely nonblocking */
 
@@ -1838,7 +1852,7 @@ static void smbd_server_connection_read_handler(struct smbd_server_connection *c
 				    0, /* timeout */
 				    &unread_bytes,
 				    &encrypted,
-				    &inbuf_len);
+				    &inbuf_len, &seqnum);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
 		goto process;
 	}
@@ -1850,7 +1864,8 @@ static void smbd_server_connection_read_handler(struct smbd_server_connection *c
 	}
 
 process:
-	process_smb(conn, inbuf, inbuf_len, unread_bytes, encrypted, NULL);
+	process_smb(conn, inbuf, inbuf_len, unread_bytes,
+		    seqnum, encrypted, NULL);
 }
 
 static void smbd_server_connection_handler(struct event_context *ev,
@@ -2015,7 +2030,8 @@ void smbd_process(void)
 		unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
 		DEBUG( 1, ("Connection denied from %s\n",
 			   client_addr(get_client_fd(),addr,sizeof(addr)) ) );
-		(void)srv_send_smb(smbd_server_fd(),(char *)buf,false, NULL);
+		(void)srv_send_smb(smbd_server_fd(),(char *)buf, false,
+				   0, false, NULL);
 		exit_server_cleanly("connection denied");
 	}
 
@@ -2039,6 +2055,10 @@ void smbd_process(void)
 			exit_server("Failed to chroot()");
 		}
 		DEBUG(0,("Changed root to %s\n", lp_rootdir()));
+	}
+
+	if (!srv_init_signing(smbd_server_conn)) {
+		exit_server("Failed to init smb_signing");
 	}
 
 	/* Setup oplocks */

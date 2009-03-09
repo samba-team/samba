@@ -9572,15 +9572,20 @@ uint32 lp_get_spoolss_state( void )
  Ensure we don't use sendfile if server smb signing is active.
 ********************************************************************/
 
-bool lp_use_sendfile(int snum)
+bool lp_use_sendfile(int snum, struct smb_signing_state *signing_state)
 {
+	bool sign_active = false;
+
 	/* Using sendfile blows the brains out of any DOS or Win9x TCP stack... JRA. */
 	if (Protocol < PROTOCOL_NT1) {
-		return False;
+		return false;
+	}
+	if (signing_state) {
+		sign_active = smb_signing_is_active(signing_state);
 	}
 	return (_lp_use_sendfile(snum) &&
 			(get_remote_arch() != RA_WIN95) &&
-			!srv_is_signing_active());
+			!sign_active);
 }
 
 /*******************************************************************
