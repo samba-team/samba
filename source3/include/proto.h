@@ -5515,6 +5515,14 @@ WERROR rpccli_spoolss_enumjobs(struct rpc_pipe_client *cli,
 			       uint32_t offered,
 			       uint32_t *count,
 			       union spoolss_JobInfo **info);
+WERROR rpccli_spoolss_enumprinterdrivers(struct rpc_pipe_client *cli,
+					 TALLOC_CTX *mem_ctx,
+					 const char *server,
+					 const char *environment,
+					 uint32_t level,
+					 uint32_t offered,
+					 uint32_t *count,
+					 union spoolss_DriverInfo **info);
 WERROR rpccli_spoolss_enum_printers(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				 char *name, uint32 flags, uint32 level,
 				 uint32 *num_printers, PRINTER_INFO_CTR *ctr);
