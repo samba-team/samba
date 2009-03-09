@@ -67,6 +67,8 @@ void request_error(struct winbindd_cli_state *state);
 void request_ok(struct winbindd_cli_state *state);
 void winbind_check_sighup(const char *lfile);
 void winbind_check_sigterm(bool in_parent);
+bool winbindd_use_idmap_cache(void);
+bool winbindd_use_cache(void);
 int main(int argc, char **argv, char **envp);
 
 /* The following definitions come from winbindd/winbindd_ads.c  */
