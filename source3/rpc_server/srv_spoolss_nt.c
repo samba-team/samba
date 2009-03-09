@@ -5451,15 +5451,6 @@ static WERROR fill_printer_driver_info6(TALLOC_CTX *mem_ctx,
 }
 
 /********************************************************************
- * fill a DRIVER_INFO_1 struct
- ********************************************************************/
-
-static void fill_printer_driver_info_1(DRIVER_INFO_1 *info, NT_PRINTER_DRIVER_INFO_LEVEL driver, const char *servername, fstring architecture)
-{
-	init_unistr( &info->name, driver.info_3->name);
-}
-
-/********************************************************************
  * construct_printer_driver_info_1
  ********************************************************************/
 
@@ -5489,53 +5480,6 @@ static WERROR construct_printer_driver_info_1(TALLOC_CTX *mem_ctx,
 	free_a_printer(&printer,2);
 
 	return result;
-}
-
-/********************************************************************
- * construct_printer_driver_info_2
- * fill a printer_info_2 struct
- ********************************************************************/
-
-static void fill_printer_driver_info_2(DRIVER_INFO_2 *info, NT_PRINTER_DRIVER_INFO_LEVEL driver, const char *servername)
-{
-	TALLOC_CTX *ctx = talloc_tos();
-	char *temp = NULL;
-	const char *cservername = canon_servername(servername);
-
-	info->version=driver.info_3->cversion;
-
-	init_unistr( &info->name, driver.info_3->name );
-	init_unistr( &info->architecture, driver.info_3->environment );
-
-	if (strlen(driver.info_3->driverpath)) {
-		temp = talloc_asprintf(ctx,
-				"\\\\%s%s",
-				cservername,
-				driver.info_3->driverpath);
-		init_unistr( &info->driverpath, temp );
-	} else {
-		init_unistr( &info->driverpath, "" );
-	}
-
-	TALLOC_FREE(temp);
-	if (strlen(driver.info_3->datafile)) {
-		temp = talloc_asprintf(ctx,
-				"\\\\%s%s",
-				cservername,
-				driver.info_3->datafile);
-		init_unistr( &info->datafile, temp );
-	} else
-		init_unistr( &info->datafile, "" );
-
-	TALLOC_FREE(temp);
-	if (strlen(driver.info_3->configfile)) {
-		temp = talloc_asprintf(ctx,
-				"\\\\%s%s",
-				cservername,
-				driver.info_3->configfile);
-		init_unistr( &info->configfile, temp );
-	} else
-		init_unistr( &info->configfile, "" );
 }
 
 /********************************************************************
@@ -5650,71 +5594,6 @@ static uint32 init_unistr_array(uint16 **uni_array, fstring *char_array, const c
  * fill a printer_info_3 struct
  ********************************************************************/
 
-static void fill_printer_driver_info_3(DRIVER_INFO_3 *info, NT_PRINTER_DRIVER_INFO_LEVEL driver, const char *servername)
-{
-	char *temp = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
-	const char *cservername = canon_servername(servername);
-
-	ZERO_STRUCTP(info);
-
-	info->version=driver.info_3->cversion;
-
-	init_unistr( &info->name, driver.info_3->name );
-	init_unistr( &info->architecture, driver.info_3->environment );
-
-	if (strlen(driver.info_3->driverpath)) {
-		temp = talloc_asprintf(ctx,
-				"\\\\%s%s",
-				cservername,
-				driver.info_3->driverpath);
-		init_unistr( &info->driverpath, temp );
-	} else
-		init_unistr( &info->driverpath, "" );
-
-	TALLOC_FREE(temp);
-	if (strlen(driver.info_3->datafile)) {
-		temp = talloc_asprintf(ctx,
-				"\\\\%s%s",
-				cservername,
-				driver.info_3->datafile);
-		init_unistr( &info->datafile, temp );
-	} else
-		init_unistr( &info->datafile, "" );
-
-	TALLOC_FREE(temp);
-	if (strlen(driver.info_3->configfile)) {
-		temp = talloc_asprintf(ctx,
-				"\\\\%s%s",
-				cservername,
-				driver.info_3->configfile);
-		init_unistr( &info->configfile, temp );
-	} else
-		init_unistr( &info->configfile, "" );
-
-	TALLOC_FREE(temp);
-	if (strlen(driver.info_3->helpfile)) {
-		temp = talloc_asprintf(ctx,
-				"\\\\%s%s",
-				cservername,
-				driver.info_3->helpfile);
-		init_unistr( &info->helpfile, temp );
-	} else
-		init_unistr( &info->helpfile, "" );
-
-	TALLOC_FREE(temp);
-	init_unistr( &info->monitorname, driver.info_3->monitorname );
-	init_unistr( &info->defaultdatatype, driver.info_3->defaultdatatype );
-
-	info->dependentfiles=NULL;
-	init_unistr_array(&info->dependentfiles, driver.info_3->dependentfiles, cservername);
-}
-
-/********************************************************************
- * construct_printer_info_3
- * fill a printer_info_3 struct
- ********************************************************************/
-
 static WERROR construct_printer_driver_info_3(TALLOC_CTX *mem_ctx,
 					      struct spoolss_DriverInfo3 *r,
 					      int snum,
@@ -5776,87 +5655,6 @@ static WERROR construct_printer_driver_info_3(TALLOC_CTX *mem_ctx,
 
 /********************************************************************
  * construct_printer_info_6
- * fill a printer_info_6 struct - we know that driver is really level 3. This sucks. JRA.
- ********************************************************************/
-
-static void fill_printer_driver_info_6(DRIVER_INFO_6 *info, NT_PRINTER_DRIVER_INFO_LEVEL driver, const char *servername)
-{
-	char *temp = NULL;
-	fstring nullstr;
-	TALLOC_CTX *ctx = talloc_tos();
-	const char *cservername = canon_servername(servername);
-
-	ZERO_STRUCTP(info);
-	memset(&nullstr, '\0', sizeof(fstring));
-
-	info->version=driver.info_3->cversion;
-
-	init_unistr( &info->name, driver.info_3->name );
-	init_unistr( &info->architecture, driver.info_3->environment );
-
-	if (strlen(driver.info_3->driverpath)) {
-		temp = talloc_asprintf(ctx,
-				"\\\\%s%s",
-				cservername,
-				driver.info_3->driverpath);
-		init_unistr( &info->driverpath, temp );
-	} else
-		init_unistr( &info->driverpath, "" );
-
-	TALLOC_FREE(temp);
-	if (strlen(driver.info_3->datafile)) {
-		temp = talloc_asprintf(ctx,
-				"\\\\%s%s",
-				cservername,
-				driver.info_3->datafile);
-		init_unistr( &info->datafile, temp );
-	} else
-		init_unistr( &info->datafile, "" );
-
-	TALLOC_FREE(temp);
-	if (strlen(driver.info_3->configfile)) {
-		temp = talloc_asprintf(ctx,
-				"\\\\%s%s",
-				cservername,
-				driver.info_3->configfile);
-		init_unistr( &info->configfile, temp );
-	} else
-		init_unistr( &info->configfile, "" );
-
-	TALLOC_FREE(temp);
-	if (strlen(driver.info_3->helpfile)) {
-		temp = talloc_asprintf(ctx,
-				"\\\\%s%s",
-				cservername,
-				driver.info_3->helpfile);
-		init_unistr( &info->helpfile, temp );
-	} else
-		init_unistr( &info->helpfile, "" );
-
-	TALLOC_FREE(temp);
-	init_unistr( &info->monitorname, driver.info_3->monitorname );
-	init_unistr( &info->defaultdatatype, driver.info_3->defaultdatatype );
-
-	info->dependentfiles = NULL;
-	init_unistr_array( &info->dependentfiles, driver.info_3->dependentfiles, servername );
-
-	info->previousdrivernames=NULL;
-	init_unistr_array(&info->previousdrivernames, &nullstr, servername);
-
-	info->driver_date=0;
-
-	info->padding=0;
-	info->driver_version_low=0;
-	info->driver_version_high=0;
-
-	init_unistr( &info->mfgname, "");
-	init_unistr( &info->oem_url, "");
-	init_unistr( &info->hardware_id, "");
-	init_unistr( &info->provider, "");
-}
-
-/********************************************************************
- * construct_printer_info_6
  * fill a printer_info_6 struct
  ********************************************************************/
 
@@ -5911,22 +5709,6 @@ static WERROR construct_printer_driver_info_6(TALLOC_CTX *mem_ctx,
 	free_a_printer_driver(driver, 3);
 
 	return status;
-}
-
-/****************************************************************************
-****************************************************************************/
-
-static void free_printer_driver_info_3(DRIVER_INFO_3 *info)
-{
-	SAFE_FREE(info->dependentfiles);
-}
-
-/****************************************************************************
-****************************************************************************/
-
-static void free_printer_driver_info_6(DRIVER_INFO_6 *info)
-{
-	SAFE_FREE(info->dependentfiles);
 }
 
 /****************************************************************
