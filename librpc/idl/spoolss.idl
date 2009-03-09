@@ -116,7 +116,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		JOB_STATUS_COMPLETE		= 0x00001000
 	} spoolss_JobStatus;
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		[relative] nstring *printername;
 		[relative] nstring *servername;
 		uint32 cjobs;
@@ -248,7 +248,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 					   PRINTER_ENUM_ICON7 |
 					   PRINTER_ENUM_ICON8); /* 0x00ff0000 */
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		spoolss_EnumPrinterFlags flags;
 		[relative] nstring *name;
 		[relative] nstring *description;
@@ -274,7 +274,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		PRINTER_ATTRIBUTE_TS			= 0x00008000
 	} spoolss_PrinterAttributes;
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		[relative] nstring *servername;
 		[relative] nstring *printername;
 		[relative] nstring *sharename;
@@ -298,17 +298,17 @@ import "misc.idl", "security.idl", "winreg.idl";
 		uint32 averageppm;
 	} spoolss_PrinterInfo2;
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		[relative,subcontext(0)] security_descriptor *secdesc;
 	} spoolss_PrinterInfo3;
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		[relative] nstring *printername;
 		[relative] nstring *servername;
 		spoolss_PrinterAttributes attributes;
 	} spoolss_PrinterInfo4;
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		[relative] nstring *printername;
 		[relative] nstring *portname;
 		spoolss_PrinterAttributes attributes;
@@ -316,7 +316,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		uint32 transmission_retry_timeout;
 	} spoolss_PrinterInfo5;
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		spoolss_PrinterStatus status;
 	} spoolss_PrinterInfo6;
 
@@ -328,7 +328,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		DSPRINT_PENDING		= 0x80000000
 	} spoolss_DsPrintAction;
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		[relative] nstring *guid; /* text form of printer guid */
 		spoolss_DsPrintAction action;
 	} spoolss_PrinterInfo7;
@@ -337,7 +337,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[relative,subcontext(0)] spoolss_DeviceMode *devmode;
 	} spoolss_DeviceModeInfo;
 
-	typedef [nodiscriminant,relative_base,public] union {
+	typedef [nodiscriminant,relative_base,public,gensize] union {
 		[case(0)] spoolss_PrinterInfo0 info0;
 		[case(1)] spoolss_PrinterInfo1 info1;
 		[case(2)] spoolss_PrinterInfo2 info2;
