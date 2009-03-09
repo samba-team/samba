@@ -386,18 +386,6 @@ static uint32 size_of_device_mode(DEVICEMODE *devmode)
 }
 
 /*******************************************************************
- * return the length of a uint32 (obvious, but the code is clean)
- ********************************************************************/
-
-static uint32 size_of_systemtime(SYSTEMTIME *systime)
-{
-	if (systime==NULL)
-		return (4);
-	else 
-		return (sizeof(SYSTEMTIME) +4);
-}
-
-/*******************************************************************
  Parse a DEVMODE structure and its relative pointer.
 ********************************************************************/
 
@@ -979,117 +967,6 @@ bool smb_io_printer_driver_info_6(const char *desc, RPC_BUFFER *buffer, DRIVER_I
 }
 
 /*******************************************************************
- Parse a JOB_INFO_1 structure.
-********************************************************************/  
-
-bool smb_io_job_info_1(const char *desc, RPC_BUFFER *buffer, JOB_INFO_1 *info, int depth)
-{
-	prs_struct *ps=&buffer->prs;
-
-	prs_debug(ps, depth, desc, "smb_io_job_info_1");
-	depth++;	
-	
-	buffer->struct_start=prs_offset(ps);
-
-	if (!prs_uint32("jobid", ps, depth, &info->jobid))
-		return False;
-	if (!smb_io_relstr("printername", buffer, depth, &info->printername))
-		return False;
-	if (!smb_io_relstr("machinename", buffer, depth, &info->machinename))
-		return False;
-	if (!smb_io_relstr("username", buffer, depth, &info->username))
-		return False;
-	if (!smb_io_relstr("document", buffer, depth, &info->document))
-		return False;
-	if (!smb_io_relstr("datatype", buffer, depth, &info->datatype))
-		return False;
-	if (!smb_io_relstr("text_status", buffer, depth, &info->text_status))
-		return False;
-	if (!prs_uint32("status", ps, depth, &info->status))
-		return False;
-	if (!prs_uint32("priority", ps, depth, &info->priority))
-		return False;
-	if (!prs_uint32("position", ps, depth, &info->position))
-		return False;
-	if (!prs_uint32("totalpages", ps, depth, &info->totalpages))
-		return False;
-	if (!prs_uint32("pagesprinted", ps, depth, &info->pagesprinted))
-		return False;
-	if (!spoolss_io_system_time("submitted", ps, depth, &info->submitted))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
- Parse a JOB_INFO_2 structure.
-********************************************************************/  
-
-bool smb_io_job_info_2(const char *desc, RPC_BUFFER *buffer, JOB_INFO_2 *info, int depth)
-{	
-	uint32 pipo=0;
-	prs_struct *ps=&buffer->prs;
-	
-	prs_debug(ps, depth, desc, "smb_io_job_info_2");
-	depth++;	
-
-	buffer->struct_start=prs_offset(ps);
-	
-	if (!prs_uint32("jobid",ps, depth, &info->jobid))
-		return False;
-	if (!smb_io_relstr("printername", buffer, depth, &info->printername))
-		return False;
-	if (!smb_io_relstr("machinename", buffer, depth, &info->machinename))
-		return False;
-	if (!smb_io_relstr("username", buffer, depth, &info->username))
-		return False;
-	if (!smb_io_relstr("document", buffer, depth, &info->document))
-		return False;
-	if (!smb_io_relstr("notifyname", buffer, depth, &info->notifyname))
-		return False;
-	if (!smb_io_relstr("datatype", buffer, depth, &info->datatype))
-		return False;
-
-	if (!smb_io_relstr("printprocessor", buffer, depth, &info->printprocessor))
-		return False;
-	if (!smb_io_relstr("parameters", buffer, depth, &info->parameters))
-		return False;
-	if (!smb_io_relstr("drivername", buffer, depth, &info->drivername))
-		return False;
-	if (!smb_io_reldevmode("devmode", buffer, depth, &info->devmode))
-		return False;
-	if (!smb_io_relstr("text_status", buffer, depth, &info->text_status))
-		return False;
-
-/*	SEC_DESC sec_desc;*/
-	if (!prs_uint32("Hack! sec desc", ps, depth, &pipo))
-		return False;
-
-	if (!prs_uint32("status",ps, depth, &info->status))
-		return False;
-	if (!prs_uint32("priority",ps, depth, &info->priority))
-		return False;
-	if (!prs_uint32("position",ps, depth, &info->position))	
-		return False;
-	if (!prs_uint32("starttime",ps, depth, &info->starttime))
-		return False;
-	if (!prs_uint32("untiltime",ps, depth, &info->untiltime))	
-		return False;
-	if (!prs_uint32("totalpages",ps, depth, &info->totalpages))
-		return False;
-	if (!prs_uint32("size",ps, depth, &info->size))
-		return False;
-	if (!spoolss_io_system_time("submitted", ps, depth, &info->submitted) )
-		return False;
-	if (!prs_uint32("timeelapsed",ps, depth, &info->timeelapsed))
-		return False;
-	if (!prs_uint32("pagesprinted",ps, depth, &info->pagesprinted))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
 return the size required by a struct in the stream
 ********************************************************************/  
 
@@ -1384,67 +1261,6 @@ uint32 spoolss_size_printer_driver_info_6(DRIVER_INFO_6 *info)
 /*******************************************************************
 return the size required by a struct in the stream
 ********************************************************************/  
-
-uint32 spoolss_size_job_info_1(JOB_INFO_1 *info)
-{
-	int size=0;
-	size+=size_of_uint32( &info->jobid );
-	size+=size_of_relative_string( &info->printername );
-	size+=size_of_relative_string( &info->machinename );
-	size+=size_of_relative_string( &info->username );
-	size+=size_of_relative_string( &info->document );
-	size+=size_of_relative_string( &info->datatype );
-	size+=size_of_relative_string( &info->text_status );
-	size+=size_of_uint32( &info->status );
-	size+=size_of_uint32( &info->priority );
-	size+=size_of_uint32( &info->position );
-	size+=size_of_uint32( &info->totalpages );
-	size+=size_of_uint32( &info->pagesprinted );
-	size+=size_of_systemtime( &info->submitted );
-
-	return size;
-}
-
-/*******************************************************************
-return the size required by a struct in the stream
-********************************************************************/  
-
-uint32 spoolss_size_job_info_2(JOB_INFO_2 *info)
-{
-	int size=0;
-
-	size+=4; /* size of sec desc ptr */
-
-	size+=size_of_uint32( &info->jobid );
-	size+=size_of_relative_string( &info->printername );
-	size+=size_of_relative_string( &info->machinename );
-	size+=size_of_relative_string( &info->username );
-	size+=size_of_relative_string( &info->document );
-	size+=size_of_relative_string( &info->notifyname );
-	size+=size_of_relative_string( &info->datatype );
-	size+=size_of_relative_string( &info->printprocessor );
-	size+=size_of_relative_string( &info->parameters );
-	size+=size_of_relative_string( &info->drivername );
-	size+=size_of_device_mode( info->devmode );
-	size+=size_of_relative_string( &info->text_status );
-/*	SEC_DESC sec_desc;*/
-	size+=size_of_uint32( &info->status );
-	size+=size_of_uint32( &info->priority );
-	size+=size_of_uint32( &info->position );
-	size+=size_of_uint32( &info->starttime );
-	size+=size_of_uint32( &info->untiltime );
-	size+=size_of_uint32( &info->totalpages );
-	size+=size_of_uint32( &info->size );
-	size+=size_of_systemtime( &info->submitted );
-	size+=size_of_uint32( &info->timeelapsed );
-	size+=size_of_uint32( &info->pagesprinted );
-
-	return size;
-}
-
-/*******************************************************************
-return the size required by a struct in the stream
-********************************************************************/  
 uint32 spoolss_size_printer_enum_values(PRINTER_ENUM_VALUES *p)
 {
 	uint32 	size = 0; 
@@ -1677,68 +1493,6 @@ bool spoolss_io_q_getprinter(const char *desc, SPOOL_Q_GETPRINTER *q_u, prs_stru
 
 	if (!prs_align(ps))
 		return False;
-	if (!prs_uint32("offered", ps, depth, &q_u->offered))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-********************************************************************/  
-
-bool spoolss_io_r_enumjobs(const char *desc, SPOOL_R_ENUMJOBS *r_u, prs_struct *ps, int depth)
-{		
-	prs_debug(ps, depth, desc, "spoolss_io_r_enumjobs");
-	depth++;
-
-	if (!prs_align(ps))
-		return False;
-		
-	if (!prs_rpcbuffer_p("", ps, depth, &r_u->buffer))
-		return False;
-
-	if (!prs_align(ps))
-		return False;
-		
-	if (!prs_uint32("needed", ps, depth, &r_u->needed))
-		return False;
-		
-	if (!prs_uint32("returned", ps, depth, &r_u->returned))
-		return False;
-		
-	if (!prs_werror("status", ps, depth, &r_u->status))
-		return False;
-
-	return True;		
-}
-
-/*******************************************************************
-********************************************************************/  
-
-bool spoolss_io_q_enumjobs(const char *desc, SPOOL_Q_ENUMJOBS *q_u, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "spoolss_io_q_enumjobs");
-	depth++;
-
-	if (!prs_align(ps))
-		return False;
-
-	if (!smb_io_pol_hnd("printer handle",&q_u->handle, ps, depth))
-		return False;
-		
-	if (!prs_uint32("firstjob", ps, depth, &q_u->firstjob))
-		return False;
-	if (!prs_uint32("numofjobs", ps, depth, &q_u->numofjobs))
-		return False;
-	if (!prs_uint32("level", ps, depth, &q_u->level))
-		return False;
-
-	if (!prs_rpcbuffer_p("", ps, depth, &q_u->buffer))
-		return False;	
-
-	if(!prs_align(ps))
-		return False;
-
 	if (!prs_uint32("offered", ps, depth, &q_u->offered))
 		return False;
 
@@ -2049,64 +1803,6 @@ bool spoolss_io_r_setprinterdata(const char *desc, SPOOL_R_SETPRINTERDATA *r_u, 
 	return True;
 }
 
-/*******************************************************************
- Parse a SPOOL_R_GETJOB structure.
-********************************************************************/  
-
-bool spoolss_io_r_getjob(const char *desc, SPOOL_R_GETJOB *r_u, prs_struct *ps, int depth)
-{		
-	prs_debug(ps, depth, desc, "spoolss_io_r_getjob");
-	depth++;
-
-	if (!prs_align(ps))
-		return False;
-		
-	if (!prs_rpcbuffer_p("", ps, depth, &r_u->buffer))
-		return False;
-
-	if (!prs_align(ps))
-		return False;
-		
-	if (!prs_uint32("needed", ps, depth, &r_u->needed))
-		return False;
-		
-	if (!prs_werror("status", ps, depth, &r_u->status))
-		return False;
-
-	return True;		
-}
-
-/*******************************************************************
- Parse a SPOOL_Q_GETJOB structure.
-********************************************************************/  
-
-bool spoolss_io_q_getjob(const char *desc, SPOOL_Q_GETJOB *q_u, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_pol_hnd("printer handle",&q_u->handle,ps,depth))
-		return False;
-	if(!prs_uint32("jobid", ps, depth, &q_u->jobid))
-		return False;
-	if(!prs_uint32("level", ps, depth, &q_u->level))
-		return False;
-	
-	if(!prs_rpcbuffer_p("", ps, depth, &q_u->buffer))
-		return False;
-
-	if(!prs_align(ps))
-		return False;
-	
-	if(!prs_uint32("offered", ps, depth, &q_u->offered))
-		return False;
-
-	return True;
-}
-
 void free_devmode(DEVICEMODE *devmode)
 {
 	if (devmode!=NULL) {
@@ -2152,12 +1848,6 @@ void free_printer_info_6(PRINTER_INFO_6 *printer)
 void free_printer_info_7(PRINTER_INFO_7 *printer)
 {
 	SAFE_FREE(printer);
-}
-
-void free_job_info_2(JOB_INFO_2 *job)
-{
-    if (job!=NULL)
-        free_devmode(job->devmode);
 }
 
 /*******************************************************************
