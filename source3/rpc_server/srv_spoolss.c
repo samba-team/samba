@@ -252,27 +252,7 @@ static bool api_spoolss_getprinter(pipes_struct *p)
 
 static bool api_spoolss_getprinterdriver2(pipes_struct *p)
 {
-	SPOOL_Q_GETPRINTERDRIVER2 q_u;
-	SPOOL_R_GETPRINTERDRIVER2 r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!spoolss_io_q_getprinterdriver2("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_getprinterdriver2: unable to unmarshall SPOOL_Q_GETPRINTERDRIVER2.\n"));
-		return False;
-	}
-
-	r_u.status = _spoolss_getprinterdriver2(p, &q_u, &r_u);
-	
-	if(!spoolss_io_r_getprinterdriver2("",&r_u,rdata,0)) {
-		DEBUG(0,("spoolss_io_r_getprinterdriver2: unable to marshall SPOOL_R_GETPRINTERDRIVER2.\n"));
-		return False;
-	}
-	
-	return True;
+	return proxy_spoolss_call(p, NDR_SPOOLSS_GETPRINTERDRIVER2);
 }
 
 /********************************************************************
