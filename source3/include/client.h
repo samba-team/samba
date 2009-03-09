@@ -104,7 +104,7 @@ struct rpc_cli_transport {
 					uint32_t max_rdata_len,
 					void *priv);
 	/**
-	 * Get the result from the read_send operation.
+	 * Get the result from the trans_send operation.
 	 */
 	NTSTATUS (*trans_recv)(struct async_req *req, TALLOC_CTX *mem_ctx,
 			       uint8_t **prdata, uint32_t *prdata_len);

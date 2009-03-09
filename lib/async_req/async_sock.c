@@ -379,11 +379,13 @@ struct writev_state {
 	size_t total_size;
 };
 
+static void writev_trigger(struct tevent_req *req, void *private_data);
 static void writev_handler(struct tevent_context *ev, struct tevent_fd *fde,
 			   uint16_t flags, void *private_data);
 
 struct tevent_req *writev_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			       int fd, struct iovec *iov, int count)
+			       struct tevent_queue *queue, int fd,
+			       struct iovec *iov, int count)
 {
 	struct tevent_req *result;
 	struct writev_state *state;
@@ -403,16 +405,40 @@ struct tevent_req *writev_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		goto fail;
 	}
 
+	/*
+	 * This if () should go away once our callers are converted to always
+	 * pass in a queue.
+	 */
+
+	if (queue != NULL) {
+		if (!tevent_queue_add(queue, ev, result, writev_trigger,
+				      NULL)) {
+			goto fail;
+		}
+		return result;
+	}
+
 	fde = tevent_add_fd(ev, state, fd, TEVENT_FD_WRITE, writev_handler,
 			    result);
 	if (fde == NULL) {
 		goto fail;
 	}
 	return result;
-
  fail:
 	TALLOC_FREE(result);
 	return NULL;
+}
+
+static void writev_trigger(struct tevent_req *req, void *private_data)
+{
+	struct writev_state *state = tevent_req_data(req, struct writev_state);
+	struct tevent_fd *fde;
+
+	fde = tevent_add_fd(state->ev, state, state->fd, TEVENT_FD_WRITE,
+			    writev_handler, req);
+	if (fde == NULL) {
+		tevent_req_error(req, ENOMEM);
+	}
 }
 
 static void writev_handler(struct tevent_context *ev, struct tevent_fd *fde,

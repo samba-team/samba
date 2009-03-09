@@ -104,13 +104,14 @@ SAMBA4SHAREDDIR="$SAMBA4BINDIR/shared"
 export SAMBA4SHAREDDIR
 export SMBTORTURE4
 
-if test x"$LD_LIBRARY_PATH" != x""; then
-	LD_LIBRARY_PATH="$BINDIR:$SAMBA4SHAREDDIR:$LD_LIBRARY_PATH"
-else
-	LD_LIBRARY_PATH="$BINDIR:$SAMBA4SHAREDDIR"
+if [ -z "$LIB_PATH_VAR" ] ; then
+	echo "Warning: LIB_PATH_VAR not set. Using best guess LD_LIBRARY_PATH." >&2
+	LIB_PATH_VAR=LD_LIBRARY_PATH
+	export LIB_PATH_VAR
 fi
-echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
-export LD_LIBRARY_PATH
+
+eval $LIB_PATH_VAR=$BINDIR:$SAMBA4SHAREDDIR:\$$LIB_PATH_VAR
+export $LIB_PATH_VAR
 
 ##
 ## verify that we were built with --enable-socket-wrapper

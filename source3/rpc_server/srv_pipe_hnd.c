@@ -1243,7 +1243,8 @@ static void np_write_trigger(struct async_req *req)
 		req->private_data, struct np_write_state);
 	struct tevent_req *subreq;
 
-	subreq = writev_send(state, state->ev, state->p->fd, &state->iov, 1);
+	subreq = writev_send(state, state->ev, NULL, state->p->fd,
+			     &state->iov, 1);
 	if (async_req_nomem(subreq, req)) {
 		return;
 	}
