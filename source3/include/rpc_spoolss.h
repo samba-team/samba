@@ -606,95 +606,6 @@ typedef struct systemtime
 }
 SYSTEMTIME;
 
-typedef struct s_job_info_1
-{
-	uint32 jobid;
-	UNISTR printername;
-	UNISTR machinename;
-	UNISTR username;
-	UNISTR document;
-	UNISTR datatype;
-	UNISTR text_status;
-	uint32 status;
-	uint32 priority;
-	uint32 position;
-	uint32 totalpages;
-	uint32 pagesprinted;
-	SYSTEMTIME submitted;
-}
-JOB_INFO_1;
-
-typedef struct s_job_info_2
-{
-	uint32 jobid;
-	UNISTR printername;
-	UNISTR machinename;
-	UNISTR username;
-	UNISTR document;
-	UNISTR notifyname;
-	UNISTR datatype;
-	UNISTR printprocessor;
-	UNISTR parameters;
-	UNISTR drivername;
-	DEVICEMODE *devmode;
-	UNISTR text_status;
-/*	SEC_DESC sec_desc;*/
-	uint32 status;
-	uint32 priority;
-	uint32 position;
-	uint32 starttime;
-	uint32 untiltime;
-	uint32 totalpages;
-	uint32 size;
-	SYSTEMTIME submitted;
-	uint32 timeelapsed;
-	uint32 pagesprinted;
-}
-JOB_INFO_2;
-
-typedef struct spool_q_enumjobs
-{
-	POLICY_HND handle;
-	uint32 firstjob;
-	uint32 numofjobs;
-	uint32 level;
-	RPC_BUFFER *buffer;
-	uint32 offered;
-}
-SPOOL_Q_ENUMJOBS;
-
-typedef struct job_info_ctr_info
-{
-	union
-	{
-		JOB_INFO_1 *job_info_1;
-		JOB_INFO_2 *job_info_2;
-		void *info;
-	} job;
-
-} JOB_INFO_CTR;
-
-typedef struct spool_r_enumjobs
-{
-	RPC_BUFFER *buffer;
-	uint32 needed;
-	uint32 returned;
-	WERROR status;
-}
-SPOOL_R_ENUMJOBS;
-
-typedef struct job_info_info
-{
-	union
-	{
-		JOB_INFO_1 job_info_1;
-		JOB_INFO_2 job_info_2;
-	}
-	job;
-
-}
-JOB_INFO;
-
 typedef struct spool_q_enumprinterdrivers
 {
 	uint32 name_ptr;
@@ -771,37 +682,6 @@ typedef struct _form
 	UNISTR2 name;
 }
 FORM;
-
-typedef struct spool_q_getjob
-{
-	POLICY_HND handle;
-	uint32 jobid;
-	uint32 level;
-	RPC_BUFFER *buffer;
-	uint32 offered;
-}
-SPOOL_Q_GETJOB;
-
-typedef struct pjob_info_info
-{
-	union
-	{
-		JOB_INFO_1 *job_info_1;
-		JOB_INFO_2 *job_info_2;
-		void *info;
-	}
-	job;
-
-}
-PJOB_INFO;
-
-typedef struct spool_r_getjob
-{
-	RPC_BUFFER *buffer;
-	uint32 needed;
-	WERROR status;
-}
-SPOOL_R_GETJOB;
 
 typedef struct spool_q_enumprinterkey
 {
