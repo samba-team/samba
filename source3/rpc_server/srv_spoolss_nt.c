@@ -9326,86 +9326,61 @@ WERROR _spoolss_EnumMonitors(pipes_struct *p,
 /****************************************************************************
 ****************************************************************************/
 
-static WERROR getjob_level_1(print_queue_struct **queue, int count, int snum,
-                             NT_PRINTER_INFO_LEVEL *ntprinter,
-                             uint32 jobid, RPC_BUFFER *buffer, uint32 offered,
-			     uint32 *needed)
+static WERROR getjob_level_1(TALLOC_CTX *mem_ctx,
+			     const print_queue_struct *queue,
+			     int count, int snum,
+			     const NT_PRINTER_INFO_LEVEL *ntprinter,
+			     uint32_t jobid,
+			     struct spoolss_JobInfo1 *r)
 {
-	int i=0;
-	bool found=False;
-	JOB_INFO_1 *info_1=NULL;
-	WERROR result = WERR_OK;
+	int i = 0;
+	bool found = false;
 
-	info_1=SMB_MALLOC_P(JOB_INFO_1);
-
-	if (info_1 == NULL) {
-		return WERR_NOMEM;
+	for (i=0; i<count && found == false; i++) {
+		if (queue[i].job == (int)jobid) {
+			found = true;
+		}
 	}
 
-	for (i=0; i<count && found==False; i++) {
-		if ((*queue)[i].job==(int)jobid)
-			found=True;
-	}
-
-	if (found==False) {
-		SAFE_FREE(info_1);
+	if (found == false) {
 		/* NT treats not found as bad param... yet another bad choice */
 		return WERR_INVALID_PARAM;
 	}
 
-	fill_job_info_1( info_1, &((*queue)[i-1]), i, snum, ntprinter );
-
-	*needed += spoolss_size_job_info_1(info_1);
-
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
-	}
-
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
-	}
-
-	smb_io_job_info_1("", buffer, info_1, 0);
-
-out:
-	SAFE_FREE(info_1);
-
-	return result;
+	return fill_job_info1(mem_ctx,
+			      r,
+			      &queue[i-1],
+			      i,
+			      snum,
+			      ntprinter);
 }
 
 /****************************************************************************
 ****************************************************************************/
 
-static WERROR getjob_level_2(print_queue_struct **queue, int count, int snum,
-                             NT_PRINTER_INFO_LEVEL *ntprinter,
-                             uint32 jobid, RPC_BUFFER *buffer, uint32 offered,
-			     uint32 *needed)
+static WERROR getjob_level_2(TALLOC_CTX *mem_ctx,
+			     const print_queue_struct *queue,
+			     int count, int snum,
+			     const NT_PRINTER_INFO_LEVEL *ntprinter,
+			     uint32_t jobid,
+			     struct spoolss_JobInfo2 *r)
 {
-	int 		i = 0;
-	bool 		found = False;
-	JOB_INFO_2 	*info_2;
-	WERROR 		result;
-	DEVICEMODE 	*devmode = NULL;
-	NT_DEVICEMODE	*nt_devmode = NULL;
+	int i = 0;
+	bool found = false;
+	struct spoolss_DeviceMode *devmode;
+	NT_DEVICEMODE *nt_devmode;
+	WERROR result;
 
-	if ( !(info_2=SMB_MALLOC_P(JOB_INFO_2)) )
-		return WERR_NOMEM;
-
-	ZERO_STRUCTP(info_2);
-
-	for ( i=0; i<count && found==False; i++ )
-	{
-		if ((*queue)[i].job == (int)jobid)
-			found = True;
+	for (i=0; i<count && found == false; i++) {
+		if (queue[i].job == (int)jobid) {
+			found = true;
+		}
 	}
 
-	if ( !found ) {
+	if (found == false) {
 		/* NT treats not found as bad param... yet another bad
 		   choice */
-		result = WERR_INVALID_PARAM;
-		goto done;
+		return WERR_INVALID_PARAM;
 	}
 
 	/*
@@ -9414,54 +9389,36 @@ static WERROR getjob_level_2(print_queue_struct **queue, int count, int snum,
 	 *  a failure condition
 	 */
 
-	if ( !(nt_devmode=print_job_devmode( lp_const_servicename(snum), jobid )) )
-		devmode = construct_dev_mode(lp_const_servicename(snum));
-	else {
-		if ((devmode = SMB_MALLOC_P(DEVICEMODE)) != NULL) {
-			ZERO_STRUCTP( devmode );
-			convert_nt_devicemode( devmode, nt_devmode );
+	nt_devmode = print_job_devmode(lp_const_servicename(snum), jobid);
+	if (nt_devmode) {
+		devmode = TALLOC_ZERO_P(mem_ctx, struct spoolss_DeviceMode);
+		W_ERROR_HAVE_NO_MEMORY(devmode);
+		result = convert_nt_devicemode_new(devmode, devmode, nt_devmode);
+		if (!W_ERROR_IS_OK(result)) {
+			return result;
 		}
+	} else {
+		devmode = construct_dev_mode_new(mem_ctx, lp_const_servicename(snum));
+		W_ERROR_HAVE_NO_MEMORY(devmode);
 	}
 
-	fill_job_info_2(info_2, &((*queue)[i-1]), i, snum, ntprinter, devmode);
-
-	*needed += spoolss_size_job_info_2(info_2);
-
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto done;
-	}
-
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto done;
-	}
-
-	smb_io_job_info_2("", buffer, info_2, 0);
-
-	result = WERR_OK;
-
- done:
-	/* Cleanup allocated memory */
-
-	free_job_info_2(info_2);	/* Also frees devmode */
-	SAFE_FREE(info_2);
-
-	return result;
+	return fill_job_info2(mem_ctx,
+			      r,
+			      &queue[i-1],
+			      i,
+			      snum,
+			      ntprinter,
+			      devmode);
 }
 
-/****************************************************************************
-****************************************************************************/
+/****************************************************************
+ _spoolss_GetJob
+****************************************************************/
 
-WERROR _spoolss_getjob( pipes_struct *p, SPOOL_Q_GETJOB *q_u, SPOOL_R_GETJOB *r_u)
+WERROR _spoolss_GetJob(pipes_struct *p,
+		       struct spoolss_GetJob *r)
 {
-	POLICY_HND *handle = &q_u->handle;
-	uint32 jobid = q_u->jobid;
-	uint32 level = q_u->level;
-	RPC_BUFFER *buffer = NULL;
-	uint32 offered = q_u->offered;
-	uint32 *needed = &r_u->needed;
-	WERROR		wstatus = WERR_OK;
+	WERROR result = WERR_OK;
 	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
 	int snum;
 	int count;
@@ -9470,51 +9427,57 @@ WERROR _spoolss_getjob( pipes_struct *p, SPOOL_Q_GETJOB *q_u, SPOOL_R_GETJOB *r_
 
 	/* that's an [in out] buffer */
 
-	if (!q_u->buffer && (offered!=0)) {
+	if (!r->in.buffer && (r->in.offered != 0)) {
 		return WERR_INVALID_PARAM;
 	}
 
-	if (offered > MAX_RPC_DATA_SIZE) {
-		return WERR_INVALID_PARAM;
-	}
+	DEBUG(5,("_spoolss_GetJob\n"));
 
-	rpcbuf_move(q_u->buffer, &r_u->buffer);
-	buffer = r_u->buffer;
+	*r->out.needed = 0;
 
-	DEBUG(5,("spoolss_getjob\n"));
-
-	*needed = 0;
-
-	if (!get_printer_snum(p, handle, &snum, NULL))
+	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
 		return WERR_BADFID;
+	}
 
-	wstatus = get_a_printer(NULL, &ntprinter, 2, lp_servicename(snum));
-	if ( !W_ERROR_IS_OK(wstatus) )
-		return wstatus;
+	result = get_a_printer(NULL, &ntprinter, 2, lp_servicename(snum));
+	if (!W_ERROR_IS_OK(result)) {
+		return result;
+	}
 
 	count = print_queue_status(snum, &queue, &prt_status);
 
 	DEBUGADD(4,("count:[%d], prt_status:[%d], [%s]\n",
 	             count, prt_status.status, prt_status.message));
 
-	switch ( level ) {
+	switch (r->in.level) {
 	case 1:
-			wstatus = getjob_level_1(&queue, count, snum, ntprinter, jobid,
-				buffer, offered, needed);
-			break;
+		result = getjob_level_1(p->mem_ctx,
+					queue, count, snum, ntprinter,
+					r->in.job_id, &r->out.info->info1);
+		break;
 	case 2:
-			wstatus = getjob_level_2(&queue, count, snum, ntprinter, jobid,
-				buffer, offered, needed);
-			break;
+		result = getjob_level_2(p->mem_ctx,
+					queue, count, snum, ntprinter,
+					r->in.job_id, &r->out.info->info2);
+		break;
 	default:
-			wstatus = WERR_UNKNOWN_LEVEL;
-			break;
+		result = WERR_UNKNOWN_LEVEL;
+		break;
 	}
 
 	SAFE_FREE(queue);
-	free_a_printer( &ntprinter, 2 );
+	free_a_printer(&ntprinter, 2);
 
-	return wstatus;
+	if (!W_ERROR_IS_OK(result)) {
+		TALLOC_FREE(r->out.info);
+		return result;
+	}
+
+	*r->out.needed	= SPOOLSS_BUFFER_UNION(spoolss_JobInfo, NULL,
+					       r->out.info, r->in.level);
+	r->out.info	= SPOOLSS_BUFFER_OK(r->out.info, NULL);
+
+	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 }
 
 /****************************************************************
@@ -10434,17 +10397,6 @@ WERROR _spoolss_AddPrintProcessor(pipes_struct *p,
 
 WERROR _spoolss_EnumPrinters(pipes_struct *p,
 			     struct spoolss_EnumPrinters *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_GetJob
-****************************************************************/
-
-WERROR _spoolss_GetJob(pipes_struct *p,
-		       struct spoolss_GetJob *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
