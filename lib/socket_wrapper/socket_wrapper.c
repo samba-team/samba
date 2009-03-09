@@ -149,11 +149,24 @@
 /*
  * FD00::5357:5FXX
  */
-static const struct in6_addr swrap_ipv6 =
-{ { {
-0xFD,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-0x00,0x00,0x00,0x00,0x53,0x57,0x5F,0x00
-} } };
+static const struct in6_addr *swrap_ipv6(void)
+{
+	static struct in6_addr v;
+	static int initialized;
+	int ret;
+
+	if (initialized) {
+		return &v;
+	}
+	initialized = 1;
+
+	ret = inet_pton(AF_INET6, "FD00::5357:5F00", &v);
+	if (ret <= 0) {
+		abort();
+	}
+
+	return &v;
+}
 #endif
 
 static struct sockaddr *sockaddr_dup(const void *data, socklen_t len)
@@ -305,7 +318,7 @@ static int convert_un_in(const struct sockaddr_un *un, struct sockaddr *in, sock
 
 		memset(in2, 0, sizeof(*in2));
 		in2->sin6_family = AF_INET6;
-		in2->sin6_addr = swrap_ipv6;
+		in2->sin6_addr = *swrap_ipv6();
 		in2->sin6_addr.s6_addr[15] = iface;
 		in2->sin6_port = htons(prt);
 
@@ -395,7 +408,7 @@ static int convert_in_un_remote(struct socket_info *si, const struct sockaddr *i
 
 		cmp = in->sin6_addr;
 		cmp.s6_addr[15] = 0;
-		if (IN6_ARE_ADDR_EQUAL(&swrap_ipv6, &cmp)) {
+		if (IN6_ARE_ADDR_EQUAL(swrap_ipv6(), &cmp)) {
 			iface = in->sin6_addr.s6_addr[15];
 		} else {
 			errno = ENETUNREACH;
@@ -513,7 +526,7 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 		cmp.s6_addr[15] = 0;
 		if (IN6_IS_ADDR_UNSPECIFIED(&in->sin6_addr)) {
 			iface = socket_wrapper_default_iface();
-		} else if (IN6_ARE_ADDR_EQUAL(&swrap_ipv6, &cmp)) {
+		} else if (IN6_ARE_ADDR_EQUAL(swrap_ipv6(), &cmp)) {
 			iface = in->sin6_addr.s6_addr[15];
 		} else {
 			errno = EADDRNOTAVAIL;
@@ -1605,7 +1618,7 @@ static int swrap_auto_bind(struct socket_info *si, int family)
 
 		memset(&in6, 0, sizeof(in6));
 		in6.sin6_family = AF_INET6;
-		in6.sin6_addr = swrap_ipv6;
+		in6.sin6_addr = *swrap_ipv6();
 		in6.sin6_addr.s6_addr[15] = socket_wrapper_default_iface();
 		si->myname_len = sizeof(in6);
 		si->myname = sockaddr_dup(&in6, si->myname_len);
