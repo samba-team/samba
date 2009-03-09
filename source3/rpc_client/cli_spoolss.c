@@ -330,6 +330,215 @@ WERROR rpccli_spoolss_enumforms(struct rpc_pipe_client *cli,
 	return werror;
 }
 
+/**********************************************************************
+ convencience wrapper around rpccli_spoolss_EnumPrintProcessors
+**********************************************************************/
+
+WERROR rpccli_spoolss_enumprintprocessors(struct rpc_pipe_client *cli,
+					  TALLOC_CTX *mem_ctx,
+					  const char *servername,
+					  const char *environment,
+					  uint32_t level,
+					  uint32_t offered,
+					  uint32_t *count,
+					  union spoolss_PrintProcessorInfo **info)
+{
+	NTSTATUS status;
+	WERROR werror;
+	uint32_t needed;
+	DATA_BLOB buffer;
+
+	if (offered > 0) {
+		buffer = data_blob_talloc_zero(mem_ctx, offered);
+		W_ERROR_HAVE_NO_MEMORY(buffer.data);
+	}
+
+	status = rpccli_spoolss_EnumPrintProcessors(cli, mem_ctx,
+						    servername,
+						    environment,
+						    level,
+						    (offered > 0) ? &buffer : NULL,
+						    offered,
+						    count,
+						    info,
+						    &needed,
+						    &werror);
+
+	if (W_ERROR_EQUAL(werror, WERR_INSUFFICIENT_BUFFER)) {
+		offered = needed;
+		buffer = data_blob_talloc_zero(mem_ctx, needed);
+		W_ERROR_HAVE_NO_MEMORY(buffer.data);
+
+		status = rpccli_spoolss_EnumPrintProcessors(cli, mem_ctx,
+							    servername,
+							    environment,
+							    level,
+							    (offered > 0) ? &buffer : NULL,
+							    offered,
+							    count,
+							    info,
+							    &needed,
+							    &werror);
+	}
+
+	return werror;
+}
+
+/**********************************************************************
+ convencience wrapper around rpccli_spoolss_EnumPrintProcDataTypes
+**********************************************************************/
+
+WERROR rpccli_spoolss_enumprintprocessordatatypes(struct rpc_pipe_client *cli,
+						  TALLOC_CTX *mem_ctx,
+						  const char *servername,
+						  const char *print_processor_name,
+						  uint32_t level,
+						  uint32_t offered,
+						  uint32_t *count,
+						  union spoolss_PrintProcDataTypesInfo **info)
+{
+	NTSTATUS status;
+	WERROR werror;
+	uint32_t needed;
+	DATA_BLOB buffer;
+
+	if (offered > 0) {
+		buffer = data_blob_talloc_zero(mem_ctx, offered);
+		W_ERROR_HAVE_NO_MEMORY(buffer.data);
+	}
+
+	status = rpccli_spoolss_EnumPrintProcDataTypes(cli, mem_ctx,
+						       servername,
+						       print_processor_name,
+						       level,
+						       (offered > 0) ? &buffer : NULL,
+						       offered,
+						       count,
+						       info,
+						       &needed,
+						       &werror);
+
+	if (W_ERROR_EQUAL(werror, WERR_INSUFFICIENT_BUFFER)) {
+		offered = needed;
+		buffer = data_blob_talloc_zero(mem_ctx, needed);
+		W_ERROR_HAVE_NO_MEMORY(buffer.data);
+
+		status = rpccli_spoolss_EnumPrintProcDataTypes(cli, mem_ctx,
+							       servername,
+							       print_processor_name,
+							       level,
+							       (offered > 0) ? &buffer : NULL,
+							       offered,
+							       count,
+							       info,
+							       &needed,
+							       &werror);
+	}
+
+	return werror;
+}
+
+/**********************************************************************
+ convencience wrapper around rpccli_spoolss_EnumPorts
+**********************************************************************/
+
+WERROR rpccli_spoolss_enumports(struct rpc_pipe_client *cli,
+				TALLOC_CTX *mem_ctx,
+				const char *servername,
+				uint32_t level,
+				uint32_t offered,
+				uint32_t *count,
+				union spoolss_PortInfo **info)
+{
+	NTSTATUS status;
+	WERROR werror;
+	uint32_t needed;
+	DATA_BLOB buffer;
+
+	if (offered > 0) {
+		buffer = data_blob_talloc_zero(mem_ctx, offered);
+		W_ERROR_HAVE_NO_MEMORY(buffer.data);
+	}
+
+	status = rpccli_spoolss_EnumPorts(cli, mem_ctx,
+					  servername,
+					  level,
+					  (offered > 0) ? &buffer : NULL,
+					  offered,
+					  count,
+					  info,
+					  &needed,
+					  &werror);
+
+	if (W_ERROR_EQUAL(werror, WERR_INSUFFICIENT_BUFFER)) {
+		offered = needed;
+		buffer = data_blob_talloc_zero(mem_ctx, needed);
+		W_ERROR_HAVE_NO_MEMORY(buffer.data);
+
+		status = rpccli_spoolss_EnumPorts(cli, mem_ctx,
+						  servername,
+						  level,
+						  (offered > 0) ? &buffer : NULL,
+						  offered,
+						  count,
+						  info,
+						  &needed,
+						  &werror);
+	}
+
+	return werror;
+}
+
+/**********************************************************************
+ convencience wrapper around rpccli_spoolss_EnumMonitors
+**********************************************************************/
+
+WERROR rpccli_spoolss_enummonitors(struct rpc_pipe_client *cli,
+				   TALLOC_CTX *mem_ctx,
+				   const char *servername,
+				   uint32_t level,
+				   uint32_t offered,
+				   uint32_t *count,
+				   union spoolss_MonitorInfo **info)
+{
+	NTSTATUS status;
+	WERROR werror;
+	uint32_t needed;
+	DATA_BLOB buffer;
+
+	if (offered > 0) {
+		buffer = data_blob_talloc_zero(mem_ctx, offered);
+		W_ERROR_HAVE_NO_MEMORY(buffer.data);
+	}
+
+	status = rpccli_spoolss_EnumMonitors(cli, mem_ctx,
+					     servername,
+					     level,
+					     (offered > 0) ? &buffer : NULL,
+					     offered,
+					     count,
+					     info,
+					     &needed,
+					     &werror);
+
+	if (W_ERROR_EQUAL(werror, WERR_INSUFFICIENT_BUFFER)) {
+		offered = needed;
+		buffer = data_blob_talloc_zero(mem_ctx, needed);
+		W_ERROR_HAVE_NO_MEMORY(buffer.data);
+
+		status = rpccli_spoolss_EnumMonitors(cli, mem_ctx,
+						     servername,
+						     level,
+						     (offered > 0) ? &buffer : NULL,
+						     offered,
+						     count,
+						     info,
+						     &needed,
+						     &werror);
+	}
+
+	return werror;
+}
 
 /*********************************************************************
  Decode various spoolss rpc's and info levels
@@ -454,68 +663,6 @@ static bool decode_printer_info_3(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
 	for (i=0; i<returned; i++) {
 		inf[i].secdesc = NULL;
 		if (!smb_io_printer_info_3("", buffer, &inf[i], 0)) {
-			return False;
-		}
-	}
-
-	*info=inf;
-	return True;
-}
-
-/**********************************************************************
-**********************************************************************/
-
-static bool decode_port_info_1(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
-			uint32 returned, PORT_INFO_1 **info)
-{
-	uint32 i;
-	PORT_INFO_1 *inf;
-
-	if (returned) {
-		inf=TALLOC_ARRAY(mem_ctx, PORT_INFO_1, returned);
-		if (!inf) {
-			return False;
-		}
-		memset(inf, 0, returned*sizeof(PORT_INFO_1));
-	} else {
-		inf = NULL;
-	}
-
-	prs_set_offset(&buffer->prs, 0);
-
-	for (i=0; i<returned; i++) {
-		if (!smb_io_port_info_1("", buffer, &(inf[i]), 0)) {
-			return False;
-		}
-	}
-
-	*info=inf;
-	return True;
-}
-
-/**********************************************************************
-**********************************************************************/
-
-static bool decode_port_info_2(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
-			uint32 returned, PORT_INFO_2 **info)
-{
-	uint32 i;
-	PORT_INFO_2 *inf;
-
-	if (returned) {
-		inf=TALLOC_ARRAY(mem_ctx, PORT_INFO_2, returned);
-		if (!inf) {
-			return False;
-		}
-		memset(inf, 0, returned*sizeof(PORT_INFO_2));
-	} else {
-		inf = NULL;
-	}
-
-	prs_set_offset(&buffer->prs, 0);
-
-	for (i=0; i<returned; i++) {
-		if (!smb_io_port_info_2("", buffer, &(inf[i]), 0)) {
 			return False;
 		}
 	}
@@ -746,78 +893,6 @@ WERROR rpccli_spoolss_enum_printers(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	}			
 
 	*num_printers = out.returned;
-
-	return out.status;
-}
-
-/**********************************************************************
-**********************************************************************/
-
-WERROR rpccli_spoolss_enum_ports(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-			      uint32 level, uint32 *num_ports, PORT_INFO_CTR *ctr)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_ENUMPORTS in;
-        SPOOL_R_ENUMPORTS out;
-	RPC_BUFFER buffer;
-	fstring server;
-	uint32 offered;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
-        strupper_m(server);
-
-	offered = 0;
-	if (!rpcbuf_init(&buffer, offered, mem_ctx))
-		return WERR_NOMEM;
-	make_spoolss_q_enumports( &in, server, level, &buffer, offered );
-	
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_ENUMPORTS,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_enumports,
-	            spoolss_io_r_enumports, 
-	            WERR_GENERAL_FAILURE );
-		    	
-	if ( W_ERROR_EQUAL( out.status, WERR_INSUFFICIENT_BUFFER ) ) {
-		offered = out.needed;
-		
-		ZERO_STRUCT(in);
-		ZERO_STRUCT(out);
-		
-		if (!rpcbuf_init(&buffer, offered, mem_ctx))
-			return WERR_NOMEM;
-		make_spoolss_q_enumports( &in, server, level, &buffer, offered );
-
-		CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_ENUMPORTS,
-		            in, out, 
-		            qbuf, rbuf,
-		            spoolss_io_q_enumports,
-		            spoolss_io_r_enumports, 
-		            WERR_GENERAL_FAILURE );
-	}
-	
-	if ( !W_ERROR_IS_OK(out.status) )
-		return out.status;
-	
-	switch (level) {
-	case 1:
-		if (!decode_port_info_1(mem_ctx, out.buffer, out.returned, &ctr->port.info_1)) {
-			return WERR_GENERAL_FAILURE;
-		}
-		break;
-	case 2:
-		if (!decode_port_info_2(mem_ctx, out.buffer, out.returned, &ctr->port.info_2)) {
-			return WERR_GENERAL_FAILURE;
-		}
-		break;
-	default:
-		return WERR_UNKNOWN_LEVEL;
-	}
-
-	*num_ports = out.returned;
 
 	return out.status;
 }

@@ -1269,28 +1269,31 @@ static int net_sam_do_list(struct net_context *c, int argc, const char **argv,
 		}
 	}
 
-	pdb_search_destroy(search);
+	TALLOC_FREE(search);
 	return 0;
 }
 
 static int net_sam_list_users(struct net_context *c, int argc,
 			      const char **argv)
 {
-	return net_sam_do_list(c, argc, argv, pdb_search_users(ACB_NORMAL),
+	return net_sam_do_list(c, argc, argv,
+			       pdb_search_users(talloc_tos(), ACB_NORMAL),
 			       "users");
 }
 
 static int net_sam_list_groups(struct net_context *c, int argc,
 			       const char **argv)
 {
-	return net_sam_do_list(c, argc, argv, pdb_search_groups(), "groups");
+	return net_sam_do_list(c, argc, argv, pdb_search_groups(talloc_tos()),
+			       "groups");
 }
 
 static int net_sam_list_localgroups(struct net_context *c, int argc,
 				    const char **argv)
 {
 	return net_sam_do_list(c, argc, argv,
-			       pdb_search_aliases(get_global_sam_sid()),
+			       pdb_search_aliases(talloc_tos(),
+						  get_global_sam_sid()),
 			       "localgroups");
 }
 
@@ -1298,7 +1301,8 @@ static int net_sam_list_builtin(struct net_context *c, int argc,
 				const char **argv)
 {
 	return net_sam_do_list(c, argc, argv,
-			       pdb_search_aliases(&global_sid_Builtin),
+			       pdb_search_aliases(talloc_tos(),
+						  &global_sid_Builtin),
 			       "builtin");
 }
 
@@ -1306,7 +1310,7 @@ static int net_sam_list_workstations(struct net_context *c, int argc,
 				     const char **argv)
 {
 	return net_sam_do_list(c, argc, argv,
-			       pdb_search_users(ACB_WSTRUST),
+			       pdb_search_users(talloc_tos(), ACB_WSTRUST),
 			       "workstations");
 }
 

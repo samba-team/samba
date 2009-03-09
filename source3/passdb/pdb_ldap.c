@@ -4349,7 +4349,8 @@ static bool ldapsam_search_next_entry(struct pdb_search *search,
 	    !ldapsam_search_nextpage(search))
 		    return False;
 
-	result = state->ldap2displayentry(state, search->mem_ctx, state->connection->ldap_struct,
+	result = state->ldap2displayentry(state, search,
+					  state->connection->ldap_struct,
 					  state->current_entry, entry);
 
 	if (!result) {
@@ -4508,7 +4509,7 @@ static bool ldapsam_search_users(struct pdb_methods *methods,
 		(struct ldapsam_privates *)methods->private_data;
 	struct ldap_search_state *state;
 
-	state = TALLOC_P(search->mem_ctx, struct ldap_search_state);
+	state = talloc(search, struct ldap_search_state);
 	if (state == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		return False;
@@ -4525,10 +4526,10 @@ static bool ldapsam_search_users(struct pdb_methods *methods,
 		state->base = lp_ldap_suffix();
 
 	state->acct_flags = acct_flags;
-	state->base = talloc_strdup(search->mem_ctx, state->base);
+	state->base = talloc_strdup(search, state->base);
 	state->scope = LDAP_SCOPE_SUBTREE;
-	state->filter = get_ldap_filter(search->mem_ctx, "*");
-	state->attrs = talloc_attrs(search->mem_ctx, "uid", "sambaSid",
+	state->filter = get_ldap_filter(search, "*");
+	state->attrs = talloc_attrs(search, "uid", "sambaSid",
 				    "displayName", "description",
 				    "sambaAcctFlags", NULL);
 	state->attrsonly = 0;
@@ -4682,7 +4683,7 @@ static bool ldapsam_search_grouptype(struct pdb_methods *methods,
 	struct ldap_search_state *state;
 	fstring tmp;
 
-	state = TALLOC_P(search->mem_ctx, struct ldap_search_state);
+	state = talloc(search, struct ldap_search_state);
 	if (state == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		return False;
@@ -4690,15 +4691,14 @@ static bool ldapsam_search_grouptype(struct pdb_methods *methods,
 
 	state->connection = ldap_state->smbldap_state;
 
-	state->base = talloc_strdup(search->mem_ctx, lp_ldap_group_suffix());
+	state->base = talloc_strdup(search, lp_ldap_group_suffix());
 	state->connection = ldap_state->smbldap_state;
 	state->scope = LDAP_SCOPE_SUBTREE;
-	state->filter =	talloc_asprintf(search->mem_ctx,
-					"(&(objectclass=%s)"
+	state->filter =	talloc_asprintf(search, "(&(objectclass=%s)"
 					"(sambaGroupType=%d)(sambaSID=%s*))",
 					 LDAP_OBJ_GROUPMAP,
 					 type, sid_to_fstring(tmp, sid));
-	state->attrs = talloc_attrs(search->mem_ctx, "cn", "sambaSid",
+	state->attrs = talloc_attrs(search, "cn", "sambaSid",
 				    "displayName", "description",
 				    "sambaGroupType", NULL);
 	state->attrsonly = 0;

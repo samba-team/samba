@@ -1566,11 +1566,11 @@ static bool smbpasswd_search_next_entry(struct pdb_search *search,
 	entry->acct_flags = state->entries[state->current].acct_flags;
 
 	entry->account_name = talloc_strdup(
-		search->mem_ctx, state->entries[state->current].account_name);
+		search, state->entries[state->current].account_name);
 	entry->fullname = talloc_strdup(
-		search->mem_ctx, state->entries[state->current].fullname);
+		search, state->entries[state->current].fullname);
 	entry->description = talloc_strdup(
-		search->mem_ctx, state->entries[state->current].description);
+		search, state->entries[state->current].description);
 
 	if ((entry->account_name == NULL) || (entry->fullname == NULL)
 	    || (entry->description == NULL)) {
@@ -1593,8 +1593,7 @@ static bool smbpasswd_search_users(struct pdb_methods *methods,
 	struct smb_passwd *pwd;
 	FILE *fp;
 
-	search_state = TALLOC_ZERO_P(search->mem_ctx,
-				     struct smbpasswd_search_state);
+	search_state = talloc_zero(search, struct smbpasswd_search_state);
 	if (search_state == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		return false;

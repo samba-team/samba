@@ -882,12 +882,9 @@ static bool tdbsam_search_next_entry(struct pdb_search *search,
 
 	entry->acct_flags = pdb_get_acct_ctrl(user);
 	entry->rid = rid;
-	entry->account_name = talloc_strdup(
-		search->mem_ctx, pdb_get_username(user));
-	entry->fullname = talloc_strdup(
-		search->mem_ctx, pdb_get_fullname(user));
-	entry->description = talloc_strdup(
-		search->mem_ctx, pdb_get_acct_desc(user));
+	entry->account_name = talloc_strdup(search, pdb_get_username(user));
+	entry->fullname = talloc_strdup(search, pdb_get_fullname(user));
+	entry->description = talloc_strdup(search, pdb_get_acct_desc(user));
 
 	TALLOC_FREE(user);
 
@@ -912,7 +909,7 @@ static bool tdbsam_search_users(struct pdb_methods *methods,
 		return false;
 	}
 
-	state = TALLOC_ZERO_P(search->mem_ctx, struct tdbsam_search_state);
+	state = talloc_zero(search, struct tdbsam_search_state);
 	if (state == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		return false;

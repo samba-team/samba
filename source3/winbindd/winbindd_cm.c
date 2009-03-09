@@ -821,8 +821,6 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 		}
 	}
 
-	cli_setup_signing_state(*cli, Undefined);
-
 	result = cli_negprot(*cli);
 
 	if (!NT_STATUS_IS_OK(result)) {

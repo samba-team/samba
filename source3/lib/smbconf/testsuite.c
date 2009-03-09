@@ -214,7 +214,7 @@ static bool torture_smbconf_txt(void)
 	printf("TEST: init\n");
 	werr = smbconf_init_txt(mem_ctx, &conf_ctx, filename);
 	if (!W_ERROR_IS_OK(werr)) {
-		printf("FAIL: text backend\[ failed: %s\n", win_errstr(werr));
+		printf("FAIL: text backend failed: %s\n", win_errstr(werr));
 		ret = false;
 		goto done;
 	}

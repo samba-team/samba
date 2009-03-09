@@ -359,55 +359,45 @@ static WERROR cmd_spoolss_enum_printers(struct rpc_pipe_client *cli,
 /****************************************************************************
 ****************************************************************************/
 
-static void display_port_info_1(PORT_INFO_1 *i1)
+static void display_port_info_1(struct spoolss_PortInfo1 *r)
 {
-	fstring buffer;
-
-	rpcstr_pull(buffer, i1->port_name.buffer, sizeof(buffer), -1, STR_TERMINATE);
-	printf("\tPort Name:\t[%s]\n", buffer);
+	printf("\tPort Name:\t[%s]\n", r->port_name);
 }
 
 /****************************************************************************
 ****************************************************************************/
 
-static void display_port_info_2(PORT_INFO_2 *i2)
+static void display_port_info_2(struct spoolss_PortInfo2 *r)
 {
-	fstring buffer;
-
-	rpcstr_pull(buffer, i2->port_name.buffer, sizeof(buffer), -1, STR_TERMINATE);
-	printf("\tPort Name:\t[%s]\n", buffer);
-	rpcstr_pull(buffer, i2->monitor_name.buffer, sizeof(buffer), -1, STR_TERMINATE);
-
-	printf("\tMonitor Name:\t[%s]\n", buffer);
-	rpcstr_pull(buffer, i2->description.buffer, sizeof(buffer), -1, STR_TERMINATE);
-
-	printf("\tDescription:\t[%s]\n", buffer);
+	printf("\tPort Name:\t[%s]\n", r->port_name);
+	printf("\tMonitor Name:\t[%s]\n", r->monitor_name);
+	printf("\tDescription:\t[%s]\n", r->description);
 	printf("\tPort Type:\t" );
-	if ( i2->port_type ) {
+	if (r->port_type) {
 		int comma = 0; /* hack */
 		printf( "[" );
-		if ( i2->port_type & PORT_TYPE_READ ) {
+		if (r->port_type & SPOOLSS_PORT_TYPE_READ) {
 			printf( "Read" );
 			comma = 1;
 		}
-		if ( i2->port_type & PORT_TYPE_WRITE ) {
+		if (r->port_type & SPOOLSS_PORT_TYPE_WRITE) {
 			printf( "%sWrite", comma ? ", " : "" );
 			comma = 1;
 		}
 		/* These two have slightly different interpretations
 		 on 95/98/ME but I'm disregarding that for now */
-		if ( i2->port_type & PORT_TYPE_REDIRECTED ) {
+		if (r->port_type & SPOOLSS_PORT_TYPE_REDIRECTED) {
 			printf( "%sRedirected", comma ? ", " : "" );
 			comma = 1;
 		}
-		if ( i2->port_type & PORT_TYPE_NET_ATTACHED ) {
+		if (r->port_type & SPOOLSS_PORT_TYPE_NET_ATTACHED) {
 			printf( "%sNet-Attached", comma ? ", " : "" );
 		}
 		printf( "]\n" );
 	} else {
 		printf( "[Unset]\n" );
 	}
-	printf("\tReserved:\t[%d]\n", i2->reserved);
+	printf("\tReserved:\t[%d]\n", r->reserved);
 	printf("\n");
 }
 
@@ -420,8 +410,8 @@ static WERROR cmd_spoolss_enum_ports(struct rpc_pipe_client *cli,
 {
 	WERROR         		result;
 	uint32                  info_level = 1;
-	PORT_INFO_CTR 		ctr;
 	uint32 			returned;
+	union spoolss_PortInfo *info;
 
 	if (argc > 2) {
 		printf("Usage: %s [level]\n", argv[0]);
@@ -433,20 +423,22 @@ static WERROR cmd_spoolss_enum_ports(struct rpc_pipe_client *cli,
 
 	/* Enumerate ports */
 
-	ZERO_STRUCT(ctr);
-
-	result = rpccli_spoolss_enum_ports(cli, mem_ctx, info_level, &returned, &ctr);
-
+	result = rpccli_spoolss_enumports(cli, mem_ctx,
+					  cli->srv_name_slash,
+					  info_level,
+					  0,
+					  &returned,
+					  &info);
 	if (W_ERROR_IS_OK(result)) {
 		int i;
 
 		for (i = 0; i < returned; i++) {
 			switch (info_level) {
 			case 1:
-				display_port_info_1(&ctr.port.info_1[i]);
+				display_port_info_1(&info[i].info1);
 				break;
 			case 2:
-				display_port_info_2(&ctr.port.info_2[i]);
+				display_port_info_2(&info[i].info2);
 				break;
 			default:
 				printf("unknown info level %d\n", info_level);
@@ -3057,6 +3049,176 @@ done:
 	return WERR_OK;
 }
 
+static void display_proc_info1(struct spoolss_PrintProcessorInfo1 *r)
+{
+	printf("print_processor_name: %s\n", r->print_processor_name);
+}
+
+static WERROR cmd_spoolss_enum_procs(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx, int argc,
+				     const char **argv)
+{
+	WERROR werror;
+	const char *environment = SPOOLSS_ARCHITECTURE_NT_X86;
+	uint32_t num_procs, level = 1, i;
+	union spoolss_PrintProcessorInfo *procs;
+
+	/* Parse the command arguments */
+
+	if (argc < 1 || argc > 4) {
+		printf ("Usage: %s [environment] [level]\n", argv[0]);
+		return WERR_OK;
+        }
+
+	if (argc >= 2) {
+		environment = argv[1];
+	}
+
+	if (argc == 3) {
+		level = atoi(argv[2]);
+	}
+
+	/* Enumerate Print Processors */
+
+	werror = rpccli_spoolss_enumprintprocessors(cli, mem_ctx,
+						    cli->srv_name_slash,
+						    environment,
+						    level,
+						    0,
+						    &num_procs,
+						    &procs);
+	if (!W_ERROR_IS_OK(werror))
+		goto done;
+
+	/* Display output */
+
+	for (i = 0; i < num_procs; i++) {
+		switch (level) {
+		case 1:
+			display_proc_info1(&procs[i].info1);
+			break;
+		}
+	}
+
+ done:
+	return werror;
+}
+
+static void display_proc_data_types_info1(struct spoolss_PrintProcDataTypesInfo1 *r)
+{
+	printf("name_array: %s\n", r->name_array);
+}
+
+static WERROR cmd_spoolss_enum_proc_data_types(struct rpc_pipe_client *cli,
+					       TALLOC_CTX *mem_ctx, int argc,
+					       const char **argv)
+{
+	WERROR werror;
+	const char *print_processor_name = "winprint";
+	uint32_t num_procs, level = 1, i;
+	union spoolss_PrintProcDataTypesInfo *procs;
+
+	/* Parse the command arguments */
+
+	if (argc < 1 || argc > 4) {
+		printf ("Usage: %s [environment] [level]\n", argv[0]);
+		return WERR_OK;
+        }
+
+	if (argc >= 2) {
+		print_processor_name = argv[1];
+	}
+
+	if (argc == 3) {
+		level = atoi(argv[2]);
+	}
+
+	/* Enumerate Print Processor Data Types */
+
+	werror = rpccli_spoolss_enumprintprocessordatatypes(cli, mem_ctx,
+							    cli->srv_name_slash,
+							    print_processor_name,
+							    level,
+							    0,
+							    &num_procs,
+							    &procs);
+	if (!W_ERROR_IS_OK(werror))
+		goto done;
+
+	/* Display output */
+
+	for (i = 0; i < num_procs; i++) {
+		switch (level) {
+		case 1:
+			display_proc_data_types_info1(&procs[i].info1);
+			break;
+		}
+	}
+
+ done:
+	return werror;
+}
+
+static void display_monitor1(const struct spoolss_MonitorInfo1 *r)
+{
+	printf("monitor_name: %s\n", r->monitor_name);
+}
+
+static void display_monitor2(const struct spoolss_MonitorInfo2 *r)
+{
+	printf("monitor_name: %s\n", r->monitor_name);
+	printf("environment: %s\n", r->environment);
+	printf("dll_name: %s\n", r->dll_name);
+}
+
+static WERROR cmd_spoolss_enum_monitors(struct rpc_pipe_client *cli,
+					TALLOC_CTX *mem_ctx, int argc,
+					const char **argv)
+{
+	WERROR werror;
+	uint32_t count, level = 1, i;
+	union spoolss_MonitorInfo *info;
+
+	/* Parse the command arguments */
+
+	if (argc > 2) {
+		printf("Usage: %s [level]\n", argv[0]);
+		return WERR_OK;
+	}
+
+	if (argc == 2) {
+		level = atoi(argv[1]);
+	}
+
+	/* Enumerate Print Monitors */
+
+	werror = rpccli_spoolss_enummonitors(cli, mem_ctx,
+					     cli->srv_name_slash,
+					     level,
+					     0,
+					     &count,
+					     &info);
+	if (!W_ERROR_IS_OK(werror)) {
+		goto done;
+	}
+
+	/* Display output */
+
+	for (i = 0; i < count; i++) {
+		switch (level) {
+		case 1:
+			display_monitor1(&info[i].info1);
+			break;
+		case 2:
+			display_monitor2(&info[i].info2);
+			break;
+		}
+	}
+
+ done:
+	return werror;
+}
+
 /* List of commands exported by this module */
 struct cmd_set spoolss_commands[] = {
 
@@ -3092,6 +3254,9 @@ struct cmd_set spoolss_commands[] = {
 	{ "setprinterdata",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_setprinterdata,     &syntax_spoolss, NULL, "Set REG_SZ printer data",             "" },
 	{ "rffpcnex",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_rffpcnex,           &syntax_spoolss, NULL, "Rffpcnex test", "" },
 	{ "printercmp",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_printercmp,         &syntax_spoolss, NULL, "Printer comparison test", "" },
+	{ "enumprocs",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_procs,         &syntax_spoolss, NULL, "Enumerate Print Processors",          "" },
+	{ "enumprocdatatypes",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_proc_data_types, &syntax_spoolss, NULL, "Enumerate Print Processor Data Types", "" },
+	{ "enummonitors",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_monitors,      &syntax_spoolss, NULL, "Enumerate Print Monitors", "" },
 
 	{ NULL }
 };

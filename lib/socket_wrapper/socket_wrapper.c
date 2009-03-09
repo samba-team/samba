@@ -149,11 +149,24 @@
 /*
  * FD00::5357:5FXX
  */
-static const struct in6_addr swrap_ipv6 =
-{ { {
-0xFD,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-0x00,0x00,0x00,0x00,0x53,0x57,0x5F,0x00
-} } };
+static const struct in6_addr *swrap_ipv6(void)
+{
+	static struct in6_addr v;
+	static int initialized;
+	int ret;
+
+	if (initialized) {
+		return &v;
+	}
+	initialized = 1;
+
+	ret = inet_pton(AF_INET6, "FD00::5357:5F00", &v);
+	if (ret <= 0) {
+		abort();
+	}
+
+	return &v;
+}
 #endif
 
 static struct sockaddr *sockaddr_dup(const void *data, socklen_t len)
@@ -202,6 +215,7 @@ struct socket_info
 	int bound;
 	int bcast;
 	int is_server;
+	int connected;
 
 	char *path;
 	char *tmp_path;
@@ -304,7 +318,7 @@ static int convert_un_in(const struct sockaddr_un *un, struct sockaddr *in, sock
 
 		memset(in2, 0, sizeof(*in2));
 		in2->sin6_family = AF_INET6;
-		in2->sin6_addr = swrap_ipv6;
+		in2->sin6_addr = *swrap_ipv6();
 		in2->sin6_addr.s6_addr[15] = iface;
 		in2->sin6_port = htons(prt);
 
@@ -394,7 +408,7 @@ static int convert_in_un_remote(struct socket_info *si, const struct sockaddr *i
 
 		cmp = in->sin6_addr;
 		cmp.s6_addr[15] = 0;
-		if (IN6_ARE_ADDR_EQUAL(&swrap_ipv6, &cmp)) {
+		if (IN6_ARE_ADDR_EQUAL(swrap_ipv6(), &cmp)) {
 			iface = in->sin6_addr.s6_addr[15];
 		} else {
 			errno = ENETUNREACH;
@@ -510,7 +524,9 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 
 		cmp = in->sin6_addr;
 		cmp.s6_addr[15] = 0;
-		if (IN6_ARE_ADDR_EQUAL(&swrap_ipv6, &cmp)) {
+		if (IN6_IS_ADDR_UNSPECIFIED(&in->sin6_addr)) {
+			iface = socket_wrapper_default_iface();
+		} else if (IN6_ARE_ADDR_EQUAL(swrap_ipv6(), &cmp)) {
 			iface = in->sin6_addr.s6_addr[15];
 		} else {
 			errno = EADDRNOTAVAIL;
@@ -1485,6 +1501,7 @@ _PUBLIC_ int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	child_si->protocol = parent_si->protocol;
 	child_si->bound = 1;
 	child_si->is_server = 1;
+	child_si->connected = 1;
 
 	child_si->peername_len = len;
 	child_si->peername = sockaddr_dup(my_addr, len);
@@ -1532,8 +1549,10 @@ static int autobind_start;
 /* using sendto() or connect() on an unbound socket would give the
    recipient no way to reply, as unlike UDP and TCP, a unix domain
    socket can't auto-assign emphemeral port numbers, so we need to
-   assign it here */
-static int swrap_auto_bind(struct socket_info *si)
+   assign it here.
+   Note: this might change the family from ipv6 to ipv4
+*/
+static int swrap_auto_bind(struct socket_info *si, int family)
 {
 	struct sockaddr_un un_addr;
 	int i;
@@ -1551,7 +1570,7 @@ static int swrap_auto_bind(struct socket_info *si)
 
 	un_addr.sun_family = AF_UNIX;
 
-	switch (si->family) {
+	switch (family) {
 	case AF_INET: {
 		struct sockaddr_in in;
 
@@ -1580,6 +1599,11 @@ static int swrap_auto_bind(struct socket_info *si)
 	case AF_INET6: {
 		struct sockaddr_in6 in6;
 
+		if (si->family != family) {
+			errno = ENETUNREACH;
+			return -1;
+		}
+
 		switch (si->type) {
 		case SOCK_STREAM:
 			type = SOCKET_TYPE_CHAR_TCP_V6;
@@ -1594,7 +1618,7 @@ static int swrap_auto_bind(struct socket_info *si)
 
 		memset(&in6, 0, sizeof(in6));
 		in6.sin6_family = AF_INET6;
-		in6.sin6_addr = swrap_ipv6;
+		in6.sin6_addr = *swrap_ipv6();
 		in6.sin6_addr.s6_addr[15] = socket_wrapper_default_iface();
 		si->myname_len = sizeof(in6);
 		si->myname = sockaddr_dup(&in6, si->myname_len);
@@ -1630,6 +1654,7 @@ static int swrap_auto_bind(struct socket_info *si)
 		return -1;
 	}
 
+	si->family = family;
 	set_port(si->family, port, si->myname);
 
 	return 0;
@@ -1647,7 +1672,7 @@ _PUBLIC_ int swrap_connect(int s, const struct sockaddr *serv_addr, socklen_t ad
 	}
 
 	if (si->bound == 0) {
-		ret = swrap_auto_bind(si);
+		ret = swrap_auto_bind(si, serv_addr->sa_family);
 		if (ret == -1) return -1;
 	}
 
@@ -1672,7 +1697,14 @@ _PUBLIC_ int swrap_connect(int s, const struct sockaddr *serv_addr, socklen_t ad
 	if (ret == 0) {
 		si->peername_len = addrlen;
 		si->peername = sockaddr_dup(serv_addr, addrlen);
+		si->connected = 1;
+	}
 
+	if (si->type != SOCK_STREAM) {
+		return ret;
+	}
+
+	if (ret == 0) {
 		swrap_dump_packet(si, serv_addr, SWRAP_CONNECT_RECV, NULL, 0);
 		swrap_dump_packet(si, serv_addr, SWRAP_CONNECT_ACK, NULL, 0);
 	} else {
@@ -1801,9 +1833,16 @@ _PUBLIC_ ssize_t swrap_recvfrom(int s, void *buf, size_t len, int flags, struct 
 	socklen_t un_addrlen = sizeof(un_addr);
 	int ret;
 	struct socket_info *si = find_socket_info(s);
+	struct sockaddr_storage ss;
+	socklen_t ss_len = sizeof(ss);
 
 	if (!si) {
 		return real_recvfrom(s, buf, len, flags, from, fromlen);
+	}
+
+	if (!from) {
+		from = (struct sockaddr *)&ss;
+		fromlen = &ss_len;
 	}
 
 	len = MIN(len, 1500);
@@ -1836,6 +1875,16 @@ _PUBLIC_ ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags, con
 		return real_sendto(s, buf, len, flags, to, tolen);
 	}
 
+	if (si->connected) {
+		if (to) {
+			errno = EISCONN;
+			return -1;
+		}
+
+		to = si->peername;
+		tolen = si->peername_len;
+	}
+
 	len = MIN(len, 1500);
 
 	switch (si->type) {
@@ -1844,7 +1893,7 @@ _PUBLIC_ ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags, con
 		break;
 	case SOCK_DGRAM:
 		if (si->bound == 0) {
-			ret = swrap_auto_bind(si);
+			ret = swrap_auto_bind(si, si->family);
 			if (ret == -1) return -1;
 		}
 		

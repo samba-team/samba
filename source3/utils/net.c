@@ -272,7 +272,7 @@ static bool search_maxrid(struct pdb_search *search, const char *type,
 	num_entries = pdb_search_entries(search, 0, 0xffffffff, &entries);
 	for (i=0; i<num_entries; i++)
 		*max_rid = MAX(*max_rid, entries[i].rid);
-	pdb_search_destroy(search);
+	TALLOC_FREE(search);
 	return true;
 }
 
@@ -280,13 +280,14 @@ static uint32 get_maxrid(void)
 {
 	uint32 max_rid = 0;
 
-	if (!search_maxrid(pdb_search_users(0), "users", &max_rid))
+	if (!search_maxrid(pdb_search_users(talloc_tos(), 0), "users", &max_rid))
 		return 0;
 
-	if (!search_maxrid(pdb_search_groups(), "groups", &max_rid))
+	if (!search_maxrid(pdb_search_groups(talloc_tos()), "groups", &max_rid))
 		return 0;
 
-	if (!search_maxrid(pdb_search_aliases(get_global_sam_sid()),
+	if (!search_maxrid(pdb_search_aliases(talloc_tos(),
+					      get_global_sam_sid()),
 			   "aliases", &max_rid))
 		return 0;
 

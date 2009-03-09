@@ -95,6 +95,9 @@ const struct unix_error_map unix_dos_nt_errmap[] = {
 #ifdef ENOATTR
 	{ ENOATTR, ERRDOS, ERRbadfile, NT_STATUS_NOT_FOUND },
 #endif
+#ifdef ECANCELED
+	{ ECANCELED, ERRDOS, ERRbadfid, NT_STATUS_CANCELLED},
+#endif
 
 	{ 0, 0, 0, NT_STATUS_OK }
 };

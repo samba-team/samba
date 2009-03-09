@@ -1014,7 +1014,7 @@ union spoolss_DriverDirectoryInfo {
 
 struct spoolss_PrintProcessorInfo1 {
 	const char * print_processor_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
-};
+}/* [gensize,public] */;
 
 union spoolss_PrintProcessorInfo {
 	struct spoolss_PrintProcessorInfo1 info1;/* [case] */
@@ -1169,7 +1169,7 @@ union spoolss_AddFormInfo {
 
 struct spoolss_PortInfo1 {
 	const char * port_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
-};
+}/* [gensize,public] */;
 
 /* bitmap spoolss_PortType */
 #define SPOOLSS_PORT_TYPE_WRITE ( 0x00000001 )
@@ -1183,7 +1183,7 @@ struct spoolss_PortInfo2 {
 	const char * description;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	uint32_t port_type;
 	uint32_t reserved;
-};
+}/* [gensize,public] */;
 
 enum spoolss_PortStatus
 #ifndef USE_UINT_ENUMS
@@ -1239,12 +1239,12 @@ struct spoolss_PortInfo3 {
 	enum spoolss_PortStatus status;
 	const char * status_string;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	enum spoolss_PortSeverity severity;
-};
+}/* [gensize,public] */;
 
 struct spoolss_PortInfoFF {
 	const char * port_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	DATA_BLOB monitor_data;
-};
+}/* [gensize,public] */;
 
 union spoolss_PortInfo {
 	struct spoolss_PortInfo1 info1;/* [case] */
@@ -1255,17 +1255,25 @@ union spoolss_PortInfo {
 
 struct spoolss_MonitorInfo1 {
 	const char * monitor_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
-};
+}/* [gensize,public] */;
 
 struct spoolss_MonitorInfo2 {
 	const char * monitor_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * environment;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * dll_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
-};
+}/* [gensize,public] */;
 
 union spoolss_MonitorInfo {
 	struct spoolss_MonitorInfo1 info1;/* [case] */
 	struct spoolss_MonitorInfo2 info2;/* [case(2)] */
+}/* [relative_base,nodiscriminant,public] */;
+
+struct spoolss_PrintProcDataTypesInfo1 {
+	const char * name_array;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+}/* [gensize,public] */;
+
+union spoolss_PrintProcDataTypesInfo {
+	struct spoolss_PrintProcDataTypesInfo1 info1;/* [case] */
 }/* [relative_base,nodiscriminant,public] */;
 
 /* bitmap spoolss_PrinterChangeFlags */
@@ -2507,8 +2515,51 @@ struct spoolss_DeletePrintProvidor {
 };
 
 
+struct _spoolss_EnumPrintProcDataTypes {
+	struct {
+		const char *servername;/* [unique,charset(UTF16)] */
+		const char *print_processor_name;/* [unique,charset(UTF16)] */
+		uint32_t level;
+		DATA_BLOB *buffer;/* [unique] */
+		uint32_t offered;
+	} in;
+
+	struct {
+		DATA_BLOB *info;/* [unique] */
+		uint32_t *needed;/* [ref] */
+		uint32_t *count;/* [ref] */
+		WERROR result;
+	} out;
+
+};
+
+
+struct __spoolss_EnumPrintProcDataTypes {
+	struct {
+		uint32_t level;
+		uint32_t count;
+	} in;
+
+	struct {
+		union spoolss_PrintProcDataTypesInfo *info;/* [switch_is(level)] */
+	} out;
+
+};
+
+
 struct spoolss_EnumPrintProcDataTypes {
 	struct {
+		const char *servername;/* [unique,charset(UTF16)] */
+		const char *print_processor_name;/* [unique,charset(UTF16)] */
+		uint32_t level;
+		DATA_BLOB *buffer;/* [unique] */
+		uint32_t offered;
+	} in;
+
+	struct {
+		uint32_t *count;/* [ref] */
+		union spoolss_PrintProcDataTypesInfo **info;/* [ref,switch_is(level),size_is(,*count)] */
+		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
 
