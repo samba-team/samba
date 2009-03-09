@@ -978,16 +978,19 @@ static bool net_spoolss_enumforms(struct rpc_pipe_client *pipe_hnd,
 static bool net_spoolss_enumprinterdrivers (struct rpc_pipe_client *pipe_hnd,
 					TALLOC_CTX *mem_ctx,
 					uint32 level, const char *env,
-					uint32 *num_drivers,
-					PRINTER_DRIVER_CTR *ctr)
+					uint32 *count,
+					union spoolss_DriverInfo **info)
 {
 	WERROR result;
 
 	/* enumprinterdrivers call */
-	result = rpccli_spoolss_enumprinterdrivers(
-			pipe_hnd, mem_ctx, level,
-			env, num_drivers, ctr);
-
+	result = rpccli_spoolss_enumprinterdrivers(pipe_hnd, mem_ctx,
+						   pipe_hnd->srv_name_slash,
+						   env,
+						   level,
+						   0,
+						   count,
+						   info);
 	if (!W_ERROR_IS_OK(result)) {
 		printf("cannot enum drivers: %s\n", win_errstr(result));
 		return false;
@@ -1213,10 +1216,8 @@ NTSTATUS rpc_printer_driver_list_internals(struct net_context *c,
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	uint32 i;
 	uint32 level = 3;
-	PRINTER_DRIVER_CTR drv_ctr_enum;
+	union spoolss_DriverInfo *info;
 	int d;
-
-	ZERO_STRUCT(drv_ctr_enum);
 
 	printf("listing printer-drivers\n");
 
@@ -1227,7 +1228,7 @@ NTSTATUS rpc_printer_driver_list_internals(struct net_context *c,
 		/* enum remote drivers */
 		if (!net_spoolss_enumprinterdrivers(pipe_hnd, mem_ctx, level,
 				archi_table[i].long_archi,
-				&num_drivers, &drv_ctr_enum)) {
+				&num_drivers, &info)) {
 			nt_status = NT_STATUS_UNSUCCESSFUL;
 			goto done;
 		}
@@ -1244,7 +1245,7 @@ NTSTATUS rpc_printer_driver_list_internals(struct net_context *c,
 
 		/* do something for all drivers for architecture */
 		for (d = 0; d < num_drivers; d++) {
-			display_print_driver_3(&(drv_ctr_enum.info3[d]));
+			display_print_driver3(&info[d].info3);
 		}
 	}
 
