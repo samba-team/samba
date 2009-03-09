@@ -1041,31 +1041,6 @@ uint32 spoolss_size_printer_enum_values(PRINTER_ENUM_VALUES *p)
 }
 
 /*******************************************************************
- * init a structure.
- ********************************************************************/
-
-bool make_spoolss_q_enumprinters(
-	SPOOL_Q_ENUMPRINTERS *q_u, 
-	uint32 flags, 
-	char *servername, 
-	uint32 level, 
-	RPC_BUFFER *buffer, 
-	uint32 offered
-)
-{
-	q_u->flags=flags;
-	
-	q_u->servername_ptr = (servername != NULL) ? 1 : 0;
-	init_buf_unistr2(&q_u->servername, &q_u->servername_ptr, servername);
-
-	q_u->level=level;
-	q_u->buffer=buffer;
-	q_u->offered=offered;
-
-	return True;
-}
-
-/*******************************************************************
  * read a structure.
  * called from spoolss_enumprinters (srv_spoolss.c)
  ********************************************************************/
