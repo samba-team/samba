@@ -36,6 +36,10 @@ o   Jeremy Allison <jra@samba.org>
     * Fix more POSIX path lstat calls.
 
 
+o   Andrew Tridgell <tridge@samba.org>
+    * Fix a bug in message handling for the change notify code.
+
+
 o   Steven Danneman <steven.danneman@isilon.com>
     * Fix guest authentication in setups with "security = share" and "guest ok =
       yes" when Winbind is running.
