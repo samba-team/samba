@@ -172,5 +172,12 @@ ssize_t tsocket_recvfrom_recv(struct tevent_req *req,
 			      uint8_t **buf,
 			      struct tsocket_address **src);
 
+struct tevent_req *tsocket_sendto_send(struct tsocket_context *sock,
+				       TALLOC_CTX *mem_ctx,
+				       const uint8_t *buf,
+				       size_t len,
+				       const struct tsocket_address *dst);
+ssize_t tsocket_sendto_recv(struct tevent_req *req, int *perrno);
+
 #endif /* _TSOCKET_H */
 
