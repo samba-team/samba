@@ -4590,6 +4590,14 @@ static WERROR construct_printer_info2(TALLOC_CTX *mem_ctx,
 }
 
 /********************************************************************
+********************************************************************/
+
+static bool snum_is_shared_printer(int snum)
+{
+	return (lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum));
+}
+
+/********************************************************************
  Spoolss_enumprinters.
 ********************************************************************/
 
