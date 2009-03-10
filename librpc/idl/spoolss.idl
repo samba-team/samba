@@ -1052,7 +1052,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[relative] nstring *provider;
 	} spoolss_DriverInfo101;
 
-	typedef [nodiscriminant,relative_base,public] union {
+	typedef [nodiscriminant,relative_base,public,gensize] union {
 		[case(1)] spoolss_DriverInfo1 info1;
 		[case(2)] spoolss_DriverInfo2 info2;
 		[case(3)] spoolss_DriverInfo3 info3;
