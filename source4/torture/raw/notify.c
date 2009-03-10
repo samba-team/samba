@@ -1429,6 +1429,174 @@ done:
 	return ret;
 }
 
+
+/*
+  create a secondary tree connect - used to test for a bug in Samba3 messaging
+  with change notify
+*/
+static struct smbcli_tree *secondary_tcon(struct smbcli_state *cli, 
+					  struct torture_context *tctx)
+{
+	NTSTATUS status;
+	const char *share, *host;
+	struct smbcli_tree *tree;
+	union smb_tcon tcon;
+
+	share = torture_setting_string(tctx, "share", NULL);
+	host  = torture_setting_string(tctx, "host", NULL);
+	
+	printf("create a second tree context on the same session\n");
+	tree = smbcli_tree_init(cli->session, tctx, false);
+
+	tcon.generic.level = RAW_TCON_TCONX;
+	tcon.tconx.in.flags = 0;
+	tcon.tconx.in.password = data_blob(NULL, 0);
+	tcon.tconx.in.path = talloc_asprintf(tctx, "\\\\%s\\%s", host, share);
+	tcon.tconx.in.device = "A:";	
+	status = smb_raw_tcon(tree, tctx, &tcon);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tree);
+		printf("Failed to create secondary tree\n");
+		return NULL;
+	}
+
+	tree->tid = tcon.tconx.out.tid;
+	printf("tid1=%d tid2=%d\n", cli->tree->tid, tree->tid);
+
+	return tree;
+}
+
+
+/* 
+   very simple change notify test
+*/
+static bool test_notify_tcon(struct smbcli_state *cli, struct torture_context *torture)
+{
+	bool ret = true;
+	NTSTATUS status;
+	union smb_notify notify;
+	union smb_open io;
+	int fnum, fnum2;
+	struct smbcli_request *req;
+	extern int torture_numops;
+	struct smbcli_tree *tree = NULL;
+		
+	printf("TESTING SIMPLE CHANGE NOTIFY\n");
+		
+	/*
+	  get a handle on the directory
+	*/
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_FILE_ALL;
+	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = BASEDIR;
+
+	status = smb_raw_open(cli->tree, torture, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.file.fnum;
+
+	status = smb_raw_open(cli->tree, torture, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum2 = io.ntcreatex.out.file.fnum;
+
+	/* ask for a change notify,
+	   on file or directory name changes */
+	notify.nttrans.level = RAW_NOTIFY_NTTRANS;
+	notify.nttrans.in.buffer_size = 1000;
+	notify.nttrans.in.completion_filter = FILE_NOTIFY_CHANGE_NAME;
+	notify.nttrans.in.file.fnum = fnum;
+	notify.nttrans.in.recursive = true;
+
+	printf("testing notify mkdir\n");
+	req = smb_raw_changenotify_send(cli->tree, &notify);
+	smbcli_mkdir(cli->tree, BASEDIR "\\subdir-name");
+
+	status = smb_raw_changenotify_recv(req, torture, &notify);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	CHECK_VAL(notify.nttrans.out.num_changes, 1);
+	CHECK_VAL(notify.nttrans.out.changes[0].action, NOTIFY_ACTION_ADDED);
+	CHECK_WSTR(notify.nttrans.out.changes[0].name, "subdir-name", STR_UNICODE);
+
+	printf("testing notify rmdir\n");
+	req = smb_raw_changenotify_send(cli->tree, &notify);
+	smbcli_rmdir(cli->tree, BASEDIR "\\subdir-name");
+
+	status = smb_raw_changenotify_recv(req, torture, &notify);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VAL(notify.nttrans.out.num_changes, 1);
+	CHECK_VAL(notify.nttrans.out.changes[0].action, NOTIFY_ACTION_REMOVED);
+	CHECK_WSTR(notify.nttrans.out.changes[0].name, "subdir-name", STR_UNICODE);
+
+	printf("SIMPLE CHANGE NOTIFY OK\n");
+
+	printf("TESTING WITH SECONDARY TCON\n");
+	tree = secondary_tcon(cli, torture);
+
+	printf("testing notify mkdir\n");
+	req = smb_raw_changenotify_send(cli->tree, &notify);
+	smbcli_mkdir(cli->tree, BASEDIR "\\subdir-name");
+
+	status = smb_raw_changenotify_recv(req, torture, &notify);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	CHECK_VAL(notify.nttrans.out.num_changes, 1);
+	CHECK_VAL(notify.nttrans.out.changes[0].action, NOTIFY_ACTION_ADDED);
+	CHECK_WSTR(notify.nttrans.out.changes[0].name, "subdir-name", STR_UNICODE);
+
+	printf("testing notify rmdir\n");
+	req = smb_raw_changenotify_send(cli->tree, &notify);
+	smbcli_rmdir(cli->tree, BASEDIR "\\subdir-name");
+
+	status = smb_raw_changenotify_recv(req, torture, &notify);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VAL(notify.nttrans.out.num_changes, 1);
+	CHECK_VAL(notify.nttrans.out.changes[0].action, NOTIFY_ACTION_REMOVED);
+	CHECK_WSTR(notify.nttrans.out.changes[0].name, "subdir-name", STR_UNICODE);
+
+	printf("CHANGE NOTIFY WITH TCON OK\n");
+
+	printf("Disconnecting secondary tree\n");
+	status = smb_tree_disconnect(tree);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	talloc_free(tree);
+
+	printf("testing notify mkdir\n");
+	req = smb_raw_changenotify_send(cli->tree, &notify);
+	smbcli_mkdir(cli->tree, BASEDIR "\\subdir-name");
+
+	status = smb_raw_changenotify_recv(req, torture, &notify);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	CHECK_VAL(notify.nttrans.out.num_changes, 1);
+	CHECK_VAL(notify.nttrans.out.changes[0].action, NOTIFY_ACTION_ADDED);
+	CHECK_WSTR(notify.nttrans.out.changes[0].name, "subdir-name", STR_UNICODE);
+
+	printf("testing notify rmdir\n");
+	req = smb_raw_changenotify_send(cli->tree, &notify);
+	smbcli_rmdir(cli->tree, BASEDIR "\\subdir-name");
+
+	status = smb_raw_changenotify_recv(req, torture, &notify);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VAL(notify.nttrans.out.num_changes, 1);
+	CHECK_VAL(notify.nttrans.out.changes[0].action, NOTIFY_ACTION_REMOVED);
+	CHECK_WSTR(notify.nttrans.out.changes[0].name, "subdir-name", STR_UNICODE);
+
+	printf("CHANGE NOTIFY WITH TDIS OK\n");
+done:
+	smb_raw_exit(cli->session);
+	return ret;
+}
+
+
 /* 
    basic testing of change notify
 */
@@ -1442,6 +1610,7 @@ bool torture_raw_notify(struct torture_context *torture,
 		return false;
 	}
 
+	ret &= test_notify_tcon(cli, torture);
 	ret &= test_notify_dir(cli, cli2, torture);
 	ret &= test_notify_mask(cli, torture);
 	ret &= test_notify_recursive(cli, torture);
