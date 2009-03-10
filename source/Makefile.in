@@ -630,6 +630,7 @@ VFS_READAHEAD_OBJ = modules/vfs_readahead.o
 VFS_TSMSM_OBJ = modules/vfs_tsmsm.o
 VFS_FILEID_OBJ = modules/vfs_fileid.o
 VFS_AIO_FORK_OBJ = modules/vfs_aio_fork.o
+VFS_PREOPEN_OBJ = modules/vfs_preopen.o
 VFS_SYNCOPS_OBJ = modules/vfs_syncops.o
 VFS_ACL_XATTR_OBJ = modules/vfs_acl_xattr.o
 VFS_ACL_TDB_OBJ = modules/vfs_acl_tdb.o
@@ -2448,6 +2449,10 @@ bin/registry.@SHLIBEXT@: $(BINARY_PREREQS) libgpo/gpext/registry.o
 bin/scripts.@SHLIBEXT@: $(BINARY_PREREQS) libgpo/gpext/scripts.o
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) libgpo/gpext/scripts.o
+
+bin/preopen.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_PREOPEN_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) $(VFS_PREOPEN_OBJ)
 
 bin/smb_traffic_analyzer.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_SMB_TRAFFIC_ANALYZER_OBJ)
 	@echo "Building plugin $@"

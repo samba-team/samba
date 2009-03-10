@@ -409,7 +409,7 @@ dnl These have to be built static:
 default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsarpc rpc_samr rpc_winreg rpc_initshutdown rpc_dssetup rpc_wkssvc rpc_svcctl2 rpc_ntsvcs2 rpc_netlogon rpc_netdfs rpc_srvsvc rpc_spoolss rpc_eventlog2 auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin vfs_default nss_info_template"
 
 dnl These are preferably build shared, and static if dlopen() is not available
-default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_full_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap vfs_expand_msdfs vfs_shadow_copy vfs_shadow_copy2 charset_CP850 charset_CP437 auth_script vfs_readahead vfs_xattr_tdb vfs_streams_xattr vfs_streams_depot vfs_acl_xattr vfs_acl_tdb vfs_smb_traffic_analyzer"
+default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_full_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap vfs_expand_msdfs vfs_shadow_copy vfs_shadow_copy2 charset_CP850 charset_CP437 auth_script vfs_readahead vfs_xattr_tdb vfs_streams_xattr vfs_streams_depot vfs_acl_xattr vfs_acl_tdb vfs_smb_traffic_analyzer vfs_preopen"
 
 if test "x$developer" = xyes; then
    default_static_modules="$default_static_modules rpc_rpcecho"
@@ -6394,6 +6394,7 @@ SMB_MODULE(vfs_readahead, \$(VFS_READAHEAD_OBJ), "bin/readahead.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_tsmsm, \$(VFS_TSMSM_OBJ), "bin/tsmsm.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_fileid, \$(VFS_FILEID_OBJ), "bin/fileid.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_aio_fork, \$(VFS_AIO_FORK_OBJ), "bin/aio_fork.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_preopen, \$(VFS_PREOPEN_OBJ), "bin/preopen.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_syncops, \$(VFS_SYNCOPS_OBJ), "bin/syncops.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_zfsacl, \$(VFS_ZFSACL_OBJ), "bin/zfsacl.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_notify_fam, \$(VFS_NOTIFY_FAM_OBJ), "bin/notify_fam.$SHLIBEXT", VFS)
