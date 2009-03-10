@@ -442,7 +442,7 @@ static int handle_aio_read_complete(struct aio_extra *aio_ex)
 		/* If errno is ECANCELED then don't return anything to the
 		 * client. */
 		if (errno == ECANCELED) {
-			srv_cancel_sign_response(aio_ex->mid);
+			srv_cancel_sign_response(aio_ex->mid, false);
 			return 0;
 		}
 
@@ -536,7 +536,7 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex)
 		/* If errno is ECANCELED then don't return anything to the
 		 * client. */
 		if (errno == ECANCELED) {
-			srv_cancel_sign_response(aio_ex->mid);
+			srv_cancel_sign_response(aio_ex->mid, false);
 			return 0;
 		}
 
@@ -648,7 +648,7 @@ int process_aio_queue(void)
 		if (!aio_ex) {
 			DEBUG(3,("process_aio_queue: Can't find record to "
 				 "match mid %u.\n", (unsigned int)mid));
-			srv_cancel_sign_response(mid);
+			srv_cancel_sign_response(mid, false);
 			continue;
 		}
 
@@ -658,7 +658,7 @@ int process_aio_queue(void)
 			 * ignore. */
 			DEBUG( 3,( "process_aio_queue: file closed whilst "
 				   "aio outstanding.\n"));
-			srv_cancel_sign_response(mid);
+			srv_cancel_sign_response(mid, false);
 			continue;
 		}
 
