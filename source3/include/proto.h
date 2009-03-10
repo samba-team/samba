@@ -2790,13 +2790,18 @@ struct async_req *cli_push_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 				struct cli_state *cli,
 				uint16_t fnum, uint16_t mode,
 				off_t start_offset, size_t window_size,
-				size_t (*source)(uint8_t *buf, size_t n,
+				bool caller_buffers,
+				size_t (*source)(uint8_t *inbuf, size_t n,
+						 const uint8_t **outbuf,
 						 void *priv),
 				void *priv);
 NTSTATUS cli_push_recv(struct async_req *req);
 NTSTATUS cli_push(struct cli_state *cli, uint16_t fnum, uint16_t mode,
 		  off_t start_offset, size_t window_size,
-		  size_t (*source)(uint8_t *buf, size_t n, void *priv),
+		  bool caller_buffers,
+		  size_t (*source)(uint8_t *inbuf, size_t n,
+				   const uint8_t **outbuf,
+				   void *priv),
 		  void *priv);
 
 /* The following definitions come from libsmb/clisecdesc.c  */

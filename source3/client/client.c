@@ -220,7 +220,9 @@ struct push_state {
 	SMB_OFF_T nread;
 };
 
-static size_t push_source(uint8_t *buf, size_t n, void *priv)
+static size_t push_source(uint8_t *inbuf, size_t n,
+			  const uint8_t **outbuf,
+			  void *priv)
 {
 	struct push_state *state = (struct push_state *)priv;
 	int result;
@@ -229,7 +231,7 @@ static size_t push_source(uint8_t *buf, size_t n, void *priv)
 		return 0;
 	}
 
-	result = readfile(buf, n, state->f);
+	result = readfile(inbuf, n, state->f);
 	state->nread += result;
 	return result;
 }
@@ -1681,8 +1683,8 @@ static int do_put(const char *rname, const char *lname, bool reput)
 	state.f = f;
 	state.nread = 0;
 
-	status = cli_push(targetcli, fnum, 0, 0, io_bufsize, push_source,
-			  &state);
+	status = cli_push(targetcli, fnum, 0, 0, io_bufsize,
+			  false, push_source, &state);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "cli_push returned %s\n", nt_errstr(status));
 	}
