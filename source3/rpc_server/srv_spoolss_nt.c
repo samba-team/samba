@@ -27,6 +27,16 @@
 
 #include "includes.h"
 
+/* macros stolen from s4 spoolss server */
+#define SPOOLSS_BUFFER_UNION(fn,ic,info,level) \
+	((info)?ndr_size_##fn(info, level, ic, 0):0)
+
+#define SPOOLSS_BUFFER_UNION_ARRAY(mem_ctx,fn,ic,info,level,count) \
+	((info)?ndr_size_##fn##_info(mem_ctx, ic, level, count, info):0)
+
+#define SPOOLSS_BUFFER_OK(val_true,val_false) ((r->in.offered >= *r->out.needed)?val_true:val_false)
+
+
 extern userdom_struct current_user_info;
 
 #undef DBGC_CLASS
