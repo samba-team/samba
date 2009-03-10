@@ -971,10 +971,8 @@ static bool cli_push_write_setup(struct async_req *req,
 	substate->size = state->source(substate->buf,
 				       state->chunk_size,
 				       state->priv);
-	if (substate->size < state->chunk_size) {
-		state->eof = true;
-	}
 	if (substate->size == 0) {
+		state->eof = true;
 		/* nothing to send */
 		talloc_free(substate);
 		return true;
@@ -1051,7 +1049,6 @@ struct async_req *cli_push_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 		}
 
 		if (state->eof) {
-			state->num_reqs = i+1;
 			break;
 		}
 	}
