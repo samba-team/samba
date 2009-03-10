@@ -4616,38 +4616,40 @@ static WERROR enum_all_printers_info_1(TALLOC_CTX *mem_ctx,
 	*count = 0;
 
 	for (snum=0; snum<n_services; snum++) {
-		if (lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) ) {
 
-			NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
-			struct spoolss_PrinterInfo1 info1;
+		NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
+		struct spoolss_PrinterInfo1 info1;
 
-			DEBUG(4,("Found a printer in smb.conf: %s[%x]\n", lp_servicename(snum), snum));
-
-			result = get_a_printer(NULL, &ntprinter, 2, lp_const_servicename(snum));
-			if (!W_ERROR_IS_OK(result)) {
-				continue;
-			}
-
-			result = construct_printer_info1(info, ntprinter, flags, &info1, snum);
-			free_a_printer(&ntprinter,2);
-			if (!W_ERROR_IS_OK(result)) {
-				continue;
-			}
-
-			info = TALLOC_REALLOC_ARRAY(mem_ctx, info,
-						    union spoolss_PrinterInfo,
-						    *count + 1);
-			if (!info) {
-				DEBUG(2,("enum_all_printers_info_1: failed to enlarge printers buffer!\n"));
-				result = WERR_NOMEM;
-				goto out;
-			}
-
-			DEBUG(4,("ReAlloced memory for [%d] PRINTER_INFO_1\n", *count));
-
-			info[*count].info1 = info1;
-			(*count)++;
+		if (!snum_is_shared_printer(snum)) {
+			continue;
 		}
+
+		DEBUG(4,("Found a printer in smb.conf: %s[%x]\n", lp_servicename(snum), snum));
+
+		result = get_a_printer(NULL, &ntprinter, 2, lp_const_servicename(snum));
+		if (!W_ERROR_IS_OK(result)) {
+			continue;
+		}
+
+		result = construct_printer_info1(info, ntprinter, flags, &info1, snum);
+		free_a_printer(&ntprinter,2);
+		if (!W_ERROR_IS_OK(result)) {
+			continue;
+		}
+
+		info = TALLOC_REALLOC_ARRAY(mem_ctx, info,
+					    union spoolss_PrinterInfo,
+					    *count + 1);
+		if (!info) {
+			DEBUG(2,("enum_all_printers_info_1: failed to enlarge printers buffer!\n"));
+			result = WERR_NOMEM;
+			goto out;
+		}
+
+		DEBUG(4,("ReAlloced memory for [%d] PRINTER_INFO_1\n", *count));
+
+		info[*count].info1 = info1;
+		(*count)++;
 	}
 
  out:
@@ -4813,39 +4815,41 @@ static WERROR enum_all_printers_info_2(TALLOC_CTX *mem_ctx,
 	*count = 0;
 
 	for (snum=0; snum<n_services; snum++) {
-		if (lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum)) {
 
-			struct spoolss_PrinterInfo2 info2;
-			NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
+		struct spoolss_PrinterInfo2 info2;
+		NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
 
-			DEBUG(4,("Found a printer in smb.conf: %s[%x]\n", lp_servicename(snum), snum));
-
-			result = get_a_printer(NULL, &ntprinter, 2, lp_const_servicename(snum));
-			if (!W_ERROR_IS_OK(result)) {
-				continue;
-			}
-
-			result = construct_printer_info2(info, ntprinter, &info2, snum);
-			free_a_printer(&ntprinter, 2);
-			if (!W_ERROR_IS_OK(result)) {
-				continue;
-			}
-
-			info = TALLOC_REALLOC_ARRAY(mem_ctx, info,
-						    union spoolss_PrinterInfo,
-						    *count + 1);
-			if (!info) {
-				DEBUG(2,("enum_all_printers_info_2: failed to enlarge printers buffer!\n"));
-				result = WERR_NOMEM;
-				goto out;
-			}
-
-			DEBUG(4,("ReAlloced memory for [%d] PRINTER_INFO_2\n", *count + 1));
-
-			info[*count].info2 = info2;
-
-			(*count)++;
+		if (!snum_is_shared_printer(snum)) {
+			continue;
 		}
+
+		DEBUG(4,("Found a printer in smb.conf: %s[%x]\n", lp_servicename(snum), snum));
+
+		result = get_a_printer(NULL, &ntprinter, 2, lp_const_servicename(snum));
+		if (!W_ERROR_IS_OK(result)) {
+			continue;
+		}
+
+		result = construct_printer_info2(info, ntprinter, &info2, snum);
+		free_a_printer(&ntprinter, 2);
+		if (!W_ERROR_IS_OK(result)) {
+			continue;
+		}
+
+		info = TALLOC_REALLOC_ARRAY(mem_ctx, info,
+					    union spoolss_PrinterInfo,
+					    *count + 1);
+		if (!info) {
+			DEBUG(2,("enum_all_printers_info_2: failed to enlarge printers buffer!\n"));
+			result = WERR_NOMEM;
+			goto out;
+		}
+
+		DEBUG(4,("ReAlloced memory for [%d] PRINTER_INFO_2\n", *count + 1));
+
+		info[*count].info2 = info2;
+
+		(*count)++;
 	}
 
  out:
