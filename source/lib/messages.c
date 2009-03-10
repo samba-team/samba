@@ -278,7 +278,15 @@ NTSTATUS messaging_register(struct messaging_context *msg_ctx,
 	 */
 
 	for (cb = msg_ctx->callbacks; cb != NULL; cb = cb->next) {
-		if (cb->msg_type == msg_type) {
+		/* we allow a second registration of the same message
+		   type if it has a different private pointer. This is
+		   needed in, for example, the internal notify code,
+		   which creates a new notify context for each tree
+		   connect, and expects to receive messages to each of
+		   them. */
+		if (cb->msg_type == msg_type && private_data == cb->private_data) {
+			DEBUG(5,("Overriding messaging pointer for type %u - private_data=%p\n",
+				  (unsigned)msg_type, private_data));
 			cb->fn = fn;
 			cb->private_data = private_data;
 			return NT_STATUS_OK;
@@ -309,6 +317,8 @@ void messaging_deregister(struct messaging_context *ctx, uint32_t msg_type,
 		next = cb->next;
 		if ((cb->msg_type == msg_type)
 		    && (cb->private_data == private_data)) {
+			DEBUG(5,("Deregistering messaging pointer for type %u - private_data=%p\n",
+				  (unsigned)msg_type, private_data));
 			DLIST_REMOVE(ctx->callbacks, cb);
 			TALLOC_FREE(cb);
 		}
@@ -354,7 +364,11 @@ void messaging_dispatch_rec(struct messaging_context *msg_ctx,
 		if (cb->msg_type == rec->msg_type) {
 			cb->fn(msg_ctx, cb->private_data, rec->msg_type,
 			       rec->src, &rec->buf);
-			return;
+			/* we continue looking for matching messages
+			   after finding one. This matters for
+			   subsystems like the internal notify code
+			   which register more than one handler for
+			   the same message type */
 		}
 	}
 	return;
