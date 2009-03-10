@@ -197,6 +197,8 @@ void *_tevent_req_data(struct tevent_req *req);
 
 #define tevent_req_callback_data(_req, _type) \
 	talloc_get_type_abort(_tevent_req_callback_data(_req), _type)
+#define tevent_req_callback_data_void(_req) \
+	_tevent_req_callback_data(_req)
 #define tevent_req_data(_req, _type) \
 	talloc_get_type_abort(_tevent_req_data(_req), _type)
 
