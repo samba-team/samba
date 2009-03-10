@@ -56,7 +56,7 @@ struct tevent_req {
 	/**
 	 * @brief A function to overwrite the default print function
 	 *
-	 * The implementation doing the work may want to imeplement a
+	 * The implementation doing the work may want to implement a
 	 * custom function to print the text representation of the async
 	 * request.
 	 */

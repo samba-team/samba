@@ -256,6 +256,27 @@ bool tevent_req_is_in_progress(struct tevent_req *req)
 	return false;
 }
 
+/**
+ * @brief This function destroys the attached private data
+ * @param[in] req	The finished request
+ *
+ * This function can be called as last action of a _recv()
+ * function, it destroys the data attached to the tevent_req.
+ */
+void tevent_req_received(struct tevent_req *req)
+{
+	talloc_free(req->data);
+	req->data = NULL;
+	req->private_print = NULL;
+
+	talloc_free(req->internal.trigger);
+	req->internal.trigger = NULL;
+	talloc_free(req->internal.timer);
+	req->internal.timer = NULL;
+
+	req->internal.state = TEVENT_REQ_RECEIVED;
+}
+
 bool tevent_req_poll(struct tevent_req *req,
 		     struct tevent_context *ev)
 {
