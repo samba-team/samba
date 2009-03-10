@@ -13635,6 +13635,11 @@ _PUBLIC_ void ndr_print_spoolss_DriverInfo(struct ndr_print *ndr, const char *na
 	}
 }
 
+_PUBLIC_ size_t ndr_size_spoolss_DriverInfo(const union spoolss_DriverInfo *r, uint32_t level, struct smb_iconv_convenience *ic, int flags)
+{
+	return ndr_size_union(r, flags, level, (ndr_push_flags_fn_t)ndr_push_spoolss_DriverInfo, ic);
+}
+
 _PUBLIC_ enum ndr_err_code ndr_push_spoolss_DriverDirectoryInfo1(struct ndr_push *ndr, int ndr_flags, const struct spoolss_DriverDirectoryInfo1 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {

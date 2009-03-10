@@ -1002,7 +1002,7 @@ union spoolss_DriverInfo {
 	struct spoolss_DriverInfo6 info6;/* [case(6)] */
 	struct spoolss_DriverInfo8 info8;/* [case(8)] */
 	struct spoolss_DriverInfo101 info101;/* [case(101)] */
-}/* [relative_base,nodiscriminant,public] */;
+}/* [relative_base,gensize,public,nodiscriminant] */;
 
 struct spoolss_DriverDirectoryInfo1 {
 	const char * directory_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
