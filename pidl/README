@@ -3,8 +3,9 @@ Introduction:
 This directory contains the source code of the pidl (Perl IDL) 
 compiler for Samba 4. 
 
-The main sources for pidl are available by Subversion on
-svn://svnanon.samba.org/samba/branches/SAMBA_4_0/source/pidl
+The main sources for pidl are available using Git as part of
+the combined Samba 3 / Samba 4 tree. Use:
+git clone git://git.samba.org/samba.git
 
 Pidl works by building a parse tree from a .pidl file (a simple 
 dump of it's internal parse tree) or a .idl file 
