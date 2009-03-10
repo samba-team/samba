@@ -1055,7 +1055,7 @@ static int ltdb_index_filter(const struct dn_list *dn_list,
 
 		ret = ldb_module_send_entry(ac->req, msg, NULL);
 		if (ret != LDB_SUCCESS) {
-			ac->callback_failed = true;
+			ac->request_terminated = true;
 			return ret;
 		}
 	}

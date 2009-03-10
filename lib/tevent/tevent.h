@@ -165,7 +165,11 @@ enum tevent_req_state {
 	/**
 	 * No memory in between
 	 */
-	TEVENT_REQ_NO_MEMORY
+	TEVENT_REQ_NO_MEMORY,
+	/**
+	 * the request is already received by the caller
+	 */
+	TEVENT_REQ_RECEIVED
 };
 
 /**
@@ -193,6 +197,8 @@ void *_tevent_req_data(struct tevent_req *req);
 
 #define tevent_req_callback_data(_req, _type) \
 	talloc_get_type_abort(_tevent_req_callback_data(_req), _type)
+#define tevent_req_callback_data_void(_req) \
+	_tevent_req_callback_data(_req)
 #define tevent_req_data(_req, _type) \
 	talloc_get_type_abort(_tevent_req_data(_req), _type)
 
@@ -237,6 +243,8 @@ bool tevent_req_poll(struct tevent_req *req,
 bool tevent_req_is_error(struct tevent_req *req,
 			 enum tevent_req_state *state,
 			 uint64_t *error);
+
+void tevent_req_received(struct tevent_req *req);
 
 struct tevent_req *tevent_wakeup_send(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,

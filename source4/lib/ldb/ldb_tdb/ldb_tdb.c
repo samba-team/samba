@@ -1019,7 +1019,16 @@ static void ltdb_timeout(struct tevent_context *ev,
 	struct ltdb_context *ctx;
 	ctx = talloc_get_type(private_data, struct ltdb_context);
 
-	ltdb_request_done(ctx, LDB_ERR_TIME_LIMIT_EXCEEDED);
+	if (!ctx->request_terminated) {
+		/* request is done now */
+		ltdb_request_done(ctx, LDB_ERR_TIME_LIMIT_EXCEEDED);
+	}
+
+	if (!ctx->request_terminated) {
+		/* neutralize the spy */
+		ctx->spy->ctx = NULL;
+	}
+	talloc_free(ctx);
 }
 
 static void ltdb_request_extended_done(struct ltdb_context *ctx,
@@ -1078,6 +1087,10 @@ static void ltdb_callback(struct tevent_context *ev,
 
 	ctx = talloc_get_type(private_data, struct ltdb_context);
 
+	if (ctx->request_terminated) {
+		goto done;
+	}
+
 	switch (ctx->req->operation) {
 	case LDB_SEARCH:
 		ret = ltdb_search(ctx);
@@ -1096,17 +1109,34 @@ static void ltdb_callback(struct tevent_context *ev,
 		break;
 	case LDB_EXTENDED:
 		ltdb_handle_extended(ctx);
-		return;
+		goto done;
 	default:
 		/* no other op supported */
 		ret = LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	if (!ctx->callback_failed) {
-		/* Once we are done, we do not need timeout events */
-		talloc_free(ctx->timeout_event);
+	if (!ctx->request_terminated) {
+		/* request is done now */
 		ltdb_request_done(ctx, ret);
 	}
+
+done:
+	if (!ctx->request_terminated) {
+		/* neutralize the spy */
+		ctx->spy->ctx = NULL;
+	}
+	talloc_free(ctx);
+}
+
+static int ltdb_request_destructor(void *ptr)
+{
+	struct ltdb_req_spy *spy = talloc_get_type(ptr, struct ltdb_req_spy);
+
+	if (spy->ctx != NULL) {
+		spy->ctx->request_terminated = true;
+	}
+
+	return 0;
 }
 
 static int ltdb_handle_request(struct ldb_module *module,
@@ -1131,7 +1161,7 @@ static int ltdb_handle_request(struct ldb_module *module,
 
 	ev = ldb_get_event_context(ldb);
 
-	ac = talloc_zero(req, struct ltdb_context);
+	ac = talloc_zero(ldb, struct ltdb_context);
 	if (ac == NULL) {
 		ldb_set_errstring(ldb, "Out of Memory");
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -1144,14 +1174,27 @@ static int ltdb_handle_request(struct ldb_module *module,
 	tv.tv_usec = 0;
 	te = tevent_add_timer(ev, ac, tv, ltdb_callback, ac);
 	if (NULL == te) {
+		talloc_free(ac);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	tv.tv_sec = req->starttime + req->timeout;
 	ac->timeout_event = tevent_add_timer(ev, ac, tv, ltdb_timeout, ac);
 	if (NULL == ac->timeout_event) {
+		talloc_free(ac);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
+
+	/* set a spy so that we do not try to use the request context
+	 * if it is freed before ltdb_callback fires */
+	ac->spy = talloc(req, struct ltdb_req_spy);
+	if (NULL == ac->spy) {
+		talloc_free(ac);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	ac->spy->ctx = ac;
+
+	talloc_set_destructor((TALLOC_CTX *)ac->spy, ltdb_request_destructor);
 
 	return LDB_SUCCESS;
 }
