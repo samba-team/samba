@@ -1020,13 +1020,14 @@ static void ltdb_timeout(struct tevent_context *ev,
 	ctx = talloc_get_type(private_data, struct ltdb_context);
 
 	if (!ctx->request_terminated) {
-		/* neutralize the spy */
-		ctx->spy->ctx = NULL;
-
 		/* request is done now */
 		ltdb_request_done(ctx, LDB_ERR_TIME_LIMIT_EXCEEDED);
 	}
 
+	if (!ctx->request_terminated) {
+		/* neutralize the spy */
+		ctx->spy->ctx = NULL;
+	}
 	talloc_free(ctx);
 }
 
@@ -1086,10 +1087,9 @@ static void ltdb_callback(struct tevent_context *ev,
 
 	ctx = talloc_get_type(private_data, struct ltdb_context);
 
-	if (!ctx->request_terminated) {
-		/* neutralize the spy */
-		ctx->spy->ctx = NULL;
-	} else goto done;
+	if (ctx->request_terminated) {
+		goto done;
+	}
 
 	switch (ctx->req->operation) {
 	case LDB_SEARCH:
@@ -1109,7 +1109,7 @@ static void ltdb_callback(struct tevent_context *ev,
 		break;
 	case LDB_EXTENDED:
 		ltdb_handle_extended(ctx);
-		return;
+		goto done;
 	default:
 		/* no other op supported */
 		ret = LDB_ERR_UNWILLING_TO_PERFORM;
@@ -1121,6 +1121,10 @@ static void ltdb_callback(struct tevent_context *ev,
 	}
 
 done:
+	if (!ctx->request_terminated) {
+		/* neutralize the spy */
+		ctx->spy->ctx = NULL;
+	}
 	talloc_free(ctx);
 }
 
