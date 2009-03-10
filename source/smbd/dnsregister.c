@@ -109,8 +109,7 @@ void dns_register_smbd(struct dns_reg_state ** dns_state_ptr,
 	struct dns_reg_state *dns_state = *dns_state_ptr;
 
 	if (dns_state == NULL) {
-		dns_state = talloc_zero(NULL, struct dns_reg_state);
-		*dns_state_ptr = dns_state;
+		*dns_state_ptr = dns_state = talloc(NULL, struct dns_reg_state);
 		if (dns_state == NULL) {
 			return;
 		}
