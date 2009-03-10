@@ -55,6 +55,10 @@ o   Volker Lendecke <vl@samba.org>
     * BUG 6124: Fix the build on IRIX.
 
 
+o   Stefan Metzmacher <metze@samba.org>
+    * Fix build on SLES8.
+
+
 o   Tim Prouty <tprouty@samba.org>
     * Fix creation of core files.
 
