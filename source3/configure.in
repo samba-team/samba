@@ -1177,13 +1177,10 @@ if test x"$LIBUNWIND_PTRACE" != x"" ; then
 #endif
 	    ],
 	    [
-		int main(int argc, const char ** argv)
-		{
-			pid_t me = (pid_t)-1;
-			ptrace(PTRACE_ATTACH, me, 0, 0);
-			ptrace(PTRACE_DETACH, me, 0, 0);
-			return 0;
-		}
+		pid_t me = (pid_t)-1;
+		ptrace(PTRACE_ATTACH, me, 0, 0);
+		ptrace(PTRACE_DETACH, me, 0, 0);
+		return 0;
 	    ],
 	    [
 		AC_MSG_RESULT(yes)
