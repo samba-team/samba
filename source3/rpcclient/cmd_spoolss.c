@@ -567,7 +567,7 @@ static WERROR cmd_spoolss_getprinter(struct rpc_pipe_client *cli,
 {
 	POLICY_HND 	pol;
 	WERROR          result;
-	uint32 		info_level = 1;
+	uint32_t 	level = 1;
 	const char	*printername;
 	union spoolss_PrinterInfo info;
 
@@ -578,7 +578,7 @@ static WERROR cmd_spoolss_getprinter(struct rpc_pipe_client *cli,
 
 	/* Open a printer handle */
 	if (argc == 3) {
-		info_level = atoi(argv[2]);
+		level = atoi(argv[2]);
 	}
 
 	RPCCLIENT_PRINTERNAME(printername, cli, argv[1]);
@@ -589,21 +589,23 @@ static WERROR cmd_spoolss_getprinter(struct rpc_pipe_client *cli,
 					       printername,
 					       SEC_FLAG_MAXIMUM_ALLOWED,
 					       &pol);
-	if (!W_ERROR_IS_OK(result))
+	if (!W_ERROR_IS_OK(result)) {
 		goto done;
+	}
 
 	/* Get printer info */
 
 	result = rpccli_spoolss_getprinter(cli, mem_ctx,
 					   &pol,
-					   info_level,
+					   level,
 					   0,
 					   &info);
-	if (!W_ERROR_IS_OK(result))
+	if (!W_ERROR_IS_OK(result)) {
 		goto done;
+	}
 
 	/* Display printer info */
-	switch (info_level) {
+	switch (level) {
 	case 0:
 		display_print_info0(&info.info0);
 		break;
@@ -620,12 +622,13 @@ static WERROR cmd_spoolss_getprinter(struct rpc_pipe_client *cli,
 		display_print_info7(&info.info7);
 		break;
 	default:
-		printf("unknown info level %d\n", info_level);
+		printf("unknown info level %d\n", level);
 		break;
 	}
  done:
-	if (is_valid_policy_hnd(&pol))
+	if (is_valid_policy_hnd(&pol)) {
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &pol, NULL);
+	}
 
 	return result;
 }
