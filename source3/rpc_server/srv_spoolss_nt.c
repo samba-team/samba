@@ -8105,9 +8105,7 @@ static WERROR compose_spoolss_server_path(TALLOC_CTX *mem_ctx,
 static WERROR getprinterdriverdir_level_1(TALLOC_CTX *mem_ctx,
 					  const char *servername,
 					  const char *environment,
-					  struct spoolss_DriverDirectoryInfo1 *r,
-					  uint32_t offered,
-					  uint32_t *needed)
+					  struct spoolss_DriverDirectoryInfo1 *r)
 {
 	WERROR werr;
 	char *path = NULL;
@@ -8124,13 +8122,6 @@ static WERROR getprinterdriverdir_level_1(TALLOC_CTX *mem_ctx,
 	DEBUG(4,("printer driver directory: [%s]\n", path));
 
 	r->directory_name = path;
-
-	*needed += ndr_size_spoolss_DriverDirectoryInfo1(r, NULL, 0);
-
-	if (*needed > offered) {
-		talloc_free(path);
-		return WERR_INSUFFICIENT_BUFFER;
-	}
 
 	return WERR_OK;
 }
@@ -8160,14 +8151,17 @@ WERROR _spoolss_GetPrinterDriverDirectory(pipes_struct *p,
 	werror = getprinterdriverdir_level_1(p->mem_ctx,
 					     r->in.server,
 					     r->in.environment,
-					     &r->out.info->info1,
-					     r->in.offered,
-					     r->out.needed);
+					     &r->out.info->info1);
 	if (!W_ERROR_IS_OK(werror)) {
 		TALLOC_FREE(r->out.info);
+		return werror;
 	}
 
-	return werror;
+	*r->out.needed	= SPOOLSS_BUFFER_UNION(spoolss_DriverDirectoryInfo, NULL,
+					       r->out.info, r->in.level);
+	r->out.info	= SPOOLSS_BUFFER_OK(r->out.info, NULL);
+
+	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 }
 
 /****************************************************************************
