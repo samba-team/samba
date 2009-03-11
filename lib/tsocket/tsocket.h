@@ -205,5 +205,16 @@ struct tevent_req *tsocket_writev_queue_send(TALLOC_CTX *mem_ctx,
 					     size_t count);
 int tsocket_writev_queue_recv(struct tevent_req *req, int *perrno);
 
+typedef int (*tsocket_readv_next_iovec_t)(struct tsocket_context *sock,
+					  void *private_data,
+					  TALLOC_CTX *mem_ctx,
+					  struct iovec **vector,
+					  size_t *count);
+struct tevent_req *tsocket_readv_send(struct tsocket_context *sock,
+				      TALLOC_CTX *mem_ctx,
+				      tsocket_readv_next_iovec_t next_iovec_fn,
+				      void *private_data);
+int tsocket_readv_recv(struct tevent_req *req, int *perrno);
+
 #endif /* _TSOCKET_H */
 

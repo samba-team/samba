@@ -8,7 +8,8 @@ LIBTSOCKET_OBJ_FILES = $(addprefix ../lib/tsocket/, \
 					tsocket_recvfrom.o \
 					tsocket_sendto.o \
 					tsocket_connect.o \
-					tsocket_writev.o)
+					tsocket_writev.o \
+					tsocket_readv.o)
 
 PUBLIC_HEADERS += $(addprefix ../lib/tsocket/, \
 				 tsocket.h\
