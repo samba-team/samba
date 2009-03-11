@@ -972,7 +972,7 @@ int dsdb_schema_from_schema_dn(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 	 */
 	ret = ldb_search(ldb, tmp_ctx, &a_res,
 			 schema_dn, LDB_SCOPE_ONELEVEL, NULL,
-			 "(objectCategory=attributeSchema)");
+			 "(objectClass=attributeSchema)");
 	if (ret != LDB_SUCCESS) {
 		*error_string_out = talloc_asprintf(mem_ctx, 
 				       "dsdb_schema: failed to search attributeSchema objects: %s",
@@ -986,7 +986,7 @@ int dsdb_schema_from_schema_dn(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 	 */
 	ret = ldb_search(ldb, tmp_ctx, &c_res,
 			 schema_dn, LDB_SCOPE_ONELEVEL, NULL,
-			 "(objectCategory=classSchema)");
+			 "(objectClass=classSchema)");
 	if (ret != LDB_SUCCESS) {
 		*error_string_out = talloc_asprintf(mem_ctx, 
 				       "dsdb_schema: failed to search attributeSchema objects: %s",
