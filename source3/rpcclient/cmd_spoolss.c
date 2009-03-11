@@ -915,21 +915,20 @@ static void display_print_driver3(struct spoolss_DriverInfo3 *r)
 ****************************************************************************/
 
 static WERROR cmd_spoolss_getdriver(struct rpc_pipe_client *cli,
-                                      TALLOC_CTX *mem_ctx,
-                                      int argc, const char **argv)
+				    TALLOC_CTX *mem_ctx,
+				    int argc, const char **argv)
 {
 	POLICY_HND 	pol;
 	WERROR          werror;
-	uint32		info_level = 3;
+	uint32_t	level = 3;
 	const char	*printername;
-	uint32		i;
-	bool		success = False;
+	uint32_t	i;
+	bool		success = false;
 	union spoolss_DriverInfo info;
 	uint32_t server_major_version;
 	uint32_t server_minor_version;
 
-	if ((argc == 1) || (argc > 3))
-	{
+	if ((argc == 1) || (argc > 3)) {
 		printf("Usage: %s <printername> [level]\n", argv[0]);
 		return WERR_OK;
 	}
@@ -938,8 +937,9 @@ static WERROR cmd_spoolss_getdriver(struct rpc_pipe_client *cli,
 
 	RPCCLIENT_PRINTERNAME(printername, cli, argv[1]);
 
-	if (argc == 3)
-		info_level = atoi(argv[2]);
+	if (argc == 3) {
+		level = atoi(argv[2]);
+	}
 
 	/* Open a printer handle */
 
@@ -959,23 +959,24 @@ static WERROR cmd_spoolss_getdriver(struct rpc_pipe_client *cli,
 		werror = rpccli_spoolss_getprinterdriver2(cli, mem_ctx,
 							  &pol,
 							  archi_table[i].long_archi,
-							  info_level,
+							  level,
 							  0, /* offered */
 							  archi_table[i].version,
 							  2,
 							  &info,
 							  &server_major_version,
 							  &server_minor_version);
-		if (!W_ERROR_IS_OK(werror))
+		if (!W_ERROR_IS_OK(werror)) {
 			continue;
+		}
 
 		/* need at least one success */
 
-		success = True;
+		success = true;
 
-		printf ("\n[%s]\n", archi_table[i].long_archi);
+		printf("\n[%s]\n", archi_table[i].long_archi);
 
-		switch (info_level) {
+		switch (level) {
 		case 1:
 			display_print_driver1(&info.info1);
 			break;
@@ -986,18 +987,20 @@ static WERROR cmd_spoolss_getdriver(struct rpc_pipe_client *cli,
 			display_print_driver3(&info.info3);
 			break;
 		default:
-			printf("unknown info level %d\n", info_level);
+			printf("unknown info level %d\n", level);
 			break;
 		}
 	}
 
 	/* Cleanup */
 
-	if (is_valid_policy_hnd(&pol))
+	if (is_valid_policy_hnd(&pol)) {
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &pol, NULL);
+	}
 
-	if ( success )
+	if (success) {
 		werror = WERR_OK;
+	}
 
 	return werror;
 }
