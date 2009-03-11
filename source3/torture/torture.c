@@ -5005,7 +5005,7 @@ static bool run_chain1(int dummy)
 }
 
 static size_t null_source(uint8_t *inbuf, size_t n,
-			  const uint8_t *outbuf,
+			  const uint8_t **outbuf,
 			  void *priv)
 {
 	size_t *to_pull = (size_t *)priv;
