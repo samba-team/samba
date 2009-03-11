@@ -485,7 +485,7 @@ static void writev_handler(struct tevent_context *ev, struct tevent_fd *fde,
 			state->iov[0].iov_len -= written;
 			break;
 		}
-		written = state->iov[0].iov_len;
+		written -= state->iov[0].iov_len;
 		state->iov += 1;
 		state->count -= 1;
 	}
