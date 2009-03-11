@@ -3277,6 +3277,9 @@ if test x"$with_ads_support" != x"no"; then
   ac_save_CPPFLAGS=$CPPFLAGS
   ac_save_LDFLAGS=$LDFLAGS
 
+  # remove needless evil rpath stuff as early as possible:
+  LIB_REMOVE_USR_LIB(KRB5_LIBS)
+  LIB_REMOVE_USR_LIB(KRB5_LDFLAGS)
   CFLAGS="$KRB5_CFLAGS $CFLAGS"
   CPPFLAGS="$KRB5_CPPFLAGS $CPPFLAGS"
   LDFLAGS="$KRB5_LDFLAGS $LDFLAGS"
@@ -6358,7 +6361,6 @@ AC_ZLIB([ZLIB_OBJS=""], [
 dnl Remove -L/usr/lib/? from LDFLAGS and LIBS
 LIB_REMOVE_USR_LIB(LDFLAGS)
 LIB_REMOVE_USR_LIB(LIBS)
-LIB_REMOVE_USR_LIB(KRB5_LIBS)
 
 dnl Remove -I/usr/include/? from CFLAGS and CPPFLAGS
 CFLAGS_REMOVE_USR_INCLUDE(CFLAGS)
