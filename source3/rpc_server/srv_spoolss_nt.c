@@ -8961,13 +8961,10 @@ static WERROR fill_monitor_2(TALLOC_CTX *mem_ctx,
 
 static WERROR enumprintmonitors_level_1(TALLOC_CTX *mem_ctx,
 					union spoolss_MonitorInfo **info_p,
-					uint32_t offered,
-					uint32_t *needed,
 					uint32_t *count)
 {
 	union spoolss_MonitorInfo *info;
 	WERROR result = WERR_OK;
-	int i;
 
 	info = TALLOC_ARRAY(mem_ctx, union spoolss_MonitorInfo, 2);
 	W_ERROR_HAVE_NO_MEMORY(info);
@@ -8983,15 +8980,6 @@ static WERROR enumprintmonitors_level_1(TALLOC_CTX *mem_ctx,
 	result = fill_monitor_1(info, &info[1].info1,
 				SPL_TCPIP_PORT /* FIXME */);
 	if (!W_ERROR_IS_OK(result)) {
-		goto out;
-	}
-
-	for (i=0; i<*count; i++) {
-		*needed += ndr_size_spoolss_MonitorInfo1(&info[i].info1, NULL, 0);
-	}
-
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
 		goto out;
 	}
 
@@ -9013,13 +9001,10 @@ out:
 
 static WERROR enumprintmonitors_level_2(TALLOC_CTX *mem_ctx,
 					union spoolss_MonitorInfo **info_p,
-					uint32_t offered,
-					uint32_t *needed,
 					uint32_t *count)
 {
 	union spoolss_MonitorInfo *info;
 	WERROR result = WERR_OK;
-	int i;
 
 	info = TALLOC_ARRAY(mem_ctx, union spoolss_MonitorInfo, 2);
 	W_ERROR_HAVE_NO_MEMORY(info);
@@ -9042,15 +9027,6 @@ static WERROR enumprintmonitors_level_2(TALLOC_CTX *mem_ctx,
 		goto out;
 	}
 
-	for (i=0; i<*count; i++) {
-		*needed += ndr_size_spoolss_MonitorInfo2(&info[i].info2, NULL, 0);
-	}
-
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
-	}
-
 out:
 	if (!W_ERROR_IS_OK(result)) {
 		TALLOC_FREE(info);
@@ -9070,6 +9046,8 @@ out:
 WERROR _spoolss_EnumMonitors(pipes_struct *p,
 			     struct spoolss_EnumMonitors *r)
 {
+	WERROR result;
+
 	/* that's an [in out] buffer */
 
 	if (!r->in.buffer && (r->in.offered != 0)) {
@@ -9091,16 +9069,29 @@ WERROR _spoolss_EnumMonitors(pipes_struct *p,
 
 	switch (r->in.level) {
 	case 1:
-		return enumprintmonitors_level_1(p->mem_ctx, r->out.info,
-						 r->in.offered, r->out.needed,
-						 r->out.count);
+		result = enumprintmonitors_level_1(p->mem_ctx, r->out.info,
+						   r->out.count);
+		break;
 	case 2:
-		return enumprintmonitors_level_2(p->mem_ctx, r->out.info,
-						 r->in.offered, r->out.needed,
-						 r->out.count);
+		result = enumprintmonitors_level_2(p->mem_ctx, r->out.info,
+						   r->out.count);
+		break;
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
+
+	if (!W_ERROR_IS_OK(result)) {
+		return result;
+	}
+
+	*r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(p->mem_ctx,
+						     spoolss_EnumMonitors, NULL,
+						     *r->out.info, r->in.level,
+						     *r->out.count);
+	*r->out.info	= SPOOLSS_BUFFER_OK(*r->out.info, NULL);
+	*r->out.count	= SPOOLSS_BUFFER_OK(*r->out.count, 0);
+
+	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 }
 
 /****************************************************************************
