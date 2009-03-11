@@ -364,8 +364,8 @@ static WERROR cmd_spoolss_enum_ports(struct rpc_pipe_client *cli,
 				       const char **argv)
 {
 	WERROR         		result;
-	uint32                  info_level = 1;
-	uint32 			returned;
+	uint32_t		level = 1;
+	uint32_t		count;
 	union spoolss_PortInfo *info;
 
 	if (argc > 2) {
@@ -373,22 +373,23 @@ static WERROR cmd_spoolss_enum_ports(struct rpc_pipe_client *cli,
 		return WERR_OK;
 	}
 
-	if (argc == 2)
-		info_level = atoi(argv[1]);
+	if (argc == 2) {
+		level = atoi(argv[1]);
+	}
 
 	/* Enumerate ports */
 
 	result = rpccli_spoolss_enumports(cli, mem_ctx,
 					  cli->srv_name_slash,
-					  info_level,
+					  level,
 					  0,
-					  &returned,
+					  &count,
 					  &info);
 	if (W_ERROR_IS_OK(result)) {
 		int i;
 
-		for (i = 0; i < returned; i++) {
-			switch (info_level) {
+		for (i = 0; i < count; i++) {
+			switch (level) {
 			case 1:
 				display_port_info_1(&info[i].info1);
 				break;
@@ -396,7 +397,7 @@ static WERROR cmd_spoolss_enum_ports(struct rpc_pipe_client *cli,
 				display_port_info_2(&info[i].info2);
 				break;
 			default:
-				printf("unknown info level %d\n", info_level);
+				printf("unknown info level %d\n", level);
 				break;
 			}
 		}
