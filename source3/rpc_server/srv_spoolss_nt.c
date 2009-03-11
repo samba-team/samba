@@ -7557,8 +7557,6 @@ WERROR enumports_hook(TALLOC_CTX *ctx, int *count, char ***lines )
 
 static WERROR enumports_level_1(TALLOC_CTX *mem_ctx,
 				union spoolss_PortInfo **info_p,
-				uint32_t offered,
-				uint32_t *needed,
 				uint32_t *count)
 {
 	union spoolss_PortInfo *info = NULL;
@@ -7590,17 +7588,6 @@ static WERROR enumports_level_1(TALLOC_CTX *mem_ctx,
 	}
 	TALLOC_FREE(qlines);
 
-	/* check the required size. */
-	for (i=0; i<numlines; i++) {
-		DEBUGADD(6,("adding port [%d]'s size\n", i));
-		*needed += ndr_size_spoolss_PortInfo1(&info[i].info1, NULL, 0);
-	}
-
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
-	}
-
 out:
 	if (!W_ERROR_IS_OK(result)) {
 		TALLOC_FREE(info);
@@ -7622,8 +7609,6 @@ out:
 
 static WERROR enumports_level_2(TALLOC_CTX *mem_ctx,
 				union spoolss_PortInfo **info_p,
-				uint32_t offered,
-				uint32_t *needed,
 				uint32_t *count)
 {
 	union spoolss_PortInfo *info = NULL;
@@ -7655,17 +7640,6 @@ static WERROR enumports_level_2(TALLOC_CTX *mem_ctx,
 	}
 	TALLOC_FREE(qlines);
 
-	/* check the required size. */
-	for (i=0; i<numlines; i++) {
-		DEBUGADD(6,("adding port [%d]'s size\n", i));
-		*needed += ndr_size_spoolss_PortInfo2(&info[i].info2, NULL, 0);
-	}
-
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
-	}
-
 out:
 	if (!W_ERROR_IS_OK(result)) {
 		TALLOC_FREE(info);
@@ -7688,6 +7662,8 @@ out:
 WERROR _spoolss_EnumPorts(pipes_struct *p,
 			  struct spoolss_EnumPorts *r)
 {
+	WERROR result;
+
 	/* that's an [in out] buffer */
 
 	if (!r->in.buffer && (r->in.offered != 0)) {
@@ -7702,16 +7678,29 @@ WERROR _spoolss_EnumPorts(pipes_struct *p,
 
 	switch (r->in.level) {
 	case 1:
-		return enumports_level_1(p->mem_ctx, r->out.info,
-					 r->in.offered, r->out.needed,
-					 r->out.count);
+		result = enumports_level_1(p->mem_ctx, r->out.info,
+					   r->out.count);
+		break;
 	case 2:
-		return enumports_level_2(p->mem_ctx, r->out.info,
-					 r->in.offered, r->out.needed,
-					 r->out.count);
+		result = enumports_level_2(p->mem_ctx, r->out.info,
+					   r->out.count);
+		break;
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
+
+	if (!W_ERROR_IS_OK(result)) {
+		return result;
+	}
+
+	*r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(p->mem_ctx,
+						     spoolss_EnumPorts, NULL,
+						     *r->out.info, r->in.level,
+						     *r->out.count);
+	*r->out.info	= SPOOLSS_BUFFER_OK(*r->out.info, NULL);
+	*r->out.count	= SPOOLSS_BUFFER_OK(*r->out.count, 0);
+
+	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 }
 
 /****************************************************************************
