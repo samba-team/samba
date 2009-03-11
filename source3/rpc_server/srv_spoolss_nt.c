@@ -8854,8 +8854,6 @@ static WERROR fill_printprocdatatype1(TALLOC_CTX *mem_ctx,
 
 static WERROR enumprintprocdatatypes_level_1(TALLOC_CTX *mem_ctx,
 					     union spoolss_PrintProcDataTypesInfo **info_p,
-					     uint32_t offered,
-					     uint32_t *needed,
 					     uint32_t *count)
 {
 	WERROR result;
@@ -8868,13 +8866,6 @@ static WERROR enumprintprocdatatypes_level_1(TALLOC_CTX *mem_ctx,
 
 	result = fill_printprocdatatype1(info, &info[0].info1, "RAW");
 	if (!W_ERROR_IS_OK(result)) {
-		goto out;
-	}
-
-	*needed += ndr_size_spoolss_PrintProcDataTypesInfo1(&info[0].info1, NULL, 0);
-
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
 		goto out;
 	}
 
@@ -8897,6 +8888,8 @@ static WERROR enumprintprocdatatypes_level_1(TALLOC_CTX *mem_ctx,
 WERROR _spoolss_EnumPrintProcDataTypes(pipes_struct *p,
 				       struct spoolss_EnumPrintProcDataTypes *r)
 {
+	WERROR result;
+
 	/* that's an [in out] buffer */
 
 	if (!r->in.buffer && (r->in.offered != 0)) {
@@ -8911,12 +8904,21 @@ WERROR _spoolss_EnumPrintProcDataTypes(pipes_struct *p,
 
 	switch (r->in.level) {
 	case 1:
-		return enumprintprocdatatypes_level_1(p->mem_ctx, r->out.info,
-						      r->in.offered, r->out.needed,
-						      r->out.count);
+		result = enumprintprocdatatypes_level_1(p->mem_ctx, r->out.info,
+							r->out.count);
+		break;
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
+
+	*r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(p->mem_ctx,
+						     spoolss_EnumPrintProcDataTypes, NULL,
+						     *r->out.info, r->in.level,
+						     *r->out.count);
+	*r->out.info	= SPOOLSS_BUFFER_OK(*r->out.info, NULL);
+	*r->out.count	= SPOOLSS_BUFFER_OK(*r->out.count, 0);
+
+	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 }
 
 /****************************************************************************
