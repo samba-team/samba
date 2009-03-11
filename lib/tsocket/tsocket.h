@@ -192,5 +192,11 @@ struct tevent_req *tsocket_connect_send(struct tsocket_context *sock,
 					const struct tsocket_address *dst);
 int tsocket_connect_recv(struct tevent_req *req, int *perrno);
 
+struct tevent_req *tsocket_writev_send(struct tsocket_context *sock,
+				       TALLOC_CTX *mem_ctx,
+				       const struct iovec *vector,
+				       size_t count);
+int tsocket_writev_recv(struct tevent_req *req, int *perrno);
+
 #endif /* _TSOCKET_H */
 
