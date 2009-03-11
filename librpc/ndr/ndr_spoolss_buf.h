@@ -17,7 +17,7 @@ enum ndr_err_code ndr_pull_spoolss_EnumPrinters(struct ndr_pull *ndr, int flags,
 uint32_t ndr_size_spoolss_EnumPrinters_info(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience, uint32_t level, uint32_t count, union spoolss_PrinterInfo *info);
 enum ndr_err_code ndr_push_spoolss_EnumJobs(struct ndr_push *ndr, int flags, const struct spoolss_EnumJobs *r);
 enum ndr_err_code ndr_pull_spoolss_EnumJobs(struct ndr_pull *ndr, int flags, struct spoolss_EnumJobs *r);
-uint32_t ndr_size_spoolss_EnumJobss_info(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience, uint32_t level, uint32_t count, union spoolss_JobInfo *info);
+uint32_t ndr_size_spoolss_EnumJobs_info(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience, uint32_t level, uint32_t count, union spoolss_JobInfo *info);
 enum ndr_err_code ndr_push_spoolss_EnumPrinterDrivers(struct ndr_push *ndr, int flags, const struct spoolss_EnumPrinterDrivers *r);
 enum ndr_err_code ndr_pull_spoolss_EnumPrinterDrivers(struct ndr_pull *ndr, int flags, struct spoolss_EnumPrinterDrivers *r);
 uint32_t ndr_size_spoolss_EnumPrinterDrivers_info(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience, uint32_t level, uint32_t count, union spoolss_DriverInfo *info);

@@ -250,7 +250,7 @@ enum ndr_err_code ndr_pull_spoolss_EnumJobs(struct ndr_pull *ndr, int flags, str
 	return NDR_ERR_SUCCESS;
 }
 
-uint32_t ndr_size_spoolss_EnumJobss_info(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience, uint32_t level, uint32_t count, union spoolss_JobInfo *info)
+uint32_t ndr_size_spoolss_EnumJobs_info(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience, uint32_t level, uint32_t count, union spoolss_JobInfo *info)
 {
 	NDR_SPOOLSS_SIZE_ENUM(spoolss_EnumJobs);
 }
