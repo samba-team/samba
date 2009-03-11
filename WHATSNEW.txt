@@ -1,6 +1,6 @@
                    =============================
                    Release Notes for Samba 3.3.2
-			   March, 09 2009
+			   March, 12 2009
                    =============================
 
 This is the latest bugfix release release of the Samba 3.3 series.
@@ -8,6 +8,7 @@ This is the latest bugfix release release of the Samba 3.3 series.
 Major enhancements in Samba 3.3.2 include:
 
      * Fix "force group" (bug #6155).
+     * Fix saving of files on Samba share using MS Office 2007 (bug #6160).
      * Fix guest authentication in setups with "security = share" and
       "guest ok = yes" when Winbind is running.
      * Fix corruptions of source path in tar mode of smbclient (bug #6161).
@@ -26,7 +27,7 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 6082: Fix renaming and deleting of directories using Windows clients.
     * BUG 6154: Make ZFS honor admin users.
     * BUG 6155: Fix "force group".
-    * BUG 6160: Fix saving of files on Samba share using MS Office 2007
+    * BUG 6160: Fix saving of files on Samba share using MS Office 2007.
     * BUG 6161: Fix corruptions of source path in tar mode of smbclient.
     * Fix some NetBSD warnings.
     * Fix bug in processing of open modes in POSIX open.
@@ -57,10 +58,14 @@ o   Björn Jacke <bj@sernet.de>
 
 o   Volker Lendecke <vl@samba.org>
     * BUG 6124: Fix the build on IRIX.
+    * Add a vfs_preopen module to hide fs latencies.
+    * Don't log NDR_PRINT_DEBUG at level 0, this always ends up in syslog.
+    * Fix a valgrind error / segfault in dns_register_smbd().
 
 
 o   Stefan Metzmacher <metze@samba.org>
     * Fix build on SLES8.
+    * Decremented by 1 for ntcancel requests.
 
 
 o   Tim Prouty <tprouty@samba.org>
