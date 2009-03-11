@@ -785,8 +785,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
         samdb.set_invocation_id(invocationid)
 
     schema_data = load_schema(setup_path, samdb, names.schemadn, names.netbiosname, 
-                              names.configdn, names.sitename, names.serverdn,
-                              names.hostname)
+                              names.configdn, names.sitename, names.serverdn)
     samdb.transaction_start()
         
     try:
