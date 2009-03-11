@@ -7255,19 +7255,19 @@ WERROR _spoolss_enumprinterdrivers( pipes_struct *p, SPOOL_Q_ENUMPRINTERDRIVERS 
 ****************************************************************************/
 
 static WERROR fill_form_info_1(TALLOC_CTX *mem_ctx,
-			       struct spoolss_FormInfo1 *form,
-			       const nt_forms_struct *list)
+			       struct spoolss_FormInfo1 *r,
+			       const nt_forms_struct *form)
 {
-	form->form_name		= talloc_strdup(mem_ctx, list->name);
-	W_ERROR_HAVE_NO_MEMORY(form->form_name);
+	r->form_name	= talloc_strdup(mem_ctx, form->name);
+	W_ERROR_HAVE_NO_MEMORY(r->form_name);
 
-	form->flags		= list->flag;
-	form->size.width	= list->width;
-	form->size.height	= list->length;
-	form->area.left		= list->left;
-	form->area.top		= list->top;
-	form->area.right	= list->right;
-	form->area.bottom	= list->bottom;
+	r->flags	= form->flag;
+	r->size.width	= form->width;
+	r->size.height	= form->length;
+	r->area.left	= form->left;
+	r->area.top	= form->top;
+	r->area.right	= form->right;
+	r->area.bottom	= form->bottom;
 
 	return WERR_OK;
 }
@@ -7395,92 +7395,91 @@ WERROR _spoolss_EnumForms(pipes_struct *p,
 }
 
 /****************************************************************
+****************************************************************/
+
+static WERROR find_form_byname(const char *name,
+			       nt_forms_struct *form)
+{
+	nt_forms_struct *list = NULL;
+	int num_forms = 0, i = 0;
+
+	if (get_a_builtin_ntform_by_string(name, form)) {
+		return WERR_OK;
+	}
+
+	num_forms = get_ntforms(&list);
+	DEBUGADD(5,("Number of forms [%d]\n", num_forms));
+
+	if (num_forms == 0) {
+		return WERR_BADFID;
+	}
+
+	/* Check if the requested name is in the list of form structures */
+	for (i = 0; i < num_forms; i++) {
+
+		DEBUG(4,("checking form %s (want %s)\n", list[i].name, name));
+
+		if (strequal(name, list[i].name)) {
+			DEBUGADD(6,("Found form %s number [%d]\n", name, i));
+			*form = list[i];
+			SAFE_FREE(list);
+			return WERR_OK;
+		}
+	}
+
+	SAFE_FREE(list);
+
+	return WERR_BADFID;
+}
+
+/****************************************************************
  _spoolss_GetForm
 ****************************************************************/
 
 WERROR _spoolss_GetForm(pipes_struct *p,
 			struct spoolss_GetForm *r)
 {
-	uint32 level = r->in.level;
-	uint32 offered = r->in.offered;
-	uint32 *needed = r->out.needed;
-
-	nt_forms_struct *list=NULL;
-	nt_forms_struct builtin_form;
-	bool foundBuiltin;
-	union spoolss_FormInfo info;
-	struct spoolss_FormInfo1 form_1;
-	int numofforms=0, i=0;
+	WERROR result;
+	nt_forms_struct form;
 
 	/* that's an [in out] buffer */
 
-	if (!r->in.buffer && (offered!=0)) {
+	if (!r->in.buffer && (r->in.offered != 0)) {
 		return WERR_INVALID_PARAM;
 	}
 
 	DEBUG(4,("_spoolss_GetForm\n"));
-	DEBUGADD(5,("Offered buffer size [%d]\n", offered));
-	DEBUGADD(5,("Info level [%d]\n",          level));
+	DEBUGADD(5,("Offered buffer size [%d]\n", r->in.offered));
+	DEBUGADD(5,("Info level [%d]\n",          r->in.level));
 
-	foundBuiltin = get_a_builtin_ntform_by_string(r->in.form_name, &builtin_form);
-	if (!foundBuiltin) {
-		numofforms = get_ntforms(&list);
-		DEBUGADD(5,("Number of forms [%d]\n",     numofforms));
-
-		if (numofforms == 0)
-			return WERR_BADFID;
+	result = find_form_byname(r->in.form_name, &form);
+	if (!W_ERROR_IS_OK(result)) {
+		TALLOC_FREE(r->out.info);
+		return result;
 	}
 
-	ZERO_STRUCT(form_1);
-
-	switch (level) {
+	switch (r->in.level) {
 	case 1:
-		if (foundBuiltin) {
-			fill_form_info_1(p->mem_ctx, &form_1, &builtin_form);
-		} else {
-
-			/* Check if the requested name is in the list of form structures */
-			for (i=0; i<numofforms; i++) {
-
-				DEBUG(4,("_spoolss_GetForm: checking form %s (want %s)\n",
-					list[i].name, r->in.form_name));
-
-				if (strequal(r->in.form_name, list[i].name)) {
-					DEBUGADD(6,("Found form %s number [%d]\n",
-						r->in.form_name, i));
-					fill_form_info_1(p->mem_ctx, &form_1, &list[i]);
-					break;
-				}
-			}
-
-			SAFE_FREE(list);
-			if (i == numofforms) {
-				return WERR_BADFID;
-			}
-		}
-		/* check the required size. */
-
-		info.info1 = form_1;
-
-		*needed = ndr_size_spoolss_FormInfo(&info, 1, NULL, 0);
-
-		if (*needed > offered) {
-			r->out.info = NULL;
-			return WERR_INSUFFICIENT_BUFFER;
-		}
-
-		r->out.info->info1 = form_1;
-
-		/* fill the buffer with the form structures */
-		DEBUGADD(6,("adding form %s [%d] to buffer\n",
-			r->in.form_name, i));
-
-		return WERR_OK;
+		result = fill_form_info_1(p->mem_ctx,
+					  &r->out.info->info1,
+					  &form);
+		break;
 
 	default:
-		SAFE_FREE(list);
-		return WERR_UNKNOWN_LEVEL;
+		result = WERR_UNKNOWN_LEVEL;
+		break;
 	}
+
+	if (!W_ERROR_IS_OK(result)) {
+		TALLOC_FREE(r->out.info);
+		return result;
+	}
+
+	*r->out.needed	= SPOOLSS_BUFFER_UNION(spoolss_FormInfo, NULL,
+					       r->out.info, r->in.level);
+	r->out.info	= SPOOLSS_BUFFER_OK(r->out.info, NULL);
+
+	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 }
 
 /****************************************************************************
