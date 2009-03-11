@@ -4150,6 +4150,119 @@ static bool run_opentest(int dummy)
 	return correct;
 }
 
+/*
+  Test POSIX open /mkdir calls.
+ */
+static bool run_simple_posix_open_test(int dummy)
+{
+	static struct cli_state *cli1;
+	const char *fname = "\\posix.file";
+	const char *dname = "\\posix.dir";
+	uint16 major, minor;
+	uint32 caplow, caphigh;
+	int fnum1;
+	bool correct = false;
+
+	printf("Starting simple POSIX open test\n");
+
+	if (!torture_open_connection(&cli1, 0)) {
+		return false;
+	}
+
+	cli_sockopt(cli1, sockops);
+
+	if (!SERVER_HAS_UNIX_CIFS(cli1)) {
+		printf("Server doesn't support UNIX CIFS extensions.\n");
+		return false;
+	}
+
+	if (!cli_unix_extensions_version(cli1, &major,
+			&minor, &caplow, &caphigh)) {
+		printf("Server didn't return UNIX CIFS extensions.\n");
+		return false;
+	}
+
+	if (!cli_set_unix_extensions_capabilities(cli1,
+			major, minor, caplow, caphigh)) {
+		printf("Server doesn't support setting UNIX CIFS extensions.\n");
+		return false;
+        }
+
+	cli_setatr(cli1, fname, 0, 0);
+	cli_posix_unlink(cli1, fname);
+	cli_setatr(cli1, dname, 0, 0);
+	cli_posix_rmdir(cli1, dname);
+
+	/* Create a directory. */
+	if (cli_posix_mkdir(cli1, dname, 0777) == -1) {
+		printf("Server doesn't support setting UNIX CIFS extensions.\n");
+		goto out;
+	}
+
+	fnum1 = cli_posix_open(cli1, fname, O_RDWR|O_CREAT|O_EXCL, 0600);
+	if (fnum1 == -1) {
+		printf("POSIX create of %s failed (%s)\n", fname, cli_errstr(cli1));
+		goto out;
+	}
+
+	if (!cli_close(cli1, fnum1)) {
+		printf("close failed (%s)\n", cli_errstr(cli1));
+		goto out;
+	}
+
+	/* Now open the file again for read only. */
+	fnum1 = cli_posix_open(cli1, fname, O_RDONLY, 0);
+	if (fnum1 == -1) {
+		printf("POSIX open of %s failed (%s)\n", fname, cli_errstr(cli1));
+		goto out;
+	}
+
+	/* Now unlink while open. */
+	if (!cli_posix_unlink(cli1, fname)) {
+		printf("POSIX unlink of %s failed (%s)\n", fname, cli_errstr(cli1));
+		goto out;
+	}
+
+	if (!cli_close(cli1, fnum1)) {
+		printf("close(2) failed (%s)\n", cli_errstr(cli1));
+		goto out;
+	}
+
+	/* Ensure the file has gone. */
+	fnum1 = cli_posix_open(cli1, fname, O_RDONLY, 0);
+	if (fnum1 != -1) {
+		printf("POSIX open of %s succeeded, should have been deleted.\n", fname);
+		goto out;
+	}
+
+	if (!cli_posix_rmdir(cli1, dname)) {
+		printf("POSIX rmdir failed (%s)\n", cli_errstr(cli1));
+		goto out;
+	}
+
+	printf("Simple POSIX open test passed\n");
+	correct = true;
+
+  out:
+
+	if (fnum1 != -1) {
+		cli_close(cli1, fnum1);
+		fnum1 = -1;
+	}
+
+	cli_setatr(cli1, fname, 0, 0);
+	cli_posix_unlink(cli1, fname);
+	cli_setatr(cli1, dname, 0, 0);
+	cli_posix_rmdir(cli1, dname);
+
+	if (!torture_close_connection(cli1)) {
+		correct = false;
+	}
+
+	return correct;
+}
+
+
 static uint32 open_attrs_table[] = {
 		FILE_ATTRIBUTE_NORMAL,
 		FILE_ATTRIBUTE_ARCHIVE,
@@ -5692,6 +5805,7 @@ static struct {
 	{"RW2",  run_readwritemulti, FLAG_MULTIPROC},
 	{"RW3",  run_readwritelarge, 0},
 	{"OPEN", run_opentest, 0},
+	{"POSIX", run_simple_posix_open_test, 0},
 #if 1
 	{"OPENATTR", run_openattrtest, 0},
 #endif
