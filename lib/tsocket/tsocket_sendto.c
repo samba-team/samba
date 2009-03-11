@@ -75,6 +75,16 @@ struct tevent_req *tsocket_sendto_send(struct tsocket_context *sock,
 	state->caller.dst	= dst;
 	state->ret		= -1;
 
+	/*
+	 * this is a fast path, not waiting for the
+	 * socket to become explicit writeable gains
+	 * about 10%-20% performance in benchmark tests.
+	 */
+	tsocket_sendto_handler(sock, req);
+	if (!tevent_req_is_in_progress(req)) {
+		goto post;
+	}
+
 	talloc_set_destructor(state, tsocket_sendto_state_destructor);
 
 	ret = tsocket_set_writeable_handler(sock,
