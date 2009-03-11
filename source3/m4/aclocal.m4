@@ -386,11 +386,17 @@ AC_DEFUN(LIB_REMOVE_USR_LIB,[
     case [$]l[$]i in
     -L/usr/lib) ;;
     -L/usr/lib/) ;;
-    -Wl,-rpath,/usr/lib) ;;
-    -Wl,-rpath,/usr/lib/) ;;
+    -L/usr/lib64) ;;
+    -L/usr/lib64/) ;;
+    -Wl,-rpath,/usr/lib) l="";;
+    -Wl,-rpath,/usr/lib/) l="";;
+    -Wl,-rpath,/usr/lib64) l="";;
+    -Wl,-rpath,/usr/lib64/) l="";;
     -Wl,-rpath) l=[$]i;;
     -Wl,-rpath-Wl,/usr/lib) l="";;
     -Wl,-rpath-Wl,/usr/lib/) l="";;
+    -Wl,-rpath-Wl,/usr/lib64) l="";;
+    -Wl,-rpath-Wl,/usr/lib64/) l="";;
     *)
     	s=" "
         if test x"[$]ac_new_flags" = x""; then
