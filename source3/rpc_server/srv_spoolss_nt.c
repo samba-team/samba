@@ -8767,8 +8767,6 @@ static WERROR fill_print_processor1(TALLOC_CTX *mem_ctx,
 
 static WERROR enumprintprocessors_level_1(TALLOC_CTX *mem_ctx,
 					  union spoolss_PrintProcessorInfo **info_p,
-					  uint32_t offered,
-					  uint32_t *needed,
 					  uint32_t *count)
 {
 	union spoolss_PrintProcessorInfo *info;
@@ -8781,13 +8779,6 @@ static WERROR enumprintprocessors_level_1(TALLOC_CTX *mem_ctx,
 
 	result = fill_print_processor1(info, &info[0].info1, "winprint");
 	if (!W_ERROR_IS_OK(result)) {
-		goto out;
-	}
-
-	*needed += ndr_size_spoolss_PrintProcessorInfo1(&info[0].info1, NULL, 0);
-
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
 		goto out;
 	}
 
@@ -8810,6 +8801,8 @@ static WERROR enumprintprocessors_level_1(TALLOC_CTX *mem_ctx,
 WERROR _spoolss_EnumPrintProcessors(pipes_struct *p,
 				    struct spoolss_EnumPrintProcessors *r)
 {
+	WERROR result;
+
 	/* that's an [in out] buffer */
 
 	if (!r->in.buffer && (r->in.offered != 0)) {
@@ -8831,12 +8824,25 @@ WERROR _spoolss_EnumPrintProcessors(pipes_struct *p,
 
 	switch (r->in.level) {
 	case 1:
-		return enumprintprocessors_level_1(p->mem_ctx, r->out.info,
-						   r->in.offered, r->out.needed,
-						   r->out.count);
+		result = enumprintprocessors_level_1(p->mem_ctx, r->out.info,
+						     r->out.count);
+		break;
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
+
+	if (!W_ERROR_IS_OK(result)) {
+		return result;
+	}
+
+	*r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(p->mem_ctx,
+						     spoolss_EnumPrintProcessors, NULL,
+						     *r->out.info, r->in.level,
+						     *r->out.count);
+	*r->out.info	= SPOOLSS_BUFFER_OK(*r->out.info, NULL);
+	*r->out.count	= SPOOLSS_BUFFER_OK(*r->out.count, 0);
+
+	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 }
 
 /****************************************************************************
