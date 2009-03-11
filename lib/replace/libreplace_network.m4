@@ -16,6 +16,7 @@ AC_CHECK_HEADERS([netinet/ip.h], [], [],[#ifdef HAVE_NETINET_IN_H
 #endif])
 AC_CHECK_HEADERS(netinet/tcp.h netinet/in_ip.h)
 AC_CHECK_HEADERS(sys/sockio.h sys/un.h)
+AC_CHECK_HEADERS(sys/uio.h)
 
 dnl we need to check that net/if.h really can be used, to cope with hpux
 dnl where including it always fails
