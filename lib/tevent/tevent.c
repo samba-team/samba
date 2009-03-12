@@ -313,6 +313,25 @@ bool tevent_signal_support(struct tevent_context *ev)
 	return false;
 }
 
+static void (*tevent_abort_fn)(const char *reason);
+
+void tevent_set_abort_fn(void (*abort_fn)(const char *reason))
+{
+	tevent_abort_fn = abort_fn;
+}
+
+static void tevent_abort(struct tevent_context *ev, const char *reason)
+{
+	tevent_debug(ev, TEVENT_DEBUG_FATAL,
+		     "abort: %s\n", reason);
+
+	if (!tevent_abort_fn) {
+		abort();
+	}
+
+	tevent_abort_fn(reason);
+}
+
 /*
   add a timer event
   return NULL on failure

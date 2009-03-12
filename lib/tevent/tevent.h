@@ -110,6 +110,8 @@ void tevent_fd_set_flags(struct tevent_fd *fde, uint16_t flags);
 
 bool tevent_signal_support(struct tevent_context *ev);
 
+void tevent_set_abort_fn(void (*abort_fn)(const char *reason));
+
 /* bits for file descriptor event flags */
 #define TEVENT_FD_READ 1
 #define TEVENT_FD_WRITE 2
