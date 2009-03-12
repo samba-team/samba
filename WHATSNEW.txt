@@ -58,6 +58,7 @@ o   Björn Jacke <bj@sernet.de>
 
 o   Volker Lendecke <vl@samba.org>
     * BUG 6124: Fix the build on IRIX.
+    * BUG 6176: winbindd -n should disable the winbind idmap cache.
     * Add a vfs_preopen module to hide fs latencies.
     * Don't log NDR_PRINT_DEBUG at level 0, this always ends up in syslog.
     * Fix a valgrind error / segfault in dns_register_smbd().
