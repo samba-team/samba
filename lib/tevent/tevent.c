@@ -371,15 +371,15 @@ struct tevent_signal *_tevent_add_signal(struct tevent_context *ev,
 /*
   do a single event loop using the events defined in ev 
 */
-int tevent_loop_once(struct tevent_context *ev)
+int _tevent_loop_once(struct tevent_context *ev, const char *location)
 {
-	return ev->ops->loop_once(ev);
+	return ev->ops->loop_once(ev, location);
 }
 
 /*
   return on failure or (with 0) if all fd events are removed
 */
-int tevent_loop_wait(struct tevent_context *ev)
+int _tevent_loop_wait(struct tevent_context *ev, const char *location)
 {
-	return ev->ops->loop_wait(ev);
+	return ev->ops->loop_wait(ev, location);
 }

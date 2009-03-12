@@ -99,8 +99,13 @@ struct tevent_signal *_tevent_add_signal(struct tevent_context *ev,
 	_tevent_add_signal(ev, mem_ctx, signum, sa_flags, handler, private_data, \
 			   #handler, __location__)
 
-int tevent_loop_once(struct tevent_context *ev);
-int tevent_loop_wait(struct tevent_context *ev);
+int _tevent_loop_once(struct tevent_context *ev, const char *location);
+#define tevent_loop_once(ev) \
+	_tevent_loop_once(ev, __location__) \
+
+int _tevent_loop_wait(struct tevent_context *ev, const char *location);
+#define tevent_loop_wait(ev) \
+	_tevent_loop_wait(ev, __location__) \
 
 void tevent_fd_set_close_fn(struct tevent_fd *fde,
 			    tevent_fd_close_fn_t close_fn);

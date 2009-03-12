@@ -153,8 +153,8 @@ struct tevent_ops {
 					    const char *location);
 
 	/* loop functions */
-	int (*loop_once)(struct tevent_context *ev);
-	int (*loop_wait)(struct tevent_context *ev);
+	int (*loop_once)(struct tevent_context *ev, const char *location);
+	int (*loop_wait)(struct tevent_context *ev, const char *location);
 };
 
 struct tevent_fd {

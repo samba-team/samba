@@ -411,7 +411,7 @@ static void epoll_event_set_fd_flags(struct tevent_fd *fde, uint16_t flags)
 /*
   do a single event loop using the events defined in ev 
 */
-static int epoll_event_loop_once(struct tevent_context *ev)
+static int epoll_event_loop_once(struct tevent_context *ev, const char *location)
 {
 	struct epoll_event_context *epoll_ev = talloc_get_type(ev->additional_data,
 		 					   struct epoll_event_context);
@@ -430,12 +430,12 @@ static int epoll_event_loop_once(struct tevent_context *ev)
 /*
   return on failure or (with 0) if all fd events are removed
 */
-static int epoll_event_loop_wait(struct tevent_context *ev)
+static int epoll_event_loop_wait(struct tevent_context *ev, const char *location)
 {
 	struct epoll_event_context *epoll_ev = talloc_get_type(ev->additional_data,
 							   struct epoll_event_context);
 	while (epoll_ev->ev->fd_events) {
-		if (epoll_event_loop_once(ev) != 0) {
+		if (epoll_event_loop_once(ev, location) != 0) {
 			break;
 		}
 	}

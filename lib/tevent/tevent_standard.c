@@ -534,7 +534,7 @@ static int std_event_loop_select(struct std_event_context *std_ev, struct timeva
 /*
   do a single event loop using the events defined in ev 
 */
-static int std_event_loop_once(struct tevent_context *ev)
+static int std_event_loop_once(struct tevent_context *ev, const char *location)
 {
 	struct std_event_context *std_ev = talloc_get_type(ev->additional_data,
 		 					   struct std_event_context);
@@ -557,14 +557,14 @@ static int std_event_loop_once(struct tevent_context *ev)
 /*
   return on failure or (with 0) if all fd events are removed
 */
-static int std_event_loop_wait(struct tevent_context *ev)
+static int std_event_loop_wait(struct tevent_context *ev, const char *location)
 {
 	struct std_event_context *std_ev = talloc_get_type(ev->additional_data,
 							   struct std_event_context);
 	std_ev->exit_code = 0;
 
 	while (ev->fd_events && std_ev->exit_code == 0) {
-		if (std_event_loop_once(ev) != 0) {
+		if (std_event_loop_once(ev, location) != 0) {
 			break;
 		}
 	}
