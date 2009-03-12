@@ -32,6 +32,7 @@
  *  Author: Andrew Tridgell
  */
 
+#define TEVENT_DEPRECATED 1
 #include "ldb_private.h"
 
 static int ldb_context_destructor(void *ptr)
@@ -56,7 +57,7 @@ static void ldb_tevent_debug(void *context, enum tevent_debug_level level,
 static void ldb_tevent_debug(void *context, enum tevent_debug_level level,
 			     const char *fmt, va_list ap)
 {
-	struct ldb_context = talloc_get_type_abort(context, struct ldb_context);
+	struct ldb_context *ldb = talloc_get_type(context, struct ldb_context);
 	enum ldb_debug_level ldb_level = LDB_DEBUG_FATAL;
 	char *s = NULL;
 
@@ -97,6 +98,7 @@ struct ldb_context *ldb_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev_ctx)
 	if (ev_ctx == NULL) {
 		ev_ctx = tevent_context_init(talloc_autofree_context());
 		tevent_set_debug(ev_ctx, ldb_tevent_debug, ldb);
+		tevent_loop_allow_nesting(ev_ctx);
 	}
 
 	ret = ldb_setup_wellknown_attributes(ldb);
