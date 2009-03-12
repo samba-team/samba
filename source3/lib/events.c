@@ -145,7 +145,7 @@ struct timeval *get_timed_events_timeout(struct tevent_context *ev,
 	return to_ret;
 }
 
-static int s3_event_loop_once(struct tevent_context *ev)
+static int s3_event_loop_once(struct tevent_context *ev, const char *location)
 {
 	struct timeval now, to;
 	fd_set r_fds, w_fds;
@@ -181,12 +181,12 @@ static int s3_event_loop_once(struct tevent_context *ev)
 	return 0;
 }
 
-static int s3_event_loop_wait(struct tevent_context *ev)
+static int s3_event_loop_wait(struct tevent_context *ev, const char *location)
 {
 	int ret = 0;
 
 	while (ret == 0) {
-		ret = s3_event_loop_once(ev);
+		ret = s3_event_loop_once(ev, location);
 	}
 
 	return ret;
