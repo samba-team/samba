@@ -35,6 +35,7 @@ struct smb2_negotiate {
 	NTTIME system_time;
 	NTTIME server_start_time;
 	uint16_t security_mode;
+	uint16_t dialect_revision;
 };
 
 /* this is the context for the smb2 transport layer */
@@ -226,8 +227,9 @@ struct smb2_request {
 
 #define SMB2_MAGIC 0x424D53FE /* 0xFE 'S' 'M' 'B' */
 
-/* the dialect we support */
+/* the dialects we support */
 #define SMB2_DIALECT_REVISION           0x202
+#define SMB21_DIALECT_REVISION          0x210
 
 /* SMB2 negotiate security_mode */
 #define SMB2_NEGOTIATE_SIGNING_ENABLED   0x01

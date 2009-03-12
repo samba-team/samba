@@ -108,6 +108,7 @@ static void continue_negprot(struct smb2_request *req)
 	transport->negotiate.system_time = state->negprot.out.system_time;
 	transport->negotiate.server_start_time = state->negprot.out.server_start_time;
 	transport->negotiate.security_mode = state->negprot.out.security_mode;
+	transport->negotiate.dialect_revision = state->negprot.out.dialect_revision;
 
 	switch (transport->options.signing) {
 	case SMB_SIGNING_OFF:
@@ -187,7 +188,7 @@ static void continue_socket(struct composite_context *creq)
 	state->negprot.in.capabilities  = 0;
 	unix_to_nt_time(&state->negprot.in.start_time, time(NULL));
 	dialects[0] = SMB2_DIALECT_REVISION;
-	dialects[1] = 0;
+	dialects[1] = SMB21_DIALECT_REVISION;
 	state->negprot.in.dialects = dialects;
 
 	req = smb2_negprot_send(transport, &state->negprot);
