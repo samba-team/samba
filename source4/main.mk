@@ -57,3 +57,4 @@ mkinclude ../libcli/auth/config.mk
 mkinclude ../libcli/drsuapi/config.mk
 mkinclude ../libcli/samsync/config.mk
 mkinclude ../libgpo/config.mk
+mkinclude ../libcli/named_pipe_auth/config.mk
