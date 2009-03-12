@@ -175,10 +175,10 @@ userAccountControl: %u
             user_dn = res[0].dn
 
             setpw = """
-    dn: %s
-    changetype: modify
-    replace: userPassword
-    userPassword: %s
+dn: %s
+changetype: modify
+replace: userPassword
+userPassword: %s
     """ % (user_dn, password)
 
             self.modify_ldif(setpw)
@@ -229,12 +229,12 @@ userAccountControl: %u
                 accountExpires = glue.unix2nttime(expiry_seconds + int(time.time()))
 
             mod = """
-    dn: %s
-    changetype: modify
-    replace: userAccountControl
-    userAccountControl: %u
-    replace: accountExpires
-    accountExpires: %u
+dn: %s
+changetype: modify
+replace: userAccountControl
+userAccountControl: %u
+replace: accountExpires
+accountExpires: %u
     """ % (res[0].dn, userAccountControl, accountExpires)
             # now change the database
             self.modify_ldif(mod)
