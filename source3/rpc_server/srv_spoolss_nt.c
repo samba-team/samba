@@ -3924,108 +3924,81 @@ done:
  * fill a printer_info_0 struct
  ********************************************************************/
 
-static bool construct_printer_info_0(Printer_entry *print_hnd, PRINTER_INFO_0 *printer, int snum)
+static WERROR construct_printer_info0(TALLOC_CTX *mem_ctx,
+				      const NT_PRINTER_INFO_LEVEL *ntprinter,
+				      struct spoolss_PrinterInfo0 *r,
+				      int snum)
 {
-	char *chaine = NULL;
 	int count;
-	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
 	counter_printer_0 *session_counter;
-	uint32 global_counter;
-	struct tm *t;
 	time_t setuptime;
 	print_status_struct status;
-	TALLOC_CTX *ctx = talloc_tos();
 
-	if (!W_ERROR_IS_OK(get_a_printer(print_hnd, &ntprinter, 2, lp_const_servicename(snum))))
-		return False;
+	r->printername		= talloc_strdup(mem_ctx, ntprinter->info_2->printername);
+	W_ERROR_HAVE_NO_MEMORY(r->printername);
 
-	init_unistr(&printer->printername, ntprinter->info_2->printername);
-
-	chaine = talloc_asprintf(ctx, "\\\\%s", get_server_name(print_hnd));
-	if (!chaine) {
-		free_a_printer(&ntprinter,2);
-		return false;
-	}
+	r->servername		= talloc_strdup(mem_ctx, ntprinter->info_2->servername);
+	W_ERROR_HAVE_NO_MEMORY(r->servername);
 
 	count = print_queue_length(snum, &status);
 
 	/* check if we already have a counter for this printer */
-	for(session_counter = counter_list; session_counter; session_counter = session_counter->next) {
+	for (session_counter = counter_list; session_counter; session_counter = session_counter->next) {
 		if (session_counter->snum == snum)
 			break;
 	}
 
-	init_unistr(&printer->servername, chaine);
-
 	/* it's the first time, add it to the list */
-	if (session_counter==NULL) {
-		if((session_counter=SMB_MALLOC_P(counter_printer_0)) == NULL) {
-			free_a_printer(&ntprinter, 2);
-			return False;
-		}
+	if (session_counter == NULL) {
+		session_counter = SMB_MALLOC_P(counter_printer_0);
+		W_ERROR_HAVE_NO_MEMORY(session_counter);
 		ZERO_STRUCTP(session_counter);
-		session_counter->snum=snum;
-		session_counter->counter=0;
+		session_counter->snum		= snum;
+		session_counter->counter	= 0;
 		DLIST_ADD(counter_list, session_counter);
 	}
 
 	/* increment it */
 	session_counter->counter++;
 
+	r->cjobs			= count;
+	r->total_jobs			= 0;
+	r->total_bytes			= 0;
+
+	setuptime = (time_t)ntprinter->info_2->setuptime;
+
+	init_systemtime(&r->time, gmtime(&setuptime));
+
 	/* JFM:
 	 * the global_counter should be stored in a TDB as it's common to all the clients
 	 * and should be zeroed on samba startup
 	 */
-	global_counter=session_counter->counter;
-	printer->cjobs = count;
-	printer->total_jobs = 0;
-	printer->total_bytes = 0;
-
-	setuptime = (time_t)ntprinter->info_2->setuptime;
-	t=gmtime(&setuptime);
-
-	printer->year = t->tm_year+1900;
-	printer->month = t->tm_mon+1;
-	printer->dayofweek = t->tm_wday;
-	printer->day = t->tm_mday;
-	printer->hour = t->tm_hour;
-	printer->minute = t->tm_min;
-	printer->second = t->tm_sec;
-	printer->milliseconds = 0;
-
-	printer->global_counter = global_counter;
-	printer->total_pages = 0;
-
+	r->global_counter		= session_counter->counter;
+	r->total_pages			= 0;
 	/* in 2.2 we reported ourselves as 0x0004 and 0x0565 */
-	printer->major_version = 0x0005; 	/* NT 5 */
-	printer->build_version = 0x0893; 	/* build 2195 */
+	r->version			= 0x0005; 	/* NT 5 */
+	r->free_build			= 0x0893; 	/* build 2195 */
+	r->spooling			= 0;
+	r->max_spooling			= 0;
+	r->session_counter		= session_counter->counter;
+	r->num_error_out_of_paper	= 0x0;
+	r->num_error_not_ready		= 0x0;		/* number of print failure */
+	r->job_error			= 0x0;
+	r->number_of_processors		= 0x1;
+	r->processor_type		= PROCESSOR_INTEL_PENTIUM; /* 586 Pentium ? */
+	r->high_part_total_bytes	= 0x0;
+	r->change_id			= ntprinter->info_2->changeid; /* ChangeID in milliseconds*/
+	r->last_error			= WERR_OK;
+	r->status			= nt_printq_status(status.status);
+	r->enumerate_network_printers	= 0x0;
+	r->c_setprinter			= get_c_setprinter(); /* monotonically increasing sum of delta printer counts */
+	r->processor_architecture	= 0x0;
+	r->processor_level		= 0x6; 		/* 6  ???*/
+	r->ref_ic			= 0;
+	r->reserved2			= 0;
+	r->reserved3			= 0;
 
-	printer->unknown7 = 0x1;
-	printer->unknown8 = 0x0;
-	printer->unknown9 = 0x0;
-	printer->session_counter = session_counter->counter;
-	printer->unknown11 = 0x0;
-	printer->printer_errors = 0x0;		/* number of print failure */
-	printer->unknown13 = 0x0;
-	printer->unknown14 = 0x1;
-	printer->unknown15 = 0x024a;		/* 586 Pentium ? */
-	printer->unknown16 =  0x0;
-	printer->change_id = ntprinter->info_2->changeid; /* ChangeID in milliseconds*/
-	printer->unknown18 =  0x0;
-	printer->status = nt_printq_status(status.status);
-	printer->unknown20 =  0x0;
-	printer->c_setprinter = get_c_setprinter(); /* monotonically increasing sum of delta printer counts */
-	printer->unknown22 = 0x0;
-	printer->unknown23 = 0x6; 		/* 6  ???*/
-	printer->unknown24 = 0; 		/* unknown 24 to 26 are always 0 */
-	printer->unknown25 = 0;
-	printer->unknown26 = 0;
-	printer->unknown27 = 0;
-	printer->unknown28 = 0;
-	printer->unknown29 = 0;
-
-	free_a_printer(&ntprinter,2);
-	return (True);
+	return WERR_OK;
 }
 
 /********************************************************************
@@ -4345,140 +4318,116 @@ static bool construct_printer_info_2(Printer_entry *print_hnd, PRINTER_INFO_2 *p
 }
 
 /********************************************************************
- * construct_printer_info_3
- * fill a printer_info_3 struct
+ * construct_printer_info3
+ * fill a spoolss_PrinterInfo3 struct
  ********************************************************************/
 
-static bool construct_printer_info_3(Printer_entry *print_hnd, PRINTER_INFO_3 **pp_printer, int snum)
+static WERROR construct_printer_info3(TALLOC_CTX *mem_ctx,
+				      const NT_PRINTER_INFO_LEVEL *ntprinter,
+				      struct spoolss_PrinterInfo3 *r,
+				      int snum)
 {
-	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
-	PRINTER_INFO_3 *printer = NULL;
-
-	if (!W_ERROR_IS_OK(get_a_printer(print_hnd, &ntprinter, 2, lp_const_servicename(snum))))
-		return False;
-
-	*pp_printer = NULL;
-	if ((printer = SMB_MALLOC_P(PRINTER_INFO_3)) == NULL) {
-		DEBUG(2,("construct_printer_info_3: malloc fail.\n"));
-		free_a_printer(&ntprinter, 2);
-		return False;
-	}
-
-	ZERO_STRUCTP(printer);
-
 	/* These are the components of the SD we are returning. */
 
 	if (ntprinter->info_2->secdesc_buf && ntprinter->info_2->secdesc_buf->sd_size != 0) {
 		/* don't use talloc_steal() here unless you do a deep steal of all
 		   the SEC_DESC members */
 
-		printer->secdesc = dup_sec_desc( talloc_tos(),
-			ntprinter->info_2->secdesc_buf->sd );
+		r->secdesc = dup_sec_desc(mem_ctx,
+					  ntprinter->info_2->secdesc_buf->sd);
+		W_ERROR_HAVE_NO_MEMORY(r->secdesc);
 	}
 
-	free_a_printer(&ntprinter, 2);
-
-	*pp_printer = printer;
-	return True;
+	return WERR_OK;
 }
 
 /********************************************************************
- * construct_printer_info_4
- * fill a printer_info_4 struct
+ * construct_printer_info4
+ * fill a spoolss_PrinterInfo4 struct
  ********************************************************************/
 
-static bool construct_printer_info_4(Printer_entry *print_hnd, PRINTER_INFO_4 *printer, int snum)
+static WERROR construct_printer_info4(TALLOC_CTX *mem_ctx,
+				      const NT_PRINTER_INFO_LEVEL *ntprinter,
+				      struct spoolss_PrinterInfo4 *r,
+				      int snum)
 {
-	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
+	r->printername	= talloc_strdup(mem_ctx, ntprinter->info_2->printername);
+	W_ERROR_HAVE_NO_MEMORY(r->printername);
+	r->servername	= talloc_strdup(mem_ctx, ntprinter->info_2->servername);
+	W_ERROR_HAVE_NO_MEMORY(r->servername);
 
-	if (!W_ERROR_IS_OK(get_a_printer(print_hnd, &ntprinter, 2, lp_const_servicename(snum))))
-		return False;
+	r->attributes	= ntprinter->info_2->attributes;
 
-	init_unistr(&printer->printername, ntprinter->info_2->printername);				/* printername*/
-	init_unistr(&printer->servername, ntprinter->info_2->servername); /* servername*/
-	printer->attributes = ntprinter->info_2->attributes;
-
-	free_a_printer(&ntprinter, 2);
-	return True;
+	return WERR_OK;
 }
 
 /********************************************************************
- * construct_printer_info_5
- * fill a printer_info_5 struct
+ * construct_printer_info5
+ * fill a spoolss_PrinterInfo5 struct
  ********************************************************************/
 
-static bool construct_printer_info_5(Printer_entry *print_hnd, PRINTER_INFO_5 *printer, int snum)
+static WERROR construct_printer_info5(TALLOC_CTX *mem_ctx,
+				      const NT_PRINTER_INFO_LEVEL *ntprinter,
+				      struct spoolss_PrinterInfo5 *r,
+				      int snum)
 {
-	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
+	r->printername	= talloc_strdup(mem_ctx, ntprinter->info_2->printername);
+	W_ERROR_HAVE_NO_MEMORY(r->printername);
+	r->portname	= talloc_strdup(mem_ctx, ntprinter->info_2->portname);
+	W_ERROR_HAVE_NO_MEMORY(r->portname);
 
-	if (!W_ERROR_IS_OK(get_a_printer(print_hnd, &ntprinter, 2, lp_const_servicename(snum))))
-		return False;
-
-	init_unistr(&printer->printername, ntprinter->info_2->printername);
-	init_unistr(&printer->portname, ntprinter->info_2->portname);
-	printer->attributes = ntprinter->info_2->attributes;
+	r->attributes	= ntprinter->info_2->attributes;
 
 	/* these two are not used by NT+ according to MSDN */
 
-	printer->device_not_selected_timeout = 0x0;  /* have seen 0x3a98 */
-	printer->transmission_retry_timeout  = 0x0;  /* have seen 0xafc8 */
+	r->device_not_selected_timeout		= 0x0;  /* have seen 0x3a98 */
+	r->transmission_retry_timeout		= 0x0;  /* have seen 0xafc8 */
 
-	free_a_printer(&ntprinter, 2);
-
-	return True;
+	return WERR_OK;
 }
 
 /********************************************************************
  * construct_printer_info_6
- * fill a printer_info_6 struct
+ * fill a spoolss_PrinterInfo6 struct
  ********************************************************************/
 
-static bool construct_printer_info_6(Printer_entry *print_hnd,
-				     PRINTER_INFO_6 *printer,
-				     int snum)
+static WERROR construct_printer_info6(TALLOC_CTX *mem_ctx,
+				      const NT_PRINTER_INFO_LEVEL *ntprinter,
+				      struct spoolss_PrinterInfo6 *r,
+				      int snum)
 {
-	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
 	int count;
 	print_status_struct status;
 
-	if (!W_ERROR_IS_OK(get_a_printer(print_hnd, &ntprinter, 2,
-					 lp_const_servicename(snum))))
-		return False;
-
 	count = print_queue_length(snum, &status);
 
-	printer->status = nt_printq_status(status.status);
+	r->status = nt_printq_status(status.status);
 
-	free_a_printer(&ntprinter, 2);
-
-	return True;
+	return WERR_OK;
 }
 
 /********************************************************************
- * construct_printer_info_7
- * fill a printer_info_7 struct
+ * construct_printer_info7
+ * fill a spoolss_PrinterInfo7 struct
  ********************************************************************/
 
-static bool construct_printer_info_7(Printer_entry *print_hnd, PRINTER_INFO_7 *printer, int snum)
+static WERROR construct_printer_info7(TALLOC_CTX *mem_ctx,
+				      Printer_entry *print_hnd,
+				      struct spoolss_PrinterInfo7 *r,
+				      int snum)
 {
-	char *guid_str = NULL;
 	struct GUID guid;
 
 	if (is_printer_published(print_hnd, snum, &guid)) {
-		if (asprintf(&guid_str, "{%s}",
-			     GUID_string(talloc_tos(), &guid)) == -1) {
-			return false;
-		}
-		strupper_m(guid_str);
-		init_unistr(&printer->guid, guid_str);
-		SAFE_FREE(guid_str);
-		printer->action = DSPRINT_PUBLISH;
+		r->guid = talloc_strdup_upper(mem_ctx, GUID_string2(mem_ctx, &guid));
+		r->action = DSPRINT_PUBLISH;
 	} else {
-		init_unistr(&printer->guid, "");
-		printer->action = DSPRINT_UNPUBLISH;
+		r->guid = talloc_strdup(mem_ctx, "");
+		r->action = DSPRINT_UNPUBLISH;
 	}
+	W_ERROR_HAVE_NO_MEMORY(r->guid);
 
-	return True;
+	return WERR_OK;
 }
 
 /********************************************************************
@@ -5312,57 +5261,88 @@ out:
 	return result;
 }
 
-/****************************************************************************
-****************************************************************************/
+/****************************************************************
+ _spoolss_GetPrinter
+****************************************************************/
 
-WERROR _spoolss_getprinter(pipes_struct *p, SPOOL_Q_GETPRINTER *q_u, SPOOL_R_GETPRINTER *r_u)
+WERROR _spoolss_GetPrinter(pipes_struct *p,
+			   struct spoolss_GetPrinter *r)
 {
-	POLICY_HND *handle = &q_u->handle;
-	uint32 level = q_u->level;
-	RPC_BUFFER *buffer = NULL;
-	uint32 offered = q_u->offered;
-	uint32 *needed = &r_u->needed;
-	Printer_entry *Printer=find_printer_index_by_hnd(p, handle);
+	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
+	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
+	WERROR result = WERR_OK;
 
 	int snum;
 
 	/* that's an [in out] buffer */
 
-	if (!q_u->buffer && (offered!=0)) {
+	if (!r->in.buffer && (r->in.offered != 0)) {
 		return WERR_INVALID_PARAM;
 	}
 
-	if (offered > MAX_RPC_DATA_SIZE) {
-		return WERR_INVALID_PARAM;
-	}
+	*r->out.needed = 0;
 
-	rpcbuf_move(q_u->buffer, &r_u->buffer);
-	buffer = r_u->buffer;
-
-	*needed=0;
-
-	if (!get_printer_snum(p, handle, &snum, NULL))
+	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
 		return WERR_BADFID;
-
-	switch (level) {
-	case 0:
-		return getprinter_level_0(Printer, snum, buffer, offered, needed);
-	case 1:
-		return getprinter_level_1(Printer, snum, buffer, offered, needed);
-	case 2:
-		return getprinter_level_2(Printer, snum, buffer, offered, needed);
-	case 3:
-		return getprinter_level_3(Printer, snum, buffer, offered, needed);
-	case 4:
-		return getprinter_level_4(Printer, snum, buffer, offered, needed);
-	case 5:
-		return getprinter_level_5(Printer, snum, buffer, offered, needed);
-	case 6:
-		return getprinter_level_6(Printer, snum, buffer, offered, needed);
-	case 7:
-		return getprinter_level_7(Printer, snum, buffer, offered, needed);
 	}
-	return WERR_UNKNOWN_LEVEL;
+
+	result = get_a_printer(Printer, &ntprinter, 2,
+			       lp_const_servicename(snum));
+	if (!W_ERROR_IS_OK(result)) {
+		return result;
+	}
+
+	switch (r->in.level) {
+	case 0:
+		result = construct_printer_info0(p->mem_ctx, ntprinter,
+						 &r->out.info->info0, snum);
+		break;
+	case 1:
+		result = construct_printer_info1(p->mem_ctx, ntprinter,
+						 PRINTER_ENUM_ICON8,
+						 &r->out.info->info1, snum);
+		break;
+	case 2:
+		result = construct_printer_info2(p->mem_ctx, ntprinter,
+						 &r->out.info->info2, snum);
+		break;
+	case 3:
+		result = construct_printer_info3(p->mem_ctx, ntprinter,
+						 &r->out.info->info3, snum);
+		break;
+	case 4:
+		result = construct_printer_info4(p->mem_ctx, ntprinter,
+						 &r->out.info->info4, snum);
+		break;
+	case 5:
+		result = construct_printer_info5(p->mem_ctx, ntprinter,
+						 &r->out.info->info5, snum);
+		break;
+	case 6:
+		result = construct_printer_info6(p->mem_ctx, ntprinter,
+						 &r->out.info->info6, snum);
+		break;
+	case 7:
+		result = construct_printer_info7(p->mem_ctx, Printer,
+						 &r->out.info->info7, snum);
+		break;
+	default:
+		result = WERR_UNKNOWN_LEVEL;
+		break;
+	}
+
+	free_a_printer(&ntprinter, 2);
+
+	if (!W_ERROR_IS_OK(result)) {
+		TALLOC_FREE(r->out.info);
+		return result;
+	}
+
+	*r->out.needed	= SPOOLSS_BUFFER_UNION(spoolss_PrinterInfo, NULL,
+					       r->out.info, r->in.level);
+	r->out.info	= SPOOLSS_BUFFER_OK(r->out.info, NULL);
+
+	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 }
 
 /********************************************************************
@@ -10372,17 +10352,6 @@ WERROR _spoolss_AddPrintProcessor(pipes_struct *p,
 
 WERROR _spoolss_AddPrinter(pipes_struct *p,
 			   struct spoolss_AddPrinter *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_GetPrinter
-****************************************************************/
-
-WERROR _spoolss_GetPrinter(pipes_struct *p,
-			   struct spoolss_GetPrinter *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
