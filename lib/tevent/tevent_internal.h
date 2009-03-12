@@ -238,6 +238,8 @@ struct tevent_context {
 	struct {
 		bool allowed;
 		uint32_t level;
+		tevent_nesting_hook hook_fn;
+		void *hook_private;
 	} nesting;
 };
 

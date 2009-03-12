@@ -301,6 +301,12 @@ void tevent_queue_stop(struct tevent_queue *queue);
 
 size_t tevent_queue_length(struct tevent_queue *queue);
 
+typedef int (*tevent_nesting_hook)(struct tevent_context *ev,
+				   void *private_data,
+				   uint32_t level,
+				   bool begin,
+				   void *stack_ptr,
+				   const char *location);
 #ifdef TEVENT_DEPRECATED
 #ifndef _DEPRECATED_
 #if (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1 )
@@ -310,6 +316,9 @@ size_t tevent_queue_length(struct tevent_queue *queue);
 #endif
 #endif
 void tevent_loop_allow_nesting(struct tevent_context *ev) _DEPRECATED_;
+void tevent_loop_set_nesting_hook(struct tevent_context *ev,
+				  tevent_nesting_hook hook,
+				  void *private_data) _DEPRECATED_;
 #endif
 
 #ifdef TEVENT_COMPAT_DEFINES

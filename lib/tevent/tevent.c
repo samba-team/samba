@@ -374,6 +374,14 @@ void tevent_loop_allow_nesting(struct tevent_context *ev)
 	ev->nesting.allowed = true;
 }
 
+void tevent_loop_set_nesting_hook(struct tevent_context *ev,
+				  tevent_nesting_hook hook,
+				  void *private_data)
+{
+	ev->nesting.hook_fn = hook;
+	ev->nesting.hook_private = private_data;
+}
+
 static void tevent_abort_nesting(struct tevent_context *ev, const char *location)
 {
 	const char *reason;
@@ -393,6 +401,7 @@ static void tevent_abort_nesting(struct tevent_context *ev, const char *location
 int _tevent_loop_once(struct tevent_context *ev, const char *location)
 {
 	int ret;
+	void *nesting_stack_ptr = NULL;
 
 	ev->nesting.level++;
 
@@ -402,12 +411,41 @@ int _tevent_loop_once(struct tevent_context *ev, const char *location)
 			errno = ELOOP;
 			return -1;
 		}
+		if (ev->nesting.hook_fn) {
+			int ret2;
+			ret2 = ev->nesting.hook_fn(ev,
+						   ev->nesting.hook_private,
+						   ev->nesting.level,
+						   true,
+						   (void *)&nesting_stack_ptr,
+						   location);
+			if (ret2 != 0) {
+				ret = ret2;
+				goto done;
+			}
+		}
 	}
 
 	ret = ev->ops->loop_once(ev, location);
 
-	ev->nesting.level--;
+	if (ev->nesting.level > 1) {
+		if (ev->nesting.hook_fn) {
+			int ret2;
+			ret2 = ev->nesting.hook_fn(ev,
+						   ev->nesting.hook_private,
+						   ev->nesting.level,
+						   false,
+						   (void *)&nesting_stack_ptr,
+						   location);
+			if (ret2 != 0) {
+				ret = ret2;
+				goto done;
+			}
+		}
+	}
 
+done:
+	ev->nesting.level--;
 	return ret;
 }
 
