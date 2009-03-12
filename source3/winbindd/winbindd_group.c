@@ -25,8 +25,6 @@
 #include "includes.h"
 #include "winbindd.h"
 
-extern bool opt_nocache;
-
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 

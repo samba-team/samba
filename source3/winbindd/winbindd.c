@@ -28,7 +28,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-bool opt_nocache = False;
+static bool opt_nocache = False;
 static bool interactive = False;
 
 extern bool override_logfile;
@@ -1088,6 +1088,16 @@ static void process_loop(void)
 #if 0
 	winbindd_check_cache_size(time(NULL));
 #endif
+}
+
+bool winbindd_use_idmap_cache(void)
+{
+	return !opt_nocache;
+}
+
+bool winbindd_use_cache(void)
+{
+	return !opt_nocache;
 }
 
 /* Main function */
