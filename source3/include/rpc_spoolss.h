@@ -444,15 +444,6 @@ typedef struct printer_info_ctr_info
 }
 PRINTER_INFO_CTR;
 
-typedef struct spool_q_getprinter
-{
-	POLICY_HND handle;
-	uint32 level;
-	RPC_BUFFER *buffer;
-	uint32 offered;
-}
-SPOOL_Q_GETPRINTER;
-
 typedef struct printer_info_info
 {
 	union
@@ -463,13 +454,6 @@ typedef struct printer_info_info
 		void *info;
 	} printer;
 } PRINTER_INFO;
-
-typedef struct spool_r_getprinter
-{
-	RPC_BUFFER *buffer;
-	uint32 needed;
-	WERROR status;
-} SPOOL_R_GETPRINTER;
 
 typedef struct add_jobinfo_1
 {
