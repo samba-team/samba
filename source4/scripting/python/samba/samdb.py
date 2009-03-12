@@ -59,7 +59,7 @@ dn: CN=%s,CN=ForeignSecurityPrincipals,%s
 objectClass: top
 objectClass: foreignSecurityPrincipal
 description: %s
-        """ % (sid, domaindn, desc)
+""" % (sid, domaindn, desc)
         # deliberately ignore errors from this, as the records may
         # already exist
         for msg in self.parse_ldif(add):
@@ -179,7 +179,7 @@ dn: %s
 changetype: modify
 replace: userPassword
 userPassword: %s
-    """ % (user_dn, password)
+""" % (user_dn, password)
 
             self.modify_ldif(setpw)
 
@@ -235,7 +235,7 @@ replace: userAccountControl
 userAccountControl: %u
 replace: accountExpires
 accountExpires: %u
-    """ % (res[0].dn, userAccountControl, accountExpires)
+""" % (res[0].dn, userAccountControl, accountExpires)
             # now change the database
             self.modify_ldif(mod)
         except:
