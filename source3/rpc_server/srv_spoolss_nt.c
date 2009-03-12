@@ -5868,7 +5868,7 @@ WERROR _spoolss_StartDocPrinter(pipes_struct *p,
 	}
 
 	Printer->jobid = print_job_start(p->server_info, snum,
-					 CONST_DISCARD(char *,info_1->document_name),
+					 info_1->document_name,
 					 Printer->nt_devmode);
 
 	/* An error occured in print_job_start() so return an appropriate

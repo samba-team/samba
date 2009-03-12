@@ -2407,7 +2407,7 @@ static bool add_to_jobs_changed(struct tdb_print_db *pdb, uint32 jobid)
 ***************************************************************************/
 
 uint32 print_job_start(struct auth_serversupplied_info *server_info, int snum,
-		       char *jobname, NT_DEVICEMODE *nt_devmode )
+		       const char *jobname, NT_DEVICEMODE *nt_devmode )
 {
 	uint32 jobid;
 	char *path;

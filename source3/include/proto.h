@@ -4928,7 +4928,7 @@ bool print_job_resume(struct auth_serversupplied_info *server_info, int snum,
 ssize_t print_job_write(int snum, uint32 jobid, const char *buf, SMB_OFF_T pos, size_t size);
 int print_queue_length(int snum, print_status_struct *pstatus);
 uint32 print_job_start(struct auth_serversupplied_info *server_info, int snum,
-		       char *jobname, NT_DEVICEMODE *nt_devmode );
+		       const char *jobname, NT_DEVICEMODE *nt_devmode );
 void print_job_endpage(int snum, uint32 jobid);
 bool print_job_end(int snum, uint32 jobid, enum file_close_type close_type);
 int print_queue_status(int snum, 
