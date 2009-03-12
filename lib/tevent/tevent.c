@@ -450,6 +450,68 @@ done:
 }
 
 /*
+  this is a performance optimization for the samba4 nested event loop problems
+*/
+int _tevent_loop_until(struct tevent_context *ev,
+		       bool (*finished)(void *private_data),
+		       void *private_data,
+		       const char *location)
+{
+	int ret;
+	void *nesting_stack_ptr = NULL;
+
+	ev->nesting.level++;
+
+	if (ev->nesting.level > 1) {
+		if (!ev->nesting.allowed) {
+			tevent_abort_nesting(ev, location);
+			errno = ELOOP;
+			return -1;
+		}
+		if (ev->nesting.hook_fn) {
+			int ret2;
+			ret2 = ev->nesting.hook_fn(ev,
+						   ev->nesting.hook_private,
+						   ev->nesting.level,
+						   true,
+						   (void *)&nesting_stack_ptr,
+						   location);
+			if (ret2 != 0) {
+				ret = ret2;
+				goto done;
+			}
+		}
+	}
+
+	while (!finished(private_data)) {
+		ret = ev->ops->loop_once(ev, location);
+		if (ret != 0) {
+			break;
+		}
+	}
+
+	if (ev->nesting.level > 1) {
+		if (ev->nesting.hook_fn) {
+			int ret2;
+			ret2 = ev->nesting.hook_fn(ev,
+						   ev->nesting.hook_private,
+						   ev->nesting.level,
+						   false,
+						   (void *)&nesting_stack_ptr,
+						   location);
+			if (ret2 != 0) {
+				ret = ret2;
+				goto done;
+			}
+		}
+	}
+
+done:
+	ev->nesting.level--;
+	return ret;
+}
+
+/*
   return on failure or (with 0) if all fd events are removed
 */
 int _tevent_loop_wait(struct tevent_context *ev, const char *location)

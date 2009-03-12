@@ -319,6 +319,12 @@ void tevent_loop_allow_nesting(struct tevent_context *ev) _DEPRECATED_;
 void tevent_loop_set_nesting_hook(struct tevent_context *ev,
 				  tevent_nesting_hook hook,
 				  void *private_data) _DEPRECATED_;
+int _tevent_loop_until(struct tevent_context *ev,
+		       bool (*finished)(void *private_data),
+		       void *private_data,
+		       const char *location) _DEPRECATED_;
+#define tevent_loop_until(ev, finished, private_data) \
+	_tevent_loop_until(ev, finished, private_data, __location__)
 #endif
 
 #ifdef TEVENT_COMPAT_DEFINES
