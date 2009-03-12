@@ -48,6 +48,40 @@ static int ldb_context_destructor(void *ptr)
 }
 
 /*
+  this is used to catch debug messages from events
+*/
+static void ldb_tevent_debug(void *context, enum tevent_debug_level level,
+			     const char *fmt, va_list ap)  PRINTF_ATTRIBUTE(3,0);
+
+static void ldb_tevent_debug(void *context, enum tevent_debug_level level,
+			     const char *fmt, va_list ap)
+{
+	struct ldb_context = talloc_get_type_abort(context, struct ldb_context);
+	enum ldb_debug_level ldb_level = LDB_DEBUG_FATAL;
+	char *s = NULL;
+
+	switch (level) {
+	case TEVENT_DEBUG_FATAL:
+		ldb_level = LDB_DEBUG_FATAL;
+		break;
+	case TEVENT_DEBUG_ERROR:
+		ldb_level = LDB_DEBUG_ERROR;
+		break;
+	case TEVENT_DEBUG_WARNING:
+		ldb_level = LDB_DEBUG_WARNING;
+		break;
+	case TEVENT_DEBUG_TRACE:
+		ldb_level = LDB_DEBUG_TRACE;
+		break;
+	};
+
+	vasprintf(&s, fmt, ap);
+	if (!s) return;
+	ldb_debug(ldb, ldb_level, "tevent: %s", s);
+	free(s);
+}
+
+/*
    initialise a ldb context
    The mem_ctx is required
    The event_ctx is required
@@ -62,6 +96,7 @@ struct ldb_context *ldb_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev_ctx)
 	 * until we have them all converted */
 	if (ev_ctx == NULL) {
 		ev_ctx = tevent_context_init(talloc_autofree_context());
+		tevent_set_debug(ev_ctx, ldb_tevent_debug, ldb);
 	}
 
 	ret = ldb_setup_wellknown_attributes(ldb);
