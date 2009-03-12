@@ -28,6 +28,7 @@ import ldb
 from samba.idmap import IDmapDB
 import pwd
 import time
+import base64
 
 __docformat__ = "restructuredText"
 
@@ -178,8 +179,8 @@ userAccountControl: %u
 dn: %s
 changetype: modify
 replace: userPassword
-userPassword: %s
-""" % (user_dn, password)
+userPassword:: %s
+""" % (user_dn, base64.b64encode(password))
 
             self.modify_ldif(setpw)
 
