@@ -333,6 +333,62 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 	return result;
 }
 
+ char * smbldap_talloc_smallest_attribute(LDAP *ldap_struct, LDAPMessage *entry,
+					  const char *attribute,
+					  TALLOC_CTX *mem_ctx)
+{
+	char **values;
+	char *result;
+	size_t converted_size;
+	int i, num_values;
+
+	if (attribute == NULL) {
+		return NULL;
+	}
+
+	values = ldap_get_values(ldap_struct, entry, attribute);
+
+	if (values == NULL) {
+		DEBUG(10, ("attribute %s does not exist\n", attribute));
+		return NULL;
+	}
+
+	if (!pull_utf8_talloc(mem_ctx, &result, values[0], &converted_size)) {
+		DEBUG(10, ("pull_utf8_talloc failed\n"));
+		ldap_value_free(values);
+		return NULL;
+	}
+
+	num_values = ldap_count_values(values);
+
+	for (i=1; i<num_values; i++) {
+		char *tmp;
+
+		if (!pull_utf8_talloc(mem_ctx, &tmp, values[i],
+				      &converted_size)) {
+			DEBUG(10, ("pull_utf8_talloc failed\n"));
+			TALLOC_FREE(result);
+			ldap_value_free(values);
+			return NULL;
+		}
+
+		if (StrCaseCmp(tmp, result) < 0) {
+			TALLOC_FREE(result);
+			result = tmp;
+		} else {
+			TALLOC_FREE(tmp);
+		}
+	}
+
+	ldap_value_free(values);
+
+#ifdef DEBUG_PASSWORDS
+	DEBUG (100, ("smbldap_get_single_attribute: [%s] = [%s]\n",
+		     attribute, result));
+#endif
+	return result;
+}
+
  static int ldapmsg_destructor(LDAPMessage **result) {
 	ldap_msgfree(*result);
 	return 0;
