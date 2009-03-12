@@ -457,7 +457,7 @@ int _tevent_loop_until(struct tevent_context *ev,
 		       void *private_data,
 		       const char *location)
 {
-	int ret;
+	int ret = 0;
 	void *nesting_stack_ptr = NULL;
 
 	ev->nesting.level++;
