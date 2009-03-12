@@ -425,8 +425,26 @@ static NTSTATUS open_file(files_struct *fsp,
 					&access_granted);
 			if (!NT_STATUS_IS_OK(status)) {
 				if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+					/*
+					 * On NT_STATUS_ACCESS_DENIED, access_granted
+					 * contains the denied bits.
+					 */
+
+					if ((access_mask & FILE_WRITE_ATTRIBUTES) &&
+							(access_granted & FILE_WRITE_ATTRIBUTES) &&
+							(lp_map_readonly(SNUM(conn)) ||
+							 lp_map_archive(SNUM(conn)) ||
+							 lp_map_hidden(SNUM(conn)) ||
+							 lp_map_system(SNUM(conn)))) {
+						access_granted &= ~FILE_WRITE_ATTRIBUTES;
+
+						DEBUG(10,("open_file: overrode FILE_WRITE_ATTRIBUTES "
+							"on file %s\n",
+							path ));
+					}
+
 					if ((access_mask & DELETE_ACCESS) &&
-							(access_granted == DELETE_ACCESS) &&
+							(access_granted & DELETE_ACCESS) &&
 							can_delete_file_in_directory(conn, path)) {
 						/* Were we trying to do a stat open
 						 * for delete and didn't get DELETE
@@ -436,10 +454,14 @@ static NTSTATUS open_file(files_struct *fsp,
 						 * http://blogs.msdn.com/oldnewthing/archive/2004/06/04/148426.aspx
 						 * for details. */
 
-						DEBUG(10,("open_file: overrode ACCESS_DENIED "
+						access_granted &= ~DELETE_ACCESS;
+
+						DEBUG(10,("open_file: overrode DELETE_ACCESS "
 							"on file %s\n",
 							path ));
-					} else {
+					}
+
+					if (access_granted != 0) {
 						DEBUG(10, ("open_file: Access denied on "
 							"file %s\n",
 							path));
