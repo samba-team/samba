@@ -5838,24 +5838,6 @@ bool make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
 				   const char *valuename, uint32 size);
 bool spoolss_io_q_getprinterdata(const char *desc, SPOOL_Q_GETPRINTERDATA *q_u, prs_struct *ps, int depth);
 bool spoolss_io_r_getprinterdata(const char *desc, SPOOL_R_GETPRINTERDATA *r_u, prs_struct *ps, int depth);
-bool smb_io_printer_info_0(const char *desc, RPC_BUFFER *buffer, PRINTER_INFO_0 *info, int depth);
-bool smb_io_printer_info_1(const char *desc, RPC_BUFFER *buffer, PRINTER_INFO_1 *info, int depth);
-bool smb_io_printer_info_2(const char *desc, RPC_BUFFER *buffer, PRINTER_INFO_2 *info, int depth);
-bool smb_io_printer_info_3(const char *desc, RPC_BUFFER *buffer, PRINTER_INFO_3 *info, int depth);
-bool smb_io_printer_info_4(const char *desc, RPC_BUFFER *buffer, PRINTER_INFO_4 *info, int depth);
-bool smb_io_printer_info_5(const char *desc, RPC_BUFFER *buffer, PRINTER_INFO_5 *info, int depth);
-bool smb_io_printer_info_6(const char *desc, RPC_BUFFER *buffer,
-			   PRINTER_INFO_6 *info, int depth);
-bool smb_io_printer_info_7(const char *desc, RPC_BUFFER *buffer, PRINTER_INFO_7 *info, int depth);
-uint32 spoolss_size_printer_info_0(PRINTER_INFO_0 *info);
-uint32 spoolss_size_printer_info_1(PRINTER_INFO_1 *info);
-uint32 spoolss_size_printer_info_2(PRINTER_INFO_2 *info);
-uint32 spoolss_size_printer_info_4(PRINTER_INFO_4 *info);
-uint32 spoolss_size_printer_info_5(PRINTER_INFO_5 *info);
-uint32 spoolss_size_printer_info_6(PRINTER_INFO_6 *info);
-uint32 spoolss_size_printer_info_3(PRINTER_INFO_3 *info);
-uint32 spoolss_size_printer_info_7(PRINTER_INFO_7 *info);
-uint32 spoolss_size_string_array(uint16 *string);
 uint32 spoolss_size_printer_enum_values(PRINTER_ENUM_VALUES *p);
 bool make_spoolss_buffer5(TALLOC_CTX *mem_ctx, BUFFER5 *buf5, uint32 len, uint16 *src);
 bool spoolss_io_r_enumprinterdata(const char *desc, SPOOL_R_ENUMPRINTERDATA *r_u, prs_struct *ps, int depth);
@@ -5870,14 +5852,6 @@ bool make_spoolss_q_setprinterdata(SPOOL_Q_SETPRINTERDATA *q_u, const POLICY_HND
 				   char* value, uint32 data_type, char* data, uint32 data_size);
 bool spoolss_io_q_setprinterdata(const char *desc, SPOOL_Q_SETPRINTERDATA *q_u, prs_struct *ps, int depth);
 bool spoolss_io_r_setprinterdata(const char *desc, SPOOL_R_SETPRINTERDATA *r_u, prs_struct *ps, int depth);
-void free_devmode(DEVICEMODE *devmode);
-void free_printer_info_1(PRINTER_INFO_1 *printer);
-void free_printer_info_2(PRINTER_INFO_2 *printer);
-void free_printer_info_3(PRINTER_INFO_3 *printer);
-void free_printer_info_4(PRINTER_INFO_4 *printer);
-void free_printer_info_5(PRINTER_INFO_5 *printer);
-void free_printer_info_6(PRINTER_INFO_6 *printer);
-void free_printer_info_7(PRINTER_INFO_7 *printer);
 bool make_spoolss_q_enumprinterkey(SPOOL_Q_ENUMPRINTERKEY *q_u, 
 				   POLICY_HND *hnd, const char *key, 
 				   uint32 size);
