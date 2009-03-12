@@ -1041,64 +1041,6 @@ uint32 spoolss_size_printer_enum_values(PRINTER_ENUM_VALUES *p)
 }
 
 /*******************************************************************
- * write a structure.
- * called from spoolss_r_enum_printers (srv_spoolss.c)
- *
- ********************************************************************/
-
-bool spoolss_io_r_getprinter(const char *desc, SPOOL_R_GETPRINTER *r_u, prs_struct *ps, int depth)
-{	
-	prs_debug(ps, depth, desc, "spoolss_io_r_getprinter");
-	depth++;
-
-	if (!prs_align(ps))
-		return False;
-		
-	if (!prs_rpcbuffer_p("", ps, depth, &r_u->buffer))
-		return False;
-
-	if (!prs_align(ps))
-		return False;
-
-	if (!prs_uint32("needed", ps, depth, &r_u->needed))
-		return False;
-		
-	if (!prs_werror("status", ps, depth, &r_u->status))
-		return False;
-
-	return True;		
-}
-
-/*******************************************************************
- * read a structure.
- * called from spoolss_getprinter (srv_spoolss.c)
- ********************************************************************/
-
-bool spoolss_io_q_getprinter(const char *desc, SPOOL_Q_GETPRINTER *q_u, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "spoolss_io_q_getprinter");
-	depth++;
-
-	if (!prs_align(ps))
-		return False;
-
-	if(!smb_io_pol_hnd("printer handle", &q_u->handle, ps, depth))
-		return False;
-	if (!prs_uint32("level", ps, depth, &q_u->level))
-		return False;
-
-	if (!prs_rpcbuffer_p("", ps, depth, &q_u->buffer))
-		return False;
-
-	if (!prs_align(ps))
-		return False;
-	if (!prs_uint32("offered", ps, depth, &q_u->offered))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
  make a BUFFER5 struct from a uint16*
  ******************************************************************/
 
