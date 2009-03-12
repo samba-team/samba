@@ -301,6 +301,17 @@ void tevent_queue_stop(struct tevent_queue *queue);
 
 size_t tevent_queue_length(struct tevent_queue *queue);
 
+#ifdef TEVENT_DEPRECATED
+#ifndef _DEPRECATED_
+#if (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1 )
+#define _DEPRECATED_ __attribute__ ((deprecated))
+#else
+#define _DEPRECATED_
+#endif
+#endif
+void tevent_loop_allow_nesting(struct tevent_context *ev) _DEPRECATED_;
+#endif
+
 #ifdef TEVENT_COMPAT_DEFINES
 
 #define event_context	tevent_context

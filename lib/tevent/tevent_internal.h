@@ -233,6 +233,12 @@ struct tevent_context {
 
 	/* debugging operations */
 	struct tevent_debug_ops debug_ops;
+
+	/* info about the nesting status */
+	struct {
+		bool allowed;
+		uint32_t level;
+	} nesting;
 };
 
 

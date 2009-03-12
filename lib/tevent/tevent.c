@@ -59,6 +59,7 @@
 */
 #include "replace.h"
 #include "system/filesys.h"
+#define TEVENT_DEPRECATED 1
 #include "tevent.h"
 #include "tevent_internal.h"
 #include "tevent_util.h"
@@ -368,12 +369,46 @@ struct tevent_signal *_tevent_add_signal(struct tevent_context *ev,
 				   handler_name, location);
 }
 
+void tevent_loop_allow_nesting(struct tevent_context *ev)
+{
+	ev->nesting.allowed = true;
+}
+
+static void tevent_abort_nesting(struct tevent_context *ev, const char *location)
+{
+	const char *reason;
+
+	reason = talloc_asprintf(NULL, "tevent_loop_once() nesting at %s",
+				 location);
+	if (!reason) {
+		reason = "tevent_loop_once() nesting";
+	}
+
+	tevent_abort(ev, reason);
+}
+
 /*
   do a single event loop using the events defined in ev 
 */
 int _tevent_loop_once(struct tevent_context *ev, const char *location)
 {
-	return ev->ops->loop_once(ev, location);
+	int ret;
+
+	ev->nesting.level++;
+
+	if (ev->nesting.level > 1) {
+		if (!ev->nesting.allowed) {
+			tevent_abort_nesting(ev, location);
+			errno = ELOOP;
+			return -1;
+		}
+	}
+
+	ret = ev->ops->loop_once(ev, location);
+
+	ev->nesting.level--;
+
+	return ret;
 }
 
 /*
