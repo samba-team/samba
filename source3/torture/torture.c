@@ -4160,7 +4160,7 @@ static bool run_simple_posix_open_test(int dummy)
 	const char *dname = "\\posix.dir";
 	uint16 major, minor;
 	uint32 caplow, caphigh;
-	int fnum1;
+	int fnum1 = -1;
 	bool correct = false;
 
 	printf("Starting simple POSIX open test\n");
