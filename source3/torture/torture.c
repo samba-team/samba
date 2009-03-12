@@ -5117,9 +5117,7 @@ static bool run_chain1(int dummy)
 	return True;
 }
 
-static size_t null_source(uint8_t *inbuf, size_t n,
-			  const uint8_t **outbuf,
-			  void *priv)
+static size_t null_source(uint8_t *buf, size_t n, void *priv)
 {
 	size_t *to_pull = (size_t *)priv;
 	size_t thistime = *to_pull;
@@ -5129,7 +5127,7 @@ static size_t null_source(uint8_t *inbuf, size_t n,
 		return 0;
 	}
 
-	memset(inbuf, 0, thistime);
+	memset(buf, 0, thistime);
 	*to_pull -= thistime;
 	return thistime;
 }
@@ -5172,7 +5170,7 @@ static bool run_windows_write(int dummy)
 		}
 
 		status = cli_push(cli1, fnum, 0, i * torture_blocksize, torture_blocksize,
-				  false, null_source, &to_pull);
+				  null_source, &to_pull);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("cli_push returned: %s\n", nt_errstr(status));
 			goto fail;
