@@ -182,4 +182,6 @@ char *talloc_asprintf(const void *t, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3)
 char *talloc_asprintf_append(char *s, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 char *talloc_asprintf_append_buffer(char *s, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 
+void talloc_set_abort_fn(void (*abort_fn)(const char *reason));
+
 #endif
