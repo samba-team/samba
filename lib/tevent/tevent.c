@@ -305,6 +305,14 @@ void tevent_fd_set_flags(struct tevent_fd *fde, uint16_t flags)
 	fde->event_ctx->ops->set_fd_flags(fde, flags);
 }
 
+bool tevent_signal_support(struct tevent_context *ev)
+{
+	if (ev->ops->add_signal) {
+		return true;
+	}
+	return false;
+}
+
 /*
   add a timer event
   return NULL on failure

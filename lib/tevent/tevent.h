@@ -108,6 +108,8 @@ void tevent_fd_set_auto_close(struct tevent_fd *fde);
 uint16_t tevent_fd_get_flags(struct tevent_fd *fde);
 void tevent_fd_set_flags(struct tevent_fd *fde, uint16_t flags);
 
+bool tevent_signal_support(struct tevent_context *ev);
+
 /* bits for file descriptor event flags */
 #define TEVENT_FD_READ 1
 #define TEVENT_FD_WRITE 2
