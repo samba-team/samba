@@ -242,7 +242,7 @@ AC_CHECK_MEMBERS([struct sockaddr.sa_len],
 
 dnl test for getifaddrs and freeifaddrs
 AC_CACHE_CHECK([for getifaddrs and freeifaddrs],libreplace_cv_HAVE_GETIFADDRS,[
-AC_TRY_COMPILE([
+AC_TRY_LINK([
 #include <sys/types.h>
 #if STDC_HEADERS
 #include <stdlib.h>
