@@ -37,6 +37,7 @@ struct tevent_context;
 struct tevent_ops;
 struct tevent_fd;
 struct tevent_timer;
+struct tevent_immediate;
 struct tevent_signal;
 
 /* event handler types */
@@ -52,6 +53,9 @@ typedef void (*tevent_timer_handler_t)(struct tevent_context *ev,
 				       struct tevent_timer *te,
 				       struct timeval current_time,
 				       void *private_data);
+typedef void (*tevent_immediate_handler_t)(struct tevent_context *ctx,
+					   struct tevent_immediate *im,
+					   void *private_data);
 typedef void (*tevent_signal_handler_t)(struct tevent_context *ev,
 					struct tevent_signal *se,
 					int signum,
@@ -86,6 +90,21 @@ struct tevent_timer *_tevent_add_timer(struct tevent_context *ev,
 #define tevent_add_timer(ev, mem_ctx, next_event, handler, private_data) \
 	_tevent_add_timer(ev, mem_ctx, next_event, handler, private_data, \
 			  #handler, __location__)
+
+struct tevent_immediate *_tevent_create_immediate(TALLOC_CTX *mem_ctx,
+						  const char *location);
+#define tevent_create_immediate(mem_ctx) \
+	_tevent_create_immediate(mem_ctx, __location__)
+
+void _tevent_schedule_immediate(struct tevent_immediate *im,
+				struct tevent_context *ctx,
+				tevent_immediate_handler_t handler,
+				void *private_data,
+				const char *handler_name,
+				const char *location);
+#define tevent_schedule_immediate(im, ctx, handler, private_data) \
+	_tevent_schedule_immediate(im, ctx, handler, private_data, \
+				   #handler, __location__);
 
 struct tevent_signal *_tevent_add_signal(struct tevent_context *ev,
 					 TALLOC_CTX *mem_ctx,
