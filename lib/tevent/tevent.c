@@ -143,6 +143,7 @@ int tevent_common_context_destructor(struct tevent_context *ev)
 {
 	struct tevent_fd *fd, *fn;
 	struct tevent_timer *te, *tn;
+	struct tevent_immediate *ie, *in;
 	struct tevent_signal *se, *sn;
 
 	if (ev->pipe_fde) {
@@ -160,6 +161,13 @@ int tevent_common_context_destructor(struct tevent_context *ev)
 		tn = te->next;
 		te->event_ctx = NULL;
 		DLIST_REMOVE(ev->timer_events, te);
+	}
+
+	for (ie = ev->immediate_events; ie; ie = in) {
+		in = ie->next;
+		ie->event_ctx = NULL;
+		ie->cancel_fn = NULL;
+		DLIST_REMOVE(ev->immediate_events, ie);
 	}
 
 	for (se = ev->signal_events; se; se = sn) {
@@ -347,6 +355,47 @@ struct tevent_timer *_tevent_add_timer(struct tevent_context *ev,
 {
 	return ev->ops->add_timer(ev, mem_ctx, next_event, handler, private_data,
 				  handler_name, location);
+}
+
+/*
+  allocate an immediate event
+  return NULL on failure (memory allocation error)
+*/
+struct tevent_immediate *_tevent_create_immediate(TALLOC_CTX *mem_ctx,
+						  const char *location)
+{
+	struct tevent_immediate *im;
+
+	im = talloc(mem_ctx, struct tevent_immediate);
+	if (im == NULL) return NULL;
+
+	im->prev		= NULL;
+	im->next		= NULL;
+	im->event_ctx		= NULL;
+	im->create_location	= location;
+	im->handler		= NULL;
+	im->private_data	= NULL;
+	im->handler_name	= NULL;
+	im->schedule_location	= NULL;
+	im->cancel_fn		= NULL;
+	im->additional_data	= NULL;
+
+	return im;
+}
+
+/*
+  schedule an immediate event
+  return NULL on failure
+*/
+void _tevent_schedule_immediate(struct tevent_immediate *im,
+				struct tevent_context *ev,
+				tevent_immediate_handler_t handler,
+				void *private_data,
+				const char *handler_name,
+				const char *location)
+{
+	ev->ops->schedule_immediate(im, ev, handler, private_data,
+				    handler_name, location);
 }
 
 /*
