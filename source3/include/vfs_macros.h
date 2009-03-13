@@ -91,6 +91,8 @@
 #define SMB_VFS_BRL_LOCK_WINDOWS(conn, br_lck, plock, blocking_lock, blr) ((conn)->vfs.ops.brl_lock_windows((conn)->vfs.handles.brl_lock_windows, (br_lck), (plock), (blocking_lock), (blr)))
 #define SMB_VFS_BRL_UNLOCK_WINDOWS(conn, msg_ctx, br_lck, plock) ((conn)->vfs.ops.brl_unlock_windows((conn)->vfs.handles.brl_unlock_windows, (msg_ctx), (br_lck), (plock)))
 #define SMB_VFS_BRL_CANCEL_WINDOWS(conn, br_lck, plock, blr) ((conn)->vfs.ops.brl_cancel_windows((conn)->vfs.handles.brl_cancel_windows, (br_lck), (plock), (blr)))
+#define SMB_VFS_STRICT_LOCK(conn, fsp, plock) ((conn)->vfs.ops.strict_lock((conn)->vfs.handles.strict_lock, (fsp), (plock)))
+#define SMB_VFS_STRICT_UNLOCK(conn, fsp, plock) ((conn)->vfs.ops.strict_unlock((conn)->vfs.handles.strict_unlock, (fsp), (plock)))
 
 /* NT ACL operations. */
 #define SMB_VFS_FGET_NT_ACL(fsp, security_info, ppdesc) ((fsp)->conn->vfs.ops.fget_nt_acl((fsp)->conn->vfs.handles.fget_nt_acl, (fsp), (security_info), (ppdesc)))
@@ -223,6 +225,8 @@
 #define SMB_VFS_OPAQUE_BRL_LOCK_WINDOWS(conn, br_lck, plock, blocking_lock, blr) ((conn)->vfs_opaque.ops.brl_lock_windows((conn)->vfs_opaque.handles.brl_lock_windows, (br_lck), (plock), (blocking_lock), (blr)))
 #define SMB_VFS_OPAQUE_BRL_UNLOCK_WINDOWS(conn, msg_ctx, br_lck, plock) ((conn)->vfs_opaque.ops.brl_unlock_windows((conn)->vfs_opaque.handles.brl_unlock_windows, (msg_ctx), (br_lck), (plock)))
 #define SMB_VFS_OPAQUE_BRL_CANCEL_WINDOWS(conn, br_lck, plock, blr) ((conn)->vfs_opaque.ops.brl_cancel_windows((conn)->vfs_opaque.handles.brl_cancel_windows, (br_lck), (plock), (blr)))
+#define SMB_VFS_OPAQUE_STRICT_LOCK(conn, fsp, plock) ((conn)->vfs_opaque.ops.strict_lock((conn)->vfs_opaque.handles.strict_lock, (fsp), (plock)))
+#define SMB_VFS_OPAQUE_STRICT_UNLOCK(conn, fsp, plock) ((conn)->vfs_opaque.ops.strict_unlock((conn)->vfs_opaque.handles.strict_unlock, (fsp), (plock)))
 
 /* NT ACL operations. */
 #define SMB_VFS_OPAQUE_FGET_NT_ACL(fsp, security_info, ppdesc) ((fsp)->conn->vfs_opaque.ops.fget_nt_acl((fsp)->conn->vfs_opaque.handles.fget_nt_acl, (fsp), (security_info), (ppdesc)))
@@ -356,6 +360,8 @@
 #define SMB_VFS_NEXT_BRL_LOCK_WINDOWS(handle, br_lck, plock, blocking_lock, blr) ((handle)->vfs_next.ops.brl_lock_windows((handle)->vfs_next.handles.brl_lock_windows, (br_lck), (plock), (blocking_lock), (blr)))
 #define SMB_VFS_NEXT_BRL_UNLOCK_WINDOWS(handle, msg_ctx, br_lck, plock) ((handle)->vfs_next.ops.brl_unlock_windows((handle)->vfs_next.handles.brl_unlock_windows, (msg_ctx), (br_lck), (plock)))
 #define SMB_VFS_NEXT_BRL_CANCEL_WINDOWS(handle, br_lck, plock, blr) ((handle)->vfs_next.ops.brl_cancel_windows((handle)->vfs_next.handles.brl_cancel_windows, (br_lck), (plock), (blr)))
+#define SMB_VFS_NEXT_STRICT_LOCK(handle, fsp, plock) ((handle)->vfs_next.ops.strict_lock((handle)->vfs_next.handles.strict_lock, (fsp), (plock)))
+#define SMB_VFS_NEXT_STRICT_UNLOCK(handle, fsp, plock) ((handle)->vfs_next.ops.strict_unlock((handle)->vfs_next.handles.strict_unlock, (fsp), (plock)))
 
 /* NT ACL operations. */
 #define SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info, ppdesc) ((handle)->vfs_next.ops.fget_nt_acl((handle)->vfs_next.handles.fget_nt_acl, (fsp), (security_info), (ppdesc)))

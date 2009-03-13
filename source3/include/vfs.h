@@ -116,6 +116,7 @@
 /* Leave at 25 - not yet released. Add SMB_STRUCT_STAT to readdir. - sdann */
 /* Leave at 25 - not yet released. Add init_search_op call. - sdann */
 /* Leave at 25 - not yet released. Add locking calls. -- zkirsch. */
+/* Leave at 25 - not yet released. Add strict locking calls. -- drichards. */
 
 #define SMB_VFS_INTERFACE_VERSION 25
 
@@ -223,6 +224,8 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_BRL_LOCK_WINDOWS,
 	SMB_VFS_OP_BRL_UNLOCK_WINDOWS,
 	SMB_VFS_OP_BRL_CANCEL_WINDOWS,
+	SMB_VFS_OP_STRICT_LOCK,
+	SMB_VFS_OP_STRICT_UNLOCK,
 
 	/* NT ACL operations. */
 
@@ -415,6 +418,14 @@ struct vfs_ops {
 					   struct lock_struct *plock,
 					   struct blocking_lock_record *blr);
 
+		bool (*strict_lock)(struct vfs_handle_struct *handle,
+					struct files_struct *fsp,
+					struct lock_struct *plock);
+
+		void (*strict_unlock)(struct vfs_handle_struct *handle,
+					struct files_struct *fsp,
+					struct lock_struct *plock);
+
 		/* NT ACL operations. */
 
 		NTSTATUS (*fget_nt_acl)(struct vfs_handle_struct *handle,
@@ -556,6 +567,8 @@ struct vfs_ops {
 		struct vfs_handle_struct *brl_lock_windows;
 		struct vfs_handle_struct *brl_unlock_windows;
 		struct vfs_handle_struct *brl_cancel_windows;
+		struct vfs_handle_struct *strict_lock;
+		struct vfs_handle_struct *strict_unlock;
 
 		/* NT ACL operations. */
 

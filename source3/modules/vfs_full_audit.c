@@ -234,6 +234,12 @@ static bool smb_full_audit_brl_cancel_windows(struct vfs_handle_struct *handle,
 				              struct byte_range_lock *br_lck,
 					      struct lock_struct *plock,
 					      struct blocking_lock_record *blr);
+static bool smb_full_audit_strict_lock(struct vfs_handle_struct *handle,
+				       struct files_struct *fsp,
+				       struct lock_struct *plock);
+static void smb_full_audit_strict_unlock(struct vfs_handle_struct *handle,
+				         struct files_struct *fsp,
+				         struct lock_struct *plock);
 static NTSTATUS smb_full_audit_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 				uint32 security_info,
 				SEC_DESC **ppdesc);
@@ -483,6 +489,10 @@ static vfs_op_tuple audit_op_tuples[] = {
 	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_brl_cancel_windows), SMB_VFS_OP_BRL_CANCEL_WINDOWS,
 	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_strict_lock), SMB_VFS_OP_STRICT_LOCK,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_strict_unlock), SMB_VFS_OP_STRICT_UNLOCK,
+	 SMB_VFS_LAYER_LOGGER},
 
 	/* NT ACL operations. */
 
@@ -660,6 +670,8 @@ static struct {
 	{ SMB_VFS_OP_BRL_LOCK_WINDOWS,  "brl_lock_windows" },
 	{ SMB_VFS_OP_BRL_UNLOCK_WINDOWS, "brl_unlock_windows" },
 	{ SMB_VFS_OP_BRL_CANCEL_WINDOWS, "brl_cancel_windows" },
+	{ SMB_VFS_OP_STRICT_LOCK, "strict_lock" },
+	{ SMB_VFS_OP_STRICT_UNLOCK, "strict_unlock" },
 	{ SMB_VFS_OP_FGET_NT_ACL,	"fget_nt_acl" },
 	{ SMB_VFS_OP_GET_NT_ACL,	"get_nt_acl" },
 	{ SMB_VFS_OP_FSET_NT_ACL,	"fset_nt_acl" },
@@ -1764,6 +1776,34 @@ static bool smb_full_audit_brl_cancel_windows(struct vfs_handle_struct *handle,
 	    plock->size);
 
 	return result;
+}
+
+static bool smb_full_audit_strict_lock(struct vfs_handle_struct *handle,
+				       struct files_struct *fsp,
+				       struct lock_struct *plock)
+{
+	bool result;
+
+	result = SMB_VFS_NEXT_STRICT_LOCK(handle, fsp, plock);
+
+	do_log(SMB_VFS_OP_STRICT_LOCK, result, handle,
+	    "%s:%llu-%llu:%d", fsp->fsp_name, plock->start,
+	    plock->size);
+
+	return result;
+}
+
+static void smb_full_audit_strict_unlock(struct vfs_handle_struct *handle,
+					 struct files_struct *fsp,
+					 struct lock_struct *plock)
+{
+	SMB_VFS_NEXT_STRICT_UNLOCK(handle, fsp, plock);
+
+	do_log(SMB_VFS_OP_STRICT_UNLOCK, true, handle,
+	    "%s:%llu-%llu:%d", fsp->fsp_name, plock->start,
+	    plock->size);
+
+	return;
 }
 
 static NTSTATUS smb_full_audit_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,

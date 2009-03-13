@@ -1157,6 +1157,26 @@ static bool vfswrap_brl_cancel_windows(struct vfs_handle_struct *handle,
 	return brl_lock_cancel_default(br_lck, plock);
 }
 
+static bool vfswrap_strict_lock(struct vfs_handle_struct *handle,
+				files_struct *fsp,
+				struct lock_struct *plock)
+{
+	SMB_ASSERT(plock->lock_type == READ_LOCK ||
+	    plock->lock_type == WRITE_LOCK);
+
+	return strict_lock_default(fsp, plock);
+}
+
+static void vfswrap_strict_unlock(struct vfs_handle_struct *handle,
+				files_struct *fsp,
+				struct lock_struct *plock)
+{
+	SMB_ASSERT(plock->lock_type == READ_LOCK ||
+	    plock->lock_type == WRITE_LOCK);
+
+	return strict_unlock_default(fsp, plock);
+}
+
 /* NT ACL operations. */
 
 static NTSTATUS vfswrap_fget_nt_acl(vfs_handle_struct *handle,
@@ -1591,6 +1611,10 @@ static vfs_op_tuple vfs_default_ops[] = {
 	{SMB_VFS_OP(vfswrap_brl_unlock_windows),SMB_VFS_OP_BRL_UNLOCK_WINDOWS,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(vfswrap_brl_cancel_windows),SMB_VFS_OP_BRL_CANCEL_WINDOWS,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(vfswrap_strict_lock),	SMB_VFS_OP_STRICT_LOCK,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(vfswrap_strict_unlock),	SMB_VFS_OP_STRICT_UNLOCK,
 	 SMB_VFS_LAYER_OPAQUE},
 
 	/* NT ACL operations. */

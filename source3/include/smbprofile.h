@@ -243,6 +243,14 @@ enum profile_stats_values
 #define syscall_brl_cancel_count __profile_stats_value(PR_VALUE_SYSCALL_BRL_CANCEL, count)
 #define syscall_brl_cancel_time __profile_stats_value(PR_VALUE_SYSCALL_BRL_CANCEL, time)
 
+	PR_VALUE_SYSCALL_STRICT_LOCK,
+#define syscall_strict_lock_count __profile_stats_value(PR_VALUE_SYSCALL_STRICT_LOCK, count)
+#define syscall_strict_lock_time __profile_stats_value(PR_VALUE_SYSCALL_STRICT_LOCK, time)
+
+	PR_VALUE_SYSCALL_STRICT_UNLOCK,
+#define syscall_strict_unlock_count __profile_stats_value(PR_VALUE_SYSCALL_STRICT_UNLOCK, count)
+#define syscall_strict_unlock_time __profile_stats_value(PR_VALUE_SYSCALL_STRICT_UNLOCK, time)
+
 /* counters for individual SMB types */
 	PR_VALUE_SMBMKDIR,
 #define SMBmkdir_count __profile_stats_value(PR_VALUE_SMBMKDIR, count)
