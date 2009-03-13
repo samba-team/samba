@@ -248,7 +248,7 @@ NTSTATUS onefs_brl_lock_windows(vfs_handle_struct *handle,
 {
 	int fd = br_lck->fsp->fh->fd;
 	uint64_t id = 0;
-	bool exclusive = false;
+	enum cbrl_lock_type type;
 	bool async = false;
 	bool pending = false;
 	bool pending_async = false;
@@ -268,20 +268,22 @@ NTSTATUS onefs_brl_lock_windows(vfs_handle_struct *handle,
 
 	switch (plock->lock_type) {
 		case WRITE_LOCK:
-			exclusive = true;
+			type = CBRL_LK_EX;
 			break;
 		case READ_LOCK:
+			type = CBRL_LK_SH;
 			break;
 		case PENDING_WRITE_LOCK:
 			/* Called when a blocking lock request is added - do an
 			 * async lock. */
+			type = CBRL_LK_EX;
 			pending = true;
 			async = true;
-			exclusive = true;
 			break;
 		case PENDING_READ_LOCK:
 			/* Called when a blocking lock request is added - do an
 			 * async lock. */
+			type = CBRL_LK_SH;
 			pending = true;
 			async = true;
 			break;
@@ -323,7 +325,7 @@ NTSTATUS onefs_brl_lock_windows(vfs_handle_struct *handle,
 	}
 
 	DEBUG(10, ("Calling ifs_cbrl(LOCK)..."));
-	error = ifs_cbrl(fd, CBRL_OP_LOCK, exclusive, plock->start,
+	error = ifs_cbrl(fd, CBRL_OP_LOCK, type, plock->start,
 	    plock->size, async, id, plock->context.smbpid, plock->context.tid,
 	    plock->fnum);
 	if (!error) {
@@ -373,8 +375,6 @@ success:
 	return NT_STATUS_OK;
 }
 
-#define CBRL_NOTYPE true
-
 bool onefs_brl_unlock_windows(vfs_handle_struct *handle,
 			      struct messaging_context *msg_ctx,
 			      struct byte_range_lock *br_lck,
@@ -389,8 +389,8 @@ bool onefs_brl_unlock_windows(vfs_handle_struct *handle,
 	SMB_ASSERT(plock->lock_type == UNLOCK_LOCK);
 
 	DEBUG(10, ("Calling ifs_cbrl(UNLOCK)..."));
-	error = ifs_cbrl(fd, CBRL_OP_UNLOCK, CBRL_NOTYPE,
-	    plock->start, plock->size, CBRL_NOTYPE, 0, plock->context.smbpid,
+	error = ifs_cbrl(fd, CBRL_OP_UNLOCK, CBRL_LK_SH,
+	    plock->start, plock->size, false, 0, plock->context.smbpid,
 	    plock->context.tid, plock->fnum);
 
 	END_PROFILE(syscall_brl_unlock);
@@ -444,8 +444,8 @@ bool onefs_brl_cancel_windows(vfs_handle_struct *handle,
 
 	/* A real cancel. */
 	DEBUG(10, ("Calling ifs_cbrl(CANCEL)..."));
-	error = ifs_cbrl(fd, CBRL_OP_CANCEL, CBRL_NOTYPE, plock->start,
-	    plock->size, CBRL_NOTYPE, bs->id, plock->context.smbpid,
+	error = ifs_cbrl(fd, CBRL_OP_CANCEL, CBRL_LK_UNSPEC, plock->start,
+	    plock->size, false, bs->id, plock->context.smbpid,
 	    plock->context.tid, plock->fnum);
 
 	END_PROFILE(syscall_brl_cancel);
@@ -460,6 +460,79 @@ bool onefs_brl_cancel_windows(vfs_handle_struct *handle,
 	onefs_cbrl_enumerate_blq("onefs_brl_cancel_windows");
 	DEBUG(10, ("returning true\n"));
 	return true;
+}
+
+bool onefs_strict_lock(vfs_handle_struct *handle,
+			files_struct *fsp,
+			struct lock_struct *plock)
+{
+	int error;
+
+	START_PROFILE(syscall_strict_lock);
+
+	SMB_ASSERT(plock->lock_type == READ_LOCK ||
+	    plock->lock_type == WRITE_LOCK);
+
+        if (!lp_locking(handle->conn->params) ||
+	    !lp_strict_locking(handle->conn->params)) {
+		END_PROFILE(syscall_strict_lock);
+                return True;
+        }
+
+	if (plock->lock_flav == POSIX_LOCK) {
+		END_PROFILE(syscall_strict_lock);
+		return SMB_VFS_NEXT_STRICT_LOCK(handle, fsp, plock);
+	}
+
+	if (plock->size == 0) {
+		END_PROFILE(syscall_strict_lock);
+                return True;
+	}
+
+	error = ifs_cbrl(fsp->fh->fd, CBRL_OP_LOCK,
+	    plock->lock_type == READ_LOCK ? CBRL_LK_RD : CBRL_LK_WR,
+	    plock->start, plock->size, 0, 0, plock->context.smbpid,
+	    plock->context.tid, plock->fnum);
+
+	END_PROFILE(syscall_strict_lock);
+
+	return (error == 0);
+}
+
+void onefs_strict_unlock(vfs_handle_struct *handle,
+			files_struct *fsp,
+			struct lock_struct *plock)
+{
+	START_PROFILE(syscall_strict_unlock);
+
+	SMB_ASSERT(plock->lock_type == READ_LOCK ||
+	    plock->lock_type == WRITE_LOCK);
+
+        if (!lp_locking(handle->conn->params) ||
+	    !lp_strict_locking(handle->conn->params)) {
+		END_PROFILE(syscall_strict_unlock);
+		return;
+        }
+
+	if (plock->lock_flav == POSIX_LOCK) {
+		SMB_VFS_NEXT_STRICT_UNLOCK(handle, fsp, plock);
+		END_PROFILE(syscall_strict_unlock);
+		return;
+	}
+
+	if (plock->size == 0) {
+		END_PROFILE(syscall_strict_unlock);
+		return;
+	}
+
+	if (fsp->fh) {
+		ifs_cbrl(fsp->fh->fd, CBRL_OP_UNLOCK,
+		    plock->lock_type == READ_LOCK ? CBRL_LK_RD : CBRL_LK_WR,
+		    plock->start, plock->size, 0, 0, plock->context.smbpid,
+		    plock->context.tid, plock->fnum);
+	}
+
+	END_PROFILE(syscall_strict_unlock);
 }
 
 /* TODO Optimization: Abstract out brl_get_locks() in the Windows case.
