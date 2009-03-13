@@ -3409,11 +3409,16 @@ void brl_register_msgs(struct messaging_context *msg_ctx);
 
 const char *lock_type_name(enum brl_type lock_type);
 const char *lock_flav_name(enum brl_flavour lock_flav);
-bool is_locked(files_struct *fsp,
-		uint32 smbpid,
-		uint64_t count,
-		uint64_t offset, 
-		enum brl_type lock_type);
+void init_strict_lock_struct(files_struct *fsp,
+				uint32 smbpid,
+				br_off start,
+				br_off size,
+				enum brl_type lock_type,
+				struct lock_struct *plock);
+bool strict_lock_default(files_struct *fsp,
+				struct lock_struct *plock);
+void strict_unlock_default(files_struct *fsp,
+				struct lock_struct *plock);
 NTSTATUS query_lock(files_struct *fsp,
 			uint32 *psmbpid,
 			uint64_t *pcount,
