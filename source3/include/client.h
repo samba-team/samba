@@ -167,6 +167,10 @@ struct smb_trans_enc_state {
 };
 
 struct cli_state {
+	/**
+	 * A list of subsidiary connections for DFS.
+	 */
+        struct cli_state *prev, *next;
 	int port;
 	int fd;
 	/* Last read or write error. */
@@ -276,6 +280,9 @@ struct cli_state {
 	 * chained async_req.
 	 */
 	struct cli_request *chain_accumulator;
+
+	/* Where (if anywhere) this is mounted under DFS. */
+	char *dfs_mountpoint;
 };
 
 typedef struct file_info {

@@ -73,22 +73,27 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 /********************************************************************
 ********************************************************************/
 
-WERROR libnetapi_shutdown_cm(struct libnetapi_ctx *ctx)
-{
-	cli_cm_shutdown();
+struct client_pipe_connection {
+	struct client_pipe_connection *prev, *next;
+	struct rpc_pipe_client *pipe;
+	struct cli_state *cli;
+};
 
-	return WERR_OK;
-}
+static struct client_pipe_connection *pipe_connections;
 
 /********************************************************************
 ********************************************************************/
 
-struct client_pipe_connection {
-	struct client_pipe_connection *prev, *next;
-	struct rpc_pipe_client *pipe;
-};
+WERROR libnetapi_shutdown_cm(struct libnetapi_ctx *ctx)
+{
+	struct client_pipe_connection *p;
 
-static struct client_pipe_connection *pipe_connections;
+	for (p = pipe_connections; p; p = p->next) {
+		cli_shutdown(p->cli);
+	}
+
+	return WERR_OK;
+}
 
 /********************************************************************
 ********************************************************************/
@@ -138,6 +143,7 @@ static NTSTATUS pipe_cm_connect(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
+	p->cli = cli;
 	DLIST_ADD(pipe_connections, p);
 
 	*presult = p->pipe;
@@ -193,5 +199,3 @@ WERROR libnetapi_open_pipe(struct libnetapi_ctx *ctx,
 
 	return WERR_OK;
 }
-
-

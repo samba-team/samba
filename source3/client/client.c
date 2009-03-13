@@ -1419,7 +1419,7 @@ static bool do_altname(const char *name)
 
 static int cmd_quit(void)
 {
-	cli_cm_shutdown();
+	cli_shutdown(cli);
 	exit(0);
 	/* NOTREACHED */
 	return 0;
@@ -1714,7 +1714,7 @@ static int do_put(const char *rname, const char *lname, bool reput)
 	}
 
 	if (f == x_stdin) {
-		cli_cm_shutdown();
+		cli_shutdown(cli);
 		exit(0);
 	}
 
@@ -3815,7 +3815,7 @@ static int cmd_logon(void)
 
 static int cmd_list_connect(void)
 {
-	cli_cm_display();
+	cli_cm_display(cli);
 	return 0;
 }
 
@@ -4526,7 +4526,7 @@ static int process(const char *base_directory)
 	if (base_directory && *base_directory) {
 		rc = do_cd(base_directory);
 		if (rc) {
-			cli_cm_shutdown();
+			cli_shutdown(cli);
 			return rc;
 		}
 	}
@@ -4537,7 +4537,7 @@ static int process(const char *base_directory)
 		process_stdin();
 	}
 
-	cli_cm_shutdown();
+	cli_shutdown(cli);
 	return rc;
 }
 
@@ -4568,7 +4568,7 @@ static int do_host_query(const char *query_host)
 		/* Workgroups simply don't make sense over anything
 		   else but port 139... */
 
-		cli_cm_shutdown();
+		cli_shutdown(cli);
 		cli = cli_cm_open(talloc_tos(), NULL,
 				query_host, "IPC$", true, smb_encrypt,
 				max_protocol, 139, name_type);
@@ -4581,7 +4581,7 @@ static int do_host_query(const char *query_host)
 
 	list_servers(lp_workgroup());
 
-	cli_cm_shutdown();
+	cli_shutdown(cli);
 
 	return(0);
 }
@@ -4609,14 +4609,14 @@ static int do_tar_op(const char *base_directory)
 	if (base_directory && *base_directory)  {
 		ret = do_cd(base_directory);
 		if (ret) {
-			cli_cm_shutdown();
+			cli_shutdown(cli);
 			return ret;
 		}
 	}
 
 	ret=process_tar();
 
-	cli_cm_shutdown();
+	cli_shutdown(cli);
 
 	return(ret);
 }
@@ -4663,12 +4663,12 @@ static int do_message_op(struct user_auth_info *auth_info)
 
 	if (!cli_session_request(cli, &calling, &called)) {
 		d_printf("session request failed\n");
-		cli_cm_shutdown();
+		cli_shutdown(cli);
 		return 1;
 	}
 
 	send_message(get_cmdline_auth_info_username(auth_info));
-	cli_cm_shutdown();
+	cli_shutdown(cli);
 
 	return 0;
 }

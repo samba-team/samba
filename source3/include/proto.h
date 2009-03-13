@@ -2355,7 +2355,6 @@ NTSTATUS cli_cm_force_encryption(struct cli_state *c,
 			const char *password,
 			const char *domain,
 			const char *sharename);
-const char *cli_cm_get_mntpoint(struct cli_state *c);
 struct cli_state *cli_cm_open(TALLOC_CTX *ctx,
 				struct cli_state *referring_cli,
 				const char *server,
@@ -2365,8 +2364,7 @@ struct cli_state *cli_cm_open(TALLOC_CTX *ctx,
 				int max_protocol,
 				int port,
 				int name_type);
-void cli_cm_shutdown(void);
-void cli_cm_display(void);
+void cli_cm_display(const struct cli_state *c);
 void cli_cm_set_credentials(struct user_auth_info *auth_info);
 void cli_cm_set_port(int port_number);
 void cli_cm_set_dest_name_type(int type);

@@ -425,7 +425,7 @@ void cli_init_creds(struct cli_state *cli, const char *username, const char *dom
 }
 
 /****************************************************************************
- Initialise a client structure. Always returns a malloc'ed struct.
+ Initialise a client structure. Always returns a talloc'ed struct.
  Set the signing state (used from the command line).
 ****************************************************************************/
 
@@ -446,6 +446,11 @@ struct cli_state *cli_initialise_ex(int signing_state)
 		return NULL;
 	}
 
+	cli->dfs_mountpoint = talloc_strdup(cli, "");
+	if (!cli->dfs_mountpoint) {
+		TALLOC_FREE(cli);
+		return NULL;
+	}
 	cli->port = 0;
 	cli->fd = -1;
 	cli->cnum = -1;
@@ -550,6 +555,27 @@ void cli_nt_pipes_close(struct cli_state *cli)
 
 void cli_shutdown(struct cli_state *cli)
 {
+	if (cli->prev == NULL) {
+		/*
+		 * Possible head of a DFS list,
+		 * shutdown all subsidiary DFS
+		 * connections.
+		 */
+		struct cli_state *p, *next;
+
+		for (p = cli->next; p; p = next) {
+			next = p->next;
+			cli_shutdown(p);
+		}
+	} else {
+		/*
+		 * We're a subsidiary connection.
+		 * Just remove ourselves from the
+		 * DFS list.
+		 */
+		DLIST_REMOVE(cli->prev, cli);
+	}
+
 	cli_nt_pipes_close(cli);
 
 	/*

@@ -3,7 +3,7 @@
    client connect/disconnect routines
    Copyright (C) Andrew Tridgell                  1994-1998
    Copyright (C) Gerald (Jerry) Carter            2004
-   Copyright (C) Jeremy Allison                   2007
+   Copyright (C) Jeremy Allison                   2007-2009
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -32,12 +32,6 @@
    as a separator when looking at the pathname part.... JRA.
 ********************************************************************/
 
-struct client_connection {
-	struct client_connection *prev, *next;
-	struct cli_state *cli;
-	char *mount;
-};
-
 static struct cm_cred_struct {
 	char *username;
 	char *password;
@@ -48,8 +42,6 @@ static struct cm_cred_struct {
 } cm_creds;
 
 static void cm_set_password(const char *newpass);
-
-static struct client_connection *connections;
 
 static bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 				struct cli_state *cli,
@@ -96,7 +88,7 @@ NTSTATUS cli_cm_force_encryption(struct cli_state *c,
 
 	return status;
 }
-	
+
 /********************************************************************
  Return a connection to a server.
 ********************************************************************/
@@ -301,52 +293,20 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 /****************************************************************************
 ****************************************************************************/
 
-static void cli_cm_set_mntpoint(struct cli_state *c, const char *mnt)
+static void cli_set_mntpoint(struct cli_state *cli, const char *mnt)
 {
-	struct client_connection *p;
-	int i;
-
-	for (p=connections,i=0; p; p=p->next,i++) {
-		if (strequal(p->cli->desthost, c->desthost) &&
-				strequal(p->cli->share, c->share)) {
-			break;
-		}
+	char *name = clean_name(NULL, mnt);
+	if (!name) {
+		return;
 	}
-
-	if (p) {
-		char *name = clean_name(NULL, mnt);
-		if (!name) {
-			return;
-		}
-		TALLOC_FREE(p->mount);
-		p->mount = talloc_strdup(p, name);
-		TALLOC_FREE(name);
-	}
-}
-
-/****************************************************************************
-****************************************************************************/
-
-const char *cli_cm_get_mntpoint(struct cli_state *c)
-{
-	struct client_connection *p;
-	int i;
-
-	for (p=connections,i=0; p; p=p->next,i++) {
-		if (strequal(p->cli->desthost, c->desthost) &&
-				strequal(p->cli->share, c->share)) {
-			break;
-		}
-	}
-
-	if (p) {
-		return p->mount;
-	}
-	return NULL;
+	TALLOC_FREE(cli->dfs_mountpoint);
+	cli->dfs_mountpoint = talloc_strdup(cli, name);
+	TALLOC_FREE(name);
 }
 
 /********************************************************************
- Add a new connection to the list
+ Add a new connection to the list.
+ referring_cli == NULL means a new initial connection.
 ********************************************************************/
 
 static struct cli_state *cli_cm_connect(TALLOC_CTX *ctx,
@@ -359,53 +319,62 @@ static struct cli_state *cli_cm_connect(TALLOC_CTX *ctx,
 					int port,
 					int name_type)
 {
-	struct client_connection *node;
+	struct cli_state *cli;
 
-	/* NB This must be the null context here... JRA. */
-	node = TALLOC_ZERO_ARRAY(NULL, struct client_connection, 1);
-	if (!node) {
-		return NULL;
-	}
-
-	node->cli = do_connect(ctx, server, share,
+	cli = do_connect(ctx, server, share,
 				show_hdr, force_encrypt, max_protocol,
 				port, name_type);
 
-	if ( !node->cli ) {
-		TALLOC_FREE( node );
+	if (!cli ) {
 		return NULL;
 	}
 
-	DLIST_ADD( connections, node );
-
-	cli_cm_set_mntpoint(node->cli, "");
+	/* Enter into the list. */
+	if (referring_cli) {
+		DLIST_ADD_END(referring_cli, cli, struct cli_state *);
+	}
 
 	if (referring_cli && referring_cli->posix_capabilities) {
 		uint16 major, minor;
 		uint32 caplow, caphigh;
-		if (cli_unix_extensions_version(node->cli, &major,
+		if (cli_unix_extensions_version(cli, &major,
 					&minor, &caplow, &caphigh)) {
-			cli_set_unix_extensions_capabilities(node->cli,
+			cli_set_unix_extensions_capabilities(cli,
 					major, minor,
 					caplow, caphigh);
 		}
 	}
 
-	return node->cli;
+	return cli;
 }
 
 /********************************************************************
- Return a connection to a server.
+ Return a connection to a server on a particular share.
 ********************************************************************/
 
-static struct cli_state *cli_cm_find(const char *server, const char *share)
+static struct cli_state *cli_cm_find(struct cli_state *cli,
+				const char *server,
+				const char *share)
 {
-	struct client_connection *p;
+	struct cli_state *p;
 
-	for (p=connections; p; p=p->next) {
-		if ( strequal(server, p->cli->desthost) &&
-				strequal(share,p->cli->share)) {
-			return p->cli;
+	if (cli == NULL) {
+		return NULL;
+	}
+
+	/* Search to the start of the list. */
+	for (p = cli; p; p = p->prev) {
+		if (strequal(server, p->desthost) &&
+				strequal(share,p->share)) {
+			return p;
+		}
+	}
+
+	/* Search to the end of the list. */
+	for (p = cli->next; p; p = p->next) {
+		if (strequal(server, p->desthost) &&
+				strequal(share,p->share)) {
+			return p;
 		}
 	}
 
@@ -413,8 +382,7 @@ static struct cli_state *cli_cm_find(const char *server, const char *share)
 }
 
 /****************************************************************************
- Open a client connection to a \\server\share.  Set's the current *cli
- global variable as a side-effect (but only if the connection is successful).
+ Open a client connection to a \\server\share.
 ****************************************************************************/
 
 struct cli_state *cli_cm_open(TALLOC_CTX *ctx,
@@ -427,50 +395,28 @@ struct cli_state *cli_cm_open(TALLOC_CTX *ctx,
 				int port,
 				int name_type)
 {
-	struct cli_state *c;
+	/* Try to reuse an existing connection in this list. */
+	struct cli_state *c = cli_cm_find(referring_cli, server, share);
 
-	/* try to reuse an existing connection */
+	if (c) {
+		return c;
+	}
 
-	c = cli_cm_find(server, share);
-	if (!c) {
-		c = cli_cm_connect(ctx, referring_cli,
+	return cli_cm_connect(ctx, referring_cli,
 				server, share, show_hdr, force_encrypt,
 				max_protocol, port, name_type);
-	}
-
-	return c;
 }
 
 /****************************************************************************
 ****************************************************************************/
 
-void cli_cm_shutdown(void)
+void cli_cm_display(const struct cli_state *cli)
 {
-	struct client_connection *p, *x;
-
-	for (p=connections; p;) {
-		cli_shutdown(p->cli);
-		x = p;
-		p = p->next;
-
-		TALLOC_FREE(x);
-	}
-
-	connections = NULL;
-	return;
-}
-
-/****************************************************************************
-****************************************************************************/
-
-void cli_cm_display(void)
-{
-	struct client_connection *p;
 	int i;
 
-	for ( p=connections,i=0; p; p=p->next,i++ ) {
+	for (i=0; cli; cli = cli->next,i++ ) {
 		d_printf("%d:\tserver=%s, share=%s\n",
-			i, p->cli->desthost, p->cli->share );
+			i, cli->desthost, cli->share );
 	}
 }
 
@@ -998,7 +944,7 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 		return false;
 	}
 
-	cli_cm_set_mntpoint(*targetcli, newmount);
+	cli_set_mntpoint(*targetcli, newmount);
 
 	/* Check for another dfs referral, note that we are not
 	   checking for loops here. */
