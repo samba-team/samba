@@ -210,8 +210,13 @@ static int select_event_loop_once(struct tevent_context *ev, const char *locatio
 		 					   struct select_event_context);
 	struct timeval tval;
 
-	if (select_ev->ev->signal_events &&
-	    tevent_common_check_signal(select_ev->ev)) {
+	if (ev->signal_events &&
+	    tevent_common_check_signal(ev)) {
+		return 0;
+	}
+
+	if (ev->immediate_events &&
+	    tevent_common_loop_immediate(ev)) {
 		return 0;
 	}
 
@@ -224,15 +229,16 @@ static int select_event_loop_once(struct tevent_context *ev, const char *locatio
 }
 
 static const struct tevent_ops select_event_ops = {
-	.context_init	= select_event_context_init,
-	.add_fd		= select_event_add_fd,
-	.set_fd_close_fn= tevent_common_fd_set_close_fn,
-	.get_fd_flags	= tevent_common_fd_get_flags,
-	.set_fd_flags	= tevent_common_fd_set_flags,
-	.add_timer	= tevent_common_add_timer,
-	.add_signal	= tevent_common_add_signal,
-	.loop_once	= select_event_loop_once,
-	.loop_wait	= tevent_common_loop_wait,
+	.context_init		= select_event_context_init,
+	.add_fd			= select_event_add_fd,
+	.set_fd_close_fn	= tevent_common_fd_set_close_fn,
+	.get_fd_flags		= tevent_common_fd_get_flags,
+	.set_fd_flags		= tevent_common_fd_set_flags,
+	.add_timer		= tevent_common_add_timer,
+	.schedule_immediate	= tevent_common_schedule_immediate,
+	.add_signal		= tevent_common_add_signal,
+	.loop_once		= select_event_loop_once,
+	.loop_wait		= tevent_common_loop_wait,
 };
 
 bool tevent_select_init(void)

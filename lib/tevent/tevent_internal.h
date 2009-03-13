@@ -143,6 +143,15 @@ struct tevent_ops {
 					  void *private_data,
 					  const char *handler_name,
 					  const char *location);
+
+	/* immediate event functions */
+	void (*schedule_immediate)(struct tevent_immediate *im,
+				   struct tevent_context *ev,
+				   tevent_immediate_handler_t handler,
+				   void *private_data,
+				   const char *handler_name,
+				   const char *location);
+
 	/* signal functions */
 	struct tevent_signal *(*add_signal)(struct tevent_context *ev,
 					    TALLOC_CTX *mem_ctx,
@@ -188,6 +197,21 @@ struct tevent_timer {
 	void *additional_data;
 };
 
+struct tevent_immediate {
+	struct tevent_immediate *prev, *next;
+	struct tevent_context *event_ctx;
+	tevent_immediate_handler_t handler;
+	/* this is private for the specific handler */
+	void *private_data;
+	/* this is for debugging only! */
+	const char *handler_name;
+	const char *create_location;
+	const char *schedule_location;
+	/* this is private for the events_ops implementation */
+	void (*cancel_fn)(struct tevent_immediate *im);
+	void *additional_data;
+};
+
 struct tevent_signal {
 	struct tevent_signal *prev, *next;
 	struct tevent_context *event_ctx;
@@ -221,6 +245,9 @@ struct tevent_context {
 
 	/* list of timed events - used by common code */
 	struct tevent_timer *timer_events;
+
+	/* list of immediate events - used by common code */
+	struct tevent_immediate *immediate_events;
 
 	/* list of signal events - used by common code */
 	struct tevent_signal *signal_events;
@@ -272,6 +299,14 @@ struct tevent_timer *tevent_common_add_timer(struct tevent_context *ev,
 					     const char *handler_name,
 					     const char *location);
 struct timeval tevent_common_loop_timer_delay(struct tevent_context *);
+
+void tevent_common_schedule_immediate(struct tevent_immediate *im,
+				      struct tevent_context *ev,
+				      tevent_immediate_handler_t handler,
+				      void *private_data,
+				      const char *handler_name,
+				      const char *location);
+bool tevent_common_loop_immediate(struct tevent_context *ev);
 
 struct tevent_signal *tevent_common_add_signal(struct tevent_context *ev,
 					       TALLOC_CTX *mem_ctx,
