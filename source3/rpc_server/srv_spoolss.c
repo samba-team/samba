@@ -74,28 +74,7 @@ static bool api_spoolss_open_printer_ex(pipes_struct *p)
 
 static bool api_spoolss_getprinterdata(pipes_struct *p)
 {
-	SPOOL_Q_GETPRINTERDATA q_u;
-	SPOOL_R_GETPRINTERDATA r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	/* read the stream and fill the struct */
-	if (!spoolss_io_q_getprinterdata("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_getprinterdata: unable to unmarshall SPOOL_Q_GETPRINTERDATA.\n"));
-		return False;
-	}
-	
-	r_u.status = _spoolss_getprinterdata( p, &q_u, &r_u);
-
-	if (!spoolss_io_r_getprinterdata("", &r_u, rdata, 0)) {
-		DEBUG(0,("spoolss_io_r_getprinterdata: unable to marshall SPOOL_R_GETPRINTERDATA.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_spoolss_call(p, NDR_SPOOLSS_GETPRINTERDATA);
 }
 
 /********************************************************************
