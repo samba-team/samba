@@ -575,7 +575,7 @@ static bool test_EnumPrintProcDataTypes(struct torture_context *tctx,
 	NTSTATUS status;
 	struct spoolss_EnumPrintProcDataTypes r;
 	uint16_t levels[] = { 1 };
-	int i, j;
+	int i;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i];
