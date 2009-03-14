@@ -187,9 +187,9 @@ struct cli_state {
 	fstring desthost;
 
 	/* The credentials used to open the cli_state connection. */
-	fstring domain;
-	fstring user_name;
-	struct pwd_info pwd;
+	char *domain;
+	char *user_name;
+	char *password; /* Can be null to force use of zero NTLMSSP session key. */
 
 	/*
 	 * The following strings are the

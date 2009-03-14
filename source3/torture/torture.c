@@ -333,6 +333,7 @@ bool torture_cli_session_setup2(struct cli_state *cli, uint16 *new_vuid)
 	uint16 old_vuid = cli->vuid;
 	fstring old_user_name;
 	size_t passlen = strlen(password);
+	NTSTATUS status;
 	bool ret;
 
 	fstrcpy(old_user_name, cli->user_name);
@@ -343,7 +344,10 @@ bool torture_cli_session_setup2(struct cli_state *cli, uint16 *new_vuid)
 						workgroup));
 	*new_vuid = cli->vuid;
 	cli->vuid = old_vuid;
-	fstrcpy(cli->user_name, old_user_name);
+	status = cli_set_username(cli, old_user_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
 	return ret;
 }
 

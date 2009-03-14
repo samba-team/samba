@@ -457,7 +457,7 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/clireadwrite.o libsmb/clilist.o libsmb/cliprint.o \
 	     libsmb/clitrans.o libsmb/clisecdesc.o libsmb/clidgram.o \
 	     libsmb/clistr.o libsmb/cliquota.o libsmb/clifsinfo.o libsmb/clidfs.o \
-             libsmb/credentials.o libsmb/pwd_cache.o \
+             libsmb/credentials.o \
 	     libsmb/clioplock.o libsmb/clirap2.o \
 	     libsmb/smb_seal.o libsmb/async_smb.o \
 	     $(LIBSAMBA_OBJ) \

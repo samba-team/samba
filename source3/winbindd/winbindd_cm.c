@@ -866,7 +866,10 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 			result = ads_ntstatus(ads_status);
 			if (NT_STATUS_IS_OK(result)) {
 				/* Ensure creds are stored for NTLMSSP authenticated pipe access. */
-				cli_init_creds(*cli, machine_account, lp_workgroup(), machine_password);
+				result = cli_init_creds(*cli, machine_account, lp_workgroup(), machine_password);
+				if (!NT_STATUS_IS_OK(result)) {
+					goto done;
+				}
 				goto session_setup_done;
 			}
 		}
@@ -891,7 +894,10 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 		result = ads_ntstatus(ads_status);
 		if (NT_STATUS_IS_OK(result)) {
 			/* Ensure creds are stored for NTLMSSP authenticated pipe access. */
-			cli_init_creds(*cli, machine_account, lp_workgroup(), machine_password);
+			result = cli_init_creds(*cli, machine_account, lp_workgroup(), machine_password);
+			if (!NT_STATUS_IS_OK(result)) {
+				goto done;
+			}
 			goto session_setup_done;
 		}
 	}
@@ -917,7 +923,10 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 					    ipc_password, strlen(ipc_password)+1,
 					    ipc_domain))) {
 			/* Successful logon with given username. */
-			cli_init_creds(*cli, ipc_username, ipc_domain, ipc_password);
+			result = cli_init_creds(*cli, ipc_username, ipc_domain, ipc_password);
+			if (!NT_STATUS_IS_OK(result)) {
+				goto done;
+			}
 			goto session_setup_done;
 		} else {
 			DEBUG(4, ("authenticated session setup with user %s\\%s failed.\n",
@@ -935,7 +944,10 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	if (NT_STATUS_IS_OK(cli_session_setup(*cli, "", NULL, 0,
 					      NULL, 0, ""))) {
 		DEBUG(5, ("Connected anonymously\n"));
-		cli_init_creds(*cli, "", "", "");
+		result = cli_init_creds(*cli, "", "", "");
+		if (!NT_STATUS_IS_OK(result)) {
+			goto done;
+		}
 		goto session_setup_done;
 	}
 
@@ -970,8 +982,11 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	*retry = False;
 
 	/* set the domain if empty; needed for schannel connections */
-	if ( !*(*cli)->domain ) {
-		fstrcpy( (*cli)->domain, domain->name );
+	if ( !(*cli)->domain[0] ) {
+		result = cli_set_domain((*cli), domain->name);
+		if (!NT_STATUS_IS_OK(result)) {
+			return result;
+		}
 	}
 
 	result = NT_STATUS_OK;
@@ -1979,7 +1994,6 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 {
 	struct winbindd_cm_conn *conn;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	fstring conn_pwd;
 	struct dcinfo *p_dcinfo;
 	char *machine_password = NULL;
 	char *machine_account = NULL;
@@ -2004,10 +2018,9 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	 * anonymous.
 	 */
 
-	pwd_get_cleartext(&conn->cli->pwd, conn_pwd);
 	if ((conn->cli->user_name[0] == '\0') ||
 	    (conn->cli->domain[0] == '\0') || 
-	    (conn_pwd[0] == '\0'))
+	    (conn->cli->password == NULL || conn->cli->password[0] == '\0'))
 	{
 		result = get_trust_creds(domain, &machine_password,
 					 &machine_account, NULL);
@@ -2018,7 +2031,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 		}
 		domain_name = domain->name;
 	} else {
-		machine_password = SMB_STRDUP(conn_pwd);		
+		machine_password = SMB_STRDUP(conn->cli->password);
 		machine_account = SMB_STRDUP(conn->cli->user_name);
 		domain_name = conn->cli->domain;
 	}
@@ -2147,7 +2160,6 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 {
 	struct winbindd_cm_conn *conn;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	fstring conn_pwd;
 	struct dcinfo *p_dcinfo;
 
 	result = init_dc_connection(domain);
@@ -2160,10 +2172,9 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	pwd_get_cleartext(&conn->cli->pwd, conn_pwd);
 	if ((conn->cli->user_name[0] == '\0') ||
 	    (conn->cli->domain[0] == '\0') || 
-	    (conn_pwd[0] == '\0')) {
+	    (conn->cli->password == NULL || conn->cli->password[0] == '\0')) {
 		DEBUG(10, ("cm_connect_lsa: No no user available for "
 			   "domain %s, trying schannel\n", conn->cli->domain));
 		goto schannel;
@@ -2174,7 +2185,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	result = cli_rpc_pipe_open_spnego_ntlmssp
 		(conn->cli, &ndr_table_lsarpc.syntax_id,
 		 PIPE_AUTH_LEVEL_PRIVACY,
-		 conn->cli->domain, conn->cli->user_name, conn_pwd,
+		 conn->cli->domain, conn->cli->user_name, conn->cli->password,
 		 &conn->lsa_pipe);
 
 	if (!NT_STATUS_IS_OK(result)) {

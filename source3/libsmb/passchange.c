@@ -133,9 +133,17 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 			return result;
 		}
 
-		cli_init_creds(cli, "", "", NULL);
+		result = cli_init_creds(cli, "", "", NULL);
+		if (!NT_STATUS_IS_OK(result)) {
+			cli_shutdown(cli);
+			return result;
+		}
 	} else {
-		cli_init_creds(cli, user_name, "", old_passwd);
+		result = cli_init_creds(cli, user_name, "", old_passwd);
+		if (!NT_STATUS_IS_OK(result)) {
+			cli_shutdown(cli);
+			return result;
+		}
 	}
 
 	result = cli_tcon_andx(cli, "IPC$", "IPC", "", 1);
@@ -222,7 +230,11 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 	TALLOC_FREE(pipe_hnd);
 
 	/* Try anonymous NTLMSSP... */
-	cli_init_creds(cli, "", "", NULL);
+	result = cli_init_creds(cli, "", "", NULL);
+	if (!NT_STATUS_IS_OK(result)) {
+		cli_shutdown(cli);
+		return result;
+	}
 
 	result = NT_STATUS_UNSUCCESSFUL;
 
