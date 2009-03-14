@@ -61,6 +61,7 @@ static NTSTATUS cli_session_setup_lanman2(struct cli_state *cli,
 {
 	DATA_BLOB session_key = data_blob_null;
 	DATA_BLOB lm_response = data_blob_null;
+	NTSTATUS status;
 	fstring pword;
 	char *p;
 
@@ -129,7 +130,10 @@ static NTSTATUS cli_session_setup_lanman2(struct cli_state *cli,
 	
 	/* use the returned vuid from now on */
 	cli->vuid = SVAL(cli->inbuf,smb_uid);	
-	fstrcpy(cli->user_name, user);
+	status = cli_set_username(cli, user);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	if (session_key.data) {
 		/* Have plaintext orginal */
@@ -237,7 +241,10 @@ NTSTATUS cli_session_setup_guest_recv(struct async_req *req)
 		cli->is_samba = True;
 	}
 
-	fstrcpy(cli->user_name, "");
+	status = cli_set_username(cli, "");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	return NT_STATUS_OK;
 }
@@ -289,6 +296,7 @@ static NTSTATUS cli_session_setup_plaintext(struct cli_state *cli,
 {
 	uint32 capabilities = cli_session_setup_capabilities(cli);
 	char *p;
+	NTSTATUS status;
 	fstring lanman;
 	
 	fstr_sprintf( lanman, "Samba %s", samba_version_string());
@@ -349,8 +357,10 @@ static NTSTATUS cli_session_setup_plaintext(struct cli_state *cli,
 			 -1, STR_TERMINATE);
 	p += clistr_pull(cli->inbuf, cli->server_domain, p, sizeof(fstring),
 			 -1, STR_TERMINATE);
-	fstrcpy(cli->user_name, user);
-
+	status = cli_set_username(cli, user);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 	if (strstr(cli->server_type, "Samba")) {
 		cli->is_samba = True;
 	}
@@ -520,7 +530,10 @@ static NTSTATUS cli_session_setup_nt1(struct cli_state *cli, const char *user,
 		cli->is_samba = True;
 	}
 
-	fstrcpy(cli->user_name, user);
+	result = cli_set_username(cli, user);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto end;
+	}
 
 	if (session_key.data) {
 		/* Have plaintext orginal */
@@ -898,6 +911,7 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 	DATA_BLOB blob;
 	const char *p = NULL;
 	char *account = NULL;
+	NTSTATUS status;
 
 	DEBUG(3,("Doing spnego session setup (blob length=%lu)\n", (unsigned long)cli->secblob.length));
 
@@ -936,7 +950,10 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 
 	DEBUG(3,("got principal=%s\n", principal ? principal : "<null>"));
 
-	fstrcpy(cli->user_name, user);
+	status = cli_set_username(cli, user);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ADS_ERROR_NT(status);
+	}
 
 #ifdef HAVE_KRB5
 	/* If password is set we reauthenticate to kerberos server
@@ -2101,7 +2118,11 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 		}
 	}
 
-	cli_init_creds(cli, user, domain, password);
+	nt_status = cli_init_creds(cli, user, domain, password);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		cli_shutdown(cli);
+		return nt_status;
+	}
 
 	*output_cli = cli;
 	return NT_STATUS_OK;

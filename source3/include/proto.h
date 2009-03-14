@@ -2424,7 +2424,10 @@ bool cli_send_smb_direct_writeX(struct cli_state *cli,
 void cli_setup_packet_buf(struct cli_state *cli, char *buf);
 void cli_setup_packet(struct cli_state *cli);
 void cli_setup_bcc(struct cli_state *cli, void *p);
-void cli_init_creds(struct cli_state *cli, const char *username, const char *domain, const char *password);
+NTSTATUS cli_set_domain(struct cli_state *cli, const char *domain);
+NTSTATUS cli_set_username(struct cli_state *cli, const char *username);
+NTSTATUS cli_set_password(struct cli_state *cli, const char *password);
+NTSTATUS cli_init_creds(struct cli_state *cli, const char *username, const char *domain, const char *password);
 struct cli_state *cli_initialise(void);
 struct cli_state *cli_initialise_ex(int signing_state);
 void cli_nt_pipes_close(struct cli_state *cli);
@@ -3153,11 +3156,6 @@ NTSTATUS ntlmssp_sign_init(NTLMSSP_STATE *ntlmssp_state);
 NTSTATUS remote_password_change(const char *remote_machine, const char *user_name, 
 				const char *old_passwd, const char *new_passwd,
 				char **err_str);
-
-/* The following definitions come from libsmb/pwd_cache.c  */
-
-void pwd_set_cleartext(struct pwd_info *pwd, const char *clr);
-void pwd_get_cleartext(struct pwd_info *pwd, fstring clr);
 
 /* The following definitions come from libsmb/samlogon_cache.c  */
 
