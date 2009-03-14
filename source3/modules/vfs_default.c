@@ -1174,7 +1174,7 @@ static void vfswrap_strict_unlock(struct vfs_handle_struct *handle,
 	SMB_ASSERT(plock->lock_type == READ_LOCK ||
 	    plock->lock_type == WRITE_LOCK);
 
-	return strict_unlock_default(fsp, plock);
+	strict_unlock_default(fsp, plock);
 }
 
 /* NT ACL operations. */
