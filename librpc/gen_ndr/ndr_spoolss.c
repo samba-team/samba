@@ -21787,8 +21787,11 @@ _PUBLIC_ enum ndr_err_code ndr_push___spoolss_SetPrinterData(struct ndr_push *nd
 		NDR_CHECK(ndr_push_spoolss_PrinterDataType(ndr, NDR_SCALARS, r->in.type));
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->out.data, r->in.type));
-		NDR_CHECK(ndr_push_spoolss_PrinterData(ndr, NDR_SCALARS|NDR_BUFFERS, &r->out.data));
+		if (r->out.data == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_set_switch_value(ndr, r->out.data, r->in.type));
+		NDR_CHECK(ndr_push_spoolss_PrinterData(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.data));
 	}
 	return NDR_ERR_SUCCESS;
 }
