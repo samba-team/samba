@@ -553,7 +553,7 @@ enum ndr_err_code ndr_push_spoolss_SetPrinterData(struct ndr_push *ndr, int flag
 		_ndr_data->flags= ndr->flags;
 
 		__r.in.type	= r->in.type;
-		__r.out.data	= r->in.data;
+		__r.out.data	= discard_const_p(union spoolss_PrinterData, &r->in.data);
 		NDR_CHECK(ndr_push___spoolss_SetPrinterData(_ndr_data, NDR_OUT, &__r));
 		_data_blob_data = ndr_push_blob(_ndr_data);
 
