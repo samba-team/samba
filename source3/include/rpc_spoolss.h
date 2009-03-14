@@ -274,23 +274,6 @@ typedef struct devicemode
 }
 DEVICEMODE;
 
-typedef struct _devmode_cont
-{
-	uint32 size;
-	uint32 devmode_ptr;
-	DEVICEMODE *devmode;
-}
-DEVMODE_CTR;
-
-typedef struct _printer_default
-{
-	uint32 datatype_ptr;
-	UNISTR2 datatype;
-	DEVMODE_CTR devmode_cont;
-	uint32 access_required;
-}
-PRINTER_DEFAULT;
-
 /********************************************/
 
 typedef struct spool_q_getprinterdata
@@ -379,20 +362,6 @@ typedef struct spool_r_setprinterdata
 	WERROR status;
 }
 SPOOL_R_SETPRINTERDATA;
-
-typedef struct _form
-{
-	uint32 flags;
-	uint32 name_ptr;
-	uint32 size_x;
-	uint32 size_y;
-	uint32 left;
-	uint32 top;
-	uint32 right;
-	uint32 bottom;
-	UNISTR2 name;
-}
-FORM;
 
 typedef struct spool_q_enumprinterkey
 {
