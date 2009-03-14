@@ -317,24 +317,6 @@ typedef struct spool_r_enumprinterdata
 }
 SPOOL_R_ENUMPRINTERDATA;
 
-typedef struct spool_q_setprinterdata
-{
-	POLICY_HND handle;
-	UNISTR2 value;
-	uint32 type;
-	uint32 max_len;
-	uint8 *data;
-	uint32 real_len;
-	uint32 numeric_data;
-}
-SPOOL_Q_SETPRINTERDATA;
-
-typedef struct spool_r_setprinterdata
-{
-	WERROR status;
-}
-SPOOL_R_SETPRINTERDATA;
-
 typedef struct spool_q_enumprinterkey
 {
 	POLICY_HND handle;
