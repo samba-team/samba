@@ -4793,7 +4793,6 @@ bool nt_printing_init(struct messaging_context *msg_ctx);
 uint32 update_c_setprinter(bool initialize);
 uint32 get_c_setprinter(void);
 int get_builtin_ntforms(nt_forms_struct **list);
-bool get_a_builtin_ntform(UNISTR2 *uni_formname,nt_forms_struct *form);
 bool get_a_builtin_ntform_by_string(const char *form_name, nt_forms_struct *form);
 int get_ntforms(nt_forms_struct **list);
 int write_ntforms(nt_forms_struct **list, int number);
