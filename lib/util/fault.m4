@@ -8,6 +8,7 @@ if test x"$ac_cv_header_execinfo_h" = x"yes" -a x"$ac_cv_func_ext_backtrace" = x
 	EXECINFO_CFLAGS="$CFLAGS"
 	EXECINFO_CPPFLAGS="$CPPFLAGS"
 	EXECINFO_LDFLAGS="$LDFLAGS"
+	LIB_REMOVE_USR_LIB(EXECINFO_LDFLAGS)
 else
 	SMB_ENABLE(EXECINFO,NO)
 fi
