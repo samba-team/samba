@@ -1338,12 +1338,14 @@ static bool test_GetPrinterData(struct torture_context *tctx,
 	struct spoolss_GetPrinterData r;
 	uint32_t needed;
 	enum spoolss_PrinterDataType type;
+	union spoolss_PrinterData data;
 
 	r.in.handle = handle;
 	r.in.value_name = value_name;
 	r.in.offered = 0;
 	r.out.needed = &needed;
 	r.out.type = &type;
+	r.out.data = &data;
 
 	torture_comment(tctx, "Testing GetPrinterData\n");
 
