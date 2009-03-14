@@ -697,6 +697,54 @@ static void display_reg_value(REGISTRY_VALUE value)
 /****************************************************************************
 ****************************************************************************/
 
+static void display_printer_data(const char *v,
+				 enum winreg_Type type,
+				 union spoolss_PrinterData *r)
+{
+	int i;
+
+	switch (type) {
+	case REG_DWORD:
+		printf("%s: REG_DWORD: 0x%08x\n", v, r->value);
+		break;
+	case REG_SZ:
+		printf("%s: REG_SZ: %s\n", v, r->string);
+		break;
+	case REG_BINARY: {
+		char *hex = hex_encode_talloc(NULL,
+			r->binary.data, r->binary.length);
+		size_t len;
+		printf("%s: REG_BINARY:", v);
+		len = strlen(hex);
+		for (i=0; i<len; i++) {
+			if (hex[i] == '\0') {
+				break;
+			}
+			if (i%40 == 0) {
+				putchar('\n');
+			}
+			putchar(hex[i]);
+		}
+		TALLOC_FREE(hex);
+		putchar('\n');
+		break;
+	}
+	case REG_MULTI_SZ:
+		printf("%s: REG_MULTI_SZ: ", v);
+		for (i=0; r->string_array[i] != NULL; i++) {
+			printf("%s ", r->string_array[i]);
+		}
+		printf("\n");
+		break;
+	default:
+		printf("%s: unknown type 0x%02x:\n", v, type);
+		break;
+	}
+}
+
+/****************************************************************************
+****************************************************************************/
+
 static WERROR cmd_spoolss_getprinterdata(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx,
 					   int argc, const char **argv)
@@ -705,7 +753,8 @@ static WERROR cmd_spoolss_getprinterdata(struct rpc_pipe_client *cli,
 	WERROR          result;
 	fstring 	printername;
 	const char *valuename;
-	REGISTRY_VALUE value;
+	enum winreg_Type type;
+	union spoolss_PrinterData data;
 
 	if (argc != 3) {
 		printf("Usage: %s <printername> <valuename>\n", argv[0]);
@@ -733,16 +782,18 @@ static WERROR cmd_spoolss_getprinterdata(struct rpc_pipe_client *cli,
 
 	/* Get printer info */
 
-	result = rpccli_spoolss_getprinterdata(cli, mem_ctx, &pol, valuename, &value);
-
+	result = rpccli_spoolss_getprinterdata(cli, mem_ctx,
+					       &pol,
+					       valuename,
+					       0,
+					       &type,
+					       &data);
 	if (!W_ERROR_IS_OK(result))
 		goto done;
 
 	/* Display printer data */
 
-	fstrcpy(value.valuename, valuename);
-	display_reg_value(value);
-
+	display_printer_data(valuename, type, &data);
 
  done:
 	if (is_valid_policy_hnd(&pol))
