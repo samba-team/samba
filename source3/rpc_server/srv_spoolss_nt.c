@@ -8101,37 +8101,36 @@ done:
 	return result;
 }
 
-/****************************************************************************
-****************************************************************************/
+/****************************************************************
+ _spoolss_SetPrinterData
+****************************************************************/
 
-WERROR _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SPOOL_R_SETPRINTERDATA *r_u)
+WERROR _spoolss_SetPrinterData(pipes_struct *p,
+			       struct spoolss_SetPrinterData *r)
 {
-	POLICY_HND 		*handle = &q_u->handle;
-	UNISTR2 		*value = &q_u->value;
-	uint32 			type = q_u->type;
-	uint8 			*data = q_u->data;
-	uint32 			real_len = q_u->real_len;
+	NT_PRINTER_INFO_LEVEL *printer = NULL;
+	int snum=0;
+	WERROR result = WERR_OK;
+	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
+	DATA_BLOB blob;
 
-	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
-	int 			snum=0;
-	WERROR 			status = WERR_OK;
-	Printer_entry 		*Printer=find_printer_index_by_hnd(p, handle);
-	fstring			valuename;
-
-	DEBUG(5,("spoolss_setprinterdata\n"));
+	DEBUG(5,("_spoolss_SetPrinterData\n"));
 
 	if (!Printer) {
-		DEBUG(2,("_spoolss_setprinterdata: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
+		DEBUG(2,("_spoolss_SetPrinterData: Invalid handle (%s:%u:%u).\n",
+			OUR_HANDLE(r->in.handle)));
 		return WERR_BADFID;
 	}
 
-	if ( Printer->printer_type == SPLHND_SERVER ) {
-		DEBUG(10,("_spoolss_setprinterdata: Not implemented for server handles yet\n"));
+	if (Printer->printer_type == SPLHND_SERVER) {
+		DEBUG(10,("_spoolss_SetPrinterData: "
+			"Not implemented for server handles yet\n"));
 		return WERR_INVALID_PARAM;
 	}
 
-	if (!get_printer_snum(p,handle, &snum, NULL))
+	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
 		return WERR_BADFID;
+	}
 
 	/*
 	 * Access check : NT returns "access denied" if you make a
@@ -8141,43 +8140,49 @@ WERROR _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 	 * when connecting to a printer  --jerry
 	 */
 
-	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER)
-	{
-		DEBUG(3, ("_spoolss_setprinterdata: change denied by handle access permissions\n"));
-		status = WERR_ACCESS_DENIED;
+	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
+		DEBUG(3,("_spoolss_SetPrinterData: "
+			"change denied by handle access permissions\n"));
+		result = WERR_ACCESS_DENIED;
 		goto done;
 	}
 
-	status = get_a_printer(Printer, &printer, 2, lp_const_servicename(snum));
-	if (!W_ERROR_IS_OK(status))
-		return status;
+	result = get_a_printer(Printer, &printer, 2, lp_const_servicename(snum));
+	if (!W_ERROR_IS_OK(result)) {
+		return result;
+	}
 
-	unistr2_to_ascii(valuename, value, sizeof(valuename));
+	result = push_spoolss_PrinterData(p->mem_ctx, &blob,
+					  r->in.type, &r->in.data);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
 
 	/*
 	 * When client side code sets a magic printer data key, detect it and save
 	 * the current printer data and the magic key's data (its the DEVMODE) for
 	 * future printer/driver initializations.
 	 */
-	if ( (type == REG_BINARY) && strequal( valuename, PHANTOM_DEVMODE_KEY))
-	{
+	if ((r->in.type == REG_BINARY) && strequal(r->in.value_name, PHANTOM_DEVMODE_KEY)) {
 		/* Set devmode and printer initialization info */
-		status = save_driver_init( printer, 2, data, real_len );
+		result = save_driver_init(printer, 2, blob.data, blob.length);
 
-		srv_spoolss_reset_printerdata( printer->info_2->drivername );
+		srv_spoolss_reset_printerdata(printer->info_2->drivername);
+
+		goto done;
 	}
-	else
-	{
-	status = set_printer_dataex( printer, SPOOL_PRINTERDATA_KEY, valuename,
-					type, data, real_len );
-		if ( W_ERROR_IS_OK(status) )
-			status = mod_a_printer(printer, 2);
+
+	result = set_printer_dataex(printer, SPOOL_PRINTERDATA_KEY,
+				    r->in.value_name, r->in.type,
+				    blob.data, blob.length);
+	if (W_ERROR_IS_OK(result)) {
+		result = mod_a_printer(printer, 2);
 	}
 
 done:
 	free_a_printer(&printer, 2);
 
-	return status;
+	return result;
 }
 
 /****************************************************************
@@ -9933,17 +9938,6 @@ WERROR _spoolss_GetPrinterDriver(pipes_struct *p,
 
 WERROR _spoolss_ReadPrinter(pipes_struct *p,
 			    struct spoolss_ReadPrinter *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_SetPrinterData
-****************************************************************/
-
-WERROR _spoolss_SetPrinterData(pipes_struct *p,
-			       struct spoolss_SetPrinterData *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
