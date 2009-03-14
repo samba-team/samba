@@ -2465,74 +2465,58 @@ WERROR set_printer_dataex( NT_PRINTER_INFO_LEVEL *printer, const char *key, cons
  GetPrinterData on a printer server Handle.
 ********************************************************************/
 
-static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint32 *type, uint8 **data, uint32 *needed, uint32 in_size)
+static WERROR getprinterdata_printer_server(TALLOC_CTX *mem_ctx,
+					    const char *value,
+					    enum winreg_Type *type,
+					    union spoolss_PrinterData *data)
 {
-	int i;
-
 	DEBUG(8,("getprinterdata_printer_server:%s\n", value));
 
 	if (!StrCaseCmp(value, "W3SvcInstalled")) {
 		*type = REG_DWORD;
-		if ( !(*data = TALLOC_ARRAY(ctx, uint8, sizeof(uint32) )) )
-			return WERR_NOMEM;
-		SIVAL(*data, 0, 0x00);
-		*needed = 0x4;
+		data->value = 0x00;
 		return WERR_OK;
 	}
 
 	if (!StrCaseCmp(value, "BeepEnabled")) {
 		*type = REG_DWORD;
-		if ( !(*data = TALLOC_ARRAY(ctx, uint8, sizeof(uint32) )) )
-			return WERR_NOMEM;
-		SIVAL(*data, 0, 0x00);
-		*needed = 0x4;
+		data->value = 0x00;
 		return WERR_OK;
 	}
 
 	if (!StrCaseCmp(value, "EventLog")) {
 		*type = REG_DWORD;
-		if ( !(*data = TALLOC_ARRAY(ctx, uint8, sizeof(uint32) )) )
-			return WERR_NOMEM;
 		/* formally was 0x1b */
-		SIVAL(*data, 0, 0x0);
-		*needed = 0x4;
+		data->value = 0x00;
 		return WERR_OK;
 	}
 
 	if (!StrCaseCmp(value, "NetPopup")) {
 		*type = REG_DWORD;
-		if ( !(*data = TALLOC_ARRAY(ctx, uint8, sizeof(uint32) )) )
-			return WERR_NOMEM;
-		SIVAL(*data, 0, 0x00);
-		*needed = 0x4;
+		data->value = 0x00;
 		return WERR_OK;
 	}
 
 	if (!StrCaseCmp(value, "MajorVersion")) {
 		*type = REG_DWORD;
-		if ( !(*data = TALLOC_ARRAY(ctx, uint8, sizeof(uint32) )) )
-			return WERR_NOMEM;
 
 		/* Windows NT 4.0 seems to not allow uploading of drivers
 		   to a server that reports 0x3 as the MajorVersion.
 		   need to investigate more how Win2k gets around this .
 		   -- jerry */
 
-		if ( RA_WINNT == get_remote_arch() )
-			SIVAL(*data, 0, 2);
-		else
-			SIVAL(*data, 0, 3);
+		if (RA_WINNT == get_remote_arch()) {
+			data->value = 0x02;
+		} else {
+			data->value = 0x03;
+		}
 
-		*needed = 0x4;
 		return WERR_OK;
 	}
 
 	if (!StrCaseCmp(value, "MinorVersion")) {
 		*type = REG_DWORD;
-		if ( !(*data = TALLOC_ARRAY(ctx, uint8, sizeof(uint32) )) )
-			return WERR_NOMEM;
-		SIVAL(*data, 0, 0);
-		*needed = 0x4;
+		data->value = 0x00;
 		return WERR_OK;
 	}
 
@@ -2544,109 +2528,88 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 	 *  extra unicode string = e.g. "Service Pack 3"
 	 */
 	if (!StrCaseCmp(value, "OSVersion")) {
+		DATA_BLOB blob;
+		enum ndr_err_code ndr_err;
+		struct spoolss_OSVersion os;
+
+		os.major		= 5;	/* Windows 2000 == 5.0 */
+		os.minor		= 0;
+		os.build		= 2195;	/* build */
+		os.extra_string		= "";	/* leave extra string empty */
+
+		ndr_err = ndr_push_struct_blob(&blob, mem_ctx, NULL, &os,
+			(ndr_push_flags_fn_t)ndr_push_spoolss_OSVersion);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			return WERR_GENERAL_FAILURE;
+		}
+
 		*type = REG_BINARY;
-		*needed = 0x114;
-
-		if ( !(*data = TALLOC_ZERO_ARRAY(ctx, uint8, (*needed > in_size) ? *needed:in_size )) )
-			return WERR_NOMEM;
-
-		SIVAL(*data, 0, *needed);	/* size */
-		SIVAL(*data, 4, 5);		/* Windows 2000 == 5.0 */
-		SIVAL(*data, 8, 0);
-		SIVAL(*data, 12, 2195);		/* build */
-
-		/* leave extra string empty */
+		data->binary = blob;
 
 		return WERR_OK;
 	}
 
 
    	if (!StrCaseCmp(value, "DefaultSpoolDirectory")) {
-		const char *string="C:\\PRINTERS";
 		*type = REG_SZ;
-		*needed = 2*(strlen(string)+1);
-		if((*data  = (uint8 *)TALLOC(ctx, (*needed > in_size) ? *needed:in_size )) == NULL)
-			return WERR_NOMEM;
-		memset(*data, 0, (*needed > in_size) ? *needed:in_size);
 
-		/* it's done by hand ready to go on the wire */
-		for (i=0; i<strlen(string); i++) {
-			(*data)[2*i]=string[i];
-			(*data)[2*i+1]='\0';
-		}
+		data->string = talloc_strdup(mem_ctx, "C:\\PRINTERS");
+		W_ERROR_HAVE_NO_MEMORY(data->string);
+
 		return WERR_OK;
 	}
 
 	if (!StrCaseCmp(value, "Architecture")) {
-		const char *string="Windows NT x86";
 		*type = REG_SZ;
-		*needed = 2*(strlen(string)+1);
-		if((*data  = (uint8 *)TALLOC(ctx, (*needed > in_size) ? *needed:in_size )) == NULL)
-			return WERR_NOMEM;
-		memset(*data, 0, (*needed > in_size) ? *needed:in_size);
-		for (i=0; i<strlen(string); i++) {
-			(*data)[2*i]=string[i];
-			(*data)[2*i+1]='\0';
-		}
+
+		data->string = talloc_strdup(mem_ctx, "Windows NT x86");
+		W_ERROR_HAVE_NO_MEMORY(data->string);
+
 		return WERR_OK;
 	}
 
 	if (!StrCaseCmp(value, "DsPresent")) {
 		*type = REG_DWORD;
-		if ( !(*data = TALLOC_ARRAY(ctx, uint8, sizeof(uint32) )) )
-			return WERR_NOMEM;
 
 		/* only show the publish check box if we are a
-		   memeber of a AD domain */
+		   member of a AD domain */
 
-		if ( lp_security() == SEC_ADS )
-			SIVAL(*data, 0, 0x01);
-		else
-			SIVAL(*data, 0, 0x00);
-
-		*needed = 0x4;
+		if (lp_security() == SEC_ADS) {
+			data->value = 0x01;
+		} else {
+			data->value = 0x00;
+		}
 		return WERR_OK;
 	}
 
 	if (!StrCaseCmp(value, "DNSMachineName")) {
 		const char *hostname = get_mydnsfullname();
 
-		if (!hostname)
+		if (!hostname) {
 			return WERR_BADFILE;
-		*type = REG_SZ;
-		*needed = 2*(strlen(hostname)+1);
-		if((*data  = (uint8 *)TALLOC(ctx, (*needed > in_size) ? *needed:in_size )) == NULL)
-			return WERR_NOMEM;
-		memset(*data, 0, (*needed > in_size) ? *needed:in_size);
-		for (i=0; i<strlen(hostname); i++) {
-			(*data)[2*i]=hostname[i];
-			(*data)[2*i+1]='\0';
 		}
+
+		*type = REG_SZ;
+		data->string = talloc_strdup(mem_ctx, hostname);
+		W_ERROR_HAVE_NO_MEMORY(data->string);
+
 		return WERR_OK;
 	}
-
 
 	return WERR_BADFILE;
 }
 
-/********************************************************************
- * spoolss_getprinterdata
- ********************************************************************/
+/****************************************************************
+ _spoolss_GetPrinterData
+****************************************************************/
 
-WERROR _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPOOL_R_GETPRINTERDATA *r_u)
+WERROR _spoolss_GetPrinterData(pipes_struct *p,
+			       struct spoolss_GetPrinterData *r)
 {
-	POLICY_HND 	*handle = &q_u->handle;
-	UNISTR2 	*valuename = &q_u->valuename;
-	uint32 		in_size = q_u->size;
-	uint32 		*type = &r_u->type;
-	uint32 		*out_size = &r_u->size;
-	uint8 		**data = &r_u->data;
-	uint32 		*needed = &r_u->needed;
-	WERROR 		status;
-	fstring 	value;
-	Printer_entry 	*Printer = find_printer_index_by_hnd(p, handle);
-	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
-	int		snum = 0;
+	WERROR result;
+	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
+	NT_PRINTER_INFO_LEVEL *printer = NULL;
+	int snum = 0;
 
 	/*
 	 * Reminder: when it's a string, the length is in BYTES
@@ -2655,79 +2618,80 @@ WERROR _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPO
 	 * JFM, 4/19/1999
 	 */
 
-	*out_size = in_size;
-
 	/* in case of problem, return some default values */
 
-	*needed = 0;
-	*type   = 0;
+	*r->out.needed	= 0;
+	*r->out.type	= 0;
 
-	DEBUG(4,("_spoolss_getprinterdata\n"));
+	DEBUG(4,("_spoolss_GetPrinterData\n"));
 
-	if ( !Printer ) {
-		DEBUG(2,("_spoolss_getprinterdata: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
-		status = WERR_BADFID;
+	if (!Printer) {
+		DEBUG(2,("_spoolss_GetPrinterData: Invalid handle (%s:%u:%u).\n",
+			OUR_HANDLE(r->in.handle)));
+		result = WERR_BADFID;
 		goto done;
 	}
 
-	unistr2_to_ascii(value, valuename, sizeof(value));
-
-	if ( Printer->printer_type == SPLHND_SERVER )
-		status = getprinterdata_printer_server( p->mem_ctx, value, type, data, needed, *out_size );
-	else
-	{
-		if ( !get_printer_snum(p,handle, &snum, NULL) ) {
-			status = WERR_BADFID;
+	if (Printer->printer_type == SPLHND_SERVER) {
+		result = getprinterdata_printer_server(p->mem_ctx,
+						       r->in.value_name,
+						       r->out.type,
+						       r->out.data);
+	} else {
+		if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
+			result = WERR_BADFID;
 			goto done;
 		}
 
-		status = get_a_printer(Printer, &printer, 2, lp_servicename(snum));
-		if ( !W_ERROR_IS_OK(status) )
+		result = get_a_printer(Printer, &printer, 2, lp_servicename(snum));
+		if (!W_ERROR_IS_OK(result)) {
 			goto done;
+		}
 
 		/* XP sends this and wants to change id value from the PRINTER_INFO_0 */
 
-		if ( strequal(value, "ChangeId") ) {
-			*type = REG_DWORD;
-			*needed = sizeof(uint32);
-			if ( (*data = (uint8*)TALLOC(p->mem_ctx, sizeof(uint32))) == NULL) {
-				status = WERR_NOMEM;
+		if (strequal(r->in.value_name, "ChangeId")) {
+			*r->out.type = REG_DWORD;
+			r->out.data->value = printer->info_2->changeid;
+			result = WERR_OK;
+		} else {
+			REGISTRY_VALUE *v;
+			DATA_BLOB blob;
+
+			v = get_printer_data(printer->info_2,
+					     SPOOL_PRINTERDATA_KEY,
+					     r->in.value_name);
+			if (!v) {
+				result = WERR_BADFILE;
 				goto done;
 			}
-			SIVAL( *data, 0, printer->info_2->changeid );
-			status = WERR_OK;
-		}
-		else
-			status = get_printer_dataex( p->mem_ctx, printer, SPOOL_PRINTERDATA_KEY, value, type, data, needed, *out_size );
-	}
 
-	if (*needed > *out_size)
-		status = WERR_MORE_DATA;
+			*r->out.type = v->type;
 
-done:
-	if ( !W_ERROR_IS_OK(status) )
-	{
-		DEBUG(5, ("error %d: allocating %d\n", W_ERROR_V(status),*out_size));
+			blob = data_blob_const(v->data_p, v->size);
 
-		/* reply this param doesn't exist */
-
-		if ( *out_size ) {
-			if((*data=(uint8 *)TALLOC_ZERO_ARRAY(p->mem_ctx, uint8, *out_size)) == NULL) {
-				if ( printer )
-					free_a_printer( &printer, 2 );
-				return WERR_NOMEM;
-			}
-		} else {
-			*data = NULL;
+			result = pull_spoolss_PrinterData(p->mem_ctx, &blob,
+							  r->out.data,
+							  *r->out.type);
 		}
 	}
 
+ done:
 	/* cleanup & exit */
 
-	if ( printer )
-		free_a_printer( &printer, 2 );
+	if (printer) {
+		free_a_printer(&printer, 2);
+	}
 
-	return status;
+	if (!W_ERROR_IS_OK(result)) {
+		return result;
+	}
+
+	*r->out.needed	= ndr_size_spoolss_PrinterData(r->out.data, *r->out.type, NULL, 0);
+	*r->out.type	= SPOOLSS_BUFFER_OK(*r->out.type, REG_NONE);
+	r->out.data	= SPOOLSS_BUFFER_OK(r->out.data, r->out.data);
+
+	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_MORE_DATA);
 }
 
 /*********************************************************
@@ -9969,17 +9933,6 @@ WERROR _spoolss_GetPrinterDriver(pipes_struct *p,
 
 WERROR _spoolss_ReadPrinter(pipes_struct *p,
 			    struct spoolss_ReadPrinter *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_GetPrinterData
-****************************************************************/
-
-WERROR _spoolss_GetPrinterData(pipes_struct *p,
-			       struct spoolss_GetPrinterData *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
