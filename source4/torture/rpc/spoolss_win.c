@@ -157,6 +157,7 @@ static bool test_GetPrinterData(struct torture_context *tctx,
 	struct spoolss_GetPrinterData gpd;
 	uint32_t needed;
 	enum spoolss_PrinterDataType type;
+	union spoolss_PrinterData data;
 
 	torture_comment(tctx, "Testing GetPrinterData(%s).\n", value_name);
 	gpd.in.handle = handle;
@@ -164,6 +165,7 @@ static bool test_GetPrinterData(struct torture_context *tctx,
 	gpd.in.offered = 4;
 	gpd.out.needed = &needed;
 	gpd.out.type = &type;
+	gpd.out.data = &data;
 
 	status = dcerpc_spoolss_GetPrinterData(p, tctx, &gpd);
 	torture_assert_ntstatus_ok(tctx, status, "GetPrinterData failed.");
@@ -171,7 +173,7 @@ static bool test_GetPrinterData(struct torture_context *tctx,
 			"GetPrinterData did not return expected error value.");
 
 	if (W_ERROR_IS_OK(expected_werr)) {
-		torture_assert_int_equal(tctx, gpd.out.data.value,
+		torture_assert_int_equal(tctx, data.value,
 			expected_value,
 			"GetPrinterData did not return expected value.");
 	}
