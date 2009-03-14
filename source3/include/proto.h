@@ -5540,11 +5540,6 @@ WERROR rpccli_spoolss_getprinterdata(struct rpc_pipe_client *cli,
 				     uint32_t offered,
 				     enum winreg_Type *type,
 				     union spoolss_PrinterData *data);
-#if 0
-WERROR rpccli_spoolss_getprinterdata(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				  POLICY_HND *hnd, const char *valuename, 
-				  REGISTRY_VALUE *value);
-#endif
 WERROR rpccli_spoolss_setprinterdata(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				  POLICY_HND *hnd, REGISTRY_VALUE *value);
 WERROR rpccli_spoolss_enumprinterdata(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
@@ -5851,9 +5846,6 @@ bool sec_io_desc_buf(const char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int
 bool spoolss_io_system_time(const char *desc, prs_struct *ps, int depth, SYSTEMTIME *systime);
 bool make_systemtime(SYSTEMTIME *systime, struct tm *unixtime);
 bool spoolss_io_devmode(const char *desc, prs_struct *ps, int depth, DEVICEMODE *devmode);
-bool make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
-				   const POLICY_HND *handle,
-				   const char *valuename, uint32 size);
 bool spoolss_io_q_getprinterdata(const char *desc, SPOOL_Q_GETPRINTERDATA *q_u, prs_struct *ps, int depth);
 bool spoolss_io_r_getprinterdata(const char *desc, SPOOL_R_GETPRINTERDATA *r_u, prs_struct *ps, int depth);
 uint32 spoolss_size_printer_enum_values(PRINTER_ENUM_VALUES *p);

@@ -259,25 +259,6 @@ bool spoolss_io_devmode(const char *desc, prs_struct *ps, int depth, DEVICEMODE 
 }
 
 /*******************************************************************
- * make a structure.
- ********************************************************************/
-
-bool make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
-				   const POLICY_HND *handle,
-				   const char *valuename, uint32 size)
-{
-        if (q_u == NULL) return False;
-
-        DEBUG(5,("make_spoolss_q_getprinterdata\n"));
-
-        q_u->handle = *handle;
-	init_unistr2(&q_u->valuename, valuename, UNI_STR_TERMINATE);
-        q_u->size = size;
-
-        return True;
-}
-
-/*******************************************************************
  * read a structure.
  * called from spoolss_q_getprinterdata (srv_spoolss.c)
  ********************************************************************/
