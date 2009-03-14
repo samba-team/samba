@@ -88,12 +88,11 @@ UNINSTALLLIBCMD_A=@UNINSTALLLIBCMD_A@
 VPATH=@srcdir@
 srcdir=@abs_srcdir@
 builddir=@abs_builddir@
-SHELL=/bin/sh
-DESTDIR=/
-
 # XXX: Perhaps this should be @SHELL@ instead -- apparently autoconf
 # will search for a POSIX-compliant shell, and that might not be
 # /bin/sh on some platforms.  I guess it's not a big problem -- mbp
+SHELL=/bin/sh
+DESTDIR=/
 
 # See the autoconf manual "Installation Directory Variables" for a
 # discussion of the subtle use of these variables.
