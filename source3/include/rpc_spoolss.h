@@ -274,26 +274,6 @@ typedef struct devicemode
 }
 DEVICEMODE;
 
-/********************************************/
-
-typedef struct spool_q_getprinterdata
-{
-	POLICY_HND handle;
-	UNISTR2 valuename;
-	uint32 size;
-}
-SPOOL_Q_GETPRINTERDATA;
-
-typedef struct spool_r_getprinterdata
-{
-	uint32 type;
-	uint32 size;
-	uint8 *data;
-	uint32 needed;
-	WERROR status;
-}
-SPOOL_R_GETPRINTERDATA;
-
 /*
  * I'm really wondering how many different time formats
  * I will have to cope with
