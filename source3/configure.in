@@ -39,7 +39,7 @@ then
 		])
 fi
 
-if "x$enable_external_libtalloc" = xno
+if test "x$enable_external_libtalloc" = xno
 then
 	m4_include(../lib/talloc/libtalloc.m4)
 fi
