@@ -420,21 +420,6 @@ bool make_spoolss_q_enumprinterdataex(SPOOL_Q_ENUMPRINTERDATAEX *q_u,
 
 /*******************************************************************
 ********************************************************************/  
-bool make_spoolss_q_setprinterdata(SPOOL_Q_SETPRINTERDATA *q_u, const POLICY_HND *hnd,
-				   char* value, uint32 data_type, char* data, uint32 data_size)
-{
-	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
-	q_u->type = data_type;
-	init_unistr2(&q_u->value, value, UNI_STR_TERMINATE);
-
-	q_u->max_len = q_u->real_len = data_size;
-	q_u->data = (unsigned char *)data;
-	
-	return True;
-}
-
-/*******************************************************************
-********************************************************************/  
 
 bool spoolss_io_q_setprinterdata(const char *desc, SPOOL_Q_SETPRINTERDATA *q_u, prs_struct *ps, int depth)
 {
