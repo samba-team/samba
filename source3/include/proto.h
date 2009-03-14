@@ -5533,9 +5533,18 @@ WERROR rpccli_spoolss_enumprinters(struct rpc_pipe_client *cli,
 				   uint32_t offered,
 				   uint32_t *count,
 				   union spoolss_PrinterInfo **info);
+WERROR rpccli_spoolss_getprinterdata(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx,
+				     struct policy_handle *handle,
+				     const char *value_name,
+				     uint32_t offered,
+				     enum winreg_Type *type,
+				     union spoolss_PrinterData *data);
+#if 0
 WERROR rpccli_spoolss_getprinterdata(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				  POLICY_HND *hnd, const char *valuename, 
 				  REGISTRY_VALUE *value);
+#endif
 WERROR rpccli_spoolss_setprinterdata(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				  POLICY_HND *hnd, REGISTRY_VALUE *value);
 WERROR rpccli_spoolss_enumprinterdata(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
