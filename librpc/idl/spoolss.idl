@@ -1324,19 +1324,19 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in] 	 [string,charset(UTF16)] uint16 value_name[],
 		[in] 	 uint32 offered,
 		[out,ref] spoolss_PrinterDataType *type,
-		[out] 	 DATA_BLOB data,
+		[out,ref] DATA_BLOB *data,
 		[out,ref] uint32 *needed
 	);
 	[noopnum,noprint,public] void __spoolss_GetPrinterData(
 		[in] spoolss_PrinterDataType type,
-		[out,switch_is(type)] spoolss_PrinterData data
+		[out,ref,switch_is(type)] spoolss_PrinterData *data
 	);
 	[nopull,nopush,public] WERROR spoolss_GetPrinterData(
 		[in,ref] policy_handle *handle,
 		[in] 	 [string,charset(UTF16)] uint16 value_name[],
 		[in] 	 uint32 offered,
 		[out,ref] spoolss_PrinterDataType *type,
-		[out,subcontext(4),subcontext_size(offered),switch_is(*type)] spoolss_PrinterData data,
+		[out,ref,subcontext(4),subcontext_size(offered),switch_is(*type)] spoolss_PrinterData *data,
 		[out,ref] uint32 *needed
 	);
 
