@@ -789,13 +789,6 @@ bool get_a_builtin_ntform_by_string(const char *form_name, nt_forms_struct *form
 	return (i !=count);
 }
 
-bool get_a_builtin_ntform(UNISTR2 *uni_formname,nt_forms_struct *form)
-{
-	fstring form_name;
-	unistr2_to_ascii(form_name, uni_formname, sizeof(form_name));
-	return get_a_builtin_ntform_by_string(form_name, form);
-}
-
 /****************************************************************************
  get a form struct list.
 ****************************************************************************/
