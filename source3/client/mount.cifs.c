@@ -1463,7 +1463,8 @@ mount_retry:
 			}
 		}
 		printf("mount error(%d): %s\n", errno, strerror(errno));
-		printf("Refer to the mount.cifs(8) manual page (e.g.man mount.cifs)\n");
+		printf("Refer to the mount.cifs(8) manual page (e.g. man "
+		       "mount.cifs)\n");
 		rc = EX_FAIL;
 		goto mount_exit;
 	}
