@@ -2147,7 +2147,7 @@ struct __spoolss_SetPrinterData {
 	} in;
 
 	struct {
-		union spoolss_PrinterData data;/* [switch_is(type)] */
+		union spoolss_PrinterData *data;/* [ref,switch_is(type)] */
 	} out;
 
 };
