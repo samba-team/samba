@@ -44,7 +44,7 @@ TORTURE_LOCAL_OBJ_FILES = \
 		$(torturesrcdir)/../../lib/compression/testsuite.o \
 		$(torturesrcdir)/../../lib/util/charset/tests/charset.o \
 		$(torturesrcdir)/../libcli/security/tests/sddl.o \
-		$(torturesrcdir)/../lib/tdr/testsuite.o \
+		../lib/tdr/testsuite.o \
 		$(torturesrcdir)/../../lib/tevent/testsuite.o \
 		$(torturesrcdir)/../param/tests/share.o \
 		$(torturesrcdir)/../param/tests/loadparm.o \

@@ -20,7 +20,7 @@ mkinclude ../lib/socket_wrapper/config.mk
 mkinclude ../lib/nss_wrapper/config.mk
 mkinclude lib/stream/config.mk
 mkinclude ../lib/util/config.mk
-mkinclude lib/tdr/config.mk
+mkinclude ../lib/tdr/config.mk
 mkinclude ../lib/crypto/config.mk
 mkinclude ../lib/torture/config.mk
 mkinclude lib/basic.mk
