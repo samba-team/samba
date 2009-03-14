@@ -2114,11 +2114,12 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
 					    int argc, const char **argv)
 {
 	WERROR result;
+	NTSTATUS status;
 	const char *printername;
 	POLICY_HND pol;
 	union spoolss_PrinterInfo info;
-	REGISTRY_VALUE value;
-	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	enum winreg_Type type;
+	union spoolss_PrinterData data;
 
 	/* parse the command arguments */
 	if (argc < 5) {
@@ -2131,25 +2132,25 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
 
 	RPCCLIENT_PRINTERNAME(printername, cli, argv[1]);
 
-	value.type = REG_NONE;
+	type = REG_NONE;
 
 	if (strequal(argv[2], "string")) {
-		value.type = REG_SZ;
+		type = REG_SZ;
 	}
 
 	if (strequal(argv[2], "binary")) {
-		value.type = REG_BINARY;
+		type = REG_BINARY;
 	}
 
 	if (strequal(argv[2], "dword")) {
-		value.type = REG_DWORD;
+		type = REG_DWORD;
 	}
 
 	if (strequal(argv[2], "multistring")) {
-		value.type = REG_MULTI_SZ;
+		type = REG_MULTI_SZ;
 	}
 
-	if (value.type == REG_NONE) {
+	if (type == REG_NONE) {
 		printf("Unknown data type: %s\n", argv[2]);
 		result =  WERR_INVALID_PARAM;
 		goto done;
@@ -2161,92 +2162,73 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
 					       printername,
 					       SEC_FLAG_MAXIMUM_ALLOWED,
 					       &pol);
-	if (!W_ERROR_IS_OK(result))
+	if (!W_ERROR_IS_OK(result)) {
 		goto done;
+	}
 
 	result = rpccli_spoolss_getprinter(cli, mem_ctx,
 					   &pol,
 					   0,
 					   0,
 					   &info);
-        if (!W_ERROR_IS_OK(result))
+        if (!W_ERROR_IS_OK(result)) {
                 goto done;
+	}
 
-	printf("%s\n", current_timestring(tmp_ctx, True));
+	printf("%s\n", current_timestring(mem_ctx, true));
 	printf("\tchange_id (before set)\t:[0x%x]\n", info.info0.change_id);
 
 	/* Set the printer data */
 
-	fstrcpy(value.valuename, argv[3]);
-
-	switch (value.type) {
-	case REG_SZ: {
-		UNISTR2 data;
-		init_unistr2(&data, argv[4], UNI_STR_TERMINATE);
-		value.size = data.uni_str_len * 2;
-		if (value.size) {
-			value.data_p = (uint8 *)TALLOC_MEMDUP(mem_ctx, data.buffer,
-						      value.size);
-		} else {
-			value.data_p = NULL;
-		}
+	switch (type) {
+	case REG_SZ:
+		data.string = talloc_strdup(mem_ctx, argv[4]);
+		W_ERROR_HAVE_NO_MEMORY(data.string);
 		break;
-	}
-	case REG_DWORD: {
-		uint32 data = strtoul(argv[4], NULL, 10);
-		value.size = sizeof(data);
-		if (sizeof(data)) {
-			value.data_p = (uint8 *)TALLOC_MEMDUP(mem_ctx, &data,
-						      sizeof(data));
-		} else {
-			value.data_p = NULL;
-		}
+	case REG_DWORD:
+		data.value = strtoul(argv[4], NULL, 10);
 		break;
-	}
-	case REG_BINARY: {
-		DATA_BLOB data = strhex_to_data_blob(mem_ctx, argv[4]);
-		value.data_p = data.data;
-		value.size = data.length;
+	case REG_BINARY:
+		data.binary = strhex_to_data_blob(mem_ctx, argv[4]);
 		break;
-	}
 	case REG_MULTI_SZ: {
-		int i;
-		size_t len = 0;
-		char *p;
+		int i, num_strings;
+		const char **strings = NULL;
 
 		for (i=4; i<argc; i++) {
 			if (strcmp(argv[i], "NULL") == 0) {
 				argv[i] = "";
 			}
-			len += strlen(argv[i])+1;
+			if (!add_string_to_array(mem_ctx, argv[i],
+						 &strings,
+						 &num_strings)) {
+				result = WERR_NOMEM;
+				goto done;
+			}
 		}
-
-		value.size = len*2;
-		value.data_p = TALLOC_ARRAY(mem_ctx, unsigned char, value.size);
-		if (value.data_p == NULL) {
+		data.string_array = talloc_zero_array(mem_ctx, const char *, num_strings + 1);
+		if (!data.string_array) {
 			result = WERR_NOMEM;
 			goto done;
 		}
-
-		p = (char *)value.data_p;
-		len = value.size;
-		for (i=4; i<argc; i++) {
-			size_t l = (strlen(argv[i])+1)*2;
-			rpcstr_push(p, argv[i], len, STR_TERMINATE);
-			p += l;
-			len -= l;
+		for (i=0; i < num_strings; i++) {
+			data.string_array[i] = strings[i];
 		}
-		SMB_ASSERT(len == 0);
 		break;
-	}
+		}
 	default:
 		printf("Unknown data type: %s\n", argv[2]);
 		result = WERR_INVALID_PARAM;
 		goto done;
 	}
 
-	result = rpccli_spoolss_setprinterdata(cli, mem_ctx, &pol, &value);
-
+	status = rpccli_spoolss_SetPrinterData(cli, mem_ctx,
+					       &pol,
+					       argv[3], /* value_name */
+					       type,
+					       data,
+					       0, /* autocalculated size */
+					       &result);
 	if (!W_ERROR_IS_OK(result)) {
 		printf ("Unable to set [%s=%s]!\n", argv[3], argv[4]);
 		goto done;
@@ -2258,17 +2240,18 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
 					   0,
 					   0,
 					   &info);
-        if (!W_ERROR_IS_OK(result))
+        if (!W_ERROR_IS_OK(result)) {
                 goto done;
+	}
 
-	printf("%s\n", current_timestring(tmp_ctx, True));
+	printf("%s\n", current_timestring(mem_ctx, true));
 	printf("\tchange_id (after set)\t:[0x%x]\n", info.info0.change_id);
 
 done:
 	/* cleanup */
-	TALLOC_FREE(tmp_ctx);
-	if (is_valid_policy_hnd(&pol))
+	if (is_valid_policy_hnd(&pol)) {
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &pol, NULL);
+	}
 
 	return result;
 }
