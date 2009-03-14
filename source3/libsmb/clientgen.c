@@ -409,19 +409,64 @@ void cli_setup_bcc(struct cli_state *cli, void *p)
 }
 
 /****************************************************************************
+ Initialize Domain, user or password.
+****************************************************************************/
+
+NTSTATUS cli_set_domain(struct cli_state *cli, const char *domain)
+{
+	TALLOC_FREE(cli->domain);
+	cli->domain = talloc_strdup(cli, domain ? domain : "");
+	if (cli->domain == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_set_username(struct cli_state *cli, const char *username)
+{
+	TALLOC_FREE(cli->user_name);
+	cli->user_name = talloc_strdup(cli, username ? username : "");
+	if (cli->user_name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_set_password(struct cli_state *cli, const char *password)
+{
+	TALLOC_FREE(cli->password);
+
+	/* Password can be NULL. */
+	if (password) {
+		cli->password = talloc_strdup(cli, password);
+		if (cli->password == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	} else {
+		/* Use zero NTLMSSP hashes and session key. */
+		cli->password = NULL;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
  Initialise credentials of a client structure.
 ****************************************************************************/
 
-void cli_init_creds(struct cli_state *cli, const char *username, const char *domain, const char *password)
+NTSTATUS cli_init_creds(struct cli_state *cli, const char *username, const char *domain, const char *password)
 {
-	fstrcpy(cli->domain, domain);
-	fstrcpy(cli->user_name, username);
-	pwd_set_cleartext(&cli->pwd, password);
-	if (!*username) {
-		cli->pwd.null_pwd = true;
+	NTSTATUS status = cli_set_username(cli, username);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
+	status = cli_set_domain(cli, domain);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	DEBUG(10,("cli_init_creds: user %s domain %s\n", cli->user_name, cli->domain));
 
-        DEBUG(10,("cli_init_creds: user %s domain %s\n", cli->user_name, cli->domain));
+	return cli_set_password(cli, password);
 }
 
 /****************************************************************************
