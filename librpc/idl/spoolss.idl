@@ -1351,7 +1351,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 	);
 	[noopnum,nopull,noprint,public] void __spoolss_SetPrinterData(
 		[in] spoolss_PrinterDataType type,
-		[out,switch_is(type)] spoolss_PrinterData data
+		[out,ref,switch_is(type)] spoolss_PrinterData *data
 	);
 	[nopush] WERROR spoolss_SetPrinterData(
 		[in,ref] policy_handle *handle,
