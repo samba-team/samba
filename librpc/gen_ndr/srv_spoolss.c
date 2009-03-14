@@ -2119,6 +2119,12 @@ static bool api_spoolss_GetPrinterData(pipes_struct *p)
 		return false;
 	}
 
+	r->out.data = talloc_zero(r, union spoolss_PrinterData);
+	if (r->out.data == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
 	r->out.needed = talloc_zero(r, uint32_t);
 	if (r->out.needed == NULL) {
 		talloc_free(r);
@@ -7867,6 +7873,11 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			ZERO_STRUCT(r->out);
 			r->out.type = talloc_zero(mem_ctx, enum spoolss_PrinterDataType);
 			if (r->out.type == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.data = talloc_zero(mem_ctx, union spoolss_PrinterData);
+			if (r->out.data == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 

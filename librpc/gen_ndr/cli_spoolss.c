@@ -1303,7 +1303,7 @@ NTSTATUS rpccli_spoolss_GetPrinterData(struct rpc_pipe_client *cli,
 				       const char *value_name /* [in] [charset(UTF16)] */,
 				       uint32_t offered /* [in]  */,
 				       enum spoolss_PrinterDataType *type /* [out] [ref] */,
-				       union spoolss_PrinterData data /* [out] [subcontext_size(offered),subcontext(4),switch_is(*type)] */,
+				       union spoolss_PrinterData *data /* [out] [subcontext_size(offered),ref,subcontext(4),switch_is(*type)] */,
 				       uint32_t *needed /* [out] [ref] */,
 				       WERROR *werror)
 {
@@ -1339,7 +1339,7 @@ NTSTATUS rpccli_spoolss_GetPrinterData(struct rpc_pipe_client *cli,
 
 	/* Return variables */
 	*type = *r.out.type;
-	return NT_STATUS_NOT_SUPPORTED;
+	*data = *r.out.data;
 	*needed = *r.out.needed;
 
 	/* Return result */

@@ -21611,7 +21611,10 @@ _PUBLIC_ enum ndr_err_code ndr_push__spoolss_GetPrinterData(struct ndr_push *ndr
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_spoolss_PrinterDataType(ndr, NDR_SCALARS, *r->out.type));
-		NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS, r->out.data));
+		if (r->out.data == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS, *r->out.data));
 		if (r->out.needed == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -21625,6 +21628,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_GetPrinterData(struct ndr_pull *ndr
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_type_0;
+	TALLOC_CTX *_mem_save_data_0;
 	TALLOC_CTX *_mem_save_needed_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
@@ -21646,6 +21650,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_GetPrinterData(struct ndr_pull *ndr
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.offered));
 		NDR_PULL_ALLOC(ndr, r->out.type);
 		ZERO_STRUCTP(r->out.type);
+		NDR_PULL_ALLOC(ndr, r->out.data);
+		ZERO_STRUCTP(r->out.data);
 		NDR_PULL_ALLOC(ndr, r->out.needed);
 		ZERO_STRUCTP(r->out.needed);
 	}
@@ -21657,7 +21663,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_GetPrinterData(struct ndr_pull *ndr
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.type, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_spoolss_PrinterDataType(ndr, NDR_SCALARS, r->out.type));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_type_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, &r->out.data));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.data);
+		}
+		_mem_save_data_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.data, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, r->out.data));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_0, LIBNDR_FLAG_REF_ALLOC);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.needed);
 		}
@@ -21676,22 +21688,34 @@ _PUBLIC_ enum ndr_err_code ndr_push___spoolss_GetPrinterData(struct ndr_push *nd
 		NDR_CHECK(ndr_push_spoolss_PrinterDataType(ndr, NDR_SCALARS, r->in.type));
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->out.data, r->in.type));
-		NDR_CHECK(ndr_push_spoolss_PrinterData(ndr, NDR_SCALARS|NDR_BUFFERS, &r->out.data));
+		if (r->out.data == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_set_switch_value(ndr, r->out.data, r->in.type));
+		NDR_CHECK(ndr_push_spoolss_PrinterData(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.data));
 	}
 	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ enum ndr_err_code ndr_pull___spoolss_GetPrinterData(struct ndr_pull *ndr, int flags, struct __spoolss_GetPrinterData *r)
 {
+	TALLOC_CTX *_mem_save_data_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
 		NDR_CHECK(ndr_pull_spoolss_PrinterDataType(ndr, NDR_SCALARS, &r->in.type));
+		NDR_PULL_ALLOC(ndr, r->out.data);
+		ZERO_STRUCTP(r->out.data);
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->out.data, r->in.type));
-		NDR_CHECK(ndr_pull_spoolss_PrinterData(ndr, NDR_SCALARS|NDR_BUFFERS, &r->out.data));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.data);
+		}
+		_mem_save_data_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.data, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, r->out.data, r->in.type));
+		NDR_CHECK(ndr_pull_spoolss_PrinterData(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.data));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_0, LIBNDR_FLAG_REF_ALLOC);
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -21721,8 +21745,11 @@ _PUBLIC_ void ndr_print_spoolss_GetPrinterData(struct ndr_print *ndr, const char
 		ndr->depth++;
 		ndr_print_spoolss_PrinterDataType(ndr, "type", *r->out.type);
 		ndr->depth--;
-		ndr_print_set_switch_value(ndr, &r->out.data, *r->out.type);
-		ndr_print_spoolss_PrinterData(ndr, "data", &r->out.data);
+		ndr_print_ptr(ndr, "data", r->out.data);
+		ndr->depth++;
+		ndr_print_set_switch_value(ndr, r->out.data, *r->out.type);
+		ndr_print_spoolss_PrinterData(ndr, "data", r->out.data);
+		ndr->depth--;
 		ndr_print_ptr(ndr, "needed", r->out.needed);
 		ndr->depth++;
 		ndr_print_uint32(ndr, "needed", *r->out.needed);
