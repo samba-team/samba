@@ -16,17 +16,22 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
-
+#define TALLOC_DEPRECATED 1
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #if _SAMBA_BUILD_ == 4
+#include "system/filesys.h"
+#include "auth/auth.h"
 #include "../libgpo/gpo.h"
+#include "../lib/talloc/talloc.h"
 #include "source4/libgpo/ads_convenience.h"
 #endif
 #undef strdup
 
+#if 0
 #define DEFAULT_DOMAIN_POLICY "Default Domain Policy"
 #define DEFAULT_DOMAIN_CONTROLLERS_POLICY "Default Domain Controllers Policy"
+#endif
 
 /* should we store a parsed guid ? */
 struct gp_table {
@@ -571,7 +576,7 @@ ADS_STATUS gpo_process_gpo_list(ADS_STRUCT *ads,
 	}
 #endif
 	if (!W_ERROR_IS_OK(werr)) {
-		gp_free_reg_ctx(reg_ctx);
+		talloc_free(reg_ctx);
 		return ADS_ERROR_NT(werror_to_ntstatus(werr));
 	}
 
@@ -606,7 +611,7 @@ ADS_STATUS gpo_process_gpo_list(ADS_STRUCT *ads,
 	}
 
  done:
-	gp_free_reg_ctx(reg_ctx);
+	talloc_free(reg_ctx);
 	talloc_free(root_key);
 	free_gp_extensions();
 
@@ -622,9 +627,9 @@ ADS_STATUS gpo_process_gpo_list(ADS_STRUCT *ads,
 NTSTATUS check_refresh_gpo(ADS_STRUCT *ads,
 			   TALLOC_CTX *mem_ctx,
                            const char *cache_path,
+                           struct loadparm_context *lp_ctx,
 			   uint32_t flags,
-			   struct GROUP_POLICY_OBJECT *gpo,
-			   struct cli_state **cli_out)
+			   struct GROUP_POLICY_OBJECT *gpo)
 {
 	NTSTATUS result;
 	char *server = NULL;
@@ -633,7 +638,6 @@ NTSTATUS check_refresh_gpo(ADS_STRUCT *ads,
 	char *unix_path = NULL;
 	uint32_t sysvol_gpt_version = 0;
 	char *display_name = NULL;
-	struct cli_state *cli = NULL;
 
 	result = gpo_explode_filesyspath(mem_ctx, cache_path, gpo->file_sys_path,
 					 &server, &share, &nt_path, &unix_path);
@@ -663,32 +667,7 @@ NTSTATUS check_refresh_gpo(ADS_STRUCT *ads,
 
 		DEBUG(1,("check_refresh_gpo: need to refresh GPO\n"));
 
-#if _SAMBA_BUILD == 3
-		if (*cli_out == NULL) {
-			result = cli_full_connection(&cli,
-					global_myname(),
-					ads_get_ldap_server_name(ads),
-					/* server */
-					NULL, 0,
-					share, "A:",
-					ads->auth.user_name, NULL,
-					ads->auth.password,
-					CLI_FULL_CONNECTION_USE_KERBEROS |
-					CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS,
-					Undefined, NULL);
-			if (!NT_STATUS_IS_OK(result)) {
-				DEBUG(10,("check_refresh_gpo: "
-					"failed to connect: %s\n",
-					nt_errstr(result)));
-				goto out;
-			}
-			*cli_out = cli;
-		}
-#else
-	/* TODO Implement */
-#endif
-
-		result = gpo_fetch_files(mem_ctx, cache_path, *cli_out, gpo);
+		result = gpo_fetch_files(mem_ctx, ads, lp_ctx, cache_path, gpo);
 		if (!NT_STATUS_IS_OK(result)) {
 			goto out;
 		}
@@ -735,11 +714,11 @@ NTSTATUS check_refresh_gpo(ADS_STRUCT *ads,
 NTSTATUS check_refresh_gpo_list(ADS_STRUCT *ads,
 				TALLOC_CTX *mem_ctx,
 				const char *cache_path,
+                                struct loadparm_context *lp_ctx,
 				uint32_t flags,
 				struct GROUP_POLICY_OBJECT *gpo_list)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	struct cli_state *cli = NULL;
 	struct GROUP_POLICY_OBJECT *gpo;
 
 	if (!gpo_list) {
@@ -748,7 +727,7 @@ NTSTATUS check_refresh_gpo_list(ADS_STRUCT *ads,
 
 	for (gpo = gpo_list; gpo; gpo = gpo->next) {
 
-		result = check_refresh_gpo(ads, mem_ctx, cache_path, flags, gpo, &cli);
+		result = check_refresh_gpo(ads, mem_ctx, cache_path, lp_ctx, flags, gpo);
 		if (!NT_STATUS_IS_OK(result)) {
 			goto out;
 		}
@@ -757,9 +736,7 @@ NTSTATUS check_refresh_gpo_list(ADS_STRUCT *ads,
 	result = NT_STATUS_OK;
 
  out:
-	if (cli) {
-		cli_shutdown(cli);
-	}
+	/* FIXME close cli connection */
 
 	return result;
 }
@@ -768,45 +745,46 @@ NTSTATUS check_refresh_gpo_list(ADS_STRUCT *ads,
 ****************************************************************/
 
 NTSTATUS gpo_get_unix_path(TALLOC_CTX *mem_ctx,
+                           const char *cache_path,
 			   struct GROUP_POLICY_OBJECT *gpo,
 			   char **unix_path)
 {
 	char *server, *share, *nt_path;
-	return gpo_explode_filesyspath(mem_ctx, gpo->file_sys_path,
+	return gpo_explode_filesyspath(mem_ctx, cache_path, gpo->file_sys_path,
 				       &server, &share, &nt_path, unix_path);
 }
 
 /****************************************************************
 ****************************************************************/
 
-char *gpo_flag_str(uint32_t flags)
+char *gpo_flag_str(TALLOC_CTX *ctx, uint32_t flags)
 {
-	fstring str = "";
+	char *str = NULL;
 
 	if (flags == 0) {
 		return NULL;
 	}
 
 	if (flags & GPO_INFO_FLAG_SLOWLINK)
-		fstrcat(str, "GPO_INFO_FLAG_SLOWLINK ");
+		str = talloc_append_string(ctx, str, "GPO_INFO_FLAG_SLOWLINK ");
 	if (flags & GPO_INFO_FLAG_VERBOSE)
-		fstrcat(str, "GPO_INFO_FLAG_VERBOSE ");
+		str = talloc_append_string(ctx, str, "GPO_INFO_FLAG_VERBOSE ");
 	if (flags & GPO_INFO_FLAG_SAFEMODE_BOOT)
-		fstrcat(str, "GPO_INFO_FLAG_SAFEMODE_BOOT ");
+		str = talloc_append_string(ctx, str, "GPO_INFO_FLAG_SAFEMODE_BOOT ");
 	if (flags & GPO_INFO_FLAG_NOCHANGES)
-		fstrcat(str, "GPO_INFO_FLAG_NOCHANGES ");
+		str = talloc_append_string(ctx, str, "GPO_INFO_FLAG_NOCHANGES ");
 	if (flags & GPO_INFO_FLAG_MACHINE)
-		fstrcat(str, "GPO_INFO_FLAG_MACHINE ");
+		str = talloc_append_string(ctx, str, "GPO_INFO_FLAG_MACHINE ");
 	if (flags & GPO_INFO_FLAG_LOGRSOP_TRANSITION)
-		fstrcat(str, "GPO_INFO_FLAG_LOGRSOP_TRANSITION ");
+		str = talloc_append_string(ctx, str, "GPO_INFO_FLAG_LOGRSOP_TRANSITION ");
 	if (flags & GPO_INFO_FLAG_LINKTRANSITION)
-		fstrcat(str, "GPO_INFO_FLAG_LINKTRANSITION ");
+		str = talloc_append_string(ctx, str, "GPO_INFO_FLAG_LINKTRANSITION ");
 	if (flags & GPO_INFO_FLAG_FORCED_REFRESH)
-		fstrcat(str, "GPO_INFO_FLAG_FORCED_REFRESH ");
+		str = talloc_append_string(ctx, str, "GPO_INFO_FLAG_FORCED_REFRESH ");
 	if (flags & GPO_INFO_FLAG_BACKGROUND)
-		fstrcat(str, "GPO_INFO_FLAG_BACKGROUND ");
+		str = talloc_append_string(ctx, str, "GPO_INFO_FLAG_BACKGROUND ");
 
-	return strdup(str);
+	return str;
 }
 
 /****************************************************************
@@ -857,12 +835,17 @@ NTSTATUS gp_find_file(TALLOC_CTX *mem_ctx,
 
 ADS_STATUS gp_get_machine_token(ADS_STRUCT *ads,
 				TALLOC_CTX *mem_ctx,
+				struct loadparm_context *lp_ctx,
 				const char *dn,
 				NT_USER_TOKEN **token)
 {
 	NT_USER_TOKEN *ad_token = NULL;
 	ADS_STATUS status;
+#if _SAMBA_BUILD_ == 4
+	struct auth_session_info *info;
+#else
 	NTSTATUS ntstatus;
+#endif
 
 #ifndef HAVE_ADS
 	return ADS_ERROR_NT(NT_STATUS_NOT_SUPPORTED);
@@ -871,12 +854,15 @@ ADS_STATUS gp_get_machine_token(ADS_STRUCT *ads,
 	if (!ADS_ERR_OK(status)) {
 		return status;
 	}
-
+#if _SAMBA_BUILD_ == 4
+	info = system_session(mem_ctx, lp_ctx);
+	*token = info->security_token;
+#else
 	ntstatus = merge_nt_token(mem_ctx, ad_token, get_system_token(),
 				  token);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		return ADS_ERROR_NT(ntstatus);
 	}
-
+#endif
 	return ADS_SUCCESS;
 }

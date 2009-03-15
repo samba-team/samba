@@ -23,6 +23,7 @@
 #include "libgpo/ads_convenience.h"
 #include "librpc/gen_ndr/security.h"
 #include "librpc/gen_ndr/ndr_misc.h"
+#include "../libcli/security/secace.h"
 #include "../libgpo/gpo.h"
 #endif
 

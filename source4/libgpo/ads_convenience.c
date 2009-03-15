@@ -258,6 +258,9 @@ bool nt_token_check_sid( const struct dom_sid *sid, const NT_USER_TOKEN *token)
 
 	return false;
 }
+const char *ads_get_ldap_server_name(ADS_STRUCT *ads) {
+	return ads->ldap_server_name;
+}
 
 
 /*

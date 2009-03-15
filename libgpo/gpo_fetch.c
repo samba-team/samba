@@ -21,6 +21,17 @@
 #include "system/filesys.h"
 #include "../libgpo/gpo.h"
 
+#if _SAMBA_BUILD_ == 4
+#include "param/param.h"
+#include "libcli/resolve/resolve.h"
+#include "../lib/tevent/tevent.h"
+#include "libcli/libcli.h"
+#include "libcli/raw/libcliraw.h"
+#include "libcli/libcli_proto.h"
+#include "libgpo/ads_convenience.h"
+#include "libgpo/gpo.h"
+#endif
+
 /****************************************************************
  explode the GPO CIFS URI into their components
 ****************************************************************/
@@ -118,23 +129,89 @@ static NTSTATUS gpo_prepare_local_store(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS gpo_connect_server(ADS_STRUCT *ads, struct loadparm_context *lp_ctx,
+                                   const char *server, const char *service, void *ret_cli)
+{
+	NTSTATUS result;
+#if _SAMBA_BUILD_ == 3
+	struct cli_state *cli;
+
+
+	result = cli_full_connection(&cli,
+			global_myname(),
+			server,
+			NULL, 0,
+			service, "A:",
+			ads->auth.user_name, NULL,
+			ads->auth.password,
+			CLI_FULL_CONNECTION_USE_KERBEROS |
+			CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS,
+			Undefined, NULL);
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(10,("check_refresh_gpo: "
+				"failed to connect: %s\n",
+				nt_errstr(result)));
+			return result;
+		}
+	}
+	*(struct cli_state **) ret_cli = cli;
+#else
+	struct smbcli_state *cli = NULL;
+	struct smbcli_options options;
+	struct smbcli_session_options session_options;
+
+	lp_smbcli_options(lp_ctx, &options);
+	lp_smbcli_session_options(lp_ctx, &session_options);
+
+	result = smbcli_full_connection(NULL, &cli,
+			server,
+			NULL, service,
+			NULL /*devtype*/, NULL /* socket options */,
+			ads->credentials,
+			lp_resolve_context(lp_ctx),
+			tevent_context_init(ads),
+			&options,
+			&session_options,
+			lp_iconv_convenience(lp_ctx),
+			lp_gensec_settings(ads, lp_ctx));
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(10,("failed to connect: %s\n",
+				nt_errstr(result)));
+		return result;
+	}
+	*(struct smbcli_state **) ret_cli = cli;
+#endif
+	return NT_STATUS_OK;
+}
+
 /****************************************************************
  download a full GPO via CIFS
 ****************************************************************/
 
 NTSTATUS gpo_fetch_files(TALLOC_CTX *mem_ctx,
+                         ADS_STRUCT *ads,
+                         struct loadparm_context *lp_ctx,
                          const char *cache_path,
-			 struct cli_state *cli,
 			 struct GROUP_POLICY_OBJECT *gpo)
 {
 	NTSTATUS result;
 	char *server, *service, *nt_path, *unix_path;
 	char *nt_ini_path, *unix_ini_path;
+#if _SAMBA_BUILD_ == 3
+	struct cli_state *cli;
+#else
+	struct smbcli_state *cli;
+#endif
+
 
 	result = gpo_explode_filesyspath(mem_ctx, cache_path, gpo->file_sys_path,
 					 &server, &service, &nt_path,
 					 &unix_path);
 	NT_STATUS_NOT_OK_RETURN(result);
+
+
+	result = gpo_connect_server(ads, lp_ctx, server, service, &cli);
+
 
 	result = gpo_prepare_local_store(mem_ctx, cache_path, unix_path);
 	NT_STATUS_NOT_OK_RETURN(result);

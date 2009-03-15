@@ -176,8 +176,9 @@ NTSTATUS gpo_explode_filesyspath(TALLOC_CTX *mem_ctx,
 				 char **nt_path,
 				 char **unix_path);
 NTSTATUS gpo_fetch_files(TALLOC_CTX *mem_ctx,
+                         ADS_STRUCT *ads,
+                         struct loadparm_context *lp_ctx,
                          const char *cache_path,
-			 struct cli_state *cli,
 			 struct GROUP_POLICY_OBJECT *gpo);
 NTSTATUS gpo_get_sysvol_gpt_version(TALLOC_CTX *mem_ctx,
 				    const char *unix_path,
@@ -255,18 +256,20 @@ ADS_STATUS gpo_process_gpo_list(ADS_STRUCT *ads,
 NTSTATUS check_refresh_gpo(ADS_STRUCT *ads,
 			   TALLOC_CTX *mem_ctx,
                            const char *cache_path,
+                           struct loadparm_context *lp_ctx,
 			   uint32_t flags,
-			   struct GROUP_POLICY_OBJECT *gpo,
-			   struct cli_state **cli_out);
+			   struct GROUP_POLICY_OBJECT *gpo);
 NTSTATUS check_refresh_gpo_list(ADS_STRUCT *ads,
 				TALLOC_CTX *mem_ctx,
                                 const char *cache_path,
+                                struct loadparm_context *lp_ctx,
 				uint32_t flags,
 				struct GROUP_POLICY_OBJECT *gpo_list);
 NTSTATUS gpo_get_unix_path(TALLOC_CTX *mem_ctx,
+                           const char *cache_path,
 			   struct GROUP_POLICY_OBJECT *gpo,
 			   char **unix_path);
-char *gpo_flag_str(uint32_t flags);
+char *gpo_flag_str(TALLOC_CTX *mem_ctx, uint32_t flags);
 NTSTATUS gp_find_file(TALLOC_CTX *mem_ctx,
 		      uint32_t flags,
 		      const char *filename,
@@ -274,6 +277,7 @@ NTSTATUS gp_find_file(TALLOC_CTX *mem_ctx,
 		      const char **filename_out);
 ADS_STATUS gp_get_machine_token(ADS_STRUCT *ads,
 				TALLOC_CTX *mem_ctx,
+				struct loadparm_context *lp_ctx,
 				const char *dn,
 				NT_USER_TOKEN **token);
 

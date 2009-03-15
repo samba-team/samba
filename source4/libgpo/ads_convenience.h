@@ -45,6 +45,11 @@
 typedef struct {
 	struct libnet_context *netctx;
 	struct ldb_context *ldbctx;
+	char *ldap_server_name;
+
+	/* State information for the smb connection */
+	struct cli_credentials *credentials;
+	struct smbcli_state *cli;
 } ADS_STRUCT;
 
 
@@ -92,6 +97,7 @@ bool nt_token_check_sid( const struct dom_sid *sid, const NT_USER_TOKEN *token);
 ADS_MODLIST ads_init_mods(TALLOC_CTX *ctx);
 ADS_STATUS ads_mod_str(TALLOC_CTX *ctx, ADS_MODLIST *mods, const char *name, const char *val);
 ADS_STATUS ads_gen_mod(ADS_STRUCT *ads, const char *mod_dn, ADS_MODLIST mods);
+const char *ads_get_ldap_server_name(ADS_STRUCT *ads);
 
 
 #endif
