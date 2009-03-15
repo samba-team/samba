@@ -64,10 +64,6 @@
 /* String routines */
 #include "../lib/util/safe_string.h"
 
-#ifndef CONST_DISCARD
-#define CONST_DISCARD(type, ptr)      ((type) ((void *) (ptr)))
-#endif
-
 #if 0
 /* darn, we can't do this now that we don't link the ldb tools to all the smb libs */
 #define TALLOC_ABORT(reason) smb_panic(reason)
