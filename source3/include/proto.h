@@ -2761,11 +2761,16 @@ int cli_NetConnectionEnum(struct cli_state *cli, const char *qualifier,
 
 /* The following definitions come from libsmb/clireadwrite.c  */
 
-struct async_req *cli_read_andx_send(TALLOC_CTX *mem_ctx,
-				     struct event_context *ev,
-				     struct cli_state *cli, int fnum,
-				     off_t offset, size_t size);
-NTSTATUS cli_read_andx_recv(struct async_req *req, ssize_t *received,
+struct tevent_req *cli_read_andx_create(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct cli_state *cli, int fnum,
+					off_t offset, size_t size,
+					struct tevent_req **psmbreq);
+struct tevent_req *cli_read_andx_send(TALLOC_CTX *mem_ctx,
+				      struct event_context *ev,
+				      struct cli_state *cli, int fnum,
+				      off_t offset, size_t size);
+NTSTATUS cli_read_andx_recv(struct tevent_req *req, ssize_t *received,
 			    uint8_t **rcvbuf);
 struct async_req *cli_pull_send(TALLOC_CTX *mem_ctx,
 				struct event_context *ev,

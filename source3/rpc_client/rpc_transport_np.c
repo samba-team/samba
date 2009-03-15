@@ -119,7 +119,7 @@ struct rpc_np_read_state {
 	ssize_t received;
 };
 
-static void rpc_np_read_done(struct async_req *subreq);
+static void rpc_np_read_done(struct tevent_req *subreq);
 
 static struct tevent_req *rpc_np_read_send(TALLOC_CTX *mem_ctx,
 					   struct event_context *ev,
@@ -128,8 +128,7 @@ static struct tevent_req *rpc_np_read_send(TALLOC_CTX *mem_ctx,
 {
 	struct rpc_transport_np_state *np_transport = talloc_get_type_abort(
 		priv, struct rpc_transport_np_state);
-	struct tevent_req *req;
-	struct async_req *subreq;
+	struct tevent_req *req, *subreq;
 	struct rpc_np_read_state *state;
 
 	req = tevent_req_create(mem_ctx, &state, struct rpc_np_read_state);
@@ -144,18 +143,17 @@ static struct tevent_req *rpc_np_read_send(TALLOC_CTX *mem_ctx,
 	if (subreq == NULL) {
 		goto fail;
 	}
-	subreq->async.fn = rpc_np_read_done;
-	subreq->async.priv = req;
+	tevent_req_set_callback(subreq, rpc_np_read_done, req);
 	return req;
  fail:
 	TALLOC_FREE(req);
 	return NULL;
 }
 
-static void rpc_np_read_done(struct async_req *subreq)
+static void rpc_np_read_done(struct tevent_req *subreq)
 {
-	struct tevent_req *req = talloc_get_type_abort(
-		subreq->async.priv, struct tevent_req);
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
 	struct rpc_np_read_state *state = tevent_req_data(
 		req, struct rpc_np_read_state);
 	NTSTATUS status;
