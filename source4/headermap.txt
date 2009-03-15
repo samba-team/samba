@@ -9,7 +9,7 @@
 ../lib/util/memory.h: util/memory.h
 ../lib/util/talloc_stack.h: util/talloc_stack.h
 ../lib/util/xfile.h: util/xfile.h
-lib/tdr/tdr.h: tdr.h
+../lib/tdr/tdr.h: tdr.h
 librpc/rpc/dcerpc.h: dcerpc.h
 lib/ldb/include/ldb.h: ldb.h
 lib/ldb/include/ldb_errors.h: ldb_errors.h
