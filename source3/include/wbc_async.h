@@ -61,7 +61,8 @@ wbcErr wb_resp_read_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			 struct winbindd_response **presp);
 
 struct tevent_req *wb_resp_write_send(TALLOC_CTX *mem_ctx,
-				      struct tevent_context *ev, int fd,
+				      struct tevent_context *ev,
+				      struct tevent_queue *queue, int fd,
 				      struct winbindd_response *wb_resp);
 wbcErr wb_resp_write_recv(struct tevent_req *req);
 
