@@ -22,6 +22,8 @@
 
 #if _SAMBA_BUILD_ == 4
 #include "source4/libgpo/ads_convenience.h"
+#else
+struct loadparm_context;
 #endif
 
 enum GPO_LINK_TYPE {
@@ -169,7 +171,7 @@ struct cli_state;
 /* The following definitions come from libgpo/gpo_fetch.c  */
 
 NTSTATUS gpo_explode_filesyspath(TALLOC_CTX *mem_ctx,
-                                 const char *cache_path,
+                                 const char *cache_dir,
 				 const char *file_sys_path,
 				 char **server,
 				 char **service,
@@ -178,7 +180,7 @@ NTSTATUS gpo_explode_filesyspath(TALLOC_CTX *mem_ctx,
 NTSTATUS gpo_fetch_files(TALLOC_CTX *mem_ctx,
                          ADS_STRUCT *ads,
                          struct loadparm_context *lp_ctx,
-                         const char *cache_path,
+                         const char *cache_dir,
 			 struct GROUP_POLICY_OBJECT *gpo);
 NTSTATUS gpo_get_sysvol_gpt_version(TALLOC_CTX *mem_ctx,
 				    const char *unix_path,
@@ -255,18 +257,18 @@ ADS_STATUS gpo_process_gpo_list(ADS_STRUCT *ads,
 				uint32_t flags);
 NTSTATUS check_refresh_gpo(ADS_STRUCT *ads,
 			   TALLOC_CTX *mem_ctx,
-                           const char *cache_path,
+                           const char *cache_dir,
                            struct loadparm_context *lp_ctx,
 			   uint32_t flags,
 			   struct GROUP_POLICY_OBJECT *gpo);
 NTSTATUS check_refresh_gpo_list(ADS_STRUCT *ads,
 				TALLOC_CTX *mem_ctx,
-                                const char *cache_path,
+                                const char *cache_dir,
                                 struct loadparm_context *lp_ctx,
 				uint32_t flags,
 				struct GROUP_POLICY_OBJECT *gpo_list);
 NTSTATUS gpo_get_unix_path(TALLOC_CTX *mem_ctx,
-                           const char *cache_path,
+                           const char *cache_dir,
 			   struct GROUP_POLICY_OBJECT *gpo,
 			   char **unix_path);
 char *gpo_flag_str(TALLOC_CTX *mem_ctx, uint32_t flags);

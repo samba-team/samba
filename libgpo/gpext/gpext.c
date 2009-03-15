@@ -662,9 +662,9 @@ void debug_gpext_header(int lvl,
 	DEBUGADD(lvl,("\tsnapin:        %s (%s)\n", snapin_guid,
 		cse_snapin_gpo_guid_string_to_name(snapin_guid)));
 
-	flags_str = gpo_flag_str(flags);
+	flags_str = gpo_flag_str(NULL, flags);
 	DEBUGADD(lvl,("\tflags:         0x%08x %s\n", flags, flags_str));
-	SAFE_FREE(flags_str);
+	TALLOC_FREE(flags_str);
 }
 
 NTSTATUS process_gpo_list_with_extension(ADS_STRUCT *ads,

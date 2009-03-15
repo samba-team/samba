@@ -551,8 +551,9 @@ ADS_STATUS gpo_process_gpo_list(ADS_STRUCT *ads,
 	struct gp_extension *gp_ext = NULL;
 	struct registry_key *root_key = NULL;
 	struct gp_registry_context *reg_ctx = NULL;
+#if 0
 	WERROR werr;
-
+#endif
 	status = ADS_ERROR_NT(init_gp_extensions(mem_ctx));
 	if (!ADS_ERR_OK(status)) {
 		return status;
@@ -574,11 +575,11 @@ ADS_STATUS gpo_process_gpo_list(ADS_STRUCT *ads,
 				       token,
 				       &reg_ctx);
 	}
-#endif
 	if (!W_ERROR_IS_OK(werr)) {
 		talloc_free(reg_ctx);
 		return ADS_ERROR_NT(werror_to_ntstatus(werr));
 	}
+#endif
 
 	root_key = reg_ctx->curr_key;
 
@@ -626,7 +627,7 @@ ADS_STATUS gpo_process_gpo_list(ADS_STRUCT *ads,
 
 NTSTATUS check_refresh_gpo(ADS_STRUCT *ads,
 			   TALLOC_CTX *mem_ctx,
-                           const char *cache_path,
+                           const char *cache_dir,
                            struct loadparm_context *lp_ctx,
 			   uint32_t flags,
 			   struct GROUP_POLICY_OBJECT *gpo)
@@ -639,7 +640,7 @@ NTSTATUS check_refresh_gpo(ADS_STRUCT *ads,
 	uint32_t sysvol_gpt_version = 0;
 	char *display_name = NULL;
 
-	result = gpo_explode_filesyspath(mem_ctx, cache_path, gpo->file_sys_path,
+	result = gpo_explode_filesyspath(mem_ctx, cache_dir, gpo->file_sys_path,
 					 &server, &share, &nt_path, &unix_path);
 
 	if (!NT_STATUS_IS_OK(result)) {
@@ -667,7 +668,7 @@ NTSTATUS check_refresh_gpo(ADS_STRUCT *ads,
 
 		DEBUG(1,("check_refresh_gpo: need to refresh GPO\n"));
 
-		result = gpo_fetch_files(mem_ctx, ads, lp_ctx, cache_path, gpo);
+		result = gpo_fetch_files(mem_ctx, ads, lp_ctx, cache_dir, gpo);
 		if (!NT_STATUS_IS_OK(result)) {
 			goto out;
 		}
@@ -713,7 +714,7 @@ NTSTATUS check_refresh_gpo(ADS_STRUCT *ads,
 
 NTSTATUS check_refresh_gpo_list(ADS_STRUCT *ads,
 				TALLOC_CTX *mem_ctx,
-				const char *cache_path,
+				const char *cache_dir,
                                 struct loadparm_context *lp_ctx,
 				uint32_t flags,
 				struct GROUP_POLICY_OBJECT *gpo_list)
@@ -727,7 +728,7 @@ NTSTATUS check_refresh_gpo_list(ADS_STRUCT *ads,
 
 	for (gpo = gpo_list; gpo; gpo = gpo->next) {
 
-		result = check_refresh_gpo(ads, mem_ctx, cache_path, lp_ctx, flags, gpo);
+		result = check_refresh_gpo(ads, mem_ctx, cache_dir, lp_ctx, flags, gpo);
 		if (!NT_STATUS_IS_OK(result)) {
 			goto out;
 		}
@@ -745,12 +746,12 @@ NTSTATUS check_refresh_gpo_list(ADS_STRUCT *ads,
 ****************************************************************/
 
 NTSTATUS gpo_get_unix_path(TALLOC_CTX *mem_ctx,
-                           const char *cache_path,
+                           const char *cache_dir,
 			   struct GROUP_POLICY_OBJECT *gpo,
 			   char **unix_path)
 {
 	char *server, *share, *nt_path;
-	return gpo_explode_filesyspath(mem_ctx, cache_path, gpo->file_sys_path,
+	return gpo_explode_filesyspath(mem_ctx, cache_dir, gpo->file_sys_path,
 				       &server, &share, &nt_path, unix_path);
 }
 

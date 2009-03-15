@@ -37,7 +37,7 @@
 ****************************************************************/
 
 NTSTATUS gpo_explode_filesyspath(TALLOC_CTX *mem_ctx,
-                                 const char *cache_path,
+                                 const char *cache_dir,
 				 const char *file_sys_path,
 				 char **server,
 				 char **service,
@@ -73,7 +73,7 @@ NTSTATUS gpo_explode_filesyspath(TALLOC_CTX *mem_ctx,
 
 	if ((path = talloc_asprintf(mem_ctx,
 					"%s/%s",
-					cache_path,
+					cache_dir,
 					file_sys_path)) == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -98,21 +98,21 @@ NTSTATUS gpo_explode_filesyspath(TALLOC_CTX *mem_ctx,
 ****************************************************************/
 
 static NTSTATUS gpo_prepare_local_store(TALLOC_CTX *mem_ctx,
-                                        const char *cache_path,
+                                        const char *cache_dir,
 					const char *unix_path)
 {
 	char *current_dir;
 	char *tok;
 
-	current_dir = talloc_strdup(mem_ctx, cache_path);
+	current_dir = talloc_strdup(mem_ctx, cache_dir);
 	NT_STATUS_HAVE_NO_MEMORY(current_dir);
 
-	if ((mkdir(cache_path, 0644)) < 0 && errno != EEXIST) {
+	if ((mkdir(cache_dir, 0644)) < 0 && errno != EEXIST) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	while (next_token_talloc(mem_ctx, &unix_path, &tok, "/")) {
-		if (strequal(tok, GPO_CACHE_DIR)) {
+		if (strequal(tok, cache_dir)) {
 			break;
 		}
 	}
@@ -151,8 +151,7 @@ static NTSTATUS gpo_connect_server(ADS_STRUCT *ads, struct loadparm_context *lp_
 		DEBUG(10,("check_refresh_gpo: "
 				"failed to connect: %s\n",
 				nt_errstr(result)));
-			return result;
-		}
+		return result;
 	}
 	*(struct cli_state **) ret_cli = cli;
 #else
@@ -191,7 +190,7 @@ static NTSTATUS gpo_connect_server(ADS_STRUCT *ads, struct loadparm_context *lp_
 NTSTATUS gpo_fetch_files(TALLOC_CTX *mem_ctx,
                          ADS_STRUCT *ads,
                          struct loadparm_context *lp_ctx,
-                         const char *cache_path,
+                         const char *cache_dir,
 			 struct GROUP_POLICY_OBJECT *gpo)
 {
 	NTSTATUS result;
@@ -204,7 +203,7 @@ NTSTATUS gpo_fetch_files(TALLOC_CTX *mem_ctx,
 #endif
 
 
-	result = gpo_explode_filesyspath(mem_ctx, cache_path, gpo->file_sys_path,
+	result = gpo_explode_filesyspath(mem_ctx, cache_dir, gpo->file_sys_path,
 					 &server, &service, &nt_path,
 					 &unix_path);
 	NT_STATUS_NOT_OK_RETURN(result);
@@ -213,7 +212,7 @@ NTSTATUS gpo_fetch_files(TALLOC_CTX *mem_ctx,
 	result = gpo_connect_server(ads, lp_ctx, server, service, &cli);
 
 
-	result = gpo_prepare_local_store(mem_ctx, cache_path, unix_path);
+	result = gpo_prepare_local_store(mem_ctx, cache_dir, unix_path);
 	NT_STATUS_NOT_OK_RETURN(result);
 
 	unix_ini_path = talloc_asprintf(mem_ctx, "%s/%s", unix_path, GPT_INI);
