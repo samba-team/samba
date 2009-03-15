@@ -515,7 +515,7 @@ struct cli_state *cli_initialise(void)
 
         SAFE_FREE(cli->inbuf);
         SAFE_FREE(cli->outbuf);
-	SAFE_FREE(cli);
+	TALLOC_FREE(cli);
         return NULL;
 }
 
