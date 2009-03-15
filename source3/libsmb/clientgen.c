@@ -493,8 +493,7 @@ struct cli_state *cli_initialise_ex(int signing_state)
 
 	cli->dfs_mountpoint = talloc_strdup(cli, "");
 	if (!cli->dfs_mountpoint) {
-		TALLOC_FREE(cli);
-		return NULL;
+		goto error;
 	}
 	cli->port = 0;
 	cli->fd = -1;
@@ -571,7 +570,7 @@ struct cli_state *cli_initialise_ex(int signing_state)
 
         SAFE_FREE(cli->inbuf);
         SAFE_FREE(cli->outbuf);
-	SAFE_FREE(cli);
+	TALLOC_FREE(cli);
         return NULL;
 }
 
