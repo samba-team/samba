@@ -129,6 +129,7 @@ void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te,
 	struct ctdb_context *ctdb = node->ctdb;
         ctdb_sock_addr sock_in;
 	int sockin_size;
+	int sockout_size;
         ctdb_sock_addr sock_out;
 
 	ctdb_tcp_stop_connection(node);
@@ -167,12 +168,20 @@ void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te,
 	if (ctdb_tcp_get_address(ctdb, ctdb->address.address, &sock_in) != 0) {
 		return;
 	}
+
+	/* AIX libs check to see if the socket address and length
+	   arguments are consistent with each other on calls like
+	   connect().   Can not get by with just sizeof(sock_in),
+	   need sizeof(sock_in.ip).
+	*/
 	switch (sock_in.sa.sa_family) {
 	case AF_INET:
 		sockin_size = sizeof(sock_in.ip);
+		sockout_size = sizeof(sock_out.ip);
 		break;
 	case AF_INET6:
 		sockin_size = sizeof(sock_in.ip6);
+		sockout_size = sizeof(sock_out.ip6);
 		break;
 	default:
 		DEBUG(DEBUG_ERR, (__location__ " unknown family %u\n",
@@ -181,10 +190,11 @@ void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te,
 	}
 #ifdef HAVE_SOCK_SIN_LEN
 	sock_in.ip.sin_len = sockin_size;
+	sock_out.ip.sin_len = sockout_size;
 #endif
 	bind(tnode->fd, (struct sockaddr *)&sock_in, sockin_size);
 
-	if (connect(tnode->fd, (struct sockaddr *)&sock_out, sizeof(sock_out)) != 0 &&
+	if (connect(tnode->fd, (struct sockaddr *)&sock_out, sockout_size) != 0 &&
 	    errno != EINPROGRESS) {
 		ctdb_tcp_stop_connection(node);
 		tnode->connect_te = event_add_timed(ctdb->ev, tnode, 
