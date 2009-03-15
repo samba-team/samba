@@ -101,10 +101,12 @@ AC_DEFUN([SMB_EXT_LIB_FROM_PKGCONFIG],
 
 				ac_cv_$1_libs_only_other="`$PKG_CONFIG --libs-only-other '$2'` `$PKG_CONFIG --libs-only-L '$2'`"
 				LIB_REMOVE_USR_LIB(ac_cv_$1_libs_only_other)
+				ac_cv_$1_includedir_only="`$PKG_CONFIG --cflags-only-I '$2'`"
+				CFLAGS_REMOVE_USR_INCLUDE(ac_cv_$1_includedir_only)
 				SMB_EXT_LIB($1, 
 					[`$PKG_CONFIG --libs-only-l '$2'`], 
 					[`$PKG_CONFIG --cflags-only-other '$2'`],
-					[`$PKG_CONFIG --cflags-only-I '$2'`],
+					[$ac_cv_$1_includedir_only],
 					[$ac_cv_$1_libs_only_other])
 				ac_cv_$1_found=yes
 
