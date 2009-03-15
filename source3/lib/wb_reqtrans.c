@@ -372,7 +372,8 @@ struct resp_write_state {
 static void wb_resp_write_done(struct tevent_req *subreq);
 
 struct tevent_req *wb_resp_write_send(TALLOC_CTX *mem_ctx,
-				      struct tevent_context *ev, int fd,
+				      struct tevent_context *ev,
+				      struct tevent_queue *queue, int fd,
 				      struct winbindd_response *wb_resp)
 {
 	struct tevent_req *result, *subreq;
@@ -394,7 +395,7 @@ struct tevent_req *wb_resp_write_send(TALLOC_CTX *mem_ctx,
 		count = 2;
 	}
 
-	subreq = writev_send(state, ev, NULL, fd, state->iov, count);
+	subreq = writev_send(state, ev, queue, fd, state->iov, count);
 	if (subreq == NULL) {
 		goto fail;
 	}
