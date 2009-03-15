@@ -24,7 +24,7 @@
 convert a security permissions into a string
 ****************************************************************************/
 
-char *get_sec_mask_str(TALLOC_CTX *ctx, uint32 type)
+char *get_sec_mask_str(TALLOC_CTX *ctx, uint32_t type)
 {
 	char *typestr = talloc_strdup(ctx, "");
 
@@ -122,7 +122,7 @@ void display_sec_access(uint32_t *info)
 {
 	char *mask_str = get_sec_mask_str(NULL, *info);
 	printf("\t\tPermissions: 0x%x: %s\n", *info, mask_str ? mask_str : "");
-	TALLOC_FREE(mask_str);
+	talloc_free(mask_str);
 }
 
 /****************************************************************************
@@ -238,7 +238,7 @@ void display_sec_acl(SEC_ACL *sec_acl)
 	}
 }
 
-void display_acl_type(uint16 type)
+void display_acl_type(uint16_t type)
 {
 	fstring typestr="";
 
