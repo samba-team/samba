@@ -514,6 +514,34 @@ done:
 /*
   return on failure or (with 0) if all fd events are removed
 */
+int tevent_common_loop_wait(struct tevent_context *ev,
+			    const char *location)
+{
+	/*
+	 * loop as long as we have events pending
+	 */
+	while (ev->fd_events ||
+	       ev->timer_events ||
+	       ev->immediate_events ||
+	       ev->signal_events) {
+		int ret;
+		ret = _tevent_loop_once(ev, location);
+		if (ret != 0) {
+			tevent_debug(ev, TEVENT_DEBUG_FATAL,
+				     "_tevent_loop_once() failed: %d - %s\n",
+				     ret, strerror(errno));
+			return ret;
+		}
+	}
+
+	tevent_debug(ev, TEVENT_DEBUG_WARNING,
+		     "tevent_common_loop_wait() out of events\n");
+	return 0;
+}
+
+/*
+  return on failure or (with 0) if all fd events are removed
+*/
 int _tevent_loop_wait(struct tevent_context *ev, const char *location)
 {
 	return ev->ops->loop_wait(ev, location);

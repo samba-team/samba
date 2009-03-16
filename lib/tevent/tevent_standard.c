@@ -543,24 +543,6 @@ static int std_event_loop_once(struct tevent_context *ev, const char *location)
 	return std_event_loop_select(std_ev, &tval);
 }
 
-/*
-  return on failure or (with 0) if all fd events are removed
-*/
-static int std_event_loop_wait(struct tevent_context *ev, const char *location)
-{
-	struct std_event_context *std_ev = talloc_get_type(ev->additional_data,
-							   struct std_event_context);
-	std_ev->exit_code = 0;
-
-	while (ev->fd_events && std_ev->exit_code == 0) {
-		if (std_event_loop_once(ev, location) != 0) {
-			break;
-		}
-	}
-
-	return std_ev->exit_code;
-}
-
 static const struct tevent_ops std_event_ops = {
 	.context_init	= std_event_context_init,
 	.add_fd		= std_event_add_fd,
@@ -570,7 +552,7 @@ static const struct tevent_ops std_event_ops = {
 	.add_timer	= tevent_common_add_timer,
 	.add_signal	= tevent_common_add_signal,
 	.loop_once	= std_event_loop_once,
-	.loop_wait	= std_event_loop_wait,
+	.loop_wait	= tevent_common_loop_wait,
 };
 
 
