@@ -934,7 +934,6 @@ static bool remove_idle_client(void)
 
 static void process_loop(void)
 {
-	struct winbindd_cli_state *state;
 	struct winbindd_fd_event *ev;
 	fd_set r_fds, w_fds;
 	int maxfd, listen_sock, listen_priv_sock, selret;
@@ -950,10 +949,6 @@ static void process_loop(void)
 	}
 
 	run_events(winbind_event_context(), 0, NULL, NULL);
-
-	/* refresh the trusted domain cache */
-
-	rescan_trusted_domains();
 
 	/* Initialise fd lists for select() */
 
@@ -977,23 +972,6 @@ static void process_loop(void)
 	}
 	if (get_timed_events_timeout(winbind_event_context(), &ev_timeout)) {
 		timeout = timeval_min(&timeout, &ev_timeout);
-	}
-
-	/* Set up client readers and writers */
-
-	state = winbindd_client_list();
-
-	while (state) {
-
-		struct winbindd_cli_state *next = state->next;
-
-		/* Dispose of client connection if it is marked as 
-		   finished */ 
-
-		if (state->finished)
-			remove_client(state);
-
-		state = next;
 	}
 
 	for (ev = fd_events; ev; ev = ev->next) {
@@ -1370,8 +1348,29 @@ int main(int argc, char **argv, char **envp)
 
 	TALLOC_FREE(frame);
 	while (1) {
+		struct winbindd_cli_state *state;
+
 		frame = talloc_stackframe();
+
+		/* refresh the trusted domain cache */
+
+		rescan_trusted_domains();
+
+		/* Dispose of client connection if it is marked as
+		   finished */
+		state = winbindd_client_list();
+		while (state) {
+			struct winbindd_cli_state *next = state->next;
+
+			if (state->finished) {
+				remove_client(state);
+			}
+
+			state = next;
+		}
+
 		process_loop();
+
 		TALLOC_FREE(frame);
 	}
 
