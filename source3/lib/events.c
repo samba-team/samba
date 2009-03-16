@@ -181,17 +181,6 @@ static int s3_event_loop_once(struct tevent_context *ev, const char *location)
 	return 0;
 }
 
-static int s3_event_loop_wait(struct tevent_context *ev, const char *location)
-{
-	int ret = 0;
-
-	while (ret == 0) {
-		ret = s3_event_loop_once(ev, location);
-	}
-
-	return ret;
-}
-
 void event_context_reinit(struct tevent_context *ev)
 {
 	tevent_common_context_destructor(ev);
@@ -246,7 +235,7 @@ static const struct tevent_ops s3_event_ops = {
 	.add_timer	= tevent_common_add_timer,
 	.add_signal	= tevent_common_add_signal,
 	.loop_once	= s3_event_loop_once,
-	.loop_wait	= s3_event_loop_wait,
+	.loop_wait	= tevent_common_loop_wait,
 };
 
 static bool s3_tevent_init(void)
