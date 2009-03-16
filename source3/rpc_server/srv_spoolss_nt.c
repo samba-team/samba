@@ -9068,11 +9068,10 @@ WERROR _spoolss_GetPrinterDataEx(pipes_struct *p,
 WERROR _spoolss_SetPrinterDataEx(pipes_struct *p,
 				 struct spoolss_SetPrinterDataEx *r)
 {
-	POLICY_HND		*handle = r->in.handle;
 	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
 	int 			snum = 0;
-	WERROR 			status = WERR_OK;
-	Printer_entry 		*Printer = find_printer_index_by_hnd(p, handle);
+	WERROR 			result = WERR_OK;
+	Printer_entry 		*Printer = find_printer_index_by_hnd(p, r->in.handle);
 	char			*oid_string;
 
 	DEBUG(4,("_spoolss_SetPrinterDataEx\n"));
@@ -9081,19 +9080,20 @@ WERROR _spoolss_SetPrinterDataEx(pipes_struct *p,
            SetPrinterData if key is "PrinterDriverData" */
 
 	if (!Printer) {
-		DEBUG(2,("_spoolss_SetPrinterDataEx: "
-			"Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
+		DEBUG(2,("_spoolss_SetPrinterDataEx: Invalid handle (%s:%u:%u).\n",
+			OUR_HANDLE(r->in.handle)));
 		return WERR_BADFID;
 	}
 
-	if ( Printer->printer_type == SPLHND_SERVER ) {
+	if (Printer->printer_type == SPLHND_SERVER) {
 		DEBUG(10,("_spoolss_SetPrinterDataEx: "
 			"Not implemented for server handles yet\n"));
 		return WERR_INVALID_PARAM;
 	}
 
-	if ( !get_printer_snum(p,handle, &snum, NULL) )
+	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
 		return WERR_BADFID;
+	}
 
 	/*
 	 * Access check : NT returns "access denied" if you make a
@@ -9103,38 +9103,38 @@ WERROR _spoolss_SetPrinterDataEx(pipes_struct *p,
 	 * when connecting to a printer  --jerry
 	 */
 
-	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER)
-	{
+	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
 		DEBUG(3, ("_spoolss_SetPrinterDataEx: "
 			"change denied by handle access permissions\n"));
 		return WERR_ACCESS_DENIED;
 	}
 
-	status = get_a_printer(Printer, &printer, 2, lp_servicename(snum));
-	if (!W_ERROR_IS_OK(status))
-		return status;
+	result = get_a_printer(Printer, &printer, 2, lp_servicename(snum));
+	if (!W_ERROR_IS_OK(result)) {
+		return result;
+	}
 
 	/* check for OID in valuename */
 
-	if ( (oid_string = strchr( r->in.value_name, ',' )) != NULL )
-	{
+	oid_string = strchr(r->in.value_name, ',');
+	if (oid_string) {
 		*oid_string = '\0';
 		oid_string++;
 	}
 
 	/* save the registry data */
 
-	status = set_printer_dataex( printer, r->in.key_name, r->in.value_name,
-				     r->in.type, r->in.buffer, r->in.offered );
+	result = set_printer_dataex(printer, r->in.key_name, r->in.value_name,
+				    r->in.type, r->in.buffer, r->in.offered);
 
-	if ( W_ERROR_IS_OK(status) )
-	{
+	if (W_ERROR_IS_OK(result)) {
 		/* save the OID if one was specified */
-		if ( oid_string ) {
+		if (oid_string) {
 			char *str = talloc_asprintf(p->mem_ctx, "%s\\%s",
 				r->in.key_name, SPOOL_OID_KEY);
 			if (!str) {
-				return WERR_NOMEM;
+				result = WERR_NOMEM;
+				goto done;
 			}
 
 			/*
@@ -9144,17 +9144,18 @@ WERROR _spoolss_SetPrinterDataEx(pipes_struct *p,
 			 * this is right.    --jerry
 			 */
 
-			set_printer_dataex( printer, str, r->in.value_name,
-			                    REG_SZ, (uint8 *)oid_string,
-					    strlen(oid_string)+1 );
+			set_printer_dataex(printer, str, r->in.value_name,
+					   REG_SZ, (uint8_t *)oid_string,
+					   strlen(oid_string)+1);
 		}
 
-		status = mod_a_printer(printer, 2);
+		result = mod_a_printer(printer, 2);
 	}
 
+ done:
 	free_a_printer(&printer, 2);
 
-	return status;
+	return result;
 }
 
 /****************************************************************
