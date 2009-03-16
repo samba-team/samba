@@ -2113,7 +2113,7 @@ static bool api_spoolss_GetPrinterData(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.type = talloc_zero(r, enum spoolss_PrinterDataType);
+	r->out.type = talloc_zero(r, enum winreg_Type);
 	if (r->out.type == NULL) {
 		talloc_free(r);
 		return false;
@@ -5655,14 +5655,14 @@ static bool api_spoolss_EnumPrinterData(pipes_struct *p)
 		return false;
 	}
 
-	r->out.printerdata_type = talloc_zero(r, uint32_t);
-	if (r->out.printerdata_type == NULL) {
+	r->out.type = talloc_zero(r, enum winreg_Type);
+	if (r->out.type == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.buffer = talloc_zero(r, DATA_BLOB);
-	if (r->out.buffer == NULL) {
+	r->out.data = talloc_zero_array(r, uint8_t, r->in.data_offered);
+	if (r->out.data == NULL) {
 		talloc_free(r);
 		return false;
 	}
@@ -6112,7 +6112,7 @@ static bool api_spoolss_GetPrinterDataEx(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.type = talloc_zero(r, uint32_t);
+	r->out.type = talloc_zero(r, enum winreg_Type);
 	if (r->out.type == NULL) {
 		talloc_free(r);
 		return false;
@@ -7871,7 +7871,7 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 		case NDR_SPOOLSS_GETPRINTERDATA: {
 			struct spoolss_GetPrinterData *r = (struct spoolss_GetPrinterData *)_r;
 			ZERO_STRUCT(r->out);
-			r->out.type = talloc_zero(mem_ctx, enum spoolss_PrinterDataType);
+			r->out.type = talloc_zero(mem_ctx, enum winreg_Type);
 			if (r->out.type == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
@@ -8303,13 +8303,13 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			return NT_STATUS_NO_MEMORY;
 			}
 
-			r->out.printerdata_type = talloc_zero(mem_ctx, uint32_t);
-			if (r->out.printerdata_type == NULL) {
+			r->out.type = talloc_zero(mem_ctx, enum winreg_Type);
+			if (r->out.type == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 
-			r->out.buffer = talloc_zero(mem_ctx, DATA_BLOB);
-			if (r->out.buffer == NULL) {
+			r->out.data = talloc_zero_array(mem_ctx, uint8_t, r->in.data_offered);
+			if (r->out.data == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 
@@ -8355,7 +8355,7 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 		case NDR_SPOOLSS_GETPRINTERDATAEX: {
 			struct spoolss_GetPrinterDataEx *r = (struct spoolss_GetPrinterDataEx *)_r;
 			ZERO_STRUCT(r->out);
-			r->out.type = talloc_zero(mem_ctx, uint32_t);
+			r->out.type = talloc_zero(mem_ctx, enum winreg_Type);
 			if (r->out.type == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}

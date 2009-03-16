@@ -387,7 +387,6 @@ enum ndr_err_code ndr_push_spoolss_OSVersionEx(struct ndr_push *ndr, int ndr_fla
 enum ndr_err_code ndr_pull_spoolss_OSVersionEx(struct ndr_pull *ndr, int ndr_flags, struct spoolss_OSVersionEx *r);
 void ndr_print_spoolss_OSVersionEx(struct ndr_print *ndr, const char *name, const struct spoolss_OSVersionEx *r);
 size_t ndr_size_spoolss_OSVersionEx(const struct spoolss_OSVersionEx *r, struct smb_iconv_convenience *ic, int flags);
-void ndr_print_spoolss_PrinterDataType(struct ndr_print *ndr, const char *name, enum spoolss_PrinterDataType r);
 enum ndr_err_code ndr_push_spoolss_PrinterData(struct ndr_push *ndr, int ndr_flags, const union spoolss_PrinterData *r);
 enum ndr_err_code ndr_pull_spoolss_PrinterData(struct ndr_pull *ndr, int ndr_flags, union spoolss_PrinterData *r);
 void ndr_print_spoolss_PrinterData(struct ndr_print *ndr, const char *name, const union spoolss_PrinterData *r);

@@ -1058,30 +1058,11 @@ struct spoolss_OSVersionEx {
 	uint32_t unknown3;
 }/* [gensize,public] */;
 
-enum spoolss_PrinterDataType
-#ifndef USE_UINT_ENUMS
- {
-	SPOOLSS_PRINTER_DATA_TYPE_NULL=0,
-	SPOOLSS_PRINTER_DATA_TYPE_STRING=1,
-	SPOOLSS_PRINTER_DATA_TYPE_BINARY=3,
-	SPOOLSS_PRINTER_DATA_TYPE_UINT32=4,
-	SPOOLSS_PRINTER_DATA_TYPE_STRING_ARRAY=7
-}
-#else
- { __donnot_use_enum_spoolss_PrinterDataType=0x7FFFFFFF}
-#define SPOOLSS_PRINTER_DATA_TYPE_NULL ( 0 )
-#define SPOOLSS_PRINTER_DATA_TYPE_STRING ( 1 )
-#define SPOOLSS_PRINTER_DATA_TYPE_BINARY ( 3 )
-#define SPOOLSS_PRINTER_DATA_TYPE_UINT32 ( 4 )
-#define SPOOLSS_PRINTER_DATA_TYPE_STRING_ARRAY ( 7 )
-#endif
-;
-
 union spoolss_PrinterData {
-	const char * string;/* [flag(LIBNDR_FLAG_STR_NULLTERM),case(SPOOLSS_PRINTER_DATA_TYPE_STRING)] */
-	DATA_BLOB binary;/* [flag(LIBNDR_FLAG_REMAINING),case(SPOOLSS_PRINTER_DATA_TYPE_BINARY)] */
-	uint32_t value;/* [case(SPOOLSS_PRINTER_DATA_TYPE_UINT32)] */
-	const char ** string_array;/* [flag(LIBNDR_FLAG_STR_NULLTERM),case(SPOOLSS_PRINTER_DATA_TYPE_STRING_ARRAY)] */
+	const char * string;/* [flag(LIBNDR_FLAG_STR_NULLTERM),case(REG_SZ)] */
+	DATA_BLOB binary;/* [flag(LIBNDR_FLAG_REMAINING),case(REG_BINARY)] */
+	uint32_t value;/* [case(REG_DWORD)] */
+	const char ** string_array;/* [flag(LIBNDR_FLAG_STR_NULLTERM),case(REG_MULTI_SZ)] */
 	DATA_BLOB data;/* [flag(LIBNDR_FLAG_REMAINING),default] */
 }/* [gensize,public,nodiscriminant] */;
 
@@ -2087,7 +2068,7 @@ struct _spoolss_GetPrinterData {
 	} in;
 
 	struct {
-		enum spoolss_PrinterDataType *type;/* [ref] */
+		enum winreg_Type *type;/* [ref] */
 		DATA_BLOB *data;/* [ref] */
 		uint32_t *needed;/* [ref] */
 		WERROR result;
@@ -2098,7 +2079,7 @@ struct _spoolss_GetPrinterData {
 
 struct __spoolss_GetPrinterData {
 	struct {
-		enum spoolss_PrinterDataType type;
+		enum winreg_Type type;
 	} in;
 
 	struct {
@@ -2116,7 +2097,7 @@ struct spoolss_GetPrinterData {
 	} in;
 
 	struct {
-		enum spoolss_PrinterDataType *type;/* [ref] */
+		enum winreg_Type *type;/* [ref] */
 		union spoolss_PrinterData *data;/* [subcontext_size(offered),ref,subcontext(4),switch_is(*type)] */
 		uint32_t *needed;/* [ref] */
 		WERROR result;
@@ -2129,7 +2110,7 @@ struct _spoolss_SetPrinterData {
 	struct {
 		struct policy_handle *handle;/* [ref] */
 		const char *value_name;/* [charset(UTF16)] */
-		enum spoolss_PrinterDataType type;
+		enum winreg_Type type;
 		DATA_BLOB data;
 		uint32_t _offered;
 	} in;
@@ -2143,7 +2124,7 @@ struct _spoolss_SetPrinterData {
 
 struct __spoolss_SetPrinterData {
 	struct {
-		enum spoolss_PrinterDataType type;
+		enum winreg_Type type;
 	} in;
 
 	struct {
@@ -2157,7 +2138,7 @@ struct spoolss_SetPrinterData {
 	struct {
 		struct policy_handle *handle;/* [ref] */
 		const char *value_name;/* [charset(UTF16)] */
-		enum spoolss_PrinterDataType type;
+		enum winreg_Type type;
 		union spoolss_PrinterData data;/* [subcontext(4),switch_is(type)] */
 		uint32_t _offered;/* [value(ndr_size_spoolss_PrinterData(&data,type,ndr->iconv_convenience,flags))] */
 	} in;
@@ -2826,8 +2807,8 @@ struct spoolss_EnumPrinterData {
 	struct {
 		const char *value_name;/* [charset(UTF16),size_is(value_offered/2)] */
 		uint32_t *value_needed;/* [ref] */
-		uint32_t *printerdata_type;/* [ref] */
-		DATA_BLOB *buffer;/* [ref] */
+		enum winreg_Type *type;/* [ref] */
+		uint8_t *data;/* [ref,flag(LIBNDR_PRINT_ARRAY_HEX),size_is(data_offered)] */
 		uint32_t *data_needed;/* [ref] */
 		WERROR result;
 	} out;
@@ -2877,7 +2858,7 @@ struct spoolss_SetPrinterDataEx {
 		struct policy_handle *handle;/* [ref] */
 		const char *key_name;/* [charset(UTF16)] */
 		const char *value_name;/* [charset(UTF16)] */
-		uint32_t type;
+		enum winreg_Type type;
 		uint8_t *buffer;/* [ref,size_is(offered)] */
 		uint32_t offered;
 	} in;
@@ -2898,7 +2879,7 @@ struct spoolss_GetPrinterDataEx {
 	} in;
 
 	struct {
-		uint32_t *type;/* [ref] */
+		enum winreg_Type *type;/* [ref] */
 		uint8_t *buffer;/* [ref,size_is(offered)] */
 		uint32_t *needed;/* [ref] */
 		WERROR result;
