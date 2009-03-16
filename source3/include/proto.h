@@ -1396,13 +1396,13 @@ struct tevent_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 					uint16_t port,
 					int timeout);
 NTSTATUS open_socket_out_recv(struct tevent_req *req, int *pfd);
-struct async_req *open_socket_out_defer_send(TALLOC_CTX *mem_ctx,
-					     struct event_context *ev,
-					     struct timeval wait_time,
-					     const struct sockaddr_storage *pss,
-					     uint16_t port,
-					     int timeout);
-NTSTATUS open_socket_out_defer_recv(struct async_req *req, int *pfd);
+struct tevent_req *open_socket_out_defer_send(TALLOC_CTX *mem_ctx,
+					      struct event_context *ev,
+					      struct timeval wait_time,
+					      const struct sockaddr_storage *pss,
+					      uint16_t port,
+					      int timeout);
+NTSTATUS open_socket_out_defer_recv(struct tevent_req *req, int *pfd);
 bool open_any_socket_out(struct sockaddr_storage *addrs, int num_addrs,
 			 int timeout, int *fd_index, int *fd);
 int open_udp_socket(const char *host, int port);
