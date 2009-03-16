@@ -1316,24 +1316,6 @@ int open_winbindd_priv_socket(void)
 	return _winbindd_priv_socket;
 }
 
-/* Close the winbindd socket */
-
-void close_winbindd_socket(void)
-{
-	if (_winbindd_socket != -1) {
-		DEBUG(10, ("close_winbindd_socket: closing socket fd %d\n",
-			   _winbindd_socket));
-		close(_winbindd_socket);
-		_winbindd_socket = -1;
-	}
-	if (_winbindd_priv_socket != -1) {
-		DEBUG(10, ("close_winbindd_socket: closing socket fd %d\n",
-			   _winbindd_priv_socket));
-		close(_winbindd_priv_socket);
-		_winbindd_priv_socket = -1;
-	}
-}
-
 /*
  * Client list accessor functions
  */
