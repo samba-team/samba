@@ -419,22 +419,6 @@ static int epoll_event_loop_once(struct tevent_context *ev, const char *location
 	return epoll_event_loop(epoll_ev, &tval);
 }
 
-/*
-  return on failure or (with 0) if all fd events are removed
-*/
-static int epoll_event_loop_wait(struct tevent_context *ev, const char *location)
-{
-	struct epoll_event_context *epoll_ev = talloc_get_type(ev->additional_data,
-							   struct epoll_event_context);
-	while (epoll_ev->ev->fd_events) {
-		if (epoll_event_loop_once(ev, location) != 0) {
-			break;
-		}
-	}
-
-	return 0;
-}
-
 static const struct tevent_ops epoll_event_ops = {
 	.context_init	= epoll_event_context_init,
 	.add_fd		= epoll_event_add_fd,
@@ -444,7 +428,7 @@ static const struct tevent_ops epoll_event_ops = {
 	.add_timer	= tevent_common_add_timer,
 	.add_signal	= tevent_common_add_signal,
 	.loop_once	= epoll_event_loop_once,
-	.loop_wait	= epoll_event_loop_wait,
+	.loop_wait	= tevent_common_loop_wait,
 };
 
 bool tevent_epoll_init(void)
