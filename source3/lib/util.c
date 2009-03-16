@@ -290,7 +290,7 @@ struct user_auth_info *user_auth_info_init(TALLOC_CTX *mem_ctx)
 	return result;
 }
 
-const char *get_cmdline_auth_info_username(struct user_auth_info *auth_info)
+const char *get_cmdline_auth_info_username(const struct user_auth_info *auth_info)
 {
 	if (!auth_info->username) {
 		return "";
@@ -308,7 +308,7 @@ void set_cmdline_auth_info_username(struct user_auth_info *auth_info,
 	}
 }
 
-const char *get_cmdline_auth_info_password(struct user_auth_info *auth_info)
+const char *get_cmdline_auth_info_password(const struct user_auth_info *auth_info)
 {
 	if (!auth_info->password) {
 		return "";
@@ -346,7 +346,7 @@ bool set_cmdline_auth_info_signing_state(struct user_auth_info *auth_info,
 	return true;
 }
 
-int get_cmdline_auth_info_signing_state(struct user_auth_info *auth_info)
+int get_cmdline_auth_info_signing_state(const struct user_auth_info *auth_info)
 {
 	return auth_info->signing_state;
 }
@@ -357,7 +357,7 @@ void set_cmdline_auth_info_use_kerberos(struct user_auth_info *auth_info,
         auth_info->use_kerberos = b;
 }
 
-bool get_cmdline_auth_info_use_kerberos(struct user_auth_info *auth_info)
+bool get_cmdline_auth_info_use_kerberos(const struct user_auth_info *auth_info)
 {
 	return auth_info->use_kerberos;
 }
@@ -380,23 +380,23 @@ void set_cmdline_auth_info_use_machine_account(struct user_auth_info *auth_info)
 	auth_info->use_machine_account = true;
 }
 
-bool get_cmdline_auth_info_got_pass(struct user_auth_info *auth_info)
+bool get_cmdline_auth_info_got_pass(const struct user_auth_info *auth_info)
 {
 	return auth_info->got_pass;
 }
 
-bool get_cmdline_auth_info_smb_encrypt(struct user_auth_info *auth_info)
+bool get_cmdline_auth_info_smb_encrypt(const struct user_auth_info *auth_info)
 {
 	return auth_info->smb_encrypt;
 }
 
-bool get_cmdline_auth_info_use_machine_account(struct user_auth_info *auth_info)
+bool get_cmdline_auth_info_use_machine_account(const struct user_auth_info *auth_info)
 {
 	return auth_info->use_machine_account;
 }
 
 struct user_auth_info *get_cmdline_auth_info_copy(TALLOC_CTX *mem_ctx,
-						  struct user_auth_info *src)
+						  const struct user_auth_info *src)
 {
 	struct user_auth_info *result;
 
