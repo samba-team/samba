@@ -2446,14 +2446,22 @@ done:
 /****************************************************************************
 ****************************************************************************/
 
-static WERROR cmd_spoolss_enum_data( struct rpc_pipe_client *cli,
-				       TALLOC_CTX *mem_ctx, int argc,
-				       const char **argv)
+static WERROR cmd_spoolss_enum_data(struct rpc_pipe_client *cli,
+				    TALLOC_CTX *mem_ctx, int argc,
+				    const char **argv)
 {
 	WERROR result;
-	uint32 i=0, val_needed, data_needed;
+	NTSTATUS status;
+	uint32_t i = 0;
 	const char *printername;
 	POLICY_HND hnd;
+	uint32_t value_offered = 0;
+	const char *value_name = NULL;
+	uint32_t value_needed;
+	enum winreg_Type type;
+	uint8_t *data = NULL;
+	uint32_t data_offered = 0;
+	uint32_t data_needed;
 
 	if (argc != 2) {
 		printf("Usage: %s printername\n", argv[0]);
@@ -2468,28 +2476,60 @@ static WERROR cmd_spoolss_enum_data( struct rpc_pipe_client *cli,
 					       printername,
 					       SEC_FLAG_MAXIMUM_ALLOWED,
 					       &hnd);
-	if (!W_ERROR_IS_OK(result))
+	if (!W_ERROR_IS_OK(result)) {
 		goto done;
+	}
 
 	/* Enumerate data */
 
-	result = rpccli_spoolss_enumprinterdata(cli, mem_ctx, &hnd, i, 0, 0,
-					     &val_needed, &data_needed,
-					     NULL);
-	while (W_ERROR_IS_OK(result)) {
-		REGISTRY_VALUE value;
-		result = rpccli_spoolss_enumprinterdata(
-			cli, mem_ctx, &hnd, i++, val_needed,
-			data_needed, 0, 0, &value);
-		if (W_ERROR_IS_OK(result))
-			display_reg_value(value);
+	status = rpccli_spoolss_EnumPrinterData(cli, mem_ctx,
+						&hnd,
+						i,
+						value_name,
+						value_offered,
+						&value_needed,
+						&type,
+						data,
+						data_offered,
+						&data_needed,
+						&result);
+
+	data_offered	= data_needed;
+	value_offered	= value_needed;
+	data		= talloc_zero_array(mem_ctx, uint8_t, data_needed);
+	value_name	= talloc_zero_array(mem_ctx, char, value_needed);
+
+	while (NT_STATUS_IS_OK(status) && W_ERROR_IS_OK(result)) {
+
+		status = rpccli_spoolss_EnumPrinterData(cli, mem_ctx,
+							&hnd,
+							i++,
+							value_name,
+							value_offered,
+							&value_needed,
+							&type,
+							data,
+							data_offered,
+							&data_needed,
+							&result);
+		if (NT_STATUS_IS_OK(status) && W_ERROR_IS_OK(result)) {
+			REGISTRY_VALUE v;
+			fstrcpy(v.valuename, value_name);
+			v.type = type;
+			v.size = data_offered;
+			v.data_p = data;
+			display_reg_value(v);
+		}
 	}
-	if (W_ERROR_V(result) == ERRnomoreitems)
+
+	if (W_ERROR_V(result) == ERRnomoreitems) {
 		result = W_ERROR(ERRsuccess);
+	}
 
 done:
-	if (is_valid_policy_hnd(&hnd))
+	if (is_valid_policy_hnd(&hnd)) {
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &hnd, NULL);
+	}
 
 	return result;
 }
