@@ -111,7 +111,7 @@ PRIVATE_DEPENDENCIES = \
 		RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_ROT RPC_NDR_DSSETUP \
 		RPC_NDR_REMACT RPC_NDR_OXIDRESOLVER RPC_NDR_NTSVCS WB_HELPER LIBSAMBA-NET \
 		LIBCLI_AUTH POPT_CREDENTIALS TORTURE_LDAP TORTURE_LDB TORTURE_UTIL TORTURE_RAP \
-		dcerpc_server service process_model ntvfs SERVICE_SMB RPC_NDR_BROWSER
+		dcerpc_server service process_model ntvfs SERVICE_SMB RPC_NDR_BROWSER LIBCLI_DRSUAPI
 
 torture_rpc_OBJ_FILES = $(addprefix $(torturesrcdir)/rpc/, \
 		join.o lsa.o lsa_lookup.o session_key.o echo.o dfs.o drsuapi.o \
