@@ -295,22 +295,6 @@ SYSTEMTIME;
 
 /********************************************/
 
-typedef struct spool_q_enumprinterkey
-{
-	POLICY_HND handle;
-	UNISTR2 key;
-	uint32 size;
-}
-SPOOL_Q_ENUMPRINTERKEY;
-
-typedef struct spool_r_enumprinterkey
-{
-	BUFFER5 keys;
-	uint32 needed;	/* in bytes */
-	WERROR status;
-}
-SPOOL_R_ENUMPRINTERKEY;
-
 typedef struct printer_enum_values
 {
 	UNISTR valuename;
