@@ -591,8 +591,7 @@ RPC_ECHO_OBJ = rpc_server/srv_echo_nt.o ../librpc/gen_ndr/srv_echo.o
 RPC_SERVER_OBJ = @RPC_STATIC@ $(RPC_PIPE_OBJ)
 
 RPC_PARSE_OBJ = $(RPC_PARSE_OBJ2) \
-                rpc_parse/parse_spoolss.o \
-	        rpc_parse/parse_buffer.o
+                rpc_parse/parse_spoolss.o
 
 RPC_CLIENT_OBJ = rpc_client/cli_pipe.o rpc_client/rpc_transport_np.o \
 	rpc_client/rpc_transport_sock.o rpc_client/rpc_transport_smbd.o
