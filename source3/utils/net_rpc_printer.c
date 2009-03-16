@@ -846,12 +846,12 @@ static bool net_spoolss_enumprinterkey(struct rpc_pipe_client *pipe_hnd,
 					TALLOC_CTX *mem_ctx,
 					POLICY_HND *hnd,
 					const char *keyname,
-					uint16 **keylist)
+					const char ***keylist)
 {
 	WERROR result;
 
 	/* enumprinterkey call */
-	result = rpccli_spoolss_enumprinterkey(pipe_hnd, mem_ctx, hnd, keyname, keylist, NULL);
+	result = rpccli_spoolss_enumprinterkey(pipe_hnd, mem_ctx, hnd, keyname, keylist, 0);
 
 	if (!W_ERROR_IS_OK(result)) {
 		printf("enumprinterkey failed: %s\n", win_errstr(result));
@@ -2146,8 +2146,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 	struct cli_state *cli_dst = NULL;
 	char *devicename = NULL, *unc_name = NULL, *url = NULL;
 	const char *longname;
-
-	uint16 *keylist = NULL, *curkey;
+	const char **keylist = NULL;
 
 	/* FIXME GD */
 	ZERO_STRUCT(info_dst_publish);
@@ -2367,19 +2366,9 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 		if (keylist == NULL)
 			continue;
 
-		curkey = keylist;
-		while (*curkey != 0) {
-			char *subkey;
-			rpcstr_pull_talloc(mem_ctx,
-					&subkey,
-					curkey,
-					-1,
-					STR_TERMINATE);
-			if (!subkey) {
-				return NT_STATUS_NO_MEMORY;
-			}
+		for (i=0; keylist && keylist[i] != NULL; i++) {
 
-			curkey += strlen(subkey) + 1;
+			const char *subkey = keylist[i];
 
 			if ( !(reg_ctr = TALLOC_ZERO_P( mem_ctx, REGVAL_CTR )) )
 				return NT_STATUS_NO_MEMORY;
@@ -2484,7 +2473,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 			TALLOC_FREE( reg_ctr );
 		}
 
-		SAFE_FREE(keylist);
+		TALLOC_FREE(keylist);
 
 		/* close printer handles here */
 		if (is_valid_policy_hnd(&hnd_src)) {
