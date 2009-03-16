@@ -156,7 +156,7 @@ static bool test_GetPrinterData(struct torture_context *tctx,
 	NTSTATUS status;
 	struct spoolss_GetPrinterData gpd;
 	uint32_t needed;
-	enum spoolss_PrinterDataType type;
+	enum winreg_Type type;
 	union spoolss_PrinterData data;
 
 	torture_comment(tctx, "Testing GetPrinterData(%s).\n", value_name);
