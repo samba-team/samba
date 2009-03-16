@@ -392,21 +392,6 @@ bool spoolss_io_q_enumprinterdata(const char *desc, SPOOL_Q_ENUMPRINTERDATA *q_u
 /*******************************************************************
 ********************************************************************/  
 
-bool make_spoolss_q_enumprinterdata(SPOOL_Q_ENUMPRINTERDATA *q_u,
-		const POLICY_HND *hnd,
-		uint32 idx, uint32 valuelen, uint32 datalen)
-{
-	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
-	q_u->index=idx;
-	q_u->valuesize=valuelen;
-	q_u->datasize=datalen;
-
-	return True;
-}
-
-/*******************************************************************
-********************************************************************/  
-
 bool make_spoolss_q_enumprinterdataex(SPOOL_Q_ENUMPRINTERDATAEX *q_u,
 				      const POLICY_HND *hnd, const char *key,
 				      uint32 size)
