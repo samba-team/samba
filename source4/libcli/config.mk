@@ -1,4 +1,3 @@
-mkinclude auth/config.mk
 mkinclude ldap/config.mk
 mkinclude security/config.mk
 mkinclude wbclient/config.mk
