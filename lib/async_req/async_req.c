@@ -194,48 +194,6 @@ bool async_req_is_error(struct async_req *req, enum async_req_state *state,
 	return true;
 }
 
-static void async_req_timedout(struct tevent_context *ev,
-			       struct tevent_timer *te,
-			       struct timeval now,
-			       void *priv)
-{
-	struct async_req *req = talloc_get_type_abort(priv, struct async_req);
-	TALLOC_FREE(te);
-	async_req_finish(req, ASYNC_REQ_TIMED_OUT);
-}
-
-bool async_req_set_timeout(struct async_req *req, struct tevent_context *ev,
-			   struct timeval to)
-{
-	return (tevent_add_timer(
-			ev, req,
-			tevent_timeval_current_ofs(to.tv_sec, to.tv_usec),
-			async_req_timedout, req)
-		!= NULL);
-}
-
-struct async_req *async_wait_send(TALLOC_CTX *mem_ctx,
-				  struct tevent_context *ev,
-				  struct timeval to)
-{
-	struct async_req *result;
-
-	result = async_req_new(mem_ctx);
-	if (result == NULL) {
-		return result;
-	}
-	if (!async_req_set_timeout(result, ev, to)) {
-		TALLOC_FREE(result);
-		return NULL;
-	}
-	return result;
-}
-
-bool async_wait_recv(struct async_req *req)
-{
-	return true;
-}
-
 struct async_queue_entry {
 	struct async_queue_entry *prev, *next;
 	struct async_req_queue *queue;

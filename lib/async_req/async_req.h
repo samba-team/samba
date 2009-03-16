@@ -139,15 +139,6 @@ bool async_post_error(struct async_req *req, struct tevent_context *ev,
 bool async_req_is_error(struct async_req *req, enum async_req_state *state,
 			uint64_t *error);
 
-bool async_req_set_timeout(struct async_req *req, struct tevent_context *ev,
-			   struct timeval to);
-
-struct async_req *async_wait_send(TALLOC_CTX *mem_ctx,
-				  struct tevent_context *ev,
-				  struct timeval to);
-
-bool async_wait_recv(struct async_req *req);
-
 struct async_req_queue;
 
 struct async_req_queue *async_req_queue_init(TALLOC_CTX *mem_ctx);
