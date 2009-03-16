@@ -654,44 +654,15 @@ static void smbd_parent_loop(struct smbd_parent_context *parent)
 {
 	/* now accept incoming connections - forking a new process
 	   for each incoming connection */
-	DEBUG(2,("waiting for a connection\n"));
+	DEBUG(2,("waiting for connections\n"));
 	while (1) {
-		struct timeval now, idle_timeout;
-		fd_set r_fds, w_fds;
-		int maxfd = 0;
-		int num;
+		int ret;
 		TALLOC_CTX *frame = talloc_stackframe();
 
-		if (run_events(smbd_event_context(), 0, NULL, NULL)) {
-			TALLOC_FREE(frame);
-			continue;
+		ret = tevent_loop_once(smbd_event_context());
+		if (ret != 0) {
+			exit_server_cleanly("tevent_loop_once() error");
 		}
-
-		idle_timeout = timeval_zero();
-
-		FD_ZERO(&w_fds);
-		FD_ZERO(&r_fds);
-		GetTimeOfDay(&now);
-
-		event_add_to_select_args(smbd_event_context(), &now,
-					 &r_fds, &w_fds, &idle_timeout,
-					 &maxfd);
-
-		num = sys_select(maxfd+1,&r_fds,&w_fds,NULL,
-				 timeval_is_zero(&idle_timeout) ?
-				 NULL : &idle_timeout);
-
-		/* check if we need to reload services */
-		check_reload(time(NULL));
-
-		if (run_events(smbd_event_context(), num, &r_fds, &w_fds)) {
-			TALLOC_FREE(frame);
-			continue;
-		}
-
-		/* socket error */
-		if (num < 0)
-			exit_server_cleanly("socket error");
 
 		TALLOC_FREE(frame);
 	} /* end while 1 */
