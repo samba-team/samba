@@ -8978,31 +8978,27 @@ WERROR _spoolss_GetJob(pipes_struct *p,
 WERROR _spoolss_GetPrinterDataEx(pipes_struct *p,
 				 struct spoolss_GetPrinterDataEx *r)
 {
-	POLICY_HND	*handle = r->in.handle;
-	uint8 		*data = NULL;
-	const char	*keyname = r->in.key_name;
-	const char	*valuename = r->in.value_name;
 
-	Printer_entry 	*Printer = find_printer_index_by_hnd(p, handle);
-
+	Printer_entry 	*Printer = find_printer_index_by_hnd(p, r->in.handle);
+	REGISTRY_VALUE		*val = NULL;
 	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
 	int 			snum = 0;
-	WERROR 			status = WERR_OK;
+	WERROR result = WERR_OK;
 
 	DEBUG(4,("_spoolss_GetPrinterDataEx\n"));
 
 	DEBUG(10, ("_spoolss_GetPrinterDataEx: key => [%s], value => [%s]\n",
-		keyname, valuename));
+		r->in.key_name, r->in.value_name));
 
 	/* in case of problem, return some default values */
 
 	*r->out.needed	= 0;
-	*r->out.type	= 0;
+	*r->out.type	= REG_NONE;
 
 	if (!Printer) {
-		DEBUG(2,("_spoolss_GetPrinterDataEx: "
-			"Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
-		status = WERR_BADFID;
+		DEBUG(2,("_spoolss_GetPrinterDataEx: Invalid handle (%s:%u:%u).\n",
+			OUR_HANDLE(r->in.handle)));
+		result = WERR_BADFID;
 		goto done;
 	}
 
@@ -9011,50 +9007,58 @@ WERROR _spoolss_GetPrinterDataEx(pipes_struct *p,
 	if (Printer->printer_type == SPLHND_SERVER) {
 		DEBUG(10,("_spoolss_GetPrinterDataEx: "
 			"Not implemented for server handles yet\n"));
-		status = WERR_INVALID_PARAM;
+		result = WERR_INVALID_PARAM;
 		goto done;
 	}
 
-	if ( !get_printer_snum(p,handle, &snum, NULL) )
+	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
 		return WERR_BADFID;
+	}
 
-	status = get_a_printer(Printer, &printer, 2, lp_servicename(snum));
-	if ( !W_ERROR_IS_OK(status) )
+	result = get_a_printer(Printer, &printer, 2, lp_servicename(snum));
+	if (!W_ERROR_IS_OK(result)) {
 		goto done;
+	}
 
 	/* check to see if the keyname is valid */
-	if ( !strlen(keyname) ) {
-		status = WERR_INVALID_PARAM;
+	if (!strlen(r->in.key_name)) {
+		result = WERR_INVALID_PARAM;
 		goto done;
 	}
 
-	if ( lookup_printerkey( printer->info_2->data, keyname ) == -1 ) {
+	if (lookup_printerkey(printer->info_2->data, r->in.key_name) == -1) {
 		DEBUG(4,("_spoolss_GetPrinterDataEx: "
-			"Invalid keyname [%s]\n", keyname ));
-		free_a_printer( &printer, 2 );
-		status = WERR_BADFILE;
+			"Invalid keyname [%s]\n", r->in.key_name ));
+		result = WERR_BADFILE;
 		goto done;
 	}
 
 	/* When given a new keyname, we should just create it */
 
-	status = get_printer_dataex( p->mem_ctx, printer, keyname, valuename,
-				     r->out.type, &data, r->out.needed,
-				     r->in.offered );
+	val = get_printer_data(printer->info_2,
+			       r->in.key_name, r->in.value_name);
+	if (!val) {
+		result = WERR_BADFILE;
+		goto done;
+	}
+
+	*r->out.needed = regval_size(val);
 
 	if (*r->out.needed > r->in.offered) {
-		status = WERR_MORE_DATA;
+		result = WERR_MORE_DATA;
+		goto done;
 	}
 
-	if (W_ERROR_IS_OK(status)) {
-		memcpy(r->out.buffer, data, r->in.offered);
+	*r->out.type = regval_type(val);
+
+	memcpy(r->out.buffer, regval_data_p(val), regval_size(val));
+
+ done:
+	if (printer) {
+		free_a_printer(&printer, 2);
 	}
 
-done:
-	if ( printer )
-	free_a_printer( &printer, 2 );
-
-	return status;
+	return result;
 }
 
 /****************************************************************
