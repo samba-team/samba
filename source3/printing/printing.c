@@ -1428,6 +1428,7 @@ void start_background_queue(void)
 
 	if(background_lpq_updater_pid == 0) {
 		struct tevent_fd *fde;
+		int ret;
 
 		/* Child. */
 		DEBUG(5,("start_background_queue: background LPQ thread started\n"));
@@ -1464,56 +1465,11 @@ void start_background_queue(void)
 		}
 
 		DEBUG(5,("start_background_queue: background LPQ thread waiting for messages\n"));
-		while (1) {
-			fd_set r_fds, w_fds;
-			int ret;
-			struct timeval to;
-			int maxfd = 0;
-
-			/* Process a signal and timed events now... */
-			if (run_events(smbd_event_context(), 0, NULL, NULL)) {
-				continue;
-			}
-
-			to.tv_sec = SMBD_SELECT_TIMEOUT;
-			to.tv_usec = 0;
-
-			/*
-			 * Setup the select fd sets.
-			 */
-
-			FD_ZERO(&r_fds);
-			FD_ZERO(&w_fds);
-
-			/*
-			 * Are there any timed events waiting ? If so, ensure we don't
-			 * select for longer than it would take to wait for them.
-			 */
-
-			{
-				struct timeval now;
-				GetTimeOfDay(&now);
-
-				event_add_to_select_args(smbd_event_context(), &now,
-							 &r_fds, &w_fds, &to, &maxfd);
-			}
-
-			ret = sys_select(maxfd, &r_fds, &w_fds, NULL, &to);
-
-			/*
-			 * If pause_pipe[1] is closed it means the parent smbd
-			 * and children exited or aborted. If sys_select()
-			 * failed, then something more sinister is wrong
-			 */
-			if ((ret < 0) ||
-			    (ret == 1 && FD_ISSET(pause_pipe[1], &r_fds))) {
-                                exit_server_cleanly(NULL);
-			}
-
-			if (run_events(smbd_event_context(), ret, &r_fds, &w_fds)) {
-				continue;
-			}
-		}
+		ret = tevent_loop_wait(smbd_event_context());
+		/* should not be reached */
+		DEBUG(0,("background_queue: tevent_loop_wait() exited with %d - %s\n",
+			 ret, (ret == 0) ? "out of events" : strerror(errno)));
+		exit(1);
 	}
 
 	close(pause_pipe[1]);
