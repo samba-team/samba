@@ -815,17 +815,23 @@ static bool net_spoolss_setprinter(struct rpc_pipe_client *pipe_hnd,
 
 
 static bool net_spoolss_setprinterdata(struct rpc_pipe_client *pipe_hnd,
-					TALLOC_CTX *mem_ctx,
-					POLICY_HND *hnd,
-					REGISTRY_VALUE *value)
+				       TALLOC_CTX *mem_ctx,
+				       struct policy_handle *hnd,
+				       const char *value_name,
+				       enum winreg_Type type,
+				       union spoolss_PrinterData data)
 {
 	WERROR result;
-
-	/* FIXME - GD */
-	return true;
+	NTSTATUS status;
 
 	/* setprinterdata call */
-	/* result = rpccli_spoolss_setprinterdata(pipe_hnd, mem_ctx, hnd, value); */
+	status = rpccli_spoolss_SetPrinterData(pipe_hnd, mem_ctx,
+					       hnd,
+					       value_name,
+					       type,
+					       data,
+					       0, /* autocalculated */
+					       &result);
 
 	if (!W_ERROR_IS_OK(result)) {
 		printf ("unable to set printerdata: %s\n", win_errstr(result));
