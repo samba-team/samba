@@ -2164,7 +2164,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in]     uint32 value_offered,
 		[out,ref] uint32 *value_needed,
 		[out,ref] uint32 *printerdata_type,
-		[out,ref] DATA_BLOB *buffer,
+		[out,ref,size_is(data_offered),flag(LIBNDR_PRINT_ARRAY_HEX)] uint8 *data,
 		[in]	 uint32 data_offered,
 		[out,ref] uint32 *data_needed
 	);
