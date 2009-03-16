@@ -5558,6 +5558,9 @@ WERROR pull_spoolss_PrinterData(TALLOC_CTX *mem_ctx,
 				const DATA_BLOB *blob,
 				union spoolss_PrinterData *data,
 				enum winreg_Type type);
+WERROR push_spoolss_PrinterData(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
+				enum winreg_Type type,
+				union spoolss_PrinterData *data);
 
 /* The following definitions come from rpc_client/init_lsa.c  */
 
