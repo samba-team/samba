@@ -25,32 +25,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-bool async_req_is_wbcerr(struct async_req *req, wbcErr *pwbc_err)
-{
-	enum async_req_state state;
-	uint64_t error;
-	if (!async_req_is_error(req, &state, &error)) {
-		*pwbc_err = WBC_ERR_SUCCESS;
-		return false;
-	}
-
-	switch (state) {
-	case ASYNC_REQ_USER_ERROR:
-		*pwbc_err = error;
-		break;
-	case ASYNC_REQ_TIMED_OUT:
-		*pwbc_err = WBC_ERR_UNKNOWN_FAILURE;
-		break;
-	case ASYNC_REQ_NO_MEMORY:
-		*pwbc_err = WBC_ERR_NO_MEMORY;
-		break;
-	default:
-		*pwbc_err = WBC_ERR_UNKNOWN_FAILURE;
-		break;
-	}
-	return true;
-}
-
 wbcErr map_wbc_err_from_errno(int error)
 {
 	switch(error) {
@@ -63,17 +37,6 @@ wbcErr map_wbc_err_from_errno(int error)
 	default:
 		return WBC_ERR_UNKNOWN_FAILURE;
 	}
-}
-
-wbcErr async_req_simple_recv_wbcerr(struct async_req *req)
-{
-	wbcErr wbc_err;
-
-	if (async_req_is_wbcerr(req, &wbc_err)) {
-		return wbc_err;
-	}
-
-	return WBC_ERR_SUCCESS;
 }
 
 bool tevent_req_is_wbcerr(struct tevent_req *req, wbcErr *pwbc_err)

@@ -33,9 +33,7 @@ wbcErr wb_trans_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 struct wb_context *wb_context_init(TALLOC_CTX *mem_ctx);
 
 /* Definitions from wb_reqtrans.c */
-bool async_req_is_wbcerr(struct async_req *req, wbcErr *pwbc_err);
 wbcErr map_wbc_err_from_errno(int error);
-wbcErr async_req_simple_recv_wbcerr(struct async_req *req);
 
 bool tevent_req_is_wbcerr(struct tevent_req *req, wbcErr *pwbc_err);
 wbcErr tevent_req_simple_recv_wbcerr(struct tevent_req *req);
