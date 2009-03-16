@@ -5540,6 +5540,12 @@ WERROR rpccli_spoolss_getprinterdata(struct rpc_pipe_client *cli,
 				     uint32_t offered,
 				     enum winreg_Type *type,
 				     union spoolss_PrinterData *data);
+WERROR rpccli_spoolss_enumprinterkey(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx,
+				     struct policy_handle *handle,
+				     const char *key_name,
+				     const char ***key_buffer,
+				     uint32_t offered);
 WERROR rpccli_spoolss_enumprinterdataex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				     POLICY_HND *hnd, const char *keyname, 
 				     REGVAL_CTR *ctr);
