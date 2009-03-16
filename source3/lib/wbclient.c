@@ -545,7 +545,7 @@ struct wb_trans_state {
 
 static void wb_trans_connect_done(struct tevent_req *subreq);
 static void wb_trans_done(struct tevent_req *subreq);
-static void wb_trans_retry_wait_done(struct async_req *subreq);
+static void wb_trans_retry_wait_done(struct tevent_req *subreq);
 
 static void wb_trigger_trans(struct async_req *req)
 {
@@ -604,7 +604,7 @@ static bool wb_trans_retry(struct async_req *req,
 			   struct wb_trans_state *state,
 			   wbcErr wbc_err)
 {
-	struct async_req *subreq;
+	struct tevent_req *subreq;
 
 	if (WBC_ERROR_IS_OK(wbc_err)) {
 		return false;
@@ -634,38 +634,36 @@ static bool wb_trans_retry(struct async_req *req,
 		state->wb_ctx->fd = -1;
 	}
 
-	subreq = async_wait_send(state, state->ev, timeval_set(1, 0));
+	subreq = tevent_wakeup_send(state, state->ev,
+				    timeval_current_ofs(1, 0));
 	if (async_req_nomem(subreq, req)) {
 		return true;
 	}
-
-	subreq->async.fn = wb_trans_retry_wait_done;
-	subreq->async.priv = req;
+	tevent_req_set_callback(subreq, wb_trans_retry_wait_done, req);
 	return true;
 }
 
-static void wb_trans_retry_wait_done(struct async_req *subreq)
+static void wb_trans_retry_wait_done(struct tevent_req *subreq)
 {
-	struct async_req *req = talloc_get_type_abort(
-		subreq->async.priv, struct async_req);
+	struct async_req *req = tevent_req_callback_data(
+		subreq, struct async_req);
 	struct wb_trans_state *state = talloc_get_type_abort(
 		req->private_data, struct wb_trans_state);
-	struct tevent_req *subreq2;
 	bool ret;
 
-	ret = async_wait_recv(subreq);
+	ret = tevent_wakeup_recv(subreq);
 	TALLOC_FREE(subreq);
-	if (ret) {
+	if (!ret) {
 		async_req_error(req, WBC_ERR_UNKNOWN_FAILURE);
 		return;
 	}
 
-	subreq2 = wb_open_pipe_send(state, state->ev, state->wb_ctx,
+	subreq = wb_open_pipe_send(state, state->ev, state->wb_ctx,
 				    state->need_priv);
-	if (async_req_nomem(subreq2, req)) {
+	if (async_req_nomem(subreq, req)) {
 		return;
 	}
-	tevent_req_set_callback(subreq2, wb_trans_connect_done, req);
+	tevent_req_set_callback(subreq, wb_trans_connect_done, req);
 }
 
 static void wb_trans_connect_done(struct tevent_req *subreq)
