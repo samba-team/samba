@@ -9206,76 +9206,88 @@ WERROR _spoolss_DeletePrinterDataEx(pipes_struct *p,
 	return status;
 }
 
-/********************************************************************
- * spoolss_enumprinterkey
- ********************************************************************/
+/****************************************************************
+ _spoolss_EnumPrinterKey
+****************************************************************/
 
-
-WERROR _spoolss_enumprinterkey(pipes_struct *p, SPOOL_Q_ENUMPRINTERKEY *q_u, SPOOL_R_ENUMPRINTERKEY *r_u)
+WERROR _spoolss_EnumPrinterKey(pipes_struct *p,
+			       struct spoolss_EnumPrinterKey *r)
 {
-	fstring 	key;
 	fstring		*keynames = NULL;
-	uint16  	*enumkeys = NULL;
 	int		num_keys;
-	int		printerkey_len;
-	POLICY_HND	*handle = &q_u->handle;
-	Printer_entry 	*Printer = find_printer_index_by_hnd(p, handle);
+	Printer_entry 	*Printer = find_printer_index_by_hnd(p, r->in.handle);
 	NT_PRINTER_DATA	*data;
 	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
 	int 		snum = 0;
-	WERROR		status = WERR_BADFILE;
+	WERROR		result = WERR_BADFILE;
+	int i;
+	const char **array = NULL;
 
 
-	DEBUG(4,("_spoolss_enumprinterkey\n"));
+	DEBUG(4,("_spoolss_EnumPrinterKey\n"));
 
 	if (!Printer) {
-		DEBUG(2,("_spoolss_enumprinterkey: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
+		DEBUG(2,("_spoolss_EnumPrinterKey: Invalid handle (%s:%u:%u).\n",
+			OUR_HANDLE(r->in.handle)));
 		return WERR_BADFID;
 	}
 
-	if ( !get_printer_snum(p,handle, &snum, NULL) )
+	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
 		return WERR_BADFID;
+	}
 
-	status = get_a_printer(Printer, &printer, 2, lp_const_servicename(snum));
-	if (!W_ERROR_IS_OK(status))
-		return status;
+	result = get_a_printer(Printer, &printer, 2, lp_const_servicename(snum));
+	if (!W_ERROR_IS_OK(result)) {
+		return result;
+	}
 
 	/* get the list of subkey names */
 
-	unistr2_to_ascii(key, &q_u->key, sizeof(key));
 	data = printer->info_2->data;
 
-	num_keys = get_printer_subkeys( data, key, &keynames );
-
-	if ( num_keys == -1 ) {
-		status = WERR_BADFILE;
+	num_keys = get_printer_subkeys(data, r->in.key_name, &keynames);
+	if (num_keys == -1) {
+		result = WERR_BADFILE;
 		goto done;
 	}
 
-	printerkey_len = init_unistr_array( &enumkeys,  keynames, NULL );
+	*r->out.needed = 4;
 
-	r_u->needed = printerkey_len*2;
-
-	if ( q_u->size < r_u->needed ) {
-		status = WERR_MORE_DATA;
+	array = talloc_zero_array(r->out.key_buffer, const char *, num_keys + 1);
+	if (!array) {
+		result = WERR_NOMEM;
 		goto done;
 	}
 
-	if (!make_spoolss_buffer5(p->mem_ctx, &r_u->keys, printerkey_len, enumkeys)) {
-		status = WERR_NOMEM;
+	for (i=0; i < num_keys; i++) {
+		array[i] = talloc_strdup(array, keynames[i]);
+		if (!array[i]) {
+			result = WERR_NOMEM;
+			goto done;
+		}
+
+		*r->out.needed += strlen_m_term(keynames[i]) * 2;
+	}
+
+	if (r->in.offered < *r->out.needed) {
+		result = WERR_MORE_DATA;
 		goto done;
 	}
 
-	status = WERR_OK;
+	result = WERR_OK;
 
-	if ( q_u->size < r_u->needed )
-		status = WERR_MORE_DATA;
+	*r->out.key_buffer = array;
 
-done:
-	free_a_printer( &printer, 2 );
-	SAFE_FREE( keynames );
+ done:
+	if (!W_ERROR_IS_OK(result)) {
+		TALLOC_FREE(array);
+		ZERO_STRUCTP(r->out.key_buffer);
+	}
 
-        return status;
+	free_a_printer(&printer, 2);
+	SAFE_FREE(keynames);
+
+	return result;
 }
 
 /****************************************************************
@@ -10264,17 +10276,6 @@ WERROR _spoolss_4c(pipes_struct *p,
 
 WERROR _spoolss_EnumPrinterDataEx(pipes_struct *p,
 				  struct spoolss_EnumPrinterDataEx *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_EnumPrinterKey
-****************************************************************/
-
-WERROR _spoolss_EnumPrinterKey(pipes_struct *p,
-			       struct spoolss_EnumPrinterKey *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
