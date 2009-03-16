@@ -1302,20 +1302,12 @@ import "misc.idl", "security.idl", "winreg.idl";
 		uint32 unknown3;/* hmm? w2k3: 131346(0x20112) winxp sp1: 503382272 0x1E010100 */
 	} spoolss_OSVersionEx;
 
-	typedef [v1_enum] enum {
-		SPOOLSS_PRINTER_DATA_TYPE_NULL = 0,
-		SPOOLSS_PRINTER_DATA_TYPE_STRING = 1,
-		SPOOLSS_PRINTER_DATA_TYPE_BINARY = 3,
-		SPOOLSS_PRINTER_DATA_TYPE_UINT32 = 4,
-		SPOOLSS_PRINTER_DATA_TYPE_STRING_ARRAY = 7
-	} spoolss_PrinterDataType;
-
 	typedef [nodiscriminant,public,gensize] union {
-		[case(SPOOLSS_PRINTER_DATA_TYPE_NULL)];
-		[case(SPOOLSS_PRINTER_DATA_TYPE_STRING)] nstring string;
-		[case(SPOOLSS_PRINTER_DATA_TYPE_BINARY),flag(NDR_REMAINING)] DATA_BLOB binary;
-		[case(SPOOLSS_PRINTER_DATA_TYPE_UINT32)] uint32 value;
-		[case(SPOOLSS_PRINTER_DATA_TYPE_STRING_ARRAY)] nstring_array string_array;
+		[case(REG_NONE)];
+		[case(REG_SZ)] nstring string;
+		[case(REG_BINARY),flag(NDR_REMAINING)] DATA_BLOB binary;
+		[case(REG_DWORD)] uint32 value;
+		[case(REG_MULTI_SZ)] nstring_array string_array;
 		[default,flag(NDR_REMAINING)] DATA_BLOB data;
 	} spoolss_PrinterData;
 
@@ -1323,19 +1315,19 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in,ref] policy_handle *handle,
 		[in] 	 [string,charset(UTF16)] uint16 value_name[],
 		[in] 	 uint32 offered,
-		[out,ref] spoolss_PrinterDataType *type,
+		[out,ref] winreg_Type *type,
 		[out,ref] DATA_BLOB *data,
 		[out,ref] uint32 *needed
 	);
 	[noopnum,noprint,public] void __spoolss_GetPrinterData(
-		[in] spoolss_PrinterDataType type,
+		[in] winreg_Type type,
 		[out,ref,switch_is(type)] spoolss_PrinterData *data
 	);
 	[nopull,nopush,public] WERROR spoolss_GetPrinterData(
 		[in,ref] policy_handle *handle,
 		[in] 	 [string,charset(UTF16)] uint16 value_name[],
 		[in] 	 uint32 offered,
-		[out,ref] spoolss_PrinterDataType *type,
+		[out,ref] winreg_Type *type,
 		[out,ref,subcontext(4),subcontext_size(offered),switch_is(*type)] spoolss_PrinterData *data,
 		[out,ref] uint32 *needed
 	);
@@ -1345,18 +1337,18 @@ import "misc.idl", "security.idl", "winreg.idl";
 	[noopnum,nopull,noprint,public] WERROR _spoolss_SetPrinterData(
 		[in,ref] policy_handle *handle,
 		[in] [string,charset(UTF16)] uint16 value_name[],
-		[in] spoolss_PrinterDataType type,
+		[in] winreg_Type type,
 		[in] DATA_BLOB data,
 		[in] uint32 _offered
 	);
 	[noopnum,nopull,noprint,public] void __spoolss_SetPrinterData(
-		[in] spoolss_PrinterDataType type,
+		[in] winreg_Type type,
 		[out,ref,switch_is(type)] spoolss_PrinterData *data
 	);
 	[nopush] WERROR spoolss_SetPrinterData(
 		[in,ref] policy_handle *handle,
 		[in] [string,charset(UTF16)] uint16 value_name[],
-		[in] spoolss_PrinterDataType type,
+		[in] winreg_Type type,
 		[in,subcontext(4),switch_is(type)] spoolss_PrinterData data,
 		[in,value(ndr_size_spoolss_PrinterData(&data,type,ndr->iconv_convenience,flags))] uint32 _offered
 	);
@@ -2163,7 +2155,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[out,size_is(value_offered/2),charset(UTF16)] uint16 value_name[],
 		[in]     uint32 value_offered,
 		[out,ref] uint32 *value_needed,
-		[out,ref] uint32 *printerdata_type,
+		[out,ref] winreg_Type *type,
 		[out,ref,size_is(data_offered),flag(LIBNDR_PRINT_ARRAY_HEX)] uint8 *data,
 		[in]	 uint32 data_offered,
 		[out,ref] uint32 *data_needed
@@ -2197,7 +2189,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in,ref] policy_handle *handle,
 		[in] 	 [string,charset(UTF16)] uint16 key_name[],
 		[in] 	 [string,charset(UTF16)] uint16 value_name[],
-		[in] 	 uint32 type,
+		[in] 	 winreg_Type type,
 		[in,ref] [size_is(offered)] uint8 *buffer,
 		[in] 	 uint32 offered
 	);
@@ -2208,7 +2200,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in,ref] policy_handle *handle,
 		[in] 	 [string,charset(UTF16)] uint16 key_name[],
 		[in] 	 [string,charset(UTF16)] uint16 value_name[],
-		[out,ref] uint32 *type,
+		[out,ref] winreg_Type *type,
 		[out,ref] [size_is(offered)] uint8 *buffer,
 		[in] 	 uint32 offered,
 		[out,ref] uint32 *needed
