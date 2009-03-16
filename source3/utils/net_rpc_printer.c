@@ -885,7 +885,7 @@ static bool net_spoolss_enumprinterdataex(struct rpc_pipe_client *pipe_hnd,
 static bool net_spoolss_setprinterdataex(struct rpc_pipe_client *pipe_hnd,
 					TALLOC_CTX *mem_ctx,
 					POLICY_HND *hnd,
-					char *keyname,
+					const char *keyname,
 					REGISTRY_VALUE *value)
 {
 	WERROR result;
