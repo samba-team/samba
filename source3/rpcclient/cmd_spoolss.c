@@ -816,7 +816,7 @@ static WERROR cmd_spoolss_getprinterdataex(struct rpc_pipe_client *cli,
 	const char *valuename, *keyname;
 	REGISTRY_VALUE value;
 
-	uint32_t type;
+	enum winreg_Type type;
 	uint8_t *buffer = NULL;
 	uint32_t offered = 0;
 	uint32_t needed;
