@@ -753,55 +753,6 @@ WERROR rpccli_spoolss_getprinterdata(struct rpc_pipe_client *cli,
 /**********************************************************************
 **********************************************************************/
 
-WERROR rpccli_spoolss_enumprinterdata(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				   POLICY_HND *hnd, uint32 ndx,
-				   uint32 value_offered, uint32 data_offered,
-				   uint32 *value_needed, uint32 *data_needed,
-				   REGISTRY_VALUE *value)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_ENUMPRINTERDATA in;
-	SPOOL_R_ENUMPRINTERDATA out;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-        make_spoolss_q_enumprinterdata( &in, hnd, ndx, value_offered, data_offered );
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_ENUMPRINTERDATA,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_enumprinterdata,
-	            spoolss_io_r_enumprinterdata, 
-	            WERR_GENERAL_FAILURE );
-
-	if ( value_needed )
-		*value_needed = out.realvaluesize;
-	if ( data_needed )
-		*data_needed = out.realdatasize;
-		
-	if (!W_ERROR_IS_OK(out.status))
-		return out.status;
-
-	if (value) {
-		rpcstr_pull(value->valuename, out.value, sizeof(value->valuename), -1,
-			    STR_TERMINATE);
-		if (out.realdatasize) {
-			value->data_p = (uint8 *)TALLOC_MEMDUP(mem_ctx, out.data,
-						       out.realdatasize);
-		} else {
-			value->data_p = NULL;
-		}
-		value->type = out.type;
-		value->size = out.realdatasize;
-	}
-	
-	return out.status;
-}
-
-/**********************************************************************
-**********************************************************************/
-
 WERROR rpccli_spoolss_enumprinterdataex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				     POLICY_HND *hnd, const char *keyname, 
 				     REGVAL_CTR *ctr)

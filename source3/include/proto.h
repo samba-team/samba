@@ -5540,11 +5540,6 @@ WERROR rpccli_spoolss_getprinterdata(struct rpc_pipe_client *cli,
 				     uint32_t offered,
 				     enum winreg_Type *type,
 				     union spoolss_PrinterData *data);
-WERROR rpccli_spoolss_enumprinterdata(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				   POLICY_HND *hnd, uint32 ndx,
-				   uint32 value_offered, uint32 data_offered,
-				   uint32 *value_needed, uint32 *data_needed,
-				   REGISTRY_VALUE *value);
 WERROR rpccli_spoolss_enumprinterdataex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				     POLICY_HND *hnd, const char *keyname, 
 				     REGVAL_CTR *ctr);
@@ -5848,9 +5843,6 @@ uint32 spoolss_size_printer_enum_values(PRINTER_ENUM_VALUES *p);
 bool make_spoolss_buffer5(TALLOC_CTX *mem_ctx, BUFFER5 *buf5, uint32 len, uint16 *src);
 bool spoolss_io_r_enumprinterdata(const char *desc, SPOOL_R_ENUMPRINTERDATA *r_u, prs_struct *ps, int depth);
 bool spoolss_io_q_enumprinterdata(const char *desc, SPOOL_Q_ENUMPRINTERDATA *q_u, prs_struct *ps, int depth);
-bool make_spoolss_q_enumprinterdata(SPOOL_Q_ENUMPRINTERDATA *q_u,
-		const POLICY_HND *hnd,
-		uint32 idx, uint32 valuelen, uint32 datalen);
 bool make_spoolss_q_enumprinterdataex(SPOOL_Q_ENUMPRINTERDATAEX *q_u,
 				      const POLICY_HND *hnd, const char *key,
 				      uint32 size);
