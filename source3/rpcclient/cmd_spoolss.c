@@ -2592,25 +2592,27 @@ done:
 /****************************************************************************
 ****************************************************************************/
 
-static WERROR cmd_spoolss_enum_printerkey( struct rpc_pipe_client *cli,
-					     TALLOC_CTX *mem_ctx, int argc,
-					     const char **argv)
+static WERROR cmd_spoolss_enum_printerkey(struct rpc_pipe_client *cli,
+					  TALLOC_CTX *mem_ctx, int argc,
+					  const char **argv)
 {
 	WERROR result;
 	const char *printername;
 	const char *keyname = NULL;
 	POLICY_HND hnd;
-	uint16 *keylist = NULL, *curkey;
+	const char **key_buffer = NULL;
+	int i;
 
 	if (argc < 2 || argc > 3) {
 		printf("Usage: %s printername [keyname]\n", argv[0]);
 		return WERR_OK;
 	}
 
-	if (argc == 3)
+	if (argc == 3) {
 		keyname = argv[2];
-	else
+	} else {
 		keyname = "";
+	}
 
 	/* Open printer handle */
 
@@ -2620,34 +2622,31 @@ static WERROR cmd_spoolss_enum_printerkey( struct rpc_pipe_client *cli,
 					       printername,
 					       SEC_FLAG_MAXIMUM_ALLOWED,
 					       &hnd);
-	if (!W_ERROR_IS_OK(result))
+	if (!W_ERROR_IS_OK(result)) {
 		goto done;
+	}
 
 	/* Enumerate subkeys */
 
-	result = rpccli_spoolss_enumprinterkey(cli, mem_ctx, &hnd, keyname, &keylist, NULL);
+	result = rpccli_spoolss_enumprinterkey(cli, mem_ctx,
+					       &hnd,
+					       keyname,
+					       &key_buffer,
+					       0);
 
-	if (!W_ERROR_IS_OK(result))
+	if (!W_ERROR_IS_OK(result)) {
 		goto done;
-
-	curkey = keylist;
-	while (*curkey != 0) {
-		char *subkey = NULL;
-		rpcstr_pull_talloc(mem_ctx, &subkey, curkey, -1,
-			    STR_TERMINATE);
-		if (!subkey) {
-			break;
-		}
-		printf("%s\n", subkey);
-		curkey += strlen(subkey) + 1;
 	}
 
-done:
+	for (i=0; key_buffer && key_buffer[i]; i++) {
+		printf("%s\n", key_buffer[i]);
+	}
 
-	SAFE_FREE(keylist);
+ done:
 
-	if (is_valid_policy_hnd(&hnd))
+	if (is_valid_policy_hnd(&hnd)) {
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &hnd, NULL);
+	}
 
 	return result;
 }
