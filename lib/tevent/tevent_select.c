@@ -210,6 +210,11 @@ static int select_event_loop_once(struct tevent_context *ev, const char *locatio
 		 					   struct select_event_context);
 	struct timeval tval;
 
+	if (select_ev->ev->signal_events &&
+	    tevent_common_check_signal(select_ev->ev)) {
+		return 0;
+	}
+
 	tval = tevent_common_loop_timer_delay(ev);
 	if (tevent_timeval_is_zero(&tval)) {
 		return 0;
