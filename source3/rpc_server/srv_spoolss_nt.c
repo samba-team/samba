@@ -2395,52 +2395,6 @@ done:
 
 
 /****************************************************************************
- Internal routine for retreiving printerdata
- ***************************************************************************/
-
-static WERROR get_printer_dataex( TALLOC_CTX *ctx, NT_PRINTER_INFO_LEVEL *printer,
-                                  const char *key, const char *value, uint32 *type, uint8 **data,
-				  uint32 *needed, uint32 in_size  )
-{
-	REGISTRY_VALUE 		*val;
-	uint32			size;
-	int			data_len;
-
-	if ( !(val = get_printer_data( printer->info_2, key, value)) )
-		return WERR_BADFILE;
-
-	*type = regval_type( val );
-
-	DEBUG(5,("get_printer_dataex: allocating %d\n", in_size));
-
-	size = regval_size( val );
-
-	/* copy the min(in_size, len) */
-
-	if ( in_size ) {
-		data_len = (size > in_size) ? in_size : size*sizeof(uint8);
-
-		/* special case for 0 length values */
-		if ( data_len ) {
-			if ( (*data  = (uint8 *)TALLOC_MEMDUP(ctx, regval_data_p(val), data_len)) == NULL )
-				return WERR_NOMEM;
-		}
-		else {
-			if ( (*data  = (uint8 *)TALLOC_ZERO(ctx, in_size)) == NULL )
-				return WERR_NOMEM;
-		}
-	}
-	else
-		*data = NULL;
-
-	*needed = size;
-
-	DEBUG(5,("get_printer_dataex: copy done\n"));
-
-	return WERR_OK;
-}
-
-/****************************************************************************
  Internal routine for removing printerdata
  ***************************************************************************/
 
