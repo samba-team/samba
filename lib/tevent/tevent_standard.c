@@ -524,6 +524,11 @@ static int std_event_loop_once(struct tevent_context *ev, const char *location)
 		 					   struct std_event_context);
 	struct timeval tval;
 
+	if (std_ev->ev->signal_events &&
+	    tevent_common_check_signal(std_ev->ev)) {
+		return 0;
+	}
+
 	tval = tevent_common_loop_timer_delay(ev);
 	if (tevent_timeval_is_zero(&tval)) {
 		return 0;
