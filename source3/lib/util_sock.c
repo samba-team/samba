@@ -1152,7 +1152,7 @@ struct open_socket_out_defer_state {
 	int fd;
 };
 
-static void open_socket_out_defer_waited(struct async_req *subreq);
+static void open_socket_out_defer_waited(struct tevent_req *subreq);
 static void open_socket_out_defer_connected(struct tevent_req *subreq);
 
 struct async_req *open_socket_out_defer_send(TALLOC_CTX *mem_ctx,
@@ -1162,9 +1162,9 @@ struct async_req *open_socket_out_defer_send(TALLOC_CTX *mem_ctx,
 					     uint16_t port,
 					     int timeout)
 {
-	struct async_req *result, *subreq;
+	struct async_req *result;
+	struct tevent_req *subreq;
 	struct open_socket_out_defer_state *state;
-	NTSTATUS status;
 
 	if (!async_req_setup(mem_ctx, &result, &state,
 			     struct open_socket_out_defer_state)) {
@@ -1175,47 +1175,40 @@ struct async_req *open_socket_out_defer_send(TALLOC_CTX *mem_ctx,
 	state->port = port;
 	state->timeout = timeout;
 
-	subreq = async_wait_send(state, ev, wait_time);
+	subreq = tevent_wakeup_send(
+		state, ev,
+		timeval_current_ofs(wait_time.tv_sec, wait_time.tv_usec));
 	if (subreq == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto post_status;
-	}
-	subreq->async.fn = open_socket_out_defer_waited;
-	subreq->async.priv = result;
-	return result;
-
- post_status:
-	if (!async_post_ntstatus(result, ev, status)) {
 		goto fail;
 	}
+	tevent_req_set_callback(subreq, open_socket_out_defer_waited, result);
 	return result;
  fail:
 	TALLOC_FREE(result);
 	return NULL;
 }
 
-static void open_socket_out_defer_waited(struct async_req *subreq)
+static void open_socket_out_defer_waited(struct tevent_req *subreq)
 {
-	struct async_req *req = talloc_get_type_abort(
-		subreq->async.priv, struct async_req);
+	struct async_req *req = tevent_req_callback_data(
+		subreq, struct async_req);
 	struct open_socket_out_defer_state *state = talloc_get_type_abort(
 		req->private_data, struct open_socket_out_defer_state);
-	struct tevent_req *subreq2;
 	bool ret;
 
-	ret = async_wait_recv(subreq);
+	ret = tevent_wakeup_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!ret) {
 		async_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 		return;
 	}
 
-	subreq2 = open_socket_out_send(state, state->ev, &state->ss,
-				       state->port, state->timeout);
-	if (async_req_nomem(subreq2, req)) {
+	subreq = open_socket_out_send(state, state->ev, &state->ss,
+				      state->port, state->timeout);
+	if (async_req_nomem(subreq, req)) {
 		return;
 	}
-	tevent_req_set_callback(subreq2, open_socket_out_defer_connected, req);
+	tevent_req_set_callback(subreq, open_socket_out_defer_connected, req);
 }
 
 static void open_socket_out_defer_connected(struct tevent_req *subreq)
