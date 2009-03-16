@@ -678,7 +678,6 @@ static void wb_trans_connect_done(struct tevent_req *subreq)
 		subreq, struct async_req);
 	struct wb_trans_state *state = talloc_get_type_abort(
 		req->private_data, struct wb_trans_state);
-	struct tevent_req *subreq2;
 	wbcErr wbc_err;
 
 	wbc_err = wb_open_pipe_recv(subreq);
@@ -688,12 +687,12 @@ static void wb_trans_connect_done(struct tevent_req *subreq)
 		return;
 	}
 
-	subreq2 = wb_int_trans_send(state, state->ev, NULL, state->wb_ctx->fd,
-				    state->wb_req);
-	if (async_req_nomem(subreq2, req)) {
+	subreq = wb_int_trans_send(state, state->ev, NULL, state->wb_ctx->fd,
+				   state->wb_req);
+	if (async_req_nomem(subreq, req)) {
 		return;
 	}
-	tevent_req_set_callback(subreq2, wb_trans_done, req);
+	tevent_req_set_callback(subreq, wb_trans_done, req);
 }
 
 static void wb_trans_done(struct tevent_req *subreq)
