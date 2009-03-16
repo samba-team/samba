@@ -2218,6 +2218,15 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x4f */
+
+	typedef [relative_base,public,gensize] struct {
+		[relative] nstring *value_name;
+		[value(2*strlen_m_term(value_name))] uint32 value_name_len;
+		winreg_Type type;
+		[relative,switch_is(type),subcontext(0),subcontext_size(data_length)] spoolss_PrinterData *data;
+		[value(ndr_size_spoolss_PrinterData(data, type, ndr->iconv_convenience, ndr->flags))] uint32 data_length;
+	} spoolss_PrinterEnumValues;
+
 	[public] WERROR spoolss_EnumPrinterDataEx(
 		[in,ref] policy_handle *handle,
 		[in] 	 [string,charset(UTF16)] uint16 key_name[],
