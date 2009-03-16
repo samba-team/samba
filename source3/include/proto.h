@@ -5554,6 +5554,10 @@ WERROR rpccli_spoolss_enumprinterkey(struct rpc_pipe_client *cli, TALLOC_CTX *me
 
 bool init_systemtime(struct spoolss_Time *r,
 		     struct tm *unixtime);
+WERROR pull_spoolss_PrinterData(TALLOC_CTX *mem_ctx,
+				const DATA_BLOB *blob,
+				union spoolss_PrinterData *data,
+				enum winreg_Type type);
 
 /* The following definitions come from rpc_client/init_lsa.c  */
 
