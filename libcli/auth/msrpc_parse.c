@@ -209,7 +209,7 @@ bool msrpc_parse(TALLOC_CTX *mem_ctx,
 {
 	int i;
 	va_list ap;
-	const char **ps, *s;
+	char **ps, *s;
 	DATA_BLOB *b;
 	size_t head_ofs = 0;
 	uint16_t len1, len2;
@@ -228,9 +228,9 @@ bool msrpc_parse(TALLOC_CTX *mem_ctx,
 			len2 = SVAL(blob->data, head_ofs); head_ofs += 2;
 			ptr =  IVAL(blob->data, head_ofs); head_ofs += 4;
 
-			ps = (const char **)va_arg(ap, char **);
+			ps = va_arg(ap, char **);
 			if (len1 == 0 && len2 == 0) {
-				*ps = "";
+				*ps = discard_const("");
 			} else {
 				/* make sure its in the right format - be strict */
 				if ((len1 != len2) || (ptr + len1 < ptr) || (ptr + len1 < len1) || (ptr + len1 > blob->length)) {
@@ -249,15 +249,15 @@ bool msrpc_parse(TALLOC_CTX *mem_ctx,
 				}
 
 				if (0 < len1) {
-					pull_string(p, blob->data + ptr, p_len, 
-						    len1, STR_UNICODE|STR_NOALIGN);
-					(*ps) = talloc_strdup(mem_ctx, p);
-					if (!(*ps)) {
+					size_t pull_len;
+					if (!convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, 
+								   blob->data + ptr, len1, 
+								   ps, &pull_len, false)) {
 						ret = false;
 						goto cleanup;
 					}
 				} else {
-					(*ps) = "";
+					(*ps) = discard_const("");
 				}
 			}
 			break;
@@ -267,10 +267,10 @@ bool msrpc_parse(TALLOC_CTX *mem_ctx,
 			len2 = SVAL(blob->data, head_ofs); head_ofs += 2;
 			ptr =  IVAL(blob->data, head_ofs); head_ofs += 4;
 
-			ps = (const char **)va_arg(ap, char **);
+			ps = (char **)va_arg(ap, char **);
 			/* make sure its in the right format - be strict */
 			if (len1 == 0 && len2 == 0) {
-				*ps = "";
+				*ps = discard_const("");
 			} else {
 				if ((len1 != len2) || (ptr + len1 < ptr) || (ptr + len1 < len1) || (ptr + len1 > blob->length)) {
 					ret = false;
@@ -284,15 +284,16 @@ bool msrpc_parse(TALLOC_CTX *mem_ctx,
 				}
 
 				if (0 < len1) {
-					pull_string(p, blob->data + ptr, p_len, 
-						    len1, STR_ASCII|STR_NOALIGN);
-					(*ps) = talloc_strdup(mem_ctx, p);
-					if (!(*ps)) {
+					size_t pull_len;
+
+					if (!convert_string_talloc(mem_ctx, CH_DOS, CH_UNIX, 
+								   blob->data + ptr, len1, 
+								   ps, &pull_len, false)) {
 						ret = false;
 						goto cleanup;
 					}
 				} else {
-					(*ps) = "";
+					(*ps) = discard_const("");
 				}
 			}
 			break;
@@ -344,19 +345,18 @@ bool msrpc_parse(TALLOC_CTX *mem_ctx,
 			s = va_arg(ap, char *);
 
 			if (blob->data + head_ofs < (uint8_t *)head_ofs ||
-					blob->data + head_ofs < blob->data) {
+					blob->data + head_ofs < blob->data ||
+			    (head_ofs + (strlen(s) + 1)) > blob->length) {
 				ret = false;
 				goto cleanup;
 			}
 
-			head_ofs += pull_string(p,
-					blob->data+head_ofs, p_len,
-					blob->length - head_ofs,
-					STR_ASCII|STR_TERMINATE);
-			if (strcmp(s, p) != 0) {
+			if (memcmp(blob->data + head_ofs, s, strlen(s)+1) != 0) {
 				ret = false;
 				goto cleanup;
 			}
+			head_ofs += (strlen(s) + 1);
+
 			break;
 		}
 	}
