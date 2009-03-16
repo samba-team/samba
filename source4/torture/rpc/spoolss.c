@@ -1337,7 +1337,7 @@ static bool test_GetPrinterData(struct torture_context *tctx,
 	NTSTATUS status;
 	struct spoolss_GetPrinterData r;
 	uint32_t needed;
-	enum spoolss_PrinterDataType type;
+	enum winreg_Type type;
 	union spoolss_PrinterData data;
 
 	r.in.handle = handle;
@@ -1372,7 +1372,7 @@ static bool test_GetPrinterDataEx(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct spoolss_GetPrinterDataEx r;
-	uint32_t type;
+	enum winreg_Type type;
 	uint32_t needed;
 
 	r.in.handle = handle;
@@ -1419,16 +1419,15 @@ static bool test_EnumPrinterData(struct torture_context *tctx, struct dcerpc_pip
 	do {
 		uint32_t value_size = 0;
 		uint32_t data_size = 0;
-		uint32_t printerdata_type = 0;
-		DATA_BLOB data = data_blob(NULL,0);
+		enum winreg_Type type = 0;
 
 		r.in.value_offered = value_size;
 		r.out.value_needed = &value_size;
 		r.in.data_offered = data_size;
 		r.out.data_needed = &data_size;
 
-		r.out.printerdata_type = &printerdata_type;
-		r.out.buffer = &data;
+		r.out.type = &type;
+		r.out.data = talloc_zero_array(tctx, uint8_t, 0);
 
 		torture_comment(tctx, "Testing EnumPrinterData\n");
 
@@ -1437,7 +1436,9 @@ static bool test_EnumPrinterData(struct torture_context *tctx, struct dcerpc_pip
 		torture_assert_ntstatus_ok(tctx, status, "EnumPrinterData failed");
 
 		r.in.value_offered = value_size;
+		r.out.value_name = talloc_zero_array(tctx, const char, value_size);
 		r.in.data_offered = data_size;
+		r.out.data = talloc_zero_array(tctx, uint8_t, data_size);
 
 		status = dcerpc_spoolss_EnumPrinterData(p, tctx, &r);
 
@@ -1517,7 +1518,7 @@ static bool test_SetPrinterData(struct torture_context *tctx,
 	
 	r.in.handle = handle;
 	r.in.value_name = value_name;
-	r.in.type = SPOOLSS_PRINTER_DATA_TYPE_STRING;
+	r.in.type = REG_SZ;
 	r.in.data.string = "dog";
 
 	torture_comment(tctx, "Testing SetPrinterData\n");
