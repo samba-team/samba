@@ -1,3 +1,9 @@
+[SUBSYSTEM::MSRPC_PARSE]
+
+MSRPC_PARSE_OBJ_FILES = $(addprefix $(libclicommonsrcdir)/auth/, msrpc_parse.o)
+
+$(eval $(call proto_header_template,$(libclicommonsrcdir)/auth/msrpc_parse.h,$(MSRPC_PARSE_OBJ_FILES:.o=.c)))
+
 [SUBSYSTEM::LIBCLI_AUTH]
 PUBLIC_DEPENDENCIES = \
 		MSRPC_PARSE \
