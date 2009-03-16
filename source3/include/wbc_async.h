@@ -22,11 +22,7 @@
 
 #include "nsswitch/libwbclient/wbclient.h"
 
-struct wb_context {
-	struct async_req_queue *queue;
-	int fd;
-	bool is_priv;
-};
+struct wb_context;
 
 struct async_req *wb_trans_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 				struct wb_context *wb_ctx, bool need_priv,

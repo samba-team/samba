@@ -20,6 +20,12 @@
 #include "includes.h"
 #include "wbc_async.h"
 
+struct wb_context {
+	struct async_req_queue *queue;
+	int fd;
+	bool is_priv;
+};
+
 static int make_nonstd_fd(int fd)
 {
 	int i;
