@@ -1387,6 +1387,18 @@ static void print_queue_receive(struct messaging_context *msg,
 	return;
 }
 
+static void printing_pause_fd_handler(struct tevent_context *ev,
+				      struct tevent_fd *fde,
+				      uint16_t flags,
+				      void *private_data)
+{
+	/*
+	 * If pause_pipe[1] is closed it means the parent smbd
+	 * and children exited or aborted.
+	 */
+	exit_server_cleanly(NULL);
+}
+
 static pid_t background_lpq_updater_pid = -1;
 
 /****************************************************************************
@@ -1415,6 +1427,8 @@ void start_background_queue(void)
 	}
 
 	if(background_lpq_updater_pid == 0) {
+		struct tevent_fd *fde;
+
 		/* Child. */
 		DEBUG(5,("start_background_queue: background LPQ thread started\n"));
 
@@ -1439,6 +1453,15 @@ void start_background_queue(void)
 
 		messaging_register(smbd_messaging_context(), NULL,
 				   MSG_PRINTER_UPDATE, print_queue_receive);
+
+		fde = tevent_add_fd(smbd_event_context(), smbd_event_context(),
+				    pause_pipe[1], TEVENT_FD_READ,
+				    printing_pause_fd_handler,
+				    NULL);
+		if (!fde) {
+			DEBUG(0,("tevent_add_fd() failed for pause_pipe\n"));
+			smb_panic("tevent_add_fd() failed for pause_pipe");
+		}
 
 		DEBUG(5,("start_background_queue: background LPQ thread waiting for messages\n"));
 		while (1) {
@@ -1474,9 +1497,6 @@ void start_background_queue(void)
 				event_add_to_select_args(smbd_event_context(), &now,
 							 &r_fds, &w_fds, &to, &maxfd);
 			}
-
-			FD_SET(pause_pipe[1], &r_fds);
-			maxfd = MAX(pause_pipe[1], maxfd);
 
 			ret = sys_select(maxfd, &r_fds, &w_fds, NULL, &to);
 
