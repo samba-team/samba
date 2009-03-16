@@ -327,22 +327,6 @@ bool make_spoolss_q_enumprinterdataex(SPOOL_Q_ENUMPRINTERDATAEX *q_u,
 /*******************************************************************
  * read a structure.
  ********************************************************************/  
-bool make_spoolss_q_enumprinterkey(SPOOL_Q_ENUMPRINTERKEY *q_u, 
-				   POLICY_HND *hnd, const char *key, 
-				   uint32 size)
-{
-	DEBUG(5,("make_spoolss_q_enumprinterkey\n"));
-
-	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
-	init_unistr2(&q_u->key, key, UNI_STR_TERMINATE);
-	q_u->size = size;
-
-	return True;
-}
-
-/*******************************************************************
- * read a structure.
- ********************************************************************/  
 
 bool spoolss_io_q_enumprinterkey(const char *desc, SPOOL_Q_ENUMPRINTERKEY *q_u, prs_struct *ps, int depth)
 {
