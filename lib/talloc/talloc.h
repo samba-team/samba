@@ -115,6 +115,8 @@ typedef void TALLOC_CTX;
 #define talloc_append_string(c, s, a) (s?talloc_strdup_append(s,a):talloc_strdup(c, a))
 #endif
 
+#define TALLOC_FREE(ctx) do { talloc_free(ctx); ctx=NULL; } while(0)
+
 /* The following definitions come from talloc.c  */
 void *_talloc(const void *context, size_t size);
 void *talloc_pool(const void *context, size_t size);
