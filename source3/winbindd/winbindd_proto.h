@@ -549,7 +549,6 @@ const char *get_winbind_pipe_dir(void) ;
 char *get_winbind_priv_pipe_dir(void) ;
 int open_winbindd_socket(void);
 int open_winbindd_priv_socket(void);
-void close_winbindd_socket(void);
 struct winbindd_cli_state *winbindd_client_list(void);
 void winbindd_add_client(struct winbindd_cli_state *cli);
 void winbindd_remove_client(struct winbindd_cli_state *cli);
