@@ -94,6 +94,7 @@ typedef void TALLOC_CTX;
 #define talloc_array(ctx, type, count) (type *)_talloc_array(ctx, sizeof(type), count, #type)
 #define talloc_array_size(ctx, size, count) _talloc_array(ctx, size, count, __location__)
 #define talloc_array_ptrtype(ctx, ptr, count) (_TALLOC_TYPEOF(ptr))talloc_array_size(ctx, sizeof(*(ptr)), count)
+#define talloc_array_length(ctx) ((ctx) ? talloc_get_size(ctx)/sizeof(*ctx) : 0)
 
 #define talloc_realloc(ctx, p, type, count) (type *)_talloc_realloc_array(ctx, p, sizeof(type), count, #type)
 #define talloc_realloc_size(ctx, ptr, size) _talloc_realloc(ctx, ptr, size, __location__)
