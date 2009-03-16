@@ -35,14 +35,6 @@ struct epoll_event_context {
 	/* a pointer back to the generic event_context */
 	struct tevent_context *ev;
 
-	/* this is changed by the destructors for the fd event
-	   type. It is used to detect event destruction by event
-	   handlers, which means the code that is calling the event
-	   handler needs to assume that the linked list is no longer
-	   valid
-	*/
-	uint32_t destruction_count;
-
 	/* when using epoll this is the handle from epoll_create */
 	int epoll_fd;
 
@@ -242,9 +234,8 @@ static void epoll_change_event(struct epoll_event_context *epoll_ev, struct teve
 static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval *tvalp)
 {
 	int ret, i;
-#define MAXEVENTS 32
+#define MAXEVENTS 1
 	struct epoll_event events[MAXEVENTS];
-	uint32_t destruction_count = ++epoll_ev->destruction_count;
 	int timeout = -1;
 
 	if (epoll_ev->epoll_fd == -1) return -1;
@@ -305,9 +296,7 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 		if (events[i].events & EPOLLOUT) flags |= TEVENT_FD_WRITE;
 		if (flags) {
 			fde->handler(epoll_ev->ev, fde, flags, fde->private_data);
-			if (destruction_count != epoll_ev->destruction_count) {
-				break;
-			}
+			break;
 		}
 	}
 
@@ -350,8 +339,6 @@ static int epoll_event_fd_destructor(struct tevent_fd *fde)
 					   struct epoll_event_context);
 
 		epoll_check_reopen(epoll_ev);
-
-		epoll_ev->destruction_count++;
 
 		epoll_del_event(epoll_ev, fde);
 	}
