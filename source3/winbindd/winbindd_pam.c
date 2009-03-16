@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "winbindd.h"
+#include "../libcli/auth/libcli_auth.h"
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
@@ -1238,13 +1239,13 @@ NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 		   the server's domain at this point.  The 'server name' is also
 		   dodgy...
 		*/
-		names_blob = NTLMv2_generate_names_blob(global_myname(), lp_workgroup());
+		names_blob = NTLMv2_generate_names_blob(state->mem_ctx, global_myname(), lp_workgroup());
 
-		if (!SMBNTLMv2encrypt(name_user, name_domain,
+		if (!SMBNTLMv2encrypt(NULL, name_user, name_domain,
 				      state->request.data.auth.pass,
 				      &server_chal,
 				      &names_blob,
-				      &lm_response, &nt_response, NULL)) {
+				      &lm_response, &nt_response, NULL, NULL)) {
 			data_blob_free(&names_blob);
 			data_blob_free(&server_chal);
 			DEBUG(0, ("winbindd_pam_auth: SMBNTLMv2encrypt() failed!\n"));

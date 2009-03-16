@@ -18,6 +18,7 @@
  */
 
 #include "includes.h"
+#include "../libcli/auth/libcli_auth.h"
 
 /*******************************************************************
  inits a structure.
@@ -259,7 +260,7 @@ NTSTATUS serverinfo_to_SamInfo3(struct auth_serversupplied_info *server_info,
 		       MIN(sizeof(user_session_key.key),
 			   server_info->user_session_key.length));
 		if (pipe_session_key) {
-			SamOEMhash(user_session_key.key, pipe_session_key, 16);
+			arcfour_crypt(user_session_key.key, pipe_session_key, 16);
 		}
 	}
 	if (server_info->lm_session_key.length) {
@@ -268,7 +269,7 @@ NTSTATUS serverinfo_to_SamInfo3(struct auth_serversupplied_info *server_info,
 		       MIN(sizeof(lm_session_key.key),
 			   server_info->lm_session_key.length));
 		if (pipe_session_key) {
-			SamOEMhash(lm_session_key.key, pipe_session_key, 8);
+			arcfour_crypt(lm_session_key.key, pipe_session_key, 8);
 		}
 	}
 
@@ -418,7 +419,7 @@ void init_netr_CryptPassword(const char *pwd,
 
 	encode_pw_buffer(password_buf.data, pwd, STR_UNICODE);
 
-	SamOEMhash(password_buf.data, session_key, 516);
+	arcfour_crypt(password_buf.data, session_key, 516);
 	memcpy(pwd_buf->data, password_buf.data, 512);
 	pwd_buf->length = IVAL(password_buf.data, 512);
 }

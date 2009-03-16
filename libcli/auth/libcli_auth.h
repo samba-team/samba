@@ -18,7 +18,10 @@
 #define __LIBCLI_AUTH_H__
 
 #include "librpc/gen_ndr/netlogon.h"
+#include "librpc/gen_ndr/wkssvc.h"
 #include "libcli/auth/credentials.h"
+#include "libcli/auth/ntlm_check.h"
 #include "libcli/auth/proto.h"
+#include "libcli/auth/msrpc_parse.h"
 
 #endif /* __LIBCLI_AUTH_H__ */

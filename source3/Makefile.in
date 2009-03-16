@@ -374,7 +374,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) \
 	  lib/bitmap.o lib/dprintf.o $(UTIL_REG_OBJ) \
 	  lib/wins_srv.o \
 	  lib/util_str.o lib/clobber.o lib/util_sid.o lib/util_uuid.o \
-	  lib/util_unistr.o lib/util_file.o \
+	  lib/util_unistr.o ../lib/util/charset/util_unistr.c lib/util_file.o \
 	  lib/util.o lib/util_sock.o lib/sock_exec.o lib/util_sec.o \
 	  lib/substitute.o lib/dbwrap_util.o \
 	  lib/ms_fnmatch.o lib/select.o lib/errmap_unix.o \
@@ -445,15 +445,16 @@ DOSERR_OBJ = ../libcli/util/doserr.o
 ERRORMAP_OBJ = libsmb/errormap.o
 DCE_RPC_ERR_OBJ = ../librpc/rpc/dcerpc_error.o
 
-LIBSMB_ERR_OBJ0 = $(NTERR_OBJ) $(DOSERR_OBJ) $(ERRORMAP_OBJ) $(DCE_RPC_ERR_OBJ) \
-		  libsmb/smbdes.o libsmb/smbencrypt.o libsmb/ntlmssp_parse.o
+LIBSMB_ERR_OBJ0 = $(NTERR_OBJ) $(DOSERR_OBJ) $(ERRORMAP_OBJ) $(DCE_RPC_ERR_OBJ)
 
-LIBSMB_ERR_OBJ = $(LIBSMB_ERR_OBJ0) \
+LIBSMB_ERR_OBJ1 = ../libcli/auth/smbdes.o ../libcli/auth/smbencrypt.o ../libcli/auth/msrpc_parse.o
+
+LIBSMB_ERR_OBJ = $(LIBSMB_ERR_OBJ0) $(LIBSMB_ERR_OBJ1) \
 		 $(RPC_PARSE_OBJ1) \
 		 $(SECRETS_OBJ)
 
 LIBSMB_OBJ0 = \
-	       libsmb/ntlm_check.o \
+	       ../libcli/auth/ntlm_check.o \
 	       libsmb/ntlmssp.o \
 	       libsmb/ntlmssp_sign.o
 
@@ -481,7 +482,7 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/clireadwrite.o libsmb/clilist.o libsmb/cliprint.o \
 	     libsmb/clitrans.o libsmb/clisecdesc.o libsmb/clidgram.o \
 	     libsmb/clistr.o libsmb/cliquota.o libsmb/clifsinfo.o libsmb/clidfs.o \
-             libsmb/credentials.o \
+             libsmb/credentials.o ../libcli/auth/credentials.o \
 	     libsmb/clioplock.o libsmb/clirap2.o \
 	     libsmb/smb_seal.o libsmb/async_smb.o \
 	     $(LIBSAMBA_OBJ) \
@@ -1145,7 +1146,7 @@ LDB_LDAP_OBJ=@LDBLDAP@
 LDB_OBJ = ${LDB_COMMON_OBJ} ${LDB_TDB_OBJ} ${LDB_LDAP_OBJ} ${LDB_MODULES_OBJ}
 
 LDB_CMDLINE_OBJ = $(PARAM_OBJ) \
-	  $(POPT_LIB_OBJ) $(LIB_OBJ) $(LIB_DUMMY_OBJ) $(LIBSMB_ERR_OBJ0) \
+	  $(POPT_LIB_OBJ) $(LIB_OBJ) $(LIB_DUMMY_OBJ) $(LIBSMB_ERR_OBJ0) $(LIBSMB_ERR_OBJ1) \
 	  $(RPC_PARSE_OBJ1) $(SECRETS_OBJ) \
 	  $(LDB_OBJ) lib/ldb/tools/cmdline.o 
 

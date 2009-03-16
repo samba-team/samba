@@ -25,6 +25,7 @@
 
 #include "includes.h"
 #include "utils/ntlm_auth.h"
+#include "../libcli/auth/libcli_auth.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -1977,7 +1978,7 @@ static void manage_ntlm_change_password_1_request(struct ntlm_auth_state *state,
 				encode_pw_buffer(new_lm_pswd.data, newpswd,
 						 STR_UNICODE);
 
-				SamOEMhash(new_lm_pswd.data, old_nt_hash, 516);
+				arcfour_crypt(new_lm_pswd.data, old_nt_hash, 516);
 				E_old_pw_hash(new_nt_hash, old_lm_hash,
 					      old_lm_hash_enc.data);
 			} else {
@@ -1990,7 +1991,7 @@ static void manage_ntlm_change_password_1_request(struct ntlm_auth_state *state,
 			encode_pw_buffer(new_nt_pswd.data, newpswd,
 					 STR_UNICODE);
 	
-			SamOEMhash(new_nt_pswd.data, old_nt_hash, 516);
+			arcfour_crypt(new_nt_pswd.data, old_nt_hash, 516);
 			E_old_pw_hash(new_nt_hash, old_nt_hash,
 				      old_nt_hash_enc.data);
 		}

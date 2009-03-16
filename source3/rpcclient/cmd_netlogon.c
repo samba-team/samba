@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "rpcclient.h"
+#include "../libcli/auth/libcli_auth.h"
 
 static WERROR cmd_netlogon_logon_ctrl2(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx, int argc,

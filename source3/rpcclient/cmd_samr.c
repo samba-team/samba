@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "rpcclient.h"
+#include "../libcli/auth/libcli_auth.h"
 
 extern DOM_SID domain_sid;
 

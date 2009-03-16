@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "../libcli/auth/libcli_auth.h"
 
 /****************************************************************************
  Wrapper function that uses the auth and auth2 calls to set up a NETLOGON
@@ -40,7 +41,7 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	struct netr_Credential clnt_chal_send;
 	struct netr_Credential srv_chal_recv;
-	struct dcinfo *dc;
+	struct netr_Credentials *dc;
 	bool retried = false;
 
 	SMB_ASSERT(ndr_syntax_id_equal(&cli->abstract_syntax,
@@ -203,9 +204,9 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
 		memcpy(key, cli->dc->sess_key, 8);
 
 		memcpy(lm_owf, lm_owf_user_pwd, 16);
-		SamOEMhash(lm_owf, key, 16);
+		arcfour_crypt(lm_owf, key, 16);
 		memcpy(nt_owf, nt_owf_user_pwd, 16);
-		SamOEMhash(nt_owf, key, 16);
+		arcfour_crypt(nt_owf, key, 16);
 
 #ifdef DEBUG_PASSWORD
 		DEBUG(100,("encrypt of lm owf password:"));
@@ -408,12 +409,12 @@ NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
 	}
 
 	if (memcmp(zeros, validation.sam3->base.key.key, 16) != 0) {
-		SamOEMhash(validation.sam3->base.key.key,
+		arcfour_crypt(validation.sam3->base.key.key,
 			   cli->dc->sess_key, 16);
 	}
 
 	if (memcmp(zeros, validation.sam3->base.LMSessKey.key, 8) != 0) {
-		SamOEMhash(validation.sam3->base.LMSessKey.key,
+		arcfour_crypt(validation.sam3->base.LMSessKey.key,
 			   cli->dc->sess_key, 8);
 	}
 
@@ -525,12 +526,12 @@ NTSTATUS rpccli_netlogon_sam_network_logon_ex(struct rpc_pipe_client *cli,
 	}
 
 	if (memcmp(zeros, validation.sam3->base.key.key, 16) != 0) {
-		SamOEMhash(validation.sam3->base.key.key,
+		arcfour_crypt(validation.sam3->base.key.key,
 			   cli->dc->sess_key, 16);
 	}
 
 	if (memcmp(zeros, validation.sam3->base.LMSessKey.key, 8) != 0) {
-		SamOEMhash(validation.sam3->base.LMSessKey.key,
+		arcfour_crypt(validation.sam3->base.LMSessKey.key,
 			   cli->dc->sess_key, 8);
 	}
 

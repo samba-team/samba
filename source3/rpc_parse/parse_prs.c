@@ -1373,7 +1373,7 @@ bool prs_hash1(prs_struct *ps, uint32 offset, int len)
 	dump_data(100, (uint8 *)ps->sess_key, 16);
 	dump_data(100, (uint8 *)q, len);
 #endif
-	SamOEMhash((uchar *) q, (const unsigned char *)ps->sess_key, len);
+	arcfour_crypt((uchar *) q, (const unsigned char *)ps->sess_key, len);
 
 #ifdef DEBUG_PASSWORD
 	dump_data(100, (uint8 *)q, len);
@@ -1468,7 +1468,7 @@ static void schannel_deal_with_seq_num(struct schannel_auth_struct *a,
 	dump_data_pw("sequence_key:\n", sequence_key, sizeof(sequence_key));
 
 	dump_data_pw("seq_num (before):\n", verf->seq_num, sizeof(verf->seq_num));
-	SamOEMhash(verf->seq_num, sequence_key, 8);
+	arcfour_crypt(verf->seq_num, sequence_key, 8);
 	dump_data_pw("seq_num (after):\n", verf->seq_num, sizeof(verf->seq_num));
 }
 
@@ -1554,13 +1554,13 @@ void schannel_encode(struct schannel_auth_struct *a, enum pipe_auth_level auth_l
 
 		/* encode the verification data */
 		dump_data_pw("verf->confounder:\n", verf->confounder, sizeof(verf->confounder));
-		SamOEMhash(verf->confounder, sealing_key, 8);
+		arcfour_crypt(verf->confounder, sealing_key, 8);
 
 		dump_data_pw("verf->confounder_enc:\n", verf->confounder, sizeof(verf->confounder));
 		
 		/* encode the packet payload */
 		dump_data_pw("data:\n", (const unsigned char *)data, data_len);
-		SamOEMhash((unsigned char *)data, sealing_key, data_len);
+		arcfour_crypt((unsigned char *)data, sealing_key, data_len);
 		dump_data_pw("data_enc:\n", (const unsigned char *)data, data_len);
 	}
 
@@ -1652,14 +1652,14 @@ bool schannel_decode(struct schannel_auth_struct *a, enum pipe_auth_level auth_l
 		/* extract the verification data */
 		dump_data_pw("verf->confounder:\n", verf->confounder, 
 			     sizeof(verf->confounder));
-		SamOEMhash(verf->confounder, sealing_key, 8);
+		arcfour_crypt(verf->confounder, sealing_key, 8);
 
 		dump_data_pw("verf->confounder_dec:\n", verf->confounder, 
 			     sizeof(verf->confounder));
 		
 		/* extract the packet payload */
 		dump_data_pw("data   :\n", (const unsigned char *)data, data_len);
-		SamOEMhash((unsigned char *)data, sealing_key, data_len);
+		arcfour_crypt((unsigned char *)data, sealing_key, data_len);
 		dump_data_pw("datadec:\n", (const unsigned char *)data, data_len);	
 	}
 

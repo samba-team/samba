@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "rpcclient.h"
+#include "../libcli/auth/libcli_auth.h"
 
 DOM_SID domain_sid;
 

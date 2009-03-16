@@ -19,6 +19,7 @@
  */
 
 #include "includes.h"
+#include "../libcli/auth/libcli_auth.h"
 
 /*********************************************************
  Change the domain password on the PDC.

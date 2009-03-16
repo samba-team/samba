@@ -18,6 +18,7 @@
  */
 
 #include "includes.h"
+#include "../libcli/auth/libcli_auth.h"
 
 /*************************************************************************
  inits a samr_CryptPasswordEx structure
@@ -44,7 +45,7 @@ void init_samr_CryptPasswordEx(const char *pwd,
 			    session_key->length);
 	MD5Final(confounded_session_key.data, &md5_ctx);
 
-	SamOEMhashBlob(pwbuf, 516, &confounded_session_key);
+	arcfour_crypt_blob(pwbuf, 516, &confounded_session_key);
 	memcpy(&pwbuf[516], confounder, 16);
 
 	memcpy(pwd_buf->data, pwbuf, sizeof(pwbuf));
@@ -62,5 +63,5 @@ void init_samr_CryptPassword(const char *pwd,
 	/* samr_CryptPassword */
 
 	encode_pw_buffer(pwd_buf->data, pwd, STR_UNICODE);
-	SamOEMhashBlob(pwd_buf->data, 516, session_key);
+	arcfour_crypt_blob(pwd_buf->data, 516, session_key);
 }

@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "rpcclient.h"
+#include "../libcli/auth/libcli_auth.h"
 
 /* useful function to allow entering a name instead of a SID and
  * looking it up automatically */
@@ -947,27 +948,22 @@ static NTSTATUS cmd_lsa_query_secobj(struct rpc_pipe_client *cli,
 }
 
 static void display_trust_dom_info_4(struct lsa_TrustDomainInfoPassword *p,
-				     uint8_t nt_hash[16])
+				     uint8_t session_key[16])
 {
 	char *pwd, *pwd_old;
 	
-	DATA_BLOB data 	   = data_blob(NULL, p->password->length);
-	DATA_BLOB data_old = data_blob(NULL, p->old_password->length);
+	DATA_BLOB data 	   = data_blob_const(p->password->data, p->password->length);
+	DATA_BLOB data_old = data_blob_const(p->old_password->data, p->old_password->length);
+	DATA_BLOB session_key_blob = data_blob_const(session_key, sizeof(session_key));
 
-	memcpy(data.data, p->password->data, p->password->length);
-	memcpy(data_old.data, p->old_password->data, p->old_password->length);
-	
-	pwd 	= decrypt_trustdom_secret(nt_hash, &data);
-	pwd_old = decrypt_trustdom_secret(nt_hash, &data_old);
+	pwd 	= sess_decrypt_string(talloc_tos(), &data, &session_key_blob);
+	pwd_old = sess_decrypt_string(talloc_tos(), &data_old, &session_key_blob);
 	
 	d_printf("Password:\t%s\n", pwd);
 	d_printf("Old Password:\t%s\n", pwd_old);
 
-	SAFE_FREE(pwd);
-	SAFE_FREE(pwd_old);
-	
-	data_blob_free(&data);
-	data_blob_free(&data_old);
+	talloc_free(pwd);
+	talloc_free(pwd_old);
 }
 
 static void display_trust_dom_info(TALLOC_CTX *mem_ctx,

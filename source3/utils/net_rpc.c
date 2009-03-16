@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "utils/net.h"
+#include "../libcli/auth/libcli_auth.h"
 
 static int net_mode_share;
 static bool sync_files(struct copy_clistate *cp_clistate, const char *mask);
@@ -5738,7 +5739,8 @@ static NTSTATUS vampire_trusted_domain(struct rpc_pipe_client *pipe_hnd,
 	NTSTATUS nt_status;
 	union lsa_TrustedDomainInfo *info = NULL;
 	char *cleartextpwd = NULL;
-	uint8_t nt_hash[16];
+	uint8_t session_key[16];
+	DATA_BLOB session_key_blob;
 	DATA_BLOB data;
 
 	nt_status = rpccli_lsa_QueryTrustedDomainInfoBySid(pipe_hnd, mem_ctx,
@@ -5755,12 +5757,13 @@ static NTSTATUS vampire_trusted_domain(struct rpc_pipe_client *pipe_hnd,
 	data = data_blob(info->password.password->data,
 			 info->password.password->length);
 
-	if (!rpccli_get_pwd_hash(pipe_hnd, nt_hash)) {
+	if (!rpccli_get_pwd_hash(pipe_hnd, session_key)) {
 		DEBUG(0, ("Could not retrieve password hash\n"));
 		goto done;
 	}
 
-	cleartextpwd = decrypt_trustdom_secret(nt_hash, &data);
+	session_key_blob = data_blob_const(session_key, sizeof(session_key));
+	cleartextpwd = sess_decrypt_string(mem_ctx, &data, &session_key_blob);
 
 	if (cleartextpwd == NULL) {
 		DEBUG(0,("retrieved NULL password\n"));

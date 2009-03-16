@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "winbind_client.h"
 #include "libwbclient/wbclient.h"
+#include "../libcli/auth/libcli_auth.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -1323,11 +1324,11 @@ static bool wbinfo_auth_crap(char *username)
 		server_chal = data_blob(params.password.response.challenge, 8);
 
 		/* Pretend this is a login to 'us', for blob purposes */
-		names_blob = NTLMv2_generate_names_blob(global_myname(), lp_workgroup());
+		names_blob = NTLMv2_generate_names_blob(NULL, global_myname(), lp_workgroup());
 
-		if (!SMBNTLMv2encrypt(name_user, name_domain, pass, &server_chal,
+		if (!SMBNTLMv2encrypt(NULL, name_user, name_domain, pass, &server_chal,
 				      &names_blob,
-				      &lm, &nt, NULL)) {
+				      &lm, &nt, NULL, NULL)) {
 			data_blob_free(&names_blob);
 			data_blob_free(&server_chal);
 			SAFE_FREE(pass);

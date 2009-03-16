@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "libnet/libnet.h"
+#include "../lib/crypto/crypto.h"
 
 /**
  * Decrypt and extract the user's passwords.
@@ -72,7 +73,7 @@ static NTSTATUS fix_user(TALLOC_CTX *mem_ctx,
 		enum ndr_err_code ndr_err;
 		data.data = user->user_private_info.SensitiveData;
 		data.length = user->user_private_info.DataLength;
-		SamOEMhashBlob(data.data, data.length, session_key);
+		arcfour_crypt_blob(data.data, data.length, session_key);
 		user->user_private_info.SensitiveData = data.data;
 		user->user_private_info.DataLength = data.length;
 
@@ -127,13 +128,13 @@ static NTSTATUS fix_secret(TALLOC_CTX *mem_ctx,
 {
 	struct netr_DELTA_SECRET *secret = delta->delta_union.secret;
 
-	SamOEMhashBlob(secret->current_cipher.cipher_data,
-		       secret->current_cipher.maxlen,
-		       session_key);
-
-	SamOEMhashBlob(secret->old_cipher.cipher_data,
-		       secret->old_cipher.maxlen,
-		       session_key);
+	arcfour_crypt_blob(secret->current_cipher.cipher_data,
+			   secret->current_cipher.maxlen,
+			   session_key);
+	
+	arcfour_crypt_blob(secret->old_cipher.cipher_data,
+			   secret->old_cipher.maxlen,
+			   session_key);
 
 	return NT_STATUS_OK;
 }

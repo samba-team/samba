@@ -25,6 +25,7 @@
 /* This is the implementation of the netlogon pipe. */
 
 #include "includes.h"
+#include "../libcli/auth/libcli_auth.h"
 
 extern userdom_struct current_user_info;
 

@@ -23,7 +23,6 @@
 #include "../lib/crypto/crypto.h"
 #include "librpc/gen_ndr/netlogon.h"
 #include "libcli/auth/libcli_auth.h"
-#include "auth/ntlm/ntlm_check.h"
 
 /****************************************************************************
  Core of smb password checking routine.

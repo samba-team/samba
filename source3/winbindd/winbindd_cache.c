@@ -26,6 +26,7 @@
 #include "includes.h"
 #include "winbindd.h"
 #include "tdb_validate.h"
+#include "../libcli/auth/libcli_auth.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

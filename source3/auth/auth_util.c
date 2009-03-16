@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "../libcli/auth/libcli_auth.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -330,10 +331,10 @@ bool make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
 #endif
 	
 	if (lm_interactive_pwd)
-		SamOEMhash(lm_pwd, key, sizeof(lm_pwd));
+		arcfour_crypt(lm_pwd, key, sizeof(lm_pwd));
 	
 	if (nt_interactive_pwd)
-		SamOEMhash(nt_pwd, key, sizeof(nt_pwd));
+		arcfour_crypt(nt_pwd, key, sizeof(nt_pwd));
 	
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("decrypt of lm owf password:"));

@@ -19,6 +19,8 @@
 */
 
 #include "includes.h"
+#include "../lib/crypto/crypto.h"
+#include "libcli/auth/libcli_auth.h"
 
 /****************************************************************************
  Represent a credential as a string.
@@ -278,84 +280,12 @@ bool netlogon_creds_server_step(struct dcinfo *dc,
 	return true;
 }
 
-/****************************************************************************
- Create a client credential struct.
-****************************************************************************/
-
-void creds_client_init(uint32 neg_flags,
-			struct dcinfo *dc,
-			struct netr_Credential *clnt_chal,
-			struct netr_Credential *srv_chal,
-			const unsigned char mach_pw[16],
-			struct netr_Credential *init_chal_out)
+void cred_hash3(unsigned char *out, const unsigned char *in, const unsigned char *key, int forw)
 {
-	dc->sequence = time(NULL);
+        unsigned char key2[8];
 
-	DEBUG(10,("creds_client_init: neg_flags : %x\n", (unsigned int)neg_flags));
-	DEBUG(10,("creds_client_init: client chal : %s\n", credstr(clnt_chal->data) ));
-	DEBUG(10,("creds_client_init: server chal : %s\n", credstr(srv_chal->data) ));
-	dump_data_pw("creds_client_init: machine pass", (const unsigned char *)mach_pw, 16);
-
-	/* Generate the session key and the next client and server creds. */
-	if (neg_flags & NETLOGON_NEG_128BIT) {
-		creds_init_128(dc,
-				clnt_chal,
-				srv_chal,
-				mach_pw);
-	} else {
-		creds_init_64(dc,
-			clnt_chal,
-			srv_chal,
-			mach_pw);
-	}
-
-	dump_data_pw("creds_client_init: session key", dc->sess_key, 16);
-
-	DEBUG(10,("creds_client_init: clnt : %s\n", credstr(dc->clnt_chal.data) ));
-	DEBUG(10,("creds_client_init: server : %s\n", credstr(dc->srv_chal.data) ));
-	DEBUG(10,("creds_client_init: seed : %s\n", credstr(dc->seed_chal.data) ));
-
-	memcpy(init_chal_out->data, dc->clnt_chal.data, 8);
-}
-
-/****************************************************************************
- Check a credential returned by the server.
-****************************************************************************/
-
-bool netlogon_creds_client_check(const struct dcinfo *dc,
-				 const struct netr_Credential *rcv_srv_chal_in)
-{
-	if (memcmp(dc->srv_chal.data, rcv_srv_chal_in->data,
-		   sizeof(dc->srv_chal.data))) {
-
-		DEBUG(0,("netlogon_creds_client_check: credentials check failed.\n"));
-		DEBUGADD(5,("netlogon_creds_client_check: challenge : %s\n",
-			credstr(rcv_srv_chal_in->data)));
-		DEBUGADD(5,("calculated: %s\n", credstr(dc->srv_chal.data)));
-		return false;
-	}
-
-	DEBUG(10,("netlogon_creds_client_check: credentials check OK.\n"));
-
-	return true;
-}
-
-
-/****************************************************************************
-  Step the client credentials to the next element in the chain, updating the
-  current client and server credentials and the seed
-  produce the next authenticator in the sequence ready to send to
-  the server
-****************************************************************************/
-
-void netlogon_creds_client_step(struct dcinfo *dc,
-				struct netr_Authenticator *next_cred_out)
-{
-	dc->sequence += 2;
-	creds_step(dc);
-	creds_reseed(dc);
-
-	memcpy(&next_cred_out->cred.data, &dc->clnt_chal.data,
-		sizeof(next_cred_out->cred.data));
-	next_cred_out->timestamp = dc->sequence;
+	memset(key2,'\0',8);
+        des_crypt56(out, in, key, forw);
+        key2[0] = key[7];
+        des_crypt56(out + 8, in + 8, key2, forw);
 }

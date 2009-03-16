@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "../libcli/auth/libcli_auth.h"
 
 static NTSTATUS ntlmssp_client_initial(struct ntlmssp_state *ntlmssp_state, 
 				       DATA_BLOB reply, DATA_BLOB *next_request);
@@ -873,9 +874,9 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 			ntlmssp_state->session_key = session_key;
 		} else {
 			dump_data_pw("KEY_EXCH session key (enc):\n", encrypted_session_key.data, encrypted_session_key.length);
-			SamOEMhash(encrypted_session_key.data, 
-				   session_key.data, 
-				   encrypted_session_key.length);
+			arcfour_crypt_blob(encrypted_session_key.data, 
+					   encrypted_session_key.length, 
+					   &session_key);
 			ntlmssp_state->session_key = data_blob_talloc(
 				ntlmssp_state, encrypted_session_key.data,
 				encrypted_session_key.length);
@@ -1079,7 +1080,6 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 		/* not doing NLTM2 without a password */
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_NTLM2;
 	} else if (ntlmssp_state->use_ntlmv2) {
-
 		if (!struct_blob.length) {
 			/* be lazy, match win2k - we can't do NTLMv2 without it */
 			DEBUG(1, ("Server did not provide 'target information', required for NTLMv2\n"));
@@ -1089,11 +1089,13 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 		/* TODO: if the remote server is standalone, then we should replace 'domain'
 		   with the server name as supplied above */
 
-		if (!SMBNTLMv2encrypt_hash(ntlmssp_state->user, 
-				      ntlmssp_state->domain, 
-				      ntlmssp_state->nt_hash, &challenge_blob, 
-				      &struct_blob, 
-				      &lm_response, &nt_response, &session_key)) {
+		if (!SMBNTLMv2encrypt_hash(ntlmssp_state, 
+					   ntlmssp_state->user, 
+					   ntlmssp_state->domain, 
+					   ntlmssp_state->nt_hash, &challenge_blob, 
+					   &struct_blob, 
+					   &lm_response, &nt_response, NULL,
+					   &session_key)) {
 			data_blob_free(&challenge_blob);
 			data_blob_free(&struct_blob);
 			return NT_STATUS_NO_MEMORY;
@@ -1122,12 +1124,12 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 
 		nt_response = data_blob_talloc(ntlmssp_state, NULL, 24);
 		SMBNTencrypt_hash(ntlmssp_state->nt_hash,
-			     session_nonce_hash,
-			     nt_response.data);
+				  session_nonce_hash,
+				  nt_response.data);
 
 		session_key = data_blob_talloc(ntlmssp_state, NULL, 16);
 
-		SMBsesskeygen_ntv1(ntlmssp_state->nt_hash, NULL, user_session_key);
+		SMBsesskeygen_ntv1(ntlmssp_state->nt_hash, user_session_key);
 		hmac_md5(user_session_key, session_nonce, sizeof(session_nonce), session_key.data);
 		dump_data_pw("NTLM2 session key:\n", session_key.data, session_key.length);
 	} else {
@@ -1150,7 +1152,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 					session_key.data);
 			dump_data_pw("LM session key\n", session_key.data, session_key.length);
 		} else {
-			SMBsesskeygen_ntv1(ntlmssp_state->nt_hash, NULL, session_key.data);
+			SMBsesskeygen_ntv1(ntlmssp_state->nt_hash, session_key.data);
 			dump_data_pw("NT session key:\n", session_key.data, session_key.length);
 		}
 	}
@@ -1166,7 +1168,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 		/* Encrypt the new session key with the old one */
 		encrypted_session_key = data_blob(client_session_key, sizeof(client_session_key));
 		dump_data_pw("KEY_EXCH session key:\n", encrypted_session_key.data, encrypted_session_key.length);
-		SamOEMhash(encrypted_session_key.data, session_key.data, encrypted_session_key.length);
+		arcfour_crypt_blob(encrypted_session_key.data, encrypted_session_key.length, &session_key);
 		dump_data_pw("KEY_EXCH session key (enc):\n", encrypted_session_key.data, encrypted_session_key.length);
 
 		/* Mark the new session key as the 'real' session key */

@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "utils/ntlm_auth.h"
+#include "../libcli/auth/libcli_auth.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -72,7 +73,7 @@ static bool test_lm_ntlm_broken(enum ntlm_break break_which)
 	SMBNTencrypt(opt_password,chall.data,nt_response.data);
 
 	E_md4hash(opt_password, nt_hash);
-	SMBsesskeygen_ntv1(nt_hash, NULL, session_key.data);
+	SMBsesskeygen_ntv1(nt_hash, session_key.data);
 
 	switch (break_which) {
 	case BREAK_NONE:
@@ -257,7 +258,7 @@ static bool test_ntlm_in_both(void)
 
 	SMBNTencrypt(opt_password,chall.data,nt_response.data);
 	E_md4hash(opt_password, nt_hash);
-	SMBsesskeygen_ntv1(nt_hash, NULL, session_key.data);
+	SMBsesskeygen_ntv1(nt_hash, session_key.data);
 
 	E_deshash(opt_password, lm_hash); 
 
@@ -316,7 +317,7 @@ static bool test_lmv2_ntlmv2_broken(enum ntlm_break break_which)
 	DATA_BLOB ntlmv2_response = data_blob_null;
 	DATA_BLOB lmv2_response = data_blob_null;
 	DATA_BLOB ntlmv2_session_key = data_blob_null;
-	DATA_BLOB names_blob = NTLMv2_generate_names_blob(get_winbind_netbios_name(), get_winbind_domain());
+	DATA_BLOB names_blob = NTLMv2_generate_names_blob(NULL, get_winbind_netbios_name(), get_winbind_domain());
 
 	uchar user_session_key[16];
 	DATA_BLOB chall = get_challenge();
@@ -326,9 +327,9 @@ static bool test_lmv2_ntlmv2_broken(enum ntlm_break break_which)
 	
 	flags |= WBFLAG_PAM_USER_SESSION_KEY;
 
-	if (!SMBNTLMv2encrypt(opt_username, opt_domain, opt_password, &chall,
+	if (!SMBNTLMv2encrypt(NULL, opt_username, opt_domain, opt_password, &chall,
 			      &names_blob,
-			      &lmv2_response, &ntlmv2_response, 
+			      &lmv2_response, &ntlmv2_response, NULL,
 			      &ntlmv2_session_key)) {
 		data_blob_free(&names_blob);
 		return False;

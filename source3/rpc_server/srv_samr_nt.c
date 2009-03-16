@@ -32,6 +32,7 @@
  */
 
 #include "includes.h"
+#include "../libcli/auth/libcli_auth.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -3822,7 +3823,7 @@ static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx,
 				 struct samu *pwd)
 {
 	char *plaintext_buf = NULL;
-	uint32 len = 0;
+	size_t len = 0;
 	uint32_t acct_ctrl;
 	NTSTATUS status;
 
@@ -3849,7 +3850,7 @@ static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx,
 				      id23->password.data,
 				      &plaintext_buf,
 				      &len,
-				      STR_UNICODE)) {
+				      CH_UTF16)) {
 			return NT_STATUS_WRONG_PASSWORD;
 		}
 
@@ -3911,7 +3912,7 @@ static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx,
 
 static bool set_user_info_pw(uint8 *pass, struct samu *pwd)
 {
-	uint32 len = 0;
+	size_t len = 0;
 	char *plaintext_buf = NULL;
 	uint32 acct_ctrl;
 
@@ -3924,7 +3925,7 @@ static bool set_user_info_pw(uint8 *pass, struct samu *pwd)
 				pass,
 				&plaintext_buf,
 				&len,
-				STR_UNICODE)) {
+				CH_UTF16)) {
 		return False;
  	}
 
@@ -4223,8 +4224,8 @@ NTSTATUS _samr_SetUserInfo(pipes_struct *p,
 			if (!p->server_info->user_session_key.length) {
 				status = NT_STATUS_NO_USER_SESSION_KEY;
 			}
-			SamOEMhashBlob(info->info23.password.data, 516,
-				       &p->server_info->user_session_key);
+			arcfour_crypt_blob(info->info23.password.data, 516,
+					   &p->server_info->user_session_key);
 
 			dump_data(100, info->info23.password.data, 516);
 
@@ -4236,9 +4237,9 @@ NTSTATUS _samr_SetUserInfo(pipes_struct *p,
 			if (!p->server_info->user_session_key.length) {
 				status = NT_STATUS_NO_USER_SESSION_KEY;
 			}
-			SamOEMhashBlob(info->info24.password.data,
-				       516,
-				       &p->server_info->user_session_key);
+			arcfour_crypt_blob(info->info24.password.data,
+					   516,
+					   &p->server_info->user_session_key);
 
 			dump_data(100, info->info24.password.data, 516);
 

@@ -1782,6 +1782,23 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 						const char *sitename,
 						struct sockaddr_storage *pss);
 
+
+/* The following definitions come from libsmb/credentials.c  */
+
+char *credstr(const unsigned char *cred);
+void creds_server_init(uint32 neg_flags,
+			struct dcinfo *dc,
+			struct netr_Credential *clnt_chal,
+			struct netr_Credential *srv_chal,
+			const unsigned char mach_pw[16],
+			struct netr_Credential *init_chal_out);
+bool netlogon_creds_server_check(const struct dcinfo *dc,
+				 const struct netr_Credential *rcv_cli_chal_in);
+bool netlogon_creds_server_step(struct dcinfo *dc,
+				const struct netr_Authenticator *received_cred,
+				struct netr_Authenticator *cred_out);
+void cred_hash3(unsigned char *out, const unsigned char *in, const unsigned char *key, int forw);
+
 /* The following definitions come from libads/kerberos_keytab.c  */
 
 int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc);
@@ -2933,31 +2950,6 @@ void delete_negative_conn_cache(const char *domain, const char *server);
 void flush_negative_conn_cache( void );
 void flush_negative_conn_cache_for_domain(const char *domain);
 
-/* The following definitions come from libsmb/credentials.c  */
-
-char *credstr(const unsigned char *cred);
-void creds_server_init(uint32 neg_flags,
-			struct dcinfo *dc,
-			struct netr_Credential *clnt_chal,
-			struct netr_Credential *srv_chal,
-			const unsigned char mach_pw[16],
-			struct netr_Credential *init_chal_out);
-bool netlogon_creds_server_check(const struct dcinfo *dc,
-				 const struct netr_Credential *rcv_cli_chal_in);
-bool netlogon_creds_server_step(struct dcinfo *dc,
-				const struct netr_Authenticator *received_cred,
-				struct netr_Authenticator *cred_out);
-void creds_client_init(uint32 neg_flags,
-			struct dcinfo *dc,
-			struct netr_Credential *clnt_chal,
-			struct netr_Credential *srv_chal,
-			const unsigned char mach_pw[16],
-			struct netr_Credential *init_chal_out);
-bool netlogon_creds_client_check(const struct dcinfo *dc,
-				 const struct netr_Credential *rcv_srv_chal_in);
-void netlogon_creds_client_step(struct dcinfo *dc,
-				struct netr_Authenticator *next_cred_out);
-
 /* The following definitions come from ../librpc/rpc/dcerpc_error.c  */
 
 const char *dcerpc_errstr(TALLOC_CTX *mem_ctx, uint32_t fault_code);
@@ -3109,21 +3101,6 @@ const char *get_nt_error_c_code(NTSTATUS nt_code);
 NTSTATUS nt_status_string_to_code(const char *nt_status_str);
 NTSTATUS nt_status_squash(NTSTATUS nt_status);
 
-/* The following definitions come from libsmb/ntlm_check.c  */
-
-NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
-			     const DATA_BLOB *challenge,
-			     const DATA_BLOB *lm_response,
-			     const DATA_BLOB *nt_response,
-			     const DATA_BLOB *lm_interactive_pwd,
-			     const DATA_BLOB *nt_interactive_pwd,
-			     const char *username, 
-			     const char *client_username, 
-			     const char *client_domain,
-			     const uint8 *lm_pw, const uint8 *nt_pw, 
-			     DATA_BLOB *user_sess_key, 
-			     DATA_BLOB *lm_sess_key);
-
 /* The following definitions come from libsmb/ntlmssp.c  */
 
 void debug_ntlmssp_flags(uint32 neg_flags);
@@ -3144,13 +3121,6 @@ void ntlmssp_end(NTLMSSP_STATE **ntlmssp_state);
 DATA_BLOB ntlmssp_weaken_keys(NTLMSSP_STATE *ntlmssp_state, TALLOC_CTX *mem_ctx);
 NTSTATUS ntlmssp_server_start(NTLMSSP_STATE **ntlmssp_state);
 NTSTATUS ntlmssp_client_start(NTLMSSP_STATE **ntlmssp_state);
-
-/* The following definitions come from libsmb/ntlmssp_parse.c  */
-
-bool msrpc_gen(DATA_BLOB *blob,
-	       const char *format, ...);
-bool msrpc_parse(const DATA_BLOB *blob,
-		 const char *format, ...);
 
 /* The following definitions come from libsmb/ntlmssp_sign.c  */
 
@@ -3234,84 +3204,6 @@ bool srv_is_signing_negotiated(struct smbd_server_connection *conn);
 void srv_set_signing(struct smbd_server_connection *conn,
 		     const DATA_BLOB user_session_key,
 		     const DATA_BLOB response);
-
-/* The following definitions come from libsmb/smbdes.c  */
-
-void des_crypt56(unsigned char *out, const unsigned char *in, const unsigned char *key, int forw);
-void E_P16(const unsigned char *p14,unsigned char *p16);
-void E_P24(const unsigned char *p21, const unsigned char *c8, unsigned char *p24);
-void D_P16(const unsigned char *p14, const unsigned char *in, unsigned char *out);
-void E_old_pw_hash( unsigned char *p14, const unsigned char *in, unsigned char *out);
-void des_crypt128(unsigned char out[8], const unsigned char in[8], const unsigned char key[16]);
-void des_crypt64(unsigned char out[8], const unsigned char in[8], const unsigned char key[8]);
-void des_crypt112(unsigned char out[8], const unsigned char in[8], const unsigned char key[14], int forw);
-void cred_hash3(unsigned char *out, const unsigned char *in, const unsigned char *key, int forw);
-void des_crypt112_16(unsigned char out[16], unsigned char in[16], const unsigned char key[14], int forw);
-void SamOEMhash( unsigned char *data, const unsigned char key[16], size_t len);
-void SamOEMhashBlob( unsigned char *data, size_t len, DATA_BLOB *key);
-void sam_pwd_hash(unsigned int rid, const uchar *in, uchar *out, int forw);
-
-/* The following definitions come from libsmb/smbencrypt.c  */
-
-void SMBencrypt_hash(const uchar lm_hash[16], const uchar *c8, uchar p24[24]);
-bool SMBencrypt(const char *passwd, const uchar *c8, uchar p24[24]);
-void E_md4hash(const char *passwd, uchar p16[16]);
-void E_md5hash(const uchar salt[16], const uchar nthash[16], uchar hash_out[16]);
-bool E_deshash(const char *passwd, uchar p16[16]);
-void nt_lm_owf_gen(const char *pwd, uchar nt_p16[16], uchar p16[16]);
-bool ntv2_owf_gen(const uchar owf[16],
-		  const char *user_in, const char *domain_in,
-		  bool upper_case_domain, /* Transform the domain into UPPER case */
-		  uchar kr_buf[16]);
-void SMBOWFencrypt(const uchar passwd[16], const uchar *c8, uchar p24[24]);
-void NTLMSSPOWFencrypt(const uchar passwd[8], const uchar *ntlmchalresp, uchar p24[24]);
-void SMBNTencrypt_hash(const uchar nt_hash[16], uchar *c8, uchar *p24);
-void SMBNTencrypt(const char *passwd, uchar *c8, uchar *p24);
-void SMBOWFencrypt_ntv2(const uchar kr[16],
-			const DATA_BLOB *srv_chal,
-			const DATA_BLOB *cli_chal,
-			uchar resp_buf[16]);
-void SMBsesskeygen_ntv2(const uchar kr[16],
-			const uchar * nt_resp, uint8 sess_key[16]);
-void SMBsesskeygen_ntv1(const uchar kr[16],
-			const uchar * nt_resp, uint8 sess_key[16]);
-void SMBsesskeygen_lm_sess_key(const uchar lm_hash[16],
-			const uchar lm_resp[24], /* only uses 8 */ 
-			uint8 sess_key[16]);
-DATA_BLOB NTLMv2_generate_names_blob(const char *hostname, 
-				     const char *domain);
-bool SMBNTLMv2encrypt_hash(const char *user, const char *domain, const uchar nt_hash[16], 
-		      const DATA_BLOB *server_chal, 
-		      const DATA_BLOB *names_blob,
-		      DATA_BLOB *lm_response, DATA_BLOB *nt_response, 
-		      DATA_BLOB *user_session_key) ;
-bool SMBNTLMv2encrypt(const char *user, const char *domain, const char *password, 
-		      const DATA_BLOB *server_chal, 
-		      const DATA_BLOB *names_blob,
-		      DATA_BLOB *lm_response, DATA_BLOB *nt_response, 
-		      DATA_BLOB *user_session_key) ;
-bool encode_pw_buffer(uint8 buffer[516], const char *password, int string_flags);
-bool decode_pw_buffer(TALLOC_CTX *ctx,
-			uint8 in_buffer[516],
-			char **pp_new_pwrd,
-			uint32 *new_pw_len,
-			int string_flags);
-void encode_or_decode_arc4_passwd_buffer(unsigned char pw_buf[532], const DATA_BLOB *psession_key);
-void sess_crypt_blob(DATA_BLOB *out, const DATA_BLOB *in, const DATA_BLOB *session_key, int forward);
-char *decrypt_trustdom_secret(uint8_t nt_hash[16], DATA_BLOB *data_in);
-void encode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
-					const char *pwd,
-					DATA_BLOB *session_key,
-					struct wkssvc_PasswordBuffer **pwd_buf);
-WERROR decode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
-					  struct wkssvc_PasswordBuffer *pwd_buf,
-					  DATA_BLOB *session_key,
-					  char **pwd);
-DATA_BLOB decrypt_drsuapi_blob(TALLOC_CTX *mem_ctx,
-			       const DATA_BLOB *session_key,
-			       bool rcrypt,
-			       uint32_t rid,
-			       const DATA_BLOB *buffer);
 
 /* The following definitions come from libsmb/smberr.c  */
 

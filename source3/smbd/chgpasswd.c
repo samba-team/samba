@@ -46,6 +46,7 @@
    */
 
 #include "includes.h"
+#include "../libcli/auth/libcli_auth.h"
 
 static NTSTATUS check_oem_password(const char *user,
 				   uchar password_encrypted_with_lm_hash[516],
@@ -832,7 +833,7 @@ static NTSTATUS check_oem_password(const char *user,
 	const uint8 *encryption_key;
 	const uint8 *lanman_pw, *nt_pw;
 	uint32 acct_ctrl;
-	uint32 new_pw_len;
+	size_t new_pw_len;
 	uchar new_nt_hash[16];
 	uchar new_lm_hash[16];
 	uchar verifier[16];
@@ -919,13 +920,13 @@ static NTSTATUS check_oem_password(const char *user,
 	/*
 	 * Decrypt the password with the key
 	 */
-	SamOEMhash( password_encrypted, encryption_key, 516);
+	arcfour_crypt( password_encrypted, encryption_key, 516);
 
 	if (!decode_pw_buffer(talloc_tos(),
 				password_encrypted,
 				pp_new_passwd,
 				&new_pw_len,
-				nt_pass_set ? STR_UNICODE : STR_ASCII)) {
+				nt_pass_set ? CH_UTF16 : CH_DOS)) {
 		TALLOC_FREE(sampass);
 		return NT_STATUS_WRONG_PASSWORD;
 	}
