@@ -133,7 +133,9 @@ void *talloc_zeronull(const void *context, size_t size, const char *name);
 #define TALLOC_REALLOC(ctx, ptr, count) _talloc_realloc(ctx, ptr, count, __location__)
 #define TALLOC_REALLOC_ARRAY(ctx, ptr, type, count) (type *)_talloc_realloc_array(ctx, ptr, sizeof(type), count, #type)
 #define talloc_destroy(ctx) talloc_free(ctx)
+#ifndef TALLOC_FREE
 #define TALLOC_FREE(ctx) do { talloc_free(ctx); ctx=NULL; } while(0)
+#endif
 
 /*******************************************************************
    Type definitions for int16, int32, uint16 and uint32.  Needed
