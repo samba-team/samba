@@ -7913,29 +7913,15 @@ WERROR _spoolss_GetPrinterDriverDirectory(pipes_struct *p,
 	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 }
 
-/****************************************************************************
-****************************************************************************/
+/****************************************************************
+ _spoolss_EnumPrinterData
+****************************************************************/
 
-WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, SPOOL_R_ENUMPRINTERDATA *r_u)
+WERROR _spoolss_EnumPrinterData(pipes_struct *p,
+				struct spoolss_EnumPrinterData *r)
 {
-	POLICY_HND *handle = &q_u->handle;
-	uint32 idx 		 = q_u->index;
-	uint32 in_value_len 	 = q_u->valuesize;
-	uint32 in_data_len 	 = q_u->datasize;
-	uint32 *out_max_value_len = &r_u->valuesize;
-	uint16 **out_value 	 = &r_u->value;
-	uint32 *out_value_len 	 = &r_u->realvaluesize;
-	uint32 *out_type 	 = &r_u->type;
-	uint32 *out_max_data_len = &r_u->datasize;
-	uint8  **data_out 	 = &r_u->data;
-	uint32 *out_data_len 	 = &r_u->realdatasize;
-
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
-
-	uint32 		biggest_valuesize;
-	uint32 		biggest_datasize;
-	uint32 		data_len;
-	Printer_entry 	*Printer = find_printer_index_by_hnd(p, handle);
+	Printer_entry 	*Printer = find_printer_index_by_hnd(p, r->in.handle);
 	int 		snum;
 	WERROR 		result;
 	REGISTRY_VALUE	*val = NULL;
@@ -7943,25 +7929,26 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 	int		i, key_index, num_values;
 	int		name_length;
 
-	*out_type = 0;
+	*r->out.value_needed	= 0;
+	*r->out.type		= REG_NONE;
+	*r->out.data_needed	= 0;
 
-	*out_max_data_len = 0;
-	*data_out         = NULL;
-	*out_data_len     = 0;
-
-	DEBUG(5,("spoolss_enumprinterdata\n"));
+	DEBUG(5,("_spoolss_EnumPrinterData\n"));
 
 	if (!Printer) {
-		DEBUG(2,("_spoolss_enumprinterdata: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
+		DEBUG(2,("_spoolss_EnumPrinterData: Invalid handle (%s:%u:%u).\n",
+			OUR_HANDLE(r->in.handle)));
 		return WERR_BADFID;
 	}
 
-	if (!get_printer_snum(p,handle, &snum, NULL))
+	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
 		return WERR_BADFID;
+	}
 
 	result = get_a_printer(Printer, &printer, 2, lp_const_servicename(snum));
-	if (!W_ERROR_IS_OK(result))
+	if (!W_ERROR_IS_OK(result)) {
 		return result;
+	}
 
 	p_data = printer->info_2->data;
 	key_index = lookup_printerkey( p_data, SPOOL_PRINTERDATA_KEY );
@@ -7974,12 +7961,12 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 	 * cf: MSDN EnumPrinterData remark section
 	 */
 
-	if ( !in_value_len && !in_data_len && (key_index != -1) )
-	{
-		DEBUGADD(6,("Activating NT mega-hack to find sizes\n"));
+	if (!r->in.value_offered && !r->in.data_offered && (key_index != -1)) {
 
-		biggest_valuesize = 0;
-		biggest_datasize  = 0;
+		uint32_t biggest_valuesize = 0;
+		uint32_t biggest_datasize = 0;
+
+		DEBUGADD(6,("Activating NT mega-hack to find sizes\n"));
 
 		num_values = regval_ctr_numvals( p_data->keys[key_index].values );
 
@@ -8001,10 +7988,11 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 		/* the value is an UNICODE string but real_value_size is the length
 		   in bytes including the trailing 0 */
 
-		*out_value_len = 2 * (1+biggest_valuesize);
-		*out_data_len  = biggest_datasize;
+		*r->out.value_needed = 2 * (1 + biggest_valuesize);
+		*r->out.data_needed  = biggest_datasize;
 
-		DEBUG(6,("final values: [%d], [%d]\n", *out_value_len, *out_data_len));
+		DEBUG(6,("final values: [%d], [%d]\n",
+			*r->out.value_needed, *r->out.data_needed));
 
 		goto done;
 	}
@@ -8014,46 +8002,34 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 	 * that's the number of bytes not the number of unicode chars
 	 */
 
-	if ( key_index != -1 )
-		val = regval_ctr_specific_value( p_data->keys[key_index].values, idx );
+	if (key_index != -1) {
+		val = regval_ctr_specific_value(p_data->keys[key_index].values,
+						r->in.enum_index);
+	}
 
-	if ( !val )
-	{
+	if (!val) {
 
 		/* out_value should default to "" or else NT4 has
 		   problems unmarshalling the response */
 
-		*out_max_value_len=(in_value_len/sizeof(uint16));
-
-		if (in_value_len) {
-			if((*out_value=(uint16 *)TALLOC_ZERO(p->mem_ctx, in_value_len*sizeof(uint8))) == NULL)
-			{
+		if (r->in.value_offered) {
+			*r->out.value_needed = 1;
+			r->out.value_name = talloc_strdup(r, "");
+			if (!r->out.value_name) {
 				result = WERR_NOMEM;
 				goto done;
 			}
-			*out_value_len = (uint32)rpcstr_push((char *)*out_value, "", in_value_len, 0);
 		} else {
-			*out_value=NULL;
-			*out_value_len = 0;
+			r->out.value_name = NULL;
+			*r->out.value_needed = 0;
 		}
 
 		/* the data is counted in bytes */
 
-		*out_max_data_len = in_data_len;
-		*out_data_len     = in_data_len;
-
-		/* only allocate when given a non-zero data_len */
-
-		if ( in_data_len && ((*data_out=(uint8 *)TALLOC_ZERO(p->mem_ctx, in_data_len*sizeof(uint8))) == NULL) )
-		{
-			result = WERR_NOMEM;
-			goto done;
-		}
+		*r->out.data_needed = r->in.data_offered;
 
 		result = WERR_NO_MORE_ITEMS;
-	}
-	else
-	{
+	} else {
 		/*
 		 * the value is:
 		 * - counted in bytes in the request
@@ -8064,36 +8040,29 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 		 */
 
 		/* name */
-		*out_max_value_len=(in_value_len/sizeof(uint16));
-		if (in_value_len) {
-			if ( (*out_value = (uint16 *)TALLOC_ZERO(p->mem_ctx, in_value_len*sizeof(uint8))) == NULL )
-			{
+		if (r->in.value_offered) {
+			r->out.value_name = talloc_strdup(r, regval_name(val));
+			if (!r->out.value_name) {
 				result = WERR_NOMEM;
 				goto done;
 			}
-
-			*out_value_len = (uint32)rpcstr_push((char *)*out_value, regval_name(val), (size_t)in_value_len, 0);
+			*r->out.value_needed = strlen_m(regval_name(val));
 		} else {
-			*out_value = NULL;
-			*out_value_len = 0;
+			r->out.value_name = NULL;
+			*r->out.value_needed = 0;
 		}
 
 		/* type */
 
-		*out_type = regval_type( val );
+		*r->out.type = regval_type(val);
 
 		/* data - counted in bytes */
 
-		*out_max_data_len = in_data_len;
-		if ( in_data_len && (*data_out = (uint8 *)TALLOC_ZERO(p->mem_ctx, in_data_len*sizeof(uint8))) == NULL)
-		{
-			result = WERR_NOMEM;
-			goto done;
+		if (r->out.data && regval_size(val)) {
+			memcpy(r->out.data, regval_data_p(val), regval_size(val));
 		}
-		data_len = regval_size(val);
-		if ( *data_out && data_len )
-			memcpy( *data_out, regval_data_p(val), data_len );
-		*out_data_len = data_len;
+
+		*r->out.data_needed = regval_size(val);
 	}
 
 done:
@@ -10246,17 +10215,6 @@ WERROR _spoolss_44(pipes_struct *p,
 
 WERROR _spoolss_47(pipes_struct *p,
 		   struct spoolss_47 *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_EnumPrinterData
-****************************************************************/
-
-WERROR _spoolss_EnumPrinterData(pipes_struct *p,
-				struct spoolss_EnumPrinterData *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;

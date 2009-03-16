@@ -350,27 +350,7 @@ static bool api_spoolss_getprinterdriverdirectory(pipes_struct *p)
 
 static bool api_spoolss_enumprinterdata(pipes_struct *p)
 {
-	SPOOL_Q_ENUMPRINTERDATA q_u;
-	SPOOL_R_ENUMPRINTERDATA r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-	
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-	
-	if(!spoolss_io_q_enumprinterdata("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_enumprinterdata: unable to unmarshall SPOOL_Q_ENUMPRINTERDATA.\n"));
-		return False;
-	}
-	
-	r_u.status = _spoolss_enumprinterdata(p, &q_u, &r_u);
-				
-	if(!spoolss_io_r_enumprinterdata("", &r_u, rdata, 0)) {
-		DEBUG(0,("spoolss_io_r_enumprinterdata: unable to marshall SPOOL_R_ENUMPRINTERDATA.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_spoolss_call(p, NDR_SPOOLSS_ENUMPRINTERDATA);
 }
 
 /****************************************************************************
