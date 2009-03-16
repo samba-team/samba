@@ -28,30 +28,38 @@
 #include "../lib/crypto/crypto.h"
 #include "libcli/auth/libcli_auth.h"
 
+void SMBencrypt_hash(const uint8_t lm_hash[16], const uint8_t *c8, uint8_t p24[24])
+{
+	uint8_t p21[21];
+
+	memset(p21,'\0',21);
+	memcpy(p21, lm_hash, 16);
+
+	SMBOWFencrypt(p21, c8, p24);
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100,("SMBencrypt_hash: lm#, challenge, response\n"));
+	dump_data(100, p21, 16);
+	dump_data(100, c8, 8);
+	dump_data(100, p24, 24);
+#endif
+}
+
 /*
    This implements the X/Open SMB password encryption
    It takes a password ('unix' string), a 8 byte "crypt key" 
    and puts 24 bytes of encrypted password into p24 
 
-   Returns false if password must have been truncated to create LM hash
+   Returns False if password must have been truncated to create LM hash
 */
+
 bool SMBencrypt(const char *passwd, const uint8_t *c8, uint8_t p24[24])
 {
 	bool ret;
-	uint8_t p21[21];
+	uint8_t lm_hash[16];
 
-	memset(p21,'\0',21);
-	ret = E_deshash(passwd, p21); 
-
-	SMBOWFencrypt(p21, c8, p24);
-
-#ifdef DEBUG_PASSWORD
-	DEBUG(100,("SMBencrypt: lm#, challenge, response\n"));
-	dump_data(100, p21, 16);
-	dump_data(100, c8, 8);
-	dump_data(100, p24, 24);
-#endif
-
+	ret = E_deshash(passwd, lm_hash); 
+	SMBencrypt_hash(lm_hash, c8, p24);
 	return ret;
 }
 
@@ -83,6 +91,26 @@ bool E_md4hash(const char *passwd, uint8_t p16[16])
 }
 
 /**
+ * Creates the MD5 Hash of a combination of 16 byte salt and 16 byte NT hash.
+ * @param 16 byte salt.
+ * @param 16 byte NT hash.
+ * @param 16 byte return hashed with md5, caller allocated 16 byte buffer
+ */
+
+void E_md5hash(const uint8_t salt[16], const uint8_t nthash[16], uint8_t hash_out[16])
+{
+	struct MD5Context tctx;
+	uint8_t array[32];
+	
+	memset(hash_out, '\0', 16);
+	memcpy(array, salt, 16);
+	memcpy(&array[16], nthash, 16);
+	MD5Init(&tctx);
+	MD5Update(&tctx, array, 32);
+	MD5Final(hash_out, &tctx);
+}
+
+/**
  * Creates the DES forward-only Hash of the users password in DOS ASCII charset
  * @param passwd password in 'unix' charset.
  * @param p16 return password hashed with DES, caller allocated 16 byte buffer
@@ -109,6 +137,36 @@ bool E_deshash(const char *passwd, uint8_t p16[16])
 	ZERO_STRUCT(dospwd);	
 
 	return ret;
+}
+
+/**
+ * Creates the MD4 and DES (LM) Hash of the users password.  
+ * MD4 is of the NT Unicode, DES is of the DOS UPPERCASE password.
+ * @param passwd password in 'unix' charset.
+ * @param nt_p16 return password hashed with md4, caller allocated 16 byte buffer
+ * @param p16 return password hashed with des, caller allocated 16 byte buffer
+ */
+ 
+/* Does both the NT and LM owfs of a user's password */
+void nt_lm_owf_gen(const char *pwd, uint8_t nt_p16[16], uint8_t p16[16])
+{
+	/* Calculate the MD4 hash (NT compatible) of the password */
+	memset(nt_p16, '\0', 16);
+	E_md4hash(pwd, nt_p16);
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100,("nt_lm_owf_gen: pwd, nt#\n"));
+	dump_data(120, (uint8_t *)pwd, strlen(pwd));
+	dump_data(100, nt_p16, 16);
+#endif
+
+	E_deshash(pwd, (uint8_t *)p16);
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100,("nt_lm_owf_gen: pwd, lm#\n"));
+	dump_data(120, (uint8_t *)pwd, strlen(pwd));
+	dump_data(100, p16, 16);
+#endif
 }
 
 /* Does both the NTLMv2 owfs of a user's password */
@@ -154,14 +212,14 @@ bool ntv2_owf_gen(const uint8_t owf[16],
 
 	ret = push_ucs2_talloc(mem_ctx, &user, user_in, &user_byte_len );
 	if (!ret) {
-		DEBUG(0, ("push_uss2_talloc() for user returned -1 (probably talloc() failure)\n"));
+		DEBUG(0, ("push_uss2_talloc() for user failed)\n"));
 		talloc_free(mem_ctx);
 		return false;
 	}
 
 	ret = push_ucs2_talloc(mem_ctx, &domain, domain_in, &domain_byte_len);
 	if (!ret) {
-		DEBUG(0, ("push_ucs2_talloc() for domain returned -1 (probably talloc() failure)\n"));
+		DEBUG(0, ("push_ucs2_talloc() for domain failed\n"));
 		talloc_free(mem_ctx);
 		return false;
 	}
@@ -201,15 +259,14 @@ void SMBOWFencrypt(const uint8_t passwd[16], const uint8_t *c8, uint8_t p24[24])
 	E_P24(p21, c8, p24);
 }
 
-/* Does the NT MD4 hash then des encryption. */
+/* Does the des encryption. */
  
-void SMBNTencrypt(const char *passwd, uint8_t *c8, uint8_t *p24)
+void SMBNTencrypt_hash(const uint8_t nt_hash[16], uint8_t *c8, uint8_t *p24)
 {
 	uint8_t p21[21];
  
 	memset(p21,'\0',21);
- 
-	E_md4hash(passwd, p21);    
+	memcpy(p21, nt_hash, 16);
 	SMBOWFencrypt(p21, c8, p24);
 
 #ifdef DEBUG_PASSWORD
@@ -219,6 +276,16 @@ void SMBNTencrypt(const char *passwd, uint8_t *c8, uint8_t *p24)
 	dump_data(100, p24, 24);
 #endif
 }
+
+/* Does the NT MD4 hash then des encryption. Plaintext version of the above. */
+
+void SMBNTencrypt(const char *passwd, uint8_t *c8, uint8_t *p24)
+{
+	uint8_t nt_hash[16];
+	E_md4hash(passwd, nt_hash);    
+	SMBNTencrypt_hash(nt_hash, c8, p24);
+}
+
 
 /* Does the md5 encryption from the Key Response for NTLMv2. */
 void SMBOWFencrypt_ntv2(const uint8_t kr[16],
@@ -471,7 +538,7 @@ bool encode_pw_buffer(uint8_t buffer[516], const char *password, int string_flag
 	/* the incoming buffer can be any alignment. */
 	string_flags |= STR_NOALIGN;
 
-	new_pw_len = push_string(new_pw,
+	new_pw_len = push_string(new_pw, new_pw,
 				 password, 
 				 sizeof(new_pw), string_flags);
 	
@@ -494,14 +561,17 @@ bool encode_pw_buffer(uint8_t buffer[516], const char *password, int string_flag
  *new_pw_len is the length in bytes of the possibly mulitbyte
  returned password including termination.
 ************************************************************/
-bool decode_pw_buffer(uint8_t in_buffer[516], char *new_pwrd,
-		      int new_pwrd_size, int string_flags)
+
+bool decode_pw_buffer(TALLOC_CTX *ctx,
+		      uint8_t in_buffer[516],
+		      char **pp_new_pwrd,
+		      size_t *new_pw_len,
+		      charset_t string_charset)
 {
 	int byte_len=0;
-	ssize_t converted_pw_len;
 
-	/* the incoming buffer can be any alignment. */
-	string_flags |= STR_NOALIGN;
+	*pp_new_pwrd = NULL;
+	*new_pw_len = 0;
 
 	/*
 	  Warning !!! : This function is called from some rpc call.
@@ -520,25 +590,49 @@ bool decode_pw_buffer(uint8_t in_buffer[516], char *new_pwrd,
 
 	/* Password cannot be longer than the size of the password buffer */
 	if ( (byte_len < 0) || (byte_len > 512)) {
+		DEBUG(0, ("decode_pw_buffer: incorrect password length (%d).\n", byte_len));
+		DEBUG(0, ("decode_pw_buffer: check that 'encrypt passwords = yes'\n"));
 		return false;
 	}
 
-	/* decode into the return buffer.  Buffer length supplied */
- 	converted_pw_len = pull_string(new_pwrd, &in_buffer[512 - byte_len], new_pwrd_size, 
-				  byte_len, string_flags);
-
-	if (converted_pw_len == -1) {
+	/* decode into the return buffer. */
+	if (!convert_string_talloc(ctx, string_charset, CH_UNIX, 
+				   &in_buffer[512 - byte_len],
+				   byte_len,
+				   (void *)pp_new_pwrd,
+				   new_pw_len,
+				   false)) {
+		DEBUG(0, ("decode_pw_buffer: failed to convert incoming password\n"));
 		return false;
 	}
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("decode_pw_buffer: new_pwrd: "));
-	dump_data(100, (const uint8_t *)new_pwrd, converted_pw_len);
-	DEBUG(100,("multibyte len:%d\n", (int)converted_pw_len));
+	dump_data(100, (uint8_t *)*pp_new_pwrd, *new_pw_len);
+	DEBUG(100,("multibyte len:%lu\n", (unsigned long int)*new_pw_len));
 	DEBUG(100,("original char len:%d\n", byte_len/2));
 #endif
-	
+
 	return true;
+}
+
+/***********************************************************
+ Decode an arc4 encrypted password change buffer.
+************************************************************/
+
+void encode_or_decode_arc4_passwd_buffer(unsigned char pw_buf[532], const DATA_BLOB *psession_key)
+{
+	struct MD5Context tctx;
+	unsigned char key_out[16];
+
+	/* Confounder is last 16 bytes. */
+
+	MD5Init(&tctx);
+	MD5Update(&tctx, &pw_buf[516], 16);
+	MD5Update(&tctx, psession_key->data, psession_key->length);
+	MD5Final(key_out, &tctx);
+	/* arc4 with key_out. */
+	arcfour_crypt(pw_buf, key_out, 516);
 }
 
 /***********************************************************
@@ -593,3 +687,97 @@ bool extract_pw_from_buffer(TALLOC_CTX *mem_ctx,
 
 	return true;
 }
+
+
+/* encode a wkssvc_PasswordBuffer:
+ *
+ * similar to samr_CryptPasswordEx. Different: 8byte confounder (instead of
+ * 16byte), confounder in front of the 516 byte buffer (instead of after that
+ * buffer), calling MD5Update() first with session_key and then with confounder
+ * (vice versa in samr) - Guenther */
+
+void encode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
+					const char *pwd,
+					DATA_BLOB *session_key,
+					struct wkssvc_PasswordBuffer **pwd_buf)
+{
+	uint8_t buffer[516];
+	struct MD5Context ctx;
+	struct wkssvc_PasswordBuffer *my_pwd_buf = NULL;
+	DATA_BLOB confounded_session_key;
+	int confounder_len = 8;
+	uint8_t confounder[8];
+
+	my_pwd_buf = talloc_zero(mem_ctx, struct wkssvc_PasswordBuffer);
+	if (!my_pwd_buf) {
+		return;
+	}
+
+	confounded_session_key = data_blob_talloc(mem_ctx, NULL, 16);
+
+	encode_pw_buffer(buffer, pwd, STR_UNICODE);
+
+	generate_random_buffer((uint8_t *)confounder, confounder_len);
+
+	MD5Init(&ctx);
+	MD5Update(&ctx, session_key->data, session_key->length);
+	MD5Update(&ctx, confounder, confounder_len);
+	MD5Final(confounded_session_key.data, &ctx);
+
+	arcfour_crypt_blob(buffer, 516, &confounded_session_key);
+
+	memcpy(&my_pwd_buf->data[0], confounder, confounder_len);
+	memcpy(&my_pwd_buf->data[8], buffer, 516);
+
+	data_blob_free(&confounded_session_key);
+
+	*pwd_buf = my_pwd_buf;
+}
+
+WERROR decode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
+					  struct wkssvc_PasswordBuffer *pwd_buf,
+					  DATA_BLOB *session_key,
+					  char **pwd)
+{
+	uint8_t buffer[516];
+	struct MD5Context ctx;
+	size_t pwd_len;
+
+	DATA_BLOB confounded_session_key;
+
+	int confounder_len = 8;
+	uint8_t confounder[8];
+
+	*pwd = NULL;
+
+	if (!pwd_buf) {
+		return WERR_BAD_PASSWORD;
+	}
+
+	if (session_key->length != 16) {
+		DEBUG(10,("invalid session key\n"));
+		return WERR_BAD_PASSWORD;
+	}
+
+	confounded_session_key = data_blob_talloc(mem_ctx, NULL, 16);
+
+	memcpy(&confounder, &pwd_buf->data[0], confounder_len);
+	memcpy(&buffer, &pwd_buf->data[8], 516);
+
+	MD5Init(&ctx);
+	MD5Update(&ctx, session_key->data, session_key->length);
+	MD5Update(&ctx, confounder, confounder_len);
+	MD5Final(confounded_session_key.data, &ctx);
+
+	arcfour_crypt_blob(buffer, 516, &confounded_session_key);
+
+	if (!decode_pw_buffer(mem_ctx, buffer, pwd, &pwd_len, CH_UTF16)) {
+		data_blob_free(&confounded_session_key);
+		return WERR_BAD_PASSWORD;
+	}
+
+	data_blob_free(&confounded_session_key);
+
+	return WERR_OK;
+}
+
