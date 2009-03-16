@@ -295,28 +295,6 @@ SYSTEMTIME;
 
 /********************************************/
 
-typedef struct spool_q_enumprinterdata
-{
-	POLICY_HND handle;
-	uint32 index;
-	uint32 valuesize;
-	uint32 datasize;
-}
-SPOOL_Q_ENUMPRINTERDATA;
-
-typedef struct spool_r_enumprinterdata
-{
-	uint32 valuesize;
-	uint16 *value;
-	uint32 realvaluesize;
-	uint32 type;
-	uint32 datasize;
-	uint8 *data;
-	uint32 realdatasize;
-	WERROR status;
-}
-SPOOL_R_ENUMPRINTERDATA;
-
 typedef struct spool_q_enumprinterkey
 {
 	POLICY_HND handle;
