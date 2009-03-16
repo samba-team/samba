@@ -5673,19 +5673,6 @@ NTSTATUS cli_do_rpc_ndr(struct rpc_pipe_client *cli,
 			const struct ndr_interface_table *table,
 			uint32 opnum, void *r);
 
-/* The following definitions come from rpc_parse/parse_buffer.c  */
-
-bool rpcbuf_init(RPC_BUFFER *buffer, uint32 size, TALLOC_CTX *ctx);
-bool prs_rpcbuffer(const char *desc, prs_struct *ps, int depth, RPC_BUFFER *buffer);
-bool prs_rpcbuffer_p(const char *desc, prs_struct *ps, int depth, RPC_BUFFER **buffer);
-bool rpcbuf_alloc_size(RPC_BUFFER *buffer, uint32 buffer_size);
-void rpcbuf_move(RPC_BUFFER *src, RPC_BUFFER **dest);
-uint32 rpcbuf_get_size(RPC_BUFFER *buffer);
-bool smb_io_relstr(const char *desc, RPC_BUFFER *buffer, int depth, UNISTR *string);
-bool smb_io_relarraystr(const char *desc, RPC_BUFFER *buffer, int depth, uint16 **string);
-bool smb_io_relsecdesc(const char *desc, RPC_BUFFER *buffer, int depth, SEC_DESC **secdesc);
-uint32 size_of_relative_string(UNISTR *string);
-
 /* The following definitions come from rpc_parse/parse_misc.c  */
 
 bool smb_io_time(const char *desc, NTTIME *nttime, prs_struct *ps, int depth);
