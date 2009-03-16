@@ -58,3 +58,18 @@ WERROR pull_spoolss_PrinterData(TALLOC_CTX *mem_ctx,
 	return WERR_OK;
 }
 
+/*******************************************************************
+ ********************************************************************/
+
+WERROR push_spoolss_PrinterData(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
+				enum winreg_Type type,
+				union spoolss_PrinterData *data)
+{
+	enum ndr_err_code ndr_err;
+	ndr_err = ndr_push_union_blob(blob, mem_ctx, NULL, data, type,
+			(ndr_push_flags_fn_t)ndr_push_spoolss_PrinterData);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return WERR_GENERAL_FAILURE;
+	}
+	return WERR_OK;
+}
