@@ -38,10 +38,6 @@ struct select_event_context {
 
 	/* information for exiting from the event loop */
 	int exit_code;
-
-	/* this is incremented when the loop over events causes something which
-	   could change the events yet to be processed */
-	uint32_t destruction_count;
 };
 
 /*
@@ -95,8 +91,6 @@ static int select_event_fd_destructor(struct tevent_fd *fde)
 		if (select_ev->maxfd == fde->fd) {
 			select_ev->maxfd = EVENT_INVALID_MAXFD;
 		}
-
-		select_ev->destruction_count++;
 	}
 
 	return tevent_common_fd_destructor(fde);
@@ -138,7 +132,6 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 	fd_set r_fds, w_fds;
 	struct tevent_fd *fde;
 	int selrtn;
-	uint32_t destruction_count = ++select_ev->destruction_count;
 
 	/* we maybe need to recalculate the maxfd */
 	if (select_ev->maxfd == EVENT_INVALID_MAXFD) {
@@ -200,15 +193,13 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 			if (FD_ISSET(fde->fd, &w_fds)) flags |= TEVENT_FD_WRITE;
 			if (flags) {
 				fde->handler(select_ev->ev, fde, flags, fde->private_data);
-				if (destruction_count != select_ev->destruction_count) {
-					break;
-				}
+				break;
 			}
 		}
 	}
 
 	return 0;
-}		
+}
 
 /*
   do a single event loop using the events defined in ev 
