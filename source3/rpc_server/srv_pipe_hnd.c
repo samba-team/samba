@@ -943,7 +943,7 @@ bool fsp_is_np(struct files_struct *fsp)
 }
 
 struct np_proxy_state {
-	struct async_req_queue *read_queue;
+	struct tevent_queue *read_queue;
 	struct tevent_queue *write_queue;
 	int fd;
 
@@ -1104,7 +1104,7 @@ static struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 
 	result->msg = NULL;
 
-	result->read_queue = async_req_queue_init(result);
+	result->read_queue = tevent_queue_create(result, "np_read");
 	if (result->read_queue == NULL) {
 		goto fail;
 	}
@@ -1304,19 +1304,19 @@ struct np_read_state {
 	bool is_data_outstanding;
 };
 
-static void np_read_trigger(struct async_req *req);
+static void np_read_trigger(struct tevent_req *req, void *private_data);
 static void np_read_done(struct tevent_req *subreq);
 
-struct async_req *np_read_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
-			       struct fake_file_handle *handle,
-			       uint8_t *data, size_t len)
+struct tevent_req *np_read_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+				struct fake_file_handle *handle,
+				uint8_t *data, size_t len)
 {
-	struct async_req *result;
+	struct tevent_req *req;
 	struct np_read_state *state;
 	NTSTATUS status;
 
-	if (!async_req_setup(mem_ctx, &result, &state,
-			     struct np_read_state)) {
+	req = tevent_req_create(mem_ctx, &state, struct np_read_state);
+	if (req == NULL) {
 		return NULL;
 	}
 
@@ -1361,32 +1361,35 @@ struct async_req *np_read_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 		state->data = data;
 		state->len = len;
 
-		if (!async_req_enqueue(p->read_queue, ev, result,
-				       np_read_trigger)) {
+		if (!tevent_queue_add(p->read_queue, ev, req, np_read_trigger,
+				      NULL)) {
 			goto fail;
 		}
-		return result;
+		return req;
 	}
 
 	status = NT_STATUS_INVALID_HANDLE;
  post_status:
-	if (async_post_ntstatus(result, ev, status)) {
-		return result;
+	if (NT_STATUS_IS_OK(status)) {
+		tevent_req_done(req);
+	} else {
+		tevent_req_nterror(req, status);
 	}
+	return tevent_req_post(req, ev);
  fail:
-	TALLOC_FREE(result);
+	TALLOC_FREE(req);
 	return NULL;
 }
 
-static void np_read_trigger(struct async_req *req)
+static void np_read_trigger(struct tevent_req *req, void *private_data)
 {
-	struct np_read_state *state = talloc_get_type_abort(
-		req->private_data, struct np_read_state);
+	struct np_read_state *state = tevent_req_callback_data(
+		req, struct np_read_state);
 	struct tevent_req *subreq;
 
 	subreq = read_packet_send(state, state->ev, state->p->fd,
 				  RPC_HEADER_LEN, rpc_frag_more_fn, NULL);
-	if (async_req_nomem(subreq, req)) {
+	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
 	tevent_req_set_callback(subreq, np_read_done, req);
@@ -1394,10 +1397,10 @@ static void np_read_trigger(struct async_req *req)
 
 static void np_read_done(struct tevent_req *subreq)
 {
-	struct async_req *req =
-		tevent_req_callback_data(subreq, struct async_req);
-	struct np_read_state *state = talloc_get_type_abort(
-		req->private_data, struct np_read_state);
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct np_read_state *state = tevent_req_data(
+		req, struct np_read_state);
 	ssize_t received;
 	size_t thistime;
 	int err;
@@ -1405,7 +1408,7 @@ static void np_read_done(struct tevent_req *subreq)
 	received = read_packet_recv(subreq, state->p, &state->p->msg, &err);
 	TALLOC_FREE(subreq);
 	if (received == -1) {
-		async_req_nterror(req, map_nt_error_from_unix(err));
+		tevent_req_nterror(req, map_nt_error_from_unix(err));
 		return;
 	}
 
@@ -1422,18 +1425,18 @@ static void np_read_done(struct tevent_req *subreq)
 		state->is_data_outstanding = false;
 	}
 
-	async_req_done(req);
+	tevent_req_done(req);
 	return;
 }
 
-NTSTATUS np_read_recv(struct async_req *req, ssize_t *nread,
+NTSTATUS np_read_recv(struct tevent_req *req, ssize_t *nread,
 		      bool *is_data_outstanding)
 {
-	struct np_read_state *state = talloc_get_type_abort(
-		req->private_data, struct np_read_state);
+	struct np_read_state *state = tevent_req_data(
+		req, struct np_read_state);
 	NTSTATUS status;
 
-	if (async_req_is_nterror(req, &status)) {
+	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
 	*nread = state->nread;
