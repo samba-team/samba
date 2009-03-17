@@ -265,14 +265,11 @@ bool tevent_req_is_in_progress(struct tevent_req *req)
  */
 void tevent_req_received(struct tevent_req *req)
 {
-	talloc_free(req->data);
-	req->data = NULL;
+	TALLOC_FREE(req->data);
 	req->private_print = NULL;
 
-	talloc_free(req->internal.trigger);
-	req->internal.trigger = NULL;
-	talloc_free(req->internal.timer);
-	req->internal.timer = NULL;
+	TALLOC_FREE(req->internal.trigger);
+	TALLOC_FREE(req->internal.timer);
 
 	req->internal.state = TEVENT_REQ_RECEIVED;
 }
@@ -313,8 +310,7 @@ static void tevent_req_timedout(struct tevent_context *ev,
 	struct tevent_req *req = talloc_get_type(private_data,
 				 struct tevent_req);
 
-	talloc_free(req->internal.timer);
-	req->internal.timer = NULL;
+	TALLOC_FREE(req->internal.timer);
 
 	tevent_req_finish(req, TEVENT_REQ_TIMED_OUT);
 }
@@ -323,7 +319,7 @@ bool tevent_req_set_endtime(struct tevent_req *req,
 			    struct tevent_context *ev,
 			    struct timeval endtime)
 {
-	talloc_free(req->internal.timer);
+	TALLOC_FREE(req->internal.timer);
 
 	req->internal.timer = tevent_add_timer(ev, req, endtime,
 					       tevent_req_timedout,
