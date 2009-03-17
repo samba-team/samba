@@ -15,6 +15,10 @@
 #define PRINTER_ENUM_ICONMASK	( (PRINTER_ENUM_ICON1|PRINTER_ENUM_ICON2|PRINTER_ENUM_ICON3|PRINTER_ENUM_ICON4|PRINTER_ENUM_ICON5|PRINTER_ENUM_ICON6|PRINTER_ENUM_ICON7|PRINTER_ENUM_ICON8) )
 #define SPOOLSS_ARCHITECTURE_NT_X86	( "Windows NT x86" )
 #define SPOOLSS_DEFAULT_SERVER_PATH	( "C:\\WINDOWS\\system32\\spool" )
+#define SPL_LOCAL_PORT	( "Local Port" )
+#define SPL_TCPIP_PORT	( "Standard TCP/IP Port" )
+#define SPL_XCV_MONITOR_LOCALMON	( ",XcvMonitor Local Port" )
+#define SPL_XCV_MONITOR_TCPMON	( ",XcvMonitor Standard TCP/IP Port" )
 #define PRINTER_CHANGE_PRINTER	( 0x000000FF )
 #define PRINTER_CHANGE_JOB	( 0x0000FF00 )
 #define PRINTER_CHANGE_FORM	( (PRINTER_CHANGE_ADD_FORM|PRINTER_CHANGE_SET_FORM|PRINTER_CHANGE_DELETE_FORM) )
@@ -324,7 +328,7 @@ struct spoolss_PrinterInfo2 {
 	const char * parameters;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	struct security_descriptor *secdesc;/* [relative,subcontext(0)] */
 	uint32_t attributes;
-	uint32_t priority;
+	uint32_t priority;/* [range(0,99)] */
 	uint32_t defaultpriority;
 	uint32_t starttime;
 	uint32_t untiltime;
@@ -398,7 +402,7 @@ struct spoolss_JobInfo1 {
 	const char * data_type;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * text_status;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	uint32_t status;
-	uint32_t priority;
+	uint32_t priority;/* [range(0,99)] */
 	uint32_t position;
 	uint32_t total_pages;
 	uint32_t pages_printed;
@@ -420,7 +424,7 @@ struct spoolss_JobInfo2 {
 	const char * text_status;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	struct security_descriptor *secdesc;/* [relative] */
 	uint32_t status;
-	uint32_t priority;
+	uint32_t priority;/* [range(0,99)] */
 	uint32_t position;
 	uint32_t start_time;
 	uint32_t until_time;
@@ -452,7 +456,7 @@ struct spoolss_JobInfo4 {
 	const char * text_status;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	struct security_descriptor *secdesc;/* [relative] */
 	uint32_t status;
-	uint32_t priority;
+	uint32_t priority;/* [range(0,99)] */
 	uint32_t position;
 	uint32_t start_time;
 	uint32_t until_time;
@@ -480,7 +484,7 @@ struct spoolss_SetJobInfo1 {
 	const char *data_type;/* [unique,charset(UTF16)] */
 	const char *text_status;/* [unique,charset(UTF16)] */
 	uint32_t status;
-	uint32_t priority;
+	uint32_t priority;/* [range(0,99)] */
 	uint32_t position;
 	uint32_t total_pages;
 	uint32_t pages_printed;
@@ -502,7 +506,7 @@ struct spoolss_SetJobInfo2 {
 	const char *text_status;/* [unique,charset(UTF16)] */
 	uint32_t _secdesc_ptr;
 	uint32_t status;
-	uint32_t priority;
+	uint32_t priority;/* [range(0,99)] */
 	uint32_t position;
 	uint32_t start_time;
 	uint32_t until_time;
@@ -528,7 +532,7 @@ struct spoolss_SetJobInfo4 {
 	const char *text_status;/* [unique,charset(UTF16)] */
 	uint32_t _secdesc_ptr;
 	uint32_t status;
-	uint32_t priority;
+	uint32_t priority;/* [range(0,99)] */
 	uint32_t position;
 	uint32_t start_time;
 	uint32_t until_time;
@@ -652,7 +656,7 @@ struct spoolss_SetPrinterInfo2 {
 	const char *parameters;/* [unique,charset(UTF16)] */
 	struct security_descriptor *secdesc;/* [unique,subcontext(0)] */
 	uint32_t attributes;
-	uint32_t priority;
+	uint32_t priority;/* [range(0,99)] */
 	uint32_t defaultpriority;
 	uint32_t starttime;
 	uint32_t untiltime;
@@ -1344,13 +1348,13 @@ enum spoolss_Field
 enum spoolss_NotifyType
 #ifndef USE_UINT_ENUMS
  {
-	SPOOLSS_NOTIFY_PRINTER=0,
-	SPOOLSS_NOTIFY_JOB=1
+	PRINTER_NOTIFY_TYPE=0x00,
+	JOB_NOTIFY_TYPE=0x01
 }
 #else
  { __donnot_use_enum_spoolss_NotifyType=0x7FFFFFFF}
-#define SPOOLSS_NOTIFY_PRINTER ( 0 )
-#define SPOOLSS_NOTIFY_JOB ( 1 )
+#define PRINTER_NOTIFY_TYPE ( 0x00 )
+#define JOB_NOTIFY_TYPE ( 0x01 )
 #endif
 ;
 
