@@ -179,34 +179,6 @@
 #define JOB_NOTIFY_BYTES_PRINTED		0x17
 
 /*
- * Set of macros for flagging what changed in the PRINTER_INFO_2 struct
- * when sending messages to other smbd's
- */
-#define PRINTER_MESSAGE_NULL            0x00000000
-#define PRINTER_MESSAGE_DRIVER		0x00000001
-#define PRINTER_MESSAGE_COMMENT		0x00000002
-#define PRINTER_MESSAGE_PRINTERNAME	0x00000004
-#define PRINTER_MESSAGE_LOCATION	0x00000008
-#define PRINTER_MESSAGE_DEVMODE		0x00000010	/* not curently supported */
-#define PRINTER_MESSAGE_SEPFILE		0x00000020
-#define PRINTER_MESSAGE_PRINTPROC	0x00000040
-#define PRINTER_MESSAGE_PARAMS		0x00000080
-#define PRINTER_MESSAGE_DATATYPE	0x00000100
-#define PRINTER_MESSAGE_SECDESC		0x00000200
-#define PRINTER_MESSAGE_CJOBS		0x00000400
-#define PRINTER_MESSAGE_PORT		0x00000800
-#define PRINTER_MESSAGE_SHARENAME	0x00001000
-#define PRINTER_MESSAGE_ATTRIBUTES	0x00002000
-
-typedef struct printer_message_info {
-	uint32 low;		/* PRINTER_CHANGE_XXX */
-	uint32 high;		/* PRINTER_CHANGE_XXX */
-	fstring printer_name;
-	uint32 flags;		/* PRINTER_MESSAGE_XXX */
-}
-PRINTER_MESSAGE_INFO;
-
-/*
  * The printer attributes.
  * I #defined all of them (grabbed form MSDN)
  * I'm only using:
