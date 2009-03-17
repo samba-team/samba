@@ -1,5 +1,5 @@
 AC_PREREQ(2.50)
-AC_INIT(tevent, 0.9.4)
+AC_INIT(tevent, 0.9.5)
 AC_CONFIG_SRCDIR([tevent.c])
 AC_CONFIG_HEADER(config.h)
 
