@@ -5827,8 +5827,6 @@ bool smb_io_rpc_auth_schannel_chk(const char *desc, int auth_len,
 bool sec_io_desc(const char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth);
 bool sec_io_desc_buf(const char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int depth);
 
-/* The following definitions come from rpc_parse/parse_spoolss.c  */
-
 /* The following definitions come from rpc_server/srv_eventlog_lib.c  */
 
 TDB_CONTEXT *elog_init_tdb( char *tdbfilename );
