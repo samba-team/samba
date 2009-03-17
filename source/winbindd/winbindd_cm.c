@@ -1747,7 +1747,7 @@ static void set_dc_type_and_flags_connect( struct winbindd_domain *domain )
 	NTSTATUS 		result;
 	WERROR werr;
 	TALLOC_CTX              *mem_ctx = NULL;
-	struct rpc_pipe_client  *cli;
+	struct rpc_pipe_client  *cli = NULL;
 	POLICY_HND pol;
 	union dssetup_DsRoleInfo info;
 	union lsa_PolicyInformation *lsa_info = NULL;
