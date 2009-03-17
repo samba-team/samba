@@ -34,6 +34,7 @@ struct tevent_queue_entry {
 	bool triggered;
 
 	struct tevent_req *req;
+	struct tevent_context *ev;
 
 	tevent_queue_trigger_fn_t trigger;
 	void *private_data;
@@ -44,11 +45,15 @@ struct tevent_queue {
 	const char *location;
 
 	bool running;
-	struct tevent_timer *timer;
+	struct tevent_immediate *immediate;
 
 	size_t length;
 	struct tevent_queue_entry *list;
 };
+
+static void tevent_queue_immediate_trigger(struct tevent_context *ev,
+					   struct tevent_immediate *im,
+					   void *private_data);
 
 static int tevent_queue_entry_destructor(struct tevent_queue_entry *e)
 {
@@ -61,13 +66,22 @@ static int tevent_queue_entry_destructor(struct tevent_queue_entry *e)
 	DLIST_REMOVE(q->list, e);
 	q->length--;
 
-	if (e->triggered &&
-	    q->running &&
-	    q->list) {
-		q->list->triggered = true;
-		q->list->trigger(q->list->req,
-				 q->list->private_data);
+	if (!q->running) {
+		return 0;
 	}
+
+	if (!q->list) {
+		return 0;
+	}
+
+	if (q->list->triggered) {
+		return 0;
+	}
+
+	tevent_schedule_immediate(q->immediate,
+				  q->list->ev,
+				  tevent_queue_immediate_trigger,
+				  q);
 
 	return 0;
 }
@@ -100,6 +114,11 @@ struct tevent_queue *_tevent_queue_create(TALLOC_CTX *mem_ctx,
 		talloc_free(queue);
 		return NULL;
 	}
+	queue->immediate = tevent_create_immediate(queue);
+	if (!queue->immediate) {
+		talloc_free(queue);
+		return NULL;
+	}
 
 	queue->location = location;
 
@@ -110,16 +129,16 @@ struct tevent_queue *_tevent_queue_create(TALLOC_CTX *mem_ctx,
 	return queue;
 }
 
-static void tevent_queue_timer_start(struct tevent_context *ev,
-				     struct tevent_timer *te,
-				     struct timeval now,
-				     void *private_data)
+static void tevent_queue_immediate_trigger(struct tevent_context *ev,
+					   struct tevent_immediate *im,
+					   void *private_data)
 {
 	struct tevent_queue *q = talloc_get_type(private_data,
 				  struct tevent_queue);
 
-	talloc_free(te);
-	q->timer = NULL;
+	if (!q->running) {
+		return;
+	}
 
 	q->list->triggered = true;
 	q->list->trigger(q->list->req, q->list->private_data);
@@ -140,56 +159,56 @@ bool tevent_queue_add(struct tevent_queue *queue,
 
 	e->queue = queue;
 	e->req = req;
+	e->ev = ev;
 	e->trigger = trigger;
 	e->private_data = private_data;
-
-	if (queue->running &&
-	    !queue->timer &&
-	    !queue->list) {
-		queue->timer = tevent_add_timer(ev, queue, tevent_timeval_zero(),
-						tevent_queue_timer_start,
-						queue);
-		if (!queue->timer) {
-			talloc_free(e);
-			return false;
-		}
-	}
 
 	DLIST_ADD_END(queue->list, e, struct tevent_queue_entry *);
 	queue->length++;
 	talloc_set_destructor(e, tevent_queue_entry_destructor);
 
-	return true;
-}
-
-bool tevent_queue_start(struct tevent_queue *queue,
-			struct tevent_context *ev)
-{
-	if (queue->running) {
-		/* already started */
+	if (!queue->running) {
 		return true;
 	}
 
-	if (!queue->timer &&
-	    queue->list) {
-		queue->timer = tevent_add_timer(ev, queue, tevent_timeval_zero(),
-						tevent_queue_timer_start,
-						queue);
-		if (!queue->timer) {
-			return false;
-		}
+	if (queue->list->triggered) {
+		return true;
+	}
+
+	tevent_schedule_immediate(queue->immediate,
+				  queue->list->ev,
+				  tevent_queue_immediate_trigger,
+				  queue);
+
+	return true;
+}
+
+void tevent_queue_start(struct tevent_queue *queue)
+{
+	if (queue->running) {
+		/* already started */
+		return;
 	}
 
 	queue->running = true;
 
-	return true;
+	if (!queue->list) {
+		return;
+	}
+
+	if (queue->list->triggered) {
+		return;
+	}
+
+	tevent_schedule_immediate(queue->immediate,
+				  queue->list->ev,
+				  tevent_queue_immediate_trigger,
+				  queue);
 }
 
 void tevent_queue_stop(struct tevent_queue *queue)
 {
 	queue->running = false;
-	talloc_free(queue->timer);
-	queue->timer = NULL;
 }
 
 size_t tevent_queue_length(struct tevent_queue *queue)

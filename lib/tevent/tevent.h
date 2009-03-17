@@ -314,8 +314,7 @@ bool tevent_queue_add(struct tevent_queue *queue,
 		      struct tevent_req *req,
 		      tevent_queue_trigger_fn_t trigger,
 		      void *private_data);
-bool tevent_queue_start(struct tevent_queue *queue,
-			struct tevent_context *ev);
+void tevent_queue_start(struct tevent_queue *queue);
 void tevent_queue_stop(struct tevent_queue *queue);
 
 size_t tevent_queue_length(struct tevent_queue *queue);
