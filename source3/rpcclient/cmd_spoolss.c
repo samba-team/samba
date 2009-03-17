@@ -682,6 +682,7 @@ static void display_reg_value(REGISTRY_VALUE value)
 			break;
 		}
 
+		printf("%s: REG_MULTI_SZ: \n", value.valuename);
 		for (i=0; i<num_values; i++) {
 			d_printf("%s\n", values[i]);
 		}
