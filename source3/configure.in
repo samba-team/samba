@@ -266,7 +266,7 @@ if test "$ac_cv_prog_gnu_ld" = "yes"; then
         else
            AC_MSG_CHECKING(GNU ld release version)
            changequote(,)dnl
-           ac_cv_gnu_ld_vernr=`echo $ac_cv_gnu_ld_version | sed -n 's,^.*\([1-9][0-9]*\.[0-9][0-9]*\).*$,\1,p'`
+           ac_cv_gnu_ld_vernr=`echo $ac_cv_gnu_ld_version | sed -n 's,^.*[^0-9\.]\+\([1-9][0-9]*\.[0-9][0-9]*\).*$,\1,p'`
            ac_cv_gnu_ld_vernr_major=`echo $ac_cv_gnu_ld_vernr | cut -d '.' -f 1`
            ac_cv_gnu_ld_vernr_minor=`echo $ac_cv_gnu_ld_vernr | cut -d '.' -f 2`
            changequote([,])dnl
@@ -278,7 +278,7 @@ if test "$ac_cv_prog_gnu_ld" = "yes"; then
            if test "$ac_cv_gnu_ld_vernr_major" -lt 2 || test "$ac_cv_gnu_ld_vernr_minor" -lt 14; then
              ac_cv_gnu_ld_no_default_allow_shlib_undefined=yes
            fi
-           if test "$ac_cv_gnu_ld_vernr_major" -gt 2 || test "$ac_cv_gnu_ld_vernr_major"=2 && test "$ac_cv_gnu_ld_vernr_minor" -ge 12; then
+           if test "$ac_cv_gnu_ld_vernr_major" -gt 2 || test "$ac_cv_gnu_ld_vernr_major" = 2 && test "$ac_cv_gnu_ld_vernr_minor" -ge 12; then
              ac_cv_gnu_ld_version_script=yes
            fi
         fi
