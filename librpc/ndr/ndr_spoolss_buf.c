@@ -438,6 +438,99 @@ uint32_t ndr_size_spoolss_EnumPrintProcDataTypes_info(TALLOC_CTX *mem_ctx, struc
 }
 
 /*
+  spoolss_EnumPrinterDataEx
+*/
+
+enum ndr_err_code ndr_push_spoolss_EnumPrinterDataEx(struct ndr_push *ndr, int flags, const struct spoolss_EnumPrinterDataEx *r)
+{
+	struct _spoolss_EnumPrinterDataEx _r;
+	if (flags & NDR_IN) {
+		_r.in.handle	= r->in.handle;
+		_r.in.key_name	= r->in.key_name;
+		_r.in.offered	= r->in.offered;
+		NDR_CHECK(ndr_push__spoolss_EnumPrinterDataEx(ndr, flags, &_r));
+	}
+	if (flags & NDR_OUT) {
+		struct ndr_push *_ndr_info;
+		_r.in.handle	= r->in.handle;
+		_r.in.key_name	= r->in.key_name;
+		_r.in.offered	= r->in.offered;
+		_r.out.count	= r->out.count;
+		_r.out.needed	= r->out.needed;
+		_r.out.result	= r->out.result;
+		if (r->in.offered >= *r->out.needed) {
+			struct __spoolss_EnumPrinterDataEx __r;
+			_ndr_info = ndr_push_init_ctx(ndr, ndr->iconv_convenience);
+			NDR_ERR_HAVE_NO_MEMORY(_ndr_info);
+			_ndr_info->flags= ndr->flags;
+			__r.in.count	= *r->out.count;
+			__r.out.info	= *r->out.info;
+			NDR_CHECK(ndr_push___spoolss_EnumPrinterDataEx(_ndr_info, flags, &__r));
+			if (r->in.offered > _ndr_info->offset) {
+				uint32_t _padding_len = r->in.offered - _ndr_info->offset;
+				NDR_CHECK(ndr_push_zero(_ndr_info, _padding_len));
+			}
+			_r.out.info = ndr_push_blob(_ndr_info);
+		}
+		NDR_CHECK(ndr_push__spoolss_EnumPrinterDataEx(ndr, flags, &_r));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+enum ndr_err_code ndr_pull_spoolss_EnumPrinterDataEx(struct ndr_pull *ndr, int flags, struct spoolss_EnumPrinterDataEx *r)
+{
+	struct _spoolss_EnumPrinterDataEx _r;
+	if (flags & NDR_IN) {
+		_r.in.handle	= r->in.handle;
+		_r.in.key_name	= r->in.key_name;
+		ZERO_STRUCT(r->out);
+		NDR_CHECK(ndr_pull__spoolss_EnumPrinterDataEx(ndr, flags, &_r));
+		r->in.handle	= _r.in.handle;
+		r->in.key_name	= _r.in.key_name;
+		r->in.offered	= _r.in.offered;
+		r->out.needed	= _r.out.needed;
+		r->out.count	= _r.out.count;
+		NDR_PULL_ALLOC(ndr, r->out.info);
+		ZERO_STRUCTP(r->out.info);
+	}
+	if (flags & NDR_OUT) {
+		_r.in.handle	= r->in.handle;
+		_r.in.key_name	= r->in.key_name;
+		_r.in.offered	= r->in.offered;
+		_r.out.count	= r->out.count;
+		_r.out.needed	= r->out.needed;
+		NDR_CHECK(ndr_pull__spoolss_EnumPrinterDataEx(ndr, flags, &_r));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.info);
+		}
+		*r->out.info	= NULL;
+		r->out.needed	= _r.out.needed;
+		r->out.count	= _r.out.count;
+		r->out.result	= _r.out.result;
+		if (_r.out.info.length) {
+			struct ndr_pull *_ndr_info;
+			NDR_PULL_ALLOC(ndr, *r->out.info);
+			_ndr_info = ndr_pull_init_blob(&_r.out.info, *r->out.info, ndr->iconv_convenience);
+			NDR_ERR_HAVE_NO_MEMORY(_ndr_info);
+			_ndr_info->flags= ndr->flags;
+			if (r->in.offered != _ndr_info->data_size) {
+				return ndr_pull_error(ndr, NDR_ERR_BUFSIZE,
+					"SPOOLSS Buffer: offered[%u] doesn't match length of buffer[%u]",
+					(unsigned)r->in.offered, (unsigned)_ndr_info->data_size);
+			}
+			if (*r->out.needed <= _ndr_info->data_size) {
+				struct __spoolss_EnumPrinterDataEx __r;
+				__r.in.count	= *r->out.count;
+				__r.out.info	= NULL;
+				NDR_CHECK(ndr_pull___spoolss_EnumPrinterDataEx(_ndr_info, flags, &__r));
+				*r->out.info	= __r.out.info;
+			}
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+/*
   spoolss_GetPrinterData
 */
 enum ndr_err_code ndr_push_spoolss_GetPrinterData(struct ndr_push *ndr, int flags, const struct spoolss_GetPrinterData *r)
