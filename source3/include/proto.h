@@ -5550,9 +5550,6 @@ WERROR rpccli_spoolss_enumprinterdataex(struct rpc_pipe_client *cli,
 					uint32_t offered,
 					uint32_t *count,
 					struct spoolss_PrinterEnumValues **info);
-WERROR rpccli_spoolss_enumprinterdataex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				     POLICY_HND *hnd, const char *keyname, 
-				     REGVAL_CTR *ctr);
 
 /* The following definitions come from rpc_client/init_spoolss.c  */
 
@@ -5834,9 +5831,6 @@ bool sec_io_desc_buf(const char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int
 
 uint32 spoolss_size_printer_enum_values(PRINTER_ENUM_VALUES *p);
 bool make_spoolss_buffer5(TALLOC_CTX *mem_ctx, BUFFER5 *buf5, uint32 len, uint16 *src);
-bool make_spoolss_q_enumprinterdataex(SPOOL_Q_ENUMPRINTERDATAEX *q_u,
-				      const POLICY_HND *hnd, const char *key,
-				      uint32 size);
 bool spoolss_io_q_enumprinterdataex(const char *desc, SPOOL_Q_ENUMPRINTERDATAEX *q_u, prs_struct *ps, int depth);
 bool spoolss_io_r_enumprinterdataex(const char *desc, SPOOL_R_ENUMPRINTERDATAEX *r_u, prs_struct *ps, int depth);
 
