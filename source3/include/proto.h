@@ -5927,11 +5927,6 @@ void copy_id23_to_sam_passwd(struct samu *to,
 void copy_id25_to_sam_passwd(struct samu *to,
 			     struct samr_UserInfo25 *from);
 
-/* The following definitions come from rpc_server/srv_spoolss.c  */
-
-void spoolss2_get_pipe_fns( struct api_struct **fns, int *n_fns );
-NTSTATUS rpc_spoolss2_init(void);
-
 /* The following definitions come from rpc_server/srv_spoolss_nt.c  */
 
 WERROR delete_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, const char *sharename );
