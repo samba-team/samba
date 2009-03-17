@@ -577,7 +577,7 @@ RPC_NTSVCS_OBJ = rpc_server/srv_ntsvcs_nt.o \
 
 RPC_DFS_OBJ =  ../librpc/gen_ndr/srv_dfs.o rpc_server/srv_dfs_nt.o
 
-RPC_SPOOLSS_OBJ = rpc_server/srv_spoolss.o rpc_server/srv_spoolss_nt.o \
+RPC_SPOOLSS_OBJ = rpc_server/srv_spoolss_nt.o \
 		  ../librpc/gen_ndr/srv_spoolss.o
 
 RPC_EVENTLOG_OBJ = rpc_server/srv_eventlog_nt.o \
@@ -2277,7 +2277,7 @@ bin/librpc_dssetup.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_DSSETUP_OBJ)
 	@echo "Linking $@"
 	@$(SHLD_MODULE) $(RPC_DSSETUP_OBJ)
 
-bin/librpc_spoolss2.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_SPOOLSS_OBJ)
+bin/librpc_spoolss.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_SPOOLSS_OBJ)
 	@echo "Linking $@"
 	@$(SHLD_MODULE) $(RPC_SPOOLSS_OBJ)
 
