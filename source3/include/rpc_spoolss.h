@@ -185,9 +185,6 @@
 
 /* the flags of each printers */
 
-#define DRIVER_ANY_VERSION		0xffffffff
-#define DRIVER_MAX_VERSION		4
-
 
 /********************************************/
 
