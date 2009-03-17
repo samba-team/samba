@@ -178,14 +178,6 @@
 #define JOB_NOTIFY_TOTAL_BYTES			0x16
 #define JOB_NOTIFY_BYTES_PRINTED		0x17
 
-#define NO_PRIORITY	 0
-#define MAX_PRIORITY	99
-#define MIN_PRIORITY	 1
-#define DEF_PRIORITY	 1
-
-/* the flags of each printers */
-
-
 /********************************************/
 
 typedef struct printer_enum_values
