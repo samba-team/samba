@@ -1922,8 +1922,8 @@ import "misc.idl", "security.idl", "winreg.idl";
 	} spoolss_Field;
 
 	typedef [enum16bit] enum {
-		SPOOLSS_NOTIFY_PRINTER 			= 0,
-		SPOOLSS_NOTIFY_JOB				= 1
+		PRINTER_NOTIFY_TYPE	= 0x00,
+		JOB_NOTIFY_TYPE		= 0x01
 	} spoolss_NotifyType;
 
 	/******************/
