@@ -944,7 +944,7 @@ bool fsp_is_np(struct files_struct *fsp)
 
 struct np_proxy_state {
 	struct async_req_queue *read_queue;
-	struct async_req_queue *write_queue;
+	struct tevent_queue *write_queue;
 	int fd;
 
 	uint8_t *msg;
@@ -1108,7 +1108,7 @@ static struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 	if (result->read_queue == NULL) {
 		goto fail;
 	}
-	result->write_queue = async_req_queue_init(result);
+	result->write_queue = tevent_queue_create(result, "np_write");
 	if (result->write_queue == NULL) {
 		goto fail;
 	}
@@ -1175,22 +1175,21 @@ struct np_write_state {
 	ssize_t nwritten;
 };
 
-static void np_write_trigger(struct async_req *req);
 static void np_write_done(struct tevent_req *subreq);
 
-struct async_req *np_write_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
-				struct fake_file_handle *handle,
-				const uint8_t *data, size_t len)
+struct tevent_req *np_write_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+				 struct fake_file_handle *handle,
+				 const uint8_t *data, size_t len)
 {
-	struct async_req *result;
+	struct tevent_req *req;
 	struct np_write_state *state;
 	NTSTATUS status;
 
 	DEBUG(6, ("np_write_send: len: %d\n", (int)len));
 	dump_data(50, data, len);
 
-	if (!async_req_setup(mem_ctx, &result, &state,
-			     struct np_write_state)) {
+	req = tevent_req_create(mem_ctx, &state, struct np_write_state);
+	if (req == NULL) {
 		return NULL;
 	}
 
@@ -1214,68 +1213,60 @@ struct async_req *np_write_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 	if (handle->type == FAKE_FILE_TYPE_NAMED_PIPE_PROXY) {
 		struct np_proxy_state *p = talloc_get_type_abort(
 			handle->private_data, struct np_proxy_state);
+		struct tevent_req *subreq;
 
 		state->ev = ev;
 		state->p = p;
 		state->iov.iov_base = CONST_DISCARD(void *, data);
 		state->iov.iov_len = len;
 
-		if (!async_req_enqueue(p->write_queue, ev, result,
-				       np_write_trigger)) {
+		subreq = writev_send(state, ev, p->write_queue, p->fd,
+				     &state->iov, 1);
+		if (subreq == NULL) {
 			goto fail;
 		}
-		return result;
+		tevent_req_set_callback(subreq, np_write_done, req);
+		return req;
 	}
 
 	status = NT_STATUS_INVALID_HANDLE;
  post_status:
-	if (async_post_ntstatus(result, ev, status)) {
-		return result;
+	if (NT_STATUS_IS_OK(status)) {
+		tevent_req_done(req);
+	} else {
+		tevent_req_nterror(req, status);
 	}
+	return tevent_req_post(req, ev);
  fail:
-	TALLOC_FREE(result);
+	TALLOC_FREE(req);
 	return NULL;
-}
-
-static void np_write_trigger(struct async_req *req)
-{
-	struct np_write_state *state = talloc_get_type_abort(
-		req->private_data, struct np_write_state);
-	struct tevent_req *subreq;
-
-	subreq = writev_send(state, state->ev, NULL, state->p->fd,
-			     &state->iov, 1);
-	if (async_req_nomem(subreq, req)) {
-		return;
-	}
-	tevent_req_set_callback(subreq, np_write_done, req);
 }
 
 static void np_write_done(struct tevent_req *subreq)
 {
-	struct async_req *req =
-		tevent_req_callback_data(subreq, struct async_req);
-	struct np_write_state *state = talloc_get_type_abort(
-		req->private_data, struct np_write_state);
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct np_write_state *state = tevent_req_data(
+		req, struct np_write_state);
 	ssize_t received;
 	int err;
 
 	received = writev_recv(subreq, &err);
 	if (received < 0) {
-		async_req_nterror(req, map_nt_error_from_unix(err));
+		tevent_req_nterror(req, map_nt_error_from_unix(err));
 		return;
 	}
 	state->nwritten = received;
-	async_req_done(req);
+	tevent_req_done(req);
 }
 
-NTSTATUS np_write_recv(struct async_req *req, ssize_t *pnwritten)
+NTSTATUS np_write_recv(struct tevent_req *req, ssize_t *pnwritten)
 {
-	struct np_write_state *state = talloc_get_type_abort(
-		req->private_data, struct np_write_state);
+	struct np_write_state *state = tevent_req_data(
+		req, struct np_write_state);
 	NTSTATUS status;
 
-	if (async_req_is_nterror(req, &status)) {
+	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
 	*pnwritten = state->nwritten;
