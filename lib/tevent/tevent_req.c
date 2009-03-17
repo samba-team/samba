@@ -97,6 +97,11 @@ struct tevent_req *_tevent_req_create(TALLOC_CTX *mem_ctx,
 	req->internal.private_type	= type;
 	req->internal.location		= location;
 	req->internal.state		= TEVENT_REQ_IN_PROGRESS;
+	req->internal.trigger		= tevent_create_immediate(req);
+	if (!req->internal.trigger) {
+		talloc_free(req);
+		return NULL;
+	}
 
 	data = talloc_size(req, data_size);
 	if (data == NULL) {
@@ -199,22 +204,17 @@ bool tevent_req_nomem(const void *p, struct tevent_req *req)
 }
 
 /**
- * @brief Timed event callback
+ * @brief Immediate event callback
  * @param[in] ev	Event context
- * @param[in] te	The timed event
- * @param[in] now	zero time
+ * @param[in] im	The immediate event
  * @param[in] priv	The async request to be finished
  */
 static void tevent_req_trigger(struct tevent_context *ev,
-			       struct tevent_timer *te,
-			       struct timeval zero,
+			       struct tevent_immediate *im,
 			       void *private_data)
 {
 	struct tevent_req *req = talloc_get_type(private_data,
 				 struct tevent_req);
-
-	talloc_free(req->internal.trigger);
-	req->internal.trigger = NULL;
 
 	tevent_req_finish(req, req->internal.state);
 }
@@ -223,8 +223,7 @@ static void tevent_req_trigger(struct tevent_context *ev,
  * @brief Finish a request before the caller had the change to set the callback
  * @param[in] req	The finished request
  * @param[in] ev	The tevent_context for the timed event
- * @retval		On success req will be returned,
- * 			on failure req will be destroyed
+ * @retval		req will be returned
  *
  * An implementation of an async request might find that it can either finish
  * the request without waiting for an external event, or it can't even start
@@ -237,13 +236,8 @@ static void tevent_req_trigger(struct tevent_context *ev,
 struct tevent_req *tevent_req_post(struct tevent_req *req,
 				   struct tevent_context *ev)
 {
-	req->internal.trigger = tevent_add_timer(ev, req, tevent_timeval_zero(),
-						 tevent_req_trigger, req);
-	if (!req->internal.trigger) {
-		talloc_free(req);
-		return NULL;
-	}
-
+	tevent_schedule_immediate(req->internal.trigger,
+				  ev, tevent_req_trigger, req);
 	return req;
 }
 

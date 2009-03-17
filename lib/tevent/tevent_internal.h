@@ -105,10 +105,10 @@ struct tevent_req {
 		uint64_t error;
 
 		/**
-		 * @brief the timer event if tevent_req_post was used
+		 * @brief the immediate event used by tevent_req_post
 		 *
 		 */
-		struct tevent_timer *trigger;
+		struct tevent_immediate *trigger;
 
 		/**
 		 * @brief the timer event if tevent_req_set_timeout was used
