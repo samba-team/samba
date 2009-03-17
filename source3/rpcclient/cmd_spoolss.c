@@ -2545,16 +2545,14 @@ static WERROR cmd_spoolss_enum_data_ex( struct rpc_pipe_client *cli,
 	WERROR result;
 	uint32 i;
 	const char *printername;
-	const char *keyname = NULL;
 	POLICY_HND hnd;
-	REGVAL_CTR *ctr = NULL;
+	uint32_t count;
+	struct spoolss_PrinterEnumValues *info;
 
 	if (argc != 3) {
 		printf("Usage: %s printername <keyname>\n", argv[0]);
 		return WERR_OK;
 	}
-
-	keyname = argv[2];
 
 	/* Open printer handle */
 
@@ -2564,28 +2562,32 @@ static WERROR cmd_spoolss_enum_data_ex( struct rpc_pipe_client *cli,
 					       printername,
 					       SEC_FLAG_MAXIMUM_ALLOWED,
 					       &hnd);
-	if (!W_ERROR_IS_OK(result))
+	if (!W_ERROR_IS_OK(result)) {
 		goto done;
+	}
 
 	/* Enumerate subkeys */
 
-	if ( !(ctr = TALLOC_ZERO_P( mem_ctx, REGVAL_CTR )) )
-		return WERR_NOMEM;
-
-	result = rpccli_spoolss_enumprinterdataex(cli, mem_ctx, &hnd, keyname, ctr);
-
-	if (!W_ERROR_IS_OK(result))
+	result = rpccli_spoolss_enumprinterdataex(cli, mem_ctx,
+						  &hnd,
+						  argv[2],
+						  0,
+						  &count,
+						  &info);
+	if (!W_ERROR_IS_OK(result)) {
 		goto done;
-
-	for (i=0; i < ctr->num_values; i++) {
-		display_reg_value(*(ctr->values[i]));
 	}
 
-	TALLOC_FREE( ctr );
+	for (i=0; i < count; i++) {
+		display_printer_data(info[i].value_name,
+				     info[i].type,
+				     info[i].data);
+	}
 
-done:
-	if (is_valid_policy_hnd(&hnd))
+ done:
+	if (is_valid_policy_hnd(&hnd)) {
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &hnd, NULL);
+	}
 
 	return result;
 }
