@@ -4290,70 +4290,6 @@ static WERROR enum_all_printers_info_1_name(TALLOC_CTX *mem_ctx,
 	return enum_all_printers_info_1(mem_ctx, PRINTER_ENUM_ICON8, info, count);
 }
 
-#if 0 	/* JERRY -- disabled for now.  Don't think this is used, tested, or correct */
-/********************************************************************
- enum_all_printers_info_1_remote.
-*********************************************************************/
-
-static WERROR enum_all_printers_info_1_remote(fstring name, RPC_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
-{
-	PRINTER_INFO_1 *printer;
-	fstring printername;
-	fstring desc;
-	fstring comment;
-	DEBUG(4,("enum_all_printers_info_1_remote\n"));
-	WERROR result = WERR_OK;
-
-	/* JFM: currently it's more a place holder than anything else.
-	 * In the spooler world there is a notion of server registration.
-	 * the print servers are registered on the PDC (in the same domain)
-	 *
-	 * We should have a TDB here. The registration is done thru an
-	 * undocumented RPC call.
-	 */
-
-	if((printer=SMB_MALLOC_P(PRINTER_INFO_1)) == NULL)
-		return WERR_NOMEM;
-
-	*returned=1;
-
-	slprintf(printername, sizeof(printername)-1,"Windows NT Remote Printers!!\\\\%s", name);
-	slprintf(desc, sizeof(desc)-1,"%s", name);
-	slprintf(comment, sizeof(comment)-1, "Logged on Domain");
-
-	init_unistr(&printer->description, desc);
-	init_unistr(&printer->name, printername);
-	init_unistr(&printer->comment, comment);
-	printer->flags=PRINTER_ENUM_ICON3|PRINTER_ENUM_CONTAINER;
-
-	/* check the required size. */
-	*needed += spoolss_size_printer_info_1(printer);
-
-	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
-	}
-
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
-	}
-
-	/* fill the buffer with the structures */
-	smb_io_printer_info_1("", buffer, printer, 0);
-
-out:
-	/* clear memory */
-	SAFE_FREE(printer);
-
-	if ( !W_ERROR_IS_OK(result) )
-		*returned = 0;
-
-	return result;
-}
-
-#endif
-
 /********************************************************************
  enum_all_printers_info_1_network.
 *********************************************************************/
@@ -4472,12 +4408,6 @@ static WERROR enumprinters_level1(TALLOC_CTX *mem_ctx,
 	if (flags & PRINTER_ENUM_NAME) {
 		return enum_all_printers_info_1_name(mem_ctx, name, info, count);
 	}
-
-#if 0	/* JERRY - disabled for now */
-	if (flags & PRINTER_ENUM_REMOTE) {
-		return enum_all_printers_info_1_remote(mem_ctx, name, info, count);
-	}
-#endif
 
 	if (flags & PRINTER_ENUM_NETWORK) {
 		return enum_all_printers_info_1_network(mem_ctx, name, info, count);
