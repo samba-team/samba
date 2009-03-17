@@ -1072,26 +1072,26 @@ const char *my_netbios_names(int i);
 bool set_netbios_aliases(const char **str_array);
 bool init_names(void);
 struct user_auth_info *user_auth_info_init(TALLOC_CTX *mem_ctx);
-const char *get_cmdline_auth_info_username(struct user_auth_info *auth_info);
+const char *get_cmdline_auth_info_username(const struct user_auth_info *auth_info);
 void set_cmdline_auth_info_username(struct user_auth_info *auth_info,
 				    const char *username);
 void set_cmdline_auth_info_password(struct user_auth_info *auth_info,
 				    const char *password);
-const char *get_cmdline_auth_info_password(struct user_auth_info *auth_info);
+const char *get_cmdline_auth_info_password(const struct user_auth_info *auth_info);
 bool set_cmdline_auth_info_signing_state(struct user_auth_info *auth_info,
 					 const char *arg);
-int get_cmdline_auth_info_signing_state(struct user_auth_info *auth_info);
+int get_cmdline_auth_info_signing_state(const struct user_auth_info *auth_info);
 void set_cmdline_auth_info_use_kerberos(struct user_auth_info *auth_info,
 					bool b);
-bool get_cmdline_auth_info_use_kerberos(struct user_auth_info *auth_info);
+bool get_cmdline_auth_info_use_kerberos(const struct user_auth_info *auth_info);
 void set_cmdline_auth_info_use_krb5_ticket(struct user_auth_info *auth_info);
 void set_cmdline_auth_info_smb_encrypt(struct user_auth_info *auth_info);
 void set_cmdline_auth_info_use_machine_account(struct user_auth_info *auth_info);
-bool get_cmdline_auth_info_got_pass(struct user_auth_info *auth_info);
-bool get_cmdline_auth_info_smb_encrypt(struct user_auth_info *auth_info);
-bool get_cmdline_auth_info_use_machine_account(struct user_auth_info *auth_info);
+bool get_cmdline_auth_info_got_pass(const struct user_auth_info *auth_info);
+bool get_cmdline_auth_info_smb_encrypt(const struct user_auth_info *auth_info);
+bool get_cmdline_auth_info_use_machine_account(const struct user_auth_info *auth_info);
 struct user_auth_info *get_cmdline_auth_info_copy(TALLOC_CTX *mem_ctx,
-						 struct user_auth_info *info);
+						 const struct user_auth_info *info);
 bool set_cmdline_auth_info_machine_account_creds(struct user_auth_info *auth_info);
 bool add_gid_to_array_unique(TALLOC_CTX *mem_ctx, gid_t gid,
 			     gid_t **gids, size_t *num_gids);
@@ -1396,13 +1396,13 @@ struct tevent_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 					uint16_t port,
 					int timeout);
 NTSTATUS open_socket_out_recv(struct tevent_req *req, int *pfd);
-struct async_req *open_socket_out_defer_send(TALLOC_CTX *mem_ctx,
-					     struct event_context *ev,
-					     struct timeval wait_time,
-					     const struct sockaddr_storage *pss,
-					     uint16_t port,
-					     int timeout);
-NTSTATUS open_socket_out_defer_recv(struct async_req *req, int *pfd);
+struct tevent_req *open_socket_out_defer_send(TALLOC_CTX *mem_ctx,
+					      struct event_context *ev,
+					      struct timeval wait_time,
+					      const struct sockaddr_storage *pss,
+					      uint16_t port,
+					      int timeout);
+NTSTATUS open_socket_out_defer_recv(struct tevent_req *req, int *pfd);
 bool open_any_socket_out(struct sockaddr_storage *addrs, int num_addrs,
 			 int timeout, int *fd_index, int *fd);
 int open_udp_socket(const char *host, int port);

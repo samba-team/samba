@@ -1785,15 +1785,20 @@ bool cli_session_request(struct cli_state *cli,
 	return(True);
 }
 
-static void smb_sock_connected(struct async_req *req)
+struct fd_struct {
+	int fd;
+};
+
+static void smb_sock_connected(struct tevent_req *req)
 {
-	int *pfd = (int *)req->async.priv;
+	struct fd_struct *pfd = tevent_req_callback_data(
+		req, struct fd_struct);
 	int fd;
 	NTSTATUS status;
 
 	status = open_socket_out_defer_recv(req, &fd);
 	if (NT_STATUS_IS_OK(status)) {
-		*pfd = fd;
+		pfd->fd = fd;
 	}
 }
 
@@ -1801,10 +1806,9 @@ static NTSTATUS open_smb_socket(const struct sockaddr_storage *pss,
 				uint16_t *port, int timeout, int *pfd)
 {
 	struct event_context *ev;
-	struct async_req *r139, *r445;
-	int fd139 = -1;
-	int fd445 = -1;
-	NTSTATUS status;
+	struct tevent_req *r139, *r445;
+	struct fd_struct *fd139, *fd445;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
 	if (*port != 0) {
 		return open_socket_out(pss, *port, timeout, pfd);
@@ -1815,43 +1819,54 @@ static NTSTATUS open_smb_socket(const struct sockaddr_storage *pss,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	fd139 = talloc(ev, struct fd_struct);
+	if (fd139 == NULL) {
+		goto done;
+	}
+	fd139->fd = -1;
+
+	fd445 = talloc(ev, struct fd_struct);
+	if (fd445 == NULL) {
+		goto done;
+	}
+	fd445->fd = -1;
+
 	r445 = open_socket_out_defer_send(ev, ev, timeval_set(0, 0),
 					  pss, 445, timeout);
 	r139 = open_socket_out_defer_send(ev, ev, timeval_set(0, 3000),
 					  pss, 139, timeout);
 	if ((r445 == NULL) || (r139 == NULL)) {
-		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
-	r445->async.fn = smb_sock_connected;
-	r445->async.priv = &fd445;
-	r139->async.fn = smb_sock_connected;
-	r139->async.priv = &fd139;
+	tevent_req_set_callback(r445, smb_sock_connected, fd445);
+	tevent_req_set_callback(r139, smb_sock_connected, fd139);
 
-	while ((fd139 == -1) && (r139->state < ASYNC_REQ_DONE)
-	       && (fd445 == -1) && (r445->state < ASYNC_REQ_DONE)) {
+	while ((fd139->fd == -1)
+	       && tevent_req_is_in_progress(r139)
+	       && (fd445->fd == -1)
+	       && tevent_req_is_in_progress(r445)) {
 		event_loop_once(ev);
 	}
 
-	if ((fd139 != -1) && (fd445 != -1)) {
-		close(fd139);
-		fd139 = -1;
+	if ((fd139->fd != -1) && (fd445->fd != -1)) {
+		close(fd139->fd);
+		fd139->fd = -1;
 	}
 
-	if (fd445 != -1) {
+	if (fd445->fd != -1) {
 		*port = 445;
-		*pfd = fd445;
+		*pfd = fd445->fd;
 		status = NT_STATUS_OK;
 		goto done;
 	}
-	if (fd139 != -1) {
+	if (fd139->fd != -1) {
 		*port = 139;
-		*pfd = fd139;
+		*pfd = fd139->fd;
 		status = NT_STATUS_OK;
 		goto done;
 	}
 
-	status = open_socket_out_defer_recv(r445, &fd445);
+	status = open_socket_out_defer_recv(r445, &fd445->fd);
  done:
 	TALLOC_FREE(ev);
 	return status;

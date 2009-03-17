@@ -31,7 +31,7 @@ if test "x$enable_external_libtalloc" != xno
 then
 	PKG_CHECK_MODULES(TALLOC, talloc >= 1.3.0, 
 		[ enable_external_libtalloc=yes ],
-		[ if x$enable_external_libtalloc = xyes; then 
+		[ if test x$enable_external_libtalloc = xyes; then
 		 	AC_MSG_ERROR([Unable to find libtalloc])
 	      else 
 			enable_external_libtalloc=no
