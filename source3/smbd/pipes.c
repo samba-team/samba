@@ -340,14 +340,14 @@ struct pipe_read_andx_state {
 	int smb_maxcnt;
 };
 
-static void pipe_read_andx_done(struct async_req *subreq);
+static void pipe_read_andx_done(struct tevent_req *subreq);
 
 void reply_pipe_read_and_X(struct smb_request *req)
 {
 	files_struct *fsp = file_fsp(req, SVAL(req->vwv+0, 0));
 	uint8_t *data;
 	struct pipe_read_andx_state *state;
-	struct async_req *subreq;
+	struct tevent_req *subreq;
 
 	/* we don't use the offset given to use for pipe reads. This
            is deliberate, instead we always return the next lump of
@@ -392,14 +392,14 @@ void reply_pipe_read_and_X(struct smb_request *req)
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
-	subreq->async.fn = pipe_read_andx_done;
-	subreq->async.priv = talloc_move(req->conn, &req);
+	tevent_req_set_callback(subreq, pipe_read_andx_done,
+				talloc_move(req->conn, &req));
 }
 
-static void pipe_read_andx_done(struct async_req *subreq)
+static void pipe_read_andx_done(struct tevent_req *subreq)
 {
-	struct smb_request *req = talloc_get_type_abort(
-		subreq->async.priv, struct smb_request);
+	struct smb_request *req = tevent_req_callback_data(
+		subreq, struct smb_request);
 	struct pipe_read_andx_state *state = talloc_get_type_abort(
 		req->async_priv, struct pipe_read_andx_state);
 	NTSTATUS status;

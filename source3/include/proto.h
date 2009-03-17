@@ -5919,10 +5919,10 @@ struct tevent_req *np_write_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 				 struct fake_file_handle *handle,
 				 const uint8_t *data, size_t len);
 NTSTATUS np_write_recv(struct tevent_req *req, ssize_t *pnwritten);
-struct async_req *np_read_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
-			       struct fake_file_handle *handle,
-			       uint8_t *data, size_t len);
-NTSTATUS np_read_recv(struct async_req *req, ssize_t *nread,
+struct tevent_req *np_read_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+				struct fake_file_handle *handle,
+				uint8_t *data, size_t len);
+NTSTATUS np_read_recv(struct tevent_req *req, ssize_t *nread,
 		      bool *is_data_outstanding);
 
 /* The following definitions come from rpc_server/srv_samr_util.c  */
