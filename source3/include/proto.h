@@ -5829,11 +5829,6 @@ bool sec_io_desc_buf(const char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int
 
 /* The following definitions come from rpc_parse/parse_spoolss.c  */
 
-uint32 spoolss_size_printer_enum_values(PRINTER_ENUM_VALUES *p);
-bool make_spoolss_buffer5(TALLOC_CTX *mem_ctx, BUFFER5 *buf5, uint32 len, uint16 *src);
-bool spoolss_io_q_enumprinterdataex(const char *desc, SPOOL_Q_ENUMPRINTERDATAEX *q_u, prs_struct *ps, int depth);
-bool spoolss_io_r_enumprinterdataex(const char *desc, SPOOL_R_ENUMPRINTERDATAEX *r_u, prs_struct *ps, int depth);
-
 /* The following definitions come from rpc_server/srv_eventlog_lib.c  */
 
 TDB_CONTEXT *elog_init_tdb( char *tdbfilename );
