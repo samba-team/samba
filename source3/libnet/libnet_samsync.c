@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "libnet/libnet.h"
 #include "../lib/crypto/crypto.h"
+#include "../libcli/auth/libcli_auth.h"
 
 /**
  * Decrypt and extract the user's passwords.
@@ -51,7 +52,7 @@ static NTSTATUS fix_user(TALLOC_CTX *mem_ctx,
 	 * think this channel is secure enough. */
 	if (user->lm_password_present) {
 		if (memcmp(user->lmpassword.hash, zero_buf, 16) != 0) {
-			sam_pwd_hash(rid, user->lmpassword.hash, lm_hash.hash, 0);
+			sam_rid_crypt(rid, user->lmpassword.hash, lm_hash.hash, 0);
 		} else {
 			memset(lm_hash.hash, '\0', sizeof(lm_hash.hash));
 		}
@@ -60,7 +61,7 @@ static NTSTATUS fix_user(TALLOC_CTX *mem_ctx,
 
 	if (user->nt_password_present) {
 		if (memcmp(user->ntpassword.hash, zero_buf, 16) != 0) {
-			sam_pwd_hash(rid, user->ntpassword.hash, nt_hash.hash, 0);
+			sam_rid_crypt(rid, user->ntpassword.hash, nt_hash.hash, 0);
 		} else {
 			memset(nt_hash.hash, '\0', sizeof(nt_hash.hash));
 		}
@@ -90,9 +91,9 @@ static NTSTATUS fix_user(TALLOC_CTX *mem_ctx,
 		if (keys.keys.keys2.lmpassword.length == 16) {
 			if (memcmp(keys.keys.keys2.lmpassword.pwd.hash,
 					zero_buf, 16) != 0) {
-				sam_pwd_hash(rid,
-					keys.keys.keys2.lmpassword.pwd.hash,
-					lm_hash.hash, 0);
+				sam_rid_crypt(rid,
+					      keys.keys.keys2.lmpassword.pwd.hash,
+					      lm_hash.hash, 0);
 			} else {
 				memset(lm_hash.hash, '\0', sizeof(lm_hash.hash));
 			}
@@ -102,9 +103,9 @@ static NTSTATUS fix_user(TALLOC_CTX *mem_ctx,
 		if (keys.keys.keys2.ntpassword.length == 16) {
 			if (memcmp(keys.keys.keys2.ntpassword.pwd.hash,
 						zero_buf, 16) != 0) {
-				sam_pwd_hash(rid,
-					keys.keys.keys2.ntpassword.pwd.hash,
-					nt_hash.hash, 0);
+				sam_rid_crypt(rid,
+					      keys.keys.keys2.ntpassword.pwd.hash,
+					      nt_hash.hash, 0);
 			} else {
 				memset(nt_hash.hash, '\0', sizeof(nt_hash.hash));
 			}
