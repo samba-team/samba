@@ -90,6 +90,36 @@ class BasicTests(unittest.TestCase):
         except LdbError, (num, _): 
             self.assertEquals(num, ERR_NO_SUCH_OBJECT)
 
+    def test_parentGUID(self):
+        """Test parentGUID behaviour"""
+        print "Testing parentGUID behaviour\n"
+        
+        self.ldb.add({
+            "dn": "cn=parentguidtest,cn=users," + self.base_dn,
+            "objectclass":"user",
+            "samaccountname":"parentguidtest"});
+        res1 = ldb.search(base="cn=parentguidtest,cn=users," + self.base_dn, scope=SCOPE_BASE,
+                          attrs=["parentGUID"]);
+        res2 = ldb.search(base="cn=users," + self.base_dn,scope=SCOPE_BASE,
+                          attrs=["objectGUID"]);
+        self.assertEquals(res1[0]["parentGUID"], res2[0]["objectGUID"]);
+
+        """Test parentGUID behaviour"""
+        print "Testing parentGUID behaviour on rename\n"
+
+        self.ldb.add({
+            "dn": "cn=testotherusers," + self.base_dn,
+            "objectclass":"container"});
+        res1 = ldb.search(base="cn=testotherusers," + self.base_dn,scope=SCOPE_BASE,
+                          attrs=["objectGUID"]);
+        ldb.rename("cn=parentguidtest,cn=users," + self.base_dn,
+                   "cn=parentguidtest,cn=testotherusers," + self.base_dn);
+        res2 = ldb.search(base="cn=parentguidtest,cn=testotherusers," + self.base_dn,
+                          scope=SCOPE_BASE,
+                          attrs=["parentGUID"]);
+        self.assertEquals(res1[0]["objectGUID"], res2[0]["parentGUID"]);
+        
+
     def test_all(self):
         """Basic tests"""
 
