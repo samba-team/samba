@@ -24,6 +24,7 @@
 #include "lib/netapi/netapi_private.h"
 #include "lib/netapi/libnetapi.h"
 #include "libnet/libnet.h"
+#include "libcli/auth/libcli_auth.h"
 
 /****************************************************************
 ****************************************************************/

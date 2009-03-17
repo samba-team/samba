@@ -19,6 +19,7 @@
  */
 
 #include "includes.h"
+#include "../libcli/auth/libcli_auth.h"
 
 #define CLI_SIGN "session key to client-to-server signing key magic constant"
 #define CLI_SEAL "session key to client-to-server sealing key magic constant"
@@ -124,7 +125,7 @@ static NTSTATUS ntlmssp_make_packet_signature(NTLMSSP_STATE *ntlmssp_state,
 	} else {
 		uint32 crc;
 		crc = crc32_calc_buffer(data, length);
-		if (!msrpc_gen(sig, "dddd", NTLMSSP_SIGN_VERSION, 0, crc, ntlmssp_state->ntlmv1_seq_num)) {
+		if (!msrpc_gen(NULL, sig, "dddd", NTLMSSP_SIGN_VERSION, 0, crc, ntlmssp_state->ntlmv1_seq_num)) {
 			return NT_STATUS_NO_MEMORY;
 		}
 		
@@ -271,7 +272,7 @@ NTSTATUS ntlmssp_seal_packet(NTLMSSP_STATE *ntlmssp_state,
 	} else {
 		uint32 crc;
 		crc = crc32_calc_buffer(data, length);
-		if (!msrpc_gen(sig, "dddd", NTLMSSP_SIGN_VERSION, 0, crc, ntlmssp_state->ntlmv1_seq_num)) {
+		if (!msrpc_gen(NULL, sig, "dddd", NTLMSSP_SIGN_VERSION, 0, crc, ntlmssp_state->ntlmv1_seq_num)) {
 			return NT_STATUS_NO_MEMORY;
 		}
 

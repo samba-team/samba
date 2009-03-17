@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "../libcli/auth/libcli_auth.h"
 
 static const struct {
 	int prot;
@@ -433,11 +434,11 @@ static NTSTATUS cli_session_setup_nt1(struct cli_state *cli, const char *user,
 			   the server's domain at this point.  The 'server name' is also
 			   dodgy... 
 			*/
-			names_blob = NTLMv2_generate_names_blob(cli->called.name, workgroup);
+			names_blob = NTLMv2_generate_names_blob(NULL, cli->called.name, workgroup);
 
-			if (!SMBNTLMv2encrypt(user, workgroup, pass, &server_chal, 
+			if (!SMBNTLMv2encrypt(NULL, user, workgroup, pass, &server_chal, 
 					      &names_blob,
-					      &lm_response, &nt_response, &session_key)) {
+					      &lm_response, &nt_response, NULL, &session_key)) {
 				data_blob_free(&names_blob);
 				data_blob_free(&server_chal);
 				return NT_STATUS_ACCESS_DENIED;
@@ -474,7 +475,7 @@ static NTSTATUS cli_session_setup_nt1(struct cli_state *cli, const char *user,
 			E_deshash(pass, session_key.data);
 			memset(&session_key.data[8], '\0', 8);
 #else
-			SMBsesskeygen_ntv1(nt_hash, NULL, session_key.data);
+			SMBsesskeygen_ntv1(nt_hash, session_key.data);
 #endif
 		}
 		cli_temp_set_signing(cli);
