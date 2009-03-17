@@ -2227,13 +2227,25 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[value(ndr_size_spoolss_PrinterData(data, type, ndr->iconv_convenience, ndr->flags))] uint32 data_length;
 	} spoolss_PrinterEnumValues;
 
-	[public] WERROR spoolss_EnumPrinterDataEx(
+	[public,noopnum,noprint] WERROR _spoolss_EnumPrinterDataEx(
 		[in,ref] policy_handle *handle,
 		[in] 	 [string,charset(UTF16)] uint16 key_name[],
-		[out,ref] [size_is(offered)] uint8 *buffer,
-		[in] 	 uint32 offered,
+		[out] DATA_BLOB info,
+		[in] uint32 offered,
 		[out,ref] uint32 *needed,
 		[out,ref] uint32 *count
+	);
+	[public,noopnum,noprint] void __spoolss_EnumPrinterDataEx(
+		[in] uint32 count,
+		[out] spoolss_PrinterEnumValues info[count]
+	);
+	[nopull,nopush] WERROR spoolss_EnumPrinterDataEx(
+		[in,ref] policy_handle *handle,
+		[in] 	 [string,charset(UTF16)] uint16 key_name[],
+		[in] uint32 offered,
+		[out,ref] uint32 *count,
+		[out,ref,size_is(,*count)] spoolss_PrinterEnumValues **info,
+		[out,ref] uint32 *needed
 	);
 
 	/******************/
