@@ -5543,6 +5543,13 @@ WERROR rpccli_spoolss_enumprinterkey(struct rpc_pipe_client *cli,
 				     const char *key_name,
 				     const char ***key_buffer,
 				     uint32_t offered);
+WERROR rpccli_spoolss_enumprinterdataex(struct rpc_pipe_client *cli,
+					TALLOC_CTX *mem_ctx,
+					struct policy_handle *handle,
+					const char *key_name,
+					uint32_t offered,
+					uint32_t *count,
+					struct spoolss_PrinterEnumValues **info);
 WERROR rpccli_spoolss_enumprinterdataex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				     POLICY_HND *hnd, const char *keyname, 
 				     REGVAL_CTR *ctr);
