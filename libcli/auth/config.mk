@@ -1,3 +1,8 @@
+[SUBSYSTEM::ntlm_check]
+PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL
+
+ntlm_check_OBJ_FILES = $(addprefix $(libclicommonsrcdir)/auth/, ntlm_check.o)
+
 [SUBSYSTEM::MSRPC_PARSE]
 
 MSRPC_PARSE_OBJ_FILES = $(addprefix $(libclicommonsrcdir)/auth/, msrpc_parse.o)

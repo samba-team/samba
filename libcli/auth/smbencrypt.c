@@ -538,7 +538,7 @@ bool encode_pw_buffer(uint8_t buffer[516], const char *password, int string_flag
 	/* the incoming buffer can be any alignment. */
 	string_flags |= STR_NOALIGN;
 
-	new_pw_len = push_string(new_pw, new_pw,
+	new_pw_len = push_string(new_pw,
 				 password, 
 				 sizeof(new_pw), string_flags);
 	

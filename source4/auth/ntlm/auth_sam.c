@@ -25,7 +25,7 @@
 #include "lib/ldb/include/ldb.h"
 #include "../lib/util/util_ldb.h"
 #include "auth/auth.h"
-#include "auth/ntlm/ntlm_check.h"
+#include "../libcli/auth/ntlm_check.h"
 #include "auth/ntlm/auth_proto.h"
 #include "auth/auth_sam.h"
 #include "dsdb/samdb/samdb.h"

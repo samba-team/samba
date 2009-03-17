@@ -1,10 +1,5 @@
 # NTLM auth server subsystem
 
-[SUBSYSTEM::ntlm_check]
-PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL
-
-ntlm_check_OBJ_FILES = $(addprefix $(authsrcdir)/ntlm/, ntlm_check.o)
-
 #######################
 # Start MODULE auth_sam
 [MODULE::auth_sam_module]

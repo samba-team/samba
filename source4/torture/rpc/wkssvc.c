@@ -1148,43 +1148,6 @@ static bool test_NetrJoinDomain(struct torture_context *tctx,
 	return true;
 }
 
-/* encode a wkssvc_PasswordBuffer for remote joining/unjoining:
- *
- * similar to samr_CryptPasswordEx. Different: 8byte confounder (instead of
- * 16byte), confounder in front of the 516 byte buffer (instead of after that
- * buffer), calling MD5Update() first with session_key and then with confounder
- * (vice versa in samr) - Guenther */
-
-static void encode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
-					       const char *pwd,
-					       DATA_BLOB *session_key,
-					       struct wkssvc_PasswordBuffer *pwd_buf)
-{
-	uint8_t buffer[516];
-	struct MD5Context ctx;
-
-	DATA_BLOB confounded_session_key = data_blob_talloc(mem_ctx, NULL, 16);
-
-	int confounder_len = 8;
-	uint8_t confounder[8];
-
-	encode_pw_buffer(buffer, pwd, STR_UNICODE);
-
-	generate_random_buffer((uint8_t *)confounder, confounder_len);
-
-	MD5Init(&ctx);
-	MD5Update(&ctx, session_key->data, session_key->length);
-	MD5Update(&ctx, confounder, confounder_len);
-	MD5Final(confounded_session_key.data, &ctx);
-
-	arcfour_crypt_blob(buffer, 516, &confounded_session_key);
-
-	memcpy(&pwd_buf->data[0], confounder, confounder_len);
-	memcpy(&pwd_buf->data[8], buffer, 516);
-
-	data_blob_free(&confounded_session_key);
-}
-
 /*
  * prerequisites for remotely joining an unjoined XP SP2 workstation:
  * - firewall needs to be disabled (or open for ncacn_np access)
@@ -1202,7 +1165,7 @@ static bool test_NetrJoinDomain2(struct torture_context *tctx,
 	const char *domain_admin_account = NULL;
 	const char *domain_admin_password = NULL;
 	const char *domain_name = NULL;
-	struct wkssvc_PasswordBuffer pwd_buf;
+	struct wkssvc_PasswordBuffer *pwd_buf;
 	enum wkssvc_NetJoinStatus join_status;
 	const char *join_name = NULL;
 	WERROR expected_err;
@@ -1253,7 +1216,7 @@ static bool test_NetrJoinDomain2(struct torture_context *tctx,
 	r.in.domain_name = domain_name;
 	r.in.account_ou = NULL;
 	r.in.admin_account = domain_admin_account;
-	r.in.encrypted_password = &pwd_buf;
+	r.in.encrypted_password = pwd_buf;
 	r.in.join_flags = WKSSVC_JOIN_FLAGS_JOIN_TYPE |
 			  WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE;
 
@@ -1286,7 +1249,7 @@ static bool test_NetrUnjoinDomain2(struct torture_context *tctx,
 	struct wkssvc_NetrUnjoinDomain2 r;
 	const char *domain_admin_account = NULL;
 	const char *domain_admin_password = NULL;
-	struct wkssvc_PasswordBuffer pwd_buf;
+	struct wkssvc_PasswordBuffer *pwd_buf;
 	enum wkssvc_NetJoinStatus join_status;
 	const char *join_name = NULL;
 	WERROR expected_err;
@@ -1332,7 +1295,7 @@ static bool test_NetrUnjoinDomain2(struct torture_context *tctx,
 
 	r.in.server_name = dcerpc_server_name(p);
 	r.in.account = domain_admin_account;
-	r.in.encrypted_password = &pwd_buf;
+	r.in.encrypted_password = pwd_buf;
 	r.in.unjoin_flags = 0;
 
 	torture_comment(tctx, "testing NetrUnjoinDomain2 (assuming non-DC)\n");
