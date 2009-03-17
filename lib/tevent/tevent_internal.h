@@ -85,7 +85,17 @@ struct tevent_req {
 		 *
 		 * This for debugging only.
 		 */
-		const char *location;
+		const char *create_location;
+
+		/**
+		 * @brief The location where the request was finished
+		 *
+		 * This uses the __location__ macro via the tevent_req_done(),
+		 * tevent_req_error() or tevent_req_nomem() macro.
+		 *
+		 * This for debugging only.
+		 */
+		const char *finish_location;
 
 		/**
 		 * @brief The external state - will be queried by the caller

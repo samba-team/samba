@@ -43,7 +43,7 @@ char *tevent_req_default_print(struct tevent_req *req, TALLOC_CTX *mem_ctx)
 	return talloc_asprintf(mem_ctx,
 			       "tevent_req[%p/%s]: state[%d] error[%lld (0x%llX)] "
 			       " state[%s (%p)] timer[%p]",
-			       req, req->internal.location,
+			       req, req->internal.create_location,
 			       req->internal.state,
 			       (unsigned long long)req->internal.error,
 			       (unsigned long long)req->internal.error,
@@ -95,7 +95,8 @@ struct tevent_req *_tevent_req_create(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	req->internal.private_type	= type;
-	req->internal.location		= location;
+	req->internal.create_location	= location;
+	req->internal.finish_location	= NULL;
 	req->internal.state		= TEVENT_REQ_IN_PROGRESS;
 	req->internal.trigger		= tevent_create_immediate(req);
 	if (!req->internal.trigger) {
@@ -116,9 +117,12 @@ struct tevent_req *_tevent_req_create(TALLOC_CTX *mem_ctx,
 	return req;
 }
 
-static void tevent_req_finish(struct tevent_req *req, enum tevent_req_state state)
+static void tevent_req_finish(struct tevent_req *req,
+			      enum tevent_req_state state,
+			      const char *location)
 {
 	req->internal.state = state;
+	req->internal.finish_location = location;
 	if (req->async.fn != NULL) {
 		req->async.fn(req);
 	}
@@ -133,9 +137,10 @@ static void tevent_req_finish(struct tevent_req *req, enum tevent_req_state stat
  * function.
  */
 
-void tevent_req_done(struct tevent_req *req)
+void _tevent_req_done(struct tevent_req *req,
+		      const char *location)
 {
-	tevent_req_finish(req, TEVENT_REQ_DONE);
+	tevent_req_finish(req, TEVENT_REQ_DONE, location);
 }
 
 /**
@@ -166,14 +171,16 @@ void tevent_req_done(struct tevent_req *req)
  * \endcode
  */
 
-bool tevent_req_error(struct tevent_req *req, uint64_t error)
+bool _tevent_req_error(struct tevent_req *req,
+		       uint64_t error,
+		       const char *location)
 {
 	if (error == 0) {
 		return false;
 	}
 
 	req->internal.error = error;
-	tevent_req_finish(req, TEVENT_REQ_USER_ERROR);
+	tevent_req_finish(req, TEVENT_REQ_USER_ERROR, location);
 	return true;
 }
 
@@ -194,12 +201,14 @@ bool tevent_req_error(struct tevent_req *req, uint64_t error)
  * \endcode
  */
 
-bool tevent_req_nomem(const void *p, struct tevent_req *req)
+bool _tevent_req_nomem(const void *p,
+		       struct tevent_req *req,
+		       const char *location)
 {
 	if (p != NULL) {
 		return false;
 	}
-	tevent_req_finish(req, TEVENT_REQ_NO_MEMORY);
+	tevent_req_finish(req, TEVENT_REQ_NO_MEMORY, location);
 	return true;
 }
 
@@ -216,7 +225,8 @@ static void tevent_req_trigger(struct tevent_context *ev,
 	struct tevent_req *req = talloc_get_type(private_data,
 				 struct tevent_req);
 
-	tevent_req_finish(req, req->internal.state);
+	tevent_req_finish(req, req->internal.state,
+			  req->internal.finish_location);
 }
 
 /**
@@ -306,7 +316,7 @@ static void tevent_req_timedout(struct tevent_context *ev,
 
 	TALLOC_FREE(req->internal.timer);
 
-	tevent_req_finish(req, TEVENT_REQ_TIMED_OUT);
+	tevent_req_finish(req, TEVENT_REQ_TIMED_OUT, __FUNCTION__);
 }
 
 bool tevent_req_set_endtime(struct tevent_req *req,
