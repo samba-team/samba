@@ -252,12 +252,12 @@ static bool test_RFFPCNEx(struct torture_context *tctx,
 	t1.flags = 0;
 	t1.count = 2;
 	t1.types = talloc_zero_array(tctx, struct spoolss_NotifyOptionType, 2);
-	t1.types[0].type = SPOOLSS_NOTIFY_PRINTER;
+	t1.types[0].type = PRINTER_NOTIFY_TYPE;
 	t1.types[0].count = 1;
 	t1.types[0].fields = talloc_array(t1.types, enum spoolss_Field, 1);
 	t1.types[0].fields[0] = SPOOLSS_FIELD_SERVER_NAME;
 
-	t1.types[1].type = SPOOLSS_NOTIFY_JOB;
+	t1.types[1].type = JOB_NOTIFY_TYPE;
 	t1.types[1].count = 1;
 	t1.types[1].fields = talloc_array(t1.types, enum spoolss_Field, 1);
 	t1.types[1].fields[0] = SPOOLSS_FIELD_PRINTER_NAME;
