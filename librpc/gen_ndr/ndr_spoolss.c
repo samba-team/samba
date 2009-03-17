@@ -1366,6 +1366,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrinterInfo2(struct ndr_pull *ndr, i
 		}
 		NDR_CHECK(ndr_pull_spoolss_PrinterAttributes(ndr, NDR_SCALARS, &r->attributes));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->priority));
+		if (r->priority > 99) {
+			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
+		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->defaultpriority));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->starttime));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->untiltime));
@@ -2797,6 +2800,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_JobInfo1(struct ndr_pull *ndr, int n
 		}
 		NDR_CHECK(ndr_pull_spoolss_JobStatus(ndr, NDR_SCALARS, &r->status));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->priority));
+		if (r->priority > 99) {
+			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
+		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->position));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->total_pages));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->pages_printed));
@@ -3298,6 +3304,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_JobInfo2(struct ndr_pull *ndr, int n
 		}
 		NDR_CHECK(ndr_pull_spoolss_JobStatus(ndr, NDR_SCALARS, &r->status));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->priority));
+		if (r->priority > 99) {
+			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
+		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->position));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->start_time));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->until_time));
@@ -3965,6 +3974,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_JobInfo4(struct ndr_pull *ndr, int n
 		}
 		NDR_CHECK(ndr_pull_spoolss_JobStatus(ndr, NDR_SCALARS, &r->status));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->priority));
+		if (r->priority > 99) {
+			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
+		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->position));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->start_time));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->until_time));
@@ -4519,6 +4531,9 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo1(struct ndr_pull *ndr, int 
 		}
 		NDR_CHECK(ndr_pull_spoolss_JobStatus(ndr, NDR_SCALARS, &r->status));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->priority));
+		if (r->priority > 99) {
+			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
+		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->position));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->total_pages));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->pages_printed));
@@ -4833,6 +4848,9 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo2(struct ndr_pull *ndr, int 
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->_secdesc_ptr));
 		NDR_CHECK(ndr_pull_spoolss_JobStatus(ndr, NDR_SCALARS, &r->status));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->priority));
+		if (r->priority > 99) {
+			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
+		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->position));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->start_time));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->until_time));
@@ -5230,6 +5248,9 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo4(struct ndr_pull *ndr, int 
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->_secdesc_ptr));
 		NDR_CHECK(ndr_pull_spoolss_JobStatus(ndr, NDR_SCALARS, &r->status));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->priority));
+		if (r->priority > 99) {
+			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
+		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->position));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->start_time));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->until_time));
@@ -6286,6 +6307,9 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo2(struct ndr_pull *ndr, 
 		}
 		NDR_CHECK(ndr_pull_spoolss_PrinterAttributes(ndr, NDR_SCALARS, &r->attributes));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->priority));
+		if (r->priority > 99) {
+			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
+		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->defaultpriority));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->starttime));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->untiltime));
@@ -17008,8 +17032,8 @@ _PUBLIC_ void ndr_print_spoolss_NotifyType(struct ndr_print *ndr, const char *na
 	const char *val = NULL;
 
 	switch (r) {
-		case SPOOLSS_NOTIFY_PRINTER: val = "SPOOLSS_NOTIFY_PRINTER"; break;
-		case SPOOLSS_NOTIFY_JOB: val = "SPOOLSS_NOTIFY_JOB"; break;
+		case PRINTER_NOTIFY_TYPE: val = "PRINTER_NOTIFY_TYPE"; break;
+		case JOB_NOTIFY_TYPE: val = "JOB_NOTIFY_TYPE"; break;
 	}
 	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
