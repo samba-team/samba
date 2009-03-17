@@ -1114,7 +1114,7 @@ static bool _reg_perfcount_marshall_perf_data_block(prs_struct *ps, PERF_DATA_BL
 		return False;
 	if(!prs_uint32("DefaultObject", ps, depth, &block.DefaultObject))
 		return False;
-	if(!spoolss_io_system_time("SystemTime", ps, depth, &block.SystemTime))
+	if(!smb_io_system_time("SystemTime", ps, depth, &block.SystemTime))
 		return False;
 	if(!prs_uint32("Padding", ps, depth, &block.Padding))
 		return False;

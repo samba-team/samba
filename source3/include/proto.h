@@ -5677,6 +5677,8 @@ NTSTATUS cli_do_rpc_ndr(struct rpc_pipe_client *cli,
 
 bool smb_io_time(const char *desc, NTTIME *nttime, prs_struct *ps, int depth);
 bool smb_io_nttime(const char *desc, prs_struct *ps, int depth, NTTIME *nttime);
+bool smb_io_system_time(const char *desc, prs_struct *ps, int depth, SYSTEMTIME *systime);
+bool make_systemtime(SYSTEMTIME *systime, struct tm *unixtime);
 bool smb_io_dom_sid(const char *desc, DOM_SID *sid, prs_struct *ps, int depth);
 bool smb_io_uuid(const char *desc, struct GUID *uuid, 
 		 prs_struct *ps, int depth);
@@ -5826,8 +5828,6 @@ bool sec_io_desc_buf(const char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int
 
 /* The following definitions come from rpc_parse/parse_spoolss.c  */
 
-bool spoolss_io_system_time(const char *desc, prs_struct *ps, int depth, SYSTEMTIME *systime);
-bool make_systemtime(SYSTEMTIME *systime, struct tm *unixtime);
 bool spoolss_io_devmode(const char *desc, prs_struct *ps, int depth, DEVICEMODE *devmode);
 uint32 spoolss_size_printer_enum_values(PRINTER_ENUM_VALUES *p);
 bool make_spoolss_buffer5(TALLOC_CTX *mem_ctx, BUFFER5 *buf5, uint32 len, uint16 *src);

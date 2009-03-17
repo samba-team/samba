@@ -68,6 +68,48 @@ bool smb_io_nttime(const char *desc, prs_struct *ps, int depth, NTTIME *nttime)
 }
 
 /*******************************************************************
+********************************************************************/
+
+bool smb_io_system_time(const char *desc, prs_struct *ps, int depth, SYSTEMTIME *systime)
+{
+	if(!prs_uint16("year", ps, depth, &systime->year))
+		return False;
+	if(!prs_uint16("month", ps, depth, &systime->month))
+		return False;
+	if(!prs_uint16("dayofweek", ps, depth, &systime->dayofweek))
+		return False;
+	if(!prs_uint16("day", ps, depth, &systime->day))
+		return False;
+	if(!prs_uint16("hour", ps, depth, &systime->hour))
+		return False;
+	if(!prs_uint16("minute", ps, depth, &systime->minute))
+		return False;
+	if(!prs_uint16("second", ps, depth, &systime->second))
+		return False;
+	if(!prs_uint16("milliseconds", ps, depth, &systime->milliseconds))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+********************************************************************/
+
+bool make_systemtime(SYSTEMTIME *systime, struct tm *unixtime)
+{
+	systime->year=unixtime->tm_year+1900;
+	systime->month=unixtime->tm_mon+1;
+	systime->dayofweek=unixtime->tm_wday;
+	systime->day=unixtime->tm_mday;
+	systime->hour=unixtime->tm_hour;
+	systime->minute=unixtime->tm_min;
+	systime->second=unixtime->tm_sec;
+	systime->milliseconds=0;
+
+	return True;
+}
+
+/*******************************************************************
  Reads or writes a DOM_SID structure.
 ********************************************************************/
 
