@@ -293,11 +293,4 @@ struct api_struct {
 
 /* end higher order functions */
 
-typedef struct {
-	uint32 size;
-	prs_struct prs;
-	uint32 struct_start;
-	uint32 string_at_end;
-} RPC_BUFFER;
-
 #endif /* _NT_DOMAIN_H */
