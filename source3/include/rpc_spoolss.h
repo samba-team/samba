@@ -189,50 +189,6 @@
 #define DRIVER_MAX_VERSION		4
 
 
-/* 
- * Devicemode structure
- */
-
-typedef struct devicemode
-{
-	UNISTR devicename;
-	uint16 specversion;
-	uint16 driverversion;
-	uint16 size;
-	uint16 driverextra;
-	uint32 fields;
-	uint16 orientation;
-	uint16 papersize;
-	uint16 paperlength;
-	uint16 paperwidth;
-	uint16 scale;
-	uint16 copies;
-	uint16 defaultsource;
-	uint16 printquality;
-	uint16 color;
-	uint16 duplex;
-	uint16 yresolution;
-	uint16 ttoption;
-	uint16 collate;
-	UNISTR formname;
-	uint16 logpixels;
-	uint32 bitsperpel;
-	uint32 pelswidth;
-	uint32 pelsheight;
-	uint32 displayflags;
-	uint32 displayfrequency;
-	uint32 icmmethod;
-	uint32 icmintent;
-	uint32 mediatype;
-	uint32 dithertype;
-	uint32 reserved1;
-	uint32 reserved2;
-	uint32 panningwidth;
-	uint32 panningheight;
-	uint8 *dev_private;
-}
-DEVICEMODE;
-
 /********************************************/
 
 typedef struct printer_enum_values
