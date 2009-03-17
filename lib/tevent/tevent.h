@@ -252,13 +252,22 @@ bool tevent_req_set_endtime(struct tevent_req *req,
 			    struct tevent_context *ev,
 			    struct timeval endtime);
 
-void tevent_req_done(struct tevent_req *req);
+void _tevent_req_done(struct tevent_req *req,
+		      const char *location);
+#define tevent_req_done(req) \
+	_tevent_req_done(req, __location__)
 
-bool tevent_req_error(struct tevent_req *req,
-		      uint64_t error);
+bool _tevent_req_error(struct tevent_req *req,
+		       uint64_t error,
+		       const char *location);
+#define tevent_req_error(req, error) \
+	_tevent_req_error(req, error, __location__)
 
-bool tevent_req_nomem(const void *p,
-		      struct tevent_req *req);
+bool _tevent_req_nomem(const void *p,
+		       struct tevent_req *req,
+		       const char *location);
+#define tevent_req_nomem(p, req) \
+	_tevent_req_nomem(p, req, __location__)
 
 struct tevent_req *tevent_req_post(struct tevent_req *req,
 				   struct tevent_context *ev);
