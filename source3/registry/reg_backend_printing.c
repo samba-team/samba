@@ -385,9 +385,7 @@ static bool key_printers_store_keys( const char *key, struct regsubkey_ctr *subk
 
 static void fill_in_printer_values( NT_PRINTER_INFO_LEVEL_2 *info2, REGVAL_CTR *values )
 {
-	DEVICEMODE	*devmode;
-	prs_struct	prs;
-	uint32		offset;
+	struct spoolss_DeviceMode *devmode;
 	UNISTR2		data;
 	char 		*p;
 	uint32 printer_status = PRINTER_STATUS_OK;
@@ -438,25 +436,22 @@ static void fill_in_printer_values( NT_PRINTER_INFO_LEVEL_2 *info2, REGVAL_CTR *
 	init_unistr2( &data, "RAW", UNI_STR_TERMINATE);
 	regval_ctr_addvalue( values, "Datatype", REG_SZ, (char*)data.buffer, data.uni_str_len*sizeof(uint16) );
 
-		
-	/* use a prs_struct for converting the devmode and security 
-	   descriptor to REG_BINARY */
-	
-	if (!prs_init( &prs, RPC_MAX_PDU_FRAG_LEN, values, MARSHALL))
-		return;
-
 	/* stream the device mode */
-		
-	if ( (devmode = construct_dev_mode( info2->sharename )) != NULL ) {
-		if ( spoolss_io_devmode( "devmode", &prs, 0, devmode ) ) {
-			offset = prs_offset( &prs );
-			regval_ctr_addvalue( values, "Default Devmode", REG_BINARY, prs_data_p(&prs), offset );
+
+	devmode = construct_dev_mode_new(values,info2->sharename);
+	if (devmode) {
+		DATA_BLOB blob;
+		enum ndr_err_code ndr_err;
+
+		ndr_err = ndr_push_struct_blob(&blob, values, NULL, devmode,
+				(ndr_push_flags_fn_t)ndr_push_spoolss_DeviceMode);
+
+		if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			regval_ctr_addvalue(values, "Default Devmode", REG_BINARY,
+					    (const char *)blob.data, blob.length);
 		}
 	}
-		
-	prs_mem_clear( &prs );
-	prs_set_offset( &prs, 0 );
-		
+
 	/* stream the printer security descriptor */
 
 	if (info2->secdesc_buf &&
@@ -474,9 +469,7 @@ static void fill_in_printer_values( NT_PRINTER_INFO_LEVEL_2 *info2, REGVAL_CTR *
 		}
 	}
 
-	prs_mem_free( &prs );
-
-	return;		
+	return;
 }
 
 /**********************************************************************
