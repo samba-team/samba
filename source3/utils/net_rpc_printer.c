@@ -2128,7 +2128,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 	WERROR result;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	uint32 i = 0, p = 0, j = 0;
-	uint32 num_printers, val_needed, data_needed;
+	uint32 num_printers;
 	uint32 level = 2;
 	const char *printername, *sharename;
 	struct rpc_pipe_client *pipe_hnd_dst = NULL;
@@ -2176,6 +2176,12 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 
 	/* do something for all printers */
 	for (i = 0; i < num_printers; i++) {
+
+		uint32_t value_offered = 0, value_needed;
+		uint32_t data_offered = 0, data_needed;
+		enum winreg_Type type;
+		uint8_t *buffer = NULL;
+		const char *value_name = NULL;
 
 		/* do some initialization */
 		printername = info_enum[i].info2.printername;
@@ -2269,32 +2275,69 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 		*/
 
 		/* enumerate data on src handle */
-		result = rpccli_spoolss_enumprinterdata(pipe_hnd, mem_ctx, &hnd_src, p, 0, 0,
-			&val_needed, &data_needed, NULL);
+		nt_status = rpccli_spoolss_EnumPrinterData(pipe_hnd, mem_ctx,
+							   &hnd_src,
+							   p,
+							   value_name,
+							   value_offered,
+							   &value_needed,
+							   &type,
+							   buffer,
+							   data_offered,
+							   &data_needed,
+							   &result);
+
+		data_offered	= data_needed;
+		value_offered	= value_needed;
+		buffer		= talloc_zero_array(mem_ctx, uint8_t, data_needed);
+		value_name	= talloc_zero_array(mem_ctx, char, value_needed);
 
 		/* loop for all printerdata of "PrinterDriverData" */
-		while (W_ERROR_IS_OK(result)) {
+		while (NT_STATUS_IS_OK(nt_status) && W_ERROR_IS_OK(result)) {
 
-			REGISTRY_VALUE value;
-
-			result = rpccli_spoolss_enumprinterdata(
-				pipe_hnd, mem_ctx, &hnd_src, p++, val_needed,
-				data_needed, 0, 0, &value);
-
+			nt_status = rpccli_spoolss_EnumPrinterData(pipe_hnd, mem_ctx,
+								   &hnd_src,
+								   p++,
+								   value_name,
+								   value_offered,
+								   &value_needed,
+								   &type,
+								   buffer,
+								   data_offered,
+								   &data_needed,
+								   &result);
 			/* loop for all reg_keys */
-			if (W_ERROR_IS_OK(result)) {
+			if (NT_STATUS_IS_OK(nt_status) && W_ERROR_IS_OK(result)) {
+
+				REGISTRY_VALUE v;
+				DATA_BLOB blob;
+				union spoolss_PrinterData printer_data;
 
 				/* display_value */
-				if (c->opt_verbose)
-					display_reg_value(SPOOL_PRINTERDATA_KEY, value);
+				if (c->opt_verbose) {
+					fstrcpy(v.valuename, value_name);
+					v.type = type;
+					v.size = data_offered;
+					v.data_p = buffer;
+					display_reg_value(SPOOL_PRINTERDATA_KEY, v);
+				}
+
+				result = pull_spoolss_PrinterData(mem_ctx,
+								  &blob,
+								  &printer_data,
+								  type);
+				if (!W_ERROR_IS_OK(result)) {
+					goto done;
+				}
 
 				/* set_value */
 				if (!net_spoolss_setprinterdata(pipe_hnd_dst, mem_ctx,
-								&hnd_dst, &value))
+								&hnd_dst, value_name,
+								type, printer_data))
 					goto done;
 
 				DEBUGADD(1,("\tSetPrinterData of [%s] succeeded\n",
-					value.valuename));
+					v.valuename));
 			}
 		}
 
