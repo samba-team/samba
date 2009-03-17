@@ -130,13 +130,9 @@ size_t __unsafe_string_function_usage_here_char__(void);
 	safe_strcat_fn2(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, \
 			dest,src,maxlength)
 
-#define push_string(base_ptr, dest, src, dest_len, flags) \
-	push_string_fn2(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, \
-			base_ptr, 0, dest, src, dest_len, flags)
-
-#define pull_string(base_ptr, smb_flags2, dest, src, dest_len, src_len, flags) \
-	pull_string_fn2(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, \
-			base_ptr, smb_flags2, dest, src, dest_len, src_len, flags)
+#define push_string_check(dest, src, dest_len, flags) \
+	push_string_check_fn2(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, \
+			dest, src, dest_len, flags)
 
 #define pull_string_talloc(ctx, base_ptr, smb_flags2, dest, src, src_len, flags) \
 	pull_string_talloc_fn2(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, \
@@ -182,15 +178,10 @@ size_t __unsafe_string_function_usage_here_char__(void);
     ? __unsafe_string_function_usage_here__() \
     : safe_strcat_fn(fn_name, fn_line, (d), (s), (max_len)))
 
-#define push_string_fn2(fn_name, fn_line, base_ptr, flags2, dest, src, dest_len, flags) \
+#define push_string_check_fn2(fn_name, fn_line, dest, src, dest_len, flags) \
     (CHECK_STRING_SIZE(dest, dest_len) \
     ? __unsafe_string_function_usage_here_size_t__() \
-    : push_string_fn(fn_name, fn_line, base_ptr, flags2, dest, src, dest_len, flags))
-
-#define pull_string_fn2(fn_name, fn_line, base_ptr, smb_flags2, dest, src, dest_len, src_len, flags) \
-    (CHECK_STRING_SIZE(dest, dest_len) \
-    ? __unsafe_string_function_usage_here_size_t__() \
-    : pull_string_fn(fn_name, fn_line, base_ptr, smb_flags2, dest, src, dest_len, src_len, flags))
+    : push_string_check_fn(fn_name, fn_line, dest, src, dest_len, flags))
 
 #define pull_string_talloc_fn2(fn_name, fn_line, ctx, base_ptr, smb_flags2, dest, src, src_len, flags) \
     pull_string_talloc_fn(fn_name, fn_line, ctx, base_ptr, smb_flags2, dest, src, src_len, flags)
@@ -214,8 +205,7 @@ size_t __unsafe_string_function_usage_here_char__(void);
 
 #define safe_strcpy_fn2 safe_strcpy_fn
 #define safe_strcat_fn2 safe_strcat_fn
-#define push_string_fn2 push_string_fn
-#define pull_string_fn2 pull_string_fn
+#define push_string_check_fn2 push_string_check_fn
 #define pull_string_talloc_fn2 pull_string_talloc_fn
 #define clistr_push_fn2 clistr_push_fn
 #define clistr_pull_fn2 clistr_pull_fn

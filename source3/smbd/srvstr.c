@@ -32,8 +32,8 @@ size_t srvstr_push_fn(const char *function, unsigned int line,
 	}
 
 	/* 'normal' push into size-specified buffer */
-	return push_string_fn(function, line, base_ptr, smb_flags2, dest, src,
-			      dest_len, flags);
+	return push_string_base(function, line, base_ptr, smb_flags2, dest, src,
+				dest_len, flags);
 }
 
 /*******************************************************************

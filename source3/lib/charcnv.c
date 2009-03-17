@@ -1766,6 +1766,44 @@ bool pull_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src,
 /**
  Copy a string from a char* src to a unicode or ascii
  dos codepage destination choosing unicode or ascii based on the 
+ flags supplied
+ Return the number of bytes occupied by the string in the destination.
+ flags can have:
+  STR_TERMINATE means include the null termination.
+  STR_UPPER     means uppercase in the destination.
+  STR_ASCII     use ascii even with unicode packet.
+  STR_NOALIGN   means don't do alignment.
+ dest_len is the maximum length allowed in the destination. If dest_len
+ is -1 then no maxiumum is used.
+**/
+
+size_t push_string_check_fn(const char *function, unsigned int line,
+			    void *dest, const char *src,
+			    size_t dest_len, int flags)
+{
+#ifdef DEVELOPER
+	/* We really need to zero fill here, not clobber
+	 * region, as we want to ensure that valgrind thinks
+	 * all of the outgoing buffer has been written to
+	 * so a send() or write() won't trap an error.
+	 * JRA.
+	 */
+#if 0
+	clobber_region(function, line, dest, dest_len);
+#else
+	memset(dest, '\0', dest_len);
+#endif
+#endif
+
+	if (!(flags & STR_ASCII) && (flags & STR_UNICODE)) {
+		return push_ucs2(NULL, dest, src, dest_len, flags);
+	}
+	return push_ascii(dest, src, dest_len, flags);
+}
+
+/**
+ Copy a string from a char* src to a unicode or ascii
+ dos codepage destination choosing unicode or ascii based on the 
  flags in the SMB buffer starting at base_ptr.
  Return the number of bytes occupied by the string in the destination.
  flags can have:
@@ -1777,10 +1815,10 @@ bool pull_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src,
  is -1 then no maxiumum is used.
 **/
 
-size_t push_string_fn(const char *function, unsigned int line,
-		      const void *base_ptr, uint16 flags2,
-		      void *dest, const char *src,
-		      size_t dest_len, int flags)
+size_t push_string_base(const char *function, unsigned int line,
+			const char *base, uint16 flags2, 
+			void *dest, const char *src,
+			size_t dest_len, int flags)
 {
 #ifdef DEVELOPER
 	/* We really need to zero fill here, not clobber
@@ -1799,7 +1837,7 @@ size_t push_string_fn(const char *function, unsigned int line,
 	if (!(flags & STR_ASCII) && \
 	    ((flags & STR_UNICODE || \
 	      (flags2 & FLAGS2_UNICODE_STRINGS)))) {
-		return push_ucs2(base_ptr, dest, src, dest_len, flags);
+		return push_ucs2(base, dest, src, dest_len, flags);
 	}
 	return push_ascii(dest, src, dest_len, flags);
 }

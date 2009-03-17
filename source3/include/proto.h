@@ -391,10 +391,13 @@ bool pull_ucs2_talloc(TALLOC_CTX *ctx, char **dest, const smb_ucs2_t *src,
 		      size_t *converted_size);
 bool pull_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src,
 		       size_t *converted_size);
-size_t push_string_fn(const char *function, unsigned int line,
-		      const void *base_ptr, uint16 flags2,
-		      void *dest, const char *src,
-		      size_t dest_len, int flags);
+size_t push_string_check_fn(const char *function, unsigned int line,
+			    void *dest, const char *src,
+			    size_t dest_len, int flags);
+size_t push_string_base(const char *function, unsigned int line,
+			const char *base, uint16 flags2, 
+			void *dest, const char *src,
+			size_t dest_len, int flags);
 size_t pull_string_fn(const char *function,
 			unsigned int line,
 			const void *base_ptr,

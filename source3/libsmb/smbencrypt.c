@@ -499,9 +499,9 @@ bool encode_pw_buffer(uint8 buffer[516], const char *password, int string_flags)
 	/* the incoming buffer can be any alignment. */
 	string_flags |= STR_NOALIGN;
 
-	new_pw_len = push_string(NULL, new_pw,
-				 password, 
-				 sizeof(new_pw), string_flags);
+	new_pw_len = push_string_check(new_pw,
+				       password, 
+				       sizeof(new_pw), string_flags);
 	
 	memcpy(&buffer[512 - new_pw_len], new_pw, new_pw_len);
 

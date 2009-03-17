@@ -74,7 +74,7 @@ to subnet %s\n", work->work_group, subrec->subnet_name));
 
 	SCVAL(p,0,work->token); /* (local) Unique workgroup token id. */
 	p++;
-	p +=  push_string(NULL, p+1, global_myname(), 15, STR_ASCII|STR_UPPER|STR_TERMINATE);
+	p +=  push_string_check(p+1, global_myname(), 15, STR_ASCII|STR_UPPER|STR_TERMINATE);
   
 	send_mailslot(False, BROWSE_MAILSLOT, outbuf,PTR_DIFF(p,outbuf),
 		global_myname(), 0x0, work->work_group,0x1e, subrec->bcast_ip, 
@@ -105,7 +105,7 @@ static void send_announcement(struct subnet_record *subrec, int announce_type,
 
 	safe_strcpy(upper_server_name, server_name, sizeof(upper_server_name)-1);
 	strupper_m(upper_server_name);
-	push_string(NULL, p+5, upper_server_name, 16, STR_ASCII|STR_TERMINATE);
+	push_string_check(p+5, upper_server_name, 16, STR_ASCII|STR_TERMINATE);
 
 	SCVAL(p,21,lp_major_announce_version()); /* Major version. */
 	SCVAL(p,22,lp_minor_announce_version()); /* Minor version. */
@@ -115,7 +115,7 @@ static void send_announcement(struct subnet_record *subrec, int announce_type,
 	SSVAL(p,27,BROWSER_ELECTION_VERSION);
 	SSVAL(p,29,BROWSER_CONSTANT); /* Browse signature. */
 
-	p += 31 + push_string(NULL, p+31, server_comment, sizeof(outbuf) - (p + 31 - outbuf), STR_ASCII|STR_TERMINATE);
+	p += 31 + push_string_check(p+31, server_comment, sizeof(outbuf) - (p + 31 - outbuf), STR_ASCII|STR_TERMINATE);
 
 	send_mailslot(False,BROWSE_MAILSLOT, outbuf, PTR_DIFF(p,outbuf),
 			from_name, 0x0, to_name, to_type, to_ip, subrec->myip,
@@ -143,8 +143,8 @@ static void send_lm_announcement(struct subnet_record *subrec, int announce_type
 	SSVAL(p,8,announce_interval);            /* In seconds - according to spec. */
 
 	p += 10;
-	p += push_string(NULL, p, server_name, 15, STR_ASCII|STR_UPPER|STR_TERMINATE);
-	p += push_string(NULL, p, server_comment, sizeof(outbuf)- (p - outbuf), STR_ASCII|STR_UPPER|STR_TERMINATE);
+	p += push_string_check(p, server_name, 15, STR_ASCII|STR_UPPER|STR_TERMINATE);
+	p += push_string_check(p, server_comment, sizeof(outbuf)- (p - outbuf), STR_ASCII|STR_UPPER|STR_TERMINATE);
 
 	send_mailslot(False,LANMAN_MAILSLOT, outbuf, PTR_DIFF(p,outbuf),
 		from_name, 0x0, to_name, to_type, to_ip, subrec->myip,

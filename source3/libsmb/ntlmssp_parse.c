@@ -106,8 +106,8 @@ bool msrpc_gen(DATA_BLOB *blob,
 			SSVAL(blob->data, head_ofs, n*2); head_ofs += 2;
 			SSVAL(blob->data, head_ofs, n*2); head_ofs += 2;
 			SIVAL(blob->data, head_ofs, data_ofs); head_ofs += 4;
-			push_string(NULL, blob->data+data_ofs,
-					s, n*2, STR_UNICODE|STR_NOALIGN);
+			push_string_check(blob->data+data_ofs,
+					  s, n*2, STR_UNICODE|STR_NOALIGN);
 			data_ofs += n*2;
 			break;
 		case 'A':
@@ -116,8 +116,8 @@ bool msrpc_gen(DATA_BLOB *blob,
 			SSVAL(blob->data, head_ofs, n); head_ofs += 2;
 			SSVAL(blob->data, head_ofs, n); head_ofs += 2;
 			SIVAL(blob->data, head_ofs, data_ofs); head_ofs += 4;
-			push_string(NULL, blob->data+data_ofs,
-					s, n, STR_ASCII|STR_NOALIGN);
+			push_string_check(blob->data+data_ofs,
+				    s, n, STR_ASCII|STR_NOALIGN);
 			data_ofs += n;
 			break;
 		case 'a':
@@ -127,7 +127,7 @@ bool msrpc_gen(DATA_BLOB *blob,
 			n = str_charnum(s);
 			SSVAL(blob->data, data_ofs, n*2); data_ofs += 2;
 			if (0 < n) {
-				push_string(NULL, blob->data+data_ofs, s, n*2,
+				push_string_check(blob->data+data_ofs, s, n*2,
 					    STR_UNICODE|STR_NOALIGN);
 			}
 			data_ofs += n*2;
@@ -156,8 +156,8 @@ bool msrpc_gen(DATA_BLOB *blob,
 		case 'C':
 			s = va_arg(ap, char *);
 			n = str_charnum(s) + 1;
-			head_ofs += push_string(NULL, blob->data+head_ofs, s, n,
-						STR_ASCII|STR_TERMINATE);
+			head_ofs += push_string_check(blob->data+head_ofs, s, n,
+						      STR_ASCII|STR_TERMINATE);
 			break;
 		}
 	}
