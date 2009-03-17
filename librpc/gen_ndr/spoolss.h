@@ -1479,6 +1479,14 @@ struct spoolss_UserLevelCtr {
 #define JOB_ACCESS_ADMINISTER ( 0x00000010 )
 #define JOB_ACCESS_READ ( 0x00000020 )
 
+struct spoolss_PrinterEnumValues {
+	const char * value_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	uint32_t value_name_len;/* [value(2*strlen_m_term(value_name))] */
+	enum winreg_Type type;
+	union spoolss_PrinterData *data;/* [relative,subcontext_size(data_length),subcontext(0),switch_is(type)] */
+	uint32_t data_length;/* [value(ndr_size_spoolss_PrinterData(data,type,ndr->iconv_convenience,ndr->flags))] */
+}/* [relative_base,gensize,public] */;
+
 /* bitmap spoolss_DeleteDriverFlags */
 #define DPD_DELETE_UNUSED_FILES ( 0x00000001 )
 #define DPD_DELETE_SPECIFIC_VERSION ( 0x00000002 )
