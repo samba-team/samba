@@ -784,6 +784,47 @@ WERROR rpccli_spoolss_enumprinterkey(struct rpc_pipe_client *cli,
 	return werror;
 }
 
+/**********************************************************************
+ convencience wrapper around rpccli_spoolss_EnumPrinterDataEx
+**********************************************************************/
+
+WERROR rpccli_spoolss_enumprinterdataex(struct rpc_pipe_client *cli,
+					TALLOC_CTX *mem_ctx,
+					struct policy_handle *handle,
+					const char *key_name,
+					uint32_t offered,
+					uint32_t *count,
+					struct spoolss_PrinterEnumValues **info)
+{
+	NTSTATUS status;
+	WERROR werror;
+	uint32_t needed;
+
+	status = rpccli_spoolss_EnumPrinterDataEx(cli, mem_ctx,
+						  handle,
+						  key_name,
+						  offered,
+						  count,
+						  info,
+						  &needed,
+						  &werror);
+
+	if (W_ERROR_EQUAL(werror, WERR_MORE_DATA)) {
+		offered = needed;
+
+		status = rpccli_spoolss_EnumPrinterDataEx(cli, mem_ctx,
+							  handle,
+							  key_name,
+							  offered,
+							  count,
+							  info,
+							  &needed,
+							  &werror);
+	}
+
+	return werror;
+}
+
 
 /*********************************************************************
  Decode various spoolss rpc's and info levels
