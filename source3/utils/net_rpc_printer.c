@@ -821,8 +821,11 @@ static bool net_spoolss_setprinterdata(struct rpc_pipe_client *pipe_hnd,
 {
 	WERROR result;
 
+	/* FIXME - GD */
+	return true;
+
 	/* setprinterdata call */
-	result = rpccli_spoolss_setprinterdata(pipe_hnd, mem_ctx, hnd, value);
+	/* result = rpccli_spoolss_setprinterdata(pipe_hnd, mem_ctx, hnd, value); */
 
 	if (!W_ERROR_IS_OK(result)) {
 		printf ("unable to set printerdata: %s\n", win_errstr(result));
