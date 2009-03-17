@@ -366,22 +366,22 @@ static bool test_EnumPrinterKey(struct torture_context *tctx,
 	NTSTATUS status;
 	struct spoolss_EnumPrinterKey epk;
 	uint32_t needed = 0;
+	const char **key_buffer = NULL;
 
 	torture_comment(tctx, "Testing EnumPrinterKey(%s)\n", key);
 
 	epk.in.handle = handle;
 	epk.in.key_name = talloc_strdup(tctx, key);
-	epk.in.key_buffer_size = 0;
+	epk.in.offered = 0;
 	epk.out.needed = &needed;
-	epk.out.key_buffer = talloc_array(tctx, uint16_t, 0);
+	epk.out.key_buffer = &key_buffer;
 
 	status = dcerpc_spoolss_EnumPrinterKey(p, tctx, &epk);
 	torture_assert_ntstatus_ok(tctx, status, "EnumPrinterKey failed");
 
 
 	if (W_ERROR_EQUAL(epk.out.result, WERR_MORE_DATA)) {
-		epk.in.key_buffer_size = needed;
-		epk.out.key_buffer = talloc_array(tctx, uint16_t, needed/2);
+		epk.in.offered = needed;
 		status = dcerpc_spoolss_EnumPrinterKey(p, tctx, &epk);
 		torture_assert_ntstatus_ok(tctx, status,
 				"EnumPrinterKey failed");
