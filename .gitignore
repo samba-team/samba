@@ -280,6 +280,7 @@ source4/tests
 source4/torture/auth/proto.h
 source4/torture/basic/proto.h
 source4/torture/ldap/proto.h
+source4/torture/ldb/proto.h
 source4/torture/libnet/proto.h
 source4/torture/local/proto.h
 source4/torture/nbench/proto.h
