@@ -458,14 +458,19 @@ static void fill_in_printer_values( NT_PRINTER_INFO_LEVEL_2 *info2, REGVAL_CTR *
 	prs_set_offset( &prs, 0 );
 		
 	/* stream the printer security descriptor */
-	
-	if ( info2->secdesc_buf &&
-	     info2->secdesc_buf->sd &&
-	     info2->secdesc_buf->sd_size )  
+
+	if (info2->secdesc_buf &&
+	    info2->secdesc_buf->sd &&
+	    info2->secdesc_buf->sd_size)
 	{
-		if ( sec_io_desc("sec_desc", &info2->secdesc_buf->sd, &prs, 0 ) ) {
-			offset = prs_offset( &prs );
-			regval_ctr_addvalue( values, "Security", REG_BINARY, prs_data_p(&prs), offset );
+		NTSTATUS status;
+		DATA_BLOB blob;
+
+		status = marshall_sec_desc(values, info2->secdesc_buf->sd,
+					   &blob.data, &blob.length);
+		if (NT_STATUS_IS_OK(status)) {
+			regval_ctr_addvalue(values, "Security", REG_BINARY,
+					    (const char *)blob.data, blob.length);
 		}
 	}
 
