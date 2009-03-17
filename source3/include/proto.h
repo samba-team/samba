@@ -6032,7 +6032,6 @@ struct spoolss_DeviceMode *construct_dev_mode(TALLOC_CTX *mem_ctx,
 WERROR add_port_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, const char *portname, const char *uri );
 bool add_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, NT_PRINTER_INFO_LEVEL *printer);
 WERROR enumports_hook(TALLOC_CTX *ctx, int *count, char ***lines );
-WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_u, SPOOL_R_ENUMPRINTERDATAEX *r_u);
 
 /* The following definitions come from rpc_server/srv_srvsvc_nt.c  */
 

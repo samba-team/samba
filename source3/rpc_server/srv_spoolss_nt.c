@@ -9014,34 +9014,32 @@ static WERROR registry_value_to_printer_enum_value(TALLOC_CTX *mem_ctx,
 	return WERR_OK;
 }
 
-/********************************************************************
- * spoolss_enumprinterdataex
- ********************************************************************/
+/****************************************************************
+ _spoolss_EnumPrinterDataEx
+****************************************************************/
 
-WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_u, SPOOL_R_ENUMPRINTERDATAEX *r_u)
+WERROR _spoolss_EnumPrinterDataEx(pipes_struct *p,
+				  struct spoolss_EnumPrinterDataEx *r)
 {
-	POLICY_HND	*handle = &q_u->handle;
-	uint32 		in_size = q_u->size;
-	uint32 		num_entries,
-			needed;
+	uint32_t	count = 0;
 	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
-	PRINTER_ENUM_VALUES	*enum_values = NULL;
+	struct spoolss_PrinterEnumValues *info = NULL;
 	NT_PRINTER_DATA		*p_data;
-	fstring 	key;
-	Printer_entry 	*Printer = find_printer_index_by_hnd(p, handle);
+	Printer_entry 	*Printer = find_printer_index_by_hnd(p, r->in.handle);
 	int 		snum;
 	WERROR 		result;
 	int		key_index;
 	int		i;
-	REGISTRY_VALUE	*val;
-	char		*value_name;
-	uint32		data_len;
 
+	DEBUG(4,("_spoolss_EnumPrinterDataEx\n"));
 
-	DEBUG(4,("_spoolss_enumprinterdataex\n"));
+	*r->out.count = 0;
+	*r->out.needed = 0;
+	*r->out.info = NULL;
 
 	if (!Printer) {
-		DEBUG(2,("_spoolss_enumprinterdataex: Invalid handle (%s:%u:%u1<).\n", OUR_HANDLE(handle)));
+		DEBUG(2,("_spoolss_EnumPrinterDataEx: Invalid handle (%s:%u:%u1<).\n",
+			OUR_HANDLE(r->in.handle)));
 		return WERR_BADFID;
 	}
 
@@ -9052,51 +9050,50 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 	 * --jerry
 	 */
 
-	unistr2_to_ascii(key, &q_u->key, sizeof(key));
-	if ( !strlen(key) ) {
+	if (!strlen(r->in.key_name)) {
 		result = WERR_INVALID_PARAM;
 		goto done;
 	}
 
 	/* get the printer off of disk */
 
-	if (!get_printer_snum(p,handle, &snum, NULL))
+	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
 		return WERR_BADFID;
+	}
 
 	ZERO_STRUCT(printer);
 	result = get_a_printer(Printer, &printer, 2, lp_const_servicename(snum));
-	if (!W_ERROR_IS_OK(result))
+	if (!W_ERROR_IS_OK(result)) {
 		return result;
+	}
 
 	/* now look for a match on the key name */
 
 	p_data = printer->info_2->data;
 
-	unistr2_to_ascii(key, &q_u->key, sizeof(key));
-	if ( (key_index = lookup_printerkey( p_data, key)) == -1  )
-	{
-		DEBUG(10,("_spoolss_enumprinterdataex: Unknown keyname [%s]\n", key));
+	key_index = lookup_printerkey(p_data, r->in.key_name);
+	if (key_index == -1) {
+		DEBUG(10,("_spoolss_EnumPrinterDataEx: Unknown keyname [%s]\n",
+			r->in.key_name));
 		result = WERR_INVALID_PARAM;
 		goto done;
 	}
 
-	result = WERR_OK;
-	needed = 0;
-
 	/* allocate the memory for the array of pointers -- if necessary */
 
-	num_entries = regval_ctr_numvals( p_data->keys[key_index].values );
-	if ( num_entries )
-	{
-		if ( (enum_values=TALLOC_ARRAY(p->mem_ctx, PRINTER_ENUM_VALUES, num_entries)) == NULL )
-		{
-			DEBUG(0,("_spoolss_enumprinterdataex: talloc() failed to allocate memory for [%lu] bytes!\n",
-				(unsigned long)num_entries*sizeof(PRINTER_ENUM_VALUES)));
-			result = WERR_NOMEM;
-			goto done;
-		}
+	count = regval_ctr_numvals(p_data->keys[key_index].values);
+	if (!count) {
+		result = WERR_OK; /* ??? */
+		goto done;
+	}
 
-		memset( enum_values, 0x0, num_entries*sizeof(PRINTER_ENUM_VALUES) );
+	info = TALLOC_ZERO_ARRAY(p->mem_ctx,
+				 struct spoolss_PrinterEnumValues,
+				 count);
+	if (!info) {
+		DEBUG(0,("_spoolss_EnumPrinterDataEx: talloc() failed\n"));
+		result = WERR_NOMEM;
+		goto done;
 	}
 
 	/*
@@ -9104,37 +9101,25 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 	 * back to the  client
 	 */
 
-	for ( i=0; i<num_entries; i++ )
-	{
+	for (i=0; i < count; i++) {
+
+		REGISTRY_VALUE	*val;
+
 		/* lookup the registry value */
 
-		val = regval_ctr_specific_value( p_data->keys[key_index].values, i );
-		DEBUG(10,("retrieved value number [%d] [%s]\n", i, regval_name(val) ));
+		val = regval_ctr_specific_value(p_data->keys[key_index].values, i);
+
+		DEBUG(10,("retrieved value number [%d] [%s]\n", i, regval_name(val)));
 
 		/* copy the data */
 
-		value_name = regval_name( val );
-		init_unistr( &enum_values[i].valuename, value_name );
-		enum_values[i].value_len = (strlen(value_name)+1) * 2;
-		enum_values[i].type      = regval_type( val );
-
-		data_len = regval_size( val );
-		if ( data_len ) {
-			if ( !(enum_values[i].data = (uint8 *)TALLOC_MEMDUP(p->mem_ctx, regval_data_p(val), data_len)) )
-			{
-				DEBUG(0,("TALLOC_MEMDUP failed to allocate memory [data_len=%d] for data!\n",
-					data_len ));
-				result = WERR_NOMEM;
-				goto done;
-			}
+		result = registry_value_to_printer_enum_value(info, val, &info[i]);
+		if (!W_ERROR_IS_OK(result)) {
+			goto done;
 		}
-		enum_values[i].data_len = data_len;
-
-		/* keep track of the size of the array in bytes */
-
-		needed += spoolss_size_printer_enum_values(&enum_values[i]);
 	}
 
+#if 0 /* FIXME - gd */
 	/* housekeeping information in the reply */
 
 	/* Fix from Martin Zielinski <mz@seh.de> - ensure
@@ -9145,32 +9130,24 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 	if (needed % 4) {
 		needed += 4-(needed % 4);
 	}
+#endif
+	*r->out.count	= count;
+	*r->out.info	= info;
 
-	r_u->needed 	= needed;
-	r_u->returned 	= num_entries;
+ done:
 
-	if (needed > in_size) {
-		result = WERR_MORE_DATA;
-		goto done;
+	if (printer) {
+		free_a_printer(&printer, 2);
 	}
 
-	/* copy data into the reply */
+	*r->out.needed	= SPOOLSS_BUFFER_ARRAY(p->mem_ctx,
+					       spoolss_EnumPrinterDataEx, NULL,
+					       *r->out.info,
+					       *r->out.count);
+	*r->out.info	= SPOOLSS_BUFFER_OK(*r->out.info, NULL);
+	*r->out.count	= SPOOLSS_BUFFER_OK(*r->out.count, *r->out.count);
 
-	/* mz: Vista x64 returns 0x6f7 (The stub received bad data), if the
-	   response buffer size is != the offered buffer size
-
-		r_u->ctr.size           = r_u->needed;
-	*/
-	r_u->ctr.size           = in_size;
-
-	r_u->ctr.size_of_array 	= r_u->returned;
-	r_u->ctr.values 	= enum_values;
-
-done:
-	if ( printer )
-	free_a_printer(&printer, 2);
-
-	return result;
+	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_MORE_DATA);
 }
 
 /****************************************************************************
@@ -9937,17 +9914,6 @@ WERROR _spoolss_4b(pipes_struct *p,
 
 WERROR _spoolss_4c(pipes_struct *p,
 		   struct spoolss_4c *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_EnumPrinterDataEx
-****************************************************************/
-
-WERROR _spoolss_EnumPrinterDataEx(pipes_struct *p,
-				  struct spoolss_EnumPrinterDataEx *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
