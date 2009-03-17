@@ -32,17 +32,6 @@
    as a separator when looking at the pathname part.... JRA.
 ********************************************************************/
 
-static struct cm_cred_struct {
-	char *username;
-	char *password;
-	bool got_pass;
-	bool use_kerberos;
-	bool fallback_after_kerberos;
-	int signing_state;
-} cm_creds;
-
-static void cm_set_password(const char *newpass);
-
 static bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 				struct cli_state *cli,
 				const char *sharename,
@@ -96,6 +85,7 @@ NTSTATUS cli_cm_force_encryption(struct cli_state *c,
 static struct cli_state *do_connect(TALLOC_CTX *ctx,
 					const char *server,
 					const char *share,
+					const struct user_auth_info *auth_info,
 					bool show_sessetup,
 					bool force_encrypt,
 					int max_protocol,
@@ -143,7 +133,7 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 	zero_sockaddr(&ss);
 
 	/* have to open a new connection */
-	if (!(c=cli_initialise_ex(cm_creds.signing_state))) {
+	if (!(c=cli_initialise_ex(get_cmdline_auth_info_signing_state(auth_info)))) {
 		d_printf("Connection to %s failed\n", server_n);
 		if (c) {
 			cli_shutdown(c);
@@ -167,8 +157,9 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 		max_protocol = PROTOCOL_NT1;
 	}
 	c->protocol = max_protocol;
-	c->use_kerberos = cm_creds.use_kerberos;
-	c->fallback_after_kerberos = cm_creds.fallback_after_kerberos;
+	c->use_kerberos = get_cmdline_auth_info_use_kerberos(auth_info);
+	c->fallback_after_kerberos =
+		get_cmdline_auth_info_fallback_after_kerberos(auth_info);
 
 	if (!cli_session_request(c, &calling, &called)) {
 		char *p;
@@ -198,20 +189,8 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 		return NULL;
 	}
 
-	if (!cm_creds.got_pass && !cm_creds.use_kerberos) {
-		char *label = NULL;
-		char *pass;
-		label = talloc_asprintf(ctx, "Enter %s's password: ",
-			cm_creds.username);
-		pass = getpass(label);
-		if (pass) {
-			cm_set_password(pass);
-		}
-		TALLOC_FREE(label);
-	}
-
-	username = cm_creds.username ? cm_creds.username : "";
-	password = cm_creds.password ? cm_creds.password : "";
+	username = get_cmdline_auth_info_username(auth_info);
+	password = get_cmdline_auth_info_password(auth_info);
 
 	if (!NT_STATUS_IS_OK(cli_session_setup(c, username,
 					       password, strlen(password),
@@ -219,8 +198,9 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 					       lp_workgroup()))) {
 		/* If a password was not supplied then
 		 * try again with a null username. */
-		if (password[0] || !username[0] || cm_creds.use_kerberos ||
-		    !NT_STATUS_IS_OK(cli_session_setup(c, "",
+		if (password[0] || !username[0] ||
+			get_cmdline_auth_info_use_kerberos(auth_info) ||
+			!NT_STATUS_IS_OK(cli_session_setup(c, "",
 				    		"", 0,
 						"", 0,
 					       lp_workgroup()))) {
@@ -259,7 +239,7 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 				lp_workgroup())) {
 		cli_shutdown(c);
 		return do_connect(ctx, newserver,
-				newshare, false,
+				newshare, auth_info, false,
 				force_encrypt, max_protocol,
 				port, name_type);
 	}
@@ -313,6 +293,7 @@ static struct cli_state *cli_cm_connect(TALLOC_CTX *ctx,
 					struct cli_state *referring_cli,
 	 				const char *server,
 					const char *share,
+					const struct user_auth_info *auth_info,
 					bool show_hdr,
 					bool force_encrypt,
 					int max_protocol,
@@ -322,6 +303,7 @@ static struct cli_state *cli_cm_connect(TALLOC_CTX *ctx,
 	struct cli_state *cli;
 
 	cli = do_connect(ctx, server, share,
+				auth_info,
 				show_hdr, force_encrypt, max_protocol,
 				port, name_type);
 
@@ -389,6 +371,7 @@ struct cli_state *cli_cm_open(TALLOC_CTX *ctx,
 				struct cli_state *referring_cli,
 				const char *server,
 				const char *share,
+				const struct user_auth_info *auth_info,
 				bool show_hdr,
 				bool force_encrypt,
 				int max_protocol,
@@ -402,9 +385,25 @@ struct cli_state *cli_cm_open(TALLOC_CTX *ctx,
 		return c;
 	}
 
-	return cli_cm_connect(ctx, referring_cli,
-				server, share, show_hdr, force_encrypt,
-				max_protocol, port, name_type);
+	if (auth_info == NULL) {
+		/* Can't do a new connection
+		 * without auth info. */
+		d_printf("cli_cm_open() Unable to open connection [\\%s\\%s] "
+			"without auth info\n",
+			server, share );
+		return NULL;
+	}
+
+	return cli_cm_connect(ctx,
+				referring_cli,
+				server,
+				share,
+				auth_info,
+				show_hdr,
+				force_encrypt,
+				max_protocol,
+				port,
+				name_type);
 }
 
 /****************************************************************************
@@ -423,18 +422,10 @@ void cli_cm_display(const struct cli_state *cli)
 /****************************************************************************
 ****************************************************************************/
 
-static void cm_set_password(const char *newpass)
-{
-	SAFE_FREE(cm_creds.password);
-	cm_creds.password = SMB_STRDUP(newpass);
-	if (cm_creds.password) {
-		cm_creds.got_pass = true;
-	}
-}
-
 /****************************************************************************
 ****************************************************************************/
 
+#if 0
 void cli_cm_set_credentials(struct user_auth_info *auth_info)
 {
 	SAFE_FREE(cm_creds.username);
@@ -449,51 +440,7 @@ void cli_cm_set_credentials(struct user_auth_info *auth_info)
 	cm_creds.fallback_after_kerberos = false;
 	cm_creds.signing_state = get_cmdline_auth_info_signing_state(auth_info);
 }
-
-/****************************************************************************
-****************************************************************************/
-
-void cli_cm_set_signing_state(int state)
-{
-	cm_creds.signing_state = state;
-}
-
-/****************************************************************************
-****************************************************************************/
-
-void cli_cm_set_username(const char *username)
-{
-	SAFE_FREE(cm_creds.username);
-	cm_creds.username = SMB_STRDUP(username);
-}
-
-/****************************************************************************
-****************************************************************************/
-
-void cli_cm_set_password(const char *newpass)
-{
-	SAFE_FREE(cm_creds.password);
-	cm_creds.password = SMB_STRDUP(newpass);
-	if (cm_creds.password) {
-		cm_creds.got_pass = true;
-	}
-}
-
-/****************************************************************************
-****************************************************************************/
-
-void cli_cm_set_use_kerberos(void)
-{
-	cm_creds.use_kerberos = true;
-}
-
-/****************************************************************************
-****************************************************************************/
-
-void cli_cm_set_fallback_after_kerberos(void)
-{
-	cm_creds.fallback_after_kerberos = true;
-}
+#endif
 
 /**********************************************************************
  split a dfs path into the server, share name, and extrapath components
@@ -763,6 +710,7 @@ bool cli_dfs_get_referral(TALLOC_CTX *ctx,
 
 bool cli_resolve_path(TALLOC_CTX *ctx,
 			const char *mountpt,
+			const struct user_auth_info *dfs_auth_info,
 			struct cli_state *rootcli,
 			const char *path,
 			struct cli_state **targetcli,
@@ -843,13 +791,16 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 
 	/* Check for the referral. */
 
-	if (!(cli_ipc = cli_cm_open(ctx, rootcli,
-					rootcli->desthost,
-					"IPC$", false,
-					(rootcli->trans_enc_state != NULL),
-					rootcli->protocol,
-					0,
-					0x20))) {
+	if (!(cli_ipc = cli_cm_open(ctx,
+				rootcli,
+				rootcli->desthost,
+				"IPC$",
+				dfs_auth_info,
+				false,
+				(rootcli->trans_enc_state != NULL),
+				rootcli->protocol,
+				0,
+				0x20))) {
 		return false;
 	}
 
@@ -893,6 +844,7 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 	if ((*targetcli = cli_cm_open(ctx, rootcli,
 					server,
 					share,
+					dfs_auth_info,
 					false,
 					(rootcli->trans_enc_state != NULL),
 					rootcli->protocol,
@@ -952,6 +904,7 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 	if (!strequal(*pp_targetpath, "\\") && !strequal(*pp_targetpath, "/")) {
 		if (cli_resolve_path(ctx,
 					newmount,
+					dfs_auth_info,
 					*targetcli,
 					*pp_targetpath,
 					&newcli,

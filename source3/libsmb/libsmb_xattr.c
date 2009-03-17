@@ -891,7 +891,8 @@ cacl_get(SMBCCTX *context,
                 /* Point to the portion after "system.nt_sec_desc." */
                 name += 19;     /* if (all) this will be invalid but unused */
 
-		if (!cli_resolve_path(ctx, "", cli, filename,
+		if (!cli_resolve_path(ctx, "", context->internal->auth_info,
+				cli, filename,
 				&targetcli, &targetpath)) {
 			DEBUG(5, ("cacl_get Could not resolve %s\n",
 				filename));
@@ -1496,14 +1497,15 @@ cacl_get(SMBCCTX *context,
 set the ACLs on a file given an ascii description
 *******************************************************/
 static int
-cacl_set(TALLOC_CTX *ctx,
-         struct cli_state *cli,
-         struct cli_state *ipc_cli,
-         POLICY_HND *pol,
-         const char *filename,
-         char *the_acl,
-         int mode,
-         int flags)
+cacl_set(SMBCCTX *context,
+	TALLOC_CTX *ctx,
+	struct cli_state *cli,
+	struct cli_state *ipc_cli,
+	POLICY_HND *pol,
+	const char *filename,
+	char *the_acl,
+	int mode,
+	int flags)
 {
 	int fnum;
         int err = 0;
@@ -1547,8 +1549,9 @@ cacl_set(TALLOC_CTX *ctx,
 		return -1;
 	}
 
-	if (!cli_resolve_path(ctx, "", cli, filename,
-				&targetcli, &targetpath)) {
+	if (!cli_resolve_path(ctx, "", context->internal->auth_info,
+			cli, filename,
+			&targetcli, &targetpath)) {
 		DEBUG(5,("cacl_set: Could not resolve %s\n", filename));
 		errno = ENOENT;
 		return -1;
@@ -1793,7 +1796,7 @@ SMBC_setxattr_ctx(SMBCCTX *context,
                 }
                 
                 if (ipc_srv) {
-                        ret = cacl_set(talloc_tos(), srv->cli,
+                        ret = cacl_set(context, talloc_tos(), srv->cli,
                                        ipc_srv->cli, &ipc_srv->pol, path,
                                        namevalue,
                                        (*namevalue == '*'
@@ -1857,7 +1860,7 @@ SMBC_setxattr_ctx(SMBCCTX *context,
                         errno = ENOMEM;
                         ret = -1;
                 } else {
-                        ret = cacl_set(talloc_tos(), srv->cli,
+                        ret = cacl_set(context, talloc_tos(), srv->cli,
                                        ipc_srv->cli, &ipc_srv->pol, path,
                                        namevalue,
                                        (*namevalue == '*'
@@ -1887,7 +1890,7 @@ SMBC_setxattr_ctx(SMBCCTX *context,
                         errno = ENOMEM;
                         ret = -1;
                 } else {
-                        ret = cacl_set(talloc_tos(), srv->cli,
+                        ret = cacl_set(context, talloc_tos(), srv->cli,
                                        ipc_srv->cli, &ipc_srv->pol, path,
                                        namevalue, SMBC_XATTR_MODE_CHOWN, 0);
                 }
@@ -1914,7 +1917,7 @@ SMBC_setxattr_ctx(SMBCCTX *context,
                         errno = ENOMEM;
                         ret = -1;
                 } else {
-                        ret = cacl_set(talloc_tos(), srv->cli,
+                        ret = cacl_set(context, talloc_tos(), srv->cli,
                                        ipc_srv->cli, &ipc_srv->pol, path,
                                        namevalue, SMBC_XATTR_MODE_CHGRP, 0);
                 }
@@ -2216,7 +2219,7 @@ SMBC_removexattr_ctx(SMBCCTX *context,
             StrCaseCmp(name, "system.nt_sec_desc.*+") == 0) {
                 
                 /* Yup. */
-                ret = cacl_set(talloc_tos(), srv->cli,
+                ret = cacl_set(context, talloc_tos(), srv->cli,
                                ipc_srv->cli, &ipc_srv->pol, path,
                                NULL, SMBC_XATTR_MODE_REMOVE_ALL, 0);
 		TALLOC_FREE(frame);
@@ -2236,7 +2239,7 @@ SMBC_removexattr_ctx(SMBCCTX *context,
             StrnCaseCmp(name, "system.nt_sec_desc.acl+", 23) == 0) {
                 
                 /* Yup. */
-                ret = cacl_set(talloc_tos(), srv->cli,
+                ret = cacl_set(context, talloc_tos(), srv->cli,
                                ipc_srv->cli, &ipc_srv->pol, path,
                                CONST_DISCARD(char *, name) + 19,
                                SMBC_XATTR_MODE_REMOVE, 0);
