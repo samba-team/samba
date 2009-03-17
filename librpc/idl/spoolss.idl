@@ -1501,6 +1501,16 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[out,ref] uint32 *needed
 	);
 
+	/*
+	 * Special strings for the OpenPrinter() call.  See the MSDN DDK
+	 * docs on the XcvDataPort() for more details.
+	 */
+
+	const string SPL_LOCAL_PORT		= "Local Port";
+	const string SPL_TCPIP_PORT		= "Standard TCP/IP Port";
+	const string SPL_XCV_MONITOR_LOCALMON   = ",XcvMonitor Local Port";
+	const string SPL_XCV_MONITOR_TCPMON	= ",XcvMonitor Standard TCP/IP Port";
+
 	typedef [public,gensize] struct {
 		[relative] nstring *port_name;
 	} spoolss_PortInfo1;
