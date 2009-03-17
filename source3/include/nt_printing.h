@@ -472,4 +472,7 @@ typedef struct _Printer{
 						 PRINTER_ATTRIBUTE_LOCAL)
 #define PRINTER_ATTRIBUTE_NOT_SAMBA		(PRINTER_ATTRIBUTE_NETWORK)
 
+#define DRIVER_ANY_VERSION		0xffffffff
+#define DRIVER_MAX_VERSION		4
+
 #endif /* NT_PRINTING_H_ */
