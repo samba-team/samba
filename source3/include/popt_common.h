@@ -53,6 +53,7 @@ struct user_auth_info {
 	int signing_state;
 	bool smb_encrypt;
 	bool use_machine_account;
+	bool fallback_after_kerberos;
 };
 
 #endif /* _POPT_COMMON_H */

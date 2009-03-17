@@ -257,8 +257,9 @@ SMBC_fstat_ctx(SMBCCTX *context,
         }
         
 	/*d_printf(">>>fstat: resolving %s\n", path);*/
-	if (!cli_resolve_path(frame, "", file->srv->cli, path,
-                              &targetcli, &targetpath)) {
+	if (!cli_resolve_path(frame, "", context->internal->auth_info,
+			file->srv->cli, path,
+			&targetcli, &targetpath)) {
 		d_printf("Could not resolve %s\n", path);
 		TALLOC_FREE(frame);
 		return -1;

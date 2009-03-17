@@ -181,6 +181,12 @@ struct SMBC_internal_data {
          */
         bool                                    case_sensitive;
 
+	/*
+	 * Auth info needed for DFS traversal.
+	 */
+
+	struct user_auth_info			*auth_info;
+
         struct smbc_server_cache * server_cache;
 
         /* POSIX emulation functions */

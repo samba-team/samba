@@ -1084,6 +1084,9 @@ int get_cmdline_auth_info_signing_state(const struct user_auth_info *auth_info);
 void set_cmdline_auth_info_use_kerberos(struct user_auth_info *auth_info,
 					bool b);
 bool get_cmdline_auth_info_use_kerberos(const struct user_auth_info *auth_info);
+void set_cmdline_auth_info_fallback_after_kerberos(struct user_auth_info *auth_info,
+					bool b);
+bool get_cmdline_auth_info_fallback_after_kerberos(const struct user_auth_info *auth_info);
 void set_cmdline_auth_info_use_krb5_ticket(struct user_auth_info *auth_info);
 void set_cmdline_auth_info_smb_encrypt(struct user_auth_info *auth_info);
 void set_cmdline_auth_info_use_machine_account(struct user_auth_info *auth_info);
@@ -1093,6 +1096,7 @@ bool get_cmdline_auth_info_use_machine_account(const struct user_auth_info *auth
 struct user_auth_info *get_cmdline_auth_info_copy(TALLOC_CTX *mem_ctx,
 						 const struct user_auth_info *info);
 bool set_cmdline_auth_info_machine_account_creds(struct user_auth_info *auth_info);
+void set_cmdline_auth_info_getpass(struct user_auth_info *auth_info);
 bool add_gid_to_array_unique(TALLOC_CTX *mem_ctx, gid_t gid,
 			     gid_t **gids, size_t *num_gids);
 bool file_exist_stat(const char *fname,SMB_STRUCT_STAT *sbuf);
@@ -2359,21 +2363,13 @@ struct cli_state *cli_cm_open(TALLOC_CTX *ctx,
 				struct cli_state *referring_cli,
 				const char *server,
 				const char *share,
+				const struct user_auth_info *auth_info,
 				bool show_hdr,
 				bool force_encrypt,
 				int max_protocol,
 				int port,
 				int name_type);
 void cli_cm_display(const struct cli_state *c);
-void cli_cm_set_credentials(struct user_auth_info *auth_info);
-void cli_cm_set_port(int port_number);
-void cli_cm_set_dest_name_type(int type);
-void cli_cm_set_signing_state(int state);
-void cli_cm_set_username(const char *username);
-void cli_cm_set_password(const char *newpass);
-void cli_cm_set_use_kerberos(void);
-void cli_cm_set_fallback_after_kerberos(void);
-void cli_cm_set_dest_ss(struct sockaddr_storage *pss);
 bool cli_dfs_get_referral(TALLOC_CTX *ctx,
 			struct cli_state *cli,
 			const char *path,
@@ -2382,6 +2378,7 @@ bool cli_dfs_get_referral(TALLOC_CTX *ctx,
 			uint16 *consumed);
 bool cli_resolve_path(TALLOC_CTX *ctx,
 			const char *mountpt,
+			const struct user_auth_info *dfs_auth_info,
 			struct cli_state *rootcli,
 			const char *path,
 			struct cli_state **targetcli,
