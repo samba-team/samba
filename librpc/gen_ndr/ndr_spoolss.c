@@ -18231,6 +18231,148 @@ _PUBLIC_ void ndr_print_spoolss_AccessRights(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrinterEnumValues(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PrinterEnumValues *r)
+{
+	uint32_t _save_relative_base_offset = ndr_push_get_relative_base_offset(ndr);
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->value_name));
+			ndr->flags = _flags_save_string;
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 2 * strlen_m_term(r->value_name)));
+		NDR_CHECK(ndr_push_winreg_Type(ndr, NDR_SCALARS, r->type));
+		NDR_CHECK(ndr_push_relative_ptr1(ndr, r->data));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_spoolss_PrinterData(r->data, r->type, ndr->iconv_convenience, ndr->flags)));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		NDR_CHECK(ndr_push_setup_relative_base_offset2(ndr, r));
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->value_name) {
+				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->value_name));
+				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->value_name));
+			}
+			ndr->flags = _flags_save_string;
+		}
+		if (r->data) {
+			NDR_CHECK(ndr_push_relative_ptr2(ndr, r->data));
+			{
+				struct ndr_push *_ndr_data;
+				NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_data, 0, ndr_size_spoolss_PrinterData(r->data, r->type, ndr->iconv_convenience, ndr->flags)));
+				NDR_CHECK(ndr_push_set_switch_value(_ndr_data, r->data, r->type));
+				NDR_CHECK(ndr_push_spoolss_PrinterData(_ndr_data, NDR_SCALARS|NDR_BUFFERS, r->data));
+				NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_data, 0, ndr_size_spoolss_PrinterData(r->data, r->type, ndr->iconv_convenience, ndr->flags)));
+			}
+		}
+	}
+	ndr_push_restore_relative_base_offset(ndr, _save_relative_base_offset);
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrinterEnumValues(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PrinterEnumValues *r)
+{
+	uint32_t _save_relative_base_offset = ndr_pull_get_relative_base_offset(ndr);
+	uint32_t _ptr_value_name;
+	TALLOC_CTX *_mem_save_value_name_0;
+	uint32_t _ptr_data;
+	TALLOC_CTX *_mem_save_data_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_value_name));
+			if (_ptr_value_name) {
+				NDR_PULL_ALLOC(ndr, r->value_name);
+				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->value_name, _ptr_value_name));
+			} else {
+				r->value_name = NULL;
+			}
+			ndr->flags = _flags_save_string;
+		}
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->value_name_len));
+		NDR_CHECK(ndr_pull_winreg_Type(ndr, NDR_SCALARS, &r->type));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_data));
+		if (_ptr_data) {
+			NDR_PULL_ALLOC(ndr, r->data);
+			NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->data, _ptr_data));
+		} else {
+			r->data = NULL;
+		}
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->data_length));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		NDR_CHECK(ndr_pull_setup_relative_base_offset2(ndr, r));
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->value_name) {
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
+				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->value_name));
+				_mem_save_value_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->value_name, 0);
+				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->value_name));
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_value_name_0, 0);
+				ndr->offset = _relative_save_offset;
+			}
+			ndr->flags = _flags_save_string;
+		}
+		if (r->data) {
+			uint32_t _relative_save_offset;
+			_relative_save_offset = ndr->offset;
+			NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->data));
+			_mem_save_data_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->data, 0);
+			{
+				struct ndr_pull *_ndr_data;
+				NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_data, 0, r->data_length));
+				NDR_CHECK(ndr_pull_set_switch_value(_ndr_data, r->data, r->type));
+				NDR_CHECK(ndr_pull_spoolss_PrinterData(_ndr_data, NDR_SCALARS|NDR_BUFFERS, r->data));
+				NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_data, 0, r->data_length));
+			}
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_0, 0);
+			ndr->offset = _relative_save_offset;
+		}
+	}
+	ndr_pull_restore_relative_base_offset(ndr, _save_relative_base_offset);
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_PrinterEnumValues(struct ndr_print *ndr, const char *name, const struct spoolss_PrinterEnumValues *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_PrinterEnumValues");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "value_name", r->value_name);
+	ndr->depth++;
+	if (r->value_name) {
+		ndr_print_string(ndr, "value_name", r->value_name);
+	}
+	ndr->depth--;
+	ndr_print_uint32(ndr, "value_name_len", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?2 * strlen_m_term(r->value_name):r->value_name_len);
+	ndr_print_winreg_Type(ndr, "type", r->type);
+	ndr_print_ptr(ndr, "data", r->data);
+	ndr->depth++;
+	if (r->data) {
+		ndr_print_set_switch_value(ndr, r->data, r->type);
+		ndr_print_spoolss_PrinterData(ndr, "data", r->data);
+	}
+	ndr->depth--;
+	ndr_print_uint32(ndr, "data_length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_spoolss_PrinterData(r->data, r->type, ndr->iconv_convenience, ndr->flags):r->data_length);
+	ndr->depth--;
+}
+
+_PUBLIC_ size_t ndr_size_spoolss_PrinterEnumValues(const struct spoolss_PrinterEnumValues *r, struct smb_iconv_convenience *ic, int flags)
+{
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_spoolss_PrinterEnumValues, ic);
+}
+
 _PUBLIC_ enum ndr_err_code ndr_push_spoolss_DeleteDriverFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
