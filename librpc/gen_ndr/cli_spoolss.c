@@ -3811,8 +3811,8 @@ NTSTATUS rpccli_spoolss_EnumPrinterKey(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
 				       struct policy_handle *handle /* [in] [ref] */,
 				       const char *key_name /* [in] [charset(UTF16)] */,
-				       uint16_t *key_buffer /* [out] [ref,size_is(key_buffer_size/2)] */,
-				       uint32_t key_buffer_size /* [in]  */,
+				       const char ** *key_buffer /* [out] [subcontext_size(offered),ref,subcontext(0),flag(LIBNDR_FLAG_STR_NULLTERM)] */,
+				       uint32_t offered /* [in]  */,
 				       uint32_t *needed /* [out] [ref] */,
 				       WERROR *werror)
 {
@@ -3822,7 +3822,7 @@ NTSTATUS rpccli_spoolss_EnumPrinterKey(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.key_name = key_name;
-	r.in.key_buffer_size = key_buffer_size;
+	r.in.offered = offered;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(spoolss_EnumPrinterKey, &r);
@@ -3847,7 +3847,7 @@ NTSTATUS rpccli_spoolss_EnumPrinterKey(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(key_buffer, r.out.key_buffer, r.in.key_buffer_size / 2 * sizeof(*key_buffer));
+	*key_buffer = *r.out.key_buffer;
 	*needed = *r.out.needed;
 
 	/* Return result */

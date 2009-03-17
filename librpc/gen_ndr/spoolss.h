@@ -2909,11 +2909,11 @@ struct spoolss_EnumPrinterKey {
 	struct {
 		struct policy_handle *handle;/* [ref] */
 		const char *key_name;/* [charset(UTF16)] */
-		uint32_t key_buffer_size;
+		uint32_t offered;
 	} in;
 
 	struct {
-		uint16_t *key_buffer;/* [ref,size_is(key_buffer_size/2)] */
+		const char ** *key_buffer;/* [subcontext_size(offered),ref,subcontext(0),flag(LIBNDR_FLAG_STR_NULLTERM)] */
 		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
