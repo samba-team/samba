@@ -212,7 +212,7 @@ struct dcerpc_cmd_state {
 };
 
 static void api_dcerpc_cmd_write_done(struct tevent_req *subreq);
-static void api_dcerpc_cmd_read_done(struct async_req *subreq);
+static void api_dcerpc_cmd_read_done(struct tevent_req *subreq);
 
 static void api_dcerpc_cmd(connection_struct *conn, struct smb_request *req,
 			   files_struct *fsp, uint8_t *data, size_t length,
@@ -264,7 +264,6 @@ static void api_dcerpc_cmd_write_done(struct tevent_req *subreq)
 		subreq, struct smb_request);
 	struct dcerpc_cmd_state *state = talloc_get_type_abort(
 		req->async_priv, struct dcerpc_cmd_state);
-	struct async_req *subreq2;
 	NTSTATUS status;
 	ssize_t nwritten = -1;
 
@@ -285,15 +284,13 @@ static void api_dcerpc_cmd_write_done(struct tevent_req *subreq)
 		goto send;
 	}
 
-	subreq2 = np_read_send(req->conn, smbd_event_context(),
-			       state->handle, state->data, state->max_read);
-	if (subreq2 == NULL) {
+	subreq = np_read_send(req->conn, smbd_event_context(),
+			      state->handle, state->data, state->max_read);
+	if (subreq == NULL) {
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		goto send;
 	}
-
-	subreq2->async.fn = api_dcerpc_cmd_read_done;
-	subreq2->async.priv = req;
+	tevent_req_set_callback(subreq, api_dcerpc_cmd_read_done, req);
 	return;
 
  send:
@@ -306,10 +303,10 @@ static void api_dcerpc_cmd_write_done(struct tevent_req *subreq)
 	TALLOC_FREE(req);
 }
 
-static void api_dcerpc_cmd_read_done(struct async_req *subreq)
+static void api_dcerpc_cmd_read_done(struct tevent_req *subreq)
 {
-	struct smb_request *req = talloc_get_type_abort(
-		subreq->async.priv, struct smb_request);
+	struct smb_request *req = tevent_req_callback_data(
+		subreq, struct smb_request);
 	struct dcerpc_cmd_state *state = talloc_get_type_abort(
 		req->async_priv, struct dcerpc_cmd_state);
 	NTSTATUS status;
