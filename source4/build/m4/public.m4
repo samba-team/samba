@@ -82,7 +82,8 @@ AC_DEFUN([SMB_EXT_LIB_FROM_PKGCONFIG],
 		echo "*** Or see http://pkg-config.freedesktop.org/ to get pkg-config."
 			ac_cv_$1_found=no
 	else
-		if $PKG_CONFIG --atleast-pkgconfig-version 0.9.0; then
+		SAMBA_PKG_CONFIG_MIN_VERSION="0.9.0"
+		if $PKG_CONFIG --atleast-pkgconfig-version $SAMBA_PKG_CONFIG_MIN_VERSION; then
 			AC_MSG_CHECKING(for $2)
 
 			if $PKG_CONFIG --exists '$2' ; then
@@ -114,7 +115,7 @@ AC_DEFUN([SMB_EXT_LIB_FROM_PKGCONFIG],
 				ac_cv_$1_found=no
 			fi
 		else
-			echo "*** Your version of pkg-config is too old. You need version $PKG_CONFIG_MIN_VERSION or newer."
+			echo "*** Your version of pkg-config is too old. You need version $SAMBA_PKG_CONFIG_MIN_VERSION or newer."
 			echo "*** See http://pkg-config.freedesktop.org/"
 			ac_cv_$1_found=no
 		fi
