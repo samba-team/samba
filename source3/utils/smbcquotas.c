@@ -385,12 +385,7 @@ static struct cli_state *connect_one(const char *share)
 
 	}
 
-	if (!get_cmdline_auth_info_got_pass(smbcquotas_auth_info)) {
-		char *pass = getpass("Password: ");
-		if (pass) {
-			set_cmdline_auth_info_password(smbcquotas_auth_info, pass);
-		}
-	}
+	set_cmdline_auth_info_getpass(smbcquotas_auth_info);
 
 	nt_status = cli_full_connection(&c, global_myname(), server, 
 					    &ss, 0,

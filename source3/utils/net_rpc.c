@@ -3299,7 +3299,7 @@ static bool sync_files(struct copy_clistate *cp_clistate, const char *mask)
 
 	DEBUG(3,("calling cli_list with mask: %s\n", mask));
 
-	if ( !cli_resolve_path(talloc_tos(), "", cp_clistate->cli_share_src,
+	if ( !cli_resolve_path(talloc_tos(), "", NULL, cp_clistate->cli_share_src,
 				mask, &targetcli, &targetpath ) ) {
 		d_fprintf(stderr, "cli_resolve_path %s failed with error: %s\n", 
 			mask, cli_errstr(cp_clistate->cli_share_src));

@@ -315,12 +315,7 @@ static bool print_tree(struct user_auth_info *user_info)
 		return 1;
 	}
 
-	if (!get_cmdline_auth_info_got_pass(auth_info)) {
-		char *pass = getpass("Password: ");
-		if (pass) {
-			set_cmdline_auth_info_password(auth_info, pass);
-		}
-	}
+	set_cmdline_auth_info_getpass(auth_info);
 
 	/* Now do our stuff */
 
