@@ -4583,24 +4583,25 @@ static uint32 update_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level)
  got to keep the endians happy :).
 ****************************************************************************/
 
-static bool convert_driver_init( TALLOC_CTX *ctx, NT_DEVICEMODE *nt_devmode, uint8 *data, uint32 data_len )
+static bool convert_driver_init(TALLOC_CTX *mem_ctx, NT_DEVICEMODE *nt_devmode,
+				const uint8_t *data, uint32_t data_len)
 {
-	bool       result = False;
-	prs_struct ps;
-	DEVICEMODE devmode;
+	struct spoolss_DeviceMode devmode;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
 
 	ZERO_STRUCT(devmode);
 
-	prs_init_empty(&ps, ctx, UNMARSHALL);
-	ps.data_p      = (char *)data;
-	ps.buffer_size = data_len;
+	blob = data_blob_const(data, data_len);
 
-	if (spoolss_io_devmode("phantom DEVMODE", &ps, 0, &devmode))
-		result = convert_devicemode("", &devmode, &nt_devmode);
-	else
-		DEBUG(10,("convert_driver_init: error parsing DEVMODE\n"));
+	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, NULL, &devmode,
+			(ndr_pull_flags_fn_t)ndr_pull_spoolss_DeviceMode);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(10,("convert_driver_init: error parsing spoolss_DeviceMode\n"));
+		return false;
+	}
 
-	return result;
+	return convert_devicemode("", &devmode, &nt_devmode);
 }
 
 /****************************************************************************
