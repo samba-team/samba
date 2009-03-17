@@ -178,19 +178,6 @@
 #define JOB_NOTIFY_TOTAL_BYTES			0x16
 #define JOB_NOTIFY_BYTES_PRINTED		0x17
 
-/*
- * The printer attributes.
- * I #defined all of them (grabbed form MSDN)
- * I'm only using:
- * ( SHARED | NETWORK | RAW_ONLY )
- * RAW_ONLY _MUST_ be present otherwise NT will send an EMF file
- */
-
-#define PRINTER_ATTRIBUTE_SAMBA			(PRINTER_ATTRIBUTE_RAW_ONLY|\
-						 PRINTER_ATTRIBUTE_SHARED|\
-						 PRINTER_ATTRIBUTE_LOCAL)
-#define PRINTER_ATTRIBUTE_NOT_SAMBA		(PRINTER_ATTRIBUTE_NETWORK)
-
 #define NO_PRIORITY	 0
 #define MAX_PRIORITY	99
 #define MIN_PRIORITY	 1

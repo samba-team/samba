@@ -459,4 +459,17 @@ typedef struct _Printer{
 	
 } Printer_entry;
 
+/*
+ * The printer attributes.
+ * I #defined all of them (grabbed form MSDN)
+ * I'm only using:
+ * ( SHARED | NETWORK | RAW_ONLY )
+ * RAW_ONLY _MUST_ be present otherwise NT will send an EMF file
+ */
+
+#define PRINTER_ATTRIBUTE_SAMBA			(PRINTER_ATTRIBUTE_RAW_ONLY|\
+						 PRINTER_ATTRIBUTE_SHARED|\
+						 PRINTER_ATTRIBUTE_LOCAL)
+#define PRINTER_ATTRIBUTE_NOT_SAMBA		(PRINTER_ATTRIBUTE_NETWORK)
+
 #endif /* NT_PRINTING_H_ */
