@@ -102,6 +102,7 @@ static int tdbsam_convert_one(struct db_record *rec, void *priv)
 		ret = init_samu_from_buffer(user, SAMU_BUFFER_V3,
 					    (uint8 *)rec->value.dptr,
 					    rec->value.dsize);
+		break;
 	case 4:
 		ret = init_samu_from_buffer(user, SAMU_BUFFER_V4,
 					    (uint8 *)rec->value.dptr,
