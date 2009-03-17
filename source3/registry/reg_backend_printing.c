@@ -438,7 +438,7 @@ static void fill_in_printer_values( NT_PRINTER_INFO_LEVEL_2 *info2, REGVAL_CTR *
 
 	/* stream the device mode */
 
-	devmode = construct_dev_mode_new(values,info2->sharename);
+	devmode = construct_dev_mode(values,info2->sharename);
 	if (devmode) {
 		DATA_BLOB blob;
 		enum ndr_err_code ndr_err;

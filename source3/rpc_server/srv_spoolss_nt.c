@@ -3978,14 +3978,14 @@ static bool convert_nt_devicemode( DEVICEMODE *devmode, NT_DEVICEMODE *ntdevmode
  Create a spoolss_DeviceMode struct. Returns talloced memory.
 ****************************************************************************/
 
-struct spoolss_DeviceMode *construct_dev_mode_new(TALLOC_CTX *mem_ctx,
-						  const char *servicename)
+struct spoolss_DeviceMode *construct_dev_mode(TALLOC_CTX *mem_ctx,
+					      const char *servicename)
 {
 	WERROR result;
 	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
 	struct spoolss_DeviceMode *devmode = NULL;
 
-	DEBUG(7,("construct_dev_mode_new\n"));
+	DEBUG(7,("construct_dev_mode\n"));
 
 	DEBUGADD(8,("getting printer characteristics\n"));
 
@@ -3999,7 +3999,7 @@ struct spoolss_DeviceMode *construct_dev_mode_new(TALLOC_CTX *mem_ctx,
 
 	devmode = TALLOC_ZERO_P(mem_ctx, struct spoolss_DeviceMode);
 	if (!devmode) {
-		DEBUG(2,("construct_dev_mode_new: talloc fail.\n"));
+		DEBUG(2,("construct_dev_mode: talloc fail.\n"));
 		goto done;
 	}
 
@@ -4008,47 +4008,6 @@ struct spoolss_DeviceMode *construct_dev_mode_new(TALLOC_CTX *mem_ctx,
 	result = convert_nt_devicemode_new(mem_ctx, devmode, printer->info_2->devmode);
 	if (!W_ERROR_IS_OK(result)) {
 		TALLOC_FREE(devmode);
-	}
-
-done:
-	free_a_printer(&printer,2);
-
-	return devmode;
-}
-
-/****************************************************************************
- Create a DEVMODE struct. Returns malloced memory.
-****************************************************************************/
-
-DEVICEMODE *construct_dev_mode(const char *servicename)
-{
-	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
-	DEVICEMODE 		*devmode = NULL;
-
-	DEBUG(7,("construct_dev_mode\n"));
-
-	DEBUGADD(8,("getting printer characteristics\n"));
-
-	if (!W_ERROR_IS_OK(get_a_printer(NULL, &printer, 2, servicename)))
-		return NULL;
-
-	if ( !printer->info_2->devmode ) {
-		DEBUG(5, ("BONG! There was no device mode!\n"));
-		goto done;
-	}
-
-	if ((devmode = SMB_MALLOC_P(DEVICEMODE)) == NULL) {
-		DEBUG(2,("construct_dev_mode: malloc fail.\n"));
-		goto done;
-	}
-
-	ZERO_STRUCTP(devmode);
-
-	DEBUGADD(8,("loading DEVICEMODE\n"));
-
-	if ( !convert_nt_devicemode( devmode, printer->info_2->devmode ) ) {
-		free_dev_mode( devmode );
-		devmode = NULL;
 	}
 
 done:
@@ -4261,7 +4220,7 @@ static WERROR construct_printer_info2(TALLOC_CTX *mem_ctx,
 	r->cjobs		= count;
 	r->averageppm		= ntprinter->info_2->averageppm;
 
-	r->devmode = construct_dev_mode_new(mem_ctx, lp_const_servicename(snum));
+	r->devmode = construct_dev_mode(mem_ctx, lp_const_servicename(snum));
 	if (!r->devmode) {
 		DEBUG(8,("Returning NULL Devicemode!\n"));
 	}
@@ -6316,7 +6275,7 @@ static WERROR enumjobs_level2(TALLOC_CTX *mem_ctx,
 
 		struct spoolss_DeviceMode *devmode;
 
-		devmode = construct_dev_mode_new(info, lp_const_servicename(snum));
+		devmode = construct_dev_mode(info, lp_const_servicename(snum));
 		if (!devmode) {
 			result = WERR_NOMEM;
 			goto out;
@@ -8694,7 +8653,7 @@ static WERROR getjob_level_2(TALLOC_CTX *mem_ctx,
 			return result;
 		}
 	} else {
-		devmode = construct_dev_mode_new(mem_ctx, lp_const_servicename(snum));
+		devmode = construct_dev_mode(mem_ctx, lp_const_servicename(snum));
 		W_ERROR_HAVE_NO_MEMORY(devmode);
 	}
 
