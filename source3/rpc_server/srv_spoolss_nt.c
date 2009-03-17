@@ -6938,7 +6938,7 @@ static WERROR fill_port_2(TALLOC_CTX *mem_ctx,
 	r->monitor_name = talloc_strdup(mem_ctx, "Local Monitor");
 	W_ERROR_HAVE_NO_MEMORY(r->monitor_name);
 
-	r->description = talloc_strdup(mem_ctx, SPL_LOCAL_PORT); /* FIXME */
+	r->description = talloc_strdup(mem_ctx, SPL_LOCAL_PORT);
 	W_ERROR_HAVE_NO_MEMORY(r->description);
 
 	r->port_type = SPOOLSS_PORT_TYPE_WRITE;
@@ -8397,13 +8397,13 @@ static WERROR enumprintmonitors_level_1(TALLOC_CTX *mem_ctx,
 	*count = 2;
 
 	result = fill_monitor_1(info, &info[0].info1,
-				SPL_LOCAL_PORT /* FIXME */);
+				SPL_LOCAL_PORT);
 	if (!W_ERROR_IS_OK(result)) {
 		goto out;
 	}
 
 	result = fill_monitor_1(info, &info[1].info1,
-				SPL_TCPIP_PORT /* FIXME */);
+				SPL_TCPIP_PORT);
 	if (!W_ERROR_IS_OK(result)) {
 		goto out;
 	}
@@ -8437,7 +8437,7 @@ static WERROR enumprintmonitors_level_2(TALLOC_CTX *mem_ctx,
 	*count = 2;
 
 	result = fill_monitor_2(info, &info[0].info2,
-				SPL_LOCAL_PORT, /* FIXME */
+				SPL_LOCAL_PORT,
 				"Windows NT X86", /* FIXME */
 				"localmon.dll");
 	if (!W_ERROR_IS_OK(result)) {
@@ -8445,7 +8445,7 @@ static WERROR enumprintmonitors_level_2(TALLOC_CTX *mem_ctx,
 	}
 
 	result = fill_monitor_2(info, &info[1].info2,
-				SPL_TCPIP_PORT, /* FIXME */
+				SPL_TCPIP_PORT,
 				"Windows NT X86", /* FIXME */
 				"tcpmon.dll");
 	if (!W_ERROR_IS_OK(result)) {

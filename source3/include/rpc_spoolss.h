@@ -111,16 +111,6 @@
 #define SPOOLSS_XCVDATAPORT				0x58
 #define SPOOLSS_ADDPRINTERDRIVEREX			0x59
 
-/* 
- * Special strings for the OpenPrinter() call.  See the MSDN DDK
- * docs on the XcvDataPort() for more details.
- */
-
-#define SPL_LOCAL_PORT            "Local Port"
-#define SPL_TCPIP_PORT            "Standard TCP/IP Port"
-#define SPL_XCV_MONITOR_LOCALMON  ",XcvMonitor Local Port"
-#define SPL_XCV_MONITOR_TCPMON    ",XcvMonitor Standard TCP/IP Port"
-
 /* Notify field types */
 
 #define PRINTER_NOTIFY_TYPE 0x00
