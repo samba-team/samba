@@ -464,27 +464,7 @@ static bool api_spoolss_enumprinterkey(pipes_struct *p)
 
 static bool api_spoolss_enumprinterdataex(pipes_struct *p)
 {
-	SPOOL_Q_ENUMPRINTERDATAEX q_u;
-	SPOOL_R_ENUMPRINTERDATAEX r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-	
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-	
-	if(!spoolss_io_q_enumprinterdataex("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_enumprinterdataex: unable to unmarshall SPOOL_Q_ENUMPRINTERDATAEX.\n"));
-		return False;
-	}
-	
-	r_u.status = _spoolss_enumprinterdataex(p, &q_u, &r_u);
-				
-	if(!spoolss_io_r_enumprinterdataex("", &r_u, rdata, 0)) {
-		DEBUG(0,("spoolss_io_r_enumprinterdataex: unable to marshall SPOOL_R_ENUMPRINTERDATAEX.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_spoolss_call(p, NDR_SPOOLSS_ENUMPRINTERDATAEX);
 }
 
 /****************************************************************************
