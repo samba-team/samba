@@ -433,7 +433,7 @@ AC_SUBST(DYNEXP)
 
 dnl Add modules that have to be built by default here
 dnl These have to be built static:
-default_static_modules="pdb_smbpasswd pdb_tdbsam pdb_wbc_sam rpc_lsarpc rpc_samr rpc_winreg rpc_initshutdown rpc_dssetup rpc_wkssvc rpc_svcctl rpc_ntsvcs rpc_netlogon rpc_netdfs rpc_srvsvc rpc_spoolss2 rpc_eventlog auth_sam auth_unix auth_winbind auth_wbc auth_server auth_domain auth_builtin auth_netlogond vfs_default nss_info_template"
+default_static_modules="pdb_smbpasswd pdb_tdbsam pdb_wbc_sam rpc_lsarpc rpc_samr rpc_winreg rpc_initshutdown rpc_dssetup rpc_wkssvc rpc_svcctl rpc_ntsvcs rpc_netlogon rpc_netdfs rpc_srvsvc rpc_spoolss rpc_eventlog auth_sam auth_unix auth_winbind auth_wbc auth_server auth_domain auth_builtin auth_netlogond vfs_default nss_info_template"
 
 dnl These are preferably build shared, and static if dlopen() is not available
 default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_full_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap vfs_expand_msdfs vfs_shadow_copy vfs_shadow_copy2 charset_CP850 charset_CP437 auth_script vfs_readahead vfs_xattr_tdb vfs_streams_xattr vfs_streams_depot vfs_acl_xattr vfs_acl_tdb vfs_smb_traffic_analyzer vfs_preopen"
@@ -6087,7 +6087,7 @@ do
 done
 
 dnl Always build these modules static
-MODULE_rpc_spoolss2=STATIC
+MODULE_rpc_spoolss=STATIC
 MODULE_rpc_srvsvc=STATIC
 MODULE_idmap_tdb=STATIC
 MODULE_idmap_passdb=STATIC
@@ -6131,7 +6131,7 @@ SMB_MODULE(rpc_ntsvcs, \$(RPC_NTSVCS_OBJ), "bin/librpc_ntsvcs.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_netlogon, \$(RPC_NETLOG_OBJ), "bin/librpc_NETLOGON.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_netdfs, \$(RPC_DFS_OBJ), "bin/librpc_netdfs.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_srvsvc, \$(RPC_SVC_OBJ), "bin/librpc_svcsvc.$SHLIBEXT", RPC)
-SMB_MODULE(rpc_spoolss2, \$(RPC_SPOOLSS_OBJ), "bin/librpc_spoolss2.$SHLIBEXT", RPC)
+SMB_MODULE(rpc_spoolss, \$(RPC_SPOOLSS_OBJ), "bin/librpc_spoolss.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_eventlog, \$(RPC_EVENTLOG_OBJ), "bin/librpc_eventlog.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_samr, \$(RPC_SAMR_OBJ), "bin/librpc_samr.$SHLIBEXT", RPC)
 SMB_MODULE(rpc_rpcecho, \$(RPC_ECHO_OBJ), "bin/librpc_rpcecho.$SHLIBEXT", RPC)
