@@ -2223,7 +2223,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[relative] nstring *value_name;
 		[value(2*strlen_m_term(value_name))] uint32 value_name_len;
 		winreg_Type type;
-		[relative,switch_is(type),subcontext(0),subcontext_size(data_length)] spoolss_PrinterData *data;
+		[relative,switch_is(type),subcontext(0),subcontext_size(r->data_length)] spoolss_PrinterData *data;
 		[value(ndr_size_spoolss_PrinterData(data, type, ndr->iconv_convenience, ndr->flags))] uint32 data_length;
 	} spoolss_PrinterEnumValues;
 
