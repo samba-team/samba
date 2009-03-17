@@ -9,6 +9,7 @@ LIBREPLACE_NETWORK_LIBS=""
 AC_CHECK_HEADERS(sys/socket.h netinet/in.h netdb.h arpa/inet.h)
 AC_CHECK_HEADERS(netinet/in_systm.h)
 AC_CHECK_HEADERS([netinet/ip.h], [], [],[
+	#include <sys/types.h>
 	#ifdef HAVE_NETINET_IN_H
 	#include <netinet/in.h>
 	#endif
