@@ -1791,8 +1791,8 @@ static bool printer_info2_to_nt_printer_info2(struct spoolss_SetPrinterInfo2 *r,
 /****************************************************************************
 ****************************************************************************/
 
-static bool convert_printer_info_new(struct spoolss_SetPrinterInfoCtr *info_ctr,
-				     NT_PRINTER_INFO_LEVEL *printer)
+static bool convert_printer_info(struct spoolss_SetPrinterInfoCtr *info_ctr,
+				 NT_PRINTER_INFO_LEVEL *printer)
 {
 	bool ret;
 
@@ -1805,7 +1805,7 @@ static bool convert_printer_info_new(struct spoolss_SetPrinterInfoCtr *info_ctr,
 		if (!printer->info_2) {
 			printer->info_2 = TALLOC_ZERO_P(printer, NT_PRINTER_INFO_LEVEL_2);
 			if (!printer->info_2) {
-				DEBUG(0,("convert_printer_info_new: "
+				DEBUG(0,("convert_printer_info: "
 					"talloc() failed!\n"));
 				return false;
 			}
@@ -5766,7 +5766,7 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle,
 	 * just read from the tdb in the pointer 'printer'.
 	 */
 
-	if (!convert_printer_info_new(info_ctr, printer)) {
+	if (!convert_printer_info(info_ctr, printer)) {
 		result =  WERR_NOMEM;
 		goto done;
 	}
@@ -7182,7 +7182,7 @@ static WERROR spoolss_addprinterex_level_2(pipes_struct *p,
 	}
 
 	/* convert from UNICODE to ASCII - this allocates the info_2 struct inside *printer.*/
-	if (!convert_printer_info_new(info_ctr, printer)) {
+	if (!convert_printer_info(info_ctr, printer)) {
 		free_a_printer(&printer, 2);
 		return WERR_NOMEM;
 	}
