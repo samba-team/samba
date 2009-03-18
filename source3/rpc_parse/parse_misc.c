@@ -214,30 +214,6 @@ bool smb_io_unistr(const char *desc, UNISTR *uni, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
-reads or writes a BUFFER5 structure.
-the buf_len member tells you how large the buffer is.
-********************************************************************/
-bool smb_io_buffer5(const char *desc, BUFFER5 *buf5, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "smb_io_buffer5");
-	depth++;
-
-	if (buf5 == NULL) return False;
-
-	if(!prs_align(ps))
-		return False;
-	if(!prs_uint32("buf_len", ps, depth, &buf5->buf_len))
-		return False;
-
-	if(buf5->buf_len) {
-		if(!prs_buffer5(True, "buffer" , ps, depth, buf5))
-			return False;
-	}
-
-	return True;
-}
-
-/*******************************************************************
 creates a UNISTR2 structure: sets up the buffer, too
 ********************************************************************/
 
@@ -569,63 +545,6 @@ bool smb_io_pol_hnd(const char *desc, POLICY_HND *pol, prs_struct *ps, int depth
 	if (!prs_uint32("handle_type", ps, depth, &pol->handle_type))
 		return False;
 	if (!smb_io_uuid("uuid", (struct GUID*)&pol->uuid, ps, depth))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
- Create a UNISTR3.
-********************************************************************/
-
-void init_unistr3(UNISTR3 *str, const char *buf)
-{
-	if (buf == NULL) {
-		str->uni_str_len=0;
-		str->str.buffer = NULL;
-		return;
-	}
-
-	str->uni_str_len = strlen(buf) + 1;
-
-	if (str->uni_str_len) {
-		str->str.buffer = TALLOC_ZERO_ARRAY(talloc_tos(), uint16, str->uni_str_len);
-		if (str->str.buffer == NULL)
-			smb_panic("init_unistr3: malloc fail");
-
-		rpcstr_push((char *)str->str.buffer, buf, str->uni_str_len * sizeof(uint16), STR_TERMINATE);
-	} else {
-		str->str.buffer = NULL;
-	}
-}
-
-/*******************************************************************
- Reads or writes a UNISTR3 structure.
-********************************************************************/
-
-bool smb_io_unistr3(const char *desc, UNISTR3 *name, prs_struct *ps, int depth)
-{
-	if (name == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "smb_io_unistr3");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-	
-	if(!prs_uint32("uni_str_len", ps, depth, &name->uni_str_len))
-		return False;
-		
-	/* we're done if there is no string */
-	
-	if ( name->uni_str_len == 0 )
-		return True;
-
-	/* don't know if len is specified by uni_str_len member... */
-	/* assume unicode string is unicode-null-terminated, instead */
-
-	if(!prs_unistr3(True, "unistr", name, ps, depth))
 		return False;
 
 	return True;

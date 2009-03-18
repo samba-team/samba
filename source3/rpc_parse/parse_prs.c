@@ -1049,37 +1049,6 @@ bool prs_uint32s(bool charmode, const char *name, prs_struct *ps, int depth, uin
 }
 
 /******************************************************************
- Stream an array of unicode string, length/buffer specified separately,
- in uint16 chars. The unicode string is already in little-endian format.
- ********************************************************************/
-
-bool prs_buffer5(bool charmode, const char *name, prs_struct *ps, int depth, BUFFER5 *str)
-{
-	char *p;
-	char *q = prs_mem_get(ps, str->buf_len * sizeof(uint16));
-	if (q == NULL)
-		return False;
-
-	/* If the string is empty, we don't have anything to stream */
-	if (str->buf_len==0)
-		return True;
-
-	if (UNMARSHALLING(ps)) {
-		str->buffer = PRS_ALLOC_MEM(ps,uint16,str->buf_len);
-		if (str->buffer == NULL)
-			return False;
-	}
-
-	p = (char *)str->buffer;
-
-	dbg_rw_punival(charmode, name, depth, ps, q, p, str->buf_len);
-	
-	ps->data_offset += (str->buf_len * sizeof(uint16));
-
-	return True;
-}
-
-/******************************************************************
  Stream a unicode string, length/buffer specified separately,
  in uint16 chars. The unicode string is already in little-endian format.
  ********************************************************************/
@@ -1112,36 +1081,6 @@ bool prs_unistr2(bool charmode, const char *name, prs_struct *ps, int depth, UNI
 
 	dbg_rw_punival(charmode, name, depth, ps, q, p, str->uni_str_len);
 	
-	ps->data_offset += (str->uni_str_len * sizeof(uint16));
-
-	return True;
-}
-
-/******************************************************************
- Stream a unicode string, length/buffer specified separately,
- in uint16 chars. The unicode string is already in little-endian format.
- ********************************************************************/
-
-bool prs_unistr3(bool charmode, const char *name, UNISTR3 *str, prs_struct *ps, int depth)
-{
-	char *p;
-	char *q = prs_mem_get(ps, str->uni_str_len * sizeof(uint16));
-	if (q == NULL)
-		return False;
-
-	if (UNMARSHALLING(ps)) {
-		if (str->uni_str_len) {
-			str->str.buffer = PRS_ALLOC_MEM(ps,uint16,str->uni_str_len);
-			if (str->str.buffer == NULL)
-				return False;
-		} else {
-			str->str.buffer = NULL;
-		}
-	}
-
-	p = (char *)str->str.buffer;
-
-	dbg_rw_punival(charmode, name, depth, ps, q, p, str->uni_str_len);
 	ps->data_offset += (str->uni_str_len * sizeof(uint16));
 
 	return True;
