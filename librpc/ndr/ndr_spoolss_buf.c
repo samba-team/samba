@@ -458,6 +458,7 @@ enum ndr_err_code ndr_push_spoolss_EnumPrinterDataEx(struct ndr_push *ndr, int f
 		_r.out.count	= r->out.count;
 		_r.out.needed	= r->out.needed;
 		_r.out.result	= r->out.result;
+		_r.out.info 	= data_blob(NULL, 0);
 		if (r->in.offered >= *r->out.needed) {
 			struct __spoolss_EnumPrinterDataEx __r;
 			_ndr_info = ndr_push_init_ctx(ndr, ndr->iconv_convenience);
