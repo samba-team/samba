@@ -2700,21 +2700,21 @@ static WERROR cmd_spoolss_rffpcnex(struct rpc_pipe_client *cli,
 
 	option.types[0].type = PRINTER_NOTIFY_TYPE;
 	option.types[0].count = 1;
-	option.types[0].fields = talloc_array(mem_ctx, enum spoolss_Field, 1);
+	option.types[0].fields = talloc_array(mem_ctx, union spoolss_Field, 1);
 	if (option.types[0].fields == NULL) {
 		result = WERR_NOMEM;
 		goto done;
 	}
-	option.types[0].fields[0] = PRINTER_NOTIFY_SERVER_NAME;
+	option.types[0].fields[0].field = PRINTER_NOTIFY_SERVER_NAME;
 
 	option.types[1].type = JOB_NOTIFY_TYPE;
 	option.types[1].count = 1;
-	option.types[1].fields = talloc_array(mem_ctx, enum spoolss_Field, 1);
+	option.types[1].fields = talloc_array(mem_ctx, union spoolss_Field, 1);
 	if (option.types[1].fields == NULL) {
 		result = WERR_NOMEM;
 		goto done;
 	}
-	option.types[1].fields[0] = JOB_NOTIFY_PRINTER_NAME;
+	option.types[1].fields[0].field = JOB_NOTIFY_PRINTER_NAME;
 
 	clientname = talloc_asprintf(mem_ctx, "\\\\%s", global_myname());
 	if (!clientname) {
