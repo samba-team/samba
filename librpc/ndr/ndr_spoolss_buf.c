@@ -1185,3 +1185,25 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_DriverInfo101(struct ndr_pull *ndr, 
 	}
 	return NDR_ERR_SUCCESS;
 }
+
+void ndr_print_spoolss_Field(struct ndr_print *ndr, const char *name, const union spoolss_Field *r)
+{
+	int level;
+	level = ndr_print_get_switch_value(ndr, r);
+	ndr_print_union(ndr, name, level, "spoolss_Field");
+	switch (level) {
+		case PRINTER_NOTIFY_TYPE:
+			ndr_print_spoolss_PrintNotifyField(ndr, "field", r->field);
+		break;
+
+		case JOB_NOTIFY_TYPE:
+			ndr_print_spoolss_JobNotifyField(ndr, "field", r->field);
+		break;
+
+		default:
+			ndr_print_uint16(ndr, "field", r->field);
+		break;
+
+	}
+}
+
