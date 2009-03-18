@@ -592,11 +592,11 @@ done:
 		while (e) {
 			struct winbindd_tdc_domain *domain_rec;
 
-			dn = ads_get_dn(ads, e);
+			dn = ads_get_dn(ads, frame, e);
 			BAIL_ON_PTR_ERROR(dn, nt_status);
 
 			dns_domain = cell_dn_to_dns(dn);
-			SAFE_FREE(dn);
+			TALLOC_FREE(dn);
 			BAIL_ON_PTR_ERROR(dns_domain, nt_status);
 
 			domain_rec = wcache_tdc_fetch_domain(frame, dns_domain);
@@ -666,13 +666,13 @@ static NTSTATUS get_object_account_name(ADS_STRUCT *ads,
 
 	/* get the name and domain */
 
-	dn = ads_get_dn(ads, msg);
+	dn = ads_get_dn(ads, frame, msg);
 	BAIL_ON_PTR_ERROR(dn, nt_status);
 
 	DEBUG(10,("get_object_account_name: dn = \"%s\"\n", dn));
 
 	dns_domain = cell_dn_to_dns(dn);
-	SAFE_FREE(dn);
+	TALLOC_FREE(dn);
 	BAIL_ON_PTR_ERROR(dns_domain, nt_status);
 
 	domain_rec = wcache_tdc_fetch_domain(frame, dns_domain);

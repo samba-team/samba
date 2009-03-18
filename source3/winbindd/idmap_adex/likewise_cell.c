@@ -400,10 +400,10 @@ done:
 				     e!=NULL;
 				     e = ads_next_entry(c->conn, e))
 				{
-					char *dn = ads_get_dn(c->conn, e);
+					char *dn = ads_get_dn(c->conn, NULL, e);
 
 					DEBUGADD(10,("   dn: %s\n", dn ? dn : "<NULL>"));
-					SAFE_FREE(dn);
+					TALLOC_FREE(dn);
 				}
 			}
 
