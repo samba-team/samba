@@ -840,27 +840,27 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 
 		/* Make call to Novell eDirectory ldap extension to get clear text password.
 			NOTE: This will only work if we have an SSL connection to eDirectory. */
-		user_dn = smbldap_get_dn(ldap_state->smbldap_state->ldap_struct, entry);
+		user_dn = smbldap_talloc_dn(ctx, ldap_state->smbldap_state->ldap_struct, entry);
 		if (user_dn != NULL) {
-			DEBUG(3, ("init_sam_from_ldap: smbldap_get_dn(%s) returned '%s'\n", username, user_dn));
+			DEBUG(3, ("init_sam_from_ldap: smbldap_talloc_dn(ctx, %s) returned '%s'\n", username, user_dn));
 
 			pwd_len = sizeof(clear_text_pw);
 			if (pdb_nds_get_password(ldap_state->smbldap_state, user_dn, &pwd_len, clear_text_pw) == LDAP_SUCCESS) {
 				nt_lm_owf_gen(clear_text_pw, smbntpwd, smblmpwd);
 				if (!pdb_set_lanman_passwd(sampass, smblmpwd, PDB_SET)) {
-					SAFE_FREE(user_dn);
+					TALLOC_FREE(user_dn);
 					return False;
 				}
 				ZERO_STRUCT(smblmpwd);
 				if (!pdb_set_nt_passwd(sampass, smbntpwd, PDB_SET)) {
-					SAFE_FREE(user_dn);
+					TALLOC_FREE(user_dn);
 					return False;
 				}
 				ZERO_STRUCT(smbntpwd);
 				use_samba_attrs = False;
 			}
 
-			SAFE_FREE(user_dn);
+			TALLOC_FREE(user_dn);
 
 		} else {
 			DEBUG(0, ("init_sam_from_ldap: failed to get user_dn for '%s'\n", username));
@@ -1908,7 +1908,7 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, struc
 	}
 
 	entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct, result);
-	dn = smbldap_get_dn(ldap_state->smbldap_state->ldap_struct, entry);
+	dn = smbldap_talloc_dn(NULL, ldap_state->smbldap_state->ldap_struct, entry);
 	if (!dn) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -1918,7 +1918,7 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, struc
 	if (!init_ldap_from_sam(ldap_state, entry, &mods, newpwd,
 				element_is_changed)) {
 		DEBUG(0, ("ldapsam_update_sam_account: init_ldap_from_sam failed!\n"));
-		SAFE_FREE(dn);
+		TALLOC_FREE(dn);
 		if (mods != NULL)
 			ldap_mods_free(mods,True);
 		return NT_STATUS_UNSUCCESSFUL;
@@ -1928,7 +1928,7 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, struc
 	    && (mods == NULL)) {
 		DEBUG(4,("ldapsam_update_sam_account: mods is empty: nothing to update for user: %s\n",
 			 pdb_get_username(newpwd)));
-		SAFE_FREE(dn);
+		TALLOC_FREE(dn);
 		return NT_STATUS_OK;
 	}
 	
@@ -1938,7 +1938,7 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, struc
 		ldap_mods_free(mods,True);
 	}
 
-	SAFE_FREE(dn);
+	TALLOC_FREE(dn);
 
 	/*
 	 * We need to set the backend private data to NULL here. For example
@@ -2147,17 +2147,10 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, struct s
 
 	/* Check if we need to update an existing entry */
 	if (num_result == 1) {
-		char *tmp;
-
 		DEBUG(3,("ldapsam_add_sam_account: User exists without samba attributes: adding them\n"));
 		ldap_op = LDAP_MOD_REPLACE;
 		entry = ldap_first_entry (ldap_state->smbldap_state->ldap_struct, result);
-		tmp = smbldap_get_dn(ldap_state->smbldap_state->ldap_struct, entry);
-		if (!tmp) {
-			goto fn_exit;
-		}
-		dn = talloc_asprintf(ctx, "%s", tmp);
-		SAFE_FREE(tmp);
+		dn = smbldap_talloc_dn(ctx, ldap_state->smbldap_state->ldap_struct, entry);
 		if (!dn) {
 			status = NT_STATUS_NO_MEMORY;
 			goto fn_exit;
@@ -2200,17 +2193,11 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, struct s
 
 		/* Check if we need to update an existing entry */
 		if (num_result == 1) {
-			char *tmp;
 
 			DEBUG(3,("ldapsam_add_sam_account: User exists without samba attributes: adding them\n"));
 			ldap_op = LDAP_MOD_REPLACE;
 			entry = ldap_first_entry (ldap_state->smbldap_state->ldap_struct, result);
-			tmp = smbldap_get_dn (ldap_state->smbldap_state->ldap_struct, entry);
-			if (!tmp) {
-				goto fn_exit;
-			}
-			dn = talloc_asprintf(ctx, "%s", tmp);
-			SAFE_FREE(tmp);
+			dn = smbldap_talloc_dn (ctx, ldap_state->smbldap_state->ldap_struct, entry);
 			if (!dn) {
 				status = NT_STATUS_NO_MEMORY;
 				goto fn_exit;
@@ -3525,7 +3512,7 @@ static NTSTATUS ldapsam_modify_aliasmem(struct pdb_methods *methods,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	dn = smbldap_get_dn(ldap_state->smbldap_state->ldap_struct, entry);
+	dn = smbldap_talloc_dn(NULL, ldap_state->smbldap_state->ldap_struct, entry);
 	if (!dn) {
 		ldap_msgfree(result);
 		return NT_STATUS_UNSUCCESSFUL;
@@ -3540,7 +3527,7 @@ static NTSTATUS ldapsam_modify_aliasmem(struct pdb_methods *methods,
 
 	ldap_mods_free(mods, True);
 	ldap_msgfree(result);
-	SAFE_FREE(dn);
+	TALLOC_FREE(dn);
 
 	if (rc == LDAP_TYPE_OR_VALUE_EXISTS) {
 		return NT_STATUS_MEMBER_IN_ALIAS;
@@ -6307,14 +6294,14 @@ NTSTATUS pdb_init_ldapsam(struct pdb_methods **pdb_method, const char *location)
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	dn = smbldap_get_dn(ldap_state->smbldap_state->ldap_struct, entry);
+	dn = smbldap_talloc_dn(talloc_tos(), ldap_state->smbldap_state->ldap_struct, entry);
 	if (!dn) {
 		ldap_msgfree(result);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	ldap_state->domain_dn = smb_xstrdup(dn);
-	ldap_memfree(dn);
+	TALLOC_FREE(dn);
 
 	domain_sid_string = smbldap_talloc_single_attribute(
 		    ldap_state->smbldap_state->ldap_struct,

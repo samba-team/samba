@@ -746,7 +746,6 @@ void smbldap_free_struct(struct smbldap_state **ldap_state) ;
 NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx, struct event_context *event_ctx,
 		      const char *location,
 		      struct smbldap_state **smbldap_state);
-char *smbldap_get_dn(LDAP *ld, LDAPMessage *entry);
 bool smbldap_has_control(LDAP *ld, const char *control);
 bool smbldap_has_extension(LDAP *ld, const char *extension);
 bool smbldap_has_naming_context(LDAP *ld, const char *naming_context);

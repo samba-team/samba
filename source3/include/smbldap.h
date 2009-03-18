@@ -141,7 +141,6 @@ void smbldap_make_mod(LDAP *ldap_struct, LDAPMessage *existing,
 bool smbldap_get_single_attribute (LDAP * ldap_struct, LDAPMessage * entry,
 				   const char *attribute, char *value,
 				   int max_len);
-char *smbldap_get_dn(LDAP *ld, LDAPMessage *entry);
 int smbldap_modify(struct smbldap_state *ldap_state,
                    const char *dn,
                    LDAPMod *attrs[]);
@@ -214,7 +213,7 @@ char * smbldap_talloc_single_attribute(LDAP *ldap_struct, LDAPMessage *entry,
 				       TALLOC_CTX *mem_ctx);
 void talloc_autofree_ldapmsg(TALLOC_CTX *mem_ctx, LDAPMessage *result);
 void talloc_autofree_ldapmod(TALLOC_CTX *mem_ctx, LDAPMod **mod);
-const char *smbldap_talloc_dn(TALLOC_CTX *mem_ctx, LDAP *ld,
+char *smbldap_talloc_dn(TALLOC_CTX *mem_ctx, LDAP *ld,
 			      LDAPMessage *entry);
 
 
