@@ -2705,7 +2705,7 @@ static WERROR cmd_spoolss_rffpcnex(struct rpc_pipe_client *cli,
 		result = WERR_NOMEM;
 		goto done;
 	}
-	option.types[0].fields[0].field = PRINTER_NOTIFY_SERVER_NAME;
+	option.types[0].fields[0].field = PRINTER_NOTIFY_FIELD_SERVER_NAME;
 
 	option.types[1].type = JOB_NOTIFY_TYPE;
 	option.types[1].count = 1;
@@ -2714,7 +2714,7 @@ static WERROR cmd_spoolss_rffpcnex(struct rpc_pipe_client *cli,
 		result = WERR_NOMEM;
 		goto done;
 	}
-	option.types[1].fields[0].field = JOB_NOTIFY_PRINTER_NAME;
+	option.types[1].fields[0].field = JOB_NOTIFY_FIELD_PRINTER_NAME;
 
 	clientname = talloc_asprintf(mem_ctx, "\\\\%s", global_myname());
 	if (!clientname) {
