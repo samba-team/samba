@@ -51,7 +51,12 @@ case $cmd in
 		# We do this so that the ip address will exist on a
 		# non-loopback interface so that samba may send it along in the
 		# KDC requests.
-		ip addr add $NATGW_PUBLIC_IP_HOST dev $NATGW_PRIVATE_IFACE
+
+		# Set the scope up as host and make sure we dont respond to ARP
+		# for this ip
+		echo 3 > /proc/sys/net/ipv4/conf/all/arp_ignore
+		ip addr add $NATGW_PUBLIC_IP_HOST dev $NATGW_PRIVATE_IFACE scope host
+		
 		ip route add 0.0.0.0/0 via $FIRSTIP metric 10
 	fi
 	;;

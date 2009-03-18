@@ -1,11 +1,11 @@
 .\"     Title: ctdbd
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
-.\"      Date: 03/18/2009
+.\"      Date: 03/19/2009
 .\"    Manual: 
 .\"    Source: 
 .\"
-.TH "CTDBD" "1" "03/18/2009" "" ""
+.TH "CTDBD" "1" "03/19/2009" "" ""
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -427,7 +427,7 @@ If then the service status of CTDB depends on such services being able to always
 There are two ways to solve this problem\. The first is by assigning a static ip address for one public interface on every node which will allow every node to be able to route traffic to the public network even if there are no public addresses assigned to the node\. This is the simplest way but it uses up a lot of ip addresses since you have to assign both static and also public addresses to each node\.
 .SS "NAT\-GW"
 .PP
-A second way is to use the built in NAT\-GW feature in CTDB\. With NAT\-GW only one extra address is required for the entire cluster instead of one address per node\.
+A second way is to use the built in NAT\-GW feature in CTDB\. With NAT\-GW only one extra address is required for the entire cluster instead of one address per node\. This extra address is dedicated to traffic that originates from the cluster and is destined for the external network\.
 .PP
 In NAT\-GW one of the nodes in the cluster is designated the NAT Gateway through which all traffic that is originated in the cluster will be routed through if the public addresses are not available\.
 .SS "Configuration"
@@ -455,22 +455,18 @@ NAT\-GW is configured in /etc/sysconfig/ctdb by setting the following variables:
 # to use NAT MASQUERADING for all traffic from the internal private network
 # to the external network\. This node is the NAT\-GW node\.
 #
-# All other nodes are set up with policy routing so that all traffic with
-# a source address of the private network and a destination outside of
-# the private network are instead routed through the NAT\-GW node\.
+# All other nodes are set up with a default rote with a metric of 10 to point
+# to the nat\-gw node\.
 # 
 # The effect of this is that only when a node does not have a public address
-# or a route to the external network will the node use the private address
-# as the source address and only then will it use the policy routing
-# through the NAT\-GW\.
-# As long as a node has a public address and can route to the external network
-# the node will always pick the public address as the source address and NAT\-GW
-# routing will not be used\.
-#NATGW_PUBLIC_IP=10\.0\.0\.227/24
-#NATGW_PUBLIC_IFACE=eth0
-#NATGW_DEFAULT_GATEWAY=10\.0\.0\.1
-#NATGW_PRIVATE_IFACE=eth1
-#NATGW_PRIVATE_NETWORK=10\.1\.1\.0/24
+# and thus no proper routes to the external world it will instead
+# route all packets through the nat\-gw node\.
+#
+# NATGW_PUBLIC_IP=10\.0\.0\.227/24
+# NATGW_PUBLIC_IFACE=eth0
+# NATGW_DEFAULT_GATEWAY=10\.0\.0\.1
+# NATGW_PRIVATE_IFACE=eth1
+# NATGW_PRIVATE_NETWORK=10\.1\.1\.0/24
     
 .fi
 .RE
@@ -505,7 +501,7 @@ When the NAT\-GW fiunctionality is used, one of the nodes is elected to act as a
 .PP
 The NAT\-GW node is assigned the NATGW_PUBLIC_IP to the designated interface and the provided default route\. The NAT\-GW is configured to act as a router and to masquerade all traffic it receives from the internal private network and which is destined to the external network(s)\.
 .PP
-All other nodes are configured with policy routing so that all outgoing packets that have a source ip address belonging to the private network (which means they are not routable from the public network) are instead sent on to the designated NAT\-GW host instead of using the normal routing table\.
+All other nodes are configured with a default route of metric 10 pointing to the designated NAT GW node\.
 .PP
 This is implemented in the 11\.natgw eventscript\. Please see the eventscript for further information\.
 .SH "SEE ALSO"
