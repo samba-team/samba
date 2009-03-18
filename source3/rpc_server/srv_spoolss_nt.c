@@ -9141,6 +9141,10 @@ WERROR _spoolss_EnumPrinterDataEx(pipes_struct *p,
 		free_a_printer(&printer, 2);
 	}
 
+	if (!W_ERROR_IS_OK(result)) {
+		return result;
+	}
+
 	*r->out.needed	= SPOOLSS_BUFFER_ARRAY(p->mem_ctx,
 					       spoolss_EnumPrinterDataEx, NULL,
 					       *r->out.info,
