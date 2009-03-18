@@ -34,6 +34,9 @@
 #define SPOOLSS_BUFFER_UNION_ARRAY(mem_ctx,fn,ic,info,level,count) \
 	((info)?ndr_size_##fn##_info(mem_ctx, ic, level, count, info):0)
 
+#define SPOOLSS_BUFFER_ARRAY(mem_ctx,fn,ic,info,count) \
+	((info)?ndr_size_##fn##_info(mem_ctx, ic, count, info):0)
+
 #define SPOOLSS_BUFFER_OK(val_true,val_false) ((r->in.offered >= *r->out.needed)?val_true:val_false)
 
 
