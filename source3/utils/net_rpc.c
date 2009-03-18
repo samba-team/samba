@@ -6421,30 +6421,30 @@ static int rpc_printer_migrate_all(struct net_context *c, int argc,
 		return -1;
 	}
 
-	ret = run_rpc_command(c, NULL, &syntax_spoolss, 0,
+	ret = run_rpc_command(c, NULL, &ndr_table_spoolss.syntax_id, 0,
 			      rpc_printer_migrate_printers_internals, argc,
 			      argv);
 	if (ret)
 		return ret;
 
-	ret = run_rpc_command(c, NULL, &syntax_spoolss, 0,
+	ret = run_rpc_command(c, NULL, &ndr_table_spoolss.syntax_id, 0,
 			      rpc_printer_migrate_drivers_internals, argc,
 			      argv);
 	if (ret)
 		return ret;
 
-	ret = run_rpc_command(c, NULL, &syntax_spoolss, 0,
+	ret = run_rpc_command(c, NULL, &ndr_table_spoolss.syntax_id, 0,
 			      rpc_printer_migrate_forms_internals, argc, argv);
 	if (ret)
 		return ret;
 
-	ret = run_rpc_command(c, NULL, &syntax_spoolss, 0,
+	ret = run_rpc_command(c, NULL, &ndr_table_spoolss.syntax_id, 0,
 			      rpc_printer_migrate_settings_internals, argc,
 			      argv);
 	if (ret)
 		return ret;
 
-	return run_rpc_command(c, NULL, &syntax_spoolss, 0,
+	return run_rpc_command(c, NULL, &ndr_table_spoolss.syntax_id, 0,
 			       rpc_printer_migrate_security_internals, argc,
 			       argv);
 
@@ -6475,7 +6475,7 @@ static int rpc_printer_migrate_drivers(struct net_context *c, int argc,
 		return -1;
 	}
 
-	return run_rpc_command(c, NULL, &syntax_spoolss, 0,
+	return run_rpc_command(c, NULL, &ndr_table_spoolss.syntax_id, 0,
 			       rpc_printer_migrate_drivers_internals,
 			       argc, argv);
 }
@@ -6505,7 +6505,7 @@ static int rpc_printer_migrate_forms(struct net_context *c, int argc,
 		return -1;
 	}
 
-	return run_rpc_command(c, NULL, &syntax_spoolss, 0,
+	return run_rpc_command(c, NULL, &ndr_table_spoolss.syntax_id, 0,
 			       rpc_printer_migrate_forms_internals,
 			       argc, argv);
 }
@@ -6535,7 +6535,7 @@ static int rpc_printer_migrate_printers(struct net_context *c, int argc,
 		return -1;
 	}
 
-	return run_rpc_command(c, NULL, &syntax_spoolss, 0,
+	return run_rpc_command(c, NULL, &ndr_table_spoolss.syntax_id, 0,
 			       rpc_printer_migrate_printers_internals,
 			       argc, argv);
 }
@@ -6565,7 +6565,7 @@ static int rpc_printer_migrate_security(struct net_context *c, int argc,
 		return -1;
 	}
 
-	return run_rpc_command(c, NULL, &syntax_spoolss, 0,
+	return run_rpc_command(c, NULL, &ndr_table_spoolss.syntax_id, 0,
 			       rpc_printer_migrate_security_internals,
 			       argc, argv);
 }
@@ -6595,7 +6595,7 @@ static int rpc_printer_migrate_settings(struct net_context *c, int argc,
 		return -1;
 	}
 
-	return run_rpc_command(c, NULL, &syntax_spoolss, 0,
+	return run_rpc_command(c, NULL, &ndr_table_spoolss.syntax_id, 0,
 			       rpc_printer_migrate_settings_internals,
 			       argc, argv);
 }
@@ -6691,7 +6691,7 @@ static int rpc_printer_list(struct net_context *c, int argc, const char **argv)
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, &syntax_spoolss, 0,
+	return run_rpc_command(c, NULL, &ndr_table_spoolss.syntax_id, 0,
 			       rpc_printer_list_internals,
 			       argc, argv);
 }
@@ -6716,7 +6716,7 @@ static int rpc_printer_driver_list(struct net_context *c, int argc,
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, &syntax_spoolss, 0,
+	return run_rpc_command(c, NULL, &ndr_table_spoolss.syntax_id, 0,
 			       rpc_printer_driver_list_internals,
 			       argc, argv);
 }
@@ -6741,7 +6741,7 @@ static int rpc_printer_publish_publish(struct net_context *c, int argc,
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, &syntax_spoolss, 0,
+	return run_rpc_command(c, NULL, &ndr_table_spoolss.syntax_id, 0,
 			       rpc_printer_publish_publish_internals,
 			       argc, argv);
 }
@@ -6765,7 +6765,7 @@ static int rpc_printer_publish_update(struct net_context *c, int argc, const cha
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, &syntax_spoolss, 0,
+	return run_rpc_command(c, NULL, &ndr_table_spoolss.syntax_id, 0,
 			       rpc_printer_publish_update_internals,
 			       argc, argv);
 }
@@ -6790,7 +6790,7 @@ static int rpc_printer_publish_unpublish(struct net_context *c, int argc,
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, &syntax_spoolss, 0,
+	return run_rpc_command(c, NULL, &ndr_table_spoolss.syntax_id, 0,
 			       rpc_printer_publish_unpublish_internals,
 			       argc, argv);
 }
@@ -6815,7 +6815,7 @@ static int rpc_printer_publish_list(struct net_context *c, int argc,
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, &syntax_spoolss, 0,
+	return run_rpc_command(c, NULL, &ndr_table_spoolss.syntax_id, 0,
 			       rpc_printer_publish_list_internals,
 			       argc, argv);
 }
@@ -6880,7 +6880,7 @@ static int rpc_printer_publish(struct net_context *c, int argc,
 			net_display_usage_from_functable(func);
 			return 0;
 		}
-		return run_rpc_command(c, NULL, &syntax_spoolss, 0,
+		return run_rpc_command(c, NULL, &ndr_table_spoolss.syntax_id, 0,
 			       rpc_printer_publish_list_internals,
 			       argc, argv);
 	}
@@ -6983,7 +6983,7 @@ int net_rpc_printer(struct net_context *c, int argc, const char **argv)
 			net_display_usage_from_functable(func);
 			return 0;
 		}
-		return run_rpc_command(c, NULL, &syntax_spoolss, 0,
+		return run_rpc_command(c, NULL, &ndr_table_spoolss.syntax_id, 0,
 			       rpc_printer_list_internals,
 			       argc, argv);
 	}

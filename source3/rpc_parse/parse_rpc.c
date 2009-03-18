@@ -639,13 +639,3 @@ bool smb_io_rpc_auth_schannel_chk(const char *desc, int auth_len,
 
 	return True;
 }
-
-const struct ndr_syntax_id syntax_spoolss = {
-	{
-		0x12345678, 0x1234, 0xabcd,
-		{ 0xef, 0x00 },
-		{ 0x01, 0x23,
-		  0x45, 0x67, 0x89, 0xab }
-	}, 0x01
-};
-

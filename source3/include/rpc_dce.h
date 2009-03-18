@@ -159,8 +159,6 @@ enum schannel_direction {
 /* RPC_IFACE */
 typedef struct ndr_syntax_id RPC_IFACE;
 
-extern const struct ndr_syntax_id syntax_spoolss;
-
 #define RPC_IFACE_LEN (UUID_SIZE + 4)
 
 /* RPC_HDR - dce rpc header */
