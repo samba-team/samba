@@ -632,30 +632,6 @@ bool smb_io_unistr3(const char *desc, UNISTR3 *name, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
- Stream a uint64_struct
- ********************************************************************/
-bool prs_uint64(const char *name, prs_struct *ps, int depth, uint64 *data64)
-{
-	if (UNMARSHALLING(ps)) {
-		uint32 high, low;
-
-		if (!prs_uint32(name, ps, depth+1, &low))
-			return False;
-
-		if (!prs_uint32(name, ps, depth+1, &high))
-			return False;
-
-		*data64 = ((uint64_t)high << 32) + low;
-
-		return True;
-	} else {
-		uint32 high = (*data64) >> 32, low = (*data64) & 0xFFFFFFFF;
-		return prs_uint32(name, ps, depth+1, &low) && 
-			   prs_uint32(name, ps, depth+1, &high);
-	}
-}
-
-/*******************************************************************
 return the length of a UNISTR string.
 ********************************************************************/  
 

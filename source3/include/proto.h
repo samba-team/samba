@@ -5698,7 +5698,6 @@ bool smb_io_unistr2(const char *desc, UNISTR2 *uni2, uint32 buffer, prs_struct *
 bool smb_io_pol_hnd(const char *desc, POLICY_HND *pol, prs_struct *ps, int depth);
 void init_unistr3(UNISTR3 *str, const char *buf);
 bool smb_io_unistr3(const char *desc, UNISTR3 *name, prs_struct *ps, int depth);
-bool prs_uint64(const char *name, prs_struct *ps, int depth, uint64 *data64);
 uint32 str_len_uni(UNISTR *source);
 bool policy_handle_is_valid(const POLICY_HND *hnd);
 
@@ -5748,6 +5747,7 @@ bool prs_pointer( const char *name, prs_struct *ps, int depth,
 bool prs_uint16(const char *name, prs_struct *ps, int depth, uint16 *data16);
 bool prs_uint32(const char *name, prs_struct *ps, int depth, uint32 *data32);
 bool prs_int32(const char *name, prs_struct *ps, int depth, int32 *data32);
+bool prs_uint64(const char *name, prs_struct *ps, int depth, uint64 *data64);
 bool prs_ntstatus(const char *name, prs_struct *ps, int depth, NTSTATUS *status);
 bool prs_dcerpc_status(const char *name, prs_struct *ps, int depth, NTSTATUS *status);
 bool prs_werror(const char *name, prs_struct *ps, int depth, WERROR *status);
