@@ -33,7 +33,7 @@ struct test_spoolss_win_context {
 	union spoolss_PrinterInfo *current_info;
 
 	/* EnumPrinterKeys */
-	char *printer_keys;
+	const char **printer_keys;
 };
 
 /* This is a convenience function for all OpenPrinterEx calls */
@@ -389,9 +389,7 @@ static bool test_EnumPrinterKey(struct torture_context *tctx,
 
 	torture_assert_werr_ok(tctx, epk.out.result, "EnumPrinterKey failed");
 
-	convert_string_talloc_convenience(ctx, lp_iconv_convenience(tctx->lp_ctx), CH_UTF16,
-			CH_UNIX, epk.out.key_buffer, *epk.out.needed,
-			(void**)&ctx->printer_keys, NULL, false);
+	ctx->printer_keys = key_buffer;
 
 	return true;
 }
@@ -458,7 +456,7 @@ static bool test_WinXP(struct torture_context *tctx, struct dcerpc_pipe *p)
 	 * code, the unused_handle structures are used for that. */
 	struct policy_handle unused_handle1, unused_handle2;
 	char *server_name;
-	char *key_pointer;
+	uint32_t i;
 
 	ntvfs_init(tctx->lp_ctx);
 
@@ -533,24 +531,15 @@ static bool test_WinXP(struct torture_context *tctx, struct dcerpc_pipe *p)
 	ret &= test_EnumForms(tctx, p, &handle03, 0);
 
 	ret &= test_EnumPrinterKey(tctx, p, &handle03, "", ctx);
-	key_pointer = ctx->printer_keys;
-	while(*key_pointer != '\0') {
-		char *end_pointer;
-		char *key_name;
 
-		for(end_pointer = key_pointer; *end_pointer != '\0';
-				++end_pointer) {
-			/* Do nothing, just move the pointer */
-		}
-		key_name = talloc_strndup(tctx, key_pointer,
-				end_pointer - key_pointer);
+	for (i=0; ctx->printer_keys[i] != NULL; i++) {
 
-		ret &= test_EnumPrinterKey(tctx, p, &handle03, key_name,
-				tmp_ctx);
-		ret &= test_EnumPrinterDataEx(tctx, p, &handle03, key_name, 0,
-				WERR_OK);
-
-		key_pointer = ++end_pointer;
+		ret &= test_EnumPrinterKey(tctx, p, &handle03,
+					   ctx->printer_keys[i],
+					   tmp_ctx);
+		ret &= test_EnumPrinterDataEx(tctx, p, &handle03,
+					      ctx->printer_keys[i], 0,
+					      WERR_OK);
 	}
 
 	ret &= test_EnumPrinterDataEx(tctx, p, &handle03, "", 0,
