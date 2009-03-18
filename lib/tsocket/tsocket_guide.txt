@@ -280,3 +280,145 @@ on failure.
 Note: if the socket is readable and writeable, only the writeable
       handler is called, this avoids deadlocks at the application level.
 
+Async helper functions
+======================
+
+To make the life easier for the callers, there're 'tevent_req' based
+helper functions for non-blocking io-operations. For each of this functions
+to work the caller must attach the tevent_context to the tsocket_context
+with tsocket_set_event_context(). Please remember that attching a new
+tevent_context will reset the event state of the socket and should only
+be done, when there's no async request is pending on the socket!
+
+The detailed calling conventions for 'tevent_req' based programming
+will be explained in the 'tevent' documentation.
+
+To receive the next availabe datagram from socket there's a wrapper
+for tsocket_recvfrom(). The caller virtually sends its desire to receive
+the next available datagram by calling the tsocket_recvfrom_send() function
+and attaches a callback function to the returned tevent_req via tevent_req_set_callback().
+The callback function is called when a datagram is available or an error has happened.
+The callback function needs to get the result by calling
+tsocket_recvfrom_recv(). The return value of tsocket_recvfrom_recv()
+matches the return value from tsocket_recvfrom(). A possible errno is delivered
+via the perrno parameter instead of the global errno variable. The datagram
+buffer and optional the source tsocket_address of the datagram are returned as talloc
+childs of the mem_ctx passed to tsocket_recvfrom_recv().
+It's important that the caller garanties that there's only one async
+read request on the socket at a time.
+
+   struct tevent_req *tsocket_recvfrom_send(struct tsocket_context *sock,
+                                            TALLOC_CTX *mem_ctx);
+   ssize_t tsocket_recvfrom_recv(struct tevent_req *req,
+                                 int *perrno,
+                                 TALLOC_CTX *mem_ctx,
+                                 uint8_t **buf,
+                                 struct tsocket_address **src);
+
+To send a datagram there's a wrapper for tsocket_sendto().
+The caller calls tsocket_sendto_send() instead of tsocket_sendto()
+which returns a tevent_req allocated on the given TALLOC_CTX.
+The caller attaches a callback function to the returned tevent_req via
+tevent_req_set_callback(). The callback function is called when a datagram was
+deliviered into the socket or an error has happened.
+The callback function needs to get the result by calling
+tsocket_sendto_recv(). The return value of tsocket_sendto_recv()
+matches the return value from tsocket_sendto(). A possible errno is delivered
+via the perrno parameter instead of the global errno variable.
+Normal callers should not use this function directly, they should use
+tsocket_sendto_queue_send/recv() instead.
+
+   struct tevent_req *tsocket_sendto_send(struct tsocket_context *sock,
+                                          TALLOC_CTX *mem_ctx,
+                                          const uint8_t *buf,
+                                          size_t len,
+                                          const struct tsocket_address *dst);
+   ssize_t tsocket_sendto_recv(struct tevent_req *req, int *perrno);
+
+As only one async tsocket_sendto() call should happen at a time,
+there's a 'tevent_queue' is used to serialize the sendto requests.
+
+   struct tevent_req *tsocket_sendto_queue_send(TALLOC_CTX *mem_ctx,
+                                                struct tsocket_context *sock,
+                                                struct tevent_queue *queue,
+                                                const uint8_t *buf,
+                                                size_t len,
+                                                struct tsocket_address *dst);
+   ssize_t tsocket_sendto_queue_recv(struct tevent_req *req, int *perrno);
+
+Ther's an async helper for tsocket_connect(), which should be used
+to connect TSOCKET_TYPE_STREAM based sockets.
+The caller virtually sends its desire to connect to the destination
+tsocket_address by calling tsocket_connect_send() and gets back a tevent_req.
+The caller sets a callback function via tevent_req_set_callback().
+The callback function is called if the tsocket is connected or an error has happened.
+The callback function needs to get the result by calling
+tsocket_connect_recv(). The return value of tsocket_connect_recv()
+matches the return value from tsocket_connect()/tsocket_get_status().
+A possible errno is delivered via the perrno parameter instead of the global
+errno variable.
+
+   struct tevent_req *tsocket_connect_send(struct tsocket_context *sock,
+                                           TALLOC_CTX *mem_ctx,
+                                           const struct tsocket_address *dst);
+   int tsocket_connect_recv(struct tevent_req *req, int *perrno);
+
+To send an 'iovec' there's a wrapper for tsocket_writev().
+The caller calls tsocket_writev_send() instead of tsocket_writev()
+which returns a tevent_req allocated on the given TALLOC_CTX.
+The caller attaches a callback function to the returned tevent_req via
+tevent_req_set_callback(). The callback function is called when the whole iovec
+was deliviered into the socket or an error has happened.
+The callback function needs to get the result by calling
+tsocket_writev_recv(). The return value of tsocket_writev_recv()
+matches the return value from tsocket_writev(). A possible errno is delivered
+via the perrno parameter instead of the global errno variable.
+Normal callers should not use this function directly, they should use
+tsocket_writev_queue_send/recv() instead.
+
+   struct tevent_req *tsocket_writev_send(struct tsocket_context *sock,
+                                          TALLOC_CTX *mem_ctx,
+                                          const struct iovec *vector,
+                                          size_t count);
+   int tsocket_writev_recv(struct tevent_req *req, int *perrno);
+
+As only one async tsocket_writev() call should happen at a time,
+there's a 'tevent_queue' is used to serialize the writev requests.
+
+   struct tevent_req *tsocket_writev_queue_send(TALLOC_CTX *mem_ctx,
+                                                struct tsocket_context *sock,
+                                                struct tevent_queue *queue,
+                                                const struct iovec *vector,
+                                                size_t count);
+   int tsocket_writev_queue_recv(struct tevent_req *req, int *perrno);
+
+For TSOCKET_TYPE_STREAM sockets, it's typically desired to split the stream
+into PDUs. That's why the helper function for tsocket_readv() is a bit
+different compared to the other helper functions. The general rule
+is still to get a tevent_req, set a callback which gets called when the
+operation is done. The callback function needs to get the result by
+calling tsocket_readv_recv(). The 'next_iovec' callback function
+makes the difference to the other helper function.
+The tsocket_writev_send/recv() logic asks the caller via the
+next_iovec_fn for an iovec array, which will be filled completely
+with bytes from the socket, then the next_iovec_fn is called for
+the next iovec array to fill, untill the next_iovec_fn returns an empty
+iovec array. That next_iovec_fn should allocate the array as child of the
+passed mem_ctx, while the buffers the array referr to belong to the caller.
+The tsocket_writev_send/recv() engine will modify and free the given array!
+The basic idea is that the caller allocates and maintains the real buffers.
+The next_iovec_fn should report error by returning -1 and setting errno to
+the specific error code. The engine will pass the error to the caller
+via tsocket_readv_recv().
+
+typedef int (*tsocket_readv_next_iovec_t)(struct tsocket_context *sock,
+					  void *private_data,
+					  TALLOC_CTX *mem_ctx,
+					  struct iovec **vector,
+					  size_t *count);
+struct tevent_req *tsocket_readv_send(struct tsocket_context *sock,
+				      TALLOC_CTX *mem_ctx,
+				      tsocket_readv_next_iovec_t next_iovec_fn,
+				      void *private_data);
+int tsocket_readv_recv(struct tevent_req *req, int *perrno);
+
