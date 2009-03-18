@@ -50,7 +50,7 @@ static int eventlog_info_destructor(EVENTLOG_INFO *elog)
  ********************************************************************/
 
 static EVENTLOG_INFO *find_eventlog_info_by_hnd( pipes_struct * p,
-						POLICY_HND * handle )
+						struct policy_handle * handle )
 {
 	EVENTLOG_INFO *info;
 
@@ -174,7 +174,7 @@ static bool get_oldest_entry_hook( EVENTLOG_INFO * info )
 /********************************************************************
  ********************************************************************/
 
-static NTSTATUS elog_open( pipes_struct * p, const char *logname, POLICY_HND *hnd )
+static NTSTATUS elog_open( pipes_struct * p, const char *logname, struct policy_handle *hnd )
 {
 	EVENTLOG_INFO *elog;
 
@@ -254,7 +254,7 @@ static NTSTATUS elog_open( pipes_struct * p, const char *logname, POLICY_HND *hn
 /********************************************************************
  ********************************************************************/
 
-static NTSTATUS elog_close( pipes_struct *p, POLICY_HND *hnd )
+static NTSTATUS elog_close( pipes_struct *p, struct policy_handle *hnd )
 {
         if ( !( close_policy_hnd( p, hnd ) ) ) {
                 return NT_STATUS_INVALID_HANDLE;

@@ -1209,7 +1209,7 @@ void *_talloc_zero_array_zeronull(const void *ctx, size_t el_size, unsigned coun
 void *talloc_zeronull(const void *context, size_t size, const char *name);
 NTSTATUS split_ntfs_stream_name(TALLOC_CTX *mem_ctx, const char *fname,
 				char **pbase, char **pstream);
-bool is_valid_policy_hnd(const POLICY_HND *hnd);
+bool is_valid_policy_hnd(const struct policy_handle *hnd);
 bool policy_hnd_equal(const struct policy_handle *hnd1,
 		      const struct policy_handle *hnd2);
 const char *strip_hostname(const char *s);
@@ -5170,13 +5170,13 @@ WERROR regkey_open_internal( TALLOC_CTX *ctx, REGISTRY_KEY **regkey,
 NTSTATUS rpccli_lsa_open_policy(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
 				bool sec_qos, uint32 des_access,
-				POLICY_HND *pol);
+				struct policy_handle *pol);
 NTSTATUS rpccli_lsa_open_policy2(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx, bool sec_qos,
-				 uint32 des_access, POLICY_HND *pol);
+				 uint32 des_access, struct policy_handle *pol);
 NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
-				POLICY_HND *pol,
+				struct policy_handle *pol,
 				int num_sids,
 				const DOM_SID *sids,
 				char ***pdomains,
@@ -5184,7 +5184,7 @@ NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 				enum lsa_SidType **ptypes);
 NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
-				 POLICY_HND *pol, int num_names,
+				 struct policy_handle *pol, int num_names,
 				 const char **names,
 				 const char ***dom_names,
 				 int level,
@@ -5398,7 +5398,7 @@ NTSTATUS rpc_transport_sock_init(TALLOC_CTX *mem_ctx, int fd,
 
 NTSTATUS rpccli_winreg_Connect(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                          uint32 reg_type, uint32 access_mask,
-                         POLICY_HND *reg_hnd);
+                         struct policy_handle *reg_hnd);
 
 /* The following definitions come from rpc_client/cli_samr.c  */
 
@@ -5431,7 +5431,7 @@ void get_query_dispinfo_params(int loop_count, uint32 *max_entries,
 NTSTATUS rpccli_try_samr_connects(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
 				  uint32_t access_mask,
-				  POLICY_HND *connect_pol);
+				  struct policy_handle *connect_pol);
 
 /* The following definitions come from rpc_client/cli_spoolss.c  */
 
@@ -5845,9 +5845,9 @@ NTSTATUS evlog_tdb_entry_to_evt_entry(TALLOC_CTX *mem_ctx,
 
 bool init_pipe_handle_list(pipes_struct *p,
 			   const struct ndr_syntax_id *syntax);
-bool create_policy_hnd(pipes_struct *p, POLICY_HND *hnd, void *data_ptr);
-bool find_policy_by_hnd(pipes_struct *p, POLICY_HND *hnd, void **data_p);
-bool close_policy_hnd(pipes_struct *p, POLICY_HND *hnd);
+bool create_policy_hnd(pipes_struct *p, struct policy_handle *hnd, void *data_ptr);
+bool find_policy_by_hnd(pipes_struct *p, struct policy_handle *hnd, void **data_p);
+bool close_policy_hnd(pipes_struct *p, struct policy_handle *hnd);
 void close_policy_by_pipe(pipes_struct *p);
 bool pipe_access_check(pipes_struct *p);
 

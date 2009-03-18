@@ -105,7 +105,7 @@ static WERROR cmd_spoolss_open_printer_ex(struct rpc_pipe_client *cli,
                                             int argc, const char **argv)
 {
 	WERROR 	        werror;
-	POLICY_HND	hnd;
+	struct policy_handle	hnd;
 
 	if (argc != 2) {
 		printf("Usage: %s <printername>\n", argv[0]);
@@ -414,7 +414,7 @@ static WERROR cmd_spoolss_setprinter(struct rpc_pipe_client *cli,
                                        TALLOC_CTX *mem_ctx,
                                        int argc, const char **argv)
 {
-	POLICY_HND 	pol;
+	struct policy_handle pol;
 	WERROR		result;
 	NTSTATUS	status;
 	uint32 		info_level = 2;
@@ -490,7 +490,7 @@ static WERROR cmd_spoolss_setprintername(struct rpc_pipe_client *cli,
                                        TALLOC_CTX *mem_ctx,
                                        int argc, const char **argv)
 {
-	POLICY_HND 	pol;
+	struct policy_handle pol;
 	WERROR		result;
 	NTSTATUS	status;
 	uint32 		info_level = 2;
@@ -566,7 +566,7 @@ static WERROR cmd_spoolss_getprinter(struct rpc_pipe_client *cli,
                                        TALLOC_CTX *mem_ctx,
                                        int argc, const char **argv)
 {
-	POLICY_HND 	pol;
+	struct policy_handle pol;
 	WERROR          result;
 	uint32_t 	level = 1;
 	const char	*printername;
@@ -751,7 +751,7 @@ static WERROR cmd_spoolss_getprinterdata(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx,
 					   int argc, const char **argv)
 {
-	POLICY_HND 	pol;
+	struct policy_handle pol;
 	WERROR          result;
 	fstring 	printername;
 	const char *valuename;
@@ -811,7 +811,7 @@ static WERROR cmd_spoolss_getprinterdataex(struct rpc_pipe_client *cli,
 					     TALLOC_CTX *mem_ctx,
 					     int argc, const char **argv)
 {
-	POLICY_HND 	pol;
+	struct policy_handle pol;
 	WERROR          result;
 	NTSTATUS	status;
 	fstring 	printername;
@@ -971,7 +971,7 @@ static WERROR cmd_spoolss_getdriver(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
 				    int argc, const char **argv)
 {
-	POLICY_HND 	pol;
+	struct policy_handle pol;
 	WERROR          werror;
 	uint32_t	level = 3;
 	const char	*printername;
@@ -1464,7 +1464,7 @@ static WERROR cmd_spoolss_setdriver(struct rpc_pipe_client *cli,
                                       TALLOC_CTX *mem_ctx,
                                       int argc, const char **argv)
 {
-	POLICY_HND		pol;
+	struct policy_handle	pol;
 	WERROR                  result;
 	NTSTATUS		status;
 	uint32			level = 2;
@@ -1713,7 +1713,7 @@ static WERROR cmd_spoolss_getprintprocdir(struct rpc_pipe_client *cli,
 static WERROR cmd_spoolss_addform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				    int argc, const char **argv)
 {
-	POLICY_HND handle;
+	struct policy_handle handle;
 	WERROR werror;
 	NTSTATUS status;
 	const char *printername;
@@ -1803,7 +1803,7 @@ static WERROR cmd_spoolss_addform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 static WERROR cmd_spoolss_setform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				    int argc, const char **argv)
 {
-	POLICY_HND handle;
+	struct policy_handle handle;
 	WERROR werror;
 	NTSTATUS status;
 	const char *printername;
@@ -1917,7 +1917,7 @@ static void display_form_info2(struct spoolss_FormInfo2 *r)
 static WERROR cmd_spoolss_getform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				    int argc, const char **argv)
 {
-	POLICY_HND handle;
+	struct policy_handle handle;
 	WERROR werror;
 	NTSTATUS status;
 	const char *printername;
@@ -2001,7 +2001,7 @@ static WERROR cmd_spoolss_deleteform(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx, int argc,
 				       const char **argv)
 {
-	POLICY_HND handle;
+	struct policy_handle handle;
 	WERROR werror;
 	NTSTATUS status;
 	const char *printername;
@@ -2048,7 +2048,7 @@ static WERROR cmd_spoolss_enum_forms(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx, int argc,
 				       const char **argv)
 {
-	POLICY_HND handle;
+	struct policy_handle handle;
 	WERROR werror;
 	const char *printername;
 	uint32 num_forms, level = 1, i;
@@ -2118,7 +2118,7 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
 	WERROR result;
 	NTSTATUS status;
 	const char *printername;
-	POLICY_HND pol;
+	struct policy_handle pol;
 	union spoolss_PrinterInfo info;
 	enum winreg_Type type;
 	union spoolss_PrinterData data;
@@ -2309,7 +2309,7 @@ static WERROR cmd_spoolss_enum_jobs(struct rpc_pipe_client *cli,
 	WERROR result;
 	uint32_t level = 1, count, i;
 	const char *printername;
-	POLICY_HND hnd;
+	struct policy_handle hnd;
 	union spoolss_JobInfo *info;
 
 	if (argc < 2 || argc > 3) {
@@ -2456,7 +2456,7 @@ static WERROR cmd_spoolss_enum_data(struct rpc_pipe_client *cli,
 	NTSTATUS status;
 	uint32_t i = 0;
 	const char *printername;
-	POLICY_HND hnd;
+	struct policy_handle hnd;
 	uint32_t value_offered = 0;
 	const char *value_name = NULL;
 	uint32_t value_needed;
@@ -2546,7 +2546,7 @@ static WERROR cmd_spoolss_enum_data_ex( struct rpc_pipe_client *cli,
 	WERROR result;
 	uint32 i;
 	const char *printername;
-	POLICY_HND hnd;
+	struct policy_handle hnd;
 	uint32_t count;
 	struct spoolss_PrinterEnumValues *info;
 
@@ -2603,7 +2603,7 @@ static WERROR cmd_spoolss_enum_printerkey(struct rpc_pipe_client *cli,
 	WERROR result;
 	const char *printername;
 	const char *keyname = NULL;
-	POLICY_HND hnd;
+	struct policy_handle hnd;
 	const char **key_buffer = NULL;
 	int i;
 
@@ -2664,7 +2664,7 @@ static WERROR cmd_spoolss_rffpcnex(struct rpc_pipe_client *cli,
 {
 	const char *printername;
 	const char *clientname;
-	POLICY_HND hnd;
+	struct policy_handle hnd;
 	WERROR result;
 	NTSTATUS status;
 	struct spoolss_NotifyOption option;
@@ -2748,8 +2748,8 @@ done:
 /****************************************************************************
 ****************************************************************************/
 
-static bool compare_printer( struct rpc_pipe_client *cli1, POLICY_HND *hnd1,
-                             struct rpc_pipe_client *cli2, POLICY_HND *hnd2 )
+static bool compare_printer( struct rpc_pipe_client *cli1, struct policy_handle *hnd1,
+                             struct rpc_pipe_client *cli2, struct policy_handle *hnd2 )
 {
 	union spoolss_PrinterInfo info1, info2;
 	WERROR werror;
@@ -2789,8 +2789,8 @@ static bool compare_printer( struct rpc_pipe_client *cli1, POLICY_HND *hnd1,
 /****************************************************************************
 ****************************************************************************/
 
-static bool compare_printer_secdesc( struct rpc_pipe_client *cli1, POLICY_HND *hnd1,
-                                     struct rpc_pipe_client *cli2, POLICY_HND *hnd2 )
+static bool compare_printer_secdesc( struct rpc_pipe_client *cli1, struct policy_handle *hnd1,
+                                     struct rpc_pipe_client *cli2, struct policy_handle *hnd2 )
 {
 	union spoolss_PrinterInfo info1, info2;
 	WERROR werror;
@@ -2864,7 +2864,7 @@ static WERROR cmd_spoolss_printercmp(struct rpc_pipe_client *cli,
 	char *printername_path = NULL;
 	struct cli_state *cli_server2 = NULL;
 	struct rpc_pipe_client *cli2 = NULL;
-	POLICY_HND hPrinter1, hPrinter2;
+	struct policy_handle hPrinter1, hPrinter2;
 	NTSTATUS nt_status;
 	WERROR werror;
 

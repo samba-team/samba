@@ -440,7 +440,7 @@ typedef struct _Printer{
 		fstring localmachine;
 		uint32 printerlocal;
 		struct spoolss_NotifyOption *option;
-		POLICY_HND client_hnd;
+		struct policy_handle client_hnd;
 		bool client_connected;
 		uint32 change;
 		/* are we in a FindNextPrinterChangeNotify() call? */

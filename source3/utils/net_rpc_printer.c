@@ -683,7 +683,7 @@ static bool net_spoolss_open_printer_ex(struct rpc_pipe_client *pipe_hnd,
 					const char *printername,
 					uint32 access_required,
 					const char *username,
-					POLICY_HND *hnd)
+					struct policy_handle *hnd)
 {
 	WERROR result;
 	fstring printername2;
@@ -722,7 +722,7 @@ static bool net_spoolss_open_printer_ex(struct rpc_pipe_client *pipe_hnd,
 
 static bool net_spoolss_getprinter(struct rpc_pipe_client *pipe_hnd,
 				TALLOC_CTX *mem_ctx,
-				POLICY_HND *hnd,
+				struct policy_handle *hnd,
 				uint32 level,
 				union spoolss_PrinterInfo *info)
 {
@@ -744,7 +744,7 @@ static bool net_spoolss_getprinter(struct rpc_pipe_client *pipe_hnd,
 
 static bool net_spoolss_setprinter(struct rpc_pipe_client *pipe_hnd,
 				TALLOC_CTX *mem_ctx,
-				POLICY_HND *hnd,
+				struct policy_handle *hnd,
 				uint32 level,
 				union spoolss_PrinterInfo *info)
 {
@@ -844,7 +844,7 @@ static bool net_spoolss_setprinterdata(struct rpc_pipe_client *pipe_hnd,
 
 static bool net_spoolss_enumprinterkey(struct rpc_pipe_client *pipe_hnd,
 					TALLOC_CTX *mem_ctx,
-					POLICY_HND *hnd,
+					struct policy_handle *hnd,
 					const char *keyname,
 					const char ***keylist)
 {
@@ -864,7 +864,7 @@ static bool net_spoolss_enumprinterkey(struct rpc_pipe_client *pipe_hnd,
 static bool net_spoolss_enumprinterdataex(struct rpc_pipe_client *pipe_hnd,
 					TALLOC_CTX *mem_ctx,
 					uint32 offered,
-					POLICY_HND *hnd,
+					struct policy_handle *hnd,
 					const char *keyname,
 					uint32_t *count,
 					struct spoolss_PrinterEnumValues **info)
@@ -890,7 +890,7 @@ static bool net_spoolss_enumprinterdataex(struct rpc_pipe_client *pipe_hnd,
 
 static bool net_spoolss_setprinterdataex(struct rpc_pipe_client *pipe_hnd,
 					TALLOC_CTX *mem_ctx,
-					POLICY_HND *hnd,
+					struct policy_handle *hnd,
 					const char *keyname,
 					REGISTRY_VALUE *value)
 {
@@ -917,7 +917,7 @@ static bool net_spoolss_setprinterdataex(struct rpc_pipe_client *pipe_hnd,
 
 static bool net_spoolss_enumforms(struct rpc_pipe_client *pipe_hnd,
 				TALLOC_CTX *mem_ctx,
-				POLICY_HND *hnd,
+				struct policy_handle *hnd,
 				int level,
 				uint32_t *num_forms,
 				union spoolss_FormInfo **forms)
@@ -965,7 +965,7 @@ static bool net_spoolss_enumprinterdrivers (struct rpc_pipe_client *pipe_hnd,
 
 static bool net_spoolss_getprinterdriver(struct rpc_pipe_client *pipe_hnd,
 			     TALLOC_CTX *mem_ctx,
-			     POLICY_HND *hnd, uint32 level,
+			     struct policy_handle *hnd, uint32 level,
 			     const char *env, int version,
 			     union spoolss_DriverInfo *info)
 {
@@ -1051,7 +1051,7 @@ static bool get_printer_info(struct rpc_pipe_client *pipe_hnd,
 			uint32 *num_printers,
 			union spoolss_PrinterInfo **info_p)
 {
-	POLICY_HND hnd;
+	struct policy_handle hnd;
 
 	/* no arguments given, enumerate all printers */
 	if (argc == 0) {
@@ -1236,7 +1236,7 @@ static NTSTATUS rpc_printer_publish_internals_args(struct rpc_pipe_client *pipe_
 	struct spoolss_SetPrinterInfoCtr info_ctr;
 	struct spoolss_DevmodeContainer devmode_ctr;
 	struct sec_desc_buf secdesc_ctr;
-	POLICY_HND hnd;
+	struct policy_handle hnd;
 	WERROR result;
 	const char *action_str;
 
@@ -1378,7 +1378,7 @@ NTSTATUS rpc_printer_publish_list_internals(struct net_context *c,
 	const char *printername, *sharename;
 	union spoolss_PrinterInfo *info_enum;
 	union spoolss_PrinterInfo info;
-	POLICY_HND hnd;
+	struct policy_handle hnd;
 	int state;
 
 	if (!get_printer_info(pipe_hnd, mem_ctx, 2, argc, argv, &num_printers, &info_enum))
@@ -1470,7 +1470,7 @@ NTSTATUS rpc_printer_migrate_security_internals(struct net_context *c,
 	uint32 level = 2;
 	const char *printername, *sharename;
 	struct rpc_pipe_client *pipe_hnd_dst = NULL;
-	POLICY_HND hnd_src, hnd_dst;
+	struct policy_handle hnd_src, hnd_dst;
 	union spoolss_PrinterInfo *info_enum;
 	struct cli_state *cli_dst = NULL;
 	union spoolss_PrinterInfo info_src, info_dst;
@@ -1616,7 +1616,7 @@ NTSTATUS rpc_printer_migrate_forms_internals(struct net_context *c,
 	uint32 level = 1;
 	const char *printername, *sharename;
 	struct rpc_pipe_client *pipe_hnd_dst = NULL;
-	POLICY_HND hnd_src, hnd_dst;
+	struct policy_handle hnd_src, hnd_dst;
 	union spoolss_PrinterInfo *info_enum;
 	union spoolss_PrinterInfo info_dst;
 	uint32_t num_forms;
@@ -1778,7 +1778,7 @@ NTSTATUS rpc_printer_migrate_drivers_internals(struct net_context *c,
 	bool got_src_driver_share = false;
 	bool got_dst_driver_share = false;
 	struct rpc_pipe_client *pipe_hnd_dst = NULL;
-	POLICY_HND hnd_src, hnd_dst;
+	struct policy_handle hnd_src, hnd_dst;
 	union spoolss_DriverInfo drv_info_src;
 	union spoolss_PrinterInfo *info_enum;
 	union spoolss_PrinterInfo info_dst;
@@ -1988,7 +1988,7 @@ NTSTATUS rpc_printer_migrate_printers_internals(struct net_context *c,
 	union spoolss_PrinterInfo info_dst, info_src;
 	union spoolss_PrinterInfo *info_enum;
 	struct cli_state *cli_dst = NULL;
-	POLICY_HND hnd_dst, hnd_src;
+	struct policy_handle hnd_dst, hnd_src;
 	const char *printername, *sharename;
 	struct rpc_pipe_client *pipe_hnd_dst = NULL;
 	struct spoolss_SetPrinterInfoCtr info_ctr;
@@ -2144,7 +2144,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 	uint32 level = 2;
 	const char *printername, *sharename;
 	struct rpc_pipe_client *pipe_hnd_dst = NULL;
-	POLICY_HND hnd_src, hnd_dst;
+	struct policy_handle hnd_src, hnd_dst;
 	union spoolss_PrinterInfo *info_enum;
 	union spoolss_PrinterInfo info_dst_publish;
 	union spoolss_PrinterInfo info_dst;

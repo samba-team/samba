@@ -38,7 +38,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			       WINBIND_USERINFO **info)
 {
 	NTSTATUS result;
-	POLICY_HND dom_pol;
+	struct policy_handle dom_pol;
 	unsigned int i, start_idx;
 	uint32 loop_count;
 	struct rpc_pipe_client *cli;
@@ -130,7 +130,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 				uint32 *num_entries, 
 				struct acct_info **info)
 {
-	POLICY_HND dom_pol;
+	struct policy_handle dom_pol;
 	NTSTATUS status;
 	uint32 start = 0;
 	struct rpc_pipe_client *cli;
@@ -201,7 +201,7 @@ static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 				uint32 *num_entries, 
 				struct acct_info **info)
 {
-	POLICY_HND dom_pol;
+	struct policy_handle dom_pol;
 	NTSTATUS result;
 	struct rpc_pipe_client *cli;
 
@@ -278,7 +278,7 @@ static NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
 	enum lsa_SidType *types = NULL;
 	char *full_name = NULL;
 	struct rpc_pipe_client *cli;
-	POLICY_HND lsa_policy;
+	struct policy_handle lsa_policy;
 	NTSTATUS name_map_status = NT_STATUS_UNSUCCESSFUL;
 	char *mapped_name = NULL;
 
@@ -343,7 +343,7 @@ static NTSTATUS msrpc_sid_to_name(struct winbindd_domain *domain,
 	enum lsa_SidType *types = NULL;
 	NTSTATUS result;
 	struct rpc_pipe_client *cli;
-	POLICY_HND lsa_policy;
+	struct policy_handle lsa_policy;
 	NTSTATUS name_map_status = NT_STATUS_UNSUCCESSFUL;
 	char *mapped_name = NULL;
 
@@ -396,7 +396,7 @@ static NTSTATUS msrpc_rids_to_names(struct winbindd_domain *domain,
 	char **domains;
 	NTSTATUS result;
 	struct rpc_pipe_client *cli;
-	POLICY_HND lsa_policy;
+	struct policy_handle lsa_policy;
 	DOM_SID *sids;
 	size_t i;
 	char **ret_names;
@@ -461,7 +461,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 			   WINBIND_USERINFO *user_info)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	POLICY_HND dom_pol, user_pol;
+	struct policy_handle dom_pol, user_pol;
 	union samr_UserInfo *info = NULL;
 	uint32 user_rid;
 	struct netr_SamInfo3 *user;
@@ -564,7 +564,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 				  uint32 *num_groups, DOM_SID **user_grpsids)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	POLICY_HND dom_pol, user_pol;
+	struct policy_handle dom_pol, user_pol;
 	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	struct samr_RidWithAttributeArray *rid_array = NULL;
 	unsigned int i;
@@ -645,7 +645,7 @@ static NTSTATUS msrpc_lookup_useraliases(struct winbindd_domain *domain,
 					 uint32 **alias_rids)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	POLICY_HND dom_pol;
+	struct policy_handle dom_pol;
 	uint32 num_query_sids = 0;
 	int i;
 	struct rpc_pipe_client *cli;
@@ -745,7 +745,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 {
         NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
         uint32 i, total_names = 0;
-        POLICY_HND dom_pol, group_pol;
+        struct policy_handle dom_pol, group_pol;
         uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	uint32 *rid_mem = NULL;
 	uint32 group_rid;
@@ -953,7 +953,7 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 	TALLOC_CTX *mem_ctx;
 	union samr_DomainInfo *info = NULL;
 	NTSTATUS result;
-	POLICY_HND dom_pol;
+	struct policy_handle dom_pol;
 	bool got_seq_num = False;
 	struct rpc_pipe_client *cli;
 
@@ -1054,7 +1054,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 enum_ctx = 0;
 	struct rpc_pipe_client *cli;
-	POLICY_HND lsa_policy;
+	struct policy_handle lsa_policy;
 
 	DEBUG(3,("rpc: trusted_domains\n"));
 
@@ -1112,7 +1112,7 @@ static NTSTATUS msrpc_lockout_policy(struct winbindd_domain *domain,
 {
 	NTSTATUS result;
 	struct rpc_pipe_client *cli;
-	POLICY_HND dom_pol;
+	struct policy_handle dom_pol;
 	union samr_DomainInfo *info = NULL;
 
 	DEBUG(10,("rpc: fetch lockout policy for %s\n", domain->name));
@@ -1153,7 +1153,7 @@ static NTSTATUS msrpc_password_policy(struct winbindd_domain *domain,
 {
 	NTSTATUS result;
 	struct rpc_pipe_client *cli;
-	POLICY_HND dom_pol;
+	struct policy_handle dom_pol;
 	union samr_DomainInfo *info = NULL;
 
 	DEBUG(10,("rpc: fetch password policy for %s\n", domain->name));

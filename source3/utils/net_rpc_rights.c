@@ -28,7 +28,7 @@ static NTSTATUS sid_to_name(struct rpc_pipe_client *pipe_hnd,
 				DOM_SID *sid,
 				fstring name)
 {
-	POLICY_HND pol;
+	struct policy_handle pol;
 	enum lsa_SidType *sid_types = NULL;
 	NTSTATUS result;
 	char **domains = NULL, **names = NULL;
@@ -59,7 +59,7 @@ static NTSTATUS name_to_sid(struct rpc_pipe_client *pipe_hnd,
 			    TALLOC_CTX *mem_ctx,
 			    DOM_SID *sid, const char *name)
 {
-	POLICY_HND pol;
+	struct policy_handle pol;
 	enum lsa_SidType *sid_types;
 	NTSTATUS result;
 	DOM_SID *sids;
@@ -90,7 +90,7 @@ static NTSTATUS name_to_sid(struct rpc_pipe_client *pipe_hnd,
 
 static NTSTATUS enum_privileges(struct rpc_pipe_client *pipe_hnd,
 				TALLOC_CTX *ctx,
-				POLICY_HND *pol )
+				struct policy_handle *pol )
 {
 	NTSTATUS result;
 	uint32 enum_context = 0;
@@ -148,7 +148,7 @@ static NTSTATUS enum_privileges(struct rpc_pipe_client *pipe_hnd,
 
 static NTSTATUS check_privilege_for_user(struct rpc_pipe_client *pipe_hnd,
 					TALLOC_CTX *ctx,
-					POLICY_HND *pol,
+					struct policy_handle *pol,
 					DOM_SID *sid,
 					const char *right)
 {
@@ -183,7 +183,7 @@ static NTSTATUS check_privilege_for_user(struct rpc_pipe_client *pipe_hnd,
 
 static NTSTATUS enum_privileges_for_user(struct rpc_pipe_client *pipe_hnd,
 					TALLOC_CTX *ctx,
-					POLICY_HND *pol,
+					struct policy_handle *pol,
 					DOM_SID *sid )
 {
 	NTSTATUS result;
@@ -214,7 +214,7 @@ static NTSTATUS enum_privileges_for_user(struct rpc_pipe_client *pipe_hnd,
 
 static NTSTATUS enum_accounts_for_privilege(struct rpc_pipe_client *pipe_hnd,
 						TALLOC_CTX *ctx,
-						POLICY_HND *pol,
+						struct policy_handle *pol,
 						const char *privilege)
 {
 	NTSTATUS result;
@@ -265,7 +265,7 @@ static NTSTATUS enum_accounts_for_privilege(struct rpc_pipe_client *pipe_hnd,
 
 static NTSTATUS enum_privileges_for_accounts(struct rpc_pipe_client *pipe_hnd,
 						TALLOC_CTX *ctx,
-						POLICY_HND *pol)
+						struct policy_handle *pol)
 {
 	NTSTATUS result;
 	uint32 enum_context=0;
@@ -317,7 +317,7 @@ static NTSTATUS rpc_rights_list_internal(struct net_context *c,
 					int argc,
 					const char **argv )
 {
-	POLICY_HND pol;
+	struct policy_handle pol;
 	NTSTATUS result;
 	DOM_SID sid;
 	fstring privname;
@@ -436,7 +436,7 @@ static NTSTATUS rpc_rights_grant_internal(struct net_context *c,
 					int argc,
 					const char **argv )
 {
-	POLICY_HND dom_pol;
+	struct policy_handle dom_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	struct lsa_RightSet rights;
 	int i;
@@ -506,7 +506,7 @@ static NTSTATUS rpc_rights_revoke_internal(struct net_context *c,
 					int argc,
 					const char **argv )
 {
-	POLICY_HND dom_pol;
+	struct policy_handle dom_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	struct lsa_RightSet rights;
 	DOM_SID sid;

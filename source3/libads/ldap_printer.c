@@ -314,7 +314,7 @@ WERROR get_remote_printer_publishing_data(struct rpc_pipe_client *cli,
 	struct spoolss_PrinterEnumValues *info;
 	uint32_t count;
 	uint32 i;
-	POLICY_HND pol;
+	struct policy_handle pol;
 
 	if ((asprintf(&printername, "%s\\%s", cli->srv_name_slash, printer) == -1)) {
 		DEBUG(3, ("Insufficient memory\n"));
