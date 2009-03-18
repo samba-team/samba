@@ -6025,7 +6025,7 @@ void spoolss_notify_cjobs(int snum,
 				 TALLOC_CTX *mem_ctx);
 void construct_info_data(struct spoolss_Notify *info_data,
 			 enum spoolss_NotifyType type,
-			 enum spoolss_Field field,
+			 uint16_t field,
 			 int id);
 struct spoolss_DeviceMode *construct_dev_mode(TALLOC_CTX *mem_ctx,
 					      const char *servicename);
