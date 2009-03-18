@@ -5676,26 +5676,13 @@ NTSTATUS cli_do_rpc_ndr(struct rpc_pipe_client *cli,
 /* The following definitions come from rpc_parse/parse_misc.c  */
 
 bool smb_io_time(const char *desc, NTTIME *nttime, prs_struct *ps, int depth);
-bool smb_io_nttime(const char *desc, prs_struct *ps, int depth, NTTIME *nttime);
 bool smb_io_system_time(const char *desc, prs_struct *ps, int depth, SYSTEMTIME *systime);
 bool make_systemtime(SYSTEMTIME *systime, struct tm *unixtime);
 bool smb_io_dom_sid(const char *desc, DOM_SID *sid, prs_struct *ps, int depth);
 bool smb_io_uuid(const char *desc, struct GUID *uuid, 
 		 prs_struct *ps, int depth);
 void init_unistr(UNISTR *str, const char *buf);
-bool smb_io_unistr(const char *desc, UNISTR *uni, prs_struct *ps, int depth);
-void init_buf_unistr2(UNISTR2 *str, uint32 *ptr, const char *buf);
-void copy_unistr2(UNISTR2 *str, const UNISTR2 *from);
 void init_unistr2(UNISTR2 *str, const char *buf, enum unistr2_term_codes flags);
-void init_unistr2_w(TALLOC_CTX *ctx, UNISTR2 *str, const smb_ucs2_t *buf);
-void init_unistr2_from_unistr(TALLOC_CTX *ctx, UNISTR2 *to, const UNISTR *from);
-void init_unistr2_from_datablob(UNISTR2 *str, DATA_BLOB *blob) ;
-bool prs_io_unistr2_p(const char *desc, prs_struct *ps, int depth, UNISTR2 **uni2);
-bool prs_io_unistr2(const char *desc, prs_struct *ps, int depth, UNISTR2 *uni2 );
-bool smb_io_unistr2(const char *desc, UNISTR2 *uni2, uint32 buffer, prs_struct *ps, int depth);
-bool smb_io_pol_hnd(const char *desc, POLICY_HND *pol, prs_struct *ps, int depth);
-uint32 str_len_uni(UNISTR *source);
-bool policy_handle_is_valid(const POLICY_HND *hnd);
 
 /* The following definitions come from rpc_parse/parse_prs.c  */
 
