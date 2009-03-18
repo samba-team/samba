@@ -147,23 +147,18 @@
 # to use NAT MASQUERADING for all traffic from the internal private network
 # to the external network. This node is the NAT-GW node.
 #
-# All other nodes are set up with policy routing so that all traffic with
-# a source address of the private network and a destination outside of
-# the private network are instead routed through the NAT-GW node.
+# All other nodes are set up with a default rote with a metric of 10 to point
+# to the nat-gw node.
 # 
 # The effect of this is that only when a node does not have a public address
-# or a route to the external network will the node use the private address
-# as the source address and only then will it use the policy routing
-# through the NAT-GW.
-# As long as a node has a public address and can route to the external network
-# the node will always pick the public address as the source address and NAT-GW
-# routing will not be used.
-#NATGW_PUBLIC_IP=10.0.0.227/24
-#NATGW_PUBLIC_IFACE=eth0
-#NATGW_DEFAULT_GATEWAY=10.0.0.1
-#NATGW_PRIVATE_IFACE=eth1
-#NATGW_PRIVATE_NETWORK=10.1.1.0/24
-
+# and thus no proper routes to the external world it will instead
+# route all packets through the nat-gw node.
+#
+# NATGW_PUBLIC_IP=10.0.0.227/24
+# NATGW_PUBLIC_IFACE=eth0
+# NATGW_DEFAULT_GATEWAY=10.0.0.1
+# NATGW_PRIVATE_IFACE=eth1
+# NATGW_PRIVATE_NETWORK=10.1.1.0/24
 
 # where to log messages
 # the default is /var/log/log.ctdb

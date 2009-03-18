@@ -8,11 +8,23 @@
 . $CTDB_BASE/functions
 loadconfig ctdb
 
-[ -z "$NATGW_PUBLIC_INTERFACE" ] && exit 0
+[ -z "$NATGW_PUBLIC_IFACE" ] && exit 0
 
 cmd="$1"
 shift
 PATH=/usr/bin:/bin:/usr/sbin:/sbin:$PATH
+
+delete_all() {
+	ip addr add $NATGW_PUBLIC_IP dev $NATGW_PUBLIC_IFACE >/dev/null 2>/dev/null
+	ip addr del $NATGW_PUBLIC_IP_HOST dev $NATGW_PRIVATE_IFACE >/dev/null 2>/dev/null
+	ip route del 0.0.0.0/0 metric 10 >/dev/null 2>/dev/null
+
+	# Delete the masquerading setup from a previous iteration where we
+	# were the NAT-GW
+	iptables -D POSTROUTING -t nat -s $NATGW_PRIVATE_NETWORK -d ! $NATGW_PRIVATE_NETWORK -j MASQUERADE >/dev/null 2>/dev/null
+
+	ip addr del $NATGW_PUBLIC_IP dev $NATGW_PUBLIC_IFACE >/dev/null 2>/dev/null
+}
 
 case $cmd in 
      recovered)
@@ -22,19 +34,9 @@ case $cmd in
 	FIRST=`ctdb status -Y | grep ":0:$" | head -1`
 	FIRSTNODE=`echo $FIRST | cut -d: -f2`
 	FIRSTIP=`echo $FIRST | cut -d: -f3`
+	NATGW_PUBLIC_IP_HOST=`echo $NATGW_PUBLIC_IP | sed -e "s/\/.*/\/32/"`
 
-	# Delete everything that might have been set in a previous iteration
-	# when we were not the NAT-GW
-	ip rule del fwmark 11 table 11 >/dev/null 2>/dev/null
-	iptables -D OUTPUT -t mangle -s $NATGW_PRIVATE_NETWORK -d ! $NATGW_PRIVATE_NETWORK -j MARK --set-mark 11 >/dev/null 2>/dev/null
-	iptables -D OUTPUT -t mangle -s $NATGW_PRIVATE_NETWORK -d ! $NATGW_PRIVATE_NETWORK -p tcp --sport 22 -j ACCEPT >/dev/null 2>/dev/null
-	ip route del $NATGW_PRIVATE_NETWORK dev $NATGW_PRIVATE_IFACE table 11 >/dev/null 2>/dev/null
-	ip route del 0.0.0.0/0 dev $NATGW_PRIVATE_IFACE table 11 >/dev/null 2>/dev/null
-
-	# Delete the masquerading setup from a previous iteration where we
-	# was the NAT-GW
-	iptables -D POSTROUTING -t nat -s $NATGW_PRIVATE_NETWORK -d ! $NATGW_PRIVATE_NETWORK -j MASQUERADE >/dev/null 2>/dev/null
-	ip addr del $NATGW_PUBLIC_IP dev $NATGW_PUBLIC_IFACE >/dev/null 2>/dev/null
+	delete_all
 
 	if [ "$FIRSTNODE" == "$MYPNN" ]; then
 		# This is the first node, set it up as the NAT GW
@@ -44,34 +46,18 @@ case $cmd in
 		ip route add 0.0.0.0/0 via $NATGW_DEFAULT_GATEWAY >/dev/null 2>/dev/null
 	else
 		# This is not the NAT-GW
-		# We now need to set up a separate routing table for
-		# all traffic we originate and with a destination that is
-		# outside of the local private network and route these 
-		# packets via the NAT-GW
-
-
-		# Mark all outgoing packets that have the private address
-		# as source address with fwmarker 11
-		# We expect that the only time the the source address will be
-		# selected as the private address would be when there are
-		# no static or public addresses assigned at all to the node.
-		# Othervise the routing would have picked a different address.
-		#
-		# Except for traffic to the ssh daemon, so that it is easier
-		# to test in the lab without disrupting the ssh sessions
-		iptables -A OUTPUT -t mangle -s $NATGW_PRIVATE_NETWORK -d ! $NATGW_PRIVATE_NETWORK -p tcp --sport 22 -j ACCEPT
-		iptables -A OUTPUT -t mangle -s $NATGW_PRIVATE_NETWORK -d ! $NATGW_PRIVATE_NETWORK -j MARK --set-mark 11
-
-
-		# create a routing table for the natgw traffic and set it
-		# up with both an interface toute for the private network
-		# as well as a default route that goes via the NAT-GW
-		ip route add $NATGW_PRIVATE_NETWORK dev $NATGW_PRIVATE_IFACE table 11
-		ip route add 0.0.0.0/0 via $FIRSTIP dev $NATGW_PRIVATE_IFACE table 11 >/dev/null 2>/dev/null
-
-		# Create a rule to use routing table 11 for these packets
-		ip rule add fwmark 11 table 11
+		# Assign the public ip to the private interface and make
+		# sure we dont respond to ARPs.
+		# We do this so that the ip address will exist on a
+		# non-loopback interface so that samba may send it along in the
+		# KDC requests.
+		ip addr add $NATGW_PUBLIC_IP_HOST dev $NATGW_PRIVATE_IFACE
+		ip route add 0.0.0.0/0 via $FIRSTIP metric 10
 	fi
+	;;
+
+     shutdown)
+	delete_all
 	;;
 
 esac
