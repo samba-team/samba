@@ -8982,6 +8982,37 @@ WERROR _spoolss_DeletePrinterKey(pipes_struct *p,
 	return status;
 }
 
+/****************************************************************
+****************************************************************/
+
+static WERROR registry_value_to_printer_enum_value(TALLOC_CTX *mem_ctx,
+						   REGISTRY_VALUE *v,
+						   struct spoolss_PrinterEnumValues *r)
+{
+	WERROR result;
+
+	r->data = TALLOC_ZERO_P(mem_ctx, union spoolss_PrinterData);
+	W_ERROR_HAVE_NO_MEMORY(r->data);
+
+	r->value_name	= talloc_strdup(mem_ctx, regval_name(v));
+	W_ERROR_HAVE_NO_MEMORY(r->value_name);
+
+	r->type		= regval_type(v);
+	r->data_length	= regval_size(v);
+
+	if (r->data_length) {
+		DATA_BLOB blob = data_blob_const(regval_data_p(v),
+						 regval_size(v));
+		result = pull_spoolss_PrinterData(mem_ctx, &blob,
+						  r->data,
+						  r->type);
+		if (!W_ERROR_IS_OK(result)) {
+			return result;
+		}
+	}
+
+	return WERR_OK;
+}
 
 /********************************************************************
  * spoolss_enumprinterdataex
