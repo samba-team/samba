@@ -170,12 +170,12 @@ int ms_fnmatch(const char *pattern, const char *string, bool translate_pattern,
 		}
 	}
 
-	if (!push_ucs2_allocate(&p, pattern, &converted_size)) {
+	if (!push_ucs2_talloc(talloc_tos(), &p, pattern, &converted_size)) {
 		return -1;
 	}
 
-	if (!push_ucs2_allocate(&s, string, &converted_size)) {
-		SAFE_FREE(p);
+	if (!push_ucs2_talloc(talloc_tos(), &s, string, &converted_size)) {
+		TALLOC_FREE(p);
 		return -1;
 	}
 
@@ -214,8 +214,8 @@ int ms_fnmatch(const char *pattern, const char *string, bool translate_pattern,
 		else {
 			max_n = SMB_CALLOC_ARRAY(struct max_n, count);
 			if (!max_n) {
-				SAFE_FREE(p);
-				SAFE_FREE(s);
+				TALLOC_FREE(p);
+				TALLOC_FREE(s);
 				return -1;
 			}
 			max_n_free = max_n;
@@ -225,8 +225,8 @@ int ms_fnmatch(const char *pattern, const char *string, bool translate_pattern,
 	ret = ms_fnmatch_core(p, s, max_n, strrchr_w(s, UCS2_CHAR('.')), is_case_sensitive);
 
 	SAFE_FREE(max_n_free);
-	SAFE_FREE(p);
-	SAFE_FREE(s);
+	TALLOC_FREE(p);
+	TALLOC_FREE(s);
 	return ret;
 }
 
