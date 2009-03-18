@@ -1483,7 +1483,7 @@ struct spoolss_PrinterEnumValues {
 	const char * value_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	uint32_t value_name_len;/* [value(2*strlen_m_term(value_name))] */
 	enum winreg_Type type;
-	union spoolss_PrinterData *data;/* [relative,subcontext_size(data_length),subcontext(0),switch_is(type)] */
+	union spoolss_PrinterData *data;/* [relative,subcontext_size(r->data_length),subcontext(0),switch_is(type)] */
 	uint32_t data_length;/* [value(ndr_size_spoolss_PrinterData(data,type,ndr->iconv_convenience,ndr->flags))] */
 }/* [relative_base,gensize,public] */;
 
