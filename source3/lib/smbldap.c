@@ -1228,7 +1228,7 @@ static int smbldap_search_ext(struct smbldap_state *ldap_state,
 		ZERO_STRUCT(ldap_state->last_rebind);
 	}
 
-	if (!push_utf8_allocate(&utf8_filter, filter, &converted_size)) {
+	if (!push_utf8_talloc(talloc_tos(), &utf8_filter, filter, &converted_size)) {
 		return LDAP_NO_MEMORY;
 	}
 
@@ -1276,7 +1276,7 @@ static int smbldap_search_ext(struct smbldap_state *ldap_state,
 		}
 	}
 
-	SAFE_FREE(utf8_filter);
+	TALLOC_FREE(utf8_filter);
 
 	/* Teardown timeout. */
 	CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
@@ -1400,7 +1400,7 @@ int smbldap_modify(struct smbldap_state *ldap_state, const char *dn, LDAPMod *at
 
 	DEBUG(5,("smbldap_modify: dn => [%s]\n", dn ));
 
-	if (!push_utf8_allocate(&utf8_dn, dn, &converted_size)) {
+	if (!push_utf8_talloc(talloc_tos(), &utf8_dn, dn, &converted_size)) {
 		return LDAP_NO_MEMORY;
 	}
 
@@ -1428,7 +1428,7 @@ int smbldap_modify(struct smbldap_state *ldap_state, const char *dn, LDAPMod *at
 		}
 	}
 		
-	SAFE_FREE(utf8_dn);
+	TALLOC_FREE(utf8_dn);
 	return rc;
 }
 
@@ -1444,7 +1444,7 @@ int smbldap_add(struct smbldap_state *ldap_state, const char *dn, LDAPMod *attrs
 
 	DEBUG(5,("smbldap_add: dn => [%s]\n", dn ));
 
-	if (!push_utf8_allocate(&utf8_dn, dn, &converted_size)) {
+	if (!push_utf8_talloc(talloc_tos(), &utf8_dn, dn, &converted_size)) {
 		return LDAP_NO_MEMORY;
 	}
 
@@ -1472,7 +1472,7 @@ int smbldap_add(struct smbldap_state *ldap_state, const char *dn, LDAPMod *attrs
 		}
 	}
 	
-	SAFE_FREE(utf8_dn);
+	TALLOC_FREE(utf8_dn);
 	return rc;
 }
 
@@ -1488,7 +1488,7 @@ int smbldap_delete(struct smbldap_state *ldap_state, const char *dn)
 
 	DEBUG(5,("smbldap_delete: dn => [%s]\n", dn ));
 
-	if (!push_utf8_allocate(&utf8_dn, dn, &converted_size)) {
+	if (!push_utf8_talloc(talloc_tos(), &utf8_dn, dn, &converted_size)) {
 		return LDAP_NO_MEMORY;
 	}
 
@@ -1516,7 +1516,7 @@ int smbldap_delete(struct smbldap_state *ldap_state, const char *dn)
 		}
 	}
 	
-	SAFE_FREE(utf8_dn);
+	TALLOC_FREE(utf8_dn);
 	return rc;
 }
 
