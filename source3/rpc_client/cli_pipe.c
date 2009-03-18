@@ -65,7 +65,7 @@ static const struct pipe_id_info {
 	{ PIPE_SRVSVC,		&ndr_table_srvsvc.syntax_id },
 	{ PIPE_WKSSVC,		&ndr_table_wkssvc.syntax_id },
 	{ PIPE_WINREG,		&ndr_table_winreg.syntax_id },
-	{ PIPE_SPOOLSS,		&syntax_spoolss },
+	{ PIPE_SPOOLSS,		&ndr_table_spoolss.syntax_id },
 	{ PIPE_NETDFS,		&ndr_table_netdfs.syntax_id },
 	{ PIPE_ECHO,		&ndr_table_rpcecho.syntax_id },
 	{ PIPE_SHUTDOWN,	&ndr_table_initshutdown.syntax_id },
