@@ -731,6 +731,7 @@ static struct async_req *cli_ship_trans(TALLOC_CTX *mem_ctx,
 	uint16_t this_data = 0;
 	uint32_t useable_space;
 	uint8_t cmd;
+	uint8_t pad[3];
 
 	frame = talloc_stackframe();
 
@@ -743,9 +744,16 @@ static struct async_req *cli_ship_trans(TALLOC_CTX *mem_ctx,
 
 	param_offset = smb_size - 4;
 
+	bytes = TALLOC_ARRAY(talloc_tos(), uint8_t, 0); /* padding */
+	if (bytes == NULL) {
+		goto fail;
+	}
+
 	switch (cmd) {
 	case SMBtrans:
-		bytes = TALLOC_ZERO_P(talloc_tos(), uint8_t); /* padding */
+		pad[0] = 0;
+		bytes = (uint8_t *)talloc_append_blob(talloc_tos(), bytes,
+						data_blob_const(pad, 1));
 		if (bytes == NULL) {
 			goto fail;
 		}
@@ -759,13 +767,14 @@ static struct async_req *cli_ship_trans(TALLOC_CTX *mem_ctx,
 		param_offset += talloc_get_size(bytes);
 		break;
 	case SMBtrans2:
-		bytes = TALLOC_ARRAY(talloc_tos(), uint8_t, 3); /* padding */
+		pad[0] = 0;
+		pad[1] = 'D'; /* Copy this from "old" 3.0 behaviour */
+		pad[2] = ' ';
+		bytes = (uint8_t *)talloc_append_blob(talloc_tos(), bytes,
+						data_blob_const(pad, 3));
 		if (bytes == NULL) {
 			goto fail;
 		}
-		bytes[0] = 0;
-		bytes[1] = 'D';	/* Copy this from "old" 3.0 behaviour */
-		bytes[2] = ' ';
 		wct = 14 + state->num_setup;
 		param_offset += talloc_get_size(bytes);
 		break;
