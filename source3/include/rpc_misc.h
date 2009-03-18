@@ -100,17 +100,6 @@ typedef struct policy_handle POLICY_HND;
 
 
 /********************************************************************** 
- * Buffers use by spoolss (i might be able to replace it with
- * an RPC_DATA_BLOB)
- **********************************************************************/
-
-typedef struct {
-	uint32 buf_len;
-	uint16 *buffer; /* data */
-} BUFFER5;
-
-
-/********************************************************************** 
  * UNICODE string variations
  **********************************************************************/
 
@@ -129,14 +118,6 @@ typedef struct {		/* UNISTR2 - unicode string size (in
 				  **must** be null-terminated and the uni_str_len 
 				  should include the NULL character */
 } UNISTR2;
-
-/* i think this is the same as a BUFFER5 used in the spoolss code --jerry */
-/* not sure about how the termination matches between the uint16 buffers thought */
-
-typedef struct {		/* UNISTR3 - XXXX not sure about this structure */
-	uint32 uni_str_len;
-	UNISTR str;
-} UNISTR3;
 
 /*
  * I'm really wondering how many different time formats
