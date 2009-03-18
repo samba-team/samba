@@ -375,11 +375,8 @@ size_t pull_ucs2_base_talloc(TALLOC_CTX *ctx,
 size_t pull_ucs2_fstring(char *dest, const void *src);
 bool push_ucs2_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src,
 		      size_t *converted_size);
-bool pull_ucs2_allocate(char **dest, const smb_ucs2_t *src,
-			size_t *converted_size);
 bool pull_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src,
 		      size_t *converted_size);
-bool pull_utf8_allocate(char **dest, const char *src, size_t *converted_size);
 bool pull_ucs2_talloc(TALLOC_CTX *ctx, char **dest, const smb_ucs2_t *src,
 		      size_t *converted_size);
 bool pull_ascii_talloc(TALLOC_CTX *ctx, char **dest, const char *src,
@@ -1831,7 +1828,6 @@ ADS_STATUS ads_do_search_all_fn(ADS_STRUCT *ads, const char *bind_path,
 				int scope, const char *expr, const char **attrs,
 				bool (*fn)(ADS_STRUCT *, char *, void **, void *), 
 				void *data_area);
-void ads_memfree(ADS_STRUCT *ads, void *mem);
 char *ads_parent_dn(const char *dn);
 ADS_MODLIST ads_init_mods(TALLOC_CTX *ctx);
 ADS_STATUS ads_mod_str(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
