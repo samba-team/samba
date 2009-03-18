@@ -2482,7 +2482,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *mem_ctx,
 		return WERR_OK;
 	}
 
-	return WERR_BADFILE;
+	return WERR_INVALID_PARAM;
 }
 
 /****************************************************************
