@@ -866,12 +866,18 @@ static bool net_spoolss_enumprinterdataex(struct rpc_pipe_client *pipe_hnd,
 					uint32 offered,
 					POLICY_HND *hnd,
 					const char *keyname,
-					REGVAL_CTR *ctr)
+					uint32_t *count,
+					struct spoolss_PrinterEnumValues **info)
 {
 	WERROR result;
 
 	/* enumprinterdataex call */
-	result = rpccli_spoolss_enumprinterdataex(pipe_hnd, mem_ctx, hnd, keyname, ctr);
+	result = rpccli_spoolss_enumprinterdataex(pipe_hnd, mem_ctx,
+						  hnd,
+						  keyname,
+						  0, /* offered */
+						  count,
+						  info);
 
 	if (!W_ERROR_IS_OK(result)) {
 		printf("enumprinterdataex failed: %s\n", win_errstr(result));
@@ -2142,7 +2148,6 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 	union spoolss_PrinterInfo *info_enum;
 	union spoolss_PrinterInfo info_dst_publish;
 	union spoolss_PrinterInfo info_dst;
-	REGVAL_CTR *reg_ctr;
 	struct cli_state *cli_dst = NULL;
 	char *devicename = NULL, *unc_name = NULL, *url = NULL;
 	const char *longname;
@@ -2369,17 +2374,17 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 		for (i=0; keylist && keylist[i] != NULL; i++) {
 
 			const char *subkey = keylist[i];
-
-			if ( !(reg_ctr = TALLOC_ZERO_P( mem_ctx, REGVAL_CTR )) )
-				return NT_STATUS_NO_MEMORY;
+			uint32_t count;
+			struct spoolss_PrinterEnumValues *info;
 
 			/* enumerate all src subkeys */
 			if (!net_spoolss_enumprinterdataex(pipe_hnd, mem_ctx, 0,
 							   &hnd_src, subkey,
-							   reg_ctr))
+							   &count, &info)) {
 				goto done;
+			}
 
-			for (j=0; j < reg_ctr->num_values; j++) {
+			for (j=0; j < count; j++) {
 
 				REGISTRY_VALUE value;
 				UNISTR2 data;
@@ -2387,20 +2392,20 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 				/* although samba replies with sane data in most cases we
 				   should try to avoid writing wrong registry data */
 
-				if (strequal(reg_ctr->values[j]->valuename, SPOOL_REG_PORTNAME) ||
-				    strequal(reg_ctr->values[j]->valuename, SPOOL_REG_UNCNAME) ||
-				    strequal(reg_ctr->values[j]->valuename, SPOOL_REG_URL) ||
-				    strequal(reg_ctr->values[j]->valuename, SPOOL_REG_SHORTSERVERNAME) ||
-				    strequal(reg_ctr->values[j]->valuename, SPOOL_REG_SERVERNAME)) {
+				if (strequal(info[j].value_name, SPOOL_REG_PORTNAME) ||
+				    strequal(info[j].value_name, SPOOL_REG_UNCNAME) ||
+				    strequal(info[j].value_name, SPOOL_REG_URL) ||
+				    strequal(info[j].value_name, SPOOL_REG_SHORTSERVERNAME) ||
+				    strequal(info[j].value_name, SPOOL_REG_SERVERNAME)) {
 
-					if (strequal(reg_ctr->values[j]->valuename, SPOOL_REG_PORTNAME)) {
+					if (strequal(info[j].value_name, SPOOL_REG_PORTNAME)) {
 
 						/* although windows uses a multi-sz, we use a sz */
 						init_unistr2(&data, SAMBA_PRINTER_PORT_NAME, UNI_STR_TERMINATE);
 						fstrcpy(value.valuename, SPOOL_REG_PORTNAME);
 					}
 
-					if (strequal(reg_ctr->values[j]->valuename, SPOOL_REG_UNCNAME)) {
+					if (strequal(info[j].value_name, SPOOL_REG_UNCNAME)) {
 
 						if (asprintf(&unc_name, "\\\\%s\\%s", longname, sharename) < 0) {
 							nt_status = NT_STATUS_NO_MEMORY;
@@ -2410,7 +2415,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 						fstrcpy(value.valuename, SPOOL_REG_UNCNAME);
 					}
 
-					if (strequal(reg_ctr->values[j]->valuename, SPOOL_REG_URL)) {
+					if (strequal(info[j].value_name, SPOOL_REG_URL)) {
 
 						continue;
 
@@ -2425,13 +2430,13 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 #endif
 					}
 
-					if (strequal(reg_ctr->values[j]->valuename, SPOOL_REG_SERVERNAME)) {
+					if (strequal(info[j].value_name, SPOOL_REG_SERVERNAME)) {
 
 						init_unistr2(&data, longname, UNI_STR_TERMINATE);
 						fstrcpy(value.valuename, SPOOL_REG_SERVERNAME);
 					}
 
-					if (strequal(reg_ctr->values[j]->valuename, SPOOL_REG_SHORTSERVERNAME)) {
+					if (strequal(info[j].value_name, SPOOL_REG_SHORTSERVERNAME)) {
 
 						init_unistr2(&data, global_myname(), UNI_STR_TERMINATE);
 						fstrcpy(value.valuename, SPOOL_REG_SHORTSERVERNAME);
@@ -2455,22 +2460,37 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 
 				} else {
 
-					if (c->opt_verbose)
-						display_reg_value(subkey, *(reg_ctr->values[j]));
+					REGISTRY_VALUE v;
+					DATA_BLOB blob;
+
+					result = push_spoolss_PrinterData(mem_ctx, &blob,
+									  info[j].type,
+									  info[j].data);
+					if (!W_ERROR_IS_OK(result)) {
+						goto done;
+					}
+
+					fstrcpy(v.valuename, info[j].value_name);
+					v.type = info[j].type;
+					v.data_p = blob.data;
+					v.size = blob.length;
+
+					if (c->opt_verbose) {
+						display_reg_value(subkey, v);
+					}
 
 					/* here we have to set all subkeys on the dst server */
 					if (!net_spoolss_setprinterdataex(pipe_hnd_dst, mem_ctx, &hnd_dst,
-							subkey, reg_ctr->values[j]))
+							subkey, &v)) {
 						goto done;
+					}
 
 				}
 
 				DEBUGADD(1,("\tSetPrinterDataEx of key [%s\\%s] succeeded\n",
-						subkey, reg_ctr->values[j]->valuename));
+						subkey, info[j].value_name));
 
 			}
-
-			TALLOC_FREE( reg_ctr );
 		}
 
 		TALLOC_FREE(keylist);
