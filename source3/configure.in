@@ -157,8 +157,6 @@ if test "x$CFLAGS" = x; then
 fi
 if test "x$debug" = "xyes" ; then
 	CFLAGS="${CFLAGS} -g"
-else
-	CFLAGS="${CFLAGS} -O"
 fi
 
 m4_include(../lib/socket_wrapper/config.m4)
