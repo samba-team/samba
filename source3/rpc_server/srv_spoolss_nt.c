@@ -631,7 +631,7 @@ static bool is_monitoring_event(Printer_entry *p, uint16 notify_type,
 		/* Check match for field */
 
 		for (j = 0; j < option->types[i].count; j++) {
-			if (option->types[i].fields[j] == notify_field) {
+			if (option->types[i].fields[j].field == notify_field) {
 				return True;
 			}
 		}
@@ -2737,7 +2737,7 @@ static struct spoolss_NotifyOption *dup_spoolss_NotifyOption(TALLOC_CTX *mem_ctx
 
 		if (option->types[i].count) {
 			option->types[i].fields = talloc_zero_array(option,
-				enum spoolss_Field, option->types[i].count);
+				union spoolss_Field, option->types[i].count);
 			if (!option->types[i].fields) {
 				talloc_free(option);
 				return NULL;
@@ -3282,7 +3282,7 @@ static void spoolss_notify_submitted_time(int snum,
 struct s_notify_info_data_table
 {
 	enum spoolss_NotifyType type;
-	enum spoolss_Field field;
+	uint16_t field;
 	const char *name;
 	enum spoolss_NotifyTable variable_type;
 	void (*fn) (int snum, struct spoolss_Notify *data,
@@ -3352,7 +3352,7 @@ static const struct s_notify_info_data_table notify_info_data_table[] =
 ********************************************************************/
 
 static uint32_t variable_type_of_notify_info_data(enum spoolss_NotifyType type,
-						  enum spoolss_Field field)
+						  uint16_t field)
 {
 	int i=0;
 
@@ -3372,7 +3372,7 @@ static uint32_t variable_type_of_notify_info_data(enum spoolss_NotifyType type,
 ****************************************************************************/
 
 static bool search_notify(enum spoolss_NotifyType type,
-			  enum spoolss_Field field,
+			  uint16_t field,
 			  int *value)
 {
 	int i;
@@ -3394,11 +3394,11 @@ static bool search_notify(enum spoolss_NotifyType type,
 
 void construct_info_data(struct spoolss_Notify *info_data,
 			 enum spoolss_NotifyType type,
-			 enum spoolss_Field field,
+			 uint16_t field,
 			 int id)
 {
 	info_data->type			= type;
-	info_data->field		= field;
+	info_data->field.field		= field;
 	info_data->variable_type	= variable_type_of_notify_info_data(type, field);
 	info_data->job_id		= id;
 }
@@ -3418,7 +3418,7 @@ static bool construct_notify_printer_info(Printer_entry *print_hnd,
 {
 	int field_num,j;
 	enum spoolss_NotifyType type;
-	enum spoolss_Field field;
+	uint16_t field;
 
 	struct spoolss_Notify *current_data;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
@@ -3434,7 +3434,7 @@ static bool construct_notify_printer_info(Printer_entry *print_hnd,
 		return False;
 
 	for(field_num=0; field_num < option_type->count; field_num++) {
-		field = option_type->fields[field_num];
+		field = option_type->fields[field_num].field;
 
 		DEBUG(4,("construct_notify_printer_info: notify [%d]: type [%x], field [%x]\n", field_num, type, field));
 
@@ -3483,7 +3483,7 @@ static bool construct_notify_jobs_info(print_queue_struct *queue,
 {
 	int field_num,j;
 	enum spoolss_NotifyType type;
-	enum spoolss_Field field;
+	uint16_t field;
 	struct spoolss_Notify *current_data;
 
 	DEBUG(4,("construct_notify_jobs_info\n"));
@@ -3495,7 +3495,7 @@ static bool construct_notify_jobs_info(print_queue_struct *queue,
 		option_type->count));
 
 	for(field_num=0; field_num<option_type->count; field_num++) {
-		field = option_type->fields[field_num];
+		field = option_type->fields[field_num].field;
 
 		if (!search_notify(type, field, &j) )
 			continue;
