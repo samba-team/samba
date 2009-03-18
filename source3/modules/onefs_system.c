@@ -591,8 +591,8 @@ ssize_t onefs_sys_recvfile(int fromfd, int tofd, SMB_OFF_T offset,
 	 */
 	while (total_rbytes < count) {
 
-		DEBUG(0, ("shallow recvfile, reading %llu\n",
-			  count - total_rbytes));
+		DEBUG(0, ("shallow recvfile (%s), reading %llu\n",
+			  strerror(errno), count - total_rbytes));
 
 		/*
 		 * Read the remaining data into the spill buffer.  recvfile
@@ -603,9 +603,13 @@ ssize_t onefs_sys_recvfile(int fromfd, int tofd, SMB_OFF_T offset,
 			       spill_buffer + (total_rbytes - total_wbytes),
 			       count - total_rbytes);
 
-		if (ret == -1) {
-			DEBUG(0, ("shallow recvfile read failed: %s\n",
-				  strerror(errno)));
+		if (ret <= 0) {
+			if (ret == 0) {
+				DEBUG(0, ("shallow recvfile read: EOF\n"));
+			} else {
+				DEBUG(0, ("shallow recvfile read failed: %s\n",
+					  strerror(errno)));
+			}
 			/* Socket is dead, so treat as if it were drained. */
 			socket_drained = true;
 			goto out;
