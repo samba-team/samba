@@ -187,6 +187,21 @@
 	return _data_blob_info.length;\
 } while(0)
 
+/* TODO: set _ndr_info->flags correct */
+#define NDR_SPOOLSS_SIZE_ENUM(fn) do { \
+	struct __##fn __r;\
+	DATA_BLOB _data_blob_info;\
+	struct ndr_push *_ndr_info = ndr_push_init_ctx(mem_ctx, iconv_convenience);\
+	if (!_ndr_info) return 0;\
+	_ndr_info->flags|=0;\
+	__r.in.count	= count;\
+	__r.out.info	= info;\
+	_NDR_CHECK_UINT32(ndr_push___##fn(_ndr_info, NDR_OUT, &__r)); \
+	_data_blob_info = ndr_push_blob(_ndr_info);\
+	return _data_blob_info.length;\
+} while(0)
+
+
 /*
   spoolss_EnumPrinters
 */
@@ -529,6 +544,12 @@ enum ndr_err_code ndr_pull_spoolss_EnumPrinterDataEx(struct ndr_pull *ndr, int f
 		}
 	}
 	return NDR_ERR_SUCCESS;
+}
+
+uint32_t ndr_size_spoolss_EnumPrinterDataEx_info(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience,
+						 uint32_t count, struct spoolss_PrinterEnumValues *info)
+{
+	NDR_SPOOLSS_SIZE_ENUM(spoolss_EnumPrinterDataEx);
 }
 
 /*
