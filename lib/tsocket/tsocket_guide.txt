@@ -422,3 +422,82 @@ struct tevent_req *tsocket_readv_send(struct tsocket_context *sock,
 				      void *private_data);
 int tsocket_readv_recv(struct tevent_req *req, int *perrno);
 
+Wrapper for BSD style sockets
+=============================
+
+Support for BSD style sockets of AF_INET, AF_INET6 and AF_UNIX
+are part of the main tsocket library.
+
+To wrap an existing fd into a tsocket_context the function
+tsocket_context_bsd_wrap_existing() can be used.
+The caller needs to make sure the fd is marked as non-blocking!
+Normaly the tsocket_disconnect() function would close the fd,
+but the caller can influence this behavior based on the close_on_disconnect
+parameter. The caller should also make sure that the socket is only
+accessed via the tsocket_context wrapper after the call to
+tsocket_context_bsd_wrap_existing().
+
+   int tsocket_context_bsd_wrap_existing(TALLOC_CTX *mem_ctx,
+                                         int fd, bool close_on_disconnect,
+                                         struct tsocket_context **_sock);
+
+To create a tsocket_address for an inet address you need to use
+the tsocket_address_inet_from_strings() function. It takes the family
+as parameter which can be "ipv4", "ipv6" or "ip", where "ip" autodetects
+"ipv4" or "ipv6", based on the given address string. Depending on the
+operating system, "ipv6" may not be supported. Note: NULL as address
+is mapped to "0.0.0.0" or "::" based on the given family.
+The address parameter only accepts valid ipv4 or ipv6 address strings
+and no names! The caller need to resolve names before using this function.
+
+   int tsocket_address_inet_from_strings(TALLOC_CTX *mem_ctx,
+                                         const char *family,
+                                         const char *address,
+                                         uint16_t port,
+                                         struct tsocket_address **addr);
+
+To get the address of the inet tsocket_address as string the
+tsocket_address_inet_addr_string() function should be used.
+The caller should not try to parse the tsocket_address_string() output!
+
+   char *tsocket_address_inet_addr_string(const struct tsocket_address *addr,
+                                          TALLOC_CTX *mem_ctx);
+
+To get the port number of the inet tsocket_address the
+tsocket_address_inet_port() function should be used.
+The caller should not try to parse the tsocket_address_string() output!
+
+   uint16_t tsocket_address_inet_port(const struct tsocket_address *addr);
+
+To alter the port number of an inet tsocket_address the
+tsocket_address_inet_set_port() function can be used.
+This is usefull if the caller gets the address from
+tsocket_address_copy(), tsocket_context_remote_address() or
+tsocket_context_remote_address() instead of tsocket_address_inet_from_strings().
+
+   int tsocket_address_inet_set_port(struct tsocket_address *addr,
+                                     uint16_t port);
+
+If the caller wants to create a broadcast socket, with the SO_BROADCAST
+socket option, the broadcast option needs to be set with the
+tsocket_address_inet_set_broadcast() function before calling
+tsocket_address_create_socket().
+
+   void tsocket_address_inet_set_broadcast(struct tsocket_address *addr,
+                                           bool broadcast);
+
+To create a tsocket_address for AF_UNIX style sockets the
+tsocket_address_unix_from_path() should be used.
+NULL as path is handled like "".
+
+   int tsocket_address_unix_from_path(TALLOC_CTX *mem_ctx,
+                                      const char *path,
+                                      struct tsocket_address **addr);
+
+To get the unix path of an existing unix tsocket_address
+the tsocket_address_unix_path() should be used.
+The caller should not try to parse the tsocket_address_string() output!
+
+   char *tsocket_address_unix_path(const struct tsocket_address *addr,
+                                   TALLOC_CTX *mem_ctx);
+
