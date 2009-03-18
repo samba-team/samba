@@ -117,7 +117,7 @@ typedef struct _input_data {
 struct policy {
 	struct policy *next, *prev;
 
-	POLICY_HND pol_hnd;
+	struct policy_handle pol_hnd;
 
 	void *data_ptr;
 };

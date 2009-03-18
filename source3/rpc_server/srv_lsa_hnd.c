@@ -112,7 +112,7 @@ bool init_pipe_handle_list(pipes_struct *p, const struct ndr_syntax_id *syntax)
   data_ptr is TALLOC_FREE()'ed
 ****************************************************************************/
 
-bool create_policy_hnd(pipes_struct *p, POLICY_HND *hnd, void *data_ptr)
+bool create_policy_hnd(pipes_struct *p, struct policy_handle *hnd, void *data_ptr)
 {
 	static uint32 pol_hnd_low  = 0;
 	static uint32 pol_hnd_high = 0;
@@ -167,7 +167,7 @@ bool create_policy_hnd(pipes_struct *p, POLICY_HND *hnd, void *data_ptr)
   find policy by handle - internal version.
 ****************************************************************************/
 
-static struct policy *find_policy_by_hnd_internal(pipes_struct *p, POLICY_HND *hnd, void **data_p)
+static struct policy *find_policy_by_hnd_internal(pipes_struct *p, struct policy_handle *hnd, void **data_p)
 {
 	struct policy *pol;
 	size_t i;
@@ -197,7 +197,7 @@ static struct policy *find_policy_by_hnd_internal(pipes_struct *p, POLICY_HND *h
   find policy by handle
 ****************************************************************************/
 
-bool find_policy_by_hnd(pipes_struct *p, POLICY_HND *hnd, void **data_p)
+bool find_policy_by_hnd(pipes_struct *p, struct policy_handle *hnd, void **data_p)
 {
 	return find_policy_by_hnd_internal(p, hnd, data_p) == NULL ? False : True;
 }
@@ -206,7 +206,7 @@ bool find_policy_by_hnd(pipes_struct *p, POLICY_HND *hnd, void **data_p)
   Close a policy.
 ****************************************************************************/
 
-bool close_policy_hnd(pipes_struct *p, POLICY_HND *hnd)
+bool close_policy_hnd(pipes_struct *p, struct policy_handle *hnd)
 {
 	struct policy *pol = find_policy_by_hnd_internal(p, hnd, NULL);
 

@@ -680,7 +680,7 @@ static NTSTATUS libnet_join_lookup_dc_rpc(TALLOC_CTX *mem_ctx,
 					  struct cli_state **cli)
 {
 	struct rpc_pipe_client *pipe_hnd = NULL;
-	POLICY_HND lsa_pol;
+	struct policy_handle lsa_pol;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	union lsa_PolicyInformation *info = NULL;
 
@@ -750,7 +750,7 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 					   struct cli_state *cli)
 {
 	struct rpc_pipe_client *pipe_hnd = NULL;
-	POLICY_HND sam_pol, domain_pol, user_pol;
+	struct policy_handle sam_pol, domain_pol, user_pol;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	char *acct_name;
 	struct lsa_String lsa_acct_name;
@@ -1132,7 +1132,7 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 {
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_hnd = NULL;
-	POLICY_HND sam_pol, domain_pol, user_pol;
+	struct policy_handle sam_pol, domain_pol, user_pol;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	char *acct_name;
 	uint32_t user_rid;

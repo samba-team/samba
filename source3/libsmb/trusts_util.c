@@ -99,7 +99,7 @@ bool enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain,
                                      char ***domain_names, uint32 *num_domains,
 				     DOM_SID **sids )
 {
-	POLICY_HND 	pol;
+	struct policy_handle 	pol;
 	NTSTATUS 	result = NT_STATUS_UNSUCCESSFUL;
 	fstring 	dc_name;
 	struct sockaddr_storage	dc_ss;

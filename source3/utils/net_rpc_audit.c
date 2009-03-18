@@ -70,7 +70,7 @@ static NTSTATUS rpc_audit_get_internal(struct net_context *c,
 				       int argc,
 				       const char **argv)
 {
-	POLICY_HND pol;
+	struct policy_handle pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	union lsa_PolicyInformation *info = NULL;
 	int i;
@@ -138,7 +138,7 @@ static NTSTATUS rpc_audit_set_internal(struct net_context *c,
 				       int argc,
 				       const char **argv)
 {
-	POLICY_HND pol;
+	struct policy_handle pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	union lsa_PolicyInformation *info = NULL;
 	uint32_t audit_policy, audit_category;
@@ -224,7 +224,7 @@ static NTSTATUS rpc_audit_enable_internal_ext(struct rpc_pipe_client *pipe_hnd,
 					      const char **argv,
 					      bool enable)
 {
-	POLICY_HND pol;
+	struct policy_handle pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	union lsa_PolicyInformation *info = NULL;
 
@@ -308,7 +308,7 @@ static NTSTATUS rpc_audit_list_internal(struct net_context *c,
 					int argc,
 					const char **argv)
 {
-	POLICY_HND pol;
+	struct policy_handle pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	union lsa_PolicyInformation *info = NULL;
 	int i;

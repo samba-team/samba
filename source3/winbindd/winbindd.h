@@ -119,10 +119,10 @@ struct winbindd_cm_conn {
 	struct cli_state *cli;
 
 	struct rpc_pipe_client *samr_pipe;
-	POLICY_HND sam_connect_handle, sam_domain_handle;
+	struct policy_handle sam_connect_handle, sam_domain_handle;
 
 	struct rpc_pipe_client *lsa_pipe;
-	POLICY_HND lsa_policy;
+	struct policy_handle lsa_policy;
 
 	struct rpc_pipe_client *netlogon_pipe;
 };

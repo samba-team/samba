@@ -29,7 +29,7 @@ static NTSTATUS name_to_sid(struct rpc_pipe_client *cli,
 			    TALLOC_CTX *mem_ctx,
 			    DOM_SID *sid, const char *name)
 {
-	POLICY_HND pol;
+	struct policy_handle pol;
 	enum lsa_SidType *sid_types;
 	NTSTATUS result;
 	DOM_SID *sids;
@@ -149,7 +149,7 @@ static NTSTATUS cmd_lsa_query_info_policy(struct rpc_pipe_client *cli,
                                           TALLOC_CTX *mem_ctx, int argc, 
                                           const char **argv) 
 {
-	POLICY_HND pol;
+	struct policy_handle pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	union lsa_PolicyInformation *info = NULL;
 
@@ -207,7 +207,7 @@ static NTSTATUS cmd_lsa_lookup_names(struct rpc_pipe_client *cli,
                                      TALLOC_CTX *mem_ctx, int argc, 
                                      const char **argv)
 {
-	POLICY_HND pol;
+	struct policy_handle pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	DOM_SID *sids;
 	enum lsa_SidType *types;
@@ -255,7 +255,7 @@ static NTSTATUS cmd_lsa_lookup_names_level(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx, int argc, 
 					   const char **argv)
 {
-	POLICY_HND pol;
+	struct policy_handle pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	DOM_SID *sids;
 	enum lsa_SidType *types;
@@ -305,7 +305,7 @@ static NTSTATUS cmd_lsa_lookup_names_level(struct rpc_pipe_client *cli,
 static NTSTATUS cmd_lsa_lookup_sids(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                                     int argc, const char **argv)
 {
-	POLICY_HND pol;
+	struct policy_handle pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	DOM_SID *sids;
 	char **domains;
@@ -374,7 +374,7 @@ static NTSTATUS cmd_lsa_enum_trust_dom(struct rpc_pipe_client *cli,
                                        TALLOC_CTX *mem_ctx, int argc, 
                                        const char **argv)
 {
-	POLICY_HND pol;
+	struct policy_handle pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	struct lsa_DomainList domain_list;
 
@@ -439,7 +439,7 @@ static NTSTATUS cmd_lsa_enum_privilege(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx, int argc, 
 				       const char **argv) 
 {
-	POLICY_HND pol;
+	struct policy_handle pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	struct lsa_PrivArray priv_array;
 
@@ -496,7 +496,7 @@ static NTSTATUS cmd_lsa_get_dispname(struct rpc_pipe_client *cli,
                                      TALLOC_CTX *mem_ctx, int argc, 
                                      const char **argv) 
 {
-	POLICY_HND pol;
+	struct policy_handle pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
 	uint16 lang_id=0;
@@ -544,7 +544,7 @@ static NTSTATUS cmd_lsa_enum_sids(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx, int argc, 
 				  const char **argv) 
 {
-	POLICY_HND pol;
+	struct policy_handle pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
 	uint32 enum_context=0;
@@ -600,8 +600,8 @@ static NTSTATUS cmd_lsa_create_account(struct rpc_pipe_client *cli,
                                            TALLOC_CTX *mem_ctx, int argc, 
                                            const char **argv) 
 {
-	POLICY_HND dom_pol;
-	POLICY_HND user_pol;
+	struct policy_handle dom_pol;
+	struct policy_handle user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 des_access = 0x000f000f;
 	
@@ -647,8 +647,8 @@ static NTSTATUS cmd_lsa_enum_privsaccounts(struct rpc_pipe_client *cli,
                                            TALLOC_CTX *mem_ctx, int argc, 
                                            const char **argv) 
 {
-	POLICY_HND dom_pol;
-	POLICY_HND user_pol;
+	struct policy_handle dom_pol;
+	struct policy_handle user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 access_desired = 0x000f000f;
 	DOM_SID sid;
@@ -710,7 +710,7 @@ static NTSTATUS cmd_lsa_enum_acct_rights(struct rpc_pipe_client *cli,
 					 TALLOC_CTX *mem_ctx, int argc, 
 					 const char **argv) 
 {
-	POLICY_HND dom_pol;
+	struct policy_handle dom_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	DOM_SID sid;
 	struct lsa_RightSet rights;
@@ -760,7 +760,7 @@ static NTSTATUS cmd_lsa_add_acct_rights(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx, int argc, 
 					const char **argv) 
 {
-	POLICY_HND dom_pol;
+	struct policy_handle dom_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	struct lsa_RightSet rights;
 	DOM_SID sid;
@@ -813,7 +813,7 @@ static NTSTATUS cmd_lsa_remove_acct_rights(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx, int argc, 
 					const char **argv) 
 {
-	POLICY_HND dom_pol;
+	struct policy_handle dom_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	struct lsa_RightSet rights;
 	DOM_SID sid;
@@ -868,7 +868,7 @@ static NTSTATUS cmd_lsa_lookup_priv_value(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx, int argc, 
 					const char **argv) 
 {
-	POLICY_HND pol;
+	struct policy_handle pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	struct lsa_LUID luid;
 	struct lsa_String name;
@@ -910,7 +910,7 @@ static NTSTATUS cmd_lsa_query_secobj(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx, int argc, 
 				     const char **argv) 
 {
-	POLICY_HND pol;
+	struct policy_handle pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	SEC_DESC_BUF *sdb;
 	uint32 sec_info = DACL_SECURITY_INFORMATION;
@@ -996,7 +996,7 @@ static NTSTATUS cmd_lsa_query_trustdominfobysid(struct rpc_pipe_client *cli,
 						TALLOC_CTX *mem_ctx, int argc, 
 						const char **argv) 
 {
-	POLICY_HND pol;
+	struct policy_handle pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	DOM_SID dom_sid;
 	uint32 access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
@@ -1045,7 +1045,7 @@ static NTSTATUS cmd_lsa_query_trustdominfobyname(struct rpc_pipe_client *cli,
 						 TALLOC_CTX *mem_ctx, int argc,
 						 const char **argv) 
 {
-	POLICY_HND pol;
+	struct policy_handle pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	union lsa_TrustedDomainInfo *info = NULL;
@@ -1093,7 +1093,7 @@ static NTSTATUS cmd_lsa_query_trustdominfo(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx, int argc,
 					   const char **argv) 
 {
-	POLICY_HND pol, trustdom_pol;
+	struct policy_handle pol, trustdom_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	union lsa_TrustedDomainInfo *info = NULL;
@@ -1152,7 +1152,7 @@ static NTSTATUS cmd_lsa_get_username(struct rpc_pipe_client *cli,
                                      TALLOC_CTX *mem_ctx, int argc,
                                      const char **argv)
 {
-	POLICY_HND pol;
+	struct policy_handle pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	const char *servername = cli->desthost;
 	struct lsa_String *account_name = NULL;
@@ -1194,7 +1194,7 @@ static NTSTATUS cmd_lsa_add_priv(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx, int argc,
 				 const char **argv)
 {
-	POLICY_HND dom_pol, user_pol;
+	struct policy_handle dom_pol, user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	struct lsa_PrivilegeSet privs;
 	struct lsa_LUIDAttribute *set = NULL;
@@ -1278,7 +1278,7 @@ static NTSTATUS cmd_lsa_del_priv(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx, int argc,
 				 const char **argv)
 {
-	POLICY_HND dom_pol, user_pol;
+	struct policy_handle dom_pol, user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	struct lsa_PrivilegeSet privs;
 	struct lsa_LUIDAttribute *set = NULL;

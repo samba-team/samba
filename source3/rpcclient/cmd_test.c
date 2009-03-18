@@ -26,7 +26,7 @@ static NTSTATUS cmd_testme(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 {
 	struct rpc_pipe_client *lsa_pipe = NULL, *samr_pipe = NULL;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	POLICY_HND pol;
+	struct policy_handle pol;
 
 	d_printf("testme\n");
 

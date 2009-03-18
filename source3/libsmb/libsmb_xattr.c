@@ -166,7 +166,7 @@ sort_acl(SEC_ACL *the_acl)
 /* convert a SID to a string, either numeric or username/group */
 static void
 convert_sid_to_string(struct cli_state *ipc_cli,
-                      POLICY_HND *pol,
+                      struct policy_handle *pol,
                       fstring str,
                       bool numeric,
                       DOM_SID *sid)
@@ -211,7 +211,7 @@ convert_sid_to_string(struct cli_state *ipc_cli,
 /* convert a string to a SID, either numeric or username/group */
 static bool
 convert_string_to_sid(struct cli_state *ipc_cli,
-                      POLICY_HND *pol,
+                      struct policy_handle *pol,
                       bool numeric,
                       DOM_SID *sid,
                       const char *str)
@@ -255,7 +255,7 @@ done:
 /* parse an ACE in the same format as print_ace() */
 static bool
 parse_ace(struct cli_state *ipc_cli,
-          POLICY_HND *pol,
+          struct policy_handle *pol,
           SEC_ACE *ace,
           bool numeric,
           char *str)
@@ -422,7 +422,7 @@ add_ace(SEC_ACL **the_acl,
 static SEC_DESC *
 sec_desc_parse(TALLOC_CTX *ctx,
                struct cli_state *ipc_cli,
-               POLICY_HND *pol,
+               struct policy_handle *pol,
                bool numeric,
                const char *str)
 {
@@ -702,7 +702,7 @@ cacl_get(SMBCCTX *context,
          TALLOC_CTX *ctx,
          SMBCSRV *srv,
          struct cli_state *ipc_cli,
-         POLICY_HND *pol,
+         struct policy_handle *pol,
          char *filename,
          char *attr_name,
          char *buf,
@@ -1501,7 +1501,7 @@ cacl_set(SMBCCTX *context,
 	TALLOC_CTX *ctx,
 	struct cli_state *cli,
 	struct cli_state *ipc_cli,
-	POLICY_HND *pol,
+	struct policy_handle *pol,
 	const char *filename,
 	char *the_acl,
 	int mode,

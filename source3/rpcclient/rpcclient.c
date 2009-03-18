@@ -133,7 +133,7 @@ static char *next_command (char **cmdstr)
 
 static void fetch_machine_sid(struct cli_state *cli)
 {
-	POLICY_HND pol;
+	struct policy_handle pol;
 	NTSTATUS result = NT_STATUS_OK;
 	static bool got_domain_sid;
 	TALLOC_CTX *mem_ctx;

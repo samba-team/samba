@@ -44,7 +44,7 @@
 NTSTATUS rpccli_lsa_open_policy(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
 				bool sec_qos, uint32 des_access,
-				POLICY_HND *pol)
+				struct policy_handle *pol)
 {
 	struct lsa_ObjectAttribute attr;
 	struct lsa_QosInfo qos;
@@ -77,7 +77,7 @@ NTSTATUS rpccli_lsa_open_policy(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_lsa_open_policy2(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx, bool sec_qos,
-				 uint32 des_access, POLICY_HND *pol)
+				 uint32 des_access, struct policy_handle *pol)
 {
 	struct lsa_ObjectAttribute attr;
 	struct lsa_QosInfo qos;
@@ -109,7 +109,7 @@ NTSTATUS rpccli_lsa_open_policy2(struct rpc_pipe_client *cli,
 
 static NTSTATUS rpccli_lsa_lookup_sids_noalloc(struct rpc_pipe_client *cli,
 					       TALLOC_CTX *mem_ctx,
-					       POLICY_HND *pol,
+					       struct policy_handle *pol,
 					       int num_sids,
 					       const DOM_SID *sids,
 					       char **domains,
@@ -235,7 +235,7 @@ done:
 
 NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
-				POLICY_HND *pol,
+				struct policy_handle *pol,
 				int num_sids,
 				const DOM_SID *sids,
 				char ***pdomains,
@@ -344,7 +344,7 @@ fail:
 
 NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
-				 POLICY_HND *pol, int num_names,
+				 struct policy_handle *pol, int num_names,
 				 const char **names,
 				 const char ***dom_names,
 				 int level,

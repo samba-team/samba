@@ -1396,7 +1396,7 @@ NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 	    NT_STATUS_IS_OK(result) && (my_info3->base.acct_flags == 0)) {
 
 		struct rpc_pipe_client *samr_pipe;
-		POLICY_HND samr_domain_handle, user_pol;
+		struct policy_handle samr_domain_handle, user_pol;
 		union samr_UserInfo *info = NULL;
 		NTSTATUS status_tmp;
 		uint32 acct_flags;
@@ -2066,7 +2066,7 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
 {
 	char *oldpass;
 	char *newpass = NULL;
-	POLICY_HND dom_pol;
+	struct policy_handle dom_pol;
 	struct rpc_pipe_client *cli;
 	bool got_info = false;
 	struct samr_DomInfo1 *info = NULL;
@@ -2394,7 +2394,7 @@ enum winbindd_result winbindd_dual_pam_chng_pswd_auth_crap(struct winbindd_domai
 	DATA_BLOB new_lm_password;
 	DATA_BLOB old_lm_hash_enc;
 	fstring  domain,user;
-	POLICY_HND dom_pol;
+	struct policy_handle dom_pol;
 	struct winbindd_domain *contact_domain = domainSt;
 	struct rpc_pipe_client *cli;
 

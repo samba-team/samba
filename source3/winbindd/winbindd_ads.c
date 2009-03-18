@@ -978,7 +978,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	size_t num_members = 0;
 	ads_control args;
         struct rpc_pipe_client *cli;
-        POLICY_HND lsa_policy;
+        struct policy_handle lsa_policy;
 	DOM_SID *sid_mem_nocache = NULL;
 	char **names_nocache = NULL;
 	enum lsa_SidType *name_types_nocache = NULL;

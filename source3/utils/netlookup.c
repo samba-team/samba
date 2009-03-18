@@ -31,7 +31,7 @@ struct con_struct {
 	NTSTATUS err;
 	struct cli_state *cli;
 	struct rpc_pipe_client *lsapipe;
-	POLICY_HND pol;
+	struct policy_handle pol;
 };
 
 static struct con_struct *cs;

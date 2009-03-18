@@ -170,7 +170,7 @@ static SEC_DESC* construct_scm_sd( TALLOC_CTX *ctx )
  Find a registry key handle and return a SERVICE_INFO
  *****************************************************************/
 
-static SERVICE_INFO *find_service_info_by_hnd(pipes_struct *p, POLICY_HND *hnd)
+static SERVICE_INFO *find_service_info_by_hnd(pipes_struct *p, struct policy_handle *hnd)
 {
 	SERVICE_INFO *service_info = NULL;
 
@@ -185,7 +185,7 @@ static SERVICE_INFO *find_service_info_by_hnd(pipes_struct *p, POLICY_HND *hnd)
 /******************************************************************
  *****************************************************************/
 
-static WERROR create_open_service_handle( pipes_struct *p, POLICY_HND *handle, uint32 type,
+static WERROR create_open_service_handle( pipes_struct *p, struct policy_handle *handle, uint32 type,
                                           const char *service, uint32 access_granted )
 {
 	SERVICE_INFO *info = NULL;

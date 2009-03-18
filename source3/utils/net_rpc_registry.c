@@ -767,7 +767,7 @@ static NTSTATUS rpc_registry_enumerate_internal(struct net_context *c,
 						int argc,
 						const char **argv )
 {
-	POLICY_HND pol_hive, pol_key;
+	struct policy_handle pol_hive, pol_key;
 	NTSTATUS status;
 	uint32 num_subkeys = 0;
 	uint32 num_values = 0;
@@ -843,7 +843,7 @@ static NTSTATUS rpc_registry_save_internal(struct net_context *c,
 					const char **argv )
 {
 	WERROR result = WERR_GENERAL_FAILURE;
-	POLICY_HND pol_hive, pol_key;
+	struct policy_handle pol_hive, pol_key;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct winreg_String filename;
 
@@ -1139,7 +1139,7 @@ static NTSTATUS rpc_registry_getsd_internal(struct net_context *c,
 					    int argc,
 					    const char **argv)
 {
-	POLICY_HND pol_hive, pol_key;
+	struct policy_handle pol_hive, pol_key;
 	NTSTATUS status;
 	enum ndr_err_code ndr_err;
 	struct KeySecurityData *sd = NULL;

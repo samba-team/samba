@@ -30,7 +30,7 @@
  *****************************************************************/
 
 static struct registry_key *find_regkey_by_hnd(pipes_struct *p,
-					       POLICY_HND *hnd)
+					       struct policy_handle *hnd)
 {
 	struct registry_key *regkey = NULL;
 
@@ -50,7 +50,7 @@ static struct registry_key *find_regkey_by_hnd(pipes_struct *p,
  HK[LM|U]\<key>\<key>\...
  *******************************************************************/
  
-static WERROR open_registry_key( pipes_struct *p, POLICY_HND *hnd, 
+static WERROR open_registry_key( pipes_struct *p, struct policy_handle *hnd,
 				 struct registry_key *parent,
 				 const char *subkeyname,
 				 uint32 access_desired  )
@@ -83,7 +83,7 @@ static WERROR open_registry_key( pipes_struct *p, POLICY_HND *hnd,
  Note that P should be valid & hnd should already have space
  *******************************************************************/
 
-static bool close_registry_key(pipes_struct *p, POLICY_HND *hnd)
+static bool close_registry_key(pipes_struct *p, struct policy_handle *hnd)
 {
 	struct registry_key *regkey = find_regkey_by_hnd(p, hnd);
 	
