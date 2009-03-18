@@ -865,7 +865,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	user_dn = ads_get_dn(ads, msg);
+	user_dn = ads_get_dn(ads, mem_ctx, msg);
 	if (user_dn == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -942,7 +942,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	DEBUG(3,("ads lookup_usergroups (tokenGroups) succeeded for sid=%s\n",
 		 sid_string_dbg(sid)));
 done:
-	ads_memfree(ads, user_dn);
+	TALLOC_FREE(user_dn);
 	ads_msgfree(ads, msg);
 	return status;
 }

@@ -1267,22 +1267,12 @@ ADS_STATUS ads_do_search_all_fn(ADS_STRUCT *ads, const char *bind_path,
 }
 
 /**
- * Free up memory from various ads requests
- * @param ads connection to ads server
- * @param mem Area to free
- **/
-void ads_memfree(ADS_STRUCT *ads, void *mem)
-{
-	SAFE_FREE(mem);
-}
-
-/**
  * Get a dn from search results
  * @param ads connection to ads server
  * @param msg Search result
  * @return dn string
  **/
- char *ads_get_dn(ADS_STRUCT *ads, LDAPMessage *msg)
+ char *ads_get_dn(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, LDAPMessage *msg)
 {
 	char *utf8_dn, *unix_dn;
 	size_t converted_size;
@@ -1294,7 +1284,7 @@ void ads_memfree(ADS_STRUCT *ads, void *mem)
 		return NULL;
 	}
 
-	if (!pull_utf8_allocate(&unix_dn, utf8_dn, &converted_size)) {
+	if (!pull_utf8_talloc(mem_ctx, &unix_dn, utf8_dn, &converted_size)) {
 		DEBUG(0,("ads_get_dn: string conversion failure utf8 [%s]\n",
 			utf8_dn ));
 		return NULL;
@@ -1639,7 +1629,7 @@ char *ads_default_ou_string(ADS_STRUCT *ads, const char *wknguid)
 	}
 
 	/* substitute the bind-path from the well-known-guid-search result */
-	wkn_dn = ads_get_dn(ads, res);
+	wkn_dn = ads_get_dn(ads, NULL, res);
 	if (!wkn_dn) {
 		goto out;
 	}
@@ -1685,7 +1675,7 @@ char *ads_default_ou_string(ADS_STRUCT *ads, const char *wknguid)
  out:
 	SAFE_FREE(base);
 	ads_msgfree(ads, res);
-	ads_memfree(ads, wkn_dn);
+	TALLOC_FREE(wkn_dn);
 	if (wkn_dn_exp) {
 		ldap_value_free(wkn_dn_exp);
 	}
@@ -1741,14 +1731,14 @@ uint32 ads_get_kvno(ADS_STRUCT *ads, const char *account_name)
 		return kvno;
 	}
 
-	dn_string = ads_get_dn(ads, res);
+	dn_string = ads_get_dn(ads, NULL, res);
 	if (!dn_string) {
 		DEBUG(0,("ads_get_kvno: out of memory.\n"));
 		ads_msgfree(ads, res);
 		return kvno;
 	}
 	DEBUG(5,("ads_get_kvno: Using: %s\n", dn_string));
-	ads_memfree(ads, dn_string);
+	TALLOC_FREE(dn_string);
 
 	/* ---------------------------------------------------------
 	 * 0 is returned as a default KVNO from this point on...
@@ -1836,14 +1826,14 @@ ADS_STATUS ads_clear_service_principal_names(ADS_STRUCT *ads, const char *machin
 		talloc_destroy(ctx);
 		return ret;
 	}
-	dn_string = ads_get_dn(ads, res);
+	dn_string = ads_get_dn(ads, NULL, res);
 	if (!dn_string) {
 		talloc_destroy(ctx);
 		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 	ret = ads_gen_mod(ads, dn_string, mods);
-	ads_memfree(ads,dn_string);
+	TALLOC_FREE(dn_string);
 	if (!ADS_ERR_OK(ret)) {
 		DEBUG(1,("ads_clear_service_principal_names: Error: Updating Service Principals for machine %s in LDAP\n",
 			machine_name));
@@ -1933,13 +1923,12 @@ ADS_STATUS ads_add_service_principal_name(ADS_STRUCT *ads, const char *machine_n
 		goto out;
 	}
 	
-	if ( (dn_string = ads_get_dn(ads, res)) == NULL ) {
+	if ( (dn_string = ads_get_dn(ads, ctx, res)) == NULL ) {
 		ret = ADS_ERROR(LDAP_NO_MEMORY);
 		goto out;
 	}
 	
 	ret = ads_gen_mod(ads, dn_string, mods);
-	ads_memfree(ads,dn_string);
 	if (!ADS_ERR_OK(ret)) {
 		DEBUG(1,("ads_add_service_principal_name: Error: Updating Service Principals in LDAP\n"));
 		goto out;
@@ -2052,7 +2041,7 @@ ADS_STATUS ads_move_machine_acct(ADS_STRUCT *ads, const char *machine_name,
 		goto done;
 	}
 
-	computer_dn = ads_get_dn(ads, res);
+	computer_dn = ads_get_dn(ads, NULL, res);
 	if (!computer_dn) {
 		rc = ADS_ERROR(LDAP_NO_MEMORY);
 		goto done;
@@ -3029,7 +3018,7 @@ ADS_STATUS ads_site_dn_for_machine(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const c
 		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);
 	}
 
-	dn = ads_get_dn(ads, res);
+	dn = ads_get_dn(ads, mem_ctx, res);
 	if (dn == NULL) {
 		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_MEMORY);
@@ -3039,18 +3028,18 @@ ADS_STATUS ads_site_dn_for_machine(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const c
 	parent = ads_parent_dn(ads_parent_dn(ads_parent_dn(dn)));
 	if (parent == NULL) {
 		ads_msgfree(ads, res);
-		ads_memfree(ads, dn);
+		TALLOC_FREE(dn);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
 	*site_dn = talloc_strdup(mem_ctx, parent);
 	if (*site_dn == NULL) {
 		ads_msgfree(ads, res);
-		ads_memfree(ads, dn);
+		TALLOC_FREE(dn);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
-	ads_memfree(ads, dn);
+	TALLOC_FREE(dn);
 	ads_msgfree(ads, res);
 
 	return status;
@@ -3140,7 +3129,7 @@ ADS_STATUS ads_get_joinable_ous(ADS_STRUCT *ads,
 
 		char *dn = NULL;
 
-		dn = ads_get_dn(ads, msg);
+		dn = ads_get_dn(ads, NULL, msg);
 		if (!dn) {
 			ads_msgfree(ads, res);
 			return ADS_ERROR(LDAP_NO_MEMORY);
@@ -3149,12 +3138,12 @@ ADS_STATUS ads_get_joinable_ous(ADS_STRUCT *ads,
 		if (!add_string_to_array(mem_ctx, dn,
 					 (const char ***)ous,
 					 (int *)num_ous)) {
-			ads_memfree(ads, dn);
+			TALLOC_FREE(dn);
 			ads_msgfree(ads, res);
 			return ADS_ERROR(LDAP_NO_MEMORY);
 		}
 
-		ads_memfree(ads, dn);
+		TALLOC_FREE(dn);
 	}
 
 	ads_msgfree(ads, res);
@@ -3494,7 +3483,7 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 		return ADS_ERROR_SYSTEM(ENOENT);
 	}
 
-	hostnameDN = ads_get_dn(ads, (LDAPMessage *)msg);
+	hostnameDN = ads_get_dn(ads, NULL, (LDAPMessage *)msg);
 
 	rc = ldap_delete_ext_s(ads->ldap.ld, hostnameDN, pldap_control, NULL);
 	if (rc) {
@@ -3516,7 +3505,7 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 
 		if (!ADS_ERR_OK(status)) {
 			SAFE_FREE(host);
-			ads_memfree(ads, hostnameDN);
+			TALLOC_FREE(hostnameDN);
 			return status;
 		}
 
@@ -3525,9 +3514,9 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 
 			char *dn = NULL;
 
-			if ((dn = ads_get_dn(ads, msg_sub)) == NULL) {
+			if ((dn = ads_get_dn(ads, NULL, msg_sub)) == NULL) {
 				SAFE_FREE(host);
-				ads_memfree(ads, hostnameDN);
+				TALLOC_FREE(hostnameDN);
 				return ADS_ERROR(LDAP_NO_MEMORY);
 			}
 
@@ -3535,12 +3524,12 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 			if (!ADS_ERR_OK(status)) {
 				DEBUG(3,("failed to delete dn %s: %s\n", dn, ads_errstr(status)));
 				SAFE_FREE(host);
-				ads_memfree(ads, dn);
-				ads_memfree(ads, hostnameDN);
+				TALLOC_FREE(dn);
+				TALLOC_FREE(hostnameDN);
 				return status;
 			}
 
-			ads_memfree(ads, dn);
+			TALLOC_FREE(dn);
 		}
 
 		/* there should be no subordinate objects anymore */
@@ -3550,7 +3539,7 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 
 		if (!ADS_ERR_OK(status) || ( (ads_count_replies(ads, res)) > 0 ) ) {
 			SAFE_FREE(host);
-			ads_memfree(ads, hostnameDN);
+			TALLOC_FREE(hostnameDN);
 			return status;
 		}
 
@@ -3559,12 +3548,12 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 		if (!ADS_ERR_OK(status)) {
 			SAFE_FREE(host);
 			DEBUG(3,("failed to delete dn %s: %s\n", hostnameDN, ads_errstr(status)));
-			ads_memfree(ads, hostnameDN);
+			TALLOC_FREE(hostnameDN);
 			return status;
 		}
 	}
 
-	ads_memfree(ads, hostnameDN);
+	TALLOC_FREE(hostnameDN);
 
 	status = ads_find_machine_acct(ads, &res, host);
 	if (ADS_ERR_OK(status) && ads_count_replies(ads, res) == 1) {
@@ -3723,7 +3712,7 @@ ADS_STATUS ads_find_samaccount(ADS_STRUCT *ads,
 		goto out;
 	}
 
-	dn = ads_get_dn(ads, res);
+	dn = ads_get_dn(ads, NULL, res);
 	if (dn == NULL) {
 		status = ADS_ERROR(LDAP_NO_MEMORY);
 		goto out;
@@ -3746,7 +3735,7 @@ ADS_STATUS ads_find_samaccount(ADS_STRUCT *ads,
 		}
 	}
  out:
-	ads_memfree(ads, dn);
+	TALLOC_FREE(dn);
 	ads_msgfree(ads, res);
 
 	return status;

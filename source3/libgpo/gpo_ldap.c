@@ -415,7 +415,7 @@ ADS_STATUS ads_delete_gpo_link(ADS_STRUCT *ads,
 	if (gpo_dn) {
 		gpo->ds_path = talloc_strdup(mem_ctx, gpo_dn);
 	} else {
-		gpo->ds_path = ads_get_dn(ads, res);
+		gpo->ds_path = ads_get_dn(ads, mem_ctx, res);
 	}
 
 	ADS_ERROR_HAVE_NO_MEMORY(gpo->ds_path);
@@ -523,7 +523,7 @@ ADS_STATUS ads_get_gpo(ADS_STRUCT *ads,
 		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);
 	}
 
-	dn = ads_get_dn(ads, res);
+	dn = ads_get_dn(ads, mem_ctx, res);
 	if (dn == NULL) {
 		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_MEMORY);
@@ -531,7 +531,7 @@ ADS_STATUS ads_get_gpo(ADS_STRUCT *ads,
 
 	status = ads_parse_gpo(ads, mem_ctx, res, dn, gpo);
 	ads_msgfree(ads, res);
-	ads_memfree(ads, dn);
+	TALLOC_FREE(dn);
 
 	return status;
 }
