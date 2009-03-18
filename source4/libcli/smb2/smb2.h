@@ -230,6 +230,7 @@ struct smb2_request {
 /* the dialects we support */
 #define SMB2_DIALECT_REVISION           0x202
 #define SMB21_DIALECT_REVISION          0x210
+#define SMB2_LONGHORN_BETA_DIALECT_REVISION	0x0 /* early beta dialect */
 
 /* SMB2 negotiate security_mode */
 #define SMB2_NEGOTIATE_SIGNING_ENABLED   0x01
