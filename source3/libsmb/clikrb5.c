@@ -56,12 +56,12 @@ static krb5_error_code ads_krb5_get_fwd_ticket( krb5_context context,
 	char *utf8_name;
 	size_t converted_size;
 
-	if (!push_utf8_allocate(&utf8_name, name, &converted_size)) {
+	if (!push_utf8_talloc(talloc_tos(), &utf8_name, name, &converted_size)) {
 		return ENOMEM;
 	}
 
 	ret = krb5_parse_name(context, utf8_name, principal);
-	SAFE_FREE(utf8_name);
+	TALLOC_FREE(utf8_name);
 	return ret;
 }
 
@@ -79,24 +79,25 @@ static krb5_error_code smb_krb5_parse_name_norealm_conv(krb5_context context,
 	size_t converted_size;
 
 	*principal = NULL;
-	if (!push_utf8_allocate(&utf8_name, name, &converted_size)) {
+	if (!push_utf8_talloc(talloc_tos(), &utf8_name, name, &converted_size)) {
 		return ENOMEM;
 	}
 
 	ret = krb5_parse_name_norealm(context, utf8_name, principal);
-	SAFE_FREE(utf8_name);
+	TALLOC_FREE(utf8_name);
 	return ret;
 }
 #endif
 
 /**************************************************************
  krb5_parse_name that returns a UNIX charset name. Must
- be freed with normal free() call.
+ be freed with talloc_free() call.
 **************************************************************/
 
- krb5_error_code smb_krb5_unparse_name(krb5_context context,
-					krb5_const_principal principal,
-					char **unix_name)
+krb5_error_code smb_krb5_unparse_name(TALLOC_CTX *mem_ctx,
+				      krb5_context context,
+				      krb5_const_principal principal,
+				      char **unix_name)
 {
 	krb5_error_code ret;
 	char *utf8_name;
@@ -108,7 +109,7 @@ static krb5_error_code smb_krb5_parse_name_norealm_conv(krb5_context context,
 		return ret;
 	}
 
-	if (!pull_utf8_allocate(unix_name, utf8_name, &converted_size)) {
+	if (!pull_utf8_talloc(mem_ctx, unix_name, utf8_name, &converted_size)) {
 		krb5_free_unparsed_name(context, utf8_name);
 		return ENOMEM;
 	}
@@ -1081,10 +1082,10 @@ get_key_from_keytab(krb5_context context,
 	}
 
 	if ( DEBUGLEVEL >= 10 ) {
-		if (smb_krb5_unparse_name(context, server, &name) == 0) {
+		if (smb_krb5_unparse_name(talloc_tos(), context, server, &name) == 0) {
 			DEBUG(10,("get_key_from_keytab: will look for kvno %d, enctype %d and name: %s\n", 
 				kvno, enctype, name));
-			SAFE_FREE(name);
+			TALLOC_FREE(name);
 		}
 	}
 

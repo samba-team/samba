@@ -192,7 +192,7 @@ static bool ads_keytab_verify_ticket(krb5_context context,
 	}
   
 	while (!auth_ok && (krb5_kt_next_entry(context, keytab, &kt_entry, &kt_cursor) == 0)) {
-		ret = smb_krb5_unparse_name(context, kt_entry.principal, &entry_princ_s);
+		ret = smb_krb5_unparse_name(talloc_tos(), context, kt_entry.principal, &entry_princ_s);
 		if (ret) {
 			DEBUG(1, ("ads_keytab_verify_ticket: smb_krb5_unparse_name failed (%s)\n",
 				error_message(ret)));
@@ -242,7 +242,7 @@ static bool ads_keytab_verify_ticket(krb5_context context,
 		}
 
 		/* Free the name we parsed. */
-		SAFE_FREE(entry_princ_s);
+		TALLOC_FREE(entry_princ_s);
 
 		/* Free the entry we just read. */
 		smb_krb5_kt_free_entry(context, &kt_entry);
@@ -636,7 +636,7 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 #endif
 #endif
 
-	if ((ret = smb_krb5_unparse_name(context, client_principal, principal))) {
+	if ((ret = smb_krb5_unparse_name(mem_ctx, context, client_principal, principal))) {
 		DEBUG(3,("ads_verify_ticket: smb_krb5_unparse_name failed (%s)\n", 
 			 error_message(ret)));
 		sret = NT_STATUS_LOGON_FAILURE;

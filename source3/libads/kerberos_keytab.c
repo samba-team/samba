@@ -64,7 +64,7 @@ int smb_krb5_kt_add_entry_ext(krb5_context context,
 		while(!krb5_kt_next_entry(context, keytab, &kt_entry, &cursor)) {
 			bool compare_name_ok = False;
 
-			ret = smb_krb5_unparse_name(context, kt_entry.principal, &ktprinc);
+			ret = smb_krb5_unparse_name(talloc_tos(), context, kt_entry.principal, &ktprinc);
 			if (ret) {
 				DEBUG(1,("smb_krb5_kt_add_entry_ext: smb_krb5_unparse_name failed (%s)\n",
 					error_message(ret)));
@@ -91,7 +91,7 @@ int smb_krb5_kt_add_entry_ext(krb5_context context,
 					ktprinc, kt_entry.vno));
 			}
 
-			SAFE_FREE(ktprinc);
+			TALLOC_FREE(ktprinc);
 
 			if (compare_name_ok) {
 				if (kt_entry.vno == kvno - 1) {
@@ -549,13 +549,12 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 		}
 	}
 
-	TALLOC_FREE( ctx );
-
 	/* Now loop through the keytab and update any other existing entries... */
 	
 	kvno = (krb5_kvno) ads_get_machine_kvno(ads, machine_name);
 	if (kvno == -1) {
 		DEBUG(1,("ads_keytab_create_default: ads_get_machine_kvno failed to determine the system's kvno.\n"));
+		TALLOC_FREE(ctx);
 		return -1;
 	}
 	
@@ -569,6 +568,7 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 	ret = krb5_init_context(&context);
 	if (ret) {
 		DEBUG(1,("ads_keytab_create_default: could not krb5_init_context: %s\n",error_message(ret)));
+		TALLOC_FREE(ctx);
 		return ret;
 	}
 
@@ -599,7 +599,7 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 	if (!found) {
 		goto done;
 	}
-	oldEntries = SMB_MALLOC_ARRAY(char *, found );
+	oldEntries = talloc_array(ctx, char *, found );
 	if (!oldEntries) {
 		DEBUG(1,("ads_keytab_create_default: Failed to allocate space to store the old keytab entries (malloc failed?).\n"));
 		ret = -1;
@@ -615,7 +615,7 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 				char *p;
 
 				/* This returns a malloc'ed string in ktprinc. */
-				ret = smb_krb5_unparse_name(context, kt_entry.principal, &ktprinc);
+				ret = smb_krb5_unparse_name(oldEntries, context, kt_entry.principal, &ktprinc);
 				if (ret) {
 					DEBUG(1,("smb_krb5_unparse_name failed (%s)\n", error_message(ret)));
 					goto done;
@@ -640,12 +640,12 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 						break;
 					}
 					if (!strcmp(oldEntries[i], ktprinc)) {
-						SAFE_FREE(ktprinc);
+						TALLOC_FREE(ktprinc);
 						break;
 					}
 				}
 				if (i == found) {
-					SAFE_FREE(ktprinc);
+					TALLOC_FREE(ktprinc);
 				}
 			}
 			smb_krb5_kt_free_entry(context, &kt_entry);
@@ -654,7 +654,7 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 		ret = 0;
 		for (i = 0; oldEntries[i]; i++) {
 			ret |= ads_keytab_add_entry(ads, oldEntries[i]);
-			SAFE_FREE(oldEntries[i]);
+			TALLOC_FREE(oldEntries[i]);
 		}
 		krb5_kt_end_seq_get(context, keytab, &cursor);
 	}
@@ -662,7 +662,8 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 
 done:
 
-	SAFE_FREE(oldEntries);
+	TALLOC_FREE(oldEntries);
+	TALLOC_FREE(ctx);
 
 	{
 		krb5_keytab_entry zero_kt_entry;
@@ -728,7 +729,7 @@ int ads_keytab_list(const char *keytab_name)
 		char *etype_s = NULL;
 		krb5_enctype enctype = 0;
 
-		ret = smb_krb5_unparse_name(context, kt_entry.principal, &princ_s);
+		ret = smb_krb5_unparse_name(talloc_tos(), context, kt_entry.principal, &princ_s);
 		if (ret) {
 			goto out;
 		}
@@ -739,14 +740,14 @@ int ads_keytab_list(const char *keytab_name)
 		if (ret) {
 			if (asprintf(&etype_s, "UNKNOWN: %d\n", enctype) == -1)
 			{
-				SAFE_FREE(princ_s);
+				TALLOC_FREE(princ_s);
 				goto out;
 			}
 		}
 
 		printf("%3d  %s\t\t %s\n", kt_entry.vno, etype_s, princ_s);
 
-		SAFE_FREE(princ_s);
+		TALLOC_FREE(princ_s);
 		SAFE_FREE(etype_s);
 
 		ret = smb_krb5_kt_free_entry(context, &kt_entry);
