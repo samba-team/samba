@@ -236,7 +236,7 @@ show_all "smbclient -U% -L 127.0.0.1"
 WORKGROUP=`testparm -s --parameter-name=WORKGROUP 2> /dev/null`
 show_all id "$WORKGROUP/Administrator"
 show_all "wbinfo -p"
-show_all "wbinfo --sequence"
+show_all "wbinfo --online-status"
 show_all "smbd -b"
 
 date
