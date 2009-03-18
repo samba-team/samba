@@ -2900,6 +2900,35 @@ struct spoolss_GetPrinterDataEx {
 };
 
 
+struct _spoolss_EnumPrinterDataEx {
+	struct {
+		struct policy_handle *handle;/* [ref] */
+		const char *key_name;/* [charset(UTF16)] */
+		uint32_t offered;
+	} in;
+
+	struct {
+		DATA_BLOB info;
+		uint32_t *needed;/* [ref] */
+		uint32_t *count;/* [ref] */
+		WERROR result;
+	} out;
+
+};
+
+
+struct __spoolss_EnumPrinterDataEx {
+	struct {
+		uint32_t count;
+	} in;
+
+	struct {
+		struct spoolss_PrinterEnumValues *info;
+	} out;
+
+};
+
+
 struct spoolss_EnumPrinterDataEx {
 	struct {
 		struct policy_handle *handle;/* [ref] */
@@ -2908,9 +2937,9 @@ struct spoolss_EnumPrinterDataEx {
 	} in;
 
 	struct {
-		uint8_t *buffer;/* [ref,size_is(offered)] */
-		uint32_t *needed;/* [ref] */
 		uint32_t *count;/* [ref] */
+		struct spoolss_PrinterEnumValues **info;/* [ref,size_is(,*count)] */
+		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
 

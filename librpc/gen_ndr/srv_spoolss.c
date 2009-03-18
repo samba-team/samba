@@ -6204,20 +6204,20 @@ static bool api_spoolss_EnumPrinterDataEx(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.buffer = talloc_zero_array(r, uint8_t, r->in.offered);
-	if (r->out.buffer == NULL) {
+	r->out.count = talloc_zero(r, uint32_t);
+	if (r->out.count == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	r->out.info = talloc_zero(r, struct spoolss_PrinterEnumValues *);
+	if (r->out.info == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
 	r->out.needed = talloc_zero(r, uint32_t);
 	if (r->out.needed == NULL) {
-		talloc_free(r);
-		return false;
-	}
-
-	r->out.count = talloc_zero(r, uint32_t);
-	if (r->out.count == NULL) {
 		talloc_free(r);
 		return false;
 	}
@@ -8377,18 +8377,18 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 		case NDR_SPOOLSS_ENUMPRINTERDATAEX: {
 			struct spoolss_EnumPrinterDataEx *r = (struct spoolss_EnumPrinterDataEx *)_r;
 			ZERO_STRUCT(r->out);
-			r->out.buffer = talloc_zero_array(mem_ctx, uint8_t, r->in.offered);
-			if (r->out.buffer == NULL) {
+			r->out.count = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.count == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.info = talloc_zero(mem_ctx, struct spoolss_PrinterEnumValues *);
+			if (r->out.info == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.needed = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.needed == NULL) {
-			return NT_STATUS_NO_MEMORY;
-			}
-
-			r->out.count = talloc_zero(mem_ctx, uint32_t);
-			if (r->out.count == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 

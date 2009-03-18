@@ -3758,10 +3758,10 @@ NTSTATUS rpccli_spoolss_EnumPrinterDataEx(struct rpc_pipe_client *cli,
 					  TALLOC_CTX *mem_ctx,
 					  struct policy_handle *handle /* [in] [ref] */,
 					  const char *key_name /* [in] [charset(UTF16)] */,
-					  uint8_t *buffer /* [out] [ref,size_is(offered)] */,
 					  uint32_t offered /* [in]  */,
-					  uint32_t *needed /* [out] [ref] */,
 					  uint32_t *count /* [out] [ref] */,
+					  struct spoolss_PrinterEnumValues **info /* [out] [ref,size_is(,*count)] */,
+					  uint32_t *needed /* [out] [ref] */,
 					  WERROR *werror)
 {
 	struct spoolss_EnumPrinterDataEx r;
@@ -3795,9 +3795,9 @@ NTSTATUS rpccli_spoolss_EnumPrinterDataEx(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(buffer, r.out.buffer, r.in.offered * sizeof(*buffer));
-	*needed = *r.out.needed;
 	*count = *r.out.count;
+	*info = *r.out.info;
+	*needed = *r.out.needed;
 
 	/* Return result */
 	if (werror) {
