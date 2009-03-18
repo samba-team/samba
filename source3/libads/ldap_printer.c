@@ -311,7 +311,8 @@ WERROR get_remote_printer_publishing_data(struct rpc_pipe_client *cli,
 {
 	WERROR result;
 	char *printername;
-	REGVAL_CTR *dsdriver_ctr, *dsspooler_ctr;
+	struct spoolss_PrinterEnumValues *info;
+	uint32_t count;
 	uint32 i;
 	POLICY_HND pol;
 
@@ -330,48 +331,64 @@ WERROR get_remote_printer_publishing_data(struct rpc_pipe_client *cli,
 		SAFE_FREE(printername);
 		return result;
 	}
-	
-	if ( !(dsdriver_ctr = TALLOC_ZERO_P( mem_ctx, REGVAL_CTR )) )  {
-		SAFE_FREE(printername);
-		return WERR_NOMEM;
-	}
 
-	result = rpccli_spoolss_enumprinterdataex(cli, mem_ctx, &pol, SPOOL_DSDRIVER_KEY, dsdriver_ctr);
+	result = rpccli_spoolss_enumprinterdataex(cli, mem_ctx, &pol,
+						  SPOOL_DSDRIVER_KEY,
+						  0,
+						  &count,
+						  &info);
 
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(3, ("Unable to do enumdataex on %s, error is %s.\n",
 			  printername, win_errstr(result)));
 	} else {
-		uint32 num_values = regval_ctr_numvals( dsdriver_ctr );
-
 		/* Have the data we need now, so start building */
-		for (i=0; i < num_values; i++) {
-			map_regval_to_ads(mem_ctx, mods, dsdriver_ctr->values[i]);
+		for (i=0; i < count; i++) {
+			REGISTRY_VALUE v;
+			DATA_BLOB blob;
+
+			result = push_spoolss_PrinterData(mem_ctx, &blob,
+							  info[i].type,
+							  info[i].data);
+			if (W_ERROR_IS_OK(result)) {
+				fstrcpy(v.valuename, info[i].value_name);
+				v.type = info[i].type;
+				v.data_p = blob.data;
+				v.size = blob.length;
+
+				map_regval_to_ads(mem_ctx, mods, &v);
+			}
 		}
 	}
-	
-	if ( !(dsspooler_ctr = TALLOC_ZERO_P( mem_ctx, REGVAL_CTR )) ) {
-		SAFE_FREE(printername);
-		return WERR_NOMEM;
-	}
 
-	result = rpccli_spoolss_enumprinterdataex(cli, mem_ctx, &pol, SPOOL_DSSPOOLER_KEY, dsspooler_ctr);
-
+	result = rpccli_spoolss_enumprinterdataex(cli, mem_ctx, &pol,
+						  SPOOL_DSSPOOLER_KEY,
+						  0,
+						  &count,
+						  &info);
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(3, ("Unable to do enumdataex on %s, error is %s.\n",
 			  printername, win_errstr(result)));
 	} else {
-		uint32 num_values = regval_ctr_numvals( dsspooler_ctr );
+		for (i=0; i < count; i++) {
+			REGISTRY_VALUE v;
+			DATA_BLOB blob;
 
-		for (i=0; i<num_values; i++) {
-			map_regval_to_ads(mem_ctx, mods, dsspooler_ctr->values[i]);
+			result = push_spoolss_PrinterData(mem_ctx, &blob,
+							  info[i].type,
+							  info[i].data);
+			if (W_ERROR_IS_OK(result)) {
+				fstrcpy(v.valuename, info[i].value_name);
+				v.type = info[i].type;
+				v.data_p = blob.data;
+				v.size = blob.length;
+
+				map_regval_to_ads(mem_ctx, mods, &v);
+			}
 		}
 	}
-	
-	ads_mod_str(mem_ctx, mods, SPOOL_REG_PRINTERNAME, printer);
 
-	TALLOC_FREE( dsdriver_ctr );
-	TALLOC_FREE( dsspooler_ctr );
+	ads_mod_str(mem_ctx, mods, SPOOL_REG_PRINTERNAME, printer);
 
 	rpccli_spoolss_ClosePrinter(cli, mem_ctx, &pol, NULL);
 	SAFE_FREE(printername);
