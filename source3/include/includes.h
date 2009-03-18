@@ -622,7 +622,6 @@ struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 #include "ntdomain.h"
 #include "reg_objects.h"
 #include "reg_db.h"
-#include "rpc_spoolss.h"
 #include "rpc_perfcount.h"
 #include "rpc_perfcount_defs.h"
 #include "librpc/gen_ndr/notify.h"
