@@ -575,7 +575,7 @@ PASSDB_OBJ = $(PASSDB_GET_SET_OBJ) passdb/passdb.o passdb/pdb_interface.o \
 		passdb/util_unixsids.o passdb/lookup_sid.o \
 		passdb/login_cache.o @PDB_STATIC@ \
 		lib/account_pol.o $(PRIVILEGES_OBJ) \
-		lib/util_nscd.o lib/winbind_util.o
+		lib/util_nscd.o lib/winbind_util.o $(SERVER_MUTEX_OBJ)
 
 DEVEL_HELP_WEIRD_OBJ = modules/weird.o
 CP850_OBJ = modules/CP850.o
@@ -670,7 +670,7 @@ SMBD_OBJ_SRV = smbd/files.o smbd/chgpasswd.o smbd/connection.o \
 	       smbd/dosmode.o smbd/filename.o smbd/open.o smbd/close.o \
 	       smbd/blocking.o smbd/sec_ctx.o smbd/srvstr.o \
 	       smbd/vfs.o smbd/statcache.o smbd/seal.o \
-               smbd/posix_acls.o lib/sysacls.o $(SERVER_MUTEX_OBJ) \
+               smbd/posix_acls.o lib/sysacls.o \
 	       smbd/process.o smbd/service.o smbd/error.o \
 	       printing/printfsp.o lib/sysquotas.o lib/sysquotas_linux.o \
 	       lib/sysquotas_xfs.o lib/sysquotas_4A.o \
@@ -881,7 +881,7 @@ NET_OBJ = $(NET_OBJ1) \
 	  $(KRBCLIENT_OBJ) $(LIB_NONSMBD_OBJ) $(LIBADDNS_OBJ0) \
 	  $(LIBMSRPC_OBJ) $(LIBMSRPC_GEN_OBJ) \
 	  $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ) $(POPT_LIB_OBJ) \
-	  $(SMBLDAP_OBJ) $(DCUTIL_OBJ) $(SERVER_MUTEX_OBJ) \
+	  $(SMBLDAP_OBJ) $(DCUTIL_OBJ) \
 	  $(AFS_OBJ) $(AFS_SETTOKEN_OBJ) $(READLINE_OBJ) \
 	  $(LDB_OBJ) $(LIBGPO_OBJ) @BUILD_INIPARSER@ $(DISPLAY_SEC_OBJ) \
 	  $(REG_SMBCONF_OBJ) @LIBNETAPI_STATIC@ $(LIBNET_OBJ) \
@@ -1043,7 +1043,7 @@ WINBINDD_OBJ = \
 		$(LIBADS_OBJ) $(KRBCLIENT_OBJ) $(POPT_LIB_OBJ) \
 		$(DCUTIL_OBJ) $(IDMAP_OBJ) $(NSS_INFO_OBJ) \
 		$(AFS_OBJ) $(AFS_SETTOKEN_OBJ) \
-		$(LIBADS_SERVER_OBJ) $(SERVER_MUTEX_OBJ) $(LDB_OBJ) 
+		$(LIBADS_SERVER_OBJ) $(LDB_OBJ) 
 
 WBINFO_OBJ = nsswitch/wbinfo.o $(LIBSAMBA_OBJ) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 		$(POPT_LIB_OBJ) $(AFS_SETTOKEN_OBJ) \
@@ -1109,7 +1109,7 @@ NTLM_AUTH_OBJ1 = utils/ntlm_auth.o utils/ntlm_auth_diagnostics.o
 
 NTLM_AUTH_OBJ = ${NTLM_AUTH_OBJ1} $(LIBSAMBA_OBJ) $(POPT_LIB_OBJ) \
 		libsmb/asn1.o libsmb/spnego.o libsmb/clikrb5.o libads/kerberos.o \
-		$(SERVER_MUTEX_OBJ) $(LIBADS_SERVER_OBJ) \
+		$(LIBADS_SERVER_OBJ) \
 		$(PASSDB_OBJ) $(GROUPDB_OBJ) \
 		$(SMBLDAP_OBJ) $(LIBNMB_OBJ) \
 		$(LDB_OBJ) $(WBCOMMON_OBJ) @LIBWBCLIENT_STATIC@ \
