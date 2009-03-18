@@ -16964,13 +16964,13 @@ _PUBLIC_ void ndr_print_spoolss_PrinterChangeFlags(struct ndr_print *ndr, const 
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_spoolss_Field(struct ndr_push *ndr, int ndr_flags, enum spoolss_Field r)
+_PUBLIC_ enum ndr_err_code ndr_push_spoolss_JobNotifyField(struct ndr_push *ndr, int ndr_flags, enum spoolss_JobNotifyField r)
 {
 	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_spoolss_Field(struct ndr_pull *ndr, int ndr_flags, enum spoolss_Field *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_JobNotifyField(struct ndr_pull *ndr, int ndr_flags, enum spoolss_JobNotifyField *r)
 {
 	uint16_t v;
 	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
@@ -16978,37 +16978,86 @@ static enum ndr_err_code ndr_pull_spoolss_Field(struct ndr_pull *ndr, int ndr_fl
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ void ndr_print_spoolss_Field(struct ndr_print *ndr, const char *name, enum spoolss_Field r)
+_PUBLIC_ void ndr_print_spoolss_JobNotifyField(struct ndr_print *ndr, const char *name, enum spoolss_JobNotifyField r)
 {
 	const char *val = NULL;
 
 	switch (r) {
-		case SPOOLSS_FIELD_SERVER_NAME: val = "SPOOLSS_FIELD_SERVER_NAME"; break;
-		case SPOOLSS_FIELD_PRINTER_NAME: val = "SPOOLSS_FIELD_PRINTER_NAME"; break;
-		case SPOOLSS_FIELD_SHARE_NAME: val = "SPOOLSS_FIELD_SHARE_NAME"; break;
-		case SPOOLSS_FIELD_PORT_NAME: val = "SPOOLSS_FIELD_PORT_NAME"; break;
-		case SPOOLSS_FIELD_DRIVER_NAME: val = "SPOOLSS_FIELD_DRIVER_NAME"; break;
-		case SPOOLSS_FIELD_COMMENT: val = "SPOOLSS_FIELD_COMMENT"; break;
-		case SPOOLSS_FIELD_LOCATION: val = "SPOOLSS_FIELD_LOCATION"; break;
-		case SPOOLSS_FIELD_DEVMODE: val = "SPOOLSS_FIELD_DEVMODE"; break;
-		case SPOOLSS_FIELD_SEPFILE: val = "SPOOLSS_FIELD_SEPFILE"; break;
-		case SPOOLSS_FIELD_PRINT_PROCESSOR: val = "SPOOLSS_FIELD_PRINT_PROCESSOR"; break;
-		case SPOOLSS_FIELD_PARAMETERS: val = "SPOOLSS_FIELD_PARAMETERS"; break;
-		case SPOOLSS_FIELD_DATATYPE: val = "SPOOLSS_FIELD_DATATYPE"; break;
-		case SPOOLSS_FIELD_SECURITY_DESCRIPTOR: val = "SPOOLSS_FIELD_SECURITY_DESCRIPTOR"; break;
-		case SPOOLSS_FIELD_ATTRIBUTES: val = "SPOOLSS_FIELD_ATTRIBUTES"; break;
-		case SPOOLSS_FIELD_PRIORITY: val = "SPOOLSS_FIELD_PRIORITY"; break;
-		case SPOOLSS_FIELD_DEFAULT_PRIORITY: val = "SPOOLSS_FIELD_DEFAULT_PRIORITY"; break;
-		case SPOOLSS_FIELD_START_TIME: val = "SPOOLSS_FIELD_START_TIME"; break;
-		case SPOOLSS_FIELD_UNTIL_TIME: val = "SPOOLSS_FIELD_UNTIL_TIME"; break;
-		case SPOOLSS_FIELD_STATUS: val = "SPOOLSS_FIELD_STATUS"; break;
-		case SPOOLSS_FIELD_STATUS_STRING: val = "SPOOLSS_FIELD_STATUS_STRING"; break;
-		case SPOOLSS_FIELD_CJOBS: val = "SPOOLSS_FIELD_CJOBS"; break;
-		case SPOOLSS_FIELD_AVERAGE_PPM: val = "SPOOLSS_FIELD_AVERAGE_PPM"; break;
-		case SPOOLSS_FIELD_TOTAL_PAGES: val = "SPOOLSS_FIELD_TOTAL_PAGES"; break;
-		case SPOOLSS_FIELD_PAGES_PRINTED: val = "SPOOLSS_FIELD_PAGES_PRINTED"; break;
-		case SPOOLSS_FIELD_TOTAL_BYTES: val = "SPOOLSS_FIELD_TOTAL_BYTES"; break;
-		case SPOOLSS_FIELD_BYTES_PRINTED: val = "SPOOLSS_FIELD_BYTES_PRINTED"; break;
+		case JOB_NOTIFY_FIELD_PRINTER_NAME: val = "JOB_NOTIFY_FIELD_PRINTER_NAME"; break;
+		case JOB_NOTIFY_FIELD_MACHINE_NAME: val = "JOB_NOTIFY_FIELD_MACHINE_NAME"; break;
+		case JOB_NOTIFY_FIELD_PORT_NAME: val = "JOB_NOTIFY_FIELD_PORT_NAME"; break;
+		case JOB_NOTIFY_FIELD_USER_NAME: val = "JOB_NOTIFY_FIELD_USER_NAME"; break;
+		case JOB_NOTIFY_FIELD_NOTIFY_NAME: val = "JOB_NOTIFY_FIELD_NOTIFY_NAME"; break;
+		case JOB_NOTIFY_FIELD_DATATYPE: val = "JOB_NOTIFY_FIELD_DATATYPE"; break;
+		case JOB_NOTIFY_FIELD_PRINT_PROCESSOR: val = "JOB_NOTIFY_FIELD_PRINT_PROCESSOR"; break;
+		case JOB_NOTIFY_FIELD_PARAMETERS: val = "JOB_NOTIFY_FIELD_PARAMETERS"; break;
+		case JOB_NOTIFY_FIELD_DRIVER_NAME: val = "JOB_NOTIFY_FIELD_DRIVER_NAME"; break;
+		case JOB_NOTIFY_FIELD_DEVMODE: val = "JOB_NOTIFY_FIELD_DEVMODE"; break;
+		case JOB_NOTIFY_FIELD_STATUS: val = "JOB_NOTIFY_FIELD_STATUS"; break;
+		case JOB_NOTIFY_FIELD_STATUS_STRING: val = "JOB_NOTIFY_FIELD_STATUS_STRING"; break;
+		case JOB_NOTIFY_FIELD_SECURITY_DESCRIPTOR: val = "JOB_NOTIFY_FIELD_SECURITY_DESCRIPTOR"; break;
+		case JOB_NOTIFY_FIELD_DOCUMENT: val = "JOB_NOTIFY_FIELD_DOCUMENT"; break;
+		case JOB_NOTIFY_FIELD_PRIORITY: val = "JOB_NOTIFY_FIELD_PRIORITY"; break;
+		case JOB_NOTIFY_FIELD_POSITION: val = "JOB_NOTIFY_FIELD_POSITION"; break;
+		case JOB_NOTIFY_FIELD_SUBMITTED: val = "JOB_NOTIFY_FIELD_SUBMITTED"; break;
+		case JOB_NOTIFY_FIELD_START_TIME: val = "JOB_NOTIFY_FIELD_START_TIME"; break;
+		case JOB_NOTIFY_FIELD_UNTIL_TIME: val = "JOB_NOTIFY_FIELD_UNTIL_TIME"; break;
+		case JOB_NOTIFY_FIELD_TIME: val = "JOB_NOTIFY_FIELD_TIME"; break;
+		case JOB_NOTIFY_FIELD_TOTAL_PAGES: val = "JOB_NOTIFY_FIELD_TOTAL_PAGES"; break;
+		case JOB_NOTIFY_FIELD_PAGES_PRINTED: val = "JOB_NOTIFY_FIELD_PAGES_PRINTED"; break;
+		case JOB_NOTIFY_FIELD_TOTAL_BYTES: val = "JOB_NOTIFY_FIELD_TOTAL_BYTES"; break;
+		case JOB_NOTIFY_FIELD_BYTES_PRINTED: val = "JOB_NOTIFY_FIELD_BYTES_PRINTED"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrintNotifyField(struct ndr_push *ndr, int ndr_flags, enum spoolss_PrintNotifyField r)
+{
+	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrintNotifyField(struct ndr_pull *ndr, int ndr_flags, enum spoolss_PrintNotifyField *r)
+{
+	uint16_t v;
+	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_PrintNotifyField(struct ndr_print *ndr, const char *name, enum spoolss_PrintNotifyField r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case PRINTER_NOTIFY_FIELD_SERVER_NAME: val = "PRINTER_NOTIFY_FIELD_SERVER_NAME"; break;
+		case PRINTER_NOTIFY_FIELD_PRINTER_NAME: val = "PRINTER_NOTIFY_FIELD_PRINTER_NAME"; break;
+		case PRINTER_NOTIFY_FIELD_SHARE_NAME: val = "PRINTER_NOTIFY_FIELD_SHARE_NAME"; break;
+		case PRINTER_NOTIFY_FIELD_PORT_NAME: val = "PRINTER_NOTIFY_FIELD_PORT_NAME"; break;
+		case PRINTER_NOTIFY_FIELD_DRIVER_NAME: val = "PRINTER_NOTIFY_FIELD_DRIVER_NAME"; break;
+		case PRINTER_NOTIFY_FIELD_COMMENT: val = "PRINTER_NOTIFY_FIELD_COMMENT"; break;
+		case PRINTER_NOTIFY_FIELD_LOCATION: val = "PRINTER_NOTIFY_FIELD_LOCATION"; break;
+		case PRINTER_NOTIFY_FIELD_DEVMODE: val = "PRINTER_NOTIFY_FIELD_DEVMODE"; break;
+		case PRINTER_NOTIFY_FIELD_SEPFILE: val = "PRINTER_NOTIFY_FIELD_SEPFILE"; break;
+		case PRINTER_NOTIFY_FIELD_PRINT_PROCESSOR: val = "PRINTER_NOTIFY_FIELD_PRINT_PROCESSOR"; break;
+		case PRINTER_NOTIFY_FIELD_PARAMETERS: val = "PRINTER_NOTIFY_FIELD_PARAMETERS"; break;
+		case PRINTER_NOTIFY_FIELD_DATATYPE: val = "PRINTER_NOTIFY_FIELD_DATATYPE"; break;
+		case PRINTER_NOTIFY_FIELD_SECURITY_DESCRIPTOR: val = "PRINTER_NOTIFY_FIELD_SECURITY_DESCRIPTOR"; break;
+		case PRINTER_NOTIFY_FIELD_ATTRIBUTES: val = "PRINTER_NOTIFY_FIELD_ATTRIBUTES"; break;
+		case PRINTER_NOTIFY_FIELD_PRIORITY: val = "PRINTER_NOTIFY_FIELD_PRIORITY"; break;
+		case PRINTER_NOTIFY_FIELD_DEFAULT_PRIORITY: val = "PRINTER_NOTIFY_FIELD_DEFAULT_PRIORITY"; break;
+		case PRINTER_NOTIFY_FIELD_START_TIME: val = "PRINTER_NOTIFY_FIELD_START_TIME"; break;
+		case PRINTER_NOTIFY_FIELD_UNTIL_TIME: val = "PRINTER_NOTIFY_FIELD_UNTIL_TIME"; break;
+		case PRINTER_NOTIFY_FIELD_STATUS: val = "PRINTER_NOTIFY_FIELD_STATUS"; break;
+		case PRINTER_NOTIFY_FIELD_STATUS_STRING: val = "PRINTER_NOTIFY_FIELD_STATUS_STRING"; break;
+		case PRINTER_NOTIFY_FIELD_CJOBS: val = "PRINTER_NOTIFY_FIELD_CJOBS"; break;
+		case PRINTER_NOTIFY_FIELD_AVERAGE_PPM: val = "PRINTER_NOTIFY_FIELD_AVERAGE_PPM"; break;
+		case PRINTER_NOTIFY_FIELD_TOTAL_PAGES: val = "PRINTER_NOTIFY_FIELD_TOTAL_PAGES"; break;
+		case PRINTER_NOTIFY_FIELD_PAGES_PRINTED: val = "PRINTER_NOTIFY_FIELD_PAGES_PRINTED"; break;
+		case PRINTER_NOTIFY_FIELD_TOTAL_BYTES: val = "PRINTER_NOTIFY_FIELD_TOTAL_BYTES"; break;
+		case PRINTER_NOTIFY_FIELD_BYTES_PRINTED: val = "PRINTER_NOTIFY_FIELD_BYTES_PRINTED"; break;
+		case PRINTER_NOTIFY_FIELD_OBJECT_GUID: val = "PRINTER_NOTIFY_FIELD_OBJECT_GUID"; break;
+		case PRINTER_NOTIFY_FIELD_FRIENDLY_NAME: val = "PRINTER_NOTIFY_FIELD_FRIENDLY_NAME"; break;
 	}
 	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
@@ -17038,6 +17087,78 @@ _PUBLIC_ void ndr_print_spoolss_NotifyType(struct ndr_print *ndr, const char *na
 	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
 
+static enum ndr_err_code ndr_push_spoolss_Field(struct ndr_push *ndr, int ndr_flags, const union spoolss_Field *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
+		switch (level) {
+			case PRINTER_NOTIFY_TYPE: {
+				NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->field));
+			break; }
+
+			case JOB_NOTIFY_TYPE: {
+				NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->field));
+			break; }
+
+			default: {
+				NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->field));
+			break; }
+
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
+		switch (level) {
+			case PRINTER_NOTIFY_TYPE:
+			break;
+
+			case JOB_NOTIFY_TYPE:
+			break;
+
+			default:
+			break;
+
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_Field(struct ndr_pull *ndr, int ndr_flags, union spoolss_Field *r)
+{
+	int level;
+	level = ndr_pull_get_switch_value(ndr, r);
+	if (ndr_flags & NDR_SCALARS) {
+		switch (level) {
+			case PRINTER_NOTIFY_TYPE: {
+				NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->field));
+			break; }
+
+			case JOB_NOTIFY_TYPE: {
+				NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->field));
+			break; }
+
+			default: {
+				NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->field));
+			break; }
+
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		switch (level) {
+			case PRINTER_NOTIFY_TYPE:
+			break;
+
+			case JOB_NOTIFY_TYPE:
+			break;
+
+			default:
+			break;
+
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
 static enum ndr_err_code ndr_push_spoolss_NotifyOptionType(struct ndr_push *ndr, int ndr_flags, const struct spoolss_NotifyOptionType *r)
 {
 	uint32_t cntr_fields_1;
@@ -17054,7 +17175,8 @@ static enum ndr_err_code ndr_push_spoolss_NotifyOptionType(struct ndr_push *ndr,
 		if (r->fields) {
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->count));
 			for (cntr_fields_1 = 0; cntr_fields_1 < r->count; cntr_fields_1++) {
-				NDR_CHECK(ndr_push_spoolss_Field(ndr, NDR_SCALARS, r->fields[cntr_fields_1]));
+				NDR_CHECK(ndr_push_set_switch_value(ndr, &r->fields[cntr_fields_1], r->type));
+				NDR_CHECK(ndr_push_spoolss_Field(ndr, NDR_SCALARS, &r->fields[cntr_fields_1]));
 			}
 		}
 	}
@@ -17090,6 +17212,7 @@ static enum ndr_err_code ndr_pull_spoolss_NotifyOptionType(struct ndr_pull *ndr,
 			_mem_save_fields_1 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->fields, 0);
 			for (cntr_fields_1 = 0; cntr_fields_1 < r->count; cntr_fields_1++) {
+				NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->fields[cntr_fields_1], r->type));
 				NDR_CHECK(ndr_pull_spoolss_Field(ndr, NDR_SCALARS, &r->fields[cntr_fields_1]));
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_fields_1, 0);
@@ -17120,7 +17243,8 @@ _PUBLIC_ void ndr_print_spoolss_NotifyOptionType(struct ndr_print *ndr, const ch
 		for (cntr_fields_1=0;cntr_fields_1<r->count;cntr_fields_1++) {
 			char *idx_1=NULL;
 			if (asprintf(&idx_1, "[%d]", cntr_fields_1) != -1) {
-				ndr_print_spoolss_Field(ndr, "fields", r->fields[cntr_fields_1]);
+				ndr_print_set_switch_value(ndr, &r->fields[cntr_fields_1], r->type);
+				ndr_print_spoolss_Field(ndr, "fields", &r->fields[cntr_fields_1]);
 				free(idx_1);
 			}
 		}
@@ -17505,7 +17629,8 @@ static enum ndr_err_code ndr_push_spoolss_Notify(struct ndr_push *ndr, int ndr_f
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_spoolss_NotifyType(ndr, NDR_SCALARS, r->type));
-		NDR_CHECK(ndr_push_spoolss_Field(ndr, NDR_SCALARS, r->field));
+		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->field, r->type));
+		NDR_CHECK(ndr_push_spoolss_Field(ndr, NDR_SCALARS, &r->field));
 		NDR_CHECK(ndr_push_spoolss_NotifyTable(ndr, NDR_SCALARS, r->variable_type));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->job_id));
 		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->data, r->variable_type));
@@ -17522,6 +17647,7 @@ static enum ndr_err_code ndr_pull_spoolss_Notify(struct ndr_pull *ndr, int ndr_f
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_spoolss_NotifyType(ndr, NDR_SCALARS, &r->type));
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->field, r->type));
 		NDR_CHECK(ndr_pull_spoolss_Field(ndr, NDR_SCALARS, &r->field));
 		NDR_CHECK(ndr_pull_spoolss_NotifyTable(ndr, NDR_SCALARS, &r->variable_type));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->job_id));
@@ -17539,7 +17665,8 @@ _PUBLIC_ void ndr_print_spoolss_Notify(struct ndr_print *ndr, const char *name, 
 	ndr_print_struct(ndr, name, "spoolss_Notify");
 	ndr->depth++;
 	ndr_print_spoolss_NotifyType(ndr, "type", r->type);
-	ndr_print_spoolss_Field(ndr, "field", r->field);
+	ndr_print_set_switch_value(ndr, &r->field, r->type);
+	ndr_print_spoolss_Field(ndr, "field", &r->field);
 	ndr_print_spoolss_NotifyTable(ndr, "variable_type", r->variable_type);
 	ndr_print_uint32(ndr, "job_id", r->job_id);
 	ndr_print_set_switch_value(ndr, &r->data, r->variable_type);

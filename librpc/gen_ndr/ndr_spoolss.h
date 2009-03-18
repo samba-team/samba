@@ -451,8 +451,14 @@ enum ndr_err_code ndr_push_spoolss_PrintProcDataTypesInfo(struct ndr_push *ndr, 
 enum ndr_err_code ndr_pull_spoolss_PrintProcDataTypesInfo(struct ndr_pull *ndr, int ndr_flags, union spoolss_PrintProcDataTypesInfo *r);
 void ndr_print_spoolss_PrintProcDataTypesInfo(struct ndr_print *ndr, const char *name, const union spoolss_PrintProcDataTypesInfo *r);
 void ndr_print_spoolss_PrinterChangeFlags(struct ndr_print *ndr, const char *name, uint32_t r);
-void ndr_print_spoolss_Field(struct ndr_print *ndr, const char *name, enum spoolss_Field r);
+enum ndr_err_code ndr_push_spoolss_JobNotifyField(struct ndr_push *ndr, int ndr_flags, enum spoolss_JobNotifyField r);
+enum ndr_err_code ndr_pull_spoolss_JobNotifyField(struct ndr_pull *ndr, int ndr_flags, enum spoolss_JobNotifyField *r);
+void ndr_print_spoolss_JobNotifyField(struct ndr_print *ndr, const char *name, enum spoolss_JobNotifyField r);
+enum ndr_err_code ndr_push_spoolss_PrintNotifyField(struct ndr_push *ndr, int ndr_flags, enum spoolss_PrintNotifyField r);
+enum ndr_err_code ndr_pull_spoolss_PrintNotifyField(struct ndr_pull *ndr, int ndr_flags, enum spoolss_PrintNotifyField *r);
+void ndr_print_spoolss_PrintNotifyField(struct ndr_print *ndr, const char *name, enum spoolss_PrintNotifyField r);
 void ndr_print_spoolss_NotifyType(struct ndr_print *ndr, const char *name, enum spoolss_NotifyType r);
+void ndr_print_spoolss_Field(struct ndr_print *ndr, const char *name, const union spoolss_Field *r);
 void ndr_print_spoolss_NotifyOptionType(struct ndr_print *ndr, const char *name, const struct spoolss_NotifyOptionType *r);
 void ndr_print_spoolssNotifyOptionFlags(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_spoolss_NotifyOption(struct ndr_print *ndr, const char *name, const struct spoolss_NotifyOption *r);
