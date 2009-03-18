@@ -112,9 +112,6 @@ bool cli_send_trans(struct cli_state *cli, int trans,
 			this_lparam = MIN(lparam-tot_param,cli->max_xmit - 500); /* hack */
 			this_ldata = MIN(ldata-tot_data,cli->max_xmit - (500+this_lparam));
 
-			client_set_trans_sign_state_off(cli, mid);
-			client_set_trans_sign_state_on(cli, mid);
-
 			cli_set_message(cli->outbuf,trans==SMBtrans?8:9,0,True);
 			SCVAL(cli->outbuf,smb_com,(trans==SMBtrans ? SMBtranss : SMBtranss2));
 
@@ -138,20 +135,14 @@ bool cli_send_trans(struct cli_state *cli, int trans,
 				memcpy(outdata,data+tot_data,this_ldata);
 			cli_setup_bcc(cli, outdata+this_ldata);
 
-			/*
-			 * Save the mid we're using. We need this for finding
-			 * signing replies.
-			 */
-			mid = cli->mid;
-
 			show_msg(cli->outbuf);
+
+			client_set_trans_sign_state_off(cli, mid);
+			cli->mid = mid;
 			if (!cli_send_smb(cli)) {
-				client_set_trans_sign_state_off(cli, mid);
 				return False;
 			}
-
-			/* Ensure we use the same mid for the secondaries. */
-			cli->mid = mid;
+			client_set_trans_sign_state_on(cli, mid);
 
 			tot_data += this_ldata;
 			tot_param += this_lparam;
@@ -461,21 +452,14 @@ bool cli_send_nt_trans(struct cli_state *cli,
 				memcpy(outdata,data+tot_data,this_ldata);
 			cli_setup_bcc(cli, outdata+this_ldata);
 
-			/*
-			 * Save the mid we're using. We need this for finding
-			 * signing replies.
-			 */
-			mid = cli->mid;
-
 			show_msg(cli->outbuf);
 
+			client_set_trans_sign_state_off(cli, mid);
+			cli->mid = mid;
 			if (!cli_send_smb(cli)) {
-				client_set_trans_sign_state_off(cli, mid);
 				return False;
 			}
-
-			/* Ensure we use the same mid for the secondaries. */
-			cli->mid = mid;
+			client_set_trans_sign_state_on(cli, mid);
 
 			tot_data += this_ldata;
 			tot_param += this_lparam;
