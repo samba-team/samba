@@ -1557,7 +1557,6 @@ char *rpcstr_pull_unistr2_talloc(TALLOC_CTX *ctx, const UNISTR2 *src);
 int rpcstr_push(void *dest, const char *src, size_t dest_len, int flags);
 int rpcstr_push_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src);
 void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen);
-void unistr3_to_ascii(char *dest, const UNISTR3 *str, size_t maxlen);
 char *unistr2_to_ascii_talloc(TALLOC_CTX *ctx, const UNISTR2 *str);
 const char *unistr2_static(const UNISTR2 *str);
 smb_ucs2_t toupper_w(smb_ucs2_t val);
@@ -5685,7 +5684,6 @@ bool smb_io_uuid(const char *desc, struct GUID *uuid,
 		 prs_struct *ps, int depth);
 void init_unistr(UNISTR *str, const char *buf);
 bool smb_io_unistr(const char *desc, UNISTR *uni, prs_struct *ps, int depth);
-bool smb_io_buffer5(const char *desc, BUFFER5 *buf5, prs_struct *ps, int depth);
 void init_buf_unistr2(UNISTR2 *str, uint32 *ptr, const char *buf);
 void copy_unistr2(UNISTR2 *str, const UNISTR2 *from);
 void init_unistr2(UNISTR2 *str, const char *buf, enum unistr2_term_codes flags);
@@ -5696,8 +5694,6 @@ bool prs_io_unistr2_p(const char *desc, prs_struct *ps, int depth, UNISTR2 **uni
 bool prs_io_unistr2(const char *desc, prs_struct *ps, int depth, UNISTR2 *uni2 );
 bool smb_io_unistr2(const char *desc, UNISTR2 *uni2, uint32 buffer, prs_struct *ps, int depth);
 bool smb_io_pol_hnd(const char *desc, POLICY_HND *pol, prs_struct *ps, int depth);
-void init_unistr3(UNISTR3 *str, const char *buf);
-bool smb_io_unistr3(const char *desc, UNISTR3 *name, prs_struct *ps, int depth);
 uint32 str_len_uni(UNISTR *source);
 bool policy_handle_is_valid(const POLICY_HND *hnd);
 
@@ -5755,9 +5751,7 @@ bool prs_uint8s(bool charmode, const char *name, prs_struct *ps, int depth, uint
 bool prs_uint16s(bool charmode, const char *name, prs_struct *ps, int depth, uint16 *data16s, int len);
 bool prs_uint16uni(bool charmode, const char *name, prs_struct *ps, int depth, uint16 *data16s, int len);
 bool prs_uint32s(bool charmode, const char *name, prs_struct *ps, int depth, uint32 *data32s, int len);
-bool prs_buffer5(bool charmode, const char *name, prs_struct *ps, int depth, BUFFER5 *str);
 bool prs_unistr2(bool charmode, const char *name, prs_struct *ps, int depth, UNISTR2 *str);
-bool prs_unistr3(bool charmode, const char *name, UNISTR3 *str, prs_struct *ps, int depth);
 bool prs_unistr(const char *name, prs_struct *ps, int depth, UNISTR *str);
 bool prs_string(const char *name, prs_struct *ps, int depth, char *str, int max_buf_size);
 bool prs_string_alloc(const char *name, prs_struct *ps, int depth, const char **str);
