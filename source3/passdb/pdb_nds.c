@@ -788,7 +788,7 @@ static NTSTATUS pdb_nds_update_login_attempts(struct pdb_methods *methods,
 		}
 
 		entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct, result);
-		dn = smbldap_get_dn(ldap_state->smbldap_state->ldap_struct, entry);
+		dn = smbldap_talloc_dn(NULL, ldap_state->smbldap_state->ldap_struct, entry);
 		if (!dn) {
 			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
@@ -811,6 +811,7 @@ static NTSTATUS pdb_nds_update_login_attempts(struct pdb_methods *methods,
 			
 			rc = smb_ldap_setup_full_conn(&ld, ldap_state->location);
 			if (rc) {
+				TALLOC_FREE(dn);
 				return NT_STATUS_INVALID_CONNECTION;
 			}
 
@@ -841,6 +842,7 @@ static NTSTATUS pdb_nds_update_login_attempts(struct pdb_methods *methods,
 				return nt_status;
 			}
 		}
+		TALLOC_FREE(dn);
 	}
 	
 	return NT_STATUS_OK;

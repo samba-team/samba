@@ -1649,41 +1649,19 @@ NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx, struct event_context *event_ctx,
 	return NT_STATUS_OK;
 }
 
-/*******************************************************************
- Return a copy of the DN for a LDAPMessage. Convert from utf8 to CH_UNIX.
-********************************************************************/
-char *smbldap_get_dn(LDAP *ld, LDAPMessage *entry)
+ char *smbldap_talloc_dn(TALLOC_CTX *mem_ctx, LDAP *ld,
+			 LDAPMessage *entry)
 {
 	char *utf8_dn, *unix_dn;
 	size_t converted_size;
 
 	utf8_dn = ldap_get_dn(ld, entry);
 	if (!utf8_dn) {
-		DEBUG (5, ("smbldap_get_dn: ldap_get_dn failed\n"));
-		return NULL;
-	}
-	if (!pull_utf8_allocate(&unix_dn, utf8_dn, &converted_size)) {
-		DEBUG (0, ("smbldap_get_dn: String conversion failure utf8 "
-			   "[%s]\n", utf8_dn));
-		return NULL;
-	}
-	ldap_memfree(utf8_dn);
-	return unix_dn;
-}
-
- const char *smbldap_talloc_dn(TALLOC_CTX *mem_ctx, LDAP *ld,
-			       LDAPMessage *entry)
-{
-	char *utf8_dn, *unix_dn;
-	size_t converted_size;
-
-	utf8_dn = ldap_get_dn(ld, entry);
-	if (!utf8_dn) {
-		DEBUG (5, ("smbldap_get_dn: ldap_get_dn failed\n"));
+		DEBUG (5, ("smbldap_talloc_dn: ldap_get_dn failed\n"));
 		return NULL;
 	}
 	if (!pull_utf8_talloc(mem_ctx, &unix_dn, utf8_dn, &converted_size)) {
-		DEBUG (0, ("smbldap_get_dn: String conversion failure utf8 "
+		DEBUG (0, ("smbldap_talloc_dn: String conversion failure utf8 "
 			   "[%s]\n", utf8_dn));
 		return NULL;
 	}
