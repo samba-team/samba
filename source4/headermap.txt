@@ -25,7 +25,7 @@ lib/registry/registry.h: registry.h
 libcli/util/werror.h: core/werror.h
 libcli/util/doserr.h: core/doserr.h
 libcli/util/ntstatus.h: core/ntstatus.h
-libcli/cldap/cldap.h: cldap.h
+../libcli/cldap/cldap.h: cldap.h
 auth/credentials/credentials.h: credentials.h
 auth/credentials/credentials_krb5.h: credentials/krb5.h
 rpc_server/dcerpc_server.h: dcerpc_server.h

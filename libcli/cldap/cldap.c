@@ -35,14 +35,16 @@
 #include "includes.h"
 #include <tevent.h>
 #include "../lib/util/dlinklist.h"
-#include "libcli/ldap/ldap.h"
-#include "libcli/ldap/ldap_ndr.h"
-#include "libcli/cldap/cldap.h"
+#include "../libcli/ldap/ldap_message.h"
+#include "../libcli/ldap/ldap_ndr.h"
+#include "../libcli/cldap/cldap.h"
 #include "../lib/tsocket/tsocket.h"
-#include "libcli/security/security.h"
-#include "librpc/gen_ndr/ndr_nbt.h"
+#include "../libcli/security/dom_sid.h"
+#include "../librpc/gen_ndr/ndr_nbt.h"
 #include "../lib/util/asn1.h"
 #include "../lib/util/tevent_ntstatus.h"
+
+#undef strcasecmp
 
 /*
   context structure for operations on cldap packets
