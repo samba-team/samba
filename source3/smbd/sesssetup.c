@@ -333,7 +333,6 @@ static void reply_spnego_kerberos(struct smb_request *req,
 		DEBUG(3,("Doesn't look like a valid principal\n"));
 		data_blob_free(&ap_rep);
 		data_blob_free(&session_key);
-		SAFE_FREE(client);
 		talloc_destroy(mem_ctx);
 		reply_nterror(req,nt_status_squash(NT_STATUS_LOGON_FAILURE));
 		return;
@@ -355,7 +354,6 @@ static void reply_spnego_kerberos(struct smb_request *req,
 		if (!lp_allow_trusted_domains()) {
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
-			SAFE_FREE(client);
 			talloc_destroy(mem_ctx);
 			reply_nterror(req, nt_status_squash(
 					      NT_STATUS_LOGON_FAILURE));
@@ -445,7 +443,6 @@ static void reply_spnego_kerberos(struct smb_request *req,
 		if ( !pw ) {
 			DEBUG(1,("Username %s is invalid on this system\n",
 				user));
-			SAFE_FREE(client);
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
 			TALLOC_FREE(mem_ctx);
@@ -471,7 +468,6 @@ static void reply_spnego_kerberos(struct smb_request *req,
 		if ( !NT_STATUS_IS_OK(ret) ) {
 			DEBUG(1,("make_server_info_info3 failed: %s!\n",
 				 nt_errstr(ret)));
-			SAFE_FREE(client);
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
 			TALLOC_FREE(mem_ctx);
@@ -485,7 +481,6 @@ static void reply_spnego_kerberos(struct smb_request *req,
 		if ( !NT_STATUS_IS_OK(ret) ) {
 			DEBUG(1,("make_server_info_pw failed: %s!\n",
 				 nt_errstr(ret)));
-			SAFE_FREE(client);
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
 			TALLOC_FREE(mem_ctx);
@@ -513,7 +508,6 @@ static void reply_spnego_kerberos(struct smb_request *req,
 		if ( !NT_STATUS_IS_OK(ret) ) {
 			DEBUG(10,("failed to create local token: %s\n",
 				nt_errstr(ret)));
-			SAFE_FREE(client);
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
 			TALLOC_FREE( mem_ctx );
@@ -540,8 +534,6 @@ static void reply_spnego_kerberos(struct smb_request *req,
 					server_info,
 					nullblob,
 					client);
-
-	SAFE_FREE(client);
 
 	reply_outbuf(req, 4, 0);
 	SSVAL(req->outbuf,smb_uid,sess_vuid);

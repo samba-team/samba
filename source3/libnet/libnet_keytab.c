@@ -144,7 +144,7 @@ static krb5_error_code libnet_keytab_remove_entries(krb5_context context,
 			goto cont;
 		}
 
-		ret = smb_krb5_unparse_name(context, kt_entry.principal,
+		ret = smb_krb5_unparse_name(talloc_tos(), context, kt_entry.principal,
 					    &princ_s);
 		if (ret) {
 			DEBUG(5, ("smb_krb5_unparse_name failed (%s)\n",
@@ -190,7 +190,7 @@ static krb5_error_code libnet_keytab_remove_entries(krb5_context context,
 
 cont:
 		smb_krb5_kt_free_entry(context, &kt_entry);
-		SAFE_FREE(princ_s);
+		TALLOC_FREE(princ_s);
 	}
 
 	ret = krb5_kt_end_seq_get(context, keytab, &cursor);
@@ -334,6 +334,8 @@ struct libnet_keytab_entry *libnet_keytab_search(struct libnet_keytab_context *c
 		krb5_keyblock *keyp;
 		char *princ_s = NULL;
 
+		entry = NULL;
+
 		if (kt_entry.vno != kvno) {
 			goto cont;
 		}
@@ -344,7 +346,13 @@ struct libnet_keytab_entry *libnet_keytab_search(struct libnet_keytab_context *c
 			goto cont;
 		}
 
-		ret = smb_krb5_unparse_name(ctx->context, kt_entry.principal,
+		entry = talloc_zero(mem_ctx, struct libnet_keytab_entry);
+		if (!entry) {
+			DEBUG(3, ("talloc failed\n"));
+			goto fail;
+		}
+
+		ret = smb_krb5_unparse_name(entry, ctx->context, kt_entry.principal,
 					    &princ_s);
 		if (ret) {
 			goto cont;
@@ -354,23 +362,13 @@ struct libnet_keytab_entry *libnet_keytab_search(struct libnet_keytab_context *c
 			goto cont;
 		}
 
-		entry = talloc_zero(mem_ctx, struct libnet_keytab_entry);
-		if (!entry) {
-			DEBUG(3, ("talloc failed\n"));
-			goto fail;
-		}
-
-		entry->name = talloc_strdup(entry, princ_s);
-		if (!entry->name) {
-			DEBUG(3, ("talloc_strdup_failed\n"));
-			goto fail;
-		}
-
 		entry->principal = talloc_strdup(entry, princ_s);
 		if (!entry->principal) {
 			DEBUG(3, ("talloc_strdup_failed\n"));
 			goto fail;
 		}
+
+		entry->name = talloc_move(entry, &princ_s);
 
 		entry->password = data_blob_talloc(entry, KRB5_KEY_DATA(keyp),
 						   KRB5_KEY_LENGTH(keyp));
@@ -382,18 +380,16 @@ struct libnet_keytab_entry *libnet_keytab_search(struct libnet_keytab_context *c
 		DEBUG(10, ("found entry\n"));
 
 		smb_krb5_kt_free_entry(ctx->context, &kt_entry);
-		SAFE_FREE(princ_s);
 		break;
 
 fail:
 		smb_krb5_kt_free_entry(ctx->context, &kt_entry);
-		SAFE_FREE(princ_s);
 		TALLOC_FREE(entry);
 		break;
 
 cont:
 		smb_krb5_kt_free_entry(ctx->context, &kt_entry);
-		SAFE_FREE(princ_s);
+		TALLOC_FREE(entry);
 		continue;
 	}
 

@@ -1251,8 +1251,6 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 						   &principal, &pac_data, &ap_rep,
 						   &session_key, True);
 
-			talloc_destroy(mem_ctx);
-
 			/* Now in "principal" we have the name we are
                            authenticated as. */
 
@@ -1274,9 +1272,9 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 				user = SMB_STRDUP(principal);
 
 				data_blob_free(&ap_rep);
-
-				SAFE_FREE(principal);
 			}
+
+			TALLOC_FREE(mem_ctx);
 		}
 #endif
 

@@ -545,7 +545,7 @@ krb5_principal kerberos_fetch_salt_princ_for_host_princ(krb5_context context,
 	
 		/* look under the old key.  If this fails, just use the standard key */
 
-		if (smb_krb5_unparse_name(context, host_princ, &unparsed_name) != 0) {
+		if (smb_krb5_unparse_name(talloc_tos(), context, host_princ, &unparsed_name) != 0) {
 			return (krb5_principal)NULL;
 		}
 		if ((salt_princ_s = kerberos_secrets_fetch_salting_principal(unparsed_name, enctype)) == NULL) {
@@ -558,7 +558,7 @@ krb5_principal kerberos_fetch_salt_princ_for_host_princ(krb5_context context,
 		ret_princ = NULL;
 	}
 	
-	SAFE_FREE(unparsed_name);
+	TALLOC_FREE(unparsed_name);
 	SAFE_FREE(salt_princ_s);
 	
 	return ret_princ;
@@ -603,7 +603,7 @@ bool kerberos_secrets_store_salting_principal(const char *service,
 		goto out;
 		
 	}
-	if (smb_krb5_unparse_name(context, princ, &unparsed_name) != 0) {
+	if (smb_krb5_unparse_name(talloc_tos(), context, princ, &unparsed_name) != 0) {
 		goto out;
 	}
 
@@ -623,7 +623,7 @@ bool kerberos_secrets_store_salting_principal(const char *service,
 
 	SAFE_FREE(key);
 	SAFE_FREE(princ_s);
-	SAFE_FREE(unparsed_name);
+	TALLOC_FREE(unparsed_name);
 
 	if (princ) {
 		krb5_free_principal(context, princ);
