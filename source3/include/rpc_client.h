@@ -41,34 +41,4 @@
 
 #define prs_init_empty( _ps_, _ctx_, _io_ ) (void) prs_init((_ps_), 0, (_ctx_), (_io_))
 
-/* macro to expand cookie-cutter code in cli_xxx() using rpc_api_pipe_req() */
-
-#define CLI_DO_RPC_WERR( pcli, ctx, interface, opnum, q_in, r_out, \
-                             q_ps, r_ps, q_io_fn, r_io_fn, default_error ) \
-{\
-	SMB_ASSERT(ndr_syntax_id_equal(&pcli->abstract_syntax, interface)); \
-	if (!prs_init( &q_ps, RPC_MAX_PDU_FRAG_LEN, ctx, MARSHALL )) { \
-		return WERR_NOMEM;\
-	}\
-	if ( q_io_fn("", &q_in, &q_ps, 0) ) {\
-		NTSTATUS _smb_pipe_stat_ = rpc_api_pipe_req(ctx, pcli, opnum, &q_ps, &r_ps); \
-		if (!NT_STATUS_IS_OK(_smb_pipe_stat_)) {\
-			prs_mem_free( &q_ps );\
-			prs_mem_free( &r_ps );\
-			return ntstatus_to_werror(_smb_pipe_stat_);\
-		}\
-		if (!r_io_fn("", &r_out, &r_ps, 0)) {\
-			prs_mem_free( &q_ps );\
-			prs_mem_free( &r_ps );\
-			return default_error;\
-		}\
-	} else {\
-		prs_mem_free( &q_ps );\
-		prs_mem_free( &r_ps );\
-		return default_error;\
-	}\
-	prs_mem_free( &q_ps );\
-	prs_mem_free( &r_ps );\
-}
-
 #endif /* _RPC_CLIENT_H */
