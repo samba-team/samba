@@ -343,7 +343,7 @@ static bool upgrade_to_version_3(void)
 static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
                             TDB_DATA data, void *state )
 {
-	prs_struct ps;
+	NTSTATUS status;
 	SEC_DESC_BUF *sd_orig = NULL;
 	SEC_DESC_BUF *sd_new, *sd_store;
 	SEC_DESC *sec, *new_sec;
@@ -362,22 +362,16 @@ static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
 
 	/* upgrade the security descriptor */
 
-	ZERO_STRUCT( ps );
-
-	prs_init_empty( &ps, ctx, UNMARSHALL );
-	prs_give_memory( &ps, (char *)data.dptr, data.dsize, False );
-
-	if ( !sec_io_desc_buf( "sec_desc_upg_fn", &sd_orig, &ps, 1 ) ) {
+	status = unmarshall_sec_desc_buf(ctx, data.dptr, data.dsize, &sd_orig);
+	if (!NT_STATUS_IS_OK(status)) {
 		/* delete bad entries */
 		DEBUG(0,("sec_desc_upg_fn: Failed to parse original sec_desc for %si.  Deleting....\n",
 			(const char *)key.dptr ));
 		tdb_delete( tdb_printers, key );
-		prs_mem_free( &ps );
 		return 0;
 	}
 
 	if (!sd_orig) {
-		prs_mem_free( &ps );
 		return 0;
 	}
 	sec = sd_orig->sd;
@@ -385,7 +379,6 @@ static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
 	/* is this even valid? */
 
 	if ( !sec->dacl ) {
-		prs_mem_free( &ps );
 		return 0;
 	}
 
@@ -416,44 +409,30 @@ static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
 				 &global_sid_Builtin_Administrators,
 				 NULL, NULL, &size_new_sec );
 	if (!new_sec) {
-		prs_mem_free( &ps );
 		return 0;
 	}
 	sd_new = make_sec_desc_buf( ctx, size_new_sec, new_sec );
 	if (!sd_new) {
-		prs_mem_free( &ps );
 		return 0;
 	}
 
 	if ( !(sd_store = sec_desc_merge( ctx, sd_new, sd_orig )) ) {
 		DEBUG(0,("sec_desc_upg_fn: Failed to update sec_desc for %s\n", key.dptr ));
-		prs_mem_free( &ps );
 		return 0;
 	}
-
-	prs_mem_free( &ps );
 
 	/* store it back */
 
 	sd_size = ndr_size_security_descriptor(sd_store->sd, NULL, 0)
 		+ sizeof(SEC_DESC_BUF);
-	if ( !prs_init(&ps, sd_size, ctx, MARSHALL) ) {
-		DEBUG(0,("sec_desc_upg_fn: Failed to allocate prs memory for %s\n", key.dptr ));
-		return 0;
-	}
 
-	if ( !sec_io_desc_buf( "sec_desc_upg_fn", &sd_store, &ps, 1 ) ) {
+	status = marshall_sec_desc_buf(ctx, sd_store, &data.dptr, &data.dsize);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("sec_desc_upg_fn: Failed to parse new sec_desc for %s\n", key.dptr ));
-		prs_mem_free( &ps );
 		return 0;
 	}
-
-	data.dptr = (uint8 *)prs_data_p( &ps );
-	data.dsize = sd_size;
 
 	result = tdb_store( tdb_printers, key, data, TDB_REPLACE );
-
-	prs_mem_free( &ps );
 
 	/* 0 to continue and non-zero to stop traversal */
 
