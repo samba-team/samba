@@ -35,7 +35,7 @@ enum exit_values {EXIT_OK, EXIT_FAILED, EXIT_PARSE_ERROR};
 
 static struct cli_state *cli_ipc;
 static struct rpc_pipe_client *global_pipe_hnd;
-static POLICY_HND pol;
+static struct policy_handle pol;
 static bool got_policy_hnd;
 static struct user_auth_info *smbcquotas_auth_info;
 

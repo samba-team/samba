@@ -27,7 +27,7 @@
 
 NTSTATUS rpccli_winreg_Connect(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                          uint32 reg_type, uint32 access_mask,
-                         POLICY_HND *reg_hnd)
+                         struct policy_handle *reg_hnd)
 {
 	ZERO_STRUCTP(reg_hnd);
 
