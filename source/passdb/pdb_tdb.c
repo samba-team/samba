@@ -687,7 +687,7 @@ static uint32 init_buffer_from_sam (uint8 **buf, struct samu *sampass, bool size
 }
 
 /**********************************************************************
- Intialize a BYTE buffer from a struct samu struct
+ Struct and function to update an old record.
  *********************************************************************/
 
 struct tdbsam_convert_state {
@@ -772,38 +772,188 @@ static int tdbsam_convert_one(struct db_record *rec, void *priv)
 	return 0;
 }
 
-static bool tdbsam_convert(struct db_context *db, int32 from)
+/**********************************************************************
+ Struct and function to backup an old record.
+ *********************************************************************/
+
+struct tdbsam_backup_state {
+	struct db_context *new_db;
+	bool success;
+};
+
+static int backup_copy_fn(struct db_record *orig_rec, void *state)
 {
-	struct tdbsam_convert_state state;
+	struct tdbsam_backup_state *bs = (struct tdbsam_backup_state *)state;
+	struct db_record *new_rec;
+	NTSTATUS status;
+
+	new_rec = bs->new_db->fetch_locked(bs->new_db, talloc_tos(), orig_rec->key);
+	if (new_rec == NULL) {
+		bs->success = false;
+		return 1;
+	}
+
+	status = new_rec->store(new_rec, orig_rec->value, TDB_INSERT);
+
+	TALLOC_FREE(new_rec);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		bs->success = false;
+                return 1;
+        }
+        return 0;
+}
+
+/**********************************************************************
+ Make a backup of an old passdb and replace the new one with it. We
+ have to do this as between 3.0.x and 3.2.x the hash function changed
+ by mistake (used unsigned char * instead of char *). This means the
+ previous simple update code will fail due to not being able to find
+ existing records to replace in the tdbsam_convert_one() function. JRA.
+ *********************************************************************/
+
+static bool tdbsam_convert_backup(const char *dbname, struct db_context **pp_db)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	const char *tmp_fname = NULL;
+	struct db_context *tmp_db = NULL;
+	struct db_context *orig_db = *pp_db;
+	struct tdbsam_backup_state bs;
 	int ret;
 
+	tmp_fname = talloc_asprintf(frame, "%s.tmp", dbname);
+	if (!tmp_fname) {
+		TALLOC_FREE(frame);
+		return false;
+	}
+
+	unlink(tmp_fname);
+
+	/* Remember to open this on the NULL context. We need
+	 * it to stay around after we return from here. */
+
+	tmp_db = db_open_trans(NULL, tmp_fname, 0,
+				TDB_DEFAULT, O_CREAT|O_RDWR, 0600);
+	if (tmp_db == NULL) {
+		DEBUG(0, ("tdbsam_convert_backup: Failed to create backup TDB passwd "
+			  "[%s]\n", tmp_fname));
+		TALLOC_FREE(frame);
+		return false;
+	}
+
+	if (orig_db->transaction_start(orig_db) != 0) {
+		DEBUG(0, ("tdbsam_convert_backup: Could not start transaction (1)\n"));
+		unlink(tmp_fname);
+		TALLOC_FREE(tmp_db);
+		TALLOC_FREE(frame);
+		return false;
+	}
+	if (tmp_db->transaction_start(tmp_db) != 0) {
+		DEBUG(0, ("tdbsam_convert_backup: Could not start transaction (2)\n"));
+		orig_db->transaction_cancel(orig_db);
+		unlink(tmp_fname);
+		TALLOC_FREE(tmp_db);
+		TALLOC_FREE(frame);
+		return false;
+	}
+
+	bs.new_db = tmp_db;
+	bs.success = true;
+
+        ret = orig_db->traverse(orig_db, backup_copy_fn, (void *)&bs);
+        if (ret < 0) {
+                DEBUG(0, ("tdbsam_convert_backup: traverse failed\n"));
+                goto cancel;
+        }
+
+	if (!bs.success) {
+		DEBUG(0, ("tdbsam_convert_backup: Rewriting records failed\n"));
+		goto cancel;
+	}
+
+	if (orig_db->transaction_commit(orig_db) != 0) {
+		smb_panic("tdbsam_convert_backup: orig commit failed\n");
+	}
+	if (tmp_db->transaction_commit(tmp_db) != 0) {
+		smb_panic("tdbsam_convert_backup: orig commit failed\n");
+	}
+
+	/* This is safe from other users as we know we're
+ 	 * under a mutex here. */
+
+	if (rename(tmp_fname, dbname) == -1) {
+		DEBUG(0, ("tdbsam_convert_backup: rename of %s to %s failed %s\n",
+			tmp_fname,
+			dbname,
+			strerror(errno)));
+		smb_panic("tdbsam_convert_backup: replace passdb failed\n");
+	}
+
+	TALLOC_FREE(frame);
+	TALLOC_FREE(orig_db);
+
+	DEBUG(1, ("tdbsam_convert_backup: updated %s file.\n",
+		dbname ));
+
+	/* Replace the global db pointer. */
+	*pp_db = tmp_db;
+	return true;
+
+  cancel:
+
+	if (orig_db->transaction_cancel(orig_db) != 0) {
+		smb_panic("tdbsam_convert: transaction_cancel failed");
+	}
+
+	if (tmp_db->transaction_cancel(tmp_db) != 0) {
+		smb_panic("tdbsam_convert: transaction_cancel failed");
+	}
+
+	unlink(tmp_fname);
+	TALLOC_FREE(tmp_db);
+	TALLOC_FREE(frame);
+	return false;
+}
+
+static bool tdbsam_convert(struct db_context **pp_db, const char *name, int32 from)
+{
+	struct tdbsam_convert_state state;
+	struct db_context *db = NULL;
+	int ret;
+
+	if (!tdbsam_convert_backup(name, pp_db)) {
+		DEBUG(0, ("tdbsam_convert: Could not backup %s\n", name));
+		return false;
+	}
+
+	db = *pp_db;
 	state.from = from;
 	state.success = true;
 
 	if (db->transaction_start(db) != 0) {
-		DEBUG(0, ("Could not start transaction\n"));
+		DEBUG(0, ("tdbsam_convert: Could not start transaction\n"));
 		return false;
 	}
 
 	ret = db->traverse(db, tdbsam_convert_one, &state);
 	if (ret < 0) {
-		DEBUG(0, ("traverse failed\n"));
+		DEBUG(0, ("tdbsam_convert: traverse failed\n"));
 		goto cancel;
 	}
 
 	if (!state.success) {
-		DEBUG(0, ("Converting records failed\n"));
+		DEBUG(0, ("tdbsam_convert: Converting records failed\n"));
 		goto cancel;
 	}
 
 	if (dbwrap_store_int32(db, TDBSAM_VERSION_STRING,
 			       TDBSAM_VERSION) != 0) {
-		DEBUG(0, ("Could not store tdbsam version\n"));
+		DEBUG(0, ("tdbsam_convert: Could not store tdbsam version\n"));
 		goto cancel;
 	}
 
 	if (db->transaction_commit(db) != 0) {
-		DEBUG(0, ("Could not commit transaction\n"));
+		DEBUG(0, ("tdbsam_convert: Could not commit transaction\n"));
 		goto cancel;
 	}
 
@@ -811,7 +961,7 @@ static bool tdbsam_convert(struct db_context *db, int32 from)
 
  cancel:
 	if (db->transaction_cancel(db) != 0) {
-		smb_panic("transaction_cancel failed");
+		smb_panic("tdbsam_convert: transaction_cancel failed");
 	}
 
 	return false;
@@ -856,17 +1006,54 @@ static bool tdbsam_open( const char *name )
 	}
 
 	if ( version < TDBSAM_VERSION ) {
-		DEBUG(1, ("tdbsam_open: Converting version %d database to "
-			  "version %d.\n", version, TDBSAM_VERSION));
+		/*
+		 * Ok - we think we're going to have to convert.
+		 * Due to the backup process we now must do to
+		 * upgrade we have to get a mutex and re-check
+		 * the version. Someone else may have upgraded
+		 * whilst we were checking.
+		 */
 
-		if ( !tdbsam_convert(db_sam, version) ) {
-			DEBUG(0, ("tdbsam_open: Error when trying to convert "
-				  "tdbsam [%s]\n",name));
+		struct named_mutex *mtx = grab_named_mutex(NULL,
+						"tdbsam_upgrade_mutex",
+						600);
+
+		if (!mtx) {
+			DEBUG(0, ("tdbsam_open: failed to grab mutex.\n"));
 			TALLOC_FREE(db_sam);
 			return false;
 		}
 
-		DEBUG(3, ("TDBSAM converted successfully.\n"));
+		/* Re-check the version */
+		version = dbwrap_fetch_int32(db_sam, TDBSAM_VERSION_STRING);
+		if (version == -1) {
+			version = 0;	/* Version not found, assume version 0 */
+		}
+
+		/* Compare the version */
+		if (version > TDBSAM_VERSION) {
+			/* Version more recent than the latest known */
+			DEBUG(0, ("tdbsam_open: unknown version => %d\n", version));
+			TALLOC_FREE(db_sam);
+			TALLOC_FREE(mtx);
+			return false;
+		}
+
+		if ( version < TDBSAM_VERSION ) {
+			DEBUG(1, ("tdbsam_open: Converting version %d database to "
+				  "version %d.\n", version, TDBSAM_VERSION));
+
+			if ( !tdbsam_convert(&db_sam, name, version) ) {
+				DEBUG(0, ("tdbsam_open: Error when trying to convert "
+					  "tdbsam [%s]\n",name));
+				TALLOC_FREE(db_sam);
+				TALLOC_FREE(mtx);
+				return false;
+			}
+
+			DEBUG(3, ("TDBSAM converted successfully.\n"));
+		}
+		TALLOC_FREE(mtx);
 	}
 
 	DEBUG(4,("tdbsam_open: successfully opened %s\n", name ));
