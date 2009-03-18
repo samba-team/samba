@@ -18,11 +18,11 @@
 
 <refsynopsisdiv>
 	<title>DESCRIPTION</title>
-	<para>The idmap_hash plugin implements a hashing algorithm used
-	  map SIDs for domain users and groups to a 31-bit uid and gid.
+	<para>The idmap_hash plugin implements a hashing algorithm used to map
+	  SIDs for domain users and groups to 31-bit uids and gids, respectively.
 	  This plugin also implements the nss_info API and can be used
 	  to support a local name mapping files if enabled via the
-	  &quot;winbind normlaize names&quot; and &quot;winbind nss info&quot;
+	  &quot;winbind normalize names&quot; and &quot;winbind nss info&quot;
 	  parameters in smb.conf.
 	</para>
 </refsynopsisdiv>
