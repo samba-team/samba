@@ -18263,10 +18263,10 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrinterEnumValues(struct ndr_push *n
 			NDR_CHECK(ndr_push_relative_ptr2(ndr, r->data));
 			{
 				struct ndr_push *_ndr_data;
-				NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_data, 0, ndr_size_spoolss_PrinterData(r->data, r->type, ndr->iconv_convenience, ndr->flags)));
+				NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_data, 0, r->data_length));
 				NDR_CHECK(ndr_push_set_switch_value(_ndr_data, r->data, r->type));
 				NDR_CHECK(ndr_push_spoolss_PrinterData(_ndr_data, NDR_SCALARS|NDR_BUFFERS, r->data));
-				NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_data, 0, ndr_size_spoolss_PrinterData(r->data, r->type, ndr->iconv_convenience, ndr->flags)));
+				NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_data, 0, r->data_length));
 			}
 		}
 	}
