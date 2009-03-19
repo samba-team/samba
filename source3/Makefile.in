@@ -158,7 +158,7 @@ CODEPAGEDIR = @codepagedir@
 # the directory where pid files go
 PIDDIR = @piddir@
 
-FLAGS = -I. -I$(srcdir) @FLAGS1@ @SAMBA_CPPFLAGS@ $(CPPFLAGS) -I$(CTDBDIR)/include $(ISA) -I$(srcdir)/lib -I.. -D_SAMBA_BUILD_=3 -I../source4
+FLAGS = -I. -I$(srcdir) @FLAGS1@ @SAMBA_CPPFLAGS@ $(CPPFLAGS) $(ISA) -I$(srcdir)/lib -I.. -D_SAMBA_BUILD_=3 -I../source4
 
 PATH_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" \
 	-DPRIVATE_DIR=\"$(PRIVATE_DIR)\" \
@@ -173,7 +173,6 @@ PATH_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" \
 	-DMODULESDIR=\"$(MODULESDIR)\" \
 	-DLOGFILEBASE=\"$(LOGFILEBASE)\" \
 	-DSHLIBEXT=\"@SHLIBEXT@\" \
-	-DCTDBDIR=\"$(CTDBDIR)\" \
 	-DNCALRPCDIR=\"$(NCALRPCDIR)\" \
 	-DCONFIGDIR=\"$(CONFIGDIR)\" \
 	-DCODEPAGEDIR=\"$(CODEPAGEDIR)\" \
