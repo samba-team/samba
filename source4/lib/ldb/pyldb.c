@@ -469,19 +469,20 @@ static PyObject *py_ldb_get_default_basedn(PyLdbObject *self)
 	return PyLdbDn_FromDn(dn);
 }
 
-static const char **PyList_AsStringList(TALLOC_CTX *mem_ctx, PyObject *list)
+static const char **PyList_AsStringList(TALLOC_CTX *mem_ctx, PyObject *list, 
+										const char *paramname)
 {
 	const char **ret;
 	int i;
 	if (!PyList_Check(list)) {
-		PyErr_SetString(PyExc_TypeError, "options is not a list");
+		PyErr_Format(PyExc_TypeError, "%s is not a list", paramname);
 		return NULL;
 	}
 	ret = talloc_array(NULL, const char *, PyList_Size(list)+1);
 	for (i = 0; i < PyList_Size(list); i++) {
 		PyObject *item = PyList_GetItem(list, i);
 		if (!PyString_Check(item)) {
-			PyErr_SetString(PyExc_TypeError, "options should be strings");
+			PyErr_Format(PyExc_TypeError, "%s should be strings", paramname);
 			return NULL;
 		}
 		ret[i] = PyString_AsString(item);
@@ -510,7 +511,7 @@ static int py_ldb_init(PyLdbObject *self, PyObject *args, PyObject *kwargs)
 	if (py_options == Py_None) {
 		options = NULL;
 	} else {
-		options = PyList_AsStringList(ldb, py_options);
+		options = PyList_AsStringList(ldb, py_options, "options");
 		if (options == NULL)
 			return -1;
 	}
@@ -563,7 +564,7 @@ static PyObject *py_ldb_connect(PyLdbObject *self, PyObject *args, PyObject *kwa
 	if (py_options == Py_None) {
 		options = NULL;
 	} else {
-		options = PyList_AsStringList(NULL, py_options);
+		options = PyList_AsStringList(NULL, py_options, "options");
 		if (options == NULL)
 			return NULL;
 	}
@@ -813,7 +814,7 @@ static PyObject *py_ldb_search(PyLdbObject *self, PyObject *args, PyObject *kwar
 	if (py_attrs == Py_None) {
 		attrs = NULL;
 	} else {
-		attrs = PyList_AsStringList(ldb_ctx, py_attrs);
+		attrs = PyList_AsStringList(ldb_ctx, py_attrs, "attrs");
 		if (attrs == NULL)
 			return NULL;
 	}
@@ -828,7 +829,7 @@ static PyObject *py_ldb_search(PyLdbObject *self, PyObject *args, PyObject *kwar
 	if (py_controls == Py_None) {
 		parsed_controls = NULL;
 	} else {
-		const char **controls = PyList_AsStringList(ldb_ctx, py_controls);
+		const char **controls = PyList_AsStringList(ldb_ctx, py_controls, "controls");
 		parsed_controls = ldb_parse_control_strings(ldb_ctx, ldb_ctx, controls);
 		talloc_free(controls);
 	}
@@ -1129,7 +1130,7 @@ static PyObject *py_ldb_module_search(PyLdbModuleObject *self, PyObject *args, P
 	mod = self->mod;
 
 	ret = ldb_build_search_req(&req, mod->ldb, NULL, PyLdbDn_AsDn(py_base), 
-			     scope, NULL /* expr */, py_attrs == Py_None?NULL:PyList_AsStringList(req, py_attrs),
+			     scope, NULL /* expr */, py_attrs == Py_None?NULL:PyList_AsStringList(req, py_attrs, "attrs"),
 			     NULL /* controls */, NULL, NULL, NULL);
 	PyErr_LDB_ERROR_IS_ERR_RAISE(ret, mod->ldb);
 
