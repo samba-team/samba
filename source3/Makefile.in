@@ -448,7 +448,19 @@ LIBSAMBA_OBJ = $(LIBSMB_OBJ0) \
 LIBCLI_LDAP_MESSAGE_OBJ = ../libcli/ldap/ldap_message.o
 LIBCLI_LDAP_NDR_OBJ = ../libcli/ldap/ldap_ndr.o
 
-CLDAP_OBJ = libads/cldap.o $(LIBCLI_LDAP_MESSAGE_OBJ) $(LIBCLI_LDAP_NDR_OBJ)
+LIBTSOCKET_OBJ = ../lib/tsocket/tsocket.o \
+		../lib/tsocket/tsocket_helpers.o \
+		../lib/tsocket/tsocket_bsd.o \
+		../lib/tsocket/tsocket_recvfrom.o \
+		../lib/tsocket/tsocket_sendto.o \
+		../lib/tsocket/tsocket_connect.o \
+		../lib/tsocket/tsocket_writev.o \
+		../lib/tsocket/tsocket_readv.o
+
+CLDAP_OBJ = libads/cldap.o \
+	../libcli/cldap/cldap.o \
+	../lib/util/idtree.o \
+	$(LIBCLI_LDAP_MESSAGE_OBJ) $(LIBCLI_LDAP_NDR_OBJ) $(LIBTSOCKET_OBJ)
 
 LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/clikrb5.o libsmb/clispnego.o ../lib/util/asn1.o \
@@ -1628,6 +1640,10 @@ bin/ldbrename: $(BINARY_PREREQS) $(LDBRENAME_OBJ) @BUILD_POPT@ @LIBTALLOC_SHARED
 	@$(CC) $(FLAGS) -o $@ $(LDBRENAME_OBJ) $(DYNEXP) $(LDFLAGS) \
 		$(LIBS) $(POPT_LIBS) $(LDAP_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(WINBIND_LIBS)
+
+bin/versiontest: $(BINARY_PREREQS) lib/version_test.o $(VERSION_OBJ)
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(VERSION_OBJ) lib/version_test.o
 
 
 #####################################################################

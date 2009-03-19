@@ -30,12 +30,10 @@ static const struct {
 	{KRB5KDC_ERR_CLIENT_REVOKED, NT_STATUS_ACCESS_DENIED},
 	{KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN, NT_STATUS_INVALID_ACCOUNT_NAME},
 	{KRB5KDC_ERR_ETYPE_NOSUPP, NT_STATUS_LOGON_FAILURE},
-#if defined(KRB5KDC_ERR_KEY_EXPIRED) /* Heimdal */
-	{KRB5KDC_ERR_KEY_EXPIRED, NT_STATUS_PASSWORD_EXPIRED},
-#elif defined(KRB5KDC_ERR_KEY_EXP) /* MIT */
+#if defined(KRB5KDC_ERR_KEY_EXP) /* MIT */
 	{KRB5KDC_ERR_KEY_EXP, NT_STATUS_PASSWORD_EXPIRED},
-#else 
-#error Neither KRB5KDC_ERR_KEY_EXPIRED nor KRB5KDC_ERR_KEY_EXP available
+#else /* old Heimdal releases have it with different name only in an enum: */
+	{KRB5KDC_ERR_KEY_EXPIRED, NT_STATUS_PASSWORD_EXPIRED},
 #endif
 	{25, NT_STATUS_PASSWORD_EXPIRED}, /* FIXME: bug in heimdal 0.7 krb5_get_init_creds_password (Inappropriate ioctl for device (25)) */
 	{KRB5KDC_ERR_NULL_KEY, NT_STATUS_LOGON_FAILURE},

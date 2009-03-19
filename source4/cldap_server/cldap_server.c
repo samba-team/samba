@@ -20,8 +20,8 @@
 */
 
 #include "includes.h"
+#include <talloc.h>
 #include "libcli/ldap/ldap.h"
-#include "lib/socket/socket.h"
 #include "lib/messaging/irpc.h"
 #include "smbd/service_task.h"
 #include "smbd/service.h"
@@ -34,50 +34,67 @@
 #include "ldb_wrap.h"
 #include "auth/auth.h"
 #include "param/param.h"
+#include "../lib/tsocket/tsocket.h"
 
 /*
   handle incoming cldap requests
 */
-static void cldapd_request_handler(struct cldap_socket *cldap, 
-				   struct ldap_message *ldap_msg, 
-				   struct socket_address *src)
+static void cldapd_request_handler(struct cldap_socket *cldap,
+				   void *private_data,
+				   struct cldap_incoming *in)
 {
+	struct cldapd_server *cldapd = talloc_get_type(private_data,
+				       struct cldapd_server);
 	struct ldap_SearchRequest *search;
-	if (ldap_msg->type != LDAP_TAG_SearchRequest) {
-		DEBUG(0,("Invalid CLDAP request type %d from %s:%d\n", 
-			 ldap_msg->type, src->addr, src->port));
-		cldap_error_reply(cldap, ldap_msg->messageid, src,
+
+	if (in->ldap_msg->type != LDAP_TAG_SearchRequest) {
+		DEBUG(0,("Invalid CLDAP request type %d from %s\n",
+			 in->ldap_msg->type,
+			 tsocket_address_string(in->src, in)));
+		cldap_error_reply(cldap, in->ldap_msg->messageid, in->src,
 				  LDAP_OPERATIONS_ERROR, "Invalid CLDAP request");
+		talloc_free(in);
 		return;
 	}
 
-	search = &ldap_msg->r.SearchRequest;
+	search = &in->ldap_msg->r.SearchRequest;
 
 	if (strcmp("", search->basedn) != 0) {
-		DEBUG(0,("Invalid CLDAP basedn '%s' from %s:%d\n", 
-			 search->basedn, src->addr, src->port));
-		cldap_error_reply(cldap, ldap_msg->messageid, src,
+		DEBUG(0,("Invalid CLDAP basedn '%s' from %s\n",
+			 search->basedn,
+			 tsocket_address_string(in->src, in)));
+		cldap_error_reply(cldap, in->ldap_msg->messageid, in->src,
 				  LDAP_OPERATIONS_ERROR, "Invalid CLDAP basedn");
+		talloc_free(in);
 		return;
 	}
 
 	if (search->scope != LDAP_SEARCH_SCOPE_BASE) {
-		DEBUG(0,("Invalid CLDAP scope %d from %s:%d\n", 
-			 search->scope, src->addr, src->port));
-		cldap_error_reply(cldap, ldap_msg->messageid, src,
+		DEBUG(0,("Invalid CLDAP scope %d from %s\n",
+			 search->scope,
+			 tsocket_address_string(in->src, in)));
+		cldap_error_reply(cldap, in->ldap_msg->messageid, in->src,
 				  LDAP_OPERATIONS_ERROR, "Invalid CLDAP scope");
+		talloc_free(in);
 		return;
 	}
 
 	if (search->num_attributes == 1 &&
 	    strcasecmp(search->attributes[0], "netlogon") == 0) {
-		cldapd_netlogon_request(cldap, ldap_msg->messageid,
-					search->tree, src);
+		cldapd_netlogon_request(cldap,
+					cldapd,
+					in,
+					in->ldap_msg->messageid,
+					search->tree,
+					in->src);
+		talloc_free(in);
 		return;
 	}
 
-	cldapd_rootdse_request(cldap, ldap_msg->messageid,
-			       search, src);
+	cldapd_rootdse_request(cldap, cldapd, in,
+			       in->ldap_msg->messageid,
+			       search, in->src);
+	talloc_free(in);
 }
 
 
@@ -88,35 +105,42 @@ static NTSTATUS cldapd_add_socket(struct cldapd_server *cldapd, struct loadparm_
 				  const char *address)
 {
 	struct cldap_socket *cldapsock;
-	struct socket_address *socket_address;
+	struct tsocket_address *socket_address;
 	NTSTATUS status;
+	int ret;
 
-	/* listen for unicasts on the CLDAP port (389) */
-	cldapsock = cldap_socket_init(cldapd, cldapd->task->event_ctx, lp_iconv_convenience(cldapd->task->lp_ctx));
-	NT_STATUS_HAVE_NO_MEMORY(cldapsock);
-
-	socket_address = socket_address_from_strings(cldapsock, cldapsock->sock->backend_name, 
-						     address, lp_cldap_port(lp_ctx));
-	if (!socket_address) {
-		talloc_free(cldapsock);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = socket_listen(cldapsock->sock, socket_address, 0, 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to bind to %s:%d - %s\n", 
-			 address, lp_cldap_port(lp_ctx), nt_errstr(status)));
-		talloc_free(cldapsock);
+	ret = tsocket_address_inet_from_strings(cldapd,
+						"ip",
+						address,
+						lp_cldap_port(lp_ctx),
+						&socket_address);
+	if (ret != 0) {
+		status = map_nt_error_from_unix(errno);
+		DEBUG(0,("invalid address %s:%d - %s:%s\n",
+			 address, lp_cldap_port(lp_ctx),
+			 gai_strerror(ret), nt_errstr(status)));
 		return status;
 	}
 
+	/* listen for unicasts on the CLDAP port (389) */
+	status = cldap_socket_init(cldapd,
+				   cldapd->task->event_ctx,
+				   socket_address,
+				   NULL,
+				   &cldapsock);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("Failed to bind to %s - %s\n", 
+			 tsocket_address_string(socket_address, socket_address),
+			 nt_errstr(status)));
+		talloc_free(socket_address);
+		return status;
+	}
 	talloc_free(socket_address);
 
 	cldap_set_incoming_handler(cldapsock, cldapd_request_handler, cldapd);
 
 	return NT_STATUS_OK;
 }
-
 
 /*
   setup our listening sockets on the configured network interfaces

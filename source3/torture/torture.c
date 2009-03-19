@@ -4160,8 +4160,8 @@ static bool run_opentest(int dummy)
 static bool run_simple_posix_open_test(int dummy)
 {
 	static struct cli_state *cli1;
-	const char *fname = "\\posix.file";
-	const char *dname = "\\posix.dir";
+	const char *fname = "\\posix:file";
+	const char *dname = "\\posix:dir";
 	uint16 major, minor;
 	uint32 caplow, caphigh;
 	int fnum1 = -1;
