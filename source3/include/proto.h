@@ -1555,13 +1555,8 @@ int rpcstr_pull_talloc(TALLOC_CTX *ctx,
 			void *src,
 			int src_len,
 			int flags);
-int rpcstr_pull_unistr2_fstring(char *dest, UNISTR2 *src);
-char *rpcstr_pull_unistr2_talloc(TALLOC_CTX *ctx, const UNISTR2 *src);
 int rpcstr_push(void *dest, const char *src, size_t dest_len, int flags);
 int rpcstr_push_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src);
-void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen);
-char *unistr2_to_ascii_talloc(TALLOC_CTX *ctx, const UNISTR2 *str);
-const char *unistr2_static(const UNISTR2 *str);
 smb_ucs2_t toupper_w(smb_ucs2_t val);
 smb_ucs2_t tolower_w( smb_ucs2_t val );
 bool islower_w(smb_ucs2_t c);
