@@ -868,24 +868,30 @@ failed:
 
  bool get_krb5_smb_session_key(krb5_context context, krb5_auth_context auth_context, DATA_BLOB *session_key, bool remote)
  {
-	krb5_keyblock *skey;
-	krb5_error_code err;
-	bool ret = False;
+	krb5_keyblock *skey = NULL;
+	krb5_error_code err = 0;
+	bool ret = false;
 
-	if (remote)
+	if (remote) {
 		err = krb5_auth_con_getremotesubkey(context, auth_context, &skey);
-	else
-		err = krb5_auth_con_getlocalsubkey(context, auth_context, &skey);
-	if (err == 0 && skey != NULL) {
-		DEBUG(10, ("Got KRB5 session key of length %d\n",  (int)KRB5_KEY_LENGTH(skey)));
-		*session_key = data_blob(KRB5_KEY_DATA(skey), KRB5_KEY_LENGTH(skey));
-		dump_data_pw("KRB5 Session Key:\n", session_key->data, session_key->length);
-
-		ret = True;
-
-		krb5_free_keyblock(context, skey);
 	} else {
+		err = krb5_auth_con_getlocalsubkey(context, auth_context, &skey);
+	}
+
+	if (err || skey == NULL) {
 		DEBUG(10, ("KRB5 error getting session key %d\n", err));
+		goto done;
+	}
+
+	DEBUG(10, ("Got KRB5 session key of length %d\n",  (int)KRB5_KEY_LENGTH(skey)));
+	*session_key = data_blob(KRB5_KEY_DATA(skey), KRB5_KEY_LENGTH(skey));
+	dump_data_pw("KRB5 Session Key:\n", session_key->data, session_key->length);
+
+	ret = true;
+
+ done:
+	if (skey) {
+		krb5_free_keyblock(context, skey);
 	}
 
 	return ret;
