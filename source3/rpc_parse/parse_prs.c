@@ -1048,44 +1048,6 @@ bool prs_uint32s(bool charmode, const char *name, prs_struct *ps, int depth, uin
 	return True;
 }
 
-/******************************************************************
- Stream a unicode string, length/buffer specified separately,
- in uint16 chars. The unicode string is already in little-endian format.
- ********************************************************************/
-
-bool prs_unistr2(bool charmode, const char *name, prs_struct *ps, int depth, UNISTR2 *str)
-{
-	char *p;
-	char *q = prs_mem_get(ps, str->uni_str_len * sizeof(uint16));
-	if (q == NULL)
-		return False;
-
-	/* If the string is empty, we don't have anything to stream */
-	if (str->uni_str_len==0)
-		return True;
-
-	if (UNMARSHALLING(ps)) {
-		if (str->uni_str_len > str->uni_max_len) {
-			return False;
-		}
-		if (str->uni_max_len) {
-			str->buffer = PRS_ALLOC_MEM(ps,uint16,str->uni_max_len);
-			if (str->buffer == NULL)
-				return False;
-		} else {
-			str->buffer = NULL;
-		}
-	}
-
-	p = (char *)str->buffer;
-
-	dbg_rw_punival(charmode, name, depth, ps, q, p, str->uni_str_len);
-	
-	ps->data_offset += (str->uni_str_len * sizeof(uint16));
-
-	return True;
-}
-
 /*******************************************************************
  Stream a unicode  null-terminated string. As the string is already
  in little-endian format then do it as a stream of bytes.
