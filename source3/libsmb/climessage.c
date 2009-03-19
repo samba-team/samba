@@ -85,7 +85,7 @@ int cli_message_text_build(struct cli_state *cli, const char *msg, int len, int 
 	p = smb_buf(cli->outbuf);
 	*p++ = 1;
 
-	if (!convert_string_allocate(NULL, CH_UNIX, CH_DOS, msg, len,
+	if (!convert_string_talloc(talloc_tos(), CH_UNIX, CH_DOS, msg, len,
 		(void **)(void *)&msgdos, &lendos, True) || !msgdos) {
 		DEBUG(3,("Conversion failed, sending message in UNIX charset\n"));
 		SSVAL(p, 0, len); p += 2;
@@ -101,7 +101,7 @@ int cli_message_text_build(struct cli_state *cli, const char *msg, int len, int 
 		}
 		memcpy(p, msgdos, lendos);
 		p += lendos;
-		SAFE_FREE(msgdos);
+		TALLOC_FREE(msgdos);
 	}
 
 	cli_setup_bcc(cli, p);

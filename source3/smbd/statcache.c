@@ -205,7 +205,7 @@ bool stat_cache_lookup(connection_struct *conn,
 	} else {
 		chk_name = talloc_strdup_upper(ctx,name);
 		if (!chk_name) {
-			DEBUG(0, ("stat_cache_lookup: strdup_upper failed!\n"));
+			DEBUG(0, ("stat_cache_lookup: talloc_strdup_upper failed!\n"));
 			return False;
 		}
 

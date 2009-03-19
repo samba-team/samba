@@ -290,15 +290,15 @@ static bool is_8_3(const char *fname, bool check_case, bool allow_wildcards,
 	if (strlen(f) > 12)
 		return False;
 
-	if (!push_ucs2_allocate(&ucs2name, f, &size)) {
-		DEBUG(0,("is_8_3: internal error push_ucs2_allocate() failed!\n"));
+	if (!push_ucs2_talloc(NULL, &ucs2name, f, &size)) {
+		DEBUG(0,("is_8_3: internal error push_ucs2_talloc() failed!\n"));
 		goto done;
 	}
 
 	ret = is_8_3_w(ucs2name, allow_wildcards);
 
 done:
-	SAFE_FREE(ucs2name);
+	TALLOC_FREE(ucs2name);
 
 	if (!NT_STATUS_IS_OK(ret)) {
 		return False;
@@ -606,12 +606,12 @@ static bool must_mangle(const char *name,
 
 	magic_char = lp_magicchar(p);
 
-	if (!push_ucs2_allocate(&name_ucs2, name, &converted_size)) {
-		DEBUG(0, ("push_ucs2_allocate failed!\n"));
+	if (!push_ucs2_talloc(NULL, &name_ucs2, name, &converted_size)) {
+		DEBUG(0, ("push_ucs2_talloc failed!\n"));
 		return False;
 	}
 	status = is_valid_name(name_ucs2, False, False);
-	SAFE_FREE(name_ucs2);
+	TALLOC_FREE(name_ucs2);
 	return NT_STATUS_IS_OK(status);
 }
 
@@ -645,20 +645,20 @@ static bool hash_name_to_8_3(const char *in,
 	DEBUG(5,("hash_name_to_8_3( %s, cache83 = %s)\n", in,
 		 cache83 ? "True" : "False"));
 
-	if (!push_ucs2_allocate(&in_ucs2, in, &converted_size)) {
-		DEBUG(0, ("push_ucs2_allocate failed!\n"));
+	if (!push_ucs2_talloc(NULL, &in_ucs2, in, &converted_size)) {
+		DEBUG(0, ("push_ucs2_talloc failed!\n"));
 		return False;
 	}
 
 	/* If it's already 8.3, just copy. */
 	if (NT_STATUS_IS_OK(is_valid_name(in_ucs2, False, False)) &&
 				NT_STATUS_IS_OK(is_8_3_w(in_ucs2, False))) {
-		SAFE_FREE(in_ucs2);
+		TALLOC_FREE(in_ucs2);
 		safe_strcpy(out, in, 12);
 		return True;
 	}
 
-	SAFE_FREE(in_ucs2);
+	TALLOC_FREE(in_ucs2);
 	if (!to_8_3(magic_char, in, out, default_case)) {
 		return False;
 	}

@@ -205,14 +205,14 @@ void cgi_load_variables(void)
 		char *dest = NULL;
 		size_t dest_len;
 
-		convert_string_allocate(frame, CH_UTF8, CH_UNIX,
+		convert_string_talloc(frame, CH_UTF8, CH_UNIX,
 			       variables[i].name, strlen(variables[i].name),
 			       &dest, &dest_len, True);
 		SAFE_FREE(variables[i].name);
 		variables[i].name = SMB_STRDUP(dest ? dest : "");
 
 		dest = NULL;
-		convert_string_allocate(frame, CH_UTF8, CH_UNIX,
+		convert_string_talloc(frame, CH_UTF8, CH_UNIX,
 			       variables[i].value, strlen(variables[i].value),
 			       &dest, &dest_len, True);
 		SAFE_FREE(variables[i].value);

@@ -720,7 +720,7 @@ bool secrets_store_trusted_domain_password(const char* domain, const char* pwd,
 	struct trusted_dom_pass pass;
 	ZERO_STRUCT(pass);
 
-	if (!push_ucs2_allocate(&uni_dom_name, domain, &converted_size)) {
+	if (!push_ucs2_talloc(talloc_tos(), &uni_dom_name, domain, &converted_size)) {
 		DEBUG(0, ("Could not convert domain name %s to unicode\n",
 			  domain));
 		return False;
@@ -728,7 +728,7 @@ bool secrets_store_trusted_domain_password(const char* domain, const char* pwd,
 
 	strncpy_w(pass.uni_name, uni_dom_name, sizeof(pass.uni_name) - 1);
 	pass.uni_name_len = strlen_w(uni_dom_name)+1;
-	SAFE_FREE(uni_dom_name);
+	TALLOC_FREE(uni_dom_name);
 
 	/* last change time */
 	pass.mod_time = time(NULL);
@@ -742,14 +742,14 @@ bool secrets_store_trusted_domain_password(const char* domain, const char* pwd,
 
 	/* Calculate the length. */
 	pass_len = tdb_trusted_dom_pass_pack(NULL, 0, &pass);
-	pass_buf = SMB_MALLOC_ARRAY(uint8, pass_len);
+	pass_buf = talloc_array(talloc_tos(), uint8, pass_len);
 	if (!pass_buf) {
 		return false;
 	}
 	pass_len = tdb_trusted_dom_pass_pack(pass_buf, pass_len, &pass);
 	ret = secrets_store(trustdom_keystr(domain), (void *)pass_buf,
 			pass_len);
-	SAFE_FREE(pass_buf);
+	TALLOC_FREE(pass_buf);
 	return ret;
 }
 

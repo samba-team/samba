@@ -93,7 +93,7 @@ WERROR reg_pull_multi_sz(TALLOC_CTX *mem_ctx, const void *buf, size_t len,
 		size_t dstlen, thislen;
 
 		thislen = strnlen_w(p, len) + 1;
-		if (!convert_string_allocate(*values, CH_UTF16LE, CH_UNIX,
+		if (!convert_string_talloc(*values, CH_UTF16LE, CH_UNIX,
 			p, thislen*2, (void *)&val, &dstlen, true)) {
 			TALLOC_FREE(*values);
 			return WERR_NOMEM;

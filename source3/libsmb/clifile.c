@@ -968,10 +968,10 @@ uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2,
 		buflen += 1;
 	}
 
-	if (!convert_string_allocate(talloc_tos(), CH_UNIX,
-				     ucs2 ? CH_UTF16LE : CH_DOS,
-				     str, str_len, &converted,
-				     &converted_size, true)) {
+	if (!convert_string_talloc(talloc_tos(), CH_UNIX,
+				   ucs2 ? CH_UTF16LE : CH_DOS,
+				   str, str_len, &converted,
+				   &converted_size, true)) {
 		return NULL;
 	}
 

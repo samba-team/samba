@@ -444,12 +444,15 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 			/* notreached. */
 		}
 
-		if (!push_utf8_allocate(&utf8_value, value, &converted_size)) {
+		if (!push_utf8_talloc(talloc_tos(), &utf8_value, value, &converted_size)) {
 			smb_panic("smbldap_set_mod: String conversion failure!");
 			/* notreached. */
 		}
-
-		mods[i]->mod_values[j] = utf8_value;
+		
+		
+		mods[i]->mod_values[j] = SMB_STRDUP(utf8_value);
+		TALLOC_FREE(utf8_value);
+		SMB_ASSERT(mods[i]->mod_values[j] != NULL);
 
 		mods[i]->mod_values[j + 1] = NULL;
 	}

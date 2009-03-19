@@ -171,10 +171,10 @@ static void print_share_mode(const struct share_mode_entry *e,
 		printf("NONE            ");
 	printf("</td>");
 
-	push_utf8_allocate(&utf8_fname, fname, &converted_size);
+	push_utf8_talloc(talloc_tos(), &utf8_fname, fname, &converted_size);
 	printf("<td>%s</td><td>%s</td></tr>\n",
 	       utf8_fname,tstring(talloc_tos(),e->time.tv_sec));
-	SAFE_FREE(utf8_fname);
+	TALLOC_FREE(utf8_fname);
 }
 
 

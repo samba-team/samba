@@ -1500,7 +1500,7 @@ ADS_STATUS ads_gen_mod(ADS_STRUCT *ads, const char *mod_dn, ADS_MODLIST mods)
 	controls[0] = &PermitModify;
 	controls[1] = NULL;
 
-	if (!push_utf8_allocate(&utf8_dn, mod_dn, &converted_size)) {
+	if (!push_utf8_talloc(talloc_tos(), &utf8_dn, mod_dn, &converted_size)) {
 		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 
@@ -1510,7 +1510,7 @@ ADS_STATUS ads_gen_mod(ADS_STRUCT *ads, const char *mod_dn, ADS_MODLIST mods)
 	mods[i] = NULL;
 	ret = ldap_modify_ext_s(ads->ldap.ld, utf8_dn,
 				(LDAPMod **) mods, controls, NULL);
-	SAFE_FREE(utf8_dn);
+	TALLOC_FREE(utf8_dn);
 	return ADS_ERROR(ret);
 }
 
@@ -1527,8 +1527,8 @@ ADS_STATUS ads_gen_add(ADS_STRUCT *ads, const char *new_dn, ADS_MODLIST mods)
 	char *utf8_dn = NULL;
 	size_t converted_size;
 
-	if (!push_utf8_allocate(&utf8_dn, new_dn, &converted_size)) {
-		DEBUG(1, ("ads_gen_add: push_utf8_allocate failed!"));
+	if (!push_utf8_talloc(talloc_tos(), &utf8_dn, new_dn, &converted_size)) {
+		DEBUG(1, ("ads_gen_add: push_utf8_talloc failed!"));
 		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 	
@@ -1538,7 +1538,7 @@ ADS_STATUS ads_gen_add(ADS_STRUCT *ads, const char *new_dn, ADS_MODLIST mods)
 	mods[i] = NULL;
 
 	ret = ldap_add_s(ads->ldap.ld, utf8_dn, (LDAPMod**)mods);
-	SAFE_FREE(utf8_dn);
+	TALLOC_FREE(utf8_dn);
 	return ADS_ERROR(ret);
 }
 
@@ -1553,13 +1553,13 @@ ADS_STATUS ads_del_dn(ADS_STRUCT *ads, char *del_dn)
 	int ret;
 	char *utf8_dn = NULL;
 	size_t converted_size;
-	if (!push_utf8_allocate(&utf8_dn, del_dn, &converted_size)) {
-		DEBUG(1, ("ads_del_dn: push_utf8_allocate failed!"));
+	if (!push_utf8_talloc(talloc_tos(), &utf8_dn, del_dn, &converted_size)) {
+		DEBUG(1, ("ads_del_dn: push_utf8_talloc failed!"));
 		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 	
 	ret = ldap_delete_s(ads->ldap.ld, utf8_dn);
-	SAFE_FREE(utf8_dn);
+	TALLOC_FREE(utf8_dn);
 	return ADS_ERROR(ret);
 }
 

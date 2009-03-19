@@ -1711,22 +1711,22 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 			}
 		}
 
-		if (!push_utf8_allocate(&utf8_password,
+		if (!push_utf8_talloc(talloc_tos(), &utf8_password,
 					pdb_get_plaintext_passwd(newpwd),
 					&converted_size))
 		{
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		if (!push_utf8_allocate(&utf8_dn, dn, &converted_size)) {
-			SAFE_FREE(utf8_password);
+		if (!push_utf8_talloc(talloc_tos(), &utf8_dn, dn, &converted_size)) {
+			TALLOC_FREE(utf8_password);
 			return NT_STATUS_NO_MEMORY;
 		}
 
 		if ((ber = ber_alloc_t(LBER_USE_DER))==NULL) {
 			DEBUG(0,("ber_alloc_t returns NULL\n"));
-			SAFE_FREE(utf8_password);
-			SAFE_FREE(utf8_dn);
+			TALLOC_FREE(utf8_password);
+			TALLOC_FREE(utf8_dn);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 
@@ -1736,21 +1736,21 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 		    (ber_printf (ber, "n}") < 0)) {
 			DEBUG(0,("ldapsam_modify_entry: ber_printf returns a value <0\n"));
                        ber_free(ber,1);
-                       SAFE_FREE(utf8_dn);
-                       SAFE_FREE(utf8_password);
+                       TALLOC_FREE(utf8_dn);
+                       TALLOC_FREE(utf8_password);
                        return NT_STATUS_UNSUCCESSFUL;
 		}
 
 	        if ((rc = ber_flatten (ber, &bv))<0) {
 			DEBUG(0,("ldapsam_modify_entry: ber_flatten returns a value <0\n"));
 			ber_free(ber,1);
-			SAFE_FREE(utf8_dn);
-			SAFE_FREE(utf8_password);
+			TALLOC_FREE(utf8_dn);
+			TALLOC_FREE(utf8_password);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 		
-		SAFE_FREE(utf8_dn);
-		SAFE_FREE(utf8_password);
+		TALLOC_FREE(utf8_dn);
+		TALLOC_FREE(utf8_password);
 		ber_free(ber, 1);
 
 		if (!ldap_state->is_nds_ldap) {

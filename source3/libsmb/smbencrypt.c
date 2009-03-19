@@ -172,16 +172,16 @@ bool ntv2_owf_gen(const uchar owf[16],
 
 	HMACMD5Context ctx;
 
-	if (!push_ucs2_allocate(&user, user_in, &user_byte_len)) {
-		DEBUG(0, ("push_uss2_allocate() for user failed: %s\n",
+	if (!push_ucs2_talloc(NULL, &user, user_in, &user_byte_len)) {
+		DEBUG(0, ("push_uss2_talloc() for user failed: %s\n",
 			  strerror(errno)));
 		return False;
 	}
 
-	if (!push_ucs2_allocate(&domain, domain_in, &domain_byte_len)) {
-		DEBUG(0, ("push_uss2_allocate() for domain failed: %s\n",
+	if (!push_ucs2_talloc(NULL, &domain, domain_in, &domain_byte_len)) {
+		DEBUG(0, ("push_uss2_talloc() for domain failed: %s\n",
 			  strerror(errno)));
-		SAFE_FREE(user);
+		TALLOC_FREE(user);
 		return False;
 	}
 
@@ -210,8 +210,8 @@ bool ntv2_owf_gen(const uchar owf[16],
 	dump_data(100, (uint8 *)kr_buf, 16);
 #endif
 
-	SAFE_FREE(user);
-	SAFE_FREE(domain);
+	TALLOC_FREE(user);
+	TALLOC_FREE(domain);
 	return True;
 }
 

@@ -458,31 +458,31 @@ static bool test_plaintext(enum ntlm_break break_which)
 	flags |= WBFLAG_PAM_LMKEY;
 	flags |= WBFLAG_PAM_USER_SESSION_KEY;
 
-	if (!push_ucs2_allocate(&nt_response_ucs2, opt_password,
+	if (!push_ucs2_talloc(NULL, &nt_response_ucs2, opt_password,
 				&converted_size))
 	{
-		DEBUG(0, ("push_ucs2_allocate failed!\n"));
+		DEBUG(0, ("push_ucs2_talloc failed!\n"));
 		exit(1);
 	}
 
 	nt_response.data = (unsigned char *)nt_response_ucs2;
 	nt_response.length = strlen_w(nt_response_ucs2)*sizeof(smb_ucs2_t);
 
-	if ((password = strdup_upper(opt_password)) == NULL) {
-		DEBUG(0, ("strdup_upper failed!\n"));
+	if ((password = strupper_talloc(NULL, opt_password)) == NULL) {
+		DEBUG(0, ("strupper_talloc() failed!\n"));
 		exit(1);
 	}
 
-	if (!convert_string_allocate(NULL, CH_UNIX,
-				     CH_DOS, password,
-				     strlen(password)+1, 
-				     &lm_response.data,
-				     &lm_response.length, True)) {
-		DEBUG(0, ("convert_string_allocate failed!\n"));
+	if (!convert_string_talloc(NULL, CH_UNIX,
+				   CH_DOS, password,
+				   strlen(password)+1, 
+				   &lm_response.data,
+				   &lm_response.length, True)) {
+		DEBUG(0, ("convert_string_talloc failed!\n"));
 		exit(1);
 	}
 
-	SAFE_FREE(password);
+	TALLOC_FREE(password);
 
 	switch (break_which) {
 	case BREAK_NONE:
@@ -513,8 +513,8 @@ static bool test_plaintext(enum ntlm_break break_which)
 					      user_session_key,
 					      &error_string, NULL);
 	
-	SAFE_FREE(nt_response.data);
-	SAFE_FREE(lm_response.data);
+	TALLOC_FREE(nt_response.data);
+	TALLOC_FREE(lm_response.data);
 	data_blob_free(&chall);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {

@@ -576,7 +576,7 @@ char *alloc_sub_basic(const char *smb_name, const char *domain_name,
 
 		switch (*(p+1)) {
 		case 'U' : 
-			r = strdup_lower(smb_name);
+			r = strlower_talloc(tmp_ctx, smb_name);
 			if (r == NULL) {
 				goto error;
 			}
@@ -584,7 +584,7 @@ char *alloc_sub_basic(const char *smb_name, const char *domain_name,
 			break;
 		case 'G' : {
 			struct passwd *pass;
-			r = SMB_STRDUP(smb_name);
+			r = talloc_strdup(tmp_ctx, smb_name);
 			if (r == NULL) {
 				goto error;
 			}
@@ -598,7 +598,7 @@ char *alloc_sub_basic(const char *smb_name, const char *domain_name,
 			break;
 		}
 		case 'D' :
-			r = strdup_upper(domain_name);
+			r = strupper_talloc(tmp_ctx, domain_name);
 			if (r == NULL) {
 				goto error;
 			}
@@ -678,7 +678,7 @@ char *alloc_sub_basic(const char *smb_name, const char *domain_name,
 		}
 
 		p++;
-		SAFE_FREE(r);
+		TALLOC_FREE(r);
 
 		if (a_string == NULL) {
 			goto done;

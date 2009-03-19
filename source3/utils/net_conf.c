@@ -766,7 +766,7 @@ static int net_conf_setparm(struct net_context *c, struct smbconf_ctx *conf_ctx,
 		d_printf("error: out of memory!\n");
 		goto done;
 	}
-	param = talloc_strdup_lower(mem_ctx, argv[1]);
+	param = strlower_talloc(mem_ctx, argv[1]);
 	if (param == NULL) {
 		d_printf("error: out of memory!\n");
 		goto done;
@@ -818,7 +818,7 @@ static int net_conf_getparm(struct net_context *c, struct smbconf_ctx *conf_ctx,
 		d_printf("error: out of memory!\n");
 		goto done;
 	}
-	param = talloc_strdup_lower(mem_ctx, argv[1]);
+	param = strlower_talloc(mem_ctx, argv[1]);
 	if (param == NULL) {
 		d_printf("error: out of memory!\n");
 		goto done;
@@ -868,7 +868,7 @@ static int net_conf_delparm(struct net_context *c, struct smbconf_ctx *conf_ctx,
 		d_printf("error: out of memory!\n");
 		goto done;
 	}
-	param = talloc_strdup_lower(mem_ctx, argv[1]);
+	param = strlower_talloc(mem_ctx, argv[1]);
 	if (param == NULL) {
 		d_printf("error: out of memory!\n");
 		goto done;

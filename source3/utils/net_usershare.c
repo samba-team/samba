@@ -154,8 +154,8 @@ static int net_usershare_delete(struct net_context *c, int argc, const char **ar
 		return net_usershare_delete_usage(c, argc, argv);
 	}
 
-	if ((sharename = strdup_lower(argv[0])) == NULL) {
-		d_fprintf(stderr, "strdup failed\n");
+	if ((sharename = strlower_talloc(talloc_tos(), argv[0])) == NULL) {
+		d_fprintf(stderr, "strlower_talloc failed\n");
 		return -1;
 	}
 
@@ -624,22 +624,22 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 		default:
 			return net_usershare_add_usage(c, argc, argv);
 		case 2:
-			sharename = strdup_lower(argv[0]);
+			sharename = strlower_talloc(ctx, argv[0]);
 			us_path = argv[1];
 			break;
 		case 3:
-			sharename = strdup_lower(argv[0]);
+			sharename = strlower_talloc(ctx, argv[0]);
 			us_path = argv[1];
 			us_comment = argv[2];
 			break;
 		case 4:
-			sharename = strdup_lower(argv[0]);
+			sharename = strlower_talloc(ctx, argv[0]);
 			us_path = argv[1];
 			us_comment = argv[2];
 			arg_acl = argv[3];
 			break;
 		case 5:
-			sharename = strdup_lower(argv[0]);
+			sharename = strlower_talloc(ctx, argv[0]);
 			us_path = argv[1];
 			us_comment = argv[2];
 			arg_acl = argv[3];
