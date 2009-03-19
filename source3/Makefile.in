@@ -1641,6 +1641,10 @@ bin/ldbrename: $(BINARY_PREREQS) $(LDBRENAME_OBJ) @BUILD_POPT@ @LIBTALLOC_SHARED
 		$(LIBS) $(POPT_LIBS) $(LDAP_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(WINBIND_LIBS)
 
+bin/versiontest: $(BINARY_PREREQS) lib/version_test.o $(VERSION_OBJ)
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(VERSION_OBJ) lib/version_test.o
+
 
 #####################################################################
 #
