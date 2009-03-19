@@ -76,11 +76,16 @@ static NTSTATUS check_path_syntax_internal(char *path,
 			}
 		}
 
-		if (!stream_started && *s == ':') {
+		if (!posix_path && !stream_started && *s == ':') {
 			if (*p_last_component_contains_wcard) {
 				return NT_STATUS_OBJECT_NAME_INVALID;
 			}
-			/* stream names allow more characters than file names */
+			/* Stream names allow more characters than file names.
+			   We're overloading posix_path here to allow a wider
+			   range of characters. If stream_started is true this
+			   is still a Windows path even if posix_path is true.
+			   JRA.
+			*/
 			stream_started = true;
 			start_of_name_component = false;
 			posix_path = true;
