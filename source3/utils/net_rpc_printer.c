@@ -1902,7 +1902,7 @@ NTSTATUS rpc_printer_migrate_drivers_internals(struct net_context *c,
 
 		}
 
-		if (strlen(drivername) == 0) {
+		if (!drivername || strlen(drivername) == 0) {
 			DEBUGADD(1,("Did not get driver for printer %s\n",
 				    printername));
 			goto done;
