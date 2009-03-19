@@ -468,6 +468,8 @@ int _tevent_loop_once(struct tevent_context *ev, const char *location)
 			errno = ELOOP;
 			return -1;
 		}
+	}
+	if (ev->nesting.level > 0) {
 		if (ev->nesting.hook_fn) {
 			int ret2;
 			ret2 = ev->nesting.hook_fn(ev,
@@ -485,7 +487,7 @@ int _tevent_loop_once(struct tevent_context *ev, const char *location)
 
 	ret = ev->ops->loop_once(ev, location);
 
-	if (ev->nesting.level > 1) {
+	if (ev->nesting.level > 0) {
 		if (ev->nesting.hook_fn) {
 			int ret2;
 			ret2 = ev->nesting.hook_fn(ev,
@@ -525,6 +527,8 @@ int _tevent_loop_until(struct tevent_context *ev,
 			errno = ELOOP;
 			return -1;
 		}
+	}
+	if (ev->nesting.level > 0) {
 		if (ev->nesting.hook_fn) {
 			int ret2;
 			ret2 = ev->nesting.hook_fn(ev,
@@ -547,7 +551,7 @@ int _tevent_loop_until(struct tevent_context *ev,
 		}
 	}
 
-	if (ev->nesting.level > 1) {
+	if (ev->nesting.level > 0) {
 		if (ev->nesting.hook_fn) {
 			int ret2;
 			ret2 = ev->nesting.hook_fn(ev,
@@ -601,9 +605,5 @@ int tevent_common_loop_wait(struct tevent_context *ev,
 */
 int _tevent_loop_wait(struct tevent_context *ev, const char *location)
 {
-	int ret;
-	ev->nesting.level++;
-	ret = ev->ops->loop_wait(ev, location);
-	ev->nesting.level--;
-	return ret;
+	return ev->ops->loop_wait(ev, location);
 }
