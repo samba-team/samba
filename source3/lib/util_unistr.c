@@ -1003,52 +1003,6 @@ int unistrcpy(uint16 *dst, uint16 *src)
 	return num_wchars;
 }
 
-/**
- * Samba ucs2 type to UNISTR2 conversion
- *
- * @param ctx Talloc context to create the dst strcture (if null) and the 
- *            contents of the unicode string.
- * @param dst UNISTR2 destination. If equals null, then it's allocated.
- * @param src smb_ucs2_t source.
- * @param max_len maximum number of unicode characters to copy. If equals
- *        null, then null-termination of src is taken
- *
- * @return copied UNISTR2 destination
- **/
-
-UNISTR2* ucs2_to_unistr2(TALLOC_CTX *ctx, UNISTR2* dst, smb_ucs2_t* src)
-{
-	size_t len;
-
-	if (!src) {
-		return NULL;
-	}
-
-	len = strlen_w(src);
-	
-	/* allocate UNISTR2 destination if not given */
-	if (!dst) {
-		dst = TALLOC_P(ctx, UNISTR2);
-		if (!dst)
-			return NULL;
-	}
-	if (!dst->buffer) {
-		dst->buffer = TALLOC_ARRAY(ctx, uint16, len + 1);
-		if (!dst->buffer)
-			return NULL;
-	}
-	
-	/* set UNISTR2 parameters */
-	dst->uni_max_len = len + 1;
-	dst->offset = 0;
-	dst->uni_str_len = len;
-	
-	/* copy the actual unicode string */
-	strncpy_w(dst->buffer, src, dst->uni_max_len);
-	
-	return dst;
-}
-
 /*************************************************************
  ascii only toupper - saves the need for smbd to be in C locale.
 *************************************************************/

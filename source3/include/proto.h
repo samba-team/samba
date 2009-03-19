@@ -1602,7 +1602,6 @@ smb_ucs2_t *strpbrk_wa(const smb_ucs2_t *s, const char *p);
 smb_ucs2_t *strstr_wa(const smb_ucs2_t *s, const char *ins);
 int unistrlen(uint16 *s);
 int unistrcpy(uint16 *dst, uint16 *src);
-UNISTR2* ucs2_to_unistr2(TALLOC_CTX *ctx, UNISTR2* dst, smb_ucs2_t* src);
 int toupper_ascii(int c);
 int tolower_ascii(int c);
 int isupper_ascii(int c);
