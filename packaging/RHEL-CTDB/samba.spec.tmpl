@@ -209,6 +209,7 @@ mv ../nsswitch/libnss_winbind.so %{_32bit_tmp_dir}/
 mv bin/pam_winbind.so %{_32bit_tmp_dir}/
 mv bin/libtalloc.so* %{_32bit_tmp_dir}/
 mv bin/libtdb.so* %{_32bit_tmp_dir}/
+mv bin/libwbclient.so* %{_32bit_tmp_dir}/
 
 make clean
 
@@ -319,6 +320,7 @@ install -m 755 %{_32bit_tmp_dir}/libnss_winbind.so ${RPM_BUILD_ROOT}/lib/libnss_
 
 mv %{_32bit_tmp_dir}/libtalloc* ${RPM_BUILD_ROOT}/usr/lib
 mv %{_32bit_tmp_dir}/libtdb* ${RPM_BUILD_ROOT}/usr/lib
+mv %{_32bit_tmp_dir}/libwbclient* ${RPM_BUILD_ROOT}/usr/lib
 mv %{_32bit_tmp_dir}/pam_winbind.so ${RPM_BUILD_ROOT}/lib/security
 
 rm -rf %{_32bit_tmp_dir}
@@ -605,6 +607,7 @@ exit 0
 #%attr(755,root,root) /lib/libnss_wins.so*
 %attr(755,root,root) /usr/lib/libtalloc.so*
 %attr(755,root,root) /usr/lib/libtdb.so*
+%attr(755,root,root) /usr/lib/libwbclient.so*
 %attr(755,root,root) /lib/security/pam_winbind.so
 %endif
 
