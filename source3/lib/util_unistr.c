@@ -850,43 +850,6 @@ smb_ucs2_t *strstr_wa(const smb_ucs2_t *s, const char *ins)
 	return NULL;
 }
 
-/*******************************************************************
- Returns the length in number of wide characters.
-******************************************************************/
-
-int unistrlen(uint16 *s)
-{
-	int len;
-
-	if (!s) {
-		return -1;
-	}
-
-	for (len=0; SVAL(s,0); s++,len++) {
-		;
-	}
-
-	return len;
-}
-
-/*******************************************************************
- Strcpy for unicode strings. Returns length (in num of wide chars).
- Not odd align safe.
-********************************************************************/
-
-int unistrcpy(uint16 *dst, uint16 *src)
-{
-	int num_wchars = 0;
-
-	while (SVAL(src,0)) {
-		*dst++ = *src++;
-		num_wchars++;
-	}
-	*dst = 0;
-
-	return num_wchars;
-}
-
 /*************************************************************
  ascii only toupper - saves the need for smbd to be in C locale.
 *************************************************************/
