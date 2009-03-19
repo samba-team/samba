@@ -291,64 +291,6 @@ int rpcstr_pull_talloc(TALLOC_CTX *ctx,
 
 }
 
-/* Copy a string from a unistr2 source to internal samba format
-   destination.  Use this instead of direct calls to rpcstr_pull() to avoid
-   having to determine whether the source string is null terminated. */
-
-int rpcstr_pull_unistr2_fstring(char *dest, UNISTR2 *src)
-{
-        return pull_ucs2(NULL, dest, src->buffer, sizeof(fstring),
-                         src->uni_str_len * 2, 0);
-}
-
-/* Helper function to return a talloc'ed string. I have implemented it with a
- * copy because I don't really know how pull_ucs2 and friends calculate the
- * target size. If this turns out to be a major bottleneck someone with deeper
- * multi-byte knowledge needs to revisit this.
- * I just did (JRA :-). No longer uses copy.
- * My (VL) use is dsr_getdcname, which returns 6 strings, the alternative would
- * have been to manually talloc_strdup them in rpc_client/cli_netlogon.c.
- */
-
-char *rpcstr_pull_unistr2_talloc(TALLOC_CTX *ctx, const UNISTR2 *src)
-{
-	char *dest = NULL;
-	size_t dest_len;
-
-	if (!convert_string_talloc(ctx, CH_UTF16LE, CH_UNIX, src->buffer,
-				   src->uni_str_len * 2, (void *)&dest,
-				   &dest_len, true))
-	{
-		return NULL;
-	}
-
-	/* Ensure we're returning a null terminated string. */
-	if (dest_len) {
-		/* Did we already process the terminating zero ? */
-		if (dest[dest_len-1] != 0) {
-			size_t size = talloc_get_size(dest);
-			/* Have we got space to append the '\0' ? */
-			if (size <= dest_len) {
-				/* No, realloc. */
-				dest = TALLOC_REALLOC_ARRAY(ctx, dest, char,
-						dest_len+1);
-				if (!dest) {
-					/* talloc fail. */
-					dest_len = (size_t)-1;
-					return NULL;
-				}
-			}
-			/* Yay - space ! */
-			dest[dest_len] = '\0';
-			dest_len++;
-		}
-	} else if (dest) {
-		dest[0] = 0;
-	}
-
-	return dest;
-}
-
 /* Converts a string from internal samba format to unicode
  */
 
@@ -368,64 +310,6 @@ int rpcstr_push_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src)
 		return size;
 	else
 		return -1;
-}
-
-/*******************************************************************
- Convert a (little-endian) UNISTR2 structure to an ASCII string.
-********************************************************************/
-
-void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
-{
-	if ((str == NULL) || (str->uni_str_len == 0)) {
-		*dest='\0';
-		return;
-	}
-	pull_ucs2(NULL, dest, str->buffer, maxlen, str->uni_str_len*2, STR_NOALIGN);
-}
-
-/*******************************************************************
- Duplicate a UNISTR2 string into a null terminated char*
- using a talloc context.
-********************************************************************/
-
-char *unistr2_to_ascii_talloc(TALLOC_CTX *ctx, const UNISTR2 *str)
-{
-	char *s = NULL;
-
-	if (!str || !str->buffer) {
-		return NULL;
-	}
-	if (pull_ucs2_base_talloc(ctx,
-				NULL,
-				&s,
-				str->buffer,
-				str->uni_str_len*2,
-				STR_NOALIGN) == (size_t)-1) {
-		return NULL;
-	}
-	return s;
-}
-
-/*******************************************************************
- Return a string for displaying a UNISTR2. Guarentees to return a
- valid string - "" if nothing else.
- Changed to use talloc_tos() under the covers.... JRA.
-********************************************************************/
-
-const char *unistr2_static(const UNISTR2 *str)
-{
-	char *dest = NULL;
-
-	if ((str == NULL) || (str->uni_str_len == 0)) {
-		return "";
-	}
-
-	dest = unistr2_to_ascii_talloc(talloc_tos(), str);
-	if (!dest) {
-		return "";
-	}
-
-	return dest;
 }
 
 /*******************************************************************
