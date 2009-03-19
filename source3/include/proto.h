@@ -5931,8 +5931,9 @@ void reset_all_printerdata(struct messaging_context *msg,
 bool convert_devicemode(const char *printername,
 			const struct spoolss_DeviceMode *devmode,
 			NT_DEVICEMODE **pp_nt_devmode);
-WERROR set_printer_dataex( NT_PRINTER_INFO_LEVEL *printer, const char *key, const char *value,
-                                  uint32 type, uint8 *data, int real_len  );
+WERROR set_printer_dataex(NT_PRINTER_INFO_LEVEL *printer,
+			  const char *key, const char *value,
+			  uint32_t type, uint8_t *data, int real_len);
 void spoolss_notify_server_name(int snum,
 				       struct spoolss_Notify *data,
 				       print_queue_struct *queue,
