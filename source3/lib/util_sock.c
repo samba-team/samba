@@ -519,7 +519,7 @@ NTSTATUS read_socket_with_timeout(int fd, char *buf,
 		}
 
 		while (nread < mincnt) {
-			readret = sys_read(fd, buf + nread, maxcnt - nread);
+			readret = sys_recv(fd, buf + nread, maxcnt - nread, 0);
 
 			if (readret == 0) {
 				DEBUG(5,("read_socket_with_timeout: "
@@ -588,7 +588,7 @@ NTSTATUS read_socket_with_timeout(int fd, char *buf,
 			return NT_STATUS_IO_TIMEOUT;
 		}
 
-		readret = sys_read(fd, buf+nread, maxcnt-nread);
+		readret = sys_recv(fd, buf+nread, maxcnt-nread, 0);
 
 		if (readret == 0) {
 			/* we got EOF on the file descriptor */
