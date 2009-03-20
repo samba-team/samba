@@ -5,7 +5,7 @@
 
    Copyright (C) 2005,2006 Tim Potter <tpot@samba.org>
    Copyright (C) 2006 Simo Sorce <idra@samba.org>
-   Copyright (C) 2007-2008 Jelmer Vernooij <jelmer@samba.org>
+   Copyright (C) 2007-2009 Jelmer Vernooij <jelmer@samba.org>
 
 	 ** NOTE! The following LGPL license applies to the ldb
 	 ** library. This does NOT imply that all of Samba is released
@@ -84,6 +84,14 @@ static PyObject *PyObject_FromLdbValue(struct ldb_context *ldb_ctx,
 	return ret;
 }
 
+/**
+ * Obtain a ldb DN from a Python object.
+ *
+ * @param mem_ctx Memory context
+ * @param object Python object
+ * @param ldb_ctx LDB context
+ * @return Whether or not the conversion succeeded
+ */
 bool PyObject_AsDn(TALLOC_CTX *mem_ctx, PyObject *object, 
 		   struct ldb_context *ldb_ctx, struct ldb_dn **dn)
 {
@@ -104,6 +112,12 @@ bool PyObject_AsDn(TALLOC_CTX *mem_ctx, PyObject *object,
 	return false;
 }
 
+/**
+ * Create a Python object from a ldb_result.
+ *
+ * @param result LDB result to convert
+ * @return Python object with converted result (a list object)
+ */
 static PyObject *PyLdbResult_FromResult(struct ldb_result *result)
 {
 	PyObject *ret;
@@ -119,7 +133,16 @@ static PyObject *PyLdbResult_FromResult(struct ldb_result *result)
 	return ret;
 }
 
-static struct ldb_result *PyLdbResult_AsResult(TALLOC_CTX *mem_ctx, PyObject *obj)
+/**
+ * Create a LDB Result from a Python object. 
+ * If conversion fails, NULL will be returned and a Python exception set.
+ *
+ * @param mem_ctx Memory context in which to allocate the LDB Result
+ * @param obj Python object to convert
+ * @return a ldb_result, or NULL if the conversion failed
+ */
+static struct ldb_result *PyLdbResult_AsResult(TALLOC_CTX *mem_ctx, 
+											   PyObject *obj)
 {
 	struct ldb_result *res;
 	int i;
@@ -451,7 +474,6 @@ static PyObject *py_ldb_get_schema_basedn(PyLdbObject *self)
 	return PyLdbDn_FromDn(dn);
 }
 
-
 static PyObject *py_ldb_get_config_basedn(PyLdbObject *self)
 {
 	struct ldb_dn *dn = ldb_get_config_basedn(PyLdb_AsLdbContext(self));
@@ -459,7 +481,6 @@ static PyObject *py_ldb_get_config_basedn(PyLdbObject *self)
 		Py_RETURN_NONE;
 	return PyLdbDn_FromDn(dn);
 }
-
 
 static PyObject *py_ldb_get_default_basedn(PyLdbObject *self)
 {
@@ -651,8 +672,6 @@ static PyObject *py_ldb_add(PyLdbObject *self, PyObject *args)
 
 	Py_RETURN_NONE;
 }
-
-
 
 static PyObject *py_ldb_delete(PyLdbObject *self, PyObject *args)
 {
