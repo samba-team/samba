@@ -29,36 +29,36 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 					    const char *server_name,
 					    struct cli_state **cli)
 {
+	struct user_auth_info *auth_info = NULL;
 	struct cli_state *cli_ipc = NULL;
 
 	if (!ctx || !cli || !server_name) {
 		return WERR_INVALID_PARAM;
 	}
 
-	cli_cm_set_signing_state(Undefined);
-
-	if (ctx->use_kerberos) {
-		cli_cm_set_use_kerberos();
+	auth_info = user_auth_info_init(NULL);
+	if (!auth_info) {
+		return WERR_NOMEM;
 	}
-
-	if (ctx->password) {
-		cli_cm_set_password(ctx->password);
-	}
-	if (ctx->username) {
-		cli_cm_set_username(ctx->username);
-	}
+	auth_info->signing_state = Undefined;
+	set_cmdline_auth_info_use_kerberos(auth_info, ctx->use_kerberos);
+	set_cmdline_auth_info_password(auth_info, ctx->password);
+	set_cmdline_auth_info_username(auth_info, ctx->username);
 
 	if (ctx->username && ctx->username[0] &&
 	    ctx->password && ctx->password[0] &&
 	    ctx->use_kerberos) {
-		cli_cm_set_fallback_after_kerberos();
+		set_cmdline_auth_info_fallback_after_kerberos(auth_info, true);
 	}
 
 	cli_ipc = cli_cm_open(ctx, NULL,
-			      server_name, "IPC$",
-			      false, false,
-			      PROTOCOL_NT1,
-			      0, 0x20);
+				server_name, "IPC$",
+				auth_info,
+				false, false,
+				PROTOCOL_NT1,
+				0, 0x20);
+	TALLOC_FREE(auth_info);
+
 	if (!cli_ipc) {
 		libnetapi_set_error_string(ctx,
 			"Failed to connect to IPC$ share on %s", server_name);
@@ -73,22 +73,27 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 /********************************************************************
 ********************************************************************/
 
-WERROR libnetapi_shutdown_cm(struct libnetapi_ctx *ctx)
-{
-	cli_cm_shutdown();
+struct client_pipe_connection {
+	struct client_pipe_connection *prev, *next;
+	struct rpc_pipe_client *pipe;
+	struct cli_state *cli;
+};
 
-	return WERR_OK;
-}
+static struct client_pipe_connection *pipe_connections;
 
 /********************************************************************
 ********************************************************************/
 
-struct client_pipe_connection {
-	struct client_pipe_connection *prev, *next;
-	struct rpc_pipe_client *pipe;
-};
+WERROR libnetapi_shutdown_cm(struct libnetapi_ctx *ctx)
+{
+	struct client_pipe_connection *p;
 
-static struct client_pipe_connection *pipe_connections;
+	for (p = pipe_connections; p; p = p->next) {
+		cli_shutdown(p->cli);
+	}
+
+	return WERR_OK;
+}
 
 /********************************************************************
 ********************************************************************/
@@ -138,6 +143,7 @@ static NTSTATUS pipe_cm_connect(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
+	p->cli = cli;
 	DLIST_ADD(pipe_connections, p);
 
 	*presult = p->pipe;
@@ -193,5 +199,3 @@ WERROR libnetapi_open_pipe(struct libnetapi_ctx *ctx,
 
 	return WERR_OK;
 }
-
-

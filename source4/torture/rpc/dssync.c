@@ -273,7 +273,12 @@ static bool test_GetInfo(struct torture_context *tctx, struct DsSyncTest *ctx)
 	struct cldap_socket *cldap;
 	struct cldap_netlogon search;
 
-	cldap = cldap_socket_init(ctx, tctx->ev, lp_iconv_convenience(tctx->lp_ctx));
+	status = cldap_socket_init(ctx, NULL, NULL, NULL, &cldap);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("failed to setup cldap socket - %s\n",
+			nt_errstr(status));
+		return false;
+	}
 
 	r.in.bind_handle		= &ctx->admin.drsuapi.bind_handle;
 	r.in.level			= 1;
@@ -311,7 +316,7 @@ static bool test_GetInfo(struct torture_context *tctx, struct DsSyncTest *ctx)
 	search.in.acct_control = -1;
 	search.in.version		= NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX;
 	search.in.map_response = true;
-	status = cldap_netlogon(cldap, ctx, &search);
+	status = cldap_netlogon(cldap, lp_iconv_convenience(tctx->lp_ctx), ctx, &search);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		ctx->site_name = talloc_asprintf(ctx, "%s", "Default-First-Site-Name");

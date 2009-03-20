@@ -73,7 +73,7 @@ foreach my $key (values %$OUTPUT) {
 		$shared_libs_used = 1;
 	}
 	if ($key->{TYPE} eq "MODULE" and @{$key->{OUTPUT_TYPE}}[0] eq "MERGED_OBJ" and defined($key->{INIT_FUNCTION})) {
-		$mkenv->output("$key->{SUBSYSTEM}_INIT_FUNCTIONS += $key->{INIT_FUNCTION},\n");
+		$mkenv->output("$key->{SUBSYSTEM}_INIT_FUNCTIONS +=$key->{INIT_FUNCTION},\n");
 	}
 	$mkenv->CFlags($key);
 }

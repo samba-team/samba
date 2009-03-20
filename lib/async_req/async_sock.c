@@ -389,7 +389,6 @@ struct tevent_req *writev_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 {
 	struct tevent_req *result;
 	struct writev_state *state;
-	struct tevent_fd *fde;
 
 	result = tevent_req_create(mem_ctx, &state, struct writev_state);
 	if (result == NULL) {
@@ -405,22 +404,7 @@ struct tevent_req *writev_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		goto fail;
 	}
 
-	/*
-	 * This if () should go away once our callers are converted to always
-	 * pass in a queue.
-	 */
-
-	if (queue != NULL) {
-		if (!tevent_queue_add(queue, ev, result, writev_trigger,
-				      NULL)) {
-			goto fail;
-		}
-		return result;
-	}
-
-	fde = tevent_add_fd(ev, state, fd, TEVENT_FD_WRITE, writev_handler,
-			    result);
-	if (fde == NULL) {
+	if (!tevent_queue_add(queue, ev, result, writev_trigger, NULL)) {
 		goto fail;
 	}
 	return result;
@@ -485,7 +469,7 @@ static void writev_handler(struct tevent_context *ev, struct tevent_fd *fde,
 			state->iov[0].iov_len -= written;
 			break;
 		}
-		written = state->iov[0].iov_len;
+		written -= state->iov[0].iov_len;
 		state->iov += 1;
 		state->count -= 1;
 	}

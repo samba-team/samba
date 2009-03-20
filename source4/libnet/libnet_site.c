@@ -56,8 +56,14 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_context *lctx, struct li
 	search.in.version = NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX;
 	search.in.map_response = true;
 
-	cldap = cldap_socket_init(tmp_ctx, lctx->event_ctx, lp_iconv_convenience(lctx->lp_ctx));
-	status = cldap_netlogon(cldap, tmp_ctx, &search);
+	/* we want to use non async calls, so we're not passing an event context */
+	status = cldap_socket_init(tmp_ctx, NULL, NULL, NULL, &cldap);//TODO
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
+		r->out.error_string = NULL;
+		return status;
+	}
+	status = cldap_netlogon(cldap, lp_iconv_convenience(lctx->lp_ctx), tmp_ctx, &search);
 	if (!NT_STATUS_IS_OK(status)
 	    || !search.out.netlogon.data.nt5_ex.client_site) {
 		/*

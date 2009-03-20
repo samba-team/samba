@@ -203,6 +203,9 @@ smbc_free_context(SMBCCTX *context,
         
         DEBUG(3, ("Context %p successfully freed\n", context));
 
+	/* Free any DFS auth context. */
+	TALLOC_FREE(context->internal->auth_info);
+
 	SAFE_FREE(context->internal);
         SAFE_FREE(context);
 
@@ -625,32 +628,20 @@ smbc_version(void)
         return samba_version_string();
 }
 
-
 /*
  * Set the credentials so DFS will work when following referrals.
+ * This function is broken and must be removed. No SMBCCTX arg...
+ * JRA.
  */
+
 void
 smbc_set_credentials(const char *workgroup,
-                     const char *user,
-                     const char *password,
-                     smbc_bool use_kerberos,
-                     const char *signing_state)
+			const char *user,
+			const char *password,
+			smbc_bool use_kerberos,
+			const char *signing_state)
 {
-        struct user_auth_info *auth_info;
-
-	auth_info = user_auth_info_init(talloc_tos());
-	if (auth_info == NULL) {
-		return;
-	}
-        set_cmdline_auth_info_username(auth_info, user);
-        set_cmdline_auth_info_password(auth_info, password);
-        set_cmdline_auth_info_use_kerberos(auth_info, use_kerberos);
-        if (! set_cmdline_auth_info_signing_state(auth_info, signing_state)) {
-                DEBUG(0, ("Invalid signing state: %s", signing_state));
-        }
-        set_global_myworkgroup(workgroup);
-        cli_cm_set_credentials(auth_info);
-	TALLOC_FREE(auth_info);
+	d_printf("smbc_set_credentials is obsolete. Replace with smbc_set_credentials_with_fallback().\n");
 }
 
 void smbc_set_credentials_with_fallback(SMBCCTX *context,
@@ -660,12 +651,23 @@ void smbc_set_credentials_with_fallback(SMBCCTX *context,
 {
 	smbc_bool use_kerberos = false;
 	const char *signing_state = "off";
-	
+	struct user_auth_info *auth_info = user_auth_info_init(NULL);
+
+	if (auth_info) {
+	}
+
 	if (! context ||
 	    ! workgroup || ! *workgroup ||
 	    ! user || ! *user ||
 	    ! password || ! *password) {
 
+		return;
+	}
+
+	auth_info = user_auth_info_init(NULL);
+
+	if (auth_info) {
+		DEBUG(0, ("smbc_set_credentials_with_fallback: allocation fail\n"));
 		return;
 	}
 
@@ -681,10 +683,15 @@ void smbc_set_credentials_with_fallback(SMBCCTX *context,
 		signing_state = "force";
 	}
 
-	smbc_set_credentials(workgroup, user, password,
-                             use_kerberos, signing_state);
+        set_cmdline_auth_info_username(auth_info, user);
+        set_cmdline_auth_info_password(auth_info, password);
+        set_cmdline_auth_info_use_kerberos(auth_info, use_kerberos);
+        set_cmdline_auth_info_signing_state(auth_info, signing_state);
+	set_cmdline_auth_info_fallback_after_kerberos(auth_info,
+		smbc_getOptionFallbackAfterKerberos(context));
+        set_global_myworkgroup(workgroup);
 
-	if (smbc_getOptionFallbackAfterKerberos(context)) {
-		cli_cm_set_fallback_after_kerberos();
-	}
+	TALLOC_FREE(context->internal->auth_info);
+
+        context->internal->auth_info = auth_info;
 }

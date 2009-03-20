@@ -440,7 +440,7 @@ typedef struct _Printer{
 		fstring localmachine;
 		uint32 printerlocal;
 		struct spoolss_NotifyOption *option;
-		POLICY_HND client_hnd;
+		struct policy_handle client_hnd;
 		bool client_connected;
 		uint32 change;
 		/* are we in a FindNextPrinterChangeNotify() call? */
@@ -458,5 +458,21 @@ typedef struct _Printer{
 	NT_PRINTER_INFO_LEVEL *printer_info;
 	
 } Printer_entry;
+
+/*
+ * The printer attributes.
+ * I #defined all of them (grabbed form MSDN)
+ * I'm only using:
+ * ( SHARED | NETWORK | RAW_ONLY )
+ * RAW_ONLY _MUST_ be present otherwise NT will send an EMF file
+ */
+
+#define PRINTER_ATTRIBUTE_SAMBA			(PRINTER_ATTRIBUTE_RAW_ONLY|\
+						 PRINTER_ATTRIBUTE_SHARED|\
+						 PRINTER_ATTRIBUTE_LOCAL)
+#define PRINTER_ATTRIBUTE_NOT_SAMBA		(PRINTER_ATTRIBUTE_NETWORK)
+
+#define DRIVER_ANY_VERSION		0xffffffff
+#define DRIVER_MAX_VERSION		4
 
 #endif /* NT_PRINTING_H_ */

@@ -719,7 +719,7 @@ NTSTATUS _samr_GetUserPwInfo(pipes_struct *p,
 /*******************************************************************
 ********************************************************************/
 
-static bool get_lsa_policy_samr_sid( pipes_struct *p, POLICY_HND *pol,
+static bool get_lsa_policy_samr_sid( pipes_struct *p, struct policy_handle *pol,
 					DOM_SID *sid, uint32 *acc_granted,
 					DISP_INFO **ppdisp_info)
 {
@@ -2122,8 +2122,6 @@ NTSTATUS _samr_OpenUser(pipes_struct *p,
 {
 	struct samu *sampass=NULL;
 	DOM_SID sid;
-	POLICY_HND domain_pol = *r->in.domain_handle;
-	POLICY_HND *user_pol = r->out.user_handle;
 	struct samr_info *info = NULL;
 	SEC_DESC *psd = NULL;
 	uint32    acc_granted;
@@ -2135,7 +2133,7 @@ NTSTATUS _samr_OpenUser(pipes_struct *p,
 
 	/* find the domain policy handle and get domain SID / access bits in the domain policy. */
 
-	if ( !get_lsa_policy_samr_sid(p, &domain_pol, &sid, &acc_granted, NULL) )
+	if ( !get_lsa_policy_samr_sid(p, r->in.domain_handle, &sid, &acc_granted, NULL) )
 		return NT_STATUS_INVALID_HANDLE;
 
 	nt_status = access_check_samr_function(acc_granted,
@@ -2188,7 +2186,7 @@ NTSTATUS _samr_OpenUser(pipes_struct *p,
 	info->acc_granted = acc_granted;
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (!create_policy_hnd(p, user_pol, info))
+	if (!create_policy_hnd(p, r->out.user_handle, info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	return NT_STATUS_OK;
@@ -3032,9 +3030,7 @@ NTSTATUS _samr_CreateUser2(pipes_struct *p,
 {
 	const char *account = NULL;
 	DOM_SID sid;
-	POLICY_HND dom_pol = *r->in.domain_handle;
 	uint32_t acb_info = r->in.acct_flags;
-	POLICY_HND *user_pol = r->out.user_handle;
 	struct samr_info *info = NULL;
 	NTSTATUS nt_status;
 	uint32 acc_granted;
@@ -3047,7 +3043,7 @@ NTSTATUS _samr_CreateUser2(pipes_struct *p,
 	DISP_INFO *disp_info = NULL;
 
 	/* Get the domain SID stored in the domain policy */
-	if (!get_lsa_policy_samr_sid(p, &dom_pol, &sid, &acc_granted,
+	if (!get_lsa_policy_samr_sid(p, r->in.domain_handle, &sid, &acc_granted,
 				     &disp_info))
 		return NT_STATUS_INVALID_HANDLE;
 
@@ -3159,7 +3155,7 @@ NTSTATUS _samr_CreateUser2(pipes_struct *p,
 	info->acc_granted = acc_granted;
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (!create_policy_hnd(p, user_pol, info)) {
+	if (!create_policy_hnd(p, r->out.user_handle, info)) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
@@ -3447,9 +3443,7 @@ NTSTATUS _samr_OpenAlias(pipes_struct *p,
 			 struct samr_OpenAlias *r)
 {
 	DOM_SID sid;
-	POLICY_HND domain_pol = *r->in.domain_handle;
 	uint32 alias_rid = r->in.rid;
-	POLICY_HND *alias_pol = r->out.alias_handle;
 	struct    samr_info *info = NULL;
 	SEC_DESC *psd = NULL;
 	uint32    acc_granted;
@@ -3460,7 +3454,7 @@ NTSTATUS _samr_OpenAlias(pipes_struct *p,
 
 	/* find the domain policy and get the SID / access bits stored in the domain policy */
 
-	if ( !get_lsa_policy_samr_sid(p, &domain_pol, &sid, &acc_granted, NULL) )
+	if ( !get_lsa_policy_samr_sid(p, r->in.domain_handle, &sid, &acc_granted, NULL) )
 		return NT_STATUS_INVALID_HANDLE;
 
 	status = access_check_samr_function(acc_granted,
@@ -3521,7 +3515,7 @@ NTSTATUS _samr_OpenAlias(pipes_struct *p,
 	info->acc_granted = acc_granted;
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (!create_policy_hnd(p, alias_pol, info))
+	if (!create_policy_hnd(p, r->out.alias_handle, info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	return NT_STATUS_OK;
@@ -3996,7 +3990,6 @@ NTSTATUS _samr_SetUserInfo(pipes_struct *p,
 	NTSTATUS status;
 	struct samu *pwd = NULL;
 	DOM_SID sid;
-	POLICY_HND *pol = r->in.user_handle;
 	union samr_UserInfo *info = r->in.info;
 	uint16_t switch_value = r->in.level;
 	uint32_t acc_granted;
@@ -4009,7 +4002,7 @@ NTSTATUS _samr_SetUserInfo(pipes_struct *p,
 	DEBUG(5,("_samr_SetUserInfo: %d\n", __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, pol, &sid, &acc_granted, &disp_info)) {
+	if (!get_lsa_policy_samr_sid(p, r->in.user_handle, &sid, &acc_granted, &disp_info)) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
 

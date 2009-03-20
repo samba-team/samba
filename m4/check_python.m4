@@ -41,7 +41,11 @@ dnl $PYTHON_CFLAGS
 dnl $PYTHON_LDFLAGS
 AC_DEFUN([AC_SAMBA_PYTHON_DEVEL],
 [
-	AC_PATH_PROG([PYTHON],[python[$PYTHON_VERSION]])
+	if test -z "$PYTHON_VERSION"; then
+		AC_PATH_PROGS([PYTHON], [python2.6 python2.5 python2.4 python])
+	else
+		AC_PATH_PROG([PYTHON],[python[$PYTHON_VERSION]])
+	fi
 	if test -z "$PYTHON"; then
 		working_python=no
 		AC_MSG_WARN([No python found])

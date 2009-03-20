@@ -1387,6 +1387,18 @@ static void print_queue_receive(struct messaging_context *msg,
 	return;
 }
 
+static void printing_pause_fd_handler(struct tevent_context *ev,
+				      struct tevent_fd *fde,
+				      uint16_t flags,
+				      void *private_data)
+{
+	/*
+	 * If pause_pipe[1] is closed it means the parent smbd
+	 * and children exited or aborted.
+	 */
+	exit_server_cleanly(NULL);
+}
+
 static pid_t background_lpq_updater_pid = -1;
 
 /****************************************************************************
@@ -1415,6 +1427,9 @@ void start_background_queue(void)
 	}
 
 	if(background_lpq_updater_pid == 0) {
+		struct tevent_fd *fde;
+		int ret;
+
 		/* Child. */
 		DEBUG(5,("start_background_queue: background LPQ thread started\n"));
 
@@ -1440,60 +1455,21 @@ void start_background_queue(void)
 		messaging_register(smbd_messaging_context(), NULL,
 				   MSG_PRINTER_UPDATE, print_queue_receive);
 
-		DEBUG(5,("start_background_queue: background LPQ thread waiting for messages\n"));
-		while (1) {
-			fd_set r_fds, w_fds;
-			int ret;
-			struct timeval to;
-			int maxfd = 0;
-
-			/* Process a signal and timed events now... */
-			if (run_events(smbd_event_context(), 0, NULL, NULL)) {
-				continue;
-			}
-
-			to.tv_sec = SMBD_SELECT_TIMEOUT;
-			to.tv_usec = 0;
-
-			/*
-			 * Setup the select fd sets.
-			 */
-
-			FD_ZERO(&r_fds);
-			FD_ZERO(&w_fds);
-
-			/*
-			 * Are there any timed events waiting ? If so, ensure we don't
-			 * select for longer than it would take to wait for them.
-			 */
-
-			{
-				struct timeval now;
-				GetTimeOfDay(&now);
-
-				event_add_to_select_args(smbd_event_context(), &now,
-							 &r_fds, &w_fds, &to, &maxfd);
-			}
-
-			FD_SET(pause_pipe[1], &r_fds);
-			maxfd = MAX(pause_pipe[1], maxfd);
-
-			ret = sys_select(maxfd, &r_fds, &w_fds, NULL, &to);
-
-			/*
-			 * If pause_pipe[1] is closed it means the parent smbd
-			 * and children exited or aborted. If sys_select()
-			 * failed, then something more sinister is wrong
-			 */
-			if ((ret < 0) ||
-			    (ret == 1 && FD_ISSET(pause_pipe[1], &r_fds))) {
-                                exit_server_cleanly(NULL);
-			}
-
-			if (run_events(smbd_event_context(), ret, &r_fds, &w_fds)) {
-				continue;
-			}
+		fde = tevent_add_fd(smbd_event_context(), smbd_event_context(),
+				    pause_pipe[1], TEVENT_FD_READ,
+				    printing_pause_fd_handler,
+				    NULL);
+		if (!fde) {
+			DEBUG(0,("tevent_add_fd() failed for pause_pipe\n"));
+			smb_panic("tevent_add_fd() failed for pause_pipe");
 		}
+
+		DEBUG(5,("start_background_queue: background LPQ thread waiting for messages\n"));
+		ret = tevent_loop_wait(smbd_event_context());
+		/* should not be reached */
+		DEBUG(0,("background_queue: tevent_loop_wait() exited with %d - %s\n",
+			 ret, (ret == 0) ? "out of events" : strerror(errno)));
+		exit(1);
 	}
 
 	close(pause_pipe[1]);
@@ -2407,7 +2383,7 @@ static bool add_to_jobs_changed(struct tdb_print_db *pdb, uint32 jobid)
 ***************************************************************************/
 
 uint32 print_job_start(struct auth_serversupplied_info *server_info, int snum,
-		       char *jobname, NT_DEVICEMODE *nt_devmode )
+		       const char *jobname, NT_DEVICEMODE *nt_devmode )
 {
 	uint32 jobid;
 	char *path;

@@ -43,6 +43,8 @@
 		return false;					\
 	}} while (0)
 
+#define TARGET_IS_WIN7(_tctx) (torture_setting_bool(_tctx, "win7", false))
+
 /*
   test some interesting combinations found by gentest
  */
@@ -160,7 +162,11 @@ static bool test_create_gentest(struct torture_context *torture, struct smb2_tre
 		}
 	}
 
-	CHECK_EQUAL(access_mask, 0x0df0fe00);
+	if (TARGET_IS_WIN7(torture)) {
+		CHECK_EQUAL(access_mask, 0x0de0fe00);
+	} else {
+		CHECK_EQUAL(access_mask, 0x0df0fe00);
+	}
 
 	io.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
 	io.in.desired_access = SEC_FLAG_MAXIMUM_ALLOWED;

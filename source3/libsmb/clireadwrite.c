@@ -930,11 +930,8 @@ struct cli_push_state {
 	uint16_t mode;
 	off_t start_offset;
 	size_t window_size;
-	bool caller_buffers;
 
-	size_t (*source)(uint8_t *inbuf, size_t n,
-			 const uint8_t **outbuf,
-			 void *priv);
+	size_t (*source)(uint8_t *buf, size_t n, void *priv);
 	void *priv;
 
 	bool eof;
@@ -966,21 +963,13 @@ static bool cli_push_write_setup(struct async_req *req,
 	substate->req = req;
 	substate->idx = idx;
 	substate->ofs = state->next_offset;
-	if (state->caller_buffers) {
-		substate->buf = NULL;
-	} else {
-		substate->buf = talloc_array(substate, uint8_t,
-					     state->chunk_size);
-		if (!substate->buf) {
-			talloc_free(substate);
-			return false;
-		}
+	substate->buf = talloc_array(substate, uint8_t, state->chunk_size);
+	if (!substate->buf) {
+		talloc_free(substate);
+		return false;
 	}
-
-	/* source function can overwrite substate->buf... */
 	substate->size = state->source(substate->buf,
 				       state->chunk_size,
-				       (const uint8_t **)&substate->buf,
 				       state->priv);
 	if (substate->size == 0) {
 		state->eof = true;
@@ -1013,9 +1002,7 @@ struct async_req *cli_push_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 				struct cli_state *cli,
 				uint16_t fnum, uint16_t mode,
 				off_t start_offset, size_t window_size,
-				bool caller_buffers,
-				size_t (*source)(uint8_t *inbuf, size_t n,
-						 const uint8_t **outbuf,
+				size_t (*source)(uint8_t *buf, size_t n,
 						 void *priv),
 				void *priv)
 {
@@ -1032,7 +1019,6 @@ struct async_req *cli_push_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 	state->fnum = fnum;
 	state->start_offset = start_offset;
 	state->mode = mode;
-	state->caller_buffers = caller_buffers;
 	state->source = source;
 	state->priv = priv;
 	state->eof = false;
@@ -1122,10 +1108,7 @@ NTSTATUS cli_push_recv(struct async_req *req)
 
 NTSTATUS cli_push(struct cli_state *cli, uint16_t fnum, uint16_t mode,
 		  off_t start_offset, size_t window_size,
-		  bool caller_buffers,
-		  size_t (*source)(uint8_t *inbuf, size_t n,
-				   const uint8_t **outbuf,
-				   void *priv),
+		  size_t (*source)(uint8_t *buf, size_t n, void *priv),
 		  void *priv)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -1146,7 +1129,7 @@ NTSTATUS cli_push(struct cli_state *cli, uint16_t fnum, uint16_t mode,
 	}
 
 	req = cli_push_send(frame, ev, cli, fnum, mode, start_offset,
-			    window_size, caller_buffers, source, priv);
+			    window_size, source, priv);
 	if (req == NULL) {
 		goto nomem;
 	}

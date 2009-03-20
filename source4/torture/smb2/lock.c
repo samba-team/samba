@@ -28,6 +28,9 @@
 
 #include "librpc/gen_ndr/ndr_security.h"
 
+#define TARGET_IS_WINDOWS(_tctx) (torture_setting_bool(_tctx, "win7", false) || torture_setting_bool(torture, "windows", false))
+#define TARGET_IS_WIN7(_tctx) (torture_setting_bool(_tctx, "win7", false))
+
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
 		printf("(%s) Incorrect status %s - should be %s\n", \
@@ -97,16 +100,26 @@ static bool test_valid_request(struct torture_context *torture, struct smb2_tree
 	el[0].reserved		= 0x00000000;
 	el[0].flags		= SMB2_LOCK_FLAG_EXCLUSIVE|SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
 	status = smb2_lock(tree, &lck);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	if (TARGET_IS_WIN7(torture)) {
+		CHECK_STATUS(status, NT_STATUS_WIN7_INVALID_RANGE);
+	} else {
+		CHECK_STATUS(status, NT_STATUS_OK);
+	}
 	CHECK_VALUE(lck.out.reserved, 0);
 
 	lck.in.reserved		= 0x123ab2;
 	status = smb2_lock(tree, &lck);
-	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
+	if (TARGET_IS_WIN7(torture)) {
+		CHECK_STATUS(status, NT_STATUS_WIN7_INVALID_RANGE);
+	} else {
+		CHECK_STATUS(status, NT_STATUS_OK);
+	}
 
 	lck.in.reserved		= 0x123ab3;
 	status = smb2_lock(tree, &lck);
-	if (torture_setting_bool(torture, "windows", false)) {
+	if (TARGET_IS_WIN7(torture)) {
+		CHECK_STATUS(status, NT_STATUS_WIN7_INVALID_RANGE);
+	} else if (TARGET_IS_WINDOWS(torture)) {
 		CHECK_STATUS(status, NT_STATUS_OK);
 	} else {
 		CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
@@ -115,11 +128,17 @@ static bool test_valid_request(struct torture_context *torture, struct smb2_tree
 
 	lck.in.reserved		= 0x123ab4;
 	status = smb2_lock(tree, &lck);
-	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
+	if (TARGET_IS_WIN7(torture)) {
+		CHECK_STATUS(status, NT_STATUS_WIN7_INVALID_RANGE);
+	} else {
+		CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
+	}
 
 	lck.in.reserved		= 0x123ab5;
 	status = smb2_lock(tree, &lck);
-	if (torture_setting_bool(torture, "windows", false)) {
+	if (TARGET_IS_WIN7(torture)) {
+		CHECK_STATUS(status, NT_STATUS_WIN7_INVALID_RANGE);
+	} else if (TARGET_IS_WINDOWS(torture)) {
 		CHECK_STATUS(status, NT_STATUS_OK);
 	} else {
 		CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
@@ -141,7 +160,7 @@ static bool test_valid_request(struct torture_context *torture, struct smb2_tree
 	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
 
 	status = smb2_lock(tree, &lck);
-	if (torture_setting_bool(torture, "windows", false)) {
+	if (TARGET_IS_WINDOWS(torture)) {
 		CHECK_STATUS(status, NT_STATUS_OK);
 	} else {
 		CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
@@ -152,7 +171,7 @@ static bool test_valid_request(struct torture_context *torture, struct smb2_tree
 	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
 
 	status = smb2_lock(tree, &lck);
-	if (torture_setting_bool(torture, "windows", false)) {
+	if (TARGET_IS_WINDOWS(torture)) {
 		CHECK_STATUS(status, NT_STATUS_OK);
 	} else {
 		CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
@@ -481,7 +500,6 @@ static bool test_lock_rw_exclusiv(struct torture_context *torture, struct smb2_t
 	return test_lock_read_write(torture, tree, &s);
 }
 
-
 static bool test_lock_auto_unlock(struct torture_context *torture, struct smb2_tree *tree)
 {
 	bool ret = true;
@@ -513,13 +531,14 @@ static bool test_lock_auto_unlock(struct torture_context *torture, struct smb2_t
 	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
 
 	status = smb2_lock(tree, &lck);
-	if (torture_setting_bool(torture, "windows", false)) {
+	if (TARGET_IS_WINDOWS(torture)) {
 		CHECK_STATUS(status, NT_STATUS_OK);
 	} else {
 		CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
 	}
 
-	
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
 
 done:
 	return ret;

@@ -90,24 +90,11 @@ enum unistr2_term_codes { UNI_FLAGS_NONE = 0, UNI_STR_TERMINATE = 1, UNI_MAXLEN_
 /********************************************************************** 
  * RPC policy handle used pretty much everywhere
  **********************************************************************/
- 
-typedef struct policy_handle POLICY_HND;
 
 #define OUR_HANDLE(hnd) (((hnd)==NULL) ? "NULL" :\
 	( IVAL((hnd)->uuid.node,2) == (uint32)sys_getpid() ? "OURS" : \
 		"OTHER")), ((unsigned int)IVAL((hnd)->uuid.node,2)),\
 		((unsigned int)sys_getpid() )
-
-
-/********************************************************************** 
- * Buffers use by spoolss (i might be able to replace it with
- * an RPC_DATA_BLOB)
- **********************************************************************/
-
-typedef struct {
-	uint32 buf_len;
-	uint16 *buffer; /* data */
-} BUFFER5;
 
 
 /********************************************************************** 
@@ -130,12 +117,23 @@ typedef struct {		/* UNISTR2 - unicode string size (in
 				  should include the NULL character */
 } UNISTR2;
 
-/* i think this is the same as a BUFFER5 used in the spoolss code --jerry */
-/* not sure about how the termination matches between the uint16 buffers thought */
-
-typedef struct {		/* UNISTR3 - XXXX not sure about this structure */
-	uint32 uni_str_len;
-	UNISTR str;
-} UNISTR3;
+/*
+ * I'm really wondering how many different time formats
+ * I will have to cope with
+ *
+ * JFM, 09/13/98 In a mad mood ;-(
+*/
+typedef struct systemtime
+{
+	uint16 year;
+	uint16 month;
+	uint16 dayofweek;
+	uint16 day;
+	uint16 hour;
+	uint16 minute;
+	uint16 second;
+	uint16 milliseconds;
+}
+SYSTEMTIME;
 
 #endif /* _RPC_MISC_H */

@@ -22,23 +22,18 @@
 
 #include "nsswitch/libwbclient/wbclient.h"
 
-struct wb_context {
-	struct async_req_queue *queue;
-	int fd;
-	bool is_priv;
-};
+struct wb_context;
 
-struct async_req *wb_trans_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-				struct wb_context *wb_ctx, bool need_priv,
-				struct winbindd_request *wb_req);
-wbcErr wb_trans_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
+struct tevent_req *wb_trans_send(TALLOC_CTX *mem_ctx,
+				 struct tevent_context *ev,
+				 struct wb_context *wb_ctx, bool need_priv,
+				 struct winbindd_request *wb_req);
+wbcErr wb_trans_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		     struct winbindd_response **presponse);
 struct wb_context *wb_context_init(TALLOC_CTX *mem_ctx);
 
 /* Definitions from wb_reqtrans.c */
-bool async_req_is_wbcerr(struct async_req *req, wbcErr *pwbc_err);
 wbcErr map_wbc_err_from_errno(int error);
-wbcErr async_req_simple_recv_wbcerr(struct async_req *req);
 
 bool tevent_req_is_wbcerr(struct tevent_req *req, wbcErr *pwbc_err);
 wbcErr tevent_req_simple_recv_wbcerr(struct tevent_req *req);
@@ -61,7 +56,8 @@ wbcErr wb_resp_read_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			 struct winbindd_response **presp);
 
 struct tevent_req *wb_resp_write_send(TALLOC_CTX *mem_ctx,
-				      struct tevent_context *ev, int fd,
+				      struct tevent_context *ev,
+				      struct tevent_queue *queue, int fd,
 				      struct winbindd_response *wb_resp);
 wbcErr wb_resp_write_recv(struct tevent_req *req);
 

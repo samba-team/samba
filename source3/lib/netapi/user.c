@@ -352,7 +352,7 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
-	POLICY_HND connect_handle, domain_handle, user_handle;
+	struct policy_handle connect_handle, domain_handle, user_handle;
 	struct lsa_String lsa_account_name;
 	struct dom_sid2 *domain_sid = NULL;
 	union samr_UserInfo *user_info = NULL;
@@ -496,7 +496,7 @@ WERROR NetUserDel_r(struct libnetapi_ctx *ctx,
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
-	POLICY_HND connect_handle, builtin_handle, domain_handle, user_handle;
+	struct policy_handle connect_handle, builtin_handle, domain_handle, user_handle;
 	struct lsa_String lsa_account_name;
 	struct samr_Ids user_rids, name_types;
 	struct dom_sid2 *domain_sid = NULL;

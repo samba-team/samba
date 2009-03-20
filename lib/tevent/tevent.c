@@ -59,6 +59,7 @@
 */
 #include "replace.h"
 #include "system/filesys.h"
+#define TEVENT_DEPRECATED 1
 #include "tevent.h"
 #include "tevent_internal.h"
 #include "tevent_util.h"
@@ -142,6 +143,7 @@ int tevent_common_context_destructor(struct tevent_context *ev)
 {
 	struct tevent_fd *fd, *fn;
 	struct tevent_timer *te, *tn;
+	struct tevent_immediate *ie, *in;
 	struct tevent_signal *se, *sn;
 
 	if (ev->pipe_fde) {
@@ -159,6 +161,13 @@ int tevent_common_context_destructor(struct tevent_context *ev)
 		tn = te->next;
 		te->event_ctx = NULL;
 		DLIST_REMOVE(ev->timer_events, te);
+	}
+
+	for (ie = ev->immediate_events; ie; ie = in) {
+		in = ie->next;
+		ie->event_ctx = NULL;
+		ie->cancel_fn = NULL;
+		DLIST_REMOVE(ev->immediate_events, ie);
 	}
 
 	for (se = ev->signal_events; se; se = sn) {
@@ -305,6 +314,33 @@ void tevent_fd_set_flags(struct tevent_fd *fde, uint16_t flags)
 	fde->event_ctx->ops->set_fd_flags(fde, flags);
 }
 
+bool tevent_signal_support(struct tevent_context *ev)
+{
+	if (ev->ops->add_signal) {
+		return true;
+	}
+	return false;
+}
+
+static void (*tevent_abort_fn)(const char *reason);
+
+void tevent_set_abort_fn(void (*abort_fn)(const char *reason))
+{
+	tevent_abort_fn = abort_fn;
+}
+
+static void tevent_abort(struct tevent_context *ev, const char *reason)
+{
+	tevent_debug(ev, TEVENT_DEBUG_FATAL,
+		     "abort: %s\n", reason);
+
+	if (!tevent_abort_fn) {
+		abort();
+	}
+
+	tevent_abort_fn(reason);
+}
+
 /*
   add a timer event
   return NULL on failure
@@ -319,6 +355,47 @@ struct tevent_timer *_tevent_add_timer(struct tevent_context *ev,
 {
 	return ev->ops->add_timer(ev, mem_ctx, next_event, handler, private_data,
 				  handler_name, location);
+}
+
+/*
+  allocate an immediate event
+  return NULL on failure (memory allocation error)
+*/
+struct tevent_immediate *_tevent_create_immediate(TALLOC_CTX *mem_ctx,
+						  const char *location)
+{
+	struct tevent_immediate *im;
+
+	im = talloc(mem_ctx, struct tevent_immediate);
+	if (im == NULL) return NULL;
+
+	im->prev		= NULL;
+	im->next		= NULL;
+	im->event_ctx		= NULL;
+	im->create_location	= location;
+	im->handler		= NULL;
+	im->private_data	= NULL;
+	im->handler_name	= NULL;
+	im->schedule_location	= NULL;
+	im->cancel_fn		= NULL;
+	im->additional_data	= NULL;
+
+	return im;
+}
+
+/*
+  schedule an immediate event
+  return NULL on failure
+*/
+void _tevent_schedule_immediate(struct tevent_immediate *im,
+				struct tevent_context *ev,
+				tevent_immediate_handler_t handler,
+				void *private_data,
+				const char *handler_name,
+				const char *location)
+{
+	ev->ops->schedule_immediate(im, ev, handler, private_data,
+				    handler_name, location);
 }
 
 /*
@@ -341,18 +418,192 @@ struct tevent_signal *_tevent_add_signal(struct tevent_context *ev,
 				   handler_name, location);
 }
 
+void tevent_loop_allow_nesting(struct tevent_context *ev)
+{
+	ev->nesting.allowed = true;
+}
+
+void tevent_loop_set_nesting_hook(struct tevent_context *ev,
+				  tevent_nesting_hook hook,
+				  void *private_data)
+{
+	if (ev->nesting.hook_fn && 
+	    (ev->nesting.hook_fn != hook ||
+	     ev->nesting.hook_private != private_data)) {
+		/* the way the nesting hook code is currently written
+		   we cannot support two different nesting hooks at the
+		   same time. */
+		tevent_abort(ev, "tevent: Violation of nesting hook rules\n");
+	}
+	ev->nesting.hook_fn = hook;
+	ev->nesting.hook_private = private_data;
+}
+
+static void tevent_abort_nesting(struct tevent_context *ev, const char *location)
+{
+	const char *reason;
+
+	reason = talloc_asprintf(NULL, "tevent_loop_once() nesting at %s",
+				 location);
+	if (!reason) {
+		reason = "tevent_loop_once() nesting";
+	}
+
+	tevent_abort(ev, reason);
+}
+
 /*
   do a single event loop using the events defined in ev 
 */
-int tevent_loop_once(struct tevent_context *ev)
+int _tevent_loop_once(struct tevent_context *ev, const char *location)
 {
-	return ev->ops->loop_once(ev);
+	int ret;
+	void *nesting_stack_ptr = NULL;
+
+	ev->nesting.level++;
+
+	if (ev->nesting.level > 1) {
+		if (!ev->nesting.allowed) {
+			tevent_abort_nesting(ev, location);
+			errno = ELOOP;
+			return -1;
+		}
+	}
+	if (ev->nesting.level > 0) {
+		if (ev->nesting.hook_fn) {
+			int ret2;
+			ret2 = ev->nesting.hook_fn(ev,
+						   ev->nesting.hook_private,
+						   ev->nesting.level,
+						   true,
+						   (void *)&nesting_stack_ptr,
+						   location);
+			if (ret2 != 0) {
+				ret = ret2;
+				goto done;
+			}
+		}
+	}
+
+	ret = ev->ops->loop_once(ev, location);
+
+	if (ev->nesting.level > 0) {
+		if (ev->nesting.hook_fn) {
+			int ret2;
+			ret2 = ev->nesting.hook_fn(ev,
+						   ev->nesting.hook_private,
+						   ev->nesting.level,
+						   false,
+						   (void *)&nesting_stack_ptr,
+						   location);
+			if (ret2 != 0) {
+				ret = ret2;
+				goto done;
+			}
+		}
+	}
+
+done:
+	ev->nesting.level--;
+	return ret;
+}
+
+/*
+  this is a performance optimization for the samba4 nested event loop problems
+*/
+int _tevent_loop_until(struct tevent_context *ev,
+		       bool (*finished)(void *private_data),
+		       void *private_data,
+		       const char *location)
+{
+	int ret = 0;
+	void *nesting_stack_ptr = NULL;
+
+	ev->nesting.level++;
+
+	if (ev->nesting.level > 1) {
+		if (!ev->nesting.allowed) {
+			tevent_abort_nesting(ev, location);
+			errno = ELOOP;
+			return -1;
+		}
+	}
+	if (ev->nesting.level > 0) {
+		if (ev->nesting.hook_fn) {
+			int ret2;
+			ret2 = ev->nesting.hook_fn(ev,
+						   ev->nesting.hook_private,
+						   ev->nesting.level,
+						   true,
+						   (void *)&nesting_stack_ptr,
+						   location);
+			if (ret2 != 0) {
+				ret = ret2;
+				goto done;
+			}
+		}
+	}
+
+	while (!finished(private_data)) {
+		ret = ev->ops->loop_once(ev, location);
+		if (ret != 0) {
+			break;
+		}
+	}
+
+	if (ev->nesting.level > 0) {
+		if (ev->nesting.hook_fn) {
+			int ret2;
+			ret2 = ev->nesting.hook_fn(ev,
+						   ev->nesting.hook_private,
+						   ev->nesting.level,
+						   false,
+						   (void *)&nesting_stack_ptr,
+						   location);
+			if (ret2 != 0) {
+				ret = ret2;
+				goto done;
+			}
+		}
+	}
+
+done:
+	ev->nesting.level--;
+	return ret;
 }
 
 /*
   return on failure or (with 0) if all fd events are removed
 */
-int tevent_loop_wait(struct tevent_context *ev)
+int tevent_common_loop_wait(struct tevent_context *ev,
+			    const char *location)
 {
-	return ev->ops->loop_wait(ev);
+	/*
+	 * loop as long as we have events pending
+	 */
+	while (ev->fd_events ||
+	       ev->timer_events ||
+	       ev->immediate_events ||
+	       ev->signal_events) {
+		int ret;
+		ret = _tevent_loop_once(ev, location);
+		if (ret != 0) {
+			tevent_debug(ev, TEVENT_DEBUG_FATAL,
+				     "_tevent_loop_once() failed: %d - %s\n",
+				     ret, strerror(errno));
+			return ret;
+		}
+	}
+
+	tevent_debug(ev, TEVENT_DEBUG_WARNING,
+		     "tevent_common_loop_wait() out of events\n");
+	return 0;
+}
+
+/*
+  return on failure or (with 0) if all fd events are removed
+*/
+int _tevent_loop_wait(struct tevent_context *ev, const char *location)
+{
+	return ev->ops->loop_wait(ev, location);
 }

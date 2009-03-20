@@ -65,7 +65,7 @@ static const struct pipe_id_info {
 	{ PIPE_SRVSVC,		&ndr_table_srvsvc.syntax_id },
 	{ PIPE_WKSSVC,		&ndr_table_wkssvc.syntax_id },
 	{ PIPE_WINREG,		&ndr_table_winreg.syntax_id },
-	{ PIPE_SPOOLSS,		&syntax_spoolss },
+	{ PIPE_SPOOLSS,		&ndr_table_spoolss.syntax_id },
 	{ PIPE_NETDFS,		&ndr_table_netdfs.syntax_id },
 	{ PIPE_ECHO,		&ndr_table_rpcecho.syntax_id },
 	{ PIPE_SHUTDOWN,	&ndr_table_initshutdown.syntax_id },
@@ -2974,7 +2974,7 @@ bool rpccli_get_pwd_hash(struct rpc_pipe_client *rpc_cli, uint8_t nt_hash[16])
 	if (cli == NULL) {
 		return false;
 	}
-	E_md4hash(cli->pwd.password, nt_hash);
+	E_md4hash(cli->password ? cli->password : "", nt_hash);
 	return true;
 }
 
@@ -3699,7 +3699,7 @@ static NTSTATUS cli_rpc_pipe_open_ntlmssp_internal(struct cli_state *cli,
 
 	status = rpccli_ntlmssp_bind_data(
 		result, auth_type, auth_level, domain, username,
-		cli->pwd.null_pwd ? NULL : password, &auth);
+		password, &auth);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("rpccli_ntlmssp_bind_data returned %s\n",
 			  nt_errstr(status)));

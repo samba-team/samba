@@ -3,7 +3,7 @@
    client connect/disconnect routines
    Copyright (C) Andrew Tridgell                  1994-1998
    Copyright (C) Gerald (Jerry) Carter            2004
-   Copyright (C) Jeremy Allison                   2007
+   Copyright (C) Jeremy Allison                   2007-2009
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -31,25 +31,6 @@
    '/' separators, not '\\' separators. So cope with '\\' or '/'
    as a separator when looking at the pathname part.... JRA.
 ********************************************************************/
-
-struct client_connection {
-	struct client_connection *prev, *next;
-	struct cli_state *cli;
-	char *mount;
-};
-
-static struct cm_cred_struct {
-	char *username;
-	char *password;
-	bool got_pass;
-	bool use_kerberos;
-	bool fallback_after_kerberos;
-	int signing_state;
-} cm_creds;
-
-static void cm_set_password(const char *newpass);
-
-static struct client_connection *connections;
 
 static bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 				struct cli_state *cli,
@@ -96,7 +77,7 @@ NTSTATUS cli_cm_force_encryption(struct cli_state *c,
 
 	return status;
 }
-	
+
 /********************************************************************
  Return a connection to a server.
 ********************************************************************/
@@ -104,6 +85,7 @@ NTSTATUS cli_cm_force_encryption(struct cli_state *c,
 static struct cli_state *do_connect(TALLOC_CTX *ctx,
 					const char *server,
 					const char *share,
+					const struct user_auth_info *auth_info,
 					bool show_sessetup,
 					bool force_encrypt,
 					int max_protocol,
@@ -151,7 +133,7 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 	zero_sockaddr(&ss);
 
 	/* have to open a new connection */
-	if (!(c=cli_initialise_ex(cm_creds.signing_state))) {
+	if (!(c=cli_initialise_ex(get_cmdline_auth_info_signing_state(auth_info)))) {
 		d_printf("Connection to %s failed\n", server_n);
 		if (c) {
 			cli_shutdown(c);
@@ -175,8 +157,9 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 		max_protocol = PROTOCOL_NT1;
 	}
 	c->protocol = max_protocol;
-	c->use_kerberos = cm_creds.use_kerberos;
-	c->fallback_after_kerberos = cm_creds.fallback_after_kerberos;
+	c->use_kerberos = get_cmdline_auth_info_use_kerberos(auth_info);
+	c->fallback_after_kerberos =
+		get_cmdline_auth_info_fallback_after_kerberos(auth_info);
 
 	if (!cli_session_request(c, &calling, &called)) {
 		char *p;
@@ -206,20 +189,8 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 		return NULL;
 	}
 
-	if (!cm_creds.got_pass && !cm_creds.use_kerberos) {
-		char *label = NULL;
-		char *pass;
-		label = talloc_asprintf(ctx, "Enter %s's password: ",
-			cm_creds.username);
-		pass = getpass(label);
-		if (pass) {
-			cm_set_password(pass);
-		}
-		TALLOC_FREE(label);
-	}
-
-	username = cm_creds.username ? cm_creds.username : "";
-	password = cm_creds.password ? cm_creds.password : "";
+	username = get_cmdline_auth_info_username(auth_info);
+	password = get_cmdline_auth_info_password(auth_info);
 
 	if (!NT_STATUS_IS_OK(cli_session_setup(c, username,
 					       password, strlen(password),
@@ -227,8 +198,9 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 					       lp_workgroup()))) {
 		/* If a password was not supplied then
 		 * try again with a null username. */
-		if (password[0] || !username[0] || cm_creds.use_kerberos ||
-		    !NT_STATUS_IS_OK(cli_session_setup(c, "",
+		if (password[0] || !username[0] ||
+			get_cmdline_auth_info_use_kerberos(auth_info) ||
+			!NT_STATUS_IS_OK(cli_session_setup(c, "",
 				    		"", 0,
 						"", 0,
 					       lp_workgroup()))) {
@@ -267,7 +239,7 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 				lp_workgroup())) {
 		cli_shutdown(c);
 		return do_connect(ctx, newserver,
-				newshare, false,
+				newshare, auth_info, false,
 				force_encrypt, max_protocol,
 				port, name_type);
 	}
@@ -301,111 +273,90 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 /****************************************************************************
 ****************************************************************************/
 
-static void cli_cm_set_mntpoint(struct cli_state *c, const char *mnt)
+static void cli_set_mntpoint(struct cli_state *cli, const char *mnt)
 {
-	struct client_connection *p;
-	int i;
-
-	for (p=connections,i=0; p; p=p->next,i++) {
-		if (strequal(p->cli->desthost, c->desthost) &&
-				strequal(p->cli->share, c->share)) {
-			break;
-		}
+	char *name = clean_name(NULL, mnt);
+	if (!name) {
+		return;
 	}
-
-	if (p) {
-		char *name = clean_name(NULL, mnt);
-		if (!name) {
-			return;
-		}
-		TALLOC_FREE(p->mount);
-		p->mount = talloc_strdup(p, name);
-		TALLOC_FREE(name);
-	}
-}
-
-/****************************************************************************
-****************************************************************************/
-
-const char *cli_cm_get_mntpoint(struct cli_state *c)
-{
-	struct client_connection *p;
-	int i;
-
-	for (p=connections,i=0; p; p=p->next,i++) {
-		if (strequal(p->cli->desthost, c->desthost) &&
-				strequal(p->cli->share, c->share)) {
-			break;
-		}
-	}
-
-	if (p) {
-		return p->mount;
-	}
-	return NULL;
+	TALLOC_FREE(cli->dfs_mountpoint);
+	cli->dfs_mountpoint = talloc_strdup(cli, name);
+	TALLOC_FREE(name);
 }
 
 /********************************************************************
- Add a new connection to the list
+ Add a new connection to the list.
+ referring_cli == NULL means a new initial connection.
 ********************************************************************/
 
 static struct cli_state *cli_cm_connect(TALLOC_CTX *ctx,
 					struct cli_state *referring_cli,
 	 				const char *server,
 					const char *share,
+					const struct user_auth_info *auth_info,
 					bool show_hdr,
 					bool force_encrypt,
 					int max_protocol,
 					int port,
 					int name_type)
 {
-	struct client_connection *node;
+	struct cli_state *cli;
 
-	/* NB This must be the null context here... JRA. */
-	node = TALLOC_ZERO_ARRAY(NULL, struct client_connection, 1);
-	if (!node) {
-		return NULL;
-	}
-
-	node->cli = do_connect(ctx, server, share,
+	cli = do_connect(ctx, server, share,
+				auth_info,
 				show_hdr, force_encrypt, max_protocol,
 				port, name_type);
 
-	if ( !node->cli ) {
-		TALLOC_FREE( node );
+	if (!cli ) {
 		return NULL;
 	}
 
-	DLIST_ADD( connections, node );
-
-	cli_cm_set_mntpoint(node->cli, "");
+	/* Enter into the list. */
+	if (referring_cli) {
+		DLIST_ADD_END(referring_cli, cli, struct cli_state *);
+	}
 
 	if (referring_cli && referring_cli->posix_capabilities) {
 		uint16 major, minor;
 		uint32 caplow, caphigh;
-		if (cli_unix_extensions_version(node->cli, &major,
+		if (cli_unix_extensions_version(cli, &major,
 					&minor, &caplow, &caphigh)) {
-			cli_set_unix_extensions_capabilities(node->cli,
+			cli_set_unix_extensions_capabilities(cli,
 					major, minor,
 					caplow, caphigh);
 		}
 	}
 
-	return node->cli;
+	return cli;
 }
 
 /********************************************************************
- Return a connection to a server.
+ Return a connection to a server on a particular share.
 ********************************************************************/
 
-static struct cli_state *cli_cm_find(const char *server, const char *share)
+static struct cli_state *cli_cm_find(struct cli_state *cli,
+				const char *server,
+				const char *share)
 {
-	struct client_connection *p;
+	struct cli_state *p;
 
-	for (p=connections; p; p=p->next) {
-		if ( strequal(server, p->cli->desthost) &&
-				strequal(share,p->cli->share)) {
-			return p->cli;
+	if (cli == NULL) {
+		return NULL;
+	}
+
+	/* Search to the start of the list. */
+	for (p = cli; p; p = p->prev) {
+		if (strequal(server, p->desthost) &&
+				strequal(share,p->share)) {
+			return p;
+		}
+	}
+
+	/* Search to the end of the list. */
+	for (p = cli->next; p; p = p->next) {
+		if (strequal(server, p->desthost) &&
+				strequal(share,p->share)) {
+			return p;
 		}
 	}
 
@@ -413,82 +364,68 @@ static struct cli_state *cli_cm_find(const char *server, const char *share)
 }
 
 /****************************************************************************
- Open a client connection to a \\server\share.  Set's the current *cli
- global variable as a side-effect (but only if the connection is successful).
+ Open a client connection to a \\server\share.
 ****************************************************************************/
 
 struct cli_state *cli_cm_open(TALLOC_CTX *ctx,
 				struct cli_state *referring_cli,
 				const char *server,
 				const char *share,
+				const struct user_auth_info *auth_info,
 				bool show_hdr,
 				bool force_encrypt,
 				int max_protocol,
 				int port,
 				int name_type)
 {
-	struct cli_state *c;
+	/* Try to reuse an existing connection in this list. */
+	struct cli_state *c = cli_cm_find(referring_cli, server, share);
 
-	/* try to reuse an existing connection */
-
-	c = cli_cm_find(server, share);
-	if (!c) {
-		c = cli_cm_connect(ctx, referring_cli,
-				server, share, show_hdr, force_encrypt,
-				max_protocol, port, name_type);
+	if (c) {
+		return c;
 	}
 
-	return c;
+	if (auth_info == NULL) {
+		/* Can't do a new connection
+		 * without auth info. */
+		d_printf("cli_cm_open() Unable to open connection [\\%s\\%s] "
+			"without auth info\n",
+			server, share );
+		return NULL;
+	}
+
+	return cli_cm_connect(ctx,
+				referring_cli,
+				server,
+				share,
+				auth_info,
+				show_hdr,
+				force_encrypt,
+				max_protocol,
+				port,
+				name_type);
 }
 
 /****************************************************************************
 ****************************************************************************/
 
-void cli_cm_shutdown(void)
+void cli_cm_display(const struct cli_state *cli)
 {
-	struct client_connection *p, *x;
-
-	for (p=connections; p;) {
-		cli_shutdown(p->cli);
-		x = p;
-		p = p->next;
-
-		TALLOC_FREE(x);
-	}
-
-	connections = NULL;
-	return;
-}
-
-/****************************************************************************
-****************************************************************************/
-
-void cli_cm_display(void)
-{
-	struct client_connection *p;
 	int i;
 
-	for ( p=connections,i=0; p; p=p->next,i++ ) {
+	for (i=0; cli; cli = cli->next,i++ ) {
 		d_printf("%d:\tserver=%s, share=%s\n",
-			i, p->cli->desthost, p->cli->share );
+			i, cli->desthost, cli->share );
 	}
 }
 
 /****************************************************************************
 ****************************************************************************/
 
-static void cm_set_password(const char *newpass)
-{
-	SAFE_FREE(cm_creds.password);
-	cm_creds.password = SMB_STRDUP(newpass);
-	if (cm_creds.password) {
-		cm_creds.got_pass = true;
-	}
-}
-
 /****************************************************************************
 ****************************************************************************/
 
+#if 0
 void cli_cm_set_credentials(struct user_auth_info *auth_info)
 {
 	SAFE_FREE(cm_creds.username);
@@ -503,51 +440,7 @@ void cli_cm_set_credentials(struct user_auth_info *auth_info)
 	cm_creds.fallback_after_kerberos = false;
 	cm_creds.signing_state = get_cmdline_auth_info_signing_state(auth_info);
 }
-
-/****************************************************************************
-****************************************************************************/
-
-void cli_cm_set_signing_state(int state)
-{
-	cm_creds.signing_state = state;
-}
-
-/****************************************************************************
-****************************************************************************/
-
-void cli_cm_set_username(const char *username)
-{
-	SAFE_FREE(cm_creds.username);
-	cm_creds.username = SMB_STRDUP(username);
-}
-
-/****************************************************************************
-****************************************************************************/
-
-void cli_cm_set_password(const char *newpass)
-{
-	SAFE_FREE(cm_creds.password);
-	cm_creds.password = SMB_STRDUP(newpass);
-	if (cm_creds.password) {
-		cm_creds.got_pass = true;
-	}
-}
-
-/****************************************************************************
-****************************************************************************/
-
-void cli_cm_set_use_kerberos(void)
-{
-	cm_creds.use_kerberos = true;
-}
-
-/****************************************************************************
-****************************************************************************/
-
-void cli_cm_set_fallback_after_kerberos(void)
-{
-	cm_creds.fallback_after_kerberos = true;
-}
+#endif
 
 /**********************************************************************
  split a dfs path into the server, share name, and extrapath components
@@ -658,13 +551,23 @@ static char *cli_dfs_make_full_path(TALLOC_CTX *ctx,
 					struct cli_state *cli,
 					const char *dir)
 {
+	char path_sep = '\\';
+
 	/* Ensure the extrapath doesn't start with a separator. */
 	while (IS_DIRECTORY_SEP(*dir)) {
 		dir++;
 	}
 
-	return talloc_asprintf(ctx, "\\%s\\%s\\%s",
-			cli->desthost, cli->share, dir);
+	if (cli->posix_capabilities & CIFS_UNIX_POSIX_PATHNAMES_CAP) {
+		path_sep = '/';
+	}
+	return talloc_asprintf(ctx, "%c%s%c%s%c%s",
+			path_sep,
+			cli->desthost,
+			path_sep,
+			cli->share,
+			path_sep,
+			dir);
 }
 
 /********************************************************************
@@ -817,6 +720,7 @@ bool cli_dfs_get_referral(TALLOC_CTX *ctx,
 
 bool cli_resolve_path(TALLOC_CTX *ctx,
 			const char *mountpt,
+			const struct user_auth_info *dfs_auth_info,
 			struct cli_state *rootcli,
 			const char *path,
 			struct cli_state **targetcli,
@@ -897,13 +801,16 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 
 	/* Check for the referral. */
 
-	if (!(cli_ipc = cli_cm_open(ctx, rootcli,
-					rootcli->desthost,
-					"IPC$", false,
-					(rootcli->trans_enc_state != NULL),
-					rootcli->protocol,
-					0,
-					0x20))) {
+	if (!(cli_ipc = cli_cm_open(ctx,
+				rootcli,
+				rootcli->desthost,
+				"IPC$",
+				dfs_auth_info,
+				false,
+				(rootcli->trans_enc_state != NULL),
+				rootcli->protocol,
+				0,
+				0x20))) {
 		return false;
 	}
 
@@ -947,6 +854,7 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 	if ((*targetcli = cli_cm_open(ctx, rootcli,
 					server,
 					share,
+					dfs_auth_info,
 					false,
 					(rootcli->trans_enc_state != NULL),
 					rootcli->protocol,
@@ -998,7 +906,7 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 		return false;
 	}
 
-	cli_cm_set_mntpoint(*targetcli, newmount);
+	cli_set_mntpoint(*targetcli, newmount);
 
 	/* Check for another dfs referral, note that we are not
 	   checking for loops here. */
@@ -1006,6 +914,7 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 	if (!strequal(*pp_targetpath, "\\") && !strequal(*pp_targetpath, "/")) {
 		if (cli_resolve_path(ctx,
 					newmount,
+					dfs_auth_info,
 					*targetcli,
 					*pp_targetpath,
 					&newcli,

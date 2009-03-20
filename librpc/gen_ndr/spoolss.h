@@ -15,6 +15,10 @@
 #define PRINTER_ENUM_ICONMASK	( (PRINTER_ENUM_ICON1|PRINTER_ENUM_ICON2|PRINTER_ENUM_ICON3|PRINTER_ENUM_ICON4|PRINTER_ENUM_ICON5|PRINTER_ENUM_ICON6|PRINTER_ENUM_ICON7|PRINTER_ENUM_ICON8) )
 #define SPOOLSS_ARCHITECTURE_NT_X86	( "Windows NT x86" )
 #define SPOOLSS_DEFAULT_SERVER_PATH	( "C:\\WINDOWS\\system32\\spool" )
+#define SPL_LOCAL_PORT	( "Local Port" )
+#define SPL_TCPIP_PORT	( "Standard TCP/IP Port" )
+#define SPL_XCV_MONITOR_LOCALMON	( ",XcvMonitor Local Port" )
+#define SPL_XCV_MONITOR_TCPMON	( ",XcvMonitor Standard TCP/IP Port" )
 #define PRINTER_CHANGE_PRINTER	( 0x000000FF )
 #define PRINTER_CHANGE_JOB	( 0x0000FF00 )
 #define PRINTER_CHANGE_FORM	( (PRINTER_CHANGE_ADD_FORM|PRINTER_CHANGE_SET_FORM|PRINTER_CHANGE_DELETE_FORM) )
@@ -193,7 +197,7 @@ struct spoolss_PrinterInfo0 {
 	uint32_t ref_ic;
 	uint32_t reserved2;
 	uint32_t reserved3;
-};
+}/* [gensize,public] */;
 
 /* bitmap spoolss_DeviceModeFields */
 #define DEVMODE_ORIENTATION ( 0x00000001 )
@@ -289,7 +293,7 @@ struct spoolss_PrinterInfo1 {
 	const char * name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * description;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * comment;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
-};
+}/* [gensize,public] */;
 
 /* bitmap spoolss_PrinterAttributes */
 #define PRINTER_ATTRIBUTE_QUEUED ( 0x00000001 )
@@ -324,24 +328,24 @@ struct spoolss_PrinterInfo2 {
 	const char * parameters;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	struct security_descriptor *secdesc;/* [relative,subcontext(0)] */
 	uint32_t attributes;
-	uint32_t priority;
+	uint32_t priority;/* [range(0,99)] */
 	uint32_t defaultpriority;
 	uint32_t starttime;
 	uint32_t untiltime;
 	uint32_t status;
 	uint32_t cjobs;
 	uint32_t averageppm;
-};
+}/* [gensize,public] */;
 
 struct spoolss_PrinterInfo3 {
 	struct security_descriptor *secdesc;/* [relative,subcontext(0)] */
-};
+}/* [gensize,public] */;
 
 struct spoolss_PrinterInfo4 {
 	const char * printername;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * servername;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	uint32_t attributes;
-};
+}/* [gensize,public] */;
 
 struct spoolss_PrinterInfo5 {
 	const char * printername;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
@@ -349,11 +353,11 @@ struct spoolss_PrinterInfo5 {
 	uint32_t attributes;
 	uint32_t device_not_selected_timeout;
 	uint32_t transmission_retry_timeout;
-};
+}/* [gensize,public] */;
 
 struct spoolss_PrinterInfo6 {
 	uint32_t status;
-};
+}/* [gensize,public] */;
 
 /* bitmap spoolss_DsPrintAction */
 #define DSPRINT_PUBLISH ( 0x00000001 )
@@ -365,7 +369,7 @@ struct spoolss_PrinterInfo6 {
 struct spoolss_PrinterInfo7 {
 	const char * guid;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	uint32_t action;
-};
+}/* [gensize,public] */;
 
 struct spoolss_DeviceModeInfo {
 	struct spoolss_DeviceMode *devmode;/* [relative,subcontext(0)] */
@@ -382,7 +386,7 @@ union spoolss_PrinterInfo {
 	struct spoolss_PrinterInfo7 info7;/* [case(7)] */
 	struct spoolss_DeviceModeInfo info8;/* [case(8)] */
 	struct spoolss_DeviceModeInfo info9;/* [case(9)] */
-}/* [relative_base,nodiscriminant,public] */;
+}/* [relative_base,gensize,public,nodiscriminant] */;
 
 struct spoolss_DevmodeContainer {
 	uint32_t _ndr_size;/* [value(_ndr_size_spoolss_DeviceMode(devmode,ndr->iconv_convenience,ndr->flags))] */
@@ -398,12 +402,12 @@ struct spoolss_JobInfo1 {
 	const char * data_type;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * text_status;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	uint32_t status;
-	uint32_t priority;
+	uint32_t priority;/* [range(0,99)] */
 	uint32_t position;
 	uint32_t total_pages;
 	uint32_t pages_printed;
 	struct spoolss_Time submitted;
-};
+}/* [gensize,public] */;
 
 struct spoolss_JobInfo2 {
 	uint32_t job_id;
@@ -420,7 +424,7 @@ struct spoolss_JobInfo2 {
 	const char * text_status;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	struct security_descriptor *secdesc;/* [relative] */
 	uint32_t status;
-	uint32_t priority;
+	uint32_t priority;/* [range(0,99)] */
 	uint32_t position;
 	uint32_t start_time;
 	uint32_t until_time;
@@ -429,13 +433,13 @@ struct spoolss_JobInfo2 {
 	struct spoolss_Time submitted;
 	uint32_t time;
 	uint32_t pages_printed;
-};
+}/* [gensize,public] */;
 
 struct spoolss_JobInfo3 {
 	uint32_t job_id;
 	uint32_t next_job_id;
 	uint32_t reserved;
-};
+}/* [gensize,public] */;
 
 struct spoolss_JobInfo4 {
 	uint32_t job_id;
@@ -452,7 +456,7 @@ struct spoolss_JobInfo4 {
 	const char * text_status;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	struct security_descriptor *secdesc;/* [relative] */
 	uint32_t status;
-	uint32_t priority;
+	uint32_t priority;/* [range(0,99)] */
 	uint32_t position;
 	uint32_t start_time;
 	uint32_t until_time;
@@ -462,14 +466,14 @@ struct spoolss_JobInfo4 {
 	uint32_t time;
 	uint32_t pages_printed;
 	uint32_t size_high;
-};
+}/* [gensize,public] */;
 
 union spoolss_JobInfo {
 	struct spoolss_JobInfo1 info1;/* [case] */
 	struct spoolss_JobInfo2 info2;/* [case(2)] */
 	struct spoolss_JobInfo3 info3;/* [case(3)] */
 	struct spoolss_JobInfo4 info4;/* [case(4)] */
-}/* [relative_base,nodiscriminant,public] */;
+}/* [relative_base,gensize,public,nodiscriminant] */;
 
 struct spoolss_SetJobInfo1 {
 	uint32_t job_id;
@@ -480,7 +484,7 @@ struct spoolss_SetJobInfo1 {
 	const char *data_type;/* [unique,charset(UTF16)] */
 	const char *text_status;/* [unique,charset(UTF16)] */
 	uint32_t status;
-	uint32_t priority;
+	uint32_t priority;/* [range(0,99)] */
 	uint32_t position;
 	uint32_t total_pages;
 	uint32_t pages_printed;
@@ -502,7 +506,7 @@ struct spoolss_SetJobInfo2 {
 	const char *text_status;/* [unique,charset(UTF16)] */
 	uint32_t _secdesc_ptr;
 	uint32_t status;
-	uint32_t priority;
+	uint32_t priority;/* [range(0,99)] */
 	uint32_t position;
 	uint32_t start_time;
 	uint32_t until_time;
@@ -528,7 +532,7 @@ struct spoolss_SetJobInfo4 {
 	const char *text_status;/* [unique,charset(UTF16)] */
 	uint32_t _secdesc_ptr;
 	uint32_t status;
-	uint32_t priority;
+	uint32_t priority;/* [range(0,99)] */
 	uint32_t position;
 	uint32_t start_time;
 	uint32_t until_time;
@@ -652,7 +656,7 @@ struct spoolss_SetPrinterInfo2 {
 	const char *parameters;/* [unique,charset(UTF16)] */
 	struct security_descriptor *secdesc;/* [unique,subcontext(0)] */
 	uint32_t attributes;
-	uint32_t priority;
+	uint32_t priority;/* [range(0,99)] */
 	uint32_t defaultpriority;
 	uint32_t starttime;
 	uint32_t untiltime;
@@ -1002,7 +1006,7 @@ union spoolss_DriverInfo {
 	struct spoolss_DriverInfo6 info6;/* [case(6)] */
 	struct spoolss_DriverInfo8 info8;/* [case(8)] */
 	struct spoolss_DriverInfo101 info101;/* [case(101)] */
-}/* [relative_base,nodiscriminant,public] */;
+}/* [relative_base,gensize,public,nodiscriminant] */;
 
 struct spoolss_DriverDirectoryInfo1 {
 	const char * directory_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
@@ -1058,30 +1062,11 @@ struct spoolss_OSVersionEx {
 	uint32_t unknown3;
 }/* [gensize,public] */;
 
-enum spoolss_PrinterDataType
-#ifndef USE_UINT_ENUMS
- {
-	SPOOLSS_PRINTER_DATA_TYPE_NULL=0,
-	SPOOLSS_PRINTER_DATA_TYPE_STRING=1,
-	SPOOLSS_PRINTER_DATA_TYPE_BINARY=3,
-	SPOOLSS_PRINTER_DATA_TYPE_UINT32=4,
-	SPOOLSS_PRINTER_DATA_TYPE_STRING_ARRAY=7
-}
-#else
- { __donnot_use_enum_spoolss_PrinterDataType=0x7FFFFFFF}
-#define SPOOLSS_PRINTER_DATA_TYPE_NULL ( 0 )
-#define SPOOLSS_PRINTER_DATA_TYPE_STRING ( 1 )
-#define SPOOLSS_PRINTER_DATA_TYPE_BINARY ( 3 )
-#define SPOOLSS_PRINTER_DATA_TYPE_UINT32 ( 4 )
-#define SPOOLSS_PRINTER_DATA_TYPE_STRING_ARRAY ( 7 )
-#endif
-;
-
 union spoolss_PrinterData {
-	const char * string;/* [flag(LIBNDR_FLAG_STR_NULLTERM),case(SPOOLSS_PRINTER_DATA_TYPE_STRING)] */
-	DATA_BLOB binary;/* [flag(LIBNDR_FLAG_REMAINING),case(SPOOLSS_PRINTER_DATA_TYPE_BINARY)] */
-	uint32_t value;/* [case(SPOOLSS_PRINTER_DATA_TYPE_UINT32)] */
-	const char ** string_array;/* [flag(LIBNDR_FLAG_STR_NULLTERM),case(SPOOLSS_PRINTER_DATA_TYPE_STRING_ARRAY)] */
+	const char * string;/* [flag(LIBNDR_FLAG_STR_NULLTERM),case(REG_SZ)] */
+	DATA_BLOB binary;/* [flag(LIBNDR_FLAG_REMAINING),case(REG_BINARY)] */
+	uint32_t value;/* [case(REG_DWORD)] */
+	const char ** string_array;/* [flag(LIBNDR_FLAG_STR_NULLTERM),case(REG_MULTI_SZ)] */
 	DATA_BLOB data;/* [flag(LIBNDR_FLAG_REMAINING),default] */
 }/* [gensize,public,nodiscriminant] */;
 
@@ -1299,79 +1284,144 @@ union spoolss_PrintProcDataTypesInfo {
 #define PRINTER_CHANGE_DELETE_PRINTER_DRIVER ( 0x40000000 )
 #define PRINTER_CHANGE_TIMEOUT ( 0x80000000 )
 
-enum spoolss_Field
+enum spoolss_JobNotifyField
 #ifndef USE_UINT_ENUMS
  {
-	SPOOLSS_FIELD_SERVER_NAME=0,
-	SPOOLSS_FIELD_PRINTER_NAME=1,
-	SPOOLSS_FIELD_SHARE_NAME=2,
-	SPOOLSS_FIELD_PORT_NAME=3,
-	SPOOLSS_FIELD_DRIVER_NAME=4,
-	SPOOLSS_FIELD_COMMENT=5,
-	SPOOLSS_FIELD_LOCATION=6,
-	SPOOLSS_FIELD_DEVMODE=7,
-	SPOOLSS_FIELD_SEPFILE=8,
-	SPOOLSS_FIELD_PRINT_PROCESSOR=9,
-	SPOOLSS_FIELD_PARAMETERS=10,
-	SPOOLSS_FIELD_DATATYPE=11,
-	SPOOLSS_FIELD_SECURITY_DESCRIPTOR=12,
-	SPOOLSS_FIELD_ATTRIBUTES=13,
-	SPOOLSS_FIELD_PRIORITY=14,
-	SPOOLSS_FIELD_DEFAULT_PRIORITY=15,
-	SPOOLSS_FIELD_START_TIME=16,
-	SPOOLSS_FIELD_UNTIL_TIME=17,
-	SPOOLSS_FIELD_STATUS=18,
-	SPOOLSS_FIELD_STATUS_STRING=19,
-	SPOOLSS_FIELD_CJOBS=20,
-	SPOOLSS_FIELD_AVERAGE_PPM=21,
-	SPOOLSS_FIELD_TOTAL_PAGES=22,
-	SPOOLSS_FIELD_PAGES_PRINTED=23,
-	SPOOLSS_FIELD_TOTAL_BYTES=24,
-	SPOOLSS_FIELD_BYTES_PRINTED=25
+	JOB_NOTIFY_FIELD_PRINTER_NAME=0x00,
+	JOB_NOTIFY_FIELD_MACHINE_NAME=0x01,
+	JOB_NOTIFY_FIELD_PORT_NAME=0x02,
+	JOB_NOTIFY_FIELD_USER_NAME=0x03,
+	JOB_NOTIFY_FIELD_NOTIFY_NAME=0x04,
+	JOB_NOTIFY_FIELD_DATATYPE=0x05,
+	JOB_NOTIFY_FIELD_PRINT_PROCESSOR=0x06,
+	JOB_NOTIFY_FIELD_PARAMETERS=0x07,
+	JOB_NOTIFY_FIELD_DRIVER_NAME=0x08,
+	JOB_NOTIFY_FIELD_DEVMODE=0x09,
+	JOB_NOTIFY_FIELD_STATUS=0x0a,
+	JOB_NOTIFY_FIELD_STATUS_STRING=0x0b,
+	JOB_NOTIFY_FIELD_SECURITY_DESCRIPTOR=0x0c,
+	JOB_NOTIFY_FIELD_DOCUMENT=0x0d,
+	JOB_NOTIFY_FIELD_PRIORITY=0x0e,
+	JOB_NOTIFY_FIELD_POSITION=0x0f,
+	JOB_NOTIFY_FIELD_SUBMITTED=0x10,
+	JOB_NOTIFY_FIELD_START_TIME=0x11,
+	JOB_NOTIFY_FIELD_UNTIL_TIME=0x12,
+	JOB_NOTIFY_FIELD_TIME=0x13,
+	JOB_NOTIFY_FIELD_TOTAL_PAGES=0x14,
+	JOB_NOTIFY_FIELD_PAGES_PRINTED=0x15,
+	JOB_NOTIFY_FIELD_TOTAL_BYTES=0x16,
+	JOB_NOTIFY_FIELD_BYTES_PRINTED=0x17
 }
 #else
- { __donnot_use_enum_spoolss_Field=0x7FFFFFFF}
-#define SPOOLSS_FIELD_SERVER_NAME ( 0 )
-#define SPOOLSS_FIELD_PRINTER_NAME ( 1 )
-#define SPOOLSS_FIELD_SHARE_NAME ( 2 )
-#define SPOOLSS_FIELD_PORT_NAME ( 3 )
-#define SPOOLSS_FIELD_DRIVER_NAME ( 4 )
-#define SPOOLSS_FIELD_COMMENT ( 5 )
-#define SPOOLSS_FIELD_LOCATION ( 6 )
-#define SPOOLSS_FIELD_DEVMODE ( 7 )
-#define SPOOLSS_FIELD_SEPFILE ( 8 )
-#define SPOOLSS_FIELD_PRINT_PROCESSOR ( 9 )
-#define SPOOLSS_FIELD_PARAMETERS ( 10 )
-#define SPOOLSS_FIELD_DATATYPE ( 11 )
-#define SPOOLSS_FIELD_SECURITY_DESCRIPTOR ( 12 )
-#define SPOOLSS_FIELD_ATTRIBUTES ( 13 )
-#define SPOOLSS_FIELD_PRIORITY ( 14 )
-#define SPOOLSS_FIELD_DEFAULT_PRIORITY ( 15 )
-#define SPOOLSS_FIELD_START_TIME ( 16 )
-#define SPOOLSS_FIELD_UNTIL_TIME ( 17 )
-#define SPOOLSS_FIELD_STATUS ( 18 )
-#define SPOOLSS_FIELD_STATUS_STRING ( 19 )
-#define SPOOLSS_FIELD_CJOBS ( 20 )
-#define SPOOLSS_FIELD_AVERAGE_PPM ( 21 )
-#define SPOOLSS_FIELD_TOTAL_PAGES ( 22 )
-#define SPOOLSS_FIELD_PAGES_PRINTED ( 23 )
-#define SPOOLSS_FIELD_TOTAL_BYTES ( 24 )
-#define SPOOLSS_FIELD_BYTES_PRINTED ( 25 )
+ { __donnot_use_enum_spoolss_JobNotifyField=0x7FFFFFFF}
+#define JOB_NOTIFY_FIELD_PRINTER_NAME ( 0x00 )
+#define JOB_NOTIFY_FIELD_MACHINE_NAME ( 0x01 )
+#define JOB_NOTIFY_FIELD_PORT_NAME ( 0x02 )
+#define JOB_NOTIFY_FIELD_USER_NAME ( 0x03 )
+#define JOB_NOTIFY_FIELD_NOTIFY_NAME ( 0x04 )
+#define JOB_NOTIFY_FIELD_DATATYPE ( 0x05 )
+#define JOB_NOTIFY_FIELD_PRINT_PROCESSOR ( 0x06 )
+#define JOB_NOTIFY_FIELD_PARAMETERS ( 0x07 )
+#define JOB_NOTIFY_FIELD_DRIVER_NAME ( 0x08 )
+#define JOB_NOTIFY_FIELD_DEVMODE ( 0x09 )
+#define JOB_NOTIFY_FIELD_STATUS ( 0x0a )
+#define JOB_NOTIFY_FIELD_STATUS_STRING ( 0x0b )
+#define JOB_NOTIFY_FIELD_SECURITY_DESCRIPTOR ( 0x0c )
+#define JOB_NOTIFY_FIELD_DOCUMENT ( 0x0d )
+#define JOB_NOTIFY_FIELD_PRIORITY ( 0x0e )
+#define JOB_NOTIFY_FIELD_POSITION ( 0x0f )
+#define JOB_NOTIFY_FIELD_SUBMITTED ( 0x10 )
+#define JOB_NOTIFY_FIELD_START_TIME ( 0x11 )
+#define JOB_NOTIFY_FIELD_UNTIL_TIME ( 0x12 )
+#define JOB_NOTIFY_FIELD_TIME ( 0x13 )
+#define JOB_NOTIFY_FIELD_TOTAL_PAGES ( 0x14 )
+#define JOB_NOTIFY_FIELD_PAGES_PRINTED ( 0x15 )
+#define JOB_NOTIFY_FIELD_TOTAL_BYTES ( 0x16 )
+#define JOB_NOTIFY_FIELD_BYTES_PRINTED ( 0x17 )
+#endif
+;
+
+enum spoolss_PrintNotifyField
+#ifndef USE_UINT_ENUMS
+ {
+	PRINTER_NOTIFY_FIELD_SERVER_NAME=0x00,
+	PRINTER_NOTIFY_FIELD_PRINTER_NAME=0x01,
+	PRINTER_NOTIFY_FIELD_SHARE_NAME=0x02,
+	PRINTER_NOTIFY_FIELD_PORT_NAME=0x03,
+	PRINTER_NOTIFY_FIELD_DRIVER_NAME=0x04,
+	PRINTER_NOTIFY_FIELD_COMMENT=0x05,
+	PRINTER_NOTIFY_FIELD_LOCATION=0x06,
+	PRINTER_NOTIFY_FIELD_DEVMODE=0x07,
+	PRINTER_NOTIFY_FIELD_SEPFILE=0x08,
+	PRINTER_NOTIFY_FIELD_PRINT_PROCESSOR=0x09,
+	PRINTER_NOTIFY_FIELD_PARAMETERS=0x0a,
+	PRINTER_NOTIFY_FIELD_DATATYPE=0x0b,
+	PRINTER_NOTIFY_FIELD_SECURITY_DESCRIPTOR=0x0c,
+	PRINTER_NOTIFY_FIELD_ATTRIBUTES=0x0d,
+	PRINTER_NOTIFY_FIELD_PRIORITY=0x0e,
+	PRINTER_NOTIFY_FIELD_DEFAULT_PRIORITY=0x0f,
+	PRINTER_NOTIFY_FIELD_START_TIME=0x10,
+	PRINTER_NOTIFY_FIELD_UNTIL_TIME=0x11,
+	PRINTER_NOTIFY_FIELD_STATUS=0x12,
+	PRINTER_NOTIFY_FIELD_STATUS_STRING=0x13,
+	PRINTER_NOTIFY_FIELD_CJOBS=0x14,
+	PRINTER_NOTIFY_FIELD_AVERAGE_PPM=0x15,
+	PRINTER_NOTIFY_FIELD_TOTAL_PAGES=0x16,
+	PRINTER_NOTIFY_FIELD_PAGES_PRINTED=0x17,
+	PRINTER_NOTIFY_FIELD_TOTAL_BYTES=0x18,
+	PRINTER_NOTIFY_FIELD_BYTES_PRINTED=0x19,
+	PRINTER_NOTIFY_FIELD_OBJECT_GUID=0x1a,
+	PRINTER_NOTIFY_FIELD_FRIENDLY_NAME=0x1b
+}
+#else
+ { __donnot_use_enum_spoolss_PrintNotifyField=0x7FFFFFFF}
+#define PRINTER_NOTIFY_FIELD_SERVER_NAME ( 0x00 )
+#define PRINTER_NOTIFY_FIELD_PRINTER_NAME ( 0x01 )
+#define PRINTER_NOTIFY_FIELD_SHARE_NAME ( 0x02 )
+#define PRINTER_NOTIFY_FIELD_PORT_NAME ( 0x03 )
+#define PRINTER_NOTIFY_FIELD_DRIVER_NAME ( 0x04 )
+#define PRINTER_NOTIFY_FIELD_COMMENT ( 0x05 )
+#define PRINTER_NOTIFY_FIELD_LOCATION ( 0x06 )
+#define PRINTER_NOTIFY_FIELD_DEVMODE ( 0x07 )
+#define PRINTER_NOTIFY_FIELD_SEPFILE ( 0x08 )
+#define PRINTER_NOTIFY_FIELD_PRINT_PROCESSOR ( 0x09 )
+#define PRINTER_NOTIFY_FIELD_PARAMETERS ( 0x0a )
+#define PRINTER_NOTIFY_FIELD_DATATYPE ( 0x0b )
+#define PRINTER_NOTIFY_FIELD_SECURITY_DESCRIPTOR ( 0x0c )
+#define PRINTER_NOTIFY_FIELD_ATTRIBUTES ( 0x0d )
+#define PRINTER_NOTIFY_FIELD_PRIORITY ( 0x0e )
+#define PRINTER_NOTIFY_FIELD_DEFAULT_PRIORITY ( 0x0f )
+#define PRINTER_NOTIFY_FIELD_START_TIME ( 0x10 )
+#define PRINTER_NOTIFY_FIELD_UNTIL_TIME ( 0x11 )
+#define PRINTER_NOTIFY_FIELD_STATUS ( 0x12 )
+#define PRINTER_NOTIFY_FIELD_STATUS_STRING ( 0x13 )
+#define PRINTER_NOTIFY_FIELD_CJOBS ( 0x14 )
+#define PRINTER_NOTIFY_FIELD_AVERAGE_PPM ( 0x15 )
+#define PRINTER_NOTIFY_FIELD_TOTAL_PAGES ( 0x16 )
+#define PRINTER_NOTIFY_FIELD_PAGES_PRINTED ( 0x17 )
+#define PRINTER_NOTIFY_FIELD_TOTAL_BYTES ( 0x18 )
+#define PRINTER_NOTIFY_FIELD_BYTES_PRINTED ( 0x19 )
+#define PRINTER_NOTIFY_FIELD_OBJECT_GUID ( 0x1a )
+#define PRINTER_NOTIFY_FIELD_FRIENDLY_NAME ( 0x1b )
 #endif
 ;
 
 enum spoolss_NotifyType
 #ifndef USE_UINT_ENUMS
  {
-	SPOOLSS_NOTIFY_PRINTER=0,
-	SPOOLSS_NOTIFY_JOB=1
+	PRINTER_NOTIFY_TYPE=0x00,
+	JOB_NOTIFY_TYPE=0x01
 }
 #else
  { __donnot_use_enum_spoolss_NotifyType=0x7FFFFFFF}
-#define SPOOLSS_NOTIFY_PRINTER ( 0 )
-#define SPOOLSS_NOTIFY_JOB ( 1 )
+#define PRINTER_NOTIFY_TYPE ( 0x00 )
+#define JOB_NOTIFY_TYPE ( 0x01 )
 #endif
 ;
+
+union spoolss_Field {
+	uint16_t field;/* [case(PRINTER_NOTIFY_TYPE)] */
+}/* [noprint,nodiscriminant] */;
 
 struct spoolss_NotifyOptionType {
 	enum spoolss_NotifyType type;
@@ -1379,7 +1429,7 @@ struct spoolss_NotifyOptionType {
 	uint32_t u2;
 	uint32_t u3;
 	uint32_t count;
-	enum spoolss_Field *fields;/* [unique,size_is(count)] */
+	union spoolss_Field *fields;/* [unique,switch_is(type),size_is(count)] */
 };
 
 /* bitmap spoolssNotifyOptionFlags */
@@ -1426,7 +1476,7 @@ union spoolss_NotifyData {
 
 struct spoolss_Notify {
 	enum spoolss_NotifyType type;
-	enum spoolss_Field field;
+	union spoolss_Field field;/* [switch_is(type)] */
 	enum spoolss_NotifyTable variable_type;
 	uint32_t job_id;
 	union spoolss_NotifyData data;/* [switch_is(variable_type)] */
@@ -1493,6 +1543,14 @@ struct spoolss_UserLevelCtr {
 #define PRINTER_ACCESS_USE ( 0x00000008 )
 #define JOB_ACCESS_ADMINISTER ( 0x00000010 )
 #define JOB_ACCESS_READ ( 0x00000020 )
+
+struct spoolss_PrinterEnumValues {
+	const char * value_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	uint32_t value_name_len;/* [value(2*strlen_m_term(value_name))] */
+	enum winreg_Type type;
+	union spoolss_PrinterData *data;/* [relative,subcontext_size(r->data_length),subcontext(0),switch_is(type)] */
+	uint32_t data_length;/* [value(ndr_size_spoolss_PrinterData(data,type,ndr->iconv_convenience,ndr->flags))] */
+}/* [relative_base,gensize,public] */;
 
 /* bitmap spoolss_DeleteDriverFlags */
 #define DPD_DELETE_UNUSED_FILES ( 0x00000001 )
@@ -2087,8 +2145,8 @@ struct _spoolss_GetPrinterData {
 	} in;
 
 	struct {
-		enum spoolss_PrinterDataType *type;/* [ref] */
-		DATA_BLOB data;
+		enum winreg_Type *type;/* [ref] */
+		DATA_BLOB *data;/* [ref] */
 		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
@@ -2098,11 +2156,11 @@ struct _spoolss_GetPrinterData {
 
 struct __spoolss_GetPrinterData {
 	struct {
-		enum spoolss_PrinterDataType type;
+		enum winreg_Type type;
 	} in;
 
 	struct {
-		union spoolss_PrinterData data;/* [switch_is(type)] */
+		union spoolss_PrinterData *data;/* [ref,switch_is(type)] */
 	} out;
 
 };
@@ -2116,8 +2174,8 @@ struct spoolss_GetPrinterData {
 	} in;
 
 	struct {
-		enum spoolss_PrinterDataType *type;/* [ref] */
-		union spoolss_PrinterData data;/* [subcontext_size(offered),subcontext(4),switch_is(*type)] */
+		enum winreg_Type *type;/* [ref] */
+		union spoolss_PrinterData *data;/* [subcontext_size(offered),ref,subcontext(4),switch_is(*type)] */
 		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
@@ -2129,7 +2187,7 @@ struct _spoolss_SetPrinterData {
 	struct {
 		struct policy_handle *handle;/* [ref] */
 		const char *value_name;/* [charset(UTF16)] */
-		enum spoolss_PrinterDataType type;
+		enum winreg_Type type;
 		DATA_BLOB data;
 		uint32_t _offered;
 	} in;
@@ -2143,11 +2201,11 @@ struct _spoolss_SetPrinterData {
 
 struct __spoolss_SetPrinterData {
 	struct {
-		enum spoolss_PrinterDataType type;
+		enum winreg_Type type;
 	} in;
 
 	struct {
-		union spoolss_PrinterData data;/* [switch_is(type)] */
+		union spoolss_PrinterData *data;/* [ref,switch_is(type)] */
 	} out;
 
 };
@@ -2157,7 +2215,7 @@ struct spoolss_SetPrinterData {
 	struct {
 		struct policy_handle *handle;/* [ref] */
 		const char *value_name;/* [charset(UTF16)] */
-		enum spoolss_PrinterDataType type;
+		enum winreg_Type type;
 		union spoolss_PrinterData data;/* [subcontext(4),switch_is(type)] */
 		uint32_t _offered;/* [value(ndr_size_spoolss_PrinterData(&data,type,ndr->iconv_convenience,flags))] */
 	} in;
@@ -2826,8 +2884,8 @@ struct spoolss_EnumPrinterData {
 	struct {
 		const char *value_name;/* [charset(UTF16),size_is(value_offered/2)] */
 		uint32_t *value_needed;/* [ref] */
-		uint32_t *printerdata_type;/* [ref] */
-		DATA_BLOB *buffer;/* [ref] */
+		enum winreg_Type *type;/* [ref] */
+		uint8_t *data;/* [ref,flag(LIBNDR_PRINT_ARRAY_HEX),size_is(data_offered)] */
 		uint32_t *data_needed;/* [ref] */
 		WERROR result;
 	} out;
@@ -2877,7 +2935,7 @@ struct spoolss_SetPrinterDataEx {
 		struct policy_handle *handle;/* [ref] */
 		const char *key_name;/* [charset(UTF16)] */
 		const char *value_name;/* [charset(UTF16)] */
-		uint32_t type;
+		enum winreg_Type type;
 		uint8_t *buffer;/* [ref,size_is(offered)] */
 		uint32_t offered;
 	} in;
@@ -2898,10 +2956,39 @@ struct spoolss_GetPrinterDataEx {
 	} in;
 
 	struct {
-		uint32_t *type;/* [ref] */
+		enum winreg_Type *type;/* [ref] */
 		uint8_t *buffer;/* [ref,size_is(offered)] */
 		uint32_t *needed;/* [ref] */
 		WERROR result;
+	} out;
+
+};
+
+
+struct _spoolss_EnumPrinterDataEx {
+	struct {
+		struct policy_handle *handle;/* [ref] */
+		const char *key_name;/* [charset(UTF16)] */
+		uint32_t offered;
+	} in;
+
+	struct {
+		DATA_BLOB info;
+		uint32_t *needed;/* [ref] */
+		uint32_t *count;/* [ref] */
+		WERROR result;
+	} out;
+
+};
+
+
+struct __spoolss_EnumPrinterDataEx {
+	struct {
+		uint32_t count;
+	} in;
+
+	struct {
+		struct spoolss_PrinterEnumValues *info;
 	} out;
 
 };
@@ -2915,9 +3002,9 @@ struct spoolss_EnumPrinterDataEx {
 	} in;
 
 	struct {
-		uint8_t *buffer;/* [ref,size_is(offered)] */
-		uint32_t *needed;/* [ref] */
 		uint32_t *count;/* [ref] */
+		struct spoolss_PrinterEnumValues **info;/* [ref,size_is(,*count)] */
+		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -2928,11 +3015,11 @@ struct spoolss_EnumPrinterKey {
 	struct {
 		struct policy_handle *handle;/* [ref] */
 		const char *key_name;/* [charset(UTF16)] */
-		uint32_t key_buffer_size;
+		uint32_t offered;
 	} in;
 
 	struct {
-		uint16_t *key_buffer;/* [ref,size_is(key_buffer_size/2)] */
+		const char ** *key_buffer;/* [subcontext_size(offered),ref,subcontext(0),flag(LIBNDR_FLAG_STR_NULLTERM)] */
 		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;

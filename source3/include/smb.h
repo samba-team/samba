@@ -1759,13 +1759,6 @@ struct node_status_extra {
 	/* There really is more here ... */ 
 };
 
-struct pwd_info {
-	bool null_pwd;
-	bool cleartext;
-
-	fstring password;
-};
-
 /* For split krb5 SPNEGO blobs. */
 struct pending_auth_data {
 	struct pending_auth_data *prev, *next;

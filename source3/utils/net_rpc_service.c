@@ -61,11 +61,11 @@ const char *svc_status_string( uint32 state )
 
 static WERROR query_service_state(struct rpc_pipe_client *pipe_hnd,
 				TALLOC_CTX *mem_ctx,
-				POLICY_HND *hSCM,
+				struct policy_handle *hSCM,
 				const char *service,
 				uint32 *state )
 {
-	POLICY_HND hService;
+	struct policy_handle hService;
 	struct SERVICE_STATUS service_status;
 	WERROR result = WERR_GENERAL_FAILURE;
 	NTSTATUS status;
@@ -102,7 +102,7 @@ static WERROR query_service_state(struct rpc_pipe_client *pipe_hnd,
 
 static WERROR watch_service_state(struct rpc_pipe_client *pipe_hnd,
 				TALLOC_CTX *mem_ctx,
-				POLICY_HND *hSCM,
+				struct policy_handle *hSCM,
 				const char *service,
 				uint32 watch_state,
 				uint32 *final_state )
@@ -137,12 +137,12 @@ static WERROR watch_service_state(struct rpc_pipe_client *pipe_hnd,
 
 static WERROR control_service(struct rpc_pipe_client *pipe_hnd,
 				TALLOC_CTX *mem_ctx,
-				POLICY_HND *hSCM,
+				struct policy_handle *hSCM,
 				const char *service,
 				uint32 control,
 				uint32 watch_state )
 {
-	POLICY_HND hService;
+	struct policy_handle hService;
 	WERROR result = WERR_GENERAL_FAILURE;
 	NTSTATUS status;
 	struct SERVICE_STATUS service_status;
@@ -199,7 +199,7 @@ static NTSTATUS rpc_service_list_internal(struct net_context *c,
 					int argc,
 					const char **argv )
 {
-	POLICY_HND hSCM;
+	struct policy_handle hSCM;
 	struct ENUM_SERVICE_STATUSW *services = NULL;
 	WERROR result = WERR_GENERAL_FAILURE;
 	NTSTATUS status;
@@ -309,7 +309,7 @@ static NTSTATUS rpc_service_status_internal(struct net_context *c,
 						int argc,
 						const char **argv )
 {
-	POLICY_HND hSCM, hService;
+	struct policy_handle hSCM, hService;
 	WERROR result = WERR_GENERAL_FAILURE;
 	NTSTATUS status;
 	struct SERVICE_STATUS service_status;
@@ -433,7 +433,7 @@ static NTSTATUS rpc_service_stop_internal(struct net_context *c,
 					int argc,
 					const char **argv )
 {
-	POLICY_HND hSCM;
+	struct policy_handle hSCM;
 	WERROR result = WERR_GENERAL_FAILURE;
 	NTSTATUS status;
 	fstring servicename;
@@ -477,7 +477,7 @@ static NTSTATUS rpc_service_pause_internal(struct net_context *c,
 					int argc,
 					const char **argv )
 {
-	POLICY_HND hSCM;
+	struct policy_handle hSCM;
 	WERROR result = WERR_GENERAL_FAILURE;
 	NTSTATUS status;
 	fstring servicename;
@@ -521,7 +521,7 @@ static NTSTATUS rpc_service_resume_internal(struct net_context *c,
 					int argc,
 					const char **argv )
 {
-	POLICY_HND hSCM;
+	struct policy_handle hSCM;
 	WERROR result = WERR_GENERAL_FAILURE;
 	NTSTATUS status;
 	fstring servicename;
@@ -565,7 +565,7 @@ static NTSTATUS rpc_service_start_internal(struct net_context *c,
 					int argc,
 					const char **argv )
 {
-	POLICY_HND hSCM, hService;
+	struct policy_handle hSCM, hService;
 	WERROR result = WERR_GENERAL_FAILURE;
 	NTSTATUS status;
 	uint32 state = 0;

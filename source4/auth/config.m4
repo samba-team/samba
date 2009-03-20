@@ -27,6 +27,7 @@ if test x"$ac_cv_header_sasl_sasl_h" = x"yes" -a x"$ac_cv_lib_ext_sasl2_sasl_cli
 	SASL_CFLAGS="$CFLAGS"
 	SASL_CPPFLAGS="$CPPFLAGS"
 	SASL_LDFLAGS="$LDFLAGS"
+	LIB_REMOVE_USR_LIB(SASL_LDFLAGS)
 else
 	SMB_ENABLE(cyrus_sasl,NO)
 fi

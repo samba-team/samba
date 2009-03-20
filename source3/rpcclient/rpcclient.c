@@ -133,7 +133,7 @@ static char *next_command (char **cmdstr)
 
 static void fetch_machine_sid(struct cli_state *cli)
 {
-	POLICY_HND pol;
+	struct policy_handle pol;
 	NTSTATUS result = NT_STATUS_OK;
 	static bool got_domain_sid;
 	TALLOC_CTX *mem_ctx;
@@ -868,12 +868,7 @@ out_free:
 		goto done;
 	}
 
-	if (!get_cmdline_auth_info_got_pass(rpcclient_auth_info)) {
-		char *pass = getpass("Password:");
-		if (pass) {
-			set_cmdline_auth_info_password(rpcclient_auth_info, pass);
-		}
-	}
+	set_cmdline_auth_info_getpass(rpcclient_auth_info);
 
 	if ((server[0] == '/' && server[1] == '/') ||
 			(server[0] == '\\' && server[1] ==  '\\')) {

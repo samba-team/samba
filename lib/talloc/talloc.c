@@ -138,14 +138,30 @@ struct talloc_chunk {
 #define TC_HDR_SIZE ((sizeof(struct talloc_chunk)+15)&~15)
 #define TC_PTR_FROM_CHUNK(tc) ((void *)(TC_HDR_SIZE + (char*)tc))
 
+static void (*talloc_abort_fn)(const char *reason);
+
+void talloc_set_abort_fn(void (*abort_fn)(const char *reason))
+{
+	talloc_abort_fn = abort_fn;
+}
+
+static void talloc_abort(const char *reason)
+{
+	if (!talloc_abort_fn) {
+		TALLOC_ABORT(reason);
+	}
+
+	talloc_abort_fn(reason);
+}
+
 static void talloc_abort_double_free(void)
 {
-	TALLOC_ABORT("Bad talloc magic value - double free"); 
+	talloc_abort("Bad talloc magic value - double free");
 }
 
 static void talloc_abort_unknown_value(void)
 {
-	TALLOC_ABORT("Bad talloc magic value - unknown value"); 
+	talloc_abort("Bad talloc magic value - unknown value");
 }
 
 /* panic if we get a bad magic value */
@@ -564,7 +580,7 @@ static inline int _talloc_free(void *ptr)
 		pool_object_count = talloc_pool_objectcount(pool);
 
 		if (*pool_object_count == 0) {
-			TALLOC_ABORT("Pool object count zero!");
+			talloc_abort("Pool object count zero!");
 		}
 
 		*pool_object_count -= 1;
@@ -810,7 +826,18 @@ static void talloc_abort_type_missmatch(const char *location,
 					const char *name,
 					const char *expected)
 {
-	TALLOC_ABORT("Type missmatch");
+	const char *reason;
+
+	reason = talloc_asprintf(NULL,
+				 "%s: Type mismatch: name[%s] expected[%s]",
+				 location,
+				 name?name:"NULL",
+				 expected);
+	if (!reason) {
+		reason = "Type mismatch";
+	}
+
+	talloc_abort(reason);
 }
 
 void *_talloc_get_type_abort(const void *ptr, const char *name, const char *location)
