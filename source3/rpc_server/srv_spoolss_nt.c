@@ -4245,6 +4245,10 @@ static WERROR enum_all_printers_info_level(TALLOC_CTX *mem_ctx,
 		}
 
 		switch (level) {
+		case 0:
+			result = construct_printer_info0(info, ntprinter,
+							 &info[count].info0, snum);
+			break;
 		case 1:
 			result = construct_printer_info1(info, ntprinter, flags,
 							 &info[count].info1, snum);
@@ -4289,6 +4293,22 @@ static WERROR enum_all_printers_info_level(TALLOC_CTX *mem_ctx,
 
 	return WERR_OK;
 }
+
+/********************************************************************
+ * handle enumeration of printers at level 0
+ ********************************************************************/
+
+static WERROR enumprinters_level0(TALLOC_CTX *mem_ctx,
+				  uint32_t flags,
+				  const char *servername,
+				  union spoolss_PrinterInfo **info,
+				  uint32_t *count)
+{
+	DEBUG(4,("enum_all_printers_info_0\n"));
+
+	return enum_all_printers_info_level(mem_ctx, 0, flags, info, count);
+}
+
 
 /********************************************************************
 ********************************************************************/
@@ -4513,6 +4533,10 @@ WERROR _spoolss_EnumPrinters(pipes_struct *p,
 	W_ERROR_HAVE_NO_MEMORY(name);
 
 	switch (r->in.level) {
+	case 0:
+		result = enumprinters_level0(p->mem_ctx, r->in.flags, name,
+					     r->out.info, r->out.count);
+		break;
 	case 1:
 		result = enumprinters_level1(p->mem_ctx, r->in.flags, name,
 					     r->out.info, r->out.count);
