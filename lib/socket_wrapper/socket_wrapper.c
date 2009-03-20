@@ -1686,10 +1686,14 @@ _PUBLIC_ int swrap_connect(int s, const struct sockaddr *serv_addr, socklen_t ad
 	ret = sockaddr_convert_to_un(si, (const struct sockaddr *)serv_addr, addrlen, &un_addr, 0, NULL);
 	if (ret == -1) return -1;
 
-	swrap_dump_packet(si, serv_addr, SWRAP_CONNECT_SEND, NULL, 0);
+	if (si->type == SOCK_DGRAM) {
+		ret = 0;
+	} else {
+		swrap_dump_packet(si, serv_addr, SWRAP_CONNECT_SEND, NULL, 0);
 
-	ret = real_connect(s, (struct sockaddr *)&un_addr, 
-			   sizeof(struct sockaddr_un));
+		ret = real_connect(s, (struct sockaddr *)&un_addr,
+				   sizeof(struct sockaddr_un));
+	}
 
 	/* to give better errors */
 	if (ret == -1 && errno == ENOENT) {
