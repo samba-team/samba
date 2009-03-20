@@ -1657,7 +1657,7 @@ static NTSTATUS get_sid_from_name(struct cli_state *cli,
 {
 	DOM_SID *sids = NULL;
 	enum lsa_SidType *types = NULL;
-	struct rpc_pipe_client *pipe_hnd;
+	struct rpc_pipe_client *pipe_hnd = NULL;
 	struct policy_handle lsa_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
