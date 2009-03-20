@@ -208,9 +208,9 @@ void invalidate_cm_connection(struct winbindd_cm_conn *conn);
 void close_conns_after_fork(void);
 NTSTATUS init_dc_connection(struct winbindd_domain *domain);
 NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
-			struct rpc_pipe_client **cli, POLICY_HND *sam_handle);
+			struct rpc_pipe_client **cli, struct policy_handle *sam_handle);
 NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
-			struct rpc_pipe_client **cli, POLICY_HND *lsa_policy);
+			struct rpc_pipe_client **cli, struct policy_handle *lsa_policy);
 NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 			     struct rpc_pipe_client **cli);
 
@@ -549,7 +549,6 @@ const char *get_winbind_pipe_dir(void) ;
 char *get_winbind_priv_pipe_dir(void) ;
 int open_winbindd_socket(void);
 int open_winbindd_priv_socket(void);
-void close_winbindd_socket(void);
 struct winbindd_cli_state *winbindd_client_list(void);
 void winbindd_add_client(struct winbindd_cli_state *cli);
 void winbindd_remove_client(struct winbindd_cli_state *cli);

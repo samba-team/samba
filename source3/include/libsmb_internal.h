@@ -74,7 +74,7 @@ struct _SMBCSRV {
 	bool no_pathinfo;
 	bool no_pathinfo2;
         bool no_nt_session;
-        POLICY_HND pol;
+        struct policy_handle pol;
 
 	SMBCSRV *next, *prev;
 	
@@ -180,6 +180,12 @@ struct SMBC_internal_data {
          * Should we request case sensitivity of file names?
          */
         bool                                    case_sensitive;
+
+	/*
+	 * Auth info needed for DFS traversal.
+	 */
+
+	struct user_auth_info			*auth_info;
 
         struct smbc_server_cache * server_cache;
 

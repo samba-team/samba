@@ -705,252 +705,122 @@ WERROR rpccli_spoolss_enumprinters(struct rpc_pipe_client *cli,
 	return werror;
 }
 
-/*********************************************************************
- Decode various spoolss rpc's and info levels
- ********************************************************************/
-
 /**********************************************************************
+ convencience wrapper around rpccli_spoolss_GetPrinterData
 **********************************************************************/
 
-WERROR rpccli_spoolss_getprinterdata(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				  POLICY_HND *hnd, const char *valuename, 
-				  REGISTRY_VALUE *value)
+WERROR rpccli_spoolss_getprinterdata(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx,
+				     struct policy_handle *handle,
+				     const char *value_name,
+				     uint32_t offered,
+				     enum winreg_Type *type,
+				     union spoolss_PrinterData *data)
 {
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_GETPRINTERDATA in;
-	SPOOL_R_GETPRINTERDATA out;
-	uint32 offered;
+	NTSTATUS status;
+	WERROR werror;
+	uint32_t needed;
 
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
+	status = rpccli_spoolss_GetPrinterData(cli, mem_ctx,
+					       handle,
+					       value_name,
+					       offered,
+					       type,
+					       data,
+					       &needed,
+					       &werror);
 
-	offered = 0;
-	make_spoolss_q_getprinterdata( &in, hnd, valuename, offered );
+	if (W_ERROR_EQUAL(werror, WERR_MORE_DATA)) {
+		offered = needed;
 
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_GETPRINTERDATA,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_getprinterdata,
-	            spoolss_io_r_getprinterdata, 
-	            WERR_GENERAL_FAILURE );
-
-	if ( W_ERROR_EQUAL( out.status, WERR_MORE_DATA ) ) {
-		offered = out.needed;
-		
-		ZERO_STRUCT(in);
-		ZERO_STRUCT(out);
-		
-		make_spoolss_q_getprinterdata( &in, hnd, valuename, offered );
-
-		CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_GETPRINTERDATA,
-		            in, out, 
-		            qbuf, rbuf,
-		            spoolss_io_q_getprinterdata,
-		            spoolss_io_r_getprinterdata, 
-		            WERR_GENERAL_FAILURE );
+		status = rpccli_spoolss_GetPrinterData(cli, mem_ctx,
+						       handle,
+						       value_name,
+						       offered,
+						       type,
+						       data,
+						       &needed,
+						       &werror);
 	}
 
-	if (!W_ERROR_IS_OK(out.status))
-		return out.status;	
-
-	/* Return output parameters */
-
-	if (out.needed) {
-		value->data_p = (uint8 *)TALLOC_MEMDUP(mem_ctx, out.data, out.needed);
-	} else {
-		value->data_p = NULL;
-	}
-	value->type = out.type;
-	value->size = out.size;
-
-	return out.status;
+	return werror;
 }
 
 /**********************************************************************
+ convencience wrapper around rpccli_spoolss_EnumPrinterKey
 **********************************************************************/
 
-WERROR rpccli_spoolss_setprinterdata(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				  POLICY_HND *hnd, REGISTRY_VALUE *value)
+WERROR rpccli_spoolss_enumprinterkey(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx,
+				     struct policy_handle *handle,
+				     const char *key_name,
+				     const char ***key_buffer,
+				     uint32_t offered)
 {
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_SETPRINTERDATA in;
-	SPOOL_R_SETPRINTERDATA out;
+	NTSTATUS status;
+	WERROR werror;
+	uint32_t needed;
 
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
+	status = rpccli_spoolss_EnumPrinterKey(cli, mem_ctx,
+					       handle,
+					       key_name,
+					       key_buffer,
+					       offered,
+					       &needed,
+					       &werror);
 
-        make_spoolss_q_setprinterdata( &in, hnd, value->valuename, 
-		value->type, (char *)value->data_p, value->size);
+	if (W_ERROR_EQUAL(werror, WERR_MORE_DATA)) {
+		offered = needed;
 
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_SETPRINTERDATA,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_setprinterdata,
-	            spoolss_io_r_setprinterdata, 
-	            WERR_GENERAL_FAILURE );
-		    
-	return out.status;
+		status = rpccli_spoolss_EnumPrinterKey(cli, mem_ctx,
+						       handle,
+						       key_name,
+						       key_buffer,
+						       offered,
+						       &needed,
+						       &werror);
+	}
+
+	return werror;
 }
 
 /**********************************************************************
+ convencience wrapper around rpccli_spoolss_EnumPrinterDataEx
 **********************************************************************/
 
-WERROR rpccli_spoolss_enumprinterdata(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				   POLICY_HND *hnd, uint32 ndx,
-				   uint32 value_offered, uint32 data_offered,
-				   uint32 *value_needed, uint32 *data_needed,
-				   REGISTRY_VALUE *value)
+WERROR rpccli_spoolss_enumprinterdataex(struct rpc_pipe_client *cli,
+					TALLOC_CTX *mem_ctx,
+					struct policy_handle *handle,
+					const char *key_name,
+					uint32_t offered,
+					uint32_t *count,
+					struct spoolss_PrinterEnumValues **info)
 {
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_ENUMPRINTERDATA in;
-	SPOOL_R_ENUMPRINTERDATA out;
+	NTSTATUS status;
+	WERROR werror;
+	uint32_t needed;
 
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
+	status = rpccli_spoolss_EnumPrinterDataEx(cli, mem_ctx,
+						  handle,
+						  key_name,
+						  offered,
+						  count,
+						  info,
+						  &needed,
+						  &werror);
 
-        make_spoolss_q_enumprinterdata( &in, hnd, ndx, value_offered, data_offered );
+	if (W_ERROR_EQUAL(werror, WERR_MORE_DATA)) {
+		offered = needed;
 
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_ENUMPRINTERDATA,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_enumprinterdata,
-	            spoolss_io_r_enumprinterdata, 
-	            WERR_GENERAL_FAILURE );
-
-	if ( value_needed )
-		*value_needed = out.realvaluesize;
-	if ( data_needed )
-		*data_needed = out.realdatasize;
-		
-	if (!W_ERROR_IS_OK(out.status))
-		return out.status;
-
-	if (value) {
-		rpcstr_pull(value->valuename, out.value, sizeof(value->valuename), -1,
-			    STR_TERMINATE);
-		if (out.realdatasize) {
-			value->data_p = (uint8 *)TALLOC_MEMDUP(mem_ctx, out.data,
-						       out.realdatasize);
-		} else {
-			value->data_p = NULL;
-		}
-		value->type = out.type;
-		value->size = out.realdatasize;
+		status = rpccli_spoolss_EnumPrinterDataEx(cli, mem_ctx,
+							  handle,
+							  key_name,
+							  offered,
+							  count,
+							  info,
+							  &needed,
+							  &werror);
 	}
-	
-	return out.status;
+
+	return werror;
 }
-
-/**********************************************************************
-**********************************************************************/
-
-WERROR rpccli_spoolss_enumprinterdataex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				     POLICY_HND *hnd, const char *keyname, 
-				     REGVAL_CTR *ctr)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_ENUMPRINTERDATAEX in;
-	SPOOL_R_ENUMPRINTERDATAEX out;
-	int i;
-	uint32 offered;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-	offered = 0;
-	make_spoolss_q_enumprinterdataex( &in, hnd, keyname, offered );
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_ENUMPRINTERDATAEX,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_enumprinterdataex,
-	            spoolss_io_r_enumprinterdataex, 
-	            WERR_GENERAL_FAILURE );
-
-	if ( W_ERROR_EQUAL( out.status, WERR_MORE_DATA ) ) {
-		offered = out.needed;
-		
-		ZERO_STRUCT(in);
-		ZERO_STRUCT(out);
-		
-	        make_spoolss_q_enumprinterdataex( &in, hnd, keyname, offered );
-
-		CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_ENUMPRINTERDATAEX,
-		            in, out, 
-		            qbuf, rbuf,
-		            spoolss_io_q_enumprinterdataex,
-		            spoolss_io_r_enumprinterdataex, 
-		            WERR_GENERAL_FAILURE );
-	}
-	
-	if (!W_ERROR_IS_OK(out.status))
-		return out.status;
-
-	for (i = 0; i < out.returned; i++) {
-		PRINTER_ENUM_VALUES *v = &out.ctr.values[i];
-		fstring name;
-
-		rpcstr_pull(name, v->valuename.buffer, sizeof(name), -1, 
-			    STR_TERMINATE);
-		regval_ctr_addvalue(ctr, name, v->type, (const char *)v->data, v->data_len);
-	}
-
-	return out.status;
-}
-
-/**********************************************************************
-**********************************************************************/
-
-WERROR rpccli_spoolss_enumprinterkey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				  POLICY_HND *hnd, const char *keyname,
-				  uint16 **keylist, uint32 *len)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_ENUMPRINTERKEY in;
-	SPOOL_R_ENUMPRINTERKEY out;
-	uint32 offered = 0;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-	make_spoolss_q_enumprinterkey( &in, hnd, keyname, offered );
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_ENUMPRINTERKEY,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_enumprinterkey,
-	            spoolss_io_r_enumprinterkey, 
-	            WERR_GENERAL_FAILURE );
-
-	if ( W_ERROR_EQUAL( out.status, WERR_MORE_DATA ) ) {
-		offered = out.needed;
-		
-		ZERO_STRUCT(in);
-		ZERO_STRUCT(out);
-		
-		make_spoolss_q_enumprinterkey( &in, hnd, keyname, offered );
-
-		CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_ENUMPRINTERKEY,
-		            in, out, 
-		            qbuf, rbuf,
-		            spoolss_io_q_enumprinterkey,
-		            spoolss_io_r_enumprinterkey, 
-		            WERR_GENERAL_FAILURE );
-	}
-
-	if ( !W_ERROR_IS_OK(out.status) )
-		return out.status;	
-	
-	if (keylist) {
-		*keylist = SMB_MALLOC_ARRAY(uint16, out.keys.buf_len);
-		if (!*keylist) {
-			return WERR_NOMEM;
-		}
-		memcpy(*keylist, out.keys.buffer, out.keys.buf_len * 2);
-		if (len)
-			*len = out.keys.buf_len * 2;
-	}
-
-	return out.status;
-}
-/** @} **/

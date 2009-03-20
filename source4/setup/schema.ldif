@@ -4096,6 +4096,21 @@ systemOnly: TRUE
 systemFlags: 19
 isMemberOfPartialAttributeSet: TRUE
 
+dn: CN=Parent-GUID,${SCHEMADN}
+objectClass: top
+objectClass: attributeSchema
+cn: Parent-GUID
+ldapDisplayName: parentGUID
+attributeId: 1.2.840.113556.1.4.1224
+attributeSyntax: 2.5.5.10
+omSyntax: 4
+isSingleValued: TRUE
+schemaIdGuid: 2df90d74-009f-11d2-aa4c-00c04fd7d83a
+systemOnly: TRUE
+searchFlags: 0
+systemFlags: 134217748
+schemaFlagsEx: 1
+
 dn: CN=ms-DS-Tasks-For-Az-Task-BL,${SCHEMADN}
 objectClass: top
 objectClass: attributeSchema

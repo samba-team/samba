@@ -4160,8 +4160,8 @@ static bool run_opentest(int dummy)
 static bool run_simple_posix_open_test(int dummy)
 {
 	static struct cli_state *cli1;
-	const char *fname = "\\posix.file";
-	const char *dname = "\\posix.dir";
+	const char *fname = "\\posix:file";
+	const char *dname = "\\posix:dir";
 	uint16 major, minor;
 	uint32 caplow, caphigh;
 	int fnum1 = -1;
@@ -5613,11 +5613,11 @@ static bool run_local_memcache(int dummy)
 	return ret;
 }
 
-static void wbclient_done(struct async_req *req)
+static void wbclient_done(struct tevent_req *req)
 {
 	wbcErr wbc_err;
 	struct winbindd_response *wb_resp;
-	int *i = (int *)req->async.priv;
+	int *i = (int *)tevent_req_callback_data_void(req);
 
 	wbc_err = wb_trans_recv(req, req, &wb_resp);
 	TALLOC_FREE(req);
@@ -5654,14 +5654,13 @@ static bool run_local_wbclient(int dummy)
 			goto fail;
 		}
 		for (j=0; j<5; j++) {
-			struct async_req *req;
+			struct tevent_req *req;
 			req = wb_trans_send(ev, ev, wb_ctx[i],
 					    (j % 2) == 0, &wb_req);
 			if (req == NULL) {
 				goto fail;
 			}
-			req->async.fn = wbclient_done;
-			req->async.priv = &i;
+			tevent_req_set_callback(req, wbclient_done, &i);
 		}
 	}
 

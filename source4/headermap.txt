@@ -10,6 +10,8 @@
 ../lib/util/talloc_stack.h: util/talloc_stack.h
 ../lib/util/xfile.h: util/xfile.h
 ../lib/tdr/tdr.h: tdr.h
+../lib/tsocket/tsocket.h: tsocket.h
+../lib/tsocket/tsocket_internal.h: tsocket_internal.h
 librpc/rpc/dcerpc.h: dcerpc.h
 lib/ldb/include/ldb.h: ldb.h
 lib/ldb/include/ldb_errors.h: ldb_errors.h
@@ -23,7 +25,7 @@ lib/registry/registry.h: registry.h
 libcli/util/werror.h: core/werror.h
 libcli/util/doserr.h: core/doserr.h
 libcli/util/ntstatus.h: core/ntstatus.h
-libcli/cldap/cldap.h: cldap.h
+../libcli/cldap/cldap.h: cldap.h
 auth/credentials/credentials.h: credentials.h
 auth/credentials/credentials_krb5.h: credentials/krb5.h
 rpc_server/dcerpc_server.h: dcerpc_server.h

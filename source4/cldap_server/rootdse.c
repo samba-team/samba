@@ -20,19 +20,15 @@
 */
 
 #include "includes.h"
+#include <tevent.h>
 #include "libcli/ldap/ldap.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
-#include "lib/events/events.h"
-#include "lib/socket/socket.h"
 #include "smbd/service_task.h"
 #include "cldap_server/cldap_server.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "dsdb/samdb/samdb.h"
-#include "auth/auth.h"
 #include "ldb_wrap.h"
-#include "system/network.h"
-#include "lib/socket/netif.h"
 
 static void cldapd_rootdse_fill(struct cldapd_server *cldapd,
 				TALLOC_CTX *mem_ctx,
@@ -151,15 +147,15 @@ done:
   handle incoming cldap requests
 */
 void cldapd_rootdse_request(struct cldap_socket *cldap, 
+			    struct cldapd_server *cldapd,
+			    TALLOC_CTX *tmp_ctx,
 			    uint32_t message_id,
 			    struct ldap_SearchRequest *search,
-			    struct socket_address *src)
+			    struct tsocket_address *src)
 {
-	struct cldapd_server *cldapd = talloc_get_type(cldap->incoming.private_data, struct cldapd_server);
 	NTSTATUS status;
 	struct cldap_reply reply;
 	struct ldap_Result result;
-	TALLOC_CTX *tmp_ctx = talloc_new(cldap);
 
 	ZERO_STRUCT(result);
 
@@ -176,6 +172,5 @@ void cldapd_rootdse_request(struct cldap_socket *cldap,
 			 ldb_filter_from_tree(tmp_ctx, search->tree), nt_errstr(status)));
 	}
 
-	talloc_free(tmp_ctx);
 	return;
 }

@@ -973,12 +973,7 @@ static struct cli_state *connect_one(struct user_auth_info *auth_info,
 		return NULL;
 	}
 
-	if (!get_cmdline_auth_info_got_pass(auth_info)) {
-		char *pass = getpass("Password: ");
-		if (pass) {
-			set_cmdline_auth_info_password(auth_info, pass);
-		}
-	}
+	set_cmdline_auth_info_getpass(auth_info);
 
 	nt_status = cli_full_connection(&c, global_myname(), server, 
 				&ss, 0,

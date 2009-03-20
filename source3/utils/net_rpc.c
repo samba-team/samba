@@ -54,8 +54,8 @@ NTSTATUS net_get_remote_domain_sid(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				   DOM_SID **domain_sid,
 				   const char **domain_name)
 {
-	struct rpc_pipe_client *lsa_pipe;
-	POLICY_HND pol;
+	struct rpc_pipe_client *lsa_pipe = NULL;
+	struct policy_handle pol;
 	NTSTATUS result = NT_STATUS_OK;
 	union lsa_PolicyInformation *info = NULL;
 
@@ -470,7 +470,7 @@ NTSTATUS rpc_info_internals(struct net_context *c,
 			int argc,
 			const char **argv)
 {
-	POLICY_HND connect_pol, domain_pol;
+	struct policy_handle connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	union samr_DomainInfo *info = NULL;
 	fstring sid_str;
@@ -989,10 +989,10 @@ static NTSTATUS rpc_sh_handle_user(struct net_context *c,
 					   TALLOC_CTX *mem_ctx,
 					   struct rpc_sh_ctx *ctx,
 					   struct rpc_pipe_client *pipe_hnd,
-					   POLICY_HND *user_hnd,
+					   struct policy_handle *user_hnd,
 					   int argc, const char **argv))
 {
-	POLICY_HND connect_pol, domain_pol, user_pol;
+	struct policy_handle connect_pol, domain_pol, user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	DOM_SID sid;
 	uint32 rid;
@@ -1073,7 +1073,7 @@ static NTSTATUS rpc_sh_user_show_internals(struct net_context *c,
 					   TALLOC_CTX *mem_ctx,
 					   struct rpc_sh_ctx *ctx,
 					   struct rpc_pipe_client *pipe_hnd,
-					   POLICY_HND *user_hnd,
+					   struct policy_handle *user_hnd,
 					   int argc, const char **argv)
 {
 	NTSTATUS result;
@@ -1124,7 +1124,7 @@ static NTSTATUS rpc_sh_user_str_edit_internals(struct net_context *c,
 					       TALLOC_CTX *mem_ctx,
 					       struct rpc_sh_ctx *ctx,
 					       struct rpc_pipe_client *pipe_hnd,
-					       POLICY_HND *user_hnd,
+					       struct policy_handle *user_hnd,
 					       int argc, const char **argv)
 {
 	NTSTATUS result;
@@ -1209,7 +1209,7 @@ static NTSTATUS rpc_sh_user_flag_edit_internals(struct net_context *c,
 						TALLOC_CTX *mem_ctx,
 						struct rpc_sh_ctx *ctx,
 						struct rpc_pipe_client *pipe_hnd,
-						POLICY_HND *user_hnd,
+						struct policy_handle *user_hnd,
 						int argc, const char **argv)
 {
 	NTSTATUS result;
@@ -1386,7 +1386,7 @@ static NTSTATUS rpc_group_delete_internals(struct net_context *c,
 					int argc,
 					const char **argv)
 {
-	POLICY_HND connect_pol, domain_pol, group_pol, user_pol;
+	struct policy_handle connect_pol, domain_pol, group_pol, user_pol;
 	bool group_is_primary = false;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32_t group_rid;
@@ -1657,8 +1657,8 @@ static NTSTATUS get_sid_from_name(struct cli_state *cli,
 {
 	DOM_SID *sids = NULL;
 	enum lsa_SidType *types = NULL;
-	struct rpc_pipe_client *pipe_hnd;
-	POLICY_HND lsa_pol;
+	struct rpc_pipe_client *pipe_hnd = NULL;
+	struct policy_handle lsa_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
 	result = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc.syntax_id,
@@ -1710,10 +1710,10 @@ static NTSTATUS rpc_add_groupmem(struct rpc_pipe_client *pipe_hnd,
 				const DOM_SID *group_sid,
 				const char *member)
 {
-	POLICY_HND connect_pol, domain_pol;
+	struct policy_handle connect_pol, domain_pol;
 	NTSTATUS result;
 	uint32 group_rid;
-	POLICY_HND group_pol;
+	struct policy_handle group_pol;
 
 	struct samr_Ids rids, rid_types;
 	struct lsa_String lsa_acct_name;
@@ -1784,10 +1784,10 @@ static NTSTATUS rpc_add_aliasmem(struct rpc_pipe_client *pipe_hnd,
 				const DOM_SID *alias_sid,
 				const char *member)
 {
-	POLICY_HND connect_pol, domain_pol;
+	struct policy_handle connect_pol, domain_pol;
 	NTSTATUS result;
 	uint32 alias_rid;
-	POLICY_HND alias_pol;
+	struct policy_handle alias_pol;
 
 	DOM_SID member_sid;
 	enum lsa_SidType member_type;
@@ -1918,10 +1918,10 @@ static NTSTATUS rpc_del_groupmem(struct net_context *c,
 				const DOM_SID *group_sid,
 				const char *member)
 {
-	POLICY_HND connect_pol, domain_pol;
+	struct policy_handle connect_pol, domain_pol;
 	NTSTATUS result;
 	uint32 group_rid;
-	POLICY_HND group_pol;
+	struct policy_handle group_pol;
 
 	struct samr_Ids rids, rid_types;
 	struct lsa_String lsa_acct_name;
@@ -1986,10 +1986,10 @@ static NTSTATUS rpc_del_aliasmem(struct rpc_pipe_client *pipe_hnd,
 				const DOM_SID *alias_sid,
 				const char *member)
 {
-	POLICY_HND connect_pol, domain_pol;
+	struct policy_handle connect_pol, domain_pol;
 	NTSTATUS result;
 	uint32 alias_rid;
-	POLICY_HND alias_pol;
+	struct policy_handle alias_pol;
 
 	DOM_SID member_sid;
 	enum lsa_SidType member_type;
@@ -2136,7 +2136,7 @@ static NTSTATUS rpc_group_list_internals(struct net_context *c,
 					int argc,
 					const char **argv)
 {
-	POLICY_HND connect_pol, domain_pol;
+	struct policy_handle connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 start_idx=0, max_entries=250, num_entries, i, loop_count = 0;
 	struct samr_SamArray *groups = NULL;
@@ -2259,7 +2259,7 @@ static NTSTATUS rpc_group_list_internals(struct net_context *c,
 
 			if (c->opt_long_list_entries) {
 
-				POLICY_HND alias_pol;
+				struct policy_handle alias_pol;
 				union samr_AliasInfo *info = NULL;
 
 				if ((NT_STATUS_IS_OK(rpccli_samr_OpenAlias(pipe_hnd, mem_ctx,
@@ -2318,7 +2318,7 @@ static NTSTATUS rpc_group_list_internals(struct net_context *c,
 
 			if (c->opt_long_list_entries) {
 
-				POLICY_HND alias_pol;
+				struct policy_handle alias_pol;
 				union samr_AliasInfo *info = NULL;
 
 				if ((NT_STATUS_IS_OK(rpccli_samr_OpenAlias(pipe_hnd, mem_ctx,
@@ -2362,11 +2362,11 @@ static NTSTATUS rpc_list_group_members(struct net_context *c,
 					TALLOC_CTX *mem_ctx,
 					const char *domain_name,
 					const DOM_SID *domain_sid,
-					POLICY_HND *domain_pol,
+					struct policy_handle *domain_pol,
 					uint32 rid)
 {
 	NTSTATUS result;
-	POLICY_HND group_pol;
+	struct policy_handle group_pol;
 	uint32 num_members, *group_rids;
 	int i;
 	struct samr_RidTypeArray *rids = NULL;
@@ -2437,12 +2437,12 @@ static NTSTATUS rpc_list_group_members(struct net_context *c,
 static NTSTATUS rpc_list_alias_members(struct net_context *c,
 					struct rpc_pipe_client *pipe_hnd,
 					TALLOC_CTX *mem_ctx,
-					POLICY_HND *domain_pol,
+					struct policy_handle *domain_pol,
 					uint32 rid)
 {
 	NTSTATUS result;
 	struct rpc_pipe_client *lsa_pipe;
-	POLICY_HND alias_pol, lsa_pol;
+	struct policy_handle alias_pol, lsa_pol;
 	uint32 num_members;
 	DOM_SID *alias_sids;
 	char **domains;
@@ -2545,7 +2545,7 @@ static NTSTATUS rpc_group_members_internals(struct net_context *c,
 					const char **argv)
 {
 	NTSTATUS result;
-	POLICY_HND connect_pol, domain_pol;
+	struct policy_handle connect_pol, domain_pol;
 	struct samr_Ids rids, rid_types;
 	struct lsa_String lsa_acct_name;
 
@@ -3299,7 +3299,7 @@ static bool sync_files(struct copy_clistate *cp_clistate, const char *mask)
 
 	DEBUG(3,("calling cli_list with mask: %s\n", mask));
 
-	if ( !cli_resolve_path(talloc_tos(), "", cp_clistate->cli_share_src,
+	if ( !cli_resolve_path(talloc_tos(), "", NULL, cp_clistate->cli_share_src,
 				mask, &targetcli, &targetpath ) ) {
 		d_fprintf(stderr, "cli_resolve_path %s failed with error: %s\n", 
 			mask, cli_errstr(cp_clistate->cli_share_src));
@@ -3752,13 +3752,13 @@ static void push_alias(TALLOC_CTX *mem_ctx, struct full_alias *alias)
 
 static NTSTATUS rpc_fetch_domain_aliases(struct rpc_pipe_client *pipe_hnd,
 					TALLOC_CTX *mem_ctx,
-					POLICY_HND *connect_pol,
+					struct policy_handle *connect_pol,
 					const DOM_SID *domain_sid)
 {
 	uint32 start_idx, max_entries, num_entries, i;
 	struct samr_SamArray *groups = NULL;
 	NTSTATUS result;
-	POLICY_HND domain_pol;
+	struct policy_handle domain_pol;
 
 	/* Get domain policy handle */
 
@@ -3782,7 +3782,7 @@ static NTSTATUS rpc_fetch_domain_aliases(struct rpc_pipe_client *pipe_hnd,
 						       &num_entries);
 		for (i = 0; i < num_entries; i++) {
 
-			POLICY_HND alias_pol;
+			struct policy_handle alias_pol;
 			struct full_alias alias;
 			struct lsa_SidArray sid_array;
 			int j;
@@ -3847,7 +3847,7 @@ static NTSTATUS rpc_aliaslist_dump(struct net_context *c,
 {
 	int i;
 	NTSTATUS result;
-	POLICY_HND lsa_pol;
+	struct policy_handle lsa_pol;
 
 	result = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, true,
 				     SEC_RIGHTS_MAXIMUM_ALLOWED,
@@ -3912,7 +3912,7 @@ static NTSTATUS rpc_aliaslist_internals(struct net_context *c,
 					const char **argv)
 {
 	NTSTATUS result;
-	POLICY_HND connect_pol;
+	struct policy_handle connect_pol;
 
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
 				      pipe_hnd->desthost,
@@ -5149,7 +5149,7 @@ static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
 						int argc,
 						const char **argv)
 {
-	POLICY_HND connect_pol, domain_pol, user_pol;
+	struct policy_handle connect_pol, domain_pol, user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	char *acct_name;
 	struct lsa_String lsa_acct_name;
@@ -5306,7 +5306,7 @@ static NTSTATUS rpc_trustdom_del_internals(struct net_context *c,
 					int argc,
 					const char **argv)
 {
-	POLICY_HND connect_pol, domain_pol, user_pol;
+	struct policy_handle connect_pol, domain_pol, user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	char *acct_name;
 	DOM_SID trust_acct_sid;
@@ -5495,7 +5495,7 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 	struct cli_state *cli = NULL;
 	struct sockaddr_storage server_ss;
 	struct rpc_pipe_client *pipe_hnd = NULL;
-	POLICY_HND connect_hnd;
+	struct policy_handle connect_hnd;
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS nt_status;
 	DOM_SID *domain_sid;
@@ -5731,7 +5731,7 @@ static void print_trusted_domain(DOM_SID *dom_sid, const char *trusted_dom_name)
 
 static NTSTATUS vampire_trusted_domain(struct rpc_pipe_client *pipe_hnd,
 				      TALLOC_CTX *mem_ctx,
-				      POLICY_HND *pol,
+				      struct policy_handle *pol,
 				      DOM_SID dom_sid,
 				      const char *trusted_dom_name)
 {
@@ -5797,7 +5797,7 @@ static int rpc_trustdom_vampire(struct net_context *c, int argc,
 	NTSTATUS nt_status;
 	const char *domain_name = NULL;
 	DOM_SID *queried_dom_sid;
-	POLICY_HND connect_hnd;
+	struct policy_handle connect_hnd;
 	union lsa_PolicyInformation *info = NULL;
 
 	/* trusted domains listing variables */
@@ -5950,7 +5950,7 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 	DOM_SID *queried_dom_sid;
 	fstring padding;
 	int ascii_dom_name_len;
-	POLICY_HND connect_hnd;
+	struct policy_handle connect_hnd;
 	union lsa_PolicyInformation *info = NULL;
 
 	/* trusted domains listing variables */
@@ -5960,7 +5960,7 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 	fstring pdc_name;
 
 	/* trusting domains listing variables */
-	POLICY_HND domain_hnd;
+	struct policy_handle domain_hnd;
 	struct samr_SamArray *trusts = NULL;
 
 	if (c->display_usage) {
@@ -6421,30 +6421,30 @@ static int rpc_printer_migrate_all(struct net_context *c, int argc,
 		return -1;
 	}
 
-	ret = run_rpc_command(c, NULL, &syntax_spoolss, 0,
+	ret = run_rpc_command(c, NULL, &ndr_table_spoolss.syntax_id, 0,
 			      rpc_printer_migrate_printers_internals, argc,
 			      argv);
 	if (ret)
 		return ret;
 
-	ret = run_rpc_command(c, NULL, &syntax_spoolss, 0,
+	ret = run_rpc_command(c, NULL, &ndr_table_spoolss.syntax_id, 0,
 			      rpc_printer_migrate_drivers_internals, argc,
 			      argv);
 	if (ret)
 		return ret;
 
-	ret = run_rpc_command(c, NULL, &syntax_spoolss, 0,
+	ret = run_rpc_command(c, NULL, &ndr_table_spoolss.syntax_id, 0,
 			      rpc_printer_migrate_forms_internals, argc, argv);
 	if (ret)
 		return ret;
 
-	ret = run_rpc_command(c, NULL, &syntax_spoolss, 0,
+	ret = run_rpc_command(c, NULL, &ndr_table_spoolss.syntax_id, 0,
 			      rpc_printer_migrate_settings_internals, argc,
 			      argv);
 	if (ret)
 		return ret;
 
-	return run_rpc_command(c, NULL, &syntax_spoolss, 0,
+	return run_rpc_command(c, NULL, &ndr_table_spoolss.syntax_id, 0,
 			       rpc_printer_migrate_security_internals, argc,
 			       argv);
 
@@ -6475,7 +6475,7 @@ static int rpc_printer_migrate_drivers(struct net_context *c, int argc,
 		return -1;
 	}
 
-	return run_rpc_command(c, NULL, &syntax_spoolss, 0,
+	return run_rpc_command(c, NULL, &ndr_table_spoolss.syntax_id, 0,
 			       rpc_printer_migrate_drivers_internals,
 			       argc, argv);
 }
@@ -6505,7 +6505,7 @@ static int rpc_printer_migrate_forms(struct net_context *c, int argc,
 		return -1;
 	}
 
-	return run_rpc_command(c, NULL, &syntax_spoolss, 0,
+	return run_rpc_command(c, NULL, &ndr_table_spoolss.syntax_id, 0,
 			       rpc_printer_migrate_forms_internals,
 			       argc, argv);
 }
@@ -6535,7 +6535,7 @@ static int rpc_printer_migrate_printers(struct net_context *c, int argc,
 		return -1;
 	}
 
-	return run_rpc_command(c, NULL, &syntax_spoolss, 0,
+	return run_rpc_command(c, NULL, &ndr_table_spoolss.syntax_id, 0,
 			       rpc_printer_migrate_printers_internals,
 			       argc, argv);
 }
@@ -6565,7 +6565,7 @@ static int rpc_printer_migrate_security(struct net_context *c, int argc,
 		return -1;
 	}
 
-	return run_rpc_command(c, NULL, &syntax_spoolss, 0,
+	return run_rpc_command(c, NULL, &ndr_table_spoolss.syntax_id, 0,
 			       rpc_printer_migrate_security_internals,
 			       argc, argv);
 }
@@ -6595,7 +6595,7 @@ static int rpc_printer_migrate_settings(struct net_context *c, int argc,
 		return -1;
 	}
 
-	return run_rpc_command(c, NULL, &syntax_spoolss, 0,
+	return run_rpc_command(c, NULL, &ndr_table_spoolss.syntax_id, 0,
 			       rpc_printer_migrate_settings_internals,
 			       argc, argv);
 }
@@ -6691,7 +6691,7 @@ static int rpc_printer_list(struct net_context *c, int argc, const char **argv)
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, &syntax_spoolss, 0,
+	return run_rpc_command(c, NULL, &ndr_table_spoolss.syntax_id, 0,
 			       rpc_printer_list_internals,
 			       argc, argv);
 }
@@ -6716,7 +6716,7 @@ static int rpc_printer_driver_list(struct net_context *c, int argc,
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, &syntax_spoolss, 0,
+	return run_rpc_command(c, NULL, &ndr_table_spoolss.syntax_id, 0,
 			       rpc_printer_driver_list_internals,
 			       argc, argv);
 }
@@ -6741,7 +6741,7 @@ static int rpc_printer_publish_publish(struct net_context *c, int argc,
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, &syntax_spoolss, 0,
+	return run_rpc_command(c, NULL, &ndr_table_spoolss.syntax_id, 0,
 			       rpc_printer_publish_publish_internals,
 			       argc, argv);
 }
@@ -6765,7 +6765,7 @@ static int rpc_printer_publish_update(struct net_context *c, int argc, const cha
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, &syntax_spoolss, 0,
+	return run_rpc_command(c, NULL, &ndr_table_spoolss.syntax_id, 0,
 			       rpc_printer_publish_update_internals,
 			       argc, argv);
 }
@@ -6790,7 +6790,7 @@ static int rpc_printer_publish_unpublish(struct net_context *c, int argc,
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, &syntax_spoolss, 0,
+	return run_rpc_command(c, NULL, &ndr_table_spoolss.syntax_id, 0,
 			       rpc_printer_publish_unpublish_internals,
 			       argc, argv);
 }
@@ -6815,7 +6815,7 @@ static int rpc_printer_publish_list(struct net_context *c, int argc,
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, &syntax_spoolss, 0,
+	return run_rpc_command(c, NULL, &ndr_table_spoolss.syntax_id, 0,
 			       rpc_printer_publish_list_internals,
 			       argc, argv);
 }
@@ -6880,7 +6880,7 @@ static int rpc_printer_publish(struct net_context *c, int argc,
 			net_display_usage_from_functable(func);
 			return 0;
 		}
-		return run_rpc_command(c, NULL, &syntax_spoolss, 0,
+		return run_rpc_command(c, NULL, &ndr_table_spoolss.syntax_id, 0,
 			       rpc_printer_publish_list_internals,
 			       argc, argv);
 	}
@@ -6983,7 +6983,7 @@ int net_rpc_printer(struct net_context *c, int argc, const char **argv)
 			net_display_usage_from_functable(func);
 			return 0;
 		}
-		return run_rpc_command(c, NULL, &syntax_spoolss, 0,
+		return run_rpc_command(c, NULL, &ndr_table_spoolss.syntax_id, 0,
 			       rpc_printer_list_internals,
 			       argc, argv);
 	}

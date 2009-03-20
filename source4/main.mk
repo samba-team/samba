@@ -21,6 +21,7 @@ mkinclude ../lib/nss_wrapper/config.mk
 mkinclude lib/stream/config.mk
 mkinclude ../lib/util/config.mk
 mkinclude ../lib/tdr/config.mk
+mkinclude ../lib/tsocket/config.mk
 mkinclude ../lib/crypto/config.mk
 mkinclude ../lib/torture/config.mk
 mkinclude lib/basic.mk
@@ -45,6 +46,7 @@ mkinclude torture/config.mk
 mkinclude librpc/config.mk
 mkinclude client/config.mk
 mkinclude libcli/config.mk
+mkinclude ../libcli/cldap/config.mk
 mkinclude scripting/python/config.mk
 mkinclude kdc/config.mk
 mkinclude ../lib/smbconf/config.mk

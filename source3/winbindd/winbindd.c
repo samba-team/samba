@@ -927,6 +927,97 @@ static bool remove_idle_client(void)
 	return False;
 }
 
+struct winbindd_listen_state {
+	bool privileged;
+	int fd;
+	struct tevent_fd *fde;
+};
+
+static void winbindd_listen_fde_handler(struct tevent_context *ev,
+					struct tevent_fd *fde,
+					uint16_t flags,
+					void *private_data)
+{
+	struct winbindd_listen_state *s = talloc_get_type_abort(private_data,
+					  struct winbindd_listen_state);
+
+	while (winbindd_num_clients() >
+	       WINBINDD_MAX_SIMULTANEOUS_CLIENTS - 1) {
+		DEBUG(5,("winbindd: Exceeding %d client "
+			 "connections, removing idle "
+			 "connection.\n",
+			 WINBINDD_MAX_SIMULTANEOUS_CLIENTS));
+		if (!remove_idle_client()) {
+			DEBUG(0,("winbindd: Exceeding %d "
+				 "client connections, no idle "
+				 "connection found\n",
+				 WINBINDD_MAX_SIMULTANEOUS_CLIENTS));
+			break;
+		}
+	}
+
+	/* new, non-privileged connection */
+	new_connection(s->fd, s->privileged);
+}
+
+static bool winbindd_setup_listeners(void)
+{
+	struct winbindd_listen_state *pub_state = NULL;
+	struct winbindd_listen_state *priv_state = NULL;
+
+	pub_state = talloc(winbind_event_context(),
+			   struct winbindd_listen_state);
+	if (!pub_state) {
+		goto failed;
+	}
+
+	pub_state->privileged = false;
+	pub_state->fd = open_winbindd_socket();
+	if (pub_state->fd == -1) {
+		goto failed;
+	}
+
+	pub_state->fde = tevent_add_fd(winbind_event_context(),
+				       pub_state, pub_state->fd,
+				       TEVENT_FD_READ,
+				       winbindd_listen_fde_handler,
+				       pub_state);
+	if (!pub_state->fde) {
+		close(pub_state->fd);
+		goto failed;
+	}
+	tevent_fd_set_auto_close(pub_state->fde);
+
+	priv_state = talloc(winbind_event_context(),
+			    struct winbindd_listen_state);
+	if (!priv_state) {
+		goto failed;
+	}
+
+	priv_state->privileged = true;
+	priv_state->fd = open_winbindd_priv_socket();
+	if (priv_state->fd == -1) {
+		goto failed;
+	}
+
+	priv_state->fde = tevent_add_fd(winbind_event_context(),
+					priv_state, priv_state->fd,
+					TEVENT_FD_READ,
+					winbindd_listen_fde_handler,
+					priv_state);
+	if (!priv_state->fde) {
+		close(priv_state->fd);
+		goto failed;
+	}
+	tevent_fd_set_auto_close(priv_state->fde);
+
+	return true;
+failed:
+	TALLOC_FREE(pub_state);
+	TALLOC_FREE(priv_state);
+	return false;
+}
+
 /* Process incoming clients on listen_sock.  We use a tricky non-blocking,
    non-forking, non-threaded model which allows us to handle many
    simultaneous connections while remaining impervious to many denial of
@@ -934,35 +1025,17 @@ static bool remove_idle_client(void)
 
 static void process_loop(void)
 {
-	struct winbindd_cli_state *state;
 	struct winbindd_fd_event *ev;
 	fd_set r_fds, w_fds;
-	int maxfd, listen_sock, listen_priv_sock, selret;
+	int maxfd = 0, selret;
 	struct timeval timeout, ev_timeout;
-
-	/* Open Sockets here to get stuff going ASAP */
-	listen_sock = open_winbindd_socket();
-	listen_priv_sock = open_winbindd_priv_socket();
-
-	if (listen_sock == -1 || listen_priv_sock == -1) {
-		perror("open_winbind_socket");
-		exit(1);
-	}
 
 	run_events(winbind_event_context(), 0, NULL, NULL);
 
-	/* refresh the trusted domain cache */
-
-	rescan_trusted_domains();
-
 	/* Initialise fd lists for select() */
-
-	maxfd = MAX(listen_sock, listen_priv_sock);
 
 	FD_ZERO(&r_fds);
 	FD_ZERO(&w_fds);
-	FD_SET(listen_sock, &r_fds);
-	FD_SET(listen_priv_sock, &r_fds);
 
 	timeout.tv_sec = WINBINDD_ESTABLISH_LOOP;
 	timeout.tv_usec = 0;
@@ -977,23 +1050,6 @@ static void process_loop(void)
 	}
 	if (get_timed_events_timeout(winbind_event_context(), &ev_timeout)) {
 		timeout = timeval_min(&timeout, &ev_timeout);
-	}
-
-	/* Set up client readers and writers */
-
-	state = winbindd_client_list();
-
-	while (state) {
-
-		struct winbindd_cli_state *next = state->next;
-
-		/* Dispose of client connection if it is marked as 
-		   finished */ 
-
-		if (state->finished)
-			remove_client(state);
-
-		state = next;
 	}
 
 	for (ev = fd_events; ev; ev = ev->next) {
@@ -1043,43 +1099,7 @@ static void process_loop(void)
 		ev = next;
 	}
 
-	if (FD_ISSET(listen_sock, &r_fds)) {
-		while (winbindd_num_clients() >
-		       WINBINDD_MAX_SIMULTANEOUS_CLIENTS - 1) {
-			DEBUG(5,("winbindd: Exceeding %d client "
-				 "connections, removing idle "
-				 "connection.\n",
-				 WINBINDD_MAX_SIMULTANEOUS_CLIENTS));
-			if (!remove_idle_client()) {
-				DEBUG(0,("winbindd: Exceeding %d "
-					 "client connections, no idle "
-					 "connection found\n",
-					 WINBINDD_MAX_SIMULTANEOUS_CLIENTS));
-				break;
-			}
-		}
-		/* new, non-privileged connection */
-		new_connection(listen_sock, False);
-	}
-
-	if (FD_ISSET(listen_priv_sock, &r_fds)) {
-		while (winbindd_num_clients() >
-		       WINBINDD_MAX_SIMULTANEOUS_CLIENTS - 1) {
-			DEBUG(5,("winbindd: Exceeding %d client "
-				 "connections, removing idle "
-				 "connection.\n",
-				 WINBINDD_MAX_SIMULTANEOUS_CLIENTS));
-			if (!remove_idle_client()) {
-				DEBUG(0,("winbindd: Exceeding %d "
-					 "client connections, no idle "
-					 "connection found\n",
-					 WINBINDD_MAX_SIMULTANEOUS_CLIENTS));
-				break;
-			}
-		}
-		/* new, privileged connection */
-		new_connection(listen_priv_sock, True);
-	}
+	return;
 
  no_fds_ready:
 
@@ -1366,12 +1386,39 @@ int main(int argc, char **argv, char **envp)
 	smb_nscd_flush_user_cache();
 	smb_nscd_flush_group_cache();
 
-	/* Loop waiting for requests */
+	/* setup listen sockets */
+
+	if (!winbindd_setup_listeners()) {
+		DEBUG(0,("winbindd_setup_listeners() failed\n"));
+		exit(1);
+	}
 
 	TALLOC_FREE(frame);
+	/* Loop waiting for requests */
 	while (1) {
+		struct winbindd_cli_state *state;
+
 		frame = talloc_stackframe();
+
+		/* refresh the trusted domain cache */
+
+		rescan_trusted_domains();
+
+		/* Dispose of client connection if it is marked as
+		   finished */
+		state = winbindd_client_list();
+		while (state) {
+			struct winbindd_cli_state *next = state->next;
+
+			if (state->finished) {
+				remove_client(state);
+			}
+
+			state = next;
+		}
+
 		process_loop();
+
 		TALLOC_FREE(frame);
 	}
 

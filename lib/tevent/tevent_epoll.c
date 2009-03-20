@@ -35,14 +35,6 @@ struct epoll_event_context {
 	/* a pointer back to the generic event_context */
 	struct tevent_context *ev;
 
-	/* this is changed by the destructors for the fd event
-	   type. It is used to detect event destruction by event
-	   handlers, which means the code that is calling the event
-	   handler needs to assume that the linked list is no longer
-	   valid
-	*/
-	uint32_t destruction_count;
-
 	/* when using epoll this is the handle from epoll_create */
 	int epoll_fd;
 
@@ -242,9 +234,8 @@ static void epoll_change_event(struct epoll_event_context *epoll_ev, struct teve
 static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval *tvalp)
 {
 	int ret, i;
-#define MAXEVENTS 32
+#define MAXEVENTS 1
 	struct epoll_event events[MAXEVENTS];
-	uint32_t destruction_count = ++epoll_ev->destruction_count;
 	int timeout = -1;
 
 	if (epoll_ev->epoll_fd == -1) return -1;
@@ -305,9 +296,7 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 		if (events[i].events & EPOLLOUT) flags |= TEVENT_FD_WRITE;
 		if (flags) {
 			fde->handler(epoll_ev->ev, fde, flags, fde->private_data);
-			if (destruction_count != epoll_ev->destruction_count) {
-				break;
-			}
+			break;
 		}
 	}
 
@@ -350,8 +339,6 @@ static int epoll_event_fd_destructor(struct tevent_fd *fde)
 					   struct epoll_event_context);
 
 		epoll_check_reopen(epoll_ev);
-
-		epoll_ev->destruction_count++;
 
 		epoll_del_event(epoll_ev, fde);
 	}
@@ -417,6 +404,16 @@ static int epoll_event_loop_once(struct tevent_context *ev, const char *location
 		 					   struct epoll_event_context);
 	struct timeval tval;
 
+	if (ev->signal_events &&
+	    tevent_common_check_signal(ev)) {
+		return 0;
+	}
+
+	if (ev->immediate_events &&
+	    tevent_common_loop_immediate(ev)) {
+		return 0;
+	}
+
 	tval = tevent_common_loop_timer_delay(ev);
 	if (tevent_timeval_is_zero(&tval)) {
 		return 0;
@@ -427,32 +424,17 @@ static int epoll_event_loop_once(struct tevent_context *ev, const char *location
 	return epoll_event_loop(epoll_ev, &tval);
 }
 
-/*
-  return on failure or (with 0) if all fd events are removed
-*/
-static int epoll_event_loop_wait(struct tevent_context *ev, const char *location)
-{
-	struct epoll_event_context *epoll_ev = talloc_get_type(ev->additional_data,
-							   struct epoll_event_context);
-	while (epoll_ev->ev->fd_events) {
-		if (epoll_event_loop_once(ev, location) != 0) {
-			break;
-		}
-	}
-
-	return 0;
-}
-
 static const struct tevent_ops epoll_event_ops = {
-	.context_init	= epoll_event_context_init,
-	.add_fd		= epoll_event_add_fd,
-	.set_fd_close_fn= tevent_common_fd_set_close_fn,
-	.get_fd_flags	= tevent_common_fd_get_flags,
-	.set_fd_flags	= epoll_event_set_fd_flags,
-	.add_timer	= tevent_common_add_timer,
-	.add_signal	= tevent_common_add_signal,
-	.loop_once	= epoll_event_loop_once,
-	.loop_wait	= epoll_event_loop_wait,
+	.context_init		= epoll_event_context_init,
+	.add_fd			= epoll_event_add_fd,
+	.set_fd_close_fn	= tevent_common_fd_set_close_fn,
+	.get_fd_flags		= tevent_common_fd_get_flags,
+	.set_fd_flags		= epoll_event_set_fd_flags,
+	.add_timer		= tevent_common_add_timer,
+	.schedule_immediate	= tevent_common_schedule_immediate,
+	.add_signal		= tevent_common_add_signal,
+	.loop_once		= epoll_event_loop_once,
+	.loop_wait		= tevent_common_loop_wait,
 };
 
 bool tevent_epoll_init(void)

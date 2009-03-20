@@ -273,8 +273,8 @@ static void send_spoolss_notify2_msg(SPOOLSS_NOTIFY_MSG *msg)
 	 */
 
 	if ((num_messages < 100) && (msg->type == JOB_NOTIFY_TYPE) 
-		&& (msg->field == JOB_NOTIFY_TOTAL_BYTES 
-		    || msg->field == JOB_NOTIFY_TOTAL_PAGES )) 
+		&& (msg->field == JOB_NOTIFY_FIELD_TOTAL_BYTES
+		    || msg->field == JOB_NOTIFY_FIELD_TOTAL_PAGES ))
 	{
 
 		for (tmp_ptr = notify_queue_head; tmp_ptr; tmp_ptr = tmp_ptr->next) 
@@ -400,7 +400,7 @@ void notify_printer_status_byname(const char *sharename, uint32 status)
 	int snum = print_queue_snum(sharename);
 
 	send_notify_field_values(sharename, PRINTER_NOTIFY_TYPE, 
-				 PRINTER_NOTIFY_STATUS, snum,
+				 PRINTER_NOTIFY_FIELD_STATUS, snum,
 				 status, 0, 0);
 }
 
@@ -418,7 +418,7 @@ void notify_job_status_byname(const char *sharename, uint32 jobid, uint32 status
 	/* Job id stored in id field, status in value1 */
 
 	send_notify_field_values(sharename, JOB_NOTIFY_TYPE,
-				 JOB_NOTIFY_STATUS, jobid,
+				 JOB_NOTIFY_FIELD_STATUS, jobid,
 				 status, 0, flags);
 }
 
@@ -433,7 +433,7 @@ void notify_job_total_bytes(const char *sharename, uint32 jobid,
 	/* Job id stored in id field, status in value1 */
 
 	send_notify_field_values(sharename, JOB_NOTIFY_TYPE,
-				 JOB_NOTIFY_TOTAL_BYTES, jobid,
+				 JOB_NOTIFY_FIELD_TOTAL_BYTES, jobid,
 				 size, 0, 0);
 }
 
@@ -443,21 +443,21 @@ void notify_job_total_pages(const char *sharename, uint32 jobid,
 	/* Job id stored in id field, status in value1 */
 
 	send_notify_field_values(sharename, JOB_NOTIFY_TYPE,
-				 JOB_NOTIFY_TOTAL_PAGES, jobid,
+				 JOB_NOTIFY_FIELD_TOTAL_PAGES, jobid,
 				 pages, 0, 0);
 }
 
 void notify_job_username(const char *sharename, uint32 jobid, char *name)
 {
 	send_notify_field_buffer(
-		sharename, JOB_NOTIFY_TYPE, JOB_NOTIFY_USER_NAME,
+		sharename, JOB_NOTIFY_TYPE, JOB_NOTIFY_FIELD_USER_NAME,
 		jobid, strlen(name) + 1, name);
 }
 
 void notify_job_name(const char *sharename, uint32 jobid, char *name)
 {
 	send_notify_field_buffer(
-		sharename, JOB_NOTIFY_TYPE, JOB_NOTIFY_DOCUMENT,
+		sharename, JOB_NOTIFY_TYPE, JOB_NOTIFY_FIELD_DOCUMENT,
 		jobid, strlen(name) + 1, name);
 }
 
@@ -465,7 +465,7 @@ void notify_job_submitted(const char *sharename, uint32 jobid,
 			  time_t submitted)
 {
 	send_notify_field_buffer(
-		sharename, JOB_NOTIFY_TYPE, JOB_NOTIFY_SUBMITTED,
+		sharename, JOB_NOTIFY_TYPE, JOB_NOTIFY_FIELD_SUBMITTED,
 		jobid, sizeof(submitted), (char *)&submitted);
 }
 
@@ -474,7 +474,7 @@ void notify_printer_driver(int snum, char *driver_name)
 	const char *sharename = SERVICE(snum);
 
 	send_notify_field_buffer(
-		sharename, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_DRIVER_NAME,
+		sharename, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_FIELD_DRIVER_NAME,
 		snum, strlen(driver_name) + 1, driver_name);
 }
 
@@ -483,7 +483,7 @@ void notify_printer_comment(int snum, char *comment)
 	const char *sharename = SERVICE(snum);
 
 	send_notify_field_buffer(
-		sharename, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_COMMENT,
+		sharename, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_FIELD_COMMENT,
 		snum, strlen(comment) + 1, comment);
 }
 
@@ -492,7 +492,7 @@ void notify_printer_sharename(int snum, char *share_name)
 	const char *sharename = SERVICE(snum);
 
 	send_notify_field_buffer(
-		sharename, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_SHARE_NAME,
+		sharename, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_FIELD_SHARE_NAME,
 		snum, strlen(share_name) + 1, share_name);
 }
 
@@ -501,7 +501,7 @@ void notify_printer_printername(int snum, char *printername)
 	const char *sharename = SERVICE(snum);
 
 	send_notify_field_buffer(
-		sharename, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_PRINTER_NAME,
+		sharename, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_FIELD_PRINTER_NAME,
 		snum, strlen(printername) + 1, printername);
 }
 
@@ -510,7 +510,7 @@ void notify_printer_port(int snum, char *port_name)
 	const char *sharename = SERVICE(snum);
 
 	send_notify_field_buffer(
-		sharename, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_PORT_NAME,
+		sharename, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_FIELD_PORT_NAME,
 		snum, strlen(port_name) + 1, port_name);
 }
 
@@ -519,7 +519,7 @@ void notify_printer_location(int snum, char *location)
 	const char *sharename = SERVICE(snum);
 
 	send_notify_field_buffer(
-		sharename, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_LOCATION,
+		sharename, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_FIELD_LOCATION,
 		snum, strlen(location) + 1, location);
 }
 

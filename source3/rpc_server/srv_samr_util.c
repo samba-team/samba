@@ -36,6 +36,27 @@
 		((s1) && (s2) && (strcmp((s1), (s2)) != 0))
 
 /*************************************************************
+ Copies a struct samr_UserInfo18 to a struct samu
+**************************************************************/
+
+void copy_id18_to_sam_passwd(struct samu *to,
+			     struct samr_UserInfo18 *from)
+{
+	struct samr_UserInfo21 i;
+
+	if (from == NULL || to == NULL) {
+		return;
+	}
+
+	ZERO_STRUCT(i);
+
+	i.fields_present	= SAMR_FIELD_EXPIRED_FLAG;
+	i.password_expired	= from->password_expired;
+
+	copy_id21_to_sam_passwd("INFO_18", to, &i);
+}
+
+/*************************************************************
  Copies a struct samr_UserInfo20 to a struct samu
 **************************************************************/
 
@@ -336,7 +357,7 @@ void copy_id21_to_sam_passwd(const char *log_prefix,
 	if (from->fields_present & SAMR_FIELD_EXPIRED_FLAG) {
 		DEBUG(10,("%s SAMR_FIELD_EXPIRED_FLAG: %02X\n", l,
 			from->password_expired));
-		if (from->password_expired == PASS_MUST_CHANGE_AT_NEXT_LOGON) {
+		if (from->password_expired != 0) {
 			pdb_set_pass_last_set_time(to, 0, PDB_CHANGED);
 		} else {
 			/* A subtlety here: some windows commands will
@@ -345,9 +366,27 @@ void copy_id21_to_sam_passwd(const char *log_prefix,
 			   in these caess.  "net user /dom <user> /active:y"
 			   for example, to clear an autolocked acct.
 			   We must check to see if it's expired first. jmcd */
+
+			uint32_t pwd_max_age = 0;
+			time_t now = time(NULL);
+
+			pdb_get_account_policy(AP_MAX_PASSWORD_AGE, &pwd_max_age);
+
+			if (pwd_max_age == (uint32_t)-1 || pwd_max_age == 0) {
+				pwd_max_age = get_time_t_max();
+			}
+
 			stored_time = pdb_get_pass_last_set_time(to);
-			if (stored_time == 0)
-				pdb_set_pass_last_set_time(to, time(NULL),PDB_CHANGED);
+
+			/* we will only *set* a pwdlastset date when
+			   a) the last pwdlastset time was 0 (user was forced to
+			      change password).
+			   b) the users password has not expired. gd. */
+
+			if ((stored_time == 0) ||
+			    ((now - stored_time) > pwd_max_age)) {
+				pdb_set_pass_last_set_time(to, now, PDB_CHANGED);
+			}
 		}
 	}
 }
@@ -368,6 +407,27 @@ void copy_id23_to_sam_passwd(struct samu *to,
 }
 
 /*************************************************************
+ Copies a struct samr_UserInfo24 to a struct samu
+**************************************************************/
+
+void copy_id24_to_sam_passwd(struct samu *to,
+			     struct samr_UserInfo24 *from)
+{
+	struct samr_UserInfo21 i;
+
+	if (from == NULL || to == NULL) {
+		return;
+	}
+
+	ZERO_STRUCT(i);
+
+	i.fields_present	= SAMR_FIELD_EXPIRED_FLAG;
+	i.password_expired	= from->password_expired;
+
+	copy_id21_to_sam_passwd("INFO_24", to, &i);
+}
+
+/*************************************************************
  Copies a struct samr_UserInfo25 to a struct samu
 **************************************************************/
 
@@ -379,4 +439,25 @@ void copy_id25_to_sam_passwd(struct samu *to,
 	}
 
 	copy_id21_to_sam_passwd("INFO_25", to, &from->info);
+}
+
+/*************************************************************
+ Copies a struct samr_UserInfo26 to a struct samu
+**************************************************************/
+
+void copy_id26_to_sam_passwd(struct samu *to,
+			     struct samr_UserInfo26 *from)
+{
+	struct samr_UserInfo21 i;
+
+	if (from == NULL || to == NULL) {
+		return;
+	}
+
+	ZERO_STRUCT(i);
+
+	i.fields_present	= SAMR_FIELD_EXPIRED_FLAG;
+	i.password_expired	= from->password_expired;
+
+	copy_id21_to_sam_passwd("INFO_26", to, &i);
 }

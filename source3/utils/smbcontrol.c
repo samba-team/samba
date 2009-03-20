@@ -669,11 +669,11 @@ static bool do_printnotify(struct messaging_context *msg_ctx,
 		}
 
 		if (strcmp(argv[3], "comment") == 0) {
-			attribute = PRINTER_NOTIFY_COMMENT;
+			attribute = PRINTER_NOTIFY_FIELD_COMMENT;
 		} else if (strcmp(argv[3], "port") == 0) {
-			attribute = PRINTER_NOTIFY_PORT_NAME;
+			attribute = PRINTER_NOTIFY_FIELD_PORT_NAME;
 		} else if (strcmp(argv[3], "driver") == 0) {
-			attribute = PRINTER_NOTIFY_DRIVER_NAME;
+			attribute = PRINTER_NOTIFY_FIELD_DRIVER_NAME;
 		} else {
 			fprintf(stderr, "Invalid printer command '%s'\n",
 				argv[3]);

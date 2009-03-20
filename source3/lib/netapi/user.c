@@ -352,7 +352,7 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
-	POLICY_HND connect_handle, domain_handle, user_handle;
+	struct policy_handle connect_handle, domain_handle, user_handle;
 	struct lsa_String lsa_account_name;
 	struct dom_sid2 *domain_sid = NULL;
 	union samr_UserInfo *user_info = NULL;
@@ -496,7 +496,7 @@ WERROR NetUserDel_r(struct libnetapi_ctx *ctx,
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
-	POLICY_HND connect_handle, builtin_handle, domain_handle, user_handle;
+	struct policy_handle connect_handle, builtin_handle, domain_handle, user_handle;
 	struct lsa_String lsa_account_name;
 	struct samr_Ids user_rids, name_types;
 	struct dom_sid2 *domain_sid = NULL;
@@ -2806,6 +2806,7 @@ WERROR NetUserGetGroups_r(struct libnetapi_ctx *ctx,
 
 	*r->out.buffer = NULL;
 	*r->out.entries_read = 0;
+	*r->out.total_entries = 0;
 
 	switch (r->in.level) {
 		case 0:
@@ -2899,12 +2900,8 @@ WERROR NetUserGetGroups_r(struct libnetapi_ctx *ctx,
 		}
 	}
 
-	if (r->out.entries_read) {
-		*r->out.entries_read = entries_read;
-	}
-	if (r->out.total_entries) {
-		*r->out.total_entries = entries_read;
-	}
+	*r->out.entries_read = entries_read;
+	*r->out.total_entries = entries_read;
 
  done:
 	if (ctx->disable_policy_handle_cache) {
@@ -3242,6 +3239,7 @@ WERROR NetUserGetLocalGroups_r(struct libnetapi_ctx *ctx,
 
 	*r->out.buffer = NULL;
 	*r->out.entries_read = 0;
+	*r->out.total_entries = 0;
 
 	switch (r->in.level) {
 		case 0:
@@ -3402,12 +3400,8 @@ WERROR NetUserGetLocalGroups_r(struct libnetapi_ctx *ctx,
 		}
 	}
 
-	if (r->out.entries_read) {
-		*r->out.entries_read = entries_read;
-	}
-	if (r->out.total_entries) {
-		*r->out.total_entries = entries_read;
-	}
+	*r->out.entries_read = entries_read;
+	*r->out.total_entries = entries_read;
 
  done:
 	if (ctx->disable_policy_handle_cache) {

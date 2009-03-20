@@ -85,7 +85,17 @@ struct tevent_req {
 		 *
 		 * This for debugging only.
 		 */
-		const char *location;
+		const char *create_location;
+
+		/**
+		 * @brief The location where the request was finished
+		 *
+		 * This uses the __location__ macro via the tevent_req_done(),
+		 * tevent_req_error() or tevent_req_nomem() macro.
+		 *
+		 * This for debugging only.
+		 */
+		const char *finish_location;
 
 		/**
 		 * @brief The external state - will be queried by the caller
@@ -105,10 +115,10 @@ struct tevent_req {
 		uint64_t error;
 
 		/**
-		 * @brief the timer event if tevent_req_post was used
+		 * @brief the immediate event used by tevent_req_post
 		 *
 		 */
-		struct tevent_timer *trigger;
+		struct tevent_immediate *trigger;
 
 		/**
 		 * @brief the timer event if tevent_req_set_timeout was used
@@ -143,6 +153,15 @@ struct tevent_ops {
 					  void *private_data,
 					  const char *handler_name,
 					  const char *location);
+
+	/* immediate event functions */
+	void (*schedule_immediate)(struct tevent_immediate *im,
+				   struct tevent_context *ev,
+				   tevent_immediate_handler_t handler,
+				   void *private_data,
+				   const char *handler_name,
+				   const char *location);
+
 	/* signal functions */
 	struct tevent_signal *(*add_signal)(struct tevent_context *ev,
 					    TALLOC_CTX *mem_ctx,
@@ -188,6 +207,21 @@ struct tevent_timer {
 	void *additional_data;
 };
 
+struct tevent_immediate {
+	struct tevent_immediate *prev, *next;
+	struct tevent_context *event_ctx;
+	tevent_immediate_handler_t handler;
+	/* this is private for the specific handler */
+	void *private_data;
+	/* this is for debugging only! */
+	const char *handler_name;
+	const char *create_location;
+	const char *schedule_location;
+	/* this is private for the events_ops implementation */
+	void (*cancel_fn)(struct tevent_immediate *im);
+	void *additional_data;
+};
+
 struct tevent_signal {
 	struct tevent_signal *prev, *next;
 	struct tevent_context *event_ctx;
@@ -222,6 +256,9 @@ struct tevent_context {
 	/* list of timed events - used by common code */
 	struct tevent_timer *timer_events;
 
+	/* list of immediate events - used by common code */
+	struct tevent_immediate *immediate_events;
+
 	/* list of signal events - used by common code */
 	struct tevent_signal *signal_events;
 
@@ -247,6 +284,8 @@ struct tevent_context {
 bool tevent_register_backend(const char *name, const struct tevent_ops *ops);
 
 int tevent_common_context_destructor(struct tevent_context *ev);
+int tevent_common_loop_wait(struct tevent_context *ev,
+			    const char *location);
 
 int tevent_common_fd_destructor(struct tevent_fd *fde);
 struct tevent_fd *tevent_common_add_fd(struct tevent_context *ev,
@@ -270,6 +309,14 @@ struct tevent_timer *tevent_common_add_timer(struct tevent_context *ev,
 					     const char *handler_name,
 					     const char *location);
 struct timeval tevent_common_loop_timer_delay(struct tevent_context *);
+
+void tevent_common_schedule_immediate(struct tevent_immediate *im,
+				      struct tevent_context *ev,
+				      tevent_immediate_handler_t handler,
+				      void *private_data,
+				      const char *handler_name,
+				      const char *location);
+bool tevent_common_loop_immediate(struct tevent_context *ev);
 
 struct tevent_signal *tevent_common_add_signal(struct tevent_context *ev,
 					       TALLOC_CTX *mem_ctx,

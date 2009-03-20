@@ -448,7 +448,19 @@ LIBSAMBA_OBJ = $(LIBSMB_OBJ0) \
 LIBCLI_LDAP_MESSAGE_OBJ = ../libcli/ldap/ldap_message.o
 LIBCLI_LDAP_NDR_OBJ = ../libcli/ldap/ldap_ndr.o
 
-CLDAP_OBJ = libads/cldap.o $(LIBCLI_LDAP_MESSAGE_OBJ) $(LIBCLI_LDAP_NDR_OBJ)
+LIBTSOCKET_OBJ = ../lib/tsocket/tsocket.o \
+		../lib/tsocket/tsocket_helpers.o \
+		../lib/tsocket/tsocket_bsd.o \
+		../lib/tsocket/tsocket_recvfrom.o \
+		../lib/tsocket/tsocket_sendto.o \
+		../lib/tsocket/tsocket_connect.o \
+		../lib/tsocket/tsocket_writev.o \
+		../lib/tsocket/tsocket_readv.o
+
+CLDAP_OBJ = libads/cldap.o \
+	../libcli/cldap/cldap.o \
+	../lib/util/idtree.o \
+	$(LIBCLI_LDAP_MESSAGE_OBJ) $(LIBCLI_LDAP_NDR_OBJ) $(LIBTSOCKET_OBJ)
 
 LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/clikrb5.o libsmb/clispnego.o ../lib/util/asn1.o \
@@ -577,7 +589,7 @@ RPC_NTSVCS_OBJ = rpc_server/srv_ntsvcs_nt.o \
 
 RPC_DFS_OBJ =  ../librpc/gen_ndr/srv_dfs.o rpc_server/srv_dfs_nt.o
 
-RPC_SPOOLSS_OBJ = rpc_server/srv_spoolss.o rpc_server/srv_spoolss_nt.o \
+RPC_SPOOLSS_OBJ = rpc_server/srv_spoolss_nt.o \
 		  ../librpc/gen_ndr/srv_spoolss.o
 
 RPC_EVENTLOG_OBJ = rpc_server/srv_eventlog_nt.o \
@@ -590,9 +602,7 @@ RPC_ECHO_OBJ = rpc_server/srv_echo_nt.o ../librpc/gen_ndr/srv_echo.o
 
 RPC_SERVER_OBJ = @RPC_STATIC@ $(RPC_PIPE_OBJ)
 
-RPC_PARSE_OBJ = $(RPC_PARSE_OBJ2) \
-                rpc_parse/parse_spoolss.o \
-	        rpc_parse/parse_buffer.o
+RPC_PARSE_OBJ = $(RPC_PARSE_OBJ2)
 
 RPC_CLIENT_OBJ = rpc_client/cli_pipe.o rpc_client/rpc_transport_np.o \
 	rpc_client/rpc_transport_sock.o rpc_client/rpc_transport_smbd.o
@@ -610,7 +620,7 @@ PASSDB_OBJ = $(PASSDB_GET_SET_OBJ) passdb/passdb.o passdb/pdb_interface.o \
 		passdb/util_unixsids.o passdb/lookup_sid.o \
 		passdb/login_cache.o @PDB_STATIC@ \
 		lib/account_pol.o $(PRIVILEGES_OBJ) \
-		lib/util_nscd.o lib/winbind_util.o
+		lib/util_nscd.o lib/winbind_util.o $(SERVER_MUTEX_OBJ)
 
 DEVEL_HELP_WEIRD_OBJ = modules/weird.o
 CP850_OBJ = modules/CP850.o
@@ -714,7 +724,7 @@ SMBD_OBJ_SRV = smbd/files.o smbd/chgpasswd.o smbd/connection.o \
 	       smbd/dosmode.o smbd/filename.o smbd/open.o smbd/close.o \
 	       smbd/blocking.o smbd/sec_ctx.o smbd/srvstr.o \
 	       smbd/vfs.o smbd/perfcount.o smbd/statcache.o smbd/seal.o \
-               smbd/posix_acls.o lib/sysacls.o $(SERVER_MUTEX_OBJ) \
+               smbd/posix_acls.o lib/sysacls.o \
 	       smbd/process.o smbd/service.o smbd/error.o \
 	       printing/printfsp.o lib/sysquotas.o lib/sysquotas_linux.o \
 	       lib/sysquotas_xfs.o lib/sysquotas_4A.o \
@@ -931,7 +941,7 @@ NET_OBJ = $(NET_OBJ1) \
 	  $(KRBCLIENT_OBJ) $(LIB_NONSMBD_OBJ) $(LIBADDNS_OBJ0) \
 	  $(LIBMSRPC_OBJ) $(LIBMSRPC_GEN_OBJ) \
 	  $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ) $(POPT_LIB_OBJ) \
-	  $(SMBLDAP_OBJ) $(DCUTIL_OBJ) $(SERVER_MUTEX_OBJ) \
+	  $(SMBLDAP_OBJ) $(DCUTIL_OBJ) \
 	  $(AFS_OBJ) $(AFS_SETTOKEN_OBJ) $(READLINE_OBJ) \
 	  $(LDB_OBJ) $(LIBGPO_OBJ) @BUILD_INIPARSER@ $(DISPLAY_SEC_OBJ) \
 	  $(REG_SMBCONF_OBJ) @LIBNETAPI_STATIC@ $(LIBNET_OBJ) \
@@ -1094,7 +1104,7 @@ WINBINDD_OBJ = \
 		$(LIBADS_OBJ) $(KRBCLIENT_OBJ) $(POPT_LIB_OBJ) \
 		$(DCUTIL_OBJ) $(IDMAP_OBJ) $(NSS_INFO_OBJ) \
 		$(AFS_OBJ) $(AFS_SETTOKEN_OBJ) \
-		$(LIBADS_SERVER_OBJ) $(SERVER_MUTEX_OBJ) $(LDB_OBJ) \
+		$(LIBADS_SERVER_OBJ) $(LDB_OBJ) \
 		$(TDB_VALIDATE_OBJ)
 
 WBINFO_OBJ = ../nsswitch/wbinfo.o $(LIBSAMBA_OBJ) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
@@ -1161,7 +1171,7 @@ NTLM_AUTH_OBJ1 = utils/ntlm_auth.o utils/ntlm_auth_diagnostics.o
 
 NTLM_AUTH_OBJ = ${NTLM_AUTH_OBJ1} $(LIBSAMBA_OBJ) $(POPT_LIB_OBJ) \
 		../lib/util/asn1.o libsmb/spnego.o libsmb/clikrb5.o libads/kerberos.o \
-		$(SERVER_MUTEX_OBJ) $(LIBADS_SERVER_OBJ) \
+		$(LIBADS_SERVER_OBJ) \
 		$(PASSDB_OBJ) $(GROUPDB_OBJ) \
 		$(SMBLDAP_OBJ) $(LIBNMB_OBJ) \
 		$(LDB_OBJ) $(WBCOMMON_OBJ) @LIBWBCLIENT_STATIC@ \
@@ -1630,6 +1640,10 @@ bin/ldbrename: $(BINARY_PREREQS) $(LDBRENAME_OBJ) @BUILD_POPT@ @LIBTALLOC_SHARED
 	@$(CC) $(FLAGS) -o $@ $(LDBRENAME_OBJ) $(DYNEXP) $(LDFLAGS) \
 		$(LIBS) $(POPT_LIBS) $(LDAP_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(WINBIND_LIBS)
+
+bin/versiontest: $(BINARY_PREREQS) lib/version_test.o $(VERSION_OBJ)
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(VERSION_OBJ) lib/version_test.o
 
 
 #####################################################################
@@ -2279,7 +2293,7 @@ bin/librpc_dssetup.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_DSSETUP_OBJ)
 	@echo "Linking $@"
 	@$(SHLD_MODULE) $(RPC_DSSETUP_OBJ)
 
-bin/librpc_spoolss2.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_SPOOLSS_OBJ)
+bin/librpc_spoolss.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_SPOOLSS_OBJ)
 	@echo "Linking $@"
 	@$(SHLD_MODULE) $(RPC_SPOOLSS_OBJ)
 

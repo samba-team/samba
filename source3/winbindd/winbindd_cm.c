@@ -1772,8 +1772,8 @@ static void set_dc_type_and_flags_connect( struct winbindd_domain *domain )
 	NTSTATUS 		result;
 	WERROR werr;
 	TALLOC_CTX              *mem_ctx = NULL;
-	struct rpc_pipe_client  *cli;
-	POLICY_HND pol;
+	struct rpc_pipe_client  *cli = NULL;
+	struct policy_handle pol;
 	union dssetup_DsRoleInfo info;
 	union lsa_PolicyInformation *lsa_info = NULL;
 
@@ -1990,7 +1990,7 @@ static bool cm_get_schannel_dcinfo(struct winbindd_domain *domain,
 }
 
 NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
-			struct rpc_pipe_client **cli, POLICY_HND *sam_handle)
+			struct rpc_pipe_client **cli, struct policy_handle *sam_handle)
 {
 	struct winbindd_cm_conn *conn;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -2156,7 +2156,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
-			struct rpc_pipe_client **cli, POLICY_HND *lsa_policy)
+			struct rpc_pipe_client **cli, struct policy_handle *lsa_policy)
 {
 	struct winbindd_cm_conn *conn;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;

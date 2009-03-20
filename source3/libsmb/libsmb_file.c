@@ -115,8 +115,9 @@ SMBC_open_ctx(SMBCCTX *context,
 		ZERO_STRUCTP(file);
                 
 		/*d_printf(">>>open: resolving %s\n", path);*/
-		if (!cli_resolve_path(frame, "", srv->cli, path,
-                                      &targetcli, &targetpath)) {
+		if (!cli_resolve_path(frame, "", context->internal->auth_info,
+				srv->cli, path,
+				&targetcli, &targetpath)) {
 			d_printf("Could not resolve %s\n", path);
 			SAFE_FREE(file);
 			TALLOC_FREE(frame);
@@ -295,8 +296,9 @@ SMBC_read_ctx(SMBCCTX *context,
         }
         
 	/*d_printf(">>>read: resolving %s\n", path);*/
-	if (!cli_resolve_path(frame, "", file->srv->cli, path,
-                              &targetcli, &targetpath)) {
+	if (!cli_resolve_path(frame, "", context->internal->auth_info,
+			file->srv->cli, path,
+			&targetcli, &targetpath)) {
 		d_printf("Could not resolve %s\n", path);
 		TALLOC_FREE(frame);
 		return -1;
@@ -384,8 +386,9 @@ SMBC_write_ctx(SMBCCTX *context,
         }
 
 	/*d_printf(">>>write: resolving %s\n", path);*/
-	if (!cli_resolve_path(frame, "", file->srv->cli, path,
-                              &targetcli, &targetpath)) {
+	if (!cli_resolve_path(frame, "", context->internal->auth_info,
+			file->srv->cli, path,
+			&targetcli, &targetpath)) {
 		d_printf("Could not resolve %s\n", path);
 		TALLOC_FREE(frame);
 		return -1;
@@ -459,8 +462,9 @@ SMBC_close_ctx(SMBCCTX *context,
         }
         
 	/*d_printf(">>>close: resolving %s\n", path);*/
-	if (!cli_resolve_path(frame, "", file->srv->cli, path,
-                              &targetcli, &targetpath)) {
+	if (!cli_resolve_path(frame, "", context->internal->auth_info,
+			file->srv->cli, path,
+			&targetcli, &targetpath)) {
 		d_printf("Could not resolve %s\n", path);
 		TALLOC_FREE(frame);
 		return -1;
@@ -541,8 +545,9 @@ SMBC_getatr(SMBCCTX * context,
 	}
 	DEBUG(4,("SMBC_getatr: sending qpathinfo\n"));
         
-	if (!cli_resolve_path(frame, "", srv->cli, fixedpath,
-                              &targetcli, &targetpath)) {
+	if (!cli_resolve_path(frame, "", context->internal->auth_info,
+			srv->cli, fixedpath,
+			&targetcli, &targetpath)) {
 		d_printf("Couldn't resolve %s\n", path);
 		TALLOC_FREE(frame);
 		return False;
@@ -753,8 +758,9 @@ SMBC_lseek_ctx(SMBCCTX *context,
 		}
                 
 		/*d_printf(">>>lseek: resolving %s\n", path);*/
-		if (!cli_resolve_path(frame, "", file->srv->cli, path,
-                                      &targetcli, &targetpath)) {
+		if (!cli_resolve_path(frame, "", context->internal->auth_info,
+				file->srv->cli, path,
+				&targetcli, &targetpath)) {
 			d_printf("Could not resolve %s\n", path);
 			TALLOC_FREE(frame);
 			return -1;
@@ -844,8 +850,9 @@ SMBC_ftruncate_ctx(SMBCCTX *context,
         }
         
 	/*d_printf(">>>fstat: resolving %s\n", path);*/
-	if (!cli_resolve_path(frame, "", file->srv->cli, path,
-                              &targetcli, &targetpath)) {
+	if (!cli_resolve_path(frame, "", context->internal->auth_info,
+			file->srv->cli, path,
+			&targetcli, &targetpath)) {
 		d_printf("Could not resolve %s\n", path);
 		TALLOC_FREE(frame);
 		return -1;

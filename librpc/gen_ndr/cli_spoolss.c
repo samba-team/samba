@@ -1302,8 +1302,8 @@ NTSTATUS rpccli_spoolss_GetPrinterData(struct rpc_pipe_client *cli,
 				       struct policy_handle *handle /* [in] [ref] */,
 				       const char *value_name /* [in] [charset(UTF16)] */,
 				       uint32_t offered /* [in]  */,
-				       enum spoolss_PrinterDataType *type /* [out] [ref] */,
-				       union spoolss_PrinterData data /* [out] [subcontext_size(offered),subcontext(4),switch_is(*type)] */,
+				       enum winreg_Type *type /* [out] [ref] */,
+				       union spoolss_PrinterData *data /* [out] [subcontext_size(offered),ref,subcontext(4),switch_is(*type)] */,
 				       uint32_t *needed /* [out] [ref] */,
 				       WERROR *werror)
 {
@@ -1339,7 +1339,7 @@ NTSTATUS rpccli_spoolss_GetPrinterData(struct rpc_pipe_client *cli,
 
 	/* Return variables */
 	*type = *r.out.type;
-	return NT_STATUS_NOT_SUPPORTED;
+	*data = *r.out.data;
 	*needed = *r.out.needed;
 
 	/* Return result */
@@ -1354,7 +1354,7 @@ NTSTATUS rpccli_spoolss_SetPrinterData(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
 				       struct policy_handle *handle /* [in] [ref] */,
 				       const char *value_name /* [in] [charset(UTF16)] */,
-				       enum spoolss_PrinterDataType type /* [in]  */,
+				       enum winreg_Type type /* [in]  */,
 				       union spoolss_PrinterData data /* [in] [subcontext(4),switch_is(type)] */,
 				       uint32_t _offered /* [in] [value(ndr_size_spoolss_PrinterData(&data,type,ndr->iconv_convenience,flags))] */,
 				       WERROR *werror)
@@ -3426,8 +3426,8 @@ NTSTATUS rpccli_spoolss_EnumPrinterData(struct rpc_pipe_client *cli,
 					const char *value_name /* [out] [charset(UTF16),size_is(value_offered/2)] */,
 					uint32_t value_offered /* [in]  */,
 					uint32_t *value_needed /* [out] [ref] */,
-					uint32_t *printerdata_type /* [out] [ref] */,
-					DATA_BLOB *buffer /* [out] [ref] */,
+					enum winreg_Type *type /* [out] [ref] */,
+					uint8_t *data /* [out] [ref,flag(LIBNDR_PRINT_ARRAY_HEX),size_is(data_offered)] */,
 					uint32_t data_offered /* [in]  */,
 					uint32_t *data_needed /* [out] [ref] */,
 					WERROR *werror)
@@ -3466,8 +3466,8 @@ NTSTATUS rpccli_spoolss_EnumPrinterData(struct rpc_pipe_client *cli,
 	/* Return variables */
 	memcpy(CONST_DISCARD(char *, value_name), r.out.value_name, r.in.value_offered / 2 * sizeof(*value_name));
 	*value_needed = *r.out.value_needed;
-	*printerdata_type = *r.out.printerdata_type;
-	*buffer = *r.out.buffer;
+	*type = *r.out.type;
+	memcpy(data, r.out.data, r.in.data_offered * sizeof(*data));
 	*data_needed = *r.out.data_needed;
 
 	/* Return result */
@@ -3651,7 +3651,7 @@ NTSTATUS rpccli_spoolss_SetPrinterDataEx(struct rpc_pipe_client *cli,
 					 struct policy_handle *handle /* [in] [ref] */,
 					 const char *key_name /* [in] [charset(UTF16)] */,
 					 const char *value_name /* [in] [charset(UTF16)] */,
-					 uint32_t type /* [in]  */,
+					 enum winreg_Type type /* [in]  */,
 					 uint8_t *buffer /* [in] [ref,size_is(offered)] */,
 					 uint32_t offered /* [in]  */,
 					 WERROR *werror)
@@ -3704,7 +3704,7 @@ NTSTATUS rpccli_spoolss_GetPrinterDataEx(struct rpc_pipe_client *cli,
 					 struct policy_handle *handle /* [in] [ref] */,
 					 const char *key_name /* [in] [charset(UTF16)] */,
 					 const char *value_name /* [in] [charset(UTF16)] */,
-					 uint32_t *type /* [out] [ref] */,
+					 enum winreg_Type *type /* [out] [ref] */,
 					 uint8_t *buffer /* [out] [ref,size_is(offered)] */,
 					 uint32_t offered /* [in]  */,
 					 uint32_t *needed /* [out] [ref] */,
@@ -3758,10 +3758,10 @@ NTSTATUS rpccli_spoolss_EnumPrinterDataEx(struct rpc_pipe_client *cli,
 					  TALLOC_CTX *mem_ctx,
 					  struct policy_handle *handle /* [in] [ref] */,
 					  const char *key_name /* [in] [charset(UTF16)] */,
-					  uint8_t *buffer /* [out] [ref,size_is(offered)] */,
 					  uint32_t offered /* [in]  */,
-					  uint32_t *needed /* [out] [ref] */,
 					  uint32_t *count /* [out] [ref] */,
+					  struct spoolss_PrinterEnumValues **info /* [out] [ref,size_is(,*count)] */,
+					  uint32_t *needed /* [out] [ref] */,
 					  WERROR *werror)
 {
 	struct spoolss_EnumPrinterDataEx r;
@@ -3795,9 +3795,9 @@ NTSTATUS rpccli_spoolss_EnumPrinterDataEx(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(buffer, r.out.buffer, r.in.offered * sizeof(*buffer));
-	*needed = *r.out.needed;
 	*count = *r.out.count;
+	*info = *r.out.info;
+	*needed = *r.out.needed;
 
 	/* Return result */
 	if (werror) {
@@ -3811,8 +3811,8 @@ NTSTATUS rpccli_spoolss_EnumPrinterKey(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
 				       struct policy_handle *handle /* [in] [ref] */,
 				       const char *key_name /* [in] [charset(UTF16)] */,
-				       uint16_t *key_buffer /* [out] [ref,size_is(key_buffer_size/2)] */,
-				       uint32_t key_buffer_size /* [in]  */,
+				       const char ** *key_buffer /* [out] [subcontext_size(offered),ref,subcontext(0),flag(LIBNDR_FLAG_STR_NULLTERM)] */,
+				       uint32_t offered /* [in]  */,
 				       uint32_t *needed /* [out] [ref] */,
 				       WERROR *werror)
 {
@@ -3822,7 +3822,7 @@ NTSTATUS rpccli_spoolss_EnumPrinterKey(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.key_name = key_name;
-	r.in.key_buffer_size = key_buffer_size;
+	r.in.offered = offered;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(spoolss_EnumPrinterKey, &r);
@@ -3847,7 +3847,7 @@ NTSTATUS rpccli_spoolss_EnumPrinterKey(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(key_buffer, r.out.key_buffer, r.in.key_buffer_size / 2 * sizeof(*key_buffer));
+	*key_buffer = *r.out.key_buffer;
 	*needed = *r.out.needed;
 
 	/* Return result */

@@ -41,6 +41,9 @@ sub teardown_env($$)
 	$self->stop_sig_term($smbdpid);
 	$self->stop_sig_term($nmbdpid);
 	$self->stop_sig_term($winbinddpid);
+
+	sleep(2);
+
 	$self->stop_sig_kill($smbdpid);
 	$self->stop_sig_kill($nmbdpid);
 	$self->stop_sig_kill($winbinddpid);
@@ -187,7 +190,7 @@ sub stop_sig_term($$) {
 
 sub stop_sig_kill($$) {
 	my ($self, $pid) = @_;
-	kill("KILL", $pid) or warn("Unable to kill $pid: $!");
+	kill("ALRM", $pid) or warn("Unable to kill $pid: $!");
 }
 
 sub write_pid($$$)
