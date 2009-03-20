@@ -4253,6 +4253,11 @@ static WERROR enum_all_printers_info_level(TALLOC_CTX *mem_ctx,
 			result = construct_printer_info2(info, ntprinter,
 							 &info[count].info2, snum);
 			break;
+		case 5:
+			result = construct_printer_info5(info, ntprinter,
+							 &info[count].info5, snum);
+			break;
+
 		default:
 			result = WERR_UNKNOWN_LEVEL;
 			free_a_printer(&ntprinter, 2);
@@ -4444,8 +4449,9 @@ static WERROR enumprinters_level5(TALLOC_CTX *mem_ctx,
 				  union spoolss_PrinterInfo **info,
 				  uint32_t *count)
 {
-/*	return enum_all_printers_info_5(mem_ctx, info, offered, needed, count);*/
-	return WERR_OK;
+	DEBUG(4,("enum_all_printers_info_5\n"));
+
+	return enum_all_printers_info_level(mem_ctx, 5, flags, info, count);
 }
 
 /****************************************************************
