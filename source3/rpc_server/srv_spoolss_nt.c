@@ -4529,9 +4529,6 @@ WERROR _spoolss_EnumPrinters(pipes_struct *p,
 		result = enumprinters_level5(p->mem_ctx, r->in.flags, name,
 					     r->out.info, r->out.count);
 		break;
-	case 3:
-		result = WERR_OK; /* ??? */
-		break;
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
