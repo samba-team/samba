@@ -1293,9 +1293,11 @@ struct ldb_message_element *PyObject_AsMessageElement(TALLOC_CTX *mem_ctx,
 		me->num_values = 1;
 		me->values = talloc_array(me, struct ldb_val, me->num_values);
 		me->values[0].length = PyString_Size(set_obj);
-		me->values[0].data = (uint8_t *)talloc_strndup(me->values,
+		me->values[0].data = (uint8_t *)talloc_memdup(me->values,
 					PyString_AsString(set_obj),
-					me->values[0].length);
+					me->values[0].length + 1);
+		me->values[0].data[me->values[0].length] = '\0';
+
 	} else if (PySequence_Check(set_obj)) {
 		int i;
 		me->num_values = PySequence_Size(set_obj);
