@@ -851,8 +851,9 @@ bool api_pipe_bind_auth3(pipes_struct *p, prs_struct *rpc_in_p)
 
 static bool setup_bind_nak(pipes_struct *p)
 {
-	RPC_HDR nak_hdr;
-	uint16 zero = 0;
+	NTSTATUS status;
+	union dcerpc_payload u;
+	DATA_BLOB blob;
 
 	/* Free any memory in the current return data buffer. */
 	prs_mem_free(&p->out_data.rdata);
@@ -869,24 +870,25 @@ static bool setup_bind_nak(pipes_struct *p)
 	 * Initialize a bind_nak header.
 	 */
 
-	init_rpc_hdr(&nak_hdr, DCERPC_PKT_BIND_NAK, DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST,
-		p->hdr.call_id, RPC_HEADER_LEN + sizeof(uint16), 0);
+	ZERO_STRUCT(u);
 
-	/*
-	 * Marshall the header into the outgoing PDU.
-	 */
+	u.bind_nak.reject_reason  = 0;
 
-	if(!smb_io_rpc_hdr("", &nak_hdr, &p->out_data.frag, 0)) {
-		DEBUG(0,("setup_bind_nak: marshalling of RPC_HDR failed.\n"));
+	status = dcerpc_push_ncacn_packet(p->mem_ctx,
+					  DCERPC_PKT_BIND_NAK,
+					  DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST,
+					  RPC_HEADER_LEN + sizeof(uint16_t) /* FIXME - gd */,
+					  0,
+					  p->hdr.call_id,
+					  u,
+					  &blob);
+	if (!NT_STATUS_IS_OK(status)) {
 		prs_mem_free(&p->out_data.frag);
 		return False;
 	}
 
-	/*
-	 * Now add the reject reason.
-	 */
-
-	if(!prs_uint16("reject code", &p->out_data.frag, 0, &zero)) {
+	if (!prs_copy_data_in(&p->out_data.frag,
+			      (char *)blob.data, blob.length)) {
 		prs_mem_free(&p->out_data.frag);
 		return False;
 	}
