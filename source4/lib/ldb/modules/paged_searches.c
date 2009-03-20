@@ -2,6 +2,7 @@
    ldb database library
 
    Copyright (C) Simo Sorce  2005-2008
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2009
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
@@ -52,23 +53,40 @@ struct ps_context {
 
 	char **saved_referrals;
 	int num_referrals;
+
+	struct ldb_request *down_req;
 };
 
-static int check_ps_continuation(struct ldb_request *req, struct ldb_reply *ares)
+static int check_ps_continuation(struct ps_context *ac, struct ldb_request *req, struct ldb_reply *ares)
 {
-	struct ps_context *ac;
-	struct ldb_paged_control *rep_control, *req_control;
+	struct ldb_context *ldb;
+	struct ldb_control *rep_control, *req_control;
+	struct ldb_paged_control *paged_rep_control = NULL, *paged_req_control = NULL;
+	ldb = ldb_module_get_ctx(ac->module);
 
-	ac = talloc_get_type(req->context, struct ps_context);
-
-	/* look up our paged control */
-	if (!ares->controls || strcmp(LDB_CONTROL_PAGED_RESULTS_OID, ares->controls[0]->oid) != 0) {
-		/* something wrong here */
-		return LDB_ERR_OPERATIONS_ERROR;
+	rep_control = ldb_reply_get_control(ares, LDB_CONTROL_PAGED_RESULTS_OID);
+	if (rep_control) {
+		paged_rep_control = talloc_get_type(rep_control->data, struct ldb_paged_control);
 	}
 
-	rep_control = talloc_get_type(ares->controls[0]->data, struct ldb_paged_control);
-	if (rep_control->cookie_len == 0) {
+	req_control = ldb_request_get_control(req, LDB_CONTROL_PAGED_RESULTS_OID);
+	paged_req_control = talloc_get_type(req_control->data, struct ldb_paged_control);
+
+	if (!rep_control || !paged_rep_control) {
+		if (paged_req_control->cookie) {
+			/* something wrong here - why give us a control back befre, but not one now? */
+			ldb_set_errstring(ldb, "paged_searches:  ERROR: We got back a control from a previous page, but this time no control was returned!");
+			return LDB_ERR_OPERATIONS_ERROR;
+		} else {
+			/* No cookie recived yet, valid to just return the full data set */
+
+			/* we are done */
+			ac->pending = false;
+			return LDB_SUCCESS;
+		}
+	}
+
+	if (paged_rep_control->cookie_len == 0) {
 		/* we are done */
 		ac->pending = false;
 		return LDB_SUCCESS;
@@ -79,21 +97,14 @@ static int check_ps_continuation(struct ldb_request *req, struct ldb_reply *ares
 	/* if there's a reply control we must find a request
 	 * control matching it */
 
-	if (strcmp(LDB_CONTROL_PAGED_RESULTS_OID, req->controls[0]->oid) != 0) {
-		/* something wrong here */
-		return LDB_ERR_OPERATIONS_ERROR;
+	if (paged_req_control->cookie) {
+		talloc_free(paged_req_control->cookie);
 	}
 
-	req_control = talloc_get_type(req->controls[0]->data, struct ldb_paged_control);
-
-	if (req_control->cookie) {
-		talloc_free(req_control->cookie);
-	}
-
-	req_control->cookie = talloc_memdup(req_control,
-					    rep_control->cookie,
-					    rep_control->cookie_len);
-	req_control->cookie_len = rep_control->cookie_len;
+	paged_req_control->cookie = talloc_memdup(req_control,
+						  paged_rep_control->cookie,
+						  paged_rep_control->cookie_len);
+	paged_req_control->cookie_len = paged_rep_control->cookie_len;
 
 	ac->pending = true;
 	return LDB_SUCCESS;
@@ -141,8 +152,6 @@ static int send_referrals(struct ps_context *ac)
 	return LDB_SUCCESS;
 }
 
-static int ps_next_request(struct ps_context *ac);
-
 static int ps_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
 	struct ps_context *ac;
@@ -176,14 +185,15 @@ static int ps_callback(struct ldb_request *req, struct ldb_reply *ares)
 
 	case LDB_REPLY_DONE:
 
-		ret = check_ps_continuation(req, ares);
+		ret = check_ps_continuation(ac, req, ares);
 		if (ret != LDB_SUCCESS) {
 			return ldb_module_done(ac->req, NULL, NULL, ret);
 		}
 
 		if (ac->pending) {
 
-			ret = ps_next_request(ac);
+			ret = ldb_next_request(ac->module, ac->down_req);
+
 			if (ret != LDB_SUCCESS) {
 				return ldb_module_done(ac->req,
 							NULL, NULL, ret);
@@ -214,6 +224,8 @@ static int ps_search(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_context *ldb;
 	struct private_data *private_data;
 	struct ps_context *ac;
+	struct ldb_paged_control *control;
+	int ret;
 
 	private_data = talloc_get_type(ldb_module_get_private(module), struct private_data);
 	ldb = ldb_module_get_ctx(module);
@@ -238,30 +250,9 @@ static int ps_search(struct ldb_module *module, struct ldb_request *req)
 	ac->saved_referrals = NULL;
 	ac->num_referrals = 0;
 
-	return ps_next_request(ac);
-}
-
-static int ps_next_request(struct ps_context *ac) {
-
-	struct ldb_context *ldb;
-	struct ldb_paged_control *control;
-	struct ldb_control **controls;
-	struct ldb_request *new_req;
-	int ret;
-
 	ldb = ldb_module_get_ctx(ac->module);
 
-	controls = talloc_array(ac, struct ldb_control *, 2);
-	if (!controls) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	controls[0] = talloc(controls, struct ldb_control);
-	if (!controls[0]) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	control = talloc(controls[0], struct ldb_paged_control);
+	control = talloc(ac, struct ldb_paged_control);
 	if (!control) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -270,26 +261,28 @@ static int ps_next_request(struct ps_context *ac) {
 	control->cookie = NULL;
 	control->cookie_len = 0;
 
-	controls[0]->oid = LDB_CONTROL_PAGED_RESULTS_OID;
-	controls[0]->critical = 1;
-	controls[0]->data = control;
-	controls[1] = NULL;
-
-	ret = ldb_build_search_req_ex(&new_req, ldb, ac,
+	ret = ldb_build_search_req_ex(&ac->down_req, ldb, ac,
 					ac->req->op.search.base,
 					ac->req->op.search.scope,
 					ac->req->op.search.tree,
 					ac->req->op.search.attrs,
-					controls,
+					ac->req->controls,
 					ac,
 					ps_callback,
 					ac->req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	talloc_steal(new_req, controls);
 
-	return ldb_next_request(ac->module, new_req);
+	ret = ldb_request_add_control(ac->down_req, LDB_CONTROL_PAGED_RESULTS_OID,
+				      true, control);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	talloc_steal(ac->down_req, control);
+
+	return ldb_next_request(ac->module, ac->down_req);
 }
 
 static int check_supported_paged(struct ldb_request *req,
