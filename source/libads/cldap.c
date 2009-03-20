@@ -60,7 +60,7 @@ static unsigned pull_netlogon_string(char *ret, const char *ptr,
 				ret_len += 2;
 				followed_ptr = 1;
 			}
-			len = ((ptr[0] & 0x3f) << 8) | ptr[1];
+			len = ((ptr[0] & 0x3f) << 8) | (uint8) ptr[1];
 			ptr = data + len;
 		} else if (*ptr) {
 			uint8 len = (uint8)*(ptr++);
