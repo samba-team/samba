@@ -157,7 +157,8 @@ rootDse = res[0]
 
 if opts.dump_attributes:
     res = ldb.search(expression="objectClass=attributeSchema", 
-                     base=rootDse["schemaNamingContext"][0], scope=SCOPE_SUBTREE,attrs=attrib_attrs)
+                     base=rootDse["schemaNamingContext"][0], scope=SCOPE_SUBTREE,attrs=attrib_attrs,
+                     controls=["server_sort:1:0:cn"])
     
     for msg in res:
         o = Objectclass(ldb, msg["ldapDisplayName"])
@@ -167,7 +168,8 @@ if opts.dump_attributes:
             
 if opts.dump_classes:
     res = ldb.search(expression="objectClass=classSchema", 
-                     base=rootDse["schemaNamingContext"][0], scope=SCOPE_SUBTREE,attrs=class_attrs)
+                     base=rootDse["schemaNamingContext"][0], scope=SCOPE_SUBTREE,attrs=class_attrs,
+                     controls=["server_sort:1:0:cn"])
 
     for msg in res:
         o = Objectclass(ldb, msg["ldapDisplayName"])
