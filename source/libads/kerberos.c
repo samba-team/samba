@@ -535,13 +535,13 @@ char *kerberos_get_default_realm_from_ccache( void )
 
   out:
 
-	if (princ) {
-		krb5_free_principal(ctx, princ);
-	}
-	if (cc) {
-		krb5_cc_close(ctx, cc);
-	}
 	if (ctx) {
+		if (princ) {
+			krb5_free_principal(ctx, princ);
+		}
+		if (cc) {
+			krb5_cc_close(ctx, cc);
+		}
 		krb5_free_context(ctx);
 	}
 
