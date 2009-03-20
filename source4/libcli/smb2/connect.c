@@ -108,6 +108,7 @@ static void continue_negprot(struct smb2_request *req)
 	transport->negotiate.system_time = state->negprot.out.system_time;
 	transport->negotiate.server_start_time = state->negprot.out.server_start_time;
 	transport->negotiate.security_mode = state->negprot.out.security_mode;
+	transport->negotiate.dialect_revision = state->negprot.out.dialect_revision;
 
 	switch (transport->options.signing) {
 	case SMB_SIGNING_OFF:
@@ -161,7 +162,8 @@ static void continue_socket(struct composite_context *creq)
 	struct smbcli_socket *sock;
 	struct smb2_transport *transport;
 	struct smb2_request *req;
-	uint16_t dialects[2];
+	uint16_t dialects[3] = { SMB2_DIALECT_REVISION, SMB21_DIALECT_REVISION,
+				 SMB2_LONGHORN_BETA_DIALECT_REVISION };
 
 	c->status = smbcli_sock_connect_recv(creq, state, &sock);
 	if (!composite_is_ok(c)) return;
@@ -170,7 +172,7 @@ static void continue_socket(struct composite_context *creq)
 	if (composite_nomem(transport, c)) return;
 
 	ZERO_STRUCT(state->negprot);
-	state->negprot.in.dialect_count = 2;
+	state->negprot.in.dialect_count = sizeof(dialects) / sizeof(dialects[0]);
 	switch (transport->options.signing) {
 	case SMB_SIGNING_OFF:
 		state->negprot.in.security_mode = 0;
@@ -186,8 +188,6 @@ static void continue_socket(struct composite_context *creq)
 	}
 	state->negprot.in.capabilities  = 0;
 	unix_to_nt_time(&state->negprot.in.start_time, time(NULL));
-	dialects[0] = SMB2_DIALECT_REVISION;
-	dialects[1] = 0;
 	state->negprot.in.dialects = dialects;
 
 	req = smb2_negprot_send(transport, &state->negprot);

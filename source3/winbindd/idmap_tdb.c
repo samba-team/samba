@@ -775,6 +775,11 @@ static NTSTATUS idmap_tdb_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 	NTSTATUS ret;
 	int i;
 
+	/* initialize the status to avoid suprise */
+	for (i = 0; ids[i]; i++) {
+		ids[i]->status = ID_UNKNOWN;
+	}
+	
 	ctx = talloc_get_type(dom->private_data, struct idmap_tdb_context);
 
 	for (i = 0; ids[i]; i++) {
@@ -813,6 +818,11 @@ static NTSTATUS idmap_tdb_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 	NTSTATUS ret;
 	int i;
 
+	/* initialize the status to avoid suprise */
+	for (i = 0; ids[i]; i++) {
+		ids[i]->status = ID_UNKNOWN;
+	}
+	
 	ctx = talloc_get_type(dom->private_data, struct idmap_tdb_context);
 
 	for (i = 0; ids[i]; i++) {

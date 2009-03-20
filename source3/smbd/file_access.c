@@ -34,6 +34,11 @@ bool can_access_file_acl(struct connection_struct *conn,
 	uint32_t access_granted;
 	struct security_descriptor *secdesc = NULL;
 
+	if (conn->server_info->utok.uid == 0 || conn->admin_user) {
+		/* I'm sorry sir, I didn't know you were root... */
+		return true;
+	}
+
 	status = SMB_VFS_GET_NT_ACL(conn, fname,
 				    (OWNER_SECURITY_INFORMATION |
 				     GROUP_SECURITY_INFORMATION |

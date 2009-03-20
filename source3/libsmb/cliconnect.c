@@ -61,6 +61,7 @@ static NTSTATUS cli_session_setup_lanman2(struct cli_state *cli,
 {
 	DATA_BLOB session_key = data_blob_null;
 	DATA_BLOB lm_response = data_blob_null;
+	NTSTATUS status;
 	fstring pword;
 	char *p;
 
@@ -129,7 +130,10 @@ static NTSTATUS cli_session_setup_lanman2(struct cli_state *cli,
 	
 	/* use the returned vuid from now on */
 	cli->vuid = SVAL(cli->inbuf,smb_uid);	
-	fstrcpy(cli->user_name, user);
+	status = cli_set_username(cli, user);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	if (session_key.data) {
 		/* Have plaintext orginal */
@@ -237,7 +241,10 @@ NTSTATUS cli_session_setup_guest_recv(struct async_req *req)
 		cli->is_samba = True;
 	}
 
-	fstrcpy(cli->user_name, "");
+	status = cli_set_username(cli, "");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	return NT_STATUS_OK;
 }
@@ -289,6 +296,7 @@ static NTSTATUS cli_session_setup_plaintext(struct cli_state *cli,
 {
 	uint32 capabilities = cli_session_setup_capabilities(cli);
 	char *p;
+	NTSTATUS status;
 	fstring lanman;
 	
 	fstr_sprintf( lanman, "Samba %s", samba_version_string());
@@ -349,8 +357,10 @@ static NTSTATUS cli_session_setup_plaintext(struct cli_state *cli,
 			 -1, STR_TERMINATE);
 	p += clistr_pull(cli->inbuf, cli->server_domain, p, sizeof(fstring),
 			 -1, STR_TERMINATE);
-	fstrcpy(cli->user_name, user);
-
+	status = cli_set_username(cli, user);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 	if (strstr(cli->server_type, "Samba")) {
 		cli->is_samba = True;
 	}
@@ -379,6 +389,7 @@ static NTSTATUS cli_session_setup_nt1(struct cli_state *cli, const char *user,
 	DATA_BLOB session_key = data_blob_null;
 	NTSTATUS result;
 	char *p;
+	bool ok;
 
 	if (passlen == 0) {
 		/* do nothing - guest login */
@@ -436,11 +447,7 @@ static NTSTATUS cli_session_setup_nt1(struct cli_state *cli, const char *user,
 			SMBsesskeygen_ntv1(nt_hash, NULL, session_key.data);
 #endif
 		}
-#ifdef LANMAN_ONLY
-		cli_simple_set_signing(cli, session_key, lm_response); 
-#else
-		cli_simple_set_signing(cli, session_key, nt_response); 
-#endif
+		cli_temp_set_signing(cli);
 	} else {
 		/* pre-encrypted password supplied.  Only used for 
 		   security=server, can't do
@@ -492,6 +499,22 @@ static NTSTATUS cli_session_setup_nt1(struct cli_state *cli, const char *user,
 		goto end;
 	}
 
+#ifdef LANMAN_ONLY
+	ok = cli_simple_set_signing(cli, session_key, lm_response);
+#else
+	ok = cli_simple_set_signing(cli, session_key, nt_response);
+#endif
+	if (ok) {
+		/* 'resign' the last message, so we get the right sequence numbers
+		   for checking the first reply from the server */
+		cli_calculate_sign_mac(cli, cli->outbuf);
+
+		if (!cli_check_sign_mac(cli, cli->inbuf)) {
+			result = NT_STATUS_ACCESS_DENIED;
+			goto end;
+		}
+	}
+
 	/* use the returned vuid from now on */
 	cli->vuid = SVAL(cli->inbuf,smb_uid);
 	
@@ -507,7 +530,10 @@ static NTSTATUS cli_session_setup_nt1(struct cli_state *cli, const char *user,
 		cli->is_samba = True;
 	}
 
-	fstrcpy(cli->user_name, user);
+	result = cli_set_username(cli, user);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto end;
+	}
 
 	if (session_key.data) {
 		/* Have plaintext orginal */
@@ -885,6 +911,7 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 	DATA_BLOB blob;
 	const char *p = NULL;
 	char *account = NULL;
+	NTSTATUS status;
 
 	DEBUG(3,("Doing spnego session setup (blob length=%lu)\n", (unsigned long)cli->secblob.length));
 
@@ -923,7 +950,10 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 
 	DEBUG(3,("got principal=%s\n", principal ? principal : "<null>"));
 
-	fstrcpy(cli->user_name, user);
+	status = cli_set_username(cli, user);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ADS_ERROR_NT(status);
+	}
 
 #ifdef HAVE_KRB5
 	/* If password is set we reauthenticate to kerberos server
@@ -1284,10 +1314,17 @@ struct async_req *cli_tcon_andx_send(TALLOC_CTX *mem_ctx,
 	return result;
 
  access_denied:
-	result = async_req_new(mem_ctx);
-	if (async_post_ntstatus(result, ev, NT_STATUS_ACCESS_DENIED)) {
-		return result;
+	{
+		struct cli_request *state;
+		if (!async_req_setup(mem_ctx, &result, &state,
+				     struct cli_request)) {
+			goto fail;
+		}
+		if (async_post_ntstatus(result, ev, NT_STATUS_ACCESS_DENIED)) {
+			return result;
+		}
 	}
+ fail:
 	TALLOC_FREE(result);
 	return NULL;
 }
@@ -1748,15 +1785,20 @@ bool cli_session_request(struct cli_state *cli,
 	return(True);
 }
 
-static void smb_sock_connected(struct async_req *req)
+struct fd_struct {
+	int fd;
+};
+
+static void smb_sock_connected(struct tevent_req *req)
 {
-	int *pfd = (int *)req->async.priv;
+	struct fd_struct *pfd = tevent_req_callback_data(
+		req, struct fd_struct);
 	int fd;
 	NTSTATUS status;
 
 	status = open_socket_out_defer_recv(req, &fd);
 	if (NT_STATUS_IS_OK(status)) {
-		*pfd = fd;
+		pfd->fd = fd;
 	}
 }
 
@@ -1764,10 +1806,9 @@ static NTSTATUS open_smb_socket(const struct sockaddr_storage *pss,
 				uint16_t *port, int timeout, int *pfd)
 {
 	struct event_context *ev;
-	struct async_req *r139, *r445;
-	int fd139 = -1;
-	int fd445 = -1;
-	NTSTATUS status;
+	struct tevent_req *r139, *r445;
+	struct fd_struct *fd139, *fd445;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
 	if (*port != 0) {
 		return open_socket_out(pss, *port, timeout, pfd);
@@ -1778,43 +1819,54 @@ static NTSTATUS open_smb_socket(const struct sockaddr_storage *pss,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	fd139 = talloc(ev, struct fd_struct);
+	if (fd139 == NULL) {
+		goto done;
+	}
+	fd139->fd = -1;
+
+	fd445 = talloc(ev, struct fd_struct);
+	if (fd445 == NULL) {
+		goto done;
+	}
+	fd445->fd = -1;
+
 	r445 = open_socket_out_defer_send(ev, ev, timeval_set(0, 0),
 					  pss, 445, timeout);
 	r139 = open_socket_out_defer_send(ev, ev, timeval_set(0, 3000),
 					  pss, 139, timeout);
 	if ((r445 == NULL) || (r139 == NULL)) {
-		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
-	r445->async.fn = smb_sock_connected;
-	r445->async.priv = &fd445;
-	r139->async.fn = smb_sock_connected;
-	r139->async.priv = &fd139;
+	tevent_req_set_callback(r445, smb_sock_connected, fd445);
+	tevent_req_set_callback(r139, smb_sock_connected, fd139);
 
-	while ((fd139 == -1) && (r139->state < ASYNC_REQ_DONE)
-	       && (fd445 == -1) && (r445->state < ASYNC_REQ_DONE)) {
+	while ((fd139->fd == -1)
+	       && tevent_req_is_in_progress(r139)
+	       && (fd445->fd == -1)
+	       && tevent_req_is_in_progress(r445)) {
 		event_loop_once(ev);
 	}
 
-	if ((fd139 != -1) && (fd445 != -1)) {
-		close(fd139);
-		fd139 = -1;
+	if ((fd139->fd != -1) && (fd445->fd != -1)) {
+		close(fd139->fd);
+		fd139->fd = -1;
 	}
 
-	if (fd445 != -1) {
+	if (fd445->fd != -1) {
 		*port = 445;
-		*pfd = fd445;
+		*pfd = fd445->fd;
 		status = NT_STATUS_OK;
 		goto done;
 	}
-	if (fd139 != -1) {
+	if (fd139->fd != -1) {
 		*port = 139;
-		*pfd = fd139;
+		*pfd = fd139->fd;
 		status = NT_STATUS_OK;
 		goto done;
 	}
 
-	status = open_socket_out_defer_recv(r445, &fd445);
+	status = open_socket_out_defer_recv(r445, &fd445->fd);
  done:
 	TALLOC_FREE(ev);
 	return status;
@@ -1936,7 +1988,7 @@ NTSTATUS cli_start_connection(struct cli_state **output_cli,
 	if (!my_name) 
 		my_name = global_myname();
 
-	if (!(cli = cli_initialise())) {
+	if (!(cli = cli_initialise_ex(signing_state))) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -1983,8 +2035,6 @@ again:
 		}
 		return NT_STATUS_BAD_NETWORK_NAME;
 	}
-
-	cli_setup_signing_state(cli, signing_state);
 
 	if (flags & CLI_FULL_CONNECTION_DONT_SPNEGO)
 		cli->use_spnego = False;
@@ -2083,7 +2133,11 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 		}
 	}
 
-	cli_init_creds(cli, user, domain, password);
+	nt_status = cli_init_creds(cli, user, domain, password);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		cli_shutdown(cli);
+		return nt_status;
+	}
 
 	*output_cli = cli;
 	return NT_STATUS_OK;

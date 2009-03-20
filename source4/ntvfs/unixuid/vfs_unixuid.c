@@ -26,6 +26,8 @@
 #include "auth/auth.h"
 #include "ntvfs/ntvfs.h"
 #include "libcli/wbclient/wbclient.h"
+#define TEVENT_DEPRECATED
+#include <tevent.h>
 
 struct unixuid_private {
 	struct wbc_context *wbc_ctx;
@@ -90,6 +92,64 @@ static NTSTATUS set_unix_security(struct unix_sec_ctx *sec)
 	}
 	return NT_STATUS_OK;
 }
+
+static int unixuid_nesting_level;
+
+/*
+  called at the start and end of a tevent nesting loop. Needs to save/restore
+  unix security context
+ */
+static int unixuid_event_nesting_hook(struct tevent_context *ev,
+				      void *private_data,
+				      uint32_t level,
+				      bool begin,
+				      void *stack_ptr,
+				      const char *location)
+{
+	struct unix_sec_ctx *sec_ctx;
+
+	if (unixuid_nesting_level == 0) {
+		/* we don't need to do anything unless we are nested
+		   inside of a call in this module */
+		return 0;
+	}
+
+	if (begin) {
+		sec_ctx = save_unix_security(ev);
+		if (sec_ctx == NULL) {
+			DEBUG(0,("%s: Failed to save security context\n", location));
+			return -1;
+		}
+		*(struct unix_sec_ctx **)stack_ptr = sec_ctx;
+		if (seteuid(0) != 0 || setegid(0) != 0) {
+			DEBUG(0,("%s: Failed to change to root\n", location));
+			return -1;			
+		}
+	} else {
+		/* called when we come out of a nesting level */
+		NTSTATUS status;
+
+		sec_ctx = *(struct unix_sec_ctx **)stack_ptr;
+		if (sec_ctx == NULL) {
+			/* this happens the first time this function
+			   is called, as we install the hook while
+			   inside an event in unixuid_connect() */
+			return 0;
+		}
+
+		sec_ctx = talloc_get_type_abort(sec_ctx, struct unix_sec_ctx);
+		status = set_unix_security(sec_ctx);
+		talloc_free(sec_ctx);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("%s: Failed to revert security context (%s)\n", 
+				 location, nt_errstr(status)));
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
 
 /*
   form a unix_sec_ctx from the current security_token
@@ -219,7 +279,9 @@ static NTSTATUS unixuid_setup_security(struct ntvfs_module_context *ntvfs,
 	struct unix_sec_ctx *sec; \
 	status = unixuid_setup_security(ntvfs, req, &sec); \
 	NT_STATUS_NOT_OK_RETURN(status); \
+	unixuid_nesting_level++; \
 	status = ntvfs_next_##op args; \
+	unixuid_nesting_level--; \
 	status2 = set_unix_security(sec); \
 	talloc_free(sec); \
 	if (!NT_STATUS_IS_OK(status2)) smb_panic("Unable to reset security context"); \
@@ -251,6 +313,10 @@ static NTSTATUS unixuid_connect(struct ntvfs_module_context *ntvfs,
 	ntvfs->private_data = priv;
 	priv->last_sec_ctx = NULL;
 	priv->last_token = NULL;
+
+	tevent_loop_set_nesting_hook(ntvfs->ctx->event_ctx, 
+				     unixuid_event_nesting_hook,
+				     &unixuid_nesting_level);
 
 	/* we don't use PASS_THRU_REQ here, as the connect operation runs with 
 	   root privileges. This allows the backends to setup any database

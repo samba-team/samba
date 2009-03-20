@@ -34,7 +34,6 @@
 #define WINBINDD_CACHE_VERSION_KEYSTR "WINBINDD_CACHE_VERSION"
 
 extern struct winbindd_methods reconnect_methods;
-extern bool opt_nocache;
 #ifdef HAVE_ADS
 extern struct winbindd_methods ads_methods;
 #endif
@@ -632,7 +631,7 @@ static struct cache_entry *wcache_fetch(struct winbind_cache *cache,
 	char *kstr;
 	struct cache_entry *centry;
 
-	if (opt_nocache) {
+	if (!winbindd_use_cache()) {
 		return NULL;
 	}
 
@@ -834,7 +833,7 @@ static void centry_end(struct cache_entry *centry, const char *format, ...)
 	char *kstr;
 	TDB_DATA key, data;
 
-	if (opt_nocache) {
+	if (!winbindd_use_cache()) {
 		return;
 	}
 
@@ -2861,8 +2860,9 @@ void wcache_flush_cache(void)
 		tdb_close(wcache->tdb);
 		wcache->tdb = NULL;
 	}
-	if (opt_nocache)
+	if (!winbindd_use_cache()) {
 		return;
+	}
 
 	/* when working offline we must not clear the cache on restart */
 	wcache->tdb = tdb_open_log(cache_path("winbindd_cache.tdb"),

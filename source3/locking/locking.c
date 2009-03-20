@@ -75,67 +75,87 @@ const char *lock_flav_name(enum brl_flavour lock_flav)
  Called in the read/write codepath.
 ****************************************************************************/
 
-bool is_locked(files_struct *fsp,
-		uint32 smbpid,
-		uint64_t count,
-		uint64_t offset, 
-		enum brl_type lock_type)
+void init_strict_lock_struct(files_struct *fsp,
+				uint32 smbpid,
+				br_off start,
+				br_off size,
+				enum brl_type lock_type,
+				struct lock_struct *plock)
+{
+	SMB_ASSERT(lock_type == READ_LOCK || lock_type == WRITE_LOCK);
+
+	plock->context.smbpid = smbpid;
+        plock->context.tid = fsp->conn->cnum;
+        plock->context.pid = procid_self();
+        plock->start = start;
+        plock->size = size;
+        plock->fnum = fsp->fnum;
+        plock->lock_type = lock_type;
+        plock->lock_flav = lp_posix_cifsu_locktype(fsp);
+}
+
+bool strict_lock_default(files_struct *fsp, struct lock_struct *plock)
 {
 	int strict_locking = lp_strict_locking(fsp->conn->params);
-	enum brl_flavour lock_flav = lp_posix_cifsu_locktype(fsp);
-	bool ret = True;
-	
-	if (count == 0) {
-		return False;
+	bool ret = False;
+
+	if (plock->size == 0) {
+		return True;
 	}
 
 	if (!lp_locking(fsp->conn->params) || !strict_locking) {
-		return False;
+		return True;
 	}
 
 	if (strict_locking == Auto) {
-		if  (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) && (lock_type == READ_LOCK || lock_type == WRITE_LOCK)) {
+		if  (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) && (plock->lock_type == READ_LOCK || plock->lock_type == WRITE_LOCK)) {
 			DEBUG(10,("is_locked: optimisation - exclusive oplock on file %s\n", fsp->fsp_name ));
-			ret = False;
+			ret = True;
 		} else if ((fsp->oplock_type == LEVEL_II_OPLOCK) &&
-			   (lock_type == READ_LOCK)) {
+			   (plock->lock_type == READ_LOCK)) {
 			DEBUG(10,("is_locked: optimisation - level II oplock on file %s\n", fsp->fsp_name ));
-			ret = False;
+			ret = True;
 		} else {
 			struct byte_range_lock *br_lck = brl_get_locks_readonly(talloc_tos(), fsp);
 			if (!br_lck) {
-				return False;
+				return True;
 			}
-			ret = !brl_locktest(br_lck,
-					smbpid,
-					procid_self(),
-					offset,
-					count,
-					lock_type,
-					lock_flav);
+			ret = brl_locktest(br_lck,
+					plock->context.smbpid,
+					plock->context.pid,
+					plock->start,
+					plock->size,
+					plock->lock_type,
+					plock->lock_flav);
 			TALLOC_FREE(br_lck);
 		}
 	} else {
 		struct byte_range_lock *br_lck = brl_get_locks_readonly(talloc_tos(), fsp);
 		if (!br_lck) {
-			return False;
+			return True;
 		}
-		ret = !brl_locktest(br_lck,
-				smbpid,
-				procid_self(),
-				offset,
-				count,
-				lock_type,
-				lock_flav);
+		ret = brl_locktest(br_lck,
+				plock->context.smbpid,
+				plock->context.pid,
+				plock->start,
+				plock->size,
+				plock->lock_type,
+				plock->lock_flav);
 		TALLOC_FREE(br_lck);
 	}
 
-	DEBUG(10,("is_locked: flavour = %s brl start=%.0f len=%.0f %s for fnum %d file %s\n",
-			lock_flav_name(lock_flav),
-			(double)offset, (double)count, ret ? "locked" : "unlocked",
-			fsp->fnum, fsp->fsp_name ));
+	DEBUG(10,("strict_lock_default: flavour = %s brl start=%.0f "
+			"len=%.0f %s for fnum %d file %s\n",
+			lock_flav_name(plock->lock_flav),
+			(double)plock->start, (double)plock->size,
+			ret ? "unlocked" : "locked",
+			plock->fnum, fsp->fsp_name ));
 
 	return ret;
+}
+
+void strict_unlock_default(files_struct *fsp, struct lock_struct *plock)
+{
 }
 
 /****************************************************************************
@@ -1295,7 +1315,7 @@ NTSTATUS can_set_delete_on_close(files_struct *fsp, bool delete_on_close,
  (Should this be in locking.c.... ?).
 *************************************************************************/
 
-static UNIX_USER_TOKEN *copy_unix_token(TALLOC_CTX *ctx, UNIX_USER_TOKEN *tok)
+static UNIX_USER_TOKEN *copy_unix_token(TALLOC_CTX *ctx, const UNIX_USER_TOKEN *tok)
 {
 	UNIX_USER_TOKEN *cpy;
 
@@ -1326,7 +1346,7 @@ static UNIX_USER_TOKEN *copy_unix_token(TALLOC_CTX *ctx, UNIX_USER_TOKEN *tok)
  Replace the delete on close token.
 ****************************************************************************/
 
-void set_delete_on_close_token(struct share_mode_lock *lck, UNIX_USER_TOKEN *tok)
+void set_delete_on_close_token(struct share_mode_lock *lck, const UNIX_USER_TOKEN *tok)
 {
 	TALLOC_FREE(lck->delete_token); /* Also deletes groups... */
 
@@ -1346,7 +1366,7 @@ void set_delete_on_close_token(struct share_mode_lock *lck, UNIX_USER_TOKEN *tok
  lck entry. This function is used when the lock is already granted.
 ****************************************************************************/
 
-void set_delete_on_close_lck(struct share_mode_lock *lck, bool delete_on_close, UNIX_USER_TOKEN *tok)
+void set_delete_on_close_lck(struct share_mode_lock *lck, bool delete_on_close, const UNIX_USER_TOKEN *tok)
 {
 	if (lck->delete_on_close != delete_on_close) {
 		set_delete_on_close_token(lck, tok);
@@ -1358,8 +1378,9 @@ void set_delete_on_close_lck(struct share_mode_lock *lck, bool delete_on_close, 
 	}
 }
 
-bool set_delete_on_close(files_struct *fsp, bool delete_on_close, UNIX_USER_TOKEN *tok)
+bool set_delete_on_close(files_struct *fsp, bool delete_on_close, const UNIX_USER_TOKEN *tok)
 {
+	UNIX_USER_TOKEN *tok_copy = NULL;
 	struct share_mode_lock *lck;
 	
 	DEBUG(10,("set_delete_on_close: %s delete on close flag for "
@@ -1371,6 +1392,16 @@ bool set_delete_on_close(files_struct *fsp, bool delete_on_close, UNIX_USER_TOKE
 				  NULL);
 	if (lck == NULL) {
 		return False;
+	}
+
+	if (fsp->conn->admin_user) {
+		tok_copy = copy_unix_token(lck, tok);
+		tok_copy->uid = (uid_t)0;
+		if (tok_copy == NULL) {
+			TALLOC_FREE(lck);
+			return false;
+		}
+		tok = tok_copy;
 	}
 
 	set_delete_on_close_lck(lck, delete_on_close, tok);

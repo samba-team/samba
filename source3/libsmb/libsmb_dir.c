@@ -770,8 +770,9 @@ SMBC_opendir_ctx(SMBCCTX *context,
 				return NULL;
 			}
 
-			if (!cli_resolve_path(frame, "", srv->cli, path,
-                                              &targetcli, &targetpath)) {
+			if (!cli_resolve_path(frame, "", context->internal->auth_info,
+						srv->cli, path,
+						&targetcli, &targetpath)) {
 				d_printf("Could not resolve %s\n", path);
 				if (dir) {
 					SAFE_FREE(dir->fname);
@@ -1166,8 +1167,9 @@ SMBC_mkdir_ctx(SMBCCTX *context,
 	}
 
 	/*d_printf(">>>mkdir: resolving %s\n", path);*/
-	if (!cli_resolve_path(frame, "", srv->cli, path,
-                              &targetcli, &targetpath)) {
+	if (!cli_resolve_path(frame, "", context->internal->auth_info,
+				srv->cli, path,
+				&targetcli, &targetpath)) {
 		d_printf("Could not resolve %s\n", path);
 		TALLOC_FREE(frame);
 		return -1;
@@ -1272,8 +1274,9 @@ SMBC_rmdir_ctx(SMBCCTX *context,
 	}
 
 	/*d_printf(">>>rmdir: resolving %s\n", path);*/
-	if (!cli_resolve_path(frame, "", srv->cli, path,
-                              &targetcli, &targetpath)) {
+	if (!cli_resolve_path(frame, "", context->internal->auth_info,
+				srv->cli, path,
+				&targetcli, &targetpath)) {
 		d_printf("Could not resolve %s\n", path);
 		TALLOC_FREE(frame);
 		return -1;
@@ -1554,8 +1557,9 @@ SMBC_chmod_ctx(SMBCCTX *context,
 	}
 	
 	/*d_printf(">>>unlink: resolving %s\n", path);*/
-	if (!cli_resolve_path(frame, "", srv->cli, path,
-                              &targetcli, &targetpath)) {
+	if (!cli_resolve_path(frame, "", context->internal->auth_info,
+				srv->cli, path,
+				&targetcli, &targetpath)) {
 		d_printf("Could not resolve %s\n", path);
 		TALLOC_FREE(frame);
 		return -1;
@@ -1745,8 +1749,9 @@ SMBC_unlink_ctx(SMBCCTX *context,
 	}
 
 	/*d_printf(">>>unlink: resolving %s\n", path);*/
-	if (!cli_resolve_path(frame, "", srv->cli, path,
-                              &targetcli, &targetpath)) {
+	if (!cli_resolve_path(frame, "", context->internal->auth_info,
+				srv->cli, path,
+				&targetcli, &targetpath)) {
 		d_printf("Could not resolve %s\n", path);
 		TALLOC_FREE(frame);
 		return -1;
@@ -1917,8 +1922,10 @@ SMBC_rename_ctx(SMBCCTX *ocontext,
 				    	   password1);
 
 	/*d_printf(">>>rename: resolving %s\n", path1);*/
-	if (!cli_resolve_path(frame, "", srv->cli, path1,
-                              &targetcli1, &targetpath1)) {
+	if (!cli_resolve_path(frame, "", ocontext->internal->auth_info,
+				srv->cli,
+				path1,
+				&targetcli1, &targetpath1)) {
 		d_printf("Could not resolve %s\n", path1);
 		TALLOC_FREE(frame);
 		return -1;
@@ -1932,8 +1939,10 @@ SMBC_rename_ctx(SMBCCTX *ocontext,
 	
 	/*d_printf(">>>rename: resolved path as %s\n", targetpath1);*/
 	/*d_printf(">>>rename: resolving %s\n", path2);*/
-	if (!cli_resolve_path(frame, "", srv->cli, path2,
-                              &targetcli2, &targetpath2)) {
+	if (!cli_resolve_path(frame, "", ncontext->internal->auth_info,
+				srv->cli, 
+				path2,
+				&targetcli2, &targetpath2)) {
 		d_printf("Could not resolve %s\n", path2);
 		TALLOC_FREE(frame);
 		return -1;

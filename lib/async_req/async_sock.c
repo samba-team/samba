@@ -123,8 +123,8 @@ static void async_send_handler(struct tevent_context *ev,
 {
 	struct tevent_req *req = talloc_get_type_abort(
 		private_data, struct tevent_req);
-	struct async_send_state *state = talloc_get_type_abort(
-		req->private_state, struct async_send_state);
+	struct async_send_state *state =
+		tevent_req_data(req, struct async_send_state);
 
 	state->sent = send(state->fd, state->buf, state->len, state->flags);
 	if (state->sent == -1) {
@@ -136,8 +136,8 @@ static void async_send_handler(struct tevent_context *ev,
 
 ssize_t async_send_recv(struct tevent_req *req, int *perrno)
 {
-	struct async_send_state *state = talloc_get_type_abort(
-		req->private_state, struct async_send_state);
+	struct async_send_state *state =
+		tevent_req_data(req, struct async_send_state);
 
 	if (tevent_req_is_unix_error(req, perrno)) {
 		return -1;
@@ -189,8 +189,8 @@ static void async_recv_handler(struct tevent_context *ev,
 {
 	struct tevent_req *req = talloc_get_type_abort(
 		private_data, struct tevent_req);
-	struct async_recv_state *state = talloc_get_type_abort(
-		req->private_state, struct async_recv_state);
+	struct async_recv_state *state =
+		tevent_req_data(req, struct async_recv_state);
 
 	state->received = recv(state->fd, state->buf, state->len,
 			       state->flags);
@@ -203,8 +203,8 @@ static void async_recv_handler(struct tevent_context *ev,
 
 ssize_t async_recv_recv(struct tevent_req *req, int *perrno)
 {
-	struct async_recv_state *state = talloc_get_type_abort(
-		req->private_state, struct async_recv_state);
+	struct async_recv_state *state =
+		tevent_req_data(req, struct async_recv_state);
 
 	if (tevent_req_is_unix_error(req, perrno)) {
 		return -1;
@@ -317,8 +317,8 @@ static void async_connect_connected(struct tevent_context *ev,
 {
 	struct tevent_req *req = talloc_get_type_abort(
 		priv, struct tevent_req);
-	struct async_connect_state *state = talloc_get_type_abort(
-		req->private_state, struct async_connect_state);
+	struct async_connect_state *state =
+		tevent_req_data(req, struct async_connect_state);
 
 	TALLOC_FREE(fde);
 
@@ -352,8 +352,8 @@ static void async_connect_connected(struct tevent_context *ev,
 
 int async_connect_recv(struct tevent_req *req, int *perrno)
 {
-	struct async_connect_state *state = talloc_get_type_abort(
-		req->private_state, struct async_connect_state);
+	struct async_connect_state *state =
+		tevent_req_data(req, struct async_connect_state);
 	int err;
 
 	fcntl(state->fd, F_SETFL, state->old_sockflags);
@@ -379,15 +379,16 @@ struct writev_state {
 	size_t total_size;
 };
 
+static void writev_trigger(struct tevent_req *req, void *private_data);
 static void writev_handler(struct tevent_context *ev, struct tevent_fd *fde,
 			   uint16_t flags, void *private_data);
 
 struct tevent_req *writev_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			       int fd, struct iovec *iov, int count)
+			       struct tevent_queue *queue, int fd,
+			       struct iovec *iov, int count)
 {
 	struct tevent_req *result;
 	struct writev_state *state;
-	struct tevent_fd *fde;
 
 	result = tevent_req_create(mem_ctx, &state, struct writev_state);
 	if (result == NULL) {
@@ -403,16 +404,25 @@ struct tevent_req *writev_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		goto fail;
 	}
 
-	fde = tevent_add_fd(ev, state, fd, TEVENT_FD_WRITE, writev_handler,
-			    result);
-	if (fde == NULL) {
+	if (!tevent_queue_add(queue, ev, result, writev_trigger, NULL)) {
 		goto fail;
 	}
 	return result;
-
  fail:
 	TALLOC_FREE(result);
 	return NULL;
+}
+
+static void writev_trigger(struct tevent_req *req, void *private_data)
+{
+	struct writev_state *state = tevent_req_data(req, struct writev_state);
+	struct tevent_fd *fde;
+
+	fde = tevent_add_fd(state->ev, state, state->fd, TEVENT_FD_WRITE,
+			    writev_handler, req);
+	if (fde == NULL) {
+		tevent_req_error(req, ENOMEM);
+	}
 }
 
 static void writev_handler(struct tevent_context *ev, struct tevent_fd *fde,
@@ -420,8 +430,8 @@ static void writev_handler(struct tevent_context *ev, struct tevent_fd *fde,
 {
 	struct tevent_req *req = talloc_get_type_abort(
 		private_data, struct tevent_req);
-	struct writev_state *state = talloc_get_type_abort(
-		req->private_state, struct writev_state);
+	struct writev_state *state =
+		tevent_req_data(req, struct writev_state);
 	size_t to_write, written;
 	int i;
 
@@ -459,7 +469,7 @@ static void writev_handler(struct tevent_context *ev, struct tevent_fd *fde,
 			state->iov[0].iov_len -= written;
 			break;
 		}
-		written = state->iov[0].iov_len;
+		written -= state->iov[0].iov_len;
 		state->iov += 1;
 		state->count -= 1;
 	}
@@ -467,8 +477,8 @@ static void writev_handler(struct tevent_context *ev, struct tevent_fd *fde,
 
 ssize_t writev_recv(struct tevent_req *req, int *perrno)
 {
-	struct writev_state *state = talloc_get_type_abort(
-		req->private_state, struct writev_state);
+	struct writev_state *state =
+		tevent_req_data(req, struct writev_state);
 
 	if (tevent_req_is_unix_error(req, perrno)) {
 		return -1;
@@ -531,8 +541,8 @@ static void read_packet_handler(struct tevent_context *ev,
 {
 	struct tevent_req *req = talloc_get_type_abort(
 		private_data, struct tevent_req);
-	struct read_packet_state *state = talloc_get_type_abort(
-		req->private_state, struct read_packet_state);
+	struct read_packet_state *state =
+		tevent_req_data(req, struct read_packet_state);
 	size_t total = talloc_get_size(state->buf);
 	ssize_t nread, more;
 	uint8_t *tmp;
@@ -584,8 +594,8 @@ static void read_packet_handler(struct tevent_context *ev,
 ssize_t read_packet_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			 uint8_t **pbuf, int *perrno)
 {
-	struct read_packet_state *state = talloc_get_type_abort(
-		req->private_state, struct read_packet_state);
+	struct read_packet_state *state =
+		tevent_req_data(req, struct read_packet_state);
 
 	if (tevent_req_is_unix_error(req, perrno)) {
 		return -1;

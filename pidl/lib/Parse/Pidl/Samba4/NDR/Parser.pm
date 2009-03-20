@@ -1256,7 +1256,7 @@ sub ParseStructPush($$$$)
 
 	EnvSubstituteValue($env, $struct);
 
-	$self->DeclareArrayVariables($_) foreach (@{$struct->{ELEMENTS}});
+	$self->DeclareArrayVariablesNoZero($_, $env) foreach (@{$struct->{ELEMENTS}});
 
 	$self->start_flags($struct, $ndr);
 
@@ -1477,6 +1477,24 @@ sub DeclareArrayVariables($$)
 		next if is_charset_array($e,$l);
 		if ($l->{TYPE} eq "ARRAY") {
 			$self->pidl("uint32_t cntr_$e->{NAME}_$l->{LEVEL_INDEX};");
+		}
+	}
+}
+
+sub DeclareArrayVariablesNoZero($$$)
+{
+	my ($self,$e,$env) = @_;
+
+	foreach my $l (@{$e->{LEVELS}}) {
+		next if has_fast_array($e,$l);
+		next if is_charset_array($e,$l);
+		if ($l->{TYPE} eq "ARRAY") {
+		    my $length = ParseExpr($l->{LENGTH_IS}, $env, $e->{ORIGINAL});
+		    if ($length eq "0") {
+			warning($e->{ORIGINAL}, "pointless array cntr: 'cntr_$e->{NAME}_$l->{LEVEL_INDEX}': length=$length");
+		    } else {
+			$self->pidl("uint32_t cntr_$e->{NAME}_$l->{LEVEL_INDEX};");
+		    }
 		}
 	}
 }

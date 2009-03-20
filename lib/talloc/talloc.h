@@ -94,6 +94,7 @@ typedef void TALLOC_CTX;
 #define talloc_array(ctx, type, count) (type *)_talloc_array(ctx, sizeof(type), count, #type)
 #define talloc_array_size(ctx, size, count) _talloc_array(ctx, size, count, __location__)
 #define talloc_array_ptrtype(ctx, ptr, count) (_TALLOC_TYPEOF(ptr))talloc_array_size(ctx, sizeof(*(ptr)), count)
+#define talloc_array_length(ctx) ((ctx) ? talloc_get_size(ctx)/sizeof(*ctx) : 0)
 
 #define talloc_realloc(ctx, p, type, count) (type *)_talloc_realloc_array(ctx, p, sizeof(type), count, #type)
 #define talloc_realloc_size(ctx, ptr, size) _talloc_realloc(ctx, ptr, size, __location__)
@@ -102,6 +103,7 @@ typedef void TALLOC_CTX;
 
 #define talloc_set_type(ptr, type) talloc_set_name_const(ptr, #type)
 #define talloc_get_type(ptr, type) (type *)talloc_check_name(ptr, #type)
+#define talloc_get_type_abort(ptr, type) (type *)_talloc_get_type_abort(ptr, #type, __location__)
 
 #define talloc_find_parent_bytype(ptr, type) (type *)talloc_find_parent_byname(ptr, #type)
 
@@ -113,6 +115,8 @@ typedef void TALLOC_CTX;
 #define talloc_destroy(ctx) talloc_free(ctx)
 #define talloc_append_string(c, s, a) (s?talloc_strdup_append(s,a):talloc_strdup(c, a))
 #endif
+
+#define TALLOC_FREE(ctx) do { talloc_free(ctx); ctx=NULL; } while(0)
 
 /* The following definitions come from talloc.c  */
 void *_talloc(const void *context, size_t size);
@@ -129,6 +133,7 @@ void *talloc_named(const void *context, size_t size,
 void *talloc_named_const(const void *context, size_t size, const char *name);
 const char *talloc_get_name(const void *ptr);
 void *talloc_check_name(const void *ptr, const char *name);
+void *_talloc_get_type_abort(const void *ptr, const char *name, const char *location);
 void *talloc_parent(const void *ptr);
 const char *talloc_parent_name(const void *ptr);
 void *talloc_init(const char *fmt, ...) PRINTF_ATTRIBUTE(1,2);
@@ -179,5 +184,7 @@ char *talloc_vasprintf_append_buffer(char *s, const char *fmt, va_list ap) PRINT
 char *talloc_asprintf(const void *t, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 char *talloc_asprintf_append(char *s, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 char *talloc_asprintf_append_buffer(char *s, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
+
+void talloc_set_abort_fn(void (*abort_fn)(const char *reason));
 
 #endif

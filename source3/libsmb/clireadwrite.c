@@ -915,9 +915,15 @@ static NTSTATUS cli_writeall_recv(struct async_req *req)
 	return async_req_simple_recv_ntstatus(req);
 }
 
-struct cli_push_state {
-	struct async_req *req;
+struct cli_push_write_state {
+	struct async_req *req;/* This is the main request! Not the subreq */
+	uint32_t idx;
+	off_t ofs;
+	uint8_t *buf;
+	size_t size;
+};
 
+struct cli_push_state {
 	struct event_context *ev;
 	struct cli_state *cli;
 	uint16_t fnum;
@@ -928,23 +934,69 @@ struct cli_push_state {
 	size_t (*source)(uint8_t *buf, size_t n, void *priv);
 	void *priv;
 
-	size_t chunk_size;
-
-	size_t sent;
 	bool eof;
+
+	size_t chunk_size;
+	off_t next_offset;
 
 	/*
 	 * Outstanding requests
 	 */
-	int num_reqs;
-	struct async_req **reqs;
-
-	int pending;
-
-	uint8_t *buf;
+	uint32_t pending;
+	uint32_t num_reqs;
+	struct cli_push_write_state **reqs;
 };
 
 static void cli_push_written(struct async_req *req);
+
+static bool cli_push_write_setup(struct async_req *req,
+				 struct cli_push_state *state,
+				 uint32_t idx)
+{
+	struct cli_push_write_state *substate;
+	struct async_req *subreq;
+
+	substate = talloc(state->reqs, struct cli_push_write_state);
+	if (!substate) {
+		return false;
+	}
+	substate->req = req;
+	substate->idx = idx;
+	substate->ofs = state->next_offset;
+	substate->buf = talloc_array(substate, uint8_t, state->chunk_size);
+	if (!substate->buf) {
+		talloc_free(substate);
+		return false;
+	}
+	substate->size = state->source(substate->buf,
+				       state->chunk_size,
+				       state->priv);
+	if (substate->size == 0) {
+		state->eof = true;
+		/* nothing to send */
+		talloc_free(substate);
+		return true;
+	}
+
+	subreq = cli_writeall_send(substate,
+				   state->ev, state->cli,
+				   state->fnum, state->mode,
+				   substate->buf,
+				   substate->ofs,
+				   substate->size);
+	if (!subreq) {
+		talloc_free(substate);
+		return false;
+	}
+	subreq->async.fn = cli_push_written;
+	subreq->async.priv = substate;
+
+	state->reqs[idx] = substate;
+	state->pending += 1;
+	state->next_offset += substate->size;
+
+	return true;
+}
 
 struct async_req *cli_push_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 				struct cli_state *cli,
@@ -954,16 +1006,14 @@ struct async_req *cli_push_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 						 void *priv),
 				void *priv)
 {
-	struct async_req *result;
+	struct async_req *req;
 	struct cli_push_state *state;
-	int i;
+	uint32_t i;
 
-	if (!async_req_setup(mem_ctx, &result, &state,
+	if (!async_req_setup(mem_ctx, &req, &state,
 			     struct cli_push_state)) {
 		return NULL;
 	}
-	state->req = result;
-
 	state->cli = cli;
 	state->ev = ev;
 	state->fnum = fnum;
@@ -972,124 +1022,83 @@ struct async_req *cli_push_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 	state->source = source;
 	state->priv = priv;
 	state->eof = false;
-	state->sent = 0;
 	state->pending = 0;
+	state->next_offset = start_offset;
 
 	state->chunk_size = cli_write_max_bufsize(cli, mode);
 
-	state->num_reqs = MAX(window_size/state->chunk_size, 1);
+	if (window_size == 0) {
+		window_size = cli->max_mux * state->chunk_size;
+	}
+	state->num_reqs = window_size/state->chunk_size;
+	if ((window_size % state->chunk_size) > 0) {
+		state->num_reqs += 1;
+	}
 	state->num_reqs = MIN(state->num_reqs, cli->max_mux);
+	state->num_reqs = MAX(state->num_reqs, 1);
 
-	state->reqs = TALLOC_ZERO_ARRAY(state, struct async_req *,
+	state->reqs = TALLOC_ZERO_ARRAY(state, struct cli_push_write_state *,
 					state->num_reqs);
 	if (state->reqs == NULL) {
 		goto failed;
 	}
 
-	state->buf = TALLOC_ARRAY(
-		state, uint8_t, state->chunk_size * state->num_reqs);
-	if (state->buf == NULL) {
-		goto failed;
-	}
-
 	for (i=0; i<state->num_reqs; i++) {
-		size_t to_write;
-		uint8_t *buf = state->buf + i*state->chunk_size;
+		if (!cli_push_write_setup(req, state, i)) {
+			goto failed;
+		}
 
-		to_write = state->source(buf, state->chunk_size, state->priv);
-		if (to_write == 0) {
-			state->eof = true;
+		if (state->eof) {
 			break;
 		}
-
-		state->reqs[i] = cli_writeall_send(
-			state->reqs, state->ev, state->cli, state->fnum,
-			state->mode, buf, state->start_offset + state->sent,
-			to_write);
-		if (state->reqs[i] == NULL) {
-			goto failed;
-		}
-
-		state->reqs[i]->async.fn = cli_push_written;
-		state->reqs[i]->async.priv = state;
-
-		state->sent += to_write;
-		state->pending += 1;
 	}
 
-	if (i == 0) {
-		if (!async_post_ntstatus(result, ev, NT_STATUS_OK)) {
+	if (state->pending == 0) {
+		if (!async_post_ntstatus(req, ev, NT_STATUS_OK)) {
 			goto failed;
 		}
-		return result;
+		return req;
 	}
 
-	return result;
+	return req;
 
  failed:
-	TALLOC_FREE(result);
+	TALLOC_FREE(req);
 	return NULL;
 }
 
-static void cli_push_written(struct async_req *req)
+static void cli_push_written(struct async_req *subreq)
 {
+	struct cli_push_write_state *substate = talloc_get_type_abort(
+		subreq->async.priv, struct cli_push_write_state);
+	struct async_req *req = substate->req;
 	struct cli_push_state *state = talloc_get_type_abort(
-		req->async.priv, struct cli_push_state);
+		req->private_data, struct cli_push_state);
 	NTSTATUS status;
-	int i;
-	uint8_t *buf;
-	size_t to_write;
+	uint32_t idx = substate->idx;
 
-	for (i=0; i<state->num_reqs; i++) {
-		if (state->reqs[i] == req) {
-			break;
+	state->reqs[idx] = NULL;
+	state->pending -= 1;
+
+	status = cli_writeall_recv(subreq);
+	TALLOC_FREE(subreq);
+	TALLOC_FREE(substate);
+	if (!NT_STATUS_IS_OK(status)) {
+		async_req_nterror(req, status);
+		return;
+	}
+
+	if (!state->eof) {
+		if (!cli_push_write_setup(req, state, idx)) {
+			async_req_nomem(NULL, req);
+			return;
 		}
 	}
 
-	if (i == state->num_reqs) {
-		async_req_nterror(state->req, NT_STATUS_INTERNAL_ERROR);
-		return;
-	}
-
-	status = cli_writeall_recv(req);
-	TALLOC_FREE(state->reqs[i]);
-	req = NULL;
-	if (!NT_STATUS_IS_OK(status)) {
-		async_req_nterror(state->req, status);
-		return;
-	}
-
-	state->pending -= 1;
 	if (state->pending == 0) {
-		async_req_done(state->req);
+		async_req_done(req);
 		return;
 	}
-
-	if (state->eof) {
-		return;
-	}
-
-	buf = state->buf + i * state->chunk_size;
-
-	to_write = state->source(buf, state->chunk_size, state->priv);
-	if (to_write == 0) {
-		state->eof = true;
-		return;
-	}
-
-	state->reqs[i] = cli_writeall_send(
-		state->reqs, state->ev, state->cli, state->fnum,
-		state->mode, buf, state->start_offset + state->sent, to_write);
-	if (state->reqs[i] == NULL) {
-		async_req_nterror(state->req, NT_STATUS_NO_MEMORY);
-		return;
-	}
-
-	state->reqs[i]->async.fn = cli_push_written;
-	state->reqs[i]->async.priv = state;
-
-	state->sent += to_write;
-	state->pending += 1;
 }
 
 NTSTATUS cli_push_recv(struct async_req *req)

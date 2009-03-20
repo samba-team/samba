@@ -322,7 +322,6 @@ bool winbind_get_sid_aliases(TALLOC_CTX *mem_ctx,
 			       &rids,
 			       &num_rids);
 	if (ret != WBC_ERR_SUCCESS) {
-		wbcFreeMemory(rids);
 		return false;
 	}
 

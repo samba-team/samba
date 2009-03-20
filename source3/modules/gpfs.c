@@ -26,6 +26,7 @@
 
 static bool gpfs_share_modes;
 static bool gpfs_leases;
+static bool gpfs_getrealfilename;
 
 static int (*gpfs_set_share_fn)(int fd, unsigned int allow, unsigned int deny);
 static int (*gpfs_set_lease_fn)(int fd, unsigned int leaseType);
@@ -139,7 +140,8 @@ int smbd_gpfs_putacl(char *pathname, int flags, void *acl)
 int smbd_gpfs_get_realfilename_path(char *pathname, char *filenamep,
 				    int *buflen)
 {
-	if (gpfs_get_realfilename_path_fn == NULL) {
+	if ((!gpfs_getrealfilename)
+	    || (gpfs_get_realfilename_path_fn == NULL)) {
 		errno = ENOSYS;
 		return -1;
 	}
@@ -208,6 +210,8 @@ void init_gpfs(void)
 
 	gpfs_share_modes = lp_parm_bool(-1, "gpfs", "sharemodes", True);
 	gpfs_leases      = lp_parm_bool(-1, "gpfs", "leases", True);
+	gpfs_getrealfilename = lp_parm_bool(-1, "gpfs", "getrealfilename",
+					    True);
 
 	return;
 }

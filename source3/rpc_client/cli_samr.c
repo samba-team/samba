@@ -282,7 +282,7 @@ void get_query_dispinfo_params(int loop_count, uint32 *max_entries,
 NTSTATUS rpccli_try_samr_connects(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
 				  uint32_t access_mask,
-				  POLICY_HND *connect_pol)
+				  struct policy_handle *connect_pol)
 {
 	NTSTATUS status;
 	union samr_ConnectInfo info_in, info_out;

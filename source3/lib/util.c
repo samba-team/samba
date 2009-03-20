@@ -290,7 +290,7 @@ struct user_auth_info *user_auth_info_init(TALLOC_CTX *mem_ctx)
 	return result;
 }
 
-const char *get_cmdline_auth_info_username(struct user_auth_info *auth_info)
+const char *get_cmdline_auth_info_username(const struct user_auth_info *auth_info)
 {
 	if (!auth_info->username) {
 		return "";
@@ -308,7 +308,7 @@ void set_cmdline_auth_info_username(struct user_auth_info *auth_info,
 	}
 }
 
-const char *get_cmdline_auth_info_password(struct user_auth_info *auth_info)
+const char *get_cmdline_auth_info_password(const struct user_auth_info *auth_info)
 {
 	if (!auth_info->password) {
 		return "";
@@ -320,6 +320,9 @@ void set_cmdline_auth_info_password(struct user_auth_info *auth_info,
 				    const char *password)
 {
 	TALLOC_FREE(auth_info->password);
+	if (password == NULL) {
+		password = "";
+	}
 	auth_info->password = talloc_strdup(auth_info, password);
 	if (!auth_info->password) {
 		exit(ENOMEM);
@@ -346,7 +349,7 @@ bool set_cmdline_auth_info_signing_state(struct user_auth_info *auth_info,
 	return true;
 }
 
-int get_cmdline_auth_info_signing_state(struct user_auth_info *auth_info)
+int get_cmdline_auth_info_signing_state(const struct user_auth_info *auth_info)
 {
 	return auth_info->signing_state;
 }
@@ -357,9 +360,20 @@ void set_cmdline_auth_info_use_kerberos(struct user_auth_info *auth_info,
         auth_info->use_kerberos = b;
 }
 
-bool get_cmdline_auth_info_use_kerberos(struct user_auth_info *auth_info)
+bool get_cmdline_auth_info_use_kerberos(const struct user_auth_info *auth_info)
 {
 	return auth_info->use_kerberos;
+}
+
+void set_cmdline_auth_info_fallback_after_kerberos(struct user_auth_info *auth_info,
+					bool b)
+{
+	auth_info->fallback_after_kerberos = b;
+}
+
+bool get_cmdline_auth_info_fallback_after_kerberos(const struct user_auth_info *auth_info)
+{
+	return auth_info->fallback_after_kerberos;
 }
 
 /* This should only be used by lib/popt_common.c JRA */
@@ -380,23 +394,23 @@ void set_cmdline_auth_info_use_machine_account(struct user_auth_info *auth_info)
 	auth_info->use_machine_account = true;
 }
 
-bool get_cmdline_auth_info_got_pass(struct user_auth_info *auth_info)
+bool get_cmdline_auth_info_got_pass(const struct user_auth_info *auth_info)
 {
 	return auth_info->got_pass;
 }
 
-bool get_cmdline_auth_info_smb_encrypt(struct user_auth_info *auth_info)
+bool get_cmdline_auth_info_smb_encrypt(const struct user_auth_info *auth_info)
 {
 	return auth_info->smb_encrypt;
 }
 
-bool get_cmdline_auth_info_use_machine_account(struct user_auth_info *auth_info)
+bool get_cmdline_auth_info_use_machine_account(const struct user_auth_info *auth_info)
 {
 	return auth_info->use_machine_account;
 }
 
 struct user_auth_info *get_cmdline_auth_info_copy(TALLOC_CTX *mem_ctx,
-						  struct user_auth_info *src)
+						  const struct user_auth_info *src)
 {
 	struct user_auth_info *result;
 
@@ -453,6 +467,32 @@ bool set_cmdline_auth_info_machine_account_creds(struct user_auth_info *auth_inf
 	SAFE_FREE(pass);
 
 	return true;
+}
+
+/****************************************************************************
+ Ensure we have a password if one not given.
+****************************************************************************/
+
+void set_cmdline_auth_info_getpass(struct user_auth_info *auth_info)
+{
+	char *label = NULL;
+	char *pass;
+	TALLOC_CTX *frame;
+
+	if (get_cmdline_auth_info_got_pass(auth_info) ||
+			get_cmdline_auth_info_use_kerberos(auth_info)) {
+		/* Already got one... */
+		return;
+	}
+
+	frame = talloc_stackframe();
+	label = talloc_asprintf(frame, "Enter %s's password: ",
+			get_cmdline_auth_info_username(auth_info));
+	pass = getpass(label);
+	if (pass) {
+		set_cmdline_auth_info_password(auth_info, pass);
+	}
+	TALLOC_FREE(frame);
 }
 
 /****************************************************************************
@@ -898,13 +938,6 @@ bool reinit_after_fork(struct messaging_context *msg_ctx,
 	 * children do not get the same random
 	 * numbers as each other */
 	set_need_random_reseed();
-
-#ifdef WITH_MADVISE_PROTECTED
-	/* Protect parent process from being killed by kernel when system
-	 * memory is low.  Child processes can still be killed */
-	if(!parent_longlived)
-		madvise(NULL,0,MADV_PROTECT);
-#endif
 
 	/* tdb needs special fork handling */
 	if (tdb_reopen_all(parent_longlived ? 1 : 0) == -1) {
@@ -3109,9 +3142,9 @@ NTSTATUS split_ntfs_stream_name(TALLOC_CTX *mem_ctx, const char *fname,
 	return NT_STATUS_OK;
 }
 
-bool is_valid_policy_hnd(const POLICY_HND *hnd)
+bool is_valid_policy_hnd(const struct policy_handle *hnd)
 {
-	POLICY_HND tmp;
+	struct policy_handle tmp;
 	ZERO_STRUCT(tmp);
 	return (memcmp(&tmp, hnd, sizeof(tmp)) != 0);
 }

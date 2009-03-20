@@ -107,7 +107,7 @@ char *config_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
 	char *fname, *config_dir, *p;
 	config_dir = talloc_strdup(mem_ctx, lp_configfile(lp_ctx));
 	if (config_dir == NULL) {
-		return NULL;
+		config_dir = talloc_strdup(mem_ctx, lp_default_path());
 	}
 	p = strrchr(config_dir, '/');
 	if (p == NULL) {

@@ -222,7 +222,14 @@ static int onefs_ntimes(vfs_handle_struct *handle, const char *fname,
 
 static uint32_t onefs_fs_capabilities(struct vfs_handle_struct *handle)
 {
-	return SMB_VFS_NEXT_FS_CAPABILITIES(handle) | FILE_NAMED_STREAMS;
+	uint32_t result = 0;
+
+	if (!lp_parm_bool(SNUM(handle->conn), PARM_ONEFS_TYPE,
+		PARM_IGNORE_STREAMS, PARM_IGNORE_STREAMS_DEFAULT)) {
+		result |= FILE_NAMED_STREAMS;
+	}
+
+	return result | SMB_VFS_NEXT_FS_CAPABILITIES(handle);
 }
 
 static vfs_op_tuple onefs_ops[] = {
@@ -281,6 +288,10 @@ static vfs_op_tuple onefs_ops[] = {
 	{SMB_VFS_OP(onefs_brl_unlock_windows), SMB_VFS_OP_BRL_UNLOCK_WINDOWS,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(onefs_brl_cancel_windows), SMB_VFS_OP_BRL_CANCEL_WINDOWS,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(onefs_strict_lock),		SMB_VFS_OP_STRICT_LOCK,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(onefs_strict_unlock),	SMB_VFS_OP_STRICT_UNLOCK,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(onefs_notify_watch), SMB_VFS_OP_NOTIFY_WATCH,
 	 SMB_VFS_LAYER_OPAQUE},

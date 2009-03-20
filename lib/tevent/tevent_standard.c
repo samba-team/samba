@@ -48,14 +48,6 @@ struct std_event_context {
 	/* information for exiting from the event loop */
 	int exit_code;
 
-	/* this is changed by the destructors for the fd event
-	   type. It is used to detect event destruction by event
-	   handlers, which means the code that is calling the event
-	   handler needs to assume that the linked list is no longer
-	   valid
-	*/
-	uint32_t destruction_count;
-
 	/* when using epoll this is the handle from epoll_create */
 	int epoll_fd;
 
@@ -253,9 +245,8 @@ static void epoll_change_event(struct std_event_context *std_ev, struct tevent_f
 static int epoll_event_loop(struct std_event_context *std_ev, struct timeval *tvalp)
 {
 	int ret, i;
-#define MAXEVENTS 8
+#define MAXEVENTS 1
 	struct epoll_event events[MAXEVENTS];
-	uint32_t destruction_count = ++std_ev->destruction_count;
 	int timeout = -1;
 
 	if (std_ev->epoll_fd == -1) return -1;
@@ -316,9 +307,7 @@ static int epoll_event_loop(struct std_event_context *std_ev, struct timeval *tv
 		if (events[i].events & EPOLLOUT) flags |= TEVENT_FD_WRITE;
 		if (flags) {
 			fde->handler(std_ev->ev, fde, flags, fde->private_data);
-			if (destruction_count != std_ev->destruction_count) {
-				break;
-			}
+			break;
 		}
 	}
 
@@ -390,8 +379,6 @@ static int std_event_fd_destructor(struct tevent_fd *fde)
 			std_ev->maxfd = EVENT_INVALID_MAXFD;
 		}
 
-		std_ev->destruction_count++;
-
 		epoll_del_event(std_ev, fde);
 	}
 
@@ -459,7 +446,6 @@ static int std_event_loop_select(struct std_event_context *std_ev, struct timeva
 	fd_set r_fds, w_fds;
 	struct tevent_fd *fde;
 	int selrtn;
-	uint32_t destruction_count = ++std_ev->destruction_count;
 
 	/* we maybe need to recalculate the maxfd */
 	if (std_ev->maxfd == EVENT_INVALID_MAXFD) {
@@ -521,9 +507,7 @@ static int std_event_loop_select(struct std_event_context *std_ev, struct timeva
 			if (FD_ISSET(fde->fd, &w_fds)) flags |= TEVENT_FD_WRITE;
 			if (flags) {
 				fde->handler(std_ev->ev, fde, flags, fde->private_data);
-				if (destruction_count != std_ev->destruction_count) {
-					break;
-				}
+				break;
 			}
 		}
 	}
@@ -534,11 +518,21 @@ static int std_event_loop_select(struct std_event_context *std_ev, struct timeva
 /*
   do a single event loop using the events defined in ev 
 */
-static int std_event_loop_once(struct tevent_context *ev)
+static int std_event_loop_once(struct tevent_context *ev, const char *location)
 {
 	struct std_event_context *std_ev = talloc_get_type(ev->additional_data,
 		 					   struct std_event_context);
 	struct timeval tval;
+
+	if (ev->signal_events &&
+	    tevent_common_check_signal(ev)) {
+		return 0;
+	}
+
+	if (ev->immediate_events &&
+	    tevent_common_loop_immediate(ev)) {
+		return 0;
+	}
 
 	tval = tevent_common_loop_timer_delay(ev);
 	if (tevent_timeval_is_zero(&tval)) {
@@ -554,34 +548,17 @@ static int std_event_loop_once(struct tevent_context *ev)
 	return std_event_loop_select(std_ev, &tval);
 }
 
-/*
-  return on failure or (with 0) if all fd events are removed
-*/
-static int std_event_loop_wait(struct tevent_context *ev)
-{
-	struct std_event_context *std_ev = talloc_get_type(ev->additional_data,
-							   struct std_event_context);
-	std_ev->exit_code = 0;
-
-	while (ev->fd_events && std_ev->exit_code == 0) {
-		if (std_event_loop_once(ev) != 0) {
-			break;
-		}
-	}
-
-	return std_ev->exit_code;
-}
-
 static const struct tevent_ops std_event_ops = {
-	.context_init	= std_event_context_init,
-	.add_fd		= std_event_add_fd,
-	.set_fd_close_fn= tevent_common_fd_set_close_fn,
-	.get_fd_flags	= tevent_common_fd_get_flags,
-	.set_fd_flags	= std_event_set_fd_flags,
-	.add_timer	= tevent_common_add_timer,
-	.add_signal	= tevent_common_add_signal,
-	.loop_once	= std_event_loop_once,
-	.loop_wait	= std_event_loop_wait,
+	.context_init		= std_event_context_init,
+	.add_fd			= std_event_add_fd,
+	.set_fd_close_fn	= tevent_common_fd_set_close_fn,
+	.get_fd_flags		= tevent_common_fd_get_flags,
+	.set_fd_flags		= std_event_set_fd_flags,
+	.add_timer		= tevent_common_add_timer,
+	.schedule_immediate	= tevent_common_schedule_immediate,
+	.add_signal		= tevent_common_add_signal,
+	.loop_once		= std_event_loop_once,
+	.loop_wait		= tevent_common_loop_wait,
 };
 
 

@@ -409,49 +409,76 @@ void cli_setup_bcc(struct cli_state *cli, void *p)
 }
 
 /****************************************************************************
+ Initialize Domain, user or password.
+****************************************************************************/
+
+NTSTATUS cli_set_domain(struct cli_state *cli, const char *domain)
+{
+	TALLOC_FREE(cli->domain);
+	cli->domain = talloc_strdup(cli, domain ? domain : "");
+	if (cli->domain == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_set_username(struct cli_state *cli, const char *username)
+{
+	TALLOC_FREE(cli->user_name);
+	cli->user_name = talloc_strdup(cli, username ? username : "");
+	if (cli->user_name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_set_password(struct cli_state *cli, const char *password)
+{
+	TALLOC_FREE(cli->password);
+
+	/* Password can be NULL. */
+	if (password) {
+		cli->password = talloc_strdup(cli, password);
+		if (cli->password == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	} else {
+		/* Use zero NTLMSSP hashes and session key. */
+		cli->password = NULL;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
  Initialise credentials of a client structure.
 ****************************************************************************/
 
-void cli_init_creds(struct cli_state *cli, const char *username, const char *domain, const char *password)
+NTSTATUS cli_init_creds(struct cli_state *cli, const char *username, const char *domain, const char *password)
 {
-	fstrcpy(cli->domain, domain);
-	fstrcpy(cli->user_name, username);
-	pwd_set_cleartext(&cli->pwd, password);
-	if (!*username) {
-		cli->pwd.null_pwd = true;
+	NTSTATUS status = cli_set_username(cli, username);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
+	status = cli_set_domain(cli, domain);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	DEBUG(10,("cli_init_creds: user %s domain %s\n", cli->user_name, cli->domain));
 
-        DEBUG(10,("cli_init_creds: user %s domain %s\n", cli->user_name, cli->domain));
+	return cli_set_password(cli, password);
 }
 
 /****************************************************************************
+ Initialise a client structure. Always returns a talloc'ed struct.
  Set the signing state (used from the command line).
 ****************************************************************************/
 
-void cli_setup_signing_state(struct cli_state *cli, int signing_state)
-{
-	if (signing_state == Undefined)
-		return;
-
-	if (signing_state == false) {
-		cli->sign_info.allow_smb_signing = false;
-		cli->sign_info.mandatory_signing = false;
-		return;
-	}
-
-	cli->sign_info.allow_smb_signing = true;
-
-	if (signing_state == Required) 
-		cli->sign_info.mandatory_signing = true;
-}
-
-/****************************************************************************
- Initialise a client structure. Always returns a malloc'ed struct.
-****************************************************************************/
-
-struct cli_state *cli_initialise(void)
+struct cli_state *cli_initialise_ex(int signing_state)
 {
 	struct cli_state *cli = NULL;
+	bool allow_smb_signing = false;
+	bool mandatory_signing = false;
 
 	/* Check the effective uid - make sure we are not setuid */
 	if (is_setuid_root()) {
@@ -464,6 +491,10 @@ struct cli_state *cli_initialise(void)
 		return NULL;
 	}
 
+	cli->dfs_mountpoint = talloc_strdup(cli, "");
+	if (!cli->dfs_mountpoint) {
+		goto error;
+	}
 	cli->port = 0;
 	cli->fd = -1;
 	cli->cnum = -1;
@@ -490,12 +521,27 @@ struct cli_state *cli_initialise(void)
 	if (getenv("CLI_FORCE_DOSERR"))
 		cli->force_dos_errors = true;
 
-	if (lp_client_signing()) 
-		cli->sign_info.allow_smb_signing = true;
+	if (lp_client_signing()) {
+		allow_smb_signing = true;
+	}
 
-	if (lp_client_signing() == Required) 
-		cli->sign_info.mandatory_signing = true;
-                                   
+	if (lp_client_signing() == Required) {
+		mandatory_signing = true;
+	}
+
+	if (signing_state != Undefined) {
+		allow_smb_signing = true;
+	}
+
+	if (signing_state == false) {
+		allow_smb_signing = false;
+		mandatory_signing = false;
+	}
+
+	if (signing_state == Required) {
+		mandatory_signing = true;
+	}
+
 	if (!cli->outbuf || !cli->inbuf)
                 goto error;
 
@@ -510,6 +556,8 @@ struct cli_state *cli_initialise(void)
 #endif
 
 	/* initialise signing */
+	cli->sign_info.allow_smb_signing = allow_smb_signing;
+	cli->sign_info.mandatory_signing = mandatory_signing;
 	cli_null_set_signing(cli);
 
 	cli->initialised = 1;
@@ -522,8 +570,13 @@ struct cli_state *cli_initialise(void)
 
         SAFE_FREE(cli->inbuf);
         SAFE_FREE(cli->outbuf);
-	SAFE_FREE(cli);
+	TALLOC_FREE(cli);
         return NULL;
+}
+
+struct cli_state *cli_initialise(void)
+{
+	return cli_initialise_ex(Undefined);
 }
 
 /****************************************************************************
@@ -546,6 +599,27 @@ void cli_nt_pipes_close(struct cli_state *cli)
 
 void cli_shutdown(struct cli_state *cli)
 {
+	if (cli->prev == NULL) {
+		/*
+		 * Possible head of a DFS list,
+		 * shutdown all subsidiary DFS
+		 * connections.
+		 */
+		struct cli_state *p, *next;
+
+		for (p = cli->next; p; p = next) {
+			next = p->next;
+			cli_shutdown(p);
+		}
+	} else {
+		/*
+		 * We're a subsidiary connection.
+		 * Just remove ourselves from the
+		 * DFS list.
+		 */
+		DLIST_REMOVE(cli->prev, cli);
+	}
+
 	cli_nt_pipes_close(cli);
 
 	/*

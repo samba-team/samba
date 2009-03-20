@@ -103,6 +103,9 @@ struct cli_state *cli;
 static char CLI_DIRSEP_CHAR = '\\';
 static char CLI_DIRSEP_STR[] = { '\\', '\0' };
 
+/* Authentication for client connections. */
+struct user_auth_info *auth_info;
+
 /* Accessor functions for directory paths. */
 static char *fileselection;
 static const char *client_get_fileselection(void)
@@ -299,7 +302,7 @@ static int do_dskattr(void)
 	char *targetpath = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	if ( !cli_resolve_path(ctx, "", cli, client_get_cur_dir(), &targetcli, &targetpath)) {
+	if ( !cli_resolve_path(ctx, "", auth_info, cli, client_get_cur_dir(), &targetcli, &targetpath)) {
 		d_printf("Error in dskattr: %s\n", cli_errstr(cli));
 		return 1;
 	}
@@ -393,7 +396,7 @@ static int do_cd(const char *new_dir)
 	new_cd = clean_name(ctx, new_cd);
 	client_set_cur_dir(new_cd);
 
-	if ( !cli_resolve_path(ctx, "", cli, new_cd, &targetcli, &targetpath)) {
+	if ( !cli_resolve_path(ctx, "", auth_info, cli, new_cd, &targetcli, &targetpath)) {
 		d_printf("cd %s: %s\n", new_cd, cli_errstr(cli));
 		client_set_cur_dir(saved_dir);
 		goto out;
@@ -819,7 +822,7 @@ void do_list(const char *mask,
 
 			/* check for dfs */
 
-			if ( !cli_resolve_path(ctx, "", cli, head, &targetcli, &targetpath ) ) {
+			if ( !cli_resolve_path(ctx, "", auth_info, cli, head, &targetcli, &targetpath ) ) {
 				d_printf("do_list: [%s] %s\n", head, cli_errstr(cli));
 				remove_do_list_queue_head();
 				continue;
@@ -852,7 +855,7 @@ void do_list(const char *mask,
 		}
 	} else {
 		/* check for dfs */
-		if (cli_resolve_path(ctx, "", cli, mask, &targetcli, &targetpath)) {
+		if (cli_resolve_path(ctx, "", auth_info, cli, mask, &targetcli, &targetpath)) {
 			if (cli_list(targetcli, targetpath, attribute, do_list_helper, NULL) == -1) {
 				d_printf("%s listing %s\n",
 					cli_errstr(targetcli), targetpath);
@@ -1018,7 +1021,7 @@ static int do_get(const char *rname, const char *lname_in, bool reget)
 		strlower_m(lname);
 	}
 
-	if (!cli_resolve_path(ctx, "", cli, rname, &targetcli, &targetname ) ) {
+	if (!cli_resolve_path(ctx, "", auth_info, cli, rname, &targetcli, &targetname ) ) {
 		d_printf("Failed to open %s: %s\n", rname, cli_errstr(cli));
 		return 1;
 	}
@@ -1381,7 +1384,7 @@ static bool do_mkdir(const char *name)
 	struct cli_state *targetcli;
 	char *targetname = NULL;
 
-	if (!cli_resolve_path(ctx, "", cli, name, &targetcli, &targetname)) {
+	if (!cli_resolve_path(ctx, "", auth_info, cli, name, &targetcli, &targetname)) {
 		d_printf("mkdir %s: %s\n", name, cli_errstr(cli));
 		return false;
 	}
@@ -1419,7 +1422,7 @@ static bool do_altname(const char *name)
 
 static int cmd_quit(void)
 {
-	cli_cm_shutdown();
+	cli_shutdown(cli);
 	exit(0);
 	/* NOTREACHED */
 	return 0;
@@ -1464,7 +1467,7 @@ static int cmd_mkdir(void)
 			return 1;
 		}
 
-		if (!cli_resolve_path(ctx, "", cli, mask, &targetcli, &targetname)) {
+		if (!cli_resolve_path(ctx, "", auth_info, cli, mask, &targetcli, &targetname)) {
 			return 1;
 		}
 
@@ -1625,7 +1628,7 @@ static int do_put(const char *rname, const char *lname, bool reput)
 	struct push_state state;
 	NTSTATUS status;
 
-	if (!cli_resolve_path(ctx, "", cli, rname, &targetcli, &targetname)) {
+	if (!cli_resolve_path(ctx, "", auth_info, cli, rname, &targetcli, &targetname)) {
 		d_printf("Failed to open %s: %s\n", rname, cli_errstr(cli));
 		return 1;
 	}
@@ -1714,7 +1717,7 @@ static int do_put(const char *rname, const char *lname, bool reput)
 	}
 
 	if (f == x_stdin) {
-		cli_cm_shutdown();
+		cli_shutdown(cli);
 		exit(0);
 	}
 
@@ -2183,7 +2186,7 @@ static int cmd_wdel(void)
 		return 1;
 	}
 
-	if (!cli_resolve_path(ctx, "", cli, mask, &targetcli, &targetname)) {
+	if (!cli_resolve_path(ctx, "", auth_info, cli, mask, &targetcli, &targetname)) {
 		d_printf("cmd_wdel %s: %s\n", mask, cli_errstr(cli));
 		return 1;
 	}
@@ -2218,7 +2221,7 @@ static int cmd_open(void)
 		return 1;
 	}
 
-	if (!cli_resolve_path(ctx, "", cli, mask, &targetcli, &targetname)) {
+	if (!cli_resolve_path(ctx, "", auth_info, cli, mask, &targetcli, &targetname)) {
 		d_printf("open %s: %s\n", mask, cli_errstr(cli));
 		return 1;
 	}
@@ -2311,7 +2314,7 @@ static int cmd_posix_open(void)
 	}
 	mode = (mode_t)strtol(buf, (char **)NULL, 8);
 
-	if (!cli_resolve_path(ctx, "", cli, mask, &targetcli, &targetname)) {
+	if (!cli_resolve_path(ctx, "", auth_info, cli, mask, &targetcli, &targetname)) {
 		d_printf("posix_open %s: %s\n", mask, cli_errstr(cli));
 		return 1;
 	}
@@ -2359,7 +2362,7 @@ static int cmd_posix_mkdir(void)
 	}
 	mode = (mode_t)strtol(buf, (char **)NULL, 8);
 
-	if (!cli_resolve_path(ctx, "", cli, mask, &targetcli, &targetname)) {
+	if (!cli_resolve_path(ctx, "", auth_info, cli, mask, &targetcli, &targetname)) {
 		d_printf("posix_mkdir %s: %s\n", mask, cli_errstr(cli));
 		return 1;
 	}
@@ -2393,7 +2396,7 @@ static int cmd_posix_unlink(void)
 		return 1;
 	}
 
-	if (!cli_resolve_path(ctx, "", cli, mask, &targetcli, &targetname)) {
+	if (!cli_resolve_path(ctx, "", auth_info, cli, mask, &targetcli, &targetname)) {
 		d_printf("posix_unlink %s: %s\n", mask, cli_errstr(cli));
 		return 1;
 	}
@@ -2427,7 +2430,7 @@ static int cmd_posix_rmdir(void)
 		return 1;
 	}
 
-	if (!cli_resolve_path(ctx, "", cli, mask, &targetcli, &targetname)) {
+	if (!cli_resolve_path(ctx, "", auth_info, cli, mask, &targetcli, &targetname)) {
 		d_printf("posix_rmdir %s: %s\n", mask, cli_errstr(cli));
 		return 1;
 	}
@@ -2667,7 +2670,7 @@ static int cmd_rmdir(void)
 		return 1;
 	}
 
-	if (!cli_resolve_path(ctx, "", cli, mask, &targetcli, &targetname)) {
+	if (!cli_resolve_path(ctx, "", auth_info, cli, mask, &targetcli, &targetname)) {
 		d_printf("rmdir %s: %s\n", mask, cli_errstr(cli));
 		return 1;
 	}
@@ -2714,7 +2717,7 @@ static int cmd_link(void)
 		return 1;
 	}
 
-	if (!cli_resolve_path(ctx, "", cli, oldname, &targetcli, &targetname)) {
+	if (!cli_resolve_path(ctx, "", auth_info, cli, oldname, &targetcli, &targetname)) {
 		d_printf("link %s: %s\n", oldname, cli_errstr(cli));
 		return 1;
 	}
@@ -2765,7 +2768,7 @@ static int cmd_symlink(void)
 		return 1;
 	}
 
-	if (!cli_resolve_path(ctx, "", cli, oldname, &targetcli, &targetname)) {
+	if (!cli_resolve_path(ctx, "", auth_info, cli, oldname, &targetcli, &targetname)) {
 		d_printf("link %s: %s\n", oldname, cli_errstr(cli));
 		return 1;
 	}
@@ -2813,7 +2816,7 @@ static int cmd_chmod(void)
 
 	mode = (mode_t)strtol(buf, NULL, 8);
 
-	if (!cli_resolve_path(ctx, "", cli, src, &targetcli, &targetname)) {
+	if (!cli_resolve_path(ctx, "", auth_info, cli, src, &targetcli, &targetname)) {
 		d_printf("chmod %s: %s\n", src, cli_errstr(cli));
 		return 1;
 	}
@@ -2966,7 +2969,7 @@ static int cmd_getfacl(void)
 		return 1;
 	}
 
-	if (!cli_resolve_path(ctx, "", cli, src, &targetcli, &targetname)) {
+	if (!cli_resolve_path(ctx, "", auth_info, cli, src, &targetcli, &targetname)) {
 		d_printf("stat %s: %s\n", src, cli_errstr(cli));
 		return 1;
 	}
@@ -3132,7 +3135,7 @@ static int cmd_stat(void)
 		return 1;
 	}
 
-	if (!cli_resolve_path(ctx, "", cli, src, &targetcli, &targetname)) {
+	if (!cli_resolve_path(ctx, "", auth_info, cli, src, &targetcli, &targetname)) {
 		d_printf("stat %s: %s\n", src, cli_errstr(cli));
 		return 1;
 	}
@@ -3233,7 +3236,7 @@ static int cmd_chown(void)
 	if (!src) {
 		return 1;
 	}
-	if (!cli_resolve_path(ctx, "", cli, src, &targetcli, &targetname) ) {
+	if (!cli_resolve_path(ctx, "", auth_info, cli, src, &targetcli, &targetname) ) {
 		d_printf("chown %s: %s\n", src, cli_errstr(cli));
 		return 1;
 	}
@@ -3287,12 +3290,12 @@ static int cmd_rename(void)
 		return 1;
 	}
 
-	if (!cli_resolve_path(ctx, "", cli, src, &targetcli, &targetsrc)) {
+	if (!cli_resolve_path(ctx, "", auth_info, cli, src, &targetcli, &targetsrc)) {
 		d_printf("rename %s: %s\n", src, cli_errstr(cli));
 		return 1;
 	}
 
-	if (!cli_resolve_path(ctx, "", cli, dest, &targetcli, &targetdest)) {
+	if (!cli_resolve_path(ctx, "", auth_info, cli, dest, &targetcli, &targetdest)) {
 		d_printf("rename %s: %s\n", dest, cli_errstr(cli));
 		return 1;
 	}
@@ -3362,7 +3365,7 @@ static int cmd_hardlink(void)
 		return 1;
 	}
 
-	if (!cli_resolve_path(ctx, "", cli, src, &targetcli, &targetname)) {
+	if (!cli_resolve_path(ctx, "", auth_info, cli, src, &targetcli, &targetname)) {
 		d_printf("hardlink %s: %s\n", src, cli_errstr(cli));
 		return 1;
 	}
@@ -3815,7 +3818,7 @@ static int cmd_logon(void)
 
 static int cmd_list_connect(void)
 {
-	cli_cm_display();
+	cli_cm_display(cli);
 	return 0;
 }
 
@@ -3829,7 +3832,7 @@ static int cmd_show_connect( void )
 	struct cli_state *targetcli;
 	char *targetpath;
 
-	if (!cli_resolve_path(ctx, "", cli, client_get_cur_dir(),
+	if (!cli_resolve_path(ctx, "", auth_info, cli, client_get_cur_dir(),
 				&targetcli, &targetpath ) ) {
 		d_printf("showconnect %s: %s\n", cur_dir, cli_errstr(cli));
 		return 1;
@@ -4051,7 +4054,8 @@ static int process_command_string(const char *cmd_in)
 	if (!cli) {
 		cli = cli_cm_open(talloc_tos(), NULL,
 				have_ip ? dest_ss_str : desthost,
-				service, true, smb_encrypt,
+				service, auth_info,
+				true, smb_encrypt,
 				max_protocol, port, name_type);
 		if (!cli) {
 			return 1;
@@ -4220,7 +4224,7 @@ static char **remote_completion(const char *text, int len)
 		goto cleanup;
 	}
 
-	if (!cli_resolve_path(ctx, "", cli, dirmask, &targetcli, &targetpath)) {
+	if (!cli_resolve_path(ctx, "", auth_info, cli, dirmask, &targetcli, &targetpath)) {
 		goto cleanup;
 	}
 	if (cli_list(targetcli, targetpath, aDIR | aSYSTEM | aHIDDEN,
@@ -4517,7 +4521,7 @@ static int process(const char *base_directory)
 
 	cli = cli_cm_open(talloc_tos(), NULL,
 			have_ip ? dest_ss_str : desthost,
-			service, true, smb_encrypt,
+			service, auth_info, true, smb_encrypt,
 			max_protocol, port, name_type);
 	if (!cli) {
 		return 1;
@@ -4526,7 +4530,7 @@ static int process(const char *base_directory)
 	if (base_directory && *base_directory) {
 		rc = do_cd(base_directory);
 		if (rc) {
-			cli_cm_shutdown();
+			cli_shutdown(cli);
 			return rc;
 		}
 	}
@@ -4537,7 +4541,7 @@ static int process(const char *base_directory)
 		process_stdin();
 	}
 
-	cli_cm_shutdown();
+	cli_shutdown(cli);
 	return rc;
 }
 
@@ -4550,7 +4554,7 @@ static int do_host_query(const char *query_host)
 	struct sockaddr_storage ss;
 
 	cli = cli_cm_open(talloc_tos(), NULL,
-			query_host, "IPC$", true, smb_encrypt,
+			query_host, "IPC$", auth_info, true, smb_encrypt,
 			max_protocol, port, name_type);
 	if (!cli)
 		return 1;
@@ -4568,9 +4572,9 @@ static int do_host_query(const char *query_host)
 		/* Workgroups simply don't make sense over anything
 		   else but port 139... */
 
-		cli_cm_shutdown();
+		cli_shutdown(cli);
 		cli = cli_cm_open(talloc_tos(), NULL,
-				query_host, "IPC$", true, smb_encrypt,
+				query_host, "IPC$", auth_info, true, smb_encrypt,
 				max_protocol, 139, name_type);
 	}
 
@@ -4581,7 +4585,7 @@ static int do_host_query(const char *query_host)
 
 	list_servers(lp_workgroup());
 
-	cli_cm_shutdown();
+	cli_shutdown(cli);
 
 	return(0);
 }
@@ -4598,7 +4602,7 @@ static int do_tar_op(const char *base_directory)
 	if (!cli) {
 		cli = cli_cm_open(talloc_tos(), NULL,
 			have_ip ? dest_ss_str : desthost,
-			service, true, smb_encrypt,
+			service, auth_info, true, smb_encrypt,
 			max_protocol, port, name_type);
 		if (!cli)
 			return 1;
@@ -4609,14 +4613,14 @@ static int do_tar_op(const char *base_directory)
 	if (base_directory && *base_directory)  {
 		ret = do_cd(base_directory);
 		if (ret) {
-			cli_cm_shutdown();
+			cli_shutdown(cli);
 			return ret;
 		}
 	}
 
 	ret=process_tar();
 
-	cli_cm_shutdown();
+	cli_shutdown(cli);
 
 	return(ret);
 }
@@ -4625,7 +4629,7 @@ static int do_tar_op(const char *base_directory)
  Handle a message operation.
 ****************************************************************************/
 
-static int do_message_op(struct user_auth_info *auth_info)
+static int do_message_op(struct user_auth_info *a_info)
 {
 	struct sockaddr_storage ss;
 	struct nmb_name called, calling;
@@ -4663,12 +4667,12 @@ static int do_message_op(struct user_auth_info *auth_info)
 
 	if (!cli_session_request(cli, &calling, &called)) {
 		d_printf("session request failed\n");
-		cli_cm_shutdown();
+		cli_shutdown(cli);
 		return 1;
 	}
 
-	send_message(get_cmdline_auth_info_username(auth_info));
-	cli_cm_shutdown();
+	send_message(get_cmdline_auth_info_username(a_info));
+	cli_shutdown(cli);
 
 	return 0;
 }
@@ -4714,7 +4718,6 @@ static int do_message_op(struct user_auth_info *auth_info)
 		POPT_TABLEEND
 	};
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct user_auth_info *auth_info;
 
 	if (!client_set_cur_dir("\\")) {
 		exit(ENOMEM);
@@ -4970,11 +4973,10 @@ static int do_message_op(struct user_auth_info *auth_info)
 
 	poptFreeContext(pc);
 
-	/* Store the username and password for dfs support */
-
-	cli_cm_set_credentials(auth_info);
-
 	DEBUG(3,("Client started (version %s).\n", samba_version_string()));
+
+	/* Ensure we have a password (or equivalent). */
+	set_cmdline_auth_info_getpass(auth_info);
 
 	if (tar_type) {
 		if (cmdstr)

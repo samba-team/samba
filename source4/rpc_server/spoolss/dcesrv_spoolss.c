@@ -243,8 +243,8 @@ static WERROR dcesrv_spoolss_EnumPrinters(struct dcesrv_call_state *dce_call, TA
 	status = ntptr_EnumPrinters(ntptr, mem_ctx, r);
 	W_ERROR_NOT_OK_RETURN(status);
 
-	*r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(spoolss_EnumPrinters, ic, r->out.info, r->in.level, *r->out.count);
-	r->out.info	= SPOOLSS_BUFFER_OK(r->out.info, NULL);
+	*r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(spoolss_EnumPrinters, ic, *r->out.info, r->in.level, *r->out.count);
+	*r->out.info	= SPOOLSS_BUFFER_OK(*r->out.info, NULL);
 	*r->out.count	= SPOOLSS_BUFFER_OK(*r->out.count, 0);
 	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 }
@@ -379,8 +379,8 @@ static WERROR dcesrv_spoolss_EnumPrinterDrivers(struct dcesrv_call_state *dce_ca
 	status = ntptr_EnumPrinterDrivers(ntptr, mem_ctx, r);
 	W_ERROR_NOT_OK_RETURN(status);
 
-	*r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(spoolss_EnumPrinterDrivers, ic, r->out.info, r->in.level, *r->out.count);
-	r->out.info	= SPOOLSS_BUFFER_OK(r->out.info, NULL);
+	*r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(spoolss_EnumPrinterDrivers, ic, *r->out.info, r->in.level, *r->out.count);
+	*r->out.info	= SPOOLSS_BUFFER_OK(*r->out.info, NULL);
 	*r->out.count	= SPOOLSS_BUFFER_OK(*r->out.count, 0);
 	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 }
@@ -580,8 +580,14 @@ static WERROR dcesrv_spoolss_GetPrinterData(struct dcesrv_call_state *dce_call, 
 	if (!handle)
 		return WERR_BADFID;
 
-	r->out.type = talloc_zero(mem_ctx, enum spoolss_PrinterDataType);
+	r->out.type = talloc_zero(mem_ctx, enum winreg_Type);
 	W_ERROR_HAVE_NO_MEMORY(r->out.type);
+
+	r->out.needed = talloc_zero(mem_ctx, uint32_t);
+	W_ERROR_HAVE_NO_MEMORY(r->out.needed);
+
+	r->out.data = talloc_zero(mem_ctx, union spoolss_PrinterData);
+	W_ERROR_HAVE_NO_MEMORY(r->out.data);
 
 	switch (handle->type) {
 		case NTPTR_HANDLE_SERVER:
@@ -594,8 +600,8 @@ static WERROR dcesrv_spoolss_GetPrinterData(struct dcesrv_call_state *dce_call, 
 
 	W_ERROR_NOT_OK_RETURN(status);
 
-	*r->out.needed	= ndr_size_spoolss_PrinterData(&r->out.data, *r->out.type, ic, 0);
-	*r->out.type	= SPOOLSS_BUFFER_OK(*r->out.type, SPOOLSS_PRINTER_DATA_TYPE_NULL);
+	*r->out.needed	= ndr_size_spoolss_PrinterData(r->out.data, *r->out.type, ic, 0);
+	*r->out.type	= SPOOLSS_BUFFER_OK(*r->out.type, REG_NONE);
 	r->out.data	= SPOOLSS_BUFFER_OK(r->out.data, r->out.data);
 	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_MORE_DATA);
 }
@@ -802,8 +808,8 @@ static WERROR dcesrv_spoolss_EnumForms(struct dcesrv_call_state *dce_call, TALLO
 			return WERR_FOOBAR;
 	}
 
-	*r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(spoolss_EnumForms, ic, r->out.info, r->in.level, *r->out.count);
-	r->out.info	= SPOOLSS_BUFFER_OK(r->out.info, NULL);
+	*r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(spoolss_EnumForms, ic, *r->out.info, r->in.level, *r->out.count);
+	*r->out.info	= SPOOLSS_BUFFER_OK(*r->out.info, NULL);
 	*r->out.count	= SPOOLSS_BUFFER_OK(*r->out.count, 0);
 	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 }
@@ -825,8 +831,8 @@ static WERROR dcesrv_spoolss_EnumPorts(struct dcesrv_call_state *dce_call, TALLO
 	status = ntptr_EnumPorts(ntptr, mem_ctx, r);
 	W_ERROR_NOT_OK_RETURN(status);
 
-	*r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(spoolss_EnumPorts, ic, r->out.info, r->in.level, *r->out.count);
-	r->out.info	= SPOOLSS_BUFFER_OK(r->out.info, NULL);
+	*r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(spoolss_EnumPorts, ic, *r->out.info, r->in.level, *r->out.count);
+	*r->out.info	= SPOOLSS_BUFFER_OK(*r->out.info, NULL);
 	*r->out.count	= SPOOLSS_BUFFER_OK(*r->out.count, 0);
 	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 }
@@ -848,8 +854,8 @@ static WERROR dcesrv_spoolss_EnumMonitors(struct dcesrv_call_state *dce_call, TA
 	status = ntptr_EnumMonitors(ntptr, mem_ctx, r);
 	W_ERROR_NOT_OK_RETURN(status);
 
-	*r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(spoolss_EnumMonitors, ic, r->out.info, r->in.level, *r->out.count);
-	r->out.info	= SPOOLSS_BUFFER_OK(r->out.info, NULL);
+	*r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(spoolss_EnumMonitors, ic, *r->out.info, r->in.level, *r->out.count);
+	*r->out.info	= SPOOLSS_BUFFER_OK(*r->out.info, NULL);
 	*r->out.count	= SPOOLSS_BUFFER_OK(*r->out.count, 0);
 	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 }
@@ -1001,7 +1007,7 @@ static WERROR dcesrv_spoolss_DeletePrintProvidor(struct dcesrv_call_state *dce_c
 static WERROR dcesrv_spoolss_EnumPrintProcDataTypes(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_EnumPrintProcDataTypes *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	return WERR_OK;
 }
 
 

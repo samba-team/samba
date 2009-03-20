@@ -38,7 +38,7 @@ static NTSTATUS rpc_sh_acct_do(struct net_context *c,
 					  struct samr_DomInfo12 *i12,
 					  int argc, const char **argv))
 {
-	POLICY_HND connect_pol, domain_pol;
+	struct policy_handle connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	union samr_DomainInfo *info1 = NULL;
 	union samr_DomainInfo *info3 = NULL;

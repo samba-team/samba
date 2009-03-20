@@ -150,7 +150,6 @@ static NTSTATUS pdb_wbc_sam_lookup_rids(struct pdb_methods *methods,
 	NTSTATUS result = NT_STATUS_OK;
 	char *domain = NULL;
 	char **account_names = NULL;
-	char name[256];
 	enum lsa_SidType *attr_list = NULL;
 	int i;
 
@@ -168,16 +167,19 @@ static NTSTATUS pdb_wbc_sam_lookup_rids(struct pdb_methods *methods,
 		if (attrs[i] == SID_NAME_UNKNOWN) {
 			names[i] = NULL;
 		} else {
-			snprintf(name, sizeof(name), "%s%c%s", domain,
-				 *lp_winbind_separator(), account_names[i]);
-			names[i] = talloc_strdup(names, name);
+			names[i] = talloc_strdup(names, account_names[i]);
+			if (names[i] == NULL) {
+				result = NT_STATUS_NO_MEMORY;
+				goto done;
+			}
+
 		}
 	}
 
 done:
 	TALLOC_FREE(account_names);
 	TALLOC_FREE(domain);
-	TALLOC_FREE(attrs);
+	TALLOC_FREE(attr_list);
 	return result;
 }
 

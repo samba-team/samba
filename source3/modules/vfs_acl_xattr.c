@@ -381,7 +381,7 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 		if (fsp && !fsp->is_directory && fsp->fh->fd != -1) {
 			ret = SMB_VFS_FSTAT(fsp, &sbuf);
 		} else {
-			if (fsp->posix_open) {
+			if (fsp && fsp->posix_open) {
 				ret = SMB_VFS_LSTAT(handle->conn,fname, &sbuf);
 			} else {
 				ret = SMB_VFS_STAT(handle->conn,fname, &sbuf);

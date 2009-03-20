@@ -38,10 +38,6 @@ struct select_event_context {
 
 	/* information for exiting from the event loop */
 	int exit_code;
-
-	/* this is incremented when the loop over events causes something which
-	   could change the events yet to be processed */
-	uint32_t destruction_count;
 };
 
 /*
@@ -95,8 +91,6 @@ static int select_event_fd_destructor(struct tevent_fd *fde)
 		if (select_ev->maxfd == fde->fd) {
 			select_ev->maxfd = EVENT_INVALID_MAXFD;
 		}
-
-		select_ev->destruction_count++;
 	}
 
 	return tevent_common_fd_destructor(fde);
@@ -138,7 +132,6 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 	fd_set r_fds, w_fds;
 	struct tevent_fd *fde;
 	int selrtn;
-	uint32_t destruction_count = ++select_ev->destruction_count;
 
 	/* we maybe need to recalculate the maxfd */
 	if (select_ev->maxfd == EVENT_INVALID_MAXFD) {
@@ -200,24 +193,32 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 			if (FD_ISSET(fde->fd, &w_fds)) flags |= TEVENT_FD_WRITE;
 			if (flags) {
 				fde->handler(select_ev->ev, fde, flags, fde->private_data);
-				if (destruction_count != select_ev->destruction_count) {
-					break;
-				}
+				break;
 			}
 		}
 	}
 
 	return 0;
-}		
+}
 
 /*
   do a single event loop using the events defined in ev 
 */
-static int select_event_loop_once(struct tevent_context *ev)
+static int select_event_loop_once(struct tevent_context *ev, const char *location)
 {
 	struct select_event_context *select_ev = talloc_get_type(ev->additional_data,
 		 					   struct select_event_context);
 	struct timeval tval;
+
+	if (ev->signal_events &&
+	    tevent_common_check_signal(ev)) {
+		return 0;
+	}
+
+	if (ev->immediate_events &&
+	    tevent_common_loop_immediate(ev)) {
+		return 0;
+	}
 
 	tval = tevent_common_loop_timer_delay(ev);
 	if (tevent_timeval_is_zero(&tval)) {
@@ -227,34 +228,17 @@ static int select_event_loop_once(struct tevent_context *ev)
 	return select_event_loop_select(select_ev, &tval);
 }
 
-/*
-  return on failure or (with 0) if all fd events are removed
-*/
-static int select_event_loop_wait(struct tevent_context *ev)
-{
-	struct select_event_context *select_ev = talloc_get_type(ev->additional_data,
-							   struct select_event_context);
-	select_ev->exit_code = 0;
-
-	while (ev->fd_events && select_ev->exit_code == 0) {
-		if (select_event_loop_once(ev) != 0) {
-			break;
-		}
-	}
-
-	return select_ev->exit_code;
-}
-
 static const struct tevent_ops select_event_ops = {
-	.context_init	= select_event_context_init,
-	.add_fd		= select_event_add_fd,
-	.set_fd_close_fn= tevent_common_fd_set_close_fn,
-	.get_fd_flags	= tevent_common_fd_get_flags,
-	.set_fd_flags	= tevent_common_fd_set_flags,
-	.add_timer	= tevent_common_add_timer,
-	.add_signal	= tevent_common_add_signal,
-	.loop_once	= select_event_loop_once,
-	.loop_wait	= select_event_loop_wait,
+	.context_init		= select_event_context_init,
+	.add_fd			= select_event_add_fd,
+	.set_fd_close_fn	= tevent_common_fd_set_close_fn,
+	.get_fd_flags		= tevent_common_fd_get_flags,
+	.set_fd_flags		= tevent_common_fd_set_flags,
+	.add_timer		= tevent_common_add_timer,
+	.schedule_immediate	= tevent_common_schedule_immediate,
+	.add_signal		= tevent_common_add_signal,
+	.loop_once		= select_event_loop_once,
+	.loop_wait		= tevent_common_loop_wait,
 };
 
 bool tevent_select_init(void)

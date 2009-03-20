@@ -91,6 +91,11 @@ bool run_events(struct tevent_context *ev,
 		return true;
 	}
 
+	if (ev->immediate_events &&
+	    tevent_common_loop_immediate(ev)) {
+		return true;
+	}
+
 	GetTimeOfDay(&now);
 
 	if ((ev->timer_events != NULL)
@@ -145,7 +150,7 @@ struct timeval *get_timed_events_timeout(struct tevent_context *ev,
 	return to_ret;
 }
 
-static int s3_event_loop_once(struct tevent_context *ev)
+static int s3_event_loop_once(struct tevent_context *ev, const char *location)
 {
 	struct timeval now, to;
 	fd_set r_fds, w_fds;
@@ -179,17 +184,6 @@ static int s3_event_loop_once(struct tevent_context *ev)
 
 	run_events(ev, ret, &r_fds, &w_fds);
 	return 0;
-}
-
-static int s3_event_loop_wait(struct tevent_context *ev)
-{
-	int ret = 0;
-
-	while (ret == 0) {
-		ret = s3_event_loop_once(ev);
-	}
-
-	return ret;
 }
 
 void event_context_reinit(struct tevent_context *ev)
@@ -238,15 +232,16 @@ void dump_event_list(struct tevent_context *ev)
 }
 
 static const struct tevent_ops s3_event_ops = {
-	.context_init	= s3_event_context_init,
-	.add_fd		= tevent_common_add_fd,
-	.set_fd_close_fn= tevent_common_fd_set_close_fn,
-	.get_fd_flags	= tevent_common_fd_get_flags,
-	.set_fd_flags	= tevent_common_fd_set_flags,
-	.add_timer	= tevent_common_add_timer,
-	.add_signal	= tevent_common_add_signal,
-	.loop_once	= s3_event_loop_once,
-	.loop_wait	= s3_event_loop_wait,
+	.context_init		= s3_event_context_init,
+	.add_fd			= tevent_common_add_fd,
+	.set_fd_close_fn	= tevent_common_fd_set_close_fn,
+	.get_fd_flags		= tevent_common_fd_get_flags,
+	.set_fd_flags		= tevent_common_fd_set_flags,
+	.add_timer		= tevent_common_add_timer,
+	.schedule_immediate	= tevent_common_schedule_immediate,
+	.add_signal		= tevent_common_add_signal,
+	.loop_once		= s3_event_loop_once,
+	.loop_wait		= tevent_common_loop_wait,
 };
 
 static bool s3_tevent_init(void)
@@ -286,8 +281,9 @@ static void s3_event_debug(void *context, enum tevent_debug_level level,
 		break;
 
 	};
-	vasprintf(&s, fmt, ap);
-	if (!s) return;
+	if (vasprintf(&s, fmt, ap) == -1) {
+		return;
+	}
 	DEBUG(samba_level, ("s3_event: %s", s));
 	free(s);
 }

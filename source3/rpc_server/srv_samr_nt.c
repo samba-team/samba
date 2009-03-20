@@ -319,8 +319,8 @@ static DISP_INFO *get_samr_dispinfo_by_sid(DOM_SID *psid)
 	 * enumerate stuff, so just cache 2 entries.
 	 */
 
-	static struct disp_info builtin_dispinfo;
-	static struct disp_info domain_dispinfo;
+	static struct disp_info *builtin_dispinfo;
+	static struct disp_info *domain_dispinfo;
 
 	/* There are two cases to consider here:
 	   1) The SID is a domain SID and we look for an equality match, or
@@ -335,18 +335,32 @@ static DISP_INFO *get_samr_dispinfo_by_sid(DOM_SID *psid)
 		/*
 		 * Necessary only once, but it does not really hurt.
 		 */
-		sid_copy(&builtin_dispinfo.sid, &global_sid_Builtin);
+		if (builtin_dispinfo == NULL) {
+			builtin_dispinfo = talloc_zero(
+				talloc_autofree_context(), struct disp_info);
+			if (builtin_dispinfo == NULL) {
+				return NULL;
+			}
+		}
+		sid_copy(&builtin_dispinfo->sid, &global_sid_Builtin);
 
-		return &builtin_dispinfo;
+		return builtin_dispinfo;
 	}
 
 	if (sid_check_is_domain(psid) || sid_check_is_in_our_domain(psid)) {
 		/*
 		 * Necessary only once, but it does not really hurt.
 		 */
-		sid_copy(&domain_dispinfo.sid, get_global_sam_sid());
+		if (domain_dispinfo == NULL) {
+			domain_dispinfo = talloc_zero(
+				talloc_autofree_context(), struct disp_info);
+			if (domain_dispinfo == NULL) {
+				return NULL;
+			}
+		}
+		sid_copy(&domain_dispinfo->sid, get_global_sam_sid());
 
-		return &domain_dispinfo;
+		return domain_dispinfo;
 	}
 
 	return NULL;
@@ -403,32 +417,11 @@ static void free_samr_cache(DISP_INFO *disp_info)
 
 	become_root();
 
-	if (disp_info->users) {
-		DEBUG(10,("free_samr_cache: deleting users cache\n"));
-		pdb_search_destroy(disp_info->users);
-		disp_info->users = NULL;
-	}
-	if (disp_info->machines) {
-		DEBUG(10,("free_samr_cache: deleting machines cache\n"));
-		pdb_search_destroy(disp_info->machines);
-		disp_info->machines = NULL;
-	}
-	if (disp_info->groups) {
-		DEBUG(10,("free_samr_cache: deleting groups cache\n"));
-		pdb_search_destroy(disp_info->groups);
-		disp_info->groups = NULL;
-	}
-	if (disp_info->aliases) {
-		DEBUG(10,("free_samr_cache: deleting aliases cache\n"));
-		pdb_search_destroy(disp_info->aliases);
-		disp_info->aliases = NULL;
-	}
-	if (disp_info->enum_users) {
-		DEBUG(10,("free_samr_cache: deleting enum_users cache\n"));
-		pdb_search_destroy(disp_info->enum_users);
-		disp_info->enum_users = NULL;
-	}
-	disp_info->enum_acb_mask = 0;
+	TALLOC_FREE(disp_info->users);
+	TALLOC_FREE(disp_info->machines);
+	TALLOC_FREE(disp_info->groups);
+	TALLOC_FREE(disp_info->aliases);
+	TALLOC_FREE(disp_info->enum_users);
 
 	unbecome_root();
 }
@@ -524,7 +517,7 @@ static uint32 count_sam_users(struct disp_info *info, uint32 acct_flags)
 	}
 
 	if (info->users == NULL) {
-		info->users = pdb_search_users(acct_flags);
+		info->users = pdb_search_users(info, acct_flags);
 		if (info->users == NULL) {
 			return 0;
 		}
@@ -548,7 +541,7 @@ static uint32 count_sam_groups(struct disp_info *info)
 	}
 
 	if (info->groups == NULL) {
-		info->groups = pdb_search_groups();
+		info->groups = pdb_search_groups(info);
 		if (info->groups == NULL) {
 			return 0;
 		}
@@ -567,7 +560,7 @@ static uint32 count_sam_aliases(struct disp_info *info)
 	struct samr_displayentry *entry;
 
 	if (info->aliases == NULL) {
-		info->aliases = pdb_search_aliases(&info->sid);
+		info->aliases = pdb_search_aliases(info, &info->sid);
 		if (info->aliases == NULL) {
 			return 0;
 		}
@@ -726,7 +719,7 @@ NTSTATUS _samr_GetUserPwInfo(pipes_struct *p,
 /*******************************************************************
 ********************************************************************/
 
-static bool get_lsa_policy_samr_sid( pipes_struct *p, POLICY_HND *pol,
+static bool get_lsa_policy_samr_sid( pipes_struct *p, struct policy_handle *pol,
 					DOM_SID *sid, uint32 *acc_granted,
 					DISP_INFO **ppdisp_info)
 {
@@ -1012,12 +1005,12 @@ NTSTATUS _samr_EnumDomainUsers(pipes_struct *p,
 
 	if ((info->disp_info->enum_users != NULL) &&
 	    (info->disp_info->enum_acb_mask != r->in.acct_flags)) {
-		pdb_search_destroy(info->disp_info->enum_users);
-		info->disp_info->enum_users = NULL;
+		TALLOC_FREE(info->disp_info->enum_users);
 	}
 
 	if (info->disp_info->enum_users == NULL) {
-		info->disp_info->enum_users = pdb_search_users(r->in.acct_flags);
+		info->disp_info->enum_users = pdb_search_users(
+			info->disp_info, r->in.acct_flags);
 		info->disp_info->enum_acb_mask = r->in.acct_flags;
 	}
 
@@ -1149,7 +1142,7 @@ NTSTATUS _samr_EnumDomainGroups(pipes_struct *p,
 	become_root();
 
 	if (info->disp_info->groups == NULL) {
-		info->disp_info->groups = pdb_search_groups();
+		info->disp_info->groups = pdb_search_groups(info->disp_info);
 
 		if (info->disp_info->groups == NULL) {
 			unbecome_root();
@@ -1216,7 +1209,8 @@ NTSTATUS _samr_EnumDomainAliases(pipes_struct *p,
 	become_root();
 
 	if (info->disp_info->aliases == NULL) {
-		info->disp_info->aliases = pdb_search_aliases(&info->sid);
+		info->disp_info->aliases = pdb_search_aliases(
+			info->disp_info, &info->sid);
 		if (info->disp_info->aliases == NULL) {
 			unbecome_root();
 			return NT_STATUS_ACCESS_DENIED;
@@ -1547,7 +1541,8 @@ NTSTATUS _samr_QueryDisplayInfo(pipes_struct *p,
 	case 0x1:
 	case 0x4:
 		if (info->disp_info->users == NULL) {
-			info->disp_info->users = pdb_search_users(ACB_NORMAL);
+			info->disp_info->users = pdb_search_users(
+				info->disp_info, ACB_NORMAL);
 			if (info->disp_info->users == NULL) {
 				unbecome_root();
 				return NT_STATUS_ACCESS_DENIED;
@@ -1565,8 +1560,8 @@ NTSTATUS _samr_QueryDisplayInfo(pipes_struct *p,
 		break;
 	case 0x2:
 		if (info->disp_info->machines == NULL) {
-			info->disp_info->machines =
-				pdb_search_users(ACB_WSTRUST|ACB_SVRTRUST);
+			info->disp_info->machines = pdb_search_users(
+				info->disp_info, ACB_WSTRUST|ACB_SVRTRUST);
 			if (info->disp_info->machines == NULL) {
 				unbecome_root();
 				return NT_STATUS_ACCESS_DENIED;
@@ -1585,7 +1580,8 @@ NTSTATUS _samr_QueryDisplayInfo(pipes_struct *p,
 	case 0x3:
 	case 0x5:
 		if (info->disp_info->groups == NULL) {
-			info->disp_info->groups = pdb_search_groups();
+			info->disp_info->groups = pdb_search_groups(
+				info->disp_info);
 			if (info->disp_info->groups == NULL) {
 				unbecome_root();
 				return NT_STATUS_ACCESS_DENIED;
@@ -2126,8 +2122,6 @@ NTSTATUS _samr_OpenUser(pipes_struct *p,
 {
 	struct samu *sampass=NULL;
 	DOM_SID sid;
-	POLICY_HND domain_pol = *r->in.domain_handle;
-	POLICY_HND *user_pol = r->out.user_handle;
 	struct samr_info *info = NULL;
 	SEC_DESC *psd = NULL;
 	uint32    acc_granted;
@@ -2139,7 +2133,7 @@ NTSTATUS _samr_OpenUser(pipes_struct *p,
 
 	/* find the domain policy handle and get domain SID / access bits in the domain policy. */
 
-	if ( !get_lsa_policy_samr_sid(p, &domain_pol, &sid, &acc_granted, NULL) )
+	if ( !get_lsa_policy_samr_sid(p, r->in.domain_handle, &sid, &acc_granted, NULL) )
 		return NT_STATUS_INVALID_HANDLE;
 
 	nt_status = access_check_samr_function(acc_granted,
@@ -2192,7 +2186,7 @@ NTSTATUS _samr_OpenUser(pipes_struct *p,
 	info->acc_granted = acc_granted;
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (!create_policy_hnd(p, user_pol, info))
+	if (!create_policy_hnd(p, r->out.user_handle, info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	return NT_STATUS_OK;
@@ -3036,9 +3030,7 @@ NTSTATUS _samr_CreateUser2(pipes_struct *p,
 {
 	const char *account = NULL;
 	DOM_SID sid;
-	POLICY_HND dom_pol = *r->in.domain_handle;
 	uint32_t acb_info = r->in.acct_flags;
-	POLICY_HND *user_pol = r->out.user_handle;
 	struct samr_info *info = NULL;
 	NTSTATUS nt_status;
 	uint32 acc_granted;
@@ -3051,7 +3043,7 @@ NTSTATUS _samr_CreateUser2(pipes_struct *p,
 	DISP_INFO *disp_info = NULL;
 
 	/* Get the domain SID stored in the domain policy */
-	if (!get_lsa_policy_samr_sid(p, &dom_pol, &sid, &acc_granted,
+	if (!get_lsa_policy_samr_sid(p, r->in.domain_handle, &sid, &acc_granted,
 				     &disp_info))
 		return NT_STATUS_INVALID_HANDLE;
 
@@ -3163,7 +3155,7 @@ NTSTATUS _samr_CreateUser2(pipes_struct *p,
 	info->acc_granted = acc_granted;
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (!create_policy_hnd(p, user_pol, info)) {
+	if (!create_policy_hnd(p, r->out.user_handle, info)) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
@@ -3451,9 +3443,7 @@ NTSTATUS _samr_OpenAlias(pipes_struct *p,
 			 struct samr_OpenAlias *r)
 {
 	DOM_SID sid;
-	POLICY_HND domain_pol = *r->in.domain_handle;
 	uint32 alias_rid = r->in.rid;
-	POLICY_HND *alias_pol = r->out.alias_handle;
 	struct    samr_info *info = NULL;
 	SEC_DESC *psd = NULL;
 	uint32    acc_granted;
@@ -3464,7 +3454,7 @@ NTSTATUS _samr_OpenAlias(pipes_struct *p,
 
 	/* find the domain policy and get the SID / access bits stored in the domain policy */
 
-	if ( !get_lsa_policy_samr_sid(p, &domain_pol, &sid, &acc_granted, NULL) )
+	if ( !get_lsa_policy_samr_sid(p, r->in.domain_handle, &sid, &acc_granted, NULL) )
 		return NT_STATUS_INVALID_HANDLE;
 
 	status = access_check_samr_function(acc_granted,
@@ -3525,7 +3515,7 @@ NTSTATUS _samr_OpenAlias(pipes_struct *p,
 	info->acc_granted = acc_granted;
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (!create_policy_hnd(p, alias_pol, info))
+	if (!create_policy_hnd(p, r->out.alias_handle, info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	return NT_STATUS_OK;
@@ -4000,7 +3990,6 @@ NTSTATUS _samr_SetUserInfo(pipes_struct *p,
 	NTSTATUS status;
 	struct samu *pwd = NULL;
 	DOM_SID sid;
-	POLICY_HND *pol = r->in.user_handle;
 	union samr_UserInfo *info = r->in.info;
 	uint16_t switch_value = r->in.level;
 	uint32_t acc_granted;
@@ -4013,7 +4002,7 @@ NTSTATUS _samr_SetUserInfo(pipes_struct *p,
 	DEBUG(5,("_samr_SetUserInfo: %d\n", __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, pol, &sid, &acc_granted, &disp_info)) {
+	if (!get_lsa_policy_samr_sid(p, r->in.user_handle, &sid, &acc_granted, &disp_info)) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
@@ -5632,7 +5621,8 @@ NTSTATUS _samr_GetDisplayEnumerationIndex(pipes_struct *p,
 	switch (r->in.level) {
 	case 1:
 		if (info->disp_info->users == NULL) {
-			info->disp_info->users = pdb_search_users(ACB_NORMAL);
+			info->disp_info->users = pdb_search_users(
+				info->disp_info, ACB_NORMAL);
 			if (info->disp_info->users == NULL) {
 				unbecome_root();
 				return NT_STATUS_ACCESS_DENIED;
@@ -5651,8 +5641,8 @@ NTSTATUS _samr_GetDisplayEnumerationIndex(pipes_struct *p,
 		break;
 	case 2:
 		if (info->disp_info->machines == NULL) {
-			info->disp_info->machines =
-				pdb_search_users(ACB_WSTRUST|ACB_SVRTRUST);
+			info->disp_info->machines = pdb_search_users(
+				info->disp_info, ACB_WSTRUST|ACB_SVRTRUST);
 			if (info->disp_info->machines == NULL) {
 				unbecome_root();
 				return NT_STATUS_ACCESS_DENIED;
@@ -5671,7 +5661,8 @@ NTSTATUS _samr_GetDisplayEnumerationIndex(pipes_struct *p,
 		break;
 	case 3:
 		if (info->disp_info->groups == NULL) {
-			info->disp_info->groups = pdb_search_groups();
+			info->disp_info->groups = pdb_search_groups(
+				info->disp_info);
 			if (info->disp_info->groups == NULL) {
 				unbecome_root();
 				return NT_STATUS_ACCESS_DENIED;

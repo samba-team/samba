@@ -171,6 +171,11 @@ static NTSTATUS idmap_rid_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 	NTSTATUS ret;
 	int i;
 
+	/* initialize the status to avoid suprise */
+	for (i = 0; ids[i]; i++) {
+		ids[i]->status = ID_UNKNOWN;
+	}
+	
 	ridctx = talloc_get_type(dom->private_data, struct idmap_rid_context);
 
 	ctx = talloc_new(dom);
@@ -205,6 +210,11 @@ static NTSTATUS idmap_rid_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 	NTSTATUS ret;
 	int i;
 
+	/* initialize the status to avoid suprise */
+	for (i = 0; ids[i]; i++) {
+		ids[i]->status = ID_UNKNOWN;
+	}
+	
 	ridctx = talloc_get_type(dom->private_data, struct idmap_rid_context);
 
 	ctx = talloc_new(dom);

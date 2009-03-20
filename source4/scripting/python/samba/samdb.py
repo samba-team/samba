@@ -28,6 +28,7 @@ import ldb
 from samba.idmap import IDmapDB
 import pwd
 import time
+import base64
 
 __docformat__ = "restructuredText"
 
@@ -59,7 +60,7 @@ dn: CN=%s,CN=ForeignSecurityPrincipals,%s
 objectClass: top
 objectClass: foreignSecurityPrincipal
 description: %s
-        """ % (sid, domaindn, desc)
+""" % (sid, domaindn, desc)
         # deliberately ignore errors from this, as the records may
         # already exist
         for msg in self.parse_ldif(add):
@@ -175,11 +176,11 @@ userAccountControl: %u
             user_dn = res[0].dn
 
             setpw = """
-    dn: %s
-    changetype: modify
-    replace: userPassword
-    userPassword: %s
-    """ % (user_dn, password)
+dn: %s
+changetype: modify
+replace: userPassword
+userPassword:: %s
+""" % (user_dn, base64.b64encode(password))
 
             self.modify_ldif(setpw)
 
@@ -229,13 +230,13 @@ userAccountControl: %u
                 accountExpires = glue.unix2nttime(expiry_seconds + int(time.time()))
 
             mod = """
-    dn: %s
-    changetype: modify
-    replace: userAccountControl
-    userAccountControl: %u
-    replace: accountExpires
-    accountExpires: %u
-    """ % (res[0].dn, userAccountControl, accountExpires)
+dn: %s
+changetype: modify
+replace: userAccountControl
+userAccountControl: %u
+replace: accountExpires
+accountExpires: %u
+""" % (res[0].dn, userAccountControl, accountExpires)
             # now change the database
             self.modify_ldif(mod)
         except:

@@ -4,6 +4,7 @@
    Copyright (C) 2001 Andrew Tridgell (tridge@samba.org)
    Copyright (C) 2003 Jim McDonough (jmcd@us.ibm.com)
    Copyright (C) 2008 Guenther Deschner (gd@samba.org)
+   Copyright (C) 2009 Stefan Metzmacher (metze@samba.org)
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,221 +21,8 @@
 */
 
 #include "includes.h"
-
-/*
-  do a cldap netlogon query
-*/
-static int send_cldap_netlogon(TALLOC_CTX *mem_ctx, int sock, const char *domain,
-			       const char *hostname, unsigned ntversion)
-{
-	ASN1_DATA *data;
-	char ntver[4];
-#ifdef CLDAP_USER_QUERY
-	char aac[4];
-
-	SIVAL(aac, 0, 0x00000180);
-#endif
-	SIVAL(ntver, 0, ntversion);
-
-	data = asn1_init(mem_ctx);
-	if (data == NULL) {
-		return -1;
-	}
-
-	asn1_push_tag(data,ASN1_SEQUENCE(0));
-	asn1_write_Integer(data, 4);
-	asn1_push_tag(data, ASN1_APPLICATION(3));
-	asn1_write_OctetString(data, NULL, 0);
-	asn1_write_enumerated(data, 0);
-	asn1_write_enumerated(data, 0);
-	asn1_write_Integer(data, 0);
-	asn1_write_Integer(data, 0);
-	asn1_write_BOOLEAN(data, False);
-	asn1_push_tag(data, ASN1_CONTEXT(0));
-
-	if (domain) {
-		asn1_push_tag(data, ASN1_CONTEXT(3));
-		asn1_write_OctetString(data, "DnsDomain", 9);
-		asn1_write_OctetString(data, domain, strlen(domain));
-		asn1_pop_tag(data);
-	}
-
-	asn1_push_tag(data, ASN1_CONTEXT(3));
-	asn1_write_OctetString(data, "Host", 4);
-	asn1_write_OctetString(data, hostname, strlen(hostname));
-	asn1_pop_tag(data);
-
-#ifdef CLDAP_USER_QUERY
-	asn1_push_tag(data, ASN1_CONTEXT(3));
-	asn1_write_OctetString(data, "User", 4);
-	asn1_write_OctetString(data, "SAMBA$", 6);
-	asn1_pop_tag(data);
-
-	asn1_push_tag(data, ASN1_CONTEXT(3));
-	asn1_write_OctetString(data, "AAC", 4);
-	asn1_write_OctetString(data, aac, 4);
-	asn1_pop_tag(data);
-#endif
-
-	asn1_push_tag(data, ASN1_CONTEXT(3));
-	asn1_write_OctetString(data, "NtVer", 5);
-	asn1_write_OctetString(data, ntver, 4);
-	asn1_pop_tag(data);
-
-	asn1_pop_tag(data);
-
-	asn1_push_tag(data,ASN1_SEQUENCE(0));
-	asn1_write_OctetString(data, "NetLogon", 8);
-	asn1_pop_tag(data);
-	asn1_pop_tag(data);
-	asn1_pop_tag(data);
-
-	if (data->has_error) {
-		DEBUG(2,("Failed to build cldap netlogon at offset %d\n", (int)data->ofs));
-		asn1_free(data);
-		return -1;
-	}
-
-	if (write(sock, data->data, data->length) != (ssize_t)data->length) {
-		DEBUG(2,("failed to send cldap query (%s)\n", strerror(errno)));
-		asn1_free(data);
-		return -1;
-	}
-
-	asn1_free(data);
-
-	return 0;
-}
-
-/*
-  receive a cldap netlogon reply
-*/
-static int recv_cldap_netlogon(TALLOC_CTX *mem_ctx,
-			       int sock,
-			       uint32_t nt_version,
-			       struct netlogon_samlogon_response **reply)
-{
-	int ret;
-	ASN1_DATA *data;
-	DATA_BLOB blob = data_blob_null;
-	DATA_BLOB os1 = data_blob_null;
-	DATA_BLOB os2 = data_blob_null;
-	DATA_BLOB os3 = data_blob_null;
-	int i1;
-	struct netlogon_samlogon_response *r = NULL;
-	NTSTATUS status;
-
-	fd_set r_fds;
-	struct timeval timeout;
-
-	blob = data_blob(NULL, 8192);
-	if (blob.data == NULL) {
-		DEBUG(1, ("data_blob failed\n"));
-		errno = ENOMEM;
-		return -1;
-	}
-
-	FD_ZERO(&r_fds);
-	FD_SET(sock, &r_fds);
-
-	/*
-	 * half the time of a regular ldap timeout, not less than 3 seconds.
-	 */
-	timeout.tv_sec = MAX(3,lp_ldap_timeout()/2);
-	timeout.tv_usec = 0;
-
-	ret = sys_select(sock+1, &r_fds, NULL, NULL, &timeout);
-	if (ret == -1) {
-		DEBUG(10, ("select failed: %s\n", strerror(errno)));
-		data_blob_free(&blob);
-		return -1;
-	}
-
-	if (ret == 0) {
-		DEBUG(1,("no reply received to cldap netlogon\n"));
-		data_blob_free(&blob);
-		return -1;
-	}
-
-	ret = read(sock, blob.data, blob.length);
-	if (ret <= 0) {
-		DEBUG(1,("no reply received to cldap netlogon\n"));
-		data_blob_free(&blob);
-		return -1;
-	}
-	blob.length = ret;
-
-	data = asn1_init(mem_ctx);
-	if (data == NULL) {
-		data_blob_free(&blob);
-		return -1;
-	}
-
-	asn1_load(data, blob);
-	asn1_start_tag(data, ASN1_SEQUENCE(0));
-	asn1_read_Integer(data, &i1);
-	asn1_start_tag(data, ASN1_APPLICATION(4));
-	asn1_read_OctetString(data, NULL, &os1);
-	asn1_start_tag(data, ASN1_SEQUENCE(0));
-	asn1_start_tag(data, ASN1_SEQUENCE(0));
-	asn1_read_OctetString(data, NULL, &os2);
-	asn1_start_tag(data, ASN1_SET);
-	asn1_read_OctetString(data, NULL, &os3);
-	asn1_end_tag(data);
-	asn1_end_tag(data);
-	asn1_end_tag(data);
-	asn1_end_tag(data);
-	asn1_end_tag(data);
-
-	if (data->has_error) {
-		data_blob_free(&blob);
-		data_blob_free(&os1);
-		data_blob_free(&os2);
-		data_blob_free(&os3);
-		asn1_free(data);
-		DEBUG(1,("Failed to parse cldap reply\n"));
-		return -1;
-	}
-
-	r = TALLOC_ZERO_P(mem_ctx, struct netlogon_samlogon_response);
-	if (!r) {
-		errno = ENOMEM;
-		data_blob_free(&os1);
-		data_blob_free(&os2);
-		data_blob_free(&os3);
-		data_blob_free(&blob);
-		asn1_free(data);
-		return -1;
-	}
-
-	status = pull_netlogon_samlogon_response(&os3, mem_ctx, NULL, r);
-	if (!NT_STATUS_IS_OK(status)) {
-		data_blob_free(&os1);
-		data_blob_free(&os2);
-		data_blob_free(&os3);
-		data_blob_free(&blob);
-		asn1_free(data);
-		TALLOC_FREE(r);
-		return -1;
-	}
-
-	map_netlogon_samlogon_response(r);
-
-	data_blob_free(&os1);
-	data_blob_free(&os2);
-	data_blob_free(&os3);
-	data_blob_free(&blob);
-
-	asn1_free(data);
-
-	if (reply) {
-		*reply = r;
-	} else {
-		TALLOC_FREE(r);
-	}
-
-	return 0;
-}
+#include "../libcli/cldap/cldap.h"
+#include "../lib/tsocket/tsocket.h"
 
 /*******************************************************************
   do a cldap netlogon query.  Always 389/udp
@@ -244,31 +32,81 @@ bool ads_cldap_netlogon(TALLOC_CTX *mem_ctx,
 			const char *server,
 			const char *realm,
 			uint32_t nt_version,
-			struct netlogon_samlogon_response **reply)
+			struct netlogon_samlogon_response **_reply)
 {
-	int sock;
+	struct cldap_socket *cldap;
+	struct cldap_netlogon io;
+	struct netlogon_samlogon_response *reply;
+	NTSTATUS status;
+	struct in_addr addr;
+	char addrstr[INET_ADDRSTRLEN];
+	const char *dest_str;
 	int ret;
+	struct tsocket_address *dest_addr;
 
-	sock = open_udp_socket(server, LDAP_PORT );
-	if (sock == -1) {
-		DEBUG(2,("ads_cldap_netlogon: Failed to open udp socket to %s\n", 
+	addr = interpret_addr2(server);
+	dest_str = inet_ntop(AF_INET, &addr,
+			     addrstr, sizeof(addrstr));
+	if (!dest_str) {
+		DEBUG(2,("Failed to resolve[%s] into an address for cldap\n",
 			 server));
-		return False;
+		return false;
 	}
 
-	ret = send_cldap_netlogon(mem_ctx, sock, realm, global_myname(), nt_version);
+	ret = tsocket_address_inet_from_strings(mem_ctx, "ipv4",
+						dest_str, LDAP_PORT,
+						&dest_addr);
 	if (ret != 0) {
-		close(sock);
-		return False;
-	}
-	ret = recv_cldap_netlogon(mem_ctx, sock, nt_version, reply);
-	close(sock);
-
-	if (ret == -1) {
-		return False;
+		status = map_nt_error_from_unix(errno);
+		DEBUG(2,("Failed to create cldap tsocket_address for %s - %s\n",
+			 dest_str, nt_errstr(status)));
+		return false;
 	}
 
-	return True;
+	/*
+	 * as we use a connected udp socket
+	 */
+	status = cldap_socket_init(mem_ctx, NULL, NULL, dest_addr, &cldap);
+	TALLOC_FREE(dest_addr);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(2,("Failed to create cldap socket to %s: %s\n",
+			 dest_str, nt_errstr(status)));
+		return false;
+	}
+
+	reply = talloc(cldap, struct netlogon_samlogon_response);
+	if (!reply) {
+		goto failed;
+	}
+
+	/*
+	 * as we use a connected socket, so we don't need to specify the
+	 * destination
+	 */
+	io.in.dest_address	= NULL;
+	io.in.dest_port		= 0;
+	io.in.realm		= realm;
+	io.in.host		= NULL;
+	io.in.user		= NULL;
+	io.in.domain_guid	= NULL;
+	io.in.domain_sid	= NULL;
+	io.in.acct_control	= 0;
+	io.in.version		= nt_version;
+	io.in.map_response	= false;
+
+	status = cldap_netlogon(cldap, NULL, reply, &io);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(2,("cldap_netlogon() failed: %s\n", nt_errstr(status)));
+		goto failed;
+	}
+
+	*reply = io.out.netlogon;
+	*_reply = talloc_move(mem_ctx, &reply);
+	TALLOC_FREE(cldap);
+	return true;
+failed:
+	TALLOC_FREE(cldap);
+	return false;
 }
 
 /*******************************************************************

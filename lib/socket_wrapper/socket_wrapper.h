@@ -52,6 +52,8 @@ ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags, const struct
 int swrap_ioctl(int s, int req, void *ptr);
 ssize_t swrap_recv(int s, void *buf, size_t len, int flags);
 ssize_t swrap_send(int s, const void *buf, size_t len, int flags);
+int swrap_readv(int s, const struct iovec *vector, size_t count);
+int swrap_writev(int s, const struct iovec *vector, size_t count);
 int swrap_close(int);
 
 #ifdef SOCKET_WRAPPER_REPLACE
@@ -120,6 +122,16 @@ int swrap_close(int);
 #undef send
 #endif
 #define send(s,buf,len,flags)		swrap_send(s,buf,len,flags)
+
+#ifdef readv
+#undef readv
+#endif
+#define readv(s, vector, count)		swrap_readv(s,vector, count)
+
+#ifdef writev
+#undef writev
+#endif
+#define writev(s, vector, count)	swrap_writev(s,vector, count)
 
 #ifdef socket
 #undef socket

@@ -196,7 +196,7 @@ static NTSTATUS onefs_open_file(files_struct *fsp,
 						      &base, &stream);
 	}
 	/* It's a stream, so pass in the base_fd */
-	if (stream != NULL) {
+	if ((conn->fs_capabilities & FILE_NAMED_STREAMS) && stream != NULL) {
 		SMB_ASSERT(fsp->base_fsp);
 
 		/*
@@ -1646,119 +1646,6 @@ static NTSTATUS onefs_open_directory(connection_struct *conn,
 
 	*result = fsp;
 	return NT_STATUS_OK;
-}
-
-/*
- * If a main file is opened for delete, all streams need to be checked for
- * !FILE_SHARE_DELETE. Do this by opening with DELETE_ACCESS.
- * If that works, delete them all by setting the delete on close and close.
- */
-
-static NTSTATUS open_streams_for_delete(connection_struct *conn,
-					const char *fname)
-{
-	struct stream_struct *stream_info;
-	files_struct **streams;
-	int i;
-	unsigned int num_streams;
-	TALLOC_CTX *frame = talloc_stackframe();
-	NTSTATUS status;
-
-	status = SMB_VFS_STREAMINFO(conn, NULL, fname, talloc_tos(),
-				    &num_streams, &stream_info);
-
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)
-	    || NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-		DEBUG(10, ("no streams around\n"));
-		TALLOC_FREE(frame);
-		return NT_STATUS_OK;
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("SMB_VFS_STREAMINFO failed: %s\n",
-			   nt_errstr(status)));
-		goto fail;
-	}
-
-	DEBUG(10, ("open_streams_for_delete found %d streams\n",
-		   num_streams));
-
-	if (num_streams == 0) {
-		TALLOC_FREE(frame);
-		return NT_STATUS_OK;
-	}
-
-	streams = TALLOC_ARRAY(talloc_tos(), files_struct *, num_streams);
-	if (streams == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
-	}
-
-	/* Open the base file */
-
-	for (i=0; i<num_streams; i++) {
-		char *streamname;
-
-		if (strequal(stream_info[i].name, "::$DATA")) {
-			streams[i] = NULL;
-			continue;
-		}
-
-		streamname = talloc_asprintf(talloc_tos(), "%s%s", fname,
-					     stream_info[i].name);
-
-		if (streamname == NULL) {
-			DEBUG(0, ("talloc_aprintf failed\n"));
-			status = NT_STATUS_NO_MEMORY;
-			goto fail;
-		}
-
-		status = onefs_create_file_unixpath
-			(conn,			/* conn */
-			 NULL,			/* req */
-			 streamname,		/* fname */
-			 DELETE_ACCESS,		/* access_mask */
-			 FILE_SHARE_READ | FILE_SHARE_WRITE
-			 | FILE_SHARE_DELETE,	/* share_access */
-			 FILE_OPEN,		/* create_disposition*/
-			 NTCREATEX_OPTIONS_PRIVATE_STREAM_DELETE, /* create_options */
-			 FILE_ATTRIBUTE_NORMAL,	/* file_attributes */
-			 0,			/* oplock_request */
-			 0,			/* allocation_size */
-			 NULL,			/* sd */
-			 NULL,			/* ea_list */
-			 &streams[i],		/* result */
-			 NULL,			/* pinfo */
-			 NULL,			/* fsp_data */
-			 NULL);			/* psbuf */
-
-		TALLOC_FREE(streamname);
-
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10, ("Could not open stream %s: %s\n",
-				   streamname, nt_errstr(status)));
-			break;
-		}
-	}
-
-	/*
-	 * don't touch the variable "status" beyond this point :-)
-	 */
-
-	for (i -= 1 ; i >= 0; i--) {
-		if (streams[i] == NULL) {
-			continue;
-		}
-
-		DEBUG(10, ("Closing stream # %d, %s\n", i,
-			   streams[i]->fsp_name));
-		close_file(NULL, streams[i], NORMAL_CLOSE);
-	}
-
- fail:
-	TALLOC_FREE(frame);
-	return status;
 }
 
 /*

@@ -76,6 +76,15 @@ static NTSTATUS check_open_rights(struct connection_struct *conn,
 
 	*access_granted = 0;
 
+	if (conn->server_info->utok.uid == 0 || conn->admin_user) {
+		/* I'm sorry sir, I didn't know you were root... */
+		*access_granted = access_mask;
+		if (access_mask & SEC_FLAG_MAXIMUM_ALLOWED) {
+			*access_granted |= FILE_GENERIC_ALL;
+		}
+		return NT_STATUS_OK;
+	}
+
 	status = SMB_VFS_GET_NT_ACL(conn, fname,
 			(OWNER_SECURITY_INFORMATION |
 			GROUP_SECURITY_INFORMATION |
@@ -445,8 +454,26 @@ static NTSTATUS open_file(files_struct *fsp,
 					&access_granted);
 			if (!NT_STATUS_IS_OK(status)) {
 				if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+					/*
+					 * On NT_STATUS_ACCESS_DENIED, access_granted
+					 * contains the denied bits.
+					 */
+
+					if ((access_mask & FILE_WRITE_ATTRIBUTES) &&
+							(access_granted & FILE_WRITE_ATTRIBUTES) &&
+							(lp_map_readonly(SNUM(conn)) ||
+							 lp_map_archive(SNUM(conn)) ||
+							 lp_map_hidden(SNUM(conn)) ||
+							 lp_map_system(SNUM(conn)))) {
+						access_granted &= ~FILE_WRITE_ATTRIBUTES;
+
+						DEBUG(10,("open_file: overrode FILE_WRITE_ATTRIBUTES "
+							"on file %s\n",
+							path ));
+					}
+
 					if ((access_mask & DELETE_ACCESS) &&
-							(access_granted == DELETE_ACCESS) &&
+							(access_granted & DELETE_ACCESS) &&
 							can_delete_file_in_directory(conn, path)) {
 						/* Were we trying to do a stat open
 						 * for delete and didn't get DELETE
@@ -456,10 +483,14 @@ static NTSTATUS open_file(files_struct *fsp,
 						 * http://blogs.msdn.com/oldnewthing/archive/2004/06/04/148426.aspx
 						 * for details. */
 
-						DEBUG(10,("open_file: overrode ACCESS_DENIED "
+						access_granted &= ~DELETE_ACCESS;
+
+						DEBUG(10,("open_file: overrode DELETE_ACCESS "
 							"on file %s\n",
 							path ));
-					} else {
+					}
+
+					if (access_granted != 0) {
 						DEBUG(10, ("open_file: Access denied on "
 							"file %s\n",
 							path));
@@ -2377,6 +2408,14 @@ static NTSTATUS open_directory(connection_struct *conn,
 		return status;
 	}
 
+	/* We need to support SeSecurityPrivilege for this. */
+	if (access_mask & SEC_RIGHT_SYSTEM_SECURITY) {
+		DEBUG(10, ("open_directory: open on %s "
+			"failed - SEC_RIGHT_SYSTEM_SECURITY denied.\n",
+			fname));
+		return NT_STATUS_PRIVILEGE_NOT_HELD;
+	}
+
 	switch( create_disposition ) {
 		case FILE_OPEN:
 
@@ -2710,7 +2749,7 @@ struct case_semantics_state *set_posix_case_semantics(TALLOC_CTX *mem_ctx,
  * If that works, delete them all by setting the delete on close and close.
  */
 
-static NTSTATUS open_streams_for_delete(connection_struct *conn,
+NTSTATUS open_streams_for_delete(connection_struct *conn,
 					const char *fname)
 {
 	struct stream_struct *stream_info;
@@ -2768,13 +2807,15 @@ static NTSTATUS open_streams_for_delete(connection_struct *conn,
 			goto fail;
 		}
 
-		status = create_file_unixpath
-			(conn,			/* conn */
+		status = SMB_VFS_CREATE_FILE(
+			 conn,			/* conn */
 			 NULL,			/* req */
+			 0,			/* root_dir_fid */
 			 streamname,		/* fname */
+			 0,			/* create_file_flags */
 			 DELETE_ACCESS,		/* access_mask */
-			 FILE_SHARE_READ | FILE_SHARE_WRITE
-			 | FILE_SHARE_DELETE,	/* share_access */
+			 (FILE_SHARE_READ |	/* share_access */
+			     FILE_SHARE_WRITE | FILE_SHARE_DELETE),
 			 FILE_OPEN,		/* create_disposition*/
 			 NTCREATEX_OPTIONS_PRIVATE_STREAM_DELETE, /* create_options */
 			 FILE_ATTRIBUTE_NORMAL,	/* file_attributes */
@@ -2917,6 +2958,20 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	if ((access_mask & SEC_RIGHT_SYSTEM_SECURITY) &&
 	    !user_has_privileges(current_user.nt_user_token,
 				 &se_security)) {
+		status = NT_STATUS_PRIVILEGE_NOT_HELD;
+		goto fail;
+	}
+#else
+	/* We need to support SeSecurityPrivilege for this. */
+	if (access_mask & SEC_RIGHT_SYSTEM_SECURITY) {
+		status = NT_STATUS_PRIVILEGE_NOT_HELD;
+		goto fail;
+	}
+	/* Don't allow a SACL set from an NTtrans create until we
+	 * support SeSecurityPrivilege. */
+	if (!VALID_STAT(sbuf) &&
+			lp_nt_acl_support(SNUM(conn)) &&
+			sd && (sd->sacl != NULL)) {
 		status = NT_STATUS_PRIVILEGE_NOT_HELD;
 		goto fail;
 	}

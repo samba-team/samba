@@ -333,6 +333,7 @@ bool torture_cli_session_setup2(struct cli_state *cli, uint16 *new_vuid)
 	uint16 old_vuid = cli->vuid;
 	fstring old_user_name;
 	size_t passlen = strlen(password);
+	NTSTATUS status;
 	bool ret;
 
 	fstrcpy(old_user_name, cli->user_name);
@@ -343,7 +344,10 @@ bool torture_cli_session_setup2(struct cli_state *cli, uint16 *new_vuid)
 						workgroup));
 	*new_vuid = cli->vuid;
 	cli->vuid = old_vuid;
-	fstrcpy(cli->user_name, old_user_name);
+	status = cli_set_username(cli, old_user_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
 	return ret;
 }
 
@@ -4150,6 +4154,119 @@ static bool run_opentest(int dummy)
 	return correct;
 }
 
+/*
+  Test POSIX open /mkdir calls.
+ */
+static bool run_simple_posix_open_test(int dummy)
+{
+	static struct cli_state *cli1;
+	const char *fname = "\\posix:file";
+	const char *dname = "\\posix:dir";
+	uint16 major, minor;
+	uint32 caplow, caphigh;
+	int fnum1 = -1;
+	bool correct = false;
+
+	printf("Starting simple POSIX open test\n");
+
+	if (!torture_open_connection(&cli1, 0)) {
+		return false;
+	}
+
+	cli_sockopt(cli1, sockops);
+
+	if (!SERVER_HAS_UNIX_CIFS(cli1)) {
+		printf("Server doesn't support UNIX CIFS extensions.\n");
+		return false;
+	}
+
+	if (!cli_unix_extensions_version(cli1, &major,
+			&minor, &caplow, &caphigh)) {
+		printf("Server didn't return UNIX CIFS extensions.\n");
+		return false;
+	}
+
+	if (!cli_set_unix_extensions_capabilities(cli1,
+			major, minor, caplow, caphigh)) {
+		printf("Server doesn't support setting UNIX CIFS extensions.\n");
+		return false;
+        }
+
+	cli_setatr(cli1, fname, 0, 0);
+	cli_posix_unlink(cli1, fname);
+	cli_setatr(cli1, dname, 0, 0);
+	cli_posix_rmdir(cli1, dname);
+
+	/* Create a directory. */
+	if (cli_posix_mkdir(cli1, dname, 0777) == -1) {
+		printf("Server doesn't support setting UNIX CIFS extensions.\n");
+		goto out;
+	}
+
+	fnum1 = cli_posix_open(cli1, fname, O_RDWR|O_CREAT|O_EXCL, 0600);
+	if (fnum1 == -1) {
+		printf("POSIX create of %s failed (%s)\n", fname, cli_errstr(cli1));
+		goto out;
+	}
+
+	if (!cli_close(cli1, fnum1)) {
+		printf("close failed (%s)\n", cli_errstr(cli1));
+		goto out;
+	}
+
+	/* Now open the file again for read only. */
+	fnum1 = cli_posix_open(cli1, fname, O_RDONLY, 0);
+	if (fnum1 == -1) {
+		printf("POSIX open of %s failed (%s)\n", fname, cli_errstr(cli1));
+		goto out;
+	}
+
+	/* Now unlink while open. */
+	if (!cli_posix_unlink(cli1, fname)) {
+		printf("POSIX unlink of %s failed (%s)\n", fname, cli_errstr(cli1));
+		goto out;
+	}
+
+	if (!cli_close(cli1, fnum1)) {
+		printf("close(2) failed (%s)\n", cli_errstr(cli1));
+		goto out;
+	}
+
+	/* Ensure the file has gone. */
+	fnum1 = cli_posix_open(cli1, fname, O_RDONLY, 0);
+	if (fnum1 != -1) {
+		printf("POSIX open of %s succeeded, should have been deleted.\n", fname);
+		goto out;
+	}
+
+	if (!cli_posix_rmdir(cli1, dname)) {
+		printf("POSIX rmdir failed (%s)\n", cli_errstr(cli1));
+		goto out;
+	}
+
+	printf("Simple POSIX open test passed\n");
+	correct = true;
+
+  out:
+
+	if (fnum1 != -1) {
+		cli_close(cli1, fnum1);
+		fnum1 = -1;
+	}
+
+	cli_setatr(cli1, fname, 0, 0);
+	cli_posix_unlink(cli1, fname);
+	cli_setatr(cli1, dname, 0, 0);
+	cli_posix_rmdir(cli1, dname);
+
+	if (!torture_close_connection(cli1)) {
+		correct = false;
+	}
+
+	return correct;
+}
+
+
 static uint32 open_attrs_table[] = {
 		FILE_ATTRIBUTE_NORMAL,
 		FILE_ATTRIBUTE_ARCHIVE,
@@ -5496,11 +5613,11 @@ static bool run_local_memcache(int dummy)
 	return ret;
 }
 
-static void wbclient_done(struct async_req *req)
+static void wbclient_done(struct tevent_req *req)
 {
 	wbcErr wbc_err;
 	struct winbindd_response *wb_resp;
-	int *i = (int *)req->async.priv;
+	int *i = (int *)tevent_req_callback_data_void(req);
 
 	wbc_err = wb_trans_recv(req, req, &wb_resp);
 	TALLOC_FREE(req);
@@ -5537,14 +5654,13 @@ static bool run_local_wbclient(int dummy)
 			goto fail;
 		}
 		for (j=0; j<5; j++) {
-			struct async_req *req;
+			struct tevent_req *req;
 			req = wb_trans_send(ev, ev, wb_ctx[i],
 					    (j % 2) == 0, &wb_req);
 			if (req == NULL) {
 				goto fail;
 			}
-			req->async.fn = wbclient_done;
-			req->async.priv = &i;
+			tevent_req_set_callback(req, wbclient_done, &i);
 		}
 	}
 
@@ -5690,6 +5806,7 @@ static struct {
 	{"RW2",  run_readwritemulti, FLAG_MULTIPROC},
 	{"RW3",  run_readwritelarge, 0},
 	{"OPEN", run_opentest, 0},
+	{"POSIX", run_simple_posix_open_test, 0},
 #if 1
 	{"OPENATTR", run_openattrtest, 0},
 #endif

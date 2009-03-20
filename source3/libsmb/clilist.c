@@ -244,7 +244,6 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 	unsigned int param_len, data_len;
 	uint16 setup;
 	char *param;
-	const char *mnt;
 	uint32 resume_key = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
 	DATA_BLOB last_name_raw = data_blob(NULL, 0);
@@ -457,8 +456,6 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 		First = False;
 	}
 
-	mnt = cli_cm_get_mntpoint( cli );
-
         /* see if the server disconnected or the connection otherwise failed */
         if (cli_is_error(cli)) {
                 total_received = -1;
@@ -479,7 +476,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 					info_level));
 				break;
 			}
-                        fn(mnt,&finfo, Mask, state);
+                        fn(cli->dfs_mountpoint, &finfo, Mask, state);
                 }
         }
 

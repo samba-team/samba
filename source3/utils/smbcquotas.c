@@ -35,7 +35,7 @@ enum exit_values {EXIT_OK, EXIT_FAILED, EXIT_PARSE_ERROR};
 
 static struct cli_state *cli_ipc;
 static struct rpc_pipe_client *global_pipe_hnd;
-static POLICY_HND pol;
+static struct policy_handle pol;
 static bool got_policy_hnd;
 static struct user_auth_info *smbcquotas_auth_info;
 
@@ -385,12 +385,7 @@ static struct cli_state *connect_one(const char *share)
 
 	}
 
-	if (!get_cmdline_auth_info_got_pass(smbcquotas_auth_info)) {
-		char *pass = getpass("Password: ");
-		if (pass) {
-			set_cmdline_auth_info_password(smbcquotas_auth_info, pass);
-		}
-	}
+	set_cmdline_auth_info_getpass(smbcquotas_auth_info);
 
 	nt_status = cli_full_connection(&c, global_myname(), server, 
 					    &ss, 0,

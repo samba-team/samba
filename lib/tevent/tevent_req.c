@@ -43,12 +43,12 @@ char *tevent_req_default_print(struct tevent_req *req, TALLOC_CTX *mem_ctx)
 	return talloc_asprintf(mem_ctx,
 			       "tevent_req[%p/%s]: state[%d] error[%lld (0x%llX)] "
 			       " state[%s (%p)] timer[%p]",
-			       req, req->internal.location,
+			       req, req->internal.create_location,
 			       req->internal.state,
 			       (unsigned long long)req->internal.error,
 			       (unsigned long long)req->internal.error,
-			       talloc_get_name(req->private_state),
-			       req->private_state,
+			       talloc_get_name(req->data),
+			       req->data,
 			       req->internal.timer
 			       );
 }
@@ -81,39 +81,48 @@ char *tevent_req_print(TALLOC_CTX *mem_ctx, struct tevent_req *req)
  */
 
 struct tevent_req *_tevent_req_create(TALLOC_CTX *mem_ctx,
-				    void *pstate,
-				    size_t state_size,
+				    void *pdata,
+				    size_t data_size,
 				    const char *type,
 				    const char *location)
 {
 	struct tevent_req *req;
-	void **ppstate = (void **)pstate;
-	void *state;
+	void **ppdata = (void **)pdata;
+	void *data;
 
 	req = talloc_zero(mem_ctx, struct tevent_req);
 	if (req == NULL) {
 		return NULL;
 	}
 	req->internal.private_type	= type;
-	req->internal.location		= location;
+	req->internal.create_location	= location;
+	req->internal.finish_location	= NULL;
 	req->internal.state		= TEVENT_REQ_IN_PROGRESS;
-
-	state = talloc_size(req, state_size);
-	if (state == NULL) {
+	req->internal.trigger		= tevent_create_immediate(req);
+	if (!req->internal.trigger) {
 		talloc_free(req);
 		return NULL;
 	}
-	talloc_set_name_const(state, type);
 
-	req->private_state = state;
+	data = talloc_size(req, data_size);
+	if (data == NULL) {
+		talloc_free(req);
+		return NULL;
+	}
+	talloc_set_name_const(data, type);
 
-	*ppstate = state;
+	req->data = data;
+
+	*ppdata = data;
 	return req;
 }
 
-static void tevent_req_finish(struct tevent_req *req, enum tevent_req_state state)
+static void tevent_req_finish(struct tevent_req *req,
+			      enum tevent_req_state state,
+			      const char *location)
 {
 	req->internal.state = state;
+	req->internal.finish_location = location;
 	if (req->async.fn != NULL) {
 		req->async.fn(req);
 	}
@@ -128,9 +137,10 @@ static void tevent_req_finish(struct tevent_req *req, enum tevent_req_state stat
  * function.
  */
 
-void tevent_req_done(struct tevent_req *req)
+void _tevent_req_done(struct tevent_req *req,
+		      const char *location)
 {
-	tevent_req_finish(req, TEVENT_REQ_DONE);
+	tevent_req_finish(req, TEVENT_REQ_DONE, location);
 }
 
 /**
@@ -161,14 +171,16 @@ void tevent_req_done(struct tevent_req *req)
  * \endcode
  */
 
-bool tevent_req_error(struct tevent_req *req, uint64_t error)
+bool _tevent_req_error(struct tevent_req *req,
+		       uint64_t error,
+		       const char *location)
 {
 	if (error == 0) {
 		return false;
 	}
 
 	req->internal.error = error;
-	tevent_req_finish(req, TEVENT_REQ_USER_ERROR);
+	tevent_req_finish(req, TEVENT_REQ_USER_ERROR, location);
 	return true;
 }
 
@@ -189,42 +201,39 @@ bool tevent_req_error(struct tevent_req *req, uint64_t error)
  * \endcode
  */
 
-bool tevent_req_nomem(const void *p, struct tevent_req *req)
+bool _tevent_req_nomem(const void *p,
+		       struct tevent_req *req,
+		       const char *location)
 {
 	if (p != NULL) {
 		return false;
 	}
-	tevent_req_finish(req, TEVENT_REQ_NO_MEMORY);
+	tevent_req_finish(req, TEVENT_REQ_NO_MEMORY, location);
 	return true;
 }
 
 /**
- * @brief Timed event callback
+ * @brief Immediate event callback
  * @param[in] ev	Event context
- * @param[in] te	The timed event
- * @param[in] now	zero time
+ * @param[in] im	The immediate event
  * @param[in] priv	The async request to be finished
  */
 static void tevent_req_trigger(struct tevent_context *ev,
-			       struct tevent_timer *te,
-			       struct timeval zero,
+			       struct tevent_immediate *im,
 			       void *private_data)
 {
 	struct tevent_req *req = talloc_get_type(private_data,
 				 struct tevent_req);
 
-	talloc_free(req->internal.trigger);
-	req->internal.trigger = NULL;
-
-	tevent_req_finish(req, req->internal.state);
+	tevent_req_finish(req, req->internal.state,
+			  req->internal.finish_location);
 }
 
 /**
  * @brief Finish a request before the caller had the change to set the callback
  * @param[in] req	The finished request
  * @param[in] ev	The tevent_context for the timed event
- * @retval		On success req will be returned,
- * 			on failure req will be destroyed
+ * @retval		req will be returned
  *
  * An implementation of an async request might find that it can either finish
  * the request without waiting for an external event, or it can't even start
@@ -237,13 +246,8 @@ static void tevent_req_trigger(struct tevent_context *ev,
 struct tevent_req *tevent_req_post(struct tevent_req *req,
 				   struct tevent_context *ev)
 {
-	req->internal.trigger = tevent_add_timer(ev, req, tevent_timeval_zero(),
-						 tevent_req_trigger, req);
-	if (!req->internal.trigger) {
-		talloc_free(req);
-		return NULL;
-	}
-
+	tevent_schedule_immediate(req->internal.trigger,
+				  ev, tevent_req_trigger, req);
 	return req;
 }
 
@@ -254,6 +258,24 @@ bool tevent_req_is_in_progress(struct tevent_req *req)
 	}
 
 	return false;
+}
+
+/**
+ * @brief This function destroys the attached private data
+ * @param[in] req	The finished request
+ *
+ * This function can be called as last action of a _recv()
+ * function, it destroys the data attached to the tevent_req.
+ */
+void tevent_req_received(struct tevent_req *req)
+{
+	TALLOC_FREE(req->data);
+	req->private_print = NULL;
+
+	TALLOC_FREE(req->internal.trigger);
+	TALLOC_FREE(req->internal.timer);
+
+	req->internal.state = TEVENT_REQ_RECEIVED;
 }
 
 bool tevent_req_poll(struct tevent_req *req,
@@ -292,17 +314,16 @@ static void tevent_req_timedout(struct tevent_context *ev,
 	struct tevent_req *req = talloc_get_type(private_data,
 				 struct tevent_req);
 
-	talloc_free(req->internal.timer);
-	req->internal.timer = NULL;
+	TALLOC_FREE(req->internal.timer);
 
-	tevent_req_finish(req, TEVENT_REQ_TIMED_OUT);
+	tevent_req_finish(req, TEVENT_REQ_TIMED_OUT, __FUNCTION__);
 }
 
 bool tevent_req_set_endtime(struct tevent_req *req,
 			    struct tevent_context *ev,
 			    struct timeval endtime)
 {
-	talloc_free(req->internal.timer);
+	TALLOC_FREE(req->internal.timer);
 
 	req->internal.timer = tevent_add_timer(ev, req, endtime,
 					       tevent_req_timedout,
@@ -314,3 +335,23 @@ bool tevent_req_set_endtime(struct tevent_req *req,
 	return true;
 }
 
+void tevent_req_set_callback(struct tevent_req *req, tevent_req_fn fn, void *pvt)
+{
+	req->async.fn = fn;
+	req->async.private_data = pvt;
+}
+
+void *_tevent_req_callback_data(struct tevent_req *req)
+{
+	return req->async.private_data;
+}
+
+void *_tevent_req_data(struct tevent_req *req)
+{
+	return req->data;
+}
+
+void tevent_req_set_print_fn(struct tevent_req *req, tevent_req_print_fn fn)
+{
+	req->private_print = fn;
+}

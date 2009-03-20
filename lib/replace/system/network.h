@@ -83,6 +83,10 @@
 #include <sys/ioctl.h>
 #endif
 
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif
+
 #ifdef HAVE_STROPTS_H
 #include <stropts.h>
 #endif

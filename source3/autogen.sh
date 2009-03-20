@@ -65,7 +65,7 @@ echo "$0: running script/mkversion.sh"
 rm -rf autom4te*.cache
 rm -f configure include/config.h*
 
-IPATHS="-Im4 -I../lib/replace -I../source4"
+IPATHS="-Im4 -I../m4 -I../lib/replace -I../source4"
 
 echo "$0: running $AUTOHEADER $IPATHS"
 $AUTOHEADER $IPATHS || exit 1

@@ -24,7 +24,6 @@
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "lib/events/events.h"
-#include "lib/socket/socket.h"
 #include "smbd/service_task.h"
 #include "cldap_server/cldap_server.h"
 #include "librpc/gen_ndr/ndr_misc.h"
@@ -36,6 +35,8 @@
 #include "system/network.h"
 #include "lib/socket/netif.h"
 #include "param/param.h"
+#include "../lib/tsocket/tsocket.h"
+
 /*
   fill in the cldap netlogon union for a given version
 */
@@ -402,12 +403,13 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 /*
   handle incoming cldap requests
 */
-void cldapd_netlogon_request(struct cldap_socket *cldap, 
+void cldapd_netlogon_request(struct cldap_socket *cldap,
+			     struct cldapd_server *cldapd,
+			     TALLOC_CTX *tmp_ctx,
 			     uint32_t message_id,
 			     struct ldb_parse_tree *tree,
-			     struct socket_address *src)
+			     struct tsocket_address *src)
 {
-	struct cldapd_server *cldapd = talloc_get_type(cldap->incoming.private_data, struct cldapd_server);
 	int i;
 	const char *domain = NULL;
 	const char *host = NULL;
@@ -418,8 +420,6 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 	int version = -1;
 	struct netlogon_samlogon_response netlogon;
 	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
-
-	TALLOC_CTX *tmp_ctx = talloc_new(cldap);
 
 	if (tree->operation != LDB_OP_AND) goto failed;
 
@@ -478,24 +478,25 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 		 domain, host, user, version, domain_guid));
 
 	status = fill_netlogon_samlogon_response(cldapd->samctx, tmp_ctx, domain, NULL, NULL, domain_guid,
-						 user, acct_control, src->addr, 
+						 user, acct_control,
+						 tsocket_address_inet_addr_string(src, tmp_ctx),
 						 version, cldapd->task->lp_ctx, &netlogon);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}
 
-	status = cldap_netlogon_reply(cldap, message_id, src, version,
+	status = cldap_netlogon_reply(cldap,
+				      lp_iconv_convenience(cldapd->task->lp_ctx),
+				      message_id, src, version,
 				      &netlogon);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}
 
-	talloc_free(tmp_ctx);
 	return;
 	
 failed:
 	DEBUG(2,("cldap netlogon query failed domain=%s host=%s version=%d - %s\n",
 		 domain, host, version, nt_errstr(status)));
-	talloc_free(tmp_ctx);
-	cldap_empty_reply(cldap, message_id, src);	
+	cldap_empty_reply(cldap, message_id, src);
 }

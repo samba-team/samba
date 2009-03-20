@@ -671,6 +671,11 @@ NTSTATUS onefs_streaminfo(vfs_handle_struct *handle,
 	state.streams = NULL;
 	state.num_streams = 0;
 
+	if (lp_parm_bool(SNUM(handle->conn), PARM_ONEFS_TYPE,
+		PARM_IGNORE_STREAMS, PARM_IGNORE_STREAMS_DEFAULT)) {
+		goto out;
+	}
+
 	/* Add the default stream. */
 	if (S_ISREG(sbuf.st_mode)) {
 		if (!add_one_stream(mem_ctx,
@@ -702,7 +707,7 @@ NTSTATUS onefs_streaminfo(vfs_handle_struct *handle,
 			return state.status;
 		}
 	}
-
+ out:
 	*num_streams = state.num_streams;
 	*streams = state.streams;
 	return NT_STATUS_OK;

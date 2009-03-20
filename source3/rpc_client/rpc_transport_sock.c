@@ -61,8 +61,7 @@ static struct async_req *rpc_sock_read_send(TALLOC_CTX *mem_ctx,
 	if (subreq == NULL) {
 		goto fail;
 	}
-	subreq->async.fn = rpc_sock_read_done;
-	subreq->async.private_data = result;
+	tevent_req_set_callback(subreq, rpc_sock_read_done, result);
 	return result;
  fail:
 	TALLOC_FREE(result);
@@ -71,8 +70,8 @@ static struct async_req *rpc_sock_read_send(TALLOC_CTX *mem_ctx,
 
 static void rpc_sock_read_done(struct tevent_req *subreq)
 {
-	struct async_req *req = talloc_get_type_abort(
-		subreq->async.private_data, struct async_req);
+	struct async_req *req =
+		tevent_req_callback_data(subreq, struct async_req);
 	struct rpc_sock_read_state *state = talloc_get_type_abort(
 		req->private_data, struct rpc_sock_read_state);
 	int err;
@@ -123,8 +122,7 @@ static struct async_req *rpc_sock_write_send(TALLOC_CTX *mem_ctx,
 	if (subreq == NULL) {
 		goto fail;
 	}
-	subreq->async.fn = rpc_sock_write_done;
-	subreq->async.private_data = result;
+	tevent_req_set_callback(subreq, rpc_sock_write_done, result);
 	return result;
  fail:
 	TALLOC_FREE(result);
@@ -133,8 +131,8 @@ static struct async_req *rpc_sock_write_send(TALLOC_CTX *mem_ctx,
 
 static void rpc_sock_write_done(struct tevent_req *subreq)
 {
-	struct async_req *req = talloc_get_type_abort(
-		subreq->async.private_data, struct async_req);
+	struct async_req *req =
+		tevent_req_callback_data(subreq, struct async_req);
 	struct rpc_sock_write_state *state = talloc_get_type_abort(
 		req->private_data, struct rpc_sock_write_state);
 	int err;

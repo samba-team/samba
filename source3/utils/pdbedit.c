@@ -67,7 +67,7 @@ static int export_database (struct pdb_methods *in,
 
 	DEBUG(3, ("export_database: username=\"%s\"\n", username ? username : "(NULL)"));
 
-	u_search = pdb_search_init(PDB_USER_SEARCH);
+	u_search = pdb_search_init(talloc_tos(), PDB_USER_SEARCH);
 	if (u_search == NULL) {
 		DEBUG(0, ("pdb_search_init failed\n"));
 		return 1;
@@ -75,7 +75,7 @@ static int export_database (struct pdb_methods *in,
 
 	if (!in->search_users(in, u_search, 0)) {
 		DEBUG(0, ("Could not start searching users\n"));
-		pdb_search_destroy(u_search);
+		TALLOC_FREE(u_search);
 		return 1;
 	}
 
@@ -116,7 +116,7 @@ static int export_database (struct pdb_methods *in,
 			fprintf(stderr, "export_database: Memory allocation "
 				"failure!\n");
 			TALLOC_FREE( user );
-			pdb_search_destroy(u_search);
+			TALLOC_FREE(u_search);
 			return 1;
 		}
 
@@ -139,7 +139,7 @@ static int export_database (struct pdb_methods *in,
 		TALLOC_FREE( user );
 	}
 
-	pdb_search_destroy(u_search);
+	TALLOC_FREE(u_search);
 
 	return 0;
 }
@@ -352,7 +352,7 @@ static int print_users_list (struct pdb_methods *in, bool verbosity, bool smbpwd
 	struct pdb_search *u_search;
 	struct samr_displayentry userentry;
 
-	u_search = pdb_search_init(PDB_USER_SEARCH);
+	u_search = pdb_search_init(talloc_tos(), PDB_USER_SEARCH);
 	if (u_search == NULL) {
 		DEBUG(0, ("pdb_search_init failed\n"));
 		return 1;
@@ -360,7 +360,7 @@ static int print_users_list (struct pdb_methods *in, bool verbosity, bool smbpwd
 
 	if (!in->search_users(in, u_search, 0)) {
 		DEBUG(0, ("Could not start searching users\n"));
-		pdb_search_destroy(u_search);
+		TALLOC_FREE(u_search);
 		return 1;
 	}
 
@@ -391,7 +391,7 @@ static int print_users_list (struct pdb_methods *in, bool verbosity, bool smbpwd
 		print_sam_info (sam_pwent, verbosity, smbpwdstyle);
 		TALLOC_FREE(sam_pwent);
 	}
-	pdb_search_destroy(u_search);
+	TALLOC_FREE(u_search);
 
 	return 0;
 }
@@ -404,7 +404,7 @@ static int fix_users_list (struct pdb_methods *in)
 	struct pdb_search *u_search;
 	struct samr_displayentry userentry;
 
-	u_search = pdb_search_init(PDB_USER_SEARCH);
+	u_search = pdb_search_init(talloc_tos(), PDB_USER_SEARCH);
 	if (u_search == NULL) {
 		DEBUG(0, ("pdb_search_init failed\n"));
 		return 1;
@@ -412,7 +412,7 @@ static int fix_users_list (struct pdb_methods *in)
 
 	if (!in->search_users(in, u_search, 0)) {
 		DEBUG(0, ("Could not start searching users\n"));
-		pdb_search_destroy(u_search);
+		TALLOC_FREE(u_search);
 		return 1;
 	}
 
@@ -444,7 +444,7 @@ static int fix_users_list (struct pdb_methods *in)
 		}
 		TALLOC_FREE(sam_pwent);
 	}
-	pdb_search_destroy(u_search);
+	TALLOC_FREE(u_search);
 	return 0;
 }
 

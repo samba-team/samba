@@ -3,17 +3,17 @@
    SMB Signing Code
    Copyright (C) Jeremy Allison 2003.
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2002-2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -119,14 +119,14 @@ static bool cli_set_smb_signing_common(struct cli_state *cli)
 	if (cli->sign_info.doing_signing) {
 		return False;
 	}
-	
+
 	if (cli->sign_info.free_signing_context)
 		cli->sign_info.free_signing_context(&cli->sign_info);
 
 	/* These calls are INCOMPATIBLE with SMB signing */
 	cli->readbraw_supported = False;
 	cli->writebraw_supported = False;
-	
+
 	return True;
 }
 
@@ -196,7 +196,7 @@ static void null_free_signing_context(struct smb_sign_info *si)
 static bool null_set_signing(struct smb_sign_info *si)
 {
 	si->signing_context = NULL;
-	
+
 	si->sign_outgoing_message = null_sign_outgoing_message;
 	si->check_incoming_message = null_check_incoming_message;
 	si->free_signing_context = null_free_signing_context;
@@ -207,7 +207,7 @@ static bool null_set_signing(struct smb_sign_info *si)
 /**
  * Free the signing context
  */
- 
+
 static void free_signing_context(struct smb_sign_info *si)
 {
 	if (si->free_signing_context) {
@@ -227,7 +227,7 @@ static bool signing_good(const char *inbuf, struct smb_sign_info *si,
 		if (!si->doing_signing) {
 			si->doing_signing = True;
 		}
-		
+
 		if (!si->seen_valid) {
 			si->seen_valid = True;
 		}
@@ -289,7 +289,7 @@ static void simple_packet_signature(struct smb_basic_signing_context *data,
 
 	/* Calculate the 16 byte MAC - but don't alter the data in the
 	   incoming packet.
-	   
+
 	   This makes for a bit of fussing about, but it's not too bad.
 	*/
 	MD5Init(&md5_ctx);
@@ -368,7 +368,7 @@ static void client_sign_outgoing_message(char *outbuf, struct smb_sign_info *si)
 	   I can isolate the fix here rather than re-adding the trans
 	   signing on/off calls in libsmb/clitrans2.c JRA.
 	 */
-	
+
 	if (store_sequence_for_reply(&data->outstanding_packet_list, SVAL(outbuf,smb_mid), data->send_seq_num + 1)) {
 		data->send_seq_num += 2;
 	}
@@ -409,11 +409,11 @@ static bool client_check_incoming_message(const char *inbuf,
 
 	server_sent_mac = (unsigned char *)&inbuf[smb_ss_field];
 	good = (memcmp(server_sent_mac, calc_md5_mac, 8) == 0);
-	
+
 	if (!good) {
 		DEBUG(5, ("client_check_incoming_message: BAD SIG: wanted SMB signature of\n"));
 		dump_data(5, calc_md5_mac, 8);
-		
+
 		DEBUG(5, ("client_check_incoming_message: BAD SIG: got SMB signature of\n"));
 		dump_data(5, server_sent_mac, 8);
 #if 1 /* JRATEST */
@@ -447,7 +447,7 @@ static void simple_free_signing_context(struct smb_sign_info *si)
 		(struct smb_basic_signing_context *)si->signing_context;
 	struct outstanding_packet_lookup *list;
 	struct outstanding_packet_lookup *next;
-	
+
 	for (list = data->outstanding_packet_list; list; list = next) {
 		next = list->next;
 		DLIST_REMOVE(data->outstanding_packet_list, list);
@@ -486,7 +486,7 @@ bool cli_simple_set_signing(struct cli_state *cli,
 	memset(data, '\0', sizeof(*data));
 
 	cli->sign_info.signing_context = data;
-	
+
 	data->mac_key = data_blob(NULL, response.length + user_session_key.length);
 
 	memcpy(&data->mac_key.data[0], user_session_key.data, user_session_key.length);
@@ -571,7 +571,7 @@ bool cli_temp_set_signing(struct cli_state *cli)
 	}
 
 	cli->sign_info.signing_context = NULL;
-	
+
 	cli->sign_info.sign_outgoing_message = temp_sign_outgoing_message;
 	cli->sign_info.check_incoming_message = temp_check_incoming_message;
 	cli->sign_info.free_signing_context = temp_free_signing_context;
@@ -587,7 +587,7 @@ void cli_free_signing_context(struct cli_state *cli)
 /**
  * Sign a packet with the current mechanism
  */
- 
+
 void cli_calculate_sign_mac(struct cli_state *cli, char *buf)
 {
 	cli->sign_info.sign_outgoing_message(buf, &cli->sign_info);
@@ -598,7 +598,7 @@ void cli_calculate_sign_mac(struct cli_state *cli, char *buf)
  * @return False if we had an established signing connection
  *         which had a bad checksum, True otherwise.
  */
- 
+
 bool cli_check_sign_mac(struct cli_state *cli, char *buf)
 {
 	if (!cli->sign_info.check_incoming_message(buf, &cli->sign_info, True)) {
@@ -746,7 +746,7 @@ static bool srv_check_incoming_message(const char *inbuf,
 
 	server_sent_mac = (unsigned char *)&inbuf[smb_ss_field];
 	good = (memcmp(server_sent_mac, calc_md5_mac, 8) == 0);
-	
+
 	if (!good) {
 
 		if (saved_seq) {
@@ -758,7 +758,7 @@ static bool srv_check_incoming_message(const char *inbuf,
 						(unsigned int)reply_seq_number));
 			dump_data(5, server_sent_mac, 8);
 		}
-		
+
 #if 1 /* JRATEST */
 		{
 			int i;
@@ -865,7 +865,7 @@ void srv_defer_sign_response(uint16 mid)
  cancelled by mid. This should never find one....
 ************************************************************/
 
-void srv_cancel_sign_response(uint16 mid)
+void srv_cancel_sign_response(uint16 mid, bool cancel)
 {
 	struct smb_basic_signing_context *data;
 	uint32 dummy_seq;
@@ -884,7 +884,9 @@ void srv_cancel_sign_response(uint16 mid)
 		;
 
 	/* cancel doesn't send a reply so doesn't burn a sequence number. */
-	data->send_seq_num -= 1;
+	if (cancel) {
+		data->send_seq_num -= 1;
+	}
 }
 
 /***********************************************************
@@ -969,17 +971,17 @@ void srv_set_signing(const DATA_BLOB user_session_key, const DATA_BLOB response)
 	if (srv_sign_info.doing_signing) {
 		return;
 	}
-	
+
 	if (srv_sign_info.free_signing_context)
 		srv_sign_info.free_signing_context(&srv_sign_info);
-	
+
 	srv_sign_info.doing_signing = True;
 
 	data = SMB_XMALLOC_P(struct smb_basic_signing_context);
 	memset(data, '\0', sizeof(*data));
 
 	srv_sign_info.signing_context = data;
-	
+
 	data->mac_key = data_blob(NULL, response.length + user_session_key.length);
 
 	memcpy(&data->mac_key.data[0], user_session_key.data, user_session_key.length);

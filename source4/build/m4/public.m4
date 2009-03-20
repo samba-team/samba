@@ -82,7 +82,8 @@ AC_DEFUN([SMB_EXT_LIB_FROM_PKGCONFIG],
 		echo "*** Or see http://pkg-config.freedesktop.org/ to get pkg-config."
 			ac_cv_$1_found=no
 	else
-		if $PKG_CONFIG --atleast-pkgconfig-version 0.9.0; then
+		SAMBA_PKG_CONFIG_MIN_VERSION="0.9.0"
+		if $PKG_CONFIG --atleast-pkgconfig-version $SAMBA_PKG_CONFIG_MIN_VERSION; then
 			AC_MSG_CHECKING(for $2)
 
 			if $PKG_CONFIG --exists '$2' ; then
@@ -99,11 +100,13 @@ AC_DEFUN([SMB_EXT_LIB_FROM_PKGCONFIG],
 					AC_MSG_WARN([cannot run when cross-compiling]))
 				CFLAGS="$OLD_CFLAGS"
 
+				ac_cv_$1_libs_only_other="`$PKG_CONFIG --libs-only-other '$2'` `$PKG_CONFIG --libs-only-L '$2'`"
+				LIB_REMOVE_USR_LIB(ac_cv_$1_libs_only_other)
 				SMB_EXT_LIB($1, 
 					[`$PKG_CONFIG --libs-only-l '$2'`], 
 					[`$PKG_CONFIG --cflags-only-other '$2'`],
 					[`$PKG_CONFIG --cflags-only-I '$2'`],
-					[`$PKG_CONFIG --libs-only-other '$2'` `$PKG_CONFIG --libs-only-L '$2'`])
+					[$ac_cv_$1_libs_only_other])
 				ac_cv_$1_found=yes
 
 			else
@@ -112,7 +115,7 @@ AC_DEFUN([SMB_EXT_LIB_FROM_PKGCONFIG],
 				ac_cv_$1_found=no
 			fi
 		else
-			echo "*** Your version of pkg-config is too old. You need version $PKG_CONFIG_MIN_VERSION or newer."
+			echo "*** Your version of pkg-config is too old. You need version $SAMBA_PKG_CONFIG_MIN_VERSION or newer."
 			echo "*** See http://pkg-config.freedesktop.org/"
 			ac_cv_$1_found=no
 		fi

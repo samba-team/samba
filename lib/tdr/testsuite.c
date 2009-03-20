@@ -21,12 +21,11 @@
 #include "includes.h"
 #include "torture/torture.h"
 #include "lib/tdr/tdr.h"
-#include "param/param.h"
 
 static bool test_push_uint8(struct torture_context *tctx)
 {
 	uint8_t v = 4;
-	struct tdr_push *tdr = tdr_push_init(tctx, lp_iconv_convenience(tctx->lp_ctx));
+	struct tdr_push *tdr = tdr_push_init(tctx, global_iconv_convenience);
 
 	torture_assert_ntstatus_ok(tctx, tdr_push_uint8(tdr, &v), "push failed");
 	torture_assert_int_equal(tctx, tdr->data.length, 1, "length incorrect");
@@ -38,7 +37,7 @@ static bool test_pull_uint8(struct torture_context *tctx)
 {
 	uint8_t d = 2;
 	uint8_t l;
-	struct tdr_pull *tdr = tdr_pull_init(tctx, lp_iconv_convenience(tctx->lp_ctx));
+	struct tdr_pull *tdr = tdr_pull_init(tctx, global_iconv_convenience);
 	tdr->data.data = &d;
 	tdr->data.length = 1;
 	tdr->offset = 0;
@@ -53,7 +52,7 @@ static bool test_pull_uint8(struct torture_context *tctx)
 static bool test_push_uint16(struct torture_context *tctx)
 {
 	uint16_t v = 0xF32;
-	struct tdr_push *tdr = tdr_push_init(tctx, lp_iconv_convenience(tctx->lp_ctx));
+	struct tdr_push *tdr = tdr_push_init(tctx, global_iconv_convenience);
 
 	torture_assert_ntstatus_ok(tctx, tdr_push_uint16(tdr, &v), "push failed");
 	torture_assert_int_equal(tctx, tdr->data.length, 2, "length incorrect");
@@ -66,7 +65,7 @@ static bool test_pull_uint16(struct torture_context *tctx)
 {
 	uint8_t d[2] = { 782 & 0xFF, (782 & 0xFF00) / 0x100 };
 	uint16_t l;
-	struct tdr_pull *tdr = tdr_pull_init(tctx, lp_iconv_convenience(tctx->lp_ctx));
+	struct tdr_pull *tdr = tdr_pull_init(tctx, global_iconv_convenience);
 	tdr->data.data = d;
 	tdr->data.length = 2;
 	tdr->offset = 0;
@@ -81,7 +80,7 @@ static bool test_pull_uint16(struct torture_context *tctx)
 static bool test_push_uint32(struct torture_context *tctx)
 {
 	uint32_t v = 0x100F32;
-	struct tdr_push *tdr = tdr_push_init(tctx, lp_iconv_convenience(tctx->lp_ctx));
+	struct tdr_push *tdr = tdr_push_init(tctx, global_iconv_convenience);
 
 	torture_assert_ntstatus_ok(tctx, tdr_push_uint32(tdr, &v), "push failed");
 	torture_assert_int_equal(tctx, tdr->data.length, 4, "length incorrect");
@@ -96,7 +95,7 @@ static bool test_pull_uint32(struct torture_context *tctx)
 {
 	uint8_t d[4] = { 782 & 0xFF, (782 & 0xFF00) / 0x100, 0, 0 };
 	uint32_t l;
-	struct tdr_pull *tdr = tdr_pull_init(tctx, lp_iconv_convenience(tctx->lp_ctx));
+	struct tdr_pull *tdr = tdr_pull_init(tctx, global_iconv_convenience);
 	tdr->data.data = d;
 	tdr->data.length = 4;
 	tdr->offset = 0;
@@ -110,7 +109,7 @@ static bool test_pull_uint32(struct torture_context *tctx)
 
 static bool test_pull_charset(struct torture_context *tctx)
 {
-	struct tdr_pull *tdr = tdr_pull_init(tctx, lp_iconv_convenience(tctx->lp_ctx));
+	struct tdr_pull *tdr = tdr_pull_init(tctx, global_iconv_convenience);
 	const char *l = NULL;
 	tdr->data.data = (uint8_t *)talloc_strdup(tctx, "bla");
 	tdr->data.length = 4;
@@ -132,7 +131,7 @@ static bool test_pull_charset(struct torture_context *tctx)
 
 static bool test_pull_charset_empty(struct torture_context *tctx)
 {
-	struct tdr_pull *tdr = tdr_pull_init(tctx, lp_iconv_convenience(tctx->lp_ctx));
+	struct tdr_pull *tdr = tdr_pull_init(tctx, global_iconv_convenience);
 	const char *l = NULL;
 	tdr->data.data = (uint8_t *)talloc_strdup(tctx, "bla");
 	tdr->data.length = 4;
@@ -151,7 +150,7 @@ static bool test_pull_charset_empty(struct torture_context *tctx)
 static bool test_push_charset(struct torture_context *tctx)
 {
 	const char *l = "bloe";
-	struct tdr_push *tdr = tdr_push_init(tctx, lp_iconv_convenience(tctx->lp_ctx));
+	struct tdr_push *tdr = tdr_push_init(tctx, global_iconv_convenience);
 	torture_assert_ntstatus_ok(tctx, tdr_push_charset(tdr, &l, 4, 1, CH_UTF8), 
 							   "push failed");
 	torture_assert_int_equal(tctx, 4, tdr->data.length, "offset invalid");

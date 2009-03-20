@@ -104,6 +104,14 @@ static void register_name_response(struct subnet_record *subrec,
 			 subrec->subnet_name, nmb->header.rcode, inet_ntoa(p->ip)));
 		success = False;
 	} else {
+		if (!ip_equal_v4(rrec->packet->ip, p->ip)) {
+			DEBUG(5,("register_name_response: Ignoring WINS server response "
+				"from IP %s, for name %s. We sent to IP %s\n",
+				inet_ntoa(p->ip),
+				nmb_namestr(answer_name),
+				inet_ntoa(rrec->packet->ip)));
+			return;
+		}
 		/* Unicast - check to see if the response allows us to have the name. */
 		if (nmb->header.opcode == NMB_WACK_OPCODE) {
 			/* WINS server is telling us to wait. Pretend we didn't get

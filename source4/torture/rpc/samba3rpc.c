@@ -2619,6 +2619,7 @@ static bool enumprinters(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *pipe,
 	DATA_BLOB blob;
 	uint32_t needed;
 	uint32_t count;
+	union spoolss_PrinterInfo *info;
 
 	r.in.flags = PRINTER_ENUM_LOCAL;
 	r.in.server = talloc_asprintf(mem_ctx, "\\\\%s", servername);
@@ -2627,6 +2628,7 @@ static bool enumprinters(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *pipe,
 	r.in.offered = 0;
 	r.out.needed = &needed;
 	r.out.count = &count;
+	r.out.info = &info;
 
 	status = dcerpc_spoolss_EnumPrinters(pipe, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {

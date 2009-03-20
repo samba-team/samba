@@ -17,6 +17,7 @@
 */
 
 #include "includes.h"
+#define TEVENT_DEPRECATED 1
 #include "lib/events/events.h"
 
 /*
@@ -65,6 +66,7 @@ struct tevent_context *s4_event_context_init(TALLOC_CTX *mem_ctx)
 	ev = tevent_context_init_byname(mem_ctx, NULL);
 	if (ev) {
 		tevent_set_debug(ev, ev_wrap_debug, NULL);
+		tevent_loop_allow_nesting(ev);
 	}
 	return ev;
 }

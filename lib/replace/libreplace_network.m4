@@ -8,14 +8,18 @@ LIBREPLACE_NETWORK_LIBS=""
 
 AC_CHECK_HEADERS(sys/socket.h netinet/in.h netdb.h arpa/inet.h)
 AC_CHECK_HEADERS(netinet/in_systm.h)
-AC_CHECK_HEADERS([netinet/ip.h], [], [],[#ifdef HAVE_NETINET_IN_H
-#include <netinet/in.h>
-#endif
-#ifdef HAVE_NETINET_IN_SYSTM_H
-#include <netinet/in_systm.h>
-#endif])
+AC_CHECK_HEADERS([netinet/ip.h], [], [],[
+	#include <sys/types.h>
+	#ifdef HAVE_NETINET_IN_H
+	#include <netinet/in.h>
+	#endif
+	#ifdef HAVE_NETINET_IN_SYSTM_H
+	#include <netinet/in_systm.h>
+	#endif
+])
 AC_CHECK_HEADERS(netinet/tcp.h netinet/in_ip.h)
 AC_CHECK_HEADERS(sys/sockio.h sys/un.h)
+AC_CHECK_HEADERS(sys/uio.h)
 
 dnl we need to check that net/if.h really can be used, to cope with hpux
 dnl where including it always fails
@@ -241,7 +245,7 @@ AC_CHECK_MEMBERS([struct sockaddr.sa_len],
 
 dnl test for getifaddrs and freeifaddrs
 AC_CACHE_CHECK([for getifaddrs and freeifaddrs],libreplace_cv_HAVE_GETIFADDRS,[
-AC_TRY_COMPILE([
+AC_TRY_LINK([
 #include <sys/types.h>
 #if STDC_HEADERS
 #include <stdlib.h>

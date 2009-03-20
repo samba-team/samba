@@ -541,21 +541,6 @@ void *malloc_array(size_t el_size, unsigned int count)
 	return realloc_array(NULL, el_size, count, false);
 }
 
-_PUBLIC_ void *talloc_check_name_abort(const void *ptr, const char *name)
-{
-        void *result;
-
-        result = talloc_check_name(ptr, name);
-        if (result != NULL)
-                return result;
-
-        DEBUG(0, ("Talloc type mismatch, expected %s, got %s\n",
-                  name, talloc_get_name(ptr)));
-        smb_panic("talloc type mismatch");
-        /* Keep the compiler happy */
-        return NULL;
-}
-
 /**
  Trim the specified elements off the front and back of a string.
 **/

@@ -117,7 +117,7 @@ typedef struct _input_data {
 struct policy {
 	struct policy *next, *prev;
 
-	POLICY_HND pol_hnd;
+	struct policy_handle pol_hnd;
 
 	void *data_ptr;
 };
@@ -292,12 +292,5 @@ struct api_struct {
         void (*fn)(const char*, const char*, uint32, uint32, void *const *const)
 
 /* end higher order functions */
-
-typedef struct {
-	uint32 size;
-	prs_struct prs;
-	uint32 struct_start;
-	uint32 string_at_end;
-} RPC_BUFFER;
 
 #endif /* _NT_DOMAIN_H */

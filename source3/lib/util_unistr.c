@@ -383,22 +383,6 @@ void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
 	pull_ucs2(NULL, dest, str->buffer, maxlen, str->uni_str_len*2, STR_NOALIGN);
 }
 
-#if 0
-/*******************************************************************
- Convert a (little-endian) UNISTR3 structure to an ASCII string.
-********************************************************************/
-
-void unistr3_to_ascii(char *dest, const UNISTR3 *str, size_t maxlen)
-{
-	if ((str == NULL) || (str->uni_str_len == 0)) {
-		*dest='\0';
-		return;
-	}
-	pull_ucs2(NULL, dest, str->str.buffer, maxlen, str->uni_str_len*2,
-	          STR_NOALIGN);
-}
-#endif
-
 /*******************************************************************
  Duplicate a UNISTR2 string into a null terminated char*
  using a talloc context.

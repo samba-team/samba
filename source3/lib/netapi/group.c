@@ -33,7 +33,7 @@ WERROR NetGroupAdd_r(struct libnetapi_ctx *ctx,
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
-	POLICY_HND connect_handle, domain_handle, group_handle;
+	struct policy_handle connect_handle, domain_handle, group_handle;
 	struct lsa_String lsa_group_name;
 	struct dom_sid2 *domain_sid = NULL;
 	uint32_t rid = 0;
@@ -223,7 +223,7 @@ WERROR NetGroupDel_r(struct libnetapi_ctx *ctx,
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
-	POLICY_HND connect_handle, domain_handle, group_handle;
+	struct policy_handle connect_handle, domain_handle, group_handle;
 	struct lsa_String lsa_group_name;
 	struct dom_sid2 *domain_sid = NULL;
 	int i = 0;
@@ -384,7 +384,7 @@ WERROR NetGroupSetInfo_r(struct libnetapi_ctx *ctx,
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
-	POLICY_HND connect_handle, domain_handle, group_handle;
+	struct policy_handle connect_handle, domain_handle, group_handle;
 	struct lsa_String lsa_group_name;
 	struct dom_sid2 *domain_sid = NULL;
 
@@ -624,7 +624,7 @@ WERROR NetGroupGetInfo_r(struct libnetapi_ctx *ctx,
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
-	POLICY_HND connect_handle, domain_handle, group_handle;
+	struct policy_handle connect_handle, domain_handle, group_handle;
 	struct lsa_String lsa_group_name;
 	struct dom_sid2 *domain_sid = NULL;
 
@@ -742,7 +742,7 @@ WERROR NetGroupAddUser_r(struct libnetapi_ctx *ctx,
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
-	POLICY_HND connect_handle, domain_handle, group_handle;
+	struct policy_handle connect_handle, domain_handle, group_handle;
 	struct lsa_String lsa_group_name, lsa_user_name;
 	struct dom_sid2 *domain_sid = NULL;
 
@@ -863,7 +863,7 @@ WERROR NetGroupDelUser_r(struct libnetapi_ctx *ctx,
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
-	POLICY_HND connect_handle, domain_handle, group_handle;
+	struct policy_handle connect_handle, domain_handle, group_handle;
 	struct lsa_String lsa_group_name, lsa_user_name;
 	struct dom_sid2 *domain_sid = NULL;
 

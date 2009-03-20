@@ -6,7 +6,7 @@ MANPAGES=$*
 
 for I in $MANPAGES
 do
-	SECTION=`echo $I | grep -o '.$'`
+	SECTION=`echo -n $I | sed "s/.*\(.\)$/\1/"
 	DIR="$MANDIR/man$SECTION"
 	if [ ! -d "$DIR" ]
 	then

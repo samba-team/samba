@@ -37,6 +37,7 @@ struct tevent_context;
 struct tevent_ops;
 struct tevent_fd;
 struct tevent_timer;
+struct tevent_immediate;
 struct tevent_signal;
 
 /* event handler types */
@@ -52,6 +53,9 @@ typedef void (*tevent_timer_handler_t)(struct tevent_context *ev,
 				       struct tevent_timer *te,
 				       struct timeval current_time,
 				       void *private_data);
+typedef void (*tevent_immediate_handler_t)(struct tevent_context *ctx,
+					   struct tevent_immediate *im,
+					   void *private_data);
 typedef void (*tevent_signal_handler_t)(struct tevent_context *ev,
 					struct tevent_signal *se,
 					int signum,
@@ -87,6 +91,21 @@ struct tevent_timer *_tevent_add_timer(struct tevent_context *ev,
 	_tevent_add_timer(ev, mem_ctx, next_event, handler, private_data, \
 			  #handler, __location__)
 
+struct tevent_immediate *_tevent_create_immediate(TALLOC_CTX *mem_ctx,
+						  const char *location);
+#define tevent_create_immediate(mem_ctx) \
+	_tevent_create_immediate(mem_ctx, __location__)
+
+void _tevent_schedule_immediate(struct tevent_immediate *im,
+				struct tevent_context *ctx,
+				tevent_immediate_handler_t handler,
+				void *private_data,
+				const char *handler_name,
+				const char *location);
+#define tevent_schedule_immediate(im, ctx, handler, private_data) \
+	_tevent_schedule_immediate(im, ctx, handler, private_data, \
+				   #handler, __location__);
+
 struct tevent_signal *_tevent_add_signal(struct tevent_context *ev,
 					 TALLOC_CTX *mem_ctx,
 					 int signum,
@@ -99,14 +118,23 @@ struct tevent_signal *_tevent_add_signal(struct tevent_context *ev,
 	_tevent_add_signal(ev, mem_ctx, signum, sa_flags, handler, private_data, \
 			   #handler, __location__)
 
-int tevent_loop_once(struct tevent_context *ev);
-int tevent_loop_wait(struct tevent_context *ev);
+int _tevent_loop_once(struct tevent_context *ev, const char *location);
+#define tevent_loop_once(ev) \
+	_tevent_loop_once(ev, __location__) \
+
+int _tevent_loop_wait(struct tevent_context *ev, const char *location);
+#define tevent_loop_wait(ev) \
+	_tevent_loop_wait(ev, __location__) \
 
 void tevent_fd_set_close_fn(struct tevent_fd *fde,
 			    tevent_fd_close_fn_t close_fn);
 void tevent_fd_set_auto_close(struct tevent_fd *fde);
 uint16_t tevent_fd_get_flags(struct tevent_fd *fde);
 void tevent_fd_set_flags(struct tevent_fd *fde, uint16_t flags);
+
+bool tevent_signal_support(struct tevent_context *ev);
+
+void tevent_set_abort_fn(void (*abort_fn)(const char *reason));
 
 /* bits for file descriptor event flags */
 #define TEVENT_FD_READ 1
@@ -165,7 +193,11 @@ enum tevent_req_state {
 	/**
 	 * No memory in between
 	 */
-	TEVENT_REQ_NO_MEMORY
+	TEVENT_REQ_NO_MEMORY,
+	/**
+	 * the request is already received by the caller
+	 */
+	TEVENT_REQ_RECEIVED
 };
 
 /**
@@ -183,98 +215,24 @@ enum tevent_req_state {
  * finished. This can happen while the completion function is called.
  */
 
-struct tevent_req {
-	/**
-	 * @brief What to do on completion
-	 *
-	 * This is used for the user of an async request, fn is called when
-	 * the request completes, either successfully or with an error.
-	 */
-	struct {
-		/**
-		 * @brief Completion function
-		 * Completion function, to be filled by the API user
-		 */
-		void (*fn)(struct tevent_req *);
-		/**
-		 * @brief Private data for the completion function
-		 */
-		void *private_data;
-	} async;
+struct tevent_req;
 
-	/**
-	 * @brief Private state pointer for the actual implementation
-	 *
-	 * The implementation doing the work for the async request needs a
-	 * current state like for example a fd event. The user of an async
-	 * request should not touch this.
-	 */
-	void *private_state;
+typedef void (*tevent_req_fn)(struct tevent_req *);
 
-	/**
-	 * @brief A function to overwrite the default print function
-	 *
-	 * The implementation doing the work may want to imeplement a
-	 * custom function to print the text representation of the async
-	 * request.
-	 */
-	char *(*private_print)(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+void tevent_req_set_callback(struct tevent_req *req, tevent_req_fn fn, void *pvt);
+void *_tevent_req_callback_data(struct tevent_req *req);
+void *_tevent_req_data(struct tevent_req *req);
 
-	/**
-	 * @brief Internal state of the request
-	 *
-	 * Callers should only access this via functions and never directly.
-	 */
-	struct {
-		/**
-		 * @brief The talloc type of the private_state pointer
-		 *
-		 * This is filled by the tevent_req_create() macro.
-		 *
-		 * This for debugging only.
-		 */
-		const char *private_type;
+#define tevent_req_callback_data(_req, _type) \
+	talloc_get_type_abort(_tevent_req_callback_data(_req), _type)
+#define tevent_req_callback_data_void(_req) \
+	_tevent_req_callback_data(_req)
+#define tevent_req_data(_req, _type) \
+	talloc_get_type_abort(_tevent_req_data(_req), _type)
 
-		/**
-		 * @brief The location where the request was created
-		 *
-		 * This uses the __location__ macro via the tevent_req_create()
-		 * macro.
-		 *
-		 * This for debugging only.
-		 */
-		const char *location;
+typedef char *(*tevent_req_print_fn)(struct tevent_req *, TALLOC_CTX *);
 
-		/**
-		 * @brief The external state - will be queried by the caller
-		 *
-		 * While the async request is being processed, state will remain in
-		 * TEVENT_REQ_IN_PROGRESS. A request is finished if
-		 * req->state>=TEVENT_REQ_DONE.
-		 */
-		enum tevent_req_state state;
-
-		/**
-		 * @brief status code when finished
-		 *
-		 * This status can be queried in the async completion function. It
-		 * will be set to 0 when everything went fine.
-		 */
-		uint64_t error;
-
-		/**
-		 * @brief the timer event if tevent_req_post was used
-		 *
-		 */
-		struct tevent_timer *trigger;
-
-		/**
-		 * @brief the timer event if tevent_req_set_timeout was used
-		 *
-		 */
-		struct tevent_timer *timer;
-	} internal;
-};
+void tevent_req_set_print_fn(struct tevent_req *req, tevent_req_print_fn fn);
 
 char *tevent_req_default_print(struct tevent_req *req, TALLOC_CTX *mem_ctx);
 
@@ -294,13 +252,22 @@ bool tevent_req_set_endtime(struct tevent_req *req,
 			    struct tevent_context *ev,
 			    struct timeval endtime);
 
-void tevent_req_done(struct tevent_req *req);
+void _tevent_req_done(struct tevent_req *req,
+		      const char *location);
+#define tevent_req_done(req) \
+	_tevent_req_done(req, __location__)
 
-bool tevent_req_error(struct tevent_req *req,
-		      uint64_t error);
+bool _tevent_req_error(struct tevent_req *req,
+		       uint64_t error,
+		       const char *location);
+#define tevent_req_error(req, error) \
+	_tevent_req_error(req, error, __location__)
 
-bool tevent_req_nomem(const void *p,
-		      struct tevent_req *req);
+bool _tevent_req_nomem(const void *p,
+		       struct tevent_req *req,
+		       const char *location);
+#define tevent_req_nomem(p, req) \
+	_tevent_req_nomem(p, req, __location__)
 
 struct tevent_req *tevent_req_post(struct tevent_req *req,
 				   struct tevent_context *ev);
@@ -313,6 +280,8 @@ bool tevent_req_poll(struct tevent_req *req,
 bool tevent_req_is_error(struct tevent_req *req,
 			 enum tevent_req_state *state,
 			 uint64_t *error);
+
+void tevent_req_received(struct tevent_req *req);
 
 struct tevent_req *tevent_wakeup_send(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,
@@ -354,11 +323,36 @@ bool tevent_queue_add(struct tevent_queue *queue,
 		      struct tevent_req *req,
 		      tevent_queue_trigger_fn_t trigger,
 		      void *private_data);
-bool tevent_queue_start(struct tevent_queue *queue,
-			struct tevent_context *ev);
+void tevent_queue_start(struct tevent_queue *queue);
 void tevent_queue_stop(struct tevent_queue *queue);
 
 size_t tevent_queue_length(struct tevent_queue *queue);
+
+typedef int (*tevent_nesting_hook)(struct tevent_context *ev,
+				   void *private_data,
+				   uint32_t level,
+				   bool begin,
+				   void *stack_ptr,
+				   const char *location);
+#ifdef TEVENT_DEPRECATED
+#ifndef _DEPRECATED_
+#if (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1 )
+#define _DEPRECATED_ __attribute__ ((deprecated))
+#else
+#define _DEPRECATED_
+#endif
+#endif
+void tevent_loop_allow_nesting(struct tevent_context *ev) _DEPRECATED_;
+void tevent_loop_set_nesting_hook(struct tevent_context *ev,
+				  tevent_nesting_hook hook,
+				  void *private_data) _DEPRECATED_;
+int _tevent_loop_until(struct tevent_context *ev,
+		       bool (*finished)(void *private_data),
+		       void *private_data,
+		       const char *location) _DEPRECATED_;
+#define tevent_loop_until(ev, finished, private_data) \
+	_tevent_loop_until(ev, finished, private_data, __location__)
+#endif
 
 #ifdef TEVENT_COMPAT_DEFINES
 

@@ -1308,13 +1308,20 @@ void uid_to_sid(DOM_SID *psid, uid_t uid)
 	if (!ret || expired) {
 		/* Not in cache. Ask winbindd. */
 		if (!winbind_uid_to_sid(psid, uid)) {
-			if (!winbind_ping()) {
-				legacy_uid_to_sid(psid, uid);
-				return;
-			}
+			/*
+			 * We shouldn't return the NULL SID
+			 * here if winbind was running and
+			 * couldn't map, as winbind will have
+			 * added a negative entry that will
+			 * cause us to go though the
+			 * legacy_uid_to_sid()
+			 * function anyway in the case above
+			 * the next time we ask.
+			 */
+			DEBUG(5, ("uid_to_sid: winbind failed to find a sid "
+				  "for uid %u\n", uid));
 
-			DEBUG(5, ("uid_to_sid: winbind failed to find a sid for uid %u\n",
-				uid));
+			legacy_uid_to_sid(psid, uid);
 			return;
 		}
 	}
@@ -1354,13 +1361,20 @@ void gid_to_sid(DOM_SID *psid, gid_t gid)
 	if (!ret || expired) {
 		/* Not in cache. Ask winbindd. */
 		if (!winbind_gid_to_sid(psid, gid)) {
-			if (!winbind_ping()) {
-				legacy_gid_to_sid(psid, gid);
-				return;
-			}
+			/*
+			 * We shouldn't return the NULL SID
+			 * here if winbind was running and
+			 * couldn't map, as winbind will have
+			 * added a negative entry that will
+			 * cause us to go though the
+			 * legacy_gid_to_sid()
+			 * function anyway in the case above
+			 * the next time we ask.
+			 */
+			DEBUG(5, ("gid_to_sid: winbind failed to find a sid "
+				  "for gid %u\n", gid));
 
-			DEBUG(5, ("gid_to_sid: winbind failed to find a sid for gid %u\n",
-				gid));
+			legacy_gid_to_sid(psid, gid);
 			return;
 		}
 	}
