@@ -7230,6 +7230,11 @@ NTSTATUS idmap_sid_to_gid(const char *domname, DOM_SID *sid, gid_t *gid);
 
 NTSTATUS nss_info_template_init( void );
 
+/* The following definitions come from lib/avahi.c */
+
+struct AvahiPoll *tevent_avahi_poll(TALLOC_CTX *mem_ctx,
+				    struct tevent_context *ev);
+
 /* Misc protos */
 
 #endif /*  _PROTO_H_  */
