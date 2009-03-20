@@ -405,40 +405,40 @@ def attribute_list(objectclass, attr1, attr2):
 
 def aggregate_list(name, list):
     """write out a list in aggregate form"""
-    if list is None:
-        return
-    print "%s ( %s )" % (name, "$ ".join(list))
+    if list == []:
+        return ""
+    return " %s ( %s )" % (name, " $ ".join(list))
 
 def write_aggregate_objectclass(objectclass):
     """write the aggregate record for an objectclass"""
-    print "objectClasses: ( %s NAME '%s' " % (objectclass["governsID"], objectclass.name),
+    line = "objectClasses: ( %s NAME '%s' " % (objectclass["governsID"], objectclass.name)
     if not objectclass.has_key('subClassOf'):
-        print "SUP %s " % objectclass['subClassOf'],
+        line += "SUP %s" % objectclass['subClassOf']
     if objectclass["objectClassCategory"] == 1:
-        print "STRUCTURAL ",
+        line += "STRUCTURAL"
     elif objectclass["objectClassCategory"] == 2:
-        print "ABSTRACT ",
+        line += "ABSTRACT"
     elif objectclass["objectClassCategory"] == 3:
-        print "AUXILIARY ",
+        line += "AUXILIARY"
 
     list = attribute_list(objectclass, "systemMustContain", "mustContain")
-    aggregate_list("MUST", list)
+    line += aggregate_list("MUST", list)
 
     list = attribute_list(objectclass, "systemMayContain", "mayContain")
-    aggregate_list("MAY", list)
+    line += aggregate_list("MAY", list)
 
-    print ")"
+    print line + " )"
 
 
 def write_aggregate_ditcontentrule(objectclass):
     """write the aggregate record for an ditcontentrule"""
     list = attribute_list(objectclass, "auxiliaryClass", "systemAuxiliaryClass")
-    if list is None:
+    if list == []:
         return
 
-    print "dITContentRules: ( %s NAME '%s' " % (objectclass["governsID"], objectclass.name)
+    line = "dITContentRules: ( %s NAME '%s'" % (objectclass["governsID"], objectclass.name)
 
-    aggregate_list("AUX", list)
+    line += aggregate_list("AUX", list)
 
     may_list = []
     must_list = []
@@ -451,31 +451,30 @@ def write_aggregate_ditcontentrule(objectclass):
                        "mustContain", "systemMustContain")
         must_list = must_list + list2
 
-    aggregate_list("MUST", must_list)
-    aggregate_list("MAY", may_list)
+    line += aggregate_list("MUST", must_list)
+    line += aggregate_list("MAY", may_list)
 
-    print ")\n"
+    print line + " )"
 
 def write_aggregate_attribute(attrib):
     """write the aggregate record for an attribute"""
-    print "attributeTypes: ( %s NAME '%s' SYNTAX '%s' " % (
+    line = "attributeTypes: ( %s NAME '%s' SYNTAX '%s' " % (
            attrib["attributeID"], attrib.name, 
            map_attribute_syntax(attrib["attributeSyntax"]))
     if attrib.get('isSingleValued') == "TRUE":
-        print "SINGLE-VALUE "
+        line += "SINGLE-VALUE "
     if attrib.get('systemOnly') == "TRUE":
-        print "NO-USER-MODIFICATION "
+        line += "NO-USER-MODIFICATION "
 
-    print ")\n"
+    print line + ")"
 
 
 def write_aggregate():
     """write the aggregate record"""
-    print "dn: CN=Aggregate,${SCHEMADN}\n"
+    print "dn: CN=Aggregate,${SCHEMADN}"
     print """objectClass: top
 objectClass: subSchema
-objectCategory: CN=SubSchema,${SCHEMADN}
-"""
+objectCategory: CN=SubSchema,${SCHEMADN}"""
     if not opts.dump_subschema_auto:
         return
 
