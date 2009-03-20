@@ -4253,6 +4253,10 @@ static WERROR enum_all_printers_info_level(TALLOC_CTX *mem_ctx,
 			result = construct_printer_info2(info, ntprinter,
 							 &info[count].info2, snum);
 			break;
+		case 4:
+			result = construct_printer_info4(info, ntprinter,
+							 &info[count].info4, snum);
+			break;
 		case 5:
 			result = construct_printer_info5(info, ntprinter,
 							 &info[count].info5, snum);
@@ -4440,6 +4444,22 @@ static WERROR enumprinters_level2(TALLOC_CTX *mem_ctx,
 }
 
 /********************************************************************
+ * handle enumeration of printers at level 4
+ ********************************************************************/
+
+static WERROR enumprinters_level4(TALLOC_CTX *mem_ctx,
+				  uint32_t flags,
+				  const char *servername,
+				  union spoolss_PrinterInfo **info,
+				  uint32_t *count)
+{
+	DEBUG(4,("enum_all_printers_info_4\n"));
+
+	return enum_all_printers_info_level(mem_ctx, 4, flags, info, count);
+}
+
+
+/********************************************************************
  * handle enumeration of printers at level 5
  ********************************************************************/
 
@@ -4501,12 +4521,15 @@ WERROR _spoolss_EnumPrinters(pipes_struct *p,
 		result = enumprinters_level2(p->mem_ctx, r->in.flags, name,
 					     r->out.info, r->out.count);
 		break;
+	case 4:
+		result = enumprinters_level4(p->mem_ctx, r->in.flags, name,
+					     r->out.info, r->out.count);
+		break;
 	case 5:
 		result = enumprinters_level5(p->mem_ctx, r->in.flags, name,
 					     r->out.info, r->out.count);
 		break;
 	case 3:
-	case 4:
 		result = WERR_OK; /* ??? */
 		break;
 	default:
