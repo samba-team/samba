@@ -365,5 +365,5 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 
  int main(int argc, const char *argv[])
 {
-	return binary_smbd_main("smbd", argc, argv);
+	return binary_smbd_main("samba", argc, argv);
 }
