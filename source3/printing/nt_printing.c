@@ -2275,7 +2275,9 @@ static WERROR get_a_printer_driver_3_default(NT_PRINTER_DRIVER_INFO_LEVEL_3 **in
 
 /****************************************************************************
 ****************************************************************************/
-static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, fstring drivername, const char *arch, uint32 version)
+static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr,
+				     const char *drivername, const char *arch,
+				     uint32_t version)
 {
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 driver;
 	TDB_DATA dbuf;
@@ -4448,7 +4450,7 @@ bool set_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level)
  Delete driver init data stored for a specified driver
 ****************************************************************************/
 
-bool del_driver_init(char *drivername)
+bool del_driver_init(const char *drivername)
 {
 	char *key;
 	bool ret;
@@ -4837,8 +4839,9 @@ uint32 add_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
 /****************************************************************************
 ****************************************************************************/
 
-WERROR get_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32 level,
-                            fstring drivername, const char *architecture, uint32 version)
+WERROR get_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32_t level,
+			    const char *drivername, const char *architecture,
+			    uint32_t version)
 {
 	WERROR result;
 
