@@ -230,10 +230,10 @@ static int ps_search(struct ldb_module *module, struct ldb_request *req)
 	private_data = talloc_get_type(ldb_module_get_private(module), struct private_data);
 	ldb = ldb_module_get_ctx(module);
 
-	/* check if paging is supported and if there is a any control */
-	if (!private_data || !private_data->paged_supported || req->controls) {
+	/* check if paging is supported */
+	if (!private_data || !private_data->paged_supported) {
 		/* do not touch this request paged controls not
-		 * supported or explicit controls have been set or we
+		 * supported or we
 		 * are just not setup yet */
 		return ldb_next_request(module, req);
 	}
