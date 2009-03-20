@@ -227,6 +227,12 @@ def __transform_entry(entry, objectClass):
     entry.insert(0, ["dn", "CN=%s,${SCHEMADN}" % cn])
     entry.insert(1, ["objectClass", ["top", objectClass]])
     
+    for l in entry:
+        key = l[0].lower()
+
+        if key == "cn":
+            entry.remove(l)
+
     return entry
 
 def __parse_schema_file(filename, objectClass):
