@@ -5973,10 +5973,10 @@ AC_SUBST(FLAGS1)
 # Check if user wants DNS service discovery support
 
 AC_ARG_ENABLE(dnssd,
-[AS_HELP_STRING([--enable-dnssd], [Enable DNS service discovery support (default=auto)])])
+[AS_HELP_STRING([--enable-dnssd], [Enable DNS service discovery support (default=no)])])
 
 AC_SUBST(DNSSD_LIBS)
-if test x"$enable_dnssd" != x"no"; then
+if test x"$enable_dnssd" == x"yes"; then
     have_dnssd_support=yes
 
     AC_CHECK_HEADERS(dns_sd.h)
