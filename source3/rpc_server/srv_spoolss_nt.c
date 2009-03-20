@@ -4204,6 +4204,83 @@ static bool snum_is_shared_printer(int snum)
  Spoolss_enumprinters.
 ********************************************************************/
 
+static WERROR enum_all_printers_info_level(TALLOC_CTX *mem_ctx,
+					   uint32_t level,
+					   uint32_t flags,
+					   union spoolss_PrinterInfo **info_p,
+					   uint32_t *count_p)
+{
+	int snum;
+	int n_services = lp_numservices();
+	union spoolss_PrinterInfo *info = NULL;
+	uint32_t count = 0;
+	WERROR result = WERR_OK;
+
+	*count_p = 0;
+	*info_p = NULL;
+
+	for (snum = 0; snum < n_services; snum++) {
+
+		NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
+
+		if (!snum_is_shared_printer(snum)) {
+			continue;
+		}
+
+		DEBUG(4,("Found a printer in smb.conf: %s[%x]\n",
+			lp_servicename(snum), snum));
+
+		info = TALLOC_REALLOC_ARRAY(mem_ctx, info,
+					    union spoolss_PrinterInfo,
+					    count + 1);
+		if (!info) {
+			result = WERR_NOMEM;
+			goto out;
+		}
+
+		result = get_a_printer(NULL, &ntprinter, 2,
+				       lp_const_servicename(snum));
+		if (!W_ERROR_IS_OK(result)) {
+			goto out;
+		}
+
+		switch (level) {
+		case 1:
+			result = construct_printer_info1(info, ntprinter, flags,
+							 &info[count].info1, snum);
+			break;
+		case 2:
+			result = construct_printer_info2(info, ntprinter,
+							 &info[count].info2, snum);
+			break;
+		default:
+			result = WERR_UNKNOWN_LEVEL;
+			free_a_printer(&ntprinter, 2);
+			goto out;
+		}
+
+		free_a_printer(&ntprinter, 2);
+		if (!W_ERROR_IS_OK(result)) {
+			goto out;
+		}
+
+		count++;
+	}
+
+	*count_p = count;
+	*info_p = info;
+
+ out:
+	if (!W_ERROR_IS_OK(result)) {
+		TALLOC_FREE(info);
+		return result;
+	}
+
+	*info_p = info;
+
+	return WERR_OK;
+}
+
 static WERROR enum_all_printers_info_1(TALLOC_CTX *mem_ctx,
 				       uint32_t flags,
 				       union spoolss_PrinterInfo **info_p,
