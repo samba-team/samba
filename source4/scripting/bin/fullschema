@@ -22,7 +22,6 @@ parser.add_option_group(sambaopts)
 credopts = options.CredentialsOptions(parser)
 parser.add_option_group(credopts)
 parser.add_option_group(options.VersionOptions(parser))
-parser.add_option("--verbose", help="Be verbose", action="store_true")
 parser.add_option("--dump-classes", action="store_true")
 parser.add_option("--dump-attributes", action="store_true")
 
@@ -48,9 +47,6 @@ lp_ctx = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp_ctx)
 ldb = Ldb(url, credentials=creds, lp=lp_ctx, options=["modules:paged_searches"])
 
-objectclasses = {}
-attributes = {}
-
 # the attributes we need for objectclasses
 class_attrs = ["objectClass", 
                "cn",
@@ -62,7 +58,6 @@ class_attrs = ["objectClass",
                "mustContain",
                "auxiliaryClass",
                "rDNAttID",
-               "showInAdvancedViewOnly",
                "adminDisplayName",
                "adminDescription",
                "objectClassCategory",
@@ -94,7 +89,6 @@ attrib_attrs = ["objectClass",
                 "rangeUpper",
                 "mAPIID",
                 "linkID",
-                "showInAdvancedViewOnly",
                 "adminDisplayName",
                 "oMObjectClass",
                 "adminDescription",
@@ -115,14 +109,6 @@ attrib_attrs = ["objectClass",
                 "classDisplayName",
                 "isEphemeral",
                 "isDefunct"]
-
-#
-#  notes:
-#
-#  objectClassCategory 
-#      1: structural
-#      2: abstract
-#      3: auxiliary
 
 class Objectclass(dict):
 
