@@ -6004,6 +6004,42 @@ if test x"$enable_dnssd" == x"yes"; then
 fi
 
 #################################################
+# Check if user wants avahi support
+
+AC_ARG_ENABLE(avahi,
+[AS_HELP_STRING([--enable-avahi], [Enable Avahi support (default=auto)])])
+
+AC_SUBST(AVAHI_LIBS)
+if test x"$enable_avahi" != x"no"; then
+    have_avahi_support=yes
+
+    AC_CHECK_HEADERS(avahi-common/watch.h)
+    if test x"$ac_cv_header_avahi_common_watch_h" != x"yes"; then
+	have_avahi_support=no
+    fi
+
+    AC_CHECK_HEADERS(avahi-client/client.h)
+    if test x"$ac_cv_header_avahi_common_watch_h" != x"yes"; then
+	have_avahi_support=no
+    fi
+
+    AC_CHECK_LIB_EXT(avahi-client, AVAHI_LIBS, avahi_client_new)
+    if test x"$ac_cv_lib_ext_avahi_client_avahi_client_new" != x"yes"; then
+	have_avahi_support=no
+    fi
+
+    if test x"$have_avahi_support" = x"yes"; then
+	AC_DEFINE(WITH_AVAHI_SUPPORT, 1,
+		[Whether to enable avahi support])
+    else
+	if test x"$enable_avahi" = x"yes"; then
+	    AC_MSG_ERROR(avahi support not available)
+	fi
+    fi
+
+fi
+
+#################################################
 # Check to see if we should use the included iniparser
 
 AC_ARG_WITH(included-iniparser,
