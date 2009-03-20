@@ -315,7 +315,7 @@ static NTSTATUS smb_get_nt_acl_nfs4_common(const SMB_STRUCT_STAT *sbuf,
 	}
 
 	DEBUG(10, ("smb_get_nt_acl_nfs4_common successfully exited with sd_size %d\n",
-		   ndr_size_security_descriptor(*ppdesc, 0)));
+		   ndr_size_security_descriptor(*ppdesc, NULL, 0)));
 
 	return NT_STATUS_OK;
 }
