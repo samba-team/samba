@@ -225,32 +225,32 @@ test4-%::
 valgrindtest4:: valgrindtest-all
 
 valgrindtest4-quick:: all
-	SMBD_VALGRIND="xterm -n server -e $(selftestdir)/valgrind_run $(LD_LIBPATH_OVERRIDE)" \
+	SAMBA_VALGRIND="xterm -n server -e $(selftestdir)/valgrind_run $(LD_LIBPATH_OVERRIDE)" \
 	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
 	$(SELFTEST4) $(SELFTEST4_QUICK_OPTS) --immediate --socket-wrapper $(TESTS)
 
 valgrindtest4-all:: everything
-	SMBD_VALGRIND="xterm -n server -e $(selftestdir)/valgrind_run $(LD_LIBPATH_OVERRIDE)" \
+	SAMBA_VALGRIND="xterm -n server -e $(selftestdir)/valgrind_run $(LD_LIBPATH_OVERRIDE)" \
 	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
 	$(SELFTEST4) $(SELFTEST4_NOSLOW_OPTS) --immediate --socket-wrapper $(TESTS)
 
 valgrindtest4-env:: everything
-	SMBD_VALGRIND="xterm -n server -e $(selftestdir)/valgrind_run $(LD_LIBPATH_OVERRIDE)" \
+	SAMBA_VALGRIND="xterm -n server -e $(selftestdir)/valgrind_run $(LD_LIBPATH_OVERRIDE)" \
 	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
 	$(SELFTEST4) $(SELFTEST4_NOSLOW_OPTS) --socket-wrapper --testenv
 
 gdbtest4:: gdbtest4-all
 
 gdbtest4-quick:: all
-	SMBD_VALGRIND="xterm -n server -e $(selftestdir)/gdb_run $(LD_LIBPATH_OVERRIDE)" \
+	SAMBA_VALGRIND="xterm -n server -e $(selftestdir)/gdb_run $(LD_LIBPATH_OVERRIDE)" \
 	$(SELFTEST4) $(SELFTEST4_QUICK_OPTS) --immediate --socket-wrapper $(TESTS)
 
 gdbtest4-all:: everything
-	SMBD_VALGRIND="xterm -n server -e $(selftestdir)/gdb_run $(LD_LIBPATH_OVERRIDE)" \
+	SAMBA_VALGRIND="xterm -n server -e $(selftestdir)/gdb_run $(LD_LIBPATH_OVERRIDE)" \
 	$(SELFTEST4) $(SELFTEST4_NOSLOW_OPTS) --immediate --socket-wrapper $(TESTS)
 
 gdbtest4-env:: everything
-	SMBD_VALGRIND="xterm -n server -e $(selftestdir)/gdb_run $(LD_LIBPATH_OVERRIDE)" \
+	SAMBA_VALGRIND="xterm -n server -e $(selftestdir)/gdb_run $(LD_LIBPATH_OVERRIDE)" \
 	$(SELFTEST4) $(SELFTEST4_NOSLOW_OPTS) --socket-wrapper --testenv
 
 plugins: $(PLUGINS)
