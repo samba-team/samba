@@ -54,7 +54,7 @@ NTSTATUS net_get_remote_domain_sid(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				   DOM_SID **domain_sid,
 				   const char **domain_name)
 {
-	struct rpc_pipe_client *lsa_pipe;
+	struct rpc_pipe_client *lsa_pipe = NULL;
 	struct policy_handle pol;
 	NTSTATUS result = NT_STATUS_OK;
 	union lsa_PolicyInformation *info = NULL;
