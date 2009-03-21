@@ -1276,6 +1276,21 @@ PyTypeObject PyLdbModule = {
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
+
+/**
+ * Create a ldb_message_element from a Python object.
+ *
+ * This will accept any sequence objects that contains strings, or 
+ * a string object.
+ *
+ * A reference to set_obj will be borrowed. 
+ *
+ * @param mem_ctx Memory context
+ * @param set_obj Python object to convert
+ * @param flags ldb_message_element flags to set
+ * @param attr_name Name of the attribute
+ * @return New ldb_message_element, allocated as child of mem_ctx
+ */
 struct ldb_message_element *PyObject_AsMessageElement(TALLOC_CTX *mem_ctx,
 											   PyObject *set_obj, int flags,
 											   const char *attr_name)
@@ -1293,11 +1308,7 @@ struct ldb_message_element *PyObject_AsMessageElement(TALLOC_CTX *mem_ctx,
 		me->num_values = 1;
 		me->values = talloc_array(me, struct ldb_val, me->num_values);
 		me->values[0].length = PyString_Size(set_obj);
-		me->values[0].data = (uint8_t *)talloc_memdup(me->values,
-					PyString_AsString(set_obj),
-					me->values[0].length + 1);
-		me->values[0].data[me->values[0].length] = '\0';
-
+		me->values[0].data = (uint8_t *)PyString_AsString(set_obj);
 	} else if (PySequence_Check(set_obj)) {
 		int i;
 		me->num_values = PySequence_Size(set_obj);
