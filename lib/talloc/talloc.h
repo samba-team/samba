@@ -426,6 +426,22 @@ typedef void TALLOC_CTX;
 
 #define talloc_zero_size(ctx, size) _talloc_zero(ctx, size, __location__)
 
+/**
+ * \def talloc_zero_array(ctx, type, count)
+ * \brief Allocate a 0-initialized array
+ * \param ctx The talloc context to hang the result off
+ * \param type The type that we want to allocate
+ * \param count The number of "type" elements you want to allocate
+ * \return The allocated result, properly cast to "type *"
+ * \ingroup talloc_array
+ *
+ * The talloc_zero_array() macro is equivalent to:
+ *
+ * \code
+ * ptr = talloc_array(ctx, type, count);
+ * if (ptr) memset(ptr, sizeof(type) * count);
+ * \endcode
+ */
 #define talloc_zero_array(ctx, type, count) (type *)_talloc_zero_array(ctx, sizeof(type), count, #type)
 
 /**
