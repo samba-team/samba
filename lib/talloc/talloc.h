@@ -117,6 +117,13 @@
  * allocated memory hierarchy.
  */
 
+/** \defgroup todo Default group of undocumented stuff
+ *
+ * This should be empty...
+ */
+
+/*\{*/
+
 /**
  * \typedef TALLOC_CTX
  * \brief Define a talloc parent type
@@ -1210,3 +1217,5 @@ char *talloc_asprintf_append_buffer(char *s, const char *fmt, ...) PRINTF_ATTRIB
 void talloc_set_abort_fn(void (*abort_fn)(const char *reason));
 
 #endif
+
+/*\}*/
