@@ -56,6 +56,9 @@
  * If you think about this, then what this effectively gives you is an n-ary
  * tree, where you can free any part of the tree with talloc_free().
  *
+ * To start, you should probably first look at the definitions of
+ * ::TALLOC_CTX, talloc_init(), talloc() and talloc_free().
+ *
  * \section named_blocks Named blocks
  *
  * Every talloc chunk has a name that can be used as a dynamic type-checking
