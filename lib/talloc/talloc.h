@@ -99,28 +99,33 @@
  * programming.
  */
 
-/** \defgroup talloc_ref Talloc References
+/**
+ * \defgroup talloc_ref Talloc References
  *
  * This module contains the definitions around talloc references
  */
 
-/** \defgroup talloc_array Array routines
+/**
+ * \defgroup talloc_array Array routines
  *
  * Talloc contains some handy helpers for handling Arrays conveniently
  */
 
-/** \defgroup talloc_string String handling routines
+/**
+ * \defgroup talloc_string String handling routines
  *
  * Talloc contains some handy string handling functions
  */
 
-/** \defgroup talloc_debug Debugging support routines
+/**
+ * \defgroup talloc_debug Debugging support routines
  *
  * To aid memory debugging, talloc contains routines to inspect the currently
  * allocated memory hierarchy.
  */
 
-/** \defgroup todo Default group of undocumented stuff
+/**
+ * \defgroup talloc_undoc Default group of undocumented stuff
  *
  * This should be empty...
  */
