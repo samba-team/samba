@@ -635,7 +635,16 @@ typedef void TALLOC_CTX;
 
 #define TALLOC_FREE(ctx) do { talloc_free(ctx); ctx=NULL; } while(0)
 
-/* The following definitions come from talloc.c  */
+/**
+ * \brief Allocate untyped, unnamed memory
+ * \param context The talloc context to hang the result off
+ * \param size Number of char's that you want to allocate
+ * \return The allocated memory chunk
+ * \ingroup talloc_internal
+ *
+ * Essentially the same as talloc_size() without setting the chunk name to the
+ * current file/line number.
+ */
 void *_talloc(const void *context, size_t size);
 
 /**
