@@ -633,6 +633,16 @@ typedef void TALLOC_CTX;
 #define talloc_append_string(c, s, a) (s?talloc_strdup_append(s,a):talloc_strdup(c, a))
 #endif
 
+/**
+ * \def TALLOC_FREE(ctx)
+ * \brief talloc_free a chunk and NULL out the pointer
+ * \param ctx The chunk to be freed
+ * \ingroup talloc_basic
+ *
+ * TALLOC_FREE() frees a pointer and sets it to NULL. Use this if you want
+ * immediate feedback (i.e. crash) if you use a pointer after having free'ed
+ * it.
+ */
 #define TALLOC_FREE(ctx) do { talloc_free(ctx); ctx=NULL; } while(0)
 
 /**
