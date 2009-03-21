@@ -628,6 +628,41 @@ typedef void TALLOC_CTX;
 
 /* The following definitions come from talloc.c  */
 void *_talloc(const void *context, size_t size);
+
+/**
+ * \brief Allocate a talloc pool
+ * \param context The talloc context to hang the result off
+ * \param size Size of the talloc pool
+ * \result The talloc pool
+ * \ingroup talloc_basic
+ *
+ * A talloc pool is a pure optimization for specific situations. In the
+ * release process for Samba 3.2 we found out that we had become considerably
+ * slower than Samba 3.0 was. Profiling showed that malloc(3) was a large CPU
+ * consumer in benchmarks. For Samba 3.2 we have internally converted many
+ * static buffers to dynamically allocated ones, so malloc(3) being beaten
+ * more was no surprise. But it made us slower.
+ *
+ * talloc_pool() is an optimization to call malloc(3) a lot less for the use
+ * pattern Samba has: The SMB protocol is mainly a request/response protocol
+ * where we have to allocate a certain amount of memory per request and free
+ * that after the SMB reply is sent to the client.
+ *
+ * talloc_pool() creates a talloc chunk that you can use as a talloc parent
+ * exactly as you would use any other ::TALLOC_CTX. The difference is that
+ * when you talloc a child of this pool, no malloc(3) is done. Instead, talloc
+ * just increments a pointer inside the talloc_pool. This also works
+ * recursively. If you use the child of the talloc pool as a parent for
+ * grand-children, their memory is also taken from the talloc pool.
+ *
+ * If you talloc_free() children of a talloc pool, the memory is not given
+ * back to the system. Instead, free(3) is only called if the talloc_pool()
+ * itself is released with talloc_free().
+ *
+ * The downside of a talloc pool is that if you talloc_move() a child of a
+ * talloc pool to a talloc parent outside the pool, the whole pool memory is
+ * not free(3)'ed until that moved chunk is also talloc_free()ed.
+ */
 void *talloc_pool(const void *context, size_t size);
 void _talloc_set_destructor(const void *ptr, int (*destructor)(void *));
 
