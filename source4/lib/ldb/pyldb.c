@@ -65,18 +65,7 @@ static PyObject *PyObject_FromLdbValue(struct ldb_context *ldb_ctx,
 	PyObject *ret;
 	
 	new_val = *val;
-	
-	if (ldb_ctx != NULL) {		
-		a = ldb_schema_attribute_by_name(ldb_ctx, el->name);
-	
-		if (a != NULL) {
-			if (a->syntax->ldif_write_fn(ldb_ctx, mem_ctx, val, &new_val) != 0) {
-				talloc_free(mem_ctx);
-				return NULL;
-			}
-		}
-	} 
-	
+
 	ret = PyString_FromStringAndSize((const char *)new_val.data, new_val.length);
 	
 	talloc_free(mem_ctx);
