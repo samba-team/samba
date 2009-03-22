@@ -952,23 +952,23 @@ krb5_425_conv_principal_ext2(krb5_context context,
 	krb5_boolean passed = FALSE;
 	char *inst = NULL;
 #ifdef USE_RESOLVER
-	struct dns_reply *r;
+	struct rk_dns_reply *r;
 
-	r = dns_lookup(instance, "aaaa");
+	r = rk_dns_lookup(instance, "aaaa");
 	if (r) {
-	    if (r->head && r->head->type == T_AAAA) {
+	    if (r->head && r->head->type == rk_ns_t_aaaa) {
 		inst = strdup(r->head->domain);
 		passed = TRUE;
 	    }
-	    dns_free_data(r);
+	    rk_dns_free_data(r);
 	} else {
-	    r = dns_lookup(instance, "a");
+	    r = rk_dns_lookup(instance, "a");
 	    if (r) {
-		if(r->head && r->head->type == T_A) {
+		if(r->head && r->head->type == rk_ns_t_a) {
 		    inst = strdup(r->head->domain);
 		    passed = TRUE;
 		}
-		dns_free_data(r);
+		rk_dns_free_data(r);
 	    }
 	}
 #else
