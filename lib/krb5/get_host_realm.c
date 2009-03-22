@@ -58,7 +58,7 @@ copy_txt_to_realms (struct rk_resource_record *head,
     unsigned int n, i;
 
     for(n = 0, rr = head; rr; rr = rr->next)
-	if (rr->type == T_TXT)
+	if (rr->type == rk_ns_t_txt)
 	    ++n;
 
     if (n == 0)
@@ -72,7 +72,7 @@ copy_txt_to_realms (struct rk_resource_record *head,
 	(*realms)[i] = NULL;
 
     for (i = 0, rr = head; rr; rr = rr->next) {
-	if (rr->type == T_TXT) {
+	if (rr->type == rk_ns_t_txt) {
 	    char *tmp;
 
 	    tmp = strdup(rr->u.txt);
