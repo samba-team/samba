@@ -305,7 +305,7 @@ _hx509_collector_collect_private_keys(hx509_context context,
 	    c->val.data[i]->private_key = NULL;
 	}
     }
-    (*keys)[nkeys++] = NULL;
+    (*keys)[nkeys] = NULL;
 
     return 0;
 }
