@@ -7235,6 +7235,11 @@ NTSTATUS nss_info_template_init( void );
 struct AvahiPoll *tevent_avahi_poll(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev);
 
+/* The following definitions come from smbd/avahi_register.c */
+
+void *avahi_start_register(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+			   uint16_t port);
+
 /* Misc protos */
 
 #endif /*  _PROTO_H_  */
