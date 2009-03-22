@@ -125,15 +125,6 @@
  */
 
 /**
- * \defgroup talloc_internal Internal routines
- *
- * To achieve type-safety, talloc.h defines a lot of macros with type
- * casts. These macros define the user interface to the internal routines you
- * find here. You should not really use these routines directly but go through
- * the external API.
- */
-
-/**
  * \defgroup talloc_undoc Default group of undocumented stuff
  *
  * This should be empty...
