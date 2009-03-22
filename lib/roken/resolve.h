@@ -173,7 +173,7 @@ typedef enum {
 #define dns_type_to_string	rk_dns_type_to_string
 #define dns_srv_order		rk_dns_srv_order
 
-struct dns_query{
+struct rk_dns_query{
     char *domain;
     unsigned type;
     unsigned class;
@@ -235,7 +235,7 @@ struct ds_record {
     u_char digest_data[1];
 };
 
-struct resource_record{
+struct rk_resource_record{
     char *domain;
     unsigned type;
     unsigned class;
@@ -254,7 +254,7 @@ struct resource_record{
 	struct sshfp_record *sshfp;
 	struct ds_record *ds;
     }u;
-    struct resource_record *next;
+    struct rk_resource_record *next;
 };
 
 #define rk_DNS_MAX_PACKET_SIZE		0xffff
@@ -277,22 +277,22 @@ struct dns_header {
     unsigned arcount;
 };
 
-struct dns_reply{
-    struct dns_header h;
-    struct dns_query q;
-    struct resource_record *head;
+struct rk_dns_reply{
+    struct rk_dns_header h;
+    struct rk_dns_query q;
+    struct rk_resource_record *head;
 };
 
 
 struct dns_reply* ROKEN_LIB_FUNCTION
-	dns_lookup(const char *, const char *);
+	rk_dns_lookup(const char *, const char *);
 void ROKEN_LIB_FUNCTION
 	dns_free_data(struct dns_reply *);
 int ROKEN_LIB_FUNCTION
-	dns_string_to_type(const char *name);
+	rk_dns_string_to_type(const char *name);
 const char *ROKEN_LIB_FUNCTION
-	dns_type_to_string(int type);
+	rk_dns_type_to_string(int type);
 void ROKEN_LIB_FUNCTION
-	dns_srv_order(struct dns_reply*);
+	rk_dns_srv_order(struct dns_reply*);
 
 #endif /* __RESOLVE_H__ */
