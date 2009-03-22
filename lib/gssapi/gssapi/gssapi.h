@@ -803,6 +803,18 @@ gss_release_iov_buffer(OM_uint32 * /* minor_status */,
 		       gss_iov_buffer_desc * /* iov */,
 		       int /* iov_count */);
 
+
+OM_uint32
+gss_store_cred(OM_uint32         * /* minor_status */,
+	       gss_cred_id_t     /* input_cred_handle */,
+	       gss_cred_usage_t  /* cred_usage */,
+	       const gss_OID     /* desired_mech */,
+	       OM_uint32         /* overwrite_cred */,
+	       OM_uint32         /* default_cred */,
+	       gss_OID_set       * /* elements_stored */,
+	       gss_cred_usage_t  * /* cred_usage_stored */);
+
+
 /*
  * Query functions
  */
