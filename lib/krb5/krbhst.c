@@ -90,7 +90,7 @@ srv_find_realm(krb5_context context, krb5_krbhst_info ***res, int *count,
 	return KRB5_KDC_UNREACH;
 
     for(num_srv = 0, rr = r->head; rr; rr = rr->next)
-	if(rr->type == T_SRV)
+	if(rr->type == rk_ns_t_srv)
 	    num_srv++;
 
     *res = malloc(num_srv * sizeof(**res));
@@ -104,7 +104,7 @@ srv_find_realm(krb5_context context, krb5_krbhst_info ***res, int *count,
     rk_dns_srv_order(r);
 
     for(num_srv = 0, rr = r->head; rr; rr = rr->next)
-	if(rr->type == T_SRV) {
+	if(rr->type == rk_ns_t_srv) {
 	    krb5_krbhst_info *hi;
 	    size_t len = strlen(rr->u.srv->target);
 
