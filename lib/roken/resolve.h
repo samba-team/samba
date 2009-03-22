@@ -167,12 +167,6 @@ typedef enum {
 #define resource_record		rk_resource_record
 #define dns_reply		rk_dns_reply
 
-#define dns_lookup		rk_dns_lookup
-#define dns_free_data		rk_dns_free_data
-#define dns_string_to_type	rk_dns_string_to_type
-#define dns_type_to_string	rk_dns_type_to_string
-#define dns_srv_order		rk_dns_srv_order
-
 struct rk_dns_query{
     char *domain;
     unsigned type;
@@ -287,7 +281,7 @@ struct rk_dns_reply{
 struct dns_reply* ROKEN_LIB_FUNCTION
 	rk_dns_lookup(const char *, const char *);
 void ROKEN_LIB_FUNCTION
-	dns_free_data(struct dns_reply *);
+	rk_dns_free_data(struct dns_reply *);
 int ROKEN_LIB_FUNCTION
 	rk_dns_string_to_type(const char *name);
 const char *ROKEN_LIB_FUNCTION
