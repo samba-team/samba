@@ -31,6 +31,7 @@
  * SUCH DAMAGE.
  */
 
+#include "mech_locl.h"
 
 OM_uint32
 gss_store_cred(OM_uint32         *minor_status,
@@ -44,34 +45,50 @@ gss_store_cred(OM_uint32         *minor_status,
 {
     struct _gss_cred *cred = (struct _gss_cred *) input_cred_handle;
     struct _gss_mechanism_cred *mc;
-    OM_uint32 maj;
+    OM_uint32 maj, junk;
 
     if (minor_status == NULL)
 	return GSS_S_FAILURE;
     if (elements_stored)
 	*elements_stored = NULL;
     if (cred_usage_stored)
-	*cred_usage_stored = NULL;
+	*cred_usage_stored = 0;
 	
     if (cred == NULL)
 	return GSS_S_NO_CONTEXT;
 
-    if (m->gm_store_cred == NULL) {
-	*minor_status = 0;
-	return GSS_S_UNAVAILABLE;
+    if (cred_usage_stored) {
+	maj = gss_create_empty_oid_set(minor_status, elements_stored);
+	if (maj != GSS_S_COMPLETE)
+	    return maj;
     }
 
     SLIST_FOREACH(mc, &cred->gc_mc, gmc_link) {
 	gssapi_mech_interface m = mc->gmc_mech;
 
-	if (m == NULL || mc->gmc_cred == NULL)
+	if (m == NULL || m->gm_store_cred == NULL)
 	    continue;
 
+	if (desired_mech) {
+	    maj = gss_oid_equal(&junk, &m->gm_mech_oid, desired_mech);
+	    if (maj != 0)
+		continue;
+	}
+
 	maj = (m->gm_store_cred)(minor_status, mc->gmc_cred,
-				  cred_usage, desired_mech, overwrite_cred,
-				  default_cred, elements_stored, cred_usage);
-	if (maj != GSS_S_COMPLETE)
+				 cred_usage, desired_mech, overwrite_cred,
+				 default_cred, NULL, cred_usage_stored);
+	if (maj != GSS_S_COMPLETE) {
+	    gss_release_oid_set(&junk, elements_stored);
 	    return maj;
+	}
+
+	if (elements_stored) {
+	    gss_add_oid_set_member(&junk,
+				   &m->gm_mech_oid,
+				   elements_stored);
+	}
+
     }
     return GSS_S_COMPLETE;
 }
