@@ -78,7 +78,7 @@ static struct stot{
 int _resolve_debug = 0;
 
 int ROKEN_LIB_FUNCTION
-dns_string_to_type(const char *name)
+rk_dns_string_to_type(const char *name)
 {
     struct stot *p = stot;
     for(p = stot; p->name; p++)
@@ -88,7 +88,7 @@ dns_string_to_type(const char *name)
 }
 
 const char * ROKEN_LIB_FUNCTION
-dns_type_to_string(int type)
+rk_dns_type_to_string(int type)
 {
     struct stot *p = stot;
     for(p = stot; p->name; p++)
@@ -100,7 +100,7 @@ dns_type_to_string(int type)
 #if (defined(HAVE_RES_SEARCH) || defined(HAVE_RES_NSEARCH)) && defined(HAVE_DN_EXPAND)
 
 static void
-dns_free_rr(struct resource_record *rr)
+dns_free_rr(struct rk_resource_record *rr)
 {
     if(rr->domain)
 	free(rr->domain);
@@ -110,13 +110,13 @@ dns_free_rr(struct resource_record *rr)
 }
 
 void ROKEN_LIB_FUNCTION
-dns_free_data(struct dns_reply *r)
+rk_dns_free_data(struct rk_dns_reply *r)
 {
-    struct resource_record *rr;
+    struct rk_resource_record *rr;
     if(r->q.domain)
 	free(r->q.domain);
     for(rr = r->head; rr;){
-	struct resource_record *tmp = rr;
+	struct rk_resource_record *tmp = rr;
 	rr = rr->next;
 	dns_free_rr(tmp);
     }
@@ -125,9 +125,9 @@ dns_free_data(struct dns_reply *r)
 
 static int
 parse_record(const unsigned char *data, const unsigned char *end_data,
-	     const unsigned char **pp, struct resource_record **ret_rr)
+	     const unsigned char **pp, struct rk_resource_record **ret_rr)
 {
-    struct resource_record *rr;
+    struct rk_resource_record *rr;
     int type, class, ttl;
     unsigned size;
     int status;
@@ -401,7 +401,7 @@ parse_record(const unsigned char *data, const unsigned char *end_data,
 #ifndef TEST_RESOLVE
 static
 #endif
-struct dns_reply*
+struct rk_dns_reply*
 parse_reply(const unsigned char *data, size_t len)
 {
     const unsigned char *p;
@@ -409,8 +409,8 @@ parse_reply(const unsigned char *data, size_t len)
     int i;
     char host[MAXDNAME];
     const unsigned char *end_data = data + len;
-    struct dns_reply *r;
-    struct resource_record **rr;
+    struct rk_dns_reply *r;
+    struct rk_resource_record **rr;
 
     r = calloc(1, sizeof(*r));
     if (r == NULL)
@@ -449,16 +449,16 @@ parse_reply(const unsigned char *data, size_t len)
     }
     status = dn_expand(data, end_data, p, host, sizeof(host));
     if(status < 0){
-	dns_free_data(r);
+	rk_dns_free_data(r);
 	return NULL;
     }
     r->q.domain = strdup(host);
     if(r->q.domain == NULL) {
-	dns_free_data(r);
+	rk_dns_free_data(r);
 	return NULL;
     }
     if (p + status + 4 > end_data) {
-	dns_free_data(r);
+	rk_dns_free_data(r);
 	return NULL;
     }
     p += status;
@@ -470,21 +470,21 @@ parse_reply(const unsigned char *data, size_t len)
     rr = &r->head;
     for(i = 0; i < r->h.ancount; i++) {
 	if(parse_record(data, end_data, &p, rr) != 0) {
-	    dns_free_data(r);
+	    rk_dns_free_data(r);
 	    return NULL;
 	}
 	rr = &(*rr)->next;
     }
     for(i = 0; i < r->h.nscount; i++) {
 	if(parse_record(data, end_data, &p, rr) != 0) {
-	    dns_free_data(r);
+	    rk_dns_free_data(r);
 	    return NULL;
 	}
 	rr = &(*rr)->next;
     }
     for(i = 0; i < r->h.arcount; i++) {
 	if(parse_record(data, end_data, &p, rr) != 0) {
-	    dns_free_data(r);
+	    rk_dns_free_data(r);
 	    return NULL;
 	}
 	rr = &(*rr)->next;
@@ -501,10 +501,10 @@ parse_reply(const unsigned char *data, size_t len)
 #endif
 #endif
 
-static struct dns_reply *
+static struct rk_dns_reply *
 dns_lookup_int(const char *domain, int rr_class, int rr_type)
 {
-    struct dns_reply *r;
+    struct rk_dns_reply *r;
     unsigned char *reply = NULL;
     int size;
     int len;
@@ -534,7 +534,7 @@ dns_lookup_int(const char *domain, int rr_class, int rr_type)
 	    _res.options |= RES_DEBUG;
 #endif
 	    fprintf(stderr, "dns_lookup(%s, %d, %s), buffer size %d\n", domain,
-		    rr_class, dns_type_to_string(rr_type), size);
+		    rr_class, rk_dns_type_to_string(rr_type), size);
 	}
 	reply = malloc(size);
 	if (reply == NULL) {
@@ -553,7 +553,7 @@ dns_lookup_int(const char *domain, int rr_class, int rr_type)
 	    _res.options = old_options;
 #endif
 	    fprintf(stderr, "dns_lookup(%s, %d, %s) --> %d\n",
-		    domain, rr_class, dns_type_to_string(rr_type), len);
+		    domain, rr_class, rk_dns_type_to_string(rr_type), len);
 	}
 	if (len < 0) {
 #ifdef HAVE_RES_NSEARCH
@@ -573,12 +573,12 @@ dns_lookup_int(const char *domain, int rr_class, int rr_type)
     return r;
 }
 
-struct dns_reply * ROKEN_LIB_FUNCTION
-dns_lookup(const char *domain, const char *type_name)
+struct rk_dns_reply * ROKEN_LIB_FUNCTION
+rk_dns_lookup(const char *domain, const char *type_name)
 {
     int type;
 
-    type = dns_string_to_type(type_name);
+    type = rk_dns_string_to_type(type_name);
     if(type == -1) {
 	if(_resolve_debug)
 	    fprintf(stderr, "dns_lookup: unknown resource type: `%s'\n",
@@ -591,7 +591,7 @@ dns_lookup(const char *domain, const char *type_name)
 static int
 compare_srv(const void *a, const void *b)
 {
-    const struct resource_record *const* aa = a, *const* bb = b;
+    const struct rk_resource_record *const* aa = a, *const* bb = b;
 
     if((*aa)->u.srv->priority == (*bb)->u.srv->priority)
 	return ((*aa)->u.srv->weight - (*bb)->u.srv->weight);
@@ -604,10 +604,10 @@ compare_srv(const void *a, const void *b)
 
 /* try to rearrange the srv-records by the algorithm in RFC2782 */
 void ROKEN_LIB_FUNCTION
-dns_srv_order(struct dns_reply *r)
+rk_dns_srv_order(struct rk_dns_reply *r)
 {
-    struct resource_record **srvs, **ss, **headp;
-    struct resource_record *rr;
+    struct rk_resource_record **srvs, **ss, **headp;
+    struct rk_resource_record *rr;
     int num_srv = 0;
 
 #if defined(HAVE_INITSTATE) && defined(HAVE_SETSTATE)
@@ -648,7 +648,7 @@ dns_srv_order(struct dns_reply *r)
 
     for(ss = srvs; ss < srvs + num_srv; ) {
 	int sum, rnd, count;
-	struct resource_record **ee, **tt;
+	struct rk_resource_record **ee, **tt;
 	/* find the last record with the same priority and count the
            sum of all weights */
 	for(sum = 0, tt = ss; tt < srvs + num_srv; tt++) {
@@ -693,19 +693,19 @@ dns_srv_order(struct dns_reply *r)
 
 #else /* NOT defined(HAVE_RES_SEARCH) && defined(HAVE_DN_EXPAND) */
 
-struct dns_reply * ROKEN_LIB_FUNCTION
-dns_lookup(const char *domain, const char *type_name)
+struct rk_dns_reply * ROKEN_LIB_FUNCTION
+rk_dns_lookup(const char *domain, const char *type_name)
 {
     return NULL;
 }
 
 void ROKEN_LIB_FUNCTION
-dns_free_data(struct dns_reply *r)
+rk_dns_free_data(struct rk_dns_reply *r)
 {
 }
 
 void ROKEN_LIB_FUNCTION
-dns_srv_order(struct dns_reply *r)
+rk_dns_srv_order(struct rk_dns_reply *r)
 {
 }
 
