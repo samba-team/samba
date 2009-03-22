@@ -69,8 +69,8 @@ usage (int ret)
 int
 main(int argc, char **argv)
 {
-    struct dns_reply *r;
-    struct resource_record *rr;
+    struct rk_dns_reply *r;
+    struct rk_resource_record *rr;
     int optidx = 0;
 
     setprogname (argv[0]);
@@ -92,16 +92,16 @@ main(int argc, char **argv)
     if (argc != 2)
 	usage(1);
 
-    r = dns_lookup(argv[0], argv[1]);
+    r = rk_dns_lookup(argv[0], argv[1]);
     if(r == NULL){
 	printf("No reply.\n");
 	return 1;
     }
     if(r->q.type == rk_ns_t_srv)
-	dns_srv_order(r);
+	rk_dns_srv_order(r);
 
     for(rr = r->head; rr;rr=rr->next){
-	printf("%-30s %-5s %-6d ", rr->domain, dns_type_to_string(rr->type), rr->ttl);
+	printf("%-30s %-5s %-6d ", rr->domain, rk_dns_type_to_string(rr->type), rr->ttl);
 	switch(rr->type){
 	case rk_ns_t_ns:
 	case rk_ns_t_cname:
@@ -117,7 +117,7 @@ main(int argc, char **argv)
 	    break;
 	}
 	case rk_ns_t_srv:{
-	    struct srv_record *srv = rr->u.srv;
+	    struct rk_srv_record *srv = rr->u.srv;
 	    printf("%d %d %d %s\n", srv->priority, srv->weight,
 		   srv->port, srv->target);
 	    break;
@@ -127,8 +127,8 @@ main(int argc, char **argv)
 	    break;
 	}
 	case rk_ns_t_sig : {
-	    struct sig_record *sig = rr->u.sig;
-	    const char *type_string = dns_type_to_string (sig->type);
+	    struct rk_sig_record *sig = rr->u.sig;
+	    const char *type_string = rk_dns_type_to_string (sig->type);
 
 	    printf ("type %u (%s), algorithm %u, labels %u, orig_ttl %u, sig_expiration %u, sig_inception %u, key_tag %u, signer %s\n",
 		    sig->type, type_string ? type_string : "",
@@ -138,14 +138,14 @@ main(int argc, char **argv)
 	    break;
 	}
 	case rk_ns_t_key : {
-	    struct key_record *key = rr->u.key;
+	    struct rk_key_record *key = rr->u.key;
 
 	    printf ("flags %u, protocol %u, algorithm %u\n",
 		    key->flags, key->protocol, key->algorithm);
 	    break;
 	}
 	case rk_ns_t_sshfp : {
-	    struct sshfp_record *sshfp = rr->u.sshfp;
+	    struct rk_sshfp_record *sshfp = rr->u.sshfp;
 	    int i;
 
 	    printf ("alg %u type %u length %lu data ", sshfp->algorithm,
@@ -157,7 +157,7 @@ main(int argc, char **argv)
 	    break;
 	}
 	case rk_ns_t_ds : {
-	    struct ds_record *ds = rr->u.ds;
+	    struct rk_ds_record *ds = rr->u.ds;
 	    int i;
 
 	    printf ("key tag %u alg %u type %u length %u data ",
