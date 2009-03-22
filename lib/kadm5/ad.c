@@ -290,7 +290,7 @@ _kadm5_ad_connect(void *server_handle)
 	}	
 
 	for (rr = r->head ; rr != NULL; rr = rr->next) {
-	    if (rr->type != T_SRV)
+	    if (rr->type != rk_ns_t_srv)
 		continue;
 	    s = realloc(servers, sizeof(*servers) * (num_servers + 1));
 	    if (s == NULL) {
