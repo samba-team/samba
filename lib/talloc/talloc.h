@@ -849,25 +849,7 @@ const char *talloc_get_name(const void *ptr);
 void *talloc_check_name(const void *ptr, const char *name);
 
 void *_talloc_get_type_abort(const void *ptr, const char *name, const char *location);
-
-/**
- * \brief Return the parent chunk of a pointer
- * \param ptr The talloc pointer to inspect
- * \return The talloc parent of "ptr"
- * \ingroup talloc_basic
- *
- * Return the parent chunk of a pointer
- */
 void *talloc_parent(const void *ptr);
-
-/**
- * \brief Return a talloc chunk's parent name
- * \param ptr The talloc pointer to inspect
- * \return The name of ptr's parent chunk
- * \ingroup talloc_basic
- *
- * Return a talloc chunk's parent name
- */
 const char *talloc_parent_name(const void *ptr);
 
 /**
@@ -1167,17 +1149,6 @@ size_t talloc_get_size(const void *ctx);
  */
 void *talloc_find_parent_byname(const void *ctx, const char *name);
 void talloc_show_parents(const void *context, FILE *file);
-
-/**
- * \brief Check if a context is parent of a talloc chunk
- * \param context The assumed talloc context
- * \param ptr The talloc chunk to check
- * \return Is context an anchestor of ptr
- * \ingroup talloc_basic
- *
- * talloc_is_parent() checks if context is referenced in the talloc
- * hierarchy above ptr. Return 1 if this is the case, 0 if not.
- */
 int talloc_is_parent(const void *context, const void *ptr);
 
 /**
