@@ -1593,6 +1593,18 @@ krb5_init_creds_step(krb5_context context,
 					   N_("Preauth required but no preauth "
 					      "options send by KDC", ""));
 		}
+	    } else if (ret == KRB5KRB_AP_ERR_SKEW && context->kdc_sec_offset == 0) {
+		/* 
+		 * Try adapt to timeskrew when we are using pre-auth, and
+		 * if there was a time skew, try again.
+		 */
+		time_t sec_now;
+
+		krb5_timeofday (context, &sec_now);
+		context->kdc_sec_offset = ctx->error.stime - sec_now;
+
+		if (context->kdc_sec_offset)
+		    ret = 0; 
 	    } else if (ret == KRB5_KDC_ERR_WRONG_REALM && ctx->flags.canonicalize) {
 	        /* client referal to a new realm */
 		if (ctx->error.crealm) {
