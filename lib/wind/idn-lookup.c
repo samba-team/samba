@@ -102,7 +102,7 @@ lookup(const char *name)
 	*ep++ = '.';
 	i = j;
     }
-    *ep++ = '\0';
+    *ep = '\0';
     free(norm);
 
     printf("Converted \"%s\" into \"%s\"\n", name, encoded);
