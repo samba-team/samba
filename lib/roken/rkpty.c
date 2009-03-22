@@ -336,7 +336,6 @@ main(int argc, char **argv)
     parse_configuration(argv[0]);
 
     argv += 1;
-    argc -= 1;
 
     open_pty();
 
