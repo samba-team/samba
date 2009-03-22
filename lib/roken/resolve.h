@@ -101,58 +101,6 @@ typedef enum {
 	rk_ns_t_max = 65536
 } rk_ns_type;
 
-/* We use these, but they are not always present in <arpa/nameser.h> */
-
-#ifndef C_IN
-#define C_IN		1
-#endif
-
-#ifndef T_A
-#define T_A		1
-#endif
-#ifndef T_NS
-#define T_NS		2
-#endif
-#ifndef T_CNAME
-#define T_CNAME		5
-#endif
-#ifndef T_SOA
-#define T_SOA		5
-#endif
-#ifndef T_PTR
-#define T_PTR		12
-#endif
-#ifndef T_MX
-#define T_MX		15
-#endif
-#ifndef T_TXT
-#define T_TXT		16
-#endif
-#ifndef T_AFSDB
-#define T_AFSDB		18
-#endif
-#ifndef T_SIG
-#define T_SIG		24
-#endif
-#ifndef T_KEY
-#define T_KEY		25
-#endif
-#ifndef T_AAAA
-#define T_AAAA		28
-#endif
-#ifndef T_SRV
-#define T_SRV		33
-#endif
-#ifndef T_NAPTR
-#define T_NAPTR		35
-#endif
-#ifndef T_CERT
-#define T_CERT		37
-#endif
-#ifndef T_SSHFP
-#define T_SSHFP		44
-#endif
-
 #ifndef MAXDNAME
 #define MAXDNAME	1025
 #endif
