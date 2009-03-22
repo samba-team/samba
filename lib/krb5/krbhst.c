@@ -59,8 +59,8 @@ srv_find_realm(krb5_context context, krb5_krbhst_info ***res, int *count,
 	       const char *proto, const char *service, int port)
 {
     char domain[1024];
-    struct dns_reply *r;
-    struct resource_record *rr;
+    struct rk_dns_reply *r;
+    struct rk_resource_record *rr;
     int num_srv;
     int proto_num;
     int def_port;
@@ -85,7 +85,7 @@ srv_find_realm(krb5_context context, krb5_krbhst_info ***res, int *count,
 
     snprintf(domain, sizeof(domain), "_%s._%s.%s.", service, proto, realm);
 
-    r = dns_lookup(domain, dns_type);
+    r = rk_dns_lookup(domain, dns_type);
     if(r == NULL)
 	return KRB5_KDC_UNREACH;
 
@@ -95,13 +95,13 @@ srv_find_realm(krb5_context context, krb5_krbhst_info ***res, int *count,
 
     *res = malloc(num_srv * sizeof(**res));
     if(*res == NULL) {
-	dns_free_data(r);
+	rk_dns_free_data(r);
 	krb5_set_error_message(context, ENOMEM,
 			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
 
-    dns_srv_order(r);
+    rk_dns_srv_order(r);
 
     for(num_srv = 0, rr = r->head; rr; rr = rr->next)
 	if(rr->type == T_SRV) {
@@ -110,7 +110,7 @@ srv_find_realm(krb5_context context, krb5_krbhst_info ***res, int *count,
 
 	    hi = calloc(1, sizeof(*hi) + len);
 	    if(hi == NULL) {
-		dns_free_data(r);
+		rk_dns_free_data(r);
 		while(--num_srv >= 0)
 		    free((*res)[num_srv]);
 		free(*res);
@@ -132,7 +132,7 @@ srv_find_realm(krb5_context context, krb5_krbhst_info ***res, int *count,
 
     *count = num_srv;
 	
-    dns_free_data(r);
+    rk_dns_free_data(r);
     return 0;
 }
 
