@@ -44,7 +44,11 @@
 #endif
 #endif
 
-typedef enum {
+enum {
+    rk_ns_c_in = 1
+};
+
+enum {
 	rk_ns_t_invalid = 0,	/* Cookie. */
 	rk_ns_t_a = 1,		/* Host address. */
 	rk_ns_t_ns = 2,		/* Authoritative server. */
@@ -99,7 +103,7 @@ typedef enum {
 	rk_ns_t_any = 255,	/* Wildcard match. */
 	rk_ns_t_zxfr = 256,	/* BIND-specific, nonstandard. */
 	rk_ns_t_max = 65536
-} rk_ns_type;
+};
 
 #ifndef MAXDNAME
 #define MAXDNAME	1025
