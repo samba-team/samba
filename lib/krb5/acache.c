@@ -491,12 +491,21 @@ acc_resolve(krb5_context context, krb5_ccache *id, const char *res)
 
     error = (*a->context->func->open_ccache)(a->context, res, &a->ccache);
     if (error == ccNoError) {
+	cc_time_t offset;
 	error = get_cc_name(a);
 	if (error != ccNoError) {
 	    acc_close(context, *id);
 	    *id = NULL;
 	    return translate_cc_error(context, error);
 	}
+
+	error = (*a->ccache->func->get_kdc_time_offset)(a->ccache,
+							cc_credentials_v5,
+							&offset);
+	if (error == 0) 
+	    context->kdc_sec_offset = offset;
+
+	error = 0;
     } else if (error == ccErrCCacheNotFound) {
 	a->ccache = NULL;
 	a->cache_name = NULL;
@@ -571,6 +580,11 @@ acc_initialize(krb5_context context,
 						  cc_credentials_v5,
 						  name);
     }
+
+    if (error == 0 && context->kdc_sec_offset)
+	error = (*a->ccache->func->set_kdc_time_offset)(a->ccache,
+							cc_credentials_v5,
+							context->kdc_sec_offset);
 
     return translate_cc_error(context, error);
 }
