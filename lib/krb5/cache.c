@@ -1315,15 +1315,17 @@ krb5_cc_set_config(krb5_context context, krb5_ccache id,
     if (ret && ret != KRB5_CC_NOTFOUND)
         goto out;
 
-    /* not that anyone care when this expire */
-    cred.times.authtime = time(NULL);
-    cred.times.endtime = cred.times.authtime + 3600 * 24 * 30;
-
-    ret = krb5_data_copy(&cred.ticket, data->data, data->length);
-    if (ret)
-	goto out;
-
-    ret = krb5_cc_store_cred(context, id, &cred);
+    if (data) {
+	/* not that anyone care when this expire */
+	cred.times.authtime = time(NULL);
+	cred.times.endtime = cred.times.authtime + 3600 * 24 * 30;
+	
+	ret = krb5_data_copy(&cred.ticket, data->data, data->length);
+	if (ret)
+	    goto out;
+	
+	ret = krb5_cc_store_cred(context, id, &cred);
+    }
 
 out:
     krb5_free_cred_contents (context, &cred);
