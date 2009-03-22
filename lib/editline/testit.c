@@ -57,9 +57,6 @@ main(int argc, char **argv)
 	exit(0);
     }
 
-    argc -= optidx;
-    argv += optidx;
-
     while ((p = readline("testit> ")) != NULL) {
 	(void)printf("\t\t\t|%s|\n", p);
 	if (!n_flag) {
