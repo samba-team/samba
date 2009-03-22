@@ -681,7 +681,7 @@ list_files(FILE *out, const char **files, int n_files, int flags)
 		sec_fprintf2(out, "\r\n");
 	} else {
 	    int skip = (num_files + columns - 1) / columns;
-	    j = 0;
+
 	    for(i = 0; i < skip; i++) {
 		for(j = i; j < n_files;) {
 		    while(j < n_files && fi[j].filename == NULL)
