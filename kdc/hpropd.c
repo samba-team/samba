@@ -89,7 +89,7 @@ main(int argc, char **argv)
 
     ret = krb5_openlog(context, "hpropd", &fac);
     if(ret)
-	;
+	errx(1, "krb5_openlog");
     krb5_set_warn_dest(context, fac);
 
     if(getarg(args, num_args, argc, argv, &optidx))
