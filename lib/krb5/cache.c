@@ -1293,7 +1293,7 @@ krb5_is_config_principal(krb5_context context,
  * @param principal configuration for a specific principal, if
  * NULL, global for the whole cache.
  * @param name name under which the configuraion is stored.
- * @param data data to store
+ * @param data data to store, if NULL, configure is removed.
  *
  * @ingroup krb5_ccache
  */
