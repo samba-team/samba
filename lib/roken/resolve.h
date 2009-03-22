@@ -157,15 +157,12 @@ typedef enum {
 #define MAXDNAME	1025
 #endif
 
-#define dns_query		rk_dns_query
 #define mx_record		rk_mx_record
 #define srv_record		rk_srv_record
 #define key_record		rk_key_record
 #define sig_record		rk_sig_record
 #define cert_record		rk_cert_record
 #define sshfp_record		rk_sshfp_record
-#define resource_record		rk_resource_record
-#define dns_reply		rk_dns_reply
 
 struct rk_dns_query{
     char *domain;
@@ -173,19 +170,19 @@ struct rk_dns_query{
     unsigned class;
 };
 
-struct mx_record{
+struct rk_mx_record{
     unsigned  preference;
     char domain[1];
 };
 
-struct srv_record{
+struct rk_srv_record{
     unsigned priority;
     unsigned weight;
     unsigned port;
     char target[1];
 };
 
-struct key_record {
+struct rk_key_record {
     unsigned flags;
     unsigned protocol;
     unsigned algorithm;
@@ -193,7 +190,7 @@ struct key_record {
     u_char   key_data[1];
 };
 
-struct sig_record {
+struct rk_sig_record {
     unsigned type;
     unsigned algorithm;
     unsigned labels;
@@ -206,7 +203,7 @@ struct sig_record {
     char     sig_data[1];	/* also includes signer */
 };
 
-struct cert_record {
+struct rk_cert_record {
     unsigned type;
     unsigned tag;
     unsigned algorithm;
@@ -214,14 +211,14 @@ struct cert_record {
     u_char   cert_data[1];
 };
 
-struct sshfp_record {
+struct rk_sshfp_record {
     unsigned algorithm;
     unsigned type;
     size_t   sshfp_len;
     u_char   sshfp_data[1];
 };
 
-struct ds_record {
+struct rk_ds_record {
     unsigned key_tag;
     unsigned algorithm;
     unsigned digest_type;
@@ -237,16 +234,16 @@ struct rk_resource_record{
     unsigned size;
     union {
 	void *data;
-	struct mx_record *mx;
-	struct mx_record *afsdb; /* mx and afsdb are identical */
-	struct srv_record *srv;
+	struct rk_mx_record *mx;
+	struct rk_mx_record *afsdb; /* mx and afsdb are identical */
+	struct rk_srv_record *srv;
 	struct in_addr *a;
 	char *txt;
-	struct key_record *key;
-	struct cert_record *cert;
-	struct sig_record *sig;
-	struct sshfp_record *sshfp;
-	struct ds_record *ds;
+	struct rk_key_record *key;
+	struct rk_cert_record *cert;
+	struct rk_sig_record *sig;
+	struct rk_sshfp_record *sshfp;
+	struct rk_ds_record *ds;
     }u;
     struct rk_resource_record *next;
 };
@@ -282,16 +279,16 @@ struct rk_dns_reply{
 extern "C" {
 #endif
 
-struct dns_reply* ROKEN_LIB_FUNCTION
+struct rk_dns_reply* ROKEN_LIB_FUNCTION
 	rk_dns_lookup(const char *, const char *);
 void ROKEN_LIB_FUNCTION
-	rk_dns_free_data(struct dns_reply *);
+	rk_dns_free_data(struct rk_dns_reply *);
 int ROKEN_LIB_FUNCTION
 	rk_dns_string_to_type(const char *name);
 const char *ROKEN_LIB_FUNCTION
 	rk_dns_type_to_string(int type);
 void ROKEN_LIB_FUNCTION
-	rk_dns_srv_order(struct dns_reply*);
+	rk_dns_srv_order(struct rk_dns_reply*);
 
 #ifdef __cplusplus
 }
