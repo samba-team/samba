@@ -635,6 +635,7 @@ VFS_SYNCOPS_OBJ = modules/vfs_syncops.o
 VFS_ACL_XATTR_OBJ = modules/vfs_acl_xattr.o
 VFS_ACL_TDB_OBJ = modules/vfs_acl_tdb.o
 VFS_SMB_TRAFFIC_ANALYZER_OBJ = modules/vfs_smb_traffic_analyzer.o
+VFS_DIRSORT_OBJ = modules/vfs_dirsort.o
 
 PLAINTEXT_AUTH_OBJ = auth/pampass.o auth/pass_check.o
 
@@ -2461,6 +2462,10 @@ bin/smb_traffic_analyzer.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_SMB_TRAFFIC_ANALYZE
 bin/security.@SHLIBEXT@: $(BINARY_PREREQS) libgpo/gpext/security.o
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) libgpo/gpext/security.o
+
+bin/dirsort.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_DIRSORT_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) $(VFS_DIRSORT_OBJ)
 
 #########################################################
 ## IdMap NSS plugins
