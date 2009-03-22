@@ -70,7 +70,7 @@ gss_store_cred(OM_uint32         *minor_status,
 	    continue;
 
 	if (desired_mech) {
-	    maj = gss_oid_equal(&junk, &m->gm_mech_oid, desired_mech);
+	    maj = gss_oid_equal(&m->gm_mech_oid, desired_mech);
 	    if (maj != 0)
 		continue;
 	}
