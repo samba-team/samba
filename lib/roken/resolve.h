@@ -278,6 +278,10 @@ struct rk_dns_reply{
 };
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct dns_reply* ROKEN_LIB_FUNCTION
 	rk_dns_lookup(const char *, const char *);
 void ROKEN_LIB_FUNCTION
@@ -288,5 +292,9 @@ const char *ROKEN_LIB_FUNCTION
 	rk_dns_type_to_string(int type);
 void ROKEN_LIB_FUNCTION
 	rk_dns_srv_order(struct dns_reply*);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __RESOLVE_H__ */
