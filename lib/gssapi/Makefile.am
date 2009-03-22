@@ -122,6 +122,7 @@ mechsrc = \
 	mech/gss_set_cred_option.c \
 	mech/gss_set_sec_context_option.c \
 	mech/gss_sign.c \
+	mech/gss_store_cred.c \
 	mech/gss_test_oid_set_member.c \
 	mech/gss_unseal.c \
 	mech/gss_unwrap.c \
