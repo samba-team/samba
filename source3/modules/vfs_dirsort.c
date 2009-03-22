@@ -23,7 +23,7 @@
 static int compare_dirent (const void *a, const void *b) {
 	const SMB_STRUCT_DIRENT *da = (const SMB_STRUCT_DIRENT *) a;
 	const SMB_STRUCT_DIRENT *db = (const SMB_STRUCT_DIRENT *) b;
-	return strcmp(da->d_name, db->d_name);
+	return StrCaseCmp(da->d_name, db->d_name);
 }
 
 struct dirsort_privates {
