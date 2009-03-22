@@ -10,11 +10,6 @@ HEIMDAL_ROKEN_1.0 {
 		cgetnum;
 		cgetset;
 		cgetustr;
-		dns_free_data;
-		dns_lookup;
-		dns_srv_order;
-		dns_string_to_type;
-		dns_type_to_string;
 		err;
 		errx;
 		free_getarg_strings;
