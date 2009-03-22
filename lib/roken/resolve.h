@@ -259,7 +259,7 @@ struct rk_resource_record{
 
 #define rk_DNS_MAX_PACKET_SIZE		0xffff
 
-struct dns_header {
+struct rk_dns_header {
     unsigned id;
     unsigned flags;
 #define rk_DNS_HEADER_RESPONSE_FLAG		1
