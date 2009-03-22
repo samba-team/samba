@@ -175,13 +175,13 @@ _kafs_v4_to_kt(CREDENTIALS *c, uid_t uid, struct kafs_token *kt)
 static int
 dns_find_cell(const char *cell, char *dbserver, size_t len)
 {
-    struct dns_reply *r;
+    struct rk_dns_reply *r;
     int ok = -1;
-    r = dns_lookup(cell, "afsdb");
+    r = rk_dns_lookup(cell, "afsdb");
     if(r){
-	struct resource_record *rr = r->head;
+	struct rk_resource_record *rr = r->head;
 	while(rr){
-	    if(rr->type == T_AFSDB && rr->u.afsdb->preference == 1){
+	    if(rr->type == rk_ns_t_afsdb && rr->u.afsdb->preference == 1){
 		strlcpy(dbserver,
 				rr->u.afsdb->domain,
 				len);
@@ -190,7 +190,7 @@ dns_find_cell(const char *cell, char *dbserver, size_t len)
 	    }
 	    rr = rr->next;
 	}
-	dns_free_data(r);
+	rk_dns_free_data(r);
     }
     return ok;
 }
