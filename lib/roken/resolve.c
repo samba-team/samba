@@ -41,6 +41,9 @@
 #ifdef HAVE_RESOLV_H
 #include <resolv.h>
 #endif
+#ifdef HAVE_DNS_H
+#include <dns.h>
+#endif
 #include "resolve.h"
 
 #include <assert.h>
@@ -501,20 +504,42 @@ parse_reply(const unsigned char *data, size_t len)
 #endif
 #endif
 
+#if defined(HAVE_DNS_SEARCH)
+#define resolve_search(h,n,c,t,r,l) \
+    	((int)dns_search(h,n,c,t,r,l,(struct sockaddr *)&from,&fromsize))
+#define resolve_free_handle(h) dns_free(h)
+#elif defined(HAVE_RES_NSEARCH)
+#define resolve_search(h,n,c,t,r,l) dns_nsearch(h,n,c,t,r,l)
+#define resolve_free_handle(h) rk_res_free(h);
+#else
+#define resolve_search(h,n,c,t,r,l) dns_search(n,c,t,r,l)
+#define handle 0
+#define resolve_free_handle(h)
+#endif
+
+
 static struct rk_dns_reply *
 dns_lookup_int(const char *domain, int rr_class, int rr_type)
 {
     struct rk_dns_reply *r;
-    unsigned char *reply = NULL;
+    void *reply = NULL;
     int size;
     int len;
-#ifdef HAVE_RES_NSEARCH
+#if defined(HAVE_DNS_SEARCH)
+    struct sockaddr_storage from;
+    uint32_t fromsize = sizeof(from);
+    dns_handle_t handle;
+    
+    handle = dns_open(NULL);
+    if (handle == NULL)
+	return NULL;
+#elif defined(HAVE_RES_NSEARCH)
     struct __res_state state;
+    struct __res_state *handle = &state;
+
     memset(&state, 0, sizeof(state));
-    if(res_ninit(&state))
+    if(res_ninit(handle))
 	return NULL; /* is this the best we can do? */
-#elif defined(HAVE__RES)
-    u_long old_options = 0;
 #endif
 
     size = 0;
@@ -527,45 +552,33 @@ dns_lookup_int(const char *domain, int rr_class, int rr_type)
 	if (size <= len)
 	    size = len;
 	if (_resolve_debug) {
-#ifdef HAVE_RES_NSEARCH
+#if defined(HAVE_DNS_SEARCH)
+	    dns_set_debug(handle, 1);
+#elif defined(HAVE_RES_NSEARCH)
 	    state.options |= RES_DEBUG;
-#elif defined(HAVE__RES)
-	    old_options = _res.options;
-	    _res.options |= RES_DEBUG;
 #endif
 	    fprintf(stderr, "dns_lookup(%s, %d, %s), buffer size %d\n", domain,
 		    rr_class, rk_dns_type_to_string(rr_type), size);
 	}
 	reply = malloc(size);
 	if (reply == NULL) {
-#ifdef HAVE_RES_NSEARCH
-	    rk_res_free(&state);
-#endif
+	    resolve_free_handle(handle);
 	    return NULL;
 	}
-#ifdef HAVE_RES_NSEARCH
-	len = res_nsearch(&state, domain, rr_class, rr_type, reply, size);
-#else
-	len = res_search(domain, rr_class, rr_type, reply, size);
-#endif
+
+	len = resolve_search(handle, domain, rr_class, rr_type, reply, size);
+
 	if (_resolve_debug) {
-#if defined(HAVE__RES) && !defined(HAVE_RES_NSEARCH)
-	    _res.options = old_options;
-#endif
 	    fprintf(stderr, "dns_lookup(%s, %d, %s) --> %d\n",
 		    domain, rr_class, rk_dns_type_to_string(rr_type), len);
 	}
-	if (len < 0) {
-#ifdef HAVE_RES_NSEARCH
-	    rk_res_free(&state);
-#endif
+	if (len <= 0) {
+	    resolve_free_handle(handle);
 	    free(reply);
 	    return NULL;
 	}
     } while (size < len && len < rk_DNS_MAX_PACKET_SIZE);
-#ifdef HAVE_RES_NSEARCH
-    rk_res_free(&state);
-#endif
+    resolve_free_handle(handle);
 
     len = min(len, size);
     r = parse_reply(reply, len);
