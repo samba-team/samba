@@ -711,7 +711,7 @@ krb5_change_password (krb5_context	context,
 #endif /* HEIMDAL_SMALLER */
 
 /**
- * Change passwrod using creds.
+ * Change password using creds.
  *
  * @param context a Keberos context
  * @param creds The initial kadmin/passwd for the principal or an admin principal
