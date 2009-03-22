@@ -758,8 +758,7 @@ hx509_cert_find_subjectAltName_otherName(hx509_context context,
 	ret = find_extension_subject_alt_name(_hx509_get_cert(cert), &i, &sa);
 	i++;
 	if (ret == HX509_EXTENSION_NOT_FOUND) {
-	    ret = 0;
-	    break;
+	    return 0;
 	} else if (ret != 0) {
 	    hx509_set_error_string(context, 0, ret, "Error searching for SAN");
 	    hx509_free_octet_string_list(list);
@@ -783,7 +782,6 @@ hx509_cert_find_subjectAltName_otherName(hx509_context context,
 	}
 	free_GeneralNames(&sa);
     }
-    return 0;
 }
 
 
