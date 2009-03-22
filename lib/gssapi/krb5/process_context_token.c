@@ -44,14 +44,11 @@ OM_uint32 _gsskrb5_process_context_token (
     krb5_context context;
     OM_uint32 ret = GSS_S_FAILURE;
     gss_buffer_desc empty_buffer;
-    gss_qop_t qop_state;
 
     empty_buffer.length = 0;
     empty_buffer.value = NULL;
 
     GSSAPI_KRB5_INIT (&context);
-
-    qop_state = GSS_C_QOP_DEFAULT;
 
     ret = _gsskrb5_verify_mic_internal(minor_status,
 				       (gsskrb5_ctx)context_handle,
