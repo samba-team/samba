@@ -62,7 +62,11 @@ init_method(void)
 {
     if (selected_meth != NULL)
 	return;
+#ifdef __APPLE__
+    selected_meth = &hc_rand_unix_method;
+#else
     selected_meth = &hc_rand_fortuna_method;
+#endif
 }
 
 /**
