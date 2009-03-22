@@ -409,7 +409,7 @@ dnl These have to be built static:
 default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsarpc rpc_samr rpc_winreg rpc_initshutdown rpc_dssetup rpc_wkssvc rpc_svcctl2 rpc_ntsvcs2 rpc_netlogon rpc_netdfs rpc_srvsvc rpc_spoolss rpc_eventlog2 auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin vfs_default nss_info_template"
 
 dnl These are preferably build shared, and static if dlopen() is not available
-default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_full_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap vfs_expand_msdfs vfs_shadow_copy vfs_shadow_copy2 charset_CP850 charset_CP437 auth_script vfs_readahead vfs_xattr_tdb vfs_streams_xattr vfs_streams_depot vfs_acl_xattr vfs_acl_tdb vfs_smb_traffic_analyzer vfs_preopen vfs_dirsort"
+default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_full_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap vfs_expand_msdfs vfs_shadow_copy vfs_shadow_copy2 charset_CP850 charset_CP437 auth_script vfs_readahead vfs_xattr_tdb vfs_streams_xattr vfs_streams_depot vfs_acl_xattr vfs_acl_tdb vfs_smb_traffic_analyzer vfs_preopen"
 
 if test "x$developer" = xyes; then
    default_static_modules="$default_static_modules rpc_rpcecho"
@@ -862,7 +862,7 @@ fi
 
 AC_CHECK_FUNCS(dirfd)
 if test x"$ac_cv_func_dirfd" = x"yes"; then
-	default_shared_modules="$default_shared_modules vfs_syncops"
+	default_shared_modules="$default_shared_modules vfs_syncops vfs_dirsort"
 fi
 
 AC_CACHE_CHECK([for sig_atomic_t type],samba_cv_sig_atomic_t, [
