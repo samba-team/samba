@@ -55,7 +55,8 @@ gss_wrap_iov(OM_uint32 * minor_status,
 	m = ctx->gc_mech;
 
 	if (m->gm_wrap_iov == NULL) {
-	    *minor_status = 0;
+	    if (minor_status)
+		*minor_status = 0;
 	    return GSS_S_UNAVAILABLE;
 	}
 
