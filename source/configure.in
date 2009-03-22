@@ -6227,7 +6227,7 @@ if test x"$enable_avahi" != x"no"; then
     if test x"$have_avahi_support" = x"yes"; then
 	AC_DEFINE(WITH_AVAHI_SUPPORT, 1,
 		[Whether to enable avahi support])
-	AC_SUBST(AVAHI_OBJ, lib/avahi.o)
+	AC_SUBST(AVAHI_OBJ, "lib/avahi.o smbd/avahi_register.o")
     else
 	if test x"$enable_avahi" = x"yes"; then
 	    AC_MSG_ERROR(avahi support not available)
