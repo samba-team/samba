@@ -51,10 +51,10 @@ RCSID("$Id$");
  */
 
 static int
-copy_txt_to_realms (struct resource_record *head,
+copy_txt_to_realms (struct rk_resource_record *head,
 		    krb5_realm **realms)
 {
-    struct resource_record *rr;
+    struct rk_resource_record *rr;
     unsigned int n, i;
 
     for(n = 0, rr = head; rr; rr = rr->next)
@@ -96,7 +96,7 @@ dns_find_realm(krb5_context context,
 {
     static const char *default_labels[] = { "_kerberos", NULL };
     char dom[MAXHOSTNAMELEN];
-    struct dns_reply *r;
+    struct rk_dns_reply *r;
     const char **labels;
     char **config_labels;
     int i, ret;
@@ -116,10 +116,10 @@ dns_find_realm(krb5_context context,
 		krb5_config_free_strings(config_labels);
 	    return -1;
 	}
-    	r = dns_lookup(dom, "TXT");
+    	r = rk_dns_lookup(dom, "TXT");
     	if(r != NULL) {
 	    ret = copy_txt_to_realms (r->head, realms);
-	    dns_free_data(r);
+	    rk_dns_free_data(r);
 	    if(ret == 0) {
 		if (config_labels)
 		    krb5_config_free_strings(config_labels);
