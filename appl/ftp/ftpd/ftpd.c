@@ -2327,10 +2327,8 @@ out:
     }
     data = -1;
     pdata = -1;
-    if (freeglob) {
-	freeglob = 0;
+    if (freeglob)
 	globfree(&gl);
-    }
 }
 
 
