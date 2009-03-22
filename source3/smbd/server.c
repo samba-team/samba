@@ -643,8 +643,19 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 #endif
 
 	if (dns_port != 0) {
+#ifdef WITH_DNSSD_SUPPORT
 		smbd_setup_mdns_registration(smbd_event_context(),
 					     parent, dns_port);
+#endif
+#ifdef WITH_AVAHI_SUPPORT
+		void *avahi_conn;
+
+		avahi_conn = avahi_start_register(
+			smbd_event_context(), smbd_event_context(), dns_port);
+		if (avahi_conn == NULL) {
+			DEBUG(10, ("avahi_start_register failed\n"));
+		}
+#endif
 	}
 
 	return true;
