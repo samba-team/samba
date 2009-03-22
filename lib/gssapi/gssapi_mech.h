@@ -333,6 +333,16 @@ _gss_wrap_iov_length_t(OM_uint32 * minor_status,
 		       gss_iov_buffer_desc *iov,
 		       int iov_count);
 
+typedef OM_uint32
+_gss_store_cred_t(OM_uint32         *minor_status,
+		  gss_cred_id_t     input_cred_handle,
+		  gss_cred_usage_t  cred_usage,
+		  const gss_OID     desired_mech,
+		  OM_uint32         overwrite_cred,
+		  OM_uint32         default_cred,
+		  gss_OID_set       *elements_stored,
+		  gss_cred_usage_t  *cred_usage_stored);
+
 
 
 #define GMI_VERSION 2
@@ -378,7 +388,7 @@ typedef struct gssapi_mech_interface_desc {
 	_gss_wrap_iov_t			*gm_wrap_iov;
 	_gss_unwrap_iov_t		*gm_unwrap_iov;
 	_gss_wrap_iov_length_t		*gm_wrap_iov_length;
-
+	_gss_store_cred_t		*gm_store_cred;
 } gssapi_mech_interface_desc, *gssapi_mech_interface;
 
 gssapi_mech_interface
