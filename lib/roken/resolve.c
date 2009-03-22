@@ -598,7 +598,7 @@ rk_dns_lookup(const char *domain, const char *type_name)
 		    type_name);
 	return NULL;
     }
-    return dns_lookup_int(domain, C_IN, type);
+    return dns_lookup_int(domain, rk_ns_c_in, type);
 }
 
 static int
