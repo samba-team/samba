@@ -833,6 +833,7 @@ krb5_principal_match(krb5_context context,
     return TRUE;
 }
 
+#ifdef KRB4
 
 static struct v4_name_convert {
     const char *from;
@@ -1108,6 +1109,10 @@ no_host:
     return HEIM_ERR_V4_PRINC_NO_CONV;
 }
 
+#endif /* KRB4 */
+
+#ifndef HEIMDAL_SMALLER
+
 static int
 check_list(const krb5_config_binding *l, const char *name, const char **out)
 {
@@ -1250,6 +1255,8 @@ krb5_524_conv_principal(krb5_context context,
     }
     return 0;
 }
+
+#endif /* !HEIMDAL_SMALLER */
 
 /**
  * Create a principal for the service running on hostname. If
