@@ -884,6 +884,8 @@ static hx509_private_key_ops rsa_private_key_ops = {
     rsa_get_internal
 };
 
+#ifdef HAVE_OPENSSL
+
 static int
 ecdsa_private_key2SPKI(hx509_context context,
 		       hx509_private_key private_key,
@@ -949,6 +951,7 @@ static hx509_private_key_ops ecdsa_private_key_ops = {
     ecdsa_get_internal
 };
 
+#endif /* HAVE_OPENSSL */
 
 /*
  *
@@ -1484,7 +1487,9 @@ alg_for_privatekey(const hx509_private_key pk, int type)
 
 static struct hx509_private_key_ops *private_algs[] = {
     &rsa_private_key_ops,
+#ifdef HAVE_OPENSSL
     &ecdsa_private_key_ops,
+#endif
     NULL
 };
 
@@ -2021,9 +2026,11 @@ _hx509_private_key_free(hx509_private_key *key)
     if ((*key)->ops && der_heim_oid_cmp((*key)->ops->key_oid, &asn1_oid_id_pkcs1_rsaEncryption) == 0) {
 	if ((*key)->private_key.rsa)
 	    RSA_free((*key)->private_key.rsa);
+#ifdef HAVE_OPENSSL
     } else if ((*key)->ops && der_heim_oid_cmp((*key)->ops->key_oid, &asn1_oid_id_ecPublicKey) == 0) {
 	if ((*key)->private_key.ecdsa)
 	    EC_KEY_free((*key)->private_key.ecdsa);
+#endif
     }
     (*key)->private_key.rsa = NULL;
     free(*key);
