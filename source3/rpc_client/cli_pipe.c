@@ -1140,27 +1140,25 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli, RPC_H
 
 		case DCERPC_PKT_FAULT:
 		{
-			RPC_HDR_RESP rhdr_resp;
-			RPC_HDR_FAULT fault_resp;
+			DATA_BLOB blob;
+			struct ncacn_packet r;
 
-			if(!smb_io_rpc_hdr_resp("rpc_hdr_resp", &rhdr_resp, current_pdu, 0)) {
-				DEBUG(5,("cli_pipe_validate_current_pdu: failed to unmarshal RPC_HDR_RESP.\n"));
-				return NT_STATUS_BUFFER_TOO_SMALL;
+			blob = data_blob_const(prs_data_p(current_pdu),
+					       prs_data_size(current_pdu));
+
+			ret = dcerpc_pull_ncacn_packet(cli, &blob, &r);
+			if (!NT_STATUS_IS_OK(ret)) {
+				return ret;
 			}
-
-			if(!smb_io_rpc_hdr_fault("fault", &fault_resp, current_pdu, 0)) {
-				DEBUG(5,("cli_pipe_validate_current_pdu: failed to unmarshal RPC_HDR_FAULT.\n"));
-				return NT_STATUS_BUFFER_TOO_SMALL;
-			}
-
 			DEBUG(1, ("cli_pipe_validate_current_pdu: RPC fault "
 				  "code %s received from %s!\n",
-				dcerpc_errstr(talloc_tos(), NT_STATUS_V(fault_resp.status)),
+				dcerpc_errstr(talloc_tos(), r.u.fault.status),
 				rpccli_pipe_txt(talloc_tos(), cli)));
-			if (NT_STATUS_IS_OK(fault_resp.status)) {
+
+			if (NT_STATUS_IS_OK(NT_STATUS(r.u.fault.status))) {
 				return NT_STATUS_UNSUCCESSFUL;
 			} else {
-				return fault_resp.status;
+				return NT_STATUS(r.u.fault.status);
 			}
 		}
 
