@@ -5,7 +5,7 @@
 
    Copyright (C) 2005,2006 Tim Potter <tpot@samba.org>
    Copyright (C) 2006 Simo Sorce <idra@samba.org>
-   Copyright (C) 2007-2008 Jelmer Vernooij <jelmer@samba.org>
+   Copyright (C) 2007-2009 Jelmer Vernooij <jelmer@samba.org>
 
 	 ** NOTE! The following LGPL license applies to the ldb
 	 ** library. This does NOT imply that all of Samba is released
@@ -65,18 +65,7 @@ static PyObject *PyObject_FromLdbValue(struct ldb_context *ldb_ctx,
 	PyObject *ret;
 	
 	new_val = *val;
-	
-	if (ldb_ctx != NULL) {		
-		a = ldb_schema_attribute_by_name(ldb_ctx, el->name);
-	
-		if (a != NULL) {
-			if (a->syntax->ldif_write_fn(ldb_ctx, mem_ctx, val, &new_val) != 0) {
-				talloc_free(mem_ctx);
-				return NULL;
-			}
-		}
-	} 
-	
+
 	ret = PyString_FromStringAndSize((const char *)new_val.data, new_val.length);
 	
 	talloc_free(mem_ctx);
@@ -84,6 +73,14 @@ static PyObject *PyObject_FromLdbValue(struct ldb_context *ldb_ctx,
 	return ret;
 }
 
+/**
+ * Obtain a ldb DN from a Python object.
+ *
+ * @param mem_ctx Memory context
+ * @param object Python object
+ * @param ldb_ctx LDB context
+ * @return Whether or not the conversion succeeded
+ */
 bool PyObject_AsDn(TALLOC_CTX *mem_ctx, PyObject *object, 
 		   struct ldb_context *ldb_ctx, struct ldb_dn **dn)
 {
@@ -104,6 +101,12 @@ bool PyObject_AsDn(TALLOC_CTX *mem_ctx, PyObject *object,
 	return false;
 }
 
+/**
+ * Create a Python object from a ldb_result.
+ *
+ * @param result LDB result to convert
+ * @return Python object with converted result (a list object)
+ */
 static PyObject *PyLdbResult_FromResult(struct ldb_result *result)
 {
 	PyObject *ret;
@@ -119,7 +122,16 @@ static PyObject *PyLdbResult_FromResult(struct ldb_result *result)
 	return ret;
 }
 
-static struct ldb_result *PyLdbResult_AsResult(TALLOC_CTX *mem_ctx, PyObject *obj)
+/**
+ * Create a LDB Result from a Python object. 
+ * If conversion fails, NULL will be returned and a Python exception set.
+ *
+ * @param mem_ctx Memory context in which to allocate the LDB Result
+ * @param obj Python object to convert
+ * @return a ldb_result, or NULL if the conversion failed
+ */
+static struct ldb_result *PyLdbResult_AsResult(TALLOC_CTX *mem_ctx, 
+											   PyObject *obj)
 {
 	struct ldb_result *res;
 	int i;
@@ -451,7 +463,6 @@ static PyObject *py_ldb_get_schema_basedn(PyLdbObject *self)
 	return PyLdbDn_FromDn(dn);
 }
 
-
 static PyObject *py_ldb_get_config_basedn(PyLdbObject *self)
 {
 	struct ldb_dn *dn = ldb_get_config_basedn(PyLdb_AsLdbContext(self));
@@ -459,7 +470,6 @@ static PyObject *py_ldb_get_config_basedn(PyLdbObject *self)
 		Py_RETURN_NONE;
 	return PyLdbDn_FromDn(dn);
 }
-
 
 static PyObject *py_ldb_get_default_basedn(PyLdbObject *self)
 {
@@ -469,19 +479,20 @@ static PyObject *py_ldb_get_default_basedn(PyLdbObject *self)
 	return PyLdbDn_FromDn(dn);
 }
 
-static const char **PyList_AsStringList(TALLOC_CTX *mem_ctx, PyObject *list)
+static const char **PyList_AsStringList(TALLOC_CTX *mem_ctx, PyObject *list, 
+										const char *paramname)
 {
 	const char **ret;
 	int i;
 	if (!PyList_Check(list)) {
-		PyErr_SetString(PyExc_TypeError, "options is not a list");
+		PyErr_Format(PyExc_TypeError, "%s is not a list", paramname);
 		return NULL;
 	}
 	ret = talloc_array(NULL, const char *, PyList_Size(list)+1);
 	for (i = 0; i < PyList_Size(list); i++) {
 		PyObject *item = PyList_GetItem(list, i);
 		if (!PyString_Check(item)) {
-			PyErr_SetString(PyExc_TypeError, "options should be strings");
+			PyErr_Format(PyExc_TypeError, "%s should be strings", paramname);
 			return NULL;
 		}
 		ret[i] = PyString_AsString(item);
@@ -510,7 +521,7 @@ static int py_ldb_init(PyLdbObject *self, PyObject *args, PyObject *kwargs)
 	if (py_options == Py_None) {
 		options = NULL;
 	} else {
-		options = PyList_AsStringList(ldb, py_options);
+		options = PyList_AsStringList(ldb, py_options, "options");
 		if (options == NULL)
 			return -1;
 	}
@@ -563,7 +574,7 @@ static PyObject *py_ldb_connect(PyLdbObject *self, PyObject *args, PyObject *kwa
 	if (py_options == Py_None) {
 		options = NULL;
 	} else {
-		options = PyList_AsStringList(NULL, py_options);
+		options = PyList_AsStringList(NULL, py_options, "options");
 		if (options == NULL)
 			return NULL;
 	}
@@ -650,8 +661,6 @@ static PyObject *py_ldb_add(PyLdbObject *self, PyObject *args)
 
 	Py_RETURN_NONE;
 }
-
-
 
 static PyObject *py_ldb_delete(PyLdbObject *self, PyObject *args)
 {
@@ -813,7 +822,7 @@ static PyObject *py_ldb_search(PyLdbObject *self, PyObject *args, PyObject *kwar
 	if (py_attrs == Py_None) {
 		attrs = NULL;
 	} else {
-		attrs = PyList_AsStringList(ldb_ctx, py_attrs);
+		attrs = PyList_AsStringList(ldb_ctx, py_attrs, "attrs");
 		if (attrs == NULL)
 			return NULL;
 	}
@@ -828,7 +837,7 @@ static PyObject *py_ldb_search(PyLdbObject *self, PyObject *args, PyObject *kwar
 	if (py_controls == Py_None) {
 		parsed_controls = NULL;
 	} else {
-		const char **controls = PyList_AsStringList(ldb_ctx, py_controls);
+		const char **controls = PyList_AsStringList(ldb_ctx, py_controls, "controls");
 		parsed_controls = ldb_parse_control_strings(ldb_ctx, ldb_ctx, controls);
 		talloc_free(controls);
 	}
@@ -1129,7 +1138,7 @@ static PyObject *py_ldb_module_search(PyLdbModuleObject *self, PyObject *args, P
 	mod = self->mod;
 
 	ret = ldb_build_search_req(&req, mod->ldb, NULL, PyLdbDn_AsDn(py_base), 
-			     scope, NULL /* expr */, py_attrs == Py_None?NULL:PyList_AsStringList(req, py_attrs),
+			     scope, NULL /* expr */, py_attrs == Py_None?NULL:PyList_AsStringList(req, py_attrs, "attrs"),
 			     NULL /* controls */, NULL, NULL, NULL);
 	PyErr_LDB_ERROR_IS_ERR_RAISE(ret, mod->ldb);
 
@@ -1256,6 +1265,21 @@ PyTypeObject PyLdbModule = {
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
+
+/**
+ * Create a ldb_message_element from a Python object.
+ *
+ * This will accept any sequence objects that contains strings, or 
+ * a string object.
+ *
+ * A reference to set_obj will be borrowed. 
+ *
+ * @param mem_ctx Memory context
+ * @param set_obj Python object to convert
+ * @param flags ldb_message_element flags to set
+ * @param attr_name Name of the attribute
+ * @return New ldb_message_element, allocated as child of mem_ctx
+ */
 struct ldb_message_element *PyObject_AsMessageElement(TALLOC_CTX *mem_ctx,
 											   PyObject *set_obj, int flags,
 											   const char *attr_name)
@@ -1273,9 +1297,7 @@ struct ldb_message_element *PyObject_AsMessageElement(TALLOC_CTX *mem_ctx,
 		me->num_values = 1;
 		me->values = talloc_array(me, struct ldb_val, me->num_values);
 		me->values[0].length = PyString_Size(set_obj);
-		me->values[0].data = (uint8_t *)talloc_strndup(me->values,
-					PyString_AsString(set_obj),
-					me->values[0].length);
+		me->values[0].data = (uint8_t *)PyString_AsString(set_obj);
 	} else if (PySequence_Check(set_obj)) {
 		int i;
 		me->num_values = PySequence_Size(set_obj);

@@ -879,7 +879,7 @@ fi
 
 AC_CHECK_FUNCS(dirfd)
 if test x"$ac_cv_func_dirfd" = x"yes"; then
-	default_shared_modules="$default_shared_modules vfs_syncops"
+	default_shared_modules="$default_shared_modules vfs_syncops vfs_dirsort"
 fi
 
 AC_CACHE_CHECK([for struct sigevent type],samba_cv_struct_sigevent, [
@@ -6213,6 +6213,7 @@ SMB_MODULE(vfs_acl_tdb, \$(VFS_ACL_TDB_OBJ), "bin/acl_tdb.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_smb_traffic_analyzer, \$(VFS_SMB_TRAFFIC_ANALYZER_OBJ), "bin/smb_traffic_analyzer.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_onefs, \$(VFS_ONEFS), "bin/onefs.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_onefs_shadow_copy, \$(VFS_ONEFS_SHADOW_COPY), "bin/onefs_shadow_copy.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_dirsort, \$(VFS_DIRSORT_OBJ), "bin/dirsort.$SHLIBEXT", VFS)
 
 SMB_SUBSYSTEM(VFS,smbd/vfs.o)
 

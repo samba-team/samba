@@ -3779,6 +3779,8 @@ bool send_mailslot(bool unique, const char *mailslot,char *buf, size_t len,
 
 /* The following definitions come from nmbd/nmbd_processlogon.c  */
 
+bool initialize_nmbd_proxy_logon(void);
+
 void process_logon_packet(struct packet_struct *p, char *buf,int len, 
                           const char *mailslot);
 
@@ -4828,7 +4830,7 @@ WERROR add_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key, const cha
 REGISTRY_VALUE* get_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key, const char *value );
 WERROR mod_a_printer(NT_PRINTER_INFO_LEVEL *printer, uint32 level);
 bool set_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level);
-bool del_driver_init(char *drivername);
+bool del_driver_init(const char *drivername);
 WERROR save_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level, uint8 *data, uint32 data_len);
 WERROR get_a_printer( Printer_entry *print_hnd,
 			NT_PRINTER_INFO_LEVEL **pp_printer,
@@ -4840,8 +4842,8 @@ WERROR get_a_printer_search( Printer_entry *print_hnd,
 			const char *sharename);
 uint32 free_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level);
 uint32 add_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level);
-WERROR get_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32 level,
-                            fstring drivername, const char *architecture, uint32 version);
+WERROR get_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32_t level,
+			    const char *drivername, const char *architecture, uint32_t version);
 uint32 free_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level);
 bool printer_driver_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3 );
 bool printer_driver_files_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info );
@@ -5898,6 +5900,8 @@ NTSTATUS np_read_recv(struct tevent_req *req, ssize_t *nread,
 
 /* The following definitions come from rpc_server/srv_samr_util.c  */
 
+void copy_id18_to_sam_passwd(struct samu *to,
+			     struct samr_UserInfo18 *from);
 void copy_id20_to_sam_passwd(struct samu *to,
 			     struct samr_UserInfo20 *from);
 void copy_id21_to_sam_passwd(const char *log_prefix,
@@ -5905,8 +5909,12 @@ void copy_id21_to_sam_passwd(const char *log_prefix,
 			     struct samr_UserInfo21 *from);
 void copy_id23_to_sam_passwd(struct samu *to,
 			     struct samr_UserInfo23 *from);
+void copy_id24_to_sam_passwd(struct samu *to,
+			     struct samr_UserInfo24 *from);
 void copy_id25_to_sam_passwd(struct samu *to,
 			     struct samr_UserInfo25 *from);
+void copy_id26_to_sam_passwd(struct samu *to,
+			     struct samr_UserInfo26 *from);
 
 /* The following definitions come from rpc_server/srv_spoolss_nt.c  */
 
@@ -5925,8 +5933,9 @@ void reset_all_printerdata(struct messaging_context *msg,
 bool convert_devicemode(const char *printername,
 			const struct spoolss_DeviceMode *devmode,
 			NT_DEVICEMODE **pp_nt_devmode);
-WERROR set_printer_dataex( NT_PRINTER_INFO_LEVEL *printer, const char *key, const char *value,
-                                  uint32 type, uint8 *data, int real_len  );
+WERROR set_printer_dataex(NT_PRINTER_INFO_LEVEL *printer,
+			  const char *key, const char *value,
+			  uint32_t type, uint8_t *data, int real_len);
 void spoolss_notify_server_name(int snum,
 				       struct spoolss_Notify *data,
 				       print_queue_struct *queue,

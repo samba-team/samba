@@ -988,6 +988,12 @@ static bool open_sockets(bool isdaemon, int port)
 		exit(1);
 	}
 
+	if (!initialize_nmbd_proxy_logon()) {
+		DEBUG(0,("ERROR: Failed setup nmbd_proxy_logon.\n"));
+		kill_async_dns_child();
+		exit(1);
+	}
+
 	TALLOC_FREE(frame);
 	process();
 

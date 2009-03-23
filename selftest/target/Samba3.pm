@@ -41,6 +41,9 @@ sub teardown_env($$)
 	$self->stop_sig_term($smbdpid);
 	$self->stop_sig_term($nmbdpid);
 	$self->stop_sig_term($winbinddpid);
+
+	sleep(2);
+
 	$self->stop_sig_kill($smbdpid);
 	$self->stop_sig_kill($nmbdpid);
 	$self->stop_sig_kill($winbinddpid);
@@ -123,9 +126,8 @@ sub setup_dc($$)
 				    $dc_options);
 
 	$self->check_or_start($vars,
-			      ($ENV{NMBD_MAXTIME} or 2700),
-			      ($ENV{WINBINDD_MAXTIME} or 2700),
-			      ($ENV{SMBD_MAXTIME} or 2700));
+			      ($ENV{SMBD_MAXTIME} or 2700),
+			       "yes", "yes", "yes");
 
 	$self->wait_for_start($vars);
 
@@ -160,9 +162,8 @@ sub setup_member($$$)
 	system($cmd) == 0 or die("Join failed\n$cmd");
 
 	$self->check_or_start($ret,
-			      ($ENV{NMBD_MAXTIME} or 2700),
-			      ($ENV{WINBINDD_MAXTIME} or 2700),
-			      ($ENV{SMBD_MAXTIME} or 2700));
+			      ($ENV{SMBD_MAXTIME} or 2700),
+			       "yes", "yes", "yes");
 
 	$self->wait_for_start($ret);
 
@@ -187,7 +188,7 @@ sub stop_sig_term($$) {
 
 sub stop_sig_kill($$) {
 	my ($self, $pid) = @_;
-	kill("KILL", $pid) or warn("Unable to kill $pid: $!");
+	kill("ALRM", $pid) or warn("Unable to kill $pid: $!");
 }
 
 sub write_pid($$$)
@@ -209,8 +210,8 @@ sub read_pid($$)
 	return $pid;
 }
 
-sub check_or_start($$$$) {
-	my ($self, $env_vars, $nmbd_maxtime, $winbindd_maxtime, $smbd_maxtime) = @_;
+sub check_or_start($$$$$) {
+	my ($self, $env_vars, $maxtime, $nmbd, $winbindd, $smbd) = @_;
 
 	unlink($env_vars->{NMBD_TEST_LOG});
 	print "STARTING NMBD...";
@@ -226,13 +227,13 @@ sub check_or_start($$$$) {
 		$ENV{NSS_WRAPPER_PASSWD} = $env_vars->{NSS_WRAPPER_PASSWD};
 		$ENV{NSS_WRAPPER_GROUP} = $env_vars->{NSS_WRAPPER_GROUP};
 
-		if ($nmbd_maxtime eq "skip") {
+		if ($nmbd ne "yes") {
 			$SIG{USR1} = $SIG{ALRM} = $SIG{INT} = $SIG{QUIT} = $SIG{TERM} = sub {
 				my $signame = shift;
 				print("Skip nmbd received signal $signame");
 				exit 0;
 			};
-			sleep(999999);
+			sleep($maxtime);
 			exit 0;
 		}
 
@@ -243,7 +244,7 @@ sub check_or_start($$$$) {
 
 		$ENV{MAKE_TEST_BINARY} = $self->binpath("nmbd");
 
-		my @preargs = ($self->binpath("timelimit"), $nmbd_maxtime);
+		my @preargs = ($self->binpath("timelimit"), $maxtime);
 		if(defined($ENV{NMBD_VALGRIND})) { 
 			@preargs = split(/ /, $ENV{NMBD_VALGRIND});
 		}
@@ -267,13 +268,13 @@ sub check_or_start($$$$) {
 		$ENV{NSS_WRAPPER_PASSWD} = $env_vars->{NSS_WRAPPER_PASSWD};
 		$ENV{NSS_WRAPPER_GROUP} = $env_vars->{NSS_WRAPPER_GROUP};
 
-		if ($winbindd_maxtime eq "skip") {
+		if ($winbindd ne "yes") {
 			$SIG{USR1} = $SIG{ALRM} = $SIG{INT} = $SIG{QUIT} = $SIG{TERM} = sub {
 				my $signame = shift;
 				print("Skip winbindd received signal $signame");
 				exit 0;
 			};
-			sleep(999999);
+			sleep($maxtime);
 			exit 0;
 		}
 
@@ -284,7 +285,7 @@ sub check_or_start($$$$) {
 
 		$ENV{MAKE_TEST_BINARY} = $self->binpath("winbindd");
 
-		my @preargs = ($self->binpath("timelimit"), $winbindd_maxtime);
+		my @preargs = ($self->binpath("timelimit"), $maxtime);
 		if(defined($ENV{WINBINDD_VALGRIND})) {
 			@preargs = split(/ /, $ENV{WINBINDD_VALGRIND});
 		}
@@ -308,13 +309,13 @@ sub check_or_start($$$$) {
 		$ENV{NSS_WRAPPER_PASSWD} = $env_vars->{NSS_WRAPPER_PASSWD};
 		$ENV{NSS_WRAPPER_GROUP} = $env_vars->{NSS_WRAPPER_GROUP};
 
-		if ($smbd_maxtime eq "skip") {
+		if ($smbd ne "yes") {
 			$SIG{USR1} = $SIG{ALRM} = $SIG{INT} = $SIG{QUIT} = $SIG{TERM} = sub {
 				my $signame = shift;
 				print("Skip smbd received signal $signame");
 				exit 0;
 			};
-			sleep(999999);
+			sleep($maxtime);
 			exit 0;
 		}
 
@@ -323,7 +324,7 @@ sub check_or_start($$$$) {
 		if (defined($ENV{SMBD_OPTIONS})) {
 			@optargs = split(/ /, $ENV{SMBD_OPTIONS});
 		}
-		my @preargs = ($self->binpath("timelimit"), $smbd_maxtime);
+		my @preargs = ($self->binpath("timelimit"), $maxtime);
 		if(defined($ENV{SMBD_VALGRIND})) {
 			@preargs = split(/ /,$ENV{SMBD_VALGRIND});
 		}
