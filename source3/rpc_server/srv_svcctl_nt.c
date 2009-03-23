@@ -635,7 +635,7 @@ static WERROR fill_svc_config( TALLOC_CTX *ctx, const char *name,
 			       NT_USER_TOKEN *token )
 {
 	struct regval_ctr *values;
-	REGISTRY_VALUE *val;
+	struct regval_blob *val;
 
 	/* retrieve the registry values for this service */
 

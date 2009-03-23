@@ -642,7 +642,7 @@ static WERROR cmd_spoolss_getprinter(struct rpc_pipe_client *cli,
 /****************************************************************************
 ****************************************************************************/
 
-static void display_reg_value(REGISTRY_VALUE value)
+static void display_reg_value(struct regval_blob value)
 {
 	char *text = NULL;
 
@@ -821,7 +821,7 @@ static WERROR cmd_spoolss_getprinterdataex(struct rpc_pipe_client *cli,
 	NTSTATUS	status;
 	fstring 	printername;
 	const char *valuename, *keyname;
-	REGISTRY_VALUE value;
+	struct regval_blob value;
 
 	enum winreg_Type type;
 	uint8_t *buffer = NULL;
@@ -2574,7 +2574,7 @@ static WERROR cmd_spoolss_enum_data(struct rpc_pipe_client *cli,
 							&data_needed,
 							&result);
 		if (NT_STATUS_IS_OK(status) && W_ERROR_IS_OK(result)) {
-			REGISTRY_VALUE v;
+			struct regval_blob v;
 			fstrcpy(v.valuename, value_name);
 			v.type = type;
 			v.size = data_offered;

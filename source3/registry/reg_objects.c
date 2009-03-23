@@ -279,25 +279,25 @@ int regval_ctr_numvals(struct regval_ctr *ctr)
 }
 
 /***********************************************************************
- allocate memory for and duplicate a REGISTRY_VALUE.
+ allocate memory for and duplicate a struct regval_blob.
  This is malloc'd memory so the caller should free it when done
  **********************************************************************/
 
-REGISTRY_VALUE* dup_registry_value( REGISTRY_VALUE *val )
+struct regval_blob* dup_registry_value(struct regval_blob *val)
 {
-	REGISTRY_VALUE 	*copy = NULL;
+	struct regval_blob *copy = NULL;
 
 	if ( !val )
 		return NULL;
 
-	if ( !(copy = SMB_MALLOC_P( REGISTRY_VALUE)) ) {
+	if ( !(copy = SMB_MALLOC_P( struct regval_blob)) ) {
 		DEBUG(0,("dup_registry_value: malloc() failed!\n"));
 		return NULL;
 	}
 
 	/* copy all the non-pointer initial data */
 
-	memcpy( copy, val, sizeof(REGISTRY_VALUE) );
+	memcpy( copy, val, sizeof(struct regval_blob) );
 
 	copy->size = 0;
 	copy->data_p = NULL;
@@ -318,10 +318,10 @@ REGISTRY_VALUE* dup_registry_value( REGISTRY_VALUE *val )
 }
 
 /**********************************************************************
- free the memory allocated to a REGISTRY_VALUE
+ free the memory allocated to a struct regval_blob
  *********************************************************************/
 
-void free_registry_value( REGISTRY_VALUE *val )
+void free_registry_value(struct regval_blob *val)
 {
 	if ( !val )
 		return;
@@ -335,7 +335,7 @@ void free_registry_value( REGISTRY_VALUE *val )
 /**********************************************************************
  *********************************************************************/
 
-uint8* regval_data_p( REGISTRY_VALUE *val )
+uint8* regval_data_p(struct regval_blob *val)
 {
 	return val->data_p;
 }
@@ -343,7 +343,7 @@ uint8* regval_data_p( REGISTRY_VALUE *val )
 /**********************************************************************
  *********************************************************************/
 
-uint32 regval_size( REGISTRY_VALUE *val )
+uint32 regval_size(struct regval_blob *val)
 {
 	return val->size;
 }
@@ -351,7 +351,7 @@ uint32 regval_size( REGISTRY_VALUE *val )
 /**********************************************************************
  *********************************************************************/
 
-char* regval_name( REGISTRY_VALUE *val )
+char* regval_name(struct regval_blob *val)
 {
 	return val->valuename;
 }
@@ -359,7 +359,7 @@ char* regval_name( REGISTRY_VALUE *val )
 /**********************************************************************
  *********************************************************************/
 
-uint32 regval_type( REGISTRY_VALUE *val )
+uint32 regval_type(struct regval_blob *val)
 {
 	return val->type;
 }
@@ -369,7 +369,8 @@ uint32 regval_type( REGISTRY_VALUE *val )
  since this memory will go away when the ctr is free()'d
  **********************************************************************/
 
-REGISTRY_VALUE* regval_ctr_specific_value(struct regval_ctr *ctr, uint32 idx)
+struct regval_blob *regval_ctr_specific_value(struct regval_ctr *ctr,
+					      uint32 idx)
 {
 	if ( !(idx < ctr->num_values) )
 		return NULL;
@@ -394,13 +395,14 @@ bool regval_ctr_key_exists(struct regval_ctr *ctr, const char *value)
 }
 
 /***********************************************************************
- * compose a REGISTRY_VALUE from input data
+ * compose a struct regval_blob from input data
  **********************************************************************/
 
-REGISTRY_VALUE *regval_compose(TALLOC_CTX *ctx, const char *name, uint16 type,
-			       const char *data_p, size_t size)
+struct regval_blob *regval_compose(TALLOC_CTX *ctx, const char *name,
+				   uint16 type,
+				   const char *data_p, size_t size)
 {
-	REGISTRY_VALUE *regval = TALLOC_P(ctx, REGISTRY_VALUE);
+	struct regval_blob *regval = TALLOC_P(ctx, struct regval_blob);
 
 	if (regval == NULL) {
 		return NULL;
@@ -439,10 +441,10 @@ int regval_ctr_addvalue(struct regval_ctr *ctr, const char *name, uint16 type,
 	/* allocate a slot in the array of pointers */
 
 	if (  ctr->num_values == 0 ) {
-		ctr->values = TALLOC_P( ctr, REGISTRY_VALUE *);
+		ctr->values = TALLOC_P( ctr, struct regval_blob *);
 	} else {
 		ctr->values = TALLOC_REALLOC_ARRAY(ctr, ctr->values,
-						   REGISTRY_VALUE *,
+						   struct regval_blob *,
 						   ctr->num_values+1);
 	}
 
@@ -468,7 +470,7 @@ int regval_ctr_addvalue(struct regval_ctr *ctr, const char *name, uint16 type,
  Add a new registry value to the array
  **********************************************************************/
 
-int regval_ctr_copyvalue(struct regval_ctr *ctr, REGISTRY_VALUE *val)
+int regval_ctr_copyvalue(struct regval_ctr *ctr, struct regval_blob *val)
 {
 	if ( val ) {
 		regval_ctr_addvalue(ctr, val->valuename, val->type,
@@ -501,7 +503,7 @@ int regval_ctr_delvalue(struct regval_ctr *ctr, const char *name)
 	ctr->num_values--;
 	if ( i < ctr->num_values )
 		memmove(&ctr->values[i], &ctr->values[i+1],
-			sizeof(REGISTRY_VALUE*)*(ctr->num_values-i));
+			sizeof(struct regval_blob*)*(ctr->num_values-i));
 
 	return ctr->num_values;
 }
@@ -511,7 +513,8 @@ int regval_ctr_delvalue(struct regval_ctr *ctr, const char *name)
  No need to free memory since it is talloc'd.
  **********************************************************************/
 
-REGISTRY_VALUE* regval_ctr_getvalue(struct regval_ctr *ctr, const char *name)
+struct regval_blob* regval_ctr_getvalue(struct regval_ctr *ctr,
+					const char *name)
 {
 	int 	i;
 
@@ -529,7 +532,7 @@ REGISTRY_VALUE* regval_ctr_getvalue(struct regval_ctr *ctr, const char *name)
  return the data_p as a uint32
  **********************************************************************/
 
-uint32 regval_dword( REGISTRY_VALUE *val )
+uint32 regval_dword(struct regval_blob *val)
 {
 	uint32 data;
 
@@ -542,7 +545,7 @@ uint32 regval_dword( REGISTRY_VALUE *val )
  return the data_p as a character string
  **********************************************************************/
 
-char *regval_sz(REGISTRY_VALUE *val)
+char *regval_sz(struct regval_blob *val)
 {
 	char *data = NULL;
 

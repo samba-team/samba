@@ -506,7 +506,7 @@ SEC_DESC *svcctl_get_secdesc( TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *
 {
 	REGISTRY_KEY *key = NULL;
 	struct regval_ctr *values = NULL;
-	REGISTRY_VALUE *val = NULL;
+	struct regval_blob *val = NULL;
 	SEC_DESC *ret_sd = NULL;
 	char *path= NULL;
 	WERROR wresult;
@@ -621,7 +621,7 @@ const char *svcctl_lookup_dispname(TALLOC_CTX *ctx, const char *name, NT_USER_TO
 	char *display_name = NULL;
 	REGISTRY_KEY *key = NULL;
 	struct regval_ctr *values = NULL;
-	REGISTRY_VALUE *val = NULL;
+	struct regval_blob *val = NULL;
 	char *path = NULL;
 	WERROR wresult;
 
@@ -671,7 +671,7 @@ const char *svcctl_lookup_description(TALLOC_CTX *ctx, const char *name, NT_USER
 	char *description = NULL;
 	REGISTRY_KEY *key = NULL;
 	struct regval_ctr *values = NULL;
-	REGISTRY_VALUE *val = NULL;
+	struct regval_blob *val = NULL;
 	char *path = NULL;
 	WERROR wresult;
 

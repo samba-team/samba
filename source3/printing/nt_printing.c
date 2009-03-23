@@ -2473,7 +2473,7 @@ static int pack_values(NT_PRINTER_DATA *data, uint8 *buf, int buflen)
 {
 	int 		len = 0;
 	int 		i, j;
-	REGISTRY_VALUE	*val;
+	struct regval_blob	*val;
 	struct regval_ctr	*val_ctr;
 	char *path = NULL;
 	int		num_values;
@@ -3470,7 +3470,7 @@ bool is_printer_published(Printer_entry *print_hnd, int snum,
 {
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	struct regval_ctr *ctr;
-	REGISTRY_VALUE *guid_val;
+	struct regval_blob *guid_val;
 	WERROR win_rc;
 	int i;
 	bool ret = False;
@@ -3690,7 +3690,7 @@ WERROR add_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key, const cha
 /****************************************************************************
  ***************************************************************************/
 
-REGISTRY_VALUE* get_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key, const char *value )
+struct regval_blob* get_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key, const char *value )
 {
 	int		key_index;
 
@@ -3717,7 +3717,7 @@ static int unpack_values(NT_PRINTER_DATA *printer_data, const uint8 *buf, int bu
 	char		*str;
 	int		size;
 	uint8		*data_p;
-	REGISTRY_VALUE 	*regval_p;
+	struct regval_blob 	*regval_p;
 	int		key_index;
 
 	/* add the "PrinterDriverData" key first for performance reasons */

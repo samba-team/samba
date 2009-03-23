@@ -125,7 +125,7 @@ WERROR _PNP_GetDeviceRegProp(pipes_struct *p,
 {
 	char *ptr;
 	struct regval_ctr *values;
-	REGISTRY_VALUE *val;
+	struct regval_blob *val;
 
 	switch( r->in.property ) {
 	case DEV_REGPROP_DESC:

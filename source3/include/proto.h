@@ -4628,7 +4628,7 @@ WERROR delete_all_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key );
 WERROR delete_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key, const char *value );
 WERROR add_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key, const char *value, 
                            uint32 type, uint8 *data, int real_len );
-REGISTRY_VALUE* get_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key, const char *value );
+struct regval_blob* get_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key, const char *value );
 WERROR mod_a_printer(NT_PRINTER_INFO_LEVEL *printer, uint32 level);
 bool set_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level);
 bool del_driver_init(const char *drivername);
@@ -4906,23 +4906,26 @@ bool regsubkey_ctr_key_exists( struct regsubkey_ctr *ctr, const char *keyname );
 int regsubkey_ctr_numkeys( struct regsubkey_ctr *ctr );
 char* regsubkey_ctr_specific_key( struct regsubkey_ctr *ctr, uint32 key_index );
 int regval_ctr_numvals(struct regval_ctr *ctr);
-REGISTRY_VALUE* dup_registry_value( REGISTRY_VALUE *val );
-void free_registry_value( REGISTRY_VALUE *val );
-uint8* regval_data_p( REGISTRY_VALUE *val );
-uint32 regval_size( REGISTRY_VALUE *val );
-char* regval_name( REGISTRY_VALUE *val );
-uint32 regval_type( REGISTRY_VALUE *val );
-REGISTRY_VALUE* regval_ctr_specific_value(struct regval_ctr *ctr, uint32 idx);
+struct regval_blob* dup_registry_value(struct regval_blob *val);
+void free_registry_value(struct regval_blob *val);
+uint8* regval_data_p(struct regval_blob *val);
+uint32 regval_size(struct regval_blob *val);
+char* regval_name(struct regval_blob *val);
+uint32 regval_type(struct regval_blob *val);
+struct regval_blob* regval_ctr_specific_value(struct regval_ctr *ctr,
+					      uint32 idx);
 bool regval_ctr_key_exists(struct regval_ctr *ctr, const char *value);
-REGISTRY_VALUE *regval_compose(TALLOC_CTX *ctx, const char *name, uint16 type,
-			       const char *data_p, size_t size);
+struct regval_blob *regval_compose(TALLOC_CTX *ctx, const char *name,
+				   uint16 type,
+				   const char *data_p, size_t size);
 int regval_ctr_addvalue(struct regval_ctr *ctr, const char *name, uint16 type,
 			const char *data_p, size_t size);
-int regval_ctr_copyvalue(struct regval_ctr *ctr, REGISTRY_VALUE *val);
+int regval_ctr_copyvalue(struct regval_ctr *ctr, struct regval_blob *val);
 int regval_ctr_delvalue(struct regval_ctr *ctr, const char *name);
-REGISTRY_VALUE* regval_ctr_getvalue(struct regval_ctr *ctr, const char *name);
-uint32 regval_dword( REGISTRY_VALUE *val );
-char *regval_sz(REGISTRY_VALUE *val);
+struct regval_blob* regval_ctr_getvalue(struct regval_ctr *ctr,
+					const char *name);
+uint32 regval_dword(struct regval_blob *val);
+char *regval_sz(struct regval_blob *val);
 
 /* The following definitions come from registry/reg_perfcount.c  */
 

@@ -1657,7 +1657,8 @@ static uint32 nk_record_data_size( REGF_NK_REC *nk )
 /*******************************************************************
 *******************************************************************/
 
-static bool create_vk_record( REGF_FILE *file, REGF_VK_REC *vk, REGISTRY_VALUE *value )
+static bool create_vk_record(REGF_FILE *file, REGF_VK_REC *vk,
+			     struct regval_blob *value)
 {
 	char *name = regval_name(value);
 	REGF_HBIN *data_hbin;
@@ -1894,7 +1895,7 @@ static int hashrec_cmp( REGF_HASH_REC *h1, REGF_HASH_REC *h2 )
 
 		for ( i=0; i<nk->num_values; i++ ) {
 			uint32 vk_size, namelen, datalen;
-			REGISTRY_VALUE *r;
+			struct regval_blob *r;
 
 			r = regval_ctr_specific_value( values, i );
 			create_vk_record( file, &nk->values[i], r );

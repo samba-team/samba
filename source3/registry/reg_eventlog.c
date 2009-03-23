@@ -202,7 +202,7 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 	char *evtlogpath = NULL;
 	struct regsubkey_ctr *subkeys;
 	struct regval_ctr *values;
-	REGISTRY_VALUE *rval;
+	struct regval_blob *rval;
 	UNISTR2 data;
 	uint16 *msz_wp;
 	int mbytes, ii;

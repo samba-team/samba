@@ -23,13 +23,13 @@
 
 /* structure to contain registry values */
 
-typedef struct {
+struct regval_blob {
 	fstring		valuename;
 	uint16		type;
 	/* this should be encapsulated in an RPC_DATA_BLOB */
 	uint32		size;	/* in bytes */
 	uint8           *data_p;
-} REGISTRY_VALUE;
+};
 
 /*
  * A REG_SZ string is not necessarily NULL terminated. When retrieving it from
@@ -60,7 +60,7 @@ struct registry_value {
 
 struct regval_ctr {
 	uint32          num_values;
-	REGISTRY_VALUE	**values;
+	struct regval_blob **values;
 	int seqnum;
 };
 

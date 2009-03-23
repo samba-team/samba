@@ -1447,7 +1447,7 @@ static int regdb_pack_values(struct regval_ctr *values, uint8 *buf, int buflen)
 {
 	int 		len = 0;
 	int 		i;
-	REGISTRY_VALUE	*val;
+	struct regval_blob	*val;
 	int		num_values;
 
 	if ( !values )

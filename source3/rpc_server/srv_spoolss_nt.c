@@ -2547,7 +2547,7 @@ WERROR _spoolss_GetPrinterData(pipes_struct *p,
 			r->out.data->value = printer->info_2->changeid;
 			result = WERR_OK;
 		} else {
-			REGISTRY_VALUE *v;
+			struct regval_blob *v;
 			DATA_BLOB blob;
 
 			v = get_printer_data(printer->info_2,
@@ -7944,7 +7944,7 @@ WERROR _spoolss_EnumPrinterData(pipes_struct *p,
 	Printer_entry 	*Printer = find_printer_index_by_hnd(p, r->in.handle);
 	int 		snum;
 	WERROR 		result;
-	REGISTRY_VALUE	*val = NULL;
+	struct regval_blob	*val = NULL;
 	NT_PRINTER_DATA *p_data;
 	int		i, key_index, num_values;
 	int		name_length;
@@ -9026,7 +9026,7 @@ WERROR _spoolss_GetPrinterDataEx(pipes_struct *p,
 {
 
 	Printer_entry 	*Printer = find_printer_index_by_hnd(p, r->in.handle);
-	REGISTRY_VALUE		*val = NULL;
+	struct regval_blob		*val = NULL;
 	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
 	int 			snum = 0;
 	WERROR result = WERR_OK;
@@ -9390,7 +9390,7 @@ WERROR _spoolss_DeletePrinterKey(pipes_struct *p,
 ****************************************************************/
 
 static WERROR registry_value_to_printer_enum_value(TALLOC_CTX *mem_ctx,
-						   REGISTRY_VALUE *v,
+						   struct regval_blob *v,
 						   struct spoolss_PrinterEnumValues *r)
 {
 	WERROR result;
@@ -9507,7 +9507,7 @@ WERROR _spoolss_EnumPrinterDataEx(pipes_struct *p,
 
 	for (i=0; i < count; i++) {
 
-		REGISTRY_VALUE	*val;
+		struct regval_blob	*val;
 
 		/* lookup the registry value */
 

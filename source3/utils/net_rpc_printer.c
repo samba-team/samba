@@ -77,7 +77,7 @@ static void display_print_driver3(struct spoolss_DriverInfo3 *r)
 	printf("\tDefaultdatatype: [%s]\n\n", r->default_datatype);
 }
 
-static void display_reg_value(const char *subkey, REGISTRY_VALUE value)
+static void display_reg_value(const char *subkey, struct regval_blob value)
 {
 	char *text;
 
@@ -892,7 +892,7 @@ static bool net_spoolss_setprinterdataex(struct rpc_pipe_client *pipe_hnd,
 					TALLOC_CTX *mem_ctx,
 					struct policy_handle *hnd,
 					const char *keyname,
-					REGISTRY_VALUE *value)
+					struct regval_blob *value)
 {
 	WERROR result;
 	NTSTATUS status;
@@ -2318,7 +2318,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 			/* loop for all reg_keys */
 			if (NT_STATUS_IS_OK(nt_status) && W_ERROR_IS_OK(result)) {
 
-				REGISTRY_VALUE v;
+				struct regval_blob v;
 				DATA_BLOB blob;
 				union spoolss_PrinterData printer_data;
 
@@ -2385,7 +2385,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 
 			for (j=0; j < count; j++) {
 
-				REGISTRY_VALUE value;
+				struct regval_blob value;
 				UNISTR2 data;
 
 				/* although samba replies with sane data in most cases we
@@ -2459,7 +2459,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 
 				} else {
 
-					REGISTRY_VALUE v;
+					struct regval_blob v;
 					DATA_BLOB blob;
 
 					result = push_spoolss_PrinterData(mem_ctx, &blob,

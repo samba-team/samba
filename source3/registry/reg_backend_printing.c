@@ -598,7 +598,7 @@ static void convert_values_to_printer_info_2(NT_PRINTER_INFO_LEVEL_2 *printer2, 
 {
 	int num_values = regval_ctr_numvals( values );
 	uint32 value_index;
-	REGISTRY_VALUE *val;
+	struct regval_blob *val;
 	int i;
 	
 	for ( i=0; i<num_values; i++ ) {
@@ -702,7 +702,7 @@ static bool key_printers_store_values(const char *key, struct regval_ctr *values
 	else {
 		int num_values = regval_ctr_numvals( values );
 		int i;
-		REGISTRY_VALUE *val;
+		struct regval_blob *val;
 		
 		delete_printer_key( printer->info_2->data, keyname );
 		
