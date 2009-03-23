@@ -1281,6 +1281,10 @@ everything:: all libtalloc libsmbclient libnetapi debug2html smbfilter talloctor
 .SUFFIXES:
 .SUFFIXES: .c .o .lo
 
+.PHONY: showflags SHOWFLAGS
+
+showflags: SHOWFLAGS
+
 SHOWFLAGS::
 	@echo "Using CFLAGS     = $(CFLAGS)"
 	@echo "      PICFLAG    = $(PICFLAG)"
