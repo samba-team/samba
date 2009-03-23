@@ -910,11 +910,11 @@ static bool setup_bind_nak(pipes_struct *p)
  Marshall a fault pdu.
 *******************************************************************/
 
-bool setup_fault_pdu(pipes_struct *p, NTSTATUS status)
+bool setup_fault_pdu(pipes_struct *p, NTSTATUS fault_status)
 {
-	RPC_HDR fault_hdr;
-	RPC_HDR_RESP hdr_resp;
-	RPC_HDR_FAULT fault_resp;
+	NTSTATUS status;
+	union dcerpc_payload u;
+	DATA_BLOB blob;
 
 	/* Free any memory in the current return data buffer. */
 	prs_mem_free(&p->out_data.rdata);
@@ -931,36 +931,26 @@ bool setup_fault_pdu(pipes_struct *p, NTSTATUS status)
 	 * Initialize a fault header.
 	 */
 
-	init_rpc_hdr(&fault_hdr, DCERPC_PKT_FAULT, DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST | DCERPC_PFC_FLAG_DID_NOT_EXECUTE,
-            p->hdr.call_id, RPC_HEADER_LEN + RPC_HDR_RESP_LEN + RPC_HDR_FAULT_LEN, 0);
+	ZERO_STRUCT(u);
 
-	/*
-	 * Initialize the HDR_RESP and FAULT parts of the PDU.
-	 */
+	u.fault.status		= NT_STATUS_V(fault_status);
+	u.fault._pad		= data_blob_talloc_zero(p->mem_ctx, 4);
 
-	memset((char *)&hdr_resp, '\0', sizeof(hdr_resp));
-
-	fault_resp.status = status;
-	fault_resp.reserved = 0;
-
-	/*
-	 * Marshall the header into the outgoing PDU.
-	 */
-
-	if(!smb_io_rpc_hdr("", &fault_hdr, &p->out_data.frag, 0)) {
-		DEBUG(0,("setup_fault_pdu: marshalling of RPC_HDR failed.\n"));
+	status = dcerpc_push_ncacn_packet(p->mem_ctx,
+					  DCERPC_PKT_FAULT,
+					  DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST | DCERPC_PFC_FLAG_DID_NOT_EXECUTE,
+					  RPC_HEADER_LEN + RPC_HDR_RESP_LEN + RPC_HDR_FAULT_LEN /* FIXME - gd */,
+					  0,
+					  p->hdr.call_id,
+					  u,
+					  &blob);
+	if (!NT_STATUS_IS_OK(status)) {
 		prs_mem_free(&p->out_data.frag);
 		return False;
 	}
 
-	if(!smb_io_rpc_hdr_resp("resp", &hdr_resp, &p->out_data.frag, 0)) {
-		DEBUG(0,("setup_fault_pdu: failed to marshall RPC_HDR_RESP.\n"));
-		prs_mem_free(&p->out_data.frag);
-		return False;
-	}
-
-	if(!smb_io_rpc_hdr_fault("fault", &fault_resp, &p->out_data.frag, 0)) {
-		DEBUG(0,("setup_fault_pdu: failed to marshall RPC_HDR_FAULT.\n"));
+	if (!prs_copy_data_in(&p->out_data.frag,
+			      (char *)blob.data, blob.length)) {
 		prs_mem_free(&p->out_data.frag);
 		return False;
 	}
