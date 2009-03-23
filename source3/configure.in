@@ -152,11 +152,11 @@ AC_SUBST(NSCD_LIBS)
 # do this here since AC_CACHE_CHECK apparently sets the CFLAGS to "-g -O2"
 # if it has no value.  This prevent *very* large debug binaries from occurring
 # by default.
-if test "x$CFLAGS" = x; then
-  CFLAGS="-O"
-fi
 if test "x$debug" = "xyes" ; then
 	CFLAGS="${CFLAGS} -g"
+fi
+if test "x$CFLAGS" = x; then
+  CFLAGS="-O"
 fi
 
 m4_include(../lib/socket_wrapper/config.m4)
