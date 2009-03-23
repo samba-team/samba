@@ -443,26 +443,6 @@ bool smb_io_rpc_hdr_resp(const char *desc, RPC_HDR_RESP *rpc, prs_struct *ps, in
 }
 
 /*******************************************************************
- Reads or writes an RPC_HDR_FAULT structure.
-********************************************************************/
-
-bool smb_io_rpc_hdr_fault(const char *desc, RPC_HDR_FAULT *rpc, prs_struct *ps, int depth)
-{
-	if (rpc == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "smb_io_rpc_hdr_fault");
-	depth++;
-
-	if(!prs_dcerpc_status("status  ", ps, depth, &rpc->status))
-		return False;
-	if(!prs_uint32("reserved", ps, depth, &rpc->reserved))
-		return False;
-
-    return True;
-}
-
-/*******************************************************************
  Inits an RPC_HDR_AUTH structure.
 ********************************************************************/
 
