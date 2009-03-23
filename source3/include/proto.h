@@ -2410,6 +2410,10 @@ bool receive_getdc_response(TALLOC_CTX *mem_ctx,
 int cli_set_message(char *buf,int num_words,int num_bytes,bool zero);
 unsigned int cli_set_timeout(struct cli_state *cli, unsigned int timeout);
 void cli_set_port(struct cli_state *cli, int port);
+bool cli_state_seqnum_persistent(struct cli_state *cli,
+				 uint16_t mid);
+bool cli_state_seqnum_remove(struct cli_state *cli,
+			     uint16_t mid);
 bool cli_receive_smb(struct cli_state *cli);
 ssize_t cli_receive_smb_data(struct cli_state *cli, char *buffer, size_t len);
 bool cli_receive_smb_readX_header(struct cli_state *cli);
@@ -3181,29 +3185,34 @@ void cli_free_enc_buffer(struct cli_state *cli, char *buf);
 NTSTATUS cli_decrypt_message(struct cli_state *cli);
 NTSTATUS cli_encrypt_message(struct cli_state *cli, char *buf, char **buf_out);
 
-/* The following definitions come from libsmb/smb_signing.c  */
+/* The following definitions come from libsmb/clisigning.c  */
 
 bool cli_simple_set_signing(struct cli_state *cli,
 			    const DATA_BLOB user_session_key,
 			    const DATA_BLOB response);
-bool cli_null_set_signing(struct cli_state *cli);
 bool cli_temp_set_signing(struct cli_state *cli);
-void cli_free_signing_context(struct cli_state *cli);
-void cli_calculate_sign_mac(struct cli_state *cli, char *buf);
-bool cli_check_sign_mac(struct cli_state *cli, char *buf);
-bool client_set_trans_sign_state_on(struct cli_state *cli, uint16 mid);
-bool client_set_trans_sign_state_off(struct cli_state *cli, uint16 mid);
+void cli_calculate_sign_mac(struct cli_state *cli, char *buf, uint32_t *seqnum);
+bool cli_check_sign_mac(struct cli_state *cli, const char *buf, uint32_t seqnum);
 bool client_is_signing_on(struct cli_state *cli);
-bool srv_oplock_set_signing(bool onoff);
-bool srv_check_sign_mac(const char *inbuf, bool must_be_ok);
-void srv_calculate_sign_mac(char *outbuf);
-void srv_defer_sign_response(uint16 mid);
-void srv_cancel_sign_response(uint16 mid, bool cancel);
-void srv_set_signing_negotiated(void);
-bool srv_is_signing_active(void);
-bool srv_is_signing_negotiated(void);
-bool srv_signing_started(void);
-void srv_set_signing(const DATA_BLOB user_session_key, const DATA_BLOB response);
+bool client_is_signing_allowed(struct cli_state *cli);
+bool client_is_signing_mandatory(struct cli_state *cli);
+void cli_set_signing_negotiated(struct cli_state *cli);
+
+/* The following definitions come from smbd/signing.c  */
+
+struct smbd_server_connection;
+bool srv_check_sign_mac(struct smbd_server_connection *conn,
+			const char *inbuf, uint32_t *seqnum);
+void srv_calculate_sign_mac(struct smbd_server_connection *conn,
+			    char *outbuf, uint32_t seqnum);
+void srv_cancel_sign_response(struct smbd_server_connection *conn);
+bool srv_init_signing(struct smbd_server_connection *conn);
+void srv_set_signing_negotiated(struct smbd_server_connection *conn);
+bool srv_is_signing_active(struct smbd_server_connection *conn);
+bool srv_is_signing_negotiated(struct smbd_server_connection *conn);
+void srv_set_signing(struct smbd_server_connection *conn,
+		     const DATA_BLOB user_session_key,
+		     const DATA_BLOB response);
 
 /* The following definitions come from libsmb/smbdes.c  */
 
@@ -4347,7 +4356,7 @@ const char *lp_printcapname(void);
 bool lp_disable_spoolss( void );
 void lp_set_spoolss_state( uint32 state );
 uint32 lp_get_spoolss_state( void );
-bool lp_use_sendfile(int snum);
+bool lp_use_sendfile(int snum, struct smb_signing_state *signing_state);
 void set_use_sendfile(int snum, bool val);
 void set_store_dos_attributes(int snum, bool val);
 void lp_set_mangling_method(const char *new_method);
@@ -6722,7 +6731,9 @@ SEC_DESC *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname);
 
 void smbd_setup_sig_term_handler(void);
 void smbd_setup_sig_hup_handler(void);
-bool srv_send_smb(int fd, char *buffer, bool do_encrypt,
+bool srv_send_smb(int fd, char *buffer,
+		  bool no_signing, uint32_t seqnum,
+		  bool do_encrypt,
 		  struct smb_perfcount_data *pcd);
 int srv_set_message(char *buf,
                         int num_words,
@@ -7218,6 +7229,16 @@ NTSTATUS idmap_sid_to_gid(const char *domname, DOM_SID *sid, gid_t *gid);
 /* The following definitions come from winbindd/nss_info_template.c  */
 
 NTSTATUS nss_info_template_init( void );
+
+/* The following definitions come from lib/avahi.c */
+
+struct AvahiPoll *tevent_avahi_poll(TALLOC_CTX *mem_ctx,
+				    struct tevent_context *ev);
+
+/* The following definitions come from smbd/avahi_register.c */
+
+void *avahi_start_register(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+			   uint16_t port);
 
 /* Misc protos */
 

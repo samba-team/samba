@@ -621,6 +621,7 @@ struct smb_request {
 	uint16 flags2;
 	uint16 smbpid;
 	uint16 mid;
+	uint32_t seqnum;
 	uint16 vuid;
 	uint16 tid;
 	uint8  wct;
@@ -722,6 +723,7 @@ struct pending_message_list {
 	struct timeval request_time; /* When was this first issued? */
 	struct timed_event *te;
 	struct smb_perfcount_data pcd;
+	uint32_t seqnum;
 	bool encrypted;
 	DATA_BLOB buf;
 	DATA_BLOB private_data;
@@ -1846,21 +1848,6 @@ struct ip_service {
 
 /* Special name type used to cause a _kerberos DNS lookup. */
 #define KDC_NAME_TYPE 0xDCDC
-
-/* Used by the SMB signing functions. */
-
-typedef struct smb_sign_info {
-	void (*sign_outgoing_message)(char *outbuf, struct smb_sign_info *si);
-	bool (*check_incoming_message)(const char *inbuf, struct smb_sign_info *si, bool must_be_ok);
-	void (*free_signing_context)(struct smb_sign_info *si);
-	void *signing_context;
-
-	bool negotiated_smb_signing;
-	bool allow_smb_signing;
-	bool doing_signing;
-	bool mandatory_signing;
-	bool seen_valid; /* Have I ever seen a validly signed packet? */
-} smb_sign_info;
 
 struct ea_struct {
 	uint8 flags;

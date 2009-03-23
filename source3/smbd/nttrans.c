@@ -230,6 +230,7 @@ void send_nt_replies(connection_struct *conn,
 		show_msg((char *)req->outbuf);
 		if (!srv_send_smb(smbd_server_fd(),
 				(char *)req->outbuf,
+				true, req->seqnum+1,
 				IS_CONN_ENCRYPTED(conn),
 				&req->pcd)) {
 			exit_server_cleanly("send_nt_replies: srv_send_smb failed.");
@@ -1129,9 +1130,9 @@ void reply_ntcancel(struct smb_request *req)
 	 */
 
 	START_PROFILE(SMBntcancel);
+	srv_cancel_sign_response(smbd_server_conn);
 	remove_pending_change_notify_requests_by_mid(req->mid);
 	remove_pending_lock_requests_by_mid(req->mid);
-	srv_cancel_sign_response(req->mid, true);
 
 	DEBUG(3,("reply_ntcancel: cancel called on mid = %d.\n", req->mid));
 

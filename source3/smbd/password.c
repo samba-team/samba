@@ -298,11 +298,13 @@ int register_existing_vuid(uint16 vuid,
 			vuser->server_info->unix_name);
 	}
 
-	if (srv_is_signing_negotiated() && !vuser->server_info->guest &&
-			!srv_signing_started()) {
+	if (srv_is_signing_negotiated(smbd_server_conn) &&
+	    !vuser->server_info->guest) {
 		/* Try and turn on server signing on the first non-guest
 		 * sessionsetup. */
-		srv_set_signing(vuser->server_info->user_session_key, response_blob);
+		srv_set_signing(smbd_server_conn,
+				vuser->server_info->user_session_key,
+				response_blob);
 	}
 
 	/* fill in the current_user_info struct */
