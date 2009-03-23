@@ -1841,10 +1841,9 @@ static NTSTATUS open_smb_socket(const struct sockaddr_storage *pss,
 	tevent_req_set_callback(r445, smb_sock_connected, fd445);
 	tevent_req_set_callback(r139, smb_sock_connected, fd139);
 
-	while ((fd139->fd == -1)
-	       && tevent_req_is_in_progress(r139)
-	       && (fd445->fd == -1)
-	       && tevent_req_is_in_progress(r445)) {
+	while ((fd445->fd == -1) && (fd139->fd == -1)
+	       && (tevent_req_is_in_progress(r139)
+		   || tevent_req_is_in_progress(r445))) {
 		event_loop_once(ev);
 	}
 
