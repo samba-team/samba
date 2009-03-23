@@ -4833,6 +4833,14 @@ struct tevent_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
 					 prs_struct *req_data);
 NTSTATUS rpc_api_pipe_req_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			       prs_struct *reply_pdu);
+NTSTATUS dcerpc_push_ncacn_packet(TALLOC_CTX *mem_ctx,
+				  enum dcerpc_pkt_type ptype,
+				  uint8_t pfc_flags,
+				  uint16_t frag_length,
+				  uint16_t auth_length,
+				  uint32_t call_id,
+				  union dcerpc_payload u,
+				  DATA_BLOB *blob);
 struct tevent_req *rpc_pipe_bind_send(TALLOC_CTX *mem_ctx,
 				      struct event_context *ev,
 				      struct rpc_pipe_client *cli,

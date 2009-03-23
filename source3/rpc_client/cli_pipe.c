@@ -41,6 +41,7 @@
 #include "smb_krb5.h"
 #include "../libcli/auth/ntlmssp.h"
 #include "rpc_client/cli_netlogon.h"
+#include "librpc/gen_ndr/ndr_dcerpc.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_CLI
@@ -293,6 +294,46 @@ static bool rpc_grow_buffer(prs_struct *pdu, size_t size)
 	return true;
 }
 
+/*******************************************************************
+*******************************************************************/
+
+NTSTATUS dcerpc_push_ncacn_packet(TALLOC_CTX *mem_ctx,
+				  enum dcerpc_pkt_type ptype,
+				  uint8_t pfc_flags,
+				  uint16_t frag_length,
+				  uint16_t auth_length,
+				  uint32_t call_id,
+				  union dcerpc_payload u,
+				  DATA_BLOB *blob)
+{
+	struct ncacn_packet r;
+	enum ndr_err_code ndr_err;
+
+	r.rpc_vers		= 5;
+	r.rpc_vers_minor	= 0;
+	r.ptype			= ptype;
+	r.pfc_flags		= pfc_flags;
+	r.drep[0]		= DCERPC_DREP_LE;
+	r.drep[1]		= 0;
+	r.drep[2]		= 0;
+	r.drep[3]		= 0;
+	r.frag_length		= frag_length;
+	r.auth_length		= auth_length;
+	r.call_id		= call_id;
+	r.u			= u;
+
+	ndr_err = ndr_push_struct_blob(blob, mem_ctx, &r,
+		(ndr_push_flags_fn_t)ndr_push_ncacn_packet);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(ncacn_packet, &r);
+	}
+
+	return NT_STATUS_OK;
+}
 
 /*******************************************************************
  Use SMBreadX to get rest of one fragment's worth of rpc data.
