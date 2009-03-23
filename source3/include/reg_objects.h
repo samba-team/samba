@@ -145,10 +145,10 @@ typedef struct {
 	bool	(*values_need_update)(struct regval_ctr *values);
 } REGISTRY_OPS;
 
-typedef struct {
+struct registry_hook {
 	const char	*keyname;	/* full path to name of key */
 	REGISTRY_OPS	*ops;		/* registry function hooks */
-} REGISTRY_HOOK;
+};
 
 
 /* structure to store the registry handles */
