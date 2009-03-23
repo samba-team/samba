@@ -2906,7 +2906,6 @@ static void recd_sig_child_handler(struct event_context *ev,
  */
 int ctdb_start_recoverd(struct ctdb_context *ctdb)
 {
-	int ret;
 	int fd[2];
 	struct signal_event *se;
 
@@ -2931,34 +2930,15 @@ int ctdb_start_recoverd(struct ctdb_context *ctdb)
 
 	close(fd[1]);
 
-	/* shutdown the transport */
-	if (ctdb->methods) {
-		ctdb->methods->shutdown(ctdb);
-	}
+	srandom(getpid() ^ time(NULL));
 
-	/* get a new event context */
-	talloc_free(ctdb->ev);
-	ctdb->ev = event_context_init(ctdb);
+	if (switch_from_server_to_client(ctdb) != 0) {
+		DEBUG(DEBUG_CRIT, (__location__ "ERROR: failed to switch recovery daemon into client mode. shutting down.\n"));
+		exit(1);
+	}
 
 	event_add_fd(ctdb->ev, ctdb, fd[0], EVENT_FD_READ|EVENT_FD_AUTOCLOSE, 
 		     ctdb_recoverd_parent, &fd[0]);	
-
-	close(ctdb->daemon.sd);
-	ctdb->daemon.sd = -1;
-
-	srandom(getpid() ^ time(NULL));
-
-	/* the recovery daemon does not need to be realtime */
-	if (ctdb->do_setsched) {
-		ctdb_restore_scheduler(ctdb);
-	}
-
-	/* initialise ctdb */
-	ret = ctdb_socket_connect(ctdb);
-	if (ret != 0) {
-		DEBUG(DEBUG_ALERT, (__location__ " Failed to init ctdb\n"));
-		exit(1);
-	}
 
 	/* set up a handler to pick up sigchld */
 	se = event_add_signal(ctdb->ev, ctdb,

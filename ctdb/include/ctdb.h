@@ -610,4 +610,6 @@ int ctdb_transaction_commit(struct ctdb_transaction_handle *h);
 
 int ctdb_ctrl_recd_ping(struct ctdb_context *ctdb);
 
+int switch_from_server_to_client(struct ctdb_context *ctdb);
+
 #endif
