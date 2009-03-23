@@ -209,16 +209,17 @@ struct rpc_read_state {
 
 static void rpc_read_done(struct async_req *subreq);
 
-static struct async_req *rpc_read_send(TALLOC_CTX *mem_ctx,
-				       struct event_context *ev,
-				       struct rpc_cli_transport *transport,
-				       uint8_t *data, size_t size)
+static struct tevent_req *rpc_read_send(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct rpc_cli_transport *transport,
+					uint8_t *data, size_t size)
 {
-	struct async_req *result, *subreq;
+	struct tevent_req *req;
+	struct async_req *subreq;
 	struct rpc_read_state *state;
 
-	if (!async_req_setup(mem_ctx, &result, &state,
-			     struct rpc_read_state)) {
+	req = tevent_req_create(mem_ctx, &state, struct rpc_read_state);
+	if (req == NULL) {
 		return NULL;
 	}
 	state->ev = ev;
@@ -235,33 +236,33 @@ static struct async_req *rpc_read_send(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 	subreq->async.fn = rpc_read_done;
-	subreq->async.priv = result;
-	return result;
+	subreq->async.priv = req;
+	return req;
 
  fail:
-	TALLOC_FREE(result);
+	TALLOC_FREE(req);
 	return NULL;
 }
 
 static void rpc_read_done(struct async_req *subreq)
 {
-	struct async_req *req = talloc_get_type_abort(
-		subreq->async.priv, struct async_req);
-	struct rpc_read_state *state = talloc_get_type_abort(
-		req->private_data, struct rpc_read_state);
+	struct tevent_req *req = talloc_get_type_abort(
+		subreq->async.priv, struct tevent_req);
+	struct rpc_read_state *state = tevent_req_data(
+		req, struct rpc_read_state);
 	NTSTATUS status;
 	ssize_t received;
 
 	status = state->transport->read_recv(subreq, &received);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_nterror(req, status);
+		tevent_req_nterror(req, status);
 		return;
 	}
 
 	state->num_read += received;
 	if (state->num_read == state->size) {
-		async_req_done(req);
+		tevent_req_done(req);
 		return;
 	}
 
@@ -269,16 +270,16 @@ static void rpc_read_done(struct async_req *subreq)
 					     state->data + state->num_read,
 					     state->size - state->num_read,
 					     state->transport->priv);
-	if (async_req_nomem(subreq, req)) {
+	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
 	subreq->async.fn = rpc_read_done;
 	subreq->async.priv = req;
 }
 
-static NTSTATUS rpc_read_recv(struct async_req *req)
+static NTSTATUS rpc_read_recv(struct tevent_req *req)
 {
-	return async_req_simple_recv_ntstatus(req);
+	return tevent_req_simple_recv_ntstatus(req);
 }
 
 struct rpc_write_state {
@@ -399,8 +400,8 @@ struct get_complete_frag_state {
 	prs_struct *pdu;
 };
 
-static void get_complete_frag_got_header(struct async_req *subreq);
-static void get_complete_frag_got_rest(struct async_req *subreq);
+static void get_complete_frag_got_header(struct tevent_req *subreq);
+static void get_complete_frag_got_rest(struct tevent_req *subreq);
 
 static struct async_req *get_complete_frag_send(TALLOC_CTX *mem_ctx,
 					       struct event_context *ev,
@@ -408,7 +409,8 @@ static struct async_req *get_complete_frag_send(TALLOC_CTX *mem_ctx,
 					       struct rpc_hdr_info *prhdr,
 					       prs_struct *pdu)
 {
-	struct async_req *result, *subreq;
+	struct async_req *result;
+	struct tevent_req *subreq;
 	struct get_complete_frag_state *state;
 	uint32_t pdu_len;
 	NTSTATUS status;
@@ -437,8 +439,8 @@ static struct async_req *get_complete_frag_send(TALLOC_CTX *mem_ctx,
 			status = NT_STATUS_NO_MEMORY;
 			goto post_status;
 		}
-		subreq->async.fn = get_complete_frag_got_header;
-		subreq->async.priv = result;
+		tevent_req_set_callback(subreq, get_complete_frag_got_header,
+					result);
 		return result;
 	}
 
@@ -463,8 +465,8 @@ static struct async_req *get_complete_frag_send(TALLOC_CTX *mem_ctx,
 			status = NT_STATUS_NO_MEMORY;
 			goto post_status;
 		}
-		subreq->async.fn = get_complete_frag_got_rest;
-		subreq->async.priv = result;
+		tevent_req_set_callback(subreq, get_complete_frag_got_rest,
+					result);
 		return result;
 	}
 
@@ -477,10 +479,10 @@ static struct async_req *get_complete_frag_send(TALLOC_CTX *mem_ctx,
 	return NULL;
 }
 
-static void get_complete_frag_got_header(struct async_req *subreq)
+static void get_complete_frag_got_header(struct tevent_req *subreq)
 {
-	struct async_req *req = talloc_get_type_abort(
-		subreq->async.priv, struct async_req);
+	struct async_req *req = tevent_req_callback_data(
+		subreq, struct async_req);
 	struct get_complete_frag_state *state = talloc_get_type_abort(
 		req->private_data, struct get_complete_frag_state);
 	NTSTATUS status;
@@ -515,14 +517,13 @@ static void get_complete_frag_got_header(struct async_req *subreq)
 	if (async_req_nomem(subreq, req)) {
 		return;
 	}
-	subreq->async.fn = get_complete_frag_got_rest;
-	subreq->async.priv = req;
+	tevent_req_set_callback(subreq, get_complete_frag_got_rest, req);
 }
 
-static void get_complete_frag_got_rest(struct async_req *subreq)
+static void get_complete_frag_got_rest(struct tevent_req *subreq)
 {
-	struct async_req *req = talloc_get_type_abort(
-		subreq->async.priv, struct async_req);
+	struct async_req *req = tevent_req_callback_data(
+		subreq, struct async_req);
 	NTSTATUS status;
 
 	status = rpc_read_recv(subreq);
