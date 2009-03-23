@@ -1,0 +1,70 @@
+#!/bin/sh
+# Script to set up one of the nodes as a NAT gateway for all other nodes.
+# This is used to ensure that all nodes in the cluster can still originate
+# traffic to the external network even if there are no public addresses
+# available.
+#
+
+. $CTDB_BASE/functions
+loadconfig ctdb
+
+[ -z "$NATGW_PUBLIC_IFACE" ] && exit 0
+
+cmd="$1"
+shift
+PATH=/usr/bin:/bin:/usr/sbin:/sbin:$PATH
+
+delete_all() {
+	ip addr add $NATGW_PUBLIC_IP dev $NATGW_PUBLIC_IFACE >/dev/null 2>/dev/null
+	ip addr del $NATGW_PUBLIC_IP_HOST dev $NATGW_PRIVATE_IFACE >/dev/null 2>/dev/null
+	ip route del 0.0.0.0/0 metric 10 >/dev/null 2>/dev/null
+
+	# Delete the masquerading setup from a previous iteration where we
+	# were the NAT-GW
+	iptables -D POSTROUTING -t nat -s $NATGW_PRIVATE_NETWORK -d ! $NATGW_PRIVATE_NETWORK -j MASQUERADE >/dev/null 2>/dev/null
+
+	ip addr del $NATGW_PUBLIC_IP dev $NATGW_PUBLIC_IFACE >/dev/null 2>/dev/null
+}
+
+case $cmd in 
+     recovered)
+	MYPNN=`ctdb pnn | cut -d: -f2`
+
+	# Find the first connected node
+	FIRST=`ctdb status -Y | grep ":0:$" | head -1`
+	FIRSTNODE=`echo $FIRST | cut -d: -f2`
+	FIRSTIP=`echo $FIRST | cut -d: -f3`
+	NATGW_PUBLIC_IP_HOST=`echo $NATGW_PUBLIC_IP | sed -e "s/\/.*/\/32/"`
+
+	delete_all
+
+	if [ "$FIRSTNODE" == "$MYPNN" ]; then
+		# This is the first node, set it up as the NAT GW
+		echo 1 >/proc/sys/net/ipv4/ip_forward
+		iptables -A POSTROUTING -t nat -s $NATGW_PRIVATE_NETWORK -d ! $NATGW_PRIVATE_NETWORK -j MASQUERADE
+		ip addr add $NATGW_PUBLIC_IP dev $NATGW_PUBLIC_IFACE
+		ip route add 0.0.0.0/0 via $NATGW_DEFAULT_GATEWAY >/dev/null 2>/dev/null
+	else
+		# This is not the NAT-GW
+		# Assign the public ip to the private interface and make
+		# sure we dont respond to ARPs.
+		# We do this so that the ip address will exist on a
+		# non-loopback interface so that samba may send it along in the
+		# KDC requests.
+
+		# Set the scope up as host and make sure we dont respond to ARP
+		# for this ip
+		echo 3 > /proc/sys/net/ipv4/conf/all/arp_ignore
+		ip addr add $NATGW_PUBLIC_IP_HOST dev $NATGW_PRIVATE_IFACE scope host
+		
+		ip route add 0.0.0.0/0 via $FIRSTIP metric 10
+	fi
+	;;
+
+     shutdown)
+	delete_all
+	;;
+
+esac
+
+exit 0

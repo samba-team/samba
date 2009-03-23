@@ -146,6 +146,38 @@
 # CTDB_CAPABILITY_RECMASTER=yes
 # CTDB_CAPABILITY_LMASTER=yes
 
+# NAT-GW configuration
+# Some services running on nthe CTDB node may need to originate traffic to
+# remote servers before the node is assigned any IP addresses,
+# This is problematic since before the node has public addresses the node might
+# not be able to route traffic to the public networks.
+# One solution is to have static public addresses assigned with routing
+# in addition to the public address interfaces, thus guaranteeing that
+# a node always can route traffic to the external network.
+# This is the most simple solution but it uses up a large number of 
+# additional ip addresses.
+#
+# A more complex solution is NAT-GW.
+# In this mode we only need one additional ip address for the cluster from
+# the exsternal public network.
+# One of the nodes in the cluster is elected to be hosting this ip address
+# so it can reach the external services. This node is also configured
+# to use NAT MASQUERADING for all traffic from the internal private network
+# to the external network. This node is the NAT-GW node.
+#
+# All other nodes are set up with a default rote with a metric of 10 to point
+# to the nat-gw node.
+# 
+# The effect of this is that only when a node does not have a public address
+# and thus no proper routes to the external world it will instead
+# route all packets through the nat-gw node.
+#
+# NATGW_PUBLIC_IP=10.0.0.227/24
+# NATGW_PUBLIC_IFACE=eth0
+# NATGW_DEFAULT_GATEWAY=10.0.0.1
+# NATGW_PRIVATE_IFACE=eth1
+# NATGW_PRIVATE_NETWORK=10.1.1.0/24
+
 # where to log messages
 # the default is /var/log/log.ctdb
 # CTDB_LOGFILE=/var/log/log.ctdb

@@ -610,4 +610,30 @@ int ctdb_transaction_commit(struct ctdb_transaction_handle *h);
 
 int ctdb_ctrl_recd_ping(struct ctdb_context *ctdb);
 
+int switch_from_server_to_client(struct ctdb_context *ctdb);
+
+#define MONITOR_SCRIPT_OK      0
+#define MONITOR_SCRIPT_TIMEOUT 1
+
+#define MAX_SCRIPT_NAME 31
+#define MAX_SCRIPT_OUTPUT 511
+struct ctdb_monitoring_script_wire {
+	char name[MAX_SCRIPT_NAME+1];
+	struct timeval start;
+	struct timeval finished;
+	int32_t status;
+	int32_t timedout;
+	char output[MAX_SCRIPT_OUTPUT+1];
+};
+
+struct ctdb_monitoring_wire {
+	uint32_t num_scripts;
+	struct ctdb_monitoring_script_wire scripts[1];
+};
+
+int ctdb_ctrl_getscriptstatus(struct ctdb_context *ctdb, 
+		    struct timeval timeout, uint32_t destnode, 
+		    TALLOC_CTX *mem_ctx, struct ctdb_monitoring_wire **script_status);
+
+
 #endif

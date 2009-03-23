@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.73
+Version: 1.0.74
 Release: 1
 Epoch: 0
 License: GNU GPL version 3
@@ -128,6 +128,11 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Mon Mar 16 2009 : Version 1.0.74
+ - Fixes to AIX from C Cowan.
+ - Fixes to ctdb_diagnostics so we collect correct GPFS data
+ - Fixes to the net conf list command in ctdb_diagnostics
+ - Check the static-routes file IFF it exists in ctdb_diagnostics
 * Wed Mar 4 2009 : Version 1.0.73
  - Add possibility to disable the check of shares for NFS and Samba
  - From Sumit Bose, fix dependencies so make -j works

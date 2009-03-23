@@ -4,7 +4,13 @@
 
 PATH="$PATH:/sbin:/usr/sbin:/usr/lpp/mmfs/bin"
 
-CONFIG_FILES="/etc/krb5.conf /etc/hosts /etc/ctdb/nodes /etc/sysconfig/ctdb /etc/ctdb/public_addresses /etc/resolv.conf /etc/nsswitch.conf /etc/sysctl.conf /etc/samba/smb.conf /etc/fstab /etc/multipath.conf /etc/pam.d/system-auth /etc/sysconfig/nfs /etc/exports /etc/vsftpd/vsftpd.conf"
+# list of config files that must exist and that we check are the same 
+# on all nodes
+CONFIG_FILES_MUST="/etc/krb5.conf /etc/hosts /etc/ctdb/nodes /etc/sysconfig/ctdb /etc/resolv.conf /etc/nsswitch.conf /etc/sysctl.conf /etc/samba/smb.conf /etc/fstab /etc/multipath.conf /etc/pam.d/system-auth /etc/sysconfig/nfs /etc/exports /etc/vsftpd/vsftpd.conf"
+
+# list of config files that may exist and should be checked that they
+# are the same on all nodes
+CONFIG_FILES_MAY="/etc/ctdb/public_addresses /etc/ctdb/static-routes"
 
 2>&1
 
@@ -54,9 +60,27 @@ cat <<EOF
 Comping critical config files on all nodes
 EOF
 
-for f in $CONFIG_FILES; do
+for f in $CONFIG_FILES_MUST; do
  [ -r "$f" ] || {
-    error "$f is missing"
+    error "$f is missing on this node"
+    continue;
+ }
+ show_file $f
+ for i in `seq 0 $MAX_NODE`; do
+     echo "Testing for same config file $f on node $i"
+     tmpf=/tmp/`basename $f`.node$i
+     onnode $i cat $f > $tmpf 2>&1
+     cmp $f $tmpf 2>&1 || {
+	 error "File $f is different on node $i"
+	 diff -u $f $tmpf
+     }
+     rm -f $tmpf
+ done
+done
+
+for f in $CONFIG_FILES_MAY; do
+ [ -r "$f" ] || {
+    echo "Optional file $f is not present on local node"
     continue;
  }
  show_file $f
@@ -182,11 +206,11 @@ EOF
  show_all "/usr/lpp/mmfs/bin/mmlsmgr"
  devlist=`mmlsfs all|grep ^File.system.attributes | cut -d/ -f3 | cut -d: -f1`
  for d in $devlist; do
-     show_all mmdf $d
-     show_all mmlsdisk $d
-     show_all mmlsfileset $d
-     show_all mmlspolicy $d
-     show_all mmlssnapshot $d
+     show_all "mmdf $d"
+     show_all "mmlsdisk $d"
+     show_all "mmlsfileset $d"
+     show_all "mmlspolicy $d"
+     show_all "mmlssnapshot $d"
  done
  fslist=`mount|grep type.gpfs|awk '{print $1}'`
  for fs in $fslist; do
@@ -202,6 +226,7 @@ Showing Samba status
 EOF
 show_all "smbstatus -n -B"
 show_all "net ads testjoin"
+show_all "net conf list"
 show_all "lsof -n | grep smbd"
 show_all "lsof -n | grep ctdbd"
 show_all "netstat -tan"
@@ -211,7 +236,7 @@ show_all "smbclient -U% -L 127.0.0.1"
 WORKGROUP=`testparm -s --parameter-name=WORKGROUP 2> /dev/null`
 show_all id "$WORKGROUP/Administrator"
 show_all "wbinfo -p"
-show_all "wbinfo --sequence"
+show_all "wbinfo --online-status"
 show_all "smbd -b"
 
 date

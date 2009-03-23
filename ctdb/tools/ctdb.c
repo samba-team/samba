@@ -471,6 +471,44 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 	return 0;
 }
 
+
+/*
+  display the status of the monitoring scripts
+ */
+static int control_scriptstatus(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int i, ret;
+	struct ctdb_monitoring_wire *script_status;
+
+	ret = ctdb_ctrl_getscriptstatus(ctdb, TIMELIMIT(), options.pnn, ctdb, &script_status);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get script status from node %u\n", options.pnn));
+		return ret;
+	}
+
+	printf("%d scripts were executed last monitoring cycle\n", script_status->num_scripts);
+	for (i=0; i<script_status->num_scripts; i++) {
+		printf("%-20s Status:%s    ",
+			script_status->scripts[i].name,
+			script_status->scripts[i].timedout?"TIMEDOUT":script_status->scripts[i].status==0?"OK":"ERROR");
+		if (script_status->scripts[i].timedout == 0) {
+			printf("Duration:%.3lf ",
+			timeval_delta(&script_status->scripts[i].finished,
+			      &script_status->scripts[i].start));
+		}
+		printf("%s",
+			ctime(&script_status->scripts[i].start.tv_sec));
+		if ((script_status->scripts[i].timedout != 0)
+		||  (script_status->scripts[i].status != 0) ) {
+			printf("   OUTPUT:%s\n",
+				script_status->scripts[i].output);
+		}
+	}
+
+	return 0;
+}
+	
+
 /*
   display the pnn of the recovery master
  */
@@ -2647,6 +2685,7 @@ static const struct {
 	{ "restoredb",        control_restoredb,          false, "restore the database from a file.", "<file>"},
 	{ "recmaster",        control_recmaster,          false, "show the pnn for the recovery master."},
 	{ "setflags",        control_setflags,            false, "set flags for a node in the nodemap.", "<node> <flags>"},
+	{ "scriptstatus",        control_scriptstatus,    false, "show the status of the monitoring scripts"},
 };
 
 /*
