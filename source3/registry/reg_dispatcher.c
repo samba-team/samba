@@ -80,7 +80,8 @@ static WERROR construct_registry_sd(TALLOC_CTX *ctx, SEC_DESC **psd)
  High level wrapper function for storing registry subkeys
  ***********************************************************************/
 
-bool store_reg_keys( REGISTRY_KEY *key, struct regsubkey_ctr *subkeys )
+bool store_reg_keys(struct registry_key_handle *key,
+		    struct regsubkey_ctr *subkeys)
 {
 	if (key->ops && key->ops->store_subkeys)
 		return key->ops->store_subkeys(key->name, subkeys);
@@ -92,7 +93,7 @@ bool store_reg_keys( REGISTRY_KEY *key, struct regsubkey_ctr *subkeys )
  High level wrapper function for storing registry values
  ***********************************************************************/
 
-bool store_reg_values(REGISTRY_KEY *key, struct regval_ctr *val)
+bool store_reg_values(struct registry_key_handle *key, struct regval_ctr *val)
 {
 	if (key->ops && key->ops->store_values)
 		return key->ops->store_values(key->name, val);
@@ -100,7 +101,7 @@ bool store_reg_values(REGISTRY_KEY *key, struct regval_ctr *val)
 	return false;
 }
 
-WERROR create_reg_subkey(REGISTRY_KEY *key, const char *subkey)
+WERROR create_reg_subkey(struct registry_key_handle *key, const char *subkey)
 {
 	if (key->ops && key->ops->create_subkey) {
 		return key->ops->create_subkey(key->name, subkey);
@@ -109,7 +110,7 @@ WERROR create_reg_subkey(REGISTRY_KEY *key, const char *subkey)
 	return WERR_NOT_SUPPORTED;
 }
 
-WERROR delete_reg_subkey(REGISTRY_KEY *key, const char *subkey)
+WERROR delete_reg_subkey(struct registry_key_handle *key, const char *subkey)
 {
 	if (key->ops && key->ops->delete_subkey) {
 		return key->ops->delete_subkey(key->name, subkey);
@@ -123,7 +124,8 @@ WERROR delete_reg_subkey(REGISTRY_KEY *key, const char *subkey)
  Initialize the TALLOC_CTX if necessary
  ***********************************************************************/
 
-int fetch_reg_keys( REGISTRY_KEY *key, struct regsubkey_ctr *subkey_ctr )
+int fetch_reg_keys(struct registry_key_handle *key,
+		   struct regsubkey_ctr *subkey_ctr)
 {
 	int result = -1;
 
@@ -137,7 +139,7 @@ int fetch_reg_keys( REGISTRY_KEY *key, struct regsubkey_ctr *subkey_ctr )
  High level wrapper function for enumerating registry values
  ***********************************************************************/
 
-int fetch_reg_values(REGISTRY_KEY *key, struct regval_ctr *val)
+int fetch_reg_values(struct registry_key_handle *key, struct regval_ctr *val)
 {
 	int result = -1;
 
@@ -155,8 +157,9 @@ int fetch_reg_values(REGISTRY_KEY *key, struct regval_ctr *val)
  underlying registry backend
  ***********************************************************************/
 
-bool regkey_access_check( REGISTRY_KEY *key, uint32 requested, uint32 *granted,
-			  const struct nt_user_token *token )
+bool regkey_access_check(struct registry_key_handle *key, uint32 requested,
+			 uint32 *granted,
+			 const struct nt_user_token *token )
 {
 	SEC_DESC *sec_desc;
 	NTSTATUS status;
@@ -187,7 +190,7 @@ bool regkey_access_check( REGISTRY_KEY *key, uint32 requested, uint32 *granted,
 	return NT_STATUS_IS_OK(status);
 }
 
-WERROR regkey_get_secdesc(TALLOC_CTX *mem_ctx, REGISTRY_KEY *key,
+WERROR regkey_get_secdesc(TALLOC_CTX *mem_ctx, struct registry_key_handle *key,
 			  struct security_descriptor **psecdesc)
 {
 	struct security_descriptor *secdesc;
@@ -209,7 +212,7 @@ WERROR regkey_get_secdesc(TALLOC_CTX *mem_ctx, REGISTRY_KEY *key,
 	return WERR_OK;
 }
 
-WERROR regkey_set_secdesc(REGISTRY_KEY *key,
+WERROR regkey_set_secdesc(struct registry_key_handle *key,
 			  struct security_descriptor *psecdesc)
 {
 	if (key->ops && key->ops->set_secdesc) {
@@ -223,7 +226,8 @@ WERROR regkey_set_secdesc(REGISTRY_KEY *key,
  * Check whether the in-memory version of the subkyes of a
  * registry key needs update from disk.
  */
-bool reg_subkeys_need_update(REGISTRY_KEY *key, struct regsubkey_ctr *subkeys)
+bool reg_subkeys_need_update(struct registry_key_handle *key,
+			     struct regsubkey_ctr *subkeys)
 {
 	if (key->ops && key->ops->subkeys_need_update)
 	{
@@ -237,7 +241,8 @@ bool reg_subkeys_need_update(REGISTRY_KEY *key, struct regsubkey_ctr *subkeys)
  * Check whether the in-memory version of the values of a
  * registry key needs update from disk.
  */
-bool reg_values_need_update(REGISTRY_KEY *key, struct regval_ctr *values)
+bool reg_values_need_update(struct registry_key_handle *key,
+			    struct regval_ctr *values)
 {
 	if (key->ops && key->ops->values_need_update)
 	{

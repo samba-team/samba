@@ -332,10 +332,11 @@ static void fill_service_values(const char *name, struct regval_ctr *values)
 /********************************************************************
 ********************************************************************/
 
-static void add_new_svc_name( REGISTRY_KEY *key_parent, struct regsubkey_ctr *subkeys,
-                              const char *name )
+static void add_new_svc_name(struct registry_key_handle *key_parent,
+			     struct regsubkey_ctr *subkeys,
+			     const char *name )
 {
-	REGISTRY_KEY *key_service = NULL, *key_secdesc = NULL;
+	struct registry_key_handle *key_service = NULL, *key_secdesc = NULL;
 	WERROR wresult;
 	char *path = NULL;
 	struct regval_ctr *values = NULL;
@@ -446,7 +447,7 @@ void svcctl_init_keys( void )
 	const char **service_list = lp_svcctl_list();
 	int i;
 	struct regsubkey_ctr *subkeys = NULL;
-	REGISTRY_KEY *key = NULL;
+	struct registry_key_handle *key = NULL;
 	WERROR wresult;
 
 	/* bad mojo here if the lookup failed.  Should not happen */
@@ -504,7 +505,7 @@ void svcctl_init_keys( void )
 
 SEC_DESC *svcctl_get_secdesc( TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *token )
 {
-	REGISTRY_KEY *key = NULL;
+	struct registry_key_handle *key = NULL;
 	struct regval_ctr *values = NULL;
 	struct regval_blob *val = NULL;
 	SEC_DESC *ret_sd = NULL;
@@ -565,7 +566,7 @@ done:
 
 bool svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, SEC_DESC *sec_desc, NT_USER_TOKEN *token )
 {
-	REGISTRY_KEY *key = NULL;
+	struct registry_key_handle *key = NULL;
 	WERROR wresult;
 	char *path = NULL;
 	struct regval_ctr *values = NULL;
@@ -619,7 +620,7 @@ bool svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, SEC_DESC *sec_desc, 
 const char *svcctl_lookup_dispname(TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *token )
 {
 	char *display_name = NULL;
-	REGISTRY_KEY *key = NULL;
+	struct registry_key_handle *key = NULL;
 	struct regval_ctr *values = NULL;
 	struct regval_blob *val = NULL;
 	char *path = NULL;
@@ -669,7 +670,7 @@ fail:
 const char *svcctl_lookup_description(TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *token )
 {
 	char *description = NULL;
-	REGISTRY_KEY *key = NULL;
+	struct registry_key_handle *key = NULL;
 	struct regval_ctr *values = NULL;
 	struct regval_blob *val = NULL;
 	char *path = NULL;
@@ -714,7 +715,7 @@ const char *svcctl_lookup_description(TALLOC_CTX *ctx, const char *name, NT_USER
 
 struct regval_ctr *svcctl_fetch_regvalues(const char *name, NT_USER_TOKEN *token)
 {
-	REGISTRY_KEY *key = NULL;
+	struct registry_key_handle *key = NULL;
 	struct regval_ctr *values = NULL;
 	char *path = NULL;
 	WERROR wresult;

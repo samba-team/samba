@@ -153,15 +153,15 @@ typedef struct {
 
 /* structure to store the registry handles */
 
-typedef struct _RegistryKey {
+struct registry_key_handle {
 	uint32		type;
 	char		*name; 		/* full name of registry key */
 	uint32 		access_granted;
 	REGISTRY_OPS	*ops;
-} REGISTRY_KEY;
+};
 
 struct registry_key {
-	REGISTRY_KEY *key;
+	struct registry_key_handle *key;
 	struct regsubkey_ctr *subkeys;
 	struct regval_ctr *values;
 	struct nt_user_token *token;

@@ -28,10 +28,11 @@
  * legacy open key function that should be replaced by uses of
  * reg_open_path
  */
-WERROR regkey_open_internal( TALLOC_CTX *ctx, REGISTRY_KEY **regkey,
-			     const char *path,
-                             const struct nt_user_token *token,
-			     uint32 access_desired )
+WERROR regkey_open_internal(TALLOC_CTX *ctx,
+			    struct registry_key_handle **regkey,
+			    const char *path,
+			    const struct nt_user_token *token,
+			    uint32 access_desired )
 {
 	struct registry_key *key;
 	WERROR err;
