@@ -9542,10 +9542,6 @@ const char *lp_printcapname(void)
 	return PRINTCAP_NAME;
 }
 
-/*******************************************************************
- Ensure we don't use sendfile if server smb signing is active.
-********************************************************************/
-
 static uint32 spoolss_state;
 
 bool lp_disable_spoolss( void )
