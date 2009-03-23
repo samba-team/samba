@@ -98,15 +98,15 @@ struct rpc_cli_transport {
 	 * trip. The transport implementation is free to set this to NULL,
 	 * cli_pipe.c will fall back to the explicit write/read routines.
 	 */
-	struct async_req *(*trans_send)(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
-					uint8_t *data, size_t data_len,
-					uint32_t max_rdata_len,
-					void *priv);
+	struct tevent_req *(*trans_send)(TALLOC_CTX *mem_ctx,
+					 struct event_context *ev,
+					 uint8_t *data, size_t data_len,
+					 uint32_t max_rdata_len,
+					 void *priv);
 	/**
 	 * Get the result from the trans_send operation.
 	 */
-	NTSTATUS (*trans_recv)(struct async_req *req, TALLOC_CTX *mem_ctx,
+	NTSTATUS (*trans_recv)(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			       uint8_t **prdata, uint32_t *prdata_len);
 	void *priv;
 };

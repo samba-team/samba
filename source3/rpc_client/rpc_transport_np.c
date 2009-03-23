@@ -206,19 +206,20 @@ struct rpc_np_trans_state {
 
 static void rpc_np_trans_done(struct async_req *subreq);
 
-static struct async_req *rpc_np_trans_send(TALLOC_CTX *mem_ctx,
-					   struct event_context *ev,
-					   uint8_t *data, size_t data_len,
-					   uint32_t max_rdata_len,
-					   void *priv)
+static struct tevent_req *rpc_np_trans_send(TALLOC_CTX *mem_ctx,
+					    struct event_context *ev,
+					    uint8_t *data, size_t data_len,
+					    uint32_t max_rdata_len,
+					    void *priv)
 {
 	struct rpc_transport_np_state *np_transport = talloc_get_type_abort(
 		priv, struct rpc_transport_np_state);
-	struct async_req *result, *subreq;
+	struct tevent_req *req;
+	struct async_req *subreq;
 	struct rpc_np_trans_state *state;
 
-	if (!async_req_setup(mem_ctx, &result, &state,
-			     struct rpc_np_trans_state)) {
+	req = tevent_req_create(mem_ctx, &state, struct rpc_np_trans_state);
+	if (req == NULL) {
 		return NULL;
 	}
 
@@ -233,40 +234,40 @@ static struct async_req *rpc_np_trans_send(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 	subreq->async.fn = rpc_np_trans_done;
-	subreq->async.priv = result;
-	return result;
+	subreq->async.priv = req;
+	return req;
 
  fail:
-	TALLOC_FREE(result);
+	TALLOC_FREE(req);
 	return NULL;
 }
 
 static void rpc_np_trans_done(struct async_req *subreq)
 {
-	struct async_req *req = talloc_get_type_abort(
-		subreq->async.priv, struct async_req);
-	struct rpc_np_trans_state *state = talloc_get_type_abort(
-		req->private_data, struct rpc_np_trans_state);
+	struct tevent_req *req = talloc_get_type_abort(
+		subreq->async.priv, struct tevent_req);
+	struct rpc_np_trans_state *state = tevent_req_data(
+		req, struct rpc_np_trans_state);
 	NTSTATUS status;
 
 	status = cli_trans_recv(subreq, state, NULL, NULL, NULL, NULL,
 				&state->rdata, &state->rdata_len);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_nterror(req, status);
+		tevent_req_nterror(req, status);
 		return;
 	}
-	async_req_done(req);
+	tevent_req_done(req);
 }
 
-static NTSTATUS rpc_np_trans_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
+static NTSTATUS rpc_np_trans_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 				  uint8_t **prdata, uint32_t *prdata_len)
 {
-	struct rpc_np_trans_state *state = talloc_get_type_abort(
-		req->private_data, struct rpc_np_trans_state);
+	struct rpc_np_trans_state *state = tevent_req_data(
+		req, struct rpc_np_trans_state);
 	NTSTATUS status;
 
-	if (async_req_is_nterror(req, &status)) {
+	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
 	*prdata = talloc_move(mem_ctx, &state->rdata);

@@ -1034,7 +1034,7 @@ struct cli_api_pipe_state {
 	uint32_t rdata_len;
 };
 
-static void cli_api_pipe_trans_done(struct async_req *subreq);
+static void cli_api_pipe_trans_done(struct tevent_req *subreq);
 static void cli_api_pipe_write_done(struct tevent_req *subreq);
 static void cli_api_pipe_read_done(struct tevent_req *subreq);
 
@@ -1044,9 +1044,7 @@ static struct tevent_req *cli_api_pipe_send(TALLOC_CTX *mem_ctx,
 					    uint8_t *data, size_t data_len,
 					    uint32_t max_rdata_len)
 {
-	struct tevent_req *req;
-	struct async_req *subreq;
-	struct tevent_req *subreq2;
+	struct tevent_req *req, *subreq;
 	struct cli_api_pipe_state *state;
 	NTSTATUS status;
 
@@ -1071,11 +1069,9 @@ static struct tevent_req *cli_api_pipe_send(TALLOC_CTX *mem_ctx,
 		subreq = transport->trans_send(state, ev, data, data_len,
 					       max_rdata_len, transport->priv);
 		if (subreq == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto post_status;
+			goto fail;
 		}
-		subreq->async.fn = cli_api_pipe_trans_done;
-		subreq->async.priv = req;
+		tevent_req_set_callback(subreq, cli_api_pipe_trans_done, req);
 		return req;
 	}
 
@@ -1084,31 +1080,27 @@ static struct tevent_req *cli_api_pipe_send(TALLOC_CTX *mem_ctx,
 	 * example the ncacn_ip_tcp transport, do the write/read step here.
 	 */
 
-	subreq2 = rpc_write_send(state, ev, transport, data, data_len);
-	if (subreq2 == NULL) {
+	subreq = rpc_write_send(state, ev, transport, data, data_len);
+	if (subreq == NULL) {
 		goto fail;
 	}
-	tevent_req_set_callback(subreq2, cli_api_pipe_write_done, req);
+	tevent_req_set_callback(subreq, cli_api_pipe_write_done, req);
 	return req;
 
 	status = NT_STATUS_INVALID_PARAMETER;
 
  post_status:
-	if (NT_STATUS_IS_OK(status)) {
-		tevent_req_done(req);
-	} else {
-		tevent_req_nterror(req, status);
-	}
+	tevent_req_nterror(req, status);
 	return tevent_req_post(req, ev);
  fail:
 	TALLOC_FREE(req);
 	return NULL;
 }
 
-static void cli_api_pipe_trans_done(struct async_req *subreq)
+static void cli_api_pipe_trans_done(struct tevent_req *subreq)
 {
-	struct tevent_req *req = talloc_get_type_abort(
-		subreq->async.priv, struct tevent_req);
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
 	struct cli_api_pipe_state *state = tevent_req_data(
 		req, struct cli_api_pipe_state);
 	NTSTATUS status;
