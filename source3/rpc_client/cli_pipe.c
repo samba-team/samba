@@ -287,15 +287,14 @@ struct rpc_write_state {
 	size_t num_written;
 };
 
-static void rpc_write_done(struct async_req *subreq);
+static void rpc_write_done(struct tevent_req *subreq);
 
 static struct tevent_req *rpc_write_send(TALLOC_CTX *mem_ctx,
 					 struct event_context *ev,
 					 struct rpc_cli_transport *transport,
 					 const uint8_t *data, size_t size)
 {
-	struct tevent_req *req;
-	struct async_req *subreq;
+	struct tevent_req *req, *subreq;
 	struct rpc_write_state *state;
 
 	req = tevent_req_create(mem_ctx, &state, struct rpc_write_state);
@@ -314,18 +313,17 @@ static struct tevent_req *rpc_write_send(TALLOC_CTX *mem_ctx,
 	if (subreq == NULL) {
 		goto fail;
 	}
-	subreq->async.fn = rpc_write_done;
-	subreq->async.priv = req;
+	tevent_req_set_callback(subreq, rpc_write_done, req);
 	return req;
  fail:
 	TALLOC_FREE(req);
 	return NULL;
 }
 
-static void rpc_write_done(struct async_req *subreq)
+static void rpc_write_done(struct tevent_req *subreq)
 {
-	struct tevent_req *req = talloc_get_type_abort(
-		subreq->async.priv, struct tevent_req);
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
 	struct rpc_write_state *state = tevent_req_data(
 		req, struct rpc_write_state);
 	NTSTATUS status;
@@ -352,8 +350,7 @@ static void rpc_write_done(struct async_req *subreq)
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
-	subreq->async.fn = rpc_write_done;
-	subreq->async.priv = req;
+	tevent_req_set_callback(subreq, rpc_write_done, req);
 }
 
 static NTSTATUS rpc_write_recv(struct tevent_req *req)

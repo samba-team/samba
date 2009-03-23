@@ -83,14 +83,14 @@ struct rpc_cli_transport {
 	/**
 	 * Trigger an async write to the server. May return a short write.
 	 */
-	struct async_req *(*write_send)(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
-					const uint8_t *data, size_t size,
-					void *priv);
+	struct tevent_req *(*write_send)(TALLOC_CTX *mem_ctx,
+					 struct event_context *ev,
+					 const uint8_t *data, size_t size,
+					 void *priv);
 	/**
 	 * Get the result from the read_send operation.
 	 */
-	NTSTATUS (*write_recv)(struct async_req *req, ssize_t *psent);
+	NTSTATUS (*write_recv)(struct tevent_req *req, ssize_t *psent);
 
 	/**
 	 * This is an optimization for the SMB transport. It models the
