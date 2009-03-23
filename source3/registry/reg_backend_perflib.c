@@ -29,7 +29,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY
 
-extern REGISTRY_OPS regdb_ops;
+extern struct registry_ops regdb_ops;
 
 #define KEY_PERFLIB_NORM	"HKLM/SOFTWARE/MICROSOFT/WINDOWS NT/CURRENTVERSION/PERFLIB"
 #define KEY_PERFLIB_009_NORM	"HKLM/SOFTWARE/MICROSOFT/WINDOWS NT/CURRENTVERSION/PERFLIB/009"
@@ -100,7 +100,7 @@ static int perflib_fetch_subkeys(const char *key,
 	return regdb_ops.fetch_subkeys(key, subkey_ctr);
 }
 
-REGISTRY_OPS perflib_reg_ops = {
+struct registry_ops perflib_reg_ops = {
 	.fetch_values = perflib_fetch_values,
 	.fetch_subkeys = perflib_fetch_subkeys,
 };

@@ -1258,7 +1258,7 @@ static bool regprint_store_reg_values(const char *key, struct regval_ctr *values
  * Table of function pointers for accessing printing data
  */
 
-REGISTRY_OPS printing_ops = {
+struct registry_ops printing_ops = {
 	.fetch_subkeys = regprint_fetch_reg_keys,
 	.fetch_values = regprint_fetch_reg_values,
 	.store_subkeys = regprint_store_reg_keys,

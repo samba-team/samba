@@ -126,7 +126,7 @@ struct regsubkey_ctr;
  * for virtual registry view 
  */ 
  
-typedef struct {
+struct registry_ops {
 	/* functions for enumerating subkeys and values */	
 	int 	(*fetch_subkeys)( const char *key, struct regsubkey_ctr *subkeys);
 	int 	(*fetch_values) ( const char *key, struct regval_ctr *val );
@@ -143,11 +143,11 @@ typedef struct {
 			      struct security_descriptor *sec_desc);
 	bool	(*subkeys_need_update)(struct regsubkey_ctr *subkeys);
 	bool	(*values_need_update)(struct regval_ctr *values);
-} REGISTRY_OPS;
+};
 
 struct registry_hook {
 	const char	*keyname;	/* full path to name of key */
-	REGISTRY_OPS	*ops;		/* registry function hooks */
+	struct registry_ops	*ops;	/* registry function hooks */
 };
 
 
@@ -157,7 +157,7 @@ struct registry_key_handle {
 	uint32		type;
 	char		*name; 		/* full name of registry key */
 	uint32 		access_granted;
-	REGISTRY_OPS	*ops;
+	struct registry_ops	*ops;
 };
 
 struct registry_key {

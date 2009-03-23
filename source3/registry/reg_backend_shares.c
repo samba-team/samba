@@ -154,7 +154,7 @@ static bool shares_store_value(const char *key, struct regval_ctr *val)
  * Table of function pointers for accessing printing data
  */
  
-REGISTRY_OPS shares_reg_ops = {
+struct registry_ops shares_reg_ops = {
 	.fetch_subkeys = shares_subkey_info,
 	.fetch_values = shares_value_info,
 	.store_subkeys = shares_store_subkey,

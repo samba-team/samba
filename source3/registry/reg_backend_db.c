@@ -1667,7 +1667,7 @@ bool regdb_values_need_update(struct regval_ctr *values)
  * Table of function pointers for default access
  */
  
-REGISTRY_OPS regdb_ops = {
+struct registry_ops regdb_ops = {
 	.fetch_subkeys = regdb_fetch_keys,
 	.fetch_values = regdb_fetch_values,
 	.store_subkeys = regdb_store_keys,

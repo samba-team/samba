@@ -4853,8 +4853,8 @@ bool regdb_values_need_update(struct regval_ctr *values);
 /* The following definitions come from registry/reg_cachehook.c  */
 
 WERROR reghook_cache_init(void);
-WERROR reghook_cache_add(const char *keyname, REGISTRY_OPS *ops);
-REGISTRY_OPS *reghook_cache_find(const char *keyname);
+WERROR reghook_cache_add(const char *keyname, struct registry_ops *ops);
+struct registry_ops *reghook_cache_find(const char *keyname);
 void reghook_dump_cache( int debuglevel );
 
 /* The following definitions come from registry/reg_dispatcher.c  */

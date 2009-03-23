@@ -26,7 +26,7 @@
 #define DBGC_CLASS DBGC_REGISTRY
 
 static SORTED_TREE *cache_tree = NULL;
-extern REGISTRY_OPS regdb_ops;		/* these are the default */
+extern struct registry_ops regdb_ops;		/* these are the default */
 
 static WERROR keyname_to_path(TALLOC_CTX *mem_ctx, const char *keyname,
 			      char **path)
@@ -79,7 +79,7 @@ WERROR reghook_cache_init(void)
  is not in the exact format that a SORTED_TREE expects.
  *********************************************************************/
 
-WERROR reghook_cache_add(const char *keyname, REGISTRY_OPS *ops)
+WERROR reghook_cache_add(const char *keyname, struct registry_ops *ops)
 {
 	WERROR werr;
 	char *key = NULL;
@@ -107,11 +107,11 @@ done:
  Find a key in the cache.
  *********************************************************************/
 
-REGISTRY_OPS *reghook_cache_find(const char *keyname)
+struct registry_ops *reghook_cache_find(const char *keyname)
 {
 	WERROR werr;
 	char *key = NULL;
-	REGISTRY_OPS *ops = NULL;
+	struct registry_ops *ops = NULL;
 
 	if (keyname == NULL) {
 		return NULL;
@@ -124,7 +124,7 @@ REGISTRY_OPS *reghook_cache_find(const char *keyname)
 
 	DEBUG(10,("reghook_cache_find: Searching for keyname [%s]\n", key));
 
-	ops = (REGISTRY_OPS *)pathtree_find(cache_tree, key);
+	ops = (struct registry_ops *)pathtree_find(cache_tree, key);
 
 	DEBUG(10, ("reghook_cache_find: found ops %p for key [%s]\n",
 		   ops ? (void *)ops : 0, key));

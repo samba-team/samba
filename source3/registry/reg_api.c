@@ -187,7 +187,7 @@ static WERROR regkey_open_onelevel(TALLOC_CTX *mem_ctx,
 
 	if ( !(key->ops = reghook_cache_find( key->name )) ) {
 		DEBUG(0,("reg_open_onelevel: Failed to assign "
-			 "REGISTRY_OPS to [%s]\n", key->name ));
+			 "registry_ops to [%s]\n", key->name ));
 		result = WERR_BADFILE;
 		goto done;
 	}
@@ -721,7 +721,7 @@ static WERROR reg_load_tree(REGF_FILE *regfile, const char *topkeypath,
 
 	registry_key.ops = reghook_cache_find(topkeypath);
 	if (!registry_key.ops) {
-		DEBUG(0, ("reg_load_tree: Failed to assign  REGISTRY_OPS "
+		DEBUG(0, ("reg_load_tree: Failed to assign registry_ops "
 			  "to [%s]\n", topkeypath));
 		return WERR_BADFILE;
 	}

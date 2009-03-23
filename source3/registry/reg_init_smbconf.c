@@ -22,7 +22,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY
 
-extern REGISTRY_OPS smbconf_reg_ops;
+extern struct registry_ops smbconf_reg_ops;
 
 /*
  * create a fake token just with enough rights to
