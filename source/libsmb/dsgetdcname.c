@@ -439,7 +439,7 @@ static uint32_t get_cldap_reply_server_flags(union nbt_cldap_netlogon *r,
 /****************************************************************
 ****************************************************************/
 
-#define RETURN_ON_FALSE(x) if (!x) return false;
+#define RETURN_ON_FALSE(x) if (!(x)) return false;
 
 static bool check_cldap_reply_required_flags(uint32_t ret_flags,
 					     uint32_t req_flags)
