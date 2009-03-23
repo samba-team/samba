@@ -71,14 +71,14 @@ struct rpc_cli_transport {
 	/**
 	 * Trigger an async read from the server. May return a short read.
 	 */
-	struct async_req *(*read_send)(TALLOC_CTX *mem_ctx,
-				       struct event_context *ev,
-                                       uint8_t *data, size_t size,
-				       void *priv);
+	struct tevent_req *(*read_send)(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					uint8_t *data, size_t size,
+					void *priv);
 	/**
 	 * Get the result from the read_send operation.
 	 */
-	NTSTATUS (*read_recv)(struct async_req *req, ssize_t *preceived);
+	NTSTATUS (*read_recv)(struct tevent_req *req, ssize_t *preceived);
 
 	/**
 	 * Trigger an async write to the server. May return a short write.

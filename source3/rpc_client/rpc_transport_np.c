@@ -120,18 +120,19 @@ struct rpc_np_read_state {
 
 static void rpc_np_read_done(struct async_req *subreq);
 
-static struct async_req *rpc_np_read_send(TALLOC_CTX *mem_ctx,
-					  struct event_context *ev,
-					  uint8_t *data, size_t size,
-					  void *priv)
+static struct tevent_req *rpc_np_read_send(TALLOC_CTX *mem_ctx,
+					   struct event_context *ev,
+					   uint8_t *data, size_t size,
+					   void *priv)
 {
 	struct rpc_transport_np_state *np_transport = talloc_get_type_abort(
 		priv, struct rpc_transport_np_state);
-	struct async_req *result, *subreq;
+	struct tevent_req *req;
+	struct async_req *subreq;
 	struct rpc_np_read_state *state;
 
-	if (!async_req_setup(mem_ctx, &result, &state,
-			     struct rpc_np_read_state)) {
+	req = tevent_req_create(mem_ctx, &state, struct rpc_np_read_state);
+	if (req == NULL) {
 		return NULL;
 	}
 	state->data = data;
@@ -143,19 +144,19 @@ static struct async_req *rpc_np_read_send(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 	subreq->async.fn = rpc_np_read_done;
-	subreq->async.priv = result;
-	return result;
+	subreq->async.priv = req;
+	return req;
  fail:
-	TALLOC_FREE(result);
+	TALLOC_FREE(req);
 	return NULL;
 }
 
 static void rpc_np_read_done(struct async_req *subreq)
 {
-	struct async_req *req = talloc_get_type_abort(
-		subreq->async.priv, struct async_req);
-	struct rpc_np_read_state *state = talloc_get_type_abort(
-		req->private_data, struct rpc_np_read_state);
+	struct tevent_req *req = talloc_get_type_abort(
+		subreq->async.priv, struct tevent_req);
+	struct rpc_np_read_state *state = tevent_req_data(
+		req, struct rpc_np_read_state);
 	NTSTATUS status;
 	uint8_t *rcvbuf;
 
@@ -169,27 +170,27 @@ static void rpc_np_read_done(struct async_req *subreq)
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(subreq);
-		async_req_nterror(req, status);
+		tevent_req_nterror(req, status);
 		return;
 	}
 
 	if (state->received > state->size) {
 		TALLOC_FREE(subreq);
-		async_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
 	}
 
 	memcpy(state->data, rcvbuf, state->received);
-	async_req_done(req);
+	tevent_req_done(req);
 }
 
-static NTSTATUS rpc_np_read_recv(struct async_req *req, ssize_t *preceived)
+static NTSTATUS rpc_np_read_recv(struct tevent_req *req, ssize_t *preceived)
 {
-	struct rpc_np_read_state *state = talloc_get_type_abort(
-		req->private_data, struct rpc_np_read_state);
+	struct rpc_np_read_state *state = tevent_req_data(
+		req, struct rpc_np_read_state);
 	NTSTATUS status;
 
-	if (async_req_is_nterror(req, &status)) {
+	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
 	*preceived = state->received;
