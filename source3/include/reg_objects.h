@@ -21,7 +21,7 @@
 #ifndef _REG_OBJECTS_H /* _REG_OBJECTS_H */
 #define _REG_OBJECTS_H
 
-/* structure to contain registry values */
+/* low level structure to contain registry values */
 
 struct regval_blob {
 	fstring		valuename;
