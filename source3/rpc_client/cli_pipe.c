@@ -2052,20 +2052,20 @@ static void rpc_api_pipe_req_done(struct tevent_req *subreq);
 static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
 				  bool *is_last_frag);
 
-struct async_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
-					struct rpc_pipe_client *cli,
-					uint8_t op_num,
-					prs_struct *req_data)
+struct tevent_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
+					 struct event_context *ev,
+					 struct rpc_pipe_client *cli,
+					 uint8_t op_num,
+					 prs_struct *req_data)
 {
-	struct async_req *result;
-	struct tevent_req *subreq;
+	struct tevent_req *req, *subreq;
 	struct rpc_api_pipe_req_state *state;
 	NTSTATUS status;
 	bool is_last_frag;
 
-	if (!async_req_setup(mem_ctx, &result, &state,
-			     struct rpc_api_pipe_req_state)) {
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpc_api_pipe_req_state);
+	if (req == NULL) {
 		return NULL;
 	}
 	state->ev = ev;
@@ -2103,8 +2103,7 @@ struct async_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
 		if (subreq == NULL) {
 			goto fail;
 		}
-		tevent_req_set_callback(subreq, rpc_api_pipe_req_done,
-					result);
+		tevent_req_set_callback(subreq, rpc_api_pipe_req_done, req);
 	} else {
 		subreq = rpc_write_send(
 			state, ev, cli->transport,
@@ -2114,16 +2113,15 @@ struct async_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
 			goto fail;
 		}
 		tevent_req_set_callback(subreq, rpc_api_pipe_req_write_done,
-					result);
+					req);
 	}
-	return result;
+	return req;
 
  post_status:
-	if (async_post_ntstatus(result, ev, status)) {
-		return result;
-	}
+	tevent_req_nterror(req, status);
+	return tevent_req_post(req, ev);
  fail:
-	TALLOC_FREE(result);
+	TALLOC_FREE(req);
 	return NULL;
 }
 
@@ -2214,23 +2212,23 @@ static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
 
 static void rpc_api_pipe_req_write_done(struct tevent_req *subreq)
 {
-	struct async_req *req = tevent_req_callback_data(
-		subreq, struct async_req);
-	struct rpc_api_pipe_req_state *state = talloc_get_type_abort(
-		req->private_data, struct rpc_api_pipe_req_state);
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpc_api_pipe_req_state *state = tevent_req_data(
+		req, struct rpc_api_pipe_req_state);
 	NTSTATUS status;
 	bool is_last_frag;
 
 	status = rpc_write_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_nterror(req, status);
+		tevent_req_nterror(req, status);
 		return;
 	}
 
 	status = prepare_next_frag(state, &is_last_frag);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_nterror(req, status);
+		tevent_req_nterror(req, status);
 		return;
 	}
 
@@ -2238,7 +2236,7 @@ static void rpc_api_pipe_req_write_done(struct tevent_req *subreq)
 		subreq = rpc_api_pipe_send(state, state->ev, state->cli,
 					   &state->outgoing_frag,
 					   RPC_RESPONSE);
-		if (async_req_nomem(subreq, req)) {
+		if (tevent_req_nomem(subreq, req)) {
 			return;
 		}
 		tevent_req_set_callback(subreq, rpc_api_pipe_req_done, req);
@@ -2248,7 +2246,7 @@ static void rpc_api_pipe_req_write_done(struct tevent_req *subreq)
 			state->cli->transport,
 			(uint8_t *)prs_data_p(&state->outgoing_frag),
 			prs_offset(&state->outgoing_frag));
-		if (async_req_nomem(subreq, req)) {
+		if (tevent_req_nomem(subreq, req)) {
 			return;
 		}
 		tevent_req_set_callback(subreq, rpc_api_pipe_req_write_done,
@@ -2258,29 +2256,29 @@ static void rpc_api_pipe_req_write_done(struct tevent_req *subreq)
 
 static void rpc_api_pipe_req_done(struct tevent_req *subreq)
 {
-	struct async_req *req = tevent_req_callback_data(
-		subreq, struct async_req);
-	struct rpc_api_pipe_req_state *state = talloc_get_type_abort(
-		req->private_data, struct rpc_api_pipe_req_state);
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpc_api_pipe_req_state *state = tevent_req_data(
+		req, struct rpc_api_pipe_req_state);
 	NTSTATUS status;
 
 	status = rpc_api_pipe_recv(subreq, state, &state->reply_pdu);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_nterror(req, status);
+		tevent_req_nterror(req, status);
 		return;
 	}
-	async_req_done(req);
+	tevent_req_done(req);
 }
 
-NTSTATUS rpc_api_pipe_req_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
+NTSTATUS rpc_api_pipe_req_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			       prs_struct *reply_pdu)
 {
-	struct rpc_api_pipe_req_state *state = talloc_get_type_abort(
-		req->private_data, struct rpc_api_pipe_req_state);
+	struct rpc_api_pipe_req_state *state = tevent_req_data(
+		req, struct rpc_api_pipe_req_state);
 	NTSTATUS status;
 
-	if (async_req_is_nterror(req, &status)) {
+	if (tevent_req_is_nterror(req, &status)) {
 		/*
 		 * We always have to initialize to reply pdu, even if there is
 		 * none. The rpccli_* caller routines expect this.
@@ -2308,7 +2306,7 @@ NTSTATUS rpc_api_pipe_req(TALLOC_CTX *mem_ctx, struct rpc_pipe_client *cli,
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct event_context *ev;
-	struct async_req *req;
+	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
 	ev = event_context_init(frame);
@@ -2321,9 +2319,7 @@ NTSTATUS rpc_api_pipe_req(TALLOC_CTX *mem_ctx, struct rpc_pipe_client *cli,
 		goto fail;
 	}
 
-	while (req->state < ASYNC_REQ_DONE) {
-		event_loop_once(ev);
-	}
+	tevent_req_poll(req, ev);
 
 	status = rpc_api_pipe_req_recv(req, mem_ctx, out_data);
  fail:
