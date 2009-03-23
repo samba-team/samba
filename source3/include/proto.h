@@ -5267,11 +5267,11 @@ NTSTATUS rpc_api_pipe_req(TALLOC_CTX *mem_ctx, struct rpc_pipe_client *cli,
 			uint8 op_num,
 			prs_struct *in_data,
 			prs_struct *out_data);
-struct async_req *rpc_pipe_bind_send(TALLOC_CTX *mem_ctx,
-				     struct event_context *ev,
-				     struct rpc_pipe_client *cli,
-				     struct cli_pipe_auth_data *auth);
-NTSTATUS rpc_pipe_bind_recv(struct async_req *req);
+struct tevent_req *rpc_pipe_bind_send(TALLOC_CTX *mem_ctx,
+				      struct event_context *ev,
+				      struct rpc_pipe_client *cli,
+				      struct cli_pipe_auth_data *auth);
+NTSTATUS rpc_pipe_bind_recv(struct tevent_req *req);
 NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 		       struct cli_pipe_auth_data *auth);
 unsigned int rpccli_set_timeout(struct rpc_pipe_client *cli,
