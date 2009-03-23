@@ -4821,10 +4821,10 @@ WERROR regdb_transaction_cancel(void);
 int regdb_get_seqnum(void);
 bool regdb_store_keys(const char *key, struct regsubkey_ctr *ctr);
 int regdb_fetch_keys(const char *key, struct regsubkey_ctr *ctr);
-int regdb_fetch_values( const char* key, REGVAL_CTR *values );
-bool regdb_store_values( const char *key, REGVAL_CTR *values );
+int regdb_fetch_values(const char* key, struct regval_ctr *values);
+bool regdb_store_values(const char *key, struct regval_ctr *values);
 bool regdb_subkeys_need_update(struct regsubkey_ctr *subkeys);
-bool regdb_values_need_update(REGVAL_CTR *values);
+bool regdb_values_need_update(struct regval_ctr *values);
 
 /* The following definitions come from registry/reg_backend_hkpt_params.c  */
 
@@ -4860,11 +4860,11 @@ void reghook_dump_cache( int debuglevel );
 /* The following definitions come from registry/reg_dispatcher.c  */
 
 bool store_reg_keys( REGISTRY_KEY *key, struct regsubkey_ctr *subkeys );
-bool store_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val );
+bool store_reg_values(REGISTRY_KEY *key, struct regval_ctr *val);
 WERROR create_reg_subkey(REGISTRY_KEY *key, const char *subkey);
 WERROR delete_reg_subkey(REGISTRY_KEY *key, const char *subkey);
 int fetch_reg_keys( REGISTRY_KEY *key, struct regsubkey_ctr *subkey_ctr );
-int fetch_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val );
+int fetch_reg_values(REGISTRY_KEY *key, struct regval_ctr *val);
 bool regkey_access_check( REGISTRY_KEY *key, uint32 requested, uint32 *granted,
 			  const struct nt_user_token *token );
 WERROR regkey_get_secdesc(TALLOC_CTX *mem_ctx, REGISTRY_KEY *key,
@@ -4872,7 +4872,7 @@ WERROR regkey_get_secdesc(TALLOC_CTX *mem_ctx, REGISTRY_KEY *key,
 WERROR regkey_set_secdesc(REGISTRY_KEY *key,
 			  struct security_descriptor *psecdesc);
 bool reg_subkeys_need_update(REGISTRY_KEY *key, struct regsubkey_ctr *subkeys);
-bool reg_values_need_update(REGISTRY_KEY *key, REGVAL_CTR *values);
+bool reg_values_need_update(REGISTRY_KEY *key, struct regval_ctr *values);
 
 /* The following definitions come from registry/reg_eventlog.c  */
 
@@ -4905,22 +4905,22 @@ WERROR regsubkey_ctr_delkey( struct regsubkey_ctr *ctr, const char *keyname );
 bool regsubkey_ctr_key_exists( struct regsubkey_ctr *ctr, const char *keyname );
 int regsubkey_ctr_numkeys( struct regsubkey_ctr *ctr );
 char* regsubkey_ctr_specific_key( struct regsubkey_ctr *ctr, uint32 key_index );
-int regval_ctr_numvals( REGVAL_CTR *ctr );
+int regval_ctr_numvals(struct regval_ctr *ctr);
 REGISTRY_VALUE* dup_registry_value( REGISTRY_VALUE *val );
 void free_registry_value( REGISTRY_VALUE *val );
 uint8* regval_data_p( REGISTRY_VALUE *val );
 uint32 regval_size( REGISTRY_VALUE *val );
 char* regval_name( REGISTRY_VALUE *val );
 uint32 regval_type( REGISTRY_VALUE *val );
-REGISTRY_VALUE* regval_ctr_specific_value( REGVAL_CTR *ctr, uint32 idx );
-bool regval_ctr_key_exists( REGVAL_CTR *ctr, const char *value );
+REGISTRY_VALUE* regval_ctr_specific_value(struct regval_ctr *ctr, uint32 idx);
+bool regval_ctr_key_exists(struct regval_ctr *ctr, const char *value);
 REGISTRY_VALUE *regval_compose(TALLOC_CTX *ctx, const char *name, uint16 type,
 			       const char *data_p, size_t size);
-int regval_ctr_addvalue( REGVAL_CTR *ctr, const char *name, uint16 type,
-                         const char *data_p, size_t size );
-int regval_ctr_copyvalue( REGVAL_CTR *ctr, REGISTRY_VALUE *val );
-int regval_ctr_delvalue( REGVAL_CTR *ctr, const char *name );
-REGISTRY_VALUE* regval_ctr_getvalue( REGVAL_CTR *ctr, const char *name );
+int regval_ctr_addvalue(struct regval_ctr *ctr, const char *name, uint16 type,
+			const char *data_p, size_t size);
+int regval_ctr_copyvalue(struct regval_ctr *ctr, REGISTRY_VALUE *val);
+int regval_ctr_delvalue(struct regval_ctr *ctr, const char *name);
+REGISTRY_VALUE* regval_ctr_getvalue(struct regval_ctr *ctr, const char *name);
 uint32 regval_dword( REGISTRY_VALUE *val );
 char *regval_sz(REGISTRY_VALUE *val);
 
@@ -5881,7 +5881,7 @@ SEC_DESC *svcctl_get_secdesc( TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *
 bool svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, SEC_DESC *sec_desc, NT_USER_TOKEN *token );
 const char *svcctl_lookup_dispname(TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *token );
 const char *svcctl_lookup_description(TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *token );
-REGVAL_CTR *svcctl_fetch_regvalues( const char *name, NT_USER_TOKEN *token );
+struct regval_ctr *svcctl_fetch_regvalues( const char *name, NT_USER_TOKEN *token );
 
 /* The following definitions come from services/svc_netlogon.c  */
 

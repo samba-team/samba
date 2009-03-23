@@ -36,7 +36,7 @@ bool eventlog_init_keys(void)
 	char *evtlogpath = NULL;
 	char *evtfilepath = NULL;
 	struct regsubkey_ctr *subkeys;
-	REGVAL_CTR *values;
+	struct regval_ctr *values;
 	uint32 uiMaxSize;
 	uint32 uiRetention;
 	uint32 uiCategoryCount;
@@ -87,7 +87,7 @@ bool eventlog_init_keys(void)
 		TALLOC_FREE( subkeys );
 
 		/* now add the values to the KEY_EVENTLOG/Application form key */
-		if (!(values = TALLOC_ZERO_P(ctx, REGVAL_CTR))) {
+		if (!(values = TALLOC_ZERO_P(ctx, struct regval_ctr))) {
 			DEBUG( 0, ( "talloc() failure!\n" ) );
 			return False;
 		}
@@ -149,7 +149,7 @@ bool eventlog_init_keys(void)
 		if (!evtlogpath) {
 			return false;
 		}
-		if (!(values = TALLOC_ZERO_P(ctx, REGVAL_CTR))) {
+		if (!(values = TALLOC_ZERO_P(ctx, struct regval_ctr))) {
 			DEBUG( 0, ( "talloc() failure!\n" ) );
 			return False;
 		}
@@ -201,7 +201,7 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 	char **wrklist, **wp;
 	char *evtlogpath = NULL;
 	struct regsubkey_ctr *subkeys;
-	REGVAL_CTR *values;
+	struct regval_ctr *values;
 	REGISTRY_VALUE *rval;
 	UNISTR2 data;
 	uint16 *msz_wp;
@@ -233,7 +233,7 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 
 	/* todo add to Sources */
 
-	if (!( values = TALLOC_ZERO_P(ctx, REGVAL_CTR))) {
+	if (!( values = TALLOC_ZERO_P(ctx, struct regval_ctr))) {
 		DEBUG( 0, ( "talloc() failure!\n" ));
 		return false;
 	}
@@ -363,7 +363,7 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 	regdb_fetch_keys( evtlogpath, subkeys );
 
 	/* now add the values to the KEY_EVENTLOG/Application form key */
-	if ( !( values = TALLOC_ZERO_P(ctx, REGVAL_CTR ) ) ) {
+	if ( !( values = TALLOC_ZERO_P(ctx, struct regval_ctr ) ) ) {
 		DEBUG( 0, ( "talloc() failure!\n" ) );
 		return False;
 	}

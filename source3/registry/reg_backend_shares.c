@@ -100,7 +100,7 @@ static int shares_subkey_info( const char *key, struct regsubkey_ctr *subkey_ctr
  Caller is responsible for freeing memory 
  *********************************************************************/
 
-static int shares_value_info( const char *key, REGVAL_CTR *val )
+static int shares_value_info(const char *key, struct regval_ctr *val)
 {
 	char 		*path;
 	bool		top_level = False;
@@ -145,7 +145,7 @@ static bool shares_store_subkey( const char *key, struct regsubkey_ctr *subkeys 
  (for now at least)
  *********************************************************************/
 
-static bool shares_store_value( const char *key, REGVAL_CTR *val )
+static bool shares_store_value(const char *key, struct regval_ctr *val)
 {
 	return False;
 }

@@ -31,7 +31,7 @@
 
 extern REGISTRY_OPS regdb_ops;
 
-static int hkpt_params_fetch_values(const char *key, REGVAL_CTR *regvals)
+static int hkpt_params_fetch_values(const char *key, struct regval_ctr *regvals)
 {
 	uint32 base_index;
 	uint32 buffer_size;

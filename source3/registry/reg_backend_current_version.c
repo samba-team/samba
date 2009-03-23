@@ -33,7 +33,7 @@ extern REGISTRY_OPS regdb_ops;
 
 #define KEY_CURRENT_VERSION_NORM "HKLM/SOFTWARE/MICROSOFT/WINDOWS NT/CURRENTVERSION"
 
-static int current_version_fetch_values(const char *key, REGVAL_CTR *values)
+static int current_version_fetch_values(const char *key, struct regval_ctr *values)
 {
 	const char *sysroot_string = "c:\\Windows";
 	fstring sysversion;

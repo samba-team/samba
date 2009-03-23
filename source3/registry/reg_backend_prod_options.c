@@ -31,7 +31,7 @@
 
 extern REGISTRY_OPS regdb_ops;
 
-static int prod_options_fetch_values(const char *key, REGVAL_CTR *regvals)
+static int prod_options_fetch_values(const char *key, struct regval_ctr *regvals)
 {
 	const char *value_ascii = "";
 	fstring value;

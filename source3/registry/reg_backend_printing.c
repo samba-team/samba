@@ -44,8 +44,8 @@ struct reg_dyn_tree {
 	/* callbscks for fetch/store operations */
 	int ( *fetch_subkeys) ( const char *path, struct regsubkey_ctr *subkeys );
 	bool (*store_subkeys) ( const char *path, struct regsubkey_ctr *subkeys );
-	int  (*fetch_values)  ( const char *path, REGVAL_CTR *values );
-	bool (*store_values)  ( const char *path, REGVAL_CTR *values );
+	int  (*fetch_values)  ( const char *path, struct regval_ctr *values );
+	bool (*store_values)  ( const char *path, struct regval_ctr *values );
 };
 
 /*********************************************************************
@@ -93,7 +93,7 @@ static int key_forms_fetch_keys(const char *key, struct regsubkey_ctr *subkeys)
 /**********************************************************************
  *********************************************************************/
 
-static int key_forms_fetch_values( const char *key, REGVAL_CTR *values )
+static int key_forms_fetch_values(const char *key, struct regval_ctr *values)
 {
 	uint32 		data[8];
 	int		i, num_values, form_index = 1;
@@ -383,7 +383,7 @@ static bool key_printers_store_keys( const char *key, struct regsubkey_ctr *subk
 /**********************************************************************
  *********************************************************************/
 
-static void fill_in_printer_values( NT_PRINTER_INFO_LEVEL_2 *info2, REGVAL_CTR *values )
+static void fill_in_printer_values(NT_PRINTER_INFO_LEVEL_2 *info2, struct regval_ctr *values)
 {
 	struct spoolss_DeviceMode *devmode;
 	UNISTR2		data;
@@ -475,7 +475,7 @@ static void fill_in_printer_values( NT_PRINTER_INFO_LEVEL_2 *info2, REGVAL_CTR *
 /**********************************************************************
  *********************************************************************/
 
-static int key_printers_fetch_values( const char *key, REGVAL_CTR *values )
+static int key_printers_fetch_values(const char *key, struct regval_ctr *values)
 {
 	int 		num_values;
 	char		*printers_key;
@@ -594,7 +594,7 @@ static int find_valuename_index( const char *valuename )
 /**********************************************************************
  *********************************************************************/
 
-static void convert_values_to_printer_info_2( NT_PRINTER_INFO_LEVEL_2 *printer2, REGVAL_CTR *values )
+static void convert_values_to_printer_info_2(NT_PRINTER_INFO_LEVEL_2 *printer2, struct regval_ctr *values)
 {
 	int num_values = regval_ctr_numvals( values );
 	uint32 value_index;
@@ -671,7 +671,7 @@ static void convert_values_to_printer_info_2( NT_PRINTER_INFO_LEVEL_2 *printer2,
 /**********************************************************************
  *********************************************************************/
 
-static bool key_printers_store_values( const char *key, REGVAL_CTR *values )
+static bool key_printers_store_values(const char *key, struct regval_ctr *values)
 {
 	char *printers_key;
 	char *printername, *keyname;
@@ -888,7 +888,7 @@ static int key_driver_fetch_keys( const char *key, struct regsubkey_ctr *subkeys
 /**********************************************************************
  *********************************************************************/
 
-static void fill_in_driver_values( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info3, REGVAL_CTR *values )
+static void fill_in_driver_values(NT_PRINTER_DRIVER_INFO_LEVEL_3 *info3, struct regval_ctr *values)
 {
 	char *buffer = NULL;
 	int buffer_size = 0;
@@ -967,7 +967,7 @@ static void fill_in_driver_values( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info3, REGVAL
 /**********************************************************************
  *********************************************************************/
 
-static int driver_arch_fetch_values( char *key, REGVAL_CTR *values )
+static int driver_arch_fetch_values(char *key, struct regval_ctr *values)
 {
 	char 		*keystr, *base, *subkeypath;
 	fstring		arch_environment;
@@ -1054,7 +1054,7 @@ static int driver_arch_fetch_values( char *key, REGVAL_CTR *values )
 /**********************************************************************
  *********************************************************************/
 
-static int key_driver_fetch_values( const char *key, REGVAL_CTR *values )
+static int key_driver_fetch_values(const char *key, struct regval_ctr *values)
 {
 	char *keystr = NULL;
 	char *subkey = NULL;
@@ -1222,7 +1222,7 @@ static bool regprint_store_reg_keys( const char *key, struct regsubkey_ctr *subk
 /**********************************************************************
  *********************************************************************/
 
-static int regprint_fetch_reg_values( const char *key, REGVAL_CTR *values )
+static int regprint_fetch_reg_values(const char *key, struct regval_ctr *values)
 {
 	int i = match_registry_path( key );
 
@@ -1241,7 +1241,7 @@ static int regprint_fetch_reg_values( const char *key, REGVAL_CTR *values )
 /**********************************************************************
  *********************************************************************/
 
-static bool regprint_store_reg_values( const char *key, REGVAL_CTR *values )
+static bool regprint_store_reg_values(const char *key, struct regval_ctr *values)
 {
 	int i = match_registry_path( key );
 

@@ -403,7 +403,7 @@ bool get_local_printer_publishing_data(TALLOC_CTX *mem_ctx,
 	uint32 key,val;
 
 	for (key=0; key < data->num_keys; key++) {
-		REGVAL_CTR *ctr = data->keys[key].values;
+		struct regval_ctr *ctr = data->keys[key].values;
 		for (val=0; val < ctr->num_values; val++)
 			map_regval_to_ads(mem_ctx, mods, ctr->values[val]);
 	}

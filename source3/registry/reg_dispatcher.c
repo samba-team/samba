@@ -92,7 +92,7 @@ bool store_reg_keys( REGISTRY_KEY *key, struct regsubkey_ctr *subkeys )
  High level wrapper function for storing registry values
  ***********************************************************************/
 
-bool store_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val )
+bool store_reg_values(REGISTRY_KEY *key, struct regval_ctr *val)
 {
 	if (key->ops && key->ops->store_values)
 		return key->ops->store_values(key->name, val);
@@ -137,7 +137,7 @@ int fetch_reg_keys( REGISTRY_KEY *key, struct regsubkey_ctr *subkey_ctr )
  High level wrapper function for enumerating registry values
  ***********************************************************************/
 
-int fetch_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val )
+int fetch_reg_values(REGISTRY_KEY *key, struct regval_ctr *val)
 {
 	int result = -1;
 
@@ -237,7 +237,7 @@ bool reg_subkeys_need_update(REGISTRY_KEY *key, struct regsubkey_ctr *subkeys)
  * Check whether the in-memory version of the values of a
  * registry key needs update from disk.
  */
-bool reg_values_need_update(REGISTRY_KEY *key, REGVAL_CTR *values)
+bool reg_values_need_update(REGISTRY_KEY *key, struct regval_ctr *values)
 {
 	if (key->ops && key->ops->values_need_update)
 	{

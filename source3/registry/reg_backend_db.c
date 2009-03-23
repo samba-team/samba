@@ -239,7 +239,7 @@ WERROR init_registry_data(void)
 {
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
-	REGVAL_CTR *values;
+	struct regval_ctr *values;
 	int i;
 	UNISTR2 data;
 
@@ -254,7 +254,7 @@ WERROR init_registry_data(void)
 	}
 
 	for (i=0; builtin_registry_values[i].path != NULL; i++) {
-		values = TALLOC_ZERO_P(frame, REGVAL_CTR);
+		values = TALLOC_ZERO_P(frame, struct regval_ctr);
 		if (values == NULL) {
 			werr = WERR_NOMEM;
 			goto done;
@@ -307,7 +307,7 @@ do_init:
 
 	for (i=0; builtin_registry_values[i].path != NULL; i++) {
 
-		values = TALLOC_ZERO_P(frame, REGVAL_CTR);
+		values = TALLOC_ZERO_P(frame, struct regval_ctr);
 		if (values == NULL) {
 			werr = WERR_NOMEM;
 			goto fail;
@@ -1398,7 +1398,7 @@ done:
  Unpack a list of registry values frem the TDB
  ***************************************************************************/
 
-static int regdb_unpack_values(REGVAL_CTR *values, uint8 *buf, int buflen)
+static int regdb_unpack_values(struct regval_ctr *values, uint8 *buf, int buflen)
 {
 	int 		len = 0;
 	uint32		type;
@@ -1443,7 +1443,7 @@ static int regdb_unpack_values(REGVAL_CTR *values, uint8 *buf, int buflen)
  Pack all values in all printer keys
  ***************************************************************************/
 
-static int regdb_pack_values(REGVAL_CTR *values, uint8 *buf, int buflen)
+static int regdb_pack_values(struct regval_ctr *values, uint8 *buf, int buflen)
 {
 	int 		len = 0;
 	int 		i;
@@ -1478,7 +1478,7 @@ static int regdb_pack_values(REGVAL_CTR *values, uint8 *buf, int buflen)
  released by the caller.
  ***********************************************************************/
 
-int regdb_fetch_values( const char* key, REGVAL_CTR *values )
+int regdb_fetch_values(const char* key, struct regval_ctr *values)
 {
 	char *keystr = NULL;
 	TALLOC_CTX *ctx = talloc_stackframe();
@@ -1513,7 +1513,7 @@ done:
 	return ret;
 }
 
-bool regdb_store_values( const char *key, REGVAL_CTR *values )
+bool regdb_store_values(const char *key, struct regval_ctr *values)
 {
 	TDB_DATA old_data, data;
 	char *keystr = NULL;
@@ -1658,7 +1658,7 @@ bool regdb_subkeys_need_update(struct regsubkey_ctr *subkeys)
 	return (regdb_get_seqnum() != regsubkey_ctr_get_seqnum(subkeys));
 }
 
-bool regdb_values_need_update(REGVAL_CTR *values)
+bool regdb_values_need_update(struct regval_ctr *values)
 {
 	return (regdb_get_seqnum() != values->seqnum);
 }

@@ -45,12 +45,12 @@ static WERROR smbconf_delete_subkey(const char *key, const char *subkey)
 	return regdb_ops.delete_subkey(key, subkey);
 }
 
-static int smbconf_fetch_values( const char *key, REGVAL_CTR *val )
+static int smbconf_fetch_values(const char *key, struct regval_ctr *val)
 {
 	return regdb_ops.fetch_values(key, val);
 }
 
-static bool smbconf_store_values( const char *key, REGVAL_CTR *val )
+static bool smbconf_store_values(const char *key, struct regval_ctr *val)
 {
 	return regdb_ops.store_values(key, val);
 }

@@ -31,7 +31,7 @@
 
 extern REGISTRY_OPS regdb_ops;
 
-static int tcpip_params_fetch_values(const char *key, REGVAL_CTR *regvals)
+static int tcpip_params_fetch_values(const char *key, struct regval_ctr *regvals)
 {
 	fstring value;
 	int value_length;

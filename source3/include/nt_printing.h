@@ -243,8 +243,8 @@ typedef struct nt_printer_driver_info_level
 /* container for a single registry key */
 
 typedef struct {
-	char		*name;
-	REGVAL_CTR 	*values;
+	char			*name;
+	struct regval_ctr	*values;
 } NT_PRINTER_KEY;
 
 /* container for all printer data */

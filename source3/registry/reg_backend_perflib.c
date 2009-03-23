@@ -34,7 +34,7 @@ extern REGISTRY_OPS regdb_ops;
 #define KEY_PERFLIB_NORM	"HKLM/SOFTWARE/MICROSOFT/WINDOWS NT/CURRENTVERSION/PERFLIB"
 #define KEY_PERFLIB_009_NORM	"HKLM/SOFTWARE/MICROSOFT/WINDOWS NT/CURRENTVERSION/PERFLIB/009"
 
-static int perflib_params( REGVAL_CTR *regvals )
+static int perflib_params(struct regval_ctr *regvals)
 {
 	int base_index = -1;
 	int last_counter = -1;
@@ -52,7 +52,7 @@ static int perflib_params( REGVAL_CTR *regvals )
 	return regval_ctr_numvals( regvals );
 }
 
-static int perflib_009_params( REGVAL_CTR *regvals )
+static int perflib_009_params(struct regval_ctr *regvals)
 {
 	int base_index;
 	int buffer_size;
@@ -71,7 +71,7 @@ static int perflib_009_params( REGVAL_CTR *regvals )
 	return regval_ctr_numvals( regvals );
 }
 
-static int perflib_fetch_values(const char *key, REGVAL_CTR *regvals)
+static int perflib_fetch_values(const char *key, struct regval_ctr *regvals)
 {
 	char *path = NULL;
 	TALLOC_CTX *ctx = talloc_tos();

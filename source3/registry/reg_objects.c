@@ -33,7 +33,7 @@ struct regsubkey_ctr {
 
 /**********************************************************************
 
- Note that the struct regsubkey_ctr and REGVAL_CTR objects *must* be
+ Note that the struct regsubkey_ctr and struct regval_ctr objects *must* be
  talloc()'d since the methods use the object pointer as the talloc
  context for internal private data.
 
@@ -266,14 +266,14 @@ char* regsubkey_ctr_specific_key( struct regsubkey_ctr *ctr, uint32_t key_index 
 }
 
 /*
- * Utility functions for REGVAL_CTR
+ * Utility functions for struct regval_ctr
  */
 
 /***********************************************************************
  How many keys does the container hold ?
  **********************************************************************/
 
-int regval_ctr_numvals( REGVAL_CTR *ctr )
+int regval_ctr_numvals(struct regval_ctr *ctr)
 {
 	return ctr->num_values;
 }
@@ -369,7 +369,7 @@ uint32 regval_type( REGISTRY_VALUE *val )
  since this memory will go away when the ctr is free()'d
  **********************************************************************/
 
-REGISTRY_VALUE* regval_ctr_specific_value( REGVAL_CTR *ctr, uint32 idx )
+REGISTRY_VALUE* regval_ctr_specific_value(struct regval_ctr *ctr, uint32 idx)
 {
 	if ( !(idx < ctr->num_values) )
 		return NULL;
@@ -381,7 +381,7 @@ REGISTRY_VALUE* regval_ctr_specific_value( REGVAL_CTR *ctr, uint32 idx )
  Check for the existance of a value
  **********************************************************************/
 
-bool regval_ctr_key_exists( REGVAL_CTR *ctr, const char *value )
+bool regval_ctr_key_exists(struct regval_ctr *ctr, const char *value)
 {
 	int 	i;
 
@@ -426,8 +426,8 @@ REGISTRY_VALUE *regval_compose(TALLOC_CTX *ctx, const char *name, uint16 type,
  Add a new registry value to the array
  **********************************************************************/
 
-int regval_ctr_addvalue( REGVAL_CTR *ctr, const char *name, uint16 type,
-                         const char *data_p, size_t size )
+int regval_ctr_addvalue(struct regval_ctr *ctr, const char *name, uint16 type,
+                        const char *data_p, size_t size)
 {
 	if ( !name )
 		return ctr->num_values;
@@ -468,7 +468,7 @@ int regval_ctr_addvalue( REGVAL_CTR *ctr, const char *name, uint16 type,
  Add a new registry value to the array
  **********************************************************************/
 
-int regval_ctr_copyvalue( REGVAL_CTR *ctr, REGISTRY_VALUE *val )
+int regval_ctr_copyvalue(struct regval_ctr *ctr, REGISTRY_VALUE *val)
 {
 	if ( val ) {
 		regval_ctr_addvalue(ctr, val->valuename, val->type,
@@ -483,7 +483,7 @@ int regval_ctr_copyvalue( REGVAL_CTR *ctr, REGISTRY_VALUE *val )
  No need to free memory since it is talloc'd.
  **********************************************************************/
 
-int regval_ctr_delvalue( REGVAL_CTR *ctr, const char *name )
+int regval_ctr_delvalue(struct regval_ctr *ctr, const char *name)
 {
 	int 	i;
 
@@ -511,7 +511,7 @@ int regval_ctr_delvalue( REGVAL_CTR *ctr, const char *name )
  No need to free memory since it is talloc'd.
  **********************************************************************/
 
-REGISTRY_VALUE* regval_ctr_getvalue( REGVAL_CTR *ctr, const char *name )
+REGISTRY_VALUE* regval_ctr_getvalue(struct regval_ctr *ctr, const char *name)
 {
 	int 	i;
 

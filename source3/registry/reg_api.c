@@ -81,7 +81,7 @@ static WERROR fill_value_cache(struct registry_key *key)
 		}
 	}
 
-	if (!(key->values = TALLOC_ZERO_P(key, REGVAL_CTR))) {
+	if (!(key->values = TALLOC_ZERO_P(key, struct regval_ctr))) {
 		return WERR_NOMEM;
 	}
 	if (fetch_reg_values(key->key, key->values) == -1) {
@@ -710,7 +710,7 @@ static WERROR reg_load_tree(REGF_FILE *regfile, const char *topkeypath,
 {
 	REGF_NK_REC *subkey;
 	REGISTRY_KEY registry_key;
-	REGVAL_CTR *values;
+	struct regval_ctr *values;
 	struct regsubkey_ctr *subkeys;
 	int i;
 	char *path = NULL;
@@ -736,12 +736,12 @@ static WERROR reg_load_tree(REGF_FILE *regfile, const char *topkeypath,
 	result = regsubkey_ctr_init(regfile->mem_ctx, &subkeys);
 	W_ERROR_NOT_OK_RETURN(result);
 
-	values = TALLOC_ZERO_P(subkeys, REGVAL_CTR);
+	values = TALLOC_ZERO_P(subkeys, struct regval_ctr);
 	if (values == NULL) {
 		return WERR_NOMEM;
 	}
 
-	/* copy values into the REGVAL_CTR */
+	/* copy values into the struct regval_ctr */
 
 	for (i=0; i<key->num_values; i++) {
 		regval_ctr_addvalue(values, key->values[i].valuename,
@@ -843,7 +843,7 @@ static WERROR reg_write_tree(REGF_FILE *regfile, const char *keypath,
 			     REGF_NK_REC *parent)
 {
 	REGF_NK_REC *key;
-	REGVAL_CTR *values;
+	struct regval_ctr *values;
 	struct regsubkey_ctr *subkeys;
 	int i, num_subkeys;
 	char *key_tmp = NULL;
@@ -895,7 +895,7 @@ static WERROR reg_write_tree(REGF_FILE *regfile, const char *keypath,
 	result = regsubkey_ctr_init(regfile->mem_ctx, &subkeys);
 	W_ERROR_NOT_OK_RETURN(result);
 
-	values = TALLOC_ZERO_P(subkeys, REGVAL_CTR);
+	values = TALLOC_ZERO_P(subkeys, struct regval_ctr);
 	if (values == NULL) {
 		return WERR_NOMEM;
 	}

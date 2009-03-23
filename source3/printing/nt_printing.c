@@ -2474,7 +2474,7 @@ static int pack_values(NT_PRINTER_DATA *data, uint8 *buf, int buflen)
 	int 		len = 0;
 	int 		i, j;
 	REGISTRY_VALUE	*val;
-	REGVAL_CTR	*val_ctr;
+	struct regval_ctr	*val_ctr;
 	char *path = NULL;
 	int		num_values;
 
@@ -2870,7 +2870,7 @@ int add_new_printer_key( NT_PRINTER_DATA *data, const char *name )
 
 	data->keys[key_index].name = talloc_strdup( data, name );
 
-	if ( !(data->keys[key_index].values = TALLOC_ZERO_P( data, REGVAL_CTR )) )
+	if ( !(data->keys[key_index].values = TALLOC_ZERO_P( data, struct regval_ctr )) )
 		return -1;
 
 	data->num_keys++;
@@ -3041,7 +3041,7 @@ done:
 }
 
 #ifdef HAVE_ADS
-static void map_sz_into_ctr(REGVAL_CTR *ctr, const char *val_name,
+static void map_sz_into_ctr(struct regval_ctr *ctr, const char *val_name,
 			    const char *sz)
 {
 	smb_ucs2_t conv_str[1024];
@@ -3054,7 +3054,7 @@ static void map_sz_into_ctr(REGVAL_CTR *ctr, const char *val_name,
 			    (char *) conv_str, str_size);
 }
 
-static void map_dword_into_ctr(REGVAL_CTR *ctr, const char *val_name,
+static void map_dword_into_ctr(struct regval_ctr *ctr, const char *val_name,
 			       uint32 dword)
 {
 	regval_ctr_delvalue(ctr, val_name);
@@ -3062,7 +3062,7 @@ static void map_dword_into_ctr(REGVAL_CTR *ctr, const char *val_name,
 			    (char *) &dword, sizeof(dword));
 }
 
-static void map_bool_into_ctr(REGVAL_CTR *ctr, const char *val_name,
+static void map_bool_into_ctr(struct regval_ctr *ctr, const char *val_name,
 			      bool b)
 {
 	uint8 bin_bool = (b ? 1 : 0);
@@ -3071,7 +3071,7 @@ static void map_bool_into_ctr(REGVAL_CTR *ctr, const char *val_name,
 			    (char *) &bin_bool, sizeof(bin_bool));
 }
 
-static void map_single_multi_sz_into_ctr(REGVAL_CTR *ctr, const char *val_name,
+static void map_single_multi_sz_into_ctr(struct regval_ctr *ctr, const char *val_name,
 					 const char *multi_sz)
 {
 	smb_ucs2_t *conv_strs = NULL;
@@ -3105,7 +3105,7 @@ static void map_single_multi_sz_into_ctr(REGVAL_CTR *ctr, const char *val_name,
 
 static bool map_nt_printer_info2_to_dsspooler(NT_PRINTER_INFO_LEVEL_2 *info2)
 {
-	REGVAL_CTR *ctr = NULL;
+	struct regval_ctr *ctr = NULL;
 	fstring longname;
 	const char *dnssuffix;
 	char *allocated_string = NULL;
@@ -3177,7 +3177,7 @@ static void store_printer_guid(NT_PRINTER_INFO_LEVEL_2 *info2,
 			       struct GUID guid)
 {
 	int i;
-	REGVAL_CTR *ctr=NULL;
+	struct regval_ctr *ctr=NULL;
 	UNISTR2 unistr_guid;
 
 	/* find the DsSpooler key */
@@ -3469,7 +3469,7 @@ bool is_printer_published(Printer_entry *print_hnd, int snum,
 			  struct GUID *guid)
 {
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
-	REGVAL_CTR *ctr;
+	struct regval_ctr *ctr;
 	REGISTRY_VALUE *guid_val;
 	WERROR win_rc;
 	int i;
