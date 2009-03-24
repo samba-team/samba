@@ -1651,6 +1651,40 @@ static NTSTATUS rpc_api_pipe_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 }
 
 /*******************************************************************
+ ********************************************************************/
+
+static NTSTATUS dcerpc_push_dcerpc_auth(TALLOC_CTX *mem_ctx,
+					enum dcerpc_AuthType auth_type,
+					enum dcerpc_AuthLevel auth_level,
+					uint8_t auth_pad_length,
+					uint32_t auth_context_id,
+					const DATA_BLOB *credentials,
+					DATA_BLOB *blob)
+{
+	struct dcerpc_auth r;
+	enum ndr_err_code ndr_err;
+
+	r.auth_type		= auth_type;
+	r.auth_level		= auth_level;
+	r.auth_pad_length	= auth_pad_length;
+	r.auth_reserved		= 0;
+	r.auth_context_id	= auth_context_id;
+	r.credentials		= *credentials;
+
+	ndr_err = ndr_push_struct_blob(blob, mem_ctx, &r,
+		(ndr_push_flags_fn_t)ndr_push_dcerpc_auth);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(dcerpc_auth, &r);
+	}
+
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
  Creates krb5 auth bind.
  ********************************************************************/
 
