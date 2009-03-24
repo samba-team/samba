@@ -281,6 +281,7 @@ int main(int argc, const char *argv[])
 
 		if (parse_ip(options.single_public_ip, 
 				svnn->iface,
+				0,
 				&svnn->public_address) == 0) {
 			DEBUG(DEBUG_ALERT,("Invalid --single-public-ip argument : %s . This is not a valid ip address. Exiting.\n", options.single_public_ip));
 			exit(10);

@@ -1290,7 +1290,7 @@ void ctdb_start_freeze(struct ctdb_context *ctdb);
 
 bool parse_ip_mask(const char *s, const char *iface, ctdb_sock_addr *addr, unsigned *mask);
 bool parse_ip_port(const char *s, ctdb_sock_addr *addr);
-bool parse_ip(const char *s, const char *iface, ctdb_sock_addr *addr);
+bool parse_ip(const char *s, const char *iface, unsigned port, ctdb_sock_addr *addr);
 bool parse_ipv4(const char *s, unsigned port, struct sockaddr_in *sin);
  
 
@@ -1401,6 +1401,7 @@ int32_t ctdb_control_trans2_error(struct ctdb_context *ctdb,
 				  struct ctdb_req_control *c);
 
 char *ctdb_addr_to_str(ctdb_sock_addr *addr);
+unsigned ctdb_addr_to_port(ctdb_sock_addr *addr);
 void ctdb_canonicalize_ip(const ctdb_sock_addr *ip, ctdb_sock_addr *cip);
 
 int32_t ctdb_control_recd_ping(struct ctdb_context *ctdb);

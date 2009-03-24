@@ -27,7 +27,7 @@
 
 static int tnode_destructor(struct ctdb_tcp_node *tnode)
 {
-	struct ctdb_node *node = talloc_find_parent_bytype(tnode, struct ctdb_node);
+  //	struct ctdb_node *node = talloc_find_parent_bytype(tnode, struct ctdb_node);
 
 	if (tnode->fd != -1) {
 		close(tnode->fd);

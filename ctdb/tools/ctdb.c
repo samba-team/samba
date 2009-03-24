@@ -540,7 +540,7 @@ static int control_get_tickles(struct ctdb_context *ctdb, int argc, const char *
 		usage();
 	}
 
-	if (parse_ip(argv[0], NULL, &addr) == 0) {
+	if (parse_ip(argv[0], NULL, 0, &addr) == 0) {
 		DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s'\n", argv[0]));
 		return -1;
 	}
@@ -612,7 +612,7 @@ static int control_moveip(struct ctdb_context *ctdb, int argc, const char **argv
 		usage();
 	}
 
-	if (parse_ip(argv[0], NULL,  &addr) == 0) {
+	if (parse_ip(argv[0], NULL, 0, &addr) == 0) {
 		DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s'\n", argv[0]));
 		return -1;
 	}
@@ -988,7 +988,7 @@ static int control_delip(struct ctdb_context *ctdb, int argc, const char **argv)
 		usage();
 	}
 
-	if (parse_ip(argv[0], NULL, &addr) == 0) {
+	if (parse_ip(argv[0], NULL, 0, &addr) == 0) {
 		DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s'\n", argv[0]));
 		return -1;
 	}
@@ -1086,7 +1086,7 @@ static int control_gratious_arp(struct ctdb_context *ctdb, int argc, const char 
 		usage();
 	}
 
-	if (!parse_ip(argv[0], NULL, &addr)) {
+	if (!parse_ip(argv[0], NULL, 0, &addr)) {
 		DEBUG(DEBUG_ERR, ("Bad IP '%s'\n", argv[0]));
 		return -1;
 	}

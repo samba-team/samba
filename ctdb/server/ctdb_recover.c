@@ -165,6 +165,7 @@ ctdb_control_getnodemap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA ind
 	for (i=0; i<num_nodes; i++) {
 		if (parse_ip(ctdb->nodes[i]->address.address,
 			     NULL, /* TODO: pass in the correct interface here*/
+			     0,
 			     &node_map->nodes[i].addr) == 0)
 		{
 			DEBUG(DEBUG_ERR, (__location__ " Failed to parse %s into a sockaddr\n", ctdb->nodes[i]->address.address));
