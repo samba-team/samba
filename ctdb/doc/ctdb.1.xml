@@ -256,6 +256,46 @@ Recovery master:0
       </screen>
     </refsect2>
 
+    <refsect2><title>recmaster</title>
+      <para>
+        This command shows the pnn of the node which is currently the recmaster.
+      </para>
+    </refsect2>
+
+    <refsect2><title>uptime</title>
+      <para>
+        This command shows the uptime for the ctdb daemon. When the last recovery completed and how long the last recovery took. If the "duration" is shown as a negative number, this indicates that there is a recovery in progress and it started that many seconds ago.
+      </para>
+
+      <para>
+	Example: ctdb uptime
+      </para>
+      <para>Example output:</para>
+      <screen format="linespecific">
+Current time of node  : Tue Mar 24 18:27:54 2009
+Ctdbd start time      : (000 00:00:05) Tue Mar 24 18:27:49 2009
+Time of last recovery : (000 00:00:05) Tue Mar 24 18:27:49 2009
+Duration of last recovery : 0.000000 seconds
+      </screen>
+    </refsect2>
+
+    <refsect2><title>listnodes</title>
+      <para>
+        This command shows lists the ip addresses of all the nodes in the cluster.
+      </para>
+
+      <para>
+	Example: ctdb listnodes
+      </para>
+      <para>Example output:</para>
+      <screen format="linespecific">
+10.0.0.71
+10.0.0.72
+10.0.0.73
+10.0.0.74
+      </screen>
+    </refsect2>
+
     <refsect2><title>ping</title>
       <para>
         This command will "ping" all CTDB daemons in the cluster to verify that they are processing commands correctly.
@@ -276,7 +316,7 @@ response from 3 time=0.000114 sec  (2 clients)
 
     <refsect2><title>ip</title>
       <para>
-        This command will display the list of public addresses that are provided by the cluster and which physical node is currently serving this ip.
+        This command will display the list of public addresses that are provided by the cluster and which physical node is currently serving this ip. By default this command will ONLY show those public addresses that are known to the node itself. To see the full list of all public ips across the cluster you must use "ctdb ip -n all".
       </para>
       <para>
 	Example: ctdb ip
@@ -290,6 +330,29 @@ Number of addresses:4
 12.1.1.2         1
 12.1.1.3         2
 12.1.1.4         3
+      </screen>
+    </refsect2>
+
+    <refsect2><title>scriptstatus</title>
+      <para>
+        This command displays which scripts where run in the previous monitoring cycle and the result of each script. If a script failed with an error, causing the node to become unhealthy, the output from that script is also shown.
+      </para>
+      <para>
+	Example: ctdb scriptstatus
+      </para>
+      <para>
+	Example output:
+      </para>
+      <screen format="linespecific">
+7 scripts were executed last monitoring cycle
+00.ctdb              Status:OK    Duration:0.056 Tue Mar 24 18:56:57 2009
+10.interface         Status:OK    Duration:0.077 Tue Mar 24 18:56:57 2009
+11.natgw             Status:OK    Duration:0.039 Tue Mar 24 18:56:57 2009
+20.multipathd        Status:OK    Duration:0.038 Tue Mar 24 18:56:57 2009
+40.vsftpd            Status:OK    Duration:0.045 Tue Mar 24 18:56:57 2009
+41.httpd             Status:OK    Duration:0.039 Tue Mar 24 18:56:57 2009
+50.samba             Status:ERROR    Duration:0.082 Tue Mar 24 18:56:57 2009
+   OUTPUT:ERROR: Samba tcp port 445 is not responding
       </screen>
     </refsect2>
 
@@ -536,6 +599,29 @@ CTDB version 1
       </para>
     </refsect2>
 
+    <refsect2><title>addip &lt;public_ip/mask&gt; &lt;iface&gt;</title>
+      <para>
+	This command is used to add a new public ip to a node during runtime.
+	This allows public addresses to be added to a cluster without having
+	to restart the ctdb daemons.
+      </para>
+      <para>
+	Note that this only updates the runtime instance of ctdb. Any changes will be lost next time ctdb is restarted and the public addresses file is re-read.
+ If you want this change to be permanent you must also update the public addresses file manually.
+      </para>
+    </refsect2>
+
+    <refsect2><title>delip &lt;public_ip&gt;</title>
+      <para>
+	This command is used to remove a public ip from a node during runtime.
+	If this public ip is currently hosted by the node it being removed from, the ip will first be failed over to another node, if possible, before it is removed.
+      </para>
+      <para>
+	Note that this only updates the runtime instance of ctdb. Any changes will be lost next time ctdb is restarted and the public addresses file is re-read.
+ If you want this change to be permanent you must also update the public addresses file manually.
+      </para>
+    </refsect2>
+
     <refsect2><title>moveip &lt;public_ip&gt; &lt;node&gt;</title>
       <para>
       This command can be used to manually fail a public ip address to a
@@ -578,7 +664,16 @@ CTDB version 1
     <refsect2><title>killtcp &lt;srcip:port&gt; &lt;dstip:port&gt;</title>
       <para>
         This command will kill the specified TCP connection by issuing a
-        TCP RST to the srcip:port endpoint.
+        TCP RST to the srcip:port endpoint. This is a command used by the 
+	ctdb eventscripts.
+      </para>
+    </refsect2>
+
+    <refsect2><title>gratiousarp &lt;ip&gt; &lt;interface&gt;</title>
+      <para>
+	This command will send out a gratious arp for the specified interface
+	through the specified interface. This command is mainly used by the
+	ctdb eventscripts.
       </para>
     </refsect2>
 
@@ -634,6 +729,12 @@ CTDB version 1
       </para>
     </refsect2>
 
+    <refsect2><title>gettickles &lt;ip&gt;</title>
+      <para>
+	This command is used to show which TCP connections are registered with
+	CTDB to be "tickled" if there is a failover.
+      </para>
+    </refsect2>
     <refsect2><title>repack [max_freelist]</title>
       <para>
 	Over time, when records are created and deleted in a TDB, the TDB list of free space will become fragmented. This can lead to a slowdown in accessing TDB records.
@@ -772,6 +873,13 @@ dbid:0x7bbbd26c name:passdb.tdb path:/var/ctdb/persistent/passdb.tdb.0 PERSISTEN
       </para>
     </refsect2>
 
+    <refsect2><title>rddumpmemory</title>
+      <para>
+        This is a debugging command. This command will dump the talloc memory
+	allocation tree for the recovery daemon to standard output.
+      </para>
+    </refsect2>
+
     <refsect2><title>freeze</title>
       <para>
         This command will lock all the local TDB databases causing clients 
@@ -791,8 +899,29 @@ dbid:0x7bbbd26c name:passdb.tdb path:/var/ctdb/persistent/passdb.tdb.0 PERSISTEN
       </para>
     </refsect2>
 
-  </refsect1>
 
+    <refsect2><title>eventscript &lt;arguments&gt;</title>
+      <para>
+        This is a debugging command. This command can be used to manually
+	invoke and run the eventscritps with arbitrary arguments.
+      </para>
+    </refsect2>
+
+    <refsect2><title>backupdb &lt;database&gt; &lt;file&gt;</title>
+      <para>
+        This command can be used to copy the entire content of a database out to a file. This file can later be read back into ctdb using the restoredb command.
+This is mainly useful for backing up persistent databases such as secrets.tdb and similar.
+      </para>
+    </refsect2>
+
+    <refsect2><title>restoredb &lt;file&gt;</title>
+      <para>
+        This command restores a persistent database that was previously backed up using backupdb.
+      </para>
+    </refsect2>
+
+
+  </refsect1>
 
   <refsect1><title>SEE ALSO</title>
     <para>
