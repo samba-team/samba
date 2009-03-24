@@ -65,6 +65,24 @@
 # should ctdb manage starting/stopping the NFS service
 # CTDB_MANAGES_NFS=yes
 
+# should ctdb manage starting/stopping the Apache web server httpd?
+# CTDB_MANAGES_HTTPD
+
+# The init style (redhat/suse/ubuntu...) is usually auto-detected.
+# The names of init scripts of services managed by CTDB are set
+# based on the detected init style. You can override the init style
+# auto-detection here to explicitly use a scheme. This might be
+# useful when you have installed a packages (for instance samba
+# packages) with a different init script layout.
+# There is no default.
+# CTDB_INIT_STYLE=redhat
+
+# The following are specific Samba init scripts / services that you
+# can override from auto-detection.
+# There are no defaults.
+# CTDB_SERVICE_SMB=smb
+# CTDB_SERVICE_NMB=nmb
+# CTDB_SERVICE_WINBIND=winbind
 
 # you may wish to raise the file descriptor limit for ctdb
 # use a ulimit command here. ctdb needs one file descriptor per

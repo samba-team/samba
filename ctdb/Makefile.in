@@ -41,7 +41,7 @@ UTIL_OBJ = lib/util/idtree.o lib/util/db_wrap.o lib/util/strlist.o lib/util/util
 
 CTDB_COMMON_OBJ =  common/ctdb_io.o common/ctdb_util.o \
 	common/ctdb_ltdb.o common/ctdb_message.o common/cmdline.o  \
-	lib/util/debug.o common/rb_tree.o @CTDB_SYSTEM_OBJ@
+	lib/util/debug.o common/rb_tree.o @CTDB_SYSTEM_OBJ@ common/system_common.o
 
 CTDB_TCP_OBJ = tcp/tcp_connect.o tcp/tcp_io.o tcp/tcp_init.o
 
