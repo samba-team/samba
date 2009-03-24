@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.74
+Version: 1.0.75
 Release: 1
 Epoch: 0
 License: GNU GPL version 3
@@ -128,6 +128,10 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Tue Mar 24 2009 : Version 1.0.75
+ - Various updates to LVS
+ - Fix a bug in the killtcp control where we did not set the port correctly
+ - add a new "ctdb scriptstatus" command that shows the status of the eventrscripts.
 * Mon Mar 16 2009 : Version 1.0.74
  - Fixes to AIX from C Cowan.
  - Fixes to ctdb_diagnostics so we collect correct GPFS data
