@@ -828,6 +828,10 @@ NTSTATUS _lsa_LookupSids(pipes_struct *p,
 					   &names,
 					   &mapped_count);
 
+	if (NT_STATUS_IS_ERR(status)) {
+		return status;
+	}
+
 	/* Convert from lsa_TranslatedName2 to lsa_TranslatedName */
 	names_out = TALLOC_ARRAY(p->mem_ctx, struct lsa_TranslatedName,
 				 num_sids);
