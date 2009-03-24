@@ -92,4 +92,12 @@ struct tevent_req *wb_simple_trans_send(TALLOC_CTX *mem_ctx,
 int wb_simple_trans_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			 struct winbindd_response **presponse, int *err);
 
+/* Async functions from wbc_util.c */
+
+struct tevent_req *wbcPing_send(TALLOC_CTX *mem_ctx,
+			       struct tevent_context *ev,
+			       struct wb_context *wb_ctx);
+wbcErr wbcPing_recv(struct tevent_req *req);
+
+
 #endif /*_WBC_ASYNC_H_*/

@@ -27,11 +27,89 @@
 
 
 
+struct wbc_ping_state {
+	struct winbindd_request req;
+};
+
+static void wbcPing_done(struct tevent_req *subreq);
+
+/** @brief Ping winbind to see if the service is up and running
+ *
+ * @param mem_ctx	talloc context to allocate the request from
+ * @param ev		event context to use for async operation
+ * @param wb_ctx	winbind context to use
+ *
+ * @return Async request on successful dispatch of the request, NULL on error
+ */
+
+struct tevent_req *wbcPing_send(TALLOC_CTX *mem_ctx,
+				struct tevent_context *ev,
+				struct wb_context *wb_ctx)
+{
+	struct tevent_req *req, *subreq;
+	struct wbc_ping_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct wbc_ping_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	ZERO_STRUCT(state->req);
+
+	state->req.cmd = WINBINDD_PING;
+	subreq = wb_trans_send(state, ev, wb_ctx, false, &state->req);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_set_callback(subreq, wbcPing_done, req);
+	return req;
+}
+
+static void wbcPing_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+			subreq, struct tevent_req);
+	struct wbc_ping_state *state = tevent_req_data(
+			req, struct wbc_ping_state);
+	struct winbindd_response *resp;
+	wbcErr wbc_status;
+
+	wbc_status = wb_trans_recv(subreq, state, &resp);
+	TALLOC_FREE(subreq);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		tevent_req_error(req, wbc_status);
+		return;
+	}
+	TALLOC_FREE(resp);
+
+	tevent_req_done(req);
+}
+
+/** @brief Receive ping response from winbind
+ *
+ * @param req		async request sent in #wbcPing_send
+ *
+ * @return NT_STATUS_OK on success, an error status on error.
+ */
+
+wbcErr wbcPing_recv(struct tevent_req *req)
+{
+	wbcErr wbc_status;
+
+	if (tevent_req_is_wbcerr(req, &wbc_status)) {
+		tevent_req_received(req);
+		return wbc_status;
+	}
+
+	tevent_req_received(req);
+	return WBC_ERR_SUCCESS;
+}
+
 /** @brief Ping winbindd to see if the daemon is running
  *
  * @return #wbcErr
  **/
-
 wbcErr wbcPing(void)
 {
 	struct winbindd_request request;
