@@ -1033,7 +1033,7 @@ static const struct smb_message_struct {
 /* 0x30 */ { NULL, NULL, 0 },
 /* 0x31 */ { NULL, NULL, 0 },
 /* 0x32 */ { "SMBtrans2",reply_trans2, AS_USER | CAN_IPC },
-/* 0x33 */ { "SMBtranss2",reply_transs2, AS_USER},
+/* 0x33 */ { "SMBtranss2",reply_transs2, AS_USER | CAN_IPC},
 /* 0x34 */ { "SMBfindclose",reply_findclose,AS_USER},
 /* 0x35 */ { "SMBfindnclose",reply_findnclose,AS_USER},
 /* 0x36 */ { NULL, NULL, 0 },
