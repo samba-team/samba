@@ -129,7 +129,7 @@ typedef struct rpc_bind_req_info {
  */
 
 #define RPC_HDR_RB_LEN(rpc_hdr_rb) (RPC_HDR_BBA_LEN + 4 + \
-	((rpc_hdr_rb)->num_contexts) * (4 + RPC_IFACE_LEN + (((rpc_hdr_rb)->rpc_context->num_transfer_syntaxes)*RPC_IFACE_LEN)))
+	((rpc_hdr_rb)->num_contexts) * (4 + RPC_IFACE_LEN + (((rpc_hdr_rb)->ctx_list->num_transfer_syntaxes)*RPC_IFACE_LEN)))
 
 /* RPC_RESULTS - can only cope with one reason, right now... */
 typedef struct rpc_results_info {

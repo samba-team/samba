@@ -1846,10 +1846,37 @@ static NTSTATUS create_schannel_auth_rpc_bind_req( struct rpc_pipe_client *cli,
 }
 
 /*******************************************************************
+ ********************************************************************/
+
+static NTSTATUS init_dcerpc_ctx_list(TALLOC_CTX *mem_ctx,
+				     const struct ndr_syntax_id *abstract_syntax,
+				     const struct ndr_syntax_id *transfer_syntax,
+				     struct dcerpc_ctx_list **ctx_list_p)
+{
+	struct dcerpc_ctx_list *ctx_list;
+
+	ctx_list = talloc_array(mem_ctx, struct dcerpc_ctx_list, 1);
+	NT_STATUS_HAVE_NO_MEMORY(ctx_list);
+
+	ctx_list[0].context_id			= 0;
+	ctx_list[0].num_transfer_syntaxes	= 1;
+	ctx_list[0].abstract_syntax		= *abstract_syntax;
+	ctx_list[0].transfer_syntaxes		= talloc_array(ctx_list,
+							       struct ndr_syntax_id,
+							       ctx_list[0].num_transfer_syntaxes);
+	NT_STATUS_HAVE_NO_MEMORY(ctx_list[0].transfer_syntaxes);
+	ctx_list[0].transfer_syntaxes[0]	= *transfer_syntax;
+
+	*ctx_list_p = ctx_list;
+
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
  Creates the internals of a DCE/RPC bind request or alter context PDU.
  ********************************************************************/
 
-static NTSTATUS create_bind_or_alt_ctx_internal(enum dcerpc_pkt_type pkt_type,
+static NTSTATUS create_bind_or_alt_ctx_internal(enum dcerpc_pkt_type ptype,
 						prs_struct *rpc_out, 
 						uint32 rpc_call_id,
 						const struct ndr_syntax_id *abstract,
@@ -1857,25 +1884,33 @@ static NTSTATUS create_bind_or_alt_ctx_internal(enum dcerpc_pkt_type pkt_type,
 						RPC_HDR_AUTH *phdr_auth,
 						prs_struct *pauth_info)
 {
-	RPC_HDR hdr;
-	RPC_HDR_RB hdr_rb;
-	RPC_CONTEXT rpc_ctx;
 	uint16 auth_len = prs_offset(pauth_info);
 	uint8 ss_padding_len = 0;
 	uint16 frag_len = 0;
+	NTSTATUS status;
+	union dcerpc_payload u;
+	DATA_BLOB blob;
+	struct dcerpc_ctx_list *ctx_list;
 
-	/* create the RPC context. */
-	init_rpc_context(&rpc_ctx, 0 /* context id */, abstract, transfer);
+	status = init_dcerpc_ctx_list(rpc_out->mem_ctx, abstract, transfer,
+				      &ctx_list);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
-	/* create the bind request RPC_HDR_RB */
-	init_rpc_hdr_rb(&hdr_rb, RPC_MAX_PDU_FRAG_LEN, RPC_MAX_PDU_FRAG_LEN, 0x0, &rpc_ctx);
+	u.bind.max_xmit_frag	= RPC_MAX_PDU_FRAG_LEN;
+	u.bind.max_recv_frag	= RPC_MAX_PDU_FRAG_LEN;
+	u.bind.assoc_group_id	= 0x0;
+	u.bind.num_contexts	= 1;
+	u.bind.ctx_list		= ctx_list;
+	u.bind.auth_info	= data_blob_null;
 
 	/* Start building the frag length. */
-	frag_len = RPC_HEADER_LEN + RPC_HDR_RB_LEN(&hdr_rb);
+	frag_len = RPC_HEADER_LEN + RPC_HDR_RB_LEN(&u.bind);
 
 	/* Do we need to pad ? */
 	if (auth_len) {
-		uint16 data_len = RPC_HEADER_LEN + RPC_HDR_RB_LEN(&hdr_rb);
+		uint16_t data_len = RPC_HEADER_LEN + RPC_HDR_RB_LEN(&u.bind);
 		if (data_len % CLIENT_NDR_PADDING_SIZE) {
 			ss_padding_len = CLIENT_NDR_PADDING_SIZE - (data_len % CLIENT_NDR_PADDING_SIZE);
 			phdr_auth->auth_pad_len = ss_padding_len;
@@ -1883,18 +1918,21 @@ static NTSTATUS create_bind_or_alt_ctx_internal(enum dcerpc_pkt_type pkt_type,
 		frag_len += RPC_HDR_AUTH_LEN + auth_len + ss_padding_len;
 	}
 
-	/* Create the request RPC_HDR */
-	init_rpc_hdr(&hdr, pkt_type, DCERPC_PFC_FLAG_FIRST|DCERPC_PFC_FLAG_LAST, rpc_call_id, frag_len, auth_len);
-
-	/* Marshall the RPC header */
-	if(!smb_io_rpc_hdr("hdr"   , &hdr, rpc_out, 0)) {
-		DEBUG(0,("create_bind_or_alt_ctx_internal: failed to marshall RPC_HDR.\n"));
-		return NT_STATUS_NO_MEMORY;
+	status = dcerpc_push_ncacn_packet(rpc_out->mem_ctx,
+					  ptype,
+					  DCERPC_PFC_FLAG_FIRST |
+					  DCERPC_PFC_FLAG_LAST,
+					  frag_len,
+					  auth_len,
+					  rpc_call_id,
+					  u,
+					  &blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("create_bind_or_alt_ctx_internal: failed to marshall RPC_HDR_RB.\n"));
+		return status;
 	}
 
-	/* Marshall the bind request data */
-	if(!smb_io_rpc_hdr_rb("", &hdr_rb, rpc_out, 0)) {
-		DEBUG(0,("create_bind_or_alt_ctx_internal: failed to marshall RPC_HDR_RB.\n"));
+	if (!prs_copy_data_in(rpc_out, (char *)blob.data, blob.length)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
