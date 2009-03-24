@@ -86,6 +86,8 @@ librpc/gen_ndr/nbt.h: gen_ndr/nbt.h
 librpc/gen_ndr/svcctl.h: gen_ndr/svcctl.h
 librpc/gen_ndr/ndr_svcctl.h: gen_ndr/ndr_svcctl.h
 librpc/gen_ndr/ndr_svcctl_c.h: gen_ndr/ndr_svcctl_c.h
+../librpc/gen_ndr/dcerpc.h: gen_ndr/dcerpc.h
+../librpc/gen_ndr/ndr_dcerpc.h: gen_ndr/ndr_dcerpc.h
 ../librpc/gen_ndr/netlogon.h: gen_ndr/netlogon.h
 ../librpc/gen_ndr/ndr_misc.h: gen_ndr/ndr_misc.h
 ../librpc/gen_ndr/mgmt.h: gen_ndr/mgmt.h
