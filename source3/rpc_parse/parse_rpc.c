@@ -188,40 +188,6 @@ static bool smb_io_rpc_hdr_bba(const char *desc,  RPC_HDR_BBA *rpc, prs_struct *
 }
 
 /*******************************************************************
- Inits an RPC_CONTEXT structure.
- Note the transfer pointer must remain valid until this is marshalled.
-********************************************************************/
-
-void init_rpc_context(RPC_CONTEXT *rpc_ctx, uint16 context_id,
-		      const struct ndr_syntax_id *abstract,
-		      const struct ndr_syntax_id *transfer)
-{
-	rpc_ctx->context_id   = context_id   ; /* presentation context identifier (0x0) */
-	rpc_ctx->num_transfer_syntaxes = 1 ; /* the number of syntaxes (has always been 1?)(0x1) */
-
-	/* num and vers. of interface client is using */
-	rpc_ctx->abstract = *abstract;
-
-	/* vers. of interface to use for replies */
-	rpc_ctx->transfer = CONST_DISCARD(struct ndr_syntax_id *, transfer);
-}
-
-/*******************************************************************
- Inits an RPC_HDR_RB structure.
- Note the context pointer must remain valid until this is marshalled.
-********************************************************************/
-
-void init_rpc_hdr_rb(RPC_HDR_RB *rpc, 
-				uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
-				RPC_CONTEXT *context)
-{
-	init_rpc_hdr_bba(&rpc->bba, max_tsize, max_rsize, assoc_gid);
-
-	rpc->num_contexts = 1;
-	rpc->rpc_context = context;
-}
-
-/*******************************************************************
  Reads or writes an RPC_CONTEXT structure.
 ********************************************************************/
 

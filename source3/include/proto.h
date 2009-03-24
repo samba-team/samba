@@ -5075,12 +5075,6 @@ const char *get_pipe_name_from_syntax(TALLOC_CTX *mem_ctx,
 void init_rpc_hdr(RPC_HDR *hdr, enum dcerpc_pkt_type pkt_type, uint8 flags,
 				uint32 call_id, int data_len, int auth_len);
 bool smb_io_rpc_hdr(const char *desc,  RPC_HDR *rpc, prs_struct *ps, int depth);
-void init_rpc_context(RPC_CONTEXT *rpc_ctx, uint16 context_id,
-		      const struct ndr_syntax_id *abstract,
-		      const struct ndr_syntax_id *transfer);
-void init_rpc_hdr_rb(RPC_HDR_RB *rpc, 
-				uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
-				RPC_CONTEXT *context);
 bool smb_io_rpc_context(const char *desc, RPC_CONTEXT *rpc_ctx, prs_struct *ps, int depth);
 bool smb_io_rpc_hdr_rb(const char *desc, RPC_HDR_RB *rpc, prs_struct *ps, int depth);
 void init_rpc_hdr_ba(RPC_HDR_BA *rpc, 
