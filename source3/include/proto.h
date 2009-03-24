@@ -150,6 +150,10 @@ bool is_trusted_domain(const char* dom_name);
 
 NTSTATUS auth_winbind_init(void);
 
+/* The following definitions come from auth/auth_wbc.c  */
+
+NTSTATUS auth_wbc_init(void);
+
 /* The following definitions come from auth/pampass.c  */
 
 bool smb_pam_claim_session(char *user, char *tty, char *rhost);
