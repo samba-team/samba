@@ -5693,7 +5693,6 @@ NTSTATUS cli_do_rpc_ndr(struct rpc_pipe_client *cli,
 bool smb_io_time(const char *desc, NTTIME *nttime, prs_struct *ps, int depth);
 bool smb_io_system_time(const char *desc, prs_struct *ps, int depth, SYSTEMTIME *systime);
 bool make_systemtime(SYSTEMTIME *systime, struct tm *unixtime);
-bool smb_io_dom_sid(const char *desc, DOM_SID *sid, prs_struct *ps, int depth);
 bool smb_io_uuid(const char *desc, struct GUID *uuid, 
 		 prs_struct *ps, int depth);
 void init_unistr(UNISTR *str, const char *buf);
