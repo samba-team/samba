@@ -1160,9 +1160,11 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 		    krb5_kdc_configuration *config,
 		    pk_client_params *client_params,
 		    const hdb_entry_ex *client,
+		    krb5_enctype sessionetype,
 		    const KDC_REQ *req,
 		    const krb5_data *req_buffer,
 		    krb5_keyblock **reply_key,
+		    krb5_keyblock *sessionkey,
 		    METHOD_DATA *md)
 {
     krb5_error_code ret;
@@ -1238,6 +1240,13 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 	    if (rep.u.encKeyPack.length != size)
 		krb5_abortx(context, "Internal ASN.1 encoder error");
 
+	    ret = krb5_generate_random_keyblock(context, sessionetype, 
+						sessionkey);
+	    if (ret) {
+		free_PA_PK_AS_REP(&rep);
+		goto out;
+	    }
+
 	} else {
 	    ContentInfo info;
 
@@ -1275,6 +1284,13 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 	    if (rep.u.encKeyPack.length != size)
 		krb5_abortx(context, "Internal ASN.1 encoder error");
 
+	    /* XXX */
+	    ret = krb5_generate_random_keyblock(context, sessionetype, 
+						sessionkey);
+	    if (ret) {
+		free_PA_PK_AS_REP(&rep);
+		goto out;
+	    }
 	}
 
 	ASN1_MALLOC_ENCODE(PA_PK_AS_REP, buf, len, &rep, &size, ret);
@@ -1345,6 +1361,11 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 	}
 	if (len != size)
 	    krb5_abortx(context, "Internal ASN.1 encoder error");
+
+	ret = krb5_generate_random_keyblock(context, sessionetype, 
+					    sessionkey);
+	if (ret)
+	    goto out;
 
     } else
 	krb5_abortx(context, "PK-INIT internal error");
