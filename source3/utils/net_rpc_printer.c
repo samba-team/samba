@@ -2260,14 +2260,13 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 			info_dst.info2.secdesc = NULL;
 
 #if 0
-			if (asprintf(&devicename, "\\\\%s\\%s", longname,
-				     printername) < 0) {
+			info_dst.info2.devmode.devicename =
+				talloc_asprintf(mem_ctx, "\\\\%s\\%s",
+						longname, printername);
+			if (!info_dst.info2.devmode.devicename) {
 				nt_status = NT_STATUS_NO_MEMORY;
 				goto done;
 			}
-
-			init_unistr(&ctr_dst.printers_2->devmode->devicename,
-				    devicename);
 #endif
 			if (!net_spoolss_setprinter(pipe_hnd_dst, mem_ctx, &hnd_dst,
 						    level, &info_dst))
