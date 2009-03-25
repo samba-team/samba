@@ -64,6 +64,7 @@ krb5src = \
 	krb5/release_cred.c \
 	krb5/release_name.c \
 	krb5/sequence.c \
+	krb5/store_cred.c \
 	krb5/set_cred_option.c \
 	krb5/set_sec_context_option.c \
 	krb5/ticket_flags.c \
