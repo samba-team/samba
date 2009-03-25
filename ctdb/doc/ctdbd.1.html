@@ -440,16 +440,21 @@ CTDB_CAPABILITY_RECMASTER=no
       have to assign both static and also public addresses to each node.
     </p><div class="refsect2" lang="en"><a name="id2529493"></a><h3>NAT-GW</h3><p>
       A second way is to use the built in NAT-GW feature in CTDB.
-      With NAT-GW only one extra address is required for the entire cluster
-      instead of one address per node. This extra address is dedicated 
-      to traffic that originates from the cluster and is destined for the
-      external network.
+      With NAT-GW you assign one public NATGW address for each natgw group.
+      Each NATGW group is a set of nodes in the cluster that shares the same
+      NATGW address to talk to the outside world. Normally there would only be
+      one NATGW group spanning the entire cluster, but in situations where one
+      ctdb cluster spans multiple physical sites it is useful to have one
+      NATGW group for each of the two sites.
     </p><p>
-      In NAT-GW one of the nodes in the cluster is designated the NAT Gateway
-      through which all traffic that is originated in the cluster will be
-      routed through if the public addresses are not available. 
-    </p></div><div class="refsect2" lang="en"><a name="id2529514"></a><h3>Configuration</h3><p>
-      NAT-GW is configured in /etc/sysconfig/ctdb by setting the following
+      There can be multiple NATGW groups in one cluster but each node can only
+      be member of one NATGW group.
+    </p><p>
+      In each NATGW group, one of the nodes is designated the NAT Gateway
+      through which all traffic that is originated by nodes in this group
+      will be routed through if a public addresses are not available. 
+    </p></div><div class="refsect2" lang="en"><a name="id2529523"></a><h3>Configuration</h3><p>
+      NAT-GW is configured in /etc/sysconfigctdb by setting the following
       variables:
     </p><pre class="screen">
 # NAT-GW configuration
@@ -478,39 +483,47 @@ CTDB_CAPABILITY_RECMASTER=no
 # and thus no proper routes to the external world it will instead
 # route all packets through the nat-gw node.
 #
+# NATGW_NODES is the list of nodes that belong to this natgw group.
+# You can have multiple natgw groups in one cluster but each node
+# can only belong to one single natgw group.
+#
 # NATGW_PUBLIC_IP=10.0.0.227/24
 # NATGW_PUBLIC_IFACE=eth0
 # NATGW_DEFAULT_GATEWAY=10.0.0.1
 # NATGW_PRIVATE_IFACE=eth1
 # NATGW_PRIVATE_NETWORK=10.1.1.0/24
-    </pre></div><div class="refsect2" lang="en"><a name="id2529555"></a><h3>NATGW_PUBLIC_IP</h3><p>
+# NATGW_NODES=/etc/ctdb/natgw_nodes
+    </pre></div><div class="refsect2" lang="en"><a name="id2476123"></a><h3>NATGW_PUBLIC_IP</h3><p>
       This is an ip address in the public network that is used for all outgoing
       traffic when the public addresses are not assigned.
       This address will be assigned to one of the nodes in the cluster which
       will masquerade all traffic for the other nodes.
     </p><p>
       Format of this parameter is IPADDRESS/NETMASK
-    </p></div><div class="refsect2" lang="en"><a name="id2476128"></a><h3>NATGW_PUBLIC_IFACE</h3><p>
+    </p></div><div class="refsect2" lang="en"><a name="id2476141"></a><h3>NATGW_PUBLIC_IFACE</h3><p>
       This is the physical interface where the NATGW_PUBLIC_IP will be
       assigned to. This should be an interface connected to the public network.
     </p><p>
       Format of this parameter is INTERFACE
-    </p></div><div class="refsect2" lang="en"><a name="id2476144"></a><h3>NATGW_DEFAULT_GATEWAY</h3><p>
+    </p></div><div class="refsect2" lang="en"><a name="id2476157"></a><h3>NATGW_DEFAULT_GATEWAY</h3><p>
       This is the default gateway to use on the node that is elected to host
       the NATGW_PUBLIC_IP. This is the default gateway on the public network.
     </p><p>
       Format of this parameter is IPADDRESS
-    </p></div><div class="refsect2" lang="en"><a name="id2476160"></a><h3>NATGW_PRIVATE_IFACE</h3><p>
+    </p></div><div class="refsect2" lang="en"><a name="id2476172"></a><h3>NATGW_PRIVATE_IFACE</h3><p>
       This is the interface used for the interal private network.
     </p><p>
       Format of this parameter is INTERFACE
-    </p></div><div class="refsect2" lang="en"><a name="id2476174"></a><h3>NATGW_PRIVATE_NETWORK</h3><p>
+    </p></div><div class="refsect2" lang="en"><a name="id2476187"></a><h3>NATGW_PRIVATE_NETWORK</h3><p>
       This is the network/netmask used for the interal private network.
     </p><p>
       Format of this parameter is IPADDRESS/NETMASK
-    </p></div><div class="refsect2" lang="en"><a name="id2476188"></a><h3>Operation</h3><p>
+    </p></div><div class="refsect2" lang="en"><a name="id2476201"></a><h3>NATGW_NODES</h3><p>
+      This is the list of all nodes that belong to the same NATGW group
+      as this node. The default is /etc/ctdb/natgw_nodes.
+    </p></div><div class="refsect2" lang="en"><a name="id2476212"></a><h3>Operation</h3><p>
       When the NAT-GW fiunctionality is used, one of the nodes is elected
-      to act as a NAT router for all the other nodes in the cluster when
+      to act as a NAT router for all the other nodes in the group when
       they need to originate traffic to the external public network.
     </p><p>
       The NAT-GW node is assigned the NATGW_PUBLIC_IP to the designated
@@ -518,15 +531,15 @@ CTDB_CAPABILITY_RECMASTER=no
       to act as a router and to masquerade all traffic it receives from the
       internal private network and which is destined to the external network(s).
     </p><p>
-      All other nodes are configured with a default route of metric 10 pointing
-      to the designated NAT GW node.
+      All other nodes in the group are configured with a default route of
+      metric 10 pointing to the designated NAT GW node.
     </p><p>
       This is implemented in the 11.natgw eventscript. Please see the
       eventscript for further information.
-    </p></div></div><div class="refsect1" lang="en"><a name="id2476221"></a><h2>SEE ALSO</h2><p>
+    </p></div></div><div class="refsect1" lang="en"><a name="id2476245"></a><h2>SEE ALSO</h2><p>
       ctdb(1), onnode(1)
       <a class="ulink" href="http://ctdb.samba.org/" target="_top">http://ctdb.samba.org/</a>
-    </p></div><div class="refsect1" lang="en"><a name="id2476234"></a><h2>COPYRIGHT/LICENSE</h2><div class="literallayout"><p><br>
+    </p></div><div class="refsect1" lang="en"><a name="id2476258"></a><h2>COPYRIGHT/LICENSE</h2><div class="literallayout"><p><br>
 Copyright (C) Andrew Tridgell 2007<br>
 Copyright (C) Ronnie sahlberg 2007<br>
 <br>

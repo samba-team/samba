@@ -1,11 +1,11 @@
 .\"     Title: ctdbd
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
-.\"      Date: 03/19/2009
+.\"      Date: 03/25/2009
 .\"    Manual: 
 .\"    Source: 
 .\"
-.TH "CTDBD" "1" "03/19/2009" "" ""
+.TH "CTDBD" "1" "03/25/2009" "" ""
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -427,12 +427,14 @@ If then the service status of CTDB depends on such services being able to always
 There are two ways to solve this problem\. The first is by assigning a static ip address for one public interface on every node which will allow every node to be able to route traffic to the public network even if there are no public addresses assigned to the node\. This is the simplest way but it uses up a lot of ip addresses since you have to assign both static and also public addresses to each node\.
 .SS "NAT\-GW"
 .PP
-A second way is to use the built in NAT\-GW feature in CTDB\. With NAT\-GW only one extra address is required for the entire cluster instead of one address per node\. This extra address is dedicated to traffic that originates from the cluster and is destined for the external network\.
+A second way is to use the built in NAT\-GW feature in CTDB\. With NAT\-GW you assign one public NATGW address for each natgw group\. Each NATGW group is a set of nodes in the cluster that shares the same NATGW address to talk to the outside world\. Normally there would only be one NATGW group spanning the entire cluster, but in situations where one ctdb cluster spans multiple physical sites it is useful to have one NATGW group for each of the two sites\.
 .PP
-In NAT\-GW one of the nodes in the cluster is designated the NAT Gateway through which all traffic that is originated in the cluster will be routed through if the public addresses are not available\.
+There can be multiple NATGW groups in one cluster but each node can only be member of one NATGW group\.
+.PP
+In each NATGW group, one of the nodes is designated the NAT Gateway through which all traffic that is originated by nodes in this group will be routed through if a public addresses are not available\.
 .SS "Configuration"
 .PP
-NAT\-GW is configured in /etc/sysconfig/ctdb by setting the following variables:
+NAT\-GW is configured in /etc/sysconfigctdb by setting the following variables:
 .sp
 .RS 4
 .nf
@@ -462,11 +464,16 @@ NAT\-GW is configured in /etc/sysconfig/ctdb by setting the following variables:
 # and thus no proper routes to the external world it will instead
 # route all packets through the nat\-gw node\.
 #
+# NATGW_NODES is the list of nodes that belong to this natgw group\.
+# You can have multiple natgw groups in one cluster but each node
+# can only belong to one single natgw group\.
+#
 # NATGW_PUBLIC_IP=10\.0\.0\.227/24
 # NATGW_PUBLIC_IFACE=eth0
 # NATGW_DEFAULT_GATEWAY=10\.0\.0\.1
 # NATGW_PRIVATE_IFACE=eth1
 # NATGW_PRIVATE_NETWORK=10\.1\.1\.0/24
+# NATGW_NODES=/etc/ctdb/natgw_nodes
     
 .fi
 .RE
@@ -495,13 +502,16 @@ Format of this parameter is INTERFACE
 This is the network/netmask used for the interal private network\.
 .PP
 Format of this parameter is IPADDRESS/NETMASK
+.SS "NATGW_NODES"
+.PP
+This is the list of all nodes that belong to the same NATGW group as this node\. The default is /etc/ctdb/natgw_nodes\.
 .SS "Operation"
 .PP
-When the NAT\-GW fiunctionality is used, one of the nodes is elected to act as a NAT router for all the other nodes in the cluster when they need to originate traffic to the external public network\.
+When the NAT\-GW fiunctionality is used, one of the nodes is elected to act as a NAT router for all the other nodes in the group when they need to originate traffic to the external public network\.
 .PP
 The NAT\-GW node is assigned the NATGW_PUBLIC_IP to the designated interface and the provided default route\. The NAT\-GW is configured to act as a router and to masquerade all traffic it receives from the internal private network and which is destined to the external network(s)\.
 .PP
-All other nodes are configured with a default route of metric 10 pointing to the designated NAT GW node\.
+All other nodes in the group are configured with a default route of metric 10 pointing to the designated NAT GW node\.
 .PP
 This is implemented in the 11\.natgw eventscript\. Please see the eventscript for further information\.
 .SH "SEE ALSO"
