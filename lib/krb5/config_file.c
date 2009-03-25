@@ -302,21 +302,64 @@ krb5_config_parse_string_multi(krb5_context context,
     return 0;
 }
 
+/**
+ * Parse a configuration file and add the result into res. This
+ * interface can be used to parse several configuration files into one
+ * resulting krb5_config_section by calling it repeatably.
+ *
+ * @param context a Kerberos 5 context.
+ * @param fname a file name to a Kerberos configuration file
+ * @param res the returned result, must be free with krb5_free_config_files().
+ * @return Return an error code or 0, see krb5_get_error_message().
+ *
+ * @ingroup krb5_support
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_config_parse_file_multi (krb5_context context,
 			      const char *fname,
 			      krb5_config_section **res)
 {
     const char *str;
+    char *newfname = NULL;
     unsigned lineno = 0;
     krb5_error_code ret;
     struct fileptr f;
+
+    /**
+     * If the fname starts with "~/" parse configuration file in the
+     * current users home directory. The behavior can be disabled and
+     * enabled by calling krb5_set_home_dir_access().
+     */
+    if (_krb5_homedir_access(context) && fname[0] == '~' && fname[1] == '/') {
+	const char *home = NULL;
+
+	if(!issuid())
+	    home = getenv("HOME");
+
+	if (home == NULL) {
+	    struct passwd *pw = getpwuid(getuid());	
+	    if(pw != NULL)
+		home = pw->pw_dir;
+	}
+	if (home) {
+	    asprintf(&newfname, "%s%s", &fname[1]);
+	    if (newfname == NULL) {
+		krb5_set_error_message(context, ret,
+				       N_("malloc: out of memory", ""));
+		return ENOMEM;
+	    }
+	}
+    }
+
     f.f = fopen(fname, "r");
     f.s = NULL;
     if(f.f == NULL) {
 	ret = errno;
 	krb5_set_error_message (context, ret, "open %s: %s",
 				fname, strerror(ret));
+	if (newfname)
+	    free(newfname);
 	return ret;
     }
 
@@ -324,8 +367,12 @@ krb5_config_parse_file_multi (krb5_context context,
     fclose(f.f);
     if (ret) {
 	krb5_set_error_message (context, ret, "%s:%u: %s", fname, lineno, str);
+	if (newfname)
+	    free(newfname);
 	return ret;
     }
+    if (newfname)
+	free(newfname);
     return 0;
 }
 
