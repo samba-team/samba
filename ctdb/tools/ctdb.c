@@ -369,6 +369,80 @@ static int control_pnn(struct ctdb_context *ctdb, int argc, const char **argv)
 	return 0;
 }
 
+
+struct pnn_node {
+	struct pnn_node *next;
+	const char *addr;
+	int pnn;
+};
+
+/*
+  show the PNN of the current node
+  discover the pnn by loading the nodes file and try to bind to all
+  addresses one at a time until the ip address is found.
+ */
+static int control_xpnn(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	const char *nodes_list;
+	int nlines;
+	char **lines;
+	struct pnn_node *pnn_nodes = NULL;
+	struct pnn_node *pnn_node;
+	int i, pnn;
+
+	/* read the nodes file */
+	nodes_list = getenv("CTDB_NODES");
+	if (nodes_list == NULL) {
+		nodes_list = "/etc/ctdb/nodes";
+	}
+	lines = file_lines_load(nodes_list, &nlines, mem_ctx);
+	if (lines == NULL) {
+		ctdb_set_error(ctdb, "Failed to load nodes list '%s'\n", nodes_list);
+		return -1;
+	}
+	while (nlines > 0 && strcmp(lines[nlines-1], "") == 0) {
+		nlines--;
+	}
+	for (i=0, pnn=0; i<nlines; i++) {
+		char *node;
+
+		node = lines[i];
+		/* strip leading spaces */
+		while((*node == ' ') || (*node == '\t')) {
+			node++;
+		}
+		if (*node == '#') {
+			continue;
+		}
+		if (strcmp(node, "") == 0) {
+			continue;
+		}
+		pnn_node = talloc(mem_ctx, struct pnn_node);
+		pnn_node->pnn = pnn++;
+		pnn_node->addr = talloc_strdup(pnn_node, node);
+		pnn_node->next = pnn_nodes;
+		pnn_nodes = pnn_node;
+	}
+
+	for(pnn_node=pnn_nodes;pnn_node;pnn_node=pnn_node->next) {
+		ctdb_sock_addr addr;
+
+		if (parse_ip(pnn_node->addr, NULL, 63999, &addr) == 0) {
+			DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s' in nodes file %s\n", pnn_node->addr, nodes_list));
+			return -1;
+		}
+
+		if (ctdb_sys_have_ip(&addr)) {
+			printf("PNN:%d\n", pnn_node->pnn);
+			return 0;
+		}
+	}
+
+	printf("Failed to detect which PNN this node is\n");
+	return -1;
+}
+
 /*
   display remote ctdb status
  */
@@ -2729,69 +2803,71 @@ static const struct {
 	const char *name;
 	int (*fn)(struct ctdb_context *, int, const char **);
 	bool auto_all;
+	bool without_daemon; /* can be run without daemon running ? */
 	const char *msg;
 	const char *args;
 } ctdb_commands[] = {
 #ifdef CTDB_VERS
-	{ "version",         control_version,           true,  "show version of ctdb" },
+	{ "version",         control_version,           true,	false,  "show version of ctdb" },
 #endif
-	{ "status",          control_status,            true,  "show node status" },
-	{ "uptime",          control_uptime,            true,  "show node uptime" },
-	{ "ping",            control_ping,              true,  "ping all nodes" },
-	{ "getvar",          control_getvar,            true,  "get a tunable variable",               "<name>"},
-	{ "setvar",          control_setvar,            true,  "set a tunable variable",               "<name> <value>"},
-	{ "listvars",        control_listvars,          true,  "list tunable variables"},
-	{ "statistics",      control_statistics,        false, "show statistics" },
-	{ "statisticsreset", control_statistics_reset,  true,  "reset statistics"},
-	{ "ip",              control_ip,                false,  "show which public ip's that ctdb manages" },
-	{ "process-exists",  control_process_exists,    true,  "check if a process exists on a node",  "<pid>"},
-	{ "getdbmap",        control_getdbmap,          true,  "show the database map" },
-	{ "catdb",           control_catdb,             true,  "dump a database" ,                     "<dbname>"},
-	{ "getmonmode",      control_getmonmode,        true,  "show monitoring mode" },
-	{ "getcapabilities", control_getcapabilities,   true,  "show node capabilities" },
-	{ "pnn",             control_pnn,               true,  "show the pnn of the currnet node" },
-	{ "lvs",             control_lvs,               true,  "show lvs configuration" },
-	{ "lvsmaster",       control_lvsmaster,         true,  "show which node is the lvs master" },
-	{ "disablemonitor",      control_disable_monmode,        true,  "set monitoring mode to DISABLE" },
-	{ "enablemonitor",      control_enable_monmode,        true,  "set monitoring mode to ACTIVE" },
-	{ "setdebug",        control_setdebug,          true,  "set debug level",                      "<EMERG|ALERT|CRIT|ERR|WARNING|NOTICE|INFO|DEBUG>" },
-	{ "getdebug",        control_getdebug,          true,  "get debug level" },
-	{ "attach",          control_attach,            true,  "attach to a database",                 "<dbname>" },
-	{ "dumpmemory",      control_dumpmemory,        true,  "dump memory map to stdout" },
-	{ "rddumpmemory",    control_rddumpmemory,      true,  "dump memory map from the recovery daemon to stdout" },
-	{ "getpid",          control_getpid,            true,  "get ctdbd process ID" },
-	{ "disable",         control_disable,           true,  "disable a nodes public IP" },
-	{ "enable",          control_enable,            true,  "enable a nodes public IP" },
-	{ "ban",             control_ban,               true,  "ban a node from the cluster",          "<bantime|0>"},
-	{ "unban",           control_unban,             true,  "unban a node from the cluster" },
-	{ "shutdown",        control_shutdown,          true,  "shutdown ctdbd" },
-	{ "recover",         control_recover,           true,  "force recovery" },
-	{ "freeze",          control_freeze,            true,  "freeze all databases" },
-	{ "thaw",            control_thaw,              true,  "thaw all databases" },
-	{ "isnotrecmaster",  control_isnotrecmaster,    false,  "check if the local node is recmaster or not" },
-	{ "killtcp",         kill_tcp,                  false, "kill a tcp connection.", "<srcip:port> <dstip:port>" },
-	{ "gratiousarp",     control_gratious_arp,      false, "send a gratious arp", "<ip> <interface>" },
-	{ "tickle",          tickle_tcp,                false, "send a tcp tickle ack", "<srcip:port> <dstip:port>" },
-	{ "gettickles",      control_get_tickles,       false, "get the list of tickles registered for this ip", "<ip>" },
+	{ "status",          control_status,            true,	false,  "show node status" },
+	{ "uptime",          control_uptime,            true,	false,  "show node uptime" },
+	{ "ping",            control_ping,              true,	false,  "ping all nodes" },
+	{ "getvar",          control_getvar,            true,	false,  "get a tunable variable",               "<name>"},
+	{ "setvar",          control_setvar,            true,	false,  "set a tunable variable",               "<name> <value>"},
+	{ "listvars",        control_listvars,          true,	false,  "list tunable variables"},
+	{ "statistics",      control_statistics,        false,	false, "show statistics" },
+	{ "statisticsreset", control_statistics_reset,  true,	false,  "reset statistics"},
+	{ "ip",              control_ip,                false,	false,  "show which public ip's that ctdb manages" },
+	{ "process-exists",  control_process_exists,    true,	false,  "check if a process exists on a node",  "<pid>"},
+	{ "getdbmap",        control_getdbmap,          true,	false,  "show the database map" },
+	{ "catdb",           control_catdb,             true,	false,  "dump a database" ,                     "<dbname>"},
+	{ "getmonmode",      control_getmonmode,        true,	false,  "show monitoring mode" },
+	{ "getcapabilities", control_getcapabilities,   true,	false,  "show node capabilities" },
+	{ "pnn",             control_pnn,               true,	false,  "show the pnn of the currnet node" },
+	{ "lvs",             control_lvs,               true,	false,  "show lvs configuration" },
+	{ "lvsmaster",       control_lvsmaster,         true,	false,  "show which node is the lvs master" },
+	{ "disablemonitor",      control_disable_monmode,        true,	false,  "set monitoring mode to DISABLE" },
+	{ "enablemonitor",      control_enable_monmode,        true,	false,  "set monitoring mode to ACTIVE" },
+	{ "setdebug",        control_setdebug,          true,	false,  "set debug level",                      "<EMERG|ALERT|CRIT|ERR|WARNING|NOTICE|INFO|DEBUG>" },
+	{ "getdebug",        control_getdebug,          true,	false,  "get debug level" },
+	{ "attach",          control_attach,            true,	false,  "attach to a database",                 "<dbname>" },
+	{ "dumpmemory",      control_dumpmemory,        true,	false,  "dump memory map to stdout" },
+	{ "rddumpmemory",    control_rddumpmemory,      true,	false,  "dump memory map from the recovery daemon to stdout" },
+	{ "getpid",          control_getpid,            true,	false,  "get ctdbd process ID" },
+	{ "disable",         control_disable,           true,	false,  "disable a nodes public IP" },
+	{ "enable",          control_enable,            true,	false,  "enable a nodes public IP" },
+	{ "ban",             control_ban,               true,	false,  "ban a node from the cluster",          "<bantime|0>"},
+	{ "unban",           control_unban,             true,	false,  "unban a node from the cluster" },
+	{ "shutdown",        control_shutdown,          true,	false,  "shutdown ctdbd" },
+	{ "recover",         control_recover,           true,	false,  "force recovery" },
+	{ "freeze",          control_freeze,            true,	false,  "freeze all databases" },
+	{ "thaw",            control_thaw,              true,	false,  "thaw all databases" },
+	{ "isnotrecmaster",  control_isnotrecmaster,    false,	false,  "check if the local node is recmaster or not" },
+	{ "killtcp",         kill_tcp,                  false,	false, "kill a tcp connection.", "<srcip:port> <dstip:port>" },
+	{ "gratiousarp",     control_gratious_arp,      false,	false, "send a gratious arp", "<ip> <interface>" },
+	{ "tickle",          tickle_tcp,                false,	false, "send a tcp tickle ack", "<srcip:port> <dstip:port>" },
+	{ "gettickles",      control_get_tickles,       false,	false, "get the list of tickles registered for this ip", "<ip>" },
 
-	{ "regsrvid",        regsrvid,			false, "register a server id", "<pnn> <type> <id>" },
-	{ "unregsrvid",      unregsrvid,		false, "unregister a server id", "<pnn> <type> <id>" },
-	{ "chksrvid",        chksrvid,			false, "check if a server id exists", "<pnn> <type> <id>" },
-	{ "getsrvids",       getsrvids,			false, "get a list of all server ids"},
-	{ "vacuum",          ctdb_vacuum,		false, "vacuum the databases of empty records", "[max_records]"},
-	{ "repack",          ctdb_repack,		false, "repack all databases", "[max_freelist]"},
-	{ "listnodes",       control_listnodes,		false, "list all nodes in the cluster"},
-	{ "reloadnodes",     control_reload_nodes_file,		false, "reload the nodes file and restart the transport on all nodes"},
-	{ "moveip",          control_moveip,		false, "move/failover an ip address to another node", "<ip> <node>"},
-	{ "addip",           control_addip,		true, "add a ip address to a node", "<ip/mask> <iface>"},
-	{ "delip",           control_delip,		false, "delete an ip address from a node", "<ip>"},
-	{ "eventscript",     control_eventscript,	true, "run the eventscript with the given parameters on a node", "<arguments>"},
-	{ "backupdb",        control_backupdb,          false, "backup the database into a file.", "<database> <file>"},
-	{ "restoredb",        control_restoredb,          false, "restore the database from a file.", "<file>"},
-	{ "recmaster",        control_recmaster,          false, "show the pnn for the recovery master."},
-	{ "setflags",        control_setflags,            false, "set flags for a node in the nodemap.", "<node> <flags>"},
-	{ "scriptstatus",        control_scriptstatus,    false, "show the status of the monitoring scripts"},
-	{ "natgwlist",        control_natgwlist,    false, "show the nodes belonging to this natgw configuration"},
+	{ "regsrvid",        regsrvid,			false,	false, "register a server id", "<pnn> <type> <id>" },
+	{ "unregsrvid",      unregsrvid,		false,	false, "unregister a server id", "<pnn> <type> <id>" },
+	{ "chksrvid",        chksrvid,			false,	false, "check if a server id exists", "<pnn> <type> <id>" },
+	{ "getsrvids",       getsrvids,			false,	false, "get a list of all server ids"},
+	{ "vacuum",          ctdb_vacuum,		false,	false, "vacuum the databases of empty records", "[max_records]"},
+	{ "repack",          ctdb_repack,		false,	false, "repack all databases", "[max_freelist]"},
+	{ "listnodes",       control_listnodes,		false,	false, "list all nodes in the cluster"},
+	{ "reloadnodes",     control_reload_nodes_file,		false,	false, "reload the nodes file and restart the transport on all nodes"},
+	{ "moveip",          control_moveip,		false,	false, "move/failover an ip address to another node", "<ip> <node>"},
+	{ "addip",           control_addip,		true,	false, "add a ip address to a node", "<ip/mask> <iface>"},
+	{ "delip",           control_delip,		false,	false, "delete an ip address from a node", "<ip>"},
+	{ "eventscript",     control_eventscript,	true,	false, "run the eventscript with the given parameters on a node", "<arguments>"},
+	{ "backupdb",        control_backupdb,          false,	false, "backup the database into a file.", "<database> <file>"},
+	{ "restoredb",        control_restoredb,          false,	false, "restore the database from a file.", "<file>"},
+	{ "recmaster",        control_recmaster,          false,	false, "show the pnn for the recovery master."},
+	{ "setflags",        control_setflags,            false,	false, "set flags for a node in the nodemap.", "<node> <flags>"},
+	{ "scriptstatus",        control_scriptstatus,    false,	false, "show the status of the monitoring scripts"},
+	{ "natgwlist",        control_natgwlist,    false,	false, "show the nodes belonging to this natgw configuration"},
+	{ "xpnn",             control_xpnn,               true,	true,  "find the pnn of the local node without talking to the daemon (unreliable)" },
 };
 
 /*
@@ -2901,27 +2977,29 @@ int main(int argc, const char *argv[])
 
 	ev = event_context_init(NULL);
 
-	/* initialise ctdb */
-	ctdb = ctdb_cmdline_client(ev);
-	if (ctdb == NULL) {
-		DEBUG(DEBUG_ERR, ("Failed to init ctdb\n"));
-		exit(1);
-	}
-
-	/* verify the node exists */
-	verify_node(ctdb);
-
 	for (i=0;i<ARRAY_SIZE(ctdb_commands);i++) {
 		if (strcmp(control, ctdb_commands[i].name) == 0) {
 			int j;
 
-			if (options.pnn == CTDB_CURRENT_NODE) {
-				int pnn;
-				pnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), options.pnn);		
-				if (pnn == -1) {
-					return -1;
+			if (ctdb_commands[i].without_daemon == false) {
+				/* initialise ctdb */
+				ctdb = ctdb_cmdline_client(ev);
+				if (ctdb == NULL) {
+					DEBUG(DEBUG_ERR, ("Failed to init ctdb\n"));
+					exit(1);
 				}
-				options.pnn = pnn;
+
+				/* verify the node exists */
+				verify_node(ctdb);
+
+				if (options.pnn == CTDB_CURRENT_NODE) {
+					int pnn;
+					pnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), options.pnn);		
+					if (pnn == -1) {
+						return -1;
+					}
+					options.pnn = pnn;
+				}
 			}
 
 			if (ctdb_commands[i].auto_all && 
