@@ -62,6 +62,7 @@ char *renew_life	= NULL;
 char *server_str	= NULL;
 char *cred_cache	= NULL;
 char *start_str		= NULL;
+static int switch_cache_flags = 1;
 struct getarg_strings etype_str;
 int use_keytab		= 0;
 char *keytab_str	= NULL;
@@ -186,6 +187,9 @@ static struct getargs args[] = {
     { "ntlm-domain",	0,  arg_string, &ntlm_domain,
       NP_("NTLM domain", ""), "domain" },
 #endif
+
+    { "change-default",  0,  arg_negative_flag, &switch_cache_flags,
+      NP_("switch the default cache to the new credentials cache", "") },
 
     { "ok-as-delegate",	0,  arg_flag, &ok_as_delegate_flag,
       NP_("honor ok-as-delegate on tickets", "") },
@@ -641,6 +645,9 @@ get_new_tickets(krb5_context context,
     ret = krb5_cc_move(context, tempccache, ccache);
     if (ret)
 	krb5_err (context, 1, ret, "krb5_cc_move");
+
+    if (switch_cache_flags)
+	krb5_cc_switch(context, ccache);
 
 #ifndef NO_NTLM
     if (ntlm_domain && ntlmkey.data)
