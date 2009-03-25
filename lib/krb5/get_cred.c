@@ -1218,6 +1218,10 @@ krb5_get_creds_opt_free(krb5_context context, krb5_get_creds_opt opt)
 {
     if (opt->self)
 	krb5_free_principal(context, opt->self);
+    if (opt->ticket) {
+	free_Ticket(opt->ticket);
+	free(opt->ticket);
+    }
     memset(opt, 0, sizeof(*opt));
     free(opt);
 }
