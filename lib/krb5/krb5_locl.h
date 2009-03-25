@@ -262,6 +262,7 @@ typedef struct krb5_context_data {
     int flags;
 #define KRB5_CTX_F_DNS_CANONICALIZE_HOSTNAME	1
 #define KRB5_CTX_F_CHECK_PAC			2
+#define KRB5_CTX_F_HOMEDIR_ACCESS		4
     struct send_to_kdc *send_to_kdc;
 } krb5_context_data;
 
