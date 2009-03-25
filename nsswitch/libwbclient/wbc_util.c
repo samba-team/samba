@@ -214,6 +214,105 @@ wbcErr wbcInterfaceVersion_recv(struct tevent_req *req,
 	return WBC_ERR_SUCCESS;
 }
 
+struct wbc_info_state {
+	struct winbindd_request req;
+	char separator;
+	char *version_string;
+};
+
+static void wbcInfo_done(struct tevent_req *subreq);
+
+/**
+ * @brief Request information about the winbind service
+ *
+ * @param mem_ctx	talloc context to allocate memory from
+ * @param ev		tevent context to use for async requests
+ * @param wb_ctx	winbind context
+ *
+ * @return tevent_req on success, NULL on failure
+ */
+
+struct tevent_req *wbcInfo_send(TALLOC_CTX *mem_ctx,
+				struct tevent_context *ev,
+				struct wb_context *wb_ctx)
+{
+	struct tevent_req *req, *subreq;
+	struct wbc_info_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct wbc_info_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	ZERO_STRUCT(state->req);
+	state->req.cmd = WINBINDD_INFO;
+
+	subreq = wb_trans_send(state, ev, wb_ctx, false, &state->req);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_set_callback(subreq, wbcInfo_done, req);
+	return req;
+}
+
+static void wbcInfo_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+			subreq, struct tevent_req);
+	struct wbc_info_state *state = tevent_req_data(
+			req, struct wbc_info_state);
+	struct winbindd_response *resp;
+	wbcErr wbc_status;
+
+	wbc_status = wb_trans_recv(subreq, state, &resp);
+	TALLOC_FREE(subreq);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		tevent_req_error(req, wbc_status);
+		return;
+	}
+	state->version_string = talloc_strdup(state,
+					resp->data.info.samba_version);
+	if (tevent_req_nomem(state->version_string, subreq)) {
+		return;
+	}
+	state->separator = resp->data.info.winbind_separator;
+	TALLOC_FREE(resp);
+
+	tevent_req_done(req);
+}
+
+/**
+ * @brief Receive information about the running winbind service
+ *
+ * @param req			tevent_req containing the request
+ * @param mem_ctx		talloc context to allocate memory from
+ * @param winbind_separator	pointer to a char to hold the separator
+ * @param version_string	pointer to a string to hold the version string
+ *
+ * @return #wbcErr
+ */
+
+wbcErr wbcInfo_recv(struct tevent_req *req,
+		    TALLOC_CTX *mem_ctx,
+		    char *winbind_separator,
+		    char **version_string)
+{
+	struct wbc_info_state *state = tevent_req_data(
+			req, struct wbc_info_state);
+	wbcErr wbc_status;
+
+	if (tevent_req_is_wbcerr(req, &wbc_status)) {
+		tevent_req_received(req);
+		return wbc_status;
+	}
+
+	*winbind_separator = state->separator;
+	*version_string = talloc_steal(mem_ctx, state->version_string);
+
+	tevent_req_received(req);
+	return WBC_ERR_SUCCESS;
+}
 
 wbcErr wbcInterfaceDetails(struct wbcInterfaceDetails **_details)
 {
