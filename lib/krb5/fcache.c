@@ -770,7 +770,13 @@ fcc_remove_cred(krb5_context context,
 	return ret;
     }
 
-    return krb5_cc_move(context, newfile, id);
+    ret = krb5_cc_move(context, newfile, id);
+    if (ret) {
+	krb5_cc_destroy(context, newfile);
+	return ret;
+    }
+    
+    return ret;
 }
 
 static krb5_error_code
@@ -914,7 +920,8 @@ fcc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
 	krb5_storage *sp;
 	int fd;
 	ret = init_fcc (context, to, &sp, &fd);
-	krb5_storage_free(sp);
+	if (sp)
+	    krb5_storage_free(sp);
 	fcc_unlock(context, fd);
 	close(fd);
     }
