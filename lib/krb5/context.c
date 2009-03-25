@@ -1263,3 +1263,65 @@ cleanup:
 	free (tmp);
     return ret;
 }
+
+/*
+ * Allow homedir accces
+ */
+
+static HEIMDAL_MUTEX homedir_mutex = HEIMDAL_MUTEX_INITIALIZER;
+static krb5_boolean allow_homedir = TRUE;
+
+krb5_boolean
+_krb5_homedir_access(krb5_context context)
+{
+    krb5_boolean allow;
+
+    /* is never allowed for root */
+    if (geteuid() == 0)
+	return FALSE;
+
+    if (context && (context->flags & KRB5_CTX_F_HOMEDIR_ACCESS) == 0)
+	return FALSE;
+
+    HEIMDAL_MUTEX_lock(&homedir_mutex);
+    allow = allow_homedir;
+    HEIMDAL_MUTEX_lock(&homedir_mutex);
+    return allow;
+}
+
+/**
+ * Enable and disable home directory access on either the global state
+ * or the krb5_context state. By calling krb5_set_home_dir_access()
+ * with context set to NULL, the global state is configured otherwise
+ * the state for the krb5_context is modified.
+ *
+ * For home directory access to be allowed, both the global state and
+ * the krb5_context state have to be allowed.
+ *
+ * Administrator (root user), never uses the home directory.
+ *
+ * @param context a Kerberos 5 context or NULL
+ * @param allow allow if TRUE home directory
+ * @return the old value
+ *
+ */
+
+krb5_boolean
+krb5_set_home_dir_access(krb5_context context, krb5_boolean allow)
+{
+    krb5_boolean old;
+    if (context) {
+	old = (context->flags & KRB5_CTX_F_HOMEDIR_ACCESS) ? TRUE : FALSE;
+	if (allow)
+	    context->flags |= KRB5_CTX_F_HOMEDIR_ACCESS;
+	else
+	    context->flags &= ~KRB5_CTX_F_HOMEDIR_ACCESS;
+    } else {
+	HEIMDAL_MUTEX_lock(&homedir_mutex);
+	old = allow_homedir;
+	allow_homedir = allow;
+	HEIMDAL_MUTEX_lock(&homedir_mutex);
+    }
+
+    return old;
+}
