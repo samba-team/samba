@@ -422,9 +422,6 @@ static NTSTATUS libnet_samsync_delta(TALLOC_CTX *mem_ctx,
 
 		TALLOC_FREE(delta_enum_array);
 
-		/* Increment sync_context */
-		sync_context += 1;
-
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
  out:
