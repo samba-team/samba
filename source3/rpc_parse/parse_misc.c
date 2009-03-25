@@ -101,44 +101,6 @@ bool make_systemtime(SYSTEMTIME *systime, struct tm *unixtime)
 }
 
 /*******************************************************************
- Reads or writes a DOM_SID structure.
-********************************************************************/
-
-bool smb_io_dom_sid(const char *desc, DOM_SID *sid, prs_struct *ps, int depth)
-{
-	int i;
-
-	if (sid == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "smb_io_dom_sid");
-	depth++;
-
-	if(!prs_uint8 ("sid_rev_num", ps, depth, &sid->sid_rev_num))
-		return False;
-
-	if(!prs_uint8 ("num_auths  ", ps, depth, (uint8 *)&sid->num_auths))
-		return False;
-
-	for (i = 0; i < 6; i++)
-	{
-		fstring tmp;
-		slprintf(tmp, sizeof(tmp) - 1, "id_auth[%d] ", i);
-		if(!prs_uint8 (tmp, ps, depth, &sid->id_auth[i]))
-			return False;
-	}
-
-	/* oops! XXXX should really issue a warning here... */
-	if (sid->num_auths > MAXSUBAUTHS)
-		sid->num_auths = MAXSUBAUTHS;
-
-	if(!prs_uint32s(False, "sub_auths ", ps, depth, sid->sub_auths, sid->num_auths))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
  Reads or writes a struct GUID
 ********************************************************************/
 
