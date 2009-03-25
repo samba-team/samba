@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.75
+Version: 1.0.76
 Release: 1
 Epoch: 0
 License: GNU GPL version 3
@@ -128,6 +128,9 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Wed Mar 24 2009 : Version 1.0.76
+ - Add a debugging command "xpnn" which can print the pnn of the node even when ctdbd is not running.
+ - Redo the NATGW implementation to allow multiple disjoing NATGW groups in the same cluster.
 * Tue Mar 24 2009 : Version 1.0.75
  - Various updates to LVS
  - Fix a bug in the killtcp control where we did not set the port correctly
