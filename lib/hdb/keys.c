@@ -218,7 +218,7 @@ add_enctype_to_key_set(Key **key_set, size_t *nkeyset,
     key.key.keyvalue.data = NULL;
 
     if (salt) {
-	key.salt = malloc(sizeof(*key.salt));
+	key.salt = calloc(1, sizeof(*key.salt));
 	if (key.salt == NULL) {
 	    free_Key(&key);
 	    return ENOMEM;
