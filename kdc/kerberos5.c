@@ -1465,11 +1465,12 @@ _kdc_as_rep(krb5_context context,
 	goto out;
     }
 
-    ret = krb5_generate_random_keyblock(context, sessionetype, &et.key);
+    ret = copy_PrincipalName(&rep.cname, &et.cname);
     if (ret)
 	goto out;
-    copy_PrincipalName(&rep.cname, &et.cname);
-    copy_Realm(&rep.crealm, &et.crealm);
+    ret = copy_Realm(&rep.crealm, &et.crealm);
+    if (ret)
+	goto out;
 
     {
 	time_t start;
@@ -1532,8 +1533,6 @@ _kdc_as_rep(krb5_context context,
 
     et.transited.tr_type = DOMAIN_X500_COMPRESS;
     krb5_data_zero(&et.transited.contents);
-
-    copy_EncryptionKey(&et.key, &ek.key);
 
     /* The MIT ASN.1 library (obviously) doesn't tell lengths encoded
      * as 0 and as 0x80 (meaning indefinite length) apart, and is thus
@@ -1607,8 +1606,8 @@ _kdc_as_rep(krb5_context context,
     if (pkp) {
         e_text = "Failed to build PK-INIT reply";
 	ret = _kdc_pk_mk_pa_reply(context, config, pkp, client,
-				  req, req_buffer,
-				  &reply_key, rep.padata);
+				  sessionetype, req, req_buffer,
+				  &reply_key, &et.key, rep.padata);
 	if (ret)
 	    goto out;
 	ret = _kdc_add_inital_verified_cas(context,
@@ -1617,8 +1616,17 @@ _kdc_as_rep(krb5_context context,
 					   &et);
 	if (ret)
 	    goto out;
-    }
+    } else
+	ret = krb5_generate_random_keyblock(context, sessionetype, &et.key);
+#else
+    ret = krb5_generate_random_keyblock(context, sessionetype, &et.key);
 #endif
+    if (ret)
+	goto out;
+
+    ret = copy_EncryptionKey(&et.key, &ek.key);
+    if (ret)
+	goto out;
 
     set_salt_padata (rep.padata, ckey->salt);
 
