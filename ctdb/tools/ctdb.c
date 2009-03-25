@@ -472,6 +472,111 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 }
 
 
+struct natgw_node {
+	struct natgw_node *next;
+	const char *addr;
+};
+
+/*
+  display the list of nodes belonging to this natgw configuration
+ */
+static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int i, ret;
+	const char *natgw_list;
+	int nlines;
+	char **lines;
+	struct natgw_node *natgw_nodes = NULL;
+	struct natgw_node *natgw_node;
+	struct ctdb_node_map *nodemap=NULL;
+
+
+	/* read the natgw nodes file into a linked list */
+	natgw_list = getenv("NATGW_NODES");
+	if (natgw_list == NULL) {
+		natgw_list = "/etc/ctdb/natgw_nodes";
+	}
+	lines = file_lines_load(natgw_list, &nlines, ctdb);
+	if (lines == NULL) {
+		ctdb_set_error(ctdb, "Failed to load natgw node list '%s'\n", natgw_list);
+		return -1;
+	}
+	while (nlines > 0 && strcmp(lines[nlines-1], "") == 0) {
+		nlines--;
+	}
+	for (i=0;i<nlines;i++) {
+		char *node;
+
+		node = lines[i];
+		/* strip leading spaces */
+		while((*node == ' ') || (*node == '\t')) {
+			node++;
+		}
+		if (*node == '#') {
+			continue;
+		}
+		if (strcmp(node, "") == 0) {
+			continue;
+		}
+		natgw_node = talloc(ctdb, struct natgw_node);
+		natgw_node->addr = talloc_strdup(natgw_node, node);
+		natgw_node->next = natgw_nodes;
+		natgw_nodes = natgw_node;
+	}
+
+	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node.\n"));
+		return ret;
+	}
+
+	i=0;
+	while(i<nodemap->num) {
+		for(natgw_node=natgw_nodes;natgw_node;natgw_node=natgw_node->next) {
+			if (!strcmp(natgw_node->addr, ctdb_addr_to_str(&nodemap->nodes[i].addr))) {
+				break;
+			}
+		}
+
+		/* this node was not in the natgw so we just remove it from
+		 * the list
+		 */
+		if ((natgw_node == NULL) 
+		||  (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) ) {
+			int j;
+
+			for (j=i+1; j<nodemap->num; j++) {
+				nodemap->nodes[j-1] = nodemap->nodes[j];
+			}
+			nodemap->num--;
+			continue;
+		}
+
+		i++;
+	}		
+
+	/* print the natgw master */
+	for(i=0;i<nodemap->num;i++){
+		if (!(nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED)) {
+			printf("%d\n", nodemap->nodes[i].pnn);
+			break;
+		}
+	}
+
+	/* print the pruned list of nodes belonging to this natgw list */
+	for(i=0;i<nodemap->num;i++){
+		printf(":%d:%s:%d:%d:%d:%d:\n", nodemap->nodes[i].pnn,
+			ctdb_addr_to_str(&nodemap->nodes[i].addr),
+		       !!(nodemap->nodes[i].flags&NODE_FLAGS_DISCONNECTED),
+		       !!(nodemap->nodes[i].flags&NODE_FLAGS_BANNED),
+		       !!(nodemap->nodes[i].flags&NODE_FLAGS_PERMANENTLY_DISABLED),
+		       !!(nodemap->nodes[i].flags&NODE_FLAGS_UNHEALTHY));
+	}
+
+	return 0;
+}
+
+
 /*
   display the status of the monitoring scripts
  */
@@ -2686,6 +2791,7 @@ static const struct {
 	{ "recmaster",        control_recmaster,          false, "show the pnn for the recovery master."},
 	{ "setflags",        control_setflags,            false, "set flags for a node in the nodemap.", "<node> <flags>"},
 	{ "scriptstatus",        control_scriptstatus,    false, "show the status of the monitoring scripts"},
+	{ "natgwlist",        control_natgwlist,    false, "show the nodes belonging to this natgw configuration"},
 };
 
 /*

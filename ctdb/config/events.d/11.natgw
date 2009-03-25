@@ -29,16 +29,14 @@ delete_all() {
 case $cmd in 
      recovered)
 	MYPNN=`ctdb pnn | cut -d: -f2`
+	NATGWMASTER=`ctdb natgwlist | head -1`
+	NATGWIP=`ctdb natgwlist | tail --lines=+2 | head -1 | cut -d: -f3`
 
-	# Find the first connected node
-	FIRST=`ctdb status -Y | grep ":0:$" | head -1`
-	FIRSTNODE=`echo $FIRST | cut -d: -f2`
-	FIRSTIP=`echo $FIRST | cut -d: -f3`
 	NATGW_PUBLIC_IP_HOST=`echo $NATGW_PUBLIC_IP | sed -e "s/\/.*/\/32/"`
 
 	delete_all
 
-	if [ "$FIRSTNODE" == "$MYPNN" ]; then
+	if [ "$MYPNN" == "$NATGWMASTER" ]; then
 		# This is the first node, set it up as the NAT GW
 		echo 1 >/proc/sys/net/ipv4/ip_forward
 		iptables -A POSTROUTING -t nat -s $NATGW_PRIVATE_NETWORK -d ! $NATGW_PRIVATE_NETWORK -j MASQUERADE
@@ -51,14 +49,12 @@ case $cmd in
 		# We do this so that the ip address will exist on a
 		# non-loopback interface so that samba may send it along in the
 		# KDC requests.
-
-		# Set the scope up as host and make sure we dont respond to ARP
-		# for this ip
-		echo 3 > /proc/sys/net/ipv4/conf/all/arp_ignore
-		ip addr add $NATGW_PUBLIC_IP_HOST dev $NATGW_PRIVATE_IFACE scope host
-		
-		ip route add 0.0.0.0/0 via $FIRSTIP metric 10
+		ip addr add $NATGW_PUBLIC_IP_HOST dev $NATGW_PRIVATE_IFACE
+		ip route add 0.0.0.0/0 via $NATGWIP metric 10
 	fi
+
+	# flush our route cache
+	echo 1 > /proc/sys/net/ipv4/route/flush
 	;;
 
      shutdown)

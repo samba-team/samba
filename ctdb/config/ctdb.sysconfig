@@ -172,11 +172,16 @@
 # and thus no proper routes to the external world it will instead
 # route all packets through the nat-gw node.
 #
+# NATGW_NODES is the list of nodes that belong to this natgw group.
+# You can have multiple natgw groups in one cluster but each node
+# can only belong to one single natgw group.
+#
 # NATGW_PUBLIC_IP=10.0.0.227/24
 # NATGW_PUBLIC_IFACE=eth0
 # NATGW_DEFAULT_GATEWAY=10.0.0.1
 # NATGW_PRIVATE_IFACE=eth1
 # NATGW_PRIVATE_NETWORK=10.1.1.0/24
+# NATGW_NODES=/etc/ctdb/natgw_nodes
 
 # where to log messages
 # the default is /var/log/log.ctdb
