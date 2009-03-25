@@ -218,6 +218,7 @@ struct socket_info
 	int bcast;
 	int is_server;
 	int connected;
+	int defer_connect;
 
 	char *path;
 	char *tmp_path;
@@ -1686,10 +1687,15 @@ _PUBLIC_ int swrap_connect(int s, const struct sockaddr *serv_addr, socklen_t ad
 	ret = sockaddr_convert_to_un(si, (const struct sockaddr *)serv_addr, addrlen, &un_addr, 0, NULL);
 	if (ret == -1) return -1;
 
-	swrap_dump_packet(si, serv_addr, SWRAP_CONNECT_SEND, NULL, 0);
+	if (si->type == SOCK_DGRAM) {
+		si->defer_connect = 1;
+		ret = 0;
+	} else {
+		swrap_dump_packet(si, serv_addr, SWRAP_CONNECT_SEND, NULL, 0);
 
-	ret = real_connect(s, (struct sockaddr *)&un_addr, 
-			   sizeof(struct sockaddr_un));
+		ret = real_connect(s, (struct sockaddr *)&un_addr,
+				   sizeof(struct sockaddr_un));
+	}
 
 	/* to give better errors */
 	if (ret == -1 && errno == ENOENT) {
@@ -1917,7 +1923,22 @@ _PUBLIC_ ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags, con
 			
 			return len;
 		}
-		
+
+		if (si->defer_connect) {
+			ret = real_connect(s, (struct sockaddr *)&un_addr,
+					   sizeof(un_addr));
+
+			/* to give better errors */
+			if (ret == -1 && errno == ENOENT) {
+				errno = EHOSTUNREACH;
+			}
+
+			if (ret == -1) {
+				return ret;
+			}
+			si->defer_connect = 0;
+		}
+
 		ret = real_sendto(s, buf, len, flags, (struct sockaddr *)&un_addr, sizeof(un_addr));
 		break;
 	default:
@@ -2001,6 +2022,33 @@ _PUBLIC_ ssize_t swrap_send(int s, const void *buf, size_t len, int flags)
 	}
 
 	len = MIN(len, 1500);
+
+	if (si->defer_connect) {
+		struct sockaddr_un un_addr;
+		int bcast = 0;
+
+		if (si->bound == 0) {
+			ret = swrap_auto_bind(si, si->family);
+			if (ret == -1) return -1;
+		}
+
+		ret = sockaddr_convert_to_un(si, si->peername, si->peername_len,
+					     &un_addr, 0, &bcast);
+		if (ret == -1) return -1;
+
+		ret = real_connect(s, (struct sockaddr *)&un_addr,
+				   sizeof(un_addr));
+
+		/* to give better errors */
+		if (ret == -1 && errno == ENOENT) {
+			errno = EHOSTUNREACH;
+		}
+
+		if (ret == -1) {
+			return ret;
+		}
+		si->defer_connect = 0;
+	}
 
 	ret = real_send(s, buf, len, flags);
 

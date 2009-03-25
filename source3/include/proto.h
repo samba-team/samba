@@ -150,6 +150,10 @@ bool is_trusted_domain(const char* dom_name);
 
 NTSTATUS auth_winbind_init(void);
 
+/* The following definitions come from auth/auth_wbc.c  */
+
+NTSTATUS auth_wbc_init(void);
+
 /* The following definitions come from auth/pampass.c  */
 
 bool smb_pam_claim_session(char *user, char *tty, char *rhost);
@@ -2410,6 +2414,10 @@ bool receive_getdc_response(TALLOC_CTX *mem_ctx,
 int cli_set_message(char *buf,int num_words,int num_bytes,bool zero);
 unsigned int cli_set_timeout(struct cli_state *cli, unsigned int timeout);
 void cli_set_port(struct cli_state *cli, int port);
+bool cli_state_seqnum_persistent(struct cli_state *cli,
+				 uint16_t mid);
+bool cli_state_seqnum_remove(struct cli_state *cli,
+			     uint16_t mid);
 bool cli_receive_smb(struct cli_state *cli);
 ssize_t cli_receive_smb_data(struct cli_state *cli, char *buffer, size_t len);
 bool cli_receive_smb_readX_header(struct cli_state *cli);
@@ -3181,29 +3189,34 @@ void cli_free_enc_buffer(struct cli_state *cli, char *buf);
 NTSTATUS cli_decrypt_message(struct cli_state *cli);
 NTSTATUS cli_encrypt_message(struct cli_state *cli, char *buf, char **buf_out);
 
-/* The following definitions come from libsmb/smb_signing.c  */
+/* The following definitions come from libsmb/clisigning.c  */
 
 bool cli_simple_set_signing(struct cli_state *cli,
 			    const DATA_BLOB user_session_key,
 			    const DATA_BLOB response);
-bool cli_null_set_signing(struct cli_state *cli);
 bool cli_temp_set_signing(struct cli_state *cli);
-void cli_free_signing_context(struct cli_state *cli);
-void cli_calculate_sign_mac(struct cli_state *cli, char *buf);
-bool cli_check_sign_mac(struct cli_state *cli, char *buf);
-bool client_set_trans_sign_state_on(struct cli_state *cli, uint16 mid);
-bool client_set_trans_sign_state_off(struct cli_state *cli, uint16 mid);
+void cli_calculate_sign_mac(struct cli_state *cli, char *buf, uint32_t *seqnum);
+bool cli_check_sign_mac(struct cli_state *cli, const char *buf, uint32_t seqnum);
 bool client_is_signing_on(struct cli_state *cli);
-bool srv_oplock_set_signing(bool onoff);
-bool srv_check_sign_mac(const char *inbuf, bool must_be_ok);
-void srv_calculate_sign_mac(char *outbuf);
-void srv_defer_sign_response(uint16 mid);
-void srv_cancel_sign_response(uint16 mid, bool cancel);
-void srv_set_signing_negotiated(void);
-bool srv_is_signing_active(void);
-bool srv_is_signing_negotiated(void);
-bool srv_signing_started(void);
-void srv_set_signing(const DATA_BLOB user_session_key, const DATA_BLOB response);
+bool client_is_signing_allowed(struct cli_state *cli);
+bool client_is_signing_mandatory(struct cli_state *cli);
+void cli_set_signing_negotiated(struct cli_state *cli);
+
+/* The following definitions come from smbd/signing.c  */
+
+struct smbd_server_connection;
+bool srv_check_sign_mac(struct smbd_server_connection *conn,
+			const char *inbuf, uint32_t *seqnum);
+void srv_calculate_sign_mac(struct smbd_server_connection *conn,
+			    char *outbuf, uint32_t seqnum);
+void srv_cancel_sign_response(struct smbd_server_connection *conn);
+bool srv_init_signing(struct smbd_server_connection *conn);
+void srv_set_signing_negotiated(struct smbd_server_connection *conn);
+bool srv_is_signing_active(struct smbd_server_connection *conn);
+bool srv_is_signing_negotiated(struct smbd_server_connection *conn);
+void srv_set_signing(struct smbd_server_connection *conn,
+		     const DATA_BLOB user_session_key,
+		     const DATA_BLOB response);
 
 /* The following definitions come from libsmb/smbdes.c  */
 
@@ -3779,6 +3792,8 @@ bool send_mailslot(bool unique, const char *mailslot,char *buf, size_t len,
 
 /* The following definitions come from nmbd/nmbd_processlogon.c  */
 
+bool initialize_nmbd_proxy_logon(void);
+
 void process_logon_packet(struct packet_struct *p, char *buf,int len, 
                           const char *mailslot);
 
@@ -4345,7 +4360,7 @@ const char *lp_printcapname(void);
 bool lp_disable_spoolss( void );
 void lp_set_spoolss_state( uint32 state );
 uint32 lp_get_spoolss_state( void );
-bool lp_use_sendfile(int snum);
+bool lp_use_sendfile(int snum, struct smb_signing_state *signing_state);
 void set_use_sendfile(int snum, bool val);
 void set_store_dos_attributes(int snum, bool val);
 void lp_set_mangling_method(const char *new_method);
@@ -4828,7 +4843,7 @@ WERROR add_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key, const cha
 REGISTRY_VALUE* get_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, const char *key, const char *value );
 WERROR mod_a_printer(NT_PRINTER_INFO_LEVEL *printer, uint32 level);
 bool set_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level);
-bool del_driver_init(char *drivername);
+bool del_driver_init(const char *drivername);
 WERROR save_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level, uint8 *data, uint32 data_len);
 WERROR get_a_printer( Printer_entry *print_hnd,
 			NT_PRINTER_INFO_LEVEL **pp_printer,
@@ -4840,8 +4855,8 @@ WERROR get_a_printer_search( Printer_entry *print_hnd,
 			const char *sharename);
 uint32 free_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level);
 uint32 add_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level);
-WERROR get_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32 level,
-                            fstring drivername, const char *architecture, uint32 version);
+WERROR get_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32_t level,
+			    const char *drivername, const char *architecture, uint32_t version);
 uint32 free_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level);
 bool printer_driver_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3 );
 bool printer_driver_files_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info );
@@ -5241,22 +5256,22 @@ NTSTATUS rpccli_netlogon_set_trust_password(struct rpc_pipe_client *cli,
 
 /* The following definitions come from rpc_client/cli_pipe.c  */
 
-struct async_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
-					struct rpc_pipe_client *cli,
-					uint8_t op_num,
-					prs_struct *req_data);
-NTSTATUS rpc_api_pipe_req_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
+struct tevent_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
+					 struct event_context *ev,
+					 struct rpc_pipe_client *cli,
+					 uint8_t op_num,
+					 prs_struct *req_data);
+NTSTATUS rpc_api_pipe_req_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			       prs_struct *reply_pdu);
 NTSTATUS rpc_api_pipe_req(TALLOC_CTX *mem_ctx, struct rpc_pipe_client *cli,
 			uint8 op_num,
 			prs_struct *in_data,
 			prs_struct *out_data);
-struct async_req *rpc_pipe_bind_send(TALLOC_CTX *mem_ctx,
-				     struct event_context *ev,
-				     struct rpc_pipe_client *cli,
-				     struct cli_pipe_auth_data *auth);
-NTSTATUS rpc_pipe_bind_recv(struct async_req *req);
+struct tevent_req *rpc_pipe_bind_send(TALLOC_CTX *mem_ctx,
+				      struct event_context *ev,
+				      struct rpc_pipe_client *cli,
+				      struct cli_pipe_auth_data *auth);
+NTSTATUS rpc_pipe_bind_recv(struct tevent_req *req);
 NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 		       struct cli_pipe_auth_data *auth);
 unsigned int rpccli_set_timeout(struct rpc_pipe_client *cli,
@@ -6720,7 +6735,9 @@ SEC_DESC *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname);
 
 void smbd_setup_sig_term_handler(void);
 void smbd_setup_sig_hup_handler(void);
-bool srv_send_smb(int fd, char *buffer, bool do_encrypt,
+bool srv_send_smb(int fd, char *buffer,
+		  bool no_signing, uint32_t seqnum,
+		  bool do_encrypt,
 		  struct smb_perfcount_data *pcd);
 int srv_set_message(char *buf,
                         int num_words,
@@ -7216,6 +7233,16 @@ NTSTATUS idmap_sid_to_gid(const char *domname, DOM_SID *sid, gid_t *gid);
 /* The following definitions come from winbindd/nss_info_template.c  */
 
 NTSTATUS nss_info_template_init( void );
+
+/* The following definitions come from lib/avahi.c */
+
+struct AvahiPoll *tevent_avahi_poll(TALLOC_CTX *mem_ctx,
+				    struct tevent_context *ev);
+
+/* The following definitions come from smbd/avahi_register.c */
+
+void *avahi_start_register(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+			   uint16_t port);
 
 /* Misc protos */
 

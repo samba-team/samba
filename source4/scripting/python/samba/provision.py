@@ -1056,7 +1056,7 @@ def provision(setup_dir, message, session_info,
                         serverrole=serverrole, ldap_backend=ldap_backend, 
                         ldap_backend_type=ldap_backend_type)
 
-    if lp.get("server role") == "domain controller":
+    if serverrole == "domain controller":
         if paths.netlogon is None:
             message("Existing smb.conf does not have a [netlogon] share, but you are configuring a DC.")
             message("Please either remove %s or see the template at %s" % 

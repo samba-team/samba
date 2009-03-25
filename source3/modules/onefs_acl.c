@@ -825,7 +825,7 @@ NTSTATUS onefs_samba_sd_to_sd(uint32 security_info_sent, SEC_DESC *psd,
 	/* Setup owner */
 	if (security_info_sent & OWNER_SECURITY_INFORMATION) {
 		if (!onefs_og_to_identity(psd->owner_sid, &owner, false, snum))
-			return NT_STATUS_UNSUCCESSFUL;
+			return NT_STATUS_ACCESS_DENIED;
 
 		SMB_ASSERT(owner.id.uid >= 0);
 
@@ -835,7 +835,7 @@ NTSTATUS onefs_samba_sd_to_sd(uint32 security_info_sent, SEC_DESC *psd,
 	/* Setup group */
 	if (security_info_sent & GROUP_SECURITY_INFORMATION) {
 		if (!onefs_og_to_identity(psd->group_sid, &group, true, snum))
-			return NT_STATUS_UNSUCCESSFUL;
+			return NT_STATUS_ACCESS_DENIED;
 
 		SMB_ASSERT(group.id.gid >= 0);
 
@@ -846,7 +846,7 @@ NTSTATUS onefs_samba_sd_to_sd(uint32 security_info_sent, SEC_DESC *psd,
 	if ((security_info_sent & DACL_SECURITY_INFORMATION) && (psd->dacl)) {
 		if (!onefs_samba_acl_to_acl(psd->dacl, &daclp, &ignore_aces,
 			snum))
-			return NT_STATUS_UNSUCCESSFUL;
+			return NT_STATUS_ACCESS_DENIED;
 
 		if (ignore_aces == true)
 			security_info_sent &= ~DACL_SECURITY_INFORMATION;
@@ -863,7 +863,7 @@ NTSTATUS onefs_samba_sd_to_sd(uint32 security_info_sent, SEC_DESC *psd,
 			if (psd->sacl) {
 				if (!onefs_samba_acl_to_acl(psd->sacl,
 					&saclp, &ignore_aces, snum))
-					return NT_STATUS_UNSUCCESSFUL;
+					return NT_STATUS_ACCESS_DENIED;
 
 				if (ignore_aces == true) {
 					security_info_sent &=
@@ -877,7 +877,7 @@ NTSTATUS onefs_samba_sd_to_sd(uint32 security_info_sent, SEC_DESC *psd,
 	DEBUG(5,("Setting up SD\n"));
 	if (aclu_initialize_sd(sd, psd->type, ownerp, groupp,
 		(daclp ? &daclp : NULL), (saclp ? &saclp : NULL), false))
-		return NT_STATUS_UNSUCCESSFUL;
+		return NT_STATUS_ACCESS_DENIED;
 
 	return NT_STATUS_OK;
 }

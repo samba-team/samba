@@ -208,14 +208,14 @@ static NTSTATUS onefs_open_file(files_struct *fsp,
 		if ((oplock_request & ~SAMBA_PRIVATE_OPLOCK_MASK) !=
 		     NO_OPLOCK) {
 			DEBUG(0,("Oplock(%d) being requested on a stream! "
-				"Ignoring oplock request: base=%s, stream=%s",
+				"Ignoring oplock request: base=%s, stream=%s\n",
 				oplock_request & ~SAMBA_PRIVATE_OPLOCK_MASK,
 				base, stream));
 			/* Recover by requesting NO_OPLOCK instead. */
 			oplock_request &= SAMBA_PRIVATE_OPLOCK_MASK;
 		}
 
-		DEBUG(10,("Opening a stream: base=%s(%d), stream=%s",
+		DEBUG(10,("Opening a stream: base=%s(%d), stream=%s\n",
 			  base, fsp->base_fsp->fh->fd, stream));
 
 		base_fd = fsp->base_fsp->fh->fd;
@@ -386,15 +386,6 @@ static void defer_open(struct share_mode_lock *lck,
 		exit_server("push_deferred_smb_message failed");
 	}
 	add_deferred_open(lck, req->mid, request_time, state->id);
-
-	/*
-	 * Push the MID of this packet on the signing queue.
-	 * We only do this once, the first time we push the packet
-	 * onto the deferred open queue, as this has a side effect
-	 * of incrementing the response sequence number.
-	 */
-
-	srv_defer_sign_response(req->mid);
 }
 
 static void schedule_defer_open(struct share_mode_lock *lck,

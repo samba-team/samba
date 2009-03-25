@@ -257,9 +257,10 @@ static WERROR cmd_spoolss_enum_printers(struct rpc_pipe_client *cli,
 	union spoolss_PrinterInfo *info;
 	uint32_t		i, count;
 	const char *name;
+	uint32_t flags = PRINTER_ENUM_LOCAL;
 
-	if (argc > 3) {
-		printf("Usage: %s [level] [name]\n", argv[0]);
+	if (argc > 4) {
+		printf("Usage: %s [level] [name] [flags]\n", argv[0]);
 		return WERR_OK;
 	}
 
@@ -267,14 +268,18 @@ static WERROR cmd_spoolss_enum_printers(struct rpc_pipe_client *cli,
 		level = atoi(argv[1]);
 	}
 
-	if (argc == 3) {
+	if (argc >= 3) {
 		name = argv[2];
 	} else {
 		name = cli->srv_name_slash;
 	}
 
+	if (argc == 4) {
+		flags = atoi(argv[3]);
+	}
+
 	result = rpccli_spoolss_enumprinters(cli, mem_ctx,
-					     PRINTER_ENUM_LOCAL,
+					     flags,
 					     name,
 					     level,
 					     0,

@@ -134,6 +134,7 @@ void send_trans_reply(connection_struct *conn,
 
 	show_msg((char *)req->outbuf);
 	if (!srv_send_smb(smbd_server_fd(), (char *)req->outbuf,
+			  true, req->seqnum+1,
 			  IS_CONN_ENCRYPTED(conn), &req->pcd)) {
 		exit_server_cleanly("send_trans_reply: srv_send_smb failed.");
 	}
@@ -190,6 +191,7 @@ void send_trans_reply(connection_struct *conn,
 
 		show_msg((char *)req->outbuf);
 		if (!srv_send_smb(smbd_server_fd(), (char *)req->outbuf,
+				  true, req->seqnum+1,
 				  IS_CONN_ENCRYPTED(conn), &req->pcd))
 			exit_server_cleanly("send_trans_reply: srv_send_smb "
 					    "failed.");
@@ -296,6 +298,7 @@ static void api_dcerpc_cmd_write_done(struct tevent_req *subreq)
  send:
 	if (!srv_send_smb(
 		    smbd_server_fd(), (char *)req->outbuf,
+		    true, req->seqnum+1,
 		    IS_CONN_ENCRYPTED(req->conn) || req->encrypted,
 		    &req->pcd)) {
 		exit_server_cleanly("construct_reply: srv_send_smb failed.");
@@ -322,6 +325,7 @@ static void api_dcerpc_cmd_read_done(struct tevent_req *subreq)
 		reply_nterror(req, status);
 
 		if (!srv_send_smb(smbd_server_fd(), (char *)req->outbuf,
+				  true, req->seqnum+1,
 				  IS_CONN_ENCRYPTED(req->conn)
 				  ||req->encrypted, &req->pcd)) {
 			exit_server_cleanly("construct_reply: srv_send_smb "

@@ -393,7 +393,7 @@ static bool get_printer_snum(pipes_struct *p, struct policy_handle *hnd,
  Check if it's \\server or \\server\printer
 ****************************************************************************/
 
-static bool set_printer_hnd_printertype(Printer_entry *Printer, char *handlename)
+static bool set_printer_hnd_printertype(Printer_entry *Printer, const char *handlename)
 {
 	DEBUG(3,("Setting printer type=%s\n", handlename));
 
@@ -423,7 +423,7 @@ static bool set_printer_hnd_printertype(Printer_entry *Printer, char *handlename
  XcvDataPort() interface.
 ****************************************************************************/
 
-static bool set_printer_hnd_name(Printer_entry *Printer, char *handlename)
+static bool set_printer_hnd_name(Printer_entry *Printer, const char *handlename)
 {
 	int snum;
 	int n_services=lp_numservices();
@@ -434,9 +434,10 @@ static bool set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	WERROR result;
 
-	DEBUG(4,("Setting printer name=%s (len=%lu)\n", handlename, (unsigned long)strlen(handlename)));
+	DEBUG(4,("Setting printer name=%s (len=%lu)\n", handlename,
+		(unsigned long)strlen(handlename)));
 
-	aprinter = handlename;
+	aprinter = CONST_DISCARD(char *, handlename);
 	if ( *handlename == '\\' ) {
 		servername = canon_servername(handlename);
 		if ( (aprinter = strchr_m( servername, '\\' )) != NULL ) {
@@ -556,7 +557,7 @@ static bool set_printer_hnd_name(Printer_entry *Printer, char *handlename)
  ****************************************************************************/
 
 static bool open_printer_hnd(pipes_struct *p, struct policy_handle *hnd,
-			     char *name, uint32_t access_granted)
+			     const char *name, uint32_t access_granted)
 {
 	Printer_entry *new_printer;
 
@@ -1247,7 +1248,7 @@ static void receive_notify2_message_list(struct messaging_context *msg,
  driver
  ********************************************************************/
 
-static bool srv_spoolss_drv_upgrade_printer(char* drivername)
+static bool srv_spoolss_drv_upgrade_printer(const char *drivername)
 {
 	int len = strlen(drivername);
 
@@ -1545,20 +1546,19 @@ bool convert_devicemode(const char *printername,
 WERROR _spoolss_OpenPrinterEx(pipes_struct *p,
 			      struct spoolss_OpenPrinterEx *r)
 {
-	char *name = CONST_DISCARD(char *, r->in.printername);
 	int snum;
 	Printer_entry *Printer=NULL;
 
-	if (!name) {
+	if (!r->in.printername) {
 		return WERR_INVALID_PARAM;
 	}
 
 	/* some sanity check because you can open a printer or a print server */
 	/* aka: \\server\printer or \\server */
 
-	DEBUGADD(3,("checking name: %s\n",name));
+	DEBUGADD(3,("checking name: %s\n", r->in.printername));
 
-	if (!open_printer_hnd(p, r->out.handle, name, 0)) {
+	if (!open_printer_hnd(p, r->out.handle, r->in.printername, 0)) {
 		ZERO_STRUCTP(r->out.handle);
 		return WERR_INVALID_PARAM;
 	}
@@ -1566,7 +1566,7 @@ WERROR _spoolss_OpenPrinterEx(pipes_struct *p,
 	Printer = find_printer_index_by_hnd(p, r->out.handle);
 	if ( !Printer ) {
 		DEBUG(0,("_spoolss_OpenPrinterEx: logic error.  Can't find printer "
-			"handle we created for printer %s\n", name ));
+			"handle we created for printer %s\n", r->in.printername));
 		close_printer_handle(p, r->out.handle);
 		ZERO_STRUCTP(r->out.handle);
 		return WERR_INVALID_PARAM;
@@ -2075,7 +2075,7 @@ WERROR _spoolss_DeletePrinter(pipes_struct *p,
  * long architecture string
  ******************************************************************/
 
-static int get_version_id (char * arch)
+static int get_version_id(const char *arch)
 {
 	int i;
 	struct table_node archi_table[]= {
@@ -2106,8 +2106,6 @@ static int get_version_id (char * arch)
 WERROR _spoolss_DeletePrinterDriver(pipes_struct *p,
 				    struct spoolss_DeletePrinterDriver *r)
 {
-	char *driver;
-	char *arch;
 	NT_PRINTER_DRIVER_INFO_LEVEL	info;
 	NT_PRINTER_DRIVER_INFO_LEVEL	info_win2k;
 	int				version;
@@ -2128,24 +2126,26 @@ WERROR _spoolss_DeletePrinterDriver(pipes_struct *p,
 		return WERR_ACCESS_DENIED;
 	}
 
-	driver = CONST_DISCARD(char *, r->in.driver);
-	arch   = CONST_DISCARD(char *, r->in.architecture);
-
 	/* check that we have a valid driver name first */
 
-	if ((version=get_version_id(arch)) == -1)
+	if ((version = get_version_id(r->in.architecture)) == -1)
 		return WERR_INVALID_ENVIRONMENT;
 
 	ZERO_STRUCT(info);
 	ZERO_STRUCT(info_win2k);
 
-	if (!W_ERROR_IS_OK(get_a_printer_driver(&info, 3, driver, arch, version)))
+	if (!W_ERROR_IS_OK(get_a_printer_driver(&info, 3, r->in.driver,
+						r->in.architecture,
+						version)))
 	{
 		/* try for Win2k driver if "Windows NT x86" */
 
 		if ( version == 2 ) {
 			version = 3;
-			if (!W_ERROR_IS_OK(get_a_printer_driver(&info, 3, driver, arch, version))) {
+			if (!W_ERROR_IS_OK(get_a_printer_driver(&info, 3,
+								r->in.driver,
+								r->in.architecture,
+								version))) {
 				status = WERR_UNKNOWN_PRINTER_DRIVER;
 				goto done;
 			}
@@ -2165,7 +2165,9 @@ WERROR _spoolss_DeletePrinterDriver(pipes_struct *p,
 
 	if ( version == 2 )
 	{
-		if (W_ERROR_IS_OK(get_a_printer_driver(&info_win2k, 3, driver, arch, 3)))
+		if (W_ERROR_IS_OK(get_a_printer_driver(&info_win2k, 3,
+						       r->in.driver,
+						       r->in.architecture, 3)))
 		{
 			/* if we get to here, we now have 2 driver info structures to remove */
 			/* remove the Win2k driver first*/
@@ -2203,8 +2205,6 @@ done:
 WERROR _spoolss_DeletePrinterDriverEx(pipes_struct *p,
 				      struct spoolss_DeletePrinterDriverEx *r)
 {
-	char *driver;
-	char *arch;
 	NT_PRINTER_DRIVER_INFO_LEVEL	info;
 	NT_PRINTER_DRIVER_INFO_LEVEL	info_win2k;
 	int				version;
@@ -2225,11 +2225,8 @@ WERROR _spoolss_DeletePrinterDriverEx(pipes_struct *p,
 		return WERR_ACCESS_DENIED;
 	}
 
-	driver = CONST_DISCARD(char *, r->in.driver);
-	arch   = CONST_DISCARD(char *, r->in.architecture);
-
 	/* check that we have a valid driver name first */
-	if ((version=get_version_id(arch)) == -1) {
+	if ((version = get_version_id(r->in.architecture)) == -1) {
 		/* this is what NT returns */
 		return WERR_INVALID_ENVIRONMENT;
 	}
@@ -2240,7 +2237,8 @@ WERROR _spoolss_DeletePrinterDriverEx(pipes_struct *p,
 	ZERO_STRUCT(info);
 	ZERO_STRUCT(info_win2k);
 
-	status = get_a_printer_driver(&info, 3, driver, arch, version);
+	status = get_a_printer_driver(&info, 3, r->in.driver,
+				      r->in.architecture, version);
 
 	if ( !W_ERROR_IS_OK(status) )
 	{
@@ -2256,7 +2254,9 @@ WERROR _spoolss_DeletePrinterDriverEx(pipes_struct *p,
 		/* try for Win2k driver if "Windows NT x86" */
 
 		version = 3;
-		if (!W_ERROR_IS_OK(get_a_printer_driver(&info, 3, driver, arch, version))) {
+		if (!W_ERROR_IS_OK(get_a_printer_driver(&info, 3, r->in.driver,
+							r->in.architecture,
+							version))) {
 			status = WERR_UNKNOWN_PRINTER_DRIVER;
 			goto done;
 		}
@@ -2293,7 +2293,9 @@ WERROR _spoolss_DeletePrinterDriverEx(pipes_struct *p,
 	/* also check for W32X86/3 if necessary; maybe we already have? */
 
 	if ( (version == 2) && ((r->in.delete_flags & DPD_DELETE_SPECIFIC_VERSION) != DPD_DELETE_SPECIFIC_VERSION)  ) {
-		if (W_ERROR_IS_OK(get_a_printer_driver(&info_win2k, 3, driver, arch, 3)))
+		if (W_ERROR_IS_OK(get_a_printer_driver(&info_win2k, 3,
+						       r->in.driver,
+						       r->in.architecture, 3)))
 		{
 
 			if ( delete_files && printer_driver_files_in_use(info_win2k.info_3) & (r->in.delete_flags & DPD_DELETE_ALL_FILES) ) {
@@ -4202,67 +4204,123 @@ static bool snum_is_shared_printer(int snum)
  Spoolss_enumprinters.
 ********************************************************************/
 
-static WERROR enum_all_printers_info_1(TALLOC_CTX *mem_ctx,
-				       uint32_t flags,
-				       union spoolss_PrinterInfo **info_p,
-				       uint32_t *count)
+static WERROR enum_all_printers_info_level(TALLOC_CTX *mem_ctx,
+					   uint32_t level,
+					   uint32_t flags,
+					   union spoolss_PrinterInfo **info_p,
+					   uint32_t *count_p)
 {
 	int snum;
 	int n_services = lp_numservices();
 	union spoolss_PrinterInfo *info = NULL;
+	uint32_t count = 0;
 	WERROR result = WERR_OK;
 
-	DEBUG(4,("enum_all_printers_info_1\n"));
+	*count_p = 0;
+	*info_p = NULL;
 
-	*count = 0;
-
-	for (snum=0; snum<n_services; snum++) {
+	for (snum = 0; snum < n_services; snum++) {
 
 		NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
-		struct spoolss_PrinterInfo1 info1;
 
 		if (!snum_is_shared_printer(snum)) {
 			continue;
 		}
 
-		DEBUG(4,("Found a printer in smb.conf: %s[%x]\n", lp_servicename(snum), snum));
-
-		result = get_a_printer(NULL, &ntprinter, 2, lp_const_servicename(snum));
-		if (!W_ERROR_IS_OK(result)) {
-			continue;
-		}
-
-		result = construct_printer_info1(info, ntprinter, flags, &info1, snum);
-		free_a_printer(&ntprinter,2);
-		if (!W_ERROR_IS_OK(result)) {
-			continue;
-		}
+		DEBUG(4,("Found a printer in smb.conf: %s[%x]\n",
+			lp_servicename(snum), snum));
 
 		info = TALLOC_REALLOC_ARRAY(mem_ctx, info,
 					    union spoolss_PrinterInfo,
-					    *count + 1);
+					    count + 1);
 		if (!info) {
-			DEBUG(2,("enum_all_printers_info_1: failed to enlarge printers buffer!\n"));
 			result = WERR_NOMEM;
 			goto out;
 		}
 
-		DEBUG(4,("ReAlloced memory for [%d] PRINTER_INFO_1\n", *count));
+		result = get_a_printer(NULL, &ntprinter, 2,
+				       lp_const_servicename(snum));
+		if (!W_ERROR_IS_OK(result)) {
+			goto out;
+		}
 
-		info[*count].info1 = info1;
-		(*count)++;
+		switch (level) {
+		case 0:
+			result = construct_printer_info0(info, ntprinter,
+							 &info[count].info0, snum);
+			break;
+		case 1:
+			result = construct_printer_info1(info, ntprinter, flags,
+							 &info[count].info1, snum);
+			break;
+		case 2:
+			result = construct_printer_info2(info, ntprinter,
+							 &info[count].info2, snum);
+			break;
+		case 4:
+			result = construct_printer_info4(info, ntprinter,
+							 &info[count].info4, snum);
+			break;
+		case 5:
+			result = construct_printer_info5(info, ntprinter,
+							 &info[count].info5, snum);
+			break;
+
+		default:
+			result = WERR_UNKNOWN_LEVEL;
+			free_a_printer(&ntprinter, 2);
+			goto out;
+		}
+
+		free_a_printer(&ntprinter, 2);
+		if (!W_ERROR_IS_OK(result)) {
+			goto out;
+		}
+
+		count++;
 	}
+
+	*count_p = count;
+	*info_p = info;
 
  out:
 	if (!W_ERROR_IS_OK(result)) {
 		TALLOC_FREE(info);
-		*count = 0;
 		return result;
 	}
 
 	*info_p = info;
 
 	return WERR_OK;
+}
+
+/********************************************************************
+ * handle enumeration of printers at level 0
+ ********************************************************************/
+
+static WERROR enumprinters_level0(TALLOC_CTX *mem_ctx,
+				  uint32_t flags,
+				  const char *servername,
+				  union spoolss_PrinterInfo **info,
+				  uint32_t *count)
+{
+	DEBUG(4,("enum_all_printers_info_0\n"));
+
+	return enum_all_printers_info_level(mem_ctx, 0, flags, info, count);
+}
+
+
+/********************************************************************
+********************************************************************/
+
+static WERROR enum_all_printers_info_1(TALLOC_CTX *mem_ctx,
+				       uint32_t flags,
+				       union spoolss_PrinterInfo **info,
+				       uint32_t *count)
+{
+	DEBUG(4,("enum_all_printers_info_1\n"));
+
+	return enum_all_printers_info_level(mem_ctx, 1, flags, info, count);
 }
 
 /********************************************************************
@@ -4341,64 +4399,12 @@ static WERROR enum_all_printers_info_1_network(TALLOC_CTX *mem_ctx,
  ********************************************************************/
 
 static WERROR enum_all_printers_info_2(TALLOC_CTX *mem_ctx,
-				       union spoolss_PrinterInfo **info_p,
+				       union spoolss_PrinterInfo **info,
 				       uint32_t *count)
 {
-	int snum;
-	int n_services = lp_numservices();
-	union spoolss_PrinterInfo *info = NULL;
-	WERROR result = WERR_OK;
+	DEBUG(4,("enum_all_printers_info_2\n"));
 
-	*count = 0;
-
-	for (snum=0; snum<n_services; snum++) {
-
-		struct spoolss_PrinterInfo2 info2;
-		NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
-
-		if (!snum_is_shared_printer(snum)) {
-			continue;
-		}
-
-		DEBUG(4,("Found a printer in smb.conf: %s[%x]\n", lp_servicename(snum), snum));
-
-		result = get_a_printer(NULL, &ntprinter, 2, lp_const_servicename(snum));
-		if (!W_ERROR_IS_OK(result)) {
-			continue;
-		}
-
-		result = construct_printer_info2(info, ntprinter, &info2, snum);
-		free_a_printer(&ntprinter, 2);
-		if (!W_ERROR_IS_OK(result)) {
-			continue;
-		}
-
-		info = TALLOC_REALLOC_ARRAY(mem_ctx, info,
-					    union spoolss_PrinterInfo,
-					    *count + 1);
-		if (!info) {
-			DEBUG(2,("enum_all_printers_info_2: failed to enlarge printers buffer!\n"));
-			result = WERR_NOMEM;
-			goto out;
-		}
-
-		DEBUG(4,("ReAlloced memory for [%d] PRINTER_INFO_2\n", *count + 1));
-
-		info[*count].info2 = info2;
-
-		(*count)++;
-	}
-
- out:
-	if (!W_ERROR_IS_OK(result)) {
-		TALLOC_FREE(info);
-		*count = 0;
-		return result;
-	}
-
-	*info_p = info;
-
-	return WERR_OK;
+	return enum_all_printers_info_level(mem_ctx, 2, 0, info, count);
 }
 
 /********************************************************************
@@ -4458,6 +4464,22 @@ static WERROR enumprinters_level2(TALLOC_CTX *mem_ctx,
 }
 
 /********************************************************************
+ * handle enumeration of printers at level 4
+ ********************************************************************/
+
+static WERROR enumprinters_level4(TALLOC_CTX *mem_ctx,
+				  uint32_t flags,
+				  const char *servername,
+				  union spoolss_PrinterInfo **info,
+				  uint32_t *count)
+{
+	DEBUG(4,("enum_all_printers_info_4\n"));
+
+	return enum_all_printers_info_level(mem_ctx, 4, flags, info, count);
+}
+
+
+/********************************************************************
  * handle enumeration of printers at level 5
  ********************************************************************/
 
@@ -4467,8 +4489,9 @@ static WERROR enumprinters_level5(TALLOC_CTX *mem_ctx,
 				  union spoolss_PrinterInfo **info,
 				  uint32_t *count)
 {
-/*	return enum_all_printers_info_5(mem_ctx, info, offered, needed, count);*/
-	return WERR_OK;
+	DEBUG(4,("enum_all_printers_info_5\n"));
+
+	return enum_all_printers_info_level(mem_ctx, 5, flags, info, count);
 }
 
 /****************************************************************
@@ -4510,6 +4533,10 @@ WERROR _spoolss_EnumPrinters(pipes_struct *p,
 	W_ERROR_HAVE_NO_MEMORY(name);
 
 	switch (r->in.level) {
+	case 0:
+		result = enumprinters_level0(p->mem_ctx, r->in.flags, name,
+					     r->out.info, r->out.count);
+		break;
 	case 1:
 		result = enumprinters_level1(p->mem_ctx, r->in.flags, name,
 					     r->out.info, r->out.count);
@@ -4518,13 +4545,13 @@ WERROR _spoolss_EnumPrinters(pipes_struct *p,
 		result = enumprinters_level2(p->mem_ctx, r->in.flags, name,
 					     r->out.info, r->out.count);
 		break;
+	case 4:
+		result = enumprinters_level4(p->mem_ctx, r->in.flags, name,
+					     r->out.info, r->out.count);
+		break;
 	case 5:
 		result = enumprinters_level5(p->mem_ctx, r->in.flags, name,
 					     r->out.info, r->out.count);
-		break;
-	case 3:
-	case 4:
-		result = WERR_OK; /* ??? */
 		break;
 	default:
 		return WERR_UNKNOWN_LEVEL;
@@ -7247,7 +7274,7 @@ WERROR _spoolss_AddPrinterDriver(pipes_struct *p,
 	struct spoolss_AddDriverInfoCtr *info = r->in.info_ctr;
 	WERROR err = WERR_OK;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
-	fstring driver_name;
+	const char *driver_name = NULL;
 	uint32_t version;
 	const char *fn;
 
@@ -7297,12 +7324,10 @@ WERROR _spoolss_AddPrinterDriver(pipes_struct *p,
 
         switch(level) {
 	case 3:
-		fstrcpy(driver_name,
-			driver.info_3->name ? driver.info_3->name : "");
+		driver_name = driver.info_3->name ? driver.info_3->name : "";
 		break;
 	case 6:
-		fstrcpy(driver_name,
-			driver.info_6->name ?  driver.info_6->name : "");
+		driver_name = driver.info_6->name ? driver.info_6->name : "";
 		break;
         }
 

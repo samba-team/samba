@@ -135,6 +135,79 @@ static ssize_t client_receive_smb(struct cli_state *cli, size_t maxlen)
 	return len;
 }
 
+static bool cli_state_set_seqnum(struct cli_state *cli, uint16_t mid, uint32_t seqnum)
+{
+	struct cli_state_seqnum *c;
+
+	for (c = cli->seqnum; c; c = c->next) {
+		if (c->mid == mid) {
+			c->seqnum = seqnum;
+			return true;
+		}
+	}
+
+	c = talloc_zero(cli, struct cli_state_seqnum);
+	if (!c) {
+		return false;
+	}
+
+	c->mid = mid;
+	c->seqnum = seqnum;
+	c->persistent = false;
+	DLIST_ADD_END(cli->seqnum, c, struct cli_state_seqnum *);
+
+	return true;
+}
+
+bool cli_state_seqnum_persistent(struct cli_state *cli,
+				 uint16_t mid)
+{
+	struct cli_state_seqnum *c;
+
+	for (c = cli->seqnum; c; c = c->next) {
+		if (c->mid == mid) {
+			c->persistent = true;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool cli_state_seqnum_remove(struct cli_state *cli,
+			     uint16_t mid)
+{
+	struct cli_state_seqnum *c;
+
+	for (c = cli->seqnum; c; c = c->next) {
+		if (c->mid == mid) {
+			DLIST_REMOVE(cli->seqnum, c);
+			TALLOC_FREE(c);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+static uint32_t cli_state_get_seqnum(struct cli_state *cli, uint16_t mid)
+{
+	struct cli_state_seqnum *c;
+
+	for (c = cli->seqnum; c; c = c->next) {
+		if (c->mid == mid) {
+			uint32_t seqnum = c->seqnum;
+			if (!c->persistent) {
+				DLIST_REMOVE(cli->seqnum, c);
+				TALLOC_FREE(c);
+			}
+			return seqnum;
+		}
+	}
+
+	return 0;
+}
+
 /****************************************************************************
  Recv an smb.
 ****************************************************************************/
@@ -142,6 +215,8 @@ static ssize_t client_receive_smb(struct cli_state *cli, size_t maxlen)
 bool cli_receive_smb(struct cli_state *cli)
 {
 	ssize_t len;
+	uint16_t mid;
+	uint32_t seqnum;
 
 	/* fd == -1 causes segfaults -- Tom (tom@ninja.nl) */
 	if (cli->fd == -1)
@@ -177,7 +252,10 @@ bool cli_receive_smb(struct cli_state *cli)
 		return false;
 	}
 
-	if (!cli_check_sign_mac(cli, cli->inbuf)) {
+	mid = SVAL(cli->inbuf,smb_mid);
+	seqnum = cli_state_get_seqnum(cli, mid);
+
+	if (!cli_check_sign_mac(cli, cli->inbuf, seqnum+1)) {
 		/*
 		 * If we get a signature failure in sessionsetup, then
 		 * the server sometimes just reflects the sent signature
@@ -264,12 +342,20 @@ bool cli_send_smb(struct cli_state *cli)
 	ssize_t ret;
 	char *buf_out = cli->outbuf;
 	bool enc_on = cli_encryption_on(cli);
+	uint32_t seqnum;
 
 	/* fd == -1 causes segfaults -- Tom (tom@ninja.nl) */
 	if (cli->fd == -1)
 		return false;
 
-	cli_calculate_sign_mac(cli, cli->outbuf);
+	cli_calculate_sign_mac(cli, cli->outbuf, &seqnum);
+
+	if (!cli_state_set_seqnum(cli, cli->mid, seqnum)) {
+		DEBUG(0,("Failed to store mid[%u]/seqnum[%u]\n",
+			(unsigned int)cli->mid,
+			(unsigned int)seqnum));
+		return false;
+	}
 
 	if (enc_on) {
 		NTSTATUS status = cli_encrypt_message(cli, cli->outbuf,
@@ -506,6 +592,7 @@ struct cli_state *cli_initialise_ex(int signing_state)
 	cli->bufsize = CLI_BUFFER_SIZE+4;
 	cli->max_xmit = cli->bufsize;
 	cli->outbuf = (char *)SMB_MALLOC(cli->bufsize+SAFETY_MARGIN);
+	cli->seqnum = 0;
 	cli->inbuf = (char *)SMB_MALLOC(cli->bufsize+SAFETY_MARGIN);
 	cli->oplock_handler = cli_oplock_ack;
 	cli->case_sensitive = false;
@@ -556,9 +643,12 @@ struct cli_state *cli_initialise_ex(int signing_state)
 #endif
 
 	/* initialise signing */
-	cli->sign_info.allow_smb_signing = allow_smb_signing;
-	cli->sign_info.mandatory_signing = mandatory_signing;
-	cli_null_set_signing(cli);
+	cli->signing_state = smb_signing_init(cli,
+					      allow_smb_signing,
+					      mandatory_signing);
+	if (!cli->signing_state) {
+		goto error;
+	}
 
 	cli->initialised = 1;
 
@@ -641,7 +731,6 @@ void cli_shutdown(struct cli_state *cli)
 	SAFE_FREE(cli->outbuf);
 	SAFE_FREE(cli->inbuf);
 
-	cli_free_signing_context(cli);
 	data_blob_free(&cli->secblob);
 	data_blob_free(&cli->user_session_key);
 
@@ -740,7 +829,6 @@ static void cli_echo_recv_helper(struct async_req *req)
 	cli_req->data.echo.num_echos -= 1;
 
 	if (cli_req->data.echo.num_echos == 0) {
-		client_set_trans_sign_state_off(cli_req->cli, cli_req->mid);
 		async_req_done(req);
 		return;
 	}
@@ -781,8 +869,6 @@ struct async_req *cli_echo_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 		return NULL;
 	}
 	req = talloc_get_type_abort(result->private_data, struct cli_request);
-
-	client_set_trans_sign_state_on(cli, req->mid);
 
 	req->data.echo.num_echos = num_echos;
 	req->data.echo.data.data = talloc_move(req, &data_copy);

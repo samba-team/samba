@@ -204,9 +204,6 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 		(unsigned int)blr->expire_time.tv_usec, lock_timeout,
 		blr->fsp->fnum, blr->fsp->fsp_name ));
 
-	/* Push the MID of this packet on the signing queue. */
-	srv_defer_sign_response(blr->req->mid);
-
 	return True;
 }
 
@@ -260,6 +257,7 @@ static void generic_blocking_lock_error(struct blocking_lock_record *blr, NTSTAT
 
 	reply_nterror(blr->req, status);
 	if (!srv_send_smb(smbd_server_fd(), (char *)blr->req->outbuf,
+			  true, blr->req->seqnum+1,
 			  blr->req->encrypted, NULL)) {
 		exit_server_cleanly("generic_blocking_lock_error: srv_send_smb failed.");
 	}
@@ -343,6 +341,7 @@ static void blocking_lock_reply_error(struct blocking_lock_record *blr, NTSTATUS
 
 		if (!srv_send_smb(smbd_server_fd(),
 				  (char *)blr->req->outbuf,
+				  true, blr->req->seqnum+1,
 				  IS_CONN_ENCRYPTED(blr->fsp->conn),
 				  NULL)) {
 			exit_server_cleanly("blocking_lock_reply_error: "

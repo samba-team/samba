@@ -449,8 +449,8 @@ static void wb_open_pipe_connect_nonpriv_done(struct tevent_req *subreq)
 	ZERO_STRUCT(state->wb_req);
 	state->wb_req.cmd = WINBINDD_INTERFACE_VERSION;
 
-	subreq = wb_int_trans_send(state, state->ev, NULL, state->wb_ctx->fd,
-				   &state->wb_req);
+	subreq = wb_int_trans_send(state, state->ev, state->wb_ctx->queue,
+				   state->wb_ctx->fd, &state->wb_req);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -480,8 +480,8 @@ static void wb_open_pipe_ping_done(struct tevent_req *subreq)
 
 	state->wb_req.cmd = WINBINDD_PRIV_PIPE_DIR;
 
-	subreq = wb_int_trans_send(state, state->ev, NULL, state->wb_ctx->fd,
-				   &state->wb_req);
+	subreq = wb_int_trans_send(state, state->ev, state->wb_ctx->queue,
+				   state->wb_ctx->fd, &state->wb_req);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -673,8 +673,8 @@ static void wb_trans_connect_done(struct tevent_req *subreq)
 		return;
 	}
 
-	subreq = wb_int_trans_send(state, state->ev, NULL, state->wb_ctx->fd,
-				   state->wb_req);
+	subreq = wb_int_trans_send(state, state->ev, state->wb_ctx->queue,
+				   state->wb_ctx->fd, state->wb_req);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}

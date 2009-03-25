@@ -136,7 +136,7 @@ NTSTATUS common_ntlm_encrypt_buffer(NTLMSSP_STATE *ntlmssp_state,
 
 	smb_set_enclen(buf_out, smb_len(buf) + NTLMSSP_SIG_SIZE, enc_ctx_num);
 
-	sig = data_blob(NULL, NTLMSSP_SIG_SIZE);
+	ZERO_STRUCT(sig);
 
 	status = ntlmssp_seal_packet(ntlmssp_state,
 		(unsigned char *)buf_out + 8 + NTLMSSP_SIG_SIZE, /* 4 byte len + 0xFF 'S' <enc> <ctx> */
@@ -153,6 +153,7 @@ NTSTATUS common_ntlm_encrypt_buffer(NTLMSSP_STATE *ntlmssp_state,
 
 	/* First 16 data bytes are signature for SSPI compatibility. */
 	memcpy(buf_out + 8, sig.data, NTLMSSP_SIG_SIZE);
+	data_blob_free(&sig);
 	*ppbuf_out = buf_out;
 	return NT_STATUS_OK;
 }
