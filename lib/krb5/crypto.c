@@ -2371,10 +2371,11 @@ AES_PRF(krb5_context context,
     {
 	const EVP_CIPHER *c = (*crypto->et->keytype->evp)();
 	EVP_CIPHER_CTX ctx;
-	/* XXX blksz 1 for cts, so we can't use that */
+
 	EVP_CIPHER_CTX_init(&ctx); /* ivec all zero */
 	EVP_CipherInit_ex(&ctx, c, NULL, derived->keyvalue.data, NULL, 1);
-	EVP_Cipher(&ctx, out->data, result.checksum.data, 16);
+	EVP_Cipher(&ctx, out->data, result.checksum.data,
+		   crypto->et->blocksize);
 	EVP_CIPHER_CTX_cleanup(&ctx);
     }
 
