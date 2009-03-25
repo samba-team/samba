@@ -1284,13 +1284,16 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 	    if (rep.u.encKeyPack.length != size)
 		krb5_abortx(context, "Internal ASN.1 encoder error");
 
-	    /* XXX */
+	    /* XXX KRB-FX-CF2 */
 	    ret = krb5_generate_random_keyblock(context, sessionetype, 
 						sessionkey);
 	    if (ret) {
 		free_PA_PK_AS_REP(&rep);
 		goto out;
 	    }
+
+	    /* XXX Add PA-PKINIT-KX */
+
 	}
 
 	ASN1_MALLOC_ENCODE(PA_PK_AS_REP, buf, len, &rep, &size, ret);
