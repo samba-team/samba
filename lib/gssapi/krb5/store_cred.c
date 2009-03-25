@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 
-RCSID("$Id$");
+#include "gsskrb5_locl.h"
 
 OM_uint32
 _gsskrb5_store_cred(OM_uint32         *minor_status,
@@ -47,8 +47,6 @@ _gsskrb5_store_cred(OM_uint32         *minor_status,
     gsskrb5_cred cred;
 
     *minor_status = 0;
-
-    handle = NULL;
 
     if (cred_usage != GSS_C_INITIATE) {
 	*minor_status = GSS_KRB5_S_G_BAD_USAGE;
@@ -74,5 +72,5 @@ _gsskrb5_store_cred(OM_uint32         *minor_status,
     /* write out cred to credential cache */
 
     *minor_status = 0;
-    return ret;
+    return GSS_S_FAILURE;
 }
