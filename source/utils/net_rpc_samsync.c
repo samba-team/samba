@@ -2253,9 +2253,6 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 			} /* end of switch */
 		} /* end of for loop */
 
-		/* Increment sync_context */
-		sync_context += 1;
-
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
 	/* Write ldif data to the user's file */
