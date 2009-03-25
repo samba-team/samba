@@ -74,13 +74,9 @@
 
  void kerberos_free_data_contents(krb5_context context, krb5_data *pdata)
 {
-#if defined(HAVE_KRB5_FREE_DATA_CONTENTS)
 	if (pdata->data) {
-		krb5_free_data_contents(context, pdata);
+		krb5_data_free(pdata);
 	}
-#else
-	SAFE_FREE(pdata->data);
-#endif
 }
 
  krb5_error_code smb_krb5_kt_free_entry(krb5_context context, krb5_keytab_entry *kt_entry)
