@@ -1614,12 +1614,9 @@ _kdc_as_rep(krb5_context context,
 					   config,
 					   pkp,
 					   &et);
-	if (ret)
-	    goto out;
     } else
-	ret = krb5_generate_random_keyblock(context, sessionetype, &et.key);
 #else
-    ret = krb5_generate_random_keyblock(context, sessionetype, &et.key);
+	ret = krb5_generate_random_keyblock(context, sessionetype, &et.key);
 #endif
     if (ret)
 	goto out;
