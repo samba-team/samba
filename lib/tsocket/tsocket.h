@@ -29,6 +29,7 @@
 
 struct tsocket_context;
 struct tsocket_address;
+struct tdgram_context;
 struct iovec;
 
 enum tsocket_type {
@@ -121,6 +122,32 @@ int _tsocket_address_create_socket(const struct tsocket_address *addr,
 				       __location__)
 
 /*
+ * tdgram_context related functions
+ */
+struct tevent_req *tdgram_recvfrom_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct tdgram_context *dgram);
+ssize_t tdgram_recvfrom_recv(struct tevent_req *req,
+			     int *perrno,
+			     TALLOC_CTX *mem_ctx,
+			     uint8_t **buf,
+			     struct tsocket_address **src);
+
+struct tevent_req *tdgram_sendto_send(TALLOC_CTX *mem_ctx,
+				      struct tevent_context *ev,
+				      struct tdgram_context *dgram,
+				      const uint8_t *buf, size_t len,
+				      const struct tsocket_address *dst);
+ssize_t tdgram_sendto_recv(struct tevent_req *req,
+			   int *perrno);
+
+struct tevent_req *tdgram_disconnect_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct tdgram_context *dgram);
+int tdgram_disconnect_recv(struct tevent_req *req,
+			   int *perrno);
+
+/*
  * BSD sockets: inet, inet6 and unix
  */
 
@@ -159,6 +186,22 @@ int _tsocket_context_bsd_wrap_existing(TALLOC_CTX *mem_ctx,
 #define tsocket_context_bsd_wrap_existing(mem_ctx, fd, cod, _sock) \
 	_tsocket_context_bsd_wrap_existing(mem_ctx, fd, cod, _sock, \
 					   __location__)
+
+int _tdgram_inet_udp_socket(const struct tsocket_address *local,
+			    const struct tsocket_address *remote,
+			    TALLOC_CTX *mem_ctx,
+			    struct tdgram_context **dgram,
+			    const char *location);
+#define tdgram_inet_udp_socket(local, remote, mem_ctx, dgram) \
+	_tdgram_inet_udp_socket(local, remote, mem_ctx, dgram, __location__)
+
+int _tdgram_unix_dgram_socket(const struct tsocket_address *local,
+			      const struct tsocket_address *remote,
+			      TALLOC_CTX *mem_ctx,
+			      struct tdgram_context **dgram,
+			      const char *location);
+#define tdgram_unix_dgram_socket(local, remote, mem_ctx, dgram) \
+	_tdgram_unix_dgram_socket(local, remote, mem_ctx, dgram, __location__)
 
 /*
  * Async helpers

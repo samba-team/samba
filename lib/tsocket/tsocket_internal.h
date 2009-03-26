@@ -149,6 +149,47 @@ struct tsocket_address *_tsocket_address_create(TALLOC_CTX *mem_ctx,
 	_tsocket_address_create(mem_ctx, ops, state, sizeof(type), \
 				#type, location)
 
+struct tdgram_context_ops {
+	const char *name;
+
+	struct tevent_req *(*recvfrom_send)(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct tdgram_context *dgram);
+	ssize_t (*recvfrom_recv)(struct tevent_req *req,
+				 int *perrno,
+				 TALLOC_CTX *mem_ctx,
+				 uint8_t **buf,
+				 struct tsocket_address **src);
+
+	struct tevent_req *(*sendto_send)(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct tdgram_context *dgram,
+					  const uint8_t *buf, size_t len,
+					  const struct tsocket_address *dst);
+	ssize_t (*sendto_recv)(struct tevent_req *req,
+			       int *perrno);
+
+	struct tevent_req *(*disconnect_send)(TALLOC_CTX *mem_ctx,
+					      struct tevent_context *ev,
+					      struct tdgram_context *dgram);
+	int (*disconnect_recv)(struct tevent_req *req,
+			       int *perrno);
+};
+
+struct tdgram_context *_tdgram_context_create(TALLOC_CTX *mem_ctx,
+					const struct tdgram_context_ops *ops,
+					void *pstate,
+					size_t psize,
+					const char *type,
+					const char *location);
+#define tdgram_context_create(mem_ctx, ops, state, type, location) \
+	_tdgram_context_create(mem_ctx, ops, state, sizeof(type), \
+				#type, location)
+
+void *_tdgram_context_data(struct tdgram_context *dgram);
+#define tdgram_context_data(_req, _type) \
+	talloc_get_type_abort(_tdgram_context_data(_req), _type)
+
 int tsocket_error_from_errno(int ret, int sys_errno, bool *retry);
 int tsocket_simple_int_recv(struct tevent_req *req, int *perrno);
 int tsocket_common_prepare_fd(int fd, bool high_fd);
