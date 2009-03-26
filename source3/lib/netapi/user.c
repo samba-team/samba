@@ -1497,6 +1497,9 @@ WERROR NetQueryDisplayInformation_r(struct libnetapi_ctx *ctx,
 
 	NTSTATUS status = NT_STATUS_OK;
 	WERROR werr;
+	WERROR werr_tmp;
+
+	*r->out.entries_read = 0;
 
 	ZERO_STRUCT(connect_handle);
 	ZERO_STRUCT(domain_handle);
@@ -1540,15 +1543,18 @@ WERROR NetQueryDisplayInformation_r(struct libnetapi_ctx *ctx,
 					       &total_size,
 					       &returned_size,
 					       &info);
-	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
+	werr = ntstatus_to_werror(status);
+	if (NT_STATUS_IS_ERR(status)) {
 		goto done;
 	}
 
-	werr = convert_samr_dispinfo_to_NET_DISPLAY(ctx, &info,
-						    r->in.level,
-						    r->out.entries_read,
-						    r->out.buffer);
+	werr_tmp = convert_samr_dispinfo_to_NET_DISPLAY(ctx, &info,
+							r->in.level,
+							r->out.entries_read,
+							r->out.buffer);
+	if (!W_ERROR_IS_OK(werr_tmp)) {
+		werr = werr_tmp;
+	}
  done:
 	/* if last query */
 	if (NT_STATUS_IS_OK(status) ||
