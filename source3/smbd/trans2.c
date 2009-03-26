@@ -894,6 +894,8 @@ static void call_trans2open(connection_struct *conn,
 	uint32 create_options = 0;
 	TALLOC_CTX *ctx = talloc_tos();
 
+	SET_STAT_INVALID(sbuf);
+
 	/*
 	 * Ensure we have enough parameters to perform the operation.
 	 */

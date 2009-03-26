@@ -440,6 +440,8 @@ void reply_ntcreate_and_X(struct smb_request *req)
 
 	START_PROFILE(SMBntcreateX);
 
+	SET_STAT_INVALID(sbuf);
+
 	if (req->wct < 24) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return;
@@ -863,6 +865,8 @@ static void call_nt_transact_create(connection_struct *conn,
 	int oplock_request;
 	uint8_t oplock_granted;
 	TALLOC_CTX *ctx = talloc_tos();
+
+	SET_STAT_INVALID(sbuf);
 
 	DEBUG(5,("call_nt_transact_create\n"));
 
