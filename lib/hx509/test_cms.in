@@ -423,6 +423,7 @@ for a in rc2-40 rc2-64 rc2-128 des-ede3 aes-128 aes-256; do
     ${hxtool} cms-unenvelope \
 	--certificate=FILE:$srcdir/data/test.crt,$srcdir/data/test.key \
 	--content-info \
+	--allow-weak \
 	"$srcdir/data/test-enveloped-$a" ev.data.out > /dev/null || exit 1
     cmp "$srcdir/data/static-file" ev.data.out || exit 1
 done
