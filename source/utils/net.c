@@ -72,6 +72,7 @@ const char *opt_comment = "";
 const char *opt_container = NULL;
 int opt_flags = -1;
 int opt_timeout = 0;
+int opt_request_timeout = 0;
 const char *opt_target_workgroup = NULL;
 int opt_machine_pass = 0;
 int opt_localgroup = False;
@@ -571,6 +572,8 @@ NTSTATUS net_make_ipc_connection_ex(const char *domain, const char *server,
 		d_fprintf(stderr, "Connection failed: %s\n",
 			  nt_errstr(nt_status));
 		cli = NULL;
+	} else if (opt_request_timeout) {
+		cli_set_timeout(cli, opt_request_timeout * 1000);
 	}
 
 done:
@@ -1042,6 +1045,7 @@ static struct functable net_func[] = {
 		{"force",	'f', POPT_ARG_NONE,   &opt_force},
 		{"stdin",	'i', POPT_ARG_NONE,   &opt_stdin},
 		{"timeout",	't', POPT_ARG_INT,    &opt_timeout},
+		{"request-timeout",0,POPT_ARG_INT,    &opt_request_timeout},
 		{"machine-pass",'P', POPT_ARG_NONE,   &opt_machine_pass},
 		{"myworkgroup", 'W', POPT_ARG_STRING, &opt_workgroup},
 		{"verbose",	'v', POPT_ARG_NONE,   &opt_verbose},
