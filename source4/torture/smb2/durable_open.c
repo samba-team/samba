@@ -53,7 +53,7 @@ bool test_durable_open_file_position(struct torture_context *tctx,
 	struct smb2_handle h1, h2;
 	struct smb2_create io1, io2;
 	NTSTATUS status;
-	const char *fname = "durable_opens.dat";
+	const char *fname = "durable_open_position.dat";
 	DATA_BLOB b;
 	union smb_fileinfo qfinfo;
 	union smb_setfileinfo sfinfo;
@@ -182,13 +182,119 @@ done:
 	return ret;
 }
 
+/*
+  Open, disconnect, oplock break, reconnect.
+*/
+bool test_durable_open_oplock(struct torture_context *tctx,
+			      struct smb2_tree *tree1,
+			      struct smb2_tree *tree2)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_create io1, io2, io3;
+	struct smb2_handle h1;
+	NTSTATUS status;
+	const char *fname = "durable_open_oplock.dat";
+	DATA_BLOB b;
+	bool ret = true;
+
+	/* Clean slate */
+	smb2_util_unlink(tree1, fname);
+
+	/* Create with batch oplock */
+	ZERO_STRUCT(io1);
+	io1.in.security_flags		= 0x00;
+	io1.in.oplock_level		= SMB2_OPLOCK_LEVEL_BATCH;
+	io1.in.impersonation_level	= NTCREATEX_IMPERSONATION_IMPERSONATION;
+	io1.in.create_flags		= 0x00000000;
+	io1.in.reserved			= 0x00000000;
+	io1.in.desired_access		= SEC_RIGHTS_FILE_ALL;
+	io1.in.file_attributes		= FILE_ATTRIBUTE_NORMAL;
+	io1.in.share_access		= NTCREATEX_SHARE_ACCESS_READ |
+					  NTCREATEX_SHARE_ACCESS_WRITE |
+					  NTCREATEX_SHARE_ACCESS_DELETE;
+	io1.in.create_disposition	= NTCREATEX_DISP_OPEN_IF;
+	io1.in.create_options		= NTCREATEX_OPTIONS_SEQUENTIAL_ONLY |
+					  NTCREATEX_OPTIONS_ASYNC_ALERT	|
+					  NTCREATEX_OPTIONS_NON_DIRECTORY_FILE |
+					  0x00200000;
+	io1.in.fname			= fname;
+
+	io2 = io1;
+	io2.in.create_disposition	= NTCREATEX_DISP_OPEN;
+
+	b = data_blob_talloc(mem_ctx, NULL, 16);
+	SBVAL(b.data, 0, 0);
+	SBVAL(b.data, 8, 0);
+
+	status = smb2_create_blob_add(tree1, &io1.in.blobs,
+				      SMB2_CREATE_TAG_DHNQ,
+				      b);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb2_create(tree1, mem_ctx, &io1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VAL(io1.out.oplock_level, SMB2_OPLOCK_LEVEL_BATCH);
+	CHECK_VAL(io1.out.create_action, NTCREATEX_ACTION_CREATED);
+	CHECK_VAL(io1.out.alloc_size, 0);
+	CHECK_VAL(io1.out.size, 0);
+	CHECK_VAL(io1.out.file_attr, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io1.out.reserved2, 0);
+
+	h1 = io1.out.file.handle;
+
+	/* Disconnect after getting the batch */
+	talloc_free(tree1);
+	tree1 = NULL;
+
+	/*
+	 * Windows7 (build 7000) will break a batch oplock immediately if the
+	 * original client is gone. (ZML: This seems like a bug. It should give
+	 * some time for the client to reconnect!)
+	 */
+	status = smb2_create(tree2, mem_ctx, &io2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VAL(io2.out.oplock_level, SMB2_OPLOCK_LEVEL_BATCH);
+	CHECK_VAL(io2.out.create_action, NTCREATEX_ACTION_EXISTED);
+	CHECK_VAL(io2.out.alloc_size, 0);
+	CHECK_VAL(io2.out.size, 0);
+	CHECK_VAL(io2.out.file_attr, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io2.out.reserved2, 0);
+
+	/* What if tree1 tries to come back and reclaim? */
+	if (!torture_smb2_connection(tctx, &tree1)) {
+		torture_warning(tctx, "couldn't reconnect, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	ZERO_STRUCT(io2);
+	io2.in.fname = fname;
+
+	b = data_blob_talloc(tctx, NULL, 16);
+	SBVAL(b.data, 0, h1.data[0]);
+	SBVAL(b.data, 8, h1.data[1]);
+
+	status = smb2_create_blob_add(tree2, &io2.in.blobs,
+				      SMB2_CREATE_TAG_DHNC,
+				      b);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb2_create(tree2, mem_ctx, &io2);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
+done:
+	return ret;
+
+}
+
 struct torture_suite *torture_smb2_durable_open_init(void)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(),
-	    "DURABLE-OPEN");
+	struct torture_suite *suite =
+	    torture_suite_create(talloc_autofree_context(), "DURABLE-OPEN");
 
 	torture_suite_add_2smb2_test(suite, "FILE-POSITION",
 	    test_durable_open_file_position);
+	torture_suite_add_2smb2_test(suite, "OPLOCK", test_durable_open_oplock);
 
 	suite->description = talloc_strdup(suite, "SMB2-DURABLE-OPEN tests");
 }
