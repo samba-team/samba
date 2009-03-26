@@ -130,9 +130,6 @@ void check_master_browser_exists(time_t t)
 	struct subnet_record *subrec;
 	const char *workgroup_name = lp_workgroup();
 
-	if (!lastrun)
-		lastrun = t;
-
 	if (t < (lastrun + (CHECK_TIME_MST_BROWSE * 60)))
 		return;
 

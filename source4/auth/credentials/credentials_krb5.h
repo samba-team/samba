@@ -24,6 +24,7 @@
 #define __CREDENTIALS_KRB5_H__
 
 #include <gssapi/gssapi.h>
+#include <gssapi/gssapi_krb5.h>
 #include <krb5.h>
 
 struct gssapi_creds_container {

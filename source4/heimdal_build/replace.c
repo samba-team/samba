@@ -84,3 +84,7 @@
 	return -1;
 }
 #endif
+
+const char *heimdal_version = "samba-internal-heimdal";
+const char *heimdal_long_version = "samba-interal-heimdal";
+
