@@ -48,7 +48,8 @@ int net_common_flags_usage(int argc, const char **argv)
 	d_printf("\t-l or --long\t\t\tDisplay full information\n");
 	d_printf("\t-V or --version\t\t\tPrint samba version information\n");
 	d_printf("\t-P or --machine-pass\t\tAuthenticate as machine account\n");
-	d_printf("\t-e or --encrypt\t\tEncrypt SMB transport (UNIX extended servers only)\n");
+	d_printf("\t-e or --encrypt\t\t\tEncrypt SMB transport (UNIX extended servers only)\n");
+	d_printf("\t--request-timeout\t\tThe timeout for smb and rpc requests in seconds\n");
 	return -1;
 }
 
