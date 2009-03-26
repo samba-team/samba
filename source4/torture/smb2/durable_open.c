@@ -1,7 +1,7 @@
 /*
    Unix SMB/CIFS implementation.
 
-   test suite for SMB2 persistent file handles
+   test suite for SMB2 durable opens
 
    Copyright (C) Stefan Metzmacher 2008
 
@@ -41,19 +41,19 @@
 		goto done; \
 	}} while (0)
 
-/* 
-   basic testing of SMB2 persistent file handles
+/*
+   basic testing of SMB2 durable opens
    regarding the position information on the handle
 */
-bool torture_smb2_persistent_handles1(struct torture_context *tctx,
-				      struct smb2_tree *tree1,
-				      struct smb2_tree *tree2)
+bool test_durable_open_file_position(struct torture_context *tctx,
+				     struct smb2_tree *tree1,
+				     struct smb2_tree *tree2)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	struct smb2_handle h1, h2;
 	struct smb2_create io1, io2;
 	NTSTATUS status;
-	const char *fname = "persistent_handles.dat";
+	const char *fname = "durable_opens.dat";
 	DATA_BLOB b;
 	union smb_fileinfo qfinfo;
 	union smb_setfileinfo sfinfo;
@@ -180,4 +180,15 @@ bool torture_smb2_persistent_handles1(struct torture_context *tctx,
 	smb2_util_unlink(tree2, fname);
 done:
 	return ret;
+}
+
+struct torture_suite *torture_smb2_durable_open_init(void)
+{
+	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(),
+	    "DURABLE-OPEN");
+
+	torture_suite_add_2smb2_test(suite, "FILE-POSITION",
+	    test_durable_open_file_position);
+
+	suite->description = talloc_strdup(suite, "SMB2-DURABLE-OPEN tests");
 }
