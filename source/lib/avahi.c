@@ -216,6 +216,13 @@ static void avahi_timeout_update(AvahiTimeout *t, const struct timeval *tv)
 {
 	TALLOC_FREE(t->te);
 
+	if (tv == NULL) {
+		/*
+		 * Disable this timer
+		 */
+		return;
+	}
+
 	t->te = event_add_timed(t->ctx->ev, t, *tv, avahi_timeout_handler, t);
 	/*
 	 * No failure mode defined here
