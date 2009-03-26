@@ -521,6 +521,8 @@ NTSTATUS net_make_ipc_connection_ex(struct net_context *c ,const char *domain,
 		d_fprintf(stderr, "Connection failed: %s\n",
 			  nt_errstr(nt_status));
 		cli = NULL;
+	} else if (c->opt_request_timeout) {
+		cli_set_timeout(cli, c->opt_request_timeout * 1000);
 	}
 
 done:
