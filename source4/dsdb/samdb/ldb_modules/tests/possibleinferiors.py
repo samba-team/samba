@@ -36,6 +36,7 @@ parser.add_option_group(sambaopts)
 credopts = options.CredentialsOptions(parser)
 parser.add_option_group(credopts)
 parser.add_option_group(options.VersionOptions(parser))
+parser.add_option("--wspp", action="store_true")
 
 opts, args = parser.parse_args()
 
@@ -139,10 +140,12 @@ def POSSSUPERIORS(classinfo, oclist):
             list2.extend(classinfo[oc]["systemPossSuperiors"])
             list2.extend(classinfo[oc]["possSuperiors"])
             list2.extend(POSSSUPERIORS(classinfo, SUPCLASSES(classinfo, oc)))
-           # the WSPP docs suggest we should do this:
-           #   list2.extend(POSSSUPERIORS(classinfo, AUXCLASSES(classinfo, [oc])))
-           # but testing against w2k3 and w2k8 shows that we need to do this instead
-            list2.extend(SUBCLASSES(classinfo, list2))
+            if opts.wspp:
+                # the WSPP docs suggest we should do this:
+                list2.extend(POSSSUPERIORS(classinfo, AUXCLASSES(classinfo, [oc])))
+            else:
+                # but testing against w2k3 and w2k8 shows that we need to do this instead
+                list2.extend(SUBCLASSES(classinfo, list2))
             classinfo[oc]["POSSSUPERIORS"] = list2
             list.extend(list2)
     return list
