@@ -832,6 +832,7 @@ void send_trans2_replies(connection_struct *conn,
 		show_msg((char *)req->outbuf);
 		if (!srv_send_smb(smbd_server_fd(),
 				(char *)req->outbuf,
+				true, req->seqnum+1,
 				IS_CONN_ENCRYPTED(conn),
 				&req->pcd))
 			exit_server_cleanly("send_trans2_replies: srv_send_smb failed.");
@@ -893,6 +894,8 @@ static void call_trans2open(connection_struct *conn,
 	uint32 create_disposition;
 	uint32 create_options = 0;
 	TALLOC_CTX *ctx = talloc_tos();
+
+	SET_STAT_INVALID(sbuf);
 
 	/*
 	 * Ensure we have enough parameters to perform the operation.
@@ -2892,8 +2895,8 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 		case SMB_QUERY_CIFS_UNIX_INFO:
 		{
 			bool large_write = lp_min_receive_file_size() &&
-						!srv_is_signing_active();
-			bool large_read = !srv_is_signing_active();
+					!srv_is_signing_active(smbd_server_conn);
+			bool large_read = !srv_is_signing_active(smbd_server_conn);
 			int encrypt_caps = 0;
 
 			if (!lp_unix_extensions()) {

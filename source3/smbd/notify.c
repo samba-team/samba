@@ -143,7 +143,9 @@ static void change_notify_reply_packet(connection_struct *conn,
 	}
 
 	show_msg((char *)req->outbuf);
-	if (!srv_send_smb(smbd_server_fd(), (char *)req->outbuf,
+	if (!srv_send_smb(smbd_server_fd(),
+			  (char *)req->outbuf,
+			  true, req->seqnum+1,
 			  req->encrypted, &req->pcd)) {
 		exit_server_cleanly("change_notify_reply_packet: srv_send_smb "
 				    "failed.");
@@ -259,9 +261,6 @@ NTSTATUS change_notify_add_request(struct smb_request *req,
 
 	map->mid = request->req->mid;
 	DLIST_ADD(notify_changes_by_mid, map);
-
-	/* Push the MID of this packet on the signing queue. */
-	srv_defer_sign_response(request->req->mid);
 
 	return NT_STATUS_OK;
 }

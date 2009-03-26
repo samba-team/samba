@@ -345,7 +345,7 @@ static bool kdc_process(struct kdc_server *kdc,
 	}
 	if (k5_reply.length) {
 		*reply = data_blob_talloc(mem_ctx, k5_reply.data, k5_reply.length);
-		krb5_free_data_contents(kdc->smb_krb5_context->krb5_context, &k5_reply);
+		krb5_data_free(&k5_reply);
 	} else {
 		*reply = data_blob(NULL, 0);	
 	}

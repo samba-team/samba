@@ -550,7 +550,7 @@ void cli_chain_uncork(struct cli_state *cli)
 		_smb_setlen_large(((char *)req->outbuf), smblen);
 	}
 
-	cli_calculate_sign_mac(cli, (char *)req->outbuf);
+	cli_calculate_sign_mac(cli, (char *)req->outbuf, &req->seqnum);
 
 	if (cli_encryption_on(cli)) {
 		NTSTATUS status;
@@ -811,9 +811,16 @@ NTSTATUS cli_pull_reply(struct async_req *req,
  */
 
 
-static NTSTATUS validate_smb_crypto(struct cli_state *cli, char *pdu)
+static NTSTATUS validate_smb_crypto(struct cli_state *cli, char *pdu,
+				    struct cli_request **_req,
+				    uint16_t *_mid)
 {
 	NTSTATUS status;
+	struct cli_request *req = NULL;
+	uint16_t mid;
+
+	*_req = NULL;
+	*_mid = 0;
 
 	if ((IVAL(pdu, 4) != 0x424d53ff) /* 0xFF"SMB" */
 	    && (SVAL(pdu, 4) != 0x45ff)) /* 0xFF"E" */ {
@@ -846,11 +853,27 @@ static NTSTATUS validate_smb_crypto(struct cli_state *cli, char *pdu)
 		}
 	}
 
-	if (!cli_check_sign_mac(cli, pdu)) {
+	mid = SVAL(pdu, smb_mid);
+
+	for (req = cli->outstanding_requests; req; req = req->next) {
+		if (req->mid == mid) {
+			break;
+		}
+	}
+
+	if (!req) {
+		/* oplock breaks are not signed */
+		goto done;
+	}
+
+	if (!cli_check_sign_mac(cli, pdu, req->seqnum+1)) {
 		DEBUG(10, ("cli_check_sign_mac failed\n"));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
+done:
+	*_req = req;
+	*_mid = mid;
 	return NT_STATUS_OK;
 }
 
@@ -863,7 +886,7 @@ static void handle_incoming_pdu(struct cli_state *cli)
 {
 	struct cli_request *req, *next;
 	uint16_t mid;
-	size_t raw_pdu_len, buf_len, pdu_len, rest_len;
+	size_t raw_pdu_len, buf_len, rest_len;
 	char *pdu;
 	int i;
 	NTSTATUS status;
@@ -923,22 +946,12 @@ static void handle_incoming_pdu(struct cli_state *cli)
 		}
 	}
 
-	status = validate_smb_crypto(cli, pdu);
+	status = validate_smb_crypto(cli, pdu, &req, &mid);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto invalidate_requests;
 	}
 
-	mid = SVAL(pdu, smb_mid);
-
 	DEBUG(10, ("handle_incoming_pdu: got mid %d\n", mid));
-
-	for (req = cli->outstanding_requests; req; req = req->next) {
-		if (req->mid == mid) {
-			break;
-		}
-	}
-
-	pdu_len = smb_len(pdu) + 4;
 
 	if (req == NULL) {
 		DEBUG(3, ("Request for mid %d not found, dumping PDU\n", mid));

@@ -59,8 +59,8 @@ static bool test_cldap_netlogon(struct torture_context *tctx, const char *dest)
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	ZERO_STRUCT(search);
-	search.in.dest_address = NULL;//dest;
-	search.in.dest_port = 0;//lp_cldap_port(tctx->lp_ctx);
+	search.in.dest_address = NULL;
+	search.in.dest_port = 0;
 	search.in.acct_control = -1;
 	search.in.version = NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX;
 	search.in.map_response = true;

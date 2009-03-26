@@ -598,6 +598,7 @@ struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 #include "messages.h"
 #include "locking.h"
 #include "smb_perfcount.h"
+#include "smb_signing.h"
 #include "smb.h"
 #include "nameserv.h"
 #include "secrets.h"

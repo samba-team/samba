@@ -91,25 +91,6 @@ static int push_signature(uint8 **outbuf)
 }
 
 /****************************************************************************
- Start the signing engine if needed. Don't fail signing here.
-****************************************************************************/
-
-static void sessionsetup_start_signing_engine(
-			const auth_serversupplied_info *server_info,
-			const uint8 *inbuf)
-{
-	if (!server_info->guest && !srv_signing_started()) {
-		/* We need to start the signing engine
-		 * here but a W2K client sends the old
-		 * "BSRSPYL " signature instead of the
-		 * correct one. Subsequent packets will
-		 * be correct.
-		 */
-		srv_check_sign_mac((char *)inbuf, False);
-	}
-}
-
-/****************************************************************************
  Send a security blob via a session setup reply.
 ****************************************************************************/
 
@@ -579,7 +560,6 @@ static void reply_spnego_kerberos(struct smb_request *req,
 
 		SSVAL(req->outbuf, smb_uid, sess_vuid);
 
-		sessionsetup_start_signing_engine(server_info, req->inbuf);
 		/* Successful logon. Keep this vuid. */
 		*p_invalidate_vuid = False;
 	}
@@ -668,9 +648,6 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
 		if (server_info->guest) {
 			SSVAL(req->outbuf,smb_vwv2,1);
 		}
-
-		sessionsetup_start_signing_engine(server_info,
-						  (uint8 *)req->inbuf);
 	}
 
   out:
@@ -1804,8 +1781,6 @@ void reply_sesssetup_and_X(struct smb_request *req)
 
 		/* current_user_info is changed on new vuid */
 		reload_services( True );
-
-		sessionsetup_start_signing_engine(server_info, req->inbuf);
 	}
 
 	data_blob_free(&nt_resp);

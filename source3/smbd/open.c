@@ -1033,15 +1033,6 @@ static void defer_open(struct share_mode_lock *lck,
 		exit_server("push_deferred_smb_message failed");
 	}
 	add_deferred_open(lck, req->mid, request_time, state->id);
-
-	/*
-	 * Push the MID of this packet on the signing queue.
-	 * We only do this once, the first time we push the packet
-	 * onto the deferred open queue, as this has a side effect
-	 * of incrementing the response sequence number.
-	 */
-
-	srv_defer_sign_response(req->mid);
 }
 
 

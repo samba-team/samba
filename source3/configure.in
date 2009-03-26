@@ -152,13 +152,11 @@ AC_SUBST(NSCD_LIBS)
 # do this here since AC_CACHE_CHECK apparently sets the CFLAGS to "-g -O2"
 # if it has no value.  This prevent *very* large debug binaries from occurring
 # by default.
-if test "x$CFLAGS" = x; then
-  CFLAGS="-O"
-fi
 if test "x$debug" = "xyes" ; then
 	CFLAGS="${CFLAGS} -g"
-else
-	CFLAGS="${CFLAGS} -O"
+fi
+if test "x$CFLAGS" = x; then
+  CFLAGS="-O"
 fi
 
 m4_include(../lib/socket_wrapper/config.m4)
@@ -879,7 +877,7 @@ fi
 
 AC_CHECK_FUNCS(dirfd)
 if test x"$ac_cv_func_dirfd" = x"yes"; then
-	default_shared_modules="$default_shared_modules vfs_syncops"
+	default_shared_modules="$default_shared_modules vfs_syncops vfs_dirsort"
 fi
 
 AC_CACHE_CHECK([for struct sigevent type],samba_cv_struct_sigevent, [
@@ -5975,10 +5973,10 @@ AC_SUBST(FLAGS1)
 # Check if user wants DNS service discovery support
 
 AC_ARG_ENABLE(dnssd,
-[AS_HELP_STRING([--enable-dnssd], [Enable DNS service discovery support (default=auto)])])
+[AS_HELP_STRING([--enable-dnssd], [Enable DNS service discovery support (default=no)])])
 
 AC_SUBST(DNSSD_LIBS)
-if test x"$enable_dnssd" != x"no"; then
+if test x"$enable_dnssd" == x"yes"; then
     have_dnssd_support=yes
 
     AC_CHECK_HEADERS(dns_sd.h)
@@ -6004,6 +6002,42 @@ if test x"$enable_dnssd" != x"no"; then
 	fi
     fi
 
+fi
+
+#################################################
+# Check if user wants avahi support
+
+AC_ARG_ENABLE(avahi,
+[AS_HELP_STRING([--enable-avahi], [Enable Avahi support (default=auto)])])
+
+AC_SUBST(AVAHI_LIBS)
+if test x"$enable_avahi" != x"no"; then
+    have_avahi_support=yes
+
+    AC_CHECK_HEADERS(avahi-common/watch.h)
+    if test x"$ac_cv_header_avahi_common_watch_h" != x"yes"; then
+	have_avahi_support=no
+    fi
+
+    AC_CHECK_HEADERS(avahi-client/client.h)
+    if test x"$ac_cv_header_avahi_common_watch_h" != x"yes"; then
+	have_avahi_support=no
+    fi
+
+    AC_CHECK_LIB_EXT(avahi-client, AVAHI_LIBS, avahi_client_new)
+    if test x"$ac_cv_lib_ext_avahi_client_avahi_client_new" != x"yes"; then
+	have_avahi_support=no
+    fi
+
+    if test x"$have_avahi_support" = x"yes"; then
+	AC_DEFINE(WITH_AVAHI_SUPPORT, 1,
+		[Whether to enable avahi support])
+	AC_SUBST(AVAHI_OBJ, "lib/avahi.o smbd/avahi_register.o")
+    else
+	if test x"$enable_avahi" = x"yes"; then
+	    AC_MSG_ERROR(avahi support not available)
+	fi
+    fi
 fi
 
 #################################################
@@ -6213,6 +6247,7 @@ SMB_MODULE(vfs_acl_tdb, \$(VFS_ACL_TDB_OBJ), "bin/acl_tdb.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_smb_traffic_analyzer, \$(VFS_SMB_TRAFFIC_ANALYZER_OBJ), "bin/smb_traffic_analyzer.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_onefs, \$(VFS_ONEFS), "bin/onefs.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_onefs_shadow_copy, \$(VFS_ONEFS_SHADOW_COPY), "bin/onefs_shadow_copy.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_dirsort, \$(VFS_DIRSORT_OBJ), "bin/dirsort.$SHLIBEXT", VFS)
 
 SMB_SUBSYSTEM(VFS,smbd/vfs.o)
 

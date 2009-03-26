@@ -49,3 +49,13 @@ bool tevent_req_is_nterror(struct tevent_req *req, NTSTATUS *status)
 	}
 	return true;
 }
+
+NTSTATUS tevent_req_simple_recv_ntstatus(struct tevent_req *req)
+{
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	return NT_STATUS_OK;
+}

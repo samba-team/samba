@@ -258,6 +258,19 @@ class SimpleLdb(unittest.TestCase):
         l = ldb.Ldb(filename())
         l.set_debug(my_report_fn)
 
+    def test_zero_byte_string(self):
+        """Testing we do not get trapped in the \0 byte in a property string."""
+        l = ldb.Ldb(filename())
+        l.add({
+            "dn" : "dc=somedn",
+            "objectclass" : "user",
+            "cN" : "LDAPtestUSER",
+            "givenname" : "ldap",
+            "displayname" : "foo\0bar",
+        })
+        res = l.search(expression="(dn=dc=somedn)")
+        self.assertEquals("foo\0bar", res[0]["displayname"][0])
+
 
 class DnTests(unittest.TestCase):
     def setUp(self):

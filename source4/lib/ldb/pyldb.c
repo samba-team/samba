@@ -5,7 +5,7 @@
 
    Copyright (C) 2005,2006 Tim Potter <tpot@samba.org>
    Copyright (C) 2006 Simo Sorce <idra@samba.org>
-   Copyright (C) 2007-2008 Jelmer Vernooij <jelmer@samba.org>
+   Copyright (C) 2007-2009 Jelmer Vernooij <jelmer@samba.org>
 
 	 ** NOTE! The following LGPL license applies to the ldb
 	 ** library. This does NOT imply that all of Samba is released
@@ -65,18 +65,7 @@ static PyObject *PyObject_FromLdbValue(struct ldb_context *ldb_ctx,
 	PyObject *ret;
 	
 	new_val = *val;
-	
-	if (ldb_ctx != NULL) {		
-		a = ldb_schema_attribute_by_name(ldb_ctx, el->name);
-	
-		if (a != NULL) {
-			if (a->syntax->ldif_write_fn(ldb_ctx, mem_ctx, val, &new_val) != 0) {
-				talloc_free(mem_ctx);
-				return NULL;
-			}
-		}
-	} 
-	
+
 	ret = PyString_FromStringAndSize((const char *)new_val.data, new_val.length);
 	
 	talloc_free(mem_ctx);
@@ -84,6 +73,14 @@ static PyObject *PyObject_FromLdbValue(struct ldb_context *ldb_ctx,
 	return ret;
 }
 
+/**
+ * Obtain a ldb DN from a Python object.
+ *
+ * @param mem_ctx Memory context
+ * @param object Python object
+ * @param ldb_ctx LDB context
+ * @return Whether or not the conversion succeeded
+ */
 bool PyObject_AsDn(TALLOC_CTX *mem_ctx, PyObject *object, 
 		   struct ldb_context *ldb_ctx, struct ldb_dn **dn)
 {
@@ -104,6 +101,12 @@ bool PyObject_AsDn(TALLOC_CTX *mem_ctx, PyObject *object,
 	return false;
 }
 
+/**
+ * Create a Python object from a ldb_result.
+ *
+ * @param result LDB result to convert
+ * @return Python object with converted result (a list object)
+ */
 static PyObject *PyLdbResult_FromResult(struct ldb_result *result)
 {
 	PyObject *ret;
@@ -119,7 +122,16 @@ static PyObject *PyLdbResult_FromResult(struct ldb_result *result)
 	return ret;
 }
 
-static struct ldb_result *PyLdbResult_AsResult(TALLOC_CTX *mem_ctx, PyObject *obj)
+/**
+ * Create a LDB Result from a Python object. 
+ * If conversion fails, NULL will be returned and a Python exception set.
+ *
+ * @param mem_ctx Memory context in which to allocate the LDB Result
+ * @param obj Python object to convert
+ * @return a ldb_result, or NULL if the conversion failed
+ */
+static struct ldb_result *PyLdbResult_AsResult(TALLOC_CTX *mem_ctx, 
+											   PyObject *obj)
 {
 	struct ldb_result *res;
 	int i;
@@ -451,7 +463,6 @@ static PyObject *py_ldb_get_schema_basedn(PyLdbObject *self)
 	return PyLdbDn_FromDn(dn);
 }
 
-
 static PyObject *py_ldb_get_config_basedn(PyLdbObject *self)
 {
 	struct ldb_dn *dn = ldb_get_config_basedn(PyLdb_AsLdbContext(self));
@@ -459,7 +470,6 @@ static PyObject *py_ldb_get_config_basedn(PyLdbObject *self)
 		Py_RETURN_NONE;
 	return PyLdbDn_FromDn(dn);
 }
-
 
 static PyObject *py_ldb_get_default_basedn(PyLdbObject *self)
 {
@@ -651,8 +661,6 @@ static PyObject *py_ldb_add(PyLdbObject *self, PyObject *args)
 
 	Py_RETURN_NONE;
 }
-
-
 
 static PyObject *py_ldb_delete(PyLdbObject *self, PyObject *args)
 {
@@ -1257,6 +1265,21 @@ PyTypeObject PyLdbModule = {
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
+
+/**
+ * Create a ldb_message_element from a Python object.
+ *
+ * This will accept any sequence objects that contains strings, or 
+ * a string object.
+ *
+ * A reference to set_obj will be borrowed. 
+ *
+ * @param mem_ctx Memory context
+ * @param set_obj Python object to convert
+ * @param flags ldb_message_element flags to set
+ * @param attr_name Name of the attribute
+ * @return New ldb_message_element, allocated as child of mem_ctx
+ */
 struct ldb_message_element *PyObject_AsMessageElement(TALLOC_CTX *mem_ctx,
 											   PyObject *set_obj, int flags,
 											   const char *attr_name)
@@ -1274,9 +1297,7 @@ struct ldb_message_element *PyObject_AsMessageElement(TALLOC_CTX *mem_ctx,
 		me->num_values = 1;
 		me->values = talloc_array(me, struct ldb_val, me->num_values);
 		me->values[0].length = PyString_Size(set_obj);
-		me->values[0].data = (uint8_t *)talloc_strndup(me->values,
-					PyString_AsString(set_obj),
-					me->values[0].length);
+		me->values[0].data = (uint8_t *)PyString_AsString(set_obj);
 	} else if (PySequence_Check(set_obj)) {
 		int i;
 		me->num_values = PySequence_Size(set_obj);
