@@ -1287,7 +1287,7 @@ _krb5_homedir_access(krb5_context context)
 
     HEIMDAL_MUTEX_lock(&homedir_mutex);
     allow = allow_homedir;
-    HEIMDAL_MUTEX_lock(&homedir_mutex);
+    HEIMDAL_MUTEX_unlock(&homedir_mutex);
     return allow;
 }
 
