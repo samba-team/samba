@@ -43,6 +43,7 @@ struct net_context {
 	const char *opt_container;
 	int opt_flags;
 	int opt_timeout;
+	int opt_request_timeout;
 	const char *opt_target_workgroup;
 	int opt_machine_pass;
 	int opt_localgroup;
