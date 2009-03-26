@@ -854,7 +854,8 @@ struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!fill_share_mode_lock(lck, id, servicepath, fname, data, NULL)) {
-		DEBUG(3, ("fill_share_mode_lock failed\n"));
+		DEBUG(10, ("fetch_share_mode_unlocked: no share_mode record "
+			   "around (file not open)\n"));
 		TALLOC_FREE(lck);
 		return NULL;
 	}
