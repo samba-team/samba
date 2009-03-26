@@ -349,6 +349,7 @@ krb5_config_parse_file_multi (krb5_context context,
 				       N_("malloc: out of memory", ""));
 		return ENOMEM;
 	    }
+	    fname = newfname;
 	}
     }
 
