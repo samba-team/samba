@@ -306,6 +306,8 @@ krb5_init_context(krb5_context *context)
     }
     HEIMDAL_MUTEX_init(p->mutex);
 
+    p->flags |= KRB5_CTX_F_HOMEDIR_ACCESS;
+
     ret = krb5_get_default_config_files(&files);
     if(ret)
 	goto out;
@@ -1320,7 +1322,7 @@ krb5_set_home_dir_access(krb5_context context, krb5_boolean allow)
 	HEIMDAL_MUTEX_lock(&homedir_mutex);
 	old = allow_homedir;
 	allow_homedir = allow;
-	HEIMDAL_MUTEX_lock(&homedir_mutex);
+	HEIMDAL_MUTEX_unlock(&homedir_mutex);
     }
 
     return old;
