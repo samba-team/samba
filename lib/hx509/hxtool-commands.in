@@ -179,6 +179,11 @@ command = {
 		type = "flag"
 		help = "wrapped out-data in a ContentInfo"
 	}
+	option = {
+		long = "allow-weak-crypto"
+		type = "flag"
+		help = "allow weak crypto"
+	}
 	min_args="2"
 	argument="in-file out-file"
 	help = "Unenvelope a file containing a EnvelopedData object"
@@ -215,6 +220,11 @@ command = {
 		long = "content-info"
 		type = "flag"
 		help = "wrapped out-data in a ContentInfo"
+	}
+	option = {
+		long = "allow-weak-crypto"
+		type = "flag"
+		help = "allow weak crypto"
 	}
 	min_args="2"
 	argument="in-file out-file"
