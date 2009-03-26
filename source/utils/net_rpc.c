@@ -120,6 +120,7 @@ int run_rpc_command(struct net_context *c,
 	NTSTATUS nt_status;
 	DOM_SID *domain_sid;
 	const char *domain_name;
+	int ret = -1;
 
 	/* make use of cli_state handed over as an argument, if possible */
 	if (!cli_arg) {
@@ -141,15 +142,13 @@ int run_rpc_command(struct net_context *c,
 
 	if (!(mem_ctx = talloc_init("run_rpc_command"))) {
 		DEBUG(0, ("talloc_init() failed\n"));
-		cli_shutdown(cli);
-		return -1;
+		goto fail;
 	}
 
 	nt_status = net_get_remote_domain_sid(cli, mem_ctx, &domain_sid,
 					      &domain_name);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		cli_shutdown(cli);
-		return -1;
+		goto fail;
 	}
 
 	if (!(conn_flags & NET_FLAGS_NO_PIPE)) {
@@ -164,8 +163,7 @@ int run_rpc_command(struct net_context *c,
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				DEBUG(0, ("Could not initialise schannel netlogon pipe. Error was %s\n",
 					nt_errstr(nt_status) ));
-				cli_shutdown(cli);
-				return -1;
+				goto fail;
 			}
 		} else {
 			if (conn_flags & NET_FLAGS_SEAL) {
@@ -184,8 +182,7 @@ int run_rpc_command(struct net_context *c,
 					cli_get_pipe_name_from_iface(
 						debug_ctx(), cli, interface),
 					nt_errstr(nt_status) ));
-				cli_shutdown(cli);
-				return -1;
+				goto fail;
 			}
 		}
 	}
@@ -195,6 +192,7 @@ int run_rpc_command(struct net_context *c,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(1, ("rpc command function failed! (%s)\n", nt_errstr(nt_status)));
 	} else {
+		ret = 0;
 		DEBUG(5, ("rpc command function succedded\n"));
 	}
 
@@ -204,13 +202,14 @@ int run_rpc_command(struct net_context *c,
 		}
 	}
 
+fail:
 	/* close the connection only if it was opened here */
 	if (!cli_arg) {
 		cli_shutdown(cli);
 	}
 
 	talloc_destroy(mem_ctx);
-	return (!NT_STATUS_IS_OK(nt_status));
+	return ret;
 }
 
 /**
