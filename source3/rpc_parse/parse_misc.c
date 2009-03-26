@@ -129,25 +129,6 @@ bool smb_io_uuid(const char *desc, struct GUID *uuid,
 }
 
 /*******************************************************************
- Inits a UNISTR structure.
-********************************************************************/
-
-void init_unistr(UNISTR *str, const char *buf)
-{
-	size_t len;
-
-	if (buf == NULL) {
-		str->buffer = NULL;
-		return;
-	}
-
-	len = rpcstr_push_talloc(talloc_tos(), &str->buffer, buf);
-	if (len == (size_t)-1) {
-		str->buffer = NULL;
-	}
-}
-
-/*******************************************************************
  Inits a UNISTR2 structure.
 ********************************************************************/
 
