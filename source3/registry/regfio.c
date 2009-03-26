@@ -712,8 +712,30 @@ static bool hbin_prs_sk_rec( const char *desc, REGF_HBIN *hbin, int depth, REGF_
 	if ( !prs_uint32( "size", ps, depth, &sk->size))
 		return False;
 
-	if ( !sec_io_desc( "sec_desc", &sk->sec_desc, ps, depth )) 
-		return False;
+	{
+		NTSTATUS status;
+		TALLOC_CTX *mem_ctx = prs_get_mem_context(&hbin->ps);
+		DATA_BLOB blob;
+
+		if (MARSHALLING(&hbin->ps)) {
+			status = marshall_sec_desc(mem_ctx,
+						   sk->sec_desc,
+						   &blob.data, &blob.length);
+			if (!NT_STATUS_IS_OK(status))
+				return False;
+			if (!prs_copy_data_in(&hbin->ps, (const char *)blob.data, blob.length))
+				return False;
+		} else {
+			blob = data_blob_const(prs_data_p(&hbin->ps),
+					       prs_data_size(&hbin->ps));
+			status = unmarshall_sec_desc(mem_ctx,
+						     blob.data, blob.length,
+						     &sk->sec_desc);
+			if (!NT_STATUS_IS_OK(status))
+				return False;
+			prs_set_offset(&hbin->ps, blob.length);
+		}
+	}
 
 	end_off = prs_offset( &hbin->ps );
 

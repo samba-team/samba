@@ -41,6 +41,22 @@
 #define HAVE_STRNDUP
 #endif
 
+#ifndef HAVE_STRLCPY
+#define HAVE_STRLCPY
+#endif
+
+#ifndef HAVE_STRLCAT
+#define HAVE_STRLCAT
+#endif
+
+#ifndef HAVE_STRCASECMP
+#define HAVE_STRCASECMP
+#endif
+
+#ifndef HAVE_MKSTEMP
+#define HAVE_MKSTEMP
+#endif
+
 #ifndef HAVE_SETENV
 #define HAVE_SETENV
 #endif
@@ -83,5 +99,8 @@
  */
 #undef SOCKET_WRAPPER_REPLACE
 #include "heimdal/lib/roken/roken.h.in"
+
+extern const char *heimdal_version;
+extern const char *heimdal_long_version;
 
 #endif

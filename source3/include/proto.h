@@ -5693,10 +5693,8 @@ NTSTATUS cli_do_rpc_ndr(struct rpc_pipe_client *cli,
 bool smb_io_time(const char *desc, NTTIME *nttime, prs_struct *ps, int depth);
 bool smb_io_system_time(const char *desc, prs_struct *ps, int depth, SYSTEMTIME *systime);
 bool make_systemtime(SYSTEMTIME *systime, struct tm *unixtime);
-bool smb_io_dom_sid(const char *desc, DOM_SID *sid, prs_struct *ps, int depth);
 bool smb_io_uuid(const char *desc, struct GUID *uuid, 
 		 prs_struct *ps, int depth);
-void init_unistr(UNISTR *str, const char *buf);
 void init_unistr2(UNISTR2 *str, const char *buf, enum unistr2_term_codes flags);
 
 /* The following definitions come from rpc_parse/parse_prs.c  */
@@ -5817,11 +5815,6 @@ bool smb_io_rpc_auth_schannel_neg(const char *desc, RPC_AUTH_SCHANNEL_NEG *neg,
 bool smb_io_rpc_auth_schannel_chk(const char *desc, int auth_len, 
                                 RPC_AUTH_SCHANNEL_CHK * chk,
 				prs_struct *ps, int depth);
-
-/* The following definitions come from rpc_parse/parse_sec.c  */
-
-bool sec_io_desc(const char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth);
-bool sec_io_desc_buf(const char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int depth);
 
 /* The following definitions come from rpc_server/srv_eventlog_lib.c  */
 
