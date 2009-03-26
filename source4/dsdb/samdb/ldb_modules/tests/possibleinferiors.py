@@ -71,7 +71,7 @@ schema_base = rootDse["schemaNamingContext"][0]
 def possible_inferiors_search(db, oc):
     """return the possible inferiors via a search for the possibleInferiors attribute"""
     res = db.search(base=schema_base,
-                    expression=("ldapdisplayname=%s" % oc),
+                    expression=("ldapDisplayName=%s" % oc),
                     attrs=["possibleInferiors"])
 
     poss=[]
@@ -86,47 +86,137 @@ def possible_inferiors_search(db, oc):
 
 
 # see [MS-ADTS] section 3.1.1.4.5.21
-# for this algorithm
+# and section 3.1.1.4.2 for this algorithm
 
 # !systemOnly=TRUE
 # !objectClassCategory=2
 # !objectClassCategory=3
 
-def POSSINFERIORS(db, oc):
-    """returns a list of possible inferiors to a class. Returned list has the ldapdisplayname, systemOnly and objectClassCategory for each element"""
-    expanded = [oc]
-    res = db.search(base=schema_base,
-                    expression=("subclassof=%s" % str(oc["ldapdisplayname"][0])),
-                    attrs=["ldapdisplayname", "systemOnly", "objectClassCategory"])
+def SUPCLASSES(classinfo, oc):
+    list = []
+    if oc == "top":
+        return list
+    if classinfo[oc].get("SUPCLASSES") is not None:
+        return classinfo[oc]["SUPCLASSES"]
+    res = classinfo[oc]["subClassOf"];
     for r in res:
-        expanded.extend(POSSINFERIORS(db,r))
-    return expanded
+        list.append(r)
+        list.extend(SUPCLASSES(classinfo,r))
+    classinfo[oc]["SUPCLASSES"] = list
+    return list
 
-def possible_inferiors_constructed(db, oc):
-    """return the possbible inferiors via a recursive search and match"""
+def AUXCLASSES(classinfo, oclist):
+    list = []
+    if oclist == []:
+        return list
+    for oc in oclist:
+        if classinfo[oc].get("AUXCLASSES") is not None:
+            list.extend(classinfo[oc]["AUXCLASSES"])
+        else:
+            list2 = []
+            list2.extend(classinfo[oc]["systemAuxiliaryClass"])
+            list2.extend(AUXCLASSES(classinfo, classinfo[oc]["systemAuxiliaryClass"]))
+            list2.extend(classinfo[oc]["auxiliaryClass"])
+            list2.extend(AUXCLASSES(classinfo, classinfo[oc]["auxiliaryClass"]))
+            list2.extend(AUXCLASSES(classinfo, SUPCLASSES(classinfo, oc)))
+            classinfo[oc]["AUXCLASSES"] = list2
+            list.extend(list2)
+    return list
+
+def SUBCLASSES(classinfo, oclist):
+    list = []
+    for oc in oclist:
+        list.extend(classinfo[oc]["SUBCLASSES"])
+    return list
+
+def POSSSUPERIORS(classinfo, oclist):
+    list = []
+    for oc in oclist:
+        if classinfo[oc].get("POSSSUPERIORS") is not None:
+            list.extend(classinfo[oc]["POSSSUPERIORS"])
+        else:
+            list2 = []
+            list2.extend(classinfo[oc]["systemPossSuperiors"])
+            list2.extend(classinfo[oc]["possSuperiors"])
+            list2.extend(POSSSUPERIORS(classinfo, SUPCLASSES(classinfo, oc)))
+           # the WSPP docs suggest we should do this:
+           #   list2.extend(POSSSUPERIORS(classinfo, AUXCLASSES(classinfo, [oc])))
+           # but testing against w2k3 and w2k8 shows that we need to do this instead
+            list2.extend(SUBCLASSES(classinfo, list2))
+            classinfo[oc]["POSSSUPERIORS"] = list2
+            list.extend(list2)
+    return list
+
+def pull_classinfo(db):
+    """At startup we build a classinfo[] dictionary that holds all the information needed to construct the possible inferiors"""
+    classinfo = {}
     res = db.search(base=schema_base,
-                    expression=("(&(objectclass=classSchema)(|(posssuperiors=%s)(systemposssuperiors=%s)))" % (oc,oc)),
-                    attrs=["ldapdisplayname", "systemOnly", "objectClassCategory"])
-
-    poss = []
+                    expression="objectclass=classSchema",
+                    attrs=["ldapDisplayName", "systemOnly", "objectClassCategory",
+                           "possSuperiors", "systemPossSuperiors",
+                           "auxiliaryClass", "systemAuxiliaryClass", "subClassOf"])
     for r in res:
-        poss.extend(POSSINFERIORS(db,r))
-        
-    poss2 = []
-    for p in poss:
-        if (not (p["systemOnly"][0] == "TRUE" or
-                 int(p["objectClassCategory"][0]) == 2 or
-                 int(p["objectClassCategory"][0]) == 3)):
-            poss2.append(p["ldapdisplayname"][0])
-            
-    poss2 = uniq_list(poss2)
-    poss2.sort()
-    return poss2
+        name = str(r["ldapDisplayName"][0])
+        classinfo[name] = {}
+        if str(r["systemOnly"]) == "TRUE":
+            classinfo[name]["systemOnly"] = True
+        else:
+            classinfo[name]["systemOnly"] = False
+        if r.get("objectClassCategory"):
+            classinfo[name]["objectClassCategory"] = int(r["objectClassCategory"][0])
+        else:
+            classinfo[name]["objectClassCategory"] = 0
+        for a in [ "possSuperiors", "systemPossSuperiors",
+                   "auxiliaryClass", "systemAuxiliaryClass",
+                   "subClassOf" ]:
+            classinfo[name][a] = []
+            if r.get(a):
+                for i in r[a]:
+                    classinfo[name][a].append(str(i))
 
-def test_class(db, oc):
+    # build a list of subclasses for each class
+    def subclasses_recurse(subclasses, oc):
+        list = subclasses[oc]
+        for c in list:
+            list.extend(subclasses_recurse(subclasses, c))
+        return list
+
+    subclasses = {}
+    for oc in classinfo:
+        subclasses[oc] = []
+    for oc in classinfo:
+        for c in classinfo[oc]["subClassOf"]:
+            if not c == oc:
+                subclasses[c].append(oc)
+    for oc in classinfo:
+        classinfo[oc]["SUBCLASSES"] = uniq_list(subclasses_recurse(subclasses, oc))
+
+    return classinfo
+
+def is_in_list(list, c):
+    for a in list:
+        if c == a:
+            return True
+    return False
+
+def possible_inferiors_constructed(db, classinfo, c):
+    list = []
+    for oc in classinfo:
+        superiors = POSSSUPERIORS(classinfo, [oc])
+        if (is_in_list(superiors, c) and
+            classinfo[oc]["systemOnly"] == False and
+            classinfo[oc]["objectClassCategory"] != 2 and
+            classinfo[oc]["objectClassCategory"] != 3):
+            list.append(oc)
+    list = uniq_list(list)
+    list.sort()
+    return list
+
+def test_class(db, classinfo, oc):
     """test to see if one objectclass returns the correct possibleInferiors"""
+    print "testing objectClass %s" % oc
     poss1 = possible_inferiors_search(db, oc)
-    poss2 = possible_inferiors_constructed(db, oc)
+    poss2 = possible_inferiors_constructed(db, classinfo, oc)
     if poss1 != poss2:
         print "Returned incorrect list for objectclass %s" % oc
         print poss1
@@ -137,19 +227,17 @@ def test_class(db, oc):
 
 def get_object_classes(db):
     """return a list of all object classes"""
-    res = db.search(base=schema_base,
-                    expression="objectClass=classSchema",
-                    attrs=["ldapdisplayname"])
     list=[]
-    for item in res:
-        list.append(item["ldapdisplayname"][0])
+    for item in classinfo:
+        list.append(item)
     return list
+
+classinfo = pull_classinfo(db)
 
 if objectclass is None:
     for oc in get_object_classes(db):
-        print "testing objectClass %s" % oc
-        test_class(db,oc)
+        test_class(db,classinfo,oc)
 else:
-    test_class(db,objectclass)
+    test_class(db,classinfo,objectclass)
 
 print "Lists match OK"
