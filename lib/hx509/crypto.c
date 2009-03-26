@@ -1971,9 +1971,9 @@ hx509_crypto_aes256_cbc(void)
  */
 
 const AlgorithmIdentifier * _hx509_crypto_default_sig_alg =
-    &_hx509_signature_rsa_with_sha1_data;
+    &_hx509_signature_rsa_with_sha256_data;
 const AlgorithmIdentifier * _hx509_crypto_default_digest_alg =
-    &_hx509_signature_sha1_data;
+    &_hx509_signature_sha256_data;
 const AlgorithmIdentifier * _hx509_crypto_default_secret_alg =
     &_hx509_crypto_aes128_cbc_data;
 
