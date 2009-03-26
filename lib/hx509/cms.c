@@ -529,7 +529,9 @@ out:
  * used to RSA.
  *
  * @param context A hx509 context.
- * @param flags flags to control the behavior, no flags today
+ * @param flags flags to control the behavior.
+ *    - HX509_CMS_EV_NO_KU_CHECK - Dont check KU on certificate
+ *    - HX509_CMS_EV_ALLOW_WEAK - Allow weak crytpo
  * @param cert Certificate to encrypt the EnvelopedData encryption key
  * with.
  * @param data pointer the data to encrypt.
@@ -747,6 +749,9 @@ find_attribute(const CMSAttributes *attr, const heim_oid *oid)
  * @param context A hx509 context.
  * @param ctx a hx509 verify context.
  * @param flags to control the behaivor of the function.
+ *    - HX509_CMS_VS_NO_KU_CHECK - Don't check KeyUsage
+ *    - HX509_CMS_VS_ALLOW_DATA_OID_MISMATCH - allow oid mismatch
+ *    - HX509_CMS_VS_ALLOW_ZERO_SIGNER - no signer, see below.
  * @param data pointer to CMS SignedData encoded data.
  * @param length length of the data that data point to.
  * @param signedContent external data used for signature.
