@@ -466,6 +466,7 @@ cms_unenvelope(struct cms_unenvelope_options *opt, int argc, char **argv)
     void *p;
     int ret;
     hx509_lock lock;
+    int flags = 0;
 
     hx509_lock_init(context, &lock);
     lock_strings(lock, &opt->pass_strings);
@@ -498,7 +499,10 @@ cms_unenvelope(struct cms_unenvelope_options *opt, int argc, char **argv)
 
     certs_strings(context, "store", certs, lock, &opt->certificate_strings);
 
-    ret = hx509_cms_unenvelope(context, certs, 0, co.data, co.length,
+    if (opt->allow_weak_crypto_flag)
+	flags |= HX509_CMS_UE_ALLOW_WEAK;
+
+    ret = hx509_cms_unenvelope(context, certs, flags, co.data, co.length,
 			       NULL, 0, &contentType, &o);
     if (co.data != p)
 	der_free_octet_string(&co);
@@ -532,6 +536,7 @@ cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
     size_t sz;
     void *p;
     hx509_lock lock;
+    int flags = 0;
 
     memset(&contentType, 0, sizeof(contentType));
 
@@ -546,6 +551,9 @@ cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
     if (ret) hx509_err(context, 1, ret, "hx509_certs_init: MEMORY");
 
     certs_strings(context, "store", certs, lock, &opt->certificate_strings);
+
+    if (opt->allow_weak_crypto_flag)
+	flags |= HX509_CMS_EV_ALLOW_WEAK;
 
     if (opt->encryption_type_string) {
 	enctype = hx509_crypto_enctype_by_name(opt->encryption_type_string);
