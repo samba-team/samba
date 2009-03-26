@@ -163,6 +163,10 @@ static int traverse_match(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf,
 			ip,
 			port);
 
+	if (!p) {
+		return 0;
+	}
+
 	if ((state->match_type == NMB_PACKET &&
 	     p->packet.nmb.header.name_trn_id == state->match_id) ||
 	    (state->match_type == DGRAM_PACKET &&
