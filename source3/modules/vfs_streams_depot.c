@@ -78,7 +78,7 @@ static bool file_is_valid(vfs_handle_struct *handle, const char *path,
 
 	DEBUG(10, ("file_is_valid (%s) called\n", path));
 
-	if (SMB_VFS_NEXT_GETXATTR(handle, path, SAMBA_XATTR_MARKER,
+	if (SMB_VFS_GETXATTR(handle->conn, path, SAMBA_XATTR_MARKER,
 				  &buf, sizeof(buf)) != sizeof(buf)) {
 		DEBUG(10, ("GETXATTR failed: %s\n", strerror(errno)));
 		return false;
@@ -104,7 +104,7 @@ static bool mark_file_valid(vfs_handle_struct *handle, const char *path,
 
 	DEBUG(10, ("marking file %s as valid\n", path));
 
-	ret = SMB_VFS_NEXT_SETXATTR(handle, path, SAMBA_XATTR_MARKER,
+	ret = SMB_VFS_SETXATTR(handle->conn, path, SAMBA_XATTR_MARKER,
 				    &buf, sizeof(buf), 0);
 
 	if (ret == -1) {
