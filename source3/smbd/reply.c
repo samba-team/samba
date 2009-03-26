@@ -1606,6 +1606,8 @@ void reply_open(struct smb_request *req)
 
 	START_PROFILE(SMBopen);
 
+	SET_STAT_INVALID(sbuf);
+
 	if (req->wct < 2) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBopen);
@@ -1740,6 +1742,8 @@ void reply_open_and_X(struct smb_request *req)
 		END_PROFILE(SMBopenX);
 		return;
 	}
+
+	SET_STAT_INVALID(sbuf);
 
 	open_flags = SVAL(req->vwv+2, 0);
 	deny_mode = SVAL(req->vwv+3, 0);
@@ -1945,6 +1949,7 @@ void reply_mknew(struct smb_request *req)
 
 	START_PROFILE(SMBcreate);
 	ZERO_STRUCT(ft);
+	SET_STAT_INVALID(sbuf);
 
         if (req->wct < 3) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -2123,6 +2128,7 @@ void reply_ctemp(struct smb_request *req)
 		return;
 	}
 
+	SET_STAT_INVALID(sbuf);
 	SMB_VFS_STAT(conn,fname,&sbuf);
 
 	/* We should fail if file does not exist. */
