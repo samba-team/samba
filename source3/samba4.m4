@@ -69,14 +69,14 @@ AC_CONFIG_FILES(../source4/librpc/dcerpc_atsvc.pc)
 
 m4_include(../source4/min_versions.m4)
 
-SMB_EXT_LIB_FROM_PKGCONFIG(LIBTALLOC, talloc >= $TALLOC_MIN_VERSION,
+SMB_EXT_LIB_FROM_PKGCONFIG(LIBTALLOC, talloc >= TALLOC_MIN_VERSION,
 	[],
 	[
 		SMB_INCLUDE_MK(../lib/talloc/config.mk)
 	]
 )
 
-SMB_EXT_LIB_FROM_PKGCONFIG(LIBTDB, tdb >= $TDB_MIN_VERSION,
+SMB_EXT_LIB_FROM_PKGCONFIG(LIBTDB, tdb >= TDB_MIN_VERSION,
 	[],
 	[
 		m4_include(../lib/tdb/libtdb.m4)
@@ -86,13 +86,13 @@ SMB_EXT_LIB_FROM_PKGCONFIG(LIBTDB, tdb >= $TDB_MIN_VERSION,
 
 SMB_INCLUDE_MK(../lib/tdb/python.mk) 
 
-SMB_EXT_LIB_FROM_PKGCONFIG(LIBTEVENT, tevent = $TEVENT_REQUIRED_VERSION,
+SMB_EXT_LIB_FROM_PKGCONFIG(LIBTEVENT, tevent = TEVENT_REQUIRED_VERSION,
 	[],[m4_include(../lib/tevent/samba.m4)]
 )
 
 SMB_INCLUDE_MK(../lib/tevent/python.mk) 
 
-SMB_EXT_LIB_FROM_PKGCONFIG(LIBLDB, ldb = $LDB_REQUIRED_VERSION,
+SMB_EXT_LIB_FROM_PKGCONFIG(LIBLDB, ldb = LDB_REQUIRED_VERSION,
 	[
 		SMB_INCLUDE_MK(lib/ldb/ldb_ildap/config.mk)
 		SMB_INCLUDE_MK(lib/ldb/tools/config.mk)

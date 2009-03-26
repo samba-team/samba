@@ -44,14 +44,14 @@ AC_CONFIG_FILES(librpc/dcerpc_atsvc.pc)
 
 m4_include(min_versions.m4)
 
-SMB_INCLUDED_LIB_PKGCONFIG(LIBTALLOC, talloc >= $TALLOC_MIN_VERSION, [],
+SMB_INCLUDED_LIB_PKGCONFIG(LIBTALLOC, talloc >= TALLOC_MIN_VERSION, [],
 	[
 		m4_include(../lib/talloc/libtalloc.m4)
 		SMB_INCLUDE_MK(../lib/talloc/config.mk)
 	]
 )
 
-SMB_INCLUDED_LIB_PKGCONFIG(LIBTDB, tdb >= $TDB_MIN_VERSION,
+SMB_INCLUDED_LIB_PKGCONFIG(LIBTDB, tdb >= TDB_MIN_VERSION,
 	[],
 	[
 		m4_include(../lib/tdb/libtdb.m4)
@@ -67,7 +67,7 @@ SMB_INCLUDED_LIB_PKGCONFIG(LIBTEVENT, tevent = TEVENT_REQUIRED_VERSION,
 
 SMB_INCLUDE_MK(../lib/tevent/python.mk) 
 
-SMB_INCLUDED_LIB_PKGCONFIG(LIBLDB, ldb = $LDB_REQUIRED_VERSION,
+SMB_INCLUDED_LIB_PKGCONFIG(LIBLDB, ldb = LDB_REQUIRED_VERSION,
 	[
 		SMB_INCLUDE_MK(lib/ldb/ldb_ildap/config.mk)
 		SMB_INCLUDE_MK(lib/ldb/tools/config.mk)
