@@ -24,155 +24,8 @@
 #include "includes.h"
 #include "libnet/libnet.h"
 #include "../lib/crypto/crypto.h"
+#include "../libcli/samsync/samsync.h"
 #include "../libcli/auth/libcli_auth.h"
-
-/**
- * Decrypt and extract the user's passwords.
- *
- * The writes decrypted (no longer 'RID encrypted' or arcfour encrypted)
- * passwords back into the structure
- */
-
-static NTSTATUS fix_user(TALLOC_CTX *mem_ctx,
-			 DATA_BLOB *session_key,
-			 enum netr_SamDatabaseID database_id,
-			 struct netr_DELTA_ENUM *delta)
-{
-
-	uint32_t rid = delta->delta_id_union.rid;
-	struct netr_DELTA_USER *user = delta->delta_union.user;
-	struct samr_Password lm_hash;
-	struct samr_Password nt_hash;
-	unsigned char zero_buf[16];
-
-	memset(zero_buf, '\0', sizeof(zero_buf));
-
-	/* Note that win2000 may send us all zeros
-	 * for the hashes if it doesn't
-	 * think this channel is secure enough. */
-	if (user->lm_password_present) {
-		if (memcmp(user->lmpassword.hash, zero_buf, 16) != 0) {
-			sam_rid_crypt(rid, user->lmpassword.hash, lm_hash.hash, 0);
-		} else {
-			memset(lm_hash.hash, '\0', sizeof(lm_hash.hash));
-		}
-		user->lmpassword = lm_hash;
-	}
-
-	if (user->nt_password_present) {
-		if (memcmp(user->ntpassword.hash, zero_buf, 16) != 0) {
-			sam_rid_crypt(rid, user->ntpassword.hash, nt_hash.hash, 0);
-		} else {
-			memset(nt_hash.hash, '\0', sizeof(nt_hash.hash));
-		}
-		user->ntpassword = nt_hash;
-	}
-
-	if (user->user_private_info.SensitiveData) {
-		DATA_BLOB data;
-		struct netr_USER_KEYS keys;
-		enum ndr_err_code ndr_err;
-		data.data = user->user_private_info.SensitiveData;
-		data.length = user->user_private_info.DataLength;
-		arcfour_crypt_blob(data.data, data.length, session_key);
-		user->user_private_info.SensitiveData = data.data;
-		user->user_private_info.DataLength = data.length;
-
-		ndr_err = ndr_pull_struct_blob(&data, mem_ctx, NULL, &keys,
-			(ndr_pull_flags_fn_t)ndr_pull_netr_USER_KEYS);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			dump_data(10, data.data, data.length);
-			return ndr_map_error2ntstatus(ndr_err);
-		}
-
-		/* Note that win2000 may send us all zeros
-		 * for the hashes if it doesn't
-		 * think this channel is secure enough. */
-		if (keys.keys.keys2.lmpassword.length == 16) {
-			if (memcmp(keys.keys.keys2.lmpassword.pwd.hash,
-					zero_buf, 16) != 0) {
-				sam_rid_crypt(rid,
-					      keys.keys.keys2.lmpassword.pwd.hash,
-					      lm_hash.hash, 0);
-			} else {
-				memset(lm_hash.hash, '\0', sizeof(lm_hash.hash));
-			}
-			user->lmpassword = lm_hash;
-			user->lm_password_present = true;
-		}
-		if (keys.keys.keys2.ntpassword.length == 16) {
-			if (memcmp(keys.keys.keys2.ntpassword.pwd.hash,
-						zero_buf, 16) != 0) {
-				sam_rid_crypt(rid,
-					      keys.keys.keys2.ntpassword.pwd.hash,
-					      nt_hash.hash, 0);
-			} else {
-				memset(nt_hash.hash, '\0', sizeof(nt_hash.hash));
-			}
-			user->ntpassword = nt_hash;
-			user->nt_password_present = true;
-		}
-		/* TODO: rid decrypt history fields */
-	}
-	return NT_STATUS_OK;
-}
-
-/**
- * Decrypt and extract the secrets
- *
- * The writes decrypted secrets back into the structure
- */
-static NTSTATUS fix_secret(TALLOC_CTX *mem_ctx,
-			   DATA_BLOB *session_key,
-			   enum netr_SamDatabaseID database_id,
-			   struct netr_DELTA_ENUM *delta)
-{
-	struct netr_DELTA_SECRET *secret = delta->delta_union.secret;
-
-	arcfour_crypt_blob(secret->current_cipher.cipher_data,
-			   secret->current_cipher.maxlen,
-			   session_key);
-	
-	arcfour_crypt_blob(secret->old_cipher.cipher_data,
-			   secret->old_cipher.maxlen,
-			   session_key);
-
-	return NT_STATUS_OK;
-}
-
-/**
- * Fix up the delta, dealing with encryption issues so that the final
- * callback need only do the printing or application logic
- */
-
-static NTSTATUS samsync_fix_delta(TALLOC_CTX *mem_ctx,
-				  DATA_BLOB *session_key,
-				  enum netr_SamDatabaseID database_id,
-				  struct netr_DELTA_ENUM *delta)
-{
-	NTSTATUS status = NT_STATUS_OK;
-
-	switch (delta->delta_type) {
-		case NETR_DELTA_USER:
-
-			status = fix_user(mem_ctx,
-					  session_key,
-					  database_id,
-					  delta);
-			break;
-		case NETR_DELTA_SECRET:
-
-			status = fix_secret(mem_ctx,
-					    session_key,
-					    database_id,
-					    delta);
-			break;
-		default:
-			break;
-	}
-
-	return status;
-}
 
 /**
  * Fix up the delta, dealing with encryption issues so that the final
@@ -180,7 +33,7 @@ static NTSTATUS samsync_fix_delta(TALLOC_CTX *mem_ctx,
  */
 
 static NTSTATUS samsync_fix_delta_array(TALLOC_CTX *mem_ctx,
-					DATA_BLOB *session_key,
+					struct creds_CredentialState *creds,
 					enum netr_SamDatabaseID database_id,
 					struct netr_DELTA_ENUM_ARRAY *r)
 {
@@ -190,7 +43,7 @@ static NTSTATUS samsync_fix_delta_array(TALLOC_CTX *mem_ctx,
 	for (i = 0; i < r->num_deltas; i++) {
 
 		status = samsync_fix_delta(mem_ctx,
-					   session_key,
+					   creds,
 					   database_id,
 					   &r->delta_enum[i]);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -347,14 +200,13 @@ static NTSTATUS libnet_samsync_delta(TALLOC_CTX *mem_ctx,
 	struct netr_Authenticator return_authenticator;
 	uint16_t restart_state = 0;
 	uint32_t sync_context = 0;
-	DATA_BLOB session_key;
 
 	ZERO_STRUCT(return_authenticator);
 
 	do {
 		struct netr_DELTA_ENUM_ARRAY *delta_enum_array = NULL;
 
-		netlogon_creds_client_step(ctx->cli->dc, &credential);
+		creds_client_authenticator(ctx->cli->dc, &credential);
 
 		if (ctx->single_object_replication &&
 		    !ctx->force_full_replication) {
@@ -395,8 +247,8 @@ static NTSTATUS libnet_samsync_delta(TALLOC_CTX *mem_ctx,
 		}
 
 		/* Check returned credentials. */
-		if (!netlogon_creds_client_check(ctx->cli->dc,
-						 &return_authenticator.cred)) {
+		if (!creds_client_check(ctx->cli->dc,
+					&return_authenticator.cred)) {
 			DEBUG(0,("credentials chain check failed\n"));
 			return NT_STATUS_ACCESS_DENIED;
 		}
@@ -405,10 +257,8 @@ static NTSTATUS libnet_samsync_delta(TALLOC_CTX *mem_ctx,
 			break;
 		}
 
-		session_key = data_blob_const(ctx->cli->dc->sess_key, 16);
-
 		samsync_fix_delta_array(mem_ctx,
-					&session_key,
+					ctx->cli->dc,
 					database_id,
 					delta_enum_array);
 

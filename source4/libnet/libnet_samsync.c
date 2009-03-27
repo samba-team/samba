@@ -23,145 +23,13 @@
 #include "includes.h"
 #include "libnet/libnet.h"
 #include "libcli/auth/libcli_auth.h"
+#include "../libcli/samsync/samsync.h"
 #include "auth/gensec/gensec.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/schannel_proto.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
 #include "param/param.h"
-
-
-/**
- * Decrypt and extract the user's passwords.  
- * 
- * The writes decrypted (no longer 'RID encrypted' or arcfour encrypted) passwords back into the structure
- */
-static NTSTATUS fix_user(TALLOC_CTX *mem_ctx,
-			 struct creds_CredentialState *creds,
-			 bool rid_crypt,
-			 enum netr_SamDatabaseID database,
-			 struct netr_DELTA_ENUM *delta,
-			 char **error_string) 
-{
-
-	uint32_t rid = delta->delta_id_union.rid;
-	struct netr_DELTA_USER *user = delta->delta_union.user;
-	struct samr_Password lm_hash;
-	struct samr_Password nt_hash;
-	const char *username = user->account_name.string;
-
-	if (rid_crypt) {
-		if (user->lm_password_present) {
-			sam_rid_crypt(rid, user->lmpassword.hash, lm_hash.hash, 0);
-			user->lmpassword = lm_hash;
-		}
-		
-		if (user->nt_password_present) {
-			sam_rid_crypt(rid, user->ntpassword.hash, nt_hash.hash, 0);
-			user->ntpassword = nt_hash;
-		}
-	}
-
-	if (user->user_private_info.SensitiveData) {
-		DATA_BLOB data;
-		struct netr_USER_KEYS keys;
-		enum ndr_err_code ndr_err;
-		data.data = user->user_private_info.SensitiveData;
-		data.length = user->user_private_info.DataLength;
-		creds_arcfour_crypt(creds, data.data, data.length);
-		user->user_private_info.SensitiveData = data.data;
-		user->user_private_info.DataLength = data.length;
-
-		ndr_err = ndr_pull_struct_blob(&data, mem_ctx, NULL, &keys, (ndr_pull_flags_fn_t)ndr_pull_netr_USER_KEYS);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			*error_string = talloc_asprintf(mem_ctx, "Failed to parse Sensitive Data for %s:", username);
-			dump_data(10, data.data, data.length);
-			return ndr_map_error2ntstatus(ndr_err);
-		}
-
-		if (keys.keys.keys2.lmpassword.length == 16) {
-			if (rid_crypt) {
-				sam_rid_crypt(rid, keys.keys.keys2.lmpassword.pwd.hash, lm_hash.hash, 0);
-				user->lmpassword = lm_hash;
-			} else {
-				user->lmpassword = keys.keys.keys2.lmpassword.pwd;
-			}
-			user->lm_password_present = true;
-		}
-		if (keys.keys.keys2.ntpassword.length == 16) {
-			if (rid_crypt) {
-				sam_rid_crypt(rid, keys.keys.keys2.ntpassword.pwd.hash, nt_hash.hash, 0);
-				user->ntpassword = nt_hash;
-			} else {
-				user->ntpassword = keys.keys.keys2.ntpassword.pwd;
-			}
-			user->nt_password_present = true;
-		}
-		/* TODO: rid decrypt history fields */
-	}
-	return NT_STATUS_OK;
-}
-
-/**
- * Decrypt and extract the secrets
- * 
- * The writes decrypted secrets back into the structure
- */
-static NTSTATUS fix_secret(TALLOC_CTX *mem_ctx,
-			   struct creds_CredentialState *creds,
-			   enum netr_SamDatabaseID database,
-			   struct netr_DELTA_ENUM *delta,
-			   char **error_string) 
-{
-	struct netr_DELTA_SECRET *secret = delta->delta_union.secret;
-	creds_arcfour_crypt(creds, secret->current_cipher.cipher_data, 
-			    secret->current_cipher.maxlen); 
-
-	creds_arcfour_crypt(creds, secret->old_cipher.cipher_data, 
-			    secret->old_cipher.maxlen); 
-
-	return NT_STATUS_OK;
-}
-
-/**
- * Fix up the delta, dealing with encryption issues so that the final
- * callback need only do the printing or application logic
- */
-
-static NTSTATUS fix_delta(TALLOC_CTX *mem_ctx, 		
-			  struct creds_CredentialState *creds,
-			  bool rid_crypt,
-			  enum netr_SamDatabaseID database,
-			  struct netr_DELTA_ENUM *delta,
-			  char **error_string)
-{
-	NTSTATUS nt_status = NT_STATUS_OK;
-	*error_string = NULL;
-	switch (delta->delta_type) {
-	case NETR_DELTA_USER:
-	{
-		nt_status = fix_user(mem_ctx, 
-				     creds,
-				     rid_crypt,
-				     database,
-				     delta,
-				     error_string);
-		break;
-	}
-	case NETR_DELTA_SECRET:
-	{
-		nt_status = fix_secret(mem_ctx, 
-				       creds,
-				       database,
-				       delta,
-				       error_string);
-		break;
-	}
-	default:
-		break;
-	}
-	return nt_status;
-}
 
 NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_SamSync *r)
 {
@@ -177,7 +45,7 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 	struct libnet_RpcConnect *c;
 	struct libnet_SamSync_state *state;
 	const enum netr_SamDatabaseID database_ids[] = {SAM_DATABASE_DOMAIN, SAM_DATABASE_BUILTIN, SAM_DATABASE_PRIVS}; 
-	int i;
+f	int i;
 
 	samsync_ctx = talloc_named(mem_ctx, 0, "SamSync top context");
 
