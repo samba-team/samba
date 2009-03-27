@@ -4125,6 +4125,7 @@ const char **lp_admin_users(int );
 const char **lp_svcctl_list(void);
 char *lp_cups_options(int );
 char *lp_cups_server(void);
+int lp_cups_encrypt(void);
 char *lp_iprint_server(void);
 int lp_cups_connection_timeout(void);
 const char *lp_ctdbd_socket(void);

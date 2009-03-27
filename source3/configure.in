@@ -788,6 +788,7 @@ if test x$enable_cups != xno; then
 		        x"$ac_cv_header_cups_language_h" = xyes; then
 			AC_DEFINE(HAVE_CUPS,1,[Whether we have CUPS])
 			samba_cv_HAVE_CUPS=yes
+			AC_CHECK_LIB_EXT(cups, PRINT_LIBS, httpConnectEncrypt)
 		else
 			AC_MSG_WARN([cups-config around but cups-devel not installed])
 			CFLAGS=$ac_save_CFLAGS
