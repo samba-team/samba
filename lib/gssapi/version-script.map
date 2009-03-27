@@ -65,6 +65,7 @@ HEIMDAL_GSS_1.0 {
 		gss_release_buffer;
 		gss_release_buffer_set;
 		gss_release_cred;
+		gss_release_iov_buffer;
 		gss_release_name;
 		gss_release_oid;
 		gss_release_oid_set;
@@ -80,6 +81,7 @@ HEIMDAL_GSS_1.0 {
 		gss_verify_mic;
 		gss_wrap;
 		gss_wrap_iov;
+		gss_wrap_iov_length;
 		gss_wrap_size_limit;
 		gsskrb5_extract_authtime_from_sec_context;
 		gsskrb5_extract_authz_data_from_sec_context;
