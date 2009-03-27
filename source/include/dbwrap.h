@@ -49,6 +49,8 @@ struct db_context {
 	bool persistent;
 };
 
+bool db_is_local(const char *name);
+
 struct db_context *db_open(TALLOC_CTX *mem_ctx,
 			   const char *name,
 			   int hash_size, int tdb_flags,

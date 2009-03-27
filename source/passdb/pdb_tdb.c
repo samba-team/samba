@@ -921,7 +921,8 @@ static bool tdbsam_convert(struct db_context **pp_db, const char *name, int32 fr
 	struct db_context *db = NULL;
 	int ret;
 
-	if (!tdbsam_convert_backup(name, pp_db)) {
+	/* We only need the update backup for local db's. */
+	if (db_is_local(name) && !tdbsam_convert_backup(name, pp_db)) {
 		DEBUG(0, ("tdbsam_convert: Could not backup %s\n", name));
 		return false;
 	}
