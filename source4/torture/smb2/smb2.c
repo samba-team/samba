@@ -100,11 +100,11 @@ static bool wrap_simple_2smb2_test(struct torture_context *torture_ctx,
 }
 
 
-_PUBLIC_ struct torture_test *torture_suite_add_2smb2_test(struct torture_suite *suite,
-							   const char *name,
-							   bool (*run)(struct torture_context *,
-								       struct smb2_tree *,
-								       struct smb2_tree *))
+struct torture_test *torture_suite_add_2smb2_test(struct torture_suite *suite,
+						  const char *name,
+						  bool (*run)(struct torture_context *,
+							      struct smb2_tree *,
+							      struct smb2_tree *))
 {
 	struct torture_test *test;
 	struct torture_tcase *tcase;
