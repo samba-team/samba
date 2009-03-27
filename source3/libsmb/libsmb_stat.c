@@ -261,6 +261,7 @@ SMBC_fstat_ctx(SMBCCTX *context,
 			file->srv->cli, path,
 			&targetcli, &targetpath)) {
 		d_printf("Could not resolve %s\n", path);
+                errno = ENOENT;
 		TALLOC_FREE(frame);
 		return -1;
 	}
