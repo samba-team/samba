@@ -118,6 +118,7 @@ SMBC_open_ctx(SMBCCTX *context,
 		if (!cli_resolve_path(frame, "", srv->cli, path,
                                       &targetcli, &targetpath)) {
 			d_printf("Could not resolve %s\n", path);
+                        errno = ENOENT;
 			SAFE_FREE(file);
 			TALLOC_FREE(frame);
 			return NULL;
@@ -298,6 +299,7 @@ SMBC_read_ctx(SMBCCTX *context,
 	if (!cli_resolve_path(frame, "", file->srv->cli, path,
                               &targetcli, &targetpath)) {
 		d_printf("Could not resolve %s\n", path);
+                errno = ENOENT;
 		TALLOC_FREE(frame);
 		return -1;
 	}
@@ -387,6 +389,7 @@ SMBC_write_ctx(SMBCCTX *context,
 	if (!cli_resolve_path(frame, "", file->srv->cli, path,
                               &targetcli, &targetpath)) {
 		d_printf("Could not resolve %s\n", path);
+                errno = ENOENT;
 		TALLOC_FREE(frame);
 		return -1;
 	}
@@ -462,6 +465,7 @@ SMBC_close_ctx(SMBCCTX *context,
 	if (!cli_resolve_path(frame, "", file->srv->cli, path,
                               &targetcli, &targetpath)) {
 		d_printf("Could not resolve %s\n", path);
+                errno = ENOENT;
 		TALLOC_FREE(frame);
 		return -1;
 	}
@@ -544,6 +548,7 @@ SMBC_getatr(SMBCCTX * context,
 	if (!cli_resolve_path(frame, "", srv->cli, fixedpath,
                               &targetcli, &targetpath)) {
 		d_printf("Couldn't resolve %s\n", path);
+                errno = ENOENT;
 		TALLOC_FREE(frame);
 		return False;
 	}
@@ -756,6 +761,7 @@ SMBC_lseek_ctx(SMBCCTX *context,
 		if (!cli_resolve_path(frame, "", file->srv->cli, path,
                                       &targetcli, &targetpath)) {
 			d_printf("Could not resolve %s\n", path);
+                        errno = ENOENT;
 			TALLOC_FREE(frame);
 			return -1;
 		}
@@ -847,6 +853,7 @@ SMBC_ftruncate_ctx(SMBCCTX *context,
 	if (!cli_resolve_path(frame, "", file->srv->cli, path,
                               &targetcli, &targetpath)) {
 		d_printf("Could not resolve %s\n", path);
+                errno = ENOENT;
 		TALLOC_FREE(frame);
 		return -1;
 	}

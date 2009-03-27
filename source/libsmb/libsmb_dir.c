@@ -1169,7 +1169,8 @@ SMBC_mkdir_ctx(SMBCCTX *context,
 	if (!cli_resolve_path(frame, "", srv->cli, path,
                               &targetcli, &targetpath)) {
 		d_printf("Could not resolve %s\n", path);
-		TALLOC_FREE(frame);
+                errno = ENOENT;
+                TALLOC_FREE(frame);
 		return -1;
 	}
 	/*d_printf(">>>mkdir: resolved path as %s\n", targetpath);*/
@@ -1276,6 +1277,7 @@ SMBC_rmdir_ctx(SMBCCTX *context,
 	if (!cli_resolve_path(frame, "", srv->cli, path,
                               &targetcli, &targetpath)) {
 		d_printf("Could not resolve %s\n", path);
+                errno = ENOENT;
 		TALLOC_FREE(frame);
 		return -1;
 	}
@@ -1558,6 +1560,7 @@ SMBC_chmod_ctx(SMBCCTX *context,
 	if (!cli_resolve_path(frame, "", srv->cli, path,
                               &targetcli, &targetpath)) {
 		d_printf("Could not resolve %s\n", path);
+                errno = ENOENT;
 		TALLOC_FREE(frame);
 		return -1;
 	}
@@ -1749,6 +1752,7 @@ SMBC_unlink_ctx(SMBCCTX *context,
 	if (!cli_resolve_path(frame, "", srv->cli, path,
                               &targetcli, &targetpath)) {
 		d_printf("Could not resolve %s\n", path);
+                errno = ENOENT;
 		TALLOC_FREE(frame);
 		return -1;
 	}
@@ -1921,6 +1925,7 @@ SMBC_rename_ctx(SMBCCTX *ocontext,
 	if (!cli_resolve_path(frame, "", srv->cli, path1,
                               &targetcli1, &targetpath1)) {
 		d_printf("Could not resolve %s\n", path1);
+                errno = ENOENT;
 		TALLOC_FREE(frame);
 		return -1;
 	}
@@ -1936,6 +1941,7 @@ SMBC_rename_ctx(SMBCCTX *ocontext,
 	if (!cli_resolve_path(frame, "", srv->cli, path2,
                               &targetcli2, &targetpath2)) {
 		d_printf("Could not resolve %s\n", path2);
+                errno = ENOENT;
 		TALLOC_FREE(frame);
 		return -1;
 	}
