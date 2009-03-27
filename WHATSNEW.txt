@@ -1,17 +1,16 @@
                    =============================
-                   Release Notes for Samba 3.3.2
-			   March, 12 2009
+                   Release Notes for Samba 3.3.3
+			    April, 1 2009
                    =============================
 
 This is the latest bugfix release release of the Samba 3.3 series.
 
-Major enhancements in Samba 3.3.2 include:
+Major enhancements in Samba 3.3.3 include:
 
-     * Fix "force group" (bug #6155).
-     * Fix saving of files on Samba share using MS Office 2007 (bug #6160).
-     * Fix guest authentication in setups with "security = share" and
-      "guest ok = yes" when Winbind is running.
-     * Fix corruptions of source path in tar mode of smbclient (bug #6161).
+    o Migrating from 3.0.x to 3.3.x can fail to update passdb.tdb
+      correctly (bug #6195).
+    o Fix serving of files with colons to CIFS/VFS client (bug #6196).
+
 
 
 ######################################################################
@@ -19,67 +18,95 @@ Changes
 #######
 
 
-Changes since 3.3.1:
+Changes since 3.3.2:
 --------------------
 
 
+o   Michael Adam <obnox@samba.org>
+    * Add backend_requires_messaging() method to libsmbconf.
+    * Add methods is_writeable() and wrapper smbconf_is_writeable() to libsmbconf.
+    * Fall back to file backend when no valid backend was found.
+    * Fix a memleak in dbwrap_rbt.
+    * Provide transaction_start|commit|cancel fns for the registry tdb.
+    * Speed up "net conf drop".
+    * Speed up "net conf import".
+    * Add transactions to the libsmbconf API.
+    * Reduce memory usage of "net conf import".
+    * Registry cleanup.
+    * Fix handling of SAMBA_VERSION_VENDOR_PATCH.
+
+
 o   Jeremy Allison <jra@samba.org>
-    * BUG 6082: Fix renaming and deleting of directories using Windows clients.
-    * BUG 6154: Make ZFS honor admin users.
-    * BUG 6155: Fix "force group".
-    * BUG 6160: Fix saving of files on Samba share using MS Office 2007.
-    * BUG 6161: Fix corruptions of source path in tar mode of smbclient.
-    * Fix some NetBSD warnings.
-    * Fix bug in processing of open modes in POSIX open.
-    * Fix use of streams modules with CIFSFS client.
-    * Ensure ACL modules work with POSIX paths.
-    * Use fsp->posix_open in preference if we have it.
-    * Fix more POSIX path lstat calls.
+    * BUG 6186: Fix map readonly.
+    * BUG 6195: Migrating from 3.0.x to 3.3.x can fail to update passdb.tdb
+      correctly.
+    * BUG 6196: Unable to serve files with colons to Linux CIFS/VFS client.
+    * BUG 6224: nmbd waits 5 minutes at startup before checking if it needs
+      to run elections.
+    * Allow DFS client paths to work when POSIX pathnames have been
+      selected.
+    * Try and fix the build farm RAW-STREAMS errors.
 
 
-o   Andrew Tridgell <tridge@samba.org>
-    * Fix a bug in message handling for the change notify code.
-
-
-o   Steven Danneman <steven.danneman@isilon.com>
-    * Fix guest authentication in setups with "security = share" and "guest ok =
-      yes" when Winbind is running.
-
-
-o   Steve French <smfrench@gmail.com>
-    * BUG 4640: Fix guest mounts in mount.cifs.
-    * Fix displaying the version string properly when no other parameters passed
-      in in mount.cifs.
+o   Günther Deschner <gd@samba.org>
+    * BUG 6102: NetQueryDisplayInformation could return wrong information.
+    * BUG 6193: Avoid messing with sync_context in libnet_samsync_delta().
+    * Fix notify_printer_status_byname.
+    * Fix Coverity IDs 722, 762, 774, 775, 776.
 
 
 o   Björn Jacke <bj@sernet.de>
-    * Prefer gssapi header files from subdirectory.
+    * Fix build on old Heimdal based systems.
+    * Fix compile warning.
+    * Use parentheses in if condition to make negation clear.
+
+
+o   Andy Kelk <andy@mopoke.co.uk>
+    * Add dirsort module.
+
+
+o   Steve Langasek <vorlon@debian.org>
+    * BUG 6147: Fix detection of the GNU ld version.
 
 
 o   Volker Lendecke <vl@samba.org>
-    * BUG 6124: Fix the build on IRIX.
-    * BUG 6176: winbindd -n should disable the winbind idmap cache.
-    * Add a vfs_preopen module to hide fs latencies.
-    * Don't log NDR_PRINT_DEBUG at level 0, this always ends up in syslog.
-    * Fix a valgrind error / segfault in dns_register_smbd().
+    * BUG 6097: Fix smbd segfault.
+    * BUG 6130: Don't crash in winbindd_rpc lookup_groupmem() on unmapped
+      members.
+    * BUG 6139: Add missing whitespace in mount.cifs error message.
+    * Fix a malloc/talloc mismatch when cli_initialise() fails.
+    * Fix a valgrind error.
+    * Speed up "net conf list".
+    * Add sorted subkey cache.
+    * Use StrCaseCmp in the dirsort module.
+    * Document the dirsort module.
+    * Fix the build on HP/UX.
+    * Disable dns_sd by default.
+    * Add avahi detection to configure.
+    * Add event avahi binding.
+    * Use avahi to register _smb._tcp in smbd.
+    * Fix two memleaks in the encryption code.
+    * Fix a scary "fill_share_mode_lock failed" message.
 
 
 o   Stefan Metzmacher <metze@samba.org>
-    * Fix build on SLES8.
-    * Decremented by 1 for ntcancel requests.
+    * Don't use reserved words in smbconftort.
+    * Fix smb signing for fragmented trans/trans2/nttrans requests.
 
 
 o   Tim Prouty <tprouty@samba.org>
-    * Fix creation of core files.
+    * Parse_packet can return NULL which is then dereferenced in
+      match_mailslot_name.
 
 
-o   Dan Sledz <dan.sledz@isilon.com>
-    * Fix first mapping of uids/gids in Winbind.
+o   Timur <timur@FreeBSD.org>
+    * Format the header check for netinet/ip.h more nicely.
+    * Fix detection of netinet/ip.h on FreeBSD.
 
 
-o   Bo Yang <boyang@novell.com>
-    * Initialize the id_map status in idmap_ldap to avoid surprise.
-    * Fix initialization of idmap status.
+o   Alexander Zagrebin <alexz@visp.ru>
+    * Missing break in conversion function prevents tdb password database
+      update.
 
 
 ######################################################################
