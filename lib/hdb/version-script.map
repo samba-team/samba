@@ -70,6 +70,8 @@ HEIMDAL_HDB_1.0 {
 		hdb_value2entry;
 		hdb_value2entry_alias;
 		hdb_write_master_key;
+		length_hdb_keyset;
+		encode_hdb_keyset;
 
 		hdb_kt_ops;
 
