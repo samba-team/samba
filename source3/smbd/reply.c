@@ -2679,6 +2679,7 @@ static ssize_t fake_sendfile(files_struct *fsp, SMB_OFF_T startpos,
 	return (ssize_t)nread;
 }
 
+#if defined(WITH_SENDFILE)
 /****************************************************************************
  Deal with the case of sendfile reading less bytes from the file than
  requested. Fill with zeros (all we can do).
@@ -2735,6 +2736,7 @@ static void sendfile_short_send(files_struct *fsp,
 		SAFE_FREE(buf);
 	}
 }
+#endif /* defined WITH_SENDFILE */
 
 /****************************************************************************
  Return a readbraw error (4 bytes of zero).
