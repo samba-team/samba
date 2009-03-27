@@ -509,10 +509,10 @@ parse_reply(const unsigned char *data, size_t len)
     	((int)dns_search(h,n,c,t,r,l,(struct sockaddr *)&from,&fromsize))
 #define resolve_free_handle(h) dns_free(h)
 #elif defined(HAVE_RES_NSEARCH)
-#define resolve_search(h,n,c,t,r,l) dns_nsearch(h,n,c,t,r,l)
+#define resolve_search(h,n,c,t,r,l) res_nsearch(h,n,c,t,r,l)
 #define resolve_free_handle(h) rk_res_free(h);
 #else
-#define resolve_search(h,n,c,t,r,l) dns_search(n,c,t,r,l)
+#define resolve_search(h,n,c,t,r,l) res_search(n,c,t,r,l)
 #define handle 0
 #define resolve_free_handle(h)
 #endif
