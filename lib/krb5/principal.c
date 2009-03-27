@@ -833,8 +833,6 @@ krb5_principal_match(krb5_context context,
     return TRUE;
 }
 
-#ifdef KRB4
-
 static struct v4_name_convert {
     const char *from;
     const char *to;
@@ -847,6 +845,8 @@ static struct v4_name_convert {
     { "smtp",	"smtp" },
     { NULL, NULL }
 };
+
+#ifdef KRB4
 
 /*
  * return the converted instance name of `name' in `realm'.
