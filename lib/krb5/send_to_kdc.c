@@ -384,8 +384,8 @@ krb5_sendto (krb5_context context,
 	     if (context->send_to_kdc) {
 		 struct send_to_kdc *s = context->send_to_kdc;
 
-		 ret = (*s->func)(context, s->data,
-				  hi, send_data, receive);
+		 ret = (*s->func)(context, s->data, hi,
+				  context->kdc_timeout, send_data, receive);
 		 if (ret == 0 && receive->length != 0)
 		     goto out;
 		 continue;
