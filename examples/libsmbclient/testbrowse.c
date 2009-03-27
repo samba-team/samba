@@ -197,7 +197,7 @@ get_auth_data_with_context_fn(SMBCCTX * context,
                               char * pPassword,
                               int maxLenPassword)
 {
-    printf("Authenticating with context 0x%lx", context);
+    printf("Authenticating with context %p", context);
     if (context != NULL) {
         char *user_data = smbc_getOptionUserData(context);
         printf(" with user data %s", user_data);

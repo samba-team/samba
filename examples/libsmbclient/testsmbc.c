@@ -21,6 +21,7 @@
 
 #include <stdio.h>
 #include <errno.h>
+#include <time.h>
 #include <sys/time.h>
 #include <string.h>
 #include <unistd.h>
@@ -33,8 +34,12 @@ int global_id = 0;
 void print_list_fn(struct print_job_info *pji)
 {
 
-  fprintf(stdout, "Print job: ID: %u, Prio: %u, Size: %u, User: %s, Name: %s\n",
-	  pji->id, pji->priority, pji->size, pji->user, pji->name);
+  fprintf(stdout, "Print job: ID: %u, Prio: %u, Size: %lu, User: %s, Name: %s\n",
+	  pji->id,
+          pji->priority,
+          (unsigned long) pji->size,
+          pji->user,
+          pji->name);
 
   global_id = pji->id;
 
@@ -137,7 +142,8 @@ int main(int argc, char *argv[])
 
   }
 
-  fprintf(stdout, "Wrote %d bytes to file: %s\n", sizeof(buff), buff);
+  fprintf(stdout, "Wrote %lu bytes to file: %s\n",
+          (unsigned long) sizeof(buff), buff);
 
   /* Now, seek the file back to offset 0 */
 
