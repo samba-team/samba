@@ -42,6 +42,33 @@ static int dbwrap_fallback_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
+bool db_is_local(const char *name)
+{
+#ifdef CLUSTER_SUPPORT
+	const char *sockname = lp_ctdbd_socket();
+
+	if(!sockname || !*sockname) {
+		sockname = CTDB_PATH;
+	}
+
+	if (lp_clustering() && socket_exist(sockname)) {
+		const char *partname;
+		/* ctdb only wants the file part of the name */
+		partname = strrchr(name, '/');
+		if (partname) {
+			partname++;
+		} else {
+			partname = name;
+		}
+		/* allow ctdb for individual databases to be disabled */
+		if (lp_parm_bool(-1, "ctdb", partname, True)) {
+			return false;
+		}
+	}
+#endif
+	return true;
+}
+
 /**
  * If you need transaction support use db_open_trans()
  */
