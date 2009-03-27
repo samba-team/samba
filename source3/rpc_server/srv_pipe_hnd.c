@@ -1383,7 +1383,7 @@ struct tevent_req *np_read_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 
 static void np_read_trigger(struct tevent_req *req, void *private_data)
 {
-	struct np_read_state *state = tevent_req_callback_data(
+	struct np_read_state *state = tevent_req_data(
 		req, struct np_read_state);
 	struct tevent_req *subreq;
 
