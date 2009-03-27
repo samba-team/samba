@@ -190,7 +190,7 @@ bool test_durable_open_oplock(struct torture_context *tctx,
 			      struct smb2_tree *tree2)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
-	struct smb2_create io1, io2, io3;
+	struct smb2_create io1, io2;
 	struct smb2_handle h1;
 	NTSTATUS status;
 	const char *fname = "durable_open_oplock.dat";
@@ -297,4 +297,6 @@ struct torture_suite *torture_smb2_durable_open_init(void)
 	torture_suite_add_2smb2_test(suite, "OPLOCK", test_durable_open_oplock);
 
 	suite->description = talloc_strdup(suite, "SMB2-DURABLE-OPEN tests");
+
+	return suite;
 }
