@@ -1615,9 +1615,8 @@ _kdc_as_rep(krb5_context context,
 					   pkp,
 					   &et);
     } else
-#else
-	ret = krb5_generate_random_keyblock(context, sessionetype, &et.key);
 #endif
+	ret = krb5_generate_random_keyblock(context, sessionetype, &et.key);
     if (ret)
 	goto out;
 
