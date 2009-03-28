@@ -5203,7 +5203,7 @@ static bool run_cli_echo(int dummy)
 	struct async_req *req;
 	NTSTATUS status;
 
-	printf("starting chain1 test\n");
+	printf("starting cli_echo test\n");
 	if (!torture_open_connection(&cli, 0)) {
 		return false;
 	}
