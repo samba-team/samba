@@ -661,6 +661,8 @@ void reply_trans(struct smb_request *req)
 		return;
 	}
 
+	talloc_steal(talloc_tos(), state);
+
 	handle_trans(conn, req, state);
 
 	SAFE_FREE(state->data);
@@ -789,6 +791,8 @@ void reply_transs(struct smb_request *req)
 	 * outbuf. SMBtranss is wrong here.
          */
         SCVAL(req->inbuf,smb_com,SMBtrans);
+
+	talloc_steal(talloc_tos(), state);
 
 	handle_trans(conn, req, state);
 
