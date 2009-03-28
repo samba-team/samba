@@ -74,10 +74,27 @@ typedef struct HDB{
     hdb_master_key hdb_master_key;
     int hdb_openp;
 
+    /**
+     * Open (or create) the a Kerberos database.
+     *
+     * Open (or create) the a Kerberos database that was resolved with
+     * hdb_create(). The third and fourth flag to the function are the
+     * same as open(), thus passing O_CREAT will create the data base
+     * if it doesn't exists.
+     *
+     * Then done the caller should call hdb_close(), and to release
+     * all resources hdb_destroy().
+     */
     krb5_error_code (*hdb_open)(krb5_context,
 				struct HDB*,
 				int,
 				mode_t);
+    /**
+     * Close the database for transaction
+     *
+     * Closes the database for further transactions, wont release any
+     * permanant resources. the database can be ->hdb_open-ed again.
+     */
     krb5_error_code (*hdb_close)(krb5_context,
 				 struct HDB*);
     void	    (*hdb_free)(krb5_context,
@@ -111,6 +128,13 @@ typedef struct HDB{
     krb5_error_code (*hdb_rename)(krb5_context,
 				  struct HDB*,
 				  const char*);
+    /**
+     * Get a encoded principal from database.
+     *
+     * If the database is a pure DB backend, this function will take a
+     * principal key and return all data related to principal. The
+     * encoded entry is of type hdb_entry or hdb_entry_alias.
+     */
     krb5_error_code (*hdb__get)(krb5_context,
 				struct HDB*,
 				krb5_data,
@@ -123,6 +147,14 @@ typedef struct HDB{
     krb5_error_code (*hdb__del)(krb5_context,
 				struct HDB*,
 				krb5_data);
+    /**
+     * Destroy the handle to the database.
+     *
+     * Destroy the handle to the database, deallocate all memory and
+     * related resources. Does not remove any permanent data. Its the
+     * logical reverse of hdb_create() function that is the entry
+     * point for the module.
+     */
     krb5_error_code (*hdb_destroy)(krb5_context,
 				   struct HDB*);
 }HDB;
