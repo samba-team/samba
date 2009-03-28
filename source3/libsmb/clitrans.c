@@ -984,8 +984,9 @@ static void cli_trans_ship_rest(struct async_req *req,
 	cli_req->seqnum = state->seqnum;
 }
 
-static NTSTATUS cli_pull_trans(struct async_req *req,
-			       struct cli_request *cli_req,
+static NTSTATUS cli_pull_trans(uint8_t *inbuf,
+			       uint8_t wct, uint16_t *vwv,
+			       uint16_t num_bytes, uint8_t *bytes,
 			       uint8_t smb_cmd, bool expect_first_reply,
 			       uint8_t *pnum_setup, uint16_t **psetup,
 			       uint32_t *ptotal_param, uint32_t *pnum_param,
@@ -994,22 +995,6 @@ static NTSTATUS cli_pull_trans(struct async_req *req,
 			       uint32_t *pdata_disp, uint8_t **pdata)
 {
 	uint32_t param_ofs, data_ofs;
-	uint8_t wct;
-	uint16_t *vwv;
-	uint16_t num_bytes;
-	uint8_t *bytes;
-	NTSTATUS status;
-
-	status = cli_pull_reply(req, &wct, &vwv, &num_bytes, &bytes);
-
-	/*
-	 * We can receive something like STATUS_MORE_ENTRIES, so don't use
-	 * !NT_STATUS_IS_OK(status) here.
-	 */
-
-	if (NT_STATUS_IS_ERR(status)) {
-		return status;
-	}
 
 	if (expect_first_reply) {
 		if ((wct != 0) || (num_bytes != 0)) {
@@ -1065,15 +1050,15 @@ static NTSTATUS cli_pull_trans(struct async_req *req,
 	 * length. Likewise for param_ofs/param_disp.
 	 */
 
-	if (trans_oob(smb_len(cli_req->inbuf), param_ofs, *pnum_param)
+	if (trans_oob(smb_len(inbuf), param_ofs, *pnum_param)
 	    || trans_oob(*ptotal_param, *pparam_disp, *pnum_param)
-	    || trans_oob(smb_len(cli_req->inbuf), data_ofs, *pnum_data)
+	    || trans_oob(smb_len(inbuf), data_ofs, *pnum_data)
 	    || trans_oob(*ptotal_data, *pdata_disp, *pnum_data)) {
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
-	*pparam = (uint8_t *)cli_req->inbuf + 4 + param_ofs;
-	*pdata = (uint8_t *)cli_req->inbuf + 4 + data_ofs;
+	*pparam = (uint8_t *)inbuf + 4 + param_ofs;
+	*pdata = (uint8_t *)inbuf + 4 + data_ofs;
 
 	return NT_STATUS_OK;
 }
@@ -1112,6 +1097,10 @@ static void cli_trans_recv_helper(struct async_req *req)
 		req->private_data, struct cli_request);
 	struct cli_trans_state *state = talloc_get_type_abort(
 		cli_req->recv_helper.priv, struct cli_trans_state);
+	uint8_t wct;
+	uint16_t *vwv;
+	uint16_t num_bytes;
+	uint8_t *bytes;
 	uint8_t num_setup	= 0;
 	uint16_t *setup		= NULL;
 	uint32_t total_param	= 0;
@@ -1128,8 +1117,21 @@ static void cli_trans_recv_helper(struct async_req *req)
 	sent_all = (state->param_sent == state->num_param)
 		&& (state->data_sent == state->num_data);
 
+	status = cli_pull_reply(req, &wct, &vwv, &num_bytes, &bytes);
+
+	/*
+	 * We can receive something like STATUS_MORE_ENTRIES, so don't use
+	 * !NT_STATUS_IS_OK(status) here.
+	 */
+
+	if (NT_STATUS_IS_ERR(status)) {
+		async_req_nterror(req, status);
+		return;
+	}
+
 	status = cli_pull_trans(
-		req, cli_req, state->cmd, !sent_all, &num_setup, &setup,
+		(uint8_t *)cli_req->inbuf, wct, vwv, num_bytes, bytes,
+		state->cmd, !sent_all, &num_setup, &setup,
 		&total_param, &num_param, &param_disp, &param,
 		&total_data, &num_data, &data_disp, &data);
 
