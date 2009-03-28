@@ -1751,7 +1751,7 @@ LDAP_destroy(krb5_context context, HDB * db)
     return ret;
 }
 
-krb5_error_code
+static krb5_error_code
 hdb_ldap_common(krb5_context context,
 		HDB ** db,
 		const char *search_base,
