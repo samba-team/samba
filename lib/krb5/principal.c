@@ -833,6 +833,8 @@ krb5_principal_match(krb5_context context,
     return TRUE;
 }
 
+#if defined(KRB4) || !defined(HEIMDAL_SMALLER)
+
 static struct v4_name_convert {
     const char *from;
     const char *to;
@@ -845,6 +847,8 @@ static struct v4_name_convert {
     { "smtp",	"smtp" },
     { NULL, NULL }
 };
+
+#endif
 
 #ifdef KRB4
 
