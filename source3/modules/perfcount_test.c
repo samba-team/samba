@@ -351,14 +351,6 @@ static void perfcount_test_defer_op(struct smb_perfcount_data *pcd,
 	return;
 }
 
-static void perfcount_test_set_client(struct smb_perfcount_data *pcd,
-					    uid_t uid, const char *user,
-					    const char *domain)
-{
-	/* WIP */
-	return;
-}
-
 static void perfcount_test_end(struct smb_perfcount_data *pcd)
 {
 	struct perfcount_test_context *ctxt =
@@ -382,7 +374,6 @@ static struct smb_perfcount_handlers perfcount_test_handlers = {
 	perfcount_test_set_ioctl,
 	perfcount_test_set_msglen_in,
 	perfcount_test_set_msglen_out,
-	perfcount_test_set_client,
 	perfcount_test_copy_context,
 	perfcount_test_defer_op,
 	perfcount_test_end
