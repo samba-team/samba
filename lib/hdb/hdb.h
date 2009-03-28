@@ -68,7 +68,7 @@ typedef struct hdb_entry_ex {
 
 typedef struct HDB{
     void *hdb_db;
-    void *hdb_dbc;
+    void *hdb_dbc; /** don't use, only for DB3 */
     char *hdb_name;
     int hdb_master_key_set;
     hdb_master_key hdb_master_key;
