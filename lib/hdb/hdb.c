@@ -388,6 +388,14 @@ hdb_list_builtin(krb5_context context, char **list)
     return 0;
 }
 
+/**
+ * Create a handle for a Kerberos database
+ *
+ * Create a handle for a Kerberos database backend specified by a
+ * filename.  Doesn't create a file if its doesn't exists, you have to
+ * use O_CREAT to tell the backend to create the file.
+ */
+
 krb5_error_code
 hdb_create(krb5_context context, HDB **db, const char *filename)
 {
