@@ -43,12 +43,8 @@ HEIMDAL_HDB_1.0 {
 		hdb_get_dbinfo;
 		hdb_init_db;
 		hdb_key2principal;
-		hdb_ldap_common;
-		hdb_ldap_create;
-		hdb_ldapi_create;
 		hdb_list_builtin;
 		hdb_lock;
-		hdb_ndbm_create;
 		hdb_next_enctype2key;
 		hdb_principal2key;
 		hdb_print_entry;
