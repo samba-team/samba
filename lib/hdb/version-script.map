@@ -7,7 +7,6 @@ HEIMDAL_HDB_1.0 {
 		hdb_clear_extension;
 		hdb_clear_master_key;
 		hdb_create;
-		hdb_db_create;
 		hdb_db_dir;
 		hdb_dbinfo_get_acl_file;
 		hdb_dbinfo_get_binding;
