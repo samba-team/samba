@@ -750,6 +750,8 @@ void reply_trans(struct smb_request *req)
 		return;
 	}
 
+	talloc_steal(talloc_tos(), state);
+
 	handle_trans(conn, req, state);
 
 	SAFE_FREE(state->data);
@@ -847,6 +849,8 @@ void reply_transs(struct smb_request *req)
 		END_PROFILE(SMBtranss);
 		return;
 	}
+
+	talloc_steal(talloc_tos(), state);
 
 	handle_trans(conn, req, state);
 
