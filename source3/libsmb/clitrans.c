@@ -166,7 +166,7 @@ bool cli_receive_trans(struct cli_state *cli,int trans,
 
 	*data_len = *param_len = 0;
 
-	mid = SVAL(cli->inbuf,smb_mid);
+	mid = SVAL(cli->outbuf,smb_mid);
 
 	if (!cli_receive_smb(cli)) {
 		cli_state_seqnum_remove(cli, mid);
@@ -487,7 +487,7 @@ bool cli_receive_nt_trans(struct cli_state *cli,
 
 	*data_len = *param_len = 0;
 
-	mid = SVAL(cli->inbuf,smb_mid);
+	mid = SVAL(cli->outbuf,smb_mid);
 
 	if (!cli_receive_smb(cli)) {
 		cli_state_seqnum_remove(cli, mid);
