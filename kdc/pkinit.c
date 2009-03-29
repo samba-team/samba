@@ -1008,7 +1008,6 @@ pk_mk_pa_reply_enckey(krb5_context context,
 			       kdc_identity->certs,
 			       q,
 			       &cert);
-	hx509_query_free(kdc_identity->hx509ctx, q);
 	if (ret)
 	    goto out;
 	
@@ -1079,6 +1078,8 @@ pk_mk_pa_reply_dh(krb5_context context,
     krb5_data signed_data, buf;
     ContentInfo contentinfo;
     krb5_error_code ret;
+    hx509_cert cert;
+    hx509_query *q;
     size_t size;
 
     memset(&contentinfo, 0, sizeof(contentinfo));
@@ -1150,41 +1151,37 @@ pk_mk_pa_reply_dh(krb5_context context,
      * filled in above
      */
 
-    {
-	hx509_query *q;
-	hx509_cert cert;
-	
-	ret = hx509_query_alloc(kdc_identity->hx509ctx, &q);
-	if (ret)
-	    goto out;
-	
-	hx509_query_match_option(q, HX509_QUERY_OPTION_PRIVATE_KEY);
-	if (config->pkinit_kdc_friendly_name)
-	    hx509_query_match_friendly_name(q, config->pkinit_kdc_friendly_name);
-	
-	ret = hx509_certs_find(kdc_identity->hx509ctx,
-			       kdc_identity->certs,
-			       q,
-			       &cert);
-	hx509_query_free(kdc_identity->hx509ctx, q);
-	if (ret)
-	    goto out;
-	
-	ret = hx509_cms_create_signed_1(kdc_identity->hx509ctx,
-					0,
-					oid_id_pkdhkeydata(),
-					buf.data,
-					buf.length,
-					NULL,
-					cert,
-					cp->peer,
-					cp->client_anchors,
-					kdc_identity->certpool,
-					&signed_data);
-	*kdc_cert = cert;
-    }
+    ret = hx509_query_alloc(kdc_identity->hx509ctx, &q);
     if (ret)
 	goto out;
+    
+    hx509_query_match_option(q, HX509_QUERY_OPTION_PRIVATE_KEY);
+    if (config->pkinit_kdc_friendly_name)
+	hx509_query_match_friendly_name(q, config->pkinit_kdc_friendly_name);
+    
+    ret = hx509_certs_find(kdc_identity->hx509ctx,
+			   kdc_identity->certs,
+			   q,
+			   &cert);
+    if (ret)
+	goto out;
+    
+    ret = hx509_cms_create_signed_1(kdc_identity->hx509ctx,
+				    0,
+				    oid_id_pkdhkeydata(),
+				    buf.data,
+				    buf.length,
+				    NULL,
+				    cert,
+				    cp->peer,
+				    cp->client_anchors,
+				    kdc_identity->certpool,
+				    &signed_data);
+    if (ret) {
+	kdc_log(context, config, 0, "Failed signing the DH* reply: %d", ret);
+	goto out;
+    }
+    *kdc_cert = cert;
 
     ret = _krb5_pk_mk_ContentInfo(context,
 				  &signed_data,
@@ -1199,6 +1196,9 @@ pk_mk_pa_reply_dh(krb5_context context,
 	*kdc_cert = NULL;
     }
 
+    if (q)
+	hx509_query_free(kdc_identity->hx509ctx, q);
+	
     krb5_data_free(&buf);
     krb5_data_free(&signed_data);
     free_KDCDHKeyInfo(&dh_info);
