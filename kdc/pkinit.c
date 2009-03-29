@@ -612,7 +612,7 @@ _kdc_pk_rd_padata(krb5_context context,
 	/* XXX look at r.kdcPkId */
 	if (r.trustedCertifiers) {
 	    ExternalPrincipalIdentifiers *edi = r.trustedCertifiers;
-	    unsigned int i;
+	    unsigned int i, maxedi;
 
 	    ret = hx509_certs_init(kdc_identity->hx509ctx,
 				   "MEMORY:client-anchors",
@@ -625,7 +625,14 @@ _kdc_pk_rd_padata(krb5_context context,
 		goto out;
 
 	    }
-	    for (i = 0; i < edi->len; i++) {
+	    /* 
+	     * If the client sent more then 10 EDI, don't bother
+	     * looking more then 10 of performance reasons.
+	     */
+	    maxedi = edi->len;
+	    if (maxedi > 10)
+		maxedi = 10;
+	    for (i = 0; i < maxedi; i++) {
 		IssuerAndSerialNumber iasn;
 		hx509_query *q;
 		hx509_cert cert;
