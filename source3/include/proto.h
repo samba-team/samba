@@ -2793,12 +2793,20 @@ ssize_t cli_write(struct cli_state *cli,
 		 const char *buf, off_t offset, size_t size);
 ssize_t cli_smbwrite(struct cli_state *cli,
 		     int fnum, char *buf, off_t offset, size_t size1);
-struct async_req *cli_write_andx_send(TALLOC_CTX *mem_ctx,
-				      struct event_context *ev,
-				      struct cli_state *cli, uint16_t fnum,
-				      uint16_t mode, const uint8_t *buf,
-				      off_t offset, size_t size);
-NTSTATUS cli_write_andx_recv(struct async_req *req, size_t *pwritten);
+struct tevent_req *cli_write_andx_create(TALLOC_CTX *mem_ctx,
+					 struct event_context *ev,
+					 struct cli_state *cli, uint16_t fnum,
+					 uint16_t mode, const uint8_t *buf,
+					 off_t offset, size_t size,
+					 struct tevent_req **reqs_before,
+					 int num_reqs_before,
+					 struct tevent_req **psmbreq);
+struct tevent_req *cli_write_andx_send(TALLOC_CTX *mem_ctx,
+				       struct event_context *ev,
+				       struct cli_state *cli, uint16_t fnum,
+				       uint16_t mode, const uint8_t *buf,
+				       off_t offset, size_t size);
+NTSTATUS cli_write_andx_recv(struct tevent_req *req, size_t *pwritten);
 
 struct async_req *cli_push_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 				struct cli_state *cli,
