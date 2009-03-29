@@ -141,7 +141,7 @@ ${kadmin} -l get host/bar@${R} > /dev/null 2>/dev/null && exit 1
 
 echo "kill slave"
 > iprop-stats
-kill ${ipds}
+sh ${srcdir}/leaks-kill.sh ipropd-slave $ipds || exit 1
 sleep 2
 
 ${EGREP} 'iprop/slave.test.h5l.se@TEST.H5L.SE.*Down' iprop-stats >/dev/null || exit 1
@@ -171,7 +171,7 @@ echo "checking for replay problems"
 ${EGREP} 'Entry already exists in database' messages.log && exit 1
 
 echo "kill slave and remove log and database"
-kill ${ipds}
+sh ${srcdir}/leaks-kill.sh ipropd-slave $ipds || exit 1
 sleep 2
 
 rm current.slave.log current-db.slave* || exit 1
@@ -197,7 +197,8 @@ ${iproplog} truncate || exit 1
 sleep 2
 
 echo "Killing master and slave"
-kill ${ipdm} ${ipds} >/dev/null 2>/dev/null
+sh ${srcdir}/leaks-kill.sh ipropd-master $ipdm || exit 1
+sh ${srcdir}/leaks-kill.sh ipropd-slave $ipds || exit 1
 
 sleep 2
 ${EGREP} "^master down at " iprop-stats > /dev/null || exit 1
@@ -237,7 +238,7 @@ ${kadmin} -l cpw --random-password user@${R} > /dev/null || exit 1
 sleep 2
 
 echo "Killing master"
-kill $ipdm
+sh ${srcdir}/leaks-kill.sh ipropd-master $ipdm || exit 1
 
 sleep 4
 
@@ -269,7 +270,9 @@ sleep 2
 echo "shutting down all services"
 
 trap "" EXIT
-kill ${ipdm} ${ipds} ${kdcpid}
+sh ${srcdir}/leaks-kill.sh kdc $kdcpid || exit 1
+sh ${srcdir}/leaks-kill.sh ipropd-master $ipdm || exit 1
+sh ${srcdir}/leaks-kill.sh ipropd-slave $ipds || exit 1
 
 echo "compare versions on master and slave logs"
 KRB5_CONFIG=${objdir}/krb5-slave.conf \
