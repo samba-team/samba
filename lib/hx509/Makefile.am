@@ -289,7 +289,6 @@ test_query: test_query.in Makefile
 EXTRA_DIST = \
 	version-script.map \
 	crmf.asn1 \
-	data/bleichenbacher-bad.pem \
 	hx509_err.et \
 	hxtool-commands.in \
 	ocsp.asn1 \
@@ -319,6 +318,16 @@ EXTRA_DIST = \
 	tst-crypto-select5 \
 	tst-crypto-select6 \
 	tst-crypto-select7 \
+	data/secp160r1TestCA.cert.pem \
+	data/secp160r1TestCA.key.pem \
+	data/secp160r1TestCA.pem \
+	data/secp160r2TestClient.cert.pem \
+	data/secp160r2TestClient.key.pem \
+	data/secp160r2TestClient.pem \
+	data/secp160r2TestServer.cert.pem \
+	data/secp160r2TestServer.key.pem \
+	data/secp160r2TestServer.pem \
+	data/bleichenbacher-bad.pem \
 	data/bleichenbacher-good.pem \
 	data/bleichenbacher-sf-pad-correct.pem \
 	data/ca.crt \
