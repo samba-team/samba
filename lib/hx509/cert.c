@@ -444,7 +444,7 @@ void
 hx509_verify_attach_anchors(hx509_verify_ctx ctx, hx509_certs set)
 {
     if (ctx->trust_anchors)
-	hx509_certs_free(ctx, ctx->trust_anchors);
+	hx509_certs_free(&ctx->trust_anchors);
     ctx->trust_anchors = _hx509_certs_ref(set);
 }
 
