@@ -65,6 +65,7 @@ kadm5_s_rename_principal(void *server_handle,
 	int i;
 	Salt salt;
 	krb5_salt salt2;
+	memset(&salt, 0, sizeof(salt));
 	krb5_get_pw_salt(context->context, source, &salt2);
 	salt.type = hdb_pw_salt;
 	salt.salt = salt2.saltvalue;
