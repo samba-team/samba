@@ -151,7 +151,7 @@ ${klist} -l | grep bar@ >/dev/null && { ec=1 ; eval "${testfailed}"; }
 
 
 echo "killing kdc (${kdcpid})"
-kill $kdcpid || exit 1
+sh ${srcdir}/leaks-kill.sh kdc $kdcpid || exit 1
 
 trap "" EXIT
 
