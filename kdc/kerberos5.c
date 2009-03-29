@@ -1047,7 +1047,7 @@ _kdc_as_rep(krb5_context context,
 	if (pa) {
 	    char *client_cert = NULL;
 
-	    ret = _kdc_pk_rd_padata(context, config, req, pa, &pkp);
+	    ret = _kdc_pk_rd_padata(context, config, req, pa, client, &pkp);
 	    if (ret) {
 		ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
 		kdc_log(context, config, 5,
