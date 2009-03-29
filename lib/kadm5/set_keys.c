@@ -105,7 +105,7 @@ _kadm5_set_keys2(kadm5_server_context *context,
 	if(key_data[i].key_data_ver == 2) {
 	    Salt *salt;
 
-	    salt = malloc(sizeof(*salt));
+	    salt = calloc(1, sizeof(*salt));
 	    if(salt == NULL) {
 		ret = ENOMEM;
 		goto out;
