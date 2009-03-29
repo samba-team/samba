@@ -2,6 +2,7 @@
 
 HEIMDAL_HDB_1.0 {
 	global:
+		encode_hdb_keyset;
 		hdb_add_master_key;
 		hdb_check_db_format;
 		hdb_clear_extension;
@@ -27,6 +28,7 @@ HEIMDAL_HDB_1.0 {
 		hdb_entry_get_aliases;
 		hdb_entry_get_password;
 		hdb_entry_get_pkinit_acl;
+		hdb_entry_get_pkinit_cert;
 		hdb_entry_get_pkinit_hash;
 		hdb_entry_get_pw_change_time;
 		hdb_entry_set_password;
@@ -66,7 +68,6 @@ HEIMDAL_HDB_1.0 {
 		hdb_value2entry_alias;
 		hdb_write_master_key;
 		length_hdb_keyset;
-		encode_hdb_keyset;
 
 		hdb_kt_ops;
 
