@@ -129,7 +129,7 @@ struct get_anon_ipc_state {
 };
 
 static void get_anon_ipc_negprot_done(struct async_req *subreq);
-static void get_anon_ipc_sesssetup_done(struct async_req *subreq);
+static void get_anon_ipc_sesssetup_done(struct tevent_req *subreq);
 static void get_anon_ipc_tcon_done(struct async_req *subreq);
 
 static struct async_req *get_anon_ipc_send(TALLOC_CTX *mem_ctx,
@@ -165,6 +165,7 @@ static void get_anon_ipc_negprot_done(struct async_req *subreq)
 		subreq->async.priv, struct async_req);
 	struct get_anon_ipc_state *state = talloc_get_type_abort(
 		req->private_data, struct get_anon_ipc_state);
+	struct tevent_req *subreq2;
 	NTSTATUS status;
 
 	status = cli_negprot_recv(subreq);
@@ -174,20 +175,20 @@ static void get_anon_ipc_negprot_done(struct async_req *subreq)
 		return;
 	}
 
-	subreq = cli_session_setup_guest_send(state, state->ev, state->cli);
-	if (async_req_nomem(subreq, req)) {
+	subreq2 = cli_session_setup_guest_send(state, state->ev, state->cli);
+	if (async_req_nomem(subreq2, req)) {
 		return;
 	}
-	subreq->async.fn = get_anon_ipc_sesssetup_done;
-	subreq->async.priv = req;
+	tevent_req_set_callback(subreq2, get_anon_ipc_sesssetup_done, req);
 }
 
-static void get_anon_ipc_sesssetup_done(struct async_req *subreq)
+static void get_anon_ipc_sesssetup_done(struct tevent_req *subreq)
 {
-	struct async_req *req = talloc_get_type_abort(
-		subreq->async.priv, struct async_req);
+	struct async_req *req = tevent_req_callback_data(
+		subreq, struct async_req);
 	struct get_anon_ipc_state *state = talloc_get_type_abort(
 		req->private_data, struct get_anon_ipc_state);
+	struct async_req *subreq2;
 	NTSTATUS status;
 
 	status = cli_session_setup_guest_recv(subreq);
@@ -197,13 +198,13 @@ static void get_anon_ipc_sesssetup_done(struct async_req *subreq)
 		return;
 	}
 
-	subreq = cli_tcon_andx_send(state, state->ev, state->cli,
+	subreq2 = cli_tcon_andx_send(state, state->ev, state->cli,
 				    "IPC$", "IPC", NULL, 0);
-	if (async_req_nomem(subreq, req)) {
+	if (async_req_nomem(subreq2, req)) {
 		return;
 	}
-	subreq->async.fn = get_anon_ipc_tcon_done;
-	subreq->async.priv = req;
+	subreq2->async.fn = get_anon_ipc_tcon_done;
+	subreq2->async.priv = req;
 }
 
 static void get_anon_ipc_tcon_done(struct async_req *subreq)

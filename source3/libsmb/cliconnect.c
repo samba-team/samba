@@ -165,13 +165,29 @@ static uint32 cli_session_setup_capabilities(struct cli_state *cli)
  Do a NT1 guest session setup.
 ****************************************************************************/
 
-struct async_req *cli_session_setup_guest_send(TALLOC_CTX *mem_ctx,
-					       struct event_context *ev,
-					       struct cli_state *cli)
+struct cli_session_setup_guest_state {
+	struct cli_state *cli;
+	uint16_t vwv[16];
+};
+
+static void cli_session_setup_guest_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_session_setup_guest_send(TALLOC_CTX *mem_ctx,
+						struct event_context *ev,
+						struct cli_state *cli)
 {
-	struct async_req *result;
-	uint16_t vwv[13];
+	struct tevent_req *req, *subreq;
+	struct cli_session_setup_guest_state *state;
+	uint16_t *vwv;
 	uint8_t *bytes;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct cli_session_setup_guest_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->cli = cli;
+	vwv = state->vwv;
 
 	SCVAL(vwv+0, 0, 0xFF);
 	SCVAL(vwv+0, 1, 0);
@@ -186,7 +202,7 @@ struct async_req *cli_session_setup_guest_send(TALLOC_CTX *mem_ctx,
 	SSVAL(vwv+10, 0, 0);
 	SIVAL(vwv+11, 0, cli_session_setup_capabilities(cli));
 
-	bytes = talloc_array(talloc_tos(), uint8_t, 0);
+	bytes = talloc_array(state, uint8_t, 0);
 
 	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), "",  1, /* username */
 				   NULL);
@@ -195,68 +211,78 @@ struct async_req *cli_session_setup_guest_send(TALLOC_CTX *mem_ctx,
 	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), "Unix", 5, NULL);
 	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), "Samba", 6, NULL);
 
-	if (bytes == NULL) {
-		return NULL;
+	if (tevent_req_nomem(bytes, req)) {
+		return tevent_req_post(req, ev);
 	}
 
-	result = cli_request_send(mem_ctx, ev, cli, SMBsesssetupX, 0,
-				  13, vwv, 0, talloc_get_size(bytes), bytes);
-	TALLOC_FREE(bytes);
-	return result;
+	subreq = cli_smb_send(state, ev, cli, SMBsesssetupX, 0, 13, vwv,
+			      talloc_get_size(bytes), bytes);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_session_setup_guest_done, req);
+	return req;
 }
 
-NTSTATUS cli_session_setup_guest_recv(struct async_req *req)
+static void cli_session_setup_guest_done(struct tevent_req *subreq)
 {
-	struct cli_request *cli_req = talloc_get_type_abort(
-		req->private_data, struct cli_request);
-	struct cli_state *cli = cli_req->cli;
-	uint8_t wct;
-	uint16_t *vwv;
-	uint16_t num_bytes;
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_session_setup_guest_state *state = tevent_req_data(
+		req, struct cli_session_setup_guest_state);
+	struct cli_state *cli = state->cli;
+	uint32_t num_bytes;
+	char *inbuf;
 	uint8_t *bytes;
 	uint8_t *p;
 	NTSTATUS status;
 
-	if (async_req_is_nterror(req, &status)) {
-		return status;
-	}
-
-	status = cli_pull_reply(req, &wct, &vwv, &num_bytes, &bytes);
+	status = cli_smb_recv(subreq, 0, NULL, NULL, &num_bytes, &bytes);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		TALLOC_FREE(subreq);
+		tevent_req_nterror(req, status);
+		return;
 	}
 
+	inbuf = (char *)cli_smb_inbuf(subreq);
 	p = bytes;
 
-	cli->vuid = SVAL(cli_req->inbuf, smb_uid);
+	cli->vuid = SVAL(inbuf, smb_uid);
 
-	p += clistr_pull(cli_req->inbuf, cli->server_os, (char *)p,
-			 sizeof(fstring), bytes+num_bytes-p, STR_TERMINATE);
-	p += clistr_pull(cli_req->inbuf, cli->server_type, (char *)p,
-			 sizeof(fstring), bytes+num_bytes-p, STR_TERMINATE);
-	p += clistr_pull(cli_req->inbuf, cli->server_domain, (char *)p,
-			 sizeof(fstring), bytes+num_bytes-p, STR_TERMINATE);
+	p += clistr_pull(inbuf, cli->server_os, (char *)p, sizeof(fstring),
+			 bytes+num_bytes-p, STR_TERMINATE);
+	p += clistr_pull(inbuf, cli->server_type, (char *)p, sizeof(fstring),
+			 bytes+num_bytes-p, STR_TERMINATE);
+	p += clistr_pull(inbuf, cli->server_domain, (char *)p, sizeof(fstring),
+			 bytes+num_bytes-p, STR_TERMINATE);
 
 	if (strstr(cli->server_type, "Samba")) {
 		cli->is_samba = True;
 	}
 
+	TALLOC_FREE(subreq);
+
 	status = cli_set_username(cli, "");
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		tevent_req_nterror(req, status);
+		return;
 	}
+	tevent_req_done(req);
+}
 
-	return NT_STATUS_OK;
+NTSTATUS cli_session_setup_guest_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
 }
 
 static NTSTATUS cli_session_setup_guest(struct cli_state *cli)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct event_context *ev;
-	struct async_req *req;
-	NTSTATUS status;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_OK;
 
-	if (cli->fd_event != NULL) {
+	if (cli_has_async_calls(cli)) {
 		/*
 		 * Can't use sync call while an async call is in flight
 		 */
@@ -276,13 +302,17 @@ static NTSTATUS cli_session_setup_guest(struct cli_state *cli)
 		goto fail;
 	}
 
-	while (req->state < ASYNC_REQ_DONE) {
-		event_loop_once(ev);
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
 	}
 
 	status = cli_session_setup_guest_recv(req);
  fail:
 	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
 	return status;
 }
 
