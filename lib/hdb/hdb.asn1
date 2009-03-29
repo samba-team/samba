@@ -65,6 +65,10 @@ HDB-Ext-PKINIT-hash ::= SEQUENCE OF SEQUENCE {
 	digest[1] OCTET STRING
 }
 
+HDB-Ext-PKINIT-cert ::= SEQUENCE OF SEQUENCE {
+	cert[0] OCTET STRING
+}
+
 HDB-Ext-Constrained-delegation-acl ::= SEQUENCE OF Principal
 
 -- hdb-ext-referrals ::= PA-SERVER-REFERRAL-DATA
@@ -95,6 +99,7 @@ HDB-extension ::= SEQUENCE {
 		password[5]			HDB-Ext-Password,
 		aliases[6]			HDB-Ext-Aliases,
 		last-pw-change[7]		KerberosTime,
+	        pkinit-cert[8]  		HDB-Ext-PKINIT-cert,
 		...
 	},
 	...
