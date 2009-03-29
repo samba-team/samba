@@ -203,7 +203,7 @@ parse_keys(hdb_entry *ent, char *str)
 	    p++;
 	    p_len = strlen(p);
 
-	    key->salt = malloc(sizeof(*key->salt));
+	    key->salt = calloc(1, sizeof(*key->salt));
 	    if (key->salt == NULL)
 		krb5_errx (context, 1, "malloc: out of memory");
 	    key->salt->type = type;
