@@ -771,22 +771,36 @@ int cli_nt_create_full(struct cli_state *cli, const char *fname,
 	return SVAL(cli->inbuf,smb_vwv2 + 1);
 }
 
-struct async_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
-				    struct event_context *ev,
-				    struct cli_state *cli,
-				    const char *fname,
-				    uint32_t CreatFlags,
-				    uint32_t DesiredAccess,
-				    uint32_t FileAttributes,
-				    uint32_t ShareAccess,
-				    uint32_t CreateDisposition,
-				    uint32_t CreateOptions,
-				    uint8_t SecurityFlags)
+struct cli_ntcreate_state {
+	uint16_t vwv[24];
+	uint16_t fnum;
+};
+
+static void cli_ntcreate_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
+				     struct event_context *ev,
+				     struct cli_state *cli,
+				     const char *fname,
+				     uint32_t CreatFlags,
+				     uint32_t DesiredAccess,
+				     uint32_t FileAttributes,
+				     uint32_t ShareAccess,
+				     uint32_t CreateDisposition,
+				     uint32_t CreateOptions,
+				     uint8_t SecurityFlags)
 {
-	struct async_req *result;
+	struct tevent_req *req, *subreq;
+	struct cli_ntcreate_state *state;
+	uint16_t *vwv;
 	uint8_t *bytes;
 	size_t converted_len;
-	uint16_t vwv[24];
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_ntcreate_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	vwv = state->vwv;
 
 	SCVAL(vwv+0, 0, 0xFF);
 	SCVAL(vwv+0, 1, 0);
@@ -808,7 +822,7 @@ struct async_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
 	SIVAL(vwv+21, 1, 0x02);	/* ImpersonationLevel */
 	SCVAL(vwv+23, 1, SecurityFlags);
 
-	bytes = talloc_array(talloc_tos(), uint8_t, 0);
+	bytes = talloc_array(state, uint8_t, 0);
 	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli),
 				   fname, strlen(fname)+1,
 				   &converted_len);
@@ -816,41 +830,53 @@ struct async_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
 	/* sigh. this copes with broken netapp filer behaviour */
 	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), "", 1, NULL);
 
-	if (bytes == NULL) {
-		return NULL;
+	if (tevent_req_nomem(bytes, req)) {
+		return tevent_req_post(req, ev);
 	}
 
 	SIVAL(vwv+2, 1, converted_len);
 
-	result = cli_request_send(mem_ctx, ev, cli, SMBntcreateX, 0,
-				  24, vwv, 0, talloc_get_size(bytes), bytes);
-	TALLOC_FREE(bytes);
-	return result;
+	subreq = cli_smb_send(state, ev, cli, SMBntcreateX, 0, 24, vwv,
+			      talloc_get_size(bytes), bytes);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_ntcreate_done, req);
+	return req;
 }
 
-NTSTATUS cli_ntcreate_recv(struct async_req *req, uint16_t *pfnum)
+static void cli_ntcreate_done(struct tevent_req *subreq)
 {
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_ntcreate_state *state = tevent_req_data(
+		req, struct cli_ntcreate_state);
 	uint8_t wct;
 	uint16_t *vwv;
-	uint16_t num_bytes;
+	uint32_t num_bytes;
 	uint8_t *bytes;
 	NTSTATUS status;
 
-	if (async_req_is_nterror(req, &status)) {
-		return status;
-	}
-
-	status = cli_pull_reply(req, &wct, &vwv, &num_bytes, &bytes);
+	status = cli_smb_recv(subreq, 3, &wct, &vwv, &num_bytes, &bytes);
 	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(subreq);
+		tevent_req_nterror(req, status);
+		return;
+	}
+	state->fnum = SVAL(vwv+2, 1);
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_ntcreate_recv(struct tevent_req *req, uint16_t *pfnum)
+{
+	struct cli_ntcreate_state *state = tevent_req_data(
+		req, struct cli_ntcreate_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
-
-	if (wct < 3) {
-		return NT_STATUS_INVALID_NETWORK_RESPONSE;
-	}
-
-	*pfnum = SVAL(vwv+2, 1);
-
+	*pfnum = state->fnum;
 	return NT_STATUS_OK;
 }
 
@@ -867,10 +893,10 @@ NTSTATUS cli_ntcreate(struct cli_state *cli,
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct event_context *ev;
-	struct async_req *req;
-	NTSTATUS status;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_OK;
 
-	if (cli->fd_event != NULL) {
+	if (cli_has_async_calls(cli)) {
 		/*
 		 * Can't use sync call while an async call is in flight
 		 */
@@ -893,13 +919,17 @@ NTSTATUS cli_ntcreate(struct cli_state *cli,
 		goto fail;
 	}
 
-	while (req->state < ASYNC_REQ_DONE) {
-		event_loop_once(ev);
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
 	}
 
 	status = cli_ntcreate_recv(req, pfid);
  fail:
 	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
 	return status;
 }
 

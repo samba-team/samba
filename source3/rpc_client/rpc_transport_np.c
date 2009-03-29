@@ -278,14 +278,15 @@ struct rpc_transport_np_init_state {
 	struct rpc_transport_np_state *transport_np;
 };
 
-static void rpc_transport_np_init_pipe_open(struct async_req *subreq);
+static void rpc_transport_np_init_pipe_open(struct tevent_req *subreq);
 
 struct async_req *rpc_transport_np_init_send(TALLOC_CTX *mem_ctx,
 					     struct event_context *ev,
 					     struct cli_state *cli,
 					     const struct ndr_syntax_id *abstract_syntax)
 {
-	struct async_req *result, *subreq;
+	struct async_req *result;
+	struct tevent_req *subreq;
 	struct rpc_transport_np_init_state *state;
 
 	if (!async_req_setup(mem_ctx, &result, &state,
@@ -315,8 +316,8 @@ struct async_req *rpc_transport_np_init_send(TALLOC_CTX *mem_ctx,
 	if (subreq == NULL) {
 		goto fail;
 	}
-	subreq->async.fn = rpc_transport_np_init_pipe_open;
-	subreq->async.priv = result;
+	tevent_req_set_callback(subreq, rpc_transport_np_init_pipe_open,
+				result);
 	return result;
 
  fail:
@@ -324,10 +325,10 @@ struct async_req *rpc_transport_np_init_send(TALLOC_CTX *mem_ctx,
 	return NULL;
 }
 
-static void rpc_transport_np_init_pipe_open(struct async_req *subreq)
+static void rpc_transport_np_init_pipe_open(struct tevent_req *subreq)
 {
-	struct async_req *req = talloc_get_type_abort(
-		subreq->async.priv, struct async_req);
+	struct async_req *req = tevent_req_callback_data(
+		subreq, struct async_req);
 	struct rpc_transport_np_init_state *state = talloc_get_type_abort(
 		req->private_data, struct rpc_transport_np_init_state);
 	NTSTATUS status;
