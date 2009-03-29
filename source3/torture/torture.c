@@ -5023,104 +5023,6 @@ static bool subst_test(const char *str, const char *user, const char *domain,
 	return result;
 }
 
-static void chain1_open_completion(struct async_req *req)
-{
-	int fnum;
-	NTSTATUS status;
-
-	status = cli_open_recv(req, &fnum);
-	TALLOC_FREE(req);
-
-	d_printf("cli_open_recv returned %s: %d\n",
-		 nt_errstr(status),
-		 NT_STATUS_IS_OK(status) ? fnum : -1);
-}
-
-static void chain1_read_completion(struct async_req *req)
-{
-	NTSTATUS status;
-	ssize_t received;
-	uint8_t *rcvbuf;
-
-	status = cli_read_andx_recv(req, &received, &rcvbuf);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(req);
-		d_printf("cli_read_andx_recv returned %s\n",
-			 nt_errstr(status));
-		return;
-	}
-
-	d_printf("got %d bytes: %.*s\n", (int)received, (int)received,
-		 (char *)rcvbuf);
-	TALLOC_FREE(req);
-}
-
-static void chain1_write_completion(struct async_req *req)
-{
-	NTSTATUS status;
-	size_t written;
-
-	status = cli_write_andx_recv(req, &written);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(req);
-		d_printf("cli_write_andx_recv returned %s\n",
-			 nt_errstr(status));
-		return;
-	}
-
-	d_printf("wrote %d bytes\n", (int)written);
-	TALLOC_FREE(req);
-}
-
-static void chain1_close_completion(struct async_req *req)
-{
-	NTSTATUS status;
-
-	status = cli_close_recv(req);
-	*((bool *)(req->async.priv)) = true;
-
-	TALLOC_FREE(req);
-
-	d_printf("cli_close returned %s\n", nt_errstr(status));
-}
-
-static bool run_chain1(int dummy)
-{
-	struct cli_state *cli1;
-	struct event_context *evt = event_context_init(NULL);
-	struct async_req *reqs[4];
-	bool done = false;
-	const char *text = "hallo";
-
-	printf("starting chain1 test\n");
-	if (!torture_open_connection(&cli1, 0)) {
-		return False;
-	}
-
-	cli_sockopt(cli1, sockops);
-
-	cli_chain_cork(cli1, evt, 0);
-	reqs[0] = cli_open_send(talloc_tos(), evt, cli1, "\\test",
-				O_CREAT|O_RDWR, 0);
-	reqs[0]->async.fn = chain1_open_completion;
-	reqs[1] = cli_write_andx_send(talloc_tos(), evt, cli1, 0, 0,
-				      (uint8_t *)text, 0, strlen(text));
-	reqs[1]->async.fn = chain1_write_completion;
-	reqs[2] = cli_read_andx_send(talloc_tos(), evt, cli1, 0, 1, 10);
-	reqs[2]->async.fn = chain1_read_completion;
-	reqs[3] = cli_close_send(talloc_tos(), evt, cli1, 0);
-	reqs[3]->async.fn = chain1_close_completion;
-	reqs[3]->async.priv = (void *)&done;
-	cli_chain_uncork(cli1);
-
-	while (!done) {
-		event_loop_once(evt);
-	}
-
-	torture_close_connection(cli1);
-	return True;
-}
-
 static size_t null_source(uint8_t *buf, size_t n, void *priv)
 {
 	size_t *to_pull = (size_t *)priv;
@@ -5828,7 +5730,6 @@ static struct {
 	{"FDSESS", run_fdsesstest, 0},
 	{ "EATEST", run_eatest, 0},
 	{ "SESSSETUP_BENCH", run_sesssetup_bench, 0},
-	{ "CHAIN1", run_chain1, 0},
 	{ "WINDOWS-WRITE", run_windows_write, 0},
 	{ "CLI_ECHO", run_cli_echo, 0},
 	{ "LOCAL-SUBSTITUTE", run_local_substitute, 0},
