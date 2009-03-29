@@ -40,7 +40,6 @@ heimdal-gssapi.pc: heimdal-gssapi.pc.in
 
 EXTRA_DIST = \
 	$(man_MANS) \
-	heimdal-build.sh \
 	krb5-config.in \
 	heimdal-gssapi.pc.in \
 	kdc-log-analyze.pl
