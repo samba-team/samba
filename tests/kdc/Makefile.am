@@ -197,7 +197,6 @@ EXTRA_DIST = \
 	check-iprop.in \
 	check-kadmin.in \
 	check-kdc.in \
-	check-kdc-weak.in \
 	check-keys.in \
 	check-kpasswdd.in \
 	check-pkinit.in \
