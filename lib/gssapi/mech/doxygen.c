@@ -42,7 +42,7 @@
  * The project web page: http://www.h5l.org/
  *
  * - @ref gssapi_services_intro
- * - @ref gssapi_INvsMN
+ * - @ref gssapi_api_INvsMN
  */
 
 /**
