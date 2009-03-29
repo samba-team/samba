@@ -18,6 +18,7 @@ gen_files_hdb = \
 	asn1_HDBFlags.x \
 	asn1_GENERATION.x \
 	asn1_HDB_Ext_PKINIT_acl.x \
+	asn1_HDB_Ext_PKINIT_cert.x \
 	asn1_HDB_Ext_PKINIT_hash.x \
 	asn1_HDB_Ext_Constrained_delegation_acl.x \
 	asn1_HDB_Ext_Lan_Manager_OWF.x \
