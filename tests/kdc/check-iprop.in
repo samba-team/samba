@@ -200,8 +200,8 @@ echo "Killing master and slave"
 sh ${srcdir}/leaks-kill.sh ipropd-master $ipdm || exit 1
 sh ${srcdir}/leaks-kill.sh ipropd-slave $ipds || exit 1
 
-sleep 2
-${EGREP} "^master down at " iprop-stats > /dev/null || exit 1
+#sleep 2
+#${EGREP} "^master down at " iprop-stats > /dev/null || exit 1
 
 echo "compare versions on master and slave logs"
 KRB5_CONFIG=${objdir}/krb5-slave.conf \
