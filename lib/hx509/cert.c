@@ -432,6 +432,7 @@ hx509_verify_destroy_ctx(hx509_verify_ctx ctx)
  * Set the trust anchors in the verification context, makes an
  * reference to the keyset, so the consumer can free the keyset
  * independent of the destruction of the verification context (ctx).
+ * If there already is a keyset attached, it's released.
  *
  * @param ctx a verification context
  * @param set a keyset containing the trust anchors.
@@ -442,6 +443,8 @@ hx509_verify_destroy_ctx(hx509_verify_ctx ctx)
 void
 hx509_verify_attach_anchors(hx509_verify_ctx ctx, hx509_certs set)
 {
+    if (ctx->trust_anchors)
+	hx509_certs_free(ctx, ctx->trust_anchors);
     ctx->trust_anchors = _hx509_certs_ref(set);
 }
 
