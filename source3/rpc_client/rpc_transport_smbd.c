@@ -128,7 +128,7 @@ struct get_anon_ipc_state {
 	struct cli_state *cli;
 };
 
-static void get_anon_ipc_negprot_done(struct async_req *subreq);
+static void get_anon_ipc_negprot_done(struct tevent_req *subreq);
 static void get_anon_ipc_sesssetup_done(struct tevent_req *subreq);
 static void get_anon_ipc_tcon_done(struct async_req *subreq);
 
@@ -136,7 +136,8 @@ static struct async_req *get_anon_ipc_send(TALLOC_CTX *mem_ctx,
 					   struct event_context *ev,
 					   struct cli_state *cli)
 {
-	struct async_req *result, *subreq;
+	struct async_req *result;
+	struct tevent_req *subreq;
 	struct get_anon_ipc_state *state;
 
 	if (!async_req_setup(mem_ctx, &result, &state,
@@ -151,18 +152,17 @@ static struct async_req *get_anon_ipc_send(TALLOC_CTX *mem_ctx,
 	if (subreq == NULL) {
 		goto fail;
 	}
-	subreq->async.fn = get_anon_ipc_negprot_done;
-	subreq->async.priv = result;
+	tevent_req_set_callback(subreq, get_anon_ipc_negprot_done, result);
 	return result;
  fail:
 	TALLOC_FREE(result);
 	return NULL;
 }
 
-static void get_anon_ipc_negprot_done(struct async_req *subreq)
+static void get_anon_ipc_negprot_done(struct tevent_req *subreq)
 {
-	struct async_req *req = talloc_get_type_abort(
-		subreq->async.priv, struct async_req);
+	struct async_req *req = tevent_req_callback_data(
+		subreq, struct async_req);
 	struct get_anon_ipc_state *state = talloc_get_type_abort(
 		req->private_data, struct get_anon_ipc_state);
 	struct tevent_req *subreq2;

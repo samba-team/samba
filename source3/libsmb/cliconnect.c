@@ -1491,13 +1491,26 @@ void cli_negprot_sendsync(struct cli_state *cli)
  Send a negprot command.
 ****************************************************************************/
 
-struct async_req *cli_negprot_send(TALLOC_CTX *mem_ctx,
-				   struct event_context *ev,
-				   struct cli_state *cli)
+struct cli_negprot_state {
+	struct cli_state *cli;
+};
+
+static void cli_negprot_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_negprot_send(TALLOC_CTX *mem_ctx,
+				    struct event_context *ev,
+				    struct cli_state *cli)
 {
-	struct async_req *result;
+	struct tevent_req *req, *subreq;
+	struct cli_negprot_state *state;
 	uint8_t *bytes = NULL;
 	int numprots;
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_negprot_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->cli = cli;
 
 	if (cli->protocol < PROTOCOL_NT1)
 		cli->use_spnego = False;
@@ -1509,51 +1522,54 @@ struct async_req *cli_negprot_send(TALLOC_CTX *mem_ctx,
 			break;
 		}
 		bytes = (uint8_t *)talloc_append_blob(
-			talloc_tos(), bytes, data_blob_const(&c, sizeof(c)));
-		if (bytes == NULL) {
-			return NULL;
+			state, bytes, data_blob_const(&c, sizeof(c)));
+		if (tevent_req_nomem(bytes, req)) {
+			return tevent_req_post(req, ev);
 		}
 		bytes = smb_bytes_push_str(bytes, false,
 					   prots[numprots].name,
 					   strlen(prots[numprots].name)+1,
 					   NULL);
-		if (bytes == NULL) {
-			return NULL;
+		if (tevent_req_nomem(bytes, req)) {
+			return tevent_req_post(req, ev);
 		}
 	}
 
-	result = cli_request_send(mem_ctx, ev, cli, SMBnegprot, 0, 0, NULL, 0,
-				  talloc_get_size(bytes), bytes);
-	TALLOC_FREE(bytes);
-	return result;
+	subreq = cli_smb_send(state, ev, cli, SMBnegprot, 0, 0, NULL,
+			      talloc_get_size(bytes), bytes);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_negprot_done, req);
+	return req;
 }
 
-NTSTATUS cli_negprot_recv(struct async_req *req)
+static void cli_negprot_done(struct tevent_req *subreq)
 {
-	struct cli_request *cli_req = talloc_get_type_abort(
-		req->private_data, struct cli_request);
-	struct cli_state *cli = cli_req->cli;
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_negprot_state *state = tevent_req_data(
+		req, struct cli_negprot_state);
+	struct cli_state *cli = state->cli;
 	uint8_t wct;
 	uint16_t *vwv;
-	uint16_t num_bytes;
+	uint32_t num_bytes;
 	uint8_t *bytes;
 	NTSTATUS status;
 	uint16_t protnum;
 
-	if (async_req_is_nterror(req, &status)) {
-		return status;
-	}
-
-	status = cli_pull_reply(req, &wct, &vwv, &num_bytes, &bytes);
+	status = cli_smb_recv(subreq, 1, &wct, &vwv, &num_bytes, &bytes);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		TALLOC_FREE(subreq);
+		return;
 	}
 
 	protnum = SVAL(vwv, 0);
 
 	if ((protnum >= ARRAY_SIZE(prots))
-	    || (prots[protnum].prot > cli_req->cli->protocol)) {
-		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	    || (prots[protnum].prot > cli->protocol)) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
 	}
 
 	cli->protocol = prots[protnum].prot;
@@ -1561,7 +1577,8 @@ NTSTATUS cli_negprot_recv(struct async_req *req)
 	if ((cli->protocol < PROTOCOL_NT1) &&
 	    client_is_signing_mandatory(cli)) {
 		DEBUG(0,("cli_negprot: SMB signing is mandatory and the selected protocol level doesn't support it.\n"));
-		return NT_STATUS_ACCESS_DENIED;
+		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+		return;
 	}
 
 	if (cli->protocol >= PROTOCOL_NT1) {    
@@ -1602,14 +1619,18 @@ NTSTATUS cli_negprot_recv(struct async_req *req)
 			/* Fail if server says signing is mandatory and we don't want to support it. */
 			if (!client_is_signing_allowed(cli)) {
 				DEBUG(0,("cli_negprot: SMB signing is mandatory and we have disabled it.\n"));
-				return NT_STATUS_ACCESS_DENIED;
+				tevent_req_nterror(req,
+						   NT_STATUS_ACCESS_DENIED);
+				return;
 			}
 			negotiated_smb_signing = true;
 		} else if (client_is_signing_mandatory(cli) && client_is_signing_allowed(cli)) {
 			/* Fail if client says signing is mandatory and the server doesn't support it. */
 			if (!(cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_ENABLED)) {
 				DEBUG(1,("cli_negprot: SMB signing is mandatory and the server doesn't support it.\n"));
-				return NT_STATUS_ACCESS_DENIED;
+				tevent_req_nterror(req,
+						   NT_STATUS_ACCESS_DENIED);
+				return;
 			}
 			negotiated_smb_signing = true;
 		} else if (cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_ENABLED) {
@@ -1655,41 +1676,52 @@ NTSTATUS cli_negprot_recv(struct async_req *req)
 	if (getenv("CLI_FORCE_ASCII"))
 		cli->capabilities &= ~CAP_UNICODE;
 
-	return NT_STATUS_OK;
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_negprot_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
 }
 
 NTSTATUS cli_negprot(struct cli_state *cli)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct event_context *ev;
-	struct async_req *req;
-	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_OK;
 
-	if (cli->fd_event != NULL) {
+	if (cli_has_async_calls(cli)) {
 		/*
 		 * Can't use sync call while an async call is in flight
 		 */
-		cli_set_error(cli, NT_STATUS_INVALID_PARAMETER);
+		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}
 
 	ev = event_context_init(frame);
 	if (ev == NULL) {
+		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
 
 	req = cli_negprot_send(frame, ev, cli);
 	if (req == NULL) {
+		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
 
-	while (req->state < ASYNC_REQ_DONE) {
-		event_loop_once(ev);
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
 	}
 
 	status = cli_negprot_recv(req);
  fail:
 	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
 	return status;
 }
 
