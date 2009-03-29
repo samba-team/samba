@@ -78,6 +78,7 @@ typedef struct krb5_kdc_configuration {
     char *pkinit_kdc_friendly_name;
     int pkinit_dh_min_bits;
     int pkinit_require_binding;
+    int pkinit_allow_proxy_certs;
 
     krb5_log_facility *logf;
 
