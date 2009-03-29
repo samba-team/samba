@@ -4322,7 +4322,7 @@ _krb5_pk_octetstring2key(krb5_context context,
     size_t keylen, offset;
     void *keydata;
     unsigned char counter;
-    unsigned char shaoutput[20];
+    unsigned char shaoutput[SHA_DIGEST_LENGTH];
 
     if(et == NULL) {
 	krb5_set_error_message(context, KRB5_PROG_ETYPE_NOSUPP,
@@ -4473,7 +4473,7 @@ _krb5_pk_kdf(krb5_context context,
     size_t keylen, offset;
     uint32_t counter;
     unsigned char *keydata;
-    unsigned char shaoutput[20];
+    unsigned char shaoutput[SHA_DIGEST_LENGTH];
 
     if (der_heim_oid_cmp(oid_id_pkinit_kdf_ah_sha1(), &ai->algorithm) != 0) {
 	krb5_set_error_message(context, KRB5_PROG_ETYPE_NOSUPP,
