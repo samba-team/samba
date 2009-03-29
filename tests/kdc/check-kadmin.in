@@ -91,12 +91,12 @@ kdcpid=$!
 
 sh ${srcdir}/wait-kdc.sh
 if [ "$?" != 0 ] ; then
-    kill ${kdcpid}
-    kill ${kadmpid}
+    kill -9 ${kdcpid}
+    kill -9 ${kadmpid}
     exit 1
 fi
 
-trap "kill ${kdcpid} ${kadmpid}" EXIT
+trap "kill -9 ${kdcpid} ${kadmpid}" EXIT
 
 #----------------------------------
 ${kadmind} -d &
