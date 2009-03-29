@@ -252,6 +252,9 @@ cert2epi(hx509_context context, void *ctx, hx509_cert c)
     void *p;
     int ret;
 
+    if (ids->len > 10)
+	return 0;
+
     memset(&id, 0, sizeof(id));
 
     ret = hx509_cert_get_subject(c, &subject);
