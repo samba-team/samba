@@ -858,14 +858,14 @@ _krb5_pk_mk_padata(krb5_context context,
     return pk_mk_padata(context, ctx, req_body, nonce, md);
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
-_krb5_pk_verify_sign(krb5_context context,
-		     const void *data,
-		     size_t length,
-		     struct krb5_pk_identity *id,
-		     heim_oid *contentType,
-		     krb5_data *content,
-		     struct krb5_pk_cert **signer)
+static krb5_error_code
+pk_verify_sign(krb5_context context,
+	       const void *data,
+	       size_t length,
+	       struct krb5_pk_identity *id,
+	       heim_oid *contentType,
+	       krb5_data *content,
+	       struct krb5_pk_cert **signer)
 {
     hx509_certs signer_certs;
     int ret;
@@ -1205,13 +1205,13 @@ pk_rd_pa_reply_enckey(krb5_context context,
 	}
     }
 
-    ret = _krb5_pk_verify_sign(context,
-			       content.data,
-			       content.length,
-			       ctx->id,
-			       &contentType,
-			       &content,
-			       &host);
+    ret = pk_verify_sign(context,
+			 content.data,
+			 content.length,
+			 ctx->id,
+			 &contentType,
+			 &content,
+			 &host);
     if (ret)
 	goto out;
 
@@ -1295,13 +1295,13 @@ pk_rd_pa_reply_dh(krb5_context context,
 	return EINVAL;
     }
 
-    ret = _krb5_pk_verify_sign(context,
-			       indata->data,
-			       indata->length,
-			       ctx->id,
-			       &contentType,
-			       &content,
-			       &host);
+    ret = pk_verify_sign(context,
+			 indata->data,
+			 indata->length,
+			 ctx->id,
+			 &contentType,
+			 &content,
+			 &host);
     if (ret)
 	goto out;
 
@@ -1706,15 +1706,6 @@ hx_pass_prompter(void *data, const hx509_prompt *prompter)
     }
     return 0;
 }
-
-
-void KRB5_LIB_FUNCTION
-_krb5_pk_allow_proxy_certificate(struct krb5_pk_identity *id,
-				 int boolean)
-{
-    hx509_verify_set_proxy_certificate(id->verify_ctx, boolean);
-}
-
 
 krb5_error_code KRB5_LIB_FUNCTION
 _krb5_pk_load_id(krb5_context context,
