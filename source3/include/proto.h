@@ -2308,12 +2308,12 @@ struct tevent_req *cli_session_setup_guest_send(TALLOC_CTX *mem_ctx,
 						struct cli_state *cli);
 NTSTATUS cli_session_setup_guest_recv(struct tevent_req *req);
 bool cli_ulogoff(struct cli_state *cli);
-struct async_req *cli_tcon_andx_send(TALLOC_CTX *mem_ctx,
-				     struct event_context *ev,
-				     struct cli_state *cli,
-				     const char *share, const char *dev,
-				     const char *pass, int passlen);
-NTSTATUS cli_tcon_andx_recv(struct async_req *req);
+struct tevent_req *cli_tcon_andx_send(TALLOC_CTX *mem_ctx,
+				      struct event_context *ev,
+				      struct cli_state *cli,
+				      const char *share, const char *dev,
+				      const char *pass, int passlen);
+NTSTATUS cli_tcon_andx_recv(struct tevent_req *req);
 NTSTATUS cli_tcon_andx(struct cli_state *cli, const char *share,
 		       const char *dev, const char *pass, int passlen);
 bool cli_tdis(struct cli_state *cli);

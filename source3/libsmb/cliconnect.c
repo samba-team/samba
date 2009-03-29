@@ -1219,17 +1219,32 @@ bool cli_ulogoff(struct cli_state *cli)
  Send a tconX.
 ****************************************************************************/
 
-struct async_req *cli_tcon_andx_send(TALLOC_CTX *mem_ctx,
-				     struct event_context *ev,
-				     struct cli_state *cli,
-				     const char *share, const char *dev,
-				     const char *pass, int passlen)
-{
-	fstring pword;
-	char *tmp = NULL;
-	struct async_req *result;
+struct cli_tcon_andx_state {
+	struct cli_state *cli;
 	uint16_t vwv[4];
+};
+
+static void cli_tcon_andx_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_tcon_andx_send(TALLOC_CTX *mem_ctx,
+				      struct event_context *ev,
+				      struct cli_state *cli,
+				      const char *share, const char *dev,
+				      const char *pass, int passlen)
+{
+	struct tevent_req *req, *subreq;
+	struct cli_tcon_andx_state *state;
+	fstring pword;
+	uint16_t *vwv;
+	char *tmp = NULL;
 	uint8_t *bytes;
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_tcon_andx_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->cli = cli;
+	vwv = state->vwv;
 
 	fstrcpy(cli->share, share);
 
@@ -1293,9 +1308,9 @@ struct async_req *cli_tcon_andx_send(TALLOC_CTX *mem_ctx,
 	SSVAL(vwv+3, 0, passlen);
 
 	if (passlen) {
-		bytes = (uint8_t *)talloc_memdup(talloc_tos(), pword, passlen);
+		bytes = (uint8_t *)talloc_memdup(state, pword, passlen);
 	} else {
-		bytes = talloc_array(talloc_tos(), uint8_t, 0);
+		bytes = talloc_array(state, uint8_t, 0);
 	}
 
 	/*
@@ -1303,9 +1318,8 @@ struct async_req *cli_tcon_andx_send(TALLOC_CTX *mem_ctx,
 	 */
 	tmp = talloc_asprintf_strupper_m(talloc_tos(), "\\\\%s\\%s",
 					 cli->desthost, share);
-	if (tmp == NULL) {
-		TALLOC_FREE(bytes);
-		return NULL;
+	if (tevent_req_nomem(tmp, req)) {
+		return tevent_req_post(req, ev);
 	}
 	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), tmp, strlen(tmp)+1,
 				   NULL);
@@ -1315,60 +1329,52 @@ struct async_req *cli_tcon_andx_send(TALLOC_CTX *mem_ctx,
 	 * Add the devicetype
 	 */
 	tmp = talloc_strdup_upper(talloc_tos(), dev);
-	if (tmp == NULL) {
-		TALLOC_FREE(bytes);
-		return NULL;
+	if (tevent_req_nomem(tmp, req)) {
+		return tevent_req_post(req, ev);
 	}
 	bytes = smb_bytes_push_str(bytes, false, tmp, strlen(tmp)+1, NULL);
 	TALLOC_FREE(tmp);
 
-	if (bytes == NULL) {
-		return NULL;
+	if (tevent_req_nomem(bytes, req)) {
+		return tevent_req_post(req, ev);
 	}
 
-	result = cli_request_send(mem_ctx, ev, cli, SMBtconX, 0,
-				  4, vwv, 0, talloc_get_size(bytes), bytes);
-	TALLOC_FREE(bytes);
-	return result;
+	subreq = cli_smb_send(state, ev, cli, SMBtconX, 0, 4, vwv,
+			      talloc_get_size(bytes), bytes);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_tcon_andx_done, req);
+	return req;
 
  access_denied:
-	{
-		struct cli_request *state;
-		if (!async_req_setup(mem_ctx, &result, &state,
-				     struct cli_request)) {
-			goto fail;
-		}
-		if (async_post_ntstatus(result, ev, NT_STATUS_ACCESS_DENIED)) {
-			return result;
-		}
-	}
- fail:
-	TALLOC_FREE(result);
-	return NULL;
+	tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+	return tevent_req_post(req, ev);
 }
 
-NTSTATUS cli_tcon_andx_recv(struct async_req *req)
+static void cli_tcon_andx_done(struct tevent_req *subreq)
 {
-	struct cli_request *cli_req = talloc_get_type_abort(
-		req->private_data, struct cli_request);
-	struct cli_state *cli = cli_req->cli;
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_tcon_andx_state *state = tevent_req_data(
+		req, struct cli_tcon_andx_state);
+	struct cli_state *cli = state->cli;
+	char *inbuf = (char *)cli_smb_inbuf(subreq);
 	uint8_t wct;
 	uint16_t *vwv;
-	uint16_t num_bytes;
+	uint32_t num_bytes;
 	uint8_t *bytes;
 	NTSTATUS status;
 
-	if (async_req_is_nterror(req, &status)) {
-		return status;
-	}
-
-	status = cli_pull_reply(req, &wct, &vwv, &num_bytes, &bytes);
+	status = cli_smb_recv(subreq, 0, &wct, &vwv, &num_bytes, &bytes);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		TALLOC_FREE(subreq);
+		tevent_req_nterror(req, status);
+		return;
 	}
 
-	clistr_pull(cli_req->inbuf, cli->dev, bytes, sizeof(fstring),
-		    num_bytes, STR_TERMINATE|STR_ASCII);
+	clistr_pull(inbuf, cli->dev, bytes, sizeof(fstring), num_bytes,
+		    STR_TERMINATE|STR_ASCII);
 
 	if ((cli->protocol >= PROTOCOL_NT1) && (num_bytes == 3)) {
 		/* almost certainly win95 - enable bug fixes */
@@ -1386,8 +1392,13 @@ NTSTATUS cli_tcon_andx_recv(struct async_req *req)
 		cli->dfsroot = ((SVAL(vwv+2, 0) & SMB_SHARE_IN_DFS) != 0);
 	}
 
-	cli->cnum = SVAL(cli_req->inbuf,smb_tid);
-	return NT_STATUS_OK;
+	cli->cnum = SVAL(inbuf,smb_tid);
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_tcon_andx_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
 }
 
 NTSTATUS cli_tcon_andx(struct cli_state *cli, const char *share,
@@ -1395,10 +1406,10 @@ NTSTATUS cli_tcon_andx(struct cli_state *cli, const char *share,
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct event_context *ev;
-	struct async_req *req;
-	NTSTATUS status;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_OK;
 
-	if (cli->fd_event != NULL) {
+	if (cli_has_async_calls(cli)) {
 		/*
 		 * Can't use sync call while an async call is in flight
 		 */
@@ -1418,13 +1429,17 @@ NTSTATUS cli_tcon_andx(struct cli_state *cli, const char *share,
 		goto fail;
 	}
 
-	while (req->state < ASYNC_REQ_DONE) {
-		event_loop_once(ev);
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
 	}
 
 	status = cli_tcon_andx_recv(req);
  fail:
 	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
 	return status;
 }
 
