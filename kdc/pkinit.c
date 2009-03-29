@@ -66,6 +66,7 @@ struct pk_client_params {
     char *dh_group_name;
     hx509_peer_info peer;
     hx509_certs client_anchors;
+    hx509_verify_ctx verify_ctx;
 };
 
 struct pk_principal_mapping {
@@ -166,34 +167,37 @@ out:
 }
 
 void
-_kdc_pk_free_client_param(krb5_context context,
-			  pk_client_params *client_params)
+_kdc_pk_free_client_param(krb5_context context, pk_client_params *cp)
 {
-    if (client_params == NULL)
+    if (cp == NULL)
         return;
-    if (client_params->cert)
-	hx509_cert_free(client_params->cert);
-    if (client_params->keyex == USE_DH) {
-	if (client_params->u.dh.key)
-	    DH_free(client_params->u.dh.key);
-	if (client_params->u.dh.public_key)
-	    BN_free(client_params->u.dh.public_key);
+    if (cp->cert)
+	hx509_cert_free(cp->cert);
+    if (cp->verify_ctx)
+	hx509_verify_destroy_ctx(cp->verify_ctx);
+    if (cp->keyex == USE_DH) {
+	if (cp->u.dh.key)
+	    DH_free(cp->u.dh.key);
+	if (cp->u.dh.public_key)
+	    BN_free(cp->u.dh.public_key);
     }
-    if (client_params->keyex == USE_ECDH) {
-	if (client_params->u.ecdh.key)
-	    EC_KEY_free(client_params->u.ecdh.key);
-	if (client_params->u.ecdh.public_key)
-	    EC_KEY_free(client_params->u.ecdh.public_key);
+#ifdef HAVE_OPENSSL
+    if (cp->keyex == USE_ECDH) {
+	if (cp->u.ecdh.key)
+	    EC_KEY_free(cp->u.ecdh.key);
+	if (cp->u.ecdh.public_key)
+	    EC_KEY_free(cp->u.ecdh.public_key);
     }
-    krb5_free_keyblock_contents(context, &client_params->reply_key);
-    if (client_params->dh_group_name)
-	free(client_params->dh_group_name);
-    if (client_params->peer)
-	hx509_peer_info_free(client_params->peer);
-    if (client_params->client_anchors)
-	hx509_certs_free(&client_params->client_anchors);
-    memset(client_params, 0, sizeof(*client_params));
-    free(client_params);
+#endif
+    krb5_free_keyblock_contents(context, &cp->reply_key);
+    if (cp->dh_group_name)
+	free(cp->dh_group_name);
+    if (cp->peer)
+	hx509_peer_info_free(cp->peer);
+    if (cp->client_anchors)
+	hx509_certs_free(&cp->client_anchors);
+    memset(cp, 0, sizeof(*cp));
+    free(cp);
 }
 
 static krb5_error_code
@@ -246,6 +250,7 @@ generate_dh_keyblock(krb5_context context,
 	    goto out;
 	}
 	ret = 0;
+#ifdef HAVE_OPENSSL
     } else if (client_params->keyex == USE_ECDH) {
 
 	if (client_params->u.ecdh.public_key == NULL) {
@@ -280,6 +285,7 @@ generate_dh_keyblock(krb5_context context,
 					 EC_KEY_get0_public_key(client_params->u.ecdh.public_key),
 					 client_params->u.ecdh.key, NULL);
 	ret = 0;
+#endif /* HAVE_OPENSSL */
     } else {
 	ret = KRB5KRB_ERR_GENERIC;
 	krb5_set_error_message(context, ret, 
@@ -479,6 +485,7 @@ _kdc_pk_rd_padata(krb5_context context,
 		  krb5_kdc_configuration *config,
 		  const KDC_REQ *req,
 		  const PA_DATA *pa,
+		  hdb_entry_ex *client,
 		  pk_client_params **ret_params)
 {
     pk_client_params *client_params;
@@ -487,7 +494,9 @@ _kdc_pk_rd_padata(krb5_context context,
     krb5_data eContent = { 0, NULL };
     krb5_data signed_content = { 0, NULL };
     const char *type = "unknown type";
+    hx509_certs trust_anchors;
     int have_data = 0;
+    const HDB_Ext_PKINIT_cert *pc;
 
     *ret_params = NULL;
 
@@ -497,14 +506,60 @@ _kdc_pk_rd_padata(krb5_context context,
 	return 0;
     }
 
-    hx509_verify_set_time(kdc_identity->verify_ctx, kdc_time);
-
     client_params = calloc(1, sizeof(*client_params));
     if (client_params == NULL) {
 	krb5_clear_error_message(context);
 	ret = ENOMEM;
 	goto out;
     }
+
+    ret = hx509_certs_init(kdc_identity->hx509ctx,
+			   "MEMORY:trust-anchors",
+			   0, NULL, &trust_anchors);
+    if (ret) {
+	krb5_set_error_message(context, ret, "failed to create trust anchors");
+	goto out;
+    }
+
+    ret = hx509_certs_merge(kdc_identity->hx509ctx, trust_anchors, 
+			    kdc_identity->anchors);
+    if (ret) {
+	hx509_certs_free(&trust_anchors);
+	krb5_set_error_message(context, ret, "failed to create verify context");
+	goto out;
+    }
+
+    /* Add any registered certificates for this client as trust anchors */
+    ret = hdb_entry_get_pkinit_cert(&client->entry, &pc);
+    if (ret == 0 && pc != NULL) {
+	hx509_cert cert;
+	unsigned int i;
+	
+	for (i = 0; i < pc->len; i++) {
+	    ret = hx509_cert_init_data(kdc_identity->hx509ctx,
+				       pc->val[i].cert.data,
+				       pc->val[i].cert.length,
+				       &cert);
+	    if (ret)
+		continue;
+	    hx509_certs_add(kdc_identity->hx509ctx, trust_anchors, cert);
+	    hx509_cert_free(cert);
+	}
+    }
+
+    ret = hx509_verify_init_ctx(kdc_identity->hx509ctx, &client_params->verify_ctx);
+    if (ret) {
+	hx509_certs_free(&trust_anchors);
+	krb5_set_error_message(context, ret, "failed to create verify context");
+	goto out;
+    }
+
+    hx509_verify_set_time(client_params->verify_ctx, kdc_time);
+    hx509_verify_attach_anchors(client_params->verify_ctx, trust_anchors);
+    hx509_certs_free(&trust_anchors);
+
+    if (config->pkinit_allow_proxy_certs)
+	hx509_verify_set_proxy_certificate(kdc_identity->verify_ctx, 1);
 
     if (pa->padata_type == KRB5_PADATA_PK_AS_REQ_WIN) {
 	PA_PK_AS_REQ_Win2k r;
@@ -654,7 +709,7 @@ _kdc_pk_rd_padata(krb5_context context,
 	    flags |= HX509_CMS_VS_ALLOW_ZERO_SIGNER;
 
 	ret = hx509_cms_verify_signed(kdc_identity->hx509ctx,
-				      kdc_identity->verify_ctx,
+				      client_params->verify_ctx,
 				      flags,
 				      signed_content.data,
 				      signed_content.length,
@@ -760,10 +815,12 @@ _kdc_pk_rd_padata(krb5_context context,
 		client_params->keyex = USE_DH;
 		ret = get_dh_param(context, config,
 				   ap.clientPublicValue, client_params);
+#ifdef HAVE_OPENSSL
 	    } else if (der_heim_oid_cmp(&ap.clientPublicValue->algorithm.algorithm, &asn1_oid_id_ecPublicKey) == 0) {
 		client_params->keyex = USE_ECDH;
 		ret = get_ecdh_param(context, config,
 				     ap.clientPublicValue, client_params);
+#endif /* HAVE_OPENSSL */
 	    } else {
 		ret = KRB5_BADMSGTYPE;
 		krb5_set_error_message(context, ret, "PKINIT unknown DH mechanism");
@@ -1052,8 +1109,8 @@ pk_mk_pa_reply_dh(krb5_context context,
 	dh_info.subjectPublicKey.length = buf.length * 8;
 	dh_info.subjectPublicKey.data = buf.data;
 	krb5_data_zero(&buf);
-    } else if (client_params->keyex == USE_ECDH) {
 #ifdef HAVE_OPENSSL
+    } else if (client_params->keyex == USE_ECDH) {
 	unsigned char *p;
 	int len;
 
@@ -1071,8 +1128,6 @@ pk_mk_pa_reply_dh(krb5_context context,
 	len = i2o_ECPublicKey(client_params->u.ecdh.key, &p);
 	if (len <= 0)
 	    abort();
-#else
-	return ENOMEM;
 #endif
     } else
 	krb5_abortx(context, "no keyex selected ?");
@@ -1252,7 +1307,9 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 
 	    switch (client_params->keyex) {
 	    case USE_DH: type = "dh"; break;
+#ifdef HAVE_OPENSSL
 	    case USE_ECDH: type = "ecdh"; break;
+#endif
 	    default: krb5_abortx(context, "unknown keyex"); break;
 	    }
 
@@ -1598,6 +1655,7 @@ _kdc_pk_check_client(krb5_context context,
 		     char **subject_name)
 {
     const HDB_Ext_PKINIT_acl *acl;
+    const HDB_Ext_PKINIT_cert *pc;
     krb5_error_code ret;
     hx509_name name;
     int i;
@@ -1624,6 +1682,29 @@ _kdc_pk_check_client(krb5_context context,
     kdc_log(context, config, 0,
 	    "Trying to authorize PK-INIT subject DN %s",
 	    *subject_name);
+
+    ret = hdb_entry_get_pkinit_cert(&client->entry, &pc);
+    if (ret == 0 && pc) {
+	hx509_cert cert;
+	unsigned int i;
+	
+	for (i = 0; i < pc->len; i++) {
+	    ret = hx509_cert_init_data(kdc_identity->hx509ctx,
+				       pc->val[i].cert.data,
+				       pc->val[i].cert.length,
+				       &cert);
+	    if (ret)
+		continue;
+	    ret = hx509_cert_cmp(cert, client_params->cert);
+	    hx509_cert_free(cert);
+	    if (ret == 0) {
+		kdc_log(context, config, 5,
+			"Found matching PK-INIT cert in hdb");
+		return 0;
+	    }
+	}
+    }
+
 
     if (config->pkinit_princ_in_cert) {
 	ret = match_rfc_san(context, config,
@@ -1891,7 +1972,8 @@ _kdc_pk_initialize(krb5_context context,
 				       "kdc",
 				       "pkinit_allow_proxy_certificate",
 				       NULL);
-    _krb5_pk_allow_proxy_certificate(kdc_identity, ret);
+    if (ret != 0)
+	config->pkinit_allow_proxy_certs = 1;
 
     file = krb5_config_get_string(context,
 				  NULL,
