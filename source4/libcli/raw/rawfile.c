@@ -796,6 +796,7 @@ _PUBLIC_ struct smbcli_request *smb_raw_close_send(struct smbcli_tree *tree, uni
 		break;
 
 	case RAW_CLOSE_SMB2:
+	case RAW_CLOSE_GENERIC:
 		return NULL;
 	}
 
