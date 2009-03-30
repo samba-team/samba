@@ -41,6 +41,15 @@
 		goto done; \
 	}} while (0)
 
+#define CHECK_CREATED(__io, __created, __attribute)			\
+	do {								\
+		CHECK_VAL((__io)->out.create_action, NTCREATEX_ACTION_ ## __created); \
+		CHECK_VAL((__io)->out.alloc_size, 0);			\
+		CHECK_VAL((__io)->out.size, 0);				\
+		CHECK_VAL((__io)->out.file_attr, (__attribute));	\
+		CHECK_VAL((__io)->out.reserved2, 0);			\
+	} while(0)
+
 /*
    basic testing of SMB2 durable opens
    regarding the position information on the handle
@@ -54,7 +63,6 @@ bool test_durable_open_file_position(struct torture_context *tctx,
 	struct smb2_create io1, io2;
 	NTSTATUS status;
 	const char *fname = "durable_open_position.dat";
-	DATA_BLOB b;
 	union smb_fileinfo qfinfo;
 	union smb_setfileinfo sfinfo;
 	bool ret = true;
@@ -78,30 +86,16 @@ bool test_durable_open_file_position(struct torture_context *tctx,
 					  NTCREATEX_OPTIONS_ASYNC_ALERT	|
 					  NTCREATEX_OPTIONS_NON_DIRECTORY_FILE |
 					  0x00200000;
+	io1.in.durable_open		= true;
 	io1.in.fname			= fname;
-
-	b = data_blob_talloc(mem_ctx, NULL, 16);
-	SBVAL(b.data, 0, 0);
-	SBVAL(b.data, 8, 0);
-
-	status = smb2_create_blob_add(tree1, &io1.in.blobs,
-				      SMB2_CREATE_TAG_DHNQ,
-				      b);
-	CHECK_STATUS(status, NT_STATUS_OK);
 
 	status = smb2_create(tree1, mem_ctx, &io1);
 	CHECK_STATUS(status, NT_STATUS_OK);
+	h1 = io1.out.file.handle;
+	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
 	CHECK_VAL(io1.out.oplock_level, SMB2_OPLOCK_LEVEL_BATCH);
-	/*CHECK_VAL(io1.out.reserved, 0);*/
-	CHECK_VAL(io1.out.create_action, NTCREATEX_ACTION_CREATED);
-	CHECK_VAL(io1.out.alloc_size, 0);
-	CHECK_VAL(io1.out.size, 0);
-	CHECK_VAL(io1.out.file_attr, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_VAL(io1.out.reserved2, 0);
 
 	/* TODO: check extra blob content */
-
-	h1 = io1.out.file.handle;
 
 	ZERO_STRUCT(qfinfo);
 	qfinfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
@@ -141,15 +135,7 @@ bool test_durable_open_file_position(struct torture_context *tctx,
 
 	ZERO_STRUCT(io2);
 	io2.in.fname = fname;
-
-	b = data_blob_talloc(tctx, NULL, 16);
-	SBVAL(b.data, 0, h1.data[0]);
-	SBVAL(b.data, 8, h1.data[1]);
-
-	status = smb2_create_blob_add(tree2, &io2.in.blobs,
-				      SMB2_CREATE_TAG_DHNC,
-				      b);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	io2.in.durable_handle = &h1;
 
 	status = smb2_create(tree2, mem_ctx, &io2);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -191,11 +177,13 @@ bool test_durable_open_oplock(struct torture_context *tctx,
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	struct smb2_create io1, io2;
-	struct smb2_handle h1;
+	struct smb2_handle h1, h2;
 	NTSTATUS status;
-	const char *fname = "durable_open_oplock.dat";
-	DATA_BLOB b;
+	char fname[256];
 	bool ret = true;
+
+	/* Choose a random name in case the state is left a little funky. */
+	snprintf(fname, 256, "durable_open_lease_%s.dat", generate_random_str(tctx, 8));
 
 	/* Clean slate */
 	smb2_util_unlink(tree1, fname);
@@ -218,29 +206,16 @@ bool test_durable_open_oplock(struct torture_context *tctx,
 					  NTCREATEX_OPTIONS_NON_DIRECTORY_FILE |
 					  0x00200000;
 	io1.in.fname			= fname;
+	io1.in.durable_open		= true;
 
 	io2 = io1;
 	io2.in.create_disposition	= NTCREATEX_DISP_OPEN;
 
-	b = data_blob_talloc(mem_ctx, NULL, 16);
-	SBVAL(b.data, 0, 0);
-	SBVAL(b.data, 8, 0);
-
-	status = smb2_create_blob_add(tree1, &io1.in.blobs,
-				      SMB2_CREATE_TAG_DHNQ,
-				      b);
-	CHECK_STATUS(status, NT_STATUS_OK);
-
 	status = smb2_create(tree1, mem_ctx, &io1);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VAL(io1.out.oplock_level, SMB2_OPLOCK_LEVEL_BATCH);
-	CHECK_VAL(io1.out.create_action, NTCREATEX_ACTION_CREATED);
-	CHECK_VAL(io1.out.alloc_size, 0);
-	CHECK_VAL(io1.out.size, 0);
-	CHECK_VAL(io1.out.file_attr, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_VAL(io1.out.reserved2, 0);
-
 	h1 = io1.out.file.handle;
+	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io1.out.oplock_level, SMB2_OPLOCK_LEVEL_BATCH);
 
 	/* Disconnect after getting the batch */
 	talloc_free(tree1);
@@ -253,12 +228,9 @@ bool test_durable_open_oplock(struct torture_context *tctx,
 	 */
 	status = smb2_create(tree2, mem_ctx, &io2);
 	CHECK_STATUS(status, NT_STATUS_OK);
+	h2 = io2.out.file.handle;
+	CHECK_CREATED(&io2, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
 	CHECK_VAL(io2.out.oplock_level, SMB2_OPLOCK_LEVEL_BATCH);
-	CHECK_VAL(io2.out.create_action, NTCREATEX_ACTION_EXISTED);
-	CHECK_VAL(io2.out.alloc_size, 0);
-	CHECK_VAL(io2.out.size, 0);
-	CHECK_VAL(io2.out.file_attr, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_VAL(io2.out.reserved2, 0);
 
 	/* What if tree1 tries to come back and reclaim? */
 	if (!torture_smb2_connection(tctx, &tree1)) {
@@ -267,24 +239,349 @@ bool test_durable_open_oplock(struct torture_context *tctx,
 		goto done;
 	}
 
-	ZERO_STRUCT(io2);
-	io2.in.fname = fname;
+	ZERO_STRUCT(io1);
+	io1.in.fname = fname;
+	io1.in.durable_handle = &h1;
 
-	b = data_blob_talloc(tctx, NULL, 16);
-	SBVAL(b.data, 0, h1.data[0]);
-	SBVAL(b.data, 8, h1.data[1]);
-
-	status = smb2_create_blob_add(tree2, &io2.in.blobs,
-				      SMB2_CREATE_TAG_DHNC,
-				      b);
-	CHECK_STATUS(status, NT_STATUS_OK);
-
-	status = smb2_create(tree2, mem_ctx, &io2);
+	status = smb2_create(tree1, mem_ctx, &io1);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 
-done:
-	return ret;
+ done:
+	smb2_util_close(tree2, h2);
+	smb2_util_unlink(tree2, fname);
 
+	return ret;
+}
+
+/*
+  Open, disconnect, lease break, reconnect.
+*/
+bool test_durable_open_lease(struct torture_context *tctx,
+			     struct smb2_tree *tree1,
+			     struct smb2_tree *tree2)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_create io1, io2;
+	struct smb2_lease ls1, ls2;
+	struct smb2_handle h1, h2;
+	NTSTATUS status;
+	char fname[256];
+	bool ret = true;
+	uint64_t lease1, lease2;
+
+	/*
+	 * Choose a random name and random lease in case the state is left a
+	 * little funky.
+	 */
+	lease1 = random();
+	lease2 = random();
+	snprintf(fname, 256, "durable_open_lease_%s.dat", generate_random_str(tctx, 8));
+
+	/* Clean slate */
+	smb2_util_unlink(tree1, fname);
+
+	/* Create with lease */
+	ZERO_STRUCT(io1);
+	io1.in.security_flags		= 0x00;
+	io1.in.oplock_level		= SMB2_OPLOCK_LEVEL_LEASE;
+	io1.in.impersonation_level	= NTCREATEX_IMPERSONATION_IMPERSONATION;
+	io1.in.create_flags		= 0x00000000;
+	io1.in.reserved			= 0x00000000;
+	io1.in.desired_access		= SEC_RIGHTS_FILE_ALL;
+	io1.in.file_attributes		= FILE_ATTRIBUTE_NORMAL;
+	io1.in.share_access		= NTCREATEX_SHARE_ACCESS_READ |
+					  NTCREATEX_SHARE_ACCESS_WRITE |
+					  NTCREATEX_SHARE_ACCESS_DELETE;
+	io1.in.create_disposition	= NTCREATEX_DISP_OPEN_IF;
+	io1.in.create_options		= NTCREATEX_OPTIONS_SEQUENTIAL_ONLY |
+					  NTCREATEX_OPTIONS_ASYNC_ALERT	|
+					  NTCREATEX_OPTIONS_NON_DIRECTORY_FILE |
+					  0x00200000;
+	io1.in.fname			= fname;
+	io1.in.durable_open 		= true;
+
+	ZERO_STRUCT(ls1);
+	ls1.lease_key.data[0] = lease1;
+	ls1.lease_key.data[1] = ~lease1;
+	ls1.lease_state = SMB2_LEASE_READ|SMB2_LEASE_HANDLE|SMB2_LEASE_WRITE;
+	io1.in.lease_request = &ls1;
+
+	io2 = io1;
+	ls2 = ls1;
+	ls2.lease_key.data[0] = lease2;
+	ls2.lease_key.data[1] = ~lease2;
+	io2.in.lease_request = &ls2;
+	io2.in.create_disposition = NTCREATEX_DISP_OPEN;
+
+	status = smb2_create(tree1, mem_ctx, &io1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h1 = io1.out.file.handle;
+	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+
+	CHECK_VAL(io1.out.oplock_level, SMB2_OPLOCK_LEVEL_LEASE);
+	CHECK_VAL(io1.out.lease_response.lease_key.data[0], lease1);
+	CHECK_VAL(io1.out.lease_response.lease_key.data[1], ~lease1);
+	CHECK_VAL(io1.out.lease_response.lease_state,
+	    SMB2_LEASE_READ|SMB2_LEASE_HANDLE|SMB2_LEASE_WRITE);
+
+	/* Disconnect after getting the lease */
+	talloc_free(tree1);
+	tree1 = NULL;
+
+	/*
+	 * Windows7 (build 7000) will grant an RH lease immediate (not an RHW?)
+	 * even if the original client is gone. (ZML: This seems like a bug. It
+	 * should give some time for the client to reconnect! And why RH?)
+	 */
+	status = smb2_create(tree2, mem_ctx, &io2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h2 = io2.out.file.handle;
+	CHECK_CREATED(&io2, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+
+	CHECK_VAL(io2.out.oplock_level, SMB2_OPLOCK_LEVEL_LEASE);
+	CHECK_VAL(io2.out.lease_response.lease_key.data[0], lease2);
+	CHECK_VAL(io2.out.lease_response.lease_key.data[1], ~lease2);
+	CHECK_VAL(io2.out.lease_response.lease_state,
+	    SMB2_LEASE_READ|SMB2_LEASE_HANDLE);
+
+	/* What if tree1 tries to come back and reclaim? */
+	if (!torture_smb2_connection(tctx, &tree1)) {
+		torture_warning(tctx, "couldn't reconnect, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	ZERO_STRUCT(io1);
+	io1.in.fname = fname;
+	io1.in.durable_handle = &h1;
+	io1.in.lease_request = &ls1;
+
+	status = smb2_create(tree1, mem_ctx, &io1);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
+ done:
+	smb2_util_close(tree2, h2);
+	smb2_util_unlink(tree2, fname);
+
+	return ret;
+}
+
+/*
+  Open, take BRL, disconnect, reconnect.
+*/
+bool test_durable_open_lock(struct torture_context *tctx,
+			    struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_create io;
+	struct smb2_lease ls;
+	struct smb2_handle h;
+	struct smb2_lock lck;
+	struct smb2_lock_element el[2];
+	NTSTATUS status;
+	char fname[256];
+	bool ret = true;
+	uint64_t lease;
+
+	/*
+	 * Choose a random name and random lease in case the state is left a
+	 * little funky.
+	 */
+	lease = random();
+	snprintf(fname, 256, "durable_open_lock_%s.dat", generate_random_str(tctx, 8));
+
+	/* Clean slate */
+	smb2_util_unlink(tree, fname);
+
+	/* Create with lease */
+	ZERO_STRUCT(io);
+	io.in.security_flags		= 0x00;
+	io.in.oplock_level		= SMB2_OPLOCK_LEVEL_LEASE;
+	io.in.impersonation_level	= NTCREATEX_IMPERSONATION_IMPERSONATION;
+	io.in.create_flags		= 0x00000000;
+	io.in.reserved			= 0x00000000;
+	io.in.desired_access		= SEC_RIGHTS_FILE_ALL;
+	io.in.file_attributes		= FILE_ATTRIBUTE_NORMAL;
+	io.in.share_access		= NTCREATEX_SHARE_ACCESS_READ |
+					  NTCREATEX_SHARE_ACCESS_WRITE |
+					  NTCREATEX_SHARE_ACCESS_DELETE;
+	io.in.create_disposition	= NTCREATEX_DISP_OPEN_IF;
+	io.in.create_options		= NTCREATEX_OPTIONS_SEQUENTIAL_ONLY |
+					  NTCREATEX_OPTIONS_ASYNC_ALERT	|
+					  NTCREATEX_OPTIONS_NON_DIRECTORY_FILE |
+					  0x00200000;
+	io.in.fname			= fname;
+	io.in.durable_open 		= true;
+
+	ZERO_STRUCT(ls);
+	ls.lease_key.data[0] = lease;
+	ls.lease_key.data[1] = ~lease;
+	ls.lease_state = SMB2_LEASE_READ|SMB2_LEASE_HANDLE|SMB2_LEASE_WRITE;
+	io.in.lease_request = &ls;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h = io.out.file.handle;
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+
+	CHECK_VAL(io.out.oplock_level, SMB2_OPLOCK_LEVEL_LEASE);
+	CHECK_VAL(io.out.lease_response.lease_key.data[0], lease);
+	CHECK_VAL(io.out.lease_response.lease_key.data[1], ~lease);
+	CHECK_VAL(io.out.lease_response.lease_state,
+	    SMB2_LEASE_READ|SMB2_LEASE_HANDLE|SMB2_LEASE_WRITE);
+
+	ZERO_STRUCT(lck);
+	ZERO_STRUCT(el);
+	lck.in.locks		= el;
+	lck.in.lock_count	= 0x0001;
+	lck.in.reserved		= 0x00000000;
+	lck.in.file.handle	= h;
+	el[0].offset		= 0;
+	el[0].length		= 1;
+	el[0].reserved		= 0x00000000;
+	el[0].flags		= SMB2_LOCK_FLAG_EXCLUSIVE;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Disconnect/Reconnect. */
+	talloc_free(tree);
+	tree = NULL;
+
+	if (!torture_smb2_connection(tctx, &tree)) {
+		torture_warning(tctx, "couldn't reconnect, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	ZERO_STRUCT(io);
+	io.in.fname = fname;
+	io.in.durable_handle = &h;
+	io.in.lease_request = &ls;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h = io.out.file.handle;
+
+	lck.in.file.handle	= h;
+	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+ done:
+	smb2_util_close(tree, h);
+	smb2_util_unlink(tree, fname);
+
+	return ret;
+}
+
+/*
+  Open, disconnect, open in another tree, reconnect.
+
+  This test actually demonstrates a minimum level of respect for the durable
+  open in the face of another open. As long as this test shows an inability to
+  reconnect after an open, the oplock/lease tests above will certainly
+  demonstrate an error on reconnect.
+*/
+bool test_durable_open_open(struct torture_context *tctx,
+			    struct smb2_tree *tree1,
+			    struct smb2_tree *tree2)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_create io1, io2;
+	struct smb2_lease ls;
+	struct smb2_handle h1, h2;
+	NTSTATUS status;
+	char fname[256];
+	bool ret = true;
+	uint64_t lease;
+
+	/*
+	 * Choose a random name and random lease in case the state is left a
+	 * little funky.
+	 */
+	lease = random();
+	snprintf(fname, 256, "durable_open_lock_%s.dat", generate_random_str(tctx, 8));
+
+	/* Clean slate */
+	smb2_util_unlink(tree1, fname);
+
+	/* Create with lease */
+	ZERO_STRUCT(io1);
+	io1.in.security_flags		= 0x00;
+	io1.in.oplock_level		= SMB2_OPLOCK_LEVEL_LEASE;
+	io1.in.impersonation_level	= NTCREATEX_IMPERSONATION_IMPERSONATION;
+	io1.in.create_flags		= 0x00000000;
+	io1.in.reserved			= 0x00000000;
+	io1.in.desired_access		= SEC_RIGHTS_FILE_ALL;
+	io1.in.file_attributes		= FILE_ATTRIBUTE_NORMAL;
+	io1.in.share_access		= NTCREATEX_SHARE_ACCESS_NONE;
+	io1.in.create_disposition	= NTCREATEX_DISP_OPEN_IF;
+	io1.in.create_options		= NTCREATEX_OPTIONS_SEQUENTIAL_ONLY |
+					  NTCREATEX_OPTIONS_ASYNC_ALERT	|
+					  NTCREATEX_OPTIONS_NON_DIRECTORY_FILE |
+					  0x00200000;
+	io1.in.fname			= fname;
+	io1.in.durable_open 		= true;
+
+	io2 = io1;
+	io2.in.oplock_level = SMB2_OPLOCK_LEVEL_NONE;
+	io2.in.durable_open = false;
+
+	ZERO_STRUCT(ls);
+	ls.lease_key.data[0] = lease;
+	ls.lease_key.data[1] = ~lease;
+	ls.lease_state = SMB2_LEASE_READ|SMB2_LEASE_HANDLE;
+	io1.in.lease_request = &ls;
+
+	status = smb2_create(tree1, mem_ctx, &io1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h1 = io1.out.file.handle;
+	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+
+	CHECK_VAL(io1.out.oplock_level, SMB2_OPLOCK_LEVEL_LEASE);
+	CHECK_VAL(io1.out.lease_response.lease_key.data[0], lease);
+	CHECK_VAL(io1.out.lease_response.lease_key.data[1], ~lease);
+	CHECK_VAL(io1.out.lease_response.lease_state,
+	    SMB2_LEASE_READ|SMB2_LEASE_HANDLE);
+
+	/* Disconnect */
+	talloc_free(tree1);
+	tree1 = NULL;
+
+	/* Open the file in tree2 */
+	status = smb2_create(tree2, mem_ctx, &io2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h2 = io2.out.file.handle;
+	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+
+	/* Reconnect */
+	if (!torture_smb2_connection(tctx, &tree1)) {
+		torture_warning(tctx, "couldn't reconnect, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	ZERO_STRUCT(io1);
+	io1.in.fname = fname;
+	io1.in.durable_handle = &h1;
+	io1.in.lease_request = &ls;
+
+	/*
+	 * Windows7 (build 7000) will give away an open immediately if the
+	 * original client is gone. (ZML: This seems like a bug. It should give
+	 * some time for the client to reconnect!)
+	 */
+	status = smb2_create(tree1, mem_ctx, &io1);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+	h1 = io1.out.file.handle;
+
+ done:
+	smb2_util_close(tree2, h2);
+	smb2_util_unlink(tree2, fname);
+	smb2_util_close(tree1, h1);
+	smb2_util_unlink(tree1, fname);
+
+	return ret;
 }
 
 struct torture_suite *torture_smb2_durable_open_init(void)
@@ -295,6 +592,9 @@ struct torture_suite *torture_smb2_durable_open_init(void)
 	torture_suite_add_2smb2_test(suite, "FILE-POSITION",
 	    test_durable_open_file_position);
 	torture_suite_add_2smb2_test(suite, "OPLOCK", test_durable_open_oplock);
+	torture_suite_add_2smb2_test(suite, "LEASE", test_durable_open_lease);
+	torture_suite_add_1smb2_test(suite, "LOCK", test_durable_open_lock);
+	torture_suite_add_2smb2_test(suite, "OPEN", test_durable_open_open);
 
 	suite->description = talloc_strdup(suite, "SMB2-DURABLE-OPEN tests");
 
