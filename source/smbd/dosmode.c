@@ -319,8 +319,10 @@ uint32 dos_mode_msdfs(connection_struct *conn, const char *path,SMB_STRUCT_STAT 
 		} else {
 			p = path;
 		}
-		
-		if (p[0] == '.' && p[1] != '.' && p[1] != 0) {
+
+		/* Only . and .. are not hidden. */
+		if (p[0] == '.' && !((p[1] == '\0') ||
+				(p[1] == '.' && p[2] == '\0'))) {
 			result |= aHIDDEN;
 		}
 	}
@@ -371,8 +373,10 @@ uint32 dos_mode(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf)
 		} else {
 			p = path;
 		}
-		
-		if (p[0] == '.' && p[1] != '.' && p[1] != 0) {
+
+		/* Only . and .. are not hidden. */
+		if (p[0] == '.' && !((p[1] == '\0') ||
+				(p[1] == '.' && p[2] == '\0'))) {
 			result |= aHIDDEN;
 		}
 	}
