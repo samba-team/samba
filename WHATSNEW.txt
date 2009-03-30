@@ -114,6 +114,11 @@ o   Volker Lendecke <vl@sernet.de>
     * Fix a scary "fill_share_mode_lock failed" message.
 
 
+o   Derrell Lipman <derrell@dworkin.(none)>
+    * BUG 6228: Fix SMBC_open_ctx failure due to path resolve failure doesn't
+      set errno.
+
+
 o   Stefan Metzmacher <metze@samba.org
     * BUG 6100: Implement _netr_LogonGetCapabilities() with
       NT_STATUS_NOT_IMPLEMENTED.
