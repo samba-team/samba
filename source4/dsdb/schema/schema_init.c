@@ -788,7 +788,6 @@ WERROR dsdb_class_from_ldb(const struct dsdb_schema *schema,
 
 	GET_STRING_LIST_LDB(msg, "systemPossSuperiors", mem_ctx, obj, systemPossSuperiors, false);
 	GET_STRING_LIST_LDB(msg, "possSuperiors", mem_ctx, obj, possSuperiors, false);
-	GET_STRING_LIST_LDB(msg, "possibleInferiors", mem_ctx, obj, possibleInferiors, false);
 
 	GET_STRING_LDB(msg, "defaultSecurityDescriptor", mem_ctx, obj, defaultSecurityDescriptor, false);
 
@@ -1373,7 +1372,6 @@ WERROR dsdb_class_from_drsuapi(struct dsdb_schema *schema,
 
 	GET_STRING_LIST_DS(schema, r, "systemPossSuperiors", mem_ctx, obj, systemPossSuperiors, false);
 	GET_STRING_LIST_DS(schema, r, "possSuperiors", mem_ctx, obj, possSuperiors, false);
-	GET_STRING_LIST_DS(schema, r, "possibleInferiors", mem_ctx, obj, possibleInferiors, false);
 
 	GET_STRING_DS(schema, r, "defaultSecurityDescriptor", mem_ctx, obj, defaultSecurityDescriptor, false);
 
