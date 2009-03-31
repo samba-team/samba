@@ -158,7 +158,7 @@ else
 	AC_MSG_RESULT(shared library not selected, but will supply static library)
 fi
 if test $enable_static = yes; then
-	LIBUC[_STATIC]=[\$\(]LIBUC[_OBJ0\)]
+	LIBUC[_STATIC]=$LIBUC[_STATIC_TARGET]
 fi
 
 m4_popdef([LIBNAME])
