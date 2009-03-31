@@ -159,7 +159,16 @@ CODEPAGEDIR = @codepagedir@
 # the directory where pid files go
 PIDDIR = @piddir@
 
-FLAGS = -I. -I$(srcdir) @FLAGS1@ @SAMBA_CPPFLAGS@ $(CPPFLAGS) $(ISA) -I$(srcdir)/lib -I.. -D_SAMBA_BUILD_=3 -I../source4
+FLAGS = -I. \
+	-I$(srcdir) \
+	@FLAGS1@ \
+	@SAMBA_CPPFLAGS@ \
+	$(CPPFLAGS) \
+	$(ISA) \
+	-I$(srcdir)/lib \
+	-I.. \
+	-I../source4 \
+	-D_SAMBA_BUILD_=3
 
 PATH_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" \
 	-DPRIVATE_DIR=\"$(PRIVATE_DIR)\" \
@@ -851,7 +860,7 @@ RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
 	     $(SMBLDAP_OBJ) $(DCUTIL_OBJ) $(LDB_OBJ) 
 
 PAM_WINBIND_OBJ = ../nsswitch/pam_winbind.o localedir.o $(WBCOMMON_OBJ) \
-		  $(LIBREPLACE_OBJ) @BUILD_INIPARSER@
+		  $(LIBREPLACE_OBJ) @BUILD_INIPARSER@ @LIBTALLOC_STATIC@
 
 LIBSMBCLIENT_OBJ0 = \
 		    libsmb/libsmb_cache.o \
@@ -1295,6 +1304,21 @@ SHOWFLAGS::
 	@echo "      LDSHFLAGS  = $(LDSHFLAGS)"
 	@echo "      SHLIBEXT   = @SHLIBEXT@"
 	@echo "      SONAMEFLAG = @SONAMEFLAG@"
+
+# "showcflags" target for debuggin how CFLAGS are composed:
+
+.PHONY: showcflags SHOWCFLAGS
+
+showcflags: SHOWCFLAGS
+
+SHOWCFLAGS::
+	@echo "CFLAGS         = $(CFLAGS)"
+	@echo "FLAGS          = $(FLAGS)"
+	@echo ""
+	@echo "FLAGS1         = @FLAGS1@"
+	@echo "SAMBA_CPPFLAGS = @SAMBA_CPPFLAGS@"
+	@echo "CPPFLAGS       = $(CPPFLAGS)"
+	@echo "ISA            = $(ISA)"
 
 MAKEDIR = || exec false; \
 	  if test -d "$$dir"; then :; else \
