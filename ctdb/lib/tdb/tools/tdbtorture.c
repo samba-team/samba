@@ -18,6 +18,7 @@
 #define STORE_PROB 4
 #define APPEND_PROB 6
 #define TRANSACTION_PROB 10
+#define TRANSACTION_PREPARE_PROB 2
 #define LOCKSTORE_PROB 5
 #define TRAVERSE_PROB 20
 #define TRAVERSE_READ_PROB 20
@@ -121,6 +122,11 @@ static void addrec_db(void)
 		goto next;
 	}
 	if (in_transaction && random() % TRANSACTION_PROB == 0) {
+		if (random() % TRANSACTION_PREPARE_PROB == 0) {
+			if (tdb_transaction_prepare_commit(db) != 0) {
+				fatal("tdb_transaction_prepare_commit failed");
+			}
+		}
 		if (tdb_transaction_commit(db) != 0) {
 			fatal("tdb_transaction_commit failed");
 		}
