@@ -52,6 +52,7 @@ struct ldb_module_ops {
 	int (*request)(struct ldb_module *, struct ldb_request *); /* match any other operation */
 	int (*extended)(struct ldb_module *, struct ldb_request *); /* extended operations */
 	int (*start_transaction)(struct ldb_module *);
+	int (*prepare_commit)(struct ldb_module *);
 	int (*end_transaction)(struct ldb_module *);
 	int (*del_transaction)(struct ldb_module *);
 	int (*sequence_number)(struct ldb_module *, struct ldb_request *);

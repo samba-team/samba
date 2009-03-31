@@ -857,17 +857,45 @@ static int ltdb_start_trans(struct ldb_module *module)
 	return LDB_SUCCESS;
 }
 
+static int ltdb_prepare_commit(struct ldb_module *module)
+{
+	void *data = ldb_module_get_private(module);
+	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
+
+	if (ltdb->in_transaction != 1) {
+		return LDB_SUCCESS;
+	}
+
+	if (ltdb_index_transaction_commit(module) != 0) {
+		tdb_transaction_cancel(ltdb->tdb);
+		ltdb->in_transaction--;
+		return ltdb_err_map(tdb_error(ltdb->tdb));
+	}
+
+	if (tdb_transaction_prepare_commit(ltdb->tdb) != 0) {
+		ltdb->in_transaction--;
+		return ltdb_err_map(tdb_error(ltdb->tdb));
+	}
+
+	ltdb->prepared_commit = true;
+
+	return LDB_SUCCESS;
+}
+
 static int ltdb_end_trans(struct ldb_module *module)
 {
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 
-	ltdb->in_transaction--;
-
-	if (ltdb_index_transaction_commit(module) != 0) {
-		tdb_transaction_cancel(ltdb->tdb);
-		return ltdb_err_map(tdb_error(ltdb->tdb));
+	if (!ltdb->prepared_commit) {
+		int ret = ltdb_prepare_commit(module);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
 	}
+
+	ltdb->in_transaction--;
+	ltdb->prepared_commit = false;
 
 	if (tdb_transaction_commit(ltdb->tdb) != 0) {
 		return ltdb_err_map(tdb_error(ltdb->tdb));
@@ -1209,6 +1237,7 @@ static const struct ldb_module_ops ltdb_ops = {
 	.extended          = ltdb_handle_request,
 	.start_transaction = ltdb_start_trans,
 	.end_transaction   = ltdb_end_trans,
+	.prepare_commit    = ltdb_prepare_commit,
 	.del_transaction   = ltdb_del_trans,
 };
 

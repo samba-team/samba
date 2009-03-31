@@ -54,6 +54,10 @@
 #include "includes.h"
 #include "printing.h"
 
+#ifdef HAVE_HTTPCONNECTENCRYPT
+#include <cups/http.h>
+#endif
+
 bool bLoaded = False;
 
 extern enum protocol_types Protocol;
@@ -257,6 +261,7 @@ struct global {
 	int ldap_debug_threshold;
 	int iAclCompat;
 	char *szCupsServer;
+	int CupsEncrypt;
 	char *szIPrintServer;
 	char *ctdbdSocket;
 	char **szClusterAddresses;
@@ -773,6 +778,8 @@ static const struct enum_list enum_case[] = {
 	{CASE_UPPER, "upper"},
 	{-1, NULL}
 };
+
+
 
 static const struct enum_list enum_bool_auto[] = {
 	{False, "No"},
@@ -2628,6 +2635,16 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL,
 	},
 	{
+		.label          = "cups encrypt",
+		.type           = P_ENUM,
+		.p_class        = P_GLOBAL,
+		.ptr            = &Globals.CupsEncrypt,
+		.special        = NULL,
+		.enum_list      = enum_bool_auto,
+		.flags          = FLAG_ADVANCED | FLAG_PRINT | FLAG_GLOBAL,
+	},
+	{
+
 		.label		= "cups connection timeout",
 		.type		= P_INTEGER,
 		.p_class	= P_GLOBAL,
@@ -5471,6 +5488,23 @@ FN_LOCAL_LIST(lp_admin_users, szAdminUsers)
 FN_GLOBAL_LIST(lp_svcctl_list, &Globals.szServicesList)
 FN_LOCAL_STRING(lp_cups_options, szCupsOptions)
 FN_GLOBAL_STRING(lp_cups_server, &Globals.szCupsServer)
+int lp_cups_encrypt(void)
+{
+#ifdef HAVE_HTTPCONNECTENCRYPT
+	switch (Globals.CupsEncrypt) {
+		case Auto:
+			Globals.CupsEncrypt = HTTP_ENCRYPT_REQUIRED;
+			break;
+		case True:
+			Globals.CupsEncrypt = HTTP_ENCRYPT_ALWAYS;
+			break;
+		case False:
+			Globals.CupsEncrypt = HTTP_ENCRYPT_NEVER;
+			break;
+	}
+#endif
+	return Globals.CupsEncrypt;
+}
 FN_GLOBAL_STRING(lp_iprint_server, &Globals.szIPrintServer)
 FN_GLOBAL_INTEGER(lp_cups_connection_timeout, &Globals.cups_connection_timeout)
 FN_GLOBAL_CONST_STRING(lp_ctdbd_socket, &Globals.ctdbdSocket)
