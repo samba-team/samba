@@ -33,6 +33,7 @@ static struct {
 	const char *myaddress;
 	const char *public_address_list;
 	const char *event_script_dir;
+	const char *notification_script;
 	const char *logfile;
 	const char *recovery_lock_file;
 	const char *db_dir;
@@ -119,6 +120,7 @@ int main(int argc, const char *argv[])
 		{ "logfile", 0, POPT_ARG_STRING, &options.logfile, 0, "log file location", "filename" },
 		{ "nlist", 0, POPT_ARG_STRING, &options.nlist, 0, "node list file", "filename" },
 		{ "node-ip", 0, POPT_ARG_STRING, &options.node_ip, 0, "node ip", "ip-address"},
+		{ "notification-script", 0, POPT_ARG_STRING, &options.notification_script, 0, "notification script", "filename" },
 		{ "listen", 0, POPT_ARG_STRING, &options.myaddress, 0, "address to listen on", "address" },
 		{ "transport", 0, POPT_ARG_STRING, &options.transport, 0, "protocol transport", NULL },
 		{ "dbdir", 0, POPT_ARG_STRING, &options.db_dir, 0, "directory for the tdb files", NULL },
@@ -300,6 +302,14 @@ int main(int argc, const char *argv[])
 	if (ret == -1) {
 		DEBUG(DEBUG_ALERT,("Unable to setup event script directory\n"));
 		exit(1);
+	}
+
+	if (options.notification_script != NULL) {
+		ret = ctdb_set_notification_script(ctdb, options.notification_script);
+		if (ret == -1) {
+			DEBUG(DEBUG_ALERT,("Unable to setup notification script\n"));
+			exit(1);
+		}
 	}
 
 	ctdb->do_setsched = !options.no_setsched;

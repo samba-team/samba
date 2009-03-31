@@ -400,6 +400,7 @@ struct ctdb_context {
 	void *saved_scheduler_param;
 	struct _trbt_tree_t *server_ids;	
 	const char *event_script_dir;
+	const char *notification_script;
 	const char *default_public_interface;
 	pid_t ctdbd_pid;
 	pid_t recoverd_pid;
@@ -1241,6 +1242,7 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
 int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist);
 int ctdb_set_event_script(struct ctdb_context *ctdb, const char *script);
 int ctdb_set_event_script_dir(struct ctdb_context *ctdb, const char *script_dir);
+int ctdb_set_notification_script(struct ctdb_context *ctdb, const char *script);
 int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap);
 
 int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id, 

@@ -95,6 +95,9 @@
 # defaults to /etc/ctdb/nodes
 # CTDB_NODES=/etc/ctdb/nodes
 
+# a script to run when node health changes
+# CTDB_NOTIFY_SCRIPT=/etc/ctdb/notify.sh
+
 # the directory to put the local ctdb database files in
 # defaults to /var/ctdb
 # CTDB_DBDIR=/var/ctdb
