@@ -73,11 +73,14 @@ static struct partition_context *partition_init_ctx(struct ldb_module *module, s
 	return ac;
 }
 
-#define PARTITION_FIND_OP(module, op) do { \
-	struct ldb_context *ldbctx = module->ldb; \
+#define PARTITION_FIND_OP_NOERROR(module, op) do { \
         while (module && module->ops->op == NULL) module = module->next; \
+} while (0)
+
+#define PARTITION_FIND_OP(module, op) do { \
+	PARTITION_FIND_OP_NOERROR(module, op); \
         if (module == NULL) { \
-                ldb_asprintf_errstring(ldbctx, \
+                ldb_asprintf_errstring(module->ldb, \
 			"Unable to find backend operation for " #op ); \
                 return LDB_ERR_OPERATIONS_ERROR; \
         } \
@@ -654,7 +657,7 @@ static int partition_start_trans(struct ldb_module *module)
 /* end a transaction */
 static int partition_end_trans(struct ldb_module *module)
 {
-	int i, ret;
+	int i, ret, final_ret;
 	struct partition_private_data *data = talloc_get_type(module->private_data, 
 							      struct partition_private_data);
 	ret = ldb_next_end_trans(module);
@@ -662,28 +665,60 @@ static int partition_end_trans(struct ldb_module *module)
 		return ret;
 	}
 
-	/* Look at base DN */
-	/* Figure out which partition it is under */
-	/* Skip the lot if 'data' isn't here yet (initialistion) */
+	/* if the backend has a prepare_commit op then use that, to ensure
+	   that all partitions are committed safely together */
 	for (i=0; data && data->partitions && data->partitions[i]; i++) {
-		struct ldb_module *next = data->partitions[i]->module;
-		PARTITION_FIND_OP(next, end_transaction);
+		struct ldb_module *next_end = data->partitions[i]->module;
+		struct ldb_module *next_prepare = data->partitions[i]->module;
+		struct ldb_module *next_del = data->partitions[i]->module;
 
-		ret = next->ops->end_transaction(next);
+		PARTITION_FIND_OP_NOERROR(next_prepare, prepare_commit);
+		if (next_prepare == NULL) {
+			continue;
+		}
+
+		PARTITION_FIND_OP(next_end, end_transaction);
+		PARTITION_FIND_OP(next_del, del_transaction);
+
+		if (next_end != next_prepare || next_del != next_end) {
+			ldb_asprintf_errstring(module->ldb, "ERROR: Mismatch between prepare and commit ops in ldb module");
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		
+		ret = next_prepare->ops->prepare_commit(next_prepare);
 		if (ret != LDB_SUCCESS) {
-			/* Back it out, if it fails on one */
-			for (i--; i >= 0; i--) {
-				next = data->partitions[i]->module;
-				PARTITION_FIND_OP(next, del_transaction);
-
-				next->ops->del_transaction(next);
+			/* if one fails, cancel all but this one */
+			int j;
+			for (j=0; data->partitions[j]; j++) {
+				if (j == i) continue;
+				next_del = data->partitions[j]->module;
+				PARTITION_FIND_OP(next_del, del_transaction);
+				next_del->ops->del_transaction(next_del);
 			}
 			ldb_next_del_trans(module);
 			return ret;
 		}
 	}
 
-	return LDB_SUCCESS;
+	/* Look at base DN */
+	/* Figure out which partition it is under */
+	/* Skip the lot if 'data' isn't here yet (initialistion) */
+	final_ret = LDB_SUCCESS;
+
+	for (i=0; data && data->partitions && data->partitions[i]; i++) {
+		struct ldb_module *next = data->partitions[i]->module;
+		PARTITION_FIND_OP(next, end_transaction);
+
+		ret = next->ops->end_transaction(next);
+		if (ret != LDB_SUCCESS) {
+			/* this should only be happening if we had a serious 
+			   OS or hardware error */
+			ldb_asprintf_errstring(module->ldb, "ERROR: partition commit error");
+			final_ret = ret;
+		}
+	}
+
+	return final_ret;
 }
 
 /* delete a transaction */
