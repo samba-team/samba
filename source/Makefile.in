@@ -792,7 +792,7 @@ RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
 	     $(SMBLDAP_OBJ) $(DCUTIL_OBJ) $(LDB_OBJ) 
 
 PAM_WINBIND_OBJ = nsswitch/pam_winbind.o localedir.o $(WBCOMMON_OBJ) \
-		  $(LIBREPLACE_OBJ) @BUILD_INIPARSER@
+		  $(LIBREPLACE_OBJ) @BUILD_INIPARSER@ @LIBTALLOC_STATIC@
 
 LIBSMBCLIENT_OBJ0 = \
 		    libsmb/libsmb_cache.o \
