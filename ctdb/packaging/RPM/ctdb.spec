@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.77
+Version: 1.0.78
 Release: 1
 Epoch: 0
 License: GNU GPL version 3
@@ -130,6 +130,9 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Tue Mar 31 2009 : Version 1.0.78
+ - Add a notify mechanism so we can send snmptraps/email to external management systems when the node becomes unhealthy
+ - include 11.natgw eventscript in thew install so that the NATGW feature works
 * Tue Mar 31 2009 : Version 1.0.77
  - Update the 99.routing eventscript to also try to add the routes (back) during a releaseip event. Similar to the reasons why we must add addresses back during releaseip in 10.interfaces
 * Wed Mar 24 2009 : Version 1.0.76
