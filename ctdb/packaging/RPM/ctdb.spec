@@ -97,6 +97,7 @@ fi
 %defattr(-,root,root)
 
 %config(noreplace) %{_sysconfdir}/sysconfig/ctdb
+%config(noreplace) %{_sysconfdir}/ctdb/notify.sh
 %config(noreplace) %{_sysconfdir}/ctdb/functions
 %attr(755,root,root) %{initdir}/ctdb
 
