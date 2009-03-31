@@ -93,7 +93,12 @@ static http_t *cups_connect(TALLOC_CTX *frame)
                 alarm(timeout);
         }
 
+#ifdef HAVE_HTTPCONNECTENCRYPT
+	http = httpConnectEncrypt(server, port, lp_cups_encrypt());
+#else
 	http = httpConnect(server, port);
+#endif
+
 
 	CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
         alarm(0);
