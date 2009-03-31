@@ -24,10 +24,10 @@ shift
 PATH=/usr/bin:/bin:/usr/sbin:/sbin:$PATH
 
 case $cmd in 
-     takeip)
+     takeip|releaseip)
 	iface=$1
 	cat $CTDB_BASE/static-routes | egrep "^$iface " | while read IFACE DEST GW; do
-		route add -net $DEST gw $GW
+	    ip route add $DEST via $GW dev $IFACE >/dev/null 2>/dev/null
 	done
 
 	;;
