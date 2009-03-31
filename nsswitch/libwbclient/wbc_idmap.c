@@ -4,6 +4,7 @@
    Winbind client API
 
    Copyright (C) Gerald (Jerry) Carter 2007
+   Copyright (C) Kai Blin 2009
 
 
    This library is free software; you can redistribute it and/or
@@ -24,6 +25,105 @@
 
 #include "replace.h"
 #include "libwbclient.h"
+
+struct wbc_sid_to_uid_state {
+	struct winbindd_request req;
+	uid_t uid;
+};
+
+static void wbcSidToUid_done(struct tevent_req *subreq);
+
+/**
+ * @brief Convert a Windows SID to a Unix uid, allocating an uid if needed
+ *
+ * @param mem_ctx	talloc context to allocate the request from
+ * @param ev		tevent context to use for async operation
+ * @param wb_ctx	winbind context to use
+ * @param *sid		pointer to the domain SID to be resolved
+ *
+ * @return tevent_req on success, NULL on error
+ */
+
+struct tevent_req *wbcSidToUid_send(TALLOC_CTX *mem_ctx,
+				    struct tevent_context *ev,
+				    struct wb_context *wb_ctx,
+				    const struct wbcDomainSid *sid)
+{
+	struct tevent_req *req, *subreq;
+	struct wbc_sid_to_uid_state *state;
+	char *sid_string;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+
+	req = tevent_req_create(mem_ctx, &state, struct wbc_sid_to_uid_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	ZERO_STRUCT(state->req);
+
+	state->req.cmd = WINBINDD_SID_TO_UID;
+	wbc_status = wbcSidToString(sid, &sid_string);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		return tevent_req_post(req, ev);
+	}
+	strncpy(state->req.data.sid, sid_string, sizeof(state->req.data.sid)-1);
+	wbcFreeMemory(sid_string);
+
+	subreq = wb_trans_send(state, ev, wb_ctx, false, &state->req);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_set_callback(subreq, wbcSidToUid_done, req);
+	return req;
+}
+
+static void wbcSidToUid_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+			subreq, struct tevent_req);
+	struct wbc_sid_to_uid_state *state = tevent_req_data(
+			req, struct wbc_sid_to_uid_state);
+	struct winbindd_response *resp;
+	wbcErr wbc_status;
+
+	wbc_status = wb_trans_recv(subreq, state, &resp);
+	TALLOC_FREE(subreq);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		tevent_req_error(req, wbc_status);
+		return;
+	}
+	state->uid = resp->data.uid;
+	TALLOC_FREE(resp);
+
+	tevent_req_done(req);
+}
+
+/**
+ * @brief Receive a Unix uid mapped to a Windows SID
+ *
+ * @param req		tevent_req containing the request
+ * @param *puid		pointer to hold the resolved uid_t value
+ *
+ * @return #wbcErr
+ */
+
+wbcErr wbcSidToUid_recv(struct tevent_req *req, uid_t *puid)
+{
+	struct wbc_sid_to_uid_state *state = tevent_req_data(
+			req, struct wbc_sid_to_uid_state);
+	wbcErr wbc_status;
+
+	if (tevent_req_is_wbcerr(req, &wbc_status)) {
+		tevent_req_received(req);
+		return wbc_status;
+	}
+
+	*puid = state->uid;
+
+	tevent_req_received(req);
+	return WBC_ERR_SUCCESS;
+}
 
 /* Convert a Windows SID to a Unix uid, allocating an uid if needed */
 wbcErr wbcSidToUid(const struct wbcDomainSid *sid, uid_t *puid)
