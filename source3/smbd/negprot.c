@@ -316,7 +316,7 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 			capabilities &= ~CAP_RAW_MODE;
 			if (lp_server_signing() == Required)
 				secword |=NEGOTIATE_SECURITY_SIGNATURES_REQUIRED;
-			srv_set_signing_negotiated();
+			srv_set_signing_negotiated(smbd_server_conn);
 		} else {
 			DEBUG(0,("reply_nt1: smb signing is incompatible with share level security !\n"));
 			if (lp_server_signing() == Required) {

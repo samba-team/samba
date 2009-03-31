@@ -46,6 +46,7 @@ mkinclude torture/config.mk
 mkinclude librpc/config.mk
 mkinclude client/config.mk
 mkinclude libcli/config.mk
+mkinclude ../libcli/cldap/config.mk
 mkinclude scripting/python/config.mk
 mkinclude kdc/config.mk
 mkinclude ../lib/smbconf/config.mk

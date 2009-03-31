@@ -44,11 +44,11 @@ struct tsocket_address_bsd {
 	bool broadcast;
 	union {
 		struct sockaddr sa;
-		struct sockaddr_in sin;
+		struct sockaddr_in in;
 #ifdef HAVE_IPV6
-		struct sockaddr_in6 sin6;
+		struct sockaddr_in6 in6;
 #endif
-		struct sockaddr_un sun;
+		struct sockaddr_un un;
 		struct sockaddr_storage ss;
 	} u;
 };
@@ -204,14 +204,14 @@ char *tsocket_address_inet_addr_string(const struct tsocket_address *addr,
 
 	switch (bsda->u.sa.sa_family) {
 	case AF_INET:
-		str = inet_ntop(bsda->u.sin.sin_family,
-				&bsda->u.sin.sin_addr,
+		str = inet_ntop(bsda->u.in.sin_family,
+				&bsda->u.in.sin_addr,
 				addr_str, sizeof(addr_str));
 		break;
 #ifdef HAVE_IPV6
 	case AF_INET6:
-		str = inet_ntop(bsda->u.sin6.sin6_family,
-				&bsda->u.sin6.sin6_addr,
+		str = inet_ntop(bsda->u.in6.sin6_family,
+				&bsda->u.in6.sin6_addr,
 				addr_str, sizeof(addr_str));
 		break;
 #endif
@@ -240,11 +240,11 @@ uint16_t tsocket_address_inet_port(const struct tsocket_address *addr)
 
 	switch (bsda->u.sa.sa_family) {
 	case AF_INET:
-		port = ntohs(bsda->u.sin.sin_port);
+		port = ntohs(bsda->u.in.sin_port);
 		break;
 #ifdef HAVE_IPV6
 	case AF_INET6:
-		port = ntohs(bsda->u.sin6.sin6_port);
+		port = ntohs(bsda->u.in6.sin6_port);
 		break;
 #endif
 	default:
@@ -268,11 +268,11 @@ int tsocket_address_inet_set_port(struct tsocket_address *addr,
 
 	switch (bsda->u.sa.sa_family) {
 	case AF_INET:
-		bsda->u.sin.sin_port = htons(port);
+		bsda->u.in.sin_port = htons(port);
 		break;
 #ifdef HAVE_IPV6
 	case AF_INET6:
-		bsda->u.sin6.sin6_port = htons(port);
+		bsda->u.in6.sin6_port = htons(port);
 		break;
 #endif
 	default:
@@ -301,21 +301,21 @@ int _tsocket_address_unix_from_path(TALLOC_CTX *mem_ctx,
 				    struct tsocket_address **_addr,
 				    const char *location)
 {
-	struct sockaddr_un sun;
-	void *p = &sun;
+	struct sockaddr_un un;
+	void *p = &un;
 	int ret;
 
 	if (!path) {
 		path = "";
 	}
 
-	ZERO_STRUCT(sun);
-	sun.sun_family = AF_UNIX;
-	strncpy(sun.sun_path, path, sizeof(sun.sun_path));
+	ZERO_STRUCT(un);
+	un.sun_family = AF_UNIX;
+	strncpy(un.sun_path, path, sizeof(un.sun_path));
 
 	ret = _tsocket_address_bsd_from_sockaddr(mem_ctx,
 						 (struct sockaddr *)p,
-						 sizeof(sun),
+						 sizeof(un),
 						 _addr,
 						 location);
 
@@ -336,7 +336,7 @@ char *tsocket_address_unix_path(const struct tsocket_address *addr,
 
 	switch (bsda->u.sa.sa_family) {
 	case AF_UNIX:
-		str = bsda->u.sun.sun_path;
+		str = bsda->u.un.sun_path;
 		break;
 	default:
 		errno = EINVAL;
@@ -359,7 +359,7 @@ static char *tsocket_address_bsd_string(const struct tsocket_address *addr,
 	switch (bsda->u.sa.sa_family) {
 	case AF_UNIX:
 		return talloc_asprintf(mem_ctx, "unix:%s",
-				       bsda->u.sun.sun_path);
+				       bsda->u.un.sun_path);
 	case AF_INET:
 		prefix = "ipv4";
 		break;
@@ -469,27 +469,27 @@ static int tsocket_address_bsd_create_socket(const struct tsocket_address *addr,
 			errno = EINVAL;
 			return -1;
 		}
-		if (bsda->u.sun.sun_path[0] != 0) {
+		if (bsda->u.un.sun_path[0] != 0) {
 			do_bind = true;
 		}
 		break;
 	case AF_INET:
-		if (bsda->u.sin.sin_port != 0) {
+		if (bsda->u.in.sin_port != 0) {
 			do_reuseaddr = true;
 			do_bind = true;
 		}
-		if (bsda->u.sin.sin_addr.s_addr == INADDR_ANY) {
+		if (bsda->u.in.sin_addr.s_addr == INADDR_ANY) {
 			do_bind = true;
 		}
 		break;
 #ifdef HAVE_IPV6
 	case AF_INET6:
-		if (bsda->u.sin6.sin6_port != 0) {
+		if (bsda->u.in6.sin6_port != 0) {
 			do_reuseaddr = true;
 			do_bind = true;
 		}
 		if (memcmp(&in6addr_any,
-			   &bsda->u.sin6.sin6_addr,
+			   &bsda->u.in6.sin6_addr,
 			   sizeof(in6addr_any)) != 0) {
 			do_bind = true;
 		}

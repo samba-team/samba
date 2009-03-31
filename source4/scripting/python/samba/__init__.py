@@ -54,7 +54,7 @@ class Ldb(ldb.Ldb):
     functions see samdb.py.
     """
     def __init__(self, url=None, session_info=None, credentials=None, 
-                 modules_dir=None, lp=None):
+                 modules_dir=None, lp=None, options=None):
         """Open a Samba Ldb file. 
 
         :param url: Optional LDB URL to open
@@ -67,7 +67,7 @@ class Ldb(ldb.Ldb):
         modules-dir is used by default and that credentials and session_info 
         can be passed through (required by some modules).
         """
-        super(Ldb, self).__init__()
+        super(Ldb, self).__init__(options=options)
 
         if modules_dir is not None:
             self.set_modules_dir(modules_dir)
@@ -90,7 +90,7 @@ class Ldb(ldb.Ldb):
         #self.set_debug(msg)
 
         if url is not None:
-            self.connect(url)
+            self.connect(url, options=options)
 
     def set_credentials(self, credentials):
         glue.ldb_set_credentials(self, credentials)

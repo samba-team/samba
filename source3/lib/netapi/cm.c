@@ -57,6 +57,11 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 				false, false,
 				PROTOCOL_NT1,
 				0, 0x20);
+	if (cli_ipc) {
+		cli_set_username(cli_ipc, ctx->username);
+		cli_set_password(cli_ipc, ctx->password);
+		cli_set_domain(cli_ipc, ctx->workgroup);
+	}
 	TALLOC_FREE(auth_info);
 
 	if (!cli_ipc) {

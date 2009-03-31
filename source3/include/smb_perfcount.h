@@ -37,8 +37,6 @@ struct smb_perfcount_handlers {
 				         uint64_t in_bytes);
 	void (*perfcount_set_msglen_out) (struct smb_perfcount_data *pcd,
 				          uint64_t out_bytes);
-	void (*perfcount_set_client) (struct smb_perfcount_data *pcd, uid_t uid,
-				      const char *user, const char *domain);
 	void (*perfcount_copy_context) (struct smb_perfcount_data *pcd,
 				        struct smb_perfcount_data *new_pcd);
 	void (*perfcount_defer_op) (struct smb_perfcount_data *pcd,
@@ -86,12 +84,6 @@ void smb_init_perfcount_data(struct smb_perfcount_data *pcd);
 #define SMB_PERFCOUNT_SET_MSGLEN_OUT(_pcd_,_out_) \
     do {if((_pcd_) && (_pcd_)->handlers) \
 	    (_pcd_)->handlers->perfcount_set_msglen_out((_pcd_), (_out_));\
-    } while (0)
-
-#define SMB_PERFCOUNT_SET_CLIENT(_pcd_,_uid_, _user_, _domain_) \
-    do {if((_pcd_) && (_pcd_)->handlers) \
-	    (_pcd_)->handlers->perfcount_set_client((_pcd_), (_uid_), \
-	       (_user_), (_domain_)); \
     } while (0)
 
 #define SMB_PERFCOUNT_COPY_CONTEXT(_pcd_, _new_pcd_) \

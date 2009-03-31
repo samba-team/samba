@@ -100,11 +100,11 @@ static bool wrap_simple_2smb2_test(struct torture_context *torture_ctx,
 }
 
 
-_PUBLIC_ struct torture_test *torture_suite_add_2smb2_test(struct torture_suite *suite,
-							   const char *name,
-							   bool (*run)(struct torture_context *,
-								       struct smb2_tree *,
-								       struct smb2_tree *))
+struct torture_test *torture_suite_add_2smb2_test(struct torture_suite *suite,
+						  const char *name,
+						  bool (*run)(struct torture_context *,
+							      struct smb2_tree *,
+							      struct smb2_tree *))
 {
 	struct torture_test *test;
 	struct torture_tcase *tcase;
@@ -139,8 +139,9 @@ NTSTATUS torture_smb2_init(void)
 	torture_suite_add_suite(suite, torture_smb2_read_init());
 	torture_suite_add_suite(suite, torture_smb2_create_init());
 	torture_suite_add_simple_test(suite, "NOTIFY", torture_smb2_notify);
-	torture_suite_add_2smb2_test(suite, "PERSISTENT-HANDLES1", torture_smb2_persistent_handles1);
+	torture_suite_add_suite(suite, torture_smb2_durable_open_init());
 	torture_suite_add_1smb2_test(suite, "OPLOCK-BATCH1", torture_smb2_oplock_batch1);
+	torture_suite_add_suite(suite, torture_smb2_lease_init());
 
 	suite->description = talloc_strdup(suite, "SMB2-specific tests");
 

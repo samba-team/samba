@@ -53,6 +53,16 @@ struct smb2_handle {
 	uint64_t data[2];
 };
 
+/*
+  SMB2 lease structure (per MS-SMB2 2.2.13)
+*/
+struct smb2_lease {
+	uint64_t lease_key[2];
+	uint32_t lease_state;
+	uint32_t lease_flags; /* should be 0 */
+	uint64_t lease_duration; /* should be 0 */
+};
+
 struct ntvfs_handle;
 
 /*
@@ -1633,6 +1643,7 @@ union smb_open {
 			bool   query_maximal_access;
 			NTTIME timewarp;
 			bool   query_on_disk_id;
+			struct smb2_lease *lease_request;
 			
 			/* and any additional blobs the caller wants */
 			struct smb2_create_blobs {
@@ -1666,6 +1677,7 @@ union smb_open {
 			/* optional return values matching tagged values in the call */
 			uint32_t maximal_access;
 			uint8_t on_disk_id[32];
+			struct smb2_lease lease_response;
 
 			/* tagged blobs in the reply */
 			struct smb2_create_blobs blobs;

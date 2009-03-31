@@ -497,7 +497,7 @@ void reply_special(char *inbuf)
 	DEBUG(5,("init msg_type=0x%x msg_flags=0x%x\n",
 		    msg_type, msg_flags));
 
-	srv_send_smb(smbd_server_fd(), outbuf, false, NULL);
+	srv_send_smb(smbd_server_fd(), outbuf, false, 0, false, NULL);
 	return;
 }
 
@@ -1606,6 +1606,8 @@ void reply_open(struct smb_request *req)
 
 	START_PROFILE(SMBopen);
 
+	SET_STAT_INVALID(sbuf);
+
 	if (req->wct < 2) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBopen);
@@ -1740,6 +1742,8 @@ void reply_open_and_X(struct smb_request *req)
 		END_PROFILE(SMBopenX);
 		return;
 	}
+
+	SET_STAT_INVALID(sbuf);
 
 	open_flags = SVAL(req->vwv+2, 0);
 	deny_mode = SVAL(req->vwv+3, 0);
@@ -1945,6 +1949,7 @@ void reply_mknew(struct smb_request *req)
 
 	START_PROFILE(SMBcreate);
 	ZERO_STRUCT(ft);
+	SET_STAT_INVALID(sbuf);
 
         if (req->wct < 3) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -2123,6 +2128,7 @@ void reply_ctemp(struct smb_request *req)
 		return;
 	}
 
+	SET_STAT_INVALID(sbuf);
 	SMB_VFS_STAT(conn,fname,&sbuf);
 
 	/* We should fail if file does not exist. */
@@ -2673,6 +2679,7 @@ static ssize_t fake_sendfile(files_struct *fsp, SMB_OFF_T startpos,
 	return (ssize_t)nread;
 }
 
+#if defined(WITH_SENDFILE)
 /****************************************************************************
  Deal with the case of sendfile reading less bytes from the file than
  requested. Fill with zeros (all we can do).
@@ -2729,6 +2736,7 @@ static void sendfile_short_send(files_struct *fsp,
 		SAFE_FREE(buf);
 	}
 }
+#endif /* defined WITH_SENDFILE */
 
 /****************************************************************************
  Return a readbraw error (4 bytes of zero).
@@ -2766,7 +2774,8 @@ static void send_file_readbraw(connection_struct *conn,
 	 */
 
 	if ( !req_is_in_chain(req) && (nread > 0) && (fsp->base_fsp == NULL) &&
-	    (fsp->wcp == NULL) && lp_use_sendfile(SNUM(conn)) ) {
+	    (fsp->wcp == NULL) &&
+	    lp_use_sendfile(SNUM(conn), smbd_server_conn->signing_state) ) {
 		ssize_t sendfile_read = -1;
 		char header[4];
 		DATA_BLOB header_blob;
@@ -2870,7 +2879,8 @@ void reply_readbraw(struct smb_request *req)
 
 	START_PROFILE(SMBreadbraw);
 
-	if (srv_is_signing_active() || is_encrypted_packet(req->inbuf)) {
+	if (srv_is_signing_active(smbd_server_conn) ||
+	    is_encrypted_packet(req->inbuf)) {
 		exit_server_cleanly("reply_readbraw: SMB signing/sealing is active - "
 			"raw reads/writes are disallowed.");
 	}
@@ -3274,7 +3284,8 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 
 	if (!req_is_in_chain(req) &&
 	    !is_encrypted_packet(req->inbuf) && (fsp->base_fsp == NULL) &&
-	    lp_use_sendfile(SNUM(conn)) && (fsp->wcp == NULL) ) {
+	    (fsp->wcp == NULL) &&
+	    lp_use_sendfile(SNUM(conn), smbd_server_conn->signing_state) ) {
 		uint8 headerbuf[smb_size + 12 * 2];
 		DATA_BLOB header;
 
@@ -3450,7 +3461,8 @@ void reply_read_and_X(struct smb_request *req)
 				return;
 			}
 			/* We currently don't do this on signed or sealed data. */
-			if (srv_is_signing_active() || is_encrypted_packet(req->inbuf)) {
+			if (srv_is_signing_active(smbd_server_conn) ||
+			    is_encrypted_packet(req->inbuf)) {
 				reply_nterror(req, NT_STATUS_NOT_SUPPORTED);
 				END_PROFILE(SMBreadX);
 				return;
@@ -3558,7 +3570,7 @@ void reply_writebraw(struct smb_request *req)
 	 */
 	SCVAL(req->inbuf,smb_com,SMBwritec);
 
-	if (srv_is_signing_active()) {
+	if (srv_is_signing_active(smbd_server_conn)) {
 		END_PROFILE(SMBwritebraw);
 		exit_server_cleanly("reply_writebraw: SMB signing is active - "
 				"raw reads/writes are disallowed.");
@@ -3653,9 +3665,10 @@ void reply_writebraw(struct smb_request *req)
 	SSVALS(buf,smb_vwv0,0xFFFF);
 	show_msg(buf);
 	if (!srv_send_smb(smbd_server_fd(),
-			buf,
-			IS_CONN_ENCRYPTED(conn),
-			&req->pcd)) {
+			  buf,
+			  false, 0, /* no signing */
+			  IS_CONN_ENCRYPTED(conn),
+			  &req->pcd)) {
 		exit_server_cleanly("reply_writebraw: srv_send_smb "
 			"failed.");
 	}
@@ -4757,6 +4770,7 @@ void reply_echo(struct smb_request *req)
 		show_msg((char *)req->outbuf);
 		if (!srv_send_smb(smbd_server_fd(),
 				(char *)req->outbuf,
+				true, req->seqnum+1,
 				IS_CONN_ENCRYPTED(conn)||req->encrypted,
 				cur_pcd))
 			exit_server_cleanly("reply_echo: srv_send_smb failed.");

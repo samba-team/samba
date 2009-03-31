@@ -33,7 +33,7 @@ interface dcerpc
 
 	typedef struct {
 	} dcerpc_empty;
-	
+
 	typedef [nodiscriminant] union {
 		[default] dcerpc_empty empty;
 		[case(LIBNDR_FLAG_OBJECT_PRESENT)] GUID object;
@@ -75,7 +75,7 @@ interface dcerpc
 		uint32 num_versions;
 		uint32 versions[num_versions];
 	} dcerpc_bind_nak_versions;
-	
+
 	typedef [nodiscriminant] union {
 		[case(DECRPC_BIND_PROTOCOL_VERSION_NOT_SUPPORTED)] dcerpc_bind_nak_versions v;
 		[default] ;
@@ -145,7 +145,7 @@ interface dcerpc
 	const uint8 DCERPC_AUTH_LEVEL_DEFAULT	= DCERPC_AUTH_LEVEL_CONNECT;
 
 	typedef [public] struct {
-		dcerpc_AuthType auth_type; 
+		dcerpc_AuthType auth_type;
 		dcerpc_AuthLevel auth_level;
 		uint8  auth_pad_length;
 		uint8  auth_reserved;
@@ -176,7 +176,7 @@ interface dcerpc
 	} dcerpc_cl_cancel;
 
 	typedef [public] struct {
-		uint32 version; 
+		uint32 version;
 		uint32 id;
 		boolean32 server_is_accepting;
 	} dcerpc_cancel_ack;
@@ -200,7 +200,7 @@ interface dcerpc
 
 	typedef [public] struct {
 	} dcerpc_shutdown;
-	
+
 	typedef [public] struct {
 	} dcerpc_working;
 

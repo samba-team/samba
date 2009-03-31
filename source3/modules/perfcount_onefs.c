@@ -20,7 +20,10 @@
 
 #include "includes.h"
 #include <sys/isi_stats_protocol.h>
+#include <sys/isi_stats_client.h>
 #include <sys/isi_stats_cifs.h>
+
+extern struct current_user current_user;
 
 struct onefs_op_counter {
 	struct isp_op_delta iod;
@@ -282,22 +285,41 @@ static void onefs_smb_statistics_defer_op(struct smb_perfcount_data *pcd,
 		pcd->context = NULL;
 }
 
-static void onefs_smb_statistics_set_client(struct smb_perfcount_data *pcd,
-					    uid_t uid, const char *user,
-					    const char *domain)
-{
-	// not implemented...
-	return;
-}
-
 static void onefs_smb_statistics_end(struct smb_perfcount_data *pcd)
 {
 	struct onefs_stats_context *ctxt = pcd->context;
 	struct onefs_op_counter *tmp;
+	uint64_t uid;
+
+	static in_addr_t rem_addr = 0;
+	static in_addr_t loc_addr = 0;
 
         /* not enabled */
         if (pcd->context == NULL)
                 return;
+
+	uid = current_user.ut.uid ? current_user.ut.uid : ISC_UNKNOWN_CLIENT_ID;
+
+	/* get address info once, doesn't change for process */
+	if (rem_addr == 0) {
+		struct sockaddr_storage sa;
+		socklen_t sa_len;
+		int fd = smbd_server_fd();
+
+		sa_len = sizeof sa;
+		if (getpeername(fd, (struct sockaddr *)&sa, &sa_len) == 0 && 
+		    sa.ss_family == AF_INET)
+			rem_addr = ((struct sockaddr_in *)&sa)->sin_addr.s_addr;
+		else
+			rem_addr = ISC_MASKED_ADDR;
+
+		sa_len = sizeof sa;
+		if (getsockname(fd, (struct sockaddr *)&sa, &sa_len) == 0 &&
+		    sa.ss_family == AF_INET)
+			loc_addr = ((struct sockaddr_in *)&sa)->sin_addr.s_addr;
+		else
+			loc_addr = ISC_MASKED_ADDR;
+	}
 
 	/*
 	 * bug here - we aren't getting the outlens right,
@@ -305,19 +327,22 @@ static void onefs_smb_statistics_end(struct smb_perfcount_data *pcd)
 	 */
 	for (tmp = ctxt->ops_chain; tmp; tmp = tmp->next) {
 		tmp->iod.out_bytes = ctxt->iod.out_bytes;
+		isc_cookie_init(&tmp->iod.cookie, rem_addr, loc_addr, uid);
 		ISP_OP_END(&tmp->iod);
 #ifdef ONEFS_PERF_DEBUG
-		DEBUG(0,("********  Finalized CHAIN op %s in:%llu, out:%llu\n",
-			onefs_stat_debug(&tmp->iod),
+		DEBUG(0,("********  Finalized CHAIN op %s uid %llu in:%llu"
+			", out:%llu\n",
+			onefs_stat_debug(&tmp->iod), uid,
 			tmp->iod.in_bytes, tmp->iod.out_bytes));
 #endif
 		SAFE_FREE(tmp->prev);
 	}
 
-        ISP_OP_END(&ctxt->iod);
+	isc_cookie_init(&ctxt->iod.cookie, rem_addr, loc_addr, uid);
+	ISP_OP_END(&ctxt->iod);
 #ifdef ONEFS_PERF_DEBUG
-	DEBUG(0,("********  Finalized op %s in:%llu, out:%llu\n",
-		onefs_stat_debug(&ctxt->iod),
+	DEBUG(0,("********  Finalized op %s uid %llu in:%llu, out:%llu\n",
+		onefs_stat_debug(&ctxt->iod), uid,
 		ctxt->iod.in_bytes, ctxt->iod.out_bytes));
 #endif
 
@@ -338,7 +363,6 @@ static struct smb_perfcount_handlers onefs_pc_handlers = {
 	onefs_smb_statistics_set_ioctl,
 	onefs_smb_statistics_set_msglen_in,
 	onefs_smb_statistics_set_msglen_out,
-	onefs_smb_statistics_set_client,
 	onefs_smb_statistics_copy_context,
 	onefs_smb_statistics_defer_op,
 	onefs_smb_statistics_end

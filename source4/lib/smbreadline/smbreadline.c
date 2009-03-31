@@ -83,6 +83,7 @@ static char *smb_readline_replacement(const char *prompt, void (*callback)(void)
 	char *ret;
 
 	printf("%s", prompt);
+	fflush(stdout);
 
 	line = (char *)malloc(BUFSIZ);
 	if (!line) {

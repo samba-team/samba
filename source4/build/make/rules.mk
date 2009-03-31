@@ -185,7 +185,8 @@ showflags::
 base_srcdirs = $(srcdir) ../librpc/ ../lib/ ../libcli
 
 etags:
-	etags `find $(base_srcdirs) -name "*.[ch]"`
+	etags $(ETAGS_OPTIONS) `find $(base_srcdirs) -name "*.[ch]"`
 
 ctags:
-	ctags `find $(base_srcdirs) -name "*.[ch]"`
+	ctags $(CTAGS_OPTIONS) `find $(base_srcdirs) -name "*.[ch]"`
+

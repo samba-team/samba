@@ -257,9 +257,10 @@ static WERROR cmd_spoolss_enum_printers(struct rpc_pipe_client *cli,
 	union spoolss_PrinterInfo *info;
 	uint32_t		i, count;
 	const char *name;
+	uint32_t flags = PRINTER_ENUM_LOCAL;
 
-	if (argc > 3) {
-		printf("Usage: %s [level] [name]\n", argv[0]);
+	if (argc > 4) {
+		printf("Usage: %s [level] [name] [flags]\n", argv[0]);
 		return WERR_OK;
 	}
 
@@ -267,14 +268,18 @@ static WERROR cmd_spoolss_enum_printers(struct rpc_pipe_client *cli,
 		level = atoi(argv[1]);
 	}
 
-	if (argc == 3) {
+	if (argc >= 3) {
 		name = argv[2];
 	} else {
 		name = cli->srv_name_slash;
 	}
 
+	if (argc == 4) {
+		flags = atoi(argv[3]);
+	}
+
 	result = rpccli_spoolss_enumprinters(cli, mem_ctx,
-					     PRINTER_ENUM_LOCAL,
+					     flags,
 					     name,
 					     level,
 					     0,
@@ -417,7 +422,7 @@ static WERROR cmd_spoolss_setprinter(struct rpc_pipe_client *cli,
 	struct policy_handle pol;
 	WERROR		result;
 	NTSTATUS	status;
-	uint32 		info_level = 2;
+	uint32_t 	info_level = 2;
 	union spoolss_PrinterInfo info;
 	struct spoolss_SetPrinterInfoCtr info_ctr;
 	const char	*printername, *comment = NULL;
@@ -493,7 +498,7 @@ static WERROR cmd_spoolss_setprintername(struct rpc_pipe_client *cli,
 	struct policy_handle pol;
 	WERROR		result;
 	NTSTATUS	status;
-	uint32 		info_level = 2;
+	uint32_t 	info_level = 2;
 	union spoolss_PrinterInfo info;
 	const char 	*printername,
 			*new_printername = NULL;
@@ -644,7 +649,7 @@ static void display_reg_value(REGISTRY_VALUE value)
 	switch(value.type) {
 	case REG_DWORD:
 		printf("%s: REG_DWORD: 0x%08x\n", value.valuename,
-		       *((uint32 *) value.data_p));
+		       *((uint32_t *) value.data_p));
 		break;
 	case REG_SZ:
 		rpcstr_pull_talloc(talloc_tos(),
@@ -673,7 +678,7 @@ static void display_reg_value(REGISTRY_VALUE value)
 		break;
 	}
 	case REG_MULTI_SZ: {
-		uint32 i, num_values;
+		uint32_t i, num_values;
 		char **values;
 
 		if (!W_ERROR_IS_OK(reg_pull_multi_sz(NULL, value.data_p,
@@ -1338,7 +1343,7 @@ static WERROR cmd_spoolss_addprinterdriver(struct rpc_pipe_client *cli,
 {
 	WERROR result;
 	NTSTATUS status;
-	uint32                  level = 3;
+	uint32_t                  level = 3;
 	struct spoolss_AddDriverInfoCtr info_ctr;
 	struct spoolss_AddDriverInfo3 info3;
 	const char		*arch;
@@ -1467,7 +1472,7 @@ static WERROR cmd_spoolss_setdriver(struct rpc_pipe_client *cli,
 	struct policy_handle	pol;
 	WERROR                  result;
 	NTSTATUS		status;
-	uint32			level = 2;
+	uint32_t		level = 2;
 	const char		*printername;
 	union spoolss_PrinterInfo info;
 	struct spoolss_SetPrinterInfoCtr info_ctr;
@@ -2051,7 +2056,7 @@ static WERROR cmd_spoolss_enum_forms(struct rpc_pipe_client *cli,
 	struct policy_handle handle;
 	WERROR werror;
 	const char *printername;
-	uint32 num_forms, level = 1, i;
+	uint32_t num_forms, level = 1, i;
 	union spoolss_FormInfo *forms;
 
 	/* Parse the command arguments */
@@ -2544,7 +2549,7 @@ static WERROR cmd_spoolss_enum_data_ex( struct rpc_pipe_client *cli,
 					  const char **argv)
 {
 	WERROR result;
-	uint32 i;
+	uint32_t i;
 	const char *printername;
 	struct policy_handle hnd;
 	uint32_t count;
@@ -2764,7 +2769,7 @@ static bool compare_printer( struct rpc_pipe_client *cli1, struct policy_handle 
 	if ( !W_ERROR_IS_OK(werror) ) {
 		printf("failed (%s)\n", win_errstr(werror));
 		talloc_destroy(mem_ctx);
-		return False;
+		return false;
 	}
 	printf("ok\n");
 
@@ -2777,13 +2782,13 @@ static bool compare_printer( struct rpc_pipe_client *cli1, struct policy_handle 
 	if ( !W_ERROR_IS_OK(werror) ) {
 		printf("failed (%s)\n", win_errstr(werror));
 		talloc_destroy(mem_ctx);
-		return False;
+		return false;
 	}
 	printf("ok\n");
 
 	talloc_destroy(mem_ctx);
 
-	return True;
+	return true;
 }
 
 /****************************************************************************
@@ -2796,7 +2801,7 @@ static bool compare_printer_secdesc( struct rpc_pipe_client *cli1, struct policy
 	WERROR werror;
 	TALLOC_CTX *mem_ctx = talloc_init("compare_printer_secdesc");
 	SEC_DESC *sd1, *sd2;
-	bool result = True;
+	bool result = true;
 
 
 	printf("Retrieving printer security for %s...", cli1->desthost);
@@ -2807,7 +2812,7 @@ static bool compare_printer_secdesc( struct rpc_pipe_client *cli1, struct policy
 					   &info1);
 	if ( !W_ERROR_IS_OK(werror) ) {
 		printf("failed (%s)\n", win_errstr(werror));
-		result = False;
+		result = false;
 		goto done;
 	}
 	printf("ok\n");
@@ -2820,7 +2825,7 @@ static bool compare_printer_secdesc( struct rpc_pipe_client *cli1, struct policy
 					   &info2);
 	if ( !W_ERROR_IS_OK(werror) ) {
 		printf("failed (%s)\n", win_errstr(werror));
-		result = False;
+		result = false;
 		goto done;
 	}
 	printf("ok\n");
@@ -2833,13 +2838,13 @@ static bool compare_printer_secdesc( struct rpc_pipe_client *cli1, struct policy
 
 	if ( (sd1 != sd2) && ( !sd1 || !sd2 ) ) {
 		printf("NULL secdesc!\n");
-		result = False;
+		result = false;
 		goto done;
 	}
 
 	if (!sec_desc_equal( sd1, sd2 ) ) {
 		printf("Security Descriptors *not* equal!\n");
-		result = False;
+		result = false;
 		goto done;
 	}
 

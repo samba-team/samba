@@ -103,8 +103,8 @@ sub check_or_start($$$)
 		SocketWrapper::set_default_iface($env_vars->{SOCKET_WRAPPER_DEFAULT_IFACE});
 
 		my $valgrind = "";
-		if (defined($ENV{SMBD_VALGRIND})) {
-		    $valgrind = $ENV{SMBD_VALGRIND};
+		if (defined($ENV{SAMBA_VALGRIND})) {
+		    $valgrind = $ENV{SAMBA_VALGRIND};
 		} 
 
 		$ENV{KRB5_CONFIG} = $env_vars->{KRB5_CONFIG}; 
@@ -122,8 +122,8 @@ sub check_or_start($$$)
 		if (defined($max_time)) {
 			$optarg = "--maximum-runtime=$max_time ";
 		}
-		if (defined($ENV{SMBD_OPTIONS})) {
-			$optarg.= " $ENV{SMBD_OPTIONS}";
+		if (defined($ENV{SAMBA_OPTIONS})) {
+			$optarg.= " $ENV{SAMBA_OPTIONS}";
 		}
 		my $samba = $self->bindir_path("samba");
 		my $ret = system("$valgrind $samba $optarg $env_vars->{CONFIGURATION} -M single -i --leak-report-full");

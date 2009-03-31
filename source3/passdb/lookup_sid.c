@@ -804,7 +804,7 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 		} else {
 			/* This is a normal SID with rid component */
 			if (!sid_split_rid(&sid, &rid)) {
-				result = NT_STATUS_INVALID_PARAMETER;
+				result = NT_STATUS_INVALID_SID;
 				goto fail;
 			}
 		}

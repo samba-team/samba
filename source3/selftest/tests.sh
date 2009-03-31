@@ -120,6 +120,10 @@ plantest "blackbox.smbclient_s3.plain" dc BINDIR="$BINDIR" script/tests/test_smb
 plantest "blackbox.smbclient_s3.plain member creds" member BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$SERVER\\\\\$USERNAME \$PASSWORD
 plantest "blackbox.smbclient_s3.plain domain creds" member BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$DOMAIN\\\\\$DC_USERNAME \$DC_PASSWORD
 
+# sign, only the member server allows signing
+plantest "blackbox.smbclient_s3.sign member creds" member BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$SERVER\\\\\$USERNAME \$PASSWORD "--signing=required"
+plantest "blackbox.smbclient_s3.sign domain creds" member BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$DOMAIN\\\\\$DC_USERNAME \$DC_PASSWORD "--signing=required"
+
 # encrypted
 plantest "blackbox.smbclient_s3.crypt" dc BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$USERNAME \$PASSWORD "-e"
 

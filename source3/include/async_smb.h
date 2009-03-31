@@ -63,6 +63,8 @@ struct cli_request {
 	 */
 	uint16_t mid;
 
+	uint32_t seqnum;
+
 	/**
 	 * The bytes we have to ship to the server
 	 */

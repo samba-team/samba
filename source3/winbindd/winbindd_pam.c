@@ -1854,7 +1854,7 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 
 	if (state->request.data.auth_crap.lm_resp_len > sizeof(state->request.data.auth_crap.lm_resp)
 		|| state->request.data.auth_crap.nt_resp_len > sizeof(state->request.data.auth_crap.nt_resp)) {
-		if (!state->request.flags & WBFLAG_BIG_NTLMV2_BLOB ||
+		if (!(state->request.flags & WBFLAG_BIG_NTLMV2_BLOB) ||
 		     state->request.extra_len != state->request.data.auth_crap.nt_resp_len) {
 			DEBUG(0, ("winbindd_pam_auth_crap: invalid password length %u/%u\n",
 				  state->request.data.auth_crap.lm_resp_len,

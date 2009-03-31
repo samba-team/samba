@@ -595,9 +595,9 @@ RPC_NDR_KEYSVC_OBJ_FILES = ../librpc/gen_ndr/ndr_keysvc_c.o
 [SUBSYSTEM::NDR_DCERPC]
 PUBLIC_DEPENDENCIES = LIBNDR
 
-NDR_DCERPC_OBJ_FILES = $(gen_ndrsrcdir)/ndr_dcerpc.o
+NDR_DCERPC_OBJ_FILES = ../librpc/gen_ndr/ndr_dcerpc.o
 
-PUBLIC_HEADERS += $(addprefix $(librpcsrcdir)/, gen_ndr/dcerpc.h gen_ndr/ndr_dcerpc.h)
+PUBLIC_HEADERS += ../librpc/gen_ndr/dcerpc.h ../librpc/gen_ndr/ndr_dcerpc.h
 
 ################################################
 # Start SUBSYSTEM dcerpc

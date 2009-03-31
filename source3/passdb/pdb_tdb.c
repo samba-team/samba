@@ -4,7 +4,7 @@
  * Copyright (C) Andrew Tridgell   1992-1998
  * Copyright (C) Simo Sorce        2000-2003
  * Copyright (C) Gerald Carter     2000-2006
- * Copyright (C) Jeremy Allison    2001
+ * Copyright (C) Jeremy Allison    2001-2009
  * Copyright (C) Andrew Bartlett   2002
  * Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2005
  * 
@@ -38,7 +38,9 @@ static int tdbsam_debug_level = DBGC_ALL;
 #endif
 
 #define TDBSAM_VERSION	4	/* Most recent TDBSAM version */
+#define TDBSAM_MINOR_VERSION	0	/* Most recent TDBSAM minor version */
 #define TDBSAM_VERSION_STRING	"INFO/version"
+#define TDBSAM_MINOR_VERSION_STRING	"INFO/minor_version"
 #define PASSDB_FILE_NAME	"passdb.tdb"
 #define USERPREFIX		"USER_"
 #define USERPREFIX_LEN		5
@@ -322,7 +324,8 @@ static bool tdbsam_convert(struct db_context **pp_db, const char *name, int32 fr
 	struct db_context *db = NULL;
 	int ret;
 
-	if (!tdbsam_convert_backup(name, pp_db)) {
+	/* We only need the update backup for local db's. */
+	if (db_is_local(name) && !tdbsam_convert_backup(name, pp_db)) {
 		DEBUG(0, ("tdbsam_convert: Could not backup %s\n", name));
 		return false;
 	}
@@ -358,6 +361,12 @@ static bool tdbsam_convert(struct db_context **pp_db, const char *name, int32 fr
 		goto cancel;
 	}
 
+	if (dbwrap_store_int32(db, TDBSAM_MINOR_VERSION_STRING,
+			       TDBSAM_MINOR_VERSION) != 0) {
+		DEBUG(0, ("tdbsam_convert: Could not store tdbsam minor version\n"));
+		goto cancel;
+	}
+
 	if (db->transaction_commit(db) != 0) {
 		DEBUG(0, ("tdbsam_convert: Could not commit transaction\n"));
 		return false;
@@ -381,6 +390,7 @@ static bool tdbsam_convert(struct db_context **pp_db, const char *name, int32 fr
 static bool tdbsam_open( const char *name )
 {
 	int32	version;
+	int32	minor_version;
 
 	/* check if we are already open */
 
@@ -403,6 +413,12 @@ static bool tdbsam_open( const char *name )
 		version = 0;	/* Version not found, assume version 0 */
 	}
 
+	/* Get the minor version */
+	minor_version = dbwrap_fetch_int32(db_sam, TDBSAM_MINOR_VERSION_STRING);
+	if (minor_version == -1) {
+		minor_version = 0; /* Minor version not found, assume 0 */
+	}
+
 	/* Compare the version */
 	if (version > TDBSAM_VERSION) {
 		/* Version more recent than the latest known */
@@ -411,7 +427,9 @@ static bool tdbsam_open( const char *name )
 		return false;
 	}
 
-	if ( version < TDBSAM_VERSION ) {
+	if ( version < TDBSAM_VERSION ||
+			(version == TDBSAM_VERSION &&
+			 minor_version < TDBSAM_MINOR_VERSION) ) {
 		/*
 		 * Ok - we think we're going to have to convert.
 		 * Due to the backup process we now must do to
@@ -436,6 +454,12 @@ static bool tdbsam_open( const char *name )
 			version = 0;	/* Version not found, assume version 0 */
 		}
 
+		/* Re-check the minor version */
+		minor_version = dbwrap_fetch_int32(db_sam, TDBSAM_MINOR_VERSION_STRING);
+		if (minor_version == -1) {
+			minor_version = 0; /* Minor version not found, assume 0 */
+		}
+
 		/* Compare the version */
 		if (version > TDBSAM_VERSION) {
 			/* Version more recent than the latest known */
@@ -445,9 +469,24 @@ static bool tdbsam_open( const char *name )
 			return false;
 		}
 
-		if ( version < TDBSAM_VERSION ) {
-			DEBUG(1, ("tdbsam_open: Converting version %d database to "
-				  "version %d.\n", version, TDBSAM_VERSION));
+		if ( version < TDBSAM_VERSION ||
+				(version == TDBSAM_VERSION &&
+				 minor_version < TDBSAM_MINOR_VERSION) ) {
+			/*
+			 * Note that minor versions we read that are greater
+			 * than the current minor version we have hard coded
+			 * are assumed to be compatible if they have the same
+			 * major version. That allows previous versions of the
+			 * passdb code that don't know about minor versions to
+			 * still use this database. JRA.
+			 */
+
+			DEBUG(1, ("tdbsam_open: Converting version %d.%d database to "
+				  "version %d.%d.\n",
+					version,
+					minor_version,
+					TDBSAM_VERSION,
+					TDBSAM_MINOR_VERSION));
 
 			if ( !tdbsam_convert(&db_sam, name, version) ) {
 				DEBUG(0, ("tdbsam_open: Error when trying to convert "

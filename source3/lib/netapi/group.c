@@ -1276,6 +1276,7 @@ WERROR NetGroupGetUsers_r(struct libnetapi_ctx *ctx,
 
 	*r->out.buffer = NULL;
 	*r->out.entries_read = 0;
+	*r->out.total_entries = 0;
 
 	switch (r->in.level) {
 		case 0:
@@ -1364,13 +1365,8 @@ WERROR NetGroupGetUsers_r(struct libnetapi_ctx *ctx,
 		}
 	}
 
-	if (r->out.entries_read) {
-		*r->out.entries_read = entries_read;
-	}
-
-	if (r->out.total_entries) {
-		*r->out.total_entries = entries_read;
-	}
+	*r->out.entries_read = entries_read;
+	*r->out.total_entries = entries_read;
 
 	werr = WERR_OK;
 

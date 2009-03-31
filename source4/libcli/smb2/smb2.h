@@ -263,6 +263,13 @@ struct smb2_request {
 #define SMB2_OPLOCK_LEVEL_II                             0x01
 #define SMB2_OPLOCK_LEVEL_EXCLUSIVE                      0x08
 #define SMB2_OPLOCK_LEVEL_BATCH                          0x09
+#define SMB2_OPLOCK_LEVEL_LEASE                          0xFF
+
+/* SMB2 lease bits */
+#define SMB2_LEASE_NONE                                  0x00
+#define SMB2_LEASE_READ                                  0x01
+#define SMB2_LEASE_HANDLE                                0x02
+#define SMB2_LEASE_WRITE                                 0x04
 
 /* SMB2 impersonation levels */
 #define SMB2_IMPERSONATION_ANONYMOUS                     0x00
@@ -279,6 +286,7 @@ struct smb2_request {
 #define SMB2_CREATE_TAG_ALSI "AlSi"
 #define SMB2_CREATE_TAG_TWRP "TWrp"
 #define SMB2_CREATE_TAG_QFID "QFid"
+#define SMB2_CREATE_TAG_RQLS "RqLs"
 
 /* SMB2 Create ignore some more create_options */
 #define SMB2_CREATE_OPTIONS_NOT_SUPPORTED_MASK	(NTCREATEX_OPTIONS_TREE_CONNECTION | \
