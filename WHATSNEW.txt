@@ -56,6 +56,7 @@ o   Jeremy Allison <jra@samba.org>
     * Allow DFS client paths to work when POSIX pathnames have been
       selected.
     * Try and fix the build farm RAW-STREAMS errors.
+    * Ensure files starting with multiple dots are hidden.
 
 
 o   Steven Danneman <steven.danneman@isilon.com>
