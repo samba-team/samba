@@ -15,10 +15,6 @@ Major enhancements included in Samba 3.2.9 are:
   o Fix corruptions of source path in tar mode of smbclient (bug #6161).
 
 
-The original security announcement for this and past advisories can
-be found http://www.samba.org/samba/security/
-
-
 ######################################################################
 Changes
 #######
