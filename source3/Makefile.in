@@ -1305,6 +1305,21 @@ SHOWFLAGS::
 	@echo "      SHLIBEXT   = @SHLIBEXT@"
 	@echo "      SONAMEFLAG = @SONAMEFLAG@"
 
+# "showcflags" target for debuggin how CFLAGS are composed:
+
+.PHONY: showcflags SHOWCFLAGS
+
+showcflags: SHOWCFLAGS
+
+SHOWCFLAGS::
+	@echo "CFLAGS         = $(CFLAGS)"
+	@echo "FLAGS          = $(FLAGS)"
+	@echo ""
+	@echo "FLAGS1         = @FLAGS1@"
+	@echo "SAMBA_CPPFLAGS = @SAMBA_CPPFLAGS@"
+	@echo "CPPFLAGS       = $(CPPFLAGS)"
+	@echo "ISA            = $(ISA)"
+
 MAKEDIR = || exec false; \
 	  if test -d "$$dir"; then :; else \
 	  echo mkdir "$$dir"; \
