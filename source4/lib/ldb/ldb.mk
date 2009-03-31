@@ -66,7 +66,7 @@ build-python:: ldb.$(SHLIBEXT)
 
 pyldb.o: $(ldbdir)/pyldb.c
 	$(CC) $(PICFLAG) -c $(ldbdir)/pyldb.c $(CFLAGS) `$(PYTHON_CONFIG) --cflags`
-	
+
 ldb.$(SHLIBEXT): pyldb.o
 	$(SHLD) $(SHLD_FLAGS) -o ldb.$(SHLIBEXT) pyldb.o $(LIB_FLAGS) `$(PYTHON_CONFIG) --ldflags`
 
