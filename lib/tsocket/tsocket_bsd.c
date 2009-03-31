@@ -22,6 +22,7 @@
 */
 
 #include "replace.h"
+#include "system/filesys.h"
 #include "system/network.h"
 #include "tsocket.h"
 #include "tsocket_internal.h"
