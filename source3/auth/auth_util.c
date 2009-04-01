@@ -58,7 +58,7 @@ static void sort_sid_array_for_smbd(auth_serversupplied_info *result,
  Create a UNIX user on demand.
 ****************************************************************************/
 
-static int smb_create_user(const char *domain, const char *unix_username, const char *homedir)
+static int _smb_create_user(const char *domain, const char *unix_username, const char *homedir)
 {
 	TALLOC_CTX *ctx = talloc_tos();
 	char *add_script;
@@ -1567,7 +1567,7 @@ struct passwd *smb_getpwnam( TALLOC_CTX *mem_ctx, char *domuser,
 		if (username[strlen(username)-1] == '$')
 			return NULL;
 
-		smb_create_user(NULL, username, NULL);
+		_smb_create_user(NULL, username, NULL);
 		pw = Get_Pwnam_alloc(mem_ctx, username);
 	}
 	
