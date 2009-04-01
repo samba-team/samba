@@ -358,6 +358,28 @@ NTSTATUS dcerpc_pull_ncacn_packet(TALLOC_CTX *mem_ctx,
 }
 
 /*******************************************************************
+*******************************************************************/
+
+NTSTATUS dcerpc_pull_ncacn_packet_header(TALLOC_CTX *mem_ctx,
+					 const DATA_BLOB *blob,
+					 struct ncacn_packet_header *r)
+{
+	enum ndr_err_code ndr_err;
+
+	ndr_err = ndr_pull_struct_blob(blob, mem_ctx, r,
+		(ndr_pull_flags_fn_t)ndr_pull_ncacn_packet_header);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(ncacn_packet_header, r);
+	}
+
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
  ********************************************************************/
 
 static NTSTATUS dcerpc_push_schannel_bind(TALLOC_CTX *mem_ctx,

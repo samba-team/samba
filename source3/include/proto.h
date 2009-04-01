@@ -4844,6 +4844,9 @@ NTSTATUS dcerpc_push_ncacn_packet(TALLOC_CTX *mem_ctx,
 NTSTATUS dcerpc_pull_ncacn_packet(TALLOC_CTX *mem_ctx,
 				  const DATA_BLOB *blob,
 				  struct ncacn_packet *r);
+NTSTATUS dcerpc_pull_ncacn_packet_header(TALLOC_CTX *mem_ctx,
+					 const DATA_BLOB *blob,
+					 struct ncacn_packet_header *r);
 struct tevent_req *rpc_pipe_bind_send(TALLOC_CTX *mem_ctx,
 				      struct event_context *ev,
 				      struct rpc_pipe_client *cli,
