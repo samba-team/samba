@@ -23,6 +23,7 @@ Changes since 3.3.2:
 
 
 o   Michael Adam <obnox@samba.org>
+    * BUG 6195: Don't let smbd child processes panic.
     * Add backend_requires_messaging() method to libsmbconf.
     * Add methods is_writeable() and wrapper smbconf_is_writeable() to libsmbconf.
     * Fall back to file backend when no valid backend was found.
