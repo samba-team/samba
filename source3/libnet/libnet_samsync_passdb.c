@@ -223,7 +223,8 @@ static NTSTATUS sam_account_from_delta(struct samu *account,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS fetch_account_info(uint32_t rid,
+static NTSTATUS fetch_account_info(TALLOC_CTX *mem_ctx,
+				   uint32_t rid,
 				   struct netr_DELTA_USER *r)
 {
 
@@ -241,7 +242,7 @@ static NTSTATUS fetch_account_info(uint32_t rid,
 	fstrcpy(account, r->account_name.string);
 	d_printf("Creating account: %s\n", account);
 
-	if ( !(sam_account = samu_new( NULL )) ) {
+	if ( !(sam_account = samu_new(mem_ctx)) ) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -349,7 +350,8 @@ static NTSTATUS fetch_account_info(uint32_t rid,
 	return nt_ret;
 }
 
-static NTSTATUS fetch_group_info(uint32_t rid,
+static NTSTATUS fetch_group_info(TALLOC_CTX *mem_ctx,
+				 uint32_t rid,
 				 struct netr_DELTA_GROUP *r)
 {
 	fstring name;
@@ -410,11 +412,11 @@ static NTSTATUS fetch_group_info(uint32_t rid,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS fetch_group_mem_info(uint32_t rid,
+static NTSTATUS fetch_group_mem_info(TALLOC_CTX *mem_ctx,
+				     uint32_t rid,
 				     struct netr_DELTA_GROUP_MEMBER *r)
 {
 	int i;
-	TALLOC_CTX *t = NULL;
 	char **nt_members = NULL;
 	char **unix_members;
 	DOM_SID group_sid;
@@ -440,15 +442,9 @@ static NTSTATUS fetch_group_mem_info(uint32_t rid,
 
 	d_printf("Group members of %s: ", grp->gr_name);
 
-	if (!(t = talloc_init("fetch_group_mem_info"))) {
-		DEBUG(0, ("could not talloc_init\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	if (r->num_rids) {
-		if ((nt_members = TALLOC_ZERO_ARRAY(t, char *, r->num_rids)) == NULL) {
+		if ((nt_members = TALLOC_ZERO_ARRAY(mem_ctx, char *, r->num_rids)) == NULL) {
 			DEBUG(0, ("talloc failed\n"));
-			talloc_free(t);
 			return NT_STATUS_NO_MEMORY;
 		}
 	} else {
@@ -459,8 +455,7 @@ static NTSTATUS fetch_group_mem_info(uint32_t rid,
 		struct samu *member = NULL;
 		DOM_SID member_sid;
 
-		if ( !(member = samu_new(t)) ) {
-			talloc_destroy(t);
+		if ( !(member = samu_new(mem_ctx)) ) {
 			return NT_STATUS_NO_MEMORY;
 		}
 
@@ -481,7 +476,7 @@ static NTSTATUS fetch_group_mem_info(uint32_t rid,
 		}
 
 		d_printf("%s,", pdb_get_username(member));
-		nt_members[i] = talloc_strdup(t, pdb_get_username(member));
+		nt_members[i] = talloc_strdup(mem_ctx, pdb_get_username(member));
 		TALLOC_FREE(member);
 	}
 
@@ -537,11 +532,11 @@ static NTSTATUS fetch_group_mem_info(uint32_t rid,
 		}
 	}
 
-	talloc_destroy(t);
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS fetch_alias_info(uint32_t rid,
+static NTSTATUS fetch_alias_info(TALLOC_CTX *mem_ctx,
+				 uint32_t rid,
 				 struct netr_DELTA_ALIAS *r,
 				 const DOM_SID *dom_sid)
 {
@@ -599,14 +594,16 @@ static NTSTATUS fetch_alias_info(uint32_t rid,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS fetch_alias_mem(uint32_t rid,
+static NTSTATUS fetch_alias_mem(TALLOC_CTX *mem_ctx,
+				uint32_t rid,
 				struct netr_DELTA_ALIAS_MEMBER *r,
 				const DOM_SID *dom_sid)
 {
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS fetch_domain_info(uint32_t rid,
+static NTSTATUS fetch_domain_info(TALLOC_CTX *mem_ctx,
+				  uint32_t rid,
 				  struct netr_DELTA_DOMAIN *r)
 {
 	time_t u_max_age, u_min_age, u_logout;
@@ -614,7 +611,6 @@ static NTSTATUS fetch_domain_info(uint32_t rid,
 	const char *domname;
 	struct netr_AcctLockStr *lockstr = NULL;
 	NTSTATUS status;
-	TALLOC_CTX *mem_ctx = talloc_tos();
 
 	status = pull_netr_AcctLockStr(mem_ctx, &r->account_lockout,
 				       &lockstr);
@@ -690,29 +686,35 @@ static NTSTATUS fetch_sam_entry(TALLOC_CTX *mem_ctx,
 {
 	switch(r->delta_type) {
 	case NETR_DELTA_USER:
-		fetch_account_info(r->delta_id_union.rid,
+		fetch_account_info(mem_ctx,
+				   r->delta_id_union.rid,
 				   r->delta_union.user);
 		break;
 	case NETR_DELTA_GROUP:
-		fetch_group_info(r->delta_id_union.rid,
+		fetch_group_info(mem_ctx,
+				 r->delta_id_union.rid,
 				 r->delta_union.group);
 		break;
 	case NETR_DELTA_GROUP_MEMBER:
-		fetch_group_mem_info(r->delta_id_union.rid,
+		fetch_group_mem_info(mem_ctx,
+				     r->delta_id_union.rid,
 				     r->delta_union.group_member);
 		break;
 	case NETR_DELTA_ALIAS:
-		fetch_alias_info(r->delta_id_union.rid,
+		fetch_alias_info(mem_ctx,
+				 r->delta_id_union.rid,
 				 r->delta_union.alias,
 				 ctx->domain_sid);
 		break;
 	case NETR_DELTA_ALIAS_MEMBER:
-		fetch_alias_mem(r->delta_id_union.rid,
+		fetch_alias_mem(mem_ctx,
+				r->delta_id_union.rid,
 				r->delta_union.alias_member,
 				ctx->domain_sid);
 		break;
 	case NETR_DELTA_DOMAIN:
-		fetch_domain_info(r->delta_id_union.rid,
+		fetch_domain_info(mem_ctx,
+				  r->delta_id_union.rid,
 				  r->delta_union.domain);
 		break;
 	/* The following types are recognised but not handled */
