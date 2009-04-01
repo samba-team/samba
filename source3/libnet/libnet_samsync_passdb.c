@@ -35,6 +35,9 @@
 		    (!(s1) && (s2)) ||\
 		((s1) && (s2) && (strcmp((s1), (s2)) != 0))
 
+/****************************************************************
+****************************************************************/
+
 static NTSTATUS sam_account_from_delta(struct samu *account,
 				       struct netr_DELTA_USER *r)
 {
@@ -223,72 +226,36 @@ static NTSTATUS sam_account_from_delta(struct samu *account,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS fetch_account_info(uint32_t rid,
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS fetch_account_info(TALLOC_CTX *mem_ctx,
+				   uint32_t rid,
 				   struct netr_DELTA_USER *r)
 {
 
 	NTSTATUS nt_ret = NT_STATUS_UNSUCCESSFUL;
 	fstring account;
-	char *add_script = NULL;
 	struct samu *sam_account=NULL;
 	GROUP_MAP map;
 	struct group *grp;
 	DOM_SID user_sid;
 	DOM_SID group_sid;
-	struct passwd *passwd;
+	struct passwd *passwd = NULL;
 	fstring sid_string;
 
 	fstrcpy(account, r->account_name.string);
 	d_printf("Creating account: %s\n", account);
 
-	if ( !(sam_account = samu_new( NULL )) ) {
+	if ( !(sam_account = samu_new(mem_ctx)) ) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!(passwd = Get_Pwnam_alloc(sam_account, account))) {
-		/* Create appropriate user */
-		if (r->acct_flags & ACB_NORMAL) {
-			add_script = talloc_strdup(sam_account,
-					lp_adduser_script());
-		} else if ( (r->acct_flags & ACB_WSTRUST) ||
-			    (r->acct_flags & ACB_SVRTRUST) ||
-			    (r->acct_flags & ACB_DOMTRUST) ) {
-			add_script = talloc_strdup(sam_account,
-					lp_addmachine_script());
-		} else {
-			DEBUG(1, ("Unknown user type: %s\n",
-				  pdb_encode_acct_ctrl(r->acct_flags, NEW_PW_FORMAT_SPACE_PADDED_LEN)));
-			nt_ret = NT_STATUS_UNSUCCESSFUL;
-			goto done;
-		}
-		if (!add_script) {
-			nt_ret = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
-		if (*add_script) {
-			int add_ret;
-			add_script = talloc_all_string_sub(sam_account,
-					add_script,
-					"%u",
-					account);
-			if (!add_script) {
-				nt_ret = NT_STATUS_NO_MEMORY;
-				goto done;
-			}
-			add_ret = smbrun(add_script,NULL);
-			DEBUG(add_ret ? 0 : 1,("fetch_account: Running the command `%s' "
-				 "gave %d\n", add_script, add_ret));
-			if (add_ret == 0) {
-				smb_nscd_flush_user_cache();
-			}
-		}
-
-		/* try and find the possible unix account again */
-		if ( !(passwd = Get_Pwnam_alloc(sam_account, account)) ) {
-			d_fprintf(stderr, "Could not create posix account info for '%s'\n", account);
-			nt_ret = NT_STATUS_NO_SUCH_USER;
-			goto done;
-		}
+	nt_ret = smb_create_user(sam_account, r->acct_flags, account, &passwd);
+	if (!NT_STATUS_IS_OK(nt_ret)) {
+		d_fprintf(stderr, "Could not create posix account info for '%s'\n",
+			account);
+		goto done;
 	}
 
 	sid_copy(&user_sid, get_global_sam_sid());
@@ -349,7 +316,11 @@ static NTSTATUS fetch_account_info(uint32_t rid,
 	return nt_ret;
 }
 
-static NTSTATUS fetch_group_info(uint32_t rid,
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS fetch_group_info(TALLOC_CTX *mem_ctx,
+				 uint32_t rid,
 				 struct netr_DELTA_GROUP *r)
 {
 	fstring name;
@@ -410,11 +381,14 @@ static NTSTATUS fetch_group_info(uint32_t rid,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS fetch_group_mem_info(uint32_t rid,
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS fetch_group_mem_info(TALLOC_CTX *mem_ctx,
+				     uint32_t rid,
 				     struct netr_DELTA_GROUP_MEMBER *r)
 {
 	int i;
-	TALLOC_CTX *t = NULL;
 	char **nt_members = NULL;
 	char **unix_members;
 	DOM_SID group_sid;
@@ -440,15 +414,9 @@ static NTSTATUS fetch_group_mem_info(uint32_t rid,
 
 	d_printf("Group members of %s: ", grp->gr_name);
 
-	if (!(t = talloc_init("fetch_group_mem_info"))) {
-		DEBUG(0, ("could not talloc_init\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	if (r->num_rids) {
-		if ((nt_members = TALLOC_ZERO_ARRAY(t, char *, r->num_rids)) == NULL) {
+		if ((nt_members = TALLOC_ZERO_ARRAY(mem_ctx, char *, r->num_rids)) == NULL) {
 			DEBUG(0, ("talloc failed\n"));
-			talloc_free(t);
 			return NT_STATUS_NO_MEMORY;
 		}
 	} else {
@@ -459,8 +427,7 @@ static NTSTATUS fetch_group_mem_info(uint32_t rid,
 		struct samu *member = NULL;
 		DOM_SID member_sid;
 
-		if ( !(member = samu_new(t)) ) {
-			talloc_destroy(t);
+		if ( !(member = samu_new(mem_ctx)) ) {
 			return NT_STATUS_NO_MEMORY;
 		}
 
@@ -481,7 +448,7 @@ static NTSTATUS fetch_group_mem_info(uint32_t rid,
 		}
 
 		d_printf("%s,", pdb_get_username(member));
-		nt_members[i] = talloc_strdup(t, pdb_get_username(member));
+		nt_members[i] = talloc_strdup(mem_ctx, pdb_get_username(member));
 		TALLOC_FREE(member);
 	}
 
@@ -537,11 +504,14 @@ static NTSTATUS fetch_group_mem_info(uint32_t rid,
 		}
 	}
 
-	talloc_destroy(t);
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS fetch_alias_info(uint32_t rid,
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS fetch_alias_info(TALLOC_CTX *mem_ctx,
+				 uint32_t rid,
 				 struct netr_DELTA_ALIAS *r,
 				 const DOM_SID *dom_sid)
 {
@@ -599,14 +569,22 @@ static NTSTATUS fetch_alias_info(uint32_t rid,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS fetch_alias_mem(uint32_t rid,
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS fetch_alias_mem(TALLOC_CTX *mem_ctx,
+				uint32_t rid,
 				struct netr_DELTA_ALIAS_MEMBER *r,
 				const DOM_SID *dom_sid)
 {
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS fetch_domain_info(uint32_t rid,
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS fetch_domain_info(TALLOC_CTX *mem_ctx,
+				  uint32_t rid,
 				  struct netr_DELTA_DOMAIN *r)
 {
 	time_t u_max_age, u_min_age, u_logout;
@@ -614,7 +592,6 @@ static NTSTATUS fetch_domain_info(uint32_t rid,
 	const char *domname;
 	struct netr_AcctLockStr *lockstr = NULL;
 	NTSTATUS status;
-	TALLOC_CTX *mem_ctx = talloc_tos();
 
 	status = pull_netr_AcctLockStr(mem_ctx, &r->account_lockout,
 				       &lockstr);
@@ -683,37 +660,48 @@ static NTSTATUS fetch_domain_info(uint32_t rid,
 	return NT_STATUS_OK;
 }
 
+/****************************************************************
+****************************************************************/
+
 static NTSTATUS fetch_sam_entry(TALLOC_CTX *mem_ctx,
 				enum netr_SamDatabaseID database_id,
 				struct netr_DELTA_ENUM *r,
 				struct samsync_context *ctx)
 {
-	switch(r->delta_type) {
+	NTSTATUS status = NT_STATUS_NOT_IMPLEMENTED;
+
+	switch (r->delta_type) {
 	case NETR_DELTA_USER:
-		fetch_account_info(r->delta_id_union.rid,
-				   r->delta_union.user);
+		status = fetch_account_info(mem_ctx,
+					    r->delta_id_union.rid,
+					    r->delta_union.user);
 		break;
 	case NETR_DELTA_GROUP:
-		fetch_group_info(r->delta_id_union.rid,
-				 r->delta_union.group);
+		status = fetch_group_info(mem_ctx,
+					  r->delta_id_union.rid,
+					  r->delta_union.group);
 		break;
 	case NETR_DELTA_GROUP_MEMBER:
-		fetch_group_mem_info(r->delta_id_union.rid,
-				     r->delta_union.group_member);
+		status = fetch_group_mem_info(mem_ctx,
+					      r->delta_id_union.rid,
+					      r->delta_union.group_member);
 		break;
 	case NETR_DELTA_ALIAS:
-		fetch_alias_info(r->delta_id_union.rid,
-				 r->delta_union.alias,
-				 ctx->domain_sid);
+		status = fetch_alias_info(mem_ctx,
+					  r->delta_id_union.rid,
+					  r->delta_union.alias,
+					  ctx->domain_sid);
 		break;
 	case NETR_DELTA_ALIAS_MEMBER:
-		fetch_alias_mem(r->delta_id_union.rid,
-				r->delta_union.alias_member,
-				ctx->domain_sid);
+		status = fetch_alias_mem(mem_ctx,
+					 r->delta_id_union.rid,
+					 r->delta_union.alias_member,
+					 ctx->domain_sid);
 		break;
 	case NETR_DELTA_DOMAIN:
-		fetch_domain_info(r->delta_id_union.rid,
-				  r->delta_union.domain);
+		status = fetch_domain_info(mem_ctx,
+					   r->delta_id_union.rid,
+					   r->delta_union.domain);
 		break;
 	/* The following types are recognised but not handled */
 	case NETR_DELTA_RENAME_GROUP:
@@ -766,11 +754,15 @@ static NTSTATUS fetch_sam_entry(TALLOC_CTX *mem_ctx,
 		break;
 	default:
 		d_printf("Unknown delta record type %d\n", r->delta_type);
+		status = NT_STATUS_INVALID_PARAMETER;
 		break;
 	}
 
-	return NT_STATUS_OK;
+	return status;
 }
+
+/****************************************************************
+****************************************************************/
 
 static NTSTATUS fetch_sam_entries(TALLOC_CTX *mem_ctx,
 				  enum netr_SamDatabaseID database_id,
@@ -786,6 +778,9 @@ static NTSTATUS fetch_sam_entries(TALLOC_CTX *mem_ctx,
 
 	return NT_STATUS_OK;
 }
+
+/****************************************************************
+****************************************************************/
 
 const struct samsync_ops libnet_samsync_passdb_ops = {
 	.process_objects	= fetch_sam_entries,

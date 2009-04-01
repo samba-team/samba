@@ -26,6 +26,7 @@
 #include "libcli/raw/libcliraw.h"
 
 struct smb2_handle;
+struct smb2_lease_break;
 
 /*
   information returned from the negotiate process
@@ -72,6 +73,15 @@ struct smb2_transport {
 		/* private data passed to the oplock handler */
 		void *private_data;
 	} oplock;
+
+	struct {
+		/* a lease break request handler */
+		bool (*handler)(struct smb2_transport *transport,
+				const struct smb2_lease_break *lease_break,
+				void *private_data);
+		/* private data passed to the oplock handler */
+		void *private_data;
+	} lease;
 
 	struct smbcli_options options;
 
@@ -270,6 +280,9 @@ struct smb2_request {
 #define SMB2_LEASE_READ                                  0x01
 #define SMB2_LEASE_HANDLE                                0x02
 #define SMB2_LEASE_WRITE                                 0x04
+
+/* SMB2 lease break flags */
+#define SMB2_NOTIFY_BREAK_LEASE_FLAG_ACK_REQUIRED        0x01
 
 /* SMB2 impersonation levels */
 #define SMB2_IMPERSONATION_ANONYMOUS                     0x00

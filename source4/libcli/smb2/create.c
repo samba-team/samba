@@ -315,7 +315,7 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 	if (io->in.lease_request) {
 		uint8_t data[32];
 
-		memcpy(&data[0], io->in.lease_request->lease_key, 16);
+		memcpy(&data[0], &io->in.lease_request->lease_key, 16);
 		SIVAL(data, 16, io->in.lease_request->lease_state);
 		SIVAL(data, 20, io->in.lease_request->lease_flags);
 		SBVAL(data, 24, io->in.lease_request->lease_duration);
@@ -427,7 +427,7 @@ NTSTATUS smb2_create_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx, struct 
 			}
 
 			data = io->out.blobs.blobs[i].data.data;
-			memcpy(io->out.lease_response.lease_key, data, 16);
+			memcpy(&io->out.lease_response.lease_key, data, 16);
 			io->out.lease_response.lease_state = IVAL(data, 16);
 			io->out.lease_response.lease_flags = IVAL(data, 20);
 			io->out.lease_response.lease_duration = BVAL(data, 24);
