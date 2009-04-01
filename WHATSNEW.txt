@@ -10,7 +10,7 @@ Major enhancements in Samba 3.3.3 include:
     o Migrating from 3.0.x to 3.3.x can fail to update passdb.tdb
       correctly (bug #6195).
     o Fix serving of files with colons to CIFS/VFS client (bug #6196).
-
+    o Fix "map readonly" (bug #6186).
 
 
 ######################################################################
@@ -34,6 +34,8 @@ o   Michael Adam <obnox@samba.org>
     * Reduce memory usage of "net conf import".
     * Registry cleanup.
     * Fix handling of SAMBA_VERSION_VENDOR_PATCH.
+    * Fix build of pam_winbind.so with static linking.
+    * Tidy up some convert_string_internal error cases.
 
 
 o   Jeremy Allison <jra@samba.org>
@@ -46,6 +48,7 @@ o   Jeremy Allison <jra@samba.org>
     * Allow DFS client paths to work when POSIX pathnames have been
       selected.
     * Try and fix the build farm RAW-STREAMS errors.
+    * Ensure files starting with multiple dots are hidden.
 
 
 o   Günther Deschner <gd@samba.org>
@@ -87,6 +90,11 @@ o   Volker Lendecke <vl@samba.org>
     * Use avahi to register _smb._tcp in smbd.
     * Fix two memleaks in the encryption code.
     * Fix a scary "fill_share_mode_lock failed" message.
+
+
+o   Derrell Lipman <derrell@dworkin.(none)>
+    * BUG 6228: Fix SMBC_open_ctx failure due to path resolve failure doesn't set
+      errno.
 
 
 o   Stefan Metzmacher <metze@samba.org>
