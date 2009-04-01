@@ -788,7 +788,7 @@ static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli,
 				prs_struct *current_pdu,
 				uint8 *p_ss_padding_len)
 {
-	RPC_HDR_AUTH auth_info;
+	struct dcerpc_auth auth_info;
 	uint32 save_offset = prs_offset(current_pdu);
 	uint32_t auth_len = prhdr->auth_length;
 	struct ntlmssp_state *ntlmssp_state = cli->auth->a_u.ntlmssp_state;
@@ -797,6 +797,7 @@ static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli,
 	unsigned char *full_packet_data = NULL;
 	size_t full_packet_data_len;
 	DATA_BLOB auth_blob;
+	DATA_BLOB blob;
 	NTSTATUS status;
 
 	if (cli->auth->auth_level == DCERPC_AUTH_LEVEL_NONE
@@ -840,25 +841,28 @@ static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli,
 		return NT_STATUS_BUFFER_TOO_SMALL;
         }
 
-	if(!smb_io_rpc_hdr_auth("hdr_auth", &auth_info, current_pdu, 0)) {
-		DEBUG(0,("cli_pipe_verify_ntlmssp: failed to unmarshall RPC_HDR_AUTH.\n"));
-		return NT_STATUS_BUFFER_TOO_SMALL;
+	blob = data_blob_const(prs_data_p(current_pdu) + prs_offset(current_pdu),
+			       prs_data_size(current_pdu) - prs_offset(current_pdu));
+
+	status = dcerpc_pull_dcerpc_auth(cli, &blob, &auth_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("cli_pipe_verify_ntlmssp: failed to unmarshall dcerpc_auth.\n"));
+		return status;
 	}
 
 	/* Ensure auth_pad_len fits into the packet. */
-	if (RPC_HEADER_LEN + RPC_HDR_REQ_LEN + auth_info.auth_pad_len +
+	if (RPC_HEADER_LEN + RPC_HDR_REQ_LEN + auth_info.auth_pad_length +
 			RPC_HDR_AUTH_LEN + auth_len > prhdr->frag_length) {
 		DEBUG(0,("cli_pipe_verify_ntlmssp: auth_info.auth_pad_len "
 			"too large (%u), auth_len (%u), frag_len = (%u).\n",
-			(unsigned int)auth_info.auth_pad_len,
+			(unsigned int)auth_info.auth_pad_length,
 			(unsigned int)auth_len,
 			(unsigned int)prhdr->frag_length));
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
 
-	auth_blob.data = (unsigned char *)prs_data_p(current_pdu) + prs_offset(current_pdu);
-	auth_blob.length = auth_len;
+	auth_blob = auth_info.credentials;
 
 	switch (cli->auth->auth_level) {
 		case DCERPC_AUTH_LEVEL_PRIVACY:
@@ -912,7 +916,7 @@ static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli,
 	 * stream once the sign/seal is done.
 	 */
 
-	*p_ss_padding_len = auth_info.auth_pad_len;
+	*p_ss_padding_len = auth_info.auth_pad_length;
 
 	return NT_STATUS_OK;
 }
