@@ -110,7 +110,7 @@ int onefs_sys_create_file(connection_struct *conn,
 		status = onefs_samba_sd_to_sd(secinfo, sd, &ifs_sd, SNUM(conn));
 
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("SD initialization failure: %s",
+			DEBUG(1, ("SD initialization failure: %s\n",
 				  nt_errstr(status)));
 			errno = EINVAL;
 			goto out;
@@ -162,11 +162,11 @@ int onefs_sys_create_file(connection_struct *conn,
 			     open_access_mask));
 	}
 
-	DEBUG(10,("onefs_sys_create_file: base_fd = %d, "
+	DEBUG(10,("onefs_sys_create_file: base_fd = %d, fname = %s"
 		  "open_access_mask = 0x%x, flags = 0x%x, mode = 0%o, "
 		  "desired_oplock = %s, id = 0x%x, secinfo = 0x%x, sd = %p, "
 		  "dos_attributes = 0x%x, path = %s, "
-		  "default_acl=%s\n", base_fd,
+		  "default_acl=%s\n", base_fd, path,
 		  (unsigned int)open_access_mask,
 		  (unsigned int)flags,
 		  (unsigned int)mode,
@@ -328,7 +328,7 @@ ssize_t onefs_sys_sendfile(connection_struct *conn, int tofd, int fromfd,
 
 	/* If the sendfile wasn't atomic, we're done. */
 	if (!atomic) {
-		DEBUG(10, ("non-atomic sendfile read %ul bytes", ret));
+		DEBUG(10, ("non-atomic sendfile read %ul bytes\n", ret));
 		END_PROFILE(syscall_sendfile);
 		return ret;
 	}
@@ -418,7 +418,7 @@ ssize_t onefs_sys_sendfile(connection_struct *conn, int tofd, int fromfd,
 		}
 
 		if (count < 0x10000) {
-			DEBUG(0, ("Count < 2^16 and E2BIG was returned! %lu",
+			DEBUG(0, ("Count < 2^16 and E2BIG was returned! %lu\n",
 				  count));
 		}
 
