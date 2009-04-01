@@ -1164,11 +1164,19 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli,
 
 		case DCERPC_PKT_RESPONSE:
 		{
-			RPC_HDR_RESP rhdr_resp;
 			uint8 ss_padding_len = 0;
+			DATA_BLOB blob;
+			struct ncacn_packet r;
 
-			if(!smb_io_rpc_hdr_resp("rpc_hdr_resp", &rhdr_resp, current_pdu, 0)) {
-				DEBUG(5,("cli_pipe_validate_current_pdu: failed to unmarshal RPC_HDR_RESP.\n"));
+			blob = data_blob_const(prs_data_p(current_pdu),
+					       prs_data_size(current_pdu));
+
+			ret = dcerpc_pull_ncacn_packet(cli, &blob, &r);
+			if (!NT_STATUS_IS_OK(ret)) {
+				return ret;
+			}
+
+			if (!prs_set_offset(current_pdu, prs_offset(current_pdu) + RPC_HDR_RESP_LEN)) {
 				return NT_STATUS_BUFFER_TOO_SMALL;
 			}
 
@@ -1206,11 +1214,11 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli,
 			 * set up the return_data parse_struct to the correct size.
 			 */
 
-			if ((prs_data_size(return_data) == 0) && rhdr_resp.alloc_hint && (rhdr_resp.alloc_hint < 15*1024*1024)) {
-				if (!prs_set_buffer_size(return_data, rhdr_resp.alloc_hint)) {
+			if ((prs_data_size(return_data) == 0) && r.u.response.alloc_hint && (r.u.response.alloc_hint < 15*1024*1024)) {
+				if (!prs_set_buffer_size(return_data, r.u.response.alloc_hint)) {
 					DEBUG(0,("cli_pipe_validate_current_pdu: reply alloc hint %u "
 						"too large to allocate\n",
-						(unsigned int)rhdr_resp.alloc_hint ));
+						(unsigned int)r.u.response.alloc_hint ));
 					return NT_STATUS_NO_MEMORY;
 				}
 			}
