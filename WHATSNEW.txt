@@ -6,10 +6,10 @@
 
 This is a maintenance release of the Samba 3.2 series.
 
-In Samba 3.2.9 exists an issue while migrating passdb.tdb files from older Samba
-versions. That causes panics of the smbd child processes until the parent smbd is
-restarted once after converting the passdb.tdb file. This issue is fixed in
-Samba 3.2.10.
+In Samba 3.2.9, there is an issue while migrating passdb.tdb files from older
+Samba versions (e.g. 3.2.8). That causes panics of smbd child processes until
+the parent smbd is restarted once after converting the passdb.tdb file. This
+issue is fixed in Samba 3.2.10.
 
 Sorry for the inconveniences!
 
