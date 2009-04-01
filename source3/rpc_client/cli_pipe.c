@@ -2668,23 +2668,31 @@ static bool rpc_pipe_set_hnd_state(struct rpc_pipe_client *cli,
  Check the rpc bind acknowledge response.
 ****************************************************************************/
 
-static bool check_bind_response(RPC_HDR_BA *hdr_ba,
+static bool check_bind_response(const struct dcerpc_bind_ack *r,
 				const struct ndr_syntax_id *transfer)
 {
-	if ( hdr_ba->addr.len == 0) {
+	struct dcerpc_ack_ctx ctx;
+
+	if (r->secondary_address_size == 0) {
 		DEBUG(4,("Ignoring length check -- ASU bug (server didn't fill in the pipe name correctly)"));
 	}
 
+	if (r->num_results < 1 || !r->ctx_list) {
+		return false;
+	}
+
+	ctx = r->ctx_list[0];
+
 	/* check the transfer syntax */
-	if ((hdr_ba->transfer.if_version != transfer->if_version) ||
-	     (memcmp(&hdr_ba->transfer.uuid, &transfer->uuid, sizeof(transfer->uuid)) !=0)) {
+	if ((ctx.syntax.if_version != transfer->if_version) ||
+	     (memcmp(&ctx.syntax.uuid, &transfer->uuid, sizeof(transfer->uuid)) !=0)) {
 		DEBUG(2,("bind_rpc_pipe: transfer syntax differs\n"));
 		return False;
 	}
 
-	if (hdr_ba->res.num_results != 0x1 || hdr_ba->res.result != 0) {
+	if (r->num_results != 0x1 || ctx.result != 0) {
 		DEBUG(2,("bind_rpc_pipe: bind denied results: %d reason: %x\n",
-		          hdr_ba->res.num_results, hdr_ba->res.reason));
+		          r->num_results, ctx.reason));
 	}
 
 	DEBUG(5,("check_bind_response: accepted!\n"));
@@ -2807,12 +2815,12 @@ struct rpc_pipe_bind_state {
 static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq);
 static NTSTATUS rpc_finish_auth3_bind_send(struct tevent_req *req,
 					   struct rpc_pipe_bind_state *state,
-					   struct rpc_hdr_info *phdr,
+					   struct ncacn_packet *r,
 					   prs_struct *reply_pdu);
 static void rpc_bind_auth3_write_done(struct tevent_req *subreq);
 static NTSTATUS rpc_finish_spnego_ntlmssp_bind_send(struct tevent_req *req,
 						    struct rpc_pipe_bind_state *state,
-						    struct rpc_hdr_info *phdr,
+						    struct ncacn_packet *r,
 						    prs_struct *reply_pdu);
 static void rpc_bind_ntlmssp_api_done(struct tevent_req *subreq);
 
@@ -2878,8 +2886,8 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 	struct rpc_pipe_bind_state *state = tevent_req_data(
 		req, struct rpc_pipe_bind_state);
 	prs_struct reply_pdu;
-	struct rpc_hdr_info hdr;
-	struct rpc_hdr_ba_info hdr_ba;
+	DATA_BLOB blob;
+	struct ncacn_packet r;
 	NTSTATUS status;
 
 	status = rpc_api_pipe_recv(subreq, talloc_tos(), &reply_pdu);
@@ -2892,28 +2900,23 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 		return;
 	}
 
-	/* Unmarshall the RPC header */
-	if (!smb_io_rpc_hdr("hdr", &hdr, &reply_pdu, 0)) {
-		DEBUG(0, ("rpc_pipe_bind: failed to unmarshall RPC_HDR.\n"));
-		tevent_req_nterror(req, NT_STATUS_BUFFER_TOO_SMALL);
-		return;
-	}
+	blob = data_blob_const(prs_data_p(&reply_pdu),
+			       prs_data_size(&reply_pdu));
 
-	if (!smb_io_rpc_hdr_ba("", &hdr_ba, &reply_pdu, 0)) {
-		DEBUG(0, ("rpc_pipe_bind: Failed to unmarshall "
-			  "RPC_HDR_BA.\n"));
-		tevent_req_nterror(req, NT_STATUS_BUFFER_TOO_SMALL);
-		return;
-	}
+	status = dcerpc_pull_ncacn_packet(talloc_tos(), &blob, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+ 		return;
+ 	}
 
-	if (!check_bind_response(&hdr_ba, &state->cli->transfer_syntax)) {
+	if (!check_bind_response(&r.u.bind_ack, &state->cli->transfer_syntax)) {
 		DEBUG(2, ("rpc_pipe_bind: check_bind_response failed.\n"));
 		tevent_req_nterror(req, NT_STATUS_BUFFER_TOO_SMALL);
 		return;
 	}
 
-	state->cli->max_xmit_frag = hdr_ba.bba.max_tsize;
-	state->cli->max_recv_frag = hdr_ba.bba.max_rsize;
+	state->cli->max_xmit_frag = r.u.bind_ack.max_xmit_frag;
+	state->cli->max_recv_frag = r.u.bind_ack.max_recv_frag;
 
 	/*
 	 * For authenticated binds we may need to do 3 or 4 leg binds.
@@ -2929,7 +2932,7 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 
 	case PIPE_AUTH_TYPE_NTLMSSP:
 		/* Need to send AUTH3 packet - no reply. */
-		status = rpc_finish_auth3_bind_send(req, state, &hdr,
+		status = rpc_finish_auth3_bind_send(req, state, &r,
 						    &reply_pdu);
 		if (!NT_STATUS_IS_OK(status)) {
 			tevent_req_nterror(req, status);
@@ -2938,7 +2941,7 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 
 	case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
 		/* Need to send alter context request and reply. */
-		status = rpc_finish_spnego_ntlmssp_bind_send(req, state, &hdr,
+		status = rpc_finish_spnego_ntlmssp_bind_send(req, state, &r,
 							     &reply_pdu);
 		if (!NT_STATUS_IS_OK(status)) {
 			tevent_req_nterror(req, status);
@@ -2957,7 +2960,7 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 
 static NTSTATUS rpc_finish_auth3_bind_send(struct tevent_req *req,
 					   struct rpc_pipe_bind_state *state,
-					   struct rpc_hdr_info *phdr,
+					   struct ncacn_packet *r,
 					   prs_struct *reply_pdu)
 {
 	DATA_BLOB server_response = data_blob_null;
@@ -2966,14 +2969,14 @@ static NTSTATUS rpc_finish_auth3_bind_send(struct tevent_req *req,
 	struct tevent_req *subreq;
 	NTSTATUS status;
 
-	if ((phdr->auth_len == 0)
-	    || (phdr->frag_len < phdr->auth_len + RPC_HDR_AUTH_LEN)) {
+	if ((r->auth_length == 0)
+	    || (r->frag_length < r->auth_length + RPC_HDR_AUTH_LEN)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (!prs_set_offset(
 		    reply_pdu,
-		    phdr->frag_len - phdr->auth_len - RPC_HDR_AUTH_LEN)) {
+		    r->frag_length - r->auth_length - RPC_HDR_AUTH_LEN)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -2983,9 +2986,9 @@ static NTSTATUS rpc_finish_auth3_bind_send(struct tevent_req *req,
 
 	/* TODO - check auth_type/auth_level match. */
 
-	server_response = data_blob_talloc(talloc_tos(), NULL, phdr->auth_len);
+	server_response = data_blob_talloc(talloc_tos(), NULL, r->auth_length);
 	prs_copy_data_out((char *)server_response.data, reply_pdu,
-			  phdr->auth_len);
+			  r->auth_length);
 
 	status = ntlmssp_update(state->cli->auth->a_u.ntlmssp_state,
 				server_response, &client_reply);
@@ -3035,7 +3038,7 @@ static void rpc_bind_auth3_write_done(struct tevent_req *subreq)
 
 static NTSTATUS rpc_finish_spnego_ntlmssp_bind_send(struct tevent_req *req,
 						    struct rpc_pipe_bind_state *state,
-						    struct rpc_hdr_info *phdr,
+						    struct ncacn_packet *r,
 						    prs_struct *reply_pdu)
 {
 	DATA_BLOB server_spnego_response = data_blob_null;
@@ -3046,15 +3049,15 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind_send(struct tevent_req *req,
 	struct tevent_req *subreq;
 	NTSTATUS status;
 
-	if ((phdr->auth_len == 0)
-	    || (phdr->frag_len < phdr->auth_len + RPC_HDR_AUTH_LEN)) {
+	if ((r->auth_length == 0)
+	    || (r->frag_length < r->auth_length + RPC_HDR_AUTH_LEN)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* Process the returned NTLMSSP blob first. */
 	if (!prs_set_offset(
 		    reply_pdu,
-		    phdr->frag_len - phdr->auth_len - RPC_HDR_AUTH_LEN)) {
+		    r->frag_length - r->auth_length - RPC_HDR_AUTH_LEN)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -3062,9 +3065,9 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind_send(struct tevent_req *req,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	server_spnego_response = data_blob(NULL, phdr->auth_len);
+	server_spnego_response = data_blob(NULL, r->auth_length);
 	prs_copy_data_out((char *)server_spnego_response.data,
-			  reply_pdu, phdr->auth_len);
+			  reply_pdu, r->auth_length);
 
 	/*
 	 * The server might give us back two challenges - tmp_blob is for the
