@@ -255,7 +255,7 @@ done:
 }
 
 static wbcErr wbc_create_logon_info(TALLOC_CTX *mem_ctx,
-				    const struct winbindd_response *resp,
+				    struct winbindd_response *resp,
 				    struct wbcLogonUserInfo **_i)
 {
 	wbcErr wbc_status = WBC_ERR_SUCCESS;
