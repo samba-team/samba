@@ -880,6 +880,11 @@ static bool tdbsam_convert_backup(const char *dbname, struct db_context **pp_db)
 		smb_panic("tdbsam_convert_backup: orig commit failed\n");
 	}
 
+	/* be sure to close the DBs _before_ renaming the file */
+
+	TALLOC_FREE(orig_db);
+	TALLOC_FREE(tmp_db);
+
 	/* This is safe from other users as we know we're
  	 * under a mutex here. */
 
@@ -892,13 +897,22 @@ static bool tdbsam_convert_backup(const char *dbname, struct db_context **pp_db)
 	}
 
 	TALLOC_FREE(frame);
-	TALLOC_FREE(orig_db);
+
+	/* re-open the converted TDB */
+
+	orig_db = db_open_trans(NULL, dbname, 0,
+				TDB_DEFAULT, O_CREAT|O_RDWR, 0600);
+	if (orig_db == NULL) {
+		DEBUG(0, ("tdbsam_convert_backup: Failed to re-open "
+			  "converted passdb TDB [%s]\n", dbname));
+		return false;
+	}
 
 	DEBUG(1, ("tdbsam_convert_backup: updated %s file.\n",
 		dbname ));
 
 	/* Replace the global db pointer. */
-	*pp_db = tmp_db;
+	*pp_db = orig_db;
 	return true;
 
   cancel:
