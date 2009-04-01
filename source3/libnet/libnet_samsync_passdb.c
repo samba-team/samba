@@ -668,38 +668,40 @@ static NTSTATUS fetch_sam_entry(TALLOC_CTX *mem_ctx,
 				struct netr_DELTA_ENUM *r,
 				struct samsync_context *ctx)
 {
-	switch(r->delta_type) {
+	NTSTATUS status = NT_STATUS_NOT_IMPLEMENTED;
+
+	switch (r->delta_type) {
 	case NETR_DELTA_USER:
-		fetch_account_info(mem_ctx,
-				   r->delta_id_union.rid,
-				   r->delta_union.user);
+		status = fetch_account_info(mem_ctx,
+					    r->delta_id_union.rid,
+					    r->delta_union.user);
 		break;
 	case NETR_DELTA_GROUP:
-		fetch_group_info(mem_ctx,
-				 r->delta_id_union.rid,
-				 r->delta_union.group);
+		status = fetch_group_info(mem_ctx,
+					  r->delta_id_union.rid,
+					  r->delta_union.group);
 		break;
 	case NETR_DELTA_GROUP_MEMBER:
-		fetch_group_mem_info(mem_ctx,
-				     r->delta_id_union.rid,
-				     r->delta_union.group_member);
+		status = fetch_group_mem_info(mem_ctx,
+					      r->delta_id_union.rid,
+					      r->delta_union.group_member);
 		break;
 	case NETR_DELTA_ALIAS:
-		fetch_alias_info(mem_ctx,
-				 r->delta_id_union.rid,
-				 r->delta_union.alias,
-				 ctx->domain_sid);
+		status = fetch_alias_info(mem_ctx,
+					  r->delta_id_union.rid,
+					  r->delta_union.alias,
+					  ctx->domain_sid);
 		break;
 	case NETR_DELTA_ALIAS_MEMBER:
-		fetch_alias_mem(mem_ctx,
-				r->delta_id_union.rid,
-				r->delta_union.alias_member,
-				ctx->domain_sid);
+		status = fetch_alias_mem(mem_ctx,
+					 r->delta_id_union.rid,
+					 r->delta_union.alias_member,
+					 ctx->domain_sid);
 		break;
 	case NETR_DELTA_DOMAIN:
-		fetch_domain_info(mem_ctx,
-				  r->delta_id_union.rid,
-				  r->delta_union.domain);
+		status = fetch_domain_info(mem_ctx,
+					   r->delta_id_union.rid,
+					   r->delta_union.domain);
 		break;
 	/* The following types are recognised but not handled */
 	case NETR_DELTA_RENAME_GROUP:
@@ -752,10 +754,11 @@ static NTSTATUS fetch_sam_entry(TALLOC_CTX *mem_ctx,
 		break;
 	default:
 		d_printf("Unknown delta record type %d\n", r->delta_type);
+		status = NT_STATUS_INVALID_PARAMETER;
 		break;
 	}
 
-	return NT_STATUS_OK;
+	return status;
 }
 
 /****************************************************************
