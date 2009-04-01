@@ -510,6 +510,10 @@ static void cldap_reply_state_destroy(struct tevent_req *req)
 static int cldap_search_state_destructor(struct cldap_search_state *s)
 {
 	if (s->caller.cldap) {
+		if (s->message_id != -1) {
+			idr_remove(s->caller.cldap->searches.idr, s->message_id);
+			s->message_id = -1;
+		}
 		DLIST_REMOVE(s->caller.cldap->searches.list, s);
 		cldap_recvfrom_stop(s->caller.cldap);
 		ZERO_STRUCT(s->caller);
@@ -542,8 +546,12 @@ struct tevent_req *cldap_search_send(TALLOC_CTX *mem_ctx,
 	if (!req) {
 		return NULL;
 	}
+	ZERO_STRUCTP(state);
 	state->req = req;
 	state->caller.cldap = cldap;
+	state->message_id = -1;
+
+	talloc_set_destructor(state, cldap_search_state_destructor);
 
 	if (io->in.dest_address) {
 		if (cldap->connected) {
@@ -634,7 +642,6 @@ struct tevent_req *cldap_search_send(TALLOC_CTX *mem_ctx,
 	tevent_req_set_callback(subreq, cldap_search_state_queue_done, req);
 
 	DLIST_ADD_END(cldap->searches.list, state, struct cldap_search_state *);
-	talloc_set_destructor(state, cldap_search_state_destructor);
 
 	return req;
 
