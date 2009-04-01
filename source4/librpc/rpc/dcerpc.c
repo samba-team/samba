@@ -137,36 +137,6 @@ static uint32_t next_call_id(struct dcerpc_connection *c)
 	return c->call_id;
 }
 
-/* we need to be able to get/set the fragment length without doing a full
-   decode */
-void dcerpc_set_frag_length(DATA_BLOB *blob, uint16_t v)
-{
-	if (CVAL(blob->data,DCERPC_DREP_OFFSET) & DCERPC_DREP_LE) {
-		SSVAL(blob->data, DCERPC_FRAG_LEN_OFFSET, v);
-	} else {
-		RSSVAL(blob->data, DCERPC_FRAG_LEN_OFFSET, v);
-	}
-}
-
-uint16_t dcerpc_get_frag_length(const DATA_BLOB *blob)
-{
-	if (CVAL(blob->data,DCERPC_DREP_OFFSET) & DCERPC_DREP_LE) {
-		return SVAL(blob->data, DCERPC_FRAG_LEN_OFFSET);
-	} else {
-		return RSVAL(blob->data, DCERPC_FRAG_LEN_OFFSET);
-	}
-}
-
-void dcerpc_set_auth_length(DATA_BLOB *blob, uint16_t v)
-{
-	if (CVAL(blob->data,DCERPC_DREP_OFFSET) & DCERPC_DREP_LE) {
-		SSVAL(blob->data, DCERPC_AUTH_LEN_OFFSET, v);
-	} else {
-		RSSVAL(blob->data, DCERPC_AUTH_LEN_OFFSET, v);
-	}
-}
-
-
 /**
   setup for a ndr pull, also setting up any flags from the binding string
 */
