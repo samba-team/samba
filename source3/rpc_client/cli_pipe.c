@@ -402,6 +402,28 @@ static NTSTATUS dcerpc_push_schannel_bind(TALLOC_CTX *mem_ctx,
 }
 
 /*******************************************************************
+ ********************************************************************/
+
+static NTSTATUS dcerpc_pull_dcerpc_auth(TALLOC_CTX *mem_ctx,
+					const DATA_BLOB *blob,
+					struct dcerpc_auth *r)
+{
+	enum ndr_err_code ndr_err;
+
+	ndr_err = ndr_pull_struct_blob(blob, mem_ctx, r,
+		(ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(dcerpc_auth, r);
+	}
+
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
  Use SMBreadX to get rest of one fragment's worth of rpc data.
  Reads the whole size or give an error message
  ********************************************************************/
