@@ -1128,7 +1128,6 @@ int daemon_deregister_message_handler(struct ctdb_context *ctdb, uint32_t client
 
 int32_t ctdb_ltdb_enable_seqnum(struct ctdb_context *ctdb, uint32_t db_id);
 int32_t ctdb_ltdb_update_seqnum(struct ctdb_context *ctdb, uint32_t db_id, uint32_t srcnode);
-int32_t ctdb_ltdb_set_seqnum_frequency(struct ctdb_context *ctdb, uint32_t frequency);
 
 struct ctdb_rec_data *ctdb_marshall_record(TALLOC_CTX *mem_ctx, uint32_t reqid,	
 					   TDB_DATA key, struct ctdb_ltdb_header *, TDB_DATA data);
