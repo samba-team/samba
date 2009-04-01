@@ -35,6 +35,9 @@
 		    (!(s1) && (s2)) ||\
 		((s1) && (s2) && (strcmp((s1), (s2)) != 0))
 
+/****************************************************************
+****************************************************************/
+
 static NTSTATUS sam_account_from_delta(struct samu *account,
 				       struct netr_DELTA_USER *r)
 {
@@ -223,6 +226,9 @@ static NTSTATUS sam_account_from_delta(struct samu *account,
 	return NT_STATUS_OK;
 }
 
+/****************************************************************
+****************************************************************/
+
 static NTSTATUS fetch_account_info(TALLOC_CTX *mem_ctx,
 				   uint32_t rid,
 				   struct netr_DELTA_USER *r)
@@ -350,6 +356,9 @@ static NTSTATUS fetch_account_info(TALLOC_CTX *mem_ctx,
 	return nt_ret;
 }
 
+/****************************************************************
+****************************************************************/
+
 static NTSTATUS fetch_group_info(TALLOC_CTX *mem_ctx,
 				 uint32_t rid,
 				 struct netr_DELTA_GROUP *r)
@@ -411,6 +420,9 @@ static NTSTATUS fetch_group_info(TALLOC_CTX *mem_ctx,
 
 	return NT_STATUS_OK;
 }
+
+/****************************************************************
+****************************************************************/
 
 static NTSTATUS fetch_group_mem_info(TALLOC_CTX *mem_ctx,
 				     uint32_t rid,
@@ -535,6 +547,9 @@ static NTSTATUS fetch_group_mem_info(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+/****************************************************************
+****************************************************************/
+
 static NTSTATUS fetch_alias_info(TALLOC_CTX *mem_ctx,
 				 uint32_t rid,
 				 struct netr_DELTA_ALIAS *r,
@@ -594,6 +609,9 @@ static NTSTATUS fetch_alias_info(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+/****************************************************************
+****************************************************************/
+
 static NTSTATUS fetch_alias_mem(TALLOC_CTX *mem_ctx,
 				uint32_t rid,
 				struct netr_DELTA_ALIAS_MEMBER *r,
@@ -601,6 +619,9 @@ static NTSTATUS fetch_alias_mem(TALLOC_CTX *mem_ctx,
 {
 	return NT_STATUS_OK;
 }
+
+/****************************************************************
+****************************************************************/
 
 static NTSTATUS fetch_domain_info(TALLOC_CTX *mem_ctx,
 				  uint32_t rid,
@@ -678,6 +699,9 @@ static NTSTATUS fetch_domain_info(TALLOC_CTX *mem_ctx,
 
 	return NT_STATUS_OK;
 }
+
+/****************************************************************
+****************************************************************/
 
 static NTSTATUS fetch_sam_entry(TALLOC_CTX *mem_ctx,
 				enum netr_SamDatabaseID database_id,
@@ -774,6 +798,9 @@ static NTSTATUS fetch_sam_entry(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+/****************************************************************
+****************************************************************/
+
 static NTSTATUS fetch_sam_entries(TALLOC_CTX *mem_ctx,
 				  enum netr_SamDatabaseID database_id,
 				  struct netr_DELTA_ENUM_ARRAY *r,
@@ -788,6 +815,9 @@ static NTSTATUS fetch_sam_entries(TALLOC_CTX *mem_ctx,
 
 	return NT_STATUS_OK;
 }
+
+/****************************************************************
+****************************************************************/
 
 const struct samsync_ops libnet_samsync_passdb_ops = {
 	.process_objects	= fetch_sam_entries,
