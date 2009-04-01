@@ -1,178 +1,28 @@
-                   =============================
-                   Release Notes for Samba 3.2.9
-			  March 31, 2009
-                   =============================
+                   ==============================
+                   Release Notes for Samba 3.2.10
+			    April 1, 2009
+                   ==============================
 
 
 This is a maintenance release of the Samba 3.2 series.
 
-Major enhancements included in Samba 3.2.9 are:
+In Samba 3.2.9 exists an issue while migrating passdb.tdb files from older Samba
+versions. That causes panics of the smbd child processes until the parent smbd is
+restarted once after converting the passdb.tdb file. This issue is fixed in
+Samba 3.2.10.
 
-  o Migrating from 3.0.x to 3.3.x can fail to update passdb.tdb
-    correctly (bug #6195).
-  o Fix guest authentication in setups with "security = share" and
-    "guest ok = yes" when Winbind is running.
-  o Fix corruptions of source path in tar mode of smbclient (bug #6161).
-
+Sorry for the inconveniences!
 
 ######################################################################
 Changes
 #######
 
-Changes since 3.2.8
+Changes since 3.2.9
 -------------------
 
 
 o   Michael Adam <obnox@samba.org>
-    * Add script fill-templates.
-    * Make update-pkginfo callable from any directory.
-
-
-o   Jeremy Allison <jra@samba.org>
-    * BUG 6099: Samba returns incurrate capabilities list.
-    * BUG 6133: Cannot delete non-ACL files on Solaris/ZFS/NFSv4 ACL
-      filesystem.
-    * BUG 6161: smbclient corrupts source path in tar mode.
-    * BUG 6195: Migrating from 3.0.x to 3.3.x can fail to update passdb.tdb
-      correctly.
-    * BUG 6196: Unable to serve files with colons to Linux CIFS/VFS client.
-    * BUG 6224: nmbd waits 5 minutes at startup before checking if it needs to
-      run elections.
-    * Correctly use chroot().
-    * Parameterize in local.h the MAX_RPC_DATA_SIZE, and ensure
-      that "offered" read from the rpc packet in spoolss is under
-      that size.
-    * Fix Coverity ID 602.
-    * Backport the semantics of when to delete alternate data streams on a file
-      truncate.
-    * Allow set attributes on a stream fnum to be redirected to the base
-      filename.
-    * Fix use of streams modules with CIFSFS client.
-    * Fix more POSIX path lstat calls.
-    * Allow DFS client paths to work when POSIX pathnames have been
-      selected.
-    * Try and fix the build farm RAW-STREAMS errors.
-    * Ensure files starting with multiple dots are hidden.
-
-
-o   Steven Danneman <steven.danneman@isilon.com>
-    * Fix guest auth when Winbind is running.
-
-
-o   Günther Deschner <gd@samba.org>
-    * BUG 6102: NetQueryDisplayInformation could return wrong information.
-    * BUG 6193: Avoid messing with sync_context in fetch_database_to_ldif().
-    * Fix memleak in get_remote_printer_publishing_data().
-    * Add pidl in order to be able to regenerate librpc functions.
-    * Fix Coverity IDs 722, 762.
-
-
-o   Steve French <smfrench@gmail.com>
-    * cifs mount fix for handling -V parameter.
-    * Fix guest mounts.
-
-
-o   Holger Hetterich <hhetter@novell.com>
-    * Enable total anonymization in vfs_smb_traffic_analyzer.
-
-
-o   Björn Jacke <bj@sernet.de>
-    * Enable IPv6 support for NetBSD and FreeBSD.
-    * Prefer gssapi header files from subdirectory.
-    * Fix build on old Heimdal based systems.
-    * Use parentheses in if condition to make negation clear.
-
-
-o   Günter Kukkukk <linux@kukkukk.com>
-    * Don't try and delete a default ACL from a file.
-
-
-o   Jeff Layton <jlayton@redhat.com>
-    * Initialize rc to 0 in main.
-
-
-o   Volker Lendecke <vl@sernet.de>
-    * BUG 6100: Complete fix.
-    * BUG 6130: Don't crash in winbindd_rpc lookup_groupmem() on unmapped
-      members.
-    * BUG 6097: Fix smbd segfault.
-    * Fix remotely adding a share via MMC.
-    * Fix resume handle for _samr_EnumDomainGroups.
-    * Fix Coverity IDs 742, 744, 745, 879, 880.
-    * Fix a buffer handling bug when adding lots of registry keys.
-    * Fix a O(n^2) algorithm in regdb_fetch_keys().
-    * Fix an uninitialized variable warning.
-    * Fix a valgrind error / segfault in dns_register_smbd().
-    * Don't log NDR_PRINT_DEBUG at level 0, this always ends up in syslog.
-    * Fix a malloc/talloc mismatch when cli_initialise() fails.
-    * Fix a valgrind error.
-    * Fix two memleaks in the encryption code.
-    * Fix gcc 4.4 compile warning.
-    * Fix a scary "fill_share_mode_lock failed" message.
-
-
-o   Derrell Lipman <derrell@dworkin.(none)>
-    * BUG 6228: Fix SMBC_open_ctx failure due to path resolve failure doesn't
-      set errno.
-
-
-o   Stefan Metzmacher <metze@samba.org
-    * BUG 6100: Implement _netr_LogonGetCapabilities() with
-      NT_STATUS_NOT_IMPLEMENTED.
-    * Add S-1-22-X-Y sids to the local token.
-    * Add idl for netr_LogonGetCapabilities().
-    * Fix the build on SLES8.
-    * Fix smb signing for fragmented trans/trans2/nttrans requests.
-
-
-o   Glenn Machin <gmachin@sandia.gov>
-    * Don't miss an absolute pathname as a kerberos keytab path.
-
-
-o   Shirish Pargaonkar <shirishpargaonkar@gmail.com>
-    * Clean-up entries in /etc/mtab after unmount.
-    * Add fakemount (-f) and nomtab (-n) flags to mount.cifs.
-
-
-o   Ted Percival <ted.percival@quest.com>
-    * Fix a crash during name resolution when log level >= 10 and libc
-      segfaults if printf is passed NULL for a "%s" arg (e.g. Solaris).
-
-
-o   Tim Prouty <tprouty@samba.org>
-    * Fix SMB_VFS_RECVFILE/SENDFILE macros.
-    * Parse_packet can return NULL which is then dereferenced in
-      match_mailslot_name.
-
-
-o   Dan Sledz <dsledz@isilon.com>
-    * Fix double free caused by incorrect talloc_steal usage.
-
-
-o   Aravind Srinivasan <aravind.srinivasan@isilon.com>
-    * Have nmbd check all available interfaces for WINS before failing.
-
-
-o   Miguel Suarez <Miguel.Suarez@stratus.com>
-    * BUG 6085: Fix build of vfs_default on systems without utime support.
-
-
-o   Yasuma Takeda <yasuma@osstech.co.jp>
-    * BUG 5920: The length of the memcpy was calculated wrong.
-    * BUG 6098: Fix the ads_find_dc() with "security = domain" when the DNS
-      server is invalid.
-
-
-o   Andrew Tridgell <tridge@samba.org>
-    * Fix a bug in message handling for code the change notify code.
-
-
-o   Jelmer Vernooij <jelmer@samba.org>
-    * Properly cast array length in print functions.
-
-
-o   Bo Yang <boyang@novell.com>
-    * Initialize the id_map status in idmap_ldap to avoid surprise.
+    * BUG #6195: Don't let smbd child processes panic.
 
 
 ######################################################################
