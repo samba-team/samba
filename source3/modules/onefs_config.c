@@ -234,7 +234,7 @@ void onefs_sys_config_enc(void)
 
 	ret = enc_set_proc(ENC_UTF8);
 	if (ret) {
-		DEBUG(0, ("Setting process encoding failed: %s",
+		DEBUG(0, ("Setting process encoding failed: %s\n",
 			strerror(errno)));
 	}
 }
@@ -256,7 +256,7 @@ void onefs_sys_config_snap_opt(struct onefs_vfs_global_config *global_config)
 	ret = ifs_set_dotsnap_options(&dso);
 	if (ret) {
 		DEBUG(0, ("Setting snapshot visibility/accessibility "
-			"failed: %s", strerror(errno)));
+			"failed: %s\n", strerror(errno)));
 	}
 }
 
@@ -270,7 +270,7 @@ void onefs_sys_config_tilde(struct onefs_vfs_global_config *global_config)
 
 	ret = ifs_tilde_snapshot(global_config->dot_snap_tilde);
 	if (ret) {
-		DEBUG(0, ("Setting snapshot tilde failed: %s",
+		DEBUG(0, ("Setting snapshot tilde failed: %s\n",
 			strerror(errno)));
 	}
 }
