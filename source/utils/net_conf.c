@@ -300,7 +300,7 @@ static int net_conf_import(struct net_context *c, struct smbconf_ctx *conf_ctx,
 			net_conf_import_usage(c, argc, argv);
 			goto done;
 		case 2:
-			servicename = talloc_strdup_lower(mem_ctx, argv[1]);
+			servicename = talloc_strdup(mem_ctx, argv[1]);
 			if (servicename == NULL) {
 				d_printf("error: out of memory!\n");
 				goto done;
@@ -501,7 +501,7 @@ static int net_conf_showshare(struct net_context *c,
 		goto done;
 	}
 
-	sharename = talloc_strdup_lower(mem_ctx, argv[0]);
+	sharename = talloc_strdup(mem_ctx, argv[0]);
 	if (sharename == NULL) {
 		d_printf("error: out of memory!\n");
 		goto done;
@@ -514,7 +514,7 @@ static int net_conf_showshare(struct net_context *c,
 		goto done;
 	}
 
-	d_printf("[%s]\n", sharename);
+	d_printf("[%s]\n", service->name);
 
 	for (count = 0; count < service->num_params; count++) {
 		d_printf("\t%s = %s\n", service->param_names[count],
@@ -600,7 +600,7 @@ static int net_conf_addshare(struct net_context *c,
 			}
 		case 2:
 			path = argv[1];
-			sharename = talloc_strdup_lower(mem_ctx, argv[0]);
+			sharename = talloc_strdup(mem_ctx, argv[0]);
 			if (sharename == NULL) {
 				d_printf("error: out of memory!\n");
 				goto done;
@@ -728,7 +728,7 @@ static int net_conf_delshare(struct net_context *c,
 		net_conf_delshare_usage(c, argc, argv);
 		goto done;
 	}
-	sharename = talloc_strdup_lower(mem_ctx, argv[0]);
+	sharename = talloc_strdup(mem_ctx, argv[0]);
 	if (sharename == NULL) {
 		d_printf("error: out of memory!\n");
 		goto done;
@@ -761,7 +761,7 @@ static int net_conf_setparm(struct net_context *c, struct smbconf_ctx *conf_ctx,
 		net_conf_setparm_usage(c, argc, argv);
 		goto done;
 	}
-	service = talloc_strdup_lower(mem_ctx, argv[0]);
+	service = talloc_strdup(mem_ctx, argv[0]);
 	if (service == NULL) {
 		d_printf("error: out of memory!\n");
 		goto done;
@@ -813,7 +813,7 @@ static int net_conf_getparm(struct net_context *c, struct smbconf_ctx *conf_ctx,
 		net_conf_getparm_usage(c, argc, argv);
 		goto done;
 	}
-	service = talloc_strdup_lower(mem_ctx, argv[0]);
+	service = talloc_strdup(mem_ctx, argv[0]);
 	if (service == NULL) {
 		d_printf("error: out of memory!\n");
 		goto done;
@@ -863,7 +863,7 @@ static int net_conf_delparm(struct net_context *c, struct smbconf_ctx *conf_ctx,
 		net_conf_delparm_usage(c, argc, argv);
 		goto done;
 	}
-	service = talloc_strdup_lower(mem_ctx, argv[0]);
+	service = talloc_strdup(mem_ctx, argv[0]);
 	if (service == NULL) {
 		d_printf("error: out of memory!\n");
 		goto done;
@@ -916,7 +916,7 @@ static int net_conf_getincludes(struct net_context *c,
 		goto done;
 	}
 
-	service = talloc_strdup_lower(mem_ctx, argv[0]);
+	service = talloc_strdup(mem_ctx, argv[0]);
 	if (service == NULL) {
 		d_printf("error: out of memory!\n");
 		goto done;
@@ -956,7 +956,7 @@ static int net_conf_setincludes(struct net_context *c,
 		goto done;
 	}
 
-	service = talloc_strdup_lower(mem_ctx, argv[0]);
+	service = talloc_strdup(mem_ctx, argv[0]);
 	if (service == NULL) {
 		d_printf("error: out of memory!\n");
 		goto done;
@@ -996,7 +996,7 @@ static int net_conf_delincludes(struct net_context *c,
 		goto done;
 	}
 
-	service = talloc_strdup_lower(mem_ctx, argv[0]);
+	service = talloc_strdup(mem_ctx, argv[0]);
 	if (service == NULL) {
 		d_printf("error: out of memory!\n");
 		goto done;
