@@ -567,22 +567,34 @@ static NTSTATUS rpc_write_recv(struct tevent_req *req)
 
 
 static NTSTATUS parse_rpc_header(struct rpc_pipe_client *cli,
-				 struct rpc_hdr_info *prhdr,
+				 struct ncacn_packet_header *prhdr,
 				 prs_struct *pdu)
 {
+	NTSTATUS status;
+	DATA_BLOB blob = data_blob_const(prs_data_p(pdu), prs_data_size(pdu));
+
 	/*
 	 * This next call sets the endian bit correctly in current_pdu. We
 	 * will propagate this to rbuf later.
 	 */
 
-	if(!smb_io_rpc_hdr("rpc_hdr   ", prhdr, pdu, 0)) {
-		DEBUG(0, ("get_current_pdu: Failed to unmarshall RPC_HDR.\n"));
+	status = dcerpc_pull_ncacn_packet_header(cli, &blob, prhdr);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (!prs_set_offset(pdu, prs_offset(pdu) + RPC_HEADER_LEN)) {
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
-	if (prhdr->frag_len > cli->max_recv_frag) {
+	if (UNMARSHALLING(pdu) && prhdr->drep[0] == 0) {
+		DEBUG(10,("parse_rpc_header: PDU data format is big-endian. Setting flag.\n"));
+		prs_set_endian_data(pdu, RPC_BIG_ENDIAN);
+	}
+
+	if (prhdr->frag_length > cli->max_recv_frag) {
 		DEBUG(0, ("cli_pipe_get_current_pdu: Server sent fraglen %d,"
-			  " we only allow %d\n", (int)prhdr->frag_len,
+			  " we only allow %d\n", (int)prhdr->frag_length,
 			  (int)cli->max_recv_frag));
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
@@ -598,7 +610,7 @@ static NTSTATUS parse_rpc_header(struct rpc_pipe_client *cli,
 struct get_complete_frag_state {
 	struct event_context *ev;
 	struct rpc_pipe_client *cli;
-	struct rpc_hdr_info *prhdr;
+	struct ncacn_packet_header *prhdr;
 	prs_struct *pdu;
 };
 
@@ -608,7 +620,7 @@ static void get_complete_frag_got_rest(struct tevent_req *subreq);
 static struct tevent_req *get_complete_frag_send(TALLOC_CTX *mem_ctx,
 						 struct event_context *ev,
 						 struct rpc_pipe_client *cli,
-						 struct rpc_hdr_info *prhdr,
+						 struct ncacn_packet_header *prhdr,
 						 prs_struct *pdu)
 {
 	struct tevent_req *req, *subreq;
@@ -654,15 +666,15 @@ static struct tevent_req *get_complete_frag_send(TALLOC_CTX *mem_ctx,
 	/*
 	 * Ensure we have frag_len bytes of data.
 	 */
-	if (pdu_len < prhdr->frag_len) {
-		if (!rpc_grow_buffer(pdu, prhdr->frag_len)) {
+	if (pdu_len < prhdr->frag_length) {
+		if (!rpc_grow_buffer(pdu, prhdr->frag_length)) {
 			status = NT_STATUS_NO_MEMORY;
 			goto post_status;
 		}
 		subreq = rpc_read_send(state, state->ev,
 				       state->cli->transport,
 				       (uint8_t *)(prs_data_p(pdu) + pdu_len),
-				       prhdr->frag_len - pdu_len);
+				       prhdr->frag_length - pdu_len);
 		if (subreq == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			goto post_status;
@@ -703,7 +715,7 @@ static void get_complete_frag_got_header(struct tevent_req *subreq)
 		return;
 	}
 
-	if (!rpc_grow_buffer(state->pdu, state->prhdr->frag_len)) {
+	if (!rpc_grow_buffer(state->pdu, state->prhdr->frag_length)) {
 		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
@@ -716,7 +728,7 @@ static void get_complete_frag_got_header(struct tevent_req *subreq)
 	subreq = rpc_read_send(
 		state, state->ev, state->cli->transport,
 		(uint8_t *)(prs_data_p(state->pdu) + RPC_HEADER_LEN),
-		state->prhdr->frag_len - RPC_HEADER_LEN);
+		state->prhdr->frag_length - RPC_HEADER_LEN);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -749,13 +761,14 @@ static NTSTATUS get_complete_frag_recv(struct tevent_req *req)
  In fact I should probably abstract these into identical pieces of code... JRA.
  ****************************************************************************/
 
-static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli, RPC_HDR *prhdr,
+static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli,
+				struct ncacn_packet_header *prhdr,
 				prs_struct *current_pdu,
 				uint8 *p_ss_padding_len)
 {
 	RPC_HDR_AUTH auth_info;
 	uint32 save_offset = prs_offset(current_pdu);
-	uint32 auth_len = prhdr->auth_len;
+	uint32_t auth_len = prhdr->auth_length;
 	struct ntlmssp_state *ntlmssp_state = cli->auth->a_u.ntlmssp_state;
 	unsigned char *data = NULL;
 	size_t data_len;
@@ -775,8 +788,9 @@ static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli, RPC_HDR *pr
 
 	/* Ensure there's enough data for an authenticated response. */
 	if (auth_len > RPC_MAX_PDU_FRAG_LEN ||
-			prhdr->frag_len < RPC_HEADER_LEN + RPC_HDR_RESP_LEN +
-					RPC_HDR_AUTH_LEN + auth_len) {
+			prhdr->frag_length < RPC_HEADER_LEN +
+					     RPC_HDR_RESP_LEN +
+					     RPC_HDR_AUTH_LEN + auth_len) {
 		DEBUG(0,("cli_pipe_verify_ntlmssp: auth_len %u is too large.\n",
 			(unsigned int)auth_len ));
 		return NT_STATUS_BUFFER_TOO_SMALL;
@@ -790,15 +804,15 @@ static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli, RPC_HDR *pr
 	 */
 
 	data = (unsigned char *)(prs_data_p(current_pdu) + RPC_HEADER_LEN + RPC_HDR_RESP_LEN);
-	data_len = (size_t)(prhdr->frag_len - RPC_HEADER_LEN - RPC_HDR_RESP_LEN - RPC_HDR_AUTH_LEN - auth_len);
+	data_len = (size_t)(prhdr->frag_length - RPC_HEADER_LEN - RPC_HDR_RESP_LEN - RPC_HDR_AUTH_LEN - auth_len);
 
 	full_packet_data = (unsigned char *)prs_data_p(current_pdu);
-	full_packet_data_len = prhdr->frag_len - auth_len;
+	full_packet_data_len = prhdr->frag_length - auth_len;
 
 	/* Pull the auth header and the following data into a blob. */
         /* NB. The offset of the auth_header is relative to the *end*
 	 * of the packet, not the start. */
-	if(!prs_set_offset(current_pdu, prhdr->frag_len - RPC_HDR_AUTH_LEN - auth_len)) {
+	if(!prs_set_offset(current_pdu, prhdr->frag_length - RPC_HDR_AUTH_LEN - auth_len)) {
 		DEBUG(0,("cli_pipe_verify_ntlmssp: cannot move offset to %u.\n",
 			(unsigned int)RPC_HEADER_LEN + (unsigned int)RPC_HDR_RESP_LEN + (unsigned int)data_len ));
 		return NT_STATUS_BUFFER_TOO_SMALL;
@@ -811,12 +825,12 @@ static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli, RPC_HDR *pr
 
 	/* Ensure auth_pad_len fits into the packet. */
 	if (RPC_HEADER_LEN + RPC_HDR_REQ_LEN + auth_info.auth_pad_len +
-			RPC_HDR_AUTH_LEN + auth_len > prhdr->frag_len) {
+			RPC_HDR_AUTH_LEN + auth_len > prhdr->frag_length) {
 		DEBUG(0,("cli_pipe_verify_ntlmssp: auth_info.auth_pad_len "
 			"too large (%u), auth_len (%u), frag_len = (%u).\n",
 			(unsigned int)auth_info.auth_pad_len,
 			(unsigned int)auth_len,
-			(unsigned int)prhdr->frag_len ));
+			(unsigned int)prhdr->frag_length));
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
@@ -885,12 +899,13 @@ static NTSTATUS cli_pipe_verify_ntlmssp(struct rpc_pipe_client *cli, RPC_HDR *pr
  schannel specific sign/seal.
  ****************************************************************************/
 
-static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli, RPC_HDR *prhdr,
+static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli,
+				struct ncacn_packet_header *prhdr,
 				prs_struct *current_pdu,
 				uint8 *p_ss_padding_len)
 {
 	RPC_HDR_AUTH auth_info;
-	uint32 auth_len = prhdr->auth_len;
+	uint32_t auth_len = prhdr->auth_length;
 	uint32 save_offset = prs_offset(current_pdu);
 	struct schannel_state *schannel_auth =
 		cli->auth->a_u.schannel_auth;
@@ -915,22 +930,22 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli, RPC_HDR *p
 
 	/* Ensure there's enough data for an authenticated response. */
 	if ((auth_len > RPC_MAX_PDU_FRAG_LEN) ||
-			(RPC_HEADER_LEN + RPC_HDR_RESP_LEN + RPC_HDR_AUTH_LEN + auth_len > prhdr->frag_len)) {
+			(RPC_HEADER_LEN + RPC_HDR_RESP_LEN + RPC_HDR_AUTH_LEN + auth_len > prhdr->frag_length)) {
 		DEBUG(0,("cli_pipe_verify_schannel: auth_len %u is too large.\n",
 			(unsigned int)auth_len ));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	data_len = prhdr->frag_len - RPC_HEADER_LEN - RPC_HDR_RESP_LEN - RPC_HDR_AUTH_LEN - auth_len;
+	data_len = prhdr->frag_length - RPC_HEADER_LEN - RPC_HDR_RESP_LEN - RPC_HDR_AUTH_LEN - auth_len;
 
         /* Pull the auth header and the following data into a blob. */
 	/* NB. The offset of the auth_header is relative to the *end*
 	 * of the packet, not the start. */
 	if(!prs_set_offset(current_pdu,
-			prhdr->frag_len - RPC_HDR_AUTH_LEN - auth_len)) {
+			prhdr->frag_length - RPC_HDR_AUTH_LEN - auth_len)) {
 		DEBUG(0,("cli_pipe_verify_schannel: cannot move "
 			"offset to %u.\n",
-			(unsigned int)(prhdr->frag_len -
+			(unsigned int)(prhdr->frag_length -
 				RPC_HDR_AUTH_LEN - auth_len) ));
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
@@ -942,12 +957,12 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli, RPC_HDR *p
 
 	/* Ensure auth_pad_len fits into the packet. */
 	if (RPC_HEADER_LEN + RPC_HDR_REQ_LEN + auth_info.auth_pad_len +
-			RPC_HDR_AUTH_LEN + auth_len > prhdr->frag_len) {
+			RPC_HDR_AUTH_LEN + auth_len > prhdr->frag_length) {
 		DEBUG(0,("cli_pipe_verify_schannel: auth_info.auth_pad_len "
 			"too large (%u), auth_len (%u), frag_len = (%u).\n",
 			(unsigned int)auth_info.auth_pad_len,
 			(unsigned int)auth_len,
-			(unsigned int)prhdr->frag_len ));
+			(unsigned int)prhdr->frag_length));
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
@@ -1019,20 +1034,21 @@ static NTSTATUS cli_pipe_verify_schannel(struct rpc_pipe_client *cli, RPC_HDR *p
  Do the authentication checks on an incoming pdu. Check sign and unseal etc.
  ****************************************************************************/
 
-static NTSTATUS cli_pipe_validate_rpc_response(struct rpc_pipe_client *cli, RPC_HDR *prhdr,
+static NTSTATUS cli_pipe_validate_rpc_response(struct rpc_pipe_client *cli,
+				struct ncacn_packet_header *prhdr,
 				prs_struct *current_pdu,
 				uint8 *p_ss_padding_len)
 {
 	NTSTATUS ret = NT_STATUS_OK;
 
 	/* Paranioa checks for auth_len. */
-	if (prhdr->auth_len) {
-		if (prhdr->auth_len > prhdr->frag_len) {
+	if (prhdr->auth_length) {
+		if (prhdr->auth_length > prhdr->frag_length) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		if (prhdr->auth_len + (unsigned int)RPC_HDR_AUTH_LEN < prhdr->auth_len ||
-				prhdr->auth_len + (unsigned int)RPC_HDR_AUTH_LEN < (unsigned int)RPC_HDR_AUTH_LEN) {
+		if (prhdr->auth_length + (unsigned int)RPC_HDR_AUTH_LEN < prhdr->auth_length ||
+				prhdr->auth_length + (unsigned int)RPC_HDR_AUTH_LEN < (unsigned int)RPC_HDR_AUTH_LEN) {
 			/* Integer wrap attempt. */
 			return NT_STATUS_INVALID_PARAMETER;
 		}
@@ -1044,12 +1060,12 @@ static NTSTATUS cli_pipe_validate_rpc_response(struct rpc_pipe_client *cli, RPC_
 
 	switch(cli->auth->auth_type) {
 		case PIPE_AUTH_TYPE_NONE:
-			if (prhdr->auth_len) {
+			if (prhdr->auth_length) {
 				DEBUG(3, ("cli_pipe_validate_rpc_response: "
 					  "Connection to %s - got non-zero "
 					  "auth len %u.\n",
 					rpccli_pipe_txt(talloc_tos(), cli),
-					(unsigned int)prhdr->auth_len ));
+					(unsigned int)prhdr->auth_length));
 				return NT_STATUS_INVALID_PARAMETER;
 			}
 			break;
@@ -1086,7 +1102,8 @@ static NTSTATUS cli_pipe_validate_rpc_response(struct rpc_pipe_client *cli, RPC_
  Do basic authentication checks on an incoming pdu.
  ****************************************************************************/
 
-static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli, RPC_HDR *prhdr,
+static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli,
+			struct ncacn_packet_header *prhdr,
 			prs_struct *current_pdu,
 			uint8 expected_pkt_type,
 			char **ppdata,
@@ -1097,9 +1114,9 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli, RPC_H
 	NTSTATUS ret = NT_STATUS_OK;
 	uint32 current_pdu_len = prs_data_size(current_pdu);
 
-	if (current_pdu_len != prhdr->frag_len) {
+	if (current_pdu_len != prhdr->frag_length) {
 		DEBUG(5,("cli_pipe_validate_current_pdu: incorrect pdu length %u, expected %u\n",
-			(unsigned int)current_pdu_len, (unsigned int)prhdr->frag_len ));
+			(unsigned int)current_pdu_len, (unsigned int)prhdr->frag_length));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -1111,7 +1128,7 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli, RPC_H
 	*pdata_len = current_pdu_len;
 
 	/* Ensure we have the correct type. */
-	switch (prhdr->pkt_type) {
+	switch (prhdr->ptype) {
 		case DCERPC_PKT_ALTER_RESP:
 		case DCERPC_PKT_BIND_ACK:
 
@@ -1146,13 +1163,13 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli, RPC_H
 			*pdata_len = current_pdu_len - RPC_HEADER_LEN - RPC_HDR_RESP_LEN - ss_padding_len;
 
 			/* Remember to remove the auth footer. */
-			if (prhdr->auth_len) {
+			if (prhdr->auth_length) {
 				/* We've already done integer wrap tests on auth_len in
 					cli_pipe_validate_rpc_response(). */
-				if (*pdata_len < RPC_HDR_AUTH_LEN + prhdr->auth_len) {
+				if (*pdata_len < RPC_HDR_AUTH_LEN + prhdr->auth_length) {
 					return NT_STATUS_BUFFER_TOO_SMALL;
 				}
-				*pdata_len -= (RPC_HDR_AUTH_LEN + prhdr->auth_len);
+				*pdata_len -= (RPC_HDR_AUTH_LEN + prhdr->auth_length);
 			}
 
 			DEBUG(10,("cli_pipe_validate_current_pdu: got pdu len %u, data_len %u, ss_len %u\n",
@@ -1209,16 +1226,16 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli, RPC_H
 		default:
 			DEBUG(0, ("cli_pipe_validate_current_pdu: unknown packet type %u received "
 				"from %s!\n",
-				(unsigned int)prhdr->pkt_type,
+				(unsigned int)prhdr->ptype,
 				rpccli_pipe_txt(talloc_tos(), cli)));
 			return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	if (prhdr->pkt_type != expected_pkt_type) {
+	if (prhdr->ptype != expected_pkt_type) {
 		DEBUG(3, ("cli_pipe_validate_current_pdu: Connection to %s "
 			  "got an unexpected RPC packet type - %u, not %u\n",
 			rpccli_pipe_txt(talloc_tos(), cli),
-			prhdr->pkt_type,
+			prhdr->ptype,
 			expected_pkt_type));
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
@@ -1227,10 +1244,10 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli, RPC_H
 	   data before now as we may have needed to do cryptographic actions on
 	   it before. */
 
-	if ((prhdr->pkt_type == DCERPC_PKT_BIND_ACK) && !(prhdr->flags & DCERPC_PFC_FLAG_LAST)) {
+	if ((prhdr->ptype == DCERPC_PKT_BIND_ACK) && !(prhdr->pfc_flags & DCERPC_PFC_FLAG_LAST)) {
 		DEBUG(5,("cli_pipe_validate_current_pdu: bug in server (AS/U?), "
 			"setting fragment first/last ON.\n"));
-		prhdr->flags |= DCERPC_PFC_FLAG_FIRST|DCERPC_PFC_FLAG_LAST;
+		prhdr->pfc_flags |= DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 	}
 
 	return NT_STATUS_OK;
@@ -1243,16 +1260,18 @@ static NTSTATUS cli_pipe_validate_current_pdu(struct rpc_pipe_client *cli, RPC_H
  deal with that.
  ****************************************************************************/
 
-static NTSTATUS cli_pipe_reset_current_pdu(struct rpc_pipe_client *cli, RPC_HDR *prhdr, prs_struct *current_pdu)
+static NTSTATUS cli_pipe_reset_current_pdu(struct rpc_pipe_client *cli,
+					   struct ncacn_packet_header *prhdr,
+					   prs_struct *current_pdu)
 {
 	uint32 current_pdu_len = prs_data_size(current_pdu);
 
-	if (current_pdu_len < prhdr->frag_len) {
+	if (current_pdu_len < prhdr->frag_length) {
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
 	/* Common case. */
-	if (current_pdu_len == (uint32)prhdr->frag_len) {
+	if (current_pdu_len == (uint32)prhdr->frag_length) {
 		prs_mem_free(current_pdu);
 		prs_init_empty(current_pdu, prs_get_mem_context(current_pdu), UNMARSHALL);
 		/* Make current_pdu dynamic with no memory. */
@@ -1265,14 +1284,14 @@ static NTSTATUS cli_pipe_reset_current_pdu(struct rpc_pipe_client *cli, RPC_HDR 
 	 * Cheat. Move the data down and shrink the buffer.
 	 */
 
-	memcpy(prs_data_p(current_pdu), prs_data_p(current_pdu) + prhdr->frag_len,
-			current_pdu_len - prhdr->frag_len);
+	memcpy(prs_data_p(current_pdu), prs_data_p(current_pdu) + prhdr->frag_length,
+			current_pdu_len - prhdr->frag_length);
 
 	/* Remember to set the read offset back to zero. */
 	prs_set_offset(current_pdu, 0);
 
 	/* Shrink the buffer. */
-	if (!prs_set_buffer_size(current_pdu, current_pdu_len - prhdr->frag_len)) {
+	if (!prs_set_buffer_size(current_pdu, current_pdu_len - prhdr->frag_length)) {
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
@@ -1470,7 +1489,7 @@ struct rpc_api_pipe_state {
 	uint8_t expected_pkt_type;
 
 	prs_struct incoming_frag;
-	struct rpc_hdr_info rhdr;
+	struct ncacn_packet_header rhdr;
 
 	prs_struct incoming_pdu;	/* Incoming reply */
 	uint32_t incoming_pdu_offset;
@@ -1613,8 +1632,8 @@ static void rpc_api_pipe_got_pdu(struct tevent_req *subreq)
 		return;
 	}
 
-	if ((state->rhdr.flags & DCERPC_PFC_FLAG_FIRST)
-	    && (state->rhdr.pack_type[0] == 0)) {
+	if ((state->rhdr.pfc_flags & DCERPC_PFC_FLAG_FIRST)
+	    && (state->rhdr.drep[0] == 0)) {
 		/*
 		 * Set the data type correctly for big-endian data on the
 		 * first packet.
@@ -1654,7 +1673,7 @@ static void rpc_api_pipe_got_pdu(struct tevent_req *subreq)
 		return;
 	}
 
-	if (state->rhdr.flags & DCERPC_PFC_FLAG_LAST) {
+	if (state->rhdr.pfc_flags & DCERPC_PFC_FLAG_LAST) {
 		DEBUG(10,("rpc_api_pipe: %s returned %u bytes.\n",
 			  rpccli_pipe_txt(talloc_tos(), state->cli),
 			  (unsigned)prs_data_size(&state->incoming_pdu)));
