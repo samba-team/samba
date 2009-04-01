@@ -207,10 +207,11 @@ static NTSTATUS onefs_open_file(files_struct *fsp,
 		 */
 		if ((oplock_request & ~SAMBA_PRIVATE_OPLOCK_MASK) !=
 		     NO_OPLOCK) {
-			DEBUG(0,("Oplock(%d) being requested on a stream! "
-				"Ignoring oplock request: base=%s, stream=%s\n",
-				oplock_request & ~SAMBA_PRIVATE_OPLOCK_MASK,
-				base, stream));
+			DEBUG(0, ("Oplock(%d) being requested on a stream! "
+				  "Ignoring oplock request: base=%s, "
+				  "stream=%s\n",
+				  oplock_request & ~SAMBA_PRIVATE_OPLOCK_MASK,
+				  base, stream));
 			/* Recover by requesting NO_OPLOCK instead. */
 			oplock_request &= SAMBA_PRIVATE_OPLOCK_MASK;
 		}
