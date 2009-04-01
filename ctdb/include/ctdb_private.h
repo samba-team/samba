@@ -77,7 +77,7 @@ struct ctdb_tcp_array {
 /* all tunable variables go in here */
 struct ctdb_tunable {
 	uint32_t max_redirect_count;
-	uint32_t seqnum_frequency;
+	uint32_t seqnum_interval; /* unit is ms */
 	uint32_t control_timeout;
 	uint32_t traverse_timeout;
 	uint32_t keepalive_interval;

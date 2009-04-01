@@ -455,7 +455,7 @@ static void ctdb_ltdb_seqnum_check(struct event_context *ev, struct timed_event 
 	/* setup a new timer */
 	ctdb_db->te = 
 		event_add_timed(ctdb->ev, ctdb_db, 
-				timeval_current_ofs(ctdb->tunable.seqnum_frequency, 0),
+				timeval_current_ofs(ctdb->tunable.seqnum_interval/1000, (ctdb->tunable.seqnum_interval%1000)*1000),
 				ctdb_ltdb_seqnum_check, ctdb_db);
 }
 
@@ -474,7 +474,7 @@ int32_t ctdb_ltdb_enable_seqnum(struct ctdb_context *ctdb, uint32_t db_id)
 	if (ctdb_db->te == NULL) {
 		ctdb_db->te = 
 			event_add_timed(ctdb->ev, ctdb_db, 
-					timeval_current_ofs(ctdb->tunable.seqnum_frequency, 0),
+					timeval_current_ofs(ctdb->tunable.seqnum_interval/1000, (ctdb->tunable.seqnum_interval%1000)*1000),
 					ctdb_ltdb_seqnum_check, ctdb_db);
 	}
 
