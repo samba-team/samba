@@ -432,9 +432,9 @@ bool onefs_brl_cancel_windows(vfs_handle_struct *handle,
 	bs = ((struct onefs_cbrl_blr_state *)blr->blr_private);
 	SMB_ASSERT(bs);
 
-	if (bs->state == ONEFS_CBRL_DONE) {
+	if (bs->state == ONEFS_CBRL_DONE || bs->state == ONEFS_CBRL_ERROR) {
 		/* No-op. */
-		DEBUG(10, ("State=DONE, returning true\n"));
+		DEBUG(10, ("State=%d, returning true\n", bs->state));
 		END_PROFILE(syscall_brl_cancel);
 		return true;
 	}
