@@ -2931,6 +2931,12 @@ void flush_negative_conn_cache_for_domain(const char *domain);
 const char *dcerpc_errstr(TALLOC_CTX *mem_ctx, uint32_t fault_code);
 NTSTATUS dcerpc_fault_to_nt_status(uint32_t fault_code);
 
+/* The following definitions come from ../librpc/rpc/dcerpc_util.c  */
+
+void dcerpc_set_frag_length(DATA_BLOB *blob, uint16_t v);
+uint16_t dcerpc_get_frag_length(const DATA_BLOB *blob);
+void dcerpc_set_auth_length(DATA_BLOB *blob, uint16_t v);
+
 /* The following definitions come from libsmb/dsgetdcname.c  */
 
 void debug_dsdcinfo_flags(int lvl, uint32_t flags);
