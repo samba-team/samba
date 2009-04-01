@@ -649,12 +649,14 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 	uint32_t dn_count;
 	uint32_t count;
 
-	status = ctx->ops->startup(ctx, mem_ctx, &old_utdv);
-	if (!NT_STATUS_IS_OK(status)) {
-		ctx->error_message = talloc_asprintf(ctx,
-			"Failed to call startup operation: %s",
-			nt_errstr(status));
-		goto out;
+	if (ctx->ops->startup) {
+		status = ctx->ops->startup(ctx, mem_ctx, &old_utdv);
+		if (!NT_STATUS_IS_OK(status)) {
+			ctx->error_message = talloc_asprintf(ctx,
+				"Failed to call startup operation: %s",
+				nt_errstr(status));
+			goto out;
+		}
 	}
 
 	if (ctx->single_object_replication && ctx->object_dns) {
@@ -684,12 +686,14 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	status = ctx->ops->finish(ctx, mem_ctx, pnew_utdv);
-	if (!NT_STATUS_IS_OK(status)) {
-		ctx->error_message = talloc_asprintf(ctx,
-			"Failed to call finishing operation: %s",
-			nt_errstr(status));
-		goto out;
+	if (ctx->ops->finish) {
+		status = ctx->ops->finish(ctx, mem_ctx, pnew_utdv);
+		if (!NT_STATUS_IS_OK(status)) {
+			ctx->error_message = talloc_asprintf(ctx,
+				"Failed to call finishing operation: %s",
+				nt_errstr(status));
+			goto out;
+		}
 	}
 
  out:
