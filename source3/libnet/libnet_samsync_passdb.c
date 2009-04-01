@@ -236,13 +236,12 @@ static NTSTATUS fetch_account_info(TALLOC_CTX *mem_ctx,
 
 	NTSTATUS nt_ret = NT_STATUS_UNSUCCESSFUL;
 	fstring account;
-	char *add_script = NULL;
 	struct samu *sam_account=NULL;
 	GROUP_MAP map;
 	struct group *grp;
 	DOM_SID user_sid;
 	DOM_SID group_sid;
-	struct passwd *passwd;
+	struct passwd *passwd = NULL;
 	fstring sid_string;
 
 	fstrcpy(account, r->account_name.string);
@@ -252,50 +251,11 @@ static NTSTATUS fetch_account_info(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!(passwd = Get_Pwnam_alloc(sam_account, account))) {
-		/* Create appropriate user */
-		if (r->acct_flags & ACB_NORMAL) {
-			add_script = talloc_strdup(sam_account,
-					lp_adduser_script());
-		} else if ( (r->acct_flags & ACB_WSTRUST) ||
-			    (r->acct_flags & ACB_SVRTRUST) ||
-			    (r->acct_flags & ACB_DOMTRUST) ) {
-			add_script = talloc_strdup(sam_account,
-					lp_addmachine_script());
-		} else {
-			DEBUG(1, ("Unknown user type: %s\n",
-				  pdb_encode_acct_ctrl(r->acct_flags, NEW_PW_FORMAT_SPACE_PADDED_LEN)));
-			nt_ret = NT_STATUS_UNSUCCESSFUL;
-			goto done;
-		}
-		if (!add_script) {
-			nt_ret = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
-		if (*add_script) {
-			int add_ret;
-			add_script = talloc_all_string_sub(sam_account,
-					add_script,
-					"%u",
-					account);
-			if (!add_script) {
-				nt_ret = NT_STATUS_NO_MEMORY;
-				goto done;
-			}
-			add_ret = smbrun(add_script,NULL);
-			DEBUG(add_ret ? 0 : 1,("fetch_account: Running the command `%s' "
-				 "gave %d\n", add_script, add_ret));
-			if (add_ret == 0) {
-				smb_nscd_flush_user_cache();
-			}
-		}
-
-		/* try and find the possible unix account again */
-		if ( !(passwd = Get_Pwnam_alloc(sam_account, account)) ) {
-			d_fprintf(stderr, "Could not create posix account info for '%s'\n", account);
-			nt_ret = NT_STATUS_NO_SUCH_USER;
-			goto done;
-		}
+	nt_ret = smb_create_user(sam_account, r->acct_flags, account, &passwd);
+	if (!NT_STATUS_IS_OK(nt_ret)) {
+		d_fprintf(stderr, "Could not create posix account info for '%s'\n",
+			account);
+		goto done;
 	}
 
 	sid_copy(&user_sid, get_global_sam_sid());
