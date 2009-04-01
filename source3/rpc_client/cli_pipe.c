@@ -2124,7 +2124,6 @@ static NTSTATUS create_rpc_bind_req(struct rpc_pipe_client *cli,
  ********************************************************************/
 
 static NTSTATUS add_ntlmssp_auth_footer(struct rpc_pipe_client *cli,
-					RPC_HDR *phdr,
 					uint32 ss_padding_len,
 					prs_struct *outgoing_pdu)
 {
@@ -2210,7 +2209,6 @@ static NTSTATUS add_ntlmssp_auth_footer(struct rpc_pipe_client *cli,
  ********************************************************************/
 
 static NTSTATUS add_schannel_auth_footer(struct rpc_pipe_client *cli,
-					RPC_HDR *phdr,
 					uint32 ss_padding_len,
 					prs_struct *outgoing_pdu)
 {
@@ -2442,8 +2440,6 @@ struct tevent_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
 static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
 				  bool *is_last_frag)
 {
-	RPC_HDR hdr;
-	RPC_HDR_REQ hdr_req;
 	uint32_t data_sent_thistime;
 	uint16_t auth_len;
 	uint16_t frag_len;
@@ -2452,6 +2448,8 @@ static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
 	uint32_t data_left;
 	char pad[8] = { 0, };
 	NTSTATUS status;
+	union dcerpc_payload u;
+	DATA_BLOB blob;
 
 	data_left = prs_offset(state->req_data) - state->req_data_sent;
 
@@ -2470,20 +2468,25 @@ static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* Create and marshall the header and request header. */
-	init_rpc_hdr(&hdr, DCERPC_PKT_REQUEST, flags, state->call_id, frag_len,
-		     auth_len);
+	ZERO_STRUCT(u.request);
 
-	if (!smb_io_rpc_hdr("hdr    ", &hdr, &state->outgoing_frag, 0)) {
-		return NT_STATUS_NO_MEMORY;
+	u.request.alloc_hint	= prs_offset(state->req_data);
+	u.request.context_id	= 0;
+	u.request.opnum		= state->op_num;
+
+	status = dcerpc_push_ncacn_packet(prs_get_mem_context(&state->outgoing_frag),
+					  DCERPC_PKT_REQUEST,
+					  flags,
+					  frag_len,
+					  auth_len,
+					  state->call_id,
+					  u,
+					  &blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	/* Create the rpc request RPC_HDR_REQ */
-	init_rpc_hdr_req(&hdr_req, prs_offset(state->req_data),
-			 state->op_num);
-
-	if (!smb_io_rpc_hdr_req("hdr_req", &hdr_req,
-				&state->outgoing_frag, 0)) {
+	if (!prs_copy_data_in(&state->outgoing_frag, (const char *)blob.data, blob.length)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -2506,11 +2509,11 @@ static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
 		break;
 	case PIPE_AUTH_TYPE_NTLMSSP:
 	case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
-		status = add_ntlmssp_auth_footer(state->cli, &hdr, ss_padding,
+		status = add_ntlmssp_auth_footer(state->cli, ss_padding,
 						 &state->outgoing_frag);
 		break;
 	case PIPE_AUTH_TYPE_SCHANNEL:
-		status = add_schannel_auth_footer(state->cli, &hdr, ss_padding,
+		status = add_schannel_auth_footer(state->cli, ss_padding,
 						  &state->outgoing_frag);
 		break;
 	default:
