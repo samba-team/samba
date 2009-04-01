@@ -144,24 +144,39 @@ static NTSTATUS smb2_handle_oplock_break(struct smb2_transport *transport,
 					 const DATA_BLOB *blob)
 {
 	uint8_t *hdr;
-	uint16_t opcode;
+	uint8_t *body;
+	uint16_t len, bloblen;
+	bool lease;
 
 	hdr = blob->data+NBT_HDR_SIZE;
+	body = hdr+SMB2_HDR_BODY;
+	bloblen = blob->length - SMB2_HDR_BODY;
 
-	if (blob->length < (SMB2_MIN_SIZE+0x18)) {
+	if (bloblen < 2) {
 		DEBUG(1,("Discarding smb2 oplock reply of size %u\n",
-			 (unsigned)blob->length));
+			(unsigned)blob->length));
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
-	opcode	= SVAL(hdr, SMB2_HDR_OPCODE);
-
-	if (opcode != SMB2_OP_BREAK) {
+	len = CVAL(body, 0x00);
+	if (len > bloblen) {
+		DEBUG(1,("Discarding smb2 oplock reply,"
+			"packet claims %u byte body, only %u bytes seen\n",
+			len, bloblen));
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
-	if (transport->oplock.handler) {
-		uint8_t *body = hdr+SMB2_HDR_BODY;
+	if (len == 24) {
+		lease = false;
+	} else if (len == 44) {
+		lease = true;
+	} else {
+		DEBUG(1,("Discarding smb2 oplock reply of invalid size %u\n",
+			(unsigned)blob->length));
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	if (!lease && transport->oplock.handler) {
 		struct smb2_handle h;
 		uint8_t level;
 
@@ -170,8 +185,24 @@ static NTSTATUS smb2_handle_oplock_break(struct smb2_transport *transport,
 
 		transport->oplock.handler(transport, &h, level,
 					  transport->oplock.private_data);
+	} else if (lease && transport->lease.handler) {
+		struct smb2_lease_break lb;
+
+		ZERO_STRUCT(lb);
+		lb.break_flags =		SVAL(body, 0x4);
+		memcpy(&lb.current_lease.lease_key, body+0x8,
+		    sizeof(struct smb2_lease_key));
+		lb.current_lease.lease_state = 	SVAL(body, 0x18);
+		lb.new_lease_state =		SVAL(body, 0x1C);
+		lb.break_reason =		SVAL(body, 0x20);
+		lb.access_mask_hint = 		SVAL(body, 0x24);
+		lb.share_mask_hint = 		SVAL(body, 0x28);
+
+		transport->lease.handler(transport, &lb,
+		    transport->lease.private_data);
 	} else {
-		DEBUG(5,("Got SMB2 oplock break with no handler\n"));
+		DEBUG(5,("Got SMB2 %s break with no handler\n",
+			lease ? "lease" : "oplock"));
 	}
 
 	return NT_STATUS_OK;
@@ -193,6 +224,7 @@ static NTSTATUS smb2_transport_finish_recv(void *private_data, DATA_BLOB blob)
 	uint16_t buffer_code;
 	uint32_t dynamic_size;
 	uint32_t i;
+	uint16_t opcode;
 	NTSTATUS status;
 
 	buffer = blob.data;
@@ -207,9 +239,16 @@ static NTSTATUS smb2_transport_finish_recv(void *private_data, DATA_BLOB blob)
 
 	flags	= IVAL(hdr, SMB2_HDR_FLAGS);
 	seqnum	= BVAL(hdr, SMB2_HDR_MESSAGE_ID);
+	opcode	= SVAL(hdr, SMB2_HDR_OPCODE);
 
 	/* see MS-SMB2 3.2.5.19 */
 	if (seqnum == UINT64_MAX) {
+		if (opcode != SMB2_OP_BREAK) {
+			DEBUG(1,("Discarding packet with invalid seqnum, "
+				"opcode %u\n", opcode));
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+
 		return smb2_handle_oplock_break(transport, &blob);
 	}
 

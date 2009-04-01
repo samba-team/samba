@@ -56,11 +56,24 @@ struct smb2_handle {
 /*
   SMB2 lease structure (per MS-SMB2 2.2.13)
 */
+struct smb2_lease_key {
+	uint64_t data[2];
+};
+
 struct smb2_lease {
-	uint64_t lease_key[2];
+	struct smb2_lease_key lease_key;
 	uint32_t lease_state;
 	uint32_t lease_flags; /* should be 0 */
 	uint64_t lease_duration; /* should be 0 */
+};
+
+struct smb2_lease_break {
+	struct smb2_lease current_lease;
+	uint32_t break_flags;
+	uint32_t new_lease_state;
+	uint32_t break_reason; /* should be 0 */
+	uint32_t access_mask_hint; /* should be 0 */
+	uint32_t share_mask_hint; /* should be 0 */
 };
 
 struct ntvfs_handle;
@@ -2006,6 +2019,14 @@ union smb_lock {
 			/* struct smb2_handle handle; */
 		} in, out;
 	} smb2_break;
+
+	/* SMB2 Lease Break Ack (same opcode as smb2_break) */
+	struct smb2_lease_break_ack {
+		struct {
+			uint32_t reserved;
+			struct smb2_lease lease;
+		} in, out;
+	} smb2_lease_break_ack;
 };
 
 

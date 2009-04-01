@@ -324,7 +324,7 @@ NTSTATUS onefs_brl_lock_windows(vfs_handle_struct *handle,
 		id = onefs_get_new_id();
 	}
 
-	DEBUG(10, ("Calling ifs_cbrl(LOCK)..."));
+	DEBUG(10, ("Calling ifs_cbrl(LOCK)...\n"));
 	error = ifs_cbrl(fd, CBRL_OP_LOCK, type, plock->start,
 	    plock->size, async, id, plock->context.smbpid, plock->context.tid,
 	    plock->fnum);
@@ -388,7 +388,7 @@ bool onefs_brl_unlock_windows(vfs_handle_struct *handle,
 	SMB_ASSERT(plock->lock_flav == WINDOWS_LOCK);
 	SMB_ASSERT(plock->lock_type == UNLOCK_LOCK);
 
-	DEBUG(10, ("Calling ifs_cbrl(UNLOCK)..."));
+	DEBUG(10, ("Calling ifs_cbrl(UNLOCK)...\n"));
 	error = ifs_cbrl(fd, CBRL_OP_UNLOCK, CBRL_LK_SH,
 	    plock->start, plock->size, false, 0, plock->context.smbpid,
 	    plock->context.tid, plock->fnum);
@@ -432,9 +432,9 @@ bool onefs_brl_cancel_windows(vfs_handle_struct *handle,
 	bs = ((struct onefs_cbrl_blr_state *)blr->blr_private);
 	SMB_ASSERT(bs);
 
-	if (bs->state == ONEFS_CBRL_DONE) {
+	if (bs->state == ONEFS_CBRL_DONE || bs->state == ONEFS_CBRL_ERROR) {
 		/* No-op. */
-		DEBUG(10, ("State=DONE, returning true\n"));
+		DEBUG(10, ("State=%d, returning true\n", bs->state));
 		END_PROFILE(syscall_brl_cancel);
 		return true;
 	}
@@ -443,7 +443,7 @@ bool onefs_brl_cancel_windows(vfs_handle_struct *handle,
 	    bs->state == ONEFS_CBRL_ASYNC);
 
 	/* A real cancel. */
-	DEBUG(10, ("Calling ifs_cbrl(CANCEL)..."));
+	DEBUG(10, ("Calling ifs_cbrl(CANCEL)...\n"));
 	error = ifs_cbrl(fd, CBRL_OP_CANCEL, CBRL_LK_UNSPEC, plock->start,
 	    plock->size, false, bs->id, plock->context.smbpid,
 	    plock->context.tid, plock->fnum);

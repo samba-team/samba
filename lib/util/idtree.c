@@ -372,12 +372,16 @@ _PUBLIC_ int idr_get_new_random(struct idr_context *idp, void *ptr, int limit)
 
 	/* first try a random starting point in the whole range, and if that fails,
 	   then start randomly in the bottom half of the range. This can only
-	   fail if the range is over half full */
+	   fail if the range is over half full, and finally fallback to any
+	   free id */
 	id = idr_get_new_above(idp, ptr, 1+(generate_random() % limit), limit);
 	if (id == -1) {
 		id = idr_get_new_above(idp, ptr, 1+(generate_random()%(limit/2)), limit);
 	}
-	
+	if (id == -1) {
+		id = idr_get_new_above(idp, ptr, 1, limit);
+	}
+
 	return id;
 }
 
