@@ -1754,6 +1754,21 @@ uninstalllibs:: @UNINSTALL_LIBTALLOC@
 cleanlibs:: cleanlibtalloc
 shlibs test_shlibs: @LIBTALLOC_SHARED@
 
+showlibtalloc:
+	@echo  ""
+	@echo "LIBTALLOC_SHARED               = @LIBTALLOC_SHARED@"
+	@echo "LIBTALLOC_STATIC               = @LIBTALLOC_STATIC@"
+	@echo "LIBTALLOC_TARGET               = @LIBTALLOC_TARGET@"
+	@echo "LIBTALLOC_LIBS                 = $(LIBTALLOC_LIBS)"
+	@echo ""
+	@echo "LIBTALLOC_SHARED_TARGET        = $(LIBTALLOC_SHARED_TARGET)"
+	@echo "LIBTALLOC_SOVER                = $(LIBTALLOC_SOVER)"
+	@echo "LIBTALLOC_SHARED TARGET_SONAME = $(LIBTALLOC_SHARED_TARGET_SONAME)"
+	@echo "LIBTALLOC_STATIC_TARGET        = $(LIBTALLOC_STATIC_TARGET)"
+	@echo "LIBTALLOC                      = $(LIBTALLOC)"
+
+showlibs:: showlibtalloc
+
 #-------------------------------------------------------------------
 #
 # libtdb
@@ -1820,6 +1835,21 @@ installlibs:: @INSTALL_LIBTDB@
 uninstalllibs:: @UNINSTALL_LIBTDB@
 cleanlibs:: cleanlibtdb
 shlibs test_shlibs: @LIBTDB_SHARED@
+
+showlibtdb:
+	@echo  ""
+	@echo "LIBTDB_SHARED               = @LIBTDB_SHARED@"
+	@echo "LIBTDB_STATIC               = @LIBTDB_STATIC@"
+	@echo "LIBTDB_TARGET               = @LIBTDB_TARGET@"
+	@echo "LIBTDB_LIBS                 = $(LIBTDB_LIBS)"
+	@echo ""
+	@echo "LIBTDB_SHARED_TARGET        = $(LIBTDB_SHARED_TARGET)"
+	@echo "LIBTDB_SOVER                = $(LIBTDB_SOVER)"
+	@echo "LIBTDB_SHARED TARGET_SONAME = $(LIBTDB_SHARED_TARGET_SONAME)"
+	@echo "LIBTDB_STATIC_TARGET        = $(LIBTDB_STATIC_TARGET)"
+	@echo "LIBTDB                      = $(LIBTDB)"
+
+showlibs:: showlibtdb
 
 #-------------------------------------------------------------------
 #
@@ -1893,6 +1923,21 @@ uninstalllibs:: uninstalllibwbclient
 cleanlibs:: cleanlibwbclient
 shlibs test_shlibs: @LIBWBCLIENT_SHARED@
 
+showlibwbclient:
+	@echo  ""
+	@echo "LIBWBCLIENT_SHARED               = @LIBWBCLIENT_SHARED@"
+	@echo "LIBWBCLIENT_STATIC               = @LIBWBCLIENT_STATIC@"
+	@echo "LIBWBCLIENT_TARGET               = @LIBWBCLIENT_TARGET@"
+	@echo "LIBWBCLIENT_LIBS                 = $(LIBWBCLIENT_LIBS)"
+	@echo ""
+	@echo "LIBWBCLIENT_SHARED_TARGET        = $(LIBWBCLIENT_SHARED_TARGET)"
+	@echo "LIBWBCLIENT_SOVER                = $(LIBWBCLIENT_SOVER)"
+	@echo "LIBWBCLIENT_SHARED TARGET_SONAME = $(LIBWBCLIENT_SHARED_TARGET_SONAME)"
+	@echo "LIBWBCLIENT_STATIC_TARGET        = $(LIBWBCLIENT_STATIC_TARGET)"
+	@echo "LIBWBCLIENT                      = $(LIBWBCLIENT)"
+
+showlibs:: showlibwbclient
+
 
 #-------------------------------------------------------------------
 #
@@ -1951,6 +1996,21 @@ installlibs:: @INSTALL_LIBADDNS@
 uninstalllibs:: @UNINSTALL_LIBADDNS@
 cleanlibs:: cleanlibaddns
 shlibs test_shlibs: @LIBADDNS_SHARED@
+
+showlibaddns:
+	@echo  ""
+	@echo "LIBADDNS_SHARED               = @LIBADDNS_SHARED@"
+	@echo "LIBADDNS_STATIC               = @LIBADDNS_STATIC@"
+	@echo "LIBADDNS_TARGET               = @LIBADDNS_TARGET@"
+	@echo "LIBADDNS_LIBS                 = $(LIBADDNS_LIBS)"
+	@echo ""
+	@echo "LIBADDNS_SHARED_TARGET        = $(LIBADDNS_SHARED_TARGET)"
+	@echo "LIBADDNS_SOVER                = $(LIBADDNS_SOVER)"
+	@echo "LIBADDNS_SHARED TARGET_SONAME = $(LIBADDNS_SHARED_TARGET_SONAME)"
+	@echo "LIBADDNS_STATIC_TARGET        = $(LIBADDNS_STATIC_TARGET)"
+	@echo "LIBADDNS                      = $(LIBADDNS)"
+
+showlibs:: showlibaddns
 
 #-------------------------------------------------------------------
 #
@@ -2042,6 +2102,21 @@ uninstalllibs:: @UNINSTALL_LIBNETAPI@
 cleanlibs:: cleanlibnetapi
 shlibs test_shlibs: @LIBNETAPI_SHARED@
 
+showlibnetapi:
+	@echo  ""
+	@echo "LIBNETAPI_SHARED               = @LIBNETAPI_SHARED@"
+	@echo "LIBNETAPI_STATIC               = @LIBNETAPI_STATIC@"
+	@echo "LIBNETAPI_TARGET               = @LIBNETAPI_TARGET@"
+	@echo "LIBNETAPI_LIBS                 = $(LIBNETAPI_LIBS)"
+	@echo ""
+	@echo "LIBNETAPI_SHARED_TARGET        = $(LIBNETAPI_SHARED_TARGET)"
+	@echo "LIBNETAPI_SOVER                = $(LIBNETAPI_SOVER)"
+	@echo "LIBNETAPI_SHARED TARGET_SONAME = $(LIBNETAPI_SHARED_TARGET_SONAME)"
+	@echo "LIBNETAPI_STATIC_TARGET        = $(LIBNETAPI_STATIC_TARGET)"
+	@echo "LIBNETAPI                      = $(LIBNETAPI)"
+
+showlibs:: showlibnetapi
+
 #-------------------------------------------------------------------
 #
 # libsmbclient
@@ -2110,6 +2185,21 @@ uninstalllibs:: @UNINSTALL_LIBSMBCLIENT@
 cleanlibs:: cleanlibsmbclient
 shlibs test_shlibs: @LIBSMBCLIENT_SHARED@
 
+showlibsmbclient:
+	@echo  ""
+	@echo "LIBSMBCLIENT_SHARED               = @LIBSMBCLIENT_SHARED@"
+	@echo "LIBSMBCLIENT_STATIC               = @LIBSMBCLIENT_STATIC@"
+	@echo "LIBSMBCLIENT_TARGET               = @LIBSMBCLIENT_TARGET@"
+	@echo "LIBSMBCLIENT_LIBS                 = $(LIBSMBCLIENT_LIBS)"
+	@echo ""
+	@echo "LIBSMBCLIENT_SHARED_TARGET        = $(LIBSMBCLIENT_SHARED_TARGET)"
+	@echo "LIBSMBCLIENT_SOVER                = $(LIBSMBCLIENT_SOVER)"
+	@echo "LIBSMBCLIENT_SHARED TARGET_SONAME = $(LIBSMBCLIENT_SHARED_TARGET_SONAME)"
+	@echo "LIBSMBCLIENT_STATIC_TARGET        = $(LIBSMBCLIENT_STATIC_TARGET)"
+	@echo "LIBSMBCLIENT                      = $(LIBSMBCLIENT)"
+
+showlibs:: showlibsmbclient
+
 #-------------------------------------------------------------------
 #
 # libsmbsharemodes
@@ -2177,6 +2267,21 @@ installlibs:: @INSTALL_LIBSMBSHAREMODES@
 uninstalllibs:: @UNINSTALL_LIBSMBSHAREMODES@
 cleanlibs:: cleanlibsmbsharemodes
 shlibs test_shlibs: @LIBSMBSHAREMODES_SHARED@
+
+showlibsmbsharemodes:
+	@echo  ""
+	@echo "LIBSMBSHAREMODES_SHARED               = @LIBSMBSHAREMODES_SHARED@"
+	@echo "LIBSMBSHAREMODES_STATIC               = @LIBSMBSHAREMODES_STATIC@"
+	@echo "LIBSMBSHAREMODES_TARGET               = @LIBSMBSHAREMODES_TARGET@"
+	@echo "LIBSMBSHAREMODES_LIBS                 = $(LIBSMBSHAREMODES_LIBS)"
+	@echo ""
+	@echo "LIBSMBSHAREMODES_SHARED_TARGET        = $(LIBSMBSHAREMODES_SHARED_TARGET)"
+	@echo "LIBSMBSHAREMODES_SOVER                = $(LIBSMBSHAREMODES_SOVER)"
+	@echo "LIBSMBSHAREMODES_SHARED TARGET_SONAME = $(LIBSMBSHAREMODES_SHARED_TARGET_SONAME)"
+	@echo "LIBSMBSHAREMODES_STATIC_TARGET        = $(LIBSMBSHAREMODES_STATIC_TARGET)"
+	@echo "LIBSMBSHAREMODES                      = $(LIBSMBSHAREMODES)"
+
+showlibs:: showlibsmbsharemodes
 
 #-------------------------------------------------------------------
 #
@@ -2274,6 +2379,21 @@ installlibs:: @INSTALL_LIBLUA@
 uninstalllibs:: @UNINSTALL_LIBLUA@
 cleanlibs:: cleanliblua
 shlibs test_shlibs: @LIBLUA_SHARED@
+
+showliblua:
+	@echo  ""
+	@echo "LIBLUA_SHARED               = @LIBLUA_SHARED@"
+	@echo "LIBLUA_STATIC               = @LIBLUA_STATIC@"
+	@echo "LIBLUA_TARGET               = @LIBLUA_TARGET@"
+	@echo "LIBLUA_LIBS                 = $(LIBLUA_LIBS)"
+	@echo ""
+	@echo "LIBLUA_SHARED_TARGET        = $(LIBLUA_SHARED_TARGET)"
+	@echo "LIBLUA_SOVER                = $(LIBLUA_SOVER)"
+	@echo "LIBLUA_SHARED TARGET_SONAME = $(LIBLUA_SHARED_TARGET_SONAME)"
+	@echo "LIBLUA_STATIC_TARGET        = $(LIBLUA_STATIC_TARGET)"
+	@echo "LIBLUA                      = $(LIBLUA)"
+
+showlibs:: showliblua
 
 
 #####################################################################
