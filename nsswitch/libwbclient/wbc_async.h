@@ -112,6 +112,12 @@ struct tevent_req *wbcSidToGid_send(TALLOC_CTX *mem_ctx,
 				    const struct wbcDomainSid *sid);
 wbcErr wbcSidToGid_recv(struct tevent_req *req, gid_t *pgid);
 
+struct tevent_req *wbcGidToSid_send(TALLOC_CTX *mem_ctx,
+				    struct tevent_context *ev,
+				    struct wb_context *wb_ctx,
+				    gid_t gid);
+wbcErr wbcGidToSid_recv(struct tevent_req *req, struct wbcDomainSid *psid);
+
 /* Async functions from wbc_util.c */
 
 struct tevent_req *wbcPing_send(TALLOC_CTX *mem_ctx,
