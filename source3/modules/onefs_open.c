@@ -199,23 +199,6 @@ static NTSTATUS onefs_open_file(files_struct *fsp,
 	if ((conn->fs_capabilities & FILE_NAMED_STREAMS) && stream != NULL) {
 		SMB_ASSERT(fsp->base_fsp);
 
-		/*
-		 * We have never seen an oplock taken on a stream, and our
-		 * current implementation doesn't support it.  If a request is
-		 * seen, log a loud error message and ignore the requested
-		 * oplock.
-		 */
-		if ((oplock_request & ~SAMBA_PRIVATE_OPLOCK_MASK) !=
-		     NO_OPLOCK) {
-			DEBUG(0, ("Oplock(%d) being requested on a stream! "
-				  "Ignoring oplock request: base=%s, "
-				  "stream=%s\n",
-				  oplock_request & ~SAMBA_PRIVATE_OPLOCK_MASK,
-				  base, stream));
-			/* Recover by requesting NO_OPLOCK instead. */
-			oplock_request &= SAMBA_PRIVATE_OPLOCK_MASK;
-		}
-
 		DEBUG(10,("Opening a stream: base=%s(%d), stream=%s\n",
 			  base, fsp->base_fsp->fh->fd, stream));
 
@@ -531,10 +514,7 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 	 *
 	 *   1. Open the base file of a stream: Always done stat-only
 	 *
-	 *   2. Open the stream: Oplocks are disallowed on streams, so an
-	 *      oplock will never be contended.
-	 *
-	 *   3. open_file_fchmod(), which is called from 3 places:
+	 *   2. open_file_fchmod(), which is called from 3 places:
 	 *      A. try_chown: Posix acls only. Never called on onefs.
 	 *      B. set_ea_dos_attributes: Can't be called from onefs, because
 	 *         SMB_VFS_SETXATTR return ENOSYS.
@@ -1781,6 +1761,21 @@ static NTSTATUS onefs_create_file_unixpath(connection_struct *conn,
 			DEBUG(10, ("onefs_create_file_unixpath for base %s "
 				  "failed: %s\n", base, nt_errstr(status)));
 			goto fail;
+		}
+
+		/*
+		 * Testing against windows xp/2003/vista shows that oplocks
+		 * can actually be requested and granted on streams (see the
+		 * RAW-OPLOCK-STREAM1 smbtorture test).
+		 */
+		if ((oplock_request & ~SAMBA_PRIVATE_OPLOCK_MASK) !=
+		     NO_OPLOCK) {
+			DEBUG(5, ("Oplock(%d) being requested on a stream! "
+				  "Ignoring oplock request: fname=%s\n",
+				  oplock_request & ~SAMBA_PRIVATE_OPLOCK_MASK,
+				  fname));
+			/* Request NO_OPLOCK instead. */
+			oplock_request &= SAMBA_PRIVATE_OPLOCK_MASK;
 		}
 	}
 
