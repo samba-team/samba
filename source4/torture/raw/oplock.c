@@ -2855,6 +2855,181 @@ done:
 	return ret;
 }
 
+/* Test how oplocks work on streams. */
+static bool test_raw_oplock_stream1(struct torture_context *tctx,
+				    struct smbcli_state *cli1,
+				    struct smbcli_state *cli2)
+{
+	NTSTATUS status;
+	union smb_open io;
+	const char *fname_base = BASEDIR "\\test_stream1.txt";
+	const char *stream = "Stream One:$DATA";
+	const char *fname_stream, *fname_default_stream;
+	const char *default_stream = "::$DATA";
+	bool ret = true;
+	int fnum = -1;
+	int i;
+	int stream_fnum = -1;
+	uint32_t batch_req = NTCREATEX_FLAGS_REQUEST_OPLOCK |
+	    NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK | NTCREATEX_FLAGS_EXTENDED;
+	uint32_t exclusive_req = NTCREATEX_FLAGS_REQUEST_OPLOCK |
+	    NTCREATEX_FLAGS_EXTENDED;
+
+	/* Only passes against windows at the moment. */
+	if (torture_setting_bool(tctx, "samba3", false) ||
+	    torture_setting_bool(tctx, "samba4", false)) {
+		torture_skip(tctx, "STREAM1 disabled against samba3+4\n");
+	}
+
+	fname_stream = talloc_asprintf(tctx, "%s:%s", fname_base, stream);
+	fname_default_stream = talloc_asprintf(tctx, "%s%s", fname_base,
+					       default_stream);
+
+	if (!torture_setup_dir(cli1, BASEDIR)) {
+		return false;
+	}
+	smbcli_unlink(cli1->tree, fname_base);
+
+	smbcli_oplock_handler(cli2->transport, oplock_handler_ack_to_given, cli2->tree);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_given, cli1->tree);
+
+	/* Setup generic open parameters. */
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.access_mask = (SEC_FILE_READ_DATA|SEC_FILE_WRITE_DATA|
+	    SEC_FILE_APPEND_DATA|SEC_STD_READ_CONTROL);
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+	    NTCREATEX_SHARE_ACCESS_WRITE;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+
+	/* Create the file with a stream */
+	io.ntcreatex.in.fname = fname_stream;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	status = smb_raw_open(cli1->tree, tctx, &io);
+	CHECK_STATUS(tctx, status, NT_STATUS_OK);
+	smbcli_close(cli1->tree, io.ntcreatex.out.file.fnum);
+
+	/* Change the disposition to open now that the file has been created. */
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+
+	/* Try some permutations of taking oplocks on streams. */
+#define NSTREAM_OPLOCK_RESULTS 8
+	struct {
+		const char *fname;
+		bool open_base_file;
+		uint32_t oplock_req;
+		uint32_t oplock_granted;
+	} stream_oplock_results[NSTREAM_OPLOCK_RESULTS] = {
+		/* Request oplock on stream without the base file open. */
+		{fname_stream, false, batch_req, NO_OPLOCK_RETURN},
+		{fname_default_stream, false, batch_req, NO_OPLOCK_RETURN},
+		{fname_stream, false, exclusive_req, EXCLUSIVE_OPLOCK_RETURN},
+		{fname_default_stream, false,  exclusive_req, EXCLUSIVE_OPLOCK_RETURN},
+
+		/* Request oplock on stream with the base file open. */
+		{fname_stream, true, batch_req, NO_OPLOCK_RETURN},
+		{fname_default_stream, true, batch_req, NO_OPLOCK_RETURN},
+		{fname_stream, true, exclusive_req, EXCLUSIVE_OPLOCK_RETURN},
+		{fname_default_stream, true,  exclusive_req, LEVEL_II_OPLOCK_RETURN},
+
+	};
+
+	for (i = 0; i < NSTREAM_OPLOCK_RESULTS; i++) {
+		const char *fname = stream_oplock_results[i].fname;
+		bool open_base_file = stream_oplock_results[i].open_base_file;
+		uint32_t oplock_req = stream_oplock_results[i].oplock_req;
+		uint32_t oplock_granted =
+		    stream_oplock_results[i].oplock_granted;
+		int base_fnum = -1;
+
+		if (open_base_file) {
+			torture_comment(tctx, "Opening base file: %s with "
+			    "%d\n", fname_base, oplock_req);
+			io.ntcreatex.in.fname = fname_base;
+			io.ntcreatex.in.flags = batch_req;
+			status = smb_raw_open(cli2->tree, tctx, &io);
+			CHECK_STATUS(tctx, status, NT_STATUS_OK);
+			CHECK_VAL(io.ntcreatex.out.oplock_level,
+			    BATCH_OPLOCK_RETURN);
+			base_fnum = io.ntcreatex.out.file.fnum;
+		}
+
+		torture_comment(tctx, "%d: Opening stream: %s with %d\n", i,
+		    fname, oplock_req);
+		io.ntcreatex.in.fname = fname;
+		io.ntcreatex.in.flags = oplock_req;
+
+		/* Do the open with the desired oplock on the stream. */
+		status = smb_raw_open(cli1->tree, tctx, &io);
+		CHECK_STATUS(tctx, status, NT_STATUS_OK);
+		CHECK_VAL(io.ntcreatex.out.oplock_level, oplock_granted);
+		smbcli_close(cli1->tree, io.ntcreatex.out.file.fnum);
+
+		/* Cleanup the base file if it was opened. */
+		if (base_fnum != -1) {
+			smbcli_close(cli2->tree, base_fnum);
+		}
+	}
+
+	/* Open the stream with an exclusive oplock. */
+	torture_comment(tctx, "Opening stream: %s with %d\n",
+	    fname_stream, exclusive_req);
+	io.ntcreatex.in.fname = fname_stream;
+	io.ntcreatex.in.flags = exclusive_req;
+	status = smb_raw_open(cli1->tree, tctx, &io);
+	CHECK_STATUS(tctx, status, NT_STATUS_OK);
+	CHECK_VAL(io.ntcreatex.out.oplock_level, EXCLUSIVE_OPLOCK_RETURN);
+	stream_fnum = io.ntcreatex.out.file.fnum;
+
+	/* Open the base file and see if it contends. */
+	ZERO_STRUCT(break_info);
+	torture_comment(tctx, "Opening base file: %s with "
+	    "%d\n", fname_base, batch_req);
+	io.ntcreatex.in.fname = fname_base;
+	io.ntcreatex.in.flags = batch_req;
+	status = smb_raw_open(cli2->tree, tctx, &io);
+	CHECK_STATUS(tctx, status, NT_STATUS_OK);
+	CHECK_VAL(io.ntcreatex.out.oplock_level,
+	    BATCH_OPLOCK_RETURN);
+	smbcli_close(cli2->tree, io.ntcreatex.out.file.fnum);
+
+	CHECK_VAL(break_info.count, 0);
+	CHECK_VAL(break_info.failures, 0);
+
+	/* Open the stream again to see if it contends. */
+	ZERO_STRUCT(break_info);
+	torture_comment(tctx, "Opening stream again: %s with "
+	    "%d\n", fname_base, batch_req);
+	io.ntcreatex.in.fname = fname_stream;
+	io.ntcreatex.in.flags = exclusive_req;
+	status = smb_raw_open(cli2->tree, tctx, &io);
+	CHECK_STATUS(tctx, status, NT_STATUS_OK);
+	CHECK_VAL(io.ntcreatex.out.oplock_level,
+	    LEVEL_II_OPLOCK_RETURN);
+	smbcli_close(cli2->tree, io.ntcreatex.out.file.fnum);
+
+	CHECK_VAL(break_info.count, 1);
+	CHECK_VAL(break_info.level, OPLOCK_BREAK_TO_LEVEL_II);
+	CHECK_VAL(break_info.failures, 0);
+
+	/* Close the stream. */
+	if (stream_fnum != -1) {
+		smbcli_close(cli1->tree, stream_fnum);
+	}
+
+ done:
+	smbcli_close(cli1->tree, fnum);
+	smb_raw_exit(cli1->session);
+	smb_raw_exit(cli2->session);
+	smbcli_deltree(cli1->tree, BASEDIR);
+	return ret;
+}
+
 /* 
    basic testing of oplocks
 */
@@ -2893,6 +3068,7 @@ struct torture_suite *torture_raw_oplock(TALLOC_CTX *mem_ctx)
 	torture_suite_add_2smb_test(suite, "BATCH23", test_raw_oplock_batch23);
 	torture_suite_add_2smb_test(suite, "BATCH24", test_raw_oplock_batch24);
 	torture_suite_add_2smb_test(suite, "BATCH25", test_raw_oplock_batch25);
+	torture_suite_add_2smb_test(suite, "STREAM1", test_raw_oplock_stream1);
 
 	return suite;
 }
