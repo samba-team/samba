@@ -445,7 +445,7 @@ static bool set_printer_hnd_name(Printer_entry *Printer, const char *handlename)
 			aprinter++;
 		}
 	} else {
-		servername = "";
+		servername = global_myname();
 	}
 
 	/* save the servername to fill in replies on this handle */
