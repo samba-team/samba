@@ -817,11 +817,16 @@ static bool tdb_update_ridrec_only( struct samu* newpwd, int flag )
 static bool tdb_update_sam(struct pdb_methods *my_methods, struct samu* newpwd,
 			   int flag)
 {
-	if (!pdb_get_user_rid(newpwd)) {
+	uint32_t oldrid;
+	uint32_t newrid;
+
+	if (!(newrid = pdb_get_user_rid(newpwd))) {
 		DEBUG(0,("tdb_update_sam: struct samu (%s) with no RID!\n",
 			 pdb_get_username(newpwd)));
 		return False;
 	}
+
+	oldrid = newrid;
 
 	/* open the database */
 
@@ -835,9 +840,58 @@ static bool tdb_update_sam(struct pdb_methods *my_methods, struct samu* newpwd,
 		return false;
 	}
 
-	if (!tdb_update_samacct_only(newpwd, flag)
-	    || !tdb_update_ridrec_only(newpwd, flag)) {
+	/* If we are updating, we may be changing this users RID. Retrieve the old RID
+	   so we can check. */
+
+	if (flag == TDB_MODIFY) {
+		struct samu *account = samu_new(talloc_tos());
+		if (account == NULL) {
+			DEBUG(0,("tdb_update_sam: samu_new() failed\n"));
+			goto cancel;
+		}
+		if (!NT_STATUS_IS_OK(tdbsam_getsampwnam(my_methods, account, pdb_get_username(newpwd)))) {
+			DEBUG(0,("tdb_update_sam: tdbsam_getsampwnam() for %s failed\n",
+				pdb_get_username(newpwd)));
+			TALLOC_FREE(account);
+			goto cancel;
+		}
+		if (!(oldrid = pdb_get_user_rid(account))) {
+			DEBUG(0,("tdb_update_sam: pdb_get_user_rid() failed\n"));
+			TALLOC_FREE(account);
+			goto cancel;
+		}
+		TALLOC_FREE(account);
+	}
+
+	/* Update the new samu entry. */
+	if (!tdb_update_samacct_only(newpwd, flag)) {
 		goto cancel;
+	}
+
+	/* Now take care of the case where the RID changed. We need
+	 * to delete the old RID key and add the new. */
+
+	if (flag == TDB_MODIFY && newrid != oldrid) { 
+		fstring keystr;
+
+		/* Delete old RID key */
+		DEBUG(10, ("tdb_update_sam: Deleting key for RID %u\n", oldrid));
+		slprintf(keystr, sizeof(keystr) - 1, "%s%.8x", RIDPREFIX, oldrid);
+		if (!NT_STATUS_IS_OK(dbwrap_delete_bystring(db_sam, keystr))) {
+			DEBUG(0, ("tdb_update_sam: Can't delete %s\n", keystr));
+			goto cancel;
+		}
+		/* Insert new RID key */
+		DEBUG(10, ("tdb_update_sam: Inserting key for RID %u\n", newrid));
+		if (!tdb_update_ridrec_only(newpwd, TDB_INSERT)) {
+			goto cancel;
+		}
+	} else {
+		DEBUG(10, ("tdb_update_sam: %s key for RID %u\n",
+			flag == TDB_MODIFY ? "Updating" : "Inserting", newrid));
+		if (!tdb_update_ridrec_only(newpwd, flag)) {
+			goto cancel;
+		}
 	}
 
 	if (db_sam->transaction_commit(db_sam) != 0) {
