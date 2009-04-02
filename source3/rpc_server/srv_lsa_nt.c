@@ -648,14 +648,14 @@ NTSTATUS _lsa_QueryInfoPolicy(pipes_struct *p,
 				 * only a BDC is a backup controller
 				 * of the domain, it controls.
 				 */
-				info->role.role = 2;
+				info->role.role = LSA_ROLE_BACKUP;
 				break;
 			default:
 				/*
 				 * any other role is a primary
 				 * of the domain, it controls.
 				 */
-				info->role.role = 3;
+				info->role.role = LSA_ROLE_PRIMARY;
 				break;
 		}
 		break;
