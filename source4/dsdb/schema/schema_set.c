@@ -57,7 +57,6 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 	ldb_schema_attribute_set_override_handler(ldb, dsdb_attribute_handler_override, schema);
 
 	if (!write_attributes) {
-		talloc_free(mem_ctx);
 		return ret;
 	}
 
