@@ -321,6 +321,106 @@ wbcErr wbcQueryUidToSid(uid_t uid,
 	return WBC_ERR_NOT_IMPLEMENTED;
 }
 
+struct wbc_sid_to_gid_state {
+	struct winbindd_request req;
+	gid_t gid;
+};
+
+static void wbcSidToGid_done(struct tevent_req *subreq);
+
+/**
+ * @brief Request to convert a Windows SID to a Unix gid,
+ * allocating a gid if needed
+ *
+ * @param mem_ctx	talloc context to allocate the request from
+ * @param ev		tevent context to use for async operation
+ * @param wb_ctx	winbind context to use
+ * @param *sid		pointer to the domain SID to be resolved
+ *
+ * @return tevent_req on success, NULL on error
+ */
+
+struct tevent_req *wbcSidToGid_send(TALLOC_CTX *mem_ctx,
+				    struct tevent_context *ev,
+				    struct wb_context *wb_ctx,
+				    const struct wbcDomainSid *sid)
+{
+	struct tevent_req *req, *subreq;
+	struct wbc_sid_to_gid_state *state;
+	char *sid_string;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+
+	req = tevent_req_create(mem_ctx, &state, struct wbc_sid_to_gid_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	ZERO_STRUCT(state->req);
+
+	state->req.cmd = WINBINDD_SID_TO_GID;
+	wbc_status = wbcSidToString(sid, &sid_string);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		return tevent_req_post(req, ev);
+	}
+	strncpy(state->req.data.sid, sid_string, sizeof(state->req.data.sid)-1);
+	wbcFreeMemory(sid_string);
+
+	subreq = wb_trans_send(state, ev, wb_ctx, false, &state->req);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_set_callback(subreq, wbcSidToGid_done, req);
+	return req;
+}
+
+static void wbcSidToGid_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+			subreq, struct tevent_req);
+	struct wbc_sid_to_gid_state *state = tevent_req_data(
+			req, struct wbc_sid_to_gid_state);
+	struct winbindd_response *resp;
+	wbcErr wbc_status;
+
+	wbc_status = wb_trans_recv(subreq, state, &resp);
+	TALLOC_FREE(subreq);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		tevent_req_error(req, wbc_status);
+		return;
+	}
+	state->gid = resp->data.gid;
+	TALLOC_FREE(resp);
+
+	tevent_req_done(req);
+}
+
+/**
+ * @brief Receive a Unix gid mapped to a Windows SID
+ *
+ * @param req		tevent_req containing the request
+ * @param *pgid		pointer to hold the resolved gid_t value
+ *
+ * @return #wbcErr
+ */
+
+wbcErr wbcSidToGid_recv(struct tevent_req *req, gid_t *pgid)
+{
+	struct wbc_sid_to_gid_state *state = tevent_req_data(
+			req, struct wbc_sid_to_gid_state);
+	wbcErr wbc_status;
+
+	if (tevent_req_is_wbcerr(req, &wbc_status)) {
+		tevent_req_received(req);
+		return wbc_status;
+	}
+
+	*pgid = state->gid;
+
+	tevent_req_received(req);
+	return WBC_ERR_SUCCESS;
+}
+
 /** @brief Convert a Windows SID to a Unix gid, allocating a gid if needed
  *
  * @param *sid        Pointer to the domain SID to be resolved
@@ -367,6 +467,7 @@ wbcErr wbcSidToGid(const struct wbcDomainSid *sid, gid_t *pgid)
  done:
 	return wbc_status;
 }
+
 
 /* Convert a Windows SID to a Unix gid if there already is a mapping */
 
