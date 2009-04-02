@@ -403,6 +403,15 @@ const struct ldb_dn_extended_syntax *ldb_dn_extended_syntax_by_name(struct ldb_c
 #define LDB_SYNTAX_INTEGER              "1.3.6.1.4.1.1466.115.121.1.27"
 
 /**
+  LDAP attribute syntax for a boolean
+
+  This is the well-known LDAP attribute syntax for a boolean.
+
+  See <a href="http://www.ietf.org/rfc/rfc2252.txt">RFC 2252</a>, Section 4.3.2 
+*/
+#define LDB_SYNTAX_BOOLEAN              "1.3.6.1.4.1.1466.115.121.1.7"
+
+/**
   LDAP attribute syntax for an octet string
 
   This is the well-known LDAP attribute syntax for an octet string.

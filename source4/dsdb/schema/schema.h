@@ -91,6 +91,7 @@ struct dsdb_attribute {
 
 	/* internal stuff */
 	const struct dsdb_syntax *syntax;
+	const struct ldb_schema_attribute *ldb_schema_attribute;
 };
 
 struct dsdb_class {
@@ -155,6 +156,21 @@ struct dsdb_schema {
 
 	struct dsdb_attribute *attributes;
 	struct dsdb_class *classes;
+
+	/* lists of classes sorted by various attributes, for faster
+	   access */
+	uint32_t num_classes;
+	struct dsdb_class **classes_by_lDAPDisplayName;
+	struct dsdb_class **classes_by_governsID_id;
+	struct dsdb_class **classes_by_governsID_oid;
+	struct dsdb_class **classes_by_cn;
+
+	/* lists of attributes sorted by various fields */
+	uint32_t num_attributes;
+	struct dsdb_attribute **attributes_by_lDAPDisplayName;
+	struct dsdb_attribute **attributes_by_attributeID_id;
+	struct dsdb_attribute **attributes_by_attributeID_oid;
+	struct dsdb_attribute **attributes_by_linkID;
 
 	struct {
 		bool we_are_master;

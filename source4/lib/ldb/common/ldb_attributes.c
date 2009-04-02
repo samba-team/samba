@@ -124,6 +124,16 @@ const struct ldb_schema_attribute *ldb_schema_attribute_by_name(struct ldb_conte
 	int i, e, b = 0, r;
 	const struct ldb_schema_attribute *def = &ldb_attribute_default;
 
+	if (ldb->schema.attribute_handler_override) {
+		const struct ldb_schema_attribute *ret = 
+			ldb->schema.attribute_handler_override(ldb, 
+							       ldb->schema.attribute_handler_override_private,
+							       name);
+		if (ret) {
+			return ret;
+		}
+	}
+
 	/* as handlers are sorted, '*' must be the first if present */
 	if (strcmp(ldb->schema.attributes[0].name, "*") == 0) {
 		def = &ldb->schema.attributes[0];
@@ -273,3 +283,14 @@ const struct ldb_dn_extended_syntax *ldb_dn_extended_syntax_by_name(struct ldb_c
 	return NULL;
 }
 
+/*
+  set an attribute handler override function - used to delegate schema handling
+  to external code
+ */
+void ldb_schema_attribute_set_override_handler(struct ldb_context *ldb,
+					       ldb_attribute_handler_override_fn_t override,
+					       void *private_data)
+{
+	ldb->schema.attribute_handler_override_private = private_data;
+	ldb->schema.attribute_handler_override = override;
+}

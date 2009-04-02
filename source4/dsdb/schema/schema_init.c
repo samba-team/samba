@@ -28,6 +28,7 @@
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "param/param.h"
+#include "lib/ldb/include/ldb_module.h"
 
 struct dsdb_schema *dsdb_new_schema(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience)
 {
@@ -582,6 +583,48 @@ WERROR dsdb_read_prefixes_from_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 	return WERR_OK;
 }
 
+
+/*
+  setup the ldb_schema_attribute field for a dsdb_attribute
+ */
+static int dsdb_schema_setup_ldb_schema_attribute(struct ldb_context *ldb, 
+						  struct dsdb_attribute *attr)
+{
+	const char *syntax = attr->syntax->ldb_syntax;
+	const struct ldb_schema_syntax *s;
+	struct ldb_schema_attribute *a;
+
+	if (!syntax) {
+		syntax = attr->syntax->ldap_oid;
+	}
+
+	s = ldb_samba_syntax_by_lDAPDisplayName(ldb, attr->lDAPDisplayName);
+	if (s == NULL) {
+		s = ldb_samba_syntax_by_name(ldb, syntax);
+	}
+	if (s == NULL) {
+		s = ldb_standard_syntax_by_name(ldb, syntax);
+	}
+
+	if (s == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;		
+	}
+
+	attr->ldb_schema_attribute = a = talloc(attr, struct ldb_schema_attribute);
+	if (attr->ldb_schema_attribute == NULL) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	a->name = attr->lDAPDisplayName;
+	a->flags = 0;
+	a->syntax = s;
+	
+	return LDB_SUCCESS;
+}
+
+
+
 #define GET_STRING_LDB(msg, attr, mem_ctx, p, elem, strict) do { \
 	(p)->elem = samdb_result_string(msg, attr, NULL);\
 	if (strict && (p)->elem == NULL) { \
@@ -676,7 +719,8 @@ WERROR dsdb_read_prefixes_from_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 	}\
 } while (0)
 
-WERROR dsdb_attribute_from_ldb(const struct dsdb_schema *schema,
+WERROR dsdb_attribute_from_ldb(struct ldb_context *ldb,
+			       const struct dsdb_schema *schema,
 			       struct ldb_message *msg,
 			       TALLOC_CTX *mem_ctx,
 			       struct dsdb_attribute *attr)
@@ -742,6 +786,10 @@ WERROR dsdb_attribute_from_ldb(const struct dsdb_schema *schema,
 
 	attr->syntax = dsdb_syntax_for_attribute(attr);
 	if (!attr->syntax) {
+		return WERR_DS_ATT_SCHEMA_REQ_SYNTAX;
+	}
+
+	if (dsdb_schema_setup_ldb_schema_attribute(ldb, attr) != LDB_SUCCESS) {
 		return WERR_DS_ATT_SCHEMA_REQ_SYNTAX;
 	}
 
@@ -866,7 +914,7 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		status = dsdb_attribute_from_ldb(schema, attrs_res->msgs[i], sa, sa);
+		status = dsdb_attribute_from_ldb(ldb, schema, attrs_res->msgs[i], sa, sa);
 		if (!W_ERROR_IS_OK(status)) {
 			*error_string = talloc_asprintf(mem_ctx, 
 				      "schema_fsmo_init: failed to load attribute definition: %s:%s",
@@ -1274,7 +1322,8 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb
 	}\
 } while (0)
 
-WERROR dsdb_attribute_from_drsuapi(struct dsdb_schema *schema,
+WERROR dsdb_attribute_from_drsuapi(struct ldb_context *ldb,
+				   struct dsdb_schema *schema,
 				   struct drsuapi_DsReplicaObject *r,
 				   TALLOC_CTX *mem_ctx,
 				   struct dsdb_attribute *attr)
@@ -1330,6 +1379,10 @@ WERROR dsdb_attribute_from_drsuapi(struct dsdb_schema *schema,
 
 	attr->syntax = dsdb_syntax_for_attribute(attr);
 	if (!attr->syntax) {
+		return WERR_DS_ATT_SCHEMA_REQ_SYNTAX;
+	}
+
+	if (dsdb_schema_setup_ldb_schema_attribute(ldb, attr) != LDB_SUCCESS) {
 		return WERR_DS_ATT_SCHEMA_REQ_SYNTAX;
 	}
 
