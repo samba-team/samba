@@ -615,9 +615,6 @@ static int tsocket_address_bsd_create_socket(const struct tsocket_address *addr,
 		}
 		bsd_type = SOCK_STREAM;
 		break;
-	case TSOCKET_TYPE_DGRAM:
-		bsd_type = SOCK_DGRAM;
-		break;
 	default:
 		errno = EPROTONOSUPPORT;
 		return -1;
@@ -944,73 +941,6 @@ static int tsocket_context_bsd_writev_data(struct tsocket_context *sock,
 	return ret;
 }
 
-static ssize_t tsocket_context_bsd_recvfrom_data(struct tsocket_context *sock,
-						  uint8_t *data, size_t len,
-						  TALLOC_CTX *addr_ctx,
-						  struct tsocket_address **remote)
-{
-	struct tsocket_context_bsd *bsds = talloc_get_type(sock->private_data,
-					   struct tsocket_context_bsd);
-	struct tsocket_address *addr = NULL;
-	struct tsocket_address_bsd *bsda;
-	ssize_t ret;
-	struct sockaddr *sa = NULL;
-	socklen_t sa_len = 0;
-
-	if (remote) {
-		addr = tsocket_address_create(addr_ctx,
-					      &tsocket_address_bsd_ops,
-					      &bsda,
-					      struct tsocket_address_bsd,
-					      __location__ "recvfrom");
-		if (!addr) {
-			return -1;
-		}
-
-		ZERO_STRUCTP(bsda);
-
-		sa = &bsda->u.sa;
-		sa_len = sizeof(bsda->u.ss);
-	}
-
-	ret = recvfrom(bsds->fd, data, len, 0, sa, &sa_len);
-	if (ret < 0) {
-		int saved_errno = errno;
-		talloc_free(addr);
-		errno = saved_errno;
-		return ret;
-	}
-
-	if (remote) {
-		*remote = addr;
-	}
-	return ret;
-}
-
-static ssize_t tsocket_context_bsd_sendto_data(struct tsocket_context *sock,
-						const uint8_t *data, size_t len,
-						const struct tsocket_address *remote)
-{
-	struct tsocket_context_bsd *bsds = talloc_get_type(sock->private_data,
-					   struct tsocket_context_bsd);
-	struct sockaddr *sa = NULL;
-	socklen_t sa_len = 0;
-	ssize_t ret;
-
-	if (remote) {
-		struct tsocket_address_bsd *bsda =
-			talloc_get_type(remote->private_data,
-			struct tsocket_address_bsd);
-
-		sa = &bsda->u.sa;
-		sa_len = sizeof(bsda->u.ss);
-	}
-
-	ret = sendto(bsds->fd, data, len, 0, sa, sa_len);
-
-	return ret;
-}
-
 static int tsocket_context_bsd_get_status(const struct tsocket_context *sock)
 {
 	struct tsocket_context_bsd *bsds = talloc_get_type(sock->private_data,
@@ -1272,8 +1202,6 @@ static const struct tsocket_context_ops tsocket_context_bsd_ops = {
 	.pending_data		= tsocket_context_bsd_pending_data,
 	.readv_data		= tsocket_context_bsd_readv_data,
 	.writev_data		= tsocket_context_bsd_writev_data,
-	.recvfrom_data		= tsocket_context_bsd_recvfrom_data,
-	.sendto_data		= tsocket_context_bsd_sendto_data,
 
 	.get_status		= tsocket_context_bsd_get_status,
 	.get_local_address	= tsocket_context_bsd_get_local_address,

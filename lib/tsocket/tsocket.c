@@ -118,21 +118,6 @@ int tsocket_writev(struct tsocket_context *sock,
 	return sock->ops->writev_data(sock, vector, count);
 }
 
-ssize_t tsocket_recvfrom(struct tsocket_context *sock,
-			 uint8_t *data, size_t len,
-			 TALLOC_CTX *addr_ctx,
-			 struct tsocket_address **src_addr)
-{
-	return sock->ops->recvfrom_data(sock, data, len, addr_ctx, src_addr);
-}
-
-ssize_t tsocket_sendto(struct tsocket_context *sock,
-		       const uint8_t *data, size_t len,
-		       const struct tsocket_address *dest_addr)
-{
-	return sock->ops->sendto_data(sock, data, len, dest_addr);
-}
-
 int tsocket_get_status(const struct tsocket_context *sock)
 {
 	return sock->ops->get_status(sock);

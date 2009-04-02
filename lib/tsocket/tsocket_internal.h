@@ -57,14 +57,6 @@ struct tsocket_context_ops {
 	int (*writev_data)(struct tsocket_context *sock,
 			   const struct iovec *vector, size_t count);
 
-	ssize_t (*recvfrom_data)(struct tsocket_context *sock,
-				 uint8_t *data, size_t len,
-				 TALLOC_CTX *addr_ctx,
-				 struct tsocket_address **remote_addr);
-	ssize_t (*sendto_data)(struct tsocket_context *sock,
-			       const uint8_t *data, size_t len,
-			       const struct tsocket_address *remote_addr);
-
 	/* info */
 	int (*get_status)(const struct tsocket_context *sock);
 	int (*get_local_address)(const struct tsocket_context *sock,

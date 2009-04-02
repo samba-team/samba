@@ -34,7 +34,6 @@ struct iovec;
 
 enum tsocket_type {
 	TSOCKET_TYPE_STREAM = 1,
-	TSOCKET_TYPE_DGRAM,
 	TSOCKET_TYPE_MESSAGE
 };
 
@@ -67,14 +66,6 @@ int tsocket_readv(struct tsocket_context *sock,
 		  const struct iovec *vector, size_t count);
 int tsocket_writev(struct tsocket_context *sock,
 		   const struct iovec *vector, size_t count);
-
-ssize_t tsocket_recvfrom(struct tsocket_context *sock,
-			 uint8_t *data, size_t len,
-			 TALLOC_CTX *addr_ctx,
-			 struct tsocket_address **src_addr);
-ssize_t tsocket_sendto(struct tsocket_context *sock,
-		       const uint8_t *data, size_t len,
-		       const struct tsocket_address *dest_addr);
 
 int tsocket_get_status(const struct tsocket_context *sock);
 
@@ -206,29 +197,6 @@ int _tdgram_unix_dgram_socket(const struct tsocket_address *local,
 /*
  * Async helpers
  */
-
-struct tevent_req *tsocket_recvfrom_send(struct tsocket_context *sock,
-					 TALLOC_CTX *mem_ctx);
-ssize_t tsocket_recvfrom_recv(struct tevent_req *req,
-			      int *perrno,
-			      TALLOC_CTX *mem_ctx,
-			      uint8_t **buf,
-			      struct tsocket_address **src);
-
-struct tevent_req *tsocket_sendto_send(struct tsocket_context *sock,
-				       TALLOC_CTX *mem_ctx,
-				       const uint8_t *buf,
-				       size_t len,
-				       const struct tsocket_address *dst);
-ssize_t tsocket_sendto_recv(struct tevent_req *req, int *perrno);
-
-struct tevent_req *tsocket_sendto_queue_send(TALLOC_CTX *mem_ctx,
-					     struct tsocket_context *sock,
-					     struct tevent_queue *queue,
-					     const uint8_t *buf,
-					     size_t len,
-					     struct tsocket_address *dst);
-ssize_t tsocket_sendto_queue_recv(struct tevent_req *req, int *perrno);
 
 struct tevent_req *tsocket_connect_send(struct tsocket_context *sock,
 					TALLOC_CTX *mem_ctx,
