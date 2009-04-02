@@ -1313,6 +1313,10 @@ static void tdgram_bsd_fde_handler(struct tevent_context *ev,
 		return;
 	}
 	if (flags & TEVENT_FD_READ) {
+		if (!bsds->readable_handler) {
+			TEVENT_FD_NOT_READABLE(bsds->fde);
+			return;
+		}
 		bsds->readable_handler(bsds->readable_private);
 		return;
 	}
@@ -1328,17 +1332,23 @@ static int tdgram_bsd_set_readable_handler(struct tdgram_bsd *bsds,
 			errno = EINVAL;
 			return -1;
 		}
-
+		if (!bsds->readable_handler) {
+			return 0;
+		}
 		bsds->readable_handler = NULL;
 		bsds->readable_private = NULL;
-		TEVENT_FD_NOT_READABLE(bsds->fde);
 
-		if (bsds->fde && !bsds->writeable_handler) {
-			/* we don't need the fd event anymore */
-			bsds->event_ptr = NULL;
-			TALLOC_FREE(bsds->fde);
-		}
 		return 0;
+	}
+
+	/* read and write must use the same tevent_context */
+	if (bsds->event_ptr != ev) {
+		if (bsds->readable_handler || bsds->writeable_handler) {
+			errno = EINVAL;
+			return -1;
+		}
+		bsds->event_ptr = NULL;
+		TALLOC_FREE(bsds->fde);
 	}
 
 	if (bsds->fde == NULL) {
@@ -1352,15 +1362,10 @@ static int tdgram_bsd_set_readable_handler(struct tdgram_bsd *bsds,
 
 		/* cache the event context we're running on */
 		bsds->event_ptr = ev;
+	} else if (!bsds->readable_handler) {
+		TEVENT_FD_READABLE(bsds->fde);
 	}
 
-	/* read and write must use the same tevent_context */
-	if (bsds->event_ptr != ev) {
-		errno = EINVAL;
-		return -1;
-	}
-
-	TEVENT_FD_READABLE(bsds->fde);
 	bsds->readable_handler = handler;
 	bsds->readable_private = private_data;
 
@@ -1377,17 +1382,24 @@ static int tdgram_bsd_set_writeable_handler(struct tdgram_bsd *bsds,
 			errno = EINVAL;
 			return -1;
 		}
-
+		if (!bsds->writeable_handler) {
+			return 0;
+		}
 		bsds->writeable_handler = NULL;
 		bsds->writeable_private = NULL;
 		TEVENT_FD_NOT_WRITEABLE(bsds->fde);
 
-		if (bsds->fde && !bsds->readable_handler) {
-			/* we don't need the fd event anymore */
-			bsds->event_ptr = NULL;
-			TALLOC_FREE(bsds->fde);
-		}
 		return 0;
+	}
+
+	/* read and write must use the same tevent_context */
+	if (bsds->event_ptr != ev) {
+		if (bsds->readable_handler || bsds->writeable_handler) {
+			errno = EINVAL;
+			return -1;
+		}
+		bsds->event_ptr = NULL;
+		TALLOC_FREE(bsds->fde);
 	}
 
 	if (bsds->fde == NULL) {
@@ -1401,15 +1413,10 @@ static int tdgram_bsd_set_writeable_handler(struct tdgram_bsd *bsds,
 
 		/* cache the event context we're running on */
 		bsds->event_ptr = ev;
+	} else if (!bsds->writeable_handler) {
+		TEVENT_FD_WRITEABLE(bsds->fde);
 	}
 
-	/* read and write must use the same tevent_context */
-	if (bsds->event_ptr != ev) {
-		errno = EINVAL;
-		return -1;
-	}
-
-	TEVENT_FD_WRITEABLE(bsds->fde);
 	bsds->writeable_handler = handler;
 	bsds->writeable_private = private_data;
 
@@ -1467,6 +1474,16 @@ static struct tevent_req *tdgram_bsd_recvfrom_send(TALLOC_CTX *mem_ctx,
 
 	if (bsds->fd == -1) {
 		tevent_req_error(req, ENOTCONN);
+		goto post;
+	}
+
+	/*
+	 * this is a fast path, not waiting for the
+	 * socket to become explicit readable gains
+	 * about 10%-20% performance in benchmark tests.
+	 */
+	tdgram_bsd_recvfrom_handler(req);
+	if (!tevent_req_is_in_progress(req)) {
 		goto post;
 	}
 
@@ -1631,6 +1648,16 @@ static struct tevent_req *tdgram_bsd_sendto_send(TALLOC_CTX *mem_ctx,
 
 	if (bsds->fd == -1) {
 		tevent_req_error(req, ENOTCONN);
+		goto post;
+	}
+
+	/*
+	 * this is a fast path, not waiting for the
+	 * socket to become explicit writeable gains
+	 * about 10%-20% performance in benchmark tests.
+	 */
+	tdgram_bsd_sendto_handler(req);
+	if (!tevent_req_is_in_progress(req)) {
 		goto post;
 	}
 
