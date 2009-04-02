@@ -648,14 +648,14 @@ NTSTATUS _lsa_QueryInfoPolicy(pipes_struct *p,
 				 * only a BDC is a backup controller
 				 * of the domain, it controls.
 				 */
-				info->role.role = 2;
+				info->role.role = LSA_ROLE_BACKUP;
 				break;
 			default:
 				/*
 				 * any other role is a primary
 				 * of the domain, it controls.
 				 */
-				info->role.role = 3;
+				info->role.role = LSA_ROLE_PRIMARY;
 				break;
 		}
 		break;
@@ -1434,14 +1434,14 @@ NTSTATUS _lsa_EnumAccounts(pipes_struct *p,
 		sids = TALLOC_ZERO_ARRAY(p->mem_ctx, struct lsa_SidPtr,
 					 num_entries - *r->in.resume_handle);
 		if (!sids) {
-			SAFE_FREE(sid_list);
+			talloc_free(sid_list);
 			return NT_STATUS_NO_MEMORY;
 		}
 
 		for (i = *r->in.resume_handle, j = 0; i < num_entries; i++, j++) {
 			sids[j].sid = sid_dup_talloc(p->mem_ctx, &sid_list[i]);
 			if (!sids[j].sid) {
-				SAFE_FREE(sid_list);
+				talloc_free(sid_list);
 				return NT_STATUS_NO_MEMORY;
 			}
 		}

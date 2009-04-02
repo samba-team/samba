@@ -29,11 +29,11 @@
 
 struct tsocket_context;
 struct tsocket_address;
+struct tdgram_context;
 struct iovec;
 
 enum tsocket_type {
 	TSOCKET_TYPE_STREAM = 1,
-	TSOCKET_TYPE_DGRAM,
 	TSOCKET_TYPE_MESSAGE
 };
 
@@ -66,14 +66,6 @@ int tsocket_readv(struct tsocket_context *sock,
 		  const struct iovec *vector, size_t count);
 int tsocket_writev(struct tsocket_context *sock,
 		   const struct iovec *vector, size_t count);
-
-ssize_t tsocket_recvfrom(struct tsocket_context *sock,
-			 uint8_t *data, size_t len,
-			 TALLOC_CTX *addr_ctx,
-			 struct tsocket_address **src_addr);
-ssize_t tsocket_sendto(struct tsocket_context *sock,
-		       const uint8_t *data, size_t len,
-		       const struct tsocket_address *dest_addr);
 
 int tsocket_get_status(const struct tsocket_context *sock);
 
@@ -121,6 +113,32 @@ int _tsocket_address_create_socket(const struct tsocket_address *addr,
 				       __location__)
 
 /*
+ * tdgram_context related functions
+ */
+struct tevent_req *tdgram_recvfrom_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct tdgram_context *dgram);
+ssize_t tdgram_recvfrom_recv(struct tevent_req *req,
+			     int *perrno,
+			     TALLOC_CTX *mem_ctx,
+			     uint8_t **buf,
+			     struct tsocket_address **src);
+
+struct tevent_req *tdgram_sendto_send(TALLOC_CTX *mem_ctx,
+				      struct tevent_context *ev,
+				      struct tdgram_context *dgram,
+				      const uint8_t *buf, size_t len,
+				      const struct tsocket_address *dst);
+ssize_t tdgram_sendto_recv(struct tevent_req *req,
+			   int *perrno);
+
+struct tevent_req *tdgram_disconnect_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct tdgram_context *dgram);
+int tdgram_disconnect_recv(struct tevent_req *req,
+			   int *perrno);
+
+/*
  * BSD sockets: inet, inet6 and unix
  */
 
@@ -160,32 +178,25 @@ int _tsocket_context_bsd_wrap_existing(TALLOC_CTX *mem_ctx,
 	_tsocket_context_bsd_wrap_existing(mem_ctx, fd, cod, _sock, \
 					   __location__)
 
+int _tdgram_inet_udp_socket(const struct tsocket_address *local,
+			    const struct tsocket_address *remote,
+			    TALLOC_CTX *mem_ctx,
+			    struct tdgram_context **dgram,
+			    const char *location);
+#define tdgram_inet_udp_socket(local, remote, mem_ctx, dgram) \
+	_tdgram_inet_udp_socket(local, remote, mem_ctx, dgram, __location__)
+
+int _tdgram_unix_dgram_socket(const struct tsocket_address *local,
+			      const struct tsocket_address *remote,
+			      TALLOC_CTX *mem_ctx,
+			      struct tdgram_context **dgram,
+			      const char *location);
+#define tdgram_unix_dgram_socket(local, remote, mem_ctx, dgram) \
+	_tdgram_unix_dgram_socket(local, remote, mem_ctx, dgram, __location__)
+
 /*
  * Async helpers
  */
-
-struct tevent_req *tsocket_recvfrom_send(struct tsocket_context *sock,
-					 TALLOC_CTX *mem_ctx);
-ssize_t tsocket_recvfrom_recv(struct tevent_req *req,
-			      int *perrno,
-			      TALLOC_CTX *mem_ctx,
-			      uint8_t **buf,
-			      struct tsocket_address **src);
-
-struct tevent_req *tsocket_sendto_send(struct tsocket_context *sock,
-				       TALLOC_CTX *mem_ctx,
-				       const uint8_t *buf,
-				       size_t len,
-				       const struct tsocket_address *dst);
-ssize_t tsocket_sendto_recv(struct tevent_req *req, int *perrno);
-
-struct tevent_req *tsocket_sendto_queue_send(TALLOC_CTX *mem_ctx,
-					     struct tsocket_context *sock,
-					     struct tevent_queue *queue,
-					     const uint8_t *buf,
-					     size_t len,
-					     struct tsocket_address *dst);
-ssize_t tsocket_sendto_queue_recv(struct tevent_req *req, int *perrno);
 
 struct tevent_req *tsocket_connect_send(struct tsocket_context *sock,
 					TALLOC_CTX *mem_ctx,
@@ -215,6 +226,19 @@ struct tevent_req *tsocket_readv_send(struct tsocket_context *sock,
 				      tsocket_readv_next_iovec_t next_iovec_fn,
 				      void *private_data);
 int tsocket_readv_recv(struct tevent_req *req, int *perrno);
+
+/*
+ * Queue helpers
+ */
+
+struct tevent_req *tdgram_sendto_queue_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct tdgram_context *dgram,
+					    struct tevent_queue *queue,
+					    const uint8_t *buf,
+					    size_t len,
+					    struct tsocket_address *dst);
+ssize_t tdgram_sendto_queue_recv(struct tevent_req *req, int *perrno);
 
 #endif /* _TSOCKET_H */
 

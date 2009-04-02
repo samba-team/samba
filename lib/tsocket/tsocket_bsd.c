@@ -24,8 +24,167 @@
 #include "replace.h"
 #include "system/filesys.h"
 #include "system/network.h"
+#include "system/filesys.h"
 #include "tsocket.h"
 #include "tsocket_internal.h"
+
+static int tsocket_bsd_error_from_errno(int ret,
+					int sys_errno,
+					bool *retry)
+{
+	*retry = false;
+
+	if (ret >= 0) {
+		return 0;
+	}
+
+	if (ret != -1) {
+		return EIO;
+	}
+
+	if (sys_errno == 0) {
+		return EIO;
+	}
+
+	if (sys_errno == EINTR) {
+		*retry = true;
+		return sys_errno;
+	}
+
+	if (sys_errno == EINPROGRESS) {
+		*retry = true;
+		return sys_errno;
+	}
+
+	if (sys_errno == EAGAIN) {
+		*retry = true;
+		return sys_errno;
+	}
+
+#ifdef EWOULDBLOCK
+	if (sys_errno == EWOULDBLOCK) {
+		*retry = true;
+		return sys_errno;
+	}
+#endif
+
+	return sys_errno;
+}
+
+static int tsocket_bsd_common_prepare_fd(int fd, bool high_fd)
+{
+	int i;
+	int sys_errno = 0;
+	int fds[3];
+	int num_fds = 0;
+
+	int result, flags;
+
+	if (fd == -1) {
+		return -1;
+	}
+
+	/* first make a fd >= 3 */
+	if (high_fd) {
+		while (fd < 3) {
+			fds[num_fds++] = fd;
+			fd = dup(fd);
+			if (fd == -1) {
+				sys_errno = errno;
+				break;
+			}
+		}
+		for (i=0; i<num_fds; i++) {
+			close(fds[i]);
+		}
+		if (fd == -1) {
+			errno = sys_errno;
+			return fd;
+		}
+	}
+
+	/* fd should be nonblocking. */
+
+#ifdef O_NONBLOCK
+#define FLAG_TO_SET O_NONBLOCK
+#else
+#ifdef SYSV
+#define FLAG_TO_SET O_NDELAY
+#else /* BSD */
+#define FLAG_TO_SET FNDELAY
+#endif
+#endif
+
+	if ((flags = fcntl(fd, F_GETFL)) == -1) {
+		goto fail;
+	}
+
+	flags |= FLAG_TO_SET;
+	if (fcntl(fd, F_SETFL, flags) == -1) {
+		goto fail;
+	}
+
+#undef FLAG_TO_SET
+
+	/* fd should be closed on exec() */
+#ifdef FD_CLOEXEC
+	result = flags = fcntl(fd, F_GETFD, 0);
+	if (flags >= 0) {
+		flags |= FD_CLOEXEC;
+		result = fcntl(fd, F_SETFD, flags);
+	}
+	if (result < 0) {
+		goto fail;
+	}
+#endif
+	return fd;
+
+ fail:
+	if (fd != -1) {
+		sys_errno = errno;
+		close(fd);
+		errno = sys_errno;
+	}
+	return -1;
+}
+
+static ssize_t tsocket_bsd_pending(int fd)
+{
+	int ret;
+	int value = 0;
+
+	ret = ioctl(fd, FIONREAD, &value);
+	if (ret == -1) {
+		return ret;
+	}
+
+	if (ret == 0) {
+		if (value == 0) {
+			int error=0;
+			socklen_t len = sizeof(error);
+			/*
+			 * if no data is available check if the socket
+			 * is in error state. For dgram sockets
+			 * it's the way to return ICMP error messages
+			 * of connected sockets to the caller.
+			 */
+			ret = getsockopt(fd, SOL_SOCKET, SO_ERROR,
+					 &error, &len);
+			if (ret == -1) {
+				return ret;
+			}
+			if (error != 0) {
+				errno = error;
+				return -1;
+			}
+		}
+		return value;
+	}
+
+	/* this should not be reached */
+	errno = EIO;
+	return -1;
+}
 
 static const struct tsocket_context_ops tsocket_context_bsd_ops;
 static const struct tsocket_address_ops tsocket_address_bsd_ops;
@@ -456,9 +615,6 @@ static int tsocket_address_bsd_create_socket(const struct tsocket_address *addr,
 		}
 		bsd_type = SOCK_STREAM;
 		break;
-	case TSOCKET_TYPE_DGRAM:
-		bsd_type = SOCK_DGRAM;
-		break;
 	default:
 		errno = EPROTONOSUPPORT;
 		return -1;
@@ -785,73 +941,6 @@ static int tsocket_context_bsd_writev_data(struct tsocket_context *sock,
 	return ret;
 }
 
-static ssize_t tsocket_context_bsd_recvfrom_data(struct tsocket_context *sock,
-						  uint8_t *data, size_t len,
-						  TALLOC_CTX *addr_ctx,
-						  struct tsocket_address **remote)
-{
-	struct tsocket_context_bsd *bsds = talloc_get_type(sock->private_data,
-					   struct tsocket_context_bsd);
-	struct tsocket_address *addr = NULL;
-	struct tsocket_address_bsd *bsda;
-	ssize_t ret;
-	struct sockaddr *sa = NULL;
-	socklen_t sa_len = 0;
-
-	if (remote) {
-		addr = tsocket_address_create(addr_ctx,
-					      &tsocket_address_bsd_ops,
-					      &bsda,
-					      struct tsocket_address_bsd,
-					      __location__ "recvfrom");
-		if (!addr) {
-			return -1;
-		}
-
-		ZERO_STRUCTP(bsda);
-
-		sa = &bsda->u.sa;
-		sa_len = sizeof(bsda->u.ss);
-	}
-
-	ret = recvfrom(bsds->fd, data, len, 0, sa, &sa_len);
-	if (ret < 0) {
-		int saved_errno = errno;
-		talloc_free(addr);
-		errno = saved_errno;
-		return ret;
-	}
-
-	if (remote) {
-		*remote = addr;
-	}
-	return ret;
-}
-
-static ssize_t tsocket_context_bsd_sendto_data(struct tsocket_context *sock,
-						const uint8_t *data, size_t len,
-						const struct tsocket_address *remote)
-{
-	struct tsocket_context_bsd *bsds = talloc_get_type(sock->private_data,
-					   struct tsocket_context_bsd);
-	struct sockaddr *sa = NULL;
-	socklen_t sa_len = 0;
-	ssize_t ret;
-
-	if (remote) {
-		struct tsocket_address_bsd *bsda =
-			talloc_get_type(remote->private_data,
-			struct tsocket_address_bsd);
-
-		sa = &bsda->u.sa;
-		sa_len = sizeof(bsda->u.ss);
-	}
-
-	ret = sendto(bsds->fd, data, len, 0, sa, sa_len);
-
-	return ret;
-}
-
 static int tsocket_context_bsd_get_status(const struct tsocket_context *sock)
 {
 	struct tsocket_context_bsd *bsds = talloc_get_type(sock->private_data,
@@ -1113,8 +1202,6 @@ static const struct tsocket_context_ops tsocket_context_bsd_ops = {
 	.pending_data		= tsocket_context_bsd_pending_data,
 	.readv_data		= tsocket_context_bsd_readv_data,
 	.writev_data		= tsocket_context_bsd_writev_data,
-	.recvfrom_data		= tsocket_context_bsd_recvfrom_data,
-	.sendto_data		= tsocket_context_bsd_sendto_data,
 
 	.get_status		= tsocket_context_bsd_get_status,
 	.get_local_address	= tsocket_context_bsd_get_local_address,
@@ -1125,3 +1212,715 @@ static const struct tsocket_context_ops tsocket_context_bsd_ops = {
 
 	.disconnect		= tsocket_context_bsd_disconnect
 };
+
+struct tdgram_bsd {
+	int fd;
+
+	void *event_ptr;
+	struct tevent_fd *fde;
+
+	void *readable_private;
+	void (*readable_handler)(void *private_data);
+	void *writeable_private;
+	void (*writeable_handler)(void *private_data);
+
+	struct tevent_req *read_req;
+	struct tevent_req *write_req;
+};
+
+static void tdgram_bsd_fde_handler(struct tevent_context *ev,
+				   struct tevent_fd *fde,
+				   uint16_t flags,
+				   void *private_data)
+{
+	struct tdgram_bsd *bsds = talloc_get_type_abort(private_data,
+				  struct tdgram_bsd);
+
+	if (flags & TEVENT_FD_WRITE) {
+		bsds->writeable_handler(bsds->writeable_private);
+		return;
+	}
+	if (flags & TEVENT_FD_READ) {
+		if (!bsds->readable_handler) {
+			TEVENT_FD_NOT_READABLE(bsds->fde);
+			return;
+		}
+		bsds->readable_handler(bsds->readable_private);
+		return;
+	}
+}
+
+static int tdgram_bsd_set_readable_handler(struct tdgram_bsd *bsds,
+					   struct tevent_context *ev,
+					   void (*handler)(void *private_data),
+					   void *private_data)
+{
+	if (ev == NULL) {
+		if (handler) {
+			errno = EINVAL;
+			return -1;
+		}
+		if (!bsds->readable_handler) {
+			return 0;
+		}
+		bsds->readable_handler = NULL;
+		bsds->readable_private = NULL;
+
+		return 0;
+	}
+
+	/* read and write must use the same tevent_context */
+	if (bsds->event_ptr != ev) {
+		if (bsds->readable_handler || bsds->writeable_handler) {
+			errno = EINVAL;
+			return -1;
+		}
+		bsds->event_ptr = NULL;
+		TALLOC_FREE(bsds->fde);
+	}
+
+	if (bsds->fde == NULL) {
+		bsds->fde = tevent_add_fd(ev, bsds,
+					  bsds->fd, TEVENT_FD_READ,
+					  tdgram_bsd_fde_handler,
+					  bsds);
+		if (!bsds->fde) {
+			return -1;
+		}
+
+		/* cache the event context we're running on */
+		bsds->event_ptr = ev;
+	} else if (!bsds->readable_handler) {
+		TEVENT_FD_READABLE(bsds->fde);
+	}
+
+	bsds->readable_handler = handler;
+	bsds->readable_private = private_data;
+
+	return 0;
+}
+
+static int tdgram_bsd_set_writeable_handler(struct tdgram_bsd *bsds,
+					    struct tevent_context *ev,
+					    void (*handler)(void *private_data),
+					    void *private_data)
+{
+	if (ev == NULL) {
+		if (handler) {
+			errno = EINVAL;
+			return -1;
+		}
+		if (!bsds->writeable_handler) {
+			return 0;
+		}
+		bsds->writeable_handler = NULL;
+		bsds->writeable_private = NULL;
+		TEVENT_FD_NOT_WRITEABLE(bsds->fde);
+
+		return 0;
+	}
+
+	/* read and write must use the same tevent_context */
+	if (bsds->event_ptr != ev) {
+		if (bsds->readable_handler || bsds->writeable_handler) {
+			errno = EINVAL;
+			return -1;
+		}
+		bsds->event_ptr = NULL;
+		TALLOC_FREE(bsds->fde);
+	}
+
+	if (bsds->fde == NULL) {
+		bsds->fde = tevent_add_fd(ev, bsds,
+					  bsds->fd, TEVENT_FD_WRITE,
+					  tdgram_bsd_fde_handler,
+					  bsds);
+		if (!bsds->fde) {
+			return -1;
+		}
+
+		/* cache the event context we're running on */
+		bsds->event_ptr = ev;
+	} else if (!bsds->writeable_handler) {
+		TEVENT_FD_WRITEABLE(bsds->fde);
+	}
+
+	bsds->writeable_handler = handler;
+	bsds->writeable_private = private_data;
+
+	return 0;
+}
+
+struct tdgram_bsd_recvfrom_state {
+	struct tdgram_context *dgram;
+
+	uint8_t *buf;
+	size_t len;
+	struct tsocket_address *src;
+};
+
+static int tdgram_bsd_recvfrom_destructor(struct tdgram_bsd_recvfrom_state *state)
+{
+	struct tdgram_bsd *bsds = tdgram_context_data(state->dgram,
+				  struct tdgram_bsd);
+
+	bsds->read_req = NULL;
+	tdgram_bsd_set_readable_handler(bsds, NULL, NULL, NULL);
+
+	return 0;
+}
+
+static void tdgram_bsd_recvfrom_handler(void *private_data);
+
+static struct tevent_req *tdgram_bsd_recvfrom_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct tdgram_context *dgram)
+{
+	struct tevent_req *req;
+	struct tdgram_bsd_recvfrom_state *state;
+	struct tdgram_bsd *bsds = tdgram_context_data(dgram, struct tdgram_bsd);
+	int ret;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct tdgram_bsd_recvfrom_state);
+	if (!req) {
+		return NULL;
+	}
+
+	state->dgram	= dgram;
+	state->buf	= NULL;
+	state->len	= 0;
+	state->src	= NULL;
+
+	if (bsds->read_req) {
+		tevent_req_error(req, EBUSY);
+		goto post;
+	}
+	bsds->read_req = req;
+
+	talloc_set_destructor(state, tdgram_bsd_recvfrom_destructor);
+
+	if (bsds->fd == -1) {
+		tevent_req_error(req, ENOTCONN);
+		goto post;
+	}
+
+	/*
+	 * this is a fast path, not waiting for the
+	 * socket to become explicit readable gains
+	 * about 10%-20% performance in benchmark tests.
+	 */
+	tdgram_bsd_recvfrom_handler(req);
+	if (!tevent_req_is_in_progress(req)) {
+		goto post;
+	}
+
+	ret = tdgram_bsd_set_readable_handler(bsds, ev,
+					      tdgram_bsd_recvfrom_handler,
+					      req);
+	if (ret == -1) {
+		tevent_req_error(req, errno);
+		goto post;
+	}
+
+	return req;
+
+ post:
+	tevent_req_post(req, ev);
+	return req;
+}
+
+static void tdgram_bsd_recvfrom_handler(void *private_data)
+{
+	struct tevent_req *req = talloc_get_type_abort(private_data,
+				 struct tevent_req);
+	struct tdgram_bsd_recvfrom_state *state = tevent_req_data(req,
+					struct tdgram_bsd_recvfrom_state);
+	struct tdgram_context *dgram = state->dgram;
+	struct tdgram_bsd *bsds = tdgram_context_data(dgram, struct tdgram_bsd);
+	struct tsocket_address_bsd *bsda;
+	ssize_t ret;
+	struct sockaddr *sa = NULL;
+	socklen_t sa_len = 0;
+	int err;
+	bool retry;
+
+	ret = tsocket_bsd_pending(bsds->fd);
+	if (ret == 0) {
+		/* retry later */
+		return;
+	}
+	err = tsocket_bsd_error_from_errno(ret, errno, &retry);
+	if (retry) {
+		/* retry later */
+		return;
+	}
+	if (tevent_req_error(req, err)) {
+		return;
+	}
+
+	state->buf = talloc_array(state, uint8_t, ret);
+	if (tevent_req_nomem(state->buf, req)) {
+		return;
+	}
+	state->len = ret;
+
+	state->src = tsocket_address_create(state,
+					    &tsocket_address_bsd_ops,
+					    &bsda,
+					    struct tsocket_address_bsd,
+					    __location__ "bsd_recvfrom");
+	if (tevent_req_nomem(state->src, req)) {
+		return;
+	}
+
+	ZERO_STRUCTP(bsda);
+
+	sa = &bsda->u.sa;
+	sa_len = sizeof(bsda->u.ss);
+
+	ret = recvfrom(bsds->fd, state->buf, state->len, 0, sa, &sa_len);
+	err = tsocket_error_from_errno(ret, errno, &retry);
+	if (retry) {
+		/* retry later */
+		return;
+	}
+	if (tevent_req_error(req, err)) {
+		return;
+	}
+
+	if (ret != state->len) {
+		tevent_req_error(req, EIO);
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+static ssize_t tdgram_bsd_recvfrom_recv(struct tevent_req *req,
+					int *perrno,
+					TALLOC_CTX *mem_ctx,
+					uint8_t **buf,
+					struct tsocket_address **src)
+{
+	struct tdgram_bsd_recvfrom_state *state = tevent_req_data(req,
+					struct tdgram_bsd_recvfrom_state);
+	ssize_t ret;
+
+	ret = tsocket_simple_int_recv(req, perrno);
+	if (ret == 0) {
+		*buf = talloc_move(mem_ctx, &state->buf);
+		ret = state->len;
+		if (src) {
+			*src = talloc_move(mem_ctx, &state->src);
+		}
+	}
+
+	tevent_req_received(req);
+	return ret;
+}
+
+struct tdgram_bsd_sendto_state {
+	struct tdgram_context *dgram;
+
+	const uint8_t *buf;
+	size_t len;
+	const struct tsocket_address *dst;
+
+	ssize_t ret;
+};
+
+static int tdgram_bsd_sendto_destructor(struct tdgram_bsd_sendto_state *state)
+{
+	struct tdgram_bsd *bsds = tdgram_context_data(state->dgram,
+				  struct tdgram_bsd);
+
+	bsds->write_req = NULL;
+	tdgram_bsd_set_writeable_handler(bsds, NULL, NULL, NULL);
+	return 0;
+}
+
+static void tdgram_bsd_sendto_handler(void *private_data);
+
+static struct tevent_req *tdgram_bsd_sendto_send(TALLOC_CTX *mem_ctx,
+						 struct tevent_context *ev,
+						 struct tdgram_context *dgram,
+						 const uint8_t *buf,
+						 size_t len,
+						 const struct tsocket_address *dst)
+{
+	struct tevent_req *req;
+	struct tdgram_bsd_sendto_state *state;
+	struct tdgram_bsd *bsds = tdgram_context_data(dgram, struct tdgram_bsd);
+	int ret;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct tdgram_bsd_sendto_state);
+	if (!req) {
+		return NULL;
+	}
+
+	state->dgram	= dgram;
+	state->buf	= buf;
+	state->len	= len;
+	state->dst	= dst;
+	state->ret	= -1;
+
+	if (bsds->write_req) {
+		tevent_req_error(req, EBUSY);
+		goto post;
+	}
+	bsds->write_req = req;
+
+	talloc_set_destructor(state, tdgram_bsd_sendto_destructor);
+
+	if (bsds->fd == -1) {
+		tevent_req_error(req, ENOTCONN);
+		goto post;
+	}
+
+	/*
+	 * this is a fast path, not waiting for the
+	 * socket to become explicit writeable gains
+	 * about 10%-20% performance in benchmark tests.
+	 */
+	tdgram_bsd_sendto_handler(req);
+	if (!tevent_req_is_in_progress(req)) {
+		goto post;
+	}
+
+	ret = tdgram_bsd_set_writeable_handler(bsds, ev,
+					       tdgram_bsd_sendto_handler,
+					       req);
+	if (ret == -1) {
+		tevent_req_error(req, errno);
+		goto post;
+	}
+
+	return req;
+
+ post:
+	tevent_req_post(req, ev);
+	return req;
+}
+
+static void tdgram_bsd_sendto_handler(void *private_data)
+{
+	struct tevent_req *req = talloc_get_type_abort(private_data,
+				 struct tevent_req);
+	struct tdgram_bsd_sendto_state *state = tevent_req_data(req,
+					struct tdgram_bsd_sendto_state);
+	struct tdgram_context *dgram = state->dgram;
+	struct tdgram_bsd *bsds = tdgram_context_data(dgram, struct tdgram_bsd);
+	struct sockaddr *sa = NULL;
+	socklen_t sa_len = 0;
+	ssize_t ret;
+	int err;
+	bool retry;
+
+	if (state->dst) {
+		struct tsocket_address_bsd *bsda =
+			talloc_get_type(state->dst->private_data,
+			struct tsocket_address_bsd);
+
+		sa = &bsda->u.sa;
+		sa_len = sizeof(bsda->u.ss);
+	}
+
+	ret = sendto(bsds->fd, state->buf, state->len, 0, sa, sa_len);
+	err = tsocket_error_from_errno(ret, errno, &retry);
+	if (retry) {
+		/* retry later */
+		return;
+	}
+	if (tevent_req_error(req, err)) {
+		return;
+	}
+
+	state->ret = ret;
+
+	tevent_req_done(req);
+}
+
+static ssize_t tdgram_bsd_sendto_recv(struct tevent_req *req, int *perrno)
+{
+	struct tdgram_bsd_sendto_state *state = tevent_req_data(req,
+					struct tdgram_bsd_sendto_state);
+	ssize_t ret;
+
+	ret = tsocket_simple_int_recv(req, perrno);
+	if (ret == 0) {
+		ret = state->ret;
+	}
+
+	tevent_req_received(req);
+	return ret;
+}
+
+struct tdgram_bsd_disconnect_state {
+	int ret;
+};
+
+static struct tevent_req *tdgram_bsd_disconnect_send(TALLOC_CTX *mem_ctx,
+						     struct tevent_context *ev,
+						     struct tdgram_context *dgram)
+{
+	struct tdgram_bsd *bsds = tdgram_context_data(dgram, struct tdgram_bsd);
+	struct tevent_req *req;
+	struct tdgram_bsd_disconnect_state *state;
+	int ret;
+	int err;
+	bool dummy;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct tdgram_bsd_disconnect_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ret = -1;
+
+	if (bsds->read_req || bsds->write_req) {
+		tevent_req_error(req, EBUSY);
+		goto post;
+	}
+
+	if (bsds->fd == -1) {
+		tevent_req_error(req, ENOTCONN);
+		goto post;
+	}
+
+	state->ret = close(bsds->fd);
+	bsds->fd = -1;
+	err = tsocket_error_from_errno(ret, errno, &dummy);
+	if (tevent_req_error(req, err)) {
+		goto post;
+	}
+
+	tevent_req_done(req);
+post:
+	tevent_req_post(req, ev);
+	return req;
+}
+
+static int tdgram_bsd_disconnect_recv(struct tevent_req *req,
+				      int *perrno)
+{
+	struct tdgram_bsd_disconnect_state *state = tevent_req_data(req,
+					struct tdgram_bsd_disconnect_state);
+	int ret;
+
+	ret = tsocket_simple_int_recv(req, perrno);
+	if (ret == 0) {
+		ret = state->ret;
+	}
+
+	tevent_req_received(req);
+	return ret;
+}
+
+static const struct tdgram_context_ops tdgram_bsd_ops = {
+	.name			= "bsd",
+
+	.recvfrom_send		= tdgram_bsd_recvfrom_send,
+	.recvfrom_recv		= tdgram_bsd_recvfrom_recv,
+
+	.sendto_send		= tdgram_bsd_sendto_send,
+	.sendto_recv		= tdgram_bsd_sendto_recv,
+
+	.disconnect_send	= tdgram_bsd_disconnect_send,
+	.disconnect_recv	= tdgram_bsd_disconnect_recv,
+};
+
+static int tdgram_bsd_destructor(struct tdgram_bsd *bsds)
+{
+	TALLOC_FREE(bsds->fde);
+	if (bsds->fd != -1) {
+		close(bsds->fd);
+		bsds->fd = -1;
+	}
+	return 0;
+}
+
+static int tdgram_bsd_dgram_socket(const struct tsocket_address *local,
+				   const struct tsocket_address *remote,
+				   TALLOC_CTX *mem_ctx,
+				   struct tdgram_context **_dgram,
+				   const char *location)
+{
+	struct tsocket_address_bsd *lbsda =
+		talloc_get_type_abort(local->private_data,
+		struct tsocket_address_bsd);
+	struct tsocket_address_bsd *rbsda = NULL;
+	struct tdgram_context *dgram;
+	struct tdgram_bsd *bsds;
+	int fd;
+	int ret;
+	bool do_bind = false;
+	bool do_reuseaddr = false;
+
+	if (remote) {
+		rbsda = talloc_get_type_abort(remote->private_data,
+			struct tsocket_address_bsd);
+	}
+
+	switch (lbsda->u.sa.sa_family) {
+	case AF_UNIX:
+		if (lbsda->u.un.sun_path[0] != 0) {
+			do_reuseaddr = true;
+			do_bind = true;
+		}
+		break;
+	case AF_INET:
+		if (lbsda->u.in.sin_port != 0) {
+			do_reuseaddr = true;
+			do_bind = true;
+		}
+		if (lbsda->u.in.sin_addr.s_addr == INADDR_ANY) {
+			do_bind = true;
+		}
+		break;
+#ifdef HAVE_IPV6
+	case AF_INET6:
+		if (lbsda->u.in6.sin6_port != 0) {
+			do_reuseaddr = true;
+			do_bind = true;
+		}
+		if (memcmp(&in6addr_any,
+			   &lbsda->u.in6.sin6_addr,
+			   sizeof(in6addr_any)) != 0) {
+			do_bind = true;
+		}
+		break;
+#endif
+	default:
+		errno = EINVAL;
+		return -1;
+	}
+
+	fd = socket(lbsda->u.sa.sa_family, SOCK_DGRAM, 0);
+	if (fd < 0) {
+		return fd;
+	}
+
+	fd = tsocket_bsd_common_prepare_fd(fd, true);
+	if (fd < 0) {
+		return fd;
+	}
+
+	dgram = tdgram_context_create(mem_ctx,
+				      &tdgram_bsd_ops,
+				      &bsds,
+				      struct tdgram_bsd,
+				      location);
+	if (!dgram) {
+		int saved_errno = errno;
+		close(fd);
+		errno = saved_errno;
+		return -1;
+	}
+	ZERO_STRUCTP(bsds);
+	bsds->fd = fd;
+	talloc_set_destructor(bsds, tdgram_bsd_destructor);
+
+	if (lbsda->broadcast) {
+		int val = 1;
+
+		ret = setsockopt(fd, SOL_SOCKET, SO_BROADCAST,
+				 (const void *)&val, sizeof(val));
+		if (ret == -1) {
+			int saved_errno = errno;
+			talloc_free(dgram);
+			errno = saved_errno;
+			return ret;
+		}
+	}
+
+	if (do_reuseaddr) {
+		int val = 1;
+
+		ret = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR,
+				 (const void *)&val, sizeof(val));
+		if (ret == -1) {
+			int saved_errno = errno;
+			talloc_free(dgram);
+			errno = saved_errno;
+			return ret;
+		}
+	}
+
+	if (do_bind) {
+		ret = bind(fd, &lbsda->u.sa, sizeof(lbsda->u.ss));
+		if (ret == -1) {
+			int saved_errno = errno;
+			talloc_free(dgram);
+			errno = saved_errno;
+			return ret;
+		}
+	}
+
+	if (rbsda) {
+		ret = connect(fd, &rbsda->u.sa, sizeof(rbsda->u.ss));
+		if (ret == -1) {
+			int saved_errno = errno;
+			talloc_free(dgram);
+			errno = saved_errno;
+			return ret;
+		}
+	}
+
+	*_dgram = dgram;
+	return 0;
+}
+
+int _tdgram_inet_udp_socket(const struct tsocket_address *local,
+			    const struct tsocket_address *remote,
+			    TALLOC_CTX *mem_ctx,
+			    struct tdgram_context **dgram,
+			    const char *location)
+{
+	struct tsocket_address_bsd *lbsda =
+		talloc_get_type_abort(local->private_data,
+		struct tsocket_address_bsd);
+	int ret;
+
+	switch (lbsda->u.sa.sa_family) {
+	case AF_INET:
+		break;
+#ifdef HAVE_IPV6
+	case AF_INET6:
+		break;
+#endif
+	default:
+		errno = EINVAL;
+		return -1;
+	}
+
+	ret = tdgram_bsd_dgram_socket(local, remote, mem_ctx, dgram, location);
+
+	return ret;
+}
+
+int _tdgram_unix_dgram_socket(const struct tsocket_address *local,
+			      const struct tsocket_address *remote,
+			      TALLOC_CTX *mem_ctx,
+			      struct tdgram_context **dgram,
+			      const char *location)
+{
+	struct tsocket_address_bsd *lbsda =
+		talloc_get_type_abort(local->private_data,
+		struct tsocket_address_bsd);
+	int ret;
+
+	switch (lbsda->u.sa.sa_family) {
+	case AF_UNIX:
+		break;
+	default:
+		errno = EINVAL;
+		return -1;
+	}
+
+	ret = tdgram_bsd_dgram_socket(local, remote, mem_ctx, dgram, location);
+
+	return ret;
+}
+

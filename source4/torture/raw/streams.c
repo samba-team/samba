@@ -1309,7 +1309,6 @@ static bool test_stream_rename2(struct torture_context *tctx,
 static bool create_file_with_stream(struct torture_context *tctx,
 				    struct smbcli_state *cli,
 				    TALLOC_CTX *mem_ctx,
-				    const char *base_fname,
 				    const char *stream)
 {
 	NTSTATUS status;
@@ -1359,8 +1358,7 @@ static bool test_stream_create_disposition(struct torture_context *tctx,
 	stream_list[0] = talloc_asprintf(mem_ctx, ":%s", stream);
 	stream_list[1] = default_stream_name;
 
-	if (!create_file_with_stream(tctx, cli, mem_ctx, fname,
-				     fname_stream)) {
+	if (!create_file_with_stream(tctx, cli, mem_ctx, fname_stream)) {
 		goto done;
 	}
 
@@ -1407,8 +1405,7 @@ static bool test_stream_create_disposition(struct torture_context *tctx,
 	 */
 	printf("(%s) Checking ntcreatex disp: overwrite_if\n", __location__);
 	smbcli_unlink(cli->tree, fname);
-	if (!create_file_with_stream(tctx, cli, mem_ctx, fname,
-				     fname_stream)) {
+	if (!create_file_with_stream(tctx, cli, mem_ctx, fname_stream)) {
 		goto done;
 	}
 
@@ -1425,8 +1422,7 @@ static bool test_stream_create_disposition(struct torture_context *tctx,
 	 */
 	printf("(%s) Checking ntcreatex disp: supersede\n", __location__);
 	smbcli_unlink(cli->tree, fname);
-	if (!create_file_with_stream(tctx, cli, mem_ctx, fname,
-				     fname_stream)) {
+	if (!create_file_with_stream(tctx, cli, mem_ctx, fname_stream)) {
 		goto done;
 	}
 
@@ -1444,8 +1440,7 @@ static bool test_stream_create_disposition(struct torture_context *tctx,
 	printf("(%s) Checking ntcreatex disp: overwrite_if on stream\n",
 	       __location__);
 	smbcli_unlink(cli->tree, fname);
-	if (!create_file_with_stream(tctx, cli, mem_ctx, fname,
-				     fname_stream)) {
+	if (!create_file_with_stream(tctx, cli, mem_ctx, fname_stream)) {
 		goto done;
 	}
 
@@ -1463,8 +1458,7 @@ static bool test_stream_create_disposition(struct torture_context *tctx,
 	 */
 	printf("(%s) Checking openx disp: overwrite_if\n", __location__);
 	smbcli_unlink(cli->tree, fname);
-	if (!create_file_with_stream(tctx, cli, mem_ctx, fname,
-				     fname_stream)) {
+	if (!create_file_with_stream(tctx, cli, mem_ctx, fname_stream)) {
 		goto done;
 	}
 
@@ -1517,7 +1511,7 @@ static bool test_stream_large_streaminfo(struct torture_context *tctx,
 	for (i = 0; i < 10000; i++) {
 		fname_stream = talloc_asprintf(mem_ctx, "%s:%s%d", fname,
 					       lstream_name, i);
-		ret = create_file_with_stream(tctx, cli, mem_ctx, fname,
+		ret = create_file_with_stream(tctx, cli, mem_ctx,
 					      fname_stream);
 		if (!ret) {
 			goto done;
@@ -1556,8 +1550,7 @@ static bool test_stream_attributes(struct torture_context *tctx,
 	fname_stream = talloc_asprintf(mem_ctx, "%s:%s", fname, stream);
 
 	/* Create a file with a stream with attribute FILE_ATTRIBUTE_ARCHIVE. */
-	ret = create_file_with_stream(tctx, cli, mem_ctx, fname,
-				      fname_stream);
+	ret = create_file_with_stream(tctx, cli, mem_ctx, fname_stream);
 	if (!ret) {
 		goto done;
 	}

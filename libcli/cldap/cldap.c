@@ -51,7 +51,7 @@
 */
 struct cldap_socket {
 	/* the low level socket */
-	struct tsocket_context *sock;
+	struct tdgram_context *sock;
 
 	/*
 	 * Are we in connected mode, which means
@@ -120,8 +120,6 @@ struct cldap_search_state {
 
 static int cldap_socket_destructor(struct cldap_socket *c)
 {
-	tsocket_disconnect(c->sock);
-
 	while (c->searches.list) {
 		struct cldap_search_state *s = c->searches.list;
 		DLIST_REMOVE(c->searches.list, s);
@@ -146,7 +144,7 @@ static bool cldap_recvfrom_setup(struct cldap_socket *c)
 		return true;
 	}
 
-	c->recv_subreq = tsocket_recvfrom_send(c->sock, c);
+	c->recv_subreq = tdgram_recvfrom_send(c, c->event.ctx, c->sock);
 	if (!c->recv_subreq) {
 		return false;
 	}
@@ -186,11 +184,11 @@ static void cldap_recvfrom_done(struct tevent_req *subreq)
 		goto nomem;
 	}
 
-	ret = tsocket_recvfrom_recv(subreq,
-				    &in->recv_errno,
-				    in,
-				    &in->buf,
-				    &in->src);
+	ret = tdgram_recvfrom_recv(subreq,
+				   &in->recv_errno,
+				   in,
+				   &in->buf,
+				   &in->src);
 	talloc_free(subreq);
 	subreq = NULL;
 	if (ret >= 0) {
@@ -337,23 +335,15 @@ NTSTATUS cldap_socket_init(TALLOC_CTX *mem_ctx,
 		goto nomem;
 	}
 
-	ret = tsocket_address_create_socket(local_addr,
-					    TSOCKET_TYPE_DGRAM,
-					    c, &c->sock);
+	ret = tdgram_inet_udp_socket(local_addr, remote_addr,
+				     c, &c->sock);
 	if (ret != 0) {
 		status = map_nt_error_from_unix(errno);
 		goto nterror;
 	}
 	talloc_free(any);
 
-	tsocket_set_event_context(c->sock, c->event.ctx);
-
 	if (remote_addr) {
-		ret = tsocket_connect(c->sock, remote_addr);
-		if (ret != 0) {
-			status = map_nt_error_from_unix(errno);
-			goto nterror;
-		}
 		c->connected = true;
 	}
 
@@ -408,7 +398,7 @@ struct cldap_reply_state {
 	DATA_BLOB blob;
 };
 
-static void cldap_reply_state_destroy(struct tevent_req *req);
+static void cldap_reply_state_destroy(struct tevent_req *subreq);
 
 /*
   queue a cldap reply for send
@@ -419,7 +409,7 @@ NTSTATUS cldap_reply_send(struct cldap_socket *cldap, struct cldap_reply *io)
 	struct ldap_message *msg;
 	DATA_BLOB blob1, blob2;
 	NTSTATUS status;
-	struct tevent_req *req;
+	struct tevent_req *subreq;
 
 	if (cldap->connected) {
 		return NT_STATUS_PIPE_CONNECTED;
@@ -476,17 +466,18 @@ NTSTATUS cldap_reply_send(struct cldap_socket *cldap, struct cldap_reply *io)
 	data_blob_free(&blob1);
 	data_blob_free(&blob2);
 
-	req = tsocket_sendto_queue_send(state,
-					cldap->sock,
-					cldap->send_queue,
-					state->blob.data,
-					state->blob.length,
-					state->dest);
-	if (!req) {
+	subreq = tdgram_sendto_queue_send(state,
+					  cldap->event.ctx,
+					  cldap->sock,
+					  cldap->send_queue,
+					  state->blob.data,
+					  state->blob.length,
+					  state->dest);
+	if (!subreq) {
 		goto nomem;
 	}
 	/* the callback will just free the state, as we don't need a result */
-	tevent_req_set_callback(req, cldap_reply_state_destroy, state);
+	tevent_req_set_callback(subreq, cldap_reply_state_destroy, state);
 
 	return NT_STATUS_OK;
 
@@ -497,13 +488,13 @@ failed:
 	return status;
 }
 
-static void cldap_reply_state_destroy(struct tevent_req *req)
+static void cldap_reply_state_destroy(struct tevent_req *subreq)
 {
-	struct cldap_reply_state *state = tevent_req_callback_data(req,
+	struct cldap_reply_state *state = tevent_req_callback_data(subreq,
 					  struct cldap_reply_state);
 
 	/* we don't want to know the result here, we just free the state */
-	talloc_free(req);
+	talloc_free(subreq);
 	talloc_free(state);
 }
 
@@ -630,12 +621,13 @@ struct tevent_req *cldap_search_send(TALLOC_CTX *mem_ctx,
 		goto post;
 	}
 
-	subreq = tsocket_sendto_queue_send(state,
-					   state->caller.cldap->sock,
-					   state->caller.cldap->send_queue,
-					   state->request.blob.data,
-					   state->request.blob.length,
-					   state->request.dest);
+	subreq = tdgram_sendto_queue_send(state,
+					  state->caller.cldap->event.ctx,
+					  state->caller.cldap->sock,
+					  state->caller.cldap->send_queue,
+					  state->request.blob.data,
+					  state->request.blob.length,
+					  state->request.dest);
 	if (tevent_req_nomem(subreq, req)) {
 		goto post;
 	}
@@ -659,7 +651,7 @@ static void cldap_search_state_queue_done(struct tevent_req *subreq)
 	int sys_errno = 0;
 	struct timeval next;
 
-	ret = tsocket_sendto_queue_recv(subreq, &sys_errno);
+	ret = tdgram_sendto_queue_recv(subreq, &sys_errno);
 	talloc_free(subreq);
 	if (ret == -1) {
 		NTSTATUS status;
@@ -708,12 +700,13 @@ static void cldap_search_state_wakeup_done(struct tevent_req *subreq)
 		return;
 	}
 
-	subreq = tsocket_sendto_queue_send(state,
-					   state->caller.cldap->sock,
-					   state->caller.cldap->send_queue,
-					   state->request.blob.data,
-					   state->request.blob.length,
-					   state->request.dest);
+	subreq = tdgram_sendto_queue_send(state,
+					  state->caller.cldap->event.ctx,
+					  state->caller.cldap->sock,
+					  state->caller.cldap->send_queue,
+					  state->request.blob.data,
+					  state->request.blob.length,
+					  state->request.dest);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}

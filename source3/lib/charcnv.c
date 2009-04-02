@@ -242,7 +242,7 @@ static size_t convert_string_internal(charset_t from, charset_t to,
 					DEBUG(3,("convert_string_internal: Conversion error: %s(%s)\n",reason,inbuf));
 				if (allow_bad_conv)
 					goto use_as_is;
-				break;
+				return (size_t)-1;
 			case E2BIG:
 				reason="No more room"; 
 				if (!conv_silent) {
@@ -263,11 +263,12 @@ static size_t convert_string_internal(charset_t from, charset_t to,
 					DEBUG(3,("convert_string_internal: Conversion error: %s(%s)\n",reason,inbuf));
 				if (allow_bad_conv)
 					goto use_as_is;
-				break;
+				
+				return (size_t)-1;
 			default:
 				if (!conv_silent)
 					DEBUG(0,("convert_string_internal: Conversion error: %s(%s)\n",reason,inbuf));
-				break;
+				return (size_t)-1;
 		}
 		/* smb_panic(reason); */
 	}
@@ -412,7 +413,11 @@ size_t convert_string(charset_t from, charset_t to,
 #ifdef BROKEN_UNICODE_COMPOSE_CHARACTERS
 				goto general_case;
 #else
-				return retval + convert_string_internal(from, to, p, slen, q, dlen, allow_bad_conv);
+				size_t ret = convert_string_internal(from, to, p, slen, q, dlen, allow_bad_conv);
+				if (ret == (size_t)-1) {
+					return ret;
+				}
+				return retval + ret;
 #endif
 			}
 		}
@@ -448,7 +453,11 @@ size_t convert_string(charset_t from, charset_t to,
 #ifdef BROKEN_UNICODE_COMPOSE_CHARACTERS
 				goto general_case;
 #else
-				return retval + convert_string_internal(from, to, p, slen, q, dlen, allow_bad_conv);
+				size_t ret = convert_string_internal(from, to, p, slen, q, dlen, allow_bad_conv);
+				if (ret == (size_t)-1) {
+					return ret;
+				}
+				return retval + ret;
 #endif
 			}
 		}
@@ -484,7 +493,11 @@ size_t convert_string(charset_t from, charset_t to,
 #ifdef BROKEN_UNICODE_COMPOSE_CHARACTERS
 				goto general_case;
 #else
-				return retval + convert_string_internal(from, to, p, slen, q, dlen, allow_bad_conv);
+				size_t ret = convert_string_internal(from, to, p, slen, q, dlen, allow_bad_conv);
+				if (ret == (size_t)-1) {
+					return ret;
+				}
+				return retval + ret;
 #endif
 			}
 		}
