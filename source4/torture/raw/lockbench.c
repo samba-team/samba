@@ -317,13 +317,15 @@ bool torture_bench_lock(struct torture_context *torture)
 {
 	bool ret = true;
 	TALLOC_CTX *mem_ctx = talloc_new(torture);
-	int i;
+	int i, j;
 	int timelimit = torture_setting_int(torture, "timelimit", 10);
 	struct timeval tv;
 	struct benchlock_state *state;
 	int total = 0, minops=0;
 	struct smbcli_state *cli;
 	bool progress;
+	off_t offset;
+	int initial_locks = torture_setting_int(torture, "initial_locks", 0);
 
 	progress = torture_setting_bool(torture, "progress", true);
 
@@ -371,6 +373,21 @@ bool torture_bench_lock(struct torture_context *torture)
 			goto failed;
 		}
 
+		/* Optionally, lock initial_locks for each proc beforehand. */
+		if (i == 0 && initial_locks > 0) {
+			printf("Initializing %d locks on each proc.\n",
+			    initial_locks);
+		}
+
+		for (j = 0; j < initial_locks; j++) {
+			offset = (0xFFFFFED8LLU * (i+2)) + j;
+			if (!NT_STATUS_IS_OK(smbcli_lock64(state[i].tree,
+			    state[i].fnum, offset, 1, 0, WRITE_LOCK))) {
+				printf("Failed initializing, lock=%d\n", j);
+				goto failed;
+			}
+		}
+
 		state[i].stage = LOCK_INITIAL;
 		lock_send(&state[i]);
 	}
@@ -413,6 +430,7 @@ bool torture_bench_lock(struct torture_context *torture)
 	return ret;
 
 failed:
+	smbcli_deltree(state[0].tree, BASEDIR);
 	talloc_free(mem_ctx);
 	return false;
 }
