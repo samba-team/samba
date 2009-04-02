@@ -2663,6 +2663,8 @@ again:
 
 		if (remote_nodemaps[j] == NULL) {
 			DEBUG(DEBUG_ERR,(__location__ " Did not get a remote nodemap for node %d, restarting monitoring\n", j));
+			ctdb_set_culprit(rec, j);
+
 			goto again;
 		}
 
