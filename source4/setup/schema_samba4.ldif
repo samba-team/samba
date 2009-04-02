@@ -285,6 +285,7 @@ systemMayContain: replUpToDateVector
 systemMayContain: replPropertyMetaData
 systemMayContain: name
 systemMayContain: queryPolicyBL
+systemMayContain: parentGUID
 systemMayContain: proxyAddresses
 systemMayContain: proxiedObjectName
 systemMayContain: possibleInferiors
