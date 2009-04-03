@@ -230,7 +230,7 @@ krb5_start_session(void)
     char *cc_name;
     int ret;
 
-    ret = krb5_cc_gen_new(context, &krb5_fcc_ops, &ccache2);
+    ret = krb5_cc_new_unique(context, krb5_cc_type_file, NULL, &ccache2);
     if (ret) {
 	krb5_cc_destroy(context, ccache);
 	return 1;
