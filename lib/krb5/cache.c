@@ -777,32 +777,6 @@ krb5_cc_next_cred (krb5_context context,
 }
 
 /**
- * Like krb5_cc_next_cred, but allow for selective retrieval
- *
- * @ingroup krb5_ccache
- */
-
-
-krb5_error_code KRB5_LIB_FUNCTION
-krb5_cc_next_cred_match(krb5_context context,
-			const krb5_ccache id,
-			krb5_cc_cursor * cursor,
-			krb5_creds * creds,
-			krb5_flags whichfields,
-			const krb5_creds * mcreds)
-{
-    krb5_error_code ret;
-    while (1) {
-	ret = krb5_cc_next_cred(context, id, cursor, creds);
-	if (ret)
-	    return ret;
-	if (mcreds == NULL || krb5_compare_creds(context, whichfields, mcreds, creds))
-	    return 0;
-	krb5_free_cred_contents(context, creds);
-    }
-}
-
-/**
  * Destroy the cursor `cursor'.
  *
  * @ingroup krb5_ccache
@@ -907,9 +881,7 @@ krb5_cc_copy_match_f(krb5_context context,
 	return ret;
     }
 
-    while ((ret = krb5_cc_next_cred(context, from, cursor, &cred)) == 0) {
-	   if (ret)
-	       break;
+    while ((ret = krb5_cc_next_cred(context, from, &cursor, &cred)) == 0) {
 	   if (match == NULL || (*match)(context, matchctx, &cred) == 0) {
 	       if (matched)
 		   (*matched)++;
@@ -921,6 +893,8 @@ krb5_cc_copy_match_f(krb5_context context,
     }
     krb5_cc_end_seq_get(context, from, &cursor);
     krb5_free_principal(context, princ);
+    if (ret == KRB5_CC_END)
+	ret = 0;
     return ret;
 }
 
