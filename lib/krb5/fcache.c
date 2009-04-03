@@ -740,6 +740,8 @@ fcc_remove_cred(krb5_context context,
 {
     krb5_error_code ret;
     krb5_ccache copy, newfile;
+    char *newname;
+    int fd;
 
     ret = krb5_cc_gen_new(context, &krb5_mcc_ops, &copy);
     if (ret)
@@ -757,8 +759,24 @@ fcc_remove_cred(krb5_context context,
 	return ret;
     }
 
-    ret = krb5_cc_gen_new(context, &krb5_fcc_ops, &newfile);
+    asprintf(&newname, "FILE:%s.XXXXXX", FILENAME(id));
+    if (newname == NULL) {
+	krb5_cc_destroy(context, copy);
+	return ret;
+    }
+
+    fd = mkstemp(&newname[5]);
+    if (fd < 0) {
+	ret = errno;
+	krb5_cc_destroy(context, copy);
+	return ret;
+    }
+    close(fd);
+
+    ret = krb5_cc_resolve(context, newname, &newfile);
     if (ret) {
+	unlink(&newname[5]);
+	free(newname);
 	krb5_cc_destroy(context, copy);
 	return ret;
     }
@@ -766,16 +784,17 @@ fcc_remove_cred(krb5_context context,
     ret = krb5_cc_copy_cache(context, copy, newfile);
     krb5_cc_destroy(context, copy);
     if (ret) {
+	free(newname);
 	krb5_cc_destroy(context, newfile);
 	return ret;
     }
 
-    ret = krb5_cc_move(context, newfile, id);
-    if (ret) {
-	krb5_cc_destroy(context, newfile);
-	return ret;
-    }
-    
+    ret = rename(&newname[5], FILENAME(id));
+    if (ret)
+	ret = errno;
+    free(newname);
+    krb5_cc_close(context, newfile);
+
     return ret;
 }
 
