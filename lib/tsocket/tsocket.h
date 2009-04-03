@@ -190,7 +190,7 @@ int _tstream_bsd_existing_socket(TALLOC_CTX *mem_ctx,
 				     __location__)
 
 /*
- * Queue helpers
+ * Queue and PDU helpers
  */
 
 struct tevent_req *tdgram_sendto_queue_send(TALLOC_CTX *mem_ctx,
@@ -201,6 +201,18 @@ struct tevent_req *tdgram_sendto_queue_send(TALLOC_CTX *mem_ctx,
 					    size_t len,
 					    struct tsocket_address *dst);
 ssize_t tdgram_sendto_queue_recv(struct tevent_req *req, int *perrno);
+
+typedef int (*tstream_readv_pdu_next_vector_t)(struct tstream_context *stream,
+					       void *private_data,
+					       TALLOC_CTX *mem_ctx,
+					       struct iovec **vector,
+					       size_t *count);
+struct tevent_req *tstream_readv_pdu_send(TALLOC_CTX *mem_ctx,
+				struct tevent_context *ev,
+				struct tstream_context *stream,
+				tstream_readv_pdu_next_vector_t next_vector_fn,
+				void *next_vector_private);
+int tstream_readv_pdu_recv(struct tevent_req *req, int *perrno);
 
 #endif /* _TSOCKET_H */
 
