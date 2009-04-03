@@ -1209,6 +1209,7 @@ scc_get_cache_first(krb5_context context, krb5_cc_cursor *cursor)
     }
 
     ret = prepare_stmt(context, ctx->db, &ctx->stmt, str);
+    free(str);
     if (ret) {
 	exec_stmt(context, ctx->db, ctx->drop, 0);
 	sqlite3_close(ctx->db);
@@ -1328,7 +1329,7 @@ scc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
     ret = exec_stmt(context, sfrom->db, "COMMIT", KRB5_CC_IO);
     if (ret) return ret;
 
-    /* free sfrom */
+    scc_destroy(context, from);
 
     return 0;
 
