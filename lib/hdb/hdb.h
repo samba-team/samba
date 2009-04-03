@@ -66,6 +66,13 @@ typedef struct hdb_entry_ex {
 } hdb_entry_ex;
 
 
+/**
+ * HDB backend function pointer structure
+ *
+ * The HDB structure is what the KDC and kadmind framework uses to
+ * query the backend database when talking about principals.
+ */
+
 typedef struct HDB{
     void *hdb_db;
     void *hdb_dbc; /** don't use, only for DB3 */
