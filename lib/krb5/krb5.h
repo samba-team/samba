@@ -843,7 +843,7 @@ extern KRB5_LIB_VARIABLE const char *krb5_cc_type_api;
 extern KRB5_LIB_VARIABLE const char *krb5_cc_type_file;
 extern KRB5_LIB_VARIABLE const char *krb5_cc_type_memory;
 extern KRB5_LIB_VARIABLE const char *krb5_cc_type_kcm;
-extern KRB5_LIB_VARIABLE const char *krb5_cc_type_scache;
+extern KRB5_LIB_VARIABLE const char *krb5_cc_type_scc;
 
 #endif /* __KRB5_H__ */
 
