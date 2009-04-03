@@ -153,9 +153,9 @@ main (int argc, char **argv)
 	if (ret)
 	    krb5_err (context, 1, ret, "krb5_cc_resolve");
     } else {
-	ret = krb5_cc_gen_new(context, &krb5_mcc_ops, &id);
+	ret = krb5_cc_new_unique(context, krb5_cc_type_memory, NULL, &id);
 	if (ret)
-	    krb5_err (context, 1, ret, "krb5_cc_gen_new");
+	    krb5_err (context, 1, ret, "krb5_cc_new_unique");
     }
 
     if (cred_cache_str == NULL) {
