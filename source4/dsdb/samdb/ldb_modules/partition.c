@@ -151,7 +151,7 @@ static struct dsdb_control_current_partition *find_partition(struct partition_pr
 	}
 
 	return NULL;
-};
+}
 
 /**
  * fire the caller's callback for every entry, but only send 'done' once.
