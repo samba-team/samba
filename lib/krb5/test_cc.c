@@ -507,6 +507,7 @@ test_move(krb5_context context, const char *type)
     krb5_free_principal(context, p2);
 
     krb5_cc_destroy(context, toid);
+    krb5_cc_destroy(context, fromid);
 }
 
 
@@ -521,6 +522,68 @@ test_prefix_ops(krb5_context context, const char *name, const krb5_cc_ops *ops)
     if (strcmp(o->prefix, ops->prefix) != 0)
 	krb5_errx(context, 1, "ops for prefix '%s' is not "
 		  "the expected %s != %s", name, o->prefix, ops->prefix);
+}
+
+static void
+test_cc_config(krb5_context context)
+{
+    krb5_error_code ret;
+    krb5_principal p;
+    krb5_ccache id;
+    unsigned int i;
+
+    ret = krb5_cc_new_unique(context, "MEMORY", "bar", &id);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_cc_new_unique");
+
+    ret = krb5_parse_name(context, "lha@SU.SE", &p);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_parse_name");
+
+    ret = krb5_cc_initialize(context, id, p);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_cc_initialize");
+
+    for (i = 0; i < 1000; i++) {
+	krb5_data data, data2;
+	const char *name = "foo";
+	krb5_principal p1 = NULL;
+
+	if (i & 1)
+	    p1 = p;
+
+	data.data = rk_UNCONST(name);
+	data.length = strlen(name);
+
+	ret = krb5_cc_set_config(context, id, p1, "FriendlyName", &data);
+	if (ret)
+	    krb5_errx(context, 1, "krb5_cc_set_config: add");
+
+	ret = krb5_cc_get_config(context, id, p1, "FriendlyName", &data2);
+	if (ret)
+	    krb5_errx(context, 1, "krb5_cc_get_config: first");
+	krb5_data_free(&data2);
+
+	ret = krb5_cc_set_config(context, id, p1, "FriendlyName", &data);
+	if (ret)
+	    krb5_errx(context, 1, "krb5_cc_set_config: add -second");
+
+	ret = krb5_cc_get_config(context, id, p1, "FriendlyName", &data2);
+	if (ret)
+	    krb5_errx(context, 1, "krb5_cc_get_config: second");
+	krb5_data_free(&data2);
+
+	ret = krb5_cc_set_config(context, id, p1, "FriendlyName", NULL);
+	if (ret)
+	    krb5_errx(context, 1, "krb5_cc_set_config: delete");
+
+	ret = krb5_cc_get_config(context, id, p1, "FriendlyName", &data2);
+	if (ret == 0)
+	    krb5_errx(context, 1, "krb5_cc_get_config: non-existant");
+    }
+
+    krb5_cc_destroy(context, id);
+    krb5_free_principal(context, p);
 }
 
 
@@ -633,7 +696,11 @@ main(int argc, char **argv)
     krb5_cc_destroy(context, id1);
     krb5_cc_destroy(context, id2);
 
+    test_cc_config(context);
+
     krb5_free_context(context);
+
+    sleep(60);
 
     return 0;
 }
