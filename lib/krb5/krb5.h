@@ -839,5 +839,11 @@ extern KRB5_LIB_VARIABLE const krb5_kt_ops krb4_fkt_ops;
 extern KRB5_LIB_VARIABLE const krb5_kt_ops krb5_srvtab_fkt_ops;
 extern KRB5_LIB_VARIABLE const krb5_kt_ops krb5_any_ops;
 
+extern KRB5_LIB_VARIABLE const char *krb5_cc_type_api;
+extern KRB5_LIB_VARIABLE const char *krb5_cc_type_file;
+extern KRB5_LIB_VARIABLE const char *krb5_cc_type_memory;
+extern KRB5_LIB_VARIABLE const char *krb5_cc_type_kcm;
+extern KRB5_LIB_VARIABLE const char *krb5_cc_type_scache;
+
 #endif /* __KRB5_H__ */
 
