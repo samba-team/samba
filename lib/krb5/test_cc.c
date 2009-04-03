@@ -99,9 +99,9 @@ test_mcache(krb5_context context)
     if (ret)
 	krb5_err(context, 1, ret, "krb5_parse_name");
 
-    ret = krb5_cc_gen_new(context, &krb5_mcc_ops, &id);
+    ret = krb5_cc_new_unique(context, krb5_cc_type_memory, NULL, &id);
     if (ret)
-	krb5_err(context, 1, ret, "krb5_cc_gen_new");
+	krb5_err(context, 1, ret, "krb5_cc_new_unique");
 
     ret = krb5_cc_initialize(context, id, p);
     if (ret)
