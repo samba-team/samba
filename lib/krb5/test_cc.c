@@ -625,7 +625,7 @@ main(int argc, char **argv)
     test_cache_remove(context, krb5_cc_type_file);
     test_cache_remove(context, krb5_cc_type_memory);
 #ifdef USE_SQLITE
-    test_cache_remove(context, krb5_cc_type_scache);
+    test_cache_remove(context, krb5_cc_type_scc);
 #endif
 
     test_default_name(context);
@@ -635,7 +635,7 @@ main(int argc, char **argv)
 #if 0
     test_init_vs_destroy(context, krb5_cc_type_api);
 #endif
-    test_init_vs_destroy(context, krb5_cc_type_scache);
+    test_init_vs_destroy(context, krb5_cc_type_scc);
     test_mcc_default();
     test_def_cc_name(context);
 
@@ -659,22 +659,22 @@ main(int argc, char **argv)
     test_cache_iter(context, krb5_cc_type_memory, 0);
     test_cache_iter(context, krb5_cc_type_file, 0);
     test_cache_iter(context, krb5_cc_type_api, 0);
-    test_cache_iter(context, krb5_cc_type_scache, 0);
-    test_cache_iter(context, krb5_cc_type_scache, 1);
+    test_cache_iter(context, krb5_cc_type_scc, 0);
+    test_cache_iter(context, krb5_cc_type_scc, 1);
 
     test_copy(context, krb5_cc_type_file, krb5_cc_type_file);
     test_copy(context, krb5_cc_type_memory, krb5_cc_type_memory);
     test_copy(context, krb5_cc_type_file, krb5_cc_type_memory);
     test_copy(context, krb5_cc_type_memory, krb5_cc_type_file);
-    test_copy(context, krb5_cc_type_scache, krb5_cc_type_file);
-    test_copy(context, krb5_cc_type_file, krb5_cc_type_scache);
-    test_copy(context, krb5_cc_type_scache, krb5_cc_type_memory);
-    test_copy(context, krb5_cc_type_memory, krb5_cc_type_scache);
+    test_copy(context, krb5_cc_type_scc, krb5_cc_type_file);
+    test_copy(context, krb5_cc_type_file, krb5_cc_type_scc);
+    test_copy(context, krb5_cc_type_scc, krb5_cc_type_memory);
+    test_copy(context, krb5_cc_type_memory, krb5_cc_type_scc);
 
     test_move(context, krb5_cc_type_file);
     test_move(context, krb5_cc_type_memory);
     test_move(context, krb5_cc_type_kcm);
-    test_move(context, krb5_cc_type_scache);
+    test_move(context, krb5_cc_type_scc);
 
     test_prefix_ops(context, "FILE:/tmp/foo", &krb5_fcc_ops);
     test_prefix_ops(context, "FILE", &krb5_fcc_ops);
