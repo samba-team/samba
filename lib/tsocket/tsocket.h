@@ -214,6 +214,14 @@ struct tevent_req *tstream_readv_pdu_send(TALLOC_CTX *mem_ctx,
 				void *next_vector_private);
 int tstream_readv_pdu_recv(struct tevent_req *req, int *perrno);
 
+struct tevent_req *tstream_readv_pdu_queue_send(TALLOC_CTX *mem_ctx,
+				struct tevent_context *ev,
+				struct tstream_context *stream,
+				struct tevent_queue *queue,
+				tstream_readv_pdu_next_vector_t next_vector_fn,
+				void *next_vector_private);
+int tstream_readv_pdu_queue_recv(struct tevent_req *req, int *perrno);
+
 struct tevent_req *tstream_writev_queue_send(TALLOC_CTX *mem_ctx,
 					     struct tevent_context *ev,
 					     struct tstream_context *stream,
