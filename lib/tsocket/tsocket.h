@@ -146,6 +146,49 @@ int _tdgram_unix_socket(const struct tsocket_address *local,
 #define tdgram_unix_socket(local, remote, mem_ctx, dgram) \
 	_tdgram_unix_socket(local, remote, mem_ctx, dgram, __location__)
 
+struct tevent_req * tstream_inet_tcp_connect_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					const struct tsocket_address *local,
+					const struct tsocket_address *remote);
+int _tstream_inet_tcp_connect_recv(struct tevent_req *req,
+				   int *perrno,
+				   TALLOC_CTX *mem_ctx,
+				   struct tstream_context **stream,
+				   const char *location);
+#define tstream_inet_tcp_connect_recv(req, perrno, mem_ctx, stream) \
+	_tstream_inet_tcp_connect_recv(req, perrno, mem_ctx, stream, \
+				       __location__)
+
+struct tevent_req * tstream_unix_connect_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					const struct tsocket_address *local,
+					const struct tsocket_address *remote);
+int _tstream_unix_connect_recv(struct tevent_req *req,
+			       int *perrno,
+			       TALLOC_CTX *mem_ctx,
+			       struct tstream_context **stream,
+			       const char *location);
+#define tstream_unix_connect_recv(req, perrno, mem_ctx, stream) \
+	_tstream_unix_connect_recv(req, perrno, mem_ctx, stream, \
+					  __location__)
+
+int _tstream_unix_socketpair(TALLOC_CTX *mem_ctx1,
+			     struct tstream_context **_stream1,
+			     TALLOC_CTX *mem_ctx2,
+			     struct tstream_context **_stream2,
+			     const char *location);
+#define tstream_unix_socketpair(mem_ctx1, stream1, mem_ctx2, stream2) \
+	_tstream_unix_socketpair(mem_ctx1, stream1, mem_ctx2, stream2, \
+				 __location__)
+
+int _tstream_bsd_existing_socket(TALLOC_CTX *mem_ctx,
+				 int fd,
+				 struct tstream_context **_stream,
+				 const char *location);
+#define tstream_bsd_existing_socket(mem_ctx, fd, stream) \
+	_tstream_bsd_existing_socket(mem_ctx, fd, stream, \
+				     __location__)
+
 /*
  * Queue helpers
  */
