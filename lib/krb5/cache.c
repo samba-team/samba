@@ -43,7 +43,7 @@ RCSID("$Id$");
  *
  * Heimdal support the follow types of credential caches:
  *
- * - SDB
+ * - SCC
  *   Store the credential in a database
  * - FILE
  *   Store the credential in memory
