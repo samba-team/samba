@@ -478,7 +478,7 @@ get_cred_kdc(krb5_context context,
 	if (len != size)
 	    krb5_abortx(context, "internal asn1 error");
 	
-	ret = krb5_padata_add(context, &padata, KRB5_PADATA_S4U2SELF, buf, len);
+	ret = krb5_padata_add(context, &padata, KRB5_PADATA_FOR_USER, buf, len);
 	if (ret)
 	    goto out;
     }
