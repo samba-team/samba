@@ -121,7 +121,6 @@ main(int argc, char **argv)
 
 #ifdef KRB5
     {
-	const krb5_cc_ops *type;
 	krb5_error_code ret;
 	krb5_context context;
 	krb5_ccache id;
@@ -131,29 +130,7 @@ main(int argc, char **argv)
 	if (ret) /* XXX should this really call exit ? */
 	    errx(1, "no kerberos 5 support");
 
-	if (typename_arg == NULL) {
-	    char *s;
-
-	    name = krb5_cc_default_name(context);
-	    if (name == NULL)
-		krb5_errx(context, 1, "Failed getting default "
-			  "credential cache type");
-	
-	    typename_arg = strdup(name);
-	    if (typename_arg == NULL)
-		errx(1, "strdup");
-	
-	    s = strchr(typename_arg, ':');
-	    if (s)
-		*s = '\0';
-	}
-
-	type = krb5_cc_get_prefix_ops(context, typename_arg);
-	if (type == NULL)
-	    krb5_err(context, 1, ret, "Failed getting ops for %s "
-		     "credential cache", typename_arg);
-
-	ret = krb5_cc_gen_new(context, type, &id);
+	ret = krb5_cc_new_unique(context, typename_arg, NULL, &id);
 	if (ret)
 	    krb5_err(context, 1, ret, "Failed generating credential cache");
 
