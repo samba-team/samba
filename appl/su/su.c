@@ -191,7 +191,7 @@ krb5_verify(const struct passwd *login_info,
 	if (su_info->pw_uid == 0 && !krb5_kuserok(context, p, su_info->pw_name))
 	    continue;
 
-	ret = krb5_cc_gen_new(context, &krb5_mcc_ops, &ccache);
+	ret = krb5_cc_new_unique(context, krb5_cc_type_memory, NULL, &ccache);
 	if(ret) {
 	    krb5_free_host_realm(context, realms);
 	    krb5_free_principal (context, p);
