@@ -1350,7 +1350,7 @@ scc_get_default_name(krb5_context context, char **str)
     if (ret)
 	return _krb5_expand_default_cc_name(context, KRB5_SCACHE_NAME, str);
 
-    asprintf(str, "SDB:%s", name);
+    asprintf(str, "SCC:%s", name);
     free(name);
     if (*str == NULL) {
 	krb5_set_error_message(context, ENOMEM,
