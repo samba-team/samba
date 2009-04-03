@@ -151,7 +151,7 @@ test_mcache(krb5_context context)
  */
 
 static void
-test_init_vs_destroy(krb5_context context, const krb5_cc_ops *ops)
+test_init_vs_destroy(krb5_context context, const char *type)
 {
     krb5_error_code ret;
     krb5_ccache id, id2;
@@ -162,9 +162,9 @@ test_init_vs_destroy(krb5_context context, const krb5_cc_ops *ops)
     if (ret)
 	krb5_err(context, 1, ret, "krb5_parse_name");
 
-    ret = krb5_cc_gen_new(context, ops, &id);
+    ret = krb5_cc_new_unique(context, type, &id);
     if (ret)
-	krb5_err(context, 1, ret, "krb5_cc_gen_new");
+	krb5_err(context, 1, ret, "krb5_cc_new_unique");
 
     asprintf(&n, "%s:%s",
 	     krb5_cc_get_type(context, id),
@@ -191,7 +191,7 @@ test_init_vs_destroy(krb5_context context, const krb5_cc_ops *ops)
 }
 
 static void
-test_cache_remove(krb5_context context, const krb5_cc_ops *ops)
+test_cache_remove(krb5_context context, const char *type)
 {
     krb5_error_code ret;
     krb5_ccache id;
@@ -202,7 +202,7 @@ test_cache_remove(krb5_context context, const krb5_cc_ops *ops)
     if (ret)
 	krb5_err(context, 1, ret, "krb5_parse_name");
 
-    ret = krb5_cc_gen_new(context, ops, &id);
+    ret = krb5_cc_new_unique(context, type, &id);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_cc_gen_new");
 
@@ -474,11 +474,11 @@ test_move(krb5_context context, const char *type)
     if (ops == NULL)
 	return;
 
-    ret = krb5_cc_gen_new(context, ops, &fromid);
+    ret = krb5_cc_new_unique(context, type, NULL, &fromid);
     if (ret == KRB5_CC_NOSUPP)
 	return;
     else if (ret)
-	krb5_err(context, 1, ret, "krb5_cc_gen_new");
+	krb5_err(context, 1, ret, "krb5_cc_new_unique");
 
     ret = krb5_parse_name(context, "lha@SU.SE", &p);
     if (ret)
@@ -488,9 +488,9 @@ test_move(krb5_context context, const char *type)
     if (ret)
 	krb5_err(context, 1, ret, "krb5_cc_initialize");
 
-    ret = krb5_cc_gen_new(context, ops, &toid);
+    ret = krb5_cc_new_unique(context, type, NULL, &toid);
     if (ret)
-	krb5_err(context, 1, ret, "krb5_cc_gen_new");
+	krb5_err(context, 1, ret, "krb5_cc_new_unique");
 
     ret = krb5_cc_initialize(context, toid, p);
     if (ret)
@@ -631,20 +631,20 @@ main(int argc, char **argv)
     if (ret)
 	errx (1, "krb5_init_context failed: %d", ret);
 
-    test_cache_remove(context, &krb5_fcc_ops);
-    test_cache_remove(context, &krb5_mcc_ops);
+    test_cache_remove(context, krb5_cc_type_file);
+    test_cache_remove(context, krb5_cc_type_memory);
 #ifdef USE_SQLITE
-    test_cache_remove(context, &krb5_scc_ops);
+    test_cache_remove(context, krb5_cc_type_scache);
 #endif
 
     test_default_name(context);
     test_mcache(context);
-    test_init_vs_destroy(context, &krb5_mcc_ops);
-    test_init_vs_destroy(context, &krb5_fcc_ops);
+    test_init_vs_destroy(context, krb5_cc_type_memory);
+    test_init_vs_destroy(context, krb5_cc_type_file);
 #if 0
-    test_init_vs_destroy(context, &krb5_acc_ops);
+    test_init_vs_destroy(context, krb5_cc_type_api);
 #endif
-    test_init_vs_destroy(context, &krb5_scc_ops);
+    test_init_vs_destroy(context, krb5_cc_type_scache);
     test_mcc_default();
     test_def_cc_name(context);
 
