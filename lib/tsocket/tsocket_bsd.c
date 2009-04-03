@@ -1658,7 +1658,7 @@ static ssize_t tdgram_bsd_sendto_recv(struct tevent_req *req, int *perrno)
 }
 
 struct tdgram_bsd_disconnect_state {
-	int ret;
+	void *__dummy;
 };
 
 static struct tevent_req *tdgram_bsd_disconnect_send(TALLOC_CTX *mem_ctx,
@@ -1677,7 +1677,6 @@ static struct tevent_req *tdgram_bsd_disconnect_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
-	state->ret = -1;
 
 	if (bsds->read_req || bsds->write_req) {
 		tevent_req_error(req, EBUSY);
@@ -1689,7 +1688,7 @@ static struct tevent_req *tdgram_bsd_disconnect_send(TALLOC_CTX *mem_ctx,
 		goto post;
 	}
 
-	state->ret = close(bsds->fd);
+	ret = close(bsds->fd);
 	bsds->fd = -1;
 	err = tsocket_error_from_errno(ret, errno, &dummy);
 	if (tevent_req_error(req, err)) {
@@ -1705,14 +1704,9 @@ post:
 static int tdgram_bsd_disconnect_recv(struct tevent_req *req,
 				      int *perrno)
 {
-	struct tdgram_bsd_disconnect_state *state = tevent_req_data(req,
-					struct tdgram_bsd_disconnect_state);
 	int ret;
 
 	ret = tsocket_simple_int_recv(req, perrno);
-	if (ret == 0) {
-		ret = state->ret;
-	}
 
 	tevent_req_received(req);
 	return ret;
