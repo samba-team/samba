@@ -318,8 +318,6 @@ kcm_free(krb5_context context, krb5_ccache *id)
 	memset(k, 0, sizeof(*k));
 	krb5_data_free(&(*id)->data);
     }
-
-    *id = NULL;
 }
 
 static const char *
