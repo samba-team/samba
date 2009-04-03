@@ -3245,6 +3245,9 @@ NTSTATUS _samr_Connect2(pipes_struct *p,
 	case NDR_SAMR_CONNECT2:
 		fn = "_samr_Connect2";
 		break;
+	case NDR_SAMR_CONNECT3:
+		fn = "_samr_Connect3";
+		break;
 	case NDR_SAMR_CONNECT4:
 		fn = "_samr_Connect4";
 		break;
@@ -3287,6 +3290,22 @@ NTSTATUS _samr_Connect2(pipes_struct *p,
 	DEBUG(5,("%s: %d\n", fn, __LINE__));
 
 	return nt_status;
+}
+
+/****************************************************************
+ _samr_Connect3
+****************************************************************/
+
+NTSTATUS _samr_Connect3(pipes_struct *p,
+			struct samr_Connect3 *r)
+{
+	struct samr_Connect2 c;
+
+	c.in.system_name	= r->in.system_name;
+	c.in.access_mask	= r->in.access_mask;
+	c.out.connect_handle	= r->out.connect_handle;
+
+	return _samr_Connect2(p, &c);
 }
 
 /*******************************************************************
@@ -5893,16 +5912,6 @@ NTSTATUS _samr_SetBootKeyInformation(pipes_struct *p,
 
 NTSTATUS _samr_GetBootKeyInformation(pipes_struct *p,
 				     struct samr_GetBootKeyInformation *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_Connect3(pipes_struct *p,
-			struct samr_Connect3 *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
