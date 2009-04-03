@@ -848,7 +848,7 @@ krb5_verify(struct passwd *pwd, char *passwd)
         krb5_free_context(context);
         return ret;
   }
-  ret = krb5_cc_gen_new(context, &krb5_mcc_ops, &id);
+  ret = krb5_cc_new_unique(context, "MEMORY", NULL, &id);
   if(ret){
         krb5_free_principal(context, princ);
         krb5_free_context(context);
