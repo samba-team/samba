@@ -871,24 +871,27 @@ krb5_cc_get_flags(krb5_context context,
 }
 
 /**
- * Copy the contents of `from' to `to'.
+ * Copy the contents of `from' to `to' if the given match function
+ * return true.
  *
  * @ingroup krb5_ccache
  */
 
-
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_cc_copy_cache_match(krb5_context context,
-			 const krb5_ccache from,
-			 krb5_ccache to,
-			 krb5_flags whichfields,
-			 const krb5_creds * mcreds,
-			 unsigned int *matched)
+krb5_cc_copy_match_f(krb5_context context,
+		     const krb5_ccache from,
+		     krb5_ccache to,
+		     krb5_boolean (*match)(krb5_context, void *, const krb5_creds *),
+		     void *matchctx,
+		     unsigned int *matched)
 {
     krb5_error_code ret;
     krb5_cc_cursor cursor;
     krb5_creds cred;
     krb5_principal princ;
+
+    if (matched)
+	*matched = 0;
 
     ret = krb5_cc_get_principal(context, from, &princ);
     if (ret)
@@ -903,24 +906,26 @@ krb5_cc_copy_cache_match(krb5_context context,
 	krb5_free_principal(context, princ);
 	return ret;
     }
-    if (matched)
-	*matched = 0;
-    while (ret == 0 &&
-	   krb5_cc_next_cred_match(context, from, &cursor, &cred,
-				   whichfields, mcreds) == 0) {
-	if (matched)
-	    (*matched)++;
-	ret = krb5_cc_store_cred(context, to, &cred);
-	krb5_free_cred_contents(context, &cred);
+
+    while ((ret = krb5_cc_next_cred(context, from, cursor, &cred)) == 0) {
+	   if (ret)
+	       break;
+	   if (match == NULL || (*match)(context, matchctx, &cred) == 0) {
+	       if (matched)
+		   (*matched)++;
+	       ret = krb5_cc_store_cred(context, to, &cred);
+	       if (ret)
+		   break;
+	   }
+	   krb5_free_cred_contents(context, &cred);
     }
     krb5_cc_end_seq_get(context, from, &cursor);
     krb5_free_principal(context, princ);
     return ret;
 }
 
-
 /**
- * Just like krb5_cc_copy_cache_match, but copy everything.
+ * Just like krb5_cc_copy_match, but copy everything.
  *
  * @ingroup @krb5_ccache
  */
@@ -930,7 +935,7 @@ krb5_cc_copy_cache(krb5_context context,
 		   const krb5_ccache from,
 		   krb5_ccache to)
 {
-    return krb5_cc_copy_cache_match(context, from, to, 0, NULL, NULL);
+    return krb5_cc_copy_match_f(context, from, to, NULL, NULL, NULL);
 }
 
 /**
