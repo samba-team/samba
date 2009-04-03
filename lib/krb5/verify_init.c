@@ -117,7 +117,8 @@ krb5_verify_init_creds(krb5_context context,
     if (ccache && *ccache)
 	local_ccache = *ccache;
     else {
-	ret = krb5_cc_gen_new (context, &krb5_mcc_ops, &local_ccache);
+	ret = krb5_cc_new_unique(context, krb5_cc_type_memory,
+				 NULL, &local_ccache);
 	if (ret)
 	    goto cleanup;
 	ret = krb5_cc_initialize (context,
