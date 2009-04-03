@@ -1667,7 +1667,7 @@ server_lookup:
 	const PA_DATA *sdata;
 	int i = 0;
 
-	sdata = _kdc_find_padata(req, &i, KRB5_PADATA_S4U2SELF);
+	sdata = _kdc_find_padata(req, &i, KRB5_PADATA_FOR_USER);
 	if (sdata) {
 	    krb5_crypto crypto;
 	    krb5_data datack;
