@@ -39,6 +39,29 @@ RCSID("$Id$");
 #include <dlfcn.h>
 #endif
 
+/*! @mainpage Heimdal database backend library
+ *
+ * @section intro Introduction
+ *
+ * Heimdal libhdb library provides the backend support for Heimdal kdc
+ * and kadmind. Its here where plugins for diffrent database engines
+ * can be pluged in and extend support for here Heimdal get the
+ * principal and policy data from.
+ *
+ * Example of Heimdal backend are:
+ * - Berkeley DB 1.85
+ * - Berkeley DB 3.0
+ * - Berkeley DB 4.0
+ * - New Berkeley DB
+ * - LDAP
+ *
+ *
+ * The project web page: http://www.h5l.org/
+ *
+ */
+
+
+
 static struct hdb_method methods[] = {
 #if HAVE_DB1 || HAVE_DB3
     { HDB_INTERFACE_VERSION, "db:",	hdb_db_create},
