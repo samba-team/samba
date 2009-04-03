@@ -24,7 +24,6 @@
 #include "replace.h"
 #include "system/filesys.h"
 #include "system/network.h"
-#include "system/filesys.h"
 #include "tsocket.h"
 #include "tsocket_internal.h"
 
@@ -186,22 +185,9 @@ static ssize_t tsocket_bsd_pending(int fd)
 	return -1;
 }
 
-static const struct tsocket_context_ops tsocket_context_bsd_ops;
 static const struct tsocket_address_ops tsocket_address_bsd_ops;
 
-static int tsocket_context_bsd_set_option(const struct tsocket_context *sock,
-					  const char *option,
-					  bool force,
-					  const char *value);
-
-struct tsocket_context_bsd {
-	bool close_on_disconnect;
-	int fd;
-	struct tevent_fd *fde;
-};
-
 struct tsocket_address_bsd {
-	bool broadcast;
 	union {
 		struct sockaddr sa;
 		struct sockaddr_in in;
@@ -443,19 +429,6 @@ int tsocket_address_inet_set_port(struct tsocket_address *addr,
 	return 0;
 }
 
-void tsocket_address_inet_set_broadcast(struct tsocket_address *addr,
-					bool broadcast)
-{
-	struct tsocket_address_bsd *bsda = talloc_get_type(addr->private_data,
-					   struct tsocket_address_bsd);
-
-	if (!bsda) {
-		return;
-	}
-
-	bsda->broadcast = broadcast;
-}
-
 int _tsocket_address_unix_from_path(TALLOC_CTX *mem_ctx,
 				    const char *path,
 				    struct tsocket_address **_addr,
@@ -565,654 +538,13 @@ static struct tsocket_address *tsocket_address_bsd_copy(const struct tsocket_add
 		return NULL;
 	}
 
-	tsocket_address_inet_set_broadcast(copy, bsda->broadcast);
 	return copy;
-}
-
-int _tsocket_context_bsd_wrap_existing(TALLOC_CTX *mem_ctx,
-				       int fd, bool close_on_disconnect,
-				       struct tsocket_context **_sock,
-				       const char *location)
-{
-	struct tsocket_context *sock;
-	struct tsocket_context_bsd *bsds;
-
-	sock = tsocket_context_create(mem_ctx,
-				      &tsocket_context_bsd_ops,
-				      &bsds,
-				      struct tsocket_context_bsd,
-				      location);
-	if (!sock) {
-		return -1;
-	}
-
-	bsds->close_on_disconnect	= close_on_disconnect;
-	bsds->fd			= fd;
-	bsds->fde			= NULL;
-
-	*_sock = sock;
-	return 0;
-}
-
-static int tsocket_address_bsd_create_socket(const struct tsocket_address *addr,
-					     enum tsocket_type type,
-					     TALLOC_CTX *mem_ctx,
-					     struct tsocket_context **_sock,
-					     const char *location)
-{
-	struct tsocket_address_bsd *bsda = talloc_get_type(addr->private_data,
-					   struct tsocket_address_bsd);
-	struct tsocket_context *sock;
-	int bsd_type;
-	int fd;
-	int ret;
-	bool do_bind = false;
-	bool do_reuseaddr = false;
-
-	switch (type) {
-	case TSOCKET_TYPE_STREAM:
-		if (bsda->broadcast) {
-			errno = EINVAL;
-			return -1;
-		}
-		bsd_type = SOCK_STREAM;
-		break;
-	default:
-		errno = EPROTONOSUPPORT;
-		return -1;
-	}
-
-	switch (bsda->u.sa.sa_family) {
-	case AF_UNIX:
-		if (bsda->broadcast) {
-			errno = EINVAL;
-			return -1;
-		}
-		if (bsda->u.un.sun_path[0] != 0) {
-			do_bind = true;
-		}
-		break;
-	case AF_INET:
-		if (bsda->u.in.sin_port != 0) {
-			do_reuseaddr = true;
-			do_bind = true;
-		}
-		if (bsda->u.in.sin_addr.s_addr == INADDR_ANY) {
-			do_bind = true;
-		}
-		break;
-#ifdef HAVE_IPV6
-	case AF_INET6:
-		if (bsda->u.in6.sin6_port != 0) {
-			do_reuseaddr = true;
-			do_bind = true;
-		}
-		if (memcmp(&in6addr_any,
-			   &bsda->u.in6.sin6_addr,
-			   sizeof(in6addr_any)) != 0) {
-			do_bind = true;
-		}
-		break;
-#endif
-	default:
-		errno = EINVAL;
-		return -1;
-	}
-
-	fd = socket(bsda->u.sa.sa_family, bsd_type, 0);
-	if (fd < 0) {
-		return fd;
-	}
-
-	fd = tsocket_common_prepare_fd(fd, true);
-	if (fd < 0) {
-		return fd;
-	}
-
-	ret = _tsocket_context_bsd_wrap_existing(mem_ctx, fd, true,
-						 &sock, location);
-	if (ret != 0) {
-		int saved_errno = errno;
-		close(fd);
-		errno = saved_errno;
-		return ret;
-	}
-
-	if (bsda->broadcast) {
-		ret = tsocket_context_bsd_set_option(sock, "SO_BROADCAST", true, "1");
-		if (ret != 0) {
-			int saved_errno = errno;
-			talloc_free(sock);
-			errno = saved_errno;
-			return ret;
-		}
-	}
-
-	if (do_reuseaddr) {
-		ret = tsocket_context_bsd_set_option(sock, "SO_REUSEADDR", true, "1");
-		if (ret != 0) {
-			int saved_errno = errno;
-			talloc_free(sock);
-			errno = saved_errno;
-			return ret;
-		}
-	}
-
-	if (do_bind) {
-		ret = bind(fd, &bsda->u.sa, sizeof(bsda->u.ss));
-		if (ret != 0) {
-			int saved_errno = errno;
-			talloc_free(sock);
-			errno = saved_errno;
-			return ret;
-		}
-	}
-
-	*_sock = sock;
-	return 0;
 }
 
 static const struct tsocket_address_ops tsocket_address_bsd_ops = {
 	.name		= "bsd",
 	.string		= tsocket_address_bsd_string,
 	.copy		= tsocket_address_bsd_copy,
-	.create_socket	= tsocket_address_bsd_create_socket
-};
-
-static void tsocket_context_bsd_fde_handler(struct tevent_context *ev,
-					    struct tevent_fd *fde,
-					    uint16_t flags,
-					    void *private_data)
-{
-	struct tsocket_context *sock = talloc_get_type(private_data,
-				       struct tsocket_context);
-
-	if (flags & TEVENT_FD_WRITE) {
-		sock->event.write_handler(sock, sock->event.write_private);
-		return;
-	}
-	if (flags & TEVENT_FD_READ) {
-		sock->event.read_handler(sock, sock->event.read_private);
-		return;
-	}
-}
-
-static int tsocket_context_bsd_set_event_context(struct tsocket_context *sock,
-						 struct tevent_context *ev)
-{
-	struct tsocket_context_bsd *bsds = talloc_get_type(sock->private_data,
-					   struct tsocket_context_bsd);
-
-	talloc_free(bsds->fde);
-	bsds->fde = NULL;
-	ZERO_STRUCT(sock->event);
-
-	if (!ev) {
-		return 0;
-	}
-
-	bsds->fde = tevent_add_fd(ev, bsds,
-				  bsds->fd,
-				  0,
-				  tsocket_context_bsd_fde_handler,
-				  sock);
-	if (!bsds->fde) {
-		if (errno == 0) {
-			errno = ENOMEM;
-		}
-		return -1;
-	}
-
-	sock->event.ctx = ev;
-
-	return 0;
-}
-
-static int tsocket_context_bsd_set_read_handler(struct tsocket_context *sock,
-						tsocket_event_handler_t handler,
-						void *private_data)
-{
-	struct tsocket_context_bsd *bsds = talloc_get_type(sock->private_data,
-					   struct tsocket_context_bsd);
-
-	if (sock->event.read_handler && !handler) {
-		TEVENT_FD_NOT_READABLE(bsds->fde);
-	} else if (!sock->event.read_handler && handler) {
-		TEVENT_FD_READABLE(bsds->fde);
-	}
-
-	sock->event.read_handler = handler;
-	sock->event.read_private = private_data;
-
-	return 0;
-}
-
-static int tsocket_context_bsd_set_write_handler(struct tsocket_context *sock,
-						 tsocket_event_handler_t handler,
-						 void *private_data)
-{
-	struct tsocket_context_bsd *bsds = talloc_get_type(sock->private_data,
-					   struct tsocket_context_bsd);
-
-	if (sock->event.write_handler && !handler) {
-		TEVENT_FD_NOT_WRITEABLE(bsds->fde);
-	} else if (!sock->event.write_handler && handler) {
-		TEVENT_FD_WRITEABLE(bsds->fde);
-	}
-
-	sock->event.write_handler = handler;
-	sock->event.write_private = private_data;
-
-	return 0;
-}
-
-static int tsocket_context_bsd_connect_to(struct tsocket_context *sock,
-					  const struct tsocket_address *remote)
-{
-	struct tsocket_context_bsd *bsds = talloc_get_type(sock->private_data,
-					   struct tsocket_context_bsd);
-	struct tsocket_address_bsd *bsda = talloc_get_type(remote->private_data,
-					   struct tsocket_address_bsd);
-	int ret;
-
-	ret = connect(bsds->fd, &bsda->u.sa,
-		      sizeof(bsda->u.ss));
-
-	return ret;
-}
-
-static int tsocket_context_bsd_listen_on(struct tsocket_context *sock,
-					  int queue_size)
-{
-	struct tsocket_context_bsd *bsds = talloc_get_type(sock->private_data,
-					   struct tsocket_context_bsd);
-	int ret;
-
-	ret = listen(bsds->fd, queue_size);
-
-	return ret;
-}
-
-static int tsocket_context_bsd_accept_new(struct tsocket_context *sock,
-					   TALLOC_CTX *mem_ctx,
-					   struct tsocket_context **_new_sock,
-					   const char *location)
-{
-	struct tsocket_context_bsd *bsds = talloc_get_type(sock->private_data,
-					   struct tsocket_context_bsd);
-	int new_fd;
-	struct tsocket_context *new_sock;
-	struct tsocket_context_bsd *new_bsds;
-	struct sockaddr_storage ss;
-	void *p = &ss;
-	socklen_t ss_len = sizeof(ss);
-
-	new_fd = accept(bsds->fd, (struct sockaddr *)p, &ss_len);
-	if (new_fd < 0) {
-		return new_fd;
-	}
-
-	new_fd = tsocket_common_prepare_fd(new_fd, true);
-	if (new_fd < 0) {
-		return new_fd;
-	}
-
-	new_sock = tsocket_context_create(mem_ctx,
-					  &tsocket_context_bsd_ops,
-					  &new_bsds,
-					  struct tsocket_context_bsd,
-					  location);
-	if (!new_sock) {
-		int saved_errno = errno;
-		close(new_fd);
-		errno = saved_errno;
-		return -1;
-	}
-
-	new_bsds->close_on_disconnect	= true;
-	new_bsds->fd			= new_fd;
-	new_bsds->fde			= NULL;
-
-	*_new_sock = new_sock;
-	return 0;
-}
-
-static ssize_t tsocket_context_bsd_pending_data(struct tsocket_context *sock)
-{
-	struct tsocket_context_bsd *bsds = talloc_get_type(sock->private_data,
-					   struct tsocket_context_bsd);
-	int ret;
-	int value = 0;
-
-	ret = ioctl(bsds->fd, FIONREAD, &value);
-	if (ret == -1) {
-		return ret;
-	}
-
-	if (ret == 0) {
-		if (value == 0) {
-			int error=0;
-			socklen_t len = sizeof(error);
-			/*
-			 * if no data is available check if the socket
-			 * is in error state. For dgram sockets
-			 * it's the way to return ICMP error messages
-			 * of connected sockets to the caller.
-			 */
-			ret = getsockopt(bsds->fd, SOL_SOCKET, SO_ERROR,
-					 &error, &len);
-			if (ret == -1) {
-				return ret;
-			}
-			if (error != 0) {
-				errno = error;
-				return -1;
-			}
-		}
-		return value;
-	}
-
-	/* this should not be reached */
-	errno = EIO;
-	return -1;
-}
-
-static int tsocket_context_bsd_readv_data(struct tsocket_context *sock,
-					  const struct iovec *vector,
-					  size_t count)
-{
-	struct tsocket_context_bsd *bsds = talloc_get_type(sock->private_data,
-					   struct tsocket_context_bsd);
-	int ret;
-
-	ret = readv(bsds->fd, vector, count);
-
-	return ret;
-}
-
-static int tsocket_context_bsd_writev_data(struct tsocket_context *sock,
-					   const struct iovec *vector,
-					   size_t count)
-{
-	struct tsocket_context_bsd *bsds = talloc_get_type(sock->private_data,
-					   struct tsocket_context_bsd);
-	int ret;
-
-	ret = writev(bsds->fd, vector, count);
-
-	return ret;
-}
-
-static int tsocket_context_bsd_get_status(const struct tsocket_context *sock)
-{
-	struct tsocket_context_bsd *bsds = talloc_get_type(sock->private_data,
-					   struct tsocket_context_bsd);
-	int ret;
-	int error=0;
-	socklen_t len = sizeof(error);
-
-	if (bsds->fd == -1) {
-		errno = EPIPE;
-		return -1;
-	}
-
-	ret = getsockopt(bsds->fd, SOL_SOCKET, SO_ERROR, &error, &len);
-	if (ret == -1) {
-		return ret;
-	}
-	if (error != 0) {
-		errno = error;
-		return -1;
-	}
-
-	return 0;
-}
-
-static int tsocket_context_bsd_get_local_address(const struct tsocket_context *sock,
-						  TALLOC_CTX *mem_ctx,
-						  struct tsocket_address **_addr,
-						  const char *location)
-{
-	struct tsocket_context_bsd *bsds = talloc_get_type(sock->private_data,
-					   struct tsocket_context_bsd);
-	struct tsocket_address *addr;
-	struct tsocket_address_bsd *bsda;
-	ssize_t ret;
-	socklen_t sa_len;
-
-	addr = tsocket_address_create(mem_ctx,
-				      &tsocket_address_bsd_ops,
-				      &bsda,
-				      struct tsocket_address_bsd,
-				      location);
-	if (!addr) {
-		return -1;
-	}
-
-	ZERO_STRUCTP(bsda);
-
-	sa_len = sizeof(bsda->u.ss);
-	ret = getsockname(bsds->fd, &bsda->u.sa, &sa_len);
-	if (ret < 0) {
-		int saved_errno = errno;
-		talloc_free(addr);
-		errno = saved_errno;
-		return ret;
-	}
-
-	*_addr = addr;
-	return 0;
-}
-
-static int tsocket_context_bsd_get_remote_address(const struct tsocket_context *sock,
-						   TALLOC_CTX *mem_ctx,
-						   struct tsocket_address **_addr,
-						   const char *location)
-{
-	struct tsocket_context_bsd *bsds = talloc_get_type(sock->private_data,
-					   struct tsocket_context_bsd);
-	struct tsocket_address *addr;
-	struct tsocket_address_bsd *bsda;
-	ssize_t ret;
-	socklen_t sa_len;
-
-	addr = tsocket_address_create(mem_ctx,
-				      &tsocket_address_bsd_ops,
-				      &bsda,
-				      struct tsocket_address_bsd,
-				      location);
-	if (!addr) {
-		return -1;
-	}
-
-	ZERO_STRUCTP(bsda);
-
-	sa_len = sizeof(bsda->u.ss);
-	ret = getpeername(bsds->fd, &bsda->u.sa, &sa_len);
-	if (ret < 0) {
-		int saved_errno = errno;
-		talloc_free(addr);
-		errno = saved_errno;
-		return ret;
-	}
-
-	*_addr = addr;
-	return 0;
-}
-
-static const struct tsocket_context_bsd_option {
-	const char *name;
-	int level;
-	int optnum;
-	int optval;
-} tsocket_context_bsd_options[] = {
-#define TSOCKET_OPTION(_level, _optnum, _optval) { \
-	.name = #_optnum, \
-	.level = _level, \
-	.optnum = _optnum, \
-	.optval = _optval \
-}
-	TSOCKET_OPTION(SOL_SOCKET, SO_REUSEADDR, 0),
-	TSOCKET_OPTION(SOL_SOCKET, SO_BROADCAST, 0)
-};
-
-static int tsocket_context_bsd_get_option(const struct tsocket_context *sock,
-					  const char *option,
-					  TALLOC_CTX *mem_ctx,
-					  char **_value)
-{
-	struct tsocket_context_bsd *bsds = talloc_get_type(sock->private_data,
-					   struct tsocket_context_bsd);
-	const struct tsocket_context_bsd_option *opt = NULL;
-	uint32_t i;
-	int optval;
-	socklen_t optval_len = sizeof(optval);
-	char *value;
-	int ret;
-
-	for (i=0; i < ARRAY_SIZE(tsocket_context_bsd_options); i++) {
-		if (strcmp(option, tsocket_context_bsd_options[i].name) != 0) {
-			continue;
-		}
-
-		opt = &tsocket_context_bsd_options[i];
-		break;
-	}
-
-	if (!opt) {
-		goto nosys;
-	}
-
-	ret = getsockopt(bsds->fd, opt->level, opt->optnum,
-			 (void *)&optval, &optval_len);
-	if (ret != 0) {
-		return ret;
-	}
-
-	if (optval_len != sizeof(optval)) {
-		value = NULL;
-	} if (opt->optval != 0) {
-		if (optval == opt->optval) {
-			value = talloc_strdup(mem_ctx, "1");
-		} else {
-			value = talloc_strdup(mem_ctx, "0");
-		}
-		if (!value) {
-			goto nomem;
-		}
-	} else {
-		value = talloc_asprintf(mem_ctx, "%d", optval);
-		if (!value) {
-			goto nomem;
-		}
-	}
-
-	*_value = value;
-	return 0;
-
- nomem:
-	errno = ENOMEM;
-	return -1;
- nosys:
-	errno = ENOSYS;
-	return -1;
-}
-
-static int tsocket_context_bsd_set_option(const struct tsocket_context *sock,
-					  const char *option,
-					  bool force,
-					  const char *value)
-{
-	struct tsocket_context_bsd *bsds = talloc_get_type(sock->private_data,
-					   struct tsocket_context_bsd);
-	const struct tsocket_context_bsd_option *opt = NULL;
-	uint32_t i;
-	int optval;
-	int ret;
-
-	for (i=0; i < ARRAY_SIZE(tsocket_context_bsd_options); i++) {
-		if (strcmp(option, tsocket_context_bsd_options[i].name) != 0) {
-			continue;
-		}
-
-		opt = &tsocket_context_bsd_options[i];
-		break;
-	}
-
-	if (!opt) {
-		goto nosys;
-	}
-
-	if (value) {
-		if (opt->optval != 0) {
-			errno = EINVAL;
-			return -1;
-		}
-
-		optval = atoi(value);
-	} else {
-		optval = opt->optval;
-	}
-
-	ret = setsockopt(bsds->fd, opt->level, opt->optnum,
-			 (const void *)&optval, sizeof(optval));
-	if (ret != 0) {
-		if (!force) {
-			errno = 0;
-			return 0;
-		}
-		return ret;
-	}
-
-	return 0;
-
- nosys:
-	if (!force) {
-		return 0;
-	}
-
-	errno = ENOSYS;
-	return -1;
-}
-
-static void tsocket_context_bsd_disconnect(struct tsocket_context *sock)
-{
-	struct tsocket_context_bsd *bsds = talloc_get_type(sock->private_data,
-					   struct tsocket_context_bsd);
-
-	tsocket_context_bsd_set_event_context(sock, NULL);
-
-	if (bsds->fd != -1) {
-		if (bsds->close_on_disconnect) {
-			close(bsds->fd);
-		}
-		bsds->fd = -1;
-	}
-}
-
-static const struct tsocket_context_ops tsocket_context_bsd_ops = {
-	.name			= "bsd",
-
-	.set_event_context	= tsocket_context_bsd_set_event_context,
-	.set_read_handler	= tsocket_context_bsd_set_read_handler,
-	.set_write_handler	= tsocket_context_bsd_set_write_handler,
-
-	.connect_to		= tsocket_context_bsd_connect_to,
-	.listen_on		= tsocket_context_bsd_listen_on,
-	.accept_new		= tsocket_context_bsd_accept_new,
-
-	.pending_data		= tsocket_context_bsd_pending_data,
-	.readv_data		= tsocket_context_bsd_readv_data,
-	.writev_data		= tsocket_context_bsd_writev_data,
-
-	.get_status		= tsocket_context_bsd_get_status,
-	.get_local_address	= tsocket_context_bsd_get_local_address,
-	.get_remote_address	= tsocket_context_bsd_get_remote_address,
-
-	.get_option		= tsocket_context_bsd_get_option,
-	.set_option		= tsocket_context_bsd_set_option,
-
-	.disconnect		= tsocket_context_bsd_disconnect
 };
 
 struct tdgram_bsd {
@@ -1482,7 +814,7 @@ static void tdgram_bsd_recvfrom_handler(void *private_data)
 	sa_len = sizeof(bsda->u.ss);
 
 	ret = recvfrom(bsds->fd, state->buf, state->len, 0, sa, &sa_len);
-	err = tsocket_error_from_errno(ret, errno, &retry);
+	err = tsocket_bsd_error_from_errno(ret, errno, &retry);
 	if (retry) {
 		/* retry later */
 		return;
@@ -1630,7 +962,7 @@ static void tdgram_bsd_sendto_handler(void *private_data)
 	}
 
 	ret = sendto(bsds->fd, state->buf, state->len, 0, sa, sa_len);
-	err = tsocket_error_from_errno(ret, errno, &retry);
+	err = tsocket_bsd_error_from_errno(ret, errno, &retry);
 	if (retry) {
 		/* retry later */
 		return;
@@ -1692,7 +1024,7 @@ static struct tevent_req *tdgram_bsd_disconnect_send(TALLOC_CTX *mem_ctx,
 
 	ret = close(bsds->fd);
 	bsds->fd = -1;
-	err = tsocket_error_from_errno(ret, errno, &dummy);
+	err = tsocket_bsd_error_from_errno(ret, errno, &dummy);
 	if (tevent_req_error(req, err)) {
 		goto post;
 	}
@@ -1739,6 +1071,7 @@ static int tdgram_bsd_destructor(struct tdgram_bsd *bsds)
 
 static int tdgram_bsd_dgram_socket(const struct tsocket_address *local,
 				   const struct tsocket_address *remote,
+				   bool broadcast,
 				   TALLOC_CTX *mem_ctx,
 				   struct tdgram_context **_dgram,
 				   const char *location)
@@ -1761,6 +1094,10 @@ static int tdgram_bsd_dgram_socket(const struct tsocket_address *local,
 
 	switch (lbsda->u.sa.sa_family) {
 	case AF_UNIX:
+		if (broadcast) {
+			errno = EINVAL;
+			return -1;
+		}
 		if (lbsda->u.un.sun_path[0] != 0) {
 			do_reuseaddr = true;
 			do_bind = true;
@@ -1818,7 +1155,7 @@ static int tdgram_bsd_dgram_socket(const struct tsocket_address *local,
 	bsds->fd = fd;
 	talloc_set_destructor(bsds, tdgram_bsd_destructor);
 
-	if (lbsda->broadcast) {
+	if (broadcast) {
 		int val = 1;
 
 		ret = setsockopt(fd, SOL_SOCKET, SO_BROADCAST,
@@ -1891,7 +1228,8 @@ int _tdgram_inet_udp_socket(const struct tsocket_address *local,
 		return -1;
 	}
 
-	ret = tdgram_bsd_dgram_socket(local, remote, mem_ctx, dgram, location);
+	ret = tdgram_bsd_dgram_socket(local, remote, false,
+				      mem_ctx, dgram, location);
 
 	return ret;
 }
@@ -1915,7 +1253,8 @@ int _tdgram_unix_dgram_socket(const struct tsocket_address *local,
 		return -1;
 	}
 
-	ret = tdgram_bsd_dgram_socket(local, remote, mem_ctx, dgram, location);
+	ret = tdgram_bsd_dgram_socket(local, remote, false,
+				      mem_ctx, dgram, location);
 
 	return ret;
 }

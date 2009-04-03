@@ -27,72 +27,13 @@
 #include <talloc.h>
 #include <tevent.h>
 
-struct tsocket_context;
 struct tsocket_address;
 struct tdgram_context;
 struct iovec;
 
-enum tsocket_type {
-	TSOCKET_TYPE_STREAM = 1,
-	TSOCKET_TYPE_MESSAGE
-};
-
-typedef void (*tsocket_event_handler_t)(struct tsocket_context *, void *);
-int tsocket_set_event_context(struct tsocket_context *sock,
-			      struct tevent_context *ev);
-int tsocket_set_readable_handler(struct tsocket_context *sock,
-				 tsocket_event_handler_t handler,
-				 void *private_data);
-int tsocket_set_writeable_handler(struct tsocket_context *sock,
-				  tsocket_event_handler_t handler,
-				  void *private_data);
-
-int tsocket_connect(struct tsocket_context *sock,
-		    const struct tsocket_address *remote_addr);
-
-int tsocket_listen(struct tsocket_context *sock,
-		   int queue_size);
-
-int _tsocket_accept(struct tsocket_context *sock,
-		    TALLOC_CTX *mem_ctx,
-		    struct tsocket_context **new_sock,
-		    const char *location);
-#define tsocket_accept(sock, mem_ctx, new_sock) \
-	_tsocket_accept(sock, mem_ctx, new_sock, __location__)
-
-ssize_t tsocket_pending(struct tsocket_context *sock);
-
-int tsocket_readv(struct tsocket_context *sock,
-		  const struct iovec *vector, size_t count);
-int tsocket_writev(struct tsocket_context *sock,
-		   const struct iovec *vector, size_t count);
-
-int tsocket_get_status(const struct tsocket_context *sock);
-
-int _tsocket_get_local_address(const struct tsocket_context *sock,
-			       TALLOC_CTX *mem_ctx,
-			       struct tsocket_address **local_addr,
-			       const char *location);
-#define tsocket_get_local_address(sock, mem_ctx, local_addr) \
-	_tsocket_get_local_address(sock, mem_ctx, local_addr, __location__)
-int _tsocket_get_remote_address(const struct tsocket_context *sock,
-				TALLOC_CTX *mem_ctx,
-				struct tsocket_address **remote_addr,
-				const char *location);
-#define tsocket_get_remote_address(sock, mem_ctx, remote_addr) \
-	_tsocket_get_remote_address(sock, mem_ctx, remote_addr, __location__)
-
-int tsocket_get_option(const struct tsocket_context *sock,
-		       const char *option,
-		       TALLOC_CTX *mem_ctx,
-		       char **value);
-int tsocket_set_option(const struct tsocket_context *sock,
-		       const char *option,
-		       bool force,
-		       const char *value);
-
-void tsocket_disconnect(struct tsocket_context *sock);
-
+/*
+ * tsocket_address related functions
+ */
 char *tsocket_address_string(const struct tsocket_address *addr,
 			     TALLOC_CTX *mem_ctx);
 
@@ -102,15 +43,6 @@ struct tsocket_address *_tsocket_address_copy(const struct tsocket_address *addr
 
 #define tsocket_address_copy(addr, mem_ctx) \
 	_tsocket_address_copy(addr, mem_ctx, __location__)
-
-int _tsocket_address_create_socket(const struct tsocket_address *addr,
-				   enum tsocket_type type,
-				   TALLOC_CTX *mem_ctx,
-				   struct tsocket_context **sock,
-				   const char *location);
-#define tsocket_address_create_socket(addr, type, mem_ctx, sock) \
-	_tsocket_address_create_socket(addr, type, mem_ctx, sock,\
-				       __location__)
 
 /*
  * tdgram_context related functions
@@ -170,14 +102,6 @@ int _tsocket_address_unix_from_path(TALLOC_CTX *mem_ctx,
 char *tsocket_address_unix_path(const struct tsocket_address *addr,
 				TALLOC_CTX *mem_ctx);
 
-int _tsocket_context_bsd_wrap_existing(TALLOC_CTX *mem_ctx,
-				       int fd, bool close_on_disconnect,
-				       struct tsocket_context **_sock,
-				       const char *location);
-#define tsocket_context_bsd_wrap_existing(mem_ctx, fd, cod, _sock) \
-	_tsocket_context_bsd_wrap_existing(mem_ctx, fd, cod, _sock, \
-					   __location__)
-
 int _tdgram_inet_udp_socket(const struct tsocket_address *local,
 			    const struct tsocket_address *remote,
 			    TALLOC_CTX *mem_ctx,
@@ -193,39 +117,6 @@ int _tdgram_unix_dgram_socket(const struct tsocket_address *local,
 			      const char *location);
 #define tdgram_unix_dgram_socket(local, remote, mem_ctx, dgram) \
 	_tdgram_unix_dgram_socket(local, remote, mem_ctx, dgram, __location__)
-
-/*
- * Async helpers
- */
-
-struct tevent_req *tsocket_connect_send(struct tsocket_context *sock,
-					TALLOC_CTX *mem_ctx,
-					const struct tsocket_address *dst);
-int tsocket_connect_recv(struct tevent_req *req, int *perrno);
-
-struct tevent_req *tsocket_writev_send(struct tsocket_context *sock,
-				       TALLOC_CTX *mem_ctx,
-				       const struct iovec *vector,
-				       size_t count);
-int tsocket_writev_recv(struct tevent_req *req, int *perrno);
-
-struct tevent_req *tsocket_writev_queue_send(TALLOC_CTX *mem_ctx,
-					     struct tsocket_context *sock,
-					     struct tevent_queue *queue,
-					     const struct iovec *vector,
-					     size_t count);
-int tsocket_writev_queue_recv(struct tevent_req *req, int *perrno);
-
-typedef int (*tsocket_readv_next_iovec_t)(struct tsocket_context *sock,
-					  void *private_data,
-					  TALLOC_CTX *mem_ctx,
-					  struct iovec **vector,
-					  size_t *count);
-struct tevent_req *tsocket_readv_send(struct tsocket_context *sock,
-				      TALLOC_CTX *mem_ctx,
-				      tsocket_readv_next_iovec_t next_iovec_fn,
-				      void *private_data);
-int tsocket_readv_recv(struct tevent_req *req, int *perrno);
 
 /*
  * Queue helpers

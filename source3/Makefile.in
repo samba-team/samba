@@ -467,10 +467,7 @@ LIBCLI_LDAP_NDR_OBJ = ../libcli/ldap/ldap_ndr.o
 
 LIBTSOCKET_OBJ = ../lib/tsocket/tsocket.o \
 		../lib/tsocket/tsocket_helpers.o \
-		../lib/tsocket/tsocket_bsd.o \
-		../lib/tsocket/tsocket_connect.o \
-		../lib/tsocket/tsocket_writev.o \
-		../lib/tsocket/tsocket_readv.o
+		../lib/tsocket/tsocket_bsd.o
 
 CLDAP_OBJ = libads/cldap.o \
 	../libcli/cldap/cldap.o \
