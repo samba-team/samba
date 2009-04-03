@@ -162,7 +162,7 @@ test_init_vs_destroy(krb5_context context, const char *type)
     if (ret)
 	krb5_err(context, 1, ret, "krb5_parse_name");
 
-    ret = krb5_cc_new_unique(context, type, &id);
+    ret = krb5_cc_new_unique(context, type, NULL, &id);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_cc_new_unique");
 
@@ -202,7 +202,7 @@ test_cache_remove(krb5_context context, const char *type)
     if (ret)
 	krb5_err(context, 1, ret, "krb5_parse_name");
 
-    ret = krb5_cc_new_unique(context, type, &id);
+    ret = krb5_cc_new_unique(context, type, NULL, &id);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_cc_gen_new");
 
@@ -413,34 +413,25 @@ test_cache_iter_all(krb5_context context)
 
 
 static void
-test_copy(krb5_context context, const char *fromtype, const char *totype)
+test_copy(krb5_context context, const char *from, const char *to)
 {
-    const krb5_cc_ops *from, *to;
     krb5_ccache fromid, toid;
     krb5_error_code ret;
     krb5_principal p, p2;
-
-    from = krb5_cc_get_prefix_ops(context, fromtype);
-    if (from == NULL)
-	krb5_errx(context, 1, "%s isn't a type", fromtype);
-
-    to = krb5_cc_get_prefix_ops(context, totype);
-    if (to == NULL)
-	krb5_errx(context, 1, "%s isn't a type", totype);
 
     ret = krb5_parse_name(context, "lha@SU.SE", &p);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_parse_name");
 
-    ret = krb5_cc_gen_new(context, from, &fromid);
+    ret = krb5_cc_new_unique(context, from, NULL, &fromid);
     if (ret)
-	krb5_err(context, 1, ret, "krb5_cc_gen_new");
+	krb5_err(context, 1, ret, "krb5_cc_new_unique");
 
     ret = krb5_cc_initialize(context, fromid, p);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_cc_initialize");
 
-    ret = krb5_cc_gen_new(context, to, &toid);
+    ret = krb5_cc_new_unique(context, to, NULL, &toid);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_cc_gen_new");
 
