@@ -107,7 +107,7 @@ ec=0
 (cat ${objdir}/krb5.conf ; 			\
  echo '' ;					\
  echo '[libdefaults]' ; 			\
- echo "    default_cc_type = SDB" ;		\
+ echo "    default_cc_type = SCC" ;		\
  echo '' ) 					\
     > ${objdir}/krb5-cc.conf
 
@@ -123,8 +123,8 @@ ${klist} -l | grep foo@ >/dev/null || { ec=1 ; eval "${testfailed}"; }
 ${kdestroy}
 
 echo "getting both tickets"; > messages.log
-${kinit} -c SDB:1 foo@${R} || { ec=1 ; eval "${testfailed}"; }
-${kinit} -c SDB:2 bar@${R} || { ec=1 ; eval "${testfailed}"; }
+${kinit} -c SCC:1 foo@${R} || { ec=1 ; eval "${testfailed}"; }
+${kinit} -c SCC:2 bar@${R} || { ec=1 ; eval "${testfailed}"; }
 echo "switch foo"
 ${kswitch} -p foo@${R} || { ec=1 ; eval "${testfailed}"; }
 ${klist} | head -2 | grep foo@ >/dev/null || { ec=1 ; eval "${testfailed}"; }
