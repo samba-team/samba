@@ -375,6 +375,8 @@ krb5_425_conv_principal(krb5_context context,
 /**
  * Generate a new ccache of type `ops' in `id'.
  *
+ * Use krb5_cc_new_unique() instead.
+ *
  * @return Return an error code or 0, see krb5_get_error_message().
  *
  * @ingroup krb5_ccache
