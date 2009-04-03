@@ -650,11 +650,11 @@ main(int argc, char **argv)
 
     test_cache_iter_all(context);
 
-    test_cache_iter(context, "MEMORY", 0);
+    test_cache_iter(context, krb5_cc_type_memory, 0);
     {
 	krb5_principal p;
-	krb5_cc_new_unique(context, "MEMORY", "bar", &id1);
-	krb5_cc_new_unique(context, "MEMORY", "baz", &id2);
+	krb5_cc_new_unique(context, krb5_cc_type_memory, "bar", &id1);
+	krb5_cc_new_unique(context, krb5_cc_type_memory, "baz", &id2);
 	krb5_parse_name(context, "lha@SU.SE", &p);
 	krb5_cc_initialize(context, id1, p);
 	krb5_free_principal(context, p);
@@ -663,27 +663,27 @@ main(int argc, char **argv)
     test_cache_find(context, "lha@SU.SE", 1);
     test_cache_find(context, "hulabundulahotentot@SU.SE", 0);
 
-    test_cache_iter(context, "MEMORY", 0);
-    test_cache_iter(context, "MEMORY", 1);
-    test_cache_iter(context, "MEMORY", 0);
-    test_cache_iter(context, "FILE", 0);
-    test_cache_iter(context, "API", 0);
-    test_cache_iter(context, "SDB", 0);
-    test_cache_iter(context, "SDB", 1);
+    test_cache_iter(context, krb5_cc_type_memory, 0);
+    test_cache_iter(context, krb5_cc_type_memory, 1);
+    test_cache_iter(context, krb5_cc_type_memory, 0);
+    test_cache_iter(context, krb5_cc_type_file, 0);
+    test_cache_iter(context, krb5_cc_type_api, 0);
+    test_cache_iter(context, krb5_cc_type_scache, 0);
+    test_cache_iter(context, krb5_cc_type_scache, 1);
 
-    test_copy(context, "FILE", "FILE");
-    test_copy(context, "MEMORY", "MEMORY");
-    test_copy(context, "FILE", "MEMORY");
-    test_copy(context, "MEMORY", "FILE");
-    test_copy(context, "SDB", "FILE");
-    test_copy(context, "FILE", "SDB");
-    test_copy(context, "SDB", "MEMORY");
-    test_copy(context, "MEMORY", "SDB");
+    test_copy(context, krb5_cc_type_file, krb5_cc_type_file);
+    test_copy(context, krb5_cc_type_memory, krb5_cc_type_memory);
+    test_copy(context, krb5_cc_type_file, krb5_cc_type_memory);
+    test_copy(context, krb5_cc_type_memory, krb5_cc_type_file);
+    test_copy(context, krb5_cc_type_scache, krb5_cc_type_file);
+    test_copy(context, krb5_cc_type_file, krb5_cc_type_scache);
+    test_copy(context, krb5_cc_type_scache, krb5_cc_type_memory);
+    test_copy(context, krb5_cc_type_memory, krb5_cc_type_scache);
 
-    test_move(context, "FILE");
-    test_move(context, "MEMORY");
-    test_move(context, "KCM");
-    test_move(context, "SDB");
+    test_move(context, krb5_cc_type_file);
+    test_move(context, krb5_cc_type_memory);
+    test_move(context, krb5_cc_type_kcm);
+    test_move(context, krb5_cc_type_scache);
 
     test_prefix_ops(context, "FILE:/tmp/foo", &krb5_fcc_ops);
     test_prefix_ops(context, "FILE", &krb5_fcc_ops);
