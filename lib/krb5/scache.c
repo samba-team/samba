@@ -1329,11 +1329,12 @@ scc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
     ret = exec_stmt(context, sfrom->db, "COMMIT", KRB5_CC_IO);
     if (ret) return ret;
 
-    scc_destroy(context, from);
+    scc_free(sfrom);
 
     return 0;
 
 rollback:
+    scc_free(sfrom);
 
     exec_stmt(context, sfrom->db, "ROLLBACK", 0);
 
