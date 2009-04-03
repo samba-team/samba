@@ -286,7 +286,12 @@ krb5_cc_new_unique(krb5_context context, const char *type,
     ret = _krb5_cc_allocate(context, ops, id);
     if (ret)
 	return ret;
-    return (*id)->ops->gen_new(context, id);
+    ret = (*id)->ops->gen_new(context, id);
+    if (ret) {
+	free(*id);
+	*id = NULL;
+    }
+    return ret;
 }
 
 /**
