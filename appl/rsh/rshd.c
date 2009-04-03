@@ -172,7 +172,7 @@ save_krb5_creds (int s,
     if (remote_cred.length == 0)
 	return 0;
 
-    ret = krb5_cc_gen_new(context, &krb5_mcc_ops, &ccache);
+    ret = krb5_cc_new_unique(context, krb5_cc_type_memory, NULL, &ccache);
     if (ret) {
 	krb5_data_free(&remote_cred);
 	return 0;
