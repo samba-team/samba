@@ -1396,14 +1396,14 @@ scc_set_default(krb5_context context, krb5_ccache id)
 }
 
 /**
- * Variable containing the SDB based credential cache implemention.
+ * Variable containing the SCC based credential cache implemention.
  *
  * @ingroup krb5_ccache
  */
 
 KRB5_LIB_VARIABLE const krb5_cc_ops krb5_scc_ops = {
     KRB5_CC_OPS_VERSION,
-    "SDB",
+    "SCC",
     scc_get_name,
     scc_resolve,
     scc_gen_new,
