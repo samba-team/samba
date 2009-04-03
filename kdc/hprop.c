@@ -470,7 +470,7 @@ get_creds(krb5_context context, krb5_ccache *cache)
     ret = krb5_kt_close(context, keytab);
     if(ret) krb5_err(context, 1, ret, "krb5_kt_close");
 
-    ret = krb5_cc_new_unique(context, krb5_cc_type_memory, NULL cache);
+    ret = krb5_cc_new_unique(context, krb5_cc_type_memory, NULL, cache);
     if(ret) krb5_err(context, 1, ret, "krb5_cc_new_unique");
 
     ret = krb5_cc_initialize(context, *cache, client);
