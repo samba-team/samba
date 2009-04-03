@@ -823,7 +823,7 @@ scc_get_principal(krb5_context context,
     if (sqlite3_step(s->scache) != SQLITE_ROW) {
 	sqlite3_reset(s->scache);
 	krb5_set_error_message(context, KRB5_CC_END,
-			       N_("No principal for cache SCACHE:%s:%s", ""),
+			       N_("No principal for cache SCC:%s:%s", ""),
 			       s->name, s->file);
 	return KRB5_CC_END;
     }
@@ -832,7 +832,7 @@ scc_get_principal(krb5_context context,
 	sqlite3_reset(s->scache);
 	krb5_set_error_message(context, KRB5_CC_END,
 			       N_("Principal data of wrong type "
-				  "for SCACHE:%s:%s", ""),
+				  "for SCC:%s:%s", ""),
 			       s->name, s->file);
 	return KRB5_CC_END;
     }
@@ -841,7 +841,7 @@ scc_get_principal(krb5_context context,
     if (str == NULL) {
 	sqlite3_reset(s->scache);
 	krb5_set_error_message(context, KRB5_CC_END,
-			       N_("Principal not set for SCACHE:%s:%s", ""),
+			       N_("Principal not set for SCC:%s:%s", ""),
 			       s->name, s->file);
 	return KRB5_CC_END;
     }
@@ -996,7 +996,7 @@ next:
 
     if (sqlite3_column_type(ctx->credstmt, 0) != SQLITE_BLOB) {
 	krb5_set_error_message(context, KRB5_CC_END,
-			       N_("credential of wrong type for SCACHE:%s:%s", ""),
+			       N_("credential of wrong type for SCC:%s:%s", ""),
 			       s->name, s->file);
 	sqlite3_reset(ctx->credstmt);
 	return KRB5_CC_END;
@@ -1074,7 +1074,7 @@ scc_remove_cred(krb5_context context,
 	    ret = KRB5_CC_END;
 	    krb5_set_error_message(context, ret,
 				   N_("Credential of wrong type "
-				      "for SCACHE:%s:%s", ""),
+				      "for SCC:%s:%s", ""),
 				   s->name, s->file);
 	    break;
 	}
