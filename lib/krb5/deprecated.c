@@ -38,7 +38,7 @@
 #ifndef HEIMDAL_SMALLER
 
 /**
- * Same as krb5_data_free().
+ * Same as krb5_data_free(). MIT compat.
  *
  * @param context Kerberos 5 context.
  * @param data krb5_data to free.
@@ -387,6 +387,7 @@ krb5_error_code KRB5_LIB_FUNCTION
 krb5_cc_gen_new(krb5_context context,
 		const krb5_cc_ops *ops,
 		krb5_ccache *id)
+    KRB5_DEPRECATED
 {
     return krb5_cc_new_unique(context, ops->prefix, NULL, id);
 }
