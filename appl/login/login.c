@@ -161,7 +161,7 @@ krb5_verify(struct passwd *pwd, const char *password)
     ret = krb5_parse_name(context, pwd->pw_name, &princ);
     if(ret)
 	return 1;
-    ret = krb5_cc_gen_new(context, &krb5_mcc_ops, &id);
+    ret = krb5_cc_new_unique(context, "MEMORY", NULL, &id);
     if(ret) {
 	krb5_free_principal(context, princ);
 	return 1;
