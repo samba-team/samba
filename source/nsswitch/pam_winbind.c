@@ -2406,6 +2406,7 @@ static int _pam_delete_cred(pam_handle_t *pamh, int flags,
 						     user, "wbcLogoffUser");
 		wbcFreeMemory(error);
 		wbcFreeMemory(logoff.blobs);
+		logoff.blobs = NULL;
 
 		if (!WBC_ERROR_IS_OK(wbc_status)) {
 			_pam_log(ctx, LOG_INFO,
