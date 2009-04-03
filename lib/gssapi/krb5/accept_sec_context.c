@@ -138,7 +138,8 @@ gsskrb5_accept_delegated_token
 	kret = krb5_cc_default (context, &ccache);
     } else {
 	*delegated_cred_handle = NULL;
-	kret = krb5_cc_gen_new (context, &krb5_mcc_ops, &ccache);
+	kret = krb5_cc_new_unique (context, krb5_cc_type_memory,
+				   NULL, &ccache);
     }
     if (kret) {
 	ctx->flags &= ~GSS_C_DELEG_FLAG;
