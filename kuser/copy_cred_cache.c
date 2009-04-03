@@ -108,6 +108,20 @@ parse_ticket_flags(krb5_context context,
 	ret_flags->i = bitswap32(flags);
 }
 
+struct ctx {
+    krb5_flags whichfields;
+    krb5_creds mcreds;
+};
+
+static krb5_boolean
+matchfunc(krb5_context context, void *ptr, const krb5_creds *creds)
+{
+    struct ctx *ctx = ptr;
+    if (krb5_compare_creds(context, ctx->whichfields, &ctx->mcreds, creds))
+	return TRUE;
+    return FALSE;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -116,13 +130,12 @@ main(int argc, char **argv)
     int optidx = 0;
     const char *from_name, *to_name;
     krb5_ccache from_ccache, to_ccache;
-    krb5_flags whichfields = 0;
-    krb5_creds mcreds;
     unsigned int matched;
+    struct ctx ctx;
 
     setprogname(argv[0]);
 
-    memset(&mcreds, 0, sizeof(mcreds));
+    memset(&ctx, 0, sizeof(ctx));
 
     if (getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optidx))
 	usage(1);
@@ -144,7 +157,7 @@ main(int argc, char **argv)
 	errx(1, "krb5_init_context failed");
 
     if (service_string) {
-	ret = krb5_parse_name(context, service_string, &mcreds.server);
+	ret = krb5_parse_name(context, service_string, &ctx.mcreds.server);
 	if (ret)
 	    krb5_err(context, 1, ret, "%s", service_string);
     }
@@ -153,19 +166,19 @@ main(int argc, char **argv)
 	ret = krb5_string_to_enctype(context, enctype_string, &enctype);
 	if (ret)
 	    krb5_err(context, 1, ret, "%s", enctype_string);
-	whichfields |= KRB5_TC_MATCH_KEYTYPE;
-	mcreds.session.keytype = enctype;
+	ctx.whichfields |= KRB5_TC_MATCH_KEYTYPE;
+	ctx.mcreds.session.keytype = enctype;
     }
     if (flags_string) {
-	parse_ticket_flags(context, flags_string, &mcreds.flags);
-	whichfields |= KRB5_TC_MATCH_FLAGS;
+	parse_ticket_flags(context, flags_string, &ctx.mcreds.flags);
+	ctx.whichfields |= KRB5_TC_MATCH_FLAGS;
     }
     if (valid_string) {
 	time_t t = parse_time(valid_string, "s");
 	if(t < 0)
 	    errx(1, "unknown time \"%s\"", valid_string);
-	mcreds.times.endtime = time(NULL) + t;
-	whichfields |= KRB5_TC_MATCH_TIMES;
+	ctx.mcreds.times.endtime = time(NULL) + t;
+	ctx.whichfields |= KRB5_TC_MATCH_TIMES;
     }
     if (fcache_version)
 	krb5_set_fcache_version(context, fcache_version);
@@ -187,7 +200,7 @@ main(int argc, char **argv)
 	ret = krb5_cc_get_principal(context, from_ccache, &client);
 	if (ret)
 	    krb5_err(context, 1, ret, "getting default principal");
-	ret = krb5_make_principal(context, &mcreds.server,
+	ret = krb5_make_principal(context, &ctx.mcreds.server,
 				  krb5_principal_get_realm(context, client),
 				  KRB5_TGS_NAME,
 				  krb5_principal_get_realm(context, client),
@@ -200,8 +213,8 @@ main(int argc, char **argv)
     if (ret)
 	krb5_err(context, 1, ret, "%s", to_name);
 
-    ret = krb5_cc_copy_cache_match(context, from_ccache, to_ccache,
-				   whichfields, &mcreds, &matched);
+    ret = krb5_cc_copy_match_f(context, from_ccache, to_ccache,
+			       matchfunc, &ctx, &matched);
     if (ret)
 	krb5_err(context, 1, ret, "copying cred cache");
 
