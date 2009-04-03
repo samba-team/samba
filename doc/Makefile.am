@@ -14,6 +14,26 @@ dxy_subst = sed -e 's,[@]srcdir[@],$(srcdir),g' \
 	-e 's,[@]objdir[@],.,g' \
 	-e 's,[@]PACKAGE_VERSION[@],$(PACKAGE_VERSION),g'
 
+hcrypto.dxy: hcrypto.din Makefile
+	$(dxy_subst) < $(srcdir)/hcrypto.din > hcrypto.dxy.tmp
+	chmod +x hcrypto.dxy.tmp
+	mv hcrypto.dxy.tmp hcrypto.dxy
+
+hdb.dxy: hdb.din Makefile
+	$(dxy_subst) < $(srcdir)/hdb.din > hdb.dxy.tmp
+	chmod +x hdb.dxy.tmp
+	mv hdb.dxy.tmp hdb.dxy
+
+hx509.dxy: hx509.din Makefile
+	$(dxy_subst) < $(srcdir)/hx509.din > hx509.dxy.tmp
+	chmod +x hx509.dxy.tmp
+	mv hx509.dxy.tmp hx509.dxy
+
+gssapi.dxy: gssapi.din Makefile
+	$(dxy_subst) < $(srcdir)/gssapi.din > gssapi.dxy.tmp
+	chmod +x gssapi.dxy.tmp
+	mv gssapi.dxy.tmp gssapi.dxy
+
 krb5.dxy: krb5.din Makefile
 	$(dxy_subst) < $(srcdir)/krb5.din > krb5.dxy.tmp
 	chmod +x krb5.dxy.tmp
@@ -24,27 +44,10 @@ ntlm.dxy: ntlm.din Makefile
 	chmod +x ntlm.dxy.tmp
 	mv ntlm.dxy.tmp ntlm.dxy
 
-hx509.dxy: hx509.din Makefile
-	$(dxy_subst) < $(srcdir)/hx509.din > hx509.dxy.tmp
-	chmod +x hx509.dxy.tmp
-	mv hx509.dxy.tmp hx509.dxy
-
-hcrypto.dxy: hcrypto.din Makefile
-	$(dxy_subst) < $(srcdir)/hcrypto.din > hcrypto.dxy.tmp
-	chmod +x hcrypto.dxy.tmp
-	mv hcrypto.dxy.tmp hcrypto.dxy
-
 wind.dxy: wind.din Makefile
 	$(dxy_subst) < $(srcdir)/wind.din > wind.dxy.tmp
 	chmod +x wind.dxy.tmp
 	mv wind.dxy.tmp wind.dxy
-
-gssapi.dxy: gssapi.din Makefile
-	$(dxy_subst) < $(srcdir)/gssapi.din > gssapi.dxy.tmp
-	chmod +x gssapi.dxy.tmp
-	mv gssapi.dxy.tmp gssapi.dxy
-
-
 
 texi_subst = sed -e 's,[@]dbdir[@],$(localstatedir),g' \
 	-e 's,[@]PACKAGE_VERSION[@],$(PACKAGE_VERSION),g'
@@ -54,11 +57,11 @@ vars.texi: vars.tin Makefile
 	chmod +x vars.texi.tmp
 	mv vars.texi.tmp vars.texi
 
-PROJECTS = hcrypto hx509 krb5 ntlm wind gssapi
+PROJECTS = hcrypto hdb hx509 gssapi krb5 ntlm wind 
 
 $(PROJECTS): doxygen
 
-doxygen: krb5.dxy ntlm.dxy hx509.dxy hcrypto.dxy wind.dxy gssapi.dxy
+doxygen: hdb.dxy hx509.dxy hcrypto.dxy gssapi.dxy krb5.dxy ntlm.dxy wind.dxy
 	@for a in $(PROJECTS) ; do \
 		echo $$a ; \
 		rm -rf $(srcdir)/$$a ; \
@@ -114,11 +117,12 @@ heimdal_TEXINFOS = \
 
 EXTRA_DIST = \
 	$(PROJECTS) \
-	krb5.din \
-	ntlm.din \
-	hx509.din \
+	hdb.din \
 	hcrypto.din \
 	heimdal.css \
+	hx509.din \
+	krb5.din \
+	ntlm.din \
 	init-creds \
 	latin1.tex \
 	layman.asc \
@@ -127,10 +131,11 @@ EXTRA_DIST = \
 	vars.tin
 
 CLEANFILES = \
-	krb5.dxy* \
-	gssapi.dxy* \
-	ntlm.dxy* \
-	hx509.dxy* \
 	hcrypto.dxy* \
+	hx509.dxy* \
+	hdb.dxy* \
+	gssapi.dxy* \
+	krb5.dxy* \
+	ntlm.dxy* \
 	wind.dxy* \
 	vars.texi*
