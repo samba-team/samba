@@ -241,23 +241,6 @@ krb5_cc_resolve(krb5_context context,
 }
 
 /**
- * Generate a new ccache of type `ops' in `id'.
- *
- * @return Return an error code or 0, see krb5_get_error_message().
- *
- * @ingroup krb5_ccache
- */
-
-
-krb5_error_code KRB5_LIB_FUNCTION
-krb5_cc_gen_new(krb5_context context,
-		const krb5_cc_ops *ops,
-		krb5_ccache *id)
-{
-    return krb5_cc_new_unique(context, ops->prefix, NULL, id);
-}
-
-/**
  * Generates a new unique ccache of `type` in `id'. If `type' is NULL,
  * the library chooses the default credential cache type. The supplied
  * `hint' (that can be NULL) is a string that the credential cache
