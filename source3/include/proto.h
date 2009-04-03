@@ -6677,6 +6677,7 @@ void release_file_oplock(files_struct *fsp);
 bool remove_oplock(files_struct *fsp);
 bool downgrade_oplock(files_struct *fsp);
 bool should_notify_deferred_opens(void);
+void break_level2_to_none_async(files_struct *fsp);
 void reply_to_oplock_break_requests(files_struct *fsp);
 void process_oplock_async_level2_break_message(struct messaging_context *msg_ctx,
 						      void *private_data,
