@@ -168,8 +168,8 @@ get_cred(struct kafs_data *data, const char *name, const char *inst,
 
     memset(&in_creds, 0, sizeof(in_creds));
 
-    ret = krb5_make_principal(context, &in_creds.server,
-			      realm, name, instance, NULL);
+    ret = krb5_make_principal(d->context, &in_creds.server,
+			      realm, name, inst, NULL);
     if(ret)
 	return ret;
     ret = krb5_cc_get_principal(d->context, d->id, &in_creds.client);
