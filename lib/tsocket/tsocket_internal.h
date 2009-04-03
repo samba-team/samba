@@ -93,6 +93,48 @@ void *_tdgram_context_data(struct tdgram_context *dgram);
 #define tdgram_context_data(_req, _type) \
 	talloc_get_type_abort(_tdgram_context_data(_req), _type)
 
+struct tstream_context_ops {
+	const char *name;
+
+	ssize_t (*pending_bytes)(struct tstream_context *stream);
+
+	struct tevent_req *(*readv_send)(TALLOC_CTX *mem_ctx,
+					 struct tevent_context *ev,
+					 struct tstream_context *stream,
+					 struct iovec *vector,
+					 size_t count);
+	int (*readv_recv)(struct tevent_req *req,
+			  int *perrno);
+
+	struct tevent_req *(*writev_send)(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct tstream_context *stream,
+					  const struct iovec *vector,
+					  size_t count);
+	int (*writev_recv)(struct tevent_req *req,
+			   int *perrno);
+
+	struct tevent_req *(*disconnect_send)(TALLOC_CTX *mem_ctx,
+					      struct tevent_context *ev,
+					      struct tstream_context *stream);
+	int (*disconnect_recv)(struct tevent_req *req,
+			       int *perrno);
+};
+
+struct tstream_context *_tstream_context_create(TALLOC_CTX *mem_ctx,
+					const struct tstream_context_ops *ops,
+					void *pstate,
+					size_t psize,
+					const char *type,
+					const char *location);
+#define tstream_context_create(mem_ctx, ops, state, type, location) \
+	_tstream_context_create(mem_ctx, ops, state, sizeof(type), \
+				#type, location)
+
+void *_tstream_context_data(struct tstream_context *stream);
+#define tstream_context_data(_req, _type) \
+	talloc_get_type_abort(_tstream_context_data(_req), _type)
+
 int tsocket_simple_int_recv(struct tevent_req *req, int *perrno);
 
 #endif /* _TSOCKET_H */

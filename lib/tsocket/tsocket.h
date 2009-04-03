@@ -29,6 +29,7 @@
 
 struct tsocket_address;
 struct tdgram_context;
+struct tstream_context;
 struct iovec;
 
 /*
@@ -69,6 +70,33 @@ struct tevent_req *tdgram_disconnect_send(TALLOC_CTX *mem_ctx,
 					  struct tdgram_context *dgram);
 int tdgram_disconnect_recv(struct tevent_req *req,
 			   int *perrno);
+
+/*
+ * tstream_context related functions
+ */
+ssize_t tstream_pending_bytes(struct tstream_context *stream);
+
+struct tevent_req *tstream_readv_send(TALLOC_CTX *mem_ctx,
+				      struct tevent_context *ev,
+				      struct tstream_context *stream,
+				      struct iovec *vector,
+				      size_t count);
+int tstream_readv_recv(struct tevent_req *req,
+		       int *perrno);
+
+struct tevent_req *tstream_writev_send(TALLOC_CTX *mem_ctx,
+				       struct tevent_context *ev,
+				       struct tstream_context *stream,
+				       const struct iovec *vector,
+				       size_t count);
+int tstream_writev_recv(struct tevent_req *req,
+			int *perrno);
+
+struct tevent_req *tstream_disconnect_send(TALLOC_CTX *mem_ctx,
+					   struct tevent_context *ev,
+					   struct tstream_context *stream);
+int tstream_disconnect_recv(struct tevent_req *req,
+			    int *perrno);
 
 /*
  * BSD sockets: inet, inet6 and unix
