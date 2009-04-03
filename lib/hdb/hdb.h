@@ -150,16 +150,28 @@ typedef struct HDB{
      */
     krb5_error_code (*hdb_rename)(krb5_context, struct HDB*, const char*);
     /**
-     * Get a encoded principal from database.
+     * Get an hdb_entry from a classical DB backend
      *
-     * If the database is a pure DB backend, this function will take a
-     * principal key and return all data related to principal. The
-     * encoded entry is of type hdb_entry or hdb_entry_alias.
+     * If the database is a classical DB (ie BDB, NDBM, GDBM, etc)
+     * backend, this function will take a principal key (krb5_data)
+     * and return all data related to principal in the return
+     * krb5_data. The returned encoded entry is of type hdb_entry or
+     * hdb_entry_alias.
      */
     krb5_error_code (*hdb__get)(krb5_context, struct HDB*,
 				krb5_data, krb5_data*);
+    /**
+     * Store an hdb_entry from a classical DB backend
+     *
+     * Same discussion as in @ref HDB::hdb__get
+     */
     krb5_error_code (*hdb__put)(krb5_context, struct HDB*, int,
 				krb5_data, krb5_data);
+    /**
+     * Delete and hdb_entry from a classical DB backend
+     *
+     * Same discussion as in @ref HDB::hdb__get
+     */
     krb5_error_code (*hdb__del)(krb5_context, struct HDB*, krb5_data);
     /**
      * Destroy the handle to the database.
