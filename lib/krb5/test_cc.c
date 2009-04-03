@@ -681,8 +681,8 @@ main(int argc, char **argv)
     test_prefix_ops(context, "MEMORY", &krb5_mcc_ops);
     test_prefix_ops(context, "MEMORY:foo", &krb5_mcc_ops);
     test_prefix_ops(context, "/tmp/kaka", &krb5_fcc_ops);
-    test_prefix_ops(context, "SDB:", &krb5_scc_ops);
-    test_prefix_ops(context, "SDB:foo", &krb5_scc_ops);
+    test_prefix_ops(context, "SCC:", &krb5_scc_ops);
+    test_prefix_ops(context, "SCC:foo", &krb5_scc_ops);
 
     krb5_cc_destroy(context, id1);
     krb5_cc_destroy(context, id2);
