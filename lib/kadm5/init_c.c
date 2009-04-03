@@ -210,7 +210,7 @@ get_new_cache(krb5_context context,
     default:
 	return ret;
     }
-    ret = krb5_cc_gen_new(context, &krb5_mcc_ops, &id);
+    ret = krb5_cc_new_unique(context, krb5_cc_type_memory, NULL, &id);
     if(ret)
 	return ret;
     ret = krb5_cc_initialize (context, id, cred.client);
