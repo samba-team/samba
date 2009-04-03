@@ -77,9 +77,20 @@ PADATA-TYPE ::= INTEGER {
 						-- tell KDC that is supports 
 						-- the asCheckSum in the
 						--  PK-AS-REP
-	KRB5-PADATA-CLIENT-CANONICALIZED(133),	-- 
+	KRB5-PADATA-CLIENT-CANONICALIZED(133),	-- referals
+	KRB5-PADATA-FX-COOKIE(133)		-- draft-ietf-krb-wg-preauth-framework
+	KRB5-PADATA-AUTHENTICATION-SET(134)	-- draft-ietf-krb-wg-preauth-framework
+	KRB5-PADATA-AUTH-SET-SELECTED(135)	-- draft-ietf-krb-wg-preauth-framework
+	KRB5-PADATA-FX-FAST(136)		-- draft-ietf-krb-wg-preauth-framework
+	KRB5-PADATA-FX-ERROR(137)		-- draft-ietf-krb-wg-preauth-framework
+	KRB5-PADATA-ENCRYPTED-CHALLENGE(138)	-- draft-ietf-krb-wg-preauth-framework
+	KRB5-PADATA-OTP-CHALLENGE(141)		-- (gareth.richards@rsa.com)
+	KRB5-PADATA-OTP-REQUEST(142)		-- (gareth.richards@rsa.com)
+	KBB5-PADATA-OTP-CONFIRM(143)		-- (gareth.richards@rsa.com)
+	KRB5-PADATA-OTP-PIN-CHANGE(144)		-- (gareth.richards@rsa.com)
 	KRB5-PADATA-EPAK-AS-REQ(145),
-	KRB5-PADATA-EPAK-AS-REP(146)
+	KRB5-PADATA-EPAK-AS-REP(146),
+	KRB5-PADATA-SUPPORTED-ETYPES(165)	-- MS-KILE
 }
 
 AUTHDATA-TYPE ::= INTEGER {
