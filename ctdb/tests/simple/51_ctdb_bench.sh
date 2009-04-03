@@ -83,10 +83,11 @@ fi
 perc_diff=$(( ($positive - $negative) * 100 / $positive ))
 perc_diff=${perc_diff#-}
 
-if [ $perc_diff -le 1 ] ; then
-    echo "OK: percentage difference between +ive and -ive ($perc_diff%) <= 1%"
+check_percent=2
+if [ $perc_diff -le $check_percent ] ; then
+    echo "OK: percentage difference between +ive and -ive ($perc_diff%) <= $check_percent%"
 else
-    echo "BAD: percentage difference between +ive and -ive ($perc_diff%) > 1%"
+    echo "BAD: percentage difference between +ive and -ive ($perc_diff%) > $check_percent%"
     exit 1
 fi
 

@@ -161,7 +161,7 @@ static void bench_ring(struct ctdb_context *ctdb, struct event_context *ev)
 
 	start_timer();
 	while (end_timer() < timelimit) {
-		if (pnn == 0 && msg_count % 10000 == 0) {
+		if (pnn == 0 && msg_count % 10000 == 0 && end_timer() > 0) {
 			printf("Ring: %.2f msgs/sec (+ve=%d -ve=%d)\r", 
 			       msg_count/end_timer(), msg_plus, msg_minus);
 			fflush(stdout);
