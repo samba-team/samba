@@ -925,6 +925,9 @@ fcc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
 	fcc_unlock(context, fd);
 	close(fd);
     }
+
+    fcc_destroy(context, from);
+
     return ret;
 }
 
