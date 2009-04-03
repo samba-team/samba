@@ -47,4 +47,4 @@ KRB5_LIB_VARIABLE const char *krb5_cc_type_api = "API";
 KRB5_LIB_VARIABLE const char *krb5_cc_type_file = "FILE";
 KRB5_LIB_VARIABLE const char *krb5_cc_type_memory = "MEMORY";
 KRB5_LIB_VARIABLE const char *krb5_cc_type_kcm = "KCM";
-KRB5_LIB_VARIABLE const char *krb5_cc_type_scc = "SDB";
+KRB5_LIB_VARIABLE const char *krb5_cc_type_scc = "SCC";
