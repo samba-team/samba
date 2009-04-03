@@ -743,7 +743,7 @@ fcc_remove_cred(krb5_context context,
     char *newname;
     int fd;
 
-    ret = krb5_cc_gen_new(context, &krb5_mcc_ops, &copy);
+    ret = krb5_cc_new_unique(context, krb5_cc_new_unique, NULL, &copy);
     if (ret)
 	return ret;
 
