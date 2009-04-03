@@ -81,9 +81,9 @@ copy_import(void)
     if (ret)
 	errx(1, "krb5_init_context");
 
-    ret = krb5_cc_gen_new(context, &krb5_mcc_ops, &id);
+    ret = krb5_cc_new_unique(context, krb5_cc_type_memory, NULL, &id);
     if (ret)
-	krb5_err(context, 1, ret, "krb5_cc_gen_new");
+	krb5_err(context, 1, ret, "krb5_cc_new_unique");
 
     maj_stat = gss_krb5_copy_ccache(&min_stat, cred1, id);
     if (maj_stat != GSS_S_COMPLETE)
