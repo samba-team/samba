@@ -60,7 +60,7 @@ typedef struct krb5_scache {
 
 #define SCACHE_DEF_NAME		"Default-cache"
 #define KRB5_SCACHE_DB	"/tmp/krb5scc_%{uid}"
-#define KRB5_SCACHE_NAME	"SDB:"  SCACHE_DEF_NAME ":" KRB5_SCACHE_DB
+#define KRB5_SCACHE_NAME	"SCC:"  SCACHE_DEF_NAME ":" KRB5_SCACHE_DB
 
 #define SCACHE_INVALID_CID	((sqlite_uint64)-1)
 
