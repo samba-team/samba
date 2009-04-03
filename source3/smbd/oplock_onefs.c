@@ -550,87 +550,18 @@ static void onefs_semlock_write(int fd, enum level2_contention_type type,
  * the cluster except the fsp's own level 2 oplock.  This lack of
  * self-contention is a limitation of the current OneFS kernel oplocks
  * implementation.  Luckily it is easy to contend our own level 2 oplock by
- * iterating the share mode entries and only breaking the oplock if the pid
- * matches our's.
+ * checking the the fsp's oplock_type.  If it's a level2, send a break message
+ * to the client and remove the oplock.
  */
 static void onefs_contend_level2_oplocks_begin(files_struct *fsp,
 					       enum level2_contention_type type)
 {
-	int i;
-	struct share_mode_lock *lck;
-
 	/* Take care of level 2 kernel contention. */
 	onefs_semlock_write(fsp->fh->fd, type, SEMLOCK_LOCK);
 
-	/*
-	 * If this file is level II oplocked then we need
-	 * to grab the shared memory lock and inform all
-	 * other files with a level II lock that they need
-	 * to flush their read caches. We keep the lock over
-	 * the shared memory area whilst doing this.
-	 */
-
-	if (!LEVEL_II_OPLOCK_TYPE(fsp->oplock_type))
-		return;
-
-	lck = get_share_mode_lock(talloc_tos(), fsp->file_id, NULL, NULL,
-				  NULL);
-	if (lck == NULL) {
-		DEBUG(0,("onefs_contend_level2_oplocks_begin: failed to lock "
-			 "share mode entry for file %s.\n", fsp->fsp_name ));
-		return;
-	}
-
-	DEBUG(10,("onefs_contend_level2_oplocks_begin: num_share_modes = %d\n",
-		  lck->num_share_modes ));
-
-	for(i = 0; i < lck->num_share_modes; i++) {
-		struct share_mode_entry *share_entry = &lck->share_modes[i];
-		char msg[MSG_SMB_SHARE_MODE_ENTRY_SIZE];
-
-		if (!is_valid_share_mode_entry(share_entry)) {
-			continue;
-		}
-
-		DEBUG(10,("onefs_contend_level2_oplocks_begin: "
-			  "share_entry[%i]->op_type == %d\n",
-			  i, share_entry->op_type ));
-
-		if (share_entry->op_type == NO_OPLOCK) {
-			continue;
-		}
-
-		/* Paranoia .... */
-		if (EXCLUSIVE_OPLOCK_TYPE(share_entry->op_type)) {
-			DEBUG(0,("onefs_contend_level2_oplocks_begin: PANIC. "
-				 "share mode entry %d is an exlusive "
-				 "oplock !\n", i ));
-			TALLOC_FREE(lck);
-			abort();
-		}
-
-		share_mode_entry_to_message(msg, share_entry);
-
-		/*
-		 * Only contend our own level 2 oplock.  The other processes
-		 * will be get break events from the kernel.
-		 */
-		if (procid_is_me(&share_entry->pid)) {
-			DATA_BLOB blob = data_blob_const(msg,
-			    MSG_SMB_SHARE_MODE_ENTRY_SIZE);
-			process_oplock_async_level2_break_message(
-				smbd_messaging_context(),
-				NULL,
-				MSG_SMB_ASYNC_LEVEL2_BREAK,
-				share_entry->pid,
-				&blob);
-		}
-	}
-
-	/* We let the message receivers handle removing the oplock state
-	   in the share mode lock db. */
-
-	TALLOC_FREE(lck);
+	/* Take care of level 2 self contention. */
+	if (LEVEL_II_OPLOCK_TYPE(fsp->oplock_type))
+		break_level2_to_none_async(fsp);
 }
 
 /**
