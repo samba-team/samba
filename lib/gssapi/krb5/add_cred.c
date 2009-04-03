@@ -168,8 +168,8 @@ OM_uint32 _gsskrb5_add_cred (
 	    }
 
 	    if (strcmp(type, "MEMORY") == 0) {
-		ret = krb5_cc_gen_new(context, &krb5_mcc_ops,
-				      &handle->ccache);
+		ret = krb5_cc_new_unique(context, type, 
+					 NULL, &handle->ccache);
 		if (ret) {
 		    *minor_status = ret;
 		    goto failure;
