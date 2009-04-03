@@ -112,7 +112,7 @@ gss_session(void *app_data, char *username)
 	const char* ticketfile;
 	struct passwd *kpw;
 
-	ret = krb5_cc_gen_new(kdata->context, &krb5_fcc_ops, &ccache);
+	ret = krb5_cc_new_unique(kdata->context, NULL, NULL, &ccache);
 	if (ret)
 	    goto fail;
 	
