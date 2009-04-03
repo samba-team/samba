@@ -960,8 +960,10 @@ acc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
 	    return translate_cc_error(context, error);
     }
 
-
     error = (*ato->ccache->func->move)(afrom->ccache, ato->ccache);
+
+    acc_destroy(context, from);
+
     return translate_cc_error(context, error);
 }
 
