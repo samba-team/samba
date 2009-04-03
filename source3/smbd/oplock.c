@@ -376,8 +376,9 @@ void process_oplock_async_level2_break_message(struct messaging_context *msg_ctx
 	/* De-linearize incoming message. */
 	message_to_share_mode_entry(&msg, (char *)data->data);
 
-	DEBUG(10, ("Got oplock async level 2 break message from pid %d: %s/%lu\n",
-		   (int)procid_to_pid(&src), file_id_string_tos(&msg.id), msg.share_file_id));
+	DEBUG(10, ("Got oplock async level 2 break message from pid %s: "
+		   "%s/%lu\n", procid_str(debug_ctx(), &src),
+		   file_id_string_tos(&msg.id), msg.share_file_id));
 
 	fsp = initial_break_processing(msg.id, msg.share_file_id);
 
@@ -472,8 +473,9 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 	/* De-linearize incoming message. */
 	message_to_share_mode_entry(&msg, (char *)data->data);
 
-	DEBUG(10, ("Got oplock break message from pid %d: %s/%lu\n",
-		   (int)procid_to_pid(&src), file_id_string_tos(&msg.id), msg.share_file_id));
+	DEBUG(10, ("Got oplock break message from pid %s: %s/%lu\n",
+		   procid_str(debug_ctx(), &src), file_id_string_tos(&msg.id),
+		   msg.share_file_id));
 
 	fsp = initial_break_processing(msg.id, msg.share_file_id);
 
@@ -586,8 +588,8 @@ static void process_kernel_oplock_break(struct messaging_context *msg_ctx,
 	pull_file_id_24((char *)data->data, &id);
 	file_id = (unsigned long)IVAL(data->data, 24);
 
-	DEBUG(10, ("Got kernel oplock break message from pid %d: %s/%u\n",
-		   (int)procid_to_pid(&src), file_id_string_tos(&id),
+	DEBUG(10, ("Got kernel oplock break message from pid %s: %s/%u\n",
+		   procid_str(debug_ctx(), &src), file_id_string_tos(&id),
 		   (unsigned int)file_id));
 
 	fsp = initial_break_processing(id, file_id);
@@ -688,9 +690,9 @@ static void process_oplock_break_response(struct messaging_context *msg_ctx,
 	/* De-linearize incoming message. */
 	message_to_share_mode_entry(&msg, (char *)data->data);
 
-	DEBUG(10, ("Got oplock break response from pid %d: %s/%lu mid %u\n",
-		   (int)procid_to_pid(&src), file_id_string_tos(&msg.id), msg.share_file_id,
-		   (unsigned int)msg.op_mid));
+	DEBUG(10, ("Got oplock break response from pid %s: %s/%lu mid %u\n",
+		   procid_str(debug_ctx(), &src), file_id_string_tos(&msg.id),
+		   msg.share_file_id, (unsigned int)msg.op_mid));
 
 	/* Here's the hack from open.c, store the mid in the 'port' field */
 	schedule_deferred_open_smb_message(msg.op_mid);
@@ -717,8 +719,8 @@ static void process_open_retry_message(struct messaging_context *msg_ctx,
 	/* De-linearize incoming message. */
 	message_to_share_mode_entry(&msg, (char *)data->data);
 
-	DEBUG(10, ("Got open retry msg from pid %d: %s mid %u\n",
-		   (int)procid_to_pid(&src), file_id_string_tos(&msg.id),
+	DEBUG(10, ("Got open retry msg from pid %s: %s mid %u\n",
+		   procid_str(debug_ctx(), &src), file_id_string_tos(&msg.id),
 		   (unsigned int)msg.op_mid));
 
 	schedule_deferred_open_smb_message(msg.op_mid);
