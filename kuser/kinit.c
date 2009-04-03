@@ -846,7 +846,7 @@ main (int argc, char **argv)
     else {
 	if(argc > 1) {
 	    char s[1024];
-	    ret = krb5_cc_gen_new(context, &krb5_fcc_ops, &ccache);
+	    ret = krb5_cc_new_unique(context, NULL, NULL, &ccache);
 	    if(ret)
 		krb5_err(context, 1, ret, "creating cred cache");
 	    snprintf(s, sizeof(s), "%s:%s",
