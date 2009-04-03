@@ -22,9 +22,36 @@
 */
 
 #include "replace.h"
-#include "system/network.h"
 #include "tsocket.h"
 #include "tsocket_internal.h"
+
+int tsocket_simple_int_recv(struct tevent_req *req, int *perrno)
+{
+	enum tevent_req_state state;
+	uint64_t error;
+
+	if (!tevent_req_is_error(req, &state, &error)) {
+		return 0;
+	}
+
+	switch (state) {
+	case TEVENT_REQ_NO_MEMORY:
+		*perrno = ENOMEM;
+		return -1;
+	case TEVENT_REQ_TIMED_OUT:
+		*perrno = ETIMEDOUT;
+		return -1;
+	case TEVENT_REQ_USER_ERROR:
+		*perrno = (int)error;
+		return -1;
+	default:
+		*perrno = EIO;
+		return -1;
+	}
+
+	*perrno = EIO;
+	return -1;
+}
 
 struct tsocket_address *_tsocket_address_create(TALLOC_CTX *mem_ctx,
 						const struct tsocket_address_ops *ops,
