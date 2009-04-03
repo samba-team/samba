@@ -419,7 +419,7 @@ void process_oplock_async_level2_break_message(struct messaging_context *msg_ctx
 	}
 
 	/* Need to wait before sending a break message if we sent ourselves this message. */
-	if (procid_to_pid(&src) == sys_getpid()) {
+	if (procid_is_me(&src)) {
 		wait_before_sending_break();
 	}
 
@@ -520,7 +520,7 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 	}
 
 	/* Need to wait before sending a break message if we sent ourselves this message. */
-	if (procid_to_pid(&src) == sys_getpid()) {
+	if (procid_is_me(&src)) {
 		wait_before_sending_break();
 	}
 
