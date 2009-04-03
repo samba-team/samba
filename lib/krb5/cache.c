@@ -934,20 +934,6 @@ krb5_cc_copy_cache(krb5_context context,
 }
 
 /**
- * MIT compat glue
- *
- * @ingroup krb5_ccache
- */
-
-krb5_error_code KRB5_LIB_FUNCTION
-krb5_cc_copy_creds(krb5_context context,
-		   const krb5_ccache from,
-		   krb5_ccache to)
-{
-    return krb5_cc_copy_cache(context, from, to);
-}
-
-/**
  * Return the version of `id'.
  *
  * @ingroup krb5_ccache
