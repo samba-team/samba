@@ -160,6 +160,7 @@ enctype_sans_des3=`echo $enctypes | sed 's/des3-cbc-sha1//g'`
 echo foo > ${objdir}/foopassword
 
 echo Starting kdc
+env MallocStackLogging=1 MallocStackLoggingNoCompact=1 MallocErrorAbort=1 MallocLogFile=${objdir}/malloc-log \
 ${kdc} &
 kdcpid=$!
 
