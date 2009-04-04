@@ -580,6 +580,7 @@ process_msg (krb5_context context, slave *s, int log_fd,
     }
 
     krb5_data_free (&out);
+    krb5_storage_free (sp);
 
     slave_seen(s);
 
