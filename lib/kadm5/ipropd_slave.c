@@ -628,6 +628,7 @@ main(int argc, char **argv)
 	if (auth_context) {
 	    krb5_auth_con_free(context, auth_context);
 	    auth_context = NULL;
+	    krb5_cc_destroy(context, ccache);
 	    get_creds(context, keytab_str, &ccache, master);
 	}
 	ret = krb5_sendauth (context, &auth_context, &master_fd,
