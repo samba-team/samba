@@ -5,7 +5,8 @@ pid=$2
 
 ec=0
 
-if [ XXXX"$(uname -s)" = "Darwin" ] ; then
+if [ "$(uname -s)" = "Darwin" ] ; then
+    echo "leaks check on $name ($pid)"
     leaks $pid > leaks-log 2>&1 || \
         { echo "leaks failed: $?"; cat leaks-log; exit 1; }
 
