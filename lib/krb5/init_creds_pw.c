@@ -111,6 +111,7 @@ free_init_creds_ctx(krb5_context context, krb5_init_creds_context ctx)
 	free(ctx->in_tkt_service);
     if (ctx->keytab_data)
 	free(ctx->keytab_data);
+    krb5_data_free(&ctx->req_buffer);
     krb5_free_cred_contents(context, &ctx->cred);
     free_METHOD_DATA(&ctx->md);
     free_AS_REP(&ctx->as_rep);
