@@ -208,7 +208,8 @@ krb5_sendauth(krb5_context context,
 	    krb5_clear_error_message(context);
 	    return ret;
 	}
-    }
+    } else
+	krb5_data_free (&error_data);
 
     if (ap_req_options & AP_OPTS_MUTUAL_REQUIRED) {
 	krb5_data ap_rep;
