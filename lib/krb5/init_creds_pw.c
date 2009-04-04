@@ -1555,6 +1555,7 @@ krb5_init_creds_step(krb5_context context,
 		ret = copy_EncKDCRepPart(&rep.enc_part, &ctx->enc_part);
 
 	    free_AS_REP(&rep.kdc_rep);
+	    free_EncASRepPart(&rep.enc_part);
 
 	    return ret;
 
