@@ -109,6 +109,7 @@ ipdm=$!
 sh ${srcdir}/wait-kdc.sh ipropd-master || exit 1
 
 echo "starting slave"
+MallocStackLogging=1 MallocStackLoggingNoCompact=1 MallocErrorAbort=1 MallocLogFile=${objdir}/malloc-log-slave \
 KRB5_CONFIG="${objdir}/krb5-slave.conf" \
 ${ipropdslave} --hostname=slave.test.h5l.se -k ${keytab} localhost &
 ipds=$!
@@ -160,6 +161,7 @@ cp ${objdir}/current.log ${objdir}/current.log.tmp
 echo "starting slave again"
 > iprop-stats
 > messages.log
+MallocStackLogging=1 MallocStackLoggingNoCompact=1 MallocErrorAbort=1 MallocLogFile=${objdir}/malloc-log-slave \
 KRB5_CONFIG="${objdir}/krb5-slave.conf" \
 ${ipropdslave} --hostname=slave.test.h5l.se -k ${keytab} localhost &
 ipds=$!
@@ -177,6 +179,7 @@ sleep 2
 rm current.slave.log current-db.slave* || exit 1
 > iprop-stats
 > messages.log
+MallocStackLogging=1 MallocStackLoggingNoCompact=1 MallocErrorAbort=1 MallocLogFile=${objdir}/malloc-log-slave \
 KRB5_CONFIG="${objdir}/krb5-slave.conf" \
 ${ipropdslave} --hostname=slave.test.h5l.se -k ${keytab} localhost &
 ipds=$!
@@ -223,6 +226,7 @@ ipdm=$!
 sh ${srcdir}/wait-kdc.sh ipropd-master || exit 1
 
 echo "starting slave"
+MallocStackLogging=1 MallocStackLoggingNoCompact=1 MallocErrorAbort=1 MallocLogFile=${objdir}/malloc-log-slave \
 KRB5_CONFIG="${objdir}/krb5-slave.conf" \
 ${ipropdslave} --hostname=slave.test.h5l.se -k ${keytab} localhost &
 ipds=$!
