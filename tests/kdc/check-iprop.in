@@ -103,6 +103,7 @@ kdcpid=$!
 sh ${srcdir}/wait-kdc.sh || exit 1
 
 echo "starting master"
+MallocStackLogging=1 MallocStackLoggingNoCompact=1 MallocErrorAbort=1 MallocLogFile=${objdir}/malloc-log-master \
 ${ipropdmaster} --hostname=localhost -k ${keytab} \
     --database=${objdir}/current-db &
 ipdm=$!
@@ -220,6 +221,7 @@ echo "Going back to old version of the master log file"
 cp ${objdir}/current.log.tmp ${objdir}/current.log
 
 echo "starting master"
+MallocStackLogging=1 MallocStackLoggingNoCompact=1 MallocErrorAbort=1 MallocLogFile=${objdir}/malloc-log-master \
 ${ipropdmaster} --hostname=localhost -k ${keytab} \
     --database=${objdir}/current-db &
 ipdm=$!
@@ -255,6 +257,7 @@ echo "probing for slave pid"
 kill -0 ${ipds}  || { echo "slave no longer there"; exit 1; }
 
 echo "Staring master again"
+MallocStackLogging=1 MallocStackLoggingNoCompact=1 MallocErrorAbort=1 MallocLogFile=${objdir}/malloc-log-master \
 ${ipropdmaster} --hostname=localhost -k ${keytab} \
     --database=${objdir}/current-db &
 ipdm=$!
