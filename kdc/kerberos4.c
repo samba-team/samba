@@ -31,6 +31,8 @@
  * SUCH DAMAGE.
  */
 
+#define KRB5_DEPRECATED /* uses v4 functions that will die */
+
 #include "kdc_locl.h"
 
 #ifdef KRB4
