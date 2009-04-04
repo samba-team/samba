@@ -1015,6 +1015,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
 			       kdc_identity->certs,
 			       q,
 			       &cert);
+	hx509_query_free(kdc_identity->hx509ctx, q);
 	if (ret)
 	    goto out;
 	
@@ -1170,6 +1171,7 @@ pk_mk_pa_reply_dh(krb5_context context,
 			   kdc_identity->certs,
 			   q,
 			   &cert);
+    hx509_query_free(kdc_identity->hx509ctx, q);
     if (ret)
 	goto out;
     
@@ -1203,9 +1205,6 @@ pk_mk_pa_reply_dh(krb5_context context,
 	*kdc_cert = NULL;
     }
 
-    if (q)
-	hx509_query_free(kdc_identity->hx509ctx, q);
-	
     krb5_data_free(&buf);
     krb5_data_free(&signed_data);
     free_KDCDHKeyInfo(&dh_info);
