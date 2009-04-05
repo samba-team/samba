@@ -556,9 +556,9 @@ static SMB_ACL_T gpfsacl_get_posix_acl(const char *path, gpfs_aclType_t type)
 	return result;	
 }
 
-SMB_ACL_T gpfsacl_sys_acl_get_file(vfs_handle_struct *handle,
-				    const char *path_p,
-				    SMB_ACL_TYPE_T type)
+static SMB_ACL_T gpfsacl_sys_acl_get_file(vfs_handle_struct *handle,
+					  const char *path_p,
+					  SMB_ACL_TYPE_T type)
 {
 	gpfs_aclType_t gpfs_type;
 
@@ -577,8 +577,8 @@ SMB_ACL_T gpfsacl_sys_acl_get_file(vfs_handle_struct *handle,
 	return gpfsacl_get_posix_acl(path_p, gpfs_type);
 }
 
-SMB_ACL_T gpfsacl_sys_acl_get_fd(vfs_handle_struct *handle,
-				 files_struct *fsp)
+static SMB_ACL_T gpfsacl_sys_acl_get_fd(vfs_handle_struct *handle,
+					files_struct *fsp)
 {
 	return gpfsacl_get_posix_acl(fsp->fsp_name, GPFS_ACL_TYPE_ACCESS);
 }
@@ -670,10 +670,10 @@ static struct gpfs_acl *smb2gpfs_acl(const SMB_ACL_T pacl,
 	return result;
 }
 
-int gpfsacl_sys_acl_set_file(vfs_handle_struct *handle,
-			      const char *name,
-			      SMB_ACL_TYPE_T type,
-			      SMB_ACL_T theacl)
+static int gpfsacl_sys_acl_set_file(vfs_handle_struct *handle,
+				    const char *name,
+				    SMB_ACL_TYPE_T type,
+				    SMB_ACL_T theacl)
 {
 	struct gpfs_acl *gpfs_acl;
 	int result;
@@ -689,15 +689,15 @@ int gpfsacl_sys_acl_set_file(vfs_handle_struct *handle,
 	return result;
 }
 
-int gpfsacl_sys_acl_set_fd(vfs_handle_struct *handle,
-			    files_struct *fsp,
-			    SMB_ACL_T theacl)
+static int gpfsacl_sys_acl_set_fd(vfs_handle_struct *handle,
+				  files_struct *fsp,
+				  SMB_ACL_T theacl)
 {
 	return gpfsacl_sys_acl_set_file(handle, fsp->fsp_name, SMB_ACL_TYPE_ACCESS, theacl);
 }
 
-int gpfsacl_sys_acl_delete_def_file(vfs_handle_struct *handle,
-				     const char *path)
+static int gpfsacl_sys_acl_delete_def_file(vfs_handle_struct *handle,
+					   const char *path)
 {
 	errno = ENOTSUP;
 	return -1;
