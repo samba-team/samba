@@ -264,31 +264,6 @@ struct cli_state {
 	bool force_dos_errors;
 	bool case_sensitive; /* False by default. */
 
-	/**
-	 * fd_event is around while we have async requests outstanding or are
-	 * building a chained request.
-	 *
-	 * (fd_event!=NULL) &&
-	 *  ((outstanding_request!=NULL)||(chain_accumulator!=NULL))
-	 *
-	 * should always be true, as well as the reverse: If both cli_request
-	 * pointers are NULL, no fd_event is around.
-	 */
-	struct fd_event *fd_event;
-	char *evt_inbuf;
-
-	/**
-	 * A linked list of requests that are waiting for a reply
-	 */
-	struct cli_request *outstanding_requests;
-
-	/**
-	 * The place to build up the list of chained requests. In CIFS, a
-	 * single cli_request corresponds to a MID and can serve more than one
-	 * chained async_req.
-	 */
-	struct cli_request *chain_accumulator;
-
 	/* Where (if anywhere) this is mounted under DFS. */
 	char *dfs_mountpoint;
 
