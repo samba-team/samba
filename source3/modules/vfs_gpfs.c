@@ -341,7 +341,7 @@ static bool gpfsacl_process_smbacl(files_struct *fsp, SMB4ACL_T *smbacl)
 	gacl_len = sizeof(struct gpfs_acl) +
 		(smb_get_naces(smbacl)-1)*sizeof(gpfs_ace_v4_t);
 
-	gacl = TALLOC_SIZE(mem_ctx, gacl_len);
+	gacl = (struct gpfs_acl *)TALLOC_SIZE(mem_ctx, gacl_len);
 	if (gacl == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		errno = ENOMEM;
@@ -600,7 +600,7 @@ static struct gpfs_acl *smb2gpfs_acl(const SMB_ACL_T pacl,
 	len = sizeof(struct gpfs_acl) - sizeof(union gpfs_ace_union) +
 		(pacl->count)*sizeof(gpfs_ace_v1_t);
 
-	result = SMB_MALLOC(len);
+	result = (struct gpfs_acl *)SMB_MALLOC(len);
 	if (result == NULL) {
 		errno = ENOMEM;
 		return result;
