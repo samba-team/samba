@@ -291,6 +291,9 @@ struct cli_state {
 
 	/* Where (if anywhere) this is mounted under DFS. */
 	char *dfs_mountpoint;
+
+	struct tevent_queue *outgoing;
+	struct tevent_req **pending;
 };
 
 typedef struct file_info {

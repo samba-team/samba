@@ -151,4 +151,31 @@ NTSTATUS cli_pull_error(char *buf);
 
 void cli_set_error(struct cli_state *cli, NTSTATUS status);
 
+struct tevent_req *cli_smb_req_create(TALLOC_CTX *mem_ctx,
+				      struct event_context *ev,
+				      struct cli_state *cli,
+				      uint8_t smb_command,
+				      uint8_t additional_flags,
+				      uint8_t wct, uint16_t *vwv,
+				      int iov_count,
+				      struct iovec *bytes_iov);
+bool cli_smb_req_send(struct tevent_req *req);
+size_t cli_smb_wct_ofs(struct tevent_req **reqs, int num_reqs);
+bool cli_smb_chain_send(struct tevent_req **reqs, int num_reqs);
+uint8_t *cli_smb_inbuf(struct tevent_req *req);
+bool cli_has_async_calls(struct cli_state *cli);
+void cli_smb_req_unset_pending(struct tevent_req *req);
+bool cli_smb_req_set_pending(struct tevent_req *req);
+uint16_t cli_smb_req_mid(struct tevent_req *req);
+void cli_smb_req_set_mid(struct tevent_req *req, uint16_t mid);
+struct tevent_req *cli_smb_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+				struct cli_state *cli,
+				uint8_t smb_command, uint8_t additional_flags,
+				uint8_t wct, uint16_t *vwv,
+				uint32_t num_bytes,
+				const uint8_t *bytes);
+NTSTATUS cli_smb_recv(struct tevent_req *req, uint8_t min_wct,
+		      uint8_t *pwct, uint16_t **pvwv,
+		      uint32_t *pnum_bytes, uint8_t **pbytes);
+
 #endif

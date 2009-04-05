@@ -650,6 +650,12 @@ struct cli_state *cli_initialise_ex(int signing_state)
 		goto error;
 	}
 
+	cli->outgoing = tevent_queue_create(cli, "cli_outgoing");
+	if (cli->outgoing == NULL) {
+		goto error;
+	}
+	cli->pending = NULL;
+
 	cli->initialised = 1;
 
 	return cli;
@@ -740,6 +746,12 @@ void cli_shutdown(struct cli_state *cli)
 	cli->fd = -1;
 	cli->smb_rw_error = SMB_READ_OK;
 
+	/*
+	 * Need to free pending first, they remove themselves
+	 */
+	while (cli->pending) {
+		talloc_free(cli->pending[0]);
+	}
 	TALLOC_FREE(cli);
 }
 
