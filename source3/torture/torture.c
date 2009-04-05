@@ -5101,8 +5101,6 @@ static bool run_windows_write(int dummy)
 static bool run_cli_echo(int dummy)
 {
 	struct cli_state *cli;
-	struct event_context *ev = event_context_init(NULL);
-	struct async_req *req;
 	NTSTATUS status;
 
 	printf("starting cli_echo test\n");
@@ -5111,20 +5109,9 @@ static bool run_cli_echo(int dummy)
 	}
 	cli_sockopt(cli, sockops);
 
-	req = cli_echo_send(ev, ev, cli, 5, data_blob_const("hello", 5));
-	if (req == NULL) {
-		d_printf("cli_echo_send failed\n");
-		return false;
-	}
+	status = cli_echo(cli, 5, data_blob_const("hello", 5));
 
-	while (req->state < ASYNC_REQ_DONE) {
-		event_loop_once(ev);
-	}
-
-	status = cli_echo_recv(req);
 	d_printf("cli_echo returned %s\n", nt_errstr(status));
-
-	TALLOC_FREE(req);
 
 	torture_close_connection(cli);
 	return NT_STATUS_IS_OK(status);
