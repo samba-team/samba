@@ -5023,6 +5023,86 @@ static bool subst_test(const char *str, const char *user, const char *domain,
 	return result;
 }
 
+static void chain1_open_completion(struct tevent_req *req)
+{
+	int fnum;
+	NTSTATUS status;
+	status = cli_open_recv(req, &fnum);
+	TALLOC_FREE(req);
+
+	d_printf("cli_open_recv returned %s: %d\n",
+		 nt_errstr(status),
+		 NT_STATUS_IS_OK(status) ? fnum : -1);
+}
+
+static void chain1_write_completion(struct tevent_req *req)
+{
+	size_t written;
+	NTSTATUS status;
+	status = cli_write_andx_recv(req, &written);
+	TALLOC_FREE(req);
+
+	d_printf("cli_write_andx_recv returned %s: %d\n",
+		 nt_errstr(status),
+		 NT_STATUS_IS_OK(status) ? (int)written : -1);
+}
+
+static void chain1_close_completion(struct tevent_req *req)
+{
+	NTSTATUS status;
+	bool *done = (bool *)tevent_req_callback_data_void(req);
+
+	status = cli_close_recv(req);
+	*done = true;
+
+	TALLOC_FREE(req);
+
+	d_printf("cli_close returned %s\n", nt_errstr(status));
+}
+
+static bool run_chain1(int dummy)
+{
+	struct cli_state *cli1;
+	struct event_context *evt = event_context_init(NULL);
+	struct tevent_req *reqs[3], *smbreqs[3];
+	bool done = false;
+	const char *str = "foobar";
+
+	printf("starting chain1 test\n");
+	if (!torture_open_connection(&cli1, 0)) {
+		return False;
+	}
+
+	cli_sockopt(cli1, sockops);
+
+	reqs[0] = cli_open_create(talloc_tos(), evt, cli1, "\\test",
+				  O_CREAT|O_RDWR, 0, &smbreqs[0]);
+	if (reqs[0] == NULL) return false;
+	tevent_req_set_callback(reqs[0], chain1_open_completion, NULL);
+
+
+	reqs[1] = cli_write_andx_create(talloc_tos(), evt, cli1, 0, 0,
+					(uint8_t *)str, 0, strlen(str)+1,
+					smbreqs, 1, &smbreqs[1]);
+	if (reqs[1] == NULL) return false;
+	tevent_req_set_callback(reqs[1], chain1_write_completion, NULL);
+
+	reqs[2] = cli_close_create(talloc_tos(), evt, cli1, 0, &smbreqs[2]);
+	if (reqs[2] == NULL) return false;
+	tevent_req_set_callback(reqs[2], chain1_close_completion, &done);
+
+	if (!cli_smb_chain_send(smbreqs, ARRAY_SIZE(smbreqs))) {
+		return false;
+	}
+
+	while (!done) {
+		event_loop_once(evt);
+	}
+
+	torture_close_connection(cli1);
+	return True;
+}
+
 static size_t null_source(uint8_t *buf, size_t n, void *priv)
 {
 	size_t *to_pull = (size_t *)priv;
@@ -5717,6 +5797,7 @@ static struct {
 	{"FDSESS", run_fdsesstest, 0},
 	{ "EATEST", run_eatest, 0},
 	{ "SESSSETUP_BENCH", run_sesssetup_bench, 0},
+	{ "CHAIN1", run_chain1, 0},
 	{ "WINDOWS-WRITE", run_windows_write, 0},
 	{ "CLI_ECHO", run_cli_echo, 0},
 	{ "LOCAL-SUBSTITUTE", run_local_substitute, 0},
