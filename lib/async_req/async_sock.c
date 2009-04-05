@@ -547,7 +547,8 @@ static void read_packet_handler(struct tevent_context *ev,
 	ssize_t nread, more;
 	uint8_t *tmp;
 
-	nread = read(state->fd, state->buf+state->nread, total-state->nread);
+	nread = recv(state->fd, state->buf+state->nread, total-state->nread,
+		     0);
 	if (nread == -1) {
 		tevent_req_error(req, errno);
 		return;
