@@ -282,7 +282,7 @@ MAKE_TEST_BINARY="bin/smbpasswd"
 export MAKE_TEST_BINARY
 
 (echo $PASSWORD; echo $PASSWORD) | \
-	bin/smbpasswd -c $CONFFILE -L -s -a $USERNAME >/dev/null || exit 1
+	bin/smbpasswd -c $SERVERCONFFILE -L -s -a $USERNAME >/dev/null || exit 1
 
 echo "DONE";
 
