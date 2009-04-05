@@ -2889,14 +2889,14 @@ bool cli_send_nt_trans(struct cli_state *cli,
 bool cli_receive_nt_trans(struct cli_state *cli,
 			  char **param, unsigned int *param_len,
 			  char **data, unsigned int *data_len);
-struct async_req *cli_trans_send(
+struct tevent_req *cli_trans_send(
 	TALLOC_CTX *mem_ctx, struct event_context *ev,
-	struct cli_state *cli, uint8_t trans_cmd,
+	struct cli_state *cli, uint8_t cmd,
 	const char *pipe_name, uint16_t fid, uint16_t function, int flags,
 	uint16_t *setup, uint8_t num_setup, uint8_t max_setup,
 	uint8_t *param, uint32_t num_param, uint32_t max_param,
 	uint8_t *data, uint32_t num_data, uint32_t max_data);
-NTSTATUS cli_trans_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
+NTSTATUS cli_trans_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			uint16_t **setup, uint8_t *num_setup,
 			uint8_t **param, uint32_t *num_param,
 			uint8_t **data, uint32_t *num_data);
