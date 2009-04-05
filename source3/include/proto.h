@@ -2513,10 +2513,15 @@ NTSTATUS cli_ntcreate(struct cli_state *cli,
 int cli_nt_create(struct cli_state *cli, const char *fname, uint32 DesiredAccess);
 uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2, const char *str,
 			    size_t str_len, size_t *pconverted_size);
-struct async_req *cli_open_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
-				struct cli_state *cli,
-				const char *fname, int flags, int share_mode);
-NTSTATUS cli_open_recv(struct async_req *req, int *fnum);
+struct tevent_req *cli_open_create(TALLOC_CTX *mem_ctx,
+				   struct event_context *ev,
+				   struct cli_state *cli, const char *fname,
+				   int flags, int share_mode,
+				   struct tevent_req **psmbreq);
+struct tevent_req *cli_open_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+				 struct cli_state *cli, const char *fname,
+				 int flags, int share_mode);
+NTSTATUS cli_open_recv(struct tevent_req *req, int *fnum);
 int cli_open(struct cli_state *cli, const char *fname, int flags, int share_mode);
 struct tevent_req *cli_close_create(TALLOC_CTX *mem_ctx,
 				    struct event_context *ev,
