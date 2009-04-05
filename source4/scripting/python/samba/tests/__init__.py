@@ -96,3 +96,15 @@ class RpcInterfaceTestCase(unittest.TestCase):
 
     def get_credentials(self):
         return cmdline_credentials
+
+
+class ValidNetbiosNameTests(unittest.TestCase):
+
+    def test_valid(self):
+        self.assertTrue(valid_netbios_name("FOO"))
+
+    def test_too_long(self):
+        self.assertFalse(valid_netbios_name("FOO"*10))
+
+    def test_invalid_characters(self):
+        self.assertFalse(valid_netbios_name("()BLA"))
