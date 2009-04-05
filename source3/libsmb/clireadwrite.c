@@ -1216,32 +1216,41 @@ NTSTATUS cli_push(struct cli_state *cli, uint16_t fnum, uint16_t mode,
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct event_context *ev;
 	struct async_req *req;
-	NTSTATUS result = NT_STATUS_NO_MEMORY;
+	NTSTATUS status = NT_STATUS_OK;
 
-	if (cli->fd_event != NULL) {
+	if (cli_has_async_calls(cli)) {
 		/*
 		 * Can't use sync call while an async call is in flight
 		 */
-		return NT_STATUS_INVALID_PARAMETER;
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
 	}
 
 	ev = event_context_init(frame);
 	if (ev == NULL) {
-		goto nomem;
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
 	}
 
 	req = cli_push_send(frame, ev, cli, fnum, mode, start_offset,
 			    window_size, source, priv);
 	if (req == NULL) {
-		goto nomem;
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
 	}
 
 	while (req->state < ASYNC_REQ_DONE) {
-		event_loop_once(ev);
+		if (event_loop_once(ev) == -1) {
+			status = map_nt_error_from_unix(errno);
+			goto fail;
+		}
 	}
 
-	result = cli_push_recv(req);
- nomem:
+	status = cli_push_recv(req);
+ fail:
 	TALLOC_FREE(frame);
-	return result;
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
 }
