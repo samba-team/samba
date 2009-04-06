@@ -22,3 +22,10 @@ LIBCLI_AUTH_OBJ_FILES = $(addprefix $(libclicommonsrcdir)/auth/, \
 
 PUBLIC_HEADERS += ../libcli/auth/credentials.h
 $(eval $(call proto_header_template,$(libclicommonsrcdir)/auth/proto.h,$(LIBCLI_AUTH_OBJ_FILES:.o=.c)))
+
+[SUBSYSTEM::COMMON_SCHANNELDB]
+PRIVATE_DEPENDENCIES = LDB_WRAP
+
+COMMON_SCHANNELDB_OBJ_FILES = $(addprefix $(libclicommonsrcdir)/auth/, schannel_state.o)
+$(eval $(call proto_header_template,$(libclicommonsrcdir)/auth/schannel_state_proto.h,$(COMMON_SCHANNELDB_OBJ_FILES:.o=.c)))
+

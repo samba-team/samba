@@ -78,7 +78,7 @@ $(eval $(call proto_header_template,$(gensecsrcdir)/schannel_proto.h,$(gensec_sc
 ################################################
 # Start SUBSYSTEM SCHANNELDB
 [SUBSYSTEM::SCHANNELDB]
-PRIVATE_DEPENDENCIES = LDB_WRAP
+PRIVATE_DEPENDENCIES = LDB_WRAP COMMON_SCHANNELDB
 # End SUBSYSTEM SCHANNELDB
 ################################################
 
