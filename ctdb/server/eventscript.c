@@ -305,7 +305,7 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *options)
 	 */
 	if (switch_from_server_to_client(ctdb) != 0) {
 		DEBUG(DEBUG_CRIT, (__location__ "ERROR: failed to switch eventscript child into client mode. shutting down.\n"));
-		exit(1);
+		_exit(1);
 	}
 
 	if (!strcmp(options, "monitor")) {
