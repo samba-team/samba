@@ -21,7 +21,7 @@
 
 #include "librpc/gen_ndr/netlogon.h"
 
-struct creds_CredentialState {
+struct netlogon_creds_CredentialState {
 	uint32_t negotiate_flags;
 	uint8_t session_key[16];
 	uint32_t sequence;
@@ -29,7 +29,6 @@ struct creds_CredentialState {
 	struct netr_Credential client;
 	struct netr_Credential server;
 	uint16_t secure_channel_type;
-	const char *domain;
 	const char *computer_name;
 	const char *account_name;
 	struct dom_sid *sid;
