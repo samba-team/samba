@@ -102,7 +102,7 @@ struct cli_credentials {
 	/* Private handle for the callback routines to use */
 	void *priv_data;
 
-	struct creds_CredentialState *netlogon_creds;
+	struct netlogon_creds_CredentialState *netlogon_creds;
 	enum netr_SchannelType secure_channel_type;
 	int kvno;
 
@@ -167,7 +167,7 @@ int cli_credentials_get_keytab(struct cli_credentials *cred,
 			       struct loadparm_context *lp_ctx,
 			       struct keytab_container **_ktc);
 const char *cli_credentials_get_domain(struct cli_credentials *cred);
-struct creds_CredentialState *cli_credentials_get_netlogon_creds(struct cli_credentials *cred);
+struct netlogon_creds_CredentialState *cli_credentials_get_netlogon_creds(struct cli_credentials *cred);
 void cli_credentials_set_machine_account_pending(struct cli_credentials *cred,
 						 struct loadparm_context *lp_ctx);
 void cli_credentials_set_conf(struct cli_credentials *cred, 
@@ -210,7 +210,7 @@ bool cli_credentials_set_realm(struct cli_credentials *cred,
 void cli_credentials_set_secure_channel_type(struct cli_credentials *cred,
 				     enum netr_SchannelType secure_channel_type);
 void cli_credentials_set_netlogon_creds(struct cli_credentials *cred, 
-					struct creds_CredentialState *netlogon_creds);
+					struct netlogon_creds_CredentialState *netlogon_creds);
 NTSTATUS cli_credentials_set_krb5_context(struct cli_credentials *cred, 
 					  struct smb_krb5_context *smb_krb5_context);
 NTSTATUS cli_credentials_set_stored_principal(struct cli_credentials *cred,

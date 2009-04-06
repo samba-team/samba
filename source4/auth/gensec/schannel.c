@@ -27,8 +27,6 @@
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/gensec_proto.h"
 #include "auth/gensec/schannel.h"
-#include "auth/gensec/schannel_state.h"
-#include "auth/gensec/schannel_proto.h"
 #include "librpc/rpc/dcerpc.h"
 #include "param/param.h"
 #include "auth/session_proto.h"
@@ -52,8 +50,8 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 	enum ndr_err_code ndr_err;
 	struct schannel_bind bind_schannel;
 	struct schannel_bind_ack bind_schannel_ack;
-	struct creds_CredentialState *creds;
-
+	struct netlogon_creds_CredentialState *creds;
+	struct ldb_context *schannel_ldb;
 	const char *workstation;
 	const char *domain;
 	*out = data_blob(NULL, 0);
@@ -124,10 +122,22 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 			domain = bind_schannel.u.info3.domain;
 		}
 		
+		if (strcasecmp_m(domain, lp_workgroup(gensec_security->settings->lp_ctx)) != 0) {
+			DEBUG(3, ("Request for schannel to incorrect domain: %s != our domain %s\n",
+				  domain, lp_workgroup(gensec_security->settings->lp_ctx)));
+			
+			return NT_STATUS_LOGON_FAILURE;
+		}
+
+		schannel_ldb = schannel_db_connect(out_mem_ctx, gensec_security->event_ctx, 
+						   gensec_security->settings->lp_ctx);
+		if (!schannel_ldb) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
 		/* pull the session key for this client */
-		status = schannel_fetch_session_key(out_mem_ctx, gensec_security->event_ctx, 
-						    gensec_security->settings->lp_ctx, workstation, 
-						    domain, &creds);
+		status = schannel_fetch_session_key(schannel_ldb, 
+						    out_mem_ctx, workstation, &creds);
+		talloc_free(schannel_ldb);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("Could not find session key for attempted schannel connection from %s: %s\n",
 				  workstation, nt_errstr(status)));
@@ -167,9 +177,10 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
  */
 
 /* TODO: make this non-public */
+
 _PUBLIC_ NTSTATUS dcerpc_schannel_creds(struct gensec_security *gensec_security,
-			       TALLOC_CTX *mem_ctx,
-			       struct creds_CredentialState **creds)
+					TALLOC_CTX *mem_ctx,
+					struct netlogon_creds_CredentialState **creds)
 { 
 	struct schannel_state *state = talloc_get_type(gensec_security->private_data, struct schannel_state);
 

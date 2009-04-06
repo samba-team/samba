@@ -23,10 +23,9 @@
 
 #include "includes.h"
 #include "system/time.h"
-#include "auth/ntlmssp/ntlmssp.h"
-#include "auth/ntlmssp/msrpc_parse.h"
+#include "../libcli/auth/msrpc_parse.h"
 #include "../lib/crypto/crypto.h"
-#include "libcli/auth/libcli_auth.h"
+#include "../libcli/auth/libcli_auth.h"
 
 void SMBencrypt_hash(const uint8_t lm_hash[16], const uint8_t *c8, uint8_t p24[24])
 {

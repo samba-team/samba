@@ -32,7 +32,6 @@ struct libnet_SamSync_state {
 struct libnet_SamSync {
 	struct {
 		const char *binding_string;
-		bool rid_crypt;
 		NTSTATUS (*init_fn)(TALLOC_CTX *mem_ctx, 		
 				    void *private_data,
 				    struct libnet_SamSync_state *samsync_state,

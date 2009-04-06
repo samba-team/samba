@@ -668,7 +668,7 @@ _PUBLIC_ void cli_credentials_guess(struct cli_credentials *cred,
  */
 
 _PUBLIC_ void cli_credentials_set_netlogon_creds(struct cli_credentials *cred, 
-					struct creds_CredentialState *netlogon_creds)
+						 struct netlogon_creds_CredentialState *netlogon_creds)
 {
 	cred->netlogon_creds = talloc_reference(cred, netlogon_creds);
 }
@@ -677,7 +677,7 @@ _PUBLIC_ void cli_credentials_set_netlogon_creds(struct cli_credentials *cred,
  * Return attached NETLOGON credentials 
  */
 
-struct creds_CredentialState *cli_credentials_get_netlogon_creds(struct cli_credentials *cred)
+struct netlogon_creds_CredentialState *cli_credentials_get_netlogon_creds(struct cli_credentials *cred)
 {
 	return cred->netlogon_creds;
 }

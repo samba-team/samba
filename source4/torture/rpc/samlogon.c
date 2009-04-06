@@ -63,7 +63,7 @@ struct samlogon_state {
 	struct netr_LogonSamLogonEx r_ex;
 	struct netr_LogonSamLogonWithFlags r_flags;
 	struct netr_Authenticator auth, auth2;
-	struct creds_CredentialState *creds;
+	struct netlogon_creds_CredentialState *creds;
 	NTSTATUS expected_error;
 	bool old_password; /* Allow an old password to be accepted or rejected without error, as well as session key bugs */
 	DATA_BLOB chall;
@@ -153,12 +153,12 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 	switch (samlogon_state->function_level) {
 	case NDR_NETR_LOGONSAMLOGON: 
 		ZERO_STRUCT(samlogon_state->auth2);
-		creds_client_authenticator(samlogon_state->creds, &samlogon_state->auth);
+		netlogon_creds_client_authenticator(samlogon_state->creds, &samlogon_state->auth);
 
 		r->out.return_authenticator = NULL;
 		status = dcerpc_netr_LogonSamLogon(samlogon_state->p, samlogon_state->mem_ctx, r);
 		if (!r->out.return_authenticator || 
-		    !creds_client_check(samlogon_state->creds, &r->out.return_authenticator->cred)) {
+		    !netlogon_creds_client_check(samlogon_state->creds, &r->out.return_authenticator->cred)) {
 			d_printf("Credential chaining failed\n");
 		}
 		if (!NT_STATUS_IS_OK(status)) {
@@ -170,7 +170,7 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 
 		validation_level = r->in.validation_level;
 
-		creds_decrypt_samlogon(samlogon_state->creds, validation_level, r->out.validation);
+		netlogon_creds_decrypt_samlogon(samlogon_state->creds, validation_level, r->out.validation);
 
 		switch (validation_level) {
 		case 2:
@@ -195,7 +195,7 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 
 		validation_level = r_ex->in.validation_level;
 
-		creds_decrypt_samlogon(samlogon_state->creds, validation_level, r_ex->out.validation);
+		netlogon_creds_decrypt_samlogon(samlogon_state->creds, validation_level, r_ex->out.validation);
 
 		switch (validation_level) {
 		case 2:
@@ -211,12 +211,12 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 		break;
 	case NDR_NETR_LOGONSAMLOGONWITHFLAGS: 
 		ZERO_STRUCT(samlogon_state->auth2);
-		creds_client_authenticator(samlogon_state->creds, &samlogon_state->auth);
+		netlogon_creds_client_authenticator(samlogon_state->creds, &samlogon_state->auth);
 
 		r_flags->out.return_authenticator = NULL;
 		status = dcerpc_netr_LogonSamLogonWithFlags(samlogon_state->p, samlogon_state->mem_ctx, r_flags);
 		if (!r_flags->out.return_authenticator || 
-		    !creds_client_check(samlogon_state->creds, &r_flags->out.return_authenticator->cred)) {
+		    !netlogon_creds_client_check(samlogon_state->creds, &r_flags->out.return_authenticator->cred)) {
 			d_printf("Credential chaining failed\n");
 		}
 		if (!NT_STATUS_IS_OK(status)) {
@@ -228,7 +228,7 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 		
 		validation_level = r_flags->in.validation_level;
 
-		creds_decrypt_samlogon(samlogon_state->creds, validation_level, r_flags->out.validation);
+		netlogon_creds_decrypt_samlogon(samlogon_state->creds, validation_level, r_flags->out.validation);
 
 		switch (validation_level) {
 		case 2:
@@ -1314,7 +1314,7 @@ static const struct ntlm_tests {
 */
 static bool test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			  struct torture_context *tctx,
-			  struct creds_CredentialState *creds, 
+			  struct netlogon_creds_CredentialState *creds, 
 			  const char *comment,
 			  const char *account_domain, const char *account_name, 
 			  const char *plain_pass, uint32_t parameter_control,
@@ -1429,7 +1429,7 @@ static bool test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
   test an ADS style interactive domain logon
 */
 bool test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-			   struct creds_CredentialState *creds, 
+			   struct netlogon_creds_CredentialState *creds, 
 			   const char *comment,
 			   const char *workstation_name,
 			   const char *account_domain, const char *account_name,
@@ -1454,7 +1454,7 @@ bool test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(logon);
 	ZERO_STRUCT(validation);
 
-	creds_client_authenticator(creds, &a);
+	netlogon_creds_client_authenticator(creds, &a);
 
 	logon.password = &pinfo;
 
@@ -1483,18 +1483,18 @@ bool test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	E_md4hash(plain_pass, pinfo.ntpassword.hash);
 
 	if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
-		creds_arcfour_crypt(creds, pinfo.lmpassword.hash, 16);
-		creds_arcfour_crypt(creds, pinfo.ntpassword.hash, 16);
+		netlogon_creds_arcfour_crypt(creds, pinfo.lmpassword.hash, 16);
+		netlogon_creds_arcfour_crypt(creds, pinfo.ntpassword.hash, 16);
 	} else {
-		creds_des_encrypt(creds, &pinfo.lmpassword);
-		creds_des_encrypt(creds, &pinfo.ntpassword);
+		netlogon_creds_des_encrypt(creds, &pinfo.lmpassword);
+		netlogon_creds_des_encrypt(creds, &pinfo.ntpassword);
 	}
 
 	d_printf("Testing netr_LogonSamLogonWithFlags '%s' (Interactive Logon)\n", comment);
 
 	status = dcerpc_netr_LogonSamLogonWithFlags(p, fn_ctx, &r);
 	if (!r.out.return_authenticator 
-	    || !creds_client_check(creds, &r.out.return_authenticator->cred)) {
+	    || !netlogon_creds_client_check(creds, &r.out.return_authenticator->cred)) {
 		d_printf("Credential chaining failed\n");
 		talloc_free(fn_ctx);
 		return false;
@@ -1540,7 +1540,7 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 		0 /* yes, this is a valid flag, causes the use of DES */ 
 	};
 
-	struct creds_CredentialState *creds;
+	struct netlogon_creds_CredentialState *creds;
 
 	test_machine_account = talloc_asprintf(mem_ctx, "%s$", TEST_MACHINE_NAME);
 	/* We only need to join as a workstation here, and in future,

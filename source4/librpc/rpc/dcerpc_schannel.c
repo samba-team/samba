@@ -36,7 +36,7 @@ struct schannel_key_state {
 	struct dcerpc_pipe *pipe2;
 	struct dcerpc_binding *binding;
 	struct cli_credentials *credentials;
-	struct creds_CredentialState *creds;
+	struct netlogon_creds_CredentialState *creds;
 	uint32_t negotiate_flags;
 	struct netr_Credential credentials1;
 	struct netr_Credential credentials2;
@@ -167,9 +167,6 @@ static void continue_srv_challenge(struct rpc_request *req)
 	/* prepare credentials for auth2 request */
 	s->mach_pwd = cli_credentials_get_nt_hash(s->credentials, c);
 
-	creds_client_init(s->creds, &s->credentials1, &s->credentials2,
-			  s->mach_pwd, &s->credentials3, s->negotiate_flags);
-
 	/* auth2 request arguments */
 	s->a.in.server_name      = s->r.in.server_name;
 	s->a.in.account_name     = cli_credentials_get_username(s->credentials);
@@ -181,6 +178,14 @@ static void continue_srv_challenge(struct rpc_request *req)
 	s->a.out.negotiate_flags = &s->negotiate_flags;
 	s->a.out.return_credentials     = &s->credentials3;
 
+	s->creds = netlogon_creds_client_init(s, 
+					      s->a.in.account_name, 
+					      s->a.in.computer_name,
+					      &s->credentials1, &s->credentials2,
+					      s->mach_pwd, &s->credentials3, s->negotiate_flags);
+	if (composite_nomem(s->creds, c)) {
+		return;
+	}
 	/*
 	  authenticate on the netlogon pipe - a rpc request over secondary pipe
 	*/
@@ -208,7 +213,7 @@ static void continue_srv_auth2(struct rpc_request *req)
 	if (!composite_is_ok(c)) return;
 
 	/* verify credentials */
-	if (!creds_client_check(s->creds, s->a.out.return_credentials)) {
+	if (!netlogon_creds_client_check(s->creds, s->a.out.return_credentials)) {
 		composite_error(c, NT_STATUS_UNSUCCESSFUL);
 		return;
 	}
@@ -246,9 +251,6 @@ struct composite_context *dcerpc_schannel_key_send(TALLOC_CTX *mem_ctx,
 	s->credentials = credentials;
 
 	/* allocate credentials */
-	s->creds = talloc(c, struct creds_CredentialState);
-	if (composite_nomem(s->creds, c)) return c;
-
 	/* type of authentication depends on schannel type */
 	if (s->pipe->conn->flags & DCERPC_SCHANNEL_128) {
 		s->negotiate_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;

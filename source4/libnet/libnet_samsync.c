@@ -35,7 +35,7 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 {
 	NTSTATUS nt_status, dbsync_nt_status;
 	TALLOC_CTX *samsync_ctx, *loop_ctx, *delta_ctx;
-	struct creds_CredentialState *creds;
+	struct netlogon_creds_CredentialState *creds;
 	struct netr_DatabaseSync dbsync;
 	struct netr_Authenticator credential, return_authenticator;
 	struct netr_DELTA_ENUM_ARRAY *delta_enum_array = NULL;
@@ -45,7 +45,7 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 	struct libnet_RpcConnect *c;
 	struct libnet_SamSync_state *state;
 	const enum netr_SamDatabaseID database_ids[] = {SAM_DATABASE_DOMAIN, SAM_DATABASE_BUILTIN, SAM_DATABASE_PRIVS}; 
-f	int i;
+	int i;
 
 	samsync_ctx = talloc_named(mem_ctx, 0, "SamSync top context");
 
@@ -211,7 +211,7 @@ f	int i;
 		do {
 			int d;
 			loop_ctx = talloc_named(samsync_ctx, 0, "DatabaseSync loop context");
-			creds_client_authenticator(creds, &credential);
+			netlogon_creds_client_authenticator(creds, &credential);
 
 			dbsync.in.credential = &credential;
 			
@@ -223,7 +223,7 @@ f	int i;
 				return nt_status;
 			}
 			
-			if (!creds_client_check(creds, &dbsync.out.return_authenticator->cred)) {
+			if (!netlogon_creds_client_check(creds, &dbsync.out.return_authenticator->cred)) {
 				r->out.error_string = talloc_strdup(mem_ctx, "Credential chaining on incoming DatabaseSync failed");
 				talloc_free(samsync_ctx);
 				return NT_STATUS_ACCESS_DENIED;
@@ -237,12 +237,10 @@ f	int i;
 				delta_ctx = talloc_named(loop_ctx, 0, "DatabaseSync delta context");
 				/* 'Fix' elements, by decrypting and
 				 * de-obfuscating the data */
-				nt_status = fix_delta(delta_ctx, 
-						      creds, 
-						      r->in.rid_crypt,
-						      dbsync.in.database_id,
-						      &delta_enum_array->delta_enum[d],
-						      &error_string);
+				nt_status = samsync_fix_delta(delta_ctx, 
+							      creds, 
+							      dbsync.in.database_id,
+							      &delta_enum_array->delta_enum[d]);
 				if (!NT_STATUS_IS_OK(nt_status)) {
 					r->out.error_string = talloc_steal(mem_ctx, error_string);
 					talloc_free(samsync_ctx);

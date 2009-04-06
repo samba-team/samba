@@ -20,7 +20,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "libcli/auth/credentials.h"
+#include "auth/gensec/schannel_proto.h"
+#include "auth/gensec/schannel_state.h"
+#include "libcli/auth/schannel_state.h"
 
 enum schannel_position {
 	SCHANNEL_STATE_START = 0,
@@ -31,6 +33,6 @@ struct schannel_state {
 	enum schannel_position state;
 	uint32_t seq_num;
 	bool initiator;
-	struct creds_CredentialState *creds;
+	struct netlogon_creds_CredentialState *creds;
 };
 

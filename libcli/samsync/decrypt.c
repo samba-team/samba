@@ -35,7 +35,7 @@
  */
 
 static NTSTATUS fix_user(TALLOC_CTX *mem_ctx,
-			 struct creds_CredentialState *creds,
+			 struct netlogon_creds_CredentialState *creds,
 			 enum netr_SamDatabaseID database_id,
 			 struct netr_DELTA_ENUM *delta)
 {
@@ -75,7 +75,7 @@ static NTSTATUS fix_user(TALLOC_CTX *mem_ctx,
 		enum ndr_err_code ndr_err;
 		data.data = user->user_private_info.SensitiveData;
 		data.length = user->user_private_info.DataLength;
-		creds_arcfour_crypt(creds, data.data, data.length);
+		netlogon_creds_arcfour_crypt(creds, data.data, data.length);
 		user->user_private_info.SensitiveData = data.data;
 		user->user_private_info.DataLength = data.length;
 
@@ -124,15 +124,15 @@ static NTSTATUS fix_user(TALLOC_CTX *mem_ctx,
  * The writes decrypted secrets back into the structure
  */
 static NTSTATUS fix_secret(TALLOC_CTX *mem_ctx,
-			   struct creds_CredentialState *creds,
+			   struct netlogon_creds_CredentialState *creds,
 			   enum netr_SamDatabaseID database,
 			   struct netr_DELTA_ENUM *delta) 
 {
 	struct netr_DELTA_SECRET *secret = delta->delta_union.secret;
-	creds_arcfour_crypt(creds, secret->current_cipher.cipher_data, 
+	netlogon_creds_arcfour_crypt(creds, secret->current_cipher.cipher_data, 
 			    secret->current_cipher.maxlen); 
 
-	creds_arcfour_crypt(creds, secret->old_cipher.cipher_data, 
+	netlogon_creds_arcfour_crypt(creds, secret->old_cipher.cipher_data, 
 			    secret->old_cipher.maxlen); 
 
 	return NT_STATUS_OK;
@@ -144,7 +144,7 @@ static NTSTATUS fix_secret(TALLOC_CTX *mem_ctx,
  */
 
 NTSTATUS samsync_fix_delta(TALLOC_CTX *mem_ctx,
-			   struct creds_CredentialState *creds,
+			   struct netlogon_creds_CredentialState *creds,
 			   enum netr_SamDatabaseID database_id,
 			   struct netr_DELTA_ENUM *delta)
 {

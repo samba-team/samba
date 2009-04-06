@@ -21,6 +21,6 @@
 */
 
 NTSTATUS samsync_fix_delta(TALLOC_CTX *mem_ctx,
-			   struct creds_CredentialState *creds,
+			   struct netlogon_creds_CredentialState *creds,
 			   enum netr_SamDatabaseID database_id,
 			   struct netr_DELTA_ENUM *delta);

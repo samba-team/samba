@@ -43,7 +43,7 @@
 */
 bool test_netlogon_ex_ops(struct dcerpc_pipe *p, struct torture_context *tctx, 
 			  struct cli_credentials *credentials, 
-			  struct creds_CredentialState *creds)
+			  struct netlogon_creds_CredentialState *creds)
 {
 	NTSTATUS status;
 	struct netr_LogonSamLogonEx r;
@@ -259,7 +259,7 @@ static bool test_schannel(struct torture_context *tctx,
 	struct dcerpc_pipe *p_netlogon3 = NULL;
 	struct dcerpc_pipe *p_samr2 = NULL;
 	struct dcerpc_pipe *p_lsa = NULL;
-	struct creds_CredentialState *creds;
+	struct netlogon_creds_CredentialState *creds;
 	struct cli_credentials *credentials;
 
 	join_ctx = torture_join_domain(tctx, 
@@ -765,7 +765,7 @@ bool torture_rpc_schannel_bench1(struct torture_context *torture)
 	{
 		struct netr_ServerPasswordSet pwset;
 		char *password = generate_random_str(s->join_ctx1, 8);
-		struct creds_CredentialState *creds_state;
+		struct netlogon_creds_CredentialState *creds_state;
 		struct dcerpc_pipe *net_pipe;
 		struct netr_Authenticator credential, return_authenticator;
 		struct samr_Password new_password;
@@ -793,14 +793,14 @@ bool torture_rpc_schannel_bench1(struct torture_context *torture)
 
 		creds_state = cli_credentials_get_netlogon_creds(
 			s->wks_creds1);
-		creds_des_encrypt(creds_state, &new_password);
-		creds_client_authenticator(creds_state, &credential);
+		netlogon_creds_des_encrypt(creds_state, &new_password);
+		netlogon_creds_client_authenticator(creds_state, &credential);
 
 		status = dcerpc_netr_ServerPasswordSet(net_pipe, torture, &pwset);
 		torture_assert_ntstatus_ok(torture, status,
 					   "ServerPasswordSet failed");
 
-		if (!creds_client_check(creds_state,
+		if (!netlogon_creds_client_check(creds_state,
 					&pwset.out.return_authenticator->cred)) {
 			printf("Credential chaining failed\n");
 		}

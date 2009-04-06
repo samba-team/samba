@@ -115,7 +115,6 @@ NTSTATUS libnet_SamDump_keytab(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, 
 
 	r2.out.error_string            = NULL;
 	r2.in.binding_string           = r->in.binding_string;
-	r2.in.rid_crypt                = true;
 	r2.in.init_fn                  = NULL;
 	r2.in.delta_fn                 = libnet_samdump_keytab_fn;
 	r2.in.fn_ctx                   = &data;

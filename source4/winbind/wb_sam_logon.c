@@ -36,7 +36,7 @@ struct wb_sam_logon_state {
 
 	struct winbind_SamLogon *req;
 
-        struct creds_CredentialState *creds_state;
+        struct netlogon_creds_CredentialState *creds_state;
         struct netr_Authenticator auth1, auth2;
 
 	TALLOC_CTX *r_mem_ctx;
@@ -86,7 +86,7 @@ static void wb_sam_logon_recv_domain(struct composite_context *creq)
 	if (!composite_is_ok(s->ctx)) return;
 
 	s->creds_state = cli_credentials_get_netlogon_creds(domain->libnet_ctx->cred);
-	creds_client_authenticator(s->creds_state, &s->auth1);
+	netlogon_creds_client_authenticator(s->creds_state, &s->auth1);
 
 	s->r.in.server_name = talloc_asprintf(s, "\\\\%s",
 			      dcerpc_server_name(domain->netlogon_pipe));
@@ -135,8 +135,8 @@ static void wb_sam_logon_recv_samlogon(struct rpc_request *req)
 	if (!composite_is_ok(s->ctx)) return;
 
 	if ((s->r.out.return_authenticator == NULL) ||
-	    (!creds_client_check(s->creds_state,
-				 &s->r.out.return_authenticator->cred))) {
+	    (!netlogon_creds_client_check(s->creds_state,
+					  &s->r.out.return_authenticator->cred))) {
 		DEBUG(0, ("Credentials check failed!\n"));
 		composite_error(s->ctx, NT_STATUS_ACCESS_DENIED);
 		return;
@@ -145,9 +145,9 @@ static void wb_sam_logon_recv_samlogon(struct rpc_request *req)
 	/* Decrypt the session keys before we reform the info3, so the
 	 * person on the other end of winbindd pipe doesn't have to.
 	 * They won't have the encryption key anyway */
-	creds_decrypt_samlogon(s->creds_state,
-			       s->r.in.validation_level,
-			       s->r.out.validation);
+	netlogon_creds_decrypt_samlogon(s->creds_state,
+					s->r.in.validation_level,
+					s->r.out.validation);
 
 	composite_done(s->ctx);
 }

@@ -2632,7 +2632,7 @@ static bool test_QueryUserInfo_pwdlastset(struct dcerpc_pipe *p,
 static bool test_SamLogon_Creds(struct dcerpc_pipe *p, struct torture_context *tctx,
 				struct cli_credentials *machine_credentials,
 				struct cli_credentials *test_credentials,
-				struct creds_CredentialState *creds,
+				struct netlogon_creds_CredentialState *creds,
 				NTSTATUS expected_result)
 {
 	NTSTATUS status;
@@ -2700,7 +2700,7 @@ static bool test_SamLogon_Creds(struct dcerpc_pipe *p, struct torture_context *t
 	d_printf("Testing LogonSamLogon with name %s\n", ninfo.identity_info.account_name.string);
 
 	ZERO_STRUCT(auth2);
-	creds_client_authenticator(creds, &auth);
+	netlogon_creds_client_authenticator(creds, &auth);
 
 	r.in.validation_level = 2;
 
@@ -2712,7 +2712,7 @@ static bool test_SamLogon_Creds(struct dcerpc_pipe *p, struct torture_context *t
 		torture_assert_ntstatus_ok(tctx, status, "LogonSamLogon failed");
 	}
 
-	torture_assert(tctx, creds_client_check(creds, &r.out.return_authenticator->cred),
+	torture_assert(tctx, netlogon_creds_client_check(creds, &r.out.return_authenticator->cred),
 			"Credential chaining failed");
 
 	return true;
@@ -2724,7 +2724,7 @@ static bool test_SamLogon(struct torture_context *tctx,
 			  struct cli_credentials *test_credentials,
 			  NTSTATUS expected_result)
 {
-	struct creds_CredentialState *creds;
+	struct netlogon_creds_CredentialState *creds;
 
 	if (!test_SetupCredentials(p, tctx, machine_credentials, &creds)) {
 		return false;
