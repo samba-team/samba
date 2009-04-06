@@ -273,6 +273,10 @@ static bool torture_open_connection_share(struct cli_state **c,
 
 	if (use_kerberos)
 		flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
+	if (use_oplocks)
+		flags |= CLI_FULL_CONNECTION_OPLOCKS;
+	if (use_level_II_oplocks)
+		flags |= CLI_FULL_CONNECTION_LEVEL_II_OPLOCKS;
 
 	status = cli_full_connection(c, myname,
 				     hostname, NULL, port_to_use, 
@@ -285,8 +289,6 @@ static bool torture_open_connection_share(struct cli_state **c,
 		return False;
 	}
 
-	if (use_oplocks) (*c)->use_oplocks = True;
-	if (use_level_II_oplocks) (*c)->use_level_II_oplocks = True;
 	(*c)->timeout = 120000; /* set a really long timeout (2 minutes) */
 
 	if (do_encrypt) {
