@@ -299,19 +299,20 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *options)
 	int count;
 	int is_monitor = 0;
 
-	/* This is running in the forked child process. At this stage
-	 * we want to switch from being a ctdb daemon into being a client
-	 * and connect to the local daemon.
-	 */
-	if (switch_from_server_to_client(ctdb) != 0) {
-		DEBUG(DEBUG_CRIT, (__location__ "ERROR: failed to switch eventscript child into client mode. shutting down.\n"));
-		_exit(1);
-	}
-
 	if (!strcmp(options, "monitor")) {
 		is_monitor = 1;
 	}
+
 	if (is_monitor == 1) {
+		/* This is running in the forked child process. At this stage
+		 * we want to switch from being a ctdb daemon into being a
+		 * client and connect to the real local daemon.
+		 */
+		if (switch_from_server_to_client(ctdb) != 0) {
+			DEBUG(DEBUG_CRIT, (__location__ "ERROR: failed to switch eventscript child into client mode. shutting down.\n"));
+			_exit(1);
+		}
+
 		if (ctdb_ctrl_event_script_init(ctdb) != 0) {
 			DEBUG(DEBUG_ERR,(__location__ " Failed to init event script monitoring\n"));
 			talloc_free(tmp_ctx);
