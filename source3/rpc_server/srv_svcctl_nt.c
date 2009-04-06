@@ -468,9 +468,11 @@ WERROR _svcctl_EnumServicesStatusW(pipes_struct *p,
 		}
 
 		blob = ndr_push_blob(ndr);
+		if (blob.length >= r->in.buf_size) {
+			memcpy(r->out.service, blob.data, r->in.buf_size);
+		}
 	}
 
-	r->out.service			= blob.data;
 	*r->out.bytes_needed		= (buffer_size > r->in.buf_size) ? buffer_size : r->in.buf_size;
 	*r->out.services_returned	= (uint32)num_services;
 	*r->out.resume_handle		= 0x0;
