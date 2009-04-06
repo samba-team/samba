@@ -3357,7 +3357,7 @@ static WERROR nt_printer_unpublish_ads(ADS_STRUCT *ads,
 			    printer->info_2->sharename, global_myname());
 
 	if (ADS_ERR_OK(ads_rc) && res && ads_count_replies(ads, res)) {
-		prt_dn = ads_get_dn(ads, NULL, res);
+		prt_dn = ads_get_dn(ads, talloc_tos(), res);
 		if (!prt_dn) {
 			ads_msgfree(ads, res);
 			return WERR_NOMEM;

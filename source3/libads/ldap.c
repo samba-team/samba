@@ -1629,7 +1629,7 @@ char *ads_default_ou_string(ADS_STRUCT *ads, const char *wknguid)
 	}
 
 	/* substitute the bind-path from the well-known-guid-search result */
-	wkn_dn = ads_get_dn(ads, NULL, res);
+	wkn_dn = ads_get_dn(ads, talloc_tos(), res);
 	if (!wkn_dn) {
 		goto out;
 	}
@@ -1731,7 +1731,7 @@ uint32 ads_get_kvno(ADS_STRUCT *ads, const char *account_name)
 		return kvno;
 	}
 
-	dn_string = ads_get_dn(ads, NULL, res);
+	dn_string = ads_get_dn(ads, talloc_tos(), res);
 	if (!dn_string) {
 		DEBUG(0,("ads_get_kvno: out of memory.\n"));
 		ads_msgfree(ads, res);
@@ -1826,7 +1826,7 @@ ADS_STATUS ads_clear_service_principal_names(ADS_STRUCT *ads, const char *machin
 		talloc_destroy(ctx);
 		return ret;
 	}
-	dn_string = ads_get_dn(ads, NULL, res);
+	dn_string = ads_get_dn(ads, talloc_tos(), res);
 	if (!dn_string) {
 		talloc_destroy(ctx);
 		ads_msgfree(ads, res);
@@ -2041,7 +2041,7 @@ ADS_STATUS ads_move_machine_acct(ADS_STRUCT *ads, const char *machine_name,
 		goto done;
 	}
 
-	computer_dn = ads_get_dn(ads, NULL, res);
+	computer_dn = ads_get_dn(ads, talloc_tos(), res);
 	if (!computer_dn) {
 		rc = ADS_ERROR(LDAP_NO_MEMORY);
 		goto done;
@@ -3129,7 +3129,7 @@ ADS_STATUS ads_get_joinable_ous(ADS_STRUCT *ads,
 
 		char *dn = NULL;
 
-		dn = ads_get_dn(ads, NULL, msg);
+		dn = ads_get_dn(ads, talloc_tos(), msg);
 		if (!dn) {
 			ads_msgfree(ads, res);
 			return ADS_ERROR(LDAP_NO_MEMORY);
@@ -3483,7 +3483,7 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 		return ADS_ERROR_SYSTEM(ENOENT);
 	}
 
-	hostnameDN = ads_get_dn(ads, NULL, (LDAPMessage *)msg);
+	hostnameDN = ads_get_dn(ads, talloc_tos(), (LDAPMessage *)msg);
 
 	rc = ldap_delete_ext_s(ads->ldap.ld, hostnameDN, pldap_control, NULL);
 	if (rc) {
@@ -3514,7 +3514,7 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 
 			char *dn = NULL;
 
-			if ((dn = ads_get_dn(ads, NULL, msg_sub)) == NULL) {
+			if ((dn = ads_get_dn(ads, talloc_tos(), msg_sub)) == NULL) {
 				SAFE_FREE(host);
 				TALLOC_FREE(hostnameDN);
 				return ADS_ERROR(LDAP_NO_MEMORY);
@@ -3712,7 +3712,7 @@ ADS_STATUS ads_find_samaccount(ADS_STRUCT *ads,
 		goto out;
 	}
 
-	dn = ads_get_dn(ads, NULL, res);
+	dn = ads_get_dn(ads, talloc_tos(), res);
 	if (dn == NULL) {
 		status = ADS_ERROR(LDAP_NO_MEMORY);
 		goto out;
