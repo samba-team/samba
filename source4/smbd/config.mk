@@ -2,7 +2,7 @@
 
 [SUBSYSTEM::service]
 PRIVATE_DEPENDENCIES = \
-		LIBTEVENT MESSAGING samba_socket NDR_NAMED_PIPE_AUTH
+		LIBTEVENT MESSAGING samba_socket NDR_NAMED_PIPE_AUTH NAMED_PIPE_AUTH_TSTREAM
 
 service_OBJ_FILES = $(addprefix $(smbdsrcdir)/, \
 		service.o \
