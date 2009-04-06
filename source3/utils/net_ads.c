@@ -503,7 +503,7 @@ static int ads_user_add(struct net_context *c, int argc, const char **argv)
 	ads_msgfree(ads, res);
 	status=ads_find_user_acct(ads, &res, argv[0]);
 	if (ADS_ERR_OK(status)) {
-		userdn = ads_get_dn(ads, NULL, res);
+		userdn = ads_get_dn(ads, talloc_tos(), res);
 		ads_del_dn(ads, userdn);
 		TALLOC_FREE(userdn);
 	}
@@ -598,7 +598,7 @@ static int ads_user_delete(struct net_context *c, int argc, const char **argv)
 		ads_destroy(&ads);
 		return -1;
 	}
-	userdn = ads_get_dn(ads, NULL, res);
+	userdn = ads_get_dn(ads, talloc_tos(), res);
 	ads_msgfree(ads, res);
 	rc = ads_del_dn(ads, userdn);
 	TALLOC_FREE(userdn);
@@ -757,7 +757,7 @@ static int ads_group_delete(struct net_context *c, int argc, const char **argv)
 		ads_destroy(&ads);
 		return -1;
 	}
-	groupdn = ads_get_dn(ads, NULL, res);
+	groupdn = ads_get_dn(ads, talloc_tos(), res);
 	ads_msgfree(ads, res);
 	rc = ads_del_dn(ads, groupdn);
 	TALLOC_FREE(groupdn);
@@ -1740,7 +1740,7 @@ static int net_ads_printer_remove(struct net_context *c, int argc, const char **
 		return -1;
 	}
 
-	prt_dn = ads_get_dn(ads, NULL, res);
+	prt_dn = ads_get_dn(ads, talloc_tos(), res);
 	ads_msgfree(ads, res);
 	rc = ads_del_dn(ads, prt_dn);
 	TALLOC_FREE(prt_dn);

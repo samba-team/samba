@@ -368,7 +368,7 @@ static NTSTATUS check_result_unique_scoped(ADS_STRUCT **ads_list,
 		LDAPMessage *e = ads_first_entry(ads_list[i], msg_list[i]);
 
 		while (e) {
-			entry_dn = ads_get_dn(ads_list[i], NULL, e);
+			entry_dn = ads_get_dn(ads_list[i], talloc_tos(), e);
 			BAIL_ON_PTR_ERROR(entry_dn, nt_status);
 
 			if (check_forest_scope(entry_dn)) {
