@@ -1658,7 +1658,7 @@ static ssize_t tdgram_bsd_sendto_recv(struct tevent_req *req, int *perrno)
 }
 
 struct tdgram_bsd_disconnect_state {
-	void *__dummy;
+	uint8_t __dummy;
 };
 
 static struct tevent_req *tdgram_bsd_disconnect_send(TALLOC_CTX *mem_ctx,
