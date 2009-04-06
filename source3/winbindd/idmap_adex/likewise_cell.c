@@ -400,7 +400,7 @@ done:
 				     e!=NULL;
 				     e = ads_next_entry(c->conn, e))
 				{
-					char *dn = ads_get_dn(c->conn, NULL, e);
+					char *dn = ads_get_dn(c->conn, talloc_tos(), e);
 
 					DEBUGADD(10,("   dn: %s\n", dn ? dn : "<NULL>"));
 					TALLOC_FREE(dn);
