@@ -9,6 +9,7 @@
 #ifndef _HEADER_svcctl
 #define _HEADER_svcctl
 
+#define SVCCTL_ACCEPT_NONE	( 0x00000000 )
 #define SERVICE_TYPE_KERNEL_DRIVER	( 0x01 )
 #define SERVICE_TYPE_FS_DRIVER	( 0x02 )
 #define SERVICE_TYPE_ADAPTER	( 0x04 )
@@ -59,7 +60,6 @@ enum svcctl_ServiceStatus
 ;
 
 /* bitmap svcctl_ControlsAccepted */
-#define SVCCTL_ACCEPT_NONE ( 0x00000000 )
 #define SVCCTL_ACCEPT_STOP ( 0x00000001 )
 #define SVCCTL_ACCEPT_PAUSE_CONTINUE ( 0x00000002 )
 #define SVCCTL_ACCEPT_SHUTDOWN ( 0x00000004 )
