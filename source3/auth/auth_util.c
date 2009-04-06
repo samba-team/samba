@@ -886,8 +886,9 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 						    &group_sids, &gids,
 						    &num_group_sids);
 		if (!NT_STATUS_IS_OK(result)) {
-			DEBUG(10, ("enum_group_memberships failed for %s\n",
-				   username));
+			DEBUG(1, ("enum_group_memberships failed for %s (%s): "
+				  "%s\n", username, sid_string_dbg(&user_sid),
+				  nt_errstr(result)));
 			DEBUGADD(1, ("Fall back to unix user %s\n", username));
 			goto unix_user;
 		}
