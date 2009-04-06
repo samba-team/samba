@@ -300,7 +300,7 @@ static uint16_t cli_alloc_mid(struct cli_state *cli)
 		int i;
 
 		result = cli->mid++;
-		if (result == 0) {
+		if ((result == 0) || (result == 0xffff)) {
 			continue;
 		}
 
