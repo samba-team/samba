@@ -260,7 +260,7 @@ _kdc_encode_reply(krb5_context context,
 		  KDC_REP *rep, const EncTicketPart *et, EncKDCRepPart *ek,
 		  krb5_enctype etype,
 		  int skvno, const EncryptionKey *skey,
-		  int ckvno, const EncryptionKey *ckey,
+		  int ckvno, const EncryptionKey *reply_key,
 		  const char **e_text,
 		  krb5_data *reply)
 {
@@ -321,7 +321,7 @@ _kdc_encode_reply(krb5_context context,
 	*e_text = "KDC internal error";
 	return KRB5KRB_ERR_GENERIC;
     }
-    ret = krb5_crypto_init(context, ckey, 0, &crypto);
+    ret = krb5_crypto_init(context, reply_key, 0, &crypto);
     if (ret) {
 	free(buf);
 	kdc_log(context, config, 0, "krb5_crypto_init failed: %s",
@@ -1153,6 +1153,11 @@ _kdc_as_rep(krb5_context context,
 					      &enc_data,
 					      &ts_data);
 	    krb5_crypto_destroy(context, crypto);
+	    /*
+	     * Since the user might have several keys with the same
+	     * enctype but with diffrent salting, we need to try all
+	     * the keys with the same enctype.
+	     */
 	    if(ret){
 		krb5_error_code ret2;
 		ret2 = krb5_enctype_to_string(context,
@@ -1278,30 +1283,36 @@ _kdc_as_rep(krb5_context context,
 #endif
 
 	/*
-	 * RFC4120 requires:
-	 * - If the client only knows about old enctypes, then send
-	 *   both info replies (we send 'info' first in the list).
-	 * - If the client is 'modern', because it knows about 'new'
-	 *   enctype types, then only send the 'info2' reply.
-	 *
-	 * Before we send the full list of etype-info data, we pick
-	 * the client key we would have used anyway below, just pick
-	 * that instead.
+	 * If there is a client key, send ETYPE_INFO{,2}
 	 */
+	if (ckey) {
 
-	if (older_enctype(ckey->key.keytype)) {
-	    ret = get_pa_etype_info(context, config,
-				    &method_data, ckey);
+	    /*
+	     * RFC4120 requires:
+	     * - If the client only knows about old enctypes, then send
+	     *   both info replies (we send 'info' first in the list).
+	     * - If the client is 'modern', because it knows about 'new'
+	     *   enctype types, then only send the 'info2' reply.
+	     *
+	     * Before we send the full list of etype-info data, we pick
+	     * the client key we would have used anyway below, just pick
+	     * that instead.
+	     */
+
+	    if (older_enctype(ckey->key.keytype)) {
+		ret = get_pa_etype_info(context, config,
+					&method_data, ckey);
+		if (ret) {
+		    free_METHOD_DATA(&method_data);
+		    goto out;
+		}
+	    }
+	    ret = get_pa_etype_info2(context, config,
+				     &method_data, ckey);
 	    if (ret) {
 		free_METHOD_DATA(&method_data);
 		goto out;
 	    }
-	}
-	ret = get_pa_etype_info2(context, config,
-				 &method_data, ckey);
-	if (ret) {
-	    free_METHOD_DATA(&method_data);
-	    goto out;
 	}
 	
 	ASN1_MALLOC_ENCODE(METHOD_DATA, buf, len, &method_data, &len, ret);
@@ -1601,7 +1612,6 @@ _kdc_as_rep(krb5_context context,
     rep.padata->len = 0;
     rep.padata->val = NULL;
 
-    reply_key = &ckey->key;
 #if PKINIT
     if (pkp) {
         e_text = "Failed to build PK-INIT reply";
@@ -1614,17 +1624,27 @@ _kdc_as_rep(krb5_context context,
 					   config,
 					   pkp,
 					   &et);
+	if (ret)
+	    goto out;
     } else
 #endif
+    if (ckey) {
+	reply_key = &ckey->key;
 	ret = krb5_generate_random_keyblock(context, sessionetype, &et.key);
-    if (ret)
+	if (ret)
+	    goto out;
+    } else {
+	e_text = "Client have no reply key";
+	ret = KRB5KDC_ERR_CLIENT_NOTYET;
 	goto out;
+    }
 
     ret = copy_EncryptionKey(&et.key, &ek.key);
     if (ret)
 	goto out;
 
-    set_salt_padata (rep.padata, ckey->salt);
+    if (ckey)
+	set_salt_padata (rep.padata, ckey->salt);
 
     /* Add signing of alias referral */
     if (f.canonicalize) {
