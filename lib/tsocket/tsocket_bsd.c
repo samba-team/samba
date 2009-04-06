@@ -812,6 +812,13 @@ static void tdgram_bsd_recvfrom_handler(void *private_data)
 
 	sa = &bsda->u.sa;
 	sa_len = sizeof(bsda->u.ss);
+	/*
+	 * for unix sockets we can't use the size of sockaddr_storage
+	 * we would get EINVAL
+	 */
+	if (bsda->u.sa.sa_family == AF_UNIX) {
+		sa_len = sizeof(bsda->u.un);
+	}
 
 	ret = recvfrom(bsds->fd, state->buf, state->len, 0, sa, &sa_len);
 	err = tsocket_bsd_error_from_errno(ret, errno, &retry);
@@ -959,6 +966,13 @@ static void tdgram_bsd_sendto_handler(void *private_data)
 
 		sa = &bsda->u.sa;
 		sa_len = sizeof(bsda->u.ss);
+		/*
+		 * for unix sockets we can't use the size of sockaddr_storage
+		 * we would get EINVAL
+		 */
+		if (bsda->u.sa.sa_family == AF_UNIX) {
+			sa_len = sizeof(bsda->u.un);
+		}
 	}
 
 	ret = sendto(bsds->fd, state->buf, state->len, 0, sa, sa_len);
@@ -1086,6 +1100,7 @@ static int tdgram_bsd_dgram_socket(const struct tsocket_address *local,
 	int ret;
 	bool do_bind = false;
 	bool do_reuseaddr = false;
+	socklen_t sa_len = sizeof(lbsda->u.ss);
 
 	if (remote) {
 		rbsda = talloc_get_type_abort(remote->private_data,
@@ -1102,6 +1117,11 @@ static int tdgram_bsd_dgram_socket(const struct tsocket_address *local,
 			do_reuseaddr = true;
 			do_bind = true;
 		}
+		/*
+		 * for unix sockets we can't use the size of sockaddr_storage
+		 * we would get EINVAL
+		 */
+		sa_len = sizeof(lbsda->u.un);
 		break;
 	case AF_INET:
 		if (lbsda->u.in.sin_port != 0) {
@@ -1182,7 +1202,7 @@ static int tdgram_bsd_dgram_socket(const struct tsocket_address *local,
 	}
 
 	if (do_bind) {
-		ret = bind(fd, &lbsda->u.sa, sizeof(lbsda->u.ss));
+		ret = bind(fd, &lbsda->u.sa, sa_len);
 		if (ret == -1) {
 			int saved_errno = errno;
 			talloc_free(dgram);
@@ -1192,7 +1212,7 @@ static int tdgram_bsd_dgram_socket(const struct tsocket_address *local,
 	}
 
 	if (rbsda) {
-		ret = connect(fd, &rbsda->u.sa, sizeof(rbsda->u.ss));
+		ret = connect(fd, &rbsda->u.sa, sa_len);
 		if (ret == -1) {
 			int saved_errno = errno;
 			talloc_free(dgram);
