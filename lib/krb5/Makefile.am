@@ -225,7 +225,6 @@ man_MANS =					\
 	krb5_digest.3				\
 	krb5_eai_to_heim_errno.3		\
 	krb5_encrypt.3				\
-	krb5_expand_hostname.3			\
 	krb5_find_padata.3			\
 	krb5_generate_random_block.3		\
 	krb5_get_all_client_addrs.3		\
