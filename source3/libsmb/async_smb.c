@@ -685,6 +685,7 @@ static void cli_smb_received(struct tevent_req *subreq)
 	int num_pending;
 	int i, err;
 	uint16_t mid;
+	bool oplock_break;
 
 	received = read_smb_recv(subreq, talloc_tos(), &inbuf, &err);
 	TALLOC_FREE(subreq);
@@ -741,11 +742,31 @@ static void cli_smb_received(struct tevent_req *subreq)
 		goto done;
 	}
 
+	oplock_break = false;
+
+	if (mid == 0xffff) {
+		/*
+		 * Paranoia checks that this is really an oplock break request.
+		 */
+		oplock_break = (smb_len(inbuf) == 51); /* hdr + 8 words */
+		oplock_break &= ((CVAL(inbuf, smb_flg) & FLAG_REPLY) == 0);
+		oplock_break &= (CVAL(inbuf, smb_com) == SMBlockingX);
+		oplock_break &= (SVAL(inbuf, smb_vwv6) == 0);
+		oplock_break &= (SVAL(inbuf, smb_vwv7) == 0);
+
+		if (!oplock_break) {
+			/* Dump unexpected reply */
+			TALLOC_FREE(inbuf);
+			goto done;
+		}
+	}
+
 	req = cli->pending[i];
 	state = tevent_req_data(req, struct cli_smb_state);
 	ev = state->ev;
 
-	if (!cli_check_sign_mac(cli, (char *)inbuf, state->seqnum+1)) {
+	if (!oplock_break /* oplock breaks are not signed */
+	    && !cli_check_sign_mac(cli, (char *)inbuf, state->seqnum+1)) {
 		DEBUG(10, ("cli_check_sign_mac failed\n"));
 		TALLOC_FREE(inbuf);
 		status = NT_STATUS_ACCESS_DENIED;
@@ -1028,4 +1049,83 @@ bool cli_has_async_calls(struct cli_state *cli)
 {
 	return ((tevent_queue_length(cli->outgoing) != 0)
 		|| (talloc_array_length(cli->pending) != 0));
+}
+
+struct cli_smb_oplock_break_waiter_state {
+	uint16_t fnum;
+	uint8_t level;
+};
+
+static void cli_smb_oplock_break_waiter_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_smb_oplock_break_waiter_send(TALLOC_CTX *mem_ctx,
+						    struct event_context *ev,
+						    struct cli_state *cli)
+{
+	struct tevent_req *req, *subreq;
+	struct cli_smb_oplock_break_waiter_state *state;
+	struct cli_smb_state *smb_state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct cli_smb_oplock_break_waiter_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	/*
+	 * Create a fake SMB request that we will never send out. This is only
+	 * used to be set into the pending queue with the right mid.
+	 */
+	subreq = cli_smb_req_create(mem_ctx, ev, cli, 0, 0, 0, NULL, 0, NULL);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	smb_state = tevent_req_data(subreq, struct cli_smb_state);
+	SSVAL(smb_state->header, smb_mid, 0xffff);
+
+	if (!cli_smb_req_set_pending(subreq)) {
+		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_smb_oplock_break_waiter_done, req);
+	return req;
+}
+
+static void cli_smb_oplock_break_waiter_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_smb_oplock_break_waiter_state *state = tevent_req_data(
+		req, struct cli_smb_oplock_break_waiter_state);
+	uint8_t wct;
+	uint16_t *vwv;
+	uint32_t num_bytes;
+	uint8_t *bytes;
+	NTSTATUS status;
+
+	status = cli_smb_recv(subreq, 8, &wct, &vwv, &num_bytes, &bytes);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(subreq);
+		tevent_req_nterror(req, status);
+		return;
+	}
+	state->fnum = SVAL(vwv+2, 0);
+	state->level = CVAL(vwv+3, 1);
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_smb_oplock_break_waiter_recv(struct tevent_req *req,
+					  uint16_t *pfnum,
+					  uint8_t *plevel)
+{
+	struct cli_smb_oplock_break_waiter_state *state = tevent_req_data(
+		req, struct cli_smb_oplock_break_waiter_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	*pfnum = state->fnum;
+	*plevel = state->level;
+	return NT_STATUS_OK;
 }
