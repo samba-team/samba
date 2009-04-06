@@ -90,7 +90,7 @@ _kdc_find_padata(const KDC_REQ *req, int *start, int type)
  */
 
 krb5_boolean
-_kdc_is_weak_expection(krb5_principal principal, krb5_enctype etype)
+_kdc_is_weak_exception(krb5_principal principal, krb5_enctype etype)
 {
     if (principal->name.name_string.len > 0 &&
 	strcmp(principal->name.name_string.val[0], "afs") == 0 &&
@@ -139,7 +139,7 @@ _kdc_find_etype(krb5_context context, const hdb_entry_ex *princ,
 	Key *key = NULL;
 
 	if (krb5_enctype_valid(context, etypes[i]) != 0 &&
-	    !_kdc_is_weak_expection(princ->entry.principal, etypes[i]))
+	    !_kdc_is_weak_exception(princ->entry.principal, etypes[i]))
 	    continue;
 
 	while (hdb_next_enctype2key(context, &princ->entry, etypes[i], &key) == 0) {
