@@ -120,7 +120,6 @@ _PUBLIC_ void ndr_print_svcctl_ControlsAccepted(struct ndr_print *ndr, const cha
 {
 	ndr_print_uint32(ndr, name, r);
 	ndr->depth++;
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SVCCTL_ACCEPT_NONE", SVCCTL_ACCEPT_NONE, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SVCCTL_ACCEPT_STOP", SVCCTL_ACCEPT_STOP, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SVCCTL_ACCEPT_PAUSE_CONTINUE", SVCCTL_ACCEPT_PAUSE_CONTINUE, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SVCCTL_ACCEPT_SHUTDOWN", SVCCTL_ACCEPT_SHUTDOWN, r);
