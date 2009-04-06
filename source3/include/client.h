@@ -132,8 +132,8 @@ struct rpc_pipe_client {
 
 	struct cli_pipe_auth_data *auth;
 
-	/* The following is only non-null on a netlogon pipe. */
-	struct dcinfo *dc;
+	/* The following is only non-null on a netlogon client pipe. */
+	struct netlogon_creds_CredentialState *dc;
 
 	/* Used by internal rpc_pipe_client */
 	pipes_struct *pipes_struct;

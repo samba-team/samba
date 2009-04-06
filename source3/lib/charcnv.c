@@ -1600,6 +1600,7 @@ size_t push_string_check_fn(const char *function, unsigned int line,
 	return push_ascii(dest, src, dest_len, flags);
 }
 
+
 /**
  Copy a string from a char* src to a unicode or ascii
  dos codepage destination choosing unicode or ascii based on the 
@@ -1641,6 +1642,43 @@ size_t push_string_base(const char *function, unsigned int line,
 	return push_ascii(dest, src, dest_len, flags);
 }
 
+/**
+ Copy a string from a char* src to a unicode or ascii
+ dos codepage destination choosing unicode or ascii based on the 
+ flags supplied
+ Return the number of bytes occupied by the string in the destination.
+ flags can have:
+  STR_TERMINATE means include the null termination.
+  STR_UPPER     means uppercase in the destination.
+  STR_ASCII     use ascii even with unicode packet.
+  STR_NOALIGN   means don't do alignment.
+ dest_len is the maximum length allowed in the destination. If dest_len
+ is -1 then no maxiumum is used.
+**/
+
+ssize_t push_string(void *dest, const char *src, size_t dest_len, int flags)
+{
+	size_t ret;
+#ifdef DEVELOPER
+	/* We really need to zero fill here, not clobber
+	 * region, as we want to ensure that valgrind thinks
+	 * all of the outgoing buffer has been written to
+	 * so a send() or write() won't trap an error.
+	 * JRA.
+	 */
+	memset(dest, '\0', dest_len);
+#endif
+
+	if (!(flags & STR_ASCII) && \
+	    (flags & STR_UNICODE)) {
+		ret = push_ucs2(NULL, dest, src, dest_len, flags);
+	}
+	ret = push_ascii(dest, src, dest_len, flags);
+	if (ret == (size_t)-1) {
+		return -1;
+	}
+	return ret;
+}
 
 /**
  Copy a string from a unicode or ascii source (depending on

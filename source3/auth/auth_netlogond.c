@@ -69,14 +69,12 @@ static NTSTATUS netlogond_validate(TALLOC_CTX *mem_ctx,
 	 * rpccli_netlogon_sam_network_logon_ex can decrypt the session keys.
 	 */
 
-	p->dc = talloc(p, struct dcinfo);
+	p->dc = netlogon_creds_client_init_session_key(p, schannel_key);
 	if (p->dc == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		TALLOC_FREE(p);
 		return NT_STATUS_NO_MEMORY;
 	}
-
-	memcpy(p->dc->sess_key, schannel_key, 16);
 
 	status = rpccli_netlogon_sam_network_logon_ex(
 		p, p,
@@ -257,7 +255,7 @@ static NTSTATUS check_netlogond_security(const struct auth_context *auth_context
 		goto done;
 	}
 
-	memcpy(schannel_key, p->dc->sess_key, 16);
+	memcpy(schannel_key, p->dc->session_key, 16);
 	secrets_store_local_schannel_key(schannel_key);
 
 	TALLOC_FREE(p);

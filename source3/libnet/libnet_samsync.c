@@ -33,7 +33,7 @@
  */
 
 static NTSTATUS samsync_fix_delta_array(TALLOC_CTX *mem_ctx,
-					struct creds_CredentialState *creds,
+					struct netlogon_creds_CredentialState *creds,
 					enum netr_SamDatabaseID database_id,
 					struct netr_DELTA_ENUM_ARRAY *r)
 {
@@ -206,7 +206,7 @@ static NTSTATUS libnet_samsync_delta(TALLOC_CTX *mem_ctx,
 	do {
 		struct netr_DELTA_ENUM_ARRAY *delta_enum_array = NULL;
 
-		creds_client_authenticator(ctx->cli->dc, &credential);
+		netlogon_creds_client_authenticator(ctx->cli->dc, &credential);
 
 		if (ctx->single_object_replication &&
 		    !ctx->force_full_replication) {
@@ -247,8 +247,8 @@ static NTSTATUS libnet_samsync_delta(TALLOC_CTX *mem_ctx,
 		}
 
 		/* Check returned credentials. */
-		if (!creds_client_check(ctx->cli->dc,
-					&return_authenticator.cred)) {
+		if (!netlogon_creds_client_check(ctx->cli->dc,
+						 &return_authenticator.cred)) {
 			DEBUG(0,("credentials chain check failed\n"));
 			return NT_STATUS_ACCESS_DENIED;
 		}

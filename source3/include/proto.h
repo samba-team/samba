@@ -4636,11 +4636,11 @@ bool secrets_store_afs_keyfile(const char *cell, const struct afs_keyfile *keyfi
 bool secrets_fetch_afs_key(const char *cell, struct afs_key *result);
 void secrets_fetch_ipc_userpass(char **username, char **domain, char **password);
 bool secrets_store_schannel_session_info(TALLOC_CTX *mem_ctx,
-				const char *remote_machine,
-				const struct dcinfo *pdc);
+					 const char *remote_machine,
+					 const struct dcinfo *pdc);
 bool secrets_restore_schannel_session_info(TALLOC_CTX *mem_ctx,
-				const char *remote_machine,
-				struct dcinfo **ppdc);
+					   const char *remote_machine,
+					   struct dcinfo **ppdc);
 bool secrets_store_generic(const char *owner, const char *key, const char *secret);
 char *secrets_fetch_generic(const char *owner, const char *key);
 bool secrets_store_local_schannel_key(uint8_t schannel_key[16]);
@@ -5245,7 +5245,7 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 					     const struct ndr_syntax_id *interface,
 					     enum pipe_auth_level auth_level,
 					     const char *domain,
-					     const struct dcinfo *pdc,
+					     struct netlogon_creds_CredentialState *pdc,
 					     struct rpc_pipe_client **presult);
 NTSTATUS cli_rpc_pipe_open_ntlmssp_auth_schannel(struct cli_state *cli,
 						 const struct ndr_syntax_id *interface,

@@ -3851,7 +3851,7 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 					     const struct ndr_syntax_id *interface,
 					     enum pipe_auth_level auth_level,
 					     const char *domain,
-					     const struct dcinfo *pdc,
+					     struct netlogon_creds_CredentialState *pdc,
 					     struct rpc_pipe_client **presult)
 {
 	struct rpc_pipe_client *result;
@@ -3864,7 +3864,7 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 	}
 
 	status = rpccli_schannel_bind_data(result, domain, auth_level,
-					   pdc->sess_key, &auth);
+					   pdc->session_key, &auth);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("rpccli_schannel_bind_data returned %s\n",
 			  nt_errstr(status)));
@@ -3883,11 +3883,11 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 
 	/*
 	 * The credentials on a new netlogon pipe are the ones we are passed
-	 * in - copy them over.
+	 * in - reference them in
 	 */
-	result->dc = (struct dcinfo *)talloc_memdup(result, pdc, sizeof(*pdc));
+	result->dc = talloc_reference(result, pdc);
 	if (result->dc == NULL) {
-		DEBUG(0, ("talloc failed\n"));
+		DEBUG(0, ("talloc reference failed\n"));
 		TALLOC_FREE(result);
 		return NT_STATUS_NO_MEMORY;
 	}

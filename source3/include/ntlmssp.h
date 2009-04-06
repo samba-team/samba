@@ -68,11 +68,6 @@ enum NTLM_MESSAGE_TYPE
 #define NTLMSSP_FEATURE_SIGN               0x00000002
 #define NTLMSSP_FEATURE_SEAL               0x00000004
 
-#define NTLMSSP_NAME_TYPE_SERVER      0x01
-#define NTLMSSP_NAME_TYPE_DOMAIN      0x02
-#define NTLMSSP_NAME_TYPE_SERVER_DNS  0x03
-#define NTLMSSP_NAME_TYPE_DOMAIN_DNS  0x04
-
 #define NTLMSSP_SIG_SIZE 16
 
 typedef struct ntlmssp_state 

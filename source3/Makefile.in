@@ -374,7 +374,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) \
 	  lib/bitmap.o lib/dprintf.o $(UTIL_REG_OBJ) \
 	  lib/wins_srv.o \
 	  lib/util_str.o lib/clobber.o lib/util_sid.o lib/util_uuid.o \
-	  lib/util_unistr.o ../lib/util/charset/util_unistr.c lib/util_file.o \
+	  lib/util_unistr.o lib/util_file.o \
 	  lib/util.o lib/util_sock.o lib/sock_exec.o lib/util_sec.o \
 	  lib/substitute.o lib/dbwrap_util.o \
 	  lib/ms_fnmatch.o lib/select.o lib/errmap_unix.o \
@@ -447,7 +447,7 @@ DCE_RPC_ERR_OBJ = ../librpc/rpc/dcerpc_error.o
 
 LIBSMB_ERR_OBJ0 = $(NTERR_OBJ) $(DOSERR_OBJ) $(ERRORMAP_OBJ) $(DCE_RPC_ERR_OBJ)
 
-LIBSMB_ERR_OBJ1 = ../libcli/auth/smbdes.o ../libcli/auth/smbencrypt.o ../libcli/auth/msrpc_parse.o
+LIBSMB_ERR_OBJ1 = ../libcli/auth/smbdes.o ../libcli/auth/smbencrypt.o ../libcli/auth/msrpc_parse.o ../libcli/auth/session.o
 
 LIBSMB_ERR_OBJ = $(LIBSMB_ERR_OBJ0) $(LIBSMB_ERR_OBJ1) \
 		 $(RPC_PARSE_OBJ1) \
@@ -930,7 +930,9 @@ LIBNET_OBJ = libnet/libnet_join.o \
 	     libnet/libnet_samsync_keytab.o \
 	     libnet/libnet_dssync.o \
 	     libnet/libnet_dssync_keytab.o \
-	     librpc/gen_ndr/ndr_libnet_join.o
+	     librpc/gen_ndr/ndr_libnet_join.o \
+	     ../libcli/samsync/decrypt.o \
+	     ../libcli/drsuapi/repl_decrypt.o
 
 NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_help.o \
 	   utils/net_rap.o utils/net_rpc.o utils/net_rpc_samsync.o \

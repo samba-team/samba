@@ -585,7 +585,7 @@ static NTSTATUS cmd_netlogon_sam_sync(struct rpc_pipe_client *cli,
 	do {
 		struct netr_DELTA_ENUM_ARRAY *delta_enum_array = NULL;
 
-		netlogon_creds_client_step(cli->dc, &credential);
+		netlogon_creds_client_authenticator(cli->dc, &credential);
 
 		result = rpccli_netr_DatabaseSync2(cli, mem_ctx,
 						   logon_server,
@@ -648,7 +648,7 @@ static NTSTATUS cmd_netlogon_sam_deltas(struct rpc_pipe_client *cli,
 	do {
 		struct netr_DELTA_ENUM_ARRAY *delta_enum_array = NULL;
 
-		netlogon_creds_client_step(cli->dc, &credential);
+		netlogon_creds_client_authenticator(cli->dc, &credential);
 
 		result = rpccli_netr_DatabaseDeltas(cli, mem_ctx,
 						    logon_server,
@@ -1083,7 +1083,7 @@ static NTSTATUS cmd_netlogon_database_redo(struct rpc_pipe_client *cli,
 		return status;
 	}
 
-	netlogon_creds_client_step(cli->dc, &clnt_creds);
+	netlogon_creds_client_authenticator(cli->dc, &clnt_creds);
 
 	ZERO_STRUCT(e);
 
@@ -1128,7 +1128,7 @@ static NTSTATUS cmd_netlogon_capabilities(struct rpc_pipe_client *cli,
 	}
 
 #if 0
-	netlogon_creds_client_step(cli->dc, &credential);
+	netlogon_creds_client_authenticator(cli->dc, &credential);
 #else
 	ZERO_STRUCT(credential);
 #endif

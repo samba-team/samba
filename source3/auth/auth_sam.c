@@ -40,7 +40,9 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 {
 	uint32 acct_ctrl;
 	const uint8 *lm_pw, *nt_pw;
+	struct samr_Password lm_hash, nt_hash, client_lm_hash, client_nt_hash;
 	const char *username = pdb_get_username(sampass);
+	bool got_lm = false, got_nt = false;
 
 	acct_ctrl = pdb_get_acct_ctrl(sampass);
 	if (acct_ctrl & ACB_PWNOTREQ) {
@@ -55,14 +57,46 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 
 	lm_pw = pdb_get_lanman_passwd(sampass);
 	nt_pw = pdb_get_nt_passwd(sampass);
-
-	return ntlm_password_check(mem_ctx, &auth_context->challenge, 
-				   &user_info->lm_resp, &user_info->nt_resp, 
-				   &user_info->lm_interactive_pwd, &user_info->nt_interactive_pwd,
-				   username, 
-				   user_info->smb_name,
-				   user_info->client_domain,
-				   lm_pw, nt_pw, user_sess_key, lm_sess_key);
+	if (lm_pw) {
+		memcpy(lm_hash.hash, lm_pw, sizeof(lm_hash.hash));
+	}
+	if (nt_pw) {
+		memcpy(nt_hash.hash, nt_pw, sizeof(nt_hash.hash));
+	}
+	if (user_info->lm_interactive_pwd.data && sizeof(client_lm_hash.hash) == user_info->lm_interactive_pwd.length) {
+		memcpy(client_lm_hash.hash, user_info->lm_interactive_pwd.data, sizeof(lm_hash.hash));
+		got_lm = true;
+	}
+	if (user_info->nt_interactive_pwd.data && sizeof(client_nt_hash.hash) == user_info->nt_interactive_pwd.length) {
+		memcpy(client_nt_hash.hash, user_info->nt_interactive_pwd.data, sizeof(nt_hash.hash));
+		got_nt = true;
+	}
+	if (got_lm || got_nt) {
+		*user_sess_key = data_blob(mem_ctx, 16);
+		if (!user_sess_key->data) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		SMBsesskeygen_ntv1(nt_pw, user_sess_key->data);
+		*lm_sess_key = data_blob(NULL, 0);
+		return hash_password_check(mem_ctx, lp_lanman_auth(),
+					   got_lm ? &client_lm_hash : NULL, 
+					   got_nt ? &client_nt_hash : NULL,
+					   username, 
+					   lm_pw ? &lm_hash: NULL, 
+					   nt_pw ? &nt_hash : NULL);
+	} else {
+		return ntlm_password_check(mem_ctx, lp_lanman_auth(),
+					   lp_ntlm_auth(),
+					   user_info->logon_parameters,
+					   &auth_context->challenge, 
+					   &user_info->lm_resp, &user_info->nt_resp, 
+					   username, 
+					   user_info->smb_name,
+					   user_info->client_domain,
+					   lm_pw ? &lm_hash: NULL, 
+					   nt_pw ? &nt_hash : NULL,
+					   user_sess_key, lm_sess_key);
+	}
 }
 
 /****************************************************************************

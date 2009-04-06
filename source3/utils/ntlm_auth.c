@@ -567,15 +567,15 @@ static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB 
 static NTSTATUS local_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key) 
 {
 	NTSTATUS nt_status;
-	uint8 lm_pw[16], nt_pw[16];
+	struct samr_Password lm_pw, nt_pw;
 
-	nt_lm_owf_gen (opt_password, nt_pw, lm_pw);
+	nt_lm_owf_gen (opt_password, nt_pw.hash, lm_pw.hash);
 	
 	nt_status = ntlm_password_check(ntlmssp_state,
+					true, true,
 					&ntlmssp_state->chal,
 					&ntlmssp_state->lm_resp,
 					&ntlmssp_state->nt_resp, 
-					NULL, NULL,
 					ntlmssp_state->user, 
 					ntlmssp_state->user, 
 					ntlmssp_state->domain,
