@@ -2644,6 +2644,11 @@ bool cli_message_end(struct cli_state *cli, int grp);
 
 /* The following definitions come from libsmb/clioplock.c  */
 
+struct tevent_req *cli_oplock_ack_send(TALLOC_CTX *mem_ctx,
+				       struct tevent_context *ev,
+				       struct cli_state *cli,
+				       uint16_t fnum, uint8_t level);
+NTSTATUS cli_oplock_ack_recv(struct tevent_req *req);
 bool cli_oplock_ack(struct cli_state *cli, int fnum, unsigned char level);
 void cli_oplock_handler(struct cli_state *cli, 
 			bool (*handler)(struct cli_state *, int, unsigned char));
