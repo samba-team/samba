@@ -888,7 +888,7 @@ tgs_make_reply(krb5_context context,
     }
 
     if (krb5_enctype_valid(context, et.key.keytype) != 0
-	&& _kdc_is_weak_expection(server->entry.principal, et.key.keytype))
+	&& _kdc_is_weak_exception(server->entry.principal, et.key.keytype))
     {
 	krb5_enctype_enable(context, et.key.keytype);
 	is_weak = 1;
