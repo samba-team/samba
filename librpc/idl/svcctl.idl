@@ -30,8 +30,9 @@ import "misc.idl", "security.idl";
 		SVCCTL_PAUSED			= 0x00000007
 	} svcctl_ServiceStatus;
 
+	const int SVCCTL_ACCEPT_NONE			= 0x00000000;
+
 	typedef [bitmap32bit] bitmap {
-		SVCCTL_ACCEPT_NONE			= 0x00000000,
 		SVCCTL_ACCEPT_STOP			= 0x00000001,
 		SVCCTL_ACCEPT_PAUSE_CONTINUE		= 0x00000002,
 		SVCCTL_ACCEPT_SHUTDOWN			= 0x00000004,
