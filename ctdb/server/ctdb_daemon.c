@@ -582,7 +582,7 @@ static int ux_socket_bind(struct ctdb_context *ctdb)
 	} 
 
 
-	if (listen(ctdb->daemon.sd, 10) != 0) {
+	if (listen(ctdb->daemon.sd, 100) != 0) {
 		DEBUG(DEBUG_CRIT,("Unable to listen on ctdb socket '%s'\n", ctdb->daemon.name));
 		goto failed;
 	}
