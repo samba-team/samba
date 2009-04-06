@@ -2657,7 +2657,7 @@ again:
 	/* verify that all other nodes have the same nodemap as we have
 	*/
 	for (j=0; j<nodemap->num; j++) {
-		if (nodemap->nodes[j].flags & NODE_FLAGS_DISCONNECTED) {
+		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
 			continue;
 		}
 
