@@ -308,3 +308,26 @@ _PUBLIC_ bool str_list_check_ci(const char **list, const char *s)
 }
 
 
+/**
+  append one list to another - expanding list1
+*/
+_PUBLIC_ const char **str_list_append(const char **list1, const char **list2)
+{
+	size_t len1 = str_list_length(list1);
+	size_t len2 = str_list_length(list2);
+	const char **ret;
+	int i;
+
+	ret = talloc_realloc(NULL, list1, const char *, len1+len2+1);
+	if (ret == NULL) return NULL;
+
+	for (i=len1;i<len1+len2;i++) {
+		ret[i] = talloc_strdup(ret, list2[i-len1]);
+		if (ret[i] == NULL) {
+			return NULL;
+		}
+	}
+	ret[i] = NULL;
+
+	return ret;
+}
