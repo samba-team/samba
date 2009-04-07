@@ -52,7 +52,7 @@ case $cmd in
 	# kill off any tcp connections
 	ipvsadm -D -t $CTDB_LVS_PUBLIC_IP:0
 	ipvsadm -D -u $CTDB_LVS_PUBLIC_IP:0
-	kill_tcp_connections $CTDB_LVS_PUBLIC_IP
+	kill_tcp_connections_local_only $CTDB_LVS_PUBLIC_IP
 
 	PNN=`ctdb pnn | sed -e "s/.*PNN://"`
 	LVSMASTER=`ctdb lvsmaster | sed -e "s/.*Node //" -e "s/ .*//"`

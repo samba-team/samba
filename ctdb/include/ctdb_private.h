@@ -77,7 +77,7 @@ struct ctdb_tcp_array {
 /* all tunable variables go in here */
 struct ctdb_tunable {
 	uint32_t max_redirect_count;
-	uint32_t seqnum_frequency;
+	uint32_t seqnum_interval; /* unit is ms */
 	uint32_t control_timeout;
 	uint32_t traverse_timeout;
 	uint32_t keepalive_interval;
@@ -400,6 +400,7 @@ struct ctdb_context {
 	void *saved_scheduler_param;
 	struct _trbt_tree_t *server_ids;	
 	const char *event_script_dir;
+	const char *notification_script;
 	const char *default_public_interface;
 	pid_t ctdbd_pid;
 	pid_t recoverd_pid;
@@ -412,6 +413,8 @@ struct ctdb_context {
 	TALLOC_CTX *eventscripts_ctx; /* a context to hold data for the RUN_EVENTSCRIPTS control */
 	uint32_t *recd_ping_count;
 	TALLOC_CTX *release_ips_ctx; /* a context used to automatically drop all IPs if we fail to recover the node */
+	TALLOC_CTX *script_monitoring_ctx; /* a context where we store results while running the monitor event */
+	TALLOC_CTX *last_monitoring_ctx; 
 };
 
 struct ctdb_db_context {
@@ -550,6 +553,11 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_TAKEOVER_IP             = 89,
 		    CTDB_CONTROL_GET_PUBLIC_IPS          = 90,
 		    CTDB_CONTROL_GET_NODEMAP             = 91,
+		    CTDB_CONTROL_EVENT_SCRIPT_INIT       = 92,
+		    CTDB_CONTROL_EVENT_SCRIPT_START      = 93,
+		    CTDB_CONTROL_EVENT_SCRIPT_STOP       = 94,
+		    CTDB_CONTROL_EVENT_SCRIPT_FINISHED   = 95,
+		    CTDB_CONTROL_GET_EVENT_SCRIPT_STATUS = 96,
 };	
 
 /*
@@ -1120,7 +1128,6 @@ int daemon_deregister_message_handler(struct ctdb_context *ctdb, uint32_t client
 
 int32_t ctdb_ltdb_enable_seqnum(struct ctdb_context *ctdb, uint32_t db_id);
 int32_t ctdb_ltdb_update_seqnum(struct ctdb_context *ctdb, uint32_t db_id, uint32_t srcnode);
-int32_t ctdb_ltdb_set_seqnum_frequency(struct ctdb_context *ctdb, uint32_t frequency);
 
 struct ctdb_rec_data *ctdb_marshall_record(TALLOC_CTX *mem_ctx, uint32_t reqid,	
 					   TDB_DATA key, struct ctdb_ltdb_header *, TDB_DATA data);
@@ -1224,6 +1231,7 @@ int ctdb_ctrl_get_public_ipsv4(struct ctdb_context *ctdb,
 
 
 /* from takeover/system.c */
+uint32_t uint16_checksum(uint16_t *data, size_t n);
 int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface);
 bool ctdb_sys_have_ip(ctdb_sock_addr *addr);
 int ctdb_sys_send_tcp(const ctdb_sock_addr *dest, 
@@ -1233,6 +1241,7 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
 int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist);
 int ctdb_set_event_script(struct ctdb_context *ctdb, const char *script);
 int ctdb_set_event_script_dir(struct ctdb_context *ctdb, const char *script_dir);
+int ctdb_set_notification_script(struct ctdb_context *ctdb, const char *script);
 int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap);
 
 int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id, 
@@ -1283,7 +1292,7 @@ void ctdb_start_freeze(struct ctdb_context *ctdb);
 
 bool parse_ip_mask(const char *s, const char *iface, ctdb_sock_addr *addr, unsigned *mask);
 bool parse_ip_port(const char *s, ctdb_sock_addr *addr);
-bool parse_ip(const char *s, const char *iface, ctdb_sock_addr *addr);
+bool parse_ip(const char *s, const char *iface, unsigned port, ctdb_sock_addr *addr);
 bool parse_ipv4(const char *s, unsigned port, struct sockaddr_in *sin);
  
 
@@ -1394,11 +1403,27 @@ int32_t ctdb_control_trans2_error(struct ctdb_context *ctdb,
 				  struct ctdb_req_control *c);
 
 char *ctdb_addr_to_str(ctdb_sock_addr *addr);
+unsigned ctdb_addr_to_port(ctdb_sock_addr *addr);
 void ctdb_canonicalize_ip(const ctdb_sock_addr *ip, ctdb_sock_addr *cip);
 
 int32_t ctdb_control_recd_ping(struct ctdb_context *ctdb);
 int32_t ctdb_control_set_recmaster(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata);
 
 extern int script_log_level;
+
+int ctdb_ctrl_event_script_init(struct ctdb_context *ctdb);
+int ctdb_ctrl_event_script_start(struct ctdb_context *ctdb, const char *name);
+int ctdb_ctrl_event_script_stop(struct ctdb_context *ctdb, int32_t res);
+int ctdb_ctrl_event_script_finished(struct ctdb_context *ctdb);
+
+int32_t ctdb_control_event_script_init(struct ctdb_context *ctdb);
+int32_t ctdb_control_event_script_start(struct ctdb_context *ctdb, TDB_DATA indata);
+int32_t ctdb_control_event_script_stop(struct ctdb_context *ctdb, TDB_DATA indata);
+int32_t ctdb_control_event_script_finished(struct ctdb_context *ctdb);
+
+
+int32_t ctdb_control_get_event_script_status(struct ctdb_context *ctdb, TDB_DATA *outdata);
+
+int ctdb_log_event_script_output(struct ctdb_context *ctdb, char *str, uint16_t len);
 
 #endif

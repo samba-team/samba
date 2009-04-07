@@ -163,6 +163,8 @@ static void ctdb_log_handler(struct event_context *ev, struct fd_event *fde,
 		}
 		if (script_log_level <= LogLevel) {
 			do_debug("%*.*s\n", n2, n2, ctdb->log->buf);
+			/* log it in the eventsystem as well */
+			ctdb_log_event_script_output(ctdb, ctdb->log->buf, n2);
 		}
 		memmove(ctdb->log->buf, p+1, sizeof(ctdb->log->buf) - n1);
 		ctdb->log->buf_used -= n1;
@@ -174,6 +176,8 @@ static void ctdb_log_handler(struct event_context *ev, struct fd_event *fde,
 		if (script_log_level <= LogLevel) {
 			do_debug("%*.*s\n", 
 				(int)ctdb->log->buf_used, (int)ctdb->log->buf_used, ctdb->log->buf);
+			/* log it in the eventsystem as well */
+			ctdb_log_event_script_output(ctdb, ctdb->log->buf, ctdb->log->buf_used);
 		}
 		ctdb->log->buf_used = 0;
 	}

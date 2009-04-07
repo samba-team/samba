@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.73
+Version: 1.0.78
 Release: 1
 Epoch: 0
 License: GNU GPL version 3
@@ -97,6 +97,7 @@ fi
 %defattr(-,root,root)
 
 %config(noreplace) %{_sysconfdir}/sysconfig/ctdb
+%config(noreplace) %{_sysconfdir}/ctdb/notify.sh
 %config(noreplace) %{_sysconfdir}/ctdb/functions
 %attr(755,root,root) %{initdir}/ctdb
 
@@ -104,6 +105,7 @@ fi
 %{_docdir}/ctdb/recovery-process.txt
 %{_sysconfdir}/ctdb/events.d/00.ctdb
 %{_sysconfdir}/ctdb/events.d/10.interface
+%{_sysconfdir}/ctdb/events.d/11.natgw
 %{_sysconfdir}/ctdb/events.d/20.multipathd
 %{_sysconfdir}/ctdb/events.d/40.vsftpd
 %{_sysconfdir}/ctdb/events.d/41.httpd
@@ -128,6 +130,23 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Tue Mar 31 2009 : Version 1.0.78
+ - Add a notify mechanism so we can send snmptraps/email to external management systems when the node becomes unhealthy
+ - include 11.natgw eventscript in thew install so that the NATGW feature works
+* Tue Mar 31 2009 : Version 1.0.77
+ - Update the 99.routing eventscript to also try to add the routes (back) during a releaseip event. Similar to the reasons why we must add addresses back during releaseip in 10.interfaces
+* Wed Mar 24 2009 : Version 1.0.76
+ - Add a debugging command "xpnn" which can print the pnn of the node even when ctdbd is not running.
+ - Redo the NATGW implementation to allow multiple disjoing NATGW groups in the same cluster.
+* Tue Mar 24 2009 : Version 1.0.75
+ - Various updates to LVS
+ - Fix a bug in the killtcp control where we did not set the port correctly
+ - add a new "ctdb scriptstatus" command that shows the status of the eventrscripts.
+* Mon Mar 16 2009 : Version 1.0.74
+ - Fixes to AIX from C Cowan.
+ - Fixes to ctdb_diagnostics so we collect correct GPFS data
+ - Fixes to the net conf list command in ctdb_diagnostics
+ - Check the static-routes file IFF it exists in ctdb_diagnostics
 * Wed Mar 4 2009 : Version 1.0.73
  - Add possibility to disable the check of shares for NFS and Samba
  - From Sumit Bose, fix dependencies so make -j works

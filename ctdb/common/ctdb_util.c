@@ -435,7 +435,7 @@ bool parse_ip_port(const char *addr, ctdb_sock_addr *saddr)
 
 
 	/* now is this a ipv4 or ipv6 address ?*/
-	ret = parse_ip(s, NULL, addr);
+	ret = parse_ip(s, NULL, port, saddr);
 
 	talloc_free(tmp_ctx);
 	return ret;
@@ -444,7 +444,7 @@ bool parse_ip_port(const char *addr, ctdb_sock_addr *saddr)
 /*
   parse an ip
  */
-bool parse_ip(const char *addr, const char *iface, ctdb_sock_addr *saddr)
+bool parse_ip(const char *addr, const char *iface, unsigned port, ctdb_sock_addr *saddr)
 {
 	char *p;
 	bool ret;
@@ -452,9 +452,9 @@ bool parse_ip(const char *addr, const char *iface, ctdb_sock_addr *saddr)
 	/* now is this a ipv4 or ipv6 address ?*/
 	p = index(addr, ':');
 	if (p == NULL) {
-		ret = parse_ipv4(addr, 0, &saddr->ip);
+		ret = parse_ipv4(addr, port, &saddr->ip);
 	} else {
-		ret = parse_ipv6(addr, iface, 0, saddr);
+		ret = parse_ipv6(addr, iface, port, saddr);
 	}
 
 	return ret;
@@ -496,7 +496,7 @@ bool parse_ip_mask(const char *str, const char *iface, ctdb_sock_addr *addr, uns
 
 
 	/* now is this a ipv4 or ipv6 address ?*/
-	ret = parse_ip(s, iface, addr);
+	ret = parse_ip(s, iface, 0, addr);
 
 	talloc_free(tmp_ctx);
 	return ret;
@@ -575,6 +575,21 @@ char *ctdb_addr_to_str(ctdb_sock_addr *addr)
 	return cip;
 }
 
+unsigned ctdb_addr_to_port(ctdb_sock_addr *addr)
+{
+	switch (addr->sa.sa_family) {
+	case AF_INET:
+		return ntohs(addr->ip.sin_port);
+		break;
+	case AF_INET6:
+		return ntohs(addr->ip6.sin6_port);
+		break;
+	default:
+		DEBUG(DEBUG_ERR, (__location__ " ERROR, unknown family %u\n", addr->sa.sa_family));
+	}
+
+	return 0;
+}
 
 void ctdb_block_signal(int signum)
 {

@@ -3472,3 +3472,146 @@ int ctdb_ctrl_recd_ping(struct ctdb_context *ctdb)
 
 	return 0;
 }
+
+/* when forking the main daemon and the child process needs to connect back
+ * to the daemon as a client process, this function can be used to change
+ * the ctdb context from daemon into client mode
+ */
+int switch_from_server_to_client(struct ctdb_context *ctdb)
+{
+	int ret;
+
+	/* shutdown the transport */
+	if (ctdb->methods) {
+		ctdb->methods->shutdown(ctdb);
+	}
+
+	/* get a new event context */
+	talloc_free(ctdb->ev);
+	ctdb->ev = event_context_init(ctdb);
+
+	close(ctdb->daemon.sd);
+	ctdb->daemon.sd = -1;
+
+	/* the client does not need to be realtime */
+	if (ctdb->do_setsched) {
+		ctdb_restore_scheduler(ctdb);
+	}
+
+	/* initialise ctdb */
+	ret = ctdb_socket_connect(ctdb);
+	if (ret != 0) {
+		DEBUG(DEBUG_ALERT, (__location__ " Failed to init ctdb client\n"));
+		return -1;
+	}
+
+	 return 0;
+}
+
+/*
+  tell the main daemon we are starting a new monitor event script
+ */
+int ctdb_ctrl_event_script_init(struct ctdb_context *ctdb)
+{
+	int ret;
+	int32_t res;
+
+	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, 0, CTDB_CONTROL_EVENT_SCRIPT_INIT, 0, tdb_null, 
+			   ctdb, NULL, &res, NULL, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(DEBUG_ERR,("Failed to send event_script_init\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
+/*
+  tell the main daemon we are starting a new monitor event script
+ */
+int ctdb_ctrl_event_script_finished(struct ctdb_context *ctdb)
+{
+	int ret;
+	int32_t res;
+
+	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, 0, CTDB_CONTROL_EVENT_SCRIPT_FINISHED, 0, tdb_null, 
+			   ctdb, NULL, &res, NULL, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(DEBUG_ERR,("Failed to send event_script_init\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
+/*
+  tell the main daemon we are starting to run an eventscript
+ */
+int ctdb_ctrl_event_script_start(struct ctdb_context *ctdb, const char *name)
+{
+	int ret;
+	int32_t res;
+	TDB_DATA data;
+
+	data.dptr = discard_const(name);
+	data.dsize = strlen(name)+1;
+
+	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, 0, CTDB_CONTROL_EVENT_SCRIPT_START, 0, data, 
+			   ctdb, NULL, &res, NULL, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(DEBUG_ERR,("Failed to send event_script_start\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
+/*
+  tell the main daemon the status of the script we ran
+ */
+int ctdb_ctrl_event_script_stop(struct ctdb_context *ctdb, int32_t result)
+{
+	int ret;
+	int32_t res;
+	TDB_DATA data;
+
+	data.dptr = (uint8_t *)&result;
+	data.dsize = sizeof(result);
+
+	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, 0, CTDB_CONTROL_EVENT_SCRIPT_STOP, 0, data, 
+			   ctdb, NULL, &res, NULL, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(DEBUG_ERR,("Failed to send event_script_stop\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
+
+/*
+  get the status of running the monitor eventscripts
+ */
+int ctdb_ctrl_getscriptstatus(struct ctdb_context *ctdb, 
+		struct timeval timeout, uint32_t destnode, 
+		TALLOC_CTX *mem_ctx,
+		struct ctdb_monitoring_wire **script_status)
+{
+	int ret;
+	TDB_DATA outdata;
+	int32_t res;
+
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_GET_EVENT_SCRIPT_STATUS, 0, tdb_null, 
+			   mem_ctx, &outdata, &res, &timeout, NULL);
+	if (ret != 0 || res != 0 || outdata.dsize == 0) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for getscriptstatus failed ret:%d res:%d\n", ret, res));
+		return -1;
+	}
+
+	*script_status = (struct ctdb_monitoring_wire *)talloc_memdup(mem_ctx, outdata.dptr, outdata.dsize);
+	talloc_free(outdata.dptr);
+		    
+	return 0;
+}
+

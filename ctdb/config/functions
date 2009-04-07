@@ -311,6 +311,48 @@ kill_tcp_connections() {
     echo "killed $_killcount TCP connections to released IP $_IP"
 }
 
+##################################################################
+# kill off the local end for any TCP connections with the given IP
+##################################################################
+kill_tcp_connections_local_only() {
+    _IP="$1"    
+    _failed=0
+
+    _killcount=0
+    connfile="$CTDB_BASE/state/connections.$_IP"
+    netstat -tn |egrep "^tcp.*[[:space:]]+$_IP:.*ESTABLISHED" | awk '{print $4" "$5}' > $connfile
+    netstat -tn |egrep "^tcp.*[[:space:]]+::ffff:$_IP:.*ESTABLISHED" | awk '{print $4" "$5}' >> $connfile
+
+    while read dest src; do
+	srcip=`echo $src | sed -e "s/:[^:]*$//"`
+	srcport=`echo $src | sed -e "s/^.*://"`
+	destip=`echo $dest | sed -e "s/:[^:]*$//"`
+	destport=`echo $dest | sed -e "s/^.*://"`
+	echo "Killing TCP connection $srcip:$srcport $destip:$destport"
+	ctdb killtcp $srcip:$srcport $destip:$destport >/dev/null 2>&1 || _failed=1
+	_killcount=`expr $_killcount + 1`
+     done < $connfile
+    /bin/rm -f $connfile
+
+    [ $_failed = 0 ] || {
+	echo "Failed to send killtcp control"
+	return;
+    }
+    [ $_killcount -gt 0 ] || {
+	return;
+    }
+    _count=0
+    while netstat -tn |egrep "^tcp.*[[:space:]]+$_IP:.*ESTABLISHED" > /dev/null; do
+	sleep 1
+	_count=`expr $_count + 1`
+	[ $_count -gt 3 ] && {
+	    echo "Timed out killing tcp connections for IP $_IP"
+	    return;
+	}
+    done
+    echo "killed $_killcount TCP connections to released IP $_IP"
+}
+
 ########################################################
 # start/stop the nfs service on different platforms
 ########################################################

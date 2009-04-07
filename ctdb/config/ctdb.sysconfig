@@ -65,6 +65,24 @@
 # should ctdb manage starting/stopping the NFS service
 # CTDB_MANAGES_NFS=yes
 
+# should ctdb manage starting/stopping the Apache web server httpd?
+# CTDB_MANAGES_HTTPD
+
+# The init style (redhat/suse/ubuntu...) is usually auto-detected.
+# The names of init scripts of services managed by CTDB are set
+# based on the detected init style. You can override the init style
+# auto-detection here to explicitly use a scheme. This might be
+# useful when you have installed a packages (for instance samba
+# packages) with a different init script layout.
+# There is no default.
+# CTDB_INIT_STYLE=redhat
+
+# The following are specific Samba init scripts / services that you
+# can override from auto-detection.
+# There are no defaults.
+# CTDB_SERVICE_SMB=smb
+# CTDB_SERVICE_NMB=nmb
+# CTDB_SERVICE_WINBIND=winbind
 
 # you may wish to raise the file descriptor limit for ctdb
 # use a ulimit command here. ctdb needs one file descriptor per
@@ -76,6 +94,9 @@
 # it must be exactly the same on all cluster nodes
 # defaults to /etc/ctdb/nodes
 # CTDB_NODES=/etc/ctdb/nodes
+
+# a script to run when node health changes
+# CTDB_NOTIFY_SCRIPT=/etc/ctdb/notify.sh
 
 # the directory to put the local ctdb database files in
 # defaults to /var/ctdb
@@ -127,6 +148,43 @@
 # datacentre.
 # CTDB_CAPABILITY_RECMASTER=yes
 # CTDB_CAPABILITY_LMASTER=yes
+
+# NAT-GW configuration
+# Some services running on nthe CTDB node may need to originate traffic to
+# remote servers before the node is assigned any IP addresses,
+# This is problematic since before the node has public addresses the node might
+# not be able to route traffic to the public networks.
+# One solution is to have static public addresses assigned with routing
+# in addition to the public address interfaces, thus guaranteeing that
+# a node always can route traffic to the external network.
+# This is the most simple solution but it uses up a large number of 
+# additional ip addresses.
+#
+# A more complex solution is NAT-GW.
+# In this mode we only need one additional ip address for the cluster from
+# the exsternal public network.
+# One of the nodes in the cluster is elected to be hosting this ip address
+# so it can reach the external services. This node is also configured
+# to use NAT MASQUERADING for all traffic from the internal private network
+# to the external network. This node is the NAT-GW node.
+#
+# All other nodes are set up with a default rote with a metric of 10 to point
+# to the nat-gw node.
+# 
+# The effect of this is that only when a node does not have a public address
+# and thus no proper routes to the external world it will instead
+# route all packets through the nat-gw node.
+#
+# NATGW_NODES is the list of nodes that belong to this natgw group.
+# You can have multiple natgw groups in one cluster but each node
+# can only belong to one single natgw group.
+#
+# NATGW_PUBLIC_IP=10.0.0.227/24
+# NATGW_PUBLIC_IFACE=eth0
+# NATGW_DEFAULT_GATEWAY=10.0.0.1
+# NATGW_PRIVATE_IFACE=eth1
+# NATGW_PRIVATE_NETWORK=10.1.1.0/24
+# NATGW_NODES=/etc/ctdb/natgw_nodes
 
 # where to log messages
 # the default is /var/log/log.ctdb

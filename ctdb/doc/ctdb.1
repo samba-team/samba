@@ -1,11 +1,11 @@
 .\"     Title: ctdb
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
-.\"      Date: 09/15/2008
+.\"      Date: 03/24/2009
 .\"    Manual: 
 .\"    Source: 
 .\"
-.TH "CTDB" "1" "09/15/2008" "" ""
+.TH "CTDB" "1" "03/24/2009" "" ""
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -171,6 +171,43 @@ Recovery master:0
       
 .fi
 .RE
+.SS "recmaster"
+.PP
+This command shows the pnn of the node which is currently the recmaster\.
+.SS "uptime"
+.PP
+This command shows the uptime for the ctdb daemon\. When the last recovery completed and how long the last recovery took\. If the "duration" is shown as a negative number, this indicates that there is a recovery in progress and it started that many seconds ago\.
+.PP
+Example: ctdb uptime
+.PP
+Example output:
+.sp
+.RS 4
+.nf
+Current time of node  : Tue Mar 24 18:27:54 2009
+Ctdbd start time      : (000 00:00:05) Tue Mar 24 18:27:49 2009
+Time of last recovery : (000 00:00:05) Tue Mar 24 18:27:49 2009
+Duration of last recovery : 0\.000000 seconds
+      
+.fi
+.RE
+.SS "listnodes"
+.PP
+This command shows lists the ip addresses of all the nodes in the cluster\.
+.PP
+Example: ctdb listnodes
+.PP
+Example output:
+.sp
+.RS 4
+.nf
+10\.0\.0\.71
+10\.0\.0\.72
+10\.0\.0\.73
+10\.0\.0\.74
+      
+.fi
+.RE
 .SS "ping"
 .PP
 This command will "ping" all CTDB daemons in the cluster to verify that they are processing commands correctly\.
@@ -190,7 +227,7 @@ response from 3 time=0\.000114 sec  (2 clients)
 .RE
 .SS "ip"
 .PP
-This command will display the list of public addresses that are provided by the cluster and which physical node is currently serving this ip\.
+This command will display the list of public addresses that are provided by the cluster and which physical node is currently serving this ip\. By default this command will ONLY show those public addresses that are known to the node itself\. To see the full list of all public ips across the cluster you must use "ctdb ip \-n all"\.
 .PP
 Example: ctdb ip
 .PP
@@ -203,6 +240,28 @@ Number of addresses:4
 12\.1\.1\.2         1
 12\.1\.1\.3         2
 12\.1\.1\.4         3
+      
+.fi
+.RE
+.SS "scriptstatus"
+.PP
+This command displays which scripts where run in the previous monitoring cycle and the result of each script\. If a script failed with an error, causing the node to become unhealthy, the output from that script is also shown\.
+.PP
+Example: ctdb scriptstatus
+.PP
+Example output:
+.sp
+.RS 4
+.nf
+7 scripts were executed last monitoring cycle
+00\.ctdb              Status:OK    Duration:0\.056 Tue Mar 24 18:56:57 2009
+10\.interface         Status:OK    Duration:0\.077 Tue Mar 24 18:56:57 2009
+11\.natgw             Status:OK    Duration:0\.039 Tue Mar 24 18:56:57 2009
+20\.multipathd        Status:OK    Duration:0\.038 Tue Mar 24 18:56:57 2009
+40\.vsftpd            Status:OK    Duration:0\.045 Tue Mar 24 18:56:57 2009
+41\.httpd             Status:OK    Duration:0\.039 Tue Mar 24 18:56:57 2009
+50\.samba             Status:ERROR    Duration:0\.082 Tue Mar 24 18:56:57 2009
+   OUTPUT:ERROR: Samba tcp port 445 is not responding
       
 .fi
 .RE
@@ -374,6 +433,16 @@ Administratively ban a node for bantime seconds\. A bantime of 0 means that the 
 A banned node does not participate in the cluster and does not host any records for the clustered TDB\. Its ip address has been taken over by an other node and no services are hosted\.
 .PP
 Nodes are automatically banned if they are the cause of too many cluster recoveries\.
+.SS "addip <public_ip/mask> <iface>"
+.PP
+This command is used to add a new public ip to a node during runtime\. This allows public addresses to be added to a cluster without having to restart the ctdb daemons\.
+.PP
+Note that this only updates the runtime instance of ctdb\. Any changes will be lost next time ctdb is restarted and the public addresses file is re\-read\. If you want this change to be permanent you must also update the public addresses file manually\.
+.SS "delip <public_ip>"
+.PP
+This command is used to remove a public ip from a node during runtime\. If this public ip is currently hosted by the node it being removed from, the ip will first be failed over to another node, if possible, before it is removed\.
+.PP
+Note that this only updates the runtime instance of ctdb\. Any changes will be lost next time ctdb is restarted and the public addresses file is re\-read\. If you want this change to be permanent you must also update the public addresses file manually\.
 .SS "moveip <public_ip> <node>"
 .PP
 This command can be used to manually fail a public ip address to a specific node\.
@@ -394,7 +463,10 @@ This command will shutdown a specific CTDB daemon\.
 This command will trigger the recovery daemon to do a cluster recovery\.
 .SS "killtcp <srcip:port> <dstip:port>"
 .PP
-This command will kill the specified TCP connection by issuing a TCP RST to the srcip:port endpoint\.
+This command will kill the specified TCP connection by issuing a TCP RST to the srcip:port endpoint\. This is a command used by the ctdb eventscripts\.
+.SS "gratiousarp <ip> <interface>"
+.PP
+This command will send out a gratious arp for the specified interface through the specified interface\. This command is mainly used by the ctdb eventscripts\.
 .SS "reloadnodes"
 .PP
 This command is used when adding new nodes to an existing cluster and to reduce the disruption of this operation\. This command should never be used except when expanding an existing cluster\. This can only be used to expand a cluster\. To remove a node from the cluster you still need to shut down ctdb on all nodes, edit the nodes file and restart ctdb\.
@@ -417,6 +489,9 @@ Procedure:
 This command will will send a TCP tickle to the source host for the specified TCP connection\. A TCP tickle is a TCP ACK packet with an invalid sequence and acknowledge number and will when received by the source host result in it sending an immediate correct ACK back to the other end\.
 .PP
 TCP tickles are useful to "tickle" clients after a IP failover has occured since this will make the client immediately recognize the TCP connection has been disrupted and that the client will need to reestablish\. This greatly speeds up the time it takes for a client to detect and reestablish after an IP failover in the ctdb cluster\.
+.SS "gettickles <ip>"
+.PP
+This command is used to show which TCP connections are registered with CTDB to be "tickled" if there is a failover\.
 .SS "repack [max_freelist]"
 .PP
 Over time, when records are created and deleted in a TDB, the TDB list of free space will become fragmented\. This can lead to a slowdown in accessing TDB records\. This command is used to defragment a TDB database and pruning the freelist\.
@@ -493,6 +568,9 @@ This is a debugging command\. This command will make the CTDB daemon create a ne
 .SS "dumpmemory"
 .PP
 This is a debugging command\. This command will make the ctdb daemon to write a fill memory allocation map to standard output\.
+.SS "rddumpmemory"
+.PP
+This is a debugging command\. This command will dump the talloc memory allocation tree for the recovery daemon to standard output\.
 .SS "freeze"
 .PP
 This command will lock all the local TDB databases causing clients that are accessing these TDBs such as samba3 to block until the databases are thawed\.
@@ -501,6 +579,15 @@ This is primarily used by the recovery daemon to stop all samba daemons from acc
 .SS "thaw"
 .PP
 Thaw a previously frozen node\.
+.SS "eventscript <arguments>"
+.PP
+This is a debugging command\. This command can be used to manually invoke and run the eventscritps with arbitrary arguments\.
+.SS "backupdb <database> <file>"
+.PP
+This command can be used to copy the entire content of a database out to a file\. This file can later be read back into ctdb using the restoredb command\. This is mainly useful for backing up persistent databases such as secrets\.tdb and similar\.
+.SS "restoredb <file>"
+.PP
+This command restores a persistent database that was previously backed up using backupdb\.
 .SH "SEE ALSO"
 .PP
 ctdbd(1), onnode(1)
