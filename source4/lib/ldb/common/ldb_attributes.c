@@ -118,21 +118,12 @@ static const struct ldb_schema_attribute ldb_attribute_default = {
 /*
   return the attribute handlers for a given attribute
 */
-const struct ldb_schema_attribute *ldb_schema_attribute_by_name(struct ldb_context *ldb,
-								const char *name)
+static const struct ldb_schema_attribute *ldb_schema_attribute_by_name_internal(
+	struct ldb_context *ldb,
+	const char *name)
 {
 	int i, e, b = 0, r;
 	const struct ldb_schema_attribute *def = &ldb_attribute_default;
-
-	if (ldb->schema.attribute_handler_override) {
-		const struct ldb_schema_attribute *ret = 
-			ldb->schema.attribute_handler_override(ldb, 
-							       ldb->schema.attribute_handler_override_private,
-							       name);
-		if (ret) {
-			return ret;
-		}
-	}
 
 	/* as handlers are sorted, '*' must be the first if present */
 	if (strcmp(ldb->schema.attributes[0].name, "*") == 0) {
@@ -162,6 +153,25 @@ const struct ldb_schema_attribute *ldb_schema_attribute_by_name(struct ldb_conte
 	return def;
 }
 
+/*
+  return the attribute handlers for a given attribute
+*/
+const struct ldb_schema_attribute *ldb_schema_attribute_by_name(struct ldb_context *ldb,
+								const char *name)
+{
+	if (ldb->schema.attribute_handler_override) {
+		const struct ldb_schema_attribute *ret = 
+			ldb->schema.attribute_handler_override(ldb, 
+							       ldb->schema.attribute_handler_override_private,
+							       name);
+		if (ret) {
+			return ret;
+		}
+	}
+
+	return ldb_schema_attribute_by_name_internal(ldb, name);
+}
+
 
 /*
   add to the list of ldif handlers for this ldb context
@@ -171,7 +181,7 @@ void ldb_schema_attribute_remove(struct ldb_context *ldb, const char *name)
 	const struct ldb_schema_attribute *a;
 	int i;
 
-	a = ldb_schema_attribute_by_name(ldb, name);
+	a = ldb_schema_attribute_by_name_internal(ldb, name);
 	if (a == NULL || a->name == NULL) {
 		return;
 	}
