@@ -467,6 +467,12 @@ static NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32_t fault_code
 	DLIST_ADD_END(call->replies, rep, struct data_blob_list_item *);
 	dcesrv_call_set_list(call, DCESRV_LIST_CALL_LIST);
 
+	if (call->conn->call_list && call->conn->call_list->replies) {
+		if (call->conn->transport.report_output_data) {
+			call->conn->transport.report_output_data(call->conn);
+		}
+	}
+
 	return NT_STATUS_OK;	
 }
 
@@ -505,6 +511,12 @@ static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32_t reason)
 
 	DLIST_ADD_END(call->replies, rep, struct data_blob_list_item *);
 	dcesrv_call_set_list(call, DCESRV_LIST_CALL_LIST);
+
+	if (call->conn->call_list && call->conn->call_list->replies) {
+		if (call->conn->transport.report_output_data) {
+			call->conn->transport.report_output_data(call->conn);
+		}
+	}
 
 	return NT_STATUS_OK;	
 }
@@ -706,6 +718,12 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	DLIST_ADD_END(call->replies, rep, struct data_blob_list_item *);
 	dcesrv_call_set_list(call, DCESRV_LIST_CALL_LIST);
 
+	if (call->conn->call_list && call->conn->call_list->replies) {
+		if (call->conn->transport.report_output_data) {
+			call->conn->transport.report_output_data(call->conn);
+		}
+	}
+
 	return NT_STATUS_OK;
 }
 
@@ -876,6 +894,12 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 
 	DLIST_ADD_END(call->replies, rep, struct data_blob_list_item *);
 	dcesrv_call_set_list(call, DCESRV_LIST_CALL_LIST);
+
+	if (call->conn->call_list && call->conn->call_list->replies) {
+		if (call->conn->transport.report_output_data) {
+			call->conn->transport.report_output_data(call->conn);
+		}
+	}
 
 	return NT_STATUS_OK;
 }
