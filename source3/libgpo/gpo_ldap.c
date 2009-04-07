@@ -453,7 +453,7 @@ ADS_STATUS ads_delete_gpo_link(ADS_STRUCT *ads,
 }
 
 /****************************************************************
- get a GROUP_POLICY_OBJECT structure based on different input paramters
+ get a GROUP_POLICY_OBJECT structure based on different input parameters
 ****************************************************************/
 
 ADS_STATUS ads_get_gpo(ADS_STRUCT *ads,
