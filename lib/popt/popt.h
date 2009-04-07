@@ -83,7 +83,7 @@
 #define POPT_ERROR_NOARG	-10	/*!< missing argument */
 #define POPT_ERROR_BADOPT	-11	/*!< unknown option */
 #define POPT_ERROR_OPTSTOODEEP	-13	/*!< aliases nested too deeply */
-#define POPT_ERROR_BADQUOTE	-15	/*!< error in paramter quoting */
+#define POPT_ERROR_BADQUOTE	-15	/*!< error in parameter quoting */
 #define POPT_ERROR_ERRNO	-16	/*!< errno set, use strerror(errno) */
 #define POPT_ERROR_BADNUMBER	-17	/*!< invalid numeric value */
 #define POPT_ERROR_OVERFLOW	-18	/*!< number too large or too small */
