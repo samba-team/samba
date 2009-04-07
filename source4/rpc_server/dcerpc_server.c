@@ -1135,17 +1135,17 @@ static int dcesrv_call_dequeue(struct dcesrv_call_state *call)
 /*
   process some input to a dcerpc endpoint server.
 */
-NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
+NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
+				     struct ncacn_packet *pkt,
+				     DATA_BLOB blob)
 {
-	struct ndr_pull *ndr;
-	enum ndr_err_code ndr_err;
 	NTSTATUS status;
 	struct dcesrv_call_state *call;
-	DATA_BLOB blob;
 
 	call = talloc_zero(dce_conn, struct dcesrv_call_state);
 	if (!call) {
-		talloc_free(dce_conn->partial_input.data);
+		data_blob_free(&blob);
+		talloc_free(pkt);
 		return NT_STATUS_NO_MEMORY;
 	}
 	call->conn		= dce_conn;
@@ -1155,42 +1155,18 @@ NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 	call->time		= timeval_current();
 	call->list              = DCESRV_LIST_NONE;
 
+	talloc_steal(call, pkt);
+	talloc_steal(call, blob.data);
+	call->pkt = *pkt;
+
 	talloc_set_destructor(call, dcesrv_call_dequeue);
-
-	blob = dce_conn->partial_input;
-	blob.length = dcerpc_get_frag_length(&blob);
-
-	ndr = ndr_pull_init_blob(&blob, call, lp_iconv_convenience(call->conn->dce_ctx->lp_ctx));
-	if (!ndr) {
-		talloc_free(dce_conn->partial_input.data);
-		talloc_free(call);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!(CVAL(blob.data, DCERPC_DREP_OFFSET) & DCERPC_DREP_LE)) {
-		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
-	}
-
-	if (CVAL(blob.data, DCERPC_PFC_OFFSET) & DCERPC_PFC_FLAG_OBJECT_UUID) {
-		ndr->flags |= LIBNDR_FLAG_OBJECT_PRESENT;
-	}
-
-	ndr_err = ndr_pull_ncacn_packet(ndr, NDR_SCALARS|NDR_BUFFERS, &call->pkt);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		talloc_free(dce_conn->partial_input.data);
-		talloc_free(call);
-		return ndr_map_error2ntstatus(ndr_err);
-	}
 
 	/* we have to check the signing here, before combining the
 	   pdus */
 	if (call->pkt.ptype == DCERPC_PKT_REQUEST &&
 	    !dcesrv_auth_request(call, &blob)) {
-		dce_partial_advance(dce_conn, blob.length);
 		return dcesrv_fault(call, DCERPC_FAULT_ACCESS_DENIED);		
 	}
-
-	dce_partial_advance(dce_conn, blob.length);
 
 	/* see if this is a continued packet */
 	if (call->pkt.ptype == DCERPC_PKT_REQUEST &&
@@ -1300,7 +1276,52 @@ _PUBLIC_ NTSTATUS dcesrv_input(struct dcesrv_connection *dce_conn, const DATA_BL
 	dce_conn->partial_input.length += data->length;
 
 	while (dce_full_packet(&dce_conn->partial_input)) {
-		status = dcesrv_input_process(dce_conn);
+		NTSTATUS status;
+		struct ndr_pull *ndr;
+		enum ndr_err_code ndr_err;
+		DATA_BLOB blob;
+		struct ncacn_packet *pkt;
+
+		blob = dce_conn->partial_input;
+		blob.length = dcerpc_get_frag_length(&blob);
+		blob = data_blob_talloc(dce_conn, blob.data, blob.length);
+		if (!blob.data) {
+			data_blob_free(&dce_conn->partial_input);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		dce_partial_advance(dce_conn, blob.length);
+
+		pkt = talloc(dce_conn, struct ncacn_packet);
+		if (!pkt) {
+			data_blob_free(&blob);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		ndr = ndr_pull_init_blob(&blob, pkt, lp_iconv_convenience(dce_conn->dce_ctx->lp_ctx));
+		if (!ndr) {
+			data_blob_free(&blob);
+			talloc_free(pkt);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		if (!(CVAL(blob.data, DCERPC_DREP_OFFSET) & DCERPC_DREP_LE)) {
+			ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
+		}
+
+		if (CVAL(blob.data, DCERPC_PFC_OFFSET) & DCERPC_PFC_FLAG_OBJECT_UUID) {
+			ndr->flags |= LIBNDR_FLAG_OBJECT_PRESENT;
+		}
+
+		ndr_err = ndr_pull_ncacn_packet(ndr, NDR_SCALARS|NDR_BUFFERS, pkt);
+		TALLOC_FREE(ndr);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			data_blob_free(&blob);
+			talloc_free(pkt);
+			return ndr_map_error2ntstatus(ndr_err);
+		}
+
+		status = dcesrv_process_ncacn_packet(dce_conn, pkt, blob);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
