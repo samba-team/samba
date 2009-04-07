@@ -265,7 +265,7 @@ static WERROR smbconf_reg_set_value(struct registry_key *key,
 	if (!strequal(subkeyname, GLOBAL_NAME) &&
 	    lp_parameter_is_global(valname))
 	{
-		DEBUG(5, ("Global paramter '%s' not allowed in "
+		DEBUG(5, ("Global parameter '%s' not allowed in "
 			  "service definition ('%s').\n", canon_valname,
 			  subkeyname));
 		werr = WERR_INVALID_PARAM;
