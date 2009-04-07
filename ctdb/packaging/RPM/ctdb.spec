@@ -128,6 +128,7 @@ fi
 %{_mandir}/man1/onnode.1.gz
 %{_includedir}/ctdb.h
 %{_includedir}/ctdb_private.h
+%{_libdir}/pkgconfig/ctdb.pc
 
 %changelog
 * Tue Mar 31 2009 : Version 1.0.78
