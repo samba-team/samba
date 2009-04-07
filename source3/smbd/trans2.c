@@ -1882,6 +1882,7 @@ static void call_trans2findfirst(connection_struct *conn,
 		maxentries then so be it. We assume that the redirector has
 		enough room for the fixed number of parameter bytes it has
 		requested. */
+	struct smb_filename *smb_dname = NULL;
 	char *params = *pparams;
 	char *pdata = *ppdata;
 	char *data_end;
@@ -1904,7 +1905,6 @@ static void call_trans2findfirst(connection_struct *conn,
 	bool out_of_space = False;
 	int space_remaining;
 	bool mask_contains_wcard = False;
-	SMB_STRUCT_STAT sbuf;
 	struct ea_list *ea_list = NULL;
 	NTSTATUS ntstatus = NT_STATUS_OK;
 	bool ask_sharemode = lp_parm_bool(SNUM(conn), "smbd", "search ask sharemode", true);
@@ -1981,7 +1981,17 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 		return;
 	}
 
-	ntstatus = unix_convert(ctx, conn, directory, True, &directory, &mask, &sbuf);
+	ntstatus = unix_convert(ctx, conn, directory, &smb_dname,
+				(UCF_SAVE_LCOMP | UCF_ALLOW_WCARD_LCOMP));
+	if (!NT_STATUS_IS_OK(ntstatus)) {
+		reply_nterror(req, ntstatus);
+		return;
+	}
+
+	mask = smb_dname->original_lcomp;
+
+	ntstatus = get_full_smb_filename(ctx, smb_dname, &directory);
+	TALLOC_FREE(smb_dname);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		reply_nterror(req, ntstatus);
 		return;
@@ -3834,6 +3844,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 	SMB_STRUCT_STAT sbuf;
 	char *dos_fname = NULL;
 	char *fname = NULL;
+	struct smb_filename *smb_fname = NULL;
 	char *fullpathname;
 	char *base_name;
 	char *p;
@@ -3981,11 +3992,20 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			return;
 		}
 
-		status = unix_convert(ctx, conn, fname, False, &fname, NULL, &sbuf);
+		status = unix_convert(ctx, conn, fname, &smb_fname, 0);
 		if (!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);
 			return;
 		}
+		sbuf = smb_fname->st;
+
+		status = get_full_smb_filename(ctx, smb_fname, &fname);
+		TALLOC_FREE(smb_fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			reply_nterror(req, status);
+			return;
+		}
+
 		status = check_name(conn, fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3,("call_trans2qfilepathinfo: fileinfo of %s failed (%s)\n",fname,nt_errstr(status)));
@@ -4821,57 +4841,64 @@ NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 		const char *oldname_in,
 		const char *newname_in)
 {
-	SMB_STRUCT_STAT sbuf1, sbuf2;
-	char *last_component_oldname = NULL;
-	char *last_component_newname = NULL;
+	struct smb_filename *smb_fname = NULL;
+	struct smb_filename *smb_fname_new = NULL;
 	char *oldname = NULL;
 	char *newname = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 
-	ZERO_STRUCT(sbuf1);
-	ZERO_STRUCT(sbuf2);
-
-	status = unix_convert(ctx, conn, oldname_in, False, &oldname,
-			&last_component_oldname, &sbuf1);
+	status = unix_convert(ctx, conn, oldname_in, &smb_fname, 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto out;
+	}
+
+	status = get_full_smb_filename(ctx, smb_fname, &oldname);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
 	}
 
 	status = check_name(conn, oldname);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto out;
 	}
 
 	/* source must already exist. */
-	if (!VALID_STAT(sbuf1)) {
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	if (!VALID_STAT(smb_fname->st)) {
+		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		goto out;
 	}
 
-	status = unix_convert(ctx, conn, newname_in, False, &newname,
-			&last_component_newname, &sbuf2);
+	status = unix_convert(ctx, conn, newname_in, &smb_fname_new, 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto out;
+	}
+
+	status = get_full_smb_filename(ctx, smb_fname_new, &newname);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
 	}
 
 	status = check_name(conn, newname);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto out;
 	}
 
 	/* Disallow if newname already exists. */
-	if (VALID_STAT(sbuf2)) {
-		return NT_STATUS_OBJECT_NAME_COLLISION;
+	if (VALID_STAT(smb_fname_new->st)) {
+		status = NT_STATUS_OBJECT_NAME_COLLISION;
+		goto out;
 	}
 
 	/* No links from a directory. */
-	if (S_ISDIR(sbuf1.st_mode)) {
-		return NT_STATUS_FILE_IS_A_DIRECTORY;
+	if (S_ISDIR(smb_fname->st.st_mode)) {
+		status = NT_STATUS_FILE_IS_A_DIRECTORY;
+		goto out;
 	}
 
 	/* Ensure this is within the share. */
 	status = check_reduced_name(conn, oldname);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto out;
 	}
 
 	DEBUG(10,("hardlink_internals: doing hard link %s -> %s\n", newname, oldname ));
@@ -4879,9 +4906,15 @@ NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 	if (SMB_VFS_LINK(conn,oldname,newname) != 0) {
 		status = map_nt_error_from_unix(errno);
 		DEBUG(3,("hardlink_internals: Error %s hard link %s -> %s\n",
-                                nt_errstr(status), newname, oldname));
+				 nt_errstr(status), newname, oldname));
 	}
-
+ out:
+	if (smb_fname) {
+		TALLOC_FREE(smb_fname);
+	}
+	if (smb_fname_new) {
+		TALLOC_FREE(smb_fname_new);
+	}
 	return status;
 }
 
@@ -5382,9 +5415,8 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 	uint32 len;
 	char *newname = NULL;
 	char *base_name = NULL;
+	struct smb_filename *smb_fname = NULL;
 	bool dest_has_wcard = False;
-	SMB_STRUCT_STAT sbuf;
-	char *newname_last_component = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	char *p;
 	TALLOC_CTX *ctx = talloc_tos();
@@ -5392,8 +5424,6 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 	if (total_data < 13) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-
-	ZERO_STRUCT(sbuf);
 
 	overwrite = (CVAL(pdata,0) ? True : False);
 	root_fid = IVAL(pdata,4);
@@ -5466,10 +5496,8 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		status = unix_convert(ctx, conn, newname, False,
-				&newname,
-				&newname_last_component,
-				&sbuf);
+		status = unix_convert(ctx, conn, newname, &smb_fname,
+				      UCF_SAVE_LCOMP);
 
 		/* If an error we expect this to be
 		 * NT_STATUS_OBJECT_PATH_NOT_FOUND */
@@ -5477,7 +5505,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		if (!NT_STATUS_IS_OK(status)
 		    && !NT_STATUS_EQUAL(NT_STATUS_OBJECT_PATH_NOT_FOUND,
 					status)) {
-			return status;
+			goto out;
 		}
 	}
 
@@ -5485,8 +5513,9 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		DEBUG(10,("smb_file_rename_information: SMB_FILE_RENAME_INFORMATION (fnum %d) %s -> %s\n",
 			fsp->fnum, fsp->fsp_name, base_name ));
 		status = rename_internals_fsp(conn, fsp, base_name,
-					      newname_last_component, 0,
-					      overwrite);
+					      smb_fname ?
+					      smb_fname->original_lcomp : NULL,
+					      0, overwrite);
 	} else {
 		DEBUG(10,("smb_file_rename_information: SMB_FILE_RENAME_INFORMATION %s -> %s\n",
 			fname, base_name ));
@@ -5494,7 +5523,10 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 					overwrite, False, dest_has_wcard,
 					FILE_WRITE_ATTRIBUTES);
 	}
-
+ out:
+	if (smb_fname) {
+		TALLOC_FREE(smb_fname);
+	}
 	return status;
 }
 
@@ -6700,6 +6732,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 	uint16 info_level;
 	SMB_STRUCT_STAT sbuf;
 	char *fname = NULL;
+	struct smb_filename *smb_fname = NULL;
 	files_struct *fsp = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	int data_return_size = 0;
@@ -6814,8 +6847,15 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 			return;
 		}
 
-		status = unix_convert(ctx, conn, fname, False,
-				&fname, NULL, &sbuf);
+		status = unix_convert(ctx, conn, fname, &smb_fname, 0);
+		if (!NT_STATUS_IS_OK(status)) {
+			reply_nterror(req, status);
+			return;
+		}
+		sbuf = smb_fname->st;
+
+		status = get_full_smb_filename(ctx, smb_fname, &fname);
+		TALLOC_FREE(smb_fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);
 			return;
@@ -7129,10 +7169,10 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 			     char **ppdata, int total_data,
 			     unsigned int max_data_bytes)
 {
+	struct smb_filename *smb_dname = NULL;
 	char *params = *pparams;
 	char *pdata = *ppdata;
 	char *directory = NULL;
-	SMB_STRUCT_STAT sbuf;
 	NTSTATUS status = NT_STATUS_OK;
 	struct ea_list *ea_list = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
@@ -7157,7 +7197,13 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 
 	DEBUG(3,("call_trans2mkdir : name = %s\n", directory));
 
-	status = unix_convert(ctx, conn, directory, False, &directory, NULL, &sbuf);
+	status = unix_convert(ctx, conn, directory, &smb_dname, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+		return;
+	}
+
+	status = get_full_smb_filename(ctx, smb_dname, &directory);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		return;

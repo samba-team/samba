@@ -515,8 +515,8 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 {
 	char *p = NULL;
 	char *q = NULL;
-	SMB_STRUCT_STAT sbuf;
 	NTSTATUS status;
+	struct smb_filename *smb_fname = NULL;
 	char *localpath = NULL;
 	char *canon_dfspath = NULL; /* Canonicalized dfs path. (only '/'
 				  components). */
@@ -536,12 +536,21 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 	 * think this is needed. JRA.
 	 */
 
-	status = unix_convert(ctx, conn, pdp->reqpath, search_flag, &localpath,
-			NULL, &sbuf);
+	status = unix_convert(ctx, conn, pdp->reqpath, &smb_fname,
+			      search_flag ? UCF_ALLOW_WCARD_LCOMP : 0);
+
 	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status,
 					NT_STATUS_OBJECT_PATH_NOT_FOUND)) {
 		return status;
 	}
+
+	status = get_full_smb_filename(ctx, smb_fname, &localpath);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(smb_fname);
+		return status;
+	}
+
+	TALLOC_FREE(smb_fname);
 
 	/* Optimization - check if we can redirect the whole path. */
 

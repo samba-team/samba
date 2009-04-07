@@ -29,10 +29,7 @@
 static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
 				  connection_struct *conn,
 				  const char *orig_path,
-				  const char *basepath,
-				  const char *streamname,
-				  SMB_STRUCT_STAT *pst,
-				  char **path);
+				  struct smb_filename *smb_fname);
 
 /****************************************************************************
  Mangle the 2nd name and check if it is then equal to the first name.
@@ -83,10 +80,27 @@ static NTSTATUS determine_path_error(const char *name,
 	}
 }
 
+NTSTATUS get_full_smb_filename(TALLOC_CTX *ctx, const struct smb_filename *smb_fname,
+			       char **full_name)
+{
+	if (smb_fname->stream_name) {
+		*full_name = talloc_asprintf(ctx, "%s%s", smb_fname->base_name,
+					     smb_fname->stream_name);
+	} else {
+		*full_name = talloc_strdup(ctx, smb_fname->base_name);
+	}
+
+	if (!*full_name) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_OK;
+}
+
 /****************************************************************************
 This routine is called to convert names from the dos namespace to unix
-namespace. It needs to handle any case conversions, mangling, format
-changes etc.
+namespace. It needs to handle any case conversions, mangling, format changes,
+streams etc.
 
 We assume that we have already done a chdir() to the right "root" directory
 for this service.
@@ -94,32 +108,34 @@ for this service.
 The function will return an NTSTATUS error if some part of the name except for
 the last part cannot be resolved, else NT_STATUS_OK.
 
-Note NT_STATUS_OK doesn't mean the name exists or is valid, just that we didn't
-get any fatal errors that should immediately terminate the calling
-SMB processing whilst resolving.
+Note NT_STATUS_OK doesn't mean the name exists or is valid, just that we
+didn't get any fatal errors that should immediately terminate the calling SMB
+processing whilst resolving.
 
-If the saved_last_component != 0, then the unmodified last component
-of the pathname is returned there. If saved_last_component == 0 then nothing
-is returned there.
+If the UCF_SAVE_LCOMP flag is passed in, then the unmodified last component
+of the pathname is set in smb_filename->original_lcomp.
 
-If last_component_wcard is true then a MS wildcard was detected and
+If UCF_ALLOW_WCARD_LCOMP is passed in, then a MS wildcard was detected and
 should be allowed in the last component of the path only.
 
-On exit from unix_convert, if *pst was not null, then the file stat
-struct will be returned if the file exists and was found, if not this
-stat struct will be filled with zeros (and this can be detected by checking
-for nlinks = 0, which can never be true for any file).
+If the orig_path was a stream, smb_filename->base_name will point to the base
+filename, and smb_filename->stream_name will point to the stream name.  If
+orig_path was not a stream, then smb_filename->stream_name will be NULL.
+
+On exit from unix_convert, the smb_filename->st stat struct will be populated
+if the file exists and was found, if not this stat struct will be filled with
+zeros (and this can be detected by checking for nlinks = 0, which can never be
+true for any file).
 ****************************************************************************/
 
 NTSTATUS unix_convert(TALLOC_CTX *ctx,
-			connection_struct *conn,
-			const char *orig_path,
-			bool allow_wcard_last_component,
-			char **pp_conv_path,
-			char **pp_saved_last_component,
-			SMB_STRUCT_STAT *pst)
+		      connection_struct *conn,
+		      const char *orig_path,
+		      struct smb_filename **smb_fname_out,
+		      uint32_t ucf_flags)
 {
 	SMB_STRUCT_STAT st;
+	struct smb_filename *smb_fname = NULL;
 	char *start, *end;
 	char *dirpath = NULL;
 	char *name = NULL;
@@ -127,21 +143,26 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	bool component_was_mangled = False;
 	bool name_has_wildcard = False;
 	bool posix_pathnames = false;
+	bool allow_wcard_last_component = ucf_flags & UCF_ALLOW_WCARD_LCOMP;
+	bool save_last_component = ucf_flags & UCF_SAVE_LCOMP;
 	NTSTATUS result;
 	int ret = -1;
 
-	SET_STAT_INVALID(*pst);
-	*pp_conv_path = NULL;
-	if(pp_saved_last_component) {
-		*pp_saved_last_component = NULL;
+	*smb_fname_out = NULL;
+
+	smb_fname = TALLOC_ZERO_P(talloc_tos(), struct smb_filename);
+	if (smb_fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (conn->printer) {
 		/* we don't ever use the filenames on a printer share as a
 			filename - so don't convert them */
-		if (!(*pp_conv_path = talloc_strdup(ctx,orig_path))) {
+		if (!(smb_fname->base_name = talloc_strdup(smb_fname,
+							   orig_path))) {
 			return NT_STATUS_NO_MEMORY;
 		}
+		*smb_fname_out = smb_fname;
 		return NT_STATUS_OK;
 	}
 
@@ -174,7 +195,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 		if (SMB_VFS_STAT(conn,name,&st) == 0) {
-			*pst = st;
+			smb_fname->st = st;
 		} else {
 			return map_nt_error_from_unix(errno);
 		}
@@ -217,18 +238,20 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	 * Ensure saved_last_component is valid even if file exists.
 	 */
 
-	if(pp_saved_last_component) {
+	if(save_last_component) {
 		end = strrchr_m(name, '/');
 		if (end) {
-			*pp_saved_last_component = talloc_strdup(ctx, end + 1);
+			smb_fname->original_lcomp = talloc_strdup(ctx,
+								  end + 1);
 		} else {
-			*pp_saved_last_component = talloc_strdup(ctx,
-							name);
+			smb_fname->original_lcomp = talloc_strdup(ctx, name);
 		}
 	}
 
 	posix_pathnames = lp_posix_pathnames();
 
+	/* Strip off the stream. Should we use any of the other stream parsing
+	 * at this point? Also, should we set the is_stream bit? */
 	if (!posix_pathnames) {
 		stream = strchr_m(name, ':');
 
@@ -253,7 +276,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 
 	if((!conn->case_sensitive || !(conn->fs_capabilities & FILE_CASE_SENSITIVE_SEARCH)) &&
 			stat_cache_lookup(conn, &name, &dirpath, &start, &st)) {
-		*pst = st;
+		smb_fname->st = st;
 		goto done;
 	}
 
@@ -295,7 +318,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		}
 		stat_cache_add(orig_path, name, conn->case_sensitive);
 		DEBUG(5,("conversion finished %s -> %s\n",orig_path, name));
-		*pst = st;
+		smb_fname->st = st;
 		goto done;
 	}
 
@@ -346,11 +369,11 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 			*end = 0;
 		}
 
-		if (pp_saved_last_component) {
-			TALLOC_FREE(*pp_saved_last_component);
-			*pp_saved_last_component = talloc_strdup(ctx,
+		if (save_last_component) {
+			TALLOC_FREE(smb_fname->original_lcomp);
+			smb_fname->original_lcomp = talloc_strdup(ctx,
 							end ? end + 1 : start);
-			if (!*pp_saved_last_component) {
+			if (!smb_fname->original_lcomp) {
 				DEBUG(0, ("talloc failed\n"));
 				return NT_STATUS_NO_MEMORY;
 			}
@@ -427,7 +450,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 				 * struct. JRA.
 				 */
 
-				*pst = st;
+				smb_fname->st = st;
 			}
 
 		} else {
@@ -621,7 +644,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 				}
 
 				if (ret == 0) {
-					*pst = st;
+					smb_fname->st = st;
 				} else {
 					SET_STAT_INVALID(st);
 				}
@@ -703,35 +726,34 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	DEBUG(5,("conversion finished %s -> %s\n",orig_path, name));
 
  done:
-	if (stream != NULL) {
-		char *tmp = NULL;
+	smb_fname->base_name = name;
 
-		result = build_stream_path(ctx, conn, orig_path, name, stream,
-					   pst, &tmp);
+	if (stream != NULL) {
+		smb_fname->stream_name = stream;
+
+		/* Check path now that the base_name has been converted. */
+		result = build_stream_path(ctx, conn, orig_path, smb_fname);
 		if (!NT_STATUS_IS_OK(result)) {
 			goto fail;
 		}
-
-		DEBUG(10, ("build_stream_path returned %s\n", tmp));
-
-		TALLOC_FREE(name);
-		name = tmp;
 	}
-	*pp_conv_path = name;
 	TALLOC_FREE(dirpath);
+	*smb_fname_out = smb_fname;
 	return NT_STATUS_OK;
  fail:
 	DEBUG(10, ("dirpath = [%s] start = [%s]\n", dirpath, start));
 	if (*dirpath != '\0') {
-		*pp_conv_path = talloc_asprintf(ctx,
-				"%s/%s", dirpath, start);
+		smb_fname->base_name = talloc_asprintf(ctx, "%s/%s", dirpath,
+						       start);
 	} else {
-		*pp_conv_path = talloc_strdup(ctx, start);
+		smb_fname->base_name = talloc_strdup(ctx, start);
 	}
-	if (!*pp_conv_path) {
+	if (!smb_fname->base_name) {
 		DEBUG(0, ("talloc_asprintf failed\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
+
+	*smb_fname_out = smb_fname;
 	TALLOC_FREE(name);
 	TALLOC_FREE(dirpath);
 	return result;
@@ -923,25 +945,19 @@ int get_real_filename(connection_struct *conn, const char *path,
 static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
 				  connection_struct *conn,
 				  const char *orig_path,
-				  const char *basepath,
-				  const char *streamname,
-				  SMB_STRUCT_STAT *pst,
-				  char **path)
+				  struct smb_filename *smb_fname)
 {
-	SMB_STRUCT_STAT st;
 	char *result = NULL;
 	NTSTATUS status;
 	unsigned int i, num_streams;
 	struct stream_struct *streams = NULL;
 
-	result = talloc_asprintf(mem_ctx, "%s%s", basepath, streamname);
-	if (result == NULL) {
+	status = get_full_smb_filename(mem_ctx, smb_fname, &result);
+	if (!NT_STATUS_IS_OK(status)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (SMB_VFS_STAT(conn, result, &st) == 0) {
-		*pst = st;
-		*path = result;
+	if (SMB_VFS_STAT(conn, result, &smb_fname->st) == 0) {
 		return NT_STATUS_OK;
 	}
 
@@ -951,12 +967,12 @@ static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	status = SMB_VFS_STREAMINFO(conn, NULL, basepath, mem_ctx,
+	/* Fall back to a case-insensitive scan of all streams on the file. */
+	status = SMB_VFS_STREAMINFO(conn, NULL, smb_fname->base_name, mem_ctx,
 				    &num_streams, &streams);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-		SET_STAT_INVALID(*pst);
-		*path = result;
+		SET_STAT_INVALID(smb_fname->st);
 		return NT_STATUS_OK;
 	}
 
@@ -967,8 +983,8 @@ static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
 
 	for (i=0; i<num_streams; i++) {
 		DEBUG(10, ("comparing [%s] and [%s]: ",
-			   streamname, streams[i].name));
-		if (fname_equal(streamname, streams[i].name,
+			   smb_fname->stream_name, streams[i].name));
+		if (fname_equal(smb_fname->stream_name, streams[i].name,
 				conn->case_sensitive)) {
 			DEBUGADD(10, ("equal\n"));
 			break;
@@ -976,28 +992,33 @@ static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
 		DEBUGADD(10, ("not equal\n"));
 	}
 
+	/* Couldn't find the stream. */
 	if (i == num_streams) {
-		SET_STAT_INVALID(*pst);
-		*path = result;
+		SET_STAT_INVALID(smb_fname->st);
 		TALLOC_FREE(streams);
 		return NT_STATUS_OK;
 	}
 
-	TALLOC_FREE(result);
+	DEBUG(10, ("case insensitive stream. requested: %s, actual: %s\n",
+		smb_fname->stream_name, streams[i].name));
 
-	result = talloc_asprintf(mem_ctx, "%s%s", basepath, streams[i].name);
-	if (result == NULL) {
+
+	TALLOC_FREE(smb_fname->stream_name);
+	smb_fname->stream_name = talloc_strdup(mem_ctx, streams[i].name);
+
+	TALLOC_FREE(result);
+	status = get_full_smb_filename(mem_ctx, smb_fname, &result);
+	if (!NT_STATUS_IS_OK(status)) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
 
-	SET_STAT_INVALID(*pst);
+	SET_STAT_INVALID(smb_fname->st);
 
-	if (SMB_VFS_STAT(conn, result, pst) == 0) {
+	if (SMB_VFS_STAT(conn, result, &smb_fname->st) == 0) {
 		stat_cache_add(orig_path, result, conn->case_sensitive);
 	}
 
-	*path = result;
 	TALLOC_FREE(streams);
 	return NT_STATUS_OK;
 

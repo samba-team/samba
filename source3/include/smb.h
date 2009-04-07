@@ -1925,4 +1925,20 @@ struct smb_file_time {
 	struct timespec create_time;
 };
 
+/*
+ * unix_convert_flags
+ */
+#define UCF_SAVE_LCOMP			0x00000001
+#define UCF_ALLOW_WCARD_LCOMP		0x00000002
+
+/*
+ * smb_filename
+ */
+struct smb_filename {
+	char *base_name;
+	char *stream_name;
+	char *original_lcomp;
+	SMB_STRUCT_STAT st;
+};
+
 #endif /* _SMB_H */

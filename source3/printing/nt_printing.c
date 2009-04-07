@@ -638,7 +638,9 @@ static char *driver_unix_convert(connection_struct *conn,
 		const char *old_name,
 		SMB_STRUCT_STAT *pst)
 {
+	NTSTATUS status;
 	TALLOC_CTX *ctx = talloc_tos();
+	struct smb_filename *smb_fname = NULL;
 	char *name = talloc_strdup(ctx, old_name);
 	char *new_name = NULL;
 
@@ -651,7 +653,20 @@ static char *driver_unix_convert(connection_struct *conn,
 		return NULL;
 	}
 	trim_string(name,"/","/");
-	unix_convert(ctx,conn, name, false, &new_name, NULL, pst);
+
+	status = unix_convert(ctx, conn, name, &smb_fname, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NULL;
+	}
+
+	*pst = smb_fname->st;
+	status = get_full_smb_filename(ctx, smb_fname, &new_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(smb_fname);
+		return NULL;
+	}
+
+	TALLOC_FREE(smb_fname);
 	return new_name;
 }
 

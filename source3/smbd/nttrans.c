@@ -1155,11 +1155,10 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 				const char *newname_in,
 				uint32 attrs)
 {
-	SMB_STRUCT_STAT sbuf1, sbuf2;
+	struct smb_filename *smb_fname = NULL;
+	struct smb_filename *smb_fname_new = NULL;
 	char *oldname = NULL;
 	char *newname = NULL;
-	char *last_component_oldname = NULL;
-	char *last_component_newname = NULL;
 	files_struct *fsp1,*fsp2;
 	uint32 fattr;
 	int info;
@@ -1167,59 +1166,69 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 	NTSTATUS status = NT_STATUS_OK;
 	char *parent;
 
-	ZERO_STRUCT(sbuf1);
-	ZERO_STRUCT(sbuf2);
-
 	if (!CAN_WRITE(conn)) {
-		return NT_STATUS_MEDIA_WRITE_PROTECTED;
+		status = NT_STATUS_MEDIA_WRITE_PROTECTED;
+		goto out;
 	}
 
-	status = unix_convert(ctx, conn, oldname_in, False, &oldname,
-			&last_component_oldname, &sbuf1);
+	status = unix_convert(ctx, conn, oldname_in, &smb_fname, 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto out;
+	}
+
+	status = get_full_smb_filename(ctx, smb_fname, &oldname);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
 	}
 
 	status = check_name(conn, oldname);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto out;
 	}
 
         /* Source must already exist. */
-	if (!VALID_STAT(sbuf1)) {
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	if (!VALID_STAT(smb_fname->st)) {
+		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		goto out;
 	}
 	/* Ensure attributes match. */
-	fattr = dos_mode(conn,oldname,&sbuf1);
+	fattr = dos_mode(conn, oldname, &smb_fname->st);
 	if ((fattr & ~attrs) & (aHIDDEN | aSYSTEM)) {
-		return NT_STATUS_NO_SUCH_FILE;
+		status = NT_STATUS_NO_SUCH_FILE;
+		goto out;
 	}
 
-	status = unix_convert(ctx, conn, newname_in, False, &newname,
-			&last_component_newname, &sbuf2);
+	status = unix_convert(ctx, conn, newname_in, &smb_fname_new, 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto out;
+	}
+
+	status = get_full_smb_filename(ctx, smb_fname_new, &newname);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
 	}
 
 	status = check_name(conn, newname);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto out;
 	}
 
 	/* Disallow if newname already exists. */
-	if (VALID_STAT(sbuf2)) {
-		return NT_STATUS_OBJECT_NAME_COLLISION;
+	if (VALID_STAT(smb_fname_new->st)) {
+		status = NT_STATUS_OBJECT_NAME_COLLISION;
+		goto out;
 	}
 
 	/* No links from a directory. */
-	if (S_ISDIR(sbuf1.st_mode)) {
-		return NT_STATUS_FILE_IS_A_DIRECTORY;
+	if (S_ISDIR(smb_fname->st.st_mode)) {
+		status = NT_STATUS_FILE_IS_A_DIRECTORY;
+		goto out;
 	}
 
 	/* Ensure this is within the share. */
 	status = check_reduced_name(conn, oldname);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto out;
 	}
 
 	DEBUG(10,("copy_internals: doing file copy %s to %s\n",
@@ -1243,10 +1252,10 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 		NULL,					/* ea_list */
 		&fsp1,					/* result */
 		&info,					/* pinfo */
-		&sbuf1);				/* psbuf */
+		&smb_fname->st);			/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto out;
 	}
 
         status = SMB_VFS_CREATE_FILE(
@@ -1267,15 +1276,15 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 		NULL,					/* ea_list */
 		&fsp2,					/* result */
 		&info,					/* pinfo */
-		&sbuf2);				/* psbuf */
+		&smb_fname_new->st);			/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		close_file(NULL, fsp1, ERROR_CLOSE);
-		return status;
+		goto out;
 	}
 
-	if (sbuf1.st_size) {
-		ret = vfs_transfer_file(fsp1, fsp2, sbuf1.st_size);
+	if (smb_fname->st.st_size) {
+		ret = vfs_transfer_file(fsp1, fsp2, smb_fname->st.st_size);
 	}
 
 	/*
@@ -1287,7 +1296,7 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 	close_file(NULL, fsp1, NORMAL_CLOSE);
 
 	/* Ensure the modtime is set correctly on the destination file. */
-	set_close_write_time(fsp2, get_mtimespec(&sbuf1));
+	set_close_write_time(fsp2, get_mtimespec(&smb_fname->st));
 
 	status = close_file(NULL, fsp2, NORMAL_CLOSE);
 
@@ -1295,15 +1304,24 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 	   creates the file. This isn't the correct thing to do in the copy
 	   case. JRA */
 	if (!parent_dirname(talloc_tos(), newname, &parent, NULL)) {
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
 	}
-	file_set_dosmode(conn, newname, fattr, &sbuf2, parent, false);
+	file_set_dosmode(conn, newname, fattr, &smb_fname_new->st, parent,
+			 false);
 	TALLOC_FREE(parent);
 
-	if (ret < (SMB_OFF_T)sbuf1.st_size) {
-		return NT_STATUS_DISK_FULL;
+	if (ret < (SMB_OFF_T)smb_fname->st.st_size) {
+		status = NT_STATUS_DISK_FULL;
+		goto out;
 	}
-
+ out:
+	if (smb_fname) {
+		TALLOC_FREE(smb_fname);
+	}
+	if (smb_fname_new) {
+		TALLOC_FREE(smb_fname_new);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3,("copy_internals: Error %s copy file %s to %s\n",
 			nt_errstr(status), oldname, newname));

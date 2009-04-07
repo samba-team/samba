@@ -6264,13 +6264,13 @@ int fsp_stat(files_struct *fsp, SMB_STRUCT_STAT *pst);
 
 /* The following definitions come from smbd/filename.c  */
 
+NTSTATUS get_full_smb_filename(TALLOC_CTX *ctx, const struct smb_filename *smb_fname,
+			      char **full_name);
 NTSTATUS unix_convert(TALLOC_CTX *ctx,
-			connection_struct *conn,
-			const char *orig_path,
-			bool allow_wcard_last_component,
-			char **pp_conv_path,
-			char **pp_saved_last_component,
-			SMB_STRUCT_STAT *pst);
+		      connection_struct *conn,
+		      const char *orig_path,
+		      struct smb_filename **smb_fname,
+		      uint32_t ucf_flags);
 NTSTATUS check_name(connection_struct *conn, const char *name);
 int get_real_filename(connection_struct *conn, const char *path,
 		      const char *name, TALLOC_CTX *mem_ctx,

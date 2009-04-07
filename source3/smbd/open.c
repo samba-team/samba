@@ -3442,16 +3442,27 @@ NTSTATUS create_file_default(connection_struct *conn,
 	}
 
 	if (create_file_flags & CFF_DOS_PATH) {
+		struct smb_filename *smb_fname = NULL;
 		char *converted_fname;
 
 		SET_STAT_INVALID(sbuf);
 
-		status = unix_convert(talloc_tos(), conn, fname, False,
-				      &converted_fname, NULL, &sbuf);
+		status = unix_convert(talloc_tos(), conn, fname, &smb_fname,
+				      0);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto fail;
 		}
+
+		status = get_full_smb_filename(talloc_tos(), smb_fname,
+					       &converted_fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(smb_fname);
+			goto fail;
+		}
+
+		sbuf = smb_fname->st;
 		fname = converted_fname;
+		TALLOC_FREE(smb_fname);
 	} else {
 		if (psbuf != NULL) {
 			sbuf = *psbuf;

@@ -966,8 +966,8 @@ static NTSTATUS map_checkpath_error(uint16_t flags2, NTSTATUS status)
 void reply_checkpath(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
+	struct smb_filename *smb_fname = NULL;
 	char *name = NULL;
-	SMB_STRUCT_STAT sbuf;
 	NTSTATUS status;
 	TALLOC_CTX *ctx = talloc_tos();
 
@@ -999,7 +999,12 @@ void reply_checkpath(struct smb_request *req)
 
 	DEBUG(3,("reply_checkpath %s mode=%d\n", name, (int)SVAL(req->vwv+0, 0)));
 
-	status = unix_convert(ctx, conn, name, False, &name, NULL, &sbuf);
+	status = unix_convert(ctx, conn, name, &smb_fname, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto path_err;
+	}
+
+	status = get_full_smb_filename(ctx, smb_fname, &name);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto path_err;
 	}
@@ -1010,25 +1015,32 @@ void reply_checkpath(struct smb_request *req)
 		goto path_err;
 	}
 
-	if (!VALID_STAT(sbuf) && (SMB_VFS_STAT(conn,name,&sbuf) != 0)) {
+	if (!VALID_STAT(smb_fname->st) &&
+	    (SMB_VFS_STAT(conn, name, &smb_fname->st) != 0)) {
 		DEBUG(3,("reply_checkpath: stat of %s failed (%s)\n",name,strerror(errno)));
 		status = map_nt_error_from_unix(errno);
 		goto path_err;
 	}
 
-	if (!S_ISDIR(sbuf.st_mode)) {
+	if (!S_ISDIR(smb_fname->st.st_mode)) {
 		reply_botherror(req, NT_STATUS_NOT_A_DIRECTORY,
 				ERRDOS, ERRbadpath);
-		END_PROFILE(SMBcheckpath);
-		return;
+		goto out;
 	}
 
 	reply_outbuf(req, 0, 0);
-
+ out:
+	if (smb_fname) {
+		TALLOC_FREE(smb_fname);
+	}
 	END_PROFILE(SMBcheckpath);
 	return;
 
-  path_err:
+ path_err:
+
+	if (smb_fname) {
+		TALLOC_FREE(smb_fname);
+	}
 
 	END_PROFILE(SMBcheckpath);
 
@@ -1061,8 +1073,8 @@ void reply_checkpath(struct smb_request *req)
 void reply_getatr(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
+	struct smb_filename *smb_fname = NULL;
 	char *fname = NULL;
-	SMB_STRUCT_STAT sbuf;
 	int mode=0;
 	SMB_OFF_T size=0;
 	time_t mtime=0;
@@ -1076,8 +1088,7 @@ void reply_getatr(struct smb_request *req)
 	p += srvstr_get_path_req(ctx, req, &fname, p, STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
-		END_PROFILE(SMBgetatr);
-		return;
+		goto out;
 	}
 
 	status = resolve_dfspath(ctx, conn,
@@ -1088,12 +1099,10 @@ void reply_getatr(struct smb_request *req)
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
 					ERRSRV, ERRbadpath);
-			END_PROFILE(SMBgetatr);
-			return;
+			goto out;
 		}
 		reply_nterror(req, status);
-		END_PROFILE(SMBgetatr);
-		return;
+		goto out;
 	}
 
 	/* dos smetimes asks for a stat of "" - it returns a "hidden directory"
@@ -1106,29 +1115,32 @@ void reply_getatr(struct smb_request *req)
 		size = 0;
 		mtime = 0;
 	} else {
-		status = unix_convert(ctx, conn, fname, False, &fname, NULL,&sbuf);
+		status = unix_convert(ctx, conn, fname, &smb_fname, 0);
 		if (!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);
-			END_PROFILE(SMBgetatr);
-			return;
+			goto out;
+		}
+		status = get_full_smb_filename(ctx, smb_fname, &fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			reply_nterror(req, status);
+			goto out;
 		}
 		status = check_name(conn, fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3,("reply_getatr: check_name of %s failed (%s)\n",fname,nt_errstr(status)));
 			reply_nterror(req, status);
-			END_PROFILE(SMBgetatr);
-			return;
+			goto out;
 		}
-		if (!VALID_STAT(sbuf) && (SMB_VFS_STAT(conn,fname,&sbuf) != 0)) {
+		if (!VALID_STAT(smb_fname->st) &&
+		    (SMB_VFS_STAT(conn, fname, &smb_fname->st) != 0)) {
 			DEBUG(3,("reply_getatr: stat of %s failed (%s)\n",fname,strerror(errno)));
 			reply_unixerror(req, ERRDOS,ERRbadfile);
-			END_PROFILE(SMBgetatr);
-			return;
+			goto out;
 		}
 
-		mode = dos_mode(conn,fname,&sbuf);
-		size = sbuf.st_size;
-		mtime = sbuf.st_mtime;
+		mode = dos_mode(conn, fname, &smb_fname->st);
+		size = smb_fname->st.st_size;
+		mtime = smb_fname->st.st_mtime;
 		if (mode & aDIR) {
 			size = 0;
 		}
@@ -1151,6 +1163,10 @@ void reply_getatr(struct smb_request *req)
 
 	DEBUG(3,("reply_getatr: name=%s mode=%d size=%u\n", fname, mode, (unsigned int)size ) );
 
+ out:
+	if (smb_fname) {
+		TALLOC_FREE(smb_fname);
+	}
 	END_PROFILE(SMBgetatr);
 	return;
 }
@@ -1163,10 +1179,10 @@ void reply_setatr(struct smb_request *req)
 {
 	struct smb_file_time ft;
 	connection_struct *conn = req->conn;
+	struct smb_filename *smb_fname = NULL;
 	char *fname = NULL;
 	int mode;
 	time_t mtime;
-	SMB_STRUCT_STAT sbuf;
 	const char *p;
 	NTSTATUS status;
 	TALLOC_CTX *ctx = talloc_tos();
@@ -1177,15 +1193,14 @@ void reply_setatr(struct smb_request *req)
 
 	if (req->wct < 2) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return;
+		goto out;
 	}
 
 	p = (const char *)req->buf + 1;
 	p += srvstr_get_path_req(ctx, req, &fname, p, STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
-		END_PROFILE(SMBsetatr);
-		return;
+		goto out;
 	}
 
 	status = resolve_dfspath(ctx, conn,
@@ -1196,26 +1211,28 @@ void reply_setatr(struct smb_request *req)
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
 					ERRSRV, ERRbadpath);
-			END_PROFILE(SMBsetatr);
-			return;
+			goto out;
 		}
 		reply_nterror(req, status);
-		END_PROFILE(SMBsetatr);
-		return;
+		goto out;
 	}
 
-	status = unix_convert(ctx, conn, fname, False, &fname, NULL, &sbuf);
+	status = unix_convert(ctx, conn, fname, &smb_fname, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
-		END_PROFILE(SMBsetatr);
-		return;
+		goto out;
+	}
+
+	status = get_full_smb_filename(ctx, smb_fname, &fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+		goto out;
 	}
 
 	status = check_name(conn, fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
-		END_PROFILE(SMBsetatr);
-		return;
+		goto out;
 	}
 
 	if (fname[0] == '.' && fname[1] == '\0') {
@@ -1224,8 +1241,7 @@ void reply_setatr(struct smb_request *req)
 		 * condition. Might be moved to somewhere else later -- vl
 		 */
 		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
-		END_PROFILE(SMBsetatr);
-		return;
+		goto out;
 	}
 
 	mode = SVAL(req->vwv+0, 0);
@@ -1233,30 +1249,32 @@ void reply_setatr(struct smb_request *req)
 
 	ft.mtime = convert_time_t_to_timespec(mtime);
 	status = smb_set_file_time(conn, NULL, fname,
-				   &sbuf, &ft, true);
+				   &smb_fname->st, &ft, true);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_unixerror(req, ERRDOS, ERRnoaccess);
-		END_PROFILE(SMBsetatr);
-		return;
+		goto out;
 	}
 
 	if (mode != FILE_ATTRIBUTE_NORMAL) {
-		if (VALID_STAT_OF_DIR(sbuf))
+		if (VALID_STAT_OF_DIR(smb_fname->st))
 			mode |= aDIR;
 		else
 			mode &= ~aDIR;
 
-		if (file_set_dosmode(conn,fname,mode,&sbuf,NULL,false) != 0) {
+		if (file_set_dosmode(conn, fname, mode, &smb_fname->st, NULL,
+				     false) != 0) {
 			reply_unixerror(req, ERRDOS, ERRnoaccess);
-			END_PROFILE(SMBsetatr);
-			return;
+			goto out;
 		}
 	}
 
 	reply_outbuf(req, 0, 0);
 
 	DEBUG( 3, ( "setatr name=%s mode=%d\n", fname, mode ) );
-
+ out:
+	if (smb_fname) {
+		TALLOC_FREE(smb_fname);
+	}
 	END_PROFILE(SMBsetatr);
 	return;
 }
@@ -1399,10 +1417,18 @@ void reply_search(struct smb_request *req)
 	/* dirtype &= ~aDIR; */
 
 	if (status_len == 0) {
-		SMB_STRUCT_STAT sbuf;
+		struct smb_filename *smb_fname = NULL;
 
-		nt_status = unix_convert(ctx, conn, path, True,
-				&directory, NULL, &sbuf);
+		nt_status = unix_convert(ctx, conn, path, &smb_fname,
+					 UCF_ALLOW_WCARD_LCOMP);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			reply_nterror(req, nt_status);
+			END_PROFILE(SMBsearch);
+			return;
+		}
+
+		nt_status = get_full_smb_filename(ctx, smb_fname, &directory);
+		TALLOC_FREE(smb_fname);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			reply_nterror(req, nt_status);
 			END_PROFILE(SMBsearch);
@@ -2142,12 +2168,12 @@ void reply_mknew(struct smb_request *req)
 void reply_ctemp(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
+	struct smb_filename *smb_fname = NULL;
 	char *fname = NULL;
 	uint32 fattr;
 	files_struct *fsp;
 	int oplock_request;
 	int tmpfd;
-	SMB_STRUCT_STAT sbuf;
 	char *s;
 	NTSTATUS status;
 	TALLOC_CTX *ctx = talloc_tos();
@@ -2156,8 +2182,7 @@ void reply_ctemp(struct smb_request *req)
 
 	if (req->wct < 3) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		END_PROFILE(SMBctemp);
-		return;
+		goto out;
 	}
 
 	fattr = SVAL(req->vwv+0, 0);
@@ -2167,8 +2192,7 @@ void reply_ctemp(struct smb_request *req)
 			    STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
-		END_PROFILE(SMBctemp);
-		return;
+		goto out;
 	}
 	if (*fname) {
 		fname = talloc_asprintf(ctx,
@@ -2180,8 +2204,7 @@ void reply_ctemp(struct smb_request *req)
 
 	if (!fname) {
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		END_PROFILE(SMBctemp);
-		return;
+		goto out;
 	}
 
 	status = resolve_dfspath(ctx, conn,
@@ -2192,37 +2215,38 @@ void reply_ctemp(struct smb_request *req)
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
 					ERRSRV, ERRbadpath);
-			END_PROFILE(SMBctemp);
-			return;
+			goto out;
 		}
 		reply_nterror(req, status);
-		END_PROFILE(SMBctemp);
-		return;
+		goto out;
 	}
 
-	status = unix_convert(ctx, conn, fname, False, &fname, NULL, &sbuf);
+	status = unix_convert(ctx, conn, fname, &smb_fname, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
-		END_PROFILE(SMBctemp);
-		return;
+		goto out;
+	}
+
+	status = get_full_smb_filename(ctx, smb_fname, &fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+		goto out;
 	}
 
 	status = check_name(conn, fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
-		END_PROFILE(SMBctemp);
-		return;
+		goto out;
 	}
 
 	tmpfd = mkstemp(fname);
 	if (tmpfd == -1) {
 		reply_unixerror(req, ERRDOS, ERRnoaccess);
-		END_PROFILE(SMBctemp);
-		return;
+		goto out;
 	}
 
-	SET_STAT_INVALID(sbuf);
-	SMB_VFS_STAT(conn,fname,&sbuf);
+	SET_STAT_INVALID(smb_fname->st);
+	SMB_VFS_STAT(conn, fname, &smb_fname->st);
 
 	/* We should fail if file does not exist. */
 	status = SMB_VFS_CREATE_FILE(
@@ -2242,7 +2266,7 @@ void reply_ctemp(struct smb_request *req)
 		NULL,					/* ea_list */
 		&fsp,					/* result */
 		NULL,					/* pinfo */
-		&sbuf);					/* psbuf */
+		&smb_fname->st);			/* psbuf */
 
 	/* close fd from mkstemp() */
 	close(tmpfd);
@@ -2250,12 +2274,10 @@ void reply_ctemp(struct smb_request *req)
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->mid)) {
 			/* We have re-scheduled this call. */
-			END_PROFILE(SMBctemp);
-			return;
+			goto out;
 		}
 		reply_openerror(req, status);
-		END_PROFILE(SMBctemp);
-		return;
+		goto out;
 	}
 
 	reply_outbuf(req, 1, 0);
@@ -2277,8 +2299,7 @@ void reply_ctemp(struct smb_request *req)
 	if (message_push_string(&req->outbuf, s, STR_ASCII|STR_TERMINATE)
 	    == -1) {
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		END_PROFILE(SMBctemp);
-		return;
+		goto out;
 	}
 
 	if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
@@ -2293,8 +2314,11 @@ void reply_ctemp(struct smb_request *req)
 
 	DEBUG( 2, ( "reply_ctemp: created temp file %s\n", fsp->fsp_name ) );
 	DEBUG( 3, ( "reply_ctemp %s fd=%d umode=0%o\n", fsp->fsp_name,
-		    fsp->fh->fd, (unsigned int)sbuf.st_mode ) );
-
+		    fsp->fh->fd, (unsigned int)smb_fname->st.st_mode));
+ out:
+	if (smb_fname) {
+		TALLOC_FREE(smb_fname);
+	}
 	END_PROFILE(SMBctemp);
 	return;
 }
@@ -2479,17 +2503,25 @@ static NTSTATUS do_unlink(connection_struct *conn,
 NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 			  uint32 dirtype, const char *name_in, bool has_wild)
 {
+	struct smb_filename *smb_fname = NULL;
 	const char *directory = NULL;
 	char *mask = NULL;
 	char *name = NULL;
 	char *p = NULL;
 	int count=0;
 	NTSTATUS status = NT_STATUS_OK;
-	SMB_STRUCT_STAT sbuf, st;
+	SMB_STRUCT_STAT st;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	status = unix_convert(ctx, conn, name_in, has_wild, &name, NULL, &sbuf);
+	status = unix_convert(ctx, conn, name_in, &smb_fname,
+			      has_wild ? UCF_ALLOW_WCARD_LCOMP : 0);
 	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = get_full_smb_filename(ctx, smb_fname, &name);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(smb_fname);
 		return status;
 	}
 
@@ -2497,6 +2529,7 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 	if (!p) {
 		directory = talloc_strdup(ctx, ".");
 		if (!directory) {
+			TALLOC_FREE(smb_fname);
 			return NT_STATUS_NO_MEMORY;
 		}
 		mask = name;
@@ -2515,7 +2548,7 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 	 * Tine Smukavec <valentin.smukavec@hermes.si>.
 	 */
 
-	if (!VALID_STAT(sbuf) && mangle_is_mangled(mask,conn->params)) {
+	if (!VALID_STAT(smb_fname->st) && mangle_is_mangled(mask,conn->params)) {
 		char *new_mask = NULL;
 		mangle_lookup_name_from_8_3(ctx,
 				mask,
@@ -2525,6 +2558,7 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 			mask = new_mask;
 		}
 	}
+	TALLOC_FREE(smb_fname);
 
 	if (!has_wild) {
 		directory = talloc_asprintf(ctx,
@@ -5141,9 +5175,9 @@ void reply_printwrite(struct smb_request *req)
 void reply_mkdir(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
+	struct smb_filename *smb_dname = NULL;
 	char *directory = NULL;
 	NTSTATUS status;
-	SMB_STRUCT_STAT sbuf;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBmkdir);
@@ -5152,8 +5186,7 @@ void reply_mkdir(struct smb_request *req)
 			    STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
-		END_PROFILE(SMBmkdir);
-		return;
+		goto out;
 	}
 
 	status = resolve_dfspath(ctx, conn,
@@ -5164,26 +5197,28 @@ void reply_mkdir(struct smb_request *req)
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
 					ERRSRV, ERRbadpath);
-			END_PROFILE(SMBmkdir);
-			return;
+			goto out;
 		}
 		reply_nterror(req, status);
-		END_PROFILE(SMBmkdir);
-		return;
+		goto out;
 	}
 
-	status = unix_convert(ctx, conn, directory, False, &directory, NULL, &sbuf);
+	status = unix_convert(ctx, conn, directory, &smb_dname, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
-		END_PROFILE(SMBmkdir);
-		return;
+		goto out;
+	}
+
+	status = get_full_smb_filename(ctx, smb_dname, &directory);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+		goto out;
 	}
 
 	status = check_name(conn, directory);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
-		END_PROFILE(SMBmkdir);
-		return;
+		goto out;
 	}
 
 	status = create_directory(conn, req, directory);
@@ -5204,14 +5239,16 @@ void reply_mkdir(struct smb_request *req)
 		}
 
 		reply_nterror(req, status);
-		END_PROFILE(SMBmkdir);
-		return;
+		goto out;
 	}
 
 	reply_outbuf(req, 0, 0);
 
 	DEBUG( 3, ( "mkdir %s\n", directory ) );
-
+ out:
+	if (smb_dname) {
+		TALLOC_FREE(smb_dname);
+	}
 	END_PROFILE(SMBmkdir);
 	return;
 }
@@ -5418,8 +5455,8 @@ NTSTATUS rmdir_internals(TALLOC_CTX *ctx,
 void reply_rmdir(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
+	struct smb_filename *smb_dname = NULL;
 	char *directory = NULL;
-	SMB_STRUCT_STAT sbuf;
 	NTSTATUS status;
 	TALLOC_CTX *ctx = talloc_tos();
 
@@ -5429,8 +5466,7 @@ void reply_rmdir(struct smb_request *req)
 			    STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
-		END_PROFILE(SMBrmdir);
-		return;
+		goto out;
 	}
 
 	status = resolve_dfspath(ctx, conn,
@@ -5441,41 +5477,44 @@ void reply_rmdir(struct smb_request *req)
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
 					ERRSRV, ERRbadpath);
-			END_PROFILE(SMBrmdir);
-			return;
+			goto out;
 		}
 		reply_nterror(req, status);
-		END_PROFILE(SMBrmdir);
-		return;
+		goto out;
 	}
 
-	status = unix_convert(ctx, conn, directory, False, &directory,
-			NULL, &sbuf);
+	status = unix_convert(ctx, conn, directory, &smb_dname, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
-		END_PROFILE(SMBrmdir);
-		return;
+		goto out;
+	}
+
+	status = get_full_smb_filename(ctx, smb_dname, &directory);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+		goto out;
 	}
 
 	status = check_name(conn, directory);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
-		END_PROFILE(SMBrmdir);
-		return;
+		goto out;
 	}
 
 	dptr_closepath(directory, req->smbpid);
 	status = rmdir_internals(ctx, conn, directory);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
-		END_PROFILE(SMBrmdir);
-		return;
+		goto out;
 	}
 
 	reply_outbuf(req, 0, 0);
 
 	DEBUG( 3, ( "rmdir %s\n", directory ) );
-
+ out:
+	if (smb_dname) {
+		TALLOC_FREE(smb_dname);
+	}
 	END_PROFILE(SMBrmdir);
 	return;
 }
@@ -5936,35 +5975,42 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			bool dest_has_wild,
 			uint32_t access_mask)
 {
+	struct smb_filename *smb_fname = NULL;
+	struct smb_filename *smb_fname_new = NULL;
 	char *directory = NULL;
 	char *mask = NULL;
-	char *last_component_src = NULL;
-	char *last_component_dest = NULL;
 	char *name = NULL;
 	char *newname = NULL;
 	char *p;
 	int count=0;
 	NTSTATUS status = NT_STATUS_OK;
-	SMB_STRUCT_STAT sbuf1, sbuf2;
 	struct smb_Dir *dir_hnd = NULL;
 	const char *dname;
 	long offset = 0;
 	int create_options = 0;
 	bool posix_pathnames = lp_posix_pathnames();
 
-	ZERO_STRUCT(sbuf1);
-	ZERO_STRUCT(sbuf2);
-
-	status = unix_convert(ctx, conn, name_in, src_has_wild, &name,
-			&last_component_src, &sbuf1);
+	status = unix_convert(ctx, conn, name_in, &smb_fname,
+			      src_has_wild ? UCF_ALLOW_WCARD_LCOMP : 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto out;
 	}
 
-	status = unix_convert(ctx, conn, newname_in, dest_has_wild, &newname,
-			&last_component_dest, &sbuf2);
+	status = get_full_smb_filename(ctx, smb_fname, &name);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto out;
+	}
+
+	status = unix_convert(ctx, conn, newname_in, &smb_fname_new,
+			      (UCF_SAVE_LCOMP |
+			       (dest_has_wild ? UCF_ALLOW_WCARD_LCOMP : 0)));
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	status = get_full_smb_filename(ctx, smb_fname_new, &newname);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
 	}
 
 	/*
@@ -5980,14 +6026,16 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	if (!p) {
 		directory = talloc_strdup(ctx, ".");
 		if (!directory) {
-			return NT_STATUS_NO_MEMORY;
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
 		}
 		mask = name;
 	} else {
 		*p = 0;
 		directory = talloc_strdup(ctx, name);
 		if (!directory) {
-			return NT_STATUS_NO_MEMORY;
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
 		}
 		mask = p+1;
 		*p = '/'; /* Replace needed for exceptional test below. */
@@ -6002,7 +6050,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	 * Tine Smukavec <valentin.smukavec@hermes.si>.
 	 */
 
-	if (!VALID_STAT(sbuf1) && mangle_is_mangled(mask, conn->params)) {
+	if (!VALID_STAT(smb_fname->st) && mangle_is_mangled(mask, conn->params)) {
 		char *new_mask = NULL;
 		mangle_lookup_name_from_8_3(ctx,
 					mask,
@@ -6024,7 +6072,8 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 				"/%s",
 				mask);
 		if (!directory) {
-			return NT_STATUS_NO_MEMORY;
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
 		}
 
 		/* Ensure newname contains a '/' also */
@@ -6033,7 +6082,8 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 						"./%s",
 						newname);
 			if (!newname) {
-				return NT_STATUS_NO_MEMORY;
+				status = NT_STATUS_NO_MEMORY;
+				goto out;
 			}
 		}
 
@@ -6043,7 +6093,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			  "last_component_dest = %s\n",
 			  conn->case_sensitive, conn->case_preserve,
 			  conn->short_case_preserve, directory,
-			  newname, last_component_dest));
+			  newname, smb_fname_new->original_lcomp));
 
 		/* The dest name still may have wildcards. */
 		if (dest_has_wild) {
@@ -6054,19 +6104,20 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 					"%s %s failed\n",
 					directory,
 					newname));
-				return NT_STATUS_NO_MEMORY;
+				status = NT_STATUS_NO_MEMORY;
+				goto out;
 			}
 			newname = mod_newname;
 		}
 
-		ZERO_STRUCT(sbuf1);
+		ZERO_STRUCT(smb_fname->st);
 		if (posix_pathnames) {
-			SMB_VFS_LSTAT(conn, directory, &sbuf1);
+			SMB_VFS_LSTAT(conn, directory, &smb_fname->st);
 		} else {
-			SMB_VFS_STAT(conn, directory, &sbuf1);
+			SMB_VFS_STAT(conn, directory, &smb_fname->st);
 		}
 
-		if (S_ISDIR(sbuf1.st_mode)) {
+		if (S_ISDIR(smb_fname->st.st_mode)) {
 			create_options |= FILE_DIRECTORY_FILE;
 		}
 
@@ -6088,16 +6139,16 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			NULL,				/* ea_list */
 			&fsp,				/* result */
 			NULL,				/* pinfo */
-			&sbuf1);			/* psbuf */
+			&smb_fname->st);		/* psbuf */
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("Could not open rename source %s: %s\n",
 				  directory, nt_errstr(status)));
-			return status;
+			goto out;
 		}
 
 		status = rename_internals_fsp(conn, fsp, newname,
-					      last_component_dest,
+					      smb_fname_new->original_lcomp,
 					      attrs, replace_if_exists);
 
 		close_file(req, fsp, NORMAL_CLOSE);
@@ -6105,7 +6156,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		DEBUG(3, ("rename_internals: Error %s rename %s -> %s\n",
 			  nt_errstr(status), directory,newname));
 
-		return status;
+		goto out;
 	}
 
 	/*
@@ -6118,12 +6169,13 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 
 	status = check_name(conn, directory);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto out;
 	}
 
 	dir_hnd = OpenDir(talloc_tos(), conn, directory, mask, attrs);
 	if (dir_hnd == NULL) {
-		return map_nt_error_from_unix(errno);
+		status = map_nt_error_from_unix(errno);
+		goto out;
 	}
 
 	status = NT_STATUS_NO_SUCH_FILE;
@@ -6132,7 +6184,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	 * - gentest fix. JRA
 	 */
 
-	while ((dname = ReadDirName(dir_hnd, &offset, &sbuf1))) {
+	while ((dname = ReadDirName(dir_hnd, &offset, &smb_fname->st))) {
 		files_struct *fsp = NULL;
 		char *fname = NULL;
 		char *destname = NULL;
@@ -6147,7 +6199,8 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			}
 		}
 
-		if (!is_visible_file(conn, directory, dname, &sbuf1, False)) {
+		if (!is_visible_file(conn, directory, dname, &smb_fname->st,
+				     False)) {
 			continue;
 		}
 
@@ -6165,7 +6218,8 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 				directory,
 				dname);
 		if (!fname) {
-			return NT_STATUS_NO_MEMORY;
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
 		}
 
 		if (!resolve_wildcards(ctx,
@@ -6176,19 +6230,20 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			continue;
 		}
 		if (!destname) {
-			return NT_STATUS_NO_MEMORY;
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
 		}
 
-		ZERO_STRUCT(sbuf1);
+		ZERO_STRUCT(smb_fname->st);
 		if (posix_pathnames) {
-			SMB_VFS_LSTAT(conn, fname, &sbuf1);
+			SMB_VFS_LSTAT(conn, fname, &smb_fname->st);
 		} else {
-			SMB_VFS_STAT(conn, fname, &sbuf1);
+			SMB_VFS_STAT(conn, fname, &smb_fname->st);
 		}
 
 		create_options = 0;
 
-		if (S_ISDIR(sbuf1.st_mode)) {
+		if (S_ISDIR(smb_fname->st.st_mode)) {
 			create_options |= FILE_DIRECTORY_FILE;
 		}
 
@@ -6210,7 +6265,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			NULL,				/* ea_list */
 			&fsp,				/* result */
 			NULL,				/* pinfo */
-			&sbuf1);			/* psbuf */
+			&smb_fname->st);		/* psbuf */
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3,("rename_internals: SMB_VFS_CREATE_FILE "
@@ -6245,6 +6300,13 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		status = map_nt_error_from_unix(errno);
 	}
 
+ out:
+	if (smb_fname) {
+		TALLOC_FREE(smb_fname);
+	}
+	if (smb_fname_new) {
+		TALLOC_FREE(smb_fname_new);
+	}
 	return status;
 }
 
@@ -6505,6 +6567,8 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 void reply_copy(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
+	struct smb_filename *smb_fname = NULL;
+	struct smb_filename *smb_fname_new = NULL;
 	char *name = NULL;
 	char *newname = NULL;
 	char *directory = NULL;
@@ -6520,7 +6584,6 @@ void reply_copy(struct smb_request *req)
 	bool target_is_directory=False;
 	bool source_has_wild = False;
 	bool dest_has_wild = False;
-	SMB_STRUCT_STAT sbuf1, sbuf2;
 	NTSTATUS status;
 	TALLOC_CTX *ctx = talloc_tos();
 
@@ -6528,8 +6591,7 @@ void reply_copy(struct smb_request *req)
 
 	if (req->wct < 3) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		END_PROFILE(SMBcopy);
-		return;
+		goto out;
 	}
 
 	tid2 = SVAL(req->vwv+0, 0);
@@ -6541,15 +6603,13 @@ void reply_copy(struct smb_request *req)
 				       &status, &source_has_wild);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
-		END_PROFILE(SMBcopy);
-		return;
+		goto out;
 	}
 	p += srvstr_get_path_req_wcard(ctx, req, &newname, p, STR_TERMINATE,
 				       &status, &dest_has_wild);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
-		END_PROFILE(SMBcopy);
-		return;
+		goto out;
 	}
 
 	DEBUG(3,("reply_copy : %s -> %s\n",name,newname));
@@ -6558,8 +6618,7 @@ void reply_copy(struct smb_request *req)
 		/* can't currently handle inter share copies XXXX */
 		DEBUG(3,("Rejecting inter-share copy\n"));
 		reply_doserror(req, ERRSRV, ERRinvdevice);
-		END_PROFILE(SMBcopy);
-		return;
+		goto out;
 	}
 
 	status = resolve_dfspath_wcard(ctx, conn,
@@ -6571,12 +6630,10 @@ void reply_copy(struct smb_request *req)
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
 					ERRSRV, ERRbadpath);
-			END_PROFILE(SMBcopy);
-			return;
+			goto out;
 		}
 		reply_nterror(req, status);
-		END_PROFILE(SMBcopy);
-		return;
+		goto out;
 	}
 
 	status = resolve_dfspath_wcard(ctx, conn,
@@ -6588,50 +6645,55 @@ void reply_copy(struct smb_request *req)
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
 					ERRSRV, ERRbadpath);
-			END_PROFILE(SMBcopy);
-			return;
+			goto out;
 		}
 		reply_nterror(req, status);
-		END_PROFILE(SMBcopy);
-		return;
+		goto out;
 	}
 
-	status = unix_convert(ctx, conn, name, source_has_wild,
-			&name, NULL, &sbuf1);
+	status = unix_convert(ctx, conn, name, &smb_fname,
+			      source_has_wild ? UCF_ALLOW_WCARD_LCOMP : 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
-		END_PROFILE(SMBcopy);
-		return;
+		goto out;
 	}
 
-	status = unix_convert(ctx, conn, newname, dest_has_wild,
-			&newname, NULL, &sbuf2);
+	status = get_full_smb_filename(ctx, smb_fname, &name);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
-		END_PROFILE(SMBcopy);
-		return;
+		goto out;
 	}
 
-	target_is_directory = VALID_STAT_OF_DIR(sbuf2);
+	status = unix_convert(ctx, conn, newname, &smb_fname_new,
+			      dest_has_wild ? UCF_ALLOW_WCARD_LCOMP : 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+		goto out;
+	}
+
+	status = get_full_smb_filename(ctx, smb_fname_new, &newname);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+		goto out;
+	}
+
+	target_is_directory = VALID_STAT_OF_DIR(smb_fname_new->st);
 
 	if ((flags&1) && target_is_directory) {
 		reply_doserror(req, ERRDOS, ERRbadfile);
-		END_PROFILE(SMBcopy);
-		return;
+		goto out;
 	}
 
 	if ((flags&2) && !target_is_directory) {
 		reply_doserror(req, ERRDOS, ERRbadpath);
-		END_PROFILE(SMBcopy);
-		return;
+		goto out;
 	}
 
-	if ((flags&(1<<5)) && VALID_STAT_OF_DIR(sbuf1)) {
+	if ((flags&(1<<5)) && VALID_STAT_OF_DIR(smb_fname->st)) {
 		/* wants a tree copy! XXXX */
 		DEBUG(3,("Rejecting tree copy\n"));
 		reply_doserror(req, ERRSRV, ERRerror);
-		END_PROFILE(SMBcopy);
-		return;
+		goto out;
 	}
 
 	p = strrchr_m(name,'/');
@@ -6645,8 +6707,7 @@ void reply_copy(struct smb_request *req)
 
 	if (!directory) {
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		END_PROFILE(SMBcopy);
-		return;
+		goto out;
 	}
 
 	/*
@@ -6658,7 +6719,8 @@ void reply_copy(struct smb_request *req)
 	 * Tine Smukavec <valentin.smukavec@hermes.si>.
 	 */
 
-	if (!VALID_STAT(sbuf1) && mangle_is_mangled(mask, conn->params)) {
+	if (!VALID_STAT(smb_fname->st) &&
+	    mangle_is_mangled(mask, conn->params)) {
 		char *new_mask = NULL;
 		mangle_lookup_name_from_8_3(ctx,
 					mask,
@@ -6678,8 +6740,7 @@ void reply_copy(struct smb_request *req)
 			if (!resolve_wildcards(ctx,
 					directory,newname,&mod_newname)) {
 				reply_nterror(req, NT_STATUS_NO_MEMORY);
-				END_PROFILE(SMBcopy);
-				return;
+				goto out;
 			}
 			newname = mod_newname;
 		}
@@ -6687,15 +6748,13 @@ void reply_copy(struct smb_request *req)
 		status = check_name(conn, directory);
 		if (!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);
-			END_PROFILE(SMBcopy);
-			return;
+			goto out;
 		}
 
 		status = check_name(conn, newname);
 		if (!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);
-			END_PROFILE(SMBcopy);
-			return;
+			goto out;
 		}
 
 		status = copy_file(ctx,conn,directory,newname,ofun,
@@ -6703,8 +6762,7 @@ void reply_copy(struct smb_request *req)
 
 		if(!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);
-			END_PROFILE(SMBcopy);
-			return;
+			goto out;
 		} else {
 			count++;
 		}
@@ -6720,21 +6778,20 @@ void reply_copy(struct smb_request *req)
 		status = check_name(conn, directory);
 		if (!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);
-			END_PROFILE(SMBcopy);
-			return;
+			goto out;
 		}
 
 		dir_hnd = OpenDir(talloc_tos(), conn, directory, mask, 0);
 		if (dir_hnd == NULL) {
 			status = map_nt_error_from_unix(errno);
 			reply_nterror(req, status);
-			END_PROFILE(SMBcopy);
-			return;
+			goto out;
 		}
 
 		error = ERRbadfile;
 
-		while ((dname = ReadDirName(dir_hnd, &offset, &sbuf1))) {
+		while ((dname = ReadDirName(dir_hnd, &offset,
+					    &smb_fname->st))) {
 			char *destname = NULL;
 			char *fname = NULL;
 
@@ -6742,7 +6799,8 @@ void reply_copy(struct smb_request *req)
 				continue;
 			}
 
-			if (!is_visible_file(conn, directory, dname, &sbuf1, False)) {
+			if (!is_visible_file(conn, directory, dname,
+					     &smb_fname->st, False)) {
 				continue;
 			}
 
@@ -6758,8 +6816,7 @@ void reply_copy(struct smb_request *req)
 			if (!fname) {
 				TALLOC_FREE(dir_hnd);
 				reply_nterror(req, NT_STATUS_NO_MEMORY);
-				END_PROFILE(SMBcopy);
-				return;
+				goto out;
 			}
 
 			if (!resolve_wildcards(ctx,
@@ -6769,24 +6826,21 @@ void reply_copy(struct smb_request *req)
 			if (!destname) {
 				TALLOC_FREE(dir_hnd);
 				reply_nterror(req, NT_STATUS_NO_MEMORY);
-				END_PROFILE(SMBcopy);
-				return;
+				goto out;
 			}
 
 			status = check_name(conn, fname);
 			if (!NT_STATUS_IS_OK(status)) {
 				TALLOC_FREE(dir_hnd);
 				reply_nterror(req, status);
-				END_PROFILE(SMBcopy);
-				return;
+				goto out;
 			}
 
 			status = check_name(conn, destname);
 			if (!NT_STATUS_IS_OK(status)) {
 				TALLOC_FREE(dir_hnd);
 				reply_nterror(req, status);
-				END_PROFILE(SMBcopy);
-				return;
+				goto out;
 			}
 
 			DEBUG(3,("reply_copy : doing copy on %s -> %s\n",fname, destname));
@@ -6807,18 +6861,22 @@ void reply_copy(struct smb_request *req)
 			/* Error on close... */
 			errno = err;
 			reply_unixerror(req, ERRHRD, ERRgeneral);
-			END_PROFILE(SMBcopy);
-			return;
+			goto out;
 		}
 
 		reply_doserror(req, ERRDOS, error);
-		END_PROFILE(SMBcopy);
-		return;
+		goto out;
 	}
 
 	reply_outbuf(req, 1, 0);
 	SSVAL(req->outbuf,smb_vwv0,count);
-
+ out:
+	if (smb_fname) {
+		TALLOC_FREE(smb_fname);
+	}
+	if (smb_fname_new) {
+		TALLOC_FREE(smb_fname_new);
+	}
 	END_PROFILE(SMBcopy);
 	return;
 }
