@@ -188,12 +188,14 @@ distclean: clean
 	rm -f Makefile
 
 install: all
+	mkdir -p $(DESTDIR)$(libdir)/pkgconfig
 	mkdir -p $(DESTDIR)$(bindir)
 	mkdir -p $(DESTDIR)$(sbindir)
 	mkdir -p $(DESTDIR)$(includedir)
 	mkdir -p $(DESTDIR)$(etcdir)/ctdb
 	mkdir -p $(DESTDIR)$(etcdir)/ctdb/events.d
 	mkdir -p $(DESTDIR)$(docdir)/ctdb
+	${INSTALLCMD} -m 644 ctdb.pc $(DESTDIR)$(libdir)/pkgconfig
 	${INSTALLCMD} -m 755 bin/ctdb $(DESTDIR)$(bindir)
 	${INSTALLCMD} -m 755 bin/ctdb_ipmux $(DESTDIR)$(bindir)
 	${INSTALLCMD} -m 755 bin/ctdbd $(DESTDIR)$(sbindir)
@@ -233,4 +235,4 @@ valgrindtest: all
 
 
 realdistclean: distclean
-	rm -f configure config.h.in
+	rm -f configure config.h.in ctdb.pc

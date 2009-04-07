@@ -1,7 +1,7 @@
 #!/bin/sh
 
 rm -rf autom4te.cache
-rm -f configure config.h.in
+rm -f configure config.h.in ctdb.pc
 
 IPATHS="-I libreplace -I lib/replace -I ../libreplace -I ../replace"
 IPATHS="$IPATHS -I lib/talloc -I talloc -I ../talloc"
