@@ -32,8 +32,6 @@ struct service_control_op {
 	SERVICE_CONTROL_OPS *ops;
 };
 
-#define SVCCTL_NUM_INTERNAL_SERVICES	4
-
 /* handle external services */
 extern SERVICE_CONTROL_OPS rcinit_svc_ops;
 
