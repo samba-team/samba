@@ -429,8 +429,9 @@ void process_oplock_async_level2_break_message(struct messaging_context *msg_ctx
 	/* De-linearize incoming message. */
 	message_to_share_mode_entry(&msg, (char *)data->data);
 
-	DEBUG(10, ("Got oplock async level 2 break message from pid %d: %s/%lu\n",
-		   (int)procid_to_pid(&src), file_id_string_tos(&msg.id), msg.share_file_id));
+	DEBUG(10, ("Got oplock async level 2 break message from pid %s: "
+		   "%s/%lu\n", procid_str(debug_ctx(), &src),
+		   file_id_string_tos(&msg.id), msg.share_file_id));
 
 	fsp = initial_break_processing(msg.id, msg.share_file_id);
 
