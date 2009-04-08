@@ -233,8 +233,8 @@ static bool test_ReportEventLog(struct torture_context *tctx,
 	r.in.strings = &strings;
 	r.in.data = NULL;
 	r.in.flags = 0;
-	r.out.record_number = &record_number;
-	r.out.time_written = &time_written;
+	r.in.record_number = r.out.record_number = &record_number;
+	r.in.time_written = r.out.time_written = &time_written;
 
 	torture_assert_ntstatus_ok(tctx,
 			dcerpc_eventlog_ReportEventW(p, tctx, &r),
