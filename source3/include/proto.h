@@ -5421,11 +5421,11 @@ NTSTATUS rpc_cli_smbd_conn_init(TALLOC_CTX *mem_ctx,
 							void *priv),
 				void *priv);
 
-struct async_req *rpc_transport_smbd_init_send(TALLOC_CTX *mem_ctx,
-					       struct event_context *ev,
-					       struct rpc_cli_smbd_conn *conn,
-					       const struct ndr_syntax_id *abstract_syntax);
-NTSTATUS rpc_transport_smbd_init_recv(struct async_req *req,
+struct tevent_req *rpc_transport_smbd_init_send(TALLOC_CTX *mem_ctx,
+						struct event_context *ev,
+						struct rpc_cli_smbd_conn *conn,
+						const struct ndr_syntax_id *abstract_syntax);
+NTSTATUS rpc_transport_smbd_init_recv(struct tevent_req *req,
 				      TALLOC_CTX *mem_ctx,
 				      struct rpc_cli_transport **presult);
 NTSTATUS rpc_transport_smbd_init(TALLOC_CTX *mem_ctx,

@@ -567,56 +567,53 @@ struct rpc_transport_smbd_init_state {
 
 static void rpc_transport_smbd_init_done(struct tevent_req *subreq);
 
-struct async_req *rpc_transport_smbd_init_send(TALLOC_CTX *mem_ctx,
-					       struct event_context *ev,
-					       struct rpc_cli_smbd_conn *conn,
-					       const struct ndr_syntax_id *abstract_syntax)
+struct tevent_req *rpc_transport_smbd_init_send(TALLOC_CTX *mem_ctx,
+						struct event_context *ev,
+						struct rpc_cli_smbd_conn *conn,
+						const struct ndr_syntax_id *abstract_syntax)
 {
-	struct async_req *result;
-	struct tevent_req *subreq;
+	struct tevent_req *req, *subreq;
 	struct rpc_transport_smbd_init_state *state;
 
-	if (!async_req_setup(mem_ctx, &result, &state,
-			     struct rpc_transport_smbd_init_state)) {
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpc_transport_smbd_init_state);
+	if (req == NULL) {
 		return NULL;
 	}
 
 	state->transport = talloc(state, struct rpc_cli_transport);
-	if (state->transport == NULL) {
-		goto fail;
+	if (tevent_req_nomem(state->transport, req)) {
+		return tevent_req_post(req, ev);
 	}
 	state->transport_smbd = talloc(state->transport,
 				       struct rpc_transport_smbd_state);
-	if (state->transport_smbd == NULL) {
-		goto fail;
+	if (tevent_req_nomem(state->transport_smbd, req)) {
+		return tevent_req_post(req, ev);
 	}
 	state->transport_smbd->conn = conn;
 	state->transport->priv = state->transport_smbd;
 
 	if (event_add_fd(ev, state, conn->stdout_fd, EVENT_FD_READ,
 			 rpc_cli_smbd_stdout_reader, conn) == NULL) {
-		goto fail;
+		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+		return tevent_req_post(req, ev);
 	}
 
 	subreq = rpc_transport_np_init_send(state, ev, conn->cli,
 					    abstract_syntax);
-	if (subreq == NULL) {
-		goto fail;
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, rpc_transport_smbd_init_done, result);
-	return result;
-
- fail:
-	TALLOC_FREE(result);
-	return NULL;
+	tevent_req_set_callback(subreq, rpc_transport_smbd_init_done, req);
+	return req;
 }
 
 static void rpc_transport_smbd_init_done(struct tevent_req *subreq)
 {
-	struct async_req *req = tevent_req_callback_data(
-		subreq, struct async_req);
-	struct rpc_transport_smbd_init_state *state = talloc_get_type_abort(
-		req->private_data, struct rpc_transport_smbd_init_state);
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpc_transport_smbd_init_state *state = tevent_req_data(
+		req, struct rpc_transport_smbd_init_state);
 	NTSTATUS status;
 
 	status = rpc_transport_np_init_recv(
@@ -624,21 +621,21 @@ static void rpc_transport_smbd_init_done(struct tevent_req *subreq)
 		&state->transport_smbd->sub_transp);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_nterror(req, status);
+		tevent_req_nterror(req, status);
 		return;
 	}
-	async_req_done(req);
+	tevent_req_done(req);
 }
 
-NTSTATUS rpc_transport_smbd_init_recv(struct async_req *req,
+NTSTATUS rpc_transport_smbd_init_recv(struct tevent_req *req,
 				      TALLOC_CTX *mem_ctx,
 				      struct rpc_cli_transport **presult)
 {
-	struct rpc_transport_smbd_init_state *state = talloc_get_type_abort(
-		req->private_data, struct rpc_transport_smbd_init_state);
+	struct rpc_transport_smbd_init_state *state = tevent_req_data(
+		req, struct rpc_transport_smbd_init_state);
 	NTSTATUS status;
 
-	if (async_req_is_nterror(req, &status)) {
+	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
 
@@ -660,7 +657,7 @@ NTSTATUS rpc_transport_smbd_init(TALLOC_CTX *mem_ctx,
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct event_context *ev;
-	struct async_req *req;
+	struct tevent_req *req;
 	NTSTATUS status;
 
 	ev = event_context_init(frame);
@@ -675,8 +672,9 @@ NTSTATUS rpc_transport_smbd_init(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	while (req->state < ASYNC_REQ_DONE) {
-		event_loop_once(ev);
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
 	}
 
 	status = rpc_transport_smbd_init_recv(req, mem_ctx, presult);
