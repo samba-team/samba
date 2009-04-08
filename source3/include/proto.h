@@ -5874,6 +5874,10 @@ NTSTATUS evlog_evt_entry_to_tdb_entry(TALLOC_CTX *mem_ctx,
 NTSTATUS evlog_tdb_entry_to_evt_entry(TALLOC_CTX *mem_ctx,
 				      const struct eventlog_Record_tdb *t,
 				      struct EVENTLOGRECORD *e);
+NTSTATUS evlog_convert_tdb_to_evt(TALLOC_CTX *mem_ctx,
+				  ELOG_TDB *etdb,
+				  DATA_BLOB *blob_p,
+				  uint32_t *num_records_p);
 
 /* The following definitions come from rpc_server/srv_eventlog_nt.c  */
 
