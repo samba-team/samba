@@ -1,0 +1,105 @@
+/*
+   Unix SMB/CIFS implementation.
+   SMB client library implementation (thread interface functions).
+   Copyright (C) Jeremy Allison, 2009.
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
+ * This code is based in the ideas in openssl
+ * but somewhat simpler and expended to include
+ * thread local storage.
+ */
+
+#include "includes.h"
+
+#define NUM_GLOBAL_LOCKS 1
+
+/*********************************************************
+ Functions to vector the locking primitives used internally
+ by libsmbclient.
+*********************************************************/
+
+const struct smb_thread_functions *global_tfp;
+
+/*********************************************************
+ Dynamic lock array.
+*********************************************************/
+
+void **global_lock_array;
+
+/*********************************************************
+ Function to set the locking primitives used by libsmbclient.
+*********************************************************/
+
+int smb_thread_set_functions(const struct smb_thread_functions *tf)
+{
+	int i;
+
+	global_tfp = tf;
+
+	/* Here we initialize any static locks we're using. */
+	global_lock_array = (void **)SMB_MALLOC_ARRAY(void *, NUM_GLOBAL_LOCKS);
+	if (global_lock_array == NULL) {
+		return ENOMEM;
+	}
+
+	for (i = 0; i < NUM_GLOBAL_LOCKS; i++) {
+		char *name = NULL;
+		if (asprintf(&name, "global_lock_%d", i) == -1) {
+			SAFE_FREE(global_lock_array);
+			return ENOMEM;
+		}
+		global_tfp->create_mutex(name,
+				&global_lock_array[i],
+				__location__);
+		SAFE_FREE(name);
+	}
+
+	return 0;
+}
+
+#if 0
+/* Test. - pthread implementations. */
+#include <pthread.h>
+
+#ifdef malloc
+#undef malloc
+#endif
+
+SMB_THREADS_DEF_PTHREAD_IMPLEMENTATION(tf);
+
+/* Test function. */
+int test_threads(void)
+{
+	int ret;
+	void *plock = NULL;
+
+	smb_thread_set_functions(&tf);
+
+	if ((ret = SMB_THREAD_CREATE_MUTEX("test", plock)) != 0) {
+		printf("Create lock error: %d\n", ret);
+	}
+	if ((ret = SMB_THREAD_LOCK(plock, SMB_THREAD_LOCK)) != 0) {
+		printf("lock error: %d\n", ret);
+	}
+	if ((SMB_THREAD_LOCK(plock, SMB_THREAD_UNLOCK)) != 0) {
+		printf("unlock error: %d\n", ret);
+	}
+	SMB_THREAD_DESTROY_MUTEX(plock);
+
+	return 0;
+}
+#endif
