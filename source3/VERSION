@@ -84,7 +84,7 @@ SAMBA_VERSION_IS_GIT_SNAPSHOT=yes
 #       SAMBA_VERSION_VENDOR_FUNCTION                  #
 #                                                      #
 ########################################################
-SAMBA_VERSION_VENDOR_SUFFIX="devel"
+SAMBA_VERSION_VENDOR_SUFFIX="test"
 SAMBA_VERSION_VENDOR_PATCH=
 
 ########################################################
