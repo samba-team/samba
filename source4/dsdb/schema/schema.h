@@ -132,6 +132,12 @@ struct dsdb_class {
 	bool defaultHidingValue;
 	bool isDefunct;
 	bool systemOnly;
+
+	char **supclasses;
+	char **subclasses;
+	char **subclasses_direct;
+	char **posssuperiors;
+	char **possible_inferiors;
 };
 
 struct dsdb_schema_oid_prefix {

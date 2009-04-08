@@ -309,6 +309,23 @@ failed:
 	return LDB_ERR_OPERATIONS_ERROR;
 }
 
+int dsdb_setup_schema_inversion(struct ldb_context *ldb, struct dsdb_schema *schema)
+{
+	/* Walk the list of schema classes */
+
+	/*  For each subClassOf, add us to subclasses of the parent */
+
+	/* collect these subclasses into a recursive list of total subclasses, preserving order */
+
+	/* For each subclass under 'top', write the index from it's
+	 * order as an integer in the dsdb_class (for sorting
+	 * objectClass lists efficiently) */
+
+	/* Walk the list of scheam classes */
+	
+	/*  Create a 'total possible superiors' on each class */
+	return LDB_SUCCESS;
+}
 
 /**
  * Attach the schema to an opaque pointer on the ldb, so ldb modules
@@ -323,6 +340,8 @@ int dsdb_set_schema(struct ldb_context *ldb, struct dsdb_schema *schema)
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
+
+	schema_fill_constructed(schema);
 
 	ret = ldb_set_opaque(ldb, "dsdb_schema", schema);
 	if (ret != LDB_SUCCESS) {
