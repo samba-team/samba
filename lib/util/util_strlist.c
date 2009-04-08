@@ -198,7 +198,7 @@ _PUBLIC_ size_t str_list_length(const char * const*list)
 /**
   copy a string list
 */
-_PUBLIC_ char **str_list_copy(TALLOC_CTX *mem_ctx, const char **list)
+_PUBLIC_ char **str_list_copy(TALLOC_CTX *mem_ctx, const char * const *list)
 {
 	int i;
 	char **ret;
@@ -245,14 +245,39 @@ _PUBLIC_ bool str_list_equal(const char **list1, const char **list2)
 
 
 /**
-  add an entry to a string list
+  add an entry to a string list if not already in there
 */
-_PUBLIC_ const char **str_list_add(const char **list, const char *s)
+_PUBLIC_ char **str_list_add_unique(char **list, const char *s)
 {
-	size_t len = str_list_length(list);
+	int i;
+	size_t len;
 	const char **ret;
 
+	for (i=0;list[i];i++) {
+		if (strcmp(list[i], s) == 0) return list;
+	}
+
+	len = i;
 	ret = talloc_realloc(NULL, list, const char *, len+2);
+	if (ret == NULL) return NULL;
+
+	ret[len] = talloc_strdup(ret, s);
+	if (ret[len] == NULL) return NULL;
+
+	ret[len+1] = NULL;
+
+	return ret;
+}
+
+/**
+  add an entry to a string list
+*/
+_PUBLIC_ char **str_list_add(char **list, const char *s)
+{
+	size_t len = str_list_length(list);
+	char **ret;
+
+	ret = talloc_realloc(NULL, list, char *, len+2);
 	if (ret == NULL) return NULL;
 
 	ret[len] = talloc_strdup(ret, s);
@@ -311,14 +336,14 @@ _PUBLIC_ bool str_list_check_ci(const char **list, const char *s)
 /**
   append one list to another - expanding list1
 */
-_PUBLIC_ const char **str_list_append(const char **list1, const char **list2)
+_PUBLIC_ char **str_list_append(char **list1, const char * const *list2)
 {
 	size_t len1 = str_list_length(list1);
 	size_t len2 = str_list_length(list2);
-	const char **ret;
+	char **ret;
 	int i;
 
-	ret = talloc_realloc(NULL, list1, const char *, len1+len2+1);
+	ret = talloc_realloc(NULL, list1, char *, len1+len2+1);
 	if (ret == NULL) return NULL;
 
 	for (i=len1;i<len1+len2;i++) {

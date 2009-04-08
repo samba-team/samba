@@ -427,7 +427,7 @@ _PUBLIC_ size_t str_list_length(const char * const *list);
 /**
   copy a string list
 */
-_PUBLIC_ char **str_list_copy(TALLOC_CTX *mem_ctx, const char **list);
+_PUBLIC_ char **str_list_copy(TALLOC_CTX *mem_ctx, const char * const *list);
 
 /**
    Return true if all the elements of the list match exactly.
@@ -437,7 +437,12 @@ _PUBLIC_ bool str_list_equal(const char **list1, const char **list2);
 /**
   add an entry to a string list
 */
-_PUBLIC_ const char **str_list_add(const char **list, const char *s);
+_PUBLIC_ char **str_list_add(char **list, const char *s);
+
+/**
+  add an entry to a string list (if not already in there)
+*/
+_PUBLIC_ char **str_list_add_unique(char **list, const char *s);
 
 /**
   remove an entry from a string list
@@ -453,6 +458,10 @@ _PUBLIC_ bool str_list_check(const char **list, const char *s);
   return true if a string is in a list, case insensitively
 */
 _PUBLIC_ bool str_list_check_ci(const char **list, const char *s);
+/**
+  append one list to another - expanding list1
+*/
+_PUBLIC_ char **str_list_append(char **list1, const char * const *list2);
 
 /* The following definitions come from lib/util/util_file.c  */
 
