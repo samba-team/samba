@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.78
+Version: 1.0.79
 Release: 1
 Epoch: 0
 License: GNU GPL version 3
@@ -131,6 +131,14 @@ fi
 %{_libdir}/pkgconfig/ctdb.pc
 
 %changelog
+* Wed Apr 8 2009 : Version 1.0.79
+ - From Mathieu Parent: add a ctdb pkgconfig file
+ - Fix bug 6250
+ - add a funciton remove_ip to safely remove an ip from an interface, taking care to workaround an issue with linux alias interfaces.
+ - Update the natgw eventscript to use the safe remove_ip() function
+ - fix a bug in the eventscript child process that would cause the socket to be removed.
+ - dont verify nodemap on banned nodes during cluster monitoring
+ - Update the dodgy SeqnumInterval to have ms resolution
 * Tue Mar 31 2009 : Version 1.0.78
  - Add a notify mechanism so we can send snmptraps/email to external management systems when the node becomes unhealthy
  - include 11.natgw eventscript in thew install so that the NATGW feature works
