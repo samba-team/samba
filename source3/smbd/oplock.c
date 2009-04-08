@@ -58,6 +58,12 @@ void break_kernel_oplock(struct messaging_context *msg_ctx, files_struct *fsp)
 
 bool set_file_oplock(files_struct *fsp, int oplock_type)
 {
+	if ((fsp->oplock_type == LEVEL_II_OPLOCK)
+	    && koplocks && !(koplocks->flags & KOPLOCKS_LEVEL2_SUPPORTED)) {
+		DEBUG(10, ("Refusing level2 oplock, kernel oplocks don't "
+			   "support them\n"));
+		return false;
+	}
 	if ((fsp->oplock_type != NO_OPLOCK) &&
 	    (fsp->oplock_type != FAKE_LEVEL_II_OPLOCK) &&
 	    koplocks &&
