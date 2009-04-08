@@ -479,12 +479,12 @@ struct svcctl_EnumDependentServicesW {
 	struct {
 		struct policy_handle *service;/* [ref] */
 		uint32_t state;
-		uint32_t buf_size;/* [range(0,0x40000)] */
+		uint32_t offered;/* [range(0,0x40000)] */
 	} in;
 
 	struct {
-		uint8_t *service_status;/* [ref,size_is(buf_size)] */
-		uint32_t *bytes_needed;/* [ref,range(0,0x40000)] */
+		uint8_t *service_status;/* [ref,size_is(offered)] */
+		uint32_t *needed;/* [ref,range(0,0x40000)] */
 		uint32_t *services_returned;/* [ref,range(0,0x40000)] */
 		WERROR result;
 	} out;
@@ -497,13 +497,13 @@ struct svcctl_EnumServicesStatusW {
 		struct policy_handle *handle;/* [ref] */
 		uint32_t type;
 		enum svcctl_ServiceState state;
-		uint32_t buf_size;/* [range(0,0x40000)] */
+		uint32_t offered;/* [range(0,0x40000)] */
 		uint32_t *resume_handle;/* [unique] */
 	} in;
 
 	struct {
-		uint8_t *service;/* [ref,size_is(buf_size)] */
-		uint32_t *bytes_needed;/* [ref,range(0,0x40000)] */
+		uint8_t *service;/* [ref,size_is(offered)] */
+		uint32_t *needed;/* [ref,range(0,0x40000)] */
 		uint32_t *services_returned;/* [ref,range(0,0x40000)] */
 		uint32_t *resume_handle;/* [unique] */
 		WERROR result;
@@ -545,12 +545,12 @@ struct svcctl_OpenServiceW {
 struct svcctl_QueryServiceConfigW {
 	struct {
 		struct policy_handle *handle;/* [ref] */
-		uint32_t buf_size;/* [range(0,8192)] */
+		uint32_t offered;/* [range(0,8192)] */
 	} in;
 
 	struct {
 		struct QUERY_SERVICE_CONFIG *query;/* [ref] */
-		uint32_t *bytes_needed;/* [ref,range(0,8192)] */
+		uint32_t *needed;/* [ref,range(0,8192)] */
 		WERROR result;
 	} out;
 
@@ -560,12 +560,12 @@ struct svcctl_QueryServiceConfigW {
 struct svcctl_QueryServiceLockStatusW {
 	struct {
 		struct policy_handle *handle;/* [ref] */
-		uint32_t buf_size;
+		uint32_t offered;
 	} in;
 
 	struct {
 		struct SERVICE_LOCK_STATUS *lock_status;/* [ref] */
-		uint32_t *required_buf_size;/* [ref] */
+		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -683,12 +683,12 @@ struct svcctl_EnumDependentServicesA {
 	struct {
 		struct policy_handle *service;/* [ref] */
 		uint32_t state;
-		uint32_t buf_size;
+		uint32_t offered;
 	} in;
 
 	struct {
 		struct ENUM_SERVICE_STATUSA *service_status;/* [unique] */
-		uint32_t *bytes_needed;/* [ref] */
+		uint32_t *needed;/* [ref] */
 		uint32_t *services_returned;/* [ref] */
 		WERROR result;
 	} out;
@@ -701,13 +701,13 @@ struct svcctl_EnumServicesStatusA {
 		struct policy_handle *handle;/* [ref] */
 		uint32_t type;
 		enum svcctl_ServiceState state;
-		uint32_t buf_size;
+		uint32_t offered;
 		uint32_t *resume_handle;/* [unique] */
 	} in;
 
 	struct {
-		uint8_t *service;/* [size_is(buf_size)] */
-		uint32_t *bytes_needed;/* [ref] */
+		uint8_t *service;/* [size_is(offered)] */
+		uint32_t *needed;/* [ref] */
 		uint32_t *services_returned;/* [ref] */
 		uint32_t *resume_handle;/* [unique] */
 		WERROR result;
@@ -748,12 +748,12 @@ struct svcctl_OpenServiceA {
 struct svcctl_QueryServiceConfigA {
 	struct {
 		struct policy_handle *handle;/* [ref] */
-		uint32_t buf_size;
+		uint32_t offered;
 	} in;
 
 	struct {
 		uint8_t *query;
-		uint32_t *bytes_needed;/* [ref] */
+		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -763,12 +763,12 @@ struct svcctl_QueryServiceConfigA {
 struct svcctl_QueryServiceLockStatusA {
 	struct {
 		struct policy_handle *handle;/* [ref] */
-		uint32_t buf_size;
+		uint32_t offered;
 	} in;
 
 	struct {
 		struct SERVICE_LOCK_STATUS *lock_status;/* [ref] */
-		uint32_t *required_buf_size;/* [ref] */
+		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -869,12 +869,12 @@ struct svcctl_QueryServiceConfig2A {
 	struct {
 		struct policy_handle *handle;/* [ref] */
 		enum svcctl_ConfigLevel info_level;
-		uint32_t buf_size;
+		uint32_t offered;
 	} in;
 
 	struct {
 		uint8_t *buffer;
-		uint32_t *bytes_needed;/* [ref] */
+		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -885,12 +885,12 @@ struct svcctl_QueryServiceConfig2W {
 	struct {
 		struct policy_handle *handle;/* [ref] */
 		enum svcctl_ConfigLevel info_level;
-		uint32_t buf_size;/* [range(0,8192)] */
+		uint32_t offered;/* [range(0,8192)] */
 	} in;
 
 	struct {
-		uint8_t *buffer;/* [ref,size_is(buf_size)] */
-		uint32_t *bytes_needed;/* [ref,range(0,8192)] */
+		uint8_t *buffer;/* [ref,size_is(offered)] */
+		uint32_t *needed;/* [ref,range(0,8192)] */
 		WERROR result;
 	} out;
 
@@ -901,12 +901,12 @@ struct svcctl_QueryServiceStatusEx {
 	struct {
 		struct policy_handle *handle;/* [ref] */
 		enum svcctl_StatusLevel info_level;
-		uint32_t buf_size;/* [range(0,8192)] */
+		uint32_t offered;/* [range(0,8192)] */
 	} in;
 
 	struct {
-		uint8_t *buffer;/* [ref,size_is(buf_size)] */
-		uint32_t *bytes_needed;/* [ref,range(0,8192)] */
+		uint8_t *buffer;/* [ref,size_is(offered)] */
+		uint32_t *needed;/* [ref,range(0,8192)] */
 		WERROR result;
 	} out;
 
@@ -919,13 +919,13 @@ struct EnumServicesStatusExA {
 		uint32_t info_level;
 		uint32_t type;
 		enum svcctl_ServiceState state;
-		uint32_t buf_size;
+		uint32_t offered;
 		uint32_t *resume_handle;/* [unique] */
 	} in;
 
 	struct {
 		uint8_t *services;
-		uint32_t *bytes_needed;/* [ref] */
+		uint32_t *needed;/* [ref] */
 		uint32_t *service_returned;/* [ref] */
 		const char **group_name;/* [ref,charset(UTF16)] */
 		uint32_t *resume_handle;/* [unique] */
@@ -941,14 +941,14 @@ struct EnumServicesStatusExW {
 		uint32_t info_level;
 		uint32_t type;
 		enum svcctl_ServiceState state;
-		uint32_t buf_size;/* [range(0,0x40000)] */
+		uint32_t offered;/* [range(0,0x40000)] */
 		const char *group_name;/* [unique,charset(UTF16)] */
 		uint32_t *resume_handle;/* [unique,range(0,0x40000)] */
 	} in;
 
 	struct {
-		uint8_t *services;/* [ref,size_is(buf_size)] */
-		uint32_t *bytes_needed;/* [ref,range(0,0x40000)] */
+		uint8_t *services;/* [ref,size_is(offered)] */
+		uint32_t *needed;/* [ref,range(0,0x40000)] */
 		uint32_t *service_returned;/* [ref,range(0,0x40000)] */
 		uint32_t *resume_handle;/* [unique,range(0,0x40000)] */
 		WERROR result;

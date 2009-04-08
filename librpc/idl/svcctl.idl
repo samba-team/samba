@@ -261,9 +261,9 @@ import "misc.idl", "security.idl";
 	WERROR svcctl_EnumDependentServicesW(
 		[in,ref] policy_handle *service,
 		[in] uint32 state,
-		[out,ref,size_is(buf_size)] uint8 *service_status,
-		[in,range(0,0x40000)] uint32 buf_size,
-		[out,ref,range(0,0x40000)] uint32 *bytes_needed,
+		[out,ref,size_is(offered)] uint8 *service_status,
+		[in,range(0,0x40000)] uint32 offered,
+		[out,ref,range(0,0x40000)] uint32 *needed,
 		[out,ref,range(0,0x40000)] uint32 *services_returned
 	);
 
@@ -280,9 +280,9 @@ import "misc.idl", "security.idl";
 		[in,ref] policy_handle *handle,
 		[in] uint32 type,
 		[in] svcctl_ServiceState state,
-		[out,ref,size_is(buf_size)] uint8 *service,
-		[in] [range(0,0x40000)] uint32 buf_size,
-		[out,ref] [range(0,0x40000)] uint32 *bytes_needed,
+		[out,ref,size_is(offered)] uint8 *service,
+		[in] [range(0,0x40000)] uint32 offered,
+		[out,ref] [range(0,0x40000)] uint32 *needed,
 		[out,ref] [range(0,0x40000)] uint32 *services_returned,
 		[in,out,unique] uint32 *resume_handle
 	);
@@ -389,17 +389,17 @@ import "misc.idl", "security.idl";
 	WERROR svcctl_QueryServiceConfigW(
 		[in,ref] policy_handle *handle,
 		[out] QUERY_SERVICE_CONFIG *query,
-		[in] [range(0,8192)] uint32 buf_size,
-		[out,ref] [range(0,8192)] uint32 *bytes_needed
+		[in] [range(0,8192)] uint32 offered,
+		[out,ref] [range(0,8192)] uint32 *needed
 	);
 
 	/*****************/
 	/* Function 0x12 */
 	WERROR svcctl_QueryServiceLockStatusW(
 		[in,ref] policy_handle *handle,
-		[in] uint32 buf_size,
+		[in] uint32 offered,
 		[out,ref] SERVICE_LOCK_STATUS *lock_status,
-		[out,ref] uint32 *required_buf_size
+		[out,ref] uint32 *needed
 	);
 
 	/*****************/
@@ -477,8 +477,8 @@ import "misc.idl", "security.idl";
 		[in,ref] policy_handle *service,
 		[in] uint32 state,
 		[out,unique] ENUM_SERVICE_STATUSA *service_status,
-		[in] uint32 buf_size,
-		[out,ref] uint32 *bytes_needed,
+		[in] uint32 offered,
+		[out,ref] uint32 *needed,
 		[out,ref] uint32 *services_returned
 	);
 
@@ -488,9 +488,9 @@ import "misc.idl", "security.idl";
 		[in,ref] policy_handle *handle,
 		[in] uint32 type,
 		[in] svcctl_ServiceState state,
-		[in] uint32 buf_size,
-		[out,size_is(buf_size)] uint8 service[*],
-		[out,ref] uint32 *bytes_needed,
+		[in] uint32 offered,
+		[out,size_is(offered)] uint8 service[*],
+		[out,ref] uint32 *needed,
 		[out,ref] uint32 *services_returned,
 		[in,out,unique] uint32 *resume_handle
 	);
@@ -516,18 +516,18 @@ import "misc.idl", "security.idl";
 	/* Function 0x1d */
 	WERROR svcctl_QueryServiceConfigA(
 		[in,ref] policy_handle *handle,
-		[out] uint8 query[buf_size], /*QUERYU_SERVICE_CONFIG */
-		[in] uint32 buf_size,
-		[out,ref] uint32 *bytes_needed
+		[out] uint8 query[offered], /*QUERYU_SERVICE_CONFIG */
+		[in] uint32 offered,
+		[out,ref] uint32 *needed
 	);
 
 	/*****************/
 	/* Function 0x1e */
 	WERROR svcctl_QueryServiceLockStatusA(
 		[in,ref] policy_handle *handle,
-		[in] uint32 buf_size,
+		[in] uint32 offered,
 		[out,ref] SERVICE_LOCK_STATUS *lock_status,
-		[out,ref] uint32 *required_buf_size
+		[out,ref] uint32 *needed
 	);
 
 	/*****************/
@@ -617,9 +617,9 @@ import "misc.idl", "security.idl";
 	WERROR svcctl_QueryServiceConfig2A(
 		[in,ref] policy_handle *handle,
 		[in] svcctl_ConfigLevel info_level,
-		[out] uint8 buffer[buf_size],
-		[in] uint32 buf_size,
-		[out,ref] uint32 *bytes_needed
+		[out] uint8 buffer[offered],
+		[in] uint32 offered,
+		[out,ref] uint32 *needed
 	);
 
 	/*****************/
@@ -627,9 +627,9 @@ import "misc.idl", "security.idl";
 	WERROR svcctl_QueryServiceConfig2W(
 		[in,ref] policy_handle *handle,
 		[in] svcctl_ConfigLevel info_level,
-		[out,ref,size_is(buf_size)] uint8 *buffer,
-		[in] [range(0,8192)] uint32 buf_size,
-		[out,ref] [range(0,8192)] uint32 *bytes_needed
+		[out,ref,size_is(offered)] uint8 *buffer,
+		[in] [range(0,8192)] uint32 offered,
+		[out,ref] [range(0,8192)] uint32 *needed
 	);
 
 	/*****************/
@@ -642,9 +642,9 @@ import "misc.idl", "security.idl";
 	WERROR svcctl_QueryServiceStatusEx(
 		[in,ref] policy_handle *handle,
 		[in] svcctl_StatusLevel info_level,
-		[out,ref,size_is(buf_size)] uint8 *buffer,
-		[in] [range(0,8192)] uint32 buf_size,
-		[out,ref] [range(0,8192)] uint32 *bytes_needed
+		[out,ref,size_is(offered)] uint8 *buffer,
+		[in] [range(0,8192)] uint32 offered,
+		[out,ref] [range(0,8192)] uint32 *needed
 	);
 
 	/*****************/
@@ -654,9 +654,9 @@ import "misc.idl", "security.idl";
 		[in] uint32 info_level,
 		[in] uint32 type,
 		[in] svcctl_ServiceState state,
-		[out] uint8 services[buf_size],
-		[in] uint32 buf_size,
-		[out,ref] uint32 *bytes_needed,
+		[out] uint8 services[offered],
+		[in] uint32 offered,
+		[out,ref] uint32 *needed,
 		[out,ref] uint32 *service_returned,
 		[in,out,unique] uint32 *resume_handle,
 		[out,ref] [string,charset(UTF16)] uint16 **group_name
@@ -669,9 +669,9 @@ import "misc.idl", "security.idl";
 		[in] uint32 info_level,
 		[in] uint32 type,
 		[in] svcctl_ServiceState state,
-		[out,ref,size_is(buf_size)] uint8 *services,
-		[in] [range(0,0x40000)] uint32 buf_size,
-		[out,ref] [range(0,0x40000)] uint32 *bytes_needed,
+		[out,ref,size_is(offered)] uint8 *services,
+		[in] [range(0,0x40000)] uint32 offered,
+		[out,ref] [range(0,0x40000)] uint32 *needed,
 		[out,ref] [range(0,0x40000)] uint32 *service_returned,
 		[in,out,unique] [range(0,0x40000)] uint32 *resume_handle,
 		[in,unique] [string,charset(UTF16)] uint16 *group_name
