@@ -521,6 +521,7 @@ sub provision($$$$$$)
 
 	open(PASSWD, ">$nss_wrapper_passwd") or die("Unable to open $nss_wrapper_passwd");
 	print PASSWD "nobody:x:65534:65533:nobody gecos:$prefix_abs:/bin/false
+root:x:65533:65532:root gecos:$prefix_abs:/bin/false
 $unix_name:x:$unix_uid:$unix_gids[0]:$unix_name gecos:$prefix_abs:/bin/false
 ";
 	close(PASSWD);
