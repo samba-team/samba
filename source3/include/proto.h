@@ -5844,7 +5844,7 @@ bool smb_io_rpc_auth_schannel_chk(const char *desc, int auth_len,
                                 RPC_AUTH_SCHANNEL_CHK * chk,
 				prs_struct *ps, int depth);
 
-/* The following definitions come from rpc_server/srv_eventlog_lib.c  */
+/* The following definitions come from lib/eventlog/eventlog.c  */
 
 TDB_CONTEXT *elog_init_tdb( char *tdbfilename );
 char *elog_tdbname(TALLOC_CTX *ctx, const char *name );

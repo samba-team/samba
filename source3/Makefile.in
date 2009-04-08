@@ -568,7 +568,7 @@ REG_FULL_OBJ = $(REG_SMBCONF_OBJ) \
 	       registry/reg_perfcount.o \
 	       registry/reg_util_legacy.o
 
-LIB_EVENTLOG_OBJ = rpc_server/srv_eventlog_lib.o
+LIB_EVENTLOG_OBJ = lib/eventlog/eventlog.o
 
 RPC_LSA_OBJ = rpc_server/srv_lsa_nt.o ../librpc/gen_ndr/srv_lsa.o
 
