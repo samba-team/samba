@@ -648,9 +648,9 @@ NTSTATUS rpccli_svcctl_EnumDependentServicesW(struct rpc_pipe_client *cli,
 					      TALLOC_CTX *mem_ctx,
 					      struct policy_handle *service /* [in] [ref] */,
 					      uint32_t state /* [in]  */,
-					      uint8_t *service_status /* [out] [ref,size_is(buf_size)] */,
-					      uint32_t buf_size /* [in] [range(0,0x40000)] */,
-					      uint32_t *bytes_needed /* [out] [ref,range(0,0x40000)] */,
+					      uint8_t *service_status /* [out] [ref,size_is(offered)] */,
+					      uint32_t offered /* [in] [range(0,0x40000)] */,
+					      uint32_t *needed /* [out] [ref,range(0,0x40000)] */,
 					      uint32_t *services_returned /* [out] [ref,range(0,0x40000)] */,
 					      WERROR *werror)
 {
@@ -660,7 +660,7 @@ NTSTATUS rpccli_svcctl_EnumDependentServicesW(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.service = service;
 	r.in.state = state;
-	r.in.buf_size = buf_size;
+	r.in.offered = offered;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_EnumDependentServicesW, &r);
@@ -685,8 +685,8 @@ NTSTATUS rpccli_svcctl_EnumDependentServicesW(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(service_status, r.out.service_status, r.in.buf_size * sizeof(*service_status));
-	*bytes_needed = *r.out.bytes_needed;
+	memcpy(service_status, r.out.service_status, r.in.offered * sizeof(*service_status));
+	*needed = *r.out.needed;
 	*services_returned = *r.out.services_returned;
 
 	/* Return result */
@@ -702,9 +702,9 @@ NTSTATUS rpccli_svcctl_EnumServicesStatusW(struct rpc_pipe_client *cli,
 					   struct policy_handle *handle /* [in] [ref] */,
 					   uint32_t type /* [in]  */,
 					   enum svcctl_ServiceState state /* [in]  */,
-					   uint8_t *service /* [out] [ref,size_is(buf_size)] */,
-					   uint32_t buf_size /* [in] [range(0,0x40000)] */,
-					   uint32_t *bytes_needed /* [out] [ref,range(0,0x40000)] */,
+					   uint8_t *service /* [out] [ref,size_is(offered)] */,
+					   uint32_t offered /* [in] [range(0,0x40000)] */,
+					   uint32_t *needed /* [out] [ref,range(0,0x40000)] */,
 					   uint32_t *services_returned /* [out] [ref,range(0,0x40000)] */,
 					   uint32_t *resume_handle /* [in,out] [unique] */,
 					   WERROR *werror)
@@ -716,7 +716,7 @@ NTSTATUS rpccli_svcctl_EnumServicesStatusW(struct rpc_pipe_client *cli,
 	r.in.handle = handle;
 	r.in.type = type;
 	r.in.state = state;
-	r.in.buf_size = buf_size;
+	r.in.offered = offered;
 	r.in.resume_handle = resume_handle;
 
 	if (DEBUGLEVEL >= 10) {
@@ -742,8 +742,8 @@ NTSTATUS rpccli_svcctl_EnumServicesStatusW(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(service, r.out.service, r.in.buf_size * sizeof(*service));
-	*bytes_needed = *r.out.bytes_needed;
+	memcpy(service, r.out.service, r.in.offered * sizeof(*service));
+	*needed = *r.out.needed;
 	*services_returned = *r.out.services_returned;
 	if (resume_handle && r.out.resume_handle) {
 		*resume_handle = *r.out.resume_handle;
@@ -859,8 +859,8 @@ NTSTATUS rpccli_svcctl_QueryServiceConfigW(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx,
 					   struct policy_handle *handle /* [in] [ref] */,
 					   struct QUERY_SERVICE_CONFIG *query /* [out] [ref] */,
-					   uint32_t buf_size /* [in] [range(0,8192)] */,
-					   uint32_t *bytes_needed /* [out] [ref,range(0,8192)] */,
+					   uint32_t offered /* [in] [range(0,8192)] */,
+					   uint32_t *needed /* [out] [ref,range(0,8192)] */,
 					   WERROR *werror)
 {
 	struct svcctl_QueryServiceConfigW r;
@@ -868,7 +868,7 @@ NTSTATUS rpccli_svcctl_QueryServiceConfigW(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 	r.in.handle = handle;
-	r.in.buf_size = buf_size;
+	r.in.offered = offered;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceConfigW, &r);
@@ -894,7 +894,7 @@ NTSTATUS rpccli_svcctl_QueryServiceConfigW(struct rpc_pipe_client *cli,
 
 	/* Return variables */
 	*query = *r.out.query;
-	*bytes_needed = *r.out.bytes_needed;
+	*needed = *r.out.needed;
 
 	/* Return result */
 	if (werror) {
@@ -907,9 +907,9 @@ NTSTATUS rpccli_svcctl_QueryServiceConfigW(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_svcctl_QueryServiceLockStatusW(struct rpc_pipe_client *cli,
 					       TALLOC_CTX *mem_ctx,
 					       struct policy_handle *handle /* [in] [ref] */,
-					       uint32_t buf_size /* [in]  */,
+					       uint32_t offered /* [in]  */,
 					       struct SERVICE_LOCK_STATUS *lock_status /* [out] [ref] */,
-					       uint32_t *required_buf_size /* [out] [ref] */,
+					       uint32_t *needed /* [out] [ref] */,
 					       WERROR *werror)
 {
 	struct svcctl_QueryServiceLockStatusW r;
@@ -917,7 +917,7 @@ NTSTATUS rpccli_svcctl_QueryServiceLockStatusW(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 	r.in.handle = handle;
-	r.in.buf_size = buf_size;
+	r.in.offered = offered;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceLockStatusW, &r);
@@ -943,7 +943,7 @@ NTSTATUS rpccli_svcctl_QueryServiceLockStatusW(struct rpc_pipe_client *cli,
 
 	/* Return variables */
 	*lock_status = *r.out.lock_status;
-	*required_buf_size = *r.out.required_buf_size;
+	*needed = *r.out.needed;
 
 	/* Return result */
 	if (werror) {
@@ -1290,8 +1290,8 @@ NTSTATUS rpccli_svcctl_EnumDependentServicesA(struct rpc_pipe_client *cli,
 					      struct policy_handle *service /* [in] [ref] */,
 					      uint32_t state /* [in]  */,
 					      struct ENUM_SERVICE_STATUSA *service_status /* [out] [unique] */,
-					      uint32_t buf_size /* [in]  */,
-					      uint32_t *bytes_needed /* [out] [ref] */,
+					      uint32_t offered /* [in]  */,
+					      uint32_t *needed /* [out] [ref] */,
 					      uint32_t *services_returned /* [out] [ref] */,
 					      WERROR *werror)
 {
@@ -1301,7 +1301,7 @@ NTSTATUS rpccli_svcctl_EnumDependentServicesA(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.service = service;
 	r.in.state = state;
-	r.in.buf_size = buf_size;
+	r.in.offered = offered;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_EnumDependentServicesA, &r);
@@ -1329,7 +1329,7 @@ NTSTATUS rpccli_svcctl_EnumDependentServicesA(struct rpc_pipe_client *cli,
 	if (service_status && r.out.service_status) {
 		*service_status = *r.out.service_status;
 	}
-	*bytes_needed = *r.out.bytes_needed;
+	*needed = *r.out.needed;
 	*services_returned = *r.out.services_returned;
 
 	/* Return result */
@@ -1345,9 +1345,9 @@ NTSTATUS rpccli_svcctl_EnumServicesStatusA(struct rpc_pipe_client *cli,
 					   struct policy_handle *handle /* [in] [ref] */,
 					   uint32_t type /* [in]  */,
 					   enum svcctl_ServiceState state /* [in]  */,
-					   uint32_t buf_size /* [in]  */,
-					   uint8_t *service /* [out] [size_is(buf_size)] */,
-					   uint32_t *bytes_needed /* [out] [ref] */,
+					   uint32_t offered /* [in]  */,
+					   uint8_t *service /* [out] [size_is(offered)] */,
+					   uint32_t *needed /* [out] [ref] */,
 					   uint32_t *services_returned /* [out] [ref] */,
 					   uint32_t *resume_handle /* [in,out] [unique] */,
 					   WERROR *werror)
@@ -1359,7 +1359,7 @@ NTSTATUS rpccli_svcctl_EnumServicesStatusA(struct rpc_pipe_client *cli,
 	r.in.handle = handle;
 	r.in.type = type;
 	r.in.state = state;
-	r.in.buf_size = buf_size;
+	r.in.offered = offered;
 	r.in.resume_handle = resume_handle;
 
 	if (DEBUGLEVEL >= 10) {
@@ -1385,8 +1385,8 @@ NTSTATUS rpccli_svcctl_EnumServicesStatusA(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(service, r.out.service, r.in.buf_size * sizeof(*service));
-	*bytes_needed = *r.out.bytes_needed;
+	memcpy(service, r.out.service, r.in.offered * sizeof(*service));
+	*needed = *r.out.needed;
 	*services_returned = *r.out.services_returned;
 	if (resume_handle && r.out.resume_handle) {
 		*resume_handle = *r.out.resume_handle;
@@ -1500,8 +1500,8 @@ NTSTATUS rpccli_svcctl_QueryServiceConfigA(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx,
 					   struct policy_handle *handle /* [in] [ref] */,
 					   uint8_t *query /* [out]  */,
-					   uint32_t buf_size /* [in]  */,
-					   uint32_t *bytes_needed /* [out] [ref] */,
+					   uint32_t offered /* [in]  */,
+					   uint32_t *needed /* [out] [ref] */,
 					   WERROR *werror)
 {
 	struct svcctl_QueryServiceConfigA r;
@@ -1509,7 +1509,7 @@ NTSTATUS rpccli_svcctl_QueryServiceConfigA(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 	r.in.handle = handle;
-	r.in.buf_size = buf_size;
+	r.in.offered = offered;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceConfigA, &r);
@@ -1534,8 +1534,8 @@ NTSTATUS rpccli_svcctl_QueryServiceConfigA(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(query, r.out.query, r.in.buf_size * sizeof(*query));
-	*bytes_needed = *r.out.bytes_needed;
+	memcpy(query, r.out.query, r.in.offered * sizeof(*query));
+	*needed = *r.out.needed;
 
 	/* Return result */
 	if (werror) {
@@ -1548,9 +1548,9 @@ NTSTATUS rpccli_svcctl_QueryServiceConfigA(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_svcctl_QueryServiceLockStatusA(struct rpc_pipe_client *cli,
 					       TALLOC_CTX *mem_ctx,
 					       struct policy_handle *handle /* [in] [ref] */,
-					       uint32_t buf_size /* [in]  */,
+					       uint32_t offered /* [in]  */,
 					       struct SERVICE_LOCK_STATUS *lock_status /* [out] [ref] */,
-					       uint32_t *required_buf_size /* [out] [ref] */,
+					       uint32_t *needed /* [out] [ref] */,
 					       WERROR *werror)
 {
 	struct svcctl_QueryServiceLockStatusA r;
@@ -1558,7 +1558,7 @@ NTSTATUS rpccli_svcctl_QueryServiceLockStatusA(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 	r.in.handle = handle;
-	r.in.buf_size = buf_size;
+	r.in.offered = offered;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceLockStatusA, &r);
@@ -1584,7 +1584,7 @@ NTSTATUS rpccli_svcctl_QueryServiceLockStatusA(struct rpc_pipe_client *cli,
 
 	/* Return variables */
 	*lock_status = *r.out.lock_status;
-	*required_buf_size = *r.out.required_buf_size;
+	*needed = *r.out.needed;
 
 	/* Return result */
 	if (werror) {
@@ -1926,8 +1926,8 @@ NTSTATUS rpccli_svcctl_QueryServiceConfig2A(struct rpc_pipe_client *cli,
 					    struct policy_handle *handle /* [in] [ref] */,
 					    enum svcctl_ConfigLevel info_level /* [in]  */,
 					    uint8_t *buffer /* [out]  */,
-					    uint32_t buf_size /* [in]  */,
-					    uint32_t *bytes_needed /* [out] [ref] */,
+					    uint32_t offered /* [in]  */,
+					    uint32_t *needed /* [out] [ref] */,
 					    WERROR *werror)
 {
 	struct svcctl_QueryServiceConfig2A r;
@@ -1936,7 +1936,7 @@ NTSTATUS rpccli_svcctl_QueryServiceConfig2A(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.info_level = info_level;
-	r.in.buf_size = buf_size;
+	r.in.offered = offered;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceConfig2A, &r);
@@ -1961,8 +1961,8 @@ NTSTATUS rpccli_svcctl_QueryServiceConfig2A(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(buffer, r.out.buffer, r.in.buf_size * sizeof(*buffer));
-	*bytes_needed = *r.out.bytes_needed;
+	memcpy(buffer, r.out.buffer, r.in.offered * sizeof(*buffer));
+	*needed = *r.out.needed;
 
 	/* Return result */
 	if (werror) {
@@ -1976,9 +1976,9 @@ NTSTATUS rpccli_svcctl_QueryServiceConfig2W(struct rpc_pipe_client *cli,
 					    TALLOC_CTX *mem_ctx,
 					    struct policy_handle *handle /* [in] [ref] */,
 					    enum svcctl_ConfigLevel info_level /* [in]  */,
-					    uint8_t *buffer /* [out] [ref,size_is(buf_size)] */,
-					    uint32_t buf_size /* [in] [range(0,8192)] */,
-					    uint32_t *bytes_needed /* [out] [ref,range(0,8192)] */,
+					    uint8_t *buffer /* [out] [ref,size_is(offered)] */,
+					    uint32_t offered /* [in] [range(0,8192)] */,
+					    uint32_t *needed /* [out] [ref,range(0,8192)] */,
 					    WERROR *werror)
 {
 	struct svcctl_QueryServiceConfig2W r;
@@ -1987,7 +1987,7 @@ NTSTATUS rpccli_svcctl_QueryServiceConfig2W(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.info_level = info_level;
-	r.in.buf_size = buf_size;
+	r.in.offered = offered;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceConfig2W, &r);
@@ -2012,8 +2012,8 @@ NTSTATUS rpccli_svcctl_QueryServiceConfig2W(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(buffer, r.out.buffer, r.in.buf_size * sizeof(*buffer));
-	*bytes_needed = *r.out.bytes_needed;
+	memcpy(buffer, r.out.buffer, r.in.offered * sizeof(*buffer));
+	*needed = *r.out.needed;
 
 	/* Return result */
 	if (werror) {
@@ -2027,9 +2027,9 @@ NTSTATUS rpccli_svcctl_QueryServiceStatusEx(struct rpc_pipe_client *cli,
 					    TALLOC_CTX *mem_ctx,
 					    struct policy_handle *handle /* [in] [ref] */,
 					    enum svcctl_StatusLevel info_level /* [in]  */,
-					    uint8_t *buffer /* [out] [ref,size_is(buf_size)] */,
-					    uint32_t buf_size /* [in] [range(0,8192)] */,
-					    uint32_t *bytes_needed /* [out] [ref,range(0,8192)] */,
+					    uint8_t *buffer /* [out] [ref,size_is(offered)] */,
+					    uint32_t offered /* [in] [range(0,8192)] */,
+					    uint32_t *needed /* [out] [ref,range(0,8192)] */,
 					    WERROR *werror)
 {
 	struct svcctl_QueryServiceStatusEx r;
@@ -2038,7 +2038,7 @@ NTSTATUS rpccli_svcctl_QueryServiceStatusEx(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.info_level = info_level;
-	r.in.buf_size = buf_size;
+	r.in.offered = offered;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceStatusEx, &r);
@@ -2063,8 +2063,8 @@ NTSTATUS rpccli_svcctl_QueryServiceStatusEx(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(buffer, r.out.buffer, r.in.buf_size * sizeof(*buffer));
-	*bytes_needed = *r.out.bytes_needed;
+	memcpy(buffer, r.out.buffer, r.in.offered * sizeof(*buffer));
+	*needed = *r.out.needed;
 
 	/* Return result */
 	if (werror) {
@@ -2081,8 +2081,8 @@ NTSTATUS rpccli_EnumServicesStatusExA(struct rpc_pipe_client *cli,
 				      uint32_t type /* [in]  */,
 				      enum svcctl_ServiceState state /* [in]  */,
 				      uint8_t *services /* [out]  */,
-				      uint32_t buf_size /* [in]  */,
-				      uint32_t *bytes_needed /* [out] [ref] */,
+				      uint32_t offered /* [in]  */,
+				      uint32_t *needed /* [out] [ref] */,
 				      uint32_t *service_returned /* [out] [ref] */,
 				      uint32_t *resume_handle /* [in,out] [unique] */,
 				      const char **group_name /* [out] [ref,charset(UTF16)] */,
@@ -2096,7 +2096,7 @@ NTSTATUS rpccli_EnumServicesStatusExA(struct rpc_pipe_client *cli,
 	r.in.info_level = info_level;
 	r.in.type = type;
 	r.in.state = state;
-	r.in.buf_size = buf_size;
+	r.in.offered = offered;
 	r.in.resume_handle = resume_handle;
 
 	if (DEBUGLEVEL >= 10) {
@@ -2122,8 +2122,8 @@ NTSTATUS rpccli_EnumServicesStatusExA(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(services, r.out.services, r.in.buf_size * sizeof(*services));
-	*bytes_needed = *r.out.bytes_needed;
+	memcpy(services, r.out.services, r.in.offered * sizeof(*services));
+	*needed = *r.out.needed;
 	*service_returned = *r.out.service_returned;
 	if (resume_handle && r.out.resume_handle) {
 		*resume_handle = *r.out.resume_handle;
@@ -2144,9 +2144,9 @@ NTSTATUS rpccli_EnumServicesStatusExW(struct rpc_pipe_client *cli,
 				      uint32_t info_level /* [in]  */,
 				      uint32_t type /* [in]  */,
 				      enum svcctl_ServiceState state /* [in]  */,
-				      uint8_t *services /* [out] [ref,size_is(buf_size)] */,
-				      uint32_t buf_size /* [in] [range(0,0x40000)] */,
-				      uint32_t *bytes_needed /* [out] [ref,range(0,0x40000)] */,
+				      uint8_t *services /* [out] [ref,size_is(offered)] */,
+				      uint32_t offered /* [in] [range(0,0x40000)] */,
+				      uint32_t *needed /* [out] [ref,range(0,0x40000)] */,
 				      uint32_t *service_returned /* [out] [ref,range(0,0x40000)] */,
 				      uint32_t *resume_handle /* [in,out] [unique,range(0,0x40000)] */,
 				      const char *group_name /* [in] [unique,charset(UTF16)] */,
@@ -2160,7 +2160,7 @@ NTSTATUS rpccli_EnumServicesStatusExW(struct rpc_pipe_client *cli,
 	r.in.info_level = info_level;
 	r.in.type = type;
 	r.in.state = state;
-	r.in.buf_size = buf_size;
+	r.in.offered = offered;
 	r.in.resume_handle = resume_handle;
 	r.in.group_name = group_name;
 
@@ -2187,8 +2187,8 @@ NTSTATUS rpccli_EnumServicesStatusExW(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(services, r.out.services, r.in.buf_size * sizeof(*services));
-	*bytes_needed = *r.out.bytes_needed;
+	memcpy(services, r.out.services, r.in.offered * sizeof(*services));
+	*needed = *r.out.needed;
 	*service_returned = *r.out.service_returned;
 	if (resume_handle && r.out.resume_handle) {
 		*resume_handle = *r.out.resume_handle;
