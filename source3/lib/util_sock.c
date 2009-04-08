@@ -1942,6 +1942,10 @@ bool is_myname_or_ipaddr(const char *s)
 			return false;
 		}
 
+		if (ismyaddr((struct sockaddr *)&ss)) {
+			return true;
+		}
+
 		if (is_zero_addr((struct sockaddr *)&ss) || 
 			is_loopback_addr((struct sockaddr *)&ss)) {
 			return false;
