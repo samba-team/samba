@@ -203,7 +203,6 @@ static bool test_ReadEventLog(struct torture_context *tctx,
 static bool test_ReportEventLog(struct torture_context *tctx,
 				struct dcerpc_pipe *p)
 {
-	NTSTATUS status;
 	struct eventlog_ReportEventW r;
 	struct eventlog_CloseEventLog cr;
 	struct policy_handle handle;
@@ -237,7 +236,9 @@ static bool test_ReportEventLog(struct torture_context *tctx,
 	r.out.record_number = &record_number;
 	r.out.time_written = &time_written;
 
-	status = dcerpc_eventlog_ReportEventW(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx,
+			dcerpc_eventlog_ReportEventW(p, tctx, &r),
+			"ReportEventW failed");
 
 	torture_assert_ntstatus_ok(tctx, r.out.result, "ReportEventW failed");
 
