@@ -22,9 +22,6 @@
 
 #include "includes.h"
 
-bool async_req_is_errno(struct async_req *req, int *err);
-int async_req_simple_recv_errno(struct async_req *req);
-
 struct tevent_req *async_send_send(TALLOC_CTX *mem_ctx,
 				   struct tevent_context *ev,
 				   int fd, const void *buf, size_t len,

@@ -20,7 +20,6 @@
 #include "includes.h"
 #include "lib/talloc/talloc.h"
 #include "lib/tevent/tevent.h"
-#include "lib/async_req/async_req.h"
 #include "lib/async_req/async_sock.h"
 #include "lib/util/tevent_unix.h"
 #include <fcntl.h>
@@ -28,55 +27,6 @@
 #ifndef TALLOC_FREE
 #define TALLOC_FREE(ctx) do { talloc_free(ctx); ctx=NULL; } while(0)
 #endif
-
-/**
- * @brief Map async_req states to unix-style errnos
- * @param[in]  req	The async req to get the state from
- * @param[out] err	Pointer to take the unix-style errno
- *
- * @return true if the async_req is in an error state, false otherwise
- */
-
-bool async_req_is_errno(struct async_req *req, int *err)
-{
-	enum async_req_state state;
-	uint64_t error;
-
-	if (!async_req_is_error(req, &state, &error)) {
-		return false;
-	}
-
-	switch (state) {
-	case ASYNC_REQ_USER_ERROR:
-		*err = (int)error;
-		break;
-	case ASYNC_REQ_TIMED_OUT:
-#ifdef ETIMEDOUT
-		*err = ETIMEDOUT;
-#else
-		*err = EAGAIN;
-#endif
-		break;
-	case ASYNC_REQ_NO_MEMORY:
-		*err = ENOMEM;
-		break;
-	default:
-		*err = EIO;
-		break;
-	}
-	return true;
-}
-
-int async_req_simple_recv_errno(struct async_req *req)
-{
-	int err;
-
-	if (async_req_is_errno(req, &err)) {
-		return err;
-	}
-
-	return 0;
-}
 
 struct async_send_state {
 	int fd;
