@@ -82,8 +82,8 @@ static bool test_QueryServiceStatusEx(struct torture_context *tctx, struct dcerp
 
 	uint32_t info_level = SVC_STATUS_PROCESS_INFO;
 	uint8_t *buffer;
-	uint32_t buf_size = 0;
-	uint32_t bytes_needed = 0;
+	uint32_t offered = 0;
+	uint32_t needed = 0;
 
 	if (!test_OpenSCManager(p, tctx, &h))
 		return false;
@@ -95,16 +95,16 @@ static bool test_QueryServiceStatusEx(struct torture_context *tctx, struct dcerp
 
 	r.in.handle = &s;
 	r.in.info_level = info_level;
-	r.in.buf_size = buf_size;
+	r.in.offered = offered;
 	r.out.buffer = buffer;
-	r.out.bytes_needed = &bytes_needed;
+	r.out.needed = &needed;
 
 	status = dcerpc_svcctl_QueryServiceStatusEx(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "QueryServiceStatusEx failed!");
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-		r.in.buf_size = bytes_needed;
-		buffer = talloc_array(tctx, uint8_t, bytes_needed);
+		r.in.offered = needed;
+		buffer = talloc_array(tctx, uint8_t, needed);
 		r.out.buffer = buffer;
 
 		status = dcerpc_svcctl_QueryServiceStatusEx(p, tctx, &r);
@@ -129,8 +129,8 @@ static bool test_QueryServiceConfig2W(struct torture_context *tctx, struct dcerp
 
 	uint32_t info_level = SERVICE_CONFIG_DESCRIPTION;
 	uint8_t *buffer;
-	uint32_t buf_size = 0;
-	uint32_t bytes_needed = 0;
+	uint32_t offered = 0;
+	uint32_t needed = 0;
 
 	if (!test_OpenSCManager(p, tctx, &h))
 		return false;
@@ -142,16 +142,16 @@ static bool test_QueryServiceConfig2W(struct torture_context *tctx, struct dcerp
 
 	r.in.handle = &s;
 	r.in.info_level = info_level;
-	r.in.buf_size = buf_size;
+	r.in.offered = offered;
 	r.out.buffer = buffer;
-	r.out.bytes_needed = &bytes_needed;
+	r.out.needed = &needed;
 
 	status = dcerpc_svcctl_QueryServiceConfig2W(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "QueryServiceConfig2W failed!");
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-		r.in.buf_size = bytes_needed;
-		buffer = talloc_array(tctx, uint8_t, bytes_needed);
+		r.in.offered = needed;
+		buffer = talloc_array(tctx, uint8_t, needed);
 		r.out.buffer = buffer;
 
 		status = dcerpc_svcctl_QueryServiceConfig2W(p, tctx, &r);
@@ -160,16 +160,16 @@ static bool test_QueryServiceConfig2W(struct torture_context *tctx, struct dcerp
 	}
 
 	r.in.info_level = SERVICE_CONFIG_FAILURE_ACTIONS;
-	r.in.buf_size = buf_size;
+	r.in.offered = offered;
 	r.out.buffer = buffer;
-	r.out.bytes_needed = &bytes_needed;
+	r.out.needed = &needed;
 
 	status = dcerpc_svcctl_QueryServiceConfig2W(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "QueryServiceConfig2W failed!");
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-		r.in.buf_size = bytes_needed;
-		buffer = talloc_array(tctx, uint8_t, bytes_needed);
+		r.in.offered = needed;
+		buffer = talloc_array(tctx, uint8_t, needed);
 		r.out.buffer = buffer;
 
 		status = dcerpc_svcctl_QueryServiceConfig2W(p, tctx, &r);
@@ -194,7 +194,7 @@ static bool test_EnumServicesStatus(struct torture_context *tctx, struct dcerpc_
 	NTSTATUS status;
 	uint32_t resume_handle = 0;
 	struct ENUM_SERVICE_STATUSW *service = NULL;
-	uint32_t bytes_needed = 0;
+	uint32_t needed = 0;
 	uint32_t services_returned = 0;
 
 	if (!test_OpenSCManager(p, tctx, &h))
@@ -203,20 +203,20 @@ static bool test_EnumServicesStatus(struct torture_context *tctx, struct dcerpc_
 	r.in.handle = &h;
 	r.in.type = SERVICE_TYPE_WIN32;
 	r.in.state = SERVICE_STATE_ALL;
-	r.in.buf_size = 0;
+	r.in.offered = 0;
 	r.in.resume_handle = &resume_handle;
 	r.out.service = NULL;
 	r.out.resume_handle = &resume_handle;
 	r.out.services_returned = &services_returned;
-	r.out.bytes_needed = &bytes_needed;
+	r.out.needed = &needed;
 
 	status = dcerpc_svcctl_EnumServicesStatusW(p, tctx, &r);
 
 	torture_assert_ntstatus_ok(tctx, status, "EnumServicesStatus failed!");
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
-		r.in.buf_size = bytes_needed;
-		r.out.service = talloc_array(tctx, uint8_t, bytes_needed);
+		r.in.offered = needed;
+		r.out.service = talloc_array(tctx, uint8_t, needed);
 
 		status = dcerpc_svcctl_EnumServicesStatusW(p, tctx, &r);
 
@@ -230,7 +230,7 @@ static bool test_EnumServicesStatus(struct torture_context *tctx, struct dcerpc_
 		DATA_BLOB blob;
 		struct ndr_pull *ndr;
 
-		blob.length = r.in.buf_size;
+		blob.length = r.in.offered;
 		blob.data = talloc_steal(tctx, r.out.service);
 
 		ndr = ndr_pull_init_blob(&blob, tctx, lp_iconv_convenience(tctx->lp_ctx));
