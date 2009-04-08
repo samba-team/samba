@@ -149,7 +149,7 @@ struct EVENTLOG_EVT_FILE {
 
 struct EVENTLOG_FULL_INFORMATION {
 	uint32_t full;
-};
+}/* [public] */;
 
 
 struct eventlog_ClearEventLogW {
