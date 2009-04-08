@@ -5405,13 +5405,13 @@ struct cli_state *rpc_pipe_np_smb_conn(struct rpc_pipe_client *p);
 
 /* The following definitions come from rpc_client/rpc_transport_smbd.c  */
 
-struct async_req *rpc_cli_smbd_conn_init_send(TALLOC_CTX *mem_ctx,
-					      struct event_context *ev,
-					      void (*stdout_callback)(char *buf,
-								      size_t len,
-								      void *priv),
-					      void *priv);
-NTSTATUS rpc_cli_smbd_conn_init_recv(struct async_req *req,
+struct tevent_req *rpc_cli_smbd_conn_init_send(TALLOC_CTX *mem_ctx,
+					       struct event_context *ev,
+					       void (*stdout_callback)(char *buf,
+								       size_t len,
+								       void *priv),
+					       void *priv);
+NTSTATUS rpc_cli_smbd_conn_init_recv(struct tevent_req *req,
 				     TALLOC_CTX *mem_ctx,
 				     struct rpc_cli_smbd_conn **pconn);
 NTSTATUS rpc_cli_smbd_conn_init(TALLOC_CTX *mem_ctx,

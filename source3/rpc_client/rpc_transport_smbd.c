@@ -226,15 +226,14 @@ struct rpc_cli_smbd_conn_init_state {
 
 static void rpc_cli_smbd_conn_init_done(struct tevent_req *subreq);
 
-struct async_req *rpc_cli_smbd_conn_init_send(TALLOC_CTX *mem_ctx,
-					      struct event_context *ev,
-					      void (*stdout_callback)(char *buf,
-								      size_t len,
-								      void *priv),
-					      void *priv)
+struct tevent_req *rpc_cli_smbd_conn_init_send(TALLOC_CTX *mem_ctx,
+					       struct event_context *ev,
+					       void (*stdout_callback)(char *buf,
+								       size_t len,
+								       void *priv),
+					       void *priv)
 {
-	struct async_req *result;
-	struct tevent_req *subreq;
+	struct tevent_req *req, *subreq;
 	struct rpc_cli_smbd_conn_init_state *state;
 	int smb_sock[2];
 	int stdout_pipe[2];
@@ -244,20 +243,21 @@ struct async_req *rpc_cli_smbd_conn_init_send(TALLOC_CTX *mem_ctx,
 
 	smb_sock[0] = smb_sock[1] = stdout_pipe[0] = stdout_pipe[1] = -1;
 
-	if (!async_req_setup(mem_ctx, &result, &state,
-			     struct rpc_cli_smbd_conn_init_state)) {
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpc_cli_smbd_conn_init_state);
+	if (req == NULL) {
 		return NULL;
 	}
 	state->ev = ev;
 
 	state->conn = talloc(state, struct rpc_cli_smbd_conn);
-	if (state->conn == NULL) {
-		goto nomem;
+	if (tevent_req_nomem(state->conn, req)) {
+		return tevent_req_post(req, ev);
 	}
 
 	state->conn->cli = cli_initialise();
-	if (state->conn->cli == NULL) {
-		goto nomem;
+	if (tevent_req_nomem(state->conn->cli, req)) {
+		return tevent_req_post(req, ev);
 	}
 	state->conn->stdout_fd = -1;
 	state->conn->stdout_callback.fn = stdout_callback;
@@ -324,20 +324,19 @@ struct async_req *rpc_cli_smbd_conn_init_send(TALLOC_CTX *mem_ctx,
 	stdout_pipe[1] = -1;
 
 	subreq = get_anon_ipc_send(state, ev, state->conn->cli);
-	if (subreq == NULL) {
-		goto nomem;
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
 	}
 
 	if (event_add_fd(ev, state, state->conn->stdout_fd, EVENT_FD_READ,
 			 rpc_cli_smbd_stdout_reader, state->conn) == NULL) {
-		goto nomem;
+		status = NT_STATUS_NO_MEMORY;
+		goto post_status;
 	}
 
-	tevent_req_set_callback(subreq, rpc_cli_smbd_conn_init_done, result);
-	return result;
+	tevent_req_set_callback(subreq, rpc_cli_smbd_conn_init_done, req);
+	return req;
 
- nomem:
-	status = NT_STATUS_NO_MEMORY;
  post_status:
 	if (smb_sock[0] != -1) {
 		close(smb_sock[0]);
@@ -351,37 +350,34 @@ struct async_req *rpc_cli_smbd_conn_init_send(TALLOC_CTX *mem_ctx,
 	if (stdout_pipe[1] != -1) {
 		close(stdout_pipe[1]);
 	}
-	if (async_post_ntstatus(result, ev, status)) {
-		return result;
-	}
-	TALLOC_FREE(result);
-	return NULL;
+	tevent_req_nterror(req, status);
+	return tevent_req_post(req, ev);
 }
 
 static void rpc_cli_smbd_conn_init_done(struct tevent_req *subreq)
 {
-	struct async_req *req = tevent_req_callback_data(
-		subreq, struct async_req);
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
 	NTSTATUS status;
 
 	status = get_anon_ipc_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_nterror(req, status);
+		tevent_req_nterror(req, status);
 		return;
 	}
-	async_req_done(req);
+	tevent_req_done(req);
 }
 
-NTSTATUS rpc_cli_smbd_conn_init_recv(struct async_req *req,
+NTSTATUS rpc_cli_smbd_conn_init_recv(struct tevent_req *req,
 				     TALLOC_CTX *mem_ctx,
 				     struct rpc_cli_smbd_conn **pconn)
 {
-	struct rpc_cli_smbd_conn_init_state *state = talloc_get_type_abort(
-		req->private_data, struct rpc_cli_smbd_conn_init_state);
+	struct rpc_cli_smbd_conn_init_state *state = tevent_req_data(
+		req, struct rpc_cli_smbd_conn_init_state);
 	NTSTATUS status;
 
-	if (async_req_is_nterror(req, &status)) {
+	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
 	*pconn = talloc_move(mem_ctx, &state->conn);
@@ -397,7 +393,7 @@ NTSTATUS rpc_cli_smbd_conn_init(TALLOC_CTX *mem_ctx,
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct event_context *ev;
-	struct async_req *req;
+	struct tevent_req *req;
 	NTSTATUS status;
 
 	ev = event_context_init(frame);
@@ -412,8 +408,9 @@ NTSTATUS rpc_cli_smbd_conn_init(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	while (req->state < ASYNC_REQ_DONE) {
-		event_loop_once(ev);
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
 	}
 
 	status = rpc_cli_smbd_conn_init_recv(req, mem_ctx, pconn);
