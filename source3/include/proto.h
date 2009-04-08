@@ -2779,15 +2779,15 @@ struct tevent_req *cli_read_andx_send(TALLOC_CTX *mem_ctx,
 				      off_t offset, size_t size);
 NTSTATUS cli_read_andx_recv(struct tevent_req *req, ssize_t *received,
 			    uint8_t **rcvbuf);
-struct async_req *cli_pull_send(TALLOC_CTX *mem_ctx,
-				struct event_context *ev,
-				struct cli_state *cli,
-				uint16_t fnum, off_t start_offset,
-				SMB_OFF_T size, size_t window_size,
-				NTSTATUS (*sink)(char *buf, size_t n,
-						 void *priv),
-				void *priv);
-NTSTATUS cli_pull_recv(struct async_req *req, SMB_OFF_T *received);
+struct tevent_req *cli_pull_send(TALLOC_CTX *mem_ctx,
+				 struct event_context *ev,
+				 struct cli_state *cli,
+				 uint16_t fnum, off_t start_offset,
+				 SMB_OFF_T size, size_t window_size,
+				 NTSTATUS (*sink)(char *buf, size_t n,
+						  void *priv),
+				 void *priv);
+NTSTATUS cli_pull_recv(struct tevent_req *req, SMB_OFF_T *received);
 NTSTATUS cli_pull(struct cli_state *cli, uint16_t fnum,
 		  off_t start_offset, SMB_OFF_T size, size_t window_size,
 		  NTSTATUS (*sink)(char *buf, size_t n, void *priv),

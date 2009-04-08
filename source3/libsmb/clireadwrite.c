@@ -239,7 +239,7 @@ struct cli_pull_subreq {
  */
 
 struct cli_pull_state {
-	struct async_req *req;
+	struct tevent_req *req;
 
 	struct event_context *ev;
 	struct cli_state *cli;
@@ -278,13 +278,13 @@ struct cli_pull_state {
 	SMB_OFF_T pushed;
 };
 
-static char *cli_pull_print(TALLOC_CTX *mem_ctx, struct async_req *req)
+static char *cli_pull_print(struct tevent_req *req, TALLOC_CTX *mem_ctx)
 {
-	struct cli_pull_state *state = talloc_get_type_abort(
-		req->private_data, struct cli_pull_state);
+	struct cli_pull_state *state = tevent_req_data(
+		req, struct cli_pull_state);
 	char *result;
 
-	result = async_req_print(mem_ctx, req);
+	result = tevent_req_print(mem_ctx, req);
 	if (result == NULL) {
 		return NULL;
 	}
@@ -300,25 +300,25 @@ static void cli_pull_read_done(struct tevent_req *read_req);
  * Prepare an async pull request
  */
 
-struct async_req *cli_pull_send(TALLOC_CTX *mem_ctx,
-				struct event_context *ev,
-				struct cli_state *cli,
-				uint16_t fnum, off_t start_offset,
-				SMB_OFF_T size, size_t window_size,
-				NTSTATUS (*sink)(char *buf, size_t n,
-						 void *priv),
-				void *priv)
+struct tevent_req *cli_pull_send(TALLOC_CTX *mem_ctx,
+				 struct event_context *ev,
+				 struct cli_state *cli,
+				 uint16_t fnum, off_t start_offset,
+				 SMB_OFF_T size, size_t window_size,
+				 NTSTATUS (*sink)(char *buf, size_t n,
+						  void *priv),
+				 void *priv)
 {
-	struct async_req *result;
+	struct tevent_req *req;
 	struct cli_pull_state *state;
 	int i;
 
-	if (!async_req_setup(mem_ctx, &result, &state,
-			     struct cli_pull_state)) {
+	req = tevent_req_create(mem_ctx, &state, struct cli_pull_state);
+	if (req == NULL) {
 		return NULL;
 	}
-	result->print = cli_pull_print;
-	state->req = result;
+	tevent_req_set_print_fn(req, cli_pull_print);
+	state->req = req;
 
 	state->cli = cli;
 	state->ev = ev;
@@ -332,10 +332,8 @@ struct async_req *cli_pull_send(TALLOC_CTX *mem_ctx,
 	state->top_req = 0;
 
 	if (size == 0) {
-		if (!async_post_ntstatus(result, ev, NT_STATUS_OK)) {
-			goto failed;
-		}
-		return result;
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
 	}
 
 	state->chunk_size = cli_read_max_bufsize(cli);
@@ -372,14 +370,13 @@ struct async_req *cli_pull_send(TALLOC_CTX *mem_ctx,
 		if (subreq->req == NULL) {
 			goto failed;
 		}
-		tevent_req_set_callback(subreq->req, cli_pull_read_done,
-					result);
+		tevent_req_set_callback(subreq->req, cli_pull_read_done, req);
 		state->requested += request_thistime;
 	}
-	return result;
+	return req;
 
 failed:
-	TALLOC_FREE(result);
+	TALLOC_FREE(req);
 	return NULL;
 }
 
@@ -390,10 +387,10 @@ failed:
 
 static void cli_pull_read_done(struct tevent_req *subreq)
 {
-	struct async_req *req = tevent_req_callback_data(
-		subreq, struct async_req);
-	struct cli_pull_state *state = talloc_get_type_abort(
-		req->private_data, struct cli_pull_state);
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_pull_state *state = tevent_req_data(
+		req, struct cli_pull_state);
 	struct cli_pull_subreq *pull_subreq = NULL;
 	NTSTATUS status;
 	int i;
@@ -406,14 +403,14 @@ static void cli_pull_read_done(struct tevent_req *subreq)
 	}
 	if (i == state->num_reqs) {
 		/* Huh -- received something we did not send?? */
-		async_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 		return;
 	}
 
 	status = cli_read_andx_recv(subreq, &pull_subreq->received,
 				    &pull_subreq->buf);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_nterror(state->req, status);
+		tevent_req_nterror(state->req, status);
 		return;
 	}
 
@@ -447,7 +444,7 @@ static void cli_pull_read_done(struct tevent_req *subreq)
 		status = state->sink((char *)top_subreq->buf,
 				     top_subreq->received, state->priv);
 		if (!NT_STATUS_IS_OK(status)) {
-			async_req_nterror(state->req, status);
+			tevent_req_nterror(state->req, status);
 			return;
 		}
 		state->pushed += top_subreq->received;
@@ -475,7 +472,7 @@ static void cli_pull_read_done(struct tevent_req *subreq)
 				state->start_offset + state->requested,
 				request_thistime);
 
-			if (async_req_nomem(new_req, state->req)) {
+			if (tevent_req_nomem(new_req, state->req)) {
 				return;
 			}
 			tevent_req_set_callback(new_req, cli_pull_read_done,
@@ -488,16 +485,16 @@ static void cli_pull_read_done(struct tevent_req *subreq)
 		state->top_req = (state->top_req+1) % state->num_reqs;
 	}
 
-	async_req_done(req);
+	tevent_req_done(req);
 }
 
-NTSTATUS cli_pull_recv(struct async_req *req, SMB_OFF_T *received)
+NTSTATUS cli_pull_recv(struct tevent_req *req, SMB_OFF_T *received)
 {
-	struct cli_pull_state *state = talloc_get_type_abort(
-		req->private_data, struct cli_pull_state);
+	struct cli_pull_state *state = tevent_req_data(
+		req, struct cli_pull_state);
 	NTSTATUS status;
 
-	if (async_req_is_nterror(req, &status)) {
+	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
 	*received = state->pushed;
@@ -511,7 +508,7 @@ NTSTATUS cli_pull(struct cli_state *cli, uint16_t fnum,
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct event_context *ev;
-	struct async_req *req;
+	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_OK;
 
 	if (cli_has_async_calls(cli)) {
@@ -535,11 +532,9 @@ NTSTATUS cli_pull(struct cli_state *cli, uint16_t fnum,
 		goto fail;
 	}
 
-	while (req->state < ASYNC_REQ_DONE) {
-		if (event_loop_once(ev) == -1) {
-			status = map_nt_error_from_unix(errno);
-			goto fail;
-		}
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
 	}
 
 	status = cli_pull_recv(req, received);
