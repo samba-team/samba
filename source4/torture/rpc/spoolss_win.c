@@ -34,6 +34,8 @@ struct test_spoolss_win_context {
 
 	/* EnumPrinterKeys */
 	const char **printer_keys;
+
+	bool printer_has_driver;
 };
 
 /* This is a convenience function for all OpenPrinterEx calls */
@@ -256,6 +258,12 @@ static bool test_GetPrinter(struct torture_context *tctx,
 	torture_assert_werr_ok(tctx, gp.out.result, "GetPrinter failed");
 
 	ctx->current_info = gp.out.info;
+
+	if (level == 2 && gp.out.info) {
+		ctx->printer_has_driver = gp.out.info->info2.drivername &&
+					  strlen(gp.out.info->info2.drivername);
+	}
+
 	return true;
 }
 
@@ -289,6 +297,7 @@ static bool test_EnumJobs(struct torture_context *tctx,
 
 static bool test_GetPrinterDriver2(struct torture_context *tctx,
 					struct dcerpc_pipe *p,
+					struct test_spoolss_win_context *ctx,
 					struct policy_handle *handle)
 {
 	NTSTATUS status;
@@ -313,8 +322,11 @@ static bool test_GetPrinterDriver2(struct torture_context *tctx,
 
 	status = dcerpc_spoolss_GetPrinterDriver2(p, tctx, &gpd2);
 	torture_assert_ntstatus_ok(tctx, status, "GetPrinterDriver2 failed");
-	torture_assert_werr_ok(tctx, gpd2.out.result,
-			"GetPrinterDriver2 failed.");
+
+	if (ctx->printer_has_driver) {
+		torture_assert_werr_ok(tctx, gpd2.out.result,
+				"GetPrinterDriver2 failed.");
+	}
 
 	return true;
 }
@@ -527,7 +539,7 @@ static bool test_WinXP(struct torture_context *tctx, struct dcerpc_pipe *p)
 	ret &= test_ClosePrinter(tctx, p, &handle04);
 
 	ret &= test_EnumPrinters(tctx, p, ctx, 1556);
-	ret &= test_GetPrinterDriver2(tctx, p, &handle03);
+	ret &= test_GetPrinterDriver2(tctx, p, ctx, &handle03);
 	ret &= test_EnumForms(tctx, p, &handle03, 0);
 
 	ret &= test_EnumPrinterKey(tctx, p, &handle03, "", ctx);
