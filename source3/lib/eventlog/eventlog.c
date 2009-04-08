@@ -958,3 +958,77 @@ NTSTATUS evlog_tdb_entry_to_evt_entry(TALLOC_CTX *mem_ctx,
 
 	return NT_STATUS_OK;
 }
+
+/********************************************************************
+ ********************************************************************/
+
+NTSTATUS evlog_convert_tdb_to_evt(TALLOC_CTX *mem_ctx,
+				  ELOG_TDB *etdb,
+				  DATA_BLOB *blob_p,
+				  uint32_t *num_records_p)
+{
+	NTSTATUS status = NT_STATUS_OK;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+	uint32_t num_records = 0;
+	struct EVENTLOG_EVT_FILE evt;
+	uint32_t count = 1;
+	size_t endoffset = 0;
+
+	ZERO_STRUCT(evt);
+
+	while (1) {
+
+		struct eventlog_Record_tdb *r;
+		struct EVENTLOGRECORD e;
+
+		r = evlog_pull_record_tdb(mem_ctx, etdb->tdb, count);
+		if (!r) {
+			break;
+		}
+
+		status = evlog_tdb_entry_to_evt_entry(mem_ctx, r, &e);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+
+		endoffset += ndr_size_EVENTLOGRECORD(&e, NULL, 0);
+
+		ADD_TO_ARRAY(mem_ctx, struct EVENTLOGRECORD, e, &evt.records, &num_records);
+		count++;
+	}
+
+	evt.hdr.StartOffset		= 0x30;
+	evt.hdr.EndOffset		= evt.hdr.StartOffset + endoffset;
+	evt.hdr.CurrentRecordNumber	= count;
+	evt.hdr.OldestRecordNumber	= 1;
+	evt.hdr.MaxSize			= tdb_fetch_int32(etdb->tdb, EVT_MAXSIZE);
+	evt.hdr.Flags			= 0;
+	evt.hdr.Retention		= tdb_fetch_int32(etdb->tdb, EVT_RETENTION);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(EVENTLOGHEADER, &evt.hdr);
+	}
+
+	evt.eof.BeginRecord		= 0x30;
+	evt.eof.EndRecord		= evt.hdr.StartOffset + endoffset;
+	evt.eof.CurrentRecordNumber	= evt.hdr.CurrentRecordNumber;
+	evt.eof.OldestRecordNumber	= evt.hdr.OldestRecordNumber;
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(EVENTLOGEOF, &evt.eof);
+	}
+
+	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, NULL, &evt,
+		   (ndr_push_flags_fn_t)ndr_push_EVENTLOG_EVT_FILE);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		goto done;
+	}
+
+	*blob_p = blob;
+	*num_records_p = num_records;
+
+ done:
+	return status;
+}
