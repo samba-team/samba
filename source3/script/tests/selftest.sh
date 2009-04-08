@@ -268,6 +268,7 @@ EOF
 ##
 
 cat >$NSS_WRAPPER_PASSWD<<EOF
+root:x:65533:65532:root gecos:$PREFIX_ABS:/bin/false
 nobody:x:65534:65533:nobody gecos:$PREFIX_ABS:/bin/false
 $USERNAME:x:$USERID:$GROUPID:$USERNAME gecos:$PREFIX_ABS:/bin/false
 EOF
