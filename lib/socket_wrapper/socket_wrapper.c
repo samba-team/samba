@@ -2053,6 +2053,7 @@ int swrap_readv(int s, const struct iovec *vector, size_t count)
 		uint8_t *buf;
 		off_t ofs = 0;
 		size_t i;
+		size_t remain = ret;
 
 		/* we capture it as one single packet */
 		buf = (uint8_t *)malloc(ret);
@@ -2063,10 +2064,12 @@ int swrap_readv(int s, const struct iovec *vector, size_t count)
 		}
 
 		for (i=0; i < count; i++) {
+			size_t this_time = MIN(remain, vector[i].iov_len);
 			memcpy(buf + ofs,
 			       vector[i].iov_base,
-			       vector[i].iov_len);
-			ofs += vector[i].iov_len;
+			       this_time);
+			ofs += this_time;
+			remain -= this_time;
 		}
 
 		swrap_dump_packet(si, NULL, SWRAP_RECV, buf, ret);
@@ -2113,6 +2116,7 @@ int swrap_writev(int s, const struct iovec *vector, size_t count)
 		uint8_t *buf;
 		off_t ofs = 0;
 		size_t i;
+		size_t remain = ret;
 
 		/* we capture it as one single packet */
 		buf = (uint8_t *)malloc(ret);
@@ -2123,10 +2127,12 @@ int swrap_writev(int s, const struct iovec *vector, size_t count)
 		}
 
 		for (i=0; i < count; i++) {
+			size_t this_time = MIN(remain, vector[i].iov_len);
 			memcpy(buf + ofs,
 			       vector[i].iov_base,
-			       vector[i].iov_len);
-			ofs += vector[i].iov_len;
+			       this_time);
+			ofs += this_time;
+			remain -= this_time;
 		}
 
 		swrap_dump_packet(si, NULL, SWRAP_SEND, buf, ret);
