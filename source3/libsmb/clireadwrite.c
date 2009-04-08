@@ -927,20 +927,19 @@ struct cli_writeall_state {
 
 static void cli_writeall_written(struct tevent_req *req);
 
-static struct async_req *cli_writeall_send(TALLOC_CTX *mem_ctx,
-					   struct event_context *ev,
-					   struct cli_state *cli,
-					   uint16_t fnum,
-					   uint16_t mode,
-					   const uint8_t *buf,
-					   off_t offset, size_t size)
+static struct tevent_req *cli_writeall_send(TALLOC_CTX *mem_ctx,
+					    struct event_context *ev,
+					    struct cli_state *cli,
+					    uint16_t fnum,
+					    uint16_t mode,
+					    const uint8_t *buf,
+					    off_t offset, size_t size)
 {
-	struct async_req *result;
-	struct tevent_req *subreq;
+	struct tevent_req *req, *subreq;
 	struct cli_writeall_state *state;
 
-	if (!async_req_setup(mem_ctx, &result, &state,
-			     struct cli_writeall_state)) {
+	req = tevent_req_create(mem_ctx, &state, struct cli_writeall_state);
+	if (req == NULL) {
 		return NULL;
 	}
 	state->ev = ev;
@@ -955,44 +954,40 @@ static struct async_req *cli_writeall_send(TALLOC_CTX *mem_ctx,
 	subreq = cli_write_andx_send(state, state->ev, state->cli, state->fnum,
 				     state->mode, state->buf, state->offset,
 				     state->size);
-	if (subreq == NULL) {
-		goto fail;
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, cli_writeall_written, result);
-	return result;
-
- fail:
-	TALLOC_FREE(result);
-	return NULL;
+	tevent_req_set_callback(subreq, cli_writeall_written, req);
+	return req;
 }
 
 static void cli_writeall_written(struct tevent_req *subreq)
 {
-	struct async_req *req = tevent_req_callback_data(
-		subreq, struct async_req);
-	struct cli_writeall_state *state = talloc_get_type_abort(
-		req->private_data, struct cli_writeall_state);
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_writeall_state *state = tevent_req_data(
+		req, struct cli_writeall_state);
 	NTSTATUS status;
 	size_t written, to_write;
 
 	status = cli_write_andx_recv(subreq, &written);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_nterror(req, status);
+		tevent_req_nterror(req, status);
 		return;
 	}
 
 	state->written += written;
 
 	if (state->written > state->size) {
-		async_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
 	}
 
 	to_write = state->size - state->written;
 
 	if (to_write == 0) {
-		async_req_done(req);
+		tevent_req_done(req);
 		return;
 	}
 
@@ -1000,20 +995,19 @@ static void cli_writeall_written(struct tevent_req *subreq)
 				     state->mode,
 				     state->buf + state->written,
 				     state->offset + state->written, to_write);
-	if (subreq == NULL) {
-		async_req_nterror(req, NT_STATUS_NO_MEMORY);
+	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
 	tevent_req_set_callback(subreq, cli_writeall_written, req);
 }
 
-static NTSTATUS cli_writeall_recv(struct async_req *req)
+static NTSTATUS cli_writeall_recv(struct tevent_req *req)
 {
-	return async_req_simple_recv_ntstatus(req);
+	return tevent_req_simple_recv_ntstatus(req);
 }
 
 struct cli_push_write_state {
-	struct async_req *req;/* This is the main request! Not the subreq */
+	struct tevent_req *req;/* This is the main request! Not the subreq */
 	uint32_t idx;
 	off_t ofs;
 	uint8_t *buf;
@@ -1044,14 +1038,14 @@ struct cli_push_state {
 	struct cli_push_write_state **reqs;
 };
 
-static void cli_push_written(struct async_req *req);
+static void cli_push_written(struct tevent_req *req);
 
-static bool cli_push_write_setup(struct async_req *req,
+static bool cli_push_write_setup(struct tevent_req *req,
 				 struct cli_push_state *state,
 				 uint32_t idx)
 {
 	struct cli_push_write_state *substate;
-	struct async_req *subreq;
+	struct tevent_req *subreq;
 
 	substate = talloc(state->reqs, struct cli_push_write_state);
 	if (!substate) {
@@ -1085,8 +1079,7 @@ static bool cli_push_write_setup(struct async_req *req,
 		talloc_free(substate);
 		return false;
 	}
-	subreq->async.fn = cli_push_written;
-	subreq->async.priv = substate;
+	tevent_req_set_callback(subreq, cli_push_written, substate);
 
 	state->reqs[idx] = substate;
 	state->pending += 1;
@@ -1095,20 +1088,20 @@ static bool cli_push_write_setup(struct async_req *req,
 	return true;
 }
 
-struct async_req *cli_push_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
-				struct cli_state *cli,
-				uint16_t fnum, uint16_t mode,
-				off_t start_offset, size_t window_size,
-				size_t (*source)(uint8_t *buf, size_t n,
-						 void *priv),
-				void *priv)
+struct tevent_req *cli_push_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+				 struct cli_state *cli,
+				 uint16_t fnum, uint16_t mode,
+				 off_t start_offset, size_t window_size,
+				 size_t (*source)(uint8_t *buf, size_t n,
+						  void *priv),
+				 void *priv)
 {
-	struct async_req *req;
+	struct tevent_req *req;
 	struct cli_push_state *state;
 	uint32_t i;
 
-	if (!async_req_setup(mem_ctx, &req, &state,
-			     struct cli_push_state)) {
+	req = tevent_req_create(mem_ctx, &state, struct cli_push_state);
+	if (req == NULL) {
 		return NULL;
 	}
 	state->cli = cli;
@@ -1151,26 +1144,24 @@ struct async_req *cli_push_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 	}
 
 	if (state->pending == 0) {
-		if (!async_post_ntstatus(req, ev, NT_STATUS_OK)) {
-			goto failed;
-		}
-		return req;
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
 	}
 
 	return req;
 
  failed:
-	TALLOC_FREE(req);
-	return NULL;
+	tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+	return tevent_req_post(req, ev);
 }
 
-static void cli_push_written(struct async_req *subreq)
+static void cli_push_written(struct tevent_req *subreq)
 {
-	struct cli_push_write_state *substate = talloc_get_type_abort(
-		subreq->async.priv, struct cli_push_write_state);
-	struct async_req *req = substate->req;
-	struct cli_push_state *state = talloc_get_type_abort(
-		req->private_data, struct cli_push_state);
+	struct cli_push_write_state *substate = tevent_req_callback_data(
+		subreq, struct cli_push_write_state);
+	struct tevent_req *req = substate->req;
+	struct cli_push_state *state = tevent_req_data(
+		req, struct cli_push_state);
 	NTSTATUS status;
 	uint32_t idx = substate->idx;
 
@@ -1181,26 +1172,26 @@ static void cli_push_written(struct async_req *subreq)
 	TALLOC_FREE(subreq);
 	TALLOC_FREE(substate);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_nterror(req, status);
+		tevent_req_nterror(req, status);
 		return;
 	}
 
 	if (!state->eof) {
 		if (!cli_push_write_setup(req, state, idx)) {
-			async_req_nomem(NULL, req);
+			tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
 			return;
 		}
 	}
 
 	if (state->pending == 0) {
-		async_req_done(req);
+		tevent_req_done(req);
 		return;
 	}
 }
 
-NTSTATUS cli_push_recv(struct async_req *req)
+NTSTATUS cli_push_recv(struct tevent_req *req)
 {
-	return async_req_simple_recv_ntstatus(req);
+	return tevent_req_simple_recv_ntstatus(req);
 }
 
 NTSTATUS cli_push(struct cli_state *cli, uint16_t fnum, uint16_t mode,
@@ -1210,7 +1201,7 @@ NTSTATUS cli_push(struct cli_state *cli, uint16_t fnum, uint16_t mode,
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct event_context *ev;
-	struct async_req *req;
+	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_OK;
 
 	if (cli_has_async_calls(cli)) {
@@ -1234,11 +1225,9 @@ NTSTATUS cli_push(struct cli_state *cli, uint16_t fnum, uint16_t mode,
 		goto fail;
 	}
 
-	while (req->state < ASYNC_REQ_DONE) {
-		if (event_loop_once(ev) == -1) {
-			status = map_nt_error_from_unix(errno);
-			goto fail;
-		}
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
 	}
 
 	status = cli_push_recv(req);

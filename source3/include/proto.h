@@ -2815,14 +2815,14 @@ struct tevent_req *cli_write_andx_send(TALLOC_CTX *mem_ctx,
 				       off_t offset, size_t size);
 NTSTATUS cli_write_andx_recv(struct tevent_req *req, size_t *pwritten);
 
-struct async_req *cli_push_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
-				struct cli_state *cli,
-				uint16_t fnum, uint16_t mode,
-				off_t start_offset, size_t window_size,
-				size_t (*source)(uint8_t *buf, size_t n,
-						 void *priv),
-				void *priv);
-NTSTATUS cli_push_recv(struct async_req *req);
+struct tevent_req *cli_push_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+				 struct cli_state *cli,
+				 uint16_t fnum, uint16_t mode,
+				 off_t start_offset, size_t window_size,
+				 size_t (*source)(uint8_t *buf, size_t n,
+						  void *priv),
+				 void *priv);
+NTSTATUS cli_push_recv(struct tevent_req *req);
 NTSTATUS cli_push(struct cli_state *cli, uint16_t fnum, uint16_t mode,
 		  off_t start_offset, size_t window_size,
 		  size_t (*source)(uint8_t *buf, size_t n, void *priv),
