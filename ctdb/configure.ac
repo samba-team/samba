@@ -14,6 +14,15 @@ AC_DEFUN([SMB_ENABLE], [echo -n ""])
 AC_INIT(ctdb.h)
 AC_CONFIG_SRCDIR([server/ctdbd.c])
 
+case `uname -m` in
+  x86_64)
+    libdir='${exec_prefix}/lib64'
+    ;;
+  *)
+    libdir='${exec_prefix}/lib'
+    ;;
+esac
+
 case `uname` in
   Linux*)
     CTDB_SYSTEM_OBJ=common/system_linux.o
