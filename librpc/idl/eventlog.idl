@@ -284,7 +284,7 @@ import "lsa.idl", "security.idl";
 	/*****************/
 	/* Function 0x16 */
 
-	typedef struct {
+	typedef [public] struct {
 		boolean32 full;
 	} EVENTLOG_FULL_INFORMATION;
 
