@@ -182,13 +182,9 @@ static int net_eventlog_export(struct net_context *c, int argc,
 	int ret = -1;
 	NTSTATUS status;
 	TALLOC_CTX *ctx = talloc_stackframe();
-	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	uint32_t num_records = 0;
-	struct EVENTLOG_EVT_FILE evt;
 	ELOG_TDB *etdb = NULL;
-	uint32_t count = 1;
-	size_t endoffset = 0;
 
 	if (argc < 2 || c->display_usage) {
 		d_fprintf(stderr, "usage: net eventlog export <file> <eventlog>\n");
@@ -201,54 +197,8 @@ static int net_eventlog_export(struct net_context *c, int argc,
 		goto done;
 	}
 
-	ZERO_STRUCT(evt);
-
-	while (1) {
-
-		struct eventlog_Record_tdb *r;
-		struct EVENTLOGRECORD e;
-
-		r = evlog_pull_record_tdb(ctx, etdb->tdb, count);
-		if (!r) {
-			break;
-		}
-
-		status = evlog_tdb_entry_to_evt_entry(ctx, r, &e);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto done;
-		}
-
-		endoffset += ndr_size_EVENTLOGRECORD(&e, NULL, 0);
-
-		ADD_TO_ARRAY(ctx, struct EVENTLOGRECORD, e, &evt.records, &num_records);
-		count++;
-	}
-
-	evt.hdr.StartOffset		= 0x30;
-	evt.hdr.EndOffset		= evt.hdr.StartOffset + endoffset;
-	evt.hdr.CurrentRecordNumber	= count;
-	evt.hdr.OldestRecordNumber	= 1;
-	evt.hdr.MaxSize			= tdb_fetch_int32(etdb->tdb, EVT_MAXSIZE);
-	evt.hdr.Flags			= 0;
-	evt.hdr.Retention		= tdb_fetch_int32(etdb->tdb, EVT_RETENTION);
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_DEBUG(EVENTLOGHEADER, &evt.hdr);
-	}
-
-	evt.eof.BeginRecord		= 0x30;
-	evt.eof.EndRecord		= evt.hdr.StartOffset + endoffset;
-	evt.eof.CurrentRecordNumber	= evt.hdr.CurrentRecordNumber;
-	evt.eof.OldestRecordNumber	= evt.hdr.OldestRecordNumber;
-
-	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_DEBUG(EVENTLOGEOF, &evt.eof);
-	}
-
-	ndr_err = ndr_push_struct_blob(&blob, ctx, NULL, &evt,
-		   (ndr_push_flags_fn_t)ndr_push_EVENTLOG_EVT_FILE);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		d_fprintf(stderr, "evt push failed: %s\n", ndr_errstr(ndr_err));
+	status = evlog_convert_tdb_to_evt(ctx, etdb, &blob, &num_records);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
