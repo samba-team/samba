@@ -84,6 +84,9 @@ void ndr_print_EVENTLOGEOF(struct ndr_print *ndr, const char *name, const struct
 enum ndr_err_code ndr_push_EVENTLOG_EVT_FILE(struct ndr_push *ndr, int ndr_flags, const struct EVENTLOG_EVT_FILE *r);
 enum ndr_err_code ndr_pull_EVENTLOG_EVT_FILE(struct ndr_pull *ndr, int ndr_flags, struct EVENTLOG_EVT_FILE *r);
 void ndr_print_EVENTLOG_EVT_FILE(struct ndr_print *ndr, const char *name, const struct EVENTLOG_EVT_FILE *r);
+enum ndr_err_code ndr_push_EVENTLOG_FULL_INFORMATION(struct ndr_push *ndr, int ndr_flags, const struct EVENTLOG_FULL_INFORMATION *r);
+enum ndr_err_code ndr_pull_EVENTLOG_FULL_INFORMATION(struct ndr_pull *ndr, int ndr_flags, struct EVENTLOG_FULL_INFORMATION *r);
+void ndr_print_EVENTLOG_FULL_INFORMATION(struct ndr_print *ndr, const char *name, const struct EVENTLOG_FULL_INFORMATION *r);
 void ndr_print_eventlog_ClearEventLogW(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_ClearEventLogW *r);
 void ndr_print_eventlog_BackupEventLogW(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_BackupEventLogW *r);
 void ndr_print_eventlog_CloseEventLog(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_CloseEventLog *r);

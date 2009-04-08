@@ -682,6 +682,36 @@ _PUBLIC_ void ndr_print_EVENTLOG_EVT_FILE(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_EVENTLOG_FULL_INFORMATION(struct ndr_push *ndr, int ndr_flags, const struct EVENTLOG_FULL_INFORMATION *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->full));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_EVENTLOG_FULL_INFORMATION(struct ndr_pull *ndr, int ndr_flags, struct EVENTLOG_FULL_INFORMATION *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->full));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_EVENTLOG_FULL_INFORMATION(struct ndr_print *ndr, const char *name, const struct EVENTLOG_FULL_INFORMATION *r)
+{
+	ndr_print_struct(ndr, name, "EVENTLOG_FULL_INFORMATION");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "full", r->full);
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_eventlog_ClearEventLogW(struct ndr_push *ndr, int flags, const struct eventlog_ClearEventLogW *r)
 {
 	if (flags & NDR_IN) {
