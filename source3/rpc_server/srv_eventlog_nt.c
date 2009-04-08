@@ -616,6 +616,50 @@ NTSTATUS _eventlog_BackupEventLogW(pipes_struct *p, struct eventlog_BackupEventL
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
+/********************************************************************
+_eventlog_GetLogInformation
+ ********************************************************************/
+
+NTSTATUS _eventlog_GetLogInformation(pipes_struct *p,
+				     struct eventlog_GetLogInformation *r)
+{
+	EVENTLOG_INFO *info = find_eventlog_info_by_hnd(p, r->in.handle);
+	struct EVENTLOG_FULL_INFORMATION f;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+
+	if (!info) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (r->in.level != 0) {
+		return NT_STATUS_INVALID_LEVEL;
+	}
+
+	*r->out.bytes_needed = 4;
+
+	if (r->in.buf_size < 4) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+
+	/* FIXME: this should be retrieved from the handle */
+	f.full = false;
+
+	ndr_err = ndr_push_struct_blob(&blob, p->mem_ctx, NULL, &f,
+		      (ndr_push_flags_fn_t)ndr_push_EVENTLOG_FULL_INFORMATION);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(EVENTLOG_FULL_INFORMATION, &f);
+	}
+
+	memcpy(r->out.buffer, blob.data, 4);
+
+	return NT_STATUS_OK;
+}
+
 NTSTATUS _eventlog_DeregisterEventSource(pipes_struct *p, struct eventlog_DeregisterEventSource *r)
 {
 	p->rng_fault_state = True;
@@ -701,12 +745,6 @@ NTSTATUS _eventlog_DeregisterClusterSvc(pipes_struct *p, struct eventlog_Deregis
 }
 
 NTSTATUS _eventlog_WriteClusterEvents(pipes_struct *p, struct eventlog_WriteClusterEvents *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _eventlog_GetLogInformation(pipes_struct *p, struct eventlog_GetLogInformation *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
