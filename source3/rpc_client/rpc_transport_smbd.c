@@ -573,14 +573,15 @@ struct rpc_transport_smbd_init_state {
 	struct rpc_transport_smbd_state *transport_smbd;
 };
 
-static void rpc_transport_smbd_init_done(struct async_req *subreq);
+static void rpc_transport_smbd_init_done(struct tevent_req *subreq);
 
 struct async_req *rpc_transport_smbd_init_send(TALLOC_CTX *mem_ctx,
 					       struct event_context *ev,
 					       struct rpc_cli_smbd_conn *conn,
 					       const struct ndr_syntax_id *abstract_syntax)
 {
-	struct async_req *result, *subreq;
+	struct async_req *result;
+	struct tevent_req *subreq;
 	struct rpc_transport_smbd_init_state *state;
 
 	if (!async_req_setup(mem_ctx, &result, &state,
@@ -610,8 +611,7 @@ struct async_req *rpc_transport_smbd_init_send(TALLOC_CTX *mem_ctx,
 	if (subreq == NULL) {
 		goto fail;
 	}
-	subreq->async.fn = rpc_transport_smbd_init_done;
-	subreq->async.priv = result;
+	tevent_req_set_callback(subreq, rpc_transport_smbd_init_done, result);
 	return result;
 
  fail:
@@ -619,10 +619,10 @@ struct async_req *rpc_transport_smbd_init_send(TALLOC_CTX *mem_ctx,
 	return NULL;
 }
 
-static void rpc_transport_smbd_init_done(struct async_req *subreq)
+static void rpc_transport_smbd_init_done(struct tevent_req *subreq)
 {
-	struct async_req *req = talloc_get_type_abort(
-		subreq->async.priv, struct async_req);
+	struct async_req *req = tevent_req_callback_data(
+		subreq, struct async_req);
 	struct rpc_transport_smbd_init_state *state = talloc_get_type_abort(
 		req->private_data, struct rpc_transport_smbd_init_state);
 	NTSTATUS status;

@@ -5391,11 +5391,11 @@ NTSTATUS rpc_pipe_open_local(TALLOC_CTX *mem_ctx,
 
 /* The following definitions come from rpc_client/rpc_transport_np.c  */
 
-struct async_req *rpc_transport_np_init_send(TALLOC_CTX *mem_ctx,
-					     struct event_context *ev,
-					     struct cli_state *cli,
-					     const struct ndr_syntax_id *abstract_syntax);
-NTSTATUS rpc_transport_np_init_recv(struct async_req *req,
+struct tevent_req *rpc_transport_np_init_send(TALLOC_CTX *mem_ctx,
+					      struct event_context *ev,
+					      struct cli_state *cli,
+					      const struct ndr_syntax_id *abstract_syntax);
+NTSTATUS rpc_transport_np_init_recv(struct tevent_req *req,
 				    TALLOC_CTX *mem_ctx,
 				    struct rpc_cli_transport **presult);
 NTSTATUS rpc_transport_np_init(TALLOC_CTX *mem_ctx, struct cli_state *cli,

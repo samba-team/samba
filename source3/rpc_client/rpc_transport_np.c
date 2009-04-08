@@ -273,28 +273,28 @@ struct rpc_transport_np_init_state {
 
 static void rpc_transport_np_init_pipe_open(struct tevent_req *subreq);
 
-struct async_req *rpc_transport_np_init_send(TALLOC_CTX *mem_ctx,
-					     struct event_context *ev,
-					     struct cli_state *cli,
-					     const struct ndr_syntax_id *abstract_syntax)
+struct tevent_req *rpc_transport_np_init_send(TALLOC_CTX *mem_ctx,
+					      struct event_context *ev,
+					      struct cli_state *cli,
+					      const struct ndr_syntax_id *abstract_syntax)
 {
-	struct async_req *result;
-	struct tevent_req *subreq;
+	struct tevent_req *req, *subreq;
 	struct rpc_transport_np_init_state *state;
 
-	if (!async_req_setup(mem_ctx, &result, &state,
-			     struct rpc_transport_np_init_state)) {
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpc_transport_np_init_state);
+	if (req == NULL) {
 		return NULL;
 	}
 
 	state->transport = talloc(state, struct rpc_cli_transport);
-	if (state->transport == NULL) {
-		goto fail;
+	if (tevent_req_nomem(state->transport, req)) {
+		return tevent_req_post(req, ev);
 	}
 	state->transport_np = talloc(state->transport,
 				     struct rpc_transport_np_state);
-	if (state->transport_np == NULL) {
-		goto fail;
+	if (tevent_req_nomem(state->transport_np, req)) {
+		return tevent_req_post(req, ev);
 	}
 	state->transport->priv = state->transport_np;
 
@@ -306,47 +306,43 @@ struct async_req *rpc_transport_np_init_send(TALLOC_CTX *mem_ctx,
 		state, ev, cli, state->transport_np->pipe_name,	0,
 		DESIRED_ACCESS_PIPE, 0, FILE_SHARE_READ|FILE_SHARE_WRITE,
 		FILE_OPEN, 0, 0);
-	if (subreq == NULL) {
-		goto fail;
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
 	}
 	tevent_req_set_callback(subreq, rpc_transport_np_init_pipe_open,
-				result);
-	return result;
-
- fail:
-	TALLOC_FREE(result);
-	return NULL;
+				req);
+	return req;
 }
 
 static void rpc_transport_np_init_pipe_open(struct tevent_req *subreq)
 {
-	struct async_req *req = tevent_req_callback_data(
-		subreq, struct async_req);
-	struct rpc_transport_np_init_state *state = talloc_get_type_abort(
-		req->private_data, struct rpc_transport_np_init_state);
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpc_transport_np_init_state *state = tevent_req_data(
+		req, struct rpc_transport_np_init_state);
 	NTSTATUS status;
 
 	status = cli_ntcreate_recv(subreq, &state->transport_np->fnum);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_nterror(req, status);
+		tevent_req_nterror(req, status);
 		return;
 	}
 
 	talloc_set_destructor(state->transport_np,
 			      rpc_transport_np_state_destructor);
-	async_req_done(req);
+	tevent_req_done(req);
 }
 
-NTSTATUS rpc_transport_np_init_recv(struct async_req *req,
+NTSTATUS rpc_transport_np_init_recv(struct tevent_req *req,
 				    TALLOC_CTX *mem_ctx,
 				    struct rpc_cli_transport **presult)
 {
-	struct rpc_transport_np_init_state *state = talloc_get_type_abort(
-		req->private_data, struct rpc_transport_np_init_state);
+	struct rpc_transport_np_init_state *state = tevent_req_data(
+		req, struct rpc_transport_np_init_state);
 	NTSTATUS status;
 
-	if (async_req_is_nterror(req, &status)) {
+	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
 
@@ -367,8 +363,8 @@ NTSTATUS rpc_transport_np_init(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct event_context *ev;
-	struct async_req *req;
-	NTSTATUS status;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_OK;
 
 	ev = event_context_init(frame);
 	if (ev == NULL) {
@@ -382,8 +378,9 @@ NTSTATUS rpc_transport_np_init(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		goto fail;
 	}
 
-	while (req->state < ASYNC_REQ_DONE) {
-		event_loop_once(ev);
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
 	}
 
 	status = rpc_transport_np_init_recv(req, mem_ctx, presult);
