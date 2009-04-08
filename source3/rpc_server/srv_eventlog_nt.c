@@ -660,6 +660,21 @@ NTSTATUS _eventlog_GetLogInformation(pipes_struct *p,
 	return NT_STATUS_OK;
 }
 
+/********************************************************************
+_eventlog_FlushEventLog
+ ********************************************************************/
+
+NTSTATUS _eventlog_FlushEventLog(pipes_struct *p,
+				 struct eventlog_FlushEventLog *r)
+{
+	EVENTLOG_INFO *info = find_eventlog_info_by_hnd(p, r->in.handle);
+	if (!info) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	return NT_STATUS_ACCESS_DENIED;
+}
+
 NTSTATUS _eventlog_DeregisterEventSource(pipes_struct *p, struct eventlog_DeregisterEventSource *r)
 {
 	p->rng_fault_state = True;
@@ -745,12 +760,6 @@ NTSTATUS _eventlog_DeregisterClusterSvc(pipes_struct *p, struct eventlog_Deregis
 }
 
 NTSTATUS _eventlog_WriteClusterEvents(pipes_struct *p, struct eventlog_WriteClusterEvents *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _eventlog_FlushEventLog(pipes_struct *p, struct eventlog_FlushEventLog *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
