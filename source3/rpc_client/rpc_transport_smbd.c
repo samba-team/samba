@@ -132,50 +132,45 @@ static void get_anon_ipc_negprot_done(struct tevent_req *subreq);
 static void get_anon_ipc_sesssetup_done(struct tevent_req *subreq);
 static void get_anon_ipc_tcon_done(struct tevent_req *subreq);
 
-static struct async_req *get_anon_ipc_send(TALLOC_CTX *mem_ctx,
-					   struct event_context *ev,
-					   struct cli_state *cli)
+static struct tevent_req *get_anon_ipc_send(TALLOC_CTX *mem_ctx,
+					    struct event_context *ev,
+					    struct cli_state *cli)
 {
-	struct async_req *result;
-	struct tevent_req *subreq;
+	struct tevent_req *req, *subreq;
 	struct get_anon_ipc_state *state;
 
-	if (!async_req_setup(mem_ctx, &result, &state,
-			     struct get_anon_ipc_state)) {
+	req = tevent_req_create(mem_ctx, &state, struct get_anon_ipc_state);
+	if (req == NULL) {
 		return NULL;
 	}
-
 	state->ev = ev;
 	state->cli = cli;
 
 	subreq = cli_negprot_send(state, ev, cli);
-	if (subreq == NULL) {
-		goto fail;
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, get_anon_ipc_negprot_done, result);
-	return result;
- fail:
-	TALLOC_FREE(result);
-	return NULL;
+	tevent_req_set_callback(subreq, get_anon_ipc_negprot_done, req);
+	return req;
 }
 
 static void get_anon_ipc_negprot_done(struct tevent_req *subreq)
 {
-	struct async_req *req = tevent_req_callback_data(
-		subreq, struct async_req);
-	struct get_anon_ipc_state *state = talloc_get_type_abort(
-		req->private_data, struct get_anon_ipc_state);
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct get_anon_ipc_state *state = tevent_req_data(
+		req, struct get_anon_ipc_state);
 	NTSTATUS status;
 
 	status = cli_negprot_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_nterror(req, status);
+		tevent_req_nterror(req, status);
 		return;
 	}
 
 	subreq = cli_session_setup_guest_send(state, state->ev, state->cli);
-	if (async_req_nomem(subreq, req)) {
+	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
 	tevent_req_set_callback(subreq, get_anon_ipc_sesssetup_done, req);
@@ -183,22 +178,22 @@ static void get_anon_ipc_negprot_done(struct tevent_req *subreq)
 
 static void get_anon_ipc_sesssetup_done(struct tevent_req *subreq)
 {
-	struct async_req *req = tevent_req_callback_data(
-		subreq, struct async_req);
-	struct get_anon_ipc_state *state = talloc_get_type_abort(
-		req->private_data, struct get_anon_ipc_state);
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct get_anon_ipc_state *state = tevent_req_data(
+		req, struct get_anon_ipc_state);
 	NTSTATUS status;
 
 	status = cli_session_setup_guest_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_nterror(req, status);
+		tevent_req_nterror(req, status);
 		return;
 	}
 
 	subreq = cli_tcon_andx_send(state, state->ev, state->cli,
 				    "IPC$", "IPC", NULL, 0);
-	if (async_req_nomem(subreq, req)) {
+	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
 	tevent_req_set_callback(subreq, get_anon_ipc_tcon_done, req);
@@ -206,22 +201,22 @@ static void get_anon_ipc_sesssetup_done(struct tevent_req *subreq)
 
 static void get_anon_ipc_tcon_done(struct tevent_req *subreq)
 {
-	struct async_req *req = tevent_req_callback_data(
-		subreq, struct async_req);
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
 	NTSTATUS status;
 
 	status = cli_tcon_andx_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_nterror(req, status);
+		tevent_req_nterror(req, status);
 		return;
 	}
-	async_req_done(req);
+	tevent_req_done(req);
 }
 
-static NTSTATUS get_anon_ipc_recv(struct async_req *req)
+static NTSTATUS get_anon_ipc_recv(struct tevent_req *req)
 {
-	return async_req_simple_recv_ntstatus(req);
+	return tevent_req_simple_recv_ntstatus(req);
 }
 
 struct rpc_cli_smbd_conn_init_state {
@@ -229,7 +224,7 @@ struct rpc_cli_smbd_conn_init_state {
 	struct rpc_cli_smbd_conn *conn;
 };
 
-static void rpc_cli_smbd_conn_init_done(struct async_req *subreq);
+static void rpc_cli_smbd_conn_init_done(struct tevent_req *subreq);
 
 struct async_req *rpc_cli_smbd_conn_init_send(TALLOC_CTX *mem_ctx,
 					      struct event_context *ev,
@@ -238,7 +233,8 @@ struct async_req *rpc_cli_smbd_conn_init_send(TALLOC_CTX *mem_ctx,
 								      void *priv),
 					      void *priv)
 {
-	struct async_req *result, *subreq;
+	struct async_req *result;
+	struct tevent_req *subreq;
 	struct rpc_cli_smbd_conn_init_state *state;
 	int smb_sock[2];
 	int stdout_pipe[2];
@@ -337,8 +333,7 @@ struct async_req *rpc_cli_smbd_conn_init_send(TALLOC_CTX *mem_ctx,
 		goto nomem;
 	}
 
-	subreq->async.fn = rpc_cli_smbd_conn_init_done;
-	subreq->async.priv = result;
+	tevent_req_set_callback(subreq, rpc_cli_smbd_conn_init_done, result);
 	return result;
 
  nomem:
@@ -363,10 +358,10 @@ struct async_req *rpc_cli_smbd_conn_init_send(TALLOC_CTX *mem_ctx,
 	return NULL;
 }
 
-static void rpc_cli_smbd_conn_init_done(struct async_req *subreq)
+static void rpc_cli_smbd_conn_init_done(struct tevent_req *subreq)
 {
-	struct async_req *req = talloc_get_type_abort(
-		subreq->async.priv, struct async_req);
+	struct async_req *req = tevent_req_callback_data(
+		subreq, struct async_req);
 	NTSTATUS status;
 
 	status = get_anon_ipc_recv(subreq);
