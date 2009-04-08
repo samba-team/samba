@@ -675,6 +675,83 @@ NTSTATUS _eventlog_FlushEventLog(pipes_struct *p,
 	return NT_STATUS_ACCESS_DENIED;
 }
 
+/********************************************************************
+ ********************************************************************/
+
+static NTSTATUS evlog_report_to_record(TALLOC_CTX *mem_ctx,
+				       const struct eventlog_ReportEventW *r,
+				       const char *logname,
+				       struct EVENTLOGRECORD *e)
+{
+	uint32_t i;
+	ZERO_STRUCTP(e);
+
+	e->TimeGenerated	= r->in.timestamp;
+	e->TimeWritten		= time(NULL);
+	e->EventID		= r->in.event_id;
+	e->EventType		= r->in.event_type;
+	e->NumStrings		= r->in.num_of_strings;
+	e->EventCategory	= r->in.event_category;
+	e->ReservedFlags	= r->in.flags;
+	e->DataLength		= r->in.data_size;
+	e->SourceName		= talloc_strdup(mem_ctx, logname);
+	NT_STATUS_HAVE_NO_MEMORY(e->SourceName);
+	if (r->in.servername->string) {
+		e->Computername	= r->in.servername->string;
+	} else {
+		e->Computername	= talloc_strdup(mem_ctx, "");
+		NT_STATUS_HAVE_NO_MEMORY(e->Computername);
+	}
+	if (r->in.user_sid) {
+		e->UserSid	= *r->in.user_sid;
+	}
+	e->Strings		= talloc_array(mem_ctx, const char *, e->NumStrings);
+	NT_STATUS_HAVE_NO_MEMORY(e->Strings);
+
+	for (i=0; i < e->NumStrings; i++) {
+		e->Strings[i] = talloc_strdup(e->Strings,
+					      r->in.strings[i]->string);
+		NT_STATUS_HAVE_NO_MEMORY(e->Strings[i]);
+	}
+	e->Data			= r->in.data;
+
+	return NT_STATUS_OK;
+}
+
+/********************************************************************
+_eventlog_ReportEventW
+ ********************************************************************/
+
+NTSTATUS _eventlog_ReportEventW(pipes_struct *p,
+				struct eventlog_ReportEventW *r)
+{
+	NTSTATUS status;
+	struct EVENTLOGRECORD record;
+
+	EVENTLOG_INFO *info = find_eventlog_info_by_hnd(p, r->in.handle);
+	if (!info) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	status = evlog_report_to_record(p->mem_ctx, r, info->logname, &record);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = evlog_push_record(p->mem_ctx,
+				   ELOG_TDB_CTX(info->etdb),
+				   &record,
+				   r->out.record_number);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/********************************************************************
+ ********************************************************************/
+
 NTSTATUS _eventlog_DeregisterEventSource(pipes_struct *p, struct eventlog_DeregisterEventSource *r)
 {
 	p->rng_fault_state = True;
@@ -694,12 +771,6 @@ NTSTATUS _eventlog_RegisterEventSourceW(pipes_struct *p, struct eventlog_Registe
 }
 
 NTSTATUS _eventlog_OpenBackupEventLogW(pipes_struct *p, struct eventlog_OpenBackupEventLogW *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _eventlog_ReportEventW(pipes_struct *p, struct eventlog_ReportEventW *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
