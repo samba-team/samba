@@ -151,6 +151,48 @@ static bool test_QueryServiceStatusEx(struct torture_context *tctx, struct dcerp
 	return true;
 }
 
+static bool test_QueryServiceConfigW(struct torture_context *tctx,
+				     struct dcerpc_pipe *p)
+{
+	struct svcctl_QueryServiceConfigW r;
+	struct QUERY_SERVICE_CONFIG query;
+	struct policy_handle h, s;
+	NTSTATUS status;
+
+	uint32_t offered = 0;
+	uint32_t needed = 0;
+
+	if (!test_OpenSCManager(p, tctx, &h))
+		return false;
+
+	if (!test_OpenService(p, tctx, &h, "Netlogon", &s))
+		return false;
+
+	r.in.handle = &s;
+	r.in.offered = offered;
+	r.out.query = &query;
+	r.out.needed = &needed;
+
+	status = dcerpc_svcctl_QueryServiceConfigW(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "QueryServiceConfigW failed!");
+
+	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+		r.in.offered = needed;
+		status = dcerpc_svcctl_QueryServiceConfigW(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "QueryServiceConfigW failed!");
+	}
+
+	torture_assert_werr_ok(tctx, r.out.result, "QueryServiceConfigW failed!");
+
+	if (!test_CloseServiceHandle(p, tctx, &s))
+		return false;
+
+	if (!test_CloseServiceHandle(p, tctx, &h))
+		return false;
+
+	return true;
+}
+
 static bool test_QueryServiceConfig2W(struct torture_context *tctx, struct dcerpc_pipe *p)
 {
 	struct svcctl_QueryServiceConfig2W r;
@@ -319,6 +361,8 @@ struct torture_suite *torture_rpc_svcctl(TALLOC_CTX *mem_ctx)
 				   test_QueryServiceStatus);
 	torture_rpc_tcase_add_test(tcase, "QueryServiceStatusEx",
 				   test_QueryServiceStatusEx);
+	torture_rpc_tcase_add_test(tcase, "QueryServiceConfigW",
+				   test_QueryServiceConfigW);
 	torture_rpc_tcase_add_test(tcase, "QueryServiceConfig2W",
 				   test_QueryServiceConfig2W);
 
