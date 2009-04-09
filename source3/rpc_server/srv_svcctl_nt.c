@@ -872,7 +872,7 @@ WERROR _svcctl_QueryServiceObjectSecurity(pipes_struct *p,
 
 	*r->out.needed = ndr_size_security_descriptor( sec_desc, NULL, 0 );
 
-	if ( *r->out.needed > r->in.buffer_size ) {
+	if ( *r->out.needed > r->in.offered) {
 		ZERO_STRUCTP( &r->out.buffer );
 		return WERR_INSUFFICIENT_BUFFER;
 	}
@@ -932,7 +932,8 @@ WERROR _svcctl_SetServiceObjectSecurity(pipes_struct *p,
 	/* read the security descfriptor */
 
 	status = unmarshall_sec_desc(p->mem_ctx,
-				     r->in.buffer, r->in.buffer_size,
+				     r->in.buffer,
+				     r->in.offered,
 				     &sec_desc);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ntstatus_to_werror(status);
