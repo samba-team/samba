@@ -189,8 +189,8 @@ NTSTATUS rpccli_svcctl_QueryServiceObjectSecurity(struct rpc_pipe_client *cli,
 						  TALLOC_CTX *mem_ctx,
 						  struct policy_handle *handle /* [in] [ref] */,
 						  uint32_t security_flags /* [in]  */,
-						  uint8_t *buffer /* [out] [ref,size_is(buffer_size)] */,
-						  uint32_t buffer_size /* [in] [range(0,0x40000)] */,
+						  uint8_t *buffer /* [out] [ref,size_is(offered)] */,
+						  uint32_t offered /* [in] [range(0,0x40000)] */,
 						  uint32_t *needed /* [out] [ref,range(0,0x40000)] */,
 						  WERROR *werror)
 {
@@ -200,7 +200,7 @@ NTSTATUS rpccli_svcctl_QueryServiceObjectSecurity(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.security_flags = security_flags;
-	r.in.buffer_size = buffer_size;
+	r.in.offered = offered;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceObjectSecurity, &r);
@@ -225,7 +225,7 @@ NTSTATUS rpccli_svcctl_QueryServiceObjectSecurity(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(buffer, r.out.buffer, r.in.buffer_size * sizeof(*buffer));
+	memcpy(buffer, r.out.buffer, r.in.offered * sizeof(*buffer));
 	*needed = *r.out.needed;
 
 	/* Return result */
@@ -240,8 +240,8 @@ NTSTATUS rpccli_svcctl_SetServiceObjectSecurity(struct rpc_pipe_client *cli,
 						TALLOC_CTX *mem_ctx,
 						struct policy_handle *handle /* [in] [ref] */,
 						uint32_t security_flags /* [in]  */,
-						uint8_t *buffer /* [in] [ref,size_is(buffer_size)] */,
-						uint32_t buffer_size /* [in]  */,
+						uint8_t *buffer /* [in] [ref,size_is(offered)] */,
+						uint32_t offered /* [in]  */,
 						WERROR *werror)
 {
 	struct svcctl_SetServiceObjectSecurity r;
@@ -251,7 +251,7 @@ NTSTATUS rpccli_svcctl_SetServiceObjectSecurity(struct rpc_pipe_client *cli,
 	r.in.handle = handle;
 	r.in.security_flags = security_flags;
 	r.in.buffer = buffer;
-	r.in.buffer_size = buffer_size;
+	r.in.offered = offered;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_SetServiceObjectSecurity, &r);
