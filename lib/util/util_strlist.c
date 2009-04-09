@@ -187,7 +187,7 @@ _PUBLIC_ char *str_list_join_shell(TALLOC_CTX *mem_ctx, const char **list, char 
 /**
   return the number of elements in a string list
 */
-_PUBLIC_ size_t str_list_length(const char * const*list)
+_PUBLIC_ size_t str_list_length(const char **list)
 {
 	size_t ret;
 	for (ret=0;list && list[ret];ret++) /* noop */ ;
@@ -198,7 +198,7 @@ _PUBLIC_ size_t str_list_length(const char * const*list)
 /**
   copy a string list
 */
-_PUBLIC_ char **str_list_copy(TALLOC_CTX *mem_ctx, const char * const *list)
+_PUBLIC_ char **str_list_copy(TALLOC_CTX *mem_ctx, const char **list)
 {
 	int i;
 	char **ret;
@@ -243,31 +243,6 @@ _PUBLIC_ bool str_list_equal(const char **list1, const char **list2)
 	return true;
 }
 
-
-/**
-  add an entry to a string list if not already in there
-*/
-_PUBLIC_ char **str_list_add_unique(char **list, const char *s)
-{
-	int i;
-	size_t len;
-	const char **ret;
-
-	for (i=0;list[i];i++) {
-		if (strcmp(list[i], s) == 0) return list;
-	}
-
-	len = i;
-	ret = talloc_realloc(NULL, list, const char *, len+2);
-	if (ret == NULL) return NULL;
-
-	ret[len] = talloc_strdup(ret, s);
-	if (ret[len] == NULL) return NULL;
-
-	ret[len+1] = NULL;
-
-	return ret;
-}
 
 /**
   add an entry to a string list
@@ -336,7 +311,7 @@ _PUBLIC_ bool str_list_check_ci(const char **list, const char *s)
 /**
   append one list to another - expanding list1
 */
-_PUBLIC_ char **str_list_append(char **list1, const char * const *list2)
+_PUBLIC_ char **str_list_append(char **list1, const char **list2)
 {
 	size_t len1 = str_list_length(list1);
 	size_t len2 = str_list_length(list2);
@@ -356,3 +331,49 @@ _PUBLIC_ char **str_list_append(char **list1, const char * const *list2)
 
 	return ret;
 }
+
+static int list_cmp(const char **el1, const char **el2)
+{
+	return strcmp(*el1, *el2);
+}
+
+/*
+  return a list that only contains the unique elements of a list,
+  removing any duplicates
+ */
+_PUBLIC_ char **str_list_unique(char **list)
+{
+	size_t len = str_list_length(list);
+	char **list2;
+	int i, j;
+	if (len < 2) {
+		return list;
+	}
+	list2 = (char **)talloc_memdup(list, list, sizeof(list[0])*(len+1));
+	qsort(list2, len, sizeof(list2[0]), QSORT_CAST list_cmp);
+	list[0] = list2[0];
+	for (i=j=1;i<len;i++) {
+		if (strcmp(list2[i], list[j-1]) != 0) {
+			list[j] = list2[i];
+			j++;
+		}
+	}
+	list[j] = NULL;
+	list = talloc_realloc(NULL, list, char *, j);
+	talloc_free(list2);
+	return list;
+}
+
+/*
+  very useful when debugging complex list related code
+ */
+_PUBLIC_ void str_list_show(const char **list)
+{
+	int i;
+	DEBUG(0,("{ "));
+	for (i=0;list && list[i];i++) {
+		DEBUG(0,("\"%s\", ", list[i]));
+	}
+	DEBUG(0,("}\n"));
+}
+
