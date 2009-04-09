@@ -3,6 +3,7 @@
  *  RPC Pipe client / server routines
  *
  *  Copyright (C) Gerald (Jerry) Carter             2005.
+ *  Copyright (C) Guenther Deschner                 2008,2009.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -50,8 +51,9 @@ WERROR _PNP_GetDeviceListSize(pipes_struct *p,
 {
 	char *devicepath;
 
-	if (!r->in.devicename) {
-		return WERR_ACCESS_DENIED;
+	if ((r->in.flags & CM_GETIDLIST_FILTER_SERVICE) &&
+	    (!r->in.devicename)) {
+		return WERR_CM_INVALID_POINTER;
 	}
 
 	if (!(devicepath = get_device_path(p->mem_ctx, r->in.devicename))) {
@@ -74,13 +76,14 @@ WERROR _PNP_GetDeviceList(pipes_struct *p,
 {
 	char *devicepath;
 	uint32_t size = 0;
+	char **multi_sz = NULL;
+	size_t multi_sz_len;
+	uint16_t *multi_sz_buf;
 
-	DATA_BLOB blob;
-	struct lsa_StringLarge s;
-	enum ndr_err_code ndr_err;
-
-	if ( !r->in.filter )
-		return WERR_ACCESS_DENIED;
+	if ((r->in.flags & CM_GETIDLIST_FILTER_SERVICE) &&
+	    (!r->in.filter)) {
+		return WERR_CM_INVALID_POINTER;
+	}
 
 	if (!(devicepath = get_device_path(p->mem_ctx, r->in.filter))) {
 		return WERR_NOMEM;
@@ -92,19 +95,23 @@ WERROR _PNP_GetDeviceList(pipes_struct *p,
 		return WERR_CM_BUFFER_SMALL;
 	}
 
-	s.string = r->in.filter;
-
-	/* This has to be DOUBLE NULL terminated */
-	ndr_err = ndr_push_struct_blob(&blob, p->mem_ctx, NULL, &s,
-			(ndr_push_flags_fn_t)ndr_push_lsa_StringLarge);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return ntstatus_to_werror(ndr_map_error2ntstatus(ndr_err));
-	}
-
-	r->out.buffer = (uint16_t *)talloc_memdup(p->mem_ctx, blob.data, blob.length);
-	if (!r->out.buffer) {
+	multi_sz = talloc_zero_array(p->mem_ctx, char *, 2);
+	if (!multi_sz) {
 		return WERR_NOMEM;
 	}
+
+	multi_sz[0] = devicepath;
+
+	multi_sz_len = regval_build_multi_sz(multi_sz, &multi_sz_buf);
+	if (!multi_sz_len) {
+		return WERR_NOMEM;
+	}
+
+	if (*r->in.length < multi_sz_len/2) {
+		return WERR_CM_BUFFER_SMALL;
+	}
+
+	memcpy(r->out.buffer, multi_sz_buf, multi_sz_len);
 
 	return WERR_OK;
 }
