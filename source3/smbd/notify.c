@@ -81,7 +81,7 @@ static bool notify_marshall_changes(int num_changes,
 
 		c = &changes[i];
 
-		if (!convert_string_allocate(NULL, CH_UNIX, CH_UTF16LE,
+		if (!convert_string_allocate(talloc_tos(), CH_UNIX, CH_UTF16LE,
 			c->name, strlen(c->name)+1, &uni_name.buffer,
 			&namelen, True) || (uni_name.buffer == NULL)) {
 			goto fail;
@@ -109,7 +109,7 @@ static bool notify_marshall_changes(int num_changes,
 		 */
 		prs_set_offset(ps, prs_offset(ps)-2);
 
-		SAFE_FREE(uni_name.buffer);
+		TALLOC_FREE(uni_name.buffer);
 
 		if (prs_offset(ps) > max_offset) {
 			/* Too much data for client. */
@@ -123,7 +123,7 @@ static bool notify_marshall_changes(int num_changes,
 	return True;
 
  fail:
-	SAFE_FREE(uni_name.buffer);
+	TALLOC_FREE(uni_name.buffer);
 	return False;
 }
 
