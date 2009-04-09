@@ -873,7 +873,6 @@ WERROR _svcctl_QueryServiceObjectSecurity(pipes_struct *p,
 	*r->out.needed = ndr_size_security_descriptor( sec_desc, NULL, 0 );
 
 	if ( *r->out.needed > r->in.offered) {
-		ZERO_STRUCTP( &r->out.buffer );
 		return WERR_INSUFFICIENT_BUFFER;
 	}
 
