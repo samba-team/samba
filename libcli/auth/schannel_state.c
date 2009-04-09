@@ -147,7 +147,7 @@ NTSTATUS schannel_store_session_key(struct ldb_context *ldb,
 	/* We don't need a transaction here, as we either add or
 	 * modify records, never delete them, so it must exist */
 
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		DEBUG(0,("Unable to add %s to session key db - %s\n", 
 			 ldb_dn_get_linearized(msg->dn), ldb_errstring(ldb)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -263,8 +263,9 @@ NTSTATUS schannel_fetch_session_key(struct ldb_context *ldb,
 */
 NTSTATUS schannel_creds_server_step_check(struct ldb_context *ldb,
 					  TALLOC_CTX *mem_ctx, 
-					  bool schannel_in_use,
 					  const char *computer_name,
+					  bool schannel_required_for_call,
+					  bool schannel_in_use,
 					  struct netr_Authenticator *received_authenticator,
 					  struct netr_Authenticator *return_authenticator,
 					  struct netlogon_creds_CredentialState **creds_out) 
@@ -285,8 +286,12 @@ NTSTATUS schannel_creds_server_step_check(struct ldb_context *ldb,
 	nt_status = schannel_fetch_session_key(ldb, ldb, computer_name, 
 					       &creds);
 
-	/* Ensure that once the client and server agree on schannel, that all future calls must use it */
-	if (creds->negotiate_flags & NETLOGON_NEG_SCHANNEL && !schannel_in_use) {
+	/* If we are flaged that schannel is required for a call, and
+	 * it is not in use, then make this an error */
+
+	/* It would be good to make this mandetory once schannel is
+	 * negoiated, bu this is not what windows does */
+	if (schannel_required_for_call && !schannel_in_use) {
 		DEBUG(0,("schannel_creds_server_step_check: client %s not using schannel for netlogon, despite negotiating it\n",
 			creds->computer_name ));
 		return NT_STATUS_ACCESS_DENIED;
