@@ -478,7 +478,7 @@ struct svcctl_CreateServiceW {
 struct svcctl_EnumDependentServicesW {
 	struct {
 		struct policy_handle *service;/* [ref] */
-		uint32_t state;
+		enum svcctl_ServiceState state;
 		uint32_t offered;/* [range(0,0x40000)] */
 	} in;
 
@@ -682,7 +682,7 @@ struct svcctl_CreateServiceA {
 struct svcctl_EnumDependentServicesA {
 	struct {
 		struct policy_handle *service;/* [ref] */
-		uint32_t state;
+		enum svcctl_ServiceState state;
 		uint32_t offered;
 	} in;
 
