@@ -171,7 +171,7 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 }
 
 /**
- * Return the struct creds_CredentialState.
+ * Return the struct netlogon_creds_CredentialState.
  *
  * Make sure not to call this unless gensec is using schannel...
  */

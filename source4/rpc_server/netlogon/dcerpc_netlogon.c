@@ -240,8 +240,8 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 	}
 
 	creds = netlogon_creds_server_init(mem_ctx, 	
-					   r->in.computer_name,
 					   r->in.account_name,
+					   r->in.computer_name,
 					   r->in.secure_channel_type,
 					   &pipe_state->client_challenge, 
 					   &pipe_state->server_challenge, 
@@ -325,15 +325,17 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate2(struct dcesrv_call_state *dce_ca
 
 */
 static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dce_call,
-						    const char *computer_name,
 						    TALLOC_CTX *mem_ctx, 
+						    const char *computer_name,
 						    struct netr_Authenticator *received_authenticator,
 						    struct netr_Authenticator *return_authenticator,
 						    struct netlogon_creds_CredentialState **creds_out) 
 {
 	NTSTATUS nt_status;
 	struct ldb_context *ldb;
-	bool schannel_in_use = dce_call->conn->auth_state.auth_info->auth_type == DCERPC_AUTH_TYPE_SCHANNEL
+	bool schannel_global_required = false; /* Should be lp_schannel_server() == true */
+	bool schannel_in_use = dce_call->conn->auth_state.auth_info
+		&& dce_call->conn->auth_state.auth_info->auth_type == DCERPC_AUTH_TYPE_SCHANNEL
 		&& (dce_call->conn->auth_state.auth_info->auth_level == DCERPC_AUTH_LEVEL_INTEGRITY 
 		    || dce_call->conn->auth_state.auth_info->auth_level == DCERPC_AUTH_LEVEL_PRIVACY);
 
@@ -341,10 +343,10 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 	if (!ldb) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
-	
 	nt_status = schannel_creds_server_step_check(ldb, mem_ctx,
-						     schannel_in_use,
 						     computer_name,
+						     schannel_global_required,
+						     schannel_in_use,
 						     received_authenticator, 
 						     return_authenticator, creds_out); 
 	talloc_free(ldb);
@@ -364,7 +366,8 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet(struct dcesrv_call_state *dce_call
 	NTSTATUS nt_status;
 
 	nt_status = dcesrv_netr_creds_server_step_check(dce_call,
-							r->in.computer_name, mem_ctx, 
+							mem_ctx, 
+							r->in.computer_name, 
 							r->in.credential, r->out.return_authenticator,
 							&creds);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
@@ -401,7 +404,8 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 	struct samr_CryptPassword password_buf;
 
 	nt_status = dcesrv_netr_creds_server_step_check(dce_call,
-							r->in.computer_name, mem_ctx, 
+							mem_ctx, 
+							r->in.computer_name, 
 							r->in.credential, r->out.return_authenticator,
 							&creds);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
@@ -703,7 +707,8 @@ static NTSTATUS dcesrv_netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce
 	NT_STATUS_HAVE_NO_MEMORY(return_authenticator);
 
 	nt_status = dcesrv_netr_creds_server_step_check(dce_call,
-							r->in.computer_name, mem_ctx, 
+							mem_ctx, 
+							r->in.computer_name, 
 							r->in.credential, return_authenticator,
 							&creds);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
@@ -1070,10 +1075,11 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 	const char *local_domain;
 
 	status = dcesrv_netr_creds_server_step_check(dce_call,
-						     r->in.computer_name, mem_ctx, 
-					      r->in.credential, 
-					      r->out.return_authenticator,
-					      NULL);
+						     mem_ctx, 
+						     r->in.computer_name, 
+						     r->in.credential, 
+						     r->out.return_authenticator,
+						     NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,(__location__ " Bad credentials - error\n"));
 	}
