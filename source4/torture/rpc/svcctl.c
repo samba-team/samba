@@ -74,6 +74,36 @@ static bool test_OpenService(struct dcerpc_pipe *p, struct torture_context *tctx
 
 }
 
+static bool test_QueryServiceStatus(struct torture_context *tctx,
+				    struct dcerpc_pipe *p)
+{
+	struct svcctl_QueryServiceStatus r;
+	struct policy_handle h, s;
+	struct SERVICE_STATUS service_status;
+	NTSTATUS status;
+
+	if (!test_OpenSCManager(p, tctx, &h))
+		return false;
+
+	if (!test_OpenService(p, tctx, &h, "Netlogon", &s))
+		return false;
+
+	r.in.handle = &s;
+	r.out.service_status = &service_status;
+
+	status = dcerpc_svcctl_QueryServiceStatus(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "QueryServiceStatus failed!");
+	torture_assert_werr_ok(tctx, r.out.result, "QueryServiceStatus failed!");
+
+	if (!test_CloseServiceHandle(p, tctx, &s))
+		return false;
+
+	if (!test_CloseServiceHandle(p, tctx, &h))
+		return false;
+
+	return true;
+}
+
 static bool test_QueryServiceStatusEx(struct torture_context *tctx, struct dcerpc_pipe *p)
 {
 	struct svcctl_QueryServiceStatusEx r;
@@ -285,6 +315,8 @@ struct torture_suite *torture_rpc_svcctl(TALLOC_CTX *mem_ctx)
 				   test_SCManager);
 	torture_rpc_tcase_add_test(tcase, "EnumServicesStatus",
 				   test_EnumServicesStatus);
+	torture_rpc_tcase_add_test(tcase, "QueryServiceStatus",
+				   test_QueryServiceStatus);
 	torture_rpc_tcase_add_test(tcase, "QueryServiceStatusEx",
 				   test_QueryServiceStatusEx);
 	torture_rpc_tcase_add_test(tcase, "QueryServiceConfig2W",
