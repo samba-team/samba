@@ -468,6 +468,26 @@ _PUBLIC_ char **str_list_unique(char **list);
  */
 _PUBLIC_ void str_list_show(const char **list);
 
+
+/**
+  append one list to another - expanding list1
+  this assumes the elements of list2 are const pointers, so we can re-use them
+*/
+_PUBLIC_ char **str_list_append_const(char **list1, const char **list2);
+
+/**
+  add an entry to a string list
+  this assumes s will not change
+*/
+_PUBLIC_ char **str_list_add_const(char **list, const char *s);
+
+/**
+  copy a string list
+  this assumes list will not change
+*/
+_PUBLIC_ char **str_list_copy_const(TALLOC_CTX *mem_ctx, const char **list);
+
+
 /* The following definitions come from lib/util/util_file.c  */
 
 

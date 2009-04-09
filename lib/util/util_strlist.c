@@ -377,3 +377,67 @@ _PUBLIC_ void str_list_show(const char **list)
 	DEBUG(0,("}\n"));
 }
 
+
+
+/**
+  append one list to another - expanding list1
+  this assumes the elements of list2 are const pointers, so we can re-use them
+*/
+_PUBLIC_ char **str_list_append_const(char **list1, const char **list2)
+{
+	size_t len1 = str_list_length(list1);
+	size_t len2 = str_list_length(list2);
+	char **ret;
+	int i;
+
+	ret = talloc_realloc(NULL, list1, char *, len1+len2+1);
+	if (ret == NULL) return NULL;
+
+	for (i=len1;i<len1+len2;i++) {
+		ret[i] = list2[i-len1];
+	}
+	ret[i] = NULL;
+
+	return ret;
+}
+
+/**
+  add an entry to a string list
+  this assumes s will not change
+*/
+_PUBLIC_ char **str_list_add_const(char **list, const char *s)
+{
+	size_t len = str_list_length(list);
+	char **ret;
+
+	ret = talloc_realloc(NULL, list, char *, len+2);
+	if (ret == NULL) return NULL;
+
+	ret[len] = s;
+	ret[len+1] = NULL;
+
+	return ret;
+}
+
+/**
+  copy a string list
+  this assumes list will not change
+*/
+_PUBLIC_ char **str_list_copy_const(TALLOC_CTX *mem_ctx, const char **list)
+{
+	int i;
+	char **ret;
+
+	if (list == NULL)
+		return NULL;
+	
+	ret = talloc_array(mem_ctx, char *, str_list_length(list)+1);
+	if (ret == NULL) 
+		return NULL;
+
+	for (i=0;list && list[i];i++) {
+		ret[i] = list[i];
+	}
+	ret[i] = NULL;
+	return ret;
+}
