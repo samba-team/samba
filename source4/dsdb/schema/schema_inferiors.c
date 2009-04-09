@@ -31,14 +31,13 @@
 #include "dsdb/samdb/samdb.h"
 
 
-
 /*
   create the SUPCLASSES() list
  */
-static char * const *schema_supclasses(struct dsdb_schema *schema, 
-				       TALLOC_CTX *mem_ctx, struct dsdb_class *schema_class)
+static char **schema_supclasses(struct dsdb_schema *schema, 
+				TALLOC_CTX *mem_ctx, struct dsdb_class *schema_class)
 {
-	char * const *list;
+	char **list;
 
 	if (schema_class->supclasses) {
 		return schema_class->supclasses;
@@ -60,11 +59,14 @@ static char * const *schema_supclasses(struct dsdb_schema *schema,
 		char **list2;
 		list = str_list_add(list, schema_class->subClassOf);
 
-		list2 = schema_supclasses(schema, mem_ctx, dsdb_class_by_lDAPDisplayName(schema, schema_class->subClassOf));
+		list2 = schema_supclasses(schema, mem_ctx, 
+					  discard_const_p(struct dsdb_class, 
+							  dsdb_class_by_lDAPDisplayName(schema, 
+											schema_class->subClassOf)));
 		list = str_list_append(list, list2);
 	}
 
-	schema_class->supclasses = list;
+	schema_class->supclasses = str_list_unique(list);
 	
 	return list;
 }
@@ -73,8 +75,7 @@ static char * const *schema_supclasses(struct dsdb_schema *schema,
   this one is used internally
   matches SUBCLASSES() python function
  */
-static char **schema_subclasses(struct dsdb_schema *schema, TALLOC_CTX *mem_ctx,
-				const char * const *oclist)
+static char **schema_subclasses(struct dsdb_schema *schema, TALLOC_CTX *mem_ctx, char **oclist)
 {
 	char **list = str_list_make(mem_ctx, NULL, NULL);
 	int i;
@@ -93,27 +94,29 @@ static char **schema_subclasses(struct dsdb_schema *schema, TALLOC_CTX *mem_ctx,
 static char **schema_posssuperiors(struct dsdb_schema *schema, TALLOC_CTX *mem_ctx,
 				   struct dsdb_class *schema_class)
 {
-	char **list = str_list_make(mem_ctx, NULL, NULL);
+	if (schema_class->posssuperiors == NULL) {
+		char **list2 = str_list_make(mem_ctx, NULL, NULL);
+		char **list3;
+		int i;
 
-	if (schema_class->posssuperiors) {
-		return schema_class->posssuperiors;
-	} else {
-		char * const *list2 = str_list_make(mem_ctx, NULL, NULL);
 		list2 = str_list_append(list2, schema_class->systemPossSuperiors);
 		list2 = str_list_append(list2, schema_class->possSuperiors);
-		list2 = str_list_append(list2, schema_supclasses(schema, list2, schema_class));
+		list3 = schema_supclasses(schema, list2, schema_class);
+		for (i=0; list3 && list3[i]; i++) {
+			struct dsdb_class *class2 = dsdb_class_by_lDAPDisplayName(schema, list3[i]);
+			list2 = str_list_append(list2, schema_posssuperiors(schema, mem_ctx, class2));
+		}
 		list2 = str_list_append(list2, schema_subclasses(schema, list2, list2));
 
-		schema_class->posssuperiors = list2;
-		return schema_class->posssuperiors;
+		schema_class->posssuperiors = str_list_unique(list2);
 	}
 
-	return list;
+	return schema_class->posssuperiors;
 }
 
 static char **schema_subclasses_recurse(struct dsdb_schema *schema, struct dsdb_class *schema_class)
 {
-	char * const *list = str_list_copy(schema_class, schema_class->subclasses_direct);
+	char **list = str_list_copy(schema_class, schema_class->subclasses_direct);
 	int i;
 	for (i=0;list && list[i]; i++) {
 		struct dsdb_class *schema_class2 = dsdb_class_by_lDAPDisplayName(schema, list[i]);
@@ -130,18 +133,17 @@ static void schema_create_subclasses(struct dsdb_schema *schema)
 
 	for (schema_class=schema->classes; schema_class; schema_class=schema_class->next) {
 		struct dsdb_class *schema_class2 = dsdb_class_by_lDAPDisplayName(schema, schema_class->subClassOf);
-		schema_class->subclasses_direct = str_list_make(schema_class, NULL, NULL);
 		if (schema_class != schema_class2) {
 			if (schema_class2->subclasses_direct == NULL) {
 				schema_class2->subclasses_direct = str_list_make(schema_class2, NULL, NULL);
 			}
 			schema_class2->subclasses_direct = str_list_add(schema_class2->subclasses_direct, 
-									schema_class->subClassOf);
+									schema_class->lDAPDisplayName);
 		}
 	}
 
 	for (schema_class=schema->classes; schema_class; schema_class=schema_class->next) {
-		schema_class->subclasses = schema_subclasses_recurse(schema, schema_class);
+		schema_class->subclasses = str_list_unique(schema_subclasses_recurse(schema, schema_class));
 	}	
 }
 
@@ -155,14 +157,14 @@ static void schema_fill_possible_inferiors(struct dsdb_schema *schema, struct ds
 		    && c2->objectClassCategory != 2 
 		    && c2->objectClassCategory != 3
 		    && str_list_check(superiors, schema_class->lDAPDisplayName)) {
-			if (c2->possible_inferiors == NULL) {
-				c2->possible_inferiors = str_list_make(c2, NULL, NULL);
+			if (schema_class->possibleInferiors == NULL) {
+				schema_class->possibleInferiors = str_list_make(schema_class, NULL, NULL);
 			}
-			c2->possible_inferiors = str_list_add_unique(c2->possible_inferiors,
-								     schema_class->lDAPDisplayName);
+			schema_class->possibleInferiors = str_list_add(schema_class->possibleInferiors,
+								       c2->lDAPDisplayName);
 		}
-		talloc_free(superiors);
 	}
+	schema_class->possibleInferiors = str_list_unique(schema_class->possibleInferiors);
 }
 
 void schema_fill_constructed(struct dsdb_schema *schema) 
