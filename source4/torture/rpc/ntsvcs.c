@@ -47,18 +47,26 @@ static bool test_PNP_GetVersion(struct torture_context *tctx,
 static bool test_PNP_GetDeviceListSize(struct torture_context *tctx,
 				       struct dcerpc_pipe *p)
 {
-	NTSTATUS status;
 	struct PNP_GetDeviceListSize r;
 	uint32_t size = 0;
 
 	r.in.devicename = NULL;
-	r.in.flags = 0;
+	r.in.flags = CM_GETIDLIST_FILTER_SERVICE;
 	r.out.size = &size;
 
-	status = dcerpc_PNP_GetDeviceListSize(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_PNP_GetDeviceListSize(p, tctx, &r),
+		"PNP_GetDeviceListSize");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_CM_INVALID_POINTER,
+		"PNP_GetDeviceListSize");
 
-	torture_assert_ntstatus_ok(tctx, status, "PNP_GetDeviceListSize");
-	torture_assert_werr_ok(tctx, r.out.result, "PNP_GetDeviceListSize");
+	r.in.devicename = "Spooler";
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_PNP_GetDeviceListSize(p, tctx, &r),
+		"PNP_GetDeviceListSize");
+	torture_assert_werr_ok(tctx, r.out.result,
+		"PNP_GetDeviceListSize");
 
 	return true;
 }
@@ -66,7 +74,6 @@ static bool test_PNP_GetDeviceListSize(struct torture_context *tctx,
 static bool test_PNP_GetDeviceList(struct torture_context *tctx,
 				   struct dcerpc_pipe *p)
 {
-	NTSTATUS status;
 	struct PNP_GetDeviceList r;
 	uint16_t *buffer = NULL;
 	uint32_t length = 0;
@@ -74,25 +81,35 @@ static bool test_PNP_GetDeviceList(struct torture_context *tctx,
 	buffer = talloc_array(tctx, uint16_t, 0);
 
 	r.in.filter = NULL;
-	r.in.flags = 0;
+	r.in.flags = CM_GETIDLIST_FILTER_SERVICE;
 	r.in.length = &length;
 	r.out.length = &length;
 	r.out.buffer = buffer;
 
-	status = dcerpc_PNP_GetDeviceList(p, tctx, &r);
-	torture_assert_ntstatus_ok(tctx, status, "PNP_GetDeviceList");
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_PNP_GetDeviceList(p, tctx, &r),
+		"PNP_GetDeviceList failed");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_CM_INVALID_POINTER,
+		"PNP_GetDeviceList failed");
+
+	r.in.filter = "Spooler";
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_PNP_GetDeviceList(p, tctx, &r),
+		"PNP_GetDeviceList failed");
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_CM_BUFFER_SMALL)) {
 		struct PNP_GetDeviceListSize s;
 
-		s.in.devicename = NULL;
-		s.in.flags = 0;
+		s.in.devicename = "Spooler";
+		s.in.flags = CM_GETIDLIST_FILTER_SERVICE;
 		s.out.size = &length;
 
-		status = dcerpc_PNP_GetDeviceListSize(p, tctx, &s);
-
-		torture_assert_ntstatus_ok(tctx, status, "PNP_GetDeviceListSize");
-		torture_assert_werr_ok(tctx, s.out.result, "PNP_GetDeviceListSize");
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_PNP_GetDeviceListSize(p, tctx, &s),
+			"PNP_GetDeviceListSize failed");
+		torture_assert_werr_ok(tctx, s.out.result,
+			"PNP_GetDeviceListSize failed");
 	}
 
 	buffer = talloc_array(tctx, uint16_t, length);
@@ -101,9 +118,12 @@ static bool test_PNP_GetDeviceList(struct torture_context *tctx,
 	r.out.length = &length;
 	r.out.buffer = buffer;
 
-	status = dcerpc_PNP_GetDeviceList(p, tctx, &r);
-	torture_assert_ntstatus_ok(tctx, status, "PNP_GetDeviceList");
-	torture_assert_werr_ok(tctx, r.out.result, "PNP_GetDeviceList");
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_PNP_GetDeviceList(p, tctx, &r),
+		"PNP_GetDeviceList failed");
+
+	torture_assert_werr_ok(tctx, r.out.result,
+		"PNP_GetDeviceList failed");
 
 	return true;
 }
