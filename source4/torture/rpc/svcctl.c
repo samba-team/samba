@@ -3,7 +3,7 @@
    test suite for srvsvc rpc operations
 
    Copyright (C) Jelmer Vernooij 2004
-   Copyright (C) Guenther Deschner 2008
+   Copyright (C) Guenther Deschner 2008,2009
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -385,6 +385,69 @@ static bool test_EnumServicesStatus(struct torture_context *tctx, struct dcerpc_
 	return true;
 }
 
+static bool test_EnumDependentServicesW(struct torture_context *tctx,
+					struct dcerpc_pipe *p)
+{
+	struct svcctl_EnumDependentServicesW r;
+	struct policy_handle h, s;
+	uint32_t needed;
+	uint32_t services_returned;
+	uint32_t i;
+	uint32_t states[] = { SERVICE_STATE_ACTIVE,
+			      SERVICE_STATE_INACTIVE,
+			      SERVICE_STATE_ALL };
+
+	if (!test_OpenSCManager(p, tctx, &h))
+		return false;
+
+	if (!test_OpenService(p, tctx, &h, "Netlogon", &s))
+		return false;
+
+	r.in.service = &s;
+	r.in.offered = 0;
+	r.in.state = 0;
+	r.out.service_status = NULL;
+	r.out.services_returned = &services_returned;
+	r.out.needed = &needed;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_svcctl_EnumDependentServicesW(p, tctx, &r),
+		"EnumDependentServicesW failed!");
+
+	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAM,
+		"EnumDependentServicesW failed!");
+
+	for (i=0; i<ARRAY_SIZE(states); i++) {
+
+		r.in.state = states[i];
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_svcctl_EnumDependentServicesW(p, tctx, &r),
+			"EnumDependentServicesW failed!");
+
+		if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
+			r.in.offered = needed;
+			r.out.service_status = talloc_array(tctx, uint8_t, needed);
+
+			torture_assert_ntstatus_ok(tctx,
+				dcerpc_svcctl_EnumDependentServicesW(p, tctx, &r),
+				"EnumDependentServicesW failed!");
+
+		}
+
+		torture_assert_werr_ok(tctx, r.out.result,
+			"EnumDependentServicesW failed");
+	}
+
+	if (!test_CloseServiceHandle(p, tctx, &s))
+		return false;
+
+	if (!test_CloseServiceHandle(p, tctx, &h))
+		return false;
+
+	return true;
+}
+
 static bool test_SCManager(struct torture_context *tctx,
 						   struct dcerpc_pipe *p)
 {
@@ -410,6 +473,8 @@ struct torture_suite *torture_rpc_svcctl(TALLOC_CTX *mem_ctx)
 				   test_SCManager);
 	torture_rpc_tcase_add_test(tcase, "EnumServicesStatus",
 				   test_EnumServicesStatus);
+	torture_rpc_tcase_add_test(tcase, "EnumDependentServicesW",
+				   test_EnumDependentServicesW);
 	torture_rpc_tcase_add_test(tcase, "QueryServiceStatus",
 				   test_QueryServiceStatus);
 	torture_rpc_tcase_add_test(tcase, "QueryServiceStatusEx",
