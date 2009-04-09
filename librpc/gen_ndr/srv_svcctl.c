@@ -353,7 +353,7 @@ static bool api_svcctl_QueryServiceObjectSecurity(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.buffer = talloc_zero_array(r, uint8_t, r->in.buffer_size);
+	r->out.buffer = talloc_zero_array(r, uint8_t, r->in.offered);
 	if (r->out.buffer == NULL) {
 		talloc_free(r);
 		return false;
@@ -3658,7 +3658,7 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		case NDR_SVCCTL_QUERYSERVICEOBJECTSECURITY: {
 			struct svcctl_QueryServiceObjectSecurity *r = (struct svcctl_QueryServiceObjectSecurity *)_r;
 			ZERO_STRUCT(r->out);
-			r->out.buffer = talloc_zero_array(mem_ctx, uint8_t, r->in.buffer_size);
+			r->out.buffer = talloc_zero_array(mem_ctx, uint8_t, r->in.offered);
 			if (r->out.buffer == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}

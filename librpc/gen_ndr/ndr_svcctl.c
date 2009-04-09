@@ -1592,15 +1592,15 @@ static enum ndr_err_code ndr_push_svcctl_QueryServiceObjectSecurity(struct ndr_p
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.security_flags));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.buffer_size));
+		NDR_CHECK(ndr_push_security_secinfo(ndr, NDR_SCALARS, r->in.security_flags));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.offered));
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.buffer == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.buffer_size));
-		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->out.buffer, r->in.buffer_size));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.offered));
+		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->out.buffer, r->in.offered));
 		if (r->out.needed == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -1624,13 +1624,13 @@ static enum ndr_err_code ndr_pull_svcctl_QueryServiceObjectSecurity(struct ndr_p
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.security_flags));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.buffer_size));
-		if (r->in.buffer_size > 0x40000) {
+		NDR_CHECK(ndr_pull_security_secinfo(ndr, NDR_SCALARS, &r->in.security_flags));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.offered));
+		if (r->in.offered > 0x40000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
-		NDR_PULL_ALLOC_N(ndr, r->out.buffer, r->in.buffer_size);
-		memset(r->out.buffer, 0, (r->in.buffer_size) * sizeof(*r->out.buffer));
+		NDR_PULL_ALLOC_N(ndr, r->out.buffer, r->in.offered);
+		memset(r->out.buffer, 0, (r->in.offered) * sizeof(*r->out.buffer));
 		NDR_PULL_ALLOC(ndr, r->out.needed);
 		ZERO_STRUCTP(r->out.needed);
 	}
@@ -1652,7 +1652,7 @@ static enum ndr_err_code ndr_pull_svcctl_QueryServiceObjectSecurity(struct ndr_p
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_needed_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 		if (r->out.buffer) {
-			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->out.buffer, r->in.buffer_size));
+			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->out.buffer, r->in.offered));
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -1672,8 +1672,8 @@ _PUBLIC_ void ndr_print_svcctl_QueryServiceObjectSecurity(struct ndr_print *ndr,
 		ndr->depth++;
 		ndr_print_policy_handle(ndr, "handle", r->in.handle);
 		ndr->depth--;
-		ndr_print_uint32(ndr, "security_flags", r->in.security_flags);
-		ndr_print_uint32(ndr, "buffer_size", r->in.buffer_size);
+		ndr_print_security_secinfo(ndr, "security_flags", r->in.security_flags);
+		ndr_print_uint32(ndr, "offered", r->in.offered);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
@@ -1681,7 +1681,7 @@ _PUBLIC_ void ndr_print_svcctl_QueryServiceObjectSecurity(struct ndr_print *ndr,
 		ndr->depth++;
 		ndr_print_ptr(ndr, "buffer", r->out.buffer);
 		ndr->depth++;
-		ndr_print_array_uint8(ndr, "buffer", r->out.buffer, r->in.buffer_size);
+		ndr_print_array_uint8(ndr, "buffer", r->out.buffer, r->in.offered);
 		ndr->depth--;
 		ndr_print_ptr(ndr, "needed", r->out.needed);
 		ndr->depth++;
@@ -1700,13 +1700,13 @@ static enum ndr_err_code ndr_push_svcctl_SetServiceObjectSecurity(struct ndr_pus
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.security_flags));
+		NDR_CHECK(ndr_push_security_secinfo(ndr, NDR_SCALARS, r->in.security_flags));
 		if (r->in.buffer == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.buffer_size));
-		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->in.buffer, r->in.buffer_size));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.buffer_size));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.offered));
+		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->in.buffer, r->in.offered));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.offered));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
@@ -1725,15 +1725,15 @@ static enum ndr_err_code ndr_pull_svcctl_SetServiceObjectSecurity(struct ndr_pul
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.security_flags));
+		NDR_CHECK(ndr_pull_security_secinfo(ndr, NDR_SCALARS, &r->in.security_flags));
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.buffer));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC_N(ndr, r->in.buffer, ndr_get_array_size(ndr, &r->in.buffer));
 		}
 		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->in.buffer, ndr_get_array_size(ndr, &r->in.buffer)));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.buffer_size));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.offered));
 		if (r->in.buffer) {
-			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->in.buffer, r->in.buffer_size));
+			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->in.buffer, r->in.offered));
 		}
 	}
 	if (flags & NDR_OUT) {
@@ -1756,12 +1756,12 @@ _PUBLIC_ void ndr_print_svcctl_SetServiceObjectSecurity(struct ndr_print *ndr, c
 		ndr->depth++;
 		ndr_print_policy_handle(ndr, "handle", r->in.handle);
 		ndr->depth--;
-		ndr_print_uint32(ndr, "security_flags", r->in.security_flags);
+		ndr_print_security_secinfo(ndr, "security_flags", r->in.security_flags);
 		ndr_print_ptr(ndr, "buffer", r->in.buffer);
 		ndr->depth++;
-		ndr_print_array_uint8(ndr, "buffer", r->in.buffer, r->in.buffer_size);
+		ndr_print_array_uint8(ndr, "buffer", r->in.buffer, r->in.offered);
 		ndr->depth--;
-		ndr_print_uint32(ndr, "buffer_size", r->in.buffer_size);
+		ndr_print_uint32(ndr, "offered", r->in.offered);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
