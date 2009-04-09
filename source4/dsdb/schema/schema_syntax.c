@@ -1227,7 +1227,7 @@ static WERROR dsdb_syntax_PRESENTATION_ADDRESS_ldb_to_drsuapi(struct ldb_context
 static const struct dsdb_syntax dsdb_syntaxes[] = {
 	{
 		.name			= "Boolean",
-		.ldap_oid		= "1.3.6.1.4.1.1466.115.121.1.7",
+		.ldap_oid		= LDB_SYNTAX_BOOLEAN,
 		.oMSyntax		= 1,
 		.attributeSyntax_oid	= "2.5.5.8",
 		.drsuapi_to_ldb		= dsdb_syntax_BOOL_drsuapi_to_ldb,
@@ -1289,7 +1289,8 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.ldb_to_drsuapi		= dsdb_syntax_DATA_BLOB_ldb_to_drsuapi,
 		.equality               = "numericStringMatch",
 		.substring              = "numericStringSubstringsMatch",
-		.comment                = "Numeric String" 
+		.comment                = "Numeric String",
+		.ldb_syntax             = LDB_SYNTAX_DIRECTORY_STRING,
 	},{
 		.name			= "String(Printable)",
 		.ldap_oid		= "1.3.6.1.4.1.1466.115.121.1.44",
@@ -1297,6 +1298,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.5",
 		.drsuapi_to_ldb		= dsdb_syntax_DATA_BLOB_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_DATA_BLOB_ldb_to_drsuapi,
+		.ldb_syntax		= LDB_SYNTAX_OCTET_STRING,
 	},{
 		.name			= "String(Teletex)",
 		.ldap_oid		= "1.2.840.113556.1.4.905",
@@ -1316,7 +1318,8 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.drsuapi_to_ldb		= dsdb_syntax_DATA_BLOB_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_DATA_BLOB_ldb_to_drsuapi,
 		.equality               = "caseExactIA5Match",
-		.comment                = "Printable String"
+		.comment                = "Printable String",
+		.ldb_syntax		= LDB_SYNTAX_OCTET_STRING,
 	},{
 		.name			= "String(UTC-Time)",
 		.ldap_oid		= "1.3.6.1.4.1.1466.115.121.1.53",
@@ -1423,7 +1426,8 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.13",
 		.drsuapi_to_ldb		= dsdb_syntax_PRESENTATION_ADDRESS_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_PRESENTATION_ADDRESS_ldb_to_drsuapi,
-		.comment                = "Presentation Address" 
+		.comment                = "Presentation Address",
+		.ldb_syntax             = LDB_SYNTAX_DIRECTORY_STRING,
 	},{
 	/* not used in w2k3 schema */
 		.name			= "Object(Access-Point)",
@@ -1433,6 +1437,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.14",
 		.drsuapi_to_ldb		= dsdb_syntax_FOOBAR_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_FOOBAR_ldb_to_drsuapi,
+		.ldb_syntax             = LDB_SYNTAX_DIRECTORY_STRING,
 	},{
 	/* not used in w2k3 schema */
 		.name			= "Object(DN-String)",

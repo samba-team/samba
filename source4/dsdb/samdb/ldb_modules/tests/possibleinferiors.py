@@ -222,8 +222,8 @@ def test_class(db, classinfo, oc):
     poss2 = possible_inferiors_constructed(db, classinfo, oc)
     if poss1 != poss2:
         print "Returned incorrect list for objectclass %s" % oc
-        print poss1
-        print poss2
+        print "search:      %s" % poss1
+        print "constructed: %s" % poss2
         for i in range(0,min(len(poss1),len(poss2))):
             print "%30s %30s" % (poss1[i], poss2[i])
         exit(1)

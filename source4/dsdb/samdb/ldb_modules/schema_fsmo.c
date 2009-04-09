@@ -39,30 +39,43 @@ static int generate_extendedAttributeInfo(struct ldb_context *ldb, struct ldb_me
 					  const struct dsdb_schema *schema);
 static int generate_extendedClassInfo(struct ldb_context *ldb, struct ldb_message *msg,
 				      const struct dsdb_schema *schema);
+static int generate_possibleInferiors(struct ldb_context *ldb, struct ldb_message *msg,
+				      const struct dsdb_schema *schema);
 
 static const struct {
 	const char *attr;
 	int (*fn)(struct ldb_context *, struct ldb_message *, const struct dsdb_schema *);
+	bool aggregate;
 } generated_attrs[] = {
 	{
 		.attr = "objectClasses",
-		.fn = generate_objectClasses
+		.fn = generate_objectClasses,
+		.aggregate = true,
 	},
 	{
 		.attr = "attributeTypes",
-		.fn = generate_attributeTypes
+		.fn = generate_attributeTypes,
+		.aggregate = true,
 	},
 	{
 		.attr = "dITContentRules",
-		.fn = generate_dITContentRules
+		.fn = generate_dITContentRules,
+		.aggregate = true,
 	},
 	{
 		.attr = "extendedAttributeInfo",
-		.fn = generate_extendedAttributeInfo
+		.fn = generate_extendedAttributeInfo,
+		.aggregate = true,
 	},
 	{
 		.attr = "extendedClassInfo",
-		.fn = generate_extendedClassInfo
+		.fn = generate_extendedClassInfo,
+		.aggregate = true,
+	},
+	{
+		.attr = "possibleInferiors",
+		.fn = generate_possibleInferiors,
+		.aggregate = false,
 	}
 };
 
@@ -385,6 +398,46 @@ static int generate_extendedClassInfo(struct ldb_context *ldb,
 	return LDB_SUCCESS;
 }
 
+
+static int generate_possibleInferiors(struct ldb_context *ldb, struct ldb_message *msg,
+				      const struct dsdb_schema *schema) 
+{
+	struct ldb_dn *dn = msg->dn;
+	int ret, i;
+	const char *first_component_name = ldb_dn_get_component_name(dn, 0);
+	const struct ldb_val *first_component_val;
+	const char *class_name;
+	const struct dsdb_class *schema_class;
+	const char **possibleInferiors;
+
+	if (strcasecmp(first_component_name, "cn") != 0) {
+		return LDB_SUCCESS;
+	}
+
+	first_component_val = ldb_dn_get_component_val(dn, 0);
+	class_name = (const char *)first_component_val->data;
+
+	schema_class = dsdb_class_by_cn(schema, class_name);
+	if (schema_class == NULL) {
+		return LDB_SUCCESS;
+	}
+	
+	possibleInferiors = schema_class->possibleInferiors;
+	if (possibleInferiors == NULL) {
+		return LDB_SUCCESS;
+	}
+
+	for (i=0;possibleInferiors[i];i++) {
+		ret = ldb_msg_add_string(msg, "possibleInferiors", possibleInferiors[i]);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
+	return LDB_SUCCESS;
+}
+
+
 /* Add objectClasses, attributeTypes and dITContentRules from the
    schema object (they are not stored in the database)
  */
@@ -412,18 +465,28 @@ static int schema_fsmo_search_callback(struct ldb_request *req, struct ldb_reply
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:
 
-		if (ldb_dn_compare(ares->message->dn, mc->aggregate_dn) != 0) {
-			return ldb_module_send_entry(ac->req, ares->message, ares->controls);
-		}
-
-		for (i=0; i < ARRAY_SIZE(generated_attrs); i++) {
-			if (ldb_attr_in_list(ac->req->op.search.attrs, generated_attrs[i].attr)) {
-				ret = generated_attrs[i].fn(ldb, ares->message, ac->schema);
-				if (ret != LDB_SUCCESS) {
-					return ret;
+		if (ldb_dn_compare(ares->message->dn, mc->aggregate_dn) == 0) {
+			for (i=0; i < ARRAY_SIZE(generated_attrs); i++) {
+				if (generated_attrs[i].aggregate &&
+				    ldb_attr_in_list(ac->req->op.search.attrs, generated_attrs[i].attr)) {
+					ret = generated_attrs[i].fn(ldb, ares->message, ac->schema);
+					if (ret != LDB_SUCCESS) {
+						return ret;
+					}
+				}
+			}
+		} else {
+			for (i=0; i < ARRAY_SIZE(generated_attrs); i++) {
+				if (!generated_attrs[i].aggregate &&
+				    ldb_attr_in_list(ac->req->op.search.attrs, generated_attrs[i].attr)) {
+					ret = generated_attrs[i].fn(ldb, ares->message, ac->schema);
+					if (ret != LDB_SUCCESS) {
+						return ret;
+					}
 				}
 			}
 		}
+
 
 		return ldb_module_send_entry(ac->req, ares->message, ares->controls);
 

@@ -105,7 +105,7 @@ int ldb_handler_fold(struct ldb_context *ldb, void *mem_ctx,
   canonicalise a ldap Integer
   rfc2252 specifies it should be in decimal form
 */
-int ldb_canonicalise_Integer(struct ldb_context *ldb, void *mem_ctx,
+static int ldb_canonicalise_Integer(struct ldb_context *ldb, void *mem_ctx,
 				    const struct ldb_val *in, struct ldb_val *out)
 {
 	char *end;
@@ -124,11 +124,43 @@ int ldb_canonicalise_Integer(struct ldb_context *ldb, void *mem_ctx,
 /*
   compare two Integers
 */
-int ldb_comparison_Integer(struct ldb_context *ldb, void *mem_ctx,
+static int ldb_comparison_Integer(struct ldb_context *ldb, void *mem_ctx,
 				  const struct ldb_val *v1, const struct ldb_val *v2)
 {
 	return strtoll((char *)v1->data, NULL, 0) - strtoll((char *)v2->data, NULL, 0);
 }
+
+/*
+  canonicalise a ldap Boolean
+  rfc2252 specifies it should be either "TRUE" or "FALSE"
+*/
+static int ldb_canonicalise_Boolean(struct ldb_context *ldb, void *mem_ctx,
+			     const struct ldb_val *in, struct ldb_val *out)
+{
+	if (strncasecmp((char *)in->data, "TRUE", in->length) == 0) {
+		out->data = (uint8_t *)talloc_strdup(mem_ctx, "TRUE");
+		out->length = 4;
+	} else if (strncasecmp((char *)in->data, "FALSE", in->length) == 0) {
+		out->data = (uint8_t *)talloc_strdup(mem_ctx, "FALSE");
+		out->length = 4;
+	} else {
+		return -1;
+	}
+	return 0;
+}
+
+/*
+  compare two Booleans
+*/
+static int ldb_comparison_Boolean(struct ldb_context *ldb, void *mem_ctx,
+			   const struct ldb_val *v1, const struct ldb_val *v2)
+{
+	if (v1->length != v2->length) {
+		return v1->length - v2->length;
+	}
+	return strncasecmp((char *)v1->data, (char *)v2->data, v1->length);
+}
+
 
 /*
   compare two binary blobs
@@ -231,7 +263,7 @@ utf8str:
 /*
   canonicalise a attribute in DN format
 */
-int ldb_canonicalise_dn(struct ldb_context *ldb, void *mem_ctx,
+static int ldb_canonicalise_dn(struct ldb_context *ldb, void *mem_ctx,
 			       const struct ldb_val *in, struct ldb_val *out)
 {
 	struct ldb_dn *dn;
@@ -262,7 +294,7 @@ done:
 /*
   compare two dns
 */
-int ldb_comparison_dn(struct ldb_context *ldb, void *mem_ctx,
+static int ldb_comparison_dn(struct ldb_context *ldb, void *mem_ctx,
 			     const struct ldb_val *v1, const struct ldb_val *v2)
 {
 	struct ldb_dn *dn1 = NULL, *dn2 = NULL;
@@ -287,7 +319,7 @@ int ldb_comparison_dn(struct ldb_context *ldb, void *mem_ctx,
 /*
   compare two utc time values. 1 second resolution
 */
-int ldb_comparison_utctime(struct ldb_context *ldb, void *mem_ctx,
+static int ldb_comparison_utctime(struct ldb_context *ldb, void *mem_ctx,
 				  const struct ldb_val *v1, const struct ldb_val *v2)
 {
 	time_t t1, t2;
@@ -299,7 +331,7 @@ int ldb_comparison_utctime(struct ldb_context *ldb, void *mem_ctx,
 /*
   canonicalise a utc time
 */
-int ldb_canonicalise_utctime(struct ldb_context *ldb, void *mem_ctx,
+static int ldb_canonicalise_utctime(struct ldb_context *ldb, void *mem_ctx,
 				    const struct ldb_val *in, struct ldb_val *out)
 {
 	time_t t = ldb_string_to_time((char *)in->data);
@@ -356,7 +388,14 @@ static const struct ldb_schema_syntax ldb_standard_syntaxes[] = {
 		.ldif_write_fn   = ldb_handler_copy,
 		.canonicalise_fn = ldb_canonicalise_utctime,
 		.comparison_fn   = ldb_comparison_utctime
-	}
+	},
+	{ 
+		.name            = LDB_SYNTAX_BOOLEAN,
+		.ldif_read_fn    = ldb_handler_copy,
+		.ldif_write_fn   = ldb_handler_copy,
+		.canonicalise_fn = ldb_canonicalise_Boolean,
+		.comparison_fn   = ldb_comparison_Boolean
+	},
 };
 
 
