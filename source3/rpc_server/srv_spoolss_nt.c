@@ -4085,6 +4085,39 @@ static WERROR construct_printer_info7(TALLOC_CTX *mem_ctx,
 }
 
 /********************************************************************
+ * construct_printer_info8
+ * fill a spoolss_PrinterInfo8 struct
+ ********************************************************************/
+
+static WERROR construct_printer_info8(TALLOC_CTX *mem_ctx,
+				      const NT_PRINTER_INFO_LEVEL *ntprinter,
+				      struct spoolss_DeviceModeInfo *r,
+				      int snum)
+{
+	struct spoolss_DeviceMode *devmode;
+	WERROR result;
+
+	if (!ntprinter->info_2->devmode) {
+		r->devmode = NULL;
+		return WERR_OK;
+	}
+
+	devmode = TALLOC_ZERO_P(mem_ctx, struct spoolss_DeviceMode);
+	W_ERROR_HAVE_NO_MEMORY(devmode);
+
+	result = convert_nt_devicemode(mem_ctx, devmode, ntprinter->info_2->devmode);
+	if (!W_ERROR_IS_OK(result)) {
+		TALLOC_FREE(devmode);
+		return result;
+	}
+
+	r->devmode	= devmode;
+
+	return WERR_OK;
+}
+
+
+/********************************************************************
  * construct_printer_info1
  * fill a spoolss_PrinterInfo1 struct
 ********************************************************************/
@@ -4635,6 +4668,10 @@ WERROR _spoolss_GetPrinter(pipes_struct *p,
 	case 7:
 		result = construct_printer_info7(p->mem_ctx, Printer,
 						 &r->out.info->info7, snum);
+		break;
+	case 8:
+		result = construct_printer_info8(p->mem_ctx, ntprinter,
+						 &r->out.info->info8, snum);
 		break;
 	default:
 		result = WERR_UNKNOWN_LEVEL;
