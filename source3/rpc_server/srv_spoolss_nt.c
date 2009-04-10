@@ -9836,6 +9836,18 @@ WERROR _spoolss_AddPrintProcessor(pipes_struct *p,
 }
 
 /****************************************************************
+ _spoolss_AddPort
+****************************************************************/
+
+WERROR _spoolss_AddPort(pipes_struct *p,
+			struct spoolss_AddPort *r)
+{
+	/* do what w2k3 does */
+
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
  _spoolss_AddPrinter
 ****************************************************************/
 
@@ -9874,17 +9886,6 @@ WERROR _spoolss_ReadPrinter(pipes_struct *p,
 
 WERROR _spoolss_WaitForPrinterChange(pipes_struct *p,
 				     struct spoolss_WaitForPrinterChange *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_AddPort
-****************************************************************/
-
-WERROR _spoolss_AddPort(pipes_struct *p,
-			struct spoolss_AddPort *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
