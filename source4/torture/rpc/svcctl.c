@@ -345,6 +345,38 @@ static bool test_StartServiceW(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_ControlService(struct torture_context *tctx,
+				struct dcerpc_pipe *p)
+{
+	struct svcctl_ControlService r;
+	struct policy_handle h, s;
+	struct SERVICE_STATUS service_status;
+
+	if (!test_OpenSCManager(p, tctx, &h))
+		return false;
+
+	if (!test_OpenService(p, tctx, &h, TORTURE_DEFAULT_SERVICE, &s))
+		return false;
+
+	r.in.handle = &s;
+	r.in.control = 0;
+	r.out.service_status = &service_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_svcctl_ControlService(p, tctx, &r),
+		"ControlService failed!");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAM,
+		"ControlService failed!");
+
+	if (!test_CloseServiceHandle(p, tctx, &s))
+		return false;
+
+	if (!test_CloseServiceHandle(p, tctx, &h))
+		return false;
+
+	return true;
+}
+
 static bool test_EnumServicesStatus(struct torture_context *tctx, struct dcerpc_pipe *p)
 {
 	struct svcctl_EnumServicesStatusW r;
@@ -524,6 +556,8 @@ struct torture_suite *torture_rpc_svcctl(TALLOC_CTX *mem_ctx)
 				   test_QueryServiceObjectSecurity);
 	torture_rpc_tcase_add_test(tcase, "StartServiceW",
 				   test_StartServiceW);
+	torture_rpc_tcase_add_test(tcase, "ControlService",
+				   test_ControlService);
 
 	return suite;
 }
