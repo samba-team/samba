@@ -219,6 +219,11 @@ struct tevent_req *tdgram_sendto_send(TALLOC_CTX *mem_ctx,
 	state->ops = dgram->ops;
 	state->ret = -1;
 
+	if (len == 0) {
+		tevent_req_error(req, EINVAL);
+		goto post;
+	}
+
 	subreq = state->ops->sendto_send(state, ev, dgram,
 					 buf, len, dst);
 	if (tevent_req_nomem(subreq, req)) {
