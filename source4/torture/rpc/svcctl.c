@@ -313,6 +313,38 @@ static bool test_QueryServiceObjectSecurity(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_StartServiceW(struct torture_context *tctx,
+			       struct dcerpc_pipe *p)
+{
+	struct svcctl_StartServiceW r;
+	struct policy_handle h, s;
+
+	if (!test_OpenSCManager(p, tctx, &h))
+		return false;
+
+	if (!test_OpenService(p, tctx, &h, TORTURE_DEFAULT_SERVICE, &s))
+		return false;
+
+	r.in.handle = &s;
+	r.in.NumArgs = 0;
+	r.in.Arguments = NULL;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_svcctl_StartServiceW(p, tctx, &r),
+		"StartServiceW failed!");
+	torture_assert_werr_equal(tctx, r.out.result,
+		WERR_SERVICE_ALREADY_RUNNING,
+		"StartServiceW failed!");
+
+	if (!test_CloseServiceHandle(p, tctx, &s))
+		return false;
+
+	if (!test_CloseServiceHandle(p, tctx, &h))
+		return false;
+
+	return true;
+}
+
 static bool test_EnumServicesStatus(struct torture_context *tctx, struct dcerpc_pipe *p)
 {
 	struct svcctl_EnumServicesStatusW r;
@@ -490,6 +522,8 @@ struct torture_suite *torture_rpc_svcctl(TALLOC_CTX *mem_ctx)
 				   test_QueryServiceConfig2W);
 	torture_rpc_tcase_add_test(tcase, "QueryServiceObjectSecurity",
 				   test_QueryServiceObjectSecurity);
+	torture_rpc_tcase_add_test(tcase, "StartServiceW",
+				   test_StartServiceW);
 
 	return suite;
 }
