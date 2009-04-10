@@ -3282,6 +3282,29 @@ NTSTATUS create_file(connection_struct *conn,
 		  (unsigned int)root_dir_fid,
 		  ea_list, sd, fname));
 
+	/* MSDFS pathname processing must be done FIRST.
+	   MSDFS pathnames containing IPv6 addresses can
+	   be confused with NTFS stream names (they contain
+	   ":" characters. JRA. */
+
+	if ((req != NULL) && (req->flags2 & FLAGS2_DFS_PATHNAMES)) {
+		char *resolved_fname;
+
+		status = resolve_dfspath(talloc_tos(), conn, true, fname,
+					 &resolved_fname);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			/*
+			 * For PATH_NOT_COVERED we had
+			 * reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
+			 *		   ERRSRV, ERRbadpath);
+			 * Need to fix in callers
+			 */
+			goto fail;
+		}
+		fname = resolved_fname;
+	}
+
 	/*
 	 * Get the file name.
 	 */
@@ -3407,24 +3430,6 @@ NTSTATUS create_file(connection_struct *conn,
 			status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
 			goto fail;
 		}
-	}
-
-	if ((req != NULL) && (req->flags2 & FLAGS2_DFS_PATHNAMES)) {
-		char *resolved_fname;
-
-		status = resolve_dfspath(talloc_tos(), conn, true, fname,
-					 &resolved_fname);
-
-		if (!NT_STATUS_IS_OK(status)) {
-			/*
-			 * For PATH_NOT_COVERED we had
-			 * reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
-			 *		   ERRSRV, ERRbadpath);
-			 * Need to fix in callers
-			 */
-			goto fail;
-		}
-		fname = resolved_fname;
 	}
 
 	/*
