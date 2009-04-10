@@ -582,6 +582,161 @@ done:
 /********************************************************************
 ********************************************************************/
 
+static NTSTATUS rpc_service_delete_internal(struct net_context *c,
+					    const DOM_SID *domain_sid,
+					    const char *domain_name,
+					    struct cli_state *cli,
+					    struct rpc_pipe_client *pipe_hnd,
+					    TALLOC_CTX *mem_ctx,
+					    int argc,
+					    const char **argv)
+{
+	struct policy_handle hSCM, hService;
+	WERROR result = WERR_GENERAL_FAILURE;
+	NTSTATUS status;
+
+	if (argc != 1 ) {
+		d_printf("Usage: net rpc service delete <service>\n");
+		return NT_STATUS_OK;
+	}
+
+	/* Open the Service Control Manager */
+	status = rpccli_svcctl_OpenSCManagerW(pipe_hnd, mem_ctx,
+					      pipe_hnd->srv_name_slash,
+					      NULL,
+					      SC_RIGHT_MGR_ENUMERATE_SERVICE,
+					      &hSCM,
+					      &result);
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
+		d_fprintf(stderr, "Failed to open Service Control Manager.  [%s]\n",
+			win_errstr(result));
+		return werror_to_ntstatus(result);
+	}
+
+	/* Open the Service */
+
+	status = rpccli_svcctl_OpenServiceW(pipe_hnd, mem_ctx,
+					    &hSCM,
+					    argv[0],
+					    SERVICE_ALL_ACCESS,
+					    &hService,
+					    &result);
+
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result) ) {
+		d_fprintf(stderr, "Failed to open service.  [%s]\n",
+			win_errstr(result));
+		goto done;
+	}
+
+	/* Delete the Service */
+
+	status = rpccli_svcctl_DeleteService(pipe_hnd, mem_ctx,
+					     &hService,
+					     &result);
+
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result) ) {
+		d_fprintf(stderr, "Delete service request failed.  [%s]\n",
+			win_errstr(result));
+		goto done;
+	}
+
+	d_printf("Successfully deleted Service: %s\n", argv[0]);
+
+ done:
+	if (is_valid_policy_hnd(&hService)) {
+		rpccli_svcctl_CloseServiceHandle(pipe_hnd, mem_ctx, &hService, NULL);
+	}
+	if (is_valid_policy_hnd(&hSCM)) {
+		rpccli_svcctl_CloseServiceHandle(pipe_hnd, mem_ctx, &hSCM, NULL);
+	}
+
+	return werror_to_ntstatus(result);
+}
+
+/********************************************************************
+********************************************************************/
+
+static NTSTATUS rpc_service_create_internal(struct net_context *c,
+					    const DOM_SID *domain_sid,
+					    const char *domain_name,
+					    struct cli_state *cli,
+					    struct rpc_pipe_client *pipe_hnd,
+					    TALLOC_CTX *mem_ctx,
+					    int argc,
+					    const char **argv)
+{
+	struct policy_handle hSCM, hService;
+	WERROR result = WERR_GENERAL_FAILURE;
+	NTSTATUS status;
+	const char *ServiceName;
+	const char *DisplayName;
+	const char *binary_path;
+
+	if (argc != 3) {
+		d_printf("Usage: net rpc service create <service> <displayname> <binarypath>\n");
+		return NT_STATUS_OK;
+	}
+
+	/* Open the Service Control Manager */
+	status = rpccli_svcctl_OpenSCManagerW(pipe_hnd, mem_ctx,
+					      pipe_hnd->srv_name_slash,
+					      NULL,
+					      SC_RIGHT_MGR_CREATE_SERVICE,
+					      &hSCM,
+					      &result);
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
+		d_fprintf(stderr, "Failed to open Service Control Manager.  [%s]\n",
+			win_errstr(result));
+		return werror_to_ntstatus(result);
+	}
+
+	/* Create the service */
+
+	ServiceName = argv[0];
+	DisplayName = argv[1];
+	binary_path = argv[2];
+
+	status = rpccli_svcctl_CreateServiceW(pipe_hnd, mem_ctx,
+					      &hSCM,
+					      ServiceName,
+					      DisplayName,
+					      SERVICE_ALL_ACCESS,
+					      SERVICE_TYPE_WIN32_OWN_PROCESS,
+					      SVCCTL_DEMAND_START,
+					      SVCCTL_SVC_ERROR_NORMAL,
+					      binary_path,
+					      NULL, /* LoadOrderGroupKey */
+					      NULL, /* TagId */
+					      NULL, /* dependencies */
+					      0, /* dependencies_size */
+					      NULL, /* service_start_name */
+					      NULL, /* password */
+					      0, /* password_size */
+					      &hService,
+					      &result);
+
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result) ) {
+		d_fprintf(stderr, "Create service request failed.  [%s]\n",
+			win_errstr(result));
+		goto done;
+	}
+
+	d_printf("Successfully created Service: %s\n", argv[0]);
+
+ done:
+	if (is_valid_policy_hnd(&hService)) {
+		rpccli_svcctl_CloseServiceHandle(pipe_hnd, mem_ctx, &hService, NULL);
+	}
+	if (is_valid_policy_hnd(&hSCM)) {
+		rpccli_svcctl_CloseServiceHandle(pipe_hnd, mem_ctx, &hSCM, NULL);
+	}
+
+	return werror_to_ntstatus(result);
+}
+
+/********************************************************************
+********************************************************************/
+
 static int rpc_service_list(struct net_context *c, int argc, const char **argv )
 {
 	if (c->display_usage) {
@@ -678,6 +833,38 @@ static int rpc_service_status(struct net_context *c, int argc, const char **argv
 /********************************************************************
 ********************************************************************/
 
+static int rpc_service_delete(struct net_context *c, int argc, const char **argv)
+{
+	if (c->display_usage) {
+		d_printf("Usage:\n"
+			 "net rpc service delete <service>\n"
+			 "    Delete a Win32 service\n");
+		return 0;
+	}
+
+	return run_rpc_command(c, NULL, &ndr_table_svcctl.syntax_id, 0,
+		rpc_service_delete_internal, argc, argv);
+}
+
+/********************************************************************
+********************************************************************/
+
+static int rpc_service_create(struct net_context *c, int argc, const char **argv)
+{
+	if (c->display_usage) {
+		d_printf("Usage:\n"
+			 "net rpc service create <service>\n"
+			 "    Create a Win32 service\n");
+		return 0;
+	}
+
+	return run_rpc_command(c, NULL, &ndr_table_svcctl.syntax_id, 0,
+		rpc_service_create_internal, argc, argv);
+}
+
+/********************************************************************
+********************************************************************/
+
 int net_rpc_service(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
@@ -729,6 +916,23 @@ int net_rpc_service(struct net_context *c, int argc, const char **argv)
 			"net rpc service status\n"
 			"    View current status of a service"
 		},
+		{
+			"delete",
+			rpc_service_delete,
+			NET_TRANSPORT_RPC,
+			"Delete a service",
+			"net rpc service delete\n"
+			"    Deletes a service"
+		},
+		{
+			"create",
+			rpc_service_create,
+			NET_TRANSPORT_RPC,
+			"Create a service",
+			"net rpc service create\n"
+			"    Creates a service"
+		},
+
 		{NULL, NULL, 0, NULL, NULL}
 	};
 

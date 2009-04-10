@@ -66,7 +66,7 @@
 		<para>The <parameter>all</parameter> destination causes the 
 		message to "broadcast" to all running daemons including nmbd and
 		winbind. This is a change for Samba 3.3, prior to this the
-		paramter smbd used to do this.</para>
+		parameter smbd used to do this.</para>
 
 		<para>The <parameter>smbd</parameter> destination causes the 
 		message to be sent to the smbd daemon specified in the 

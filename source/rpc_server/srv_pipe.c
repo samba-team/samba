@@ -994,8 +994,7 @@ bool check_bind_req(struct pipes_struct *p, RPC_IFACE* abstract,
 
 	for (i=0; i<rpc_lookup_size; i++) {
 		DEBUGADD(10, ("checking %s\n", rpc_lookup[i].pipe.clnt));
-		if (strequal(rpc_lookup[i].pipe.clnt, p->name)
-		    && ndr_syntax_id_equal(
+		if (ndr_syntax_id_equal(
 			    abstract, &rpc_lookup[i].rpc_interface)
 		    && ndr_syntax_id_equal(
 			    transfer, &ndr_transfer_syntax)) {
