@@ -26,6 +26,7 @@ import tempfile
 import unittest
 
 class LdbTestCase(unittest.TestCase):
+
     """Trivial test case for running tests against a LDB."""
     def setUp(self):
         self.filename = os.tempnam()
@@ -41,6 +42,7 @@ class LdbTestCase(unittest.TestCase):
 
 
 class TestCaseInTempDir(unittest.TestCase):
+
     def setUp(self):
         super(TestCaseInTempDir, self).setUp()
         self.tempdir = tempfile.mkdtemp()
@@ -52,6 +54,7 @@ class TestCaseInTempDir(unittest.TestCase):
 
 
 class SubstituteVarTestCase(unittest.TestCase):
+
     def test_empty(self):
         self.assertEquals("", samba.substitute_var("", {}))
 
@@ -75,6 +78,7 @@ class SubstituteVarTestCase(unittest.TestCase):
 
 
 class LdbExtensionTests(TestCaseInTempDir):
+
     def test_searchone(self):
         path = self.tempdir + "/searchone.ldb"
         l = samba.Ldb(path)
@@ -90,9 +94,22 @@ cmdline_loadparm = None
 cmdline_credentials = None
 
 class RpcInterfaceTestCase(unittest.TestCase):
+
     def get_loadparm(self):
         assert cmdline_loadparm is not None
         return cmdline_loadparm
 
     def get_credentials(self):
         return cmdline_credentials
+
+
+class ValidNetbiosNameTests(unittest.TestCase):
+
+    def test_valid(self):
+        self.assertTrue(valid_netbios_name("FOO"))
+
+    def test_too_long(self):
+        self.assertFalse(valid_netbios_name("FOO"*10))
+
+    def test_invalid_characters(self):
+        self.assertFalse(valid_netbios_name("()BLA"))

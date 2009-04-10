@@ -23,10 +23,44 @@
 #include "includes.h"
 #include "dsdb/samdb/samdb.h"
 
+/* a binary array search, where the array is an array of pointers to structures,
+   and we want to find a match for 'target' on 'field' in those structures.
+
+   Inputs:
+      array:          base pointer to an array of structures
+      arrray_size:    number of elements in the array
+      field:          the name of the field in the structure we are keying off
+      target:         the field value we are looking for
+      comparison_fn:  the comparison function
+      result:         where the result of the search is put
+
+   if the element is found, then 'result' is set to point to the found array element. If not,
+   then 'result' is set to NULL.
+
+   The array is assumed to be sorted by the same comparison_fn as the
+   search (with, for example, qsort)
+ */
+#define BINARY_ARRAY_SEARCH(array, array_size, field, target, comparison_fn, result) do { \
+	int32_t _b, _e; \
+	(result) = NULL; \
+	for (_b = 0, _e = (array_size)-1; _b <= _e; ) {	\
+		int32_t _i = (_b+_e)/2; \
+		int _r = comparison_fn(target, array[_i]->field); \
+		if (_r == 0) { (result) = array[_i]; break; } \
+		if (_r < 0) _e = _i - 1; else _b = _i + 1; \
+	} } while (0)
+
+
+static int uint32_cmp(uint32_t c1, uint32_t c2) 
+{
+	return c1 - c2;
+}
+
+
 const struct dsdb_attribute *dsdb_attribute_by_attributeID_id(const struct dsdb_schema *schema,
 							      uint32_t id)
 {
-	struct dsdb_attribute *cur;
+	struct dsdb_attribute *c;
 
 	/*
 	 * 0xFFFFFFFF is used as value when no mapping table is available,
@@ -34,69 +68,49 @@ const struct dsdb_attribute *dsdb_attribute_by_attributeID_id(const struct dsdb_
 	 */
 	if (id == 0xFFFFFFFF) return NULL;
 
-	/* TODO: add binary search */
-	for (cur = schema->attributes; cur; cur = cur->next) {
-		if (cur->attributeID_id != id) continue;
-
-		return cur;
-	}
-
-	return NULL;
+	BINARY_ARRAY_SEARCH(schema->attributes_by_attributeID_id, 
+			    schema->num_attributes, attributeID_id, id, uint32_cmp, c);
+	return c;
 }
 
 const struct dsdb_attribute *dsdb_attribute_by_attributeID_oid(const struct dsdb_schema *schema,
 							       const char *oid)
 {
-	struct dsdb_attribute *cur;
+	struct dsdb_attribute *c;
 
 	if (!oid) return NULL;
 
-	/* TODO: add binary search */
-	for (cur = schema->attributes; cur; cur = cur->next) {
-		if (strcmp(cur->attributeID_oid, oid) != 0) continue;
-
-		return cur;
-	}
-
-	return NULL;
+	BINARY_ARRAY_SEARCH(schema->attributes_by_attributeID_oid, 
+			    schema->num_attributes, attributeID_oid, oid, strcasecmp, c);
+	return c;
 }
 
 const struct dsdb_attribute *dsdb_attribute_by_lDAPDisplayName(const struct dsdb_schema *schema,
 							       const char *name)
 {
-	struct dsdb_attribute *cur;
+	struct dsdb_attribute *c;
 
 	if (!name) return NULL;
 
-	/* TODO: add binary search */
-	for (cur = schema->attributes; cur; cur = cur->next) {
-		if (strcasecmp(cur->lDAPDisplayName, name) != 0) continue;
-
-		return cur;
-	}
-
-	return NULL;
+	BINARY_ARRAY_SEARCH(schema->attributes_by_lDAPDisplayName, 
+			    schema->num_attributes, lDAPDisplayName, name, strcasecmp, c);
+	return c;
 }
 
 const struct dsdb_attribute *dsdb_attribute_by_linkID(const struct dsdb_schema *schema,
 						      int linkID)
 {
-	struct dsdb_attribute *cur;
+	struct dsdb_attribute *c;
 
-	/* TODO: add binary search */
-	for (cur = schema->attributes; cur; cur = cur->next) {
-		if (cur->linkID != linkID) continue;
-
-		return cur;
-	}
-
-	return NULL;
+	BINARY_ARRAY_SEARCH(schema->attributes_by_linkID, 
+			    schema->num_attributes, linkID, linkID, uint32_cmp, c);
+	return c;
 }
 
 const struct dsdb_class *dsdb_class_by_governsID_id(const struct dsdb_schema *schema,
 						    uint32_t id)
 {
-	struct dsdb_class *cur;
+	struct dsdb_class *c;
 
 	/*
 	 * 0xFFFFFFFF is used as value when no mapping table is available,
@@ -104,65 +118,39 @@ const struct dsdb_class *dsdb_class_by_governsID_id(const struct dsdb_schema *sc
 	 */
 	if (id == 0xFFFFFFFF) return NULL;
 
-	/* TODO: add binary search */
-	for (cur = schema->classes; cur; cur = cur->next) {
-		if (cur->governsID_id != id) continue;
-
-		return cur;
-	}
-
-	return NULL;
+	BINARY_ARRAY_SEARCH(schema->classes_by_governsID_id, 
+			    schema->num_classes, governsID_id, id, uint32_cmp, c);
+	return c;
 }
 
 const struct dsdb_class *dsdb_class_by_governsID_oid(const struct dsdb_schema *schema,
 						     const char *oid)
 {
-	struct dsdb_class *cur;
-
+	struct dsdb_class *c;
 	if (!oid) return NULL;
-
-	/* TODO: add binary search */
-	for (cur = schema->classes; cur; cur = cur->next) {
-		if (strcmp(cur->governsID_oid, oid) != 0) continue;
-
-		return cur;
-	}
-
-	return NULL;
+	BINARY_ARRAY_SEARCH(schema->classes_by_governsID_oid, 
+			    schema->num_classes, governsID_oid, oid, strcasecmp, c);
+	return c;
 }
 
 const struct dsdb_class *dsdb_class_by_lDAPDisplayName(const struct dsdb_schema *schema,
 						       const char *name)
 {
-	struct dsdb_class *cur;
-
+	struct dsdb_class *c;
 	if (!name) return NULL;
-
-	/* TODO: add binary search */
-	for (cur = schema->classes; cur; cur = cur->next) {
-		if (strcasecmp(cur->lDAPDisplayName, name) != 0) continue;
-
-		return cur;
-	}
-
-	return NULL;
+	BINARY_ARRAY_SEARCH(schema->classes_by_lDAPDisplayName, 
+			    schema->num_classes, lDAPDisplayName, name, strcasecmp, c);
+	return c;
 }
 
 const struct dsdb_class *dsdb_class_by_cn(const struct dsdb_schema *schema,
 					  const char *cn)
 {
-	struct dsdb_class *cur;
-
+	struct dsdb_class *c;
 	if (!cn) return NULL;
-
-	/* TODO: add binary search */
-	for (cur = schema->classes; cur; cur = cur->next) {
-		if (strcasecmp(cur->cn, cn) != 0) continue;
-
-		return cur;
-	}
-
-	return NULL;
+	BINARY_ARRAY_SEARCH(schema->classes_by_cn, 
+			    schema->num_classes, cn, cn, strcasecmp, c);
+	return c;
 }
 
 const char *dsdb_lDAPDisplayName_by_id(const struct dsdb_schema *schema,
@@ -171,7 +159,6 @@ const char *dsdb_lDAPDisplayName_by_id(const struct dsdb_schema *schema,
 	const struct dsdb_attribute *a;
 	const struct dsdb_class *c;
 
-	/* TODO: add binary search */
 	a = dsdb_attribute_by_attributeID_id(schema, id);
 	if (a) {
 		return a->lDAPDisplayName;

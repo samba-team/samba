@@ -1228,7 +1228,7 @@ static int smbldap_search_ext(struct smbldap_state *ldap_state,
 		ZERO_STRUCT(ldap_state->last_rebind);
 	}
 
-	if (!push_utf8_allocate(&utf8_filter, filter, &converted_size)) {
+	if (!push_utf8_talloc(talloc_tos(), &utf8_filter, filter, &converted_size)) {
 		return LDAP_NO_MEMORY;
 	}
 
@@ -1276,7 +1276,7 @@ static int smbldap_search_ext(struct smbldap_state *ldap_state,
 		}
 	}
 
-	SAFE_FREE(utf8_filter);
+	TALLOC_FREE(utf8_filter);
 
 	/* Teardown timeout. */
 	CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
@@ -1400,7 +1400,7 @@ int smbldap_modify(struct smbldap_state *ldap_state, const char *dn, LDAPMod *at
 
 	DEBUG(5,("smbldap_modify: dn => [%s]\n", dn ));
 
-	if (!push_utf8_allocate(&utf8_dn, dn, &converted_size)) {
+	if (!push_utf8_talloc(talloc_tos(), &utf8_dn, dn, &converted_size)) {
 		return LDAP_NO_MEMORY;
 	}
 
@@ -1428,7 +1428,7 @@ int smbldap_modify(struct smbldap_state *ldap_state, const char *dn, LDAPMod *at
 		}
 	}
 		
-	SAFE_FREE(utf8_dn);
+	TALLOC_FREE(utf8_dn);
 	return rc;
 }
 
@@ -1444,7 +1444,7 @@ int smbldap_add(struct smbldap_state *ldap_state, const char *dn, LDAPMod *attrs
 
 	DEBUG(5,("smbldap_add: dn => [%s]\n", dn ));
 
-	if (!push_utf8_allocate(&utf8_dn, dn, &converted_size)) {
+	if (!push_utf8_talloc(talloc_tos(), &utf8_dn, dn, &converted_size)) {
 		return LDAP_NO_MEMORY;
 	}
 
@@ -1472,7 +1472,7 @@ int smbldap_add(struct smbldap_state *ldap_state, const char *dn, LDAPMod *attrs
 		}
 	}
 	
-	SAFE_FREE(utf8_dn);
+	TALLOC_FREE(utf8_dn);
 	return rc;
 }
 
@@ -1488,7 +1488,7 @@ int smbldap_delete(struct smbldap_state *ldap_state, const char *dn)
 
 	DEBUG(5,("smbldap_delete: dn => [%s]\n", dn ));
 
-	if (!push_utf8_allocate(&utf8_dn, dn, &converted_size)) {
+	if (!push_utf8_talloc(talloc_tos(), &utf8_dn, dn, &converted_size)) {
 		return LDAP_NO_MEMORY;
 	}
 
@@ -1516,7 +1516,7 @@ int smbldap_delete(struct smbldap_state *ldap_state, const char *dn)
 		}
 	}
 	
-	SAFE_FREE(utf8_dn);
+	TALLOC_FREE(utf8_dn);
 	return rc;
 }
 
@@ -1649,41 +1649,19 @@ NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx, struct event_context *event_ctx,
 	return NT_STATUS_OK;
 }
 
-/*******************************************************************
- Return a copy of the DN for a LDAPMessage. Convert from utf8 to CH_UNIX.
-********************************************************************/
-char *smbldap_get_dn(LDAP *ld, LDAPMessage *entry)
+ char *smbldap_talloc_dn(TALLOC_CTX *mem_ctx, LDAP *ld,
+			 LDAPMessage *entry)
 {
 	char *utf8_dn, *unix_dn;
 	size_t converted_size;
 
 	utf8_dn = ldap_get_dn(ld, entry);
 	if (!utf8_dn) {
-		DEBUG (5, ("smbldap_get_dn: ldap_get_dn failed\n"));
-		return NULL;
-	}
-	if (!pull_utf8_allocate(&unix_dn, utf8_dn, &converted_size)) {
-		DEBUG (0, ("smbldap_get_dn: String conversion failure utf8 "
-			   "[%s]\n", utf8_dn));
-		return NULL;
-	}
-	ldap_memfree(utf8_dn);
-	return unix_dn;
-}
-
- const char *smbldap_talloc_dn(TALLOC_CTX *mem_ctx, LDAP *ld,
-			       LDAPMessage *entry)
-{
-	char *utf8_dn, *unix_dn;
-	size_t converted_size;
-
-	utf8_dn = ldap_get_dn(ld, entry);
-	if (!utf8_dn) {
-		DEBUG (5, ("smbldap_get_dn: ldap_get_dn failed\n"));
+		DEBUG (5, ("smbldap_talloc_dn: ldap_get_dn failed\n"));
 		return NULL;
 	}
 	if (!pull_utf8_talloc(mem_ctx, &unix_dn, utf8_dn, &converted_size)) {
-		DEBUG (0, ("smbldap_get_dn: String conversion failure utf8 "
+		DEBUG (0, ("smbldap_talloc_dn: String conversion failure utf8 "
 			   "[%s]\n", utf8_dn));
 		return NULL;
 	}

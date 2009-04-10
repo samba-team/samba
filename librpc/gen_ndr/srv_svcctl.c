@@ -353,7 +353,7 @@ static bool api_svcctl_QueryServiceObjectSecurity(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.buffer = talloc_zero_array(r, uint8_t, r->in.buffer_size);
+	r->out.buffer = talloc_zero_array(r, uint8_t, r->in.offered);
 	if (r->out.buffer == NULL) {
 		talloc_free(r);
 		return false;
@@ -1047,14 +1047,14 @@ static bool api_svcctl_EnumDependentServicesW(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.service_status = talloc_zero_array(r, uint8_t, r->in.buf_size);
+	r->out.service_status = talloc_zero_array(r, uint8_t, r->in.offered);
 	if (r->out.service_status == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.bytes_needed = talloc_zero(r, uint32_t);
-	if (r->out.bytes_needed == NULL) {
+	r->out.needed = talloc_zero(r, uint32_t);
+	if (r->out.needed == NULL) {
 		talloc_free(r);
 		return false;
 	}
@@ -1140,14 +1140,14 @@ static bool api_svcctl_EnumServicesStatusW(pipes_struct *p)
 
 	ZERO_STRUCT(r->out);
 	r->out.resume_handle = r->in.resume_handle;
-	r->out.service = talloc_zero_array(r, uint8_t, r->in.buf_size);
+	r->out.service = talloc_zero_array(r, uint8_t, r->in.offered);
 	if (r->out.service == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.bytes_needed = talloc_zero(r, uint32_t);
-	if (r->out.bytes_needed == NULL) {
+	r->out.needed = talloc_zero(r, uint32_t);
+	if (r->out.needed == NULL) {
 		talloc_free(r);
 		return false;
 	}
@@ -1398,8 +1398,8 @@ static bool api_svcctl_QueryServiceConfigW(pipes_struct *p)
 		return false;
 	}
 
-	r->out.bytes_needed = talloc_zero(r, uint32_t);
-	if (r->out.bytes_needed == NULL) {
+	r->out.needed = talloc_zero(r, uint32_t);
+	if (r->out.needed == NULL) {
 		talloc_free(r);
 		return false;
 	}
@@ -1484,8 +1484,8 @@ static bool api_svcctl_QueryServiceLockStatusW(pipes_struct *p)
 		return false;
 	}
 
-	r->out.required_buf_size = talloc_zero(r, uint32_t);
-	if (r->out.required_buf_size == NULL) {
+	r->out.needed = talloc_zero(r, uint32_t);
+	if (r->out.needed == NULL) {
 		talloc_free(r);
 		return false;
 	}
@@ -2038,8 +2038,8 @@ static bool api_svcctl_EnumDependentServicesA(pipes_struct *p)
 		return false;
 	}
 
-	r->out.bytes_needed = talloc_zero(r, uint32_t);
-	if (r->out.bytes_needed == NULL) {
+	r->out.needed = talloc_zero(r, uint32_t);
+	if (r->out.needed == NULL) {
 		talloc_free(r);
 		return false;
 	}
@@ -2125,14 +2125,14 @@ static bool api_svcctl_EnumServicesStatusA(pipes_struct *p)
 
 	ZERO_STRUCT(r->out);
 	r->out.resume_handle = r->in.resume_handle;
-	r->out.service = talloc_zero_array(r, uint8_t, r->in.buf_size);
+	r->out.service = talloc_zero_array(r, uint8_t, r->in.offered);
 	if (r->out.service == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.bytes_needed = talloc_zero(r, uint32_t);
-	if (r->out.bytes_needed == NULL) {
+	r->out.needed = talloc_zero(r, uint32_t);
+	if (r->out.needed == NULL) {
 		talloc_free(r);
 		return false;
 	}
@@ -2370,14 +2370,14 @@ static bool api_svcctl_QueryServiceConfigA(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.query = talloc_zero_array(r, uint8_t, r->in.buf_size);
+	r->out.query = talloc_zero_array(r, uint8_t, r->in.offered);
 	if (r->out.query == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.bytes_needed = talloc_zero(r, uint32_t);
-	if (r->out.bytes_needed == NULL) {
+	r->out.needed = talloc_zero(r, uint32_t);
+	if (r->out.needed == NULL) {
 		talloc_free(r);
 		return false;
 	}
@@ -2462,8 +2462,8 @@ static bool api_svcctl_QueryServiceLockStatusA(pipes_struct *p)
 		return false;
 	}
 
-	r->out.required_buf_size = talloc_zero(r, uint32_t);
-	if (r->out.required_buf_size == NULL) {
+	r->out.needed = talloc_zero(r, uint32_t);
+	if (r->out.needed == NULL) {
 		talloc_free(r);
 		return false;
 	}
@@ -3069,14 +3069,14 @@ static bool api_svcctl_QueryServiceConfig2A(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.buffer = talloc_zero_array(r, uint8_t, r->in.buf_size);
+	r->out.buffer = talloc_zero_array(r, uint8_t, r->in.offered);
 	if (r->out.buffer == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.bytes_needed = talloc_zero(r, uint32_t);
-	if (r->out.bytes_needed == NULL) {
+	r->out.needed = talloc_zero(r, uint32_t);
+	if (r->out.needed == NULL) {
 		talloc_free(r);
 		return false;
 	}
@@ -3155,14 +3155,14 @@ static bool api_svcctl_QueryServiceConfig2W(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.buffer = talloc_zero_array(r, uint8_t, r->in.buf_size);
+	r->out.buffer = talloc_zero_array(r, uint8_t, r->in.offered);
 	if (r->out.buffer == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.bytes_needed = talloc_zero(r, uint32_t);
-	if (r->out.bytes_needed == NULL) {
+	r->out.needed = talloc_zero(r, uint32_t);
+	if (r->out.needed == NULL) {
 		talloc_free(r);
 		return false;
 	}
@@ -3241,14 +3241,14 @@ static bool api_svcctl_QueryServiceStatusEx(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.buffer = talloc_zero_array(r, uint8_t, r->in.buf_size);
+	r->out.buffer = talloc_zero_array(r, uint8_t, r->in.offered);
 	if (r->out.buffer == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.bytes_needed = talloc_zero(r, uint32_t);
-	if (r->out.bytes_needed == NULL) {
+	r->out.needed = talloc_zero(r, uint32_t);
+	if (r->out.needed == NULL) {
 		talloc_free(r);
 		return false;
 	}
@@ -3328,14 +3328,14 @@ static bool api_EnumServicesStatusExA(pipes_struct *p)
 
 	ZERO_STRUCT(r->out);
 	r->out.resume_handle = r->in.resume_handle;
-	r->out.services = talloc_zero_array(r, uint8_t, r->in.buf_size);
+	r->out.services = talloc_zero_array(r, uint8_t, r->in.offered);
 	if (r->out.services == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.bytes_needed = talloc_zero(r, uint32_t);
-	if (r->out.bytes_needed == NULL) {
+	r->out.needed = talloc_zero(r, uint32_t);
+	if (r->out.needed == NULL) {
 		talloc_free(r);
 		return false;
 	}
@@ -3427,14 +3427,14 @@ static bool api_EnumServicesStatusExW(pipes_struct *p)
 
 	ZERO_STRUCT(r->out);
 	r->out.resume_handle = r->in.resume_handle;
-	r->out.services = talloc_zero_array(r, uint8_t, r->in.buf_size);
+	r->out.services = talloc_zero_array(r, uint8_t, r->in.offered);
 	if (r->out.services == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.bytes_needed = talloc_zero(r, uint32_t);
-	if (r->out.bytes_needed == NULL) {
+	r->out.needed = talloc_zero(r, uint32_t);
+	if (r->out.needed == NULL) {
 		talloc_free(r);
 		return false;
 	}
@@ -3658,7 +3658,7 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		case NDR_SVCCTL_QUERYSERVICEOBJECTSECURITY: {
 			struct svcctl_QueryServiceObjectSecurity *r = (struct svcctl_QueryServiceObjectSecurity *)_r;
 			ZERO_STRUCT(r->out);
-			r->out.buffer = talloc_zero_array(mem_ctx, uint8_t, r->in.buffer_size);
+			r->out.buffer = talloc_zero_array(mem_ctx, uint8_t, r->in.offered);
 			if (r->out.buffer == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
@@ -3744,13 +3744,13 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		case NDR_SVCCTL_ENUMDEPENDENTSERVICESW: {
 			struct svcctl_EnumDependentServicesW *r = (struct svcctl_EnumDependentServicesW *)_r;
 			ZERO_STRUCT(r->out);
-			r->out.service_status = talloc_zero_array(mem_ctx, uint8_t, r->in.buf_size);
+			r->out.service_status = talloc_zero_array(mem_ctx, uint8_t, r->in.offered);
 			if (r->out.service_status == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 
-			r->out.bytes_needed = talloc_zero(mem_ctx, uint32_t);
-			if (r->out.bytes_needed == NULL) {
+			r->out.needed = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.needed == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 
@@ -3767,13 +3767,13 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			struct svcctl_EnumServicesStatusW *r = (struct svcctl_EnumServicesStatusW *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.resume_handle = r->in.resume_handle;
-			r->out.service = talloc_zero_array(mem_ctx, uint8_t, r->in.buf_size);
+			r->out.service = talloc_zero_array(mem_ctx, uint8_t, r->in.offered);
 			if (r->out.service == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 
-			r->out.bytes_needed = talloc_zero(mem_ctx, uint32_t);
-			if (r->out.bytes_needed == NULL) {
+			r->out.needed = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.needed == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 
@@ -3818,8 +3818,8 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			return NT_STATUS_NO_MEMORY;
 			}
 
-			r->out.bytes_needed = talloc_zero(mem_ctx, uint32_t);
-			if (r->out.bytes_needed == NULL) {
+			r->out.needed = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.needed == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 
@@ -3835,8 +3835,8 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			return NT_STATUS_NO_MEMORY;
 			}
 
-			r->out.required_buf_size = talloc_zero(mem_ctx, uint32_t);
-			if (r->out.required_buf_size == NULL) {
+			r->out.needed = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.needed == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 
@@ -3914,8 +3914,8 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			return NT_STATUS_NO_MEMORY;
 			}
 
-			r->out.bytes_needed = talloc_zero(mem_ctx, uint32_t);
-			if (r->out.bytes_needed == NULL) {
+			r->out.needed = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.needed == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 
@@ -3932,13 +3932,13 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			struct svcctl_EnumServicesStatusA *r = (struct svcctl_EnumServicesStatusA *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.resume_handle = r->in.resume_handle;
-			r->out.service = talloc_zero_array(mem_ctx, uint8_t, r->in.buf_size);
+			r->out.service = talloc_zero_array(mem_ctx, uint8_t, r->in.offered);
 			if (r->out.service == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 
-			r->out.bytes_needed = talloc_zero(mem_ctx, uint32_t);
-			if (r->out.bytes_needed == NULL) {
+			r->out.needed = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.needed == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 
@@ -3972,13 +3972,13 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		case NDR_SVCCTL_QUERYSERVICECONFIGA: {
 			struct svcctl_QueryServiceConfigA *r = (struct svcctl_QueryServiceConfigA *)_r;
 			ZERO_STRUCT(r->out);
-			r->out.query = talloc_zero_array(mem_ctx, uint8_t, r->in.buf_size);
+			r->out.query = talloc_zero_array(mem_ctx, uint8_t, r->in.offered);
 			if (r->out.query == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 
-			r->out.bytes_needed = talloc_zero(mem_ctx, uint32_t);
-			if (r->out.bytes_needed == NULL) {
+			r->out.needed = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.needed == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 
@@ -3994,8 +3994,8 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			return NT_STATUS_NO_MEMORY;
 			}
 
-			r->out.required_buf_size = talloc_zero(mem_ctx, uint32_t);
-			if (r->out.required_buf_size == NULL) {
+			r->out.needed = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.needed == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 
@@ -4062,13 +4062,13 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		case NDR_SVCCTL_QUERYSERVICECONFIG2A: {
 			struct svcctl_QueryServiceConfig2A *r = (struct svcctl_QueryServiceConfig2A *)_r;
 			ZERO_STRUCT(r->out);
-			r->out.buffer = talloc_zero_array(mem_ctx, uint8_t, r->in.buf_size);
+			r->out.buffer = talloc_zero_array(mem_ctx, uint8_t, r->in.offered);
 			if (r->out.buffer == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 
-			r->out.bytes_needed = talloc_zero(mem_ctx, uint32_t);
-			if (r->out.bytes_needed == NULL) {
+			r->out.needed = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.needed == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 
@@ -4079,13 +4079,13 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		case NDR_SVCCTL_QUERYSERVICECONFIG2W: {
 			struct svcctl_QueryServiceConfig2W *r = (struct svcctl_QueryServiceConfig2W *)_r;
 			ZERO_STRUCT(r->out);
-			r->out.buffer = talloc_zero_array(mem_ctx, uint8_t, r->in.buf_size);
+			r->out.buffer = talloc_zero_array(mem_ctx, uint8_t, r->in.offered);
 			if (r->out.buffer == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 
-			r->out.bytes_needed = talloc_zero(mem_ctx, uint32_t);
-			if (r->out.bytes_needed == NULL) {
+			r->out.needed = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.needed == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 
@@ -4096,13 +4096,13 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		case NDR_SVCCTL_QUERYSERVICESTATUSEX: {
 			struct svcctl_QueryServiceStatusEx *r = (struct svcctl_QueryServiceStatusEx *)_r;
 			ZERO_STRUCT(r->out);
-			r->out.buffer = talloc_zero_array(mem_ctx, uint8_t, r->in.buf_size);
+			r->out.buffer = talloc_zero_array(mem_ctx, uint8_t, r->in.offered);
 			if (r->out.buffer == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 
-			r->out.bytes_needed = talloc_zero(mem_ctx, uint32_t);
-			if (r->out.bytes_needed == NULL) {
+			r->out.needed = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.needed == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 
@@ -4114,13 +4114,13 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			struct EnumServicesStatusExA *r = (struct EnumServicesStatusExA *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.resume_handle = r->in.resume_handle;
-			r->out.services = talloc_zero_array(mem_ctx, uint8_t, r->in.buf_size);
+			r->out.services = talloc_zero_array(mem_ctx, uint8_t, r->in.offered);
 			if (r->out.services == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 
-			r->out.bytes_needed = talloc_zero(mem_ctx, uint32_t);
-			if (r->out.bytes_needed == NULL) {
+			r->out.needed = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.needed == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 
@@ -4142,13 +4142,13 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 			struct EnumServicesStatusExW *r = (struct EnumServicesStatusExW *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.resume_handle = r->in.resume_handle;
-			r->out.services = talloc_zero_array(mem_ctx, uint8_t, r->in.buf_size);
+			r->out.services = talloc_zero_array(mem_ctx, uint8_t, r->in.offered);
 			if (r->out.services == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 
-			r->out.bytes_needed = talloc_zero(mem_ctx, uint32_t);
-			if (r->out.bytes_needed == NULL) {
+			r->out.needed = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.needed == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 

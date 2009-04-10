@@ -2318,6 +2318,8 @@ static int _pam_delete_cred(pam_handle_t *pamh, int flags,
 	const char *user;
 	wbcErr wbc_status = WBC_ERR_SUCCESS;
 
+	ZERO_STRUCT(logoff);
+
 	retval = _pam_winbind_init_context(pamh, flags, argc, argv, &ctx);
 	if (retval) {
 		goto out;
@@ -2365,8 +2367,6 @@ static int _pam_delete_cred(pam_handle_t *pamh, int flags,
 		wbc_flags = WBFLAG_PAM_KRB5 |
 			WBFLAG_PAM_CONTACT_TRUSTDOM;
 
-		ZERO_STRUCT(logoff);
-
 		logoff.username		= user;
 
 		if (ccname) {
@@ -2406,6 +2406,7 @@ static int _pam_delete_cred(pam_handle_t *pamh, int flags,
 						     user, "wbcLogoffUser");
 		wbcFreeMemory(error);
 		wbcFreeMemory(logoff.blobs);
+		logoff.blobs = NULL;
 
 		if (!WBC_ERROR_IS_OK(wbc_status)) {
 			_pam_log(ctx, LOG_INFO,

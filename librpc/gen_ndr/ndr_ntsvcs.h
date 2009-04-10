@@ -142,6 +142,7 @@ extern const struct ndr_interface_table ndr_table_ntsvcs;
 #define NDR_PNP_GETSERVERSIDEDEVICEINSTALLFLAGS (0x40)
 
 #define NDR_NTSVCS_CALL_COUNT (65)
+void ndr_print_PNP_GetIdListFlags(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_PNP_HwProfInfo(struct ndr_print *ndr, const char *name, const struct PNP_HwProfInfo *r);
 void ndr_print_PNP_Disconnect(struct ndr_print *ndr, const char *name, int flags, const struct PNP_Disconnect *r);
 void ndr_print_PNP_Connect(struct ndr_print *ndr, const char *name, int flags, const struct PNP_Connect *r);

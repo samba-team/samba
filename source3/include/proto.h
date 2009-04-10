@@ -746,7 +746,6 @@ void smbldap_free_struct(struct smbldap_state **ldap_state) ;
 NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx, struct event_context *event_ctx,
 		      const char *location,
 		      struct smbldap_state **smbldap_state);
-char *smbldap_get_dn(LDAP *ld, LDAPMessage *entry);
 bool smbldap_has_control(LDAP *ld, const char *control);
 bool smbldap_has_extension(LDAP *ld, const char *extension);
 bool smbldap_has_naming_context(LDAP *ld, const char *naming_context);
@@ -1421,6 +1420,11 @@ int create_pipe_sock(const char *socket_dir,
 		     mode_t dir_perms);
 const char *get_mydnsfullname(void);
 bool is_myname_or_ipaddr(const char *s);
+struct tevent_req *read_smb_send(TALLOC_CTX *mem_ctx,
+				 struct tevent_context *ev,
+				 int fd);
+ssize_t read_smb_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+		      uint8_t **pbuf, int *perrno);
 
 /* The following definitions come from lib/util_str.c  */
 
@@ -1556,13 +1560,8 @@ int rpcstr_pull_talloc(TALLOC_CTX *ctx,
 			void *src,
 			int src_len,
 			int flags);
-int rpcstr_pull_unistr2_fstring(char *dest, UNISTR2 *src);
-char *rpcstr_pull_unistr2_talloc(TALLOC_CTX *ctx, const UNISTR2 *src);
 int rpcstr_push(void *dest, const char *src, size_t dest_len, int flags);
 int rpcstr_push_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src);
-void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen);
-char *unistr2_to_ascii_talloc(TALLOC_CTX *ctx, const UNISTR2 *str);
-const char *unistr2_static(const UNISTR2 *str);
 smb_ucs2_t toupper_w(smb_ucs2_t val);
 smb_ucs2_t tolower_w( smb_ucs2_t val );
 bool islower_w(smb_ucs2_t c);
@@ -1596,9 +1595,6 @@ int strcmp_wa(const smb_ucs2_t *a, const char *b);
 int strncmp_wa(const smb_ucs2_t *a, const char *b, size_t len);
 smb_ucs2_t *strpbrk_wa(const smb_ucs2_t *s, const char *p);
 smb_ucs2_t *strstr_wa(const smb_ucs2_t *s, const char *ins);
-int unistrlen(uint16 *s);
-int unistrcpy(uint16 *dst, uint16 *src);
-UNISTR2* ucs2_to_unistr2(TALLOC_CTX *ctx, UNISTR2* dst, smb_ucs2_t* src);
 int toupper_ascii(int c);
 int tolower_ascii(int c);
 int isupper_ascii(int c);
@@ -2299,26 +2295,26 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 			   const char *pass, int passlen,
 			   const char *ntpass, int ntpasslen,
 			   const char *workgroup);
-struct async_req *cli_session_setup_guest_send(TALLOC_CTX *mem_ctx,
-					       struct event_context *ev,
-					       struct cli_state *cli);
-NTSTATUS cli_session_setup_guest_recv(struct async_req *req);
+struct tevent_req *cli_session_setup_guest_send(TALLOC_CTX *mem_ctx,
+						struct event_context *ev,
+						struct cli_state *cli);
+NTSTATUS cli_session_setup_guest_recv(struct tevent_req *req);
 bool cli_ulogoff(struct cli_state *cli);
-struct async_req *cli_tcon_andx_send(TALLOC_CTX *mem_ctx,
-				     struct event_context *ev,
-				     struct cli_state *cli,
-				     const char *share, const char *dev,
-				     const char *pass, int passlen);
-NTSTATUS cli_tcon_andx_recv(struct async_req *req);
+struct tevent_req *cli_tcon_andx_send(TALLOC_CTX *mem_ctx,
+				      struct event_context *ev,
+				      struct cli_state *cli,
+				      const char *share, const char *dev,
+				      const char *pass, int passlen);
+NTSTATUS cli_tcon_andx_recv(struct tevent_req *req);
 NTSTATUS cli_tcon_andx(struct cli_state *cli, const char *share,
 		       const char *dev, const char *pass, int passlen);
 bool cli_tdis(struct cli_state *cli);
 void cli_negprot_sendsync(struct cli_state *cli);
 NTSTATUS cli_negprot(struct cli_state *cli);
-struct async_req *cli_negprot_send(TALLOC_CTX *mem_ctx,
-				   struct event_context *ev,
-				   struct cli_state *cli);
-NTSTATUS cli_negprot_recv(struct async_req *req);
+struct tevent_req *cli_negprot_send(TALLOC_CTX *mem_ctx,
+				    struct event_context *ev,
+				    struct cli_state *cli);
+NTSTATUS cli_negprot_recv(struct tevent_req *req);
 bool cli_session_request(struct cli_state *cli,
 			 struct nmb_name *calling, struct nmb_name *called);
 NTSTATUS cli_connect(struct cli_state *cli,
@@ -2440,10 +2436,10 @@ void cli_sockopt(struct cli_state *cli, const char *options);
 uint16 cli_setpid(struct cli_state *cli, uint16 pid);
 bool cli_set_case_sensitive(struct cli_state *cli, bool case_sensitive);
 bool cli_send_keepalive(struct cli_state *cli);
-struct async_req *cli_echo_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
-				struct cli_state *cli, uint16_t num_echos,
-				DATA_BLOB data);
-NTSTATUS cli_echo_recv(struct async_req *req);
+struct tevent_req *cli_echo_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+				 struct cli_state *cli, uint16_t num_echos,
+				 DATA_BLOB data);
+NTSTATUS cli_echo_recv(struct tevent_req *req);
 NTSTATUS cli_echo(struct cli_state *cli, uint16_t num_echos, DATA_BLOB data);
 bool cli_ucs2(struct cli_state *cli);
 bool is_andx_req(uint8_t cmd);
@@ -2484,18 +2480,18 @@ int cli_nt_create_full(struct cli_state *cli, const char *fname,
 		 uint32 FileAttributes, uint32 ShareAccess,
 		 uint32 CreateDisposition, uint32 CreateOptions,
 		 uint8 SecuityFlags);
-struct async_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
-				    struct event_context *ev,
-				    struct cli_state *cli,
-				    const char *fname,
-				    uint32_t CreatFlags,
-				    uint32_t DesiredAccess,
-				    uint32_t FileAttributes,
-				    uint32_t ShareAccess,
-				    uint32_t CreateDisposition,
-				    uint32_t CreateOptions,
-				    uint8_t SecurityFlags);
-NTSTATUS cli_ntcreate_recv(struct async_req *req, uint16_t *pfnum);
+struct tevent_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
+				     struct event_context *ev,
+				     struct cli_state *cli,
+				     const char *fname,
+				     uint32_t CreatFlags,
+				     uint32_t DesiredAccess,
+				     uint32_t FileAttributes,
+				     uint32_t ShareAccess,
+				     uint32_t CreateDisposition,
+				     uint32_t CreateOptions,
+				     uint8_t SecurityFlags);
+NTSTATUS cli_ntcreate_recv(struct tevent_req *req, uint16_t *pfnum);
 NTSTATUS cli_ntcreate(struct cli_state *cli,
 		      const char *fname,
 		      uint32_t CreatFlags,
@@ -2509,14 +2505,24 @@ NTSTATUS cli_ntcreate(struct cli_state *cli,
 int cli_nt_create(struct cli_state *cli, const char *fname, uint32 DesiredAccess);
 uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2, const char *str,
 			    size_t str_len, size_t *pconverted_size);
-struct async_req *cli_open_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
-				struct cli_state *cli,
-				const char *fname, int flags, int share_mode);
-NTSTATUS cli_open_recv(struct async_req *req, int *fnum);
+struct tevent_req *cli_open_create(TALLOC_CTX *mem_ctx,
+				   struct event_context *ev,
+				   struct cli_state *cli, const char *fname,
+				   int flags, int share_mode,
+				   struct tevent_req **psmbreq);
+struct tevent_req *cli_open_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+				 struct cli_state *cli, const char *fname,
+				 int flags, int share_mode);
+NTSTATUS cli_open_recv(struct tevent_req *req, int *fnum);
 int cli_open(struct cli_state *cli, const char *fname, int flags, int share_mode);
-struct async_req *cli_close_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
-				 struct cli_state *cli, int fnum);
-NTSTATUS cli_close_recv(struct async_req *req);
+struct tevent_req *cli_close_create(TALLOC_CTX *mem_ctx,
+				    struct event_context *ev,
+				    struct cli_state *cli, int fnum,
+				    struct tevent_req **psubreq);
+struct tevent_req *cli_close_send(TALLOC_CTX *mem_ctx,
+				  struct event_context *ev,
+				  struct cli_state *cli, int fnum);
+NTSTATUS cli_close_recv(struct tevent_req *req);
 bool cli_close(struct cli_state *cli, int fnum);
 bool cli_ftruncate(struct cli_state *cli, int fnum, uint64_t size);
 NTSTATUS cli_locktype(struct cli_state *cli, int fnum,
@@ -2630,6 +2636,11 @@ bool cli_message_end(struct cli_state *cli, int grp);
 
 /* The following definitions come from libsmb/clioplock.c  */
 
+struct tevent_req *cli_oplock_ack_send(TALLOC_CTX *mem_ctx,
+				       struct tevent_context *ev,
+				       struct cli_state *cli,
+				       uint16_t fnum, uint8_t level);
+NTSTATUS cli_oplock_ack_recv(struct tevent_req *req);
 bool cli_oplock_ack(struct cli_state *cli, int fnum, unsigned char level);
 void cli_oplock_handler(struct cli_state *cli, 
 			bool (*handler)(struct cli_state *, int, unsigned char));
@@ -2757,21 +2768,26 @@ int cli_NetConnectionEnum(struct cli_state *cli, const char *qualifier,
 
 /* The following definitions come from libsmb/clireadwrite.c  */
 
-struct async_req *cli_read_andx_send(TALLOC_CTX *mem_ctx,
-				     struct event_context *ev,
-				     struct cli_state *cli, int fnum,
-				     off_t offset, size_t size);
-NTSTATUS cli_read_andx_recv(struct async_req *req, ssize_t *received,
+struct tevent_req *cli_read_andx_create(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct cli_state *cli, int fnum,
+					off_t offset, size_t size,
+					struct tevent_req **psmbreq);
+struct tevent_req *cli_read_andx_send(TALLOC_CTX *mem_ctx,
+				      struct event_context *ev,
+				      struct cli_state *cli, int fnum,
+				      off_t offset, size_t size);
+NTSTATUS cli_read_andx_recv(struct tevent_req *req, ssize_t *received,
 			    uint8_t **rcvbuf);
-struct async_req *cli_pull_send(TALLOC_CTX *mem_ctx,
-				struct event_context *ev,
-				struct cli_state *cli,
-				uint16_t fnum, off_t start_offset,
-				SMB_OFF_T size, size_t window_size,
-				NTSTATUS (*sink)(char *buf, size_t n,
-						 void *priv),
-				void *priv);
-NTSTATUS cli_pull_recv(struct async_req *req, SMB_OFF_T *received);
+struct tevent_req *cli_pull_send(TALLOC_CTX *mem_ctx,
+				 struct event_context *ev,
+				 struct cli_state *cli,
+				 uint16_t fnum, off_t start_offset,
+				 SMB_OFF_T size, size_t window_size,
+				 NTSTATUS (*sink)(char *buf, size_t n,
+						  void *priv),
+				 void *priv);
+NTSTATUS cli_pull_recv(struct tevent_req *req, SMB_OFF_T *received);
 NTSTATUS cli_pull(struct cli_state *cli, uint16_t fnum,
 		  off_t start_offset, SMB_OFF_T size, size_t window_size,
 		  NTSTATUS (*sink)(char *buf, size_t n, void *priv),
@@ -2784,21 +2800,29 @@ ssize_t cli_write(struct cli_state *cli,
 		 const char *buf, off_t offset, size_t size);
 ssize_t cli_smbwrite(struct cli_state *cli,
 		     int fnum, char *buf, off_t offset, size_t size1);
-struct async_req *cli_write_andx_send(TALLOC_CTX *mem_ctx,
-				      struct event_context *ev,
-				      struct cli_state *cli, uint16_t fnum,
-				      uint16_t mode, const uint8_t *buf,
-				      off_t offset, size_t size);
-NTSTATUS cli_write_andx_recv(struct async_req *req, size_t *pwritten);
+struct tevent_req *cli_write_andx_create(TALLOC_CTX *mem_ctx,
+					 struct event_context *ev,
+					 struct cli_state *cli, uint16_t fnum,
+					 uint16_t mode, const uint8_t *buf,
+					 off_t offset, size_t size,
+					 struct tevent_req **reqs_before,
+					 int num_reqs_before,
+					 struct tevent_req **psmbreq);
+struct tevent_req *cli_write_andx_send(TALLOC_CTX *mem_ctx,
+				       struct event_context *ev,
+				       struct cli_state *cli, uint16_t fnum,
+				       uint16_t mode, const uint8_t *buf,
+				       off_t offset, size_t size);
+NTSTATUS cli_write_andx_recv(struct tevent_req *req, size_t *pwritten);
 
-struct async_req *cli_push_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
-				struct cli_state *cli,
-				uint16_t fnum, uint16_t mode,
-				off_t start_offset, size_t window_size,
-				size_t (*source)(uint8_t *buf, size_t n,
-						 void *priv),
-				void *priv);
-NTSTATUS cli_push_recv(struct async_req *req);
+struct tevent_req *cli_push_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+				 struct cli_state *cli,
+				 uint16_t fnum, uint16_t mode,
+				 off_t start_offset, size_t window_size,
+				 size_t (*source)(uint8_t *buf, size_t n,
+						  void *priv),
+				 void *priv);
+NTSTATUS cli_push_recv(struct tevent_req *req);
 NTSTATUS cli_push(struct cli_state *cli, uint16_t fnum, uint16_t mode,
 		  off_t start_offset, size_t window_size,
 		  size_t (*source)(uint8_t *buf, size_t n, void *priv),
@@ -2885,14 +2909,14 @@ bool cli_send_nt_trans(struct cli_state *cli,
 bool cli_receive_nt_trans(struct cli_state *cli,
 			  char **param, unsigned int *param_len,
 			  char **data, unsigned int *data_len);
-struct async_req *cli_trans_send(
+struct tevent_req *cli_trans_send(
 	TALLOC_CTX *mem_ctx, struct event_context *ev,
-	struct cli_state *cli, uint8_t trans_cmd,
+	struct cli_state *cli, uint8_t cmd,
 	const char *pipe_name, uint16_t fid, uint16_t function, int flags,
 	uint16_t *setup, uint8_t num_setup, uint8_t max_setup,
 	uint8_t *param, uint32_t num_param, uint32_t max_param,
 	uint8_t *data, uint32_t num_data, uint32_t max_data);
-NTSTATUS cli_trans_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
+NTSTATUS cli_trans_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			uint16_t **setup, uint8_t *num_setup,
 			uint8_t **param, uint32_t *num_param,
 			uint8_t **data, uint32_t *num_data);
@@ -5367,11 +5391,11 @@ NTSTATUS rpc_pipe_open_local(TALLOC_CTX *mem_ctx,
 
 /* The following definitions come from rpc_client/rpc_transport_np.c  */
 
-struct async_req *rpc_transport_np_init_send(TALLOC_CTX *mem_ctx,
-					     struct event_context *ev,
-					     struct cli_state *cli,
-					     const struct ndr_syntax_id *abstract_syntax);
-NTSTATUS rpc_transport_np_init_recv(struct async_req *req,
+struct tevent_req *rpc_transport_np_init_send(TALLOC_CTX *mem_ctx,
+					      struct event_context *ev,
+					      struct cli_state *cli,
+					      const struct ndr_syntax_id *abstract_syntax);
+NTSTATUS rpc_transport_np_init_recv(struct tevent_req *req,
 				    TALLOC_CTX *mem_ctx,
 				    struct rpc_cli_transport **presult);
 NTSTATUS rpc_transport_np_init(TALLOC_CTX *mem_ctx, struct cli_state *cli,
@@ -5381,13 +5405,13 @@ struct cli_state *rpc_pipe_np_smb_conn(struct rpc_pipe_client *p);
 
 /* The following definitions come from rpc_client/rpc_transport_smbd.c  */
 
-struct async_req *rpc_cli_smbd_conn_init_send(TALLOC_CTX *mem_ctx,
-					      struct event_context *ev,
-					      void (*stdout_callback)(char *buf,
-								      size_t len,
-								      void *priv),
-					      void *priv);
-NTSTATUS rpc_cli_smbd_conn_init_recv(struct async_req *req,
+struct tevent_req *rpc_cli_smbd_conn_init_send(TALLOC_CTX *mem_ctx,
+					       struct event_context *ev,
+					       void (*stdout_callback)(char *buf,
+								       size_t len,
+								       void *priv),
+					       void *priv);
+NTSTATUS rpc_cli_smbd_conn_init_recv(struct tevent_req *req,
 				     TALLOC_CTX *mem_ctx,
 				     struct rpc_cli_smbd_conn **pconn);
 NTSTATUS rpc_cli_smbd_conn_init(TALLOC_CTX *mem_ctx,
@@ -5397,11 +5421,11 @@ NTSTATUS rpc_cli_smbd_conn_init(TALLOC_CTX *mem_ctx,
 							void *priv),
 				void *priv);
 
-struct async_req *rpc_transport_smbd_init_send(TALLOC_CTX *mem_ctx,
-					       struct event_context *ev,
-					       struct rpc_cli_smbd_conn *conn,
-					       const struct ndr_syntax_id *abstract_syntax);
-NTSTATUS rpc_transport_smbd_init_recv(struct async_req *req,
+struct tevent_req *rpc_transport_smbd_init_send(TALLOC_CTX *mem_ctx,
+						struct event_context *ev,
+						struct rpc_cli_smbd_conn *conn,
+						const struct ndr_syntax_id *abstract_syntax);
+NTSTATUS rpc_transport_smbd_init_recv(struct tevent_req *req,
 				      TALLOC_CTX *mem_ctx,
 				      struct rpc_cli_transport **presult);
 NTSTATUS rpc_transport_smbd_init(TALLOC_CTX *mem_ctx,
@@ -5756,7 +5780,6 @@ bool prs_uint8s(bool charmode, const char *name, prs_struct *ps, int depth, uint
 bool prs_uint16s(bool charmode, const char *name, prs_struct *ps, int depth, uint16 *data16s, int len);
 bool prs_uint16uni(bool charmode, const char *name, prs_struct *ps, int depth, uint16 *data16s, int len);
 bool prs_uint32s(bool charmode, const char *name, prs_struct *ps, int depth, uint32 *data32s, int len);
-bool prs_unistr2(bool charmode, const char *name, prs_struct *ps, int depth, UNISTR2 *str);
 bool prs_unistr(const char *name, prs_struct *ps, int depth, UNISTR *str);
 bool prs_string(const char *name, prs_struct *ps, int depth, char *str, int max_buf_size);
 bool prs_string_alloc(const char *name, prs_struct *ps, int depth, const char **str);
@@ -5821,7 +5844,7 @@ bool smb_io_rpc_auth_schannel_chk(const char *desc, int auth_len,
                                 RPC_AUTH_SCHANNEL_CHK * chk,
 				prs_struct *ps, int depth);
 
-/* The following definitions come from rpc_server/srv_eventlog_lib.c  */
+/* The following definitions come from lib/eventlog/eventlog.c  */
 
 TDB_CONTEXT *elog_init_tdb( char *tdbfilename );
 char *elog_tdbname(TALLOC_CTX *ctx, const char *name );
@@ -5851,6 +5874,10 @@ NTSTATUS evlog_evt_entry_to_tdb_entry(TALLOC_CTX *mem_ctx,
 NTSTATUS evlog_tdb_entry_to_evt_entry(TALLOC_CTX *mem_ctx,
 				      const struct eventlog_Record_tdb *t,
 				      struct EVENTLOGRECORD *e);
+NTSTATUS evlog_convert_tdb_to_evt(TALLOC_CTX *mem_ctx,
+				  ELOG_TDB *etdb,
+				  DATA_BLOB *blob_p,
+				  uint32_t *num_records_p);
 
 /* The following definitions come from rpc_server/srv_eventlog_nt.c  */
 
@@ -6645,6 +6672,7 @@ void release_file_oplock(files_struct *fsp);
 bool remove_oplock(files_struct *fsp);
 bool downgrade_oplock(files_struct *fsp);
 bool should_notify_deferred_opens(void);
+void break_level2_to_none_async(files_struct *fsp);
 void reply_to_oplock_break_requests(files_struct *fsp);
 void process_oplock_async_level2_break_message(struct messaging_context *msg_ctx,
 						      void *private_data,

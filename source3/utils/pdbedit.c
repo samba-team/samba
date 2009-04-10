@@ -847,13 +847,6 @@ int main (int argc, char **argv)
 		POPT_TABLEEND
 	};
 	
-	/* we shouldn't have silly checks like this */
-	if (getuid() != 0) {
-		d_fprintf(stderr, "You must be root to use pdbedit\n");
-		TALLOC_FREE(frame);
-		return -1;
-	}
-	
 	bin = bout = bdef = NULL;
 
 	load_case_tables();

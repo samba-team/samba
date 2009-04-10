@@ -646,7 +646,6 @@ struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 #include "ctdbd_conn.h"
 #include "../lib/util/talloc_stack.h"
 #include "memcache.h"
-#include "../lib/async_req/async_req_ntstatus.h"
 #include "async_smb.h"
 #include "../lib/async_req/async_sock.h"
 #include "services.h"
@@ -901,9 +900,10 @@ krb5_error_code smb_krb5_parse_name(krb5_context context,
 				const char *name, /* in unix charset */
                                 krb5_principal *principal);
 
-krb5_error_code smb_krb5_unparse_name(krb5_context context,
-				krb5_const_principal principal,
-				char **unix_name);
+krb5_error_code smb_krb5_unparse_name(TALLOC_CTX *mem_ctx,
+				      krb5_context context,
+				      krb5_const_principal principal,
+				      char **unix_name);
 
 #ifndef HAVE_KRB5_SET_REAL_TIME
 krb5_error_code krb5_set_real_time(krb5_context context, int32_t seconds, int32_t microseconds);

@@ -223,7 +223,7 @@ static int test_add_attribute(void *ptr, struct ldb_context *ldb, struct ldb_mes
 		goto failed;
 	}
 
-	status = dsdb_attribute_from_ldb(schema, msg, attr, attr);
+	status = dsdb_attribute_from_ldb(ldb, schema, msg, attr, attr);
 	if (!W_ERROR_IS_OK(status)) {
 		goto failed;
 	}

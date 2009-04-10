@@ -153,10 +153,21 @@ static int onefs_get_real_filename(vfs_handle_struct *handle, const char *path,
 				   char **found_name)
 {
 	SMB_STRUCT_STAT sb;
+	struct connection_struct *conn = handle->conn;
 	struct stat_extra se;
 	int result;
+	char *unmangled_name = NULL;
 	char *full_name = NULL;
 
+	/* First demangle the name if necessary. */
+	if (!conn->case_sensitive && mangle_is_mangled(name, conn->params) &&
+	    mangle_lookup_name_from_8_3(mem_ctx, name, &unmangled_name,
+					conn->params)) {
+		/* Name is now unmangled. */
+		name = unmangled_name;
+	}
+
+	/* Do the case insensitive stat. */
 	ZERO_STRUCT(se);
 	se.se_version = ESTAT_CURRENT_VERSION;
 	se.se_flags = ESTAT_CASE_INSENSITIVE | ESTAT_SYMLINK_NOFOLLOW;
@@ -184,6 +195,7 @@ static int onefs_get_real_filename(vfs_handle_struct *handle, const char *path,
 
 done:
 	TALLOC_FREE(full_name);
+	TALLOC_FREE(unmangled_name);
 	return result;
 }
 

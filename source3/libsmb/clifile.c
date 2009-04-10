@@ -771,22 +771,36 @@ int cli_nt_create_full(struct cli_state *cli, const char *fname,
 	return SVAL(cli->inbuf,smb_vwv2 + 1);
 }
 
-struct async_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
-				    struct event_context *ev,
-				    struct cli_state *cli,
-				    const char *fname,
-				    uint32_t CreatFlags,
-				    uint32_t DesiredAccess,
-				    uint32_t FileAttributes,
-				    uint32_t ShareAccess,
-				    uint32_t CreateDisposition,
-				    uint32_t CreateOptions,
-				    uint8_t SecurityFlags)
+struct cli_ntcreate_state {
+	uint16_t vwv[24];
+	uint16_t fnum;
+};
+
+static void cli_ntcreate_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
+				     struct event_context *ev,
+				     struct cli_state *cli,
+				     const char *fname,
+				     uint32_t CreatFlags,
+				     uint32_t DesiredAccess,
+				     uint32_t FileAttributes,
+				     uint32_t ShareAccess,
+				     uint32_t CreateDisposition,
+				     uint32_t CreateOptions,
+				     uint8_t SecurityFlags)
 {
-	struct async_req *result;
+	struct tevent_req *req, *subreq;
+	struct cli_ntcreate_state *state;
+	uint16_t *vwv;
 	uint8_t *bytes;
 	size_t converted_len;
-	uint16_t vwv[24];
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_ntcreate_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	vwv = state->vwv;
 
 	SCVAL(vwv+0, 0, 0xFF);
 	SCVAL(vwv+0, 1, 0);
@@ -808,7 +822,7 @@ struct async_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
 	SIVAL(vwv+21, 1, 0x02);	/* ImpersonationLevel */
 	SCVAL(vwv+23, 1, SecurityFlags);
 
-	bytes = talloc_array(talloc_tos(), uint8_t, 0);
+	bytes = talloc_array(state, uint8_t, 0);
 	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli),
 				   fname, strlen(fname)+1,
 				   &converted_len);
@@ -816,41 +830,53 @@ struct async_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
 	/* sigh. this copes with broken netapp filer behaviour */
 	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), "", 1, NULL);
 
-	if (bytes == NULL) {
-		return NULL;
+	if (tevent_req_nomem(bytes, req)) {
+		return tevent_req_post(req, ev);
 	}
 
 	SIVAL(vwv+2, 1, converted_len);
 
-	result = cli_request_send(mem_ctx, ev, cli, SMBntcreateX, 0,
-				  24, vwv, 0, talloc_get_size(bytes), bytes);
-	TALLOC_FREE(bytes);
-	return result;
+	subreq = cli_smb_send(state, ev, cli, SMBntcreateX, 0, 24, vwv,
+			      talloc_get_size(bytes), bytes);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_ntcreate_done, req);
+	return req;
 }
 
-NTSTATUS cli_ntcreate_recv(struct async_req *req, uint16_t *pfnum)
+static void cli_ntcreate_done(struct tevent_req *subreq)
 {
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_ntcreate_state *state = tevent_req_data(
+		req, struct cli_ntcreate_state);
 	uint8_t wct;
 	uint16_t *vwv;
-	uint16_t num_bytes;
+	uint32_t num_bytes;
 	uint8_t *bytes;
 	NTSTATUS status;
 
-	if (async_req_is_nterror(req, &status)) {
-		return status;
-	}
-
-	status = cli_pull_reply(req, &wct, &vwv, &num_bytes, &bytes);
+	status = cli_smb_recv(subreq, 3, &wct, &vwv, &num_bytes, &bytes);
 	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(subreq);
+		tevent_req_nterror(req, status);
+		return;
+	}
+	state->fnum = SVAL(vwv+2, 1);
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_ntcreate_recv(struct tevent_req *req, uint16_t *pfnum)
+{
+	struct cli_ntcreate_state *state = tevent_req_data(
+		req, struct cli_ntcreate_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
-
-	if (wct < 3) {
-		return NT_STATUS_INVALID_NETWORK_RESPONSE;
-	}
-
-	*pfnum = SVAL(vwv+2, 1);
-
+	*pfnum = state->fnum;
 	return NT_STATUS_OK;
 }
 
@@ -867,10 +893,10 @@ NTSTATUS cli_ntcreate(struct cli_state *cli,
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct event_context *ev;
-	struct async_req *req;
-	NTSTATUS status;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_OK;
 
-	if (cli->fd_event != NULL) {
+	if (cli_has_async_calls(cli)) {
 		/*
 		 * Can't use sync call while an async call is in flight
 		 */
@@ -893,13 +919,17 @@ NTSTATUS cli_ntcreate(struct cli_state *cli,
 		goto fail;
 	}
 
-	while (req->state < ASYNC_REQ_DONE) {
-		event_loop_once(ev);
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
 	}
 
 	status = cli_ntcreate_recv(req, pfid);
  fail:
 	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
 	return status;
 }
 
@@ -968,17 +998,33 @@ uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2,
  WARNING: if you open with O_WRONLY then getattrE won't work!
 ****************************************************************************/
 
-struct async_req *cli_open_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
-				struct cli_state *cli,
-				const char *fname, int flags, int share_mode)
-{
-	unsigned openfn = 0;
-	unsigned accessmode = 0;
-	uint8_t additional_flags = 0;
-	uint8_t *bytes;
+struct cli_open_state {
 	uint16_t vwv[15];
-	struct async_req *result;
+	int fnum;
+	struct iovec bytes;
+};
 
+static void cli_open_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_open_create(TALLOC_CTX *mem_ctx,
+				   struct event_context *ev,
+				   struct cli_state *cli, const char *fname,
+				   int flags, int share_mode,
+				   struct tevent_req **psmbreq)
+{
+	struct tevent_req *req, *subreq;
+	struct cli_open_state *state;
+	unsigned openfn;
+	unsigned accessmode;
+	uint8_t additional_flags;
+	uint8_t *bytes;
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_open_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	openfn = 0;
 	if (flags & O_CREAT) {
 		openfn |= (1<<4);
 	}
@@ -1007,63 +1053,96 @@ struct async_req *cli_open_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 		accessmode = 0xFF;
 	}
 
-	SCVAL(vwv + 0, 0, 0xFF);
-	SCVAL(vwv + 0, 1, 0);
-	SSVAL(vwv + 1, 0, 0);
-	SSVAL(vwv + 2, 0, 0);  /* no additional info */
-	SSVAL(vwv + 3, 0, accessmode);
-	SSVAL(vwv + 4, 0, aSYSTEM | aHIDDEN);
-	SSVAL(vwv + 5, 0, 0);
-	SIVAL(vwv + 6, 0, 0);
-	SSVAL(vwv + 8, 0, openfn);
-	SIVAL(vwv + 9, 0, 0);
-	SIVAL(vwv + 11, 0, 0);
-	SIVAL(vwv + 13, 0, 0);
+	SCVAL(state->vwv + 0, 0, 0xFF);
+	SCVAL(state->vwv + 0, 1, 0);
+	SSVAL(state->vwv + 1, 0, 0);
+	SSVAL(state->vwv + 2, 0, 0);  /* no additional info */
+	SSVAL(state->vwv + 3, 0, accessmode);
+	SSVAL(state->vwv + 4, 0, aSYSTEM | aHIDDEN);
+	SSVAL(state->vwv + 5, 0, 0);
+	SIVAL(state->vwv + 6, 0, 0);
+	SSVAL(state->vwv + 8, 0, openfn);
+	SIVAL(state->vwv + 9, 0, 0);
+	SIVAL(state->vwv + 11, 0, 0);
+	SIVAL(state->vwv + 13, 0, 0);
+
+	additional_flags = 0;
 
 	if (cli->use_oplocks) {
 		/* if using oplocks then ask for a batch oplock via
                    core and extended methods */
 		additional_flags =
 			FLAG_REQUEST_OPLOCK|FLAG_REQUEST_BATCH_OPLOCK;
-		SSVAL(vwv+2, 0, SVAL(vwv+2, 0) | 6);
+		SSVAL(state->vwv+2, 0, SVAL(state->vwv+2, 0) | 6);
 	}
 
-	bytes = talloc_array(talloc_tos(), uint8_t, 0);
+	bytes = talloc_array(state, uint8_t, 0);
 	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), fname,
 				   strlen(fname)+1, NULL);
-	if (bytes == NULL) {
+
+	if (tevent_req_nomem(bytes, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	state->bytes.iov_base = bytes;
+	state->bytes.iov_len = talloc_get_size(bytes);
+
+	subreq = cli_smb_req_create(state, ev, cli, SMBopenX, additional_flags,
+				    15, state->vwv, 1, &state->bytes);
+	if (subreq == NULL) {
+		TALLOC_FREE(req);
 		return NULL;
 	}
-
-	result = cli_request_send(mem_ctx, ev, cli, SMBopenX, additional_flags,
-				  15, vwv, 0, talloc_get_size(bytes), bytes);
-	TALLOC_FREE(bytes);
-	return result;
+	tevent_req_set_callback(subreq, cli_open_done, req);
+	*psmbreq = subreq;
+	return req;
 }
 
-NTSTATUS cli_open_recv(struct async_req *req, int *fnum)
+struct tevent_req *cli_open_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+				 struct cli_state *cli, const char *fname,
+				 int flags, int share_mode)
 {
+	struct tevent_req *req, *subreq;
+
+	req = cli_open_create(mem_ctx, ev, cli, fname, flags, share_mode,
+			      &subreq);
+	if ((req == NULL) || !cli_smb_req_send(subreq)) {
+		TALLOC_FREE(req);
+		return NULL;
+	}
+	return req;
+}
+
+static void cli_open_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_open_state *state = tevent_req_data(
+		req, struct cli_open_state);
 	uint8_t wct;
 	uint16_t *vwv;
-	uint16_t num_bytes;
-	uint8_t *bytes;
 	NTSTATUS status;
 
-	if (async_req_is_nterror(req, &status)) {
-		return status;
-	}
-
-	status = cli_pull_reply(req, &wct, &vwv, &num_bytes, &bytes);
+	status = cli_smb_recv(subreq, 3, &wct, &vwv, NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(subreq);
+		tevent_req_nterror(req, status);
+		return;
+	}
+	state->fnum = SVAL(vwv+2, 0);
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_open_recv(struct tevent_req *req, int *fnum)
+{
+	struct cli_open_state *state = tevent_req_data(
+		req, struct cli_open_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
-
-	if (wct < 3) {
-		return NT_STATUS_INVALID_NETWORK_RESPONSE;
-	}
-
-	*fnum = SVAL(vwv+2, 0);
-
+	*fnum = state->fnum;
 	return NT_STATUS_OK;
 }
 
@@ -1072,34 +1151,41 @@ int cli_open(struct cli_state *cli, const char *fname, int flags,
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct event_context *ev;
-	struct async_req *req;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_OK;
 	int result = -1;
 
-	if (cli->fd_event != NULL) {
+	if (cli_has_async_calls(cli)) {
 		/*
 		 * Can't use sync call while an async call is in flight
 		 */
-		cli_set_error(cli, NT_STATUS_INVALID_PARAMETER);
+		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}
 
 	ev = event_context_init(frame);
 	if (ev == NULL) {
+		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
 
 	req = cli_open_send(frame, ev, cli, fname, flags, share_mode);
 	if (req == NULL) {
+		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
 
-	while (req->state < ASYNC_REQ_DONE) {
-		event_loop_once(ev);
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
 	}
 
 	cli_open_recv(req, &result);
  fail:
 	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
 	return result;
 }
 
@@ -1107,65 +1193,111 @@ int cli_open(struct cli_state *cli, const char *fname, int flags,
  Close a file.
 ****************************************************************************/
 
-struct async_req *cli_close_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
-				 struct cli_state *cli, int fnum)
-{
+struct cli_close_state {
 	uint16_t vwv[3];
+};
 
-	SSVAL(vwv+0, 0, fnum);
-	SIVALS(vwv+1, 0, -1);
+static void cli_close_done(struct tevent_req *subreq);
 
-	return cli_request_send(mem_ctx, ev, cli, SMBclose, 0, 3, vwv, 0,
-				0, NULL);
+struct tevent_req *cli_close_create(TALLOC_CTX *mem_ctx,
+				    struct event_context *ev,
+				    struct cli_state *cli, int fnum,
+				    struct tevent_req **psubreq)
+{
+	struct tevent_req *req, *subreq;
+	struct cli_close_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_close_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	SSVAL(state->vwv+0, 0, fnum);
+	SIVALS(state->vwv+1, 0, -1);
+
+	subreq = cli_smb_req_create(state, ev, cli, SMBclose, 0, 3, state->vwv,
+				    0, NULL);
+	if (subreq == NULL) {
+		TALLOC_FREE(req);
+		return NULL;
+	}
+	tevent_req_set_callback(subreq, cli_close_done, req);
+	*psubreq = subreq;
+	return req;
 }
 
-NTSTATUS cli_close_recv(struct async_req *req)
+struct tevent_req *cli_close_send(TALLOC_CTX *mem_ctx,
+				  struct event_context *ev,
+				  struct cli_state *cli, int fnum)
 {
-	uint8_t wct;
-	uint16_t *vwv;
-	uint16_t num_bytes;
-	uint8_t *bytes;
+	struct tevent_req *req, *subreq;
+
+	req = cli_close_create(mem_ctx, ev, cli, fnum, &subreq);
+	if ((req == NULL) || !cli_smb_req_send(subreq)) {
+		TALLOC_FREE(req);
+		return NULL;
+	}
+	return req;
+}
+
+static void cli_close_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
 	NTSTATUS status;
 
-	if (async_req_is_nterror(req, &status)) {
-		return status;
+	status = cli_smb_recv(subreq, 0, NULL, NULL, NULL, NULL);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
 	}
+	tevent_req_done(req);
+}
 
-	return cli_pull_reply(req, &wct, &vwv, &num_bytes, &bytes);
+NTSTATUS cli_close_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
 }
 
 bool cli_close(struct cli_state *cli, int fnum)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct event_context *ev;
-	struct async_req *req;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_OK;
 	bool result = false;
 
-	if (cli->fd_event != NULL) {
+	if (cli_has_async_calls(cli)) {
 		/*
 		 * Can't use sync call while an async call is in flight
 		 */
-		cli_set_error(cli, NT_STATUS_INVALID_PARAMETER);
+		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}
 
 	ev = event_context_init(frame);
 	if (ev == NULL) {
+		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
 
 	req = cli_close_send(frame, ev, cli, fnum);
 	if (req == NULL) {
+		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
 
-	while (req->state < ASYNC_REQ_DONE) {
-		event_loop_once(ev);
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
 	}
 
 	result = NT_STATUS_IS_OK(cli_close_recv(req));
  fail:
 	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
 	return result;
 }
 

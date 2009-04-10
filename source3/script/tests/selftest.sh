@@ -268,6 +268,7 @@ EOF
 ##
 
 cat >$NSS_WRAPPER_PASSWD<<EOF
+root:x:65533:65532:root gecos:$PREFIX_ABS:/bin/false
 nobody:x:65534:65533:nobody gecos:$PREFIX_ABS:/bin/false
 $USERNAME:x:$USERID:$GROUPID:$USERNAME gecos:$PREFIX_ABS:/bin/false
 EOF
@@ -282,7 +283,7 @@ MAKE_TEST_BINARY="bin/smbpasswd"
 export MAKE_TEST_BINARY
 
 (echo $PASSWORD; echo $PASSWORD) | \
-	bin/smbpasswd -c $CONFFILE -L -s -a $USERNAME >/dev/null || exit 1
+	bin/smbpasswd -c $SERVERCONFFILE -L -s -a $USERNAME >/dev/null || exit 1
 
 echo "DONE";
 

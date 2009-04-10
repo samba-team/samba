@@ -364,7 +364,7 @@ static bool test_lockx(struct torture_context *tctx, struct smbcli_state *cli)
 	lock[0].count = 2;
 	status = smb_raw_lock(cli->tree, &io);
 	if (TARGET_IS_WIN7(tctx))
-		CHECK_STATUS(status, NT_STATUS_WIN7_INVALID_RANGE);
+		CHECK_STATUS(status, NT_STATUS_INVALID_LOCK_RANGE);
 	else
 		CHECK_STATUS(status, NT_STATUS_OK);
 	lock[0].pid--;
@@ -376,7 +376,7 @@ static bool test_lockx(struct torture_context *tctx, struct smbcli_state *cli)
 	/* XXX This is very strange - Win7 gives us an invalid range when we
 	 * unlock the range even though the range is locked! Win7 bug? */
 	if (TARGET_IS_WIN7(tctx))
-		CHECK_STATUS(status, NT_STATUS_WIN7_INVALID_RANGE);
+		CHECK_STATUS(status, NT_STATUS_INVALID_LOCK_RANGE);
 	else {
 		CHECK_STATUS(status, NT_STATUS_OK);
 		status = smb_raw_lock(cli->tree, &io);

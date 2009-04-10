@@ -469,7 +469,7 @@ out:
 	data_blob_free(&sesskey1);
 	data_blob_free(&sesskey2);
 
-	SAFE_FREE(client_princ_out);
+	TALLOC_FREE(client_princ_out);
 
 	return status;
 }

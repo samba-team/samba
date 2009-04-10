@@ -3243,7 +3243,12 @@ static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
 	struct GUID guid;
 	WERROR win_rc = WERR_OK;
 	size_t converted_size;
-	int ret;
+
+	/* build the ads mods */
+	ctx = talloc_init("nt_printer_publish_ads");
+	if (ctx == NULL) {
+		return WERR_NOMEM;
+	}
 
 	DEBUG(5, ("publishing printer %s\n", printer->info_2->printername));
 
@@ -3255,24 +3260,28 @@ static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
 
 	srv_dn_utf8 = ldap_get_dn((LDAP *)ads->ldap.ld, (LDAPMessage *)res);
 	if (!srv_dn_utf8) {
+		TALLOC_FREE(ctx);
 		return WERR_SERVER_UNAVAILABLE;
 	}
 	ads_msgfree(ads, res);
 	srv_cn_utf8 = ldap_explode_dn(srv_dn_utf8, 1);
 	if (!srv_cn_utf8) {
+		TALLOC_FREE(ctx);
 		ldap_memfree(srv_dn_utf8);
 		return WERR_SERVER_UNAVAILABLE;
 	}
 	/* Now convert to CH_UNIX. */
-	if (!pull_utf8_allocate(&srv_dn, srv_dn_utf8, &converted_size)) {
+	if (!pull_utf8_talloc(ctx, &srv_dn, srv_dn_utf8, &converted_size)) {
+		TALLOC_FREE(ctx);
 		ldap_memfree(srv_dn_utf8);
 		ldap_memfree(srv_cn_utf8);
 		return WERR_SERVER_UNAVAILABLE;
 	}
-	if (!pull_utf8_allocate(&srv_cn_0, srv_cn_utf8[0], &converted_size)) {
+	if (!pull_utf8_talloc(ctx, &srv_cn_0, srv_cn_utf8[0], &converted_size)) {
+		TALLOC_FREE(ctx);
 		ldap_memfree(srv_dn_utf8);
 		ldap_memfree(srv_cn_utf8);
-		SAFE_FREE(srv_dn);
+		TALLOC_FREE(srv_dn);
 		return WERR_SERVER_UNAVAILABLE;
 	}
 
@@ -3281,41 +3290,26 @@ static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
 
 	srv_cn_escaped = escape_rdn_val_string_alloc(srv_cn_0);
 	if (!srv_cn_escaped) {
-		SAFE_FREE(srv_cn_0);
-		SAFE_FREE(srv_dn);
+		TALLOC_FREE(ctx);
 		return WERR_SERVER_UNAVAILABLE;
 	}
 	sharename_escaped = escape_rdn_val_string_alloc(printer->info_2->sharename);
 	if (!sharename_escaped) {
 		SAFE_FREE(srv_cn_escaped);
-		SAFE_FREE(srv_cn_0);
-		SAFE_FREE(srv_dn);
+		TALLOC_FREE(ctx);
 		return WERR_SERVER_UNAVAILABLE;
 	}
 
-	ret = asprintf(&prt_dn, "cn=%s-%s,%s", srv_cn_escaped, sharename_escaped, srv_dn);
+	prt_dn = talloc_asprintf(ctx, "cn=%s-%s,%s", srv_cn_escaped, sharename_escaped, srv_dn);
 
-	SAFE_FREE(srv_dn);
-	SAFE_FREE(srv_cn_0);
 	SAFE_FREE(srv_cn_escaped);
 	SAFE_FREE(sharename_escaped);
-
-	if (ret == -1) {
-		return WERR_NOMEM;
-	}
-
-	/* build the ads mods */
-	ctx = talloc_init("nt_printer_publish_ads");
-	if (ctx == NULL) {
-		SAFE_FREE(prt_dn);
-		return WERR_NOMEM;
-	}
 
 	mods = ads_init_mods(ctx);
 
 	if (mods == NULL) {
 		SAFE_FREE(prt_dn);
-		talloc_destroy(ctx);
+		TALLOC_FREE(ctx);
 		return WERR_NOMEM;
 	}
 
@@ -3336,8 +3330,6 @@ static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
 	if (!ADS_ERR_OK(ads_rc))
 		DEBUG(3, ("error publishing %s: %s\n", printer->info_2->sharename, ads_errstr(ads_rc)));
 
-	talloc_destroy(ctx);
-
 	/* retreive the guid and store it locally */
 	if (ADS_ERR_OK(ads_search_dn(ads, &res, prt_dn, attrs))) {
 		ZERO_STRUCT(guid);
@@ -3346,8 +3338,8 @@ static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
 		store_printer_guid(printer->info_2, guid);
 		win_rc = mod_a_printer(printer, 2);
 	}
+	TALLOC_FREE(ctx);
 
-	SAFE_FREE(prt_dn);
 	return win_rc;
 }
 
@@ -3365,13 +3357,13 @@ static WERROR nt_printer_unpublish_ads(ADS_STRUCT *ads,
 			    printer->info_2->sharename, global_myname());
 
 	if (ADS_ERR_OK(ads_rc) && res && ads_count_replies(ads, res)) {
-		prt_dn = ads_get_dn(ads, res);
+		prt_dn = ads_get_dn(ads, talloc_tos(), res);
 		if (!prt_dn) {
 			ads_msgfree(ads, res);
 			return WERR_NOMEM;
 		}
 		ads_rc = ads_del_dn(ads, prt_dn);
-		ads_memfree(ads, prt_dn);
+		TALLOC_FREE(prt_dn);
 	}
 
 	if (res) {

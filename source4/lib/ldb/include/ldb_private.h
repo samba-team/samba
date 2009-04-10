@@ -65,6 +65,9 @@ struct ldb_module {
   schema related information needed for matching rules
 */
 struct ldb_schema {
+	void *attribute_handler_override_private;
+	ldb_attribute_handler_override_fn_t attribute_handler_override;
+	
 	/* attribute handling table */
 	unsigned num_attributes;
 	struct ldb_schema_attribute *attributes;

@@ -212,7 +212,7 @@ static PyObject *py_dsdb_set_global_schema(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_dsdb_attach_schema_from_ldif_file(PyObject *self, PyObject *args)
+static PyObject *py_dsdb_attach_schema_from_ldif(PyObject *self, PyObject *args)
 {
 	WERROR result;
 	char *pf, *df;
@@ -224,10 +224,33 @@ static PyObject *py_dsdb_attach_schema_from_ldif_file(PyObject *self, PyObject *
 
 	PyErr_LDB_OR_RAISE(py_ldb, ldb);
 
-	result = dsdb_attach_schema_from_ldif_file(ldb, pf, df);
+	result = dsdb_attach_schema_from_ldif(ldb, pf, df);
 	PyErr_WERROR_IS_ERR_RAISE(result);
 
 	Py_RETURN_NONE;
+}
+
+static PyObject *py_dsdb_convert_schema_to_openldap(PyObject *self, PyObject *args)
+{
+	char *target_str, *mapping;
+	PyObject *py_ldb;
+	struct ldb_context *ldb;
+	PyObject *ret;
+	char *retstr;
+
+	if (!PyArg_ParseTuple(args, "Oss", &py_ldb, &target_str, &mapping))
+		return NULL;
+
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+
+	retstr = dsdb_convert_schema_to_openldap(ldb, target_str, mapping);
+	if (!retstr) {
+		PyErr_SetString(PyExc_RuntimeError, "dsdb_convert_schema_to_openldap failed");
+		return NULL;
+	} 
+	ret = PyString_FromString(retstr);
+	talloc_free(retstr);
+	return ret;
 }
 
 static PyMethodDef py_misc_methods[] = {
@@ -255,7 +278,9 @@ static PyMethodDef py_misc_methods[] = {
 		NULL },
 	{ "dsdb_set_global_schema", (PyCFunction)py_dsdb_set_global_schema, METH_VARARGS,
 		NULL },
-	{ "dsdb_attach_schema_from_ldif_file", (PyCFunction)py_dsdb_attach_schema_from_ldif_file, METH_VARARGS,
+	{ "dsdb_attach_schema_from_ldif", (PyCFunction)py_dsdb_attach_schema_from_ldif, METH_VARARGS,
+		NULL },
+	{ "dsdb_convert_schema_to_openldap", (PyCFunction)py_dsdb_convert_schema_to_openldap, METH_VARARGS,
 		NULL },
 	{ NULL }
 };

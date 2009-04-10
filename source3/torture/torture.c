@@ -273,6 +273,10 @@ static bool torture_open_connection_share(struct cli_state **c,
 
 	if (use_kerberos)
 		flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
+	if (use_oplocks)
+		flags |= CLI_FULL_CONNECTION_OPLOCKS;
+	if (use_level_II_oplocks)
+		flags |= CLI_FULL_CONNECTION_LEVEL_II_OPLOCKS;
 
 	status = cli_full_connection(c, myname,
 				     hostname, NULL, port_to_use, 
@@ -285,8 +289,6 @@ static bool torture_open_connection_share(struct cli_state **c,
 		return False;
 	}
 
-	if (use_oplocks) (*c)->use_oplocks = True;
-	if (use_level_II_oplocks) (*c)->use_level_II_oplocks = True;
 	(*c)->timeout = 120000; /* set a really long timeout (2 minutes) */
 
 	if (do_encrypt) {
@@ -5023,11 +5025,10 @@ static bool subst_test(const char *str, const char *user, const char *domain,
 	return result;
 }
 
-static void chain1_open_completion(struct async_req *req)
+static void chain1_open_completion(struct tevent_req *req)
 {
 	int fnum;
 	NTSTATUS status;
-
 	status = cli_open_recv(req, &fnum);
 	TALLOC_FREE(req);
 
@@ -5036,48 +5037,25 @@ static void chain1_open_completion(struct async_req *req)
 		 NT_STATUS_IS_OK(status) ? fnum : -1);
 }
 
-static void chain1_read_completion(struct async_req *req)
+static void chain1_write_completion(struct tevent_req *req)
 {
-	NTSTATUS status;
-	ssize_t received;
-	uint8_t *rcvbuf;
-
-	status = cli_read_andx_recv(req, &received, &rcvbuf);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(req);
-		d_printf("cli_read_andx_recv returned %s\n",
-			 nt_errstr(status));
-		return;
-	}
-
-	d_printf("got %d bytes: %.*s\n", (int)received, (int)received,
-		 (char *)rcvbuf);
-	TALLOC_FREE(req);
-}
-
-static void chain1_write_completion(struct async_req *req)
-{
-	NTSTATUS status;
 	size_t written;
-
+	NTSTATUS status;
 	status = cli_write_andx_recv(req, &written);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(req);
-		d_printf("cli_write_andx_recv returned %s\n",
-			 nt_errstr(status));
-		return;
-	}
-
-	d_printf("wrote %d bytes\n", (int)written);
 	TALLOC_FREE(req);
+
+	d_printf("cli_write_andx_recv returned %s: %d\n",
+		 nt_errstr(status),
+		 NT_STATUS_IS_OK(status) ? (int)written : -1);
 }
 
-static void chain1_close_completion(struct async_req *req)
+static void chain1_close_completion(struct tevent_req *req)
 {
 	NTSTATUS status;
+	bool *done = (bool *)tevent_req_callback_data_void(req);
 
 	status = cli_close_recv(req);
-	*((bool *)(req->async.priv)) = true;
+	*done = true;
 
 	TALLOC_FREE(req);
 
@@ -5088,9 +5066,9 @@ static bool run_chain1(int dummy)
 {
 	struct cli_state *cli1;
 	struct event_context *evt = event_context_init(NULL);
-	struct async_req *reqs[4];
+	struct tevent_req *reqs[3], *smbreqs[3];
 	bool done = false;
-	const char *text = "hallo";
+	const char *str = "foobar";
 
 	printf("starting chain1 test\n");
 	if (!torture_open_connection(&cli1, 0)) {
@@ -5099,19 +5077,25 @@ static bool run_chain1(int dummy)
 
 	cli_sockopt(cli1, sockops);
 
-	cli_chain_cork(cli1, evt, 0);
-	reqs[0] = cli_open_send(talloc_tos(), evt, cli1, "\\test",
-				O_CREAT|O_RDWR, 0);
-	reqs[0]->async.fn = chain1_open_completion;
-	reqs[1] = cli_write_andx_send(talloc_tos(), evt, cli1, 0, 0,
-				      (uint8_t *)text, 0, strlen(text));
-	reqs[1]->async.fn = chain1_write_completion;
-	reqs[2] = cli_read_andx_send(talloc_tos(), evt, cli1, 0, 1, 10);
-	reqs[2]->async.fn = chain1_read_completion;
-	reqs[3] = cli_close_send(talloc_tos(), evt, cli1, 0);
-	reqs[3]->async.fn = chain1_close_completion;
-	reqs[3]->async.priv = (void *)&done;
-	cli_chain_uncork(cli1);
+	reqs[0] = cli_open_create(talloc_tos(), evt, cli1, "\\test",
+				  O_CREAT|O_RDWR, 0, &smbreqs[0]);
+	if (reqs[0] == NULL) return false;
+	tevent_req_set_callback(reqs[0], chain1_open_completion, NULL);
+
+
+	reqs[1] = cli_write_andx_create(talloc_tos(), evt, cli1, 0, 0,
+					(uint8_t *)str, 0, strlen(str)+1,
+					smbreqs, 1, &smbreqs[1]);
+	if (reqs[1] == NULL) return false;
+	tevent_req_set_callback(reqs[1], chain1_write_completion, NULL);
+
+	reqs[2] = cli_close_create(talloc_tos(), evt, cli1, 0, &smbreqs[2]);
+	if (reqs[2] == NULL) return false;
+	tevent_req_set_callback(reqs[2], chain1_close_completion, &done);
+
+	if (!cli_smb_chain_send(smbreqs, ARRAY_SIZE(smbreqs))) {
+		return false;
+	}
 
 	while (!done) {
 		event_loop_once(evt);
@@ -5199,8 +5183,6 @@ static bool run_windows_write(int dummy)
 static bool run_cli_echo(int dummy)
 {
 	struct cli_state *cli;
-	struct event_context *ev = event_context_init(NULL);
-	struct async_req *req;
 	NTSTATUS status;
 
 	printf("starting cli_echo test\n");
@@ -5209,20 +5191,9 @@ static bool run_cli_echo(int dummy)
 	}
 	cli_sockopt(cli, sockops);
 
-	req = cli_echo_send(ev, ev, cli, 5, data_blob_const("hello", 5));
-	if (req == NULL) {
-		d_printf("cli_echo_send failed\n");
-		return false;
-	}
+	status = cli_echo(cli, 5, data_blob_const("hello", 5));
 
-	while (req->state < ASYNC_REQ_DONE) {
-		event_loop_once(ev);
-	}
-
-	status = cli_echo_recv(req);
 	d_printf("cli_echo returned %s\n", nt_errstr(status));
-
-	TALLOC_FREE(req);
 
 	torture_close_connection(cli);
 	return NT_STATUS_IS_OK(status);

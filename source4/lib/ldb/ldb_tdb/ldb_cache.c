@@ -32,6 +32,7 @@
  */
 
 #include "ldb_tdb.h"
+#include "ldb_private.h"
 
 #define LTDB_FLAG_CASE_INSENSITIVE (1<<0)
 #define LTDB_FLAG_INTEGER          (1<<1)
@@ -114,6 +115,12 @@ static int ltdb_attributes_load(struct ldb_module *module)
 	int i, r;
 
 	ldb = ldb_module_get_ctx(module);
+
+	if (ldb->schema.attribute_handler_override) {
+		/* we skip loading the @ATTRIBUTES record when a module is supplying
+		   its own attribute handling */
+		return LDB_SUCCESS;
+	}
 
 	dn = ldb_dn_new(module, ldb, LTDB_ATTRIBUTES);
 	if (dn == NULL) goto failed;

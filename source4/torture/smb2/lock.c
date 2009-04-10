@@ -101,7 +101,7 @@ static bool test_valid_request(struct torture_context *torture, struct smb2_tree
 	el[0].flags		= SMB2_LOCK_FLAG_EXCLUSIVE|SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
 	status = smb2_lock(tree, &lck);
 	if (TARGET_IS_WIN7(torture)) {
-		CHECK_STATUS(status, NT_STATUS_WIN7_INVALID_RANGE);
+		CHECK_STATUS(status, NT_STATUS_INVALID_LOCK_RANGE);
 	} else {
 		CHECK_STATUS(status, NT_STATUS_OK);
 	}
@@ -110,7 +110,7 @@ static bool test_valid_request(struct torture_context *torture, struct smb2_tree
 	lck.in.reserved		= 0x123ab2;
 	status = smb2_lock(tree, &lck);
 	if (TARGET_IS_WIN7(torture)) {
-		CHECK_STATUS(status, NT_STATUS_WIN7_INVALID_RANGE);
+		CHECK_STATUS(status, NT_STATUS_INVALID_LOCK_RANGE);
 	} else {
 		CHECK_STATUS(status, NT_STATUS_OK);
 	}
@@ -118,7 +118,7 @@ static bool test_valid_request(struct torture_context *torture, struct smb2_tree
 	lck.in.reserved		= 0x123ab3;
 	status = smb2_lock(tree, &lck);
 	if (TARGET_IS_WIN7(torture)) {
-		CHECK_STATUS(status, NT_STATUS_WIN7_INVALID_RANGE);
+		CHECK_STATUS(status, NT_STATUS_INVALID_LOCK_RANGE);
 	} else if (TARGET_IS_WINDOWS(torture)) {
 		CHECK_STATUS(status, NT_STATUS_OK);
 	} else {
@@ -129,7 +129,7 @@ static bool test_valid_request(struct torture_context *torture, struct smb2_tree
 	lck.in.reserved		= 0x123ab4;
 	status = smb2_lock(tree, &lck);
 	if (TARGET_IS_WIN7(torture)) {
-		CHECK_STATUS(status, NT_STATUS_WIN7_INVALID_RANGE);
+		CHECK_STATUS(status, NT_STATUS_INVALID_LOCK_RANGE);
 	} else {
 		CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
 	}
@@ -137,7 +137,7 @@ static bool test_valid_request(struct torture_context *torture, struct smb2_tree
 	lck.in.reserved		= 0x123ab5;
 	status = smb2_lock(tree, &lck);
 	if (TARGET_IS_WIN7(torture)) {
-		CHECK_STATUS(status, NT_STATUS_WIN7_INVALID_RANGE);
+		CHECK_STATUS(status, NT_STATUS_INVALID_LOCK_RANGE);
 	} else if (TARGET_IS_WINDOWS(torture)) {
 		CHECK_STATUS(status, NT_STATUS_OK);
 	} else {

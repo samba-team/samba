@@ -14,16 +14,16 @@ static int check_push_ucs2(const char *orig)
 	int ret;
 	size_t converted_size;
 
-	push_ucs2_allocate(&dest, orig, &converted_size);
-	pull_ucs2_allocate(&orig2, dest, &converted_size);
+	push_ucs2_talloc(NULL, &dest, orig, &converted_size);
+	pull_ucs2_talloc(NULL, &orig2, dest, &converted_size);
 	ret = strcmp(orig, orig2);
 	if (ret) {
 		fprintf(stderr, "orig: %s\n", orig);
 		fprintf(stderr, "orig (UNIX -> UCS2 -> UNIX): %s\n", orig2);
 	}
 
-	SAFE_FREE(dest);
-	SAFE_FREE(orig2);
+	TALLOC_FREE(dest);
+	TALLOC_FREE(orig2);
 
 	return ret;
 }

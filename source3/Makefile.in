@@ -363,8 +363,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) \
 	  lib/messages.o librpc/gen_ndr/ndr_messaging.o lib/messages_local.o \
 	  lib/messages_ctdbd.o lib/packet.o lib/ctdbd_conn.o \
 	  lib/interfaces.o lib/memcache.o \
-	  lib/util_transfer_file.o ../lib/async_req/async_req.o \
-	  ../lib/async_req/async_sock.o ../lib/async_req/async_req_ntstatus.o \
+	  lib/util_transfer_file.o ../lib/async_req/async_sock.o \
 	  $(TDB_LIB_OBJ) \
 	  $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/interface.o lib/pidfile.o \
@@ -466,8 +465,6 @@ LIBCLI_LDAP_NDR_OBJ = ../libcli/ldap/ldap_ndr.o
 LIBTSOCKET_OBJ = ../lib/tsocket/tsocket.o \
 		../lib/tsocket/tsocket_helpers.o \
 		../lib/tsocket/tsocket_bsd.o \
-		../lib/tsocket/tsocket_recvfrom.o \
-		../lib/tsocket/tsocket_sendto.o \
 		../lib/tsocket/tsocket_connect.o \
 		../lib/tsocket/tsocket_writev.o \
 		../lib/tsocket/tsocket_readv.o
@@ -570,7 +567,7 @@ REG_FULL_OBJ = $(REG_SMBCONF_OBJ) \
 	       registry/reg_perfcount.o \
 	       registry/reg_util_legacy.o
 
-LIB_EVENTLOG_OBJ = rpc_server/srv_eventlog_lib.o
+LIB_EVENTLOG_OBJ = lib/eventlog/eventlog.o
 
 RPC_LSA_OBJ = rpc_server/srv_lsa_nt.o ../librpc/gen_ndr/srv_lsa.o
 

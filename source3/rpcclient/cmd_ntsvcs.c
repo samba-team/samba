@@ -235,17 +235,21 @@ static WERROR cmd_ntsvcs_get_dev_list(struct rpc_pipe_client *cli,
 	uint32_t length = 0;
 	uint32_t flags = 0;
 
-	if (argc > 3) {
-		printf("usage: %s [length] [filter]\n", argv[0]);
+	if (argc > 4) {
+		printf("usage: %s [filter] [length] [flags]\n", argv[0]);
 		return WERR_OK;
 	}
 
 	if (argc >= 2) {
-		length = atoi(argv[1]);
+		filter = argv[1];
 	}
 
 	if (argc >= 3) {
-		filter = argv[2];
+		length = atoi(argv[2]);
+	}
+
+	if (argc >= 4) {
+		flags = atoi(argv[3]);
 	}
 
 	buffer = talloc(mem_ctx, uint16_t);

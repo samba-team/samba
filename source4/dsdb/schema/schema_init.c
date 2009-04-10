@@ -28,6 +28,7 @@
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "param/param.h"
+#include "lib/ldb/include/ldb_module.h"
 
 struct dsdb_schema *dsdb_new_schema(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience)
 {
@@ -582,6 +583,48 @@ WERROR dsdb_read_prefixes_from_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 	return WERR_OK;
 }
 
+
+/*
+  setup the ldb_schema_attribute field for a dsdb_attribute
+ */
+static int dsdb_schema_setup_ldb_schema_attribute(struct ldb_context *ldb, 
+						  struct dsdb_attribute *attr)
+{
+	const char *syntax = attr->syntax->ldb_syntax;
+	const struct ldb_schema_syntax *s;
+	struct ldb_schema_attribute *a;
+
+	if (!syntax) {
+		syntax = attr->syntax->ldap_oid;
+	}
+
+	s = ldb_samba_syntax_by_lDAPDisplayName(ldb, attr->lDAPDisplayName);
+	if (s == NULL) {
+		s = ldb_samba_syntax_by_name(ldb, syntax);
+	}
+	if (s == NULL) {
+		s = ldb_standard_syntax_by_name(ldb, syntax);
+	}
+
+	if (s == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;		
+	}
+
+	attr->ldb_schema_attribute = a = talloc(attr, struct ldb_schema_attribute);
+	if (attr->ldb_schema_attribute == NULL) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	a->name = attr->lDAPDisplayName;
+	a->flags = 0;
+	a->syntax = s;
+	
+	return LDB_SUCCESS;
+}
+
+
+
 #define GET_STRING_LDB(msg, attr, mem_ctx, p, elem, strict) do { \
 	(p)->elem = samdb_result_string(msg, attr, NULL);\
 	if (strict && (p)->elem == NULL) { \
@@ -676,7 +719,8 @@ WERROR dsdb_read_prefixes_from_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 	}\
 } while (0)
 
-WERROR dsdb_attribute_from_ldb(const struct dsdb_schema *schema,
+WERROR dsdb_attribute_from_ldb(struct ldb_context *ldb,
+			       const struct dsdb_schema *schema,
 			       struct ldb_message *msg,
 			       TALLOC_CTX *mem_ctx,
 			       struct dsdb_attribute *attr)
@@ -745,6 +789,10 @@ WERROR dsdb_attribute_from_ldb(const struct dsdb_schema *schema,
 		return WERR_DS_ATT_SCHEMA_REQ_SYNTAX;
 	}
 
+	if (dsdb_schema_setup_ldb_schema_attribute(ldb, attr) != LDB_SUCCESS) {
+		return WERR_DS_ATT_SCHEMA_REQ_SYNTAX;
+	}
+
 	return WERR_OK;
 }
 
@@ -788,7 +836,6 @@ WERROR dsdb_class_from_ldb(const struct dsdb_schema *schema,
 
 	GET_STRING_LIST_LDB(msg, "systemPossSuperiors", mem_ctx, obj, systemPossSuperiors, false);
 	GET_STRING_LIST_LDB(msg, "possSuperiors", mem_ctx, obj, possSuperiors, false);
-	GET_STRING_LIST_LDB(msg, "possibleInferiors", mem_ctx, obj, possibleInferiors, false);
 
 	GET_STRING_LDB(msg, "defaultSecurityDescriptor", mem_ctx, obj, defaultSecurityDescriptor, false);
 
@@ -807,6 +854,12 @@ WERROR dsdb_class_from_ldb(const struct dsdb_schema *schema,
 }
 
 #define dsdb_oom(error_string, mem_ctx) *error_string = talloc_asprintf(mem_ctx, "dsdb out of memory at %s:%d\n", __FILE__, __LINE__)
+
+/* 
+ Create a DSDB schema from the ldb results provided.  This is called
+ directly when the schema is provisioned from an on-disk LDIF file, or
+ from dsdb_schema_from_schema_dn below
+*/
 
 int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 				 struct smb_iconv_convenience *iconv_convenience, 
@@ -861,7 +914,7 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		status = dsdb_attribute_from_ldb(schema, attrs_res->msgs[i], sa, sa);
+		status = dsdb_attribute_from_ldb(ldb, schema, attrs_res->msgs[i], sa, sa);
 		if (!W_ERROR_IS_OK(status)) {
 			*error_string = talloc_asprintf(mem_ctx, 
 				      "schema_fsmo_init: failed to load attribute definition: %s:%s",
@@ -908,96 +961,9 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 	return LDB_SUCCESS;
 }
 
-/* This recursive load of the objectClasses presumes that they
- * everything is in a strict subClassOf hirarchy.  
- *
- * We load this in order so we produce certain outputs (such as the
- * exported schema for openldap, and sorted objectClass attribute) 'in
- * order' */
-
-static int fetch_oc_recursive(struct ldb_context *ldb, struct ldb_dn *schemadn, 
-			      TALLOC_CTX *mem_ctx, 
-			      struct ldb_result *search_from,
-			      struct ldb_result *res_list)
-{
-	int i;
-	int ret = 0;
-	for (i=0; i < search_from->count; i++) {
-		struct ldb_result *res;
-		const char *name = ldb_msg_find_attr_as_string(search_from->msgs[i], 
-							       "lDAPDisplayname", NULL);
-
-		ret = ldb_search(ldb, mem_ctx, &res,
-					schemadn, LDB_SCOPE_SUBTREE, NULL,
-					"(&(&(objectClass=classSchema)(subClassOf=%s))(!(lDAPDisplayName=%s)))",
-					name, name);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-		
-		res_list->msgs = talloc_realloc(res_list, res_list->msgs, 
-						struct ldb_message *, res_list->count + 2);
-		if (!res_list->msgs) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		res_list->msgs[res_list->count] = talloc_move(res_list, 
-							      &search_from->msgs[i]);
-		res_list->count++;
-		res_list->msgs[res_list->count] = NULL;
-
-		if (res->count > 0) {
-			ret = fetch_oc_recursive(ldb, schemadn, mem_ctx, res, res_list); 
-		}
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-	}
-	return ret;
-}
-
-static int fetch_objectclass_schema(struct ldb_context *ldb, struct ldb_dn *schemadn, 
-				    TALLOC_CTX *mem_ctx, 
-				    struct ldb_result **objectclasses_res,
-				    char **error_string)
-{
-	TALLOC_CTX *local_ctx = talloc_new(mem_ctx);
-	struct ldb_result *top_res, *ret_res;
-	int ret;
-	if (!local_ctx) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	
-	/* Download 'top' */
-	ret = ldb_search(ldb, local_ctx, &top_res,
-			 schemadn, LDB_SCOPE_SUBTREE, NULL,
-			 "(&(objectClass=classSchema)(lDAPDisplayName=top))");
-	if (ret != LDB_SUCCESS) {
-		*error_string = talloc_asprintf(mem_ctx, 
-						"dsdb_schema: failed to search for top classSchema object: %s",
-						ldb_errstring(ldb));
-		return ret;
-	}
-
-	if (top_res->count != 1) {
-		*error_string = talloc_asprintf(mem_ctx, 
-						"dsdb_schema: failed to find top classSchema object");
-		return LDB_ERR_NO_SUCH_OBJECT;
-	}
-
-	ret_res = talloc_zero(local_ctx, struct ldb_result);
-	if (!ret_res) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ret = fetch_oc_recursive(ldb, schemadn, local_ctx, top_res, ret_res); 
-
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	*objectclasses_res = talloc_move(mem_ctx, &ret_res);
-	return ret;
-}
+/*
+  Given an LDB, and the DN, return a populated schema
+*/
 
 int dsdb_schema_from_schema_dn(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 			       struct smb_iconv_convenience *iconv_convenience, 
@@ -1065,10 +1031,13 @@ int dsdb_schema_from_schema_dn(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 	/*
 	 * load the objectClass definitions
 	 */
-	ret = fetch_objectclass_schema(ldb, schema_dn, tmp_ctx, &c_res, &error_string);
+	ret = ldb_search(ldb, tmp_ctx, &c_res,
+			 schema_dn, LDB_SCOPE_ONELEVEL, NULL,
+			 "(objectClass=classSchema)");
 	if (ret != LDB_SUCCESS) {
 		*error_string_out = talloc_asprintf(mem_ctx, 
-				       "Failed to fetch objectClass schema elements: %s", error_string);
+				       "dsdb_schema: failed to search attributeSchema objects: %s",
+				       ldb_errstring(ldb));
 		talloc_free(tmp_ctx);
 		return ret;
 	}
@@ -1353,7 +1322,8 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb
 	}\
 } while (0)
 
-WERROR dsdb_attribute_from_drsuapi(struct dsdb_schema *schema,
+WERROR dsdb_attribute_from_drsuapi(struct ldb_context *ldb,
+				   struct dsdb_schema *schema,
 				   struct drsuapi_DsReplicaObject *r,
 				   TALLOC_CTX *mem_ctx,
 				   struct dsdb_attribute *attr)
@@ -1412,6 +1382,10 @@ WERROR dsdb_attribute_from_drsuapi(struct dsdb_schema *schema,
 		return WERR_DS_ATT_SCHEMA_REQ_SYNTAX;
 	}
 
+	if (dsdb_schema_setup_ldb_schema_attribute(ldb, attr) != LDB_SUCCESS) {
+		return WERR_DS_ATT_SCHEMA_REQ_SYNTAX;
+	}
+
 	return WERR_OK;
 }
 
@@ -1451,7 +1425,6 @@ WERROR dsdb_class_from_drsuapi(struct dsdb_schema *schema,
 
 	GET_STRING_LIST_DS(schema, r, "systemPossSuperiors", mem_ctx, obj, systemPossSuperiors, false);
 	GET_STRING_LIST_DS(schema, r, "possSuperiors", mem_ctx, obj, possSuperiors, false);
-	GET_STRING_LIST_DS(schema, r, "possibleInferiors", mem_ctx, obj, possibleInferiors, false);
 
 	GET_STRING_DS(schema, r, "defaultSecurityDescriptor", mem_ctx, obj, defaultSecurityDescriptor, false);
 

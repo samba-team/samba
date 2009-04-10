@@ -704,6 +704,8 @@ struct cli_trans_state {
 	uint16_t mid;
 	uint32_t seqnum;
 	const char *pipe_name;
+	uint8_t *pipe_name_conv;
+	size_t pipe_name_conv_len;
 	uint16_t fid;
 	uint16_t function;
 	int flags;
@@ -720,27 +722,131 @@ struct cli_trans_state {
 	struct trans_recvblob rdata;
 
 	TALLOC_CTX *secondary_request_ctx;
+
+	struct iovec iov[4];
+	uint8_t pad[4];
+	uint16_t vwv[32];
 };
 
-static void cli_trans_recv_helper(struct async_req *req);
-
-static struct async_req *cli_ship_trans(TALLOC_CTX *mem_ctx,
-					struct cli_trans_state *state)
+static NTSTATUS cli_pull_trans(uint8_t *inbuf,
+			       uint8_t wct, uint16_t *vwv,
+			       uint16_t num_bytes, uint8_t *bytes,
+			       uint8_t smb_cmd, bool expect_first_reply,
+			       uint8_t *pnum_setup, uint16_t **psetup,
+			       uint32_t *ptotal_param, uint32_t *pnum_param,
+			       uint32_t *pparam_disp, uint8_t **pparam,
+			       uint32_t *ptotal_data, uint32_t *pnum_data,
+			       uint32_t *pdata_disp, uint8_t **pdata)
 {
-	TALLOC_CTX *frame;
-	struct async_req *result = NULL;
-	struct cli_request *cli_req;
-	uint8_t wct;
-	uint16_t *vwv;
-	uint8_t *bytes = NULL;
+	uint32_t param_ofs, data_ofs;
+
+	if (expect_first_reply) {
+		if ((wct != 0) || (num_bytes != 0)) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+		return NT_STATUS_OK;
+	}
+
+	switch (smb_cmd) {
+	case SMBtrans:
+	case SMBtrans2:
+		if (wct < 10) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+		*ptotal_param	= SVAL(vwv + 0, 0);
+		*ptotal_data	= SVAL(vwv + 1, 0);
+		*pnum_param	= SVAL(vwv + 3, 0);
+		param_ofs	= SVAL(vwv + 4, 0);
+		*pparam_disp	= SVAL(vwv + 5, 0);
+		*pnum_data	= SVAL(vwv + 6, 0);
+		data_ofs	= SVAL(vwv + 7, 0);
+		*pdata_disp	= SVAL(vwv + 8, 0);
+		*pnum_setup	= CVAL(vwv + 9, 0);
+		if (wct < 10 + (*pnum_setup)) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+		*psetup = vwv + 10;
+
+		break;
+	case SMBnttrans:
+		if (wct < 18) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+		*ptotal_param	= IVAL(vwv, 3);
+		*ptotal_data	= IVAL(vwv, 7);
+		*pnum_param	= IVAL(vwv, 11);
+		param_ofs	= IVAL(vwv, 15);
+		*pparam_disp	= IVAL(vwv, 19);
+		*pnum_data	= IVAL(vwv, 23);
+		data_ofs	= IVAL(vwv, 27);
+		*pdata_disp	= IVAL(vwv, 31);
+		*pnum_setup	= CVAL(vwv, 35);
+		*psetup		= vwv + 18;
+		break;
+
+	default:
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	/*
+	 * Check for buffer overflows. data_ofs needs to be checked against
+	 * the incoming buffer length, data_disp against the total
+	 * length. Likewise for param_ofs/param_disp.
+	 */
+
+	if (trans_oob(smb_len(inbuf), param_ofs, *pnum_param)
+	    || trans_oob(*ptotal_param, *pparam_disp, *pnum_param)
+	    || trans_oob(smb_len(inbuf), data_ofs, *pnum_data)
+	    || trans_oob(*ptotal_data, *pdata_disp, *pnum_data)) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	*pparam = (uint8_t *)inbuf + 4 + param_ofs;
+	*pdata = (uint8_t *)inbuf + 4 + data_ofs;
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS cli_trans_pull_blob(TALLOC_CTX *mem_ctx,
+				    struct trans_recvblob *blob,
+				    uint32_t total, uint32_t thistime,
+				    uint8_t *buf, uint32_t displacement)
+{
+	if (blob->data == NULL) {
+		if (total > blob->max) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+		blob->total = total;
+		blob->data = TALLOC_ARRAY(mem_ctx, uint8_t, total);
+		if (blob->data == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	if (total > blob->total) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	if (thistime) {
+		memcpy(blob->data + displacement, buf, thistime);
+		blob->received += thistime;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static void cli_trans_format(struct cli_trans_state *state, uint8_t *pwct,
+			     int *piov_count)
+{
+	uint8_t wct = 0;
+	struct iovec *iov = state->iov;
+	uint8_t *pad = state->pad;
+	uint16_t *vwv = state->vwv;
 	uint16_t param_offset;
 	uint16_t this_param = 0;
 	uint16_t this_data = 0;
 	uint32_t useable_space;
 	uint8_t cmd;
-	uint8_t pad[3];
-
-	frame = talloc_stackframe();
 
 	cmd = state->cmd;
 
@@ -751,39 +857,26 @@ static struct async_req *cli_ship_trans(TALLOC_CTX *mem_ctx,
 
 	param_offset = smb_size - 4;
 
-	bytes = TALLOC_ARRAY(talloc_tos(), uint8_t, 0); /* padding */
-	if (bytes == NULL) {
-		goto fail;
-	}
-
 	switch (cmd) {
 	case SMBtrans:
 		pad[0] = 0;
-		bytes = (uint8_t *)talloc_append_blob(talloc_tos(), bytes,
-						data_blob_const(pad, 1));
-		if (bytes == NULL) {
-			goto fail;
-		}
-		bytes = smb_bytes_push_str(bytes, cli_ucs2(state->cli),
-					   state->pipe_name,
-					   strlen(state->pipe_name)+1, NULL);
-		if (bytes == NULL) {
-			goto fail;
-		}
+		iov[0].iov_base = pad;
+		iov[0].iov_len = 1;
+		iov[1].iov_base = state->pipe_name_conv;
+		iov[1].iov_len = state->pipe_name_conv_len;
 		wct = 14 + state->num_setup;
-		param_offset += talloc_get_size(bytes);
+		param_offset += iov[0].iov_len + iov[1].iov_len;
+		iov += 2;
 		break;
 	case SMBtrans2:
 		pad[0] = 0;
 		pad[1] = 'D'; /* Copy this from "old" 3.0 behaviour */
 		pad[2] = ' ';
-		bytes = (uint8_t *)talloc_append_blob(talloc_tos(), bytes,
-						data_blob_const(pad, 3));
-		if (bytes == NULL) {
-			goto fail;
-		}
+		iov[0].iov_base = pad;
+		iov[0].iov_len = 3;
 		wct = 14 + state->num_setup;
-		param_offset += talloc_get_size(bytes);
+		param_offset += 3;
+		iov += 1;
 		break;
 	case SMBtranss:
 		wct = 8;
@@ -797,8 +890,6 @@ static struct async_req *cli_ship_trans(TALLOC_CTX *mem_ctx,
 	case SMBnttranss:
 		wct = 18;
 		break;
-	default:
-		goto fail;
 	}
 
 	useable_space = state->cli->max_xmit - smb_size - sizeof(uint16_t)*wct;
@@ -806,17 +897,19 @@ static struct async_req *cli_ship_trans(TALLOC_CTX *mem_ctx,
 	if (state->param_sent < state->num_param) {
 		this_param = MIN(state->num_param - state->param_sent,
 				 useable_space);
+		iov[0].iov_base = state->param + state->param_sent;
+		iov[0].iov_len = this_param;
+		iov += 1;
 	}
 
 	if (state->data_sent < state->num_data) {
 		this_data = MIN(state->num_data - state->data_sent,
 				useable_space - this_param);
+		iov[0].iov_base = state->data + state->data_sent;
+		iov[0].iov_len = this_data;
+		iov += 1;
 	}
 
-	vwv = TALLOC_ARRAY(talloc_tos(), uint16_t, wct);
-	if (vwv == NULL) {
-		goto fail;
-	}
 	param_offset += wct * sizeof(uint16_t);
 
 	DEBUG(10, ("num_setup=%u, max_setup=%u, "
@@ -897,221 +990,120 @@ static struct async_req *cli_ship_trans(TALLOC_CTX *mem_ctx,
 		break;
 	}
 
-	bytes = (uint8_t *)talloc_append_blob(
-		talloc_tos(), bytes,
-		data_blob_const(state->param + state->param_sent, this_param));
-	if (bytes == NULL) {
-		goto fail;
-	}
 	state->param_sent += this_param;
-
-	bytes = (uint8_t *)talloc_append_blob(
-		talloc_tos(), bytes,
-		data_blob_const(state->data + state->data_sent,	this_data));
-	if (bytes == NULL) {
-		goto fail;
-	}
 	state->data_sent += this_data;
 
-	if ((cmd == SMBtrans) || (cmd == SMBtrans2) || (cmd == SMBnttrans)) {
-		/*
-		 * Primary request, retrieve our mid
-		 */
-		result = cli_request_send(mem_ctx, state->ev, state->cli,
-					  cmd, 0, wct, vwv, 0,
-					  talloc_get_size(bytes), bytes);
-		if (result == NULL) {
-			goto fail;
-		}
-		cli_req = talloc_get_type_abort(result->private_data,
-						struct cli_request);
-		state->mid = cli_req->mid;
-		state->seqnum = cli_req->seqnum;
-	} else {
-		uint16_t num_bytes = talloc_get_size(bytes);
-		/*
-		 * Secondary request, we have to fix up the mid. Thus we do
-		 * the chain_cork/chain/uncork ourselves.
-		 */
-		if (!cli_chain_cork(state->cli, state->ev,
-				    wct * sizeof(uint16_t) + num_bytes + 3)) {
-			goto fail;
-		}
-		result = cli_request_send(mem_ctx, state->ev, state->cli, cmd,
-					  0, wct, vwv, 0, num_bytes, bytes);
-		if (result == NULL) {
-			goto fail;
-		}
-		cli_req = talloc_get_type_abort(result->private_data,
-						struct cli_request);
-		cli_req->recv_helper.fn = cli_trans_recv_helper;
-		cli_req->recv_helper.priv = state;
-		cli_req->mid = state->mid;
-		cli_chain_uncork(state->cli);
-		state->seqnum = cli_req->seqnum;
-	}
-
- fail:
-	TALLOC_FREE(frame);
-	return result;
+	*pwct = wct;
+	*piov_count = iov - state->iov;
 }
 
-static void cli_trans_ship_rest(struct async_req *req,
-				struct cli_trans_state *state)
-{
-	struct cli_request *cli_req;
+static void cli_trans_done(struct tevent_req *subreq);
 
-	state->secondary_request_ctx = talloc_new(state);
-	if (state->secondary_request_ctx == NULL) {
-		async_req_nterror(req, NT_STATUS_NO_MEMORY);
-		return;
+struct tevent_req *cli_trans_send(
+	TALLOC_CTX *mem_ctx, struct event_context *ev,
+	struct cli_state *cli, uint8_t cmd,
+	const char *pipe_name, uint16_t fid, uint16_t function, int flags,
+	uint16_t *setup, uint8_t num_setup, uint8_t max_setup,
+	uint8_t *param, uint32_t num_param, uint32_t max_param,
+	uint8_t *data, uint32_t num_data, uint32_t max_data)
+{
+	struct tevent_req *req, *subreq;
+	struct cli_trans_state *state;
+	int iov_count;
+	uint8_t wct;
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_trans_state);
+	if (req == NULL) {
+		return NULL;
 	}
 
-	while ((state->param_sent < state->num_param)
-	       || (state->data_sent < state->num_data)) {
-		struct async_req *subreq;
-
-		subreq = cli_ship_trans(state->secondary_request_ctx, state);
-		if (subreq == NULL) {
-			async_req_nterror(req, NT_STATUS_NO_MEMORY);
-			return;
+	if ((cmd == SMBtrans) || (cmd == SMBtrans2)) {
+		if ((num_param > 0xffff) || (max_param > 0xffff)
+		    || (num_data > 0xffff) || (max_data > 0xffff)) {
+			DEBUG(3, ("Attempt to send invalid trans2 request "
+				  "(setup %u, params %u/%u, data %u/%u)\n",
+				  (unsigned)num_setup,
+				  (unsigned)num_param, (unsigned)max_param,
+				  (unsigned)num_data, (unsigned)max_data));
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return tevent_req_post(req, ev);
 		}
 	}
 
-	cli_req = talloc_get_type_abort(req->private_data,
-					struct cli_request);
+	/*
+	 * The largest wct will be for nttrans (19+num_setup). Make sure we
+	 * don't overflow state->vwv in cli_trans_format.
+	 */
 
-	cli_req->seqnum = state->seqnum;
+	if ((num_setup + 19) > ARRAY_SIZE(state->vwv)) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
+	}
+
+	state->cli = cli;
+	state->ev = ev;
+	state->cmd = cmd;
+	state->flags = flags;
+	state->num_rsetup = 0;
+	state->rsetup = NULL;
+	ZERO_STRUCT(state->rparam);
+	ZERO_STRUCT(state->rdata);
+
+	if ((pipe_name != NULL)
+	    && (!convert_string_allocate(state, CH_UNIX,
+					 cli_ucs2(cli) ? CH_UTF16LE : CH_DOS,
+					 pipe_name, strlen(pipe_name) + 1,
+					 &state->pipe_name_conv,
+					 &state->pipe_name_conv_len, true))) {
+		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+		return tevent_req_post(req, ev);
+	}
+	state->fid = fid;	/* trans2 */
+	state->function = function; /* nttrans */
+
+	state->setup = setup;
+	state->num_setup = num_setup;
+	state->max_setup = max_setup;
+
+	state->param = param;
+	state->num_param = num_param;
+	state->param_sent = 0;
+	state->rparam.max = max_param;
+
+	state->data = data;
+	state->num_data = num_data;
+	state->data_sent = 0;
+	state->rdata.max = max_data;
+
+	cli_trans_format(state, &wct, &iov_count);
+
+	subreq = cli_smb_req_create(state, ev, cli, cmd, 0, wct, state->vwv,
+				    iov_count, state->iov);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	state->mid = cli_smb_req_mid(subreq);
+	if (!cli_smb_req_send(subreq)) {
+		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+		return tevent_req_post(req, state->ev);
+	}
+	cli_state_seqnum_persistent(cli, state->mid);
+	tevent_req_set_callback(subreq, cli_trans_done, req);
+	return req;
 }
 
-static NTSTATUS cli_pull_trans(struct async_req *req,
-			       struct cli_request *cli_req,
-			       uint8_t smb_cmd, bool expect_first_reply,
-			       uint8_t *pnum_setup, uint16_t **psetup,
-			       uint32_t *ptotal_param, uint32_t *pnum_param,
-			       uint32_t *pparam_disp, uint8_t **pparam,
-			       uint32_t *ptotal_data, uint32_t *pnum_data,
-			       uint32_t *pdata_disp, uint8_t **pdata)
+static void cli_trans_done(struct tevent_req *subreq)
 {
-	uint32_t param_ofs, data_ofs;
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_trans_state *state = tevent_req_data(
+		req, struct cli_trans_state);
+	NTSTATUS status;
+	bool sent_all;
 	uint8_t wct;
 	uint16_t *vwv;
-	uint16_t num_bytes;
+	uint32_t num_bytes;
 	uint8_t *bytes;
-	NTSTATUS status;
-
-	status = cli_pull_reply(req, &wct, &vwv, &num_bytes, &bytes);
-
-	/*
-	 * We can receive something like STATUS_MORE_ENTRIES, so don't use
-	 * !NT_STATUS_IS_OK(status) here.
-	 */
-
-	if (NT_STATUS_IS_ERR(status)) {
-		return status;
-	}
-
-	if (expect_first_reply) {
-		if ((wct != 0) || (num_bytes != 0)) {
-			return NT_STATUS_INVALID_NETWORK_RESPONSE;
-		}
-		return NT_STATUS_OK;
-	}
-
-	switch (smb_cmd) {
-	case SMBtrans:
-	case SMBtrans2:
-		if (wct < 10) {
-			return NT_STATUS_INVALID_NETWORK_RESPONSE;
-		}
-		*ptotal_param	= SVAL(vwv + 0, 0);
-		*ptotal_data	= SVAL(vwv + 1, 0);
-		*pnum_param	= SVAL(vwv + 3, 0);
-		param_ofs	= SVAL(vwv + 4, 0);
-		*pparam_disp	= SVAL(vwv + 5, 0);
-		*pnum_data	= SVAL(vwv + 6, 0);
-		data_ofs	= SVAL(vwv + 7, 0);
-		*pdata_disp	= SVAL(vwv + 8, 0);
-		*pnum_setup	= CVAL(vwv + 9, 0);
-		if (wct < 10 + (*pnum_setup)) {
-			return NT_STATUS_INVALID_NETWORK_RESPONSE;
-		}
-		*psetup = vwv + 10;
-
-		break;
-	case SMBnttrans:
-		if (wct < 18) {
-			return NT_STATUS_INVALID_NETWORK_RESPONSE;
-		}
-		*ptotal_param	= IVAL(vwv, 3);
-		*ptotal_data	= IVAL(vwv, 7);
-		*pnum_param	= IVAL(vwv, 11);
-		param_ofs	= IVAL(vwv, 15);
-		*pparam_disp	= IVAL(vwv, 19);
-		*pnum_data	= IVAL(vwv, 23);
-		data_ofs	= IVAL(vwv, 27);
-		*pdata_disp	= IVAL(vwv, 31);
-		*pnum_setup	= CVAL(vwv, 35);
-		*psetup		= vwv + 18;
-		break;
-
-	default:
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	/*
-	 * Check for buffer overflows. data_ofs needs to be checked against
-	 * the incoming buffer length, data_disp against the total
-	 * length. Likewise for param_ofs/param_disp.
-	 */
-
-	if (trans_oob(smb_len(cli_req->inbuf), param_ofs, *pnum_param)
-	    || trans_oob(*ptotal_param, *pparam_disp, *pnum_param)
-	    || trans_oob(smb_len(cli_req->inbuf), data_ofs, *pnum_data)
-	    || trans_oob(*ptotal_data, *pdata_disp, *pnum_data)) {
-		return NT_STATUS_INVALID_NETWORK_RESPONSE;
-	}
-
-	*pparam = (uint8_t *)cli_req->inbuf + 4 + param_ofs;
-	*pdata = (uint8_t *)cli_req->inbuf + 4 + data_ofs;
-
-	return NT_STATUS_OK;
-}
-
-static NTSTATUS cli_trans_pull_blob(TALLOC_CTX *mem_ctx,
-				    struct trans_recvblob *blob,
-				    uint32_t total, uint32_t thistime,
-				    uint8_t *buf, uint32_t displacement)
-{
-	if (blob->data == NULL) {
-		if (total > blob->max) {
-			return NT_STATUS_INVALID_NETWORK_RESPONSE;
-		}
-		blob->total = total;
-		blob->data = TALLOC_ARRAY(mem_ctx, uint8_t, total);
-		if (blob->data == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-	}
-
-	if (total > blob->total) {
-		return NT_STATUS_INVALID_NETWORK_RESPONSE;
-	}
-
-	if (thistime) {
-		memcpy(blob->data + displacement, buf, thistime);
-		blob->received += thistime;
-	}
-
-	return NT_STATUS_OK;
-}
-
-static void cli_trans_recv_helper(struct async_req *req)
-{
-	struct cli_request *cli_req = talloc_get_type_abort(
-		req->private_data, struct cli_request);
-	struct cli_trans_state *state = talloc_get_type_abort(
-		cli_req->recv_helper.priv, struct cli_trans_state);
 	uint8_t num_setup	= 0;
 	uint16_t *setup		= NULL;
 	uint32_t total_param	= 0;
@@ -1122,16 +1114,8 @@ static void cli_trans_recv_helper(struct async_req *req)
 	uint32_t data_disp	= 0;
 	uint8_t *param		= NULL;
 	uint8_t *data		= NULL;
-	bool sent_all;
-	NTSTATUS status;
 
-	sent_all = (state->param_sent == state->num_param)
-		&& (state->data_sent == state->num_data);
-
-	status = cli_pull_trans(
-		req, cli_req, state->cmd, !sent_all, &num_setup, &setup,
-		&total_param, &num_param, &param_disp, &param,
-		&total_data, &num_data, &data_disp, &data);
+	status = cli_smb_recv(subreq, 0, &wct, &vwv, &num_bytes, &bytes);
 
 	/*
 	 * We can receive something like STATUS_MORE_ENTRIES, so don't use
@@ -1139,30 +1123,43 @@ static void cli_trans_recv_helper(struct async_req *req)
 	 */
 
 	if (NT_STATUS_IS_ERR(status)) {
-		async_req_nterror(req, status);
-		return;
+		goto fail;
+	}
+
+	sent_all = ((state->param_sent == state->num_param)
+		    && (state->data_sent == state->num_data));
+
+	status = cli_pull_trans(
+		cli_smb_inbuf(subreq), wct, vwv, num_bytes, bytes,
+		state->cmd, !sent_all, &num_setup, &setup,
+		&total_param, &num_param, &param_disp, &param,
+		&total_data, &num_data, &data_disp, &data);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
 	}
 
 	if (!sent_all) {
-		cli_trans_ship_rest(req, state);
-		return;
-	}
+		int iov_count;
 
-	/*
-	 * We've just received a real response. This means that we don't need
-	 * the secondary cli_request structures anymore, they have all been
-	 * shipped to the server.
-	 */
-	TALLOC_FREE(state->secondary_request_ctx);
+		TALLOC_FREE(subreq);
 
-	if (num_setup != 0) {
-		TALLOC_FREE(state->rsetup);
-		state->rsetup = (uint16_t *)TALLOC_MEMDUP(
-			state, setup, sizeof(uint16_t) * num_setup);
-		if (state->rsetup == NULL) {
-			async_req_nterror(req, NT_STATUS_NO_MEMORY);
+		cli_trans_format(state, &wct, &iov_count);
+
+		subreq = cli_smb_req_create(state, state->ev, state->cli,
+					    state->cmd + 1, 0, wct, state->vwv,
+					    iov_count, state->iov);
+		if (tevent_req_nomem(subreq, req)) {
 			return;
 		}
+		cli_smb_req_set_mid(subreq, state->mid);
+
+		if (!cli_smb_req_send(subreq)) {
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+		tevent_req_set_callback(subreq, cli_trans_done, req);
+		return;
 	}
 
 	status = cli_trans_pull_blob(
@@ -1171,8 +1168,7 @@ static void cli_trans_recv_helper(struct async_req *req)
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("Pulling params failed: %s\n", nt_errstr(status)));
-		async_req_nterror(req, status);
-		return;
+		goto fail;
 	}
 
 	status = cli_trans_pull_blob(
@@ -1181,149 +1177,39 @@ static void cli_trans_recv_helper(struct async_req *req)
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("Pulling data failed: %s\n", nt_errstr(status)));
-		async_req_nterror(req, status);
-		return;
+		goto fail;
 	}
 
 	if ((state->rparam.total == state->rparam.received)
 	    && (state->rdata.total == state->rdata.received)) {
-		async_req_done(req);
+		TALLOC_FREE(subreq);
+		cli_state_seqnum_remove(state->cli, state->mid);
+		tevent_req_done(req);
+		return;
 	}
+
+	if (!cli_smb_req_set_pending(subreq)) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+	return;
+
+ fail:
+	cli_state_seqnum_remove(state->cli, state->mid);
+	TALLOC_FREE(subreq);
+	tevent_req_nterror(req, status);
 }
 
-struct async_req *cli_trans_send(
-	TALLOC_CTX *mem_ctx, struct event_context *ev,
-	struct cli_state *cli, uint8_t trans_cmd,
-	const char *pipe_name, uint16_t fid, uint16_t function, int flags,
-	uint16_t *setup, uint8_t num_setup, uint8_t max_setup,
-	uint8_t *param, uint32_t num_param, uint32_t max_param,
-	uint8_t *data, uint32_t num_data, uint32_t max_data)
-{
-	struct async_req *req;
-	struct cli_request *cli_req;
-	struct cli_trans_state *state;
-
-	/*
-	 * We can't use it in a chained request chain, we'd get the offset
-	 * calculations wrong.
-	 */
-
-	if (cli_in_chain(cli)) {
-		return NULL;
-	}
-
-	if ((trans_cmd == SMBtrans) || (trans_cmd == SMBtrans2)) {
-		if ((num_param > 0xffff) || (max_param > 0xffff)
-		    || (num_data > 0xffff) || (max_data > 0xffff)) {
-			DEBUG(3, ("Attempt to send invalid trans2 request "
-				  "(setup %u, params %u/%u, data %u/%u)\n",
-				  (unsigned)num_setup,
-				  (unsigned)num_param, (unsigned)max_param,
-				  (unsigned)num_data, (unsigned)max_data));
-			return NULL;
-		}
-	}
-
-	state = talloc(mem_ctx, struct cli_trans_state);
-	if (state == NULL) {
-		goto nomem;
-	}
-
-	state->cli = cli;
-	state->ev = ev;
-	state->cmd = trans_cmd;
-	state->num_rsetup = 0;
-	state->rsetup = NULL;
-	ZERO_STRUCT(state->rparam);
-	ZERO_STRUCT(state->rdata);
-	state->secondary_request_ctx = NULL;
-
-	if (trans_cmd == SMBtrans) {
-		state->pipe_name = talloc_strdup(state, pipe_name);
-		if (state->pipe_name == NULL) {
-			goto nomem;
-		}
-	}
-	if (trans_cmd == SMBtrans2) {
-		state->fid = fid;
-	}
-	if (trans_cmd == SMBnttrans) {
-		state->function = function;
-	}
-
-	state->flags = flags;
-
-	if (setup != NULL) {
-		state->setup = (uint16_t *)TALLOC_MEMDUP(
-			state, setup, sizeof(*setup) * num_setup);
-		if (state->setup == NULL) {
-			goto nomem;
-		}
-		state->num_setup = num_setup;
-	} else {
-		state->setup = NULL;
-		state->num_setup = 0;
-	}
-
-	state->max_setup = max_setup;
-
-	if (param != NULL) {
-		state->param = (uint8_t *)TALLOC_MEMDUP(state, param,
-							num_param);
-		if (state->param == NULL) {
-			goto nomem;
-		}
-		state->num_param = num_param;
-	} else {
-		state->param = NULL;
-		state->num_param = 0;
-	}
-
-	state->param_sent = 0;
-	state->rparam.max = max_param;
-
-	if (data != NULL) {
-		state->data = (uint8_t *)TALLOC_MEMDUP(state, data, num_data);
-		if (state->data == NULL) {
-			goto nomem;
-		}
-		state->num_data = num_data;
-	} else {
-		state->data = NULL;
-		state->num_data = 0;
-	}
-
-	state->data_sent = 0;
-	state->rdata.max = max_data;
-
-	req = cli_ship_trans(state, state);
-	if (req == NULL) {
-		goto nomem;
-	}
-
-	cli_req = talloc_get_type_abort(req->private_data, struct cli_request);
-	cli_req->recv_helper.fn = cli_trans_recv_helper;
-	cli_req->recv_helper.priv = state;
-
-	return req;
-
- nomem:
-	TALLOC_FREE(state);
-	return NULL;
-}
-
-NTSTATUS cli_trans_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
+NTSTATUS cli_trans_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			uint16_t **setup, uint8_t *num_setup,
 			uint8_t **param, uint32_t *num_param,
 			uint8_t **data, uint32_t *num_data)
 {
-	struct cli_request *cli_req = talloc_get_type_abort(
-		req->private_data, struct cli_request);
-	struct cli_trans_state *state = talloc_get_type_abort(
-		cli_req->recv_helper.priv, struct cli_trans_state);
+	struct cli_trans_state *state = tevent_req_data(
+		req, struct cli_trans_state);
 	NTSTATUS status;
 
-	if (async_req_is_nterror(req, &status)) {
+	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
 
@@ -1364,19 +1250,20 @@ NTSTATUS cli_trans(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct event_context *ev;
-	struct async_req *req;
-	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_OK;
 
-	if (cli->fd_event != NULL) {
+	if (cli_has_async_calls(cli)) {
 		/*
 		 * Can't use sync call while an async call is in flight
 		 */
-		cli_set_error(cli, NT_STATUS_INVALID_PARAMETER);
+		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}
 
 	ev = event_context_init(frame);
 	if (ev == NULL) {
+		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
 
@@ -1386,16 +1273,21 @@ NTSTATUS cli_trans(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 			     param, num_param, max_param,
 			     data, num_data, max_data);
 	if (req == NULL) {
+		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
 
-	while (req->state < ASYNC_REQ_DONE) {
-		event_loop_once(ev);
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
 	}
 
 	status = cli_trans_recv(req, mem_ctx, rsetup, num_rsetup,
 				rparam, num_rparam, rdata, num_rdata);
  fail:
 	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
 	return status;
 }

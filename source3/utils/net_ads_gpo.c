@@ -257,7 +257,7 @@ static int net_ads_gpo_list_all(struct net_context *c, int argc, const char **ar
 	     msg;
 	     msg = ads_next_entry(ads, msg)) {
 
-		if ((dn = ads_get_dn(ads, msg)) == NULL) {
+		if ((dn = ads_get_dn(ads, mem_ctx, msg)) == NULL) {
 			goto out;
 		}
 
@@ -266,18 +266,16 @@ static int net_ads_gpo_list_all(struct net_context *c, int argc, const char **ar
 		if (!ADS_ERR_OK(status)) {
 			d_printf("ads_parse_gpo failed: %s\n",
 				ads_errstr(status));
-			ads_memfree(ads, dn);
 			goto out;
 		}
 
 		dump_gpo(ads, mem_ctx, &gpo, 0);
-		ads_memfree(ads, dn);
 	}
 
 out:
 	ads_msgfree(ads, res);
 
-	talloc_destroy(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 	ads_destroy(&ads);
 
 	return 0;

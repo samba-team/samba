@@ -303,7 +303,7 @@ static ADS_STATUS libnet_join_find_machine_acct(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	dn = ads_get_dn(r->in.ads, res);
+	dn = ads_get_dn(r->in.ads, mem_ctx, res);
 	if (!dn) {
 		status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
 		goto done;
@@ -317,7 +317,7 @@ static ADS_STATUS libnet_join_find_machine_acct(TALLOC_CTX *mem_ctx,
 
  done:
 	ads_msgfree(r->in.ads, res);
-	ads_memfree(r->in.ads, dn);
+	TALLOC_FREE(dn);
 
 	return status;
 }

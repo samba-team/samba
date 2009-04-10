@@ -729,6 +729,20 @@ const struct ldb_schema_syntax *ldb_samba_syntax_by_name(struct ldb_context *ldb
 	return s;
 }
 
+const struct ldb_schema_syntax *ldb_samba_syntax_by_lDAPDisplayName(struct ldb_context *ldb, const char *name)
+{
+	uint32_t j;
+	const struct ldb_schema_syntax *s = NULL;
+
+	for (j=0; j < ARRAY_SIZE(samba_attributes); j++) {
+		if (strcmp(samba_attributes[j].name, name) == 0) {
+			s = ldb_samba_syntax_by_name(ldb, samba_attributes[j].syntax);
+			break;
+		}
+	}
+	
+	return s;
+}
 
 /*
   register the samba ldif handlers

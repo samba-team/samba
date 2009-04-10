@@ -31,37 +31,12 @@
  *  Author: Simo Sorce
  */
 
-
 int ldb_handler_copy(		struct ldb_context *ldb, void *mem_ctx,
 				const struct ldb_val *in, struct ldb_val *out);
-
-int ldb_handler_fold(		struct ldb_context *ldb, void *mem_ctx,
-				const struct ldb_val *in, struct ldb_val *out);
-
-int ldb_canonicalise_Integer(	struct ldb_context *ldb, void *mem_ctx,
-				const struct ldb_val *in, struct ldb_val *out);
-
-int ldb_comparison_Integer(	struct ldb_context *ldb, void *mem_ctx,
-				const struct ldb_val *v1, const struct ldb_val *v2);
-
 int ldb_comparison_binary(	struct ldb_context *ldb, void *mem_ctx,
 				const struct ldb_val *v1, const struct ldb_val *v2);
-
+int db_handler_fold(		struct ldb_context *ldb, void *mem_ctx,
+				const struct ldb_val *in, struct ldb_val *out);
 int ldb_comparison_fold(	struct ldb_context *ldb, void *mem_ctx,
 				const struct ldb_val *v1, const struct ldb_val *v2);
-
-int ldb_canonicalise_dn(	struct ldb_context *ldb, void *mem_ctx,
-				const struct ldb_val *in, struct ldb_val *out);
-
-int ldb_comparison_dn(		struct ldb_context *ldb, void *mem_ctx,
-				const struct ldb_val *v1, const struct ldb_val *v2);
-
-int ldb_comparison_objectclass(	struct ldb_context *ldb, void *mem_ctx,
-				const struct ldb_val *v1, const struct ldb_val *v2);
-
-int ldb_comparison_utctime(	struct ldb_context *ldb, void *mem_ctx,
-				const struct ldb_val *v1, const struct ldb_val *v2);
-
-int ldb_canonicalise_utctime(	struct ldb_context *ldb, void *mem_ctx,
-				const struct ldb_val *in, struct ldb_val *out);
 

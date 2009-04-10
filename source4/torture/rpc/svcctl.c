@@ -3,7 +3,7 @@
    test suite for srvsvc rpc operations
 
    Copyright (C) Jelmer Vernooij 2004
-   Copyright (C) Guenther Deschner 2008
+   Copyright (C) Guenther Deschner 2008,2009
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -74,6 +74,36 @@ static bool test_OpenService(struct dcerpc_pipe *p, struct torture_context *tctx
 
 }
 
+static bool test_QueryServiceStatus(struct torture_context *tctx,
+				    struct dcerpc_pipe *p)
+{
+	struct svcctl_QueryServiceStatus r;
+	struct policy_handle h, s;
+	struct SERVICE_STATUS service_status;
+	NTSTATUS status;
+
+	if (!test_OpenSCManager(p, tctx, &h))
+		return false;
+
+	if (!test_OpenService(p, tctx, &h, "Netlogon", &s))
+		return false;
+
+	r.in.handle = &s;
+	r.out.service_status = &service_status;
+
+	status = dcerpc_svcctl_QueryServiceStatus(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "QueryServiceStatus failed!");
+	torture_assert_werr_ok(tctx, r.out.result, "QueryServiceStatus failed!");
+
+	if (!test_CloseServiceHandle(p, tctx, &s))
+		return false;
+
+	if (!test_CloseServiceHandle(p, tctx, &h))
+		return false;
+
+	return true;
+}
+
 static bool test_QueryServiceStatusEx(struct torture_context *tctx, struct dcerpc_pipe *p)
 {
 	struct svcctl_QueryServiceStatusEx r;
@@ -82,8 +112,8 @@ static bool test_QueryServiceStatusEx(struct torture_context *tctx, struct dcerp
 
 	uint32_t info_level = SVC_STATUS_PROCESS_INFO;
 	uint8_t *buffer;
-	uint32_t buf_size = 0;
-	uint32_t bytes_needed = 0;
+	uint32_t offered = 0;
+	uint32_t needed = 0;
 
 	if (!test_OpenSCManager(p, tctx, &h))
 		return false;
@@ -95,22 +125,64 @@ static bool test_QueryServiceStatusEx(struct torture_context *tctx, struct dcerp
 
 	r.in.handle = &s;
 	r.in.info_level = info_level;
-	r.in.buf_size = buf_size;
+	r.in.offered = offered;
 	r.out.buffer = buffer;
-	r.out.bytes_needed = &bytes_needed;
+	r.out.needed = &needed;
 
 	status = dcerpc_svcctl_QueryServiceStatusEx(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "QueryServiceStatusEx failed!");
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-		r.in.buf_size = bytes_needed;
-		buffer = talloc_array(tctx, uint8_t, bytes_needed);
+		r.in.offered = needed;
+		buffer = talloc_array(tctx, uint8_t, needed);
 		r.out.buffer = buffer;
 
 		status = dcerpc_svcctl_QueryServiceStatusEx(p, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "QueryServiceStatusEx failed!");
 		torture_assert_werr_ok(tctx, r.out.result, "QueryServiceStatusEx failed!");
 	}
+
+	if (!test_CloseServiceHandle(p, tctx, &s))
+		return false;
+
+	if (!test_CloseServiceHandle(p, tctx, &h))
+		return false;
+
+	return true;
+}
+
+static bool test_QueryServiceConfigW(struct torture_context *tctx,
+				     struct dcerpc_pipe *p)
+{
+	struct svcctl_QueryServiceConfigW r;
+	struct QUERY_SERVICE_CONFIG query;
+	struct policy_handle h, s;
+	NTSTATUS status;
+
+	uint32_t offered = 0;
+	uint32_t needed = 0;
+
+	if (!test_OpenSCManager(p, tctx, &h))
+		return false;
+
+	if (!test_OpenService(p, tctx, &h, "Netlogon", &s))
+		return false;
+
+	r.in.handle = &s;
+	r.in.offered = offered;
+	r.out.query = &query;
+	r.out.needed = &needed;
+
+	status = dcerpc_svcctl_QueryServiceConfigW(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "QueryServiceConfigW failed!");
+
+	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+		r.in.offered = needed;
+		status = dcerpc_svcctl_QueryServiceConfigW(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "QueryServiceConfigW failed!");
+	}
+
+	torture_assert_werr_ok(tctx, r.out.result, "QueryServiceConfigW failed!");
 
 	if (!test_CloseServiceHandle(p, tctx, &s))
 		return false;
@@ -129,8 +201,8 @@ static bool test_QueryServiceConfig2W(struct torture_context *tctx, struct dcerp
 
 	uint32_t info_level = SERVICE_CONFIG_DESCRIPTION;
 	uint8_t *buffer;
-	uint32_t buf_size = 0;
-	uint32_t bytes_needed = 0;
+	uint32_t offered = 0;
+	uint32_t needed = 0;
 
 	if (!test_OpenSCManager(p, tctx, &h))
 		return false;
@@ -142,16 +214,16 @@ static bool test_QueryServiceConfig2W(struct torture_context *tctx, struct dcerp
 
 	r.in.handle = &s;
 	r.in.info_level = info_level;
-	r.in.buf_size = buf_size;
+	r.in.offered = offered;
 	r.out.buffer = buffer;
-	r.out.bytes_needed = &bytes_needed;
+	r.out.needed = &needed;
 
 	status = dcerpc_svcctl_QueryServiceConfig2W(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "QueryServiceConfig2W failed!");
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-		r.in.buf_size = bytes_needed;
-		buffer = talloc_array(tctx, uint8_t, bytes_needed);
+		r.in.offered = needed;
+		buffer = talloc_array(tctx, uint8_t, needed);
 		r.out.buffer = buffer;
 
 		status = dcerpc_svcctl_QueryServiceConfig2W(p, tctx, &r);
@@ -160,22 +232,75 @@ static bool test_QueryServiceConfig2W(struct torture_context *tctx, struct dcerp
 	}
 
 	r.in.info_level = SERVICE_CONFIG_FAILURE_ACTIONS;
-	r.in.buf_size = buf_size;
+	r.in.offered = offered;
 	r.out.buffer = buffer;
-	r.out.bytes_needed = &bytes_needed;
+	r.out.needed = &needed;
 
 	status = dcerpc_svcctl_QueryServiceConfig2W(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "QueryServiceConfig2W failed!");
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-		r.in.buf_size = bytes_needed;
-		buffer = talloc_array(tctx, uint8_t, bytes_needed);
+		r.in.offered = needed;
+		buffer = talloc_array(tctx, uint8_t, needed);
 		r.out.buffer = buffer;
 
 		status = dcerpc_svcctl_QueryServiceConfig2W(p, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "QueryServiceConfig2W failed!");
 		torture_assert_werr_ok(tctx, r.out.result, "QueryServiceConfig2W failed!");
 	}
+
+	if (!test_CloseServiceHandle(p, tctx, &s))
+		return false;
+
+	if (!test_CloseServiceHandle(p, tctx, &h))
+		return false;
+
+	return true;
+}
+
+static bool test_QueryServiceObjectSecurity(struct torture_context *tctx,
+					    struct dcerpc_pipe *p)
+{
+	struct svcctl_QueryServiceObjectSecurity r;
+	struct policy_handle h, s;
+
+	uint8_t *buffer;
+	uint32_t needed;
+
+	if (!test_OpenSCManager(p, tctx, &h))
+		return false;
+
+	if (!test_OpenService(p, tctx, &h, "Netlogon", &s))
+		return false;
+
+	r.in.handle = &s;
+	r.in.security_flags = 0;
+	r.in.offered = 0;
+	r.out.buffer = NULL;
+	r.out.needed = &needed;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_svcctl_QueryServiceObjectSecurity(p, tctx, &r),
+		"QueryServiceObjectSecurity failed!");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAM,
+		"QueryServiceObjectSecurity failed!");
+
+	r.in.security_flags = SECINFO_DACL;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_svcctl_QueryServiceObjectSecurity(p, tctx, &r),
+		"QueryServiceObjectSecurity failed!");
+
+	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+		r.in.offered = needed;
+		buffer = talloc_array(tctx, uint8_t, needed);
+		r.out.buffer = buffer;
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_svcctl_QueryServiceObjectSecurity(p, tctx, &r),
+			"QueryServiceObjectSecurity failed!");
+	}
+
+	torture_assert_werr_ok(tctx, r.out.result, "QueryServiceObjectSecurity failed!");
 
 	if (!test_CloseServiceHandle(p, tctx, &s))
 		return false;
@@ -194,7 +319,7 @@ static bool test_EnumServicesStatus(struct torture_context *tctx, struct dcerpc_
 	NTSTATUS status;
 	uint32_t resume_handle = 0;
 	struct ENUM_SERVICE_STATUSW *service = NULL;
-	uint32_t bytes_needed = 0;
+	uint32_t needed = 0;
 	uint32_t services_returned = 0;
 
 	if (!test_OpenSCManager(p, tctx, &h))
@@ -203,20 +328,20 @@ static bool test_EnumServicesStatus(struct torture_context *tctx, struct dcerpc_
 	r.in.handle = &h;
 	r.in.type = SERVICE_TYPE_WIN32;
 	r.in.state = SERVICE_STATE_ALL;
-	r.in.buf_size = 0;
+	r.in.offered = 0;
 	r.in.resume_handle = &resume_handle;
 	r.out.service = NULL;
 	r.out.resume_handle = &resume_handle;
 	r.out.services_returned = &services_returned;
-	r.out.bytes_needed = &bytes_needed;
+	r.out.needed = &needed;
 
 	status = dcerpc_svcctl_EnumServicesStatusW(p, tctx, &r);
 
 	torture_assert_ntstatus_ok(tctx, status, "EnumServicesStatus failed!");
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
-		r.in.buf_size = bytes_needed;
-		r.out.service = talloc_array(tctx, uint8_t, bytes_needed);
+		r.in.offered = needed;
+		r.out.service = talloc_array(tctx, uint8_t, needed);
 
 		status = dcerpc_svcctl_EnumServicesStatusW(p, tctx, &r);
 
@@ -230,7 +355,7 @@ static bool test_EnumServicesStatus(struct torture_context *tctx, struct dcerpc_
 		DATA_BLOB blob;
 		struct ndr_pull *ndr;
 
-		blob.length = r.in.buf_size;
+		blob.length = r.in.offered;
 		blob.data = talloc_steal(tctx, r.out.service);
 
 		ndr = ndr_pull_init_blob(&blob, tctx, lp_iconv_convenience(tctx->lp_ctx));
@@ -253,6 +378,69 @@ static bool test_EnumServicesStatus(struct torture_context *tctx, struct dcerpc_
 			service[i].service_name, service[i].display_name,
 			service[i].status.type, service[i].status.state);
 	}
+
+	if (!test_CloseServiceHandle(p, tctx, &h))
+		return false;
+
+	return true;
+}
+
+static bool test_EnumDependentServicesW(struct torture_context *tctx,
+					struct dcerpc_pipe *p)
+{
+	struct svcctl_EnumDependentServicesW r;
+	struct policy_handle h, s;
+	uint32_t needed;
+	uint32_t services_returned;
+	uint32_t i;
+	uint32_t states[] = { SERVICE_STATE_ACTIVE,
+			      SERVICE_STATE_INACTIVE,
+			      SERVICE_STATE_ALL };
+
+	if (!test_OpenSCManager(p, tctx, &h))
+		return false;
+
+	if (!test_OpenService(p, tctx, &h, "Netlogon", &s))
+		return false;
+
+	r.in.service = &s;
+	r.in.offered = 0;
+	r.in.state = 0;
+	r.out.service_status = NULL;
+	r.out.services_returned = &services_returned;
+	r.out.needed = &needed;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_svcctl_EnumDependentServicesW(p, tctx, &r),
+		"EnumDependentServicesW failed!");
+
+	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAM,
+		"EnumDependentServicesW failed!");
+
+	for (i=0; i<ARRAY_SIZE(states); i++) {
+
+		r.in.state = states[i];
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_svcctl_EnumDependentServicesW(p, tctx, &r),
+			"EnumDependentServicesW failed!");
+
+		if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
+			r.in.offered = needed;
+			r.out.service_status = talloc_array(tctx, uint8_t, needed);
+
+			torture_assert_ntstatus_ok(tctx,
+				dcerpc_svcctl_EnumDependentServicesW(p, tctx, &r),
+				"EnumDependentServicesW failed!");
+
+		}
+
+		torture_assert_werr_ok(tctx, r.out.result,
+			"EnumDependentServicesW failed");
+	}
+
+	if (!test_CloseServiceHandle(p, tctx, &s))
+		return false;
 
 	if (!test_CloseServiceHandle(p, tctx, &h))
 		return false;
@@ -285,10 +473,18 @@ struct torture_suite *torture_rpc_svcctl(TALLOC_CTX *mem_ctx)
 				   test_SCManager);
 	torture_rpc_tcase_add_test(tcase, "EnumServicesStatus",
 				   test_EnumServicesStatus);
+	torture_rpc_tcase_add_test(tcase, "EnumDependentServicesW",
+				   test_EnumDependentServicesW);
+	torture_rpc_tcase_add_test(tcase, "QueryServiceStatus",
+				   test_QueryServiceStatus);
 	torture_rpc_tcase_add_test(tcase, "QueryServiceStatusEx",
 				   test_QueryServiceStatusEx);
+	torture_rpc_tcase_add_test(tcase, "QueryServiceConfigW",
+				   test_QueryServiceConfigW);
 	torture_rpc_tcase_add_test(tcase, "QueryServiceConfig2W",
 				   test_QueryServiceConfig2W);
+	torture_rpc_tcase_add_test(tcase, "QueryServiceObjectSecurity",
+				   test_QueryServiceObjectSecurity);
 
 	return suite;
 }

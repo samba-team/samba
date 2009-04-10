@@ -4,6 +4,37 @@
 #include "../librpc/gen_ndr/ndr_ntsvcs.h"
 
 #include "librpc/gen_ndr/ndr_winreg.h"
+static enum ndr_err_code ndr_push_PNP_GetIdListFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_PNP_GetIdListFlags(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_PNP_GetIdListFlags(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "CM_GETIDLIST_FILTER_ENUMERATOR", CM_GETIDLIST_FILTER_ENUMERATOR, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "CM_GETIDLIST_FILTER_SERVICE", CM_GETIDLIST_FILTER_SERVICE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "CM_GETIDLIST_FILTER_EJECTRELATIONS", CM_GETIDLIST_FILTER_EJECTRELATIONS, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "CM_GETIDLIST_FILTER_REMOVALRELATIONS", CM_GETIDLIST_FILTER_REMOVALRELATIONS, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "CM_GETIDLIST_FILTER_POWERRELATIONS", CM_GETIDLIST_FILTER_POWERRELATIONS, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "CM_GETIDLIST_FILTER_BUSRELATIONS", CM_GETIDLIST_FILTER_BUSRELATIONS, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "CM_GETIDLIST_DONOTGENERATE", CM_GETIDLIST_DONOTGENERATE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "CM_GETIDLIST_FILTER_TRANSPORTRELATIONS", CM_GETIDLIST_FILTER_TRANSPORTRELATIONS, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "CM_GETIDLIST_FILTER_PRESENT", CM_GETIDLIST_FILTER_PRESENT, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "CM_GETIDLIST_FILTER_CLASS", CM_GETIDLIST_FILTER_CLASS, r);
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_PNP_HwProfInfo(struct ndr_push *ndr, int ndr_flags, const struct PNP_HwProfInfo *r)
 {
 	uint32_t cntr_friendly_name_0;
@@ -522,7 +553,7 @@ static enum ndr_err_code ndr_push_PNP_GetDeviceList(struct ndr_push *ndr, int fl
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.length));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.flags));
+		NDR_CHECK(ndr_push_PNP_GetIdListFlags(ndr, NDR_SCALARS, r->in.flags));
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.buffer == NULL) {
@@ -578,7 +609,7 @@ static enum ndr_err_code ndr_pull_PNP_GetDeviceList(struct ndr_pull *ndr, int fl
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.length, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->in.length));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_length_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.flags));
+		NDR_CHECK(ndr_pull_PNP_GetIdListFlags(ndr, NDR_SCALARS, &r->in.flags));
 		NDR_PULL_ALLOC_N(ndr, r->out.buffer, *r->in.length);
 		memset(r->out.buffer, 0, (*r->in.length) * sizeof(*r->out.buffer));
 		NDR_PULL_ALLOC(ndr, r->out.length);
@@ -638,7 +669,7 @@ _PUBLIC_ void ndr_print_PNP_GetDeviceList(struct ndr_print *ndr, const char *nam
 		ndr->depth++;
 		ndr_print_uint32(ndr, "length", *r->in.length);
 		ndr->depth--;
-		ndr_print_uint32(ndr, "flags", r->in.flags);
+		ndr_print_PNP_GetIdListFlags(ndr, "flags", r->in.flags);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
@@ -677,7 +708,7 @@ static enum ndr_err_code ndr_push_PNP_GetDeviceListSize(struct ndr_push *ndr, in
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.devicename, CH_UTF16)));
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.devicename, ndr_charset_length(r->in.devicename, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.flags));
+		NDR_CHECK(ndr_push_PNP_GetIdListFlags(ndr, NDR_SCALARS, r->in.flags));
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.size == NULL) {
@@ -715,7 +746,7 @@ static enum ndr_err_code ndr_pull_PNP_GetDeviceListSize(struct ndr_pull *ndr, in
 			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.devicename, ndr_get_array_length(ndr, &r->in.devicename), sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_devicename_0, 0);
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.flags));
+		NDR_CHECK(ndr_pull_PNP_GetIdListFlags(ndr, NDR_SCALARS, &r->in.flags));
 		NDR_PULL_ALLOC(ndr, r->out.size);
 		ZERO_STRUCTP(r->out.size);
 	}
@@ -748,7 +779,7 @@ _PUBLIC_ void ndr_print_PNP_GetDeviceListSize(struct ndr_print *ndr, const char 
 			ndr_print_string(ndr, "devicename", r->in.devicename);
 		}
 		ndr->depth--;
-		ndr_print_uint32(ndr, "flags", r->in.flags);
+		ndr_print_PNP_GetIdListFlags(ndr, "flags", r->in.flags);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {

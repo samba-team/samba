@@ -233,10 +233,12 @@ def check_all_substituted(text):
 
 def valid_netbios_name(name):
     """Check whether a name is valid as a NetBIOS name. """
-    # FIXME: There are probably more constraints here. 
-    # crh has a paragraph on this in his book (1.4.1.1)
+    # See crh's book (1.4.1.1)
     if len(name) > 15:
         return False
+    for x in name:
+        if not x.isalnum() and not x in " !#$%&'()-.@^_{}~":
+            return False
     return True
 
 version = glue.version
