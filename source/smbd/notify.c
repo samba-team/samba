@@ -234,6 +234,7 @@ NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
 	if (asprintf(&fullpath, "%s/%s", fsp->conn->connectpath,
 		     fsp->fsp_name) == -1) {
 		DEBUG(0, ("asprintf failed\n"));
+		TALLOC_FREE(fsp->notify);
 		return NT_STATUS_NO_MEMORY;
 	}
 
