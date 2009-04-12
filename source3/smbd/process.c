@@ -59,15 +59,12 @@ bool srv_send_smb(int fd, char *buffer,
 
 	len = smb_len(buf_out) + 4;
 
-	while (nwritten < len) {
-		ret = write_data(fd,buf_out+nwritten,len - nwritten);
-		if (ret <= 0) {
-			DEBUG(0,("Error writing %d bytes to client. %d. (%s)\n",
-				(int)len,(int)ret, strerror(errno) ));
-			srv_free_enc_buffer(buf_out);
-			goto out;
-		}
-		nwritten += ret;
+	ret = write_data(fd,buf_out+nwritten,len - nwritten);
+	if (ret <= 0) {
+		DEBUG(0,("Error writing %d bytes to client. %d. (%s)\n",
+			 (int)len,(int)ret, strerror(errno) ));
+		srv_free_enc_buffer(buf_out);
+		goto out;
 	}
 
 	SMB_PERFCOUNT_SET_MSGLEN_OUT(pcd, len);
