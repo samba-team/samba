@@ -407,6 +407,95 @@ bool fsp_belongs_conn(connection_struct *conn, struct smb_request *req,
 	return False;
 }
 
+static bool netbios_session_retarget(const char *name, int name_type)
+{
+	char *trim_name;
+	char *trim_name_type;
+	const char *retarget_parm;
+	char *retarget;
+	char *p;
+	int retarget_type = 0x20;
+	int retarget_port = 139;
+	struct sockaddr_storage retarget_addr;
+	struct sockaddr_in *in_addr;
+	bool ret = false;
+	uint8_t outbuf[10];
+
+	if (get_socket_port(smbd_server_fd()) != 139) {
+		return false;
+	}
+
+	trim_name = talloc_strdup(talloc_tos(), name);
+	if (trim_name == NULL) {
+		goto fail;
+	}
+	trim_char(trim_name, ' ', ' ');
+
+	trim_name_type = talloc_asprintf(trim_name, "%s#%2.2x", trim_name,
+					 name_type);
+	if (trim_name_type == NULL) {
+		goto fail;
+	}
+
+	retarget_parm = lp_parm_const_string(-1, "netbios retarget",
+					     trim_name_type, NULL);
+	if (retarget_parm == NULL) {
+		retarget_parm = lp_parm_const_string(-1, "netbios retarget",
+						     trim_name, NULL);
+	}
+	if (retarget_parm == NULL) {
+		goto fail;
+	}
+
+	retarget = talloc_strdup(trim_name, retarget_parm);
+	if (retarget == NULL) {
+		goto fail;
+	}
+
+	DEBUG(10, ("retargeting %s to %s\n", trim_name_type, retarget));
+
+	p = strchr(retarget, ':');
+	if (p != NULL) {
+		*p++ = '\0';
+		retarget_port = atoi(p);
+	}
+
+	p = strchr_m(retarget, '#');
+	if (p != NULL) {
+		*p++ = '\0';
+		sscanf(p, "%x", &retarget_type);
+	}
+
+	ret = resolve_name(retarget, &retarget_addr, retarget_type);
+	if (!ret) {
+		DEBUG(10, ("could not resolve %s\n", retarget));
+		goto fail;
+	}
+
+	if (retarget_addr.ss_family != AF_INET) {
+		DEBUG(10, ("Retarget target not an IPv4 addr\n"));
+		goto fail;
+	}
+
+	in_addr = (struct sockaddr_in *)&retarget_addr;
+
+	_smb_setlen(outbuf, 6);
+	SCVAL(outbuf, 0, 0x84);
+	*(uint32_t *)(outbuf+4) = in_addr->sin_addr.s_addr;
+	*(uint16_t *)(outbuf+8) = htons(retarget_port);
+
+	if (!srv_send_smb(smbd_server_fd(), (char *)outbuf, false, 0, false,
+			  NULL)) {
+		exit_server_cleanly("netbios_session_regarget: srv_send_smb "
+				    "failed.");
+	}
+
+	ret = true;
+ fail:
+	TALLOC_FREE(trim_name);
+	return ret;
+}
+
 /****************************************************************************
  Reply to a (netbios-level) special message.
 ****************************************************************************/
@@ -449,6 +538,10 @@ void reply_special(char *inbuf)
 		name_type2 = name_extract(inbuf,4 + name_len(inbuf + 4),name2);
 		DEBUG(2,("netbios connect: name1=%s0x%x name2=%s0x%x\n",
 			 name1, name_type1, name2, name_type2));
+
+		if (netbios_session_retarget(name1, name_type1)) {
+			exit_server_cleanly("retargeted client");
+		}
 
 		set_local_machine_name(name1, True);
 		set_remote_machine_name(name2, True);
