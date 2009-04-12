@@ -94,6 +94,7 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 {
 	struct cli_state *c = NULL;
 	struct nmb_name called, calling;
+	const char *called_str;
 	const char *server_n;
 	struct sockaddr_storage ss;
 	char *servicename;
@@ -111,6 +112,7 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 	sharename = servicename;
 	if (*sharename == '\\') {
 		sharename += 2;
+		called_str = sharename;
 		if (server == NULL) {
 			server = sharename;
 		}
@@ -120,6 +122,8 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 		}
 		*sharename = 0;
 		sharename++;
+	} else {
+		called_str = server;
 	}
 
 	server_n = server;
@@ -127,7 +131,7 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 	zero_sockaddr(&ss);
 
 	make_nmb_name(&calling, global_myname(), 0x0);
-	make_nmb_name(&called , server, name_type);
+	make_nmb_name(&called , called_str, name_type);
 
  again:
 	zero_sockaddr(&ss);
