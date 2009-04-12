@@ -416,7 +416,7 @@ void reply_special(char *inbuf)
 	int msg_type = CVAL(inbuf,0);
 	int msg_flags = CVAL(inbuf,1);
 	fstring name1,name2;
-	char name_type = 0;
+	char name_type1, name_type2;
 
 	/*
 	 * We only really use 4 bytes of the outbuf, but for the smb_setlen
@@ -445,19 +445,19 @@ void reply_special(char *inbuf)
 			DEBUG(0,("Invalid name length in session request\n"));
 			return;
 		}
-		name_extract(inbuf,4,name1);
-		name_type = name_extract(inbuf,4 + name_len(inbuf + 4),name2);
-		DEBUG(2,("netbios connect: name1=%s name2=%s\n",
-			 name1,name2));      
+		name_type1 = name_extract(inbuf,4,name1);
+		name_type2 = name_extract(inbuf,4 + name_len(inbuf + 4),name2);
+		DEBUG(2,("netbios connect: name1=%s0x%x name2=%s0x%x\n",
+			 name1, name_type1, name2, name_type2));
 
 		set_local_machine_name(name1, True);
 		set_remote_machine_name(name2, True);
 
 		DEBUG(2,("netbios connect: local=%s remote=%s, name type = %x\n",
 			 get_local_machine_name(), get_remote_machine_name(),
-			 name_type));
+			 name_type2));
 
-		if (name_type == 'R') {
+		if (name_type2 == 'R') {
 			/* We are being asked for a pathworks session --- 
 			   no thanks! */
 			SCVAL(outbuf, 0,0x83);
