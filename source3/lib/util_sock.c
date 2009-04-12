@@ -208,13 +208,11 @@ static const char *get_socket_addr(int fd, char *addr_buf, size_t addr_len)
 	return print_sockaddr_len(addr_buf, addr_len, (struct sockaddr *)&sa, length);
 }
 
-#if 0
-/* Not currently used. JRA. */
 /****************************************************************************
  Return the port number we've bound to on a socket.
 ****************************************************************************/
 
-static int get_socket_port(int fd)
+int get_socket_port(int fd)
 {
 	struct sockaddr_storage sa;
 	socklen_t length = sizeof(sa);
@@ -239,7 +237,6 @@ static int get_socket_port(int fd)
 	}
 	return -1;
 }
-#endif
 
 const char *client_name(int fd)
 {
