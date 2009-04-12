@@ -247,7 +247,7 @@ struct smb2_request {
 #define SMB2_NEGOTIATE_SIGNING_REQUIRED  0x02
 
 /* SMB2 capabilities - only 1 so far. I'm sure more will be added */
-#define SMB2_CAP_DFS                     0x0
+#define SMB2_CAP_DFS                     0x00000001
 /* so we can spot new caps as added */
 #define SMB2_CAP_ALL                     SMB2_CAP_DFS 
 
