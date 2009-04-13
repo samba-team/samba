@@ -4846,6 +4846,73 @@ static WERROR fill_printer_driver_info3(TALLOC_CTX *mem_ctx,
 }
 
 /********************************************************************
+ * fill a spoolss_DriverInfo4 struct
+ ********************************************************************/
+
+static WERROR fill_printer_driver_info4(TALLOC_CTX *mem_ctx,
+					struct spoolss_DriverInfo4 *r,
+					const NT_PRINTER_DRIVER_INFO_LEVEL *driver,
+					const char *servername)
+{
+	const char *cservername = canon_servername(servername);
+
+	r->version		= driver->info_3->cversion;
+
+	r->driver_name		= talloc_strdup(mem_ctx, driver->info_3->name);
+	W_ERROR_HAVE_NO_MEMORY(r->driver_name);
+	r->architecture		= talloc_strdup(mem_ctx, driver->info_3->environment);
+	W_ERROR_HAVE_NO_MEMORY(r->architecture);
+
+	if (strlen(driver->info_3->driverpath)) {
+		r->driver_path	= talloc_asprintf(mem_ctx, "\\\\%s%s",
+				cservername, driver->info_3->driverpath);
+	} else {
+		r->driver_path	= talloc_strdup(mem_ctx, "");
+	}
+	W_ERROR_HAVE_NO_MEMORY(r->driver_path);
+
+	if (strlen(driver->info_3->datafile)) {
+		r->data_file	= talloc_asprintf(mem_ctx, "\\\\%s%s",
+				cservername, driver->info_3->datafile);
+	} else {
+		r->data_file	= talloc_strdup(mem_ctx, "");
+	}
+	W_ERROR_HAVE_NO_MEMORY(r->data_file);
+
+	if (strlen(driver->info_3->configfile)) {
+		r->config_file	= talloc_asprintf(mem_ctx, "\\\\%s%s",
+				cservername, driver->info_3->configfile);
+	} else {
+		r->config_file	= talloc_strdup(mem_ctx, "");
+	}
+	W_ERROR_HAVE_NO_MEMORY(r->config_file);
+
+	if (strlen(driver->info_3->helpfile)) {
+		r->help_file	= talloc_asprintf(mem_ctx, "\\\\%s%s",
+				cservername, driver->info_3->helpfile);
+	} else {
+		r->help_file	= talloc_strdup(mem_ctx, "");
+	}
+	W_ERROR_HAVE_NO_MEMORY(r->help_file);
+
+	r->dependent_files = string_array_from_driver_info(mem_ctx,
+							   driver->info_3->dependentfiles,
+							   cservername);
+
+
+	r->monitor_name		= talloc_strdup(mem_ctx, driver->info_3->monitorname);
+	W_ERROR_HAVE_NO_MEMORY(r->monitor_name);
+	r->default_datatype	= talloc_strdup(mem_ctx, driver->info_3->defaultdatatype);
+	W_ERROR_HAVE_NO_MEMORY(r->default_datatype);
+
+	r->previous_names = string_array_from_driver_info(mem_ctx,
+							  NULL,
+							  cservername);
+
+	return WERR_OK;
+}
+
+/********************************************************************
  * fill a spoolss_DriverInfo6 struct
  ********************************************************************/
 
@@ -6673,6 +6740,10 @@ static WERROR enumprinterdrivers_level(TALLOC_CTX *mem_ctx,
 				result = fill_printer_driver_info3(info, &info[count+i].info3,
 								   &driver, servername);
 				break;
+			case 4:
+				result = fill_printer_driver_info4(info, &info[count+i].info4,
+								   &driver, servername);
+				break;
 			default:
 				result = WERR_UNKNOWN_LEVEL;
 				break;
@@ -6745,6 +6816,20 @@ static WERROR enumprinterdrivers_level3(TALLOC_CTX *mem_ctx,
 					info_p, count);
 }
 
+/****************************************************************************
+ Enumerates all printer drivers at level 4.
+****************************************************************************/
+
+static WERROR enumprinterdrivers_level4(TALLOC_CTX *mem_ctx,
+					const char *servername,
+					const char *architecture,
+					union spoolss_DriverInfo **info_p,
+					uint32_t *count)
+{
+	return enumprinterdrivers_level(mem_ctx, servername, architecture, 4,
+					info_p, count);
+}
+
 /****************************************************************
  _spoolss_EnumPrinterDrivers
 ****************************************************************/
@@ -6786,6 +6871,11 @@ WERROR _spoolss_EnumPrinterDrivers(pipes_struct *p,
 		break;
 	case 3:
 		result = enumprinterdrivers_level3(p->mem_ctx, cservername,
+						   r->in.environment,
+						   r->out.info, r->out.count);
+		break;
+	case 4:
+		result = enumprinterdrivers_level4(p->mem_ctx, cservername,
 						   r->in.environment,
 						   r->out.info, r->out.count);
 		break;
