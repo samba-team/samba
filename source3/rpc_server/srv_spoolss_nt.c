@@ -6609,6 +6609,92 @@ WERROR _spoolss_SetJob(pipes_struct *p,
 }
 
 /****************************************************************************
+ Enumerates all printer drivers by level.
+****************************************************************************/
+
+static WERROR enumprinterdrivers_level(TALLOC_CTX *mem_ctx,
+				       const char *servername,
+				       const char *architecture,
+				       uint32_t level,
+				       union spoolss_DriverInfo **info_p,
+				       uint32_t *count_p)
+{
+	int i;
+	int ndrivers;
+	uint32_t version;
+	fstring *list = NULL;
+	NT_PRINTER_DRIVER_INFO_LEVEL driver;
+	union spoolss_DriverInfo *info = NULL;
+	uint32_t count = 0;
+	WERROR result = WERR_OK;
+
+	*count_p = 0;
+	*info_p = NULL;
+
+	for (version=0; version<DRIVER_MAX_VERSION; version++) {
+		list = NULL;
+		ndrivers = get_ntdrivers(&list, architecture, version);
+		DEBUGADD(4,("we have:[%d] drivers in environment [%s] and version [%d]\n",
+			ndrivers, architecture, version));
+
+		if (ndrivers == -1) {
+			result = WERR_NOMEM;
+			goto out;
+		}
+
+		if (ndrivers != 0) {
+			info = TALLOC_REALLOC_ARRAY(mem_ctx, info,
+						    union spoolss_DriverInfo,
+						    count + ndrivers);
+			if (!info) {
+				DEBUG(0,("enumprinterdrivers_level1: "
+					"failed to enlarge driver info buffer!\n"));
+				result = WERR_NOMEM;
+				goto out;
+			}
+		}
+
+		for (i=0; i<ndrivers; i++) {
+			DEBUGADD(5,("\tdriver: [%s]\n", list[i]));
+			ZERO_STRUCT(driver);
+			result = get_a_printer_driver(&driver, 3, list[i],
+						      architecture, version);
+			if (!W_ERROR_IS_OK(result)) {
+				goto out;
+			}
+
+			switch (level) {
+			default:
+				result = WERR_UNKNOWN_LEVEL;
+				break;
+			}
+
+			if (!W_ERROR_IS_OK(result)) {
+				free_a_printer_driver(driver, 3);
+				goto out;
+			}
+			free_a_printer_driver(driver, 3);
+		}
+
+		count += ndrivers;
+		SAFE_FREE(list);
+	}
+
+ out:
+	SAFE_FREE(list);
+
+	if (!W_ERROR_IS_OK(result)) {
+		TALLOC_FREE(info);
+		return result;
+	}
+
+	*info_p = info;
+	*count_p = count;
+
+	return WERR_OK;
+}
+
+/****************************************************************************
  Enumerates all printer drivers at level 1.
 ****************************************************************************/
 
