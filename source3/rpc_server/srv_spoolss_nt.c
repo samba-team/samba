@@ -8085,6 +8085,7 @@ WERROR _spoolss_AddForm(pipes_struct *p,
 	int snum;
 	WERROR status = WERR_OK;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
+	SE_PRIV se_printop = SE_PRINT_OPERATOR;
 
 	int count=0;
 	nt_forms_struct *list=NULL;
@@ -8111,10 +8112,17 @@ WERROR _spoolss_AddForm(pipes_struct *p,
 			goto done;
 	}
 
-	if ( !(Printer->access_granted & (PRINTER_ACCESS_ADMINISTER|SERVER_ACCESS_ADMINISTER)) ) {
-		DEBUG(2,("_spoolss_addform: denied by handle permissions.\n"));
-		status = WERR_ACCESS_DENIED;
-		goto done;
+	/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
+	   and not a printer admin, then fail */
+
+	if ((p->server_info->utok.uid != 0) &&
+	     !user_has_privileges(p->server_info->ptok, &se_printop) &&
+	     !token_contains_name_in_list(uidtoname(p->server_info->utok.uid),
+					  NULL, NULL,
+					  p->server_info->ptok,
+					  lp_printer_admin(snum))) {
+		DEBUG(2,("_spoolss_Addform: denied by insufficient permissions.\n"));
+		return WERR_ACCESS_DENIED;
 	}
 
 	/* can't add if builtin */
@@ -8163,6 +8171,7 @@ WERROR _spoolss_DeleteForm(pipes_struct *p,
 	int snum;
 	WERROR status = WERR_OK;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
+	SE_PRIV se_printop = SE_PRINT_OPERATOR;
 
 	DEBUG(5,("_spoolss_DeleteForm\n"));
 
@@ -8184,11 +8193,16 @@ WERROR _spoolss_DeleteForm(pipes_struct *p,
 			goto done;
 	}
 
-	if ( !(Printer->access_granted & (PRINTER_ACCESS_ADMINISTER|SERVER_ACCESS_ADMINISTER)) ) {
-		DEBUG(2,("_spoolss_DeleteForm: denied by handle permissions.\n"));
-		status = WERR_ACCESS_DENIED;
-		goto done;
+	if ((p->server_info->utok.uid != 0) &&
+	     !user_has_privileges(p->server_info->ptok, &se_printop) &&
+	     !token_contains_name_in_list(uidtoname(p->server_info->utok.uid),
+					  NULL, NULL,
+					  p->server_info->ptok,
+					  lp_printer_admin(snum))) {
+		DEBUG(2,("_spoolss_DeleteForm: denied by insufficient permissions.\n"));
+		return WERR_ACCESS_DENIED;
 	}
+
 
 	/* can't delete if builtin */
 
@@ -8229,6 +8243,7 @@ WERROR _spoolss_SetForm(pipes_struct *p,
 	int snum;
 	WERROR status = WERR_OK;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
+	SE_PRIV se_printop = SE_PRINT_OPERATOR;
 
 	int count=0;
 	nt_forms_struct *list=NULL;
@@ -8254,10 +8269,17 @@ WERROR _spoolss_SetForm(pipes_struct *p,
 			goto done;
 	}
 
-	if ( !(Printer->access_granted & (PRINTER_ACCESS_ADMINISTER|SERVER_ACCESS_ADMINISTER)) ) {
-		DEBUG(2,("_spoolss_SetForm: denied by handle permissions\n"));
-		status = WERR_ACCESS_DENIED;
-		goto done;
+	/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
+	   and not a printer admin, then fail */
+
+	if ((p->server_info->utok.uid != 0) &&
+	     !user_has_privileges(p->server_info->ptok, &se_printop) &&
+	     !token_contains_name_in_list(uidtoname(p->server_info->utok.uid),
+					  NULL, NULL,
+					  p->server_info->ptok,
+					  lp_printer_admin(snum))) {
+		DEBUG(2,("_spoolss_Setform: denied by insufficient permissions.\n"));
+		return WERR_ACCESS_DENIED;
 	}
 
 	/* can't set if builtin */
