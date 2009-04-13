@@ -6664,6 +6664,11 @@ static WERROR enumprinterdrivers_level(TALLOC_CTX *mem_ctx,
 			}
 
 			switch (level) {
+			case 1:
+				result = fill_printer_driver_info1(info, &info[count+i].info1,
+								   &driver, servername,
+								   architecture);
+				break;
 			default:
 				result = WERR_UNKNOWN_LEVEL;
 				break;
@@ -6704,73 +6709,8 @@ static WERROR enumprinterdrivers_level1(TALLOC_CTX *mem_ctx,
 					union spoolss_DriverInfo **info_p,
 					uint32_t *count)
 {
-	int i;
-	int ndrivers;
-	uint32_t version;
-	fstring *list = NULL;
-	NT_PRINTER_DRIVER_INFO_LEVEL driver;
-	union spoolss_DriverInfo *info = NULL;
-	WERROR result = WERR_OK;
-
-	*count = 0;
-
-	for (version=0; version<DRIVER_MAX_VERSION; version++) {
-		list = NULL;
-		ndrivers = get_ntdrivers(&list, architecture, version);
-		DEBUGADD(4,("we have:[%d] drivers in environment [%s] and version [%d]\n",
-			ndrivers, architecture, version));
-
-		if (ndrivers == -1) {
-			result = WERR_NOMEM;
-			goto out;
-		}
-
-		if (ndrivers != 0) {
-			info = TALLOC_REALLOC_ARRAY(mem_ctx, info,
-						    union spoolss_DriverInfo,
-						    *count + ndrivers);
-			if (!info) {
-				DEBUG(0,("enumprinterdrivers_level1: "
-					"failed to enlarge driver info buffer!\n"));
-				result = WERR_NOMEM;
-				goto out;
-			}
-		}
-
-		for (i=0; i<ndrivers; i++) {
-			DEBUGADD(5,("\tdriver: [%s]\n", list[i]));
-			ZERO_STRUCT(driver);
-			result = get_a_printer_driver(&driver, 3, list[i],
-						      architecture, version);
-			if (!W_ERROR_IS_OK(result)) {
-				goto out;
-			}
-			result = fill_printer_driver_info1(info, &info[*count+i].info1,
-							   &driver, servername,
-							   architecture);
-			if (!W_ERROR_IS_OK(result)) {
-				free_a_printer_driver(driver, 3);
-				goto out;
-			}
-			free_a_printer_driver(driver, 3);
-		}
-
-		*count += ndrivers;
-		SAFE_FREE(list);
-	}
-
- out:
-	SAFE_FREE(list);
-
-	if (!W_ERROR_IS_OK(result)) {
-		TALLOC_FREE(info);
-		*count = 0;
-		return result;
-	}
-
-	*info_p = info;
-
-	return WERR_OK;
+	return enumprinterdrivers_level(mem_ctx, servername, architecture, 1,
+					info_p, count);
 }
 
 /****************************************************************************
