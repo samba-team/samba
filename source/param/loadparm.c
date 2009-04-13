@@ -4566,7 +4566,7 @@ static void init_printer_values(struct service *pService)
 		string_set(&pService->szLpqcommand, "vlp lpq %p");
 		string_set(&pService->szLprmcommand, "vlp lprm %p %j");
 		string_set(&pService->szLppausecommand, "vlp lppause %p %j");
-		string_set(&pService->szLpresumecommand, "vlp lpresum %p %j");
+		string_set(&pService->szLpresumecommand, "vlp lpresume %p %j");
 		string_set(&pService->szQueuepausecommand, "vlp queuepause %p");
 		string_set(&pService->szQueueresumecommand, "vlp queueresume %p");
 		break;
