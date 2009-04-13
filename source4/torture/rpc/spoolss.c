@@ -1816,10 +1816,17 @@ static bool test_EnumPrinters_old(struct torture_context *tctx, struct dcerpc_pi
 
 		for (j=0;j<count;j++) {
 			if (r.in.level == 1) {
-				/* the names appear to be comma-separated name lists? */
-				char *name = talloc_strdup(tctx, info[j].info1.name);
-				char *comma = strchr(name, ',');
-				if (comma) *comma = 0;
+				char *unc = talloc_strdup(tctx, info[j].info1.name);
+				char *slash, *name;
+				name = unc;
+				if (unc[0] == '\\' && unc[1] == '\\') {
+					unc +=2;
+				}
+				slash = strchr(unc, '\\');
+				if (slash) {
+					slash++;
+					name = slash;
+				}
 				if (!test_OpenPrinter(tctx, p, name)) {
 					ret = false;
 				}
