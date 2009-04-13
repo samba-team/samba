@@ -310,6 +310,7 @@ void ndr_print_spoolss_DriverOSVersion(struct ndr_print *ndr, const char *name, 
 void ndr_print_spoolss_AddDriverInfo2(struct ndr_print *ndr, const char *name, const struct spoolss_AddDriverInfo2 *r);
 void ndr_print_spoolss_AddDriverInfo3(struct ndr_print *ndr, const char *name, const struct spoolss_AddDriverInfo3 *r);
 void ndr_print_spoolss_AddDriverInfo4(struct ndr_print *ndr, const char *name, const struct spoolss_AddDriverInfo4 *r);
+void ndr_print_spoolss_DriverAttributes(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_spoolss_AddDriverInfo6(struct ndr_print *ndr, const char *name, const struct spoolss_AddDriverInfo6 *r);
 void ndr_print_spoolss_AddDriverInfo8(struct ndr_print *ndr, const char *name, const struct spoolss_AddDriverInfo8 *r);
 void ndr_print_spoolss_AddDriverInfo(struct ndr_print *ndr, const char *name, const union spoolss_AddDriverInfo *r);

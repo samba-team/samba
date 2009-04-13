@@ -8372,6 +8372,28 @@ _PUBLIC_ void ndr_print_spoolss_AddDriverInfo4(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_spoolss_DriverAttributes(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_DriverAttributes(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_DriverAttributes(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_DRIVER_PACKAGE_AWARE", PRINTER_DRIVER_PACKAGE_AWARE, r);
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_spoolss_AddDriverInfo6(struct ndr_push *ndr, int ndr_flags, const struct spoolss_AddDriverInfo6 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -11255,7 +11277,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_DriverInfo5(struct ndr_push *ndr, in
 			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->config_file));
 			ndr->flags = _flags_save_string;
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->driver_attributes));
+		NDR_CHECK(ndr_push_spoolss_DriverAttributes(ndr, NDR_SCALARS, r->driver_attributes));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->config_version));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->driver_version));
 	}
@@ -11384,7 +11406,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_DriverInfo5(struct ndr_pull *ndr, in
 			}
 			ndr->flags = _flags_save_string;
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->driver_attributes));
+		NDR_CHECK(ndr_pull_spoolss_DriverAttributes(ndr, NDR_SCALARS, &r->driver_attributes));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->config_version));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->driver_version));
 	}
@@ -11503,7 +11525,7 @@ _PUBLIC_ void ndr_print_spoolss_DriverInfo5(struct ndr_print *ndr, const char *n
 		ndr_print_string(ndr, "config_file", r->config_file);
 	}
 	ndr->depth--;
-	ndr_print_uint32(ndr, "driver_attributes", r->driver_attributes);
+	ndr_print_spoolss_DriverAttributes(ndr, "driver_attributes", r->driver_attributes);
 	ndr_print_uint32(ndr, "config_version", r->config_version);
 	ndr_print_uint32(ndr, "driver_version", r->driver_version);
 	ndr->depth--;
