@@ -775,6 +775,9 @@ struct spoolss_AddDriverInfo4 {
 	struct spoolss_StringArray *previous_names;/* [unique] */
 };
 
+/* bitmap spoolss_DriverAttributes */
+#define PRINTER_DRIVER_PACKAGE_AWARE ( 0x00000002 )
+
 struct spoolss_AddDriverInfo5 {
 	enum spoolss_DriverOSVersion version;
 	const char *driver_name;/* [unique,charset(UTF16)] */
