@@ -1122,6 +1122,7 @@ static bool test_AddJob(struct torture_context *tctx,
 	r.in.handle = handle;
 	r.in.offered = 0;
 	r.out.needed = &needed;
+	r.in.buffer = r.out.buffer = NULL;
 
 	torture_comment(tctx, "Testing AddJob\n");
 
@@ -1381,6 +1382,7 @@ static bool test_GetPrinterDataEx(struct torture_context *tctx,
 	r.in.offered = 0;
 	r.out.type = &type;
 	r.out.needed = &needed;
+	r.out.buffer = NULL;
 
 	torture_comment(tctx, "Testing GetPrinterDataEx\n");
 
