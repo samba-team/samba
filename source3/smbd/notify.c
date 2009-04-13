@@ -81,7 +81,7 @@ static bool notify_marshall_changes(int num_changes,
 
 		c = &changes[i];
 
-		if (!convert_string_allocate(talloc_tos(), CH_UNIX, CH_UTF16LE,
+		if (!convert_string_talloc(talloc_tos(), CH_UNIX, CH_UTF16LE,
 			c->name, strlen(c->name)+1, &uni_name.buffer,
 			&namelen, True) || (uni_name.buffer == NULL)) {
 			goto fail;
