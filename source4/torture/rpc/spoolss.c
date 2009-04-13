@@ -1101,7 +1101,38 @@ static bool test_SetJob(struct torture_context *tctx,
 	r.in.ctr	= NULL;
 	r.in.command	= command;
 
-	torture_comment(tctx, "Testing SetJob\n");
+	switch (command) {
+	case SPOOLSS_JOB_CONTROL_PAUSE:
+		torture_comment(tctx, "Testing SetJob: SPOOLSS_JOB_CONTROL_PAUSE\n");
+		break;
+	case SPOOLSS_JOB_CONTROL_RESUME:
+		torture_comment(tctx, "Testing SetJob: SPOOLSS_JOB_CONTROL_RESUME\n");
+		break;
+	case SPOOLSS_JOB_CONTROL_CANCEL:
+		torture_comment(tctx, "Testing SetJob: SPOOLSS_JOB_CONTROL_CANCEL\n");
+		break;
+	case SPOOLSS_JOB_CONTROL_RESTART:
+		torture_comment(tctx, "Testing SetJob: SPOOLSS_JOB_CONTROL_RESTART\n");
+		break;
+	case SPOOLSS_JOB_CONTROL_DELETE:
+		torture_comment(tctx, "Testing SetJob: SPOOLSS_JOB_CONTROL_DELETE\n");
+		break;
+	case SPOOLSS_JOB_CONTROL_SEND_TO_PRINTER:
+		torture_comment(tctx, "Testing SetJob: SPOOLSS_JOB_CONTROL_SEND_TO_PRINTER\n");
+		break;
+	case SPOOLSS_JOB_CONTROL_LAST_PAGE_EJECTED:
+		torture_comment(tctx, "Testing SetJob: SPOOLSS_JOB_CONTROL_LAST_PAGE_EJECTED\n");
+		break;
+	case SPOOLSS_JOB_CONTROL_RETAIN:
+		torture_comment(tctx, "Testing SetJob: SPOOLSS_JOB_CONTROL_RETAIN\n");
+		break;
+	case SPOOLSS_JOB_CONTROL_RELEASE:
+		torture_comment(tctx, "Testing SetJob: SPOOLSS_JOB_CONTROL_RELEASE\n");
+		break;
+	default:
+		torture_comment(tctx, "Testing SetJob\n");
+		break;
+	}
 
 	status = dcerpc_spoolss_SetJob(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "SetJob failed");
