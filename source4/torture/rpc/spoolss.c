@@ -1064,28 +1064,43 @@ static bool test_GetJob(struct torture_context *tctx,
 	NTSTATUS status;
 	struct spoolss_GetJob r;
 	uint32_t needed;
+	uint32_t levels[] = {1, 2 /* 3, 4 */};
+	uint32_t i;
 
 	r.in.handle = handle;
 	r.in.job_id = job_id;
-	r.in.level = 1;
+	r.in.level = 0;
 	r.in.buffer = NULL;
 	r.in.offered = 0;
 	r.out.needed = &needed;
 
-	torture_comment(tctx, "Testing GetJob\n");
+	torture_comment(tctx, "Testing GetJob level %d\n", r.in.level);
 
 	status = dcerpc_spoolss_GetJob(p, tctx, &r);
-	torture_assert_ntstatus_ok(tctx, status, "GetJob failed");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_UNKNOWN_LEVEL, "Unexpected return code");
 
-	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-		DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
-		data_blob_clear(&blob);
-		r.in.buffer = &blob;
-		r.in.offered = needed;
+	for (i = 0; i < ARRAY_SIZE(levels); i++) {
+
+		torture_comment(tctx, "Testing GetJob level %d\n", r.in.level);
+
+		r.in.level = levels[i];
+		r.in.offered = 0;
 
 		status = dcerpc_spoolss_GetJob(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "GetJob failed");
 
+		if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+			DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
+			data_blob_clear(&blob);
+			r.in.buffer = &blob;
+			r.in.offered = needed;
+
+			status = dcerpc_spoolss_GetJob(p, tctx, &r);
+			torture_assert_ntstatus_ok(tctx, status, "GetJob failed");
+
+		}
 		torture_assert(tctx, r.out.info, "No job info returned");
+		torture_assert_werr_ok(tctx, r.out.result, "GetJob failed");
 	}
 
 	return true;
