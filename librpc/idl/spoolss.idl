@@ -836,6 +836,10 @@ import "misc.idl", "security.idl", "winreg.idl";
 		spoolss_StringArray *previous_names;
 	} spoolss_AddDriverInfo4;
 
+	typedef [bitmap32bit] bitmap {
+		PRINTER_DRIVER_PACKAGE_AWARE = 0x00000002
+	} spoolss_DriverAttributes;
+
 	typedef struct {
 		spoolss_DriverOSVersion version;
 		[string,charset(UTF16)] uint16 *driver_name;
@@ -843,7 +847,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[string,charset(UTF16)] uint16 *driver_path;
 		[string,charset(UTF16)] uint16 *data_file;
 		[string,charset(UTF16)] uint16 *config_file;
-		uint32 driver_attributes;
+		spoolss_DriverAttributes driver_attributes;
 		uint32 config_version;
 		uint32 driver_version;
 	} spoolss_AddDriverInfo5;
@@ -968,7 +972,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[relative] nstring *driver_path;
 		[relative] nstring *data_file;
 		[relative] nstring *config_file;
-		uint32 driver_attributes;
+		spoolss_DriverAttributes driver_attributes;
 		uint32 config_version;
 		uint32 driver_version;
 	} spoolss_DriverInfo5;
