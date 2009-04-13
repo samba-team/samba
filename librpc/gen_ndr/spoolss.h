@@ -290,8 +290,8 @@ struct spoolss_DeviceMode {
 
 struct spoolss_PrinterInfo1 {
 	uint32_t flags;
-	const char * name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * description;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * comment;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 }/* [gensize,public] */;
 
@@ -636,8 +636,8 @@ struct spoolss_SetPrinterInfo0 {
 
 struct spoolss_SetPrinterInfo1 {
 	uint32_t flags;
-	const char *name;/* [unique,charset(UTF16)] */
 	const char *description;/* [unique,charset(UTF16)] */
+	const char *name;/* [unique,charset(UTF16)] */
 	const char *comment;/* [unique,charset(UTF16)] */
 };
 
