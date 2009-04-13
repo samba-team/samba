@@ -1658,8 +1658,10 @@ static bool test_OpenPrinter(struct torture_context *tctx,
 		ret = false;
 	}
 
-	if (!test_SecondaryClosePrinter(tctx, p, &handle)) {
-		ret = false;
+	if (!torture_setting_bool(tctx, "samba3", false)) {
+		if (!test_SecondaryClosePrinter(tctx, p, &handle)) {
+			ret = false;
+		}
 	}
 
 	if (!test_ClosePrinter(tctx, p, &handle)) {
@@ -1758,8 +1760,10 @@ static bool test_OpenPrinterEx(struct torture_context *tctx,
 		ret = false;
 	}
 
-	if (!test_SecondaryClosePrinter(tctx, p, &handle)) {
-		ret = false;
+	if (!torture_setting_bool(tctx, "samba3", false)) {
+		if (!test_SecondaryClosePrinter(tctx, p, &handle)) {
+			ret = false;
+		}
 	}
 
 	if (!test_ClosePrinter(tctx, p, &handle)) {
