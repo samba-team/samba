@@ -250,8 +250,8 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	typedef [public,gensize] struct {
 		spoolss_EnumPrinterFlags flags;
-		[relative] nstring *name;
 		[relative] nstring *description;
+		[relative] nstring *name;
 		[relative] nstring *comment;
 	} spoolss_PrinterInfo1;
 
@@ -684,8 +684,8 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	typedef struct {
 		spoolss_EnumPrinterFlags flags;
-		[string,charset(UTF16)] uint16 *name;
 		[string,charset(UTF16)] uint16 *description;
+		[string,charset(UTF16)] uint16 *name;
 		[string,charset(UTF16)] uint16 *comment;
 	} spoolss_SetPrinterInfo1;
 
