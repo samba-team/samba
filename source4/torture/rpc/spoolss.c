@@ -1941,41 +1941,6 @@ static bool test_EnumPrinterDrivers_old(struct torture_context *tctx,
 	return true;
 }
 
-/** Test that makes sure that calling ReplyOpenPrinter()
- * on Samba 4 will cause an irpc broadcast call.
- */
-static bool test_ReplyOpenPrinter(struct torture_context *tctx, 
-				  struct dcerpc_pipe *pipe)
-{
-	struct spoolss_ReplyOpenPrinter r;
-	struct spoolss_ReplyClosePrinter s;
-	struct policy_handle h;
-
-	r.in.server_name = "earth";
-	r.in.printer_local = 2;
-	r.in.type = REG_DWORD;
-	r.in.bufsize = 0;
-	r.in.buffer = NULL;
-	r.out.handle = &h;
-
-	torture_assert_ntstatus_ok(tctx, 
-			dcerpc_spoolss_ReplyOpenPrinter(pipe, tctx, &r),
-			"spoolss_ReplyOpenPrinter call failed");
-
-	torture_assert_werr_ok(tctx, r.out.result, "error return code");
-
-	s.in.handle = &h;
-	s.out.handle = &h;
-
-	torture_assert_ntstatus_ok(tctx,
-			dcerpc_spoolss_ReplyClosePrinter(pipe, tctx, &s),
-			"spoolss_ReplyClosePrinter call failed");
-
-	torture_assert_werr_ok(tctx, r.out.result, "error return code");
-
-	return true;
-}
-
 bool torture_rpc_spoolss(struct torture_context *torture)
 {
 	NTSTATUS status;
@@ -2029,7 +1994,6 @@ bool torture_rpc_spoolss(struct torture_context *torture)
 	ret &= test_EnumPorts_old(torture, p);
 	ret &= test_EnumPrinters_old(torture, p);
 	ret &= test_EnumPrinterDrivers_old(torture, p);
-	ret &= test_ReplyOpenPrinter(torture, p);
 
 	return ret;
 }
