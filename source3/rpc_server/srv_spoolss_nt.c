@@ -4836,7 +4836,7 @@ static WERROR fill_printer_driver_info3(TALLOC_CTX *mem_ctx,
 	} else {
 		r->help_file	= talloc_strdup(mem_ctx, "");
 	}
-	W_ERROR_HAVE_NO_MEMORY(r->config_file);
+	W_ERROR_HAVE_NO_MEMORY(r->help_file);
 
 	r->monitor_name		= talloc_strdup(mem_ctx, driver->info_3->monitorname);
 	W_ERROR_HAVE_NO_MEMORY(r->monitor_name);
