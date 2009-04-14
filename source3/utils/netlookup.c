@@ -131,7 +131,7 @@ static struct con_struct *create_cs(struct net_context *c,
 	}
 
 	nt_status = rpccli_lsa_open_policy(cs->lsapipe, ctx, true,
-				SEC_RIGHTS_MAXIMUM_ALLOWED,
+				SEC_FLAG_MAXIMUM_ALLOWED,
 				&cs->pol);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {

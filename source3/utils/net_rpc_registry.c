@@ -383,7 +383,7 @@ static NTSTATUS rpc_registry_setvalue_internal(struct net_context *c,
 	struct registry_value value;
 
 	status = registry_openkey(mem_ctx, pipe_hnd, argv[0],
-				  SEC_RIGHTS_MAXIMUM_ALLOWED,
+				  SEC_FLAG_MAXIMUM_ALLOWED,
 				  &hive_hnd, &key_hnd);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "registry_openkey failed: %s\n",
@@ -455,7 +455,7 @@ static NTSTATUS rpc_registry_deletevalue_internal(struct net_context *c,
 	ZERO_STRUCT(valuename);
 
 	status = registry_openkey(mem_ctx, pipe_hnd, argv[0],
-				  SEC_RIGHTS_MAXIMUM_ALLOWED,
+				  SEC_FLAG_MAXIMUM_ALLOWED,
 				  &hive_hnd, &key_hnd);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "registry_openkey failed: %s\n",
@@ -516,7 +516,7 @@ static NTSTATUS rpc_registry_getvalue_internal(struct net_context *c,
 	ZERO_STRUCT(valuename);
 
 	status = registry_openkey(tmp_ctx, pipe_hnd, argv[0],
-				  SEC_RIGHTS_MAXIMUM_ALLOWED,
+				  SEC_FLAG_MAXIMUM_ALLOWED,
 				  &hive_hnd, &key_hnd);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "registry_openkey failed: %s\n",
@@ -657,7 +657,7 @@ static NTSTATUS rpc_registry_createkey_internal(struct net_context *c,
 	}
 
 	status = rpccli_winreg_Connect(pipe_hnd, mem_ctx, hive,
-				       SEC_RIGHTS_MAXIMUM_ALLOWED,
+				       SEC_FLAG_MAXIMUM_ALLOWED,
 				       &hive_hnd);
 	if (!(NT_STATUS_IS_OK(status))) {
 		return status;
@@ -727,7 +727,7 @@ static NTSTATUS rpc_registry_deletekey_internal(struct net_context *c,
 	}
 
 	status = rpccli_winreg_Connect(pipe_hnd, mem_ctx, hive,
-				       SEC_RIGHTS_MAXIMUM_ALLOWED,
+				       SEC_FLAG_MAXIMUM_ALLOWED,
 				       &hive_hnd);
 	if (!(NT_STATUS_IS_OK(status))) {
 		return status;

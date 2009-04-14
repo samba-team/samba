@@ -88,7 +88,7 @@ static NTSTATUS rpc_audit_get_internal(struct net_context *c,
 	}
 
 	result = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, true,
-					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					SEC_FLAG_MAXIMUM_ALLOWED,
 					&pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
@@ -170,7 +170,7 @@ static NTSTATUS rpc_audit_set_internal(struct net_context *c,
 	}
 
 	result = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, true,
-					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					SEC_FLAG_MAXIMUM_ALLOWED,
 					&pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
@@ -229,7 +229,7 @@ static NTSTATUS rpc_audit_enable_internal_ext(struct rpc_pipe_client *pipe_hnd,
 	union lsa_PolicyInformation *info = NULL;
 
 	result = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, true,
-					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					SEC_FLAG_MAXIMUM_ALLOWED,
 					&pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
@@ -314,7 +314,7 @@ static NTSTATUS rpc_audit_list_internal(struct net_context *c,
 	int i;
 
 	result = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, true,
-					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					SEC_FLAG_MAXIMUM_ALLOWED,
 					&pol);
 
 	if (!NT_STATUS_IS_OK(result)) {

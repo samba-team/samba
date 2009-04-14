@@ -211,7 +211,7 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 
 
 	CHECK_RPC_ERR(rpccli_lsa_open_policy(pipe_hnd, mem_ctx, true,
-					  SEC_RIGHTS_MAXIMUM_ALLOWED,
+					  SEC_FLAG_MAXIMUM_ALLOWED,
 					  &lsa_pol),
 		      "error opening lsa policy handle");
 
@@ -326,7 +326,7 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 	CHECK_RPC_ERR_DEBUG(
 		rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
 				     &domain_pol,
-				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     SEC_FLAG_MAXIMUM_ALLOWED,
 				     user_rid,
 				     &user_pol),
 		("could not re-open existing user %s: %s\n",
