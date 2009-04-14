@@ -26,6 +26,8 @@
 #include "torture/rpc/rpc.h"
 #include "param/param.h"
 
+#define TORTURE_DEFAULT_SERVICE "NetLogon"
+
 static bool test_OpenSCManager(struct dcerpc_pipe *p, struct torture_context *tctx, struct policy_handle *h)
 {
 	struct svcctl_OpenSCManagerW r;
@@ -85,7 +87,7 @@ static bool test_QueryServiceStatus(struct torture_context *tctx,
 	if (!test_OpenSCManager(p, tctx, &h))
 		return false;
 
-	if (!test_OpenService(p, tctx, &h, "Netlogon", &s))
+	if (!test_OpenService(p, tctx, &h, TORTURE_DEFAULT_SERVICE, &s))
 		return false;
 
 	r.in.handle = &s;
@@ -118,7 +120,7 @@ static bool test_QueryServiceStatusEx(struct torture_context *tctx, struct dcerp
 	if (!test_OpenSCManager(p, tctx, &h))
 		return false;
 
-	if (!test_OpenService(p, tctx, &h, "Netlogon", &s))
+	if (!test_OpenService(p, tctx, &h, TORTURE_DEFAULT_SERVICE, &s))
 		return false;
 
 	buffer = talloc(tctx, uint8_t);
@@ -165,7 +167,7 @@ static bool test_QueryServiceConfigW(struct torture_context *tctx,
 	if (!test_OpenSCManager(p, tctx, &h))
 		return false;
 
-	if (!test_OpenService(p, tctx, &h, "Netlogon", &s))
+	if (!test_OpenService(p, tctx, &h, TORTURE_DEFAULT_SERVICE, &s))
 		return false;
 
 	r.in.handle = &s;
@@ -207,7 +209,7 @@ static bool test_QueryServiceConfig2W(struct torture_context *tctx, struct dcerp
 	if (!test_OpenSCManager(p, tctx, &h))
 		return false;
 
-	if (!test_OpenService(p, tctx, &h, "Netlogon", &s))
+	if (!test_OpenService(p, tctx, &h, TORTURE_DEFAULT_SERVICE, &s))
 		return false;
 
 	buffer = talloc(tctx, uint8_t);
@@ -270,7 +272,7 @@ static bool test_QueryServiceObjectSecurity(struct torture_context *tctx,
 	if (!test_OpenSCManager(p, tctx, &h))
 		return false;
 
-	if (!test_OpenService(p, tctx, &h, "Netlogon", &s))
+	if (!test_OpenService(p, tctx, &h, TORTURE_DEFAULT_SERVICE, &s))
 		return false;
 
 	r.in.handle = &s;
@@ -403,7 +405,7 @@ static bool test_EnumDependentServicesW(struct torture_context *tctx,
 	if (!test_OpenSCManager(p, tctx, &h))
 		return false;
 
-	if (!test_OpenService(p, tctx, &h, "Netlogon", &s))
+	if (!test_OpenService(p, tctx, &h, TORTURE_DEFAULT_SERVICE, &s))
 		return false;
 
 	r.in.service = &s;
