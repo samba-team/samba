@@ -27,7 +27,7 @@
 #include "librpc/gen_ndr/ndr_notify.h"
 
 struct notify_context {
-	struct db_context *db;
+	struct db_context *db_recursive;
 	struct server_id server;
 	struct messaging_context *messaging_ctx;
 	struct notify_list *list;
@@ -91,10 +91,10 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx, struct server_id server,
 		return NULL;
 	}
 
-	notify->db = db_open(notify, lock_path("notify.tdb"),
-				  0, TDB_SEQNUM|TDB_CLEAR_IF_FIRST,
-				  O_RDWR|O_CREAT, 0644);
-	if (notify->db == NULL) {
+	notify->db_recursive = db_open(notify, lock_path("notify.tdb"),
+				       0, TDB_SEQNUM|TDB_CLEAR_IF_FIRST,
+				       O_RDWR|O_CREAT, 0644);
+	if (notify->db_recursive == NULL) {
 		talloc_free(notify);
 		return NULL;
 	}
@@ -103,7 +103,8 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx, struct server_id server,
 	notify->messaging_ctx = messaging_ctx;
 	notify->list = NULL;
 	notify->array = NULL;
-	notify->seqnum = notify->db->get_seqnum(notify->db);
+	notify->seqnum = notify->db_recursive->get_seqnum(
+		notify->db_recursive);
 	notify->key = string_term_tdb_data(NOTIFY_KEY);
 
 	talloc_set_destructor(notify, notify_destructor);
@@ -123,7 +124,8 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx, struct server_id server,
 */
 static NTSTATUS notify_fetch_locked(struct notify_context *notify, struct db_record **rec)
 {
-	*rec = notify->db->fetch_locked(notify->db, notify, notify->key);
+	*rec = notify->db_recursive->fetch_locked(notify->db_recursive,
+						  notify, notify->key);
 	if (*rec == NULL) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -140,7 +142,7 @@ static NTSTATUS notify_load(struct notify_context *notify, struct db_record *rec
 	NTSTATUS status;
 	int seqnum;
 
-	seqnum = notify->db->get_seqnum(notify->db);
+	seqnum = notify->db_recursive->get_seqnum(notify->db_recursive);
 
 	if (seqnum == notify->seqnum && notify->array != NULL) {
 		return NT_STATUS_OK;
@@ -153,7 +155,8 @@ static NTSTATUS notify_load(struct notify_context *notify, struct db_record *rec
 	NT_STATUS_HAVE_NO_MEMORY(notify->array);
 
 	if (!rec) {
-		if (notify->db->fetch(notify->db, notify, notify->key, &dbuf) != 0) {
+		if (notify->db_recursive->fetch(notify->db_recursive, notify,
+						notify->key, &dbuf) != 0) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 	} else {
