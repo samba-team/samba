@@ -46,7 +46,7 @@ cleanup() {
 	rmdir $tempdir
 }
 
-cflags="-I. -I./../lib/replace -Iinclude"
+cflags="-I. -I../ -I./../lib/replace -Iinclude"
 ${CC:-gcc} -m32 $RPM_OPT_FLAGS $CFLAGS -o $tempdir/wb_pad_32 $cflags $tempdir/wb_pad.c
 if [ $? -ne 0 ]; then
 	cleanup
