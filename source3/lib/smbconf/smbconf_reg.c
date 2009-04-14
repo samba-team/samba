@@ -567,7 +567,7 @@ static WERROR smbconf_reg_init(struct smbconf_ctx *ctx, const char *path)
 	}
 
 	werr = reg_open_path(ctx, ctx->path,
-			     SEC_RIGHTS_ENUM_SUBKEYS | REG_KEY_WRITE,
+			     KEY_ENUMERATE_SUB_KEYS | REG_KEY_WRITE,
 			     token, &rpd(ctx)->base_key);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;

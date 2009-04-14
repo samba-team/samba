@@ -45,7 +45,7 @@ static NTSTATUS cmd_testme(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	}
 
 	status = rpccli_lsa_open_policy(lsa_pipe, mem_ctx, False,
-					SEC_RIGHTS_QUERY_VALUE, &pol);
+					KEY_QUERY_VALUE, &pol);
 
 	if (!NT_STATUS_IS_OK(status))
 		goto done;

@@ -14,6 +14,10 @@ import "lsa.idl", "security.idl";
 {
 	typedef bitmap security_secinfo security_secinfo;
 
+	/*
+	 * Access Bits for registry ACLS
+	 */
+
 	typedef [bitmap32bit] bitmap {
 		KEY_QUERY_VALUE 		= 0x00001,
 		KEY_SET_VALUE 			= 0x00002,
@@ -24,6 +28,22 @@ import "lsa.idl", "security.idl";
 		KEY_WOW64_64KEY 		= 0x00100,
 		KEY_WOW64_32KEY 		= 0x00200
 	} winreg_AccessMask;
+
+	const int REG_KEY_READ = (	STANDARD_RIGHTS_READ_ACCESS	|
+					KEY_QUERY_VALUE			|
+					KEY_ENUMERATE_SUB_KEYS 		|
+					KEY_NOTIFY);
+
+	const int REG_KEY_EXECUTE = REG_KEY_READ;
+
+	const int REG_KEY_WRITE = (	STANDARD_RIGHTS_WRITE_ACCESS	|
+					KEY_SET_VALUE	 		|
+					KEY_CREATE_SUB_KEY);
+
+	const int REG_KEY_ALL = (	STANDARD_RIGHTS_REQUIRED_ACCESS |
+					REG_KEY_READ 			|
+					REG_KEY_WRITE 			|
+					KEY_CREATE_LINK);
 
 	typedef [public,v1_enum] enum {
 		REG_NONE                       = 0,
