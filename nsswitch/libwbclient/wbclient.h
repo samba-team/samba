@@ -495,7 +495,7 @@ struct wbcDomainControllerInfoEx {
 /**
  * @brief Free library allocated memory
  *
- * @param *p Pointer to free
+ * @param * Pointer to free
  *
  * @return void
  **/
@@ -520,7 +520,7 @@ wbcErr wbcSidToString(const struct wbcDomainSid *sid,
 /**
  * @brief Convert a character string to a binary SID
  *
- * @param *str          Character string in the form of S-...
+ * @param *sid_string   Character string in the form of S-...
  * @param sid           Resulting binary SID
  *
  * @return #wbcErr
@@ -546,7 +546,7 @@ wbcErr wbcGuidToString(const struct wbcGuid *guid,
 /**
  * @brief Convert a character string to a binary GUID
  *
- * @param *str          Character string
+ * @param *guid_string  Character string
  * @param guid          Resulting binary GUID
  *
  * @return #wbcErr
@@ -572,7 +572,7 @@ wbcErr wbcInterfaceDetails(struct wbcInterfaceDetails **details);
 /**
  * @brief Convert a domain and name to SID
  *
- * @param domain      Domain name (possibly "")
+ * @param dom_name    Domain name (possibly "")
  * @param name        User or group name
  * @param *sid        Pointer to the resolved domain SID
  * @param *name_type  Pointer to the SID type
@@ -588,9 +588,9 @@ wbcErr wbcLookupName(const char *dom_name,
  * @brief Convert a SID to a domain and name
  *
  * @param *sid        Pointer to the domain SID to be resolved
- * @param pdomain     Resolved Domain name (possibly "")
- * @param pname       Resolved User or group name
- * @param *pname_type Pointer to the resolved SID type
+ * @param domain     Resolved Domain name (possibly "")
+ * @param name       Resolved User or group name
+ * @param *name_type Pointer to the resolved SID type
  *
  * @return #wbcErr
  **/
@@ -959,7 +959,7 @@ wbcErr wbcGetGroups(const char *account,
  * @brief Lookup the current status of a trusted domain
  *
  * @param domain      Domain to query
- * @param *dinfo       Pointer to returned domain_info struct
+ * @param *info       Pointer to returned domain_info struct
  *
  * @return #wbcErr
  **/
