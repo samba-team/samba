@@ -557,9 +557,6 @@ struct tdgram_bsd {
 	void (*readable_handler)(void *private_data);
 	void *writeable_private;
 	void (*writeable_handler)(void *private_data);
-
-	struct tevent_req *read_req;
-	struct tevent_req *write_req;
 };
 
 static void tdgram_bsd_fde_handler(struct tevent_context *ev,
@@ -698,7 +695,6 @@ static int tdgram_bsd_recvfrom_destructor(struct tdgram_bsd_recvfrom_state *stat
 	struct tdgram_bsd *bsds = tdgram_context_data(state->dgram,
 				  struct tdgram_bsd);
 
-	bsds->read_req = NULL;
 	tdgram_bsd_set_readable_handler(bsds, NULL, NULL, NULL);
 
 	return 0;
@@ -725,12 +721,6 @@ static struct tevent_req *tdgram_bsd_recvfrom_send(TALLOC_CTX *mem_ctx,
 	state->buf	= NULL;
 	state->len	= 0;
 	state->src	= NULL;
-
-	if (bsds->read_req) {
-		tevent_req_error(req, EBUSY);
-		goto post;
-	}
-	bsds->read_req = req;
 
 	talloc_set_destructor(state, tdgram_bsd_recvfrom_destructor);
 
@@ -876,8 +866,8 @@ static int tdgram_bsd_sendto_destructor(struct tdgram_bsd_sendto_state *state)
 	struct tdgram_bsd *bsds = tdgram_context_data(state->dgram,
 				  struct tdgram_bsd);
 
-	bsds->write_req = NULL;
 	tdgram_bsd_set_writeable_handler(bsds, NULL, NULL, NULL);
+
 	return 0;
 }
 
@@ -906,12 +896,6 @@ static struct tevent_req *tdgram_bsd_sendto_send(TALLOC_CTX *mem_ctx,
 	state->len	= len;
 	state->dst	= dst;
 	state->ret	= -1;
-
-	if (bsds->write_req) {
-		tevent_req_error(req, EBUSY);
-		goto post;
-	}
-	bsds->write_req = req;
 
 	talloc_set_destructor(state, tdgram_bsd_sendto_destructor);
 
@@ -1024,11 +1008,6 @@ static struct tevent_req *tdgram_bsd_disconnect_send(TALLOC_CTX *mem_ctx,
 				struct tdgram_bsd_disconnect_state);
 	if (req == NULL) {
 		return NULL;
-	}
-
-	if (bsds->read_req || bsds->write_req) {
-		tevent_req_error(req, EBUSY);
-		goto post;
 	}
 
 	if (bsds->fd == -1) {

@@ -73,7 +73,23 @@ struct tdgram_context {
 	const char *location;
 	const struct tdgram_context_ops *ops;
 	void *private_data;
+
+	struct tevent_req *recvfrom_req;
+	struct tevent_req *sendto_req;
 };
+
+static int tdgram_context_destructor(struct tdgram_context *dgram)
+{
+	if (dgram->recvfrom_req) {
+		tevent_req_received(dgram->recvfrom_req);
+	}
+
+	if (dgram->sendto_req) {
+		tevent_req_received(dgram->sendto_req);
+	}
+
+	return 0;
+}
 
 struct tdgram_context *_tdgram_context_create(TALLOC_CTX *mem_ctx,
 					const struct tdgram_context_ops *ops,
@@ -90,8 +106,10 @@ struct tdgram_context *_tdgram_context_create(TALLOC_CTX *mem_ctx,
 	if (dgram == NULL) {
 		return NULL;
 	}
-	dgram->location	= location;
-	dgram->ops	= ops;
+	dgram->location		= location;
+	dgram->ops		= ops;
+	dgram->recvfrom_req	= NULL;
+	dgram->sendto_req	= NULL;
 
 	state = talloc_size(dgram, psize);
 	if (state == NULL) {
@@ -101,6 +119,8 @@ struct tdgram_context *_tdgram_context_create(TALLOC_CTX *mem_ctx,
 	talloc_set_name_const(state, type);
 
 	dgram->private_data = state;
+
+	talloc_set_destructor(dgram, tdgram_context_destructor);
 
 	*ppstate = state;
 	return dgram;
@@ -113,10 +133,20 @@ void *_tdgram_context_data(struct tdgram_context *dgram)
 
 struct tdgram_recvfrom_state {
 	const struct tdgram_context_ops *ops;
+	struct tdgram_context *dgram;
 	uint8_t *buf;
 	size_t len;
 	struct tsocket_address *src;
 };
+
+static int tdgram_recvfrom_destructor(struct tdgram_recvfrom_state *state)
+{
+	if (state->dgram) {
+		state->dgram->recvfrom_req = NULL;
+	}
+
+	return 0;
+}
 
 static void tdgram_recvfrom_done(struct tevent_req *subreq);
 
@@ -135,6 +165,18 @@ struct tevent_req *tdgram_recvfrom_send(TALLOC_CTX *mem_ctx,
 	}
 
 	state->ops = dgram->ops;
+	state->dgram = dgram;
+	state->buf = NULL;
+	state->len = 0;
+	state->src = NULL;
+
+	if (dgram->recvfrom_req) {
+		tevent_req_error(req, EBUSY);
+		goto post;
+	}
+	dgram->recvfrom_req = req;
+
+	talloc_set_destructor(state, tdgram_recvfrom_destructor);
 
 	subreq = state->ops->recvfrom_send(state, ev, dgram);
 	if (tevent_req_nomem(subreq, req)) {
@@ -195,8 +237,18 @@ ssize_t tdgram_recvfrom_recv(struct tevent_req *req,
 
 struct tdgram_sendto_state {
 	const struct tdgram_context_ops *ops;
+	struct tdgram_context *dgram;
 	ssize_t ret;
 };
+
+static int tdgram_sendto_destructor(struct tdgram_sendto_state *state)
+{
+	if (state->dgram) {
+		state->dgram->sendto_req = NULL;
+	}
+
+	return 0;
+}
 
 static void tdgram_sendto_done(struct tevent_req *subreq);
 
@@ -217,12 +269,21 @@ struct tevent_req *tdgram_sendto_send(TALLOC_CTX *mem_ctx,
 	}
 
 	state->ops = dgram->ops;
+	state->dgram = dgram;
 	state->ret = -1;
 
 	if (len == 0) {
 		tevent_req_error(req, EINVAL);
 		goto post;
 	}
+
+	if (dgram->sendto_req) {
+		tevent_req_error(req, EBUSY);
+		goto post;
+	}
+	dgram->sendto_req = req;
+
+	talloc_set_destructor(state, tdgram_sendto_destructor);
 
 	subreq = state->ops->sendto_send(state, ev, dgram,
 					 buf, len, dst);
@@ -295,6 +356,11 @@ struct tevent_req *tdgram_disconnect_send(TALLOC_CTX *mem_ctx,
 	}
 
 	state->ops = dgram->ops;
+
+	if (dgram->recvfrom_req || dgram->sendto_req) {
+		tevent_req_error(req, EBUSY);
+		goto post;
+	}
 
 	subreq = state->ops->disconnect_send(state, ev, dgram);
 	if (tevent_req_nomem(subreq, req)) {
