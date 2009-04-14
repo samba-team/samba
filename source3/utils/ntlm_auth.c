@@ -572,14 +572,14 @@ static NTSTATUS local_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *u
 	nt_lm_owf_gen (opt_password, nt_pw.hash, lm_pw.hash);
 	
 	nt_status = ntlm_password_check(ntlmssp_state,
-					true, true,
+					true, true, 0,
 					&ntlmssp_state->chal,
 					&ntlmssp_state->lm_resp,
 					&ntlmssp_state->nt_resp, 
 					ntlmssp_state->user, 
 					ntlmssp_state->user, 
 					ntlmssp_state->domain,
-					lm_pw, nt_pw, user_session_key, lm_session_key);
+					&lm_pw, &nt_pw, user_session_key, lm_session_key);
 	
 	if (NT_STATUS_IS_OK(nt_status)) {
 		ntlmssp_state->auth_context = talloc_asprintf(ntlmssp_state,

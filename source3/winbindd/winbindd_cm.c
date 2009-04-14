@@ -1964,8 +1964,8 @@ static void set_dc_type_and_flags( struct winbindd_domain *domain )
 /**********************************************************************
 ***********************************************************************/
 
-static bool cm_get_schannel_dcinfo(struct winbindd_domain *domain,
-				   struct dcinfo **ppdc)
+static bool cm_get_schannel_creds(struct winbindd_domain *domain,
+				   struct netlogon_creds_CredentialState **ppdc)
 {
 	NTSTATUS result;
 	struct rpc_pipe_client *netlogon_pipe;
@@ -1979,7 +1979,7 @@ static bool cm_get_schannel_dcinfo(struct winbindd_domain *domain,
 		return False;
 	}
 
-	/* Return a pointer to the struct dcinfo from the
+	/* Return a pointer to the struct netlogon_creds_CredentialState from the
 	   netlogon pipe. */
 
 	if (!domain->conn.netlogon_pipe->dc) {
@@ -1995,7 +1995,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 {
 	struct winbindd_cm_conn *conn;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	struct dcinfo *p_dcinfo;
+	struct netlogon_creds_CredentialState *p_creds;
 	char *machine_password = NULL;
 	char *machine_account = NULL;
 	char *domain_name = NULL;
@@ -2082,7 +2082,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 
 	/* Fall back to schannel if it's a W2K pre-SP1 box. */
 
-	if (!cm_get_schannel_dcinfo(domain, &p_dcinfo)) {
+	if (!cm_get_schannel_creds(domain, &p_creds)) {
 		/* If this call fails - conn->cli can now be NULL ! */
 		DEBUG(10, ("cm_connect_sam: Could not get schannel auth info "
 			   "for domain %s, trying anon\n", domain->name));
@@ -2090,7 +2090,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	}
 	result = cli_rpc_pipe_open_schannel_with_key
 		(conn->cli, &ndr_table_samr.syntax_id, PIPE_AUTH_LEVEL_PRIVACY,
-		 domain->name, p_dcinfo, &conn->samr_pipe);
+		 domain->name, p_creds, &conn->samr_pipe);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(10,("cm_connect_sam: failed to connect to SAMR pipe for "
@@ -2161,7 +2161,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 {
 	struct winbindd_cm_conn *conn;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	struct dcinfo *p_dcinfo;
+	struct netlogon_creds_CredentialState *p_creds;
 
 	result = init_dc_connection(domain);
 	if (!NT_STATUS_IS_OK(result))
@@ -2218,7 +2218,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 
 	/* Fall back to schannel if it's a W2K pre-SP1 box. */
 
-	if (!cm_get_schannel_dcinfo(domain, &p_dcinfo)) {
+	if (!cm_get_schannel_creds(domain, &p_creds)) {
 		/* If this call fails - conn->cli can now be NULL ! */
 		DEBUG(10, ("cm_connect_lsa: Could not get schannel auth info "
 			   "for domain %s, trying anon\n", domain->name));
@@ -2227,7 +2227,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	result = cli_rpc_pipe_open_schannel_with_key
 		(conn->cli, &ndr_table_lsarpc.syntax_id,
 		 PIPE_AUTH_LEVEL_PRIVACY,
-		 domain->name, p_dcinfo, &conn->lsa_pipe);
+		 domain->name, p_creds, &conn->lsa_pipe);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(10,("cm_connect_lsa: failed to connect to LSA pipe for "
