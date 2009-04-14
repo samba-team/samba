@@ -33,13 +33,13 @@
 #define SMB_THREAD_LOCK(plock, type) \
 	(global_tfp ? global_tfp->lock_mutex((plock), (type), __location__) : 0)
 
-#define SMB_THREAD_CREATE_TLS(keyname, key) \
-	(global_tfp ? global_tfp->create_tls((keyname), &(key), __location__) : 0)
+#define SMB_THREAD_CREATE_TLS_ONCE(keyname, key) \
+	(global_tfp ? global_tfp->create_tls_once((keyname), &(key), __location__) : 0)
 
-#define SMB_THREAD_DESTROY_TLS(key) \
+#define SMB_THREAD_DESTROY_TLS_ONCE(key) \
 	do { \
 		if (global_tfp) { \
-			global_tfp->destroy_tls(key); \
+			global_tfp->destroy_tls_once(&(key), __location__); \
 		}; \
 	} while (0)
 
@@ -49,5 +49,13 @@
 
 #define SMB_THREAD_GET_TLS(key) \
 	(global_tfp ? global_tfp->get_tls((key), __location__) : (key))
+
+/*
+ * Global thread lock list.
+ */
+
+#define NUM_GLOBAL_LOCKS 1
+
+#define GLOBAL_LOCK(locknum) (global_lock_array ? global_lock_array[(locknum)] : NULL)
 
 #endif

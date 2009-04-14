@@ -74,7 +74,7 @@ static struct talloc_stackframe *talloc_stackframe_init(void)
 
 	ZERO_STRUCTP(ts);
 
-	if (SMB_THREAD_CREATE_TLS("talloc_stackframe", global_ts)) {
+	if (SMB_THREAD_CREATE_TLS_ONCE("talloc_stackframe", global_ts)) {
 		smb_panic("talloc_stackframe_init create_tls failed");
 	}
 

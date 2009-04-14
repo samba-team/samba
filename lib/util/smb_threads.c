@@ -25,8 +25,6 @@
 
 #include "includes.h"
 
-#define NUM_GLOBAL_LOCKS 1
-
 /*********************************************************
  Functions to vector the locking primitives used internally
  by libsmbclient.
@@ -94,14 +92,18 @@ int smb_thread_set_functions(const struct smb_thread_functions *tf)
 
 SMB_THREADS_DEF_PTHREAD_IMPLEMENTATION(tf);
 
+void *pkey = NULL;
+
 /* Test function. */
 int test_threads(void)
 {
 	int ret;
 	void *plock = NULL;
-
 	smb_thread_set_functions(&tf);
 
+	if ((ret = SMB_THREAD_CREATE_TLS_ONCE("test_tls", pkey)) != 0) {
+		printf("Create tls once error: %d\n", ret);
+	}
 	if ((ret = SMB_THREAD_CREATE_MUTEX("test", plock)) != 0) {
 		printf("Create lock error: %d\n", ret);
 	}
@@ -112,6 +114,7 @@ int test_threads(void)
 		printf("unlock error: %d\n", ret);
 	}
 	SMB_THREAD_DESTROY_MUTEX(plock);
+	SMB_THREAD_DESTROY_TLS_ONCE(pkey);
 
 	return 0;
 }
