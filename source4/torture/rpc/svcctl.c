@@ -374,6 +374,9 @@ static bool test_EnumServicesStatus(struct torture_context *tctx, struct dcerpc_
 
 	for(i = 0; i < services_returned; i++) {
 
+		torture_assert(tctx, service[i].service_name,
+			"Service without name returned!");
+
 		printf("%-20s   \"%s\", Type: %d, State: %d\n",
 			service[i].service_name, service[i].display_name,
 			service[i].status.type, service[i].status.state);
