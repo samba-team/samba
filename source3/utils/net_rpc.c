@@ -5595,7 +5595,7 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 		return -1;
 	}
 
-	nt_status = rpccli_lsa_open_policy2(pipe_hnd, mem_ctx, true, SEC_RIGHTS_QUERY_VALUE,
+	nt_status = rpccli_lsa_open_policy2(pipe_hnd, mem_ctx, true, KEY_QUERY_VALUE,
 	                                 &connect_hnd);
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't open policy handle. Error was %s\n",
@@ -5851,7 +5851,7 @@ static int rpc_trustdom_vampire(struct net_context *c, int argc,
 		return -1;
 	};
 
-	nt_status = rpccli_lsa_open_policy2(pipe_hnd, mem_ctx, false, SEC_RIGHTS_QUERY_VALUE,
+	nt_status = rpccli_lsa_open_policy2(pipe_hnd, mem_ctx, false, KEY_QUERY_VALUE,
 					&connect_hnd);
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't open policy handle. Error was %s\n",
@@ -6008,7 +6008,7 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 		return -1;
 	};
 
-	nt_status = rpccli_lsa_open_policy2(pipe_hnd, mem_ctx, false, SEC_RIGHTS_QUERY_VALUE,
+	nt_status = rpccli_lsa_open_policy2(pipe_hnd, mem_ctx, false, KEY_QUERY_VALUE,
 					&connect_hnd);
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't open policy handle. Error was %s\n",
