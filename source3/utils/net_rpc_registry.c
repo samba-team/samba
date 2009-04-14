@@ -1148,7 +1148,7 @@ static NTSTATUS rpc_registry_getsd_internal(struct net_context *c,
 	struct security_descriptor sec_desc;
 	uint32_t access_mask = REG_KEY_READ |
 			       SEC_FLAG_MAXIMUM_ALLOWED |
-			       SEC_RIGHT_SYSTEM_SECURITY;
+			       SEC_FLAG_SYSTEM_SECURITY;
 
 	if (argc <1 || argc > 2 || c->display_usage) {
 		d_printf("Usage:    net rpc registry getsd <path> <secinfo>\n");

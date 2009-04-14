@@ -2400,9 +2400,9 @@ static NTSTATUS open_directory(connection_struct *conn,
 	}
 
 	/* We need to support SeSecurityPrivilege for this. */
-	if (access_mask & SEC_RIGHT_SYSTEM_SECURITY) {
+	if (access_mask & SEC_FLAG_SYSTEM_SECURITY) {
 		DEBUG(10, ("open_directory: open on %s "
-			"failed - SEC_RIGHT_SYSTEM_SECURITY denied.\n",
+			"failed - SEC_FLAG_SYSTEM_SECURITY denied.\n",
 			fname));
 		return NT_STATUS_PRIVILEGE_NOT_HELD;
 	}
@@ -2946,7 +2946,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 
 #if 0
 	/* We need to support SeSecurityPrivilege for this. */
-	if ((access_mask & SEC_RIGHT_SYSTEM_SECURITY) &&
+	if ((access_mask & SEC_FLAG_SYSTEM_SECURITY) &&
 	    !user_has_privileges(current_user.nt_user_token,
 				 &se_security)) {
 		status = NT_STATUS_PRIVILEGE_NOT_HELD;
@@ -2954,7 +2954,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	}
 #else
 	/* We need to support SeSecurityPrivilege for this. */
-	if (access_mask & SEC_RIGHT_SYSTEM_SECURITY) {
+	if (access_mask & SEC_FLAG_SYSTEM_SECURITY) {
 		status = NT_STATUS_PRIVILEGE_NOT_HELD;
 		goto fail;
 	}
