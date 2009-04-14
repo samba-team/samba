@@ -411,7 +411,7 @@ static int net_registry_getsd(struct net_context *c, int argc,
 	struct security_descriptor *secdesc = NULL;
 	TALLOC_CTX *ctx = talloc_stackframe();
 	uint32_t access_mask = REG_KEY_READ |
-			       SEC_RIGHT_MAXIMUM_ALLOWED |
+			       SEC_FLAG_MAXIMUM_ALLOWED |
 			       SEC_RIGHT_SYSTEM_SECURITY;
 
 	/*
