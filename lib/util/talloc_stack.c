@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    Implement a stack of talloc contexts
    Copyright (C) Volker Lendecke 2007
+   Copyright (C) Jeremy Allison 2009 - made thread safe.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -38,22 +39,65 @@
 
 #include "includes.h"
 
-static int talloc_stacksize;
-static int talloc_stack_arraysize;
-static TALLOC_CTX **talloc_stack;
+struct talloc_stackframe {
+	int talloc_stacksize;
+	int talloc_stack_arraysize;
+	TALLOC_CTX **talloc_stack;
+};
+
+/*
+ * In the single threaded case this is a pointer
+ * to the global talloc_stackframe. In the MT-case
+ * this is the pointer to the thread-specific key
+ * used to look up the per-thread talloc_stackframe
+ * pointer.
+ */
+
+static void *global_ts;
+
+static struct talloc_stackframe *talloc_stackframe_init(void)
+{
+#if defined(PARANOID_MALLOC_CHECKER)
+#ifdef malloc
+#undef malloc
+#endif
+#endif
+	struct talloc_stackframe *ts =
+		(struct talloc_stackframe *)malloc(sizeof(struct talloc_stackframe));
+#if defined(PARANOID_MALLOC_CHECKER)
+#define malloc(s) __ERROR_DONT_USE_MALLOC_DIRECTLY
+#endif
+
+	if (!ts) {
+		smb_panic("talloc_stackframe_init malloc failed");
+	}
+
+	ZERO_STRUCTP(ts);
+
+	if (SMB_THREAD_CREATE_TLS("talloc_stackframe", global_ts)) {
+		smb_panic("talloc_stackframe_init create_tls failed");
+	}
+
+	if (SMB_THREAD_SET_TLS(global_ts, ts)) {
+		smb_panic("talloc_stackframe_init set_tls failed");
+	}
+	return ts;
+}
 
 static int talloc_pop(TALLOC_CTX *frame)
 {
+	struct talloc_stackframe *ts =
+		(struct talloc_stackframe *)SMB_THREAD_GET_TLS(global_ts);
 	int i;
 
-	for (i=talloc_stacksize-1; i>0; i--) {
-		if (frame == talloc_stack[i]) {
+	for (i=ts->talloc_stacksize-1; i>0; i--) {
+		if (frame == ts->talloc_stack[i]) {
 			break;
 		}
-		talloc_free(talloc_stack[i]);
+		talloc_free(ts->talloc_stack[i]);
 	}
 
-	talloc_stacksize = i;
+	ts->talloc_stacksize = i;
 	return 0;
 }
 
@@ -67,22 +111,27 @@ static int talloc_pop(TALLOC_CTX *frame)
 static TALLOC_CTX *talloc_stackframe_internal(size_t poolsize)
 {
 	TALLOC_CTX **tmp, *top, *parent;
+	struct talloc_stackframe *ts =
+		(struct talloc_stackframe *)SMB_THREAD_GET_TLS(global_ts);
 
-	if (talloc_stack_arraysize < talloc_stacksize + 1) {
-		tmp = talloc_realloc(NULL, talloc_stack, TALLOC_CTX *,
-					   talloc_stacksize + 1);
+	if (ts == NULL) {
+		ts = talloc_stackframe_init();
+	}
+
+	if (ts->talloc_stack_arraysize < ts->talloc_stacksize + 1) {
+		tmp = talloc_realloc(NULL, ts->talloc_stack, TALLOC_CTX *,
+					   ts->talloc_stacksize + 1);
 		if (tmp == NULL) {
 			goto fail;
 		}
-		talloc_stack = tmp;
-		talloc_stack_arraysize = talloc_stacksize + 1;
+		ts->talloc_stack = tmp;
+		ts->talloc_stack_arraysize = ts->talloc_stacksize + 1;
         }
 
-	if (talloc_stacksize == 0) {
-		parent = talloc_stack;
-	}
-	else {
-		parent = talloc_stack[talloc_stacksize-1];
+	if (ts->talloc_stacksize == 0) {
+		parent = ts->talloc_stack;
+	} else {
+		parent = ts->talloc_stack[ts->talloc_stacksize-1];
 	}
 
 	if (poolsize) {
@@ -97,7 +146,7 @@ static TALLOC_CTX *talloc_stackframe_internal(size_t poolsize)
 
 	talloc_set_destructor(top, talloc_pop);
 
-	talloc_stack[talloc_stacksize++] = top;
+	ts->talloc_stack[ts->talloc_stacksize++] = top;
 	return top;
 
  fail:
@@ -121,10 +170,14 @@ TALLOC_CTX *talloc_stackframe_pool(size_t poolsize)
 
 TALLOC_CTX *talloc_tos(void)
 {
-	if (talloc_stacksize == 0) {
+	struct talloc_stackframe *ts =
+		(struct talloc_stackframe *)SMB_THREAD_GET_TLS(global_ts);
+
+	if (ts == NULL) {
 		talloc_stackframe();
+		ts = (struct talloc_stackframe *)SMB_THREAD_GET_TLS(global_ts);
 		DEBUG(0, ("no talloc stackframe around, leaking memory\n"));
 	}
 
-	return talloc_stack[talloc_stacksize-1];
+	return ts->talloc_stack[ts->talloc_stacksize-1];
 }

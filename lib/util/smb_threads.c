@@ -50,8 +50,19 @@ int smb_thread_set_functions(const struct smb_thread_functions *tf)
 
 	global_tfp = tf;
 
+#if defined(PARANOID_MALLOC_CHECKER)
+#ifdef malloc
+#undef malloc
+#endif
+#endif
+
 	/* Here we initialize any static locks we're using. */
-	global_lock_array = (void **)SMB_MALLOC_ARRAY(void *, NUM_GLOBAL_LOCKS);
+	global_lock_array = (void **)malloc(sizeof(void *) *NUM_GLOBAL_LOCKS);
+
+#if defined(PARANOID_MALLOC_CHECKER)
+#define malloc(s) __ERROR_DONT_USE_MALLOC_DIRECTLY
+#endif
+
 	if (global_lock_array == NULL) {
 		return ENOMEM;
 	}
@@ -62,9 +73,11 @@ int smb_thread_set_functions(const struct smb_thread_functions *tf)
 			SAFE_FREE(global_lock_array);
 			return ENOMEM;
 		}
-		global_tfp->create_mutex(name,
+		if (global_tfp->create_mutex(name,
 				&global_lock_array[i],
-				__location__);
+				__location__)) {
+			smb_panic("smb_thread_set_functions: create mutexes failed");
+		}
 		SAFE_FREE(name);
 	}
 

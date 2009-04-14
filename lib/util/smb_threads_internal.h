@@ -44,9 +44,10 @@
 	} while (0)
 
 #define SMB_THREAD_SET_TLS(key, val) \
-	(global_tfp ? global_tfp->set_tls((key),(val),__location__) : 0)
+	(global_tfp ? global_tfp->set_tls((key),(val),__location__) : \
+		((key) = (val), 0))
 
 #define SMB_THREAD_GET_TLS(key) \
-	(global_tfp ? global_tfp->get_tls((key), __location__) : NULL)
+	(global_tfp ? global_tfp->get_tls((key), __location__) : (key))
 
 #endif
