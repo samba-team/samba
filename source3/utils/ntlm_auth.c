@@ -2275,7 +2275,7 @@ static bool check_auth_crap(void)
 	if (request_lm_key 
 	    && (memcmp(zeros, lm_key, 
 		       sizeof(lm_key)) != 0)) {
-		hex_lm_key = hex_encode_talloc(NULL, (const unsigned char *)lm_key,
+		hex_lm_key = hex_encode_talloc(talloc_tos(), (const unsigned char *)lm_key,
 					sizeof(lm_key));
 		x_fprintf(x_stdout, "LM_KEY: %s\n", hex_lm_key);
 		TALLOC_FREE(hex_lm_key);
@@ -2283,7 +2283,7 @@ static bool check_auth_crap(void)
 	if (request_user_session_key 
 	    && (memcmp(zeros, user_session_key, 
 		       sizeof(user_session_key)) != 0)) {
-		hex_user_session_key = hex_encode_talloc(NULL, (const unsigned char *)user_session_key, 
+		hex_user_session_key = hex_encode_talloc(talloc_tos(), (const unsigned char *)user_session_key, 
 						  sizeof(user_session_key));
 		x_fprintf(x_stdout, "NT_KEY: %s\n", hex_user_session_key);
 		TALLOC_FREE(hex_user_session_key);
