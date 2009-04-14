@@ -10,6 +10,9 @@
 enum ndr_err_code ndr_push_notify_entry(struct ndr_push *ndr, int ndr_flags, const struct notify_entry *r);
 enum ndr_err_code ndr_pull_notify_entry(struct ndr_pull *ndr, int ndr_flags, struct notify_entry *r);
 void ndr_print_notify_entry(struct ndr_print *ndr, const char *name, const struct notify_entry *r);
+enum ndr_err_code ndr_push_notify_entry_array(struct ndr_push *ndr, int ndr_flags, const struct notify_entry_array *r);
+enum ndr_err_code ndr_pull_notify_entry_array(struct ndr_pull *ndr, int ndr_flags, struct notify_entry_array *r);
+void ndr_print_notify_entry_array(struct ndr_print *ndr, const char *name, const struct notify_entry_array *r);
 void ndr_print_notify_depth(struct ndr_print *ndr, const char *name, const struct notify_depth *r);
 enum ndr_err_code ndr_push_notify_array(struct ndr_push *ndr, int ndr_flags, const struct notify_array *r);
 enum ndr_err_code ndr_pull_notify_array(struct ndr_pull *ndr, int ndr_flags, struct notify_array *r);
