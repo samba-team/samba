@@ -525,7 +525,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	/* Get user handle */
 	result = rpccli_samr_OpenUser(cli, mem_ctx,
 				      &dom_pol,
-				      SEC_RIGHTS_MAXIMUM_ALLOWED,
+				      SEC_FLAG_MAXIMUM_ALLOWED,
 				      user_rid,
 				      &user_pol);
 
@@ -565,7 +565,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	struct policy_handle dom_pol, user_pol;
-	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	uint32 des_access = SEC_FLAG_MAXIMUM_ALLOWED;
 	struct samr_RidWithAttributeArray *rid_array = NULL;
 	unsigned int i;
 	uint32 user_rid;
@@ -746,7 +746,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
         NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
         uint32 i, total_names = 0;
         struct policy_handle dom_pol, group_pol;
-        uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
+        uint32 des_access = SEC_FLAG_MAXIMUM_ALLOWED;
 	uint32 *rid_mem = NULL;
 	uint32 group_rid;
 	unsigned int j, r;

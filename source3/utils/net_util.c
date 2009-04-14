@@ -45,7 +45,7 @@ NTSTATUS net_rpc_lookup_name(struct net_context *c,
 	}
 
 	result = rpccli_lsa_open_policy(lsa_pipe, mem_ctx, false,
-					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					SEC_FLAG_MAXIMUM_ALLOWED,
 					&pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "open_policy failed: %s\n",
