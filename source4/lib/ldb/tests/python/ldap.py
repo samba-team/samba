@@ -78,7 +78,10 @@ class BasicTests(unittest.TestCase):
         self.delete_force(self.ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestutf8user èùéìòà ,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestutf8user2  èùéìòà ,cn=users," + self.base_dn)
-  
+        self.delete_force(self.ldb, "cn=parentguidtest,cn=users," + self.base_dn)
+        self.delete_force(self.ldb, "cn=parentguidtest,cn=testotherusers," + self.base_dn)
+        self.delete_force(self.ldb, "cn=testotherusers," + self.base_dn)
+      
     def test_group_add_invalid_member(self):
         """Testing group add with invalid member"""
         try:
@@ -118,7 +121,8 @@ class BasicTests(unittest.TestCase):
                           scope=SCOPE_BASE,
                           attrs=["parentGUID"]);
         self.assertEquals(res1[0]["objectGUID"], res2[0]["parentGUID"]);
-        
+        ldb.delete("cn=parentguidtest,cn=testotherusers," + self.base_dn)
+        ldb.delete("cn=testotherusers," + self.base_dn)
 
     def test_all(self):
         """Basic tests"""
