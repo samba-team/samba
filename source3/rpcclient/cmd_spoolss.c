@@ -2449,6 +2449,60 @@ done:
 	return result;
 }
 
+/****************************************************************************
+****************************************************************************/
+
+static WERROR cmd_spoolss_set_job(struct rpc_pipe_client *cli,
+				  TALLOC_CTX *mem_ctx, int argc,
+				  const char **argv)
+{
+	WERROR result;
+	NTSTATUS status;
+	const char *printername;
+	struct policy_handle hnd;
+	uint32_t job_id;
+	enum spoolss_JobControl command;
+
+	if (argc != 4) {
+		printf("Usage: %s printername job_id command\n", argv[0]);
+		return WERR_OK;
+	}
+
+	job_id = atoi(argv[2]);
+	command = atoi(argv[3]);
+
+	/* Open printer handle */
+
+	RPCCLIENT_PRINTERNAME(printername, cli, argv[1]);
+
+	result = rpccli_spoolss_openprinter_ex(cli, mem_ctx,
+					       printername,
+					       SEC_FLAG_MAXIMUM_ALLOWED,
+					       &hnd);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	/* Set Job */
+
+	status = rpccli_spoolss_SetJob(cli, mem_ctx,
+				       &hnd,
+				       job_id,
+				       NULL,
+				       command,
+				       &result);
+
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+done:
+	if (is_valid_policy_hnd(&hnd)) {
+		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &hnd, NULL);
+	}
+
+	return result;
+}
 
 /****************************************************************************
 ****************************************************************************/
@@ -3136,6 +3190,7 @@ struct cmd_set spoolss_commands[] = {
 	{ "enumkey",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_printerkey,	&ndr_table_spoolss.syntax_id, NULL, "Enumerate printer keys",              "" },
 	{ "enumjobs",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_jobs,          &ndr_table_spoolss.syntax_id, NULL, "Enumerate print jobs",                "" },
 	{ "getjob",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_get_job,		&ndr_table_spoolss.syntax_id, NULL, "Get print job",                       "" },
+	{ "setjob",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_set_job,		&ndr_table_spoolss.syntax_id, NULL, "Set print job",                       "" },
 	{ "enumports", 		RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_ports, 	&ndr_table_spoolss.syntax_id, NULL, "Enumerate printer ports",             "" },
 	{ "enumdrivers", 	RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_drivers, 	&ndr_table_spoolss.syntax_id, NULL, "Enumerate installed printer drivers", "" },
 	{ "enumprinters", 	RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_printers, 	&ndr_table_spoolss.syntax_id, NULL, "Enumerate printers",                  "" },
