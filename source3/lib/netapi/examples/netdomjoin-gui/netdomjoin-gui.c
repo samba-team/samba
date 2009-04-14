@@ -78,6 +78,7 @@ typedef struct join_state {
 	gboolean hostname_changed;
 	uint32_t stored_num_ous;
 	char *target_hostname;
+	uid_t uid;
 } join_state;
 
 static void debug(const char *format, ...)
@@ -1440,6 +1441,10 @@ static int draw_main_window(struct join_state *state)
 		/* Entry */
 		entry = gtk_entry_new();
 		gtk_entry_set_max_length(GTK_ENTRY(entry), 256);
+
+		if (state->uid != 0) {
+			gtk_widget_set_sensitive(GTK_WIDGET(entry), FALSE);
+		}
 		g_signal_connect(G_OBJECT(entry), "changed",
 				 G_CALLBACK(callback_enter_computer_description_and_unlock),
 				 state);
@@ -1526,6 +1531,9 @@ static int draw_main_window(struct join_state *state)
 			 G_CALLBACK(callback_do_change),
 			 (gpointer)state);
 	gtk_box_pack_start(GTK_BOX(bbox), button, TRUE, TRUE, 0);
+	if (state->uid != 0) {
+		gtk_widget_set_sensitive(GTK_WIDGET(button), FALSE);
+	}
 	gtk_widget_show(button);
 
 	/* Label (hidden) */
@@ -1533,6 +1541,11 @@ static int draw_main_window(struct join_state *state)
 	gtk_label_set_line_wrap(GTK_LABEL(state->label_reboot), TRUE);
 	gtk_misc_set_alignment(GTK_MISC(state->label_reboot), 0, 0);
 	gtk_box_pack_start(GTK_BOX(vbox), state->label_reboot, TRUE, TRUE, 0);
+	if (state->uid != 0) {
+		gtk_label_set_text(GTK_LABEL(state->label_reboot),
+			   "You cannot change computer description as you're not running with root permissions");
+	}
+
 	gtk_widget_show(state->label_reboot);
 
 #if 0
@@ -1762,6 +1775,8 @@ static int initialize_join_state(struct join_state *state,
 	if (status != 0) {
 		return -1;
 	}
+
+	state->uid = geteuid();
 
 	state->ctx = ctx;
 
