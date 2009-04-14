@@ -4843,7 +4843,6 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 int pack_devicemode(NT_DEVICEMODE *nt_devmode, uint8 *buf, int buflen);
 uint32 del_a_printer(const char *sharename);
 NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename);
-NT_DEVICEMODE *dup_nt_devicemode(NT_DEVICEMODE *nt_devicemode);
 void free_nt_devicemode(NT_DEVICEMODE **devmode_ptr);
 int unpack_devicemode(NT_DEVICEMODE **nt_devmode, const uint8 *buf, int buflen);
 int add_new_printer_key( NT_PRINTER_DATA *data, const char *name );
