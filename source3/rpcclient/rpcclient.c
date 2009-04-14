@@ -155,7 +155,7 @@ static void fetch_machine_sid(struct cli_state *cli)
 	}
 	
 	result = rpccli_lsa_open_policy(lsapipe, mem_ctx, True, 
-				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     SEC_FLAG_MAXIMUM_ALLOWED,
 				     &pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto error;

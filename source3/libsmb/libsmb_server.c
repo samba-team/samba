@@ -740,7 +740,7 @@ SMBC_attr_server(TALLOC_CTX *ctx,
 
                 /*
                  * Some systems don't support
-                 * SEC_RIGHTS_MAXIMUM_ALLOWED, but NT sends 0x2000000
+                 * SEC_FLAG_MAXIMUM_ALLOWED, but NT sends 0x2000000
                  * so we might as well do it too.
                  */
 

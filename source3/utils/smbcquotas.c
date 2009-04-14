@@ -62,7 +62,7 @@ static bool cli_open_policy_hnd(void)
 
 	if (!got_policy_hnd) {
 
-		/* Some systems don't support SEC_RIGHTS_MAXIMUM_ALLOWED,
+		/* Some systems don't support SEC_FLAG_MAXIMUM_ALLOWED,
 		   but NT sends 0x2000000 so we might as well do it too. */
 
 		if (!NT_STATUS_IS_OK(rpccli_lsa_open_policy(global_pipe_hnd, talloc_tos(), True, 

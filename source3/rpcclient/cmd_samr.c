@@ -2859,7 +2859,7 @@ static NTSTATUS cmd_samr_get_dispinfo_idx(struct rpc_pipe_client *cli,
 	}
 
 	status = rpccli_try_samr_connects(cli, mem_ctx,
-					  SEC_RIGHTS_MAXIMUM_ALLOWED,
+					  SEC_FLAG_MAXIMUM_ALLOWED,
 					  &connect_handle);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2868,7 +2868,7 @@ static NTSTATUS cmd_samr_get_dispinfo_idx(struct rpc_pipe_client *cli,
 
 	status = rpccli_samr_OpenDomain(cli, mem_ctx,
 					&connect_handle,
-					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					SEC_FLAG_MAXIMUM_ALLOWED,
 					&domain_sid,
 					&domain_handle);
 

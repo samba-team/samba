@@ -1851,7 +1851,7 @@ no_dssetup:
 	}
 
 	result = rpccli_lsa_open_policy2(cli, mem_ctx, True, 
-					 SEC_RIGHTS_MAXIMUM_ALLOWED, &pol);
+					 SEC_FLAG_MAXIMUM_ALLOWED, &pol);
 
 	if (NT_STATUS_IS_OK(result)) {
 		/* This particular query is exactly what Win2k clients use 
@@ -1893,7 +1893,7 @@ no_dssetup:
 		domain->active_directory = False;
 
 		result = rpccli_lsa_open_policy(cli, mem_ctx, True, 
-						SEC_RIGHTS_MAXIMUM_ALLOWED,
+						SEC_FLAG_MAXIMUM_ALLOWED,
 						&pol);
 
 		if (!NT_STATUS_IS_OK(result)) {
@@ -2067,7 +2067,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 
 	result = rpccli_samr_Connect2(conn->samr_pipe, mem_ctx,
 				      conn->samr_pipe->desthost,
-				      SEC_RIGHTS_MAXIMUM_ALLOWED,
+				      SEC_FLAG_MAXIMUM_ALLOWED,
 				      &conn->sam_connect_handle);
 	if (NT_STATUS_IS_OK(result)) {
 		goto open_domain;
@@ -2102,7 +2102,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 
 	result = rpccli_samr_Connect2(conn->samr_pipe, mem_ctx,
 				      conn->samr_pipe->desthost,
-				      SEC_RIGHTS_MAXIMUM_ALLOWED,
+				      SEC_FLAG_MAXIMUM_ALLOWED,
 				      &conn->sam_connect_handle);
 	if (NT_STATUS_IS_OK(result)) {
 		goto open_domain;
@@ -2124,7 +2124,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 
 	result = rpccli_samr_Connect2(conn->samr_pipe, mem_ctx,
 				      conn->samr_pipe->desthost,
-				      SEC_RIGHTS_MAXIMUM_ALLOWED,
+				      SEC_FLAG_MAXIMUM_ALLOWED,
 				      &conn->sam_connect_handle);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(10,("cm_connect_sam: rpccli_samr_Connect2 failed "
@@ -2137,7 +2137,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	result = rpccli_samr_OpenDomain(conn->samr_pipe,
 					mem_ctx,
 					&conn->sam_connect_handle,
-					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					SEC_FLAG_MAXIMUM_ALLOWED,
 					&domain->sid,
 					&conn->sam_domain_handle);
 
@@ -2202,7 +2202,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 		  domain->name, conn->cli->domain, conn->cli->user_name ));
 
 	result = rpccli_lsa_open_policy(conn->lsa_pipe, mem_ctx, True,
-					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					SEC_FLAG_MAXIMUM_ALLOWED,
 					&conn->lsa_policy);
 	if (NT_STATUS_IS_OK(result)) {
 		goto done;
@@ -2238,7 +2238,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 		  "schannel.\n", domain->name ));
 
 	result = rpccli_lsa_open_policy(conn->lsa_pipe, mem_ctx, True,
-					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					SEC_FLAG_MAXIMUM_ALLOWED,
 					&conn->lsa_policy);
 	if (NT_STATUS_IS_OK(result)) {
 		goto done;
@@ -2260,7 +2260,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	}
 
 	result = rpccli_lsa_open_policy(conn->lsa_pipe, mem_ctx, True,
-					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					SEC_FLAG_MAXIMUM_ALLOWED,
 					&conn->lsa_policy);
  done:
 	if (!NT_STATUS_IS_OK(result)) {
