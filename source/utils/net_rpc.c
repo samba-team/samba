@@ -6280,7 +6280,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	/* SamrConnect2 */
 	nt_status = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
 					 pipe_hnd->cli->desthost,
-					 SA_RIGHT_SAM_OPEN_DOMAIN,
+					 SA_RIGHT_SAM_LOOKUP_DOMAIN,
 					 &connect_hnd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Couldn't open SAMR policy handle. Error was %s\n",
