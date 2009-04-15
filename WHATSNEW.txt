@@ -27,13 +27,16 @@ General Changes
 On the way towards a standalone Samba AD domain controller, Samba3 and Samba4
 branches can be built as "merged" build. That's why Samba3 and Samba4 sources
 are included in the tarball. The merged build is possible in Samba 3.4.0, but
-disabled by default. To learn more about the merged build, please see
-http://wiki.samba.org/index.php/Franky.
+disabled by default. To learn more about the merged build,
+please see http://wiki.samba.org/index.php/Franky.
 
 According to this one, there is no "source" directory included in the tarball at
 all. Samba3 sources are located in "source3", Samba4 sources are located in
-"source4". To build plain Samba3, please change to "source3" and start the
-build as usual.
+"source4". The libraries have been moved to the toplevel directory.
+
+To build plain Samba3, please change to "source3" and start the build as usual.
+To build Samba4 as well, please use the "--enable-merged-build" configure
+option.
 
 
 Authentication Changes
