@@ -77,7 +77,7 @@ static int smb_lock_pthread(void *plock, enum smb_thread_lock_type lock_type, co
 	} \
 } \
  \
-static pthread_mutex_t create_tls_mutex = PTHREAD_MUTEX_INITIALIZER; \
+static pthread_mutex_t smb_create_tls_mutex = PTHREAD_MUTEX_INITIALIZER; \
  \
 static int smb_create_tls_once_pthread(const char *keyname, void **ppkey, const char *location) \
 { \

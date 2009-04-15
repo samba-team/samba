@@ -395,7 +395,7 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
 					  SAMR_ACCESS_ENUM_DOMAINS |
-					  SAMR_ACCESS_OPEN_DOMAIN,
+					  SAMR_ACCESS_LOOKUP_DOMAIN,
 					  SAMR_DOMAIN_ACCESS_LOOKUP_INFO_1 |
 					  SAMR_DOMAIN_ACCESS_CREATE_USER |
 					  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
@@ -517,7 +517,7 @@ WERROR NetUserDel_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
 					  SAMR_ACCESS_ENUM_DOMAINS |
-					  SAMR_ACCESS_OPEN_DOMAIN,
+					  SAMR_ACCESS_LOOKUP_DOMAIN,
 					  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
 					  &connect_handle,
 					  &domain_handle,
@@ -1223,7 +1223,7 @@ WERROR NetUserEnum_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_samr_open_builtin_domain(ctx, pipe_cli,
 						  SAMR_ACCESS_ENUM_DOMAINS |
-						  SAMR_ACCESS_OPEN_DOMAIN,
+						  SAMR_ACCESS_LOOKUP_DOMAIN,
 						  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT |
 						  SAMR_DOMAIN_ACCESS_LOOKUP_ALIAS,
 						  &connect_handle,
@@ -1234,7 +1234,7 @@ WERROR NetUserEnum_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
 					  SAMR_ACCESS_ENUM_DOMAINS |
-					  SAMR_ACCESS_OPEN_DOMAIN,
+					  SAMR_ACCESS_LOOKUP_DOMAIN,
 					  SAMR_DOMAIN_ACCESS_LOOKUP_INFO_2 |
 					  SAMR_DOMAIN_ACCESS_ENUM_ACCOUNTS |
 					  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
@@ -1522,7 +1522,7 @@ WERROR NetQueryDisplayInformation_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
 					  SAMR_ACCESS_ENUM_DOMAINS |
-					  SAMR_ACCESS_OPEN_DOMAIN,
+					  SAMR_ACCESS_LOOKUP_DOMAIN,
 					  SAMR_DOMAIN_ACCESS_LOOKUP_INFO_2 |
 					  SAMR_DOMAIN_ACCESS_ENUM_ACCOUNTS |
 					  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
@@ -1648,7 +1648,7 @@ WERROR NetUserGetInfo_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
 					  SAMR_ACCESS_ENUM_DOMAINS |
-					  SAMR_ACCESS_OPEN_DOMAIN,
+					  SAMR_ACCESS_LOOKUP_DOMAIN,
 					  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
 					  &connect_handle,
 					  &domain_handle,
@@ -1659,7 +1659,7 @@ WERROR NetUserGetInfo_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_samr_open_builtin_domain(ctx, pipe_cli,
 						  SAMR_ACCESS_ENUM_DOMAINS |
-						  SAMR_ACCESS_OPEN_DOMAIN,
+						  SAMR_ACCESS_LOOKUP_DOMAIN,
 						  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT |
 						  SAMR_DOMAIN_ACCESS_LOOKUP_ALIAS,
 						  &connect_handle,
@@ -1800,7 +1800,7 @@ WERROR NetUserSetInfo_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
 					  SAMR_ACCESS_ENUM_DOMAINS |
-					  SAMR_ACCESS_OPEN_DOMAIN,
+					  SAMR_ACCESS_LOOKUP_DOMAIN,
 					  SAMR_DOMAIN_ACCESS_LOOKUP_INFO_1 |
 					  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
 					  &connect_handle,
@@ -1812,7 +1812,7 @@ WERROR NetUserSetInfo_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_samr_open_builtin_domain(ctx, pipe_cli,
 						  SAMR_ACCESS_ENUM_DOMAINS |
-						  SAMR_ACCESS_OPEN_DOMAIN,
+						  SAMR_ACCESS_LOOKUP_DOMAIN,
 						  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT |
 						  SAMR_DOMAIN_ACCESS_LOOKUP_ALIAS,
 						  &connect_handle,
@@ -2220,7 +2220,7 @@ WERROR NetUserModalsGet_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
 					  SAMR_ACCESS_ENUM_DOMAINS |
-					  SAMR_ACCESS_OPEN_DOMAIN,
+					  SAMR_ACCESS_LOOKUP_DOMAIN,
 					  access_mask,
 					  &connect_handle,
 					  &domain_handle,
@@ -2698,7 +2698,7 @@ WERROR NetUserModalsSet_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
 					  SAMR_ACCESS_ENUM_DOMAINS |
-					  SAMR_ACCESS_OPEN_DOMAIN,
+					  SAMR_ACCESS_LOOKUP_DOMAIN,
 					  access_mask,
 					  &connect_handle,
 					  &domain_handle,
@@ -2831,7 +2831,7 @@ WERROR NetUserGetGroups_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
 					  SAMR_ACCESS_ENUM_DOMAINS |
-					  SAMR_ACCESS_OPEN_DOMAIN,
+					  SAMR_ACCESS_LOOKUP_DOMAIN,
 					  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
 					  &connect_handle,
 					  &domain_handle,
@@ -2982,7 +2982,7 @@ WERROR NetUserSetGroups_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
 					  SAMR_ACCESS_ENUM_DOMAINS |
-					  SAMR_ACCESS_OPEN_DOMAIN,
+					  SAMR_ACCESS_LOOKUP_DOMAIN,
 					  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
 					  &connect_handle,
 					  &domain_handle,
@@ -3264,7 +3264,7 @@ WERROR NetUserGetLocalGroups_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_samr_open_domain(ctx, pipe_cli,
 					  SAMR_ACCESS_ENUM_DOMAINS |
-					  SAMR_ACCESS_OPEN_DOMAIN,
+					  SAMR_ACCESS_LOOKUP_DOMAIN,
 					  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT |
 					  SAMR_DOMAIN_ACCESS_LOOKUP_ALIAS,
 					  &connect_handle,
@@ -3276,7 +3276,7 @@ WERROR NetUserGetLocalGroups_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_samr_open_builtin_domain(ctx, pipe_cli,
 						  SAMR_ACCESS_ENUM_DOMAINS |
-						  SAMR_ACCESS_OPEN_DOMAIN,
+						  SAMR_ACCESS_LOOKUP_DOMAIN,
 						  SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT |
 						  SAMR_DOMAIN_ACCESS_LOOKUP_ALIAS,
 						  &connect_handle,
