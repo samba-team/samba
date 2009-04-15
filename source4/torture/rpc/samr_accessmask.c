@@ -301,7 +301,12 @@ static bool test_samr_connect_user_acl(struct torture_context *tctx,
 	/* Try to connect as the test user */
 	status = dcerpc_pipe_connect(tctx, 
 			     &test_p, binding, &ndr_table_samr,
-			     test_credentials, NULL, tctx->lp_ctx);
+			     test_credentials, tctx->ev, tctx->lp_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("dcerpc_pipe_connect failed: %s\n", nt_errstr(status));
+		return false;
+	}
+
 	/* connect to SAMR as the user */
 	status = torture_samr_Connect5(tctx, test_p, SEC_FLAG_MAXIMUM_ALLOWED, &uch);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -310,9 +315,6 @@ static bool test_samr_connect_user_acl(struct torture_context *tctx,
 	}
 	/* disconnec the user */
 	talloc_free(test_p);
-	if (!NT_STATUS_IS_OK(status)) {
-		return false;
-	}
 
 
 	/* read the sequrity descriptor back. it should not have changed 
@@ -366,7 +368,11 @@ static bool test_samr_connect_user_acl_enforced(struct torture_context *tctx,
 
 	status = dcerpc_pipe_connect(tctx, 
 			     &test_p, binding, &ndr_table_samr,
-			     test_credentials, NULL, tctx->lp_ctx);
+			     test_credentials, tctx->ev, tctx->lp_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("dcerpc_pipe_connect failed: %s\n", nt_errstr(status));
+		return false;
+	}
 
 	/* connect to SAMR as the user */
 	status = torture_samr_Connect5(tctx, test_p, SAMR_ACCESS_SHUTDOWN_SERVER, &uch);
@@ -447,6 +453,7 @@ static bool test_samr_accessmask_LookupDomain(struct torture_context *tctx,
 
 			ld.in.connect_handle = &ch;
 			ld.in.domain_name    = &dn;
+			ld.out.sid           = &sid;
 			dn.string            = lp_workgroup(tctx->lp_ctx);
 
 			status = dcerpc_samr_LookupDomain(p, tctx, &ld);
@@ -530,7 +537,7 @@ static bool test_samr_accessmask_OpenDomain(struct torture_context *tctx,
 
 			od.in.connect_handle = &ch;
 			od.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-			od.in.sid = *ld.out.sid;
+			od.in.sid = sid;
 			od.out.domain_handle = &dh;
 
 			status = dcerpc_samr_OpenDomain(p, tctx, &od);
@@ -627,6 +634,7 @@ static bool test_samr_connect(struct torture_context *tctx,
 		ret = false;
 	}
 
+	if (!torture_setting_bool(tctx, "samba3", false)) {
 
 	/* test if ACLs can be changed for the policy handle
 	 * returned by Connect5
@@ -649,7 +657,7 @@ static bool test_samr_connect(struct torture_context *tctx,
 		ret = false;
 	}
 
-
+	}
 
 	/* remove the test user */
 	torture_leave_domain(tctx, testuser);
