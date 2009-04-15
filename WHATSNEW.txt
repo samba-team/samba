@@ -23,7 +23,7 @@ o Changed the way smbd handles untrusted domain names given during user
 Internal changes:
 o The ntsvcs, svcctl, eventlog and spoolss subsystems have been converted
   to IDL.
-o Samba3 does now use the same tevent library as Samba4 does.
+o Samba3 and Samba4 do now share a common tevent library.
 
 
 General Changes
@@ -72,8 +72,7 @@ development of Samba: Hand-marshalled RPC stubs.
 
 Thanks a lot! :-)
 
-Samba3 does now use the same tevent library for fd and timer events as Samba4
-does.
+Samba3 and Samba4 do now share a common tevent library for fd and timer events.
 
 
 ######################################################################
