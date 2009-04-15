@@ -33,6 +33,9 @@ static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
 				  const char *streamname,
 				  SMB_STRUCT_STAT *pst,
 				  char **path);
+static int get_real_filename_mangled(connection_struct *conn, const char *path,
+				     const char *name, TALLOC_CTX *mem_ctx,
+				     char **found_name);
 
 /****************************************************************************
  Mangle the 2nd name and check if it is then equal to the first name.
@@ -447,7 +450,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 			 */
 
 			if (name_has_wildcard ||
-			    (SMB_VFS_GET_REAL_FILENAME(
+			    (get_real_filename_mangled(
 				     conn, dirpath, start,
 				     talloc_tos(), &found_name) == -1)) {
 				char *unmangled;
@@ -789,15 +792,12 @@ static bool fname_equal(const char *name1, const char *name2,
  If the name looks like a mangled name then try via the mangling functions
 ****************************************************************************/
 
-int get_real_filename(connection_struct *conn, const char *path,
-		      const char *name, TALLOC_CTX *mem_ctx,
-		      char **found_name)
+static int get_real_filename_mangled(connection_struct *conn, const char *path,
+				     const char *name, TALLOC_CTX *mem_ctx,
+				     char **found_name)
 {
-	struct smb_Dir *cur_dir;
-	const char *dname;
 	bool mangled;
 	char *unmangled_name = NULL;
-	long curpos;
 
 	mangled = mangle_is_mangled(name, conn->params);
 
@@ -838,7 +838,23 @@ int get_real_filename(connection_struct *conn, const char *path,
 			/* Name is now unmangled. */
 			name = unmangled_name;
 		}
+		return get_real_filename(conn, path, name, mem_ctx,
+					 found_name);
 	}
+
+	return SMB_VFS_GET_REAL_FILENAME(conn, path, name, mem_ctx,
+					 found_name);
+}
+
+int get_real_filename(connection_struct *conn, const char *path,
+		      const char *name, TALLOC_CTX *mem_ctx,
+		      char **found_name)
+{
+	struct smb_Dir *cur_dir;
+	const char *dname;
+	bool mangled;
+	char *unmangled_name = NULL;
+	long curpos;
 
 	/* open the directory */
 	if (!(cur_dir = OpenDir(talloc_tos(), conn, path, NULL, 0))) {
