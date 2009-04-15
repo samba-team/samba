@@ -735,7 +735,7 @@ sub get_machine_password {
 			($line,$password) = split(/"/, $line);
 			last;
 		}
-		if ($line =~ /$key/) {
+		if ($line =~ /\"$key\"/) {
 			$found = 1;
 		}
 	}
