@@ -69,7 +69,7 @@ _PUBLIC_ void ndr_print_samr_ConnectAccessMask(struct ndr_print *ndr, const char
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_ACCESS_INITIALIZE_SERVER", SAMR_ACCESS_INITIALIZE_SERVER, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_ACCESS_CREATE_DOMAIN", SAMR_ACCESS_CREATE_DOMAIN, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_ACCESS_ENUM_DOMAINS", SAMR_ACCESS_ENUM_DOMAINS, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_ACCESS_OPEN_DOMAIN", SAMR_ACCESS_OPEN_DOMAIN, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_ACCESS_LOOKUP_DOMAIN", SAMR_ACCESS_LOOKUP_DOMAIN, r);
 	ndr->depth--;
 }
 

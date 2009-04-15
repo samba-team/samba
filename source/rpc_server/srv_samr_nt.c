@@ -620,13 +620,6 @@ NTSTATUS _samr_OpenDomain(pipes_struct *p,
 	if ( !find_policy_by_hnd(p, r->in.connect_handle, (void**)(void *)&info) )
 		return NT_STATUS_INVALID_HANDLE;
 
-	status = access_check_samr_function(info->acc_granted,
-					    SAMR_ACCESS_OPEN_DOMAIN,
-					    "_samr_OpenDomain" );
-
-	if ( !NT_STATUS_IS_OK(status) )
-		return status;
-
 	/*check if access can be granted as requested by client. */
 	map_max_allowed_access(p->pipe_user.nt_user_token, &des_access);
 
@@ -2897,7 +2890,7 @@ NTSTATUS _samr_QueryDomainInfo(pipes_struct *p,
 	}
 
 	status = access_check_samr_function(info->acc_granted,
-					    SAMR_ACCESS_OPEN_DOMAIN,
+					    SAMR_ACCESS_LOOKUP_DOMAIN,
 					    "_samr_QueryDomainInfo" );
 
 	if ( !NT_STATUS_IS_OK(status) )
@@ -3322,7 +3315,7 @@ NTSTATUS _samr_Connect(pipes_struct *p,
 	map_max_allowed_access(p->pipe_user.nt_user_token, &des_access);
 
 	se_map_generic( &des_access, &sam_generic_mapping );
-	info->acc_granted = des_access & (SAMR_ACCESS_ENUM_DOMAINS|SAMR_ACCESS_OPEN_DOMAIN);
+	info->acc_granted = des_access & (SAMR_ACCESS_ENUM_DOMAINS|SAMR_ACCESS_LOOKUP_DOMAIN);
 
 	/* get a (unique) handle.  open a policy on it. */
 	if (!create_policy_hnd(p, r->out.connect_handle, free_samr_info, (void *)info))
@@ -3458,7 +3451,7 @@ NTSTATUS _samr_LookupDomain(pipes_struct *p,
 	   Reverted that change so we will work with RAS servers again */
 
 	status = access_check_samr_function(info->acc_granted,
-					    SAMR_ACCESS_OPEN_DOMAIN,
+					    SAMR_ACCESS_LOOKUP_DOMAIN,
 					    "_samr_LookupDomain");
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
