@@ -3,16 +3,38 @@
 
                    =================================
 
+
 This is the first preview release of Samba 3.4.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
 
+
 Major enhancements in Samba 3.4.0 include:
+------------------------------------------
+
+General changes:
+o Samba4 and Samba3 sources are included in the tarball
 
 Authentication Changes:
 o Changed the way smbd handles untrusted domain names given during user
   authentication
+
+
+General Changes
+===============
+
+On the way towards a standalone Samba AD domain controller, Samba3 and Samba4
+branches can be built as "merged" build. That's why Samba3 and Samba4 sources
+are included in the tarball. The merged build is possible in Samba 3.4.0, but
+disabled by default. To learn more about the merged build, please see
+http://wiki.samba.org/index.php/Franky.
+
+According to this one, there is no "source" directory included in the tarball at
+all. Samba3 sources are located in "source3", Samba4 sources are located in
+"source4". To build plain Samba3, please change to "source3" and start the
+build as usual.
+
 
 Authentication Changes
 ======================
@@ -31,6 +53,7 @@ While this behavior matches Windows, it may break some workflows which depended
 on smbd to always pass through bogus names to the DC for verification.  A new
 parameter "map untrusted to domain" can be enabled to revert to the legacy
 behavior.
+
 
 ######################################################################
 Reporting bugs & Development Discussion
