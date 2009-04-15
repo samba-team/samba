@@ -2073,7 +2073,7 @@ static bool api_RNetGroupEnum(connection_struct *conn,uint16 vuid,
 	}
 
 	status = rpccli_samr_Connect2(samr_pipe, talloc_tos(), global_myname(),
-				      SAMR_ACCESS_OPEN_DOMAIN, &samr_handle);
+				      SAMR_ACCESS_LOOKUP_DOMAIN, &samr_handle);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("api_RNetUserEnum: samr_Connect2 failed: %s\n",
 			  nt_errstr(status)));
@@ -2254,7 +2254,7 @@ static bool api_NetUserGetGroups(connection_struct *conn,uint16 vuid,
 	}
 
 	status = rpccli_samr_Connect2(samr_pipe, talloc_tos(), global_myname(),
-				      SAMR_ACCESS_OPEN_DOMAIN, &samr_handle);
+				      SAMR_ACCESS_LOOKUP_DOMAIN, &samr_handle);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("api_RNetUserEnum: samr_Connect2 failed: %s\n",
 			  nt_errstr(status)));
@@ -2409,7 +2409,7 @@ static bool api_RNetUserEnum(connection_struct *conn, uint16 vuid,
 	}
 
 	status = rpccli_samr_Connect2(samr_pipe, talloc_tos(), global_myname(),
-				      SAMR_ACCESS_OPEN_DOMAIN, &samr_handle);
+				      SAMR_ACCESS_LOOKUP_DOMAIN, &samr_handle);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("api_RNetUserEnum: samr_Connect2 failed: %s\n",
 			  nt_errstr(status)));
