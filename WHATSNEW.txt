@@ -21,7 +21,8 @@ o Changed the way smbd handles untrusted domain names given during user
   authentication
 
 Internal changes:
-o The spoolss subsystem has been converted to IDL.
+o The ntsvcs, svcctl, eventlog and spoolss subsystems have been converted
+  to IDL.
 
 
 General Changes
@@ -64,9 +65,9 @@ behavior.
 Internal Changes
 ================
 
-The spoolss subsystem has been converted to IDL. So Günther Deschner finally
-corrected one of the biggest mistakes in the development of Samba:
-Hand-marshalled RPC stubs.
+The ntsvcs, svcctl, eventlog and spoolss subsystems have been converted to IDL.
+So Günther Deschner finally corrected one of the biggest mistakes in the
+development of Samba: Hand-marshalled RPC stubs.
 
 Thanks a lot! :-)
 
