@@ -4128,25 +4128,21 @@ static WERROR construct_printer_info1(TALLOC_CTX *mem_ctx,
 				      struct spoolss_PrinterInfo1 *r,
 				      int snum)
 {
-	char *chaine = NULL;
 	r->flags		= flags;
+
+	r->description		= talloc_asprintf(mem_ctx, "%s,%s,%s",
+						  ntprinter->info_2->printername,
+						  ntprinter->info_2->drivername,
+						  ntprinter->info_2->location);
+	W_ERROR_HAVE_NO_MEMORY(r->description);
 
 	if (*ntprinter->info_2->comment == '\0') {
 		r->comment	= talloc_strdup(mem_ctx, lp_comment(snum));
-		chaine = talloc_asprintf(mem_ctx,
-				"%s,%s,%s", ntprinter->info_2->printername,
-				ntprinter->info_2->drivername, lp_comment(snum));
 	} else {
 		r->comment	= talloc_strdup(mem_ctx, ntprinter->info_2->comment); /* saved comment */
-		chaine = talloc_asprintf(mem_ctx,
-				"%s,%s,%s", ntprinter->info_2->printername,
-				ntprinter->info_2->drivername, ntprinter->info_2->comment);
 	}
-	W_ERROR_HAVE_NO_MEMORY(chaine);
 	W_ERROR_HAVE_NO_MEMORY(r->comment);
 
-	r->description		= talloc_strdup(mem_ctx, chaine);
-	W_ERROR_HAVE_NO_MEMORY(r->description);
 	r->name			= talloc_strdup(mem_ctx, ntprinter->info_2->printername);
 	W_ERROR_HAVE_NO_MEMORY(r->name);
 

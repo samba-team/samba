@@ -1102,8 +1102,10 @@ static uint8_t *swrap_marshall_packet(struct socket_info *si,
 	switch (si->family) {
 	case AF_INET:
 		break;
+#ifdef HAVE_IPV6
 	case AF_INET6:
 		break;
+#endif
 	default:
 		return NULL;
 	}

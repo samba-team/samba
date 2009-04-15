@@ -464,9 +464,8 @@ WERROR _svcctl_EnumServicesStatusW(pipes_struct *p,
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			return ntstatus_to_werror(ndr_map_error2ntstatus(ndr_err));
 		}
-
 		blob = ndr_push_blob(ndr);
-		memcpy(r->out.service, blob.data, r->in.offered);
+		memcpy(r->out.service, blob.data, MIN(blob.length, r->in.offered));
 	}
 
 	*r->out.needed			= (buffer_size > r->in.offered) ? buffer_size : r->in.offered;

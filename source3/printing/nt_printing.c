@@ -2732,34 +2732,6 @@ NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename)
 }
 
 /****************************************************************************
- Deepcopy an NT devicemode.
-****************************************************************************/
-
-NT_DEVICEMODE *dup_nt_devicemode(NT_DEVICEMODE *nt_devicemode)
-{
-	NT_DEVICEMODE *new_nt_devicemode = NULL;
-
-	if ( !nt_devicemode )
-		return NULL;
-
-	if ((new_nt_devicemode = (NT_DEVICEMODE *)memdup(nt_devicemode, sizeof(NT_DEVICEMODE))) == NULL) {
-		DEBUG(0,("dup_nt_devicemode: malloc fail.\n"));
-		return NULL;
-	}
-
-	new_nt_devicemode->nt_dev_private = NULL;
-	if (nt_devicemode->nt_dev_private != NULL) {
-		if ((new_nt_devicemode->nt_dev_private = (uint8 *)memdup(nt_devicemode->nt_dev_private, nt_devicemode->driverextra)) == NULL) {
-			SAFE_FREE(new_nt_devicemode);
-			DEBUG(0,("dup_nt_devicemode: malloc fail.\n"));
-			return NULL;
-        }
-	}
-
-	return new_nt_devicemode;
-}
-
-/****************************************************************************
  Clean up and deallocate a (maybe partially) allocated NT_DEVICEMODE.
 ****************************************************************************/
 
