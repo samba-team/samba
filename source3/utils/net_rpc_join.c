@@ -244,7 +244,7 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 	CHECK_RPC_ERR(rpccli_samr_Connect2(pipe_hnd, mem_ctx,
 					   pipe_hnd->desthost,
 					   SAMR_ACCESS_ENUM_DOMAINS
-					   | SAMR_ACCESS_OPEN_DOMAIN,
+					   | SAMR_ACCESS_LOOKUP_DOMAIN,
 					   &sam_pol),
 		      "could not connect to SAM database");
 

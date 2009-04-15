@@ -785,7 +785,7 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	status = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
 				      pipe_hnd->desthost,
 				      SAMR_ACCESS_ENUM_DOMAINS
-				      | SAMR_ACCESS_OPEN_DOMAIN,
+				      | SAMR_ACCESS_LOOKUP_DOMAIN,
 				      &sam_pol);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
