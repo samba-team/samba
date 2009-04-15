@@ -828,7 +828,15 @@ NTSTATUS _lsa_LookupSids(pipes_struct *p,
 					   &names,
 					   &mapped_count);
 
-	if (NT_STATUS_IS_ERR(status)) {
+	/* Only return here when there is a real error.
+	   NT_STATUS_NONE_MAPPED is a special case as it indicates that none of
+	   the requested sids could be resolved. Older versions of XP (pre SP3)
+	   rely that we return with the string representations of those SIDs in
+	   that case. If we don't, XP crashes - Guenther
+	   */
+
+	if (NT_STATUS_IS_ERR(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
 		return status;
 	}
 
