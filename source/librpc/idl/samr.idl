@@ -48,7 +48,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 		SAMR_ACCESS_INITIALIZE_SERVER   = 0x00000004,
 		SAMR_ACCESS_CREATE_DOMAIN       = 0x00000008,
 		SAMR_ACCESS_ENUM_DOMAINS        = 0x00000010,
-		SAMR_ACCESS_OPEN_DOMAIN         = 0x00000020
+		SAMR_ACCESS_LOOKUP_DOMAIN       = 0x00000020
 	} samr_ConnectAccessMask;
 
 	const int SAMR_ACCESS_ALL_ACCESS = 0x0000003F;
@@ -69,7 +69,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 
 	const int GENERIC_RIGHTS_SAM_EXECUTE =
 		(STANDARD_RIGHTS_EXECUTE_ACCESS		|
-		 SAMR_ACCESS_OPEN_DOMAIN		|
+		 SAMR_ACCESS_LOOKUP_DOMAIN		|
 		 SAMR_ACCESS_CONNECT_TO_SERVER);
 
 	/* User Object specific access rights */
