@@ -33,6 +33,13 @@ static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
 				  const char *streamname,
 				  SMB_STRUCT_STAT *pst,
 				  char **path);
+static int get_real_filename_mangled(connection_struct *conn, const char *path,
+				     const char *name, TALLOC_CTX *mem_ctx,
+				     char **found_name);
+static int get_real_filename_internal(connection_struct *conn,
+				      const char *path, const char *name,
+				      bool mangled,
+				      TALLOC_CTX *mem_ctx, char **found_name);
 
 /****************************************************************************
  Mangle the 2nd name and check if it is then equal to the first name.
@@ -447,7 +454,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 			 */
 
 			if (name_has_wildcard ||
-			    (SMB_VFS_GET_REAL_FILENAME(
+			    (get_real_filename_mangled(
 				     conn, dirpath, start,
 				     talloc_tos(), &found_name) == -1)) {
 				char *unmangled;
@@ -789,15 +796,12 @@ static bool fname_equal(const char *name1, const char *name2,
  If the name looks like a mangled name then try via the mangling functions
 ****************************************************************************/
 
-int get_real_filename(connection_struct *conn, const char *path,
-		      const char *name, TALLOC_CTX *mem_ctx,
-		      char **found_name)
+static int get_real_filename_mangled(connection_struct *conn, const char *path,
+				     const char *name, TALLOC_CTX *mem_ctx,
+				     char **found_name)
 {
-	struct smb_Dir *cur_dir;
-	const char *dname;
 	bool mangled;
 	char *unmangled_name = NULL;
-	long curpos;
 
 	mangled = mangle_is_mangled(name, conn->params);
 
@@ -837,8 +841,36 @@ int get_real_filename(connection_struct *conn, const char *path,
 		if (!mangled) {
 			/* Name is now unmangled. */
 			name = unmangled_name;
+		} else {
+			/*
+			 * If we have mangled names, do not ask the VFS'es
+			 * GET_REAL_FILENAME. The Unix file system below does
+			 * not know about Samba's style of mangling.
+			 *
+			 * Boolean flags passed down are evil, the alternative
+			 * would be to pass a comparison function down into
+			 * the loop in get_real_filename_internal(). For now,
+			 * do the quick&dirty boolean flag approach.
+			 */
+			return get_real_filename_internal(conn, path, name,
+							  true,
+							  mem_ctx, found_name);
 		}
 	}
+
+	return SMB_VFS_GET_REAL_FILENAME(conn, path, name, mem_ctx,
+					 found_name);
+}
+
+static int get_real_filename_internal(connection_struct *conn,
+				      const char *path, const char *name,
+				      bool mangled,
+				      TALLOC_CTX *mem_ctx, char **found_name)
+{
+	struct smb_Dir *cur_dir;
+	const char *dname;
+	char *unmangled_name = NULL;
+	long curpos;
 
 	/* open the directory */
 	if (!(cur_dir = OpenDir(talloc_tos(), conn, path, NULL, 0))) {
@@ -885,6 +917,20 @@ int get_real_filename(connection_struct *conn, const char *path,
 	TALLOC_FREE(cur_dir);
 	errno = ENOENT;
 	return -1;
+}
+
+
+
+int get_real_filename(connection_struct *conn,
+		      const char *path, const char *name,
+		      TALLOC_CTX *mem_ctx, char **found_name)
+{
+	/*
+	 * This is the default VFS function. If we end up here, we know we
+	 * don't have mangled names around.
+	 */
+	return get_real_filename_internal(conn, path, name, false,
+					  mem_ctx, found_name);
 }
 
 static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
