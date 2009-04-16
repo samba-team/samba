@@ -36,8 +36,6 @@
 #ifndef HEIMDAL_KRB5_LOCATE_PLUGIN_H
 #define HEIMDAL_KRB5_LOCATE_PLUGIN_H 1
 
-#include <krb5.h>
-
 #define KRB5_PLUGIN_LOCATE "resolve"
 
 enum locate_service_type {
