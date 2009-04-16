@@ -80,7 +80,7 @@ encode_ticket (krb5_context context,
 
     et.flags = cred->flags.b;
     et.key = cred->session;
-    et.crealm = *krb5_princ_realm (context, cred->client);
+    et.crealm = cred->client->realm;
     copy_PrincipalName(&cred->client->name, &et.cname);
     {
 	krb5_data empty_string;
@@ -120,7 +120,7 @@ encode_ticket (krb5_context context,
      */
 
     ticket.tkt_vno = 5;
-    ticket.realm = *krb5_princ_realm (context, cred->server);
+    ticket.realm = cred->server->realm;
     copy_PrincipalName(&cred->server->name, &ticket.sname);
 
     ASN1_MALLOC_ENCODE(Ticket, buf, len, &ticket, &size, ret);
