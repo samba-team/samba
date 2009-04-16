@@ -1037,12 +1037,10 @@ _kdc_as_rep(krb5_context context,
 	e_text = "No PKINIT PA found";
 
 	i = 0;
-	if ((pa = _kdc_find_padata(req, &i, KRB5_PADATA_PK_AS_REQ)))
-	    ;
+	pa = _kdc_find_padata(req, &i, KRB5_PADATA_PK_AS_REQ);
 	if (pa == NULL) {
 	    i = 0;
-	    if((pa = _kdc_find_padata(req, &i, KRB5_PADATA_PK_AS_REQ_WIN)))
-		;
+	    pa = _kdc_find_padata(req, &i, KRB5_PADATA_PK_AS_REQ_WIN);
 	}
 	if (pa) {
 	    char *client_cert = NULL;
