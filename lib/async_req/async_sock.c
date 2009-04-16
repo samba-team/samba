@@ -426,7 +426,7 @@ static void writev_handler(struct tevent_context *ev, struct tevent_fd *fde,
 		to_write += state->iov[i].iov_len;
 	}
 
-	written = sys_writev(state->fd, state->iov, state->count);
+	written = writev(state->fd, state->iov, state->count);
 	if (written == -1) {
 		tevent_req_error(req, errno);
 		return;
@@ -570,7 +570,7 @@ static void read_packet_handler(struct tevent_context *ev,
 		return;
 	}
 
-	tmp = TALLOC_REALLOC_ARRAY(state, state->buf, uint8_t, total+more);
+	tmp = talloc_realloc(state, state->buf, uint8_t, total+more);
 	if (tevent_req_nomem(tmp, req)) {
 		return;
 	}

@@ -18,7 +18,7 @@
 */
 
 #include "includes.h"
-#include "wbc_async.h"
+#include "nsswitch/libwbclient/wbc_async.h"
 
 extern char *optarg;
 extern int optind;

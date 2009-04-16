@@ -21,8 +21,17 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
-#include "wbc_async.h"
+#include "replace.h"
+#include "system/filesys.h"
+#include "system/network.h"
+#include <talloc.h>
+#include <tevent.h>
+struct fd_event;
+struct event_context;
+#include "lib/async_req/async_sock.h"
+#include "nsswitch/winbind_struct_protocol.h"
+#include "nsswitch/libwbclient/wbclient.h"
+#include "nsswitch/libwbclient/wbc_async.h"
 
 wbcErr map_wbc_err_from_errno(int error)
 {

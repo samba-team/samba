@@ -15,6 +15,11 @@
 #define SAFE_FREE(x) do { if(x) {free(x); x=NULL;} } while(0)
 #endif
 
+#ifndef FSTRING_LEN
+#define FSTRING_LEN 256
+typedef char fstring[FSTRING_LEN];
+#endif
+
 #ifndef _WINBINDD_NTDOM_H
 #define _WINBINDD_NTDOM_H
 

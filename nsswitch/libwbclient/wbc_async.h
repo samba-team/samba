@@ -24,9 +24,13 @@
 #ifndef _WBC_ASYNC_H_
 #define _WBC_ASYNC_H_
 
+#include <talloc.h>
+#include <tevent.h>
 #include "nsswitch/libwbclient/wbclient.h"
 
 struct wb_context;
+struct winbindd_request;
+struct winbindd_response;
 
 struct tevent_req *wb_trans_send(TALLOC_CTX *mem_ctx,
 				 struct tevent_context *ev,
