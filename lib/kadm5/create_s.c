@@ -41,10 +41,10 @@ get_default(kadm5_server_context *context, krb5_principal princ,
 {
     kadm5_ret_t ret;
     krb5_principal def_principal;
-    krb5_realm *realm = krb5_princ_realm(context->context, princ);
+    krb5_const_realm realm = krb5_principal_get_realm(context->context, princ);
 
     ret = krb5_make_principal(context->context, &def_principal,
-			      *realm, "default", NULL);
+			      realm, "default", NULL);
     if (ret)
 	return ret;
     ret = kadm5_s_get_principal(context, def_principal, def,
