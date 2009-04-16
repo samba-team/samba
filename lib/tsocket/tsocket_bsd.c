@@ -523,9 +523,11 @@ static char *tsocket_address_bsd_string(const struct tsocket_address *addr,
 	case AF_INET:
 		prefix = "ipv4";
 		break;
+#ifdef HAVE_IPV6
 	case AF_INET6:
 		prefix = "ipv6";
 		break;
+#endif
 	default:
 		errno = EINVAL;
 		return NULL;
