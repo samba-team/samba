@@ -1046,7 +1046,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 	DEBUG(3, ("NTLMSSP: Set final flags:\n"));
 	debug_ntlmssp_flags(ntlmssp_state->neg_flags);
 
-	if (!msrpc_parse(NULL, &reply, chal_parse_string,
+	if (!msrpc_parse(ntlmssp_state, &reply, chal_parse_string,
 			 "NTLMSSP",
 			 &ntlmssp_command, 
 			 &server_domain,
@@ -1059,10 +1059,8 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	ntlmssp_state->server_domain = talloc_strdup(ntlmssp_state,
-						     server_domain);
+	ntlmssp_state->server_domain = server_domain;
 
-	SAFE_FREE(server_domain);
 	if (challenge_blob.length != 8) {
 		data_blob_free(&struct_blob);
 		return NT_STATUS_INVALID_PARAMETER;
