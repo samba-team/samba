@@ -385,7 +385,7 @@ gsskrb5_acceptor_start(OM_uint32 * minor_status,
 			       server,
 			       in, &out);
 	krb5_rd_req_in_ctx_free(context, in);
-	if (kret == KRB5KRB_AP_ERR_SKEW) {
+	if (kret == KRB5KRB_AP_ERR_SKEW || kret == KRB5KRB_AP_ERR_TKT_NYV) {
 	    /*
 	     * No reply in non-MUTUAL mode, but we don't know that its
 	     * non-MUTUAL mode yet, thats inside the 8003 checksum, so
