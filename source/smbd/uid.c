@@ -166,6 +166,10 @@ void conn_clear_vuid_cache(connection_struct *conn, uint16_t vuid)
 
 		if (ent->vuid == vuid) {
 			ent->vuid = UID_FIELD_INVALID;
+			/* Ensure we're not freeing an active pointer. */
+			if (conn->server_info == ent->server_info) {
+				conn->server_info = NULL;
+			}
 			TALLOC_FREE(ent->server_info);
 			ent->read_only = False;
 			ent->admin_user = False;
@@ -217,6 +221,13 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 	snum = SNUM(conn);
 
 	server_info = vuser ? vuser->server_info : conn->server_info;
+
+	if (!server_info) {
+		/* Invalid vuid sent - even with security = share. */
+		DEBUG(2,("change_to_user: Invalid vuid %d used on "
+			 "share %s.\n",vuid, lp_servicename(snum) ));
+		return false;
+	}
 
 	if (!check_user_ok(conn, vuid, server_info, snum)) {
 		DEBUG(2,("change_to_user: SMB user %s (unix user %s, vuid %d) "
