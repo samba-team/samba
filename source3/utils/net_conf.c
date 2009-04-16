@@ -340,6 +340,14 @@ static int net_conf_import(struct net_context *c, struct smbconf_ctx *conf_ctx,
 		if (!W_ERROR_IS_OK(werr)) {
 			goto cancel;
 		}
+
+		werr = smbconf_transaction_start(conf_ctx);
+		if (!W_ERROR_IS_OK(werr)) {
+			d_printf("error starting transaction: %s\n",
+				 dos_errstr(werr));
+			goto done;
+		}
+
 		werr = import_process_service(c, conf_ctx, service);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto cancel;
