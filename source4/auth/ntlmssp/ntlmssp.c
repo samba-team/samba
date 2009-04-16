@@ -23,7 +23,7 @@
 
 #include "includes.h"
 #include "auth/ntlmssp/ntlmssp.h"
-#include "auth/ntlmssp/msrpc_parse.h"
+#include "../libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"

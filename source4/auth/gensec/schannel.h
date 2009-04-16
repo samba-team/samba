@@ -20,6 +20,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "libcli/auth/libcli_auth.h"
 #include "auth/gensec/schannel_proto.h"
 #include "auth/gensec/schannel_state.h"
 #include "libcli/auth/schannel_state.h"
