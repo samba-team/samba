@@ -430,14 +430,18 @@ static int process_root(int local_flags)
 		}
 		
 		if((local_flags & LOCAL_SET_PASSWORD) && (new_passwd == NULL)) {
-			struct passwd *passwd = getpwnam_alloc(NULL, user_name);
+			struct passwd *passwd;
 
-			if (!passwd) {
-				fprintf(stderr, "Cannot locate Unix account for "
-					"'%s'!\n", user_name);
-				exit(1);
+			if (remote_machine == NULL) {
+				passwd = getpwnam_alloc(NULL, user_name);
+
+				if (!passwd) {
+					fprintf(stderr, "Cannot locate Unix account for "
+						"'%s'!\n", user_name);
+					exit(1);
+				}
+				TALLOC_FREE(passwd);
 			}
-			TALLOC_FREE(passwd);
 
 			new_passwd = prompt_for_new_password(stdin_passwd_get);
 			
