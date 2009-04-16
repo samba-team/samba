@@ -393,4 +393,23 @@ krb5_cc_gen_new(krb5_context context,
 }
 
 
+
+krb5_realm * KRB5_LIB_FUNCTION
+krb5_princ_realm(krb5_context context,
+		 krb5_principal principal)
+    KRB5_DEPRECATED
+{
+    return &princ_realm(principal);
+}
+
+
+void KRB5_LIB_FUNCTION
+krb5_princ_set_realm(krb5_context context,
+		     krb5_principal principal,
+		     krb5_realm *realm)
+    KRB5_DEPRECATED
+{
+    princ_realm(principal) = *realm;
+}
+
 #endif /* HEIMDAL_SMALLER */
