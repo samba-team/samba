@@ -324,16 +324,15 @@ check_for_tgt (krb5_context context,
     krb5_error_code ret;
     krb5_creds pattern;
     krb5_creds creds;
-    krb5_realm *client_realm;
+    krb5_const_realm client_realm;
     int expired;
 
     krb5_cc_clear_mcred(&pattern);
 
-    client_realm = krb5_princ_realm (context, principal);
+    client_realm = krb5_principal_get_realm(context, principal);
 
     ret = krb5_make_principal (context, &pattern.server,
-			       *client_realm, KRB5_TGS_NAME, *client_realm,
-			       NULL);
+			       client_realm, KRB5_TGS_NAME, client_realm, NULL);
     if (ret)
 	krb5_err (context, 1, ret, "krb5_make_principal");
     pattern.client = principal;
