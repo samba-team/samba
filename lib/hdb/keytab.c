@@ -147,7 +147,7 @@ find_db (krb5_context context,
     const krb5_config_binding *top_bind = NULL;
     const krb5_config_binding *default_binding = NULL;
     const krb5_config_binding *db;
-    krb5_realm *prealm = krb5_princ_realm(context, rk_UNCONST(principal));
+    krb5_const_realm realm = krb5_principal_get_realm(context, principal);
 
     *dbname = *mkey = NULL;
 
@@ -169,7 +169,7 @@ find_db (krb5_context context,
 		krb5_warnx(context, "WARNING: using the first encountered");
 	    } else
 		default_binding = db;
-	} else if (strcmp (*prealm, p) == 0) {
+	} else if (strcmp (realm, p) == 0) {
 	    set_config (context, db, dbname, mkey);
 	    break;
 	}
