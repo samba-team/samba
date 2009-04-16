@@ -1430,13 +1430,10 @@ bool sid_to_uid(const DOM_SID *psid, uid_t *puid)
 	if (!ret || expired) {
 		/* Not in cache. Ask winbindd. */
 		if (!winbind_sid_to_uid(puid, psid)) {
-			if (!winbind_ping()) {
-				return legacy_sid_to_uid(psid, puid);
-			}
-
 			DEBUG(5, ("winbind failed to find a uid for sid %s\n",
 				  sid_string_dbg(psid)));
-			return false;
+			/* winbind failed. do legacy */
+			return legacy_sid_to_uid(psid, puid);
 		}
 	}
 
@@ -1497,13 +1494,11 @@ bool sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 		 * (Idmap will check it is a valid SID and of the right type) */
 
 		if ( !winbind_sid_to_gid(pgid, psid) ) {
-			if (!winbind_ping()) {
-				return legacy_sid_to_gid(psid, pgid);
-			}
 
 			DEBUG(10,("winbind failed to find a gid for sid %s\n",
 				  sid_string_dbg(psid)));
-			return false;
+			/* winbind failed. do legacy */
+			return legacy_sid_to_gid(psid, pgid);
 		}
 	}
 
