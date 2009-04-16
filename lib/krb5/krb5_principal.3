@@ -47,7 +47,6 @@
 .Nm krb5_parse_name ,
 .Nm krb5_parse_name_flags ,
 .Nm krb5_parse_nametype ,
-.Nm krb5_princ_realm ,
 .Nm krb5_princ_set_realm ,
 .Nm krb5_principal_compare ,
 .Nm krb5_principal_compare_any_realm ,
@@ -90,8 +89,6 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fn "krb5_unparse_name_short" "krb5_context context" "krb5_const_principal principal" "char **name"
 .Ft krb5_error_code
 .Fn krb5_unparse_name_fixed_short "krb5_context context" "krb5_const_principal principal" "char *name" "size_t len"
-.Ft krb5_realm *
-.Fn krb5_princ_realm "krb5_context context" "krb5_principal principal"
 .Ft void
 .Fn krb5_princ_set_realm "krb5_context context" "krb5_principal principal" "krb5_realm *realm"
 .Ft krb5_error_code
@@ -287,7 +284,6 @@ is returned.
 and
 .Fn krb5_principal_get_comp_string
 are replacements for
-.Fn krb5_princ_realm ,
 .Fn krb5_princ_component
 and related macros, described as internal in the MIT API
 specification.
@@ -308,14 +304,6 @@ and
 get and sets the name type for a principal.
 Name type handling is tricky and not often needed,
 don't use this unless you know what you do.
-.Pp
-.Fn krb5_princ_realm
-returns the realm component of the principal.
-The caller must not free realm unless
-.Fn krb5_princ_set_realm
-is called to set a new realm after freeing the realm.
-.Fn krb5_princ_set_realm
-sets the realm component of a principal. The old realm is not freed.
 .Pp
 .Fn krb5_sname_to_principal
 and
