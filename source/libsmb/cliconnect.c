@@ -1096,7 +1096,7 @@ bool cli_ulogoff(struct cli_state *cli)
 		return False;
 	}
 
-        cli->cnum = -1;
+        cli->vuid = -1;
         return True;
 }
 
