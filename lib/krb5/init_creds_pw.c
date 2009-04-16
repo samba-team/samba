@@ -1795,7 +1795,7 @@ krb5_get_init_creds_password(krb5_context context,
     if (ret)
 	goto out;
 
-    if (ctx->password == NULL && password == NULL) {
+    if (prompter != NULL && ctx->password == NULL && password == NULL) {
 	krb5_prompt prompt;
 	krb5_data password_data;
 	char *p, *q;
