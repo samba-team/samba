@@ -725,14 +725,13 @@ tgs_make_reply(krb5_context context,
 				    PRINCIPAL_ALLOW_DISABLE_TRANSITED_CHECK(server)) ||
 				   GLOBAL_ALLOW_DISABLE_TRANSITED_CHECK),
 				 &tgt->transited, &et,
-				 *krb5_princ_realm(context, client_principal),
-				 *krb5_princ_realm(context, server->entry.principal),
-				 *krb5_princ_realm(context, krbtgt->entry.principal));
+				 krb5_principal_get_realm(context, client_principal),
+				 krb5_principal_get_realm(context, server->entry.principal),
+				 krb5_principal_get_realm(context, krbtgt->entry.principal));
     if(ret)
 	goto out;
 
-    copy_Realm(krb5_princ_realm(context, server_principal),
-	       &rep.ticket.realm);
+    copy_Realm(&server_principal->realm, &rep.ticket.realm);
     _krb5_principal2principalname(&rep.ticket.sname, server_principal);
     copy_Realm(&tgt_name->realm, &rep.crealm);
 /*
