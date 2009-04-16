@@ -1570,3 +1570,49 @@ krb5_cc_set_friendly_name(krb5_context context,
 
     return krb5_cc_set_config(context, id, NULL, "FriendlyName", &data);
 }
+
+/**
+ * Get the lifetime of the initial ticket in the cache
+ *
+ * Get the lifetime of the initial ticket in the cache, if the initial
+ * ticket was not found, the error code KRB5_CC_END is returned.
+ *
+ * @param context A Kerberos 5 context.
+ * @param id a credential cache
+ * @param t the relative lifetime of the initial ticket
+ *
+ * @return Return an error code or 0, see krb5_get_error_message().
+ *
+ * @ingroup krb5_ccache
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_cc_get_lifetime(krb5_context context, krb5_ccache id, time_t *t)
+{
+    krb5_cc_cursor cursor;
+    krb5_error_code ret;
+    krb5_creds cred;
+    time_t now;
+
+    *t = 0;
+    now = time(NULL);
+    
+    ret = krb5_cc_start_seq_get(context, id, &cursor);
+    if (ret)
+	return ret;
+
+    while ((ret = krb5_cc_next_cred(context, id, &cursor, &cred)) == 0) {
+	if (cred.flags.b.initial) {
+	    if (now < cred.times.endtime)
+		*t = cred.times.endtime - now;
+	    krb5_free_cred_contents(context, &cred);
+	    goto out;
+	}
+	krb5_free_cred_contents(context, &cred);
+    }
+    
+ out:
+    krb5_cc_end_seq_get(context, id, &cursor);
+
+    return ret;
+}
