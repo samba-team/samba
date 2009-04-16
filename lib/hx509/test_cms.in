@@ -248,6 +248,31 @@ ${hxtool} cms-verify-sd \
 	sd.data.out > /dev/null || exit 1
 cmp "$srcdir/data/static-file" sd.data.out || exit 1
 
+echo "verify signed data - sha1"
+${hxtool} cms-verify-sd \
+	--missing-revoke \
+	--anchors=FILE:$srcdir/data/ca.crt \
+	--content-info \
+	"$srcdir/data/test-signed-sha-1" sd.data.out > /dev/null || exit 1
+cmp "$srcdir/data/static-file" sd.data.out || exit 1
+
+echo "verify signed data - sha256"
+${hxtool} cms-verify-sd \
+	--missing-revoke \
+	--anchors=FILE:$srcdir/data/ca.crt \
+	--content-info \
+	"$srcdir/data/test-signed-sha-256" sd.data.out > /dev/null || exit 1
+cmp "$srcdir/data/static-file" sd.data.out || exit 1
+
+#echo "verify signed data - sha512"
+#${hxtool} cms-verify-sd \
+#	--missing-revoke \
+#	--anchors=FILE:$srcdir/data/ca.crt \
+#	--content-info \
+#	"$srcdir/data/test-signed-sha-512" sd.data.out > /dev/null || exit 1
+#cmp "$srcdir/data/static-file" sd.data.out || exit 1
+
+
 echo "create signed data (subcert, no certs)"
 ${hxtool} cms-create-sd \
 	--certificate=FILE:$srcdir/data/sub-cert.crt,$srcdir/data/sub-cert.key \
