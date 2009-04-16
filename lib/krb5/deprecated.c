@@ -399,7 +399,7 @@ krb5_princ_realm(krb5_context context,
 		 krb5_principal principal)
     KRB5_DEPRECATED
 {
-    return &princ_realm(principal);
+    return &principal->realm;
 }
 
 
@@ -409,7 +409,7 @@ krb5_princ_set_realm(krb5_context context,
 		     krb5_realm *realm)
     KRB5_DEPRECATED
 {
-    princ_realm(principal) = *realm;
+    principal->realm = *realm;
 }
 
 #endif /* HEIMDAL_SMALLER */
