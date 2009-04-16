@@ -536,22 +536,6 @@ krb5_unparse_name_ext(krb5_context context,
 
 #endif
 
-krb5_realm * KRB5_LIB_FUNCTION
-krb5_princ_realm(krb5_context context,
-		 krb5_principal principal)
-{
-    return &princ_realm(principal);
-}
-
-
-void KRB5_LIB_FUNCTION
-krb5_princ_set_realm(krb5_context context,
-		     krb5_principal principal,
-		     krb5_realm *realm)
-{
-    princ_realm(principal) = *realm;
-}
-
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_principal_set_realm(krb5_context context,
 			 krb5_principal principal,
