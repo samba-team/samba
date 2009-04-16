@@ -142,8 +142,15 @@
 		</para></listitem>
 		</varlistentry>
 
-		</variablelist>
+		<varlistentry>
+		<term>warn_pwd_expire</term>
+		<listitem><para>
+		Defines number of days before pam_winbind starts to warn about passwords that are
+		going to expire. Defaults to 14 days.
+		</para></listitem>
+		</varlistentry>
 
+		</variablelist>
 
 	</para>
 
