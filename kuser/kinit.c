@@ -222,13 +222,13 @@ get_server(krb5_context context,
 	   const char *server,
 	   krb5_principal *princ)
 {
-    krb5_realm *client_realm;
+    krb5_const_realm realm;
     if(server)
 	return krb5_parse_name(context, server, princ);
 
-    client_realm = krb5_princ_realm (context, client);
-    return krb5_make_principal(context, princ, *client_realm,
-			       KRB5_TGS_NAME, *client_realm, NULL);
+    realm = krb5_principal_get_realm(context, client);
+    return krb5_make_principal(context, princ, realm,
+			       KRB5_TGS_NAME, realm, NULL);
 }
 
 #ifndef HEIMDAL_SMALLER
