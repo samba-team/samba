@@ -130,11 +130,40 @@ out:
 }
 
 static int
-parse_private_key(hx509_context context, const char *fn,
-		  struct hx509_collector *c,
-		  const hx509_pem_header *headers,
-		  const void *data, size_t len,
-		  const AlgorithmIdentifier *ai)
+parse_pkcs8_private_key(hx509_context context, const char *fn,
+			struct hx509_collector *c,
+			const hx509_pem_header *headers,
+			const void *data, size_t length,
+			const AlgorithmIdentifier *ai)
+{
+    PKCS8PrivateKeyInfo ki;
+    heim_octet_string keydata;
+   
+    int ret;
+
+    ret = decode_PKCS8PrivateKeyInfo(data, length, &ki, NULL);
+    if (ret)
+	return ret;
+
+    keydata.data = rk_UNCONST(data);
+    keydata.length = length;
+
+    ret = _hx509_collector_private_key_add(context,
+					   c,
+					   &ki.privateKeyAlgorithm,
+					   NULL,
+					   &ki.privateKey,
+					   &keydata);
+    free_PKCS8PrivateKeyInfo(&ki);
+    return ret;
+}
+
+static int
+parse_pem_private_key(hx509_context context, const char *fn,
+		      struct hx509_collector *c,
+		      const hx509_pem_header *headers,
+		      const void *data, size_t len,
+		      const AlgorithmIdentifier *ai)
 {
     int ret = 0;
     const char *enc;
@@ -283,8 +312,9 @@ struct pem_formats {
     const AlgorithmIdentifier *(*ai)(void);
 } formats[] = {
     { "CERTIFICATE", parse_certificate, NULL },
-    { "RSA PRIVATE KEY", parse_private_key, hx509_signature_rsa },
-    { "EC PRIVATE KEY", parse_private_key, hx509_signature_ecPublicKey }
+    { "PRIVATE KEY", parse_pkcs8_private_key, NULL },
+    { "RSA PRIVATE KEY", parse_pem_private_key, hx509_signature_rsa },
+    { "EC PRIVATE KEY", parse_pem_private_key, hx509_signature_ecPublicKey }
 };
 
 
