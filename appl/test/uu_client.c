@@ -95,9 +95,9 @@ proto (int sock, const char *hostname, const char *service)
     if(status)
 	krb5_err(context, 1, status, "krb5_cc_get_principal");
     status = krb5_make_principal(context, &mcred.server,
-				 *krb5_princ_realm(context, client),
+				 krb5_principal_get_realm(context, client),
 				 "krbtgt",
-				 *krb5_princ_realm(context, client),
+				 krb5_principal_get_realm(context, client),
 				 NULL);
     if(status)
 	krb5_err(context, 1, status, "krb5_make_principal");
