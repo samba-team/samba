@@ -81,22 +81,6 @@ static bool pdb_wbc_sam_gid_to_sid(struct pdb_methods *methods, gid_t gid,
 	return winbind_gid_to_sid(sid, gid);
 }
 
-static bool pdb_wbc_sam_sid_to_id(struct pdb_methods *methods,
-				  const DOM_SID *sid,
-				  union unid_t *id, enum lsa_SidType *type)
-{
-	if (winbind_sid_to_uid(&id->uid, sid)) {
-		*type = SID_NAME_USER;
-	} else if (winbind_sid_to_gid(&id->gid, sid)) {
-		/* We assume all gids are groups, not aliases */
-		*type = SID_NAME_DOM_GRP;
-	} else {
-		return false;
-	}
-
-	return true;
-}
-
 static NTSTATUS pdb_wbc_sam_enum_group_members(struct pdb_methods *methods,
 					       TALLOC_CTX *mem_ctx,
 					       const DOM_SID *group,
@@ -430,7 +414,6 @@ static NTSTATUS pdb_init_wbc_sam(struct pdb_methods **pdb_method, const char *lo
 	(*pdb_method)->set_account_policy = pdb_wbc_sam_set_account_policy;
 	(*pdb_method)->uid_to_sid = pdb_wbc_sam_uid_to_sid;
 	(*pdb_method)->gid_to_sid = pdb_wbc_sam_gid_to_sid;
-	(*pdb_method)->sid_to_id = pdb_wbc_sam_sid_to_id;
 
 	(*pdb_method)->search_groups = pdb_wbc_sam_search_groups;
 	(*pdb_method)->search_aliases = pdb_wbc_sam_search_aliases;
