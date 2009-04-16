@@ -178,6 +178,40 @@ ${openssl} smime \
     -out test-signed-data-noattr-nocerts
 
 ${openssl} smime \
+    -sign \
+    -md sha1 \
+    -nodetach \
+    -binary \
+    -in static-file \
+    -signer test.crt \
+    -inkey test.key \
+    -outform DER \
+    -out test-signed-sha-1
+
+${openssl} smime \
+    -sign \
+    -md sha256 \
+    -nodetach \
+    -binary \
+    -in static-file \
+    -signer test.crt \
+    -inkey test.key \
+    -outform DER \
+    -out test-signed-sha-256
+
+${openssl} smime \
+    -sign \
+    -md sha512 \
+    -nodetach \
+    -binary \
+    -in static-file \
+    -signer test.crt \
+    -inkey test.key \
+    -outform DER \
+    -out test-signed-sha-512
+
+
+${openssl} smime \
     -encrypt \
     -nodetach \
     -binary \
