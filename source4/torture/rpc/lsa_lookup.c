@@ -88,6 +88,7 @@ static NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, uint16_t level,
 {
 	struct lsa_LookupSids r;
 	struct lsa_SidArray sidarray;
+	struct lsa_RefDomainList *domains;
 	uint32_t count = 0;
 	uint32_t i;
 
@@ -108,6 +109,7 @@ static NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, uint16_t level,
 	r.in.count = &count;
 	r.out.names = names;
 	r.out.count = &count;
+	r.out.domains = &domains;
 
 	return dcerpc_lsa_LookupSids(p, mem_ctx, &r);
 }
