@@ -5012,6 +5012,50 @@ static bool subst_test(const char *str, const char *user, const char *domain,
 	return result;
 }
 
+static bool run_uid_regression_test(int dummy)
+{
+	static struct cli_state *cli;
+	int16_t old_vuid;
+	bool correct = True;
+
+	printf("starting uid regression test\n");
+
+	if (!torture_open_connection(&cli, 0)) {
+		return False;
+	}
+
+	cli_sockopt(cli, sockops);
+
+	/* Ok - now save then logoff our current user. */
+	old_vuid = cli->vuid;
+
+	if (!cli_ulogoff(cli)) {
+		d_printf("(%s) cli_ulogoff failed: %s\n",
+			__location__, cli_errstr(cli));
+		correct = false;
+		goto out;
+	}
+
+	cli->vuid = old_vuid;
+
+	/* Try an operation. */
+	if (!cli_mkdir(cli, "\\uid_reg_test")) {
+		/* We expect bad uid. */
+		if (!check_error(__LINE__, cli, ERRSRV, ERRbaduid,
+				NT_STATUS_NO_SUCH_USER)) {
+			return False;
+		}
+		goto out;
+	}
+
+	cli_rmdir(cli, "\\uid_reg_test");
+
+  out:
+
+	torture_close_connection(cli);
+	return correct;
+}
+
 static bool run_local_substitute(int dummy)
 {
 	bool ok = true;
@@ -5528,6 +5572,7 @@ static struct {
 	{"RW3",  run_readwritelarge, 0},
 	{"OPEN", run_opentest, 0},
 	{"POSIX", run_simple_posix_open_test, 0},
+	{ "UID-REGRESSION-TEST", run_uid_regression_test, 0},
 #if 1
 	{"OPENATTR", run_openattrtest, 0},
 #endif
