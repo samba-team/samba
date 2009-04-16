@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "auth/ntlmssp/msrpc_parse.h"
+#include "libcli/auth/msrpc_parse.h"
 
 /*
   this is a tiny msrpc packet generator. I am only using this to
