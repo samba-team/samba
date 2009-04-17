@@ -6554,6 +6554,11 @@ NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e0,
 		    void (*callback)(void *, const struct notify_event *), 
 		    void *private_data);
 NTSTATUS notify_remove(struct notify_context *notify, void *private_data);
+NTSTATUS notify_remove_onelevel(struct notify_context *notify,
+				const struct file_id *fid,
+				void *private_data);
+void notify_onelevel(struct notify_context *notify, uint32_t action,
+		     uint32_t filter, struct file_id fid, const char *name);
 void notify_trigger(struct notify_context *notify,
 		    uint32_t action, uint32_t filter, const char *path);
 

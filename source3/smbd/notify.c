@@ -339,6 +339,9 @@ void notify_fname(connection_struct *conn, uint32 action, uint32 filter,
 		  const char *path)
 {
 	char *fullpath;
+	char *parent;
+	const char *name;
+	SMB_STRUCT_STAT sbuf;
 
 	if (path[0] == '.' && path[1] == '/') {
 		path += 2;
@@ -346,6 +349,13 @@ void notify_fname(connection_struct *conn, uint32 action, uint32 filter,
 	if (asprintf(&fullpath, "%s/%s", conn->connectpath, path) == -1) {
 		DEBUG(0, ("asprintf failed\n"));
 		return;
+	}
+
+	if (parent_dirname(talloc_tos(), path, &parent, &name)
+	    && (SMB_VFS_STAT(conn, parent, &sbuf) != -1)) {
+		notify_onelevel(conn->notify_ctx, action, filter,
+				SMB_VFS_FILE_ID_CREATE(conn, &sbuf),
+				name);
 	}
 
 	notify_trigger(conn->notify_ctx, action, filter, fullpath);

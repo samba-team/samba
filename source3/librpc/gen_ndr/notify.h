@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+#include "libcli/util/ntstatus.h"
+
 #ifndef _HEADER_notify
 #define _HEADER_notify
 
@@ -14,6 +16,11 @@ struct notify_entry {
 	const char * path;/* [flag(LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_NULLTERM)] */
 	uint32_t path_len;
 	void* private_data;
+}/* [public] */;
+
+struct notify_entry_array {
+	uint32_t num_entries;
+	struct notify_entry *entries;
 }/* [public] */;
 
 struct notify_depth {

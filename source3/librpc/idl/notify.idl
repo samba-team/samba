@@ -25,6 +25,11 @@ interface notify
 		pointer private_data;
 	} notify_entry;
 
+	typedef [public] struct {
+		uint32 num_entries;
+		notify_entry entries[num_entries];
+	} notify_entry_array;
+
 	/*
 	  to allow for efficient search for matching entries, we
 	  divide them by the directory depth, with a separate array
