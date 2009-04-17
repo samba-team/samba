@@ -1058,6 +1058,7 @@ static void dcerpc_ship_next_request(struct dcerpc_connection *c)
 	while (remaining > 0 || first_packet) {
 		uint32_t chunk = MIN(chunk_size, remaining);
 		bool last_frag = false;
+		bool do_trans = false;
 
 		first_packet = false;
 		pkt.pfc_flags &= ~(DCERPC_PFC_FLAG_FIRST |DCERPC_PFC_FLAG_LAST);
@@ -1080,13 +1081,26 @@ static void dcerpc_ship_next_request(struct dcerpc_connection *c)
 			DLIST_REMOVE(p->conn->pending, req);
 			return;
 		}
-		
-		req->status = p->conn->transport.send_request(p->conn, &blob, last_frag);
+
+		if (last_frag && !req->async_call) {
+			do_trans = true;
+		}
+
+		req->status = p->conn->transport.send_request(p->conn, &blob, do_trans);
 		if (!NT_STATUS_IS_OK(req->status)) {
 			req->state = RPC_REQUEST_DONE;
 			DLIST_REMOVE(p->conn->pending, req);
 			return;
 		}		
+
+		if (last_frag && !do_trans) {
+			req->status = p->conn->transport.send_read(p->conn);
+			if (!NT_STATUS_IS_OK(req->status)) {
+				req->state = RPC_REQUEST_DONE;
+				DLIST_REMOVE(p->conn->pending, req);
+				return;
+			}
+		}
 
 		remaining -= chunk;
 	}
