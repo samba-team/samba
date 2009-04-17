@@ -256,6 +256,7 @@ struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
 						const struct GUID *object,
 						const struct ndr_interface_table *table,
 						uint32_t opnum, 
+						bool async,
 						TALLOC_CTX *mem_ctx, 
 						void *r);
 const char *dcerpc_server_name(struct dcerpc_pipe *p);

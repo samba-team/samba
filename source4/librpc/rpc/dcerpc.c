@@ -1348,11 +1348,12 @@ static NTSTATUS dcerpc_ndr_validate_out(struct dcerpc_connection *c,
  send a rpc request given a dcerpc_call structure 
  */
 struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
-						const struct GUID *object,
-						const struct ndr_interface_table *table,
-						uint32_t opnum, 
-						TALLOC_CTX *mem_ctx, 
-						void *r)
+					    const struct GUID *object,
+					    const struct ndr_interface_table *table,
+					    uint32_t opnum,
+					    bool async,
+					    TALLOC_CTX *mem_ctx,
+					    void *r)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_push *push;
@@ -1401,8 +1402,7 @@ struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
 	dump_data(10, request.data, request.length);
 
 	/* make the actual dcerpc request */
-	req = dcerpc_request_send(p, object, opnum, table->calls[opnum].async,
-				  &request);
+	req = dcerpc_request_send(p, object, opnum, async, &request);
 
 	if (req != NULL) {
 		req->ndr.table = table;
@@ -1519,7 +1519,7 @@ _PUBLIC_ NTSTATUS dcerpc_ndr_request(struct dcerpc_pipe *p,
 {
 	struct rpc_request *req;
 
-	req = dcerpc_ndr_request_send(p, object, table, opnum, mem_ctx, r);
+	req = dcerpc_ndr_request_send(p, object, table, opnum, false, mem_ctx, r);
 	if (req == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
