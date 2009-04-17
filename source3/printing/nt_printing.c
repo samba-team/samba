@@ -745,7 +745,7 @@ int get_builtin_ntforms(nt_forms_struct **list)
 	if (!*list) {
 		return 0;
 	}
-	return sizeof(default_forms) / sizeof(default_forms[0]);
+	return ARRAY_SIZE(default_forms);
 }
 
 /****************************************************************************
@@ -754,18 +754,17 @@ int get_builtin_ntforms(nt_forms_struct **list)
 
 bool get_a_builtin_ntform_by_string(const char *form_name, nt_forms_struct *form)
 {
-	int i,count;
+	int i;
 	DEBUGADD(6,("Looking for builtin form %s \n", form_name));
-	count = sizeof(default_forms) / sizeof(default_forms[0]);
-	for (i=0;i<count;i++) {
+	for (i=0; i<ARRAY_SIZE(default_forms); i++) {
 		if (strequal(form_name,default_forms[i].name)) {
 			DEBUGADD(6,("Found builtin form %s \n", form_name));
 			memcpy(form,&default_forms[i],sizeof(*form));
-			break;
+			return true;
 		}
 	}
 
-	return (i !=count);
+	return false;
 }
 
 /****************************************************************************
