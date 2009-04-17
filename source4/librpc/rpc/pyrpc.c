@@ -247,7 +247,7 @@ static PyObject *py_iface_request(PyObject *self, PyObject *args, PyObject *kwar
 	}
 
 	status = dcerpc_request(iface->pipe, object?&object_guid:NULL,
-				opnum, false, mem_ctx, &data_in, &data_out);
+				opnum, mem_ctx, &data_in, &data_out);
 
 	if (NT_STATUS_IS_ERR(status)) {
 		PyErr_SetDCERPCStatus(iface->pipe, status);

@@ -1150,14 +1150,13 @@ NTSTATUS dcerpc_request_recv(struct rpc_request *req,
 NTSTATUS dcerpc_request(struct dcerpc_pipe *p, 
 			struct GUID *object,
 			uint16_t opnum,
-			bool async,
 			TALLOC_CTX *mem_ctx,
 			DATA_BLOB *stub_data_in,
 			DATA_BLOB *stub_data_out)
 {
 	struct rpc_request *req;
 
-	req = dcerpc_request_send(p, object, opnum, async, stub_data_in);
+	req = dcerpc_request_send(p, object, opnum, false, stub_data_in);
 	if (req == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
