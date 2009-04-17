@@ -8111,7 +8111,7 @@ WERROR _spoolss_AddForm(pipes_struct *p,
 	/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
 	   and not a printer admin, then fail */
 
-	if ((p->server_info->utok.uid != 0) &&
+	if ((p->server_info->utok.uid != sec_initial_uid()) &&
 	     !user_has_privileges(p->server_info->ptok, &se_printop) &&
 	     !token_contains_name_in_list(uidtoname(p->server_info->utok.uid),
 					  NULL, NULL,
@@ -8135,7 +8135,9 @@ WERROR _spoolss_AddForm(pipes_struct *p,
 		goto done;
 	}
 
+	become_root();
 	write_ntforms(&list, count);
+	unbecome_root();
 
 	/*
 	 * ChangeID must always be set if this is a printer
@@ -8168,6 +8170,7 @@ WERROR _spoolss_DeleteForm(pipes_struct *p,
 	WERROR status = WERR_OK;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	SE_PRIV se_printop = SE_PRINT_OPERATOR;
+	bool ret = false;
 
 	DEBUG(5,("_spoolss_DeleteForm\n"));
 
@@ -8189,7 +8192,7 @@ WERROR _spoolss_DeleteForm(pipes_struct *p,
 			goto done;
 	}
 
-	if ((p->server_info->utok.uid != 0) &&
+	if ((p->server_info->utok.uid != sec_initial_uid()) &&
 	     !user_has_privileges(p->server_info->ptok, &se_printop) &&
 	     !token_contains_name_in_list(uidtoname(p->server_info->utok.uid),
 					  NULL, NULL,
@@ -8209,8 +8212,12 @@ WERROR _spoolss_DeleteForm(pipes_struct *p,
 
 	count = get_ntforms(&list);
 
-	if ( !delete_a_form(&list, form_name, &count, &status ))
+	become_root();
+	ret = delete_a_form(&list, form_name, &count, &status);
+	unbecome_root();
+	if (ret == false) {
 		goto done;
+	}
 
 	/*
 	 * ChangeID must always be set if this is a printer
@@ -8268,7 +8275,7 @@ WERROR _spoolss_SetForm(pipes_struct *p,
 	/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
 	   and not a printer admin, then fail */
 
-	if ((p->server_info->utok.uid != 0) &&
+	if ((p->server_info->utok.uid != sec_initial_uid()) &&
 	     !user_has_privileges(p->server_info->ptok, &se_printop) &&
 	     !token_contains_name_in_list(uidtoname(p->server_info->utok.uid),
 					  NULL, NULL,
@@ -8286,7 +8293,9 @@ WERROR _spoolss_SetForm(pipes_struct *p,
 
 	count = get_ntforms(&list);
 	update_a_form(&list, form, count);
+	become_root();
 	write_ntforms(&list, count);
+	unbecome_root();
 
 	/*
 	 * ChangeID must always be set if this is a printer
