@@ -1,28 +1,47 @@
                    ==============================
-                   Release Notes for Samba 3.2.10
-			    April 1, 2009
+                   Release Notes for Samba 3.2.11
+			   April 17, 2009
                    ==============================
 
 
 This is a maintenance release of the Samba 3.2 series.
 
-In Samba 3.2.9, there is an issue while migrating passdb.tdb files from older
-Samba versions (e.g. 3.2.8). That causes panics of smbd child processes until
-the parent smbd is restarted once after converting the passdb.tdb file. This
-issue is fixed in Samba 3.2.10.
+Major enhancements in 3.2.11 include:
 
-Sorry for the inconveniences!
+    o Fix domain logins for WinXP clients pre SP3 (bug #6263).
+    o Fix Winbind samr_OpenDomain (bug #6089).
+    o Fix smbd crash for close_on_completion.
+
 
 ######################################################################
 Changes
 #######
 
-Changes since 3.2.9
--------------------
+Changes since 3.2.10
+--------------------
 
 
-o   Michael Adam <obnox@samba.org>
-    * BUG #6195: Don't let smbd child processes panic.
+o   Jeremy Allison <jra@samba.org>
+    * BUG 6089: Fix Winbind samr_OpenDomain.
+    * BUG 6254: Fix IPv6 PUT/GET errors to an SMB server (3.3) with
+      "msdfs root" set to "yes".
+    * Allow pdbedit to change a user rid/sid.
+    * When doing a cli_ulogoff don't invalidate the cnum, invalidate the vuid.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 6205: Correct sample smb.conf share configuration.
+    * BUG 6263: Fix domain logins for WinXP clients pre SP3.
+    * Fix resume command typo for "printing = vlp".
+
+
+o   Volker Lendecke <vl@samba.org>
+    * Fix smbd crash for close_on_completion.
+    * Fix a memleak in an unlikely error path in change_notify_create().
+
+
+o   Jim McDonough <jmcd@samba.org>
+    * Don't look up local user for remote changes, even when root.
 
 
 ######################################################################
