@@ -53,11 +53,10 @@ static bool test_random_uuid(struct torture_context *torture)
 	uuid = GUID_random();
 
 	r1.in.level = DS_ROLE_BASIC_INFORMATION;
-	req = dcerpc_ndr_request_send(p1, &uuid,
-				      &ndr_table_dssetup,
-				      NDR_DSSETUP_DSROLEGETPRIMARYDOMAININFORMATION,
-				      torture, &r1);
-	status = dcerpc_ndr_request_recv(req);
+	status = dcerpc_ndr_request(p1, &uuid,
+				    &ndr_table_dssetup,
+				    NDR_DSSETUP_DSROLEGETPRIMARYDOMAININFORMATION,
+				    torture, &r1);
 	torture_assert_ntstatus_ok(torture, status, "DsRoleGetPrimaryDomainInformation failed");
 	torture_assert_werr_ok(torture, r1.out.result, "DsRoleGetPrimaryDomainInformation failed");
 
@@ -69,11 +68,10 @@ static bool test_random_uuid(struct torture_context *torture)
 	r2.out.account_name = &account_name_p;
 	r2.out.authority_name = &authority_name_p;
 
-	req = dcerpc_ndr_request_send(p2, &uuid,
-				      &ndr_table_lsarpc,
-				      NDR_LSA_GETUSERNAME,
-				      torture, &r2);
-	status = dcerpc_ndr_request_recv(req);
+	status = dcerpc_ndr_request(p2, &uuid,
+				    &ndr_table_lsarpc,
+				    NDR_LSA_GETUSERNAME,
+				    torture, &r2);
 	torture_assert_ntstatus_ok(torture, status, "lsaClose failed");
 	torture_assert_ntstatus_ok(torture, r2.out.result, "lsaClose failed");
 
