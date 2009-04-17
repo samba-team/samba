@@ -16,7 +16,7 @@
         </para>
 
 	<para>This feature also enables the name aliasing API which can
-	  be used to make domain user and group names to a non-qlaified
+	  be used to make domain user and group names to a non-qualified
 	  version.  Please refer to the manpage for the configured
 	  idmap and nss_info plugin for the specifics on how to configure
 	  name aliasing for a specific configuration.  Name aliasing takes
