@@ -5105,6 +5105,59 @@ static bool run_chain1(int dummy)
 	return True;
 }
 
+static bool run_mangle1(int dummy)
+{
+	struct cli_state *cli;
+	const char *fname = "this_is_a_long_fname_to_be_mangled.txt";
+	int fnum;
+	fstring alt_name;
+	NTSTATUS status;
+	time_t change, access, write;
+	SMB_OFF_T size;
+	uint16_t mode;
+
+	printf("starting chain1 test\n");
+	if (!torture_open_connection(&cli, 0)) {
+		return False;
+	}
+
+	cli_sockopt(cli, sockops);
+
+	fnum = cli_nt_create_full(
+		cli, fname, 0, GENERIC_ALL_ACCESS|DELETE_ACCESS,
+		FILE_ATTRIBUTE_NORMAL, 0, FILE_OVERWRITE_IF, 0, 0);
+	if (fnum == -1) {
+		d_printf("open %s failed: %s\n", fname, cli_errstr(cli));
+		return false;
+	}
+	cli_close(cli, fnum);
+
+	status = cli_qpathinfo_alt_name(cli, fname, alt_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("cli_qpathinfo_alt_name failed: %s\n",
+			 nt_errstr(status));
+		return false;
+	}
+	d_printf("alt_name: %s\n", alt_name);
+
+	fnum = cli_open(cli, alt_name, O_RDONLY, DENY_NONE);
+	if (fnum == -1) {
+		d_printf("cli_open(%s) failed: %s\n", alt_name,
+			 cli_errstr(cli));
+		return false;
+	}
+	cli_close(cli, fnum);
+
+	if (!cli_qpathinfo(cli, alt_name, &change, &access, &write, &size,
+			   &mode)) {
+		d_printf("cli_qpathinfo(%s) failed: %s\n", alt_name,
+			 cli_errstr(cli));
+		return false;
+	}
+
+	return true;
+}
+
 static size_t null_source(uint8_t *buf, size_t n, void *priv)
 {
 	size_t *to_pull = (size_t *)priv;
@@ -5831,6 +5884,7 @@ static struct {
 	{"DELETE", run_deletetest, 0},
 	{"PROPERTIES", run_properties, 0},
 	{"MANGLE", torture_mangle, 0},
+	{"MANGLE1", run_mangle1, 0},
 	{"W2K", run_w2ktest, 0},
 	{"TRANS2SCAN", torture_trans2_scan, 0},
 	{"NTTRANSSCAN", torture_nttrans_scan, 0},
