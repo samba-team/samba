@@ -34,8 +34,9 @@ sub ParseFunctionSend($$$)
 	if (p->conn->flags & DCERPC_DEBUG_PRINT_IN) {
 		NDR_PRINT_IN_DEBUG($name, r);
 	}
-	
-	return dcerpc_ndr_request_send(p, NULL, &ndr_table_$interface->{NAME}, NDR_$uname, mem_ctx, r);
+
+	return dcerpc_ndr_request_send(p, NULL, &ndr_table_$interface->{NAME},
+				       NDR_$uname, true, mem_ctx, r);
 ";
 	}
 
