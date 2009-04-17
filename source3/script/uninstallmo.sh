@@ -1,1 +1,2 @@
-installmo.sh
+#!/bin/sh
+script/installmo.sh
