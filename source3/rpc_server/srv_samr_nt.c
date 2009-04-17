@@ -343,6 +343,7 @@ static DISP_INFO *get_samr_dispinfo_by_sid(DOM_SID *psid)
 			}
 		}
 		sid_copy(&builtin_dispinfo->sid, &global_sid_Builtin);
+		builtin_dispinfo->builtin_domain = true;
 
 		return builtin_dispinfo;
 	}
@@ -359,6 +360,7 @@ static DISP_INFO *get_samr_dispinfo_by_sid(DOM_SID *psid)
 			}
 		}
 		sid_copy(&domain_dispinfo->sid, get_global_sam_sid());
+		domain_dispinfo->builtin_domain = false;
 
 		return domain_dispinfo;
 	}
