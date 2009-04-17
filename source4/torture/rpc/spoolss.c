@@ -1212,8 +1212,12 @@ static bool test_EnumJobs(struct torture_context *tctx,
 		for (j = 0; j < count; j++) {
 
 			test_GetJob(tctx, p, handle, info[j].info1.job_id);
-			test_SetJob(tctx, p, handle, info[j].info1.job_id, SPOOLSS_JOB_CONTROL_PAUSE);
-			test_SetJob(tctx, p, handle, info[j].info1.job_id, SPOOLSS_JOB_CONTROL_RESUME);
+
+			/* FIXME - gd */
+			if (!torture_setting_bool(tctx, "samba3", false)) {
+				test_SetJob(tctx, p, handle, info[j].info1.job_id, SPOOLSS_JOB_CONTROL_PAUSE);
+				test_SetJob(tctx, p, handle, info[j].info1.job_id, SPOOLSS_JOB_CONTROL_RESUME);
+			}
 		}
 
 	} else {
