@@ -258,7 +258,7 @@ static NTSTATUS smb2_send_trans_request(struct dcerpc_connection *c, DATA_BLOB *
 	ZERO_STRUCT(io);
 	io.in.file.handle	= smb->handle;
 	io.in.function		= FSCTL_NAMED_PIPE_READ_WRITE;
-	io.in.max_response_size	= 0x1000;
+	io.in.max_response_size	= 0x2000;
 	io.in.flags		= 1;
 	io.in.out		= *blob;
 
