@@ -313,7 +313,11 @@ static bool test_EnumPrinterDrivers(struct torture_context *tctx,
 		uint32_t count;
 		union spoolss_DriverInfo *info;
 
-		r.in.server		= "";
+		/* FIXME: gd, come back and fix "" as server, and handle
+		 * priority of returned error codes in torture test and samba 3
+		 * server */
+
+		r.in.server		= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 		r.in.environment	= SPOOLSS_ARCHITECTURE_NT_X86;
 		r.in.level		= level;
 		r.in.buffer		= NULL;
@@ -331,16 +335,15 @@ static bool test_EnumPrinterDrivers(struct torture_context *tctx,
 			/* TODO: do some more checks here */
 			continue;
 		}
-		torture_assert_werr_equal(tctx, r.out.result, WERR_INSUFFICIENT_BUFFER, 
-			"EnumPrinterDrivers failed");
+		if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+			blob = data_blob_talloc(ctx, NULL, needed);
+			data_blob_clear(&blob);
+			r.in.buffer = &blob;
+			r.in.offered = needed;
 
-		blob = data_blob_talloc(ctx, NULL, needed);
-		data_blob_clear(&blob);
-		r.in.buffer = &blob;
-		r.in.offered = needed;
-
-		status = dcerpc_spoolss_EnumPrinterDrivers(p, ctx, &r);
-		torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_EnumPrinterDrivers failed");
+			status = dcerpc_spoolss_EnumPrinterDrivers(p, ctx, &r);
+			torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_EnumPrinterDrivers failed");
+		}
 
 		torture_assert_werr_ok(tctx, r.out.result, "EnumPrinterDrivers failed");
 
