@@ -459,6 +459,16 @@ WERROR reg_createkey(TALLOC_CTX *ctx, struct registry_key *parent,
 	char *path, *end;
 	WERROR err;
 
+	/*
+	 * We must refuse to handle subkey-paths containing
+	 * a '/' character because at a lower level, after
+	 * normalization, '/' is treated as a key separator
+	 * just like '\\'.
+	 */
+	if (strchr(subkeypath, '/') != NULL) {
+		return WERR_INVALID_PARAM;
+	}
+
 	if (!(mem_ctx = talloc_new(ctx))) return WERR_NOMEM;
 
 	if (!(path = talloc_strdup(mem_ctx, subkeypath))) {
