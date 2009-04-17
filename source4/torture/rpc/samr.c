@@ -5664,7 +5664,9 @@ static bool test_OpenDomain(struct dcerpc_pipe *p, struct torture_context *tctx,
 		}
 		break;
 	case TORTURE_SAMR_PASSWORDS_PWDLASTSET:
-		ret &= test_CreateUser2(p, tctx, &domain_handle, sid, which_ops, machine_credentials);
+		if (!torture_setting_bool(tctx, "samba3", false)) {
+			ret &= test_CreateUser2(p, tctx, &domain_handle, sid, which_ops, machine_credentials);
+		}
 		ret &= test_CreateUser(p, tctx, &domain_handle, &user_handle, sid, which_ops, machine_credentials);
 		if (!ret) {
 			printf("Testing PASSWORDS PWDLASTSET on domain %s failed!\n", dom_sid_string(tctx, sid));
