@@ -9,7 +9,7 @@ This is a maintenance release of the Samba 3.2 series.
 Major enhancements in 3.2.11 include:
 
     o Fix domain logins for WinXP clients pre SP3 (bug #6263).
-    o Fix Winbind samr_OpenDomain (bug #6089).
+    o Fix samr_OpenDomain access checks (bug #6089).
     o Fix smbd crash for close_on_completion.
 
 
@@ -22,7 +22,7 @@ Changes since 3.2.10
 
 
 o   Jeremy Allison <jra@samba.org>
-    * BUG 6089: Fix Winbind samr_OpenDomain.
+    * BUG 6089: Fix samr_OpenDomain access checks.
     * BUG 6254: Fix IPv6 PUT/GET errors to an SMB server (3.3) with
       "msdfs root" set to "yes".
     * Allow pdbedit to change a user rid/sid.
