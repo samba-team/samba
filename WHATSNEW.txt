@@ -1,16 +1,16 @@
                    =============================
-                   Release Notes for Samba 3.3.3
-			    April, 1 2009
+                   Release Notes for Samba 3.3.4
+			  April, 18  2009
                    =============================
 
-This is the latest bugfix release release of the Samba 3.3 series.
 
-Major enhancements in Samba 3.3.3 include:
+This is the latest bugfix release of the Samba 3.3 series.
 
-    o Migrating from 3.0.x to 3.3.x can fail to update passdb.tdb
-      correctly (bug #6195).
-    o Fix serving of files with colons to CIFS/VFS client (bug #6196).
-    o Fix "map readonly" (bug #6186).
+Major enhancements in Samba 3.3.4 include:
+
+    o Fix domain logins for WinXP clients pre SP3 (bug #6263).
+    o Fix samr_OpenDomain access checks (bug #6089).
+    o Fix usrmgr.exe creating a user (bug #6243).
 
 
 ######################################################################
@@ -18,104 +18,48 @@ Changes
 #######
 
 
-Changes since 3.3.2:
+Changes since 3.3.3:
 --------------------
 
 
 o   Michael Adam <obnox@samba.org>
-    * BUG 6195: Don't let smbd child processes panic.
-    * Add backend_requires_messaging() method to libsmbconf.
-    * Add methods is_writeable() and wrapper smbconf_is_writeable() to libsmbconf.
-    * Fall back to file backend when no valid backend was found.
-    * Fix a memleak in dbwrap_rbt.
-    * Provide transaction_start|commit|cancel fns for the registry tdb.
-    * Speed up "net conf drop".
-    * Speed up "net conf import".
-    * Add transactions to the libsmbconf API.
-    * Reduce memory usage of "net conf import".
-    * Registry cleanup.
-    * Fix handling of SAMBA_VERSION_VENDOR_PATCH.
-    * Fix build of pam_winbind.so with static linking.
-    * Tidy up some convert_string_internal error cases.
+    * net conf: Save share name as given, not as lower case only.
+    * Prevent creation of registry keys containing the '/' character.
 
 
 o   Jeremy Allison <jra@samba.org>
-    * BUG 6186: Fix map readonly.
-    * BUG 6195: Migrating from 3.0.x to 3.3.x can fail to update passdb.tdb
-      correctly.
-    * BUG 6196: Unable to serve files with colons to Linux CIFS/VFS client.
-    * BUG 6224: nmbd waits 5 minutes at startup before checking if it needs
-      to run elections.
-    * Allow DFS client paths to work when POSIX pathnames have been
-      selected.
-    * Try and fix the build farm RAW-STREAMS errors.
-    * Ensure files starting with multiple dots are hidden.
+    * BUG 6089: Fix samr_OpenDomain access checks.
+    * BUG 6254: Fix IPv6 PUT/GET errors to an SMB server (3.3) with
+      "msdfs root" set to "yes".
+    * Allow pdbedit to change a user rid/sid.
+    * When doing a cli_ulogoff don't invalidate the cnum, invalidate the vuid.
+    * Don't access a freed structure when logging off and re-using a vuid.
 
 
 o   Günther Deschner <gd@samba.org>
-    * BUG 6102: NetQueryDisplayInformation could return wrong information.
-    * BUG 6193: Avoid messing with sync_context in libnet_samsync_delta().
-    * Fix notify_printer_status_byname.
-    * Fix Coverity IDs 722, 762, 774, 775, 776.
+    * BUG 5329: Add "net rpc service delete/create".
+    * BUG 6238: Make sure wbcLogoffUserParams are properly initialized before
+      freed.
+    * BUG 6263: Fix domain logins for WinXP clients pre SP3.
+    * Try to to fix password_expired flag handling.
+    * Make sure to grey out change fields in the netdomjoin-gui when not
+      running as root.
 
 
-o   Björn Jacke <bj@sernet.de>
-    * Fix build on old Heimdal based systems.
-    * Fix compile warning.
-    * Use parentheses in if condition to make negation clear.
-
-
-o   Andy Kelk <andy@mopoke.co.uk>
-    * Add dirsort module.
-
-
-o   Steve Langasek <vorlon@debian.org>
-    * BUG 6147: Fix detection of the GNU ld version.
+o   Jim McDonough <jmcd@samba.org>
+    * Don't look up local user for remote changes, even when root.
 
 
 o   Volker Lendecke <vl@samba.org>
-    * BUG 6097: Fix smbd segfault.
-    * BUG 6130: Don't crash in winbindd_rpc lookup_groupmem() on unmapped
-      members.
-    * BUG 6139: Add missing whitespace in mount.cifs error message.
-    * Fix a malloc/talloc mismatch when cli_initialise() fails.
-    * Fix a valgrind error.
-    * Speed up "net conf list".
-    * Add sorted subkey cache.
-    * Use StrCaseCmp in the dirsort module.
-    * Document the dirsort module.
-    * Fix the build on HP/UX.
-    * Disable dns_sd by default.
-    * Add avahi detection to configure.
-    * Add event avahi binding.
-    * Use avahi to register _smb._tcp in smbd.
-    * Fix two memleaks in the encryption code.
-    * Fix a scary "fill_share_mode_lock failed" message.
+    * BUG 6243: Fix usrmgr.exe creating a user.
+    * Use procid_str in debug messages for better cluster-debuggability.
+    * Use cluster-aware procid_is_me instead of comparing pids.
+    * Fix smbd crash for close_on_completion.
+    * Fix a memleak in an unlikely error path in change_notify_create().
 
 
-o   Derrell Lipman <derrell@dworkin.(none)>
-    * BUG 6228: Fix SMBC_open_ctx failure due to path resolve failure doesn't set
-      errno.
-
-
-o   Stefan Metzmacher <metze@samba.org>
-    * Don't use reserved words in smbconftort.
-    * Fix smb signing for fragmented trans/trans2/nttrans requests.
-
-
-o   Tim Prouty <tprouty@samba.org>
-    * Parse_packet can return NULL which is then dereferenced in
-      match_mailslot_name.
-
-
-o   Timur <timur@FreeBSD.org>
-    * Format the header check for netinet/ip.h more nicely.
-    * Fix detection of netinet/ip.h on FreeBSD.
-
-
-o   Alexander Zagrebin <alexz@visp.ru>
-    * Missing break in conversion function prevents tdb password database
-      update.
+o   Martin Schwenke <martin@meltin.net>
+    * In net_conf_import, start a transaction when importing a single share.
 
 
 ######################################################################
