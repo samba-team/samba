@@ -54,7 +54,6 @@ struct samr_connect_info {
 
 typedef struct disp_info {
 	DOM_SID sid; /* identify which domain this is. */
-	bool builtin_domain; /* Quick flag to check if this is the builtin domain. */
 	struct pdb_search *users; /* querydispinfo 1 and 4 */
 	struct pdb_search *machines; /* querydispinfo 2 */
 	struct pdb_search *groups; /* querydispinfo 3 and 5, enumgroups */
@@ -346,7 +345,6 @@ static DISP_INFO *get_samr_dispinfo_by_sid(DOM_SID *psid)
 			}
 		}
 		sid_copy(&builtin_dispinfo->sid, &global_sid_Builtin);
-		builtin_dispinfo->builtin_domain = true;
 
 		return builtin_dispinfo;
 	}
@@ -363,7 +361,6 @@ static DISP_INFO *get_samr_dispinfo_by_sid(DOM_SID *psid)
 			}
 		}
 		sid_copy(&domain_dispinfo->sid, get_global_sam_sid());
-		domain_dispinfo->builtin_domain = false;
 
 		return domain_dispinfo;
 	}
@@ -510,7 +507,7 @@ static uint32 count_sam_users(struct disp_info *info, uint32 acct_flags)
 {
 	struct samr_displayentry *entry;
 
-	if (info->builtin_domain) {
+	if (sid_check_is_builtin(&info->sid)) {
 		/* No users in builtin. */
 		return 0;
 	}
@@ -534,7 +531,7 @@ static uint32 count_sam_groups(struct disp_info *info)
 {
 	struct samr_displayentry *entry;
 
-	if (info->builtin_domain) {
+	if (sid_check_is_builtin(&info->sid)) {
 		/* No groups in builtin. */
 		return 0;
 	}
@@ -3036,14 +3033,13 @@ NTSTATUS _samr_CreateUser2(pipes_struct *p,
 	uint32    des_access = GENERIC_RIGHTS_USER_ALL_ACCESS;
 	bool can_add_account = False;
 	SE_PRIV se_rights;
-	DISP_INFO *disp_info = NULL;
 
 	/* Get the domain SID stored in the domain policy */
-	if (!get_lsa_policy_samr_sid(p, r->in.domain_handle, &sid, &acc_granted,
-				     &disp_info))
+	if (!get_lsa_policy_samr_sid(p, r->in.domain_handle, &sid,
+				     &acc_granted, NULL))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (disp_info->builtin_domain) {
+	if (sid_check_is_builtin(&sid)) {
 		DEBUG(5,("_samr_CreateUser2: Refusing user create in BUILTIN\n"));
 		return NT_STATUS_ACCESS_DENIED;
 	}
