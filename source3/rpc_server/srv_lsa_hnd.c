@@ -24,6 +24,24 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
+/*
+ * Handle database - stored per pipe.
+ */
+
+struct policy {
+	struct policy *next, *prev;
+
+	struct policy_handle pol_hnd;
+
+	void *data_ptr;
+};
+
+struct handle_list {
+	struct policy *Policy; 	/* List of policies. */
+	size_t count;			/* Current number of handles. */
+	size_t pipe_ref_count;	/* Number of pipe handles referring to this list. */
+};
+
 /* This is the max handles across all instances of a pipe name. */
 #ifndef MAX_OPEN_POLS
 #define MAX_OPEN_POLS 1024
@@ -38,6 +56,14 @@ static bool is_samr_lsa_pipe(const struct ndr_syntax_id *syntax)
 {
 	return (ndr_syntax_id_equal(syntax, &ndr_table_samr.syntax_id)
 		|| ndr_syntax_id_equal(syntax, &ndr_table_lsarpc.syntax_id));
+}
+
+size_t num_pipe_handles(struct handle_list *list)
+{
+	if (list == NULL) {
+		return 0;
+	}
+	return list->count;
 }
 
 /****************************************************************************

@@ -212,7 +212,7 @@ bool conn_idle_all(time_t t)
 
 	for (plist = get_first_internal_pipe(); plist;
 	     plist = get_next_internal_pipe(plist)) {
-		if (plist->pipe_handles && plist->pipe_handles->count) {
+		if (num_pipe_handles(plist->pipe_handles) != 0) {
 			return False;
 		}
 	}

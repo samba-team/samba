@@ -110,23 +110,7 @@ typedef struct _input_data {
 	prs_struct data;
 } input_data;
 
-/*
- * Handle database - stored per pipe.
- */
-
-struct policy {
-	struct policy *next, *prev;
-
-	struct policy_handle pol_hnd;
-
-	void *data_ptr;
-};
-
-struct handle_list {
-	struct policy *Policy; 	/* List of policies. */
-	size_t count;			/* Current number of handles. */
-	size_t pipe_ref_count;	/* Number of pipe handles referring to this list. */
-};
+struct handle_list;
 
 /* Domain controller authentication protocol info */
 struct dcinfo {

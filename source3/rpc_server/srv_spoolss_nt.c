@@ -591,7 +591,8 @@ static bool open_printer_hnd(pipes_struct *p, struct policy_handle *hnd,
 
 	new_printer->access_granted = access_granted;
 
-	DEBUG(5, ("%d printer handles active\n", (int)p->pipe_handles->count ));
+	DEBUG(5, ("%d printer handles active\n",
+		  (int)num_pipe_handles(p->pipe_handles)));
 
 	return true;
 }

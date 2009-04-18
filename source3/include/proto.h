@@ -5875,6 +5875,7 @@ NTSTATUS evlog_convert_tdb_to_evt(TALLOC_CTX *mem_ctx,
 
 /* The following definitions come from rpc_server/srv_lsa_hnd.c  */
 
+size_t num_pipe_handles(struct handle_list *list);
 bool init_pipe_handle_list(pipes_struct *p,
 			   const struct ndr_syntax_id *syntax);
 bool create_policy_hnd(pipes_struct *p, struct policy_handle *hnd, void *data_ptr);
