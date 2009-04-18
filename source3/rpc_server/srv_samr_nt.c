@@ -73,7 +73,6 @@ typedef struct disp_info {
 struct samr_info {
 	/* for use by the \PIPE\samr policy */
 	DOM_SID sid;
-	bool builtin_domain; /* Quick flag to check if this is the builtin domain. */
 	uint32 status; /* some sort of flag.  best to record it.  comes from opnum 0x39 */
 	uint32 acc_granted;
 	DISP_INFO *disp_info;
@@ -394,10 +393,8 @@ static struct samr_info *get_samr_info_by_sid(TALLOC_CTX *mem_ctx,
 
 	if (psid) {
 		sid_copy( &info->sid, psid);
-		info->builtin_domain = sid_check_is_builtin(psid);
 	} else {
 		DEBUG(10,("get_samr_info_by_sid: created new info for NULL sid.\n"));
-		info->builtin_domain = False;
 	}
 
 	info->disp_info = get_samr_dispinfo_by_sid(psid);
@@ -985,7 +982,7 @@ NTSTATUS _samr_EnumDomainUsers(pipes_struct *p,
 
 	DEBUG(5,("_samr_EnumDomainUsers: %d\n", __LINE__));
 
-	if (info->builtin_domain) {
+	if (sid_check_is_builtin(&info->sid)) {
 		/* No users in builtin. */
 		*r->out.resume_handle = *r->in.resume_handle;
 		DEBUG(5,("_samr_EnumDomainUsers: No users in BUILTIN\n"));
@@ -1124,7 +1121,7 @@ NTSTATUS _samr_EnumDomainGroups(pipes_struct *p,
 
 	DEBUG(5,("_samr_EnumDomainGroups: %d\n", __LINE__));
 
-	if (info->builtin_domain) {
+	if (sid_check_is_builtin(&info->sid)) {
 		/* No groups in builtin. */
 		*r->out.resume_handle = *r->in.resume_handle;
 		DEBUG(5,("_samr_EnumDomainGroups: No groups in BUILTIN\n"));
@@ -1467,7 +1464,7 @@ NTSTATUS _samr_QueryDisplayInfo(pipes_struct *p,
 	if (!find_policy_by_hnd(p, r->in.domain_handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (info->builtin_domain) {
+	if (sid_check_is_builtin(&info->sid)) {
 		DEBUG(5,("_samr_QueryDisplayInfo: Nothing in BUILTIN\n"));
 		return NT_STATUS_OK;
 	}
