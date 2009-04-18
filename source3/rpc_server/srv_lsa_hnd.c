@@ -280,3 +280,48 @@ bool pipe_access_check(pipes_struct *p)
 
 	return True;
 }
+
+NTSTATUS _policy_handle_create(struct pipes_struct *p, struct policy_handle *hnd,
+			       void *pdata, size_t data_size, const char *type)
+{
+	void **ppdata = (void **)pdata;
+	void *data;
+
+	if (p->pipe_handles->count > MAX_OPEN_POLS) {
+		DEBUG(0, ("policy_handle_create: ERROR: too many handles (%d) "
+			  "on pipe %s.\n", (int)p->pipe_handles->count,
+			  get_pipe_name_from_iface(&p->syntax)));
+		return NT_STATUS_INSUFFICIENT_RESOURCES;
+	}
+
+	data = talloc_size(talloc_tos(), data_size);
+	if (data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_set_name(data, type);
+
+	if (!create_policy_hnd(p, hnd, data)) {
+		TALLOC_FREE(data);
+		return NT_STATUS_NO_MEMORY;
+	}
+	*ppdata = data;
+	return NT_STATUS_OK;
+}
+
+void *_policy_handle_find(struct pipes_struct *p,
+			  const struct policy_handle *hnd,
+			  const char *name)
+{
+	void *data;
+
+	if (find_policy_by_hnd_internal(p, hnd, &data) == NULL) {
+		return NULL;
+	}
+	if (strcmp(name, talloc_get_name(data)) != 0) {
+		DEBUG(10, ("expected %s, got %s\n", name,
+			   talloc_get_name(data)));
+		return NULL;
+	}
+	DEBUG(10, ("found handle of type %s\n", talloc_get_name(data)));
+	return data;
+}
