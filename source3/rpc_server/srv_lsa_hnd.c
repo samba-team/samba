@@ -167,7 +167,9 @@ bool create_policy_hnd(pipes_struct *p, struct policy_handle *hnd, void *data_pt
   find policy by handle - internal version.
 ****************************************************************************/
 
-static struct policy *find_policy_by_hnd_internal(pipes_struct *p, struct policy_handle *hnd, void **data_p)
+static struct policy *find_policy_by_hnd_internal(pipes_struct *p,
+						  const struct policy_handle *hnd,
+						  void **data_p)
 {
 	struct policy *pol;
 	size_t i;
@@ -197,7 +199,8 @@ static struct policy *find_policy_by_hnd_internal(pipes_struct *p, struct policy
   find policy by handle
 ****************************************************************************/
 
-bool find_policy_by_hnd(pipes_struct *p, struct policy_handle *hnd, void **data_p)
+bool find_policy_by_hnd(pipes_struct *p, const struct policy_handle *hnd,
+			void **data_p)
 {
 	return find_policy_by_hnd_internal(p, hnd, data_p) == NULL ? False : True;
 }

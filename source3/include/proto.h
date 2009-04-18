@@ -5878,7 +5878,8 @@ NTSTATUS evlog_convert_tdb_to_evt(TALLOC_CTX *mem_ctx,
 bool init_pipe_handle_list(pipes_struct *p,
 			   const struct ndr_syntax_id *syntax);
 bool create_policy_hnd(pipes_struct *p, struct policy_handle *hnd, void *data_ptr);
-bool find_policy_by_hnd(pipes_struct *p, struct policy_handle *hnd, void **data_p);
+bool find_policy_by_hnd(pipes_struct *p, const struct policy_handle *hnd,
+			void **data_p);
 bool close_policy_hnd(pipes_struct *p, struct policy_handle *hnd);
 void close_policy_by_pipe(pipes_struct *p);
 bool pipe_access_check(pipes_struct *p);
