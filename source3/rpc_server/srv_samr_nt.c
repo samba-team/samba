@@ -382,20 +382,16 @@ static struct samr_info *get_samr_info_by_sid(TALLOC_CTX *mem_ctx,
 					      DOM_SID *psid)
 {
 	struct samr_info *info;
-	fstring sid_str;
 
-	if (psid) {
-		sid_to_fstring(sid_str, psid);
-	} else {
-		fstrcpy(sid_str,"(NULL)");
-	}
-
-	if ((info = TALLOC_ZERO_P(mem_ctx, struct samr_info)) == NULL) {
+	info = talloc_zero(mem_ctx, struct samr_info);
+	if (info == NULL) {
 		return NULL;
 	}
 	talloc_set_destructor(info, samr_info_destructor);
 
-	DEBUG(10,("get_samr_info_by_sid: created new info for sid %s\n", sid_str));
+	DEBUG(10, ("get_samr_info_by_sid: created new info for sid %s\n",
+		   sid_string_dbg(psid)));
+
 	if (psid) {
 		sid_copy( &info->sid, psid);
 		info->builtin_domain = sid_check_is_builtin(psid);
