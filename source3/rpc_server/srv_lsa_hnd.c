@@ -33,6 +33,8 @@ struct policy {
 
 	struct policy_handle pol_hnd;
 
+	uint32_t access_granted;
+
 	void *data_ptr;
 };
 
@@ -138,7 +140,9 @@ bool init_pipe_handle_list(pipes_struct *p, const struct ndr_syntax_id *syntax)
   data_ptr is TALLOC_FREE()'ed
 ****************************************************************************/
 
-bool create_policy_hnd(pipes_struct *p, struct policy_handle *hnd, void *data_ptr)
+static struct policy *create_policy_hnd_internal(pipes_struct *p,
+						 struct policy_handle *hnd,
+						 void *data_ptr)
 {
 	static uint32 pol_hnd_low  = 0;
 	static uint32 pol_hnd_high = 0;
@@ -149,13 +153,13 @@ bool create_policy_hnd(pipes_struct *p, struct policy_handle *hnd, void *data_pt
 	if (p->pipe_handles->count > MAX_OPEN_POLS) {
 		DEBUG(0,("create_policy_hnd: ERROR: too many handles (%d) on this pipe.\n",
 				(int)p->pipe_handles->count));
-		return False;
+		return NULL;
 	}
 
 	pol = TALLOC_ZERO_P(NULL, struct policy);
 	if (!pol) {
 		DEBUG(0,("create_policy_hnd: ERROR: out of memory!\n"));
-		return False;
+		return NULL;
 	}
 
 	if (data_ptr != NULL) {
@@ -186,7 +190,13 @@ bool create_policy_hnd(pipes_struct *p, struct policy_handle *hnd, void *data_pt
 	DEBUG(4,("Opened policy hnd[%d] ", (int)p->pipe_handles->count));
 	dump_data(4, (uint8 *)hnd, sizeof(*hnd));
 
-	return True;
+	return pol;
+}
+
+bool create_policy_hnd(pipes_struct *p, struct policy_handle *hnd,
+		       void *data_ptr)
+{
+	return create_policy_hnd_internal(p, hnd, data_ptr) != NULL;
 }
 
 /****************************************************************************
@@ -307,47 +317,80 @@ bool pipe_access_check(pipes_struct *p)
 	return True;
 }
 
-NTSTATUS _policy_handle_create(struct pipes_struct *p, struct policy_handle *hnd,
-			       void *pdata, size_t data_size, const char *type)
+void *_policy_handle_create(struct pipes_struct *p, struct policy_handle *hnd,
+			    uint32_t access_granted, size_t data_size,
+			    const char *type, NTSTATUS *pstatus)
 {
-	void **ppdata = (void **)pdata;
+	struct policy *pol;
 	void *data;
 
 	if (p->pipe_handles->count > MAX_OPEN_POLS) {
 		DEBUG(0, ("policy_handle_create: ERROR: too many handles (%d) "
 			  "on pipe %s.\n", (int)p->pipe_handles->count,
 			  get_pipe_name_from_iface(&p->syntax)));
-		return NT_STATUS_INSUFFICIENT_RESOURCES;
+		*pstatus = NT_STATUS_INSUFFICIENT_RESOURCES;
+		return NULL;
 	}
 
 	data = talloc_size(talloc_tos(), data_size);
 	if (data == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		*pstatus = NT_STATUS_NO_MEMORY;
+		return NULL;
 	}
 	talloc_set_name(data, type);
 
-	if (!create_policy_hnd(p, hnd, data)) {
+	pol = create_policy_hnd_internal(p, hnd, data);
+	if (pol == NULL) {
 		TALLOC_FREE(data);
-		return NT_STATUS_NO_MEMORY;
+		*pstatus = NT_STATUS_NO_MEMORY;
+		return NULL;
 	}
-	*ppdata = data;
-	return NT_STATUS_OK;
+	pol->access_granted = access_granted;
+	*pstatus = NT_STATUS_OK;
+	return data;
 }
 
 void *_policy_handle_find(struct pipes_struct *p,
 			  const struct policy_handle *hnd,
-			  const char *name)
+			  uint32_t access_required,
+			  uint32_t *paccess_granted,
+			  const char *name, const char *location,
+			  NTSTATUS *pstatus)
 {
+	struct policy *pol;
 	void *data;
 
-	if (find_policy_by_hnd_internal(p, hnd, &data) == NULL) {
+	pol = find_policy_by_hnd_internal(p, hnd, &data);
+	if (pol == NULL) {
+		*pstatus = NT_STATUS_INVALID_HANDLE;
 		return NULL;
 	}
 	if (strcmp(name, talloc_get_name(data)) != 0) {
 		DEBUG(10, ("expected %s, got %s\n", name,
 			   talloc_get_name(data)));
+		*pstatus = NT_STATUS_INVALID_HANDLE;
 		return NULL;
 	}
+	if ((access_required & pol->access_granted) != access_required) {
+		if (geteuid() == sec_initial_uid()) {
+			DEBUG(4, ("%s: ACCESS should be DENIED (granted: "
+				  "%#010x; required: %#010x)\n", location,
+				  pol->access_granted, access_required));
+			DEBUGADD(4,("but overwritten by euid == 0\n"));
+			goto okay;
+		}
+		DEBUG(2,("%s: ACCESS DENIED (granted: %#010x; required: "
+			 "%#010x)\n", location, pol->access_granted,
+			 access_required));
+		*pstatus = NT_STATUS_ACCESS_DENIED;
+		return NULL;
+	}
+
+ okay:
 	DEBUG(10, ("found handle of type %s\n", talloc_get_name(data)));
+	if (paccess_granted != NULL) {
+		*paccess_granted = pol->access_granted;
+	}
+	*pstatus = NT_STATUS_OK;
 	return data;
 }

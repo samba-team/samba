@@ -49,7 +49,7 @@
 #define MAX_SAM_ENTRIES_W95 50
 
 struct samr_connect_info {
-	uint32_t acc_granted;
+	uint8_t dummy;
 };
 
 typedef struct disp_info {
@@ -613,10 +613,10 @@ NTSTATUS _samr_OpenDomain(pipes_struct *p,
 
 	/* find the connection policy handle. */
 
-	cinfo = policy_handle_find(p, r->in.connect_handle,
-				   struct samr_connect_info);
-	if (cinfo == NULL) {
-		return NT_STATUS_INVALID_HANDLE;
+	cinfo = policy_handle_find(p, r->in.connect_handle, 0, NULL,
+				   struct samr_connect_info, &status);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	/*check if access can be granted as requested by client. */
@@ -3198,6 +3198,7 @@ NTSTATUS _samr_Connect(pipes_struct *p,
 		       struct samr_Connect *r)
 {
 	struct samr_connect_info *info;
+	uint32_t acc_granted;
 	struct policy_handle hnd;
 	uint32    des_access = r->in.access_mask;
 	NTSTATUS status;
@@ -3209,14 +3210,6 @@ NTSTATUS _samr_Connect(pipes_struct *p,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	/* set up the SAMR connect_anon response */
-
-	status = policy_handle_create(p, &hnd, &info,
-				      struct samr_connect_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
 	/* don't give away the farm but this is probably ok.  The SAMR_ACCESS_ENUM_DOMAINS
 	   was observed from a win98 client trying to enumerate users (when configured
 	   user level access control on shares)   --jerry */
@@ -3224,7 +3217,18 @@ NTSTATUS _samr_Connect(pipes_struct *p,
 	map_max_allowed_access(p->server_info->ptok, &des_access);
 
 	se_map_generic( &des_access, &sam_generic_mapping );
-	info->acc_granted = des_access & (SAMR_ACCESS_ENUM_DOMAINS|SAMR_ACCESS_LOOKUP_DOMAIN);
+
+	acc_granted = des_access & (SAMR_ACCESS_ENUM_DOMAINS
+				    |SAMR_ACCESS_LOOKUP_DOMAIN);
+
+	/* set up the SAMR connect_anon response */
+
+	info = policy_handle_create(p, &hnd, acc_granted,
+				    struct samr_connect_info,
+				    &status);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	*r->out.connect_handle = hnd;
 	return NT_STATUS_OK;
@@ -3281,13 +3285,11 @@ NTSTATUS _samr_Connect2(pipes_struct *p,
 	if ( !NT_STATUS_IS_OK(nt_status) )
 		return nt_status;
 
-	nt_status = policy_handle_create(p, &hnd, &info,
-					 struct samr_connect_info);
+	info = policy_handle_create(p, &hnd, acc_granted,
+				    struct samr_connect_info, &nt_status);
         if (!NT_STATUS_IS_OK(nt_status)) {
                 return nt_status;
         }
-
-	info->acc_granted = acc_granted;
 
 	DEBUG(5,("%s: %d\n", fn, __LINE__));
 
@@ -3363,23 +3365,18 @@ NTSTATUS _samr_Connect5(pipes_struct *p,
 NTSTATUS _samr_LookupDomain(pipes_struct *p,
 			    struct samr_LookupDomain *r)
 {
-	NTSTATUS status = NT_STATUS_OK;
+	NTSTATUS status;
 	struct samr_connect_info *info;
 	const char *domain_name;
 	DOM_SID *sid = NULL;
 
-	info = policy_handle_find(p, r->in.connect_handle,
-				  struct samr_connect_info);
-	if (info == NULL) {
-		return NT_STATUS_INVALID_HANDLE;
-	}
-
 	/* win9x user manager likes to use SAMR_ACCESS_ENUM_DOMAINS here.
 	   Reverted that change so we will work with RAS servers again */
 
-	status = access_check_samr_function(info->acc_granted,
-					    SAMR_ACCESS_LOOKUP_DOMAIN,
-					    "_samr_LookupDomain");
+	info = policy_handle_find(p, r->in.connect_handle,
+				  SAMR_ACCESS_LOOKUP_DOMAIN, NULL,
+				  struct samr_connect_info,
+				  &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -3424,14 +3421,8 @@ NTSTATUS _samr_EnumDomains(pipes_struct *p,
 	struct samr_SamArray *sam;
 
 	info = policy_handle_find(p, r->in.connect_handle,
-				  struct samr_connect_info);
-	if (info == NULL) {
-		return NT_STATUS_INVALID_HANDLE;
-	}
-
-	status = access_check_samr_function(info->acc_granted,
-					    SAMR_ACCESS_ENUM_DOMAINS,
-					    "_samr_EnumDomains");
+				  SAMR_ACCESS_ENUM_DOMAINS, NULL,
+				  struct samr_connect_info, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

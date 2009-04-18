@@ -5885,16 +5885,21 @@ bool close_policy_hnd(pipes_struct *p, struct policy_handle *hnd);
 void close_policy_by_pipe(pipes_struct *p);
 bool pipe_access_check(pipes_struct *p);
 
-NTSTATUS _policy_handle_create(struct pipes_struct *p, struct policy_handle *hnd,
-			       void *pdata, size_t size, const char *name);
-#define policy_handle_create(_p, _hnd, _ptr, _type) \
-	_policy_handle_create((_p), (_hnd), (_ptr), sizeof(_type), #_type)
+void *_policy_handle_create(struct pipes_struct *p, struct policy_handle *hnd,
+			    uint32_t access_granted, size_t data_size,
+			    const char *type, NTSTATUS *pstatus);
+#define policy_handle_create(_p, _hnd, _access, _type, _pstatus) \
+	(_type *)_policy_handle_create((_p), (_hnd), (_access), sizeof(_type), #_type, \
+				       (_pstatus))
 
 void *_policy_handle_find(struct pipes_struct *p,
 			  const struct policy_handle *hnd,
-			  const char *type);
-#define policy_handle_find(_p, _hnd, _type) \
-	(_type *)_policy_handle_find((_p), (_hnd), #_type)
+			  uint32_t access_required, uint32_t *paccess_granted,
+			  const char *name, const char *location,
+			  NTSTATUS *pstatus);
+#define policy_handle_find(_p, _hnd, _access_required, _access_granted, _type, _pstatus) \
+	(_type *)_policy_handle_find((_p), (_hnd), (_access_required), \
+				     (_access_granted), #_type, __location__, (_pstatus))
 
 
 /* The following definitions come from rpc_server/srv_pipe.c  */
