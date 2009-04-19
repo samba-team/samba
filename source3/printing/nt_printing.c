@@ -5736,7 +5736,7 @@ bool print_access_check(struct auth_serversupplied_info *server_info, int snum,
 
 	/* Always allow root or SE_PRINT_OPERATROR to do anything */
 
-	if (server_info->utok.uid == 0
+	if (server_info->utok.uid == sec_initial_uid()
 	    || user_has_privileges(server_info->ptok, &se_printop ) ) {
 		return True;
 	}
