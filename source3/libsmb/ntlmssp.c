@@ -644,9 +644,6 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 	uchar session_nonce_hash[16];
 
 	const char *parse_string;
-	char *domain = NULL;
-	char *user = NULL;
-	char *workstation = NULL;
 
 	/* parse the NTLMSSP packet */
 	*reply = data_blob_null;
@@ -669,20 +666,16 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 	ntlmssp_state->workstation = NULL;
 
 	/* now the NTLMSSP encoded auth hashes */
-	if (!msrpc_parse(NULL, &request, parse_string,
+	if (!msrpc_parse(ntlmssp_state, &request, parse_string,
 			 "NTLMSSP", 
 			 &ntlmssp_command, 
 			 &ntlmssp_state->lm_resp,
 			 &ntlmssp_state->nt_resp,
-			 &domain, 
-			 &user, 
-			 &workstation,
+			 &ntlmssp_state->domain, 
+			 &ntlmssp_state->user, 
+			 &ntlmssp_state->workstation,
 			 &encrypted_session_key,
 			 &auth_flags)) {
-		SAFE_FREE(domain);
-		SAFE_FREE(user);
-		SAFE_FREE(workstation);
-		data_blob_free(&encrypted_session_key);
 		auth_flags = 0;
 
 		/* Try again with a shorter string (Win9X truncates this packet) */
@@ -693,19 +686,16 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 		}
 
 		/* now the NTLMSSP encoded auth hashes */
-		if (!msrpc_parse(NULL, &request, parse_string,
+		if (!msrpc_parse(ntlmssp_state, &request, parse_string,
 				 "NTLMSSP", 
 				 &ntlmssp_command, 
 				 &ntlmssp_state->lm_resp,
 				 &ntlmssp_state->nt_resp,
-				 &domain, 
-				 &user, 
-				 &workstation)) {
+				 &ntlmssp_state->domain, 
+				 &ntlmssp_state->user, 
+				 &ntlmssp_state->workstation)) {
 			DEBUG(1, ("ntlmssp_server_auth: failed to parse NTLMSSP (tried both formats):\n"));
 			dump_data(2, request.data, request.length);
-			SAFE_FREE(domain);
-			SAFE_FREE(user);
-			SAFE_FREE(workstation);
 
 			return NT_STATUS_INVALID_PARAMETER;
 		}
@@ -713,34 +703,6 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 
 	if (auth_flags)
 		ntlmssp_handle_neg_flags(ntlmssp_state, auth_flags, lp_lanman_auth());
-
-	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_set_domain(ntlmssp_state, domain))) {
-		SAFE_FREE(domain);
-		SAFE_FREE(user);
-		SAFE_FREE(workstation);
-		data_blob_free(&encrypted_session_key);
-		return nt_status;
-	}
-
-	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_set_username(ntlmssp_state, user))) {
-		SAFE_FREE(domain);
-		SAFE_FREE(user);
-		SAFE_FREE(workstation);
-		data_blob_free(&encrypted_session_key);
-		return nt_status;
-	}
-
-	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_set_workstation(ntlmssp_state, workstation))) {
-		SAFE_FREE(domain);
-		SAFE_FREE(user);
-		SAFE_FREE(workstation);
-		data_blob_free(&encrypted_session_key);
-		return nt_status;
-	}
-
-	SAFE_FREE(domain);
-	SAFE_FREE(user);
-	SAFE_FREE(workstation);
 
 	DEBUG(3,("Got user=[%s] domain=[%s] workstation=[%s] len1=%lu len2=%lu\n",
 		 ntlmssp_state->user, ntlmssp_state->domain, ntlmssp_state->workstation, (unsigned long)ntlmssp_state->lm_resp.length, (unsigned long)ntlmssp_state->nt_resp.length));
