@@ -28,8 +28,6 @@
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/gensec_proto.h"
-#include "auth/auth.h"
-#include "auth/ntlm/auth_proto.h"
 #include "param/param.h"
 
 /**

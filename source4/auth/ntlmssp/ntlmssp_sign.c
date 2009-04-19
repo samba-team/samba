@@ -20,11 +20,9 @@
  */
 
 #include "includes.h"
-#include "auth/auth.h"
 #include "auth/ntlmssp/ntlmssp.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../lib/crypto/crypto.h"
-#include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 
 #define CLI_SIGN "session key to client-to-server signing key magic constant"
