@@ -299,7 +299,7 @@ static void map_max_allowed_access(const NT_USER_TOKEN *token,
  Fetch or create a dispinfo struct.
 ********************************************************************/
 
-static DISP_INFO *get_samr_dispinfo_by_sid(DOM_SID *psid)
+static DISP_INFO *get_samr_dispinfo_by_sid(const struct dom_sid *psid)
 {
 	/*
 	 * We do a static cache for DISP_INFO's here. Explanation can be found
@@ -476,8 +476,10 @@ static void set_disp_info_cache_timeout(DISP_INFO *disp_info, time_t secs_fromno
  We must also remove the timeout handler.
  ********************************************************************/
 
-static void force_flush_samr_cache(DISP_INFO *disp_info)
+static void force_flush_samr_cache(const struct dom_sid *sid)
 {
+	struct disp_info *disp_info = get_samr_dispinfo_by_sid(sid);
+
 	if ((disp_info == NULL) || (disp_info->cache_timeout_event == NULL)) {
 		return;
 	}
@@ -3152,7 +3154,7 @@ NTSTATUS _samr_CreateUser2(pipes_struct *p,
 	}
 
 	/* After a "set" ensure we have no cached display info. */
-	force_flush_samr_cache(info->disp_info);
+	force_flush_samr_cache(&sid);
 
 	*r->out.access_granted = acc_granted;
 
@@ -4276,7 +4278,7 @@ NTSTATUS _samr_SetUserInfo(pipes_struct *p,
 	/* ================ END SeMachineAccountPrivilege BLOCK ================ */
 
 	if (NT_STATUS_IS_OK(status)) {
-		force_flush_samr_cache(disp_info);
+		force_flush_samr_cache(&sid);
 	}
 
 	return status;
@@ -4548,7 +4550,7 @@ NTSTATUS _samr_AddAliasMember(pipes_struct *p,
 	/******** END SeAddUsers BLOCK *********/
 
 	if (NT_STATUS_IS_OK(status)) {
-		force_flush_samr_cache(disp_info);
+		force_flush_samr_cache(&alias_sid);
 	}
 
 	return status;
@@ -4598,7 +4600,7 @@ NTSTATUS _samr_DeleteAliasMember(pipes_struct *p,
 	/******** END SeAddUsers BLOCK *********/
 
 	if (NT_STATUS_IS_OK(status)) {
-		force_flush_samr_cache(disp_info);
+		force_flush_samr_cache(&alias_sid);
 	}
 
 	return status;
@@ -4652,7 +4654,7 @@ NTSTATUS _samr_AddGroupMember(pipes_struct *p,
 
 	/******** END SeAddUsers BLOCK *********/
 
-	force_flush_samr_cache(disp_info);
+	force_flush_samr_cache(&group_sid);
 
 	return status;
 }
@@ -4710,7 +4712,7 @@ NTSTATUS _samr_DeleteGroupMember(pipes_struct *p,
 
 	/******** END SeAddUsers BLOCK *********/
 
-	force_flush_samr_cache(disp_info);
+	force_flush_samr_cache(&group_sid);
 
 	return status;
 }
@@ -4800,7 +4802,7 @@ NTSTATUS _samr_DeleteUser(pipes_struct *p,
 
 	ZERO_STRUCTP(r->out.user_handle);
 
-	force_flush_samr_cache(disp_info);
+	force_flush_samr_cache(&user_sid);
 
 	return NT_STATUS_OK;
 }
@@ -4866,7 +4868,7 @@ NTSTATUS _samr_DeleteDomainGroup(pipes_struct *p,
 	if (!close_policy_hnd(p, r->in.group_handle))
 		return NT_STATUS_OBJECT_NAME_INVALID;
 
-	force_flush_samr_cache(disp_info);
+	force_flush_samr_cache(&group_sid);
 
 	return NT_STATUS_OK;
 }
@@ -4937,7 +4939,7 @@ NTSTATUS _samr_DeleteDomAlias(pipes_struct *p,
 	if (!close_policy_hnd(p, r->in.alias_handle))
 		return NT_STATUS_OBJECT_NAME_INVALID;
 
-	force_flush_samr_cache(disp_info);
+	force_flush_samr_cache(&alias_sid);
 
 	return NT_STATUS_OK;
 }
@@ -5019,7 +5021,7 @@ NTSTATUS _samr_CreateDomainGroup(pipes_struct *p,
 	if (!create_policy_hnd(p, r->out.group_handle, info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
-	force_flush_samr_cache(disp_info);
+	force_flush_samr_cache(&info_sid);
 
 	return NT_STATUS_OK;
 }
@@ -5111,7 +5113,7 @@ NTSTATUS _samr_CreateDomAlias(pipes_struct *p,
 	if (!create_policy_hnd(p, r->out.alias_handle, info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
-	force_flush_samr_cache(disp_info);
+	force_flush_samr_cache(&info_sid);
 
 	return NT_STATUS_OK;
 }
@@ -5281,7 +5283,7 @@ NTSTATUS _samr_SetGroupInfo(pipes_struct *p,
 	/******** End SeAddUsers BLOCK *********/
 
 	if (NT_STATUS_IS_OK(status)) {
-		force_flush_samr_cache(disp_info);
+		force_flush_samr_cache(&group_sid);
 	}
 
 	return status;
@@ -5383,7 +5385,7 @@ NTSTATUS _samr_SetAliasInfo(pipes_struct *p,
         /******** End SeAddUsers BLOCK *********/
 
 	if (NT_STATUS_IS_OK(status))
-		force_flush_samr_cache(disp_info);
+		force_flush_samr_cache(&group_sid);
 
 	return status;
 }
@@ -5556,7 +5558,7 @@ NTSTATUS _samr_RemoveMemberFromForeignDomain(pipes_struct *p,
 		return NT_STATUS_OK;
 	}
 
-	force_flush_samr_cache(disp_info);
+	force_flush_samr_cache(&domain_sid);
 
 	result = NT_STATUS_OK;
 
