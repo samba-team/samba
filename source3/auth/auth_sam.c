@@ -44,6 +44,9 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 	const char *username = pdb_get_username(sampass);
 	bool got_lm = false, got_nt = false;
 
+	*user_sess_key = data_blob(NULL, 0);
+	*lm_sess_key = data_blob(NULL, 0);
+
 	acct_ctrl = pdb_get_acct_ctrl(sampass);
 	if (acct_ctrl & ACB_PWNOTREQ) {
 		if (lp_null_passwords()) {
@@ -77,7 +80,6 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 			return NT_STATUS_NO_MEMORY;
 		}
 		SMBsesskeygen_ntv1(nt_pw, user_sess_key->data);
-		*lm_sess_key = data_blob(NULL, 0);
 		return hash_password_check(mem_ctx, lp_lanman_auth(),
 					   got_lm ? &client_lm_hash : NULL, 
 					   got_nt ? &client_nt_hash : NULL,
