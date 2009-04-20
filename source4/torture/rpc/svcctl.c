@@ -26,7 +26,7 @@
 #include "torture/rpc/rpc.h"
 #include "param/param.h"
 
-#define TORTURE_DEFAULT_SERVICE "NetLogon"
+#define TORTURE_DEFAULT_SERVICE "Spooler"
 
 static bool test_OpenSCManager(struct dcerpc_pipe *p, struct torture_context *tctx, struct policy_handle *h)
 {
