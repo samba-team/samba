@@ -30,6 +30,7 @@
 #include "libcli/libcli_proto.h"
 #include "libgpo/ads_convenience.h"
 #include "libgpo/gpo_s4.h"
+#include "lib/util/util.h"
 #endif
 
 /****************************************************************

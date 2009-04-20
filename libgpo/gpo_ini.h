@@ -17,12 +17,16 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-/* FIXME: get rid of iniparser */
-#include <iniparser.h>
+struct keyval_pair {
+	char *key;
+	char *val;
+};
 
 struct gp_inifile_context {
 	TALLOC_CTX *mem_ctx;
-	dictionary *dict;
+	uint32_t keyval_count;
+	struct keyval_pair **data;
+	char *current_section;
 	const char *generated_filename;
 };
 
@@ -31,3 +35,8 @@ struct gp_inifile_context {
 NTSTATUS gp_inifile_init_context(TALLOC_CTX *mem_ctx, uint32_t flags,
 				 const char *unix_path, const char *suffix,
 				 struct gp_inifile_context **ctx_ret);
+
+NTSTATUS parse_gpt_ini(struct gp_inifile_context *ctx,
+		       const char *filename,
+		       uint32_t *version,
+		       char **display_name);
