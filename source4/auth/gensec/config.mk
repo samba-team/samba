@@ -67,7 +67,7 @@ $(eval $(call proto_header_template,$(gensecsrcdir)/spnego_proto.h,$(gensec_spne
 [MODULE::gensec_schannel]
 SUBSYSTEM = gensec
 INIT_FUNCTION = gensec_schannel_init
-PRIVATE_DEPENDENCIES = SCHANNELDB NDR_SCHANNEL CREDENTIALS LIBNDR
+PRIVATE_DEPENDENCIES = SCHANNELDB NDR_SCHANNEL CREDENTIALS LIBNDR auth_session
 OUTPUT_TYPE = MERGED_OBJ
 # End MODULE gensec_schannel
 ################################################

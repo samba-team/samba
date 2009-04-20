@@ -8,6 +8,7 @@ mkinclude credentials/config.mk
 
 [SUBSYSTEM::auth_session]
 PUBLIC_DEPENDENCIES = CREDENTIALS
+PRIVATE_DEPENDENCIES = SAMDB
 
 PUBLIC_HEADERS += $(authsrcdir)/session.h
 
