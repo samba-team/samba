@@ -359,7 +359,7 @@ char *rep_strndup(const char *s, size_t n)
 }
 #endif
 
-#ifndef HAVE_WAITPID
+#if !defined(HAVE_WAITPID) && defined(HAVE_WAIT4)
 int rep_waitpid(pid_t pid,int *status,int options)
 {
   return wait4(pid, status, options, NULL);
