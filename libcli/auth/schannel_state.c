@@ -294,6 +294,7 @@ NTSTATUS schannel_creds_server_step_check(struct ldb_context *ldb,
 	if (schannel_required_for_call && !schannel_in_use) {
 		DEBUG(0,("schannel_creds_server_step_check: client %s not using schannel for netlogon, despite negotiating it\n",
 			creds->computer_name ));
+		ldb_transaction_cancel(ldb);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
