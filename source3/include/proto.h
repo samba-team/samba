@@ -5767,13 +5767,32 @@ NTSTATUS evlog_convert_tdb_to_evt(TALLOC_CTX *mem_ctx,
 
 /* The following definitions come from rpc_server/srv_lsa_hnd.c  */
 
+size_t num_pipe_handles(struct handle_list *list);
 bool init_pipe_handle_list(pipes_struct *p,
 			   const struct ndr_syntax_id *syntax);
 bool create_policy_hnd(pipes_struct *p, struct policy_handle *hnd, void *data_ptr);
-bool find_policy_by_hnd(pipes_struct *p, struct policy_handle *hnd, void **data_p);
+bool find_policy_by_hnd(pipes_struct *p, const struct policy_handle *hnd,
+			void **data_p);
 bool close_policy_hnd(pipes_struct *p, struct policy_handle *hnd);
 void close_policy_by_pipe(pipes_struct *p);
 bool pipe_access_check(pipes_struct *p);
+
+void *_policy_handle_create(struct pipes_struct *p, struct policy_handle *hnd,
+			    uint32_t access_granted, size_t data_size,
+			    const char *type, NTSTATUS *pstatus);
+#define policy_handle_create(_p, _hnd, _access, _type, _pstatus) \
+	(_type *)_policy_handle_create((_p), (_hnd), (_access), sizeof(_type), #_type, \
+				       (_pstatus))
+
+void *_policy_handle_find(struct pipes_struct *p,
+			  const struct policy_handle *hnd,
+			  uint32_t access_required, uint32_t *paccess_granted,
+			  const char *name, const char *location,
+			  NTSTATUS *pstatus);
+#define policy_handle_find(_p, _hnd, _access_required, _access_granted, _type, _pstatus) \
+	(_type *)_policy_handle_find((_p), (_hnd), (_access_required), \
+				     (_access_granted), #_type, __location__, (_pstatus))
+
 
 /* The following definitions come from rpc_server/srv_pipe.c  */
 
@@ -6446,6 +6465,11 @@ NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e0,
 		    void (*callback)(void *, const struct notify_event *), 
 		    void *private_data);
 NTSTATUS notify_remove(struct notify_context *notify, void *private_data);
+NTSTATUS notify_remove_onelevel(struct notify_context *notify,
+				const struct file_id *fid,
+				void *private_data);
+void notify_onelevel(struct notify_context *notify, uint32_t action,
+		     uint32_t filter, struct file_id fid, const char *name);
 void notify_trigger(struct notify_context *notify,
 		    uint32_t action, uint32_t filter, const char *path);
 

@@ -20,6 +20,21 @@
 #ifndef _smb_threads_h_
 #define _smb_threads_h_
 
+/* Data types needed for smb_thread_once call. */
+
+#if defined(HAVE_PTHREAD_H)
+#include <pthread.h>
+#define smb_thread_once_t pthread_once_t
+#define SMB_THREAD_ONCE_INIT PTHREAD_ONCE_INIT
+#define SMB_THREAD_ONCE_IS_INITIALIZED(val) (true)
+#define SMB_THREAD_ONCE_INITIALIZE(val)
+#else
+#define smb_thread_once_t bool
+#define SMB_THREAD_ONCE_INIT false
+#define SMB_THREAD_ONCE_IS_INITIALIZED(val) ((val) == true)
+#define SMB_THREAD_ONCE_INITIALIZE(val) ((val) = true)
+#endif
+
 enum smb_thread_lock_type {
 	SMB_THREAD_LOCK = 1,
 	SMB_THREAD_UNLOCK
@@ -35,11 +50,14 @@ struct smb_thread_functions {
 	int (*lock_mutex)(void *plock, enum smb_thread_lock_type lock_type,
 			const char *location);
 
+	/* Once initialization. */
+	int (*smb_thread_once)(smb_thread_once_t *p_once, void (*init_fn)(void));
+
 	/* Thread local storage. */
-	int (*create_tls_once)(const char *keyname,
+	int (*create_tls)(const char *keyname,
 			void **ppkey,
 			const char *location);
-	void (*destroy_tls_once)(void **pkey,
+	void (*destroy_tls)(void **pkey,
 			const char *location);
 	int (*set_tls)(void *pkey, const void *pval, const char *location);
 	void *(*get_tls)(void *pkey, const char *location);
@@ -77,45 +95,35 @@ static int smb_lock_pthread(void *plock, enum smb_thread_lock_type lock_type, co
 	} \
 } \
  \
-static pthread_mutex_t create_tls_mutex = PTHREAD_MUTEX_INITIALIZER; \
+static int smb_thread_once_pthread(smb_thread_once_t *p_once, void (*init_fn)(void)) \
+{ \
+	return pthread_once(p_once, init_fn); \
+} \
  \
-static int smb_create_tls_once_pthread(const char *keyname, void **ppkey, const char *location) \
+static int smb_create_tls_pthread(const char *keyname, void **ppkey, const char *location) \
 { \
 	int ret; \
 	pthread_key_t *pkey; \
-	ret = pthread_mutex_lock(&create_tls_mutex); \
-	if (ret) { \
-		return ret; \
-	} \
-	if (*ppkey) { \
-		pthread_mutex_unlock(&create_tls_mutex); \
-		return 0; \
-	} \
 	pkey = (pthread_key_t *)malloc(sizeof(pthread_key_t)); \
 	if (!pkey) { \
-		pthread_mutex_unlock(&create_tls_mutex); \
 		return ENOMEM; \
 	} \
 	ret = pthread_key_create(pkey, NULL); \
 	if (ret) { \
 		free(pkey); \
-		pthread_mutex_unlock(&create_tls_mutex); \
 		return ret; \
 	} \
 	*ppkey = (void *)pkey; \
-	pthread_mutex_unlock(&create_tls_mutex); \
 	return 0; \
 } \
  \
-static void smb_destroy_tls_once_pthread(void **ppkey, const char *location) \
+static void smb_destroy_tls_pthread(void **ppkey, const char *location) \
 { \
-	pthread_mutex_lock(&create_tls_mutex); \
 	if (*ppkey) { \
 		pthread_key_delete(*(pthread_key_t *)ppkey); \
 		free(*ppkey); \
 		*ppkey = NULL; \
 	} \
-	pthread_mutex_unlock(&create_tls_mutex); \
 } \
  \
 static int smb_set_tls_pthread(void *pkey, const void *pval, const char *location) \
@@ -129,12 +137,13 @@ static void *smb_get_tls_pthread(void *pkey, const char *location) \
 } \
  \
 static const struct smb_thread_functions (tf) = { \
-                        smb_create_mutex_pthread, \
-                        smb_destroy_mutex_pthread, \
-                        smb_lock_pthread, \
-                        smb_create_tls_once_pthread, \
-                        smb_destroy_tls_once_pthread, \
-                        smb_set_tls_pthread, \
-                        smb_get_tls_pthread }
+			smb_create_mutex_pthread, \
+			smb_destroy_mutex_pthread, \
+			smb_lock_pthread, \
+			smb_thread_once_pthread, \
+			smb_create_tls_pthread, \
+			smb_destroy_tls_pthread, \
+			smb_set_tls_pthread, \
+			smb_get_tls_pthread }
 
 #endif

@@ -88,6 +88,7 @@ static NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, uint16_t level,
 {
 	struct lsa_LookupSids r;
 	struct lsa_SidArray sidarray;
+	struct lsa_RefDomainList *domains;
 	uint32_t count = 0;
 	uint32_t i;
 
@@ -108,6 +109,7 @@ static NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, uint16_t level,
 	r.in.count = &count;
 	r.out.names = names;
 	r.out.count = &count;
+	r.out.domains = &domains;
 
 	return dcerpc_lsa_LookupSids(p, mem_ctx, &r);
 }
@@ -321,4 +323,92 @@ bool torture_rpc_lsa_lookup(struct torture_context *torture)
 			       NT_STATUS_INVALID_PARAMETER, NULL);
 
 	return ret;
+}
+
+static bool test_LookupSidsReply(struct torture_context *tctx,
+				 struct dcerpc_pipe *p)
+{
+	struct policy_handle *handle;
+
+	struct dom_sid **sids;
+	uint32_t num_sids = 1;
+
+	struct lsa_LookupSids r;
+	struct lsa_SidArray sidarray;
+	struct lsa_RefDomainList *domains = NULL;
+	struct lsa_TransNameArray names;
+	uint32_t count = 0;
+
+	uint32_t i;
+	NTSTATUS status;
+	const char *dom_sid = "S-1-5-21-1111111111-2222222222-3333333333";
+	const char *dom_admin_sid;
+
+	if (!open_policy(tctx, p, &handle)) {
+		return false;
+	}
+
+	dom_admin_sid = talloc_asprintf(tctx, "%s-%d", dom_sid, 512);
+
+	sids = talloc_array(tctx, struct dom_sid *, num_sids);
+
+	sids[0] = dom_sid_parse_talloc(tctx, dom_admin_sid);
+
+	names.count = 0;
+	names.names = NULL;
+
+	sidarray.num_sids = num_sids;
+	sidarray.sids = talloc_array(tctx, struct lsa_SidPtr, num_sids);
+
+	for (i=0; i<num_sids; i++) {
+		sidarray.sids[i].sid = sids[i];
+	}
+
+	r.in.handle	= handle;
+	r.in.sids	= &sidarray;
+	r.in.names	= &names;
+	r.in.level	= LSA_LOOKUP_NAMES_ALL;
+	r.in.count	= &count;
+	r.out.names	= &names;
+	r.out.count	= &count;
+	r.out.domains	= &domains;
+
+	status = dcerpc_lsa_LookupSids(p, tctx, &r);
+
+	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_NONE_MAPPED,
+		"unexpected error code");
+
+	torture_assert_int_equal(tctx, names.count, num_sids,
+		"unexpected names count");
+	torture_assert(tctx, names.names,
+		"unexpected names pointer");
+	torture_assert_str_equal(tctx, names.names[0].name.string, dom_admin_sid,
+		"unexpected names[0].string");
+
+#if 0
+	/* vista sp1 passes, w2k3 sp2 fails */
+	torture_assert_int_equal(tctx, domains->count, num_sids,
+		"unexpected domains count");
+	torture_assert(tctx, domains->domains,
+		"unexpected domains pointer");
+	torture_assert_str_equal(tctx, dom_sid_string(tctx, domains->domains[0].sid), dom_sid,
+		"unexpected domain sid");
+#endif
+
+	return true;
+}
+
+/* check for lookup sids results */
+struct torture_suite *torture_rpc_lsa_lookup_sids(TALLOC_CTX *mem_ctx)
+{
+	struct torture_suite *suite;
+	struct torture_rpc_tcase *tcase;
+
+	suite = torture_suite_create(mem_ctx, "LSA-LOOKUPSIDS");
+	tcase = torture_suite_add_rpc_iface_tcase(suite, "lsa",
+						  &ndr_table_lsarpc);
+
+	torture_rpc_tcase_add_test(tcase, "LookupSidsReply", test_LookupSidsReply);
+
+	return suite;
 }

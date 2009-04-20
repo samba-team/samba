@@ -5105,6 +5105,59 @@ static bool run_chain1(int dummy)
 	return True;
 }
 
+static bool run_mangle1(int dummy)
+{
+	struct cli_state *cli;
+	const char *fname = "this_is_a_long_fname_to_be_mangled.txt";
+	int fnum;
+	fstring alt_name;
+	NTSTATUS status;
+	time_t change, access, write;
+	SMB_OFF_T size;
+	uint16_t mode;
+
+	printf("starting chain1 test\n");
+	if (!torture_open_connection(&cli, 0)) {
+		return False;
+	}
+
+	cli_sockopt(cli, sockops);
+
+	fnum = cli_nt_create_full(
+		cli, fname, 0, GENERIC_ALL_ACCESS|DELETE_ACCESS,
+		FILE_ATTRIBUTE_NORMAL, 0, FILE_OVERWRITE_IF, 0, 0);
+	if (fnum == -1) {
+		d_printf("open %s failed: %s\n", fname, cli_errstr(cli));
+		return false;
+	}
+	cli_close(cli, fnum);
+
+	status = cli_qpathinfo_alt_name(cli, fname, alt_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("cli_qpathinfo_alt_name failed: %s\n",
+			 nt_errstr(status));
+		return false;
+	}
+	d_printf("alt_name: %s\n", alt_name);
+
+	fnum = cli_open(cli, alt_name, O_RDONLY, DENY_NONE);
+	if (fnum == -1) {
+		d_printf("cli_open(%s) failed: %s\n", alt_name,
+			 cli_errstr(cli));
+		return false;
+	}
+	cli_close(cli, fnum);
+
+	if (!cli_qpathinfo(cli, alt_name, &change, &access, &write, &size,
+			   &mode)) {
+		d_printf("cli_qpathinfo(%s) failed: %s\n", alt_name,
+			 cli_errstr(cli));
+		return false;
+	}
+
+	return true;
+}
+
 static size_t null_source(uint8_t *buf, size_t n, void *priv)
 {
 	size_t *to_pull = (size_t *)priv;
@@ -5197,6 +5250,50 @@ static bool run_cli_echo(int dummy)
 
 	torture_close_connection(cli);
 	return NT_STATUS_IS_OK(status);
+}
+
+static bool run_uid_regression_test(int dummy)
+{
+	static struct cli_state *cli;
+	int16_t old_vuid;
+	bool correct = True;
+
+	printf("starting uid regression test\n");
+
+	if (!torture_open_connection(&cli, 0)) {
+		return False;
+	}
+
+	cli_sockopt(cli, sockops);
+
+	/* Ok - now save then logoff our current user. */
+	old_vuid = cli->vuid;
+
+	if (!cli_ulogoff(cli)) {
+		d_printf("(%s) cli_ulogoff failed: %s\n",
+			__location__, cli_errstr(cli));
+		correct = false;
+		goto out;
+	}
+
+	cli->vuid = old_vuid;
+
+	/* Try an operation. */
+	if (!cli_mkdir(cli, "\\uid_reg_test")) {
+		/* We expect bad uid. */
+		if (!check_error(__LINE__, cli, ERRSRV, ERRbaduid,
+				NT_STATUS_NO_SUCH_USER)) {
+			return False;
+		}
+		goto out;
+	}
+
+	cli_rmdir(cli, "\\uid_reg_test");
+
+  out:
+
+	torture_close_connection(cli);
+	return correct;
 }
 
 static bool run_local_substitute(int dummy)
@@ -5778,6 +5875,7 @@ static struct {
 	{"RW3",  run_readwritelarge, 0},
 	{"OPEN", run_opentest, 0},
 	{"POSIX", run_simple_posix_open_test, 0},
+	{ "UID-REGRESSION-TEST", run_uid_regression_test, 0},
 #if 1
 	{"OPENATTR", run_openattrtest, 0},
 #endif
@@ -5786,6 +5884,7 @@ static struct {
 	{"DELETE", run_deletetest, 0},
 	{"PROPERTIES", run_properties, 0},
 	{"MANGLE", torture_mangle, 0},
+	{"MANGLE1", run_mangle1, 0},
 	{"W2K", run_w2ktest, 0},
 	{"TRANS2SCAN", torture_trans2_scan, 0},
 	{"NTTRANSSCAN", torture_nttrans_scan, 0},

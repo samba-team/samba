@@ -92,7 +92,25 @@ int smb_thread_set_functions(const struct smb_thread_functions *tf)
 
 SMB_THREADS_DEF_PTHREAD_IMPLEMENTATION(tf);
 
+static smb_thread_once_t ot = SMB_THREAD_ONCE_INIT;
 void *pkey = NULL;
+
+static void init_fn(void)
+{
+	int ret;
+
+	if (!global_tfp) {
+		/* Non-thread safe init case. */
+		if (ot) {
+			return;
+		}
+		ot = true;
+	}
+
+	if ((ret = SMB_THREAD_CREATE_TLS("test_tls", pkey)) != 0) {
+		printf("Create tls once error: %d\n", ret);
+	}
+}
 
 /* Test function. */
 int test_threads(void)
@@ -101,9 +119,8 @@ int test_threads(void)
 	void *plock = NULL;
 	smb_thread_set_functions(&tf);
 
-	if ((ret = SMB_THREAD_CREATE_TLS_ONCE("test_tls", pkey)) != 0) {
-		printf("Create tls once error: %d\n", ret);
-	}
+	SMB_THREAD_ONCE(&ot, init_fn);
+
 	if ((ret = SMB_THREAD_CREATE_MUTEX("test", plock)) != 0) {
 		printf("Create lock error: %d\n", ret);
 	}
@@ -114,7 +131,7 @@ int test_threads(void)
 		printf("unlock error: %d\n", ret);
 	}
 	SMB_THREAD_DESTROY_MUTEX(plock);
-	SMB_THREAD_DESTROY_TLS_ONCE(pkey);
+	SMB_THREAD_DESTROY_TLS(pkey);
 
 	return 0;
 }

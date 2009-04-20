@@ -31,6 +31,10 @@
 #include "system/locale.h"
 #include "system/wait.h"
 
+#ifdef _WIN32
+#define mkdir(d,m) _mkdir(d)
+#endif
+
 void replace_dummy(void);
 void replace_dummy(void) {}
 
@@ -355,7 +359,7 @@ char *rep_strndup(const char *s, size_t n)
 }
 #endif
 
-#ifndef HAVE_WAITPID
+#if !defined(HAVE_WAITPID) && defined(HAVE_WAIT4)
 int rep_waitpid(pid_t pid,int *status,int options)
 {
   return wait4(pid, status, options, NULL);
@@ -368,7 +372,8 @@ int rep_seteuid(uid_t euid)
 #ifdef HAVE_SETRESUID
 	return setresuid(-1, euid, -1);
 #else
-#  error "You need a seteuid function"
+	errno = ENOSYS;
+	return -1;
 #endif
 }
 #endif
@@ -379,7 +384,8 @@ int rep_setegid(gid_t egid)
 #ifdef HAVE_SETRESGID
 	return setresgid(-1, egid, -1);
 #else
-#  error "You need a setegid function"
+	errno = ENOSYS;
+	return -1;
 #endif
 }
 #endif

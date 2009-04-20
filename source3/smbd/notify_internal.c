@@ -27,7 +27,8 @@
 #include "librpc/gen_ndr/ndr_notify.h"
 
 struct notify_context {
-	struct db_context *db;
+	struct db_context *db_recursive;
+	struct db_context *db_onelevel;
 	struct server_id server;
 	struct messaging_context *messaging_ctx;
 	struct notify_list *list;
@@ -91,10 +92,18 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx, struct server_id server,
 		return NULL;
 	}
 
-	notify->db = db_open(notify, lock_path("notify.tdb"),
-				  0, TDB_SEQNUM|TDB_CLEAR_IF_FIRST,
-				  O_RDWR|O_CREAT, 0644);
-	if (notify->db == NULL) {
+	notify->db_recursive = db_open(notify, lock_path("notify.tdb"),
+				       0, TDB_SEQNUM|TDB_CLEAR_IF_FIRST,
+				       O_RDWR|O_CREAT, 0644);
+	if (notify->db_recursive == NULL) {
+		talloc_free(notify);
+		return NULL;
+	}
+
+	notify->db_onelevel = db_open(notify, lock_path("notify_onelevel.tdb"),
+				      0, TDB_SEQNUM|TDB_CLEAR_IF_FIRST,
+				      O_RDWR|O_CREAT, 0644);
+	if (notify->db_onelevel == NULL) {
 		talloc_free(notify);
 		return NULL;
 	}
@@ -103,7 +112,8 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx, struct server_id server,
 	notify->messaging_ctx = messaging_ctx;
 	notify->list = NULL;
 	notify->array = NULL;
-	notify->seqnum = notify->db->get_seqnum(notify->db);
+	notify->seqnum = notify->db_recursive->get_seqnum(
+		notify->db_recursive);
 	notify->key = string_term_tdb_data(NOTIFY_KEY);
 
 	talloc_set_destructor(notify, notify_destructor);
@@ -123,7 +133,8 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx, struct server_id server,
 */
 static NTSTATUS notify_fetch_locked(struct notify_context *notify, struct db_record **rec)
 {
-	*rec = notify->db->fetch_locked(notify->db, notify, notify->key);
+	*rec = notify->db_recursive->fetch_locked(notify->db_recursive,
+						  notify, notify->key);
 	if (*rec == NULL) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -140,7 +151,7 @@ static NTSTATUS notify_load(struct notify_context *notify, struct db_record *rec
 	NTSTATUS status;
 	int seqnum;
 
-	seqnum = notify->db->get_seqnum(notify->db);
+	seqnum = notify->db_recursive->get_seqnum(notify->db_recursive);
 
 	if (seqnum == notify->seqnum && notify->array != NULL) {
 		return NT_STATUS_OK;
@@ -153,7 +164,8 @@ static NTSTATUS notify_load(struct notify_context *notify, struct db_record *rec
 	NT_STATUS_HAVE_NO_MEMORY(notify->array);
 
 	if (!rec) {
-		if (notify->db->fetch(notify->db, notify, notify->key, &dbuf) != 0) {
+		if (notify->db_recursive->fetch(notify->db_recursive, notify,
+						notify->key, &dbuf) != 0) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 	} else {
@@ -344,6 +356,96 @@ static NTSTATUS notify_add_array(struct notify_context *notify, struct db_record
 }
 
 /*
+  Add a non-recursive watch
+*/
+
+static void notify_add_onelevel(struct notify_context *notify,
+				struct notify_entry *e, void *private_data)
+{
+	struct notify_entry_array *array;
+	struct db_record *rec;
+	DATA_BLOB blob;
+	TDB_DATA dbuf;
+	enum ndr_err_code ndr_err;
+	NTSTATUS status;
+
+	array = talloc_zero(talloc_tos(), struct notify_entry_array);
+	if (array == NULL) {
+		return;
+	}
+
+	rec = notify->db_onelevel->fetch_locked(
+		notify->db_onelevel, talloc_tos(),
+		make_tdb_data((uint8_t *)&e->dir_id, sizeof(e->dir_id)));
+	if (rec == NULL) {
+		DEBUG(10, ("notify_add_onelevel: fetch_locked for %s failed"
+			   "\n", file_id_string_tos(&e->dir_id)));
+		TALLOC_FREE(array);
+		return;
+	}
+
+	blob.data = (uint8_t *)rec->value.dptr;
+	blob.length = rec->value.dsize;
+
+	if (blob.length > 0) {
+		ndr_err = ndr_pull_struct_blob(
+			&blob, array, NULL, array,
+			(ndr_pull_flags_fn_t)ndr_pull_notify_entry_array);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			DEBUG(10, ("ndr_pull_notify_entry_array failed: %s\n",
+				   ndr_errstr(ndr_err)));
+			TALLOC_FREE(array);
+			return;
+		}
+		if (DEBUGLEVEL >= 10) {
+			DEBUG(10, ("notify_add_onelevel:\n"));
+			NDR_PRINT_DEBUG(notify_entry_array, array);
+		}
+	}
+
+	array->entries = talloc_realloc(array, array->entries,
+					struct notify_entry,
+					array->num_entries+1);
+	if (array->entries == NULL) {
+		TALLOC_FREE(array);
+		return;
+	}
+	array->entries[array->num_entries] = *e;
+	array->entries[array->num_entries].private_data = private_data;
+	array->entries[array->num_entries].server = notify->server;
+	array->num_entries += 1;
+
+	ndr_err = ndr_push_struct_blob(
+		&blob, rec, NULL, array,
+		(ndr_push_flags_fn_t)ndr_push_notify_entry_array);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(10, ("ndr_push_notify_entry_array failed: %s\n",
+			   ndr_errstr(ndr_err)));
+		TALLOC_FREE(array);
+		return;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		DEBUG(10, ("notify_add_onelevel:\n"));
+		NDR_PRINT_DEBUG(notify_entry_array, array);
+	}
+
+	dbuf.dptr = blob.data;
+	dbuf.dsize = blob.length;
+
+	status = rec->store(rec, dbuf, TDB_REPLACE);
+	TALLOC_FREE(array);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("notify_add_onelevel: store failed: %s\n",
+			   nt_errstr(status)));
+		return;
+	}
+	e->filter = 0;
+	return;
+}
+
+
+/*
   add a notify watch. This is called when a notify is first setup on a open
   directory handle.
 */
@@ -411,6 +513,11 @@ NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e0,
 		}
 	}
 
+	if (e.filter != 0) {
+		notify_add_onelevel(notify, &e, private_data);
+		status = NT_STATUS_OK;
+	}
+
 	/* if the system notify handler couldn't handle some of the
 	   filter bits, or couldn't handle a request for recursion
 	   then we need to install it in the array used for the
@@ -424,6 +531,102 @@ done:
 	talloc_free(tmp_path);
 
 	return status;
+}
+
+NTSTATUS notify_remove_onelevel(struct notify_context *notify,
+				const struct file_id *fid,
+				void *private_data)
+{
+	struct notify_entry_array *array;
+	struct db_record *rec;
+	DATA_BLOB blob;
+	TDB_DATA dbuf;
+	enum ndr_err_code ndr_err;
+	NTSTATUS status;
+	int i;
+
+	array = talloc_zero(talloc_tos(), struct notify_entry_array);
+	if (array == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	rec = notify->db_onelevel->fetch_locked(
+		notify->db_onelevel, talloc_tos(),
+		make_tdb_data((uint8_t *)fid, sizeof(*fid)));
+	if (rec == NULL) {
+		DEBUG(10, ("notify_remove_onelevel: fetch_locked for %s failed"
+			   "\n", file_id_string_tos(fid)));
+		TALLOC_FREE(array);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	blob.data = (uint8_t *)rec->value.dptr;
+	blob.length = rec->value.dsize;
+
+	if (blob.length > 0) {
+		ndr_err = ndr_pull_struct_blob(
+			&blob, array, NULL, array,
+			(ndr_pull_flags_fn_t)ndr_pull_notify_entry_array);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			DEBUG(10, ("ndr_pull_notify_entry_array failed: %s\n",
+				   ndr_errstr(ndr_err)));
+			TALLOC_FREE(array);
+			return ndr_map_error2ntstatus(ndr_err);
+		}
+		if (DEBUGLEVEL >= 10) {
+			DEBUG(10, ("notify_remove_onelevel:\n"));
+			NDR_PRINT_DEBUG(notify_entry_array, array);
+		}
+	}
+
+	for (i=0; i<array->num_entries; i++) {
+		if ((private_data == array->entries[i].private_data) &&
+		    cluster_id_equal(&notify->server,
+				     &array->entries[i].server)) {
+			break;
+		}
+	}
+
+	if (i == array->num_entries) {
+		TALLOC_FREE(array);
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	array->entries[i] = array->entries[array->num_entries-1];
+	array->num_entries -= 1;
+
+	if (array->num_entries == 0) {
+		rec->delete_rec(rec);
+		TALLOC_FREE(array);
+		return NT_STATUS_OK;
+	}
+
+	ndr_err = ndr_push_struct_blob(
+		&blob, rec, NULL, array,
+		(ndr_push_flags_fn_t)ndr_push_notify_entry_array);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(10, ("ndr_push_notify_entry_array failed: %s\n",
+			   ndr_errstr(ndr_err)));
+		TALLOC_FREE(array);
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		DEBUG(10, ("notify_add_onelevel:\n"));
+		NDR_PRINT_DEBUG(notify_entry_array, array);
+	}
+
+	dbuf.dptr = blob.data;
+	dbuf.dsize = blob.length;
+
+	status = rec->store(rec, dbuf, TDB_REPLACE);
+	TALLOC_FREE(array);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("notify_add_onelevel: store failed: %s\n",
+			   nt_errstr(status)));
+		return status;
+	}
+	return NT_STATUS_OK;
 }
 
 /*
@@ -574,6 +777,92 @@ static NTSTATUS notify_send(struct notify_context *notify, struct notify_entry *
 	return status;
 }
 
+void notify_onelevel(struct notify_context *notify, uint32_t action,
+		     uint32_t filter, struct file_id fid, const char *name)
+{
+	struct notify_entry_array *array;
+	TDB_DATA dbuf;
+	DATA_BLOB blob;
+	bool have_dead_entries = false;
+	int i;
+
+	array = talloc_zero(talloc_tos(), struct notify_entry_array);
+	if (array == NULL) {
+		return;
+	}
+
+	if (notify->db_onelevel->fetch(
+		    notify->db_onelevel, array,
+		    make_tdb_data((uint8_t *)&fid, sizeof(fid)),
+		    &dbuf) == -1) {
+		TALLOC_FREE(array);
+		return;
+	}
+
+	blob.data = (uint8 *)dbuf.dptr;
+	blob.length = dbuf.dsize;
+
+	if (blob.length > 0) {
+		enum ndr_err_code ndr_err;
+		ndr_err = ndr_pull_struct_blob(
+			&blob, array, NULL, array,
+			(ndr_pull_flags_fn_t)ndr_pull_notify_entry_array);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			DEBUG(10, ("ndr_pull_notify_entry_array failed: %s\n",
+				   ndr_errstr(ndr_err)));
+			TALLOC_FREE(array);
+			return;
+		}
+		if (DEBUGLEVEL >= 10) {
+			DEBUG(10, ("notify_onelevel:\n"));
+			NDR_PRINT_DEBUG(notify_entry_array, array);
+		}
+	}
+
+	for (i=0; i<array->num_entries; i++) {
+		struct notify_entry *e = &array->entries[i];
+
+		if ((e->filter & filter) != 0) {
+			NTSTATUS status;
+
+			status = notify_send(notify, e, name, action);
+			if (NT_STATUS_EQUAL(
+				    status, NT_STATUS_INVALID_HANDLE)) {
+				/*
+				 * Mark the entry as dead. All entries have a
+				 * path set. The marker used here is setting
+				 * that to NULL.
+				 */
+				e->path = NULL;
+				have_dead_entries = true;
+			}
+		}
+	}
+
+	if (!have_dead_entries) {
+		TALLOC_FREE(array);
+		return;
+	}
+
+	for (i=0; i<array->num_entries; i++) {
+		struct notify_entry *e = &array->entries[i];
+		if (e->path != NULL) {
+			continue;
+		}
+		DEBUG(10, ("Deleting notify entries for process %s because "
+			   "it's gone\n", procid_str_static(&e->server)));
+		/*
+		 * Potential TODO: This might need optimizing,
+		 * notify_remove_onelevel() does a fetch_locked() operation at
+		 * every call. But this would only matter if a process with
+		 * MANY notifies has died without shutting down properly.
+		 */
+		notify_remove_onelevel(notify, &e->dir_id, e->private_data);
+	}
+
+	TALLOC_FREE(array);
+	return;
+}
 
 /*
   trigger a notify message for anyone waiting on a matching event

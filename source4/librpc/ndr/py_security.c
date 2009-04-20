@@ -187,12 +187,21 @@ static PyObject *py_descriptor_from_sddl(PyObject *self, PyObject *args)
 	return py_talloc_import((PyTypeObject *)self, secdesc);
 }
 
-static PyObject *py_descriptor_as_sddl(PyObject *self, PyObject *py_sid)
+static PyObject *py_descriptor_as_sddl(PyObject *self, PyObject *args)
 {
-	struct dom_sid *sid = py_talloc_get_ptr(py_sid);
+	struct dom_sid *sid;
+	PyObject *py_sid = Py_None;
 	struct security_descriptor *desc = py_talloc_get_ptr(self);
 	char *text;
 	PyObject *ret;
+
+	if (!PyArg_ParseTuple(args, "|O", &py_sid))
+		return NULL;
+
+	if (py_sid == Py_None)
+		sid = py_talloc_get_ptr(py_sid);
+	else
+		sid = NULL;
 
 	text = sddl_encode(NULL, desc, sid);
 
@@ -215,7 +224,7 @@ static PyMethodDef py_descriptor_extra_methods[] = {
 		NULL },
 	{ "from_sddl", (PyCFunction)py_descriptor_from_sddl, METH_VARARGS|METH_CLASS, 
 		NULL },
-	{ "as_sddl", (PyCFunction)py_descriptor_as_sddl, METH_O,
+	{ "as_sddl", (PyCFunction)py_descriptor_as_sddl, METH_VARARGS,
 		NULL },
 	{ NULL }
 };

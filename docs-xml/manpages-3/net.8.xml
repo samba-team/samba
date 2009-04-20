@@ -35,6 +35,7 @@
 		<arg choice="opt">-P</arg>
 		<arg choice="opt">-d debuglevel</arg>
 		<arg choice="opt">-V</arg>
+		<arg choice="opt">--request-timeout seconds</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -122,6 +123,14 @@
 		<term>-P</term>
 		<listitem><para>
 		Make queries to the external server using the machine account of the local server.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--request-timeout 30</term>
+		<listitem><para>
+		Let client requests timeout after 30 seconds the default is 10
+		seconds.
 		</para></listitem>
 		</varlistentry>
 

@@ -68,6 +68,69 @@ _PUBLIC_ void ndr_print_notify_entry(struct ndr_print *ndr, const char *name, co
 	ndr->depth--;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_notify_entry_array(struct ndr_push *ndr, int ndr_flags, const struct notify_entry_array *r)
+{
+	uint32_t cntr_entries_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 8));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->num_entries));
+		for (cntr_entries_0 = 0; cntr_entries_0 < r->num_entries; cntr_entries_0++) {
+			NDR_CHECK(ndr_push_notify_entry(ndr, NDR_SCALARS, &r->entries[cntr_entries_0]));
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		for (cntr_entries_0 = 0; cntr_entries_0 < r->num_entries; cntr_entries_0++) {
+			NDR_CHECK(ndr_push_notify_entry(ndr, NDR_BUFFERS, &r->entries[cntr_entries_0]));
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_notify_entry_array(struct ndr_pull *ndr, int ndr_flags, struct notify_entry_array *r)
+{
+	uint32_t cntr_entries_0;
+	TALLOC_CTX *_mem_save_entries_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 8));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->num_entries));
+		NDR_PULL_ALLOC_N(ndr, r->entries, r->num_entries);
+		_mem_save_entries_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->entries, 0);
+		for (cntr_entries_0 = 0; cntr_entries_0 < r->num_entries; cntr_entries_0++) {
+			NDR_CHECK(ndr_pull_notify_entry(ndr, NDR_SCALARS, &r->entries[cntr_entries_0]));
+		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_entries_0, 0);
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		_mem_save_entries_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->entries, 0);
+		for (cntr_entries_0 = 0; cntr_entries_0 < r->num_entries; cntr_entries_0++) {
+			NDR_CHECK(ndr_pull_notify_entry(ndr, NDR_BUFFERS, &r->entries[cntr_entries_0]));
+		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_entries_0, 0);
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_notify_entry_array(struct ndr_print *ndr, const char *name, const struct notify_entry_array *r)
+{
+	uint32_t cntr_entries_0;
+	ndr_print_struct(ndr, name, "notify_entry_array");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "num_entries", r->num_entries);
+	ndr->print(ndr, "%s: ARRAY(%d)", "entries", (int)r->num_entries);
+	ndr->depth++;
+	for (cntr_entries_0=0;cntr_entries_0<r->num_entries;cntr_entries_0++) {
+		char *idx_0=NULL;
+		if (asprintf(&idx_0, "[%d]", cntr_entries_0) != -1) {
+			ndr_print_notify_entry(ndr, "entries", &r->entries[cntr_entries_0]);
+			free(idx_0);
+		}
+	}
+	ndr->depth--;
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_notify_depth(struct ndr_push *ndr, int ndr_flags, const struct notify_depth *r)
 {
 	uint32_t cntr_entries_0;

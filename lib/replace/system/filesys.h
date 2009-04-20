@@ -179,4 +179,8 @@
 #define SEEK_SET 0
 #endif
 
+#ifdef _WIN32
+#define mkdir(d,m) _mkdir(d)
+#endif
+
 #endif

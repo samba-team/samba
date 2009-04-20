@@ -334,7 +334,7 @@ AC_DEFUN([AC_CHECK_FUNC_EXT],
 	    [AC_DEFINE_UNQUOTED(AS_TR_CPP([HAVE_$1])) $3], 
 	    [$4])dnl
 AS_VAR_POPDEF([ac_var])dnl
-])# AC_CHECK_FUNC
+])# AC_CHECK_FUNC_EXT
 
 # AH_CHECK_FUNC_EXT(FUNCNAME)
 # ---------------------

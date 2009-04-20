@@ -290,6 +290,13 @@ static bool test_EnumJobs(struct torture_context *tctx,
 
 	status = dcerpc_spoolss_EnumJobs(p, tctx, &ej);
 	torture_assert_ntstatus_ok(tctx, status, "EnumJobs failed");
+	if (W_ERROR_EQUAL(ej.out.result, WERR_INSUFFICIENT_BUFFER)) {
+		blob = data_blob_talloc_zero(tctx, needed);
+		ej.in.offered = needed;
+		ej.in.buffer = &blob;
+		status = dcerpc_spoolss_EnumJobs(p, tctx, &ej);
+		torture_assert_ntstatus_ok(tctx, status, "EnumJobs failed");
+	}
 	torture_assert_werr_ok(tctx, ej.out.result, "EnumJobs failed");
 
 	return true;

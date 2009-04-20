@@ -106,10 +106,10 @@ class RpcInterfaceTestCase(unittest.TestCase):
 class ValidNetbiosNameTests(unittest.TestCase):
 
     def test_valid(self):
-        self.assertTrue(valid_netbios_name("FOO"))
+        self.assertTrue(samba.valid_netbios_name("FOO"))
 
     def test_too_long(self):
-        self.assertFalse(valid_netbios_name("FOO"*10))
+        self.assertFalse(samba.valid_netbios_name("FOO"*10))
 
     def test_invalid_characters(self):
-        self.assertFalse(valid_netbios_name("()BLA"))
+        self.assertFalse(samba.valid_netbios_name("*BLA"))

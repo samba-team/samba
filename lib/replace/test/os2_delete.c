@@ -27,6 +27,10 @@ static int test_readdir_os2_delete_ret;
 #define MIN(a,b) ((a)<(b)?(a):(b))
 #endif
 
+#ifdef _WIN32
+#define mkdir(d,m) _mkdir(d)
+#endif
+
 static void cleanup(void)
 {
 	/* I'm a lazy bastard */

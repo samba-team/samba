@@ -55,7 +55,25 @@ struct talloc_stackframe {
 
 static void *global_ts;
 
-static struct talloc_stackframe *talloc_stackframe_init(void)
+/* Variable to ensure TLS value is only initialized once. */
+static smb_thread_once_t ts_initialized = SMB_THREAD_ONCE_INIT;
+
+static void talloc_stackframe_init(void)
+{
+	if (!global_tfp) {
+		/* Non-thread safe init case. */
+		if (SMB_THREAD_ONCE_IS_INITIALIZED(ts_initialized)) {
+			return;
+		}
+		SMB_THREAD_ONCE_INITIALIZE(ts_initialized);
+	}
+
+	if (SMB_THREAD_CREATE_TLS("talloc_stackframe", global_ts)) {
+		smb_panic("talloc_stackframe_init create_tls failed");
+	}
+}
+
+static struct talloc_stackframe *talloc_stackframe_create(void)
 {
 #if defined(PARANOID_MALLOC_CHECKER)
 #ifdef malloc
@@ -74,9 +92,7 @@ static struct talloc_stackframe *talloc_stackframe_init(void)
 
 	ZERO_STRUCTP(ts);
 
-	if (SMB_THREAD_CREATE_TLS_ONCE("talloc_stackframe", global_ts)) {
-		smb_panic("talloc_stackframe_init create_tls failed");
-	}
+	SMB_THREAD_ONCE(&ts_initialized, talloc_stackframe_init);
 
 	if (SMB_THREAD_SET_TLS(global_ts, ts)) {
 		smb_panic("talloc_stackframe_init set_tls failed");
@@ -115,7 +131,7 @@ static TALLOC_CTX *talloc_stackframe_internal(size_t poolsize)
 		(struct talloc_stackframe *)SMB_THREAD_GET_TLS(global_ts);
 
 	if (ts == NULL) {
-		ts = talloc_stackframe_init();
+		ts = talloc_stackframe_create();
 	}
 
 	if (ts->talloc_stack_arraysize < ts->talloc_stacksize + 1) {
