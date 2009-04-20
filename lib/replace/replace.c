@@ -372,7 +372,8 @@ int rep_seteuid(uid_t euid)
 #ifdef HAVE_SETRESUID
 	return setresuid(-1, euid, -1);
 #else
-#  error "You need a seteuid function"
+	errno = ENOSYS;
+	return -1;
 #endif
 }
 #endif
@@ -383,7 +384,8 @@ int rep_setegid(gid_t egid)
 #ifdef HAVE_SETRESGID
 	return setresgid(-1, egid, -1);
 #else
-#  error "You need a setegid function"
+	errno = ENOSYS;
+	return -1;
 #endif
 }
 #endif
