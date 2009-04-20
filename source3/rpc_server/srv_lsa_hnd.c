@@ -337,7 +337,7 @@ void *_policy_handle_create(struct pipes_struct *p, struct policy_handle *hnd,
 		*pstatus = NT_STATUS_NO_MEMORY;
 		return NULL;
 	}
-	talloc_set_name(data, "%s", type);
+	talloc_set_name_const(data, type);
 
 	pol = create_policy_hnd_internal(p, hnd, data);
 	if (pol == NULL) {
