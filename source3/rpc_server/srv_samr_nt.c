@@ -66,6 +66,10 @@ struct samr_group_info {
 	struct dom_sid sid;
 };
 
+struct samr_alias_info {
+	struct dom_sid sid;
+};
+
 typedef struct disp_info {
 	DOM_SID sid; /* identify which domain this is. */
 	struct pdb_search *users; /* querydispinfo 1 and 4 */
@@ -1693,9 +1697,8 @@ NTSTATUS _samr_QueryDisplayInfo3(pipes_struct *p,
 NTSTATUS _samr_QueryAliasInfo(pipes_struct *p,
 			      struct samr_QueryAliasInfo *r)
 {
-	DOM_SID   sid;
+	struct samr_alias_info *ainfo;
 	struct acct_info info;
-	uint32    acc_granted;
 	NTSTATUS status;
 	union samr_AliasInfo *alias_info = NULL;
 	const char *alias_name = NULL;
@@ -1703,24 +1706,20 @@ NTSTATUS _samr_QueryAliasInfo(pipes_struct *p,
 
 	DEBUG(5,("_samr_QueryAliasInfo: %d\n", __LINE__));
 
+	ainfo = policy_handle_find(p, r->in.alias_handle,
+				   SAMR_ALIAS_ACCESS_LOOKUP_INFO, NULL,
+				   struct samr_alias_info, &status);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	alias_info = TALLOC_ZERO_P(p->mem_ctx, union samr_AliasInfo);
 	if (!alias_info) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* find the policy handle.  open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, r->in.alias_handle, &sid, &acc_granted, NULL))
-		return NT_STATUS_INVALID_HANDLE;
-
-	status = access_check_samr_function(acc_granted,
-					    SAMR_ALIAS_ACCESS_LOOKUP_INFO,
-					    "_samr_QueryAliasInfo");
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
 	become_root();
-	status = pdb_get_aliasinfo(&sid, &info);
+	status = pdb_get_aliasinfo(&ainfo->sid, &info);
 	unbecome_root();
 
 	if ( !NT_STATUS_IS_OK(status))
@@ -3405,7 +3404,7 @@ NTSTATUS _samr_OpenAlias(pipes_struct *p,
 {
 	DOM_SID sid;
 	uint32 alias_rid = r->in.rid;
-	struct    samr_info *info = NULL;
+	struct samr_alias_info *ainfo;
 	struct samr_domain_info *dinfo;
 	SEC_DESC *psd = NULL;
 	uint32    acc_granted;
@@ -3465,15 +3464,12 @@ NTSTATUS _samr_OpenAlias(pipes_struct *p,
 
 	}
 
-	/* associate the alias SID with the new handle. */
-	if ((info = get_samr_info_by_sid(p->mem_ctx, &sid)) == NULL)
-		return NT_STATUS_NO_MEMORY;
-
-	info->acc_granted = acc_granted;
-
-	/* get a (unique) handle.  open a policy on it. */
-	if (!create_policy_hnd(p, r->out.alias_handle, info))
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	ainfo = policy_handle_create(p, r->out.alias_handle, acc_granted,
+				     struct samr_alias_info, &status);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	ainfo->sid = sid;
 
 	return NT_STATUS_OK;
 }
@@ -4307,31 +4303,24 @@ NTSTATUS _samr_GetAliasMembership(pipes_struct *p,
 NTSTATUS _samr_GetMembersInAlias(pipes_struct *p,
 				 struct samr_GetMembersInAlias *r)
 {
+	struct samr_alias_info *ainfo;
 	NTSTATUS status;
 	size_t i;
 	size_t num_sids = 0;
 	struct lsa_SidPtr *sids = NULL;
 	DOM_SID *pdb_sids = NULL;
 
-	DOM_SID alias_sid;
-
-	uint32 acc_granted;
-
-	/* find the policy handle.  open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, r->in.alias_handle, &alias_sid, &acc_granted, NULL))
-		return NT_STATUS_INVALID_HANDLE;
-
-	status = access_check_samr_function(acc_granted,
-					    SAMR_ALIAS_ACCESS_GET_MEMBERS,
-					    "_samr_GetMembersInAlias");
+	ainfo = policy_handle_find(p, r->in.alias_handle,
+				   SAMR_ALIAS_ACCESS_GET_MEMBERS, NULL,
+				   struct samr_alias_info, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	DEBUG(10, ("sid is %s\n", sid_string_dbg(&alias_sid)));
+	DEBUG(10, ("sid is %s\n", sid_string_dbg(&ainfo->sid)));
 
 	become_root();
-	status = pdb_enum_aliasmem(&alias_sid, &pdb_sids, &num_sids);
+	status = pdb_enum_aliasmem(&ainfo->sid, &pdb_sids, &num_sids);
 	unbecome_root();
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -4436,25 +4425,19 @@ NTSTATUS _samr_QueryGroupMember(pipes_struct *p,
 NTSTATUS _samr_AddAliasMember(pipes_struct *p,
 			      struct samr_AddAliasMember *r)
 {
-	DOM_SID alias_sid;
-	uint32 acc_granted;
+	struct samr_alias_info *ainfo;
 	SE_PRIV se_rights;
 	bool can_add_accounts;
 	NTSTATUS status;
-	DISP_INFO *disp_info = NULL;
 
-	/* Find the policy handle. Open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, r->in.alias_handle, &alias_sid, &acc_granted, &disp_info))
-		return NT_STATUS_INVALID_HANDLE;
-
-	status = access_check_samr_function(acc_granted,
-					    SAMR_ALIAS_ACCESS_ADD_MEMBER,
-					    "_samr_AddAliasMember");
+	ainfo = policy_handle_find(p, r->in.alias_handle,
+				   SAMR_ALIAS_ACCESS_ADD_MEMBER, NULL,
+				   struct samr_alias_info, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	DEBUG(10, ("sid is %s\n", sid_string_dbg(&alias_sid)));
+	DEBUG(10, ("sid is %s\n", sid_string_dbg(&ainfo->sid)));
 
 	se_priv_copy( &se_rights, &se_add_users );
 	can_add_accounts = user_has_privileges( p->server_info->ptok, &se_rights );
@@ -4464,7 +4447,7 @@ NTSTATUS _samr_AddAliasMember(pipes_struct *p,
 	if ( can_add_accounts )
 		become_root();
 
-	status = pdb_add_aliasmem(&alias_sid, r->in.sid);
+	status = pdb_add_aliasmem(&ainfo->sid, r->in.sid);
 
 	if ( can_add_accounts )
 		unbecome_root();
@@ -4472,7 +4455,7 @@ NTSTATUS _samr_AddAliasMember(pipes_struct *p,
 	/******** END SeAddUsers BLOCK *********/
 
 	if (NT_STATUS_IS_OK(status)) {
-		force_flush_samr_cache(&alias_sid);
+		force_flush_samr_cache(&ainfo->sid);
 	}
 
 	return status;
@@ -4485,26 +4468,20 @@ NTSTATUS _samr_AddAliasMember(pipes_struct *p,
 NTSTATUS _samr_DeleteAliasMember(pipes_struct *p,
 				 struct samr_DeleteAliasMember *r)
 {
-	DOM_SID alias_sid;
-	uint32 acc_granted;
+	struct samr_alias_info *ainfo;
 	SE_PRIV se_rights;
 	bool can_add_accounts;
 	NTSTATUS status;
-	DISP_INFO *disp_info = NULL;
 
-	/* Find the policy handle. Open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, r->in.alias_handle, &alias_sid, &acc_granted, &disp_info))
-		return NT_STATUS_INVALID_HANDLE;
-
-	status = access_check_samr_function(acc_granted,
-					    SAMR_ALIAS_ACCESS_REMOVE_MEMBER,
-					    "_samr_DeleteAliasMember");
+	ainfo = policy_handle_find(p, r->in.alias_handle,
+				   SAMR_ALIAS_ACCESS_REMOVE_MEMBER, NULL,
+				   struct samr_alias_info, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
 	DEBUG(10, ("_samr_del_aliasmem:sid is %s\n",
-		   sid_string_dbg(&alias_sid)));
+		   sid_string_dbg(&ainfo->sid)));
 
 	se_priv_copy( &se_rights, &se_add_users );
 	can_add_accounts = user_has_privileges( p->server_info->ptok, &se_rights );
@@ -4514,7 +4491,7 @@ NTSTATUS _samr_DeleteAliasMember(pipes_struct *p,
 	if ( can_add_accounts )
 		become_root();
 
-	status = pdb_del_aliasmem(&alias_sid, r->in.sid);
+	status = pdb_del_aliasmem(&ainfo->sid, r->in.sid);
 
 	if ( can_add_accounts )
 		unbecome_root();
@@ -4522,7 +4499,7 @@ NTSTATUS _samr_DeleteAliasMember(pipes_struct *p,
 	/******** END SeAddUsers BLOCK *********/
 
 	if (NT_STATUS_IS_OK(status)) {
-		force_flush_samr_cache(&alias_sid);
+		force_flush_samr_cache(&ainfo->sid);
 	}
 
 	return status;
@@ -4778,39 +4755,29 @@ NTSTATUS _samr_DeleteDomainGroup(pipes_struct *p,
 NTSTATUS _samr_DeleteDomAlias(pipes_struct *p,
 			      struct samr_DeleteDomAlias *r)
 {
-	DOM_SID alias_sid;
-	uint32 acc_granted;
+	struct samr_alias_info *ainfo;
 	SE_PRIV se_rights;
 	bool can_add_accounts;
 	NTSTATUS status;
-	DISP_INFO *disp_info = NULL;
 
 	DEBUG(5, ("_samr_DeleteDomAlias: %d\n", __LINE__));
 
-	/* Find the policy handle. Open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, r->in.alias_handle, &alias_sid, &acc_granted, &disp_info))
-		return NT_STATUS_INVALID_HANDLE;
-
-	/* copy the handle to the outgoing reply */
-
-	memcpy(r->out.alias_handle, r->in.alias_handle, sizeof(r->out.alias_handle));
-
-	status = access_check_samr_function(acc_granted,
-					    STD_RIGHT_DELETE_ACCESS,
-					    "_samr_DeleteDomAlias");
+	ainfo = policy_handle_find(p, r->in.alias_handle,
+				   STD_RIGHT_DELETE_ACCESS, NULL,
+				   struct samr_alias_info, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	DEBUG(10, ("sid is %s\n", sid_string_dbg(&alias_sid)));
+	DEBUG(10, ("sid is %s\n", sid_string_dbg(&ainfo->sid)));
 
 	/* Don't let Windows delete builtin groups */
 
-	if ( sid_check_is_in_builtin( &alias_sid ) ) {
+	if ( sid_check_is_in_builtin( &ainfo->sid ) ) {
 		return NT_STATUS_SPECIAL_ACCOUNT;
 	}
 
-	if (!sid_check_is_in_our_domain(&alias_sid))
+	if (!sid_check_is_in_our_domain(&ainfo->sid))
 		return NT_STATUS_NO_SUCH_ALIAS;
 
 	DEBUG(10, ("lookup on Local SID\n"));
@@ -4824,7 +4791,7 @@ NTSTATUS _samr_DeleteDomAlias(pipes_struct *p,
 		become_root();
 
 	/* Have passdb delete the alias */
-	status = pdb_delete_alias(&alias_sid);
+	status = pdb_delete_alias(&ainfo->sid);
 
 	if ( can_add_accounts )
 		unbecome_root();
@@ -4837,7 +4804,7 @@ NTSTATUS _samr_DeleteDomAlias(pipes_struct *p,
 	if (!close_policy_hnd(p, r->in.alias_handle))
 		return NT_STATUS_OBJECT_NAME_INVALID;
 
-	force_flush_samr_cache(&alias_sid);
+	force_flush_samr_cache(&ainfo->sid);
 
 	return NT_STATUS_OK;
 }
@@ -4922,7 +4889,7 @@ NTSTATUS _samr_CreateDomAlias(pipes_struct *p,
 	DOM_SID info_sid;
 	const char *name = NULL;
 	struct samr_domain_info *dinfo;
-	struct samr_info *info;
+	struct samr_alias_info *ainfo;
 	gid_t gid;
 	NTSTATUS result;
 	SE_PRIV se_rights;
@@ -4981,16 +4948,13 @@ NTSTATUS _samr_CreateDomAlias(pipes_struct *p,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if ((info = get_samr_info_by_sid(p->mem_ctx, &info_sid)) == NULL)
-		return NT_STATUS_NO_MEMORY;
-
-	/* they created it; let the user do what he wants with it */
-
-	info->acc_granted = GENERIC_RIGHTS_ALIAS_ALL_ACCESS;
-
-	/* get a (unique) handle.  open a policy on it. */
-	if (!create_policy_hnd(p, r->out.alias_handle, info))
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	ainfo = policy_handle_create(p, r->out.alias_handle,
+				     GENERIC_RIGHTS_ALIAS_ALL_ACCESS,
+				     struct samr_alias_info, &result);
+        if (!NT_STATUS_IS_OK(result)) {
+                return result;
+        }
+	ainfo->sid = info_sid;
 
 	force_flush_samr_cache(&info_sid);
 
@@ -5168,19 +5132,14 @@ NTSTATUS _samr_SetGroupInfo(pipes_struct *p,
 NTSTATUS _samr_SetAliasInfo(pipes_struct *p,
 			    struct samr_SetAliasInfo *r)
 {
-	DOM_SID group_sid;
+	struct samr_alias_info *ainfo;
 	struct acct_info info;
-	uint32 acc_granted;
 	bool can_mod_accounts;
 	NTSTATUS status;
-	DISP_INFO *disp_info = NULL;
 
-	if (!get_lsa_policy_samr_sid(p, r->in.alias_handle, &group_sid, &acc_granted, &disp_info))
-		return NT_STATUS_INVALID_HANDLE;
-
-	status = access_check_samr_function(acc_granted,
-					    SAMR_ALIAS_ACCESS_SET_INFO,
-					    "_samr_SetAliasInfo");
+	ainfo = policy_handle_find(p, r->in.alias_handle,
+				   SAMR_ALIAS_ACCESS_SET_INFO, NULL,
+				   struct samr_alias_info, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -5188,7 +5147,7 @@ NTSTATUS _samr_SetAliasInfo(pipes_struct *p,
 	/* get the current group information */
 
 	become_root();
-	status = pdb_get_aliasinfo( &group_sid, &info );
+	status = pdb_get_aliasinfo( &ainfo->sid, &info );
 	unbecome_root();
 
 	if ( !NT_STATUS_IS_OK(status))
@@ -5204,7 +5163,7 @@ NTSTATUS _samr_SetAliasInfo(pipes_struct *p,
 			   why.  The eventually needs to be fixed to be like Windows
 			   where you can rename builtin groups, just not delete them */
 
-			if ( sid_check_is_in_builtin( &group_sid ) ) {
+			if ( sid_check_is_in_builtin( &ainfo->sid ) ) {
 				return NT_STATUS_SPECIAL_ACCOUNT;
 			}
 
@@ -5249,7 +5208,7 @@ NTSTATUS _samr_SetAliasInfo(pipes_struct *p,
         if ( can_mod_accounts )
                 become_root();
 
-        status = pdb_set_aliasinfo( &group_sid, &info );
+        status = pdb_set_aliasinfo( &ainfo->sid, &info );
 
         if ( can_mod_accounts )
                 unbecome_root();
@@ -5257,7 +5216,7 @@ NTSTATUS _samr_SetAliasInfo(pipes_struct *p,
         /******** End SeAddUsers BLOCK *********/
 
 	if (NT_STATUS_IS_OK(status))
-		force_flush_samr_cache(&group_sid);
+		force_flush_samr_cache(&ainfo->sid);
 
 	return status;
 }
