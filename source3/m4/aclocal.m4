@@ -899,3 +899,4 @@ int main(void)
 ])
 
 m4_include(../lib/replace/libreplace.m4)
+AC_CHECK_FUNCS([syslog],,[AC_MSG_ERROR([Required function not found])])

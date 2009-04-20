@@ -279,7 +279,7 @@ m4_include(timegm.m4)
 m4_include(repdir.m4)
 m4_include(crypt.m4)
 
-AC_CHECK_FUNCS([syslog printf memset memcpy],,[AC_MSG_ERROR([Required function not found])])
+AC_CHECK_FUNCS([printf memset memcpy],,[AC_MSG_ERROR([Required function not found])])
 
 echo "LIBREPLACE_BROKEN_CHECKS: END"
 ]) dnl end AC_LIBREPLACE_BROKEN_CHECKS

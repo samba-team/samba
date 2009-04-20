@@ -33,3 +33,5 @@ SMB_SUBSYSTEM(LIBREPLACE_HOSTCC,
 	[${LIBREPLACE_HOSTCC_OBJS}],
 	[],
 	[-Ilib/replace])
+
+AC_CHECK_FUNCS([syslog],,[AC_MSG_ERROR([Required function not found])])
