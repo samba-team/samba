@@ -417,7 +417,7 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 
 		result = cli_rpc_pipe_open_schannel_with_key(
 			cli, &ndr_table_netlogon.syntax_id,
-			PIPE_AUTH_LEVEL_PRIVACY, domain, pipe_hnd->dc,
+			PIPE_AUTH_LEVEL_PRIVACY, domain, &pipe_hnd->dc,
 			&netlogon_schannel_pipe);
 
 		if (!NT_STATUS_IS_OK(result)) {

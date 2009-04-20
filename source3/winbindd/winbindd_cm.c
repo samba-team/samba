@@ -2227,7 +2227,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	result = cli_rpc_pipe_open_schannel_with_key
 		(conn->cli, &ndr_table_lsarpc.syntax_id,
 		 PIPE_AUTH_LEVEL_PRIVACY,
-		 domain->name, p_creds, &conn->lsa_pipe);
+		 domain->name, &p_creds, &conn->lsa_pipe);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(10,("cm_connect_lsa: failed to connect to LSA pipe for "
@@ -2373,7 +2373,7 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 
 	result = cli_rpc_pipe_open_schannel_with_key(
 		conn->cli, &ndr_table_netlogon.syntax_id,
-		PIPE_AUTH_LEVEL_PRIVACY, domain->name, netlogon_pipe->dc,
+		PIPE_AUTH_LEVEL_PRIVACY, domain->name, &netlogon_pipe->dc,
 		&conn->netlogon_pipe);
 
 	/* We can now close the initial netlogon pipe. */
