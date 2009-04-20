@@ -28,6 +28,7 @@ raw.scan.eamax
 samba4.ntvfs.cifs.raw.qfileinfo.ipc
 smb2.notify
 smb2.scan
+smb2.lease
 ntvfs.cifs.base.charset
 ntvfs.cifs.base.iometer
 ntvfs.cifs.base.casetable
