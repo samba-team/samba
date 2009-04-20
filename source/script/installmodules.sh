@@ -29,6 +29,11 @@ mtype=`basename $LIBDIR`
 for p in $*; do
  p2=`basename $p`
  name=`echo $p2 | sed -es/${mtype}_//`
+ echo Preserving old module as $DESTDIR/$LIBDIR/$name.old
+ if [ -f $DESTDIR/$LIBDIR/$name ]; then
+   rm -f $DESTDIR/$LIBDIR/$name.old
+   mv $DESTDIR/$LIBDIR/$name $DESTDIR/$LIBDIR/$name.old
+ fi
  echo Installing $p as $DESTDIR/$LIBDIR/$name
  cp -f $p $DESTDIR/$LIBDIR/$name
  chmod $INSTALLPERMS $DESTDIR/$LIBDIR/$name
