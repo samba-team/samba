@@ -356,9 +356,8 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 					 client_domain,
 					 false,
 					 user_sess_key)) {
-			*lm_sess_key = *user_sess_key;
 			if (user_sess_key->length) {
-				lm_sess_key->length = 8;
+				*lm_sess_key = data_blob_talloc(mem_ctx, user_sess_key->data, MIN(8, user_sess_key->length));
 			}
 			return NT_STATUS_OK;
 		}
@@ -371,9 +370,8 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 					 client_domain,
 					 true,
 					 user_sess_key)) {
-			*lm_sess_key = *user_sess_key;
 			if (user_sess_key->length) {
-				lm_sess_key->length = 8;
+				*lm_sess_key = data_blob_talloc(mem_ctx, user_sess_key->data, MIN(8, user_sess_key->length));
 			}
 			return NT_STATUS_OK;
 		}
@@ -386,9 +384,8 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 					 "",
 					 false,
 					 user_sess_key)) {
-			*lm_sess_key = *user_sess_key;
 			if (user_sess_key->length) {
-				lm_sess_key->length = 8;
+				*lm_sess_key = data_blob_talloc(mem_ctx, user_sess_key->data, MIN(8, user_sess_key->length));
 			}
 			return NT_STATUS_OK;
 		} else {
@@ -408,7 +405,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 				   so use it only if we otherwise allow LM authentication */
 				
 				if (lanman_auth && stored_lanman) {
-					*lm_sess_key = data_blob_talloc(mem_ctx, stored_lanman->hash, 8);
+					*lm_sess_key = data_blob_talloc(mem_ctx, stored_lanman->hash, MIN(8, user_sess_key->length));
 				}
 				return NT_STATUS_OK;
 			} else {
@@ -497,9 +494,8 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			/* Otherwise, use the LMv2 session key */
 			*user_sess_key = tmp_sess_key;
 		}
-		*lm_sess_key = *user_sess_key;
 		if (user_sess_key->length) {
-			lm_sess_key->length = 8;
+			*lm_sess_key = data_blob_talloc(mem_ctx, user_sess_key->data, MIN(8, user_sess_key->length));
 		}
 		return NT_STATUS_OK;
 	}
@@ -528,9 +524,8 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			/* Otherwise, use the LMv2 session key */
 			*user_sess_key = tmp_sess_key;
 		}
-		*lm_sess_key = *user_sess_key;
 		if (user_sess_key->length) {
-			lm_sess_key->length = 8;
+			*lm_sess_key = data_blob_talloc(mem_ctx, user_sess_key->data, MIN(8, user_sess_key->length));
 		}
 		return NT_STATUS_OK;
 	}
@@ -559,9 +554,8 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			/* Otherwise, use the LMv2 session key */
 			*user_sess_key = tmp_sess_key;
 		}
-		*lm_sess_key = *user_sess_key;
 		if (user_sess_key->length) {
-			lm_sess_key->length = 8;
+			*lm_sess_key = data_blob_talloc(mem_ctx, user_sess_key->data, MIN(8, user_sess_key->length));
 		}
 		return NT_STATUS_OK;
 	}
