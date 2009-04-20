@@ -20,22 +20,17 @@
 #ifndef _smb_threads_h_
 #define _smb_threads_h_
 
+/* Data types needed for smb_thread_once call. */
+
 #if defined(HAVE_PTHREAD_H)
 #include <pthread.h>
-#endif
-
-/* Data types needed for smb_thread_once call. */
-#if defined(HAVE_PTHREAD_H)
 #define smb_thread_once_t pthread_once_t
-#else
-#define smb_thread_once_t bool
-#endif
-
-#if defined(HAVE_PTHREAD_H)
 #define SMB_THREAD_ONCE_INIT PTHREAD_ONCE_INIT
 #define SMB_THREAD_ONCE_IS_INITIALIZED(val) (true)
 #define SMB_THREAD_ONCE_INITIALIZE(val)
 #else
+#define smb_thread_once_t bool
+#define SMB_THREAD_ONCE_INIT false
 #define SMB_THREAD_ONCE_IS_INITIALIZED(val) ((val) == true)
 #define SMB_THREAD_ONCE_INITIALIZE(val) ((val) = true)
 #endif
