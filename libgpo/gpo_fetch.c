@@ -114,7 +114,7 @@ static NTSTATUS gpo_prepare_local_store(TALLOC_CTX *mem_ctx,
 	}
 
 	while (next_token_talloc(mem_ctx, &unix_path, &tok, "/")) {
-		if (strequal(tok, cache_dir)) {
+		if (strequal(tok, GPO_CACHE_DIR)) {
 			break;
 		}
 	}
@@ -212,6 +212,7 @@ NTSTATUS gpo_fetch_files(TALLOC_CTX *mem_ctx,
 
 
 	result = gpo_connect_server(ads, lp_ctx, server, service, &cli);
+	NT_STATUS_NOT_OK_RETURN(result);
 
 
 	result = gpo_prepare_local_store(mem_ctx, cache_dir, unix_path);

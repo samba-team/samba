@@ -42,6 +42,7 @@ static bool store_keyval_pair(const char *key, const char *value, void *ctx_ptr)
 {
 	struct gp_inifile_context *ctx = (struct gp_inifile_context *) ctx_ptr;
 	ctx->data = talloc_realloc(ctx, ctx->data, struct keyval_pair *, ctx->keyval_count+1);
+	ctx->data[ctx->keyval_count] = talloc_zero(ctx, struct keyval_pair);
 	ctx->data[ctx->keyval_count]->key = talloc_asprintf(ctx, "%s:%s", ctx->current_section, key);
 	ctx->data[ctx->keyval_count]->val = talloc_strdup(ctx, value);
 	ctx->keyval_count++;
