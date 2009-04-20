@@ -323,7 +323,7 @@ NTSTATUS ntlmssp_update(NTLMSSP_STATE *ntlmssp_state,
 			break;
 		}
 	} else {
-		if (!msrpc_parse(NULL, &input, "Cd",
+		if (!msrpc_parse(ntlmssp_state, &input, "Cd",
 				 "NTLMSSP",
 				 &ntlmssp_command)) {
 			DEBUG(1, ("Failed to parse NTLMSSP packet, could not extract NTLMSSP command\n"));
@@ -525,10 +525,10 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 #endif
 
 	if (request.length) {
-		if ((request.length < 16) || !msrpc_parse(NULL, &request, "Cdd",
-							"NTLMSSP",
-							&ntlmssp_command,
-							&neg_flags)) {
+		if ((request.length < 16) || !msrpc_parse(ntlmssp_state, &request, "Cdd",
+							  "NTLMSSP",
+							  &ntlmssp_command,
+							  &neg_flags)) {
 			DEBUG(1, ("ntlmssp_server_negotiate: failed to parse NTLMSSP Negotiate of length %u\n",
 				(unsigned int)request.length));
 			dump_data(2, request.data, request.length);
@@ -582,7 +582,7 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 	/* This creates the 'blob' of names that appears at the end of the packet */
 	if (chal_flags & NTLMSSP_CHAL_TARGET_INFO)
 	{
-		msrpc_gen(NULL, &struct_blob, "aaaaa",
+		msrpc_gen(ntlmssp_state, &struct_blob, "aaaaa",
 			  NTLMSSP_NAME_TYPE_DOMAIN, target_name,
 			  NTLMSSP_NAME_TYPE_SERVER, ntlmssp_state->get_global_myname(),
 			  NTLMSSP_NAME_TYPE_DOMAIN_DNS, dnsdomname,
@@ -601,7 +601,7 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 			gen_string = "CdAdbddB";
 		}
 
-		msrpc_gen(NULL, reply, gen_string,
+		msrpc_gen(ntlmssp_state, reply, gen_string,
 			  "NTLMSSP",
 			  NTLMSSP_CHALLENGE,
 			  target_name,
@@ -933,7 +933,7 @@ static NTSTATUS ntlmssp_client_initial(struct ntlmssp_state *ntlmssp_state,
 	}
 
 	/* generate the ntlmssp negotiate packet */
-	msrpc_gen(NULL, next_request, "CddAA",
+	msrpc_gen(ntlmssp_state, next_request, "CddAA",
 		  "NTLMSSP",
 		  NTLMSSP_NEGOTIATE,
 		  ntlmssp_state->neg_flags,
@@ -970,7 +970,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 	DATA_BLOB encrypted_session_key = data_blob_null;
 	NTSTATUS nt_status = NT_STATUS_OK;
 
-	if (!msrpc_parse(NULL, &reply, "CdBd",
+	if (!msrpc_parse(ntlmssp_state, &reply, "CdBd",
 			 "NTLMSSP",
 			 &ntlmssp_command, 
 			 &server_domain_blob,
@@ -1139,7 +1139,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 	}
 
 	/* this generates the actual auth packet */
-	if (!msrpc_gen(NULL, next_request, auth_gen_string, 
+	if (!msrpc_gen(ntlmssp_state, next_request, auth_gen_string, 
 		       "NTLMSSP", 
 		       NTLMSSP_AUTH, 
 		       lm_response.data, lm_response.length,
