@@ -20,8 +20,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __LIBGPO_GPO_H__
-#define __LIBGPO_GPO_H__
+#ifndef __LIBGPO_GPO_S4_H__
+#define __LIBGPO_GPO_S4_H__
+
+#if _SAMBA_BUILD_ == 4
+#include "source4/libcli/libcli.h"
+#endif
 
 NTSTATUS gpo_copy_file(TALLOC_CTX *mem_ctx,
 		       struct smbcli_state *cli,
