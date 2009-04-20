@@ -124,6 +124,7 @@ static NTSTATUS scripts_parse_ini_section(struct gp_inifile_context *ini_ctx,
 					  size_t *num_entries)
 {
 	NTSTATUS status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	NTSTATUS result;
 	int i = 0;
 
 	while (1) {
@@ -141,8 +142,8 @@ static NTSTATUS scripts_parse_ini_section(struct gp_inifile_context *ini_ctx,
 				      GP_SCRIPTS_SECTION_CMDLINE);
 		NT_STATUS_HAVE_NO_MEMORY(key);
 
-		script = iniparser_getstring(ini_ctx->dict, key, NULL);
-		if (!script) {
+		result = gp_inifile_getstring(ini_ctx, key, &script);
+		if (!NT_STATUS_IS_OK(result)) {
 			break;
 		}
 
@@ -151,7 +152,10 @@ static NTSTATUS scripts_parse_ini_section(struct gp_inifile_context *ini_ctx,
 				      GP_SCRIPTS_SECTION_PARAMETERS);
 		NT_STATUS_HAVE_NO_MEMORY(key);
 
-		parameters = iniparser_getstring(ini_ctx->dict, key, NULL);
+		result = gp_inifile_getstring(ini_ctx, key, &parameters);
+		if (!NT_STATUS_IS_OK(result)) {
+			break;
+		}
 
 		{
 			struct gp_registry_entry *entry = NULL;

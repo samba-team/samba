@@ -169,6 +169,7 @@ NTSTATUS gp_inifile_init_context(TALLOC_CTX *mem_ctx,
 {
 	struct gp_inifile_context *ctx = NULL;
 	NTSTATUS status;
+	int rv;
 	char *tmp_filename = NULL;
 	const char *ini_filename = NULL;
 
@@ -191,6 +192,12 @@ NTSTATUS gp_inifile_init_context(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}
+
+	rv = pm_process(tmp_filename, change_section, store_keyval_pair, ctx);
+	if (!rv) {
+		return NT_STATUS_NO_SUCH_FILE;
+	}
+
 
 	ctx->generated_filename = tmp_filename;
 	ctx->mem_ctx = mem_ctx;
@@ -217,7 +224,7 @@ NTSTATUS gp_inifile_init_context(TALLOC_CTX *mem_ctx,
 #define GPT_INI_PARAMETER_VERSION "Version"
 #define GPT_INI_PARAMETER_DISPLAYNAME "displayName"
 
-NTSTATUS parse_gpt_ini(struct gp_inifile_context *ctx,
+NTSTATUS parse_gpt_ini(TALLOC_CTX *mem_ctx,
 		       const char *filename,
 		       uint32_t *version,
 		       char **display_name)
@@ -226,12 +233,16 @@ NTSTATUS parse_gpt_ini(struct gp_inifile_context *ctx,
 	int rv;
 	int v = 0;
 	char *name = NULL;
+	struct gp_inifile_context *ctx;
 
 	if (!filename) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	rv = pm_process(filename, change_section, store_keyval_pair, NULL);
+	ctx = talloc_zero(mem_ctx, struct gp_inifile_context);
+	NT_STATUS_HAVE_NO_MEMORY(ctx);
+
+	rv = pm_process(filename, change_section, store_keyval_pair, ctx);
 	if (!rv) {
 		return NT_STATUS_NO_SUCH_FILE;
 	}
@@ -263,7 +274,7 @@ NTSTATUS parse_gpt_ini(struct gp_inifile_context *ctx,
 		*version = v;
 	}
 
-	result = NT_STATUS_OK;
+	talloc_free(ctx);
 
-	return result;
+	return NT_STATUS_OK;
 }

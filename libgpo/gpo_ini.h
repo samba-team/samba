@@ -36,7 +36,7 @@ NTSTATUS gp_inifile_init_context(TALLOC_CTX *mem_ctx, uint32_t flags,
 				 const char *unix_path, const char *suffix,
 				 struct gp_inifile_context **ctx_ret);
 
-NTSTATUS parse_gpt_ini(struct gp_inifile_context *ctx,
+NTSTATUS parse_gpt_ini(TALLOC_CTX *ctx,
 		       const char *filename,
 		       uint32_t *version,
 		       char **display_name);

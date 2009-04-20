@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "../libgpo/gpo.h"
+#include "../libgpo/gpo_ini.h"
 
 #if _SAMBA_BUILD_ == 4
 #include "param/param.h"

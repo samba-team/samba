@@ -56,27 +56,30 @@ struct gpttmpl_table {
 #define GPTTMPL_VALUE_CHICAGO "$CHICAGO$" /* whatever this is good for... */
 #define GPTTMPL_PARAMETER_UNICODE "Unicode"
 
-static NTSTATUS gpttmpl_parse_header(dictionary *dict,
+static NTSTATUS gpttmpl_parse_header(struct gp_inifile_context *ini_ctx,
 				     uint32_t *version_out)
 {
 	const char *signature = NULL;
+	NTSTATUS result;
 	uint32_t version;
+	int is_unicode;
 
-	if (!dict) {
+	if (!ini_ctx) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if ((signature = iniparser_getstring(dict, GPTTMPL_SECTION_VERSION
-			":"GPTTMPL_PARAMETER_SIGNATURE, NULL)) == NULL) {
+	result = gp_inifile_getstring(ini_ctx, GPTTMPL_SECTION_VERSION
+			":"GPTTMPL_PARAMETER_SIGNATURE, &signature);
+	if (!NT_STATUS_IS_OK(result)) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	if (!strequal(signature, GPTTMPL_VALUE_CHICAGO)) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-
-	if ((version = iniparser_getint(dict, GPTTMPL_SECTION_VERSION
-			":"GPTTMPL_PARAMETER_REVISION, Undefined)) == Undefined) {
+	result = gp_inifile_getint(ini_ctx, GPTTMPL_SECTION_VERSION
+			":"GPTTMPL_PARAMETER_REVISION, &version);
+	if (!NT_STATUS_IS_OK(result))
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -84,9 +87,9 @@ static NTSTATUS gpttmpl_parse_header(dictionary *dict,
 		*version_out = version;
 	}
 
-	/* treat that as boolean */
-	if ((!iniparser_getboolean(dict, GPTTMPL_SECTION_UNICODE
-			":"GPTTMPL_PARAMETER_UNICODE, Undefined)) == Undefined) {
+	result = gp_inifile_getint(ini_ctx, GPTTMPL_SECTION_UNICODE
+			":"GPTTMPL_PARAMETER_UNICODE, is_unicode);
+	if (!NT_STATUS_IS_OK(result) || !is_unicode) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -109,7 +112,7 @@ static NTSTATUS gpttmpl_init_context(TALLOC_CTX *mem_ctx,
 					 GPTTMPL_UNIX_PATH, &tmp_ctx);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	status = gpttmpl_parse_header(tmp_ctx->dict, &version);
+	status = gpttmpl_parse_header(tmp_ctx, &version);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1,("gpttmpl_init_context: failed: %s\n",
 			nt_errstr(status)));
