@@ -401,7 +401,7 @@ static int net_ads_gpo_apply(struct net_context *c, int argc, const char **argv)
 		flags |= GPO_LIST_FLAG_MACHINE;
 	}
 
-	if (opt_verbose) {
+	if (c->opt_verbose) {
 		flags |= GPO_INFO_FLAG_VERBOSE;
 	}
 
@@ -410,7 +410,7 @@ static int net_ads_gpo_apply(struct net_context *c, int argc, const char **argv)
 		argv[0], dn);
 
 	if (uac & UF_WORKSTATION_TRUST_ACCOUNT) {
-		status = gp_get_machine_token(ads, mem_ctx, dn, &token);
+		status = gp_get_machine_token(ads, mem_ctx, NULL, dn, &token);
 	} else {
 		status = ads_get_sid_token(ads, mem_ctx, dn, &token);
 	}

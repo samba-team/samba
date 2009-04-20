@@ -59,9 +59,9 @@ struct gpttmpl_table {
 static NTSTATUS gpttmpl_parse_header(struct gp_inifile_context *ini_ctx,
 				     uint32_t *version_out)
 {
-	const char *signature = NULL;
+	char *signature = NULL;
 	NTSTATUS result;
-	uint32_t version;
+	int version;
 	int is_unicode;
 
 	if (!ini_ctx) {
@@ -79,7 +79,7 @@ static NTSTATUS gpttmpl_parse_header(struct gp_inifile_context *ini_ctx,
 	}
 	result = gp_inifile_getint(ini_ctx, GPTTMPL_SECTION_VERSION
 			":"GPTTMPL_PARAMETER_REVISION, &version);
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(result)) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -88,7 +88,7 @@ static NTSTATUS gpttmpl_parse_header(struct gp_inifile_context *ini_ctx,
 	}
 
 	result = gp_inifile_getint(ini_ctx, GPTTMPL_SECTION_UNICODE
-			":"GPTTMPL_PARAMETER_UNICODE, is_unicode);
+			":"GPTTMPL_PARAMETER_UNICODE, &is_unicode);
 	if (!NT_STATUS_IS_OK(result) || !is_unicode) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -157,7 +157,7 @@ static NTSTATUS security_process_group_policy(ADS_STRUCT *ads,
 	/* this handler processes the gpttmpl files and merge output to the
 	 * registry */
 
-	status = gpo_get_unix_path(mem_ctx, gpo, &unix_path);
+	status = gpo_get_unix_path(mem_ctx, cache_path(GPO_CACHE_DIR), gpo, &unix_path);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}

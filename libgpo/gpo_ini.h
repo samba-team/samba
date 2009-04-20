@@ -40,3 +40,6 @@ NTSTATUS parse_gpt_ini(TALLOC_CTX *ctx,
 		       const char *filename,
 		       uint32_t *version,
 		       char **display_name);
+NTSTATUS gp_inifile_getstring(struct gp_inifile_context *ctx, const char *key, char **ret);
+NTSTATUS gp_inifile_getint(struct gp_inifile_context *ctx, const char *key, int *ret);
+

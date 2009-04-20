@@ -18,6 +18,7 @@
  */
 
 #include "includes.h"
+#include "../libgpo/gpo_ini.h"
 
 #define GP_EXT_NAME "registry"
 
@@ -534,7 +535,7 @@ static NTSTATUS registry_process_group_policy(ADS_STRUCT *ads,
 	debug_gpext_header(0, "registry_process_group_policy", flags, gpo,
 			   extension_guid, snapin_guid);
 
-	status = gpo_get_unix_path(mem_ctx, gpo, &unix_path);
+	status = gpo_get_unix_path(mem_ctx, cache_path(GPO_CACHE_DIR), gpo, &unix_path);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	status = reg_parse_registry(mem_ctx,
