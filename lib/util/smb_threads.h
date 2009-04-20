@@ -33,8 +33,11 @@
 
 #if defined(HAVE_PTHREAD_H)
 #define SMB_THREAD_ONCE_INIT PTHREAD_ONCE_INIT
+#define SMB_THREAD_ONCE_IS_INITIALIZED(val) (true)
+#define SMB_THREAD_ONCE_INITIALIZE(val)
 #else
-#define SMB_THREAD_ONCE_INIT false
+#define SMB_THREAD_ONCE_IS_INITIALIZED(val) ((val) == true)
+#define SMB_THREAD_ONCE_INITIALIZE(val) ((val) = true)
 #endif
 
 enum smb_thread_lock_type {

@@ -62,10 +62,10 @@ static void talloc_stackframe_init(void)
 {
 	if (!global_tfp) {
 		/* Non-thread safe init case. */
-		if (ts_initialized) {
+		if (SMB_THREAD_ONCE_IS_INITIALIZED(ts_initialized)) {
 			return;
 		}
-		ts_initialized = true;
+		SMB_THREAD_ONCE_INITIALIZE(ts_initialized);
 	}
 
 	if (SMB_THREAD_CREATE_TLS("talloc_stackframe", global_ts)) {
