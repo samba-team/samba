@@ -3845,13 +3845,15 @@ NTSTATUS get_schannel_session_key(struct cli_state *cli,
  External interface.
  Open a named pipe to an SMB server and bind using schannel (bind type 68)
  using session_key. sign and seal.
+
+ The *pdc will be stolen onto this new pipe
  ****************************************************************************/
 
 NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 					     const struct ndr_syntax_id *interface,
 					     enum pipe_auth_level auth_level,
 					     const char *domain,
-					     struct netlogon_creds_CredentialState *pdc,
+					     struct netlogon_creds_CredentialState **pdc,
 					     struct rpc_pipe_client **presult)
 {
 	struct rpc_pipe_client *result;
@@ -3864,7 +3866,7 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 	}
 
 	status = rpccli_schannel_bind_data(result, domain, auth_level,
-					   pdc->session_key, &auth);
+					   (*pdc)->session_key, &auth);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("rpccli_schannel_bind_data returned %s\n",
 			  nt_errstr(status)));
@@ -3885,7 +3887,7 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 	 * The credentials on a new netlogon pipe are the ones we are passed
 	 * in - reference them in
 	 */
-	result->dc = talloc_reference(result, pdc);
+	result->dc = talloc_move(result, pdc);
 	if (result->dc == NULL) {
 		DEBUG(0, ("talloc reference failed\n"));
 		TALLOC_FREE(result);
@@ -3964,7 +3966,7 @@ NTSTATUS cli_rpc_pipe_open_ntlmssp_auth_schannel(struct cli_state *cli,
 	}
 
 	status = cli_rpc_pipe_open_schannel_with_key(
-		cli, interface, auth_level, domain, netlogon_pipe->dc,
+		cli, interface, auth_level, domain, &netlogon_pipe->dc,
 		&result);
 
 	/* Now we've bound using the session key we can close the netlog pipe. */
@@ -4002,7 +4004,7 @@ NTSTATUS cli_rpc_pipe_open_schannel(struct cli_state *cli,
 	}
 
 	status = cli_rpc_pipe_open_schannel_with_key(
-		cli, interface, auth_level, domain, netlogon_pipe->dc,
+		cli, interface, auth_level, domain, &netlogon_pipe->dc,
 		&result);
 
 	/* Now we've bound using the session key we can close the netlog pipe. */

@@ -102,7 +102,7 @@ NTSTATUS net_rpc_join_ok(struct net_context *c, const char *domain,
 
 	ntret = cli_rpc_pipe_open_schannel_with_key(
 		cli, &ndr_table_netlogon.syntax_id, PIPE_AUTH_LEVEL_PRIVACY,
-		domain, netlogon_pipe->dc, &pipe_hnd);
+		domain, &netlogon_pipe->dc, &pipe_hnd);
 
 	if (!NT_STATUS_IS_OK(ntret)) {
 		DEBUG(0,("net_rpc_join_ok: failed to open schannel session "
