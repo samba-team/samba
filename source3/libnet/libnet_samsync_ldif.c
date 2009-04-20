@@ -948,12 +948,12 @@ static NTSTATUS ldif_init_context(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Open the add and mod ldif files */
-	if (!(r->add_file = fdopen(smb_mkstemp(r->add_name),"w"))) {
+	if (!(r->add_file = fdopen(mkstemp(r->add_name),"w"))) {
 		DEBUG(1, ("Could not open %s\n", r->add_name));
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
-	if (!(r->mod_file = fdopen(smb_mkstemp(r->mod_name),"w"))) {
+	if (!(r->mod_file = fdopen(mkstemp(r->mod_name),"w"))) {
 		DEBUG(1, ("Could not open %s\n", r->mod_name));
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto done;

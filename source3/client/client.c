@@ -1281,7 +1281,7 @@ static int cmd_more(void)
 	if (!lname) {
 		return 1;
 	}
-	fd = smb_mkstemp(lname);
+	fd = mkstemp(lname);
 	if (fd == -1) {
 		d_printf("failed to create temporary file for more\n");
 		return 1;

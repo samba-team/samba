@@ -2114,24 +2114,6 @@ int set_maxfiles(int requested_max)
 }
 
 /*****************************************************************
- Possibly replace mkstemp if it is broken.
-*****************************************************************/  
-
-int smb_mkstemp(char *name_template)
-{
-#if HAVE_SECURE_MKSTEMP
-	return mkstemp(name_template);
-#else
-	/* have a reasonable go at emulating it. Hope that
-	   the system mktemp() isn't completly hopeless */
-	char *p = mktemp(name_template);
-	if (!p)
-		return -1;
-	return open(p, O_CREAT|O_EXCL|O_RDWR, 0600);
-#endif
-}
-
-/*****************************************************************
  malloc that aborts with smb_panic on fail or zero size.
  *****************************************************************/  
 

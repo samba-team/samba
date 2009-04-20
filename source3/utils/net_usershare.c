@@ -859,7 +859,7 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 	}
 
 	/* Create a temporary filename for this share. */
-	tmpfd = smb_mkstemp(full_path_tmp);
+	tmpfd = mkstemp(full_path_tmp);
 
 	if (tmpfd == -1) {
 		d_fprintf(stderr, "net usershare add: cannot create tmp file %s\n",

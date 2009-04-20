@@ -2214,7 +2214,7 @@ void reply_ctemp(struct smb_request *req)
 		return;
 	}
 
-	tmpfd = smb_mkstemp(fname);
+	tmpfd = mkstemp(fname);
 	if (tmpfd == -1) {
 		reply_unixerror(req, ERRDOS, ERRnoaccess);
 		END_PROFILE(SMBctemp);
@@ -2244,7 +2244,7 @@ void reply_ctemp(struct smb_request *req)
 		NULL,					/* pinfo */
 		&sbuf);					/* psbuf */
 
-	/* close fd from smb_mkstemp() */
+	/* close fd from mkstemp() */
 	close(tmpfd);
 
 	if (!NT_STATUS_IS_OK(status)) {

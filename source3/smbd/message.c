@@ -59,7 +59,7 @@ static void msg_deliver(struct msg_state *state)
 	if (!name) {
 		goto done;
 	}
-	fd = smb_mkstemp(name);
+	fd = mkstemp(name);
 
 	if (fd == -1) {
 		DEBUG(1, ("can't open message file %s: %s\n", name,

@@ -42,7 +42,7 @@ static int setup_out_fd(void)
 	}
 
 	/* now create the file */
-	fd = smb_mkstemp(path);
+	fd = mkstemp(path);
 
 	if (fd == -1) {
 		DEBUG(0,("setup_out_fd: Failed to create file %s. (%s)\n",

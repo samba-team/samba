@@ -2476,7 +2476,7 @@ uint32 print_job_start(struct auth_serversupplied_info *server_info, int snum,
 	/* we have a job entry - now create the spool file */
 	slprintf(pjob.filename, sizeof(pjob.filename)-1, "%s/%s%.8u.XXXXXX",
 		 path, PRINT_SPOOL_PREFIX, (unsigned int)jobid);
-	pjob.fd = smb_mkstemp(pjob.filename);
+	pjob.fd = mkstemp(pjob.filename);
 
 	if (pjob.fd == -1) {
 		if (errno == EACCES) {

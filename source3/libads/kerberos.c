@@ -874,7 +874,7 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 
 	flen = strlen(file_contents);
 
-	fd = smb_mkstemp(tmpname);
+	fd = mkstemp(tmpname);
 	if (fd == -1) {
 		DEBUG(0,("create_local_private_krb5_conf_for_domain: smb_mkstemp failed,"
 			" for file %s. Errno %s\n",
