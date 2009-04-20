@@ -31,6 +31,10 @@
 #include "system/locale.h"
 #include "system/wait.h"
 
+#ifdef _WIN32
+#define mkdir(d,m) _mkdir(d)
+#endif
+
 void replace_dummy(void);
 void replace_dummy(void) {}
 
