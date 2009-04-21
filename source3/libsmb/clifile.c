@@ -622,8 +622,8 @@ struct tevent_req *cli_mkdir_send(TALLOC_CTX *mem_ctx,
 	}
 
 	bytes = talloc_array(state, uint8_t, 1);
-	if (!bytes) {
-		return NULL;
+	if (tevent_req_nomem(bytes, req)) {
+		return tevent_req_post(req, ev);
 	}
 	bytes[0] = 4;
 	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), dname,
@@ -634,7 +634,7 @@ struct tevent_req *cli_mkdir_send(TALLOC_CTX *mem_ctx,
 	}
 
 	subreq = cli_smb_send(state, ev, cli, SMBmkdir, additional_flags,
-				    0, NULL, talloc_get_size(bytes), bytes);
+			      0, NULL, talloc_get_size(bytes), bytes);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -730,8 +730,8 @@ struct tevent_req *cli_rmdir_send(TALLOC_CTX *mem_ctx,
 	}
 
 	bytes = talloc_array(state, uint8_t, 1);
-	if (!bytes) {
-		return NULL;
+	if (tevent_req_nomem(bytes, req)) {
+		return tevent_req_post(req, ev);
 	}
 	bytes[0] = 4;
 	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), dname,
@@ -742,7 +742,7 @@ struct tevent_req *cli_rmdir_send(TALLOC_CTX *mem_ctx,
 	}
 
 	subreq = cli_smb_send(state, ev, cli, SMBrmdir, additional_flags,
-				    0, NULL, talloc_get_size(bytes), bytes);
+			      0, NULL, talloc_get_size(bytes), bytes);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
