@@ -406,6 +406,7 @@ plantest "registry.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/lib/regist
 plantest "tdb.python" none PYTHONPATH="$PYTHONPATH:../lib/tdb/python/tests" $SUBUNITRUN simple
 plantest "auth.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/auth/tests/" $SUBUNITRUN bindings
 plantest "security.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/libcli/security/tests" $SUBUNITRUN bindings
+plantest "misc.python" none $SUBUNITRUN samba.tests.dcerpc.misc
 plantest "param.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/param/tests" $SUBUNITRUN bindings
 plantest "upgrade.python" none $SUBUNITRUN samba.tests.upgrade
 plantest "samba.python" none $SUBUNITRUN samba.tests
