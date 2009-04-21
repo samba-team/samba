@@ -38,7 +38,7 @@ struct tevent_req *wb_trans_send(TALLOC_CTX *mem_ctx,
 				 struct winbindd_request *wb_req);
 wbcErr wb_trans_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		     struct winbindd_response **presponse);
-struct wb_context *wb_context_init(TALLOC_CTX *mem_ctx);
+struct wb_context *wb_context_init(TALLOC_CTX *mem_ctx, const char* dir);
 
 /* Definitions from wb_reqtrans.c */
 wbcErr map_wbc_err_from_errno(int error);

@@ -5985,7 +5985,7 @@ static bool run_local_wbclient(int dummy)
 	d_printf("nprocs=%d, numops=%d\n", (int)nprocs, (int)torture_numops);
 
 	for (i=0; i<nprocs; i++) {
-		wb_ctx[i] = wb_context_init(ev);
+		wb_ctx[i] = wb_context_init(ev, NULL);
 		if (wb_ctx[i] == NULL) {
 			goto fail;
 		}

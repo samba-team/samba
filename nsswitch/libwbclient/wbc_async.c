@@ -88,6 +88,7 @@ struct wb_context {
 	struct tevent_queue *queue;
 	int fd;
 	bool is_priv;
+	const char *dir;
 };
 
 static int make_nonstd_fd(int fd)
@@ -179,7 +180,10 @@ static int make_safe_fd(int fd)
 	return -1;
 }
 
-struct wb_context *wb_context_init(TALLOC_CTX *mem_ctx)
+/* Just put a prototype to avoid moving the whole function around */
+static const char *winbindd_socket_dir(void);
+
+struct wb_context *wb_context_init(TALLOC_CTX *mem_ctx, const char* dir)
 {
 	struct wb_context *result;
 
@@ -194,6 +198,12 @@ struct wb_context *wb_context_init(TALLOC_CTX *mem_ctx)
 	}
 	result->fd = -1;
 	result->is_priv = false;
+
+	if (dir != NULL) {
+		result->dir = dir;
+	} else {
+		result->dir = winbindd_socket_dir();
+	}
 	return result;
 }
 
@@ -351,7 +361,7 @@ static struct tevent_req *wb_open_pipe_send(TALLOC_CTX *mem_ctx,
 		wb_ctx->fd = -1;
 	}
 
-	subreq = wb_connect_send(state, ev, wb_ctx, winbindd_socket_dir());
+	subreq = wb_connect_send(state, ev, wb_ctx, wb_ctx->dir);
 	if (subreq == NULL) {
 		goto fail;
 	}
