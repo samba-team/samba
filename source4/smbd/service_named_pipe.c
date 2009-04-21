@@ -29,6 +29,7 @@
 #include "lib/stream/packet.h"
 #include "librpc/gen_ndr/ndr_named_pipe_auth.h"
 #include "system/passwd.h"
+#include "libcli/raw/smb.h"
 
 struct named_pipe_socket {
 	const char *pipe_name;
@@ -107,7 +108,7 @@ static NTSTATUS named_pipe_recv_auth_request(void *private_data,
 
 	DEBUG(10,("named_pipe_auth: req_blob.length[%u]\n",
 		  (unsigned int)req_blob.length));
-	dump_data(10, req_blob.data, req_blob.length);
+	dump_data(11, req_blob.data, req_blob.length);
 
 	/* parse the passed credentials */
 	ndr_err = ndr_pull_struct_blob_all(
@@ -121,6 +122,10 @@ static NTSTATUS named_pipe_recv_auth_request(void *private_data,
 		DEBUG(2, ("Could not unmarshall named_pipe_auth_req: %s\n",
 			  nt_errstr(rep.status)));
 		goto reply;
+	}
+
+	if (DEBUGLVL(10)) {
+		NDR_PRINT_DEBUG(named_pipe_auth_req, &req);
 	}
 
 	if (strcmp(NAMED_PIPE_AUTH_MAGIC, req.magic) != 0) {
@@ -166,6 +171,49 @@ static NTSTATUS named_pipe_recv_auth_request(void *private_data,
 		}
 
 		break;
+	case 2:
+		rep.level = 2;
+		rep.info.info2.file_type = FILE_TYPE_MESSAGE_MODE_PIPE;
+		rep.info.info2.device_state = 0xff | 0x0400 | 0x0100;
+		rep.info.info2.allocation_size = 4096;
+
+		if (!req.info.info2.sam_info3) {
+			/*
+			 * anon connection, we don't create a session info
+			 * and leave it NULL
+			 */
+			rep.status = NT_STATUS_OK;
+			break;
+		}
+
+		val.sam3 = req.info.info2.sam_info3;
+
+		rep.status = make_server_info_netlogon_validation(pipe_conn,
+						val.sam3->base.account_name.string,
+						3, &val, &server_info);
+		if (!NT_STATUS_IS_OK(rep.status)) {
+			DEBUG(2, ("make_server_info_netlogon_validation returned "
+				  "%s\n", nt_errstr(rep.status)));
+			goto reply;
+		}
+
+		/* setup the session_info on the connection */
+		rep.status = auth_generate_session_info(conn,
+							conn->event.ctx,
+							conn->lp_ctx,
+							server_info,
+							&conn->session_info);
+		if (!NT_STATUS_IS_OK(rep.status)) {
+			DEBUG(2, ("auth_generate_session_info failed: %s\n",
+				  nt_errstr(rep.status)));
+			goto reply;
+		}
+
+		conn->session_info->session_key = data_blob_const(req.info.info2.session_key,
+							req.info.info2.session_key_length);
+		talloc_steal(conn->session_info, req.info.info2.session_key);
+
+		break;
 	default:
 		DEBUG(2, ("named_pipe_auth_req: unknown level %u\n",
 			  req.level));
@@ -187,10 +235,13 @@ reply:
 		return status;
 	}
 
-	pipe_conn->status = rep.status;
-
 	DEBUG(10,("named_pipe_auth reply[%u]\n", rep_blob.length));
-	dump_data(10, rep_blob.data, rep_blob.length);
+	dump_data(11, rep_blob.data, rep_blob.length);
+	if (DEBUGLVL(10)) {
+		NDR_PRINT_DEBUG(named_pipe_auth_rep, &rep);
+	}
+
+	pipe_conn->status = rep.status;
 	status = packet_send_callback(pipe_conn->packet, rep_blob,
 				      named_pipe_handover_connection,
 				      pipe_conn);
