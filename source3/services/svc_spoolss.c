@@ -50,6 +50,10 @@ static WERROR spoolss_start( const char *service )
 	if ( _lp_disable_spoolss() )
 		return WERR_ACCESS_DENIED;
 
+	if (lp_get_spoolss_state() == SVCCTL_RUNNING) {
+		return WERR_SERVICE_ALREADY_RUNNING;
+	}
+
 	lp_set_spoolss_state( SVCCTL_RUNNING );
 
 	return WERR_OK;
