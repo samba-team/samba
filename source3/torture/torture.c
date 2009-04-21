@@ -2625,7 +2625,7 @@ static bool run_trans2test(int dummy)
 
 	/* check if the server updates the directory modification time
            when creating a new file */
-	if (!cli_mkdir(cli, dname)) {
+	if (!NT_STATUS_IS_OK(cli_mkdir(cli, dname))) {
 		printf("ERROR: mkdir failed (%s)\n", cli_errstr(cli));
 		correct = False;
 	}
@@ -4584,12 +4584,12 @@ bool torture_chkpath_test(int dummy)
 	cli_unlink(cli, "\\chkpath.dir\\*");
 	cli_rmdir(cli, "\\chkpath.dir");
 
-	if (!cli_mkdir(cli, "\\chkpath.dir")) {
+	if (!NT_STATUS_IS_OK(cli_mkdir(cli, "\\chkpath.dir"))) {
 		printf("mkdir1 failed : %s\n", cli_errstr(cli));
 		return False;
 	}
 
-	if (!cli_mkdir(cli, "\\chkpath.dir\\dir2")) {
+	if (!NT_STATUS_IS_OK(cli_mkdir(cli, "\\chkpath.dir\\dir2"))) {
 		printf("mkdir2 failed : %s\n", cli_errstr(cli));
 		return False;
 	}
@@ -4801,7 +4801,7 @@ static bool run_dirtest1(int dummy)
 	for (i=0;i<1000;i++) {
 		fstring fname;
 		slprintf(fname, sizeof(fname), "\\LISTDIR\\d%d", i);
-		if (!cli_mkdir(cli, fname)) {
+		if (!NT_STATUS_IS_OK(cli_mkdir(cli, fname))) {
 			fprintf(stderr,"Failed to open %s\n", fname);
 			return False;
 		}
@@ -5279,7 +5279,7 @@ static bool run_uid_regression_test(int dummy)
 	cli->vuid = old_vuid;
 
 	/* Try an operation. */
-	if (!cli_mkdir(cli, "\\uid_reg_test")) {
+	if (!NT_STATUS_IS_OK(cli_mkdir(cli, "\\uid_reg_test"))) {
 		/* We expect bad uid. */
 		if (!check_error(__LINE__, cli, ERRSRV, ERRbaduid,
 				NT_STATUS_NO_SUCH_USER)) {

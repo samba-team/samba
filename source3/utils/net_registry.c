@@ -411,11 +411,11 @@ static int net_registry_getsd(struct net_context *c, int argc,
 	struct security_descriptor *secdesc = NULL;
 	TALLOC_CTX *ctx = talloc_stackframe();
 	uint32_t access_mask = REG_KEY_READ |
-			       SEC_RIGHT_MAXIMUM_ALLOWED |
-			       SEC_RIGHT_SYSTEM_SECURITY;
+			       SEC_FLAG_MAXIMUM_ALLOWED |
+			       SEC_FLAG_SYSTEM_SECURITY;
 
 	/*
-	 * net_rpc_regsitry uses SEC_RIGHT_SYSTEM_SECURITY, but access
+	 * net_rpc_regsitry uses SEC_FLAG_SYSTEM_SECURITY, but access
 	 * is denied with these perms right now...
 	 */
 	access_mask = REG_KEY_READ;

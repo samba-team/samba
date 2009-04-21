@@ -42,7 +42,7 @@ static NTSTATUS name_to_sid(struct rpc_pipe_client *cli,
 	}
 
 	result = rpccli_lsa_open_policy(cli, mem_ctx, True, 
-				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     SEC_FLAG_MAXIMUM_ALLOWED,
 				     &pol);
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -167,7 +167,7 @@ static NTSTATUS cmd_lsa_query_info_policy(struct rpc_pipe_client *cli,
 	switch (info_class) {
 	case 12:
 		result = rpccli_lsa_open_policy2(cli, mem_ctx, True, 
-						 SEC_RIGHTS_MAXIMUM_ALLOWED,
+						 SEC_FLAG_MAXIMUM_ALLOWED,
 						 &pol);
 
 		if (!NT_STATUS_IS_OK(result))
@@ -180,7 +180,7 @@ static NTSTATUS cmd_lsa_query_info_policy(struct rpc_pipe_client *cli,
 		break;
 	default:
 		result = rpccli_lsa_open_policy(cli, mem_ctx, True, 
-						SEC_RIGHTS_MAXIMUM_ALLOWED,
+						SEC_FLAG_MAXIMUM_ALLOWED,
 						&pol);
 
 		if (!NT_STATUS_IS_OK(result))
@@ -220,7 +220,7 @@ static NTSTATUS cmd_lsa_lookup_names(struct rpc_pipe_client *cli,
 	}
 
 	result = rpccli_lsa_open_policy(cli, mem_ctx, True, 
-				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     SEC_FLAG_MAXIMUM_ALLOWED,
 				     &pol);
 
 	if (!NT_STATUS_IS_OK(result))
@@ -268,7 +268,7 @@ static NTSTATUS cmd_lsa_lookup_names_level(struct rpc_pipe_client *cli,
 	}
 
 	result = rpccli_lsa_open_policy(cli, mem_ctx, True, 
-				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     SEC_FLAG_MAXIMUM_ALLOWED,
 				     &pol);
 
 	if (!NT_STATUS_IS_OK(result))
@@ -320,7 +320,7 @@ static NTSTATUS cmd_lsa_lookup_sids(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	}
 
 	result = rpccli_lsa_open_policy(cli, mem_ctx, True, 
-				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     SEC_FLAG_MAXIMUM_ALLOWED,
 				     &pol);
 
 	if (!NT_STATUS_IS_OK(result))
@@ -460,7 +460,7 @@ static NTSTATUS cmd_lsa_enum_privilege(struct rpc_pipe_client *cli,
 		pref_max_length=atoi(argv[2]);
 
 	result = rpccli_lsa_open_policy(cli, mem_ctx, True, 
-				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     SEC_FLAG_MAXIMUM_ALLOWED,
 				     &pol);
 
 	if (!NT_STATUS_IS_OK(result))
@@ -512,7 +512,7 @@ static NTSTATUS cmd_lsa_get_dispname(struct rpc_pipe_client *cli,
 	}
 
 	result = rpccli_lsa_open_policy(cli, mem_ctx, True, 
-				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     SEC_FLAG_MAXIMUM_ALLOWED,
 				     &pol);
 
 	if (!NT_STATUS_IS_OK(result))
@@ -565,7 +565,7 @@ static NTSTATUS cmd_lsa_enum_sids(struct rpc_pipe_client *cli,
 		pref_max_length=atoi(argv[2]);
 
 	result = rpccli_lsa_open_policy(cli, mem_ctx, True, 
-				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     SEC_FLAG_MAXIMUM_ALLOWED,
 				     &pol);
 
 	if (!NT_STATUS_IS_OK(result))
@@ -618,7 +618,7 @@ static NTSTATUS cmd_lsa_create_account(struct rpc_pipe_client *cli,
 		goto done;	
 
 	result = rpccli_lsa_open_policy2(cli, mem_ctx, True, 
-				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     SEC_FLAG_MAXIMUM_ALLOWED,
 				     &dom_pol);
 
 	if (!NT_STATUS_IS_OK(result))
@@ -666,7 +666,7 @@ static NTSTATUS cmd_lsa_enum_privsaccounts(struct rpc_pipe_client *cli,
 		goto done;	
 
 	result = rpccli_lsa_open_policy2(cli, mem_ctx, True, 
-				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     SEC_FLAG_MAXIMUM_ALLOWED,
 				     &dom_pol);
 
 	if (!NT_STATUS_IS_OK(result))
@@ -728,7 +728,7 @@ static NTSTATUS cmd_lsa_enum_acct_rights(struct rpc_pipe_client *cli,
 		goto done;	
 
 	result = rpccli_lsa_open_policy2(cli, mem_ctx, True, 
-				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     SEC_FLAG_MAXIMUM_ALLOWED,
 				     &dom_pol);
 
 	if (!NT_STATUS_IS_OK(result))
@@ -777,7 +777,7 @@ static NTSTATUS cmd_lsa_add_acct_rights(struct rpc_pipe_client *cli,
 		goto done;	
 
 	result = rpccli_lsa_open_policy2(cli, mem_ctx, True, 
-				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     SEC_FLAG_MAXIMUM_ALLOWED,
 				     &dom_pol);
 
 	if (!NT_STATUS_IS_OK(result))
@@ -830,7 +830,7 @@ static NTSTATUS cmd_lsa_remove_acct_rights(struct rpc_pipe_client *cli,
 		goto done;	
 
 	result = rpccli_lsa_open_policy2(cli, mem_ctx, True, 
-				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     SEC_FLAG_MAXIMUM_ALLOWED,
 				     &dom_pol);
 
 	if (!NT_STATUS_IS_OK(result))
@@ -880,7 +880,7 @@ static NTSTATUS cmd_lsa_lookup_priv_value(struct rpc_pipe_client *cli,
 	}
 
 	result = rpccli_lsa_open_policy2(cli, mem_ctx, True, 
-				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     SEC_FLAG_MAXIMUM_ALLOWED,
 				     &pol);
 
 	if (!NT_STATUS_IS_OK(result))
@@ -922,7 +922,7 @@ static NTSTATUS cmd_lsa_query_secobj(struct rpc_pipe_client *cli,
 	}
 
 	result = rpccli_lsa_open_policy2(cli, mem_ctx, True, 
-				      SEC_RIGHTS_MAXIMUM_ALLOWED,
+				      SEC_FLAG_MAXIMUM_ALLOWED,
 				      &pol);
 
 	if (argc == 2) 
@@ -995,7 +995,7 @@ static NTSTATUS cmd_lsa_query_trustdominfobysid(struct rpc_pipe_client *cli,
 	struct policy_handle pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	DOM_SID dom_sid;
-	uint32 access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	uint32 access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	union lsa_TrustedDomainInfo *info = NULL;
 	enum lsa_TrustDomInfoEnum info_class = 1;
 	uint8_t nt_hash[16];
@@ -1043,7 +1043,7 @@ static NTSTATUS cmd_lsa_query_trustdominfobyname(struct rpc_pipe_client *cli,
 {
 	struct policy_handle pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint32 access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	uint32 access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	union lsa_TrustedDomainInfo *info = NULL;
 	enum lsa_TrustDomInfoEnum info_class = 1;
 	struct lsa_String trusted_domain;
@@ -1091,7 +1091,7 @@ static NTSTATUS cmd_lsa_query_trustdominfo(struct rpc_pipe_client *cli,
 {
 	struct policy_handle pol, trustdom_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint32 access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	uint32 access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	union lsa_TrustedDomainInfo *info = NULL;
 	DOM_SID dom_sid;
 	enum lsa_TrustDomInfoEnum info_class = 1;
@@ -1160,7 +1160,7 @@ static NTSTATUS cmd_lsa_get_username(struct rpc_pipe_client *cli,
 	}
 
 	result = rpccli_lsa_open_policy(cli, mem_ctx, true,
-					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					SEC_FLAG_MAXIMUM_ALLOWED,
 					&pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
@@ -1210,7 +1210,7 @@ static NTSTATUS cmd_lsa_add_priv(struct rpc_pipe_client *cli,
 	}
 
 	result = rpccli_lsa_open_policy2(cli, mem_ctx, True,
-					 SEC_RIGHTS_MAXIMUM_ALLOWED,
+					 SEC_FLAG_MAXIMUM_ALLOWED,
 					 &dom_pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
@@ -1220,7 +1220,7 @@ static NTSTATUS cmd_lsa_add_priv(struct rpc_pipe_client *cli,
 	result = rpccli_lsa_OpenAccount(cli, mem_ctx,
 					&dom_pol,
 					&sid,
-					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					SEC_FLAG_MAXIMUM_ALLOWED,
 					&user_pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
@@ -1294,7 +1294,7 @@ static NTSTATUS cmd_lsa_del_priv(struct rpc_pipe_client *cli,
 	}
 
 	result = rpccli_lsa_open_policy2(cli, mem_ctx, True,
-					 SEC_RIGHTS_MAXIMUM_ALLOWED,
+					 SEC_FLAG_MAXIMUM_ALLOWED,
 					 &dom_pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
@@ -1304,7 +1304,7 @@ static NTSTATUS cmd_lsa_del_priv(struct rpc_pipe_client *cli,
 	result = rpccli_lsa_OpenAccount(cli, mem_ctx,
 					&dom_pol,
 					&sid,
-					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					SEC_FLAG_MAXIMUM_ALLOWED,
 					&user_pol);
 
 	if (!NT_STATUS_IS_OK(result)) {

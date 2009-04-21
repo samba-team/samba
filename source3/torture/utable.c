@@ -132,7 +132,7 @@ bool torture_casetable(int dummy)
 
 	cli_unlink(cli, "\\utable\\*");
 	cli_rmdir(cli, "\\utable");
-	if (!cli_mkdir(cli, "\\utable")) {
+	if (!NT_STATUS_IS_OK(cli_mkdir(cli, "\\utable"))) {
 		printf("Failed to create utable directory!\n");
 		return False;
 	}

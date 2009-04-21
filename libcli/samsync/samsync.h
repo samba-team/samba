@@ -1,7 +1,9 @@
 /*
    Unix SMB/CIFS implementation.
 
-   Copyright (C) Stefan Metzmacher 2006
+   Extract the user/system database from a remote SamSync server
+
+   Copyright (C) Guenther Deschner <gd@samba.org> 2008
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,20 +19,16 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "librpc/gen_ndr/security.h"
+#ifndef __SAMSYNC_SAMSYNC_H__ 
+#define __SAMSYNC_SAMSYNC_H__ 
 
-enum security_user_level {
-	SECURITY_ANONYMOUS,
-	SECURITY_USER,
-	SECURITY_ADMINISTRATOR,
-	SECURITY_SYSTEM
-};
+/**
+ * Fix up the delta, dealing with encryption issues so that the final
+ * callback need only do the printing or application logic
+ */
+NTSTATUS samsync_fix_delta(TALLOC_CTX *mem_ctx,
+			   struct netlogon_creds_CredentialState *creds,
+			   enum netr_SamDatabaseID database_id,
+			   struct netr_DELTA_ENUM *delta);
 
-struct auth_session_info;
-
-/* Moved the dom_sid functions to the top level dir with manual proto header */
-#include "libcli/security/dom_sid.h"
-#include "libcli/security/secace.h"
-#include "libcli/security/secacl.h"
-#include "libcli/security/proto.h"
-#include "libcli/security/security_descriptor.h"
+#endif /* __SAMSYNC_SAMSYNC_H__ */

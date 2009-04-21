@@ -34,7 +34,7 @@ static NTSTATUS sid_to_name(struct rpc_pipe_client *pipe_hnd,
 	char **domains = NULL, **names = NULL;
 
 	result = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, true,
-		SEC_RIGHTS_MAXIMUM_ALLOWED, &pol);
+		SEC_FLAG_MAXIMUM_ALLOWED, &pol);
 
 	if ( !NT_STATUS_IS_OK(result) )
 		return result;
@@ -70,7 +70,7 @@ static NTSTATUS name_to_sid(struct rpc_pipe_client *pipe_hnd,
 	}
 
 	result = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, true,
-		SEC_RIGHTS_MAXIMUM_ALLOWED, &pol);
+		SEC_FLAG_MAXIMUM_ALLOWED, &pol);
 
 	if ( !NT_STATUS_IS_OK(result) )
 		return result;
@@ -328,7 +328,7 @@ static NTSTATUS rpc_rights_list_internal(struct net_context *c,
 	uint16 lang_id_desc;
 
 	result = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, true,
-		SEC_RIGHTS_MAXIMUM_ALLOWED, &pol);
+		SEC_FLAG_MAXIMUM_ALLOWED, &pol);
 
 	if ( !NT_STATUS_IS_OK(result) )
 		return result;
@@ -456,7 +456,7 @@ static NTSTATUS rpc_rights_grant_internal(struct net_context *c,
 		goto done;
 
 	result = rpccli_lsa_open_policy2(pipe_hnd, mem_ctx, true,
-				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     SEC_FLAG_MAXIMUM_ALLOWED,
 				     &dom_pol);
 
 	if (!NT_STATUS_IS_OK(result))
@@ -522,7 +522,7 @@ static NTSTATUS rpc_rights_revoke_internal(struct net_context *c,
 		return result;
 
 	result = rpccli_lsa_open_policy2(pipe_hnd, mem_ctx, true,
-				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     SEC_FLAG_MAXIMUM_ALLOWED,
 				     &dom_pol);
 
 	if (!NT_STATUS_IS_OK(result))

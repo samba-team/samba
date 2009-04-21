@@ -272,7 +272,7 @@ WERROR reg_openkey(TALLOC_CTX *mem_ctx, struct registry_key *parent,
 
 		err = regkey_open_onelevel(mem_ctx, direct_parent,
 					   name_component, parent->token,
-					   SEC_RIGHTS_ENUM_SUBKEYS, &tmp);
+					   KEY_ENUMERATE_SUB_KEYS, &tmp);
 		SAFE_FREE(name_component);
 
 		if (!W_ERROR_IS_OK(err)) {
@@ -301,7 +301,7 @@ WERROR reg_enumkey(TALLOC_CTX *mem_ctx, struct registry_key *key,
 {
 	WERROR err;
 
-	if (!(key->key->access_granted & SEC_RIGHTS_ENUM_SUBKEYS)) {
+	if (!(key->key->access_granted & KEY_ENUMERATE_SUB_KEYS)) {
 		return WERR_ACCESS_DENIED;
 	}
 
@@ -332,7 +332,7 @@ WERROR reg_enumvalue(TALLOC_CTX *mem_ctx, struct registry_key *key,
 	struct registry_value *val;
 	WERROR err;
 
-	if (!(key->key->access_granted & SEC_RIGHTS_QUERY_VALUE)) {
+	if (!(key->key->access_granted & KEY_QUERY_VALUE)) {
 		return WERR_ACCESS_DENIED;
 	}
 
@@ -370,7 +370,7 @@ WERROR reg_queryvalue(TALLOC_CTX *mem_ctx, struct registry_key *key,
 	WERROR err;
 	uint32 i;
 
-	if (!(key->key->access_granted & SEC_RIGHTS_QUERY_VALUE)) {
+	if (!(key->key->access_granted & KEY_QUERY_VALUE)) {
 		return WERR_ACCESS_DENIED;
 	}
 
@@ -399,7 +399,7 @@ WERROR reg_queryinfokey(struct registry_key *key, uint32_t *num_subkeys,
 	WERROR err;
 	struct security_descriptor *secdesc;
 
-	if (!(key->key->access_granted & SEC_RIGHTS_QUERY_VALUE)) {
+	if (!(key->key->access_granted & KEY_QUERY_VALUE)) {
 		return WERR_ACCESS_DENIED;
 	}
 
@@ -483,7 +483,7 @@ WERROR reg_createkey(TALLOC_CTX *ctx, struct registry_key *parent,
 		*end = '\0';
 
 		err = reg_createkey(mem_ctx, key, path,
-				    SEC_RIGHTS_ENUM_SUBKEYS, &tmp, &action);
+				    KEY_ENUMERATE_SUB_KEYS, &tmp, &action);
 		if (!W_ERROR_IS_OK(err)) {
 			goto done;
 		}
@@ -521,7 +521,7 @@ WERROR reg_createkey(TALLOC_CTX *ctx, struct registry_key *parent,
 	 * with ENUM_SUBKEY access.
 	 */
 
-	err = reg_openkey(mem_ctx, key, "", SEC_RIGHTS_CREATE_SUBKEY,
+	err = reg_openkey(mem_ctx, key, "", KEY_CREATE_SUB_KEY,
 			  &create_parent);
 	if (!W_ERROR_IS_OK(err)) {
 		goto done;
@@ -582,7 +582,7 @@ WERROR reg_deletekey(struct registry_key *parent, const char *path)
 		*end = '\0';
 
 		err = reg_openkey(mem_ctx, parent, name,
-				  SEC_RIGHTS_CREATE_SUBKEY, &tmp_key);
+				  KEY_CREATE_SUB_KEY, &tmp_key);
 		W_ERROR_NOT_OK_GOTO_DONE(err);
 
 		parent = tmp_key;
@@ -608,7 +608,7 @@ WERROR reg_setvalue(struct registry_key *key, const char *name,
 	DATA_BLOB value_data;
 	int res;
 
-	if (!(key->key->access_granted & SEC_RIGHTS_SET_VALUE)) {
+	if (!(key->key->access_granted & KEY_SET_VALUE)) {
 		return WERR_ACCESS_DENIED;
 	}
 
@@ -655,7 +655,7 @@ WERROR reg_deletevalue(struct registry_key *key, const char *name)
 {
 	WERROR err;
 
-	if (!(key->key->access_granted & SEC_RIGHTS_SET_VALUE)) {
+	if (!(key->key->access_granted & KEY_SET_VALUE)) {
 		return WERR_ACCESS_DENIED;
 	}
 
@@ -982,7 +982,7 @@ WERROR reg_deleteallvalues(struct registry_key *key)
 	WERROR err;
 	int i;
 
-	if (!(key->key->access_granted & SEC_RIGHTS_SET_VALUE)) {
+	if (!(key->key->access_granted & KEY_SET_VALUE)) {
 		return WERR_ACCESS_DENIED;
 	}
 
@@ -1038,7 +1038,7 @@ WERROR reg_open_path(TALLOC_CTX *mem_ctx, const char *orig_path,
 
 	*p = '\0';
 
-	err = reg_openhive(mem_ctx, path, SEC_RIGHTS_ENUM_SUBKEYS, token,
+	err = reg_openhive(mem_ctx, path, KEY_ENUMERATE_SUB_KEYS, token,
 			   &hive);
 	if (!W_ERROR_IS_OK(err)) {
 		SAFE_FREE(path);
@@ -1209,7 +1209,7 @@ WERROR reg_create_path(TALLOC_CTX *mem_ctx, const char *orig_path,
 
 	err = reg_openhive(mem_ctx, path,
 			   (strchr(p+1, '\\') != NULL) ?
-			   SEC_RIGHTS_ENUM_SUBKEYS : SEC_RIGHTS_CREATE_SUBKEY,
+			   KEY_ENUMERATE_SUB_KEYS : KEY_CREATE_SUB_KEY,
 			   token, &hive);
 	if (!W_ERROR_IS_OK(err)) {
 		SAFE_FREE(path);
@@ -1249,7 +1249,7 @@ WERROR reg_delete_path(const struct nt_user_token *token,
 
 	err = reg_openhive(NULL, path,
 			   (strchr(p+1, '\\') != NULL) ?
-			   SEC_RIGHTS_ENUM_SUBKEYS : SEC_RIGHTS_CREATE_SUBKEY,
+			   KEY_ENUMERATE_SUB_KEYS : KEY_CREATE_SUB_KEY,
 			   token, &hive);
 	if (!W_ERROR_IS_OK(err)) {
 		SAFE_FREE(path);

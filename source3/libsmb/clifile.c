@@ -596,6 +596,7 @@ bool cli_unlink(struct cli_state *cli, const char *fname)
 	return cli_unlink_full(cli, fname, aSYSTEM | aHIDDEN);
 }
 
+#if 0
 /****************************************************************************
  Create a directory.
 ****************************************************************************/
@@ -630,6 +631,115 @@ bool cli_mkdir(struct cli_state *cli, const char *dname)
 	}
 
 	return True;
+}
+#endif
+
+/****************************************************************************
+ Create a directory.
+****************************************************************************/
+
+static void cli_mkdir_done(struct tevent_req *subreq);
+
+struct cli_mkdir_state {
+	int dummy;
+};
+
+struct tevent_req *cli_mkdir_send(TALLOC_CTX *mem_ctx,
+				  struct event_context *ev,
+				  struct cli_state *cli,
+				  const char *dname)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_mkdir_state *state = NULL;
+	uint8_t additional_flags = 0;
+	uint8_t *bytes = NULL;
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_mkdir_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	bytes = talloc_array(state, uint8_t, 1);
+	if (!bytes) {
+		return NULL;
+	}
+	bytes[0] = 4;
+	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), dname,
+				   strlen(dname)+1, NULL);
+
+	if (tevent_req_nomem(bytes, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = cli_smb_send(state, ev, cli, SMBmkdir, additional_flags,
+				    0, NULL, talloc_get_size(bytes), bytes);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_mkdir_done, req);
+	return req;
+}
+
+static void cli_mkdir_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	NTSTATUS status;
+
+	status = cli_smb_recv(subreq, 0, NULL, NULL, NULL, NULL);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_mkdir_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+NTSTATUS cli_mkdir(struct cli_state *cli, const char *dname)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_OK;
+
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	req = cli_mkdir_send(frame, ev, cli, dname);
+	if (req == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
+	}
+
+	status = cli_mkdir_recv(req);
+
+ fail:
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
 }
 
 /****************************************************************************

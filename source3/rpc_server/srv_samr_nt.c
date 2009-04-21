@@ -84,17 +84,6 @@ typedef struct disp_info {
 						  * handler. */
 } DISP_INFO;
 
-/* We keep a static list of these by SID as modern clients close down
-   all resources between each request in a complete enumeration. */
-
-struct samr_info {
-	/* for use by the \PIPE\samr policy */
-	DOM_SID sid;
-	uint32 status; /* some sort of flag.  best to record it.  comes from opnum 0x39 */
-	uint32 acc_granted;
-	DISP_INFO *disp_info;
-};
-
 static const struct generic_mapping sam_generic_mapping = {
 	GENERIC_RIGHTS_SAM_READ,
 	GENERIC_RIGHTS_SAM_WRITE,
@@ -240,36 +229,6 @@ done:
 	return status;
 }
 
-/*******************************************************************
- Checks if access to a function can be granted
-********************************************************************/
-
-static NTSTATUS access_check_samr_function(uint32 acc_granted, uint32 acc_required, const char *debug)
-{
-	DEBUG(5,("%s: access check ((granted: %#010x;  required: %#010x)\n",
-		debug, acc_granted, acc_required));
-
-	/* check the security descriptor first */
-
-	if ( (acc_granted&acc_required) == acc_required )
-		return NT_STATUS_OK;
-
-	/* give root a free pass */
-
-	if (geteuid() == sec_initial_uid()) {
-
-		DEBUG(4,("%s: ACCESS should be DENIED (granted: %#010x;  required: %#010x)\n",
-			debug, acc_granted, acc_required));
-		DEBUGADD(4,("but overwritten by euid == 0\n"));
-
-		return NT_STATUS_OK;
-	}
-
-	DEBUG(2,("%s: ACCESS DENIED (granted: %#010x;  required: %#010x)\n",
-		debug, acc_granted, acc_required));
-
-	return NT_STATUS_ACCESS_DENIED;
-}
 
 /*******************************************************************
  Map any MAXIMUM_ALLOWED_ACCESS request to a valid access set.
@@ -387,37 +346,6 @@ static DISP_INFO *get_samr_dispinfo_by_sid(const struct dom_sid *psid)
 }
 
 /*******************************************************************
- Create a samr_info struct.
-********************************************************************/
-
-static int samr_info_destructor(struct samr_info *info);
-
-static struct samr_info *get_samr_info_by_sid(TALLOC_CTX *mem_ctx,
-					      DOM_SID *psid)
-{
-	struct samr_info *info;
-
-	info = talloc_zero(mem_ctx, struct samr_info);
-	if (info == NULL) {
-		return NULL;
-	}
-	talloc_set_destructor(info, samr_info_destructor);
-
-	DEBUG(10, ("get_samr_info_by_sid: created new info for sid %s\n",
-		   sid_string_dbg(psid)));
-
-	if (psid) {
-		sid_copy( &info->sid, psid);
-	} else {
-		DEBUG(10,("get_samr_info_by_sid: created new info for NULL sid.\n"));
-	}
-
-	info->disp_info = get_samr_dispinfo_by_sid(psid);
-
-	return info;
-}
-
-/*******************************************************************
  Function to free the per SID data.
  ********************************************************************/
 
@@ -438,17 +366,6 @@ static void free_samr_cache(DISP_INFO *disp_info)
 	TALLOC_FREE(disp_info->enum_users);
 
 	unbecome_root();
-}
-
-static int samr_info_destructor(struct samr_info *info)
-{
-	/* Only free the dispinfo cache if no one bothered to set up
-	   a timeout. */
-
-	if (info->disp_info && info->disp_info->cache_timeout_event == NULL) {
-		free_samr_cache(info->disp_info);
-	}
-	return 0;
 }
 
 /*******************************************************************
@@ -724,46 +641,25 @@ NTSTATUS _samr_GetUserPwInfo(pipes_struct *p,
 }
 
 /*******************************************************************
-********************************************************************/
-
-static bool get_lsa_policy_samr_sid( pipes_struct *p, struct policy_handle *pol,
-					DOM_SID *sid, uint32 *acc_granted,
-					DISP_INFO **ppdisp_info)
-{
-	struct samr_info *info = NULL;
-
-	/* find the policy handle.  open a policy on it. */
-	if (!find_policy_by_hnd(p, pol, (void **)(void *)&info))
-		return False;
-
-	if (!info)
-		return False;
-
-	*sid = info->sid;
-	*acc_granted = info->acc_granted;
-	if (ppdisp_info) {
-		*ppdisp_info = info->disp_info;
-	}
-
-	return True;
-}
-
-/*******************************************************************
  _samr_SetSecurity
  ********************************************************************/
 
 NTSTATUS _samr_SetSecurity(pipes_struct *p,
 			   struct samr_SetSecurity *r)
 {
-	DOM_SID pol_sid;
-	uint32 acc_granted, i;
+	struct samr_user_info *uinfo;
+	uint32 i;
 	SEC_ACL *dacl;
 	bool ret;
 	struct samu *sampass=NULL;
 	NTSTATUS status;
 
-	if (!get_lsa_policy_samr_sid(p, r->in.handle, &pol_sid, &acc_granted, NULL))
-		return NT_STATUS_INVALID_HANDLE;
+	uinfo = policy_handle_find(p, r->in.handle,
+				   SAMR_USER_ACCESS_SET_ATTRIBUTES, NULL,
+				   struct samr_user_info, &status);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	if (!(sampass = samu_new( p->mem_ctx))) {
 		DEBUG(0,("No memory!\n"));
@@ -772,18 +668,19 @@ NTSTATUS _samr_SetSecurity(pipes_struct *p,
 
 	/* get the user record */
 	become_root();
-	ret = pdb_getsampwsid(sampass, &pol_sid);
+	ret = pdb_getsampwsid(sampass, &uinfo->sid);
 	unbecome_root();
 
 	if (!ret) {
-		DEBUG(4, ("User %s not found\n", sid_string_dbg(&pol_sid)));
+		DEBUG(4, ("User %s not found\n",
+			  sid_string_dbg(&uinfo->sid)));
 		TALLOC_FREE(sampass);
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
 	dacl = r->in.sdbuf->sd->dacl;
 	for (i=0; i < dacl->num_aces; i++) {
-		if (sid_equal(&pol_sid, &dacl->aces[i].trustee)) {
+		if (sid_equal(&uinfo->sid, &dacl->aces[i].trustee)) {
 			ret = pdb_set_pass_can_change(sampass,
 				(dacl->aces[i].access_mask &
 				 SAMR_USER_ACCESS_CHANGE_PASSWORD) ?
@@ -797,14 +694,9 @@ NTSTATUS _samr_SetSecurity(pipes_struct *p,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	status = access_check_samr_function(acc_granted,
-					    SAMR_USER_ACCESS_SET_ATTRIBUTES,
-					    "_samr_SetSecurity");
-	if (NT_STATUS_IS_OK(status)) {
-		become_root();
-		status = pdb_update_sam_account(sampass);
-		unbecome_root();
-	}
+	become_root();
+	status = pdb_update_sam_account(sampass);
+	unbecome_root();
 
 	TALLOC_FREE(sampass);
 
@@ -852,60 +744,99 @@ static bool check_change_pw_access(TALLOC_CTX *mem_ctx, DOM_SID *user_sid)
 NTSTATUS _samr_QuerySecurity(pipes_struct *p,
 			     struct samr_QuerySecurity *r)
 {
+	struct samr_connect_info *cinfo;
+	struct samr_domain_info *dinfo;
+	struct samr_user_info *uinfo;
+	struct samr_group_info *ginfo;
+	struct samr_alias_info *ainfo;
 	NTSTATUS status;
-	DOM_SID pol_sid;
 	SEC_DESC * psd = NULL;
-	uint32 acc_granted;
 	size_t sd_size;
 
-	/* Get the SID. */
-	if (!get_lsa_policy_samr_sid(p, r->in.handle, &pol_sid, &acc_granted, NULL))
-		return NT_STATUS_INVALID_HANDLE;
-
-	DEBUG(10,("_samr_QuerySecurity: querying security on SID: %s\n",
-		  sid_string_dbg(&pol_sid)));
-
-	status = access_check_samr_function(acc_granted,
-					    STD_RIGHT_READ_CONTROL_ACCESS,
-					    "_samr_QuerySecurity");
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	/* Check what typ of SID is beeing queried (e.g Domain SID, User SID, Group SID) */
-
-	/* To query the security of the SAM it self an invalid SID with S-0-0 is passed to this function */
-	if (pol_sid.sid_rev_num == 0) {
+	cinfo = policy_handle_find(p, r->in.handle,
+				   STD_RIGHT_READ_CONTROL_ACCESS, NULL,
+				   struct samr_connect_info, &status);
+	if (NT_STATUS_IS_OK(status)) {
 		DEBUG(5,("_samr_QuerySecurity: querying security on SAM\n"));
-		status = make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &sam_generic_mapping, NULL, 0);
-	} else if (sid_equal(&pol_sid,get_global_sam_sid())) {
-		/* check if it is our domain SID */
-		DEBUG(5,("_samr_QuerySecurity: querying security on Domain "
-			 "with SID: %s\n", sid_string_dbg(&pol_sid)));
-		status = make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &dom_generic_mapping, NULL, 0);
-	} else if (sid_equal(&pol_sid,&global_sid_Builtin)) {
-		/* check if it is the Builtin  Domain */
-		/* TODO: Builtin probably needs a different SD with restricted write access*/
-		DEBUG(5,("_samr_QuerySecurity: querying security on Builtin "
-			 "Domain with SID: %s\n", sid_string_dbg(&pol_sid)));
-		status = make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &dom_generic_mapping, NULL, 0);
-	} else if (sid_check_is_in_our_domain(&pol_sid) ||
-	    	 sid_check_is_in_builtin(&pol_sid)) {
-		/* TODO: different SDs have to be generated for aliases groups and users.
-		         Currently all three get a default user SD  */
-		DEBUG(10,("_samr_QuerySecurity: querying security on Object "
-			  "with SID: %s\n", sid_string_dbg(&pol_sid)));
-		if (check_change_pw_access(p->mem_ctx, &pol_sid)) {
-			status = make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &usr_generic_mapping,
-							  &pol_sid, SAMR_USR_RIGHTS_WRITE_PW);
-		} else {
-			status = make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &usr_nopwchange_generic_mapping,
-							  &pol_sid, SAMR_USR_RIGHTS_CANT_WRITE_PW);
-		}
-	} else {
-		return NT_STATUS_OBJECT_TYPE_MISMATCH;
+		status = make_samr_object_sd(p->mem_ctx, &psd, &sd_size,
+					     &sam_generic_mapping, NULL, 0);
+		goto done;
 	}
 
+	dinfo = policy_handle_find(p, r->in.handle,
+				   STD_RIGHT_READ_CONTROL_ACCESS, NULL,
+				   struct samr_domain_info, &status);
+	if (NT_STATUS_IS_OK(status)) {
+		DEBUG(5,("_samr_QuerySecurity: querying security on Domain "
+			 "with SID: %s\n", sid_string_dbg(&dinfo->sid)));
+		/*
+		 * TODO: Builtin probably needs a different SD with restricted
+		 * write access
+		 */
+		status = make_samr_object_sd(p->mem_ctx, &psd, &sd_size,
+					     &dom_generic_mapping, NULL, 0);
+		goto done;
+	}
+
+	uinfo = policy_handle_find(p, r->in.handle,
+				   STD_RIGHT_READ_CONTROL_ACCESS, NULL,
+				   struct samr_user_info, &status);
+	if (NT_STATUS_IS_OK(status)) {
+		DEBUG(10,("_samr_QuerySecurity: querying security on user "
+			  "Object with SID: %s\n",
+			  sid_string_dbg(&uinfo->sid)));
+		if (check_change_pw_access(p->mem_ctx, &uinfo->sid)) {
+			status = make_samr_object_sd(
+				p->mem_ctx, &psd, &sd_size,
+				&usr_generic_mapping,
+				&uinfo->sid, SAMR_USR_RIGHTS_WRITE_PW);
+		} else {
+			status = make_samr_object_sd(
+				p->mem_ctx, &psd, &sd_size,
+				&usr_nopwchange_generic_mapping,
+				&uinfo->sid, SAMR_USR_RIGHTS_CANT_WRITE_PW);
+		}
+		goto done;
+	}
+
+	ginfo = policy_handle_find(p, r->in.handle,
+				   STD_RIGHT_READ_CONTROL_ACCESS, NULL,
+				   struct samr_group_info, &status);
+	if (NT_STATUS_IS_OK(status)) {
+		/*
+		 * TODO: different SDs have to be generated for aliases groups
+		 * and users.  Currently all three get a default user SD
+		 */
+		DEBUG(10,("_samr_QuerySecurity: querying security on group "
+			  "Object with SID: %s\n",
+			  sid_string_dbg(&ginfo->sid)));
+		status = make_samr_object_sd(
+			p->mem_ctx, &psd, &sd_size,
+			&usr_nopwchange_generic_mapping,
+			&ginfo->sid, SAMR_USR_RIGHTS_CANT_WRITE_PW);
+		goto done;
+	}
+
+	ainfo = policy_handle_find(p, r->in.handle,
+				   STD_RIGHT_READ_CONTROL_ACCESS, NULL,
+				   struct samr_alias_info, &status);
+	if (NT_STATUS_IS_OK(status)) {
+		/*
+		 * TODO: different SDs have to be generated for aliases groups
+		 * and users.  Currently all three get a default user SD
+		 */
+		DEBUG(10,("_samr_QuerySecurity: querying security on alias "
+			  "Object with SID: %s\n",
+			  sid_string_dbg(&ainfo->sid)));
+		status = make_samr_object_sd(
+			p->mem_ctx, &psd, &sd_size,
+			&usr_nopwchange_generic_mapping,
+			&ainfo->sid, SAMR_USR_RIGHTS_CANT_WRITE_PW);
+		goto done;
+	}
+
+	return NT_STATUS_OBJECT_TYPE_MISMATCH;
+done:
 	if ((*r->out.sdbuf = make_sec_desc_buf(p->mem_ctx, sd_size, psd)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
