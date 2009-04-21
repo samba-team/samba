@@ -2896,7 +2896,7 @@ static bool compare_printer_secdesc( struct rpc_pipe_client *cli1, struct policy
 		goto done;
 	}
 
-	if (!sec_desc_equal( sd1, sd2 ) ) {
+	if (!security_descriptor_equal( sd1, sd2 ) ) {
 		printf("Security Descriptors *not* equal!\n");
 		result = false;
 		goto done;

@@ -5864,7 +5864,7 @@ static WERROR update_printer_sec(struct policy_handle *handle,
 		goto done;
 	}
 
-	if (sec_desc_equal(new_secdesc_ctr->sd, old_secdesc_ctr->sd)) {
+	if (security_descriptor_equal(new_secdesc_ctr->sd, old_secdesc_ctr->sd)) {
 		result = WERR_OK;
 		goto done;
 	}

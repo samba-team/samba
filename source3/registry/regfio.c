@@ -958,7 +958,7 @@ static REGF_SK_REC* find_sk_record_by_sec_desc( REGF_FILE *file, SEC_DESC *sd )
 	REGF_SK_REC *p;
 
 	for ( p=file->sec_desc_list; p; p=p->next ) {
-		if ( sec_desc_equal( p->sec_desc, sd ) )
+		if ( security_descriptor_equal( p->sec_desc, sd ) )
 			return p;
 	}
 
