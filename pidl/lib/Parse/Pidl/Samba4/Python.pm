@@ -845,7 +845,7 @@ sub ConvertObjectFromPythonData($$$$$$)
 			return;
 		}
 		$self->pidl("PY_CHECK_TYPE($ctype_name, $cvar, $fail);");
-		$self->assign($target, "talloc_ptrtype(py_talloc_get_ptr($cvar), $target)");
+		$self->assign($target, "py_talloc_get_ptr($cvar)");
 		return;
 	}
 
