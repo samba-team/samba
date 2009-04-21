@@ -33,3 +33,4 @@ struct auth_session_info;
 #include "libcli/security/secace.h"
 #include "libcli/security/secacl.h"
 #include "libcli/security/proto.h"
+#include "libcli/security/security_descriptor.h"

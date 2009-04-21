@@ -702,6 +702,7 @@ enum flush_reason_enum {
 #endif
 #include "libcli/security/secace.h"
 #include "libcli/security/secacl.h"
+#include "libcli/security/security_descriptor.h"
 
 #if defined(HAVE_POSIX_ACLS)
 #include "modules/vfs_posixacl.h"
