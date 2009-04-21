@@ -80,11 +80,7 @@ static bool gpo_sd_check_agp_object(const struct security_ace *ace)
 
 static bool gpo_sd_check_agp_access_bits(uint32_t access_mask)
 {
-#if _SAMBA_BUILD_ == 4
 	return (access_mask & SEC_ADS_CONTROL_ACCESS);
-#else
-	return (access_mask & SEC_RIGHTS_EXTENDED);
-#endif
 }
 
 #if 0
