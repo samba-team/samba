@@ -84,17 +84,6 @@ typedef struct disp_info {
 						  * handler. */
 } DISP_INFO;
 
-/* We keep a static list of these by SID as modern clients close down
-   all resources between each request in a complete enumeration. */
-
-struct samr_info {
-	/* for use by the \PIPE\samr policy */
-	DOM_SID sid;
-	uint32 status; /* some sort of flag.  best to record it.  comes from opnum 0x39 */
-	uint32 acc_granted;
-	DISP_INFO *disp_info;
-};
-
 static const struct generic_mapping sam_generic_mapping = {
 	GENERIC_RIGHTS_SAM_READ,
 	GENERIC_RIGHTS_SAM_WRITE,
@@ -240,36 +229,6 @@ done:
 	return status;
 }
 
-/*******************************************************************
- Checks if access to a function can be granted
-********************************************************************/
-
-static NTSTATUS access_check_samr_function(uint32 acc_granted, uint32 acc_required, const char *debug)
-{
-	DEBUG(5,("%s: access check ((granted: %#010x;  required: %#010x)\n",
-		debug, acc_granted, acc_required));
-
-	/* check the security descriptor first */
-
-	if ( (acc_granted&acc_required) == acc_required )
-		return NT_STATUS_OK;
-
-	/* give root a free pass */
-
-	if (geteuid() == sec_initial_uid()) {
-
-		DEBUG(4,("%s: ACCESS should be DENIED (granted: %#010x;  required: %#010x)\n",
-			debug, acc_granted, acc_required));
-		DEBUGADD(4,("but overwritten by euid == 0\n"));
-
-		return NT_STATUS_OK;
-	}
-
-	DEBUG(2,("%s: ACCESS DENIED (granted: %#010x;  required: %#010x)\n",
-		debug, acc_granted, acc_required));
-
-	return NT_STATUS_ACCESS_DENIED;
-}
 
 /*******************************************************************
  Map any MAXIMUM_ALLOWED_ACCESS request to a valid access set.
@@ -387,37 +346,6 @@ static DISP_INFO *get_samr_dispinfo_by_sid(const struct dom_sid *psid)
 }
 
 /*******************************************************************
- Create a samr_info struct.
-********************************************************************/
-
-static int samr_info_destructor(struct samr_info *info);
-
-static struct samr_info *get_samr_info_by_sid(TALLOC_CTX *mem_ctx,
-					      DOM_SID *psid)
-{
-	struct samr_info *info;
-
-	info = talloc_zero(mem_ctx, struct samr_info);
-	if (info == NULL) {
-		return NULL;
-	}
-	talloc_set_destructor(info, samr_info_destructor);
-
-	DEBUG(10, ("get_samr_info_by_sid: created new info for sid %s\n",
-		   sid_string_dbg(psid)));
-
-	if (psid) {
-		sid_copy( &info->sid, psid);
-	} else {
-		DEBUG(10,("get_samr_info_by_sid: created new info for NULL sid.\n"));
-	}
-
-	info->disp_info = get_samr_dispinfo_by_sid(psid);
-
-	return info;
-}
-
-/*******************************************************************
  Function to free the per SID data.
  ********************************************************************/
 
@@ -438,17 +366,6 @@ static void free_samr_cache(DISP_INFO *disp_info)
 	TALLOC_FREE(disp_info->enum_users);
 
 	unbecome_root();
-}
-
-static int samr_info_destructor(struct samr_info *info)
-{
-	/* Only free the dispinfo cache if no one bothered to set up
-	   a timeout. */
-
-	if (info->disp_info && info->disp_info->cache_timeout_event == NULL) {
-		free_samr_cache(info->disp_info);
-	}
-	return 0;
 }
 
 /*******************************************************************
@@ -721,31 +638,6 @@ NTSTATUS _samr_GetUserPwInfo(pipes_struct *p,
 	DEBUG(5,("_samr_GetUserPwInfo: %d\n", __LINE__));
 
 	return NT_STATUS_OK;
-}
-
-/*******************************************************************
-********************************************************************/
-
-static bool get_lsa_policy_samr_sid( pipes_struct *p, struct policy_handle *pol,
-					DOM_SID *sid, uint32 *acc_granted,
-					DISP_INFO **ppdisp_info)
-{
-	struct samr_info *info = NULL;
-
-	/* find the policy handle.  open a policy on it. */
-	if (!find_policy_by_hnd(p, pol, (void **)(void *)&info))
-		return False;
-
-	if (!info)
-		return False;
-
-	*sid = info->sid;
-	*acc_granted = info->acc_granted;
-	if (ppdisp_info) {
-		*ppdisp_info = info->disp_info;
-	}
-
-	return True;
 }
 
 /*******************************************************************
