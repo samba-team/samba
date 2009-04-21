@@ -46,3 +46,14 @@ class GUIDTests(unittest.TestCase):
 
          
         
+class PolicyHandleTests(unittest.TestCase):
+
+    def test_init(self):
+        x = misc.policy_handle(text1, 1)
+        self.assertEquals(1, x.handle_type)
+        self.assertEquals(text1, str(x.uuid))
+
+    def test_repr(self):
+        x = misc.policy_handle(text1, 42)
+        self.assertEquals("policy_handle('%s', %d)" % (text1, 42), repr(x))
+

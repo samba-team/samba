@@ -90,3 +90,41 @@ static void py_GUID_patch(PyTypeObject *type)
 
 #define PY_GUID_PATCH py_GUID_patch
 
+static int py_policy_handle_init(PyObject *self, PyObject *args, PyObject *kwargs)
+{
+	char *str = NULL;
+	NTSTATUS status;
+	struct policy_handle *handle = py_talloc_get_ptr(self);
+	const char *kwnames[] = { "uuid", "type", NULL };
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|si", discard_const_p(char *, kwnames), &str, &handle->handle_type))
+		return -1;
+
+	if (str != NULL) {
+		status = GUID_from_string(str, &handle->uuid);
+		if (!NT_STATUS_IS_OK(status)) {
+			PyErr_SetNTSTATUS(status);
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+static PyObject *py_policy_handle_repr(PyObject *py_self)
+{
+	struct policy_handle *self = py_talloc_get_ptr(py_self);
+	char *uuid_str = GUID_string(NULL, &self->uuid);
+	PyObject *ret = PyString_FromFormat("policy_handle('%s', %d)", uuid_str, self->handle_type);
+	talloc_free(uuid_str);
+	return ret;
+}
+
+static void py_policy_handle_patch(PyTypeObject *type)
+{
+	type->tp_init = py_policy_handle_init;
+	type->tp_repr = py_policy_handle_repr;
+}
+
+#define PY_POLICY_HANDLE_PATCH py_policy_handle_patch
+
