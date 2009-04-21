@@ -2675,7 +2675,7 @@ static int cmd_rmdir(void)
 		return 1;
 	}
 
-	if (!cli_rmdir(targetcli, targetname)) {
+	if (!NT_STATUS_IS_OK(cli_rmdir(targetcli, targetname))) {
 		d_printf("%s removing remote directory file %s\n",
 			 cli_errstr(targetcli),mask);
 	}

@@ -1284,8 +1284,7 @@ SMBC_rmdir_ctx(SMBCCTX *context,
 	}
 	/*d_printf(">>>rmdir: resolved path as %s\n", targetpath);*/
 
-
-	if (!cli_rmdir(targetcli, targetpath)) {
+	if (!NT_STATUS_IS_OK(cli_rmdir(targetcli, targetpath))) {
 
 		errno = SMBC_errno(context, targetcli);
 

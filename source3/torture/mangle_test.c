@@ -202,7 +202,7 @@ bool torture_mangle(int dummy)
 	}
 
 	cli_unlink(cli, "\\mangle_test\\*");
-	if (!cli_rmdir(cli, "\\mangle_test")) {
+	if (!NT_STATUS_IS_OK(cli_rmdir(cli, "\\mangle_test"))) {
 		printf("ERROR: Failed to remove directory\n");
 		return False;
 	}

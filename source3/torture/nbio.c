@@ -220,7 +220,7 @@ void nb_close(int handle)
 
 void nb_rmdir(const char *fname)
 {
-	if (!cli_rmdir(c, fname)) {
+	if (!NT_STATUS_IS_OK(cli_rmdir(c, fname))) {
 		printf("ERROR: rmdir %s failed (%s)\n", 
 		       fname, cli_errstr(c));
 		exit(1);

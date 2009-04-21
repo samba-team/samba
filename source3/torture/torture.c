@@ -4500,7 +4500,7 @@ static void del_fn(const char *mnt, file_info *finfo, const char *mask, void *st
 		return;
 
 	if (finfo->mode & aDIR) {
-		if (!cli_rmdir(pcli, fname))
+		if (!NT_STATUS_IS_OK(cli_rmdir(pcli, fname)))
 			printf("del_fn: failed to rmdir %s\n,", fname );
 	} else {
 		if (!cli_unlink(pcli, fname))

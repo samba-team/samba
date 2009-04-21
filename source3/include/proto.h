@@ -2339,7 +2339,7 @@ bool cli_nt_hardlink(struct cli_state *cli, const char *fname_src, const char *f
 bool cli_unlink_full(struct cli_state *cli, const char *fname, uint16 attrs);
 bool cli_unlink(struct cli_state *cli, const char *fname);
 NTSTATUS cli_mkdir(struct cli_state *cli, const char *dname);
-bool cli_rmdir(struct cli_state *cli, const char *dname);
+NTSTATUS cli_rmdir(struct cli_state *cli, const char *dname);
 int cli_nt_delete_on_close(struct cli_state *cli, int fnum, bool flag);
 int cli_nt_create_full(struct cli_state *cli, const char *fname,
 		 uint32 CreatFlags, uint32 DesiredAccess,
