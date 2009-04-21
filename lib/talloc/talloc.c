@@ -1008,6 +1008,11 @@ void *_talloc_realloc(const void *context, void *ptr, size_t size, const char *n
 		return NULL;
 	}
 
+	/* don't let anybody try to realloc a talloc_pool */
+	if (unlikely(tc->flags & TALLOC_FLAG_POOL)) {
+		return NULL;
+	}
+
 	/* don't shrink if we have less than 1k to gain */
 	if ((size < tc->size) && ((tc->size - size) < 1024)) {
 		tc->size = size;
