@@ -132,7 +132,7 @@ static void bench_fetch(struct ctdb_context *ctdb, struct event_context *ev)
 	start_timer();
 
 	while (end_timer() < timelimit) {
-		if (pnn == 0 && msg_count % 100 == 0) {
+		if (pnn == 0 && msg_count % 100 == 0 && end_timer() > 0) {
 			printf("Fetch: %.2f msgs/sec\r", msg_count/end_timer());
 			fflush(stdout);
 		}
