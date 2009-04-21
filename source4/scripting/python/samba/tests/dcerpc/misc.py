@@ -24,6 +24,7 @@ text1 = "76f53846-a7c2-476a-ae2c-20e2b80d7b34"
 text2 = "344edffa-330a-4b39-b96e-2c34da52e8b1"
 
 class GUIDTests(unittest.TestCase):
+
     def test_str(self):
         guid = misc.GUID(text1)
         self.assertEquals(text1, str(guid))
@@ -55,5 +56,9 @@ class PolicyHandleTests(unittest.TestCase):
 
     def test_repr(self):
         x = misc.policy_handle(text1, 42)
-        self.assertEquals("policy_handle('%s', %d)" % (text1, 42), repr(x))
+        self.assertEquals("policy_handle(%d, '%s')" % (42, text1), repr(x))
+
+    def test_str(self):
+        x = misc.policy_handle(text1, 42)
+        self.assertEquals("%d, %s" % (42, text1), str(x))
 

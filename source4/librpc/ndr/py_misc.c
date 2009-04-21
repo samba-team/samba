@@ -115,7 +115,16 @@ static PyObject *py_policy_handle_repr(PyObject *py_self)
 {
 	struct policy_handle *self = py_talloc_get_ptr(py_self);
 	char *uuid_str = GUID_string(NULL, &self->uuid);
-	PyObject *ret = PyString_FromFormat("policy_handle('%s', %d)", uuid_str, self->handle_type);
+	PyObject *ret = PyString_FromFormat("policy_handle(%d, '%s')", self->handle_type, uuid_str);
+	talloc_free(uuid_str);
+	return ret;
+}
+
+static PyObject *py_policy_handle_str(PyObject *py_self)
+{
+	struct policy_handle *self = py_talloc_get_ptr(py_self);
+	char *uuid_str = GUID_string(NULL, &self->uuid);
+	PyObject *ret = PyString_FromFormat("%d, %s", self->handle_type, uuid_str);
 	talloc_free(uuid_str);
 	return ret;
 }
@@ -124,6 +133,7 @@ static void py_policy_handle_patch(PyTypeObject *type)
 {
 	type->tp_init = py_policy_handle_init;
 	type->tp_repr = py_policy_handle_repr;
+	type->tp_str = py_policy_handle_str;
 }
 
 #define PY_POLICY_HANDLE_PATCH py_policy_handle_patch
