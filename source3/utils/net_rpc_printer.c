@@ -406,7 +406,7 @@ NTSTATUS net_copy_file(struct net_context *c,
 		DEBUGADD(3,("creating dir %s on the destination server\n",
 			dst_name));
 
-		if (!cli_mkdir(cli_share_dst, dst_name)) {
+		if (!NT_STATUS_IS_OK(cli_mkdir(cli_share_dst, dst_name))) {
 			DEBUG(0,("cannot create directory %s: %s\n",
 				dst_name, cli_errstr(cli_share_dst)));
 			nt_status = NT_STATUS_NO_SUCH_FILE;
@@ -555,7 +555,7 @@ static NTSTATUS check_arch_dir(struct cli_state *cli_share, const char *short_ar
 	DEBUG(10,("creating print-driver dir for architecture: %s\n",
 		short_archi));
 
-	if (!cli_mkdir(cli_share, dir)) {
+	if (!NT_STATUS_IS_OK(cli_mkdir(cli_share, dir))) {
                 DEBUG(1,("cannot create directory %s: %s\n",
                          dir, cli_errstr(cli_share)));
                 nt_status = NT_STATUS_NO_SUCH_FILE;

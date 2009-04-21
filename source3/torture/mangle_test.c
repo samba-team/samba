@@ -180,7 +180,7 @@ bool torture_mangle(int dummy)
 	cli_unlink(cli, "\\mangle_test\\*");
 	cli_rmdir(cli, "\\mangle_test");
 
-	if (!cli_mkdir(cli, "\\mangle_test")) {
+	if (!NT_STATUS_IS_OK(cli_mkdir(cli, "\\mangle_test"))) {
 		printf("ERROR: Failed to make directory\n");
 		return False;
 	}

@@ -1177,8 +1177,7 @@ SMBC_mkdir_ctx(SMBCCTX *context,
 	}
 	/*d_printf(">>>mkdir: resolved path as %s\n", targetpath);*/
 
-	if (!cli_mkdir(targetcli, targetpath)) {
-
+	if (!NT_STATUS_IS_OK(cli_mkdir(targetcli, targetpath))) {
 		errno = SMBC_errno(context, targetcli);
 		TALLOC_FREE(frame);
 		return -1;

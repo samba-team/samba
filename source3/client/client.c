@@ -1389,7 +1389,7 @@ static bool do_mkdir(const char *name)
 		return false;
 	}
 
-	if (!cli_mkdir(targetcli, targetname)) {
+	if (!NT_STATUS_IS_OK(cli_mkdir(targetcli, targetname))) {
 		d_printf("%s making remote directory %s\n",
 			 cli_errstr(targetcli),name);
 		return false;
