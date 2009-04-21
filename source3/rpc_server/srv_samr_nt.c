@@ -755,15 +755,19 @@ static bool get_lsa_policy_samr_sid( pipes_struct *p, struct policy_handle *pol,
 NTSTATUS _samr_SetSecurity(pipes_struct *p,
 			   struct samr_SetSecurity *r)
 {
-	DOM_SID pol_sid;
-	uint32 acc_granted, i;
+	struct samr_user_info *uinfo;
+	uint32 i;
 	SEC_ACL *dacl;
 	bool ret;
 	struct samu *sampass=NULL;
 	NTSTATUS status;
 
-	if (!get_lsa_policy_samr_sid(p, r->in.handle, &pol_sid, &acc_granted, NULL))
-		return NT_STATUS_INVALID_HANDLE;
+	uinfo = policy_handle_find(p, r->in.handle,
+				   SAMR_USER_ACCESS_SET_ATTRIBUTES, NULL,
+				   struct samr_user_info, &status);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	if (!(sampass = samu_new( p->mem_ctx))) {
 		DEBUG(0,("No memory!\n"));
@@ -772,18 +776,19 @@ NTSTATUS _samr_SetSecurity(pipes_struct *p,
 
 	/* get the user record */
 	become_root();
-	ret = pdb_getsampwsid(sampass, &pol_sid);
+	ret = pdb_getsampwsid(sampass, &uinfo->sid);
 	unbecome_root();
 
 	if (!ret) {
-		DEBUG(4, ("User %s not found\n", sid_string_dbg(&pol_sid)));
+		DEBUG(4, ("User %s not found\n",
+			  sid_string_dbg(&uinfo->sid)));
 		TALLOC_FREE(sampass);
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
 	dacl = r->in.sdbuf->sd->dacl;
 	for (i=0; i < dacl->num_aces; i++) {
-		if (sid_equal(&pol_sid, &dacl->aces[i].trustee)) {
+		if (sid_equal(&uinfo->sid, &dacl->aces[i].trustee)) {
 			ret = pdb_set_pass_can_change(sampass,
 				(dacl->aces[i].access_mask &
 				 SAMR_USER_ACCESS_CHANGE_PASSWORD) ?
@@ -797,14 +802,9 @@ NTSTATUS _samr_SetSecurity(pipes_struct *p,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	status = access_check_samr_function(acc_granted,
-					    SAMR_USER_ACCESS_SET_ATTRIBUTES,
-					    "_samr_SetSecurity");
-	if (NT_STATUS_IS_OK(status)) {
-		become_root();
-		status = pdb_update_sam_account(sampass);
-		unbecome_root();
-	}
+	become_root();
+	status = pdb_update_sam_account(sampass);
+	unbecome_root();
 
 	TALLOC_FREE(sampass);
 
