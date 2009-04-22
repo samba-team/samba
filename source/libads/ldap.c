@@ -112,6 +112,10 @@ static int ldap_search_with_timeout(LDAP *ld,
 	if (gotalarm != 0)
 		return LDAP_TIMELIMIT_EXCEEDED;
 
+	if (res == NULL) {
+		return LDAP_TIMELIMIT_EXCEEDED;
+	}
+
 	return result;
 }
 
