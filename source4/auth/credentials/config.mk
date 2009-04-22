@@ -15,6 +15,6 @@ PUBLIC_HEADERS += $(authsrcdir)/credentials/credentials.h
 
 [PYTHON::pycredentials]
 LIBRARY_REALNAME = samba/credentials.$(SHLIBEXT)
-PUBLIC_DEPENDENCIES = CREDENTIALS LIBCMDLINE_CREDENTIALS PYTALLOC param
+PUBLIC_DEPENDENCIES = CREDENTIALS LIBCMDLINE_CREDENTIALS PYTALLOC pyparam_util
 
 pycredentials_OBJ_FILES = $(authsrcdir)/credentials/pycredentials.o

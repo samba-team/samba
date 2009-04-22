@@ -325,30 +325,6 @@ PyTypeObject PyLoadparmService = {
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
-_PUBLIC_ struct loadparm_context *lp_from_py_object(PyObject *py_obj)
-{
-    struct loadparm_context *lp_ctx;
-    if (PyString_Check(py_obj)) {
-        lp_ctx = loadparm_init(NULL);
-        if (!lp_load(lp_ctx, PyString_AsString(py_obj))) {
-            talloc_free(lp_ctx);
-	    PyErr_Format(PyExc_RuntimeError, 
-			 "Unable to load %s", PyString_AsString(py_obj));
-            return NULL;
-        }
-        return lp_ctx;
-    }
-
-    if (py_obj == Py_None) {
-        lp_ctx = loadparm_init(NULL);
-	/* We're not checking that loading the file succeeded *on purpose */
-        lp_load_default(lp_ctx);
-        return lp_ctx;
-    }
-
-    return PyLoadparmContext_AsLoadparmContext(py_obj);
-}
-
 struct loadparm_context *py_default_loadparm_context(TALLOC_CTX *mem_ctx)
 {
     struct loadparm_context *ret;

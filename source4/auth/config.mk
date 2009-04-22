@@ -45,7 +45,7 @@ $(eval $(call proto_header_template,$(authsrcdir)/auth_sam_reply.h,$(auth_sam_re
 [PYTHON::pyauth]
 LIBRARY_REALNAME = samba/auth.$(SHLIBEXT)
 PUBLIC_DEPENDENCIES = auth_system_session
-PRIVATE_DEPENDENCIES = SAMDB PYTALLOC param
+PRIVATE_DEPENDENCIES = SAMDB PYTALLOC pyparam_util
 
 pyauth_OBJ_FILES = $(authsrcdir)/pyauth.o
 
