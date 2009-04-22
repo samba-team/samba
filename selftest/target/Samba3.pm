@@ -503,7 +503,15 @@ sub provision($$$$$$)
 [print1]
 	copy = tmp
 	printable = yes
-	printing = test
+	printing = vlp
+	print command = $bindir_abs/vlp print %p %s
+	lpq command = $bindir_abs/vlp lpq %p
+	lp rm command = $bindir_abs/vlp lprm %p %j
+	lp pause command = $bindir_abs/vlp lppause %p %j
+	lp resume command = $bindir_abs/vlp lpresume %p %j
+	queue pause command = $bindir_abs/vlp queuepause %p
+	queue resume command = $bindir_abs/vlp queueresume %p
+
 [print2]
 	copy = print1
 [print3]
