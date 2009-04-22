@@ -5112,7 +5112,7 @@ static bool run_mangle1(int dummy)
 	int fnum;
 	fstring alt_name;
 	NTSTATUS status;
-	time_t change, access, write;
+	time_t change_time, access_time, write_time;
 	SMB_OFF_T size;
 	uint16_t mode;
 
@@ -5148,8 +5148,8 @@ static bool run_mangle1(int dummy)
 	}
 	cli_close(cli, fnum);
 
-	if (!cli_qpathinfo(cli, alt_name, &change, &access, &write, &size,
-			   &mode)) {
+	if (!cli_qpathinfo(cli, alt_name, &change_time, &access_time,
+			   &write_time, &size, &mode)) {
 		d_printf("cli_qpathinfo(%s) failed: %s\n", alt_name,
 			 cli_errstr(cli));
 		return false;
