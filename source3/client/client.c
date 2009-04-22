@@ -307,7 +307,7 @@ static int do_dskattr(void)
 		return 1;
 	}
 
-	if (!cli_dskattr(targetcli, &bsize, &total, &avail)) {
+	if (!NT_STATUS_IS_OK(cli_dskattr(targetcli, &bsize, &total, &avail))) {
 		d_printf("Error in dskattr: %s\n",cli_errstr(targetcli));
 		return 1;
 	}

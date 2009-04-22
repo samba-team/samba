@@ -2417,7 +2417,7 @@ bool cli_setattrE(struct cli_state *cli, int fd,
                   time_t write_time);
 bool cli_setatr(struct cli_state *cli, const char *fname, uint16 attr, time_t t);
 NTSTATUS cli_chkpath(struct cli_state *cli, const char *path);
-bool cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail);
+NTSTATUS cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail);
 int cli_ctemp(struct cli_state *cli, const char *path, char **tmp_path);
 NTSTATUS cli_raw_ioctl(struct cli_state *cli, int fnum, uint32 code, DATA_BLOB *blob);
 bool cli_set_ea_path(struct cli_state *cli, const char *path, const char *ea_name, const char *ea_val, size_t ea_len);
