@@ -24,6 +24,7 @@
 #include "librpc/rpc/dcerpc.h"
 #include "lib/events/events.h"
 #include "param/pyparam.h"
+#include "auth/credentials/pycredentials.h"
 
 #ifndef Py_RETURN_NONE
 #define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
@@ -311,7 +312,6 @@ PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, Py
 	const char *kwnames[] = {
 		"binding", "lp_ctx", "credentials", "basis_connection", NULL
 	};
-	extern struct cli_credentials *cli_credentials_from_py_object(PyObject *py_obj);
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|OOO:samr", discard_const_p(char *, kwnames), &binding_string, &py_lp_ctx, &py_credentials, &py_basis)) {
 		return NULL;
@@ -392,7 +392,6 @@ static PyObject *dcerpc_interface_new(PyTypeObject *self, PyObject *args, PyObje
 	const char *kwnames[] = {
 		"binding", "syntax", "lp_ctx", "credentials", "basis_connection", NULL
 	};
-	extern struct cli_credentials *cli_credentials_from_py_object(PyObject *py_obj);
 	struct ndr_interface_table *table;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sO|OOO:connect", discard_const_p(char *, kwnames), &binding_string, &syntax, &py_lp_ctx, &py_credentials, &py_basis)) {

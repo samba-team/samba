@@ -34,7 +34,6 @@ typedef struct {
 	TALLOC_CTX *mem_ctx;
 } PyLdbObject;
 
-PyAPI_DATA(PyTypeObject) PyLdb;
 PyObject *PyLdb_FromLdbContext(struct ldb_context *ldb_ctx);
 #define PyLdb_AsLdbContext(pyobj) ((PyLdbObject *)pyobj)->ldb_ctx
 #define PyLdb_Check(ob) PyObject_TypeCheck(ob, &PyLdb)
@@ -45,7 +44,6 @@ typedef struct {
 	TALLOC_CTX *mem_ctx;
 } PyLdbDnObject;
 
-PyAPI_DATA(PyTypeObject) PyLdbDn;
 PyObject *PyLdbDn_FromDn(struct ldb_dn *);
 bool PyObject_AsDn(TALLOC_CTX *mem_ctx, PyObject *object, struct ldb_context *ldb_ctx, struct ldb_dn **dn);
 #define PyLdbDn_AsDn(pyobj) ((PyLdbDnObject *)pyobj)->dn
@@ -56,8 +54,6 @@ typedef struct {
 	struct ldb_message *msg;
 	TALLOC_CTX *mem_ctx;
 } PyLdbMessageObject;
-PyAPI_DATA(PyTypeObject) PyLdbMessage;
-PyObject *PyLdbMessage_FromMessage(struct ldb_message *message);
 #define PyLdbMessage_Check(ob) PyObject_TypeCheck(ob, &PyLdbMessage)
 #define PyLdbMessage_AsMessage(pyobj) ((PyLdbMessageObject *)pyobj)->msg
 
@@ -66,7 +62,7 @@ typedef struct {
 	struct ldb_module *mod;
 	TALLOC_CTX *mem_ctx;
 } PyLdbModuleObject;
-PyAPI_DATA(PyTypeObject) PyLdbModule;
+PyObject *PyLdbMessage_FromMessage(struct ldb_message *message);
 PyObject *PyLdbModule_FromModule(struct ldb_module *mod);
 #define PyLdbModule_AsModule(pyobj) ((PyLdbModuleObject *)pyobj)->mod
 
@@ -75,7 +71,6 @@ typedef struct {
 	struct ldb_message_element *el;
 	TALLOC_CTX *mem_ctx;
 } PyLdbMessageElementObject;
-PyAPI_DATA(PyTypeObject) PyLdbMessageElement;
 struct ldb_message_element *PyObject_AsMessageElement(TALLOC_CTX *mem_ctx, PyObject *obj, int flags, const char *name);
 PyObject *PyLdbMessageElement_FromMessageElement(struct ldb_message_element *, TALLOC_CTX *mem_ctx);
 #define PyLdbMessageElement_AsMessageElement(pyobj) ((PyLdbMessageElementObject *)pyobj)->el
@@ -86,16 +81,18 @@ typedef struct {
 	struct ldb_parse_tree *tree;
 	TALLOC_CTX *mem_ctx;
 } PyLdbTreeObject;
-PyAPI_DATA(PyTypeObject) PyLdbTree;
 PyObject *PyLdbTree_FromTree(struct ldb_parse_tree *);
 #define PyLdbTree_AsTree(pyobj) ((PyLdbTreeObject *)pyobj)->tree
 
-void PyErr_SetLdbError(int ret, struct ldb_context *ldb_ctx);
-#define PyErr_LDB_ERROR_IS_ERR_RAISE(ret,ldb) \
+void PyErr_SetLdbError(PyObject *exctype, int ret, struct ldb_context *ldb_ctx);
+#define PyErr_LDB_ERROR_IS_ERR_RAISE(err,ret,ldb) \
 	if (ret != LDB_SUCCESS) { \
-		PyErr_SetLdbError(ret, ldb); \
+		PyErr_SetLdbError(err, ret, ldb); \
 		return NULL; \
 	}
 
+/* Picked out of thin air. To do this properly, we should probably have some part of the 
+ * errors in LDB be allocated to bindings ? */
+#define LDB_ERR_PYTHON_EXCEPTION	142
 
 #endif /* _PYLDB_H_ */

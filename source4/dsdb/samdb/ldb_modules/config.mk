@@ -174,7 +174,7 @@ ldb_kludge_acl_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/kludge_acl.o
 # Start MODULE ldb_extended_dn_in
 [MODULE::ldb_extended_dn_in]
 SUBSYSTEM = LIBLDB
-PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS LIBSAMBA-UTIL
 INIT_FUNCTION = LDB_MODULE(extended_dn_in)
 # End MODULE ldb_extended_dn_in
 ################################################
@@ -185,7 +185,7 @@ ldb_extended_dn_in_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/extended_dn_in.o
 # Start MODULE ldb_extended_dn_out
 [MODULE::ldb_extended_dn_out]
 SUBSYSTEM = LIBLDB
-PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS LIBNDR LIBSAMBA-UTIL SAMDB
 INIT_FUNCTION = LDB_MODULE(extended_dn_out_ldb),LDB_MODULE(extended_dn_out_dereference)
 ENABLE = YES
 ALIASES = extended_dn_out_ldb extended_dn_out_dereference
@@ -198,7 +198,7 @@ ldb_extended_dn_out_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/extended_dn_out.
 # Start MODULE ldb_extended_dn_store
 [MODULE::ldb_extended_dn_store]
 SUBSYSTEM = LIBLDB
-PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS LIBSAMBA-UTIL SAMDB
 INIT_FUNCTION = LDB_MODULE(extended_dn_store)
 # End MODULE ldb_extended_dn_store
 ################################################
@@ -209,7 +209,7 @@ ldb_extended_dn_store_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/extended_dn_st
 # Start MODULE ldb_show_deleted
 [MODULE::ldb_show_deleted]
 SUBSYSTEM = LIBLDB
-PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS LIBSAMBA-UTIL
 INIT_FUNCTION = LDB_MODULE(show_deleted)
 # End MODULE ldb_show_deleted
 ################################################
@@ -256,7 +256,7 @@ ldb_objectclass_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/objectclass.o
 [MODULE::ldb_subtree_rename]
 INIT_FUNCTION = LDB_MODULE(subtree_rename)
 CFLAGS = -Ilib/ldb/include
-PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS LIBSAMBA-UTIL
 SUBSYSTEM = LIBLDB
 # End MODULE ldb_subtree_rename
 ################################################
@@ -268,7 +268,7 @@ ldb_subtree_rename_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/subtree_rename.o
 [MODULE::ldb_subtree_delete]
 INIT_FUNCTION = LDB_MODULE(subtree_delete)
 CFLAGS = -Ilib/ldb/include
-PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS LIBSAMBA-UTIL
 SUBSYSTEM = LIBLDB
 # End MODULE ldb_subtree_rename
 ################################################
@@ -292,7 +292,7 @@ ldb_linked_attributes_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/linked_attribu
 [MODULE::ldb_ranged_results]
 INIT_FUNCTION = LDB_MODULE(ranged_results)
 CFLAGS = -Ilib/ldb/include
-PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS LIBSAMBA-UTIL
 SUBSYSTEM = LIBLDB
 # End MODULE ldb_ranged_results
 ################################################

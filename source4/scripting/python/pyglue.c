@@ -31,6 +31,7 @@
 #include "libcli/security/security.h"
 #include "auth/pyauth.h"
 #include "param/pyparam.h"
+#include "auth/credentials/pycredentials.h"
 
 #ifndef Py_RETURN_NONE
 #define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
@@ -38,15 +39,22 @@
 
 /* FIXME: These should be in a header file somewhere, once we finish moving
  * away from SWIG .. */
-extern struct cli_credentials *cli_credentials_from_py_object(PyObject *py_obj);
-
 #define PyErr_LDB_OR_RAISE(py_ldb, ldb) \
-	if (!PyLdb_Check(py_ldb)) { \
-		/*PyErr_SetString(PyExc_TypeError, "Ldb connection object required"); \
-		return NULL; \ */ \
-	} \
+/*	if (!PyLdb_Check(py_ldb)) { \
+		PyErr_SetString(py_ldb_get_exception(), "Ldb connection object required"); \
+		return NULL; \
+	} */\
 	ldb = PyLdb_AsLdbContext(py_ldb);
 
+
+static PyObject *py_ldb_get_exception(void)
+{
+	PyObject *mod = PyImport_ImportModule("ldb");
+	if (mod == NULL)
+		return NULL;
+
+	return PyObject_GetAttrString(mod, "LdbError");
+}
 
 static PyObject *py_generate_random_str(PyObject *self, PyObject *args)
 {
@@ -90,7 +98,7 @@ static PyObject *py_ldb_set_credentials(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-    	ldb_set_opaque(ldb, "credentials", creds);
+	ldb_set_opaque(ldb, "credentials", creds);
 
 	Py_RETURN_NONE;
 }
@@ -172,7 +180,7 @@ static PyObject *py_ldb_register_samba_handlers(PyObject *self, PyObject *args)
 	PyErr_LDB_OR_RAISE(py_ldb, ldb);
 	ret = ldb_register_samba_handlers(ldb);
 
-	PyErr_LDB_ERROR_IS_ERR_RAISE(ret, ldb);
+	PyErr_LDB_ERROR_IS_ERR_RAISE(py_ldb_get_exception(), ret, ldb);
 	Py_RETURN_NONE;
 }
 
@@ -207,7 +215,7 @@ static PyObject *py_dsdb_set_global_schema(PyObject *self, PyObject *args)
 	PyErr_LDB_OR_RAISE(py_ldb, ldb);
 
 	ret = dsdb_set_global_schema(ldb);
-	PyErr_LDB_ERROR_IS_ERR_RAISE(ret, ldb);
+	PyErr_LDB_ERROR_IS_ERR_RAISE(py_ldb_get_exception(), ret, ldb);
 
 	Py_RETURN_NONE;
 }

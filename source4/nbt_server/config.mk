@@ -41,7 +41,7 @@ $(eval $(call proto_header_template,$(nbt_serversrcdir)/wins/winsserver_proto.h,
 # Start SUBSYSTEM NBTD_DGRAM
 [SUBSYSTEM::NBTD_DGRAM]
 PRIVATE_DEPENDENCIES = \
-		LIBCLI_DGRAM
+		LIBCLI_DGRAM CLDAPD
 # End SUBSYSTEM NBTD_DGRAM
 #######################
 

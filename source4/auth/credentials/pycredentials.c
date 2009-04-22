@@ -29,15 +29,6 @@
 #define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
 #endif
 
-struct cli_credentials *cli_credentials_from_py_object(PyObject *py_obj)
-{
-    if (py_obj == Py_None) {
-        return cli_credentials_init_anon(NULL);
-    }
-
-    return PyCredentials_AsCliCredentials(py_obj);
-}
-
 static PyObject *PyString_FromStringOrNULL(const char *str)
 {
 	if (str == NULL)

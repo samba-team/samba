@@ -5,11 +5,11 @@ mkinclude samdb/ldb_modules/config.mk
 ################################################
 # Start SUBSYSTEM SAMDB
 [SUBSYSTEM::SAMDB]
-PUBLIC_DEPENDENCIES = HEIMDAL_KRB5 
+PUBLIC_DEPENDENCIES = HEIMDAL_KRB5  
 PRIVATE_DEPENDENCIES = LIBNDR NDR_DRSUAPI NDR_DRSBLOBS NSS_WRAPPER \
 					   auth_system_session LDAP_ENCODE LIBCLI_AUTH LIBNDR \
 					   SAMDB_SCHEMA LDB_WRAP SAMDB_COMMON \
-						LIBCLI_DRSUAPI LIBCLI_LDAP_NDR
+						LIBCLI_DRSUAPI LIBCLI_LDAP_NDR LIBSAMBA-UTIL 
 
 
 SAMDB_OBJ_FILES = $(addprefix $(dsdbsrcdir)/, \
@@ -52,7 +52,8 @@ INIT_FUNCTION = server_service_drepl_init
 SUBSYSTEM = service
 PRIVATE_DEPENDENCIES = \
 		SAMDB \
-		process_model 
+		process_model \
+		RPC_NDR_DRSUAPI
 # End SUBSYSTEM DREPL_SRV
 #######################
 

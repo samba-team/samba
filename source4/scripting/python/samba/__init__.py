@@ -28,7 +28,7 @@ import os
 
 def _in_source_tree():
     """Check whether the script is being run from the source dir. """
-    return os.path.exists("%s/../../../samba4-skip" % os.path.dirname(__file__))
+    return os.path.exists("%s/../../../selftest/skip" % os.path.dirname(__file__))
 
 
 # When running, in-tree, make sure bin/python is in the PYTHONPATH
