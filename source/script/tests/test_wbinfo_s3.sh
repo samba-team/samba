@@ -34,6 +34,8 @@ tests="$tests:--domain-groups"
 tests="$tests:--name-to-sid=$username"
 #Didn't pass yet# tests="$tests:--user-info=$username"
 tests="$tests:--user-groups=$username"
+tests="$tests:--allocate-uid"
+tests="$tests:--allocate-gid"
 
 failed=0
 
