@@ -1306,6 +1306,8 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 		}
 
 		if (!change_to_user(conn,session_tag)) {
+			DEBUG(0, ("Error: Could not change to user. Removing "
+			    "deferred open, mid=%d.\n", req->mid));
 			reply_nterror(req, NT_STATUS_DOS(ERRSRV, ERRbaduid));
 			remove_deferred_open_smb_message(req->mid);
 			return conn;

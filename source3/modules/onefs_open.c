@@ -423,6 +423,13 @@ static void schedule_defer_open(struct share_mode_lock *lck,
 
 	if (!request_timed_out(request_time, timeout)) {
 		defer_open(lck, request_time, timeout, req, &state);
+	} else {
+		/* A delayed-for-oplocks deferred open timing out should only
+		 * happen if there is a bug or extreme load, since we set the
+		 * timeout to 300 seconds. */
+		DEBUG(0, ("Deferred open timeout! request_time=%d.%d, "
+		    "mid=%d\n", request_time.tv_sec, request_time.tv_usec,
+		    req->mid));
 	}
 }
 
@@ -885,6 +892,12 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 		 * stat-only open at this point.
 		 */
 		SMB_ASSERT(fsp->oplock_type == NO_OPLOCK);
+
+		/* The kernel and Samba's version of stat-only differs
+		 * slightly: The kernel doesn't think its stat-only if we're
+		 * truncating.  We'd better have a req in order to defer the
+		 * open. */
+		SMB_ASSERT(!((flags|flags2) & O_TRUNC));
 	}
 
 	/* Do the open. */
@@ -910,9 +923,13 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 		/* OneFS Oplock Handling */
 		if (errno == EINPROGRESS) {
 
+			/* If we get EINPROGRESS, the kernel will send us an
+			 * asynchronous semlock event back. Ensure we can defer
+			 * the open, by asserting req. */
+			SMB_ASSERT(req);
+
 			if (lck == NULL) {
 
-				struct deferred_open_record state;
 				struct timespec old_write_time;
 
 				old_write_time = smb_fname->st.st_ex_mtime;
@@ -939,17 +956,15 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 						  "lock for %s\n",
 						smb_fname_str_dbg(smb_fname)));
 					status = NT_STATUS_SHARING_VIOLATION;
+
+					/* XXXZLK: This will cause us to get a
+					 * semlock event when we aren't
+					 * expecting one. */
 					goto cleanup_destroy;
 				}
 
-				state.delayed_for_oplocks = False;
-				state.id = id;
-
-				if (req != NULL) {
-					defer_open(lck, request_time,
-					    timeval_zero(), req, &state);
-				}
-				goto cleanup_destroy;
+				schedule_defer_open(lck, request_time, req);
+				goto cleanup;
 			}
 			/* Waiting for an oplock */
 			DEBUG(5,("Async createfile because a client has an "
