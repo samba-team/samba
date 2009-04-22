@@ -2878,19 +2878,22 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 	canon_ace *dir_ace = NULL;
 	SEC_ACE *nt_ace_list = NULL;
 	size_t num_profile_acls = 0;
+	DOM_SID orig_owner_sid;
 	SEC_DESC *psd = NULL;
+	int i;
 
 	/*
 	 * Get the owner, group and world SIDs.
 	 */
 
+	create_file_sids(sbuf, &owner_sid, &group_sid);
+
 	if (lp_profile_acls(SNUM(conn))) {
 		/* For WXP SP1 the owner must be administrators. */
+		sid_copy(&orig_owner_sid, &owner_sid);
 		sid_copy(&owner_sid, &global_sid_Builtin_Administrators);
 		sid_copy(&group_sid, &global_sid_Builtin_Users);
-		num_profile_acls = 2;
-	} else {
-		create_file_sids(sbuf, &owner_sid, &group_sid);
+		num_profile_acls = 3;
 	}
 
 	if ((security_info & DACL_SECURITY_INFORMATION) && !(security_info & PROTECTED_DACL_SECURITY_INFORMATION)) {
@@ -3054,6 +3057,18 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 
 			num_aces = merge_default_aces(nt_ace_list, num_aces);
 
+			if (lp_profile_acls(SNUM(conn))) {
+				for (i = 0; i < num_aces; i++) {
+					if (sid_equal(&nt_ace_list[i].trustee, &owner_sid)) {
+						add_or_replace_ace(nt_ace_list, &num_aces,
+	    							   &orig_owner_sid,
+			    					   nt_ace_list[i].type,
+					    			   nt_ace_list[i].access_mask,
+								   nt_ace_list[i].flags);
+						break;
+					}
+				}
+			}
 		}
 
 		if (num_aces) {
