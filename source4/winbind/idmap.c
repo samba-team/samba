@@ -199,8 +199,10 @@ struct idmap_context *idmap_init(TALLOC_CTX *mem_ctx,
  * possible or some other NTSTATUS that is more descriptive on failure.
  */
 
-NTSTATUS idmap_xid_to_sid(struct idmap_context *idmap_ctx, TALLOC_CTX *mem_ctx,
-		const struct unixid *unixid, struct dom_sid **sid)
+static NTSTATUS idmap_xid_to_sid(struct idmap_context *idmap_ctx,
+				 TALLOC_CTX *mem_ctx,
+				 const struct unixid *unixid,
+				 struct dom_sid **sid)
 {
 	int ret;
 	NTSTATUS status = NT_STATUS_NONE_MAPPED;
@@ -289,8 +291,10 @@ failed:
  * a trusted domain and idmap trusted only = true, NT_STATUS_NONE_MAPPED if the
  * mapping failed.
  */
-NTSTATUS idmap_sid_to_xid(struct idmap_context *idmap_ctx, TALLOC_CTX *mem_ctx,
-		const struct dom_sid *sid, struct unixid **unixid)
+static NTSTATUS idmap_sid_to_xid(struct idmap_context *idmap_ctx,
+				 TALLOC_CTX *mem_ctx,
+				 const struct dom_sid *sid,
+				 struct unixid **unixid)
 {
 	int ret;
 	NTSTATUS status = NT_STATUS_NONE_MAPPED;
