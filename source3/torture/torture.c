@@ -3452,7 +3452,7 @@ static bool run_deletetest(int dummy)
  */
 static bool run_properties(int dummy)
 {
-	static struct cli_state *cli;
+	struct cli_state *cli;
 	bool correct = True;
 
 	printf("starting properties test\n");
