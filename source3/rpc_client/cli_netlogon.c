@@ -45,8 +45,10 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 	bool retried = false;
 	fstring mach_acct;
 
-	SMB_ASSERT(ndr_syntax_id_equal(&cli->abstract_syntax,
-				       &ndr_table_netlogon.syntax_id));
+	if (!ndr_syntax_id_equal(&cli->abstract_syntax,
+				 &ndr_table_netlogon.syntax_id)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	TALLOC_FREE(cli->dc);
 
