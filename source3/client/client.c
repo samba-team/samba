@@ -437,7 +437,7 @@ static int do_cd(const char *new_dir)
 			goto out;
 		}
 
-		if (!cli_chkpath(targetcli, targetpath)) {
+		if (!NT_STATUS_IS_OK(cli_chkpath(targetcli, targetpath))) {
 			d_printf("cd %s: %s\n", new_cd, cli_errstr(targetcli));
 			client_set_cur_dir(saved_dir);
 			goto out;
@@ -1482,7 +1482,7 @@ static int cmd_mkdir(void)
 			if (!ddir2) {
 				return 1;
 			}
-			if (!cli_chkpath(targetcli, ddir2)) {
+			if (!NT_STATUS_IS_OK(cli_chkpath(targetcli, ddir2))) {
 				do_mkdir(ddir2);
 			}
 			ddir2 = talloc_asprintf_append(ddir2, "%s", CLI_DIRSEP_STR);
@@ -1956,7 +1956,7 @@ static int cmd_mput(void)
 						break;
 					}
 					normalize_name(rname);
-					if (!cli_chkpath(cli, rname) &&
+					if (!NT_STATUS_IS_OK(cli_chkpath(cli, rname)) &&
 					    !do_mkdir(rname)) {
 						DEBUG (0, ("Unable to make dir, skipping..."));
 						/* Skip the directory */

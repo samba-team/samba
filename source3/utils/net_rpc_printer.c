@@ -400,7 +400,7 @@ NTSTATUS net_copy_file(struct net_context *c,
 	}
 
 
-	if (!is_file && !cli_chkpath(cli_share_dst, dst_name)) {
+	if (!is_file && !NT_STATUS_IS_OK(cli_chkpath(cli_share_dst, dst_name))) {
 
 		/* creating dir */
 		DEBUGADD(3,("creating dir %s on the destination server\n",
@@ -412,7 +412,7 @@ NTSTATUS net_copy_file(struct net_context *c,
 			nt_status = NT_STATUS_NO_SUCH_FILE;
 		}
 
-		if (!cli_chkpath(cli_share_dst, dst_name)) {
+		if (!NT_STATUS_IS_OK(cli_chkpath(cli_share_dst, dst_name))) {
 			d_fprintf(stderr, "cannot check for directory %s: %s\n",
 				dst_name, cli_errstr(cli_share_dst));
 			goto out;
@@ -561,7 +561,7 @@ static NTSTATUS check_arch_dir(struct cli_state *cli_share, const char *short_ar
                 nt_status = NT_STATUS_NO_SUCH_FILE;
         }
 
-	if (!cli_chkpath(cli_share, dir)) {
+	if (!NT_STATUS_IS_OK(cli_chkpath(cli_share, dir))) {
 		d_fprintf(stderr, "cannot check %s: %s\n",
 			dir, cli_errstr(cli_share));
 		goto out;

@@ -4601,17 +4601,17 @@ bool torture_chkpath_test(int dummy)
 	}
 	cli_close(cli, fnum);
 
-	if (!cli_chkpath(cli, "\\chkpath.dir")) {
+	if (!NT_STATUS_IS_OK(cli_chkpath(cli, "\\chkpath.dir"))) {
 		printf("chkpath1 failed: %s\n", cli_errstr(cli));
 		ret = False;
 	}
 
-	if (!cli_chkpath(cli, "\\chkpath.dir\\dir2")) {
+	if (!NT_STATUS_IS_OK(cli_chkpath(cli, "\\chkpath.dir\\dir2"))) {
 		printf("chkpath2 failed: %s\n", cli_errstr(cli));
 		ret = False;
 	}
 
-	if (!cli_chkpath(cli, "\\chkpath.dir\\foo.txt")) {
+	if (!NT_STATUS_IS_OK(cli_chkpath(cli, "\\chkpath.dir\\foo.txt"))) {
 		ret = check_error(__LINE__, cli, ERRDOS, ERRbadpath, 
 				  NT_STATUS_NOT_A_DIRECTORY);
 	} else {
@@ -4619,7 +4619,7 @@ bool torture_chkpath_test(int dummy)
 		ret = False;
 	}
 
-	if (!cli_chkpath(cli, "\\chkpath.dir\\bar.txt")) {
+	if (!NT_STATUS_IS_OK(cli_chkpath(cli, "\\chkpath.dir\\bar.txt"))) {
 		ret = check_error(__LINE__, cli, ERRDOS, ERRbadfile, 
 				  NT_STATUS_OBJECT_NAME_NOT_FOUND);
 	} else {
@@ -4627,7 +4627,7 @@ bool torture_chkpath_test(int dummy)
 		ret = False;
 	}
 
-	if (!cli_chkpath(cli, "\\chkpath.dir\\dirxx\\bar.txt")) {
+	if (!NT_STATUS_IS_OK(cli_chkpath(cli, "\\chkpath.dir\\dirxx\\bar.txt"))) {
 		ret = check_error(__LINE__, cli, ERRDOS, ERRbadpath, 
 				  NT_STATUS_OBJECT_PATH_NOT_FOUND);
 	} else {

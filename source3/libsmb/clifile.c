@@ -2044,6 +2044,126 @@ bool cli_setatr(struct cli_state *cli, const char *fname, uint16 attr, time_t t)
  Check for existance of a dir.
 ****************************************************************************/
 
+static void cli_chkpath_done(struct tevent_req *subreq);
+
+struct cli_chkpath_state {
+	int dummy;
+};
+
+struct tevent_req *cli_chkpath_send(TALLOC_CTX *mem_ctx,
+				  struct event_context *ev,
+				  struct cli_state *cli,
+				  const char *fname)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_chkpath_state *state = NULL;
+	uint8_t additional_flags = 0;
+	uint8_t *bytes = NULL;
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_chkpath_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	bytes = talloc_array(state, uint8_t, 1);
+	if (tevent_req_nomem(bytes, req)) {
+		return tevent_req_post(req, ev);
+	}
+	bytes[0] = 4;
+	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), fname,
+				   strlen(fname)+1, NULL);
+
+	if (tevent_req_nomem(bytes, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = cli_smb_send(state, ev, cli, SMBcheckpath, additional_flags,
+			      0, NULL, talloc_get_size(bytes), bytes);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_chkpath_done, req);
+	return req;
+}
+
+static void cli_chkpath_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	NTSTATUS status;
+
+	status = cli_smb_recv(subreq, 0, NULL, NULL, NULL, NULL);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_chkpath_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+NTSTATUS cli_chkpath(struct cli_state *cli, const char *path)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	char *path2 = NULL;
+	NTSTATUS status = NT_STATUS_OK;
+
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+
+	path2 = talloc_strdup(frame, path);
+	if (!path2) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+	trim_char(path2,'\0','\\');
+	if (!*path2) {
+		path2 = talloc_strdup(frame, "\\");
+		if (!path2) {
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+	}
+
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	req = cli_chkpath_send(frame, ev, cli, path2);
+	if (req == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
+	}
+
+	status = cli_chkpath_recv(req);
+
+ fail:
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
+}
+
+#if 0
 bool cli_chkpath(struct cli_state *cli, const char *path)
 {
 	char *path2 = NULL;
@@ -2088,6 +2208,7 @@ bool cli_chkpath(struct cli_state *cli, const char *path)
 
 	return True;
 }
+#endif
 
 /****************************************************************************
  Query disk space.
