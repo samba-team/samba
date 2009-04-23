@@ -27,6 +27,7 @@
 #define _PYLDB_H_
 
 #include <Python.h>
+#include <talloc.h>
 
 typedef struct {
 	PyObject_HEAD

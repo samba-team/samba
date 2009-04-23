@@ -24,9 +24,9 @@
 */
 
 #include "replace.h"
-#include "ldb_private.h"
 #include <Python.h>
 #include "pyldb.h"
+#include <ldb.h>
 
 void PyErr_SetLdbError(PyObject *error, int ret, struct ldb_context *ldb_ctx)
 {
