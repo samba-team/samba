@@ -351,11 +351,11 @@ gcov: test
 		do $(GCOV) -p -o $$I $$I/*.c; \
 	done
 
-samba.info: test
+samba4.info: test
 	-rm heimdal/lib/*/{lex,parse,sel-lex}.{gcda,gcno}
-	lcov --base-directory `pwd` --directory . --directory ../nsswitch --directory ../libcli --directory ../librpc --directory ../lib --capture --output-file samba.info
+	cd .. && lcov --base-directory `pwd`/source4 --directory source4 --directory nsswitch --directory libcli --directory librpc --directory lib --capture --output-file source4/samba4.info
 
-lcov: samba.info
+lcov: samba4.info
 	genhtml -o coverage $<
 
 testcov-html:: lcov
