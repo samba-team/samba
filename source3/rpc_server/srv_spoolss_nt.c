@@ -8078,7 +8078,7 @@ WERROR _spoolss_AddForm(pipes_struct *p,
 {
 	struct spoolss_AddFormInfo1 *form = r->in.info.info1;
 	nt_forms_struct tmpForm;
-	int snum;
+	int snum = -1;
 	WERROR status = WERR_OK;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	SE_PRIV se_printop = SE_PRINT_OPERATOR;
@@ -8166,7 +8166,7 @@ WERROR _spoolss_DeleteForm(pipes_struct *p,
 	int count=0;
 	nt_forms_struct *list=NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
-	int snum;
+	int snum = -1;
 	WERROR status = WERR_OK;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	SE_PRIV se_printop = SE_PRINT_OPERATOR;
