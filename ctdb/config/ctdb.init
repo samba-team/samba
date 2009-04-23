@@ -3,7 +3,7 @@
 ##############################
 # ctdb:                        Starts the clustered tdb daemon
 #
-# chkconfig:           - 90 36
+# chkconfig:           - 90 01
 #
 # description:                 Starts and stops the clustered tdb daemon
 # pidfile:             /var/run/ctdbd/ctdbd.pid
