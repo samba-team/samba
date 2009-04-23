@@ -995,5 +995,5 @@ _PUBLIC_ codepoint_t next_codepoint(const char *str, size_t *size)
 
 _PUBLIC_ ssize_t push_codepoint(char *str, codepoint_t c)
 {
-	return push_codepoint(get_iconv_convenience(), str, c);
+	return push_codepoint_convenience(get_iconv_convenience(), str, c);
 }
