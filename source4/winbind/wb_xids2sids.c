@@ -27,13 +27,13 @@
 struct xids2sids_state {
 	struct composite_context *ctx;
 	struct wbsrv_service *service;
-	struct id_mapping *ids;
+	struct id_map *ids;
 	int count;
 };
 
 struct composite_context *wb_xids2sids_send(TALLOC_CTX *mem_ctx,
 					    struct wbsrv_service *service,
-					    int count, struct id_mapping *ids)
+					    int count, struct id_map *ids)
 {
 	struct composite_context *result;
 	struct xids2sids_state *state;
@@ -61,7 +61,7 @@ struct composite_context *wb_xids2sids_send(TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS wb_xids2sids_recv(struct composite_context *ctx,
-			   struct id_mapping **ids)
+			   struct id_map **ids)
 {
 	NTSTATUS status = composite_wait(ctx);
 	struct xids2sids_state *state =	talloc_get_type(ctx->private_data,

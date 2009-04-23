@@ -49,16 +49,16 @@ static NTSTATUS dcesrv_unixinfo_SidToUid(struct dcesrv_call_state *dce_call,
 	struct wbc_context *wbc_ctx = talloc_get_type_abort(
 						dce_call->context->private_data,
 						struct wbc_context);
-	struct id_mapping *ids;
+	struct id_map *ids;
 	struct composite_context *ctx;
 
 	DEBUG(5, ("dcesrv_unixinfo_SidToUid called\n"));
 
-	ids = talloc(mem_ctx, struct  id_mapping);
+	ids = talloc(mem_ctx, struct id_map);
 	NT_STATUS_HAVE_NO_MEMORY(ids);
 
 	ids->sid = &r->in.sid;
-	ids->status = NT_STATUS_NONE_MAPPED;
+	ids->status = ID_UNKNOWN;
 	ids->unixid = NULL;
 	ctx = wbc_sids_to_xids_send(wbc_ctx, ids, 1, ids);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
@@ -82,7 +82,7 @@ static NTSTATUS dcesrv_unixinfo_UidToSid(struct dcesrv_call_state *dce_call,
 	struct wbc_context *wbc_ctx = talloc_get_type_abort(
 						dce_call->context->private_data,
 						struct wbc_context);
-	struct id_mapping *ids;
+	struct id_map *ids;
 	struct composite_context *ctx;
 	uint32_t uid;
 	NTSTATUS status;
@@ -95,11 +95,11 @@ static NTSTATUS dcesrv_unixinfo_UidToSid(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	ids = talloc(mem_ctx, struct id_mapping);
+	ids = talloc(mem_ctx, struct id_map);
 	NT_STATUS_HAVE_NO_MEMORY(ids);
 
 	ids->sid = NULL;
-	ids->status = NT_STATUS_NONE_MAPPED;
+	ids->status = ID_UNKNOWN;
 	ids->unixid = talloc(ids, struct unixid);
 	NT_STATUS_HAVE_NO_MEMORY(ids->unixid);
 
@@ -124,16 +124,16 @@ static NTSTATUS dcesrv_unixinfo_SidToGid(struct dcesrv_call_state *dce_call,
 	struct wbc_context *wbc_ctx = talloc_get_type_abort(
 						dce_call->context->private_data,
 						struct wbc_context);
-	struct id_mapping *ids;
+	struct id_map *ids;
 	struct composite_context *ctx;
 
 	DEBUG(5, ("dcesrv_unixinfo_SidToGid called\n"));
 
-	ids = talloc(mem_ctx, struct  id_mapping);
+	ids = talloc(mem_ctx, struct id_map);
 	NT_STATUS_HAVE_NO_MEMORY(ids);
 
 	ids->sid = &r->in.sid;
-	ids->status = NT_STATUS_NONE_MAPPED;
+	ids->status = ID_UNKNOWN;
 	ids->unixid = NULL;
 	ctx = wbc_sids_to_xids_send(wbc_ctx, ids, 1, ids);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
@@ -157,7 +157,7 @@ static NTSTATUS dcesrv_unixinfo_GidToSid(struct dcesrv_call_state *dce_call,
 	struct wbc_context *wbc_ctx = talloc_get_type_abort(
 						dce_call->context->private_data,
 						struct wbc_context);
-	struct id_mapping *ids;
+	struct id_map *ids;
 	struct composite_context *ctx;
 	uint32_t gid;
 	NTSTATUS status;
@@ -170,11 +170,11 @@ static NTSTATUS dcesrv_unixinfo_GidToSid(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	ids = talloc(mem_ctx, struct id_mapping);
+	ids = talloc(mem_ctx, struct id_map);
 	NT_STATUS_HAVE_NO_MEMORY(ids);
 
 	ids->sid = NULL;
-	ids->status = NT_STATUS_NONE_MAPPED;
+	ids->status = ID_UNKNOWN;
 	ids->unixid = talloc(ids, struct unixid);
 	NT_STATUS_HAVE_NO_MEMORY(ids->unixid);
 

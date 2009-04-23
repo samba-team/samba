@@ -28,11 +28,18 @@ interface winbind
 		id_type type;
 	} unixid;
 
+	typedef enum {
+		ID_UNKNOWN,
+		ID_MAPPED,
+		ID_UNMAPPED,
+		ID_EXPIRED
+	} id_mapping;
+
 	typedef struct {
 		unixid *unixid;
 		dom_sid *sid;
-		NTSTATUS status;
-	} id_mapping;
+		id_mapping status;
+	} id_map;
 
 	/* a call to get runtime informations */
 	void winbind_information(/* TODO */);
@@ -62,7 +69,7 @@ interface winbind
 	NTSTATUS winbind_get_idmap(
 		[in]     winbind_get_idmap_level level,
 		[in]     uint32 count,
-		[in,out] [size_is(count)] id_mapping ids[]
+		[in,out] [size_is(count)] id_map ids[]
 	);
 
 }

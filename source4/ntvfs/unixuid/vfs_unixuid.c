@@ -172,7 +172,7 @@ static NTSTATUS nt_token_to_unix_security(struct ntvfs_module_context *ntvfs,
 	struct unixuid_private *priv = ntvfs->private_data;
 	int i;
 	NTSTATUS status;
-	struct id_mapping *ids;
+	struct id_map *ids;
 	struct composite_context *ctx;
 	*sec = talloc(req, struct unix_sec_ctx);
 
@@ -181,16 +181,16 @@ static NTSTATUS nt_token_to_unix_security(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	ids = talloc_array(req, struct id_mapping, token->num_sids);
+	ids = talloc_array(req, struct id_map, token->num_sids);
 	NT_STATUS_HAVE_NO_MEMORY(ids);
 
 	ids[0].unixid = NULL;
 	ids[0].sid = token->user_sid;
-	ids[0].status = NT_STATUS_NONE_MAPPED;
+	ids[0].status = ID_UNKNOWN;
 
 	ids[1].unixid = NULL;
 	ids[1].sid = token->group_sid;
-	ids[1].status = NT_STATUS_NONE_MAPPED;
+	ids[1].status = ID_UNKNOWN;
 
 	(*sec)->ngroups = token->num_sids - 2;
 	(*sec)->groups = talloc_array(*sec, gid_t, (*sec)->ngroups);
@@ -199,7 +199,7 @@ static NTSTATUS nt_token_to_unix_security(struct ntvfs_module_context *ntvfs,
 	for (i=0;i<(*sec)->ngroups;i++) {
 		ids[i+2].unixid = NULL;
 		ids[i+2].sid = token->sids[i+2];
-		ids[i+2].status = NT_STATUS_NONE_MAPPED;
+		ids[i+2].status = ID_UNKNOWN;
 	}
 
 	ctx = wbc_sids_to_xids_send(priv->wbc_ctx, ids, token->num_sids, ids);

@@ -156,7 +156,7 @@ static NTSTATUS pvfs_default_acl(struct pvfs_state *pvfs,
 	NTSTATUS status;
 	struct security_ace ace;
 	mode_t mode;
-	struct id_mapping *ids;
+	struct id_map *ids;
 	struct composite_context *ctx;
 
 	*psd = security_descriptor_initialise(req);
@@ -165,7 +165,7 @@ static NTSTATUS pvfs_default_acl(struct pvfs_state *pvfs,
 	}
 	sd = *psd;
 
-	ids = talloc_zero_array(sd, struct id_mapping, 2);
+	ids = talloc_zero_array(sd, struct id_map, 2);
 	NT_STATUS_HAVE_NO_MEMORY(ids);
 
 	ids[0].unixid = talloc(ids, struct unixid);
@@ -298,7 +298,7 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 	gid_t old_gid = -1;
 	uid_t new_uid = -1;
 	gid_t new_gid = -1;
-	struct id_mapping *ids;
+	struct id_map *ids;
 	struct composite_context *ctx;
 
 	if (pvfs->acl_ops != NULL) {
@@ -311,11 +311,11 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 		return status;
 	}
 
-	ids = talloc(req, struct id_mapping);
+	ids = talloc(req, struct id_map);
 	NT_STATUS_HAVE_NO_MEMORY(ids);
 	ids->unixid = NULL;
 	ids->sid = NULL;
-	ids->status = NT_STATUS_NONE_MAPPED;
+	ids->status = ID_UNKNOWN;
 
 	new_sd = info->set_secdesc.in.sd;
 	orig_sd = *sd;
@@ -836,7 +836,7 @@ NTSTATUS pvfs_acl_inherited_sd(struct pvfs_state *pvfs,
 	struct xattr_NTACL *acl;
 	NTSTATUS status;
 	struct security_descriptor *parent_sd, *sd;
-	struct id_mapping *ids;
+	struct id_map *ids;
 	struct composite_context *ctx;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 
@@ -873,7 +873,7 @@ NTSTATUS pvfs_acl_inherited_sd(struct pvfs_state *pvfs,
 	sd = security_descriptor_initialise(req);
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(sd, tmp_ctx);
 
-	ids = talloc_array(sd, struct id_mapping, 2);
+	ids = talloc_array(sd, struct id_map, 2);
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(ids, tmp_ctx);
 
 	ids[0].unixid = talloc(ids, struct unixid);
@@ -881,14 +881,14 @@ NTSTATUS pvfs_acl_inherited_sd(struct pvfs_state *pvfs,
 	ids[0].unixid->id = geteuid();
 	ids[0].unixid->type = ID_TYPE_UID;
 	ids[0].sid = NULL;
-	ids[0].status = NT_STATUS_NONE_MAPPED;
+	ids[0].status = ID_UNKNOWN;
 
 	ids[1].unixid = talloc(ids, struct unixid);
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(ids[1].unixid, tmp_ctx);
 	ids[1].unixid->id = getegid();
 	ids[1].unixid->type = ID_TYPE_GID;
 	ids[1].sid = NULL;
-	ids[1].status = NT_STATUS_NONE_MAPPED;
+	ids[1].status = ID_UNKNOWN;
 
 	ctx = wbc_xids_to_sids_send(pvfs->wbc_ctx, ids, 2, ids);
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(ctx, tmp_ctx);

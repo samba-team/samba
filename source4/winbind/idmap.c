@@ -638,22 +638,26 @@ failed:
 
 NTSTATUS idmap_xids_to_sids(struct idmap_context *idmap_ctx,
 			    TALLOC_CTX *mem_ctx, int count,
-			    struct id_mapping *id)
+			    struct id_map *id)
 {
 	int i;
 	int error_count = 0;
+	NTSTATUS status;
 
 	for (i = 0; i < count; ++i) {
-		id[i].status = idmap_xid_to_sid(idmap_ctx, mem_ctx,
+		status = idmap_xid_to_sid(idmap_ctx, mem_ctx,
 						id[i].unixid, &id[i].sid);
-		if (NT_STATUS_EQUAL(id[i].status, NT_STATUS_RETRY)) {
-			id[i].status = idmap_xid_to_sid(idmap_ctx, mem_ctx,
+		if (NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
+			status = idmap_xid_to_sid(idmap_ctx, mem_ctx,
 							id[i].unixid,
 							&id[i].sid);
 		}
-		if (!NT_STATUS_IS_OK(id[i].status)) {
+		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("idmapping xid_to_sid failed for id[%d]\n", i));
 			error_count++;
+			id[i].status = ID_UNMAPPED;
+		} else {
+			id[i].status = ID_MAPPED;
 		}
 	}
 
@@ -683,22 +687,26 @@ NTSTATUS idmap_xids_to_sids(struct idmap_context *idmap_ctx,
 
 NTSTATUS idmap_sids_to_xids(struct idmap_context *idmap_ctx,
 			    TALLOC_CTX *mem_ctx, int count,
-			    struct id_mapping *id)
+			    struct id_map *id)
 {
 	int i;
 	int error_count = 0;
+	NTSTATUS status;
 
 	for (i = 0; i < count; ++i) {
-		id[i].status = idmap_sid_to_xid(idmap_ctx, mem_ctx,
+		status = idmap_sid_to_xid(idmap_ctx, mem_ctx,
 						id[i].sid, &id[i].unixid);
-		if (NT_STATUS_EQUAL(id[i].status, NT_STATUS_RETRY)) {
-			id[i].status = idmap_sid_to_xid(idmap_ctx, mem_ctx,
+		if (NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
+			status = idmap_sid_to_xid(idmap_ctx, mem_ctx,
 							id[i].sid,
 							&id[i].unixid);
 		}
-		if (!NT_STATUS_IS_OK(id[i].status)) {
+		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("idmapping sid_to_xid failed for id[%d]\n", i));
 			error_count++;
+			id[i].status = ID_UNMAPPED;
+		} else {
+			id[i].status = ID_MAPPED;
 		}
 	}
 

@@ -74,7 +74,7 @@ struct wbc_idmap_state {
 	struct composite_context *ctx;
 	struct winbind_get_idmap *req;
 	struct irpc_request *irpc_req;
-	struct id_mapping *ids;
+	struct id_map *ids;
 };
 
 static void sids_to_xids_recv_ids(struct irpc_request *req);
@@ -82,7 +82,7 @@ static void sids_to_xids_recv_ids(struct irpc_request *req);
 struct composite_context *wbc_sids_to_xids_send(struct wbc_context *wbc_ctx,
 						TALLOC_CTX *mem_ctx,
 						uint32_t count,
-						struct id_mapping *ids)
+						struct id_map *ids)
 {
 	struct composite_context *ctx;
 	struct wbc_idmap_state *state;
@@ -128,7 +128,7 @@ static void sids_to_xids_recv_ids(struct irpc_request *req)
 }
 
 NTSTATUS wbc_sids_to_xids_recv(struct composite_context *ctx,
-			       struct id_mapping **ids)
+			       struct id_map **ids)
 {
 	NTSTATUS status = composite_wait(ctx);
 		DEBUG(5, ("wbc_sids_to_xids_recv called\n"));
@@ -147,7 +147,7 @@ static void xids_to_sids_recv_ids(struct irpc_request *req);
 struct composite_context *wbc_xids_to_sids_send(struct wbc_context *wbc_ctx,
 						TALLOC_CTX *mem_ctx,
 						uint32_t count,
-						struct id_mapping *ids)
+						struct id_map *ids)
 {
 	struct composite_context *ctx;
 	struct wbc_idmap_state *state;
@@ -194,7 +194,7 @@ static void xids_to_sids_recv_ids(struct irpc_request *req)
 }
 
 NTSTATUS wbc_xids_to_sids_recv(struct composite_context *ctx,
-			       struct id_mapping **ids)
+			       struct id_map **ids)
 {
 	NTSTATUS status = composite_wait(ctx);
 		DEBUG(5, ("wbc_xids_to_sids_recv called\n"));

@@ -38,7 +38,7 @@ struct composite_context *wb_gid2sid_send(TALLOC_CTX *mem_ctx,
 	struct composite_context *result, *ctx;
 	struct gid2sid_state *state;
 	struct unixid *unixid;
-	struct id_mapping *ids;
+	struct id_map *ids;
 
 	DEBUG(5, ("wb_gid2sid_send called\n"));
 
@@ -57,7 +57,7 @@ struct composite_context *wb_gid2sid_send(TALLOC_CTX *mem_ctx,
 	unixid->id = gid;
 	unixid->type = ID_TYPE_GID;
 
-	ids = talloc(result, struct id_mapping);
+	ids = talloc(result, struct id_map);
 	if (composite_nomem(ids, result)) return result;
 	ids->unixid = unixid;
 	ids->sid = NULL;
@@ -73,12 +73,12 @@ static void gid2sid_recv_sid(struct composite_context *ctx)
 {
 	struct gid2sid_state *state = talloc_get_type(ctx->async.private_data,
 						      struct gid2sid_state);
-	struct id_mapping *ids = NULL;
+	struct id_map *ids = NULL;
 	state->ctx->status = wb_xids2sids_recv(ctx, &ids);
 	if (!composite_is_ok(state->ctx)) return;
 
-	if (!NT_STATUS_IS_OK(ids->status)) {
-		composite_error(state->ctx, ids->status);
+	if (ids->status != ID_MAPPED) {
+		composite_error(state->ctx, NT_STATUS_UNSUCCESSFUL);
 		return;
 	}
 
