@@ -444,7 +444,7 @@ _PUBLIC_ char *strlower_talloc(TALLOC_CTX *ctx, const char *src)
 
 		c = tolower_m(c);
 
-		c_size = push_codepoint(iconv_convenience, dest+size, c);
+		c_size = push_codepoint_convenience(iconv_convenience, dest+size, c);
 		if (c_size == -1) {
 			talloc_free(dest);
 			return NULL;
@@ -490,7 +490,7 @@ _PUBLIC_ char *strupper_talloc_n(TALLOC_CTX *ctx, const char *src, size_t n)
 
 		c = toupper_m(c);
 
-		c_size = push_codepoint(iconv_convenience, dest+size, c);
+		c_size = push_codepoint_convenience(iconv_convenience, dest+size, c);
 		if (c_size == -1) {
 			talloc_free(dest);
 			return NULL;
@@ -551,7 +551,7 @@ _PUBLIC_ void strlower_m(char *s)
 	while (*s) {
 		size_t c_size, c_size2;
 		codepoint_t c = next_codepoint_convenience(iconv_convenience, s, &c_size);
-		c_size2 = push_codepoint(iconv_convenience, d, tolower_m(c));
+		c_size2 = push_codepoint_convenience(iconv_convenience, d, tolower_m(c));
 		if (c_size2 > c_size) {
 			DEBUG(0,("FATAL: codepoint 0x%x (0x%x) expanded from %d to %d bytes in strlower_m\n",
 				 c, tolower_m(c), (int)c_size, (int)c_size2));
@@ -590,7 +590,7 @@ _PUBLIC_ void strupper_m(char *s)
 	while (*s) {
 		size_t c_size, c_size2;
 		codepoint_t c = next_codepoint_convenience(iconv_convenience, s, &c_size);
-		c_size2 = push_codepoint(iconv_convenience, d, toupper_m(c));
+		c_size2 = push_codepoint_convenience(iconv_convenience, d, toupper_m(c));
 		if (c_size2 > c_size) {
 			DEBUG(0,("FATAL: codepoint 0x%x (0x%x) expanded from %d to %d bytes in strupper_m\n",
 				 c, toupper_m(c), (int)c_size, (int)c_size2));
@@ -991,4 +991,9 @@ _PUBLIC_ bool convert_string_talloc(TALLOC_CTX *ctx,
 _PUBLIC_ codepoint_t next_codepoint(const char *str, size_t *size)
 {
 	return next_codepoint_convenience(get_iconv_convenience(), str, size);
+}
+
+_PUBLIC_ ssize_t push_codepoint(char *str, codepoint_t c)
+{
+	return push_codepoint(get_iconv_convenience(), str, c);
 }
