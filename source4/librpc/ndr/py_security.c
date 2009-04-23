@@ -198,7 +198,7 @@ static PyObject *py_descriptor_as_sddl(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "|O", &py_sid))
 		return NULL;
 
-	if (py_sid == Py_None)
+	if (py_sid != Py_None)
 		sid = py_talloc_get_ptr(py_sid);
 	else
 		sid = NULL;
