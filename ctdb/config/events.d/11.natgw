@@ -14,16 +14,17 @@ cmd="$1"
 shift
 PATH=/usr/bin:/bin:/usr/sbin:/sbin:$PATH
 
+
 delete_all() {
-	ip addr add $NATGW_PUBLIC_IP dev $NATGW_PUBLIC_IFACE >/dev/null 2>/dev/null
-	ip addr del $NATGW_PUBLIC_IP_HOST dev $NATGW_PRIVATE_IFACE >/dev/null 2>/dev/null
+	remove_ip $NATGW_PUBLIC_IP $NATGW_PUBLIC_IFACE
+	remove_ip $NATGW_PUBLIC_IP_HOST $NATGW_PRIVATE_IFACE
+
 	ip route del 0.0.0.0/0 metric 10 >/dev/null 2>/dev/null
 
 	# Delete the masquerading setup from a previous iteration where we
 	# were the NAT-GW
 	iptables -D POSTROUTING -t nat -s $NATGW_PRIVATE_NETWORK -d ! $NATGW_PRIVATE_NETWORK -j MASQUERADE >/dev/null 2>/dev/null
 
-	ip addr del $NATGW_PUBLIC_IP dev $NATGW_PUBLIC_IFACE >/dev/null 2>/dev/null
 }
 
 case $cmd in 

@@ -438,10 +438,35 @@ startstop_nfslock() {
 }
 
 ########################################################
+# remove an ip address from an interface
+########################################################
+remove_ip() {
+	# the ip tool will delete all secondary IPs if this is the primary.
+	# To work around this _very_ annoying behaviour we have to keep a
+	# record of the secondaries and re-add them afterwards. yuck
+	secondaries=""
+	if ip addr list dev $2 primary | grep -q "inet $1 " ; then
+	    secondaries=`ip addr list dev $2 secondary | grep " inet " | awk '{print $2}'`
+	fi
+	ip addr del $1 dev $2 >/dev/null 2>/dev/null || failed=1
+	[ -z "$secondaries" ] || {
+	    for i in $secondaries; do
+		if ip addr list dev $2 | grep -q "inet $i" ; then
+		    echo "kept secondary $i on dev $2"
+		else 
+		    echo "re-adding secondary address $i to dev $2"
+		    ip addr add $i dev $2 || failed=1		
+		fi
+	    done
+	}
+}
+
+########################################################
 # load a site local config file
 ########################################################
 
 [ -x $CTDB_BASE/rc.local ] && {
 	. $CTDB_BASE/rc.local
 }
+
 
