@@ -933,7 +933,7 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 
 	if (r->in.info->trust_direction & LSA_TRUST_DIRECTION_INBOUND) {
 		msg_user = ldb_msg_new(mem_ctx);
-		if (msg == NULL) {
+		if (msg_user == NULL) {
 			ldb_transaction_cancel(trusted_domain_state->policy->sam_ldb);
 			return NT_STATUS_NO_MEMORY;
 		}
