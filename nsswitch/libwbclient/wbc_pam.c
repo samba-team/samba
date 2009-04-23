@@ -810,11 +810,6 @@ wbcErr wbcChangeUserPasswordEx(const struct wbcChangePasswordParams *params,
 		break;
 	}
 
-	if (cmd == 0) {
-		wbc_status = WBC_ERR_INVALID_PARAM;
-		BAIL_ON_WBC_ERROR(wbc_status);
-	}
-
 	/* Send request */
 
 	wbc_status = wbcRequestResponse(cmd,
