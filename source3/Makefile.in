@@ -923,16 +923,18 @@ SMBCONFTORT_OBJ = $(SMBCONFTORT_OBJ0) \
 
 LIBNET_OBJ = libnet/libnet_join.o \
 	     libnet/libnet_keytab.o \
-	     libnet/libnet_samsync.o \
-	     libnet/libnet_samsync_ldif.o \
-	     libnet/libnet_samsync_passdb.o \
-	     libnet/libnet_samsync_display.o \
-	     libnet/libnet_samsync_keytab.o \
-	     libnet/libnet_dssync.o \
-	     libnet/libnet_dssync_keytab.o \
-	     librpc/gen_ndr/ndr_libnet_join.o \
-	     ../libcli/samsync/decrypt.o \
-	     ../libcli/drsuapi/repl_decrypt.o
+	     librpc/gen_ndr/ndr_libnet_join.o
+
+LIBNET_DSSYNC_OBJ = libnet/libnet_dssync.o \
+		    libnet/libnet_dssync_keytab.o \
+		    ../libcli/drsuapi/repl_decrypt.o
+
+LIBNET_SAMSYNC_OBJ = libnet/libnet_samsync.o \
+		     libnet/libnet_samsync_ldif.o \
+		     libnet/libnet_samsync_passdb.o \
+		     libnet/libnet_samsync_display.o \
+		     libnet/libnet_samsync_keytab.o \
+		     ../libcli/samsync/decrypt.o
 
 NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_help.o \
 	   utils/net_rap.o utils/net_rpc.o utils/net_rpc_samsync.o \
@@ -961,7 +963,8 @@ NET_OBJ = $(NET_OBJ1) \
 	  $(SMBLDAP_OBJ) $(DCUTIL_OBJ) \
 	  $(AFS_OBJ) $(AFS_SETTOKEN_OBJ) $(READLINE_OBJ) \
 	  $(LDB_OBJ) $(LIBGPO_OBJ) @BUILD_INIPARSER@ $(DISPLAY_SEC_OBJ) \
-	  $(REG_SMBCONF_OBJ) $(LIBNET_OBJ) \
+	  $(REG_SMBCONF_OBJ) \
+	  $(LIBNET_OBJ) $(LIBNET_DSSYNC_OBJ) $(LIBNET_SAMSYNC_OBJ) \
 	  $(LIBSMBCONF_OBJ) \
 	  $(PRIVILEGES_BASIC_OBJ) \
 	  $(LIB_EVENTLOG_OBJ)
