@@ -5864,7 +5864,7 @@ static WERROR update_printer_sec(struct policy_handle *handle,
 		goto done;
 	}
 
-	if (sec_desc_equal(new_secdesc_ctr->sd, old_secdesc_ctr->sd)) {
+	if (security_descriptor_equal(new_secdesc_ctr->sd, old_secdesc_ctr->sd)) {
 		result = WERR_OK;
 		goto done;
 	}
@@ -8264,7 +8264,7 @@ WERROR _spoolss_AddForm(pipes_struct *p,
 {
 	struct spoolss_AddFormInfo1 *form = r->in.info.info1;
 	nt_forms_struct tmpForm;
-	int snum;
+	int snum = -1;
 	WERROR status = WERR_OK;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	SE_PRIV se_printop = SE_PRINT_OPERATOR;
@@ -8352,7 +8352,7 @@ WERROR _spoolss_DeleteForm(pipes_struct *p,
 	int count=0;
 	nt_forms_struct *list=NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
-	int snum;
+	int snum = -1;
 	WERROR status = WERR_OK;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	SE_PRIV se_printop = SE_PRINT_OPERATOR;
@@ -8429,7 +8429,7 @@ WERROR _spoolss_SetForm(pipes_struct *p,
 {
 	struct spoolss_AddFormInfo1 *form = r->in.info.info1;
 	nt_forms_struct tmpForm;
-	int snum;
+	int snum = -1;
 	WERROR status = WERR_OK;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	SE_PRIV se_printop = SE_PRINT_OPERATOR;

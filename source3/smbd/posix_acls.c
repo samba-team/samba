@@ -3,6 +3,7 @@
    SMB NT Security Descriptor / Unix permission conversion.
    Copyright (C) Jeremy Allison 1994-2009.
    Copyright (C) Andreas Gruenbacher 2002.
+   Copyright (C) Simo Sorce <idra@samba.org> 2009.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -2972,6 +2973,42 @@ static size_t merge_default_aces( SEC_ACE *nt_ace_list, size_t num_aces)
 	return num_aces;
 }
 
+/*
+ * Add or Replace ACE entry.
+ * In some cases we need to add a specific ACE for compatibility reasons.
+ * When doing that we must make sure we are not actually creating a duplicate
+ * entry. So we need to search whether an ACE entry already exist and eventually
+ * replacce the access mask, or add a completely new entry if none was found.
+ *
+ * This function assumes the array has enough space to add a new entry without
+ * any reallocation of memory.
+ */
+
+static void add_or_replace_ace(SEC_ACE *nt_ace_list, size_t *num_aces,
+				const DOM_SID *sid, enum security_ace_type type,
+				uint32_t mask, uint8_t flags)
+{
+	int i;
+
+	/* first search for a duplicate */
+	for (i = 0; i < *num_aces; i++) {
+		if (sid_equal(&nt_ace_list[i].trustee, sid) &&
+		    (nt_ace_list[i].flags == flags)) break;
+	}
+
+	if (i < *num_aces) { /* found */
+		nt_ace_list[i].type = type;
+		nt_ace_list[i].access_mask = mask;
+		DEBUG(10, ("Replacing ACE %d with SID %s and flags %02x\n",
+			   i, sid_string_dbg(sid), flags));
+		return;
+	}
+
+	/* not found, append it */
+	init_sec_ace(&nt_ace_list[(*num_aces)++], sid, type, mask, flags);
+}
+
+
 /****************************************************************************
  Reply to query a security descriptor from an fsp. If it succeeds it allocates
  the space for the return elements and returns the size needed to return the
@@ -2999,19 +3036,22 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 	canon_ace *dir_ace = NULL;
 	SEC_ACE *nt_ace_list = NULL;
 	size_t num_profile_acls = 0;
+	DOM_SID orig_owner_sid;
 	SEC_DESC *psd = NULL;
+	int i;
 
 	/*
 	 * Get the owner, group and world SIDs.
 	 */
 
+	create_file_sids(sbuf, &owner_sid, &group_sid);
+
 	if (lp_profile_acls(SNUM(conn))) {
 		/* For WXP SP1 the owner must be administrators. */
+		sid_copy(&orig_owner_sid, &owner_sid);
 		sid_copy(&owner_sid, &global_sid_Builtin_Administrators);
 		sid_copy(&group_sid, &global_sid_Builtin_Users);
-		num_profile_acls = 2;
-	} else {
-		create_file_sids(sbuf, &owner_sid, &group_sid);
+		num_profile_acls = 3;
 	}
 
 	if ((security_info & DACL_SECURITY_INFORMATION) && !(security_info & PROTECTED_DACL_SECURITY_INFORMATION)) {
@@ -3132,10 +3172,10 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 			/* The User must have access to a profile share - even
 			 * if we can't map the SID. */
 			if (lp_profile_acls(SNUM(conn))) {
-				init_sec_ace(&nt_ace_list[num_aces++],
-						&global_sid_Builtin_Users,
-						SEC_ACE_TYPE_ACCESS_ALLOWED,
-						FILE_GENERIC_ALL, 0);
+				add_or_replace_ace(nt_ace_list, &num_aces,
+						   &global_sid_Builtin_Users,
+						   SEC_ACE_TYPE_ACCESS_ALLOWED,
+						   FILE_GENERIC_ALL, 0);
 			}
 
 			for (ace = dir_ace; ace != NULL; ace = ace->next) {
@@ -3156,9 +3196,13 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 			/* The User must have access to a profile share - even
 			 * if we can't map the SID. */
 			if (lp_profile_acls(SNUM(conn))) {
-				init_sec_ace(&nt_ace_list[num_aces++], &global_sid_Builtin_Users, SEC_ACE_TYPE_ACCESS_ALLOWED, FILE_GENERIC_ALL,
-						SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT|
-						SEC_ACE_FLAG_INHERIT_ONLY|0);
+				add_or_replace_ace(nt_ace_list, &num_aces,
+						&global_sid_Builtin_Users,
+						SEC_ACE_TYPE_ACCESS_ALLOWED,
+						FILE_GENERIC_ALL,
+						SEC_ACE_FLAG_OBJECT_INHERIT |
+						SEC_ACE_FLAG_CONTAINER_INHERIT |
+						SEC_ACE_FLAG_INHERIT_ONLY);
 			}
 
 			/*
@@ -3169,6 +3213,18 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 
 			num_aces = merge_default_aces(nt_ace_list, num_aces);
 
+			if (lp_profile_acls(SNUM(conn))) {
+				for (i = 0; i < num_aces; i++) {
+					if (sid_equal(&nt_ace_list[i].trustee, &owner_sid)) {
+						add_or_replace_ace(nt_ace_list, &num_aces,
+	    							   &orig_owner_sid,
+			    					   nt_ace_list[i].type,
+					    			   nt_ace_list[i].access_mask,
+								   nt_ace_list[i].flags);
+						break;
+					}
+				}
+			}
 		}
 
 		if (num_aces) {

@@ -1675,7 +1675,7 @@ WERROR _srvsvc_NetShareSetInfo(pipes_struct *p,
 
 		old_sd = get_share_security(p->mem_ctx, lp_servicename(snum), &sd_size);
 
-		if (old_sd && !sec_desc_equal(old_sd, psd)) {
+		if (old_sd && !security_descriptor_equal(old_sd, psd)) {
 			if (!set_share_security(share_name, psd))
 				DEBUG(0,("_srvsvc_NetShareSetInfo: Failed to change security info in share %s.\n",
 					share_name ));

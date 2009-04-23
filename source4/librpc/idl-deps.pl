@@ -1,7 +1,6 @@
 #!/usr/bin/perl
 use strict;
 use File::Basename;
-use Cwd 'abs_path';
 
 sub add($$)
 {
@@ -20,7 +19,6 @@ foreach(@ARGV) {
 
 	my $gen_ndr = dirname($f);
 	$gen_ndr =~ s/\/idl$/\/gen_ndr/;
-        $gen_ndr = abs_path($gen_ndr);
 
 	print "# $f\n";
 	add("IDL_FILES", $f);

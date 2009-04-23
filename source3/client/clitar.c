@@ -554,7 +554,7 @@ static bool ensurepath(const char *fname)
 	while (p) {
 		safe_strcat(partpath, p, strlen(fname) + 1);
 
-		if (!cli_chkpath(cli, partpath)) {
+		if (!NT_STATUS_IS_OK(cli_chkpath(cli, partpath))) {
 			if (!NT_STATUS_IS_OK(cli_mkdir(cli, partpath))) {
 				SAFE_FREE(partpath);
 				SAFE_FREE(ffname);

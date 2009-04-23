@@ -118,6 +118,16 @@ static int ldap_search_with_timeout(LDAP *ld,
 	if (gotalarm != 0)
 		return LDAP_TIMELIMIT_EXCEEDED;
 
+	/*
+	 * A bug in OpenLDAP means ldap_search_ext_s can return
+	 * LDAP_SUCCESS but with a NULL res pointer. Cope with
+	 * this. See bug #6279 for details. JRA.
+	 */
+
+	if (*res == NULL) {
+		return LDAP_TIMELIMIT_EXCEEDED;
+	}
+
 	return result;
 }
 

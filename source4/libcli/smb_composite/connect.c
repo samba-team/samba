@@ -418,6 +418,8 @@ static void state_handler(struct composite_context *c)
 	case CONNECT_TCON:
 		c->status = connect_tcon(c, state->io);
 		break;
+	case CONNECT_DONE:
+		break;
 	}
 
 	if (state->stage == CONNECT_DONE) {

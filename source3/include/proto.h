@@ -647,7 +647,6 @@ ssize_t drain_socket(int sockfd, size_t count);
 
 /* The following definitions come from lib/secdesc.c  */
 
-bool sec_desc_equal(SEC_DESC *s1, SEC_DESC *s2);
 uint32_t get_sec_info(const SEC_DESC *sd);
 SEC_DESC_BUF *sec_desc_merge(TALLOC_CTX *ctx, SEC_DESC_BUF *new_sdb, SEC_DESC_BUF *old_sdb);
 SEC_DESC *make_sec_desc(TALLOC_CTX *ctx,
@@ -2339,7 +2338,7 @@ bool cli_nt_hardlink(struct cli_state *cli, const char *fname_src, const char *f
 bool cli_unlink_full(struct cli_state *cli, const char *fname, uint16 attrs);
 bool cli_unlink(struct cli_state *cli, const char *fname);
 NTSTATUS cli_mkdir(struct cli_state *cli, const char *dname);
-bool cli_rmdir(struct cli_state *cli, const char *dname);
+NTSTATUS cli_rmdir(struct cli_state *cli, const char *dname);
 int cli_nt_delete_on_close(struct cli_state *cli, int fnum, bool flag);
 int cli_nt_create_full(struct cli_state *cli, const char *fname,
 		 uint32 CreatFlags, uint32 DesiredAccess,
@@ -2417,8 +2416,8 @@ bool cli_setattrE(struct cli_state *cli, int fd,
                   time_t access_time,
                   time_t write_time);
 bool cli_setatr(struct cli_state *cli, const char *fname, uint16 attr, time_t t);
-bool cli_chkpath(struct cli_state *cli, const char *path);
-bool cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail);
+NTSTATUS cli_chkpath(struct cli_state *cli, const char *path);
+NTSTATUS cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail);
 int cli_ctemp(struct cli_state *cli, const char *path, char **tmp_path);
 NTSTATUS cli_raw_ioctl(struct cli_state *cli, int fnum, uint32 code, DATA_BLOB *blob);
 bool cli_set_ea_path(struct cli_state *cli, const char *path, const char *ea_name, const char *ea_val, size_t ea_len);

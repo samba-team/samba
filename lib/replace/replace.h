@@ -535,6 +535,18 @@ typedef int bool;
 #endif
 #endif
 
+#if !defined(HAVE_INTPTR_T)
+typedef long long intptr_t ;
+#endif
+
+#if !defined(HAVE_UINTPTR_T)
+typedef unsigned long long uintptr_t ;
+#endif
+
+#if !defined(HAVE_PTRDIFF_T)
+typedef unsigned long long ptrdiff_t ;
+#endif
+
 /*
  * to prevent <rpcsvc/yp_prot.h> from doing a redefine of 'bool'
  *

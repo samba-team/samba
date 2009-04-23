@@ -2,17 +2,17 @@
    Unix SMB/CIFS implementation.
    SMB torture tester
    Copyright (C) Andrew Tridgell 1997-1998
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -94,7 +94,7 @@ void *shm_setup(int size)
 	   See Stevens "advanced programming in unix env" for details
 	   */
 	shmctl(shmid, IPC_RMID, 0);
-	
+
 	return ret;
 }
 
@@ -226,7 +226,7 @@ terminate_path_at_separator(char * path)
 		*p = '\0';
 		return p + 1;
 	}
-	
+
 	/* No separator. */
 	return NULL;
 }
@@ -516,7 +516,7 @@ static bool run_torture(int dummy)
 	cli_sockopt(cli, sockops);
 
 	ret = rw_torture(cli);
-	
+
 	if (!torture_close_connection(cli)) {
 		ret = False;
 	}
@@ -749,7 +749,7 @@ static bool run_readwritemulti(int dummy)
 	if (!torture_close_connection(cli)) {
 		test = False;
 	}
-	
+
 	return test;
 }
 
@@ -761,17 +761,17 @@ static bool run_readwritelarge(int dummy)
 	SMB_OFF_T fsize;
 	char buf[126*1024];
 	bool correct = True;
- 
+
 	if (!torture_open_connection(&cli1, 0)) {
 		return False;
 	}
 	cli_sockopt(cli1, sockops);
 	memset(buf,'\0',sizeof(buf));
-	
+
 	cli1->max_xmit = 128*1024;
-	
+
 	printf("starting readwritelarge\n");
- 
+
 	cli_unlink(cli1, lockfname);
 
 	fnum1 = cli_open(cli1, lockfname, O_RDWR | O_CREAT | O_EXCL, DENY_NONE);
@@ -779,7 +779,7 @@ static bool run_readwritelarge(int dummy)
 		printf("open read/write of %s failed (%s)\n", lockfname, cli_errstr(cli1));
 		return False;
 	}
-   
+
 	cli_write(cli1, fnum1, 0, buf, 0, sizeof(buf));
 
 	if (!cli_qfileinfo(cli1, fnum1, NULL, &fsize, NULL, NULL, NULL, NULL, NULL)) {
@@ -811,11 +811,11 @@ static bool run_readwritelarge(int dummy)
 		printf("open read/write of %s failed (%s)\n", lockfname, cli_errstr(cli1));
 		return False;
 	}
-	
+
 	cli1->max_xmit = 4*1024;
-	
+
 	cli_smbwrite(cli1, fnum1, buf, 0, sizeof(buf));
-	
+
 	if (!cli_qfileinfo(cli1, fnum1, NULL, &fsize, NULL, NULL, NULL, NULL, NULL)) {
 		printf("qfileinfo failed (%s)\n", cli_errstr(cli1));
 		correct = False;
@@ -848,7 +848,7 @@ static bool run_readwritelarge(int dummy)
 		printf("close failed (%s)\n", cli_errstr(cli1));
 		correct = False;
 	}
-	
+
 	if (!torture_close_connection(cli1)) {
 		correct = False;
 	}
@@ -953,7 +953,7 @@ static bool run_netbench(int client)
 	if (!torture_close_connection(cli)) {
 		correct = False;
 	}
-	
+
 	return correct;
 }
 
@@ -1324,7 +1324,7 @@ static bool run_tcon_devtype_test(int dummy)
 
 	if (!tcon_devtest(cli1, "IPC$", "IPC", "IPC", NT_STATUS_OK))
 		ret = False;
-			
+
 	if (!tcon_devtest(cli1, "IPC$", "FOOBA", NULL, NT_STATUS_BAD_DEVICE_TYPE))
 		ret = False;
 
@@ -1339,7 +1339,7 @@ static bool run_tcon_devtype_test(int dummy)
 
 	if (!tcon_devtest(cli1, share, "IPC", NULL, NT_STATUS_BAD_DEVICE_TYPE))
 		ret = False;
-			
+
 	if (!tcon_devtest(cli1, share, "FOOBA", NULL, NT_STATUS_BAD_DEVICE_TYPE))
 		ret = False;
 
@@ -1607,7 +1607,7 @@ static bool run_locktest3(int dummy)
 	if (!torture_close_connection(cli1)) {
 		correct = False;
 	}
-	
+
 	if (!torture_close_connection(cli2)) {
 		correct = False;
 	}
@@ -1659,7 +1659,7 @@ static bool run_locktest4(int dummy)
 	      cli_lock(cli1, fnum1, 2, 4, 0, WRITE_LOCK);
 	EXPECTED(ret, False);
 	printf("the same process %s set overlapping write locks\n", ret?"can":"cannot");
-	    
+
 	ret = cli_lock(cli1, fnum1, 10, 4, 0, READ_LOCK) &&
 	      cli_lock(cli1, fnum1, 12, 4, 0, READ_LOCK);
 	EXPECTED(ret, True);
@@ -1669,17 +1669,17 @@ static bool run_locktest4(int dummy)
 	      cli_lock(cli2, fnum2, 22, 4, 0, WRITE_LOCK);
 	EXPECTED(ret, False);
 	printf("a different connection %s set overlapping write locks\n", ret?"can":"cannot");
-	    
+
 	ret = cli_lock(cli1, fnum1, 30, 4, 0, READ_LOCK) &&
 	      cli_lock(cli2, fnum2, 32, 4, 0, READ_LOCK);
 	EXPECTED(ret, True);
 	printf("a different connection %s set overlapping read locks\n", ret?"can":"cannot");
-	
+
 	ret = (cli_setpid(cli1, 1), cli_lock(cli1, fnum1, 40, 4, 0, WRITE_LOCK)) &&
 	      (cli_setpid(cli1, 2), cli_lock(cli1, fnum1, 42, 4, 0, WRITE_LOCK));
 	EXPECTED(ret, False);
 	printf("a different pid %s set overlapping write locks\n", ret?"can":"cannot");
-	    
+
 	ret = (cli_setpid(cli1, 1), cli_lock(cli1, fnum1, 50, 4, 0, READ_LOCK)) &&
 	      (cli_setpid(cli1, 2), cli_lock(cli1, fnum1, 52, 4, 0, READ_LOCK));
 	EXPECTED(ret, True);
@@ -1912,7 +1912,7 @@ static bool run_locktest5(int dummy)
 	}
 
 	printf("finished locktest5\n");
-       
+
 	return correct;
 }
 
@@ -2274,7 +2274,7 @@ static bool run_unlinktest(int dummy)
 	}
 
 	printf("unlink test finished\n");
-	
+
 	return correct;
 }
 
@@ -2394,7 +2394,7 @@ static bool run_randomipc(int dummy)
 		param_len = (sys_random() % 64);
 
 		rand_buf(param, param_len);
-  
+
 		SSVAL(param,0,api); 
 
 		cli_api(cli, 
@@ -2713,7 +2713,7 @@ static bool run_w2ktest(int dummy)
 	}
 
 	printf("w2k test finished\n");
-	
+
 	return correct;
 }
 
@@ -2975,24 +2975,24 @@ static bool run_deletetest(int dummy)
 	int fnum1 = -1;
 	int fnum2 = -1;
 	bool correct = True;
-	
+
 	printf("starting delete test\n");
-	
+
 	if (!torture_open_connection(&cli1, 0)) {
 		return False;
 	}
-	
+
 	cli_sockopt(cli1, sockops);
 
 	/* Test 1 - this should delete the file on close. */
-	
+
 	cli_setatr(cli1, fname, 0, 0);
 	cli_unlink(cli1, fname);
-	
+
 	fnum1 = cli_nt_create_full(cli1, fname, 0, GENERIC_ALL_ACCESS|DELETE_ACCESS, FILE_ATTRIBUTE_NORMAL,
 				   0, FILE_OVERWRITE_IF, 
 				   FILE_DELETE_ON_CLOSE, 0);
-	
+
 	if (fnum1 == -1) {
 		printf("[1] open of %s failed (%s)\n", fname, cli_errstr(cli1));
 		correct = False;
@@ -3022,36 +3022,36 @@ static bool run_deletetest(int dummy)
 		correct = False;
 		goto fail;
 	}
-	
+
 	printf("first delete on close test succeeded.\n");
-	
+
 	/* Test 2 - this should delete the file on close. */
-	
+
 	cli_setatr(cli1, fname, 0, 0);
 	cli_unlink(cli1, fname);
-	
+
 	fnum1 = cli_nt_create_full(cli1, fname, 0, GENERIC_ALL_ACCESS,
 				   FILE_ATTRIBUTE_NORMAL, FILE_SHARE_NONE, 
 				   FILE_OVERWRITE_IF, 0, 0);
-	
+
 	if (fnum1 == -1) {
 		printf("[2] open of %s failed (%s)\n", fname, cli_errstr(cli1));
 		correct = False;
 		goto fail;
 	}
-	
+
 	if (!cli_nt_delete_on_close(cli1, fnum1, True)) {
 		printf("[2] setting delete_on_close failed (%s)\n", cli_errstr(cli1));
 		correct = False;
 		goto fail;
 	}
-	
+
 	if (!cli_close(cli1, fnum1)) {
 		printf("[2] close failed (%s)\n", cli_errstr(cli1));
 		correct = False;
 		goto fail;
 	}
-	
+
 	fnum1 = cli_open(cli1, fname, O_RDONLY, DENY_NONE);
 	if (fnum1 != -1) {
 		printf("[2] open of %s succeeded should have been deleted on close !\n", fname);
@@ -3063,7 +3063,7 @@ static bool run_deletetest(int dummy)
 		cli_unlink(cli1, fname);
 	} else
 		printf("second delete on close test succeeded.\n");
-	
+
 	/* Test 3 - ... */
 	cli_setatr(cli1, fname, 0, 0);
 	cli_unlink(cli1, fname);
@@ -3105,19 +3105,19 @@ static bool run_deletetest(int dummy)
 		correct = False;
 		goto fail;
 	}
-	
+
 	if (!cli_close(cli1, fnum1)) {
 		printf("[3] close 1 failed (%s)\n", cli_errstr(cli1));
 		correct = False;
 		goto fail;
 	}
-	
+
 	if (!cli_close(cli1, fnum2)) {
 		printf("[3] close 2 failed (%s)\n", cli_errstr(cli1));
 		correct = False;
 		goto fail;
 	}
-	
+
 	/* This should fail - file should no longer be there. */
 
 	fnum1 = cli_open(cli1, fname, O_RDONLY, DENY_NONE);
@@ -3138,7 +3138,7 @@ static bool run_deletetest(int dummy)
 
 	fnum1 = cli_nt_create_full(cli1, fname, 0, FILE_READ_DATA|FILE_WRITE_DATA|DELETE_ACCESS,
 			FILE_ATTRIBUTE_NORMAL, FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OVERWRITE_IF, 0, 0);
-								
+
 	if (fnum1 == -1) {
 		printf("[4] open of %s failed (%s)\n", fname, cli_errstr(cli1));
 		correct = False;
@@ -3153,19 +3153,19 @@ static bool run_deletetest(int dummy)
 		correct = False;
 		goto fail;
 	}
-	
+
 	if (!cli_close(cli1, fnum2)) {
 		printf("[4] close - 1 failed (%s)\n", cli_errstr(cli1));
 		correct = False;
 		goto fail;
 	}
-	
+
 	if (!cli_nt_delete_on_close(cli1, fnum1, True)) {
 		printf("[4] setting delete_on_close failed (%s)\n", cli_errstr(cli1));
 		correct = False;
 		goto fail;
 	}
-	
+
 	/* This should fail - no more opens once delete on close set. */
 	fnum2 = cli_nt_create_full(cli1, fname, 0, GENERIC_READ_ACCESS,
 				   FILE_ATTRIBUTE_NORMAL, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
@@ -3176,17 +3176,17 @@ static bool run_deletetest(int dummy)
 		goto fail;
 	} else
 		printf("fourth delete on close test succeeded.\n");
-	
+
 	if (!cli_close(cli1, fnum1)) {
 		printf("[4] close - 2 failed (%s)\n", cli_errstr(cli1));
 		correct = False;
 		goto fail;
 	}
-	
+
 	/* Test 5 ... */
 	cli_setatr(cli1, fname, 0, 0);
 	cli_unlink(cli1, fname);
-	
+
 	fnum1 = cli_open(cli1, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum1 == -1) {
 		printf("[5] open of %s failed (%s)\n", fname, cli_errstr(cli1));
@@ -3207,25 +3207,25 @@ static bool run_deletetest(int dummy)
 		correct = False;
 		goto fail;
 	}
-	
+
 	printf("fifth delete on close test succeeded.\n");
-	
+
 	/* Test 6 ... */
 	cli_setatr(cli1, fname, 0, 0);
 	cli_unlink(cli1, fname);
-	
+
 	fnum1 = cli_nt_create_full(cli1, fname, 0, FILE_READ_DATA|FILE_WRITE_DATA,
 				   FILE_ATTRIBUTE_NORMAL, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
 				   FILE_OVERWRITE_IF, 0, 0);
-	
+
 	if (fnum1 == -1) {
 		printf("[6] open of %s failed (%s)\n", fname, cli_errstr(cli1));
 		correct = False;
 		goto fail;
 	}
-	
+
 	/* This should fail - only allowed on NT opens with DELETE access. */
-	
+
 	if (cli_nt_delete_on_close(cli1, fnum1, True)) {
 		printf("[6] setting delete_on_close on file with no delete access succeeded - should fail !\n");
 		correct = False;
@@ -3239,14 +3239,14 @@ static bool run_deletetest(int dummy)
 	}
 
 	printf("sixth delete on close test succeeded.\n");
-	
+
 	/* Test 7 ... */
 	cli_setatr(cli1, fname, 0, 0);
 	cli_unlink(cli1, fname);
-	
+
 	fnum1 = cli_nt_create_full(cli1, fname, 0, FILE_READ_DATA|FILE_WRITE_DATA|DELETE_ACCESS,
 				   FILE_ATTRIBUTE_NORMAL, 0, FILE_OVERWRITE_IF, 0, 0);
-								
+
 	if (fnum1 == -1) {
 		printf("[7] open of %s failed (%s)\n", fname, cli_errstr(cli1));
 		correct = False;
@@ -3258,7 +3258,7 @@ static bool run_deletetest(int dummy)
 		correct = False;
 		goto fail;
 	}
-	
+
 	if (!cli_nt_delete_on_close(cli1, fnum1, False)) {
 		printf("[7] unsetting delete_on_close on file failed !\n");
 		correct = False;
@@ -3270,9 +3270,9 @@ static bool run_deletetest(int dummy)
 		correct = False;
 		goto fail;
 	}
-	
+
 	/* This next open should succeed - we reset the flag. */
-	
+
 	fnum1 = cli_open(cli1, fname, O_RDONLY, DENY_NONE);
 	if (fnum1 == -1) {
 		printf("[5] open of %s failed (%s)\n", fname, cli_errstr(cli1));
@@ -3287,11 +3287,11 @@ static bool run_deletetest(int dummy)
 	}
 
 	printf("seventh delete on close test succeeded.\n");
-	
+
 	/* Test 7 ... */
 	cli_setatr(cli1, fname, 0, 0);
 	cli_unlink(cli1, fname);
-	
+
 	if (!torture_open_connection(&cli2, 1)) {
 		printf("[8] failed to open second connection.\n");
 		correct = False;
@@ -3299,11 +3299,11 @@ static bool run_deletetest(int dummy)
 	}
 
 	cli_sockopt(cli1, sockops);
-	
+
 	fnum1 = cli_nt_create_full(cli1, fname, 0, FILE_READ_DATA|FILE_WRITE_DATA|DELETE_ACCESS,
 				   FILE_ATTRIBUTE_NORMAL, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
 				   FILE_OVERWRITE_IF, 0, 0);
-	
+
 	if (fnum1 == -1) {
 		printf("[8] open 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
 		correct = False;
@@ -3313,7 +3313,7 @@ static bool run_deletetest(int dummy)
 	fnum2 = cli_nt_create_full(cli2, fname, 0, FILE_READ_DATA|FILE_WRITE_DATA|DELETE_ACCESS,
 				   FILE_ATTRIBUTE_NORMAL, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
 				   FILE_OPEN, 0, 0);
-	
+
 	if (fnum2 == -1) {
 		printf("[8] open 2 of %s failed (%s)\n", fname, cli_errstr(cli2));
 		correct = False;
@@ -3325,7 +3325,7 @@ static bool run_deletetest(int dummy)
 		correct = False;
 		goto fail;
 	}
-	
+
 	if (!cli_close(cli1, fnum1)) {
 		printf("[8] close - 1 failed (%s)\n", cli_errstr(cli1));
 		correct = False;
@@ -3350,7 +3350,7 @@ static bool run_deletetest(int dummy)
 	/* This should fail - we need to set DELETE_ACCESS. */
 	fnum1 = cli_nt_create_full(cli1, fname, 0,FILE_READ_DATA|FILE_WRITE_DATA,
 				   FILE_ATTRIBUTE_NORMAL, FILE_SHARE_NONE, FILE_OVERWRITE_IF, FILE_DELETE_ON_CLOSE, 0);
-	
+
 	if (fnum1 != -1) {
 		printf("[9] open of %s succeeded should have failed!\n", fname);
 		correct = False;
@@ -3408,7 +3408,7 @@ static bool run_deletetest(int dummy)
 	fnum1 = cli_nt_create_full(cli1, fname, 0, FILE_READ_ATTRIBUTES|DELETE_ACCESS,
 				   0, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
 				   FILE_OVERWRITE_IF, 0, 0);
-	
+
 	if (fnum1 != -1) {
 		printf("[11] open of %s succeeded should have been denied with ACCESS_DENIED!\n", fname);
 		cli_close(cli1, fnum1);
@@ -3424,14 +3424,14 @@ static bool run_deletetest(int dummy)
 			printf("eleventh delete on close test succeeded.\n");
 		}
 	}
-	
+
 	printf("finished delete test\n");
 
   fail:
 	/* FIXME: This will crash if we aborted before cli2 got
 	 * intialized, because these functions don't handle
 	 * uninitialized connections. */
-		
+
 	if (fnum1 != -1) cli_close(cli1, fnum1);
 	if (fnum2 != -1) cli_close(cli1, fnum2);
 	cli_setatr(cli1, fname, 0, 0);
@@ -3452,17 +3452,17 @@ static bool run_deletetest(int dummy)
  */
 static bool run_properties(int dummy)
 {
-	static struct cli_state *cli;
+	struct cli_state *cli;
 	bool correct = True;
-	
+
 	printf("starting properties test\n");
-	
+
 	ZERO_STRUCT(cli);
 
 	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
-	
+
 	cli_sockopt(cli, sockops);
 
 	d_printf("Capabilities 0x%08x\n", cli->capabilities);
@@ -3506,11 +3506,11 @@ static bool run_xcopy(int dummy)
 	int fnum1, fnum2;
 
 	printf("starting xcopy test\n");
-	
+
 	if (!torture_open_connection(&cli1, 0)) {
 		return False;
 	}
-	
+
 	fnum1 = cli_nt_create_full(cli1, fname, 0,
 				   FIRST_DESIRED_ACCESS, FILE_ATTRIBUTE_ARCHIVE,
 				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 
@@ -3529,11 +3529,11 @@ static bool run_xcopy(int dummy)
 		printf("second open failed - %s\n", cli_errstr(cli1));
 		return False;
 	}
-	
+
 	if (!torture_close_connection(cli1)) {
 		correct = False;
 	}
-	
+
 	return correct;
 }
 
@@ -3549,11 +3549,11 @@ static bool run_rename(int dummy)
 	int fnum1;
 
 	printf("starting rename test\n");
-	
+
 	if (!torture_open_connection(&cli1, 0)) {
 		return False;
 	}
-	
+
 	cli_unlink(cli1, fname);
 	cli_unlink(cli1, fname1);
 	fnum1 = cli_nt_create_full(cli1, fname, 0, GENERIC_READ_ACCESS, FILE_ATTRIBUTE_NORMAL,
@@ -3629,7 +3629,7 @@ static bool run_rename(int dummy)
 		printf("[8] setting delete_on_close on file failed !\n");
 		return False;
 	}
-	
+
 	if (!cli_close(cli1, fnum2)) {
 		printf("close - 4 failed (%s)\n", cli_errstr(cli1));
 		return False;
@@ -3721,11 +3721,11 @@ static bool run_rename(int dummy)
 
 	cli_unlink(cli1, fname);
 	cli_unlink(cli1, fname1);
-        
+
 	if (!torture_close_connection(cli1)) {
 		correct = False;
 	}
-	
+
 	return correct;
 }
 
@@ -3774,16 +3774,16 @@ static bool run_opentest(int dummy)
 	char *tmp_path;
 
 	printf("starting open test\n");
-	
+
 	if (!torture_open_connection(&cli1, 0)) {
 		return False;
 	}
-	
+
 	cli_setatr(cli1, fname, 0, 0);
 	cli_unlink(cli1, fname);
-	
+
 	cli_sockopt(cli1, sockops);
-	
+
 	fnum1 = cli_open(cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
 	if (fnum1 == -1) {
 		printf("open of %s failed (%s)\n", fname, cli_errstr(cli1));
@@ -3794,67 +3794,67 @@ static bool run_opentest(int dummy)
 		printf("close2 failed (%s)\n", cli_errstr(cli1));
 		return False;
 	}
-	
+
 	if (!cli_setatr(cli1, fname, aRONLY, 0)) {
 		printf("cli_setatr failed (%s)\n", cli_errstr(cli1));
 		return False;
 	}
-	
+
 	fnum1 = cli_open(cli1, fname, O_RDONLY, DENY_WRITE);
 	if (fnum1 == -1) {
 		printf("open of %s failed (%s)\n", fname, cli_errstr(cli1));
 		return False;
 	}
-	
+
 	/* This will fail - but the error should be ERRnoaccess, not ERRbadshare. */
 	fnum2 = cli_open(cli1, fname, O_RDWR, DENY_ALL);
-	
+
         if (check_error(__LINE__, cli1, ERRDOS, ERRnoaccess, 
 			NT_STATUS_ACCESS_DENIED)) {
 		printf("correct error code ERRDOS/ERRnoaccess returned\n");
 	}
-	
+
 	printf("finished open test 1\n");
-	
+
 	cli_close(cli1, fnum1);
-	
+
 	/* Now try not readonly and ensure ERRbadshare is returned. */
-	
+
 	cli_setatr(cli1, fname, 0, 0);
-	
+
 	fnum1 = cli_open(cli1, fname, O_RDONLY, DENY_WRITE);
 	if (fnum1 == -1) {
 		printf("open of %s failed (%s)\n", fname, cli_errstr(cli1));
 		return False;
 	}
-	
+
 	/* This will fail - but the error should be ERRshare. */
 	fnum2 = cli_open(cli1, fname, O_RDWR, DENY_ALL);
-	
+
 	if (check_error(__LINE__, cli1, ERRDOS, ERRbadshare, 
 			NT_STATUS_SHARING_VIOLATION)) {
 		printf("correct error code ERRDOS/ERRbadshare returned\n");
 	}
-	
+
 	if (!cli_close(cli1, fnum1)) {
 		printf("close2 failed (%s)\n", cli_errstr(cli1));
 		return False;
 	}
-	
+
 	cli_unlink(cli1, fname);
-	
+
 	printf("finished open test 2\n");
-	
+
 	/* Test truncate open disposition on file opened for read. */
-	
+
 	fnum1 = cli_open(cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
 	if (fnum1 == -1) {
 		printf("(3) open (1) of %s failed (%s)\n", fname, cli_errstr(cli1));
 		return False;
 	}
-	
+
 	/* write 20 bytes. */
-	
+
 	memset(buf, '\0', 20);
 
 	if (cli_write(cli1, fnum1, 0, buf, 0, 20) != 20) {
@@ -3866,26 +3866,26 @@ static bool run_opentest(int dummy)
 		printf("(3) close1 failed (%s)\n", cli_errstr(cli1));
 		return False;
 	}
-	
+
 	/* Ensure size == 20. */
 	if (!cli_getatr(cli1, fname, NULL, &fsize, NULL)) {
 		printf("(3) getatr failed (%s)\n", cli_errstr(cli1));
 		return False;
 	}
-	
+
 	if (fsize != 20) {
 		printf("(3) file size != 20\n");
 		return False;
 	}
 
 	/* Now test if we can truncate a file opened for readonly. */
-	
+
 	fnum1 = cli_open(cli1, fname, O_RDONLY|O_TRUNC, DENY_NONE);
 	if (fnum1 == -1) {
 		printf("(3) open (2) of %s failed (%s)\n", fname, cli_errstr(cli1));
 		return False;
 	}
-	
+
 	if (!cli_close(cli1, fnum1)) {
 		printf("close2 failed (%s)\n", cli_errstr(cli1));
 		return False;
@@ -3902,7 +3902,7 @@ static bool run_opentest(int dummy)
 		return False;
 	}
 	printf("finished open test 3\n");
-	
+
 	cli_unlink(cli1, fname);
 
 
@@ -3919,20 +3919,20 @@ static bool run_opentest(int dummy)
 	if (!cli_unlink(cli1, tmp_path)) {
 		printf("unlink of temp failed (%s)\n", cli_errstr(cli1));
 	}
-	
+
 	/* Test the non-io opens... */
 
 	if (!torture_open_connection(&cli2, 1)) {
 		return False;
 	}
-	
+
 	cli_setatr(cli2, fname, 0, 0);
 	cli_unlink(cli2, fname);
-	
+
 	cli_sockopt(cli2, sockops);
 
 	printf("TEST #1 testing 2 non-io opens (no delete)\n");
-	
+
 	fnum1 = cli_nt_create_full(cli1, fname, 0, FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
 				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0, 0);
 
@@ -3963,7 +3963,7 @@ static bool run_opentest(int dummy)
 	cli_unlink(cli1, fname);
 
 	printf("TEST #2 testing 2 non-io opens (first with delete)\n");
-	
+
 	fnum1 = cli_nt_create_full(cli1, fname, 0, DELETE_ACCESS|FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
 				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0, 0);
 
@@ -3994,7 +3994,7 @@ static bool run_opentest(int dummy)
 	cli_unlink(cli1, fname);
 
 	printf("TEST #3 testing 2 non-io opens (second with delete)\n");
-	
+
 	fnum1 = cli_nt_create_full(cli1, fname, 0, FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
 				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0, 0);
 
@@ -4025,7 +4025,7 @@ static bool run_opentest(int dummy)
 	cli_unlink(cli1, fname);
 
 	printf("TEST #4 testing 2 non-io opens (both with delete)\n");
-	
+
 	fnum1 = cli_nt_create_full(cli1, fname, 0, DELETE_ACCESS|FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
 				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0, 0);
 
@@ -4054,7 +4054,7 @@ static bool run_opentest(int dummy)
 	cli_unlink(cli1, fname);
 
 	printf("TEST #5 testing 2 non-io opens (both with delete - both with file share delete)\n");
-	
+
 	fnum1 = cli_nt_create_full(cli1, fname, 0, DELETE_ACCESS|FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
 				   FILE_SHARE_DELETE, FILE_OVERWRITE_IF, 0, 0);
 
@@ -4084,7 +4084,7 @@ static bool run_opentest(int dummy)
 	printf("non-io open test #5 passed.\n");
 
 	printf("TEST #6 testing 1 non-io open, one io open\n");
-	
+
 	cli_unlink(cli1, fname);
 
 	fnum1 = cli_nt_create_full(cli1, fname, 0, FILE_READ_DATA, FILE_ATTRIBUTE_NORMAL,
@@ -4152,7 +4152,7 @@ static bool run_opentest(int dummy)
 	if (!torture_close_connection(cli2)) {
 		correct = False;
 	}
-	
+
 	return correct;
 }
 
@@ -4335,11 +4335,11 @@ static bool run_openattrtest(int dummy)
 	unsigned int i, j, k, l;
 
 	printf("starting open attr test\n");
-	
+
 	if (!torture_open_connection(&cli1, 0)) {
 		return False;
 	}
-	
+
 	cli_sockopt(cli1, sockops);
 
 	for (k = 0, i = 0; i < sizeof(open_attrs_table)/sizeof(uint32); i++) {
@@ -4432,7 +4432,7 @@ static bool run_openattrtest(int dummy)
 
 static void list_fn(const char *mnt, file_info *finfo, const char *name, void *state)
 {
-	
+
 }
 
 /*
@@ -4500,7 +4500,7 @@ static void del_fn(const char *mnt, file_info *finfo, const char *mask, void *st
 		return;
 
 	if (finfo->mode & aDIR) {
-		if (!cli_rmdir(pcli, fname))
+		if (!NT_STATUS_IS_OK(cli_rmdir(pcli, fname)))
 			printf("del_fn: failed to rmdir %s\n,", fname );
 	} else {
 		if (!cli_unlink(pcli, fname))
@@ -4601,17 +4601,17 @@ bool torture_chkpath_test(int dummy)
 	}
 	cli_close(cli, fnum);
 
-	if (!cli_chkpath(cli, "\\chkpath.dir")) {
+	if (!NT_STATUS_IS_OK(cli_chkpath(cli, "\\chkpath.dir"))) {
 		printf("chkpath1 failed: %s\n", cli_errstr(cli));
 		ret = False;
 	}
 
-	if (!cli_chkpath(cli, "\\chkpath.dir\\dir2")) {
+	if (!NT_STATUS_IS_OK(cli_chkpath(cli, "\\chkpath.dir\\dir2"))) {
 		printf("chkpath2 failed: %s\n", cli_errstr(cli));
 		ret = False;
 	}
 
-	if (!cli_chkpath(cli, "\\chkpath.dir\\foo.txt")) {
+	if (!NT_STATUS_IS_OK(cli_chkpath(cli, "\\chkpath.dir\\foo.txt"))) {
 		ret = check_error(__LINE__, cli, ERRDOS, ERRbadpath, 
 				  NT_STATUS_NOT_A_DIRECTORY);
 	} else {
@@ -4619,7 +4619,7 @@ bool torture_chkpath_test(int dummy)
 		ret = False;
 	}
 
-	if (!cli_chkpath(cli, "\\chkpath.dir\\bar.txt")) {
+	if (!NT_STATUS_IS_OK(cli_chkpath(cli, "\\chkpath.dir\\bar.txt"))) {
 		ret = check_error(__LINE__, cli, ERRDOS, ERRbadfile, 
 				  NT_STATUS_OBJECT_NAME_NOT_FOUND);
 	} else {
@@ -4627,7 +4627,7 @@ bool torture_chkpath_test(int dummy)
 		ret = False;
 	}
 
-	if (!cli_chkpath(cli, "\\chkpath.dir\\dirxx\\bar.txt")) {
+	if (!NT_STATUS_IS_OK(cli_chkpath(cli, "\\chkpath.dir\\dirxx\\bar.txt"))) {
 		ret = check_error(__LINE__, cli, ERRDOS, ERRbadpath, 
 				  NT_STATUS_OBJECT_PATH_NOT_FOUND);
 	} else {
@@ -4657,12 +4657,12 @@ static bool run_eatest(int dummy)
 	TALLOC_CTX *mem_ctx = talloc_init("eatest");
 
 	printf("starting eatest\n");
-	
+
 	if (!torture_open_connection(&cli, 0)) {
 		talloc_destroy(mem_ctx);
 		return False;
 	}
-	
+
 	cli_unlink(cli, fname);
 	fnum = cli_nt_create_full(cli, fname, 0,
 				   FIRST_DESIRED_ACCESS, FILE_ATTRIBUTE_ARCHIVE,
@@ -4686,7 +4686,7 @@ static bool run_eatest(int dummy)
 			return False;
 		}
 	}
-	
+
 	cli_close(cli, fnum);
 	for (i = 0; i < 10; i++) {
 		fstring ea_name, ea_val;
@@ -4699,7 +4699,7 @@ static bool run_eatest(int dummy)
 			return False;
 		}
 	}
-	
+
 	if (!cli_get_ea_list_path(cli, fname, mem_ctx, &num_eas, &ea_list)) {
 		printf("ea_get list failed - %s\n", cli_errstr(cli));
 		correct = False;
@@ -4762,7 +4762,7 @@ static bool run_eatest(int dummy)
 	if (!torture_close_connection(cli)) {
 		correct = False;
 	}
-	
+
 	return correct;
 }
 
@@ -4848,7 +4848,7 @@ static bool run_dirtest1(int dummy)
 }
 
 static bool run_error_map_extract(int dummy) {
-	
+
 	static struct cli_state *c_dos;
 	static struct cli_state *c_nt;
 	NTSTATUS status;
@@ -4917,9 +4917,9 @@ static bool run_error_map_extract(int dummy) {
 						      workgroup))) {
 			printf("/** Session setup succeeded.  This shouldn't happen...*/\n");
 		}
-		
+
 		flgs2 = SVAL(c_nt->inbuf,smb_flg2);
-		
+
 		/* Case #1: 32-bit NT errors */
 		if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
 			nt_status = NT_STATUS(IVAL(c_nt->inbuf,smb_rcls));
@@ -4936,7 +4936,7 @@ static bool run_error_map_extract(int dummy) {
 			printf("/** Session setup succeeded.  This shouldn't happen...*/\n");
 		}
 		flgs2 = SVAL(c_dos->inbuf,smb_flg2), errnum;
-		
+
 		/* Case #1: 32-bit NT errors */
 		if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
 			printf("/** NT error on DOS connection! (%s) */\n", 
@@ -4951,7 +4951,7 @@ static bool run_error_map_extract(int dummy) {
 			       get_nt_error_c_code(NT_STATUS(error)), 
 			       get_nt_error_c_code(nt_status));
 		}
-		
+
 		printf("\t{%s,\t%s,\t%s},\n", 
 		       smb_dos_err_class(errclass), 
 		       smb_dos_err_name(errclass, errnum), 
@@ -5112,7 +5112,7 @@ static bool run_mangle1(int dummy)
 	int fnum;
 	fstring alt_name;
 	NTSTATUS status;
-	time_t change, access, write;
+	time_t change_time, access_time, write_time;
 	SMB_OFF_T size;
 	uint16_t mode;
 
@@ -5148,8 +5148,8 @@ static bool run_mangle1(int dummy)
 	}
 	cli_close(cli, fnum);
 
-	if (!cli_qpathinfo(cli, alt_name, &change, &access, &write, &size,
-			   &mode)) {
+	if (!cli_qpathinfo(cli, alt_name, &change_time, &access_time,
+			   &write_time, &size, &mode)) {
 		d_printf("cli_qpathinfo(%s) failed: %s\n", alt_name,
 			 cli_errstr(cli));
 		return false;
@@ -5356,7 +5356,7 @@ static bool run_local_gencache(int dummy)
 			 __location__);
 		return False;
 	}
-			
+
 	if (gencache_get("foo", &val, &tm)) {
 		d_printf("%s: gencache_get() on deleted entry "
 			 "succeeded\n", __location__);
@@ -5828,7 +5828,7 @@ static double create_procs(bool (*fn)(int), bool *result)
 	}
 
 	printf("\n");
-	
+
 	for (i=0;i<nprocs;i++) {
 		if (!child_status_out[i]) {
 			*result = False;
@@ -5927,7 +5927,7 @@ static bool run_test(const char *name)
 		}
 		found = True;
 	}
-	
+
 	for (i=0;torture_ops[i].name;i++) {
 		fstr_sprintf(randomfname, "\\XX%x", 
 			 (unsigned)random());
@@ -5941,7 +5941,6 @@ static bool run_test(const char *name)
 					ret = False;
 					printf("TEST %s FAILED!\n", name);
 				}
-					 
 			} else {
 				start_timer();
 				if (!torture_ops[i].fn(0)) {
@@ -5996,7 +5995,7 @@ static void usage(void)
 	printf("\n");
 
 	printf("default test is ALL\n");
-	
+
 	exit(1);
 }
 
@@ -6036,7 +6035,7 @@ static void usage(void)
         for(p = argv[1]; *p; p++)
           if(*p == '\\')
             *p = '/';
- 
+
 	if (strncmp(argv[1], "//", 2)) {
 		usage();
 	}

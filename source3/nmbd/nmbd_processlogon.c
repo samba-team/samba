@@ -267,7 +267,7 @@ static void nmbd_proxy_logon_done(struct tevent_req *subreq)
 		tevent_req_callback_data(subreq,
 		struct nmbd_proxy_logon_state);
 	NTSTATUS status;
-	DATA_BLOB response;
+	DATA_BLOB response = data_blob_null;
 
 	status = cldap_netlogon_recv(subreq, NULL, state, &state->io);
 	if (!NT_STATUS_IS_OK(status)) {

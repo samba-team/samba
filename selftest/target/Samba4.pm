@@ -108,6 +108,7 @@ sub check_or_start($$$)
 		} 
 
 		$ENV{KRB5_CONFIG} = $env_vars->{KRB5_CONFIG}; 
+		$ENV{WINBINDD_SOCKET_DIR} = $env_vars->{WINBINDD_SOCKET_DIR};
 
 		$ENV{NSS_WRAPPER_PASSWD} = $env_vars->{NSS_WRAPPER_PASSWD};
 		$ENV{NSS_WRAPPER_GROUP} = $env_vars->{NSS_WRAPPER_GROUP};
