@@ -166,7 +166,7 @@ static const struct ldb_dn *ldb_set_default_basedn(struct ldb_context *ldb)
 	}
 
 	tmp_ctx = talloc_new(ldb);
-	ret = ldb_search(ldb, ldb, &res, ldb_dn_new(tmp_ctx), LDB_SCOPE_BASE, 
+	ret = ldb_search(ldb, ldb, &res, ldb_dn_new(tmp_ctx, ldb, NULL), LDB_SCOPE_BASE, 
 			 attrs, "(objectClass=*)");
 	if (ret == LDB_SUCCESS) {
 		if (res->count == 1) {
@@ -601,7 +601,7 @@ int ldb_build_search_req(struct ldb_request **ret_req,
 
 	req->operation = LDB_SEARCH;
 	if (base == NULL) {
-		req->op.search.base = ldb_dn_new(req);
+		req->op.search.base = ldb_dn_new(req, ldb, NULL);
 	} else {
 		req->op.search.base = base;
 	}

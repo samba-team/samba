@@ -22,7 +22,7 @@
 */
 
 #include "includes.h"
-#include "lib/ldb/include/includes.h"
+#include "lib/ldb/include/ldb.h"
 
 #ifdef HAVE_LDAP
 
@@ -3860,25 +3860,24 @@ ADS_STATUS ads_check_ou_dn(TALLOC_CTX *mem_ctx,
 	char *ou_string = NULL;
 	struct ldb_context *ldb = ldb_init(mem_ctx, NULL);
 
-	name_dn = ldb_dn_explode(mem_ctx, *account_ou);
-	if (name_dn) {
+	name_dn = ldb_dn_new(mem_ctx, ldb, *account_ou);
+	if (name_dn && ldb_dn_validate(name_dn)) {
+		talloc_free(ldb);
 		return ADS_SUCCESS;
 	}
 
 	ou_string = ads_ou_string(ads, *account_ou);
 	if (!ou_string) {
+		talloc_free(ldb);
 		return ADS_ERROR_LDAP(LDAP_INVALID_DN_SYNTAX);
 	}
 
-	name = talloc_asprintf(mem_ctx, "%s,%s", ou_string,
-			       ads->config.bind_path);
+	name_dn = ldb_dn_new_fmt(mem_ctx, ldb, "%s,%s", ou_string,
+				 ads->config.bind_path);
 	SAFE_FREE(ou_string);
-	if (!name) {
-		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
-	}
 
-	name_dn = ldb_dn_explode(mem_ctx, name);
-	if (!name_dn) {
+	if (!name_dn || !ldb_dn_validate(name_dn)) {
+		talloc_free(ldb);
 		return ADS_ERROR_LDAP(LDAP_INVALID_DN_SYNTAX);
 	}
 
