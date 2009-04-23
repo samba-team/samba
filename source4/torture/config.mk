@@ -353,7 +353,7 @@ gcov: test
 
 samba.info: test
 	-rm heimdal/lib/*/{lex,parse,sel-lex}.{gcda,gcno}
-	lcov --base-directory `pwd` --directory ../nsswitch --directory ../libcli --directory ../librpc --directory ../lib --capture --output-file samba.info
+	lcov --base-directory `pwd` --directory . --directory ../nsswitch --directory ../libcli --directory ../librpc --directory ../lib --capture --output-file samba.info
 
 lcov: samba.info
 	genhtml -o coverage $<
