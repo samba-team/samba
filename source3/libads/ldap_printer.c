@@ -372,7 +372,7 @@ WERROR get_remote_printer_publishing_data(struct rpc_pipe_client *cli,
 	} else {
 		for (i=0; i < count; i++) {
 			REGISTRY_VALUE v;
-			DATA_BLOB blob;
+			DATA_BLOB blob = data_blob_null;
 
 			result = push_spoolss_PrinterData(mem_ctx, &blob,
 							  info[i].type,
