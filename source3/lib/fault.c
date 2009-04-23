@@ -194,17 +194,18 @@ static char *get_freebsd_corepath(void)
  */
 static char *get_corepath(const char *logbase, const char *progname)
 {
-	char *tmp_corepath = NULL;
+#if (defined(FREEBSD) && defined(HAVE_SYSCTLBYNAME))
 
 	/* @todo: Add support for the linux corepath. */
-#if (defined(FREEBSD) && defined(HAVE_SYSCTLBYNAME))
+
+	char *tmp_corepath = NULL;
 	tmp_corepath = get_freebsd_corepath();
-#endif
 
 	/* If this has been set correctly, we're done. */
 	if (tmp_corepath) {
 		return tmp_corepath;
 	}
+#endif
 
 	/* Fall back to the default. */
 	return get_default_corepath(logbase, progname);
