@@ -66,8 +66,10 @@ bool msrpc_gen(TALLOC_CTX *mem_ctx,
 		case 'U':
 			s = va_arg(ap, char *);
 			head_size += 8;
-			ret = push_ucs2_talloc(pointers, (smb_ucs2_t **)&pointers[i].data, 
-								   s, &n);
+			ret = push_ucs2_talloc(
+				pointers,
+				(smb_ucs2_t **)(void *)&pointers[i].data,
+				s, &n);
 			if (!ret) {
 				return false;
 			}
@@ -78,8 +80,9 @@ bool msrpc_gen(TALLOC_CTX *mem_ctx,
 		case 'A':
 			s = va_arg(ap, char *);
 			head_size += 8;
-			ret = push_ascii_talloc(pointers, (char **)&pointers[i].data, s,
-									&n);
+			ret = push_ascii_talloc(
+				pointers, (char **)(void *)&pointers[i].data,
+				s, &n);
 			if (!ret) {
 				return false;
 			}
@@ -91,8 +94,10 @@ bool msrpc_gen(TALLOC_CTX *mem_ctx,
 			j = va_arg(ap, int);
 			intargs[i] = j;
 			s = va_arg(ap, char *);
-			ret = push_ucs2_talloc(pointers, (smb_ucs2_t **)&pointers[i].data, 
-								   s, &n);
+			ret = push_ucs2_talloc(
+				pointers,
+				(smb_ucs2_t **)(void *)&pointers[i].data,
+				s, &n);
 			if (!ret) {
 				return false;
 			}
@@ -230,7 +235,7 @@ bool msrpc_parse(TALLOC_CTX *mem_ctx,
 
 			ps = va_arg(ap, char **);
 			if (len1 == 0 && len2 == 0) {
-				*ps = discard_const("");
+				*ps = (char *)discard_const("");
 			} else {
 				/* make sure its in the right format - be strict */
 				if ((len1 != len2) || (ptr + len1 < ptr) || (ptr + len1 < len1) || (ptr + len1 > blob->length)) {
@@ -257,7 +262,7 @@ bool msrpc_parse(TALLOC_CTX *mem_ctx,
 						goto cleanup;
 					}
 				} else {
-					(*ps) = discard_const("");
+					(*ps) = (char *)discard_const("");
 				}
 			}
 			break;
@@ -270,7 +275,7 @@ bool msrpc_parse(TALLOC_CTX *mem_ctx,
 			ps = (char **)va_arg(ap, char **);
 			/* make sure its in the right format - be strict */
 			if (len1 == 0 && len2 == 0) {
-				*ps = discard_const("");
+				*ps = (char *)discard_const("");
 			} else {
 				if ((len1 != len2) || (ptr + len1 < ptr) || (ptr + len1 < len1) || (ptr + len1 > blob->length)) {
 					ret = false;
@@ -293,7 +298,7 @@ bool msrpc_parse(TALLOC_CTX *mem_ctx,
 						goto cleanup;
 					}
 				} else {
-					(*ps) = discard_const("");
+					(*ps) = (char *)discard_const("");
 				}
 			}
 			break;

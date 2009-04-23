@@ -1230,8 +1230,8 @@ _PUBLIC_ NTSTATUS ldap_decode(struct asn1_data *data,
 		msg->type = LDAP_TAG_SearchRequest;
 		asn1_start_tag(data, tag);
 		asn1_read_OctetString_talloc(msg, data, &r->basedn);
-		asn1_read_enumerated(data, (int *)&(r->scope));
-		asn1_read_enumerated(data, (int *)&(r->deref));
+		asn1_read_enumerated(data, (int *)(void *)&(r->scope));
+		asn1_read_enumerated(data, (int *)(void *)&(r->deref));
 		asn1_read_Integer(data, &sizelimit);
 		r->sizelimit = sizelimit;
 		asn1_read_Integer(data, &timelimit);

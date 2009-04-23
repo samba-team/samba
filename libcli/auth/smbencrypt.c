@@ -231,14 +231,14 @@ bool ntv2_owf_gen(const uint8_t owf[16],
 	domain_byte_len = domain_byte_len - 2;
 	
 	hmac_md5_init_limK_to_64(owf, 16, &ctx);
-	hmac_md5_update((const void *)user, user_byte_len, &ctx);
-	hmac_md5_update((const void *)domain, domain_byte_len, &ctx);
+	hmac_md5_update((uint8_t *)user, user_byte_len, &ctx);
+	hmac_md5_update((uint8_t *)domain, domain_byte_len, &ctx);
 	hmac_md5_final(kr_buf, &ctx);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("ntv2_owf_gen: user, domain, owfkey, kr\n"));
-	dump_data(100, (const void *)user, user_byte_len);
-	dump_data(100, (const void *)domain, domain_byte_len);
+	dump_data(100, (uint8_t *)user, user_byte_len);
+	dump_data(100, (uint8_t *)domain, domain_byte_len);
 	dump_data(100, owf, 16);
 	dump_data(100, kr_buf, 16);
 #endif
