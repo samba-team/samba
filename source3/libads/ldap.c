@@ -3858,6 +3858,7 @@ ADS_STATUS ads_check_ou_dn(TALLOC_CTX *mem_ctx,
 	struct ldb_dn *name_dn = NULL;
 	const char *name = NULL;
 	char *ou_string = NULL;
+	struct ldb_context *ldb = ldb_init(mem_ctx, NULL);
 
 	name_dn = ldb_dn_explode(mem_ctx, *account_ou);
 	if (name_dn) {
@@ -3883,9 +3884,11 @@ ADS_STATUS ads_check_ou_dn(TALLOC_CTX *mem_ctx,
 
 	*account_ou = talloc_strdup(mem_ctx, name);
 	if (!*account_ou) {
+		talloc_free(ldb);
 		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
 	}
 
+	talloc_free(ldb);
 	return ADS_SUCCESS;
 }
 

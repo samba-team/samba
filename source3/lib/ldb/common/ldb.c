@@ -39,7 +39,7 @@
    initialise a ldb context
    The mem_ctx is optional
 */
-struct ldb_context *ldb_init(void *mem_ctx)
+struct ldb_context *ldb_init(void *mem_ctx, struct tevent_context *tev_ctx)
 {
 	struct ldb_context *ldb = talloc_zero(mem_ctx, struct ldb_context);
 	int ret;

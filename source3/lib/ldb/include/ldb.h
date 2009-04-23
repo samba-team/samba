@@ -795,10 +795,13 @@ int ldb_global_init(void);
   \param mem_ctx pointer to a talloc memory context. Pass NULL if there is
   no suitable context available.
 
+  \param ev_ctx Event context. This is here for API compatibility 
+  with the Samba 4 version of LDB and ignored in this version of LDB.
+
   \return pointer to ldb_context that should be free'd (using talloc_free())
   at the end of the program.
 */
-struct ldb_context *ldb_init(void *mem_ctx);
+struct ldb_context *ldb_init(void *mem_ctx, struct tevent_context *ev_ctx);
 
 /**
    Connect to a database.
@@ -1275,7 +1278,9 @@ int ldb_attrib_add_handlers(struct ldb_context *ldb,
 int ldb_dn_is_special(const struct ldb_dn *dn);
 int ldb_dn_check_special(const struct ldb_dn *dn, const char *check);
 char *ldb_dn_escape_value(void *mem_ctx, struct ldb_val value);
-struct ldb_dn *ldb_dn_new(void *mem_ctx);
+struct ldb_dn *ldb_dn_new(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, const char *dn);
+bool ldb_dn_validate(struct ldb_dn *dn);
+struct ldb_dn *ldb_dn_new_fmt(void *mem_ctx, struct ldb_context *ldb, const char *new_fmt, ...);
 struct ldb_dn *ldb_dn_explode(void *mem_ctx, const char *dn);
 struct ldb_dn *ldb_dn_explode_or_special(void *mem_ctx, const char *dn);
 char *ldb_dn_linearize(void *mem_ctx, const struct ldb_dn *edn);

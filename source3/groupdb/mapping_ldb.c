@@ -57,7 +57,7 @@ static bool init_group_mapping(void)
 
 	db_path = state_path("group_mapping.ldb");
 
-	ldb = ldb_init(NULL);
+	ldb = ldb_init(NULL, NULL);
 	if (ldb == NULL) goto failed;
 
 	/* Ensure this db is created read/write for root only. */
