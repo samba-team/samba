@@ -1936,7 +1936,9 @@ bool send_mailslot(bool unique, const char *mailslot,char *buf, size_t len,
 		DEBUG(0, ("send_mailslot: Cannot write beyond end of packet\n"));
 		return False;
 	} else {
-		memcpy(p2,buf,len);
+		if (len) {
+			memcpy(p2,buf,len);
+		}
 		p2 += len;
 	}
 
