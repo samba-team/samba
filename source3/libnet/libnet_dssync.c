@@ -667,6 +667,8 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 		dn_count = 1;
 	}
 
+	status = NT_STATUS_OK;
+
 	for (count=0; count < dn_count; count++) {
 		status = libnet_dssync_build_request(mem_ctx, ctx,
 						     dns[count],
