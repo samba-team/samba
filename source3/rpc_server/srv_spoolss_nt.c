@@ -8243,7 +8243,7 @@ WERROR _spoolss_SetForm(pipes_struct *p,
 {
 	struct spoolss_AddFormInfo1 *form = r->in.info.info1;
 	nt_forms_struct tmpForm;
-	int snum;
+	int snum = -1;
 	WERROR status = WERR_OK;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	SE_PRIV se_printop = SE_PRINT_OPERATOR;
