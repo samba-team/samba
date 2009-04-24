@@ -177,7 +177,7 @@ static struct policy_handle *samsync_open_domain(TALLOC_CTX *mem_ctx,
 	o.in.sid = *l.out.sid;
 	o.out.domain_handle = domain_handle;
 	
-	if (sid) {
+	if (sid_p) {
 		*sid_p = *l.out.sid;
 	}
 
