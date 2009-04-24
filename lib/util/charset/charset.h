@@ -151,11 +151,12 @@ ssize_t iconv_talloc(TALLOC_CTX *mem_ctx,
 extern struct smb_iconv_convenience *global_iconv_convenience;
 
 codepoint_t next_codepoint(const char *str, size_t *size);
+ssize_t push_codepoint(char *str, codepoint_t c);
 
 /* codepoints */
 codepoint_t next_codepoint_convenience(struct smb_iconv_convenience *ic, 
 			    const char *str, size_t *size);
-ssize_t push_codepoint(struct smb_iconv_convenience *ic, 
+ssize_t push_codepoint_convenience(struct smb_iconv_convenience *ic, 
 				char *str, codepoint_t c);
 codepoint_t toupper_m(codepoint_t val);
 codepoint_t tolower_m(codepoint_t val);

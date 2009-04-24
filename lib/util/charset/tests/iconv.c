@@ -288,7 +288,7 @@ static bool test_codepoint(struct torture_context *tctx, unsigned int codepoint)
 	size_t size, size2;
 	codepoint_t c;
 
-	size = push_codepoint(lp_iconv_convenience(tctx->lp_ctx), (char *)buf, codepoint);
+	size = push_codepoint_convenience(lp_iconv_convenience(tctx->lp_ctx), (char *)buf, codepoint);
 	torture_assert(tctx, size != -1 || (codepoint >= 0xd800 && codepoint <= 0x10000), 
 		       "Invalid Codepoint range");
 

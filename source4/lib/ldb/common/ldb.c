@@ -1430,3 +1430,9 @@ void *ldb_get_opaque(struct ldb_context *ldb, const char *name)
 	}
 	return NULL;
 }
+
+int ldb_global_init(void)
+{
+	/* Provided for compatibility with some older versions of ldb */
+	return 0;
+}

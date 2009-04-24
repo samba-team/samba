@@ -430,7 +430,7 @@ _PUBLIC_ codepoint_t next_codepoint_convenience(struct smb_iconv_convenience *ic
   return the number of bytes occupied by the CH_UNIX character, or
   -1 on failure
 */
-_PUBLIC_ ssize_t push_codepoint(struct smb_iconv_convenience *ic, 
+_PUBLIC_ ssize_t push_codepoint_convenience(struct smb_iconv_convenience *ic, 
 				char *str, codepoint_t c)
 {
 	smb_iconv_t descriptor;
@@ -478,3 +478,5 @@ _PUBLIC_ ssize_t push_codepoint(struct smb_iconv_convenience *ic,
 	}
 	return 5 - olen;
 }
+
+

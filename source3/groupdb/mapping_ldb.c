@@ -23,7 +23,7 @@
 
 #include "includes.h"
 #include "groupdb/mapping.h"
-#include "lib/ldb/include/includes.h"
+#include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 
 static struct ldb_context *ldb;
@@ -57,7 +57,7 @@ static bool init_group_mapping(void)
 
 	db_path = state_path("group_mapping.ldb");
 
-	ldb = ldb_init(NULL);
+	ldb = ldb_init(NULL, NULL);
 	if (ldb == NULL) goto failed;
 
 	/* Ensure this db is created read/write for root only. */
@@ -133,8 +133,8 @@ static struct ldb_dn *mapping_dn(TALLOC_CTX *mem_ctx, const DOM_SID *sid)
 	}
 	/* we split by domain and rid so we can do a subtree search
 	   when we only want one domain */
-	return ldb_dn_string_compose(mem_ctx, NULL, "rid=%u,domain=%s", 
-				     rid, string_sid);
+	return ldb_dn_new_fmt(mem_ctx, ldb, "rid=%u,domain=%s", 
+			      rid, string_sid);
 }
 
 /*
@@ -328,7 +328,7 @@ static bool enum_group_mapping(const DOM_SID *domsid, enum lsa_SidType sid_name_
 	/* we do a subtree search on the domain */
 	if (domsid != NULL) {
 		sid_to_fstring(name, domsid);
-		basedn = ldb_dn_string_compose(tmp_ctx, NULL, "domain=%s", name);
+		basedn = ldb_dn_new_fmt(tmp_ctx, ldb, "domain=%s", name);
 		if (basedn == NULL) goto failed;
 	}
 

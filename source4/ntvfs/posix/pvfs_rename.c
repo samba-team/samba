@@ -118,13 +118,13 @@ static const char *pvfs_resolve_wildcard_component(TALLOC_CTX *mem_ctx,
 		c1 = next_codepoint_convenience(iconv_convenience, p1, &c_size1);
 		c2 = next_codepoint_convenience(iconv_convenience, p2, &c_size2);
 		if (c2 == '?') {
-			d += push_codepoint(iconv_convenience, d, c1);
+			d += push_codepoint_convenience(iconv_convenience, d, c1);
 		} else if (c2 == '*') {
 			memcpy(d, p1, strlen(p1));
 			d += strlen(p1);
 			break;
 		} else {
-			d += push_codepoint(iconv_convenience, d, c2);
+			d += push_codepoint_convenience(iconv_convenience, d, c2);
 		}
 
 		p1 += c_size1;

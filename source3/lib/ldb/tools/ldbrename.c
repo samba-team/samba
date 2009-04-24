@@ -59,7 +59,7 @@ int main(int argc, const char **argv)
 
 	ldb_global_init();
 
-	ldb = ldb_init(NULL);
+	ldb = ldb_init(NULL, NULL);
 
 	options = ldb_cmdline_process(ldb, argc, argv, usage);
 

@@ -332,21 +332,44 @@ failed:
 	return dc;
 }
 
-struct ldb_dn *ldb_dn_new(void *mem_ctx)
+struct ldb_dn *ldb_dn_new(void *mem_ctx, struct ldb_context *ldb, const char *text)
 {
 	struct ldb_dn *edn;
 
-	edn = talloc(mem_ctx, struct ldb_dn);
-	LDB_DN_NULL_FAILED(edn);
-
-	/* Initially there are no components */
-	edn->comp_num = 0;
-	edn->components = NULL;
+	if (text == NULL) {
+		edn = talloc_zero(mem_ctx, struct ldb_dn);
+	} else {
+		edn = ldb_dn_explode(mem_ctx, text);
+	}
 
 	return edn;
+}
 
-failed:
-	return NULL;
+bool ldb_dn_validate(struct ldb_dn *dn)
+{
+	/* This implementation does not do "lazy" evaluation of DN's, so 
+	 * if a DN can be created it will be valid. */
+	return true;
+}
+
+struct ldb_dn *ldb_dn_new_fmt(void *mem_ctx, struct ldb_context *ldb, const char *new_fmt, ...)
+{
+	char *strdn;
+	va_list ap;
+	struct ldb_dn *dn;
+
+	if ( (! mem_ctx) || (! ldb)) return NULL;
+
+	va_start(ap, new_fmt);
+	strdn = talloc_vasprintf(mem_ctx, new_fmt, ap);
+	if (strdn == NULL)
+		return NULL;
+	va_end(ap);
+
+	dn = ldb_dn_explode(mem_ctx, strdn);
+
+	talloc_free(strdn);
+	return dn;
 }
 
 /*
@@ -360,7 +383,7 @@ struct ldb_dn *ldb_dn_explode(void *mem_ctx, const char *dn)
 	if (dn == NULL) return NULL;
 
 	/* Allocate a structure to hold the exploded DN */
-	edn = ldb_dn_new(mem_ctx);
+	edn = talloc_zero(mem_ctx, struct ldb_dn);
 	if (edn == NULL) {
 		return NULL;
 	}
@@ -440,7 +463,7 @@ struct ldb_dn *ldb_dn_explode_or_special(void *mem_ctx, const char *dn)
 		 */
 
 		/* Allocate a structure to hold the exploded DN */
-		if (!(edn = ldb_dn_new(mem_ctx))) {
+		if (!(edn = talloc_zero(mem_ctx, struct ldb_dn))) {
 			return NULL;
 		}
 
@@ -599,7 +622,7 @@ struct ldb_dn *ldb_dn_casefold(struct ldb_context *ldb, void *mem_ctx, const str
 
 	if (edn == NULL) return NULL;
 
-	cedn = ldb_dn_new(mem_ctx);
+	cedn = talloc_zero(mem_ctx, struct ldb_dn);
 	if (!cedn) {
 		return NULL;
 	}
@@ -737,7 +760,7 @@ struct ldb_dn *ldb_dn_copy_partial(void *mem_ctx, const struct ldb_dn *dn, int n
 	if (dn == NULL) return NULL;
 	if (num_el <= 0) return NULL;
 
-	newdn = ldb_dn_new(mem_ctx);
+	newdn = talloc_zero(mem_ctx, struct ldb_dn);
 	LDB_DN_NULL_FAILED(newdn);
 
 	newdn->comp_num = num_el;
@@ -814,7 +837,7 @@ struct ldb_dn *ldb_dn_build_child(void *mem_ctx, const char *attr,
 		newdn = ldb_dn_copy_partial(mem_ctx, base, base->comp_num + 1);
 		LDB_DN_NULL_FAILED(newdn);
 	} else {
-		newdn = ldb_dn_new(mem_ctx);
+		newdn = talloc_zero(mem_ctx, struct ldb_dn);
 		LDB_DN_NULL_FAILED(newdn);
 
 		newdn->comp_num = 1;
@@ -847,7 +870,7 @@ struct ldb_dn *ldb_dn_compose(void *mem_ctx, const struct ldb_dn *dn1, const str
 	}
 
 	if (dn2 == NULL) {
-		newdn = ldb_dn_new(mem_ctx);
+		newdn = talloc_zero(mem_ctx, struct ldb_dn);
 		LDB_DN_NULL_FAILED(newdn);
 
 		newdn->comp_num = dn1->comp_num;
