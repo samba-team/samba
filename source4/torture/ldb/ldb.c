@@ -36,6 +36,9 @@ static const char *guid = "975ac5fa-35d9-431d-b86a-845bcd34fff9";
 static const char *guid2 = "{975ac5fa-35d9-431d-b86a-845bcd34fff9}";
 static const char *hex_guid = "FAC55A97D9351D43B86A845BCD34FFF9";
 
+static const char *prefix_map_newline = "2:1.2.840.113556.1.2\n5:2.16.840.1.101.2.2.3";
+static const char *prefix_map_semi = "2:1.2.840.113556.1.2;5:2.16.840.1.101.2.2.3";
+
 static bool torture_ldb_attrs(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(torture);
@@ -43,6 +46,8 @@ static bool torture_ldb_attrs(struct torture_context *torture)
 	const struct ldb_schema_attribute *attr;
 	struct ldb_val string_sid_blob, binary_sid_blob;
 	struct ldb_val string_guid_blob, string_guid_blob2, binary_guid_blob;
+	struct ldb_val string_prefix_map_newline_blob, string_prefix_map_semi_blob, string_prefix_map_blob;
+	struct ldb_val prefix_map_blob;
 
 	DATA_BLOB sid_blob = strhex_to_data_blob(mem_ctx, hex_sid);
 	DATA_BLOB guid_blob = strhex_to_data_blob(mem_ctx, hex_guid);
@@ -159,8 +164,37 @@ static bool torture_ldb_attrs(struct torture_context *torture)
 				 attr->syntax->comparison_fn(ldb, mem_ctx, &binary_guid_blob, &binary_guid_blob), 0,
 				 "Failed to compare binary and binary GUID");
 	
+	string_prefix_map_newline_blob = data_blob_string_const(prefix_map_newline);
 	
+	string_prefix_map_semi_blob = data_blob_string_const(prefix_map_semi);
 	
+	/* Test prefixMap behaviour */
+	torture_assert(torture, attr = ldb_schema_attribute_by_name(ldb, "prefixMap"), 
+		       "Failed to get prefixMap schema attribute");
+	
+	torture_assert_int_equal(torture, 
+				 attr->syntax->comparison_fn(ldb, mem_ctx, &string_prefix_map_newline_blob, &string_prefix_map_semi_blob), 0,
+				 "Failed to compare prefixMap with newlines and prefixMap with semicolons");
+	
+	torture_assert_int_equal(torture, 
+				 attr->syntax->ldif_read_fn(ldb, mem_ctx, &string_prefix_map_newline_blob, &prefix_map_blob), 0,
+				 "Failed to read prefixMap with newlines");
+	torture_assert_int_equal(torture, 
+				 attr->syntax->comparison_fn(ldb, mem_ctx, &string_prefix_map_newline_blob, &prefix_map_blob), 0,
+				 "Failed to compare prefixMap with newlines and prefixMap binary");
+	
+	torture_assert_int_equal(torture, 
+				 attr->syntax->ldif_write_fn(ldb, mem_ctx, &prefix_map_blob, &string_prefix_map_blob), 0,
+				 "Failed to write prefixMap");
+	torture_assert_int_equal(torture, 
+				 attr->syntax->comparison_fn(ldb, mem_ctx, &string_prefix_map_blob, &prefix_map_blob), 0,
+				 "Failed to compare prefixMap ldif write and prefixMap binary");
+	
+	torture_assert_data_blob_equal(torture, string_prefix_map_blob, string_prefix_map_semi_blob,
+		"Failed to compare prefixMap ldif write and prefixMap binary");
+	
+
+
 	talloc_free(mem_ctx);
 	return true;
 }
