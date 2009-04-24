@@ -72,8 +72,8 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 	/* Calculate the session key and client credentials */
 	
 	cli->dc = netlogon_creds_client_init(cli,
+				    mach_acct,
 				    clnt_name,
-				    machine_account, 
 				    &clnt_chal_send,
 				    &srv_chal_recv,
 				    &password,
@@ -101,6 +101,7 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 	 * with the returned neg_flags - gd */
 
 	if (NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) && !retried) {
+		retried = true;
 		TALLOC_FREE(cli->dc);
 		goto again;
 	}
