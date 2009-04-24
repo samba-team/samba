@@ -244,6 +244,23 @@ static void ctdb_set_culprit(struct ctdb_recoverd *rec, uint32_t culprit)
 	rec->culprit_counter++;
 }
 
+/*
+  remember the trouble maker
+ */
+static void ctdb_set_culprit_count(struct ctdb_recoverd *rec, uint32_t culprit, uint32_t count)
+{
+	struct ctdb_context *ctdb = rec->ctdb;
+
+	if (rec->last_culprit != culprit ||
+	    timeval_elapsed(&rec->first_recover_time) > ctdb->tunable.recovery_grace_period) {
+		DEBUG(DEBUG_NOTICE,("New recovery culprit %u\n", culprit));
+		/* either a new node is the culprit, or we've decided to forgive them */
+		rec->last_culprit = culprit;
+		rec->first_recover_time = timeval_current();
+		rec->culprit_counter = 0;
+	}
+	rec->culprit_counter += count;
+}
 
 /* this callback is called for every node that failed to execute the
    start recovery event
@@ -612,7 +629,9 @@ static int pull_one_remote_database(struct ctdb_context *ctdb, uint32_t srcnode,
 /*
   pull all the remote database contents into the recdb
  */
-static int pull_remote_database(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, 
+static int pull_remote_database(struct ctdb_context *ctdb,
+				struct ctdb_recoverd *rec, 
+				struct ctdb_node_map *nodemap, 
 				struct tdb_wrap *recdb, uint32_t dbid)
 {
 	int j;
@@ -628,6 +647,7 @@ static int pull_remote_database(struct ctdb_context *ctdb, struct ctdb_node_map 
 		if (pull_one_remote_database(ctdb, nodemap->nodes[j].pnn, recdb, dbid) != 0) {
 			DEBUG(DEBUG_ERR,(__location__ " Failed to pull remote database from node %u\n", 
 				 nodemap->nodes[j].pnn));
+			ctdb_set_culprit_count(rec, nodemap->nodes[j].pnn, nodemap->num);
 			return -1;
 		}
 	}
@@ -1244,7 +1264,7 @@ static int recover_database(struct ctdb_recoverd *rec,
 	}
 
 	/* pull all remote databases onto the recdb */
-	ret = pull_remote_database(ctdb, nodemap, recdb, dbid);
+	ret = pull_remote_database(ctdb, rec, nodemap, recdb, dbid);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to pull remote database 0x%x\n", dbid));
 		return -1;
