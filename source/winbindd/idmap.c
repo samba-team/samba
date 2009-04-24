@@ -536,6 +536,8 @@ static NTSTATUS idmap_alloc_init(struct idmap_alloc_context **ctx)
 	char *modulename, *params;
 	NTSTATUS ret = NT_STATUS_NO_MEMORY;;
 
+	static_init_idmap;
+
 	if (idmap_alloc_ctx != NULL) {
 		*ctx = idmap_alloc_ctx;
 		return NT_STATUS_OK;
