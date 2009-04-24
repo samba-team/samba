@@ -118,6 +118,17 @@ struct tevent_req *wbcGidToSid_send(TALLOC_CTX *mem_ctx,
 				    gid_t gid);
 wbcErr wbcGidToSid_recv(struct tevent_req *req, struct wbcDomainSid *psid);
 
+/* Async functions from wbc_sid.c */
+struct tevent_req *wbcLookupSid_send(TALLOC_CTX *mem_ctx,
+				     struct tevent_context *ev,
+				     struct wb_context *wb_ctx,
+				     const struct wbcDomainSid *sid);
+wbcErr wbcLookupSid_recv(struct tevent_req *req,
+			 TALLOC_CTX *mem_ctx,
+			 char **pdomain,
+			 char **pname,
+			 enum wbcSidType *pname_type);
+
 /* Async functions from wbc_util.c */
 
 struct tevent_req *wbcPing_send(TALLOC_CTX *mem_ctx,
