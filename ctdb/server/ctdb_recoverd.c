@@ -1346,9 +1346,9 @@ static int do_recovery(struct ctdb_recoverd *rec,
 
 	if (rec->culprit_counter > 2*nodemap->num) {
 		DEBUG(DEBUG_NOTICE,("Node %u has caused %u recoveries in %.0f seconds - banning it for %u seconds\n",
-			 culprit, rec->culprit_counter, timeval_elapsed(&rec->first_recover_time),
+			 rec->last_culprit, rec->culprit_counter, timeval_elapsed(&rec->first_recover_time),
 			 ctdb->tunable.recovery_ban_period));
-		ctdb_ban_node(rec, culprit, ctdb->tunable.recovery_ban_period);
+		ctdb_ban_node(rec, rec->last_culprit, ctdb->tunable.recovery_ban_period);
 	}
 
 	if (!ctdb_recovery_lock(ctdb, true)) {
