@@ -25,16 +25,18 @@
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
-		printf("(%s) Incorrect status %s - should be %s\n", \
-		       __location__, nt_errstr(status), nt_errstr(correct)); \
+		torture_result(tctx, TORTURE_FAIL, \
+			"(%s) Incorrect status %s - should be %s\n", \
+			__location__, nt_errstr(status), nt_errstr(correct)); \
 		ret = false; \
 		goto done; \
 	}} while (0)
 
 #define CHECK_VALUE(v, correct) do { \
 	if ((v) != (correct)) { \
-		printf("(%s) Incorrect %s %d - should be %d\n", \
-		       __location__, #v, (int)v, (int)correct); \
+		torture_result(tctx, TORTURE_FAIL, \
+			"(%s) Incorrect %s %d - should be %d\n", \
+			__location__, #v, (int)v, (int)correct); \
 		ret = false; \
 	}} while (0)
 
@@ -56,13 +58,13 @@ static bool test_mv(struct torture_context *tctx,
 	union smb_fileinfo finfo;
 	union smb_open op;
 
-	printf("Testing SMBmv\n");
+	torture_comment(tctx, "Testing SMBmv\n");
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
 	}
 
-	printf("Trying simple rename\n");
+	torture_comment(tctx, "Trying simple rename\n");
 
 	op.generic.level = RAW_OPEN_NTCREATEX;
 	op.ntcreatex.in.root_fid = 0;
@@ -88,7 +90,7 @@ static bool test_mv(struct torture_context *tctx,
 	io.rename.in.pattern2 = fname2;
 	io.rename.in.attrib = 0;
 	
-	printf("trying rename while first file open\n");
+	torture_comment(tctx, "trying rename while first file open\n");
 	status = smb_raw_rename(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
 
@@ -103,7 +105,7 @@ static bool test_mv(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = op.ntcreatex.out.file.fnum;
 
-	printf("trying rename while first file open with SHARE_ACCESS_DELETE\n");
+	torture_comment(tctx, "trying rename while first file open with SHARE_ACCESS_DELETE\n");
 	status = smb_raw_rename(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
@@ -112,7 +114,7 @@ static bool test_mv(struct torture_context *tctx,
 	status = smb_raw_rename(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	printf("Trying case-changing rename\n");
+	torture_comment(tctx, "Trying case-changing rename\n");
 	io.rename.in.pattern1 = fname1;
 	io.rename.in.pattern2 = Fname1;
 	status = smb_raw_rename(cli->tree, &io);
@@ -123,7 +125,7 @@ static bool test_mv(struct torture_context *tctx,
 	status = smb_raw_pathinfo(cli->tree, tctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	if (strcmp(finfo.all_info.out.fname.s, Fname1) != 0) {
-		printf("(%s) Incorrect filename [%s] after case-changing "
+		torture_warning(tctx, "(%s) Incorrect filename [%s] after case-changing "
 		       "rename, should be [%s]\n", __location__,
 		       finfo.all_info.out.fname.s, Fname1);
 	}
@@ -131,12 +133,12 @@ static bool test_mv(struct torture_context *tctx,
 	io.rename.in.pattern1 = fname1;
 	io.rename.in.pattern2 = fname2;
 
-	printf("trying rename while not open\n");
+	torture_comment(tctx, "trying rename while not open\n");
 	smb_raw_exit(cli->session);
 	status = smb_raw_rename(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	
-	printf("Trying self rename\n");
+	torture_comment(tctx, "Trying self rename\n");
 	io.rename.in.pattern1 = fname2;
 	io.rename.in.pattern2 = fname2;
 	status = smb_raw_rename(cli->tree, &io);
@@ -148,18 +150,18 @@ static bool test_mv(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 
 
-	printf("trying wildcard rename\n");
+	torture_comment(tctx, "trying wildcard rename\n");
 	io.rename.in.pattern1 = BASEDIR "\\*.txt";
 	io.rename.in.pattern2 = fname1;
 	
 	status = smb_raw_rename(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	printf("and again\n");
+	torture_comment(tctx, "and again\n");
 	status = smb_raw_rename(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	printf("Trying extension change\n");
+	torture_comment(tctx, "Trying extension change\n");
 	io.rename.in.pattern1 = BASEDIR "\\*.txt";
 	io.rename.in.pattern2 = BASEDIR "\\*.bak";
 	status = smb_raw_rename(cli->tree, &io);
@@ -168,7 +170,7 @@ static bool test_mv(struct torture_context *tctx,
 	status = smb_raw_rename(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_NO_SUCH_FILE);
 
-	printf("Checking attrib handling\n");
+	torture_comment(tctx, "Checking attrib handling\n");
 	torture_set_file_attribute(cli->tree, BASEDIR "\\test1.bak", FILE_ATTRIBUTE_HIDDEN);
 	io.rename.in.pattern1 = BASEDIR "\\test1.bak";
 	io.rename.in.pattern2 = BASEDIR "\\*.txt";
@@ -201,7 +203,7 @@ static bool test_osxrename(struct torture_context *tctx,
 	union smb_fileinfo finfo;
 	union smb_open op;
 
-	printf("\nTesting OSX Rename\n");
+	torture_comment(tctx, "\nTesting OSX Rename\n");
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
 	}
@@ -234,18 +236,18 @@ static bool test_osxrename(struct torture_context *tctx,
 	 * If we find one and both the output and input are same case,
 	 * delete it. */
 
-	printf("Checking os X rename (case changing)\n");
+	torture_comment(tctx, "Checking os X rename (case changing)\n");
 
 	finfo.generic.level = RAW_FILEINFO_ALL_INFO;
 	finfo.all_info.in.file.path = FNAME1;
-	printf("Looking for file %s \n",FNAME1);
+	torture_comment(tctx, "Looking for file %s \n",FNAME1);
 	status = smb_raw_pathinfo(cli->tree, tctx, &finfo);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_OK)) {
-		printf("Name of the file found %s \n", finfo.all_info.out.fname.s);
+		torture_comment(tctx, "Name of the file found %s \n", finfo.all_info.out.fname.s);
 		if (strcmp(finfo.all_info.out.fname.s, finfo.all_info.in.file.path) == 0) {
 			/* If file is found with the same case delete it */
-			printf("Deleting File %s \n", finfo.all_info.out.fname.s);
+			torture_comment(tctx, "Deleting File %s \n", finfo.all_info.out.fname.s);
 			io_un.unlink.in.pattern = finfo.all_info.out.fname.s;
 			io_un.unlink.in.attrib = 0;
 			status = smb_raw_unlink(cli->tree, &io_un);
@@ -262,7 +264,7 @@ static bool test_osxrename(struct torture_context *tctx,
 	finfo.all_info.in.file.path = fname1;
 	status = smb_raw_pathinfo(cli->tree, tctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	printf("File name after rename %s \n",finfo.all_info.out.fname.s);
+	torture_comment(tctx, "File name after rename %s \n",finfo.all_info.out.fname.s);
 
 done:
 	smbcli_close(cli->tree, fnum);
@@ -285,13 +287,13 @@ static bool test_ntrename(struct torture_context *tctx,
 	const char *fname2 = BASEDIR "\\test2.txt";
 	union smb_fileinfo finfo;
 
-	printf("Testing SMBntrename\n");
+	torture_comment(tctx, "Testing SMBntrename\n");
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
 	}
 
-	printf("Trying simple rename\n");
+	torture_comment(tctx, "Trying simple rename\n");
 
 	fnum = create_complex_file(cli, tctx, fname1);
 	
@@ -309,7 +311,7 @@ static bool test_ntrename(struct torture_context *tctx,
 	status = smb_raw_rename(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	printf("Trying self rename\n");
+	torture_comment(tctx, "Trying self rename\n");
 	io.ntrename.in.old_name = fname2;
 	io.ntrename.in.new_name = fname2;
 	status = smb_raw_rename(cli->tree, &io);
@@ -320,14 +322,14 @@ static bool test_ntrename(struct torture_context *tctx,
 	status = smb_raw_rename(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 
-	printf("trying wildcard rename\n");
+	torture_comment(tctx, "trying wildcard rename\n");
 	io.ntrename.in.old_name = BASEDIR "\\*.txt";
 	io.ntrename.in.new_name = fname1;
 	
 	status = smb_raw_rename(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_SYNTAX_BAD);
 
-	printf("Checking attrib handling\n");
+	torture_comment(tctx, "Checking attrib handling\n");
 	torture_set_file_attribute(cli->tree, fname2, FILE_ATTRIBUTE_HIDDEN);
 	io.ntrename.in.old_name = fname2;
 	io.ntrename.in.new_name = fname1;
@@ -341,7 +343,7 @@ static bool test_ntrename(struct torture_context *tctx,
 
 	torture_set_file_attribute(cli->tree, fname1, FILE_ATTRIBUTE_NORMAL);
 
-	printf("Checking hard link\n");
+	torture_comment(tctx, "Checking hard link\n");
 	io.ntrename.in.old_name = fname1;
 	io.ntrename.in.new_name = fname2;
 	io.ntrename.in.attrib = 0;
@@ -374,7 +376,7 @@ static bool test_ntrename(struct torture_context *tctx,
 	CHECK_VALUE(finfo.all_info.out.nlink, 1);
 	CHECK_VALUE(finfo.all_info.out.attrib, FILE_ATTRIBUTE_NORMAL);
 
-	printf("Checking copy\n");
+	torture_comment(tctx, "Checking copy\n");
 	io.ntrename.in.old_name = fname1;
 	io.ntrename.in.new_name = fname2;
 	io.ntrename.in.attrib = 0;
@@ -420,7 +422,7 @@ static bool test_ntrename(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(finfo.all_info.out.nlink, 1);
 
-	printf("Checking invalid flags\n");
+	torture_comment(tctx, "Checking invalid flags\n");
 	io.ntrename.in.old_name = fname1;
 	io.ntrename.in.new_name = fname2;
 	io.ntrename.in.attrib = 0;
@@ -436,7 +438,7 @@ static bool test_ntrename(struct torture_context *tctx,
 	status = smb_raw_rename(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
 
-	printf("Checking unknown field\n");
+	torture_comment(tctx, "Checking unknown field\n");
 	io.ntrename.in.old_name = fname1;
 	io.ntrename.in.new_name = fname2;
 	io.ntrename.in.attrib = 0;
@@ -445,7 +447,7 @@ static bool test_ntrename(struct torture_context *tctx,
 	status = smb_raw_rename(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	printf("Trying RENAME_FLAG_MOVE_CLUSTER_INFORMATION\n");
+	torture_comment(tctx, "Trying RENAME_FLAG_MOVE_CLUSTER_INFORMATION\n");
 
 	io.ntrename.in.old_name = fname2;
 	io.ntrename.in.new_name = fname1;
@@ -485,12 +487,12 @@ static bool test_ntrename(struct torture_context *tctx,
 		io.ntrename.in.cluster_size = i;
 		status = smb_raw_rename(cli->tree, &io);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
-			printf("i=%d status=%s\n", i, nt_errstr(status));
+			torture_warning(tctx, "i=%d status=%s\n", i, nt_errstr(status));
 		}
 	}
 #endif
 
-	printf("Checking other flags\n");
+	torture_comment(tctx, "Checking other flags\n");
 
 	for (i=0;i<0xFFF;i++) {
 		if (i == RENAME_FLAG_RENAME ||
@@ -506,7 +508,7 @@ static bool test_ntrename(struct torture_context *tctx,
 		io.ntrename.in.cluster_size = 0;
 		status = smb_raw_rename(cli->tree, &io);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
-			printf("flags=0x%x status=%s\n", i, nt_errstr(status));
+			torture_warning(tctx, "flags=0x%x status=%s\n", i, nt_errstr(status));
 		}
 	}
 	
@@ -530,7 +532,7 @@ static bool test_dir_rename(struct torture_context *tctx, struct smbcli_state *c
 	bool ret = true;
 	int fnum = -1;
 
-        printf("Checking rename on a directory containing an open file.\n");
+	torture_comment(tctx, "Checking rename on a directory containing an open file.\n");
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
