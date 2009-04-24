@@ -28,7 +28,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "param/param.h"
 #include "torture/smbtorture.h"
-#include "torture/ldb/proto.h"
+#include "torture/local/proto.h"
 
 static const char *sid = "S-1-5-21-4177067393-1453636373-93818737";
 static const char *hex_sid = "01040000000000051500000081FDF8F815BBA456718F9705";
@@ -752,9 +752,14 @@ static bool torture_ldb_dn_invalid_extended(struct torture_context *torture)
 	return true;
 }
 
-NTSTATUS torture_ldb_init(void)
+struct torture_suite *torture_ldb(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "LDB");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "LDB");
+
+	if (suite == NULL) {
+		return NULL;
+	}
+
 	torture_suite_add_simple_test(suite, "ATTRS", torture_ldb_attrs);
 	torture_suite_add_simple_test(suite, "DN-ATTRS", torture_ldb_dn_attrs);
 	torture_suite_add_simple_test(suite, "DN-EXTENDED", torture_ldb_dn_extended);
@@ -763,7 +768,5 @@ NTSTATUS torture_ldb_init(void)
 
 	suite->description = talloc_strdup(suite, "LDB (samba-specific behaviour) tests");
 
-	torture_register_suite(suite);
-
-	return NT_STATUS_OK;
+	return suite;
 }

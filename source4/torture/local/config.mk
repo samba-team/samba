@@ -51,7 +51,7 @@ TORTURE_LOCAL_OBJ_FILES = \
 		$(torturesrcdir)/../auth/credentials/tests/simple.o \
 		$(torturesrcdir)/local/local.o \
 		$(torturesrcdir)/local/dbspeed.o \
-		$(torturesrcdir)/local/torture.o
-
+		$(torturesrcdir)/local/torture.o \
+		$(torturesrcdir)/ldb/ldb.o
 
 $(eval $(call proto_header_template,$(torturesrcdir)/local/proto.h,$(TORTURE_LOCAL_OBJ_FILES:.o=.c)))
