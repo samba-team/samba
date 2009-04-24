@@ -1,6 +1,6 @@
 /*
    Unix SMB/CIFS implementation.
-   test suite for srvsvc rpc operations
+   test suite for svcctl rpc operations
 
    Copyright (C) Jelmer Vernooij 2004
    Copyright (C) Guenther Deschner 2008,2009
@@ -324,6 +324,65 @@ static bool test_QueryServiceObjectSecurity(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_SetServiceObjectSecurity(struct torture_context *tctx,
+					  struct dcerpc_pipe *p)
+{
+	struct svcctl_QueryServiceObjectSecurity q;
+	struct svcctl_SetServiceObjectSecurity r;
+	struct policy_handle h, s;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+
+	uint8_t *buffer;
+	uint32_t needed;
+
+	if (!test_OpenSCManager(b, tctx, &h))
+		return false;
+
+	if (!test_OpenService(b, tctx, &h, TORTURE_DEFAULT_SERVICE, &s))
+		return false;
+
+	q.in.handle = &s;
+	q.in.security_flags = SECINFO_DACL;
+	q.in.offered = 0;
+	q.out.buffer = NULL;
+	q.out.needed = &needed;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_svcctl_QueryServiceObjectSecurity_r(b, tctx, &q),
+		"QueryServiceObjectSecurity failed!");
+
+	if (W_ERROR_EQUAL(q.out.result, WERR_INSUFFICIENT_BUFFER)) {
+		q.in.offered = needed;
+		buffer = talloc_array(tctx, uint8_t, needed);
+		q.out.buffer = buffer;
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_svcctl_QueryServiceObjectSecurity_r(b, tctx, &q),
+			"QueryServiceObjectSecurity failed!");
+	}
+
+	torture_assert_werr_ok(tctx, q.out.result,
+		"QueryServiceObjectSecurity failed!");
+
+	r.in.handle = &s;
+	r.in.security_flags = SECINFO_DACL;
+	r.in.buffer = q.out.buffer;
+	r.in.offered = *q.out.needed;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_svcctl_SetServiceObjectSecurity_r(b, tctx, &r),
+		"SetServiceObjectSecurity failed!");
+	torture_assert_werr_ok(tctx, r.out.result,
+		"SetServiceObjectSecurity failed!");
+
+	if (!test_CloseServiceHandle(b, tctx, &s))
+		return false;
+
+	if (!test_CloseServiceHandle(b, tctx, &h))
+		return false;
+
+	return true;
+}
+
 static bool test_StartServiceW(struct torture_context *tctx,
 			       struct dcerpc_pipe *p)
 {
@@ -570,6 +629,8 @@ struct torture_suite *torture_rpc_svcctl(TALLOC_CTX *mem_ctx)
 				   test_QueryServiceConfig2W);
 	torture_rpc_tcase_add_test(tcase, "QueryServiceObjectSecurity",
 				   test_QueryServiceObjectSecurity);
+	torture_rpc_tcase_add_test(tcase, "SetServiceObjectSecurity",
+				   test_SetServiceObjectSecurity);
 	torture_rpc_tcase_add_test(tcase, "StartServiceW",
 				   test_StartServiceW);
 	torture_rpc_tcase_add_test(tcase, "ControlService",
