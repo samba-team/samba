@@ -569,7 +569,7 @@ ctdb_drop_all_ips_event(struct event_context *ev, struct timed_event *te,
 {
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
 
-	DEBUG(DEBUG_INFO,(__location__ " Been in recovery mode for too long. Dropping all IPS\n"));
+	DEBUG(DEBUG_ERR,(__location__ " Been in recovery mode for too long. Dropping all IPS\n"));
 	talloc_free(ctdb->release_ips_ctx);
 	ctdb->release_ips_ctx = NULL;
 
@@ -600,7 +600,7 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 		ctdb->release_ips_ctx = talloc_new(ctdb);
 		CTDB_NO_MEMORY(ctdb, ctdb->release_ips_ctx);
 
-		event_add_timed(ctdb->ev, ctdb->release_ips_ctx, timeval_current_ofs(5,0), ctdb_drop_all_ips_event, ctdb);
+		event_add_timed(ctdb->ev, ctdb->release_ips_ctx, timeval_current_ofs(35,0), ctdb_drop_all_ips_event, ctdb);
 	}
 
 
