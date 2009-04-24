@@ -105,6 +105,7 @@ struct ctdb_tunable {
 	uint32_t recd_ping_timeout;
 	uint32_t recd_ping_failcount;
 	uint32_t log_latency_ms;
+	uint32_t recovery_drop_all_ips;
 };
 
 /*

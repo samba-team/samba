@@ -600,7 +600,7 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 		ctdb->release_ips_ctx = talloc_new(ctdb);
 		CTDB_NO_MEMORY(ctdb, ctdb->release_ips_ctx);
 
-		event_add_timed(ctdb->ev, ctdb->release_ips_ctx, timeval_current_ofs(35,0), ctdb_drop_all_ips_event, ctdb);
+		event_add_timed(ctdb->ev, ctdb->release_ips_ctx, timeval_current_ofs(ctdb->tunable.recovery_drop_all_ips, 0), ctdb_drop_all_ips_event, ctdb);
 	}
 
 
