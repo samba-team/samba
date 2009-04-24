@@ -2324,8 +2324,8 @@ void cli_reset_error(struct cli_state *cli);
 
 /* The following definitions come from libsmb/clifile.c  */
 
-uint32 unix_perms_to_wire(mode_t perms);
-mode_t wire_perms_to_unix(uint32 perms);
+uint32_t unix_perms_to_wire(mode_t perms);
+mode_t wire_perms_to_unix(uint32_t perms);
 bool cli_unix_getfacl(struct cli_state *cli, const char *name, size_t *prb_size, char **retbuf);
 bool cli_unix_stat(struct cli_state *cli, const char *name, SMB_STRUCT_STAT *sbuf);
 bool cli_unix_symlink(struct cli_state *cli, const char *oldname, const char *newname);
@@ -2335,7 +2335,7 @@ bool cli_unix_chown(struct cli_state *cli, const char *fname, uid_t uid, gid_t g
 bool cli_rename(struct cli_state *cli, const char *fname_src, const char *fname_dst);
 bool cli_ntrename(struct cli_state *cli, const char *fname_src, const char *fname_dst);
 bool cli_nt_hardlink(struct cli_state *cli, const char *fname_src, const char *fname_dst);
-bool cli_unlink_full(struct cli_state *cli, const char *fname, uint16 attrs);
+bool cli_unlink_full(struct cli_state *cli, const char *fname, uint16_t attrs);
 bool cli_unlink(struct cli_state *cli, const char *fname);
 struct tevent_req *cli_mkdir_send(TALLOC_CTX *mem_ctx,
 				  struct event_context *ev,
@@ -2351,10 +2351,10 @@ NTSTATUS cli_rmdir_recv(struct tevent_req *req);
 NTSTATUS cli_rmdir(struct cli_state *cli, const char *dname);
 int cli_nt_delete_on_close(struct cli_state *cli, int fnum, bool flag);
 int cli_nt_create_full(struct cli_state *cli, const char *fname,
-		 uint32 CreatFlags, uint32 DesiredAccess,
-		 uint32 FileAttributes, uint32 ShareAccess,
-		 uint32 CreateDisposition, uint32 CreateOptions,
-		 uint8 SecuityFlags);
+		 uint32_t CreatFlags, uint32_t DesiredAccess,
+		 uint32_t FileAttributes, uint32_t ShareAccess,
+		 uint32_t CreateDisposition, uint32_t CreateOptions,
+		 uint8_t SecuityFlags);
 struct tevent_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
 				     struct event_context *ev,
 				     struct cli_state *cli,
@@ -2377,7 +2377,7 @@ NTSTATUS cli_ntcreate(struct cli_state *cli,
 		      uint32_t CreateOptions,
 		      uint8_t SecurityFlags,
 		      uint16_t *pfid);
-int cli_nt_create(struct cli_state *cli, const char *fname, uint32 DesiredAccess);
+int cli_nt_create(struct cli_state *cli, const char *fname, uint32_t DesiredAccess);
 uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2, const char *str,
 			    size_t str_len, size_t *pconverted_size);
 struct tevent_req *cli_open_create(TALLOC_CTX *mem_ctx,
@@ -2401,11 +2401,11 @@ NTSTATUS cli_close_recv(struct tevent_req *req);
 bool cli_close(struct cli_state *cli, int fnum);
 bool cli_ftruncate(struct cli_state *cli, int fnum, uint64_t size);
 NTSTATUS cli_locktype(struct cli_state *cli, int fnum,
-		      uint32 offset, uint32 len,
+		      uint32_t offset, uint32_t len,
 		      int timeout, unsigned char locktype);
 bool cli_lock(struct cli_state *cli, int fnum,
-	      uint32 offset, uint32 len, int timeout, enum brl_type lock_type);
-bool cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len);
+	      uint32_t offset, uint32_t len, int timeout, enum brl_type lock_type);
+bool cli_unlock(struct cli_state *cli, int fnum, uint32_t offset, uint32_t len);
 bool cli_lock64(struct cli_state *cli, int fnum,
 		uint64_t offset, uint64_t len, int timeout, enum brl_type lock_type);
 bool cli_unlock64(struct cli_state *cli, int fnum, uint64_t offset, uint64_t len);
@@ -2415,17 +2415,17 @@ bool cli_posix_lock(struct cli_state *cli, int fnum,
 bool cli_posix_unlock(struct cli_state *cli, int fnum, uint64_t offset, uint64_t len);
 bool cli_posix_getlock(struct cli_state *cli, int fnum, uint64_t *poffset, uint64_t *plen);
 bool cli_getattrE(struct cli_state *cli, int fd,
-		  uint16 *attr, SMB_OFF_T *size,
+		  uint16_t *attr, SMB_OFF_T *size,
 		  time_t *change_time,
                   time_t *access_time,
                   time_t *write_time);
 bool cli_getatr(struct cli_state *cli, const char *fname,
-		uint16 *attr, SMB_OFF_T *size, time_t *write_time);
+		uint16_t *attr, SMB_OFF_T *size, time_t *write_time);
 bool cli_setattrE(struct cli_state *cli, int fd,
 		  time_t change_time,
                   time_t access_time,
                   time_t write_time);
-bool cli_setatr(struct cli_state *cli, const char *fname, uint16 attr, time_t t);
+bool cli_setatr(struct cli_state *cli, const char *fname, uint16_t attr, time_t t);
 struct tevent_req *cli_chkpath_send(TALLOC_CTX *mem_ctx,
 				  struct event_context *ev,
 				  struct cli_state *cli,
@@ -2439,7 +2439,7 @@ NTSTATUS cli_dskattr_recv(struct tevent_req *req, int *bsize, int *total,
 			  int *avail);
 NTSTATUS cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail);
 int cli_ctemp(struct cli_state *cli, const char *path, char **tmp_path);
-NTSTATUS cli_raw_ioctl(struct cli_state *cli, int fnum, uint32 code, DATA_BLOB *blob);
+NTSTATUS cli_raw_ioctl(struct cli_state *cli, int fnum, uint32_t code, DATA_BLOB *blob);
 bool cli_set_ea_path(struct cli_state *cli, const char *path, const char *ea_name, const char *ea_val, size_t ea_len);
 bool cli_set_ea_fnum(struct cli_state *cli, int fnum, const char *ea_name, const char *ea_val, size_t ea_len);
 bool cli_get_ea_list_path(struct cli_state *cli, const char *path,

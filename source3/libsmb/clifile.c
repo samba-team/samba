@@ -29,7 +29,7 @@ static bool cli_link_internal(struct cli_state *cli, const char *oldname, const 
 {
 	unsigned int data_len = 0;
 	unsigned int param_len = 0;
-	uint16 setup = TRANSACT2_SETPATHINFO;
+	uint16_t setup = TRANSACT2_SETPATHINFO;
 	char *param;
 	char *data;
 	char *rparam=NULL, *rdata=NULL;
@@ -94,7 +94,7 @@ static bool cli_link_internal(struct cli_state *cli, const char *oldname, const 
  Map standard UNIX permissions onto wire representations.
 ****************************************************************************/
 
-uint32 unix_perms_to_wire(mode_t perms)
+uint32_t unix_perms_to_wire(mode_t perms)
 {
         unsigned int ret = 0;
 
@@ -123,7 +123,7 @@ uint32 unix_perms_to_wire(mode_t perms)
  Map wire permissions to standard UNIX.
 ****************************************************************************/
 
-mode_t wire_perms_to_unix(uint32 perms)
+mode_t wire_perms_to_unix(uint32_t perms)
 {
         mode_t ret = (mode_t)0;
 
@@ -152,7 +152,7 @@ mode_t wire_perms_to_unix(uint32 perms)
  Return the file type from the wire filetype for UNIX extensions.
 ****************************************************************************/
 
-static mode_t unix_filetype_from_wire(uint32 wire_type)
+static mode_t unix_filetype_from_wire(uint32_t wire_type)
 {
 	switch (wire_type) {
 		case UNIX_TYPE_FILE:
@@ -192,7 +192,7 @@ bool cli_unix_getfacl(struct cli_state *cli, const char *name, size_t *prb_size,
 {
 	unsigned int param_len = 0;
 	unsigned int data_len = 0;
-	uint16 setup = TRANSACT2_QPATHINFO;
+	uint16_t setup = TRANSACT2_QPATHINFO;
 	char *param;
 	size_t nlen = 2*(strlen(name)+1);
 	char *rparam=NULL, *rdata=NULL;
@@ -250,7 +250,7 @@ bool cli_unix_stat(struct cli_state *cli, const char *name, SMB_STRUCT_STAT *sbu
 {
 	unsigned int param_len = 0;
 	unsigned int data_len = 0;
-	uint16 setup = TRANSACT2_QPATHINFO;
+	uint16_t setup = TRANSACT2_QPATHINFO;
 	char *param;
 	size_t nlen = 2*(strlen(name)+1);
 	char *rparam=NULL, *rdata=NULL;
@@ -311,8 +311,8 @@ bool cli_unix_stat(struct cli_state *cli, const char *name, SMB_STRUCT_STAT *sbu
 	sbuf->st_mode |= unix_filetype_from_wire(IVAL(rdata, 56));
 #if defined(HAVE_MAKEDEV)
 	{
-		uint32 dev_major = IVAL(rdata,60);
-		uint32 dev_minor = IVAL(rdata,68);
+		uint32_t dev_major = IVAL(rdata,60);
+		uint32_t dev_minor = IVAL(rdata,68);
 		sbuf->st_rdev = makedev(dev_major, dev_minor);
 	}
 #endif
@@ -348,11 +348,11 @@ bool cli_unix_hardlink(struct cli_state *cli, const char *oldname, const char *n
  Chmod or chown a file internal (UNIX extensions).
 ****************************************************************************/
 
-static bool cli_unix_chmod_chown_internal(struct cli_state *cli, const char *fname, uint32 mode, uint32 uid, uint32 gid)
+static bool cli_unix_chmod_chown_internal(struct cli_state *cli, const char *fname, uint32_t mode, uint32_t uid, uint32_t gid)
 {
 	unsigned int data_len = 0;
 	unsigned int param_len = 0;
-	uint16 setup = TRANSACT2_SETPATHINFO;
+	uint16_t setup = TRANSACT2_SETPATHINFO;
 	size_t nlen = 2*(strlen(fname)+1);
 	char *param;
 	char data[100];
@@ -554,7 +554,7 @@ bool cli_nt_hardlink(struct cli_state *cli, const char *fname_src, const char *f
  Delete a file.
 ****************************************************************************/
 
-bool cli_unlink_full(struct cli_state *cli, const char *fname, uint16 attrs)
+bool cli_unlink_full(struct cli_state *cli, const char *fname, uint16_t attrs)
 {
 	char *p;
 
@@ -820,7 +820,7 @@ int cli_nt_delete_on_close(struct cli_state *cli, int fnum, bool flag)
 {
 	unsigned int data_len = 1;
 	unsigned int param_len = 6;
-	uint16 setup = TRANSACT2_SETFILEINFO;
+	uint16_t setup = TRANSACT2_SETFILEINFO;
 	char param[6];
 	unsigned char data;
 	char *rparam=NULL, *rdata=NULL;
@@ -859,10 +859,10 @@ int cli_nt_delete_on_close(struct cli_state *cli, int fnum, bool flag)
 ****************************************************************************/
 
 int cli_nt_create_full(struct cli_state *cli, const char *fname,
-		       uint32 CreatFlags, uint32 DesiredAccess,
-		       uint32 FileAttributes, uint32 ShareAccess,
-		       uint32 CreateDisposition, uint32 CreateOptions,
-		       uint8 SecurityFlags)
+		       uint32_t CreatFlags, uint32_t DesiredAccess,
+		       uint32_t FileAttributes, uint32_t ShareAccess,
+		       uint32_t CreateDisposition, uint32_t CreateOptions,
+		       uint8_t SecurityFlags)
 {
 	char *p;
 	int len;
@@ -1081,7 +1081,7 @@ NTSTATUS cli_ntcreate(struct cli_state *cli,
  Open a file.
 ****************************************************************************/
 
-int cli_nt_create(struct cli_state *cli, const char *fname, uint32 DesiredAccess)
+int cli_nt_create(struct cli_state *cli, const char *fname, uint32_t DesiredAccess)
 {
 	return cli_nt_create_full(cli, fname, 0, DesiredAccess, 0,
 				FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0x0, 0x0);
@@ -1453,7 +1453,7 @@ bool cli_ftruncate(struct cli_state *cli, int fnum, uint64_t size)
 {
 	unsigned int param_len = 6;
 	unsigned int data_len = 8;
-	uint16 setup = TRANSACT2_SETFILEINFO;
+	uint16_t setup = TRANSACT2_SETFILEINFO;
 	char param[6];
 	unsigned char data[8];
 	char *rparam=NULL, *rdata=NULL;
@@ -1500,7 +1500,7 @@ bool cli_ftruncate(struct cli_state *cli, int fnum, uint64_t size)
 ****************************************************************************/
 
 NTSTATUS cli_locktype(struct cli_state *cli, int fnum,
-		      uint32 offset, uint32 len,
+		      uint32_t offset, uint32_t len,
 		      int timeout, unsigned char locktype)
 {
 	char *p;
@@ -1553,7 +1553,7 @@ NTSTATUS cli_locktype(struct cli_state *cli, int fnum,
 ****************************************************************************/
 
 bool cli_lock(struct cli_state *cli, int fnum,
-	      uint32 offset, uint32 len, int timeout, enum brl_type lock_type)
+	      uint32_t offset, uint32_t len, int timeout, enum brl_type lock_type)
 {
 	char *p;
 	int saved_timeout = cli->timeout;
@@ -1607,7 +1607,7 @@ bool cli_lock(struct cli_state *cli, int fnum,
  Unlock a file.
 ****************************************************************************/
 
-bool cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len)
+bool cli_unlock(struct cli_state *cli, int fnum, uint32_t offset, uint32_t len)
 {
 	char *p;
 
@@ -1761,7 +1761,7 @@ static bool cli_posix_lock_internal(struct cli_state *cli, int fnum,
 {
 	unsigned int param_len = 4;
 	unsigned int data_len = POSIX_LOCK_DATA_SIZE;
-	uint16 setup = TRANSACT2_SETFILEINFO;
+	uint16_t setup = TRANSACT2_SETFILEINFO;
 	char param[4];
 	unsigned char data[POSIX_LOCK_DATA_SIZE];
 	char *rparam=NULL, *rdata=NULL;
@@ -1860,7 +1860,7 @@ bool cli_posix_getlock(struct cli_state *cli, int fnum, uint64_t *poffset, uint6
 ****************************************************************************/
 
 bool cli_getattrE(struct cli_state *cli, int fd,
-		  uint16 *attr, SMB_OFF_T *size,
+		  uint16_t *attr, SMB_OFF_T *size,
 		  time_t *change_time,
                   time_t *access_time,
                   time_t *write_time)
@@ -1913,7 +1913,7 @@ bool cli_getattrE(struct cli_state *cli, int fd,
 ****************************************************************************/
 
 bool cli_getatr(struct cli_state *cli, const char *fname,
-		uint16 *attr, SMB_OFF_T *size, time_t *write_time)
+		uint16_t *attr, SMB_OFF_T *size, time_t *write_time)
 {
 	char *p;
 
@@ -2004,7 +2004,7 @@ bool cli_setattrE(struct cli_state *cli, int fd,
  Do a SMBsetatr call.
 ****************************************************************************/
 
-bool cli_setatr(struct cli_state *cli, const char *fname, uint16 attr, time_t t)
+bool cli_setatr(struct cli_state *cli, const char *fname, uint16_t attr, time_t t)
 {
 	char *p;
 
@@ -2358,7 +2358,7 @@ int cli_ctemp(struct cli_state *cli, const char *path, char **tmp_path)
 /*
    send a raw ioctl - used by the torture code
 */
-NTSTATUS cli_raw_ioctl(struct cli_state *cli, int fnum, uint32 code, DATA_BLOB *blob)
+NTSTATUS cli_raw_ioctl(struct cli_state *cli, int fnum, uint32_t code, DATA_BLOB *blob)
 {
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
@@ -2389,7 +2389,7 @@ NTSTATUS cli_raw_ioctl(struct cli_state *cli, int fnum, uint32 code, DATA_BLOB *
  Set an extended attribute utility fn.
 *********************************************************/
 
-static bool cli_set_ea(struct cli_state *cli, uint16 setup, char *param, unsigned int param_len,
+static bool cli_set_ea(struct cli_state *cli, uint16_t setup, char *param, unsigned int param_len,
 			const char *ea_name, const char *ea_val, size_t ea_len)
 {
 	unsigned int data_len = 0;
@@ -2453,7 +2453,7 @@ static bool cli_set_ea(struct cli_state *cli, uint16 setup, char *param, unsigne
 
 bool cli_set_ea_path(struct cli_state *cli, const char *path, const char *ea_name, const char *ea_val, size_t ea_len)
 {
-	uint16 setup = TRANSACT2_SETPATHINFO;
+	uint16_t setup = TRANSACT2_SETPATHINFO;
 	unsigned int param_len = 0;
 	char *param;
 	size_t srclen = 2*(strlen(path)+1);
@@ -2483,7 +2483,7 @@ bool cli_set_ea_path(struct cli_state *cli, const char *path, const char *ea_nam
 bool cli_set_ea_fnum(struct cli_state *cli, int fnum, const char *ea_name, const char *ea_val, size_t ea_len)
 {
 	char param[6];
-	uint16 setup = TRANSACT2_SETFILEINFO;
+	uint16_t setup = TRANSACT2_SETFILEINFO;
 
 	memset(param, 0, 6);
 	SSVAL(param,0,fnum);
@@ -2497,7 +2497,7 @@ bool cli_set_ea_fnum(struct cli_state *cli, int fnum, const char *ea_name, const
 *********************************************************/
 
 static bool cli_get_ea_list(struct cli_state *cli,
-		uint16 setup, char *param, unsigned int param_len,
+		uint16_t setup, char *param, unsigned int param_len,
 		TALLOC_CTX *ctx,
 		size_t *pnum_eas,
 		struct ea_struct **pea_list)
@@ -2626,7 +2626,7 @@ bool cli_get_ea_list_path(struct cli_state *cli, const char *path,
 		size_t *pnum_eas,
 		struct ea_struct **pea_list)
 {
-	uint16 setup = TRANSACT2_QPATHINFO;
+	uint16_t setup = TRANSACT2_QPATHINFO;
 	unsigned int param_len = 0;
 	char *param;
 	char *p;
@@ -2658,7 +2658,7 @@ bool cli_get_ea_list_fnum(struct cli_state *cli, int fnum,
 		size_t *pnum_eas,
 		struct ea_struct **pea_list)
 {
-	uint16 setup = TRANSACT2_QFILEINFO;
+	uint16_t setup = TRANSACT2_QFILEINFO;
 	char param[6];
 
 	memset(param, 0, 6);
@@ -2669,13 +2669,13 @@ bool cli_get_ea_list_fnum(struct cli_state *cli, int fnum,
 }
 
 /****************************************************************************
- Convert open "flags" arg to uint32 on wire.
+ Convert open "flags" arg to uint32_t on wire.
 ****************************************************************************/
 
-static uint32 open_flags_to_wire(int flags)
+static uint32_t open_flags_to_wire(int flags)
 {
 	int open_mode = flags & O_ACCMODE;
-	uint32 ret = 0;
+	uint32_t ret = 0;
 
 	switch (open_mode) {
 		case O_WRONLY:
@@ -2729,13 +2729,13 @@ static int cli_posix_open_internal(struct cli_state *cli, const char *fname, int
 {
 	unsigned int data_len = 0;
 	unsigned int param_len = 0;
-	uint16 setup = TRANSACT2_SETPATHINFO;
+	uint16_t setup = TRANSACT2_SETPATHINFO;
 	char *param;
 	char data[18];
 	char *rparam=NULL, *rdata=NULL;
 	char *p;
 	int fnum = -1;
-	uint32 wire_flags = open_flags_to_wire(flags);
+	uint32_t wire_flags = open_flags_to_wire(flags);
 	size_t srclen = 2*(strlen(fname)+1);
 
 	param = SMB_MALLOC_ARRAY(char, 6+srclen+2);
@@ -2816,7 +2816,7 @@ static bool cli_posix_unlink_internal(struct cli_state *cli, const char *fname, 
 {
 	unsigned int data_len = 0;
 	unsigned int param_len = 0;
-	uint16 setup = TRANSACT2_SETPATHINFO;
+	uint16_t setup = TRANSACT2_SETPATHINFO;
 	char *param;
 	char data[2];
 	char *rparam=NULL, *rdata=NULL;
