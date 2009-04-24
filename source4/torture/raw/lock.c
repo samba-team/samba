@@ -70,6 +70,7 @@
 #define BASEDIR "\\testlock"
 
 #define TARGET_IS_WIN7(_tctx) (torture_setting_bool(_tctx, "win7", false))
+#define TARGET_IS_SAMBA4(_tctx) (torture_setting_bool(_tctx, "samba4", false))
 
 /*
   test SMBlock and SMBunlock ops
@@ -1576,9 +1577,11 @@ static bool test_unlock(struct torture_context *tctx, struct smbcli_state *cli)
 	 * resolution as to whether Samba should support this or not. There is
 	 * code to preference unlocking exclusive locks before shared locks,
 	 * but its wrapped with "#ifdef ZERO_ZERO". -zkirsch */
-	if (TARGET_IS_WIN7(tctx))
+	if (TARGET_IS_WIN7(tctx)) {
 		CHECK_STATUS(status, NT_STATUS_OK);
-	else {
+	} else if (TARGET_IS_SAMBA4(tctx)) {
+		CHECK_STATUS(status, NT_STATUS_OK);
+	} else {
 		CHECK_STATUS_OR(status, NT_STATUS_LOCK_NOT_GRANTED,
 		    NT_STATUS_FILE_LOCK_CONFLICT);
 	}
@@ -1588,11 +1591,14 @@ static bool test_unlock(struct torture_context *tctx, struct smbcli_state *cli)
 	io.lockx.in.lock_cnt = 0;
 	status = smb_raw_lock(cli->tree, &io);
 
-        /* XXX Same as above. */
-        if (TARGET_IS_WIN7(tctx))
-                CHECK_STATUS(status, NT_STATUS_OK);
-        else
-                CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
+	/* XXX Same as above. */
+	if (TARGET_IS_WIN7(tctx)) {
+		CHECK_STATUS(status, NT_STATUS_OK);
+	} else if (TARGET_IS_SAMBA4(tctx)) {
+		CHECK_STATUS(status, NT_STATUS_OK);
+	} else {
+		CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
+	}
 
 	io.lockx.in.file.fnum = fnum1;
 	io.lockx.in.locks = &lock1;
