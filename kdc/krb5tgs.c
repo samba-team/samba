@@ -1362,8 +1362,7 @@ tgs_build_reply(krb5_context context,
 		const char *from,
 		const char **e_text,
 		AuthorizationData **auth_data,
-		const struct sockaddr *from_addr,
-		int datagram_reply)
+		const struct sockaddr *from_addr)
 {
     krb5_error_code ret;
     krb5_principal cp = NULL, sp = NULL;
@@ -2038,8 +2037,7 @@ _kdc_tgs_rep(krb5_context context,
 			  from,
 			  &e_text,
 			  &auth_data,
-			  from_addr,
-			  datagram_reply);
+			  from_addr);
     if (ret) {
 	kdc_log(context, config, 0,
 		"Failed building TGS-REP to %s", from);
