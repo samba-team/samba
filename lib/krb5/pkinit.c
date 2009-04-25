@@ -2363,14 +2363,12 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 #ifdef PKINIT
 
 static int
-match_ms_san(hx509_context context, hx509_cert cert, void *ctx)
+get_ms_san(hx509_context context, hx509_cert cert, char **upn)
 {
     hx509_octet_string_list list;
-    char **result = ctx;
     int ret;
 
-    if (*result) 
-	return 0;
+    *upn = NULL;
 
     ret = hx509_cert_find_subjectAltName_otherName(context,
 						   cert,
@@ -2379,19 +2377,29 @@ match_ms_san(hx509_context context, hx509_cert cert, void *ctx)
     if (ret)
 	return 0;
 
-    if (list.len > 0 && list.val[0].length > 0) {
-
+    if (list.len > 0 && list.val[0].length > 0)
 	ret = decode_MS_UPN_SAN(list.val[0].data, list.val[0].length,
-				result, NULL);
-	if (ret)
-	    *result = NULL;
-    }
+				upn, NULL);
+    else
+	ret = 1;
     hx509_free_octet_string_list(&list);	   
 
-    if (*result == NULL)
-	return 0;
-    return 1;
+    return ret;
 }
+
+static int
+find_ms_san(hx509_context context, hx509_cert cert, void *ctx)
+{
+    char *upn;
+    int ret;
+
+    ret = get_ms_san(context, cert, &upn);
+    if (ret == 0)
+	free(upn);
+    return ret;
+}
+
+
 
 #endif
 
@@ -2407,10 +2415,11 @@ _krb5_pk_enterprise_cert(krb5_context context,
 {
 #ifdef PKINIT
     krb5_error_code ret;
-    char *enterprise_name = NULL;
     hx509_context hx509ctx;
     hx509_certs certs, result;
+    hx509_cert cert;
     hx509_query *q;
+    char *name;
 
     *principal = NULL;
     
@@ -2437,24 +2446,28 @@ _krb5_pk_enterprise_cert(krb5_context context,
     hx509_query_match_option(q, HX509_QUERY_OPTION_PRIVATE_KEY);
     hx509_query_match_option(q, HX509_QUERY_OPTION_KU_DIGITALSIGNATURE);
     hx509_query_match_eku(q, oid_id_pkinit_ms_eku());
-    hx509_query_match_cmp_func(q, match_ms_san, &enterprise_name);
+    hx509_query_match_cmp_func(q, find_ms_san, NULL);
 
     ret = hx509_certs_filter(hx509ctx, certs, q, &result);
     hx509_query_free(hx509ctx, q);
     hx509_certs_free(&certs);
-
     if (ret)
 	return ret;
-    if (enterprise_name == NULL)
-	return ENOENT; /* XXX */
+    
+    ret = hx509_get_one_cert(hx509ctx, result, &cert);
+    hx509_certs_free(&result);
+    if (ret)
+	return ret;
 
-    ret = krb5_make_principal(context, principal, realm,
-			      enterprise_name, NULL);
-    free(enterprise_name);
+    ret = get_ms_san(hx509ctx, cert, &name);
+    if (ret)
+	return ret;
+
+    ret = krb5_make_principal(context, principal, realm, name, NULL);
+    free(name);
     hx509_context_free(&hx509ctx);
     if (ret)
 	return ret;
-
 
     krb5_principal_set_type(context, *principal, KRB5_NT_ENTERPRISE_PRINCIPAL);
     
