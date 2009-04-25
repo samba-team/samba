@@ -5628,6 +5628,60 @@ static bool run_local_wbclient(int dummy)
 	return result;
 }
 
+static void getaddrinfo_finished(struct tevent_req *req)
+{
+	char *name = (char *)tevent_req_callback_data_void(req);
+	struct addrinfo *ainfo;
+	int res;
+
+	res = getaddrinfo_recv(req, &ainfo);
+	if (res != 0) {
+		d_printf("gai(%s) returned %s\n", name, gai_strerror(res));
+		return;
+	}
+	d_printf("gai(%s) succeeded\n", name);
+	freeaddrinfo(ainfo);
+}
+
+static bool run_getaddrinfo_send(int dummy)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct fncall_context *ctx;
+	struct tevent_context *ev;
+	bool result = false;
+	const char *names[4] = { "www.samba.org", "notfound.samba.org",
+				 "www.slashdot.org", "heise.de" };
+	struct tevent_req *reqs[4];
+	int i;
+
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+
+	ctx = fncall_context_init(frame, 4);
+
+	for (i=0; i<ARRAY_SIZE(names); i++) {
+		reqs[i] = getaddrinfo_send(frame, ev, ctx, names[i], NULL,
+					   NULL);
+		if (reqs[i] == NULL) {
+			goto fail;
+		}
+		tevent_req_set_callback(reqs[i], getaddrinfo_finished,
+					names[i]);
+	}
+
+	for (i=0; i<ARRAY_SIZE(reqs); i++) {
+		tevent_loop_once(ev);
+	}
+
+	result = true;
+fail:
+	TALLOC_FREE(frame);
+	return result;
+}
+
+
 static double create_procs(bool (*fn)(int), bool *result)
 {
 	int i, status;
@@ -5785,6 +5839,7 @@ static struct {
 	{ "CHAIN1", run_chain1, 0},
 	{ "WINDOWS-WRITE", run_windows_write, 0},
 	{ "CLI_ECHO", run_cli_echo, 0},
+	{ "GETADDRINFO", run_getaddrinfo_send, 0},
 	{ "LOCAL-SUBSTITUTE", run_local_substitute, 0},
 	{ "LOCAL-GENCACHE", run_local_gencache, 0},
 	{ "LOCAL-RBTREE", run_local_rbtree, 0},

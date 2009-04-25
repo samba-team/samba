@@ -2053,3 +2053,85 @@ ssize_t read_smb_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	*pbuf = talloc_move(mem_ctx, &state->buf);
 	return talloc_get_size(*pbuf);
 }
+
+struct getaddrinfo_state {
+	const char *node;
+	const char *service;
+	const struct addrinfo *hints;
+	struct addrinfo *res;
+	int ret;
+};
+
+static void getaddrinfo_do(void *private_data);
+static void getaddrinfo_done(struct tevent_req *subreq);
+
+struct tevent_req *getaddrinfo_send(TALLOC_CTX *mem_ctx,
+				    struct tevent_context *ev,
+				    struct fncall_context *ctx,
+				    const char *node,
+				    const char *service,
+				    const struct addrinfo *hints)
+{
+	struct tevent_req *req, *subreq;
+	struct getaddrinfo_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct getaddrinfo_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	state->node = node;
+	state->service = service;
+	state->hints = hints;
+
+	subreq = fncall_send(state, ev, ctx, getaddrinfo_do, state);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, getaddrinfo_done, req);
+	return req;
+}
+
+static void getaddrinfo_do(void *private_data)
+{
+	struct getaddrinfo_state *state =
+		(struct getaddrinfo_state *)private_data;
+
+	state->ret = getaddrinfo(state->node, state->service, state->hints,
+				 &state->res);
+}
+
+static void getaddrinfo_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	int ret, err;
+
+	ret = fncall_recv(subreq, &err);
+	TALLOC_FREE(subreq);
+	if (ret == -1) {
+		tevent_req_error(req, err);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+int getaddrinfo_recv(struct tevent_req *req, struct addrinfo **res)
+{
+	struct getaddrinfo_state *state = tevent_req_data(
+		req, struct getaddrinfo_state);
+	int err;
+
+	if (tevent_req_is_unix_error(req, &err)) {
+		switch(err) {
+		case ENOMEM:
+			return EAI_MEMORY;
+		default:
+			return EAI_FAIL;
+		}
+	}
+	if (state->ret == 0) {
+		*res = state->res;
+	}
+	return state->ret;
+}
