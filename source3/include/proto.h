@@ -7098,4 +7098,12 @@ void *avahi_start_register(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 
 /* Misc protos */
 
+struct fncall_context *fncall_context_init(TALLOC_CTX *mem_ctx,
+					   int max_threads);
+struct tevent_req *fncall_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+			       struct fncall_context *ctx,
+			       void (*fn)(void *private_data),
+			       void *private_data);
+int fncall_recv(struct tevent_req *req, int *perr);
+
 #endif /*  _PROTO_H_  */
