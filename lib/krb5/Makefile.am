@@ -88,7 +88,6 @@ dist_libkrb5_la_SOURCES =			\
 	changepw.c				\
 	codec.c					\
 	config_file.c				\
-	config_file_netinfo.c			\
 	convert_creds.c				\
 	constants.c				\
 	context.c				\
