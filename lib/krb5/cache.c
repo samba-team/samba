@@ -836,6 +836,15 @@ krb5_cc_get_flags(krb5_context context,
  * Copy the contents of `from' to `to' if the given match function
  * return true.
  *
+ * @param context A Kerberos 5 context.
+ * @param from the cache to copy data from.
+ * @param to the cache to copy data to.
+ * @param match a match function that should return TRUE if cred argument should be copied, if NULL, all credentials are copied.
+ * @param matchctx context passed to match function.
+ * @param matched set to true if there was a credential that matched, may be NULL.
+ *
+ * @return Return an error code or 0, see krb5_get_error_message().
+ *
  * @ingroup krb5_ccache
  */
 
@@ -887,7 +896,7 @@ krb5_cc_copy_match_f(krb5_context context,
 }
 
 /**
- * Just like krb5_cc_copy_match, but copy everything.
+ * Just like krb5_cc_copy_match_f(), but copy everything.
  *
  * @ingroup @krb5_ccache
  */
