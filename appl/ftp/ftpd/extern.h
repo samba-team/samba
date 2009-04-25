@@ -129,6 +129,7 @@ extern	struct sockaddr *data_dest;
 extern	int logged_in;
 extern	struct passwd *pw;
 extern	int guest;
+extern  int dochroot;
 extern	int logging;
 extern	int type;
 extern off_t file_size;

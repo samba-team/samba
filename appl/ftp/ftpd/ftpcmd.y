@@ -352,8 +352,12 @@ cmd
 		}
 	| CWD CRLF check_login
 		{
-			if ($3)
-				cwd(pw->pw_dir);
+			if ($3) {
+				const char *path = pw->pw_dir;
+				if (dochroot || guest)
+					path = "/";
+				cwd(path);
+			}
 		}
 	| CWD SP pathname CRLF check_login
 		{

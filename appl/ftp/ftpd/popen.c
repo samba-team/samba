@@ -73,8 +73,6 @@ RCSID("$Id$");
 static int *pids;
 static int fds;
 
-extern int dochroot;
-
 /* return path prepended with ~ftp if that file exists, otherwise
  * return path unchanged
  */
