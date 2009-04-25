@@ -34,8 +34,6 @@
 #include "krb5_locl.h"
 RCSID("$Id$");
 
-#ifndef HAVE_NETINFO
-
 /* Gaah! I want a portable funopen */
 struct fileptr {
     const char *s;
@@ -385,8 +383,6 @@ krb5_config_parse_file (krb5_context context,
     *res = NULL;
     return krb5_config_parse_file_multi(context, fname, res);
 }
-
-#endif /* !HAVE_NETINFO */
 
 static void
 free_binding (krb5_context context, krb5_config_binding *b)
