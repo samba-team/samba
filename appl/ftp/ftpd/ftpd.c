@@ -1757,7 +1757,7 @@ done:
 }
 
 void
-cwd(char *path)
+cwd(const char *path)
 {
 
 	if (chdir(path) < 0)
