@@ -699,6 +699,11 @@ HEIMDAL_KRB5_2.0 {
 		heimdal_long_version;
 		krb5_config_file;
 		krb5_defkeyname;
+		krb5_cc_type_api;
+		krb5_cc_type_file;
+		krb5_cc_type_memory;
+		krb5_cc_type_kcm;
+		krb5_cc_type_scc;
 
 		# Shared with GSSAPI krb5
 		_krb5_crc_init_table;		
