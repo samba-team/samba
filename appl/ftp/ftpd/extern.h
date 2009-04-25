@@ -63,7 +63,7 @@
 void	abor(void);
 void	blkfree(char **);
 char  **copyblk(char **);
-void	cwd(char *);
+void	cwd(const char *);
 void	do_delete(char *);
 void	dologout(int);
 void	eprt(char *);
