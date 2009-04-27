@@ -4273,6 +4273,23 @@ krb5_crypto_overhead (krb5_context context, krb5_crypto crypto)
 	return crypto_overhead (context, crypto);
 }
 
+/**
+ * Converts the random bytestring to a protocol key according to
+ * Kerberos crypto frame work. It may be assumed that all the bits of
+ * the input string are equally random, even though the entropy
+ * present in the random source may be limited.
+ *
+ * @param context Kerberos 5 context
+ * @param type the enctype resulting key will be of
+ * @param data input random data to convert to a key
+ * @param data size of input random data, at least krb5_enctype_keysize() long
+ * @param data key, output key, free with krb5_free_keyblock_contents()
+ *
+ * @return Return an error code or 0.
+ *
+ * @ingroup krb5_crypto
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_random_to_key(krb5_context context,
 		   krb5_enctype type,
