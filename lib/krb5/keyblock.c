@@ -35,12 +35,29 @@
 
 RCSID("$Id$");
 
+/**
+ * Zero out a keyblock
+ *
+ * @param keyblock keyblock to zero out
+ *
+ * @ingroup krb5_crypto
+ */
+
 void KRB5_LIB_FUNCTION
 krb5_keyblock_zero(krb5_keyblock *keyblock)
 {
     keyblock->keytype = 0;
     krb5_data_zero(&keyblock->keyvalue);
 }
+
+/**
+ * Free a keyblock's content, also zero out the content of the keyblock.
+ *
+ * @param context a Kerberos 5 context
+ * @param keyblock keyblock content to free, NULL is valid argument
+ *
+ * @ingroup krb5_crypto
+ */
 
 void KRB5_LIB_FUNCTION
 krb5_free_keyblock_contents(krb5_context context,
@@ -54,6 +71,16 @@ krb5_free_keyblock_contents(krb5_context context,
     }
 }
 
+/**
+ * Free a keyblock, also zero out the content of the keyblock, uses
+ * krb5_free_keyblock_contents() to free the content.
+ *
+ * @param context a Kerberos 5 context
+ * @param keyblock keyblock to free, NULL is valid argument
+ *
+ * @ingroup krb5_crypto
+ */
+
 void KRB5_LIB_FUNCTION
 krb5_free_keyblock(krb5_context context,
 		   krb5_keyblock *keyblock)
@@ -64,6 +91,19 @@ krb5_free_keyblock(krb5_context context,
     }
 }
 
+/**
+ * Copy a keyblock, free the output keyblock with
+ * krb5_free_keyblock_contents().
+ *
+ * @param context a Kerberos 5 context
+ * @param inblock the key to copy
+ * @param to the output key.
+ *
+ * @param 0 on success or a Kerberos 5 error code
+ *
+ * @ingroup krb5_crypto
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_copy_keyblock_contents (krb5_context context,
 			     const krb5_keyblock *inblock,
@@ -71,6 +111,20 @@ krb5_copy_keyblock_contents (krb5_context context,
 {
     return copy_EncryptionKey(inblock, to);
 }
+
+/**
+ * Copy a keyblock, free the output keyblock with
+ * krb5_free_keyblock().
+ *
+ * @param context a Kerberos 5 context
+ * @param inblock the key to copy
+ * @param to the output key.
+ *
+ * @param 0 on success or a Kerberos 5 error code
+ *
+ * @ingroup krb5_crypto
+ */
+
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_copy_keyblock (krb5_context context,
@@ -97,15 +151,23 @@ krb5_copy_keyblock (krb5_context context,
     return 0;
 }
 
+/**
+ * Get encryption type of a keyblock.
+ *
+ * @ingroup krb5_crypto
+ */
+
 krb5_enctype
 krb5_keyblock_get_enctype(const krb5_keyblock *block)
 {
     return block->keytype;
 }
 
-/*
+/**
  * Fill in `key' with key data of type `enctype' from `data' of length
- * `size'. Key should be freed using krb5_free_keyblock_contents.
+ * `size'. Key should be freed using krb5_free_keyblock_contents().
+ *
+ * @ingroup krb5_crypto
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
