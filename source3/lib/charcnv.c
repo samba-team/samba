@@ -1672,8 +1672,9 @@ ssize_t push_string(void *dest, const char *src, size_t dest_len, int flags)
 	if (!(flags & STR_ASCII) && \
 	    (flags & STR_UNICODE)) {
 		ret = push_ucs2(NULL, dest, src, dest_len, flags);
+	} else {
+		ret = push_ascii(dest, src, dest_len, flags);
 	}
-	ret = push_ascii(dest, src, dest_len, flags);
 	if (ret == (size_t)-1) {
 		return -1;
 	}
