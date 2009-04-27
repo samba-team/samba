@@ -74,6 +74,14 @@ struct {
 	ETYPE_AES128_CTS_HMAC_SHA1_96,
 	"\x4d\x6c\xa4\xe6\x29\x78\x5c\x1f\x01\xba\xf5\x5e\x2e\x54\x85\x66",
 	16
+    },
+    {
+	"key1", "a", ETYPE_AES128_CTS_HMAC_SHA1_96,
+	"key2", "b", ETYPE_AES256_CTS_HMAC_SHA1_96,
+	ETYPE_AES256_CTS_HMAC_SHA1_96,
+	"\x88\xbd\xb2\xa9\xf\x3e\x52\x5a\xb0\x5f\x68\xc5\x43\x9a\x4d\x5e"
+	"\x9c\x2b\xfd\x2b\x02\x24\xde\x39\xb5\x82\xf4\xbb\x05\xfe\x2\x2e",
+	32
     }
 };
 
@@ -139,7 +147,6 @@ test_cf2(krb5_context context)
 	    krb5_errx(context, 1, "length not right");
 	if (k3.keyvalue.length != cf2[i].len ||
 	    memcmp(k3.keyvalue.data, cf2[i].key, cf2[i].len) != 0)
-	if (ret)
 	    krb5_errx(context, 1, "key not same");
 
 	krb5_crypto_destroy(context, c1);
