@@ -7001,6 +7001,8 @@ int net_rpc_printer(struct net_context *c, int argc, const char **argv)
 
 int net_rpc(struct net_context *c, int argc, const char **argv)
 {
+	NET_API_STATUS status;
+
 	struct functable func[] = {
 		{
 			"audit",
@@ -7181,5 +7183,16 @@ int net_rpc(struct net_context *c, int argc, const char **argv)
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
+
+	status = libnetapi_init(&c->netapi_ctx);
+	if (status != 0) {
+		return -1;
+	}
+	libnetapi_set_username(c->netapi_ctx, c->opt_user_name);
+	libnetapi_set_password(c->netapi_ctx, c->opt_password);
+	if (c->opt_kerberos) {
+		libnetapi_set_use_kerberos(c->netapi_ctx);
+	}
+
 	return net_run_function(c, argc, argv, "net rpc", func);
 }
