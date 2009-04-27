@@ -2360,6 +2360,7 @@ hx509_verify_hostname(hx509_context context,
 		      /* XXX krb5_socklen_t */ int sa_size)
 {
     GeneralNames san;
+    const Name *name;
     int ret, i, j;
 
     if (sa && sa_size <= 0)
@@ -2391,31 +2392,31 @@ hx509_verify_hostname(hx509_context context,
 	free_GeneralNames(&san);
     } while (1);
 
-    {
-	const Name *name = &cert->data->tbsCertificate.subject;
+    name = &cert->data->tbsCertificate.subject;
 
-	/* match if first component is a CN= */
-	if (name->u.rdnSequence.len > 0
-	    && name->u.rdnSequence.val[0].len == 1
-	    && der_heim_oid_cmp(&name->u.rdnSequence.val[0].val[0].type,
-				oid_id_at_commonName()) == 0)
-	{
-	    DirectoryString *ds = &name->u.rdnSequence.val[0].val[0].value;
+    /* Find first CN= in the name, and try to match the hostname on that */
+    for (ret = 0, i = name->u.rdnSequence.len - 1; ret == 0 && i >= 0; i--) {
+	for (j = 0; ret == 0 && j < name->u.rdnSequence.val[i].len; j++) {
+	    AttributeTypeAndValue *n = &name->u.rdnSequence.val[i].val[j];
 
-	    switch (ds->element) {
-	    case choice_DirectoryString_printableString:
-		if (strcasecmp(ds->u.printableString, hostname) == 0)
+	    if (der_heim_oid_cmp(&n->type, oid_id_at_commonName()) == 0) {
+		DirectoryString *ds = &n->value;
+		switch (ds->element) {
+		case choice_DirectoryString_printableString:
+		    if (strcasecmp(ds->u.printableString, hostname) == 0)
+			return 0;
+		    break;
+		case choice_DirectoryString_ia5String:
+		    if (strcasecmp(ds->u.ia5String, hostname) == 0)
 		    return 0;
-		break;
-	    case choice_DirectoryString_ia5String:
-		if (strcasecmp(ds->u.ia5String, hostname) == 0)
-		    return 0;
-		break;
-	    case choice_DirectoryString_utf8String:
-		if (strcasecmp(ds->u.utf8String, hostname) == 0)
-		    return 0;
-	    default:
-		break;
+		    break;
+		case choice_DirectoryString_utf8String:
+		    if (strcasecmp(ds->u.utf8String, hostname) == 0)
+			return 0;
+		default:
+		    break;
+		}
+		ret = HX509_NAME_CONSTRAINT_ERROR;
 	    }
 	}
     }
