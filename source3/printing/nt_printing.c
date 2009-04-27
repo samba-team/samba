@@ -5716,7 +5716,7 @@ void map_job_permissions(SEC_DESC *sd)
        print_queue_purge
 
   Try access control in the following order (for performance reasons):
-    1)  root ans SE_PRINT_OPERATOR can do anything (easy check)
+    1)  root and SE_PRINT_OPERATOR can do anything (easy check)
     2)  check security descriptor (bit comparisons in memory)
     3)  "printer admins" (may result in numerous calls to winbind)
 
