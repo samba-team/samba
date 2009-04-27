@@ -19,6 +19,8 @@
 
 #include "support.h"
 
+#include "../libcli/auth/libcli_auth.h"
+
 
 #define _pam_overwrite(x)        \
 do {                             \
