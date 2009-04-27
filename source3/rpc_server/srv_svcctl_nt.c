@@ -470,7 +470,9 @@ WERROR _svcctl_EnumServicesStatusW(pipes_struct *p,
 
 	*r->out.needed			= (buffer_size > r->in.offered) ? buffer_size : r->in.offered;
 	*r->out.services_returned	= (uint32)num_services;
-	*r->out.resume_handle		= 0x0;
+	if (r->out.resume_handle) {
+		*r->out.resume_handle	= 0;
+	}
 
 	return result;
 }
