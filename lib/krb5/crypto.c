@@ -4582,6 +4582,123 @@ krb5_crypto_prf(krb5_context context,
     return (*et->prf)(context, crypto, input, output);
 }
 
+static krb5_error_code
+krb5_crypto_prfplus(krb5_context context,
+		    const krb5_crypto crypto,
+		    const krb5_data *input,
+		    size_t length,
+		    krb5_data *output)
+{
+    krb5_error_code ret;
+    krb5_data input2;
+    unsigned char i = 1;
+    unsigned char *p;
+
+    krb5_data_zero(&input2);
+    krb5_data_zero(output);
+
+    krb5_clear_error_message(context);
+
+    ret = krb5_data_alloc(output, length);
+    if (ret) goto out;
+    ret = krb5_data_alloc(&input2, input->length + 1);
+    if (ret) goto out;
+
+    krb5_clear_error_message(context);
+
+    memcpy(((unsigned char *)input2.data) + 1, input->data, input->length);
+
+    p = output->data;
+
+    while (length) {
+	krb5_data block;
+
+	((unsigned char *)input2.data)[0] = i++;
+
+	ret = krb5_crypto_prf(context, crypto, &input2, &block);
+	if (ret)
+	    goto out;
+
+	if (block.length < length) {
+	    memcpy(p, block.data, block.length);
+	    length -= block.length;
+	} else {
+	    memcpy(p, block.data, length);
+	    length = 0;
+	}
+	p += block.length;
+	krb5_data_free(&block);
+    }
+
+ out:
+    krb5_data_free(&input2);
+    if (ret)
+	krb5_data_free(output);
+    return 0;
+}
+
+/**
+ * The FX-CF2 key derivation function, used in FAST and preauth framework.
+ *
+ * @param context Kerberos 5 context
+ * @param crypto1 first key to combine
+ * @param crypto2 second key to combine
+ * @param pepper1 factor to combine with first key to garante uniqueness
+ * @param pepper1 factor to combine with second key to garante uniqueness
+ * @param enctype the encryption type of the resulting key
+ * @param res allocated key, free with krb5_free_keyblock_contents()
+ *
+ * @return Return an error code or 0.
+ *
+ * @ingroup krb5_crypto
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_crypto_fx_cf2(krb5_context context,
+		   const krb5_crypto crypto1,
+		   const krb5_crypto crypto2,
+		   krb5_data *pepper1,
+		   krb5_data *pepper2,
+		   krb5_enctype enctype,
+		   krb5_keyblock *res)
+{
+    krb5_error_code ret;
+    krb5_data os1, os2;
+    size_t i, keysize;
+
+    memset(res, 0, sizeof(*res));
+
+    ret = krb5_enctype_keysize(context, enctype, &keysize);
+    if (ret)
+	return ret;
+
+    ret = krb5_data_alloc(&res->keyvalue, keysize);
+    if (ret)
+	goto out;
+    ret = krb5_crypto_prfplus(context, crypto1, pepper1, keysize, &os1);
+    if (ret)
+	goto out;
+    ret = krb5_crypto_prfplus(context, crypto2, pepper2, keysize, &os2);
+    if (ret)
+	goto out;
+
+    res->keytype = enctype;
+    {
+	unsigned char *p1 = os1.data, *p2 = os2.data, *p3 = res->keyvalue.data;
+	for (i = 0; i < keysize; i++)
+	    p3[i] = p1[i] ^ p2[i];
+    }
+ out:
+    if (ret)
+	krb5_data_free(&res->keyvalue);
+    krb5_data_free(&os1);
+    krb5_data_free(&os2);
+
+    return ret;
+}
+
+
+
 #ifndef HEIMDAL_SMALLER
 
 krb5_error_code KRB5_LIB_FUNCTION
