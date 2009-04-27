@@ -6672,6 +6672,10 @@ done:
 	return ret;
 }
 
+#define MAX_INCLUDE_DEPTH 100
+
+static uint8_t include_depth;
+
 static struct file_lists {
 	struct file_lists *next;
 	char *name;
@@ -6859,12 +6863,22 @@ static bool handle_include(int snum, const char *pszParmValue, char **ptr)
 {
 	char *fname;
 
+	if (include_depth >= MAX_INCLUDE_DEPTH) {
+		DEBUG(0, ("Error: Maximum include depth (%u) exceeded!\n",
+			  include_depth));
+		return false;
+	}
+
 	if (strequal(pszParmValue, INCLUDE_REGISTRY_NAME)) {
 		if (!bAllowIncludeRegistry) {
 			return true;
 		}
 		if (bInGlobalSection) {
-			return process_registry_globals();
+			bool ret;
+			include_depth++;
+			ret = process_registry_globals();
+			include_depth--;
+			return ret;
 		} else {
 			DEBUG(1, ("\"include = registry\" only effective "
 				  "in %s section\n", GLOBAL_NAME));
@@ -6881,7 +6895,10 @@ static bool handle_include(int snum, const char *pszParmValue, char **ptr)
 	string_set(ptr, fname);
 
 	if (file_exist(fname, NULL)) {
-		bool ret = pm_process(fname, do_section, do_parameter, NULL);
+		bool ret;
+		include_depth++;
+		ret = pm_process(fname, do_section, do_parameter, NULL);
+		include_depth--;
 		SAFE_FREE(fname);
 		return ret;
 	}
