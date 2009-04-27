@@ -28,6 +28,7 @@ TESTS =						\
 	test_addr				\
 	test_cc					\
 	test_config				\
+	test_fx					\
 	test_prf				\
 	test_store				\
 	test_crypto_wrapping			\
