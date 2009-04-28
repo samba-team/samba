@@ -31,12 +31,12 @@
  * SUCH DAMAGE.
  */
 
+#define KRB5_DEPRECATED
+
 #include <krb5_locl.h>
 
 RCSID("$Id$");
 
-#undef KRB5_DEPRECATED
-#define KRB5_DEPRECATED
 #undef __attribute__
 #define __attribute__(X)
 
