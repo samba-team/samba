@@ -220,16 +220,6 @@ bool set_current_service(connection_struct *conn, uint16 flags, bool do_chdir)
 
 static int load_registry_service(const char *servicename)
 {
-	struct registry_key *key;
-	char *path;
-	WERROR err;
-
-	uint32 i;
-	char *value_name;
-	struct registry_value *value;
-
-	int res = -1;
-
 	if (!lp_registry_shares()) {
 		return -1;
 	}
@@ -242,79 +232,22 @@ static int load_registry_service(const char *servicename)
 		return -2;
 	}
 
-	if (asprintf(&path, "%s\\%s", KEY_SMBCONF, servicename) == -1) {
+	if (!process_registry_service(servicename)) {
 		return -1;
 	}
 
-	err = reg_open_path(NULL, path, REG_KEY_READ, get_root_nt_token(),
-			    &key);
-	SAFE_FREE(path);
-
-	if (!W_ERROR_IS_OK(err)) {
-		return -1;
-	}
-
-	res = lp_add_service(servicename, -1);
-	if (res == -1) {
-		goto error;
-	}
-
-	for (i=0;
-	     W_ERROR_IS_OK(reg_enumvalue(key, key, i, &value_name, &value));
-	     i++) {
-		switch (value->type) {
-		case REG_DWORD: { 
-			char *tmp;
-			if (asprintf(&tmp, "%d", value->v.dword) == -1) {
-				continue;
-			}
-			lp_do_parameter(res, value_name, tmp);
-			SAFE_FREE(tmp);
-			break;
-		}
-		case REG_SZ: {
-			lp_do_parameter(res, value_name, value->v.sz.str);
-			break;
-		}
-		default:
-			/* Ignore all the rest */
-			break;
-		}
-
-		TALLOC_FREE(value_name);
-		TALLOC_FREE(value);
-	}
-
- error:
-
-	TALLOC_FREE(key);
-	return res;
+	return lp_servicenumber(servicename);
 }
 
 void load_registry_shares(void)
 {
-	struct registry_key *key;
-	char *name;
-	WERROR err;
-	int i;
-
 	DEBUG(8, ("load_registry_shares()\n"));
 	if (!lp_registry_shares()) {
 		return;
 	}
 
-	err = reg_open_path(NULL, KEY_SMBCONF, REG_KEY_READ,
-			    get_root_nt_token(), &key);
-	if (!(W_ERROR_IS_OK(err))) {
-		return;
-	}
+	process_registry_shares();
 
-	for (i=0; W_ERROR_IS_OK(reg_enumkey(key, key, i, &name, NULL)); i++) {
-		load_registry_service(name);
-		TALLOC_FREE(name);
-	}
-
-	TALLOC_FREE(key);
 	return;
 }
 
