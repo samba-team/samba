@@ -1962,12 +1962,12 @@ SMBC_rename_ctx(SMBCCTX *ocontext,
 		return -1;
 	}
 
-	if (!cli_rename(targetcli1, targetpath1, targetpath2)) {
+	if (!NT_STATUS_IS_OK(cli_rename(targetcli1, targetpath1, targetpath2))) {
 		int eno = SMBC_errno(ocontext, targetcli1);
 
 		if (eno != EEXIST ||
 		    !cli_unlink(targetcli1, targetpath2) ||
-		    !cli_rename(targetcli1, targetpath1, targetpath2)) {
+		    !NT_STATUS_IS_OK(cli_rename(targetcli1, targetpath1, targetpath2))) {
 
 			errno = eno;
 			TALLOC_FREE(frame);

@@ -3564,7 +3564,7 @@ static bool run_rename(int dummy)
 		return False;
 	}
 
-	if (!cli_rename(cli1, fname, fname1)) {
+	if (!NT_STATUS_IS_OK(cli_rename(cli1, fname, fname1))) {
 		printf("First rename failed (SHARE_READ) (this is correct) - %s\n", cli_errstr(cli1));
 	} else {
 		printf("First rename succeeded (SHARE_READ) - this should have failed !\n");
@@ -3590,7 +3590,7 @@ static bool run_rename(int dummy)
 		return False;
 	}
 
-	if (!cli_rename(cli1, fname, fname1)) {
+	if (!NT_STATUS_IS_OK(cli_rename(cli1, fname, fname1))) {
 		printf("Second rename failed (SHARE_DELETE | SHARE_READ) - this should have succeeded - %s\n", cli_errstr(cli1));
 		correct = False;
 	} else {
@@ -3637,7 +3637,7 @@ static bool run_rename(int dummy)
   }
 #endif
 
-	if (!cli_rename(cli1, fname, fname1)) {
+	if (!NT_STATUS_IS_OK(cli_rename(cli1, fname, fname1))) {
 		printf("Third rename failed (SHARE_NONE) - this should have succeeded - %s\n", cli_errstr(cli1));
 		correct = False;
 	} else {
@@ -3662,7 +3662,7 @@ static bool run_rename(int dummy)
 		return False;
 	}
 
-	if (!cli_rename(cli1, fname, fname1)) {
+	if (!NT_STATUS_IS_OK(cli_rename(cli1, fname, fname1))) {
 		printf("Fourth rename failed (SHARE_READ | SHARE_WRITE) (this is correct) - %s\n", cli_errstr(cli1));
 	} else {
 		printf("Fourth rename succeeded (SHARE_READ | SHARE_WRITE) - this should have failed !\n");
@@ -3687,7 +3687,7 @@ static bool run_rename(int dummy)
 		return False;
 	}
 
-	if (!cli_rename(cli1, fname, fname1)) {
+	if (!NT_STATUS_IS_OK(cli_rename(cli1, fname, fname1))) {
 		printf("Fifth rename failed (SHARE_READ | SHARE_WRITE | SHARE_DELETE) - this should have succeeded - %s ! \n",
 			cli_errstr(cli1));
 		correct = False;

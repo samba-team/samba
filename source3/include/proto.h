@@ -2332,7 +2332,13 @@ bool cli_unix_symlink(struct cli_state *cli, const char *oldname, const char *ne
 bool cli_unix_hardlink(struct cli_state *cli, const char *oldname, const char *newname);
 bool cli_unix_chmod(struct cli_state *cli, const char *fname, mode_t mode);
 bool cli_unix_chown(struct cli_state *cli, const char *fname, uid_t uid, gid_t gid);
-bool cli_rename(struct cli_state *cli, const char *fname_src, const char *fname_dst);
+struct tevent_req *cli_rename_send(TALLOC_CTX *mem_ctx,
+                                struct event_context *ev,
+                                struct cli_state *cli,
+                                const char *fname_src,
+                                const char *fname_dst);
+NTSTATUS cli_rename_recv(struct tevent_req *req);
+NTSTATUS cli_rename(struct cli_state *cli, const char *fname_src, const char *fname_dst);
 bool cli_ntrename(struct cli_state *cli, const char *fname_src, const char *fname_dst);
 bool cli_nt_hardlink(struct cli_state *cli, const char *fname_src, const char *fname_dst);
 bool cli_unlink_full(struct cli_state *cli, const char *fname, uint16_t attrs);

@@ -429,41 +429,124 @@ bool cli_unix_chown(struct cli_state *cli, const char *fname, uid_t uid, gid_t g
  Rename a file.
 ****************************************************************************/
 
-bool cli_rename(struct cli_state *cli, const char *fname_src, const char *fname_dst)
+static void cli_rename_done(struct tevent_req *subreq);
+
+struct cli_rename_state {
+	uint16_t vwv[1];
+        int dummy;
+};
+
+struct tevent_req *cli_rename_send(TALLOC_CTX *mem_ctx,
+				struct event_context *ev,
+				struct cli_state *cli,
+				const char *fname_src,
+				const char *fname_dst)
 {
-	char *p;
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_rename_state *state = NULL;
+	uint8_t additional_flags = 0;
+	uint8_t *bytes = NULL;
 
-	memset(cli->outbuf,'\0',smb_size);
-	memset(cli->inbuf,'\0',smb_size);
-
-	cli_set_message(cli->outbuf,1, 0, true);
-
-	SCVAL(cli->outbuf,smb_com,SMBmv);
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
-
-	SSVAL(cli->outbuf,smb_vwv0,aSYSTEM | aHIDDEN | aDIR);
-
-	p = smb_buf(cli->outbuf);
-	*p++ = 4;
-	p += clistr_push(cli, p, fname_src,
-			cli->bufsize - PTR_DIFF(p,cli->outbuf), STR_TERMINATE);
-	*p++ = 4;
-	p += clistr_push(cli, p, fname_dst,
-			cli->bufsize - PTR_DIFF(p,cli->outbuf), STR_TERMINATE);
-
-	cli_setup_bcc(cli, p);
-
-	cli_send_smb(cli);
-	if (!cli_receive_smb(cli)) {
-		return false;
+	req = tevent_req_create(mem_ctx, &state, struct cli_rename_state);
+	if (req == NULL) {
+		return NULL;
 	}
 
-	if (cli_is_error(cli)) {
-		return false;
+	SSVAL(state->vwv+0, 0, aSYSTEM | aHIDDEN | aDIR);
+
+	bytes = talloc_array(state, uint8_t, 1);
+	if (tevent_req_nomem(bytes, req)) {
+		return tevent_req_post(req, ev);
+	}
+	bytes[0] = 4;
+	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), fname_src,
+				   strlen(fname_src)+1, NULL);
+	if (tevent_req_nomem(bytes, req)) {
+		return tevent_req_post(req, ev);
 	}
 
-	return true;
+	bytes = TALLOC_REALLOC_ARRAY(state, bytes, uint8_t,
+			talloc_get_size(bytes)+1);
+	if (tevent_req_nomem(bytes, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	bytes[talloc_get_size(bytes)-1] = 4;
+	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), fname_dst,
+				   strlen(fname_dst)+1, NULL);
+	if (tevent_req_nomem(bytes, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = cli_smb_send(state, ev, cli, SMBmv, additional_flags,
+			      1, state->vwv, talloc_get_size(bytes), bytes);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_rename_done, req);
+	return req;
+}
+
+static void cli_rename_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+				subreq, struct tevent_req);
+	NTSTATUS status;
+
+	status = cli_smb_recv(subreq, 0, NULL, NULL, NULL, NULL);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_rename_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+NTSTATUS cli_rename(struct cli_state *cli, const char *fname_src, const char *fname_dst)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_OK;
+
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	req = cli_rename_send(frame, ev, cli, fname_src, fname_dst);
+	if (req == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
+	}
+
+	status = cli_rename_recv(req);
+
+ fail:
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
 }
 
 /****************************************************************************

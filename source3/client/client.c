@@ -3300,7 +3300,7 @@ static int cmd_rename(void)
 		return 1;
 	}
 
-	if (!cli_rename(targetcli, targetsrc, targetdest)) {
+	if (!NT_STATUS_IS_OK(cli_rename(targetcli, targetsrc, targetdest))) {
 		d_printf("%s renaming files %s -> %s \n",
 			cli_errstr(targetcli),
 			targetsrc,

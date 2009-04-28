@@ -229,7 +229,7 @@ void nb_rmdir(const char *fname)
 
 void nb_rename(const char *oldname, const char *newname)
 {
-	if (!cli_rename(c, oldname, newname)) {
+	if (!NT_STATUS_IS_OK(cli_rename(c, oldname, newname))) {
 		printf("ERROR: rename %s %s failed (%s)\n", 
 		       oldname, newname, cli_errstr(c));
 		exit(1);
