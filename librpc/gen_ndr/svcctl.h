@@ -28,6 +28,8 @@
 #define SERVICE_EXECUTE_ACCESS	( (SERVICE_READ_ACCESS|SC_RIGHT_SVC_START|SC_RIGHT_SVC_STOP|SC_RIGHT_SVC_PAUSE_CONTINUE) )
 #define SERVICE_WRITE_ACCESS	( (SEC_STD_REQUIRED|SERVICE_READ_ACCESS|SERVICE_EXECUTE_ACCESS|SC_RIGHT_SVC_CHANGE_CONFIG) )
 #define SERVICE_ALL_ACCESS	( SERVICE_WRITE_ACCESS )
+#define SC_MAX_ARGUMENT_LENGTH	( 1024 )
+#define SC_MAX_ARGUMENTS	( 1024 )
 struct SERVICE_LOCK_STATUS {
 	uint32_t is_locked;
 	const char *lock_owner;/* [unique,charset(UTF16)] */
@@ -225,6 +227,10 @@ struct QUERY_SERVICE_CONFIG {
 	const char *startname;/* [unique,range(0,8192),charset(UTF16)] */
 	const char *displayname;/* [unique,range(0,8192),charset(UTF16)] */
 }/* [gensize,public] */;
+
+struct svcctl_ArgumentString {
+	const char *string;/* [unique,range(0,SC_MAX_ARGUMENT_LENGTH),charset(UTF16)] */
+};
 
 enum svcctl_ConfigLevel
 #ifndef USE_UINT_ENUMS
@@ -575,8 +581,8 @@ struct svcctl_QueryServiceLockStatusW {
 struct svcctl_StartServiceW {
 	struct {
 		struct policy_handle *handle;/* [ref] */
-		uint32_t NumArgs;
-		const char *Arguments;/* [unique,charset(UTF16)] */
+		uint32_t NumArgs;/* [range(0,SC_MAX_ARGUMENTS)] */
+		struct svcctl_ArgumentString *Arguments;/* [unique,size_is(NumArgs)] */
 	} in;
 
 	struct {
