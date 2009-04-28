@@ -404,10 +404,18 @@ import "misc.idl", "security.idl";
 
 	/*****************/
 	/* Function 0x13 */
+
+	const int SC_MAX_ARGUMENT_LENGTH = 1024;
+	const int SC_MAX_ARGUMENTS = 1024;
+
+	typedef struct {
+		[string,charset(UTF16),range(0,SC_MAX_ARGUMENT_LENGTH)] uint16 *string;
+	} svcctl_ArgumentString;
+
 	WERROR svcctl_StartServiceW(
 		[in,ref] policy_handle *handle,
-		[in] uint32 NumArgs,
-		[in,unique/*FIXME:,length_is(NumArgs)*/] [string,charset(UTF16)] uint16 *Arguments
+		[in,range(0,SC_MAX_ARGUMENTS)] uint32 NumArgs,
+		[in,unique,size_is(NumArgs)] svcctl_ArgumentString *Arguments
 	);
 
 	/*****************/

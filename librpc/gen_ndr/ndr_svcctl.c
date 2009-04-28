@@ -907,6 +907,66 @@ _PUBLIC_ size_t ndr_size_QUERY_SERVICE_CONFIG(const struct QUERY_SERVICE_CONFIG 
 	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_QUERY_SERVICE_CONFIG, ic);
 }
 
+static enum ndr_err_code ndr_push_svcctl_ArgumentString(struct ndr_push *ndr, int ndr_flags, const struct svcctl_ArgumentString *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->string));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->string) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->string, CH_UTF16)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->string, CH_UTF16)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->string, ndr_charset_length(r->string, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_svcctl_ArgumentString(struct ndr_pull *ndr, int ndr_flags, struct svcctl_ArgumentString *r)
+{
+	uint32_t _ptr_string;
+	TALLOC_CTX *_mem_save_string_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_string));
+		if (_ptr_string) {
+			NDR_PULL_ALLOC(ndr, r->string);
+		} else {
+			r->string = NULL;
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->string) {
+			_mem_save_string_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->string, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->string));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->string));
+			if (ndr_get_array_length(ndr, &r->string) > ndr_get_array_size(ndr, &r->string)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->string), ndr_get_array_length(ndr, &r->string));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->string), sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->string, ndr_get_array_length(ndr, &r->string), sizeof(uint16_t), CH_UTF16));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_string_0, 0);
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_svcctl_ArgumentString(struct ndr_print *ndr, const char *name, const struct svcctl_ArgumentString *r)
+{
+	ndr_print_struct(ndr, name, "svcctl_ArgumentString");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "string", r->string);
+	ndr->depth++;
+	if (r->string) {
+		ndr_print_string(ndr, "string", r->string);
+	}
+	ndr->depth--;
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_svcctl_ConfigLevel(struct ndr_push *ndr, int ndr_flags, enum svcctl_ConfigLevel r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
@@ -3415,6 +3475,7 @@ _PUBLIC_ void ndr_print_svcctl_QueryServiceLockStatusW(struct ndr_print *ndr, co
 
 static enum ndr_err_code ndr_push_svcctl_StartServiceW(struct ndr_push *ndr, int flags, const struct svcctl_StartServiceW *r)
 {
+	uint32_t cntr_Arguments_1;
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
@@ -3423,10 +3484,13 @@ static enum ndr_err_code ndr_push_svcctl_StartServiceW(struct ndr_push *ndr, int
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.NumArgs));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.Arguments));
 		if (r->in.Arguments) {
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.Arguments, CH_UTF16)));
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.Arguments, CH_UTF16)));
-			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.Arguments, ndr_charset_length(r->in.Arguments, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.NumArgs));
+			for (cntr_Arguments_1 = 0; cntr_Arguments_1 < r->in.NumArgs; cntr_Arguments_1++) {
+				NDR_CHECK(ndr_push_svcctl_ArgumentString(ndr, NDR_SCALARS, &r->in.Arguments[cntr_Arguments_1]));
+			}
+			for (cntr_Arguments_1 = 0; cntr_Arguments_1 < r->in.NumArgs; cntr_Arguments_1++) {
+				NDR_CHECK(ndr_push_svcctl_ArgumentString(ndr, NDR_BUFFERS, &r->in.Arguments[cntr_Arguments_1]));
+			}
 		}
 	}
 	if (flags & NDR_OUT) {
@@ -3438,8 +3502,10 @@ static enum ndr_err_code ndr_push_svcctl_StartServiceW(struct ndr_push *ndr, int
 static enum ndr_err_code ndr_pull_svcctl_StartServiceW(struct ndr_pull *ndr, int flags, struct svcctl_StartServiceW *r)
 {
 	uint32_t _ptr_Arguments;
+	uint32_t cntr_Arguments_1;
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_Arguments_0;
+	TALLOC_CTX *_mem_save_Arguments_1;
 	if (flags & NDR_IN) {
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.handle);
@@ -3449,6 +3515,9 @@ static enum ndr_err_code ndr_pull_svcctl_StartServiceW(struct ndr_pull *ndr, int
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.NumArgs));
+		if (r->in.NumArgs > SC_MAX_ARGUMENTS) {
+			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
+		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_Arguments));
 		if (_ptr_Arguments) {
 			NDR_PULL_ALLOC(ndr, r->in.Arguments);
@@ -3459,13 +3528,20 @@ static enum ndr_err_code ndr_pull_svcctl_StartServiceW(struct ndr_pull *ndr, int
 			_mem_save_Arguments_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.Arguments, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.Arguments));
-			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.Arguments));
-			if (ndr_get_array_length(ndr, &r->in.Arguments) > ndr_get_array_size(ndr, &r->in.Arguments)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.Arguments), ndr_get_array_length(ndr, &r->in.Arguments));
+			NDR_PULL_ALLOC_N(ndr, r->in.Arguments, ndr_get_array_size(ndr, &r->in.Arguments));
+			_mem_save_Arguments_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->in.Arguments, 0);
+			for (cntr_Arguments_1 = 0; cntr_Arguments_1 < r->in.NumArgs; cntr_Arguments_1++) {
+				NDR_CHECK(ndr_pull_svcctl_ArgumentString(ndr, NDR_SCALARS, &r->in.Arguments[cntr_Arguments_1]));
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.Arguments), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.Arguments, ndr_get_array_length(ndr, &r->in.Arguments), sizeof(uint16_t), CH_UTF16));
+			for (cntr_Arguments_1 = 0; cntr_Arguments_1 < r->in.NumArgs; cntr_Arguments_1++) {
+				NDR_CHECK(ndr_pull_svcctl_ArgumentString(ndr, NDR_BUFFERS, &r->in.Arguments[cntr_Arguments_1]));
+			}
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_Arguments_1, 0);
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_Arguments_0, 0);
+		}
+		if (r->in.Arguments) {
+			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->in.Arguments, r->in.NumArgs));
 		}
 	}
 	if (flags & NDR_OUT) {
@@ -3476,6 +3552,7 @@ static enum ndr_err_code ndr_pull_svcctl_StartServiceW(struct ndr_pull *ndr, int
 
 _PUBLIC_ void ndr_print_svcctl_StartServiceW(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_StartServiceW *r)
 {
+	uint32_t cntr_Arguments_1;
 	ndr_print_struct(ndr, name, "svcctl_StartServiceW");
 	ndr->depth++;
 	if (flags & NDR_SET_VALUES) {
@@ -3492,7 +3569,16 @@ _PUBLIC_ void ndr_print_svcctl_StartServiceW(struct ndr_print *ndr, const char *
 		ndr_print_ptr(ndr, "Arguments", r->in.Arguments);
 		ndr->depth++;
 		if (r->in.Arguments) {
-			ndr_print_string(ndr, "Arguments", r->in.Arguments);
+			ndr->print(ndr, "%s: ARRAY(%d)", "Arguments", (int)r->in.NumArgs);
+			ndr->depth++;
+			for (cntr_Arguments_1=0;cntr_Arguments_1<r->in.NumArgs;cntr_Arguments_1++) {
+				char *idx_1=NULL;
+				if (asprintf(&idx_1, "[%d]", cntr_Arguments_1) != -1) {
+					ndr_print_svcctl_ArgumentString(ndr, "Arguments", &r->in.Arguments[cntr_Arguments_1]);
+					free(idx_1);
+				}
+			}
+			ndr->depth--;
 		}
 		ndr->depth--;
 		ndr->depth--;
