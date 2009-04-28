@@ -433,7 +433,6 @@ static void cli_rename_done(struct tevent_req *subreq);
 
 struct cli_rename_state {
 	uint16_t vwv[1];
-        int dummy;
 };
 
 struct tevent_req *cli_rename_send(TALLOC_CTX *mem_ctx,
