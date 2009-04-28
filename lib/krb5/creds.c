@@ -31,24 +31,11 @@
  * SUCH DAMAGE.
  */
 
+#define KRB5_DEPRECATED
+
 #include "krb5_locl.h"
 
 RCSID("$Id$");
-
-#undef KRB5_DEPRECATED
-#define KRB5_DEPRECATED
-
-#ifndef HEIMDAL_SMALLER
-
-/* keep this for compatibility with older code */
-krb5_error_code KRB5_LIB_FUNCTION
-krb5_free_creds_contents (krb5_context context, krb5_creds *c)
-    KRB5_DEPRECATED
-{
-    return krb5_free_cred_contents (context, c);
-}
-
-#endif /* HEIMDAL_SMALLER */
 
 /**
  * Free content of krb5_creds.
