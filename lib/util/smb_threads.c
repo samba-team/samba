@@ -24,6 +24,7 @@
  */
 
 #include "includes.h"
+#include "smb_threads.h"
 
 /*********************************************************
  Functions to vector the locking primitives used internally

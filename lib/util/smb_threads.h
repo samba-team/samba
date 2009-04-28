@@ -63,6 +63,8 @@ struct smb_thread_functions {
 	void *(*get_tls)(void *pkey, const char *location);
 };
 
+int smb_thread_set_functions(const struct smb_thread_functions *tf);
+
 extern const struct smb_thread_functions *global_tfp;
 
 /* Define the pthread version of the functions. */
