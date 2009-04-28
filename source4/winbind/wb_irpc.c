@@ -132,6 +132,9 @@ static void wb_irpc_get_idmap_callback(struct composite_context *ctx)
 		case WINBIND_IDMAP_LEVEL_XIDS_TO_SIDS:
 			status = wb_xids2sids_recv(ctx, &s->req->out.ids);
 			break;
+		default:
+			status = NT_STATUS_INTERNAL_ERROR;
+			break;
 	}
 
 	irpc_send_reply(s->msg, status);
