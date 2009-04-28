@@ -35,6 +35,9 @@
 
 #include "krb5_locl.h"
 
+#undef __attribute__
+#define __attribute__(x)
+
 #ifndef HEIMDAL_SMALLER
 
 /**
