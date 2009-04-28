@@ -4430,14 +4430,14 @@ _PUBLIC_ void ndr_print_samr_PwInfo(struct ndr_print *ndr, const char *name, con
 
 static enum ndr_err_code ndr_push_samr_ConnectVersion(struct ndr_push *ndr, int ndr_flags, enum samr_ConnectVersion r)
 {
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_samr_ConnectVersion(struct ndr_pull *ndr, int ndr_flags, enum samr_ConnectVersion *r)
 {
-	uint16_t v;
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
 	*r = v;
 	return NDR_ERR_SUCCESS;
 }
