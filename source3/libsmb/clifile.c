@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    client file operations
    Copyright (C) Andrew Tridgell 1994-1998
-   Copyright (C) Jeremy Allison 2001-2002
+   Copyright (C) Jeremy Allison 2001-2009
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -2276,28 +2276,6 @@ NTSTATUS cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail)
 	return status;
 }
 
-#if 0
-bool cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail)
-{
-	memset(cli->outbuf,'\0',smb_size);
-	cli_set_message(cli->outbuf,0,0,True);
-	SCVAL(cli->outbuf,smb_com,SMBdskattr);
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
-
-	cli_send_smb(cli);
-	if (!cli_receive_smb(cli)) {
-		return False;
-	}
-
-	*bsize = SVAL(cli->inbuf,smb_vwv1)*SVAL(cli->inbuf,smb_vwv2);
-	*total = SVAL(cli->inbuf,smb_vwv0);
-	*avail = SVAL(cli->inbuf,smb_vwv3);
-
-	return True;
-}
-#endif
-
 /****************************************************************************
  Create and open a temporary file.
 ****************************************************************************/
@@ -2812,71 +2790,220 @@ int cli_posix_mkdir(struct cli_state *cli, const char *fname, mode_t mode)
  unlink or rmdir - POSIX semantics.
 ****************************************************************************/
 
-static bool cli_posix_unlink_internal(struct cli_state *cli, const char *fname, bool is_dir)
-{
-	unsigned int data_len = 0;
-	unsigned int param_len = 0;
-	uint16_t setup = TRANSACT2_SETPATHINFO;
-	char *param;
-	char data[2];
-	char *rparam=NULL, *rdata=NULL;
-	char *p;
-	size_t srclen = 2*(strlen(fname)+1);
+struct unlink_state {
+	int dummy;
+};
 
-	param = SMB_MALLOC_ARRAY(char, 6+srclen+2);
-	if (!param) {
-		return false;
+static void cli_posix_unlink_internal_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+				subreq, struct tevent_req);
+	struct unlink_state *state = tevent_req_data(req, struct unlink_state);
+	NTSTATUS status;
+
+	status = cli_trans_recv(subreq, state, NULL, NULL, NULL, NULL, NULL, NULL);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static struct tevent_req *cli_posix_unlink_internal_send(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct cli_state *cli,
+					const char *fname,
+					bool is_dir)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct unlink_state *state = NULL;
+	uint16_t setup;
+	uint8_t *param = NULL;
+	uint8_t data[2];
+
+	req = tevent_req_create(mem_ctx, &state, struct unlink_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	/* Setup setup word. */
+	SSVAL(&setup+0, 0, TRANSACT2_SETPATHINFO);
+
+	/* Setup param array. */
+	param = talloc_array(state, uint8_t, 6);
+	if (tevent_req_nomem(data, req)) {
+		return tevent_req_post(req, ev);
 	}
 	memset(param, '\0', 6);
-	SSVAL(param,0, SMB_POSIX_PATH_UNLINK);
-	p = &param[6];
+	SSVAL(param, 0, SMB_POSIX_PATH_UNLINK);
 
-	p += clistr_push(cli, p, fname, srclen, STR_TERMINATE);
-	param_len = PTR_DIFF(p, param);
+	param = smb_bytes_push_str(param, cli_ucs2(cli), fname,
+				   strlen(fname)+1, NULL);
 
+	if (tevent_req_nomem(param, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* Setup data word. */
 	SSVAL(data, 0, is_dir ? SMB_POSIX_UNLINK_DIRECTORY_TARGET :
 			SMB_POSIX_UNLINK_FILE_TARGET);
-	data_len = 2;
 
-	if (!cli_send_trans(cli, SMBtrans2,
-			NULL,                        /* name */
-			-1, 0,                          /* fid, flags */
-			&setup, 1, 0,                   /* setup, length, max */
-			param, param_len, 2,            /* param, length, max */
-			(char *)&data,  data_len, cli->max_xmit /* data, length, max */
-			)) {
-		SAFE_FREE(param);
-		return False;
+	subreq = cli_trans_send(state,			/* mem ctx. */
+				ev,			/* event ctx. */
+				cli,			/* cli_state. */
+				SMBtrans2,		/* cmd. */
+				NULL,			/* pipe name. */
+				-1,			/* fid. */
+				0,			/* function. */
+				0,			/* flags. */
+				&setup,			/* setup. */
+				2,			/* num setup. */
+				0,			/* max setup. */
+				param,			/* param. */
+				talloc_get_size(param),	/* num param. */
+				0,			/* max param. */
+				data,			/* data. */
+				2,			/* num data. */
+				0);			/* max data. */
+
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
 	}
+	tevent_req_set_callback(subreq, cli_posix_unlink_internal_done, req);
+	return req;
+}
 
-	SAFE_FREE(param);
+struct tevent_req *cli_posix_unlink_send(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct cli_state *cli,
+					const char *fname)
+{
+	return cli_posix_unlink_internal_send(mem_ctx, ev, cli, fname, false);
+}
 
-	if (!cli_receive_trans(cli, SMBtrans2,
-		&rparam, &param_len,
-		&rdata, &data_len)) {
-			return False;
+NTSTATUS cli_posix_unlink_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
 	}
-
-	SAFE_FREE(rdata);
-	SAFE_FREE(rparam);
-
-	return True;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
  unlink - POSIX semantics.
 ****************************************************************************/
 
-bool cli_posix_unlink(struct cli_state *cli, const char *fname)
+NTSTATUS cli_posix_unlink(struct cli_state *cli, const char *fname)
 {
-	return cli_posix_unlink_internal(cli, fname, False);
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status = NT_STATUS_OK;
+
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	req = cli_posix_unlink_send(frame,
+				ev,
+				cli,
+				fname);
+	if (req == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
+	}
+
+	status = cli_posix_unlink_recv(req, frame);
+
+ fail:
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
 }
 
 /****************************************************************************
  rmdir - POSIX semantics.
 ****************************************************************************/
 
-int cli_posix_rmdir(struct cli_state *cli, const char *fname)
+struct tevent_req *cli_posix_rmdir_send(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct cli_state *cli,
+					const char *fname)
 {
-	return cli_posix_unlink_internal(cli, fname, True);
+	return cli_posix_unlink_internal_send(mem_ctx, ev, cli, fname, true);
+}
+
+NTSTATUS cli_posix_rmdir_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_posix_rmdir(struct cli_state *cli, const char *fname)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status = NT_STATUS_OK;
+
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	req = cli_posix_rmdir_send(frame,
+				ev,
+				cli,
+				fname);
+	if (req == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
+	}
+
+	status = cli_posix_rmdir_recv(req, frame);
+
+ fail:
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
 }

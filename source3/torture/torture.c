@@ -4224,7 +4224,7 @@ static bool run_simple_posix_open_test(int dummy)
 	}
 
 	/* Now unlink while open. */
-	if (!cli_posix_unlink(cli1, fname)) {
+	if (!NT_STATUS_IS_OK(cli_posix_unlink(cli1, fname))) {
 		printf("POSIX unlink of %s failed (%s)\n", fname, cli_errstr(cli1));
 		goto out;
 	}
@@ -4241,7 +4241,7 @@ static bool run_simple_posix_open_test(int dummy)
 		goto out;
 	}
 
-	if (!cli_posix_rmdir(cli1, dname)) {
+	if (!NT_STATUS_IS_OK(cli_posix_rmdir(cli1, dname))) {
 		printf("POSIX rmdir failed (%s)\n", cli_errstr(cli1));
 		goto out;
 	}

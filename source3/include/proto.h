@@ -2452,8 +2452,20 @@ bool cli_get_ea_list_fnum(struct cli_state *cli, int fnum,
 		struct ea_struct **pea_list);
 int cli_posix_open(struct cli_state *cli, const char *fname, int flags, mode_t mode);
 int cli_posix_mkdir(struct cli_state *cli, const char *fname, mode_t mode);
-bool cli_posix_unlink(struct cli_state *cli, const char *fname);
-int cli_posix_rmdir(struct cli_state *cli, const char *fname);
+
+struct tevent_req *cli_posix_unlink_send(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct cli_state *cli,
+					const char *fname);
+NTSTATUS cli_posix_unlink_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+NTSTATUS cli_posix_unlink(struct cli_state *cli, const char *fname);
+
+struct tevent_req *cli_posix_rmdir_send(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct cli_state *cli,
+					const char *fname);
+NTSTATUS cli_posix_rmdir_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+NTSTATUS cli_posix_rmdir(struct cli_state *cli, const char *fname);
 
 /* The following definitions come from libsmb/clifsinfo.c  */
 

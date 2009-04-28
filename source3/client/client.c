@@ -2401,7 +2401,7 @@ static int cmd_posix_unlink(void)
 		return 1;
 	}
 
-	if (!cli_posix_unlink(targetcli, targetname)) {
+	if (!NT_STATUS_IS_OK(cli_posix_unlink(targetcli, targetname))) {
 		d_printf("Failed to unlink file %s. %s\n", targetname, cli_errstr(cli));
 	} else {
 		d_printf("posix_unlink deleted file %s\n", targetname);
@@ -2435,7 +2435,7 @@ static int cmd_posix_rmdir(void)
 		return 1;
 	}
 
-	if (!cli_posix_rmdir(targetcli, targetname)) {
+	if (!NT_STATUS_IS_OK(cli_posix_rmdir(targetcli, targetname))) {
 		d_printf("Failed to unlink directory %s. %s\n", targetname, cli_errstr(cli));
 	} else {
 		d_printf("posix_rmdir deleted directory %s\n", targetname);
