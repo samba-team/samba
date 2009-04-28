@@ -35,8 +35,6 @@
 
 RCSID("$Id$");
 
-#undef KRB5_DEPRECATED
-#define KRB5_DEPRECATED
 #undef __attribute__(x)
 #define __attribute__(x)
 
@@ -203,80 +201,3 @@ krb5_free_error_message(krb5_context context, const char *msg)
 {
     free(rk_UNCONST(msg));
 }
-
-#ifndef HEIMDAL_SMALLER
-
-/**
- * Free the error message returned by krb5_get_error_string(),
- * deprecated, use krb5_free_error_message().
- *
- * @param context Kerberos context
- * @param msg error message to free
- *
- * @ingroup krb5_deprecated
- */
-
-void KRB5_LIB_FUNCTION
-krb5_free_error_string(krb5_context context, char *str)
-    KRB5_DEPRECATED
-{
-    krb5_free_error_message(context, str);
-}
-
-/**
- * Set the error message returned by krb5_get_error_string(),
- * deprecated, use krb5_set_error_message().
- *
- * @param context Kerberos context
- * @param msg error message to free
- *
- * @ingroup krb5_deprecated
- */
-
-krb5_error_code KRB5_LIB_FUNCTION
-krb5_set_error_string(krb5_context context, const char *fmt, ...)
-    __attribute__((format (printf, 2, 3))) KRB5_DEPRECATED
-{
-    va_list ap;
-
-    va_start(ap, fmt);
-    krb5_vset_error_message (context, 0, fmt, ap);
-    va_end(ap);
-    return 0;
-}
-
-/**
- * Set the error message returned by krb5_get_error_string(),
- * deprecated, use krb5_set_error_message().
- *
- * @param context Kerberos context
- * @param msg error message to free
- *
- * @ingroup krb5_deprecated
- */
-
-krb5_error_code KRB5_LIB_FUNCTION
-krb5_vset_error_string(krb5_context context, const char *fmt, va_list args)
-    __attribute__ ((format (printf, 2, 0))) KRB5_DEPRECATED
-{
-    krb5_vset_error_message(context, 0, fmt, args);
-    return 0;
-}
-
-/**
- * Clar the error message returned by krb5_get_error_string(),
- * deprecated, use krb5_clear_error_message().
- *
- * @param context Kerberos context
- *
- * @ingroup krb5_deprecated
- */
-
-void KRB5_LIB_FUNCTION
-krb5_clear_error_string(krb5_context context)
-     KRB5_DEPRECATED
-{
-    return krb5_clear_error_message(context);
-}
-
-#endif /* !HEIMDAL_SMALLER */
