@@ -44,7 +44,14 @@ bool ads_cldap_netlogon(TALLOC_CTX *mem_ctx,
 	int ret;
 	struct tsocket_address *dest_addr;
 
+	/* TODO: support ipv6 */
+
 	addr = interpret_addr2(server);
+	if (is_zero_ip_v4(addr)) {
+		DEBUG(2,("Failed to resolve[%s] into an address for cldap\n",
+			 server));
+		return false;
+	}
 	dest_str = inet_ntop(AF_INET, &addr,
 			     addrstr, sizeof(addrstr));
 	if (!dest_str) {
