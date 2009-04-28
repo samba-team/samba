@@ -572,7 +572,7 @@ bool pm_process( const char *FileName,
 
   if( !result )                               /* Generic failure. */
     {
-    DEBUG(0,("%s Failed.  Error returned from params.c:parse().\n", func));
+    DEBUG(3,("%s Failed.  Error returned from params.c:parse().\n", func));
     return( false );
     }
 
