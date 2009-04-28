@@ -513,9 +513,10 @@ static int shadow_copy2_get_shadow_copy2_data(vfs_handle_struct *handle,
 	p = SMB_VFS_NEXT_OPENDIR(handle, snapdir, NULL, 0);
 
 	if (!p) {
-		DEBUG(0,("shadow_copy2: SMB_VFS_NEXT_OPENDIR() failed for '%s' - %s\n", 
-			 snapdir, strerror(errno)));
+		DEBUG(2,("shadow_copy2: SMB_VFS_NEXT_OPENDIR() failed for '%s'"
+			 " - %s\n", snapdir, strerror(errno)));
 		talloc_free(tmp_ctx);
+		errno = ENOSYS;
 		return -1;
 	}
 
