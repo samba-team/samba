@@ -31,8 +31,6 @@
  * SUCH DAMAGE.
  */
 
-#define KRB5_DEPRECATED
-
 #include "krb5_locl.h"
 
 RCSID("$Id$");
