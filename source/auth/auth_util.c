@@ -867,6 +867,33 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		*found_username = talloc_strdup(mem_ctx,
 						pdb_get_username(sam_acct));
 
+		/*
+		 * If the SID from lookup_name() was the guest sid, passdb knows
+		 * about the mapping of guest sid to lp_guestaccount()
+		 * username and will return the unix_pw info for a guest
+		 * user. Use it if it's there, else lookup the *uid details
+		 * using getpwnam_alloc(). See bug #6291 for details. JRA.
+		 */
+
+		/* We must always assign the *uid. */
+		if (sam_acct->unix_pw == NULL) {
+			struct passwd *pwd = getpwnam_alloc(sam_acct, *found_username );
+			if (!pwd) {
+				DEBUG(10, ("getpwnam_alloc failed for %s\n",
+					*found_username));
+				result = NT_STATUS_NO_SUCH_USER;
+				goto done;
+			}
+			result = samu_set_unix(sam_acct, pwd );
+			if (!NT_STATUS_IS_OK(result)) {
+				DEBUG(10, ("samu_set_unix failed for %s\n",
+					*found_username));
+				result = NT_STATUS_NO_SUCH_USER;
+				goto done;
+			}
+		}
+		*uid = sam_acct->unix_pw->pw_uid;
+
 	} else 	if (sid_check_is_in_unix_users(&user_sid)) {
 
 		/* This is a unix user not in passdb. We need to ask nss
@@ -883,8 +910,9 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 	unix_user:
 
 		if (!sid_to_uid(&user_sid, uid)) {
-			DEBUG(1, ("sid_to_uid for %s (%s) failed\n",
+			DEBUG(1, ("unix_user case, sid_to_uid for %s (%s) failed\n",
 				  username, sid_string_dbg(&user_sid)));
+			result = NT_STATUS_NO_SUCH_USER;
 			goto done;
 		}
 
@@ -936,6 +964,14 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		 * information. */
 
 		uint32 dummy;
+
+		/* We must always assign the *uid. */
+		if (!sid_to_uid(&user_sid, uid)) {
+			DEBUG(1, ("winbindd case, sid_to_uid for %s (%s) failed\n",
+				  username, sid_string_dbg(&user_sid)));
+			result = NT_STATUS_NO_SUCH_USER;
+			goto done;
+		}
 
 		num_group_sids = 1;
 		group_sids = TALLOC_ARRAY(tmp_ctx, DOM_SID, num_group_sids);
