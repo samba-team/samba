@@ -4079,6 +4079,7 @@ bool lp_string_is_valid_boolean(const char *parm_value);
 bool lp_invert_boolean(const char *str, const char **inverse_str);
 bool lp_canonicalize_boolean(const char *str, const char**canon_str);
 bool service_ok(int iService);
+bool process_registry_service(const char *service_name);
 bool lp_config_backend_is_registry(void);
 bool lp_config_backend_is_file(void);
 bool lp_file_list_changed(void);

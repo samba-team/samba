@@ -6824,10 +6824,10 @@ static bool process_smbconf_service(struct smbconf_service *service)
 	return true;
 }
 
-/*
- * process_registry_globals
+/**
+ * load a service from registry and activate it
  */
-static bool process_registry_globals(void)
+bool process_registry_service(const char *service_name)
 {
 	WERROR werr;
 	struct smbconf_service *service = NULL;
@@ -6839,19 +6839,18 @@ static bool process_registry_globals(void)
 		goto done;
 	}
 
-	ret = do_parameter("registry shares", "yes", NULL);
-	if (!ret) {
-		goto done;
-	}
+	DEBUG(5, ("process_registry_service: service name %s\n", service_name));
 
-	if (!smbconf_share_exists(conf_ctx, GLOBAL_NAME)) {
-		/* nothing to read from the registry yet but make sure lp_load
-		 * doesn't return false */
+	if (!smbconf_share_exists(conf_ctx, service_name)) {
+		/*
+		 * Registry does not contain data for this service (yet),
+		 * but make sure lp_load doesn't return false.
+		 */
 		ret = true;
 		goto done;
 	}
 
-	werr = smbconf_get_share(conf_ctx, mem_ctx, GLOBAL_NAME, &service);
+	werr = smbconf_get_share(conf_ctx, mem_ctx, service_name, &service);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -6867,6 +6866,21 @@ static bool process_registry_globals(void)
 done:
 	TALLOC_FREE(mem_ctx);
 	return ret;
+}
+
+/*
+ * process_registry_globals
+ */
+static bool process_registry_globals(void)
+{
+	bool ret;
+
+	ret = do_parameter("registry shares", "yes", NULL);
+	if (!ret) {
+		return ret;
+	}
+
+	return process_registry_service(GLOBAL_NAME);
 }
 
 static bool process_registry_shares(void)
