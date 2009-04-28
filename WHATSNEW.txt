@@ -1,6 +1,6 @@
                    =============================
                    Release Notes for Samba 3.3.4
-			  April, 22  2009
+			  April, 29  2009
                    =============================
 
 
@@ -31,6 +31,7 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 6089: Fix samr_OpenDomain access checks.
     * BUG 6254: Fix IPv6 PUT/GET errors to an SMB server (3.3) with
       "msdfs root" set to "yes".
+    * BUG 6279: Fix Winbind crash.
     * Allow pdbedit to change a user rid/sid.
     * When doing a cli_ulogoff don't invalidate the cnum, invalidate the vuid.
     * Don't access a freed structure when logging off and re-using a vuid.
@@ -41,6 +42,8 @@ o   Günther Deschner <gd@samba.org>
     * BUG 6238: Make sure wbcLogoffUserParams are properly initialized before
       freed.
     * BUG 6263: Fix domain logins for WinXP clients pre SP3.
+    * BUG 6286: Call init function for builtin idmap modules before probing for
+      them as shared modules.
     * Try to to fix password_expired flag handling.
     * Make sure to grey out change fields in the netdomjoin-gui when not
       running as root.
@@ -56,10 +59,20 @@ o   Volker Lendecke <vl@samba.org>
     * Use cluster-aware procid_is_me instead of comparing pids.
     * Fix smbd crash for close_on_completion.
     * Fix a memleak in an unlikely error path in change_notify_create().
+    * Do not use the file system GET_REAL_FILENAME for mangled names.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * Fix a crash bug if we timeout in net rpc trustdom list.
+    * Add '--request-timeout' option to net.
 
 
 o   Martin Schwenke <martin@meltin.net>
     * In net_conf_import, start a transaction when importing a single share.
+
+
+o   Simo Sorce <ssorce@redhat.com>
+    * Fix writing of roaming profiles with "profile acls" set to "yes".
 
 
 ######################################################################
