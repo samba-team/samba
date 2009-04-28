@@ -1246,7 +1246,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	/************************/
 	/* Function    0x3e     */
 
-	typedef enum {
+	typedef [v1_enum] enum {
 		SAMR_CONNECT_PRE_W2K	= 1,
 		SAMR_CONNECT_W2K	= 2,
 		SAMR_CONNECT_AFTER_W2K	= 3
