@@ -6883,7 +6883,7 @@ static bool process_registry_globals(void)
 	return process_registry_service(GLOBAL_NAME);
 }
 
-static bool process_registry_shares(void)
+bool process_registry_shares(void)
 {
 	WERROR werr;
 	uint32_t count;
