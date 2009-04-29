@@ -1802,6 +1802,46 @@ static char* ffmt(unsigned char *c){
 
 /****************************************************************************
 ****************************************************************************/
+
+static WERROR move_driver_file_to_download_area(TALLOC_CTX *mem_ctx,
+						connection_struct *conn,
+						const char *driver_file,
+						const char *architecture,
+						const char *new_dir,
+						uint32_t version)
+{
+	char *old_name = NULL;
+	char *new_name = NULL;
+	SMB_STRUCT_STAT st;
+	NTSTATUS status;
+
+	new_name = talloc_asprintf(mem_ctx, "%s/%s",
+				   architecture, driver_file);
+	W_ERROR_HAVE_NO_MEMORY(new_name);
+
+	old_name = talloc_asprintf(mem_ctx, "%s/%s",
+				   new_dir, driver_file);
+	W_ERROR_HAVE_NO_MEMORY(old_name);
+
+	if (version != -1 && (version = file_version_is_newer(conn, new_name, old_name)) > 0) {
+
+		new_name = driver_unix_convert(conn, new_name, &st);
+		W_ERROR_HAVE_NO_MEMORY(new_name);
+
+		status = copy_file(mem_ctx, conn, new_name, old_name,
+				   OPENX_FILE_EXISTS_TRUNCATE |
+				   OPENX_FILE_CREATE_IF_NOT_EXIST,
+				   0, false);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("move_driver_file_to_download_area: Unable to rename [%s] to [%s]\n",
+				new_name, old_name));
+			return WERR_ACCESS_DENIED;
+		}
+	}
+
+	return WERR_OK;
+}
+
 WERROR move_driver_to_download_area(struct pipes_struct *p,
 				    NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract,
 				    uint32 level, WERROR *perr)
