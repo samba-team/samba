@@ -604,6 +604,10 @@ bool cli_smb_req_send(struct tevent_req *req)
 	struct cli_smb_state *state = tevent_req_data(
 		req, struct cli_smb_state);
 
+	if (state->cli->fd == -1) {
+		return false;
+	}
+
 	return cli_smb_req_iov_send(req, state, state->iov, state->iov_count);
 }
 
