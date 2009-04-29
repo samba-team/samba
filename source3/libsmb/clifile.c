@@ -552,84 +552,204 @@ NTSTATUS cli_rename(struct cli_state *cli, const char *fname_src, const char *fn
  NT Rename a file.
 ****************************************************************************/
 
-bool cli_ntrename(struct cli_state *cli, const char *fname_src, const char *fname_dst)
+static void cli_ntrename_done(struct tevent_req *subreq);
+
+struct cli_ntrename_state {
+	uint16_t vwv[4];
+};
+
+static struct tevent_req *cli_ntrename_send_internal(TALLOC_CTX *mem_ctx,
+				struct event_context *ev,
+				struct cli_state *cli,
+				const char *fname_src,
+				const char *fname_dst,
+				uint16_t rename_flag)
 {
-	char *p;
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_ntrename_state *state = NULL;
+	uint8_t additional_flags = 0;
+	uint8_t *bytes = NULL;
 
-	memset(cli->outbuf,'\0',smb_size);
-	memset(cli->inbuf,'\0',smb_size);
-
-	cli_set_message(cli->outbuf, 4, 0, true);
-
-	SCVAL(cli->outbuf,smb_com,SMBntrename);
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
-
-	SSVAL(cli->outbuf,smb_vwv0,aSYSTEM | aHIDDEN | aDIR);
-	SSVAL(cli->outbuf,smb_vwv1, RENAME_FLAG_RENAME);
-
-	p = smb_buf(cli->outbuf);
-	*p++ = 4;
-	p += clistr_push(cli, p, fname_src,
-			cli->bufsize - PTR_DIFF(p,cli->outbuf), STR_TERMINATE);
-	*p++ = 4;
-	p += clistr_push(cli, p, fname_dst,
-			cli->bufsize - PTR_DIFF(p,cli->outbuf), STR_TERMINATE);
-
-	cli_setup_bcc(cli, p);
-
-	cli_send_smb(cli);
-	if (!cli_receive_smb(cli)) {
-		return false;
+	req = tevent_req_create(mem_ctx, &state, struct cli_ntrename_state);
+	if (req == NULL) {
+		return NULL;
 	}
 
-	if (cli_is_error(cli)) {
-		return false;
+	SSVAL(state->vwv+0, 0 ,aSYSTEM | aHIDDEN | aDIR);
+	SSVAL(state->vwv+1, 0, rename_flag);
+
+	bytes = talloc_array(state, uint8_t, 1);
+	if (tevent_req_nomem(bytes, req)) {
+		return tevent_req_post(req, ev);
+	}
+	bytes[0] = 4;
+	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), fname_src,
+				   strlen(fname_src)+1, NULL);
+	if (tevent_req_nomem(bytes, req)) {
+		return tevent_req_post(req, ev);
 	}
 
-	return true;
+	bytes = TALLOC_REALLOC_ARRAY(state, bytes, uint8_t,
+			talloc_get_size(bytes)+1);
+	if (tevent_req_nomem(bytes, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	bytes[talloc_get_size(bytes)-1] = 4;
+	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), fname_dst,
+				   strlen(fname_dst)+1, NULL);
+	if (tevent_req_nomem(bytes, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = cli_smb_send(state, ev, cli, SMBntrename, additional_flags,
+			      4, state->vwv, talloc_get_size(bytes), bytes);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_ntrename_done, req);
+	return req;
+}
+
+struct tevent_req *cli_ntrename_send(TALLOC_CTX *mem_ctx,
+				struct event_context *ev,
+				struct cli_state *cli,
+				const char *fname_src,
+				const char *fname_dst)
+{
+	return cli_ntrename_send_internal(mem_ctx,
+					ev,
+					cli,
+					fname_src,
+					fname_dst,
+					RENAME_FLAG_RENAME);
+}
+
+static void cli_ntrename_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+				subreq, struct tevent_req);
+	NTSTATUS status;
+
+	status = cli_smb_recv(subreq, 0, NULL, NULL, NULL, NULL);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_ntrename_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+NTSTATUS cli_ntrename(struct cli_state *cli, const char *fname_src, const char *fname_dst)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_OK;
+
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	req = cli_ntrename_send(frame, ev, cli, fname_src, fname_dst);
+	if (req == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
+	}
+
+	status = cli_ntrename_recv(req);
+
+ fail:
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
 }
 
 /****************************************************************************
  NT hardlink a file.
 ****************************************************************************/
 
-bool cli_nt_hardlink(struct cli_state *cli, const char *fname_src, const char *fname_dst)
+struct tevent_req *cli_nt_hardlink_send(TALLOC_CTX *mem_ctx,
+				struct event_context *ev,
+				struct cli_state *cli,
+				const char *fname_src,
+				const char *fname_dst)
 {
-	char *p;
+	return cli_ntrename_send_internal(mem_ctx,
+					ev,
+					cli,
+					fname_src,
+					fname_dst,
+					RENAME_FLAG_HARD_LINK);
+}
 
-	memset(cli->outbuf,'\0',smb_size);
-	memset(cli->inbuf,'\0',smb_size);
+NTSTATUS cli_nt_hardlink_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
 
-	cli_set_message(cli->outbuf, 4, 0, true);
+NTSTATUS cli_nt_hardlink(struct cli_state *cli, const char *fname_src, const char *fname_dst)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_OK;
 
-	SCVAL(cli->outbuf,smb_com,SMBntrename);
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
-
-	SSVAL(cli->outbuf,smb_vwv0,aSYSTEM | aHIDDEN | aDIR);
-	SSVAL(cli->outbuf,smb_vwv1, RENAME_FLAG_HARD_LINK);
-
-	p = smb_buf(cli->outbuf);
-	*p++ = 4;
-	p += clistr_push(cli, p, fname_src,
-			cli->bufsize - PTR_DIFF(p,cli->outbuf), STR_TERMINATE);
-	*p++ = 4;
-	p += clistr_push(cli, p, fname_dst,
-			cli->bufsize - PTR_DIFF(p,cli->outbuf), STR_TERMINATE);
-
-	cli_setup_bcc(cli, p);
-
-	cli_send_smb(cli);
-	if (!cli_receive_smb(cli)) {
-		return false;
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
 	}
 
-	if (cli_is_error(cli)) {
-		return false;
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
 	}
 
-	return true;
+	req = cli_nt_hardlink_send(frame, ev, cli, fname_src, fname_dst);
+	if (req == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
+	}
+
+	status = cli_nt_hardlink_recv(req);
+
+ fail:
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
 }
 
 /****************************************************************************

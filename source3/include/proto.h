@@ -2339,10 +2339,25 @@ struct tevent_req *cli_rename_send(TALLOC_CTX *mem_ctx,
                                 const char *fname_dst);
 NTSTATUS cli_rename_recv(struct tevent_req *req);
 NTSTATUS cli_rename(struct cli_state *cli, const char *fname_src, const char *fname_dst);
-bool cli_ntrename(struct cli_state *cli, const char *fname_src, const char *fname_dst);
-bool cli_nt_hardlink(struct cli_state *cli, const char *fname_src, const char *fname_dst);
+struct tevent_req *cli_ntrename_send(TALLOC_CTX *mem_ctx,
+                                struct event_context *ev,
+                                struct cli_state *cli,
+                                const char *fname_src,
+                                const char *fname_dst);
+NTSTATUS cli_ntrename_recv(struct tevent_req *req);
+NTSTATUS cli_ntrename(struct cli_state *cli, const char *fname_src, const char *fname_dst);
+
+struct tevent_req *cli_nt_hardlink_send(TALLOC_CTX *mem_ctx,
+                                struct event_context *ev,
+                                struct cli_state *cli,
+                                const char *fname_src,
+                                const char *fname_dst);
+NTSTATUS cli_nt_hardlink_recv(struct tevent_req *req);
+NTSTATUS cli_nt_hardlink(struct cli_state *cli, const char *fname_src, const char *fname_dst);
+
 bool cli_unlink_full(struct cli_state *cli, const char *fname, uint16_t attrs);
 bool cli_unlink(struct cli_state *cli, const char *fname);
+
 struct tevent_req *cli_mkdir_send(TALLOC_CTX *mem_ctx,
 				  struct event_context *ev,
 				  struct cli_state *cli,
