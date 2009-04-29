@@ -254,7 +254,15 @@ cat >$SERVERCONFFILE<<EOF
 [print1]
 	copy = tmp
 	printable = yes
-	printing = test
+	printing = vlp
+	print command = $BINDIR/vlp print %p %s
+	lpq command = $BINDIR/vlp lpq %p
+	lp rm command = $BINDIR/vlp lprm %p %j
+	lp pause command = $BINDIR/vlp lppause %p %j
+	lp resume command = $BINDIR/vlp lpresume %p %j
+	queue pause command = $BINDIR/vlp queuepause %p
+	queue resume command = $BINDIR/vlp queueresume %p
+
 [print2]
 	copy = print1
 [print3]
