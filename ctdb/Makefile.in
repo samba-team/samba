@@ -63,7 +63,7 @@ TEST_BINS=tests/bin/ctdb_bench tests/bin/ctdb_fetch tests/bin/ctdb_store \
 	tests/bin/ctdb_traverse tests/bin/rb_test tests/bin/ctdb_transaction \
 	@INFINIBAND_BINS@
 
-BINS = bin/ctdb @CTDB_SCSI_IO@ bin/ctdb_ipmux bin/smnotify
+BINS = bin/ctdb @CTDB_SCSI_IO@ bin/ctdb_ipmux bin/smnotify bin/ping_pong
 SBINS = bin/ctdbd
 
 DIRS = lib bin tests/bin
@@ -129,6 +129,11 @@ utils/smnotify/gen_xdr.c: utils/smnotify/smnotify.x utils/smnotify/smnotify.h
 utils/smnotify/gen_smnotify.c: utils/smnotify/smnotify.x utils/smnotify/smnotify.h
 	@echo Generating $@
 	rpcgen -l utils/smnotify/smnotify.x > utils/smnotify/gen_smnotify.c 
+
+bin/ping_pong: utils/ping_pong/ping_pong.o
+	@echo Linking $@
+	@$(CC) $(CFLAGS) -o $@ utils/ping_pong/ping_pong.o
+
 
 tests/bin/rb_test: $(CTDB_CLIENT_OBJ) tests/src/rb_test.o 
 	@echo Linking $@
@@ -200,6 +205,7 @@ install: all
 	${INSTALLCMD} -m 755 bin/ctdb_ipmux $(DESTDIR)$(bindir)
 	${INSTALLCMD} -m 755 bin/ctdbd $(DESTDIR)$(sbindir)
 	${INSTALLCMD} -m 755 bin/smnotify $(DESTDIR)$(bindir)
+	$(INSTALLCMD) -m 755 bin/ping_pong $(DESTDIR)$(bindir)
 	${INSTALLCMD} -m 644 include/ctdb.h $(DESTDIR)$(includedir)
 	${INSTALLCMD} -m 644 include/ctdb_private.h $(DESTDIR)$(includedir) # for samba3
 	${INSTALLCMD} -m 644 config/functions $(DESTDIR)$(etcdir)/ctdb
