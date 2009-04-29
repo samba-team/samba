@@ -161,18 +161,30 @@ bool vfs_init_custom(connection_struct *conn, const char *vfs_object)
 	}
 
 	/* First, try to load the module with the new module system */
-	if((entry = vfs_find_backend_entry(module_name)) || 
-	   (NT_STATUS_IS_OK(smb_probe_module("vfs", module_path)) &&
-		(entry = vfs_find_backend_entry(module_name)))) {
+	entry = vfs_find_backend_entry(module_name);
+	if (!entry) {
+		NTSTATUS status;
 
-		DEBUGADD(5,("Successfully loaded vfs module [%s] with the new modules system\n", vfs_object));
-		
-	 	if ((ops = entry->vfs_op_tuples) == NULL) {
-	 		DEBUG(0, ("entry->vfs_op_tuples==NULL for [%s] failed\n", vfs_object));
+		DEBUG(5, ("vfs module [%s] not loaded - trying to load...\n",
+			  vfs_object));
+
+		status = smb_probe_module("vfs", module_path);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("error probing vfs module '%s': %s\n",
+				  module_path, nt_errstr(status)));
 			goto fail;
-	 	}
-	} else {
-		DEBUG(0,("Can't find a vfs module [%s]\n",vfs_object));
+		}
+
+		entry = vfs_find_backend_entry(module_name);
+		if (!entry) {
+			DEBUG(0,("Can't find a vfs module [%s]\n",vfs_object));
+			goto fail;
+		}
+	}
+
+	DEBUGADD(5,("Successfully loaded vfs module [%s] with the new modules system\n", vfs_object));
+	if ((ops = entry->vfs_op_tuples) == NULL) {
+		DEBUG(0, ("entry->vfs_op_tuples==NULL for [%s] failed\n", vfs_object));
 		goto fail;
 	}
 
