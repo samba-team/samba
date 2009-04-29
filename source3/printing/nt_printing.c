@@ -1850,8 +1850,6 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 converted_driver;
 	const char *architecture;
 	char *new_dir = NULL;
-	char *old_name = NULL;
-	char *new_name = NULL;
 	connection_struct *conn = NULL;
 	NTSTATUS nt_status;
 	SMB_STRUCT_STAT st;
@@ -1934,143 +1932,74 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 	DEBUG(5,("Moving files now !\n"));
 
 	if (driver->driverpath && strlen(driver->driverpath)) {
-		new_name = talloc_asprintf(ctx,
-					"%s/%s",
-					architecture,
-					driver->driverpath);
-		if (!new_name) {
-			*perr = WERR_NOMEM;
-			goto err_exit;
-		}
-		old_name = talloc_asprintf(ctx,
-					"%s/%s",
-					new_dir,
-					driver->driverpath);
-		if (!old_name) {
-			*perr = WERR_NOMEM;
-			goto err_exit;
-		}
 
-		if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
-			new_name = driver_unix_convert(conn,new_name,&st);
-			if (!new_name) {
-				*perr = WERR_NOMEM;
-				goto err_exit;
-			}
-			if ( !NT_STATUS_IS_OK(copy_file(ctx,conn, new_name, old_name, OPENX_FILE_EXISTS_TRUNCATE|
-						OPENX_FILE_CREATE_IF_NOT_EXIST, 0, False))) {
-				DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
-						new_name, old_name));
-				*perr = WERR_ACCESS_DENIED;
+		*perr = move_driver_file_to_download_area(ctx,
+							  conn,
+							  driver->driverpath,
+							  architecture,
+							  new_dir,
+							  ver);
+		if (!W_ERROR_IS_OK(*perr)) {
+			if (W_ERROR_EQUAL(*perr, WERR_ACCESS_DENIED)) {
 				ver = -1;
 			}
+			goto err_exit;
 		}
 	}
 
 	if (driver->datafile && strlen(driver->datafile)) {
 		if (!strequal(driver->datafile, driver->driverpath)) {
-			new_name = talloc_asprintf(ctx,
-					"%s/%s",
-					architecture,
-					driver->datafile);
-			if (!new_name) {
-				*perr = WERR_NOMEM;
-				goto err_exit;
-			}
-			old_name = talloc_asprintf(ctx,
-					"%s/%s",
-					new_dir,
-					driver->datafile);
-			if (!old_name) {
-				*perr = WERR_NOMEM;
-				goto err_exit;
-			}
-			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
-				new_name = driver_unix_convert(conn,new_name,&st);
-				if (!new_name) {
-					*perr = WERR_NOMEM;
-					goto err_exit;
-				}
-				if ( !NT_STATUS_IS_OK(copy_file(ctx,conn, new_name, old_name, OPENX_FILE_EXISTS_TRUNCATE|
-						OPENX_FILE_CREATE_IF_NOT_EXIST, 0, False))) {
-					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
-							new_name, old_name));
-					*perr = WERR_ACCESS_DENIED;
+
+			*perr = move_driver_file_to_download_area(ctx,
+								  conn,
+								  driver->datafile,
+								  architecture,
+								  new_dir,
+								  ver);
+			if (!W_ERROR_IS_OK(*perr)) {
+				if (W_ERROR_EQUAL(*perr, WERR_ACCESS_DENIED)) {
 					ver = -1;
 				}
+				goto err_exit;
 			}
 		}
 	}
 
 	if (driver->configfile && strlen(driver->configfile)) {
 		if (!strequal(driver->configfile, driver->driverpath) &&
-			!strequal(driver->configfile, driver->datafile)) {
-			new_name = talloc_asprintf(ctx,
-						"%s/%s",
-						architecture,
-						driver->configfile);
-			if (!new_name) {
-				*perr = WERR_NOMEM;
-				goto err_exit;
-			}
-			old_name = talloc_asprintf(ctx,
-						"%s/%s",
-						new_dir,
-						driver->configfile);
-			if (!old_name) {
-				*perr = WERR_NOMEM;
-				goto err_exit;
-			}
-			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
-				new_name = driver_unix_convert(conn,new_name,&st);
-				if (!new_name) {
-					*perr = WERR_NOMEM;
-					goto err_exit;
-				}
-				if ( !NT_STATUS_IS_OK(copy_file(ctx,conn, new_name, old_name, OPENX_FILE_EXISTS_TRUNCATE|
-						OPENX_FILE_CREATE_IF_NOT_EXIST, 0, False))) {
-					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
-							new_name, old_name));
-					*perr = WERR_ACCESS_DENIED;
+		    !strequal(driver->configfile, driver->datafile)) {
+
+			*perr = move_driver_file_to_download_area(ctx,
+								  conn,
+								  driver->configfile,
+								  architecture,
+								  new_dir,
+								  ver);
+			if (!W_ERROR_IS_OK(*perr)) {
+				if (W_ERROR_EQUAL(*perr, WERR_ACCESS_DENIED)) {
 					ver = -1;
 				}
+				goto err_exit;
 			}
 		}
 	}
 
 	if (driver->helpfile && strlen(driver->helpfile)) {
 		if (!strequal(driver->helpfile, driver->driverpath) &&
-			!strequal(driver->helpfile, driver->datafile) &&
-			!strequal(driver->helpfile, driver->configfile)) {
-			new_name = talloc_asprintf(ctx,
-					"%s/%s",
-					architecture,
-					driver->helpfile);
-			if (!new_name) {
-				*perr = WERR_NOMEM;
-				goto err_exit;
-			}
-			old_name = talloc_asprintf(ctx,
-					"%s/%s",
-					new_dir,
-					driver->helpfile);
-			if (!old_name) {
-				*perr = WERR_NOMEM;
-				goto err_exit;
-			}
-			if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
-				new_name = driver_unix_convert(conn,new_name,&st);
-				if (!new_name) {
-					*perr = WERR_NOMEM;
-					goto err_exit;
-				}
-				if ( !NT_STATUS_IS_OK(copy_file(ctx,conn, new_name, old_name, OPENX_FILE_EXISTS_TRUNCATE|
-						OPENX_FILE_CREATE_IF_NOT_EXIST, 0, False))) {
-					DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
-							new_name, old_name));
-					*perr = WERR_ACCESS_DENIED;
+		    !strequal(driver->helpfile, driver->datafile) &&
+		    !strequal(driver->helpfile, driver->configfile)) {
+
+			*perr = move_driver_file_to_download_area(ctx,
+								  conn,
+								  driver->helpfile,
+								  architecture,
+								  new_dir,
+								  ver);
+			if (!W_ERROR_IS_OK(*perr)) {
+				if (W_ERROR_EQUAL(*perr, WERR_ACCESS_DENIED)) {
 					ver = -1;
 				}
+				goto err_exit;
 			}
 		}
 	}
@@ -2078,9 +2007,9 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 	if (driver->dependentfiles) {
 		for (i=0; *driver->dependentfiles[i]; i++) {
 			if (!strequal(driver->dependentfiles[i], driver->driverpath) &&
-				!strequal(driver->dependentfiles[i], driver->datafile) &&
-				!strequal(driver->dependentfiles[i], driver->configfile) &&
-				!strequal(driver->dependentfiles[i], driver->helpfile)) {
+			    !strequal(driver->dependentfiles[i], driver->datafile) &&
+			    !strequal(driver->dependentfiles[i], driver->configfile) &&
+			    !strequal(driver->dependentfiles[i], driver->helpfile)) {
 				int j;
 				for (j=0; j < i; j++) {
 					if (strequal(driver->dependentfiles[i], driver->dependentfiles[j])) {
@@ -2088,36 +2017,17 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 					}
 				}
 
-				new_name = talloc_asprintf(ctx,
-						"%s/%s",
-						architecture,
-						driver->dependentfiles[i]);
-				if (!new_name) {
-					*perr = WERR_NOMEM;
-					goto err_exit;
-				}
-				old_name = talloc_asprintf(ctx,
-						"%s/%s",
-						new_dir,
-						driver->dependentfiles[i]);
-				if (!old_name) {
-					*perr = WERR_NOMEM;
-					goto err_exit;
-				}
-				if (ver != -1 && (ver=file_version_is_newer(conn, new_name, old_name)) > 0) {
-					new_name = driver_unix_convert(conn,new_name,&st);
-					if (!new_name) {
-						*perr = WERR_NOMEM;
-						goto err_exit;
-					}
-					if ( !NT_STATUS_IS_OK(copy_file(ctx,conn, new_name, old_name,
-							OPENX_FILE_EXISTS_TRUNCATE|
-							OPENX_FILE_CREATE_IF_NOT_EXIST, 0, False))) {
-						DEBUG(0,("move_driver_to_download_area: Unable to rename [%s] to [%s]\n",
-								new_name, old_name));
-						*perr = WERR_ACCESS_DENIED;
+				*perr = move_driver_file_to_download_area(ctx,
+									  conn,
+									  driver->dependentfiles[i],
+									  architecture,
+									  new_dir,
+									  ver);
+				if (!W_ERROR_IS_OK(*perr)) {
+					if (W_ERROR_EQUAL(*perr, WERR_ACCESS_DENIED)) {
 						ver = -1;
 					}
+					goto err_exit;
 				}
 			}
 		NextDriver: ;
