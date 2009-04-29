@@ -120,6 +120,7 @@ fi
 %{_sbindir}/ctdbd
 %{_bindir}/ctdb
 %{_bindir}/smnotify
+%{_bindir}/ping_pong
 %{_bindir}/ctdb_ipmux
 %{_bindir}/ctdb_diagnostics
 %{_bindir}/onnode
