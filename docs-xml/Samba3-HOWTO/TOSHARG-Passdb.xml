@@ -757,7 +757,7 @@ Samba-3 introduces a number of new password backend capabilities.
 <indexterm><primary>trust accounts</primary></indexterm>
 		The POSIX and sambaSamAccount components of computer (machine) accounts are both used by Samba.
 		Thus, machine accounts are treated inside Samba in the same way that Windows NT4/200X treats
-		them. A user account and a machine account are indistinquishable from each other, except that
+		them. A user account and a machine account are indistinguishable from each other, except that
 		the machine account ends in a $ character, as do trust accounts.
 		</para>
 
@@ -1050,7 +1050,7 @@ is being added to the <command>net</command> toolset (see <link linkend="NetComm
 					<entry><para>0</para></entry>
                     </row>
                     <row>
-					<entry><para>Mimimum Password Length</para></entry>
+					<entry><para>Minimum Password Length</para></entry>
 					<entry><para>min password length</para></entry>
 					<entry><para>1 - 14 (Chars)</para></entry>
 					<entry><para>0 - 4294967295 (Chars)</para></entry>
@@ -1615,7 +1615,7 @@ account policy value for password history is now 4
 &rootprompt; pdbedit -P "maximum password age" -C 7776000
 account policy value for maximum password age was 4294967295
 account policy value for maximum password age is now 7776000
-&rootprompt; pdbedit -P "minimum password age" -C 7
+&rootprompt; pdbedit -P "minimum password age" -C 604800
 account policy value for minimum password age was 0
 account policy value for minimum password age is now 7
 &rootprompt; pdbedit -P "bad lockout attempt" -C 8
@@ -1735,7 +1735,7 @@ to be removed.
 		<listitem><para>
 <indexterm><primary>lookups</primary></indexterm>
 		The first problem is that all lookups must be performed sequentially. Given that
-		there are approximately two lookups per domain logon (one during intial logon validation
+		there are approximately two lookups per domain logon (one during initial logon validation
 		and one for a session connection setup, such as when mapping a network drive or printer), this
 		is a performance bottleneck for large sites. What is needed is an indexed approach
 		such as that used in databases.
@@ -2626,7 +2626,7 @@ sambaNTPassword: 878D8014606CDA29677A44EFA1353FC7
 		</sect3>
 
 		<sect3>
-		<title>Using OpenLDAP Overlay for Password Syncronization</title>
+		<title>Using OpenLDAP Overlay for Password Synchronization</title>
 
 		<para>
 		Howard Chu has written a special overlay called <command>smbk5pwd</command>. This tool  modifies the
