@@ -1582,6 +1582,65 @@ Delete the list of includes from the provided section (global or share).
 </refsect2>
 
 <refsect2>
+<title>EVENTLOG</title>
+
+<para>Starting with version 3.4.0 net can read, dump, import and export native
+win32 eventlog files (usually *.evt). evt files are used by the native Windows eventviewer tools.
+</para>
+
+<para>
+The import and export of evt files can only succeed when <parameter>eventlog list</parameter> is used in
+<emphasis>smb.conf</emphasis> file.
+See the <citerefentry><refentrytitle>smb.conf</refentrytitle> <manvolnum>5</manvolnum></citerefentry> manpage for details.
+</para>
+
+<para>The eventlog commands are:
+<simplelist>
+<member>net eventlog dump - Dump a eventlog *.evt file on the screen.</member>
+<member>net eventlog import - Import a eventlog *.evt into the samba internal
+tdb based representation of eventlogs.</member>
+<member>net eventlog export - Export the samba internal tdb based representation
+of eventlogs into an eventlog *.evt file.</member>
+</simplelist>
+</para>
+
+<refsect3>
+<title>EVENTLOG DUMP</title>
+
+<para>
+Prints a eventlog *.evt file to standard output.
+</para>
+</refsect3>
+
+<refsect3>
+<title>EVENTLOG IMPORT <replaceable>filename</replaceable> <replaceable>eventlog</replaceable></title>
+
+<para>
+Imports a eventlog *.evt file defined by <replaceable>filename</replaceable> into the
+samba internal tdb representation of eventlog defined by <replaceable>eventlog</replaceable>.
+<replaceable>eventlog</replaceable> needs to part of the <parameter>eventlog list</parameter>
+defined in smb.conf.
+See the <citerefentry><refentrytitle>smb.conf</refentrytitle> <manvolnum>5</manvolnum></citerefentry> manpage for details.
+</para>
+
+</refsect3>
+
+<refsect3>
+<title>EVENTLOG EXPORT <replaceable>filename</replaceable> <replaceable>eventlog</replaceable></title>
+
+<para>
+Exports the samba internal tdb representation of eventlog defined by <replaceable>eventlog</replaceable>
+to a eventlog *.evt file defined by <replaceable>filename</replaceable>.
+<replaceable>eventlog</replaceable> needs to part of the <parameter>eventlog list</parameter>
+defined in smb.conf.
+See the <citerefentry><refentrytitle>smb.conf</refentrytitle> <manvolnum>5</manvolnum></citerefentry> manpage for details.
+</para>
+
+</refsect3>
+
+</refsect2>
+
+<refsect2>
 <title>HELP [COMMAND]</title>
 
 <para>Gives usage information for the specified command.</para>
