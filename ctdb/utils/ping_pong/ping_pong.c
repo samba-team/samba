@@ -23,12 +23,12 @@ static struct timeval tp1,tp2;
 
 static int do_reads, do_writes, use_mmap;
 
-static void start_timer()
+static void start_timer(void)
 {
 	gettimeofday(&tp1,NULL);
 }
 
-static double end_timer()
+static double end_timer(void)
 {
 	gettimeofday(&tp2,NULL);
 	return (tp2.tv_sec + (tp2.tv_usec*1.0e-6)) - 
