@@ -77,12 +77,6 @@ extern const SE_PRIV se_take_ownership;
 /*
  * These are used in Lsa replies (srv_lsa_nt.c)
  */
-#define PR_NONE                0x0000
-#define PR_LOG_ON_LOCALLY      0x0001
-#define PR_ACCESS_FROM_NETWORK 0x0002
-#define PR_LOG_ON_BATCH_JOB    0x0004
-#define PR_LOG_ON_SERVICE      0x0010
-
 
 typedef struct {
 	uint32 high;
