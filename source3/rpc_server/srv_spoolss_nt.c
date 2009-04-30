@@ -1638,7 +1638,7 @@ WERROR _spoolss_OpenPrinterEx(pipes_struct *p,
 			/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
 			   and not a printer admin, then fail */
 
-			if ((p->server_info->utok.uid != 0) &&
+			if ((p->server_info->utok.uid != sec_initial_uid()) &&
 			    !user_has_privileges(p->server_info->ptok,
 						 &se_printop ) &&
 			    !token_contains_name_in_list(
@@ -2116,7 +2116,7 @@ WERROR _spoolss_DeletePrinterDriver(pipes_struct *p,
 	/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
 	   and not a printer admin, then fail */
 
-	if ( (p->server_info->utok.uid != 0)
+	if ( (p->server_info->utok.uid != sec_initial_uid())
 		&& !user_has_privileges(p->server_info->ptok, &se_printop )
 		&& !token_contains_name_in_list(
 			uidtoname(p->server_info->utok.uid), NULL,
@@ -2216,7 +2216,7 @@ WERROR _spoolss_DeletePrinterDriverEx(pipes_struct *p,
 	/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
 	   and not a printer admin, then fail */
 
-	if ( (p->server_info->utok.uid != 0)
+	if ( (p->server_info->utok.uid != sec_initial_uid())
 		&& !user_has_privileges(p->server_info->ptok, &se_printop )
 		&& !token_contains_name_in_list(
 			uidtoname(p->server_info->utok.uid), NULL, NULL,
