@@ -786,6 +786,10 @@ void notify_onelevel(struct notify_context *notify, uint32_t action,
 	bool have_dead_entries = false;
 	int i;
 
+	if (notify == NULL) {
+		return;
+	}
+
 	array = talloc_zero(talloc_tos(), struct notify_entry_array);
 	if (array == NULL) {
 		return;
