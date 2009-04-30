@@ -39,15 +39,15 @@ NTSTATUS gpo_copy_file(TALLOC_CTX *mem_ctx,
 		       const char *unix_path)
 {
 	NTSTATUS result;
-	int fnum;
+	uint16_t fnum;
 	int fd = 0;
 	char *data = NULL;
 	static int io_bufsize = 64512;
 	int read_size = io_bufsize;
 	off_t nread = 0;
 
-	if ((fnum = cli_open(cli, nt_path, O_RDONLY, DENY_NONE)) == -1) {
-		result = NT_STATUS_NO_SUCH_FILE;
+	result = cli_open(cli, nt_path, O_RDONLY, DENY_NONE, &fnum);
+	if (!NT_STATUS_IS_OK(result)) {
 		goto out;
 	}
 

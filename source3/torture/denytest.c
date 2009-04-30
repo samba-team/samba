@@ -1406,9 +1406,10 @@ static void progress_bar(unsigned i, unsigned total)
 bool torture_denytest1(int dummy)
 {
 	struct cli_state *cli1;
-	int fnum1, fnum2;
+	uint16_t fnum1, fnum2;
 	int i;
 	bool correct = True;
+	NTSTATUS ret1, ret2;
 	const char *fnames[2] = {"\\denytest1.dat", "\\denytest1.exe"};
 
 	if (!torture_open_connection(&cli1, 0)) {
@@ -1419,7 +1420,7 @@ bool torture_denytest1(int dummy)
 
 	for (i=0;i<2;i++) {
 		cli_unlink(cli1, fnames[i], aSYSTEM | aHIDDEN);
-		fnum1 = cli_open(cli1, fnames[i], O_RDWR|O_CREAT, DENY_NONE);
+		cli_open(cli1, fnames[i], O_RDWR|O_CREAT, DENY_NONE, &fnum1);
 		cli_write(cli1, fnum1, 0, fnames[i], 0, strlen(fnames[i]));
 		cli_close(cli1, fnum1);
 	}
@@ -1432,16 +1433,16 @@ bool torture_denytest1(int dummy)
 
 		progress_bar(i, ARRAY_SIZE(denytable1));
 
-		fnum1 = cli_open(cli1, fname, 
+		ret1 = cli_open(cli1, fname, 
 				 denytable1[i].mode1,
-				 denytable1[i].deny1);
-		fnum2 = cli_open(cli1, fname, 
+				 denytable1[i].deny1, &fnum1);
+		ret2 = cli_open(cli1, fname, 
 				 denytable1[i].mode2,
-				 denytable1[i].deny2);
+				 denytable1[i].deny2, &fnum2);
 
-		if (fnum1 == -1) {
+		if (!NT_STATUS_IS_OK(ret1)) {
 			res = A_X;
-		} else if (fnum2 == -1) {
+		} else if (!NT_STATUS_IS_OK(ret2)) {
 			res = A_0;
 		} else {
 			char x = 1;
@@ -1492,9 +1493,10 @@ bool torture_denytest1(int dummy)
 bool torture_denytest2(int dummy)
 {
 	static struct cli_state *cli1, *cli2;
-	int fnum1, fnum2;
+	uint16_t fnum1, fnum2;
 	int i;
 	bool correct = True;
+	NTSTATUS ret1, ret2;
 	const char *fnames[2] = {"\\denytest2.dat", "\\denytest2.exe"};
 
 	if (!torture_open_connection(&cli1, 0) || !torture_open_connection(&cli2, 1)) {
@@ -1505,7 +1507,7 @@ bool torture_denytest2(int dummy)
 
 	for (i=0;i<2;i++) {
 		cli_unlink(cli1, fnames[i], aSYSTEM | aHIDDEN);
-		fnum1 = cli_open(cli1, fnames[i], O_RDWR|O_CREAT, DENY_NONE);
+		cli_open(cli1, fnames[i], O_RDWR|O_CREAT, DENY_NONE, &fnum1);
 		cli_write(cli1, fnum1, 0, fnames[i], 0, strlen(fnames[i]));
 		cli_close(cli1, fnum1);
 	}
@@ -1516,16 +1518,16 @@ bool torture_denytest2(int dummy)
 
 		progress_bar(i, ARRAY_SIZE(denytable2));
 
-		fnum1 = cli_open(cli1, fname, 
+		ret1 = cli_open(cli1, fname, 
 				 denytable2[i].mode1,
-				 denytable2[i].deny1);
-		fnum2 = cli_open(cli2, fname, 
+				 denytable2[i].deny1, &fnum1);
+		ret2 = cli_open(cli2, fname, 
 				 denytable2[i].mode2,
-				 denytable2[i].deny2);
+				 denytable2[i].deny2, &fnum2);
 
-		if (fnum1 == -1) {
+		if (!NT_STATUS_IS_OK(ret1)) {
 			res = A_X;
-		} else if (fnum2 == -1) {
+		} else if (!NT_STATUS_IS_OK(ret2)) {
 			res = A_0;
 		} else {
 			char x = 1;

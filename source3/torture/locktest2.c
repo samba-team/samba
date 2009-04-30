@@ -68,7 +68,13 @@ static int try_open(struct cli_state *c, char *nfs, int fstype, const char *fnam
 
 	switch (fstype) {
 	case FSTYPE_SMB:
-		return cli_open(c, fname, flags, DENY_NONE);
+		{
+			uint16_t fd;
+			if (!NT_STATUS_IS_OK(cli_open(c, fname, flags, DENY_NONE, &fd))) {
+				return -1;
+			}
+			return fd;
+		}
 
 	case FSTYPE_NFS:
 		if (asprintf(&path, "%s%s", nfs, fname) > 0) {

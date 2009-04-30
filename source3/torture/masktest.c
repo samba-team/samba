@@ -311,7 +311,7 @@ static void get_real_name(struct cli_state *cli,
 
 static void testpair(struct cli_state *cli, const char *mask, const char *file)
 {
-	int fnum;
+	uint16_t fnum;
 	fstring res1;
 	char *res2;
 	static int count;
@@ -322,8 +322,7 @@ static void testpair(struct cli_state *cli, const char *mask, const char *file)
 
 	fstrcpy(res1, "---");
 
-	fnum = cli_open(cli, file, O_CREAT|O_TRUNC|O_RDWR, 0);
-	if (fnum == -1) {
+	if (!NT_STATUS_IS_OK(cli_open(cli, file, O_CREAT|O_TRUNC|O_RDWR, 0, &fnum))) {
 		DEBUG(0,("Can't create %s\n", file));
 		return;
 	}

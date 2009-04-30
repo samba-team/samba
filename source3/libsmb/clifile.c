@@ -1083,7 +1083,7 @@ NTSTATUS cli_rmdir(struct cli_state *cli, const char *dname)
  Set or clear the delete on close flag.
 ****************************************************************************/
 
-int cli_nt_delete_on_close(struct cli_state *cli, int fnum, bool flag)
+int cli_nt_delete_on_close(struct cli_state *cli, uint16_t fnum, bool flag)
 {
 	unsigned int data_len = 1;
 	unsigned int param_len = 6;
@@ -1125,6 +1125,7 @@ int cli_nt_delete_on_close(struct cli_state *cli, int fnum, bool flag)
  Used in smbtorture.
 ****************************************************************************/
 
+#if 0
 int cli_nt_create_full(struct cli_state *cli, const char *fname,
 		       uint32_t CreatFlags, uint32_t DesiredAccess,
 		       uint32_t FileAttributes, uint32_t ShareAccess,
@@ -1181,6 +1182,7 @@ int cli_nt_create_full(struct cli_state *cli, const char *fname,
 
 	return SVAL(cli->inbuf,smb_vwv2 + 1);
 }
+#endif
 
 struct cli_ntcreate_state {
 	uint16_t vwv[24];
@@ -1344,6 +1346,7 @@ NTSTATUS cli_ntcreate(struct cli_state *cli,
 	return status;
 }
 
+#if 0
 /****************************************************************************
  Open a file.
 ****************************************************************************/
@@ -1353,6 +1356,7 @@ int cli_nt_create(struct cli_state *cli, const char *fname, uint32_t DesiredAcce
 	return cli_nt_create_full(cli, fname, 0, DesiredAccess, 0,
 				FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0x0, 0x0);
 }
+#endif
 
 uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2,
 			    const char *str, size_t str_len,
@@ -1411,7 +1415,7 @@ uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2,
 
 struct cli_open_state {
 	uint16_t vwv[15];
-	int fnum;
+	uint16_t fnum;
 	struct iovec bytes;
 };
 
@@ -1544,7 +1548,7 @@ static void cli_open_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-NTSTATUS cli_open_recv(struct tevent_req *req, int *fnum)
+NTSTATUS cli_open_recv(struct tevent_req *req, uint16_t *pfnum)
 {
 	struct cli_open_state *state = tevent_req_data(
 		req, struct cli_open_state);
@@ -1553,18 +1557,17 @@ NTSTATUS cli_open_recv(struct tevent_req *req, int *fnum)
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
-	*fnum = state->fnum;
+	*pfnum = state->fnum;
 	return NT_STATUS_OK;
 }
 
-int cli_open(struct cli_state *cli, const char *fname, int flags,
-	     int share_mode)
+NTSTATUS cli_open(struct cli_state *cli, const char *fname, int flags,
+	     int share_mode, uint16_t *pfnum)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct event_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_OK;
-	int result = -1;
 
 	if (cli_has_async_calls(cli)) {
 		/*
@@ -1591,13 +1594,13 @@ int cli_open(struct cli_state *cli, const char *fname, int flags,
 		goto fail;
 	}
 
-	cli_open_recv(req, &result);
+	status = cli_open_recv(req, pfnum);
  fail:
 	TALLOC_FREE(frame);
 	if (!NT_STATUS_IS_OK(status)) {
 		cli_set_error(cli, status);
 	}
-	return result;
+	return status;
 }
 
 /****************************************************************************
@@ -1611,9 +1614,10 @@ struct cli_close_state {
 static void cli_close_done(struct tevent_req *subreq);
 
 struct tevent_req *cli_close_create(TALLOC_CTX *mem_ctx,
-				    struct event_context *ev,
-				    struct cli_state *cli, int fnum,
-				    struct tevent_req **psubreq)
+				struct event_context *ev,
+				struct cli_state *cli,
+				uint16_t fnum,
+				struct tevent_req **psubreq)
 {
 	struct tevent_req *req, *subreq;
 	struct cli_close_state *state;
@@ -1637,8 +1641,9 @@ struct tevent_req *cli_close_create(TALLOC_CTX *mem_ctx,
 }
 
 struct tevent_req *cli_close_send(TALLOC_CTX *mem_ctx,
-				  struct event_context *ev,
-				  struct cli_state *cli, int fnum)
+				struct event_context *ev,
+				struct cli_state *cli,
+				uint16_t fnum)
 {
 	struct tevent_req *req, *subreq;
 
@@ -1670,7 +1675,7 @@ NTSTATUS cli_close_recv(struct tevent_req *req)
 	return tevent_req_simple_recv_ntstatus(req);
 }
 
-bool cli_close(struct cli_state *cli, int fnum)
+bool cli_close(struct cli_state *cli, uint16_t fnum)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct event_context *ev;
@@ -1716,7 +1721,7 @@ bool cli_close(struct cli_state *cli, int fnum)
  Truncate a file to a specified size
 ****************************************************************************/
 
-bool cli_ftruncate(struct cli_state *cli, int fnum, uint64_t size)
+bool cli_ftruncate(struct cli_state *cli, uint16_t fnum, uint64_t size)
 {
 	unsigned int param_len = 6;
 	unsigned int data_len = 8;
@@ -1766,7 +1771,7 @@ bool cli_ftruncate(struct cli_state *cli, int fnum, uint64_t size)
  this is used for testing LOCKING_ANDX_CANCEL_LOCK
 ****************************************************************************/
 
-NTSTATUS cli_locktype(struct cli_state *cli, int fnum,
+NTSTATUS cli_locktype(struct cli_state *cli, uint16_t fnum,
 		      uint32_t offset, uint32_t len,
 		      int timeout, unsigned char locktype)
 {
@@ -1819,7 +1824,7 @@ NTSTATUS cli_locktype(struct cli_state *cli, int fnum,
  note that timeout is in units of 2 milliseconds
 ****************************************************************************/
 
-bool cli_lock(struct cli_state *cli, int fnum,
+bool cli_lock(struct cli_state *cli, uint16_t fnum,
 	      uint32_t offset, uint32_t len, int timeout, enum brl_type lock_type)
 {
 	char *p;
@@ -1874,7 +1879,7 @@ bool cli_lock(struct cli_state *cli, int fnum,
  Unlock a file.
 ****************************************************************************/
 
-bool cli_unlock(struct cli_state *cli, int fnum, uint32_t offset, uint32_t len)
+bool cli_unlock(struct cli_state *cli, uint16_t fnum, uint32_t offset, uint32_t len)
 {
 	char *p;
 
@@ -1916,7 +1921,7 @@ bool cli_unlock(struct cli_state *cli, int fnum, uint32_t offset, uint32_t len)
  Lock a file with 64 bit offsets.
 ****************************************************************************/
 
-bool cli_lock64(struct cli_state *cli, int fnum,
+bool cli_lock64(struct cli_state *cli, uint16_t fnum,
 		uint64_t offset, uint64_t len, int timeout, enum brl_type lock_type)
 {
 	char *p;
@@ -1977,7 +1982,7 @@ bool cli_lock64(struct cli_state *cli, int fnum,
  Unlock a file with 64 bit offsets.
 ****************************************************************************/
 
-bool cli_unlock64(struct cli_state *cli, int fnum, uint64_t offset, uint64_t len)
+bool cli_unlock64(struct cli_state *cli, uint16_t fnum, uint64_t offset, uint64_t len)
 {
 	char *p;
 
@@ -2023,7 +2028,7 @@ bool cli_unlock64(struct cli_state *cli, int fnum, uint64_t offset, uint64_t len
  Get/unlock a POSIX lock on a file - internal function.
 ****************************************************************************/
 
-static bool cli_posix_lock_internal(struct cli_state *cli, int fnum,
+static bool cli_posix_lock_internal(struct cli_state *cli, uint16_t fnum,
 		uint64_t offset, uint64_t len, bool wait_lock, enum brl_type lock_type)
 {
 	unsigned int param_len = 4;
@@ -2094,7 +2099,7 @@ static bool cli_posix_lock_internal(struct cli_state *cli, int fnum,
  POSIX Lock a file.
 ****************************************************************************/
 
-bool cli_posix_lock(struct cli_state *cli, int fnum,
+bool cli_posix_lock(struct cli_state *cli, uint16_t fnum,
 			uint64_t offset, uint64_t len,
 			bool wait_lock, enum brl_type lock_type)
 {
@@ -2108,7 +2113,7 @@ bool cli_posix_lock(struct cli_state *cli, int fnum,
  POSIX Unlock a file.
 ****************************************************************************/
 
-bool cli_posix_unlock(struct cli_state *cli, int fnum, uint64_t offset, uint64_t len)
+bool cli_posix_unlock(struct cli_state *cli, uint16_t fnum, uint64_t offset, uint64_t len)
 {
 	return cli_posix_lock_internal(cli, fnum, offset, len, False, UNLOCK_LOCK);
 }
@@ -2117,7 +2122,7 @@ bool cli_posix_unlock(struct cli_state *cli, int fnum, uint64_t offset, uint64_t
  POSIX Get any lock covering a file.
 ****************************************************************************/
 
-bool cli_posix_getlock(struct cli_state *cli, int fnum, uint64_t *poffset, uint64_t *plen)
+bool cli_posix_getlock(struct cli_state *cli, uint16_t fnum, uint64_t *poffset, uint64_t *plen)
 {
 	return True;
 }
@@ -2603,7 +2608,7 @@ int cli_ctemp(struct cli_state *cli, const char *path, char **tmp_path)
 /*
    send a raw ioctl - used by the torture code
 */
-NTSTATUS cli_raw_ioctl(struct cli_state *cli, int fnum, uint32_t code, DATA_BLOB *blob)
+NTSTATUS cli_raw_ioctl(struct cli_state *cli, uint16_t fnum, uint32_t code, DATA_BLOB *blob)
 {
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
@@ -2725,7 +2730,7 @@ bool cli_set_ea_path(struct cli_state *cli, const char *path, const char *ea_nam
  Set an extended attribute on an fnum.
 *********************************************************/
 
-bool cli_set_ea_fnum(struct cli_state *cli, int fnum, const char *ea_name, const char *ea_val, size_t ea_len)
+bool cli_set_ea_fnum(struct cli_state *cli, uint16_t fnum, const char *ea_name, const char *ea_val, size_t ea_len)
 {
 	char param[6];
 	uint16_t setup = TRANSACT2_SETFILEINFO;
@@ -2898,7 +2903,7 @@ bool cli_get_ea_list_path(struct cli_state *cli, const char *path,
  Get an extended attribute list from an fnum.
 *********************************************************/
 
-bool cli_get_ea_list_fnum(struct cli_state *cli, int fnum,
+bool cli_get_ea_list_fnum(struct cli_state *cli, uint16_t fnum,
 		TALLOC_CTX *ctx,
 		size_t *pnum_eas,
 		struct ea_struct **pea_list)
@@ -2979,7 +2984,7 @@ static int cli_posix_open_internal(struct cli_state *cli, const char *fname, int
 	char data[18];
 	char *rparam=NULL, *rdata=NULL;
 	char *p;
-	int fnum = -1;
+	uint16_t fnum = (uint16_t)-1;
 	uint32_t wire_flags = open_flags_to_wire(flags);
 	size_t srclen = 2*(strlen(fname)+1);
 

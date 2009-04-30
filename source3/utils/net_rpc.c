@@ -4249,7 +4249,7 @@ static void show_userlist(struct rpc_pipe_client *pipe_hnd,
 			int num_tokens,
 			struct user_token *tokens)
 {
-	int fnum;
+	uint16_t fnum;
 	SEC_DESC *share_sd = NULL;
 	SEC_DESC *root_sd = NULL;
 	struct cli_state *cli = rpc_pipe_np_smb_conn(pipe_hnd);
@@ -4284,9 +4284,8 @@ static void show_userlist(struct rpc_pipe_client *pipe_hnd,
 		return;
 	}
 
-	fnum = cli_nt_create(cli, "\\", READ_CONTROL_ACCESS);
-
-	if (fnum != -1) {
+	if (!NT_STATUS_IS_OK(cli_ntcreate(cli, "\\", 0, READ_CONTROL_ACCESS, 0,
+			FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0x0, 0x0, &fnum))) {
 		root_sd = cli_query_secdesc(cli, fnum, mem_ctx);
 	}
 

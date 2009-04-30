@@ -29,7 +29,7 @@ static unsigned total, collisions, failures;
 
 static bool test_one(struct cli_state *cli, const char *name)
 {
-	int fnum;
+	uint16_t fnum;
 	fstring shortname;
 	fstring name2;
 	NTSTATUS status;
@@ -37,8 +37,7 @@ static bool test_one(struct cli_state *cli, const char *name)
 
 	total++;
 
-	fnum = cli_open(cli, name, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
-	if (fnum == -1) {
+	if (!NT_STATUS_IS_OK(cli_open(cli, name, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum))) {
 		printf("open of %s failed (%s)\n", name, cli_errstr(cli));
 		return False;
 	}
@@ -63,8 +62,7 @@ static bool test_one(struct cli_state *cli, const char *name)
 	}
 
 	/* recreate by short name */
-	fnum = cli_open(cli, name2, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
-	if (fnum == -1) {
+	if (!NT_STATUS_IS_OK(cli_open(cli, name2, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum))) {
 		printf("open2 of %s failed (%s)\n", name2, cli_errstr(cli));
 		return False;
 	}

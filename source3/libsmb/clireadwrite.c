@@ -82,7 +82,7 @@ static void cli_read_andx_done(struct tevent_req *subreq);
 
 struct tevent_req *cli_read_andx_create(TALLOC_CTX *mem_ctx,
 					struct event_context *ev,
-					struct cli_state *cli, int fnum,
+					struct cli_state *cli, uint16_t fnum,
 					off_t offset, size_t size,
 					struct tevent_req **psmbreq)
 {
@@ -135,7 +135,7 @@ struct tevent_req *cli_read_andx_create(TALLOC_CTX *mem_ctx,
 
 struct tevent_req *cli_read_andx_send(TALLOC_CTX *mem_ctx,
 				      struct event_context *ev,
-				      struct cli_state *cli, int fnum,
+				      struct cli_state *cli, uint16_t fnum,
 				      off_t offset, size_t size)
 {
 	struct tevent_req *req, *subreq;
@@ -554,7 +554,7 @@ static NTSTATUS cli_read_sink(char *buf, size_t n, void *priv)
 	return NT_STATUS_OK;
 }
 
-ssize_t cli_read(struct cli_state *cli, int fnum, char *buf,
+ssize_t cli_read(struct cli_state *cli, uint16_t fnum, char *buf,
 		 off_t offset, size_t size)
 {
 	NTSTATUS status;
@@ -574,7 +574,7 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf,
 ****************************************************************************/
 
 static bool cli_issue_write(struct cli_state *cli,
-				int fnum,
+				uint16_t fnum,
 				off_t offset,
 				uint16 mode,
 				const char *buf,
@@ -674,7 +674,7 @@ static bool cli_issue_write(struct cli_state *cli,
 ****************************************************************************/
 
 ssize_t cli_write(struct cli_state *cli,
-    	         int fnum, uint16 write_mode,
+    	         uint16_t fnum, uint16 write_mode,
 		 const char *buf, off_t offset, size_t size)
 {
 	ssize_t bwritten = 0;
@@ -735,7 +735,7 @@ ssize_t cli_write(struct cli_state *cli,
 ****************************************************************************/
 
 ssize_t cli_smbwrite(struct cli_state *cli,
-		     int fnum, char *buf, off_t offset, size_t size1)
+		     uint16_t fnum, char *buf, off_t offset, size_t size1)
 {
 	char *p;
 	ssize_t total = 0;

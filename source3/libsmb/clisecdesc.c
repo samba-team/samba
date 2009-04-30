@@ -22,7 +22,7 @@
 /****************************************************************************
   query the security descriptor for a open file
  ****************************************************************************/
-SEC_DESC *cli_query_secdesc(struct cli_state *cli, int fnum, 
+SEC_DESC *cli_query_secdesc(struct cli_state *cli, uint16_t fnum, 
 			    TALLOC_CTX *mem_ctx)
 {
 	uint8_t param[8];
@@ -70,7 +70,7 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli, int fnum,
 /****************************************************************************
   set the security descriptor for a open file
  ****************************************************************************/
-bool cli_set_secdesc(struct cli_state *cli, int fnum, SEC_DESC *sd)
+bool cli_set_secdesc(struct cli_state *cli, uint16_t fnum, SEC_DESC *sd)
 {
 	char param[8];
 	char *rparam=NULL, *rdata=NULL;

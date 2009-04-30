@@ -660,15 +660,14 @@ dump the acls for a file
 static int cacl_dump(struct cli_state *cli, char *filename)
 {
 	int result = EXIT_FAILED;
-	int fnum = -1;
+	uint16_t fnum = (uint16_t)-1;
 	SEC_DESC *sd;
 
 	if (test_args) 
 		return EXIT_OK;
 
-	fnum = cli_nt_create(cli, filename, CREATE_ACCESS_READ);
-
-	if (fnum == -1) {
+	if (!NT_STATUS_IS_OK(cli_ntcreate(cli, filename, 0, CREATE_ACCESS_READ, 0,
+				FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0x0, 0x0, &fnum))) {
 		printf("Failed to open %s: %s\n", filename, cli_errstr(cli));
 		goto done;
 	}
@@ -685,7 +684,7 @@ static int cacl_dump(struct cli_state *cli, char *filename)
 	result = EXIT_OK;
 
 done:
-	if (fnum != -1)
+	if (fnum != (uint16_t)-1)
 		cli_close(cli, fnum);
 
 	return result;
@@ -699,14 +698,13 @@ because the NT docs say this can't be done :-). JRA.
 static int owner_set(struct cli_state *cli, enum chown_mode change_mode, 
 			const char *filename, const char *new_username)
 {
-	int fnum;
+	uint16_t fnum;
 	DOM_SID sid;
 	SEC_DESC *sd, *old;
 	size_t sd_size;
 
-	fnum = cli_nt_create(cli, filename, CREATE_ACCESS_READ);
-
-	if (fnum == -1) {
+	if (!NT_STATUS_IS_OK(cli_ntcreate(cli, filename, 0, CREATE_ACCESS_READ, 0,
+				FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0x0, 0x0, &fnum))) {
 		printf("Failed to open %s: %s\n", filename, cli_errstr(cli));
 		return EXIT_FAILED;
 	}
@@ -728,9 +726,8 @@ static int owner_set(struct cli_state *cli, enum chown_mode change_mode,
 				(change_mode == REQUEST_CHGRP) ? &sid : NULL,
 			   NULL, NULL, &sd_size);
 
-	fnum = cli_nt_create(cli, filename, WRITE_OWNER_ACCESS);
-
-	if (fnum == -1) {
+	if (!NT_STATUS_IS_OK(cli_ntcreate(cli, filename, 0, WRITE_OWNER_ACCESS, 0,
+			FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0x0, 0x0, &fnum))) {
 		printf("Failed to open %s: %s\n", filename, cli_errstr(cli));
 		return EXIT_FAILED;
 	}
@@ -815,7 +812,7 @@ set the ACLs on a file given an ascii description
 static int cacl_set(struct cli_state *cli, char *filename, 
 		    char *the_acl, enum acl_mode mode)
 {
-	int fnum;
+	uint16_t fnum;
 	SEC_DESC *sd, *old;
 	uint32 i, j;
 	size_t sd_size;
@@ -829,9 +826,8 @@ static int cacl_set(struct cli_state *cli, char *filename,
 	/* The desired access below is the only one I could find that works
 	   with NT4, W2KP and Samba */
 
-	fnum = cli_nt_create(cli, filename, CREATE_ACCESS_READ);
-
-	if (fnum == -1) {
+	if (!NT_STATUS_IS_OK(cli_ntcreate(cli, filename, 0, CREATE_ACCESS_READ, 0,
+				FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0x0, 0x0, &fnum))) {
 		printf("cacl_set failed to open %s: %s\n", filename, cli_errstr(cli));
 		return EXIT_FAILED;
 	}
@@ -930,9 +926,8 @@ static int cacl_set(struct cli_state *cli, char *filename,
 			   old->owner_sid, old->group_sid,
 			   NULL, old->dacl, &sd_size);
 
-	fnum = cli_nt_create(cli, filename, WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS);
-
-	if (fnum == -1) {
+	if (!NT_STATUS_IS_OK(cli_ntcreate(cli, filename, 0, WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS, 0,
+			FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0x0, 0x0, &fnum))) {
 		printf("cacl_set failed to open %s: %s\n", filename, cli_errstr(cli));
 		return EXIT_FAILED;
 	}

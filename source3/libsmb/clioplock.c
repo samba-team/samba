@@ -80,7 +80,7 @@ NTSTATUS cli_oplock_ack_recv(struct tevent_req *req)
 	return tevent_req_simple_recv_ntstatus(req);
 }
 
-bool cli_oplock_ack(struct cli_state *cli, int fnum, unsigned char level)
+NTSTATUS cli_oplock_ack(struct cli_state *cli, uint16_t fnum, unsigned char level)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct event_context *ev;
@@ -118,14 +118,15 @@ bool cli_oplock_ack(struct cli_state *cli, int fnum, unsigned char level)
 	if (!NT_STATUS_IS_OK(status)) {
 		cli_set_error(cli, status);
 	}
-	return NT_STATUS_IS_OK(status);
+	return status;
 }
 
 /****************************************************************************
 set the oplock handler for a connection
 ****************************************************************************/
+
 void cli_oplock_handler(struct cli_state *cli, 
-			bool (*handler)(struct cli_state *, int, unsigned char))
+			NTSTATUS (*handler)(struct cli_state *, uint16_t, unsigned char))
 {
 	cli->oplock_handler = handler;
 }

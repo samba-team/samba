@@ -613,7 +613,7 @@ append one remote file to the tar file
 
 static void do_atar(const char *rname_in,char *lname,file_info *finfo1)
 {
-	int fnum = -1;
+	uint16_t fnum = (uint16_t)-1;
 	uint64_t nread=0;
 	char ftype;
 	file_info2 finfo;
@@ -660,9 +660,7 @@ static void do_atar(const char *rname_in,char *lname,file_info *finfo1)
 		goto cleanup;
 	}
 
-	fnum = cli_open(cli, rname, O_RDONLY, DENY_NONE);
-
-	if (fnum == -1) {
+	if (!NT_STATUS_IS_OK(cli_open(cli, rname, O_RDONLY, DENY_NONE, &fnum))) {
 		DEBUG(0,("%s opening remote file %s (%s)\n",
 				cli_errstr(cli),rname, client_get_cur_dir()));
 		goto cleanup;
@@ -998,13 +996,14 @@ static int skip_file(int skipsize)
 
 static int get_file(file_info2 finfo)
 {
-	int fnum = -1, pos = 0, dsize = 0, bpos = 0;
+	uint16_t fnum;
+	int pos = 0, dsize = 0, bpos = 0;
 	uint64_t rsize = 0;
 
 	DEBUG(5, ("get_file: file: %s, size %.0f\n", finfo.name, (double)finfo.size));
 
 	if (ensurepath(finfo.name) &&
-			(fnum=cli_open(cli, finfo.name, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE)) == -1) {
+			(!NT_STATUS_IS_OK(cli_open(cli, finfo.name, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE,&fnum)))) {
 		DEBUG(0, ("abandoning restore\n"));
 		return(False);
 	}

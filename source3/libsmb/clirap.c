@@ -919,7 +919,7 @@ bool cli_qpathinfo_streams(struct cli_state *cli, const char *fname,
  Send a qfileinfo QUERY_FILE_NAME_INFO call.
 ****************************************************************************/
 
-bool cli_qfilename(struct cli_state *cli, int fnum, char *name, size_t namelen)
+bool cli_qfilename(struct cli_state *cli, uint16_t fnum, char *name, size_t namelen)
 {
 	unsigned int data_len = 0;
 	unsigned int param_len = 0;
@@ -966,7 +966,7 @@ bool cli_qfilename(struct cli_state *cli, int fnum, char *name, size_t namelen)
  Send a qfileinfo call.
 ****************************************************************************/
 
-bool cli_qfileinfo(struct cli_state *cli, int fnum,
+bool cli_qfileinfo(struct cli_state *cli, uint16_t fnum,
 		   uint16 *mode, SMB_OFF_T *size,
 		   struct timespec *create_time,
                    struct timespec *access_time,
@@ -1121,7 +1121,7 @@ bool cli_qpathinfo_basic( struct cli_state *cli, const char *name,
  Send a qfileinfo call.
 ****************************************************************************/
 
-bool cli_qfileinfo_test(struct cli_state *cli, int fnum, int level, char **poutdata, uint32 *poutlen)
+bool cli_qfileinfo_test(struct cli_state *cli, uint16_t fnum, int level, char **poutdata, uint32 *poutlen)
 {
 	unsigned int data_len = 0;
 	unsigned int param_len = 0;

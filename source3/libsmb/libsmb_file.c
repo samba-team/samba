@@ -47,7 +47,8 @@ SMBC_open_ctx(SMBCCTX *context,
 	struct cli_state *targetcli = NULL;
 	SMBCSRV *srv   = NULL;
 	SMBCFILE *file = NULL;
-	int fd;
+	uint16_t fd;
+	NTSTATUS status = NT_STATUS_OBJECT_PATH_INVALID;
 	TALLOC_CTX *frame = talloc_stackframe();
         
 	if (!context || !context->internal->initialized) {
@@ -102,7 +103,7 @@ SMBC_open_ctx(SMBCCTX *context,
 	/* Hmmm, the test for a directory is suspect here ... FIXME */
         
 	if (strlen(path) > 0 && path[strlen(path) - 1] == '\\') {
-		fd = -1;
+		status = NT_STATUS_OBJECT_PATH_INVALID;
 	} else {
 		file = SMB_MALLOC_P(SMBCFILE);
                 
@@ -126,8 +127,9 @@ SMBC_open_ctx(SMBCCTX *context,
 		}
 		/*d_printf(">>>open: resolved %s as %s\n", path, targetpath);*/
                 
-		if ((fd = cli_open(targetcli, targetpath, flags,
-                                   context->internal->share_mode)) < 0) {
+		status = cli_open(targetcli, targetpath, flags,
+                                   context->internal->share_mode, &fd);
+		if (!NT_STATUS_IS_OK(status)) {
                         
 			/* Handle the error ... */
                         
@@ -186,7 +188,7 @@ SMBC_open_ctx(SMBCCTX *context,
         
 	/* Check if opendir needed ... */
         
-	if (fd == -1) {
+	if (!NT_STATUS_IS_OK(status)) {
 		int eno = 0;
                 
 		eno = SMBC_errno(context, srv->cli);
@@ -627,7 +629,7 @@ SMBC_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
             time_t change_time,
             uint16 mode)
 {
-        int fd;
+        uint16_t fd;
         int ret;
 	TALLOC_CTX *frame = talloc_stackframe();
         
@@ -659,7 +661,7 @@ SMBC_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
                 srv->no_pathinfo = True;
                 
                 /* Open the file */
-                if ((fd = cli_open(srv->cli, path, O_RDWR, DENY_NONE)) < 0) {
+                if (!NT_STATUS_IS_OK(cli_open(srv->cli, path, O_RDWR, DENY_NONE, &fd))) {
                         
                         errno = SMBC_errno(context, srv->cli);
 			TALLOC_FREE(frame);

@@ -234,7 +234,7 @@ bool cli_receive_smb(struct cli_state *cli)
 			if (cli->oplock_handler) {
 				int fnum = SVAL(cli->inbuf,smb_vwv2);
 				unsigned char level = CVAL(cli->inbuf,smb_vwv3+1);
-				if (!cli->oplock_handler(cli, fnum, level)) {
+				if (!NT_STATUS_IS_OK(cli->oplock_handler(cli, fnum, level))) {
 					return false;
 				}
 			}

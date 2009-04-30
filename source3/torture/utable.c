@@ -23,7 +23,7 @@ bool torture_utable(int dummy)
 {
 	struct cli_state *cli;
 	fstring fname, alt_name;
-	int fnum;
+	uint16_t fnum;
 	smb_ucs2_t c2;
 	int c, len, fd;
 	int chars_allowed=0, alt_allowed=0;
@@ -52,9 +52,10 @@ bool torture_utable(int dummy)
 		p[len] = 0;
 		fstrcat(fname,"_a_long_extension");
 
-		fnum = cli_open(cli, fname, O_RDWR | O_CREAT | O_TRUNC, 
-				DENY_NONE);
-		if (fnum == -1) continue;
+		if (!NT_STATUS_IS_OK(cli_open(cli, fname, O_RDWR | O_CREAT | O_TRUNC, 
+				DENY_NONE, &fnum))) {
+			continue;
+		}
 
 		chars_allowed++;
 
@@ -118,7 +119,7 @@ bool torture_casetable(int dummy)
 {
 	static struct cli_state *cli;
 	char *fname;
-	int fnum;
+	uint16_t fnum;
 	int c, i;
 #define MAX_EQUIVALENCE 8
 	smb_ucs2_t equiv[0x10000][MAX_EQUIVALENCE];
@@ -145,13 +146,11 @@ bool torture_casetable(int dummy)
 		printf("%04x (%c)\n", c, isprint(c)?c:'.');
 
 		fname = form_name(c);
-		fnum = cli_nt_create_full(cli, fname, 0,
+		if (!NT_STATUS_IS_OK(cli_ntcreate(cli, fname, 0,
 					  GENERIC_ALL_ACCESS, 
 					  FILE_ATTRIBUTE_NORMAL,
 					  FILE_SHARE_NONE,
-					  FILE_OPEN_IF, 0, 0);
-
-		if (fnum == -1) {
+					  FILE_OPEN_IF, 0, 0, &fnum))) {
 			printf("Failed to create file with char %04x\n", c);
 			continue;
 		}

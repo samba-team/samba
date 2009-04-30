@@ -535,12 +535,12 @@ static void display_finfo(file_info *finfo, const char *dir)
 		dir_total += finfo->size;
 	} else {
 		char *afname = NULL;
-		int fnum;
+		uint16_t fnum;
 
 		/* skip if this is . or .. */
 		if ( strequal(finfo->name,"..") || strequal(finfo->name,".") )
 			return;
-		/* create absolute filename for cli_nt_create() FIXME */
+		/* create absolute filename for cli_ntcreate() FIXME */
 		afname = talloc_asprintf(ctx,
 					"%s%s%s",
 					dir,
@@ -554,8 +554,9 @@ static void display_finfo(file_info *finfo, const char *dir)
 		d_printf( "MODE:%s\n", attrib_string(finfo->mode));
 		d_printf( "SIZE:%.0f\n", (double)finfo->size);
 		d_printf( "MTIME:%s", time_to_asc(t));
-		fnum = cli_nt_create(finfo->cli, afname, CREATE_ACCESS_READ);
-		if (fnum == -1) {
+		if (!NT_STATUS_IS_OK(cli_ntcreate(finfo->cli, afname, 0,
+				CREATE_ACCESS_READ, 0, FILE_SHARE_READ|FILE_SHARE_WRITE,
+				FILE_OPEN, 0x0, 0x0, &fnum))) {
 			DEBUG( 0, ("display_finfo() Failed to open %s: %s\n",
 				afname,
 				cli_errstr( finfo->cli)));
@@ -999,7 +1000,8 @@ static NTSTATUS writefile_sink(char *buf, size_t n, void *priv)
 static int do_get(const char *rname, const char *lname_in, bool reget)
 {
 	TALLOC_CTX *ctx = talloc_tos();
-	int handle = 0, fnum;
+	int handle = 0;
+	uint16_t fnum;
 	bool newhandle = false;
 	struct timeval tp_start;
 	uint16 attr;
@@ -1028,9 +1030,7 @@ static int do_get(const char *rname, const char *lname_in, bool reget)
 
 	GetTimeOfDay(&tp_start);
 
-	fnum = cli_open(targetcli, targetname, O_RDONLY, DENY_NONE);
-
-	if (fnum == -1) {
+	if (!NT_STATUS_IS_OK(cli_open(targetcli, targetname, O_RDONLY, DENY_NONE, &fnum))) {
 		d_printf("%s opening remote file %s\n",cli_errstr(cli),rname);
 		return 1;
 	}
@@ -1618,7 +1618,7 @@ static int cmd_allinfo(void)
 static int do_put(const char *rname, const char *lname, bool reput)
 {
 	TALLOC_CTX *ctx = talloc_tos();
-	int fnum;
+	uint16_t fnum;
 	XFILE *f;
 	SMB_OFF_T start = 0;
 	int rc = 0;
@@ -1636,8 +1636,8 @@ static int do_put(const char *rname, const char *lname, bool reput)
 	GetTimeOfDay(&tp_start);
 
 	if (reput) {
-		fnum = cli_open(targetcli, targetname, O_RDWR|O_CREAT, DENY_NONE);
-		if (fnum >= 0) {
+		status = cli_open(targetcli, targetname, O_RDWR|O_CREAT, DENY_NONE, &fnum);
+		if (NT_STATUS_IS_OK(status)) {
 			if (!cli_qfileinfo(targetcli, fnum, NULL, &start, NULL, NULL, NULL, NULL, NULL) &&
 			    !cli_getattrE(targetcli, fnum, NULL, &start, NULL, NULL, NULL)) {
 				d_printf("getattrib: %s\n",cli_errstr(cli));
@@ -1645,10 +1645,10 @@ static int do_put(const char *rname, const char *lname, bool reput)
 			}
 		}
 	} else {
-		fnum = cli_open(targetcli, targetname, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE);
+		status = cli_open(targetcli, targetname, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE, &fnum);
 	}
 
-	if (fnum == -1) {
+	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("%s opening remote file %s\n",cli_errstr(targetcli),rname);
 		return 1;
 	}
@@ -2207,7 +2207,7 @@ static int cmd_open(void)
 	char *buf = NULL;
 	char *targetname = NULL;
 	struct cli_state *targetcli;
-	int fnum;
+	uint16_t fnum = (uint16_t)-1;
 
 	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("open <filename>\n");
@@ -2226,10 +2226,12 @@ static int cmd_open(void)
 		return 1;
 	}
 
-	fnum = cli_nt_create(targetcli, targetname, FILE_READ_DATA|FILE_WRITE_DATA);
-	if (fnum == -1) {
-		fnum = cli_nt_create(targetcli, targetname, FILE_READ_DATA);
-		if (fnum != -1) {
+	if (!NT_STATUS_IS_OK(cli_ntcreate(targetcli, targetname, 0,
+			FILE_READ_DATA|FILE_WRITE_DATA, 0,
+			FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0x0, 0x0, &fnum))) {
+		if (NT_STATUS_IS_OK(cli_ntcreate(targetcli, targetname, 0,
+				FILE_READ_DATA, 0,
+				FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0x0, 0x0, &fnum))) {
 			d_printf("open file %s: for read/write fnum %d\n", targetname, fnum);
 		} else {
 			d_printf("Failed to open file %s. %s\n", targetname, cli_errstr(cli));

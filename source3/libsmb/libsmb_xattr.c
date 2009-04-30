@@ -730,7 +730,7 @@ cacl_get(SMBCCTX *context,
         bool exclude_dos_inode = False;
         bool numeric = True;
         bool determine_size = (bufsize == 0);
-	int fnum = -1;
+	uint16_t fnum;
 	SEC_DESC *sd;
 	fstring sidstr;
         fstring name_sandbox;
@@ -901,9 +901,8 @@ cacl_get(SMBCCTX *context,
 		}
 
                 /* ... then obtain any NT attributes which were requested */
-                fnum = cli_nt_create(targetcli, targetpath, CREATE_ACCESS_READ);
-
-                if (fnum == -1) {
+                if (!NT_STATUS_IS_OK(cli_ntcreate(targetcli, targetpath, 0, CREATE_ACCESS_READ, 0,
+				FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0x0, 0x0, &fnum))) {
 			DEBUG(5, ("cacl_get failed to open %s: %s\n",
 				targetpath, cli_errstr(targetcli)));
 			errno = 0;
@@ -1507,7 +1506,7 @@ cacl_set(SMBCCTX *context,
 	int mode,
 	int flags)
 {
-	int fnum;
+	uint16_t fnum = (uint16_t)-1;
         int err = 0;
 	SEC_DESC *sd = NULL, *old;
         SEC_ACL *dacl = NULL;
@@ -1560,9 +1559,8 @@ cacl_set(SMBCCTX *context,
 	/* The desired access below is the only one I could find that works
 	   with NT4, W2KP and Samba */
 
-	fnum = cli_nt_create(targetcli, targetpath, CREATE_ACCESS_READ);
-
-	if (fnum == -1) {
+	if (!NT_STATUS_IS_OK(cli_ntcreate(targetcli, targetpath, 0, CREATE_ACCESS_READ, 0,
+				FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0x0, 0x0, &fnum))) {
                 DEBUG(5, ("cacl_set failed to open %s: %s\n",
                           targetpath, cli_errstr(targetcli)));
                 errno = 0;
@@ -1666,10 +1664,9 @@ cacl_set(SMBCCTX *context,
 	sd = make_sec_desc(ctx, old->revision, SEC_DESC_SELF_RELATIVE,
 			   owner_sid, group_sid, NULL, dacl, &sd_size);
         
-	fnum = cli_nt_create(targetcli, targetpath,
-                             WRITE_DAC_ACCESS | WRITE_OWNER_ACCESS);
-        
-	if (fnum == -1) {
+	if (!NT_STATUS_IS_OK(cli_ntcreate(targetcli, targetpath, 0,
+                             WRITE_DAC_ACCESS | WRITE_OWNER_ACCESS, 0,
+			     FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0x0, 0x0, &fnum))) {
 		DEBUG(5, ("cacl_set failed to open %s: %s\n",
                           targetpath, cli_errstr(targetcli)));
                 errno = 0;

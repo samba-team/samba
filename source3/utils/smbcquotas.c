@@ -230,7 +230,7 @@ static int do_quota(struct cli_state *cli,
 		SMB_NTQUOTA_STRUCT *pqt)
 {
 	uint32 fs_attrs = 0;
-	int quota_fnum = 0;
+	uint16_t quota_fnum = 0;
 	SMB_NTQUOTA_LIST *qtl = NULL;
 	SMB_NTQUOTA_STRUCT qt;
 	ZERO_STRUCT(qt);
@@ -246,7 +246,7 @@ static int do_quota(struct cli_state *cli,
 		return 0;
 	}
 
-	if (!cli_get_quota_handle(cli, &quota_fnum)) {
+	if (!NT_STATUS_IS_OK(cli_get_quota_handle(cli, &quota_fnum))) {
 		d_printf("Quotas are not enabled on this share.\n");
 		d_printf("Failed to open %s  %s.\n",
 			FAKE_FILE_NAME_QUOTA_WIN32,cli_errstr(cli));

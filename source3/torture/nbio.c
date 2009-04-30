@@ -140,7 +140,9 @@ void nb_unlink(const char *fname)
 void nb_createx(const char *fname, 
 		unsigned create_options, unsigned create_disposition, int handle)
 {
-	int fd, i;
+	uint16_t fd = (uint16_t)-1;
+	int i;
+	NTSTATUS status;
 	uint32 desired_access;
 
 	if (create_options & FILE_DIRECTORY_FILE) {
@@ -149,22 +151,22 @@ void nb_createx(const char *fname,
 		desired_access = FILE_READ_DATA | FILE_WRITE_DATA;
 	}
 
-	fd = cli_nt_create_full(c, fname, 0, 
+	status = cli_ntcreate(c, fname, 0, 
 				desired_access,
 				0x0,
 				FILE_SHARE_READ|FILE_SHARE_WRITE, 
 				create_disposition, 
-				create_options, 0);
-	if (fd == -1 && handle != -1) {
-		printf("ERROR: cli_nt_create_full failed for %s - %s\n",
+				create_options, 0, &fd);
+	if (!NT_STATUS_IS_OK(status) && handle != -1) {
+		printf("ERROR: cli_ntcreate failed for %s - %s\n",
 		       fname, cli_errstr(c));
 		exit(1);
 	}
-	if (fd != -1 && handle == -1) {
-		printf("ERROR: cli_nt_create_full succeeded for %s\n", fname);
+	if (NT_STATUS_IS_OK(status) && handle == -1) {
+		printf("ERROR: cli_ntcreate succeeded for %s\n", fname);
 		exit(1);
 	}
-	if (fd == -1) return;
+	if (fd == (uint16_t)-1) return;
 
 	for (i=0;i<MAX_FILES;i++) {
 		if (ftable[i].handle == 0) break;
