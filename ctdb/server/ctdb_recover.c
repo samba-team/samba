@@ -509,7 +509,7 @@ static void ctdb_set_recmode_timeout(struct event_context *ev, struct timed_even
 	   caused by the cluster filesystem being very slow to
 	   arbitrate locks immediately after a node failure.	   
 	 */
-	DEBUG(DEBUG_NOTICE,(__location__ " set_recmode timeout - allowing recmode set\n"));
+	DEBUG(DEBUG_ERR,(__location__ " set_recmode child process hung/timedout CFS slow to grant locks? (allowing recmode set anyway)\n"));
 	state->ctdb->recovery_mode = state->recmode;
 	ctdb_request_control_reply(state->ctdb, state->c, NULL, 0, NULL);
 	talloc_free(state);
@@ -632,11 +632,17 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 	state = talloc(ctdb, struct ctdb_set_recmode_state);
 	CTDB_NO_MEMORY(ctdb, state);
 
+
+	if (ctdb->tunable.verify_recovery_lock == 0) {
+		/* dont need to verify the reclock file */
+		ctdb->recovery_mode = recmode;
+		return 0;
+	}
+
 	/* For the rest of what needs to be done, we need to do this in
 	   a child process since 
 	   1, the call to ctdb_recovery_lock() can block if the cluster
 	      filesystem is in the process of recovery.
-	   2, running of the script may take a while.
 	*/
 	ret = pipe(state->fd);
 	if (ret != 0) {
@@ -657,7 +663,7 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 		char cc = 0;
 		close(state->fd[0]);
 
-		/* we should not be able to get the lock on the nodes list, 
+		/* we should not be able to get the lock on the reclock file, 
 		  as it should  be held by the recovery master 
 		*/
 		if (ctdb_recovery_lock(ctdb, false)) {
@@ -669,6 +675,7 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 		/* make sure we die when our parent dies */
 		while (kill(parent, 0) == 0 || errno != ESRCH) {
 			sleep(5);
+			write(state->fd[1], &cc, 1);
 		}
 		_exit(0);
 	}
@@ -676,7 +683,7 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 
 	talloc_set_destructor(state, set_recmode_destructor);
 
-	state->te = event_add_timed(ctdb->ev, state, timeval_current_ofs(3, 0),
+	state->te = event_add_timed(ctdb->ev, state, timeval_current_ofs(15, 0),
 				    ctdb_set_recmode_timeout, state);
 
 	state->fde = event_add_fd(ctdb->ev, state, state->fd[0],
