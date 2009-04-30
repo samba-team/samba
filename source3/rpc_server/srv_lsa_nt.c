@@ -1716,7 +1716,8 @@ NTSTATUS _lsa_GetSystemAccessAccount(pipes_struct *p,
 	  they can be ORed together
 	*/
 
-	*r->out.access_mask = PR_LOG_ON_LOCALLY | PR_ACCESS_FROM_NETWORK;
+	*r->out.access_mask = LSA_POLICY_MODE_INTERACTIVE |
+			      LSA_POLICY_MODE_NETWORK;
 
 	return NT_STATUS_OK;
 }
