@@ -1806,8 +1806,8 @@ static char* ffmt(unsigned char *c){
 static WERROR move_driver_file_to_download_area(TALLOC_CTX *mem_ctx,
 						connection_struct *conn,
 						const char *driver_file,
-						const char *architecture,
-						const char *new_dir,
+						const char *short_architecture,
+						uint32_t driver_version,
 						uint32_t version)
 {
 	char *old_name = NULL;
@@ -1815,26 +1815,30 @@ static WERROR move_driver_file_to_download_area(TALLOC_CTX *mem_ctx,
 	SMB_STRUCT_STAT st;
 	NTSTATUS status;
 
-	new_name = talloc_asprintf(mem_ctx, "%s/%s",
-				   architecture, driver_file);
-	W_ERROR_HAVE_NO_MEMORY(new_name);
-
 	old_name = talloc_asprintf(mem_ctx, "%s/%s",
-				   new_dir, driver_file);
+				   short_architecture, driver_file);
 	W_ERROR_HAVE_NO_MEMORY(old_name);
 
-	if (version != -1 && (version = file_version_is_newer(conn, new_name, old_name)) > 0) {
+	new_name = talloc_asprintf(mem_ctx, "%s/%d/%s",
+				   short_architecture, driver_version, driver_file);
+	W_ERROR_HAVE_NO_MEMORY(new_name);
 
-		new_name = driver_unix_convert(conn, new_name, &st);
-		W_ERROR_HAVE_NO_MEMORY(new_name);
+	if (version != -1 && (version = file_version_is_newer(conn, old_name, new_name)) > 0) {
 
-		status = copy_file(mem_ctx, conn, new_name, old_name,
+		old_name = driver_unix_convert(conn, old_name, &st);
+		W_ERROR_HAVE_NO_MEMORY(old_name);
+
+		DEBUG(10,("move_driver_file_to_download_area: copying '%s' to '%s'\n",
+			old_name, new_name));
+
+		status = copy_file(mem_ctx, conn, old_name, new_name,
 				   OPENX_FILE_EXISTS_TRUNCATE |
 				   OPENX_FILE_CREATE_IF_NOT_EXIST,
 				   0, false);
+
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,("move_driver_file_to_download_area: Unable to rename [%s] to [%s]\n",
-				new_name, old_name));
+			DEBUG(0,("move_driver_file_to_download_area: Unable to rename [%s] to [%s]: %s\n",
+				old_name, new_name, nt_errstr(status)));
 			return WERR_ACCESS_DENIED;
 		}
 	}
@@ -1848,7 +1852,7 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 {
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver;
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 converted_driver;
-	const char *architecture;
+	const char *short_architecture;
 	char *new_dir = NULL;
 	connection_struct *conn = NULL;
 	NTSTATUS nt_status;
@@ -1862,18 +1866,21 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 
 	*perr = WERR_OK;
 
-	if (level==3)
-		driver=driver_abstract.info_3;
-	else if (level==6) {
+	switch (level) {
+	case 3:
+		driver = driver_abstract.info_3;
+		break;
+	case 6:
 		convert_level_6_to_level3(&converted_driver, driver_abstract.info_6);
 		driver = &converted_driver;
-	} else {
+		break;
+	default:
 		DEBUG(0,("move_driver_to_download_area: Unknown info level (%u)\n", (unsigned int)level ));
 		return WERR_UNKNOWN_LEVEL;
 	}
 
-	architecture = get_short_archi(driver->environment);
-	if (!architecture) {
+	short_architecture = get_short_archi(driver->environment);
+	if (!short_architecture) {
 		return WERR_UNKNOWN_PRINTER_DRIVER;
 	}
 
@@ -1895,10 +1902,9 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 		return *perr;
 	}
 
-	DEBUG(5,("Creating first directory\n"));
 	new_dir = talloc_asprintf(ctx,
 				"%s/%d",
-				architecture,
+				short_architecture,
 				driver->cversion);
 	if (!new_dir) {
 		*perr = WERR_NOMEM;
@@ -1909,6 +1915,8 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 		*perr = WERR_NOMEM;
 		goto err_exit;
 	}
+
+	DEBUG(5,("Creating first directory: %s\n", new_dir));
 
 	create_directory(conn, NULL, new_dir);
 
@@ -1936,8 +1944,8 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 		*perr = move_driver_file_to_download_area(ctx,
 							  conn,
 							  driver->driverpath,
-							  architecture,
-							  new_dir,
+							  short_architecture,
+							  driver->cversion,
 							  ver);
 		if (!W_ERROR_IS_OK(*perr)) {
 			if (W_ERROR_EQUAL(*perr, WERR_ACCESS_DENIED)) {
@@ -1953,8 +1961,8 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 			*perr = move_driver_file_to_download_area(ctx,
 								  conn,
 								  driver->datafile,
-								  architecture,
-								  new_dir,
+								  short_architecture,
+								  driver->cversion,
 								  ver);
 			if (!W_ERROR_IS_OK(*perr)) {
 				if (W_ERROR_EQUAL(*perr, WERR_ACCESS_DENIED)) {
@@ -1972,8 +1980,8 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 			*perr = move_driver_file_to_download_area(ctx,
 								  conn,
 								  driver->configfile,
-								  architecture,
-								  new_dir,
+								  short_architecture,
+								  driver->cversion,
 								  ver);
 			if (!W_ERROR_IS_OK(*perr)) {
 				if (W_ERROR_EQUAL(*perr, WERR_ACCESS_DENIED)) {
@@ -1992,8 +2000,8 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 			*perr = move_driver_file_to_download_area(ctx,
 								  conn,
 								  driver->helpfile,
-								  architecture,
-								  new_dir,
+								  short_architecture,
+								  driver->cversion,
 								  ver);
 			if (!W_ERROR_IS_OK(*perr)) {
 				if (W_ERROR_EQUAL(*perr, WERR_ACCESS_DENIED)) {
@@ -2020,8 +2028,8 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 				*perr = move_driver_file_to_download_area(ctx,
 									  conn,
 									  driver->dependentfiles[i],
-									  architecture,
-									  new_dir,
+									  short_architecture,
+									  driver->cversion,
 									  ver);
 				if (!W_ERROR_IS_OK(*perr)) {
 					if (W_ERROR_EQUAL(*perr, WERR_ACCESS_DENIED)) {
