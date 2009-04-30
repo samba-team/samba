@@ -110,13 +110,13 @@ int _tdgram_inet_udp_socket(const struct tsocket_address *local,
 #define tdgram_inet_udp_socket(local, remote, mem_ctx, dgram) \
 	_tdgram_inet_udp_socket(local, remote, mem_ctx, dgram, __location__)
 
-int _tdgram_unix_dgram_socket(const struct tsocket_address *local,
-			      const struct tsocket_address *remote,
-			      TALLOC_CTX *mem_ctx,
-			      struct tdgram_context **dgram,
-			      const char *location);
-#define tdgram_unix_dgram_socket(local, remote, mem_ctx, dgram) \
-	_tdgram_unix_dgram_socket(local, remote, mem_ctx, dgram, __location__)
+int _tdgram_unix_socket(const struct tsocket_address *local,
+			const struct tsocket_address *remote,
+			TALLOC_CTX *mem_ctx,
+			struct tdgram_context **dgram,
+			const char *location);
+#define tdgram_unix_socket(local, remote, mem_ctx, dgram) \
+	_tdgram_unix_socket(local, remote, mem_ctx, dgram, __location__)
 
 /*
  * Queue helpers

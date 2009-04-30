@@ -1233,11 +1233,11 @@ int _tdgram_inet_udp_socket(const struct tsocket_address *local,
 	return ret;
 }
 
-int _tdgram_unix_dgram_socket(const struct tsocket_address *local,
-			      const struct tsocket_address *remote,
-			      TALLOC_CTX *mem_ctx,
-			      struct tdgram_context **dgram,
-			      const char *location)
+int _tdgram_unix_socket(const struct tsocket_address *local,
+			const struct tsocket_address *remote,
+			TALLOC_CTX *mem_ctx,
+			struct tdgram_context **dgram,
+			const char *location)
 {
 	struct tsocket_address_bsd *lbsda =
 		talloc_get_type_abort(local->private_data,
