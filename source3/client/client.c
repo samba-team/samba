@@ -2115,7 +2115,7 @@ static void do_del(file_info *finfo, const char *dir)
 		return;
 	}
 
-	if (!cli_unlink(finfo->cli, mask)) {
+	if (!NT_STATUS_IS_OK(cli_unlink(finfo->cli, mask, aSYSTEM | aHIDDEN))) {
 		d_printf("%s deleting remote file %s\n",
 				cli_errstr(finfo->cli),mask);
 	}
@@ -2191,7 +2191,7 @@ static int cmd_wdel(void)
 		return 1;
 	}
 
-	if (!cli_unlink_full(targetcli, targetname, attribute)) {
+	if (!NT_STATUS_IS_OK(cli_unlink(targetcli, targetname, attribute))) {
 		d_printf("%s deleting remote files %s\n",cli_errstr(targetcli),targetname);
 	}
 	return 0;

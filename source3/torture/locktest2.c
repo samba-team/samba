@@ -317,7 +317,7 @@ static void close_files(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 		}
 	}
 	for (server=0;server<NSERVERS;server++) {
-		cli_unlink(cli[server][0], FILENAME);
+		cli_unlink(cli[server][0], FILENAME, aSYSTEM | aHIDDEN);
 	}
 }
 

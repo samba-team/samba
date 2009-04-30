@@ -1418,7 +1418,7 @@ bool torture_denytest1(int dummy)
 	printf("starting denytest1\n");
 
 	for (i=0;i<2;i++) {
-		cli_unlink(cli1, fnames[i]);
+		cli_unlink(cli1, fnames[i], aSYSTEM | aHIDDEN);
 		fnum1 = cli_open(cli1, fnames[i], O_RDWR|O_CREAT, DENY_NONE);
 		cli_write(cli1, fnum1, 0, fnames[i], 0, strlen(fnames[i]));
 		cli_close(cli1, fnum1);
@@ -1474,7 +1474,7 @@ bool torture_denytest1(int dummy)
 	}
 
 	for (i=0;i<2;i++) {
-		cli_unlink(cli1, fnames[i]);
+		cli_unlink(cli1, fnames[i], aSYSTEM | aHIDDEN);
 	}
 		
 	if (!torture_close_connection(cli1)) {
@@ -1504,7 +1504,7 @@ bool torture_denytest2(int dummy)
 	printf("starting denytest2\n");
 
 	for (i=0;i<2;i++) {
-		cli_unlink(cli1, fnames[i]);
+		cli_unlink(cli1, fnames[i], aSYSTEM | aHIDDEN);
 		fnum1 = cli_open(cli1, fnames[i], O_RDWR|O_CREAT, DENY_NONE);
 		cli_write(cli1, fnum1, 0, fnames[i], 0, strlen(fnames[i]));
 		cli_close(cli1, fnum1);
@@ -1558,7 +1558,7 @@ bool torture_denytest2(int dummy)
 	}
 		
 	for (i=0;i<2;i++) {
-		cli_unlink(cli1, fnames[i]);
+		cli_unlink(cli1, fnames[i], aSYSTEM | aHIDDEN);
 	}
 
 	if (!torture_close_connection(cli1)) {

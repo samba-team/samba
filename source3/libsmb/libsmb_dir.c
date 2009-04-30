@@ -1760,7 +1760,7 @@ SMBC_unlink_ctx(SMBCCTX *context,
 	}
 	/*d_printf(">>>unlink: resolved path as %s\n", targetpath);*/
 
-	if (!cli_unlink(targetcli, targetpath)) {
+	if (!NT_STATUS_IS_OK(cli_unlink(targetcli, targetpath, aSYSTEM | aHIDDEN))) {
 
 		errno = SMBC_errno(context, targetcli);
 
@@ -1966,7 +1966,7 @@ SMBC_rename_ctx(SMBCCTX *ocontext,
 		int eno = SMBC_errno(ocontext, targetcli1);
 
 		if (eno != EEXIST ||
-		    !cli_unlink(targetcli1, targetpath2) ||
+		    !NT_STATUS_IS_OK(cli_unlink(targetcli1, targetpath2, aSYSTEM | aHIDDEN)) ||
 		    !NT_STATUS_IS_OK(cli_rename(targetcli1, targetpath1, targetpath2))) {
 
 			errno = eno;

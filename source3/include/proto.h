@@ -2355,8 +2355,13 @@ struct tevent_req *cli_nt_hardlink_send(TALLOC_CTX *mem_ctx,
 NTSTATUS cli_nt_hardlink_recv(struct tevent_req *req);
 NTSTATUS cli_nt_hardlink(struct cli_state *cli, const char *fname_src, const char *fname_dst);
 
-bool cli_unlink_full(struct cli_state *cli, const char *fname, uint16_t attrs);
-bool cli_unlink(struct cli_state *cli, const char *fname);
+struct tevent_req *cli_unlink_send(TALLOC_CTX *mem_ctx,
+                                struct event_context *ev,
+                                struct cli_state *cli,
+                                const char *fname,
+                                uint16_t mayhave_attrs);
+NTSTATUS cli_unlink_recv(struct tevent_req *req);
+NTSTATUS cli_unlink(struct cli_state *cli, const char *fname, uint16_t mayhave_attrs);
 
 struct tevent_req *cli_mkdir_send(TALLOC_CTX *mem_ctx,
 				  struct event_context *ev,
