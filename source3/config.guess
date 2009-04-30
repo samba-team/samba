@@ -806,7 +806,7 @@ EOF
 	echo ${UNAME_MACHINE}-pc-pw32
 	exit ;;
     *:Interix*:[3456]*)
-    	case ${UNAME_MACHINE} in
+	case ${UNAME_MACHINE} in
 	    x86)
 		echo i586-pc-interix${UNAME_RELEASE}
 		exit ;;
@@ -982,7 +982,7 @@ EOF
 	echo x86_64-unknown-linux-gnu
 	exit ;;
     xtensa*:Linux:*:*)
-    	echo ${UNAME_MACHINE}-unknown-linux-gnu
+	echo ${UNAME_MACHINE}-unknown-linux-gnu
 	exit ;;
     i*86:Linux:*:*)
 	# The BFD linker knows what the default object file format is, so
