@@ -305,7 +305,7 @@ _PUBLIC_ struct smbcli_request *smb_raw_write_send(struct smbcli_tree *tree, uni
 NTSTATUS smb_raw_write_recv(struct smbcli_request *req, union smb_write *parms)
 {
 	if (!smbcli_request_receive(req) ||
-	    smbcli_request_is_error(req)) {
+	    !NT_STATUS_IS_OK(req->status)) {
 		goto failed;
 	}
 
