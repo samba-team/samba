@@ -2422,17 +2422,69 @@ char *escape_shell_string(const char *src)
 }
 
 /***************************************************
- Wrapper for str_list_make() to restore the s3 behavior.
- In samba 3.2 passing NULL or an empty string returned NULL.
-
- In master, it now returns a list of length 1 with the first string set
- to NULL (an empty list)
+ str_list_make, v3 version. The v4 version does not
+ look at quoted strings with embedded blanks, so
+ do NOT merge this function please!
 ***************************************************/
+
+#define S_LIST_ABS 16 /* List Allocation Block Size */
 
 char **str_list_make_v3(TALLOC_CTX *mem_ctx, const char *string, const char *sep)
 {
-	if (!string || !*string) {
+	char **list;
+	const char *str;
+	char *s;
+	int num, lsize;
+	char *tok;
+
+	if (!string || !*string)
+		return NULL;
+
+	list = TALLOC_ARRAY(mem_ctx, char *, S_LIST_ABS+1);
+	if (list == NULL) {
 		return NULL;
 	}
-	return str_list_make(mem_ctx, string, sep);
+	lsize = S_LIST_ABS;
+
+	s = talloc_strdup(list, string);
+	if (s == NULL) {
+		DEBUG(0,("str_list_make: Unable to allocate memory"));
+		TALLOC_FREE(list);
+		return NULL;
+	}
+	if (!sep) sep = LIST_SEP;
+
+	num = 0;
+	str = s;
+
+	while (next_token_talloc(list, &str, &tok, sep)) {
+
+		if (num == lsize) {
+			char **tmp;
+
+			lsize += S_LIST_ABS;
+
+			tmp = TALLOC_REALLOC_ARRAY(mem_ctx, list, char *,
+						   lsize + 1);
+			if (tmp == NULL) {
+				DEBUG(0,("str_list_make: "
+					"Unable to allocate memory"));
+				TALLOC_FREE(list);
+				return NULL;
+			}
+
+			list = tmp;
+
+			memset (&list[num], 0,
+				((sizeof(char**)) * (S_LIST_ABS +1)));
+		}
+
+		list[num] = tok;
+		num += 1;
+	}
+
+	list[num] = NULL;
+
+	TALLOC_FREE(s);
+	return list;
 }
