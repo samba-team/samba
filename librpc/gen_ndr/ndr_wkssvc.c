@@ -5545,6 +5545,7 @@ _PUBLIC_ void ndr_print_wkssvc_joinflags(struct ndr_print *ndr, const char *name
 {
 	ndr_print_uint32(ndr, name, r);
 	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "WKSSVC_JOIN_FLAGS_IGNORE_UNSUPPORTED_FLAGS", WKSSVC_JOIN_FLAGS_IGNORE_UNSUPPORTED_FLAGS, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "WKSSVC_JOIN_FLAGS_JOIN_WITH_NEW_NAME", WKSSVC_JOIN_FLAGS_JOIN_WITH_NEW_NAME, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "WKSSVC_JOIN_FLAGS_JOIN_DC_ACCOUNT", WKSSVC_JOIN_FLAGS_JOIN_DC_ACCOUNT, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "WKSSVC_JOIN_FLAGS_DEFER_SPN", WKSSVC_JOIN_FLAGS_DEFER_SPN, r);
