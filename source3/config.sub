@@ -1452,7 +1452,7 @@ case $basic_machine in
 		os=-aout
 		;;
         c4x-* | tic4x-*)
-        	os=-coff
+		os=-coff
 		;;
 	# This must come before the *-dec entry.
 	pdp10-*)
