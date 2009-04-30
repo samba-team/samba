@@ -1078,7 +1078,7 @@ static int do_get(const char *rname, const char *lname_in, bool reget)
 		return 1;
 	}
 
-	if (!cli_close(targetcli, fnum)) {
+	if (!NT_STATUS_IS_OK(cli_close(targetcli, fnum))) {
 		d_printf("Error %s closing remote file\n",cli_errstr(cli));
 		rc = 1;
 	}
@@ -1690,7 +1690,7 @@ static int do_put(const char *rname, const char *lname, bool reput)
 		d_fprintf(stderr, "cli_push returned %s\n", nt_errstr(status));
 	}
 
-	if (!cli_close(targetcli, fnum)) {
+	if (!NT_STATUS_IS_OK(cli_close(targetcli, fnum))) {
 		d_printf("%s closing remote file %s\n",cli_errstr(cli),rname);
 		x_fclose(f);
 		return 1;
@@ -2459,7 +2459,7 @@ static int cmd_close(void)
 
 	fnum = atoi(buf);
 	/* We really should use the targetcli here.... */
-	if (!cli_close(cli, fnum)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli, fnum))) {
 		d_printf("close %d: %s\n", fnum, cli_errstr(cli));
 		return 1;
 	}

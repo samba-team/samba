@@ -213,7 +213,7 @@ void nb_close(int handle)
 {
 	int i;
 	i = find_handle(handle);
-	if (!cli_close(c, ftable[i].fd)) {
+	if (!NT_STATUS_IS_OK(cli_close(c, ftable[i].fd))) {
 		printf("(%d) close failed on handle %d\n", line_count, handle);
 		exit(1);
 	}

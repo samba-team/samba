@@ -254,14 +254,14 @@ NTSTATUS net_copy_fileattr(struct net_context *c,
 
 	/* closing files */
 
-	if (!cli_close(cli_share_src, fnum_src)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli_share_src, fnum_src))) {
 		d_fprintf(stderr, "could not close %s on originating server: %s\n",
 			is_file?"file":"dir", cli_errstr(cli_share_src));
 		nt_status = cli_nt_error(cli_share_src);
 		goto out;
 	}
 
-	if (!cli_close(cli_share_dst, fnum_dst)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli_share_dst, fnum_dst))) {
 		d_fprintf(stderr, "could not close %s on destination server: %s\n",
 			is_file?"file":"dir", cli_errstr(cli_share_dst));
 		nt_status = cli_nt_error(cli_share_dst);
@@ -420,14 +420,14 @@ NTSTATUS net_copy_file(struct net_context *c,
 
 
 	/* closing files */
-	if (!cli_close(cli_share_src, fnum_src)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli_share_src, fnum_src))) {
 		d_fprintf(stderr, "could not close file on originating server: %s\n",
 			cli_errstr(cli_share_src));
 		nt_status = cli_nt_error(cli_share_src);
 		goto out;
 	}
 
-	if (is_file && !cli_close(cli_share_dst, fnum_dst)) {
+	if (is_file && !NT_STATUS_IS_OK(cli_close(cli_share_dst, fnum_dst))) {
 		d_fprintf(stderr, "could not close file on destination server: %s\n",
 			cli_errstr(cli_share_dst));
 		nt_status = cli_nt_error(cli_share_dst);

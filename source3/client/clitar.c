@@ -1067,8 +1067,9 @@ static int get_file(file_info2 finfo)
 
 	/* Now close the file ... */
 
-	if (!cli_close(cli, fnum)) {
-		DEBUG(0, ("Error closing remote file\n"));
+	if (!NT_STATUS_IS_OK(cli_close(cli, fnum))) {
+		DEBUG(0, ("Error %s closing remote file\n",
+			cli_errstr(cli)));
 		return(False);
 	}
 

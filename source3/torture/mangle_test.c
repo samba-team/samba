@@ -42,7 +42,7 @@ static bool test_one(struct cli_state *cli, const char *name)
 		return False;
 	}
 
-	if (!cli_close(cli, fnum)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli, fnum))) {
 		printf("close of %s failed (%s)\n", name, cli_errstr(cli));
 		return False;
 	}
@@ -66,7 +66,7 @@ static bool test_one(struct cli_state *cli, const char *name)
 		printf("open2 of %s failed (%s)\n", name2, cli_errstr(cli));
 		return False;
 	}
-	if (!cli_close(cli, fnum)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli, fnum))) {
 		printf("close of %s failed (%s)\n", name, cli_errstr(cli));
 		return False;
 	}

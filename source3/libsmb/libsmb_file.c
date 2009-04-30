@@ -477,7 +477,7 @@ SMBC_close_ctx(SMBCCTX *context,
 	}
 	/*d_printf(">>>close: resolved path as %s\n", targetpath);*/
         
-	if (!cli_close(targetcli, file->cli_fd)) {
+	if (!NT_STATUS_IS_OK(cli_close(targetcli, file->cli_fd))) {
                 
 		DEBUG(3, ("cli_close failed on %s. purging server.\n", 
 			  file->fname));

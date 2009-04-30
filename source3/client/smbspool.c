@@ -602,7 +602,7 @@ smb_print(struct cli_state * cli,	/* I - SMB connection */
 		tbytes += nbytes;
 	}
 
-	if (!cli_close(cli, fnum)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli, fnum))) {
 		fprintf(stderr, "ERROR: %s closing remote spool %s\n",
 			cli_errstr(cli), title);
 		return (get_exit_code(cli, cli_nt_error(cli)));

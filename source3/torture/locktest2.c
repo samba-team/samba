@@ -94,7 +94,7 @@ static bool try_close(struct cli_state *c, int fstype, int fd)
 {
 	switch (fstype) {
 	case FSTYPE_SMB:
-		return cli_close(c, fd);
+		return NT_STATUS_IS_OK(cli_close(c, fd));
 
 	case FSTYPE_NFS:
 		return close(fd) == 0;

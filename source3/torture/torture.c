@@ -482,7 +482,7 @@ static bool rw_torture(struct cli_state *c)
 			correct = False;
 		}
 
-		if (!cli_close(c, fnum)) {
+		if (!NT_STATUS_IS_OK(cli_close(c, fnum))) {
 			printf("close failed (%s)\n", cli_errstr(c));
 			correct = False;
 		}
@@ -618,7 +618,7 @@ static bool rw_torture3(struct cli_state *c, char *lockfname)
 
 	}
 
-	if (!cli_close(c, fnum)) {
+	if (!NT_STATUS_IS_OK(cli_close(c, fnum))) {
 		printf("close failed (%s)\n", cli_errstr(c));
 		correct = False;
 	}
@@ -686,11 +686,11 @@ static bool rw_torture2(struct cli_state *c1, struct cli_state *c2)
 		}
 	}
 
-	if (!cli_close(c2, fnum2)) {
+	if (!NT_STATUS_IS_OK(cli_close(c2, fnum2))) {
 		printf("close failed (%s)\n", cli_errstr(c2));
 		correct = False;
 	}
-	if (!cli_close(c1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(c1, fnum1))) {
 		printf("close failed (%s)\n", cli_errstr(c1));
 		correct = False;
 	}
@@ -796,7 +796,7 @@ static bool run_readwritelarge(int dummy)
 		correct = False;
 	}
 
-	if (!cli_close(cli1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("close failed (%s)\n", cli_errstr(cli1));
 		correct = False;
 	}
@@ -843,7 +843,7 @@ static bool run_readwritelarge(int dummy)
 		printf("readwritelarge test 3 (truncate test) succeeded (size = %x)\n", fsize);
 #endif
 
-	if (!cli_close(cli1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("close failed (%s)\n", cli_errstr(cli1));
 		correct = False;
 	}
@@ -1050,7 +1050,7 @@ static bool run_locktest1(int dummy)
 	printf("server slept for %u seconds for a %u second timeout\n",
 	       (unsigned int)(t2-t1), lock_timeout);
 
-	if (!cli_close(cli1, fnum2)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum2))) {
 		printf("close1 failed (%s)\n", cli_errstr(cli1));
 		return False;
 	}
@@ -1063,12 +1063,12 @@ static bool run_locktest1(int dummy)
 				 NT_STATUS_FILE_LOCK_CONFLICT)) return False;
 	}
 
-	if (!cli_close(cli1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("close2 failed (%s)\n", cli_errstr(cli1));
 		return False;
 	}
 
-	if (!cli_close(cli2, fnum3)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli2, fnum3))) {
 		printf("close3 failed (%s)\n", cli_errstr(cli2));
 		return False;
 	}
@@ -1178,7 +1178,7 @@ static bool run_tcon_test(int dummy)
 	cli->cnum = cnum1;
 	cli->vuid = vuid1;
 
-	if (!cli_close(cli, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli, fnum1))) {
 		printf("close failed (%s)\n", cli_errstr(cli));
 		return False;
 	}
@@ -1461,17 +1461,17 @@ static bool run_locktest2(int dummy)
 
 	cli_setpid(cli, 1);
 
-	if (!cli_close(cli, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli, fnum1))) {
 		printf("close1 failed (%s)\n", cli_errstr(cli));
 		return False;
 	}
 
-	if (!cli_close(cli, fnum2)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli, fnum2))) {
 		printf("close2 failed (%s)\n", cli_errstr(cli));
 		return False;
 	}
 
-	if (!cli_close(cli, fnum3)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli, fnum3))) {
 		printf("close3 failed (%s)\n", cli_errstr(cli));
 		return False;
 	}
@@ -1580,12 +1580,12 @@ static bool run_locktest3(int dummy)
 		}
 	}
 
-	if (!cli_close(cli1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("close1 failed (%s)\n", cli_errstr(cli1));
 		return False;
 	}
 
-	if (!cli_close(cli2, fnum2)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli2, fnum2))) {
 		printf("close2 failed (%s)\n", cli_errstr(cli2));
 		return False;
 	}
@@ -1764,8 +1764,8 @@ static bool run_locktest4(int dummy)
 	cli_open(cli1, fname, O_RDWR, DENY_NONE, &f);
 	ret = cli_lock(cli1, fnum1, 0, 8, 0, READ_LOCK) &&
 	      cli_lock(cli1, f, 0, 1, 0, READ_LOCK) &&
-	      cli_close(cli1, fnum1) &&
-	      (NT_STATUS_IS_OK(cli_open(cli1, fname, O_RDWR, DENY_NONE, &fnum1))) &&
+	      NT_STATUS_IS_OK(cli_close(cli1, fnum1)) &&
+	      NT_STATUS_IS_OK(cli_open(cli1, fname, O_RDWR, DENY_NONE, &fnum1)) &&
 	      cli_lock(cli1, fnum1, 7, 1, 0, WRITE_LOCK);
         cli_close(cli1, f);
 	cli_close(cli1, fnum1);
@@ -2736,7 +2736,7 @@ static bool run_oplock1(int dummy)
 	cli_unlink(cli1, fname, aSYSTEM | aHIDDEN);
 	cli_unlink(cli1, fname, aSYSTEM | aHIDDEN);
 
-	if (!cli_close(cli1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("close2 failed (%s)\n", cli_errstr(cli1));
 		return False;
 	}
@@ -2815,7 +2815,7 @@ static bool run_oplock2(int dummy)
 
 		sleep(2);
 
-		if (!cli_close(cli2, fnum2)) {
+		if (!NT_STATUS_IS_OK(cli_close(cli2, fnum2))) {
 			printf("close2 failed (%s)\n", cli_errstr(cli1));
 			*shared_correct = False;
 		}
@@ -2863,7 +2863,7 @@ static bool run_oplock2(int dummy)
 	}
 #endif
 
-	if (!cli_close(cli1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("close1 failed (%s)\n", cli_errstr(cli1));
 		correct = False;
 	}
@@ -2991,7 +2991,7 @@ static bool run_deletetest(int dummy)
         }
 #endif
 
-	if (!cli_close(cli1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("[1] close failed (%s)\n", cli_errstr(cli1));
 		correct = False;
 		goto fail;
@@ -3024,7 +3024,7 @@ static bool run_deletetest(int dummy)
 		goto fail;
 	}
 
-	if (!cli_close(cli1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("[2] close failed (%s)\n", cli_errstr(cli1));
 		correct = False;
 		goto fail;
@@ -3032,7 +3032,7 @@ static bool run_deletetest(int dummy)
 
 	if (NT_STATUS_IS_OK(cli_open(cli1, fname, O_RDONLY, DENY_NONE, &fnum1))) {
 		printf("[2] open of %s succeeded should have been deleted on close !\n", fname);
-		if (!cli_close(cli1, fnum1)) {
+		if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 			printf("[2] close failed (%s)\n", cli_errstr(cli1));
 			correct = False;
 			goto fail;
@@ -3077,13 +3077,13 @@ static bool run_deletetest(int dummy)
 		goto fail;
 	}
 
-	if (!cli_close(cli1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("[3] close 1 failed (%s)\n", cli_errstr(cli1));
 		correct = False;
 		goto fail;
 	}
 
-	if (!cli_close(cli1, fnum2)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum2))) {
 		printf("[3] close 2 failed (%s)\n", cli_errstr(cli1));
 		correct = False;
 		goto fail;
@@ -3093,7 +3093,7 @@ static bool run_deletetest(int dummy)
 
 	if (NT_STATUS_IS_OK(cli_open(cli1, fname, O_RDONLY, DENY_NONE, &fnum1))) {
 		printf("[3] open of %s succeeded should have been deleted on close !\n", fname);
-		if (!cli_close(cli1, fnum1)) {
+		if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 			printf("[3] close failed (%s)\n", cli_errstr(cli1));
 		}
 		cli_unlink(cli1, fname, aSYSTEM | aHIDDEN);
@@ -3121,7 +3121,7 @@ static bool run_deletetest(int dummy)
 		goto fail;
 	}
 
-	if (!cli_close(cli1, fnum2)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum2))) {
 		printf("[4] close - 1 failed (%s)\n", cli_errstr(cli1));
 		correct = False;
 		goto fail;
@@ -3143,7 +3143,7 @@ static bool run_deletetest(int dummy)
 	} else
 		printf("fourth delete on close test succeeded.\n");
 
-	if (!cli_close(cli1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("[4] close - 2 failed (%s)\n", cli_errstr(cli1));
 		correct = False;
 		goto fail;
@@ -3167,7 +3167,7 @@ static bool run_deletetest(int dummy)
 		goto fail;
 	}
 
-	if (!cli_close(cli1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("[5] close - 2 failed (%s)\n", cli_errstr(cli1));
 		correct = False;
 		goto fail;
@@ -3195,7 +3195,7 @@ static bool run_deletetest(int dummy)
 		goto fail;
 	}
 
-	if (!cli_close(cli1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("[6] close - 2 failed (%s)\n", cli_errstr(cli1));
 		correct = False;
 		goto fail;
@@ -3226,7 +3226,7 @@ static bool run_deletetest(int dummy)
 		goto fail;
 	}
 
-	if (!cli_close(cli1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("[7] close - 2 failed (%s)\n", cli_errstr(cli1));
 		correct = False;
 		goto fail;
@@ -3240,7 +3240,7 @@ static bool run_deletetest(int dummy)
 		goto fail;
 	}
 
-	if (!cli_close(cli1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("[7] close - 2 failed (%s)\n", cli_errstr(cli1));
 		correct = False;
 		goto fail;
@@ -3282,13 +3282,13 @@ static bool run_deletetest(int dummy)
 		goto fail;
 	}
 
-	if (!cli_close(cli1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("[8] close - 1 failed (%s)\n", cli_errstr(cli1));
 		correct = False;
 		goto fail;
 	}
 
-	if (!cli_close(cli2, fnum2)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli2, fnum2))) {
 		printf("[8] close - 2 failed (%s)\n", cli_errstr(cli2));
 		correct = False;
 		goto fail;
@@ -3320,7 +3320,7 @@ static bool run_deletetest(int dummy)
 	}
 
 	/* This should delete the file. */
-	if (!cli_close(cli1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("[10] close failed (%s)\n", cli_errstr(cli1));
 		correct = False;
 		goto fail;
@@ -3348,7 +3348,7 @@ static bool run_deletetest(int dummy)
 		goto fail;
 	}
 
-	if (!cli_close(cli1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("[11] close failed (%s)\n", cli_errstr(cli1));
 		correct = False;
 		goto fail;
@@ -3514,7 +3514,7 @@ static bool run_rename(int dummy)
 		correct = False;
 	}
 
-	if (!cli_close(cli1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("close - 1 failed (%s)\n", cli_errstr(cli1));
 		return False;
 	}
@@ -3538,7 +3538,7 @@ static bool run_rename(int dummy)
 		printf("Second rename succeeded (SHARE_DELETE | SHARE_READ)\n");
 	}
 
-	if (!cli_close(cli1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("close - 2 failed (%s)\n", cli_errstr(cli1));
 		return False;
 	}
@@ -3567,7 +3567,7 @@ static bool run_rename(int dummy)
 		return False;
 	}
 
-	if (!cli_close(cli1, fnum2)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum2))) {
 		printf("close - 4 failed (%s)\n", cli_errstr(cli1));
 		return False;
 	}
@@ -3581,7 +3581,7 @@ static bool run_rename(int dummy)
 		printf("Third rename succeeded (SHARE_NONE)\n");
 	}
 
-	if (!cli_close(cli1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("close - 3 failed (%s)\n", cli_errstr(cli1));
 		return False;
 	}
@@ -3604,7 +3604,7 @@ static bool run_rename(int dummy)
 		correct = False;
 	}
 
-	if (!cli_close(cli1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("close - 4 failed (%s)\n", cli_errstr(cli1));
 		return False;
 	}
@@ -3645,7 +3645,7 @@ static bool run_rename(int dummy)
         /*--*/
 
 
-	if (!cli_close(cli1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("close - 5 failed (%s)\n", cli_errstr(cli1));
 		return False;
 	}
@@ -3718,7 +3718,7 @@ static bool run_opentest(int dummy)
 		return False;
 	}
 
-	if (!cli_close(cli1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("close2 failed (%s)\n", cli_errstr(cli1));
 		return False;
 	}
@@ -3762,7 +3762,7 @@ static bool run_opentest(int dummy)
 		printf("correct error code ERRDOS/ERRbadshare returned\n");
 	}
 
-	if (!cli_close(cli1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("close2 failed (%s)\n", cli_errstr(cli1));
 		return False;
 	}
@@ -3787,7 +3787,7 @@ static bool run_opentest(int dummy)
 		correct = False;
 	}
 
-	if (!cli_close(cli1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("(3) close1 failed (%s)\n", cli_errstr(cli1));
 		return False;
 	}
@@ -3810,7 +3810,7 @@ static bool run_opentest(int dummy)
 		return False;
 	}
 
-	if (!cli_close(cli1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("close2 failed (%s)\n", cli_errstr(cli1));
 		return False;
 	}
@@ -3837,7 +3837,7 @@ static bool run_opentest(int dummy)
 		return False;
 	}
 	printf("ctemp gave path %s\n", tmp_path);
-	if (!cli_close(cli1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("close of temp failed (%s)\n", cli_errstr(cli1));
 	}
 	if (!NT_STATUS_IS_OK(cli_unlink(cli1, tmp_path, aSYSTEM | aHIDDEN))) {
@@ -3869,11 +3869,11 @@ static bool run_opentest(int dummy)
 		return False;
 	}
 
-	if (!cli_close(cli1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("test 1 close 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
 		return False;
 	}
-	if (!cli_close(cli2, fnum2)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli2, fnum2))) {
 		printf("test 1 close 2 of %s failed (%s)\n", fname, cli_errstr(cli2));
 		return False;
 	}
@@ -3896,11 +3896,11 @@ static bool run_opentest(int dummy)
 		return False;
 	}
 
-	if (!cli_close(cli1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("test 1 close 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
 		return False;
 	}
-	if (!cli_close(cli2, fnum2)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli2, fnum2))) {
 		printf("test 1 close 2 of %s failed (%s)\n", fname, cli_errstr(cli1));
 		return False;
 	}
@@ -3923,11 +3923,11 @@ static bool run_opentest(int dummy)
 		return False;
 	}
 
-	if (!cli_close(cli1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("test 3 close 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
 		return False;
 	}
-	if (!cli_close(cli2, fnum2)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli2, fnum2))) {
 		printf("test 3 close 2 of %s failed (%s)\n", fname, cli_errstr(cli2));
 		return False;
 	}
@@ -3952,7 +3952,7 @@ static bool run_opentest(int dummy)
 
 	printf("test 3 open 2 of %s gave %s (correct error should be %s)\n", fname, cli_errstr(cli2), "sharing violation");
 
-	if (!cli_close(cli1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("test 4 close 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
 		return False;
 	}
@@ -3975,12 +3975,12 @@ static bool run_opentest(int dummy)
 		return False;
 	}
 
-	if (!cli_close(cli1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("test 5 close 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
 		return False;
 	}
 
-	if (!cli_close(cli2, fnum2)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli2, fnum2))) {
 		printf("test 5 close 2 of %s failed (%s)\n", fname, cli_errstr(cli2));
 		return False;
 	}
@@ -4003,12 +4003,12 @@ static bool run_opentest(int dummy)
 		return False;
 	}
 
-	if (!cli_close(cli1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("test 6 close 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
 		return False;
 	}
 
-	if (!cli_close(cli2, fnum2)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli2, fnum2))) {
 		printf("test 6 close 2 of %s failed (%s)\n", fname, cli_errstr(cli2));
 		return False;
 	}
@@ -4033,7 +4033,7 @@ static bool run_opentest(int dummy)
 
 	printf("test 7 open 2 of %s gave %s (correct error should be %s)\n", fname, cli_errstr(cli2), "sharing violation");
 
-	if (!cli_close(cli1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("test 7 close 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
 		return False;
 	}
@@ -4107,7 +4107,7 @@ static bool run_simple_posix_open_test(int dummy)
 		goto out;
 	}
 
-	if (!cli_close(cli1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("close failed (%s)\n", cli_errstr(cli1));
 		goto out;
 	}
@@ -4125,7 +4125,7 @@ static bool run_simple_posix_open_test(int dummy)
 		goto out;
 	}
 
-	if (!cli_close(cli1, fnum1)) {
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("close(2) failed (%s)\n", cli_errstr(cli1));
 		goto out;
 	}
@@ -4247,7 +4247,7 @@ static bool run_openattrtest(int dummy)
 			return False;
 		}
 
-		if (!cli_close(cli1, fnum1)) {
+		if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 			printf("close %d (1) of %s failed (%s)\n", i, fname, cli_errstr(cli1));
 			return False;
 		}
@@ -4277,7 +4277,7 @@ static bool run_openattrtest(int dummy)
 				continue;
 			}
 
-			if (!cli_close(cli1, fnum1)) {
+			if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 				printf("close %d (2) of %s failed (%s)\n", j, fname, cli_errstr(cli1));
 				return False;
 			}

@@ -1120,70 +1120,6 @@ int cli_nt_delete_on_close(struct cli_state *cli, uint16_t fnum, bool flag)
 	return true;
 }
 
-/****************************************************************************
- Open a file - exposing the full horror of the NT API :-).
- Used in smbtorture.
-****************************************************************************/
-
-#if 0
-int cli_nt_create_full(struct cli_state *cli, const char *fname,
-		       uint32_t CreatFlags, uint32_t DesiredAccess,
-		       uint32_t FileAttributes, uint32_t ShareAccess,
-		       uint32_t CreateDisposition, uint32_t CreateOptions,
-		       uint8_t SecurityFlags)
-{
-	char *p;
-	int len;
-
-	memset(cli->outbuf,'\0',smb_size);
-	memset(cli->inbuf,'\0',smb_size);
-
-	cli_set_message(cli->outbuf,24,0, true);
-
-	SCVAL(cli->outbuf,smb_com,SMBntcreateX);
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
-
-	SSVAL(cli->outbuf,smb_vwv0,0xFF);
-	if (cli->use_oplocks)
-		CreatFlags |= (REQUEST_OPLOCK|REQUEST_BATCH_OPLOCK);
-
-	SIVAL(cli->outbuf,smb_ntcreate_Flags, CreatFlags);
-	SIVAL(cli->outbuf,smb_ntcreate_RootDirectoryFid, 0x0);
-	SIVAL(cli->outbuf,smb_ntcreate_DesiredAccess, DesiredAccess);
-	SIVAL(cli->outbuf,smb_ntcreate_FileAttributes, FileAttributes);
-	SIVAL(cli->outbuf,smb_ntcreate_ShareAccess, ShareAccess);
-	SIVAL(cli->outbuf,smb_ntcreate_CreateDisposition, CreateDisposition);
-	SIVAL(cli->outbuf,smb_ntcreate_CreateOptions, CreateOptions);
-	SIVAL(cli->outbuf,smb_ntcreate_ImpersonationLevel, 0x02);
-	SCVAL(cli->outbuf,smb_ntcreate_SecurityFlags, SecurityFlags);
-
-	p = smb_buf(cli->outbuf);
-	/* this alignment and termination is critical for netapp filers. Don't change */
-	p += clistr_align_out(cli, p, 0);
-	len = clistr_push(cli, p, fname,
-			cli->bufsize - PTR_DIFF(p,cli->outbuf), 0);
-	p += len;
-	SSVAL(cli->outbuf,smb_ntcreate_NameLength, len);
-	/* sigh. this copes with broken netapp filer behaviour */
-	p += clistr_push(cli, p, "",
-			cli->bufsize - PTR_DIFF(p,cli->outbuf), STR_TERMINATE);
-
-	cli_setup_bcc(cli, p);
-
-	cli_send_smb(cli);
-	if (!cli_receive_smb(cli)) {
-		return -1;
-	}
-
-	if (cli_is_error(cli)) {
-		return -1;
-	}
-
-	return SVAL(cli->inbuf,smb_vwv2 + 1);
-}
-#endif
-
 struct cli_ntcreate_state {
 	uint16_t vwv[24];
 	uint16_t fnum;
@@ -1345,18 +1281,6 @@ NTSTATUS cli_ntcreate(struct cli_state *cli,
 	}
 	return status;
 }
-
-#if 0
-/****************************************************************************
- Open a file.
-****************************************************************************/
-
-int cli_nt_create(struct cli_state *cli, const char *fname, uint32_t DesiredAccess)
-{
-	return cli_nt_create_full(cli, fname, 0, DesiredAccess, 0,
-				FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0x0, 0x0);
-}
-#endif
 
 uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2,
 			    const char *str, size_t str_len,
@@ -1675,13 +1599,12 @@ NTSTATUS cli_close_recv(struct tevent_req *req)
 	return tevent_req_simple_recv_ntstatus(req);
 }
 
-bool cli_close(struct cli_state *cli, uint16_t fnum)
+NTSTATUS cli_close(struct cli_state *cli, uint16_t fnum)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct event_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_OK;
-	bool result = false;
 
 	if (cli_has_async_calls(cli)) {
 		/*
@@ -1708,13 +1631,13 @@ bool cli_close(struct cli_state *cli, uint16_t fnum)
 		goto fail;
 	}
 
-	result = NT_STATUS_IS_OK(cli_close_recv(req));
+	status = cli_close_recv(req);
  fail:
 	TALLOC_FREE(frame);
 	if (!NT_STATUS_IS_OK(status)) {
 		cli_set_error(cli, status);
 	}
-	return result;
+	return status;
 }
 
 /****************************************************************************
