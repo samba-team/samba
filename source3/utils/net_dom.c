@@ -38,7 +38,8 @@ static int net_dom_unjoin(struct net_context *c, int argc, const char **argv)
 	const char *account = NULL;
 	const char *password = NULL;
 	uint32_t unjoin_flags = NETSETUP_ACCT_DELETE |
-				NETSETUP_JOIN_DOMAIN;
+				NETSETUP_JOIN_DOMAIN |
+				NETSETUP_IGNORE_UNSUPPORTED_FLAGS;
 	struct cli_state *cli = NULL;
 	bool do_reboot = false;
 	NTSTATUS ntstatus;

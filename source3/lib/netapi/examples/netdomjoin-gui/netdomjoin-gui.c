@@ -655,7 +655,8 @@ static void callback_do_join(GtkWidget *widget,
 		unjoin_creds_required = TRUE;
 		join_creds_required = FALSE;
 		unjoin_flags = NETSETUP_JOIN_DOMAIN |
-			       NETSETUP_ACCT_DELETE;
+			       NETSETUP_ACCT_DELETE |
+			       NETSETUP_IGNORE_UNSUPPORTED_FLAGS;
 	}
 
 	if (try_unjoin) {
