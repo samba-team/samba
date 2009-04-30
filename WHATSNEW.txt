@@ -121,7 +121,9 @@ smb.conf changes
 New [sub]commands
 -----------------
 
-   net eventlog		Tool to import/dump/export native win32 eventlog files.
+   net eventlog			Import/dump/export native win32 eventlog files.
+   net rpc service create	Create a new service.
+   net rpc service delete	Delete an existing service.
 
 
 New configure options
@@ -173,6 +175,10 @@ o   Stefan Metzmacher <metze@samba.org>
 
 o   Dan Sledz <dsledz@isilon.com>
     * Add two new parameters to control how we verify kerberos tickets.
+
+
+o   Danny Tylman <danny.tylman@insightix.com>
+    * Add 'net rpc service' subcommands 'create' and 'delete'.
 
 
 o   Jelmer Vernooij <jelmer@samba.org>
