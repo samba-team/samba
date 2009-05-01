@@ -187,7 +187,7 @@ endif
 	$(DBLATEX) $(DBLATEX_OPTIONS) -I $*/images -t pdf -o $@ $<
 
 # PostScript files
-%.ps: %/index.xml xslt/latex.xsl %-images-latex-eps
+$(PSDIR)/%.ps: %/index.xml xslt/latex.xsl %-images-latex-eps
 	$(DBLATEX) $(DBLATEX_OPTIONS) -I $*/images -t ps -o $@ $<
 
 %.eps: %.svg
