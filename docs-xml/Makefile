@@ -56,9 +56,8 @@ clean::
 	rm -f $(patsubst %.svg,%.png,$(wildcard */images/*.svg)) \
 		  $(patsubst %.svg,%.eps,$(wildcard */images/*.svg)) \
 		  $(patsubst %.png,%.eps,$(wildcard */images/*.png))
-	rm -f *-attributions.xml *.tpt *.tex *.loc *.toc *.lof *.glo *.idx *.aux
+	rm -f *-attributions.xml
 	rm -f $(SMBDOTCONFDOC)/parameters.*.xml
-	rm -f $(addsuffix .*,$(MAIN_DOCS))
 	rm -f build/catalog.xml
 
 # Output format targets
@@ -248,6 +247,7 @@ distclean clobber:: clean
 realdistclean:: distclean
 	rm -f configure
 	rm -rf autom4te.cache
+	rm -rf output
 
 # Always keep intermediate files if we can
 .SECONDARY:
