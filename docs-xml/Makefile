@@ -69,7 +69,6 @@ clean::
 pdf:: $(patsubst %,$(PDFDIR)/%.pdf,$(MAIN_DOCS))
 ps:: $(patsubst %,$(PSDIR)/%.ps,$(MAIN_DOCS))
 txt:: $(patsubst %,$(TXTDIR)/%.txt,$(MAIN_DOCS))
-txt-chunks:: $(addsuffix -txt-chunks,$(MAIN_DOCS))
 tex:: $(addsuffix .tex,$(MAIN_DOCS))
 texi:: $(patsubst %,$(TEXINFODIR)/%.texi,$(MAIN_DOCS))
 texiinfo:: $(patsubst %,$(TEXINFODIR)/%.info,$(MAIN_DOCS))
