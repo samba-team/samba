@@ -5,6 +5,12 @@
 
 PATH="$(dirname $0):${PATH}"
 
+f="ctdb_bench"
+if [ ! $(which $f >/dev/null 2>&1) ] ; then
+    d=$(dirname $(dirname $0))/bin
+    [ -x "$d/$f" ] && PATH="$d:$PATH"
+fi
+
 . ctdb_test_functions.bash
 
 "$@"

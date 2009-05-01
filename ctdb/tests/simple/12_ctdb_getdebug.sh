@@ -38,7 +38,7 @@ getdebug_onnode="$out"
 
 sanity_check_output \
     $num_nodes \
-    '^Node [[:digit:]] is at debug level [[:alpha:]]+ \([[:digit:]]\)$' \
+    '^Node [[:digit:]]+ is at debug level [[:alpha:]]+ \([[:digit:]]\)$' \
     "$out"
 
 try_command_on_node -v 1 "$CTDB getdebug -n all"
@@ -65,7 +65,7 @@ colons=""
 nl="
 "
 while read line ; do
-    t=$(echo "$line" | sed -r -e 's@Node [[:digit:]] is at debug level ([[:alpha:]]+) \((-?[[:digit:]])\)$@:\1:\2:@')
+    t=$(echo "$line" | sed -r -e 's@Node [[:digit:]]+ is at debug level ([[:alpha:]]+) \((-?[[:digit:]])\)$@:\1:\2:@')
     colons="${colons}${colons:+${nl}}:Name:Level:${nl}${t}"
 done <<<"$getdebug_onnode"
 
