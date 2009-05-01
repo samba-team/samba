@@ -821,7 +821,7 @@ session: none
 
 <smbconfsection name="[ACCT_ADMIN]"/>
 <smbconfoption name="path">/data/samba/shares/Acct_Admin</smbconfoption>
-<smbconfoption name="valid users">@”acct_admin”</smbconfoption>
+<smbconfoption name="valid users">@"acct_admin"</smbconfoption>
 <smbconfoption name="force group">acct_admin</smbconfoption>
 
 <smbconfsection name="[HR_PR]"/>
