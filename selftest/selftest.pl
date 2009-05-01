@@ -543,6 +543,12 @@ sub write_clientconf($$)
 	        mkdir("$prefix/client/lockdir", 0777);
 	}
 
+	if ( -d "$prefix_abs/client/ncalrpcdir" ) {
+	        unlink <$prefix/client/ncalrpcdir/*>;
+	} else {
+	        mkdir("$prefix/client/ncalrpcdir", 0777);
+	}
+
 	open(CF, ">$conffile");
 	print CF "[global]\n";
 	if (defined($ENV{VALGRIND})) {
@@ -563,6 +569,7 @@ sub write_clientconf($$)
 	print CF "
 	private dir = $prefix_abs/client/private
 	lock dir = $prefix_abs/client/lockdir
+	ncalrpc dir = $prefix_abs/client/ncalrpcdir
 	name resolve order = bcast
 	panic action = $RealBin/gdb_backtrace \%PID\% \%PROG\%
 	max xmit = 32K
