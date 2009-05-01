@@ -9,7 +9,6 @@ include Makefile.settings
 # Docs to build
 MAIN_DOCS = $(patsubst %/index.xml,%,$(wildcard */index.xml))
 MANPAGES3 = $(wildcard $(MANPAGEDIR3)/*.?.xml)
-export TEXINPUTS=xslt/latex:.:
 
 # Lists of files to process
 MANPAGES_PLUCKER = $(patsubst $(MANPAGEDIR3)/%.xml,$(PLUCKERDIR)/%.pdb,$(MANPAGES3))
@@ -23,11 +22,9 @@ endif
 
 ifndef OUTPUTDIR
 Makefile.settings: configure
-	@echo Makefile.settings not present, trying to run configure...
 	./configure
 
 configure: configure.ac
-	@echo configure not present, trying to regenerate it...
 	autoreconf
 endif
 
