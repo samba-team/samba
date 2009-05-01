@@ -178,7 +178,9 @@ static int ctdb_client_destructor(struct ctdb_client *client)
 {
 	ctdb_takeover_client_destructor_hook(client);
 	ctdb_reqid_remove(client->ctdb, client->client_id);
-	client->ctdb->statistics.num_clients--;
+	if (client->ctdb->statistics.num_clients) {
+		client->ctdb->statistics.num_clients--;
+	}
 
 	if (client->num_persistent_updates != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Client disconnecting with %u persistent updates in flight. Starting recovery\n", client->num_persistent_updates));
@@ -243,7 +245,9 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 	res = ctdb_daemon_call_recv(state, dstate->call);
 	if (res != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " ctdbd_call_recv() returned error\n"));
-		client->ctdb->statistics.pending_calls--;
+		if (client->ctdb->statistics.pending_calls > 0) {
+			client->ctdb->statistics.pending_calls--;
+		}
 		ctdb_latency(ctdb_db, "call_from_client_cb 1", &client->ctdb->statistics.max_call_latency, dstate->start_time);
 		return;
 	}
@@ -253,7 +257,9 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 			       length, struct ctdb_reply_call);
 	if (r == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " Failed to allocate reply_call in ctdb daemon\n"));
-		client->ctdb->statistics.pending_calls--;
+		if (client->ctdb->statistics.pending_calls > 0) {
+			client->ctdb->statistics.pending_calls--;
+		}
 		ctdb_latency(ctdb_db, "call_from_client_cb 2", &client->ctdb->statistics.max_call_latency, dstate->start_time);
 		return;
 	}
@@ -267,7 +273,9 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 	}
 	ctdb_latency(ctdb_db, "call_from_client_cb 3", &client->ctdb->statistics.max_call_latency, dstate->start_time);
 	talloc_free(dstate);
-	client->ctdb->statistics.pending_calls--;
+	if (client->ctdb->statistics.pending_calls > 0) {
+		client->ctdb->statistics.pending_calls--;
+	}
 }
 
 struct ctdb_daemon_packet_wrap {
@@ -320,13 +328,17 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 	struct ctdb_daemon_packet_wrap *w;
 
 	ctdb->statistics.total_calls++;
-	ctdb->statistics.pending_calls++;
+	if (client->ctdb->statistics.pending_calls > 0) {
+		ctdb->statistics.pending_calls++;
+	}
 
 	ctdb_db = find_ctdb_db(client->ctdb, c->db_id);
 	if (!ctdb_db) {
 		DEBUG(DEBUG_ERR, (__location__ " Unknown database in request. db_id==0x%08x",
 			  c->db_id));
-		ctdb->statistics.pending_calls--;
+		if (client->ctdb->statistics.pending_calls > 0) {
+			ctdb->statistics.pending_calls--;
+		}
 		return;
 	}
 
@@ -344,7 +356,9 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 					   daemon_incoming_packet_wrap, w, True);
 	if (ret == -2) {
 		/* will retry later */
-		ctdb->statistics.pending_calls--;
+		if (client->ctdb->statistics.pending_calls > 0) {
+			ctdb->statistics.pending_calls--;
+		}
 		return;
 	}
 
@@ -352,7 +366,9 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Unable to fetch record\n"));
-		ctdb->statistics.pending_calls--;
+		if (client->ctdb->statistics.pending_calls > 0) {
+			ctdb->statistics.pending_calls--;
+		}
 		return;
 	}
 
@@ -360,7 +376,9 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 	if (dstate == NULL) {
 		ctdb_ltdb_unlock(ctdb_db, key);
 		DEBUG(DEBUG_ERR,(__location__ " Unable to allocate dstate\n"));
-		ctdb->statistics.pending_calls--;
+		if (client->ctdb->statistics.pending_calls > 0) {
+			ctdb->statistics.pending_calls--;
+		}
 		return;
 	}
 	dstate->start_time = timeval_current();
@@ -372,7 +390,9 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 	if (call == NULL) {
 		ctdb_ltdb_unlock(ctdb_db, key);
 		DEBUG(DEBUG_ERR,(__location__ " Unable to allocate call\n"));
-		ctdb->statistics.pending_calls--;
+		if (client->ctdb->statistics.pending_calls > 0) {
+			ctdb->statistics.pending_calls--;
+		}
 		ctdb_latency(ctdb_db, "call_from_client 1", &ctdb->statistics.max_call_latency, dstate->start_time);
 		return;
 	}
@@ -393,7 +413,9 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 
 	if (state == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Unable to setup call send\n"));
-		ctdb->statistics.pending_calls--;
+		if (client->ctdb->statistics.pending_calls > 0) {
+			ctdb->statistics.pending_calls--;
+		}
 		ctdb_latency(ctdb_db, "call_from_client 2", &ctdb->statistics.max_call_latency, dstate->start_time);
 		return;
 	}
