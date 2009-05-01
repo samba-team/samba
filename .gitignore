@@ -357,3 +357,6 @@ lib/tdb/tdb.so
 lib/tdb/libtdb.a
 lib/tdb/Makefile
 lib/tdb/bin
+docs-xml/build/catalog.xml
+docs-xml/*/images/*.eps
+docs-xml/*/images/*.pdf
