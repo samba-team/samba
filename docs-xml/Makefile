@@ -143,10 +143,6 @@ $(TXTDIR)/%.txt: $(HTMLDIR)/%.html
 	@mkdir -p $(@D)
 	@$(DBLATEX) $(DBLATEX_OPTIONS) -t tex -o $@ $<
 
-$(PDFDIR)/%.pdf: %.pdf
-	@mkdir -p $(@D)
-	cp $< $@
-
 # Dependency files
 %.d: $(DOCBOOKDIR)/%.xml xslt/generate-dependencies.xsl
 	@echo "Generating dependency file for $*" 
@@ -183,11 +179,11 @@ endif
 endif
 
 # Adobe PDF files  
-%.pdf: %/index.xml xslt/latex.xsl %-images-latex-png %-images-latex-pdf
+$(PDFDIR)/%.pdf: %/index.xml $(PDFDIR) xslt/latex.xsl %-images-latex-png %-images-latex-pdf
 	$(DBLATEX) $(DBLATEX_OPTIONS) -I $*/images -t pdf -o $@ $<
 
 # PostScript files
-$(PSDIR)/%.ps: %/index.xml xslt/latex.xsl %-images-latex-eps
+$(PSDIR)/%.ps: %/index.xml $(PSDIR) xslt/latex.xsl %-images-latex-eps
 	$(DBLATEX) $(DBLATEX_OPTIONS) -I $*/images -t ps -o $@ $<
 
 %.eps: %.svg
@@ -195,9 +191,6 @@ $(PSDIR)/%.ps: %/index.xml xslt/latex.xsl %-images-latex-eps
 
 %.png: %.svg
 	$(INKSCAPE) -z -f $< --export-png=$@
-
-#%.pdf: %.svg
-#	$(INKSCAPE) -z -f $< --export-pdf=$@
 
 %.pdf: %.eps
 	$(EPSTOPDF) $<
@@ -247,6 +240,9 @@ $(SMBDOTCONFDOC)/parameters.global.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(SM
 $(SMBDOTCONFDOC)/parameters.service.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/generate-context.xsl
 	@echo "Generating list of share-mode smb.conf options" 
 	$(XSLTPROC) --xinclude --param smb.context "'S'" --output $(SMBDOTCONFDOC)/parameters.service.xml $(SMBDOTCONFDOC)/generate-context.xsl $<
+
+$(OUTPUTDIR):
+	test -d $@ || mkdir $@
 
 $(OUTPUTDIR)/%: $(DOCBOOKDIR)/%.xml xslt/man.xsl
 	@mkdir -p $(@D)
