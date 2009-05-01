@@ -15,7 +15,9 @@ open(IN,"xsltproc --xinclude --param smb.context ALL generate-context.xsl parame
 
 while(<IN>) {
 	if( /<samba:parameter .*?name="([^"]*?)"/g ){
-		$doc{$1} = "NOTFOUND";
+		my $name = $1;
+	    $name =~ s/ //g;
+		$doc{$name} = "NOTFOUND";
 	}
 }
 
@@ -39,10 +41,13 @@ while ($ln = <SOURCE>) {
   next if $ln =~ m/.*P_SEPARATOR.*/;
   next unless $ln =~ /\s*\.label\s*=\s*\"(.*)\".*/;
 
-  if($doc{lc($1)}) {
-	$doc{lc($1)} = "FOUND";
+  my $name = $1;
+  $name =~ s/ //g;
+
+  if($doc{lc($name)}) {
+	$doc{lc($name)} = "FOUND";
   } else {
-	print "'$1' is not documented\n";
+	print "'$name' is not documented\n";
   }
 }
 close SOURCE;
