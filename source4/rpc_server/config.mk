@@ -230,3 +230,6 @@ SUBSYSTEM = service
 PRIVATE_DEPENDENCIES = dcerpc_server
 
 DCESRV_OBJ_FILES = $(rpc_serversrcdir)/service_rpc.o
+
+$(eval $(call proto_header_template,$(rpc_serversrcdir)/service_rpc.h,$(DCESRV_OBJ_FILES:.o=.c)))
+
