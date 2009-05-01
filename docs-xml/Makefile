@@ -33,7 +33,7 @@ help:
 	@echo " release - Build the docs needed for a Samba release"
 	@echo " all - Build all docs that can be build using the utilities found by configure"
 	@echo " everything - Build all of the above"
-	@echo " pdf,tex,ps,manpages3,txt,pearson,fo,htmlhelp - Build specific output format"
+	@echo " pdf,tex,ps,manpages3,txt,pearson,htmlhelp - Build specific output format"
 	@echo " html - Build multi-file HTML versions"
 	@echo " html-single - Build single-file HTML versions"
 	@echo " htmlman3 - Build HTML version of manpages"
@@ -70,8 +70,6 @@ pdf:: $(patsubst %,$(PDFDIR)/%.pdf,$(MAIN_DOCS))
 ps:: $(patsubst %,$(PSDIR)/%.ps,$(MAIN_DOCS))
 txt:: $(patsubst %,$(TXTDIR)/%.txt,$(MAIN_DOCS))
 txt-chunks:: $(addsuffix -txt-chunks,$(MAIN_DOCS))
-fo:: $(patsubst %,$(FODIR)/%.fo,$(MAIN_DOCS))
-fo-pdf:: $(patsubst %,$(FOPDFDIR)/%.pdf,$(MAIN_DOCS))
 tex:: $(addsuffix .tex,$(MAIN_DOCS))
 texi:: $(patsubst %,$(TEXINFODIR)/%.texi,$(MAIN_DOCS))
 texiinfo:: $(patsubst %,$(TEXINFODIR)/%.info,$(MAIN_DOCS))
@@ -197,16 +195,6 @@ $(PSDIR)/%.ps: %/index.xml $(PSDIR) xslt/latex.xsl %-images-latex-eps
 
 %.eps: %.png
 	$(PNGTOPNM) $< | $(PNMTOPS) > $@
-
-# Fo
-$(FODIR)/%.fo: $(DOCBOOKDIR)/%.xml
-	@mkdir -p $(@D)
-	$(XSLTPROC) --output $@ xslt/fo.xsl $<
-
-# PDF thru Fo
-$(FOPDFDIR)/%.pdf: $(FODIR)/%.fo
-	@mkdir -p $(@D)
-	JAVA_OPTS=-Xmx250m $(FOP) -q -d $< -pdf $@
 
 $(HTMLHELPDIR)/%: $(DOCBOOKDIR)/%.xml %-images-htmlhelp
 	$(XSLTPROC) --stringparam htmlhelp.chm $*.chm \

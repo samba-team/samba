@@ -26,7 +26,6 @@ foreach(split(/bin\//, $progs)) {
 	s/\@EXEEXT\@//g;
 	s/ //g;
 
-
 	$f = $_;
 	
 	$found = 0;
