@@ -302,7 +302,7 @@ undocumented: $(SMBDOTCONFDOC)/parameters.all.xml scripts/find_missing_doc.pl sc
 	$(PERL) scripts/find_missing_manpages.pl $(SRCDIR)
 
 samples: $(DOCBOOKDIR)/Samba3-HOWTO.xml xslt/extract-examples.xsl scripts/indent-smb.conf.pl
-	@mkdir -p $(EXAMPLESDIR)
+	@mkdir -p examples
 	$(XSLTPROC) --xinclude xslt/extract-examples.xsl $< > /dev/null 2> examples/README
 	for I in examples/*.conf; do { ./scripts/indent-smb.conf.pl < $$I > $$I.tmp; mv $$I.tmp $$I; } done
 
