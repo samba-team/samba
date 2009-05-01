@@ -307,8 +307,6 @@ page \thepage \space undefined}}%
 \renewcommand\listfigurename{\uppercase{List Of Figures}}
 \renewcommand\listtablename{\uppercase{List Of Tables}}
 
-\newcommand{\linebreaksign}{\hbox{\ensuremath\hookleftarrow}}
-
 \setlength{\emergencystretch}{0cm}
 
 
