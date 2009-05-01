@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.79
+Version: 1.0.80
 Release: 1
 Epoch: 0
 License: GNU GPL version 3
@@ -131,6 +131,14 @@ fi
 %{_libdir}/pkgconfig/ctdb.pc
 
 %changelog
+* Fri May 1 2009 : Version 1.0.80
+ - change init shutdown level to 01 for ctdb so it stops before any of the other services
+ - if we can not pull a database from a remote node during recovery, mark that node as a culprit so it becomes banned
+ - increase the loglevel when we volunteer to drop all ip addresses after beeing in recovery mode for too long. Make this timeout tuneable with "RecoveryDropAllIPs" and have it default to 60 seconds
+ - Add a new flag TDB_NO_NESTING to the tdb layer to prevent nested transactions which ctdb does not use and does not expect. Have ctdb set this flag to prevent nested transactions from occuring.
+ - dont unconditionally kill off ctdb and restrat it on "service ctdb start". Fail "service ctdb start" with an error if ctdb is already running.
+ - Add a new tunable "VerifyRecoveryLock" that can be set to 0 to prevent the main ctdb daemon to verify that the recovery master has locked the reclock file correctly before allowing it to set the recovery mode to active.
+ - fix a cosmetic bug with ctdb statistics where certain counters could become negative.
 * Wed Apr 8 2009 : Version 1.0.79
  - From Mathieu Parent: add a ctdb pkgconfig file
  - Fix bug 6250
