@@ -159,9 +159,6 @@ $(PSDIR)/%.ps: %/index.xml $(PSDIR) xslt/latex.xsl %-images-eps
 %.png: %.svg
 	$(INKSCAPE) -z -f $< --export-png=$@
 
-%.pdf: %.eps
-	$(EPSTOPDF) $<
-
 %.eps: %.png
 	$(PNGTOPNM) $< | $(PNMTOPS) > $@
 

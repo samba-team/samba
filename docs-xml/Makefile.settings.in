@@ -17,7 +17,6 @@ OUTPUTDIR = output
 ARCHIVEDIR = archive
 TEXINFODIR = $(OUTPUTDIR)/texi
 SRCDIR = ../source3
-EPSTOPDF = @EPSTOPDF@
 MANPAGEDIR3 = manpages-3
 SMBDOTCONFDOC = smbdotconf
 DOCBOOKDIR = tmp
