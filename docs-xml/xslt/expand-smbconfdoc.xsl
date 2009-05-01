@@ -1,7 +1,7 @@
 <?xml version='1.0'?>
 <!-- 
 	smb.conf-documentation specific stylesheets
-	Published under the GNU GPL
+	Published under the GNU GPLv3 or later
 
 	(C) Jelmer Vernooij 					2002-2004
 	(C) Alexander Bokovoy 					2002-2004

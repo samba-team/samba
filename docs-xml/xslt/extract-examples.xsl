@@ -1,7 +1,9 @@
 <?xml version='1.0'?>
 <!--
-Extract examples out of DocBook/XML file
+	Extract examples out of a DocBook/XML file into separate files.
 	(C) Jelmer Vernooij	2003
+
+	Published under the GNU GPLv3 or later
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 xmlns:exsl="http://exslt.org/common"
@@ -47,4 +49,3 @@ Extract examples out of DocBook/XML file
 </xsl:template>
 
 </xsl:stylesheet>
-

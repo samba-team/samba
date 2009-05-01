@@ -1,7 +1,9 @@
 <?xml version='1.0'?>
 <!-- 
-	Samba-documentation specific stylesheets
-	Published under the GNU GPL
+	Samba-documentation specific stylesheets. 
+	This stylesheet eliminates Samba-specific XML elements and replaces them with 
+	DocBook-only elements. 
+	Published under the GNU GPLv3 or later
 
 	(C) Jelmer Vernooij 					2002-2004
 -->

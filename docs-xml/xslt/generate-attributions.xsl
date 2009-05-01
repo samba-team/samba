@@ -2,11 +2,13 @@
 <!--
 	Generate Docbook/XML file with attributions based on chapter/author tags
 	(C) Jelmer Vernooij 2003
+
+	Published under the GNU GPLv3 or later
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 				version="1.1">
 
-				<xsl:output method="xml" doctype-public="-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" doctype-system="http://www.samba.org/samba/DTD/samba-doc" indent="yes"/>
+<xsl:output method="xml" doctype-public="-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" doctype-system="http://www.samba.org/samba/DTD/samba-doc" indent="yes"/>
 
 <!-- Remove all character data -->
 <xsl:template match="@*|node()">

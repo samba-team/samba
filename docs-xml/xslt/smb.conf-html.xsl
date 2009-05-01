@@ -1,7 +1,7 @@
 <?xml version='1.0'?>
 <!-- 
 	Samba-documentation specific stylesheets
-	Published under the GNU GPL
+	Published under the GNU GPLv3 or later
 
 	(C) Jelmer Vernooij 					2005
 -->

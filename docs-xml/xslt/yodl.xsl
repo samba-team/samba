@@ -6,6 +6,7 @@
 	yodl macros are used
 
 	(C) Jelmer Vernooij 					2004
+	Published under the GNU GPLv3 or later
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 	xmlns:exsl="http://exslt.org/common"

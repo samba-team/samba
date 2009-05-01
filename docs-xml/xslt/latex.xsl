@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version='1.0'
 	xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
-
-<!-- Remove bits from the manual pages that are not relevant for the book -->
+	<!-- Remove bits from the manual pages that are not relevant for the HOWTO Collection, 
+	such as author info, etc -->
 <xsl:import href="strip-references.xsl"/>
 
 <xsl:param name="latex.mapping.xml" select="document('latex.overrides.xml')"/>

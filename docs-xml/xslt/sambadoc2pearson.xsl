@@ -3,6 +3,8 @@
 	Convert DocBook to XML validating against the Pearson DTD
 
 	(C) Jelmer Vernooij <jelmer@samba.org>			2004
+
+	Released under the GNU GPLv3 or later
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 	xmlns:doc="http://nwalsh.com/xsl/documentation/1.0"

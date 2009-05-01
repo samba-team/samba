@@ -1,4 +1,10 @@
 <?xml version='1.0'?>
+<!--
+	Generate a summary page with a list of links to all manual pages
+
+	Copyright (C) 2004 Jelmer Vernooij <jelmer@samba.org>
+	Published under the GNU GPLv3 or later
+-->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 	xmlns:exsl="http://exslt.org/common"
 	version="1.1">

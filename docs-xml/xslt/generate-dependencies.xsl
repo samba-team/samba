@@ -3,11 +3,13 @@
 	Find the image dependencies of a certain XML file
 	Generates (part of) a Makefile
 
-	- $(FNAME)-images-latex-{png,dvi} for role=latex
+	- $(FNAME)-images-latex-{png,eps,pdf} for role=latex
 	- $(FNAME)-images-role for all other roles
 	- $(TXTDIR)/$(FNAME)-text 
 
 	(C) Jelmer Vernooij	2004-2005
+
+	Published under the GNU GPLv3 or later
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.1">
 	<xsl:output method="text"/>
