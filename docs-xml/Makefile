@@ -12,7 +12,6 @@ MANPAGES3 = $(wildcard $(MANPAGEDIR3)/*.?.xml)
 export TEXINPUTS=xslt/latex:.:
 
 # Lists of files to process
-LATEX_FIGURES = xslt/figures/caution.pdf xslt/figures/important.pdf xslt/figures/note.pdf xslt/figures/tip.pdf xslt/figures/warning.pdf
 MANPAGES_PLUCKER = $(patsubst $(MANPAGEDIR3)/%.xml,$(PLUCKERDIR)/%.pdb,$(MANPAGES3))
 DBLATEX_OPTIONS = -p xslt/latex.xsl -i xslt/latex
 
@@ -37,7 +36,7 @@ help:
 	@echo " release - Build the docs needed for a Samba release"
 	@echo " all - Build all docs that can be build using the utilities found by configure"
 	@echo " everything - Build all of the above"
-	@echo " pdf,tex,dvi,ps,manpages3,txt,pearson,fo,htmlhelp - Build specific output format"
+	@echo " pdf,tex,ps,manpages3,txt,pearson,fo,htmlhelp - Build specific output format"
 	@echo " html - Build multi-file HTML versions"
 	@echo " html-single - Build single-file HTML versions"
 	@echo " htmlman3 - Build HTML version of manpages"
@@ -71,7 +70,6 @@ clean::
 
 # Output format targets
 pdf:: $(patsubst %,$(PDFDIR)/%.pdf,$(MAIN_DOCS))
-dvi:: $(patsubst %,$(DVIDIR)/%.dvi,$(MAIN_DOCS))
 ps:: $(patsubst %,$(PSDIR)/%.ps,$(MAIN_DOCS))
 txt:: $(patsubst %,$(TXTDIR)/%.txt,$(MAIN_DOCS))
 txt-chunks:: $(addsuffix -txt-chunks,$(MAIN_DOCS))
@@ -191,13 +189,9 @@ endif
 %.pdf: %/index.xml xslt/latex.xsl
 	$(DBLATEX) $(DBLATEX_OPTIONS) -I $*/images -t pdf -o $@ $<
 
-# DVI files
-$(DVIDIR)/%.dvi: %.dvi
-	@mkdir -p $(@D)
-	cp $< $@
-
-%.dvi: %/index.xml xslt/latex.xsl
-	$(DBLATEX) $(DBLATEX_OPTIONS) -I $*/images -t dvi -o $@ $<
+# PostScript files
+%.ps: %/index.xml xslt/latex.xsl
+	$(DBLATEX) $(DBLATEX_OPTIONS) -I $*/images -t ps -o $@ $<
 
 %.eps: %.svg
 	$(INKSCAPE) -z -f $< --export-eps=$@
@@ -213,11 +207,6 @@ $(DVIDIR)/%.dvi: %.dvi
 
 %.eps: %.png
 	$(PNGTOPNM) $< | $(PNMTOPS) > $@
-
-# PostScript files
-$(PSDIR)/%.ps: $(DVIDIR)/%.dvi
-	@mkdir -p $(@D)
-	$(DVIPS) -o $@ $<
 
 # Fo
 $(FODIR)/%.fo: $(DOCBOOKDIR)/%.xml
