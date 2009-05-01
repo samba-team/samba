@@ -11,6 +11,8 @@
 <!ENTITY % local.linespecific.class "|smbconfblock">
 <!ENTITY % local.informal.class "|imagefile">
 
+<!-- Include the DocBook DTD, of which this DTD is an extension -->
+
 <!ENTITY % DocBookDTD 
 	PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" 
 	"http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
@@ -20,6 +22,8 @@
 	"-//Samba-Team//ENTITIES Samba Specific Entities V1.0//EN" 
 	"samba.entities">
 %samba.entities;
+
+<!-- smb.conf options -->
 
 <!ELEMENT smbconfblock ((smbconfoption|smbconfsection|smbconfcomment)*)>
 <!ELEMENT smbconfcomment (#PCDATA)>

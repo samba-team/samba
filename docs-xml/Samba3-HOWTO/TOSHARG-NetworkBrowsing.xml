@@ -898,14 +898,16 @@ in <link linkend="xremmb">&smb.conf; for Not Being a master browser</link>
 </para>
 
 <para>
-<smbconfexample id="xremmb">
+<example id="xremmb">
 <title>&smb.conf; for Not Being a master browser</title>
+<smbconfblock>
 <smbconfsection name="[global]"/>
 <smbconfoption name="domain master">no</smbconfoption>
 <smbconfoption name="local master">no</smbconfoption>
 <smbconfoption name="preferred master">no</smbconfoption>
 <smbconfoption name="os level">0</smbconfoption>
-</smbconfexample>
+</smbconfblock>
+</example>
 </para>
 
 </sect2>
