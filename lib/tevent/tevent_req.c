@@ -132,7 +132,7 @@ static void tevent_req_finish(struct tevent_req *req,
  * @brief An async request has successfully finished
  * @param[in] req	The finished request
  *
- * async_req_done is to be used by implementors of async requests. When a
+ * tevent_req_done is to be used by implementors of async requests. When a
  * request is successfully finished, this function calls the user's completion
  * function.
  */
