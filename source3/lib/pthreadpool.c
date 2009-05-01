@@ -333,8 +333,8 @@ static void *pthreadpool_server(void *arg)
 		 * time, exit this thread.
 		 */
 
-		clock_gettime(CLOCK_REALTIME, &timeout);
-		timeout.tv_sec += 1;
+		timeout.tv_sec = time(NULL) + 1;
+		timeout.tv_nsec = 0;
 
 		while ((pool->jobs == NULL) && (pool->shutdown == 0)) {
 
