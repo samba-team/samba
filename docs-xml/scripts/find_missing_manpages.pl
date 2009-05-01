@@ -19,6 +19,8 @@ while(<IN>) {
 	} else { $invar = 0; }
 }
 
+$progs =~ s/@([^@]+)@//g;
+
 foreach(split(/bin\//, $progs)) {
 	next if($_ eq " ");
 	s/\@EXEEXT\@//g;
