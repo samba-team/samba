@@ -60,10 +60,16 @@
 <xsl:template name="latex.thead.row.entry">
 <xsl:text>{\bfseries </xsl:text><xsl:apply-templates/><xsl:text>}</xsl:text>
 </xsl:template>
+<!--
 <xsl:variable name="latex.class.book">sambadoc</xsl:variable>
+-->
 <xsl:variable name="latex.babel.language">english</xsl:variable>
 <xsl:variable name="ulink.footnotes" select="1"/>
 <xsl:variable name="ulink.show" select="0"/>
+
+<xsl:template name="user.params.set2">
+	<xsl:text>\usepackage{samba}&#10;</xsl:text>
+</xsl:template>
 
 <xsl:template match="smbconfblock/smbconfoption">
 	<xsl:text>	</xsl:text><xsl:value-of select="@name"/>
