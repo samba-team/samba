@@ -59,14 +59,14 @@ parameters.
 
 <para>A VFS module has three major components:
 <itemizedlist>
-<listitem><emphasis>An initialization function</emphasis> that is
+	<listitem><para><emphasis>An initialization function</emphasis> that is
 called during the module load to register implemented
-operations.</listitem>
-<listitem><emphasis>An operations table</emphasis> representing a
+operations.</para></listitem>
+<listitem><para><emphasis>An operations table</emphasis> representing a
 mapping between statically defined module functions and VFS layer
-operations.</listitem>
-<listitem><emphasis>Module functions</emphasis> that do actual
-work.</listitem>
+operations.</para></listitem>
+<listitem><para><emphasis>Module functions</emphasis> that do actual
+		work.</para></listitem>
 </itemizedlist>
 </para>
 
@@ -93,11 +93,11 @@ corruption when accessing (changed) Samba structures.
 <para>Therefore, initialization function passes three parameters to the
 VFS registration function, <literal>smb_register_vfs()</literal>
 <itemizedlist>
-  <listitem><emphasis>interface version number</emphasis>, as constant
-  <literal>SMB_VFS_INTERFACE_VERSION</literal>, </listitem>
-  <listitem><emphasis>module name</emphasis>, under which Samba core
-  will know it, and</listitem>
-  <listitem><emphasis>an operations' table</emphasis>.</listitem>
+	<listitem><para><emphasis>interface version number</emphasis>, as constant
+			<literal>SMB_VFS_INTERFACE_VERSION</literal>, </para></listitem>
+	<listitem><para><emphasis>module name</emphasis>, under which Samba core
+			will know it, and</para></listitem>
+	<listitem><para><emphasis>an operations' table</emphasis>.</para></listitem>
 </itemizedlist>
 </para>
 
@@ -106,35 +106,36 @@ functions in the module would correspond to specific VFS operations
 and how those functions would co-operate with the rest of VFS
 subsystem. Each operation could perform in a following ways:
 <itemizedlist>
-  <listitem><emphasis>transparent</emphasis>, meaning that while
+	<listitem><para><emphasis>transparent</emphasis>, meaning that while
   operation is overriden, the module will still call a previous
   implementation, before or after its own action. This mode is
   indicated by the constant
-  <literal>SMB_VFS_LAYER_TRANSPARENT</literal>;
+  <literal>SMB_VFS_LAYER_TRANSPARENT</literal>;</para>
   </listitem>
-  <listitem><emphasis>opaque</emphasis>, for the implementations that
+  <listitem><para><emphasis>opaque</emphasis>, for the implementations that
   are terminating sequence of actions. For example, it is used to
   implement POSIX operation on top of non-POSIX file system or even
   not a file system at all, like a database for a personal audio
   collection. Use constant <literal>SMB_VFS_LAYER_OPAQUE</literal> for
-  this mode;</listitem>
-  <listitem><emphasis>splitter</emphasis>, a way when some file system
+  this mode;</para></listitem>
+  <listitem><para><emphasis>splitter</emphasis>, a way when some file system
   activity is done in addition to the transparently calling previous
   implentation. This usually involves mangling the result of that call
   before returning it back to the caller. This mode is selected by
-  <literal>SMB_VFS_LAYER_SPLITTER</literal> constant;</listitem>
-  <listitem><emphasis>logger</emphasis> does not change anything or
+  <literal>SMB_VFS_LAYER_SPLITTER</literal> constant;</para></listitem>
+  <listitem><para><emphasis>logger</emphasis> does not change anything or
   performs any additional VFS operations. When
   <emphasis>logger</emphasis> module acts, information about
   operations is logged somewhere using an external facility (or
   Samba's own debugging tools) but not the VFS layer. In order to
   describe this type of activity use constant
   <literal>SMB_VFS_LAYER_LOGGER</literal>;
+  </para>
   </listitem>
-  <listitem>On contrary, <emphasis>scanner</emphasis> module does call
+  <listitem><para>On contrary, <emphasis>scanner</emphasis> module does call
   other VFS operations while processing the data that goes through the
   system. This type of operation is indicated by the
-  <literal>SMB_VFS_LAYER_SCANNER</literal> constant.</listitem>
+  <literal>SMB_VFS_LAYER_SCANNER</literal> constant.</para></listitem>
 </itemizedlist>
 </para>
 

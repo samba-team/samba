@@ -35,10 +35,10 @@ distribution.  A copy can be found on-line at <ulink
 url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</ulink>
 </para>
 
-<warning>
-	<para>This document is incomplete and unmaintained. It is merely a 
-	collection of development-related notes.</para>
-</warning>
+<para><warning>
+	This document is incomplete and unmaintained. It is merely a 
+	collection of development-related notes.
+</warning></para>
 
 </abstract>
 
