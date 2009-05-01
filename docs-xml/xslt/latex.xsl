@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version='1.0'
 	xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
-<xsl:import href="db2latex-xsl/xsl/docbook.xsl"/>
+
+<!-- Remove bits from the manual pages that are not relevant for the book -->
 <xsl:import href="strip-references.xsl"/>
 
 <xsl:param name="latex.mapping.xml" select="document('latex.overrides.xml')"/>
@@ -27,7 +28,7 @@
 	set       toc,title
 </xsl:param>
 
-<!-- Show real name of the link rather then user specified description -->
+<!-- Show real name of the link rather then user specified description 
 <xsl:template match="link">
 	<xsl:variable name="target" select="key('id',@linkend)[1]"/>
 	<xsl:variable name="refelem" select="local-name($target)"/>
@@ -47,36 +48,20 @@
 		</xsl:with-param>
 	</xsl:call-template>
 </xsl:template>
-
-<!-- LaTeX doesn't accept verbatim stuff in titles -->
-<xsl:template match="//title/filename|//title/command|//title/parameter|//title/constant">
-  <xsl:variable name="content">
-    <xsl:apply-templates/>
-  </xsl:variable>
-  <xsl:if test="$content != ''">
-    <xsl:value-of select="$content" />
-  </xsl:if>
-</xsl:template>
+-->
 
 <xsl:output method="text" encoding="UTF-8" indent="yes"/>
 <xsl:variable name="l10n.gentext.default.language" select="'en'"/>
-<xsl:variable name="latex.document.font">default</xsl:variable>
 <xsl:variable name="latex.example.caption.style"></xsl:variable>
 <xsl:variable name="latex.hyperref.param.pdftex">hyperfigures,hyperindex,citecolor=black,urlcolor=black,filecolor=black,linkcolor=black,menucolor=red,pagecolor=black</xsl:variable>
 <xsl:variable name="admon.graphics.path">xslt/figures</xsl:variable>
 <xsl:variable name="latex.use.tabularx">1</xsl:variable>
-<xsl:variable name="latex.fancyhdr.lh"></xsl:variable>
-<xsl:variable name="latex.use.fancyhdr"></xsl:variable>
 <xsl:variable name="latex.use.parskip">1</xsl:variable>
-<xsl:variable name="latex.use.ucs">1</xsl:variable>
-<xsl:variable name="latex.inputenc">utf8</xsl:variable>
-<xsl:variable name="latex.book.varsets" select="''"/>
 <xsl:variable name="latex.hyphenation.tttricks">1</xsl:variable>
-<xsl:variable name="latex.titlepage.file"></xsl:variable>
 <xsl:template name="latex.thead.row.entry">
 <xsl:text>{\bfseries </xsl:text><xsl:apply-templates/><xsl:text>}</xsl:text>
 </xsl:template>
-<xsl:variable name="latex.documentclass">sambadoc</xsl:variable>
+<xsl:variable name="latex.class.book">sambadoc</xsl:variable>
 <xsl:variable name="latex.babel.language">english</xsl:variable>
 <xsl:variable name="ulink.footnotes" select="1"/>
 <xsl:variable name="ulink.show" select="0"/>
@@ -140,7 +125,6 @@
 		<xsl:otherwise><xsl:text>.50</xsl:text></xsl:otherwise>
 	</xsl:choose>
 	<xsl:text>]{</xsl:text>
-	<xsl:value-of select="$latex.imagebasedir"/><xsl:text>images/</xsl:text>
 	<xsl:value-of select="text()"/>
 	<xsl:text>}&#10;</xsl:text>
 </xsl:template>
