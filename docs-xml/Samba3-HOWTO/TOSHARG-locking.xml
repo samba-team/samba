@@ -1091,7 +1091,6 @@ tdb(/usr/local/samba_2.2.7/var/locks/locking.tdb): rec_read bad magic
 	</sect2>
 
 	<sect2>
-
 		<title>Long Delays Deleting Files over Network with XP SP1</title>
 		
 		<para><quote>It sometimes takes approximately 35 seconds to delete files over the network after XP SP1 has been applied.</quote></para>

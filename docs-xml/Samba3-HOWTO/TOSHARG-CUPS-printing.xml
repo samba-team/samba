@@ -627,11 +627,11 @@ application/octet-stream   application/vnd.cups-raw   0   -
 	</para></note>
 
 	<para>
-	The example in <link linkend="1small">Windows Printing to a Local Printer</link> illustrates local Windows
+	The example in <link linkend="f1small">Windows Printing to a Local Printer</link> illustrates local Windows
 	printing.
 	</para>
 
-	<figure id="1small">
+	<figure id="f1small">
 		<title>Windows Printing to a Local Printer.</title>
 		<imagefile>1small</imagefile>
 	</figure>
@@ -714,11 +714,11 @@ application/octet-stream   application/vnd.cups-raw   0   -
 	PPD-aware. PPDs are <quote>PostScript Printer Description</quote> files. They enable you to specify and
 	control all options a printer supports: duplexing, stapling, and punching. Therefore, UNIX users for a long
 	time couldn't choose many of the supported device and job options, unlike Windows or Apple users. But now
-	there is CUPS. as illustrated in <link linkend="2small">Printing to a PostScript Printer</link>.
+	there is CUPS. as illustrated in <link linkend="f2small">Printing to a PostScript Printer</link>.
 	</para>
 	</note>
 
-	<figure id="2small">
+	<figure id="f2small">
 		<title>Printing to a PostScript Printer.</title>
 		<imagefile>2small</imagefile>
 	</figure>
@@ -742,10 +742,10 @@ application/octet-stream   application/vnd.cups-raw   0   -
 	used on UNIX platforms. It is a RIP in software, capable of doing a <emphasis>lot</emphasis> of file format
 	conversions for a very broad spectrum of hardware devices as well as software file formats.  Ghostscript
 	technology and drivers are what enable PostScript printing to non-PostScript hardware. This is shown in
-	<link linkend="3small">Ghostscript as a RIP for Non-PostScript Printers</link>.
+	<link linkend="f3small">Ghostscript as a RIP for Non-PostScript Printers</link>.
 	</para>
 
-	<figure id="3small">
+	<figure id="f3small">
 		<title>Ghostscript as a RIP for Non-PostScript Printers.</title>
 		<imagefile>3small</imagefile>
 	</figure>
@@ -1176,11 +1176,11 @@ text/plain              application/postscript   33    texttops
 	embedded into the PostScript by CUPS and that the next filter to be called is pstops). Another prefilter is
 	running on all supported image formats, the <parameter>imagetops</parameter> filter. Its outcome is always of
 	MIME type <parameter>application/vnd.cups-postscript</parameter> (not application/postscript), meaning it has
-	the print options already embedded into the file. This is shown in <link linkend="4small">Prefiltering in
+	the print options already embedded into the file. This is shown in <link linkend="f4small">Prefiltering in
 	CUPS to Form PostScript</link>.
 	</para>
 
-	<figure id="4small">
+	<figure id="f4small">
 		<title>Prefiltering in CUPS to Form PostScript.</title>
 		<imagefile scale="25">4small</imagefile>
 	</figure>
@@ -1202,10 +1202,10 @@ text/plain              application/postscript   33    texttops
 	<parameter>application/vnd.cups-postscript</parameter>. As stated earlier, this filter inserts all
 	device-specific print options (commands to the printer to ask for the duplexing of output, or stapling and
 	punching it, and so on) into the PostScript file. An example is illustrated in <link
-	linkend="5small">Adding Device-Specific Print Options</link>.
+	linkend="f5small">Adding Device-Specific Print Options</link>.
 	</para>
 
-	<figure id="5small">
+	<figure id="f5small">
 		<title>Adding Device-Specific Print Options.</title>
 		<imagefile scale="25">5small</imagefile>
 	</figure>
@@ -2213,11 +2213,11 @@ long as Samba has been compiled with CUPS library (libcups) support. If Samba ha
 support, and if no other print commands are set up, then printing will use the <emphasis>System V</emphasis>
 AT&amp;T command set, with the -oraw option automatically passing through (if you want your own defined print
 commands to work with a Samba server that has CUPS support compiled in, simply use <smbconfoption
-name="classicalprinting">sysv</smbconfoption>). This is illustrated in <link linkend="13small">the Printing via
+name="classicalprinting">sysv</smbconfoption>). This is illustrated in <link linkend="f13small">the Printing via
 CUPS/Samba Server diagram</link>.
 </para>
 
-	<figure id="13small">
+	<figure id="f13small">
 		<title>Printing via CUPS/Samba Server.</title>
 		<imagefile>13small</imagefile>
 	</figure>

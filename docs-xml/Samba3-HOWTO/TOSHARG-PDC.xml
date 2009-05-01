@@ -80,7 +80,7 @@ to not inflict pain on others. Do your learning on a test network.
 </para>
 
 <para>
-<indexterm>single sign-on<primary></primary><see>SSO</see></indexterm>
+<indexterm><primary>single sign-on</primary><see>SSO</see></indexterm>
 <indexterm><primary>trust</primary></indexterm>
 <indexterm><primary>account</primary></indexterm>
 <indexterm><primary>domain</primary><secondary>security</secondary><tertiary>protocols</tertiary></indexterm>
@@ -462,7 +462,7 @@ Before we branch into a brief overview of domain control, there are three basic 
 <indexterm><primary>PDC</primary></indexterm>
 <indexterm><primary>powerful</primary></indexterm>
 <indexterm><primary>network</primary><secondary>performance</secondary></indexterm>
-<indexterm><primary>domain</primary><secondary>member</secondary><secondary>server</secondary></indexterm>
+<indexterm><primary>domain</primary><secondary>member</secondary><tertiary>server</tertiary></indexterm>
 The <emphasis>Primary Domain Controller</emphasis> or PDC plays an important role in MS Windows NT4. In
 Windows 200x domain control architecture, this role is held by domain controllers.  Folklore dictates that
 because of its role in the MS Windows network, the domain controller should be the most powerful and most
@@ -486,7 +486,7 @@ database with BDCs.
 <para>
 <indexterm><primary>domain</primary><secondary>controller</secondary><tertiary>hierarchy</tertiary></indexterm>
 <indexterm><primary>LDAP</primary></indexterm>
-<indexterm>account<primary></primary><secondary>backend</secondary></indexterm>
+<indexterm><primary>account</primary><secondary>backend</secondary></indexterm>
 <indexterm><primary>machine account</primary></indexterm>
 With MS Windows 200x Server-based Active Directory domains, one domain controller initiates a potential
 hierarchy of domain controllers, each with its own area of delegated control. The master domain
@@ -500,7 +500,7 @@ LDAP-based user and machine account backend.
 <indexterm><primary>registry</primary></indexterm>
 New to Samba-3 is the ability to use a backend database that holds the same type of data as the NT4-style SAM
 database (one of the registry files)<footnote><para>See also <link linkend="passdb">Account Information
-Databases</link>.</para>.</footnote>
+Databases</link>.</para></footnote>
 </para>
 
 <para>

@@ -1662,7 +1662,7 @@ net rpc share MIGRATE ALL &lt;share-name&gt; -S &lt;source&gt;
 	the application that receives the network requests to create the necessary services must call out
 	to the operating system in order to create the underlying printers. The call-out is implemented
 	by way of an interface script that can be specified by the &smb.conf; file parameter
-	<smbconfoption id="add printer script"/>. This script is essential to the migration process.
+	<smbconfoption name="add printer script"/>. This script is essential to the migration process.
 	A suitable example script may be obtained from the <filename>$SAMBA_SOURCES/examples/scripts</filename>
 	directory. Take note that this script must be customized to suit the operating system environment
 	and may use its tools to create a print queue.

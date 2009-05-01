@@ -93,7 +93,7 @@
 <indexterm><primary>idmap uid</primary></indexterm>
 <indexterm><primary>idmap gid</primary></indexterm>
 <indexterm><primary>idmap backend</primary></indexterm>
-<indexterm><primary></primary>LDAP</indexterm>
+<indexterm><primary>LDAP</primary></indexterm>
 		Winbind maintains a database called winbind_idmap.tdb in which it stores
 		mappings between UNIX UIDs, GIDs, and NT SIDs. This mapping is used only
 		for users and groups that do not have a local UID/GID. It stores the UID/GID

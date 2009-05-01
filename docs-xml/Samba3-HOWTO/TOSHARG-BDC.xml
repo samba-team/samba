@@ -153,7 +153,7 @@ provided this capability. The technology has become known as the LanMan Netlogon
 </para>
 
 <para>
-<indexterm>network<primary></primary><secondary>logon</secondary><tertiary>service</tertiary></indexterm>
+<indexterm><primary>network</primary><secondary>logon</secondary><tertiary>service</tertiary></indexterm>
 <indexterm><primary>Windows NT3.10</primary></indexterm>
 When MS Windows NT3.10 was first released, it supported a new style of Domain Control
 and with it a new form of the network logon service that has extended functionality.

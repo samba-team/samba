@@ -80,7 +80,7 @@ name="[IPC$]"/> share is used for browsing purposes as well as to establish TCP/
 <para>
 <indexterm><primary>Access Control Entries</primary><see>ACE</see></indexterm>
 <indexterm><primary>ACL</primary></indexterm>
-<indexterm>controls<primary></primary></indexterm>
+<indexterm><primary>controls</primary></indexterm>
 Another method by which Samba may be secured is by setting Access Control Entries (ACEs) in an Access 
 Control List (ACL) on the shares themselves. This is discussed in
 <link linkend="AccessControls">File, Directory, and Share Access Controls</link>.
