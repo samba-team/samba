@@ -40,11 +40,11 @@ help:
 	@echo " undocumented - Output list of undocumented smb.conf options"
 	@echo " samples - Extract examples"
 
-$(DOCBOOKDIR)/Samba3-ByExample.xml: $(filter-out Samba3-ByExample/index.xml,$(wildcard Samba3-ByExample/*.xml))
-$(DOCBOOKDIR)/Samba3-HOWTO.xml: $(filter-out Samba3-HOWTO/index.xml,$(wildcard Samba3-HOWTO/*.xml)) Samba3-HOWTO-attributions.xml
+$(PDFDIR)/Samba3-ByExample.pdf $(PSDIR)/Samba3-ByExample.ps $(DOCBOOKDIR)/Samba3-ByExample.xml Samba3-ByExample.tex: $(wildcard Samba3-ByExample/*.xml)
+$(PDFDIR)/Samba3-HOWTO.pdf $(PSDIR)/Samba3-HOWTO.ps Samba3-HOWTO.tex $(DOCBOOKDIR)/Samba3-HOWTO.xml: $(wildcard Samba3-HOWTO/*.xml) Samba3-HOWTO-attributions.xml
 Samba3-HOWTO/manpages.xml: $(MANPAGEDIR3)/smb.conf.5.xml
-$(DOCBOOKDIR)/Samba3-Developers-Guide.xml: $(filter-out Samba3-Developers-Guide/index.xml,$(wildcard Samba3-Developers-Guide/*.xml)) Samba3-Developers-Guide-attributions.xml
-$(DOCBOOKDIR)/Samba4-HOWTO.xml: $(filter-out Samba4-HOWTO/index.xml,$(wildcard Samba4-HOWTO/*.xml)) Samba4-HOWTO-attributions.xml
+$(PDFDIR)/Samba3-Developers-Guide.pdf $(PSDIR)/Samba3-Developers-Guide.ps $(DOCBOOKDIR)/Samba3-Developers-Guide.xml Samba3-Developers-Guide.tex: $(wildcard Samba3-Developers-Guide/*.xml) Samba3-Developers-Guide-attributions.xml
+$(PDFDIR)/Samba4-HOWTO.pdf $(PSDIR)/Samba4-HOWTO.ps Samba4-HOWTO.tex $(DOCBOOKDIR)/Samba4-HOWTO.xml: $(filter-out Samba4-HOWTO/index.xml,$(wildcard Samba4-HOWTO/*.xml)) Samba4-HOWTO-attributions.xml
 
 # Pseudo targets 
 all:: $(TARGETS)
