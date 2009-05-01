@@ -87,6 +87,8 @@ static void request_handler(struct smbcli_request *req)
 	DATA_BLOB null_data_blob = data_blob(NULL, 0);
 	NTSTATUS session_key_err, nt_status;
 	struct smbcli_request *check_req = NULL;
+	const char *os = NULL;
+	const char *lanman = NULL;
 
 	if (req->sign_caller_checks) {
 		req->do_not_free = true;
@@ -126,6 +128,8 @@ static void request_handler(struct smbcli_request *req)
 				}
 			}
 		}
+		os = state->setup.old.out.os;
+		lanman = state->setup.old.out.lanman;
 		break;
 
 	case RAW_SESSSETUP_NT1:
@@ -145,6 +149,8 @@ static void request_handler(struct smbcli_request *req)
 				}
 			}
 		}
+		os = state->setup.nt1.out.os;
+		lanman = state->setup.nt1.out.lanman;
 		break;
 
 	case RAW_SESSSETUP_SPNEGO:
@@ -216,6 +222,8 @@ static void request_handler(struct smbcli_request *req)
 			composite_continue_smb(c, state->req, request_handler, c);
 			return;
 		}
+		os = state->setup.spnego.out.os;
+		lanman = state->setup.spnego.out.lanman;
 		break;
 
 	case RAW_SESSSETUP_SMB2:
@@ -244,6 +252,19 @@ static void request_handler(struct smbcli_request *req)
 	if (!NT_STATUS_IS_OK(c->status)) {
 		composite_error(c, c->status);
 		return;
+	}
+
+	if (os) {
+		session->os = talloc_strdup(session, os);
+		if (composite_nomem(session->os, c)) return;
+	} else {
+		session->os = NULL;
+	}
+	if (lanman) {
+		session->lanman = talloc_strdup(session, lanman);
+		if (composite_nomem(session->lanman, c)) return;
+	} else {
+		session->lanman = NULL;
 	}
 
 	composite_done(c);
