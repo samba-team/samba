@@ -54,7 +54,6 @@
 <xsl:variable name="l10n.gentext.default.language" select="'en'"/>
 <xsl:variable name="latex.example.caption.style"></xsl:variable>
 <xsl:variable name="latex.hyperref.param.pdftex">hyperfigures,hyperindex,citecolor=black,urlcolor=black,filecolor=black,linkcolor=black,menucolor=red,pagecolor=black</xsl:variable>
-<xsl:variable name="admon.graphics.path">xslt/figures</xsl:variable>
 <xsl:variable name="latex.use.tabularx">1</xsl:variable>
 <xsl:variable name="latex.use.parskip">1</xsl:variable>
 <xsl:variable name="latex.hyphenation.tttricks">1</xsl:variable>
