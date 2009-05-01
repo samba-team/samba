@@ -24,6 +24,9 @@
 #ifndef _TSOCKET_INTERNAL_H
 #define _TSOCKET_INTERNAL_H
 
+#include <unistd.h>
+#include <sys/uio.h>
+
 struct tsocket_address_ops {
 	const char *name;
 
