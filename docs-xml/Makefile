@@ -183,11 +183,11 @@ endif
 endif
 
 # Adobe PDF files  
-%.pdf: %/index.xml xslt/latex.xsl
+%.pdf: %/index.xml xslt/latex.xsl %-images-latex-png %-images-latex-pdf
 	$(DBLATEX) $(DBLATEX_OPTIONS) -I $*/images -t pdf -o $@ $<
 
 # PostScript files
-%.ps: %/index.xml xslt/latex.xsl
+%.ps: %/index.xml xslt/latex.xsl %-images-latex-eps
 	$(DBLATEX) $(DBLATEX_OPTIONS) -I $*/images -t ps -o $@ $<
 
 %.eps: %.svg
