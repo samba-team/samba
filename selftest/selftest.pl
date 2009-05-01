@@ -537,7 +537,7 @@ sub write_clientconf($$)
 	        mkdir("$prefix/client/private", 0777);
 	}
 
-	if ( -d "$prefix/client/lock" ) {
+	if ( -d "$prefix/client/lockdir" ) {
 	        unlink <$prefix/client/lockdir/*>;
 	} else {
 	        mkdir("$prefix/client/lockdir", 0777);
