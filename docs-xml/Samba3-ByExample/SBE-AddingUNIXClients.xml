@@ -445,7 +445,7 @@
 	</para>
 
 	<para>
-	The instructions given here apply to the Samba environment shown in <link linkend="happy"/> and <link linkend="2000users"/>.
+	The instructions given here apply to the Samba environment shown in <link linkend="happy"/> and <link linkend="net2000users"/>.
 	If the network does not have an LDAP slave server (i.e., <link linkend="happy"/> configuration), 
 	change the target LDAP server from <constant>lapdc</constant> to <constant>massive.</constant>
 	</para>
@@ -2114,7 +2114,6 @@ hosts:  files wins
         </sect3>
 
         </sect2>
-
 
 	<sect2>
 	<title>UNIX/Linux Client Domain Member</title>

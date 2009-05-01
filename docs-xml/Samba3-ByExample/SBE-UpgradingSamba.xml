@@ -682,7 +682,7 @@ Samba-2.x could be compiled with LDAP support.
 	<para>
 	<indexterm><primary>parameters</primary></indexterm>
 	The following parameters are new to Samba-3 and should be correctly configured.
-	Please refer to <link linkend="secure"/> through <link linkend="2000users"/>
+	Please refer to <link linkend="secure"/> through <link linkend="net2000users"/>
 	in this book for examples of use of the new parameters shown here:
 	<indexterm><primary>add group script</primary></indexterm>
 	<indexterm><primary>add machine script</primary></indexterm>
@@ -695,13 +695,13 @@ Samba-2.x could be compiled with LDAP support.
 
 	<para>
 	<simplelist>
-		<member><para>add group script</para></member>
-		<member><para>add machine script</para></member>
-		<member><para>add user to group script</para></member>
-		<member><para>delete group script</para></member>
-		<member><para>delete user from group script</para></member>
-		<member><para>passdb backend</para></member>
-		<member><para>set primary group script</para></member>
+		<member>add group script</member>
+		<member>add machine script</member>
+		<member>add user to group script</member>
+		<member>delete group script</member>
+		<member>delete user from group script</member>
+		<member>passdb backend</member>
+		<member>set primary group script</member>
 		</simplelist>
 	</para>
 

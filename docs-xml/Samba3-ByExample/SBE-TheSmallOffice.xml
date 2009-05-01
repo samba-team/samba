@@ -287,10 +287,12 @@
 	by setting the sticky bit (set UID/GID) on the top-level directories.
 	</para>
 
+	<para>
 	<figure id="acct2net">
 		<title>Abmas Accounting &smbmdash; 52-User Network Topology</title>
 		<imagefile scale="100">acct2net</imagefile>
 	</figure>
+</para>
 
 	<procedure>
 	<title>Server Installation Steps</title>

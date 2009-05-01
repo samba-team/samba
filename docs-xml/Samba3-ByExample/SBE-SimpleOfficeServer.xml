@@ -556,8 +556,8 @@ Password changed
 				directories are created with the same owner and group as the directory in which they are
 				created. Any new directories created still have the same owner, group, and permissions as the
 				directory they are in. This should eliminate all permissions-based file access problems.  For
-				more information on this subject, refer to TOSHARG2<footnote>The Official Samba-3 HOWTO and
-				Reference Guide, Chapter 15, File, Directory and Share Access Controls.</footnote> or refer
+				more information on this subject, refer to TOSHARG2<footnote><para>The Official Samba-3 HOWTO and
+						Reference Guide, Chapter 15, File, Directory and Share Access Controls.</para></footnote> or refer
 				to the UNIX man page for the <command>chmod</command> and the <command>chown</command> commands.
 				</para></step>
 
@@ -798,10 +798,8 @@ C:\WINDOWS: regedit ME-dpwc.reg
 				</para>
 					<procedure>
 						<step><para>
-							<menuchoice>
-								Right-click <guimenu>My Network</guimenu>
-								<guimenuitem>Map Network Drive...</guimenuitem>
-							</menuchoice>
+								Right-click <menuchoice><guimenu>My Network</guimenu>
+								<guimenuitem>Map Network Drive...</guimenuitem></menuchoice>
 						</para></step>
 
 						<step><para>

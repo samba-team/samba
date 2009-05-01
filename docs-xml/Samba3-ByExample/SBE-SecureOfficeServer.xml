@@ -1790,7 +1790,7 @@ hosts:        wins
 </screen>
 			The next step is to make certain that Samba is running using <command>ps ax | grep mbd</command>.
 			The <command>nmbd</command> daemon will provide the WINS name resolution service when the
-			&smb.conf; file <smbconfsection>[global]</smbconfsection> parameter <smbconfoption name="wins
+			&smb.conf; file <smbconfsection name="global"/> parameter <smbconfoption name="wins
 			support">Yes</smbconfoption> has been specified.  Having validated that Samba is operational,
 			excute the following:
 <screen>

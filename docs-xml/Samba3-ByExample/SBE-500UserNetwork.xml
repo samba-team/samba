@@ -1648,6 +1648,7 @@ net groupmap add ntgroup="Insurance Group"     unixgroup=piops type=d
 		include the accounting department HP LaserJet 6 and Minolta QMS Magicolor printers, and you
 		also configure use of the identical printers that are located in the financial services department.
 		Install printers on each machine using the following steps:
+	</para>
 
 			<procedure>
 			<title>Steps to Install Printer Drivers on Windows Clients</title>
@@ -1683,8 +1684,8 @@ net groupmap add ntgroup="Insurance Group"     unixgroup=piops type=d
 				dialog panel. Right-click <menuchoice>
 					<guiicon>HP LaserJet 6</guiicon>
 					<guimenuitem>Properties</guimenuitem>
-					<guimenusub>Details (Tab)</guimenusub>
-					<guimenubutton>Add Port</guimenubutton>
+					<guisubmenu>Details (Tab)</guisubmenu>
+					<guibutton>Add Port</guibutton>
 					</menuchoice>.
 				</para></step>
 
@@ -1710,7 +1711,7 @@ net groupmap add ntgroup="Insurance Group"     unixgroup=piops type=d
 				server on the network segment on which the workstation is to be located.
 				</para></step>
 			</procedure>
-		</para></step>
+		</step>
 
 		<step><para>
 		When you are satisfied that the staging systems are complete, use the appropriate procedure to

@@ -82,8 +82,8 @@
 	Abmas Video Rentals' head of IT heard of this criticism. He was offended that a junior engineer
 	should make such a comment. He felt that he had to prepare in case he might be criticized for his 
 	decision to use Active Directory. He decided he would defend his decision by hiring the services 
-	of an outside security systems consultant to report<footnote>This report is entirely fictitious. 
-	Any resemblance to a factual report is purely coincidental.</footnote> on his unit's operations 
+	of an outside security systems consultant to report<footnote><para>This report is entirely fictitious. 
+			Any resemblance to a factual report is purely coincidental.</para></footnote> on his unit's operations 
 	and to investigate the role of Samba at his site. Here are key extracts from this hypothetical 
 	report:
 	</para>
@@ -802,8 +802,8 @@
 		</varlistentry>
 
 		<varlistentry>
-			<term>Active Directory Replacement with Kerberos, LDAP, and Samba</term>
-	        <indexterm>
+			<term>Active Directory Replacement with Kerberos, LDAP, and Samba
+				        <indexterm>
 		  <primary>Active Directory</primary>
 		  <secondary>Replacement</secondary>
 		</indexterm><indexterm>
@@ -814,6 +814,8 @@
 		  <primary>remote procedure call</primary>
 		  <see>RPC</see>
 		</indexterm>
+
+			</term>
 				<listitem><para>
 				<literallayout>    </literallayout>
 				The Microsoft networking protocols extensively make use of remote procedure call (RPC)
@@ -935,8 +937,8 @@
 	A storm has broken out concerning interoperability between MIT Kerberos and Microsofts' implementation
 	of it. For example, a 2002
 	<ulink url="http://www.idg.com.sg/idgwww.nsf/0/5DDA8D153A7505A748256BAB000D992A?OpenDocument">IDG</ulink>
-	report<footnote>Note: This link is no longer active. The same article is still
-	available from <ulink url="http://199.105.191.226/Man/2699/020430msdoj/">ITWorld.com</ulink> (July 5, 2005)</footnote> by
+	report<footnote><para>Note: This link is no longer active. The same article is still
+			available from <ulink url="http://199.105.191.226/Man/2699/020430msdoj/">ITWorld.com</ulink> (July 5, 2005)</para></footnote> by
 	states:
 	</para>
 
@@ -1369,7 +1371,7 @@
 	<orderedlist>
 		<listitem><para>
 		A user opens a Work document from a network drive. The file was owned by user <constant>janetp</constant>
-		and <group>users</group>, and was set read/write-enabled for everyone.
+		and <constant>users</constant>, and was set read/write-enabled for everyone.
 		</para></listitem>
 
 		<listitem><para>

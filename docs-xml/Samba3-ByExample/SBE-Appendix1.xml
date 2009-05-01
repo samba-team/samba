@@ -39,7 +39,7 @@
 		<step><para>
 		The opening panel is the same one that can be reached by clicking <guimenu>System</guimenu> on the Control Panel.
 		See <link linkend="swxpp001"></link>.
-		<figure id="swxpp001"><imagefile>wxpp001</imagefile><title>The General Panel.</title></figure>
+		<figure id="swxpp001"><title>The General Panel.</title><imagefile>wxpp001</imagefile></figure>
 		</para></step>
 
 		<step><para>
@@ -52,13 +52,13 @@
 		Clicking the <guimenu>Network ID</guimenu> button launches the configuration wizard. Do not use this with
 		Samba-3. If you wish to change the computer name, or join or leave the domain, click the <guimenu>Change</guimenu> button.
 		See <link linkend="swxpp004"></link>.
-		<figure id="swxpp004"><imagefile>wxpp004</imagefile><title>The Computer Name Panel.</title></figure>
+		<figure id="swxpp004"><title>The Computer Name Panel.</title><imagefile>wxpp004</imagefile></figure>
 		</para></step>
 
 		<step><para>
 		Click on <guimenu>Change</guimenu>. This panel shows that our example machine (TEMPTATION) is in a workgroup called WORKGROUP.
 		We join the domain called MIDEARTH. See <link linkend="swxpp006"></link>.
-		<figure id="swxpp006"><imagefile>wxpp006</imagefile><title>The Computer Name Changes Panel</title></figure>
+		<figure id="swxpp006"><title>The Computer Name Changes Panel</title><imagefile>wxpp006</imagefile></figure>
 		</para></step>
 
 		<step><para>
@@ -67,7 +67,7 @@
 
 		<para>
 		This panel shows that our example machine (TEMPTATION) is set to join the domain called MIDEARTH. See <link linkend="swxpp007"></link>.
-		<figure id="swxpp007"><imagefile>wxpp007</imagefile><title>The Computer Name Changes Panel &smbmdash; Domain MIDEARTH</title></figure>
+		<figure id="swxpp007"><title>The Computer Name Changes Panel &smbmdash; Domain MIDEARTH</title><imagefile>wxpp007</imagefile></figure>
 		</para></step>
 
 		<step><para>
@@ -77,7 +77,7 @@
 
 		<para>
 		Enter the name <quote>root</quote> and the root password from your Samba-3 server. See <link linkend="swxpp008"></link>.
-		<figure id="swxpp008"><imagefile>wxpp008</imagefile><title>Computer Name Changes &smbmdash; User name and Password Panel</title></figure>
+		<figure id="swxpp008"><title>Computer Name Changes &smbmdash; User name and Password Panel</title><imagefile>wxpp008</imagefile></figure>
 		</para></step>
 
 		<step><para>
@@ -1542,12 +1542,12 @@ drw-rw-r--    2 bobj     Domain Users  12346 Dec 18 18:11 maryvfile.txt
 	    <primary>file caching</primary>
 	  </indexterm>
 	Third-party Windows applications may not be compatible with the use of opportunistic file
-	and record locking. For applications that are known not to be compatible,<footnote>Refer to
+	and record locking. For applications that are known not to be compatible,<footnote><para>Refer to
 	the application manufacturer's installation guidelines and knowledge base for specific
 	information regarding compatibility. It is often safe to assume that if the software
 	manufacturer does not specifically mention incompatibilities with opportunistic file
 	and record locking, or with Windows client file caching, the application is probably
-	compatible with Windows (as well as Samba) default settings.</footnote> oplock
+	compatible with Windows (as well as Samba) default settings.</para></footnote> oplock
 	support may need to be disabled both on the Samba server and on the Windows workstations.
 	</para>
 
