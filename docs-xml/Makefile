@@ -14,6 +14,7 @@ export TEXINPUTS=xslt/latex:.:
 # Lists of files to process
 LATEX_FIGURES = xslt/figures/caution.pdf xslt/figures/important.pdf xslt/figures/note.pdf xslt/figures/tip.pdf xslt/figures/warning.pdf
 MANPAGES_PLUCKER = $(patsubst $(MANPAGEDIR3)/%.xml,$(PLUCKERDIR)/%.pdb,$(MANPAGES3))
+DBLATEX_OPTIONS = -p xslt/latex.xsl -i xslt/latex
 
 DATETIME := $(shell date +%Y%m%d%H%M%S)
 
@@ -145,17 +146,11 @@ $(TXTDIR)/%.txt: $(HTMLDIR)/%.html
 %.tex: %/index.xml xslt/latex.xsl
 	@echo "Generating $@..."
 	@mkdir -p $(@D)
-	@$(XSLTPROC) $(DB2LATEX_ARGS) --stringparam latex.imagebasedir "$*/" --xinclude --output $@ xslt/latex.xsl $<
+	@$(DBLATEX) $(DBLATEX_OPTIONS) -t tex -o $@ $<
 
 $(PDFDIR)/%.pdf: %.pdf
 	@mkdir -p $(@D)
 	cp $< $@
-
-%.idx: %.tex $(LATEX_FIGURES)
-	-$(PDFLATEX) $<
-
-%.ind: %.idx
-	$(MAKEINDEX) $<
 
 # Dependency files
 %.d: $(DOCBOOKDIR)/%.xml xslt/generate-dependencies.xsl
@@ -192,22 +187,17 @@ ifneq ($(MAKECMDGOALS),clobber)
 endif
 endif
 
-# Adobe PDF files
-%.pdf: %.tex %.ind $(LATEX_FIGURES) %-images-latex-png %-images-latex-pdf
-	-$(PDFLATEX) $<
-	-$(PDFLATEX) $<
-	-$(PDFLATEX) $<
-	-$(PDFLATEX) $<
-	$(THUMBPDF) --quiet $*.pdf
-	-$(PDFLATEX) $<
+# Adobe PDF files  
+%.pdf: %/index.xml xslt/latex.xsl
+	$(DBLATEX) $(DBLATEX_OPTIONS) -I $*/images -t pdf -o $@ $<
 
 # DVI files
 $(DVIDIR)/%.dvi: %.dvi
 	@mkdir -p $(@D)
 	cp $< $@
 
-%.dvi: %.tex %.idx %-images-latex-eps
-	-$(LATEX) $< 
+%.dvi: %/index.xml xslt/latex.xsl
+	$(DBLATEX) $(DBLATEX_OPTIONS) -I $*/images -t dvi -o $@ $<
 
 %.eps: %.svg
 	$(INKSCAPE) -z -f $< --export-eps=$@
@@ -328,8 +318,6 @@ realdistclean:: distclean
 	rm -f configure
 	rm -rf autom4te.cache
 
-
 # Always keep intermediate files if we can
 .SECONDARY:
 .PHONY: clean clobber archive release everything all 
-
