@@ -1,9 +1,5 @@
 AC_INIT(xslt/latex.xsl)
 
-AC_ARG_WITH(samba-sources,
-[ --with-samba-sources=DIR Specify path to Samba sources],
-[ test "$withval" && SPECIFIED_SOURCEDIR="$withval" ])
-
 LATEX_DOCUMENTCLASS_OPTIONS="letterpaper,11pt,openright,twoside"
 AC_ARG_ENABLE(prentice-hall,
 [ --enable-prentice-hall     Produce Prentice-Hall compatible output],
@@ -12,7 +8,6 @@ AC_SUBST(LATEX_DOCUMENTCLASS_OPTIONS)
 
 DOC_BUILD_DATE=`date '+%d-%m-%Y'`
 AC_SUBST(DOC_BUILD_DATE)
-AC_SUBST(SAMBASOURCEDIR)
 
 DOCS_TARGET_REQUIRE_PROGRAM(XSLTPROC, xsltproc, ALL)
 DOCS_TARGET_REQUIRE_PROGRAM(RM, rm, ALL)
@@ -63,7 +58,6 @@ DOCS_TARGET_REQUIRE_PROGRAM(XMLLINT, xmllint, VALIDATE)
 DOCS_TARGET_REQUIRE_PROGRAM(FOP, fop, FOPDF)
 DOCS_TARGET_REQUIRE_PROGRAM(DB2TEXI, docbook2x-texi, TEXI)
 DOCS_TARGET_REQUIRE_PROGRAM(MAKEINFO, makeinfo, TEXIINFO)
-DOCS_TARGET_REQUIRE_DIR([$SPECIFIED_SOURCEDIR $SPECIFIED_SOURCEDIR/source ..], [param/loadparm.c], SAMBASOURCEDIR, UNDOCUMENTED)
 
 AC_MSG_RESULT([])
 AC_MSG_RESULT([Summary:])
