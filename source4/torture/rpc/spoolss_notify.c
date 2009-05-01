@@ -293,7 +293,7 @@ static bool test_RFFPCNEx(struct torture_context *tctx,
  * on Samba 4 will cause an irpc broadcast call.
  */
 static bool test_ReplyOpenPrinter(struct torture_context *tctx,
-				  struct dcerpc_pipe *pipe)
+				  struct dcerpc_pipe *p)
 {
 	struct spoolss_ReplyOpenPrinter r;
 	struct spoolss_ReplyClosePrinter s;
@@ -307,7 +307,7 @@ static bool test_ReplyOpenPrinter(struct torture_context *tctx,
 	r.out.handle = &h;
 
 	torture_assert_ntstatus_ok(tctx,
-			dcerpc_spoolss_ReplyOpenPrinter(pipe, tctx, &r),
+			dcerpc_spoolss_ReplyOpenPrinter(p, tctx, &r),
 			"spoolss_ReplyOpenPrinter call failed");
 
 	torture_assert_werr_ok(tctx, r.out.result, "error return code");
@@ -316,7 +316,7 @@ static bool test_ReplyOpenPrinter(struct torture_context *tctx,
 	s.out.handle = &h;
 
 	torture_assert_ntstatus_ok(tctx,
-			dcerpc_spoolss_ReplyClosePrinter(pipe, tctx, &s),
+			dcerpc_spoolss_ReplyClosePrinter(p, tctx, &s),
 			"spoolss_ReplyClosePrinter call failed");
 
 	torture_assert_werr_ok(tctx, r.out.result, "error return code");
