@@ -53,14 +53,10 @@ release:: manpages3 htmlman3 html pdf
 clean::
 	@echo "Cleaning up..." 
 	rm -rf $(OUTPUTDIR)/* $(DOCBOOKDIR)
-	rm -f $(patsubst %.svg,%.png,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-dia))) \
-			$(patsubst %.svg,%.pdf,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-svg))) \
-			$(patsubst %.svg,%.eps,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-svg))) \
-			$(patsubst %.svg,%.png,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-svg)))
-	rm -f *-attributions.xml *.d *.tpt *.tex *.loc *.toc *.lof *.glo *.idx *.aux
-	rm -f *-images-html*
-	rm -f *-images-latex-* $(LATEX_FIGURES)
-	rm -f xslt/figures/*pdf
+	rm -f $(patsubst %.svg,%.png,$(wildcard */images/*.svg)) \
+		  $(patsubst %.svg,%.eps,$(wildcard */images/*.svg)) \
+		  $(patsubst %.png,%.eps,$(wildcard */images/*.png))
+	rm -f *-attributions.xml *.tpt *.tex *.loc *.toc *.lof *.glo *.idx *.aux
 	rm -f $(SMBDOTCONFDOC)/parameters.*.xml
 	rm -f $(addsuffix .*,$(MAIN_DOCS))
 	rm -f build/catalog.xml
@@ -109,7 +105,7 @@ $(HTMLDIR)/index.html: htmldocs.html
 	@mkdir -p $(@D)
 	cp $< $@
 	
-$(HTMLDIR)/%/index.html: $(DOCBOOKDIR)/%.xml $(HTMLDIR)/%/samba.css xslt/html-chunk.xsl %-images-html-chunks
+$(HTMLDIR)/%/index.html: $(DOCBOOKDIR)/%.xml $(HTMLDIR)/%/samba.css xslt/html-chunk.xsl
 	@mkdir -p $(@D)
 	$(XSLTPROC) --stringparam base.dir "$(HTMLDIR)/$*/" xslt/html-chunk.xsl $<
 
@@ -118,7 +114,16 @@ $(OUTPUTDIR)/%/samba.css: xslt/html/samba.css
 	@mkdir -p $(@D)
 	cp $< $@
 
-$(patsubst %,$(HTMLDIR)/%.html,$(MAIN_DOCS)): $(HTMLDIR)/%.html: %-images-html-single
+$(patsubst %,$(HTMLDIR)/%.html,$(MAIN_DOCS)): $(HTMLDIR)/%.html: %-images-png
+
+define IMAGES_TEMPLATE
+$(1)-images-png:: $$(patsubst %.svg,%.png,$$(wildcard $(1)/images/*.svg)) ;
+$(1)-images-eps:: $$(patsubst %.svg,%.eps,$$(wildcard $(1)/images/*.svg)) ;
+$(1)-images-eps:: $$(patsubst %.png,%.eps,$$(wildcard $(1)/images/*.png)) ;
+
+endef
+
+$(eval $(foreach DOC, $(MAIN_DOCS),$(call IMAGES_TEMPLATE,$(DOC))))
 
 $(HTMLDIR)/%.html: $(DOCBOOKDIR)/%.xml $(HTMLDIR)/samba.css xslt/html.xsl 
 	$(XSLTPROC) --output $@ xslt/html.xsl $<
@@ -140,47 +145,12 @@ $(TXTDIR)/%.txt: $(HTMLDIR)/%.html
 	@mkdir -p $(@D)
 	@$(DBLATEX) $(DBLATEX_OPTIONS) -t tex -o $@ $<
 
-# Dependency files
-%.d: $(DOCBOOKDIR)/%.xml xslt/generate-dependencies.xsl
-	@echo "Generating dependency file for $*" 
-	@$(XSLTPROC) --novalid \
-		--stringparam txtbasedir "$(TXTDIR)/$*/" \
-		--stringparam target "$*" \
-		-o $@ xslt/generate-dependencies.xsl $<
-	@echo "$*-images-latex-svg = \$$(wildcard \$$(addsuffix .svg, \$$($*-images-latex)))" >> $@
-	@echo "$*-images-latex-eps: \$$(addsuffix .eps, \$$($*-images-latex))" >> $@
-	@echo "$*-images-latex-pdf: \$$(patsubst %.svg, %.pdf, \$$($*-images-latex-svg))" >> $@
-	@echo "$*-images-latex-png: \$$(filter-out \$$(patsubst %.svg,%.png,\$$($*-images-latex-svg)), \$$(addsuffix .png, \$$($*-images-latex)))" >> $@
-
-	@echo >> $@
-	@echo "\$$(HTMLDIR)/%: $*/%" >> $@
-	@echo "	@mkdir -p \$$(@D)" >> $@
-	@echo "	@cp \$$< \$$@" >> $@
-	@echo >> $@
-	@echo "\$$(HTMLDIR)/$*/%: $*/%" >> $@
-	@echo "	@mkdir -p \$$(@D)" >> $@
-	@echo "	@cp \$$< \$$@" >> $@
-	@echo >> $@
-	@echo "\$$(HTMLHELPDIR)/$*/%: $*/%" >> $@
-	@echo "	@mkdir -p \$$(@D)" >> $@
-	@echo "	@cp \$$< \$$@" >> $@
-	@echo >> $@
-	@echo "$*-images-html-single: \$$(addprefix \$$(HTMLDIR)/, \$$($*-images-html))" >> $@
-	@echo "$*-images-html-chunks: \$$(addprefix \$$(HTMLDIR)/$*/, \$$($*-images-html))" >> $@
-	@echo "$*-images-htmlhelp: \$$(addprefix \$$(HTMLHELPDIR)/$*/, \$$($*-images-html))" >> $@
-
-ifdef OUTPUTDIR 
-ifneq ($(MAKECMDGOALS),clobber)
--include $(addsuffix .d,$(MAIN_DOCS))
-endif
-endif
-
 # Adobe PDF files  
-$(PDFDIR)/%.pdf: %/index.xml $(PDFDIR) xslt/latex.xsl %-images-latex-png %-images-latex-pdf
+$(PDFDIR)/%.pdf: %/index.xml $(PDFDIR) xslt/latex.xsl %-images-png
 	$(DBLATEX) $(DBLATEX_OPTIONS) -I $*/images -t pdf -o $@ $<
 
 # PostScript files
-$(PSDIR)/%.ps: %/index.xml $(PSDIR) xslt/latex.xsl %-images-latex-eps
+$(PSDIR)/%.ps: %/index.xml $(PSDIR) xslt/latex.xsl %-images-eps 
 	$(DBLATEX) $(DBLATEX_OPTIONS) -I $*/images -t ps -o $@ $<
 
 %.eps: %.svg
@@ -195,7 +165,7 @@ $(PSDIR)/%.ps: %/index.xml $(PSDIR) xslt/latex.xsl %-images-latex-eps
 %.eps: %.png
 	$(PNGTOPNM) $< | $(PNMTOPS) > $@
 
-$(HTMLHELPDIR)/%: $(DOCBOOKDIR)/%.xml %-images-htmlhelp
+$(HTMLHELPDIR)/%: $(DOCBOOKDIR)/%.xml %-images-png
 	$(XSLTPROC) --stringparam htmlhelp.chm $*.chm \
 				--stringparam manifest.in.base.dir "$@/" \
 				--stringparam base.dir "$@/" \
@@ -274,11 +244,6 @@ archive: pdf
 # XSL scripts
 xslt/html.xsl: xslt/html-common.xsl 
 xslt/html-chunk.xsl: xslt/html-common.xsl 
-xslt/latex.xsl: 
-xslt/expand-sambadoc.xsl: 
-xslt/generate-attributions.xsl: 
-xslt/man.xsl:
-xslt/pearson.xsl:
 
 distclean clobber:: clean
 	rm -f Makefile.settings config.status config.log
