@@ -17,6 +17,7 @@ AC_DEFUN([TRY_LINK_PYTHON],
 		CFLAGS="$CFLAGS $2"
 
 		AC_TRY_LINK([
+                                #undef HAVE_UINTPTR_T
 				/* we have our own configure tests */
 				#include <Python.h>
 			],[
