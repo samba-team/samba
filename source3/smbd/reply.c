@@ -3358,14 +3358,13 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 		return;
 	}
 
-	if (startpos > sbuf.st_size) {
-		smb_maxcnt = 0;
-	} else if (smb_maxcnt > (sbuf.st_size - startpos)) {
-		smb_maxcnt = (sbuf.st_size - startpos);
-	}
-
-	if (smb_maxcnt == 0) {
-		goto normal_read;
+	if (!S_ISREG(sbuf.st_mode) || (startpos > sbuf.st_size)
+	    || (smb_maxcnt > (sbuf.st_size - startpos))) {
+		/*
+		 * We already know that we would do a short read, so don't
+		 * try the sendfile() path.
+		 */
+		goto nosendfile_read;
 	}
 
 #if defined(WITH_SENDFILE)
@@ -3481,6 +3480,8 @@ normal_read:
 		TALLOC_FREE(req->outbuf);
 		return;
 	}
+
+nosendfile_read:
 
 	reply_outbuf(req, 12, smb_maxcnt);
 
