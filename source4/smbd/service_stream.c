@@ -328,7 +328,8 @@ NTSTATUS stream_setup_socket(struct tevent_context *event_context,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to listen on %s:%u - %s\n",
-			sock_addr, *port, nt_errstr(status)));
+			 sock_addr, port ? (unsigned int)(*port) : 0,
+			 nt_errstr(status)));
 		talloc_free(stream_socket);
 		return status;
 	}
