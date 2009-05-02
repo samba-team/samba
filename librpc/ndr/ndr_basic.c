@@ -568,9 +568,10 @@ _PUBLIC_ enum ndr_err_code ndr_pull_time_t(struct ndr_pull *ndr, int ndr_flags, 
 */
 _PUBLIC_ enum ndr_err_code ndr_pull_ipv4address(struct ndr_pull *ndr, int ndr_flags, const char **address)
 {
+	uint32_t s_addr;
 	struct in_addr in;
-	NDR_CHECK(ndr_pull_uint32(ndr, ndr_flags, &in.s_addr));
-	in.s_addr = htonl(in.s_addr);
+	NDR_CHECK(ndr_pull_uint32(ndr, ndr_flags, &s_addr));
+	in.s_addr = htonl(s_addr);
 	*address = talloc_strdup(ndr->current_mem_ctx, inet_ntoa(in));
 	NDR_ERR_HAVE_NO_MEMORY(*address);
 	return NDR_ERR_SUCCESS;
