@@ -759,7 +759,7 @@ size_t unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen)
 	}
 
 	if (!strupper_w(buffer) && (dest == src)) {
-		free(buffer);
+		TALLOC_FREE(buffer);
 		return srclen;
 	}
 
