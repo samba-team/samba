@@ -1120,8 +1120,12 @@ static int vfswrap_get_real_filename(struct vfs_handle_struct *handle,
 				     TALLOC_CTX *mem_ctx,
 				     char **found_name)
 {
-	return get_real_filename(handle->conn, path, name, mem_ctx,
-				 found_name);
+	/*
+	 * Don't fall back to get_real_filename so callers can differentiate
+	 * between a full directory scan and an actual case-insensitive stat.
+	 */
+	errno = EOPNOTSUPP;
+	return -1;
 }
 
 static NTSTATUS vfswrap_brl_lock_windows(struct vfs_handle_struct *handle,
