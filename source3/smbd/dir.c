@@ -576,6 +576,9 @@ const char *dptr_ReadDirName(TALLOC_CTX *ctx,
 {
 	char *name = NULL;
 	char *pathreal = NULL;
+	char *found_name = NULL;
+	int ret;
+
 	SET_STAT_INVALID(*pst);
 
 	if (dptr->has_wild || dptr->did_stat) {
@@ -637,6 +640,20 @@ const char *dptr_ReadDirName(TALLOC_CTX *ctx,
 	if (dptr->conn->case_sensitive ||
 	    !(dptr->conn->fs_capabilities & FILE_CASE_SENSITIVE_SEARCH))
 	{
+		goto clean;
+	}
+
+	/*
+	 * Try case-insensitive stat if the fs has the ability. This avoids
+	 * scanning the whole directory.
+	 */
+	ret = SMB_VFS_GET_REAL_FILENAME(dptr->conn, dptr->path, dptr->wcard,
+					ctx, &found_name);
+	if (ret == 0) {
+		name = found_name;
+		goto clean;
+	} else if (errno == ENOENT) {
+		/* The case-insensitive lookup was authoritative. */
 		goto clean;
 	}
 

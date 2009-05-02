@@ -447,9 +447,9 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 			 */
 
 			if (name_has_wildcard ||
-			    (SMB_VFS_GET_REAL_FILENAME(
-				     conn, dirpath, start,
-				     talloc_tos(), &found_name) == -1)) {
+			    (get_real_filename(conn, dirpath, start,
+					       talloc_tos(),
+					       &found_name) == -1)) {
 				char *unmangled;
 
 				if (end) {
@@ -789,9 +789,9 @@ static bool fname_equal(const char *name1, const char *name2,
  If the name looks like a mangled name then try via the mangling functions
 ****************************************************************************/
 
-int get_real_filename(connection_struct *conn, const char *path,
-		      const char *name, TALLOC_CTX *mem_ctx,
-		      char **found_name)
+static int get_real_filename_full_scan(connection_struct *conn,
+				       const char *path, const char *name,
+				       TALLOC_CTX *mem_ctx, char **found_name)
 {
 	struct smb_Dir *cur_dir;
 	const char *dname;
@@ -885,6 +885,34 @@ int get_real_filename(connection_struct *conn, const char *path,
 	TALLOC_FREE(cur_dir);
 	errno = ENOENT;
 	return -1;
+}
+
+/****************************************************************************
+ Wrapper around the vfs get_real_filename and the full directory scan
+ fallback.
+****************************************************************************/
+
+int get_real_filename(connection_struct *conn, const char *path,
+		      const char *name, TALLOC_CTX *mem_ctx,
+		      char **found_name)
+{
+	int ret;
+
+	/* Try the vfs first to take advantage of case-insensitive stat. */
+	ret = SMB_VFS_GET_REAL_FILENAME(conn, path, name, mem_ctx, found_name);
+
+	/*
+	 * If the case-insensitive stat was successful, or returned an error
+	 * other than EOPNOTSUPP then there is no need to fall back on the
+	 * full directory scan.
+	 */
+	if (ret == 0 || (ret == -1 && errno != EOPNOTSUPP)) {
+		return ret;
+	}
+
+	ret = get_real_filename_full_scan(conn, path, name, mem_ctx,
+					  found_name);
+	return ret;
 }
 
 static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
