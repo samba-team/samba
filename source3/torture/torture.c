@@ -3492,6 +3492,7 @@ static bool run_rename(int dummy)
 	const char *fname1 = "\\test1.txt";
 	bool correct = True;
 	uint16_t fnum1;
+	NTSTATUS status;
 
 	printf("starting rename test\n");
 
@@ -3521,12 +3522,14 @@ static bool run_rename(int dummy)
 
 	cli_unlink(cli1, fname, aSYSTEM | aHIDDEN);
 	cli_unlink(cli1, fname1, aSYSTEM | aHIDDEN);
-	if (!NT_STATUS_IS_OK(cli_ntcreate(cli1, fname, 0, GENERIC_READ_ACCESS, FILE_ATTRIBUTE_NORMAL,
+	status = cli_ntcreate(cli1, fname, 0, GENERIC_READ_ACCESS, FILE_ATTRIBUTE_NORMAL,
 #if 0
-				   FILE_SHARE_DELETE|FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0, 0, &fnum1))) {
+			      FILE_SHARE_DELETE|FILE_SHARE_NONE,
 #else
-				   FILE_SHARE_DELETE|FILE_SHARE_READ, FILE_OVERWRITE_IF, 0, 0, &fnum1))) {
+			      FILE_SHARE_DELETE|FILE_SHARE_READ,
 #endif
+			      FILE_OVERWRITE_IF, 0, 0, &fnum1);
+	if (!NT_STATUS_IS_OK(status)) {
 		printf("Second open failed - %s\n", cli_errstr(cli1));
 		return False;
 	}
