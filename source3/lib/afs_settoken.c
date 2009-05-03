@@ -23,6 +23,7 @@
 
 #define NO_ASN1_TYPEDEFS 1
 
+#include <afs/param.h>
 #include <afs/stds.h>
 #include <afs/afs.h>
 #include <afs/auth.h>
@@ -37,7 +38,24 @@ int afs_syscall( int subcall,
 	  char * cmarg,
 	  int follow)
 {
+/*
 	return( syscall( SYS_afs_syscall, subcall, path, cmd, cmarg, follow));
+*/
+	int errcode;
+	struct afsprocdata afs_syscall_data;
+	afs_syscall_data.syscall = subcall;
+	afs_syscall_data.param1 = (long)path;
+	afs_syscall_data.param2 = cmd;
+	afs_syscall_data.param3 = (long)cmarg;
+	afs_syscall_data.param4 = follow;
+	int proc_afs_file = open(PROC_SYSCALL_FNAME, O_RDWR);
+	if (proc_afs_file < 0)
+		proc_afs_file = open(PROC_SYSCALL_ARLA_FNAME, O_RDWR);
+	if (proc_afs_file < 0)
+		return -1;
+	errcode = ioctl(proc_afs_file, VIOC_SYSCALL, &afs_syscall_data);
+	close(proc_afs_file);
+	return errcode;
 }
 
 struct ClearToken {
