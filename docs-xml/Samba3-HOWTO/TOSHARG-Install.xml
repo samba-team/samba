@@ -467,7 +467,7 @@
 	and thus the need to keep this file small goes against good documentation wisdom. One solution that may
 	be adopted is to do all documentation and configuration in a file that has another name, such as
 	<filename>smb.conf.master</filename>. The <command>testparm</command> utility can be used to generate a
-	fully optimized &smb.conf; file from this master configuration and documtenation file as shown here:
+	fully optimized &smb.conf; file from this master configuration and documentation file as shown here:
 <screen>
 &rootprompt; testparm -s smb.conf.master > smb.conf
 </screen>
@@ -484,8 +484,7 @@
 	<para>
 	<indexterm><primary>swat</primary></indexterm>
 	SWAT is a Web-based interface that can be used to facilitate the configuration of Samba.  SWAT might not
-	be available in the Samba package that shipped with your platform, but in a separate package. If it is
-	necesaary to built SWAT please read the SWAT man page regarding compilation, installation, and
+	be available in the Samba package that shipped with your platform, but in a separate package. If you need to build SWAT please read the SWAT man page regarding compilation, installation, and
 	configuration of SWAT from the source code.
 	</para>
 
@@ -498,10 +497,12 @@
 
 	<para>
 	SWAT can be used from a browser on any IP-connected machine, but be aware that connecting from a remote
-	machine leaves your connection open to password sniffing because passwords will be sent over the wire in the clear. 
+	machine leaves your connection open to password sniffing because passwords will be sent over the wire in the clear.
 	</para>
 
 	<para>
+	Please note that re-writing the configuration file using SWAT will
+	remove all comments!
 	More information about SWAT can be found in <link linkend="SWAT">The Samba Web Administration Tool</link>.
 	</para>
 
