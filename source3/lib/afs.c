@@ -23,6 +23,7 @@
 
 #define NO_ASN1_TYPEDEFS 1
 
+#include <afs/param.h>
 #include <afs/stds.h>
 #include <afs/afs.h>
 #include <afs/auth.h>
@@ -230,8 +231,8 @@ bool afs_login(connection_struct *conn)
 	}
 
 	afs_username = talloc_sub_advanced(ctx,
-				SNUM(conn), conn->user,
-				conn->connectpath, conn->gid,
+				SNUM(conn), conn->server_info->unix_name,
+				conn->connectpath, conn->server_info->utok.gid,
 				conn->server_info->sanitized_username,
 				pdb_get_domain(conn->server_info->sam_account),
 				afs_username);

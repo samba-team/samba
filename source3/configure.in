@@ -2868,11 +2868,12 @@ AC_ARG_WITH(fake-kaserver,
 if test x"$samba_cv_WITH_AFS" != x"no" ||
    test x"$samba_cv_WITH_FAKE_KASERVER" != x"no"; then
 
+    # see if this box has the OpenSSL DES libraries
+    AC_CHECK_LIB( crypto, DES_pcbc_encrypt, LIBS="$LIBS -lcrypto" , [AC_ERROR(OpenSSL library: libcrypto ot found!)] )
+
     # see if this box has the afs-headers in /usr/include/afs
     AC_MSG_CHECKING(for /usr/include/afs)
     if test -d /usr/include/afs; then
-          CFLAGS="$CFLAGS -I/usr/include/afs"
-          CPPFLAGS="$CPPFLAGS -I/usr/include/afs"
           AC_MSG_RESULT(yes)
     else
       AC_MSG_RESULT(no)
