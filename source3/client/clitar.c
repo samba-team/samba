@@ -789,7 +789,7 @@ static void do_atar(const char *rname_in,char *lname,file_info *finfo1)
 
   cleanup:
 
-	if (fnum != -1) {
+	if (fnum != (uint16_t)-1) {
 		cli_close(cli, fnum);
 		fnum = -1;
 	}

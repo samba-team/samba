@@ -553,7 +553,7 @@ static bool rw_torture3(struct cli_state *c, char *lockfname)
 	}
 	else
 	{
-		for (i = 0; i < 500 && fnum == -1; i++)
+		for (i = 0; i < 500 && fnum == (uint16_t)-1; i++)
 		{
 			status = cli_open(c, lockfname, O_RDONLY, 
 					 DENY_NONE, &fnum);
@@ -3380,8 +3380,8 @@ static bool run_deletetest(int dummy)
 	 * intialized, because these functions don't handle
 	 * uninitialized connections. */
 
-	if (fnum1 != -1) cli_close(cli1, fnum1);
-	if (fnum2 != -1) cli_close(cli1, fnum2);
+	if (fnum1 != (uint16_t)-1) cli_close(cli1, fnum1);
+	if (fnum2 != (uint16_t)-1) cli_close(cli1, fnum2);
 	cli_setatr(cli1, fname, 0, 0);
 	cli_unlink(cli1, fname, aSYSTEM | aHIDDEN);
 
@@ -3835,7 +3835,7 @@ static bool run_opentest(int dummy)
 
 	printf("testing ctemp\n");
 	fnum1 = cli_ctemp(cli1, "\\", &tmp_path);
-	if (fnum1 == -1) {
+	if (fnum1 == (uint16_t)-1) {
 		printf("ctemp failed (%s)\n", cli_errstr(cli1));
 		return False;
 	}

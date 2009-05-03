@@ -4319,7 +4319,7 @@ static void show_userlist(struct rpc_pipe_client *pipe_hnd,
 		d_printf(" %s\n", tokens[i].name);
 	}
 
-	if (fnum != -1)
+	if (fnum != (uint16_t)-1)
 		cli_close(cli, fnum);
 	cli_tdis(cli);
 	cli->cnum = cnum;
