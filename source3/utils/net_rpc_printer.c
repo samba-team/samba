@@ -761,35 +761,45 @@ static bool net_spoolss_setprinter(struct rpc_pipe_client *pipe_hnd,
 	info_ctr.level = level;
 	switch (level) {
 	case 0:
-		info_ctr.info.info0 = (struct spoolss_SetPrinterInfo0 *)&info->info0;
+		info_ctr.info.info0 = (struct spoolss_SetPrinterInfo0 *)
+			(void *)&info->info0;
 		break;
 	case 1:
-		info_ctr.info.info1 = (struct spoolss_SetPrinterInfo1 *)&info->info1;
+		info_ctr.info.info1 = (struct spoolss_SetPrinterInfo1 *)
+			(void *)&info->info1;
 		break;
 	case 2:
-		info_ctr.info.info2 = (struct spoolss_SetPrinterInfo2 *)&info->info2;
+		info_ctr.info.info2 = (struct spoolss_SetPrinterInfo2 *)
+			(void *)&info->info2;
 		break;
 	case 3:
-		info_ctr.info.info3 = (struct spoolss_SetPrinterInfo3 *)&info->info3;
+		info_ctr.info.info3 = (struct spoolss_SetPrinterInfo3 *)
+			(void *)&info->info3;
 		break;
 	case 4:
-		info_ctr.info.info4 = (struct spoolss_SetPrinterInfo4 *)&info->info4;
+		info_ctr.info.info4 = (struct spoolss_SetPrinterInfo4 *)
+			(void *)&info->info4;
 		break;
 	case 5:
-		info_ctr.info.info5 = (struct spoolss_SetPrinterInfo5 *)&info->info5;
+		info_ctr.info.info5 = (struct spoolss_SetPrinterInfo5 *)
+			(void *)&info->info5;
 		break;
 	case 6:
-		info_ctr.info.info6 = (struct spoolss_SetPrinterInfo6 *)&info->info6;
+		info_ctr.info.info6 = (struct spoolss_SetPrinterInfo6 *)
+			(void *)&info->info6;
 		break;
 	case 7:
-		info_ctr.info.info7 = (struct spoolss_SetPrinterInfo7 *)&info->info7;
+		info_ctr.info.info7 = (struct spoolss_SetPrinterInfo7 *)
+			(void *)&info->info7;
 		break;
 #if 0 /* FIXME GD */
 	case 8:
-		info_ctr.info.info8 = (struct spoolss_SetPrinterInfo8 *)&info->info8;
+		info_ctr.info.info8 = (struct spoolss_SetPrinterInfo8 *)
+			(void *)&info->info8;
 		break;
 	case 9:
-		info_ctr.info.info9 = (struct spoolss_SetPrinterInfo9 *)&info->info9;
+		info_ctr.info.info9 = (struct spoolss_SetPrinterInfo9 *)
+			(void *)&info->info9;
 		break;
 #endif
 	default:
@@ -1009,10 +1019,12 @@ static bool net_spoolss_addprinterdriver(struct rpc_pipe_client *pipe_hnd,
 
 	switch (level) {
 	case 2:
-		info_ctr.info.info2 = (struct spoolss_AddDriverInfo2 *)&info->info2;
+		info_ctr.info.info2 = (struct spoolss_AddDriverInfo2 *)
+			(void *)&info->info2;
 		break;
 	case 3:
-		info_ctr.info.info3 = (struct spoolss_AddDriverInfo3 *)&info->info3;
+		info_ctr.info.info3 = (struct spoolss_AddDriverInfo3 *)
+			(void *)&info->info3;
 		break;
 	default:
 		printf("unsupported info level: %d\n", level);
@@ -1279,7 +1291,8 @@ static NTSTATUS rpc_printer_publish_internals_args(struct rpc_pipe_client *pipe_
 
 		info.info7.action = action;
 		info_ctr.level = 7;
-		info_ctr.info.info7 = (struct spoolss_SetPrinterInfo7 *)&info.info7;
+		info_ctr.info.info7 = (struct spoolss_SetPrinterInfo7 *)
+			(void *)&info.info7;
 
 		ZERO_STRUCT(devmode_ctr);
 		ZERO_STRUCT(secdesc_ctr);
@@ -1697,7 +1710,8 @@ NTSTATUS rpc_printer_migrate_forms_internals(struct net_context *c,
 					f, forms[f].info1.form_name,
 					forms[f].info1.flags);
 
-			info.info1 = (struct spoolss_AddFormInfo1 *)&forms[f].info1;
+			info.info1 = (struct spoolss_AddFormInfo1 *)
+				(void *)&forms[f].info1;
 
 			/* FIXME: there might be something wrong with samba's
 			   builtin-forms */
@@ -2066,7 +2080,8 @@ NTSTATUS rpc_printer_migrate_printers_internals(struct net_context *c,
 		d_printf("creating printer: %s\n", printername);
 
 		info_ctr.level = level;
-		info_ctr.info.info2 = (struct spoolss_SetPrinterInfo2 *)&info_src.info2;
+		info_ctr.info.info2 = (struct spoolss_SetPrinterInfo2 *)
+			(void *)&info_src.info2;
 
 		result = rpccli_spoolss_addprinterex(pipe_hnd_dst,
 						     mem_ctx,
