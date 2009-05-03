@@ -5671,7 +5671,7 @@ static bool run_getaddrinfo_send(int dummy)
 			goto fail;
 		}
 		tevent_req_set_callback(reqs[i], getaddrinfo_finished,
-					names[i]);
+					(void *)names[i]);
 	}
 
 	for (i=0; i<ARRAY_SIZE(reqs); i++) {
