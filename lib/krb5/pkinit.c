@@ -33,8 +33,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 struct krb5_dh_moduli {
     char *name;
     unsigned long bits;
