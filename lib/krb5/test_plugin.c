@@ -32,7 +32,6 @@
  */
 
 #include <krb5_locl.h>
-RCSID("$Id$");
 #include "locate_plugin.h"
 
 static krb5_error_code

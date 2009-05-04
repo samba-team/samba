@@ -33,8 +33,6 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id$");
-
 static krb5_error_code
 make_etypelist(krb5_context context,
 	       krb5_authdata **auth_data)

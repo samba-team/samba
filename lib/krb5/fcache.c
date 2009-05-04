@@ -33,8 +33,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 typedef struct krb5_fcache{
     char *filename;
     int version;

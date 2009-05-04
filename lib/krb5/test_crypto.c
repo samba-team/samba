@@ -34,8 +34,6 @@
 #include <err.h>
 #include <getarg.h>
 
-RCSID("$Id$");
-
 static void
 time_encryption(krb5_context context, size_t size,
 		krb5_enctype etype, int iterations)

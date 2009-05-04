@@ -33,8 +33,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 #ifdef __osf__
 /* hate */
 struct rtentry;

@@ -43,8 +43,6 @@
 
 #include "kcm.h"
 
-RCSID("$Id$");
-
 typedef struct krb5_kcmcache {
     char *name;
     struct sockaddr_un path;

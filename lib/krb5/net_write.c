@@ -33,8 +33,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 krb5_ssize_t KRB5_LIB_FUNCTION
 krb5_net_write (krb5_context context,
 		void *p_fd,

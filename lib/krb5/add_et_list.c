@@ -33,8 +33,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 /**
  * Add a specified list of error messages to the et list in context.
  * Call func (probably a comerr-generated function) with a pointer to

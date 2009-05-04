@@ -34,8 +34,6 @@
 #include "krb5_locl.h"
 #include <wind.h>
 
-RCSID("$Id$");
-
 struct PAC_INFO_BUFFER {
     uint32_t type;
     uint32_t buffersize;

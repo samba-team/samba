@@ -32,7 +32,6 @@
  */
 
 #include "krb5_locl.h"
-RCSID("$Id$");
 
 /* Gaah! I want a portable funopen */
 struct fileptr {

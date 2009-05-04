@@ -33,8 +33,6 @@
 #include "krb5_locl.h"
 #include <err.h>
 
-RCSID("$Id$");
-
 /*
  * Check that a closed cc still keeps it data and that it's no longer
  * there when it's destroyed.

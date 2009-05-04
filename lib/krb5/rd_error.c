@@ -33,8 +33,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_rd_error(krb5_context context,
 	      const krb5_data *msg,

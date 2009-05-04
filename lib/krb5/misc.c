@@ -33,8 +33,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 krb5_error_code KRB5_LIB_FUNCTION
 _krb5_s4u2self_to_checksumdata(krb5_context context,
 			       const PA_S4U2Self *self,

@@ -34,8 +34,6 @@
 #include "krb5_locl.h"
 #include <err.h>
 
-RCSID("$Id$");
-
 static void
 check_set_time(krb5_context context)
 {

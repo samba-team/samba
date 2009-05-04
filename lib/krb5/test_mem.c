@@ -33,8 +33,6 @@
 #include "krb5_locl.h"
 #include <err.h>
 
-RCSID("$Id$");
-
 /*
  * Test run functions, to be used with valgrind to detect memoryleaks.
  */

@@ -33,8 +33,6 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id$");
-
 /*
  * Take the `body' and encode it into `padata' using the credentials
  * in `creds'.

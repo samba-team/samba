@@ -34,8 +34,6 @@
 #include <err.h>
 #include <getarg.h>
 
-RCSID("$Id$");
-
 static void
 test_dh2key(int i,
 	    krb5_context context,

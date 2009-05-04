@@ -33,8 +33,6 @@
 #include "krb5_locl.h"
 #include <getarg.h>
 
-RCSID("$Id$");
-
 static void
 test_int8(krb5_context context, krb5_storage *sp)
 {

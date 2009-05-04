@@ -33,8 +33,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 /*
  * This PAC and keys are copied (with permission) from Samba torture
  * regression test suite, they where created by Andrew Bartlet.

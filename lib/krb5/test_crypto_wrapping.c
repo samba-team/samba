@@ -34,8 +34,6 @@
 #include <err.h>
 #include <getarg.h>
 
-RCSID("$Id$");
-
 static void
 test_wrapping(krb5_context context,
 	      size_t min_size,

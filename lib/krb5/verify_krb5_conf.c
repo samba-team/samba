@@ -35,7 +35,6 @@
 #include <getarg.h>
 #include <parse_bytes.h>
 #include <err.h>
-RCSID("$Id$");
 
 /* verify krb5.conf */
 

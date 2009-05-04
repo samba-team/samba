@@ -34,8 +34,6 @@
 #include <err.h>
 #include <getarg.h>
 
-RCSID("$Id$");
-
 /* print all addresses that we find */
 
 static void

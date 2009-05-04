@@ -32,8 +32,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 static krb5_error_code
 rr13(unsigned char *buf, size_t len)
 {

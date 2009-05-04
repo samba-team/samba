@@ -34,8 +34,6 @@
 #include "krb5_locl.h"
 #include "store-int.h"
 
-RCSID("$Id$");
-
 typedef struct emem_storage{
     unsigned char *base;
     size_t size;

@@ -37,8 +37,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 krb5_error_code KRB5_LIB_FUNCTION
 _krb5_principal2principalname (PrincipalName *p,
 			       const krb5_principal from)

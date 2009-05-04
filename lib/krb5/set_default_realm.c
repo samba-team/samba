@@ -33,8 +33,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 /*
  * Convert the simple string `s' into a NULL-terminated and freshly allocated
  * list in `list'.  Return an error code.

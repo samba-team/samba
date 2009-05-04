@@ -33,8 +33,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 #ifndef HEIMDAL_SMALLER
 
 /* afs keyfile operations --------------------------------------- */

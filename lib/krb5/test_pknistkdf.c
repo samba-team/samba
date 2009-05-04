@@ -36,8 +36,6 @@
 #include <getarg.h>
 #include <hex.h>
 
-RCSID("$Id$");
-
 static int verbose_flag = 0;
 
 struct testcase {

@@ -57,8 +57,6 @@ host/admin@H5L.ORG
 #include <fnmatch.h>
 #include "resolve.h"
 
-RCSID("$Id$");
-
 #define princ_num_comp(P) ((P)->name.name_string.len)
 #define princ_type(P) ((P)->name.name_type)
 #define princ_comp(P) ((P)->name.name_string.val)

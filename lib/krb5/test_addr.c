@@ -33,8 +33,6 @@
 #include "krb5_locl.h"
 #include <err.h>
 
-RCSID("$Id$");
-
 static void
 print_addr(krb5_context context, const char *addr)
 {

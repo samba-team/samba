@@ -32,8 +32,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 enum { MAXSIZE = 24 };
 
 static struct testcase {

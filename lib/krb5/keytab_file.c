@@ -33,8 +33,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 #define KRB5_KT_VNO_1 1
 #define KRB5_KT_VNO_2 2
 #define KRB5_KT_VNO   KRB5_KT_VNO_2

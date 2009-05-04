@@ -34,8 +34,6 @@
 #include "krb5_locl.h"
 #include "store-int.h"
 
-RCSID("$Id$");
-
 typedef struct fd_storage {
     int fd;
 } fd_storage;

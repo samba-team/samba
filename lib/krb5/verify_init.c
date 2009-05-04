@@ -33,8 +33,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 void KRB5_LIB_FUNCTION
 krb5_verify_init_creds_opt_init(krb5_verify_init_creds_opt *options)
 {

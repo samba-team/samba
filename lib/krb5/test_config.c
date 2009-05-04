@@ -34,8 +34,6 @@
 #include "krb5_locl.h"
 #include <err.h>
 
-RCSID("$Id$");
-
 static int
 check_config_file(krb5_context context, char *filelist, char **res, int def)
 {

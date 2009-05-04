@@ -33,8 +33,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 typedef struct krb5_get_init_creds_ctx {
     KDCOptions flags;
     krb5_creds cred;

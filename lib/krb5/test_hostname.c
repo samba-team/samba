@@ -34,8 +34,6 @@
 #include <err.h>
 #include <getarg.h>
 
-RCSID("$Id$");
-
 static int debug_flag	= 0;
 static int version_flag = 0;
 static int help_flag	= 0;

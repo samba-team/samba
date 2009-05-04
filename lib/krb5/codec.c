@@ -35,8 +35,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 #ifndef HEIMDAL_SMALLER
 
 krb5_error_code KRB5_LIB_FUNCTION

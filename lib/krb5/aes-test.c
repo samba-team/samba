@@ -38,8 +38,6 @@
 #include <openssl/evp.h>
 #endif
 
-RCSID("$Id$");
-
 static int verbose = 0;
 
 static void

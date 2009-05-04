@@ -34,8 +34,6 @@
 #include "krb5_locl.h"
 #include <fnmatch.h>
 
-RCSID("$Id$");
-
 struct acl_field {
     enum { acl_string, acl_fnmatch, acl_retval } type;
     union {

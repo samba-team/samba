@@ -35,8 +35,6 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id$");
-
 #undef __attribute__
 #define __attribute__(X)
 

@@ -33,8 +33,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 struct any_data {
     krb5_keytab kt;
     char *name;

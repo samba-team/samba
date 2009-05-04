@@ -33,8 +33,6 @@
 #include "krb5_locl.h"
 #include <err.h>
 
-RCSID("$Id$");
-
 #define RETVAL(c, r, e, s) \
 	do { if (r != e) krb5_errx(c, 1, "%s", s); } while (0)
 #define STRINGMATCH(c, s, _s1, _s2) \

@@ -33,8 +33,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 KRB5_LIB_VARIABLE const char *krb5_config_file =
 #ifdef __APPLE__
 "~/Library/Preferences/edu.mit.Kerberos:"

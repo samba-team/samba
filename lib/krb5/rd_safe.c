@@ -33,8 +33,6 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id$");
-
 static krb5_error_code
 verify_checksum(krb5_context context,
 		krb5_auth_context auth_context,

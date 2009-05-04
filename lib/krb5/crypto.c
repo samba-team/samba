@@ -31,12 +31,10 @@
  * SUCH DAMAGE.
  */
 
-#include "krb5_locl.h"
-RCSID("$Id$");
-#include <pkinit_asn1.h>
-
-#undef KRB5_DEPRECATED
 #define KRB5_DEPRECATED
+
+#include "krb5_locl.h"
+#include <pkinit_asn1.h>
 
 #define WEAK_ENCTYPES 1
 

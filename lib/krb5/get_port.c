@@ -33,8 +33,6 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id$");
-
 int KRB5_LIB_FUNCTION
 krb5_getportbyname (krb5_context context,
 		    const char *service,

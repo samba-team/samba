@@ -33,8 +33,6 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id$");
-
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_aname_to_localname (krb5_context context,
 			 krb5_const_principal aname,

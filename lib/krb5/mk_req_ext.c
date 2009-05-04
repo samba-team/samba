@@ -33,8 +33,6 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id$");
-
 krb5_error_code
 _krb5_mk_req_internal(krb5_context context,
 		      krb5_auth_context *auth_context,

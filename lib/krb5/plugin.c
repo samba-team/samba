@@ -32,7 +32,7 @@
  */
 
 #include "krb5_locl.h"
-RCSID("$Id$");
+
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
 #endif

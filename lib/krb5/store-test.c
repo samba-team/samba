@@ -32,8 +32,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 static void
 print_data(unsigned char *data, size_t len)
 {

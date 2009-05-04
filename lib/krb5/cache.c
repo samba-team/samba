@@ -33,8 +33,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 /**
  * @page krb5_ccache_intro The credential cache functions
  * @section section_krb5_ccache Kerberos credential caches

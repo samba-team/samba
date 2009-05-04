@@ -33,8 +33,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 struct addr_operations {
     int af;
     krb5_address_type atype;

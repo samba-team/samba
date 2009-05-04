@@ -33,8 +33,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 static krb5_error_code
 copy_hostname(krb5_context context,
 	      const char *orig_hostname,

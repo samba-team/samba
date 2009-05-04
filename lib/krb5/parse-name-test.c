@@ -33,8 +33,6 @@
 #include "krb5_locl.h"
 #include <err.h>
 
-RCSID("$Id$");
-
 enum { MAX_COMPONENTS = 3 };
 
 static struct testcase {

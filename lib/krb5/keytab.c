@@ -33,8 +33,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 /**
  * @page krb5_keytab_intro The keytab handing functions
  * @section section_krb5_keytab Kerberos Keytabs

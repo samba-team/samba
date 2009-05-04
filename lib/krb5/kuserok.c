@@ -34,8 +34,6 @@
 #include "krb5_locl.h"
 #include <dirent.h>
 
-RCSID("$Id$");
-
 /* see if principal is mentioned in the filename access file, return
    TRUE (in result) if so, FALSE otherwise */
 

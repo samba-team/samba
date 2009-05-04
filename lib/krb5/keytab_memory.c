@@ -33,8 +33,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 /* memory operations -------------------------------------------- */
 
 struct mkt_data {

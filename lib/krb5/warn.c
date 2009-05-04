@@ -34,8 +34,6 @@
 #include "krb5_locl.h"
 #include <err.h>
 
-RCSID("$Id$");
-
 static krb5_error_code _warnerr(krb5_context context, int do_errtext,
 	 krb5_error_code code, int level, const char *fmt, va_list ap)
 	__attribute__((__format__(__printf__, 5, 0)));

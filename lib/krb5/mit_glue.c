@@ -34,7 +34,6 @@
 #define KRB5_DEPRECATED
 
 #include "krb5_locl.h"
-RCSID("$Id$");
 
 #ifndef HEIMDAL_SMALLER
 

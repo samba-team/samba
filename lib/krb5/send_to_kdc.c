@@ -34,8 +34,6 @@
 #include "krb5_locl.h"
 #include "send_to_kdc_plugin.h"
 
-RCSID("$Id$");
-
 struct send_to_kdc {
     krb5_send_to_kdc_func func;
     void *data;

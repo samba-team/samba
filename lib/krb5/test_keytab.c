@@ -34,8 +34,6 @@
 #include <err.h>
 #include <getarg.h>
 
-RCSID("$Id$");
-
 /*
  * Test that removal entry from of empty keytab doesn't corrupts
  * memory.

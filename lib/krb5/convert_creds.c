@@ -32,8 +32,6 @@
  */
 
 #include "krb5_locl.h"
-RCSID("$Id$");
-
 #include "krb5-v4compat.h"
 
 #ifndef HEIMDAL_SMALLER
