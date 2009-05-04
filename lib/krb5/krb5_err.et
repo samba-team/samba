@@ -106,7 +106,13 @@ error_code PUBLIC_KEY_ENCRYPTION_NOT_SUPPORTED, "Public key encryption not suppo
 #error_code ERR_KDC_NOT_FOUND,	"IAKERB proxy could not find a KDC"
 #error_code ERR_KDC_NO_RESPONSE,	"IAKERB proxy never reeived a response from a KDC"
 
-# 82-127 are reserved
+# 82-93 are reserved
+
+index 94
+error_code INVALID_HASH_ALG, "Invalid OTP digest algorithm"
+error_code INVALID_ITERATION_COUNT, "Invalid OTP iteration count"
+
+# 97-127 are reserved
 
 index 128
 prefix
