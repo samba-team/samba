@@ -1101,6 +1101,11 @@ NTSTATUS ctdbd_traverse(uint32 db_id,
 	struct ctdbd_traverse_state state;
 
 	status = ctdbd_init_connection(NULL, &conn);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("ctdbd_init_connection failed: %s\n",
+			  nt_errstr(status)));
+		return status;
+	}
 
 	t.db_id = db_id;
 	t.srvid = conn->rand_srvid;
