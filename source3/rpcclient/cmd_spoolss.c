@@ -238,12 +238,45 @@ static void display_print_info3(struct spoolss_PrinterInfo3 *r)
 /****************************************************************************
 ****************************************************************************/
 
+static void display_print_info4(struct spoolss_PrinterInfo4 *r)
+{
+	printf("\tservername:[%s]\n", r->servername);
+	printf("\tprintername:[%s]\n", r->printername);
+	printf("\tattributes:[0x%x]\n", r->attributes);
+	printf("\n");
+}
+
+/****************************************************************************
+****************************************************************************/
+
+static void display_print_info5(struct spoolss_PrinterInfo5 *r)
+{
+	printf("\tprintername:[%s]\n", r->printername);
+	printf("\tportname:[%s]\n", r->portname);
+	printf("\tattributes:[0x%x]\n", r->attributes);
+	printf("\tdevice_not_selected_timeout:[0x%x]\n", r->device_not_selected_timeout);
+	printf("\ttransmission_retry_timeout:[0x%x]\n", r->transmission_retry_timeout);
+	printf("\n");
+}
+
+/****************************************************************************
+****************************************************************************/
+
+static void display_print_info6(struct spoolss_PrinterInfo6 *r)
+{
+	printf("\tstatus:[0x%x]\n", r->status);
+	printf("\n");
+}
+
+/****************************************************************************
+****************************************************************************/
+
 static void display_print_info7(struct spoolss_PrinterInfo7 *r)
 {
 	printf("\tguid:[%s]\n", r->guid);
 	printf("\taction:[0x%x]\n", r->action);
+	printf("\n");
 }
-
 
 /****************************************************************************
 ****************************************************************************/
@@ -305,6 +338,15 @@ static WERROR cmd_spoolss_enum_printers(struct rpc_pipe_client *cli,
 				break;
 			case 3:
 				display_print_info3(&info[i].info3);
+				break;
+			case 4:
+				display_print_info4(&info[i].info4);
+				break;
+			case 5:
+				display_print_info5(&info[i].info5);
+				break;
+			case 6:
+				display_print_info6(&info[i].info6);
 				break;
 			default:
 				printf("unknown info level %d\n", level);
@@ -624,6 +666,15 @@ static WERROR cmd_spoolss_getprinter(struct rpc_pipe_client *cli,
 	case 3:
 		display_print_info3(&info.info3);
 		break;
+	case 4:
+		display_print_info4(&info.info4);
+		break;
+	case 5:
+		display_print_info5(&info.info5);
+		break;
+	case 6:
+		display_print_info6(&info.info6);
+		break;
 	case 7:
 		display_print_info7(&info.info7);
 		break;
@@ -917,7 +968,8 @@ static void display_print_driver1(struct spoolss_DriverInfo1 *r)
 	}
 
 	printf("Printer Driver Info 1:\n");
-	printf("\tDriver Name: [%s]\n\n", r->driver_name);
+	printf("\tDriver Name: [%s]\n", r->driver_name);
+	printf("\n");
 }
 
 /****************************************************************************
@@ -935,7 +987,8 @@ static void display_print_driver2(struct spoolss_DriverInfo2 *r)
 	printf("\tArchitecture: [%s]\n", r->architecture);
 	printf("\tDriver Path: [%s]\n", r->driver_path);
 	printf("\tDatafile: [%s]\n", r->data_file);
-	printf("\tConfigfile: [%s]\n\n", r->config_file);
+	printf("\tConfigfile: [%s]\n", r->config_file);
+	printf("\n");
 }
 
 /****************************************************************************
@@ -955,19 +1008,165 @@ static void display_print_driver3(struct spoolss_DriverInfo3 *r)
 	printf("\tArchitecture: [%s]\n", r->architecture);
 	printf("\tDriver Path: [%s]\n", r->driver_path);
 	printf("\tDatafile: [%s]\n", r->data_file);
-	printf("\tConfigfile: [%s]\n\n", r->config_file);
-	printf("\tHelpfile: [%s]\n\n", r->help_file);
+	printf("\tConfigfile: [%s]\n", r->config_file);
+	printf("\tHelpfile: [%s]\n", r->help_file);
 
-	for (i=0; r->dependent_files[i] != NULL; i++) {
+	for (i=0; r->dependent_files && r->dependent_files[i] != NULL; i++) {
 		printf("\tDependentfiles: [%s]\n", r->dependent_files[i]);
 	}
 
-	printf("\n");
-
 	printf("\tMonitorname: [%s]\n", r->monitor_name);
-	printf("\tDefaultdatatype: [%s]\n\n", r->default_datatype);
+	printf("\tDefaultdatatype: [%s]\n", r->default_datatype);
+	printf("\n");
 }
 
+/****************************************************************************
+****************************************************************************/
+
+static void display_print_driver4(struct spoolss_DriverInfo4 *r)
+{
+	int i;
+
+	if (!r) {
+		return;
+	}
+
+	printf("Printer Driver Info 4:\n");
+	printf("\tVersion: [%x]\n", r->version);
+	printf("\tDriver Name: [%s]\n", r->driver_name);
+	printf("\tArchitecture: [%s]\n", r->architecture);
+	printf("\tDriver Path: [%s]\n", r->driver_path);
+	printf("\tDatafile: [%s]\n", r->data_file);
+	printf("\tConfigfile: [%s]\n", r->config_file);
+	printf("\tHelpfile: [%s]\n", r->help_file);
+
+	for (i=0; r->dependent_files && r->dependent_files[i] != NULL; i++) {
+		printf("\tDependentfiles: [%s]\n", r->dependent_files[i]);
+	}
+
+	printf("\tMonitorname: [%s]\n", r->monitor_name);
+	printf("\tDefaultdatatype: [%s]\n", r->default_datatype);
+
+	for (i=0; r->previous_names && r->previous_names[i] != NULL; i++) {
+		printf("\tPrevious Names: [%s]\n", r->previous_names[i]);
+	}
+	printf("\n");
+}
+
+/****************************************************************************
+****************************************************************************/
+
+static void display_print_driver5(struct spoolss_DriverInfo5 *r)
+{
+	if (!r) {
+		return;
+	}
+
+	printf("Printer Driver Info 5:\n");
+	printf("\tVersion: [%x]\n", r->version);
+	printf("\tDriver Name: [%s]\n", r->driver_name);
+	printf("\tArchitecture: [%s]\n", r->architecture);
+	printf("\tDriver Path: [%s]\n", r->driver_path);
+	printf("\tDatafile: [%s]\n", r->data_file);
+	printf("\tConfigfile: [%s]\n", r->config_file);
+	printf("\tDriver Attributes: [0x%x]\n", r->driver_attributes);
+	printf("\tConfig Version: [0x%x]\n", r->config_version);
+	printf("\tDriver Version: [0x%x]\n", r->driver_version);
+	printf("\n");
+}
+
+/****************************************************************************
+****************************************************************************/
+
+static void display_print_driver6(struct spoolss_DriverInfo6 *r)
+{
+	int i;
+
+	if (!r) {
+		return;
+	}
+
+	printf("Printer Driver Info 6:\n");
+	printf("\tVersion: [%x]\n", r->version);
+	printf("\tDriver Name: [%s]\n", r->driver_name);
+	printf("\tArchitecture: [%s]\n", r->architecture);
+	printf("\tDriver Path: [%s]\n", r->driver_path);
+	printf("\tDatafile: [%s]\n", r->data_file);
+	printf("\tConfigfile: [%s]\n", r->config_file);
+	printf("\tHelpfile: [%s]\n", r->help_file);
+
+	for (i=0; r->dependent_files && r->dependent_files[i] != NULL; i++) {
+		printf("\tDependentfiles: [%s]\n", r->dependent_files[i]);
+	}
+
+	printf("\tMonitorname: [%s]\n", r->monitor_name);
+	printf("\tDefaultdatatype: [%s]\n", r->default_datatype);
+
+	for (i=0; r->previous_names && r->previous_names[i] != NULL; i++) {
+		printf("\tPrevious Names: [%s]\n", r->previous_names[i]);
+	}
+
+	printf("\tDriver Date: [%s]\n", nt_time_string(talloc_tos(), r->driver_date));
+	printf("\tDriver Version: [0x%016llx]\n", r->driver_version);
+	printf("\tManufacturer Name: [%s]\n", r->manufacturer_name);
+	printf("\tManufacturer Url: [%s]\n", r->manufacturer_url);
+	printf("\tHardware ID: [%s]\n", r->hardware_id);
+	printf("\tProvider: [%s]\n", r->provider);
+
+	printf("\n");
+}
+
+/****************************************************************************
+****************************************************************************/
+
+static void display_print_driver8(struct spoolss_DriverInfo8 *r)
+{
+	int i;
+
+	if (!r) {
+		return;
+	}
+
+	printf("Printer Driver Info 8:\n");
+	printf("\tVersion: [%x]\n", r->version);
+	printf("\tDriver Name: [%s]\n", r->driver_name);
+	printf("\tArchitecture: [%s]\n", r->architecture);
+	printf("\tDriver Path: [%s]\n", r->driver_path);
+	printf("\tDatafile: [%s]\n", r->data_file);
+	printf("\tConfigfile: [%s]\n", r->config_file);
+	printf("\tHelpfile: [%s]\n", r->help_file);
+	printf("\tMonitorname: [%s]\n", r->monitor_name);
+	printf("\tDefaultdatatype: [%s]\n", r->default_datatype);
+
+	for (i=0; r->dependent_files && r->dependent_files[i] != NULL; i++) {
+		printf("\tDependentfiles: [%s]\n", r->dependent_files[i]);
+	}
+
+	for (i=0; r->previous_names && r->previous_names[i] != NULL; i++) {
+		printf("\tPrevious Names: [%s]\n", r->previous_names[i]);
+	}
+
+	printf("\tDriver Date: [%s]\n", nt_time_string(talloc_tos(), r->driver_date));
+	printf("\tDriver Version: [0x%016llx]\n", r->driver_version);
+	printf("\tManufacturer Name: [%s]\n", r->manufacturer_name);
+	printf("\tManufacturer Url: [%s]\n", r->manufacturer_url);
+	printf("\tHardware ID: [%s]\n", r->hardware_id);
+	printf("\tProvider: [%s]\n", r->provider);
+	printf("\tPrint Processor: [%s]\n", r->print_processor);
+	printf("\tVendor Setup: [%s]\n", r->vendor_setup);
+	for (i=0; r->color_profiles && r->color_profiles[i] != NULL; i++) {
+		printf("\tColor Profiles: [%s]\n", r->color_profiles[i]);
+	}
+	printf("\tInf Path: [%s]\n", r->inf_path);
+	printf("\tPrinter Driver Attributes: [0x%x]\n", r->printer_driver_attributes);
+	for (i=0; r->core_driver_dependencies && r->core_driver_dependencies[i] != NULL; i++) {
+		printf("\tCore Driver Dependencies: [%s]\n", r->core_driver_dependencies[i]);
+	}
+	printf("\tMin Driver Inbox Driver Version Date: [%s]\n", nt_time_string(talloc_tos(), r->min_inbox_driver_ver_date));
+	printf("\tMin Driver Inbox Driver Version Version: [0x%016llx]\n", r->min_inbox_driver_ver_version);
+
+	printf("\n");
+}
 
 /****************************************************************************
 ****************************************************************************/
@@ -1043,6 +1242,18 @@ static WERROR cmd_spoolss_getdriver(struct rpc_pipe_client *cli,
 			break;
 		case 3:
 			display_print_driver3(&info.info3);
+			break;
+		case 4:
+			display_print_driver4(&info.info4);
+			break;
+		case 5:
+			display_print_driver5(&info.info5);
+			break;
+		case 6:
+			display_print_driver6(&info.info6);
+			break;
+		case 8:
+			display_print_driver8(&info.info8);
 			break;
 		default:
 			printf("unknown info level %d\n", level);
@@ -1134,6 +1345,26 @@ static WERROR cmd_spoolss_enum_drivers(struct rpc_pipe_client *cli,
 		case 3:
 			for (j=0; j < count; j++) {
 				display_print_driver3(&info[j].info3);
+			}
+			break;
+		case 4:
+			for (j=0; j < count; j++) {
+				display_print_driver4(&info[j].info4);
+			}
+			break;
+		case 5:
+			for (j=0; j < count; j++) {
+				display_print_driver5(&info[j].info5);
+			}
+			break;
+		case 6:
+			for (j=0; j < count; j++) {
+				display_print_driver6(&info[j].info6);
+			}
+			break;
+		case 8:
+			for (j=0; j < count; j++) {
+				display_print_driver8(&info[j].info8);
 			}
 			break;
 		default:
