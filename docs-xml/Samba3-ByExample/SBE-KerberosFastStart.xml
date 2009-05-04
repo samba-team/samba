@@ -1368,8 +1368,10 @@
 
 	<orderedlist>
 		<listitem><para>
-		A user opens a Work document from a network drive. The file was owned by user <constant>janetp</constant>
+		A user opens a Word document from a network drive. The file was owned by user <constant>janetp</constant>
 		and <group>users</group>, and was set read/write-enabled for everyone.
+		A user opens a Word document from a network drive. The file was owned by user <constant>janetp</constant>
+		and <constant>users</constant>, and was set read/write-enabled for everyone.
 		</para></listitem>
 
 		<listitem><para>
