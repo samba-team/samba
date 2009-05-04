@@ -704,7 +704,7 @@ KrbFastReq ::= SEQUENCE {
 KrbFastArmoredReq ::= SEQUENCE {
 	armor        [0] KrbFastArmor OPTIONAL,
 	req-checksum [1] Checksum,
-	enc-fast-req [2] EncryptedData, -- KrbFastReq --
+	enc-fast-req [2] EncryptedData -- KrbFastReq --
 }
 
 PA-FX-FAST-REQUEST ::= CHOICE {
