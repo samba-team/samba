@@ -688,6 +688,57 @@ PA-ServerReferralData ::= SEQUENCE {
 	...
 }
 
+FastOptions ::= BIT STRING {
+	    reserved(0),
+	    hide-client-names(1),
+	    kdc-follow--referrals(16)
+}
+
+KrbFastReq ::= SEQUENCE {
+	fast-options [0] FastOptions,
+	padata       [1] SEQUENCE OF PA-DATA,
+	req-body     [2] KDC-REQ-BODY,
+	...
+}
+
+KrbFastArmoredReq ::= SEQUENCE {
+	armor        [0] KrbFastArmor OPTIONAL,
+	req-checksum [1] Checksum,
+	enc-fast-req [2] EncryptedData, -- KrbFastReq --
+}
+
+PA-FX-FAST-REQUEST ::= CHOICE {
+	armored-data [0] KrbFastArmoredReq,
+	...
+}
+
+KrbFastFinished ::= SEQUENCE {
+	timestamp   [0] KerberosTime,
+	usec        [1] Microseconds,
+	crealm      [2] Realm,
+	cname       [3] PrincipalName,
+	checksum    [4] Checksum,
+	ticket-checksum [5] Checksum,
+	...
+}
+
+KrbFastResponse ::= SEQUENCE {
+	padata      [0] SEQUENCE OF PA-DATA,
+	rep-key     [1] EncryptionKey OPTIONAL,
+	finished    [2] KrbFastFinished OPTIONAL,
+	...
+}
+
+KrbFastArmoredRep ::= SEQUENCE {
+	enc-fast-rep      [0] EncryptedData, -- KrbFastResponse --
+	...
+}
+
+PA-FX-FAST-REPLY ::= CHOICE {
+	armored-data [0] KrbFastArmoredRep,
+	...
+}
+
 END
 
 -- etags -r '/\([A-Za-z][-A-Za-z0-9]*\).*::=/\1/' k5.asn1
