@@ -24,6 +24,7 @@
 #include "onefs_config.h"
 
 #include <ifs/ifs_syscalls.h>
+#include <isi_util/isi_dir.h>
 
 /* The OneFS filesystem provides a readdirplus() syscall, equivalent to the
  * NFSv3 PDU, which retrieves bulk directory listings with stat information
@@ -48,11 +49,11 @@ static uint64_t *rdp_cookies = NULL;
 struct rdp_dir_state {
 	struct rdp_dir_state *next, *prev;
 	SMB_STRUCT_DIR *dirp;
-	char *direntries_cursor; /* cursor to current direntry in the cache */
+	char *direntries_cursor; /* cursor to last returned direntry in cache */
 	size_t stat_count;	 /* number of entries stored in the cache */
-	size_t stat_cursor;	 /* cursor to current stat in the cache */
-	uint64_t resume_cookie;  /* last cookie returned from the cache */
-	long location;		 /* absolute location of direnty in DIR */
+	size_t stat_cursor;	 /* cursor to last returned stat in the cache */
+	uint64_t resume_cookie;  /* cookie from the last entry returned from the
+				    cache */
 };
 
 static struct rdp_dir_state *dirstatelist = NULL;
@@ -127,7 +128,6 @@ rdp_init(struct rdp_dir_state *dsp)
 	dsp->stat_count = RDP_BATCH_SIZE;
 	dsp->stat_cursor = RDP_BATCH_SIZE;
 	dsp->resume_cookie = RDP_RESUME_KEY_START;
-	dsp->location = 0;
 
 	return 0;
 }
@@ -155,10 +155,10 @@ rdp_fill_cache(struct rdp_dir_state *dsp)
 	dsp->stat_count = RDP_BATCH_SIZE;
 
 	DEBUG(9, ("Calling readdirplus() with DIR %p, dirfd: %d, "
-		 "resume_cookie 0x%llx, location %u, size_to_read: %zu, "
+		 "resume_cookie %#llx, size_to_read: %zu, "
 		 "direntries_size: %zu, stat_count: %u\n",
-		 dsp->dirp, dirfd, dsp->resume_cookie, dsp->location,
-		 RDP_BATCH_SIZE, RDP_DIRENTRIES_SIZE, dsp->stat_count));
+		 dsp->dirp, dirfd, dsp->resume_cookie, RDP_BATCH_SIZE,
+		 RDP_DIRENTRIES_SIZE, dsp->stat_count));
 
 	nread = readdirplus(dirfd,
 			    RDP_FOLLOW,
@@ -285,6 +285,10 @@ onefs_opendir(vfs_handle_struct *handle, const char *fname, const char *mask,
  * Increment the internal resume cookie, and refresh the cache from the
  * kernel if necessary.
  *
+ * The cache cursor tracks the last entry which was successfully returned
+ * to a caller of onefs_readdir().  When a new entry is requested, this
+ * function first increments the cursor, then returns that entry.
+ *
  * @param[in] handle vfs handle given in most VFS calls
  * @param[in] dirp system DIR handle to retrieve direntries from
  * @param[in/out] sbuf optional stat buffer to fill, this can be NULL
@@ -297,7 +301,7 @@ onefs_readdir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp,
 {
 	struct rdp_dir_state *dsp = NULL;
 	SMB_STRUCT_DIRENT *ret_direntp;
-	bool same_as_last;
+	bool same_as_last, filled_cache = false;
 	int ret = -1;
 
 	/* Set stat invalid in-case we error out */
@@ -321,18 +325,16 @@ onefs_readdir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp,
 	}
 
 	/* DIR is the same, current buffer and cursors are valid.
-	 * Grab the next direntry from our cache. */
+	 * Check if there are any entries left in our current cache. */
 	if (same_as_last) {
-		if ((dsp->direntries_cursor >=
-		    rdp_direntries + RDP_DIRENTRIES_SIZE) ||
-		    (dsp->stat_cursor == dsp->stat_count))
-		{
+		if (dsp->stat_cursor == dsp->stat_count - 1) {
 			/* Cache is empty, refill from kernel */
 			ret = rdp_fill_cache(dsp);
 			if (ret <= 0) {
 				ret_direntp = NULL;
 				goto end;
 			}
+			filled_cache = true;
 		}
 	} else {
 		/* DIR is different from last call, reset all buffers and
@@ -342,13 +344,28 @@ onefs_readdir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp,
 			ret_direntp = NULL;
 			goto end;
 		}
+		filled_cache = true;
 		DEBUG(8, ("Switched global rdp cache to new DIR entry.\n"));
 	}
 
-	/* Return next entry from cache */
+	/* If we just filled the cache we treat that action as the cursor
+	 * increment as the resume cookie used belonged to the previous
+	 * directory entry.  If the cache has not changed we first increment
+	 * our cursor, then return the next entry */
+	if (!filled_cache) {
+		dsp->direntries_cursor +=
+		    ((SMB_STRUCT_DIRENT *)dsp->direntries_cursor)->d_reclen;
+		dsp->stat_cursor++;
+	}
+
+	/* The resume_cookie stored here purposely differs based on whether we
+	 * just filled the cache. The resume cookie stored must always provide
+	 * the next direntry, in case the cache is reloaded on every
+	 * onefs_readdir() */
+	dsp->resume_cookie = rdp_cookies[dsp->stat_cursor];
+
+	/* Return an entry from cache */
 	ret_direntp = ((SMB_STRUCT_DIRENT *)dsp->direntries_cursor);
-	dsp->direntries_cursor +=
-	    ((SMB_STRUCT_DIRENT *)dsp->direntries_cursor)->d_reclen;
 	if (sbuf) {
 		*sbuf = rdp_stats[dsp->stat_cursor];
 		/* readdirplus() sets st_ino field to 0, if it was
@@ -358,14 +375,10 @@ onefs_readdir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp,
 			SET_STAT_INVALID(*sbuf);
 	}
 
-	DEBUG(9, ("Read from DIR %p, direntry: \"%s\", location: %ld, "
-		 "resume cookie: 0x%llx, cache cursor: %zu, cache count: %zu\n",
-		 dsp->dirp, ret_direntp->d_name, dsp->location,
-		 dsp->resume_cookie, dsp->stat_cursor, dsp->stat_count));
-
-	dsp->resume_cookie = rdp_cookies[dsp->stat_cursor];
-	dsp->stat_cursor++;
-	dsp->location++;
+	DEBUG(9, ("Read from DIR %p, direntry: \"%s\", resume cookie: %#llx, "
+		 "cache cursor: %zu, cache count: %zu\n",
+		 dsp->dirp, ret_direntp->d_name, dsp->resume_cookie,
+		 dsp->stat_cursor, dsp->stat_count));
 
 	/* FALLTHROUGH */
 end:
@@ -380,15 +393,9 @@ end:
  *
  * This function should only pass in locations retrieved from onefs_telldir().
  *
- * Ideally the seek point will still be in the readdirplus cache, and we'll
- * just update our cursors.  If the seek location is outside of the current
- * cache we must do an expensive re-enumeration of the entire directory up
- * to the offset.
- *
  * @param[in] handle vfs handle given in most VFS calls
  * @param[in] dirp system DIR handle to set offset on
- * @param[in] offset from the start of the directory where the next read
- *	      will take place
+ * @param[in] offset into the directory to resume reading from
  *
  * @return no return value
  */
@@ -397,8 +404,8 @@ onefs_seekdir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp, long offset)
 {
 	struct rdp_dir_state *dsp = NULL;
 	bool same_as_last;
-	bool outside_cache = false;
-	int ret = -1, i;
+	uint64_t resume_cookie = 0;
+	int ret = -1;
 
 	/* Fallback to default system routines if readdirplus is disabled */
 	if (!lp_parm_bool(SNUM(handle->conn), PARM_ONEFS_TYPE,
@@ -423,97 +430,26 @@ onefs_seekdir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp, long offset)
 		return;
 	}
 
-	/* Short cut if no work needs to be done */
-	if (offset == dsp->location)
-		return;
+	/* Convert offset to resume_cookie */
+	resume_cookie = rdp_offset2cookie(offset);
 
-	/* If DIR is different from last call, reset all buffers and cursors,
-	 * and refill the global cache from the new DIR */
-	if (!same_as_last) {
-		ret = rdp_fill_cache(dsp);
-		if (ret <= 0)
-			goto out;
-		DEBUG(8, ("Switched global rdp cache to new DIR entry.\n"));
-	}
+	DEBUG(9, ("Seek DIR %p, offset: %ld, resume_cookie: %#llx\n",
+		 dsp->dirp, offset, resume_cookie));
 
-	/* Check if location is outside the currently cached entries */
-	if (offset < dsp->location - dsp->stat_cursor) {
-		/* offset is before the current cache */
-		/* reset to the beginning of the directory */
-		ret = rdp_init(dsp);
-		if (ret) {
-			DEBUG(0, ("Error initializing readdirplus() buffers: "
-				 "%s\n", strerror(ret)));
-			goto out;
-		}
-		outside_cache = true;
-	} else if (offset >
-	    dsp->location + (dsp->stat_count - 1 - dsp->stat_cursor))
-	{
-		/* offset is after the current cache
-		 * advance the cookie to the end of the cache */
-		dsp->resume_cookie = rdp_cookies[dsp->stat_count - 1];
-		outside_cache = true;
-	}
+	/* TODO: We could check if the resume_cookie is already in the cache
+	 * through a linear search.  This would allow us to avoid the cost of
+	 * flushing the cache.  Frequently, the seekdir offset will only be
+	 * one entry before the current cache cursor.  However, usually
+	 * VFS_SEEKDIR() is only called at the end of a TRAND2_FIND read and
+	 * we'll flush the cache at the beginning of the next PDU anyway. Some
+	 * analysis should be done to see if this enhancement would provide
+	 * better performance. */
 
-	if (outside_cache) {
-		/* start reading from the directory, until we have the
-		 * specified offset in our cache */
-		do {
-			dsp->location += dsp->stat_count - dsp->stat_cursor;
-			ret = rdp_fill_cache(dsp);
-			if (ret <= 0) {
-				DEBUG(1, ("Error seeking to offset outside the "
-					 "cached directory entries. Offset "
-					 "%ld \n", dsp->location));
-				goto out;
-			}
-			dsp->resume_cookie = rdp_cookies[dsp->stat_count - 1];
-		} while (offset >= dsp->location + dsp->stat_count);
-	}
+	/* Set the resume cookie and indicate that the cache should be reloaded
+	 * on next read */
+	dsp->resume_cookie = resume_cookie;
+	rdp_last_dirp = NULL;
 
-	/* Location should be within the currently cached entries */
-	if (offset < dsp->location &&
-	    offset >= dsp->location - dsp->stat_cursor)
-	{
-		/* offset is within the current cache, before the cursor.
-		 * update cursors to the new location */
-		int new_cursor = dsp->stat_cursor - (dsp->location - offset);
-
-		dsp->direntries_cursor = rdp_direntries;
-		for (i=0; i < new_cursor; i++) {
-			dsp->direntries_cursor +=
-			    ((SMB_STRUCT_DIRENT *)
-			     dsp->direntries_cursor)->d_reclen;
-		}
-		dsp->stat_cursor = new_cursor;
-		dsp->resume_cookie = rdp_cookies[dsp->stat_cursor];
-		dsp->location = offset;
-	} else if (offset >= dsp->location &&
-	   offset <= dsp->location + (dsp->stat_count - 1 - dsp->stat_cursor))
-	{
-		/* offset is within the current cache, at or after the cursor.
-		 * update cursors to the new location */
-		int add_to_cursor = offset - dsp->location - 1;
-
-		for (i=0; i < add_to_cursor; i++) {
-			dsp->direntries_cursor +=
-			    ((SMB_STRUCT_DIRENT *)
-			     dsp->direntries_cursor)->d_reclen;
-		}
-		dsp->stat_cursor += add_to_cursor;
-		dsp->resume_cookie = rdp_cookies[dsp->stat_cursor];
-		dsp->location = offset;
-	}
-
-	DEBUG(9, ("Seek DIR %p, location: %ld, cache cursor: %zu\n",
-		 dsp->dirp, dsp->location, dsp->stat_cursor));
-
-	/* FALLTHROUGH */
-out:
-	/* Set rdp_last_dirp at the end of every VFS call where the cache was
-	 * reloaded */
-	rdp_last_dirp = dirp;
 	return;
 }
 
@@ -525,14 +461,14 @@ out:
  * @param[in] handle vfs handle given in most VFS calls
  * @param[in] dirp system DIR handle to set offset on
  *
- * @return offset from the start of the directory where the next read
- *	   will take place
+ * @return offset into the directory to resume reading from
  */
 long
 onefs_telldir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
 {
 	struct rdp_dir_state *dsp = NULL;
 	bool same_as_last;
+	long offset;
 	int ret = -1;
 
 	/* Fallback to default system routines if readdirplus is disabled */
@@ -550,10 +486,19 @@ onefs_telldir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
 		return -1;
 	}
 
-	DEBUG(9, ("Tell DIR %p, location: %ld, cache cursor: %zu\n",
-		 dsp->dirp, dsp->location, dsp->stat_cursor));
+	/* Convert resume_cookie to offset */
+	offset = rdp_cookie2offset(dsp->resume_cookie);
+	if (offset < 0) {
+		DEBUG(1, ("Unable to convert resume_cookie: %#llx to a "
+			 "suitable 32-bit offset value.\n",
+			 dsp->resume_cookie));
+		return -1;
+	}
 
-	return dsp->location;
+	DEBUG(9, ("Seek DIR %p, offset: %ld, resume_cookie: %#llx\n",
+		 dsp->dirp, offset, dsp->resume_cookie));
+
+	return offset;
 }
 
 /**
@@ -595,8 +540,8 @@ onefs_rewinddir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
 		return;
 	}
 
-	DEBUG(9, ("Rewind DIR: %p, to location: %ld\n", dsp->dirp,
-		 dsp->location));
+	DEBUG(9, ("Rewind DIR: %p, to resume_cookie: %#llx\n", dsp->dirp,
+		 dsp->resume_cookie));
 
 	return;
 }
@@ -664,8 +609,8 @@ onefs_closedir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
 void
 onefs_init_search_op(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
 {
-	/* Setting the rdp_last_dirp to NULL will cause the next readdir operation
-	 * to refill the cache. */
+	/* Setting the rdp_last_dirp to NULL will cause the next readdir
+	 * operation to refill the cache. */
 	rdp_last_dirp = NULL;
 
 	return;
