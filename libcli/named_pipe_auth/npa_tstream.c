@@ -63,7 +63,7 @@ struct tevent_req *tstream_npa_connect_send(TALLOC_CTX *mem_ctx,
 					const char *directory,
 					const char *npipe,
 					const struct tsocket_address *client,
-					const char *client_name,
+					const char *client_name_in,
 					const struct tsocket_address *server,
 					const char *server_name,
 					const struct netr_SamInfo3 *info3,
@@ -119,7 +119,7 @@ struct tevent_req *tstream_npa_connect_send(TALLOC_CTX *mem_ctx,
 		state->auth_req.level = 2;
 		info2 = &state->auth_req.info.info2;
 
-		info2->client_name = client_name;
+		info2->client_name = client_name_in;
 		info2->client_addr = tsocket_address_inet_addr_string(client, state);
 		if (!info2->client_addr) {
 			/* errno might be EINVAL */
