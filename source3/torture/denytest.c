@@ -1470,8 +1470,12 @@ bool torture_denytest1(int dummy)
 			       resultstr(denytable1[i].result));
 		}
 
-		cli_close(cli1, fnum1);
-		cli_close(cli1, fnum2);
+		if (NT_STATUS_IS_OK(ret1)) {
+			cli_close(cli1, fnum1);
+		}
+		if (NT_STATUS_IS_OK(ret2)) {
+			cli_close(cli1, fnum2);
+		}
 	}
 
 	for (i=0;i<2;i++) {
@@ -1555,8 +1559,12 @@ bool torture_denytest2(int dummy)
 			       resultstr(denytable2[i].result));
 		}
 
-		cli_close(cli1, fnum1);
-		cli_close(cli2, fnum2);
+		if (NT_STATUS_IS_OK(ret1)) {
+			cli_close(cli1, fnum1);
+		}
+		if (NT_STATUS_IS_OK(ret2)) {
+			cli_close(cli2, fnum2);
+		}
 	}
 		
 	for (i=0;i<2;i++) {
