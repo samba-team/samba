@@ -52,6 +52,26 @@ bool change_to_guest(void)
 	return true;
 }
 
+/****************************************************************************
+ talloc free the conn->server_info if not used in the vuid cache.
+****************************************************************************/
+
+static void free_conn_server_info_if_unused(connection_struct *conn)
+{
+	unsigned int i;
+
+	for (i = 0; i < VUID_CACHE_SIZE; i++) {
+		struct vuid_cache_entry *ent;
+		ent = &conn->vuid_cache.array[i];
+		if (ent->vuid != UID_FIELD_INVALID &&
+				conn->server_info == ent->server_info) {
+			return;
+		}
+	}
+	/* Not used, safe to free. */
+	TALLOC_FREE(conn->server_info);
+}
+
 /*******************************************************************
  Check if a username is OK.
 
@@ -75,6 +95,7 @@ static bool check_user_ok(connection_struct *conn,
 		for (i=0; i<VUID_CACHE_SIZE; i++) {
 			ent = &conn->vuid_cache.array[i];
 			if (ent->vuid == vuid) {
+				free_conn_server_info_if_unused(conn);
 				conn->server_info = ent->server_info;
 				conn->read_only = ent->read_only;
 				conn->admin_user = ent->admin_user;
@@ -140,6 +161,7 @@ static bool check_user_ok(connection_struct *conn,
 		ent->vuid = vuid;
 		ent->read_only = readonly_share;
 		ent->admin_user = admin_user;
+		free_conn_server_info_if_unused(conn);
 		conn->server_info = ent->server_info;
 	}
 
@@ -151,6 +173,7 @@ static bool check_user_ok(connection_struct *conn,
 
 /****************************************************************************
  Clear a vuid out of the connection's vuid cache
+ This is only called on SMBulogoff.
 ****************************************************************************/
 
 void conn_clear_vuid_cache(connection_struct *conn, uint16_t vuid)
@@ -164,11 +187,29 @@ void conn_clear_vuid_cache(connection_struct *conn, uint16_t vuid)
 
 		if (ent->vuid == vuid) {
 			ent->vuid = UID_FIELD_INVALID;
-			/* Ensure we're not freeing an active pointer. */
+			/*
+			 * We need to keep conn->server_info around
+			 * if it's equal to ent->server_info as a SMBulogoff
+			 * is often followed by a SMBtdis (with an invalid
+			 * vuid). The debug code (or regular code in
+			 * vfs_full_audit) wants to refer to the
+			 * conn->server_info pointer to print debug
+			 * statements. Theoretically this is a bug,
+			 * as once the vuid is gone the server_info
+			 * on the conn struct isn't valid any more,
+			 * but there's enough code that assumes
+			 * conn->server_info is never null that
+			 * it's easier to hold onto the old pointer
+			 * until we get a new sessionsetupX.
+			 * As everything is hung off the
+			 * conn pointer as a talloc context we're not
+			 * leaking memory here. See bug #6315. JRA.
+			 */
 			if (conn->server_info == ent->server_info) {
-				conn->server_info = NULL;
+				ent->server_info = NULL;
+			} else {
+				TALLOC_FREE(ent->server_info);
 			}
-			TALLOC_FREE(ent->server_info);
 			ent->read_only = False;
 			ent->admin_user = False;
 		}
