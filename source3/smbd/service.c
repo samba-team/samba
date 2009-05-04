@@ -668,7 +668,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		&conn->server_info);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("create_connection_server_info failed: %s\n",
+		DEBUG(1, ("create_connection_server_info failed: %s\n",
 			  nt_errstr(status)));
 		*pstatus = status;
 		conn_free(conn);
