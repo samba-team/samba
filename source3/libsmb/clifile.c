@@ -1282,9 +1282,16 @@ NTSTATUS cli_ntcreate(struct cli_state *cli,
 	return status;
 }
 
-uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2,
-			    const char *str, size_t str_len,
-			    size_t *pconverted_size)
+/***********************************************************
+ Common function for pushing stings, used by smb_bytes_push_str()
+ and trans_bytes_push_str(). Only difference is the align_odd
+ parameter setting.
+***********************************************************/
+
+static uint8_t *internal_bytes_push_str(uint8_t *buf, bool ucs2,
+				const char *str, size_t str_len,
+				bool align_odd,
+				size_t *pconverted_size)
 {
 	size_t buflen;
 	char *converted;
@@ -1295,10 +1302,11 @@ uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2,
 	}
 
 	buflen = talloc_get_size(buf);
-	/*
-	 * We're pushing into an SMB buffer, align odd
-	 */
-	if (ucs2 && (buflen % 2 == 0)) {
+
+	if (align_odd && ucs2 && (buflen % 2 == 0)) {
+		/*
+		 * We're pushing into an SMB buffer, align odd
+		 */
 		buf = TALLOC_REALLOC_ARRAY(NULL, buf, uint8_t, buflen + 1);
 		if (buf == NULL) {
 			return NULL;
@@ -1330,6 +1338,34 @@ uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2,
 	}
 
 	return buf;
+}
+
+/***********************************************************
+ Push a string into an SMB buffer, with odd byte alignment
+ if it's a UCS2 string.
+***********************************************************/
+
+uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2,
+			    const char *str, size_t str_len,
+			    size_t *pconverted_size)
+{
+	return internal_bytes_push_str(buf, ucs2, str, str_len,
+			true, pconverted_size);
+}
+
+/***********************************************************
+ Same as smb_bytes_push_str(), but without the odd byte
+ align for ucs2 (we're pushing into a param or data block).
+ static for now, although this will probably change when
+ other modules use async trans calls.
+***********************************************************/
+
+static uint8_t *trans2_bytes_push_str(uint8_t *buf, bool ucs2,
+			    const char *str, size_t str_len,
+			    size_t *pconverted_size)
+{
+	return internal_bytes_push_str(buf, ucs2, str, str_len,
+			false, pconverted_size);
 }
 
 /****************************************************************************
@@ -2940,7 +2976,7 @@ static int cli_posix_open_internal(struct cli_state *cli, const char *fname, int
 			NULL,                        /* name */
 			-1, 0,                          /* fid, flags */
 			&setup, 1, 0,                   /* setup, length, max */
-			param, param_len, 2,            /* param, length, max */
+			param, param_len, 0,            /* param, length, max */
 			(char *)&data,  data_len, cli->max_xmit /* data, length, max */
 			)) {
 		SAFE_FREE(param);
@@ -3033,7 +3069,7 @@ static struct tevent_req *cli_posix_unlink_internal_send(TALLOC_CTX *mem_ctx,
 	memset(param, '\0', 6);
 	SSVAL(param, 0, SMB_POSIX_PATH_UNLINK);
 
-	param = smb_bytes_push_str(param, cli_ucs2(cli), fname,
+	param = trans2_bytes_push_str(param, cli_ucs2(cli), fname,
 				   strlen(fname)+1, NULL);
 
 	if (tevent_req_nomem(param, req)) {
@@ -3053,14 +3089,14 @@ static struct tevent_req *cli_posix_unlink_internal_send(TALLOC_CTX *mem_ctx,
 				0,			/* function. */
 				0,			/* flags. */
 				&setup,			/* setup. */
-				2,			/* num setup. */
-				0,			/* max setup. */
+				1,			/* num setup uint16_t words. */
+				0,			/* max returned setup. */
 				param,			/* param. */
 				talloc_get_size(param),	/* num param. */
-				0,			/* max param. */
+				2,			/* max returned param. */
 				data,			/* data. */
 				2,			/* num data. */
-				0);			/* max data. */
+				0);			/* max returned data. */
 
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);

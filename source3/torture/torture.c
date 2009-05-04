@@ -4100,7 +4100,7 @@ static bool run_simple_posix_open_test(int dummy)
 
 	/* Create a directory. */
 	if (cli_posix_mkdir(cli1, dname, 0777) == -1) {
-		printf("Server doesn't support setting UNIX CIFS extensions.\n");
+		printf("POSIX mkdir of %s failed (%s)\n", dname, cli_errstr(cli1));
 		goto out;
 	}
 
