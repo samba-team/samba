@@ -5143,6 +5143,7 @@ static bool run_uid_regression_test(int dummy)
 {
 	static struct cli_state *cli;
 	int16_t old_vuid;
+	int16_t old_cnum;
 	bool correct = True;
 
 	printf("starting uid regression test\n");
@@ -5172,14 +5173,39 @@ static bool run_uid_regression_test(int dummy)
 				NT_STATUS_NO_SUCH_USER)) {
 			return False;
 		}
-		goto out;
+	}
+
+	old_cnum = cli->cnum;
+
+	/* Now try a SMBtdis with the invald vuid set to zero. */
+	cli->vuid = 0;
+
+	/* This should succeed. */
+	if (cli_tdis(cli)) {
+		printf("First tdis with invalid vuid should succeed.\n");
+	} else {
+		printf("First tdis failed (%s)\n", cli_errstr(cli));
+	}
+
+	cli->vuid = old_vuid;
+	cli->cnum = old_cnum;
+
+	/* This should fail. */
+	if (cli_tdis(cli)) {
+		printf("Second tdis with invalid vuid should fail - succeeded instead !.\n");
+	} else {
+		/* Should be bad tid. */
+		if (!check_error(__LINE__, cli, ERRSRV, ERRinvnid,
+				NT_STATUS_NETWORK_NAME_DELETED)) {
+			return False;
+		}
 	}
 
 	cli_rmdir(cli, "\\uid_reg_test");
 
   out:
 
-	torture_close_connection(cli);
+	cli_shutdown(cli);
 	return correct;
 }
 
