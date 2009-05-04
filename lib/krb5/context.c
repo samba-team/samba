@@ -34,8 +34,6 @@
 #include "krb5_locl.h"
 #include <com_err.h>
 
-RCSID("$Id$");
-
 #define INIT_FIELD(C, T, E, D, F)					\
     (C)->E = krb5_config_get_ ## T ## _default ((C), NULL, (D), 	\
 						"libdefaults", F, NULL)
