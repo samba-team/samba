@@ -839,13 +839,14 @@ _kdc_pk_rd_padata(krb5_context context,
 	} else
 	    cp->keyex = USE_RSA;
 
-	if (ap.supportedCMSTypes) {
-	    ret = hx509_peer_info_alloc(kdc_identity->hx509ctx,
+	ret = hx509_peer_info_alloc(kdc_identity->hx509ctx,
 					&cp->peer);
-	    if (ret) {
-		free_AuthPack(&ap);
-		goto out;
-	    }
+	if (ret) {
+	    free_AuthPack(&ap);
+	    goto out;
+	}
+	
+	if (ap.supportedCMSTypes) {
 	    ret = hx509_peer_info_set_cms_algs(kdc_identity->hx509ctx,
 					       cp->peer,
 					       ap.supportedCMSTypes->val,
@@ -854,6 +855,14 @@ _kdc_pk_rd_padata(krb5_context context,
 		free_AuthPack(&ap);
 		goto out;
 	    }
+	} else {
+	    /* assume old client */
+	    hx509_peer_info_add_cms_alg(kdc_identity->hx509ctx, cp->peer,
+					hx509_crypto_des_rsdi_ede3_cbc());
+	    hx509_peer_info_add_cms_alg(kdc_identity->hx509ctx, cp->peer,
+					hx509_signature_rsa_with_sha1());
+	    hx509_peer_info_add_cms_alg(kdc_identity->hx509ctx, cp->peer,
+					hx509_signature_sha1());
 	}
 	free_AuthPack(&ap);
     } else
@@ -1332,6 +1341,13 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 				    cp,
 				    &info,
 				    &kdc_cert);
+	    if (ret) {
+		free_PA_PK_AS_REP(&rep);
+		krb5_set_error_message(context, ret,
+				       "create pa-reply-dh "
+				       "failed %d", ret);
+		goto out;
+	    }
 
 	    ASN1_MALLOC_ENCODE(ContentInfo, rep.u.dhInfo.dhSignedData.data,
 			       rep.u.dhInfo.dhSignedData.length, &info, &size,
