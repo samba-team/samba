@@ -132,9 +132,9 @@ hx509_peer_info_set_cert(hx509_peer_info peer,
  */
 
 int
-hx509_peer_info_add_cms_algs(hx509_context context,
-			     hx509_peer_info peer,
-			     const AlgorithmIdentifier *val)
+hx509_peer_info_add_cms_alg(hx509_context context,
+			    hx509_peer_info peer,
+			    const AlgorithmIdentifier *val)
 {
     void *ptr;
     int ret;
