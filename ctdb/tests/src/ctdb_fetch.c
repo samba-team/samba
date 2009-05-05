@@ -145,17 +145,6 @@ static void bench_fetch(struct ctdb_context *ctdb, struct event_context *ev)
 	printf("Fetch: %.2f msgs/sec\n", msg_count/end_timer());
 }
 
-enum my_functions {FUNC_FETCH=1};
-
-/*
-  ctdb call function to fetch a record
-*/
-static int fetch_func(struct ctdb_call_info *call)
-{
-	call->reply_data = &call->record_data;
-	return 0;
-}
-
 /*
   handler for reconfigure message
 */
@@ -185,10 +174,10 @@ int main(int argc, const char *argv[])
 	int opt;
 	const char **extra_argv;
 	int extra_argc = 0;
-	int ret;
 	poptContext pc;
 	struct event_context *ev;
-	struct ctdb_call call;
+	TDB_DATA key, data;
+	struct ctdb_record_handle *h;
 	int cluster_ready=0;
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
@@ -225,8 +214,6 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	ret = ctdb_set_call(ctdb_db, fetch_func, FUNC_FETCH);
-
 	ctdb_set_message_handler(ctdb, 0, message_handler, &msg_count);
 
 	printf("Waiting for cluster\n");
@@ -239,24 +226,20 @@ int main(int argc, const char *argv[])
 
 	bench_fetch(ctdb, ev);
 
-	ZERO_STRUCT(call);
-	call.key.dptr = discard_const(TESTKEY);
-	call.key.dsize = strlen(TESTKEY);
+	key.dptr = discard_const(TESTKEY);
+	key.dsize = strlen(TESTKEY);
 
 	printf("Fetching final record\n");
 
-	/* fetch the record */
-	call.call_id = FUNC_FETCH;
-	call.call_data.dptr = NULL;
-	call.call_data.dsize = 0;
+	h = ctdb_fetch_lock(ctdb_db, ctdb, key, &data);
 
-	ret = ctdb_call(ctdb_db, &call);
-	if (ret == -1) {
-		printf("ctdb_call FUNC_FETCH failed - %s\n", ctdb_errstr(ctdb));
+	if (h == NULL) {
+		printf("Failed to fetch record '%s' on node %d\n", 
+		       (const char *)key.dptr, ctdb_get_pnn(ctdb));
 		exit(1);
 	}
 
-	printf("DATA:\n%s\n", (char *)call.reply_data.dptr);
+	printf("DATA:\n%s\n", (char *)data.dptr);
 
 	return 0;
 }
