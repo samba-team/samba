@@ -12,6 +12,12 @@ except that it allows multiple simultaneous writers and uses locking
 internally to keep writers from trampling on each other. TDB is also extremely 
 small.
 
+<h2>Download</h2>
+You can download the latest releases of tdb from the <a
+href="http://samba.org/ftp/tdb">tdb directory</a> on the samba public
+source archive.
+
+
 <h2>Discussion and bug reports</h2>
 
 tdb does not currently have its own mailing list or bug tracking
@@ -22,17 +28,17 @@ bugzilla</a> bug tracking system.
 
 <h2>Download</h2>
 
-You can download the latest release either via rsync or git.<br>
+You can download the latest code either via git or rsync.<br>
 <br>
 To fetch via git see the following guide:<br>
 <a href="http://wiki.samba.org/index.php/Using_Git_for_Samba_Development">Using Git for Samba Development</a><br>
-Once you have cloned the tree switch to the v4-0-test branch and cd into the source/lib/tdb directory.<br>
+Once you have cloned the tree switch to the master branch and cd into the source/lib/tdb directory.<br>
 <br>
 To fetch via rsync use these commands:
 
 <pre>
-  rsync -Pavz samba.org::ftp/unpacked/tdb .
-  rsync -Pavz samba.org::ftp/unpacked/libreplace .
+  rsync -Pavz samba.org::ftp/unpacked/standalone_projects/lib/tdb .
+  rsync -Pavz samba.org::ftp/unpacked/standalone_projects/lib/replace .
 </pre>
 
 and build in tdb. It will find the replace library in the directory
