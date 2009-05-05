@@ -1908,7 +1908,7 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, struc
 	}
 
 	entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct, result);
-	dn = smbldap_talloc_dn(NULL, ldap_state->smbldap_state->ldap_struct, entry);
+	dn = smbldap_talloc_dn(talloc_tos(), ldap_state->smbldap_state->ldap_struct, entry);
 	if (!dn) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
