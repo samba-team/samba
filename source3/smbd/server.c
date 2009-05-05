@@ -356,6 +356,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 
 	pid = sys_fork();
 	if (pid == 0) {
+		NTSTATUS status = NT_STATUS_OK;
 		/* Child code ... */
 		am_parent = 0;
 
@@ -374,10 +375,15 @@ static void smbd_accept_connection(struct tevent_context *ev,
 		talloc_free(s->parent);
 		s = NULL;
 
-		if (!reinit_after_fork(
-			    smbd_messaging_context(),
-			    smbd_event_context(),
-			    true)) {
+		status = reinit_after_fork(smbd_messaging_context(),
+					   smbd_event_context(), true);
+		if (!NT_STATUS_IS_OK(status)) {
+			if (NT_STATUS_EQUAL(status,
+					    NT_STATUS_TOO_MANY_OPENED_FILES)) {
+				DEBUG(0,("child process cannot initialize "
+					 "because too many files are open\n"));
+				goto exit;
+			}
 			DEBUG(0,("reinit_after_fork() failed\n"));
 			smb_panic("reinit_after_fork() failed");
 		}
@@ -386,6 +392,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 		smbd_setup_sig_hup_handler();
 
 		smbd_process();
+	 exit:
 		exit_server_cleanly("end of child");
 		return;
 	} else if (pid < 0) {
@@ -1122,8 +1129,8 @@ extern void build_options(bool screen);
 	if (is_daemon)
 		pidfile_create("smbd");
 
-	if (!reinit_after_fork(smbd_messaging_context(),
-			       smbd_event_context(), false)) {
+	if (!NT_STATUS_IS_OK(reinit_after_fork(smbd_messaging_context(),
+			     smbd_event_context(), false))) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		exit(1);
 	}

@@ -428,8 +428,8 @@ static bool cups_pcap_load_async(int *pfd)
 
 	close_all_print_db();
 
-	if (!reinit_after_fork(smbd_messaging_context(),
-			       smbd_event_context(), true)) {
+	if (!NT_STATUS_IS_OK(reinit_after_fork(smbd_messaging_context(),
+					       smbd_event_context(), true))) {
 		DEBUG(0,("cups_pcap_load_async: reinit_after_fork() failed\n"));
 		smb_panic("cups_pcap_load_async: reinit_after_fork() failed");
 	}
