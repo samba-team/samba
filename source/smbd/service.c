@@ -286,6 +286,10 @@ static int load_registry_service(const char *servicename)
 		TALLOC_FREE(value);
 	}
 
+	if (!service_ok(res)) {
+		res = -1;
+	}
+
  error:
 
 	TALLOC_FREE(key);
