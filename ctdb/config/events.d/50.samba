@@ -135,7 +135,7 @@ periodic_cleanup() {
     # running smbstatus scrubs any dead entries from the connections
     # and sessionid database
     # echo "Running periodic cleanup of samba databases"
-    smbstatus -n > /dev/null 2>&1 &
+    smbstatus -np > /dev/null 2>&1 &
 }
 
 case $cmd in 
