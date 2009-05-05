@@ -788,7 +788,7 @@ static NTSTATUS pdb_nds_update_login_attempts(struct pdb_methods *methods,
 		}
 
 		entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct, result);
-		dn = smbldap_talloc_dn(NULL, ldap_state->smbldap_state->ldap_struct, entry);
+		dn = smbldap_talloc_dn(talloc_tos(), ldap_state->smbldap_state->ldap_struct, entry);
 		if (!dn) {
 			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
