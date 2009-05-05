@@ -6819,7 +6819,7 @@ static bool process_smbconf_service(struct smbconf_service *service)
 		}
 	}
 	if (iServiceIndex >= 0) {
-		ret = service_ok(iServiceIndex);
+		return service_ok(iServiceIndex);
 	}
 	return true;
 }
