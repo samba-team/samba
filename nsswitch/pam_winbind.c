@@ -914,7 +914,7 @@ static void _pam_warn_password_expiry(struct pwb_context *ctx,
 	/* now check for the global password policy */
 	/* good catch from Ralf Haferkamp: an expiry of "never" is translated
 	 * to -1 */
-	if (policy->expire <= 0) {
+	if (policy->expire == -1) {
 		return;
 	}
 
