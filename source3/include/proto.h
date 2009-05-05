@@ -1017,6 +1017,7 @@ void set_mtimespec(SMB_STRUCT_STAT *pst, struct timespec ts);
 struct timespec get_ctimespec(const SMB_STRUCT_STAT *pst);
 void set_ctimespec(SMB_STRUCT_STAT *pst, struct timespec ts);
 void dos_filetime_timespec(struct timespec *tsp);
+time_t make_unix_date2(const void *date_ptr, int zone_offset);
 time_t srv_make_unix_date(const void *date_ptr);
 time_t srv_make_unix_date2(const void *date_ptr);
 time_t srv_make_unix_date3(const void *date_ptr);
@@ -2441,11 +2442,23 @@ bool cli_posix_lock(struct cli_state *cli, uint16_t fnum,
 			bool wait_lock, enum brl_type lock_type);
 bool cli_posix_unlock(struct cli_state *cli, uint16_t fnum, uint64_t offset, uint64_t len);
 bool cli_posix_getlock(struct cli_state *cli, uint16_t fnum, uint64_t *poffset, uint64_t *plen);
-bool cli_getattrE(struct cli_state *cli, int fd,
-		  uint16_t *attr, SMB_OFF_T *size,
-		  time_t *change_time,
-                  time_t *access_time,
-                  time_t *write_time);
+struct tevent_req *cli_getattrE_send(TALLOC_CTX *mem_ctx,
+				struct event_context *ev,
+				struct cli_state *cli,
+                                uint16_t fnum);
+NTSTATUS cli_getattrE_recv(struct tevent_req *req,
+                        uint16_t *attr,
+                        SMB_OFF_T *size,
+                        time_t *change_time,
+                        time_t *access_time,
+                        time_t *write_time);
+NTSTATUS cli_getattrE(struct cli_state *cli,
+			uint16_t fnum,
+			uint16_t *attr,
+			SMB_OFF_T *size,
+			time_t *change_time,
+			time_t *access_time,
+			time_t *write_time);
 bool cli_getatr(struct cli_state *cli, const char *fname,
 		uint16_t *attr, SMB_OFF_T *size, time_t *write_time);
 bool cli_setattrE(struct cli_state *cli, int fd,

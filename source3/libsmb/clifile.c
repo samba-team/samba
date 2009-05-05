@@ -2090,53 +2090,153 @@ bool cli_posix_getlock(struct cli_state *cli, uint16_t fnum, uint64_t *poffset, 
  Do a SMBgetattrE call.
 ****************************************************************************/
 
-bool cli_getattrE(struct cli_state *cli, int fd,
-		  uint16_t *attr, SMB_OFF_T *size,
-		  time_t *change_time,
-                  time_t *access_time,
-                  time_t *write_time)
+static void cli_getattrE_done(struct tevent_req *subreq);
+
+struct cli_getattrE_state {
+	int zone_offset;
+	uint16_t attr;
+	SMB_OFF_T size;
+	time_t change_time;
+	time_t access_time;
+	time_t write_time;
+};
+
+struct tevent_req *cli_getattrE_send(TALLOC_CTX *mem_ctx,
+				struct event_context *ev,
+				struct cli_state *cli,
+				uint16_t fnum)
 {
-	memset(cli->outbuf,'\0',smb_size);
-	memset(cli->inbuf,'\0',smb_size);
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_getattrE_state *state = NULL;
+	uint8_t additional_flags = 0;
+	uint16_t vwv[1];
 
-	cli_set_message(cli->outbuf,1,0,True);
-
-	SCVAL(cli->outbuf,smb_com,SMBgetattrE);
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
-
-	SSVAL(cli->outbuf,smb_vwv0,fd);
-
-	cli_send_smb(cli);
-	if (!cli_receive_smb(cli)) {
-		return False;
+	req = tevent_req_create(mem_ctx, &state, struct cli_getattrE_state);
+	if (req == NULL) {
+		return NULL;
 	}
 
-	if (cli_is_error(cli)) {
-		return False;
+	state->zone_offset = cli->serverzone;
+	SSVAL(vwv+0,0,fnum);
+
+	subreq = cli_smb_send(state, ev, cli, SMBgetattrE, additional_flags,
+			      1, vwv, 0, NULL);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_getattrE_done, req);
+	return req;
+}
+
+static void cli_getattrE_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_getattrE_state *state = tevent_req_data(
+		req, struct cli_getattrE_state);
+	uint8_t wct;
+	uint16_t *vwv = NULL;
+	NTSTATUS status;
+
+	status = cli_smb_recv(subreq, 11, &wct, &vwv, NULL, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
 	}
 
-	if (size) {
-		*size = IVAL(cli->inbuf, smb_vwv6);
-	}
+	state->size = (SMB_OFF_T)IVAL(vwv+6,0);
+	state->attr = SVAL(vwv+10,0);
+	state->change_time = make_unix_date2(vwv+0, state->zone_offset);
+	state->access_time = make_unix_date2(vwv+2, state->zone_offset);
+	state->write_time = make_unix_date2(vwv+4, state->zone_offset);
 
+	TALLOC_FREE(subreq);
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_getattrE_recv(struct tevent_req *req,
+			uint16_t *attr,
+			SMB_OFF_T *size,
+			time_t *change_time,
+			time_t *access_time,
+			time_t *write_time)
+{
+	struct cli_getattrE_state *state = tevent_req_data(
+				req, struct cli_getattrE_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
 	if (attr) {
-		*attr = SVAL(cli->inbuf,smb_vwv10);
+		*attr = state->attr;
 	}
-
+	if (size) {
+		*size = state->size;
+	}
 	if (change_time) {
-		*change_time = cli_make_unix_date2(cli, cli->inbuf+smb_vwv0);
+		*change_time = state->change_time;
 	}
-
 	if (access_time) {
-		*access_time = cli_make_unix_date2(cli, cli->inbuf+smb_vwv2);
+		*access_time = state->access_time;
 	}
-
 	if (write_time) {
-		*write_time = cli_make_unix_date2(cli, cli->inbuf+smb_vwv4);
+		*write_time = state->write_time;
+	}
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_getattrE(struct cli_state *cli,
+			uint16_t fnum,
+			uint16_t *attr,
+			SMB_OFF_T *size,
+			time_t *change_time,
+			time_t *access_time,
+			time_t *write_time)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status = NT_STATUS_OK;
+
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
 	}
 
-	return True;
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	req = cli_getattrE_send(frame, ev, cli, fnum);
+	if (req == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
+	}
+
+	status = cli_getattrE_recv(req,
+					attr,
+					size,
+					change_time,
+					access_time,
+					write_time);
+
+ fail:
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
 }
 
 /****************************************************************************

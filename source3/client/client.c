@@ -1060,8 +1060,8 @@ static int do_get(const char *rname, const char *lname_in, bool reget)
 
 	if (!cli_qfileinfo(targetcli, fnum,
 			   &attr, &size, NULL, NULL, NULL, NULL, NULL) &&
-	    !cli_getattrE(targetcli, fnum,
-			  &attr, &size, NULL, NULL, NULL)) {
+	    !NT_STATUS_IS_OK(cli_getattrE(targetcli, fnum,
+			  &attr, &size, NULL, NULL, NULL))) {
 		d_printf("getattrib: %s\n",cli_errstr(targetcli));
 		return 1;
 	}
@@ -1639,7 +1639,7 @@ static int do_put(const char *rname, const char *lname, bool reput)
 		status = cli_open(targetcli, targetname, O_RDWR|O_CREAT, DENY_NONE, &fnum);
 		if (NT_STATUS_IS_OK(status)) {
 			if (!cli_qfileinfo(targetcli, fnum, NULL, &start, NULL, NULL, NULL, NULL, NULL) &&
-			    !cli_getattrE(targetcli, fnum, NULL, &start, NULL, NULL, NULL)) {
+			    !NT_STATUS_IS_OK(cli_getattrE(targetcli, fnum, NULL, &start, NULL, NULL, NULL))) {
 				d_printf("getattrib: %s\n",cli_errstr(cli));
 				return 1;
 			}

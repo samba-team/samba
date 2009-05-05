@@ -779,9 +779,8 @@ SMBC_lseek_ctx(SMBCCTX *context,
                                    &size, NULL, NULL, NULL, NULL, NULL))
 		{
                         SMB_OFF_T b_size = size;
-			if (!cli_getattrE(targetcli, file->cli_fd,
-                                          NULL, &b_size, NULL, NULL, NULL))
-                        {
+			if (!NT_STATUS_IS_OK(cli_getattrE(targetcli, file->cli_fd,
+                                          NULL, &b_size, NULL, NULL, NULL))) {
                                 errno = EINVAL;
                                 TALLOC_FREE(frame);
                                 return -1;

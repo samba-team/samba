@@ -276,8 +276,8 @@ SMBC_fstat_ctx(SMBCCTX *context,
                 
 		time_t change_time, access_time, write_time;
                 
-		if (!cli_getattrE(targetcli, file->cli_fd, &mode, &size,
-                                  &change_time, &access_time, &write_time)) {
+		if (!NT_STATUS_IS_OK(cli_getattrE(targetcli, file->cli_fd, &mode, &size,
+                                  &change_time, &access_time, &write_time))) {
                         
 			errno = EINVAL;
 			TALLOC_FREE(frame);

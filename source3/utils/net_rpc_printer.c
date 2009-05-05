@@ -198,8 +198,8 @@ NTSTATUS net_copy_fileattr(struct net_context *c,
 	if (copy_attrs || copy_timestamps) {
 
 		/* get file attributes */
-		if (!cli_getattrE(cli_share_src, fnum_src, &attr, NULL,
-				 &f_ctime, &f_atime, &f_mtime)) {
+		if (!NT_STATUS_IS_OK(cli_getattrE(cli_share_src, fnum_src, &attr, NULL,
+				 &f_ctime, &f_atime, &f_mtime))) {
 			DEBUG(0,("failed to get file-attrs: %s\n",
 				cli_errstr(cli_share_src)));
 			nt_status = cli_nt_error(cli_share_src);

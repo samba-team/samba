@@ -605,7 +605,7 @@ static time_t make_unix_date(const void *date_ptr, int zone_offset)
  Like make_unix_date() but the words are reversed.
 ********************************************************************/
 
-static time_t make_unix_date2(const void *date_ptr, int zone_offset)
+time_t make_unix_date2(const void *date_ptr, int zone_offset)
 {
 	uint32_t x,x2;
 
