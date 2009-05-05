@@ -2797,16 +2797,14 @@ int print_queue_status(int snum,
  Pause a queue.
 ****************************************************************************/
 
-bool print_queue_pause(struct auth_serversupplied_info *server_info, int snum,
-		       WERROR *errcode)
+WERROR print_queue_pause(struct auth_serversupplied_info *server_info, int snum)
 {
 	int ret;
 	struct printif *current_printif = get_printer_fns( snum );
 
 	if (!print_access_check(server_info, snum,
 				PRINTER_ACCESS_ADMINISTER)) {
-		*errcode = WERR_ACCESS_DENIED;
-		return False;
+		return WERR_ACCESS_DENIED;
 	}
 
 
@@ -2817,8 +2815,7 @@ bool print_queue_pause(struct auth_serversupplied_info *server_info, int snum,
 	unbecome_root();
 
 	if (ret != 0) {
-		*errcode = WERR_INVALID_PARAM;
-		return False;
+		return WERR_INVALID_PARAM;
 	}
 
 	/* force update the database */
@@ -2828,23 +2825,21 @@ bool print_queue_pause(struct auth_serversupplied_info *server_info, int snum,
 
 	notify_printer_status(snum, PRINTER_STATUS_PAUSED);
 
-	return True;
+	return WERR_OK;
 }
 
 /****************************************************************************
  Resume a queue.
 ****************************************************************************/
 
-bool print_queue_resume(struct auth_serversupplied_info *server_info, int snum,
-			WERROR *errcode)
+WERROR print_queue_resume(struct auth_serversupplied_info *server_info, int snum)
 {
 	int ret;
 	struct printif *current_printif = get_printer_fns( snum );
 
 	if (!print_access_check(server_info, snum,
 				PRINTER_ACCESS_ADMINISTER)) {
-		*errcode = WERR_ACCESS_DENIED;
-		return False;
+		return WERR_ACCESS_DENIED;
 	}
 
 	become_root();
@@ -2854,8 +2849,7 @@ bool print_queue_resume(struct auth_serversupplied_info *server_info, int snum,
 	unbecome_root();
 
 	if (ret != 0) {
-		*errcode = WERR_INVALID_PARAM;
-		return False;
+		return WERR_INVALID_PARAM;
 	}
 
 	/* make sure the database is up to date */
@@ -2866,15 +2860,14 @@ bool print_queue_resume(struct auth_serversupplied_info *server_info, int snum,
 
 	notify_printer_status(snum, PRINTER_STATUS_OK);
 
-	return True;
+	return WERR_OK;
 }
 
 /****************************************************************************
  Purge a queue - implemented by deleting all jobs that we can delete.
 ****************************************************************************/
 
-bool print_queue_purge(struct auth_serversupplied_info *server_info, int snum,
-		       WERROR *errcode)
+WERROR print_queue_purge(struct auth_serversupplied_info *server_info, int snum)
 {
 	print_queue_struct *queue;
 	print_status_struct status;
@@ -2908,5 +2901,5 @@ bool print_queue_purge(struct auth_serversupplied_info *server_info, int snum,
 
 	SAFE_FREE(queue);
 
-	return True;
+	return WERR_OK;
 }

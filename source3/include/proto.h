@@ -4930,12 +4930,9 @@ bool print_job_end(int snum, uint32 jobid, enum file_close_type close_type);
 int print_queue_status(int snum, 
 		       print_queue_struct **ppqueue,
 		       print_status_struct *status);
-bool print_queue_pause(struct auth_serversupplied_info *server_info, int snum,
-		       WERROR *errcode);
-bool print_queue_resume(struct auth_serversupplied_info *server_info, int snum,
-			WERROR *errcode);
-bool print_queue_purge(struct auth_serversupplied_info *server_info, int snum,
-		       WERROR *errcode);
+WERROR print_queue_pause(struct auth_serversupplied_info *server_info, int snum);
+WERROR print_queue_resume(struct auth_serversupplied_info *server_info, int snum);
+WERROR print_queue_purge(struct auth_serversupplied_info *server_info, int snum);
 
 /* The following definitions come from printing/printing_db.c  */
 

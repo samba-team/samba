@@ -5729,20 +5729,14 @@ static WERROR control_printer(struct policy_handle *handle, uint32_t command,
 
 	switch (command) {
 	case SPOOLSS_PRINTER_CONTROL_PAUSE:
-		if (print_queue_pause(p->server_info, snum, &errcode)) {
-			errcode = WERR_OK;
-		}
+		errcode = print_queue_pause(p->server_info, snum);
 		break;
 	case SPOOLSS_PRINTER_CONTROL_RESUME:
 	case SPOOLSS_PRINTER_CONTROL_UNPAUSE:
-		if (print_queue_resume(p->server_info, snum, &errcode)) {
-			errcode = WERR_OK;
-		}
+		errcode = print_queue_resume(p->server_info, snum);
 		break;
 	case SPOOLSS_PRINTER_CONTROL_PURGE:
-		if (print_queue_purge(p->server_info, snum, &errcode)) {
-			errcode = WERR_OK;
-		}
+		errcode = print_queue_purge(p->server_info, snum);
 		break;
 	default:
 		return WERR_UNKNOWN_LEVEL;
