@@ -468,12 +468,15 @@ static bool lookup_rids(TALLOC_CTX *mem_ctx, const DOM_SID *domain_sid,
 		   sid_string_dbg(domain_sid)));
 
 	if (num_rids) {
-		*names = TALLOC_ARRAY(mem_ctx, const char *, num_rids);
+		*names = TALLOC_ZERO_ARRAY(mem_ctx, const char *, num_rids);
 		*types = TALLOC_ARRAY(mem_ctx, enum lsa_SidType, num_rids);
 
 		if ((*names == NULL) || (*types == NULL)) {
 			return false;
 		}
+
+		for (i = 0; i < num_rids; i++)
+			(*types)[i] = SID_NAME_UNKNOWN;
 	} else {
 		*names = NULL;
 		*types = NULL;
