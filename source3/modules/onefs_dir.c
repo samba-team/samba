@@ -431,7 +431,7 @@ onefs_seekdir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp, long offset)
 	}
 
 	/* Convert offset to resume_cookie */
-	resume_cookie = rdp_offset2cookie(offset);
+	resume_cookie = rdp_offset31_to_cookie63(offset);
 
 	DEBUG(9, ("Seek DIR %p, offset: %ld, resume_cookie: %#llx\n",
 		 dsp->dirp, offset, resume_cookie));
@@ -487,11 +487,11 @@ onefs_telldir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
 	}
 
 	/* Convert resume_cookie to offset */
-	offset = rdp_cookie2offset(dsp->resume_cookie);
+	offset = rdp_cookie63_to_offset31(dsp->resume_cookie);
 	if (offset < 0) {
 		DEBUG(1, ("Unable to convert resume_cookie: %#llx to a "
-			 "suitable 32-bit offset value.\n",
-			 dsp->resume_cookie));
+			 "suitable 32-bit offset value. Error: %s\n",
+			 dsp->resume_cookie, strerror(errno)));
 		return -1;
 	}
 
