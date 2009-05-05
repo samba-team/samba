@@ -3512,7 +3512,7 @@ static NTSTATUS ldapsam_modify_aliasmem(struct pdb_methods *methods,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	dn = smbldap_talloc_dn(NULL, ldap_state->smbldap_state->ldap_struct, entry);
+	dn = smbldap_talloc_dn(talloc_tos(), ldap_state->smbldap_state->ldap_struct, entry);
 	if (!dn) {
 		ldap_msgfree(result);
 		return NT_STATUS_UNSUCCESSFUL;
