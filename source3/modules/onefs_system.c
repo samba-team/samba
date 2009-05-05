@@ -580,7 +580,7 @@ ssize_t onefs_sys_recvfile(int fromfd, int tofd, SMB_OFF_T offset,
 
 	/* Log if recvfile didn't write everything it read. */
 	if (total_rbytes != total_wbytes) {
-		DEBUG(0, ("partial recvfile: total_rbytes=%llu but "
+		DEBUG(3, ("partial recvfile: total_rbytes=%llu but "
 			  "total_wbytes=%llu, diff = %llu\n", total_rbytes,
 			  total_wbytes, total_rbytes - total_wbytes));
 		SMB_ASSERT(total_rbytes > total_wbytes);
@@ -591,7 +591,7 @@ ssize_t onefs_sys_recvfile(int fromfd, int tofd, SMB_OFF_T offset,
 	 */
 	while (total_rbytes < count) {
 
-		DEBUG(0, ("shallow recvfile (%s), reading %llu\n",
+		DEBUG(3, ("shallow recvfile (%s), reading %llu\n",
 			  strerror(errno), count - total_rbytes));
 
 		/*
@@ -628,7 +628,7 @@ ssize_t onefs_sys_recvfile(int fromfd, int tofd, SMB_OFF_T offset,
 	 */
 	while (total_wbytes < count) {
 
-		DEBUG(0, ("partial recvfile, writing %llu\n", count - total_wbytes));
+		DEBUG(3, ("partial recvfile, writing %llu\n", count - total_wbytes));
 
 		ret = sys_pwrite(tofd, spill_buffer, count - total_wbytes,
 				 offset + total_wbytes);
