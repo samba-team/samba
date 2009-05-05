@@ -1121,8 +1121,9 @@ bool winbindd_reinit_after_fork(const char *logfilename)
 	struct winbindd_domain *domain;
 	struct winbindd_child *cl;
 
-	if (!reinit_after_fork(winbind_messaging_context(),
-			       winbind_event_context(), true)) {
+	if (!NT_STATUS_IS_OK(reinit_after_fork(winbind_messaging_context(),
+					       winbind_event_context(),
+					       true))) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		return false;
 	}
