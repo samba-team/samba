@@ -24,6 +24,7 @@
 #include "db_wrap.h"
 #include "lib/tdb/include/tdb.h"
 #include "../include/ctdb_private.h"
+#include "lib/util/dlinklist.h"
 
 typedef void (*ctdb_traverse_fn_t)(void *private_data, TDB_DATA key, TDB_DATA data);
 
@@ -32,9 +33,12 @@ typedef void (*ctdb_traverse_fn_t)(void *private_data, TDB_DATA key, TDB_DATA da
   terminate the traverse
  */
 struct ctdb_traverse_local_handle {
+	struct ctdb_traverse_local_handle *next, *prev;
 	struct ctdb_db_context *ctdb_db;
 	int fd[2];
 	pid_t child;
+	uint64_t srvid;
+	uint32_t client_reqid;
 	void *private_data;
 	ctdb_traverse_fn_t callback;
 	struct timeval start_time;
@@ -73,6 +77,7 @@ static void ctdb_traverse_local_handler(uint8_t *rawdata, size_t length, void *p
  */
 static int traverse_local_destructor(struct ctdb_traverse_local_handle *h)
 {
+	DLIST_REMOVE(h->ctdb_db->traverse, h);
 	kill(h->child, SIGKILL);
 	return 0;
 }
@@ -114,6 +119,14 @@ static int ctdb_traverse_local_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DAT
 	return 0;
 }
 
+struct traverse_all_state {
+	struct ctdb_context *ctdb;
+	struct ctdb_traverse_local_handle *h;
+	uint32_t reqid;
+	uint32_t srcnode;
+	uint32_t client_reqid;
+	uint64_t srvid;
+};
 
 /*
   setup a non-blocking traverse of a local ltdb. The callback function
@@ -124,12 +137,12 @@ static int ctdb_traverse_local_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DAT
  */
 static struct ctdb_traverse_local_handle *ctdb_traverse_local(struct ctdb_db_context *ctdb_db,
 							      ctdb_traverse_fn_t callback,
-							      void *private_data)
+							      struct traverse_all_state *all_state)
 {
 	struct ctdb_traverse_local_handle *h;
 	int ret;
 
-	h = talloc_zero(ctdb_db, struct ctdb_traverse_local_handle);
+	h = talloc_zero(all_state, struct ctdb_traverse_local_handle);
 	if (h == NULL) {
 		return NULL;
 	}
@@ -151,8 +164,10 @@ static struct ctdb_traverse_local_handle *ctdb_traverse_local(struct ctdb_db_con
 	}
 
 	h->callback = callback;
-	h->private_data = private_data;
+	h->private_data = all_state;
 	h->ctdb_db = ctdb_db;
+	h->client_reqid = all_state->client_reqid;
+	h->srvid = all_state->srvid;
 
 	if (h->child == 0) {
 		/* start the traverse in the child */
@@ -163,6 +178,8 @@ static struct ctdb_traverse_local_handle *ctdb_traverse_local(struct ctdb_db_con
 
 	close(h->fd[1]);
 	talloc_set_destructor(h, traverse_local_destructor);
+
+	DLIST_ADD(ctdb_db->traverse, h);
 
 	/*
 	  setup a packet queue between the child and the parent. This
@@ -202,6 +219,8 @@ struct ctdb_traverse_all {
 	uint32_t db_id;
 	uint32_t reqid;
 	uint32_t pnn;
+	uint32_t client_reqid;
+	uint64_t srvid;
 };
 
 /* called when a traverse times out */
@@ -216,6 +235,17 @@ static void ctdb_traverse_all_timeout(struct event_context *ev, struct timed_eve
 	talloc_free(state);
 }
 
+
+struct traverse_start_state {
+	struct ctdb_context *ctdb;
+	struct ctdb_traverse_all_handle *h;
+	uint32_t srcnode;
+	uint32_t reqid;
+	uint32_t db_id;
+	uint64_t srvid;
+};
+
+
 /*
   setup a cluster-wide non-blocking traverse of a ctdb. The
   callback function will be called on every record in the local
@@ -226,7 +256,7 @@ static void ctdb_traverse_all_timeout(struct event_context *ev, struct timed_eve
  */
 static struct ctdb_traverse_all_handle *ctdb_daemon_traverse_all(struct ctdb_db_context *ctdb_db,
 								 ctdb_traverse_fn_t callback,
-								 void *private_data)
+								 struct traverse_start_state *start_state)
 {
 	struct ctdb_traverse_all_handle *state;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
@@ -244,7 +274,7 @@ static struct ctdb_traverse_all_handle *ctdb_daemon_traverse_all(struct ctdb_db_
 	state->ctdb_db      = ctdb_db;
 	state->reqid        = ctdb_reqid_new(ctdb_db->ctdb, state);
 	state->callback     = callback;
-	state->private_data = private_data;
+	state->private_data = start_state;
 	state->null_count   = 0;
 	
 	talloc_set_destructor(state, ctdb_traverse_all_destructor);
@@ -252,6 +282,8 @@ static struct ctdb_traverse_all_handle *ctdb_daemon_traverse_all(struct ctdb_db_
 	r.db_id = ctdb_db->db_id;
 	r.reqid = state->reqid;
 	r.pnn   = ctdb->pnn;
+	r.client_reqid = start_state->reqid;
+	r.srvid = start_state->srvid;
 
 	data.dptr = (uint8_t *)&r;
 	data.dsize = sizeof(r);
@@ -300,13 +332,6 @@ static struct ctdb_traverse_all_handle *ctdb_daemon_traverse_all(struct ctdb_db_
 	return state;
 }
 
-struct traverse_all_state {
-	struct ctdb_context *ctdb;
-	struct ctdb_traverse_local_handle *h;
-	uint32_t reqid;
-	uint32_t srcnode;
-};
-
 /*
   called for each record during a traverse all 
  */
@@ -351,7 +376,7 @@ int32_t ctdb_control_traverse_all(struct ctdb_context *ctdb, TDB_DATA data, TDB_
 	struct ctdb_db_context *ctdb_db;
 
 	if (data.dsize != sizeof(struct ctdb_traverse_all)) {
-		DEBUG(DEBUG_ERR,("Invalid size in ctdb_control_traverse_all\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Invalid size in ctdb_control_traverse_all\n"));
 		return -1;
 	}
 
@@ -368,6 +393,8 @@ int32_t ctdb_control_traverse_all(struct ctdb_context *ctdb, TDB_DATA data, TDB_
 	state->reqid = c->reqid;
 	state->srcnode = c->pnn;
 	state->ctdb = ctdb;
+	state->client_reqid = c->client_reqid;
+	state->srvid = c->srvid;
 
 	state->h = ctdb_traverse_local(ctdb_db, traverse_all_callback, state);
 	if (state->h == NULL) {
@@ -431,13 +458,55 @@ int32_t ctdb_control_traverse_data(struct ctdb_context *ctdb, TDB_DATA data, TDB
 	return 0;
 }	
 
-struct traverse_start_state {
-	struct ctdb_context *ctdb;
-	struct ctdb_traverse_all_handle *h;
-	uint32_t srcnode;
-	uint32_t reqid;
-	uint64_t srvid;
-};
+/*
+  kill a in-progress traverse, used when a client disconnects
+ */
+int32_t ctdb_control_traverse_kill(struct ctdb_context *ctdb, TDB_DATA data, 
+				   TDB_DATA *outdata, uint32_t srcnode)
+{
+	struct ctdb_traverse_start *d = (struct ctdb_traverse_start *)data.dptr;
+	struct ctdb_db_context *ctdb_db;
+	struct ctdb_traverse_local_handle *t;
+
+	ctdb_db = find_ctdb_db(ctdb, d->db_id);
+	if (ctdb_db == NULL) {
+		return -1;
+	}
+
+	for (t=ctdb_db->traverse; t; t=t->next) {
+		if (t->client_reqid == d->reqid &&
+		    t->srvid == d->srvid) {
+			talloc_free(t);
+			break;
+		}
+	}
+
+	return 0;
+}
+
+
+/*
+  this is called when a client disconnects during a traverse
+  we need to notify all the nodes taking part in the search that they
+  should kill their traverse children
+ */
+static int ctdb_traverse_start_destructor(struct traverse_start_state *state)
+{
+	struct ctdb_traverse_start r;
+	TDB_DATA data;
+
+	r.db_id = state->db_id;
+	r.reqid = state->reqid;
+	r.srvid = state->srvid;
+
+	data.dptr = (uint8_t *)&r;
+	data.dsize = sizeof(r);
+
+	ctdb_daemon_send_control(state->ctdb, CTDB_BROADCAST_CONNECTED, 0, 
+				 CTDB_CONTROL_TRAVERSE_KILL, 
+				 0, CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL);
+	return 0;
+}
 
 /*
   callback which sends records as messages to the client
@@ -461,19 +530,27 @@ static void traverse_start_callback(void *p, TDB_DATA key, TDB_DATA data)
 	ctdb_dispatch_message(state->ctdb, state->srvid, cdata);
 	if (key.dsize == 0 && data.dsize == 0) {
 		/* end of traverse */
+		talloc_set_destructor(state, NULL);
 		talloc_free(state);
 	}
 }
+
 
 /*
   start a traverse_all - called as a control from a client
  */
 int32_t ctdb_control_traverse_start(struct ctdb_context *ctdb, TDB_DATA data, 
-				    TDB_DATA *outdata, uint32_t srcnode)
+				    TDB_DATA *outdata, uint32_t srcnode, uint32_t client_id)
 {
 	struct ctdb_traverse_start *d = (struct ctdb_traverse_start *)data.dptr;
 	struct traverse_start_state *state;
 	struct ctdb_db_context *ctdb_db;
+	struct ctdb_client *client = ctdb_reqid_find(ctdb, client_id, struct ctdb_client);
+
+	if (client == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " No client found\n"));
+		return -1;		
+	}
 
 	if (data.dsize != sizeof(*d)) {
 		DEBUG(DEBUG_ERR,("Bad record size in ctdb_control_traverse_start\n"));
@@ -485,7 +562,7 @@ int32_t ctdb_control_traverse_start(struct ctdb_context *ctdb, TDB_DATA data,
 		return -1;
 	}
 
-	state = talloc(ctdb_db, struct traverse_start_state);
+	state = talloc(client, struct traverse_start_state);
 	if (state == NULL) {
 		return -1;
 	}
@@ -493,6 +570,7 @@ int32_t ctdb_control_traverse_start(struct ctdb_context *ctdb, TDB_DATA data,
 	state->srcnode = srcnode;
 	state->reqid = d->reqid;
 	state->srvid = d->srvid;
+	state->db_id = d->db_id;
 	state->ctdb = ctdb;
 
 	state->h = ctdb_daemon_traverse_all(ctdb_db, traverse_start_callback, state);
@@ -500,6 +578,8 @@ int32_t ctdb_control_traverse_start(struct ctdb_context *ctdb, TDB_DATA data,
 		talloc_free(state);
 		return -1;
 	}
+
+	talloc_set_destructor(state, ctdb_traverse_start_destructor);
 
 	return 0;
 }

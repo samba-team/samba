@@ -430,6 +430,7 @@ struct ctdb_db_context {
 	struct ctdb_registered_call *calls; /* list of registered calls */
 	uint32_t seqnum;
 	struct timed_event *te;
+	struct ctdb_traverse_local_handle *traverse;
 };
 
 
@@ -560,6 +561,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_EVENT_SCRIPT_STOP       = 94,
 		    CTDB_CONTROL_EVENT_SCRIPT_FINISHED   = 95,
 		    CTDB_CONTROL_GET_EVENT_SCRIPT_STATUS = 96,
+		    CTDB_CONTROL_TRAVERSE_KILL		 = 97,
 };	
 
 /*
@@ -1118,9 +1120,11 @@ struct ctdb_client_call_state {
 
 
 int32_t ctdb_control_traverse_start(struct ctdb_context *ctdb, TDB_DATA indata, 
-				    TDB_DATA *outdata, uint32_t srcnode);
+				    TDB_DATA *outdata, uint32_t srcnode, uint32_t client_id);
 int32_t ctdb_control_traverse_all(struct ctdb_context *ctdb, TDB_DATA data, TDB_DATA *outdata);
 int32_t ctdb_control_traverse_data(struct ctdb_context *ctdb, TDB_DATA data, TDB_DATA *outdata);
+int32_t ctdb_control_traverse_kill(struct ctdb_context *ctdb, TDB_DATA indata, 
+				    TDB_DATA *outdata, uint32_t srcnode);
 
 int ctdb_dispatch_message(struct ctdb_context *ctdb, uint64_t srvid, TDB_DATA data);
 

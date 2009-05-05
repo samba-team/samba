@@ -217,13 +217,17 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 
 	case CTDB_CONTROL_TRAVERSE_START:
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_traverse_start));
-		return ctdb_control_traverse_start(ctdb, indata, outdata, srcnode);
+		return ctdb_control_traverse_start(ctdb, indata, outdata, srcnode, client_id);
 
 	case CTDB_CONTROL_TRAVERSE_ALL:
 		return ctdb_control_traverse_all(ctdb, indata, outdata);
 
 	case CTDB_CONTROL_TRAVERSE_DATA:
 		return ctdb_control_traverse_data(ctdb, indata, outdata);
+
+	case CTDB_CONTROL_TRAVERSE_KILL:
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_traverse_start));
+		return ctdb_control_traverse_kill(ctdb, indata, outdata, srcnode);
 
 	case CTDB_CONTROL_REGISTER_SRVID:
 		return daemon_register_message_handler(ctdb, client_id, srvid);
