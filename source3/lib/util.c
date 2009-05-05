@@ -927,11 +927,11 @@ void smb_msleep(unsigned int t)
 #endif
 }
 
-bool reinit_after_fork(struct messaging_context *msg_ctx,
+NTSTATUS reinit_after_fork(struct messaging_context *msg_ctx,
 		       struct event_context *ev_ctx,
 		       bool parent_longlived)
 {
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_OK;
 
 	/* Reset the state of the random
 	 * number generation system, so
@@ -942,7 +942,8 @@ bool reinit_after_fork(struct messaging_context *msg_ctx,
 	/* tdb needs special fork handling */
 	if (tdb_reopen_all(parent_longlived ? 1 : 0) == -1) {
 		DEBUG(0,("tdb_reopen_all failed.\n"));
-		return false;
+		status = NT_STATUS_OPEN_FAILED;
+		goto done;
 	}
 
 	if (ev_ctx) {
@@ -958,11 +959,10 @@ bool reinit_after_fork(struct messaging_context *msg_ctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("messaging_reinit() failed: %s\n",
 				 nt_errstr(status)));
-			return false;
 		}
 	}
-
-	return true;
+ done:
+	return status;
 }
 
 /****************************************************************************

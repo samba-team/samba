@@ -913,8 +913,8 @@ static bool open_sockets(bool isdaemon, int port)
 
 	pidfile_create("nmbd");
 
-	if (!reinit_after_fork(nmbd_messaging_context(),
-			       nmbd_event_context(), false)) {
+	if (!NT_STATUS_IS_OK(reinit_after_fork(nmbd_messaging_context(),
+					       nmbd_event_context(), false))) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		exit(1);
 	}
