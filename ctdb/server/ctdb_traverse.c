@@ -92,7 +92,6 @@ static int ctdb_traverse_local_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DAT
 	struct ctdb_rec_data *d;
 	struct ctdb_ltdb_header *hdr;
 
-	
 	hdr = (struct ctdb_ltdb_header *)data.dptr;
 
 	if (h->ctdb_db->persistent == 0) {
@@ -229,10 +228,10 @@ static void ctdb_traverse_all_timeout(struct event_context *ev, struct timed_eve
 {
 	struct ctdb_traverse_all_handle *state = talloc_get_type(private_data, struct ctdb_traverse_all_handle);
 
+	DEBUG(DEBUG_ERR,(__location__ " Traverse all timeout on database:%s\n", state->ctdb_db->db_name));
 	state->ctdb->statistics.timeouts.traverse++;
 
 	state->callback(state->private_data, tdb_null, tdb_null);
-	talloc_free(state);
 }
 
 
@@ -265,7 +264,7 @@ static struct ctdb_traverse_all_handle *ctdb_daemon_traverse_all(struct ctdb_db_
 	struct ctdb_traverse_all r;
 	uint32_t destination;
 
-	state = talloc(ctdb_db, struct ctdb_traverse_all_handle);
+	state = talloc(start_state, struct ctdb_traverse_all_handle);
 	if (state == NULL) {
 		return NULL;
 	}
@@ -450,11 +449,6 @@ int32_t ctdb_control_traverse_data(struct ctdb_context *ctdb, TDB_DATA data, TDB
 	private_data = state->private_data;
 
 	callback(private_data, key, data);
-	if (key.dsize == 0 && data.dsize == 0) {
-		/* we've received all of the null replies, so all
-		   nodes are finished */
-		talloc_free(state);
-	}
 	return 0;
 }	
 
@@ -495,6 +489,7 @@ static int ctdb_traverse_start_destructor(struct traverse_start_state *state)
 	struct ctdb_traverse_start r;
 	TDB_DATA data;
 
+	DEBUG(DEBUG_ERR,(__location__ " Traverse cancelled by client disconnect for database:0x%08x\n", state->db_id));
 	r.db_id = state->db_id;
 	r.reqid = state->reqid;
 	r.srvid = state->srvid;
