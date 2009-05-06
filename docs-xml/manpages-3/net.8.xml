@@ -1641,6 +1641,87 @@ See the <citerefentry><refentrytitle>smb.conf</refentrytitle> <manvolnum>5</manv
 </refsect2>
 
 <refsect2>
+<title>DOM</title>
+
+<para>Starting with version 3.2.0 Samba has support for remote join and unjoin APIs, both client and server-side. Windows supports remote join capabilities since Windows 2000.
+</para>
+<para>In order for Samba to be joined or unjoined remotely an account must be used that is either member of the Domain Admins group, a member of the local Administrators group or a user that is granted the SeMachineAccountPrivilege privilege.
+</para>
+
+<para>The client side support for remote join is implemented in the net dom commands which are:
+<simplelist>
+<member>net dom join - Join a remote computer into a domain.</member>
+<member>net dom unjoin - Unjoin a remote computer from a domain.</member>
+</simplelist>
+</para>
+
+<refsect3>
+<title>DOM JOIN	<replaceable>domain=DOMAIN</replaceable> <replaceable>ou=OU</replaceable> <replaceable>account=ACCOUNT</replaceable> <replaceable>password=PASSWORD</replaceable> <replaceable>reboot</replaceable></title>
+
+<para>
+Joins a computer into a domain. This command supports the following additional parameters:
+
+<itemizedlist>
+
+<listitem><replaceable>DOMAIN</replaceable> can be a NetBIOS domain name (also known as short domain name) or a DNS domain name for Active Directory Domains. As in Windows, it is also possible to control which Domain Controller to use. This can be achieved by appending the DC name using the \ separator character. Example: MYDOM\MYDC. The <replaceable>DOMAIN</replaceable> parameter cannot be NULL.</listitem>
+
+<listitem><replaceable>OU</replaceable> can be set to a RFC 1779 LDAP DN, like <emphasis>ou=mymachines,cn=Users,dc=example,dc=com</emphasis> in order to create the machine account in a non-default LDAP containter. This optional parameter is only supported when joining Active Directory Domains.</listitem>
+
+<listitem><replaceable>ACCOUNT</replaceable> defines a domain account that will be used to join the machine to the domain. This domain account needs to have sufficient privileges to join machines.</listitem>
+
+<listitem><replaceable>PASSWORD</replaceable> defines the password for the domain account defined with <replaceable>ACCOUNT</replaceable>.</listitem>
+
+<listitem><replaceable>REBOOT</replaceable> is an optional parameter that can be set to reboot the remote machine after successful join to the domain.</listitem>
+
+</itemizedlist>
+</para>
+
+<para>
+Note that you also need to use standard net paramters to connect and authenticate to the remote machine that you want to join. These additional parameters include: -S computer and -U user.
+</para>
+<para>
+	Example:
+	net dom join -S xp -U XP\\administrator%secret domain=MYDOM account=MYDOM\\administrator password=topsecret reboot.
+</para>
+<para>
+This example would connect to a computer named XP as the local administrator using password secret, and join the computer into a domain called MYDOM using the MYDOM domain administrator account and password topsecret. After successful join, the computer would reboot.
+</para>
+
+</refsect3>
+
+<refsect3>
+<title>DOM UNJOIN <replaceable>account=ACCOUNT</replaceable> <replaceable>password=PASSWORD</replaceable> <replaceable>reboot</replaceable></title>
+
+<para>
+Unjoins a computer from a domain. This command supports the following additional parameters:
+
+<itemizedlist>
+
+<listitem><replaceable>ACCOUNT</replaceable> defines a domain account that will be used to unjoin the machine from the domain. This domain account needs to have sufficient privileges to unjoin machines.</listitem>
+
+<listitem><replaceable>PASSWORD</replaceable> defines the password for the domain account defined with <replaceable>ACCOUNT</replaceable>.</listitem>
+
+<listitem><replaceable>REBOOT</replaceable> is an optional parameter that can be set to reboot the remote machine after successful unjoin from the domain.</listitem>
+
+</itemizedlist>
+</para>
+
+<para>
+Note that you also need to use standard net paramters to connect and authenticate to the remote machine that you want to unjoin. These additional parameters include: -S computer and -U user.
+</para>
+<para>
+	Example:
+	net dom unjoin -S xp -U XP\\administrator%secret account=MYDOM\\administrator password=topsecret reboot.
+</para>
+<para>
+This example would connect to a computer named XP as the local administrator using password secret, and unjoin the computer from the domain using the MYDOM domain administrator account and password topsecret. After successful unjoin, the computer would reboot.
+</para>
+
+</refsect3>
+
+</refsect2>
+
+<refsect2>
 <title>HELP [COMMAND]</title>
 
 <para>Gives usage information for the specified command.</para>
