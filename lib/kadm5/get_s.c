@@ -150,8 +150,16 @@ kadm5_s_get_principal(void *server_handle,
 		break;
 	    }
     }
+#if 0 /* XXX implement */
     if(mask & KADM5_AUX_ATTRIBUTES)
-	/* XXX implement */;
+	;	
+    if(mask & KADM5_LAST_SUCCESS)
+	;
+    if(mask & KADM5_LAST_FAILED)
+	;
+    if(mask & KADM5_FAIL_AUTH_COUNT)
+	;
+#endif
     if(mask & KADM5_POLICY)
 	out->policy = NULL;
     if(mask & KADM5_MAX_RLIFE) {
@@ -160,12 +168,6 @@ kadm5_s_get_principal(void *server_handle,
 	else
 	    out->max_renewable_life = INT_MAX;
     }
-    if(mask & KADM5_LAST_SUCCESS)
-	/* XXX implement */;
-    if(mask & KADM5_LAST_FAILED)
-	/* XXX implement */;
-    if(mask & KADM5_FAIL_AUTH_COUNT)
-	/* XXX implement */;
     if(mask & KADM5_KEY_DATA){
 	int i;
 	Key *key;
