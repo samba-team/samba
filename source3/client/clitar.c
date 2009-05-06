@@ -604,7 +604,7 @@ static void do_setrattr(char *name, uint16 attr, int set)
 		attr = oldattr & ~attr;
 	}
 
-	if (!cli_setatr(cli, name, attr, 0)) {
+	if (!NT_STATUS_IS_OK(cli_setatr(cli, name, attr, 0))) {
 		DEBUG(1,("setatr failed: %s\n", cli_errstr(cli)));
 	}
 }
@@ -1078,7 +1078,7 @@ static int get_file(file_info2 finfo)
 	/* Now we update the creation date ... */
 	DEBUG(5, ("Updating creation date on %s\n", finfo.name));
 
-	if (!cli_setatr(cli, finfo.name, finfo.mode, finfo.mtime_ts.tv_sec)) {
+	if (!NT_STATUS_IS_OK(cli_setatr(cli, finfo.name, finfo.mode, finfo.mtime_ts.tv_sec))) {
 		if (tar_real_noisy) {
 			DEBUG(0, ("Could not set time on file: %s\n", finfo.name));
 			/*return(False); */ /* Ignore, as Win95 does not allow changes */

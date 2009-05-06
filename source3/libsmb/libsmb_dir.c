@@ -1573,7 +1573,7 @@ SMBC_chmod_ctx(SMBCCTX *context,
 	if ((newmode & S_IXGRP) && lp_map_system(-1)) mode |= aSYSTEM;
 	if ((newmode & S_IXOTH) && lp_map_hidden(-1)) mode |= aHIDDEN;
 
-	if (!cli_setatr(targetcli, targetpath, mode, 0)) {
+	if (!NT_STATUS_IS_OK(cli_setatr(targetcli, targetpath, mode, 0))) {
 		errno = SMBC_errno(context, targetcli);
 		TALLOC_FREE(frame);
 		return -1;

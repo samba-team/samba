@@ -2485,7 +2485,7 @@ static bool run_attrtest(int dummy)
 
 	t2 = t-60*60*24; /* 1 day ago */
 
-	if (!cli_setatr(cli, fname, 0, t2)) {
+	if (!NT_STATUS_IS_OK(cli_setatr(cli, fname, 0, t2))) {
 		printf("setatr failed (%s)\n", cli_errstr(cli));
 		correct = True;
 	}
@@ -3726,7 +3726,7 @@ static bool run_opentest(int dummy)
 		return False;
 	}
 
-	if (!cli_setatr(cli1, fname, aRONLY, 0)) {
+	if (!NT_STATUS_IS_OK(cli_setatr(cli1, fname, aRONLY, 0))) {
 		printf("cli_setatr failed (%s)\n", cli_errstr(cli1));
 		return False;
 	}

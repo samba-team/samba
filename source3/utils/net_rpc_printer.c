@@ -243,7 +243,7 @@ NTSTATUS net_copy_fileattr(struct net_context *c,
 	if (copy_attrs) {
 
 		/* set attrs */
-		if (!cli_setatr(cli_share_dst, dst_name, attr, 0)) {
+		if (!NT_STATUS_IS_OK(cli_setatr(cli_share_dst, dst_name, attr, 0))) {
 			DEBUG(0,("failed to set file-attrs: %s\n",
 				cli_errstr(cli_share_dst)));
 			nt_status = cli_nt_error(cli_share_dst);

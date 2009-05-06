@@ -2486,7 +2486,17 @@ NTSTATUS cli_getatr(struct cli_state *cli,
 			uint16_t *attr,
 			SMB_OFF_T *size,
 			time_t *write_time);
-bool cli_setatr(struct cli_state *cli, const char *fname, uint16_t attr, time_t t);
+struct tevent_req *cli_setatr_send(TALLOC_CTX *mem_ctx,
+				struct event_context *ev,
+				struct cli_state *cli,
+				const char *fname,
+				uint16_t attr,
+				time_t mtime);
+NTSTATUS cli_setatr_recv(struct tevent_req *req);
+NTSTATUS cli_setatr(struct cli_state *cli,
+                const char *fname,
+                uint16_t attr,
+                time_t mtime);
 struct tevent_req *cli_chkpath_send(TALLOC_CTX *mem_ctx,
 				  struct event_context *ev,
 				  struct cli_state *cli,

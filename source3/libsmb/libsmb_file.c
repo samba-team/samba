@@ -684,7 +684,7 @@ SMBC_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
                  * seems to work on win98.
                  */
                 if (ret && mode != (uint16) -1) {
-                        ret = cli_setatr(srv->cli, path, mode, 0);
+                        ret = NT_STATUS_IS_OK(cli_setatr(srv->cli, path, mode, 0));
                 }
                 
                 if (! ret) {
