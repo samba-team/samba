@@ -944,11 +944,7 @@ p11_release_module(struct p11_module *p)
 	if (p->slot[i].flags & P11_SESSION_IN_USE)
 	    _hx509_abort("pkcs11 module release while session in use");
 	if (p->slot[i].flags & P11_SESSION) {
-	    int ret;
-
-	    ret = P11FUNC(p, CloseSession, (p->slot[i].session));
-	    if (ret != CKR_OK)
-		;
+	    P11FUNC(p, CloseSession, (p->slot[i].session));
 	}
 
 	if (p->slot[i].name)
