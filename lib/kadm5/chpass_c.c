@@ -61,6 +61,8 @@ kadm5_c_chpass_principal(void *server_handle,
     krb5_store_string(sp, password);
     ret = _kadm5_client_send(context, sp);
     krb5_storage_free(sp);
+    if (ret)
+	return ret;
     ret = _kadm5_client_recv(context, &reply);
     if(ret)
 	return ret;
@@ -107,6 +109,8 @@ kadm5_c_chpass_principal_with_key(void *server_handle,
 	kadm5_store_key_data (sp, &key_data[i]);
     ret = _kadm5_client_send(context, sp);
     krb5_storage_free(sp);
+    if (ret)
+	return ret;
     ret = _kadm5_client_recv(context, &reply);
     if(ret)
 	return ret;
