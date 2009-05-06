@@ -331,7 +331,7 @@ p11_init_slot(hx509_context context,
     }
 
     asprintf(&slot->name, "%.*s",
-	     i, slot_info.slotDescription);
+	     (int)i, slot_info.slotDescription);
 
     if ((slot_info.flags & CKF_TOKEN_PRESENT) == 0)
 	return 0;
