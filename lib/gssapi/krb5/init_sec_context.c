@@ -554,8 +554,10 @@ init_auth_restart
 	flags |= GSS_C_REPLAY_FLAG;
     if (req_flags & GSS_C_SEQUENCE_FLAG)
 	flags |= GSS_C_SEQUENCE_FLAG;
+#if 0
     if (req_flags & GSS_C_ANON_FLAG)
 	;                               /* XXX */
+#endif
     if (req_flags & GSS_C_DCE_STYLE) {
 	/* GSS_C_DCE_STYLE implies GSS_C_MUTUAL_FLAG */
 	flags |= GSS_C_DCE_STYLE | GSS_C_MUTUAL_FLAG;
