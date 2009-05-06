@@ -1588,21 +1588,21 @@ Delete the list of includes from the provided section (global or share).
 
 <para>
 Joins a computer into a domain. This command supports the following additional parameters:
+</para>
 
 <itemizedlist>
 
-<listitem><replaceable>DOMAIN</replaceable> can be a NetBIOS domain name (also known as short domain name) or a DNS domain name for Active Directory Domains. As in Windows, it is also possible to control which Domain Controller to use. This can be achieved by appending the DC name using the \ separator character. Example: MYDOM\MYDC. The <replaceable>DOMAIN</replaceable> parameter cannot be NULL.</listitem>
+<listitem><para><replaceable>DOMAIN</replaceable> can be a NetBIOS domain name (also known as short domain name) or a DNS domain name for Active Directory Domains. As in Windows, it is also possible to control which Domain Controller to use. This can be achieved by appending the DC name using the \ separator character. Example: MYDOM\MYDC. The <replaceable>DOMAIN</replaceable> parameter cannot be NULL.</para></listitem>
 
-<listitem><replaceable>OU</replaceable> can be set to a RFC 1779 LDAP DN, like <emphasis>ou=mymachines,cn=Users,dc=example,dc=com</emphasis> in order to create the machine account in a non-default LDAP containter. This optional parameter is only supported when joining Active Directory Domains.</listitem>
+<listitem><para><replaceable>OU</replaceable> can be set to a RFC 1779 LDAP DN, like <emphasis>ou=mymachines,cn=Users,dc=example,dc=com</emphasis> in order to create the machine account in a non-default LDAP containter. This optional parameter is only supported when joining Active Directory Domains.</para></listitem>
 
-<listitem><replaceable>ACCOUNT</replaceable> defines a domain account that will be used to join the machine to the domain. This domain account needs to have sufficient privileges to join machines.</listitem>
+<listitem><para><replaceable>ACCOUNT</replaceable> defines a domain account that will be used to join the machine to the domain. This domain account needs to have sufficient privileges to join machines.</para></listitem>
 
-<listitem><replaceable>PASSWORD</replaceable> defines the password for the domain account defined with <replaceable>ACCOUNT</replaceable>.</listitem>
+<listitem><para><replaceable>PASSWORD</replaceable> defines the password for the domain account defined with <replaceable>ACCOUNT</replaceable>.</para></listitem>
 
-<listitem><replaceable>REBOOT</replaceable> is an optional parameter that can be set to reboot the remote machine after successful join to the domain.</listitem>
+<listitem><para><replaceable>REBOOT</replaceable> is an optional parameter that can be set to reboot the remote machine after successful join to the domain.</para></listitem>
 
 </itemizedlist>
-</para>
 
 <para>
 Note that you also need to use standard net paramters to connect and authenticate to the remote machine that you want to join. These additional parameters include: -S computer and -U user.
@@ -1622,17 +1622,17 @@ This example would connect to a computer named XP as the local administrator usi
 
 <para>
 Unjoins a computer from a domain. This command supports the following additional parameters:
+</para>
 
 <itemizedlist>
 
-<listitem><replaceable>ACCOUNT</replaceable> defines a domain account that will be used to unjoin the machine from the domain. This domain account needs to have sufficient privileges to unjoin machines.</listitem>
+<listitem><para><replaceable>ACCOUNT</replaceable> defines a domain account that will be used to unjoin the machine from the domain. This domain account needs to have sufficient privileges to unjoin machines.</para></listitem>
 
-<listitem><replaceable>PASSWORD</replaceable> defines the password for the domain account defined with <replaceable>ACCOUNT</replaceable>.</listitem>
+<listitem><para><replaceable>PASSWORD</replaceable> defines the password for the domain account defined with <replaceable>ACCOUNT</replaceable>.</para></listitem>
 
-<listitem><replaceable>REBOOT</replaceable> is an optional parameter that can be set to reboot the remote machine after successful unjoin from the domain.</listitem>
+<listitem><para><replaceable>REBOOT</replaceable> is an optional parameter that can be set to reboot the remote machine after successful unjoin from the domain.</para></listitem>
 
 </itemizedlist>
-</para>
 
 <para>
 Note that you also need to use standard net paramters to connect and authenticate to the remote machine that you want to unjoin. These additional parameters include: -S computer and -U user.
