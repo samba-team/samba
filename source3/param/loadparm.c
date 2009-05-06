@@ -9014,6 +9014,8 @@ bool lp_load_ex(const char *pszFname,
 	init_globals(! initialize_globals);
 	debug_init();
 
+	free_file_list();
+
 	if (save_defaults) {
 		init_locals();
 		lp_save_defaults();
