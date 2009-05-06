@@ -2391,43 +2391,115 @@ NTSTATUS cli_getatr(struct cli_state *cli,
  Do a SMBsetattrE call.
 ****************************************************************************/
 
-bool cli_setattrE(struct cli_state *cli, int fd,
-		  time_t change_time,
-                  time_t access_time,
-                  time_t write_time)
+static void cli_setattrE_done(struct tevent_req *subreq);
 
+struct cli_setattrE_state {
+	int dummy;
+};
+
+struct tevent_req *cli_setattrE_send(TALLOC_CTX *mem_ctx,
+				struct event_context *ev,
+				struct cli_state *cli,
+				uint16_t fnum,
+				time_t change_time,
+				time_t access_time,
+				time_t write_time)
 {
-	char *p;
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_setattrE_state *state = NULL;
+	uint8_t additional_flags = 0;
+	uint16_t vwv[7];
 
-	memset(cli->outbuf,'\0',smb_size);
-	memset(cli->inbuf,'\0',smb_size);
-
-	cli_set_message(cli->outbuf,7,0,True);
-
-	SCVAL(cli->outbuf,smb_com,SMBsetattrE);
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
-
-	SSVAL(cli->outbuf,smb_vwv0, fd);
-	cli_put_dos_date2(cli, cli->outbuf,smb_vwv1, change_time);
-	cli_put_dos_date2(cli, cli->outbuf,smb_vwv3, access_time);
-	cli_put_dos_date2(cli, cli->outbuf,smb_vwv5, write_time);
-
-	p = smb_buf(cli->outbuf);
-	*p++ = 4;
-
-	cli_setup_bcc(cli, p);
-
-	cli_send_smb(cli);
-	if (!cli_receive_smb(cli)) {
-		return False;
+	req = tevent_req_create(mem_ctx, &state, struct cli_setattrE_state);
+	if (req == NULL) {
+		return NULL;
 	}
 
-	if (cli_is_error(cli)) {
-		return False;
+	memset(vwv, '\0', sizeof(vwv));
+	SSVAL(vwv+0, 0, fnum);
+	cli_put_dos_date2(cli, (char *)&vwv[1], 0, change_time);
+	cli_put_dos_date2(cli, (char *)&vwv[3], 0, access_time);
+	cli_put_dos_date2(cli, (char *)&vwv[5], 0, write_time);
+
+	subreq = cli_smb_send(state, ev, cli, SMBsetattrE, additional_flags,
+			      7, vwv, 0, NULL);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_setattrE_done, req);
+	return req;
+}
+
+static void cli_setattrE_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	NTSTATUS status;
+
+	status = cli_smb_recv(subreq, 0, NULL, NULL, NULL, NULL);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_setattrE_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+NTSTATUS cli_setattrE(struct cli_state *cli,
+			uint16_t fnum,
+			time_t change_time,
+			time_t access_time,
+			time_t write_time)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status = NT_STATUS_OK;
+
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
 	}
 
-	return True;
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	req = cli_setattrE_send(frame, ev,
+			cli,
+			fnum,
+			change_time,
+			access_time,
+			write_time);
+
+	if (req == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
+	}
+
+	status = cli_setattrE_recv(req);
+
+ fail:
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
 }
 
 /****************************************************************************

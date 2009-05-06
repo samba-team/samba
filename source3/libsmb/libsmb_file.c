@@ -669,10 +669,10 @@ SMBC_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
                 }
                 
                 /* Set the new attributes */
-                ret = cli_setattrE(srv->cli, fd,
+                ret = NT_STATUS_IS_OK(cli_setattrE(srv->cli, fd,
                                    change_time,
                                    access_time,
-                                   write_time);
+                                   write_time));
                 
                 /* Close the file */
                 cli_close(srv->cli, fd);

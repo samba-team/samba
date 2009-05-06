@@ -2460,10 +2460,19 @@ NTSTATUS cli_getattrE(struct cli_state *cli,
 			time_t *change_time,
 			time_t *access_time,
 			time_t *write_time);
-bool cli_setattrE(struct cli_state *cli, int fd,
-		  time_t change_time,
-                  time_t access_time,
-                  time_t write_time);
+struct tevent_req *cli_setattrE_send(TALLOC_CTX *mem_ctx,
+				struct event_context *ev,
+				struct cli_state *cli,
+				uint16_t fnum,
+				time_t change_time,
+				time_t access_time,
+				time_t write_time);
+NTSTATUS cli_setattrE_recv(struct tevent_req *req);
+NTSTATUS cli_setattrE(struct cli_state *cli,
+			uint16_t fnum,
+			time_t change_time,
+			time_t access_time,
+			time_t write_time);
 struct tevent_req *cli_getatr_send(TALLOC_CTX *mem_ctx,
 				struct event_context *ev,
 				struct cli_state *cli,

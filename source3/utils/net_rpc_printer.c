@@ -221,7 +221,7 @@ NTSTATUS net_copy_fileattr(struct net_context *c,
 	if (copy_timestamps) {
 
 		/* set timestamps */
-		if (!cli_setattrE(cli_share_dst, fnum_dst, f_ctime, f_atime, f_mtime)) {
+		if (!NT_STATUS_IS_OK(cli_setattrE(cli_share_dst, fnum_dst, f_ctime, f_atime, f_mtime))) {
 			DEBUG(0,("failed to set file-attrs (timestamps): %s\n",
 				cli_errstr(cli_share_dst)));
 			nt_status = cli_nt_error(cli_share_dst);
