@@ -1398,8 +1398,7 @@ get_AuthorityKeyIdentifier(hx509_context context,
 	 */
 
 	ret = copy_Name(&certificate->tbsCertificate.subject, &name);
-	if (ai->authorityCertSerialNumber == NULL) {
-	    ret = ENOMEM;
+	if (ret) {
 	    hx509_set_error_string(context, 0, ret, "Out of memory");
 	    goto out;
 	}
