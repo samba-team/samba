@@ -701,6 +701,12 @@ KrbFastReq ::= SEQUENCE {
 	...
 }
 
+KrbFastArmor ::= SEQUENCE {
+	armor-type   [0] krb5int32,
+	armor-value  [1] OCTET STRING,
+        ...
+}
+
 KrbFastArmoredReq ::= SEQUENCE {
 	armor        [0] KrbFastArmor OPTIONAL,
 	req-checksum [1] Checksum,
@@ -714,7 +720,7 @@ PA-FX-FAST-REQUEST ::= CHOICE {
 
 KrbFastFinished ::= SEQUENCE {
 	timestamp   [0] KerberosTime,
-	usec        [1] Microseconds,
+	usec        [1] krb5int32,
 	crealm      [2] Realm,
 	cname       [3] PrincipalName,
 	checksum    [4] Checksum,
