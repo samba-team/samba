@@ -416,7 +416,7 @@ ecdsa_create_signature(hx509_context context,
 	ret = set_digest_alg(signatureAlgorithm, sig_oid, "\x05\x00", 2);
 	if (ret) {
 	    hx509_clear_error_string(context);
-	    return ret;
+	    goto error;
 	}
     }
 
@@ -426,13 +426,19 @@ ecdsa_create_signature(hx509_context context,
 				  data,
 				  NULL,
 				  &indata);
+    if (ret) {
+	if (signatureAlgorithm)
+	    free_AlgorithmIdentifier(signatureAlgorithm);
+	goto error;
+    }
 
     sig->length = ECDSA_size(signer->private_key.ecdsa);
     sig->data = malloc(sig->length);
     if (sig->data == NULL) {
 	der_free_octet_string(&indata);
-	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
-	return ENOMEM;
+	ret = ENOMEM;
+	hx509_set_error_string(context, 0, ret, "out of memory");
+	goto error;
     }
 
     siglen = sig->length;
@@ -441,9 +447,10 @@ ecdsa_create_signature(hx509_context context,
 		     sig->data, &siglen, signer->private_key.ecdsa);
     der_free_octet_string(&indata);
     if (ret != 1) {
-	hx509_set_error_string(context, 0, HX509_CMS_FAILED_CREATE_SIGATURE,
+	ret = HX509_CMS_FAILED_CREATE_SIGATURE;
+	hx509_set_error_string(context, 0, ret,
 			       "ECDSA sign failed: %d", ret);
-	return HX509_CMS_FAILED_CREATE_SIGATURE;
+	goto error;
     }
     if (siglen > sig->length)
 	_hx509_abort("ECDSA signature prelen longer the output len");
@@ -451,6 +458,10 @@ ecdsa_create_signature(hx509_context context,
     sig->length = siglen;
 
     return 0;
+ error:
+    if (signatureAlgorithm)
+	free_AlgorithmIdentifier(signatureAlgorithm);
+    return ret;
 }
 
 static int
