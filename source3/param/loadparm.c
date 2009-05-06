@@ -3354,15 +3354,6 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT,
 	},
 	{
-		.label		= "access based share enum",
-		.type		= P_BOOL,
-		.p_class	= P_LOCAL,
-		.ptr		= &sDefault.bAccessBasedShareEnum,
-		.special	= NULL,
-		.enum_list	= NULL,
-		.flags		= FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE
-	},
-	{
 		.label		= "browsable",
 		.type		= P_BOOL,
 		.p_class	= P_LOCAL,
@@ -3370,6 +3361,15 @@ static struct parm_struct parm_table[] = {
 		.special	= NULL,
 		.enum_list	= NULL,
 		.flags		= FLAG_HIDE,
+	},
+	{
+		.label		= "access based share enum",
+		.type		= P_BOOL,
+		.p_class	= P_LOCAL,
+		.ptr		= &sDefault.bAccessBasedShareEnum,
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE
 	},
 	{
 		.label		= "enhanced browsing",
