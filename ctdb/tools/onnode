@@ -30,15 +30,16 @@ usage ()
     cat >&2 <<EOF
 Usage: onnode [OPTION] ... <NODES> <COMMAND> ...
   options:
-    -c         Run in current working directory on specified nodes.
-    -p         Run command in parallel on specified nodes.
-    -q         Do not print node addresses (overrides -v).
-    -v         Print node address even for a single node.
-  <NODES>      "all", "ok" (or "healthy"), "con" (or "connected"),
-               "rm" (or "recmaster");
-               or a node number (0 base); or
-               list (comma separated) of <NODES>; or
-               range (hyphen separated) of node numbers.
+    -c          Run in current working directory on specified nodes.
+    -o <prefix> Save standard output from each node to file <prefix>.<ip>
+    -p          Run command in parallel on specified nodes.
+    -q          Do not print node addresses (overrides -v).
+    -v          Print node address even for a single node.
+  <NODES>       "all", "ok" (or "healthy"), "con" (or "connected"),
+                "rm" (or "recmaster");
+                or a node number (0 base); or
+                list (comma separated) of <NODES>; or
+                range (hyphen separated) of node numbers.
 EOF
     exit 1
 
@@ -55,13 +56,14 @@ current=false
 parallel=false
 verbose=false
 quiet=false
+prefix=""
 
 parse_options ()
 {
     # $POSIXLY_CORRECT means that the command passed to onnode can
     # take options and getopt won't reorder things to make them
     # options ot onnode.
-    local temp=$(POSIXLY_CORRECT=1 getopt -n "$prog" -o "chpqv" -l help -- "$@")
+    local temp=$(POSIXLY_CORRECT=1 getopt -n "$prog" -o "cho:pqv" -l help -- "$@")
 
     [ $? != 0 ] && usage
 
@@ -70,6 +72,7 @@ parse_options ()
     while true ; do
 	case "$1" in
 	    -c) current=true ; shift ;;
+	    -o) prefix="$2" ; shift 2 ;;
 	    -p) parallel=true ; shift ;;
 	    -q) quiet=true ; shift ;;
 	    -v) verbose=true ; shift ;;
@@ -222,6 +225,26 @@ fakessh ()
     CTDB_SOCKET="$1" sh -c "$2"
 }
 
+stdout_filter ()
+{
+    if [ -n "$prefix" ] ; then
+	cat >"${prefix}.${n}"
+    elif $verbose && $parallel ; then
+	sed -e "s@^@[$n] @"
+    else
+	cat
+    fi
+}
+
+stderr_filter ()
+{
+    if $verbose && $parallel ; then
+	sed -e "s@^@[$n] @"
+    else
+	cat
+    fi
+}
+
 ######################################################################
 
 parse_options "$@"
@@ -263,21 +286,16 @@ trap 'kill -TERM $pids 2>/dev/null' INT TERM
 # the part of the window where it matter is very small.
 retcode=0
 for n in $nodes ; do
+    set -o pipefail 2>/dev/null
     if $parallel ; then
-	if $verbose ; then
-	    # pipefail is a bashism - is there some way to do this with plain sh?
-	    set -o pipefail 2>/dev/null
-	    ($SSH $ssh_opts $EXTRA_SSH_OPTS $n "$command" 2>&1 | sed -e "s@^@[$n] @" )&
-	else
-	    $SSH $ssh_opts $EXTRA_SSH_OPTS $n "$command" &
-	fi
+	{ exec 3>&1 ; { $SSH $ssh_opts $EXTRA_SSH_OPTS $n "$command" | stdout_filter >&3 ; } 2>&1 | stderr_filter ; } &
 	pids="${pids} $!"
     else
 	if $verbose ; then
 	    echo >&2 ; echo ">> NODE: $n <<" >&2
 	fi
 
-	$SSH $ssh_opts $EXTRA_SSH_OPTS $n "$command" 
+	{ exec 3>&1 ; { $SSH $ssh_opts $EXTRA_SSH_OPTS $n "$command" | stdout_filter >&3 ; } 2>&1 | stderr_filter ; }
 	[ $? = 0 ] || retcode=$?
     fi
 done
