@@ -2371,11 +2371,10 @@ hx509_verify_hostname(hx509_context context,
     i = 0;
     do {
 	ret = find_extension_subject_alt_name(cert->data, &i, &san);
-	if (ret == HX509_EXTENSION_NOT_FOUND) {
-	    ret = 0;
+	if (ret == HX509_EXTENSION_NOT_FOUND)
 	    break;
-	} else if (ret != 0)
-	    break;
+	else if (ret != 0)
+	    return HX509_PARSING_NAME_FAILED;
 
 	for (j = 0; j < san.len; j++) {
 	    switch (san.val[j].element) {
