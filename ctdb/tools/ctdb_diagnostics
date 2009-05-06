@@ -133,10 +133,10 @@ show_all "ctdb statistics"
 show_all "ctdb uptime"
 
 echo "Showing log.ctdb"
-show_all "tail -100 /var/log/log.ctdb"
+show_all "test -f /var/log/log.ctdb && tail -100 /var/log/log.ctdb"
 
 echo "Showing log.ctdb"
-show_all "tail -100 /var/log/log.ctdb"
+show_all "test -f /var/log/log.ctdb && tail -100 /var/log/log.ctdb"
 
 show_all "tail -200 /var/log/messages"
 show_all "tail -200 /etc/ctdb/state/vacuum.log"
