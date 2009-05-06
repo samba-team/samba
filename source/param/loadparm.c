@@ -670,6 +670,8 @@ static void set_server_role(void);
 static void set_default_server_announce_type(void);
 static void set_allowed_client_auth(void);
 
+static void add_to_file_list(const char *fname, const char *subfname);
+
 static const struct enum_list enum_protocol[] = {
 	{PROTOCOL_NT1, "NT1"},
 	{PROTOCOL_LANMAN2, "LANMAN2"},
@@ -6606,6 +6608,8 @@ static bool process_registry_globals(void)
 		goto done;
 	}
 
+	add_to_file_list(INCLUDE_REGISTRY_NAME, INCLUDE_REGISTRY_NAME);
+
 	ret = do_parameter("registry shares", "yes", NULL);
 	if (!ret) {
 		goto done;
@@ -6751,45 +6755,51 @@ bool lp_file_list_changed(void)
 
  	DEBUG(6, ("lp_file_list_changed()\n"));
 
-	if (lp_config_backend_is_registry()) {
-		struct smbconf_ctx *conf_ctx = lp_smbconf_ctx();
-
-		if (conf_ctx == NULL) {
-			return false;
-		}
-		if (smbconf_changed(conf_ctx, &conf_last_csn, NULL, NULL)) {
-			DEBUGADD(6, ("registry config changed\n"));
-			return true;
-		}
-	}
-
 	while (f) {
 		char *n2 = NULL;
 		time_t mod_time;
 
-		n2 = alloc_sub_basic(get_current_username(),
-				    current_user_info.domain,
-				    f->name);
-		if (!n2) {
-			return false;
-		}
-		DEBUGADD(6, ("file %s -> %s  last mod_time: %s\n",
-			     f->name, n2, ctime(&f->modtime)));
+		if (strequal(f->name, INCLUDE_REGISTRY_NAME)) {
+			struct smbconf_ctx *conf_ctx = lp_smbconf_ctx();
 
-		mod_time = file_modtime(n2);
+			if (conf_ctx == NULL) {
+				return false;
+			}
+			if (smbconf_changed(conf_ctx, &conf_last_csn, NULL,
+					    NULL))
+			{
+				DEBUGADD(6, ("registry config changed\n"));
+				return true;
+			}
+		} else {
+			n2 = alloc_sub_basic(get_current_username(),
+					    current_user_info.domain,
+					    f->name);
+			if (!n2) {
+				return false;
+			}
+			DEBUGADD(6, ("file %s -> %s  last mod_time: %s\n",
+				     f->name, n2, ctime(&f->modtime)));
 
-		if (mod_time && ((f->modtime != mod_time) || (f->subfname == NULL) || (strcmp(n2, f->subfname) != 0))) {
-			DEBUGADD(6,
-				 ("file %s modified: %s\n", n2,
-				  ctime(&mod_time)));
-			f->modtime = mod_time;
-			SAFE_FREE(f->subfname);
-			f->subfname = n2; /* Passing ownership of
-					     return from alloc_sub_basic
-					     above. */
-			return true;
+			mod_time = file_modtime(n2);
+
+			if (mod_time &&
+			    ((f->modtime != mod_time) ||
+			     (f->subfname == NULL) ||
+			     (strcmp(n2, f->subfname) != 0)))
+			{
+				DEBUGADD(6,
+					 ("file %s modified: %s\n", n2,
+					  ctime(&mod_time)));
+				f->modtime = mod_time;
+				SAFE_FREE(f->subfname);
+				f->subfname = n2; /* Passing ownership of
+						     return from alloc_sub_basic
+						     above. */
+				return true;
+			}
+			SAFE_FREE(n2);
 		}
-		SAFE_FREE(n2);
 		f = f->next;
 	}
 	return (False);
