@@ -175,6 +175,8 @@ read_master_mit(krb5_context context, const char *filename,
     ret = krb5_ret_keyblock(sp, &key);
 #else
     ret = krb5_ret_int16(sp, &enctype);
+    if (ret)
+	goto out;
     if((htons(enctype) & 0xff00) == 0x3000) {
 	ret = HEIM_ERR_BAD_MKEY;
 	krb5_set_error_message(context, ret, "unknown keytype in %s: %#x, expected %#x",
