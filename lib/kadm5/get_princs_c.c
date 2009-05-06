@@ -61,6 +61,8 @@ kadm5_c_get_principals(void *server_handle,
 	krb5_store_string(sp, expression);
     ret = _kadm5_client_send(context, sp);
     krb5_storage_free(sp);
+    if (ret)
+	return ret;
     ret = _kadm5_client_recv(context, &reply);
     if(ret)
 	return ret;
