@@ -878,7 +878,7 @@ static int key_driver_fetch_keys( const char *key, struct regsubkey_ctr *subkeys
 
 	/* if anything else left, just say if has no subkeys */
 
-	DEBUG(1,("key_driver_fetch_keys unhandled key [%s] (subkey == %s\n",
+	DEBUG(1,("key_driver_fetch_keys unhandled key [%s] (subkey == %s)\n",
 		key, subkeypath ));
 
 	return 0;
