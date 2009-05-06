@@ -1397,11 +1397,11 @@ bool set_delete_on_close(files_struct *fsp, bool delete_on_close, const UNIX_USE
 
 	if (fsp->conn->admin_user) {
 		tok_copy = copy_unix_token(lck, tok);
-		tok_copy->uid = (uid_t)0;
 		if (tok_copy == NULL) {
 			TALLOC_FREE(lck);
 			return false;
 		}
+		tok_copy->uid = (uid_t)0;
 		tok = tok_copy;
 	}
 
