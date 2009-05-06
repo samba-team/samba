@@ -25,60 +25,10 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-wbcErr map_wbc_err_from_errno(int error)
-{
-	switch(error) {
-	case EPERM:
-	case EACCES:
-		return WBC_ERR_AUTH_ERROR;
-	case ENOMEM:
-		return WBC_ERR_NO_MEMORY;
-	case EIO:
-	default:
-		return WBC_ERR_UNKNOWN_FAILURE;
-	}
-}
-
-bool tevent_req_is_wbcerr(struct tevent_req *req, wbcErr *pwbc_err)
-{
-	enum tevent_req_state state;
-	uint64_t error;
-	if (!tevent_req_is_error(req, &state, &error)) {
-		*pwbc_err = WBC_ERR_SUCCESS;
-		return false;
-	}
-
-	switch (state) {
-	case TEVENT_REQ_USER_ERROR:
-		*pwbc_err = error;
-		break;
-	case TEVENT_REQ_TIMED_OUT:
-		*pwbc_err = WBC_ERR_UNKNOWN_FAILURE;
-		break;
-	case TEVENT_REQ_NO_MEMORY:
-		*pwbc_err = WBC_ERR_NO_MEMORY;
-		break;
-	default:
-		*pwbc_err = WBC_ERR_UNKNOWN_FAILURE;
-		break;
-	}
-	return true;
-}
-
-wbcErr tevent_req_simple_recv_wbcerr(struct tevent_req *req)
-{
-	wbcErr wbc_err;
-
-	if (tevent_req_is_wbcerr(req, &wbc_err)) {
-		return wbc_err;
-	}
-
-	return WBC_ERR_SUCCESS;
-}
-
 struct req_read_state {
 	struct winbindd_request *wb_req;
 	size_t max_extra_data;
+	ssize_t ret;
 };
 
 static ssize_t wb_req_more(uint8_t *buf, size_t buflen, void *private_data);
@@ -139,13 +89,12 @@ static void wb_req_read_done(struct tevent_req *subreq)
 	struct req_read_state *state = tevent_req_data(
 		req, struct req_read_state);
 	int err;
-	ssize_t ret;
 	uint8_t *buf;
 
-	ret = read_packet_recv(subreq, state, &buf, &err);
+	state->ret = read_packet_recv(subreq, state, &buf, &err);
 	TALLOC_FREE(subreq);
-	if (ret == -1) {
-		tevent_req_error(req, map_wbc_err_from_errno(err));
+	if (state->ret == -1) {
+		tevent_req_error(req, err);
 		return;
 	}
 
@@ -160,22 +109,22 @@ static void wb_req_read_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-wbcErr wb_req_read_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
-			struct winbindd_request **preq)
+ssize_t wb_req_read_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			 struct winbindd_request **preq, int *err)
 {
 	struct req_read_state *state = tevent_req_data(
 		req, struct req_read_state);
-	wbcErr wbc_err;
 
-	if (tevent_req_is_wbcerr(req, &wbc_err)) {
-		return wbc_err;
+	if (tevent_req_is_unix_error(req, err)) {
+		return -1;
 	}
 	*preq = talloc_move(mem_ctx, &state->wb_req);
-	return WBC_ERR_SUCCESS;
+	return state->ret;
 }
 
 struct req_write_state {
 	struct iovec iov[2];
+	ssize_t ret;
 };
 
 static void wb_req_write_done(struct tevent_req *subreq);
@@ -215,25 +164,33 @@ static void wb_req_write_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
+	struct req_write_state *state = tevent_req_data(
+		req, struct req_write_state);
 	int err;
-	ssize_t ret;
 
-	ret = writev_recv(subreq, &err);
+	state->ret = writev_recv(subreq, &err);
 	TALLOC_FREE(subreq);
-	if (ret < 0) {
-		tevent_req_error(req, map_wbc_err_from_errno(err));
+	if (state->ret < 0) {
+		tevent_req_error(req, err);
 		return;
 	}
 	tevent_req_done(req);
 }
 
-wbcErr wb_req_write_recv(struct tevent_req *req)
+ssize_t wb_req_write_recv(struct tevent_req *req, int *err)
 {
-	return tevent_req_simple_recv_wbcerr(req);
+	struct req_write_state *state = tevent_req_data(
+		req, struct req_write_state);
+
+	if (tevent_req_is_unix_error(req, err)) {
+		return -1;
+	}
+	return state->ret;
 }
 
 struct resp_read_state {
 	struct winbindd_response *wb_resp;
+	ssize_t ret;
 };
 
 static ssize_t wb_resp_more(uint8_t *buf, size_t buflen, void *private_data);
@@ -282,12 +239,11 @@ static void wb_resp_read_done(struct tevent_req *subreq)
 		req, struct resp_read_state);
 	uint8_t *buf;
 	int err;
-	ssize_t ret;
 
-	ret = read_packet_recv(subreq, state, &buf, &err);
+	state->ret = read_packet_recv(subreq, state, &buf, &err);
 	TALLOC_FREE(subreq);
-	if (ret == -1) {
-		tevent_req_error(req, map_wbc_err_from_errno(err));
+	if (state->ret == -1) {
+		tevent_req_error(req, err);
 		return;
 	}
 
@@ -302,22 +258,22 @@ static void wb_resp_read_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-wbcErr wb_resp_read_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
-			 struct winbindd_response **presp)
+ssize_t wb_resp_read_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			  struct winbindd_response **presp, int *err)
 {
 	struct resp_read_state *state = tevent_req_data(
 		req, struct resp_read_state);
-	wbcErr wbc_err;
 
-	if (tevent_req_is_wbcerr(req, &wbc_err)) {
-		return wbc_err;
+	if (tevent_req_is_unix_error(req, err)) {
+		return -1;
 	}
 	*presp = talloc_move(mem_ctx, &state->wb_resp);
-	return WBC_ERR_SUCCESS;
+	return state->ret;
 }
 
 struct resp_write_state {
 	struct iovec iov[2];
+	ssize_t ret;
 };
 
 static void wb_resp_write_done(struct tevent_req *subreq);
@@ -358,19 +314,26 @@ static void wb_resp_write_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
+	struct resp_write_state *state = tevent_req_data(
+		req, struct resp_write_state);
 	int err;
-	ssize_t ret;
 
-	ret = writev_recv(subreq, &err);
+	state->ret = writev_recv(subreq, &err);
 	TALLOC_FREE(subreq);
-	if (ret < 0) {
-		tevent_req_error(req, map_wbc_err_from_errno(err));
+	if (state->ret < 0) {
+		tevent_req_error(req, err);
 		return;
 	}
 	tevent_req_done(req);
 }
 
-wbcErr wb_resp_write_recv(struct tevent_req *req)
+ssize_t wb_resp_write_recv(struct tevent_req *req, int *err)
 {
-	return tevent_req_simple_recv_wbcerr(req);
+	struct resp_write_state *state = tevent_req_data(
+		req, struct resp_write_state);
+
+	if (tevent_req_is_unix_error(req, err)) {
+		return -1;
+	}
+	return state->ret;
 }

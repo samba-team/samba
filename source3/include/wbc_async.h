@@ -41,24 +41,24 @@ wbcErr tevent_req_simple_recv_wbcerr(struct tevent_req *req);
 struct tevent_req *wb_req_read_send(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev,
 				    int fd, size_t max_extra_data);
-wbcErr wb_req_read_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
-			struct winbindd_request **preq);
+ssize_t wb_req_read_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			 struct winbindd_request **preq, int *err);
 
 struct tevent_req *wb_req_write_send(TALLOC_CTX *mem_ctx,
 				     struct tevent_context *ev,
 				     struct tevent_queue *queue, int fd,
 				     struct winbindd_request *wb_req);
-wbcErr wb_req_write_recv(struct tevent_req *req);
+ssize_t wb_req_write_recv(struct tevent_req *req, int *err);
 
 struct tevent_req *wb_resp_read_send(TALLOC_CTX *mem_ctx,
 				     struct tevent_context *ev, int fd);
-wbcErr wb_resp_read_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
-			 struct winbindd_response **presp);
+ssize_t wb_resp_read_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			  struct winbindd_response **presp, int *err);
 
 struct tevent_req *wb_resp_write_send(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,
 				      struct tevent_queue *queue, int fd,
 				      struct winbindd_response *wb_resp);
-wbcErr wb_resp_write_recv(struct tevent_req *req);
+ssize_t wb_resp_write_recv(struct tevent_req *req, int *err);
 
 #endif /*_WBC_ASYNC_H_*/

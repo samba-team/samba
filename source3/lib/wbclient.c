@@ -20,6 +20,57 @@
 #include "includes.h"
 #include "wbc_async.h"
 
+wbcErr map_wbc_err_from_errno(int error)
+{
+	switch(error) {
+	case EPERM:
+	case EACCES:
+		return WBC_ERR_AUTH_ERROR;
+	case ENOMEM:
+		return WBC_ERR_NO_MEMORY;
+	case EIO:
+	default:
+		return WBC_ERR_UNKNOWN_FAILURE;
+	}
+}
+
+bool tevent_req_is_wbcerr(struct tevent_req *req, wbcErr *pwbc_err)
+{
+	enum tevent_req_state state;
+	uint64_t error;
+	if (!tevent_req_is_error(req, &state, &error)) {
+		*pwbc_err = WBC_ERR_SUCCESS;
+		return false;
+	}
+
+	switch (state) {
+	case TEVENT_REQ_USER_ERROR:
+		*pwbc_err = error;
+		break;
+	case TEVENT_REQ_TIMED_OUT:
+		*pwbc_err = WBC_ERR_UNKNOWN_FAILURE;
+		break;
+	case TEVENT_REQ_NO_MEMORY:
+		*pwbc_err = WBC_ERR_NO_MEMORY;
+		break;
+	default:
+		*pwbc_err = WBC_ERR_UNKNOWN_FAILURE;
+		break;
+	}
+	return true;
+}
+
+wbcErr tevent_req_simple_recv_wbcerr(struct tevent_req *req)
+{
+	wbcErr wbc_err;
+
+	if (tevent_req_is_wbcerr(req, &wbc_err)) {
+		return wbc_err;
+	}
+
+	return WBC_ERR_SUCCESS;
+}
+
 struct wb_context {
 	struct tevent_queue *queue;
 	int fd;
@@ -320,12 +371,13 @@ static void wb_int_trans_write_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct wb_int_trans_state *state = tevent_req_data(
 		req, struct wb_int_trans_state);
-	wbcErr wbc_err;
+	ssize_t ret;
+	int err;
 
-	wbc_err = wb_req_write_recv(subreq);
+	ret = wb_req_write_recv(subreq, &err);
 	TALLOC_FREE(subreq);
-	if (!WBC_ERROR_IS_OK(wbc_err)) {
-		tevent_req_error(req, wbc_err);
+	if (ret == -1) {
+		tevent_req_error(req, map_wbc_err_from_errno(err));
 		return;
 	}
 
@@ -342,12 +394,13 @@ static void wb_int_trans_read_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct wb_int_trans_state *state = tevent_req_data(
 		req, struct wb_int_trans_state);
-	wbcErr wbc_err;
+	ssize_t ret;
+	int err;
 
-	wbc_err = wb_resp_read_recv(subreq, state, &state->wb_resp);
+	ret = wb_resp_read_recv(subreq, state, &state->wb_resp, &err);
 	TALLOC_FREE(subreq);
-	if (!WBC_ERROR_IS_OK(wbc_err)) {
-		tevent_req_error(req, wbc_err);
+	if (ret == -1) {
+		tevent_req_error(req, map_wbc_err_from_errno(err));
 		return;
 	}
 
