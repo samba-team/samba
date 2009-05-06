@@ -955,8 +955,6 @@ static void winbindd_listen_fde_handler(struct tevent_context *ev,
 			break;
 		}
 	}
-
-	/* new, non-privileged connection */
 	new_connection(s->fd, s->privileged);
 }
 
