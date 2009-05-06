@@ -85,6 +85,7 @@ ${kadmin} \
 
 ${kadmin} add -p foo --use-defaults foo@${R} || exit 1
 ${kadmin} modify --alias=alias1 --alias=alias2 foo@${R} || exit 1
+${kadmin} get foo@${R} | grep alias1@${R} >/dev/null || exit 1
 
 ${kadmin} add -p foo --use-defaults  ${service}@${R2} || exit 1
 
