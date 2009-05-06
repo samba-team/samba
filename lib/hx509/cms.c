@@ -1151,11 +1151,14 @@ hx509_cms_create_signed_1(hx509_context context,
     if (ret)
 	return ret;
     ret = hx509_certs_add(context, certs, cert);
+    if (ret)
+	goto out;
 
     ret = hx509_cms_create_signed(context, flags, eContentType, data, length,
 				  digest_alg, certs, peer, anchors, pool,
 				  signed_data);
 
+ out:
     hx509_certs_free(&certs);
     return ret;
 }
