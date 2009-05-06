@@ -6943,6 +6943,26 @@ static void add_to_file_list(const char *fname, const char *subfname)
 }
 
 /**
+ * Free the file lists
+ */
+static void free_file_list(void)
+{
+	struct file_lists *f;
+	struct file_lists *next;
+
+	f = file_lists;
+	while( f ) {
+		next = f->next;
+		SAFE_FREE( f->name );
+		SAFE_FREE( f->subfname );
+		SAFE_FREE( f );
+		f = next;
+	}
+	file_lists = NULL;
+}
+
+
+/**
  * Utility function for outsiders to check if we're running on registry.
  */
 bool lp_config_backend_is_registry(void)
@@ -8928,21 +8948,9 @@ int load_usershare_shares(void)
 
 void gfree_loadparm(void)
 {
-	struct file_lists *f;
-	struct file_lists *next;
 	int i;
 
-	/* Free the file lists */
-
-	f = file_lists;
-	while( f ) {
-		next = f->next;
-		SAFE_FREE( f->name );
-		SAFE_FREE( f->subfname );
-		SAFE_FREE( f );
-		f = next;
-	}
-	file_lists = NULL;
+	free_file_list();
 
 	/* Free resources allocated to services */
 
