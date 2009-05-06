@@ -535,8 +535,6 @@ NTSTATUS _netr_ServerAuthenticate3(pipes_struct *p,
 		srv_flgs |= NETLOGON_NEG_SCHANNEL;
 	}
 
-	*r->out.negotiate_flags = srv_flgs;
-
 	switch (p->hdr_req.opnum) {
 		case NDR_NETR_SERVERAUTHENTICATE2:
 			fn = "_netr_ServerAuthenticate2";
@@ -554,6 +552,7 @@ NTSTATUS _netr_ServerAuthenticate3(pipes_struct *p,
 	if (!p->dc || !p->dc->challenge_sent) {
 		DEBUG(0,("%s: no challenge sent to client %s\n", fn,
 			r->in.computer_name));
+		*r->out.negotiate_flags = srv_flgs;
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -564,6 +563,7 @@ NTSTATUS _netr_ServerAuthenticate3(pipes_struct *p,
 		DEBUG(0,("%s: schannel required but client failed "
 			"to offer it. Client was %s\n",
 			fn, r->in.account_name));
+		*r->out.negotiate_flags = srv_flgs;
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -576,6 +576,7 @@ NTSTATUS _netr_ServerAuthenticate3(pipes_struct *p,
 			"account %s: %s\n",
 			fn, r->in.account_name, nt_errstr(status) ));
 		/* always return NT_STATUS_ACCESS_DENIED */
+		*r->out.negotiate_flags = srv_flgs;
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -593,6 +594,7 @@ NTSTATUS _netr_ServerAuthenticate3(pipes_struct *p,
 			"request from client %s machine account %s\n",
 			fn, r->in.computer_name,
 			r->in.account_name));
+		*r->out.negotiate_flags = srv_flgs;
 		return NT_STATUS_ACCESS_DENIED;
 	}
 	/* set up the LSA AUTH 2 response */
@@ -611,6 +613,8 @@ NTSTATUS _netr_ServerAuthenticate3(pipes_struct *p,
 					    r->in.computer_name,
 					    p->dc);
 	unbecome_root();
+
+	*r->out.negotiate_flags = srv_flgs;
 
 	return NT_STATUS_OK;
 }
