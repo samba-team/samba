@@ -88,25 +88,21 @@ struct tevent_req *wb_req_read_send(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev,
 				    int fd, size_t max_extra_data)
 {
-	struct tevent_req *result, *subreq;
+	struct tevent_req *req, *subreq;
 	struct req_read_state *state;
 
-	result = tevent_req_create(mem_ctx, &state, struct req_read_state);
-	if (result == NULL) {
+	req = tevent_req_create(mem_ctx, &state, struct req_read_state);
+	if (req == NULL) {
 		return NULL;
 	}
 	state->max_extra_data = max_extra_data;
 
 	subreq = read_packet_send(state, ev, fd, 4, wb_req_more, state);
-	if (subreq == NULL) {
-		goto nomem;
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
 	}
-
-	tevent_req_set_callback(subreq, wb_req_read_done, result);
-	return result;
- nomem:
-	TALLOC_FREE(result);
-	return NULL;
+	tevent_req_set_callback(subreq, wb_req_read_done, req);
+	return req;
 }
 
 static ssize_t wb_req_more(uint8_t *buf, size_t buflen, void *private_data)
@@ -189,12 +185,12 @@ struct tevent_req *wb_req_write_send(TALLOC_CTX *mem_ctx,
 				     struct tevent_queue *queue, int fd,
 				     struct winbindd_request *wb_req)
 {
-	struct tevent_req *result, *subreq;
+	struct tevent_req *req, *subreq;
 	struct req_write_state *state;
 	int count = 1;
 
-	result = tevent_req_create(mem_ctx, &state, struct req_write_state);
-	if (result == NULL) {
+	req = tevent_req_create(mem_ctx, &state, struct req_write_state);
+	if (req == NULL) {
 		return NULL;
 	}
 
@@ -208,15 +204,11 @@ struct tevent_req *wb_req_write_send(TALLOC_CTX *mem_ctx,
 	}
 
 	subreq = writev_send(state, ev, queue, fd, state->iov, count);
-	if (subreq == NULL) {
-		goto fail;
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, wb_req_write_done, result);
-	return result;
-
- fail:
-	TALLOC_FREE(result);
-	return NULL;
+	tevent_req_set_callback(subreq, wb_req_write_done, req);
+	return req;
 }
 
 static void wb_req_write_done(struct tevent_req *subreq)
@@ -250,24 +242,20 @@ static void wb_resp_read_done(struct tevent_req *subreq);
 struct tevent_req *wb_resp_read_send(TALLOC_CTX *mem_ctx,
 				     struct tevent_context *ev, int fd)
 {
-	struct tevent_req *result, *subreq;
+	struct tevent_req *req, *subreq;
 	struct resp_read_state *state;
 
-	result = tevent_req_create(mem_ctx, &state, struct resp_read_state);
-	if (result == NULL) {
+	req = tevent_req_create(mem_ctx, &state, struct resp_read_state);
+	if (req == NULL) {
 		return NULL;
 	}
 
 	subreq = read_packet_send(state, ev, fd, 4, wb_resp_more, state);
-	if (subreq == NULL) {
-		goto nomem;
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, wb_resp_read_done, result);
-	return result;
-
- nomem:
-	TALLOC_FREE(result);
-	return NULL;
+	tevent_req_set_callback(subreq, wb_resp_read_done, req);
+	return req;
 }
 
 static ssize_t wb_resp_more(uint8_t *buf, size_t buflen, void *private_data)
@@ -339,12 +327,12 @@ struct tevent_req *wb_resp_write_send(TALLOC_CTX *mem_ctx,
 				      struct tevent_queue *queue, int fd,
 				      struct winbindd_response *wb_resp)
 {
-	struct tevent_req *result, *subreq;
+	struct tevent_req *req, *subreq;
 	struct resp_write_state *state;
 	int count = 1;
 
-	result = tevent_req_create(mem_ctx, &state, struct resp_write_state);
-	if (result == NULL) {
+	req = tevent_req_create(mem_ctx, &state, struct resp_write_state);
+	if (req == NULL) {
 		return NULL;
 	}
 
@@ -359,15 +347,11 @@ struct tevent_req *wb_resp_write_send(TALLOC_CTX *mem_ctx,
 	}
 
 	subreq = writev_send(state, ev, queue, fd, state->iov, count);
-	if (subreq == NULL) {
-		goto fail;
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, wb_resp_write_done, result);
-	return result;
-
- fail:
-	TALLOC_FREE(result);
-	return NULL;
+	tevent_req_set_callback(subreq, wb_resp_write_done, req);
+	return req;
 }
 
 static void wb_resp_write_done(struct tevent_req *subreq)
