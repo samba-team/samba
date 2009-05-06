@@ -1018,6 +1018,7 @@ struct timespec get_ctimespec(const SMB_STRUCT_STAT *pst);
 void set_ctimespec(SMB_STRUCT_STAT *pst, struct timespec ts);
 void dos_filetime_timespec(struct timespec *tsp);
 time_t make_unix_date2(const void *date_ptr, int zone_offset);
+time_t make_unix_date3(const void *date_ptr, int zone_offset);
 time_t srv_make_unix_date(const void *date_ptr);
 time_t srv_make_unix_date2(const void *date_ptr);
 time_t srv_make_unix_date3(const void *date_ptr);
@@ -2459,12 +2460,23 @@ NTSTATUS cli_getattrE(struct cli_state *cli,
 			time_t *change_time,
 			time_t *access_time,
 			time_t *write_time);
-bool cli_getatr(struct cli_state *cli, const char *fname,
-		uint16_t *attr, SMB_OFF_T *size, time_t *write_time);
 bool cli_setattrE(struct cli_state *cli, int fd,
 		  time_t change_time,
                   time_t access_time,
                   time_t write_time);
+struct tevent_req *cli_getatr_send(TALLOC_CTX *mem_ctx,
+				struct event_context *ev,
+				struct cli_state *cli,
+				const char *fname);
+NTSTATUS cli_getatr_recv(struct tevent_req *req,
+				uint16_t *attr,
+				SMB_OFF_T *size,
+				time_t *write_time);
+NTSTATUS cli_getatr(struct cli_state *cli,
+			const char *fname,
+			uint16_t *attr,
+			SMB_OFF_T *size,
+			time_t *write_time);
 bool cli_setatr(struct cli_state *cli, const char *fname, uint16_t attr, time_t t);
 struct tevent_req *cli_chkpath_send(TALLOC_CTX *mem_ctx,
 				  struct event_context *ev,

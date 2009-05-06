@@ -621,7 +621,7 @@ time_t make_unix_date2(const void *date_ptr, int zone_offset)
  these generally arrive as localtimes, with corresponding DST.
 ******************************************************************/
 
-static time_t make_unix_date3(const void *date_ptr, int zone_offset)
+time_t make_unix_date3(const void *date_ptr, int zone_offset)
 {
 	time_t t = (time_t)IVAL(date_ptr,0);
 	if (!null_mtime(t)) {

@@ -594,7 +594,9 @@ static void do_setrattr(char *name, uint16 attr, int set)
 {
 	uint16 oldattr;
 
-	if (!cli_getatr(cli, name, &oldattr, NULL, NULL)) return;
+	if (!NT_STATUS_IS_OK(cli_getatr(cli, name, &oldattr, NULL, NULL))) {
+		return;
+	}
 
 	if (set == ATTRSET) {
 		attr |= oldattr;

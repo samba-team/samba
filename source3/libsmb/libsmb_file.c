@@ -578,7 +578,7 @@ SMBC_getatr(SMBCCTX * context,
                 return False;
         }
         
-	if (cli_getatr(targetcli, targetpath, mode, size, &write_time)) {
+	if (NT_STATUS_IS_OK(cli_getatr(targetcli, targetpath, mode, size, &write_time))) {
                 
                 struct timespec w_time_ts;
                 

@@ -2471,7 +2471,7 @@ static bool run_attrtest(int dummy)
 	cli_open(cli, fname, 
 			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE, &fnum);
 	cli_close(cli, fnum);
-	if (!cli_getatr(cli, fname, NULL, NULL, &t)) {
+	if (!NT_STATUS_IS_OK(cli_getatr(cli, fname, NULL, NULL, &t))) {
 		printf("getatr failed (%s)\n", cli_errstr(cli));
 		correct = False;
 	}
@@ -2490,7 +2490,7 @@ static bool run_attrtest(int dummy)
 		correct = True;
 	}
 
-	if (!cli_getatr(cli, fname, NULL, NULL, &t)) {
+	if (!NT_STATUS_IS_OK(cli_getatr(cli, fname, NULL, NULL, &t))) {
 		printf("getatr failed (%s)\n", cli_errstr(cli));
 		correct = True;
 	}
@@ -3796,7 +3796,7 @@ static bool run_opentest(int dummy)
 	}
 
 	/* Ensure size == 20. */
-	if (!cli_getatr(cli1, fname, NULL, &fsize, NULL)) {
+	if (!NT_STATUS_IS_OK(cli_getatr(cli1, fname, NULL, &fsize, NULL))) {
 		printf("(3) getatr failed (%s)\n", cli_errstr(cli1));
 		return False;
 	}
@@ -3819,7 +3819,7 @@ static bool run_opentest(int dummy)
 	}
 
 	/* Ensure size == 0. */
-	if (!cli_getatr(cli1, fname, NULL, &fsize, NULL)) {
+	if (!NT_STATUS_IS_OK(cli_getatr(cli1, fname, NULL, &fsize, NULL))) {
 		printf("(3) getatr failed (%s)\n", cli_errstr(cli1));
 		return False;
 	}
@@ -4285,7 +4285,7 @@ static bool run_openattrtest(int dummy)
 				return False;
 			}
 
-			if (!cli_getatr(cli1, fname, &attr, NULL, NULL)) {
+			if (!NT_STATUS_IS_OK(cli_getatr(cli1, fname, &attr, NULL, NULL))) {
 				printf("getatr(2) failed (%s)\n", cli_errstr(cli1));
 				return False;
 			}
