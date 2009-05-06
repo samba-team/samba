@@ -1605,7 +1605,7 @@ of eventlogs into an eventlog *.evt file.</member>
 </para>
 
 <refsect3>
-<title>EVENTLOG DUMP</title>
+<title>EVENTLOG DUMP <replaceable>filename</replaceable></title>
 
 <para>
 Prints a eventlog *.evt file to standard output.
