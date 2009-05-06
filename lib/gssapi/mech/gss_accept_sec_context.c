@@ -260,7 +260,8 @@ OM_uint32 gss_accept_sec_context(OM_uint32 *minor_status,
 	if (mech_ret_flags & GSS_C_DELEG_FLAG) {
 		if (!delegated_cred_handle) {
 			m->gm_release_cred(minor_status, &delegated_mc);
-			*ret_flags &= ~GSS_C_DELEG_FLAG;
+			if (ret_flags)
+				*ret_flags &= ~GSS_C_DELEG_FLAG;
 		} else if (delegated_mc) {
 			struct _gss_cred *dcred;
 			struct _gss_mechanism_cred *dmc;
