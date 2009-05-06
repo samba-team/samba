@@ -423,8 +423,6 @@ get_init_creds_common(krb5_context context,
 	pre_auth_types[options->preauth_list_length] = KRB5_PADATA_NONE;
 	ctx->pre_auth_types = pre_auth_types;
     }
-    if (options->flags & KRB5_GET_INIT_CREDS_OPT_SALT)
-	;			/* XXX */
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_ANONYMOUS)
 	ctx->flags.request_anonymous = options->anonymous;
     if (default_opt)
