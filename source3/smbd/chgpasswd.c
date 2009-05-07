@@ -860,12 +860,15 @@ static NTSTATUS check_oem_password(const char *user,
 	bool lm_pass_set = (password_encrypted_with_lm_hash && old_lm_hash_encrypted);
 
 	acct_ctrl = pdb_get_acct_ctrl(sampass);
+#if 0
+	/* I am convinced this check here is wrong, it is valid to
+	 * change a password of a user that has a disabled account - gd */
 
 	if (acct_ctrl & ACB_DISABLED) {
 		DEBUG(2,("check_lanman_password: account %s disabled.\n", user));
 		return NT_STATUS_ACCOUNT_DISABLED;
 	}
-
+#endif
 	if ((acct_ctrl & ACB_PWNOTREQ) && lp_null_passwords()) {
 		/* construct a null password (in case one is needed */
 		no_pw[0] = 0;
