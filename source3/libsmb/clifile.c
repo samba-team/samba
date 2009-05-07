@@ -2093,6 +2093,7 @@ bool cli_posix_getlock(struct cli_state *cli, uint16_t fnum, uint64_t *poffset, 
 static void cli_getattrE_done(struct tevent_req *subreq);
 
 struct cli_getattrE_state {
+	uint16_t vwv[1];
 	int zone_offset;
 	uint16_t attr;
 	SMB_OFF_T size;
@@ -2109,7 +2110,6 @@ struct tevent_req *cli_getattrE_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req = NULL, *subreq = NULL;
 	struct cli_getattrE_state *state = NULL;
 	uint8_t additional_flags = 0;
-	uint16_t vwv[1];
 
 	req = tevent_req_create(mem_ctx, &state, struct cli_getattrE_state);
 	if (req == NULL) {
@@ -2117,10 +2117,10 @@ struct tevent_req *cli_getattrE_send(TALLOC_CTX *mem_ctx,
 	}
 
 	state->zone_offset = cli->serverzone;
-	SSVAL(vwv+0,0,fnum);
+	SSVAL(state->vwv+0,0,fnum);
 
 	subreq = cli_smb_send(state, ev, cli, SMBgetattrE, additional_flags,
-			      1, vwv, 0, NULL);
+			      1, state->vwv, 0, NULL);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -2509,7 +2509,7 @@ NTSTATUS cli_setattrE(struct cli_state *cli,
 static void cli_setatr_done(struct tevent_req *subreq);
 
 struct cli_setatr_state {
-	int dummy;
+	uint16_t vwv[8];
 };
 
 struct tevent_req *cli_setatr_send(TALLOC_CTX *mem_ctx,
@@ -2522,7 +2522,6 @@ struct tevent_req *cli_setatr_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req = NULL, *subreq = NULL;
 	struct cli_setatr_state *state = NULL;
 	uint8_t additional_flags = 0;
-	uint16_t vwv[8];
 	uint8_t *bytes = NULL;
 
 	req = tevent_req_create(mem_ctx, &state, struct cli_setatr_state);
@@ -2530,9 +2529,9 @@ struct tevent_req *cli_setatr_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	memset(vwv, '\0', sizeof(vwv));
-	SSVAL(vwv+0, 0, attr);
-	cli_put_dos_date3(cli, (char *)&vwv[1], 0, mtime);
+	memset(state->vwv, '\0', sizeof(state->vwv));
+	SSVAL(state->vwv+0, 0, attr);
+	cli_put_dos_date3(cli, (char *)&state->vwv[1], 0, mtime);
 
 	bytes = talloc_array(state, uint8_t, 1);
 	if (tevent_req_nomem(bytes, req)) {
@@ -2558,7 +2557,7 @@ struct tevent_req *cli_setatr_send(TALLOC_CTX *mem_ctx,
 	}
 
 	subreq = cli_smb_send(state, ev, cli, SMBsetatr, additional_flags,
-			      8, vwv, talloc_get_size(bytes), bytes);
+			      8, state->vwv, talloc_get_size(bytes), bytes);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -2630,44 +2629,6 @@ NTSTATUS cli_setatr(struct cli_state *cli,
 	}
 	return status;
 }
-
-#if 0
-bool cli_setatr(struct cli_state *cli, const char *fname, uint16_t attr, time_t t)
-{
-	char *p;
-
-	memset(cli->outbuf,'\0',smb_size);
-	memset(cli->inbuf,'\0',smb_size);
-
-	cli_set_message(cli->outbuf,8,0,True);
-
-	SCVAL(cli->outbuf,smb_com,SMBsetatr);
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
-
-	SSVAL(cli->outbuf,smb_vwv0, attr);
-	cli_put_dos_date3(cli, cli->outbuf,smb_vwv1, t);
-
-	p = smb_buf(cli->outbuf);
-	*p++ = 4;
-	p += clistr_push(cli, p, fname,
-			cli->bufsize - PTR_DIFF(p,cli->outbuf), STR_TERMINATE);
-	*p++ = 4;
-
-	cli_setup_bcc(cli, p);
-
-	cli_send_smb(cli);
-	if (!cli_receive_smb(cli)) {
-		return False;
-	}
-
-	if (cli_is_error(cli)) {
-		return False;
-	}
-
-	return True;
-}
-#endif
 
 /****************************************************************************
  Check for existance of a dir.
@@ -3420,7 +3381,8 @@ int cli_posix_mkdir(struct cli_state *cli, const char *fname, mode_t mode)
 ****************************************************************************/
 
 struct unlink_state {
-	int dummy;
+	uint16_t setup;
+	uint8_t data[2];
 };
 
 static void cli_posix_unlink_internal_done(struct tevent_req *subreq)
@@ -3447,9 +3409,7 @@ static struct tevent_req *cli_posix_unlink_internal_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
 	struct unlink_state *state = NULL;
-	uint16_t setup;
 	uint8_t *param = NULL;
-	uint8_t data[2];
 
 	req = tevent_req_create(mem_ctx, &state, struct unlink_state);
 	if (req == NULL) {
@@ -3457,11 +3417,11 @@ static struct tevent_req *cli_posix_unlink_internal_send(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Setup setup word. */
-	SSVAL(&setup+0, 0, TRANSACT2_SETPATHINFO);
+	SSVAL(&state->setup, 0, TRANSACT2_SETPATHINFO);
 
 	/* Setup param array. */
 	param = talloc_array(state, uint8_t, 6);
-	if (tevent_req_nomem(data, req)) {
+	if (tevent_req_nomem(param, req)) {
 		return tevent_req_post(req, ev);
 	}
 	memset(param, '\0', 6);
@@ -3475,7 +3435,7 @@ static struct tevent_req *cli_posix_unlink_internal_send(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Setup data word. */
-	SSVAL(data, 0, is_dir ? SMB_POSIX_UNLINK_DIRECTORY_TARGET :
+	SSVAL(state->data, 0, is_dir ? SMB_POSIX_UNLINK_DIRECTORY_TARGET :
 			SMB_POSIX_UNLINK_FILE_TARGET);
 
 	subreq = cli_trans_send(state,			/* mem ctx. */
@@ -3486,13 +3446,13 @@ static struct tevent_req *cli_posix_unlink_internal_send(TALLOC_CTX *mem_ctx,
 				-1,			/* fid. */
 				0,			/* function. */
 				0,			/* flags. */
-				&setup,			/* setup. */
+				&state->setup,		/* setup. */
 				1,			/* num setup uint16_t words. */
 				0,			/* max returned setup. */
 				param,			/* param. */
 				talloc_get_size(param),	/* num param. */
 				2,			/* max returned param. */
-				data,			/* data. */
+				state->data,		/* data. */
 				2,			/* num data. */
 				0);			/* max returned data. */
 
