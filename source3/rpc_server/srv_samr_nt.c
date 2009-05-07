@@ -3219,12 +3219,13 @@ NTSTATUS _samr_Connect5(pipes_struct *p,
 	c.in.access_mask	= r->in.access_mask;
 	c.out.connect_handle	= r->out.connect_handle;
 
+	*r->out.level_out = 1;
+
 	status = _samr_Connect2(p, &c);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	*r->out.level_out = 1;
 	r->out.info_out->info1 = info1;
 
 	return NT_STATUS_OK;
