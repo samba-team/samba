@@ -3280,6 +3280,7 @@ static NTSTATUS ldapsam_delete_group_mapping_entry(struct pdb_methods *methods,
 						groupmap_attr_list_to_delete));
  
 	if ((rc == LDAP_NAMING_VIOLATION) ||
+	    (rc == LDAP_NOT_ALLOWED_ON_RDN) ||
 	    (rc == LDAP_OBJECT_CLASS_VIOLATION)) {
 		const char *attrs[] = { "sambaGroupType", "description",
 					"displayName", "sambaSIDList",
@@ -3294,6 +3295,7 @@ static NTSTATUS ldapsam_delete_group_mapping_entry(struct pdb_methods *methods,
 	}
 
 	if ((rc == LDAP_NAMING_VIOLATION) ||
+	    (rc == LDAP_NOT_ALLOWED_ON_RDN) ||
 	    (rc == LDAP_OBJECT_CLASS_VIOLATION)) {
 		const char *attrs[] = { "sambaGroupType", "description",
 					"displayName", "sambaSIDList",
