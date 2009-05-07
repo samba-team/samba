@@ -233,15 +233,15 @@ enum winbindd_result winbindd_dual_lookupsid(struct winbindd_domain *domain,
 	char *dom_name;
 
 	/* Ensure null termination */
-	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
+	state->request->data.sid[sizeof(state->request->data.sid)-1]='\0';
 
 	DEBUG(3, ("[%5lu]: lookupsid %s\n", (unsigned long)state->pid, 
-		  state->request.data.sid));
+		  state->request->data.sid));
 
 	/* Lookup sid from PDC using lsa_lookup_sids() */
 
-	if (!string_to_sid(&sid, state->request.data.sid)) {
-		DEBUG(5, ("%s not a SID\n", state->request.data.sid));
+	if (!string_to_sid(&sid, state->request->data.sid)) {
+		DEBUG(5, ("%s not a SID\n", state->request->data.sid));
 		return WINBINDD_ERROR;
 	}
 
@@ -422,27 +422,27 @@ enum winbindd_result winbindd_dual_lookupname(struct winbindd_domain *domain,
 	char *p;
 
 	/* Ensure null termination */
-	state->request.data.name.dom_name[sizeof(state->request.data.name.dom_name)-1]='\0';
+	state->request->data.name.dom_name[sizeof(state->request->data.name.dom_name)-1]='\0';
 
 	/* Ensure null termination */
-	state->request.data.name.name[sizeof(state->request.data.name.name)-1]='\0';
+	state->request->data.name.name[sizeof(state->request->data.name.name)-1]='\0';
 
 	/* cope with the name being a fully qualified name */
-	p = strstr(state->request.data.name.name, lp_winbind_separator());
+	p = strstr(state->request->data.name.name, lp_winbind_separator());
 	if (p) {
 		*p = 0;
-		name_domain = state->request.data.name.name;
+		name_domain = state->request->data.name.name;
 		name_user = p+1;
 	} else {
-		name_domain = state->request.data.name.dom_name;
-		name_user = state->request.data.name.name;
+		name_domain = state->request->data.name.dom_name;
+		name_user = state->request->data.name.name;
 	}
 
 	DEBUG(3, ("[%5lu]: lookupname %s%s%s\n", (unsigned long)state->pid,
 		  name_domain, lp_winbind_separator(), name_user));
 
 	/* Lookup name from DC using lsa_lookup_names() */
-	if (!winbindd_lookup_sid_by_name(state->mem_ctx, state->request.original_cmd, domain, name_domain,
+	if (!winbindd_lookup_sid_by_name(state->mem_ctx, state->request->original_cmd, domain, name_domain,
 					 name_user, &sid, &type)) {
 		return WINBINDD_ERROR;
 	}
@@ -700,18 +700,18 @@ enum winbindd_result winbindd_dual_lookuprids(struct winbindd_domain *domain,
 	char *result;
 
 	DEBUG(10, ("Looking up RIDs for domain %s (%s)\n",
-		   state->request.domain_name,
-		   state->request.data.sid));
+		   state->request->domain_name,
+		   state->request->data.sid));
 
-	if (!parse_ridlist(state->mem_ctx, state->request.extra_data.data,
+	if (!parse_ridlist(state->mem_ctx, state->request->extra_data.data,
 			   &rids, &num_rids)) {
 		DEBUG(5, ("Could not parse ridlist\n"));
 		return WINBINDD_ERROR;
 	}
 
-	if (!string_to_sid(&domain_sid, state->request.data.sid)) {
+	if (!string_to_sid(&domain_sid, state->request->data.sid)) {
 		DEBUG(5, ("Could not parse domain sid %s\n",
-			  state->request.data.sid));
+			  state->request->data.sid));
 		return WINBINDD_ERROR;
 	}
 

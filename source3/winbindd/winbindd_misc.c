@@ -127,8 +127,8 @@ void winbindd_list_ent(struct winbindd_cli_state *state, enum ent_type type)
 	      get_ent_type_string(type)));
 
 	/* Ensure null termination */
-	state->request.domain_name[sizeof(state->request.domain_name)-1]='\0';	
-	which_domain = state->request.domain_name;
+	state->request->domain_name[sizeof(state->request->domain_name)-1]='\0';
+	which_domain = state->request->domain_name;
 	
 	/* Initialize listent_state */
 	ent_state = TALLOC_P(state->mem_ctx, struct listent_state);
@@ -390,7 +390,7 @@ enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *
 		}
 	}
 
-	if (state->request.data.list_all_domains && !have_own_domain) {
+	if (state->request->data.list_all_domains && !have_own_domain) {
 		extra_data = talloc_asprintf(
 			state->mem_ctx, "%s\n%s\\%s\\%s",
 			extra_data, domain->name,
@@ -418,13 +418,13 @@ void winbindd_getdcname(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
 
-	state->request.domain_name
-		[sizeof(state->request.domain_name)-1] = '\0';
+	state->request->domain_name
+		[sizeof(state->request->domain_name)-1] = '\0';
 
 	DEBUG(3, ("[%5lu]: Get DC name for %s\n", (unsigned long)state->pid,
-		  state->request.domain_name));
+		  state->request->domain_name));
 
-	domain = find_domain_from_name_noinit(state->request.domain_name);
+	domain = find_domain_from_name_noinit(state->request->domain_name);
 	if (domain && domain->internal) {
 		fstrcpy(state->response.data.dc_name, global_myname());
 		request_ok(state);	
@@ -445,11 +445,11 @@ enum winbindd_result winbindd_dual_getdcname(struct winbindd_domain *domain,
 	unsigned int orig_timeout;
 	struct winbindd_domain *req_domain;
 
-	state->request.domain_name
-		[sizeof(state->request.domain_name)-1] = '\0';
+	state->request->domain_name
+		[sizeof(state->request->domain_name)-1] = '\0';
 
 	DEBUG(3, ("[%5lu]: Get DC name for %s\n", (unsigned long)state->pid,
-		  state->request.domain_name));
+		  state->request->domain_name));
 
 	result = cm_connect_netlogon(domain, &netlogon_pipe);
 
@@ -463,19 +463,19 @@ enum winbindd_result winbindd_dual_getdcname(struct winbindd_domain *domain,
 
 	orig_timeout = rpccli_set_timeout(netlogon_pipe, 35000);
 
-	req_domain = find_domain_from_name_noinit(state->request.domain_name);
+	req_domain = find_domain_from_name_noinit(state->request->domain_name);
 	if (req_domain == domain) {
 		result = rpccli_netr_GetDcName(netlogon_pipe,
 					       state->mem_ctx,
 					       domain->dcname,
-					       state->request.domain_name,
+					       state->request->domain_name,
 					       &dcname_slash,
 					       &werr);
 	} else {
 		result = rpccli_netr_GetAnyDCName(netlogon_pipe,
 						  state->mem_ctx,
 						  domain->dcname,
-						  state->request.domain_name,
+						  state->request->domain_name,
 						  &dcname_slash,
 						  &werr);
 	}
@@ -484,13 +484,13 @@ enum winbindd_result winbindd_dual_getdcname(struct winbindd_domain *domain,
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(5,("Error requesting DCname for domain %s: %s\n",
-			state->request.domain_name, nt_errstr(result)));
+			state->request->domain_name, nt_errstr(result)));
 		return WINBINDD_ERROR;
 	}
 
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(5, ("Error requesting DCname for domain %s: %s\n",
-			state->request.domain_name, win_errstr(werr)));
+			state->request->domain_name, win_errstr(werr)));
 		return WINBINDD_ERROR;
 	}
 
@@ -522,12 +522,12 @@ void winbindd_show_sequence(struct winbindd_cli_state *state)
 	struct sequence_state *seq;
 
 	/* Ensure null termination */
-	state->request.domain_name[sizeof(state->request.domain_name)-1]='\0';
+	state->request->domain_name[sizeof(state->request->domain_name)-1]='\0';
 
-	if (strlen(state->request.domain_name) > 0) {
+	if (strlen(state->request->domain_name) > 0) {
 		struct winbindd_domain *domain;
 		domain = find_domain_from_name_noinit(
-			state->request.domain_name);
+			state->request->domain_name);
 		if (domain == NULL) {
 			request_error(state);
 			return;
@@ -626,7 +626,7 @@ enum winbindd_result winbindd_dual_show_sequence(struct winbindd_domain *domain,
 	DEBUG(3, ("[%5lu]: show sequence\n", (unsigned long)state->pid));
 
 	/* Ensure null termination */
-	state->request.domain_name[sizeof(state->request.domain_name)-1]='\0';
+	state->request->domain_name[sizeof(state->request->domain_name)-1]='\0';
 
 	domain->methods->sequence_number(domain, &domain->sequence_number);
 
@@ -648,13 +648,13 @@ void winbindd_domain_info(struct winbindd_cli_state *state)
 	struct winbindd_domain *domain;
 
 	DEBUG(3, ("[%5lu]: domain_info [%s]\n", (unsigned long)state->pid,
-		  state->request.domain_name));
+		  state->request->domain_name));
 
-	domain = find_domain_from_name_noinit(state->request.domain_name);
+	domain = find_domain_from_name_noinit(state->request->domain_name);
 
 	if (domain == NULL) {
 		DEBUG(3, ("Did not find domain [%s]\n",
-			  state->request.domain_name));
+			  state->request->domain_name));
 		request_error(state);
 		return;
 	}

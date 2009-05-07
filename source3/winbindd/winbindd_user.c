@@ -160,13 +160,13 @@ enum winbindd_result winbindd_dual_userinfo(struct winbindd_domain *domain,
 	NTSTATUS status;
 
 	/* Ensure null termination */
-	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
+	state->request->data.sid[sizeof(state->request->data.sid)-1]='\0';
 
 	DEBUG(3, ("[%5lu]: lookupsid %s\n", (unsigned long)state->pid,
-		  state->request.data.sid));
+		  state->request->data.sid));
 
-	if (!string_to_sid(&sid, state->request.data.sid)) {
-		DEBUG(5, ("%s not a SID\n", state->request.data.sid));
+	if (!string_to_sid(&sid, state->request->data.sid)) {
+		DEBUG(5, ("%s not a SID\n", state->request->data.sid));
 		return WINBINDD_ERROR;
 	}
 
@@ -427,8 +427,8 @@ void winbindd_getpwnam(struct winbindd_cli_state *state)
 	size_t dusize;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 
-	domuser = state->request.data.username;
-	dusize = sizeof(state->request.data.username);
+	domuser = state->request->data.username;
+	dusize = sizeof(state->request->data.username);
 
 	/* Ensure null termination (it's an fstring) */
 	domuser[dusize-1] = '\0';
@@ -491,7 +491,7 @@ static void getpwnam_name2sid_recv(void *private_data, bool success,
 	struct winbindd_cli_state *state =
 		(struct winbindd_cli_state *)private_data;
 	fstring domname, username;
-	char *domuser = state->request.data.username;
+	char *domuser = state->request->data.username;
 
 	if (!success) {
 		DEBUG(5, ("Could not lookup name for user %s\n", domuser));
@@ -520,13 +520,13 @@ static void getpwuid_recv(void *private_data, bool success, const char *sid)
 
 	if (!success) {
 		DEBUG(10,("uid2sid_recv: uid [%lu] to sid mapping failed\n.",
-			  (unsigned long)(state->request.data.uid)));
+			  (unsigned long)(state->request->data.uid)));
 		request_error(state);
 		return;
 	}
 
 	DEBUG(10,("uid2sid_recv: uid %lu has sid %s\n",
-		  (unsigned long)(state->request.data.uid), sid));
+		  (unsigned long)(state->request->data.uid), sid));
 
 	if (!string_to_sid(&user_sid, sid)) {
 		DEBUG(1,("uid2sid_recv: Could not convert sid %s "
@@ -541,7 +541,7 @@ static void getpwuid_recv(void *private_data, bool success, const char *sid)
 /* Return a password structure given a uid number */
 void winbindd_getpwuid(struct winbindd_cli_state *state)
 {
-	uid_t uid = state->request.data.uid;
+	uid_t uid = state->request->data.uid;
 
 	DEBUG(3, ("[%5lu]: getpwuid %lu\n",
 		  (unsigned long)state->pid,
@@ -559,13 +559,13 @@ void winbindd_getpwsid(struct winbindd_cli_state *state)
 	DOM_SID sid;
 
 	/* Ensure null termination */
-	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
+	state->request->data.sid[sizeof(state->request->data.sid)-1]='\0';
 
 	DEBUG(3, ("[%5lu]: getpwsid %s\n", (unsigned long)state->pid,
-		  state->request.data.sid));
+		  state->request->data.sid));
 
-	if (!string_to_sid(&sid, state->request.data.sid)) {
-		DEBUG(5, ("%s not a SID\n", state->request.data.sid));
+	if (!string_to_sid(&sid, state->request->data.sid)) {
+		DEBUG(5, ("%s not a SID\n", state->request->data.sid));
 		request_error(state);
 		return;
 	}
@@ -772,7 +772,7 @@ void winbindd_getpwent(struct winbindd_cli_state *state)
 
 	/* Allocate space for returning a chunk of users */
 
-	num_users = MIN(MAX_GETPWENT_USERS, state->request.data.num_entries);
+	num_users = MIN(MAX_GETPWENT_USERS, state->request->data.num_entries);
 
 	if (num_users == 0) {
 		request_error(state);

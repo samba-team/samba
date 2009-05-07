@@ -708,13 +708,13 @@ enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domai
 						   struct winbindd_cli_state *state)
 {
 	/* Ensure null termination */
-	state->request.domain_name
-		[sizeof(state->request.domain_name)-1]='\0';
-	state->request.data.init_conn.dcname
-		[sizeof(state->request.data.init_conn.dcname)-1]='\0';
+	state->request->domain_name
+		[sizeof(state->request->domain_name)-1]='\0';
+	state->request->data.init_conn.dcname
+		[sizeof(state->request->data.init_conn.dcname)-1]='\0';
 
-	if (strlen(state->request.data.init_conn.dcname) > 0) {
-		fstrcpy(domain->dcname, state->request.data.init_conn.dcname);
+	if (strlen(state->request->data.init_conn.dcname) > 0) {
+		fstrcpy(domain->dcname, state->request->data.init_conn.dcname);
 	}
 
 	init_dc_connection(domain);

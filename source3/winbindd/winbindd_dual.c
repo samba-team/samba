@@ -44,8 +44,8 @@ static void child_read_request(struct winbindd_cli_state *state)
 
 	/* Read data */
 
-	status = read_data(state->sock, (char *)&state->request,
-			   sizeof(state->request));
+	status = read_data(state->sock, (char *)state->request,
+			   sizeof(*state->request));
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("child_read_request: read_data failed: %s\n",
@@ -54,27 +54,27 @@ static void child_read_request(struct winbindd_cli_state *state)
 		return;
 	}
 
-	if (state->request.extra_len == 0) {
-		state->request.extra_data.data = NULL;
+	if (state->request->extra_len == 0) {
+		state->request->extra_data.data = NULL;
 		return;
 	}
 
-	DEBUG(10, ("Need to read %d extra bytes\n", (int)state->request.extra_len));
+	DEBUG(10, ("Need to read %d extra bytes\n", (int)state->request->extra_len));
 
-	state->request.extra_data.data =
-		SMB_MALLOC_ARRAY(char, state->request.extra_len + 1);
+	state->request->extra_data.data =
+		SMB_MALLOC_ARRAY(char, state->request->extra_len + 1);
 
-	if (state->request.extra_data.data == NULL) {
+	if (state->request->extra_data.data == NULL) {
 		DEBUG(0, ("malloc failed\n"));
 		state->finished = True;
 		return;
 	}
 
 	/* Ensure null termination */
-	state->request.extra_data.data[state->request.extra_len] = '\0';
+	state->request->extra_data.data[state->request->extra_len] = '\0';
 
-	status= read_data(state->sock, state->request.extra_data.data,
-			  state->request.extra_len);
+	status= read_data(state->sock, state->request->extra_data.data,
+			  state->request->extra_len);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Could not read extra data: %s\n",
@@ -417,7 +417,7 @@ static void recvfrom_child(void *private_data_data, bool success)
 void sendto_child(struct winbindd_cli_state *state,
 		  struct winbindd_child *child)
 {
-	async_request(state->mem_ctx, child, &state->request,
+	async_request(state->mem_ctx, child, state->request,
 		      &state->response, recvfrom_child, state);
 }
 
@@ -425,7 +425,7 @@ void sendto_domain(struct winbindd_cli_state *state,
 		   struct winbindd_domain *domain)
 {
 	async_domain_request(state->mem_ctx, domain,
-			     &state->request, &state->response,
+			     state->request, &state->response,
 			     recvfrom_child, state);
 }
 
@@ -447,7 +447,7 @@ static void child_process_request(struct winbindd_child *child,
 	/* Process command */
 
 	for (; table->name; table++) {
-		if (state->request.cmd == table->struct_cmd) {
+		if (state->request->cmd == table->struct_cmd) {
 			DEBUG(10,("child_process_request: request fn %s\n",
 				  table->name));
 			state->response.result = table->struct_fn(domain, state);
@@ -456,7 +456,7 @@ static void child_process_request(struct winbindd_child *child,
 	}
 
 	DEBUG(1 ,("child_process_request: unknown request fn number %d\n",
-		  (int)state->request.cmd));
+		  (int)state->request->cmd));
 	state->response.result = WINBINDD_ERROR;
 }
 
@@ -1233,6 +1233,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 
 	ZERO_STRUCT(state);
 	state.pid = sys_getpid();
+	state.request = &state._request;
 
 	child->pid = sys_fork();
 
@@ -1421,13 +1422,13 @@ static bool fork_domain_child(struct winbindd_child *child)
 			_exit(0);
 		}
 
-		DEBUG(4,("child daemon request %d\n", (int)state.request.cmd));
+		DEBUG(4,("child daemon request %d\n", (int)state.request->cmd));
 
 		ZERO_STRUCT(state.response);
-		state.request.null_term = '\0';
+		state.request->null_term = '\0';
 		child_process_request(child, &state);
 
-		SAFE_FREE(state.request.extra_data.data);
+		SAFE_FREE(state.request->extra_data.data);
 
 		cache_store_response(sys_getpid(), &state.response);
 

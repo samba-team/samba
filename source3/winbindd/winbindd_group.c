@@ -789,20 +789,20 @@ void winbindd_getgrnam(struct winbindd_cli_state *state)
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 
 	/* Ensure null termination */
-	state->request.data.groupname[sizeof(state->request.data.groupname)-1]='\0';
+	state->request->data.groupname[sizeof(state->request->data.groupname)-1]='\0';
 
 	DEBUG(3, ("[%5lu]: getgrnam %s\n", (unsigned long)state->pid,
-		  state->request.data.groupname));
+		  state->request->data.groupname));
 
 	nt_status = normalize_name_unmap(state->mem_ctx,
-					 state->request.data.groupname,
+					 state->request->data.groupname,
 					 &tmp);
 	/* If we didn't map anything in the above call, just reset the
 	   tmp pointer to the original string */
 	if (!NT_STATUS_IS_OK(nt_status) &&
 	    !NT_STATUS_EQUAL(nt_status, NT_STATUS_FILE_RENAMED))
 	{
-		tmp = state->request.data.groupname;
+		tmp = state->request->data.groupname;
 	}
 
 	/* Parse domain and groupname */
@@ -1017,7 +1017,7 @@ static void getgrgid_recv(void *private_data, bool success, const char *sid)
 
 	if (success) {
 		DEBUG(10,("getgrgid_recv: gid %lu has sid %s\n",
-			  (unsigned long)(state->request.data.gid), sid));
+			  (unsigned long)(state->request->data.gid), sid));
 
 		if (!string_to_sid(&group_sid, sid)) {
 			DEBUG(1,("getgrgid_recv: Could not convert sid %s "
@@ -1031,25 +1031,25 @@ static void getgrgid_recv(void *private_data, bool success, const char *sid)
 	}
 
 	/* Ok, this might be "ours", i.e. an alias */
-	if (pdb_gid_to_sid(state->request.data.gid, &group_sid) &&
+	if (pdb_gid_to_sid(state->request->data.gid, &group_sid) &&
 	    lookup_sid(state->mem_ctx, &group_sid, NULL, NULL, &name_type) &&
 	    (name_type == SID_NAME_ALIAS)) {
 		/* Hey, got an alias */
 		DEBUG(10,("getgrgid_recv: we have an alias with gid %lu and sid %s\n",
-			  (unsigned long)(state->request.data.gid), sid));
+			  (unsigned long)(state->request->data.gid), sid));
 		winbindd_getgrsid(state, group_sid);
 		return;
 	}
 
 	DEBUG(1, ("could not convert gid %lu to sid\n",
-		  (unsigned long)state->request.data.gid));
+		  (unsigned long)state->request->data.gid));
 	request_error(state);
 }
 
 /* Return a group structure from a gid number */
 void winbindd_getgrgid(struct winbindd_cli_state *state)
 {
-	gid_t gid = state->request.data.gid;
+	gid_t gid = state->request->data.gid;
 
 	DEBUG(3, ("[%5lu]: getgrgid %lu\n",
 		  (unsigned long)state->pid,
@@ -1295,7 +1295,7 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 		return;
 	}
 
-	num_groups = MIN(MAX_GETGRENT_GROUPS, state->request.data.num_entries);
+	num_groups = MIN(MAX_GETGRENT_GROUPS, state->request->data.num_entries);
 
 	if (num_groups == 0) {
 		request_error(state);
@@ -1431,7 +1431,7 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 			gr_mem_len = 0;
 
 			/* Get group membership */
-			if (state->request.cmd == WINBINDD_GETGRLST) {
+			if (state->request->cmd == WINBINDD_GETGRLST) {
 				result = True;
 			} else {
 				sid_copy(&member_sid, &domain->sid);
@@ -1572,11 +1572,11 @@ void winbindd_getgroups(struct winbindd_cli_state *state)
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 
 	/* Ensure null termination */
-	state->request.data.username
-		[sizeof(state->request.data.username)-1]='\0';
+	state->request->data.username
+		[sizeof(state->request->data.username)-1]='\0';
 
 	DEBUG(3, ("[%5lu]: getgroups %s\n", (unsigned long)state->pid,
-		  state->request.data.username));
+		  state->request->data.username));
 
 	/* Parse domain and username */
 
@@ -1590,7 +1590,7 @@ void winbindd_getgroups(struct winbindd_cli_state *state)
 	s->state = state;
 
 	nt_status = normalize_name_unmap(state->mem_ctx,
-					 state->request.data.username,
+					 state->request->data.username,
 					 &real_name);
 
 	/* Reset the real_name pointer if we didn't do anything
@@ -1598,7 +1598,7 @@ void winbindd_getgroups(struct winbindd_cli_state *state)
 	if (!NT_STATUS_IS_OK(nt_status) &&
 	    !NT_STATUS_EQUAL(nt_status, NT_STATUS_FILE_RENAMED))
 	{
-		real_name = state->request.data.username;
+		real_name = state->request->data.username;
 	}
 
 	if (!parse_domain_user_talloc(state->mem_ctx, real_name,
@@ -1616,7 +1616,7 @@ void winbindd_getgroups(struct winbindd_cli_state *state)
 		s->domname = talloc_strdup(state->mem_ctx,
 					   get_global_sam_name());
 		s->username = talloc_strdup(state->mem_ctx,
-					    state->request.data.username);
+					    state->request->data.username);
 	}
 
 	/* Get info for the domain (either by short domain name or
@@ -1752,7 +1752,7 @@ void winbindd_getusersids(struct winbindd_cli_state *state)
 	DOM_SID *user_sid;
 
 	/* Ensure null termination */
-	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
+	state->request->data.sid[sizeof(state->request->data.sid)-1]='\0';
 
 	user_sid = TALLOC_P(state->mem_ctx, DOM_SID);
 	if (user_sid == NULL) {
@@ -1761,9 +1761,9 @@ void winbindd_getusersids(struct winbindd_cli_state *state)
 		return;
 	}
 
-	if (!string_to_sid(user_sid, state->request.data.sid)) {
+	if (!string_to_sid(user_sid, state->request->data.sid)) {
 		DEBUG(1, ("Could not get convert sid %s from string\n",
-			  state->request.data.sid));
+			  state->request->data.sid));
 		request_error(state);
 		return;
 	}
@@ -1821,11 +1821,11 @@ void winbindd_getuserdomgroups(struct winbindd_cli_state *state)
 	struct winbindd_domain *domain;
 
 	/* Ensure null termination */
-	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
+	state->request->data.sid[sizeof(state->request->data.sid)-1]='\0';
 
-	if (!string_to_sid(&user_sid, state->request.data.sid)) {
+	if (!string_to_sid(&user_sid, state->request->data.sid)) {
 		DEBUG(1, ("Could not get convert sid %s from string\n",
-			  state->request.data.sid));
+			  state->request->data.sid));
 		request_error(state);
 		return;
 	}
@@ -1853,11 +1853,11 @@ enum winbindd_result winbindd_dual_getuserdomgroups(struct winbindd_domain *doma
 	uint32 num_groups;
 
 	/* Ensure null termination */
-	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
+	state->request->data.sid[sizeof(state->request->data.sid)-1]='\0';
 
-	if (!string_to_sid(&user_sid, state->request.data.sid)) {
+	if (!string_to_sid(&user_sid, state->request->data.sid)) {
 		DEBUG(1, ("Could not get convert sid %s from string\n",
-			  state->request.data.sid));
+			  state->request->data.sid));
 		return WINBINDD_ERROR;
 	}
 
@@ -1893,11 +1893,11 @@ void winbindd_getsidaliases(struct winbindd_cli_state *state)
 	struct winbindd_domain *domain;
 
 	/* Ensure null termination */
-	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
+	state->request->data.sid[sizeof(state->request->data.sid)-1]='\0';
 
-	if (!string_to_sid(&domain_sid, state->request.data.sid)) {
+	if (!string_to_sid(&domain_sid, state->request->data.sid)) {
 		DEBUG(1, ("Could not get convert sid %s from string\n",
-			  state->request.data.sid));
+			  state->request->data.sid));
 		request_error(state);
 		return;
 	}
@@ -1927,7 +1927,7 @@ enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_domain *domain,
 
 	DEBUG(3, ("[%5lu]: getsidaliases\n", (unsigned long)state->pid));
 
-	sidstr = state->request.extra_data.data;
+	sidstr = state->request->extra_data.data;
 	if (sidstr == NULL) {
 		sidstr = talloc_strdup(state->mem_ctx, "\n"); /* No SID */
 		if (!sidstr) {

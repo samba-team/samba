@@ -69,7 +69,8 @@ struct winbindd_cli_state {
 	bool privileged;                           /* Is the client 'privileged' */
 
 	TALLOC_CTX *mem_ctx;			  /* memory per request */
-	struct winbindd_request request;          /* Request from client */
+	struct winbindd_request *request;         /* Request from client */
+	struct winbindd_request _request;
 	struct winbindd_response response;        /* Respose to client */
 	bool getpwent_initialized;                /* Has getpwent_state been
 						   * initialized? */

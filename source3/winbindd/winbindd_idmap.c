@@ -99,12 +99,12 @@ enum winbindd_result winbindd_dual_set_mapping(struct winbindd_domain *domain,
 
 	DEBUG(3, ("[%5lu]: dual_idmapset\n", (unsigned long)state->pid));
 
-	if (!string_to_sid(&sid, state->request.data.dual_idmapset.sid))
+	if (!string_to_sid(&sid, state->request->data.dual_idmapset.sid))
 		return WINBINDD_ERROR;
 
 	map.sid = &sid;
-	map.xid.id = state->request.data.dual_idmapset.id;
-	map.xid.type = state->request.data.dual_idmapset.type;
+	map.xid.id = state->request->data.dual_idmapset.id;
+	map.xid.type = state->request->data.dual_idmapset.type;
 	map.status = ID_MAPPED;
 
 	result = idmap_set_mapping(&map);
@@ -158,12 +158,12 @@ enum winbindd_result winbindd_dual_remove_mapping(
 
 	DEBUG(3, ("[%5lu]: dual_idmapremove\n", (unsigned long)state->pid));
 
-	if (!string_to_sid(&sid, state->request.data.dual_idmapset.sid))
+	if (!string_to_sid(&sid, state->request->data.dual_idmapset.sid))
 		return WINBINDD_ERROR;
 
 	map.sid = &sid;
-	map.xid.id = state->request.data.dual_idmapset.id;
-	map.xid.type = state->request.data.dual_idmapset.type;
+	map.xid.id = state->request->data.dual_idmapset.id;
+	map.xid.type = state->request->data.dual_idmapset.type;
 	map.status = ID_MAPPED;
 
 	result = idmap_remove_mapping(&map);
@@ -213,8 +213,8 @@ enum winbindd_result winbindd_dual_set_hwm(struct winbindd_domain *domain,
 
 	DEBUG(3, ("[%5lu]: dual_set_hwm\n", (unsigned long)state->pid));
 
-	xid.id = state->request.data.dual_idmapset.id;
-	xid.type = state->request.data.dual_idmapset.type;
+	xid.id = state->request->data.dual_idmapset.id;
+	xid.type = state->request->data.dual_idmapset.type;
 
 	switch (xid.type) {
 	case ID_TYPE_UID:
@@ -290,15 +290,15 @@ enum winbindd_result winbindd_dual_sid2uid(struct winbindd_domain *domain,
 	NTSTATUS result;
 
 	DEBUG(3, ("[%5lu]: sid to uid %s\n", (unsigned long)state->pid,
-		  state->request.data.dual_sid2id.sid));
+		  state->request->data.dual_sid2id.sid));
 
-	if (!string_to_sid(&sid, state->request.data.dual_sid2id.sid)) {
+	if (!string_to_sid(&sid, state->request->data.dual_sid2id.sid)) {
 		DEBUG(1, ("Could not get convert sid %s from string\n",
-			  state->request.data.dual_sid2id.sid));
+			  state->request->data.dual_sid2id.sid));
 		return WINBINDD_ERROR;
 	}
 
-	result = idmap_sid_to_uid(state->request.domain_name, &sid,
+	result = idmap_sid_to_uid(state->request->domain_name, &sid,
 				  &state->response.data.uid);
 
 	DEBUG(10, ("winbindd_dual_sid2uid: 0x%08x - %s - %u\n",
@@ -361,17 +361,17 @@ enum winbindd_result winbindd_dual_sid2gid(struct winbindd_domain *domain,
 	NTSTATUS result;
 
 	DEBUG(3, ("[%5lu]: sid to gid %s\n", (unsigned long)state->pid,
-		  state->request.data.dual_sid2id.sid));
+		  state->request->data.dual_sid2id.sid));
 
-	if (!string_to_sid(&sid, state->request.data.dual_sid2id.sid)) {
+	if (!string_to_sid(&sid, state->request->data.dual_sid2id.sid)) {
 		DEBUG(1, ("Could not get convert sid %s from string\n",
-			  state->request.data.dual_sid2id.sid));
+			  state->request->data.dual_sid2id.sid));
 		return WINBINDD_ERROR;
 	}
 
 	/* Find gid for this sid and return it, possibly ask the slow remote idmap */
 
-	result = idmap_sid_to_gid(state->request.domain_name, &sid,
+	result = idmap_sid_to_gid(state->request->domain_name, &sid,
 				  &state->response.data.gid);
 
 	DEBUG(10, ("winbindd_dual_sid2gid: 0x%08x - %s - %u\n",
@@ -437,11 +437,11 @@ enum winbindd_result winbindd_dual_uid2sid(struct winbindd_domain *domain,
 
 	DEBUG(3,("[%5lu]: uid to sid %lu\n",
 		 (unsigned long)state->pid,
-		 (unsigned long) state->request.data.uid));
+		 (unsigned long) state->request->data.uid));
 
 	/* Find sid for this uid and return it, possibly ask the slow remote idmap */
-	result = idmap_uid_to_sid(state->request.domain_name, &sid,
-				  state->request.data.uid);
+	result = idmap_uid_to_sid(state->request->domain_name, &sid,
+				  state->request->data.uid);
 
 	if (NT_STATUS_IS_OK(result)) {
 		sid_to_fstring(state->response.data.sid.sid, &sid);
@@ -505,11 +505,11 @@ enum winbindd_result winbindd_dual_gid2sid(struct winbindd_domain *domain,
 
 	DEBUG(3,("[%5lu]: gid %lu to sid\n",
 		(unsigned long)state->pid,
-		(unsigned long) state->request.data.gid));
+		(unsigned long) state->request->data.gid));
 
 	/* Find sid for this gid and return it, possibly ask the slow remote idmap */
-	result = idmap_gid_to_sid(state->request.domain_name, &sid,
-				  state->request.data.gid);
+	result = idmap_gid_to_sid(state->request->domain_name, &sid,
+				  state->request->data.gid);
 
 	if (NT_STATUS_IS_OK(result)) {
 		sid_to_fstring(state->response.data.sid.sid, &sid);

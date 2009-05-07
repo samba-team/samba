@@ -36,13 +36,13 @@ void winbindd_lookupsid(struct winbindd_cli_state *state)
 	DOM_SID sid;
 
 	/* Ensure null termination */
-	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
+	state->request->data.sid[sizeof(state->request->data.sid)-1]='\0';
 
 	DEBUG(3, ("[%5lu]: lookupsid %s\n", (unsigned long)state->pid, 
-		  state->request.data.sid));
+		  state->request->data.sid));
 
-	if (!string_to_sid(&sid, state->request.data.sid)) {
-		DEBUG(5, ("%s not a SID\n", state->request.data.sid));
+	if (!string_to_sid(&sid, state->request->data.sid)) {
+		DEBUG(5, ("%s not a SID\n", state->request->data.sid));
 		request_error(state);
 		return;
 	}
@@ -82,20 +82,20 @@ void winbindd_lookupname(struct winbindd_cli_state *state)
 	char *p;
 
 	/* Ensure null termination */
-	state->request.data.name.dom_name[sizeof(state->request.data.name.dom_name)-1]='\0';
+	state->request->data.name.dom_name[sizeof(state->request->data.name.dom_name)-1]='\0';
 
 	/* Ensure null termination */
-	state->request.data.name.name[sizeof(state->request.data.name.name)-1]='\0';
+	state->request->data.name.name[sizeof(state->request->data.name.name)-1]='\0';
 
 	/* cope with the name being a fully qualified name */
-	p = strstr(state->request.data.name.name, lp_winbind_separator());
+	p = strstr(state->request->data.name.name, lp_winbind_separator());
 	if (p) {
 		*p = 0;
-		name_domain = state->request.data.name.name;
+		name_domain = state->request->data.name.name;
 		name_user = p+1;
 	} else {
-		name_domain = state->request.data.name.dom_name;
-		name_user = state->request.data.name.name;
+		name_domain = state->request->data.name.dom_name;
+		name_user = state->request->data.name.name;
 	}
 
 	DEBUG(3, ("[%5lu]: lookupname %s%s%s\n", (unsigned long)state->pid,
@@ -130,13 +130,13 @@ void winbindd_lookuprids(struct winbindd_cli_state *state)
 	DOM_SID domain_sid;
 	
 	/* Ensure null termination */
-	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
+	state->request->data.sid[sizeof(state->request->data.sid)-1]='\0';
 
-	DEBUG(10, ("lookup_rids: %s\n", state->request.data.sid));
+	DEBUG(10, ("lookup_rids: %s\n", state->request->data.sid));
 
-	if (!string_to_sid(&domain_sid, state->request.data.sid)) {
+	if (!string_to_sid(&domain_sid, state->request->data.sid)) {
 		DEBUG(5, ("Could not convert %s to SID\n",
-			  state->request.data.sid));
+			  state->request->data.sid));
 		request_error(state);
 		return;
 	}
@@ -144,7 +144,7 @@ void winbindd_lookuprids(struct winbindd_cli_state *state)
 	domain = find_lookup_domain_from_sid(&domain_sid);
 	if (domain == NULL) {
 		DEBUG(10, ("Could not find domain for name %s\n",
-			   state->request.domain_name));
+			   state->request->domain_name));
 		request_error(state);
 		return;
 	}
@@ -161,11 +161,11 @@ static void sid2uid_recv(void *private_data, bool success, uid_t uid)
 		talloc_get_type_abort(private_data, struct winbindd_cli_state);
 	struct dom_sid sid;
 
-	string_to_sid(&sid, state->request.data.sid);
+	string_to_sid(&sid, state->request->data.sid);
 
 	if (!success) {
 		DEBUG(5, ("Could not convert sid %s\n",
-			  state->request.data.sid));
+			  state->request->data.sid));
 		request_error(state);
 		return;
 	}
@@ -183,22 +183,22 @@ static void sid2uid_lookupsid_recv( void *private_data, bool success,
 		talloc_get_type_abort(private_data, struct winbindd_cli_state);
 	DOM_SID sid;
 
-	if (!string_to_sid(&sid, state->request.data.sid)) {
+	if (!string_to_sid(&sid, state->request->data.sid)) {
 		DEBUG(1, ("sid2uid_lookupsid_recv: Could not get convert sid "
-			  "%s from string\n", state->request.data.sid));
+			  "%s from string\n", state->request->data.sid));
 		request_error(state);
 		return;
 	}
 
 	if (!success) {
 		DEBUG(5, ("sid2uid_lookupsid_recv Could not convert get sid type for %s\n",
-			  state->request.data.sid));
+			  state->request->data.sid));
 		goto fail;
 	}
 
 	if ( (type!=SID_NAME_USER) && (type!=SID_NAME_COMPUTER) ) {
 		DEBUG(5,("sid2uid_lookupsid_recv: Sid %s is not a user or a computer.\n", 
-			 state->request.data.sid));
+			 state->request->data.sid));
 		goto fail;
 	}
 
@@ -223,14 +223,14 @@ void winbindd_sid_to_uid(struct winbindd_cli_state *state)
 	bool expired;
 
 	/* Ensure null termination */
-	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
+	state->request->data.sid[sizeof(state->request->data.sid)-1]='\0';
 
 	DEBUG(3, ("[%5lu]: sid to uid %s\n", (unsigned long)state->pid,
-		  state->request.data.sid));
+		  state->request->data.sid));
 
-	if (!string_to_sid(&sid, state->request.data.sid)) {
+	if (!string_to_sid(&sid, state->request->data.sid)) {
 		DEBUG(1, ("Could not get convert sid %s from string\n",
-			  state->request.data.sid));
+			  state->request->data.sid));
 		request_error(state);
 		return;
 	}
@@ -270,11 +270,11 @@ static void sid2gid_recv(void *private_data, bool success, gid_t gid)
 		talloc_get_type_abort(private_data, struct winbindd_cli_state);
 	struct dom_sid sid;
 
-	string_to_sid(&sid, state->request.data.sid);
+	string_to_sid(&sid, state->request->data.sid);
 
 	if (!success) {
 		DEBUG(5, ("Could not convert sid %s\n",
-			  state->request.data.sid));
+			  state->request->data.sid));
 		request_error(state);
 		return;
 	}
@@ -292,16 +292,16 @@ static void sid2gid_lookupsid_recv( void *private_data, bool success,
 		talloc_get_type_abort(private_data, struct winbindd_cli_state);
 	DOM_SID sid;
 
-	if (!string_to_sid(&sid, state->request.data.sid)) {
+	if (!string_to_sid(&sid, state->request->data.sid)) {
 		DEBUG(1, ("sid2gid_lookupsid_recv: Could not get convert sid "
-			  "%s from string\n", state->request.data.sid));
+			  "%s from string\n", state->request->data.sid));
 		request_error(state);
 		return;
 	}
 
 	if (!success) {
 		DEBUG(5, ("sid2gid_lookupsid_recv: Could not get sid type for %s\n",
-			  state->request.data.sid));
+			  state->request->data.sid));
 		goto fail;
 	}
 
@@ -310,7 +310,7 @@ static void sid2gid_lookupsid_recv( void *private_data, bool success,
 	     (type!=SID_NAME_WKN_GRP) ) 
 	{
 		DEBUG(5,("sid2gid_lookupsid_recv: Sid %s is not a group.\n", 
-			 state->request.data.sid));
+			 state->request->data.sid));
 		goto fail;
 	}
 
@@ -335,14 +335,14 @@ void winbindd_sid_to_gid(struct winbindd_cli_state *state)
 	bool expired;
 
 	/* Ensure null termination */
-	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
+	state->request->data.sid[sizeof(state->request->data.sid)-1]='\0';
 
 	DEBUG(3, ("[%5lu]: sid to gid %s\n", (unsigned long)state->pid,
-		  state->request.data.sid));
+		  state->request->data.sid));
 
-	if (!string_to_sid(&sid, state->request.data.sid)) {
+	if (!string_to_sid(&sid, state->request->data.sid)) {
 		DEBUG(1, ("Could not get convert sid %s from string\n",
-			  state->request.data.sid));
+			  state->request->data.sid));
 		request_error(state);
 		return;
 	}
@@ -401,16 +401,16 @@ void winbindd_set_mapping(struct winbindd_cli_state *state)
 		return;
 	}
 
-	if (!string_to_sid(&sid, state->request.data.dual_idmapset.sid)) {
+	if (!string_to_sid(&sid, state->request->data.dual_idmapset.sid)) {
 		DEBUG(1, ("Could not get convert sid %s from string\n",
-			  state->request.data.sid));
+			  state->request->data.sid));
 		request_error(state);
 		return;
 	}
 
 	map.sid = &sid;
-	map.xid.id = state->request.data.dual_idmapset.id;
-	map.xid.type = state->request.data.dual_idmapset.type;
+	map.xid.id = state->request->data.dual_idmapset.id;
+	map.xid.type = state->request->data.dual_idmapset.type;
 
 	winbindd_set_mapping_async(state->mem_ctx, &map,
 			set_mapping_recv, state);
@@ -443,16 +443,16 @@ void winbindd_remove_mapping(struct winbindd_cli_state *state)
 		return;
 	}
 
-	if (!string_to_sid(&sid, state->request.data.dual_idmapset.sid)) {
+	if (!string_to_sid(&sid, state->request->data.dual_idmapset.sid)) {
 		DEBUG(1, ("Could not get convert sid %s from string\n",
-			  state->request.data.sid));
+			  state->request->data.sid));
 		request_error(state);
 		return;
 	}
 
 	map.sid = &sid;
-	map.xid.id = state->request.data.dual_idmapset.id;
-	map.xid.type = state->request.data.dual_idmapset.type;
+	map.xid.id = state->request->data.dual_idmapset.id;
+	map.xid.type = state->request->data.dual_idmapset.type;
 
 	winbindd_remove_mapping_async(state->mem_ctx, &map,
 			remove_mapping_recv, state);
@@ -484,8 +484,8 @@ void winbindd_set_hwm(struct winbindd_cli_state *state)
 		return;
 	}
 
-	xid.id = state->request.data.dual_idmapset.id;
-	xid.type = state->request.data.dual_idmapset.type;
+	xid.id = state->request->data.dual_idmapset.id;
+	xid.type = state->request->data.dual_idmapset.type;
 
 	winbindd_set_hwm_async(state->mem_ctx, &xid, set_hwm_recv, state);
 }
@@ -500,15 +500,15 @@ static void uid2sid_recv(void *private_data, bool success, const char *sidstr)
 
 	if (!success || !string_to_sid(&sid, sidstr)) {
 		ZERO_STRUCT(sid);
-		idmap_cache_set_sid2uid(&sid, state->request.data.uid);
+		idmap_cache_set_sid2uid(&sid, state->request->data.uid);
 		request_error(state);
 		return;
 	}
 
 	DEBUG(10,("uid2sid: uid %lu has sid %s\n",
-		  (unsigned long)(state->request.data.uid), sidstr));
+		  (unsigned long)(state->request->data.uid), sidstr));
 
-	idmap_cache_set_sid2uid(&sid, state->request.data.uid);
+	idmap_cache_set_sid2uid(&sid, state->request->data.uid);
 	fstrcpy(state->response.data.sid.sid, sidstr);
 	state->response.data.sid.type = SID_NAME_USER;
 	request_ok(state);
@@ -521,12 +521,12 @@ void winbindd_uid_to_sid(struct winbindd_cli_state *state)
 	bool expired;
 
 	DEBUG(3, ("[%5lu]: uid to sid %lu\n", (unsigned long)state->pid, 
-		  (unsigned long)state->request.data.uid));
+		  (unsigned long)state->request->data.uid));
 
-	if (idmap_cache_find_uid2sid(state->request.data.uid, &sid,
+	if (idmap_cache_find_uid2sid(state->request->data.uid, &sid,
 				     &expired)) {
 		DEBUG(10, ("idmap_cache_find_uid2sid found %d%s\n",
-			   (int)state->request.data.uid,
+			   (int)state->request->data.uid,
 			   expired ? " (expired)": ""));
 		if (expired && IS_DOMAIN_ONLINE(find_our_domain())) {
 			DEBUG(10, ("revalidating expired entry\n"));
@@ -545,7 +545,7 @@ void winbindd_uid_to_sid(struct winbindd_cli_state *state)
 
 	/* always go via the async interface (may block) */
  backend:
-	winbindd_uid2sid_async(state->mem_ctx, state->request.data.uid, uid2sid_recv, state);
+	winbindd_uid2sid_async(state->mem_ctx, state->request->data.uid, uid2sid_recv, state);
 }
 
 /* Convert a gid to a sid */
@@ -558,14 +558,14 @@ static void gid2sid_recv(void *private_data, bool success, const char *sidstr)
 
 	if (!success || !string_to_sid(&sid, sidstr)) {
 		ZERO_STRUCT(sid);
-		idmap_cache_set_sid2gid(&sid, state->request.data.gid);
+		idmap_cache_set_sid2gid(&sid, state->request->data.gid);
 		request_error(state);
 		return;
 	}
 	DEBUG(10,("gid2sid: gid %lu has sid %s\n",
-		  (unsigned long)(state->request.data.gid), sidstr));
+		  (unsigned long)(state->request->data.gid), sidstr));
 
-	idmap_cache_set_sid2gid(&sid, state->request.data.gid);
+	idmap_cache_set_sid2gid(&sid, state->request->data.gid);
 	fstrcpy(state->response.data.sid.sid, sidstr);
 	state->response.data.sid.type = SID_NAME_DOM_GRP;
 	request_ok(state);
@@ -579,12 +579,12 @@ void winbindd_gid_to_sid(struct winbindd_cli_state *state)
 	bool expired;
 
 	DEBUG(3, ("[%5lu]: gid to sid %lu\n", (unsigned long)state->pid, 
-		  (unsigned long)state->request.data.gid));
+		  (unsigned long)state->request->data.gid));
 
-	if (idmap_cache_find_gid2sid(state->request.data.gid, &sid,
+	if (idmap_cache_find_gid2sid(state->request->data.gid, &sid,
 				     &expired)) {
 		DEBUG(10, ("idmap_cache_find_gid2sid found %d%s\n",
-			   (int)state->request.data.gid,
+			   (int)state->request->data.gid,
 			   expired ? " (expired)": ""));
 		if (expired && IS_DOMAIN_ONLINE(find_our_domain())) {
 			DEBUG(10, ("revalidating expired entry\n"));
@@ -603,7 +603,7 @@ void winbindd_gid_to_sid(struct winbindd_cli_state *state)
 
 	/* always use async calls (may block) */
  backend:
-	winbindd_gid2sid_async(state->mem_ctx, state->request.data.gid, gid2sid_recv, state);
+	winbindd_gid2sid_async(state->mem_ctx, state->request->data.gid, gid2sid_recv, state);
 }
 
 void winbindd_allocate_uid(struct winbindd_cli_state *state)

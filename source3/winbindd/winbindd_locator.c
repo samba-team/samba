@@ -45,15 +45,15 @@ struct winbindd_child *locator_child(void)
 
 void winbindd_dsgetdcname(struct winbindd_cli_state *state)
 {
-	state->request.data.dsgetdcname.domain_name
-		[sizeof(state->request.data.dsgetdcname.domain_name)-1] = '\0';
-	state->request.data.dsgetdcname.site_name
-		[sizeof(state->request.data.dsgetdcname.site_name)-1] = '\0';
-	state->request.data.dsgetdcname.domain_guid
-		[sizeof(state->request.data.dsgetdcname.domain_guid)-1] = '\0';
+	state->request->data.dsgetdcname.domain_name
+		[sizeof(state->request->data.dsgetdcname.domain_name)-1] = '\0';
+	state->request->data.dsgetdcname.site_name
+		[sizeof(state->request->data.dsgetdcname.site_name)-1] = '\0';
+	state->request->data.dsgetdcname.domain_guid
+		[sizeof(state->request->data.dsgetdcname.domain_guid)-1] = '\0';
 
 	DEBUG(3, ("[%5lu]: dsgetdcname for %s\n", (unsigned long)state->pid,
-		  state->request.data.dsgetdcname.domain_name));
+		  state->request->data.dsgetdcname.domain_name));
 
 	sendto_child(state, locator_child());
 }
@@ -107,19 +107,19 @@ static enum winbindd_result dual_dsgetdcname(struct winbindd_domain *domain,
 	struct GUID guid, *guid_ptr = NULL;
 	const char *guid_str = NULL;
 
-	state->request.data.dsgetdcname.domain_name
-		[sizeof(state->request.data.dsgetdcname.domain_name)-1] = '\0';
-	state->request.data.dsgetdcname.site_name
-		[sizeof(state->request.data.dsgetdcname.site_name)-1] = '\0';
-	state->request.data.dsgetdcname.domain_guid
-		[sizeof(state->request.data.dsgetdcname.domain_guid)-1] = '\0';
+	state->request->data.dsgetdcname.domain_name
+		[sizeof(state->request->data.dsgetdcname.domain_name)-1] = '\0';
+	state->request->data.dsgetdcname.site_name
+		[sizeof(state->request->data.dsgetdcname.site_name)-1] = '\0';
+	state->request->data.dsgetdcname.domain_guid
+		[sizeof(state->request->data.dsgetdcname.domain_guid)-1] = '\0';
 
 	DEBUG(3, ("[%5lu]: dsgetdcname for %s\n", (unsigned long)state->pid,
-		  state->request.data.dsgetdcname.domain_name));
+		  state->request->data.dsgetdcname.domain_name));
 
-	ds_flags = get_dsgetdc_flags(state->request.flags);
+	ds_flags = get_dsgetdc_flags(state->request->flags);
 
-	result = GUID_from_string(state->request.data.dsgetdcname.domain_guid,
+	result = GUID_from_string(state->request->data.dsgetdcname.domain_guid,
 				  &guid);
 	if (NT_STATUS_IS_OK(result) && !GUID_all_zero(&guid)) {
 		guid_ptr = &guid;
@@ -127,9 +127,9 @@ static enum winbindd_result dual_dsgetdcname(struct winbindd_domain *domain,
 
 	result = dsgetdcname(state->mem_ctx,
 			     winbind_messaging_context(),
-			     state->request.data.dsgetdcname.domain_name,
+			     state->request->data.dsgetdcname.domain_name,
 			     guid_ptr,
-			     state->request.data.dsgetdcname.site_name,
+			     state->request->data.dsgetdcname.site_name,
 			     ds_flags,
 			     &info);
 

@@ -518,12 +518,12 @@ static void process_request(struct winbindd_cli_state *state)
 		return;
 
 	/* Remember who asked us. */
-	state->pid = state->request.pid;
+	state->pid = state->request->pid;
 
 	/* Process command */
 
 	for (table = dispatch_table; table->fn; table++) {
-		if (state->request.cmd == table->cmd) {
+		if (state->request->cmd == table->cmd) {
 			DEBUG(10,("process_request: request fn %s\n",
 				  table->winbindd_cmd_name ));
 			table->fn(state);
@@ -533,7 +533,7 @@ static void process_request(struct winbindd_cli_state *state)
 
 	if (!table->fn) {
 		DEBUG(10,("process_request: unknown request fn number %d\n",
-			  (int)state->request.cmd ));
+			  (int)state->request->cmd ));
 		request_error(state);
 	}
 }
@@ -675,7 +675,7 @@ static void response_extra_sent(void *private_data, bool success)
 		return;
 	}
 
-	setup_async_read(&state->fd_event, &state->request, sizeof(uint32),
+	setup_async_read(&state->fd_event, state->request, sizeof(uint32),
 			 request_len_recv, state);
 }
 
@@ -692,7 +692,7 @@ static void response_main_sent(void *private_data, bool success)
 	if (state->response.length == sizeof(state->response)) {
 		TALLOC_FREE(state->mem_ctx);
 
-		setup_async_read(&state->fd_event, &state->request,
+		setup_async_read(&state->fd_event, state->request,
 				 sizeof(uint32), request_len_recv, state);
 		return;
 	}
@@ -705,7 +705,7 @@ static void response_main_sent(void *private_data, bool success)
 static void request_finished(struct winbindd_cli_state *state)
 {
 	/* Make sure request.extra_data is freed when finish processing a request */
-	SAFE_FREE(state->request.extra_data.data);
+	SAFE_FREE(state->request->extra_data.data);
 	setup_async_write(&state->fd_event, &state->response,
 			  sizeof(state->response), response_main_sent, state);
 }
@@ -734,17 +734,16 @@ static void request_len_recv(void *private_data, bool success)
 		return;
 	}
 
-	if (*(uint32 *)(void *)(&state->request) != sizeof(state->request)) {
+	if (*(uint32 *)(state->request) != sizeof(*state->request)) {
 		DEBUG(0,("request_len_recv: Invalid request size received: %d (expected %u)\n",
-			 *(uint32_t *)(void *)(&state->request),
-			 (uint32_t)sizeof(state->request)));
+			 *(uint32_t *)(state->request),
+			 (uint32_t)sizeof(*state->request)));
 		state->finished = True;
 		return;
 	}
 
-	setup_async_read(&state->fd_event,
-			 (uint32 *)(void *)(&state->request)+1,
-			 sizeof(state->request) - sizeof(uint32),
+	setup_async_read(&state->fd_event, (uint32 *)(state->request)+1,
+			 sizeof(*state->request) - sizeof(uint32),
 			 request_main_recv, state);
 }
 
@@ -758,35 +757,36 @@ static void request_main_recv(void *private_data, bool success)
 		return;
 	}
 
-	if (state->request.extra_len == 0) {
-		state->request.extra_data.data = NULL;
+	if (state->request->extra_len == 0) {
+		state->request->extra_data.data = NULL;
 		request_recv(state, True);
 		return;
 	}
 
 	if ((!state->privileged) &&
-	    (state->request.extra_len > WINBINDD_MAX_EXTRA_DATA)) {
+	    (state->request->extra_len > WINBINDD_MAX_EXTRA_DATA)) {
 		DEBUG(3, ("Got request with %d bytes extra data on "
-			  "unprivileged socket\n", (int)state->request.extra_len));
-		state->request.extra_data.data = NULL;
+			  "unprivileged socket\n",
+			  (int)state->request->extra_len));
+		state->request->extra_data.data = NULL;
 		state->finished = True;
 		return;
 	}
 
-	state->request.extra_data.data =
-		SMB_MALLOC_ARRAY(char, state->request.extra_len + 1);
+	state->request->extra_data.data =
+		SMB_MALLOC_ARRAY(char, state->request->extra_len + 1);
 
-	if (state->request.extra_data.data == NULL) {
+	if (state->request->extra_data.data == NULL) {
 		DEBUG(0, ("malloc failed\n"));
 		state->finished = True;
 		return;
 	}
 
 	/* Ensure null termination */
-	state->request.extra_data.data[state->request.extra_len] = '\0';
+	state->request->extra_data.data[state->request->extra_len] = '\0';
 
-	setup_async_read(&state->fd_event, state->request.extra_data.data,
-			 state->request.extra_len, request_recv, state);
+	setup_async_read(&state->fd_event, state->request->extra_data.data,
+			 state->request->extra_len, request_recv, state);
 }
 
 static void request_recv(void *private_data, bool success)
@@ -831,6 +831,7 @@ static void new_connection(int listen_sock, bool privileged)
 		close(sock);
 		return;
 	}
+	state->request = &state->_request;
 
 	state->sock = sock;
 
@@ -842,7 +843,7 @@ static void new_connection(int listen_sock, bool privileged)
 	state->fd_event.flags = 0;
 	add_fd_event(&state->fd_event);
 
-	setup_async_read(&state->fd_event, &state->request, sizeof(uint32),
+	setup_async_read(&state->fd_event, state->request, sizeof(uint32),
 			 request_len_recv, state);
 
 	/* Add to connection list */
