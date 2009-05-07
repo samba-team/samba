@@ -321,10 +321,13 @@ static bool test_SetUserInfo(struct dcerpc_pipe *p, struct torture_context *tctx
 	q0.in.level = 12;
 	do { TESTCALL(QueryUserInfo, q0) } while (0);
 
-	TEST_USERINFO_STRING(2, comment,  1, comment, "xx2-1 comment", 0);
-	TEST_USERINFO_STRING(2, comment, 21, comment, "xx2-21 comment", 0);
-	TEST_USERINFO_STRING(21, comment, 21, comment, "xx21-21 comment", 
-			   SAMR_FIELD_COMMENT);
+	/* Samba 3 cannot store comment fields atm. - gd */
+	if (!torture_setting_bool(tctx, "samba3", false)) {
+		TEST_USERINFO_STRING(2, comment,  1, comment, "xx2-1 comment", 0);
+		TEST_USERINFO_STRING(2, comment, 21, comment, "xx2-21 comment", 0);
+		TEST_USERINFO_STRING(21, comment, 21, comment, "xx21-21 comment",
+				   SAMR_FIELD_COMMENT);
+	}
 
 	test_account_name = talloc_asprintf(tctx, "%sxx7-1", base_account_name);
 	TEST_USERINFO_STRING(7, account_name,  1, account_name, base_account_name, 0);
@@ -420,18 +423,21 @@ static bool test_SetUserInfo(struct dcerpc_pipe *p, struct torture_context *tctx
 	TEST_USERINFO_BINARYSTRING(21, parameters, 20, parameters, "",
 			   SAMR_FIELD_PARAMETERS);
 
-	TEST_USERINFO_INT(2, country_code, 2, country_code, __LINE__, 0);
-	TEST_USERINFO_INT(2, country_code, 21, country_code, __LINE__, 0);
-	TEST_USERINFO_INT(21, country_code, 21, country_code, __LINE__, 
-			  SAMR_FIELD_COUNTRY_CODE);
-	TEST_USERINFO_INT(21, country_code, 2, country_code, __LINE__, 
-			  SAMR_FIELD_COUNTRY_CODE);
+	/* Samba 3 cannot store country_code and copy_page atm. - gd */
+	if (!torture_setting_bool(tctx, "samba3", false)) {
+		TEST_USERINFO_INT(2, country_code, 2, country_code, __LINE__, 0);
+		TEST_USERINFO_INT(2, country_code, 21, country_code, __LINE__, 0);
+		TEST_USERINFO_INT(21, country_code, 21, country_code, __LINE__,
+				  SAMR_FIELD_COUNTRY_CODE);
+		TEST_USERINFO_INT(21, country_code, 2, country_code, __LINE__,
+				  SAMR_FIELD_COUNTRY_CODE);
 
-	TEST_USERINFO_INT(2, code_page, 21, code_page, __LINE__, 0);
-	TEST_USERINFO_INT(21, code_page, 21, code_page, __LINE__, 
-			  SAMR_FIELD_CODE_PAGE);
-	TEST_USERINFO_INT(21, code_page, 2, code_page, __LINE__, 
-			  SAMR_FIELD_CODE_PAGE);
+		TEST_USERINFO_INT(2, code_page, 21, code_page, __LINE__, 0);
+		TEST_USERINFO_INT(21, code_page, 21, code_page, __LINE__,
+				  SAMR_FIELD_CODE_PAGE);
+		TEST_USERINFO_INT(21, code_page, 2, code_page, __LINE__,
+				  SAMR_FIELD_CODE_PAGE);
+	}
 
 	TEST_USERINFO_INT(17, acct_expiry, 21, acct_expiry, __LINE__, 0);
 	TEST_USERINFO_INT(17, acct_expiry, 5, acct_expiry, __LINE__, 0);
@@ -5655,7 +5661,9 @@ static bool test_OpenDomain(struct dcerpc_pipe *p, struct torture_context *tctx,
 	switch (which_ops) {
 	case TORTURE_SAMR_USER_ATTRIBUTES:
 	case TORTURE_SAMR_PASSWORDS:
-		ret &= test_CreateUser2(p, tctx, &domain_handle, sid, which_ops, NULL);
+		if (!torture_setting_bool(tctx, "samba3", false)) {
+			ret &= test_CreateUser2(p, tctx, &domain_handle, sid, which_ops, NULL);
+		}
 		ret &= test_CreateUser(p, tctx, &domain_handle, &user_handle, sid, which_ops, NULL);
 		/* This test needs 'complex' users to validate */
 		ret &= test_QueryDisplayInfo(p, tctx, &domain_handle);
