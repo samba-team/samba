@@ -233,6 +233,27 @@ void copy_id14_to_sam_passwd(struct samu *to,
 }
 
 /*************************************************************
+ Copies a struct samr_UserInfo16 to a struct samu
+**************************************************************/
+
+void copy_id16_to_sam_passwd(struct samu *to,
+			     struct samr_UserInfo16 *from)
+{
+	struct samr_UserInfo21 i;
+
+	if (from == NULL || to == NULL) {
+		return;
+	}
+
+	ZERO_STRUCT(i);
+
+	i.fields_present	= SAMR_FIELD_ACCT_FLAGS;
+	i.acct_flags		= from->acct_flags;
+
+	copy_id21_to_sam_passwd("INFO_16", to, &i);
+}
+
+/*************************************************************
  Copies a struct samr_UserInfo17 to a struct samu
 **************************************************************/
 
