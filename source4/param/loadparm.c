@@ -2134,7 +2134,8 @@ bool lp_dump_a_parameter(struct loadparm_context *lp_ctx,
 }
 
 /**
- * Return info about the next service  in a service. snum==-1 gives the globals.
+ * Return info about the next parameter in a service.
+ * snum==-1 gives the globals.
  * Return NULL when out of parameters.
  */
 
