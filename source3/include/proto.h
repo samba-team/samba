@@ -5891,6 +5891,26 @@ NTSTATUS np_read_recv(struct tevent_req *req, ssize_t *nread,
 
 /* The following definitions come from rpc_server/srv_samr_util.c  */
 
+void copy_id2_to_sam_passwd(struct samu *to,
+			    struct samr_UserInfo2 *from);
+void copy_id4_to_sam_passwd(struct samu *to,
+			    struct samr_UserInfo4 *from);
+void copy_id6_to_sam_passwd(struct samu *to,
+			    struct samr_UserInfo6 *from);
+void copy_id8_to_sam_passwd(struct samu *to,
+			    struct samr_UserInfo8 *from);
+void copy_id10_to_sam_passwd(struct samu *to,
+			     struct samr_UserInfo10 *from);
+void copy_id11_to_sam_passwd(struct samu *to,
+			     struct samr_UserInfo11 *from);
+void copy_id12_to_sam_passwd(struct samu *to,
+			     struct samr_UserInfo12 *from);
+void copy_id13_to_sam_passwd(struct samu *to,
+			     struct samr_UserInfo13 *from);
+void copy_id14_to_sam_passwd(struct samu *to,
+			     struct samr_UserInfo14 *from);
+void copy_id17_to_sam_passwd(struct samu *to,
+			     struct samr_UserInfo17 *from);
 void copy_id18_to_sam_passwd(struct samu *to,
 			     struct samr_UserInfo18 *from);
 void copy_id20_to_sam_passwd(struct samu *to,
