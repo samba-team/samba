@@ -1894,6 +1894,54 @@ NTSTATUS _samr_ChangePasswordUser2(pipes_struct *p,
 	return status;
 }
 
+/****************************************************************
+ _samr_OemChangePasswordUser2
+****************************************************************/
+
+NTSTATUS _samr_OemChangePasswordUser2(pipes_struct *p,
+				      struct samr_OemChangePasswordUser2 *r)
+{
+	NTSTATUS status;
+	fstring user_name;
+	const char *wks = NULL;
+
+	DEBUG(5,("_samr_OemChangePasswordUser2: %d\n", __LINE__));
+
+	fstrcpy(user_name, r->in.account->string);
+	if (r->in.server && r->in.server->string) {
+		wks = r->in.server->string;
+	}
+
+	DEBUG(5,("_samr_OemChangePasswordUser2: user: %s wks: %s\n", user_name, wks));
+
+	/*
+	 * Pass the user through the NT -> unix user mapping
+	 * function.
+	 */
+
+	(void)map_username(user_name);
+
+	/*
+	 * UNIX username case mangling not required, pass_oem_change
+	 * is case insensitive.
+	 */
+
+	if (!r->in.hash || !r->in.password) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	status = pass_oem_change(user_name,
+				 r->in.password->data,
+				 r->in.hash->hash,
+				 0,
+				 0,
+				 NULL);
+
+	DEBUG(5,("_samr_OemChangePasswordUser2: %d\n", __LINE__));
+
+	return status;
+}
+
 /*******************************************************************
  _samr_ChangePasswordUser3
  ********************************************************************/
@@ -6361,16 +6409,6 @@ NTSTATUS _samr_AddMultipleMembersToAlias(pipes_struct *p,
 
 NTSTATUS _samr_RemoveMultipleMembersFromAlias(pipes_struct *p,
 					      struct samr_RemoveMultipleMembersFromAlias *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_OemChangePasswordUser2(pipes_struct *p,
-				      struct samr_OemChangePasswordUser2 *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
