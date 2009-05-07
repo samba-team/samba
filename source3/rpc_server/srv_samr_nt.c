@@ -6083,7 +6083,6 @@ NTSTATUS _samr_TestPrivateFunctionsDomain(pipes_struct *p,
 NTSTATUS _samr_TestPrivateFunctionsUser(pipes_struct *p,
 					struct samr_TestPrivateFunctionsUser *r)
 {
-	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
