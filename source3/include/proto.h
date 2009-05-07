@@ -2169,6 +2169,10 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 			   const char *pass, int passlen,
 			   const char *ntpass, int ntpasslen,
 			   const char *workgroup);
+struct tevent_req *cli_session_setup_guest_create(TALLOC_CTX *mem_ctx,
+						  struct event_context *ev,
+						  struct cli_state *cli,
+						  struct tevent_req **psmbreq);
 struct tevent_req *cli_session_setup_guest_send(TALLOC_CTX *mem_ctx,
 						struct event_context *ev,
 						struct cli_state *cli);

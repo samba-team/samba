@@ -169,13 +169,15 @@ static uint32 cli_session_setup_capabilities(struct cli_state *cli)
 struct cli_session_setup_guest_state {
 	struct cli_state *cli;
 	uint16_t vwv[16];
+	struct iovec bytes;
 };
 
 static void cli_session_setup_guest_done(struct tevent_req *subreq);
 
-struct tevent_req *cli_session_setup_guest_send(TALLOC_CTX *mem_ctx,
-						struct event_context *ev,
-						struct cli_state *cli)
+struct tevent_req *cli_session_setup_guest_create(TALLOC_CTX *mem_ctx,
+						  struct event_context *ev,
+						  struct cli_state *cli,
+						  struct tevent_req **psmbreq)
 {
 	struct tevent_req *req, *subreq;
 	struct cli_session_setup_guest_state *state;
@@ -212,16 +214,36 @@ struct tevent_req *cli_session_setup_guest_send(TALLOC_CTX *mem_ctx,
 	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), "Unix", 5, NULL);
 	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), "Samba", 6, NULL);
 
-	if (tevent_req_nomem(bytes, req)) {
-		return tevent_req_post(req, ev);
+	if (bytes == NULL) {
+		TALLOC_FREE(req);
+		return NULL;
 	}
 
-	subreq = cli_smb_send(state, ev, cli, SMBsesssetupX, 0, 13, vwv,
-			      talloc_get_size(bytes), bytes);
-	if (tevent_req_nomem(subreq, req)) {
-		return tevent_req_post(req, ev);
+	state->bytes.iov_base = bytes;
+	state->bytes.iov_len = talloc_get_size(bytes);
+
+	subreq = cli_smb_req_create(state, ev, cli, SMBsesssetupX, 0, 13, vwv,
+				    1, &state->bytes);
+	if (subreq == NULL) {
+		TALLOC_FREE(req);
+		return NULL;
 	}
 	tevent_req_set_callback(subreq, cli_session_setup_guest_done, req);
+	*psmbreq = subreq;
+	return req;
+}
+
+struct tevent_req *cli_session_setup_guest_send(TALLOC_CTX *mem_ctx,
+						struct event_context *ev,
+						struct cli_state *cli)
+{
+	struct tevent_req *req, *subreq;
+
+	req = cli_session_setup_guest_create(mem_ctx, ev, cli, &subreq);
+	if ((req == NULL) || !cli_smb_req_send(subreq)) {
+		TALLOC_FREE(req);
+		return NULL;
+	}
 	return req;
 }
 
