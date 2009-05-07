@@ -114,6 +114,7 @@ sub setup_dc($$)
 	my $dc_options = "
 	domain master = yes
 	domain logons = yes
+	lanman auth = yes
 ";
 
 	my $vars = $self->provision($path,
