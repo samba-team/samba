@@ -310,8 +310,7 @@ bool make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
 	unsigned char local_nt_response[24];
 	unsigned char key[16];
 	
-	ZERO_STRUCT(key);
-	memcpy(key, dc_sess_key, 8);
+	memcpy(key, dc_sess_key, 16);
 	
 	if (lm_interactive_pwd)
 		memcpy(lm_pwd, lm_interactive_pwd, sizeof(lm_pwd));
