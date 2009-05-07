@@ -2083,11 +2083,12 @@ static void dump_a_service(struct loadparm_service * pService, struct loadparm_s
 	if (pService != sDefault)
 		fprintf(f, "\n[%s]\n", pService->szService);
 
-	for (i = 0; parm_table[i].label; i++)
+	for (i = 0; parm_table[i].label; i++) {
 		if (parm_table[i].pclass == P_LOCAL &&
 		    parm_table[i].offset != -1 &&
 		    (*parm_table[i].label != '-') &&
-		    (i == 0 || (parm_table[i].offset != parm_table[i - 1].offset))) {
+		    (i == 0 || (parm_table[i].offset != parm_table[i - 1].offset)))
+		{
 			if (pService == sDefault) {
 				if (defaults_saved && is_default(sDefault, i))
 					continue;
@@ -2104,6 +2105,7 @@ static void dump_a_service(struct loadparm_service * pService, struct loadparm_s
 			print_parameter(&parm_table[i],
 					((char *)pService) + parm_table[i].offset, f);
 			fprintf(f, "\n");
+		}
 	}
 	if (pService->param_opt != NULL) {
 		for (data = pService->param_opt; data; data = data->next) {
