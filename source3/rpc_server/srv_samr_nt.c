@@ -1852,6 +1852,119 @@ NTSTATUS _samr_LookupNames(pipes_struct *p,
 	return status;
 }
 
+/****************************************************************
+ _samr_ChangePasswordUser
+****************************************************************/
+
+NTSTATUS _samr_ChangePasswordUser(pipes_struct *p,
+				  struct samr_ChangePasswordUser *r)
+{
+	NTSTATUS status;
+	bool ret = false;
+	struct samu *pwd;
+	struct samr_Password new_lmPwdHash, new_ntPwdHash, checkHash;
+	struct samr_Password lm_pwd, nt_pwd;
+	uint32_t acc_granted;
+	struct dom_sid sid;
+
+	DISP_INFO *disp_info = NULL;
+
+	if (!get_lsa_policy_samr_sid(p, r->in.user_handle, &sid, &acc_granted, &disp_info)) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	status = access_check_samr_function(acc_granted,
+					    SAMR_USER_ACCESS_SET_PASSWORD,
+					    "_samr_ChangePasswordUser");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	DEBUG(5,("_samr_ChangePasswordUser: sid:%s\n",
+		  sid_string_dbg(&sid)));
+
+	if (!(pwd = samu_new(NULL))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	become_root();
+	ret = pdb_getsampwsid(pwd, &sid);
+	unbecome_root();
+
+	if (!ret) {
+		TALLOC_FREE(pwd);
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	{
+		const uint8_t *lm_pass, *nt_pass;
+
+		lm_pass = pdb_get_lanman_passwd(pwd);
+		nt_pass = pdb_get_nt_passwd(pwd);
+
+		memcpy(&lm_pwd.hash, lm_pass, sizeof(lm_pwd.hash));
+		memcpy(&nt_pwd.hash, nt_pass, sizeof(nt_pwd.hash));
+	}
+
+	/* basic sanity checking on parameters.  Do this before any database ops */
+	if (!r->in.lm_present || !r->in.nt_present ||
+	    !r->in.old_lm_crypted || !r->in.new_lm_crypted ||
+	    !r->in.old_nt_crypted || !r->in.new_nt_crypted) {
+		/* we should really handle a change with lm not
+		   present */
+		status = NT_STATUS_INVALID_PARAMETER_MIX;
+		goto out;
+	}
+
+	/* decrypt and check the new lm hash */
+	D_P16(lm_pwd.hash, r->in.new_lm_crypted->hash, new_lmPwdHash.hash);
+	D_P16(new_lmPwdHash.hash, r->in.old_lm_crypted->hash, checkHash.hash);
+	if (memcmp(checkHash.hash, lm_pwd.hash, 16) != 0) {
+		status = NT_STATUS_WRONG_PASSWORD;
+		goto out;
+	}
+
+	/* decrypt and check the new nt hash */
+	D_P16(nt_pwd.hash, r->in.new_nt_crypted->hash, new_ntPwdHash.hash);
+	D_P16(new_ntPwdHash.hash, r->in.old_nt_crypted->hash, checkHash.hash);
+	if (memcmp(checkHash.hash, nt_pwd.hash, 16) != 0) {
+		status = NT_STATUS_WRONG_PASSWORD;
+		goto out;
+	}
+
+	/* The NT Cross is not required by Win2k3 R2, but if present
+	   check the nt cross hash */
+	if (r->in.cross1_present && r->in.nt_cross) {
+		D_P16(lm_pwd.hash, r->in.nt_cross->hash, checkHash.hash);
+		if (memcmp(checkHash.hash, new_ntPwdHash.hash, 16) != 0) {
+			status = NT_STATUS_WRONG_PASSWORD;
+			goto out;
+		}
+	}
+
+	/* The LM Cross is not required by Win2k3 R2, but if present
+	   check the lm cross hash */
+	if (r->in.cross2_present && r->in.lm_cross) {
+		D_P16(nt_pwd.hash, r->in.lm_cross->hash, checkHash.hash);
+		if (memcmp(checkHash.hash, new_lmPwdHash.hash, 16) != 0) {
+			status = NT_STATUS_WRONG_PASSWORD;
+			goto out;
+		}
+	}
+
+	if (!pdb_set_nt_passwd(pwd, new_ntPwdHash.hash, PDB_CHANGED) ||
+	    !pdb_set_lanman_passwd(pwd, new_lmPwdHash.hash, PDB_CHANGED)) {
+		status = NT_STATUS_ACCESS_DENIED;
+		goto out;
+	}
+
+	status = pdb_update_sam_account(pwd);
+ out:
+	TALLOC_FREE(pwd);
+
+	return status;
+}
+
 /*******************************************************************
  _samr_ChangePasswordUser2
  ********************************************************************/
@@ -6360,16 +6473,6 @@ NTSTATUS _samr_Shutdown(pipes_struct *p,
 
 NTSTATUS _samr_SetMemberAttributesOfGroup(pipes_struct *p,
 					  struct samr_SetMemberAttributesOfGroup *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_ChangePasswordUser(pipes_struct *p,
-				  struct samr_ChangePasswordUser *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
