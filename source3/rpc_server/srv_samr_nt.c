@@ -3673,6 +3673,60 @@ NTSTATUS _samr_OpenAlias(pipes_struct *p,
 }
 
 /*******************************************************************
+ set_user_info_2
+ ********************************************************************/
+
+static NTSTATUS set_user_info_2(TALLOC_CTX *mem_ctx,
+				struct samr_UserInfo2 *id2,
+				struct samu *pwd)
+{
+	if (id2 == NULL) {
+		DEBUG(5,("set_user_info_2: NULL id2\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	copy_id2_to_sam_passwd(pwd, id2);
+
+	return pdb_update_sam_account(pwd);
+}
+
+/*******************************************************************
+ set_user_info_4
+ ********************************************************************/
+
+static NTSTATUS set_user_info_4(TALLOC_CTX *mem_ctx,
+				struct samr_UserInfo4 *id4,
+				struct samu *pwd)
+{
+	if (id4 == NULL) {
+		DEBUG(5,("set_user_info_2: NULL id4\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	copy_id4_to_sam_passwd(pwd, id4);
+
+	return pdb_update_sam_account(pwd);
+}
+
+/*******************************************************************
+ set_user_info_6
+ ********************************************************************/
+
+static NTSTATUS set_user_info_6(TALLOC_CTX *mem_ctx,
+				struct samr_UserInfo6 *id6,
+				struct samu *pwd)
+{
+	if (id6 == NULL) {
+		DEBUG(5,("set_user_info_6: NULL id6\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	copy_id6_to_sam_passwd(pwd, id6);
+
+	return pdb_update_sam_account(pwd);
+}
+
+/*******************************************************************
  set_user_info_7
  ********************************************************************/
 
@@ -3712,6 +3766,114 @@ static NTSTATUS set_user_info_7(TALLOC_CTX *mem_ctx,
 }
 
 /*******************************************************************
+ set_user_info_8
+ ********************************************************************/
+
+static NTSTATUS set_user_info_8(TALLOC_CTX *mem_ctx,
+				struct samr_UserInfo8 *id8,
+				struct samu *pwd)
+{
+	if (id8 == NULL) {
+		DEBUG(5,("set_user_info_8: NULL id8\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	copy_id8_to_sam_passwd(pwd, id8);
+
+	return pdb_update_sam_account(pwd);
+}
+
+/*******************************************************************
+ set_user_info_10
+ ********************************************************************/
+
+static NTSTATUS set_user_info_10(TALLOC_CTX *mem_ctx,
+				 struct samr_UserInfo10 *id10,
+				 struct samu *pwd)
+{
+	if (id10 == NULL) {
+		DEBUG(5,("set_user_info_8: NULL id10\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	copy_id10_to_sam_passwd(pwd, id10);
+
+	return pdb_update_sam_account(pwd);
+}
+
+/*******************************************************************
+ set_user_info_11
+ ********************************************************************/
+
+static NTSTATUS set_user_info_11(TALLOC_CTX *mem_ctx,
+				 struct samr_UserInfo11 *id11,
+				 struct samu *pwd)
+{
+	if (id11 == NULL) {
+		DEBUG(5,("set_user_info_11: NULL id11\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	copy_id11_to_sam_passwd(pwd, id11);
+
+	return pdb_update_sam_account(pwd);
+}
+
+/*******************************************************************
+ set_user_info_12
+ ********************************************************************/
+
+static NTSTATUS set_user_info_12(TALLOC_CTX *mem_ctx,
+				 struct samr_UserInfo12 *id12,
+				 struct samu *pwd)
+{
+	if (id12 == NULL) {
+		DEBUG(5,("set_user_info_12: NULL id12\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	copy_id12_to_sam_passwd(pwd, id12);
+
+	return pdb_update_sam_account(pwd);
+}
+
+/*******************************************************************
+ set_user_info_13
+ ********************************************************************/
+
+static NTSTATUS set_user_info_13(TALLOC_CTX *mem_ctx,
+				 struct samr_UserInfo13 *id13,
+				 struct samu *pwd)
+{
+	if (id13 == NULL) {
+		DEBUG(5,("set_user_info_13: NULL id13\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	copy_id13_to_sam_passwd(pwd, id13);
+
+	return pdb_update_sam_account(pwd);
+}
+
+/*******************************************************************
+ set_user_info_14
+ ********************************************************************/
+
+static NTSTATUS set_user_info_14(TALLOC_CTX *mem_ctx,
+				 struct samr_UserInfo14 *id14,
+				 struct samu *pwd)
+{
+	if (id14 == NULL) {
+		DEBUG(5,("set_user_info_14: NULL id14\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	copy_id14_to_sam_passwd(pwd, id14);
+
+	return pdb_update_sam_account(pwd);
+}
+
+/*******************************************************************
  set_user_info_16
  ********************************************************************/
 
@@ -3733,6 +3895,24 @@ static bool set_user_info_16(struct samr_UserInfo16 *id16,
 	}
 
 	return True;
+}
+
+/*******************************************************************
+ set_user_info_17
+ ********************************************************************/
+
+static NTSTATUS set_user_info_17(TALLOC_CTX *mem_ctx,
+				 struct samr_UserInfo17 *id17,
+				 struct samu *pwd)
+{
+	if (id17 == NULL) {
+		DEBUG(5,("set_user_info_17: NULL id17\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	copy_id17_to_sam_passwd(pwd, id17);
+
+	return pdb_update_sam_account(pwd);
 }
 
 /*******************************************************************
@@ -4311,15 +4491,65 @@ NTSTATUS _samr_SetUserInfo(pipes_struct *p,
 
 	switch (switch_value) {
 
+		case 2:
+			status = set_user_info_2(p->mem_ctx,
+						 &info->info2, pwd);
+			break;
+
+		case 4:
+			status = set_user_info_4(p->mem_ctx,
+						 &info->info4, pwd);
+			break;
+
+		case 6:
+			status = set_user_info_6(p->mem_ctx,
+						 &info->info6, pwd);
+			break;
+
 		case 7:
 			status = set_user_info_7(p->mem_ctx,
 						 &info->info7, pwd);
+			break;
+
+		case 8:
+			status = set_user_info_8(p->mem_ctx,
+						 &info->info8, pwd);
+			break;
+
+		case 10:
+			status = set_user_info_10(p->mem_ctx,
+						  &info->info10, pwd);
+			break;
+
+		case 11:
+			status = set_user_info_11(p->mem_ctx,
+						  &info->info11, pwd);
+			break;
+
+		case 12:
+			status = set_user_info_12(p->mem_ctx,
+						  &info->info12, pwd);
+			break;
+
+		case 13:
+			status = set_user_info_13(p->mem_ctx,
+						  &info->info13, pwd);
+			break;
+
+		case 14:
+			status = set_user_info_14(p->mem_ctx,
+						  &info->info14, pwd);
 			break;
 
 		case 16:
 			if (!set_user_info_16(&info->info16, pwd)) {
 				status = NT_STATUS_ACCESS_DENIED;
 			}
+			break;
+
+		case 17:
+			status = set_user_info_17(p->mem_ctx,
+						  &info->info17, pwd);
 			break;
 
 		case 18:
