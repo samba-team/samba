@@ -213,6 +213,7 @@ cat >$SERVERCONFFILE<<EOF
 
 	domain master = yes
 	domain logons = yes
+	lanman auth = yes
 	time server = yes
 
 	add user script = $PERL $SRCDIR/../lib/nss_wrapper/nss_wrapper.pl --path $NSS_WRAPPER_PASSWD --type passwd --action add --name %u
