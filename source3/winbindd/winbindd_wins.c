@@ -59,7 +59,7 @@ static int wins_lookup_open_socket_in(void)
 
 	/* now we've got a socket - we need to bind it */
 
-	if (bind(res, (struct sockaddr * ) &sock,sizeof(sock)) < 0) {
+	if (bind(res, (struct sockaddr *)(void *)&sock, sizeof(sock)) < 0) {
 		close(res);
 		return(-1);
 	}

@@ -741,14 +741,16 @@ static void request_len_recv(void *private_data, bool success)
 		return;
 	}
 
-	if (*(uint32 *)(&state->request) != sizeof(state->request)) {
+	if (*(uint32 *)(void *)(&state->request) != sizeof(state->request)) {
 		DEBUG(0,("request_len_recv: Invalid request size received: %d (expected %u)\n",
-			 *(uint32_t *)(&state->request), (uint32_t)sizeof(state->request)));
+			 *(uint32_t *)(void *)(&state->request),
+			 (uint32_t)sizeof(state->request)));
 		state->finished = True;
 		return;
 	}
 
-	setup_async_read(&state->fd_event, (uint32 *)(&state->request)+1,
+	setup_async_read(&state->fd_event,
+			 (uint32 *)(void *)(&state->request)+1,
 			 sizeof(state->request) - sizeof(uint32),
 			 request_main_recv, state);
 }
@@ -821,7 +823,8 @@ static void new_connection(int listen_sock, bool privileged)
 	len = sizeof(sunaddr);
 
 	do {
-		sock = accept(listen_sock, (struct sockaddr *)&sunaddr, &len);
+		sock = accept(listen_sock, (struct sockaddr *)(void *)&sunaddr,
+			      &len);
 	} while (sock == -1 && errno == EINTR);
 
 	if (sock == -1)

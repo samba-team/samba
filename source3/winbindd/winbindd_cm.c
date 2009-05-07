@@ -769,7 +769,8 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	struct sockaddr peeraddr;
 	socklen_t peeraddr_len;
 
-	struct sockaddr_in *peeraddr_in = (struct sockaddr_in *)&peeraddr;
+	struct sockaddr_in *peeraddr_in =
+		(struct sockaddr_in *)(void *)&peeraddr;
 
 	DEBUG(10,("cm_prepare_connection: connecting to DC %s for domain %s\n",
 		controller, domain->name ));
@@ -1040,7 +1041,9 @@ static bool add_one_dc_unique(TALLOC_CTX *mem_ctx, const char *domain_name,
 
 	/* Make sure there's no duplicates in the list */
 	for (i=0; i<*num; i++)
-		if (sockaddr_equal((struct sockaddr *)&(*dcs)[i].ss, (struct sockaddr *)pss))
+		if (sockaddr_equal(
+			    (struct sockaddr *)(void *)&(*dcs)[i].ss,
+			    (struct sockaddr *)(void *)pss))
 			return False;
 
 	*dcs = TALLOC_REALLOC_ARRAY(mem_ctx, *dcs, struct dc_name_ip, (*num)+1);
