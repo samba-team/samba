@@ -1914,6 +1914,10 @@ NTSTATUS _samr_ChangePasswordUser2(pipes_struct *p,
 
 	DEBUG(5,("_samr_ChangePasswordUser2: %d\n", __LINE__));
 
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
 	return status;
 }
 
@@ -1959,6 +1963,10 @@ NTSTATUS _samr_OemChangePasswordUser2(pipes_struct *p,
 				 0,
 				 0,
 				 NULL);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
+		return NT_STATUS_WRONG_PASSWORD;
+	}
 
 	DEBUG(5,("_samr_OemChangePasswordUser2: %d\n", __LINE__));
 
@@ -2007,6 +2015,9 @@ NTSTATUS _samr_ChangePasswordUser3(pipes_struct *p,
 				 r->in.nt_password->data,
 				 r->in.nt_verifier->hash,
 				 &reject_reason);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
+		return NT_STATUS_WRONG_PASSWORD;
+	}
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_PASSWORD_RESTRICTION) ||
 	    NT_STATUS_EQUAL(status, NT_STATUS_ACCOUNT_RESTRICTION)) {
