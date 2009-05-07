@@ -3877,24 +3877,18 @@ static NTSTATUS set_user_info_14(TALLOC_CTX *mem_ctx,
  set_user_info_16
  ********************************************************************/
 
-static bool set_user_info_16(struct samr_UserInfo16 *id16,
-			     struct samu *pwd)
+static NTSTATUS set_user_info_16(TALLOC_CTX *mem_ctx,
+				 struct samr_UserInfo16 *id16,
+				 struct samu *pwd)
 {
 	if (id16 == NULL) {
-		DEBUG(5, ("set_user_info_16: NULL id16\n"));
-		return False;
+		DEBUG(5,("set_user_info_16: NULL id16\n"));
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	/* FIX ME: check if the value is really changed --metze */
-	if (!pdb_set_acct_ctrl(pwd, id16->acct_flags, PDB_CHANGED)) {
-		return False;
-	}
+	copy_id16_to_sam_passwd(pwd, id16);
 
-	if(!NT_STATUS_IS_OK(pdb_update_sam_account(pwd))) {
-		return False;
-	}
-
-	return True;
+	return pdb_update_sam_account(pwd);
 }
 
 /*******************************************************************
@@ -3976,22 +3970,18 @@ static NTSTATUS set_user_info_18(struct samr_UserInfo18 *id18,
  set_user_info_20
  ********************************************************************/
 
-static bool set_user_info_20(struct samr_UserInfo20 *id20,
-			     struct samu *pwd)
+static NTSTATUS set_user_info_20(TALLOC_CTX *mem_ctx,
+				 struct samr_UserInfo20 *id20,
+				 struct samu *pwd)
 {
 	if (id20 == NULL) {
-		DEBUG(5, ("set_user_info_20: NULL id20\n"));
-		return False;
+		DEBUG(5,("set_user_info_20: NULL id20\n"));
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	copy_id20_to_sam_passwd(pwd, id20);
 
-	/* write the change out */
-	if(!NT_STATUS_IS_OK(pdb_update_sam_account(pwd))) {
-		return False;
- 	}
-
-	return True;
+	return pdb_update_sam_account(pwd);
 }
 
 /*******************************************************************
@@ -4542,9 +4532,8 @@ NTSTATUS _samr_SetUserInfo(pipes_struct *p,
 			break;
 
 		case 16:
-			if (!set_user_info_16(&info->info16, pwd)) {
-				status = NT_STATUS_ACCESS_DENIED;
-			}
+			status = set_user_info_16(p->mem_ctx,
+						  &info->info16, pwd);
 			break;
 
 		case 17:
@@ -4561,9 +4550,8 @@ NTSTATUS _samr_SetUserInfo(pipes_struct *p,
 			break;
 
 		case 20:
-			if (!set_user_info_20(&info->info20, pwd)) {
-				status = NT_STATUS_ACCESS_DENIED;
-			}
+			status = set_user_info_20(p->mem_ctx,
+						  &info->info20, pwd);
 			break;
 
 		case 21:

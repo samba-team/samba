@@ -5835,6 +5835,8 @@ void copy_id13_to_sam_passwd(struct samu *to,
 			     struct samr_UserInfo13 *from);
 void copy_id14_to_sam_passwd(struct samu *to,
 			     struct samr_UserInfo14 *from);
+void copy_id16_to_sam_passwd(struct samu *to,
+			     struct samr_UserInfo16 *from);
 void copy_id17_to_sam_passwd(struct samu *to,
 			     struct samr_UserInfo17 *from);
 void copy_id18_to_sam_passwd(struct samu *to,
