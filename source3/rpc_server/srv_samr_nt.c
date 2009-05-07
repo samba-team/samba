@@ -1813,7 +1813,8 @@ NTSTATUS _samr_ChangePasswordUser(pipes_struct *p,
 		nt_pass = pdb_get_nt_passwd(pwd);
 
 		if (!lm_pass || !nt_pass) {
-			return NT_STATUS_WRONG_PASSWORD;
+			status = NT_STATUS_WRONG_PASSWORD;
+			goto out;
 		}
 
 		memcpy(&lm_pwd.hash, lm_pass, sizeof(lm_pwd.hash));
