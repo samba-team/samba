@@ -135,7 +135,7 @@ struct dcinfo {
 	struct netr_Credential clnt_chal; /* Client credential */
 	struct netr_Credential srv_chal;  /* Server credential */
 
-	unsigned char  sess_key[16]; /* Session key - 8 bytes followed by 8 zero bytes */
+	unsigned char  sess_key[16]; /* Session key */
 	unsigned char  mach_pw[16];   /* md4(machine password) */
 
 	fstring mach_acct;  /* Machine name we've authenticated. */
