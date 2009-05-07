@@ -5,17 +5,17 @@
 
    Copyright (C) Andrew Tridgell 2002
    Copyright (C) Volker Lendecke 2004,2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -277,7 +277,7 @@ static void async_reply_recv(void *private_data, bool success)
 					   state->response));
 
 	cache_cleanup_response(state->child_pid);
-	
+
 	DLIST_REMOVE(child->requests, state);
 
 	schedule_async_request(child);
@@ -499,7 +499,7 @@ void winbind_child_died(pid_t pid)
 	/* This will be re-added in fork_domain_child() */
 
 	DLIST_REMOVE(children, child);
-	
+
 	remove_fd_event(&child->event);
 	close(child->event.fd);
 	child->event.fd = 0;
@@ -545,7 +545,7 @@ void winbind_msg_debug(struct messaging_context *msg_ctx,
 	struct winbindd_child *child;
 
 	DEBUG(10,("winbind_msg_debug: got debug message.\n"));
-	
+
 	debug_message(msg_ctx, private_data, MSG_DEBUG, server_id, data);
 
 	for (child = children; child != NULL; child = child->next) {
@@ -657,7 +657,7 @@ void winbind_msg_online(struct messaging_context *msg_ctx,
 
 		if ( domain->primary ) {
 			struct winbindd_child *idmap = idmap_child();
-			
+
 			if ( idmap->pid != 0 ) {
 				messaging_send_buf(msg_ctx,
 						   pid_to_procid(idmap->pid), 
@@ -665,7 +665,6 @@ void winbind_msg_online(struct messaging_context *msg_ctx,
 						   (uint8 *)domain->name,
 						   strlen(domain->name)+1);
 			}
-			
 		}
 	}
 
@@ -1105,7 +1104,7 @@ static void child_msg_onlinestatus(struct messaging_context *msg_ctx,
 	TALLOC_CTX *mem_ctx;
 	const char *message;
 	struct server_id *sender;
-	
+
 	DEBUG(5,("winbind_msg_onlinestatus received.\n"));
 
 	if (!data->data) {
@@ -1118,7 +1117,7 @@ static void child_msg_onlinestatus(struct messaging_context *msg_ctx,
 	if (mem_ctx == NULL) {
 		return;
 	}
-	
+
 	message = collect_onlinestatus(mem_ctx);
 	if (message == NULL) {
 		talloc_destroy(mem_ctx);
@@ -1326,7 +1325,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 			}
 		}
 	}
-	
+
 	/*
 	 * We are in idmap child, make sure that we set the
 	 * check_online_event to bring primary domain online.
