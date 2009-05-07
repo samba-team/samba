@@ -2222,6 +2222,130 @@ static NTSTATUS init_samr_parameters_string(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+/*************************************************************************
+ get_user_info_1.
+ *************************************************************************/
+
+static NTSTATUS get_user_info_1(TALLOC_CTX *mem_ctx,
+				struct samr_UserInfo1 *r,
+				struct samu *pw,
+				DOM_SID *domain_sid)
+{
+	const DOM_SID *sid_group;
+	uint32_t primary_gid;
+
+	become_root();
+	sid_group = pdb_get_group_sid(pw);
+	unbecome_root();
+
+	if (!sid_peek_check_rid(domain_sid, sid_group, &primary_gid)) {
+		DEBUG(0, ("get_user_info_1: User %s has Primary Group SID %s, \n"
+			  "which conflicts with the domain sid %s.  Failing operation.\n",
+			  pdb_get_username(pw), sid_string_dbg(sid_group),
+			  sid_string_dbg(domain_sid)));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	r->account_name.string		= talloc_strdup(mem_ctx, pdb_get_username(pw));
+	r->full_name.string		= talloc_strdup(mem_ctx, pdb_get_fullname(pw));
+	r->primary_gid			= primary_gid;
+	r->description.string		= talloc_strdup(mem_ctx, pdb_get_acct_desc(pw));
+	r->comment.string		= talloc_strdup(mem_ctx, pdb_get_comment(pw));
+
+	return NT_STATUS_OK;
+}
+
+/*************************************************************************
+ get_user_info_2.
+ *************************************************************************/
+
+static NTSTATUS get_user_info_2(TALLOC_CTX *mem_ctx,
+				struct samr_UserInfo2 *r,
+				struct samu *pw)
+{
+	r->comment.string		= talloc_strdup(mem_ctx, pdb_get_comment(pw));
+	r->unknown.string		= NULL;
+	r->country_code			= 0;
+	r->code_page			= 0;
+
+	return NT_STATUS_OK;
+}
+
+/*************************************************************************
+ get_user_info_3.
+ *************************************************************************/
+
+static NTSTATUS get_user_info_3(TALLOC_CTX *mem_ctx,
+				struct samr_UserInfo3 *r,
+				struct samu *pw,
+				DOM_SID *domain_sid)
+{
+	const DOM_SID *sid_user, *sid_group;
+	uint32_t rid, primary_gid;
+
+	sid_user = pdb_get_user_sid(pw);
+
+	if (!sid_peek_check_rid(domain_sid, sid_user, &rid)) {
+		DEBUG(0, ("get_user_info_3: User %s has SID %s, \nwhich conflicts with "
+			  "the domain sid %s.  Failing operation.\n",
+			  pdb_get_username(pw), sid_string_dbg(sid_user),
+			  sid_string_dbg(domain_sid)));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	become_root();
+	sid_group = pdb_get_group_sid(pw);
+	unbecome_root();
+
+	if (!sid_peek_check_rid(domain_sid, sid_group, &primary_gid)) {
+		DEBUG(0, ("get_user_info_3: User %s has Primary Group SID %s, \n"
+			  "which conflicts with the domain sid %s.  Failing operation.\n",
+			  pdb_get_username(pw), sid_string_dbg(sid_group),
+			  sid_string_dbg(domain_sid)));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	unix_to_nt_time(&r->last_logon, pdb_get_logon_time(pw));
+	unix_to_nt_time(&r->last_logoff, pdb_get_logoff_time(pw));
+	unix_to_nt_time(&r->last_password_change, pdb_get_pass_last_set_time(pw));
+	unix_to_nt_time(&r->allow_password_change, pdb_get_pass_can_change_time(pw));
+	unix_to_nt_time(&r->force_password_change, pdb_get_pass_must_change_time(pw));
+
+	r->account_name.string	= talloc_strdup(mem_ctx, pdb_get_username(pw));
+	r->full_name.string	= talloc_strdup(mem_ctx, pdb_get_fullname(pw));
+	r->home_directory.string= talloc_strdup(mem_ctx, pdb_get_homedir(pw));
+	r->home_drive.string	= talloc_strdup(mem_ctx, pdb_get_dir_drive(pw));
+	r->logon_script.string	= talloc_strdup(mem_ctx, pdb_get_logon_script(pw));
+	r->profile_path.string	= talloc_strdup(mem_ctx, pdb_get_profile_path(pw));
+	r->workstations.string	= talloc_strdup(mem_ctx, pdb_get_workstations(pw));
+
+	r->logon_hours		= get_logon_hours_from_pdb(mem_ctx, pw);
+	r->rid			= rid;
+	r->primary_gid		= primary_gid;
+	r->acct_flags		= pdb_get_acct_ctrl(pw);
+	r->bad_password_count	= pdb_get_bad_password_count(pw);
+	r->logon_count		= pdb_get_logon_count(pw);
+
+	return NT_STATUS_OK;
+}
+
+/*************************************************************************
+ get_user_info_4.
+ *************************************************************************/
+
+static NTSTATUS get_user_info_4(TALLOC_CTX *mem_ctx,
+				struct samr_UserInfo4 *r,
+				struct samu *pw)
+{
+	r->logon_hours		= get_logon_hours_from_pdb(mem_ctx, pw);
+
+	return NT_STATUS_OK;
+}
+
+/*************************************************************************
+ get_user_info_5.
+ *************************************************************************/
+
 static NTSTATUS get_user_info_5(TALLOC_CTX *mem_ctx,
 				struct samr_UserInfo5 *r,
 				struct samu *pw,
@@ -2277,6 +2401,20 @@ static NTSTATUS get_user_info_5(TALLOC_CTX *mem_ctx,
 }
 
 /*************************************************************************
+ get_user_info_6.
+ *************************************************************************/
+
+static NTSTATUS get_user_info_6(TALLOC_CTX *mem_ctx,
+				struct samr_UserInfo6 *r,
+				struct samu *pw)
+{
+	r->account_name.string	= talloc_strdup(mem_ctx, pdb_get_username(pw));
+	r->full_name.string	= talloc_strdup(mem_ctx, pdb_get_fullname(pw));
+
+	return NT_STATUS_OK;
+}
+
+/*************************************************************************
  get_user_info_7. Safe. Only gives out account_name.
  *************************************************************************/
 
@@ -2288,6 +2426,19 @@ static NTSTATUS get_user_info_7(TALLOC_CTX *mem_ctx,
 	if (!r->account_name.string) {
 		return NT_STATUS_NO_MEMORY;
 	}
+
+	return NT_STATUS_OK;
+}
+
+/*************************************************************************
+ get_user_info_8.
+ *************************************************************************/
+
+static NTSTATUS get_user_info_8(TALLOC_CTX *mem_ctx,
+				struct samr_UserInfo8 *r,
+				struct samu *pw)
+{
+	r->full_name.string	= talloc_strdup(mem_ctx, pdb_get_fullname(pw));
 
 	return NT_STATUS_OK;
 }
@@ -2306,6 +2457,72 @@ static NTSTATUS get_user_info_9(TALLOC_CTX *mem_ctx,
 }
 
 /*************************************************************************
+ get_user_info_10.
+ *************************************************************************/
+
+static NTSTATUS get_user_info_10(TALLOC_CTX *mem_ctx,
+				 struct samr_UserInfo10 *r,
+				 struct samu *pw)
+{
+	r->home_directory.string= talloc_strdup(mem_ctx, pdb_get_homedir(pw));
+	r->home_drive.string	= talloc_strdup(mem_ctx, pdb_get_dir_drive(pw));
+
+	return NT_STATUS_OK;
+}
+
+/*************************************************************************
+ get_user_info_11.
+ *************************************************************************/
+
+static NTSTATUS get_user_info_11(TALLOC_CTX *mem_ctx,
+				 struct samr_UserInfo11 *r,
+				 struct samu *pw)
+{
+	r->logon_script.string	= talloc_strdup(mem_ctx, pdb_get_logon_script(pw));
+
+	return NT_STATUS_OK;
+}
+
+/*************************************************************************
+ get_user_info_12.
+ *************************************************************************/
+
+static NTSTATUS get_user_info_12(TALLOC_CTX *mem_ctx,
+				 struct samr_UserInfo12 *r,
+				 struct samu *pw)
+{
+	r->profile_path.string	= talloc_strdup(mem_ctx, pdb_get_profile_path(pw));
+
+	return NT_STATUS_OK;
+}
+
+/*************************************************************************
+ get_user_info_13.
+ *************************************************************************/
+
+static NTSTATUS get_user_info_13(TALLOC_CTX *mem_ctx,
+				 struct samr_UserInfo13 *r,
+				 struct samu *pw)
+{
+	r->description.string	= talloc_strdup(mem_ctx, pdb_get_acct_desc(pw));
+
+	return NT_STATUS_OK;
+}
+
+/*************************************************************************
+ get_user_info_14.
+ *************************************************************************/
+
+static NTSTATUS get_user_info_14(TALLOC_CTX *mem_ctx,
+				 struct samr_UserInfo14 *r,
+				 struct samu *pw)
+{
+	r->workstations.string	= talloc_strdup(mem_ctx, pdb_get_workstations(pw));
+
+	return NT_STATUS_OK;
+}
+
+/*************************************************************************
  get_user_info_16. Safe. Only gives out acb bits.
  *************************************************************************/
 
@@ -2314,6 +2531,19 @@ static NTSTATUS get_user_info_16(TALLOC_CTX *mem_ctx,
 				 struct samu *smbpass)
 {
 	r->acct_flags = pdb_get_acct_ctrl(smbpass);
+
+	return NT_STATUS_OK;
+}
+
+/*************************************************************************
+ get_user_info_17.
+ *************************************************************************/
+
+static NTSTATUS get_user_info_17(TALLOC_CTX *mem_ctx,
+				 struct samr_UserInfo17 *r,
+				 struct samu *pw)
+{
+	unix_to_nt_time(&r->acct_expiry, pdb_get_kickoff_time(pw));
 
 	return NT_STATUS_OK;
 }
@@ -2589,17 +2819,53 @@ NTSTATUS _samr_QueryUserInfo(pipes_struct *p,
 	samr_clear_sam_passwd(pwd);
 
 	switch (r->in.level) {
+	case 1:
+		status = get_user_info_1(p->mem_ctx, &user_info->info1, pwd, &domain_sid);
+		break;
+	case 2:
+		status = get_user_info_2(p->mem_ctx, &user_info->info2, pwd);
+		break;
+	case 3:
+		status = get_user_info_3(p->mem_ctx, &user_info->info3, pwd, &domain_sid);
+		break;
+	case 4:
+		status = get_user_info_4(p->mem_ctx, &user_info->info4, pwd);
+		break;
 	case 5:
 		status = get_user_info_5(p->mem_ctx, &user_info->info5, pwd, &domain_sid);
+		break;
+	case 6:
+		status = get_user_info_6(p->mem_ctx, &user_info->info6, pwd);
 		break;
 	case 7:
 		status = get_user_info_7(p->mem_ctx, &user_info->info7, pwd);
 		break;
+	case 8:
+		status = get_user_info_8(p->mem_ctx, &user_info->info8, pwd);
+		break;
 	case 9:
 		status = get_user_info_9(p->mem_ctx, &user_info->info9, pwd);
 		break;
+	case 10:
+		status = get_user_info_10(p->mem_ctx, &user_info->info10, pwd);
+		break;
+	case 11:
+		status = get_user_info_11(p->mem_ctx, &user_info->info11, pwd);
+		break;
+	case 12:
+		status = get_user_info_12(p->mem_ctx, &user_info->info12, pwd);
+		break;
+	case 13:
+		status = get_user_info_13(p->mem_ctx, &user_info->info13, pwd);
+		break;
+	case 14:
+		status = get_user_info_14(p->mem_ctx, &user_info->info14, pwd);
+		break;
 	case 16:
 		status = get_user_info_16(p->mem_ctx, &user_info->info16, pwd);
+		break;
+	case 17:
+		status = get_user_info_17(p->mem_ctx, &user_info->info17, pwd);
 		break;
 	case 18:
 		/* level 18 is special */
