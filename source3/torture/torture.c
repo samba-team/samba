@@ -4995,6 +4995,58 @@ static bool run_chain1(int dummy)
 	return True;
 }
 
+static void chain2_sesssetup_completion(struct tevent_req *req)
+{
+	NTSTATUS status;
+	status = cli_session_setup_guest_recv(req);
+	d_printf("sesssetup returned %s\n", nt_errstr(status));
+}
+
+static void chain2_tcon_completion(struct tevent_req *req)
+{
+	bool *done = (bool *)tevent_req_callback_data_void(req);
+	NTSTATUS status;
+	status = cli_tcon_andx_recv(req);
+	d_printf("tcon_and_x returned %s\n", nt_errstr(status));
+	*done = true;
+}
+
+static bool run_chain2(int dummy)
+{
+	struct cli_state *cli1;
+	struct event_context *evt = event_context_init(NULL);
+	struct tevent_req *reqs[2], *smbreqs[2];
+	bool done = false;
+
+	printf("starting chain2 test\n");
+	if (!torture_open_connection(&cli1, 0)) {
+		return False;
+	}
+
+	cli_sockopt(cli1, sockops);
+
+	reqs[0] = cli_session_setup_guest_create(talloc_tos(), evt, cli1,
+						 &smbreqs[0]);
+	if (reqs[0] == NULL) return false;
+	tevent_req_set_callback(reqs[0], chain2_sesssetup_completion, NULL);
+
+	reqs[1] = cli_tcon_andx_create(talloc_tos(), evt, cli1, "IPC$",
+				       "?????", NULL, 0, &smbreqs[1]);
+	if (reqs[1] == NULL) return false;
+	tevent_req_set_callback(reqs[1], chain2_tcon_completion, &done);
+
+	if (!cli_smb_chain_send(smbreqs, ARRAY_SIZE(smbreqs))) {
+		return false;
+	}
+
+	while (!done) {
+		event_loop_once(evt);
+	}
+
+	torture_close_connection(cli1);
+	return True;
+}
+
 static bool run_mangle1(int dummy)
 {
 	struct cli_state *cli;
@@ -5866,6 +5918,7 @@ static struct {
 	{ "EATEST", run_eatest, 0},
 	{ "SESSSETUP_BENCH", run_sesssetup_bench, 0},
 	{ "CHAIN1", run_chain1, 0},
+	{ "CHAIN2", run_chain2, 0},
 	{ "WINDOWS-WRITE", run_windows_write, 0},
 	{ "CLI_ECHO", run_cli_echo, 0},
 	{ "GETADDRINFO", run_getaddrinfo_send, 0},
