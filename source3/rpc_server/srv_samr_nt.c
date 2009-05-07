@@ -1397,6 +1397,11 @@ NTSTATUS _samr_QueryDisplayInfo(pipes_struct *p,
 		return status;
 	}
 
+	if (sid_check_is_builtin(&dinfo->sid)) {
+		DEBUG(5,("_samr_QueryDisplayInfo: no users in BUILTIN\n"));
+		return NT_STATUS_OK;
+	}
+
 	/*
 	 * calculate how many entries we will return.
 	 * based on
