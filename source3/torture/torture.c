@@ -5058,7 +5058,7 @@ static bool run_mangle1(int dummy)
 	SMB_OFF_T size;
 	uint16_t mode;
 
-	printf("starting chain1 test\n");
+	printf("starting mangle1 test\n");
 	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
