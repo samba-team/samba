@@ -255,6 +255,10 @@ bool netlogon_creds_server_step(struct dcinfo *dc,
 	bool ret;
 	struct dcinfo tmp_dc = *dc;
 
+	if (!received_cred || !cred_out) {
+		return false;
+	}
+
 	/* Do all operations on a temporary copy of the dc,
 	   which we throw away if the checks fail. */
 
