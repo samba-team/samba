@@ -42,6 +42,7 @@ rpc="$rpc RPC-SAMBA3-SPOOLSS RPC-SAMBA3-WKSSVC"
 rpc="$rpc RPC-NETLOGSAMBA3 RPC-SAMBA3SESSIONKEY RPC-SAMBA3-GETUSERNAME"
 rpc="$rpc RPC-SVCCTL RPC-SPOOLSS RPC-SPOOLSS-WIN RPC-NTSVCS RPC-LSA-LOOKUPSIDS"
 rpc="$rpc RPC-SAMR-PASSWORDS-PWDLASTSET RPC-JOIN"
+rpc="$rpc RPC-SCHANNEL RPC-SCHANNEL2 RPC-BENCH-SCHANNEL1"
 
 # NOTE: to enable the UNIX-WHOAMI test, we need to change the default share
 # config to allow guest access. I'm not sure whether this would break other
