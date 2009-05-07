@@ -1245,15 +1245,17 @@ bool cli_ulogoff(struct cli_state *cli)
 struct cli_tcon_andx_state {
 	struct cli_state *cli;
 	uint16_t vwv[4];
+	struct iovec bytes;
 };
 
 static void cli_tcon_andx_done(struct tevent_req *subreq);
 
-struct tevent_req *cli_tcon_andx_send(TALLOC_CTX *mem_ctx,
-				      struct event_context *ev,
-				      struct cli_state *cli,
-				      const char *share, const char *dev,
-				      const char *pass, int passlen)
+struct tevent_req *cli_tcon_andx_create(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct cli_state *cli,
+					const char *share, const char *dev,
+					const char *pass, int passlen,
+					struct tevent_req **psmbreq)
 {
 	struct tevent_req *req, *subreq;
 	struct cli_tcon_andx_state *state;
@@ -1341,8 +1343,9 @@ struct tevent_req *cli_tcon_andx_send(TALLOC_CTX *mem_ctx,
 	 */
 	tmp = talloc_asprintf_strupper_m(talloc_tos(), "\\\\%s\\%s",
 					 cli->desthost, share);
-	if (tevent_req_nomem(tmp, req)) {
-		return tevent_req_post(req, ev);
+	if (tmp == NULL) {
+		TALLOC_FREE(req);
+		return NULL;
 	}
 	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), tmp, strlen(tmp)+1,
 				   NULL);
@@ -1352,27 +1355,51 @@ struct tevent_req *cli_tcon_andx_send(TALLOC_CTX *mem_ctx,
 	 * Add the devicetype
 	 */
 	tmp = talloc_strdup_upper(talloc_tos(), dev);
-	if (tevent_req_nomem(tmp, req)) {
-		return tevent_req_post(req, ev);
+	if (tmp == NULL) {
+		TALLOC_FREE(req);
+		return NULL;
 	}
 	bytes = smb_bytes_push_str(bytes, false, tmp, strlen(tmp)+1, NULL);
 	TALLOC_FREE(tmp);
 
-	if (tevent_req_nomem(bytes, req)) {
-		return tevent_req_post(req, ev);
+	if (bytes == NULL) {
+		TALLOC_FREE(req);
+		return NULL;
 	}
 
-	subreq = cli_smb_send(state, ev, cli, SMBtconX, 0, 4, vwv,
-			      talloc_get_size(bytes), bytes);
-	if (tevent_req_nomem(subreq, req)) {
-		return tevent_req_post(req, ev);
+	state->bytes.iov_base = bytes;
+	state->bytes.iov_len = talloc_get_size(bytes);
+
+	subreq = cli_smb_req_create(state, ev, cli, SMBtconX, 0, 4, vwv,
+				    1, &state->bytes);
+	if (subreq == NULL) {
+		TALLOC_FREE(req);
+		return NULL;
 	}
 	tevent_req_set_callback(subreq, cli_tcon_andx_done, req);
+	*psmbreq = subreq;
 	return req;
 
  access_denied:
 	tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
 	return tevent_req_post(req, ev);
+}
+
+struct tevent_req *cli_tcon_andx_send(TALLOC_CTX *mem_ctx,
+				      struct event_context *ev,
+				      struct cli_state *cli,
+				      const char *share, const char *dev,
+				      const char *pass, int passlen)
+{
+	struct tevent_req *req, *subreq;
+
+	req = cli_tcon_andx_create(mem_ctx, ev, cli, share, dev, pass, passlen,
+				   &subreq);
+	if ((req == NULL) || !cli_smb_req_send(subreq)) {
+		TALLOC_FREE(req);
+		return NULL;
+	}
+	return req;
 }
 
 static void cli_tcon_andx_done(struct tevent_req *subreq)
