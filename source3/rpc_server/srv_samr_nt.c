@@ -3396,11 +3396,11 @@ NTSTATUS _samr_QueryDomainInfo(pipes_struct *p,
 			become_root();
 
 			dom_info->general2.general.num_users	= count_sam_users(
-				dinfo->disp_info, ACB_NORMAL);
+				info->disp_info, ACB_NORMAL);
 			dom_info->general2.general.num_groups	= count_sam_groups(
-				dinfo->disp_info);
+				info->disp_info);
 			dom_info->general2.general.num_aliases	= count_sam_aliases(
-				dinfo->disp_info);
+				info->disp_info);
 
 			pdb_get_account_policy(AP_TIME_TO_LOGOUT, &u_logout);
 
