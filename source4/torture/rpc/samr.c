@@ -6012,7 +6012,9 @@ bool torture_rpc_samr_users(struct torture_context *torture)
 
 	ret &= test_Connect(p, torture, &handle);
 
-	ret &= test_QuerySecurity(p, torture, &handle);
+	if (!torture_setting_bool(torture, "samba3", false)) {
+		ret &= test_QuerySecurity(p, torture, &handle);
+	}
 
 	ret &= test_EnumDomains(p, torture, &handle, TORTURE_SAMR_USER_ATTRIBUTES, NULL);
 
