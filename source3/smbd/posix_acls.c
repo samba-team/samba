@@ -1297,7 +1297,12 @@ static bool uid_entry_in_group( canon_ace *uid_ace, canon_ace *group_ace )
 		return False;
 	}
 
-	/* notice that this is not reliable for users exported by winbindd! */
+	/*
+	 * user_in_group_sid() uses create_token_from_username()
+	 * which creates an artificial NT token given just a username,
+	 * so this is not reliable for users from foreign domains
+	 * exported by winbindd!
+	 */
 	return user_in_group_sid(u_name, &group_ace->trustee);
 }
 
