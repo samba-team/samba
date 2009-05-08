@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.80
+Version: 1.0.81
 Release: 1
 Epoch: 0
 License: GNU GPL version 3
@@ -132,6 +132,18 @@ fi
 %{_libdir}/pkgconfig/ctdb.pc
 
 %changelog
+* Fri May 8 2009 : Version 1.0.81
+ - use smbstatus -np instead of smbstatus -n in the 50.samba eventscript 
+   since this avoids performing an expensive traverse on the locking and brlock
+   databases.
+ - make ctdb automatically terminate all traverse child processes clusterwide
+   associated to a client application that terminates before the traversal is
+   completed.
+ - From Sumit Bose : fixes to AC_INIT handling.
+ - From Michael Adam, add Tridge's "ping_pong" tool the the ctdb distro since 
+   this is very useful for testing the backend filesystem.
+ - From Sumit bose, add support for additional 64 bit platforms.
+ - Add a link from the webpage to Michael Adams SambaXP paper on CTDB.
 * Fri May 1 2009 : Version 1.0.80
  - change init shutdown level to 01 for ctdb so it stops before any of the other services
  - if we can not pull a database from a remote node during recovery, mark that node as a culprit so it becomes banned
