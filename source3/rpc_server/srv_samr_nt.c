@@ -6375,17 +6375,17 @@ NTSTATUS _samr_SetDomainInfo(pipes_struct *p,
 			pdb_set_account_policy(AP_MAX_PASSWORD_AGE, (int)u_expire);
 			pdb_set_account_policy(AP_MIN_PASSWORD_AGE, (int)u_min_age);
             		break;
-        	case 0x02:
-			break;
 		case 0x03:
 			u_logout=nt_time_to_unix_abs((NTTIME *)&r->in.info->info3.force_logoff_time);
 			pdb_set_account_policy(AP_TIME_TO_LOGOUT, (int)u_logout);
 			break;
-		case 0x05:
+		case 0x04:
 			break;
 		case 0x06:
 			break;
 		case 0x07:
+			break;
+		case 0x09:
 			break;
 		case 0x0c:
 			u_lock_duration=nt_time_to_unix_abs((NTTIME *)&r->in.info->info12.lockout_duration);
