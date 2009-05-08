@@ -1671,6 +1671,9 @@ NTSTATUS _samr_QueryAliasInfo(pipes_struct *p,
 		alias_info->all.num_members		= 1; /* ??? */
 		alias_info->all.description.string	= alias_description;
 		break;
+	case ALIASINFONAME:
+		alias_info->name.string			= alias_name;
+		break;
 	case ALIASINFODESCRIPTION:
 		alias_info->description.string		= alias_description;
 		break;
@@ -3271,6 +3274,66 @@ NTSTATUS _samr_QueryDomainInfo(pipes_struct *p,
 			dom_info->info8.domain_create_time = 0;
 
 			break;
+		case 0x09:
+
+			dom_info->info9.domain_server_state		= DOMAIN_SERVER_ENABLED;
+
+			break;
+		case 0x0b:
+
+			/* AS ROOT !!! */
+
+			become_root();
+
+			dom_info->general2.general.num_users	= count_sam_users(
+				dinfo->disp_info, ACB_NORMAL);
+			dom_info->general2.general.num_groups	= count_sam_groups(
+				dinfo->disp_info);
+			dom_info->general2.general.num_aliases	= count_sam_aliases(
+				dinfo->disp_info);
+
+			pdb_get_account_policy(AP_TIME_TO_LOGOUT, &u_logout);
+
+			unix_to_nt_time_abs(&dom_info->general2.general.force_logoff_time, u_logout);
+
+			if (!pdb_get_seq_num(&seq_num))
+				seq_num = time(NULL);
+
+			pdb_get_account_policy(AP_LOCK_ACCOUNT_DURATION, &account_policy_temp);
+			u_lock_duration = account_policy_temp;
+			if (u_lock_duration != -1) {
+				u_lock_duration *= 60;
+			}
+
+			pdb_get_account_policy(AP_RESET_COUNT_TIME, &account_policy_temp);
+			u_reset_time = account_policy_temp * 60;
+
+			pdb_get_account_policy(AP_BAD_ATTEMPT_LOCKOUT,
+					       &account_policy_temp);
+			dom_info->general2.lockout_threshold = account_policy_temp;
+
+			/* !AS ROOT */
+
+			unbecome_root();
+
+			server_role = ROLE_DOMAIN_PDC;
+			if (lp_server_role() == ROLE_DOMAIN_BDC)
+				server_role = ROLE_DOMAIN_BDC;
+
+			dom_info->general2.general.oem_information.string	= lp_serverstring();
+			dom_info->general2.general.domain_name.string		= lp_workgroup();
+			dom_info->general2.general.primary.string		= global_myname();
+			dom_info->general2.general.sequence_num			= seq_num;
+			dom_info->general2.general.domain_server_state		= DOMAIN_SERVER_ENABLED;
+			dom_info->general2.general.role				= server_role;
+			dom_info->general2.general.unknown3			= 1;
+
+			unix_to_nt_time_abs(&dom_info->general2.lockout_duration,
+					    u_lock_duration);
+			unix_to_nt_time_abs(&dom_info->general2.lockout_window,
+					    u_reset_time);
+
+			break;
 		case 0x0c:
 
 			become_root();
@@ -3298,6 +3361,25 @@ NTSTATUS _samr_QueryDomainInfo(pipes_struct *p,
 					    u_lock_duration);
 			unix_to_nt_time_abs(&dom_info->info12.lockout_window,
 					    u_reset_time);
+
+			break;
+		case 0x0d:
+
+			become_root();
+
+			/* AS ROOT !!! */
+
+			if (!pdb_get_seq_num(&seq_num)) {
+				seq_num = time(NULL);
+			}
+
+			/* !AS ROOT */
+
+			unbecome_root();
+
+			dom_info->info13.sequence_num = seq_num;
+			dom_info->info13.domain_create_time = 0;
+			dom_info->info13.modified_count_at_last_promotion = 0;
 
 			break;
         	default:
