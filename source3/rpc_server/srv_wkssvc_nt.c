@@ -427,8 +427,7 @@ WERROR _wkssvc_NetrUnjoinDomain2(pipes_struct *p,
 
 WERROR _wkssvc_NetrRenameMachineInDomain2(pipes_struct *p, struct wkssvc_NetrRenameMachineInDomain2 *r)
 {
-	/* FIXME: Add implementation code here */
-	p->rng_fault_state = True;
+	/* for now just return not supported */
 	return WERR_NOT_SUPPORTED;
 }
 
