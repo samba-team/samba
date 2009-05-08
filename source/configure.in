@@ -5927,6 +5927,16 @@ fi
 
 AC_HAVE_DECL(splice, [#include <fcntl.h>])
 
+############################################
+# See if we have the a broken readlink syscall.
+
+AC_CACHE_CHECK([for a broken readlink syscall],samba_cv_HAVE_BROKEN_READLINK,[
+AC_TRY_RUN([#include "${srcdir-.}/../tests/readlink.c"],
+	samba_cv_HAVE_BROKEN_READLINK=no,samba_cv_HAVE_BROKEN_READLINK=yes,samba_cv_HAVE_BROKEN_READLINK=cross)
+])
+if test x"$samba_cv_HAVE_BROKEN_READLINK" = x"yes"; then
+	AC_DEFINE(HAVE_BROKEN_READLINK,1,[Whether the readlink syscall is broken])
+fi
 
 #################################################
 # Check whether winbind is supported on this platform.  If so we need to
