@@ -413,7 +413,11 @@ static bool is_msdfs_link_internal(TALLOC_CTX *ctx,
 {
 	SMB_STRUCT_STAT st;
 	int referral_len = 0;
+#if defined(HAVE_BROKEN_READLINK)
+	char link_target_buf[PATH_MAX];
+#else
 	char link_target_buf[7];
+#endif
 	size_t bufsize = 0;
 	char *link_target = NULL;
 
