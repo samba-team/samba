@@ -439,14 +439,29 @@ static bool test_SetUserInfo(struct dcerpc_pipe *p, struct torture_context *tctx
 				  SAMR_FIELD_CODE_PAGE);
 	}
 
-	TEST_USERINFO_INT(17, acct_expiry, 21, acct_expiry, __LINE__, 0);
-	TEST_USERINFO_INT(17, acct_expiry, 5, acct_expiry, __LINE__, 0);
-	TEST_USERINFO_INT(21, acct_expiry, 21, acct_expiry, __LINE__, 
-			  SAMR_FIELD_ACCT_EXPIRY);
-	TEST_USERINFO_INT(21, acct_expiry, 5, acct_expiry, __LINE__, 
-			  SAMR_FIELD_ACCT_EXPIRY);
-	TEST_USERINFO_INT(21, acct_expiry, 17, acct_expiry, __LINE__, 
-			  SAMR_FIELD_ACCT_EXPIRY);
+	if (!torture_setting_bool(tctx, "samba3", false)) {
+		TEST_USERINFO_INT(17, acct_expiry, 21, acct_expiry, __LINE__, 0);
+		TEST_USERINFO_INT(17, acct_expiry, 5, acct_expiry, __LINE__, 0);
+		TEST_USERINFO_INT(21, acct_expiry, 21, acct_expiry, __LINE__,
+				  SAMR_FIELD_ACCT_EXPIRY);
+		TEST_USERINFO_INT(21, acct_expiry, 5, acct_expiry, __LINE__,
+				  SAMR_FIELD_ACCT_EXPIRY);
+		TEST_USERINFO_INT(21, acct_expiry, 17, acct_expiry, __LINE__,
+				  SAMR_FIELD_ACCT_EXPIRY);
+	} else {
+		/* Samba 3 can only store seconds / time_t in passdb - gd */
+		NTTIME nt;
+		unix_to_nt_time(&nt, time(NULL) + __LINE__);
+		TEST_USERINFO_INT(17, acct_expiry, 21, acct_expiry, nt, 0);
+		unix_to_nt_time(&nt, time(NULL) + __LINE__);
+		TEST_USERINFO_INT(17, acct_expiry, 5, acct_expiry, nt, 0);
+		unix_to_nt_time(&nt, time(NULL) + __LINE__);
+		TEST_USERINFO_INT(21, acct_expiry, 21, acct_expiry, nt, SAMR_FIELD_ACCT_EXPIRY);
+		unix_to_nt_time(&nt, time(NULL) + __LINE__);
+		TEST_USERINFO_INT(21, acct_expiry, 5, acct_expiry, nt, SAMR_FIELD_ACCT_EXPIRY);
+		unix_to_nt_time(&nt, time(NULL) + __LINE__);
+		TEST_USERINFO_INT(21, acct_expiry, 17, acct_expiry, nt, SAMR_FIELD_ACCT_EXPIRY);
+	}
 
 	TEST_USERINFO_INT(4, logon_hours.bits[3],  3, logon_hours.bits[3], 1, 0);
 	TEST_USERINFO_INT(4, logon_hours.bits[3],  5, logon_hours.bits[3], 2, 0);
