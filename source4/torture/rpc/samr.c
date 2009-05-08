@@ -189,9 +189,12 @@ static bool test_SetUserInfo(struct dcerpc_pipe *p, struct torture_context *tctx
 	const char *test_account_name;
 
 	uint32_t user_extra_flags = 0;
-	if (base_acct_flags == ACB_NORMAL) {
-		/* When created, accounts are expired by default */
-		user_extra_flags = ACB_PW_EXPIRED;
+
+	if (!torture_setting_bool(tctx, "samba3", false)) {
+		if (base_acct_flags == ACB_NORMAL) {
+			/* When created, accounts are expired by default */
+			user_extra_flags = ACB_PW_EXPIRED;
+		}
 	}
 
 	s.in.user_handle = handle;
@@ -501,6 +504,9 @@ static bool test_SetUserInfo(struct dcerpc_pipe *p, struct torture_context *tctx
 			      (base_acct_flags | ACB_DISABLED | user_extra_flags), 
 			      0);
 #endif
+
+	/* Samba3 cannot store these atm */
+	if (!torture_setting_bool(tctx, "samba3", false)) {
 	/* The 'store plaintext' flag does stick */
 	TEST_USERINFO_INT_EXP(16, acct_flags, 21, acct_flags, 
 			      (base_acct_flags | ACB_DISABLED | ACB_ENC_TXT_PWD_ALLOWED), 
@@ -521,7 +527,7 @@ static bool test_SetUserInfo(struct dcerpc_pipe *p, struct torture_context *tctx
 			      (base_acct_flags | ACB_DISABLED | ACB_NO_AUTH_DATA_REQD), 
 			      (base_acct_flags | ACB_DISABLED | ACB_NO_AUTH_DATA_REQD | user_extra_flags), 
 			      0);
-
+	}
 	TEST_USERINFO_INT_EXP(21, acct_flags, 21, acct_flags, 
 			      (base_acct_flags | ACB_DISABLED), 
 			      (base_acct_flags | ACB_DISABLED | user_extra_flags), 
