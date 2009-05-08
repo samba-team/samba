@@ -6566,6 +6566,36 @@ NTSTATUS _samr_GetDisplayEnumerationIndex2(pipes_struct *p,
 }
 
 /****************************************************************
+ _samr_RidToSid
+****************************************************************/
+
+NTSTATUS _samr_RidToSid(pipes_struct *p,
+			struct samr_RidToSid *r)
+{
+	struct samr_domain_info *dinfo;
+	NTSTATUS status;
+	struct dom_sid sid;
+
+	dinfo = policy_handle_find(p, r->in.domain_handle,
+				   0, NULL,
+				   struct samr_domain_info, &status);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (!sid_compose(&sid, &dinfo->sid, r->in.rid)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	*r->out.sid = sid_dup_talloc(p->mem_ctx, &sid);
+	if (!*r->out.sid) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
 ****************************************************************/
 
 NTSTATUS _samr_Shutdown(pipes_struct *p,
@@ -6638,16 +6668,6 @@ NTSTATUS _samr_SetBootKeyInformation(pipes_struct *p,
 
 NTSTATUS _samr_GetBootKeyInformation(pipes_struct *p,
 				     struct samr_GetBootKeyInformation *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_RidToSid(pipes_struct *p,
-			struct samr_RidToSid *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
