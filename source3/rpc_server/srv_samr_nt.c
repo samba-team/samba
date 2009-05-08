@@ -4013,6 +4013,12 @@ static NTSTATUS set_user_info_7(TALLOC_CTX *mem_ctx,
 	   code (like UNSUCCESSFUL instead of ALREADY_EXISTS). */
 
 	rc = can_create(mem_ctx, id7->account_name.string);
+
+	/* when there is nothing to change, we're done here */
+	if (NT_STATUS_EQUAL(rc, NT_STATUS_USER_EXISTS) &&
+	    strequal(id7->account_name.string, pdb_get_username(pwd))) {
+		return NT_STATUS_OK;
+	}
 	if (!NT_STATUS_IS_OK(rc)) {
 		return rc;
 	}
