@@ -1882,7 +1882,7 @@ received when we should release a specific IP
 static void release_ip(const char *ip, void *priv)
 {
 	char addr[INET6_ADDRSTRLEN];
-	char *p;
+	char *p = addr;
 
 	client_socket_addr(get_client_fd(),addr,sizeof(addr));
 
@@ -1890,7 +1890,7 @@ static void release_ip(const char *ip, void *priv)
 		p = addr + 7;
 	}
 
-	if ((strcmp(p, ip) == 0) || (strcmp(addr, ip) == 0)) {
+	if ((strcmp(p, ip) == 0) || ((p != addr) && strcmp(addr, ip) == 0)) {
 		/* we can't afford to do a clean exit - that involves
 		   database writes, which would potentially mean we
 		   are still running after the failover has finished -
