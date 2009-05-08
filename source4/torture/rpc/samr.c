@@ -5151,7 +5151,7 @@ static bool test_QueryDomainInfo(struct dcerpc_pipe *p, struct torture_context *
 	status = dcerpc_samr_SetDomainInfo(p, tctx, &s);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("SetDomainInfo level %u (set comment) failed - %s\n", 
-		       r.in.level, nt_errstr(status));
+		       s.in.level, nt_errstr(status));
 		return false;
 	}
 
