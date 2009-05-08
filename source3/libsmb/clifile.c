@@ -552,13 +552,13 @@ NTSTATUS cli_rename(struct cli_state *cli, const char *fname_src, const char *fn
  NT Rename a file.
 ****************************************************************************/
 
-static void cli_ntrename_done(struct tevent_req *subreq);
+static void cli_ntrename_internal_done(struct tevent_req *subreq);
 
-struct cli_ntrename_state {
+struct cli_ntrename_internal_state {
 	uint16_t vwv[4];
 };
 
-static struct tevent_req *cli_ntrename_send_internal(TALLOC_CTX *mem_ctx,
+static struct tevent_req *cli_ntrename_internal_send(TALLOC_CTX *mem_ctx,
 				struct event_context *ev,
 				struct cli_state *cli,
 				const char *fname_src,
@@ -566,11 +566,12 @@ static struct tevent_req *cli_ntrename_send_internal(TALLOC_CTX *mem_ctx,
 				uint16_t rename_flag)
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
-	struct cli_ntrename_state *state = NULL;
+	struct cli_ntrename_internal_state *state = NULL;
 	uint8_t additional_flags = 0;
 	uint8_t *bytes = NULL;
 
-	req = tevent_req_create(mem_ctx, &state, struct cli_ntrename_state);
+	req = tevent_req_create(mem_ctx, &state,
+				struct cli_ntrename_internal_state);
 	if (req == NULL) {
 		return NULL;
 	}
@@ -607,25 +608,11 @@ static struct tevent_req *cli_ntrename_send_internal(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, cli_ntrename_done, req);
+	tevent_req_set_callback(subreq, cli_ntrename_internal_done, req);
 	return req;
 }
 
-struct tevent_req *cli_ntrename_send(TALLOC_CTX *mem_ctx,
-				struct event_context *ev,
-				struct cli_state *cli,
-				const char *fname_src,
-				const char *fname_dst)
-{
-	return cli_ntrename_send_internal(mem_ctx,
-					ev,
-					cli,
-					fname_src,
-					fname_dst,
-					RENAME_FLAG_RENAME);
-}
-
-static void cli_ntrename_done(struct tevent_req *subreq)
+static void cli_ntrename_internal_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 				subreq, struct tevent_req);
@@ -640,9 +627,28 @@ static void cli_ntrename_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-NTSTATUS cli_ntrename_recv(struct tevent_req *req)
+static NTSTATUS cli_ntrename_internal_recv(struct tevent_req *req)
 {
 	return tevent_req_simple_recv_ntstatus(req);
+}
+
+struct tevent_req *cli_ntrename_send(TALLOC_CTX *mem_ctx,
+				struct event_context *ev,
+				struct cli_state *cli,
+				const char *fname_src,
+				const char *fname_dst)
+{
+	return cli_ntrename_internal_send(mem_ctx,
+					  ev,
+					  cli,
+					  fname_src,
+					  fname_dst,
+					  RENAME_FLAG_RENAME);
+}
+
+NTSTATUS cli_ntrename_recv(struct tevent_req *req)
+{
+	return cli_ntrename_internal_recv(req);
 }
 
 NTSTATUS cli_ntrename(struct cli_state *cli, const char *fname_src, const char *fname_dst)
@@ -697,17 +703,17 @@ struct tevent_req *cli_nt_hardlink_send(TALLOC_CTX *mem_ctx,
 				const char *fname_src,
 				const char *fname_dst)
 {
-	return cli_ntrename_send_internal(mem_ctx,
-					ev,
-					cli,
-					fname_src,
-					fname_dst,
-					RENAME_FLAG_HARD_LINK);
+	return cli_ntrename_internal_send(mem_ctx,
+					  ev,
+					  cli,
+					  fname_src,
+					  fname_dst,
+					  RENAME_FLAG_HARD_LINK);
 }
 
 NTSTATUS cli_nt_hardlink_recv(struct tevent_req *req)
 {
-	return tevent_req_simple_recv_ntstatus(req);
+	return cli_ntrename_internal_recv(req);
 }
 
 NTSTATUS cli_nt_hardlink(struct cli_state *cli, const char *fname_src, const char *fname_dst)
