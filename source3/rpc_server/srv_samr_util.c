@@ -534,6 +534,16 @@ void copy_id21_to_sam_passwd(const char *log_prefix,
 		DEBUG(10,("%s SAMR_FIELD_ACCT_FLAGS: %08X -> %08X\n", l,
 			pdb_get_acct_ctrl(to), from->acct_flags));
 		if (from->acct_flags != pdb_get_acct_ctrl(to)) {
+
+			/* You cannot autolock an unlocked account via
+			 * setuserinfo calls, so make sure to remove the
+			 * ACB_AUTOLOCK bit here - gd */
+
+			if ((from->acct_flags & ACB_AUTOLOCK) &&
+			    !(pdb_get_acct_ctrl(to) & ACB_AUTOLOCK)) {
+				from->acct_flags &= ~ACB_AUTOLOCK;
+			}
+
 			if (!(from->acct_flags & ACB_AUTOLOCK) &&
 			     (pdb_get_acct_ctrl(to) & ACB_AUTOLOCK)) {
 				/* We're unlocking a previously locked user. Reset bad password counts.
