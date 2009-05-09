@@ -53,6 +53,8 @@ getnameinfo_verified(const struct sockaddr *sa, socklen_t salen,
     struct addrinfo *ai, *a;
     char servbuf[NI_MAXSERV];
     struct addrinfo hints;
+    void *saaddr;
+    size_t sasize;
 
     if (host == NULL)
 	return EAI_NONAME;
@@ -72,9 +74,12 @@ getnameinfo_verified(const struct sockaddr *sa, socklen_t salen,
     ret = getaddrinfo (host, serv, &hints, &ai);
     if (ret)
 	goto fail;
+
+    saaddr = socket_get_address(sa);
+    sasize = socket_addr_size(sa);
     for (a = ai; a != NULL; a = a->ai_next) {
-	if (a->ai_addrlen == salen
-	    && memcmp (a->ai_addr, sa, salen) == 0) {
+	if (sasize == socket_addr_size(a->ai_addr) &&
+	    memcmp(saaddr, socket_get_address(a->ai_addr), sasize) == 0) {
 	    freeaddrinfo (ai);
 	    return 0;
 	}
