@@ -575,7 +575,7 @@ cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
 
     parse_oid(opt->content_type_string, oid_id_pkcs7_data(), &contentType);
 
-    ret = hx509_cms_envelope_1(context, 0, cert, p, sz, enctype,
+    ret = hx509_cms_envelope_1(context, flags, cert, p, sz, enctype,
 			       &contentType, &o);
     if (ret)
 	errx(1, "hx509_cms_envelope_1: %d", ret);
