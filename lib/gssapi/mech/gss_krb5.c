@@ -715,7 +715,7 @@ gsskrb5_extract_key(OM_uint32 *minor_status,
     krb5_storage *sp = NULL;
 
     if (context_handle == GSS_C_NO_CONTEXT) {
-	ret = EINVAL;
+	*minor_status = EINVAL;
 	return GSS_S_FAILURE;
     }
 
