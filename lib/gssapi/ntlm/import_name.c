@@ -47,8 +47,10 @@ OM_uint32 _gss_ntlm_import_name
 
     *minor_status = 0;
 
-    if (output_name)
-	*output_name = GSS_C_NO_NAME;
+    if (output_name == NULL)
+	return GSS_S_CALL_INACCESSIBLE_WRITE;
+
+    *output_name = GSS_C_NO_NAME;
 
     if (!gss_oid_equal(input_name_type, GSS_C_NT_HOSTBASED_SERVICE))
 	return GSS_S_BAD_NAMETYPE;
