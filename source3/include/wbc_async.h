@@ -61,4 +61,11 @@ struct tevent_req *wb_resp_write_send(TALLOC_CTX *mem_ctx,
 				      struct winbindd_response *wb_resp);
 ssize_t wb_resp_write_recv(struct tevent_req *req, int *err);
 
+struct tevent_req *wb_simple_trans_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct tevent_queue *queue, int fd,
+					struct winbindd_request *wb_req);
+int wb_simple_trans_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			 struct winbindd_response **presponse, int *err);
+
 #endif /*_WBC_ASYNC_H_*/

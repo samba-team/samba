@@ -169,7 +169,14 @@ static void wb_req_write_done(struct tevent_req *subreq)
 	int err;
 
 	state->ret = writev_recv(subreq, &err);
-	TALLOC_FREE(subreq);
+	/*
+	 * We do not TALLOC_FREE(subreq) here, as this would trigger the next
+	 * write of a client. The winbind protocol is purely request/response
+	 * without multiplex ID's, so having multiple requeusts on the fly
+	 * would confuse sequencing.
+	 *
+	 * Eventually the writev_req will be freed, "subreq" a child of "req"
+	 */
 	if (state->ret < 0) {
 		tevent_req_error(req, err);
 		return;
@@ -336,4 +343,126 @@ ssize_t wb_resp_write_recv(struct tevent_req *req, int *err)
 		return -1;
 	}
 	return state->ret;
+}
+
+static bool closed_fd(int fd)
+{
+	struct timeval tv;
+	fd_set r_fds;
+
+	if (fd == -1) {
+		return true;
+	}
+
+	FD_ZERO(&r_fds);
+	FD_SET(fd, &r_fds);
+	ZERO_STRUCT(tv);
+
+	if ((select(fd+1, &r_fds, NULL, NULL, &tv) == -1)
+	    || FD_ISSET(fd, &r_fds)) {
+		return true;
+	}
+
+	return false;
+}
+
+struct wb_simple_trans_state {
+	struct tevent_context *ev;
+	int fd;
+	struct winbindd_response *wb_resp;
+};
+
+static void wb_simple_trans_write_done(struct tevent_req *subreq);
+static void wb_simple_trans_read_done(struct tevent_req *subreq);
+
+struct tevent_req *wb_simple_trans_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct tevent_queue *queue, int fd,
+					struct winbindd_request *wb_req)
+{
+	struct tevent_req *req, *subreq;
+	struct wb_simple_trans_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct wb_simple_trans_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	if (closed_fd(fd)) {
+		tevent_req_error(req, EPIPE);
+		return tevent_req_post(req, ev);
+	}
+
+	wb_req->length = sizeof(struct winbindd_request);
+
+	state->ev = ev;
+	state->fd = fd;
+
+	subreq = wb_req_write_send(state, ev, queue, fd, wb_req);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, wb_simple_trans_write_done, req);
+
+	return req;
+}
+
+static void wb_simple_trans_write_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct wb_simple_trans_state *state = tevent_req_data(
+		req, struct wb_simple_trans_state);
+	ssize_t ret;
+	int err;
+
+	ret = wb_req_write_recv(subreq, &err);
+	/*
+	 * We do not TALLOC_FREE(subreq) here, as this would trigger the next
+	 * write of a client. The winbind protocol is purely request/response
+	 * without multiplex ID's, so having multiple requeusts on the fly
+	 * would confuse sequencing.
+	 *
+	 * Eventually the "subreq" will be freed, it is a child of "req"
+	 */
+	if (ret == -1) {
+		tevent_req_error(req, err);
+		return;
+	}
+	subreq = wb_resp_read_send(state, state->ev, state->fd);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, wb_simple_trans_read_done, req);
+}
+
+static void wb_simple_trans_read_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct wb_simple_trans_state *state = tevent_req_data(
+		req, struct wb_simple_trans_state);
+	ssize_t ret;
+	int err;
+
+	ret = wb_resp_read_recv(subreq, state, &state->wb_resp, &err);
+	if (ret == -1) {
+		tevent_req_error(req, err);
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+int wb_simple_trans_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			 struct winbindd_response **presponse, int *err)
+{
+	struct wb_simple_trans_state *state = tevent_req_data(
+		req, struct wb_simple_trans_state);
+
+	if (tevent_req_is_unix_error(req, err)) {
+		return -1;
+	}
+	*presponse = talloc_move(mem_ctx, &state->wb_resp);
+	return 0;
 }
