@@ -1085,6 +1085,7 @@ NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passw
 {
 	uint32 min_len;
 	uint32 refuse;
+	TALLOC_CTX *tosctx = talloc_tos();
 	struct passwd *pass = NULL;
 	const char *username = pdb_get_username(hnd);
 	time_t can_change_time = pdb_get_pass_can_change_time(hnd);
@@ -1122,7 +1123,7 @@ NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passw
 	if ((can_change_time != 0) && (time(NULL) < can_change_time)) {
 		DEBUG(1, ("user %s cannot change password now, must "
 			  "wait until %s\n", username,
-			  http_timestring(talloc_tos(), can_change_time)));
+			  http_timestring(tosctx, can_change_time)));
 		if (samr_reject_reason) {
 			*samr_reject_reason = SAMR_REJECT_OTHER;
 		}
@@ -1147,7 +1148,7 @@ NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passw
 		return NT_STATUS_PASSWORD_RESTRICTION;
 	}
 
-	pass = Get_Pwnam_alloc(talloc_tos(), username);
+	pass = Get_Pwnam_alloc(tosctx, username);
 	if (!pass) {
 		DEBUG(1, ("change_oem_password: Username %s does not exist in system !?!\n", username));
 		return NT_STATUS_ACCESS_DENIED;
@@ -1156,9 +1157,16 @@ NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passw
 	/* Use external script to check password complexity */
 	if (lp_check_password_script() && *(lp_check_password_script())) {
 		int check_ret;
+		char *cmd;
 
-		check_ret = smbrunsecret(lp_check_password_script(), new_passwd);
-		DEBUG(5, ("change_oem_password: check password script (%s) returned [%d]\n", lp_check_password_script(), check_ret));
+		cmd = talloc_string_sub(tosctx, lp_check_password_script(), "%u", username);
+        	if (!cmd) {
+                	return NT_STATUS_PASSWORD_RESTRICTION;
+        	}
+
+		check_ret = smbrunsecret(cmd, new_passwd);
+		DEBUG(5, ("change_oem_password: check password script (%s) returned [%d]\n", cmd, check_ret));
+		TALLOC_FREE(cmd);
 
 		if (check_ret != 0) {
 			DEBUG(1, ("change_oem_password: check password script said new password is not good enough!\n"));
