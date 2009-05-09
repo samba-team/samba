@@ -61,7 +61,6 @@ struct sid_ctr {
 struct winbindd_cli_state {
 	struct winbindd_cli_state *prev, *next;   /* Linked list pointers */
 	int sock;                                 /* Open socket from client */
-	struct winbindd_fd_event fd_event;
 	pid_t pid;                                /* pid of client */
 	bool finished;                            /* Can delete from list */
 	bool write_extra_data;                    /* Write extra_data field */
@@ -71,6 +70,7 @@ struct winbindd_cli_state {
 	TALLOC_CTX *mem_ctx;			  /* memory per request */
 	struct winbindd_request *request;         /* Request from client */
 	struct winbindd_request _request;
+	struct tevent_queue *out_queue;
 	struct winbindd_response response;        /* Respose to client */
 	bool getpwent_initialized;                /* Has getpwent_state been
 						   * initialized? */

@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "winbindd.h"
+#include "../../nsswitch/libwbclient/wbc_async.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -656,58 +657,52 @@ void setup_async_write(struct winbindd_fd_event *event, void *data, size_t lengt
  * to call request_finished which schedules sending the response.
  */
 
-static void request_len_recv(void *private_data, bool success);
-static void request_recv(void *private_data, bool success);
-static void request_main_recv(void *private_data, bool success);
 static void request_finished(struct winbindd_cli_state *state);
-static void response_main_sent(void *private_data, bool success);
-static void response_extra_sent(void *private_data, bool success);
 
-static void response_extra_sent(void *private_data, bool success)
-{
-	struct winbindd_cli_state *state =
-		talloc_get_type_abort(private_data, struct winbindd_cli_state);
-
-	TALLOC_FREE(state->mem_ctx);
-
-	if (!success) {
-		state->finished = True;
-		return;
-	}
-
-	setup_async_read(&state->fd_event, state->request, sizeof(uint32),
-			 request_len_recv, state);
-}
-
-static void response_main_sent(void *private_data, bool success)
-{
-	struct winbindd_cli_state *state =
-		talloc_get_type_abort(private_data, struct winbindd_cli_state);
-
-	if (!success) {
-		state->finished = True;
-		return;
-	}
-
-	if (state->response.length == sizeof(state->response)) {
-		TALLOC_FREE(state->mem_ctx);
-
-		setup_async_read(&state->fd_event, state->request,
-				 sizeof(uint32), request_len_recv, state);
-		return;
-	}
-
-	setup_async_write(&state->fd_event, state->response.extra_data.data,
-			  state->response.length - sizeof(state->response),
-			  response_extra_sent, state);
-}
+static void winbind_client_request_read(struct tevent_req *req);
+static void winbind_client_response_written(struct tevent_req *req);
 
 static void request_finished(struct winbindd_cli_state *state)
 {
-	/* Make sure request.extra_data is freed when finish processing a request */
-	SAFE_FREE(state->request->extra_data.data);
-	setup_async_write(&state->fd_event, &state->response,
-			  sizeof(state->response), response_main_sent, state);
+	struct tevent_req *req;
+
+	TALLOC_FREE(state->request);
+
+	req = wb_resp_write_send(state, winbind_event_context(),
+				 state->out_queue, state->sock,
+				 &state->response);
+	if (req == NULL) {
+		state->finished = true;
+		return;
+	}
+	tevent_req_set_callback(req, winbind_client_response_written, state);
+}
+
+static void winbind_client_response_written(struct tevent_req *req)
+{
+	struct winbindd_cli_state *state = tevent_req_callback_data(
+		req, struct winbindd_cli_state);
+	ssize_t ret;
+	int err;
+
+	ret = wb_resp_write_recv(req, &err);
+	TALLOC_FREE(req);
+	if (ret == -1) {
+		DEBUG(2, ("Could not write response to client: %s\n",
+			  strerror(err)));
+		state->finished = true;
+		return;
+	}
+
+	TALLOC_FREE(state->mem_ctx);
+
+	req = wb_req_read_send(state, winbind_event_context(), state->sock,
+			       WINBINDD_MAX_EXTRA_DATA);
+	if (req == NULL) {
+		state->finished = true;
+		return;
+	}
+	tevent_req_set_callback(req, winbind_client_request_read, state);
 }
 
 void request_error(struct winbindd_cli_state *state)
@@ -724,90 +719,13 @@ void request_ok(struct winbindd_cli_state *state)
 	request_finished(state);
 }
 
-static void request_len_recv(void *private_data, bool success)
-{
-	struct winbindd_cli_state *state =
-		talloc_get_type_abort(private_data, struct winbindd_cli_state);
-
-	if (!success) {
-		state->finished = True;
-		return;
-	}
-
-	if (*(uint32 *)(state->request) != sizeof(*state->request)) {
-		DEBUG(0,("request_len_recv: Invalid request size received: %d (expected %u)\n",
-			 *(uint32_t *)(state->request),
-			 (uint32_t)sizeof(*state->request)));
-		state->finished = True;
-		return;
-	}
-
-	setup_async_read(&state->fd_event, (uint32 *)(state->request)+1,
-			 sizeof(*state->request) - sizeof(uint32),
-			 request_main_recv, state);
-}
-
-static void request_main_recv(void *private_data, bool success)
-{
-	struct winbindd_cli_state *state =
-		talloc_get_type_abort(private_data, struct winbindd_cli_state);
-
-	if (!success) {
-		state->finished = True;
-		return;
-	}
-
-	if (state->request->extra_len == 0) {
-		state->request->extra_data.data = NULL;
-		request_recv(state, True);
-		return;
-	}
-
-	if ((!state->privileged) &&
-	    (state->request->extra_len > WINBINDD_MAX_EXTRA_DATA)) {
-		DEBUG(3, ("Got request with %d bytes extra data on "
-			  "unprivileged socket\n",
-			  (int)state->request->extra_len));
-		state->request->extra_data.data = NULL;
-		state->finished = True;
-		return;
-	}
-
-	state->request->extra_data.data =
-		SMB_MALLOC_ARRAY(char, state->request->extra_len + 1);
-
-	if (state->request->extra_data.data == NULL) {
-		DEBUG(0, ("malloc failed\n"));
-		state->finished = True;
-		return;
-	}
-
-	/* Ensure null termination */
-	state->request->extra_data.data[state->request->extra_len] = '\0';
-
-	setup_async_read(&state->fd_event, state->request->extra_data.data,
-			 state->request->extra_len, request_recv, state);
-}
-
-static void request_recv(void *private_data, bool success)
-{
-	struct winbindd_cli_state *state =
-		talloc_get_type_abort(private_data, struct winbindd_cli_state);
-
-	if (!success) {
-		state->finished = True;
-		return;
-	}
-
-	process_request(state);
-}
-
 /* Process a new connection by adding it to the client connection list */
 
 static void new_connection(int listen_sock, bool privileged)
 {
 	struct sockaddr_un sunaddr;
 	struct winbindd_cli_state *state;
+	struct tevent_req *req;
 	socklen_t len;
 	int sock;
 
@@ -831,24 +749,49 @@ static void new_connection(int listen_sock, bool privileged)
 		close(sock);
 		return;
 	}
-	state->request = &state->_request;
 
 	state->sock = sock;
+
+	state->out_queue = tevent_queue_create(state, "winbind client reply");
+	if (state->out_queue == NULL) {
+		close(sock);
+		TALLOC_FREE(state);
+		return;
+	}
 
 	state->last_access = time(NULL);	
 
 	state->privileged = privileged;
 
-	state->fd_event.fd = state->sock;
-	state->fd_event.flags = 0;
-	add_fd_event(&state->fd_event);
-
-	setup_async_read(&state->fd_event, state->request, sizeof(uint32),
-			 request_len_recv, state);
+	req = wb_req_read_send(state, winbind_event_context(), state->sock,
+			       WINBINDD_MAX_EXTRA_DATA);
+	if (req == NULL) {
+		TALLOC_FREE(state);
+		close(sock);
+		return;
+	}
+	tevent_req_set_callback(req, winbind_client_request_read, state);
 
 	/* Add to connection list */
 
 	winbindd_add_client(state);
+}
+
+static void winbind_client_request_read(struct tevent_req *req)
+{
+	struct winbindd_cli_state *state = tevent_req_callback_data(
+		req, struct winbindd_cli_state);
+	ssize_t ret;
+	int err;
+
+	ret = wb_req_read_recv(req, state, &state->request, &err);
+	if (ret == -1) {
+		DEBUG(2, ("Could not read client request: %s\n",
+			  strerror(err)));
+		state->finished = true;
+		return;
+	}
+	process_request(state);
 }
 
 /* Remove a client connection from client connection list */
@@ -888,8 +831,6 @@ static void remove_client(struct winbindd_cli_state *state)
 
 	TALLOC_FREE(state->mem_ctx);
 
-	remove_fd_event(&state->fd_event);
-
 	/* Remove from list and free */
 
 	winbindd_remove_client(state);
@@ -906,7 +847,6 @@ static bool remove_idle_client(void)
 
 	for (state = winbindd_client_list(); state; state = state->next) {
 		if (state->response.result != WINBINDD_PENDING &&
-		    state->fd_event.flags == EVENT_FD_READ &&
 		    !state->getpwent_state && !state->getgrent_state) {
 			nidle++;
 			if (!last_access || state->last_access < last_access) {
