@@ -248,9 +248,11 @@ kadm5_s_get_principal(void *server_handle,
 	    if (ret == 0) {
 		ret = add_tl_data(out, KRB5_TL_PASSWORD, pw, strlen(pw) + 1);
 		free(pw);
+	    } else {
+		kadm5_free_principal_ent(context, out);
+		goto out;
 	    }
 	    krb5_clear_error_message(context->context);
-	    ret = 0;
 	}
 
 	ret = hdb_entry_get_pkinit_acl(&ent.entry, &acl);
