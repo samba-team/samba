@@ -862,6 +862,8 @@ kadm5_log_previous (krb5_context context,
 	goto end_of_storage;
     *len = tmp;
     ret = krb5_ret_int32 (sp, &tmp);
+    if (ret)
+	goto end_of_storage;
     *ver = tmp;
     off = 24 + *len;
     krb5_storage_seek(sp, -off, SEEK_CUR);
@@ -880,6 +882,8 @@ kadm5_log_previous (krb5_context context,
 	goto end_of_storage;
     *timestamp = tmp;
     ret = krb5_ret_int32 (sp, &tmp);
+    if (ret)
+	goto end_of_storage;
     *op = tmp;
     ret = krb5_ret_int32 (sp, &tmp);
     if (ret)
