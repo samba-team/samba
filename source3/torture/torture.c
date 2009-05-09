@@ -5065,7 +5065,7 @@ static bool run_mangle1(int dummy)
 
 	cli_sockopt(cli, sockops);
 
-	if (NT_STATUS_IS_OK(cli_ntcreate(
+	if (!NT_STATUS_IS_OK(cli_ntcreate(
 			cli, fname, 0, GENERIC_ALL_ACCESS|DELETE_ACCESS,
 			FILE_ATTRIBUTE_NORMAL, 0, FILE_OVERWRITE_IF, 0, 0, &fnum))) {
 		d_printf("open %s failed: %s\n", fname, cli_errstr(cli));
