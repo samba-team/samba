@@ -166,27 +166,6 @@ static int make_safe_fd(int fd)
 	return -1;
 }
 
-static bool winbind_closed_fd(int fd)
-{
-	struct timeval tv;
-	fd_set r_fds;
-
-	if (fd == -1) {
-		return true;
-	}
-
-	FD_ZERO(&r_fds);
-	FD_SET(fd, &r_fds);
-	ZERO_STRUCT(tv);
-
-	if ((select(fd+1, &r_fds, NULL, NULL, &tv) == -1)
-	    || FD_ISSET(fd, &r_fds)) {
-		return true;
-	}
-
-	return false;
-}
-
 struct wb_context *wb_context_init(TALLOC_CTX *mem_ctx)
 {
 	struct wb_context *result;
@@ -275,7 +254,7 @@ static struct tevent_req *wb_connect_send(TALLOC_CTX *mem_ctx,
 	}
 
 	subreq = async_connect_send(mem_ctx, ev, wb_ctx->fd,
-				    (struct sockaddr *)&sunaddr,
+				    (struct sockaddr *)(void *)&sunaddr,
 				    sizeof(sunaddr));
 	if (subreq == NULL) {
 		goto nomem;
@@ -314,113 +293,6 @@ static void wbc_connect_connected(struct tevent_req *subreq)
 static wbcErr wb_connect_recv(struct tevent_req *req)
 {
 	return tevent_req_simple_recv_wbcerr(req);
-}
-
-struct wb_int_trans_state {
-	struct tevent_context *ev;
-	int fd;
-	struct winbindd_request *wb_req;
-	struct winbindd_response *wb_resp;
-};
-
-static void wb_int_trans_write_done(struct tevent_req *subreq);
-static void wb_int_trans_read_done(struct tevent_req *subreq);
-
-static struct tevent_req *wb_int_trans_send(TALLOC_CTX *mem_ctx,
-					    struct tevent_context *ev,
-					    struct tevent_queue *queue, int fd,
-					    struct winbindd_request *wb_req)
-{
-	struct tevent_req *result, *subreq;
-	struct wb_int_trans_state *state;
-
-	result = tevent_req_create(mem_ctx, &state,
-				   struct wb_int_trans_state);
-	if (result == NULL) {
-		return NULL;
-	}
-
-	if (winbind_closed_fd(fd)) {
-		tevent_req_error(result, WBC_ERR_WINBIND_NOT_AVAILABLE);
-		return tevent_req_post(result, ev);
-	}
-
-	state->ev = ev;
-	state->fd = fd;
-	state->wb_req = wb_req;
-	state->wb_req->length = sizeof(struct winbindd_request);
-	state->wb_req->pid = getpid();
-
-	subreq = wb_req_write_send(state, state->ev, queue, state->fd,
-				   state->wb_req);
-	if (subreq == NULL) {
-		goto fail;
-	}
-	tevent_req_set_callback(subreq, wb_int_trans_write_done, result);
-
-	return result;
-
- fail:
-	TALLOC_FREE(result);
-	return NULL;
-}
-
-static void wb_int_trans_write_done(struct tevent_req *subreq)
-{
-	struct tevent_req *req = tevent_req_callback_data(
-		subreq, struct tevent_req);
-	struct wb_int_trans_state *state = tevent_req_data(
-		req, struct wb_int_trans_state);
-	ssize_t ret;
-	int err;
-
-	ret = wb_req_write_recv(subreq, &err);
-	TALLOC_FREE(subreq);
-	if (ret == -1) {
-		tevent_req_error(req, map_wbc_err_from_errno(err));
-		return;
-	}
-
-	subreq = wb_resp_read_send(state, state->ev, state->fd);
-	if (tevent_req_nomem(subreq, req)) {
-		return;
-	}
-	tevent_req_set_callback(subreq, wb_int_trans_read_done, req);
-}
-
-static void wb_int_trans_read_done(struct tevent_req *subreq)
-{
-	struct tevent_req *req = tevent_req_callback_data(
-		subreq, struct tevent_req);
-	struct wb_int_trans_state *state = tevent_req_data(
-		req, struct wb_int_trans_state);
-	ssize_t ret;
-	int err;
-
-	ret = wb_resp_read_recv(subreq, state, &state->wb_resp, &err);
-	TALLOC_FREE(subreq);
-	if (ret == -1) {
-		tevent_req_error(req, map_wbc_err_from_errno(err));
-		return;
-	}
-
-	tevent_req_done(req);
-}
-
-static wbcErr wb_int_trans_recv(struct tevent_req *req,
-				TALLOC_CTX *mem_ctx,
-				struct winbindd_response **presponse)
-{
-	struct wb_int_trans_state *state = tevent_req_data(
-		req, struct wb_int_trans_state);
-	wbcErr wbc_err;
-
-	if (tevent_req_is_wbcerr(req, &wbc_err)) {
-		return wbc_err;
-	}
-
-	*presponse = talloc_move(mem_ctx, &state->wb_resp);
-	return WBC_ERR_SUCCESS;
 }
 
 static const char *winbindd_socket_dir(void)
@@ -501,9 +373,10 @@ static void wb_open_pipe_connect_nonpriv_done(struct tevent_req *subreq)
 
 	ZERO_STRUCT(state->wb_req);
 	state->wb_req.cmd = WINBINDD_INTERFACE_VERSION;
+	state->wb_req.pid = getpid();
 
-	subreq = wb_int_trans_send(state, state->ev, state->wb_ctx->queue,
-				   state->wb_ctx->fd, &state->wb_req);
+	subreq = wb_simple_trans_send(state, state->ev, state->wb_ctx->queue,
+				      state->wb_ctx->fd, &state->wb_req);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -517,12 +390,12 @@ static void wb_open_pipe_ping_done(struct tevent_req *subreq)
 	struct wb_open_pipe_state *state = tevent_req_data(
 		req, struct wb_open_pipe_state);
 	struct winbindd_response *wb_resp;
-	wbcErr wbc_err;
+	int ret, err;
 
-	wbc_err = wb_int_trans_recv(subreq, state, &wb_resp);
+	ret = wb_simple_trans_recv(subreq, state, &wb_resp, &err);
 	TALLOC_FREE(subreq);
-	if (!WBC_ERROR_IS_OK(wbc_err)) {
-		tevent_req_error(req, wbc_err);
+	if (ret == -1) {
+		tevent_req_error(req, map_wbc_err_from_errno(err));
 		return;
 	}
 
@@ -532,9 +405,10 @@ static void wb_open_pipe_ping_done(struct tevent_req *subreq)
 	}
 
 	state->wb_req.cmd = WINBINDD_PRIV_PIPE_DIR;
+	state->wb_req.pid = getpid();
 
-	subreq = wb_int_trans_send(state, state->ev, state->wb_ctx->queue,
-				   state->wb_ctx->fd, &state->wb_req);
+	subreq = wb_simple_trans_send(state, state->ev, state->wb_ctx->queue,
+				      state->wb_ctx->fd, &state->wb_req);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -548,12 +422,12 @@ static void wb_open_pipe_getpriv_done(struct tevent_req *subreq)
 	struct wb_open_pipe_state *state = tevent_req_data(
 		req, struct wb_open_pipe_state);
 	struct winbindd_response *wb_resp = NULL;
-	wbcErr wbc_err;
+	int ret, err;
 
-	wbc_err = wb_int_trans_recv(subreq, state, &wb_resp);
+	ret = wb_simple_trans_recv(subreq, state, &wb_resp, &err);
 	TALLOC_FREE(subreq);
-	if (!WBC_ERROR_IS_OK(wbc_err)) {
-		tevent_req_error(req, wbc_err);
+	if (ret == -1) {
+		tevent_req_error(req, map_wbc_err_from_errno(err));
 		return;
 	}
 
@@ -633,8 +507,10 @@ struct tevent_req *wb_trans_send(TALLOC_CTX *mem_ctx,
 		return req;
 	}
 
-	subreq = wb_int_trans_send(state, ev, wb_ctx->queue, wb_ctx->fd,
-				   wb_req);
+	state->wb_req->pid = getpid();
+
+	subreq = wb_simple_trans_send(state, ev, wb_ctx->queue, wb_ctx->fd,
+				      wb_req);
 	if (subreq == NULL) {
 		goto fail;
 	}
@@ -726,8 +602,8 @@ static void wb_trans_connect_done(struct tevent_req *subreq)
 		return;
 	}
 
-	subreq = wb_int_trans_send(state, state->ev, state->wb_ctx->queue,
-				   state->wb_ctx->fd, state->wb_req);
+	subreq = wb_simple_trans_send(state, state->ev, state->wb_ctx->queue,
+				      state->wb_ctx->fd, state->wb_req);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -740,12 +616,12 @@ static void wb_trans_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct wb_trans_state *state = tevent_req_data(
 		req, struct wb_trans_state);
-	wbcErr wbc_err;
+	int ret, err;
 
-	wbc_err = wb_int_trans_recv(subreq, state, &state->wb_resp);
+	ret = wb_simple_trans_recv(subreq, state, &state->wb_resp, &err);
 	TALLOC_FREE(subreq);
 
-	if (wb_trans_retry(req, state, wbc_err)) {
+	if (wb_trans_retry(req, state, map_wbc_err_from_errno(err))) {
 		return;
 	}
 
