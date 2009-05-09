@@ -1261,6 +1261,10 @@ _kdc_as_rep(krb5_context context,
 	method_data.val = NULL;
 
 	ret = realloc_method_data(&method_data);
+	if (ret) {
+	    free_METHOD_DATA(&method_data);
+	    goto out;
+	}
 	pa = &method_data.val[method_data.len-1];
 	pa->padata_type		= KRB5_PADATA_ENC_TIMESTAMP;
 	pa->padata_value.length	= 0;
@@ -1268,12 +1272,20 @@ _kdc_as_rep(krb5_context context,
 
 #ifdef PKINIT
 	ret = realloc_method_data(&method_data);
+	if (ret) {
+	    free_METHOD_DATA(&method_data);
+	    goto out;
+	}
 	pa = &method_data.val[method_data.len-1];
 	pa->padata_type		= KRB5_PADATA_PK_AS_REQ;
 	pa->padata_value.length	= 0;
 	pa->padata_value.data	= NULL;
 
 	ret = realloc_method_data(&method_data);
+	if (ret) {
+	    free_METHOD_DATA(&method_data);
+	    goto out;
+	}
 	pa = &method_data.val[method_data.len-1];
 	pa->padata_type		= KRB5_PADATA_PK_AS_REQ_WIN;
 	pa->padata_value.length	= 0;
