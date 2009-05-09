@@ -346,7 +346,7 @@ socket_sockaddr_size (const struct sockaddr *);
 
 #define socket_get_address rk_socket_get_address
 void * ROKEN_LIB_FUNCTION
-socket_get_address (struct sockaddr *);
+socket_get_address (const struct sockaddr *);
 
 #define socket_get_port rk_socket_get_port
 int ROKEN_LIB_FUNCTION
