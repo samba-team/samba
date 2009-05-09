@@ -791,15 +791,13 @@ static bool fname_equal(const char *name1, const char *name2,
 
 static int get_real_filename_full_scan(connection_struct *conn,
 				       const char *path, const char *name,
+				       bool mangled,
 				       TALLOC_CTX *mem_ctx, char **found_name)
 {
 	struct smb_Dir *cur_dir;
 	const char *dname;
-	bool mangled;
 	char *unmangled_name = NULL;
 	long curpos;
-
-	mangled = mangle_is_mangled(name, conn->params);
 
 	/* handle null paths */
 	if ((path == NULL) || (*path == 0)) {
@@ -897,6 +895,14 @@ int get_real_filename(connection_struct *conn, const char *path,
 		      char **found_name)
 {
 	int ret;
+	bool mangled;
+
+	mangled = mangle_is_mangled(name, conn->params);
+
+	if (mangled) {
+		return get_real_filename_full_scan(conn, path, name, mangled,
+						   mem_ctx, found_name);
+	}
 
 	/* Try the vfs first to take advantage of case-insensitive stat. */
 	ret = SMB_VFS_GET_REAL_FILENAME(conn, path, name, mem_ctx, found_name);
@@ -910,9 +916,8 @@ int get_real_filename(connection_struct *conn, const char *path,
 		return ret;
 	}
 
-	ret = get_real_filename_full_scan(conn, path, name, mem_ctx,
-					  found_name);
-	return ret;
+	return get_real_filename_full_scan(conn, path, name, mangled, mem_ctx,
+					   found_name);
 }
 
 static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
