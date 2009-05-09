@@ -93,12 +93,13 @@ create_principal(kadm5_server_context *context,
 			     defent, def_mask);
     if(defent)
 	kadm5_free_principal_ent(context, defent);
+    if (ret)
+	return ret;
 
     ent->entry.created_by.time = time(NULL);
-    ret = krb5_copy_principal(context->context, context->caller,
-			      &ent->entry.created_by.principal);
 
-    return ret;
+    return krb5_copy_principal(context->context, context->caller,
+			       &ent->entry.created_by.principal);
 }
 
 kadm5_ret_t
