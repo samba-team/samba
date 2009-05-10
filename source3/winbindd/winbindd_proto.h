@@ -276,6 +276,13 @@ void setup_domain_child(struct winbindd_domain *domain,
 
 /* The following definitions come from winbindd/winbindd_dual.c  */
 
+struct tevent_req *wb_child_request_send(TALLOC_CTX *mem_ctx,
+					 struct tevent_context *ev,
+					 struct winbindd_child *child,
+					 struct winbindd_request *request);
+int wb_child_request_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			  struct winbindd_response **presponse, int *err);
+
 void async_request(TALLOC_CTX *mem_ctx, struct winbindd_child *child,
 		   struct winbindd_request *request,
 		   struct winbindd_response *response,

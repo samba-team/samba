@@ -148,10 +148,11 @@ struct winbindd_child {
 	struct winbindd_domain *domain;
 	char *logfilename;
 
-	struct winbindd_fd_event event;
+	int sock;
+	struct tevent_queue *queue;
+
 	struct timed_event *lockout_policy_event;
 	struct timed_event *machine_password_change_event;
-	struct winbindd_async_request *requests;
 
 	const struct winbindd_child_dispatch_table *table;
 };

@@ -373,8 +373,6 @@ static void trustdom_recv(void *private_data, bool success)
 			p += 1;
 	}
 
-	SAFE_FREE(response->extra_data.data);
-
 	/*
 	   Cases to consider when scanning trusts:
 	   (a) we are calling from a child domain (primary && !forest_root)
