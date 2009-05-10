@@ -458,6 +458,9 @@ static ssize_t tstream_npa_pending_bytes(struct tstream_context *stream)
 	case FILE_TYPE_MESSAGE_MODE_PIPE:
 		ret = npas->pending.iov_len;
 		break;
+
+	default:
+		ret = -1;
 	}
 
 	return ret;
