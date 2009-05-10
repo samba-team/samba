@@ -387,11 +387,11 @@ struct tevent_req *writev_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			       struct tevent_queue *queue, int fd,
 			       struct iovec *iov, int count)
 {
-	struct tevent_req *result;
+	struct tevent_req *req;
 	struct writev_state *state;
 
-	result = tevent_req_create(mem_ctx, &state, struct writev_state);
-	if (result == NULL) {
+	req = tevent_req_create(mem_ctx, &state, struct writev_state);
+	if (req == NULL) {
 		return NULL;
 	}
 	state->ev = ev;
@@ -404,12 +404,22 @@ struct tevent_req *writev_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		goto fail;
 	}
 
-	if (!tevent_queue_add(queue, ev, result, writev_trigger, NULL)) {
+	if (queue == NULL) {
+		struct tevent_fd *fde;
+		fde = tevent_add_fd(state->ev, state, state->fd,
+				    TEVENT_FD_WRITE, writev_handler, req);
+		if (tevent_req_nomem(fde, req)) {
+			return tevent_req_post(req, ev);
+		}
+		return req;
+	}
+
+	if (!tevent_queue_add(queue, ev, req, writev_trigger, NULL)) {
 		goto fail;
 	}
-	return result;
+	return req;
  fail:
-	TALLOC_FREE(result);
+	TALLOC_FREE(req);
 	return NULL;
 }
 
