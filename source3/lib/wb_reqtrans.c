@@ -169,14 +169,7 @@ static void wb_req_write_done(struct tevent_req *subreq)
 	int err;
 
 	state->ret = writev_recv(subreq, &err);
-	/*
-	 * We do not TALLOC_FREE(subreq) here, as this would trigger the next
-	 * write of a client. The winbind protocol is purely request/response
-	 * without multiplex ID's, so having multiple requeusts on the fly
-	 * would confuse sequencing.
-	 *
-	 * Eventually the writev_req will be freed, "subreq" a child of "req"
-	 */
+	TALLOC_FREE(subreq);
 	if (state->ret < 0) {
 		tevent_req_error(req, err);
 		return;
@@ -417,14 +410,7 @@ static void wb_simple_trans_write_done(struct tevent_req *subreq)
 	int err;
 
 	ret = wb_req_write_recv(subreq, &err);
-	/*
-	 * We do not TALLOC_FREE(subreq) here, as this would trigger the next
-	 * write of a client. The winbind protocol is purely request/response
-	 * without multiplex ID's, so having multiple requeusts on the fly
-	 * would confuse sequencing.
-	 *
-	 * Eventually the "subreq" will be freed, it is a child of "req"
-	 */
+	TALLOC_FREE(subreq);
 	if (ret == -1) {
 		tevent_req_error(req, err);
 		return;
@@ -446,6 +432,7 @@ static void wb_simple_trans_read_done(struct tevent_req *subreq)
 	int err;
 
 	ret = wb_resp_read_recv(subreq, state, &state->wb_resp, &err);
+	TALLOC_FREE(subreq);
 	if (ret == -1) {
 		tevent_req_error(req, err);
 		return;
