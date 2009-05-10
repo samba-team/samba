@@ -39,17 +39,6 @@
 
 #define WB_REPLACE_CHAR		'_'
 
-struct winbindd_fd_event {
-	struct winbindd_fd_event *next, *prev;
-	int fd;
-	int flags; /* see EVENT_FD_* flags */
-	void (*handler)(struct winbindd_fd_event *fde, int flags);
-	void *data;
-	size_t length, done;
-	void (*finished)(void *private_data, bool success);
-	void *private_data;
-};
-
 struct sid_ctr {
 	DOM_SID *sid;
 	bool finished;

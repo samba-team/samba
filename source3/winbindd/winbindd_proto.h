@@ -53,14 +53,6 @@ bool register_message_flags(bool doreg, uint32 msg_flags);
 
 struct event_context *winbind_event_context(void);
 struct messaging_context *winbind_messaging_context(void);
-void add_fd_event(struct winbindd_fd_event *ev);
-void remove_fd_event(struct winbindd_fd_event *ev);
-void setup_async_read(struct winbindd_fd_event *event, void *data, size_t length,
-		      void (*finished)(void *private_data, bool success),
-		      void *private_data);
-void setup_async_write(struct winbindd_fd_event *event, void *data, size_t length,
-		       void (*finished)(void *private_data, bool success),
-		       void *private_data);
 void request_error(struct winbindd_cli_state *state);
 void request_ok(struct winbindd_cli_state *state);
 bool winbindd_setup_sig_term_handler(bool parent);
@@ -157,9 +149,6 @@ bool wcache_invalidate_cache(void);
 bool init_wcache(void);
 bool initialize_winbindd_cache(void);
 void close_winbindd_cache(void);
-void cache_store_response(pid_t pid, struct winbindd_response *response);
-bool cache_retrieve_response(pid_t pid, struct winbindd_response * response);
-void cache_cleanup_response(pid_t pid);
 bool lookup_cached_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 		       char **domain_name, char **name,
 		       enum lsa_SidType *type);

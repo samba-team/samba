@@ -540,114 +540,6 @@ static void process_request(struct winbindd_cli_state *state)
 }
 
 /*
- * A list of file descriptors being monitored by select in the main processing
- * loop. winbindd_fd_event->handler is called whenever the socket is readable/writable.
- */
-
-static struct winbindd_fd_event *fd_events = NULL;
-
-void add_fd_event(struct winbindd_fd_event *ev)
-{
-	struct winbindd_fd_event *match;
-
-	/* only add unique winbindd_fd_event structs */
-
-	for (match=fd_events; match; match=match->next ) {
-#ifdef DEVELOPER
-		SMB_ASSERT( match != ev );
-#else
-		if ( match == ev )
-			return;
-#endif
-	}
-
-	DLIST_ADD(fd_events, ev);
-}
-
-void remove_fd_event(struct winbindd_fd_event *ev)
-{
-	DLIST_REMOVE(fd_events, ev);
-}
-
-/*
- * Handler for winbindd_fd_events to complete a read/write request, set up by
- * setup_async_read/setup_async_write.
- */
-
-static void rw_callback(struct winbindd_fd_event *event, int flags)
-{
-	size_t todo;
-	ssize_t done = 0;
-
-	todo = event->length - event->done;
-
-	if (event->flags & EVENT_FD_WRITE) {
-		SMB_ASSERT(flags == EVENT_FD_WRITE);
-		done = sys_write(event->fd,
-				 &((char *)event->data)[event->done],
-				 todo);
-
-		if (done <= 0) {
-			event->flags = 0;
-			event->finished(event->private_data, False);
-			return;
-		}
-	}
-
-	if (event->flags & EVENT_FD_READ) {
-		SMB_ASSERT(flags == EVENT_FD_READ);
-		done = sys_read(event->fd, &((char *)event->data)[event->done],
-				todo);
-
-		if (done <= 0) {
-			event->flags = 0;
-			event->finished(event->private_data, False);
-			return;
-		}
-	}
-
-	event->done += done;
-
-	if (event->done == event->length) {
-		event->flags = 0;
-		event->finished(event->private_data, True);
-	}
-}
-
-/*
- * Request an async read/write on a winbindd_fd_event structure. (*finished) is called
- * when the request is completed or an error had occurred.
- */
-
-void setup_async_read(struct winbindd_fd_event *event, void *data, size_t length,
-		      void (*finished)(void *private_data, bool success),
-		      void *private_data)
-{
-	SMB_ASSERT(event->flags == 0);
-	event->data = data;
-	event->length = length;
-	event->done = 0;
-	event->handler = rw_callback;
-	event->finished = finished;
-	event->private_data = private_data;
-	event->flags = EVENT_FD_READ;
-}
-
-void setup_async_write(struct winbindd_fd_event *event, void *data, size_t length,
-		       void (*finished)(void *private_data, bool success),
-		       void *private_data)
-{
-	SMB_ASSERT(event->flags == 0);
-	event->data = data;
-	event->length = length;
-	event->done = 0;
-	event->handler = rw_callback;
-	event->finished = finished;
-	event->private_data = private_data;
-	event->flags = EVENT_FD_WRITE;
-}
-
-/*
  * This is the main event loop of winbind requests. It goes through a
  * state-machine of 3 read/write requests, 4 if you have extra data to send.
  *
@@ -962,7 +854,6 @@ failed:
 
 static void process_loop(void)
 {
-	struct winbindd_fd_event *ev;
 	fd_set r_fds, w_fds;
 	int maxfd = 0, selret;
 	struct timeval timeout, ev_timeout;
@@ -989,17 +880,6 @@ static void process_loop(void)
 		timeout = timeval_min(&timeout, &ev_timeout);
 	}
 
-	for (ev = fd_events; ev; ev = ev->next) {
-		if (ev->flags & EVENT_FD_READ) {
-			FD_SET(ev->fd, &r_fds);
-			maxfd = MAX(ev->fd, maxfd);
-		}
-		if (ev->flags & EVENT_FD_WRITE) {
-			FD_SET(ev->fd, &w_fds);
-			maxfd = MAX(ev->fd, maxfd);
-		}
-	}
-
 	/* Call select */
 
 	selret = sys_select(maxfd + 1, &r_fds, &w_fds, NULL, &timeout);
@@ -1022,19 +902,6 @@ static void process_loop(void)
 	/* selret > 0 */
 
 	run_events(winbind_event_context(), selret, &r_fds, &w_fds);
-
-	ev = fd_events;
-	while (ev != NULL) {
-		struct winbindd_fd_event *next = ev->next;
-		int flags = 0;
-		if (FD_ISSET(ev->fd, &r_fds))
-			flags |= EVENT_FD_READ;
-		if (FD_ISSET(ev->fd, &w_fds))
-			flags |= EVENT_FD_WRITE;
-		if (flags)
-			ev->handler(ev, flags);
-		ev = next;
-	}
 
 	return;
 
