@@ -1881,7 +1881,7 @@ static int control_lvsmaster(struct ctdb_context *ctdb, int argc, const char **a
 	}
 
 	printf("There is no LVS master\n");
-	return 0;
+	return -1;
 }
 
 /*
