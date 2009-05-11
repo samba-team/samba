@@ -5563,7 +5563,8 @@ static bool test_AddGroupMember(struct dcerpc_pipe *p, struct torture_context *t
 	status = dcerpc_samr_AddGroupMember(p, tctx, &r);
 	torture_assert_ntstatus_equal(tctx, NT_STATUS_MEMBER_IN_GROUP, status, "AddGroupMember");
 
-	if (torture_setting_bool(tctx, "samba4", false)) {
+	if (torture_setting_bool(tctx, "samba4", false) ||
+	    torture_setting_bool(tctx, "samba3", false)) {
 		torture_comment(tctx, "skipping SetMemberAttributesOfGroup test against Samba4\n");
 	} else {
 		/* this one is quite strange. I am using random inputs in the
