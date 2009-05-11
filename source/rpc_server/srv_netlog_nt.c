@@ -498,14 +498,13 @@ NTSTATUS _netr_ServerAuthenticate2(pipes_struct *p,
 		srv_flgs |= NETLOGON_NEG_SCHANNEL;
 	}
 
-	*r->out.negotiate_flags = srv_flgs;
-
 	/* We use this as the key to store the creds: */
 	/* r->in.computer_name */
 
 	if (!p->dc || !p->dc->challenge_sent) {
 		DEBUG(0,("_netr_ServerAuthenticate2: no challenge sent to client %s\n",
 			r->in.computer_name));
+		*r->out.negotiate_flags = srv_flgs;
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -516,6 +515,7 @@ NTSTATUS _netr_ServerAuthenticate2(pipes_struct *p,
 		DEBUG(0,("_netr_ServerAuthenticate2: schannel required but client failed "
 			"to offer it. Client was %s\n",
 			r->in.account_name));
+		*r->out.negotiate_flags = srv_flgs;
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -527,6 +527,7 @@ NTSTATUS _netr_ServerAuthenticate2(pipes_struct *p,
 			"account %s: %s\n",
 			r->in.account_name, nt_errstr(status) ));
 		/* always return NT_STATUS_ACCESS_DENIED */
+		*r->out.negotiate_flags = srv_flgs;
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -544,6 +545,7 @@ NTSTATUS _netr_ServerAuthenticate2(pipes_struct *p,
 			"request from client %s machine account %s\n",
 			r->in.computer_name,
 			r->in.account_name));
+		*r->out.negotiate_flags = srv_flgs;
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -563,6 +565,8 @@ NTSTATUS _netr_ServerAuthenticate2(pipes_struct *p,
 					    r->in.computer_name,
 					    p->dc);
 	unbecome_root();
+
+	*r->out.negotiate_flags = srv_flgs;
 
 	return NT_STATUS_OK;
 }
