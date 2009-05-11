@@ -165,14 +165,16 @@ static int smbrun_internal(const char *cmd, int *outfd, bool sanitize)
 
 	become_user_permanently(uid, gid);
 
-	if (getuid() != uid || geteuid() != uid ||
-	    getgid() != gid || getegid() != gid) {
-		/* we failed to lose our privileges - do not execute
-                   the command */
-		exit(81); /* we can't print stuff at this stage,
-			     instead use exit codes for debugging */
+	if (!non_root_mode()) {
+		if (getuid() != uid || geteuid() != uid ||
+		    getgid() != gid || getegid() != gid) {
+			/* we failed to lose our privileges - do not execute
+			   the command */
+			exit(81); /* we can't print stuff at this stage,
+				     instead use exit codes for debugging */
+		}
 	}
-	
+
 #ifndef __INSURE__
 	/* close all other file descriptors, leaving only 0, 1 and 2. 0 and
 	   2 point to /dev/null from the startup code */
@@ -322,14 +324,16 @@ int smbrunsecret(const char *cmd, const char *secret)
 
 	become_user_permanently(uid, gid);
 
-	if (getuid() != uid || geteuid() != uid ||
-	    getgid() != gid || getegid() != gid) {
-		/* we failed to lose our privileges - do not execute
-                   the command */
-		exit(81); /* we can't print stuff at this stage,
-			     instead use exit codes for debugging */
+	if (!non_root_mode()) {
+		if (getuid() != uid || geteuid() != uid ||
+		    getgid() != gid || getegid() != gid) {
+			/* we failed to lose our privileges - do not execute
+			   the command */
+			exit(81); /* we can't print stuff at this stage,
+				     instead use exit codes for debugging */
+		}
 	}
-	
+
 #ifndef __INSURE__
 	/* close all other file descriptors, leaving only 0, 1 and 2. 0 and
 	   2 point to /dev/null from the startup code */
