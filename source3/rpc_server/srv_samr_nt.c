@@ -4673,6 +4673,9 @@ NTSTATUS _samr_SetUserInfo(pipes_struct *p,
 	  we'll use the set from the WinXP join as the basis. */
 
 	switch (switch_value) {
+	case 7:
+		acc_required = SAMR_USER_ACCESS_SET_ATTRIBUTES;
+		break;
 	case 18:
 	case 24:
 	case 25:
