@@ -319,7 +319,8 @@ static bool test_LookupNames_wellknown(struct dcerpc_pipe *p,
 static bool test_LookupNames2(struct dcerpc_pipe *p,
 			      struct torture_context *tctx,
 			      struct policy_handle *handle,
-			      struct lsa_TransNameArray2 *tnames)
+			      struct lsa_TransNameArray2 *tnames,
+			      bool check_result)
 {
 	struct lsa_LookupNames2 r;
 	struct lsa_TransSidArray2 sids;
@@ -357,6 +358,14 @@ static bool test_LookupNames2(struct dcerpc_pipe *p,
 		return false;
 	}
 
+	if (check_result) {
+		torture_assert_int_equal(tctx, count, sids.count,
+			"unexpected number of results returned");
+		if (sids.count > 0) {
+			torture_assert(tctx, sids.sids, "invalid sid buffer");
+		}
+	}
+
 	printf("\n");
 
 	return true;
@@ -366,7 +375,8 @@ static bool test_LookupNames2(struct dcerpc_pipe *p,
 static bool test_LookupNames3(struct dcerpc_pipe *p,
 			      struct torture_context *tctx,
 			      struct policy_handle *handle,
-			      struct lsa_TransNameArray2 *tnames)
+			      struct lsa_TransNameArray2 *tnames,
+			      bool check_result)
 {
 	struct lsa_LookupNames3 r;
 	struct lsa_TransSidArray3 sids;
@@ -404,6 +414,14 @@ static bool test_LookupNames3(struct dcerpc_pipe *p,
 		return false;
 	}
 
+	if (check_result) {
+		torture_assert_int_equal(tctx, count, sids.count,
+			"unexpected number of results returned");
+		if (sids.count > 0) {
+			torture_assert(tctx, sids.sids, "invalid sid buffer");
+		}
+	}
+
 	printf("\n");
 
 	return true;
@@ -411,7 +429,8 @@ static bool test_LookupNames3(struct dcerpc_pipe *p,
 
 static bool test_LookupNames4(struct dcerpc_pipe *p,
 			      struct torture_context *tctx,
-			      struct lsa_TransNameArray2 *tnames)
+			      struct lsa_TransNameArray2 *tnames,
+			      bool check_result)
 {
 	struct lsa_LookupNames4 r;
 	struct lsa_TransSidArray3 sids;
@@ -446,6 +465,14 @@ static bool test_LookupNames4(struct dcerpc_pipe *p,
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("LookupNames4 failed - %s\n", nt_errstr(status));
 		return false;
+	}
+
+	if (check_result) {
+		torture_assert_int_equal(tctx, count, sids.count,
+			"unexpected number of results returned");
+		if (sids.count > 0) {
+			torture_assert(tctx, sids.sids, "invalid sid buffer");
+		}
 	}
 
 	printf("\n");
@@ -530,11 +557,11 @@ static bool test_LookupSids2(struct dcerpc_pipe *p,
 
 	printf("\n");
 
-	if (!test_LookupNames2(p, tctx, handle, &names)) {
+	if (!test_LookupNames2(p, tctx, handle, &names, false)) {
 		return false;
 	}
 
-	if (!test_LookupNames3(p, tctx, handle, &names)) {
+	if (!test_LookupNames3(p, tctx, handle, &names, false)) {
 		return false;
 	}
 
@@ -580,7 +607,7 @@ static bool test_LookupSids3(struct dcerpc_pipe *p,
 
 	printf("\n");
 
-	if (!test_LookupNames4(p, tctx, &names)) {
+	if (!test_LookupNames4(p, tctx, &names, false)) {
 		return false;
 	}
 
@@ -668,7 +695,7 @@ bool test_many_LookupSids(struct dcerpc_pipe *p,
 			       nt_errstr(status));
 			return false;
 		}
-		if (!test_LookupNames4(p, tctx, &names)) {
+		if (!test_LookupNames4(p, tctx, &names, false)) {
 			return false;
 		}
 	}
