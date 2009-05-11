@@ -70,6 +70,20 @@
 	  </para>
         </listitem>
       </varlistentry>
+      <varlistentry><term>lvs | lvsmaster</term>
+        <listitem>
+          <para>
+            The current LVS master.
+	  </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry><term>natgw | natgwlist</term>
+        <listitem>
+          <para>
+            The current NAT gateway.
+	  </para>
+        </listitem>
+      </varlistentry>
       <varlistentry><term>rm | recmaster</term>
         <listitem>
           <para>
@@ -88,6 +102,15 @@
           <para>
             Execute COMMAND in the current working directory on the
             specified nodes.
+	  </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>-o &lt;prefix&gt;</term>
+        <listitem>
+          <para>
+	    Causes standard output from each node to be saved into a
+	    file with name &lt;prefix&gt;.&lt;ip&gt;.
 	  </para>
         </listitem>
       </varlistentry>
