@@ -2700,3 +2700,69 @@ bool torture_rpc_lsa_get_user(struct torture_context *tctx)
 
 	return ret;
 }
+
+static bool testcase_LookupNames(struct torture_context *tctx,
+				 struct dcerpc_pipe *p)
+{
+	bool ret = true;
+	struct policy_handle *handle;
+	struct lsa_TransNameArray tnames;
+	struct lsa_TransNameArray2 tnames2;
+
+	if (!test_OpenPolicy(p, tctx)) {
+		ret = false;
+	}
+
+	if (!test_lsa_OpenPolicy2(p, tctx, &handle)) {
+		ret = false;
+	}
+
+	if (!handle) {
+		ret = false;
+	}
+
+	tnames.count = 1;
+	tnames.names = talloc_array(tctx, struct lsa_TranslatedName, tnames.count);
+	ZERO_STRUCT(tnames.names[0]);
+	tnames.names[0].name.string = "BUILTIN";
+	tnames.names[0].sid_type = SID_NAME_DOMAIN;
+
+	if (!test_LookupNames(p, tctx, handle, &tnames)) {
+		ret = false;
+	}
+
+	tnames2.count = 1;
+	tnames2.names = talloc_array(tctx, struct lsa_TranslatedName2, tnames2.count);
+	ZERO_STRUCT(tnames2.names[0]);
+	tnames2.names[0].name.string = "BUILTIN";
+	tnames2.names[0].sid_type = SID_NAME_DOMAIN;
+
+	if (!test_LookupNames2(p, tctx, handle, &tnames2, true)) {
+		ret = false;
+	}
+
+	if (!test_LookupNames3(p, tctx, handle, &tnames2, true)) {
+		ret = false;
+	}
+
+	if (!test_lsa_Close(p, tctx, handle)) {
+		ret = false;
+	}
+
+	return ret;
+}
+
+struct torture_suite *torture_rpc_lsa_lookup_names(TALLOC_CTX *mem_ctx)
+{
+	struct torture_suite *suite;
+	struct torture_rpc_tcase *tcase;
+
+	suite = torture_suite_create(mem_ctx, "LSA-LOOKUPNAMES");
+
+	tcase = torture_suite_add_rpc_iface_tcase(suite, "lsa",
+						  &ndr_table_lsarpc);
+	torture_rpc_tcase_add_test(tcase, "LookupNames",
+				   testcase_LookupNames);
+
+	return suite;
+}
