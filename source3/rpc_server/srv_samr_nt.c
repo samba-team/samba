@@ -6591,7 +6591,6 @@ NTSTATUS _samr_SetMemberAttributesOfGroup(pipes_struct *p,
 NTSTATUS _samr_TestPrivateFunctionsDomain(pipes_struct *p,
 					  struct samr_TestPrivateFunctionsDomain *r)
 {
-	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
