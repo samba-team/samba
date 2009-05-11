@@ -111,7 +111,7 @@ void smb_thread_once(smb_thread_once_t *ponce, void (*init_fn)(void))
 
         /* Lock our "once" mutex in order to test and initialize ponce */
 	if ((ret = SMB_THREAD_LOCK(once_mutex, SMB_THREAD_LOCK)) != 0) {
-		DEBUG(0, ("error locking 'once': %d\n", ret));
+                smb_panic("error locking 'once'");
 	}
 
         /* Store whether we're going to need to issue the function call */
@@ -134,7 +134,7 @@ void smb_thread_once(smb_thread_once_t *ponce, void (*init_fn)(void))
 
         /* Unlock the mutex */
 	if ((ret = SMB_THREAD_LOCK(once_mutex, SMB_THREAD_UNLOCK)) != 0) {
-		DEBUG(0, ("error unlocking 'once': %d\n", ret));
+                smb_panic("error unlocking 'once'");
 	}
 
         /* Finally, if we need to call the user-provided function, ... */
