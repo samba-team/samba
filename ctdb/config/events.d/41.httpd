@@ -34,19 +34,35 @@ loadconfig "${CTDB_CONFIG_HTTP}"
 cmd="$1"
 shift
 
-case $cmd in 
-     startup)
-        service "${CTDB_SERVICE_HTTP}" stop > /dev/null 2>&1
-        service "${CTDB_SERVICE_HTTP}" start
-        ;;
+# RHEL5 sometimes use a SIGKILL to terminate httpd, which then leaks
+# semaphores.  This is a hack to clean them up.
+cleanup_httpd_semaphore_leak() {
+    killall -q -0 "${CTDB_SERVICE_HTTP}" ||
+    for i in $(ipcs -s | awk '$3 == "apache" { print $2 }') ; do
+	ipcrm -s $i
+    done
+}
 
-     shutdown)
-        service "${CTDB_SERVICE_HTTP}" stop
-        ;;
+case $cmd in
+    startup)
+	cleanup_httpd_semaphore_leak
+	service "${CTDB_SERVICE_HTTP}" start
+	;;
+
+    shutdown)
+	service "${CTDB_SERVICE_HTTP}" stop
+	killall -q -9 "${CTDB_SERVICE_HTTP}"
+	;;
 
      monitor)
-        ctdb_check_tcp_ports "http" 80
-        ;;
+	( ctdb_check_tcp_ports "http" 80 )
+	if [ $? -ne 0 ] ; then
+	    echo "HTTPD is not running. Trying to restart HTTPD."
+	    cleanup_httpd_semaphore_leak
+	    service "${CTDB_SERVICE_HTTP}" start
+	    exit 1
+	fi
+	;;
 esac
 
 exit 0
