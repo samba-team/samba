@@ -1236,12 +1236,12 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 				int *last_entry_off,
 				struct ea_list *name_list)
 {
-	const char *dname;
+	char *dname;
 	bool found = False;
 	SMB_STRUCT_STAT sbuf;
 	const char *mask = NULL;
 	char *pathreal = NULL;
-	const char *fname = NULL;
+	char *fname = NULL;
 	char *p, *q, *pdata = *ppdata;
 	uint32 reskey=0;
 	long prev_dirpos=0;
@@ -1317,9 +1317,13 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 		/* Mangle fname if it's an illegal name. */
 		if (mangle_must_mangle(dname,conn->params)) {
 			if (!name_to_8_3(dname,mangled_name,True,conn->params)) {
+				TALLOC_FREE(fname);
 				continue; /* Error - couldn't mangle. */
 			}
-			fname = mangled_name;
+			fname = talloc_strdup(ctx, mangled_name);
+			if (!fname) {
+				return False;
+			}
 		}
 
 		if(!(got_match = *got_exact_match = exact_match(conn, fname, mask))) {
@@ -1336,6 +1340,7 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			 */
 			/* Force the mangling into 8.3. */
 			if (!name_to_8_3( fname, mangled_name, False, conn->params)) {
+				TALLOC_FREE(fname);
 				continue; /* Error - couldn't mangle. */
 			}
 
@@ -1348,6 +1353,7 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			bool isdots = (ISDOT(dname) || ISDOTDOT(dname));
 
 			if (dont_descend && !isdots) {
+				TALLOC_FREE(fname);
 				continue;
 			}
 
@@ -1365,6 +1371,7 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			}
 
 			if (!pathreal) {
+				TALLOC_FREE(fname);
 				return False;
 			}
 
@@ -1373,6 +1380,7 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 					DEBUG(5,("get_lanman2_dir_entry:Couldn't lstat [%s] (%s)\n",
 						pathreal,strerror(errno)));
 					TALLOC_FREE(pathreal);
+					TALLOC_FREE(fname);
 					continue;
 				}
 			} else if (!VALID_STAT(sbuf) && SMB_VFS_STAT(conn,pathreal,&sbuf) != 0) {
@@ -1384,6 +1392,7 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 					DEBUG(5,("get_lanman2_dir_entry:Couldn't stat [%s] (%s)\n",
 						pathreal,strerror(errno)));
 					TALLOC_FREE(pathreal);
+					TALLOC_FREE(fname);
 					continue;
 				}
 			}
@@ -1397,6 +1406,7 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			if (!dir_check_ftype(conn,mode,dirtype)) {
 				DEBUG(5,("get_lanman2_dir_entry: [%s] attribs didn't match %x\n",fname,dirtype));
 				TALLOC_FREE(pathreal);
+				TALLOC_FREE(fname);
 				continue;
 			}
 
@@ -1438,6 +1448,9 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 
 			dptr_DirCacheAdd(conn->dirptr, dname, curr_dirpos);
 		}
+
+		if (!found)
+			TALLOC_FREE(fname);
 	}
 
 	p = pdata;
@@ -1831,10 +1844,11 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			break;
 
 		default:
+			TALLOC_FREE(fname);
 			return(False);
 	}
 
-
+	TALLOC_FREE(fname);
 	if (PTR_DIFF(p,pdata) > space_remaining) {
 		/* Move the dirptr back to prev_dirpos */
 		dptr_SeekDir(conn->dirptr, prev_dirpos);
