@@ -1652,6 +1652,7 @@ See the <citerefentry><refentrytitle>smb.conf</refentrytitle> <manvolnum>5</manv
 <simplelist>
 <member>net dom join - Join a remote computer into a domain.</member>
 <member>net dom unjoin - Unjoin a remote computer from a domain.</member>
+<member>net dom renamecomputer - Renames a remote computer joined to a domain.</member>
 </simplelist>
 </para>
 
@@ -1715,6 +1716,38 @@ Note that you also need to use standard net paramters to connect and authenticat
 </para>
 <para>
 This example would connect to a computer named XP as the local administrator using password secret, and unjoin the computer from the domain using the MYDOM domain administrator account and password topsecret. After successful unjoin, the computer would reboot.
+</para>
+
+</refsect3>
+
+<refsect3>
+<title>DOM RENAMECOMPUTER <replaceable>newname=NEWNAME</replaceable> <replaceable>account=ACCOUNT</replaceable> <replaceable>password=PASSWORD</replaceable> <replaceable>reboot</replaceable></title>
+
+<para>
+Renames a computer that is joined to a domain. This command supports the following additional parameters:
+</para>
+
+<itemizedlist>
+
+<listitem><para><replaceable>NEWNAME</replaceable> defines the new name of the machine in the domain.</para></listitem>
+
+<listitem><para><replaceable>ACCOUNT</replaceable> defines a domain account that will be used to rename the machine in the domain. This domain account needs to have sufficient privileges to rename machines.</para></listitem>
+
+<listitem><para><replaceable>PASSWORD</replaceable> defines the password for the domain account defined with <replaceable>ACCOUNT</replaceable>.</para></listitem>
+
+<listitem><para><replaceable>REBOOT</replaceable> is an optional parameter that can be set to reboot the remote machine after successful rename in the domain.</para></listitem>
+
+</itemizedlist>
+
+<para>
+Note that you also need to use standard net paramters to connect and authenticate to the remote machine that you want to rename in the domain. These additional parameters include: -S computer and -U user.
+</para>
+<para>
+	Example:
+	net dom renamecomputer -S xp -U XP\\administrator%secret newname=XPNEW account=MYDOM\\administrator password=topsecret reboot.
+</para>
+<para>
+This example would connect to a computer named XP as the local administrator using password secret, and rename the joined computer to XPNEW using the MYDOM domain administrator account and password topsecret. After successful rename, the computer would reboot.
 </para>
 
 </refsect3>
