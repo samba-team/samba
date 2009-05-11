@@ -107,7 +107,7 @@ int smb_thread_set_functions(const struct smb_thread_functions *tf)
 void smb_thread_once(smb_thread_once_t *ponce, void (*init_fn)(void))
 {
         int ret;
-        int need_func_call;
+        bool need_func_call;
 
         /* Lock our "once" mutex in order to test and initialize ponce */
 	if ((ret = SMB_THREAD_LOCK(once_mutex, SMB_THREAD_LOCK)) != 0) {
