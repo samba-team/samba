@@ -40,6 +40,13 @@ const struct smb_thread_functions *global_tfp;
 void **global_lock_array;
 
 /*********************************************************
+ Mutex used for our internal "once" function
+*********************************************************/
+
+void *once_mutex = NULL;
+
+
+/*********************************************************
  Function to set the locking primitives used by libsmbclient.
 *********************************************************/
 
@@ -80,8 +87,63 @@ int smb_thread_set_functions(const struct smb_thread_functions *tf)
 		SAFE_FREE(name);
 	}
 
+        /* Create the mutex we'll use for our "once" function */
+	if (SMB_THREAD_CREATE_MUTEX("smb_once", once_mutex) != 0) {
+		smb_panic("smb_thread_set_functions: failed to create 'once' mutex");
+	}
+
 	return 0;
 }
+
+/*******************************************************************
+ Call a function only once. We implement this ourselves
+ using our own mutex rather than using the thread implementation's
+ *_once() function because each implementation has its own
+ type for the variable which keeps track of whether the function
+ has been called, and there's no easy way to allocate the correct
+ size variable in code internal to Samba without knowing the
+ implementation's "once" type.
+********************************************************************/
+void smb_thread_once(smb_thread_once_t *ponce, void (*init_fn)(void))
+{
+        int ret;
+        int need_func_call;
+
+        /* Lock our "once" mutex in order to test and initialize ponce */
+	if ((ret = SMB_THREAD_LOCK(once_mutex, SMB_THREAD_LOCK)) != 0) {
+		DEBUG(0, ("error locking 'once': %d\n", ret));
+	}
+
+        /* Store whether we're going to need to issue the function call */
+        need_func_call = ! *ponce;
+
+        /*
+         * See if another thread got here after we tested it initially but
+         * before we got our lock.
+         */
+        if (need_func_call) {
+                /*
+                 * Nope, we still need to issue the call. Set the "once"
+                 * variable to true now so we can unlock the mutex. (We don't
+                 * want to leave it locked during the call to the
+                 * initialization function in case there's yet another "once"
+                 * function needed to be called from therein.)
+                 */
+                *ponce = true;
+        }
+
+        /* Unlock the mutex */
+	if ((ret = SMB_THREAD_LOCK(once_mutex, SMB_THREAD_UNLOCK)) != 0) {
+		DEBUG(0, ("error unlocking 'once': %d\n", ret));
+	}
+
+        /* Finally, if we need to call the user-provided function, ... */
+        if (need_func_call) {
+                /* ... then do so now. */
+                (*init_fn)();
+        }
+}
+
 
 #if 0
 /* Test. - pthread implementations. */
@@ -128,7 +190,7 @@ int test_threads(void)
 	if ((ret = SMB_THREAD_LOCK(plock, SMB_THREAD_LOCK)) != 0) {
 		printf("lock error: %d\n", ret);
 	}
-	if ((SMB_THREAD_LOCK(plock, SMB_THREAD_UNLOCK)) != 0) {
+	if ((ret = SMB_THREAD_LOCK(plock, SMB_THREAD_UNLOCK)) != 0) {
 		printf("unlock error: %d\n", ret);
 	}
 	SMB_THREAD_DESTROY_MUTEX(plock);

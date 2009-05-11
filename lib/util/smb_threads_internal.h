@@ -34,7 +34,7 @@
 	(global_tfp ? global_tfp->lock_mutex((plock), (type), __location__) : 0)
 
 #define SMB_THREAD_ONCE(ponce, init_fn) \
-	(global_tfp ? global_tfp->smb_thread_once((ponce), (init_fn)) : ((init_fn()), 0))
+	(global_tfp ? smb_thread_once((ponce), (init_fn)) : ((init_fn()), 0))
 
 #define SMB_THREAD_CREATE_TLS(keyname, key) \
 	(global_tfp ? global_tfp->create_tls((keyname), &(key), __location__) : 0)

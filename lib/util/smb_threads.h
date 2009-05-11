@@ -20,20 +20,10 @@
 #ifndef _smb_threads_h_
 #define _smb_threads_h_
 
-/* Data types needed for smb_thread_once call. */
-
-#if defined(HAVE_PTHREAD_H)
-#include <pthread.h>
-#define smb_thread_once_t pthread_once_t
-#define SMB_THREAD_ONCE_INIT PTHREAD_ONCE_INIT
-#define SMB_THREAD_ONCE_IS_INITIALIZED(val) (true)
-#define SMB_THREAD_ONCE_INITIALIZE(val)
-#else
-#define smb_thread_once_t bool
+typedef bool smb_thread_once_t;
 #define SMB_THREAD_ONCE_INIT false
 #define SMB_THREAD_ONCE_IS_INITIALIZED(val) ((val) == true)
 #define SMB_THREAD_ONCE_INITIALIZE(val) ((val) = true)
-#endif
 
 enum smb_thread_lock_type {
 	SMB_THREAD_LOCK = 1,
@@ -50,9 +40,6 @@ struct smb_thread_functions {
 	int (*lock_mutex)(void *plock, enum smb_thread_lock_type lock_type,
 			const char *location);
 
-	/* Once initialization. */
-	int (*smb_thread_once)(smb_thread_once_t *p_once, void (*init_fn)(void));
-
 	/* Thread local storage. */
 	int (*create_tls)(const char *keyname,
 			void **ppkey,
@@ -64,6 +51,7 @@ struct smb_thread_functions {
 };
 
 int smb_thread_set_functions(const struct smb_thread_functions *tf);
+void smb_thread_once(smb_thread_once_t *ponce, void (*init_fn)(void));
 
 extern const struct smb_thread_functions *global_tfp;
 
@@ -95,11 +83,6 @@ static int smb_lock_pthread(void *plock, enum smb_thread_lock_type lock_type, co
 	} else { \
 		return pthread_mutex_lock((pthread_mutex_t *)plock); \
 	} \
-} \
- \
-static int smb_thread_once_pthread(smb_thread_once_t *p_once, void (*init_fn)(void)) \
-{ \
-	return pthread_once(p_once, init_fn); \
 } \
  \
 static int smb_create_tls_pthread(const char *keyname, void **ppkey, const char *location) \
@@ -142,7 +125,6 @@ static const struct smb_thread_functions (tf) = { \
 			smb_create_mutex_pthread, \
 			smb_destroy_mutex_pthread, \
 			smb_lock_pthread, \
-			smb_thread_once_pthread, \
 			smb_create_tls_pthread, \
 			smb_destroy_tls_pthread, \
 			smb_set_tls_pthread, \
