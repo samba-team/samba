@@ -4252,13 +4252,6 @@ int lp_min_receive_file_size(void);
 char* lp_perfcount_module(void);
 
 
-/* The following definitions come from param/params.c  */
-
-bool pm_process( const char *FileName,
-		bool (*sfunc)(const char *, void *),
-		bool (*pfunc)(const char *, const char *, void *),
-		void *userdata);
-
 /* The following definitions come from param/util.c  */
 
 uint32 get_int_param( const char* param );
