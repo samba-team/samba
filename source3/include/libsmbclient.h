@@ -2783,24 +2783,24 @@ smbc_thread_impl(
         /* Mutex functions. */
         int (*create_mutex)(const char *lockname,
                             void **pplock,
-                            const char *location);
+                            const char *location),
         void (*destroy_mutex)(void *plock,
-                              const char *location);
+                              const char *location),
         int (*lock_mutex)(void *plock,
                           int lock_type,
-                          const char *location);
+                          const char *location),
     
         /* Thread local storage. */
         int (*create_tls)(const char *keyname,
                           void **ppkey,
-                          const char *location);
+                          const char *location),
         void (*destroy_tls)(void **ppkey,
-                            const char *location);
+                            const char *location),
         int (*set_tls)(void *pkey,
                        const void *pval,
-                       const char *location);
+                       const char *location),
         void *(*get_tls)(void *pkey,
-                         const char *location);
+                         const char *location)
         );
 
 
