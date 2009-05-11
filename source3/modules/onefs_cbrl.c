@@ -150,6 +150,11 @@ static void onefs_cbrl_async_success(uint64_t id)
 	else
 		bs->state = ONEFS_CBRL_NONE;
 
+	/* Self contend our own level 2 oplock. The kernel handles
+	 * contention of other opener's level 2 oplocks. */
+	contend_level2_oplocks_begin(blr->fsp,
+	    LEVEL2_CONTEND_WINDOWS_BRL);
+
 	/* Process the queue, to try the next lock or finish up. */
 	process_blocking_lock_queue();
 }
@@ -215,7 +220,7 @@ static void onefs_init_cbrl(void)
 
 	DEBUG(10, ("cbrl_event_fd = %d\n", cbrl_event_fd));
 
-	/* Register the oplock event_fd with samba's event system */
+	/* Register the CBRL event_fd with samba's event system */
 	cbrl_fde = event_add_fd(smbd_event_context(),
 				     NULL,
 				     cbrl_event_fd,
@@ -366,6 +371,10 @@ failure:
 	return status;
 
 success:
+	/* Self contend our own level 2 oplock. The kernel handles
+	 * contention of other opener's level 2 oplocks. */
+	contend_level2_oplocks_begin(br_lck->fsp,
+	    LEVEL2_CONTEND_WINDOWS_BRL);
 
 	END_PROFILE(syscall_brl_lock);
 
@@ -399,6 +408,10 @@ bool onefs_brl_unlock_windows(vfs_handle_struct *handle,
 		DEBUG(10, ("returning false.\n"));
 		return false;
 	}
+
+	/* For symmetry purposes, end our oplock contention even though its
+	 * currently a no-op. */
+	contend_level2_oplocks_end(br_lck->fsp, LEVEL2_CONTEND_WINDOWS_BRL);
 
 	DEBUG(10, ("returning true.\n"));
 	return true;
