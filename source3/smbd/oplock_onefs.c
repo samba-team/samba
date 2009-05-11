@@ -526,7 +526,6 @@ static void onefs_semlock_write(int fd, enum level2_contention_type type,
 
 	switch (type) {
 	case LEVEL2_CONTEND_ALLOC_GROW:
-	case LEVEL2_CONTEND_WINDOWS_BRL:
 	case LEVEL2_CONTEND_POSIX_BRL:
 		DEBUG(10, ("Taking %d write semlock for cmd %d on fd: %d\n",
 			   semlock_op, type, fd));
