@@ -502,8 +502,10 @@ NTSTATUS smbsrv_recv_smb2_request(void *private_data, DATA_BLOB blob)
 		uint16_t opcode	= SVAL(req->in.hdr, SMB2_HDR_OPCODE);
 		if (opcode == SMB2_OP_NEGPROT) {
 			smbsrv_terminate_connection(req->smb_conn, "Bad body size in SMB2 negprot");			
+			return NT_STATUS_OK;
 		} else {
 			smb2srv_send_error(req, NT_STATUS_INVALID_PARAMETER);
+			return NT_STATUS_OK;
 		}
 	}
 
