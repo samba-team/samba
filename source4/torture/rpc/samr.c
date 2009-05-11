@@ -5459,7 +5459,7 @@ static bool test_TestPrivateFunctionsDomain(struct dcerpc_pipe *p, struct tortur
 	r.in.domain_handle = domain_handle;
 
 	status = dcerpc_samr_TestPrivateFunctionsDomain(p, tctx, &r);
-	torture_assert_ntstatus_equal(tctx, NT_STATUS_NOT_IMPLEMENTED, status, "TestPrivateFunctionsDomain");
+	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_NOT_IMPLEMENTED, "TestPrivateFunctionsDomain");
 
 	return ret;
 }
