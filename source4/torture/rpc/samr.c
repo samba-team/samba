@@ -3482,8 +3482,10 @@ static bool test_alias_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
 {
 	bool ret = true;
 
-	if (!test_QuerySecurity(p, tctx, alias_handle)) {
-		ret = false;
+	if (!torture_setting_bool(tctx, "samba3", false)) {
+		if (!test_QuerySecurity(p, tctx, alias_handle)) {
+			ret = false;
+		}
 	}
 
 	if (!test_QueryAliasInfo(p, tctx, alias_handle)) {
@@ -4420,8 +4422,10 @@ static bool test_OpenGroup(struct dcerpc_pipe *p,
 		return false;
 	}
 
-	if (!test_QuerySecurity(p, tctx, &group_handle)) {
-		ret = false;
+	if (!torture_setting_bool(tctx, "samba3", false)) {
+		if (!test_QuerySecurity(p, tctx, &group_handle)) {
+			ret = false;
+		}
 	}
 
 	if (!test_QueryGroupInfo(p, tctx, &group_handle)) {
@@ -4460,8 +4464,10 @@ static bool test_OpenAlias(struct dcerpc_pipe *p, struct torture_context *tctx,
 		return false;
 	}
 
-	if (!test_QuerySecurity(p, tctx, &alias_handle)) {
-		ret = false;
+	if (!torture_setting_bool(tctx, "samba3", false)) {
+		if (!test_QuerySecurity(p, tctx, &alias_handle)) {
+			ret = false;
+		}
 	}
 
 	if (!test_QueryAliasInfo(p, tctx, &alias_handle)) {
@@ -5737,7 +5743,9 @@ static bool test_OpenDomain(struct dcerpc_pipe *p, struct torture_context *tctx,
 		if (!ret) {
 			printf("Failed to CreateUser in SAMR-OTHER on domain %s!\n", dom_sid_string(tctx, sid));
 		}
-		ret &= test_QuerySecurity(p, tctx, &domain_handle);
+		if (!torture_setting_bool(tctx, "samba3", false)) {
+			ret &= test_QuerySecurity(p, tctx, &domain_handle);
+		}
 		ret &= test_RemoveMemberFromForeignDomain(p, tctx, &domain_handle);
 		ret &= test_CreateAlias(p, tctx, &domain_handle, &alias_handle, sid);
 		ret &= test_CreateDomainGroup(p, tctx, &domain_handle, &group_handle, sid);
@@ -6012,7 +6020,9 @@ bool torture_rpc_samr(struct torture_context *torture)
 
 	ret &= test_Connect(p, torture, &handle);
 
-	ret &= test_QuerySecurity(p, torture, &handle);
+	if (!torture_setting_bool(torture, "samba3", false)) {
+		ret &= test_QuerySecurity(p, torture, &handle);
+	}
 
 	ret &= test_EnumDomains(p, torture, &handle, TORTURE_SAMR_OTHER, NULL);
 
