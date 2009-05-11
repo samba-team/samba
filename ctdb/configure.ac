@@ -1,5 +1,5 @@
 AC_PREREQ(2.50)
-AC_INIT(ctdb, m4_esyscmd([grep 'Version:' ./packaging/RPM/ctdb.spec 2>/dev/null | head -1 | sed -e 's/[ \t]*Version:[ \t]*\([^ \t]*\)[ \t].*/\1/' | tr -d '\n']))
+AC_INIT(ctdb, m4_esyscmd([grep 'Version:' ./packaging/RPM/ctdb.spec 2>/dev/null | head -1 | sed -e 's/[ \t]*Version:[ \t]*\([^ \t]*\)[ \t]*.*/\1/' | tr -d '\n']))
 AC_DEFUN([AC_CHECK_LIB_EXT], [
 	AC_CHECK_LIB([$1],[$3],[$4],[$5],[$7])
 	ac_cv_lib_ext_$1_$3=$ac_cv_lib_$1_$3
