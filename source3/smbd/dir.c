@@ -569,7 +569,7 @@ static const char *dptr_normal_ReadDirName(struct dptr_struct *dptr,
  Return the next visible file name, skipping veto'd and invisible files.
 ****************************************************************************/
 
-const char *dptr_ReadDirName(TALLOC_CTX *ctx,
+char *dptr_ReadDirName(TALLOC_CTX *ctx,
 			struct dptr_struct *dptr,
 			long *poffset,
 			SMB_STRUCT_STAT *pst)
@@ -578,11 +578,14 @@ const char *dptr_ReadDirName(TALLOC_CTX *ctx,
 	char *pathreal = NULL;
 	char *found_name = NULL;
 	int ret;
+	const char *name_temp = NULL;
 
 	SET_STAT_INVALID(*pst);
 
 	if (dptr->has_wild || dptr->did_stat) {
-		return dptr_normal_ReadDirName(dptr, poffset, pst);
+		name_temp = dptr_normal_ReadDirName(dptr, poffset, pst);
+		name = talloc_strdup(ctx, name_temp);
+		return name;
 	}
 
 	/* If poffset is -1 then we know we returned this name before and we
@@ -610,7 +613,7 @@ const char *dptr_ReadDirName(TALLOC_CTX *ctx,
 	}
 
 	if (VALID_STAT(*pst)) {
-		name = dptr->wcard;
+		name = talloc_strdup(ctx, dptr->wcard);
 		goto ret;
 	}
 
@@ -622,13 +625,13 @@ const char *dptr_ReadDirName(TALLOC_CTX *ctx,
 		return NULL;
 
 	if (SMB_VFS_STAT(dptr->conn, pathreal, pst) == 0) {
-		name = dptr->wcard;
+		name = talloc_strdup(ctx, dptr->wcard);
 		goto clean;
 	} else {
 		/* If we get any other error than ENOENT or ENOTDIR
 		   then the file exists we just can't stat it. */
 		if (errno != ENOENT && errno != ENOTDIR) {
-			name = dptr->wcard;
+			name = talloc_strdup(ctx, dptr->wcard);
 			goto clean;
 		}
 	}
@@ -659,7 +662,9 @@ const char *dptr_ReadDirName(TALLOC_CTX *ctx,
 
 	TALLOC_FREE(pathreal);
 
-	return dptr_normal_ReadDirName(dptr, poffset, pst);
+	name_temp = dptr_normal_ReadDirName(dptr, poffset, pst);
+	name = talloc_strdup(ctx, name_temp);
+	return name;
 
 clean:
 	TALLOC_FREE(pathreal);
@@ -823,11 +828,11 @@ bool get_dir_entry(TALLOC_CTX *ctx,
 		bool check_descend,
 		bool ask_sharemode)
 {
-	const char *dname = NULL;
+	char *dname = NULL;
 	bool found = False;
 	SMB_STRUCT_STAT sbuf;
 	char *pathreal = NULL;
-	const char *filename = NULL;
+	char *filename = NULL;
 	bool needslash;
 
 	*pp_fname_out = NULL;
@@ -863,9 +868,13 @@ bool get_dir_entry(TALLOC_CTX *ctx,
 			if (!mangle_is_8_3(filename, False, conn->params)) {
 				if (!name_to_8_3(filename,mname,False,
 					   conn->params)) {
+					TALLOC_FREE(filename);
 					continue;
 				}
-				filename = mname;
+				filename = talloc_strdup(ctx, mname);
+				if (!filename) {
+					return False;
+				}
 			}
 
 			if (needslash) {
@@ -880,6 +889,7 @@ bool get_dir_entry(TALLOC_CTX *ctx,
 						dname);
 			}
 			if (!pathreal) {
+				TALLOC_FREE(filename);
 				return False;
 			}
 
@@ -887,6 +897,7 @@ bool get_dir_entry(TALLOC_CTX *ctx,
 				DEBUG(5,("Couldn't stat 1 [%s]. Error = %s\n",
 					pathreal, strerror(errno) ));
 				TALLOC_FREE(pathreal);
+				TALLOC_FREE(filename);
 				continue;
 			}
 
@@ -895,6 +906,7 @@ bool get_dir_entry(TALLOC_CTX *ctx,
 			if (!dir_check_ftype(conn,*mode,dirtype)) {
 				DEBUG(5,("[%s] attribs 0x%x didn't match 0x%x\n",filename,(unsigned int)*mode,(unsigned int)dirtype));
 				TALLOC_FREE(pathreal);
+				TALLOC_FREE(filename);
 				continue;
 			}
 
@@ -921,14 +933,15 @@ bool get_dir_entry(TALLOC_CTX *ctx,
 
 			found = True;
 
-			*pp_fname_out = talloc_strdup(ctx, filename);
-			if (!*pp_fname_out) {
-				return False;
-			}
+			SMB_ASSERT(filename != NULL);
+			*pp_fname_out = filename;
 
 			DirCacheAdd(conn->dirptr->dir_hnd, dname, curoff);
 			TALLOC_FREE(pathreal);
 		}
+
+		if (!found)
+			TALLOC_FREE(filename);
 	}
 
 	return(found);
