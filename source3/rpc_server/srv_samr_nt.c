@@ -6572,18 +6572,14 @@ NTSTATUS _samr_GetDisplayEnumerationIndex2(pipes_struct *p,
 NTSTATUS _samr_RidToSid(pipes_struct *p,
 			struct samr_RidToSid *r)
 {
-	struct samr_domain_info *dinfo;
-	NTSTATUS status;
+	struct samr_info *info = NULL;
 	struct dom_sid sid;
 
-	dinfo = policy_handle_find(p, r->in.domain_handle,
-				   0, NULL,
-				   struct samr_domain_info, &status);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	if (!find_policy_by_hnd(p, r->in.domain_handle, (void **)(void *)&info)) {
+		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (!sid_compose(&sid, &dinfo->sid, r->in.rid)) {
+	if (!sid_compose(&sid, &info->sid, r->in.rid)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
