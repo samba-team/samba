@@ -176,7 +176,11 @@ get_node_with_property ()
 
     local prop_node=""
     if [ "${ctdb_props##:${prop}:}" = "$ctdb_props" ] ; then
-	prop_node=$(ctdb "$prop" 2>/dev/null)
+	prop_node=$(ctdb "$prop" -Y 2>/dev/null)
+	# We only want the first line.
+	local nl="
+"
+	prop_node="${prop_node%%${nl}*}"
 	if [ $? -eq 0 ] ; then
 	    ctdb_props="${ctdb_props}${ctdb_props:+ }:${prop}:${prop_node}"
 	else
