@@ -873,7 +873,9 @@ LIBSMBCLIENT_OBJ0 = \
 		    libsmb/libsmb_server.o \
 		    libsmb/libsmb_stat.o \
 		    libsmb/libsmb_xattr.o \
-		    libsmb/libsmb_setget.o
+		    libsmb/libsmb_setget.o \
+		    libsmb/libsmb_thread_impl.o \
+		    libsmb/libsmb_thread_posix.o
 
 LIBSMBCLIENT_OBJ1 = $(LIBSMBCLIENT_OBJ0) \
 		    $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
