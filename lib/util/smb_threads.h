@@ -37,8 +37,9 @@ struct smb_thread_functions {
 			const char *location);
 	void (*destroy_mutex)(void *plock,
 			const char *location);
-	int (*lock_mutex)(void *plock, enum smb_thread_lock_type lock_type,
-			const char *location);
+	int (*lock_mutex)(void *plock,
+                          int lock_type,
+                          const char *location);
 
 	/* Thread local storage. */
 	int (*create_tls)(const char *keyname,
@@ -76,7 +77,7 @@ static void smb_destroy_mutex_pthread(void *plock, const char *location) \
 	free(plock); \
 } \
  \
-static int smb_lock_pthread(void *plock, enum smb_thread_lock_type lock_type, const char *location) \
+static int smb_lock_pthread(void *plock, int lock_type, const char *location) \
 { \
 	if (lock_type == SMB_THREAD_UNLOCK) { \
 		return pthread_mutex_unlock((pthread_mutex_t *)plock); \
