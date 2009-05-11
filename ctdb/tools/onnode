@@ -36,7 +36,8 @@ Usage: onnode [OPTION] ... <NODES> <COMMAND> ...
     -q          Do not print node addresses (overrides -v).
     -v          Print node address even for a single node.
   <NODES>       "all", "ok" (or "healthy"), "con" (or "connected"),
-                "rm" (or "recmaster");
+                "rm" (or "recmaster"), "lvs" (or "lvsmaster"),
+                "natgw" (or "natgwlist");
                 or a node number (0 base); or
                 list (comma separated) of <NODES>; or
                 range (hyphen separated) of node numbers.
@@ -87,25 +88,13 @@ parse_options ()
     command="$@"
 }
 
-# Can probably be avoided if we use bash?
-get_nth ()
+echo_nth ()
 {
     local n="$1" ; shift
 
-    local c=0
-    local j
-    for j ; do
-	if [ $n -eq $c ] ; then
-	    echo $j
-	    break
-	fi
-	c=$(($c + 1))
-    done
-}
+    shift $n
+    local node="$1"
 
-echo_nth ()
-{
-    local node=$(get_nth "$@")
     if [ -n "$node" ] ; then
 	echo $node
     else
@@ -122,7 +111,9 @@ parse_nodespec ()
 	for i in $1 ; do
 	    case "$i" in
 		*-*) seq "${i%-*}" "${i#*-}" 2>/dev/null || invalid_nodespec ;;
-		all|ok|healthy|con|connected|rm|recmaster) echo "$i" ;;
+		# Separate lines for readability.
+		all|ok|healthy|con|connected) echo "$i" ;;
+		rm|recmaster|lvs|lvsmaster|natgw|natgwlist) echo "$i" ;;
 		*)
 		    [ $i -gt -1 ] 2>/dev/null || invalid_nodespec
 		    echo $i
@@ -131,8 +122,7 @@ parse_nodespec ()
     )
 }
 
-# Cache
-ctdb_status_output=""
+ctdb_status_output="" # cache
 get_nodes_with_status ()
 {
     local all_nodes="$1"
@@ -140,10 +130,10 @@ get_nodes_with_status ()
 
     local bits
     case "$status" in
-	ok|healthy)
+	healthy)
 	    bits="0:0:0:0"
 	    ;;
-	con|connected)
+	connected)
 	    bits="0:[0-1]:[0-1]:[0-1]"
 	    ;;
 	*)
@@ -167,8 +157,8 @@ get_nodes_with_status ()
 	local t="${i%:${bits}:}"
 	if [ "$t" != "$i" ] ; then
 	    # Succeeded.  Get address.  NOTE: this is an optimisation.
-	    # It might be better to get the node number and then use
-	    # get_nth() to get the address.  This would make things
+	    # It might be better to get the node number and then get
+	    # the nth node to get the address.  This would make things
 	    # more consistent if /etc/ctdb/nodes actually contained
 	    # hostnames.
 	    nodes="${nodes} ${t##*:}"
@@ -178,7 +168,32 @@ get_nodes_with_status ()
     echo $nodes
 }
 
-ctdb_recmaster=""
+ctdb_props="" # cache
+get_node_with_property ()
+{
+    local all_nodes="$1"
+    local prop="$2"
+
+    local prop_node=""
+    if [ "${ctdb_props##:${prop}:}" = "$ctdb_props" ] ; then
+	prop_node=$(ctdb "$prop" 2>/dev/null)
+	if [ $? -eq 0 ] ; then
+	    ctdb_props="${ctdb_props}${ctdb_props:+ }:${prop}:${prop_node}"
+	else
+	    prop_node=""
+	fi
+    else
+	prop_node="${ctdb_props##:${prop}:}"
+	prop_node="${prop_node%% *}"
+    fi
+    if [ -n "$prop_node" ] ; then
+	echo_nth "$prop_node" $all_nodes
+    else
+	echo "${prog}: No ${prop} available" >&2
+	exit 1
+    fi
+}
+
 get_nodes ()
 {
     local all_nodes
@@ -197,21 +212,20 @@ get_nodes ()
 	case "$n" in
 	    all)
 		echo $all_nodes ;;
-	    ok|healthy|con|connected) 
-		get_nodes_with_status "$all_nodes" "$n" || exit 1
+	    ok|healthy) 
+		get_nodes_with_status "$all_nodes" "healthy" || exit 1
+		;;
+	    con|connected) 
+		get_nodes_with_status "$all_nodes" "connected" || exit 1
 		;;
 	    rm|recmaster)
-		if [ -z "$ctdb_recmaster" ] ; then
-		    ctdb_recmaster=$(ctdb recmaster 2>/dev/null)
-		    [ $? -eq 0 ] || ctdb_recmaster=""
-		fi
-		if [ -n "$ctdb_recmaster" ] ; then
-		    echo_nth "$ctdb_recmaster" $all_nodes
-		else
-		    echo "${prog}: No recmaster available" >&2
-		    exit 1
-		fi
-		
+		get_node_with_property "$all_nodes" "recmaster" || exit 1
+		;;
+	    lvs|lvsmaster)
+		get_node_with_property "$all_nodes" "lvsmaster" || exit 1
+		;;
+	    natgw|natgwlist)
+		get_node_with_property "$all_nodes" "natgwlist" || exit 1
 		;;
 	    *)
 		echo_nth $n $all_nodes
