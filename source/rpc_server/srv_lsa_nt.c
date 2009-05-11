@@ -1092,6 +1092,7 @@ NTSTATUS _lsa_LookupNames2(pipes_struct *p,
 
 	status = _lsa_LookupNames(p, &q);
 
+	sid_array2->count = sid_array->count;
 	sid_array2->sids = TALLOC_ARRAY(p->mem_ctx, struct lsa_TranslatedSid2, sid_array->count);
 	if (!sid_array2->sids) {
 		return NT_STATUS_NO_MEMORY;
