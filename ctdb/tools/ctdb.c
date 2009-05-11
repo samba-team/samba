@@ -1876,7 +1876,11 @@ static int control_lvsmaster(struct ctdb_context *ctdb, int argc, const char **a
 			}
 		}
 
-		printf("Node %d is LVS master\n", i);
+		if (options.machinereadable){
+			printf("%d\n", i);
+		} else {
+			printf("Node %d is LVS master\n", i);
+		}
 		return 0;
 	}
 
