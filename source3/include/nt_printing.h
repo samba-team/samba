@@ -475,4 +475,10 @@ typedef struct _Printer{
 #define DRIVER_ANY_VERSION		0xffffffff
 #define DRIVER_MAX_VERSION		4
 
+struct print_architecture_table_node {
+	const char 	*long_archi;
+	const char 	*short_archi;
+	int	version;
+};
+
 #endif /* NT_PRINTING_H_ */
