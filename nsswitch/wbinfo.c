@@ -167,11 +167,11 @@ static bool wbinfo_get_userinfo(char *user)
 		return false;
 	}
 
-	d_printf("%s:%s:%d:%d:%s:%s:%s\n",
+	d_printf("%s:%s:%u:%u:%s:%s:%s\n",
 		 pwd->pw_name,
 		 pwd->pw_passwd,
-		 pwd->pw_uid,
-		 pwd->pw_gid,
+		 (unsigned int)pwd->pw_uid,
+		 (unsigned int)pwd->pw_gid,
 		 pwd->pw_gecos,
 		 pwd->pw_dir,
 		 pwd->pw_shell);
@@ -190,11 +190,11 @@ static bool wbinfo_get_uidinfo(int uid)
 		return false;
 	}
 
-	d_printf("%s:%s:%d:%d:%s:%s:%s\n",
+	d_printf("%s:%s:%u:%u:%s:%s:%s\n",
 		 pwd->pw_name,
 		 pwd->pw_passwd,
-		 pwd->pw_uid,
-		 pwd->pw_gid,
+		 (unsigned int)pwd->pw_uid,
+		 (unsigned int)pwd->pw_gid,
 		 pwd->pw_gecos,
 		 pwd->pw_dir,
 		 pwd->pw_shell);
@@ -214,11 +214,11 @@ static bool wbinfo_get_user_sidinfo(const char *sid_str)
 		return false;
 	}
 
-	d_printf("%s:%s:%d:%d:%s:%s:%s\n",
+	d_printf("%s:%s:%u:%u:%s:%s:%s\n",
 		 pwd->pw_name,
 		 pwd->pw_passwd,
-		 pwd->pw_uid,
-		 pwd->pw_gid,
+		 (unsigned int)pwd->pw_uid,
+		 (unsigned int)pwd->pw_gid,
 		 pwd->pw_gecos,
 		 pwd->pw_dir,
 		 pwd->pw_shell);
@@ -238,10 +238,10 @@ static bool wbinfo_get_groupinfo(const char *group)
 		return false;
 	}
 
-	d_printf("%s:%s:%d\n",
+	d_printf("%s:%s:%u\n",
 		 grp->gr_name,
 		 grp->gr_passwd,
-		 grp->gr_gid);
+		 (unsigned int)grp->gr_gid);
 
 	wbcFreeMemory(grp);
 
@@ -259,10 +259,10 @@ static bool wbinfo_get_gidinfo(int gid)
 		return false;
 	}
 
-	d_printf("%s:%s:%d\n",
+	d_printf("%s:%s:%u\n",
 		 grp->gr_name,
 		 grp->gr_passwd,
-		 grp->gr_gid);
+		 (unsigned int)grp->gr_gid);
 
 	wbcFreeMemory(grp);
 
@@ -843,7 +843,7 @@ static bool wbinfo_allocate_uid(void)
 
 	/* Display response */
 
-	d_printf("New uid: %d\n", uid);
+	d_printf("New uid: %u\n", (unsigned int)uid);
 
 	return true;
 }
@@ -862,7 +862,7 @@ static bool wbinfo_allocate_gid(void)
 
 	/* Display response */
 
-	d_printf("New gid: %d\n", gid);
+	d_printf("New gid: %u\n", (unsigned int)gid);
 
 	return true;
 }
@@ -886,7 +886,8 @@ static bool wbinfo_set_uid_mapping(uid_t uid, const char *sid_str)
 
 	/* Display response */
 
-	d_printf("uid %d now mapped to sid %s\n", uid, sid_str);
+	d_printf("uid %u now mapped to sid %s\n",
+		(unsigned int)uid, sid_str);
 
 	return true;
 }
@@ -910,7 +911,8 @@ static bool wbinfo_set_gid_mapping(gid_t gid, const char *sid_str)
 
 	/* Display response */
 
-	d_printf("gid %d now mapped to sid %s\n", gid, sid_str);
+	d_printf("gid %u now mapped to sid %s\n",
+		(unsigned int)gid, sid_str);
 
 	return true;
 }
@@ -934,7 +936,8 @@ static bool wbinfo_remove_uid_mapping(uid_t uid, const char *sid_str)
 
 	/* Display response */
 
-	d_printf("Removed uid %d to sid %s mapping\n", uid, sid_str);
+	d_printf("Removed uid %u to sid %s mapping\n",
+		(unsigned int)uid, sid_str);
 
 	return true;
 }
@@ -958,7 +961,8 @@ static bool wbinfo_remove_gid_mapping(gid_t gid, const char *sid_str)
 
 	/* Display response */
 
-	d_printf("Removed gid %d to sid %s mapping\n", gid, sid_str);
+	d_printf("Removed gid %u to sid %s mapping\n",
+		(unsigned int)gid, sid_str);
 
 	return true;
 }

@@ -258,8 +258,8 @@ static int traverse_sessionid(struct db_record *db, void *state)
 
 	Ucrit_addPid( sessionid.pid );
 
-	fstr_sprintf(uid_str, "%d", sessionid.uid);
-	fstr_sprintf(gid_str, "%d", sessionid.gid);
+	fstr_sprintf(uid_str, "%u", (unsigned int)sessionid.uid);
+	fstr_sprintf(gid_str, "%u", (unsigned int)sessionid.gid);
 
 	d_printf("%-7s   %-12s  %-12s  %-12s (%s)\n",
 		 procid_str_static(&sessionid.pid),

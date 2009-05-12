@@ -5854,8 +5854,8 @@ NTSTATUS _samr_CreateDomAlias(pipes_struct *p,
 
 	/* check if the group has been successfully created */
 	if ( getgrgid(gid) == NULL ) {
-		DEBUG(10, ("getgrgid(%d) of just created alias failed\n",
-			   gid));
+		DEBUG(10, ("getgrgid(%u) of just created alias failed\n",
+			   (unsigned int)gid));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 

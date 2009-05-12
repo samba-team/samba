@@ -175,7 +175,7 @@ static NTSTATUS cmd_readdir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc
 		printf("  Device: 0x%10x", (unsigned int)st.st_dev);
 		printf(" Inode: %10u", (unsigned int)st.st_ino);
 		printf(" Links: %10u\n", (unsigned int)st.st_nlink);
-		printf("  Access: %05o", (st.st_mode) & 007777);
+		printf("  Access: %05o", (int)((st.st_mode) & 007777));
 		printf(" Uid: %5lu Gid: %5lu\n",
 		       (unsigned long)st.st_uid,
 		       (unsigned long)st.st_gid);
@@ -578,7 +578,7 @@ static NTSTATUS cmd_stat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	printf("  Device: 0x%10x", (unsigned int)st.st_dev);
 	printf(" Inode: %10u", (unsigned int)st.st_ino);
 	printf(" Links: %10u\n", (unsigned int)st.st_nlink);
-	printf("  Access: %05o", (st.st_mode) & 007777);
+	printf("  Access: %05o", (int)((st.st_mode) & 007777));
 	printf(" Uid: %5lu/%.16s Gid: %5lu/%.16s\n", (unsigned long)st.st_uid, user, 
 	       (unsigned long)st.st_gid, group);
 	printf("  Access: %s", ctime(&(st.st_atime)));
@@ -644,7 +644,7 @@ static NTSTATUS cmd_fstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	printf("  Device: 0x%10x", (unsigned int)st.st_dev);
 	printf(" Inode: %10u", (unsigned int)st.st_ino);
 	printf(" Links: %10u\n", (unsigned int)st.st_nlink);
-	printf("  Access: %05o", (st.st_mode) & 007777);
+	printf("  Access: %05o", (int)((st.st_mode) & 007777));
 	printf(" Uid: %5lu/%.16s Gid: %5lu/%.16s\n", (unsigned long)st.st_uid, user, 
 	       (unsigned long)st.st_gid, group);
 	printf("  Access: %s", ctime(&(st.st_atime)));
@@ -698,7 +698,7 @@ static NTSTATUS cmd_lstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	printf("  Device: 0x%10x", (unsigned int)st.st_dev);
 	printf(" Inode: %10u", (unsigned int)st.st_ino);
 	printf(" Links: %10u\n", (unsigned int)st.st_nlink);
-	printf("  Access: %05o", (st.st_mode) & 007777);
+	printf("  Access: %05o", (int)((st.st_mode) & 007777));
 	printf(" Uid: %5lu/%.16s Gid: %5lu/%.16s\n", (unsigned long)st.st_uid, user, 
 	       (unsigned long)st.st_gid, group);
 	printf("  Access: %s", ctime(&(st.st_atime)));

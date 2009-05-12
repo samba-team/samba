@@ -303,7 +303,7 @@ enum winbindd_result winbindd_dual_sid2uid(struct winbindd_domain *domain,
 
 	DEBUG(10, ("winbindd_dual_sid2uid: 0x%08x - %s - %u\n",
 		   NT_STATUS_V(result), sid_string_dbg(&sid),
-		   state->response.data.uid));
+		   (unsigned int)state->response.data.uid));
 
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
@@ -376,7 +376,7 @@ enum winbindd_result winbindd_dual_sid2gid(struct winbindd_domain *domain,
 
 	DEBUG(10, ("winbindd_dual_sid2gid: 0x%08x - %s - %u\n",
 		   NT_STATUS_V(result), sid_string_dbg(&sid),
-		   state->response.data.gid));
+		   (unsigned int)state->response.data.gid));
 
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }

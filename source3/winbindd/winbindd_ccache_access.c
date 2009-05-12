@@ -31,11 +31,12 @@ static bool client_can_access_ccache_entry(uid_t client_uid,
 					struct WINBINDD_MEMORY_CREDS *entry)
 {
 	if (client_uid == entry->uid || client_uid == 0) {
-		DEBUG(10, ("Access granted to uid %d\n", client_uid));
+		DEBUG(10, ("Access granted to uid %u\n", (unsigned int)client_uid));
 		return True;
 	}
 
-	DEBUG(1, ("Access denied to uid %d (expected %d)\n", client_uid, entry->uid));
+	DEBUG(1, ("Access denied to uid %u (expected %u)\n",
+		(unsigned int)client_uid, (unsigned int)entry->uid));
 	return False;
 }
 
@@ -137,9 +138,9 @@ static bool check_client_uid(struct winbindd_cli_state *state, uid_t uid)
 	}
 
 	if (uid != ret_uid) {
-		DEBUG(1, ("check_client_uid: Client lied about its uid: said %d, "
-			"actually was %d; denying access\n",
-			uid, ret_uid));
+		DEBUG(1, ("check_client_uid: Client lied about its uid: said %u, "
+			"actually was %u; denying access\n",
+			(unsigned int)uid, (unsigned int)ret_uid));
 		return False;
 	}
 

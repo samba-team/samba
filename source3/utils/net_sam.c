@@ -1490,7 +1490,7 @@ static int net_sam_provision(struct net_context *c, int argc, const char **argv)
 		uname = talloc_strdup(tc, "domusers");
 		wname = talloc_strdup(tc, "Domain Users");
 		dn = talloc_asprintf(tc, "cn=%s,%s", "domusers", lp_ldap_group_suffix());
-		gidstr = talloc_asprintf(tc, "%d", domusers_gid);
+		gidstr = talloc_asprintf(tc, "%u", (unsigned int)domusers_gid);
 		gtype = talloc_asprintf(tc, "%d", SID_NAME_DOM_GRP);
 
 		if (!uname || !wname || !dn || !gidstr || !gtype) {
@@ -1545,7 +1545,7 @@ domu_done:
 		uname = talloc_strdup(tc, "domadmins");
 		wname = talloc_strdup(tc, "Domain Admins");
 		dn = talloc_asprintf(tc, "cn=%s,%s", "domadmins", lp_ldap_group_suffix());
-		gidstr = talloc_asprintf(tc, "%d", domadmins_gid);
+		gidstr = talloc_asprintf(tc, "%u", (unsigned int)domadmins_gid);
 		gtype = talloc_asprintf(tc, "%d", SID_NAME_DOM_GRP);
 
 		if (!uname || !wname || !dn || !gidstr || !gtype) {
@@ -1608,8 +1608,8 @@ doma_done:
 		}
 		name = talloc_strdup(tc, "Administrator");
 		dn = talloc_asprintf(tc, "uid=Administrator,%s", lp_ldap_user_suffix());
-		uidstr = talloc_asprintf(tc, "%d", uid);
-		gidstr = talloc_asprintf(tc, "%d", domadmins_gid);
+		uidstr = talloc_asprintf(tc, "%u", (unsigned int)uid);
+		gidstr = talloc_asprintf(tc, "%u", (unsigned int)domadmins_gid);
 		dir = talloc_sub_specified(tc, lp_template_homedir(),
 						"Administrator",
 						get_global_sam_name(),
@@ -1699,8 +1699,8 @@ doma_done:
 		sid_compose(&sid, get_global_sam_sid(), DOMAIN_USER_RID_GUEST);
 
 		dn = talloc_asprintf(tc, "uid=%s,%s", pwd->pw_name, lp_ldap_user_suffix ());
-		uidstr = talloc_asprintf(tc, "%d", pwd->pw_uid);
-		gidstr = talloc_asprintf(tc, "%d", pwd->pw_gid);
+		uidstr = talloc_asprintf(tc, "%u", (unsigned int)pwd->pw_uid);
+		gidstr = talloc_asprintf(tc, "%u", (unsigned int)pwd->pw_gid);
 		if (!dn || !uidstr || !gidstr) {
 			d_fprintf(stderr, "Out of Memory!\n");
 			goto failed;
@@ -1765,7 +1765,7 @@ doma_done:
 		uname = talloc_strdup(tc, "domguests");
 		wname = talloc_strdup(tc, "Domain Guests");
 		dn = talloc_asprintf(tc, "cn=%s,%s", "domguests", lp_ldap_group_suffix());
-		gidstr = talloc_asprintf(tc, "%d", pwd->pw_gid);
+		gidstr = talloc_asprintf(tc, "%u", (unsigned int)pwd->pw_gid);
 		gtype = talloc_asprintf(tc, "%d", SID_NAME_DOM_GRP);
 
 		if (!uname || !wname || !dn || !gidstr || !gtype) {
