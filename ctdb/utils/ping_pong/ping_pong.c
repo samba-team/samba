@@ -115,7 +115,7 @@ static void ping_pong(int fd, int num_locks)
 			unsigned char c;
 			if (use_mmap) {
 				c = p[i];
-			} if (pread(fd, &c, 1, i) != 1) {
+			} else if (pread(fd, &c, 1, i) != 1) {
 				printf("read failed at %d\n", i);
 			}
 			incr = c - val[i];
