@@ -104,7 +104,8 @@ int smb_thread_set_functions(const struct smb_thread_functions *tf)
  size variable in code internal to Samba without knowing the
  implementation's "once" type.
 ********************************************************************/
-void smb_thread_once(smb_thread_once_t *ponce, void (*init_fn)(void))
+
+int smb_thread_once(smb_thread_once_t *ponce, void (*init_fn)(void))
 {
         int ret;
         bool need_func_call;
@@ -142,6 +143,8 @@ void smb_thread_once(smb_thread_once_t *ponce, void (*init_fn)(void))
                 /* ... then do so now. */
                 (*init_fn)();
         }
+
+	return 0;
 }
 
 
