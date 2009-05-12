@@ -19,15 +19,8 @@
 #include "includes.h"
 #include "utils/net.h"
 
-struct table_node {
-	const char *long_archi;
-	const char *short_archi;
-	int version;
-};
-
-
 /* support itanium as well */
-static const struct table_node archi_table[]= {
+static const struct print_architecture_table_node archi_table[]= {
 
 	{"Windows 4.0",          "WIN40",	0 },
 	{"Windows NT x86",       "W32X86",	2 },

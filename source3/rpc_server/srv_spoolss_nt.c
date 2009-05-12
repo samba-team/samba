@@ -53,12 +53,6 @@ extern userdom_struct current_user_info;
 #define MAGIC_DISPLAY_FREQUENCY 0xfade2bad
 #define PHANTOM_DEVMODE_KEY "_p_f_a_n_t_0_m_"
 
-struct table_node {
-	const char    *long_archi;
-	const char    *short_archi;
-	int     version;
-};
-
 static Printer_entry *printers_list;
 
 typedef struct _counter_printer_0 {
@@ -2078,7 +2072,7 @@ WERROR _spoolss_DeletePrinter(pipes_struct *p,
 static int get_version_id(const char *arch)
 {
 	int i;
-	struct table_node archi_table[]= {
+	struct print_architecture_table_node archi_table[]= {
 
 	        {"Windows 4.0",          "WIN40",       0 },
 	        {"Windows NT x86",       "W32X86",      2 },
