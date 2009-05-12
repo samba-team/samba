@@ -40,7 +40,8 @@ NTSTATUS idmap_uid_to_sid(const char *domname, DOM_SID *sid, uid_t uid)
 
 	if (winbindd_use_idmap_cache()
 	    && idmap_cache_find_uid2sid(uid, sid, &expired)) {
-		DEBUG(10, ("idmap_cache_find_uid2sid found %d%s\n", uid,
+		DEBUG(10, ("idmap_cache_find_uid2sid found %u%s\n",
+			(unsigned int)uid,
 			   expired ? " (expired)": ""));
 		if (expired && idmap_is_online()) {
 			DEBUG(10, ("revalidating expired entry\n"));
@@ -98,7 +99,8 @@ NTSTATUS idmap_gid_to_sid(const char *domname, DOM_SID *sid, gid_t gid)
 
 	if (winbindd_use_idmap_cache()
 	    && idmap_cache_find_gid2sid(gid, sid, &expired)) {
-		DEBUG(10, ("idmap_cache_find_gid2sid found %d%s\n", gid,
+		DEBUG(10, ("idmap_cache_find_gid2sid found %u%s\n",
+			(unsigned int)gid,
 			   expired ? " (expired)": ""));
 		if (expired && idmap_is_online()) {
 			DEBUG(10, ("revalidating expired entry\n"));

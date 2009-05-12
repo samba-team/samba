@@ -1107,7 +1107,7 @@ static void display_print_driver6(struct spoolss_DriverInfo6 *r)
 	}
 
 	printf("\tDriver Date: [%s]\n", nt_time_string(talloc_tos(), r->driver_date));
-	printf("\tDriver Version: [0x%016llx]\n", r->driver_version);
+	printf("\tDriver Version: [0x%016llx]\n", (long long unsigned int)r->driver_version);
 	printf("\tManufacturer Name: [%s]\n", r->manufacturer_name);
 	printf("\tManufacturer Url: [%s]\n", r->manufacturer_url);
 	printf("\tHardware ID: [%s]\n", r->hardware_id);
@@ -1147,7 +1147,7 @@ static void display_print_driver8(struct spoolss_DriverInfo8 *r)
 	}
 
 	printf("\tDriver Date: [%s]\n", nt_time_string(talloc_tos(), r->driver_date));
-	printf("\tDriver Version: [0x%016llx]\n", r->driver_version);
+	printf("\tDriver Version: [0x%016llx]\n", (long long unsigned int)r->driver_version);
 	printf("\tManufacturer Name: [%s]\n", r->manufacturer_name);
 	printf("\tManufacturer Url: [%s]\n", r->manufacturer_url);
 	printf("\tHardware ID: [%s]\n", r->hardware_id);
@@ -1163,7 +1163,8 @@ static void display_print_driver8(struct spoolss_DriverInfo8 *r)
 		printf("\tCore Driver Dependencies: [%s]\n", r->core_driver_dependencies[i]);
 	}
 	printf("\tMin Driver Inbox Driver Version Date: [%s]\n", nt_time_string(talloc_tos(), r->min_inbox_driver_ver_date));
-	printf("\tMin Driver Inbox Driver Version Version: [0x%016llx]\n", r->min_inbox_driver_ver_version);
+	printf("\tMin Driver Inbox Driver Version Version: [0x%016llx]\n",
+		(long long unsigned int)r->min_inbox_driver_ver_version);
 
 	printf("\n");
 }

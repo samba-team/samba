@@ -1319,7 +1319,7 @@ void uid_to_sid(DOM_SID *psid, uid_t uid)
 			 * the next time we ask.
 			 */
 			DEBUG(5, ("uid_to_sid: winbind failed to find a sid "
-				  "for uid %u\n", uid));
+				  "for uid %u\n", (unsigned int)uid));
 
 			legacy_uid_to_sid(psid, uid);
 			return;
@@ -1372,7 +1372,7 @@ void gid_to_sid(DOM_SID *psid, gid_t gid)
 			 * the next time we ask.
 			 */
 			DEBUG(5, ("gid_to_sid: winbind failed to find a sid "
-				  "for gid %u\n", gid));
+				  "for gid %u\n", (unsigned int)gid));
 
 			legacy_gid_to_sid(psid, gid);
 			return;

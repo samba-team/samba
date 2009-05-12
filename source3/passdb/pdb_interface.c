@@ -1210,7 +1210,7 @@ static bool pdb_default_uid_to_sid(struct pdb_methods *methods, uid_t uid,
 
 	if (!ret) {
 		DEBUG(5, ("pdb_default_uid_to_rid: Did not find user "
-			  "%s (%d)\n", unix_pw->pw_name, uid));
+			  "%s (%u)\n", unix_pw->pw_name, (unsigned int)uid));
 		TALLOC_FREE(sampw);
 		return False;
 	}

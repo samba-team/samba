@@ -4088,8 +4088,8 @@ static bool get_user_sids(const char *domain, const char *user, NT_USER_TOKEN *t
 
 		wbc_status = wbcGidToSid(gid, &wsid);
 		if (!WBC_ERROR_IS_OK(wbc_status)) {
-			DEBUG(1, ("winbind could not find SID of gid %d: %s\n",
-				  gid, wbcErrorString(wbc_status)));
+			DEBUG(1, ("winbind could not find SID of gid %u: %s\n",
+				  (unsigned int)gid, wbcErrorString(wbc_status)));
 			wbcFreeMemory(groups);
 			return false;
 		}

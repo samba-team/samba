@@ -2859,8 +2859,8 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 	}
 
 	filter = talloc_asprintf(mem_ctx,
-				 "(&(objectClass=%s)(|(memberUid=%s)(gidNumber=%d)))",
-				 LDAP_OBJ_POSIXGROUP, escape_name, primary_gid);
+				 "(&(objectClass=%s)(|(memberUid=%s)(gidNumber=%u)))",
+				 LDAP_OBJ_POSIXGROUP, escape_name, (unsigned int)primary_gid);
 	if (filter == NULL) {
 		ret = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -2969,7 +2969,7 @@ static NTSTATUS ldapsam_map_posixgroup(TALLOC_CTX *mem_ctx,
 
 	filter = talloc_asprintf(mem_ctx,
 				 "(&(objectClass=%s)(gidNumber=%u))",
-				 LDAP_OBJ_POSIXGROUP, map->gid);
+				 LDAP_OBJ_POSIXGROUP, (unsigned int)map->gid);
 	if (filter == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -3092,8 +3092,8 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 	}
 
 	if (pdb_gid_to_sid(map->gid, &sid)) {
-		DEBUG(3, ("Gid %d is already mapped to SID %s, refusing to "
-			  "add\n", map->gid, sid_string_dbg(&sid)));
+		DEBUG(3, ("Gid %u is already mapped to SID %s, refusing to "
+			  "add\n", (unsigned int)map->gid, sid_string_dbg(&sid)));
 		result = NT_STATUS_GROUP_EXISTS;
 		goto done;
 	}
@@ -3124,7 +3124,7 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 	smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, NULL, &mods, "description",
 			 map->comment);
 	smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, NULL, &mods, "gidNumber",
-			 talloc_asprintf(mem_ctx, "%u", map->gid));
+			 talloc_asprintf(mem_ctx, "%u", (unsigned int)map->gid));
 	talloc_autofree_ldapmod(mem_ctx, mods);
 
 	rc = smbldap_add(ldap_state->smbldap_state, dn, mods);
@@ -3170,7 +3170,7 @@ static NTSTATUS ldapsam_update_group_mapping_entry(struct pdb_methods *methods,
 				 "(sambaGroupType=%d))",
 				 LDAP_OBJ_GROUPMAP,
 				 sid_string_talloc(mem_ctx, &map->sid),
-				 map->gid, map->sid_name_use);
+				 (unsigned int)map->gid, map->sid_name_use);
 	if (filter == NULL) {
 		result = NT_STATUS_NO_MEMORY;
 		goto done;
