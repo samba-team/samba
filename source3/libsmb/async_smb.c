@@ -547,6 +547,10 @@ static NTSTATUS cli_smb_req_iov_send(struct tevent_req *req,
 	struct tevent_req *subreq;
 	NTSTATUS status;
 
+	if (state->cli->fd == -1) {
+		return NT_STATUS_CONNECTION_INVALID;
+	}
+
 	if (iov[0].iov_len < smb_wct) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -605,10 +609,6 @@ NTSTATUS cli_smb_req_send(struct tevent_req *req)
 {
 	struct cli_smb_state *state = tevent_req_data(
 		req, struct cli_smb_state);
-
-	if (state->cli->fd == -1) {
-		return NT_STATUS_CONNECTION_DISCONNECTED;
-	}
 
 	return cli_smb_req_iov_send(req, state, state->iov, state->iov_count);
 }
@@ -963,6 +963,7 @@ bool cli_smb_chain_send(struct tevent_req **reqs, int num_reqs)
 	int i, iovlen;
 	struct iovec *iov = NULL;
 	struct iovec *this_iov;
+	NTSTATUS status;
 
 	iovlen = 0;
 	for (i=0; i<num_reqs; i++) {
@@ -1039,7 +1040,8 @@ bool cli_smb_chain_send(struct tevent_req **reqs, int num_reqs)
 		chain_padding = next_padding;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_smb_req_iov_send(reqs[0], last_state, iov, iovlen))) {
+	status = cli_smb_req_iov_send(reqs[0], last_state, iov, iovlen);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
 	return true;
