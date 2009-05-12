@@ -210,14 +210,6 @@ struct table_node {
 	int	version;
 };
 
-#define SPL_ARCH_WIN40		"WIN40"
-#define SPL_ARCH_W32X86		"W32X86"
-#define SPL_ARCH_W32MIPS	"W32MIPS"
-#define SPL_ARCH_W32ALPHA	"W32ALPHA"
-#define SPL_ARCH_W32PPC		"W32PPC"
-#define SPL_ARCH_IA64		"IA64"
-#define SPL_ARCH_X64		"x64"
-
 static const struct table_node archi_table[]= {
 
 	{"Windows 4.0",          SPL_ARCH_WIN40,	0 },
