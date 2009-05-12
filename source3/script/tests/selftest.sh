@@ -256,13 +256,13 @@ cat >$SERVERCONFFILE<<EOF
 	copy = tmp
 	printable = yes
 	printing = vlp
-	print command = $BINDIR/vlp print %p %s
-	lpq command = $BINDIR/vlp lpq %p
-	lp rm command = $BINDIR/vlp lprm %p %j
-	lp pause command = $BINDIR/vlp lppause %p %j
-	lp resume command = $BINDIR/vlp lpresume %p %j
-	queue pause command = $BINDIR/vlp queuepause %p
-	queue resume command = $BINDIR/vlp queueresume %p
+	print command = $BINDIR/vlp tdbfile=$LOCKDIR/vlp.tdb print %p %s
+	lpq command = $BINDIR/vlp tdbfile=$LOCKDIR/vlp.tdb lpq %p
+	lp rm command = $BINDIR/vlp tdbfile=$LOCKDIR/vlp.tdb lprm %p %j
+	lp pause command = $BINDIR/vlp tdbfile=$LOCKDIR/vlp.tdb lppause %p %j
+	lp resume command = $BINDIR/vlp tdbfile=$LOCKDIR/vlp.tdb lpresume %p %j
+	queue pause command = $BINDIR/vlp tdbfile=$LOCKDIR/vlp.tdb queuepause %p
+	queue resume command = $BINDIR/vlp tdbfile=$LOCKDIR/vlp.tdb queueresume %p
 
 [print2]
 	copy = print1

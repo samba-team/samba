@@ -39,7 +39,7 @@ struct vlp_job {
 
 static void usage(void)
 {
-	printf("Usage: print-test lpq|lprm|print|queuepause|queueresume|"
+	printf("Usage: vlp tdbfile=/tmp/vlp.tdb lpq|lprm|print|queuepause|queueresume|"
 	       "lppause|lpresume [args]\n");
 }
 
@@ -375,23 +375,22 @@ static int lpresume_command(int argc, char **argv)
 int main(int argc, char **argv)
 {
 	/* Parameter check */
-	char *printdb_path = NULL;
+	const char *printdb_path = NULL;
 
-	if (argc == 1) {
+	if (argc < 2) {
 		usage();
 		return 1;
 	}
 
-	/* Initialise */
-
-#if 0
-	printdb_path = "/tmp/vlp.tdb";
-#else
-	if (asprintf(&printdb_path, "%svlp.tdb",
-                                cache_path("printing/"))) {
+	if (!strnequal(argv[1], "tdbfile", strlen("tdbfile"))) {
+		usage();
 		return 1;
 	}
-#endif
+
+	printdb_path = get_string_param(argv[1]);
+	if (!printdb_path) {
+		return 1;
+	}
 
 	if (!(tdb = tdb_open(printdb_path, 0, 0, O_RDWR | O_CREAT,
 			     0666))) {
@@ -405,32 +404,32 @@ int main(int argc, char **argv)
 
 	/* Do commands */
 
-	if (strcmp(argv[1], "lpq") == 0) {
-		return lpq_command(argc - 1, &argv[1]);
+	if (strcmp(argv[2], "lpq") == 0) {
+		return lpq_command(argc - 2, &argv[2]);
 	}
 
-	if (strcmp(argv[1], "lprm") == 0) {
-		return lprm_command(argc - 1, &argv[1]);
+	if (strcmp(argv[2], "lprm") == 0) {
+		return lprm_command(argc - 2, &argv[2]);
 	}
 
-	if (strcmp(argv[1], "print") == 0) {
-		return print_command(argc - 1, &argv[1]);
+	if (strcmp(argv[2], "print") == 0) {
+		return print_command(argc - 2, &argv[2]);
 	}
 
-	if (strcmp(argv[1], "queuepause") == 0) {
-		return queuepause_command(argc - 1, &argv[1]);
+	if (strcmp(argv[2], "queuepause") == 0) {
+		return queuepause_command(argc - 2, &argv[2]);
 	}
 
-	if (strcmp(argv[1], "queueresume") == 0) {
-		return queueresume_command(argc - 1, &argv[1]);
+	if (strcmp(argv[2], "queueresume") == 0) {
+		return queueresume_command(argc - 2, &argv[2]);
 	}
 
-	if (strcmp(argv[1], "lppause") == 0) {
-		return lppause_command(argc - 1, &argv[1]);
+	if (strcmp(argv[2], "lppause") == 0) {
+		return lppause_command(argc - 2, &argv[2]);
 	}
 
-	if (strcmp(argv[1], "lpresume") == 0) {
-		return lpresume_command(argc - 1, &argv[1]);
+	if (strcmp(argv[2], "lpresume") == 0) {
+		return lpresume_command(argc - 2, &argv[2]);
 	}
 
 	/* Unknown command */
