@@ -274,7 +274,7 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 
 	if (header) {
 		/* Set up the header/trailer iovec. */
-		hdtrl[0].iov_base = header->data;
+		hdtrl[0].iov_base = (void *)header->data;
 		hdtrl[0].iov_len = hdr_len = header->length;
 	} else {
 		hdtrl[0].iov_base = NULL;
@@ -320,7 +320,7 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 				hdtrl[0].iov_len = 0;
 			} else {
 				/* iov_base is defined as a void *... */
-				hdtrl[0].iov_base = ((char *)hdtrl[0].iov_base) + nwritten;
+				hdtrl[0].iov_base = (void *)(((char *)hdtrl[0].iov_base) + nwritten);
 				hdtrl[0].iov_len -= nwritten;
 				nwritten = 0;
 			}
@@ -351,7 +351,7 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 
 	/* Set up the header iovec. */
 	if (header) {
-		hdtrl.iov_base = header->data;
+		hdtrl.iov_base = (void *)header->data;
 		hdtrl.iov_len = hdr_len = header->length;
 	} else {
 		hdtrl.iov_base = NULL;
@@ -392,7 +392,7 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 				hdtrl.iov_len = 0;
 			} else {
 				hdtrl.iov_base =
-				    (caddr_t)hdtrl.iov_base + nwritten;
+				    (void *)((caddr_t)hdtrl.iov_base + nwritten);
 				hdtrl.iov_len -= nwritten;
 				nwritten = 0;
 			}

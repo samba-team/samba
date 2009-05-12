@@ -1465,7 +1465,7 @@ struct tevent_req *cli_open_create(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	state->bytes.iov_base = bytes;
+	state->bytes.iov_base = (void *)bytes;
 	state->bytes.iov_len = talloc_get_size(bytes);
 
 	subreq = cli_smb_req_create(state, ev, cli, SMBopenX, additional_flags,

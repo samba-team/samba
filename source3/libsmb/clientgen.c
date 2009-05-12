@@ -422,9 +422,9 @@ bool cli_send_smb_direct_writeX(struct cli_state *cli,
 		return false;
 	}
 
-	iov[0].iov_base = cli->outbuf;
+	iov[0].iov_base = (void *)cli->outbuf;
 	iov[0].iov_len = len;
-	iov[1].iov_base = CONST_DISCARD(char *, p);
+	iov[1].iov_base = CONST_DISCARD(void *, p);
 	iov[1].iov_len = extradata;
 
 	nwritten = write_data_iov(cli->fd, iov, 2);

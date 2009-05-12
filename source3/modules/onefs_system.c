@@ -231,7 +231,7 @@ static ssize_t onefs_sys_do_sendfile(int tofd, int fromfd,
 
 	/* Set up the header iovec. */
 	if (header) {
-		hdtrl.iov_base = header->data;
+		hdtrl.iov_base = (void *)header->data;
 		hdtrl.iov_len = hdr_len = header->length;
 	} else {
 		hdtrl.iov_base = NULL;
@@ -293,7 +293,7 @@ static ssize_t onefs_sys_do_sendfile(int tofd, int fromfd,
 				hdtrl.iov_len = 0;
 			} else {
 				hdtrl.iov_base =
-				    (caddr_t)hdtrl.iov_base + nwritten;
+				    (void *)((caddr_t)hdtrl.iov_base + nwritten);
 				hdtrl.iov_len -= nwritten;
 				nwritten = 0;
 			}

@@ -848,9 +848,9 @@ struct tevent_req *cli_write_andx_create(TALLOC_CTX *mem_ctx,
 	}
 
 	state->pad = 0;
-	state->iov[0].iov_base = &state->pad;
+	state->iov[0].iov_base = (void *)&state->pad;
 	state->iov[0].iov_len = 1;
-	state->iov[1].iov_base = CONST_DISCARD(uint8_t *, buf);
+	state->iov[1].iov_base = CONST_DISCARD(void *, buf);
 	state->iov[1].iov_len = size;
 
 	subreq = cli_smb_req_create(state, ev, cli, SMBwriteX, 0, wct, vwv,

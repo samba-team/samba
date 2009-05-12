@@ -680,7 +680,7 @@ ssize_t write_data_iov(int fd, const struct iovec *orig_iov, int iovcnt)
 			if (thistime < iov[0].iov_len) {
 				char *new_base =
 					(char *)iov[0].iov_base + thistime;
-				iov[0].iov_base = new_base;
+				iov[0].iov_base = (void *)new_base;
 				iov[0].iov_len -= thistime;
 				break;
 			}
@@ -709,7 +709,7 @@ ssize_t write_data(int fd, const char *buffer, size_t N)
 	ssize_t ret;
 	struct iovec iov;
 
-	iov.iov_base = CONST_DISCARD(char *, buffer);
+	iov.iov_base = CONST_DISCARD(void *, buffer);
 	iov.iov_len = N;
 
 	ret = write_data_iov(fd, &iov, 1);

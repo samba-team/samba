@@ -860,9 +860,9 @@ static void cli_trans_format(struct cli_trans_state *state, uint8_t *pwct,
 	switch (cmd) {
 	case SMBtrans:
 		pad[0] = 0;
-		iov[0].iov_base = pad;
+		iov[0].iov_base = (void *)pad;
 		iov[0].iov_len = 1;
-		iov[1].iov_base = state->pipe_name_conv;
+		iov[1].iov_base = (void *)state->pipe_name_conv;
 		iov[1].iov_len = state->pipe_name_conv_len;
 		wct = 14 + state->num_setup;
 		param_offset += iov[0].iov_len + iov[1].iov_len;
@@ -872,7 +872,7 @@ static void cli_trans_format(struct cli_trans_state *state, uint8_t *pwct,
 		pad[0] = 0;
 		pad[1] = 'D'; /* Copy this from "old" 3.0 behaviour */
 		pad[2] = ' ';
-		iov[0].iov_base = pad;
+		iov[0].iov_base = (void *)pad;
 		iov[0].iov_len = 3;
 		wct = 14 + state->num_setup;
 		param_offset += 3;
@@ -897,7 +897,7 @@ static void cli_trans_format(struct cli_trans_state *state, uint8_t *pwct,
 	if (state->param_sent < state->num_param) {
 		this_param = MIN(state->num_param - state->param_sent,
 				 useable_space);
-		iov[0].iov_base = state->param + state->param_sent;
+		iov[0].iov_base = (void *)(state->param + state->param_sent);
 		iov[0].iov_len = this_param;
 		iov += 1;
 	}
@@ -905,7 +905,7 @@ static void cli_trans_format(struct cli_trans_state *state, uint8_t *pwct,
 	if (state->data_sent < state->num_data) {
 		this_data = MIN(state->num_data - state->data_sent,
 				useable_space - this_param);
-		iov[0].iov_base = state->data + state->data_sent;
+		iov[0].iov_base = (void *)(state->data + state->data_sent);
 		iov[0].iov_len = this_data;
 		iov += 1;
 	}

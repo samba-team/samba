@@ -143,11 +143,11 @@ struct tevent_req *wb_req_write_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	state->iov[0].iov_base = wb_req;
+	state->iov[0].iov_base = (void *)wb_req;
 	state->iov[0].iov_len = sizeof(struct winbindd_request);
 
 	if (wb_req->extra_len != 0) {
-		state->iov[1].iov_base = wb_req->extra_data.data;
+		state->iov[1].iov_base = (void *)wb_req->extra_data.data;
 		state->iov[1].iov_len = wb_req->extra_len;
 		count = 2;
 	}
@@ -299,11 +299,11 @@ struct tevent_req *wb_resp_write_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	state->iov[0].iov_base = wb_resp;
+	state->iov[0].iov_base = (void *)wb_resp;
 	state->iov[0].iov_len = sizeof(struct winbindd_response);
 
 	if (wb_resp->length > sizeof(struct winbindd_response)) {
-		state->iov[1].iov_base = wb_resp->extra_data.data;
+		state->iov[1].iov_base = (void *)wb_resp->extra_data.data;
 		state->iov[1].iov_len =
 			wb_resp->length - sizeof(struct winbindd_response);
 		count = 2;

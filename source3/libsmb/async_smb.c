@@ -496,11 +496,11 @@ struct tevent_req *cli_smb_req_create(TALLOC_CTX *mem_ctx,
 
 	SSVAL(state->bytecount_buf, 0, iov_len(bytes_iov, iov_count));
 
-	state->iov[0].iov_base = state->header;
+	state->iov[0].iov_base = (void *)state->header;
 	state->iov[0].iov_len  = sizeof(state->header);
-	state->iov[1].iov_base = state->vwv;
+	state->iov[1].iov_base = (void *)state->vwv;
 	state->iov[1].iov_len  = wct * sizeof(uint16_t);
-	state->iov[2].iov_base = state->bytecount_buf;
+	state->iov[2].iov_base = (void *)state->bytecount_buf;
 	state->iov[2].iov_len  = sizeof(uint16_t);
 
 	if (iov_count != 0) {
@@ -584,7 +584,7 @@ static bool cli_smb_req_iov_send(struct tevent_req *req,
 		if (buf == NULL) {
 			return false;
 		}
-		iov[0].iov_base = buf;
+		iov[0].iov_base = (void *)buf;
 		iov[0].iov_len = talloc_get_size(buf);
 		subreq = writev_send(state, state->ev, state->cli->outgoing,
 				     state->cli->fd, iov, 1);
@@ -623,7 +623,7 @@ struct tevent_req *cli_smb_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req;
 	struct iovec iov;
 
-	iov.iov_base = CONST_DISCARD(char *, bytes);
+	iov.iov_base = CONST_DISCARD(void *, bytes);
 	iov.iov_len = num_bytes;
 
 	req = cli_smb_req_create(mem_ctx, ev, cli, smb_command,
@@ -1023,7 +1023,7 @@ bool cli_smb_chain_send(struct tevent_req **reqs, int num_reqs)
 			 * last byte.
 			 */
 			this_iov[0].iov_len = chain_padding+1;
-			this_iov[0].iov_base = &state->header[
+			this_iov[0].iov_base = (void *)&state->header[
 				sizeof(state->header) - this_iov[0].iov_len];
 			memset(this_iov[0].iov_base, 0, this_iov[0].iov_len-1);
 		}
