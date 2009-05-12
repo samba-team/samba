@@ -81,6 +81,12 @@ typedef struct join_state {
 	uid_t uid;
 } join_state;
 
+static void callback_creds_prompt(GtkWidget *widget,
+				  gpointer data,
+				  const char *label_string,
+				  gpointer cont_fn);
+
+
 static void debug(const char *format, ...)
 {
 	va_list args;
@@ -459,9 +465,50 @@ static void callback_do_hostname_change(GtkWidget *widget,
 	struct join_state *state = (struct join_state *)data;
 
 	switch (state->name_type_initial) {
-		case NetSetupDomainName:
+		case NetSetupDomainName: {
+#if 0
+			NET_API_STATUS status;
+			const char *newname;
+			char *p = NULL;
+
+			newname = strdup(gtk_label_get_text(GTK_LABEL(state->label_full_computer_name)));
+			if (!newname) {
+				return;
+			}
+
+			p = strchr(newname, '.');
+			if (p) {
+				*p = NULL;
+			}
+
+			if (!state->account || !state->password) {
+				debug("callback_do_hostname_change: no creds yet\n");
+				callback_creds_prompt(NULL, state,
+						      "Enter the name and password of an account with permission to change a computer name in a the domain.",
+						      callback_do_storeauth_and_continue);
+			}
+
+			if (!state->account || !state->password) {
+				debug("callback_do_hostname_change: still no creds???\n");
+				return;
+			}
+
+			status = NetRenameMachineInDomain(state->target_hostname,
+							  newname,
+							  state->account,
+							  state->password,
+							  NETSETUP_ACCT_CREATE);
+			SAFE_FREE(newname);
+			/* we renamed the machine in the domain */
+			if (status == 0) {
+				return;
+			}
+			str = libnetapi_get_error_string(state->ctx, status);
+#else
 			str = "To be implemented: call NetRenameMachineInDomain\n";
+#endif
 			break;
+		}
 		case NetSetupWorkgroupName:
 			str = "To be implemented: call SetComputerNameEx\n";
 			break;
