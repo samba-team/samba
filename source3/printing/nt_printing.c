@@ -204,13 +204,7 @@ static const nt_forms_struct default_forms[] = {
 	{"PRC Envelope #10 Rotated",0x1,0x6fd10,0x4f1a0,0x0,0x0,0x6fd10,0x4f1a0}
 };
 
-struct table_node {
-	const char 	*long_archi;
-	const char 	*short_archi;
-	int	version;
-};
-
-static const struct table_node archi_table[]= {
+static const struct print_architecture_table_node archi_table[]= {
 
 	{"Windows 4.0",          SPL_ARCH_WIN40,	0 },
 	{"Windows NT x86",       SPL_ARCH_W32X86,	2 },

@@ -32,12 +32,6 @@
 	W_ERROR_HAVE_NO_MEMORY(_printername); \
 }
 
-struct table_node {
-	const char 	*long_archi;
-	const char 	*short_archi;
-	int	version;
-};
-
 /* The version int is used by getdrivers.  Note that
    all architecture strings that support mutliple
    versions must be grouped together since enumdrivers
@@ -45,7 +39,7 @@ struct table_node {
    enumdriver calls for the same arch */
 
 
-static const struct table_node archi_table[]= {
+static const struct print_architecture_table_node archi_table[]= {
 
 	{"Windows 4.0",          "WIN40",	0 },
 	{"Windows NT x86",       "W32X86",	2 },
