@@ -1618,12 +1618,24 @@ static int control_unban(struct ctdb_context *ctdb, int argc, const char **argv)
 	int ret;
 	TDB_DATA data;
 	uint32_t generation, next_generation;
+	struct ctdb_node_map *nodemap=NULL;
 
 	/* record the current generation number */
 	generation = get_generation(ctdb);
 
 	data.dptr = (uint8_t *)&options.pnn;
 	data.dsize = sizeof(uint32_t);
+
+	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
+		return ret;
+	}
+
+	if (!(nodemap->nodes[options.pnn].flags & NODE_FLAGS_BANNED)) {
+		DEBUG(DEBUG_ERR, ("Node %d is not banned. Can not unban\n", options.pnn));
+		return -1;
+	}
 
 	ret = ctdb_send_message(ctdb, options.pnn, CTDB_SRVID_UNBAN_NODE, data);
 	if (ret != 0) {
