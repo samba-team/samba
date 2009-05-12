@@ -853,7 +853,7 @@ static void callback_enter_hostname_and_unlock(GtkWidget *widget,
 	gtk_label_set_text(GTK_LABEL(state->label_full_computer_name), str);
 	free(str);
 
-	if (state->hostname_changed && str && str[0] != 0 && str[0] != '.') {
+	if (state->hostname_changed && entry_text && entry_text[0] != 0 && entry_text[0] != '.') {
 		gtk_widget_set_sensitive(GTK_WIDGET(state->button_ok), TRUE);
 	}
 }
