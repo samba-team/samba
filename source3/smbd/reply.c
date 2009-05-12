@@ -3257,9 +3257,19 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 {
 	SMB_STRUCT_STAT sbuf;
 	ssize_t nread = -1;
+	struct lock_struct lock;
 
 	if(SMB_VFS_FSTAT(fsp, &sbuf) == -1) {
 		reply_unixerror(req, ERRDOS, ERRnoaccess);
+		return;
+	}
+
+	init_strict_lock_struct(fsp, (uint32)req->smbpid,
+	    (uint64_t)startpos, (uint64_t)smb_maxcnt, READ_LOCK,
+	    &lock);
+
+	if (!SMB_VFS_STRICT_LOCK(conn, fsp, &lock)) {
+		reply_doserror(req, ERRDOS, ERRlock);
 		return;
 	}
 
@@ -3323,8 +3333,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 				DEBUG( 3, ( "send_file_readX: fake_sendfile fnum=%d max=%d nread=%d\n",
 					fsp->fnum, (int)smb_maxcnt, (int)nread ) );
 				/* No outbuf here means successful sendfile. */
-				TALLOC_FREE(req->outbuf);
-				return;
+				goto strict_unlock;
 			}
 
 			DEBUG(0,("send_file_readX: sendfile failed for file %s (%s). Terminating\n",
@@ -3351,12 +3360,10 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 		if (nread != smb_maxcnt + sizeof(headerbuf)) {
 			sendfile_short_send(fsp, nread, sizeof(headerbuf), smb_maxcnt);
 		}
-
 		/* No outbuf here means successful sendfile. */
-		TALLOC_FREE(req->outbuf);
 		SMB_PERFCOUNT_SET_MSGLEN_OUT(&req->pcd, nread);
 		SMB_PERFCOUNT_END(&req->pcd);
-		return;
+		goto strict_unlock;
 	}
 
 normal_read:
@@ -3382,8 +3389,7 @@ normal_read:
 				fsp->fsp_name, strerror(errno) ));
 			exit_server_cleanly("send_file_readX: fake_sendfile failed");
 		}
-		TALLOC_FREE(req->outbuf);
-		return;
+		goto strict_unlock;
 	}
 
 nosendfile_read:
@@ -3391,6 +3397,9 @@ nosendfile_read:
 	reply_outbuf(req, 12, smb_maxcnt);
 
 	nread = read_file(fsp, smb_buf(req->outbuf), startpos, smb_maxcnt);
+
+	SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
+
 	if (nread < 0) {
 		reply_unixerror(req, ERRDOS, ERRnoaccess);
 		return;
@@ -3402,6 +3411,12 @@ nosendfile_read:
 		    fsp->fnum, (int)smb_maxcnt, (int)nread ) );
 
 	chain_reply(req);
+	return;
+
+ strict_unlock:
+	SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
+	TALLOC_FREE(req->outbuf);
+	return;
 }
 
 /****************************************************************************
@@ -3414,7 +3429,6 @@ void reply_read_and_X(struct smb_request *req)
 	files_struct *fsp;
 	SMB_OFF_T startpos;
 	size_t smb_maxcnt;
-	struct lock_struct lock;
 	bool big_readX = False;
 #if 0
 	size_t smb_mincnt = SVAL(req->vwv+6, 0);
@@ -3502,26 +3516,14 @@ void reply_read_and_X(struct smb_request *req)
 
 	}
 
-	init_strict_lock_struct(fsp, (uint32)req->smbpid,
-	    (uint64_t)startpos, (uint64_t)smb_maxcnt, READ_LOCK,
-	    &lock);
-
-	if (!SMB_VFS_STRICT_LOCK(conn, fsp, &lock)) {
-		END_PROFILE(SMBreadX);
-		reply_doserror(req, ERRDOS, ERRlock);
-		return;
-	}
-
 	if (!big_readX &&
 	    schedule_aio_read_and_X(conn, req, fsp, startpos, smb_maxcnt)) {
-		goto strict_unlock;
+		goto out;
 	}
 
 	send_file_readX(conn, req, fsp,	startpos, smb_maxcnt);
 
-strict_unlock:
-	SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
-
+ out:
 	END_PROFILE(SMBreadX);
 	return;
 }
