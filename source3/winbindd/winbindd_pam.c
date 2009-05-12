@@ -543,7 +543,7 @@ static uid_t get_uid_from_state(struct winbindd_cli_state *state)
 	uid = state->request.data.auth.uid;
 
 	if (uid < 0) {
-		DEBUG(1,("invalid uid: '%d'\n", uid));
+		DEBUG(1,("invalid uid: '%u'\n", (unsigned int)uid));
 		return -1;
 	}
 	return uid;

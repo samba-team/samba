@@ -4236,7 +4236,7 @@ do_query:
 		DEBUG(10, ("result:\n\thomedir = '%s'\n", *homedir));
                 DEBUGADD(10, ("\tshell = '%s'\n", *shell));
                 DEBUGADD(10, ("\tgecos = '%s'\n", *gecos));
-                DEBUGADD(10, ("\tgid = '%u'\n", *p_gid));
+                DEBUGADD(10, ("\tgid = '%u'\n", (unsigned int)*p_gid));
 
 		wcache_save_user_pwinfo( domain, nt_status, user_sid,
 					 *homedir, *shell, *gecos, *p_gid );

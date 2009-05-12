@@ -516,8 +516,8 @@ NTSTATUS pdb_default_create_alias(struct pdb_methods *methods,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	DEBUG(10, ("Creating alias %s with gid %d and rid %d\n",
-		   name, gid, new_rid));
+	DEBUG(10, ("Creating alias %s with gid %u and rid %u\n",
+		   name, (unsigned int)gid, (unsigned int)new_rid));
 
 	sid_copy(&sid, get_global_sam_sid());
 	sid_append_rid(&sid, new_rid);
@@ -787,7 +787,7 @@ NTSTATUS pdb_create_builtin_alias(uint32 rid)
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	DEBUG(10,("Creating alias %s with gid %d\n", groupname, gid));
+	DEBUG(10,("Creating alias %s with gid %u\n", groupname, (unsigned int)gid));
 
 	map.gid = gid;
 	sid_copy(&map.sid, &sid);

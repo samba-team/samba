@@ -776,7 +776,7 @@ NTSTATUS create_local_token(auth_serversupplied_info *server_info)
 
 	if (!uid_to_unix_users_sid(server_info->utok.uid, &tmp_sid)) {
 		DEBUG(1,("create_local_token: Failed to create SID "
-			"for uid %d!\n", server_info->utok.uid));
+			"for uid %u!\n", (unsigned int)server_info->utok.uid));
 	}
 	add_sid_to_array_unique(server_info->ptok, &tmp_sid,
 				&server_info->ptok->user_sids,
@@ -785,7 +785,7 @@ NTSTATUS create_local_token(auth_serversupplied_info *server_info)
 	for ( i=0; i<server_info->utok.ngroups; i++ ) {
 		if (!gid_to_unix_groups_sid( server_info->utok.groups[i], &tmp_sid ) ) {
 			DEBUG(1,("create_local_token: Failed to create SID "
-				"for gid %d!\n", server_info->utok.groups[i]));
+				"for gid %u!\n", (unsigned int)server_info->utok.groups[i]));
 			continue;
 		}
 		add_sid_to_array_unique(server_info->ptok, &tmp_sid,
@@ -953,8 +953,8 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 
 		pass = getpwuid_alloc(tmp_ctx, *uid);
 		if (pass == NULL) {
-			DEBUG(1, ("getpwuid(%d) for user %s failed\n",
-				  *uid, username));
+			DEBUG(1, ("getpwuid(%u) for user %s failed\n",
+				  (unsigned int)*uid, username));
 			goto done;
 		}
 
@@ -1048,7 +1048,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 
 		if ( !gid_to_unix_groups_sid( gids[i], &unix_group_sid ) ) {
 			DEBUG(1,("create_token_from_username: Failed to create SID "
-				"for gid %d!\n", gids[i]));
+				"for gid %u!\n", (unsigned int)gids[i]));
 			continue;
 		}
 		result = add_sid_to_array_unique(tmp_ctx, &unix_group_sid,

@@ -367,13 +367,13 @@ static bool smb_acl_to_solaris_acl(SMB_ACL_T smb_acl,
 		}
 		switch(solaris_entry.a_type) {
 		case USER:
-			DEBUG(10, ("got tag type USER with uid %d\n", 
-				   smb_entry->uid));
+			DEBUG(10, ("got tag type USER with uid %u\n", 
+				   (unsigned int)smb_entry->uid));
 			solaris_entry.a_id = (uid_t)smb_entry->uid;
 			break;
 		case GROUP:
-			DEBUG(10, ("got tag type GROUP with gid %d\n", 
-				   smb_entry->gid));
+			DEBUG(10, ("got tag type GROUP with gid %u\n", 
+				   (unsigned int)smb_entry->gid));
 			solaris_entry.a_id = (uid_t)smb_entry->gid;
 			break;
 		default:
@@ -388,7 +388,7 @@ static bool smb_acl_to_solaris_acl(SMB_ACL_T smb_acl,
 			smb_perm_to_solaris_perm(smb_entry->a_perm);
 		DEBUG(10, ("assembled the following solaris ace:\n"));
 		DEBUGADD(10, (" - type: 0x%04x\n", solaris_entry.a_type));
-		DEBUGADD(10, (" - id: %d\n", solaris_entry.a_id));
+		DEBUGADD(10, (" - id: %u\n", (unsigned int)solaris_entry.a_id));
 		DEBUGADD(10, (" - perm: o%o\n", solaris_entry.a_perm));
 		if (!solaris_add_to_acl(solaris_acl, count, &solaris_entry, 
 					1, type))
@@ -400,8 +400,8 @@ static bool smb_acl_to_solaris_acl(SMB_ACL_T smb_acl,
 		DEBUG(10, ("test, if entry has been copied into acl:\n"));
 		DEBUGADD(10, (" - type: 0x%04x\n",
 			      (*solaris_acl)[(*count)-1].a_type));
-		DEBUGADD(10, (" - id: %d\n",
-			      (*solaris_acl)[(*count)-1].a_id));
+		DEBUGADD(10, (" - id: %u\n",
+			      (unsigned int)(*solaris_acl)[(*count)-1].a_id));
 		DEBUGADD(10, (" - perm: o%o\n",
 			      (*solaris_acl)[(*count)-1].a_perm));
 	}
