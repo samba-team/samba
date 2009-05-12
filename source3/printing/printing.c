@@ -2313,10 +2313,14 @@ static bool allocate_print_jobid(struct tdb_print_db *pdb, int snum, const char 
 			if (tdb_error(pdb->tdb) != TDB_ERR_NOEXIST) {
 				DEBUG(0, ("allocate_print_jobid: failed to fetch INFO/nextjob for print queue %s\n",
 					sharename));
+				tdb_unlock_bystring(pdb->tdb, "INFO/nextjob");
 				return False;
 			}
+			DEBUG(10,("allocate_print_jobid: no existing jobid in %s\n", sharename));
 			jobid = 0;
 		}
+
+		DEBUG(10,("allocate_print_jobid: read jobid %u from %s\n", jobid, sharename));
 
 		jobid = NEXT_JOBID(jobid);
 
@@ -2329,8 +2333,10 @@ static bool allocate_print_jobid(struct tdb_print_db *pdb, int snum, const char 
 		/* We've finished with the INFO/nextjob lock. */
 		tdb_unlock_bystring(pdb->tdb, "INFO/nextjob");
 
-		if (!print_job_exists(sharename, jobid))
+		if (!print_job_exists(sharename, jobid)) {
 			break;
+		}
+		DEBUG(10,("allocate_print_jobid: found jobid %u in %s\n", jobid, sharename));
 	}
 
 	if (i > 2) {
