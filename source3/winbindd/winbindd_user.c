@@ -779,15 +779,13 @@ void winbindd_getpwent(struct winbindd_cli_state *state)
 		return;
 	}
 
-	user_list = SMB_MALLOC_ARRAY(struct winbindd_pw, num_users);
+	user_list = talloc_zero_array(state->mem_ctx, struct winbindd_pw,
+				      num_users);
 	if (!user_list) {
 		request_error(state);
 		return;
 	}
-	/* will be freed by process_request() */
 	state->response.extra_data.data = user_list;
-
-	memset(user_list, 0, num_users * sizeof(struct winbindd_pw));
 
 	if (!state->getpwent_initialized)
 		winbindd_setpwent_internal(state);

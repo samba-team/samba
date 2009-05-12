@@ -508,11 +508,6 @@ static void process_request(struct winbindd_cli_state *state)
 {
 	struct winbindd_dispatch_table *table = dispatch_table;
 
-	/* Free response data - we may be interrupted and receive another
-	   command before being able to send this data off. */
-
-	SAFE_FREE(state->response.extra_data.data);  
-
 	ZERO_STRUCT(state->response);
 
 	state->response.result = WINBINDD_PENDING;
@@ -679,8 +674,6 @@ static void response_extra_sent(void *private_data, bool success)
 		state->finished = True;
 		return;
 	}
-
-	SAFE_FREE(state->response.extra_data.data);
 
 	setup_async_read(&state->fd_event, &state->request, sizeof(uint32),
 			 request_len_recv, state);
@@ -885,11 +878,6 @@ static void remove_client(struct winbindd_cli_state *state)
 
 	free_getent_state(state->getpwent_state);
 	free_getent_state(state->getgrent_state);
-
-	/* We may have some extra data that was not freed if the client was
-	   killed unexpectedly */
-
-	SAFE_FREE(state->response.extra_data.data);
 
 	TALLOC_FREE(state->mem_ctx);
 

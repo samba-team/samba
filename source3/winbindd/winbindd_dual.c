@@ -1457,8 +1457,6 @@ static bool fork_domain_child(struct winbindd_child *child)
 
 		cache_store_response(sys_getpid(), &state.response);
 
-		SAFE_FREE(state.response.extra_data.data);
-
 		/* We just send the result code back, the result
 		 * structure needs to be fetched via the
 		 * winbindd_cache. Hmm. That needs fixing... */

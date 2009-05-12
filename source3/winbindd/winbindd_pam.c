@@ -35,7 +35,6 @@ static NTSTATUS append_info3_as_txt(TALLOC_CTX *mem_ctx,
 				    struct netr_SamInfo3 *info3)
 {
 	char *ex;
-	size_t size;
 	uint32_t i;
 
 	state->response.data.auth.info3.logon_time =
@@ -82,7 +81,7 @@ static NTSTATUS append_info3_as_txt(TALLOC_CTX *mem_ctx,
 	fstrcpy(state->response.data.auth.info3.logon_dom,
 		info3->base.domain.string);
 
-	ex = talloc_strdup(mem_ctx, "");
+	ex = talloc_strdup(state->mem_ctx, "");
 	NT_STATUS_HAVE_NO_MEMORY(ex);
 
 	for (i=0; i < info3->base.groups.count; i++) {
@@ -106,17 +105,8 @@ static NTSTATUS append_info3_as_txt(TALLOC_CTX *mem_ctx,
 		talloc_free(sid);
 	}
 
-	size = talloc_get_size(ex);
-
-	SAFE_FREE(state->response.extra_data.data);
-	state->response.extra_data.data = SMB_MALLOC(size);
-	if (!state->response.extra_data.data) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	memcpy(state->response.extra_data.data, ex, size);
-	talloc_free(ex);
-
-	state->response.length += size;
+	state->response.extra_data.data = ex;
+	state->response.length += talloc_get_size(ex);
 
 	return NT_STATUS_OK;
 }
@@ -135,18 +125,8 @@ static NTSTATUS append_info3_as_ndr(TALLOC_CTX *mem_ctx,
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
-	SAFE_FREE(state->response.extra_data.data);
-	state->response.extra_data.data = SMB_MALLOC(blob.length);
-	if (!state->response.extra_data.data) {
-		data_blob_free(&blob);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	memset(state->response.extra_data.data, '\0', blob.length);
-	memcpy(state->response.extra_data.data, blob.data, blob.length);
+	state->response.extra_data.data = blob.data;
 	state->response.length += blob.length;
-
-	data_blob_free(&blob);
 
 	return NT_STATUS_OK;
 }
@@ -193,6 +173,7 @@ static NTSTATUS append_afs_token(TALLOC_CTX *mem_ctx,
 {
 	char *afsname = NULL;
 	char *cell;
+	char *token;
 
 	afsname = talloc_strdup(mem_ctx, lp_afs_username_map());
 	if (afsname == NULL) {
@@ -235,15 +216,16 @@ static NTSTATUS append_afs_token(TALLOC_CTX *mem_ctx,
 	*cell = '\0';
 	cell += 1;
 
-	/* Append an AFS token string */
-	SAFE_FREE(state->response.extra_data.data);
-	state->response.extra_data.data =
-		afs_createtoken_str(afsname, cell);
-
-	if (state->response.extra_data.data != NULL) {
-		state->response.length +=
-			strlen((const char *)state->response.extra_data.data)+1;
+	token = afs_createtoken_str(afsname, cell);
+	if (token == NULL) {
+		return NT_STATUS_OK;
 	}
+	state->response.extra_data.data = talloc_strdup(state->mem_ctx, token);
+	if (state->response.extra_data.data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	state->response.length +=
+		strlen((const char *)state->response.extra_data.data)+1;
 
 	return NT_STATUS_OK;
 }

@@ -879,7 +879,12 @@ static void getgrsid_sid2gid_recv(void *private_data, bool success, gid_t gid)
 	s->state->response.data.gr.gr_mem_ofs = 0;
 
 	s->state->response.length += gr_mem_len;
-	s->state->response.extra_data.data = gr_mem;
+	s->state->response.extra_data.data = talloc_memdup(
+		s->state->mem_ctx, gr_mem, gr_mem_len);
+	if (s->state->response.extra_data.data == NULL) {
+		request_error(s->state);
+		return;
+	}
 
 	request_ok(s->state);
 }
@@ -1272,16 +1277,13 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 		return;
 	}
 
-	group_list = SMB_MALLOC_ARRAY(struct winbindd_gr, num_groups);
+	group_list = talloc_zero_array(state->mem_ctx, struct winbindd_gr,
+				       num_groups);
 	if (!group_list) {
 		request_error(state);
 		return;
 	}
-	/* will be freed by process_request() */
 	state->response.extra_data.data = group_list;
-
-	memset(state->response.extra_data.data, '\0',
-		num_groups * sizeof(struct winbindd_gr) );
 
 	state->response.data.num_entries = 0;
 
@@ -1473,8 +1475,8 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 	if (group_list_ndx == 0)
 		goto done;
 
-	state->response.extra_data.data = SMB_REALLOC(
-		state->response.extra_data.data,
+	state->response.extra_data.data = talloc_realloc_size(
+		state->mem_ctx, state->response.extra_data.data,
 		group_list_ndx * sizeof(struct winbindd_gr) + gr_mem_list_len);
 
 	if (!state->response.extra_data.data) {
@@ -1699,10 +1701,7 @@ static void getgroups_sid2gid_recv(void *private_data, bool success, gid_t gid)
 
 	s->state->response.data.num_entries = s->num_token_gids;
 	if (s->num_token_gids) {
-		/* s->token_gids are talloced */
-		s->state->response.extra_data.data =
-			smb_xmemdup(s->token_gids,
-					s->num_token_gids * sizeof(gid_t));
+		s->state->response.extra_data.data = s->token_gids;
 		s->state->response.length += s->num_token_gids * sizeof(gid_t);
 	}
 	request_ok(s->state);
@@ -1770,7 +1769,7 @@ static void getusersids_recv(void *private_data, bool success, DOM_SID *sids,
 	}
 
 	/* build the reply */
-	ret = (char *)SMB_MALLOC(ret_size);
+	ret = talloc_array(state->mem_ctx, char, ret_size);
 	if (!ret) {
 		DEBUG(0, ("malloc failed\n"));
 		request_error(state);
@@ -1856,10 +1855,7 @@ enum winbindd_result winbindd_dual_getuserdomgroups(struct winbindd_domain *doma
 		return WINBINDD_ERROR;
 	}
 
-	state->response.extra_data.data = SMB_STRDUP(sidstring);
-	if (!state->response.extra_data.data) {
-		return WINBINDD_ERROR;
-	}
+	state->response.extra_data.data = sidstring;
 	state->response.length += len+1;
 	state->response.data.num_entries = num_groups;
 
@@ -1965,11 +1961,7 @@ enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_domain *domain,
 	state->response.extra_data.data = NULL;
 
 	if (sidstr) {
-		state->response.extra_data.data = SMB_STRDUP(sidstr);
-		if (!state->response.extra_data.data) {
-			DEBUG(0, ("Out of memory\n"));
-			return WINBINDD_ERROR;
-		}
+		state->response.extra_data.data = sidstr;
 		DEBUG(10, ("aliases_list: %s\n",
 			   (char *)state->response.extra_data.data));
 		state->response.length += len+1;

@@ -269,7 +269,8 @@ enum winbindd_result winbindd_dual_ccache_ntlm_auth(struct winbindd_domain *doma
 		goto process_result;
 	}
 
-	state->response.extra_data.data = smb_xmemdup(auth.data, auth.length);
+	state->response.extra_data.data = talloc_memdup(
+		state->mem_ctx, auth.data, auth.length);
 	if (!state->response.extra_data.data) {
 		result = NT_STATUS_NO_MEMORY;
 		goto process_result;

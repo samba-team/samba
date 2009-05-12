@@ -469,8 +469,6 @@ static void listent_recv(TALLOC_CTX *mem_ctx, bool success,
 
 	cont(private_data, True, response->data.name.dom_name,
 	     (char *)response->extra_data.data);
-
-	SAFE_FREE(response->extra_data.data);
 }
 
 /* Request the name of all users/groups in a single domain */
@@ -499,7 +497,7 @@ enum winbindd_result winbindd_dual_list_users(struct winbindd_domain *domain,
 	NTSTATUS status;
 	struct winbindd_methods *methods;
 	uint32 num_entries = 0;
-	char *extra_data = NULL;
+	char *extra_data;
 	uint32_t extra_data_len = 0, i;
 
 	/* Must copy domain into response first for debugging in parent */
@@ -519,8 +517,8 @@ enum winbindd_result winbindd_dual_list_users(struct winbindd_domain *domain,
 	/* Allocate some memory for extra data.  Note that we limit
 	   account names to sizeof(fstring) = 256 characters.		
 	   +1 for the ',' between group names */
-	extra_data = (char *)SMB_REALLOC(extra_data, 
-		(sizeof(fstring) + 1) * num_entries);
+	extra_data = talloc_array(state->mem_ctx, char,
+				  (sizeof(fstring) + 1) * num_entries);
 
 	if (!extra_data) {
 		DEBUG(0,("failed to enlarge buffer!\n"));
@@ -558,7 +556,7 @@ enum winbindd_result winbindd_dual_list_groups(struct winbindd_domain *domain,
                                                struct winbindd_cli_state *state)
 {
 	struct getent_state groups;
-	char *extra_data = NULL;
+	char *extra_data;
 	uint32_t extra_data_len = 0, i;
 
 	ZERO_STRUCT(groups);
@@ -576,7 +574,8 @@ enum winbindd_result winbindd_dual_list_groups(struct winbindd_domain *domain,
 	/* Allocate some memory for extra data.  Note that we limit
 	   account names to sizeof(fstring) = 256 characters.
 	   +1 for the ',' between group names */
-	extra_data = (char *)SMB_REALLOC(extra_data,
+	extra_data = talloc_array(
+		state->mem_ctx, char,
 		(sizeof(fstring) + 1) * groups.num_sam_entries);
 
 	if (!extra_data) {
@@ -738,10 +737,7 @@ enum winbindd_result winbindd_dual_lookuprids(struct winbindd_domain *domain,
 	fstrcpy(state->response.data.domain_name, domain_name);
 
 	if (result != NULL) {
-		state->response.extra_data.data = SMB_STRDUP(result);
-		if (!state->response.extra_data.data) {
-			return WINBINDD_ERROR;
-		}
+		state->response.extra_data.data = result;
 		state->response.length += len+1;
 	}
 

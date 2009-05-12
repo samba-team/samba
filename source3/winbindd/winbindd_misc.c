@@ -209,8 +209,7 @@ static void listent_recv(void *private_data, bool success, fstring dom_name,
 
 	/* Return list of all users/groups to the client */
 	if (state->extra_data) {
-		state->cli_state->response.extra_data.data = 
-			SMB_STRDUP(state->extra_data);
+		state->cli_state->response.extra_data.data = state->extra_data;
 		state->cli_state->response.length += state->extra_data_len;
 	}
 
@@ -334,14 +333,13 @@ void winbindd_list_trusted_domains(struct winbindd_cli_state *state)
 	}
 
 	if (extra_data_len > 0) {
-		state->response.extra_data.data = SMB_STRDUP(extra_data);
+		state->response.extra_data.data = extra_data;
 		state->response.length += extra_data_len+1;
 	}
 
 	request_ok(state);	
 done:
 	TALLOC_FREE( dom_list );
-	TALLOC_FREE( extra_data );	
 }
 
 enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *domain,
@@ -409,7 +407,7 @@ enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *
 	}
 
 	if (extra_data_len > 0) {
-		state->response.extra_data.data = SMB_STRDUP(extra_data);
+		state->response.extra_data.data = extra_data;
 		state->response.length += extra_data_len+1;
 	}
 
@@ -607,8 +605,7 @@ static void sequence_recv(void *private_data, bool success)
 		cli_state->response.length =
 			sizeof(cli_state->response) +
 			strlen(state->extra_data) + 1;
-		cli_state->response.extra_data.data =
-			SMB_STRDUP(state->extra_data);
+		cli_state->response.extra_data.data = state->extra_data;
 		request_ok(cli_state);
 		return;
 	}
@@ -782,16 +779,13 @@ void winbindd_netbios_name(struct winbindd_cli_state *state)
 
 void winbindd_priv_pipe_dir(struct winbindd_cli_state *state)
 {
-
+	char *priv_dir;
 	DEBUG(3, ("[%5lu]: request location of privileged pipe\n",
 		  (unsigned long)state->pid));
 	
-	state->response.extra_data.data = SMB_STRDUP(get_winbind_priv_pipe_dir());
-	if (!state->response.extra_data.data) {
-		DEBUG(0, ("malloc failed\n"));
-		request_error(state);
-		return;
-	}
+	priv_dir = get_winbind_priv_pipe_dir();
+	state->response.extra_data.data = talloc_move(state->mem_ctx,
+						      &priv_dir);
 
 	/* must add one to length to copy the 0 for string termination */
 	state->response.length +=
