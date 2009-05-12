@@ -21,7 +21,6 @@
 
 #include "includes.h"
 
-#define PRINT_TDB "/tmp/vlp.tdb"
 #define PRINT_FIRSTJOB "100"
 
 static TDB_CONTEXT *tdb;
@@ -376,6 +375,7 @@ static int lpresume_command(int argc, char **argv)
 int main(int argc, char **argv)
 {
 	/* Parameter check */
+	char *printdb_path = NULL;
 
 	if (argc == 1) {
 		usage();
@@ -384,15 +384,24 @@ int main(int argc, char **argv)
 
 	/* Initialise */
 
-	if (!(tdb = tdb_open(PRINT_TDB, 0, 0, O_RDWR | O_CREAT,
+#if 0
+	printdb_path = "/tmp/vlp.tdb";
+#else
+	if (asprintf(&printdb_path, "%svlp.tdb",
+                                cache_path("printing/"))) {
+		return 1;
+	}
+#endif
+
+	if (!(tdb = tdb_open(printdb_path, 0, 0, O_RDWR | O_CREAT,
 			     0666))) {
-		printf("%s: unable to open %s\n", argv[0], PRINT_TDB);
+		printf("%s: unable to open %s\n", argv[0], printdb_path);
 		return 1;
 	}
 
 	/* Ensure we are modes 666 */
 
-	chmod(PRINT_TDB, 0666);
+	chmod(printdb_path, 0666);
 
 	/* Do commands */
 
