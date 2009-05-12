@@ -36,8 +36,14 @@ sub showitem($$$)
 sub showisexternal($$$)
 {
 	my ($output, $desc, $name) = @_;
-	print "Using external $desc: ".
-	    (($output->{$name}->{TYPE} eq "EXT_LIB")?"yes":"no")."\n";
+	print "Using external $desc: ";
+	if ($output->{$name}->{TYPE} eq "SUBSYSTEM" or
+	    $output->{$name}->{TYPE} eq "LIBRARY") {
+		print "no"; 
+	} else {
+		print "yes";
+	}
+	print "\n";
 }
 
 sub show($$)
