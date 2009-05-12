@@ -3454,9 +3454,10 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 		SMB_PERFCOUNT_END(&req->pcd);
 		return;
 	}
-#endif
 
 normal_read:
+
+#endif
 
 	if ((smb_maxcnt & 0xFF0000) > 0x10000) {
 		uint8 headerbuf[smb_size + 2*12];
