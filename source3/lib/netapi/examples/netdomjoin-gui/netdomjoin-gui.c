@@ -1623,7 +1623,7 @@ static int init_join_state(struct join_state **state)
 	return 0;
 }
 
-static NET_API_STATUS get_server_comment(struct join_state *state)
+static NET_API_STATUS get_server_properties(struct join_state *state)
 {
 	struct SERVER_INFO_101 *info101 = NULL;
 	struct SERVER_INFO_1005 *info1005 = NULL;
@@ -1635,6 +1635,11 @@ static NET_API_STATUS get_server_comment(struct join_state *state)
 	if (status == 0) {
 		state->comment = strdup(info101->sv101_comment);
 		if (!state->comment) {
+			return -1;
+		}
+		SAFE_FREE(state->my_hostname);
+		state->my_hostname = strdup(info101->sv101_name);
+		if (!state->my_hostname) {
 			return -1;
 		}
 		NetApiBufferFree(info101);
@@ -1772,7 +1777,7 @@ static int initialize_join_state(struct join_state *state,
 		NetApiBufferFree((void *)buffer);
 	}
 
-	status = get_server_comment(state);
+	status = get_server_properties(state);
 	if (status != 0) {
 		return -1;
 	}
