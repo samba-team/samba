@@ -152,7 +152,7 @@ int tdb_store_int32(struct tdb_context *tdb, const char *keystr, int32_t v)
 }
 
 /****************************************************************************
- Fetch a uint32_t value by a arbitrary blob key, return -1 if not found.
+ Fetch a uint32_t value by a arbitrary blob key, return false if not found.
  Output is uint32_t in native byte order.
 ****************************************************************************/
 
@@ -172,7 +172,7 @@ bool tdb_fetch_uint32_byblob(struct tdb_context *tdb, TDB_DATA key, uint32_t *va
 }
 
 /****************************************************************************
- Fetch a uint32_t value by string key, return -1 if not found.
+ Fetch a uint32_t value by string key, return false if not found.
  Output is uint32_t in native byte order.
 ****************************************************************************/
 
