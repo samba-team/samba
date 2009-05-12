@@ -868,7 +868,6 @@ CTDB_CAPABILITY_RECMASTER=no
 # NATGW_PUBLIC_IP=10.0.0.227/24
 # NATGW_PUBLIC_IFACE=eth0
 # NATGW_DEFAULT_GATEWAY=10.0.0.1
-# NATGW_PRIVATE_IFACE=eth1
 # NATGW_PRIVATE_NETWORK=10.1.1.0/24
 # NATGW_NODES=/etc/ctdb/natgw_nodes
     </screen>
@@ -903,15 +902,6 @@ CTDB_CAPABILITY_RECMASTER=no
     </para>
     <para>
       Format of this parameter is IPADDRESS
-    </para>
-    </refsect2>
-
-    <refsect2><title>NATGW_PRIVATE_IFACE</title>
-    <para>
-      This is the interface used for the interal private network.
-    </para>
-    <para>
-      Format of this parameter is INTERFACE
     </para>
     </refsect2>
 

@@ -490,7 +490,6 @@ CTDB_CAPABILITY_RECMASTER=no
 # NATGW_PUBLIC_IP=10.0.0.227/24
 # NATGW_PUBLIC_IFACE=eth0
 # NATGW_DEFAULT_GATEWAY=10.0.0.1
-# NATGW_PRIVATE_IFACE=eth1
 # NATGW_PRIVATE_NETWORK=10.1.1.0/24
 # NATGW_NODES=/etc/ctdb/natgw_nodes
     </pre></div><div class="refsect2" lang="en"><a name="id2476123"></a><h3>NATGW_PUBLIC_IP</h3><p>
@@ -505,23 +504,19 @@ CTDB_CAPABILITY_RECMASTER=no
       assigned to. This should be an interface connected to the public network.
     </p><p>
       Format of this parameter is INTERFACE
-    </p></div><div class="refsect2" lang="en"><a name="id2476157"></a><h3>NATGW_DEFAULT_GATEWAY</h3><p>
+    </p></div><div class="refsect2" lang="en"><a name="id2476156"></a><h3>NATGW_DEFAULT_GATEWAY</h3><p>
       This is the default gateway to use on the node that is elected to host
       the NATGW_PUBLIC_IP. This is the default gateway on the public network.
     </p><p>
       Format of this parameter is IPADDRESS
-    </p></div><div class="refsect2" lang="en"><a name="id2476172"></a><h3>NATGW_PRIVATE_IFACE</h3><p>
-      This is the interface used for the interal private network.
-    </p><p>
-      Format of this parameter is INTERFACE
-    </p></div><div class="refsect2" lang="en"><a name="id2476187"></a><h3>NATGW_PRIVATE_NETWORK</h3><p>
+    </p></div><div class="refsect2" lang="en"><a name="id2476171"></a><h3>NATGW_PRIVATE_NETWORK</h3><p>
       This is the network/netmask used for the interal private network.
     </p><p>
       Format of this parameter is IPADDRESS/NETMASK
-    </p></div><div class="refsect2" lang="en"><a name="id2476201"></a><h3>NATGW_NODES</h3><p>
+    </p></div><div class="refsect2" lang="en"><a name="id2476186"></a><h3>NATGW_NODES</h3><p>
       This is the list of all nodes that belong to the same NATGW group
       as this node. The default is /etc/ctdb/natgw_nodes.
-    </p></div><div class="refsect2" lang="en"><a name="id2476212"></a><h3>Operation</h3><p>
+    </p></div><div class="refsect2" lang="en"><a name="id2476197"></a><h3>Operation</h3><p>
       When the NAT-GW fiunctionality is used, one of the nodes is elected
       to act as a NAT router for all the other nodes in the group when
       they need to originate traffic to the external public network.
@@ -536,10 +531,10 @@ CTDB_CAPABILITY_RECMASTER=no
     </p><p>
       This is implemented in the 11.natgw eventscript. Please see the
       eventscript for further information.
-    </p></div></div><div class="refsect1" lang="en"><a name="id2476245"></a><h2>SEE ALSO</h2><p>
+    </p></div></div><div class="refsect1" lang="en"><a name="id2476230"></a><h2>SEE ALSO</h2><p>
       ctdb(1), onnode(1)
       <a class="ulink" href="http://ctdb.samba.org/" target="_top">http://ctdb.samba.org/</a>
-    </p></div><div class="refsect1" lang="en"><a name="id2476258"></a><h2>COPYRIGHT/LICENSE</h2><div class="literallayout"><p><br>
+    </p></div><div class="refsect1" lang="en"><a name="id2476243"></a><h2>COPYRIGHT/LICENSE</h2><div class="literallayout"><p><br>
 Copyright (C) Andrew Tridgell 2007<br>
 Copyright (C) Ronnie sahlberg 2007<br>
 <br>

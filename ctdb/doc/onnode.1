@@ -1,11 +1,11 @@
 .\"     Title: onnode
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
-.\"      Date: 09/23/2008
+.\"      Date: 05/12/2009
 .\"    Manual: 
 .\"    Source: 
 .\"
-.TH "ONNODE" "1" "09/23/2008" "" ""
+.TH "ONNODE" "1" "05/12/2009" "" ""
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -41,6 +41,16 @@ con | connected
 All nodes that are not disconnected\.
 .RE
 .PP
+lvs | lvsmaster
+.RS 4
+The current LVS master\.
+.RE
+.PP
+natgw | natgwlist
+.RS 4
+The current NAT gateway\.
+.RE
+.PP
 rm | recmaster
 .RS 4
 The current recovery master\.
@@ -50,6 +60,11 @@ The current recovery master\.
 \-c
 .RS 4
 Execute COMMAND in the current working directory on the specified nodes\.
+.RE
+.PP
+\-o <prefix>
+.RS 4
+Causes standard output from each node to be saved into a file with name <prefix>\.<ip>\.
 .RE
 .PP
 \-p

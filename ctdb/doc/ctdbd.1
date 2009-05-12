@@ -1,11 +1,11 @@
 .\"     Title: ctdbd
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
-.\"      Date: 03/25/2009
+.\"      Date: 05/12/2009
 .\"    Manual: 
 .\"    Source: 
 .\"
-.TH "CTDBD" "1" "03/25/2009" "" ""
+.TH "CTDBD" "1" "05/12/2009" "" ""
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -471,7 +471,6 @@ NAT\-GW is configured in /etc/sysconfigctdb by setting the following variables:
 # NATGW_PUBLIC_IP=10\.0\.0\.227/24
 # NATGW_PUBLIC_IFACE=eth0
 # NATGW_DEFAULT_GATEWAY=10\.0\.0\.1
-# NATGW_PRIVATE_IFACE=eth1
 # NATGW_PRIVATE_NETWORK=10\.1\.1\.0/24
 # NATGW_NODES=/etc/ctdb/natgw_nodes
     
@@ -492,11 +491,6 @@ Format of this parameter is INTERFACE
 This is the default gateway to use on the node that is elected to host the NATGW_PUBLIC_IP\. This is the default gateway on the public network\.
 .PP
 Format of this parameter is IPADDRESS
-.SS "NATGW_PRIVATE_IFACE"
-.PP
-This is the interface used for the interal private network\.
-.PP
-Format of this parameter is INTERFACE
 .SS "NATGW_PRIVATE_NETWORK"
 .PP
 This is the network/netmask used for the interal private network\.
