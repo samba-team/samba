@@ -951,7 +951,7 @@ size_t cli_smb_wct_ofs(struct tevent_req **reqs, int num_reqs)
 	return wct_ofs;
 }
 
-bool cli_smb_chain_send(struct tevent_req **reqs, int num_reqs)
+NTSTATUS cli_smb_chain_send(struct tevent_req **reqs, int num_reqs)
 {
 	struct cli_smb_state *first_state = tevent_req_data(
 		reqs[0], struct cli_smb_state);
@@ -973,13 +973,14 @@ bool cli_smb_chain_send(struct tevent_req **reqs, int num_reqs)
 
 	iov = talloc_array(last_state, struct iovec, iovlen);
 	if (iov == NULL) {
-		goto fail;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	first_state->chained_requests = (struct tevent_req **)talloc_memdup(
 		last_state, reqs, sizeof(*reqs) * num_reqs);
 	if (first_state->chained_requests == NULL) {
-		goto fail;
+		TALLOC_FREE(iov);
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	wct_offset = smb_wct - 4;
@@ -994,7 +995,9 @@ bool cli_smb_chain_send(struct tevent_req **reqs, int num_reqs)
 		if (i < num_reqs-1) {
 			if (!is_andx_req(CVAL(state->header, smb_com))
 			    || CVAL(state->header, smb_wct) < 2) {
-				goto fail;
+				TALLOC_FREE(iov);
+				TALLOC_FREE(first_state->chained_requests);
+				return NT_STATUS_INVALID_PARAMETER;
 			}
 		}
 
@@ -1042,12 +1045,12 @@ bool cli_smb_chain_send(struct tevent_req **reqs, int num_reqs)
 
 	status = cli_smb_req_iov_send(reqs[0], last_state, iov, iovlen);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
+		TALLOC_FREE(iov);
+		TALLOC_FREE(first_state->chained_requests);
+		return status;
 	}
-	return true;
- fail:
-	TALLOC_FREE(iov);
-	return false;
+
+	return NT_STATUS_OK;
 }
 
 uint8_t *cli_smb_inbuf(struct tevent_req *req)

@@ -4959,6 +4959,7 @@ static bool run_chain1(int dummy)
 	struct tevent_req *reqs[3], *smbreqs[3];
 	bool done = false;
 	const char *str = "foobar";
+	NTSTATUS status;
 
 	printf("starting chain1 test\n");
 	if (!torture_open_connection(&cli1, 0)) {
@@ -4983,7 +4984,8 @@ static bool run_chain1(int dummy)
 	if (reqs[2] == NULL) return false;
 	tevent_req_set_callback(reqs[2], chain1_close_completion, &done);
 
-	if (!cli_smb_chain_send(smbreqs, ARRAY_SIZE(smbreqs))) {
+	status = cli_smb_chain_send(smbreqs, ARRAY_SIZE(smbreqs));
+	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
 
@@ -5017,6 +5019,7 @@ static bool run_chain2(int dummy)
 	struct event_context *evt = event_context_init(NULL);
 	struct tevent_req *reqs[2], *smbreqs[2];
 	bool done = false;
+	NTSTATUS status;
 
 	printf("starting chain2 test\n");
 	if (!torture_open_connection(&cli1, 0)) {
@@ -5035,7 +5038,8 @@ static bool run_chain2(int dummy)
 	if (reqs[1] == NULL) return false;
 	tevent_req_set_callback(reqs[1], chain2_tcon_completion, &done);
 
-	if (!cli_smb_chain_send(smbreqs, ARRAY_SIZE(smbreqs))) {
+	status = cli_smb_chain_send(smbreqs, ARRAY_SIZE(smbreqs));
+	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
 
