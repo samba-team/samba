@@ -713,6 +713,9 @@ bool ctdb_recovery_lock(struct ctdb_context *ctdb, bool keep)
 {
 	struct flock lock;
 
+	if (keep) {
+		DEBUG(DEBUG_ERR, ("Take the recovery lock\n"));
+	}
 	if (ctdb->recovery_lock_fd != -1) {
 		close(ctdb->recovery_lock_fd);
 	}
@@ -743,6 +746,10 @@ bool ctdb_recovery_lock(struct ctdb_context *ctdb, bool keep)
 	if (!keep) {
 		close(ctdb->recovery_lock_fd);
 		ctdb->recovery_lock_fd = -1;
+	}
+
+	if (keep) {
+		DEBUG(DEBUG_ERR, ("Recovery lock taken successfully\n"));
 	}
 
 	DEBUG(DEBUG_NOTICE,("ctdb_recovery_lock: Got recovery lock on '%s'\n", ctdb->recovery_lock_file));
@@ -1070,7 +1077,7 @@ static void ctdb_recd_ping_timeout(struct event_context *ev, struct timed_event 
 	struct ctdb_context *ctdb = talloc_get_type(p, struct ctdb_context);
 	uint32_t *count = talloc_get_type(ctdb->recd_ping_count, uint32_t);
 
-	DEBUG(DEBUG_ERR, (__location__ " Recovery daemon ping timeout. Count : %u\n", *count));
+	DEBUG(DEBUG_ERR, ("Recovery daemon ping timeout. Count : %u\n", *count));
 
 	if (*count < ctdb->tunable.recd_ping_failcount) {
 		(*count)++;
@@ -1080,7 +1087,7 @@ static void ctdb_recd_ping_timeout(struct event_context *ev, struct timed_event 
 		return;
 	}
 
-	DEBUG(DEBUG_ERR, (__location__ " Final timeout for recovery daemon ping. Shutting down ctdb daemon\n"));
+	DEBUG(DEBUG_ERR, ("Final timeout for recovery daemon ping. Shutting down ctdb daemon. (This can be caused if the cluster filesystem has hung)\n"));
 
 	ctdb_stop_recoverd(ctdb);
 	ctdb_stop_keepalive(ctdb);
@@ -1090,7 +1097,7 @@ static void ctdb_recd_ping_timeout(struct event_context *ev, struct timed_event 
 		ctdb->methods->shutdown(ctdb);
 	}
 	ctdb_event_script(ctdb, "shutdown");
-	DEBUG(DEBUG_ERR, (__location__ " Recovery daemon ping timeout. Daemon has been shut down.\n"));
+	DEBUG(DEBUG_ERR, ("Recovery daemon ping timeout. Daemon has been shut down.\n"));
 	exit(0);
 }
 
