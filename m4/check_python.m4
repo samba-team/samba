@@ -3,7 +3,7 @@ dnl
 dnl Copyright (C) 2007-2008 Jelmer Vernooij <jelmer@samba.org>
 dnl Published under the GNU GPL, v3 or later
 dnl
-AC_ARG_VAR([PYTHON_VERSION],[The installed Python
+AC_ARG_VAR([PYTHON_VER],[The installed Python
 	version to use, for example '2.3'. This string 
 	will be appended to the Python interpreter
 	canonical name.])
@@ -42,10 +42,10 @@ dnl $PYTHON_CFLAGS
 dnl $PYTHON_LDFLAGS
 AC_DEFUN([AC_SAMBA_PYTHON_DEVEL],
 [
-	if test -z "$PYTHON_VERSION"; then
+	if test -z "$PYTHON_VER"; then
 		AC_PATH_PROGS([PYTHON], [python2.6 python2.5 python2.4 python])
 	else
-		AC_PATH_PROG([PYTHON],[python[$PYTHON_VERSION]])
+		AC_PATH_PROG([PYTHON],[python[$PYTHON_VER]])
 	fi
 	if test -z "$PYTHON"; then
 		working_python=no
@@ -55,10 +55,10 @@ AC_DEFUN([AC_SAMBA_PYTHON_DEVEL],
 	dnl assume no working python
 	working_python=no
 
-	if test -z "$PYTHON_VERSION"; then 
+	if test -z "$PYTHON_VER"; then 
 		AC_PATH_PROGS([PYTHON_CONFIG], [python2.6-config python2.5-config python2.4-config python-config])
 	else 
-		AC_PATH_PROG([PYTHON_CONFIG], [python[$PYTHON_VERSION]-config])
+		AC_PATH_PROG([PYTHON_CONFIG], [python[$PYTHON_VER]-config])
 	fi
 
 	if test -z "$PYTHON_CONFIG"; then
