@@ -5118,8 +5118,8 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 			homedir = talloc_sub_specified(tmp_ctx, lp_template_homedir(), name, ldap_state->domain_name, uid, gid);
 			shell = talloc_sub_specified(tmp_ctx, lp_template_shell(), name, ldap_state->domain_name, uid, gid);
 		}
-		uidstr = talloc_asprintf(tmp_ctx, "%d", uid);
-		gidstr = talloc_asprintf(tmp_ctx, "%d", gid);
+		uidstr = talloc_asprintf(tmp_ctx, "%u", (unsigned int)uid);
+		gidstr = talloc_asprintf(tmp_ctx, "%u", (unsigned int)gid);
 
 		escape_name = escape_rdn_val_string_alloc(name);
 		if (!escape_name) {
@@ -5328,7 +5328,7 @@ static NTSTATUS ldapsam_create_dom_group(struct pdb_methods *my_methods,
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 
-		gidstr = talloc_asprintf(tmp_ctx, "%d", gid);
+		gidstr = talloc_asprintf(tmp_ctx, "%u", (unsigned int)gid);
 
 		escape_name = escape_rdn_val_string_alloc(name);
 		if (!escape_name) {
@@ -5689,7 +5689,7 @@ static NTSTATUS ldapsam_set_primary_group(struct pdb_methods *my_methods,
 		DEBUG(0,("ldapsam_set_primary_group: failed to retrieve gid from user's group SID!\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	gidstr = talloc_asprintf(mem_ctx, "%d", gid);
+	gidstr = talloc_asprintf(mem_ctx, "%u", (unsigned int)gid);
 	if (!gidstr) {
 		DEBUG(0,("ldapsam_set_primary_group: Out of Memory!\n"));
 		return NT_STATUS_NO_MEMORY;
