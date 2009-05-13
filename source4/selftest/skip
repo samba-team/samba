@@ -22,8 +22,7 @@ base.nttrans
 base.scan.maxfid
 raw.hold.oplock		# Not a test, but a way to block other clients for a test
 raw.ping.pong		# Needs second server to test
-rpc.samr_accessmask
-samba4.rpc.samr.passwords.pwdlastset # Not provided by Samba 4 yet
+rpc.samr.accessmask
 raw.scan.eamax
 samba4.ntvfs.cifs.raw.qfileinfo.ipc
 smb2.notify
