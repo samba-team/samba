@@ -335,12 +335,6 @@ typedef struct write_cache {
 	char *data;
 } write_cache;
 
-typedef struct {
-	smb_ucs2_t *origname;
-	smb_ucs2_t *filename;
-	SMB_STRUCT_STAT *statinfo;
-} smb_filename;
-
 #include "fake_file.h"
 
 struct fd_handle {
