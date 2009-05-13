@@ -28,6 +28,13 @@ delete_all() {
 }
 
 case $cmd in 
+     startup)
+	# do not respond to ARPs that are for ip addresses with scope 'host'
+	echo 3 > /proc/sys/net/ipv4/conf/all/arp_ignore
+	# do not send out arp requests from loopback addresses
+	echo 2 > /proc/sys/net/ipv4/conf/all/arp_announce
+	;;
+
      recovered)
 	MYPNN=`ctdb pnn | cut -d: -f2`
 	NATGWMASTER=`ctdb natgwlist | head -1`
@@ -50,7 +57,7 @@ case $cmd in
 		# We do this so that the ip address will exist on a
 		# non-loopback interface so that samba may send it along in the
 		# KDC requests.
-		ip addr add $CTDB_NATGW_PUBLIC_IP_HOST dev lo
+		ip addr add $CTDB_NATGW_PUBLIC_IP_HOST dev lo scope host
 		ip route add 0.0.0.0/0 via $NATGWIP metric 10
 	fi
 
