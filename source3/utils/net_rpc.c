@@ -5739,7 +5739,7 @@ static NTSTATUS vampire_trusted_domain(struct rpc_pipe_client *pipe_hnd,
 	char *cleartextpwd = NULL;
 	uint8_t session_key[16];
 	DATA_BLOB session_key_blob;
-	DATA_BLOB data;
+	DATA_BLOB data = data_blob_null;
 
 	nt_status = rpccli_lsa_QueryTrustedDomainInfoBySid(pipe_hnd, mem_ctx,
 							   pol,
