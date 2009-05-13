@@ -2445,6 +2445,42 @@ NET_API_STATUS NetFileEnum(const char * server_name /* [in] */,
 			   uint32_t *total_entries /* [out] [ref] */,
 			   uint32_t *resume_handle /* [in,out] [ref] */);
 
+/************************************************************//**
+ *
+ * NetShutdownInit
+ *
+ * @brief Start a machine shutdown
+ *
+ * @param[in] server_name The server name to connect to
+ * @param[in] message The message that is displayed before the shutdown
+ * @param[in] timeout The amount of seconds to wait until shutting down
+ * @param[in] force_apps Whether to close all applications before the shutdown
+ * @param[in] do_reboot Whether to reboot after the shutdown
+ * @return NET_API_STATUS
+ *
+ * example shutdown/shutdown_init.c
+ ***************************************************************/
+
+NET_API_STATUS NetShutdownInit(const char * server_name /* [in] */,
+			       const char * message /* [in] */,
+			       uint32_t timeout /* [in] */,
+			       uint8_t force_apps /* [in] */,
+			       uint8_t do_reboot /* [in] */);
+
+/************************************************************//**
+ *
+ * NetShutdownAbort
+ *
+ * @brief Abort an initiated machine shutdown
+ *
+ * @param[in] server_name The server name to connect to
+ * @return NET_API_STATUS
+ *
+ * example shutdown/shutdown_abort.c
+ ***************************************************************/
+
+NET_API_STATUS NetShutdownAbort(const char * server_name /* [in] */);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
