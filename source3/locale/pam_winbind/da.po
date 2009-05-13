@@ -1,0 +1,178 @@
+# Martin Schlander <mschlander@opensuse.org>, 2008.
+msgid ""
+msgstr ""
+"Project-Id-Version: @PACKAGE@\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2008-11-16 17:11+0800\n"
+"PO-Revision-Date: 2008-11-23 15:44+0100\n"
+"Last-Translator: Martin Schlander <mschlander@opensuse.org>\n"
+"Language-Team: Danish <opensuse-translation@opensuse.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Lokalize 0.2\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: ../../nsswitch/pam_winbind.c:533
+msgid "Success"
+msgstr "Gennemført"
+
+#: ../../nsswitch/pam_winbind.c:535
+msgid "No primary Domain Controler available"
+msgstr "Ingen primær domæne-controller tilgængelig"
+
+#: ../../nsswitch/pam_winbind.c:537
+msgid "No domain controllers found"
+msgstr "Ingen domæne-controllere fundet"
+
+#: ../../nsswitch/pam_winbind.c:539
+msgid "No logon servers"
+msgstr "Ingen log på-servere"
+
+#: ../../nsswitch/pam_winbind.c:541
+msgid "Password too short"
+msgstr "For kort adgangskode"
+
+#: ../../nsswitch/pam_winbind.c:543
+msgid "The password of this user is too recent to change"
+msgstr "Denne brugers adgangskode er for ny til at ændre"
+
+#: ../../nsswitch/pam_winbind.c:545
+msgid "Password is already in password history"
+msgstr "Adgangskoden er allerede i adgangskode-historikken"
+
+#: ../../nsswitch/pam_winbind.c:547
+msgid "Your password has expired"
+msgstr "Din adgangskode er udløbet"
+
+#: ../../nsswitch/pam_winbind.c:549
+msgid "You need to change your password now"
+msgstr "Du skal ændre din adgangskode nu"
+
+#: ../../nsswitch/pam_winbind.c:551
+msgid "You are not allowed to logon from this workstation"
+msgstr "Du har ikke tilladelse til at logge på fra denne arbejdsstation"
+
+#: ../../nsswitch/pam_winbind.c:553
+msgid "You are not allowed to logon at this time"
+msgstr "Du har ikke tilladelse til at logge på, på nuværende tidspunkt"
+
+#: ../../nsswitch/pam_winbind.c:555
+msgid "Your account has expired. Please contact your System administrator"
+msgstr "Din konto er udløbet. Kontakt din systemadministrator"
+
+#: ../../nsswitch/pam_winbind.c:558
+msgid "Your account is disabled. Please contact your System administrator"
+msgstr "Din konto er deaktiveret. Kontakt din systemadministrator"
+
+#: ../../nsswitch/pam_winbind.c:561
+msgid "Your account has been locked. Please contact your System administrator"
+msgstr "Din konto er blevet låst. Kontakt din systemadministrator"
+
+#: ../../nsswitch/pam_winbind.c:564 ../../nsswitch/pam_winbind.c:566
+#: ../../nsswitch/pam_winbind.c:568
+msgid "Invalid Trust Account"
+msgstr "Ugyldig tillidskonto"
+
+#: ../../nsswitch/pam_winbind.c:570
+msgid "Access is denied"
+msgstr "Adgang nægtet"
+
+#: ../../nsswitch/pam_winbind.c:845
+msgid "Your password expires today"
+msgstr "Din adgangskode udløber i dag"
+
+#: ../../nsswitch/pam_winbind.c:851
+#, c-format
+msgid "Your password will expire in %d %s"
+msgstr "Din adgangskode udløber om %d %s"
+
+#: ../../nsswitch/pam_winbind.c:852
+msgid "days"
+msgstr "dage"
+
+#: ../../nsswitch/pam_winbind.c:852
+msgid "day"
+msgstr "dag"
+
+#: ../../nsswitch/pam_winbind.c:1193
+msgid "Grace login. Please change your password as soon you're online again"
+msgstr "Nåde-login. Ændr venligst din adgangskode, så snart du er online igen"
+
+#: ../../nsswitch/pam_winbind.c:1203
+msgid "Domain Controller unreachable, using cached credentials instead. Network resources may be unavailable"
+msgstr "Domæne-controller kan ikke nås, bruger cachede akkreditiver i stedet. Netværksressourcer kan være utilgængelige"
+
+#: ../../nsswitch/pam_winbind.c:1228
+msgid ""
+"Failed to establish your Kerberos Ticket cache due time differences\n"
+"with the domain controller.  Please verify the system time.\n"
+msgstr ""
+"Kunne ikke etablere din Kerberos-billet-cache pga. tidsforskelle\n"
+"med domæne-controlleren. Verificér venligst systemtiden.\n"
+
+#: ../../nsswitch/pam_winbind.c:1258
+#, c-format
+msgid "Your password "
+msgstr "Din adgangskode"
+
+#: ../../nsswitch/pam_winbind.c:1265
+#, c-format
+msgid "must be at least %d characters; "
+msgstr "skal have mindst %d tegn;"
+
+#: ../../nsswitch/pam_winbind.c:1275
+#, c-format
+msgid "cannot repeat any of your previous %d passwords; "
+msgstr "kan ikke gentage nogen af dine forrige %d adgangskoder;"
+
+#: ../../nsswitch/pam_winbind.c:1287
+#, c-format
+msgid "must contain capitals, numerals or punctuation; and cannot contain your account or full name; "
+msgstr "skal indeholde store bogstaver, tal eller skilletegn og må ikke indholde dit kontonavn eller fulde navn;"
+
+#: ../../nsswitch/pam_winbind.c:1298
+#, c-format
+msgid "Please type a different password. Type a password which meets these requirements in both text boxes."
+msgstr "Indtast venligst en anden adgangskode. Indtast en adgangskode, som opfylder disse krav, i begge tekstfelter."
+
+#: ../../nsswitch/pam_winbind.c:1600
+msgid "Password does not meet complexity requirements"
+msgstr "Adgangskoden opfylder ikke kravene til kompleksitet"
+
+#: ../../nsswitch/pam_winbind.c:2114
+msgid "Password: "
+msgstr "Adgangskode: "
+
+#.
+#. * First get the name of a user
+#.
+#: ../../nsswitch/pam_winbind.c:2403 ../../nsswitch/pam_winbind.c:2552
+msgid "Username: "
+msgstr "Brugernavn: "
+
+#. instruct user what is happening
+#: ../../nsswitch/pam_winbind.c:2589
+msgid "Changing password for "
+msgstr "Ændrer adgangskode for"
+
+#: ../../nsswitch/pam_winbind.c:2604
+msgid "(current) NT password: "
+msgstr "(nuværende) NT-adgangskode: "
+
+#: ../../nsswitch/pam_winbind.c:2672
+msgid "Enter new NT password: "
+msgstr "Indtast ny NT-adgangskode: "
+
+#: ../../nsswitch/pam_winbind.c:2673
+msgid "Retype new NT password: "
+msgstr "Indtast ny NT-adgangskode igen: "
+
+#.
+#. * here is the string to inform the user that the new passwords they
+#. * typed were not the same.
+#.
+#: ../../nsswitch/pam_winbind.h:119
+msgid "Sorry, passwords do not match"
+msgstr "Beklager, adgangskoderne stemmer ikke overens"
+
