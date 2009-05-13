@@ -60,14 +60,6 @@ static smb_thread_once_t ts_initialized = SMB_THREAD_ONCE_INIT;
 
 static void talloc_stackframe_init(void * unused)
 {
-	if (!global_tfp) {
-		/* Non-thread safe init case. */
-		if (SMB_THREAD_ONCE_IS_INITIALIZED(ts_initialized)) {
-			return;
-		}
-		SMB_THREAD_ONCE_INITIALIZE(ts_initialized);
-	}
-
 	if (SMB_THREAD_CREATE_TLS("talloc_stackframe", global_ts)) {
 		smb_panic("talloc_stackframe_init create_tls failed");
 	}
