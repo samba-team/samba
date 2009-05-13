@@ -426,4 +426,18 @@ WERROR NetFileEnum_r(struct libnetapi_ctx *ctx,
 		     struct NetFileEnum *r);
 WERROR NetFileEnum_l(struct libnetapi_ctx *ctx,
 		     struct NetFileEnum *r);
+NET_API_STATUS NetShutdownInit(const char * server_name /* [in] */,
+			       const char * message /* [in] */,
+			       uint32_t timeout /* [in] */,
+			       uint8_t force_apps /* [in] */,
+			       uint8_t do_reboot /* [in] */);
+WERROR NetShutdownInit_r(struct libnetapi_ctx *ctx,
+			 struct NetShutdownInit *r);
+WERROR NetShutdownInit_l(struct libnetapi_ctx *ctx,
+			 struct NetShutdownInit *r);
+NET_API_STATUS NetShutdownAbort(const char * server_name /* [in] */);
+WERROR NetShutdownAbort_r(struct libnetapi_ctx *ctx,
+			  struct NetShutdownAbort *r);
+WERROR NetShutdownAbort_l(struct libnetapi_ctx *ctx,
+			  struct NetShutdownAbort *r);
 #endif /* __LIBNETAPI_LIBNETAPI__ */
