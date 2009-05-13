@@ -42,7 +42,7 @@ static char **schema_supclasses(struct dsdb_schema *schema, struct dsdb_class *s
 		return schema_class->supclasses;
 	}
 
-	list = str_list_make(schema_class, NULL, NULL);
+	list = str_list_make_empty(schema_class);
 	if (list == NULL) {
 		DEBUG(0,(__location__ " out of memory\n"));
 		return NULL;
@@ -76,7 +76,7 @@ static char **schema_supclasses(struct dsdb_schema *schema, struct dsdb_class *s
  */
 static char **schema_subclasses(struct dsdb_schema *schema, TALLOC_CTX *mem_ctx, char **oclist)
 {
-	char **list = str_list_make(mem_ctx, NULL, NULL);
+	char **list = str_list_make_empty(mem_ctx);
 	int i;
 
 	for (i=0; oclist && oclist[i]; i++) {
@@ -94,7 +94,7 @@ static char **schema_posssuperiors(struct dsdb_schema *schema,
 				   struct dsdb_class *schema_class)
 {
 	if (schema_class->posssuperiors == NULL) {
-		char **list2 = str_list_make(schema_class, NULL, NULL);
+		char **list2 = str_list_make_empty(schema_class);
 		char **list3;
 		int i;
 
@@ -134,7 +134,7 @@ static void schema_create_subclasses(struct dsdb_schema *schema)
 		struct dsdb_class *schema_class2 = dsdb_class_by_lDAPDisplayName(schema, schema_class->subClassOf);
 		if (schema_class != schema_class2) {
 			if (schema_class2->subclasses_direct == NULL) {
-				schema_class2->subclasses_direct = str_list_make(schema_class2, NULL, NULL);
+				schema_class2->subclasses_direct = str_list_make_empty(schema_class2);
 			}
 			schema_class2->subclasses_direct = str_list_add_const(schema_class2->subclasses_direct, 
 									schema_class->lDAPDisplayName);
@@ -157,7 +157,7 @@ static void schema_fill_possible_inferiors(struct dsdb_schema *schema, struct ds
 		    && c2->objectClassCategory != 3
 		    && str_list_check(superiors, schema_class->lDAPDisplayName)) {
 			if (schema_class->possibleInferiors == NULL) {
-				schema_class->possibleInferiors = str_list_make(schema_class, NULL, NULL);
+				schema_class->possibleInferiors = str_list_make_empty(schema_class);
 			}
 			schema_class->possibleInferiors = str_list_add_const(schema_class->possibleInferiors,
 								       c2->lDAPDisplayName);
