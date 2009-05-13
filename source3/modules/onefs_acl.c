@@ -810,8 +810,9 @@ onefs_get_nt_acl(vfs_handle_struct *handle, const char* name,
  *
  * @return NTSTATUS_OK if successful
  */
-NTSTATUS onefs_samba_sd_to_sd(uint32 security_info_sent, SEC_DESC *psd,
-			      struct ifs_security_descriptor *sd, int snum)
+NTSTATUS onefs_samba_sd_to_sd(uint32_t security_info_sent, SEC_DESC *psd,
+			      struct ifs_security_descriptor *sd, int snum,
+			      uint32_t *security_info_effective)
 {
 	struct ifs_security_acl *daclp, *saclp;
 	struct ifs_identity owner, group, *ownerp, *groupp;
@@ -821,6 +822,8 @@ NTSTATUS onefs_samba_sd_to_sd(uint32 security_info_sent, SEC_DESC *psd,
 	groupp = NULL;
 	daclp = NULL;
 	saclp = NULL;
+
+	*security_info_effective = security_info_sent;
 
 	/* Setup owner */
 	if (security_info_sent & OWNER_SECURITY_INFORMATION) {
@@ -849,7 +852,7 @@ NTSTATUS onefs_samba_sd_to_sd(uint32 security_info_sent, SEC_DESC *psd,
 			return NT_STATUS_ACCESS_DENIED;
 
 		if (ignore_aces == true)
-			security_info_sent &= ~DACL_SECURITY_INFORMATION;
+			*security_info_effective &= ~DACL_SECURITY_INFORMATION;
 	}
 
 	/* Setup SACL */
@@ -857,8 +860,8 @@ NTSTATUS onefs_samba_sd_to_sd(uint32 security_info_sent, SEC_DESC *psd,
 
 		if (lp_parm_bool(snum, PARM_ONEFS_TYPE,
 			    PARM_IGNORE_SACLS, PARM_IGNORE_SACLS_DEFAULT)) {
-			DEBUG(5, ("Ignoring SACLs.\n"));
-			security_info_sent &= ~SACL_SECURITY_INFORMATION;
+			DEBUG(5, ("Ignoring SACL.\n"));
+			*security_info_effective &= ~SACL_SECURITY_INFORMATION;
 		} else {
 			if (psd->sacl) {
 				if (!onefs_samba_acl_to_acl(psd->sacl,
@@ -866,7 +869,7 @@ NTSTATUS onefs_samba_sd_to_sd(uint32 security_info_sent, SEC_DESC *psd,
 					return NT_STATUS_ACCESS_DENIED;
 
 				if (ignore_aces == true) {
-					security_info_sent &=
+					*security_info_effective &=
 					    ~SACL_SECURITY_INFORMATION;
 				}
 			}
@@ -879,6 +882,9 @@ NTSTATUS onefs_samba_sd_to_sd(uint32 security_info_sent, SEC_DESC *psd,
 		(daclp ? &daclp : NULL), (saclp ? &saclp : NULL), false))
 		return NT_STATUS_ACCESS_DENIED;
 
+	DEBUG(10, ("sec_info_sent: 0x%x, sec_info_effective: 0x%x.\n",
+		   security_info_sent, *security_info_effective));
+
 	return NT_STATUS_OK;
 }
 
@@ -890,19 +896,20 @@ NTSTATUS onefs_samba_sd_to_sd(uint32 security_info_sent, SEC_DESC *psd,
  */
 NTSTATUS
 onefs_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-		  uint32 security_info_sent, SEC_DESC *psd)
+		  uint32_t sec_info_sent, SEC_DESC *psd)
 {
 	struct ifs_security_descriptor sd = {};
 	int fd = -1;
 	bool fopened = false;
 	NTSTATUS status;
+	uint32_t sec_info_effective = 0;
 
 	START_PROFILE(syscall_set_sd);
 
 	DEBUG(5,("Setting SD on file %s.\n", fsp->fsp_name ));
 
-	status = onefs_samba_sd_to_sd(security_info_sent, psd, &sd,
-				      SNUM(handle->conn));
+	status = onefs_samba_sd_to_sd(sec_info_sent, psd, &sd,
+				      SNUM(handle->conn), &sec_info_effective);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("SD initialization failure: %s\n", nt_errstr(status)));
@@ -911,6 +918,7 @@ onefs_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 
 	fd = fsp->fh->fd;
 	if (fd == -1) {
+		DEBUG(10,("Reopening file %s.\n", fsp->fsp_name));
 		if ((fd = onefs_sys_create_file(handle->conn,
 						-1,
 						fsp->fsp_name,
@@ -934,8 +942,9 @@ onefs_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	}
 
         errno = 0;
-	if (ifs_set_security_descriptor(fd, security_info_sent, &sd)) {
-		DEBUG(0, ("Error setting security descriptor = %d\n", errno));
+	if (ifs_set_security_descriptor(fd, sec_info_effective, &sd)) {
+		DEBUG(0, ("Error setting security descriptor = %s\n",
+			  strerror(errno)));
 		status = map_nt_error_from_unix(errno);
 		goto out;
 	}
