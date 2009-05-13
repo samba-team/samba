@@ -52,7 +52,9 @@ struct smb_thread_functions {
 };
 
 int smb_thread_set_functions(const struct smb_thread_functions *tf);
-int smb_thread_once(smb_thread_once_t *ponce, void (*init_fn)(void));
+int smb_thread_once(smb_thread_once_t *ponce,
+                    void (*init_fn)(void *pdata),
+                    void *pdata);
 
 extern const struct smb_thread_functions *global_tfp;
 

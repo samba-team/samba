@@ -33,12 +33,12 @@
 #define SMB_THREAD_LOCK(plock, type) \
 	(global_tfp ? global_tfp->lock_mutex((plock), (type), __location__) : 0)
 
-#define SMB_THREAD_ONCE(ponce, init_fn)                 \
-        (global_tfp                                     \
-         ? (! *(ponce)                                  \
-            ? smb_thread_once((ponce), (init_fn))       \
-            : 0)                                        \
-         : ((init_fn()), 0))
+#define SMB_THREAD_ONCE(ponce, init_fn, pdata)                  \
+        (global_tfp                                             \
+         ? (! *(ponce)                                          \
+            ? smb_thread_once((ponce), (init_fn), (pdata))      \
+            : 0)                                                \
+         : ((init_fn(pdata)), 0))
 
 #define SMB_THREAD_CREATE_TLS(keyname, key) \
 	(global_tfp ? global_tfp->create_tls((keyname), &(key), __location__) : 0)

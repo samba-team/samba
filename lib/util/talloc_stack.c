@@ -58,7 +58,7 @@ static void *global_ts;
 /* Variable to ensure TLS value is only initialized once. */
 static smb_thread_once_t ts_initialized = SMB_THREAD_ONCE_INIT;
 
-static void talloc_stackframe_init(void)
+static void talloc_stackframe_init(void * unused)
 {
 	if (!global_tfp) {
 		/* Non-thread safe init case. */
@@ -92,7 +92,7 @@ static struct talloc_stackframe *talloc_stackframe_create(void)
 
 	ZERO_STRUCTP(ts);
 
-	SMB_THREAD_ONCE(&ts_initialized, talloc_stackframe_init);
+	SMB_THREAD_ONCE(&ts_initialized, talloc_stackframe_init, NULL);
 
 	if (SMB_THREAD_SET_TLS(global_ts, ts)) {
 		smb_panic("talloc_stackframe_init set_tls failed");

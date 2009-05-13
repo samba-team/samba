@@ -105,14 +105,19 @@ int smb_thread_set_functions(const struct smb_thread_functions *tf)
  implementation's "once" type.
 ********************************************************************/
 
-int smb_thread_once(smb_thread_once_t *ponce, void (*init_fn)(void))
+int smb_thread_once(smb_thread_once_t *ponce,
+                    void (*init_fn)(void *pdata),
+                    void *pdata)
 {
         int ret;
 
         /* Lock our "once" mutex in order to test and initialize ponce */
-	if ((ret = SMB_THREAD_LOCK(once_mutex, SMB_THREAD_LOCK)) != 0) {
+	if (SMB_THREAD_LOCK(once_mutex, SMB_THREAD_LOCK) != 0) {
                 smb_panic("error locking 'once'");
 	}
+
+        /* Keep track of whether we ran their init function */
+        ret = ! *ponce;
 
         /*
          * See if another thread got here after we tested it initially but
@@ -120,18 +125,24 @@ int smb_thread_once(smb_thread_once_t *ponce, void (*init_fn)(void))
          */
         if (! *ponce) {
                 /* Nope, we need to run the initialization function */
-                (*init_fn)();
+                (*init_fn)(pdata);
 
                 /* Now we can indicate that the function has been run */
                 *ponce = true;
         }
 
         /* Unlock the mutex */
-	if ((ret = SMB_THREAD_LOCK(once_mutex, SMB_THREAD_UNLOCK)) != 0) {
+	if (SMB_THREAD_LOCK(once_mutex, SMB_THREAD_UNLOCK) != 0) {
                 smb_panic("error unlocking 'once'");
 	}
-
-	return 0;
+        
+        /*
+         * Tell 'em whether we ran their init function. If they passed a data
+         * pointer to the init function and the init function could change
+         * something in the pointed-to data, this will tell them whether that
+         * data is valid or not.
+         */
+	return ret;
 }
 
 
