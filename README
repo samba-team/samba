@@ -83,12 +83,12 @@ http://samba.org/samba, and browse the user survey.
 Related packages include:
 
 - smbfs, a Linux-only filesystem allowing you to mount remote SMB
-filesystems from PCs on your Linux box. This is included as standard with
-Linux 2.0 and later.
+  filesystems from PCs on your Linux box. This is included as standard with
+  Linux 2.0 and later.
 
 - cifsvfs, a more advanced Linux-only filesystem allowing you to mount 
-remote SMB filesystems from PCs on your Linux box. This is included 
-as standard with Linux 2.5 and later.
+  remote SMB filesystems from PCs on your Linux box. This is included 
+  as standard with Linux 2.5 and later.
 
 
 
