@@ -30,8 +30,112 @@
 /*
  * Is the logging working / configfile read ? 
  */
-static bool SMBC_initialized;
-static unsigned int initialized_ctx_count;
+static bool SMBC_initialized = false;
+static unsigned int initialized_ctx_count = 0;
+static void *initialized_ctx_count_mutex = NULL;
+
+/*
+ * Do some module- and library-wide intializations
+ */
+static void
+SMBC_module_init(void * punused)
+{
+    bool conf_loaded = False;
+    char *home = NULL;
+    TALLOC_CTX *frame = talloc_stackframe();
+                
+    load_case_tables();
+                
+    setup_logging("libsmbclient", True);
+
+#if 0 /* need a place to put this (thread local storage) */
+    if (context->internal->debug_stderr) {
+        dbf = x_stderr;
+        x_setbuf(x_stderr, NULL);
+    }
+#endif
+                
+    /* Here we would open the smb.conf file if needed ... */
+                
+    lp_set_in_client(True);
+                
+    home = getenv("HOME");
+    if (home) {
+        char *conf = NULL;
+        if (asprintf(&conf, "%s/.smb/smb.conf", home) > 0) {
+            if (lp_load(conf, True, False, False, True)) {
+                conf_loaded = True;
+            } else {
+                DEBUG(5, ("Could not load config file: %s\n",
+                          conf));
+            }
+            SAFE_FREE(conf);
+        }
+    }
+                
+    if (!conf_loaded) {
+        /*
+         * Well, if that failed, try the get_dyn_CONFIGFILE
+         * Which points to the standard locn, and if that
+         * fails, silently ignore it and use the internal
+         * defaults ...
+         */
+                        
+        if (!lp_load(get_dyn_CONFIGFILE(), True, False, False, False)) {
+            DEBUG(5, ("Could not load config file: %s\n",
+                      get_dyn_CONFIGFILE()));
+        } else if (home) {
+            char *conf;
+            /*
+             * We loaded the global config file.  Now lets
+             * load user-specific modifications to the
+             * global config.
+             */
+            if (asprintf(&conf,
+                         "%s/.smb/smb.conf.append",
+                         home) > 0) {
+                if (!lp_load(conf, True, False, False, False)) {
+                    DEBUG(10,
+                          ("Could not append config file: "
+                           "%s\n",
+                           conf));
+                }
+                SAFE_FREE(conf);
+            }
+        }
+    }
+                
+    load_interfaces();  /* Load the list of interfaces ... */
+                
+    reopen_logs();  /* Get logging working ... */
+                
+    /*
+     * Block SIGPIPE (from lib/util_sock.c: write())
+     * It is not needed and should not stop execution
+     */
+    BlockSignals(True, SIGPIPE);
+                
+    /* Create the mutex we'll use to protect initialized_ctx_count */
+    if (SMB_THREAD_CREATE_MUTEX("initialized_ctx_count_mutex",
+                                initialized_ctx_count_mutex) != 0) {
+        smb_panic("SMBC_module_init: "
+                  "failed to create 'initialized_ctx_count' mutex");
+    }
+
+
+    TALLOC_FREE(frame);
+}
+
+
+void
+SMBC_module_terminate(void)
+{
+    gencache_shutdown();
+    secrets_shutdown();
+    gfree_all();
+    SMBC_initialized = false;
+}
+
 
 /*
  * Get a new empty handle to fill in with your own info
@@ -41,6 +145,9 @@ smbc_new_context(void)
 {
         SMBCCTX *context;
         
+        /* The first call to this function should initialize the module */
+        SMB_THREAD_ONCE(&SMBC_initialized, SMBC_module_init, NULL);
+
         /*
          * All newly added context fields should be placed in
          * SMBC_internal_data, not directly in SMBCCTX.
@@ -209,16 +316,24 @@ smbc_free_context(SMBCCTX *context,
 	SAFE_FREE(context->internal);
         SAFE_FREE(context);
 
+        /* Protect access to the count of contexts in use */
+	if (SMB_THREAD_LOCK(initialized_ctx_count_mutex) != 0) {
+                smb_panic("error locking 'initialized_ctx_count'");
+	}
+
 	if (initialized_ctx_count) {
 		initialized_ctx_count--;
 	}
 
-	if (initialized_ctx_count == 0 && SMBC_initialized) {
-		gencache_shutdown();
-		secrets_shutdown();
-		gfree_all();
-		SMBC_initialized = false;
+	if (initialized_ctx_count == 0) {
+            SMBC_module_terminate();
 	}
+
+        /* Unlock the mutex */
+	if (SMB_THREAD_UNLOCK(initialized_ctx_count_mutex) != 0) {
+                smb_panic("error unlocking 'initialized_ctx_count'");
+	}
+        
         return 0;
 }
 
@@ -427,7 +542,6 @@ smbc_init_context(SMBCCTX *context)
 {
         int pid;
         char *user = NULL;
-        char *home = NULL;
         
         if (!context) {
                 errno = EBADF;
@@ -447,88 +561,6 @@ smbc_init_context(SMBCCTX *context)
                 errno = EINVAL;
                 return NULL;
                 
-        }
-        
-        if (!SMBC_initialized) {
-                /*
-                 * Do some library-wide intializations the first time we get
-                 * called
-                 */
-                bool conf_loaded = False;
-                TALLOC_CTX *frame = talloc_stackframe();
-                
-                load_case_tables();
-                
-                setup_logging("libsmbclient", True);
-                if (context->internal->debug_stderr) {
-                        dbf = x_stderr;
-                        x_setbuf(x_stderr, NULL);
-                }
-                
-                /* Here we would open the smb.conf file if needed ... */
-                
-                lp_set_in_client(True);
-                
-                home = getenv("HOME");
-                if (home) {
-                        char *conf = NULL;
-                        if (asprintf(&conf, "%s/.smb/smb.conf", home) > 0) {
-                                if (lp_load(conf, True, False, False, True)) {
-                                        conf_loaded = True;
-                                } else {
-                                        DEBUG(5, ("Could not load config file: %s\n",
-                                                  conf));
-                                }
-                                SAFE_FREE(conf);
-                        }
-                }
-                
-                if (!conf_loaded) {
-                        /*
-                         * Well, if that failed, try the get_dyn_CONFIGFILE
-                         * Which points to the standard locn, and if that
-                         * fails, silently ignore it and use the internal
-                         * defaults ...
-                         */
-                        
-                        if (!lp_load(get_dyn_CONFIGFILE(), True, False, False, False)) {
-                                DEBUG(5, ("Could not load config file: %s\n",
-                                          get_dyn_CONFIGFILE()));
-                        } else if (home) {
-                                char *conf;
-                                /*
-                                 * We loaded the global config file.  Now lets
-                                 * load user-specific modifications to the
-                                 * global config.
-                                 */
-                                if (asprintf(&conf,
-                                             "%s/.smb/smb.conf.append",
-                                             home) > 0) {
-                                        if (!lp_load(conf, True, False, False, False)) {
-                                                DEBUG(10,
-                                                      ("Could not append config file: "
-                                                       "%s\n",
-                                                       conf));
-                                        }
-                                        SAFE_FREE(conf);
-                                }
-                        }
-                }
-                
-                load_interfaces();  /* Load the list of interfaces ... */
-                
-                reopen_logs();  /* Get logging working ... */
-                
-                /*
-                 * Block SIGPIPE (from lib/util_sock.c: write())
-                 * It is not needed and should not stop execution
-                 */
-                BlockSignals(True, SIGPIPE);
-                
-                /* Done with one-time initialisation */
-                SMBC_initialized = true;
-                
-                TALLOC_FREE(frame);
         }
         
         if (!smbc_getUser(context)) {
@@ -610,13 +642,20 @@ smbc_init_context(SMBCCTX *context)
         if (smbc_getTimeout(context) > 0 && smbc_getTimeout(context) < 1000)
                 smbc_setTimeout(context, 1000);
         
-        /*
-         * FIXME: Should we check the function pointers here?
-         */
-        
         context->internal->initialized = True;
+
+        /* Protect access to the count of contexts in use */
+	if (SMB_THREAD_LOCK(initialized_ctx_count_mutex) != 0) {
+                smb_panic("error locking 'initialized_ctx_count'");
+	}
+
 	initialized_ctx_count++;
 
+        /* Unlock the mutex */
+	if (SMB_THREAD_UNLOCK(initialized_ctx_count_mutex) != 0) {
+                smb_panic("error unlocking 'initialized_ctx_count'");
+	}
+        
         return context;
 }
 
