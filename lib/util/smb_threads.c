@@ -108,41 +108,25 @@ int smb_thread_set_functions(const struct smb_thread_functions *tf)
 int smb_thread_once(smb_thread_once_t *ponce, void (*init_fn)(void))
 {
         int ret;
-        bool need_func_call;
 
         /* Lock our "once" mutex in order to test and initialize ponce */
 	if ((ret = SMB_THREAD_LOCK(once_mutex, SMB_THREAD_LOCK)) != 0) {
                 smb_panic("error locking 'once'");
 	}
 
-        /* Store whether we're going to need to issue the function call */
-        need_func_call = ! *ponce;
-
         /*
          * See if another thread got here after we tested it initially but
          * before we got our lock.
          */
-        if (need_func_call) {
-                /*
-                 * Nope, we still need to issue the call. Set the "once"
-                 * variable to true now so we can unlock the mutex. (We don't
-                 * want to leave it locked during the call to the
-                 * initialization function in case there's yet another "once"
-                 * function needed to be called from therein.)
-                 */
-                *ponce = true;
+        if (! *ponce) {
+                /* Nope, we need to run the initialization function */
+                (*init_fn)();
         }
 
         /* Unlock the mutex */
 	if ((ret = SMB_THREAD_LOCK(once_mutex, SMB_THREAD_UNLOCK)) != 0) {
                 smb_panic("error unlocking 'once'");
 	}
-
-        /* Finally, if we need to call the user-provided function, ... */
-        if (need_func_call) {
-                /* ... then do so now. */
-                (*init_fn)();
-        }
 
 	return 0;
 }
