@@ -48,13 +48,6 @@ SMBC_module_init(void * punused)
                 
     setup_logging("libsmbclient", True);
 
-#if 0 /* need a place to put this (thread local storage) */
-    if (context->internal->debug_stderr) {
-        dbf = x_stderr;
-        x_setbuf(x_stderr, NULL);
-    }
-#endif
-                
     /* Here we would open the smb.conf file if needed ... */
                 
     lp_set_in_client(True);
@@ -553,6 +546,16 @@ smbc_init_context(SMBCCTX *context)
                 return NULL;
         }
         
+        if (context->internal->debug_stderr) {
+            /*
+             * Hmmm... Do we want a unique dbf per-thread? For now, we'll just
+             * leave it up to the user. If any one context spefies debug to
+             * stderr then all will be.
+             */
+            dbf = x_stderr;
+            x_setbuf(x_stderr, NULL);
+        }
+                
         if ((!smbc_getFunctionAuthData(context) &&
              !smbc_getFunctionAuthDataWithContext(context)) ||
             smbc_getDebug(context) < 0 ||
