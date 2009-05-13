@@ -140,7 +140,7 @@ static void nbtd_wins_refresh(struct tevent_context *ev, struct tevent_timer *te
 
 	/* setup a wins name refresh request */
 	io.in.name            = iname->name;
-	io.in.wins_servers    = (const char **)str_list_make(tmp_ctx, iname->wins_server, NULL);
+	io.in.wins_servers    = (const char **)str_list_make_single(tmp_ctx, iname->wins_server);
 	io.in.wins_port       = lp_nbt_port(iface->nbtsrv->task->lp_ctx);
 	io.in.addresses       = nbtd_address_list(iface, tmp_ctx);
 	io.in.nb_flags        = iname->nb_flags;
