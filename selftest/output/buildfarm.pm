@@ -24,6 +24,7 @@ use FindBin qw($RealBin);
 use lib "$RealBin/..";
 
 use Subunit qw(parse_results);
+use BuildFarm;
 
 use strict;
 
@@ -31,30 +32,33 @@ sub new($$$) {
 	my ($class) = @_;
 	my $self = {
 		test_output => {},
-		start_time => time()
+		last_time => 0,
+		start_time => undef,
 	};
 	bless($self, $class);
+}
+
+sub report_time($$)
+{
+	my ($self, $time) = @_;
+
+	unless ($self->{start_time}) {
+		$self->{start_time} = $time;
+	}
+
+	$self->{last_time} = $time;
 }
 
 sub start_testsuite($$)
 {
 	my ($self, $name) = @_;
-	my $out = "";
 
 	$self->{NAME} = $name;
-	$self->{START_TIME} = time();
+	$self->{START_TIME} = $self->{last_time};
 
 	my $duration = $self->{START_TIME} - $self->{start_time};
-	$out .= "--==--==--==--==--==--==--==--==--==--==--\n";
-	$out .= "Running test $name (level 0 stdout)\n";
-	$out .= "--==--==--==--==--==--==--==--==--==--==--\n";
-	$out .= scalar(localtime())."\n";
-	$out .= "SELFTEST RUNTIME: " . $duration . "s\n";
-	$out .= "NAME: $name\n";
-
+	BuildFarm::start_testsuite($name, $duration);
 	$self->{test_output}->{$name} = "";
-
-	print $out;
 }
 
 sub output_msg($$)
@@ -74,26 +78,10 @@ sub control_msg($$)
 sub end_testsuite($$$$$$)
 {
 	my ($self, $name, $result, $unexpected, $reason) = @_;
-	my $out = "";
 
-	$out .= "TEST RUNTIME: " . (time() - $self->{START_TIME}) . "s\n";
-
-	if (not $unexpected) {
-		$out .= "ALL OK\n";
-	} else {
-		$out .= "ERROR: $reason\n";
-		$out .= $self->{test_output}->{$name};
-	}
-
-	$out .= "==========================================\n";
-	if (not $unexpected) {
-		$out .= "TEST PASSED: $name\n";
-	} else {
-		$out .= "TEST FAILED: $name (status $reason)\n";
-	}
-	$out .= "==========================================\n";
-
-	print $out;
+	BuildFarm::end_testsuite($name, ($self->{last_time} - $self->{START_TIME}), 
+		                     (not $unexpected), $self->{test_output}->{$name}, 
+							 $reason);
 }
 
 sub start_test($$$)
@@ -121,15 +109,15 @@ sub end_test($$$$$)
 sub summary($)
 {
 	my ($self) = @_;
-
-	print "DURATION: " . (time() - $self->{start_time}) . " seconds\n";
+	
+	BuildFarm::summary($self->{last_time} - $self->{start_time});
 }
 
-sub skip_testsuite($$$$)
+sub skip_testsuite($$$)
 {
 	my ($self, $name, $reason) = @_;
 
-	print "SKIPPED: $name\n";
+	BuildFarm::skip_testsuite($name);
 }
 
 1;
