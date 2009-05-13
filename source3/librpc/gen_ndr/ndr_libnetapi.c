@@ -990,6 +990,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_SERVER_INFO_598(struct ndr_push *ndr, int nd
 		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sv598_disablestrictnamechecking));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		NDR_CHECK(ndr_push_GUID(ndr, NDR_BUFFERS, &r->sv598_serverguid));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1042,6 +1043,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_SERVER_INFO_598(struct ndr_pull *ndr, int nd
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sv598_disablestrictnamechecking));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		NDR_CHECK(ndr_pull_GUID(ndr, NDR_BUFFERS, &r->sv598_serverguid));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -7598,6 +7600,54 @@ _PUBLIC_ void ndr_print_NetFileEnum(struct ndr_print *ndr, const char *name, int
 		ndr->depth++;
 		ndr_print_uint32(ndr, "resume_handle", *r->out.resume_handle);
 		ndr->depth--;
+		ndr_print_NET_API_STATUS(ndr, "result", r->out.result);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+_PUBLIC_ void ndr_print_NetShutdownInit(struct ndr_print *ndr, const char *name, int flags, const struct NetShutdownInit *r)
+{
+	ndr_print_struct(ndr, name, "NetShutdownInit");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "NetShutdownInit");
+		ndr->depth++;
+		ndr_print_string(ndr, "server_name", r->in.server_name);
+		ndr_print_string(ndr, "message", r->in.message);
+		ndr_print_uint32(ndr, "timeout", r->in.timeout);
+		ndr_print_uint8(ndr, "force_apps", r->in.force_apps);
+		ndr_print_uint8(ndr, "do_reboot", r->in.do_reboot);
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "NetShutdownInit");
+		ndr->depth++;
+		ndr_print_NET_API_STATUS(ndr, "result", r->out.result);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+_PUBLIC_ void ndr_print_NetShutdownAbort(struct ndr_print *ndr, const char *name, int flags, const struct NetShutdownAbort *r)
+{
+	ndr_print_struct(ndr, name, "NetShutdownAbort");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "NetShutdownAbort");
+		ndr->depth++;
+		ndr_print_string(ndr, "server_name", r->in.server_name);
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "NetShutdownAbort");
+		ndr->depth++;
 		ndr_print_NET_API_STATUS(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
