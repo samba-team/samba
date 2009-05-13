@@ -87,6 +87,38 @@ static bool test_list_copy(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_list_make_empty(struct torture_context *tctx)
+{
+	char **result;
+
+	result = str_list_make_empty(tctx);
+	torture_assert(tctx, result, "str_list_make_empty() must not return NULL");
+	torture_assert(tctx, result[0] == NULL, "first element in str_list_make_empty() result must be NULL");
+
+	result = str_list_make(tctx, NULL, NULL);
+	torture_assert(tctx, result, "str_list_make() must not return NULL");
+	torture_assert(tctx, result[0] == NULL, "first element in str_list_make(ctx, NULL, NULL) result must be NULL");
+	
+	result = str_list_make(tctx, "", NULL);
+	torture_assert(tctx, result, "str_list_make() must not return NULL");
+	torture_assert(tctx, result[0] == NULL, "first element in str_list_make(ctx, "", NULL) result must be NULL");
+	
+	return true;
+}
+
+static bool test_list_make_single(struct torture_context *tctx)
+{
+	char **result;
+
+	result = str_list_make_single(tctx, "foo");
+
+	torture_assert(tctx, result, "str_list_make_single() must not return NULL");
+	torture_assert_str_equal(tctx, result[0], "foo", "element 0");
+	torture_assert(tctx, result[1] == NULL, "second element in result must be NULL");
+	
+	return true;
+}
+
 struct torture_suite *torture_local_util_strlist(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "STRLIST");
@@ -98,6 +130,8 @@ struct torture_suite *torture_local_util_strlist(TALLOC_CTX *mem_ctx)
 	}
 
 	torture_suite_add_simple_test(suite, "list_copy", test_list_copy);
+	torture_suite_add_simple_test(suite, "make_empty", test_list_make_empty);
+	torture_suite_add_simple_test(suite, "make_single", test_list_make_single);
 
 	return suite;
 }

@@ -397,6 +397,16 @@ _PUBLIC_ bool strequal(const char *s1, const char *s2);
 #endif
 
 /**
+  build an empty (only NULL terminated) list of strings (for expansion with str_list_add() etc)
+*/
+_PUBLIC_ char **str_list_make_empty(TALLOC_CTX *mem_ctx);
+
+/**
+  place the only element 'entry' into a new, NULL terminated string list
+*/
+_PUBLIC_ char **str_list_make_single(TALLOC_CTX *mem_ctx, const char *entry);
+
+/**
   build a null terminated list of strings from a input string and a
   separator list. The separator list must contain characters less than
   or equal to 0x2f for this to work correctly on multi-byte strings

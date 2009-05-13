@@ -29,6 +29,47 @@
  */
 
 /**
+  build an empty (only NULL terminated) list of strings (for expansion with str_list_add() etc)
+*/
+_PUBLIC_ char **str_list_make_empty(TALLOC_CTX *mem_ctx)
+{
+	int num_elements = 0;
+	char **ret = NULL;
+
+	ret = talloc_array(mem_ctx, char *, 1);
+	if (ret == NULL) {
+		return NULL;
+	}
+
+	ret[0] = NULL;
+
+	return ret;
+}
+
+/**
+  place the only element 'entry' into a new, NULL terminated string list
+*/
+_PUBLIC_ char **str_list_make_single(TALLOC_CTX *mem_ctx, const char *entry)
+{
+	int num_elements = 0;
+	char **ret = NULL;
+
+	ret = talloc_array(mem_ctx, char *, 2);
+	if (ret == NULL) {
+		return NULL;
+	}
+
+	ret[0] = talloc_strdup(ret, entry);
+	if (!ret[0]) {
+		talloc_free(ret);
+		return NULL;
+	}
+	ret[1] = NULL;
+
+	return ret;
+}
+
+/**
   build a null terminated list of strings from a input string and a
   separator list. The separator list must contain characters less than
   or equal to 0x2f for this to work correctly on multi-byte strings
