@@ -524,12 +524,12 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 							errno == ELOOP) {
 						result =
 						NT_STATUS_OBJECT_PATH_NOT_FOUND;
-					}
-					else {
+						goto fail;
+					} else if (errno != EACCES) {
 						result =
 						map_nt_error_from_unix(errno);
+						goto fail;
 					}
-					goto fail;
 				}
 
 				/*
