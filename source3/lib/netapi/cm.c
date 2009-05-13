@@ -42,8 +42,12 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 	}
 	auth_info->signing_state = Undefined;
 	set_cmdline_auth_info_use_kerberos(auth_info, ctx->use_kerberos);
-	set_cmdline_auth_info_password(auth_info, ctx->password);
 	set_cmdline_auth_info_username(auth_info, ctx->username);
+	if (ctx->password) {
+		set_cmdline_auth_info_password(auth_info, ctx->password);
+	} else {
+		set_cmdline_auth_info_getpass(auth_info);
+	}
 
 	if (ctx->username && ctx->username[0] &&
 	    ctx->password && ctx->password[0] &&
