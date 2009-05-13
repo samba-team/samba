@@ -8,7 +8,7 @@
 . $CTDB_BASE/functions
 loadconfig ctdb
 
-[ -z "$NATGW_PUBLIC_IFACE" ] && exit 0
+[ -z "$CTDB_NATGW_PUBLIC_IFACE" ] && exit 0
 
 cmd="$1"
 shift
@@ -16,14 +16,14 @@ PATH=/usr/bin:/bin:/usr/sbin:/sbin:$PATH
 
 
 delete_all() {
-	remove_ip $NATGW_PUBLIC_IP $NATGW_PUBLIC_IFACE
-	remove_ip $NATGW_PUBLIC_IP_HOST lo
+	remove_ip $CTDB_NATGW_PUBLIC_IP $CTDB_NATGW_PUBLIC_IFACE
+	remove_ip $CTDB_NATGW_PUBLIC_IP_HOST lo
 
 	ip route del 0.0.0.0/0 metric 10 >/dev/null 2>/dev/null
 
 	# Delete the masquerading setup from a previous iteration where we
 	# were the NAT-GW
-	iptables -D POSTROUTING -t nat -s $NATGW_PRIVATE_NETWORK -d ! $NATGW_PRIVATE_NETWORK -j MASQUERADE >/dev/null 2>/dev/null
+	iptables -D POSTROUTING -t nat -s $CTDB_NATGW_PRIVATE_NETWORK -d ! $CTDB_NATGW_PRIVATE_NETWORK -j MASQUERADE >/dev/null 2>/dev/null
 
 }
 
@@ -33,16 +33,16 @@ case $cmd in
 	NATGWMASTER=`ctdb natgwlist | head -1`
 	NATGWIP=`ctdb natgwlist | tail --lines=+2 | head -1 | cut -d: -f3`
 
-	NATGW_PUBLIC_IP_HOST=`echo $NATGW_PUBLIC_IP | sed -e "s/\/.*/\/32/"`
+	CTDB_NATGW_PUBLIC_IP_HOST=`echo $CTDB_NATGW_PUBLIC_IP | sed -e "s/\/.*/\/32/"`
 
 	delete_all
 
 	if [ "$MYPNN" == "$NATGWMASTER" ]; then
 		# This is the first node, set it up as the NAT GW
 		echo 1 >/proc/sys/net/ipv4/ip_forward
-		iptables -A POSTROUTING -t nat -s $NATGW_PRIVATE_NETWORK -d ! $NATGW_PRIVATE_NETWORK -j MASQUERADE
-		ip addr add $NATGW_PUBLIC_IP dev $NATGW_PUBLIC_IFACE
-		ip route add 0.0.0.0/0 via $NATGW_DEFAULT_GATEWAY >/dev/null 2>/dev/null
+		iptables -A POSTROUTING -t nat -s $CTDB_NATGW_PRIVATE_NETWORK -d ! $CTDB_NATGW_PRIVATE_NETWORK -j MASQUERADE
+		ip addr add $CTDB_NATGW_PUBLIC_IP dev $CTDB_NATGW_PUBLIC_IFACE
+		ip route add 0.0.0.0/0 via $CTDB_NATGW_DEFAULT_GATEWAY >/dev/null 2>/dev/null
 	else
 		# This is not the NAT-GW
 		# Assign the public ip to the private interface and make
@@ -50,7 +50,7 @@ case $cmd in
 		# We do this so that the ip address will exist on a
 		# non-loopback interface so that samba may send it along in the
 		# KDC requests.
-		ip addr add $NATGW_PUBLIC_IP_HOST dev lo
+		ip addr add $CTDB_NATGW_PUBLIC_IP_HOST dev lo
 		ip route add 0.0.0.0/0 via $NATGWIP metric 10
 	fi
 

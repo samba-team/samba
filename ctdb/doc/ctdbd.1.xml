@@ -861,19 +861,19 @@ CTDB_CAPABILITY_RECMASTER=no
 # and thus no proper routes to the external world it will instead
 # route all packets through the nat-gw node.
 #
-# NATGW_NODES is the list of nodes that belong to this natgw group.
+# CTDB_NATGW_NODES is the list of nodes that belong to this natgw group.
 # You can have multiple natgw groups in one cluster but each node
 # can only belong to one single natgw group.
 #
-# NATGW_PUBLIC_IP=10.0.0.227/24
-# NATGW_PUBLIC_IFACE=eth0
-# NATGW_DEFAULT_GATEWAY=10.0.0.1
-# NATGW_PRIVATE_NETWORK=10.1.1.0/24
-# NATGW_NODES=/etc/ctdb/natgw_nodes
+# CTDB_NATGW_PUBLIC_IP=10.0.0.227/24
+# CTDB_NATGW_PUBLIC_IFACE=eth0
+# CTDB_NATGW_DEFAULT_GATEWAY=10.0.0.1
+# CTDB_NATGW_PRIVATE_NETWORK=10.1.1.0/24
+# CTDB_NATGW_NODES=/etc/ctdb/natgw_nodes
     </screen>
     </refsect2>
 
-    <refsect2><title>NATGW_PUBLIC_IP</title>
+    <refsect2><title>CTDB_NATGW_PUBLIC_IP</title>
     <para>
       This is an ip address in the public network that is used for all outgoing
       traffic when the public addresses are not assigned.
@@ -885,9 +885,9 @@ CTDB_CAPABILITY_RECMASTER=no
     </para>
     </refsect2>
 
-    <refsect2><title>NATGW_PUBLIC_IFACE</title>
+    <refsect2><title>CTDB_NATGW_PUBLIC_IFACE</title>
     <para>
-      This is the physical interface where the NATGW_PUBLIC_IP will be
+      This is the physical interface where the CTDB_NATGW_PUBLIC_IP will be
       assigned to. This should be an interface connected to the public network.
     </para>
     <para>
@@ -895,17 +895,17 @@ CTDB_CAPABILITY_RECMASTER=no
     </para>
     </refsect2>
 
-    <refsect2><title>NATGW_DEFAULT_GATEWAY</title>
+    <refsect2><title>CTDB_NATGW_DEFAULT_GATEWAY</title>
     <para>
       This is the default gateway to use on the node that is elected to host
-      the NATGW_PUBLIC_IP. This is the default gateway on the public network.
+      the CTDB_NATGW_PUBLIC_IP. This is the default gateway on the public network.
     </para>
     <para>
       Format of this parameter is IPADDRESS
     </para>
     </refsect2>
 
-    <refsect2><title>NATGW_PRIVATE_NETWORK</title>
+    <refsect2><title>CTDB_NATGW_PRIVATE_NETWORK</title>
     <para>
       This is the network/netmask used for the interal private network.
     </para>
@@ -914,7 +914,7 @@ CTDB_CAPABILITY_RECMASTER=no
     </para>
     </refsect2>
 
-    <refsect2><title>NATGW_NODES</title>
+    <refsect2><title>CTDB_NATGW_NODES</title>
     <para>
       This is the list of all nodes that belong to the same NATGW group
       as this node. The default is /etc/ctdb/natgw_nodes.
@@ -928,7 +928,7 @@ CTDB_CAPABILITY_RECMASTER=no
       they need to originate traffic to the external public network.
     </para>
     <para>
-      The NAT-GW node is assigned the NATGW_PUBLIC_IP to the designated
+      The NAT-GW node is assigned the CTDB_NATGW_PUBLIC_IP to the designated
       interface and the provided default route. The NAT-GW is configured
       to act as a router and to masquerade all traffic it receives from the
       internal private network and which is destined to the external network(s).

@@ -1,11 +1,11 @@
 .\"     Title: ctdbd
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
-.\"      Date: 05/12/2009
+.\"      Date: 05/14/2009
 .\"    Manual: 
 .\"    Source: 
 .\"
-.TH "CTDBD" "1" "05/12/2009" "" ""
+.TH "CTDBD" "1" "05/14/2009" "" ""
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -464,46 +464,46 @@ NAT\-GW is configured in /etc/sysconfigctdb by setting the following variables:
 # and thus no proper routes to the external world it will instead
 # route all packets through the nat\-gw node\.
 #
-# NATGW_NODES is the list of nodes that belong to this natgw group\.
+# CTDB_NATGW_NODES is the list of nodes that belong to this natgw group\.
 # You can have multiple natgw groups in one cluster but each node
 # can only belong to one single natgw group\.
 #
-# NATGW_PUBLIC_IP=10\.0\.0\.227/24
-# NATGW_PUBLIC_IFACE=eth0
-# NATGW_DEFAULT_GATEWAY=10\.0\.0\.1
-# NATGW_PRIVATE_NETWORK=10\.1\.1\.0/24
-# NATGW_NODES=/etc/ctdb/natgw_nodes
+# CTDB_NATGW_PUBLIC_IP=10\.0\.0\.227/24
+# CTDB_NATGW_PUBLIC_IFACE=eth0
+# CTDB_NATGW_DEFAULT_GATEWAY=10\.0\.0\.1
+# CTDB_NATGW_PRIVATE_NETWORK=10\.1\.1\.0/24
+# CTDB_NATGW_NODES=/etc/ctdb/natgw_nodes
     
 .fi
 .RE
-.SS "NATGW_PUBLIC_IP"
+.SS "CTDB_NATGW_PUBLIC_IP"
 .PP
 This is an ip address in the public network that is used for all outgoing traffic when the public addresses are not assigned\. This address will be assigned to one of the nodes in the cluster which will masquerade all traffic for the other nodes\.
 .PP
 Format of this parameter is IPADDRESS/NETMASK
-.SS "NATGW_PUBLIC_IFACE"
+.SS "CTDB_NATGW_PUBLIC_IFACE"
 .PP
-This is the physical interface where the NATGW_PUBLIC_IP will be assigned to\. This should be an interface connected to the public network\.
+This is the physical interface where the CTDB_NATGW_PUBLIC_IP will be assigned to\. This should be an interface connected to the public network\.
 .PP
 Format of this parameter is INTERFACE
-.SS "NATGW_DEFAULT_GATEWAY"
+.SS "CTDB_NATGW_DEFAULT_GATEWAY"
 .PP
-This is the default gateway to use on the node that is elected to host the NATGW_PUBLIC_IP\. This is the default gateway on the public network\.
+This is the default gateway to use on the node that is elected to host the CTDB_NATGW_PUBLIC_IP\. This is the default gateway on the public network\.
 .PP
 Format of this parameter is IPADDRESS
-.SS "NATGW_PRIVATE_NETWORK"
+.SS "CTDB_NATGW_PRIVATE_NETWORK"
 .PP
 This is the network/netmask used for the interal private network\.
 .PP
 Format of this parameter is IPADDRESS/NETMASK
-.SS "NATGW_NODES"
+.SS "CTDB_NATGW_NODES"
 .PP
 This is the list of all nodes that belong to the same NATGW group as this node\. The default is /etc/ctdb/natgw_nodes\.
 .SS "Operation"
 .PP
 When the NAT\-GW fiunctionality is used, one of the nodes is elected to act as a NAT router for all the other nodes in the group when they need to originate traffic to the external public network\.
 .PP
-The NAT\-GW node is assigned the NATGW_PUBLIC_IP to the designated interface and the provided default route\. The NAT\-GW is configured to act as a router and to masquerade all traffic it receives from the internal private network and which is destined to the external network(s)\.
+The NAT\-GW node is assigned the CTDB_NATGW_PUBLIC_IP to the designated interface and the provided default route\. The NAT\-GW is configured to act as a router and to masquerade all traffic it receives from the internal private network and which is destined to the external network(s)\.
 .PP
 All other nodes in the group are configured with a default route of metric 10 pointing to the designated NAT GW node\.
 .PP
