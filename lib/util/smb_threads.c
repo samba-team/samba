@@ -121,6 +121,9 @@ int smb_thread_once(smb_thread_once_t *ponce, void (*init_fn)(void))
         if (! *ponce) {
                 /* Nope, we need to run the initialization function */
                 (*init_fn)();
+
+                /* Now we can indicate that the function has been run */
+                *ponce = true;
         }
 
         /* Unlock the mutex */
