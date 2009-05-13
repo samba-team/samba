@@ -138,7 +138,7 @@ sub end_testsuite($$$$)
 
 	print TEST "</table>\n";
 
-	print TEST "<div class=\"duration\">Duration: " . (time() - $self->{START_TIME}) . "s</div>\n";
+	print TEST "<div class=\"duration\">Duration: " . ($self->{last_time} - $self->{START_TIME}) . "s</div>\n";
 
 	$self->print_html_footer(*TEST);
 
@@ -192,12 +192,18 @@ sub end_testsuite($$$$)
 	print INDEX "</tr>\n";
 }
 
+sub report_time($$)
+{
+	my ($self, $time) = @_;
+	$self->{last_time} = $time;
+}
+
 sub start_test($$)
 {
 	my ($self, $parents, $testname) = @_;
 
 	if ($#$parents == -1) {
-		$self->{START_TIME} = time();
+		$self->{START_TIME} = $self->{last_time};
 		$self->start_testsuite($testname);
 		return;
 	}

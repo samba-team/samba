@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 # Bootstrap Samba and run a number of tests against it.
-# Copyright (C) 2005-2008 Jelmer Vernooij <jelmer@samba.org>
+# Copyright (C) 2005-2009 Jelmer Vernooij <jelmer@samba.org>
 # Copyright (C) 2007-2009 Stefan Metzmacher <metze@samba.org>
 
 # This program is free software; you can redistribute it and/or modify
@@ -254,6 +254,7 @@ sub run_testsuite($$$$$$)
 	my ($envname, $name, $cmd, $i, $totalsuites, $msg_ops) = @_;
 	my $pcap_file = setup_pcap($name);
 
+	$msg_ops->report_time(time());
 	$msg_ops->start_test([], $name);
 
 	unless (open(RESULT, "$cmd 2>&1|")) {
@@ -276,6 +277,7 @@ sub run_testsuite($$$$$$)
 
 	my $exitcode = $? >> 8;
 
+	$msg_ops->report_time(time());
 	if ($ret == 1) {
 		$msg_ops->end_test([], $name, "success", $expected_ret != $ret, undef); 
 	} else {
@@ -692,7 +694,7 @@ if ($opt_format eq "buildfarm") {
 } else {
 	die("Invalid output format '$opt_format'");
 }
-
+$msg_ops->report_time(time());
 
 foreach (@available) {
 	my $name = $$_[0];
@@ -886,7 +888,8 @@ $envvarstr
 		
 		my $envvars = setup_env($envname);
 		if (not defined($envvars)) {
-			$msg_ops->skip_testsuite($name, "unable to set up environment $envname");
+			$msg_ops->skip_testsuite($name, 
+				"unable to set up environment $envname");
 			next;
 		}
 

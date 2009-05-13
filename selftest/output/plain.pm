@@ -29,7 +29,7 @@ sub new($$$$$$$) {
 		verbose => $verbose, 
 		immediate => $immediate, 
 		statistics => $statistics,
-		start_time => time(),
+		start_time => undef,
 		test_output => {},
 		suitesfailed => [],
 		suites_ok => 0,
@@ -41,6 +41,15 @@ sub new($$$$$$$) {
 	bless($self, $class);
 }
 
+sub report_time($$)
+{
+	my ($self, $time) = @_;
+	unless ($self->{start_time}) {
+		$self->{start_time} = $time;
+	}
+	$self->{last_time} = $time;
+}
+
 sub output_msg($$);
 
 sub start_testsuite($$)
@@ -49,7 +58,7 @@ sub start_testsuite($$)
 
 	$self->{index}++;
 	$self->{NAME} = $name;
-	$self->{START_TIME} = time();
+	$self->{START_TIME} = $self->{last_time};
 
 	my $duration = $self->{START_TIME} - $self->{start_time};
 

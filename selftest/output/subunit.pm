@@ -33,6 +33,13 @@ sub new($) {
 	bless($self, $class);
 }
 
+sub report_time($$)
+{
+	my ($self, $time) = @_;
+	my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime($time);
+	printf "time: %04d-%02d-%02d %02d:%02d:%02dZ\n", $year+1900, $mon, $mday, $hour, $min, $sec;
+}
+
 sub start_testsuite($$)
 {
 	my ($self, $name) = @_;
