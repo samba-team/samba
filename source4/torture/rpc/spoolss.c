@@ -304,9 +304,14 @@ static bool test_EnumPrinterDrivers(struct torture_context *tctx,
 	NTSTATUS status;
 	struct spoolss_EnumPrinterDrivers r;
 	uint16_t levels[] = { 1, 2, 3, 4, 5, 6 };
-	int i, j;
+	int i, j, a;
+	const char *architectures[] = {
+		SPOOLSS_ARCHITECTURE_NT_X86,
+		SPOOLSS_ARCHITECTURE_ALL
+	};
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
+	for (a=0;a<ARRAY_SIZE(architectures);a++) {
 		int level = levels[i];
 		DATA_BLOB blob;
 		uint32_t needed;
@@ -318,7 +323,7 @@ static bool test_EnumPrinterDrivers(struct torture_context *tctx,
 		 * server */
 
 		r.in.server		= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
-		r.in.environment	= SPOOLSS_ARCHITECTURE_NT_X86;
+		r.in.environment	= architectures[a];
 		r.in.level		= level;
 		r.in.buffer		= NULL;
 		r.in.offered		= 0;
@@ -326,7 +331,7 @@ static bool test_EnumPrinterDrivers(struct torture_context *tctx,
 		r.out.count		= &count;
 		r.out.info		= &info;
 
-		torture_comment(tctx, "Testing EnumPrinterDrivers level %u\n", r.in.level);
+		torture_comment(tctx, "Testing EnumPrinterDrivers level %u (%s)\n", r.in.level, r.in.environment);
 
 		status = dcerpc_spoolss_EnumPrinterDrivers(p, ctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, 
@@ -347,19 +352,37 @@ static bool test_EnumPrinterDrivers(struct torture_context *tctx,
 
 		torture_assert_werr_ok(tctx, r.out.result, "EnumPrinterDrivers failed");
 
+		/* don't do cross-architecture comparison */
+		if (strequal(r.in.environment, SPOOLSS_ARCHITECTURE_ALL)) {
+			continue;
+		}
+
 		ctx->driver_count[level]	= count;
 		ctx->drivers[level]		= info;
+	}
 	}
 
 	for (i=1;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i];
 		int old_level = levels[i-1];
+
+		/* don't do cross-architecture comparison */
+		if (strequal(r.in.environment, SPOOLSS_ARCHITECTURE_ALL)) {
+			continue;
+		}
+
 		torture_assert_int_equal(tctx, ctx->driver_count[level], ctx->driver_count[old_level],
 			"EnumPrinterDrivers invalid value");
 	}
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i];
+
+		/* don't do cross-architecture comparison */
+		if (strequal(r.in.environment, SPOOLSS_ARCHITECTURE_ALL)) {
+			continue;
+		}
+
 		for (j=0;j<ctx->driver_count[level];j++) {
 			union spoolss_DriverInfo *cur = &ctx->drivers[level][j];
 			union spoolss_DriverInfo *ref = &ctx->drivers[6][j];
@@ -513,7 +536,7 @@ static bool test_EnumPrintProcessors(struct torture_context *tctx,
 		union spoolss_PrintProcessorInfo *info;
 
 		r.in.servername = "";
-		r.in.environment = "Windows NT x86";
+		r.in.environment = SPOOLSS_ARCHITECTURE_NT_X86;
 		r.in.level = level;
 		r.in.buffer = NULL;
 		r.in.offered = 0;
@@ -1965,7 +1988,7 @@ static bool test_EnumPrinterDrivers_old(struct torture_context *tctx,
 		union spoolss_DriverInfo *info;
 
 		r.in.server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
-		r.in.environment = "Windows NT x86";
+		r.in.environment = SPOOLSS_ARCHITECTURE_NT_X86;
 		r.in.level = levels[i];
 		r.in.buffer = NULL;
 		r.in.offered = 0;
