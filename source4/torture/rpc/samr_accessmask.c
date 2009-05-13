@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    test suite for accessmasks on the SAMR pipe
 
    Copyright (C) Ronnie Sahlberg 2007
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -32,8 +32,8 @@
 
 
 static NTSTATUS torture_samr_Close(struct torture_context *tctx,
-		struct dcerpc_pipe *p, 
-		struct policy_handle *h)
+				   struct dcerpc_pipe *p,
+				   struct policy_handle *h)
 {
 	NTSTATUS status;
 	struct samr_Close cl;
@@ -46,8 +46,8 @@ static NTSTATUS torture_samr_Close(struct torture_context *tctx,
 }
 
 static NTSTATUS torture_samr_Connect5(struct torture_context *tctx,
-		struct dcerpc_pipe *p, 
-		uint32_t mask, struct policy_handle *h)
+				      struct dcerpc_pipe *p,
+				      uint32_t mask, struct policy_handle *h)
 {
 	NTSTATUS status;
 	struct samr_Connect5 r5;
@@ -70,8 +70,8 @@ static NTSTATUS torture_samr_Connect5(struct torture_context *tctx,
 }
 
 /* check which bits in accessmask allows us to connect to the server */
-static bool test_samr_accessmask_Connect5(struct torture_context *tctx, 
-						   struct dcerpc_pipe *p)
+static bool test_samr_accessmask_Connect5(struct torture_context *tctx,
+					  struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct policy_handle h;
@@ -80,7 +80,7 @@ static bool test_samr_accessmask_Connect5(struct torture_context *tctx,
 
 	printf("testing which bits in accessmask allows us to connect\n");
 	mask = 1;
-	for (i=0;i<33;i++) {	
+	for (i=0;i<33;i++) {
 		printf("testing Connect5 with access mask 0x%08x", mask);
 		status = torture_samr_Connect5(tctx, p, mask, &h);
 		mask <<= 1;
@@ -140,8 +140,8 @@ static bool test_samr_accessmask_Connect5(struct torture_context *tctx,
    in the access mask to Connect5() in order to be allowed to perform
    EnumDomains() on the policy handle returned from Connect5()
 */
-static bool test_samr_accessmask_EnumDomains(struct torture_context *tctx, 
-						   struct dcerpc_pipe *p)
+static bool test_samr_accessmask_EnumDomains(struct torture_context *tctx,
+					     struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct samr_EnumDomains ed;
@@ -154,7 +154,7 @@ static bool test_samr_accessmask_EnumDomains(struct torture_context *tctx,
 
 	printf("testing which bits in Connect5 accessmask allows us to EnumDomains\n");
 	mask = 1;
-	for (i=0;i<33;i++) {	
+	for (i=0;i<33;i++) {
 		printf("testing Connect5/EnumDomains with access mask 0x%08x", mask);
 		status = torture_samr_Connect5(tctx, p, mask, &ch);
 		mask <<= 1;
@@ -225,16 +225,16 @@ static bool test_samr_accessmask_EnumDomains(struct torture_context *tctx,
 
 
 /*
- * test how ACLs affect how/if a user can connect to the SAMR service 
+ * test how ACLs affect how/if a user can connect to the SAMR service
  *
  * samr_SetSecurity() returns SUCCESS when changing the ACL for
  * a policy handle got from Connect5()   but the ACL is not changed on
  * the server
  */
-static bool test_samr_connect_user_acl(struct torture_context *tctx, 
-				   struct dcerpc_pipe *p,
-				   struct cli_credentials *test_credentials,
-				   const struct dom_sid *test_sid)
+static bool test_samr_connect_user_acl(struct torture_context *tctx,
+				       struct dcerpc_pipe *p,
+				       struct cli_credentials *test_credentials,
+				       const struct dom_sid *test_sid)
 
 {
 	NTSTATUS status;
@@ -259,7 +259,7 @@ static bool test_samr_connect_user_acl(struct torture_context *tctx,
 		return false;
 	}
 
-	
+
 	/* get the current ACL for the SAMR policy handle */
 	qs.in.handle = &ch;
 	qs.in.sec_info = SECINFO_DACL;
@@ -299,7 +299,7 @@ static bool test_samr_connect_user_acl(struct torture_context *tctx,
 
 
 	/* Try to connect as the test user */
-	status = dcerpc_pipe_connect(tctx, 
+	status = dcerpc_pipe_connect(tctx,
 			     &test_p, binding, &ndr_table_samr,
 			     test_credentials, tctx->ev, tctx->lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -317,7 +317,7 @@ static bool test_samr_connect_user_acl(struct torture_context *tctx,
 	talloc_free(test_p);
 
 
-	/* read the sequrity descriptor back. it should not have changed 
+	/* read the sequrity descriptor back. it should not have changed
 	 * eventhough samr_SetSecurity returned SUCCESS
 	 */
 	status = dcerpc_samr_QuerySecurity(p, tctx, &qs);
@@ -347,14 +347,14 @@ static bool test_samr_connect_user_acl(struct torture_context *tctx,
  * test if the ACLs are enforced for users.
  * a normal testuser only gets the rights provided in hte ACL for
  * Everyone   which does not include the SAMR_ACCESS_SHUTDOWN_SERVER
- * right.  If the ACLs are checked when a user connects   
+ * right.  If the ACLs are checked when a user connects
  * a testuser that requests the accessmask with only this bit set
  * the connect should fail.
  */
-static bool test_samr_connect_user_acl_enforced(struct torture_context *tctx, 
-				   struct dcerpc_pipe *p,
-				   struct cli_credentials *test_credentials,
-				   const struct dom_sid *test_sid)
+static bool test_samr_connect_user_acl_enforced(struct torture_context *tctx,
+						struct dcerpc_pipe *p,
+						struct cli_credentials *test_credentials,
+						const struct dom_sid *test_sid)
 
 {
 	NTSTATUS status;
@@ -366,7 +366,7 @@ static bool test_samr_connect_user_acl_enforced(struct torture_context *tctx,
 	printf("testing if ACLs are enforced for non domain admin users when connecting to SAMR");
 
 
-	status = dcerpc_pipe_connect(tctx, 
+	status = dcerpc_pipe_connect(tctx,
 			     &test_p, binding, &ndr_table_samr,
 			     test_credentials, tctx->ev, tctx->lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -392,13 +392,13 @@ static bool test_samr_connect_user_acl_enforced(struct torture_context *tctx,
    by default we must specify at least one of :
    in the access mask to Connect5() in order to be allowed to perform
 		case 5:  samr/opendomain
-		case 25: Maximum 
+		case 25: Maximum
 		case 28: GenericAll
 		case 29: GenericExecute
    LookupDomain() on the policy handle returned from Connect5()
 */
-static bool test_samr_accessmask_LookupDomain(struct torture_context *tctx, 
-						   struct dcerpc_pipe *p)
+static bool test_samr_accessmask_LookupDomain(struct torture_context *tctx,
+					      struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct samr_LookupDomain ld;
@@ -410,13 +410,13 @@ static bool test_samr_accessmask_LookupDomain(struct torture_context *tctx,
 
 	printf("testing which bits in Connect5 accessmask allows us to LookupDomain\n");
 	mask = 1;
-	for (i=0;i<33;i++) {	
+	for (i=0;i<33;i++) {
 		printf("testing Connect5/LookupDomain with access mask 0x%08x", mask);
 		status = torture_samr_Connect5(tctx, p, mask, &ch);
 		mask <<= 1;
 
 		switch (i) {
-		case 5:  
+		case 5:
 		case 25: /* Maximum */
 		case 28: /* GenericAll */
 		case 29: /* GenericExecute */
@@ -478,14 +478,14 @@ static bool test_samr_accessmask_LookupDomain(struct torture_context *tctx,
 /* check which bits in accessmask allows us to OpenDomain()
    by default we must specify at least one of :
 	samr/opendomain
-	Maximum 
+	Maximum
 	GenericAll
 	GenericExecute
    in the access mask to Connect5() in order to be allowed to perform
    OpenDomain() on the policy handle returned from Connect5()
 */
-static bool test_samr_accessmask_OpenDomain(struct torture_context *tctx, 
-						   struct dcerpc_pipe *p)
+static bool test_samr_accessmask_OpenDomain(struct torture_context *tctx,
+					    struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct samr_LookupDomain ld;
@@ -519,13 +519,13 @@ static bool test_samr_accessmask_OpenDomain(struct torture_context *tctx,
 
 	printf("testing which bits in Connect5 accessmask allows us to OpenDomain\n");
 	mask = 1;
-	for (i=0;i<33;i++) {	
+	for (i=0;i<33;i++) {
 		printf("testing Connect5/OpenDomain with access mask 0x%08x", mask);
 		status = torture_samr_Connect5(tctx, p, mask, &ch);
 		mask <<= 1;
 
 		switch (i) {
-		case 5:  
+		case 5:
 		case 25: /* Maximum */
 		case 28: /* GenericAll */
 		case 29: /* GenericExecute */
@@ -579,8 +579,8 @@ static bool test_samr_accessmask_OpenDomain(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_samr_connect(struct torture_context *tctx, 
-						   struct dcerpc_pipe *p)
+static bool test_samr_connect(struct torture_context *tctx,
+			      struct dcerpc_pipe *p)
 {
 	void *testuser;
 	const char *testuser_passwd;
@@ -589,7 +589,7 @@ static bool test_samr_connect(struct torture_context *tctx,
 	const struct dom_sid *test_sid;
 
 	/* create a test user */
-	testuser = torture_create_testuser(tctx, TEST_USER_NAME, lp_workgroup(tctx->lp_ctx), 
+	testuser = torture_create_testuser(tctx, TEST_USER_NAME, lp_workgroup(tctx->lp_ctx),
 					   ACB_NORMAL, &testuser_passwd);
 	if (!testuser) {
 		printf("Failed to create test user\n");
@@ -597,15 +597,15 @@ static bool test_samr_connect(struct torture_context *tctx,
 	}
 	test_credentials = cli_credentials_init(tctx);
 	cli_credentials_set_workstation(test_credentials, "localhost", CRED_SPECIFIED);
-	cli_credentials_set_domain(test_credentials, lp_workgroup(tctx->lp_ctx), 
+	cli_credentials_set_domain(test_credentials, lp_workgroup(tctx->lp_ctx),
 				   CRED_SPECIFIED);
 	cli_credentials_set_username(test_credentials, TEST_USER_NAME, CRED_SPECIFIED);
 	cli_credentials_set_password(test_credentials, testuser_passwd, CRED_SPECIFIED);
 	test_sid = torture_join_user_sid(testuser);
 
 
-	/* test which bits in the accessmask to Connect5 
-	   will allow us to connect to the server 
+	/* test which bits in the accessmask to Connect5
+	   will allow us to connect to the server
 	*/
 	if (!test_samr_accessmask_Connect5(tctx, p)) {
 		ret = false;
@@ -613,7 +613,7 @@ static bool test_samr_connect(struct torture_context *tctx,
 
 
 	/* test which bits in the accessmask to Connect5 will allow
-	 * us to call EnumDomains() 
+	 * us to call EnumDomains()
 	 */
 	if (!test_samr_accessmask_EnumDomains(tctx, p)) {
 		ret = false;
@@ -643,7 +643,7 @@ static bool test_samr_connect(struct torture_context *tctx,
 		ret = false;
 	}
 
-	/* test if the ACLs that are reported from the Connect5 
+	/* test if the ACLs that are reported from the Connect5
 	 * policy handle is enforced.
 	 * i.e. an ordinary user only has the same rights as Everybody
 	 *   ReadControl
@@ -667,12 +667,12 @@ static bool test_samr_connect(struct torture_context *tctx,
 
 struct torture_suite *torture_rpc_samr_accessmask(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "SAMR_ACCESSMASK");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "SAMR-ACCESSMASK");
 	struct torture_rpc_tcase *tcase;
 
-	tcase = torture_suite_add_rpc_iface_tcase(suite, "samr", 
-											  &ndr_table_samr);
-	
+	tcase = torture_suite_add_rpc_iface_tcase(suite, "samr",
+						  &ndr_table_samr);
+
 	torture_rpc_tcase_add_test(tcase, "CONNECT", test_samr_connect);
 
 	return suite;
