@@ -2353,3 +2353,91 @@ NET_API_STATUS NetFileEnum(const char * server_name /* [in] */,
 	return r.out.result;
 }
 
+/****************************************************************
+ NetShutdownInit
+****************************************************************/
+
+NET_API_STATUS NetShutdownInit(const char * server_name /* [in] */,
+			       const char * message /* [in] */,
+			       uint32_t timeout /* [in] */,
+			       uint8_t force_apps /* [in] */,
+			       uint8_t do_reboot /* [in] */)
+{
+	struct NetShutdownInit r;
+	struct libnetapi_ctx *ctx = NULL;
+	NET_API_STATUS status;
+	WERROR werr;
+
+	status = libnetapi_getctx(&ctx);
+	if (status != 0) {
+		return status;
+	}
+
+	/* In parameters */
+	r.in.server_name = server_name;
+	r.in.message = message;
+	r.in.timeout = timeout;
+	r.in.force_apps = force_apps;
+	r.in.do_reboot = do_reboot;
+
+	/* Out parameters */
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(NetShutdownInit, &r);
+	}
+
+	if (LIBNETAPI_LOCAL_SERVER(server_name)) {
+		werr = NetShutdownInit_l(ctx, &r);
+	} else {
+		werr = NetShutdownInit_r(ctx, &r);
+	}
+
+	r.out.result = W_ERROR_V(werr);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(NetShutdownInit, &r);
+	}
+
+	return r.out.result;
+}
+
+/****************************************************************
+ NetShutdownAbort
+****************************************************************/
+
+NET_API_STATUS NetShutdownAbort(const char * server_name /* [in] */)
+{
+	struct NetShutdownAbort r;
+	struct libnetapi_ctx *ctx = NULL;
+	NET_API_STATUS status;
+	WERROR werr;
+
+	status = libnetapi_getctx(&ctx);
+	if (status != 0) {
+		return status;
+	}
+
+	/* In parameters */
+	r.in.server_name = server_name;
+
+	/* Out parameters */
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(NetShutdownAbort, &r);
+	}
+
+	if (LIBNETAPI_LOCAL_SERVER(server_name)) {
+		werr = NetShutdownAbort_l(ctx, &r);
+	} else {
+		werr = NetShutdownAbort_r(ctx, &r);
+	}
+
+	r.out.result = W_ERROR_V(werr);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(NetShutdownAbort, &r);
+	}
+
+	return r.out.result;
+}
+
