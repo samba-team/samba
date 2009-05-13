@@ -6708,16 +6708,28 @@ WERROR _spoolss_SetJob(pipes_struct *p,
 	return errcode;
 }
 
+static const struct print_architecture_table_node archi_table[]= {
+
+	{"Windows 4.0",          SPL_ARCH_WIN40,	0 },
+	{"Windows NT x86",       SPL_ARCH_W32X86,	2 },
+	{"Windows NT R4000",     SPL_ARCH_W32MIPS,	2 },
+	{"Windows NT Alpha_AXP", SPL_ARCH_W32ALPHA,	2 },
+	{"Windows NT PowerPC",   SPL_ARCH_W32PPC,	2 },
+	{"Windows IA64",   	 SPL_ARCH_IA64,		3 },
+	{"Windows x64",   	 SPL_ARCH_X64,		3 },
+	{NULL,                   "",		-1 }
+};
+
 /****************************************************************************
- Enumerates all printer drivers by level.
+ Enumerates all printer drivers by level and architecture.
 ****************************************************************************/
 
-static WERROR enumprinterdrivers_level(TALLOC_CTX *mem_ctx,
-				       const char *servername,
-				       const char *architecture,
-				       uint32_t level,
-				       union spoolss_DriverInfo **info_p,
-				       uint32_t *count_p)
+static WERROR enumprinterdrivers_level_by_architecture(TALLOC_CTX *mem_ctx,
+						       const char *servername,
+						       const char *architecture,
+						       uint32_t level,
+						       union spoolss_DriverInfo **info_p,
+						       uint32_t *count_p)
 {
 	int i;
 	int ndrivers;
@@ -6817,6 +6829,54 @@ static WERROR enumprinterdrivers_level(TALLOC_CTX *mem_ctx,
 	*count_p = count;
 
 	return WERR_OK;
+}
+
+/****************************************************************************
+ Enumerates all printer drivers by level.
+****************************************************************************/
+
+static WERROR enumprinterdrivers_level(TALLOC_CTX *mem_ctx,
+				       const char *servername,
+				       const char *architecture,
+				       uint32_t level,
+				       union spoolss_DriverInfo **info_p,
+				       uint32_t *count_p)
+{
+	uint32_t a,i;
+	WERROR result = WERR_OK;
+
+	if (strequal(architecture, "all")) {
+
+		for (a=0; archi_table[a].long_archi != NULL; a++) {
+
+			union spoolss_DriverInfo *info = NULL;
+			uint32_t count = 0;
+
+			result = enumprinterdrivers_level_by_architecture(mem_ctx,
+									  servername,
+									  archi_table[a].long_archi,
+									  level,
+									  &info,
+									  &count);
+			if (!W_ERROR_IS_OK(result)) {
+				continue;
+			}
+
+			for (i=0; i < count; i++) {
+				ADD_TO_ARRAY(mem_ctx, union spoolss_DriverInfo,
+					     info[i], info_p, count_p);
+			}
+		}
+
+		return result;
+	}
+
+	return enumprinterdrivers_level_by_architecture(mem_ctx,
+							servername,
+							architecture,
+							level,
+							info_p,
+							count_p);
 }
 
 /****************************************************************************
