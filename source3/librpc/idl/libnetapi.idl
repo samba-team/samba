@@ -1849,4 +1849,25 @@ interface libnetapi
 		[out] uint32 *total_entries,
 		[in,out] uint32 *resume_handle
 		);
+
+	/*******************************************/
+	/* NetShutdownInit                         */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetShutdownInit(
+		[in] string server_name,
+		[in] string message,
+		[in] uint32 timeout,
+		[in] uint8 force_apps,
+		[in] uint8 do_reboot
+	);
+
+	/*******************************************/
+	/* NetShutdownAbort                        */
+	/*******************************************/
+
+	[nopush,nopull] NET_API_STATUS NetShutdownAbort(
+		[in] string server_name
+	);
+
 }
