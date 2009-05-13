@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+#include "libcli/util/ntstatus.h"
+
 #define LIBNETAPI_LOCAL_SERVER(x) (!x || is_myname_or_ipaddr(x))
 #ifndef MAXSUBAUTHS
 #define MAXSUBAUTHS 15 /* max sub authorities in a SID */
@@ -2064,6 +2066,34 @@ struct NetFileEnum {
 		uint32_t *entries_read;/* [ref] */
 		uint32_t *total_entries;/* [ref] */
 		uint32_t *resume_handle;/* [ref] */
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
+
+struct NetShutdownInit {
+	struct {
+		const char * server_name;
+		const char * message;
+		uint32_t timeout;
+		uint8_t force_apps;
+		uint8_t do_reboot;
+	} in;
+
+	struct {
+		enum NET_API_STATUS result;
+	} out;
+
+};
+
+
+struct NetShutdownAbort {
+	struct {
+		const char * server_name;
+	} in;
+
+	struct {
 		enum NET_API_STATUS result;
 	} out;
 
