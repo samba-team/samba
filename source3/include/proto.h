@@ -1415,11 +1415,6 @@ int create_pipe_sock(const char *socket_dir,
 		     mode_t dir_perms);
 const char *get_mydnsfullname(void);
 bool is_myname_or_ipaddr(const char *s);
-struct tevent_req *read_smb_send(TALLOC_CTX *mem_ctx,
-				 struct tevent_context *ev,
-				 int fd);
-ssize_t read_smb_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
-		      uint8_t **pbuf, int *perrno);
 struct tevent_req *getaddrinfo_send(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev,
 				    struct fncall_context *ctx,
