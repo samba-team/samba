@@ -30,7 +30,34 @@
 WERROR NetShutdownInit_r(struct libnetapi_ctx *ctx,
 			 struct NetShutdownInit *r)
 {
-	return WERR_NOT_SUPPORTED;
+	WERROR werr;
+	NTSTATUS status;
+	struct rpc_pipe_client *pipe_cli = NULL;
+	struct lsa_StringLarge message;
+
+	werr = libnetapi_open_pipe(ctx, r->in.server_name,
+				   &ndr_table_initshutdown.syntax_id,
+				   &pipe_cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	init_lsa_StringLarge(&message, r->in.message);
+
+	status = rpccli_initshutdown_Init(pipe_cli, ctx,
+					  NULL,
+					  &message,
+					  r->in.timeout,
+					  r->in.force_apps,
+					  r->in.do_reboot,
+					  &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+ done:
+	return werr;
 }
 
 /****************************************************************
@@ -48,7 +75,27 @@ WERROR NetShutdownInit_l(struct libnetapi_ctx *ctx,
 WERROR NetShutdownAbort_r(struct libnetapi_ctx *ctx,
 			  struct NetShutdownAbort *r)
 {
-	return WERR_NOT_SUPPORTED;
+	WERROR werr;
+	NTSTATUS status;
+	struct rpc_pipe_client *pipe_cli = NULL;
+
+	werr = libnetapi_open_pipe(ctx, r->in.server_name,
+				   &ndr_table_initshutdown.syntax_id,
+				   &pipe_cli);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	status = rpccli_initshutdown_Abort(pipe_cli, ctx,
+					   NULL,
+					   &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+ done:
+	return werr;
 }
 
 /****************************************************************
