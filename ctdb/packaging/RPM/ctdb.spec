@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.81
+Version: 1.0.82
 Release: 1
 Epoch: 0
 License: GNU GPL version 3
@@ -132,6 +132,20 @@ fi
 %{_libdir}/pkgconfig/ctdb.pc
 
 %changelog
+* Thu May 14 2009 : Version 1.0.82
+ - Update the "ctdb lvsmaster" command to return -1 on error.
+ - Add a -Y flag to "ctdb lvsmaster"
+ - RHEL5 apache leaks semaphores when crashing. Add semaphore cleanup to the 
+   41.httpd eventscript and try to restart apache when it has crashed.
+ - Fixes to some tests
+ - Add a -o option to "onnode" which will redirect all stdout to a file for
+   each of the nodes.
+ - Add a natgw and a lvs node specifier to onnode so that we can use 
+   "onnode natgw ..."
+ - Assign the natgw address to lo instead of the private network so it can also
+   be used where private and public networks are the same.
+ - Add GPL boilerplates to two missing scripts.
+ - Change the natgw prefix NATGW_ to CTDB_NATGW_
 * Fri May 8 2009 : Version 1.0.81
  - use smbstatus -np instead of smbstatus -n in the 50.samba eventscript 
    since this avoids performing an expensive traverse on the locking and brlock
