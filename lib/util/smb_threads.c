@@ -43,7 +43,7 @@ void **global_lock_array;
  Mutex used for our internal "once" function
 *********************************************************/
 
-void *once_mutex = NULL;
+static void *once_mutex = NULL;
 
 
 /*********************************************************
@@ -112,7 +112,7 @@ int smb_thread_once(smb_thread_once_t *ponce,
         int ret;
 
         /* Lock our "once" mutex in order to test and initialize ponce */
-	if (SMB_THREAD_LOCK(once_mutex, SMB_THREAD_LOCK) != 0) {
+	if (SMB_THREAD_LOCK(once_mutex) != 0) {
                 smb_panic("error locking 'once'");
 	}
 
@@ -132,7 +132,7 @@ int smb_thread_once(smb_thread_once_t *ponce,
         }
 
         /* Unlock the mutex */
-	if (SMB_THREAD_LOCK(once_mutex, SMB_THREAD_UNLOCK) != 0) {
+	if (SMB_THREAD_UNLOCK(once_mutex) != 0) {
                 smb_panic("error unlocking 'once'");
 	}
         

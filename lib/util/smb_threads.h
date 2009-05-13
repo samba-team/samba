@@ -22,8 +22,6 @@
 
 typedef bool smb_thread_once_t;
 #define SMB_THREAD_ONCE_INIT false
-#define SMB_THREAD_ONCE_IS_INITIALIZED(val) ((val) == true)
-#define SMB_THREAD_ONCE_INITIALIZE(val) ((val) = true)
 
 enum smb_thread_lock_type {
 	SMB_THREAD_LOCK = 1,
