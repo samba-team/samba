@@ -719,11 +719,6 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 		open_access_mask |= FILE_WRITE_DATA;
 	}
 
-	if (lp_parm_bool(SNUM(fsp->conn), PARM_ONEFS_TYPE,
-		PARM_IGNORE_SACLS, PARM_IGNORE_SACLS_DEFAULT)) {
-		access_mask &= ~SYSTEM_SECURITY_ACCESS;
-	}
-
 	DEBUG(10, ("onefs_open_file_ntcreate: fname=%s, after mapping "
 		   "open_access_mask=%#x, access_mask=0x%x\n",
 		   fname, open_access_mask, access_mask));
@@ -1682,6 +1677,11 @@ static NTSTATUS onefs_create_file_unixpath(connection_struct *conn,
 		if (SMB_VFS_STAT(conn, fname, &sbuf) == -1) {
 			SET_STAT_INVALID(sbuf);
 		}
+	}
+
+	if (lp_parm_bool(SNUM(conn), PARM_ONEFS_TYPE,
+		PARM_IGNORE_SACLS, PARM_IGNORE_SACLS_DEFAULT)) {
+		access_mask &= ~SYSTEM_SECURITY_ACCESS;
 	}
 
 	if ((conn->fs_capabilities & FILE_NAMED_STREAMS)
