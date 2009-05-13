@@ -588,6 +588,10 @@ static bool test_samr_connect(struct torture_context *tctx,
 	bool ret = true;
 	const struct dom_sid *test_sid;
 
+	if (torture_setting_bool(tctx, "samba3", false)) {
+		torture_skip(tctx, "Skipping test against Samba 3");
+	}
+
 	/* create a test user */
 	testuser = torture_create_testuser(tctx, TEST_USER_NAME, lp_workgroup(tctx->lp_ctx),
 					   ACB_NORMAL, &testuser_passwd);
@@ -603,38 +607,6 @@ static bool test_samr_connect(struct torture_context *tctx,
 	cli_credentials_set_password(test_credentials, testuser_passwd, CRED_SPECIFIED);
 	test_sid = torture_join_user_sid(testuser);
 
-
-	/* test which bits in the accessmask to Connect5
-	   will allow us to connect to the server
-	*/
-	if (!test_samr_accessmask_Connect5(tctx, p)) {
-		ret = false;
-	}
-
-
-	/* test which bits in the accessmask to Connect5 will allow
-	 * us to call EnumDomains()
-	 */
-	if (!test_samr_accessmask_EnumDomains(tctx, p)) {
-		ret = false;
-	}
-
-	/* test which bits in the accessmask to Connect5 will allow
-	 * us to call LookupDomain()
-	 */
-	if (!test_samr_accessmask_LookupDomain(tctx, p)) {
-		ret = false;
-	}
-
-
-	/* test which bits in the accessmask to Connect5 will allow
-	 * us to call OpenDomain()
-	 */
-	if (!test_samr_accessmask_OpenDomain(tctx, p)) {
-		ret = false;
-	}
-
-	if (!torture_setting_bool(tctx, "samba3", false)) {
 
 	/* test if ACLs can be changed for the policy handle
 	 * returned by Connect5
@@ -657,8 +629,6 @@ static bool test_samr_connect(struct torture_context *tctx,
 		ret = false;
 	}
 
-	}
-
 	/* remove the test user */
 	torture_leave_domain(tctx, testuser);
 
@@ -674,6 +644,26 @@ struct torture_suite *torture_rpc_samr_accessmask(TALLOC_CTX *mem_ctx)
 						  &ndr_table_samr);
 
 	torture_rpc_tcase_add_test(tcase, "CONNECT", test_samr_connect);
+
+	/* test which bits in the accessmask to Connect5 will allow
+	 * us to call OpenDomain() */
+	torture_rpc_tcase_add_test(tcase, "OpenDomain",
+				   test_samr_accessmask_OpenDomain);
+
+	/* test which bits in the accessmask to Connect5 will allow
+	 * us to call LookupDomain() */
+	torture_rpc_tcase_add_test(tcase, "LookupDomain",
+				   test_samr_accessmask_LookupDomain);
+
+	/* test which bits in the accessmask to Connect5 will allow
+	 * us to call EnumDomains() */
+	torture_rpc_tcase_add_test(tcase, "EnumDomains",
+				   test_samr_accessmask_EnumDomains);
+
+	/* test which bits in the accessmask to Connect5
+	   will allow us to connect to the server */
+	torture_rpc_tcase_add_test(tcase, "Connect5",
+				   test_samr_accessmask_Connect5);
 
 	return suite;
 }
