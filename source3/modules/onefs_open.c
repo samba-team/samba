@@ -824,7 +824,6 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 
 	DEBUG(10, ("fsp = %p\n", fsp));
 
-	fsp->file_id = vfs_file_id_from_sbuf(conn, &smb_fname->st);
 	fsp->share_access = share_access;
 	fsp->fh->private_options = create_options;
 	fsp->access_mask = open_access_mask; /* We change this to the
@@ -929,10 +928,15 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 			SMB_ASSERT(req);
 
 			if (lck == NULL) {
+				/*
+				 * We hit the race that when we did the stat
+				 * on the file it did not exist, and someone
+				 * has created it in between the stat and the
+				 * open_file() call. Defer our open waiting,
+				 * to break the oplock of the first opener.
+				 */
 
 				struct timespec old_write_time;
-
-				old_write_time = smb_fname->st.st_ex_mtime;
 
 				DEBUG(3, ("Someone created file %s with an "
 					  "oplock after we looked: Retrying\n",
@@ -980,6 +984,16 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 		if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
 			uint32 can_access_mask;
 			bool can_access = True;
+
+			/* If we raced on open we may not have a valid file_id
+			 * or stat buf.  Get them again. */
+			if (SMB_VFS_STAT(conn, fname, psbuf) == -1) {
+				DEBUG(0,("Error doing stat on file %s "
+					"(%s)\n", fname, strerror(errno)));
+				status = NT_STATUS_SHARING_VIOLATION;
+				goto cleanup_destroy;
+			}
+			id = vfs_file_id_from_sbuf(conn, psbuf);
 
 			/* Check if this can be done with the deny_dos and fcb
 			 * calls. */
@@ -1135,8 +1149,8 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 
 		/*
 		 * Now the file exists and fsp is successfully opened,
-		 * fsp->dev and fsp->inode are valid and should replace the
-		 * dev=0,inode=0 from a non existent file. Spotted by
+		 * fsp->file_id is valid and should replace the
+		 * dev=0, inode=0 from a non existent file. Spotted by
 		 * Nadav Danieli <nadavd@exanet.com>. JRA.
 		 */
 
