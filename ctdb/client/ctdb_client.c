@@ -263,6 +263,7 @@ int ctdb_socket_connect(struct ctdb_context *ctdb)
 
 	ctdb->daemon.sd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (ctdb->daemon.sd == -1) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to open client socket. Errno:%s(%d)\n", strerror(errno), errno));
 		return -1;
 	}
 
@@ -272,6 +273,7 @@ int ctdb_socket_connect(struct ctdb_context *ctdb)
 	if (connect(ctdb->daemon.sd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
 		close(ctdb->daemon.sd);
 		ctdb->daemon.sd = -1;
+		DEBUG(DEBUG_ERR,(__location__ " Failed to connect client socket to daemon. Errno:%s(%d)\n", strerror(errno), errno));
 		return -1;
 	}
 
