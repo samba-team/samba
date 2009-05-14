@@ -986,7 +986,6 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 							create_options);
 
 				if (NT_STATUS_IS_OK(status)) {
-					TALLOC_FREE(lck);
 					if (pinfo) {
 						*pinfo = FILE_WAS_OPENED;
 					}
