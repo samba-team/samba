@@ -8323,7 +8323,8 @@ static void set_allowed_client_auth(void)
  get their sorry ass fired.
 ***************************************************************************/
 
-static bool check_usershare_stat(const char *fname, SMB_STRUCT_STAT *psbuf)
+static bool check_usershare_stat(const char *fname,
+				 const SMB_STRUCT_STAT *psbuf)
 {
 	if (!S_ISREG(psbuf->st_mode)) {
 		DEBUG(0,("check_usershare_stat: file %s owned by uid %u is "
