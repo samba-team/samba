@@ -33,7 +33,6 @@
 */
 _PUBLIC_ char **str_list_make_empty(TALLOC_CTX *mem_ctx)
 {
-	int num_elements = 0;
 	char **ret = NULL;
 
 	ret = talloc_array(mem_ctx, char *, 1);
@@ -51,7 +50,6 @@ _PUBLIC_ char **str_list_make_empty(TALLOC_CTX *mem_ctx)
 */
 _PUBLIC_ char **str_list_make_single(TALLOC_CTX *mem_ctx, const char *entry)
 {
-	int num_elements = 0;
 	char **ret = NULL;
 
 	ret = talloc_array(mem_ctx, char *, 2);
