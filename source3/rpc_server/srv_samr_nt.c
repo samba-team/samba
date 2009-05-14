@@ -1465,8 +1465,8 @@ NTSTATUS _samr_QueryDisplayInfo(pipes_struct *p,
 	/* THe following done as ROOT. Don't return without unbecome_root(). */
 
 	switch (r->in.level) {
-	case 0x1:
-	case 0x4:
+	case 1:
+	case 4:
 		if (dinfo->disp_info->users == NULL) {
 			dinfo->disp_info->users = pdb_search_users(
 				dinfo->disp_info, ACB_NORMAL);
@@ -1485,7 +1485,7 @@ NTSTATUS _samr_QueryDisplayInfo(pipes_struct *p,
 						 enum_context, max_entries,
 						 &entries);
 		break;
-	case 0x2:
+	case 2:
 		if (dinfo->disp_info->machines == NULL) {
 			dinfo->disp_info->machines = pdb_search_users(
 				dinfo->disp_info, ACB_WSTRUST|ACB_SVRTRUST);
@@ -1504,8 +1504,8 @@ NTSTATUS _samr_QueryDisplayInfo(pipes_struct *p,
 						 enum_context, max_entries,
 						 &entries);
 		break;
-	case 0x3:
-	case 0x5:
+	case 3:
+	case 5:
 		if (dinfo->disp_info->groups == NULL) {
 			dinfo->disp_info->groups = pdb_search_groups(
 				dinfo->disp_info);
@@ -1534,27 +1534,27 @@ NTSTATUS _samr_QueryDisplayInfo(pipes_struct *p,
 
 	/* Now create reply structure */
 	switch (r->in.level) {
-	case 0x1:
+	case 1:
 		disp_ret = init_samr_dispinfo_1(p->mem_ctx, &disp_info->info1,
 						num_account, enum_context,
 						entries);
 		break;
-	case 0x2:
+	case 2:
 		disp_ret = init_samr_dispinfo_2(p->mem_ctx, &disp_info->info2,
 						num_account, enum_context,
 						entries);
 		break;
-	case 0x3:
+	case 3:
 		disp_ret = init_samr_dispinfo_3(p->mem_ctx, &disp_info->info3,
 						num_account, enum_context,
 						entries);
 		break;
-	case 0x4:
+	case 4:
 		disp_ret = init_samr_dispinfo_4(p->mem_ctx, &disp_info->info4,
 						num_account, enum_context,
 						entries);
 		break;
-	case 0x5:
+	case 5:
 		disp_ret = init_samr_dispinfo_5(p->mem_ctx, &disp_info->info5,
 						num_account, enum_context,
 						entries);
@@ -3212,7 +3212,7 @@ NTSTATUS _samr_QueryDomainInfo(pipes_struct *p,
 	}
 
 	switch (r->in.level) {
-		case 0x01:
+		case 1:
 
 			become_root();
 
@@ -3246,7 +3246,7 @@ NTSTATUS _samr_QueryDomainInfo(pipes_struct *p,
 			}
 
 			break;
-		case 0x02:
+		case 2:
 
 			become_root();
 
@@ -3283,7 +3283,7 @@ NTSTATUS _samr_QueryDomainInfo(pipes_struct *p,
 			dom_info->general.unknown3			= 1;
 
 			break;
-		case 0x03:
+		case 3:
 
 			become_root();
 
@@ -3302,26 +3302,26 @@ NTSTATUS _samr_QueryDomainInfo(pipes_struct *p,
 			unix_to_nt_time_abs(&dom_info->info3.force_logoff_time, u_logout);
 
 			break;
-		case 0x04:
+		case 4:
 			dom_info->oem.oem_information.string = lp_serverstring();
 			break;
-		case 0x05:
+		case 5:
 			dom_info->info5.domain_name.string = get_global_sam_name();
 			break;
-		case 0x06:
+		case 6:
 			/* NT returns its own name when a PDC. win2k and later
 			 * only the name of the PDC if itself is a BDC (samba4
 			 * idl) */
 			dom_info->info6.primary.string = global_myname();
 			break;
-		case 0x07:
+		case 7:
 			server_role = ROLE_DOMAIN_PDC;
 			if (lp_server_role() == ROLE_DOMAIN_BDC)
 				server_role = ROLE_DOMAIN_BDC;
 
 			dom_info->info7.role = server_role;
 			break;
-		case 0x08:
+		case 8:
 
 			become_root();
 
@@ -3339,12 +3339,12 @@ NTSTATUS _samr_QueryDomainInfo(pipes_struct *p,
 			dom_info->info8.domain_create_time = 0;
 
 			break;
-		case 0x09:
+		case 9:
 
 			dom_info->info9.domain_server_state		= DOMAIN_SERVER_ENABLED;
 
 			break;
-		case 0x0b:
+		case 11:
 
 			/* AS ROOT !!! */
 
@@ -3399,7 +3399,7 @@ NTSTATUS _samr_QueryDomainInfo(pipes_struct *p,
 					    u_reset_time);
 
 			break;
-		case 0x0c:
+		case 12:
 
 			become_root();
 
@@ -3428,7 +3428,7 @@ NTSTATUS _samr_QueryDomainInfo(pipes_struct *p,
 					    u_reset_time);
 
 			break;
-		case 0x0d:
+		case 13:
 
 			become_root();
 
@@ -6072,7 +6072,7 @@ NTSTATUS _samr_SetDomainInfo(pipes_struct *p,
 	DEBUG(5,("_samr_SetDomainInfo: level: %d\n", r->in.level));
 
 	switch (r->in.level) {
-        	case 0x01:
+		case 1:
 			u_expire=nt_time_to_unix_abs((NTTIME *)&r->in.info->info1.max_password_age);
 			u_min_age=nt_time_to_unix_abs((NTTIME *)&r->in.info->info1.min_password_age);
 			pdb_set_account_policy(AP_MIN_PASSWORD_LEN, (uint32)r->in.info->info1.min_password_length);
@@ -6081,19 +6081,19 @@ NTSTATUS _samr_SetDomainInfo(pipes_struct *p,
 			pdb_set_account_policy(AP_MAX_PASSWORD_AGE, (int)u_expire);
 			pdb_set_account_policy(AP_MIN_PASSWORD_AGE, (int)u_min_age);
             		break;
-		case 0x03:
+		case 3:
 			u_logout=nt_time_to_unix_abs((NTTIME *)&r->in.info->info3.force_logoff_time);
 			pdb_set_account_policy(AP_TIME_TO_LOGOUT, (int)u_logout);
 			break;
-		case 0x04:
+		case 4:
 			break;
-		case 0x06:
+		case 6:
 			break;
-		case 0x07:
+		case 7:
 			break;
-		case 0x09:
+		case 9:
 			break;
-		case 0x0c:
+		case 12:
 			u_lock_duration=nt_time_to_unix_abs((NTTIME *)&r->in.info->info12.lockout_duration);
 			if (u_lock_duration != -1)
 				u_lock_duration /= 60;
