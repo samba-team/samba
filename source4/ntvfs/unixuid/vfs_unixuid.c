@@ -293,7 +293,7 @@ static NTSTATUS unixuid_setup_security(struct ntvfs_module_context *ntvfs,
   connect to a share - used when a tree_connect operation comes in.
 */
 static NTSTATUS unixuid_connect(struct ntvfs_module_context *ntvfs,
-				struct ntvfs_request *req, const char *sharename)
+				struct ntvfs_request *req, union smb_tcon *tcon)
 {
 	struct unixuid_private *priv;
 	NTSTATUS status;
@@ -321,7 +321,7 @@ static NTSTATUS unixuid_connect(struct ntvfs_module_context *ntvfs,
 	/* we don't use PASS_THRU_REQ here, as the connect operation runs with 
 	   root privileges. This allows the backends to setup any database
 	   links they might need during the connect. */
-	status = ntvfs_next_connect(ntvfs, req, sharename);
+	status = ntvfs_next_connect(ntvfs, req, tcon);
 
 	return status;
 }

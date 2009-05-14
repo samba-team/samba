@@ -88,16 +88,44 @@ static struct pipe_state *pipe_state_find_key(struct ipc_private *ipriv, struct 
   connect to a share - always works 
 */
 static NTSTATUS ipc_connect(struct ntvfs_module_context *ntvfs,
-			    struct ntvfs_request *req, const char *sharename)
+			    struct ntvfs_request *req,
+			    union smb_tcon* tcon)
 {
 	NTSTATUS status;
 	struct ipc_private *ipriv;
+	const char *sharename;
+
+	switch (tcon->generic.level) {
+	case RAW_TCON_TCON:
+		sharename = tcon->tcon.in.service;
+		break;
+	case RAW_TCON_TCONX:
+		sharename = tcon->tconx.in.path;
+		break;
+	case RAW_TCON_SMB2:
+		sharename = tcon->smb2.in.path;
+		break;
+	default:
+		return NT_STATUS_INVALID_LEVEL;
+	}
+
+	if (strncmp(sharename, "\\\\", 2) == 0) {
+		char *p = strchr(sharename+2, '\\');
+		if (p) {
+			sharename = p + 1;
+		}
+	}
 
 	ntvfs->ctx->fs_type = talloc_strdup(ntvfs->ctx, "IPC");
 	NT_STATUS_HAVE_NO_MEMORY(ntvfs->ctx->fs_type);
 
 	ntvfs->ctx->dev_type = talloc_strdup(ntvfs->ctx, "IPC");
 	NT_STATUS_HAVE_NO_MEMORY(ntvfs->ctx->dev_type);
+
+	if (tcon->generic.level == RAW_TCON_TCONX) {
+		tcon->tconx.out.fs_type = ntvfs->ctx->fs_type;
+		tcon->tconx.out.dev_type = ntvfs->ctx->dev_type;
+	}
 
 	/* prepare the private state for this connection */
 	ipriv = talloc(ntvfs, struct ipc_private);

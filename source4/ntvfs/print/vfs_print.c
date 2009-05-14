@@ -32,13 +32,18 @@
   is available
 */
 static NTSTATUS print_connect(struct ntvfs_module_context *ntvfs,
-			      struct ntvfs_request *req, const char *sharename)
+			      struct ntvfs_request *req, union smb_tcon* tcon)
 {
 	ntvfs->ctx->fs_type = talloc_strdup(ntvfs->ctx, "NTFS");
 	NT_STATUS_HAVE_NO_MEMORY(ntvfs->ctx->fs_type);
 
 	ntvfs->ctx->dev_type = talloc_strdup(ntvfs->ctx, "LPT1:");
 	NT_STATUS_HAVE_NO_MEMORY(ntvfs->ctx->dev_type);
+
+	if (tcon->generic.level == RAW_TCON_TCONX) {
+		tcon->tconx.out.fs_type = ntvfs->ctx->fs_type;
+		tcon->tconx.out.dev_type = ntvfs->ctx->dev_type;
+	}
 
 	return NT_STATUS_OK;
 }

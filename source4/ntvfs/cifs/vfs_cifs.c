@@ -136,7 +136,8 @@ static bool oplock_handler(struct smbcli_transport *transport, uint16_t tid, uin
   connect to a share - used when a tree_connect operation comes in.
 */
 static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs, 
-			     struct ntvfs_request *req, const char *sharename)
+			     struct ntvfs_request *req,
+			     union smb_tcon *tcon)
 {
 	NTSTATUS status;
 	struct cvfs_private *p;
@@ -147,6 +148,28 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 
 	struct cli_credentials *credentials;
 	bool machine_account;
+	const char* sharename;
+
+	switch (tcon->generic.level) {
+	case RAW_TCON_TCON:
+		sharename = tcon->tcon.in.service;
+		break;
+	case RAW_TCON_TCONX:
+		sharename = tcon->tconx.in.path;
+		break;
+	case RAW_TCON_SMB2:
+		sharename = tcon->smb2.in.path;
+		break;
+	default:
+		return NT_STATUS_INVALID_LEVEL;
+	}
+
+	if (strncmp(sharename, "\\\\", 2) == 0) {
+		char *p = strchr(sharename+2, '\\');
+		if (p) {
+			sharename = p + 1;
+		}
+	}
 
 	/* Here we need to determine which server to connect to.
 	 * For now we use parametric options, type cifs.
@@ -241,6 +264,11 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	NT_STATUS_HAVE_NO_MEMORY(ntvfs->ctx->fs_type);
 	ntvfs->ctx->dev_type = talloc_strdup(ntvfs->ctx, "A:");
 	NT_STATUS_HAVE_NO_MEMORY(ntvfs->ctx->dev_type);
+
+	if (tcon->generic.level == RAW_TCON_TCONX) {
+		tcon->tconx.out.fs_type = ntvfs->ctx->fs_type;
+		tcon->tconx.out.dev_type = ntvfs->ctx->dev_type;
+	}
 
 	/* we need to receive oplock break requests from the server */
 	smbcli_oplock_handler(p->transport, oplock_handler, p);

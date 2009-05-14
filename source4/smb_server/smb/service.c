@@ -158,7 +158,7 @@ static NTSTATUS make_connection(struct smbsrv_request *req,
 }
 
 /*
-  backend for tree connect call
+  backend for tree connect call, in preparation for calling ntvfs_connect()
 */
 NTSTATUS smbsrv_tcon_backend(struct smbsrv_request *req, union smb_tcon *con)
 {
@@ -188,6 +188,7 @@ NTSTATUS smbsrv_tcon_backend(struct smbsrv_request *req, union smb_tcon *con)
 		return status;
 	}
 
+	con->tconx.out.tid = req->tcon->tid;
 	con->tconx.out.options = SMB_SUPPORT_SEARCH_BITS | (share_int_option(req->tcon->ntvfs->config, SHARE_CSC_POLICY, SHARE_CSC_POLICY_DEFAULT) << 2);
 	if (share_bool_option(req->tcon->ntvfs->config, SHARE_MSDFS_ROOT, SHARE_MSDFS_ROOT_DEFAULT) && lp_host_msdfs(req->smb_conn->lp_ctx)) {
 		con->tconx.out.options |= SMB_SHARE_IN_DFS;

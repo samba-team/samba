@@ -53,16 +53,6 @@ static void reply_tcon_send(struct ntvfs_request *ntvfs)
 
 	SMBSRV_CHECK_ASYNC_STATUS(con, union smb_tcon);
 
-	if (con->generic.level == RAW_TCON_TCON) {
-		con->tcon.out.max_xmit = req->smb_conn->negotiate.max_recv;
-		con->tcon.out.tid = req->tcon->tid;
-	} else {
-		/* TODO: take a look at tconx.in.flags! */
-		con->tconx.out.tid = req->tcon->tid;
-		con->tconx.out.dev_type = talloc_strdup(req, req->tcon->ntvfs->dev_type);
-		con->tconx.out.fs_type = talloc_strdup(req, req->tcon->ntvfs->fs_type);
-	}
-
 	/* construct reply */
 	smbsrv_setup_reply(req, 2, 0);
 
@@ -109,7 +99,7 @@ void smbsrv_reply_tcon(struct smbsrv_request *req)
 	SMBSRV_SETUP_NTVFS_REQUEST(reply_tcon_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	/* Invoke NTVFS connection hook */
-	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_connect(req->ntvfs, req->tcon->share_name));
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_connect(req->ntvfs, con));
 }
 
 
@@ -122,16 +112,6 @@ static void reply_tcon_and_X_send(struct ntvfs_request *ntvfs)
 	union smb_tcon *con;
 
 	SMBSRV_CHECK_ASYNC_STATUS(con, union smb_tcon);
-
-	if (con->generic.level == RAW_TCON_TCON) {
-		con->tcon.out.max_xmit = req->smb_conn->negotiate.max_recv;
-		con->tcon.out.tid = req->tcon->tid;
-	} else {
-		/* TODO: take a look at tconx.in.flags! */
-		con->tconx.out.tid = req->tcon->tid;
-		con->tconx.out.dev_type = talloc_strdup(req, req->tcon->ntvfs->dev_type);
-		con->tconx.out.fs_type = talloc_strdup(req, req->tcon->ntvfs->fs_type);
-	}
 
 	/* construct reply - two variants */
 	if (req->smb_conn->negotiate.protocol < PROTOCOL_NT1) {
@@ -205,7 +185,7 @@ void smbsrv_reply_tcon_and_X(struct smbsrv_request *req)
 	SMBSRV_SETUP_NTVFS_REQUEST(reply_tcon_and_X_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	/* Invoke NTVFS connection hook */
-	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_connect(req->ntvfs, req->tcon->share_name));
+	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_connect(req->ntvfs, con));
 }
 
 

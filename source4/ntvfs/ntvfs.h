@@ -49,7 +49,7 @@ struct ntvfs_ops {
 	/* initial setup */
 	NTSTATUS (*connect)(struct ntvfs_module_context *ntvfs,
 			    struct ntvfs_request *req,
-			    const char *sharename);
+			    union smb_tcon *tcon);
 	NTSTATUS (*disconnect)(struct ntvfs_module_context *ntvfs);
 
 	/* async_setup - called when a backend is processing a async request */
