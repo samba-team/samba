@@ -5312,8 +5312,8 @@ static void shortname_list_fn(const char *mnt, file_info *finfo, const char *nam
 	if (strchr(force_shortname_chars, i)) {
 		if (!finfo->short_name[0]) {
 			/* Shortname not created when it should be. */
-			d_printf("(%s) ERROR: Shortname was not created for file %s\n",
-				__location__, finfo->name);
+			d_printf("(%s) ERROR: Shortname was not created for file %s containing %d\n",
+				__location__, finfo->name, i);
 			s->val = true;
 		}
 	} else if (finfo->short_name[0]){
