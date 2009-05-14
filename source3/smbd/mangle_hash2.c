@@ -250,12 +250,17 @@ static bool is_mangled(const char *name, const struct share_params *parm)
 
 
 /* 
-   see if a filename is an allowable 8.3 name.
+   see if a filename is an allowable 8.3 name to return to the client.
+   Note this is not testing if this is a valid Samba mangled name, so
+   the rules are different for is_mangled.
 
    we are only going to allow ascii characters in 8.3 names, as this
    simplifies things greatly (it means that we know the string won't
    get larger when converted from UNIX to DOS formats)
 */
+
+static char force_shortname_chars[] = " +,[];=";
+
 static bool is_8_3(const char *name, bool check_case, bool allow_wildcards, const struct share_params *p)
 {
 	int len, i;
@@ -307,9 +312,18 @@ static bool is_8_3(const char *name, bool check_case, bool allow_wildcards, cons
 
 	/* the length are all OK. Now check to see if the characters themselves are OK */
 	for (i=0; name[i]; i++) {
+		if (FLAG_CHECK(name[i], FLAG_ILLEGAL)) {
+			return false;
+		}
 		/* note that we may allow wildcard petterns! */
-		if (!FLAG_CHECK(name[i], FLAG_ASCII|(allow_wildcards ? FLAG_WILDCARD : 0)) && name[i] != '.') {
-			return False;
+		if (!allow_wildcards && FLAG_CHECK(name[i], FLAG_WILDCARD)) {
+			return false;
+		}
+		if (((unsigned char)name[i]) > 0x7e) {
+			return false;
+		}
+		if (strchr(force_shortname_chars, name[i])) {
+			return false;
 		}
 	}
 
