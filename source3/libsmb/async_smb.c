@@ -512,8 +512,8 @@ struct tevent_req *cli_smb_req_create(TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-static bool cli_signv(struct cli_state *cli, struct iovec *iov, int count,
-		      uint32_t *seqnum)
+static NTSTATUS cli_signv(struct cli_state *cli, struct iovec *iov, int count,
+		          uint32_t *seqnum)
 {
 	uint8_t *buf;
 
@@ -523,31 +523,32 @@ static bool cli_signv(struct cli_state *cli, struct iovec *iov, int count,
 	 */
 
 	if ((count <= 0) || (iov[0].iov_len < smb_wct)) {
-		return false;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	buf = iov_concat(talloc_tos(), iov, count);
 	if (buf == NULL) {
-		return false;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	cli_calculate_sign_mac(cli, (char *)buf, seqnum);
 	memcpy(iov[0].iov_base, buf, iov[0].iov_len);
 
 	TALLOC_FREE(buf);
-	return true;
+	return NT_STATUS_OK;
 }
 
 static void cli_smb_sent(struct tevent_req *subreq);
 
-static bool cli_smb_req_iov_send(struct tevent_req *req,
-				 struct cli_smb_state *state,
-				 struct iovec *iov, int iov_count)
+static NTSTATUS cli_smb_req_iov_send(struct tevent_req *req,
+				     struct cli_smb_state *state,
+				     struct iovec *iov, int iov_count)
 {
 	struct tevent_req *subreq;
+	NTSTATUS status;
 
 	if (iov[0].iov_len < smb_wct) {
-		return false;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (state->mid != 0) {
@@ -558,17 +559,18 @@ static bool cli_smb_req_iov_send(struct tevent_req *req,
 
 	smb_setlen((char *)iov[0].iov_base, iov_len(iov, iov_count) - 4);
 
-	if (!cli_signv(state->cli, iov, iov_count, &state->seqnum)) {
-		return false;
+	status = cli_signv(state->cli, iov, iov_count, &state->seqnum);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	if (cli_encryption_on(state->cli)) {
-		NTSTATUS status;
 		char *buf, *enc_buf;
 
 		buf = (char *)iov_concat(talloc_tos(), iov, iov_count);
 		if (buf == NULL) {
-			return false;
+			return NT_STATUS_NO_MEMORY;
 		}
 		status = cli_encrypt_message(state->cli, (char *)buf,
 					     &enc_buf);
@@ -576,13 +578,13 @@ static bool cli_smb_req_iov_send(struct tevent_req *req,
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Error in encrypting client message: %s\n",
 				  nt_errstr(status)));
-			return false;
+			return status;
 		}
 		buf = (char *)talloc_memdup(state, enc_buf,
 					    smb_len(enc_buf)+4);
 		SAFE_FREE(enc_buf);
 		if (buf == NULL) {
-			return false;
+			return NT_STATUS_NO_MEMORY;
 		}
 		iov[0].iov_base = (void *)buf;
 		iov[0].iov_len = talloc_get_size(buf);
@@ -593,19 +595,19 @@ static bool cli_smb_req_iov_send(struct tevent_req *req,
 				     state->cli->fd, iov, iov_count);
 	}
 	if (subreq == NULL) {
-		return false;
+		return NT_STATUS_NO_MEMORY;
 	}
 	tevent_req_set_callback(subreq, cli_smb_sent, req);
-	return true;
+	return NT_STATUS_OK;
 }
 
-bool cli_smb_req_send(struct tevent_req *req)
+NTSTATUS cli_smb_req_send(struct tevent_req *req)
 {
 	struct cli_smb_state *state = tevent_req_data(
 		req, struct cli_smb_state);
 
 	if (state->cli->fd == -1) {
-		return false;
+		return NT_STATUS_CONNECTION_DISCONNECTED;
 	}
 
 	return cli_smb_req_iov_send(req, state, state->iov, state->iov_count);
@@ -622,6 +624,7 @@ struct tevent_req *cli_smb_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req;
 	struct iovec iov;
+	NTSTATUS status;
 
 	iov.iov_base = CONST_DISCARD(void *, bytes);
 	iov.iov_len = num_bytes;
@@ -631,8 +634,11 @@ struct tevent_req *cli_smb_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
-	if (!cli_smb_req_send(req)) {
-		TALLOC_FREE(req);
+
+	status = cli_smb_req_send(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return tevent_req_post(req, ev);
 	}
 	return req;
 }
@@ -1033,7 +1039,7 @@ bool cli_smb_chain_send(struct tevent_req **reqs, int num_reqs)
 		chain_padding = next_padding;
 	}
 
-	if (!cli_smb_req_iov_send(reqs[0], last_state, iov, iovlen)) {
+	if (!NT_STATUS_IS_OK(cli_smb_req_iov_send(reqs[0], last_state, iov, iovlen))) {
 		goto fail;
 	}
 	return true;

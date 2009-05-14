@@ -1484,12 +1484,18 @@ struct tevent_req *cli_open_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 				 int flags, int share_mode)
 {
 	struct tevent_req *req, *subreq;
+	NTSTATUS status;
 
 	req = cli_open_create(mem_ctx, ev, cli, fname, flags, share_mode,
 			      &subreq);
-	if ((req == NULL) || !cli_smb_req_send(subreq)) {
-		TALLOC_FREE(req);
+	if (req == NULL) {
 		return NULL;
+	}
+
+	status = cli_smb_req_send(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return tevent_req_post(req, ev);
 	}
 	return req;
 }
@@ -1612,11 +1618,17 @@ struct tevent_req *cli_close_send(TALLOC_CTX *mem_ctx,
 				uint16_t fnum)
 {
 	struct tevent_req *req, *subreq;
+	NTSTATUS status;
 
 	req = cli_close_create(mem_ctx, ev, cli, fnum, &subreq);
-	if ((req == NULL) || !cli_smb_req_send(subreq)) {
-		TALLOC_FREE(req);
+	if (req == NULL) {
 		return NULL;
+	}
+
+	status = cli_smb_req_send(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return tevent_req_post(req, ev);
 	}
 	return req;
 }

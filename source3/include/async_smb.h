@@ -47,7 +47,7 @@ struct tevent_req *cli_smb_req_create(TALLOC_CTX *mem_ctx,
 				      uint8_t wct, uint16_t *vwv,
 				      int iov_count,
 				      struct iovec *bytes_iov);
-bool cli_smb_req_send(struct tevent_req *req);
+NTSTATUS cli_smb_req_send(struct tevent_req *req);
 size_t cli_smb_wct_ofs(struct tevent_req **reqs, int num_reqs);
 bool cli_smb_chain_send(struct tevent_req **reqs, int num_reqs);
 uint8_t *cli_smb_inbuf(struct tevent_req *req);

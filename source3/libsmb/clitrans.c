@@ -1011,6 +1011,7 @@ struct tevent_req *cli_trans_send(
 	struct cli_trans_state *state;
 	int iov_count;
 	uint8_t wct;
+	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state, struct cli_trans_state);
 	if (req == NULL) {
@@ -1083,8 +1084,9 @@ struct tevent_req *cli_trans_send(
 		return tevent_req_post(req, ev);
 	}
 	state->mid = cli_smb_req_mid(subreq);
-	if (!cli_smb_req_send(subreq)) {
-		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+	status = cli_smb_req_send(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
 		return tevent_req_post(req, state->ev);
 	}
 	cli_state_seqnum_persistent(cli, state->mid);
@@ -1154,8 +1156,9 @@ static void cli_trans_done(struct tevent_req *subreq)
 		}
 		cli_smb_req_set_mid(subreq, state->mid);
 
-		if (!cli_smb_req_send(subreq)) {
-			status = NT_STATUS_NO_MEMORY;
+		status = cli_smb_req_send(subreq);
+
+		if (!NT_STATUS_IS_OK(status)) {
 			goto fail;
 		}
 		tevent_req_set_callback(subreq, cli_trans_done, req);
