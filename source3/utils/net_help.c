@@ -65,5 +65,6 @@ int net_help(struct net_context *c, int argc, const char **argv)
 	}
 
 	c->display_usage = true;
+	set_cmdline_auth_info_password(c->auth_info, "");
 	return net_run_function(c, argc, argv, "net help", func);
 }
