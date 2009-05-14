@@ -199,11 +199,87 @@ struct child_pid;
 extern struct child_pid *children;
 extern int num_children;
 
+struct tstream_context;
+struct smbd_smb2_request;
+
+bool smbd_is_smb2_header(const uint8_t *inbuf, size_t size);
+
+void smbd_smb2_first_negprot(struct smbd_server_connection *conn,
+			     const uint8_t *inbuf, size_t size);
+
+NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
+				    NTSTATUS status, DATA_BLOB *info);
+NTSTATUS smbd_smb2_request_error(struct smbd_smb2_request *req,
+				 NTSTATUS status);
+NTSTATUS smbd_smb2_request_done(struct smbd_smb2_request *req,
+				DATA_BLOB body, DATA_BLOB *dyn);
+
+struct smbd_smb2_request {
+	TALLOC_CTX *mem_pool;
+
+	struct smbd_server_connection *conn;
+
+	int current_idx;
+
+	struct {
+		/* the NBT header is not allocated */
+		uint8_t nbt_hdr[4];
+		/*
+		 * vector[0] NBT
+		 * .
+		 * vector[1] SMB2
+		 * vector[2] fixed body
+		 * vector[3] dynamic body
+		 * .
+		 * .
+		 * .
+		 * vector[4] SMB2
+		 * vector[5] fixed body
+		 * vector[6] dynamic body
+		 * .
+		 * .
+		 * .
+		 */
+		struct iovec *vector;
+		int vector_count;
+	} in;
+	struct {
+		/* the NBT header is not allocated */
+		uint8_t nbt_hdr[4];
+		/*
+		 * vector[0] NBT
+		 * .
+		 * vector[1] SMB2
+		 * vector[2] fixed body
+		 * vector[3] dynamic body
+		 * .
+		 * .
+		 * .
+		 * vector[4] SMB2
+		 * vector[5] fixed body
+		 * vector[6] dynamic body
+		 * .
+		 * .
+		 * .
+		 */
+		struct iovec *vector;
+		int vector_count;
+	} out;
+};
+
 struct smbd_server_connection {
 	struct fd_event *fde;
 	uint64_t num_requests;
 	struct smb_signing_state *signing_state;
+	bool allow_smb2;
+	struct {
+		struct tevent_context *event_ctx;
+		struct tevent_queue *recv_queue;
+		struct tevent_queue *send_queue;
+		struct tstream_context *stream;
+	} smb2;
 };
+
 extern struct smbd_server_connection *smbd_server_conn;
 
 void smbd_init_globals(void);

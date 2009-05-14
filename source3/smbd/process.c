@@ -1448,6 +1448,14 @@ static void process_smb(struct smbd_server_connection *conn,
 		goto done;
 	}
 
+	if (smbd_server_conn->allow_smb2) {
+		if (smbd_is_smb2_header(inbuf, nread)) {
+			smbd_smb2_first_negprot(smbd_server_conn, inbuf, nread);
+			return;
+		}
+		smbd_server_conn->allow_smb2 = false;
+	}
+
 	show_msg((char *)inbuf);
 
 	construct_reply((char *)inbuf,nread,unread_bytes,seqnum,encrypted,deferred_pcd);
@@ -2007,6 +2015,10 @@ void smbd_process(void)
 	smbd_server_conn = talloc_zero(smbd_event_context(), struct smbd_server_connection);
 	if (!smbd_server_conn) {
 		exit_server("failed to create smbd_server_connection");
+	}
+
+	if (lp_maxprotocol() == PROTOCOL_SMB2) {
+		smbd_server_conn->allow_smb2 = true;
 	}
 
 	/* Ensure child is set to blocking mode */
