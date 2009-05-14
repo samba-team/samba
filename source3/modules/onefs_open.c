@@ -1095,9 +1095,39 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 				state.id = id;
 				state.failed = false;
 
-				if ((req != NULL)
-				    && !request_timed_out(request_time,
-							  timeout)) {
+				/*
+				 * We hit the race that when we did the stat
+				 * on the file it did not exist, and someone
+				 * has created it in between the stat and the
+				 * open_file() call.  Retrieve the share_mode
+				 * lock on the newly opened file so we can
+				 * defer our request.
+				 */
+				if (lck == NULL) {
+					struct timespec old_write_time;
+					old_write_time = get_mtimespec(psbuf);
+
+					lck = get_share_mode_lock(talloc_tos(),
+					    id, conn->connectpath, fname,
+					    &old_write_time);
+					if (lck == NULL) {
+						DEBUG(0,
+						    ("onefs_open_file_ntcreate:"
+						     " Could not get share "
+						     "mode lock for %s\n",
+						     fname));
+						/* This will cause us to return
+						 * immediately skipping the
+						 * the 1 second delay, which
+						 * isn't a big deal */
+						status = NT_STATUS_SHARING_VIOLATION;
+						goto cleanup_destroy;
+					}
+				}
+
+				if ((req != NULL) &&
+				    !request_timed_out(request_time, timeout))
+				{
 					defer_open(lck, request_time, timeout,
 						   req, &state);
 				}
