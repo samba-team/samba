@@ -250,13 +250,13 @@ static int get_share_list(TALLOC_CTX *ctx, const char *wcard, bool only_ours)
 			continue;
 		}
 
-		if (!S_ISREG(sbuf.st_mode)) {
+		if (!S_ISREG(sbuf.st_ex_mode)) {
 			d_fprintf(stderr, "get_share_list: file %s is not a regular file. Ignoring.\n",
 				path );
 			continue;
 		}
 
-		if (only_ours && sbuf.st_uid != myuid) {
+		if (only_ours && sbuf.st_ex_uid != myuid) {
 			continue;
 		}
 
@@ -364,7 +364,7 @@ static int info_fn(struct file_list *fl, void *priv)
 		return -1;
 	}
 
-	if (!S_ISREG(sbuf.st_mode)) {
+	if (!S_ISREG(sbuf.st_ex_mode)) {
 		d_fprintf(stderr, "info_fn: file %s is not a regular file. Ignoring.\n",
 			basepath );
 		close(fd);
@@ -574,7 +574,7 @@ static int count_num_usershares(void)
 			continue;
 		}
 
-		if (!S_ISREG(sbuf.st_mode)) {
+		if (!S_ISREG(sbuf.st_ex_mode)) {
 			d_fprintf(stderr, "count_num_usershares: file %s is not a regular file. Ignoring.\n",
 				path );
 			continue;
@@ -738,7 +738,7 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
-	if (!S_ISDIR(sbuf.st_mode)) {
+	if (!S_ISDIR(sbuf.st_ex_mode)) {
 		d_fprintf(stderr, "net usershare add: path %s is not a directory.\n",
 			us_path );
 		TALLOC_FREE(ctx);
@@ -749,7 +749,7 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 	/* If we're not root, check if we're restricted to sharing out directories
 	   that we own only. */
 
-	if ((myeuid != 0) && lp_usershare_owner_only() && (myeuid != sbuf.st_uid)) {
+	if ((myeuid != 0) && lp_usershare_owner_only() && (myeuid != sbuf.st_ex_uid)) {
 		d_fprintf(stderr, "net usershare add: cannot share path %s as "
 			"we are restricted to only sharing directories we own.\n"
 			"\tAsk the administrator to add the line \"usershare owner only = false\" \n"
@@ -887,7 +887,7 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
-	if (!S_ISREG(sbuf.st_mode) || sbuf.st_dev != lsbuf.st_dev || sbuf.st_ino != lsbuf.st_ino) {
+	if (!S_ISREG(sbuf.st_ex_mode) || sbuf.st_ex_dev != lsbuf.st_ex_dev || sbuf.st_ex_ino != lsbuf.st_ex_ino) {
 		d_fprintf(stderr, "net usershare add: tmp file %s is not a regular file ?\n",
 				full_path_tmp );
 		TALLOC_FREE(ctx);

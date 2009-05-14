@@ -435,13 +435,32 @@ typedef uint64_t br_off;
  * Type for stat structure.
  */
 
-#ifndef SMB_STRUCT_STAT
-#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_STAT64) && defined(HAVE_OFF64_T)
-#    define SMB_STRUCT_STAT struct stat64
-#  else
-#    define SMB_STRUCT_STAT struct stat
-#  endif
-#endif
+struct stat_ex {
+	dev_t		st_ex_dev;
+	ino_t		st_ex_ino;
+	mode_t		st_ex_mode;
+	nlink_t		st_ex_nlink;
+	uid_t		st_ex_uid;
+	gid_t		st_ex_gid;
+	dev_t		st_ex_rdev;
+	off_t		st_ex_size;
+	struct timespec st_ex_atime;
+	struct timespec st_ex_mtime;
+	struct timespec st_ex_ctime;
+	struct timespec st_ex_btime; /* birthtime */
+	blksize_t	st_ex_blksize;
+	blkcnt_t	st_ex_blocks;
+
+	/*
+	 * Add space for VFS internal extensions. The initial user of this
+	 * would be the onefs modules, passing the snapid from the stat calls
+	 * to the file_id_create call. Maybe we'll have to expand this later,
+	 * but the core of Samba should never look at this field.
+	 */
+	uint64_t vfs_private;
+};
+
+typedef struct stat_ex SMB_STRUCT_STAT;
 
 /*
  * Type for dirent structure.

@@ -215,7 +215,7 @@ static bool recycle_directory_exist(vfs_handle_struct *handle, const char *dname
 	SMB_STRUCT_STAT st;
 
 	if (SMB_VFS_NEXT_STAT(handle, dname, &st) == 0) {
-		if (S_ISDIR(st.st_mode)) {
+		if (S_ISDIR(st.st_ex_mode)) {
 			return True;
 		}
 	}
@@ -228,7 +228,7 @@ static bool recycle_file_exist(vfs_handle_struct *handle, const char *fname)
 	SMB_STRUCT_STAT st;
 
 	if (SMB_VFS_NEXT_STAT(handle, fname, &st) == 0) {
-		if (S_ISREG(st.st_mode)) {
+		if (S_ISREG(st.st_ex_mode)) {
 			return True;
 		}
 	}
@@ -251,7 +251,7 @@ static SMB_OFF_T recycle_get_file_size(vfs_handle_struct *handle, const char *fn
 		return (SMB_OFF_T)0;
 	}
 
-	return(st.st_size);
+	return(st.st_ex_size);
 }
 
 /**
@@ -402,7 +402,7 @@ static void recycle_do_touch(vfs_handle_struct *handle, const char *fname,
 		return;
 	}
 	ft.atime = timespec_current(); /* atime */
-	ft.mtime = touch_mtime ? ft.atime : get_mtimespec(&st); /* mtime */
+	ft.mtime = touch_mtime ? ft.atime : st.st_ex_mtime; /* mtime */
 
 	become_root();
 	ret = SMB_VFS_NEXT_NTIMES(handle, fname, &ft);

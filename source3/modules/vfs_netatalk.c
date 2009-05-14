@@ -82,7 +82,7 @@ static int atalk_build_paths(TALLOC_CTX *ctx, const char *path, const char *fnam
 
 	sys_lstat(*orig_path, orig_info);
 
-	if (S_ISDIR(orig_info->st_mode)) {
+	if (S_ISDIR(orig_info->st_ex_mode)) {
 		*adbl_path = talloc_asprintf(ctx, "%s/%s/%s/", 
 		  path, &fname[ptr0], APPLEDOUBLE);
 	} else {
@@ -242,7 +242,7 @@ static int atalk_rename(struct vfs_handle_struct *handle, const char *oldname, c
 	  &adbl_info, &orig_info) != 0)
 		goto exit_rename;
 
-	if (S_ISDIR(orig_info.st_mode) || S_ISREG(orig_info.st_mode)) {
+	if (S_ISDIR(orig_info.st_ex_mode) || S_ISREG(orig_info.st_ex_mode)) {
 		DEBUG(3, ("ATALK: %s has passed..\n", adbl_path));		
 		goto exit_rename;
 	}
@@ -298,7 +298,7 @@ static int atalk_unlink(struct vfs_handle_struct *handle, const char *path)
 	  &adbl_info, &orig_info) != 0)
 		goto exit_unlink;
 
-	if (S_ISDIR(orig_info.st_mode) || S_ISREG(orig_info.st_mode)) {
+	if (S_ISDIR(orig_info.st_ex_mode) || S_ISREG(orig_info.st_ex_mode)) {
 		DEBUG(3, ("ATALK: %s has passed..\n", adbl_path));
 		goto exit_unlink;
 	}
@@ -330,7 +330,7 @@ static int atalk_chmod(struct vfs_handle_struct *handle, const char *path, mode_
 	  &adbl_info, &orig_info) != 0)
 		goto exit_chmod;
 
-	if (!S_ISDIR(orig_info.st_mode) && !S_ISREG(orig_info.st_mode)) {
+	if (!S_ISDIR(orig_info.st_ex_mode) && !S_ISREG(orig_info.st_ex_mode)) {
 		DEBUG(3, ("ATALK: %s has passed..\n", orig_path));		
 		goto exit_chmod;
 	}
@@ -362,7 +362,7 @@ static int atalk_chown(struct vfs_handle_struct *handle, const char *path, uid_t
 	  &adbl_info, &orig_info) != 0)
 		goto exit_chown;
 
-	if (!S_ISDIR(orig_info.st_mode) && !S_ISREG(orig_info.st_mode)) {
+	if (!S_ISDIR(orig_info.st_ex_mode) && !S_ISREG(orig_info.st_ex_mode)) {
 		DEBUG(3, ("ATALK: %s has passed..\n", orig_path));		
 		goto exit_chown;
 	}
@@ -396,7 +396,7 @@ static int atalk_lchown(struct vfs_handle_struct *handle, const char *path, uid_
 	  &adbl_info, &orig_info) != 0)
 		goto exit_lchown;
 
-	if (!S_ISDIR(orig_info.st_mode) && !S_ISREG(orig_info.st_mode)) {
+	if (!S_ISDIR(orig_info.st_ex_mode) && !S_ISREG(orig_info.st_ex_mode)) {
 		DEBUG(3, ("ATALK: %s has passed..\n", orig_path));		
 		goto exit_lchown;
 	}

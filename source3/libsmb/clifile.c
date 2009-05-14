@@ -294,31 +294,31 @@ bool cli_unix_stat(struct cli_state *cli, const char *name, SMB_STRUCT_STAT *sbu
 		return false;
 	}
 
-	sbuf->st_size = IVAL2_TO_SMB_BIG_UINT(rdata,0);     /* total size, in bytes */
-	sbuf->st_blocks = IVAL2_TO_SMB_BIG_UINT(rdata,8);   /* number of blocks allocated */
+	sbuf->st_ex_size = IVAL2_TO_SMB_BIG_UINT(rdata,0);     /* total size, in bytes */
+	sbuf->st_ex_blocks = IVAL2_TO_SMB_BIG_UINT(rdata,8);   /* number of blocks allocated */
 #if defined (HAVE_STAT_ST_BLOCKS) && defined(STAT_ST_BLOCKSIZE)
-	sbuf->st_blocks /= STAT_ST_BLOCKSIZE;
+	sbuf->st_ex_blocks /= STAT_ST_BLOCKSIZE;
 #else
 	/* assume 512 byte blocks */
-	sbuf->st_blocks /= 512;
+	sbuf->st_ex_blocks /= 512;
 #endif
-	set_ctimespec(sbuf, interpret_long_date(rdata + 16));    /* time of last change */
-	set_atimespec(sbuf, interpret_long_date(rdata + 24));    /* time of last access */
-	set_mtimespec(sbuf, interpret_long_date(rdata + 32));    /* time of last modification */
+	sbuf->st_ex_ctime = interpret_long_date(rdata + 16);    /* time of last change */
+	sbuf->st_ex_atime = interpret_long_date(rdata + 24);    /* time of last access */
+	sbuf->st_ex_mtime = interpret_long_date(rdata + 32);    /* time of last modification */
 
-	sbuf->st_uid = (uid_t) IVAL(rdata,40);      /* user ID of owner */
-	sbuf->st_gid = (gid_t) IVAL(rdata,48);      /* group ID of owner */
-	sbuf->st_mode |= unix_filetype_from_wire(IVAL(rdata, 56));
+	sbuf->st_ex_uid = (uid_t) IVAL(rdata,40);      /* user ID of owner */
+	sbuf->st_ex_gid = (gid_t) IVAL(rdata,48);      /* group ID of owner */
+	sbuf->st_ex_mode |= unix_filetype_from_wire(IVAL(rdata, 56));
 #if defined(HAVE_MAKEDEV)
 	{
 		uint32_t dev_major = IVAL(rdata,60);
 		uint32_t dev_minor = IVAL(rdata,68);
-		sbuf->st_rdev = makedev(dev_major, dev_minor);
+		sbuf->st_ex_rdev = makedev(dev_major, dev_minor);
 	}
 #endif
-	sbuf->st_ino = (SMB_INO_T)IVAL2_TO_SMB_BIG_UINT(rdata,76);      /* inode */
-	sbuf->st_mode |= wire_perms_to_unix(IVAL(rdata,84));     /* protection */
-	sbuf->st_nlink = IVAL(rdata,92);    /* number of hard links */
+	sbuf->st_ex_ino = (SMB_INO_T)IVAL2_TO_SMB_BIG_UINT(rdata,76);      /* inode */
+	sbuf->st_ex_mode |= wire_perms_to_unix(IVAL(rdata,84));     /* protection */
+	sbuf->st_ex_nlink = IVAL(rdata,92);    /* number of hard links */
 
 	SAFE_FREE(rdata);
 	SAFE_FREE(rparam);

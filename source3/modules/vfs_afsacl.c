@@ -599,8 +599,8 @@ static size_t afs_to_nt_acl_common(struct afs_acl *afs_acl,
 
 	struct afs_ace *afs_ace;
 
-	uid_to_sid(&owner_sid, psbuf->st_uid);
-	gid_to_sid(&group_sid, psbuf->st_gid);
+	uid_to_sid(&owner_sid, psbuf->st_ex_uid);
+	gid_to_sid(&group_sid, psbuf->st_ex_gid);
 
 	if (afs_acl->num_aces) {
 		nt_ace_list = TALLOC_ARRAY(mem_ctx, SEC_ACE, afs_acl->num_aces);
@@ -626,7 +626,7 @@ static size_t afs_to_nt_acl_common(struct afs_acl *afs_acl,
 			continue;
 		}
 
-		if (S_ISDIR(psbuf->st_mode))
+		if (S_ISDIR(psbuf->st_ex_mode))
 			afs_to_nt_dir_rights(afs_ace->rights, &nt_rights,
 					     &flag);
 		else

@@ -424,7 +424,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 			 * It exists. it must either be a directory or this must
 			 * be the last part of the path for it to be OK.
 			 */
-			if (end && !(st.st_mode & S_IFDIR)) {
+			if (end && !S_ISDIR(st.st_ex_mode)) {
 				/*
 				 * An intermediate part of the name isn't
 				 * a directory.

@@ -443,7 +443,7 @@ static bool is_msdfs_link_internal(TALLOC_CTX *ctx,
 		goto err;
 	}
 
-	if (!S_ISLNK(sbufp->st_mode)) {
+	if (!S_ISLNK(sbufp->st_ex_mode)) {
 		DEBUG(5,("is_msdfs_link_read_target: %s is not a link.\n",
 					path));
 		goto err;

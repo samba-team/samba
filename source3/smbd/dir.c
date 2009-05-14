@@ -824,7 +824,7 @@ bool get_dir_entry(TALLOC_CTX *ctx,
 		char **pp_fname_out,
 		SMB_OFF_T *size,
 		uint32 *mode,
-		time_t *date,
+		struct timespec *date,
 		bool check_descend,
 		bool ask_sharemode)
 {
@@ -910,8 +910,8 @@ bool get_dir_entry(TALLOC_CTX *ctx,
 				continue;
 			}
 
-			*size = sbuf.st_size;
-			*date = sbuf.st_mtime;
+			*size = sbuf.st_ex_size;
+			*date = sbuf.st_ex_mtime;
 
 			if (ask_sharemode) {
 				struct timespec write_time_ts;
@@ -920,7 +920,7 @@ bool get_dir_entry(TALLOC_CTX *ctx,
 				fileid = vfs_file_id_from_sbuf(conn, &sbuf);
 				get_file_infos(fileid, NULL, &write_time_ts);
 				if (!null_timespec(write_time_ts)) {
-					*date = convert_timespec_to_time_t(write_time_ts);
+					*date = write_time_ts;
 				}
 			}
 
@@ -989,7 +989,7 @@ static bool user_can_write_file(connection_struct *conn, char *name, SMB_STRUCT_
 
 	/* Pseudo-open the file */
 
-	if(S_ISDIR(pst->st_mode)) {
+	if(S_ISDIR(pst->st_ex_mode)) {
 		return True;
 	}
 
@@ -1012,7 +1012,7 @@ static bool file_is_special(connection_struct *conn, char *name, SMB_STRUCT_STAT
 
 	SMB_ASSERT(VALID_STAT(*pst));
 
-	if (S_ISREG(pst->st_mode) || S_ISDIR(pst->st_mode) || S_ISLNK(pst->st_mode))
+	if (S_ISREG(pst->st_ex_mode) || S_ISDIR(pst->st_ex_mode) || S_ISLNK(pst->st_ex_mode))
 		return False;
 
 	return True;

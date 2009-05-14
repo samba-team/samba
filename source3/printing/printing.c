@@ -2563,7 +2563,7 @@ bool print_job_end(int snum, uint32 jobid, enum file_close_type close_type)
 
 	if ((close_type == NORMAL_CLOSE || close_type == SHUTDOWN_CLOSE) &&
 				(sys_fstat(pjob->fd, &sbuf) == 0)) {
-		pjob->size = sbuf.st_size;
+		pjob->size = sbuf.st_ex_size;
 		close(pjob->fd);
 		pjob->fd = -1;
 	} else {

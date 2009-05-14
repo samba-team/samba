@@ -1022,7 +1022,7 @@ void reply_checkpath(struct smb_request *req)
 		goto path_err;
 	}
 
-	if (!S_ISDIR(smb_fname->st.st_mode)) {
+	if (!S_ISDIR(smb_fname->st.st_ex_mode)) {
 		reply_botherror(req, NT_STATUS_NOT_A_DIRECTORY,
 				ERRDOS, ERRbadpath);
 		goto out;
@@ -1135,8 +1135,8 @@ void reply_getatr(struct smb_request *req)
 		}
 
 		mode = dos_mode(conn, fname, &smb_fname->st);
-		size = smb_fname->st.st_size;
-		mtime = smb_fname->st.st_mtime;
+		size = smb_fname->st.st_ex_size;
+		mtime = convert_timespec_to_time_t(smb_fname->st.st_ex_mtime);
 		if (mode & aDIR) {
 			size = 0;
 		}
@@ -1336,7 +1336,7 @@ void reply_search(struct smb_request *req)
 	char *fname = NULL;
 	SMB_OFF_T size;
 	uint32 mode;
-	time_t date;
+	struct timespec date;
 	uint32 dirtype;
 	unsigned int numentries = 0;
 	unsigned int maxentries = 0;
@@ -1555,7 +1555,7 @@ void reply_search(struct smb_request *req)
 						fname,
 						size,
 						mode,
-						date,
+						convert_timespec_to_time_t(date),
 						!allow_long_path_components)) {
 					reply_nterror(req, NT_STATUS_NO_MEMORY);
 					END_PROFILE(SMBsearch);
@@ -1775,9 +1775,9 @@ void reply_open(struct smb_request *req)
 		return;
 	}
 
-	size = sbuf.st_size;
+	size = sbuf.st_ex_size;
 	fattr = dos_mode(conn,fsp->fsp_name,&sbuf);
-	mtime = sbuf.st_mtime;
+	mtime = convert_timespec_to_time_t(sbuf.st_ex_mtime);
 
 	if (fattr & aDIR) {
 		DEBUG(3,("attempt to open a directory %s\n",fsp->fsp_name));
@@ -1939,11 +1939,11 @@ void reply_open_and_X(struct smb_request *req)
 			END_PROFILE(SMBopenX);
 			return;
 		}
-		sbuf.st_size = SMB_VFS_GET_ALLOC_SIZE(conn,fsp,&sbuf);
+		sbuf.st_ex_size = SMB_VFS_GET_ALLOC_SIZE(conn,fsp,&sbuf);
 	}
 
 	fattr = dos_mode(conn,fsp->fsp_name,&sbuf);
-	mtime = sbuf.st_mtime;
+	mtime = convert_timespec_to_time_t(sbuf.st_ex_mtime);
 	if (fattr & aDIR) {
 		close_file(req, fsp, ERROR_CLOSE);
 		reply_doserror(req, ERRDOS, ERRnoaccess);
@@ -1992,7 +1992,7 @@ void reply_open_and_X(struct smb_request *req)
 	} else {
 		srv_put_dos_date3((char *)req->outbuf,smb_vwv4,mtime);
 	}
-	SIVAL(req->outbuf,smb_vwv6,(uint32)sbuf.st_size);
+	SIVAL(req->outbuf,smb_vwv6,(uint32)sbuf.st_ex_size);
 	SSVAL(req->outbuf,smb_vwv8,GET_OPENX_MODE(deny_mode));
 	SSVAL(req->outbuf,smb_vwv11,smb_action);
 
@@ -2124,7 +2124,7 @@ void reply_mknew(struct smb_request *req)
 		return;
 	}
 
-	ft.atime = get_atimespec(&sbuf); /* atime. */
+	ft.atime = sbuf.st_ex_atime; /* atime. */
 	status = smb_set_file_time(conn, fsp, fsp->fsp_name, &sbuf, &ft, true);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBcreate);
@@ -2306,7 +2306,7 @@ void reply_ctemp(struct smb_request *req)
 
 	DEBUG( 2, ( "reply_ctemp: created temp file %s\n", fsp->fsp_name ) );
 	DEBUG( 3, ( "reply_ctemp %s fd=%d umode=0%o\n", fsp->fsp_name,
-		    fsp->fh->fd, (unsigned int)smb_fname->st.st_mode));
+		    fsp->fh->fd, (unsigned int)smb_fname->st.st_ex_mode));
  out:
 	TALLOC_FREE(smb_fname);
 	END_PROFILE(SMBctemp);
@@ -2331,7 +2331,7 @@ static NTSTATUS can_rename(connection_struct *conn, files_struct *fsp,
 		return NT_STATUS_NO_SUCH_FILE;
 	}
 
-	if (S_ISDIR(pst->st_mode)) {
+	if (S_ISDIR(pst->st_ex_mode)) {
 		if (fsp->posix_open) {
 			return NT_STATUS_OK;
 		}
@@ -3104,7 +3104,7 @@ void reply_readbraw(struct smb_request *req)
 	}
 
 	if (SMB_VFS_FSTAT(fsp, &st) == 0) {
-		size = st.st_size;
+		size = st.st_ex_size;
 	}
 
 	if (startpos >= size) {
@@ -3393,8 +3393,8 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 		return;
 	}
 
-	if (!S_ISREG(sbuf.st_mode) || (startpos > sbuf.st_size)
-	    || (smb_maxcnt > (sbuf.st_size - startpos))) {
+	if (!S_ISREG(sbuf.st_ex_mode) || (startpos > sbuf.st_ex_size)
+	    || (smb_maxcnt > (sbuf.st_ex_size - startpos))) {
 		/*
 		 * We already know that we would do a short read, so don't
 		 * try the sendfile() path.
@@ -4442,7 +4442,7 @@ void reply_lseek(struct smb_request *req)
 					return;
 				}
 
-				current_pos += sbuf.st_size;
+				current_pos += sbuf.st_ex_size;
 				if(current_pos < 0)
 					res = SMB_VFS_LSEEK(fsp,0,SEEK_SET);
 			}
@@ -5287,7 +5287,7 @@ static bool recursive_rmdir(TALLOC_CTX *ctx,
 			break;
 		}
 
-		if(st.st_mode & S_IFDIR) {
+		if(st.st_ex_mode & S_IFDIR) {
 			if(!recursive_rmdir(ctx, conn, fullname)) {
 				ret = False;
 				break;
@@ -5322,12 +5322,12 @@ NTSTATUS rmdir_internals(TALLOC_CTX *ctx,
 		return map_nt_error_from_unix(errno);
 	}
 
-	if (S_ISLNK(st.st_mode)) {
+	if (S_ISLNK(st.st_ex_mode)) {
 		/* Is what it points to a directory ? */
 		if(SMB_VFS_STAT(conn, directory, &st) != 0) {
 			return map_nt_error_from_unix(errno);
 		}
-		if (!(S_ISDIR(st.st_mode))) {
+		if (!(S_ISDIR(st.st_ex_mode))) {
 			return NT_STATUS_NOT_A_DIRECTORY;
 		}
 		ret = SMB_VFS_UNLINK(conn,directory);
@@ -5404,7 +5404,7 @@ NTSTATUS rmdir_internals(TALLOC_CTX *ctx,
 			if(SMB_VFS_LSTAT(conn,fullname, &st) != 0) {
 				break;
 			}
-			if(st.st_mode & S_IFDIR) {
+			if(st.st_ex_mode & S_IFDIR) {
 				if(!recursive_rmdir(ctx, conn, fullname)) {
 					break;
 				}
@@ -6103,7 +6103,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			SMB_VFS_STAT(conn, directory, &smb_fname->st);
 		}
 
-		if (S_ISDIR(smb_fname->st.st_mode)) {
+		if (S_ISDIR(smb_fname->st.st_ex_mode)) {
 			create_options |= FILE_DIRECTORY_FILE;
 		}
 
@@ -6229,7 +6229,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 
 		create_options = 0;
 
-		if (S_ISDIR(smb_fname->st.st_mode)) {
+		if (S_ISDIR(smb_fname->st.st_ex_mode)) {
 			create_options |= FILE_DIRECTORY_FILE;
 		}
 
@@ -6510,18 +6510,18 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 			 * Stop the copy from occurring.
 			 */
 			ret = -1;
-			src_sbuf.st_size = 0;
+			src_sbuf.st_ex_size = 0;
 		}
 	}
 
-	if (src_sbuf.st_size) {
-		ret = vfs_transfer_file(fsp1, fsp2, src_sbuf.st_size);
+	if (src_sbuf.st_ex_size) {
+		ret = vfs_transfer_file(fsp1, fsp2, src_sbuf.st_ex_size);
 	}
 
 	close_file(NULL, fsp1, NORMAL_CLOSE);
 
 	/* Ensure the modtime is set correctly on the destination file. */
-	set_close_write_time(fsp2, get_mtimespec(&src_sbuf));
+	set_close_write_time(fsp2, src_sbuf.st_ex_mtime);
 
 	/*
 	 * As we are opening fsp1 read-only we only expect
@@ -6535,7 +6535,7 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 		return status;
 	}
 
-	if (ret != (SMB_OFF_T)src_sbuf.st_size) {
+	if (ret != (SMB_OFF_T)src_sbuf.st_ex_size) {
 		return NT_STATUS_DISK_FULL;
 	}
 
@@ -7551,19 +7551,20 @@ void reply_getattrE(struct smb_request *req)
 
 	reply_outbuf(req, 11, 0);
 
-	create_ts = get_create_timespec(&sbuf,
-				  lp_fake_dir_create_times(SNUM(conn)));
+	create_ts = sbuf.st_ex_btime;
 	srv_put_dos_date2((char *)req->outbuf, smb_vwv0, create_ts.tv_sec);
-	srv_put_dos_date2((char *)req->outbuf, smb_vwv2, sbuf.st_atime);
+	srv_put_dos_date2((char *)req->outbuf, smb_vwv2,
+			  convert_timespec_to_time_t(sbuf.st_ex_atime));
 	/* Should we check pending modtime here ? JRA */
-	srv_put_dos_date2((char *)req->outbuf, smb_vwv4, sbuf.st_mtime);
+	srv_put_dos_date2((char *)req->outbuf, smb_vwv4,
+			  convert_timespec_to_time_t(sbuf.st_ex_mtime));
 
 	if (mode & aDIR) {
 		SIVAL(req->outbuf, smb_vwv6, 0);
 		SIVAL(req->outbuf, smb_vwv8, 0);
 	} else {
 		uint32 allocation_size = SMB_VFS_GET_ALLOC_SIZE(conn,fsp, &sbuf);
-		SIVAL(req->outbuf, smb_vwv6, (uint32)sbuf.st_size);
+		SIVAL(req->outbuf, smb_vwv6, (uint32)sbuf.st_ex_size);
 		SIVAL(req->outbuf, smb_vwv8, allocation_size);
 	}
 	SSVAL(req->outbuf,smb_vwv10, mode);

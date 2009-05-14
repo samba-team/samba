@@ -84,7 +84,7 @@ static int read_block( REGF_FILE *file, prs_struct *ps, uint32 file_offset, uint
 		return -1;
 	}
 
-	if ( (size_t)file_offset >= sbuf.st_size )
+	if ( (size_t)file_offset >= sbuf.st_ex_size )
 		return -1;
 	
 	/* if block_size == 0, we are parsing HBIN records and need 
@@ -1434,7 +1434,7 @@ static REGF_HBIN* regf_hbin_allocate( REGF_FILE *file, uint32 block_size )
 		return NULL;
 	}
 
-	hbin->file_off       = sbuf.st_size;
+	hbin->file_off       = sbuf.st_ex_size;
 
 	hbin->free_off       = HBIN_HEADER_REC_SIZE;
 	hbin->free_size      = block_size - hbin->free_off + sizeof(uint32);;

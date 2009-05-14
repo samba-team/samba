@@ -206,19 +206,19 @@ void change_file_owner_to_parent(connection_struct *conn,
 	}
 
 	become_root();
-	ret = SMB_VFS_FCHOWN(fsp, parent_st.st_uid, (gid_t)-1);
+	ret = SMB_VFS_FCHOWN(fsp, parent_st.st_ex_uid, (gid_t)-1);
 	unbecome_root();
 	if (ret == -1) {
 		DEBUG(0,("change_file_owner_to_parent: failed to fchown "
 			 "file %s to parent directory uid %u. Error "
 			 "was %s\n", fsp->fsp_name,
-			 (unsigned int)parent_st.st_uid,
+			 (unsigned int)parent_st.st_ex_uid,
 			 strerror(errno) ));
 	}
 
 	DEBUG(10,("change_file_owner_to_parent: changed new file %s to "
 		  "parent directory uid %u.\n",	fsp->fsp_name,
-		  (unsigned int)parent_st.st_uid ));
+		  (unsigned int)parent_st.st_ex_uid ));
 }
 
 NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
@@ -276,9 +276,9 @@ NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 	}
 
 	/* Ensure we're pointing at the same place. */
-	if (sbuf.st_dev != psbuf->st_dev ||
-	    sbuf.st_ino != psbuf->st_ino ||
-	    sbuf.st_mode != psbuf->st_mode ) {
+	if (sbuf.st_ex_dev != psbuf->st_ex_dev ||
+	    sbuf.st_ex_ino != psbuf->st_ex_ino ||
+	    sbuf.st_ex_mode != psbuf->st_ex_mode ) {
 		DEBUG(0,("change_dir_owner_to_parent: "
 			 "device/inode/mode on directory %s changed. "
 			 "Refusing to chown !\n", fname ));
@@ -287,20 +287,20 @@ NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 	}
 
 	become_root();
-	ret = SMB_VFS_CHOWN(conn, ".", parent_st.st_uid, (gid_t)-1);
+	ret = SMB_VFS_CHOWN(conn, ".", parent_st.st_ex_uid, (gid_t)-1);
 	unbecome_root();
 	if (ret == -1) {
 		status = map_nt_error_from_unix(errno);
 		DEBUG(10,("change_dir_owner_to_parent: failed to chown "
 			  "directory %s to parent directory uid %u. "
 			  "Error was %s\n", fname,
-			  (unsigned int)parent_st.st_uid, strerror(errno) ));
+			  (unsigned int)parent_st.st_ex_uid, strerror(errno) ));
 		goto out;
 	}
 
 	DEBUG(10,("change_dir_owner_to_parent: changed ownership of new "
 		  "directory %s to parent directory uid %u.\n",
-		  fname, (unsigned int)parent_st.st_uid ));
+		  fname, (unsigned int)parent_st.st_ex_uid ));
 
  out:
 
@@ -396,7 +396,7 @@ static NTSTATUS open_file(files_struct *fsp,
 		 * open flags. JRA.
 		 */
 
-		if (file_existed && S_ISFIFO(psbuf->st_mode)) {
+		if (file_existed && S_ISFIFO(psbuf->st_ex_mode)) {
 			local_flags |= O_NONBLOCK;
 		}
 #endif
@@ -498,7 +498,7 @@ static NTSTATUS open_file(files_struct *fsp,
 					}
 				} else if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND) &&
 							fsp->posix_open &&
-							S_ISLNK(psbuf->st_mode)) {
+							S_ISLNK(psbuf->st_ex_mode)) {
 					/* This is a POSIX stat open for delete
 					 * or rename on a symlink that points
 					 * nowhere. Allow. */
@@ -543,13 +543,13 @@ static NTSTATUS open_file(files_struct *fsp,
 	 * so catch a directory open and return an EISDIR. JRA.
 	 */
 
-	if(S_ISDIR(psbuf->st_mode)) {
+	if(S_ISDIR(psbuf->st_ex_mode)) {
 		fd_close(fsp);
 		errno = EISDIR;
 		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
 
-	fsp->mode = psbuf->st_mode;
+	fsp->mode = psbuf->st_ex_mode;
 	fsp->file_id = vfs_file_id_from_sbuf(conn, psbuf);
 	fsp->vuid = req ? req->vuid : UID_FIELD_INVALID;
 	fsp->file_pid = req ? req->smbpid : 0;
@@ -1583,7 +1583,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 				DEBUG(5,("open_file_ntcreate: FILE_CREATE "
 					 "requested for file %s and file "
 					 "already exists.\n", fname ));
-				if (S_ISDIR(psbuf->st_mode)) {
+				if (S_ISDIR(psbuf->st_ex_mode)) {
 					errno = EISDIR;
 				} else {
 					errno = EEXIST;
@@ -1610,13 +1610,13 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			     (create_disposition == FILE_OVERWRITE_IF))) {
 		if (!open_match_attributes(conn, fname,
 					   existing_dos_attributes,
-					   new_dos_attributes, psbuf->st_mode,
+					   new_dos_attributes, psbuf->st_ex_mode,
 					   unx_mode, &new_unx_mode)) {
 			DEBUG(5,("open_file_ntcreate: attributes missmatch "
 				 "for file %s (%x %x) (0%o, 0%o)\n",
 				 fname, existing_dos_attributes,
 				 new_dos_attributes,
-				 (unsigned int)psbuf->st_mode,
+				 (unsigned int)psbuf->st_ex_mode,
 				 (unsigned int)unx_mode ));
 			errno = EACCES;
 			return NT_STATUS_ACCESS_DENIED;
@@ -1715,7 +1715,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	}
 
 	if (file_existed) {
-		struct timespec old_write_time = get_mtimespec(psbuf);
+		struct timespec old_write_time = psbuf->st_ex_mtime;
 		id = vfs_file_id_from_sbuf(conn, psbuf);
 
 		lck = get_share_mode_lock(talloc_tos(), id,
@@ -1919,7 +1919,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	}
 
 	if (!file_existed) {
-		struct timespec old_write_time = get_mtimespec(psbuf);
+		struct timespec old_write_time = psbuf->st_ex_mtime;
 		/*
 		 * Deal with the race condition where two smbd's detect the
 		 * file doesn't exist and do the create at the same time. One
@@ -2134,7 +2134,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 					    new_dos_attributes | aARCH,
 					    &tmp_sbuf, parent_dir,
 					    true) == 0) {
-					unx_mode = tmp_sbuf.st_mode;
+					unx_mode = tmp_sbuf.st_ex_mode;
 				}
 			}
 		}
@@ -2305,7 +2305,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		return map_nt_error_from_unix(errno);
 	}
 
-	if (!S_ISDIR(psbuf->st_mode)) {
+	if (!S_ISDIR(psbuf->st_ex_mode)) {
 		DEBUG(0, ("Directory just '%s' created is not a directory\n",
 			  name));
 		return NT_STATUS_ACCESS_DENIED;
@@ -2331,9 +2331,9 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		 * Consider bits automagically set by UNIX, i.e. SGID bit from parent
 		 * dir.
 		 */
-		if (mode & ~(S_IRWXU|S_IRWXG|S_IRWXO) && (mode & ~psbuf->st_mode)) {
+		if (mode & ~(S_IRWXU|S_IRWXG|S_IRWXO) && (mode & ~psbuf->st_ex_mode)) {
 			SMB_VFS_CHMOD(conn, name,
-				      psbuf->st_mode | (mode & ~psbuf->st_mode));
+				      psbuf->st_ex_mode | (mode & ~psbuf->st_ex_mode));
 		}
 	}
 
@@ -2475,7 +2475,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 			return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if(!S_ISDIR(psbuf->st_mode)) {
+	if(!S_ISDIR(psbuf->st_ex_mode)) {
 		DEBUG(5,("open_directory: %s is not a directory !\n",
 			 fname ));
 		return NT_STATUS_NOT_A_DIRECTORY;
@@ -2524,7 +2524,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 	 * Setup the files_struct for it.
 	 */
 	
-	fsp->mode = psbuf->st_mode;
+	fsp->mode = psbuf->st_ex_mode;
 	fsp->file_id = vfs_file_id_from_sbuf(conn, psbuf);
 	fsp->vuid = req ? req->vuid : UID_FIELD_INVALID;
 	fsp->file_pid = req ? req->smbpid : 0;
@@ -2547,7 +2547,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 
 	string_set(&fsp->fsp_name,fname);
 
-	mtimespec = get_mtimespec(psbuf);
+	mtimespec = psbuf->st_ex_mtime;
 
 	lck = get_share_mode_lock(talloc_tos(), fsp->file_id,
 				  conn->connectpath,
@@ -3161,7 +3161,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		}
 	}
 
-	if (!fsp->is_directory && S_ISDIR(sbuf.st_mode)) {
+	if (!fsp->is_directory && S_ISDIR(sbuf.st_ex_mode)) {
 		status = NT_STATUS_ACCESS_DENIED;
 		goto fail;
 	}
@@ -3169,7 +3169,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	/* Save the requested allocation size. */
 	if ((info == FILE_WAS_CREATED) || (info == FILE_WAS_OVERWRITTEN)) {
 		if (allocation_size
-		    && (allocation_size > sbuf.st_size)) {
+		    && (allocation_size > sbuf.st_ex_size)) {
 			fsp->initial_allocation_size = smb_roundup(
 				fsp->conn, allocation_size);
 			if (fsp->is_directory) {
@@ -3184,7 +3184,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 			}
 		} else {
 			fsp->initial_allocation_size = smb_roundup(
-				fsp->conn, (uint64_t)sbuf.st_size);
+				fsp->conn, (uint64_t)sbuf.st_ex_size);
 		}
 	}
 

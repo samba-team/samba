@@ -153,10 +153,12 @@ static bool tsmsm_is_offline(struct vfs_handle_struct *handle,
 
         /* if the file has more than FILE_IS_ONLINE_RATIO of blocks available,
 	   then assume it is not offline (it may not be 100%, as it could be sparse) */
-	if (512 * (off_t)stbuf->st_blocks >= stbuf->st_size * tsmd->online_ratio) {
+	if (512 * (off_t)stbuf->st_ex_blocks >=
+	    stbuf->st_ex_size * tsmd->online_ratio) {
 		DEBUG(10,("%s not offline: st_blocks=%ld st_size=%ld "
-			  "online_ratio=%.2f\n", path, (long)stbuf->st_blocks,
-			  (long)stbuf->st_size, tsmd->online_ratio));
+			  "online_ratio=%.2f\n", path,
+			  (long)stbuf->st_ex_blocks,
+			  (long)stbuf->st_ex_size, tsmd->online_ratio));
 		return false;
 	}
 
@@ -254,9 +256,10 @@ static bool tsmsm_aio_force(struct vfs_handle_struct *handle, struct files_struc
 	*/
 	if(SMB_VFS_FSTAT(fsp, &sbuf) == 0) {
 		DEBUG(10,("tsmsm_aio_force st_blocks=%ld st_size=%ld "
-			  "online_ratio=%.2f\n", (long)sbuf.st_blocks,
-			  (long)sbuf.st_size, tsmd->online_ratio));
-		return !(512 * (off_t)sbuf.st_blocks >= sbuf.st_size * tsmd->online_ratio);
+			  "online_ratio=%.2f\n", (long)sbuf.st_ex_blocks,
+			  (long)sbuf.st_ex_size, tsmd->online_ratio));
+		return !(512 * (off_t)sbuf.st_ex_blocks >=
+			 sbuf.st_ex_size * tsmd->online_ratio);
 	}
 	return false;
 }

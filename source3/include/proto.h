@@ -1010,13 +1010,6 @@ void srv_put_dos_date2(char *buf,int offset, time_t unixdate);
 void srv_put_dos_date3(char *buf,int offset,time_t unixdate);
 void put_long_date_timespec(char *p, struct timespec ts);
 void put_long_date(char *p, time_t t);
-struct timespec get_create_timespec(const SMB_STRUCT_STAT *st,bool fake_dirs);
-struct timespec get_atimespec(const SMB_STRUCT_STAT *pst);
-void set_atimespec(SMB_STRUCT_STAT *pst, struct timespec ts);
-struct timespec get_mtimespec(const SMB_STRUCT_STAT *pst);
-void set_mtimespec(SMB_STRUCT_STAT *pst, struct timespec ts);
-struct timespec get_ctimespec(const SMB_STRUCT_STAT *pst);
-void set_ctimespec(SMB_STRUCT_STAT *pst, struct timespec ts);
 void dos_filetime_timespec(struct timespec *tsp);
 time_t make_unix_date2(const void *date_ptr, int zone_offset);
 time_t make_unix_date3(const void *date_ptr, int zone_offset);
@@ -4087,7 +4080,7 @@ bool lp_recursive_veto_delete(int );
 bool lp_dos_filemode(int );
 bool lp_dos_filetimes(int );
 bool lp_dos_filetime_resolution(int );
-bool lp_fake_dir_create_times(int );
+bool lp_fake_dir_create_times(void);
 bool lp_blocking_locks(int );
 bool lp_inherit_perms(int );
 bool lp_inherit_acls(int );
@@ -6174,7 +6167,7 @@ bool get_dir_entry(TALLOC_CTX *ctx,
 		char **pp_fname_out,
 		SMB_OFF_T *size,
 		uint32 *mode,
-		time_t *date,
+		struct timespec *date,
 		bool check_descend,
 		bool ask_sharemode);
 bool is_visible_file(connection_struct *conn, const char *dir_path, const char *name, SMB_STRUCT_STAT *pst, bool use_veto);

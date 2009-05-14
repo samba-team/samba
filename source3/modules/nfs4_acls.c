@@ -289,10 +289,11 @@ static NTSTATUS smb_get_nt_acl_nfs4_common(const SMB_STRUCT_STAT *sbuf,
 						 * shouldn't alloc 0 for
 						 * win */
 
-	uid_to_sid(&sid_owner, sbuf->st_uid);
-	gid_to_sid(&sid_group, sbuf->st_gid);
+	uid_to_sid(&sid_owner, sbuf->st_ex_uid);
+	gid_to_sid(&sid_group, sbuf->st_ex_gid);
 
-	if (smbacl4_nfs42win(mem_ctx, theacl, &sid_owner, &sid_group, S_ISDIR(sbuf->st_mode),
+	if (smbacl4_nfs42win(mem_ctx, theacl, &sid_owner, &sid_group,
+			     S_ISDIR(sbuf->st_ex_mode),
 				&nt_ace_list, &good_aces)==False) {
 		DEBUG(8,("smbacl4_nfs42win failed\n"));
 		return map_nt_error_from_unix(errno);
@@ -733,8 +734,8 @@ NTSTATUS smb_set_nt_acl_nfs4(files_struct *fsp,
 			DEBUG(8, ("unpack_nt_owners failed"));
 			return status;
 		}
-		if (((newUID != (uid_t)-1) && (sbuf.st_uid != newUID)) ||
-		    ((newGID != (gid_t)-1) && (sbuf.st_gid != newGID))) {
+		if (((newUID != (uid_t)-1) && (sbuf.st_ex_uid != newUID)) ||
+		    ((newGID != (gid_t)-1) && (sbuf.st_ex_gid != newGID))) {
 			if(try_chown(fsp->conn, fsp->fsp_name, newUID, newGID)) {
 				DEBUG(3,("chown %s, %u, %u failed. Error = %s.\n",
 					 fsp->fsp_name, (unsigned int)newUID, (unsigned int)newGID, 

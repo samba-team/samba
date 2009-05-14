@@ -237,8 +237,8 @@ static struct file_id fileid_file_id_create(struct vfs_handle_struct *handle,
 				struct fileid_handle_data,
 				return id);
 
-	id.devid	= data->device_mapping_fn(data, sbuf->st_dev);
-	id.inode	= sbuf->st_ino;
+	id.devid	= data->device_mapping_fn(data, sbuf->st_ex_dev);
+	id.inode	= sbuf->st_ex_ino;
 
 	return id;
 }

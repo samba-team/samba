@@ -412,7 +412,7 @@ static void dotareof(int f)
 	/* Could be a pipe, in which case S_ISREG should fail,
 		* and we should write out at full size */
 	if (tp > 0) {
-		size_t towrite = S_ISREG(stbuf.st_mode) ? tp : tbufsiz;
+		size_t towrite = S_ISREG(stbuf.st_ex_mode) ? tp : tbufsiz;
 		if (sys_write(f, tarbuf, towrite) != towrite) {
 			DEBUG(0,("dotareof: sys_write fail\n"));
 		}
@@ -1793,7 +1793,8 @@ int tar_parseargs(int argc, char *argv[], const char *Optarg, int Optind)
 					SMB_STRUCT_STAT stbuf;
 
 					if (sys_stat(argv[Optind], &stbuf) == 0) {
-						newer_than = stbuf.st_mtime;
+						newer_than = convert_timespec_to_time_t(
+							stbuf.st_ex_mtime);
 						DEBUG(1,("Getting files newer than %s",
 							time_to_asc(newer_than)));
 						newOptind++;

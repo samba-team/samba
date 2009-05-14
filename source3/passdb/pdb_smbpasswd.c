@@ -292,7 +292,7 @@ Error was %s\n", pfile, strerror(errno)));
 				return NULL;
 			}
 
-			if( sbuf1.st_ino == sbuf2.st_ino) {
+			if( sbuf1.st_ex_ino == sbuf2.st_ex_ino) {
 				/* No race. */
 				break;
 			}

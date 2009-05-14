@@ -846,7 +846,7 @@ static int vfs_gpfs_chmod(vfs_handle_struct *handle, const char *path, mode_t mo
 		 }
 
 		 /* avoid chmod() if possible, to preserve acls */
-		 if ((st.st_mode & ~S_IFMT) == mode) {
+		 if ((st.st_ex_mode & ~S_IFMT) == mode) {
 			 return 0;
 		 }
 
@@ -866,7 +866,7 @@ static int vfs_gpfs_fchmod(vfs_handle_struct *handle, files_struct *fsp, mode_t 
 		 }
 
 		 /* avoid chmod() if possible, to preserve acls */
-		 if ((st.st_mode & ~S_IFMT) == mode) {
+		 if ((st.st_ex_mode & ~S_IFMT) == mode) {
 			 return 0;
 		 }
 

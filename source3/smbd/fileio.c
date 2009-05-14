@@ -296,7 +296,7 @@ ssize_t write_file(struct smb_request *req,
 			 */
 
 			if (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) && !wcp) {
-				setup_write_cache(fsp, st.st_size);
+				setup_write_cache(fsp, st.st_ex_size);
 				wcp = fsp->wcp;
 			}
 		}

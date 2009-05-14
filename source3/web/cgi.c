@@ -448,16 +448,16 @@ static void cgi_download(char *file)
 				"The requested file was not found");
 	}
 
-	if (S_ISDIR(st.st_mode))
+	if (S_ISDIR(st.st_ex_mode))
 	{
 		snprintf(buf, sizeof(buf), "%s/index.html", file);
-		if (!file_exist_stat(buf, &st) || !S_ISREG(st.st_mode))
+		if (!file_exist_stat(buf, &st) || !S_ISREG(st.st_ex_mode))
 		{
 			cgi_setup_error("404 File Not Found","",
 					"The requested file was not found");
 		}
 	}
-	else if (S_ISREG(st.st_mode))
+	else if (S_ISREG(st.st_ex_mode))
 	{
 		snprintf(buf, sizeof(buf), "%s", file);
 	}
@@ -496,7 +496,7 @@ static void cgi_download(char *file)
 		printf("Content-Language: %s\r\n", lang);
 	}
 
-	printf("Content-Length: %d\r\n\r\n", (int)st.st_size);
+	printf("Content-Length: %d\r\n\r\n", (int)st.st_ex_size);
 	while ((l=read(fd,buf,sizeof(buf)))>0) {
 		if (fwrite(buf, 1, l, stdout) != l) {
 			break;

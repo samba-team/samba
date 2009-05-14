@@ -75,7 +75,7 @@ NTSTATUS print_fsp_open(struct smb_request *req, connection_struct *conn,
 	string_set(&fsp->fsp_name,print_job_fname(lp_const_servicename(SNUM(conn)),jobid));
 	fsp->wcp = NULL;
 	SMB_VFS_FSTAT(fsp, psbuf);
-	fsp->mode = psbuf->st_mode;
+	fsp->mode = psbuf->st_ex_mode;
 	fsp->file_id = vfs_file_id_from_sbuf(conn, psbuf);
 
 	return NT_STATUS_OK;

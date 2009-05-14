@@ -60,7 +60,7 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
 		fprintf(stderr, "ERROR: lock directory %s does not exist\n",
 		       lp_lockdir());
 		ret = 1;
-	} else if ((st.st_mode & 0777) != 0755) {
+	} else if ((st.st_ex_mode & 0777) != 0755) {
 		fprintf(stderr, "WARNING: lock directory %s should have permissions 0755 for browsing to work\n",
 		       lp_lockdir());
 		ret = 1;
@@ -70,7 +70,7 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
 		fprintf(stderr, "ERROR: state directory %s does not exist\n",
 		       lp_statedir());
 		ret = 1;
-	} else if ((st.st_mode & 0777) != 0755) {
+	} else if ((st.st_ex_mode & 0777) != 0755) {
 		fprintf(stderr, "WARNING: state directory %s should have permissions 0755 for browsing to work\n",
 		       lp_statedir());
 		ret = 1;
@@ -80,7 +80,7 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
 		fprintf(stderr, "ERROR: cache directory %s does not exist\n",
 		       lp_cachedir());
 		ret = 1;
-	} else if ((st.st_mode & 0777) != 0755) {
+	} else if ((st.st_ex_mode & 0777) != 0755) {
 		fprintf(stderr, "WARNING: cache directory %s should have permissions 0755 for browsing to work\n",
 		       lp_cachedir());
 		ret = 1;

@@ -3022,7 +3022,7 @@ static int cmd_getfacl(void)
 	}
 
 	d_printf("# file: %s\n", src);
-	d_printf("# owner: %u\n# group: %u\n", (unsigned int)sbuf.st_uid, (unsigned int)sbuf.st_gid);
+	d_printf("# owner: %u\n# group: %u\n", (unsigned int)sbuf.st_ex_uid, (unsigned int)sbuf.st_ex_gid);
 
 	if (num_file_acls == 0 && num_dir_acls == 0) {
 		d_printf("No acls found.\n");
@@ -3120,6 +3120,7 @@ static int cmd_stat(void)
 	fstring mode_str;
 	SMB_STRUCT_STAT sbuf;
 	struct tm *lt;
+	time_t tmp_time;
 
 	if (!next_token_talloc(ctx, &cmd_ptr,&name,NULL)) {
 		d_printf("stat file\n");
@@ -3152,30 +3153,31 @@ static int cmd_stat(void)
 	/* Print out the stat values. */
 	d_printf("File: %s\n", src);
 	d_printf("Size: %-12.0f\tBlocks: %u\t%s\n",
-		(double)sbuf.st_size,
-		(unsigned int)sbuf.st_blocks,
-		filetype_to_str(sbuf.st_mode));
+		(double)sbuf.st_ex_size,
+		(unsigned int)sbuf.st_ex_blocks,
+		filetype_to_str(sbuf.st_ex_mode));
 
 #if defined(S_ISCHR) && defined(S_ISBLK)
-	if (S_ISCHR(sbuf.st_mode) || S_ISBLK(sbuf.st_mode)) {
+	if (S_ISCHR(sbuf.st_ex_mode) || S_ISBLK(sbuf.st_ex_mode)) {
 		d_printf("Inode: %.0f\tLinks: %u\tDevice type: %u,%u\n",
-			(double)sbuf.st_ino,
-			(unsigned int)sbuf.st_nlink,
-			unix_dev_major(sbuf.st_rdev),
-			unix_dev_minor(sbuf.st_rdev));
+			(double)sbuf.st_ex_ino,
+			(unsigned int)sbuf.st_ex_nlink,
+			unix_dev_major(sbuf.st_ex_rdev),
+			unix_dev_minor(sbuf.st_ex_rdev));
 	} else
 #endif
 		d_printf("Inode: %.0f\tLinks: %u\n",
-			(double)sbuf.st_ino,
-			(unsigned int)sbuf.st_nlink);
+			(double)sbuf.st_ex_ino,
+			(unsigned int)sbuf.st_ex_nlink);
 
 	d_printf("Access: (0%03o/%s)\tUid: %u\tGid: %u\n",
-		((int)sbuf.st_mode & 0777),
-		unix_mode_to_str(mode_str, sbuf.st_mode),
-		(unsigned int)sbuf.st_uid,
-		(unsigned int)sbuf.st_gid);
+		((int)sbuf.st_ex_mode & 0777),
+		unix_mode_to_str(mode_str, sbuf.st_ex_mode),
+		(unsigned int)sbuf.st_ex_uid,
+		(unsigned int)sbuf.st_ex_gid);
 
-	lt = localtime(&sbuf.st_atime);
+	tmp_time = convert_timespec_to_time_t(sbuf.st_ex_atime);
+	lt = localtime(&tmp_time);
 	if (lt) {
 		strftime(mode_str, sizeof(mode_str), "%Y-%m-%d %T %z", lt);
 	} else {
@@ -3183,7 +3185,8 @@ static int cmd_stat(void)
 	}
 	d_printf("Access: %s\n", mode_str);
 
-	lt = localtime(&sbuf.st_mtime);
+	tmp_time = convert_timespec_to_time_t(sbuf.st_ex_mtime);
+	lt = localtime(&tmp_time);
 	if (lt) {
 		strftime(mode_str, sizeof(mode_str), "%Y-%m-%d %T %z", lt);
 	} else {
@@ -3191,7 +3194,8 @@ static int cmd_stat(void)
 	}
 	d_printf("Modify: %s\n", mode_str);
 
-	lt = localtime(&sbuf.st_ctime);
+	tmp_time = convert_timespec_to_time_t(sbuf.st_ex_ctime);
+	lt = localtime(&tmp_time);
 	if (lt) {
 		strftime(mode_str, sizeof(mode_str), "%Y-%m-%d %T %z", lt);
 	} else {
@@ -3400,7 +3404,7 @@ static int cmd_newer(void)
 
 	ok = next_token_talloc(ctx, &cmd_ptr,&buf,NULL);
 	if (ok && (sys_stat(buf,&sbuf) == 0)) {
-		newer_than = sbuf.st_mtime;
+		newer_than = convert_timespec_to_time_t(sbuf.st_ex_mtime);
 		DEBUG(1,("Getting files newer than %s",
 			 time_to_asc(newer_than)));
 	} else {

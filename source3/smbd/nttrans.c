@@ -570,7 +570,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 		oplock_granted = NO_OPLOCK_RETURN;
 	}
 
-	file_len = sbuf.st_size;
+	file_len = sbuf.st_ex_size;
 	fattr = dos_mode(conn,fsp->fsp_name,&sbuf);
 	if (fattr == 0) {
 		fattr = FILE_ATTRIBUTE_NORMAL;
@@ -604,10 +604,9 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	p += 4;
 
 	/* Create time. */
-	c_timespec = get_create_timespec(
-		&sbuf,lp_fake_dir_create_times(SNUM(conn)));
-	a_timespec = get_atimespec(&sbuf);
-	m_timespec = get_mtimespec(&sbuf);
+	c_timespec = sbuf.st_ex_btime;
+	a_timespec = sbuf.st_ex_atime;
+	m_timespec = sbuf.st_ex_mtime;
 
 	if (lp_dos_filetime_resolution(SNUM(conn))) {
 		dos_filetime_timespec(&c_timespec);
@@ -1037,7 +1036,7 @@ static void call_nt_transact_create(connection_struct *conn,
 		oplock_granted = NO_OPLOCK_RETURN;
 	}
 
-	file_len = sbuf.st_size;
+	file_len = sbuf.st_ex_size;
 	fattr = dos_mode(conn,fsp->fsp_name,&sbuf);
 	if (fattr == 0) {
 		fattr = FILE_ATTRIBUTE_NORMAL;
@@ -1071,10 +1070,9 @@ static void call_nt_transact_create(connection_struct *conn,
 	p += 8;
 
 	/* Create time. */
-	c_timespec = get_create_timespec(
-		&sbuf,lp_fake_dir_create_times(SNUM(conn)));
-	a_timespec = get_atimespec(&sbuf);
-	m_timespec = get_mtimespec(&sbuf);
+	c_timespec = sbuf.st_ex_btime;
+	a_timespec = sbuf.st_ex_atime;
+	m_timespec = sbuf.st_ex_mtime;
 
 	if (lp_dos_filetime_resolution(SNUM(conn))) {
 		dos_filetime_timespec(&c_timespec);
@@ -1220,7 +1218,7 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 	}
 
 	/* No links from a directory. */
-	if (S_ISDIR(smb_fname->st.st_mode)) {
+	if (S_ISDIR(smb_fname->st.st_ex_mode)) {
 		status = NT_STATUS_FILE_IS_A_DIRECTORY;
 		goto out;
 	}
@@ -1283,8 +1281,8 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 		goto out;
 	}
 
-	if (smb_fname->st.st_size) {
-		ret = vfs_transfer_file(fsp1, fsp2, smb_fname->st.st_size);
+	if (smb_fname->st.st_ex_size) {
+		ret = vfs_transfer_file(fsp1, fsp2, smb_fname->st.st_ex_size);
 	}
 
 	/*
@@ -1296,7 +1294,7 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 	close_file(NULL, fsp1, NORMAL_CLOSE);
 
 	/* Ensure the modtime is set correctly on the destination file. */
-	set_close_write_time(fsp2, get_mtimespec(&smb_fname->st));
+	set_close_write_time(fsp2, smb_fname->st.st_ex_mtime);
 
 	status = close_file(NULL, fsp2, NORMAL_CLOSE);
 
@@ -1311,7 +1309,7 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 			 false);
 	TALLOC_FREE(parent);
 
-	if (ret < (SMB_OFF_T)smb_fname->st.st_size) {
+	if (ret < (SMB_OFF_T)smb_fname->st.st_ex_size) {
 		status = NT_STATUS_DISK_FULL;
 		goto out;
 	}

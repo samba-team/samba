@@ -662,7 +662,7 @@ static int net_conf_addshare(struct net_context *c,
 		goto done;
 	}
 
-	if (!S_ISDIR(sbuf.st_mode)) {
+	if (!S_ISDIR(sbuf.st_ex_mode)) {
 		d_fprintf(stderr,
 			  "ERROR: path '%s' is not a directory.\n",
 			  path);
