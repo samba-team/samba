@@ -96,22 +96,22 @@ NTSTATUS connect_to_service(struct net_context *c,
 {
 	NTSTATUS nt_status;
 	int flags = 0;
+	struct user_auth_info *ai = c->auth_info;
 
-	c->opt_password = net_prompt_pass(c, c->opt_user_name);
+	set_cmdline_auth_info_getpass(ai);
 
-	if (c->opt_kerberos) {
-		flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
-	}
-
-	if (c->opt_kerberos && c->opt_password) {
-		flags |= CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS;
+	if (get_cmdline_auth_info_use_kerberos(ai)) {
+		flags |= CLI_FULL_CONNECTION_USE_KERBEROS |
+			 CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS;
 	}
 
 	nt_status = cli_full_connection(cli_ctx, NULL, server_name,
 					server_ss, c->opt_port,
 					service_name, service_type,
-					c->opt_user_name, c->opt_workgroup,
-					c->opt_password, flags, Undefined, NULL);
+					get_cmdline_auth_info_username(ai),
+					c->opt_workgroup,
+					get_cmdline_auth_info_password(ai),
+					flags, Undefined, NULL);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		d_fprintf(stderr, "Could not connect to server %s\n", server_name);
 
@@ -131,10 +131,10 @@ NTSTATUS connect_to_service(struct net_context *c,
 		return nt_status;
 	}
 
-	if (c->smb_encrypt) {
+	if (get_cmdline_auth_info_smb_encrypt(ai)) {
 		nt_status = cli_force_encryption(*cli_ctx,
-					c->opt_user_name,
-					c->opt_password,
+					get_cmdline_auth_info_username(ai),
+					get_cmdline_auth_info_password(ai),
 					c->opt_workgroup);
 
 		if (NT_STATUS_EQUAL(nt_status,NT_STATUS_NOT_SUPPORTED)) {
@@ -234,14 +234,12 @@ NTSTATUS connect_to_ipc_krb5(struct net_context *c,
 {
 	NTSTATUS nt_status;
 	char *user_and_realm = NULL;
+	struct user_auth_info *ai = c->auth_info;
 
 	/* FIXME: Should get existing kerberos ticket if possible. */
-	c->opt_password = net_prompt_pass(c, c->opt_user_name);
-	if (!c->opt_password) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	set_cmdline_auth_info_getpass(ai);
 
-	user_and_realm = get_user_and_realm(c->opt_user_name);
+	user_and_realm = get_user_and_realm(get_cmdline_auth_info_username(ai));
 	if (!user_and_realm) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -250,7 +248,7 @@ NTSTATUS connect_to_ipc_krb5(struct net_context *c,
 					server_ss, c->opt_port,
 					"IPC$", "IPC",
 					user_and_realm, c->opt_workgroup,
-					c->opt_password,
+					get_cmdline_auth_info_password(ai),
 					CLI_FULL_CONNECTION_USE_KERBEROS,
 					Undefined, NULL);
 
@@ -261,10 +259,10 @@ NTSTATUS connect_to_ipc_krb5(struct net_context *c,
 		return nt_status;
 	}
 
-        if (c->smb_encrypt) {
+        if (get_cmdline_auth_info_smb_encrypt(ai)) {
 		nt_status = cli_cm_force_encryption(*cli_ctx,
 					user_and_realm,
-					c->opt_password,
+					get_cmdline_auth_info_password(ai),
 					c->opt_workgroup,
                                         "IPC$");
 		if (!NT_STATUS_IS_OK(nt_status)) {
@@ -326,50 +324,6 @@ NTSTATUS connect_dst_pipe(struct net_context *c, struct cli_state **cli_dst,
 	SAFE_FREE(server_name);
 
 	return nt_status;
-}
-
-/****************************************************************************
- Use the local machine account (krb) and password for this session.
-****************************************************************************/
-
-int net_use_krb_machine_account(struct net_context *c)
-{
-	char *user_name = NULL;
-
-	if (!secrets_init()) {
-		d_fprintf(stderr, "ERROR: Unable to open secrets database\n");
-		exit(1);
-	}
-
-	c->opt_password = secrets_fetch_machine_password(
-				c->opt_target_workgroup, NULL, NULL);
-	if (asprintf(&user_name, "%s$@%s", global_myname(), lp_realm()) == -1) {
-		return -1;
-	}
-	c->opt_user_name = user_name;
-	return 0;
-}
-
-/****************************************************************************
- Use the machine account name and password for this session.
-****************************************************************************/
-
-int net_use_machine_account(struct net_context *c)
-{
-	char *user_name = NULL;
-
-	if (!secrets_init()) {
-		d_fprintf(stderr, "ERROR: Unable to open secrets database\n");
-		exit(1);
-	}
-
-	c->opt_password = secrets_fetch_machine_password(
-				c->opt_target_workgroup, NULL, NULL);
-	if (asprintf(&user_name, "%s$", global_myname()) == -1) {
-		return -1;
-	}
-	c->opt_user_name = user_name;
-	return 0;
 }
 
 bool net_find_server(struct net_context *c,
@@ -534,33 +488,6 @@ done:
 
 /****************************************************************************
 ****************************************************************************/
-
-const char *net_prompt_pass(struct net_context *c, const char *user)
-{
-	char *prompt = NULL;
-	const char *pass = NULL;
-
-	if (c->opt_password) {
-		return c->opt_password;
-	}
-
-	if (c->opt_machine_pass) {
-		return NULL;
-	}
-
-	if (c->opt_kerberos && !c->opt_user_specified) {
-		return NULL;
-	}
-
-	if (asprintf(&prompt, "Enter %s's password:", user) == -1) {
-		return NULL;
-	}
-
-	pass = getpass(prompt);
-	SAFE_FREE(prompt);
-
-	return pass;
-}
 
 int net_run_function(struct net_context *c, int argc, const char **argv,
 		      const char *whoami, struct functable *table)
