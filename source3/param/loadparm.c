@@ -1034,7 +1034,7 @@ static struct parm_struct parm_table[] = {
 		.ptr		= &Globals.ConfigBackend,
 		.special	= NULL,
 		.enum_list	= enum_config_backend,
-		.flags		= FLAG_ADVANCED,
+		.flags		= FLAG_ADVANCED|FLAG_META,
 	},
 
 	{N_("Security Options"), P_SEP, P_SEPARATOR},
@@ -3736,7 +3736,7 @@ static struct parm_struct parm_table[] = {
 		.ptr		= &Globals.szConfigFile,
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_HIDE,
+		.flags		= FLAG_HIDE|FLAG_META,
 	},
 	{
 		.label		= "preload",
@@ -3999,7 +3999,7 @@ static struct parm_struct parm_table[] = {
 		.ptr		= &sDefault.szInclude,
 		.special	= handle_include,
 		.enum_list	= NULL,
-		.flags		= FLAG_HIDE,
+		.flags		= FLAG_HIDE|FLAG_META,
 	},
 	{
 		.label		= "preexec",
@@ -7772,6 +7772,7 @@ static void dump_globals(FILE *f)
 
 	for (i = 0; parm_table[i].label; i++)
 		if (parm_table[i].p_class == P_GLOBAL &&
+		    !(parm_table[i].flags & FLAG_META) &&
 		    parm_table[i].ptr &&
 		    (i == 0 || (parm_table[i].ptr != parm_table[i - 1].ptr))) {
 			if (defaults_saved && is_default(i))
@@ -7818,6 +7819,7 @@ static void dump_a_service(struct service *pService, FILE * f)
 	for (i = 0; parm_table[i].label; i++) {
 
 		if (parm_table[i].p_class == P_LOCAL &&
+		    !(parm_table[i].flags & FLAG_META) &&
 		    parm_table[i].ptr &&
 		    (*parm_table[i].label != '-') &&
 		    (i == 0 || (parm_table[i].ptr != parm_table[i - 1].ptr))) 
@@ -7894,6 +7896,7 @@ bool dump_a_parameter(int snum, char *parm_name, FILE * f, bool isGlobal)
 
 	for (i = 0; parm_table[i].label; i++) {
 		if (strwicmp(parm_table[i].label, parm_name) == 0 &&
+		    !(parm_table[i].flags & FLAG_META) &&
 		    (parm_table[i].p_class == p_class || parm_table[i].flags & flag) &&
 		    parm_table[i].ptr &&
 		    (*parm_table[i].label != '-') &&
