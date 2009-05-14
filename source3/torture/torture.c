@@ -5265,6 +5265,138 @@ static bool run_uid_regression_test(int dummy)
 	return correct;
 }
 
+
+static const char *illegal_chars = "*\\/?<>|\":";
+static char force_shortname_chars[] = " +,.[];=\177";
+
+static void shortname_del_fn(const char *mnt, file_info *finfo, const char *mask, void *state)
+{
+	struct cli_state *pcli = (struct cli_state *)state;
+	fstring fname;
+	slprintf(fname, sizeof(fname), "\\shortname\\%s", finfo->name);
+
+	if (strcmp(finfo->name, ".") == 0 || strcmp(finfo->name, "..") == 0)
+		return;
+
+	if (finfo->mode & aDIR) {
+		if (!NT_STATUS_IS_OK(cli_rmdir(pcli, fname)))
+			printf("del_fn: failed to rmdir %s\n,", fname );
+	} else {
+		if (!NT_STATUS_IS_OK(cli_unlink(pcli, fname, aSYSTEM | aHIDDEN)))
+			printf("del_fn: failed to unlink %s\n,", fname );
+	}
+}
+
+struct sn_state {
+	int i;
+	bool val;
+};
+
+static void shortname_list_fn(const char *mnt, file_info *finfo, const char *name, void *state)
+{
+	struct sn_state *s = (struct sn_state  *)state;
+	int i = s->i;
+
+#if 0
+	printf("shortname list: i = %d, name = |%s|, shortname = |%s|\n",
+		i, finfo->name, finfo->short_name);
+#endif
+
+	if (strchr(force_shortname_chars, i)) {
+		if (!finfo->short_name[0]) {
+			/* Shortname not created when it should be. */
+			d_printf("(%s) ERROR: Shortname was not created for file %s\n",
+				__location__, finfo->name);
+			s->val = true;
+		}
+	} else if (finfo->short_name[0]){
+		/* Shortname created when it should not be. */
+		d_printf("(%s) ERROR: Shortname %s was created for file %s\n",
+			__location__, finfo->short_name, finfo->name);
+		s->val = true;
+	}
+}
+
+static bool run_shortname_test(int dummy)
+{
+	static struct cli_state *cli;
+	bool correct = True;
+	int i;
+	struct sn_state s;
+	char fname[20];
+
+	printf("starting shortname test\n");
+
+	if (!torture_open_connection(&cli, 0)) {
+		return False;
+	}
+
+	cli_sockopt(cli, sockops);
+
+	cli_list(cli, "\\shortname\\*", 0, shortname_del_fn, cli);
+	cli_list(cli, "\\shortname\\*", aDIR, shortname_del_fn, cli);
+	cli_rmdir(cli, "\\shortname");
+
+	if (!NT_STATUS_IS_OK(cli_mkdir(cli, "\\shortname"))) {
+		d_printf("(%s) cli_mkdir of \\shortname failed: %s\n",
+			__location__, cli_errstr(cli));
+		correct = false;
+		goto out;
+	}
+
+	strlcpy(fname, "\\shortname\\", sizeof(fname));
+	strlcat(fname, "test .txt", sizeof(fname));
+
+	s.val = false;
+
+	for (i = 32; i < 128; i++) {
+		NTSTATUS status;
+		uint16_t fnum = (uint16_t)-1;
+
+		s.i = i;
+
+		if (strchr(illegal_chars, i)) {
+			continue;
+		}
+		fname[15] = i;
+
+		status = cli_ntcreate(cli, fname, 0, GENERIC_ALL_ACCESS, FILE_ATTRIBUTE_NORMAL,
+                                   FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OVERWRITE_IF, 0, 0, &fnum);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_printf("(%s) cli_nt_create of %s failed: %s\n",
+				__location__, fname, cli_errstr(cli));
+			correct = false;
+			goto out;
+		}
+		cli_close(cli, fnum);
+		if (cli_list(cli, "\\shortname\\test*.*", 0, shortname_list_fn, &s) != 1) {
+			d_printf("(%s) failed to list %s: %s\n",
+				__location__, fname, cli_errstr(cli));
+			correct = false;
+			goto out;
+		}
+		if (!NT_STATUS_IS_OK(cli_unlink(cli, fname, aSYSTEM | aHIDDEN))) {
+			d_printf("(%s) failed to delete %s: %s\n",
+				__location__, fname, cli_errstr(cli));
+			correct = false;
+			goto out;
+		}
+
+		if (s.val) {
+			correct = false;
+			goto out;
+		}
+	}
+
+  out:
+
+	cli_list(cli, "\\shortname\\*", 0, shortname_del_fn, cli);
+	cli_list(cli, "\\shortname\\*", aDIR, shortname_del_fn, cli);
+	cli_rmdir(cli, "\\shortname");
+	torture_close_connection(cli);
+	return correct;
+}
+
 static bool run_local_substitute(int dummy)
 {
 	bool ok = true;
@@ -5899,6 +6031,7 @@ static struct {
 	{"OPEN", run_opentest, 0},
 	{"POSIX", run_simple_posix_open_test, 0},
 	{ "UID-REGRESSION-TEST", run_uid_regression_test, 0},
+	{ "SHORTNAME-TEST", run_shortname_test, 0},
 #if 1
 	{"OPENATTR", run_openattrtest, 0},
 #endif
