@@ -105,6 +105,7 @@ struct ctdb_tunable {
 	uint32_t recd_ping_timeout;
 	uint32_t recd_ping_failcount;
 	uint32_t log_latency_ms;
+	uint32_t reclock_latency_ms;
 	uint32_t recovery_drop_all_ips;
 	uint32_t verify_recovery_lock;
 };
@@ -299,6 +300,10 @@ struct ctdb_statistics {
 		uint32_t control;
 		uint32_t traverse;
 	} timeouts;
+	struct {
+		double ctdbd;
+		double recd;
+	} reclock;
 	uint32_t total_calls;
 	uint32_t pending_calls;
 	uint32_t lockwait_calls;
@@ -562,6 +567,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_EVENT_SCRIPT_FINISHED   = 95,
 		    CTDB_CONTROL_GET_EVENT_SCRIPT_STATUS = 96,
 		    CTDB_CONTROL_TRAVERSE_KILL		 = 97,
+		    CTDB_CONTROL_RECD_RECLOCK_LATENCY    = 98,
 };	
 
 /*
@@ -954,6 +960,7 @@ void ctdb_recv_raw_pkt(void *p, uint8_t *data, uint32_t length);
 int ctdb_socket_connect(struct ctdb_context *ctdb);
 
 void ctdb_latency(struct ctdb_db_context *ctdb_db, const char *name, double *latency, struct timeval t);
+void ctdb_reclock_latency(struct ctdb_context *ctdb, const char *name, double *latency, double l);
 
 uint32_t ctdb_reqid_new(struct ctdb_context *ctdb, void *state);
 void *_ctdb_reqid_find(struct ctdb_context *ctdb, uint32_t reqid, const char *type, const char *location);
@@ -1431,5 +1438,6 @@ int32_t ctdb_control_event_script_finished(struct ctdb_context *ctdb);
 int32_t ctdb_control_get_event_script_status(struct ctdb_context *ctdb, TDB_DATA *outdata);
 
 int ctdb_log_event_script_output(struct ctdb_context *ctdb, char *str, uint16_t len);
+int ctdb_ctrl_report_recd_lock_latency(struct ctdb_context *ctdb, struct timeval timeout, double latency);
 
 #endif

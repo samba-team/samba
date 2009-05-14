@@ -492,6 +492,7 @@ struct ctdb_set_recmode_state {
 	struct timed_event *te;
 	struct fd_event *fde;
 	pid_t child;
+	struct timeval start_time;
 };
 
 /*
@@ -520,6 +521,10 @@ static void ctdb_set_recmode_timeout(struct event_context *ev, struct timed_even
 */
 static int set_recmode_destructor(struct ctdb_set_recmode_state *state)
 {
+	double l = timeval_elapsed(&state->start_time);
+
+	ctdb_reclock_latency(state->ctdb, "daemon reclock", &state->ctdb->statistics.reclock.ctdbd, l);
+		
 	kill(state->child, SIGKILL);
 	return 0;
 }
@@ -632,6 +637,7 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 	state = talloc(ctdb, struct ctdb_set_recmode_state);
 	CTDB_NO_MEMORY(ctdb, state);
 
+	state->start_time = timeval_current();
 
 	if (ctdb->tunable.verify_recovery_lock == 0) {
 		/* dont need to verify the reclock file */

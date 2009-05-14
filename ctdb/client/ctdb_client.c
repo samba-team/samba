@@ -3615,3 +3615,24 @@ int ctdb_ctrl_getscriptstatus(struct ctdb_context *ctdb,
 	return 0;
 }
 
+/*
+  tell the main daemon how long it took to lock the reclock file
+ */
+int ctdb_ctrl_report_recd_lock_latency(struct ctdb_context *ctdb, struct timeval timeout, double latency)
+{
+	int ret;
+	int32_t res;
+	TDB_DATA data;
+
+	data.dptr = (uint8_t *)&latency;
+	data.dsize = sizeof(latency);
+
+	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, 0, CTDB_CONTROL_RECD_RECLOCK_LATENCY, 0, data, 
+			   ctdb, NULL, &res, NULL, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(DEBUG_ERR,("Failed to send recd reclock latency\n"));
+		return -1;
+	}
+
+	return 0;
+}

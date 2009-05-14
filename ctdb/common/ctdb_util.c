@@ -138,6 +138,22 @@ void ctdb_latency(struct ctdb_db_context *ctdb_db, const char *name, double *lat
 	}
 }
 
+/*
+  update a reclock latency number
+ */
+void ctdb_reclock_latency(struct ctdb_context *ctdb, const char *name, double *latency, double l)
+{
+	if (l > *latency) {
+		*latency = l;
+	}
+
+	if (ctdb->tunable.reclock_latency_ms !=0) {
+		if (l*1000 > ctdb->tunable.reclock_latency_ms) {
+			DEBUG(DEBUG_ERR, ("High RECLOCK latency %fs for operation %s\n", l, name));
+		}
+	}
+}
+
 uint32_t ctdb_reqid_new(struct ctdb_context *ctdb, void *state)
 {
 	uint32_t id;

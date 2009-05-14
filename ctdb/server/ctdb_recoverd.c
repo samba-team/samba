@@ -1328,6 +1328,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	struct ctdb_dbid_map *dbmap;
 	TDB_DATA data;
 	uint32_t *nodes;
+	struct timeval start_time;
 
 	DEBUG(DEBUG_NOTICE, (__location__ " Starting do_recovery\n"));
 
@@ -1351,11 +1352,15 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		ctdb_ban_node(rec, rec->last_culprit, ctdb->tunable.recovery_ban_period);
 	}
 
+	DEBUG(DEBUG_ERR,("Taking out recovery lock from recovery daemon\n"));
+	start_time = timeval_current();
 	if (!ctdb_recovery_lock(ctdb, true)) {
 		ctdb_set_culprit(rec, pnn);
 		DEBUG(DEBUG_ERR,("Unable to get recovery lock - aborting recovery\n"));
 		return -1;
 	}
+	ctdb_ctrl_report_recd_lock_latency(ctdb, CONTROL_TIMEOUT(), timeval_elapsed(&start_time));
+	DEBUG(DEBUG_ERR,("Recovery lock taken successfully by recovery daemon\n"));
 
 	DEBUG(DEBUG_NOTICE, (__location__ " Recovery initiated due to problem with node %u\n", culprit));
 

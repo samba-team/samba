@@ -441,6 +441,10 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(0);
 		return ctdb_control_get_event_script_status(ctdb, outdata);
 
+	case CTDB_CONTROL_RECD_RECLOCK_LATENCY:
+		CHECK_CONTROL_DATA_SIZE(sizeof(double));
+		ctdb_reclock_latency(ctdb, "recd reclock", &ctdb->statistics.reclock.recd, *((double *)indata.dptr));
+		return 0;
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;

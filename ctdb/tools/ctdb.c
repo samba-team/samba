@@ -209,6 +209,9 @@ static void show_statistics(struct ctdb_statistics *s)
 		       preflen?0:4, "",
 		       *(uint32_t *)(fields[i].offset+(uint8_t *)s));
 	}
+	printf(" %-30s     %.6f sec\n", "max_reclock_ctdbd", s->reclock.ctdbd);
+	printf(" %-30s     %.6f sec\n", "max_reclock_recd", s->reclock.recd);
+
 	printf(" %-30s     %.6f sec\n", "max_call_latency", s->max_call_latency);
 	printf(" %-30s     %.6f sec\n", "max_lockwait_latency", s->max_lockwait_latency);
 	printf(" %-30s     %.6f sec\n", "max_childwrite_latency", s->max_childwrite_latency);
