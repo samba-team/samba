@@ -6018,8 +6018,6 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		/*
 		 * No wildcards - just process the one file.
 		 */
-		bool is_short_name = mangle_is_8_3(name, True, conn->params);
-
 		/* Add a terminating '/' to the directory name. */
 		directory = talloc_asprintf_append(directory,
 				"/%s",
@@ -6041,10 +6039,10 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		DEBUG(3, ("rename_internals: case_sensitive = %d, "
 			  "case_preserve = %d, short case preserve = %d, "
 			  "directory = %s, newname = %s, "
-			  "last_component_dest = %s, is_8_3 = %d\n",
+			  "last_component_dest = %s\n",
 			  conn->case_sensitive, conn->case_preserve,
 			  conn->short_case_preserve, directory,
-			  newname, last_component_dest, is_short_name));
+			  newname, last_component_dest));
 
 		/* The dest name still may have wildcards. */
 		if (dest_has_wild) {
