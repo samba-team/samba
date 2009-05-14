@@ -618,7 +618,6 @@ static struct functable net_func[] = {
  int main(int argc, const char **argv)
 {
 	int opt,i;
-	char *p;
 	int rc = 0;
 	int argc_new = 0;
 	const char ** argv_new;
@@ -629,12 +628,10 @@ static struct functable net_func[] = {
 	struct poptOption long_options[] = {
 		{"help",	'h', POPT_ARG_NONE,   0, 'h'},
 		{"workgroup",	'w', POPT_ARG_STRING, &c->opt_target_workgroup},
-		{"user",	'U', POPT_ARG_STRING, &c->opt_user_name, 'U'},
 		{"ipaddress",	'I', POPT_ARG_STRING, 0,'I'},
 		{"port",	'p', POPT_ARG_INT,    &c->opt_port},
 		{"myname",	'n', POPT_ARG_STRING, &c->opt_requester_name},
 		{"server",	'S', POPT_ARG_STRING, &c->opt_host},
-		{"encrypt",	'e', POPT_ARG_NONE,   NULL, 'e', "Encrypt SMB transport (UNIX extended servers only)" },
 		{"container",	'c', POPT_ARG_STRING, &c->opt_container},
 		{"comment",	'C', POPT_ARG_STRING, &c->opt_comment},
 		{"maxusers",	'M', POPT_ARG_INT,    &c->opt_maxusers},
@@ -645,15 +642,13 @@ static struct functable net_func[] = {
 		{"stdin",	'i', POPT_ARG_NONE,   &c->opt_stdin},
 		{"timeout",	't', POPT_ARG_INT,    &c->opt_timeout},
 		{"request-timeout",0,POPT_ARG_INT,    &c->opt_request_timeout},
-		{"machine-pass",'P', POPT_ARG_NONE,   &c->opt_machine_pass},
-		{"kerberos",    'k', POPT_ARG_NONE,   &c->opt_kerberos},
 		{"myworkgroup", 'W', POPT_ARG_STRING, &c->opt_workgroup},
 		{"verbose",	'v', POPT_ARG_NONE,   &c->opt_verbose},
 		{"test",	'T', POPT_ARG_NONE,   &c->opt_testmode},
 		/* Options for 'net groupmap set' */
 		{"local",       'L', POPT_ARG_NONE,   &c->opt_localgroup},
 		{"domain",      'D', POPT_ARG_NONE,   &c->opt_domaingroup},
-		{"ntname",      'N', POPT_ARG_STRING, &c->opt_newntname},
+		{"ntname",        0, POPT_ARG_STRING, &c->opt_newntname},
 		{"rid",         'R', POPT_ARG_INT,    &c->opt_rid},
 		/* Options for 'net rpc share migrate' */
 		{"acls",	0, POPT_ARG_NONE,     &c->opt_acls},
@@ -668,6 +663,7 @@ static struct functable net_func[] = {
 		{"clean-old-entries", 0, POPT_ARG_NONE, &c->opt_clean_old_entries},
 
 		POPT_COMMON_SAMBA
+		POPT_COMMON_CREDENTIALS
 		{ 0, 0, 0, 0}
 	};
 
@@ -681,6 +677,13 @@ static struct functable net_func[] = {
 	dbf = x_stderr;
 	c->private_data = net_func;
 
+	c->auth_info = user_auth_info_init(frame);
+	if (c->auth_info == NULL) {
+		d_fprintf(stderr, "\nOut of memory!\n");
+		exit(1);
+	}
+	popt_common_set_auth_info(c->auth_info);
+
 	pc = poptGetContext(NULL, argc, (const char **) argv, long_options,
 			    POPT_CONTEXT_KEEP_FIRST);
 
@@ -688,9 +691,7 @@ static struct functable net_func[] = {
 		switch (opt) {
 		case 'h':
 			c->display_usage = true;
-			break;
-		case 'e':
-			c->smb_encrypt = true;
+			set_cmdline_auth_info_password(c->auth_info, "");
 			break;
 		case 'I':
 			if (!interpret_string_addr(&c->opt_dest_ip,
@@ -698,15 +699,6 @@ static struct functable net_func[] = {
 				d_fprintf(stderr, "\nInvalid ip address specified\n");
 			} else {
 				c->opt_have_ip = true;
-			}
-			break;
-		case 'U':
-			c->opt_user_specified = true;
-			c->opt_user_name = SMB_STRDUP(c->opt_user_name);
-			p = strchr(c->opt_user_name,'%');
-			if (p) {
-				*p = 0;
-				c->opt_password = p+1;
 			}
 			break;
 		default:
@@ -742,10 +734,6 @@ static struct functable net_func[] = {
 		set_global_myname(c->opt_requester_name);
 	}
 
-	if (!c->opt_user_name && getenv("LOGNAME")) {
-		c->opt_user_name = getenv("LOGNAME");
-	}
-
 	if (!c->opt_workgroup) {
 		c->opt_workgroup = smb_xstrdup(lp_workgroup());
 	}
@@ -762,17 +750,6 @@ static struct functable net_func[] = {
 	/* this makes sure that when we do things like call scripts,
 	   that it won't assert becouse we are not root */
 	sec_init();
-
-	if (c->opt_machine_pass) {
-		/* it is very useful to be able to make ads queries as the
-		   machine account for testing purposes and for domain leave */
-
-		net_use_krb_machine_account(c);
-	}
-
-	if (!c->opt_password) {
-		c->opt_password = getenv("PASSWD");
-	}
 
 	rc = net_run_function(c, argc_new-1, argv_new+1, "net", net_func);
 

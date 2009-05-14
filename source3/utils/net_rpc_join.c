@@ -57,7 +57,8 @@ NTSTATUS net_rpc_join_ok(struct net_context *c, const char *domain,
 	if (sec == SEC_ADS) {
 		/* Connect to IPC$ using machine account's credentials. We don't use anonymous
 		   connection here, as it may be denied by server's local policy. */
-		net_use_machine_account(c);
+		set_cmdline_auth_info_use_machine_account(c->auth_info);
+		set_cmdline_auth_info_machine_account_creds(c->auth_info);
 
 	} else {
 		/* some servers (e.g. WinNT) don't accept machine-authenticated

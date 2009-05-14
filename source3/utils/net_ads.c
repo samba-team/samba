@@ -231,32 +231,22 @@ retry_connect:
 
 	ads = ads_init(realm, c->opt_target_workgroup, c->opt_host);
 
-	if (!c->opt_user_name) {
-		c->opt_user_name = "administrator";
-	}
-
-	if (c->opt_user_specified) {
-		need_password = true;
-	}
-
 retry:
-	if (!c->opt_password && need_password && !c->opt_machine_pass) {
-		c->opt_password = net_prompt_pass(c, c->opt_user_name);
-		if (!c->opt_password) {
-			ads_destroy(&ads);
-			return ADS_ERROR(LDAP_NO_MEMORY);
-		}
+	if (need_password) {
+		set_cmdline_auth_info_getpass(c->auth_info);
 	}
 
-	if (c->opt_password) {
+	if (get_cmdline_auth_info_got_pass(c->auth_info)) {
 		use_in_memory_ccache();
 		SAFE_FREE(ads->auth.password);
-		ads->auth.password = smb_xstrdup(c->opt_password);
+		ads->auth.password = smb_xstrdup(
+				get_cmdline_auth_info_password(c->auth_info));
 	}
 
 	ads->auth.flags |= auth_flags;
 	SAFE_FREE(ads->auth.user_name);
-	ads->auth.user_name = smb_xstrdup(c->opt_user_name);
+	ads->auth.user_name = smb_xstrdup(
+			get_cmdline_auth_info_username(c->auth_info));
 
        /*
         * If the username is of the form "name@realm",
@@ -875,6 +865,7 @@ static int net_ads_leave(struct net_context *c, int argc, const char **argv)
 	TALLOC_CTX *ctx;
 	struct libnet_UnjoinCtx *r = NULL;
 	WERROR werr;
+	struct user_auth_info *ai = c->auth_info;
 
 	if (c->display_usage) {
 		d_printf("Usage:\n"
@@ -893,7 +884,7 @@ static int net_ads_leave(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
-	if (!c->opt_kerberos) {
+	if (!get_cmdline_auth_info_use_kerberos(ai)) {
 		use_in_memory_ccache();
 	}
 
@@ -903,12 +894,14 @@ static int net_ads_leave(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
+	set_cmdline_auth_info_getpass(ai);
+
 	r->in.debug		= true;
-	r->in.use_kerberos	= c->opt_kerberos;
+	r->in.use_kerberos	= get_cmdline_auth_info_use_kerberos(ai);
 	r->in.dc_name		= c->opt_host;
 	r->in.domain_name	= lp_realm();
-	r->in.admin_account	= c->opt_user_name;
-	r->in.admin_password	= net_prompt_pass(c, c->opt_user_name);
+	r->in.admin_account	= get_cmdline_auth_info_username(ai);
+	r->in.admin_password	= get_cmdline_auth_info_password(ai);
 	r->in.modify_config	= lp_config_backend_is_registry();
 	r->in.unjoin_flags	= WKSSVC_JOIN_FLAGS_JOIN_TYPE |
 				  WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE;
@@ -959,7 +952,7 @@ static NTSTATUS net_ads_join_ok(struct net_context *c)
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	net_use_krb_machine_account(c);
+	set_cmdline_auth_info_use_machine_account(c->auth_info);
 
 	status = ads_startup(c, true, &ads);
 	if (!ADS_ERR_OK(status)) {
@@ -1190,6 +1183,7 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 	const char *os_name = NULL;
 	const char *os_version = NULL;
 	bool modify_config = lp_config_backend_is_registry();
+	struct user_auth_info *ai = c->auth_info;;
 
 	if (c->display_usage)
 		return net_ads_join_usage(c, argc, argv);
@@ -1209,7 +1203,7 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 		goto fail;
 	}
 
-	if (!c->opt_kerberos) {
+	if (!get_cmdline_auth_info_use_kerberos(ai)) {
 		use_in_memory_ccache();
 	}
 
@@ -1259,6 +1253,8 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 
 	/* Do the domain join here */
 
+	set_cmdline_auth_info_getpass(ai);
+
 	r->in.domain_name	= domain;
 	r->in.create_upn	= createupn;
 	r->in.upn		= machineupn;
@@ -1266,10 +1262,10 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 	r->in.os_name		= os_name;
 	r->in.os_version	= os_version;
 	r->in.dc_name		= c->opt_host;
-	r->in.admin_account	= c->opt_user_name;
-	r->in.admin_password	= net_prompt_pass(c, c->opt_user_name);
+	r->in.admin_account	= get_cmdline_auth_info_username(ai);
+	r->in.admin_password	= get_cmdline_auth_info_password(ai);
 	r->in.debug		= true;
-	r->in.use_kerberos	= c->opt_kerberos;
+	r->in.use_kerberos	= get_cmdline_auth_info_use_kerberos(ai);
 	r->in.modify_config	= modify_config;
 	r->in.join_flags	= WKSSVC_JOIN_FLAGS_JOIN_TYPE |
 				  WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE |
@@ -1580,6 +1576,7 @@ static int net_ads_printer_publish(struct net_context *c, int argc, const char *
 	char *prt_dn, *srv_dn, **srv_cn;
 	char *srv_cn_escaped = NULL, *printername_escaped = NULL;
 	LDAPMessage *res = NULL;
+	struct user_auth_info *ai = c->auth_info;
 
 	if (argc < 1 || c->display_usage) {
 		d_printf("Usage:\n"
@@ -1611,8 +1608,9 @@ static int net_ads_printer_publish(struct net_context *c, int argc, const char *
 	nt_status = cli_full_connection(&cli, global_myname(), servername,
 					&server_ss, 0,
 					"IPC$", "IPC",
-					c->opt_user_name, c->opt_workgroup,
-					c->opt_password ? c->opt_password : "",
+					get_cmdline_auth_info_username(ai),
+					c->opt_workgroup,
+					get_cmdline_auth_info_password(ai),
 					CLI_FULL_CONNECTION_USE_KERBEROS,
 					Undefined, NULL);
 
@@ -1800,8 +1798,8 @@ static int net_ads_printer(struct net_context *c, int argc, const char **argv)
 static int net_ads_password(struct net_context *c, int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
-	const char *auth_principal = c->opt_user_name;
-	const char *auth_password = c->opt_password;
+	const char *auth_principal;
+	const char *auth_password;
 	char *realm = NULL;
 	char *new_password = NULL;
 	char *chr, *prompt;
@@ -1816,10 +1814,9 @@ static int net_ads_password(struct net_context *c, int argc, const char **argv)
 		return 0;
 	}
 
-	if (c->opt_user_name == NULL || c->opt_password == NULL) {
-		d_fprintf(stderr, "You must supply an administrator username/password\n");
-		return -1;
-	}
+	auth_principal = get_cmdline_auth_info_username(c->auth_info);
+	set_cmdline_auth_info_getpass(c->auth_info);
+	auth_password = get_cmdline_auth_info_password(c->auth_info);
 
 	if (argc < 1) {
 		d_fprintf(stderr, "ERROR: You must say which username to change password for\n");
@@ -1901,7 +1898,7 @@ int net_ads_changetrustpw(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
-	net_use_krb_machine_account(c);
+	set_cmdline_auth_info_use_machine_account(c->auth_info);
 
 	use_in_memory_ccache();
 
@@ -2283,6 +2280,7 @@ static int net_ads_kerberos_pac(struct net_context *c, int argc, const char **ar
 	TALLOC_CTX *mem_ctx = NULL;
 	NTSTATUS status;
 	int ret = -1;
+	struct user_auth_info *ai = c->auth_info;
 
 	if (c->display_usage) {
 		d_printf("Usage:\n"
@@ -2296,11 +2294,11 @@ static int net_ads_kerberos_pac(struct net_context *c, int argc, const char **ar
 		goto out;
 	}
 
-	c->opt_password = net_prompt_pass(c, c->opt_user_name);
+	set_cmdline_auth_info_getpass(ai);
 
 	status = kerberos_return_pac(mem_ctx,
-				     c->opt_user_name,
-				     c->opt_password,
+				     get_cmdline_auth_info_username(ai),
+				     get_cmdline_auth_info_password(ai),
 			     	     0,
 				     NULL,
 				     NULL,
@@ -2333,6 +2331,7 @@ static int net_ads_kerberos_kinit(struct net_context *c, int argc, const char **
 	TALLOC_CTX *mem_ctx = NULL;
 	int ret = -1;
 	NTSTATUS status;
+	struct user_auth_info *ai = c->auth_info;
 
 	if (c->display_usage) {
 		d_printf("Usage:\n"
@@ -2346,10 +2345,10 @@ static int net_ads_kerberos_kinit(struct net_context *c, int argc, const char **
 		goto out;
 	}
 
-	c->opt_password = net_prompt_pass(c, c->opt_user_name);
+	set_cmdline_auth_info_getpass(ai);
 
-	ret = kerberos_kinit_password_ext(c->opt_user_name,
-					  c->opt_password,
+	ret = kerberos_kinit_password_ext(get_cmdline_auth_info_username(ai),
+					  get_cmdline_auth_info_password(ai),
 					  0,
 					  NULL,
 					  NULL,
