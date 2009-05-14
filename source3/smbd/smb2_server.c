@@ -290,6 +290,8 @@ static NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 	DEBUG(10,("smbd_smb2_request_dispatch: opcode[%u]\n", opcode));
 	switch (opcode) {
 	case SMB2_OP_NEGPROT:
+		return smbd_smb2_request_process_negprot(req);
+
 	case SMB2_OP_SESSSETUP:
 	case SMB2_OP_LOGOFF:
 	case SMB2_OP_TCON:
