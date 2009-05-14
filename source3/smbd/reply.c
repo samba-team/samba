@@ -477,7 +477,7 @@ static bool netbios_session_retarget(const char *name, int name_type)
 		goto fail;
 	}
 
-	in_addr = (struct sockaddr_in *)&retarget_addr;
+	in_addr = (struct sockaddr_in *)(void *)&retarget_addr;
 
 	_smb_setlen(outbuf, 6);
 	SCVAL(outbuf, 0, 0x84);
