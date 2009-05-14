@@ -6082,18 +6082,33 @@ NTSTATUS _samr_SetDomainInfo(pipes_struct *p,
 	time_t u_logout;
 	time_t u_lock_duration, u_reset_time;
 	NTSTATUS result;
+	uint32_t acc_required = 0;
 
 	DEBUG(5,("_samr_SetDomainInfo: %d\n", __LINE__));
 
-	/* We do have different access bits for info
-	 * levels here, but we're really just looking for
-	 * GENERIC_RIGHTS_DOMAIN_WRITE access. Unfortunately
-	 * this maps to different specific bits. So
-	 * assume if we have SAMR_DOMAIN_ACCESS_SET_INFO_1
-	 * set we are ok. */
+	switch (r->in.level) {
+	case 1: /* DomainPasswordInformation */
+	case 12: /* DomainLockoutInformation */
+		/* DOMAIN_WRITE_PASSWORD_PARAMETERS */
+		acc_required = SAMR_DOMAIN_ACCESS_SET_INFO_1;
+		break;
+	case 3: /* DomainLogoffInformation */
+	case 4: /* DomainOemInformation */
+		/* DOMAIN_WRITE_OTHER_PARAMETERS */
+		acc_required = SAMR_DOMAIN_ACCESS_SET_INFO_2;
+		break;
+	case 6: /* DomainReplicationInformation */
+	case 9: /* DomainStateInformation */
+	case 7: /* DomainServerRoleInformation */
+		/* DOMAIN_ADMINISTER_SERVER */
+		acc_required = SAMR_DOMAIN_ACCESS_SET_INFO_3;
+		break;
+	default:
+		return NT_STATUS_INVALID_INFO_CLASS;
+	}
 
 	dinfo = policy_handle_find(p, r->in.domain_handle,
-				   SAMR_DOMAIN_ACCESS_SET_INFO_1, NULL,
+				   acc_required, NULL,
 				   struct samr_domain_info, &result);
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
