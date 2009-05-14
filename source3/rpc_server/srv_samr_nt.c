@@ -3196,11 +3196,41 @@ NTSTATUS _samr_QueryDomainInfo(pipes_struct *p,
 
 	time_t seq_num;
 	uint32 server_role;
+	uint32_t acc_required;
 
 	DEBUG(5,("_samr_QueryDomainInfo: %d\n", __LINE__));
 
+	switch (r->in.level) {
+	case 1: /* DomainPasswordInformation */
+	case 12: /* DomainLockoutInformation */
+		/* DOMAIN_READ_PASSWORD_PARAMETERS */
+		acc_required = SAMR_DOMAIN_ACCESS_LOOKUP_INFO_1;
+		break;
+	case 11: /* DomainGeneralInformation2 */
+		/* DOMAIN_READ_PASSWORD_PARAMETERS |
+		 * DOMAIN_READ_OTHER_PARAMETERS */
+		acc_required = SAMR_DOMAIN_ACCESS_LOOKUP_INFO_1 |
+			       SAMR_DOMAIN_ACCESS_LOOKUP_INFO_2;
+		break;
+	case 2: /* DomainGeneralInformation */
+	case 3: /* DomainLogoffInformation */
+	case 4: /* DomainOemInformation */
+	case 5: /* DomainReplicationInformation */
+	case 6: /* DomainReplicationInformation */
+	case 7: /* DomainServerRoleInformation */
+	case 8: /* DomainModifiedInformation */
+	case 9: /* DomainStateInformation */
+	case 10: /* DomainUasInformation */
+	case 13: /* DomainModifiedInformation2 */
+		/* DOMAIN_READ_OTHER_PARAMETERS */
+		acc_required = SAMR_DOMAIN_ACCESS_LOOKUP_INFO_2;
+		break;
+	default:
+		return NT_STATUS_INVALID_INFO_CLASS;
+	}
+
 	dinfo = policy_handle_find(p, r->in.domain_handle,
-				   SAMR_ACCESS_LOOKUP_DOMAIN, NULL,
+				   acc_required, NULL,
 				   struct samr_domain_info, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
