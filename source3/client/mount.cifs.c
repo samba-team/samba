@@ -77,7 +77,7 @@
 #define SAFE_FREE(x) do { if ((x) != NULL) {free(x); x=NULL;} } while(0)
 #endif
 
-#define MOUNT_PASSWD_SIZE 64
+#define MOUNT_PASSWD_SIZE 128
 #define DOMAIN_SIZE 64
 
 /* currently maximum length of IPv6 address string */
@@ -473,7 +473,7 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 					printf("\npassword specified twice, ignoring second\n");
 				} else
 					got_password = 1;
-			} else if (strnlen(value, 17) < 17) {
+			} else if (strnlen(value, MOUNT_PASSWD_SIZE) < MOUNT_PASSWD_SIZE) {
 				if(got_password)
 					printf("\nmount.cifs warning - password specified twice\n");
 				got_password = 1;
