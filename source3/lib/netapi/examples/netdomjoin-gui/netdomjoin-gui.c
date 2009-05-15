@@ -878,6 +878,7 @@ static void callback_enter_hostname_and_unlock(GtkWidget *widget,
 	if (!entry_text || entry_text[0] == 0) {
 		state->hostname_changed = FALSE;
 		gtk_widget_set_sensitive(GTK_WIDGET(state->button_ok), FALSE);
+		gtk_label_set_text(GTK_LABEL(state->label_full_computer_name), "");
 		return;
 	}
 	if (strcasecmp(state->my_hostname, entry_text) == 0) {
