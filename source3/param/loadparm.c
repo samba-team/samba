@@ -1034,7 +1034,7 @@ static struct parm_struct parm_table[] = {
 		.ptr		= &Globals.ConfigBackend,
 		.special	= NULL,
 		.enum_list	= enum_config_backend,
-		.flags		= FLAG_ADVANCED|FLAG_META,
+		.flags		= FLAG_HIDE|FLAG_ADVANCED|FLAG_META,
 	},
 
 	{N_("Security Options"), P_SEP, P_SEPARATOR},
