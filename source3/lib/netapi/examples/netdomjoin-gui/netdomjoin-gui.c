@@ -1490,7 +1490,7 @@ static int draw_main_window(struct join_state *state)
 		entry = gtk_entry_new();
 		gtk_entry_set_max_length(GTK_ENTRY(entry), 256);
 
-		if (state->uid != 0) {
+		if (!state->target_hostname && state->uid != 0) {
 			gtk_widget_set_sensitive(GTK_WIDGET(entry), FALSE);
 		}
 		g_signal_connect(G_OBJECT(entry), "changed",
@@ -1579,7 +1579,7 @@ static int draw_main_window(struct join_state *state)
 			 G_CALLBACK(callback_do_change),
 			 (gpointer)state);
 	gtk_box_pack_start(GTK_BOX(bbox), button, TRUE, TRUE, 0);
-	if (state->uid != 0) {
+	if (!state->target_hostname && state->uid != 0) {
 		gtk_widget_set_sensitive(GTK_WIDGET(button), FALSE);
 	}
 	gtk_widget_show(button);
@@ -1589,7 +1589,7 @@ static int draw_main_window(struct join_state *state)
 	gtk_label_set_line_wrap(GTK_LABEL(state->label_reboot), TRUE);
 	gtk_misc_set_alignment(GTK_MISC(state->label_reboot), 0, 0);
 	gtk_box_pack_start(GTK_BOX(vbox), state->label_reboot, TRUE, TRUE, 0);
-	if (state->uid != 0) {
+	if (!state->target_hostname && state->uid != 0) {
 		gtk_label_set_text(GTK_LABEL(state->label_reboot),
 			   "You cannot change computer description as you're not running with root permissions");
 	}
