@@ -950,7 +950,8 @@ static void callback_enter_workgroup_and_unlock(GtkWidget *widget,
 		gtk_widget_set_sensitive(GTK_WIDGET(state->button_ok), FALSE);
 		return;
 	}
-	if (strcasecmp(state->name_buffer_initial, entry_text) == 0) {
+	if ((strcasecmp(state->name_buffer_initial, entry_text) == 0) &&
+	    (state->name_type_initial == NetSetupWorkgroupName)) {
 		gtk_widget_set_sensitive(GTK_WIDGET(state->button_ok), FALSE);
 		return;
 	}
@@ -972,7 +973,8 @@ static void callback_enter_domain_and_unlock(GtkWidget *widget,
 		gtk_widget_set_sensitive(GTK_WIDGET(state->button_ok), FALSE);
 		return;
 	}
-	if (strcasecmp(state->name_buffer_initial, entry_text) == 0) {
+	if ((strcasecmp(state->name_buffer_initial, entry_text) == 0) &&
+	    (state->name_type_initial == NetSetupDomainName)) {
 		gtk_widget_set_sensitive(GTK_WIDGET(state->button_ok), FALSE);
 		return;
 	}
