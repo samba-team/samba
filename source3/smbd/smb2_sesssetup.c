@@ -118,6 +118,10 @@ static int smbd_smb2_session_destructor(struct smbd_smb2_session *session)
 	idr_remove(session->conn->smb2.sessions.idtree, session->vuid);
 	DLIST_REMOVE(session->conn->smb2.sessions.list, session);
 
+	session->vuid = 0;
+	session->status = NT_STATUS_USER_SESSION_DELETED;
+	session->conn = NULL;
+
 	return 0;
 }
 
@@ -218,4 +222,45 @@ NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 
 	req->session = session;
 	return NT_STATUS_OK;
+}
+
+NTSTATUS smbd_smb2_request_process_logoff(struct smbd_smb2_request *req)
+{
+	const uint8_t *inbody;
+	int i = req->current_idx;
+	DATA_BLOB outbody;
+	size_t expected_body_size = 0x04;
+	size_t body_size;
+
+	if (req->in.vector[i+1].iov_len != (expected_body_size & 0xFFFFFFFE)) {
+		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
+	}
+
+	inbody = (const uint8_t *)req->in.vector[i+1].iov_base;
+
+	body_size = SVAL(inbody, 0x00);
+	if (body_size != expected_body_size) {
+		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
+	}
+
+	/*
+	 * TODO: cancel all outstanding requests on the session
+	 *       and delete all tree connections.
+	 */
+	smbd_smb2_session_destructor(req->session);
+	/*
+	 * we may need to sign the response, so we need to keep
+	 * the session until the response is sent to the wire.
+	 */
+	talloc_steal(req, req->session);
+
+	outbody = data_blob_talloc(req->out.vector, NULL, 0x04);
+	if (outbody.data == NULL) {
+		return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
+	}
+
+	SSVAL(outbody.data, 0x00, 0x04);	/* struct size */
+	SSVAL(outbody.data, 0x02, 0);		/* reserved */
+
+	return smbd_smb2_request_done(req, outbody, NULL);
 }

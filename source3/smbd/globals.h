@@ -225,6 +225,7 @@ NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req);
 
 NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_process_sesssetup(struct smbd_smb2_request *req);
+NTSTATUS smbd_smb2_request_process_logoff(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_process_keepalive(struct smbd_smb2_request *req);
 
 struct smbd_smb2_request {
