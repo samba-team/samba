@@ -359,6 +359,34 @@ NTSTATUS privilege_create_account(const DOM_SID *sid )
 	return ( grant_privilege(sid, &se_priv_none) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL);
 }
 
+/***************************************************************************
+ Delete a privileged account
+****************************************************************************/
+
+NTSTATUS privilege_delete_account(const struct dom_sid *sid)
+{
+	struct db_context *db = get_account_pol_db();
+	fstring tmp, keystr;
+
+	if (!lp_enable_privileges()) {
+		return NT_STATUS_OK;
+	}
+
+	if (!db) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (!sid || (sid->num_auths == 0)) {
+		return NT_STATUS_INVALID_SID;
+	}
+
+	/* PRIV_<SID> (NULL terminated) as the key */
+
+	fstr_sprintf(keystr, "%s%s", PRIVPREFIX, sid_to_fstring(tmp, sid));
+
+	return dbwrap_delete_bystring(db, keystr);
+}
+
 /****************************************************************************
  initialise a privilege list and set the talloc context
  ****************************************************************************/

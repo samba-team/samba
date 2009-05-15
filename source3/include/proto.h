@@ -597,6 +597,7 @@ bool revoke_privilege(const DOM_SID *sid, const SE_PRIV *priv_mask);
 bool revoke_all_privileges( DOM_SID *sid );
 bool revoke_privilege_by_name(DOM_SID *sid, const char *name);
 NTSTATUS privilege_create_account(const DOM_SID *sid );
+NTSTATUS privilege_delete_account(const struct dom_sid *sid);
 NTSTATUS privilege_set_init(PRIVILEGE_SET *priv_set);
 NTSTATUS privilege_set_init_by_ctx(TALLOC_CTX *mem_ctx, PRIVILEGE_SET *priv_set);
 void privilege_set_free(PRIVILEGE_SET *priv_set);
