@@ -293,22 +293,58 @@ static NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		return smbd_smb2_request_process_negprot(req);
 
 	case SMB2_OP_SESSSETUP:
+		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
+
 	case SMB2_OP_LOGOFF:
+		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
+
+		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
 	case SMB2_OP_TCON:
+		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
+
+		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
 	case SMB2_OP_TDIS:
+		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
+
 	case SMB2_OP_CREATE:
+		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
+
 	case SMB2_OP_CLOSE:
+		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
+
 	case SMB2_OP_FLUSH:
+		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
+
 	case SMB2_OP_READ:
+		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
+
 	case SMB2_OP_WRITE:
+		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
+
 	case SMB2_OP_LOCK:
+		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
+
 	case SMB2_OP_IOCTL:
+		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
+
 	case SMB2_OP_CANCEL:
+		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
+
 	case SMB2_OP_KEEPALIVE:
+		return smbd_smb2_request_process_keepalive(req);
+
 	case SMB2_OP_FIND:
+		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
+
 	case SMB2_OP_NOTIFY:
+		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
+
 	case SMB2_OP_GETINFO:
+		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
+
 	case SMB2_OP_SETINFO:
+		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
+
 	case SMB2_OP_BREAK:
 		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
 	}

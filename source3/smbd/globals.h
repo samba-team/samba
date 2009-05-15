@@ -218,6 +218,7 @@ NTSTATUS smbd_smb2_request_done(struct smbd_smb2_request *req,
 				DATA_BLOB body, DATA_BLOB *dyn);
 
 NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req);
+NTSTATUS smbd_smb2_request_process_keepalive(struct smbd_smb2_request *req);
 
 struct smbd_smb2_request {
 	TALLOC_CTX *mem_pool;
