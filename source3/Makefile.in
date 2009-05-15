@@ -222,7 +222,8 @@ BIN_PROGS = @EXTRA_BIN_PROGS@ \
 EVERYTHING_PROGS = bin/debug2html@EXEEXT@ bin/smbfilter@EXEEXT@ \
 	bin/talloctort@EXEEXT@ bin/replacetort@EXEEXT@ \
 	bin/log2pcap@EXEEXT@ \
-	bin/vlp@EXEEXT@ bin/smbiconv@EXEEXT@
+	bin/vlp@EXEEXT@ bin/smbiconv@EXEEXT@ \
+	bin/dbwrap_tool@EXEEXT@
 
 PAM_MODULES = @PAM_MODULES@
 
