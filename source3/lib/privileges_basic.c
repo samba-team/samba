@@ -5,23 +5,23 @@
    Copyright (C) Simo Sorce			2002-2003
    Copyright (C) Gerald (Jerry) Carter          2005
    Copyright (C) Michael Adam			2007
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*
- * Basic privileges functions (mask-operations and conversion 
+ * Basic privileges functions (mask-operations and conversion
  * functions between the different formats (se_priv, privset, luid)
  * moved here * from lib/privileges.c to minimize linker deps.
  *
@@ -29,7 +29,7 @@
  *
  * some extra functions to hide privs array from lib/privileges.c
  */
- 
+
 #include "includes.h"
 
 const SE_PRIV se_priv_all         = SE_ALL_PRIVS;
@@ -49,7 +49,7 @@ const SE_PRIV se_take_ownership  = SE_TAKE_OWNERSHIP;
 
 /********************************************************************
  This is a list of privileges reported by a WIndows 2000 SP4 AD DC
- just for reference purposes (and I know the LUID is not guaranteed 
+ just for reference purposes (and I know the LUID is not guaranteed
  across reboots):
 
             SeCreateTokenPrivilege  Create a token object ( 0x0, 0x2 )
@@ -87,11 +87,11 @@ const SE_PRIV se_take_ownership  = SE_TAKE_OWNERSHIP;
 /* we have to define the LUID here due to a horrible check by printmig.exe
    that requires the SeBackupPrivilege match what is in Windows.  So match
    those that we implement and start Samba privileges at 0x1001 */
-   
+
 PRIVS privs[] = {
-#if 0	/* usrmgr will display these twice if you include them.  We don't 
+#if 0	/* usrmgr will display these twice if you include them.  We don't
 	   use them but we'll keep the bitmasks reserved in privileges.h anyways */
-	   
+
 	{SE_NETWORK_LOGON,	"SeNetworkLogonRight",		"Access this computer from network", 	   { 0x0, 0x0 }},
 	{SE_INTERACTIVE_LOGON,	"SeInteractiveLogonRight",	"Log on locally", 			   { 0x0, 0x0 }},
 	{SE_BATCH_LOGON,	"SeBatchLogonRight",		"Log on as a batch job",		   { 0x0, 0x0 }},
@@ -102,7 +102,7 @@ PRIVS privs[] = {
         {SE_BACKUP,             "SeBackupPrivilege",            "Back up files and directories",	   { 0x0, 0x0011 }},
         {SE_RESTORE,            "SeRestorePrivilege",           "Restore files and directories",	   { 0x0, 0x0012 }},
 	{SE_REMOTE_SHUTDOWN,	"SeRemoteShutdownPrivilege",	"Force shutdown from a remote system",	   { 0x0, 0x0018 }},
-	
+
 	{SE_PRINT_OPERATOR,	"SePrintOperatorPrivilege",	"Manage printers",			   { 0x0, 0x1001 }},
 	{SE_ADD_USERS,		"SeAddUsersPrivilege",		"Add users and groups to the domain",	   { 0x0, 0x1002 }},
 	{SE_DISK_OPERATOR,	"SeDiskOperatorPrivilege",	"Manage disk shares",			   { 0x0, 0x1003 }},
@@ -118,9 +118,9 @@ bool se_priv_copy( SE_PRIV *dst, const SE_PRIV *src )
 {
 	if ( !dst || !src )
 		return False;
-		
+
 	memcpy( dst, src, sizeof(SE_PRIV) );
-	
+
 	return True;
 }
 
@@ -137,7 +137,7 @@ bool se_priv_put_all_privileges(SE_PRIV *mask)
 		return False;
 	}
 	for ( i=0; i<num_privs; i++ ) {
-		se_priv_add(mask, &privs[i].se_priv); 
+		se_priv_add(mask, &privs[i].se_priv);
 	}
 	return True;
 }
@@ -156,12 +156,12 @@ void se_priv_add( SE_PRIV *mask, const SE_PRIV *addpriv )
 }
 
 /***************************************************************************
- remove one SE_PRIV sytucture from another and store the resulting set 
+ remove one SE_PRIV sytucture from another and store the resulting set
  in mew_mask
 ****************************************************************************/
 
 void se_priv_remove( SE_PRIV *mask, const SE_PRIV *removepriv )
-{	
+{
 	int i;
 
 	for ( i=0; i<SE_PRIV_MASKSIZE; i++ ) {
@@ -174,9 +174,9 @@ void se_priv_remove( SE_PRIV *mask, const SE_PRIV *removepriv )
 ****************************************************************************/
 
 static void se_priv_invert( SE_PRIV *new_mask, const SE_PRIV *mask )
-{	
+{
 	SE_PRIV allprivs;
-	
+
 	se_priv_copy( &allprivs, &se_priv_all );
 	se_priv_remove( &allprivs, mask );
 	se_priv_copy( new_mask, &allprivs );
@@ -187,7 +187,7 @@ static void se_priv_invert( SE_PRIV *new_mask, const SE_PRIV *mask )
 ****************************************************************************/
 
 bool se_priv_equal( const SE_PRIV *mask1, const SE_PRIV *mask2 )
-{	
+{
 	return ( memcmp(mask1, mask2, sizeof(SE_PRIV)) == 0 );
 }
 
@@ -199,18 +199,18 @@ static bool se_priv_empty( const SE_PRIV *mask )
 {
 	SE_PRIV p1;
 	int i;
-	
+
 	se_priv_copy( &p1, mask );
 
 	for ( i=0; i<SE_PRIV_MASKSIZE; i++ ) {
 		p1.mask[i] &= se_priv_all.mask[i];
 	}
-	
+
 	return se_priv_equal( &p1, &se_priv_none );
 }
 
 /*********************************************************************
- Lookup the SE_PRIV value for a privilege name 
+ Lookup the SE_PRIV value for a privilege name
 *********************************************************************/
 
 bool se_priv_from_name( const char *name, SE_PRIV *mask )
@@ -234,13 +234,13 @@ bool se_priv_from_name( const char *name, SE_PRIV *mask )
 void dump_se_priv( int dbg_cl, int dbg_lvl, const SE_PRIV *mask )
 {
 	int i;
-	
+
 	DEBUGADDC( dbg_cl, dbg_lvl,("SE_PRIV "));
-	
+
 	for ( i=0; i<SE_PRIV_MASKSIZE; i++ ) {
 		DEBUGADDC( dbg_cl, dbg_lvl,(" 0x%x", mask->mask[i] ));
 	}
-		
+
 	DEBUGADDC( dbg_cl, dbg_lvl, ("\n"));
 }
 
@@ -255,24 +255,24 @@ bool is_privilege_assigned(const SE_PRIV *privileges,
 
 	if ( !privileges || !check )
 		return False;
-	
+
 	/* everyone has privileges if you aren't checking for any */
-	
+
 	if ( se_priv_empty( check ) ) {
 		DEBUG(1,("is_privilege_assigned: no privileges in check_mask!\n"));
 		return True;
 	}
-	
+
 	se_priv_copy( &p1, check );
-	
-	/* invert the SE_PRIV we want to check for and remove that from the 
-	   original set.  If we are left with the SE_PRIV we are checking 
+
+	/* invert the SE_PRIV we want to check for and remove that from the
+	   original set.  If we are left with the SE_PRIV we are checking
 	   for then return True */
-	   
+
 	se_priv_invert( &p1, check );
 	se_priv_copy( &p2, privileges );
 	se_priv_remove( &p2, &p1 );
-	
+
 	return se_priv_equal( &p2, check );
 }
 
@@ -286,26 +286,26 @@ static bool is_any_privilege_assigned( SE_PRIV *privileges, const SE_PRIV *check
 
 	if ( !privileges || !check )
 		return False;
-	
+
 	/* everyone has privileges if you aren't checking for any */
-	
+
 	if ( se_priv_empty( check ) ) {
 		DEBUG(1,("is_any_privilege_assigned: no privileges in check_mask!\n"));
 		return True;
 	}
-	
+
 	se_priv_copy( &p1, check );
-	
-	/* invert the SE_PRIV we want to check for and remove that from the 
-	   original set.  If we are left with the SE_PRIV we are checking 
+
+	/* invert the SE_PRIV we want to check for and remove that from the
+	   original set.  If we are left with the SE_PRIV we are checking
 	   for then return True */
-	   
+
 	se_priv_invert( &p1, check );
 	se_priv_copy( &p2, privileges );
 	se_priv_remove( &p2, &p1 );
-	
+
 	/* see if we have any bits left */
-	
+
 	return !se_priv_empty( &p2 );
 }
 
@@ -322,7 +322,7 @@ const char* get_privilege_dispname( const char *name )
 	}
 
 	for ( i=0; !se_priv_equal(&privs[i].se_priv, &se_priv_end); i++ ) {
-	
+
 		if ( strequal( privs[i].name, name ) ) {
 			return privs[i].description;
 		}
@@ -332,9 +332,9 @@ const char* get_privilege_dispname( const char *name )
 }
 
 /****************************************************************************
- initialise a privilege list and set the talloc context 
+ initialise a privilege list and set the talloc context
  ****************************************************************************/
- 
+
 /****************************************************************************
  Does the user have the specified privilege ?  We only deal with one privilege
  at a time here.
@@ -377,7 +377,7 @@ int count_all_privileges( void )
 /*********************************************************************
  Generate the LUID_ATTR structure based on a bitmask
  The assumption here is that the privilege has already been validated
- so we are guaranteed to find it in the list. 
+ so we are guaranteed to find it in the list.
 *********************************************************************/
 
 LUID_ATTR get_privilege_luid( SE_PRIV *mask )
@@ -386,9 +386,9 @@ LUID_ATTR get_privilege_luid( SE_PRIV *mask )
 	int i;
 
 	ZERO_STRUCT( priv_luid );
-	
+
 	for ( i=0; !se_priv_equal(&privs[i].se_priv, &se_priv_end); i++ ) {
-	
+
 		if ( se_priv_equal( &privs[i].se_priv, mask ) ) {
 			priv_luid.luid = privs[i].luid;
 			break;
@@ -414,7 +414,7 @@ const char *luid_to_privilege_name(const LUID *set)
 			return privs[i].name;
 		}
 	}
-	
+
 	return NULL;
 }
 
@@ -433,7 +433,7 @@ static bool privilege_set_add(PRIVILEGE_SET *priv_set, LUID_ATTR set)
 	if ( !new_set ) {
 		DEBUG(0,("privilege_set_add: failed to allocate memory!\n"));
 		return False;
-	}	
+	}
 
 	new_set[priv_set->count].luid.high = set.luid.high;
 	new_set[priv_set->count].luid.low = set.luid.low;
@@ -453,16 +453,16 @@ bool se_priv_to_privilege_set( PRIVILEGE_SET *set, SE_PRIV *mask )
 	int i;
 	uint32 num_privs = count_all_privileges();
 	LUID_ATTR luid;
-	
+
 	luid.attr = 0;
 	luid.luid.high = 0;
-	
+
 	for ( i=0; i<num_privs; i++ ) {
 		if ( !is_privilege_assigned(mask, &privs[i].se_priv) )
 			continue;
-		
+
 		luid.luid = privs[i].luid;
-		
+
 		if ( !privilege_set_add( set, luid ) )
 			return False;
 	}
@@ -477,7 +477,7 @@ static bool luid_to_se_priv( struct lsa_LUID *luid, SE_PRIV *mask )
 {
 	int i;
 	uint32 num_privs = count_all_privileges();
-	
+
 	for ( i=0; i<num_privs; i++ ) {
 		if ( luid->low == privs[i].luid.low ) {
 			se_priv_copy( mask, &privs[i].se_priv );
@@ -494,19 +494,19 @@ static bool luid_to_se_priv( struct lsa_LUID *luid, SE_PRIV *mask )
 bool privilege_set_to_se_priv( SE_PRIV *mask, struct lsa_PrivilegeSet *privset )
 {
 	int i;
-	
+
 	ZERO_STRUCTP( mask );
-	
+
 	for ( i=0; i<privset->count; i++ ) {
 		SE_PRIV r;
-	
+
 		/* sanity check for invalid privilege.  we really
 		   only care about the low 32 bits */
-		   
+
 		if ( privset->set[i].luid.high != 0 )
 			return False;
-		
-		if ( luid_to_se_priv( &privset->set[i].luid, &r ) )		
+
+		if ( luid_to_se_priv( &privset->set[i].luid, &r ) )
 			se_priv_add( mask, &r );
 	}
 
