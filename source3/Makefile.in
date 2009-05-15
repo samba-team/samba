@@ -1217,10 +1217,10 @@ RPC_OPEN_TCP_OBJ = torture/rpc_open_tcp.o \
 		   ../librpc/rpc/binding.o \
 		   $(LIBMSRPC_GEN_OBJ)
 
-DBWRAP_STORE_INT32_OBJ = utils/dbwrap_tool.o \
-			 $(PARAM_OBJ) \
-			 $(LIB_NONSMBD_OBJ) \
-			 $(LIBSAMBA_OBJ)
+DBWRAP_TOOL_OBJ = utils/dbwrap_tool.o \
+		  $(PARAM_OBJ) \
+		  $(LIB_NONSMBD_OBJ) \
+		  $(LIBSAMBA_OBJ)
 
 ######################################################################
 # now the rules...
@@ -2870,9 +2870,9 @@ bin/test_lp_load@EXEEXT@: $(BINARY_PREREQS) $(TEST_LP_LOAD_OBJ) @BUILD_POPT@ @LI
 		$(LDAP_LIBS) \
 		$(POPT_LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
 
-bin/dbwrap_tool@EXEEXT@: $(DBWRAP_STORE_INT32_OBJ) @LIBTALLOC_TARGET@ @LIBTDB_TARGET@
+bin/dbwrap_tool@EXEEXT@: $(DBWRAP_TOOL_OBJ) @LIBTALLOC_TARGET@ @LIBTDB_TARGET@
 	@echo "Linking $@"
-	@$(CC) -o $@ $(DBWRAP_STORE_INT32_OBJ)\
+	@$(CC) -o $@ $(DBWRAP_TOOL_OBJ)\
 		$(LDFLAGS) $(DYNEEXP) $(LIBS) \
 		$(LDAP_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
