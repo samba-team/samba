@@ -202,6 +202,7 @@ extern int num_children;
 struct tstream_context;
 struct smbd_smb2_request;
 struct smbd_smb2_session;
+struct smbd_smb2_tcon;
 
 DATA_BLOB negprot_spnego(void);
 
@@ -222,10 +223,12 @@ NTSTATUS smbd_smb2_request_done(struct smbd_smb2_request *req,
 				DATA_BLOB body, DATA_BLOB *dyn);
 
 NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req);
+NTSTATUS smbd_smb2_request_check_tcon(struct smbd_smb2_request *req);
 
 NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_process_sesssetup(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_process_logoff(struct smbd_smb2_request *req);
+NTSTATUS smbd_smb2_request_process_tcon(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_process_keepalive(struct smbd_smb2_request *req);
 
 struct smbd_smb2_request {
@@ -235,6 +238,9 @@ struct smbd_smb2_request {
 
 	/* the session the request operates on, maybe NULL */
 	struct smbd_smb2_session *session;
+
+	/* the tcon the request operates on, maybe NULL */
+	struct smbd_smb2_tcon *tcon;
 
 	int current_idx;
 
@@ -292,6 +298,23 @@ struct smbd_smb2_session {
 	NTSTATUS status;
 	uint64_t vuid;
 	AUTH_NTLMSSP_STATE *auth_ntlmssp_state;
+
+	struct {
+		/* an id tree used to allocate tids */
+		struct idr_context *idtree;
+
+		/* this is the limit of tid values for this connection */
+		uint32_t limit;
+
+		struct smbd_smb2_tcon *list;
+	} tcons;
+};
+
+struct smbd_smb2_tcon {
+	struct smbd_smb2_tcon *prev, *next;
+	struct smbd_smb2_session *session;
+	uint32_t tid;
+	int snum;
 };
 
 struct smbd_server_connection {

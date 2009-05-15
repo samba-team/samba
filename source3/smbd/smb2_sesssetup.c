@@ -115,6 +115,11 @@ static int smbd_smb2_session_destructor(struct smbd_smb2_session *session)
 		return 0;
 	}
 
+	/* first free all tcons */
+	while (session->tcons.list) {
+		talloc_free(session->tcons.list);
+	}
+
 	idr_remove(session->conn->smb2.sessions.idtree, session->vuid);
 	DLIST_REMOVE(session->conn->smb2.sessions.list, session);
 
@@ -150,6 +155,14 @@ static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *req,
 			return NT_STATUS_INSUFFICIENT_RESOURCES;
 		}
 		session->vuid = id;
+
+		session->tcons.idtree = idr_init(session);
+		if (session->tcons.idtree == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		session->tcons.limit = 0x00FFFFFF;
+		session->tcons.list = NULL;
+
 		DLIST_ADD_END(req->conn->smb2.sessions.list, session,
 			      struct smbd_smb2_session *);
 		session->conn = req->conn;
