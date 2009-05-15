@@ -4075,7 +4075,7 @@ NTSTATUS _samr_OpenAlias(pipes_struct *p,
 	se_priv_copy( &se_rights, &se_add_users );
 
 	status = access_check_samr_object(psd, p->server_info->ptok,
-		&se_rights, SAMR_ALIAS_ACCESS_ADD_MEMBER,
+		&se_rights, GENERIC_RIGHTS_ALIAS_ALL_ACCESS,
 		des_access, &acc_granted, "_samr_OpenAlias");
 
 	if ( !NT_STATUS_IS_OK(status) )
@@ -6125,7 +6125,7 @@ NTSTATUS _samr_OpenGroup(pipes_struct *p,
 	se_priv_copy( &se_rights, &se_add_users );
 
 	status = access_check_samr_object(psd, p->server_info->ptok,
-		&se_rights, SAMR_GROUP_ACCESS_ADD_MEMBER,
+		&se_rights, GENERIC_RIGHTS_GROUP_ALL_ACCESS,
 		des_access, &acc_granted, "_samr_OpenGroup");
 
 	if ( !NT_STATUS_IS_OK(status) )
@@ -6149,7 +6149,7 @@ NTSTATUS _samr_OpenGroup(pipes_struct *p,
 		return NT_STATUS_NO_SUCH_GROUP;
 
 	ginfo = policy_handle_create(p, r->out.group_handle,
-				     GENERIC_RIGHTS_GROUP_ALL_ACCESS,
+				     acc_granted,
 				     struct samr_group_info, &status);
         if (!NT_STATUS_IS_OK(status)) {
                 return status;
