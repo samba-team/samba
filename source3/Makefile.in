@@ -2878,6 +2878,9 @@ bin/dbwrap_tool@EXEEXT@: $(DBWRAP_TOOL_OBJ) @LIBTALLOC_TARGET@ @LIBTDB_TARGET@
 		$(LDAP_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
 
+install-dbwrap_tool:: bin/dbwrap_tool@EXEEXT@
+	@$(SHELL) script/installbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(BINDIR) $<
+
 install:: installservers installbin @INSTALL_CIFSMOUNT@ @INSTALL_CIFSUPCALL@ installman \
 		installscripts installdat installmodules @SWAT_INSTALL_TARGETS@ \
 		@INSTALL_PAM_MODULES@ installlibs installmo
