@@ -582,7 +582,7 @@ int main(int argc, const char **argv)
 		{"verbose", 'v', POPT_ARG_NONE, &verbose, 'v', "Be verbose" },
 		{"keep-permissions", 'P', POPT_ARG_NONE, &keep_permissions, 'P', "Keep permissions" },
 		{"blocksize", 'b', POPT_ARG_INT, &blocksize, 'b', "Change number of bytes in a block"},
-		{"rcfile", 'f', POPT_ARG_STRING, NULL, 0, "Use specified rc file"},
+		{"rcfile", 'f', POPT_ARG_STRING, NULL, 'f', "Use specified rc file"},
 		POPT_AUTOHELP
 		POPT_TABLEEND
 	};
