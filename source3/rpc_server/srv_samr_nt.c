@@ -3024,9 +3024,14 @@ NTSTATUS _samr_QueryUserInfo(pipes_struct *p,
 		break;
 	}
 
-	TALLOC_FREE(pwd);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 
 	*r->out.info = user_info;
+
+ done:
+	TALLOC_FREE(pwd);
 
 	DEBUG(5,("_samr_QueryUserInfo: %d\n", __LINE__));
 
