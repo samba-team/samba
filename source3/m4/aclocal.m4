@@ -151,6 +151,7 @@ if eval test x"$build_lib" = "xyes" ; then
 	else
 		enable_static=yes
 		LIBUC[_TARGET]=$LIBUC[_STATIC_TARGET]
+		LIBUC[_LIBS]=$LIBUC[_STATIC_TARGET]
 		AC_MSG_RESULT(no shared library support -- will supply static library)
 	fi
 else
