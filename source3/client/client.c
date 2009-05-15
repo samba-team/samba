@@ -4551,8 +4551,6 @@ static int process(const char *base_directory)
 
 static int do_host_query(const char *query_host)
 {
-	struct sockaddr_storage ss;
-
 	cli = cli_cm_open(talloc_tos(), NULL,
 			query_host, "IPC$", auth_info, true, smb_encrypt,
 			max_protocol, port, name_type);
