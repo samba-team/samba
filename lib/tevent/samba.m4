@@ -9,8 +9,3 @@ SMB_SUBSYSTEM(LIBTEVENT,
 	[\$(addprefix \$(libteventsrcdir)/, ${TEVENT_OBJ})],
 	[LIBTEVENT_EXT],
 	[${TEVENT_CFLAGS}])
-
-SMB_MAKE_SETTINGS([
-PUBLIC_HEADERS += \$(addprefix \$(libteventsrcdir)/, tevent.h tevent_internal.h)
-])
-
