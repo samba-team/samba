@@ -6182,7 +6182,7 @@ NTSTATUS _samr_RemoveMemberFromForeignDomain(pipes_struct *p,
 	/* Find the policy handle. Open a policy on it. */
 
 	dinfo = policy_handle_find(p, r->in.domain_handle,
-				   STD_RIGHT_DELETE_ACCESS, NULL,
+				   SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT, NULL,
 				   struct samr_domain_info, &result);
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
