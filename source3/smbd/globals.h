@@ -221,6 +221,7 @@ NTSTATUS smbd_smb2_request_done(struct smbd_smb2_request *req,
 				DATA_BLOB body, DATA_BLOB *dyn);
 
 NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req);
+NTSTATUS smbd_smb2_request_process_sesssetup(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_process_keepalive(struct smbd_smb2_request *req);
 
 struct smbd_smb2_request {
@@ -276,6 +277,16 @@ struct smbd_smb2_request {
 	} out;
 };
 
+struct smbd_server_connection;
+
+struct smbd_smb2_session {
+	struct smbd_smb2_session *prev, *next;
+	struct smbd_server_connection *conn;
+	NTSTATUS status;
+	uint64_t vuid;
+	AUTH_NTLMSSP_STATE *auth_ntlmssp_state;
+};
+
 struct smbd_server_connection {
 	struct fd_event *fde;
 	uint64_t num_requests;
@@ -286,6 +297,17 @@ struct smbd_server_connection {
 		struct tevent_queue *recv_queue;
 		struct tevent_queue *send_queue;
 		struct tstream_context *stream;
+		struct {
+			/* an id tree used to allocate vuids */
+			/* this holds info on session vuids that are already
+			 * validated for this VC */
+			struct idr_context *idtree;
+
+			/* this is the limit of vuid values for this connection */
+			uint64_t limit;
+
+			struct smbd_smb2_session *list;
+		} sessions;
 	} smb2;
 };
 

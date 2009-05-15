@@ -55,6 +55,13 @@ static NTSTATUS smbd_initialize_smb2(struct smbd_server_connection *conn)
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	conn->smb2.sessions.idtree = idr_init(conn);
+	if (conn->smb2.sessions.idtree == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	conn->smb2.sessions.limit = 0x0000FFFF;
+	conn->smb2.sessions.list = NULL;
+
 	ret = tstream_bsd_existing_socket(conn, smbd_server_fd(),
 					  &conn->smb2.stream);
 	if (ret == -1) {
@@ -293,7 +300,7 @@ static NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		return smbd_smb2_request_process_negprot(req);
 
 	case SMB2_OP_SESSSETUP:
-		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
+		return smbd_smb2_request_process_sesssetup(req);
 
 	case SMB2_OP_LOGOFF:
 		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
