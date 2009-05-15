@@ -2796,7 +2796,8 @@ static NTSTATUS get_user_info_20(TALLOC_CTX *mem_ctx,
 static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx,
 				 struct samr_UserInfo21 *r,
 				 struct samu *pw,
-				 DOM_SID *domain_sid)
+				 DOM_SID *domain_sid,
+				 uint32_t acc_granted)
 {
 	NTSTATUS status;
 	const DOM_SID *sid_user, *sid_group;
@@ -2916,9 +2917,76 @@ NTSTATUS _samr_QueryUserInfo(pipes_struct *p,
 	uint32 rid;
 	bool ret = false;
 	struct samu *pwd = NULL;
+	uint32_t acc_required, acc_granted;
+
+	switch (r->in.level) {
+	case 1: /* UserGeneralInformation */
+		/* USER_READ_GENERAL */
+		acc_required = SAMR_USER_ACCESS_GET_NAME_ETC;
+		break;
+	case 2: /* UserPreferencesInformation */
+		/* USER_READ_PREFERENCES | USER_READ_GENERAL */
+		acc_required = SAMR_USER_ACCESS_GET_LOCALE |
+			       SAMR_USER_ACCESS_GET_NAME_ETC;
+		break;
+	case 3: /* UserLogonInformation */
+		/* USER_READ_GENERAL | USER_READ_PREFERENCES | USER_READ_LOGON | USER_READ_ACCOUNT */
+		acc_required = SAMR_USER_ACCESS_GET_NAME_ETC |
+			       SAMR_USER_ACCESS_GET_LOCALE |
+			       SAMR_USER_ACCESS_GET_LOGONINFO |
+			       SAMR_USER_ACCESS_GET_ATTRIBUTES;
+		break;
+	case 4: /* UserLogonHoursInformation */
+		/* USER_READ_LOGON */
+		acc_required = SAMR_USER_ACCESS_GET_LOGONINFO;
+		break;
+	case 5: /* UserAccountInformation */
+		/* USER_READ_GENERAL | USER_READ_PREFERENCES | USER_READ_LOGON | USER_READ_ACCOUNT */
+		acc_required = SAMR_USER_ACCESS_GET_NAME_ETC |
+			       SAMR_USER_ACCESS_GET_LOCALE |
+			       SAMR_USER_ACCESS_GET_LOGONINFO |
+			       SAMR_USER_ACCESS_GET_ATTRIBUTES;
+		break;
+	case 6: /* UserNameInformation */
+	case 7: /* UserAccountNameInformation */
+	case 8: /* UserFullNameInformation */
+	case 9: /* UserPrimaryGroupInformation */
+	case 13: /* UserAdminCommentInformation */
+		/* USER_READ_GENERAL */
+		acc_required = SAMR_USER_ACCESS_GET_NAME_ETC;
+		break;
+	case 10: /* UserHomeInformation */
+	case 11: /* UserScriptInformation */
+	case 12: /* UserProfileInformation */
+	case 14: /* UserWorkStationsInformation */
+		/* USER_READ_LOGON */
+		acc_required = SAMR_USER_ACCESS_GET_LOGONINFO;
+		break;
+	case 16: /* UserControlInformation */
+	case 17: /* UserExpiresInformation */
+	case 20: /* UserParametersInformation */
+		/* USER_READ_ACCOUNT */
+		acc_required = SAMR_USER_ACCESS_GET_ATTRIBUTES;
+		break;
+	case 21: /* UserAllInformation */
+		/* FIXME! - gd */
+		acc_required = SAMR_USER_ACCESS_GET_ATTRIBUTES;
+		break;
+	case 18: /* UserInternal1Information */
+		/* FIXME! - gd */
+		acc_required = SAMR_USER_ACCESS_GET_ATTRIBUTES;
+		break;
+	case 23: /* UserInternal4Information */
+	case 24: /* UserInternal4InformationNew */
+	case 25: /* UserInternal4InformationNew */
+	case 26: /* UserInternal5InformationNew */
+	default:
+		return NT_STATUS_INVALID_INFO_CLASS;
+		break;
+	}
 
 	uinfo = policy_handle_find(p, r->in.user_handle,
-				   SAMR_USER_ACCESS_GET_ATTRIBUTES, NULL,
+				   acc_required, &acc_granted,
 				   struct samr_user_info, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -3017,7 +3085,7 @@ NTSTATUS _samr_QueryUserInfo(pipes_struct *p,
 		status = get_user_info_20(p->mem_ctx, &user_info->info20, pwd);
 		break;
 	case 21:
-		status = get_user_info_21(p->mem_ctx, &user_info->info21, pwd, &domain_sid);
+		status = get_user_info_21(p->mem_ctx, &user_info->info21, pwd, &domain_sid, acc_granted);
 		break;
 	default:
 		status = NT_STATUS_INVALID_INFO_CLASS;
