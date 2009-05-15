@@ -4816,6 +4816,73 @@ static NTSTATUS set_user_info_26(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+/*************************************************************
+**************************************************************/
+
+static uint32_t samr_set_user_info_map_fields_to_access_mask(uint32_t fields)
+{
+	uint32_t acc_required = 0;
+
+	/* USER_ALL_USERNAME */
+	if (fields & SAMR_FIELD_ACCOUNT_NAME)
+		acc_required |= SAMR_USER_ACCESS_SET_ATTRIBUTES;
+	/* USER_ALL_FULLNAME */
+	if (fields & SAMR_FIELD_FULL_NAME)
+		acc_required |= SAMR_USER_ACCESS_SET_ATTRIBUTES;
+	/* USER_ALL_PRIMARYGROUPID */
+	if (fields & SAMR_FIELD_PRIMARY_GID)
+		acc_required |= SAMR_USER_ACCESS_SET_ATTRIBUTES;
+	/* USER_ALL_HOMEDIRECTORY */
+	if (fields & SAMR_FIELD_HOME_DIRECTORY)
+		acc_required |= SAMR_USER_ACCESS_SET_ATTRIBUTES;
+	/* USER_ALL_HOMEDIRECTORYDRIVE */
+	if (fields & SAMR_FIELD_HOME_DRIVE)
+		acc_required |= SAMR_USER_ACCESS_SET_ATTRIBUTES;
+	/* USER_ALL_SCRIPTPATH */
+	if (fields & SAMR_FIELD_LOGON_SCRIPT)
+		acc_required |= SAMR_USER_ACCESS_SET_ATTRIBUTES;
+	/* USER_ALL_PROFILEPATH */
+	if (fields & SAMR_FIELD_PROFILE_PATH)
+		acc_required |= SAMR_USER_ACCESS_SET_ATTRIBUTES;
+	/* USER_ALL_ADMINCOMMENT */
+	if (fields & SAMR_FIELD_COMMENT)
+		acc_required |= SAMR_USER_ACCESS_SET_ATTRIBUTES;
+	/* USER_ALL_WORKSTATIONS */
+	if (fields & SAMR_FIELD_WORKSTATIONS)
+		acc_required |= SAMR_USER_ACCESS_SET_ATTRIBUTES;
+	/* USER_ALL_LOGONHOURS */
+	if (fields & SAMR_FIELD_LOGON_HOURS)
+		acc_required |= SAMR_USER_ACCESS_SET_ATTRIBUTES;
+	/* USER_ALL_ACCOUNTEXPIRES */
+	if (fields & SAMR_FIELD_ACCT_EXPIRY)
+		acc_required |= SAMR_USER_ACCESS_SET_ATTRIBUTES;
+	/* USER_ALL_USERACCOUNTCONTROL */
+	if (fields & SAMR_FIELD_ACCT_FLAGS)
+		acc_required |= SAMR_USER_ACCESS_SET_ATTRIBUTES;
+	/* USER_ALL_PARAMETERS */
+	if (fields & SAMR_FIELD_PARAMETERS)
+		acc_required |= SAMR_USER_ACCESS_SET_ATTRIBUTES;
+	/* USER_ALL_USERCOMMENT */
+	if (fields & SAMR_FIELD_COMMENT)
+		acc_required |= SAMR_USER_ACCESS_SET_LOC_COM;
+	/* USER_ALL_COUNTRYCODE */
+	if (fields & SAMR_FIELD_COUNTRY_CODE)
+		acc_required |= SAMR_USER_ACCESS_SET_LOC_COM;
+	/* USER_ALL_CODEPAGE */
+	if (fields & SAMR_FIELD_CODE_PAGE)
+		acc_required |= SAMR_USER_ACCESS_SET_LOC_COM;
+	/* USER_ALL_NTPASSWORDPRESENT */
+	if (fields & SAMR_FIELD_NT_PASSWORD_PRESENT)
+		acc_required |= SAMR_USER_ACCESS_SET_PASSWORD;
+	/* USER_ALL_LMPASSWORDPRESENT */
+	if (fields & SAMR_FIELD_LM_PASSWORD_PRESENT)
+		acc_required |= SAMR_USER_ACCESS_SET_PASSWORD;
+	/* USER_ALL_PASSWORDEXPIRED */
+	if (fields & SAMR_FIELD_EXPIRED_FLAG)
+		acc_required |= SAMR_USER_ACCESS_SET_PASSWORD;
+
+	return acc_required;
+}
 
 /*******************************************************************
  samr_SetUserInfo
@@ -4828,8 +4895,8 @@ NTSTATUS _samr_SetUserInfo(pipes_struct *p,
 	NTSTATUS status;
 	struct samu *pwd = NULL;
 	union samr_UserInfo *info = r->in.info;
-	uint16_t switch_value = r->in.level;
-	uint32_t acc_required;
+	uint32_t acc_required = 0;
+	uint32_t fields = 0;
 	bool ret;
 
 	DEBUG(5,("_samr_SetUserInfo: %d\n", __LINE__));
@@ -4841,21 +4908,49 @@ NTSTATUS _samr_SetUserInfo(pipes_struct *p,
 	  This should be enough for levels 18, 24, 25,& 26.  Info level 23 can set more so
 	  we'll use the set from the WinXP join as the basis. */
 
-	switch (switch_value) {
-	case 7:
+	switch (r->in.level) {
+	case 2: /* UserPreferencesInformation */
+		/* USER_WRITE_ACCOUNT | USER_WRITE_PREFERENCES */
+		acc_required = SAMR_USER_ACCESS_SET_ATTRIBUTES | SAMR_USER_ACCESS_SET_LOC_COM;
+		break;
+	case 4: /* UserLogonHoursInformation */
+	case 6: /* UserNameInformation */
+	case 7: /* UserAccountNameInformation */
+	case 8: /* UserFullNameInformation */
+	case 9: /* UserPrimaryGroupInformation */
+	case 10: /* UserHomeInformation */
+	case 11: /* UserScriptInformation */
+	case 12: /* UserProfileInformation */
+	case 13: /* UserAdminCommentInformation */
+	case 14: /* UserWorkStationsInformation */
+	case 16: /* UserControlInformation */
+	case 17: /* UserExpiresInformation */
+	case 20: /* UserParametersInformation */
+		/* USER_WRITE_ACCOUNT */
 		acc_required = SAMR_USER_ACCESS_SET_ATTRIBUTES;
 		break;
-	case 18:
-	case 24:
-	case 25:
-	case 26:
+	case 18: /* UserInternal1Information */
+		/* FIXME: gd, this is a guess */
+		acc_required = SAMR_USER_ACCESS_SET_PASSWORD;
+		break;
+	case 21: /* UserAllInformation */
+		fields = info->info21.fields_present;
+		acc_required = samr_set_user_info_map_fields_to_access_mask(fields);
+		break;
+	case 23: /* UserInternal4Information */
+		fields = info->info23.info.fields_present;
+		acc_required = samr_set_user_info_map_fields_to_access_mask(fields);
+		break;
+	case 25: /* UserInternal4InformationNew */
+		fields = info->info25.info.fields_present;
+		acc_required = samr_set_user_info_map_fields_to_access_mask(fields);
+		break;
+	case 24: /* UserInternal5Information */
+	case 26: /* UserInternal5InformationNew */
 		acc_required = SAMR_USER_ACCESS_SET_PASSWORD;
 		break;
 	default:
-		acc_required = SAMR_USER_ACCESS_SET_PASSWORD |
-			       SAMR_USER_ACCESS_SET_ATTRIBUTES |
-			       SAMR_USER_ACCESS_GET_ATTRIBUTES;
-		break;
+		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
 	uinfo = policy_handle_find(p, r->in.user_handle, acc_required, NULL,
@@ -4865,7 +4960,7 @@ NTSTATUS _samr_SetUserInfo(pipes_struct *p,
 	}
 
 	DEBUG(5, ("_samr_SetUserInfo: sid:%s, level:%d\n",
-		  sid_string_dbg(&uinfo->sid), switch_value));
+		  sid_string_dbg(&uinfo->sid), r->in.level));
 
 	if (info == NULL) {
 		DEBUG(5, ("_samr_SetUserInfo: NULL info level\n"));
@@ -4891,7 +4986,7 @@ NTSTATUS _samr_SetUserInfo(pipes_struct *p,
 
 	/* ok!  user info levels (lots: see MSDEV help), off we go... */
 
-	switch (switch_value) {
+	switch (r->in.level) {
 
 		case 2:
 			status = set_user_info_2(p->mem_ctx,
