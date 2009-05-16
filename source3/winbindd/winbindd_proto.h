@@ -507,10 +507,6 @@ void winbindd_list_users(struct winbindd_cli_state *state);
 struct winbindd_domain *domain_list(void);
 void free_domain_list(void);
 void rescan_trusted_domains( void );
-enum winbindd_result init_child_connection(struct winbindd_domain *domain,
-					   void (*continuation)(void *private_data,
-								bool success),
-					   void *private_data);
 enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domain,
 						   struct winbindd_cli_state *state);
 bool init_domain_list(void);
