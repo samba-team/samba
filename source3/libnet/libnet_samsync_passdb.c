@@ -226,6 +226,66 @@ static NTSTATUS sam_account_from_delta(struct samu *account,
 	return NT_STATUS_OK;
 }
 
+
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS smb_create_user(TALLOC_CTX *mem_ctx,
+				uint32_t acct_flags,
+				const char *account,
+				struct passwd **passwd_p)
+{
+	struct passwd *passwd;
+	char *add_script = NULL;
+
+	passwd = Get_Pwnam_alloc(mem_ctx, account);
+	if (passwd) {
+		*passwd_p = passwd;
+		return NT_STATUS_OK;
+	}
+
+	/* Create appropriate user */
+	if (acct_flags & ACB_NORMAL) {
+		add_script = talloc_strdup(mem_ctx, lp_adduser_script());
+	} else if ( (acct_flags & ACB_WSTRUST) ||
+		    (acct_flags & ACB_SVRTRUST) ||
+		    (acct_flags & ACB_DOMTRUST) ) {
+		add_script = talloc_strdup(mem_ctx, lp_addmachine_script());
+	} else {
+		DEBUG(1, ("Unknown user type: %s\n",
+			  pdb_encode_acct_ctrl(acct_flags, NEW_PW_FORMAT_SPACE_PADDED_LEN)));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (!add_script) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (*add_script) {
+		int add_ret;
+		add_script = talloc_all_string_sub(mem_ctx, add_script,
+						   "%u", account);
+		if (!add_script) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		add_ret = smbrun(add_script, NULL);
+		DEBUG(add_ret ? 0 : 1,("fetch_account: Running the command `%s' "
+			 "gave %d\n", add_script, add_ret));
+		if (add_ret == 0) {
+			smb_nscd_flush_user_cache();
+		}
+	}
+
+	/* try and find the possible unix account again */
+	passwd = Get_Pwnam_alloc(mem_ctx, account);
+	if (!passwd) {
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	*passwd_p = passwd;
+
+	return NT_STATUS_OK;
+}
 /****************************************************************
 ****************************************************************/
 

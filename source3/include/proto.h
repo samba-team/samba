@@ -4333,11 +4333,6 @@ bool get_trust_pw_hash(const char *domain, uint8 ret_pwd[16],
 		       const char **account_name, uint32 *channel);
 struct samr_LogonHours get_logon_hours_from_pdb(TALLOC_CTX *mem_ctx,
 						struct samu *pw);
-NTSTATUS smb_create_user(TALLOC_CTX *mem_ctx,
-			 uint32_t acct_flags,
-			 const char *account,
-			 struct passwd **passwd_p);
-
 /* The following definitions come from passdb/pdb_compat.c  */
 
 uint32 pdb_get_user_rid (const struct samu *sampass);
