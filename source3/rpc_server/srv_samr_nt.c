@@ -5525,8 +5525,6 @@ NTSTATUS _samr_DeleteUser(pipes_struct *p,
 	DOM_SID user_sid;
 	struct samu *sam_pass=NULL;
 	uint32 acc_granted;
-	bool can_del_accounts = false;
-	uint32 acb_info = 0;
 	DISP_INFO *disp_info = NULL;
 	bool ret;
 
@@ -5554,24 +5552,6 @@ NTSTATUS _samr_DeleteUser(pipes_struct *p,
 	become_root();
 	ret = pdb_getsampwsid(sam_pass, &user_sid);
 	unbecome_root();
-
-	if (ret) {
-		acb_info = pdb_get_acct_ctrl(sam_pass);
-	}
-
-	/* For machine accounts it's the SeMachineAccountPrivilege that counts. */
-	if (geteuid() == sec_initial_uid()) {
-		can_del_accounts = true;
-	} else if (acb_info & ACB_WSTRUST) {
-		can_del_accounts = user_has_privileges( p->server_info->ptok, &se_machine_account );
-	} else {
-		can_del_accounts = user_has_privileges( p->server_info->ptok, &se_add_users );
-	}
-
-	if (!can_del_accounts) {
-		TALLOC_FREE(sam_pass);
-		return NT_STATUS_ACCESS_DENIED;
-	}
 
 	if(!ret) {
 		DEBUG(5,("_samr_DeleteUser: User %s doesn't exist.\n",
