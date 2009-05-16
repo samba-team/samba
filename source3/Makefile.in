@@ -1131,6 +1131,7 @@ WINBINDD_OBJ1 = \
 		winbindd/winbindd_idmap.o \
 		winbindd/winbindd_locator.o \
 		winbindd/winbindd_ndr.o \
+		winbindd/wb_ping.o \
 		auth/token_util.o \
 		../nsswitch/libwbclient/wb_reqtrans.o \
 		smbd/connection.o

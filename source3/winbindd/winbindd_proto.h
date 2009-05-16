@@ -589,4 +589,10 @@ void set_auth_errors(struct winbindd_response *resp, NTSTATUS result);
 void winbindd_wins_byip(struct winbindd_cli_state *state);
 void winbindd_wins_byname(struct winbindd_cli_state *state);
 
+struct tevent_req *wb_ping_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+				struct winbindd_request *request);
+NTSTATUS wb_ping_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+		      struct winbindd_response **presp);
+
+
 #endif /*  _WINBINDD_PROTO_H_  */

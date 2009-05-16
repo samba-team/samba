@@ -516,6 +516,9 @@ struct winbindd_async_dispatch_table {
 };
 
 static struct winbindd_async_dispatch_table async_nonpriv_table[] = {
+	{ WINBINDD_PING, "PING",
+	  wb_ping_send, wb_ping_recv },
+
 	{ 0, NULL, NULL, NULL }
 };
 
