@@ -455,7 +455,6 @@ static void async_request_done(struct tevent_req *req)
 }
 
 struct domain_request_state {
-	TALLOC_CTX *mem_ctx;
 	struct winbindd_domain *domain;
 	struct winbindd_request *request;
 	struct winbindd_response *response;
@@ -463,7 +462,7 @@ struct domain_request_state {
 	void *private_data_data;
 };
 
-static void domain_init_recv(void *private_data_data, bool success);
+static void async_domain_request_done(struct tevent_req *req);
 
 void async_domain_request(TALLOC_CTX *mem_ctx,
 			  struct winbindd_domain *domain,
@@ -472,13 +471,8 @@ void async_domain_request(TALLOC_CTX *mem_ctx,
 			  void (*continuation)(void *private_data_data, bool success),
 			  void *private_data_data)
 {
+	struct tevent_req *subreq;
 	struct domain_request_state *state;
-
-	if (domain->initialized) {
-		async_request(mem_ctx, &domain->child, request, response,
-			      continuation, private_data_data);
-		return;
-	}
 
 	state = TALLOC_P(mem_ctx, struct domain_request_state);
 	if (state == NULL) {
@@ -487,30 +481,38 @@ void async_domain_request(TALLOC_CTX *mem_ctx,
 		return;
 	}
 
-	state->mem_ctx = mem_ctx;
 	state->domain = domain;
 	state->request = request;
 	state->response = response;
 	state->continuation = continuation;
 	state->private_data_data = private_data_data;
 
-	init_child_connection(domain, domain_init_recv, state);
-}
-
-static void domain_init_recv(void *private_data_data, bool success)
-{
-	struct domain_request_state *state =
-		talloc_get_type_abort(private_data_data, struct domain_request_state);
-
-	if (!success) {
-		DEBUG(5, ("Domain init returned an error\n"));
-		state->continuation(state->private_data_data, False);
+	subreq = wb_domain_request_send(state, winbind_event_context(),
+					domain, request);
+	if (subreq == NULL) {
+		DEBUG(5, ("wb_domain_request_send failed\n"));
+		continuation(private_data_data, false);
 		return;
 	}
+	tevent_req_set_callback(subreq, async_domain_request_done, state);
+}
 
-	async_request(state->mem_ctx, &state->domain->child,
-		      state->request, state->response,
-		      state->continuation, state->private_data_data);
+static void async_domain_request_done(struct tevent_req *req)
+{
+	struct domain_request_state *state = tevent_req_callback_data(
+		req, struct domain_request_state);
+	struct winbindd_response *response;
+	int ret, err;
+
+	ret = wb_domain_request_recv(req, state, &response, &err);
+	TALLOC_FREE(req);
+	if (ret == -1) {
+		DEBUG(5, ("wb_domain_request returned %s\n", strerror(errno)));
+		state->continuation(state->private_data_data, false);
+		return;
+	}
+	*(state->response) = *response;
+	state->continuation(state->private_data_data, true);
 }
 
 static void recvfrom_child(void *private_data_data, bool success)
