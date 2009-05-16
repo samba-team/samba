@@ -1029,3 +1029,9 @@ void query_user_async(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 	do_async_domain(mem_ctx, domain, &request, query_user_recv,
 			(void *)cont, private_data);
 }
+
+enum winbindd_result winbindd_dual_ping(struct winbindd_domain *domain,
+					struct winbindd_cli_state *state)
+{
+	return WINBINDD_OK;
+}

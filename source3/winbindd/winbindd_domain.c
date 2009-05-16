@@ -38,6 +38,10 @@ void setup_domain_child(struct winbindd_domain *domain,
 
 static const struct winbindd_child_dispatch_table domain_dispatch_table[] = {
 	{
+		.name		= "PING",
+		.struct_cmd	= WINBINDD_PING,
+		.struct_fn	= winbindd_dual_ping,
+	},{
 		.name		= "LOOKUPSID",
 		.struct_cmd	= WINBINDD_LOOKUPSID,
 		.struct_fn	= winbindd_dual_lookupsid,

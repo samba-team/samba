@@ -157,6 +157,10 @@ static enum winbindd_result dual_dsgetdcname(struct winbindd_domain *domain,
 
 static const struct winbindd_child_dispatch_table locator_dispatch_table[] = {
 	{
+		.name		= "PING",
+		.struct_cmd	= WINBINDD_PING,
+		.struct_fn	= winbindd_dual_ping,
+	},{
 		.name		= "DSGETDCNAME",
 		.struct_cmd	= WINBINDD_DSGETDCNAME,
 		.struct_fn	= dual_dsgetdcname,

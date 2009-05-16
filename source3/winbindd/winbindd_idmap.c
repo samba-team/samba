@@ -525,6 +525,10 @@ enum winbindd_result winbindd_dual_gid2sid(struct winbindd_domain *domain,
 
 static const struct winbindd_child_dispatch_table idmap_dispatch_table[] = {
 	{
+		.name		= "PING",
+		.struct_cmd	= WINBINDD_PING,
+		.struct_fn	= winbindd_dual_ping,
+	},{
 		.name		= "DUAL_SID2UID",
 		.struct_cmd	= WINBINDD_DUAL_SID2UID,
 		.struct_fn	= winbindd_dual_sid2uid,
