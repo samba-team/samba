@@ -8,7 +8,7 @@ timestamp='2009-04-27'
 
 # This file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 3 of the License, or
+# the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful, but
@@ -17,7 +17,9 @@ timestamp='2009-04-27'
 # General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with this program; if not, see <http://www.gnu.org/licenses/>.
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA
+# 02110-1301, USA.
 #
 # As a special exception to the GNU General Public License, if you
 # distribute this file as part of a program that contains a
@@ -806,7 +808,7 @@ EOF
 	echo ${UNAME_MACHINE}-pc-pw32
 	exit ;;
     *:Interix*:[3456]*)
-	case ${UNAME_MACHINE} in
+    	case ${UNAME_MACHINE} in
 	    x86)
 		echo i586-pc-interix${UNAME_RELEASE}
 		exit ;;
@@ -982,7 +984,7 @@ EOF
 	echo x86_64-unknown-linux-gnu
 	exit ;;
     xtensa*:Linux:*:*)
-	echo ${UNAME_MACHINE}-unknown-linux-gnu
+    	echo ${UNAME_MACHINE}-unknown-linux-gnu
 	exit ;;
     i*86:Linux:*:*)
 	# The BFD linker knows what the default object file format is, so
