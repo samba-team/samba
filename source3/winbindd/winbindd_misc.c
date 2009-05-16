@@ -638,91 +638,107 @@ enum winbindd_result winbindd_dual_show_sequence(struct winbindd_domain *domain,
 
 struct domain_info_state {
 	struct winbindd_domain *domain;
-	struct winbindd_cli_state *cli_state;
+	struct winbindd_cli_state *cli;
+	struct winbindd_request ping_request;
 };
 
-static void domain_info_init_recv(void *private_data, bool success);
+static void domain_info_done(struct tevent_req *req);
 
-void winbindd_domain_info(struct winbindd_cli_state *state)
+void winbindd_domain_info(struct winbindd_cli_state *cli)
 {
+	struct domain_info_state *state;
 	struct winbindd_domain *domain;
+	struct tevent_req *req;
 
-	DEBUG(3, ("[%5lu]: domain_info [%s]\n", (unsigned long)state->pid,
-		  state->request->domain_name));
+	DEBUG(3, ("[%5lu]: domain_info [%s]\n", (unsigned long)cli->pid,
+		  cli->request->domain_name));
 
-	domain = find_domain_from_name_noinit(state->request->domain_name);
+	domain = find_domain_from_name_noinit(cli->request->domain_name);
 
 	if (domain == NULL) {
 		DEBUG(3, ("Did not find domain [%s]\n",
-			  state->request->domain_name));
-		request_error(state);
+			  cli->request->domain_name));
+		request_error(cli);
 		return;
 	}
 
-	if (!domain->initialized) {
-		struct domain_info_state *istate;
-
-		istate = TALLOC_P(state->mem_ctx, struct domain_info_state);
-		if (istate == NULL) {
-			DEBUG(0, ("talloc failed\n"));
-			request_error(state);
-			return;
-		}
-
-		istate->cli_state = state;
-		istate->domain = domain;
-
-		init_child_connection(domain, domain_info_init_recv, istate);
-				      
+	if (domain->initialized) {
+		fstrcpy(cli->response.data.domain_info.name,
+			domain->name);
+		fstrcpy(cli->response.data.domain_info.alt_name,
+			domain->alt_name);
+		sid_to_fstring(cli->response.data.domain_info.sid,
+			       &domain->sid);
+		cli->response.data.domain_info.native_mode =
+			domain->native_mode;
+		cli->response.data.domain_info.active_directory =
+			domain->active_directory;
+		cli->response.data.domain_info.primary =
+			domain->primary;
+		request_ok(cli);
 		return;
 	}
 
-	fstrcpy(state->response.data.domain_info.name,
-		domain->name);
-	fstrcpy(state->response.data.domain_info.alt_name,
-		domain->alt_name);
-	sid_to_fstring(state->response.data.domain_info.sid, &domain->sid);
-	
-	state->response.data.domain_info.native_mode =
-		domain->native_mode;
-	state->response.data.domain_info.active_directory =
-		domain->active_directory;
-	state->response.data.domain_info.primary =
-		domain->primary;
+	state = talloc_zero(cli->mem_ctx, struct domain_info_state);
+	if (state == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		request_error(cli);
+		return;
+	}
 
-	request_ok(state);
+	state->cli = cli;
+	state->domain = domain;
+	state->ping_request.cmd = WINBINDD_PING;
+
+	/*
+	 * Send a ping down. This implicitly initializes the domain.
+	 */
+
+	req = wb_domain_request_send(state, winbind_event_context(),
+				     domain, &state->ping_request);
+	if (req == NULL) {
+		DEBUG(3, ("wb_domain_request_send failed\n"));
+		request_error(cli);
+	}
+	tevent_req_set_callback(req, domain_info_done, state);
 }
 
-static void domain_info_init_recv(void *private_data, bool success)
+static void domain_info_done(struct tevent_req *req)
 {
-	struct domain_info_state *istate =
-		(struct domain_info_state *)private_data;
-	struct winbindd_cli_state *state = istate->cli_state;
-	struct winbindd_domain *domain = istate->domain;
+	struct domain_info_state *state = tevent_req_callback_data(
+		req, struct domain_info_state);
+	struct winbindd_response *response;
+	int ret, err;
 
-	DEBUG(10, ("Got back from child init: %d\n", success));
-
-	if ((!success) || (!domain->initialized)) {
-		DEBUG(5, ("Could not init child for domain %s\n",
-			  domain->name));
-		request_error(state);
+	ret = wb_domain_request_recv(req, req, &response, &err);
+	TALLOC_FREE(req);
+	if (ret == -1) {
+		DEBUG(10, ("wb_domain_request failed: %s\n", strerror(errno)));
+		request_error(state->cli);
+		return;
+	}
+	if (!state->domain->initialized) {
+		DEBUG(5, ("wb_domain_request did not initialize domain %s\n",
+			  state->domain->name));
+		request_error(state->cli);
 		return;
 	}
 
-	fstrcpy(state->response.data.domain_info.name,
-		domain->name);
-	fstrcpy(state->response.data.domain_info.alt_name,
-		domain->alt_name);
-	sid_to_fstring(state->response.data.domain_info.sid, &domain->sid);
-	
-	state->response.data.domain_info.native_mode =
-		domain->native_mode;
-	state->response.data.domain_info.active_directory =
-		domain->active_directory;
-	state->response.data.domain_info.primary =
-		domain->primary;
+	fstrcpy(state->cli->response.data.domain_info.name,
+		state->domain->name);
+	fstrcpy(state->cli->response.data.domain_info.alt_name,
+		state->domain->alt_name);
+	sid_to_fstring(state->cli->response.data.domain_info.sid,
+		       &state->domain->sid);
 
-	request_ok(state);
+	state->cli->response.data.domain_info.native_mode =
+		state->domain->native_mode;
+	state->cli->response.data.domain_info.active_directory =
+		state->domain->active_directory;
+	state->cli->response.data.domain_info.primary =
+		state->domain->primary;
+
+	request_ok(state->cli);
 }
 
 void winbindd_ping(struct winbindd_cli_state *state)
