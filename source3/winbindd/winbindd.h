@@ -57,6 +57,8 @@ struct winbindd_cli_state {
 	bool privileged;                           /* Is the client 'privileged' */
 
 	TALLOC_CTX *mem_ctx;			  /* memory per request */
+	NTSTATUS (*recv_fn)(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			    struct winbindd_response **presp);
 	struct winbindd_request *request;         /* Request from client */
 	struct winbindd_request _request;
 	struct tevent_queue *out_queue;

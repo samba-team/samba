@@ -505,9 +505,26 @@ static struct winbindd_dispatch_table {
 	{ WINBINDD_NUM_CMDS, NULL, "NONE" }
 };
 
+struct winbindd_async_dispatch_table {
+	enum winbindd_cmd cmd;
+	const char *cmd_name;
+	struct tevent_req *(*send_req)(TALLOC_CTX *mem_ctx,
+				       struct tevent_context *ev,
+				       struct winbindd_request *request);
+	NTSTATUS (*recv_req)(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			     struct winbindd_response **presp);
+};
+
+static struct winbindd_async_dispatch_table async_nonpriv_table[] = {
+	{ 0, NULL, NULL, NULL }
+};
+
+static void wb_request_done(struct tevent_req *req);
+
 static void process_request(struct winbindd_cli_state *state)
 {
 	struct winbindd_dispatch_table *table = dispatch_table;
+	struct winbindd_async_dispatch_table *atable;
 
 	ZERO_STRUCT(state->response);
 
@@ -523,6 +540,31 @@ static void process_request(struct winbindd_cli_state *state)
 
 	/* Process command */
 
+	for (atable = async_nonpriv_table; atable->send_req; atable += 1) {
+		if (state->request->cmd == atable->cmd) {
+			break;
+		}
+	}
+
+	if (atable->send_req != NULL) {
+		struct tevent_req *req;
+
+		DEBUG(10, ("process_request: Handling async request %s\n",
+			   atable->cmd_name));
+
+		req = atable->send_req(state->mem_ctx, winbind_event_context(),
+				       state->request);
+		if (req == NULL) {
+			DEBUG(0, ("process_request: atable->send failed for "
+				  "%s\n", atable->cmd_name));
+			request_error(state);
+			return;
+		}
+		tevent_req_set_callback(req, wb_request_done, state);
+		state->recv_fn = atable->recv_req;
+		return;
+	}
+
 	for (table = dispatch_table; table->fn; table++) {
 		if (state->request->cmd == table->cmd) {
 			DEBUG(10,("process_request: request fn %s\n",
@@ -537,6 +579,25 @@ static void process_request(struct winbindd_cli_state *state)
 			  (int)state->request->cmd ));
 		request_error(state);
 	}
+}
+
+static void wb_request_done(struct tevent_req *req)
+{
+	struct winbindd_cli_state *state = tevent_req_callback_data(
+		req, struct winbindd_cli_state);
+	NTSTATUS status;
+	struct winbindd_response *response;
+
+	status = state->recv_fn(req, state->mem_ctx, &response);
+	TALLOC_FREE(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("returning %s\n", nt_errstr(status)));
+		request_error(state);
+	}
+	state->response = *response;
+	state->response.result = WINBINDD_PENDING;
+	state->response.length = sizeof(struct winbindd_response);
+	request_ok(state);
 }
 
 /*
