@@ -94,7 +94,7 @@ NTSTATUS idmap_gid_to_sid(const char *domname, DOM_SID *sid, gid_t gid)
 	struct id_map map;
 	bool expired;
 
-	DEBUG(10,("idmap_gid_to_si: gid = [%lu], domain = '%s'\n",
+	DEBUG(10,("idmap_gid_to_sid: gid = [%lu], domain = '%s'\n",
 		  (unsigned long)gid, domname?domname:"NULL"));
 
 	if (winbindd_use_idmap_cache()
