@@ -116,3 +116,9 @@ do { \
 const char **ev_str_list_add(const char **list, const char *s);
 int ev_set_blocking(int fd, bool set);
 size_t ev_str_list_length(const char **list);
+
+/* Defined here so we can build against older talloc versions that don't
+ * have this define yet. */
+#ifndef TALLOC_FREE
+#define TALLOC_FREE(ctx) do { talloc_free(ctx); ctx=NULL; } while(0)
+#endif
