@@ -6181,6 +6181,11 @@ MODULE_idmap_nss=STATIC
 
 MODULE_nss_info_template=STATIC
 
+if test x"$MODULE_vfs_notify_fam" = xSTATIC ; then
+	SMBD_FAM_LIBS="$SMB_FAM_LIBS"
+	AC_SUBST(SMBD_FAM_LIBS)
+fi
+
 AC_ARG_WITH(static-modules,
 [AS_HELP_STRING([--with-static-modules=MODULES], [Comma-separated list of names of modules to statically link in])],
 [ if test $withval; then
