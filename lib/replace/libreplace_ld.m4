@@ -40,7 +40,7 @@ LDFLAGS="$saved_LDFLAGS"
 AC_DEFUN([AC_LD_PICFLAG],
 [
 case "$host_os" in
-	*linux*) 
+	*linux*|*gnu*)
 		PICFLAG="-fPIC" 
 		;;
 	*solaris*)
@@ -111,7 +111,7 @@ AC_DEFUN([AC_LIBREPLACE_LD_SHLIB_FLAGS],
 	LD_SHLIB_FLAGS="-shared"
 
 	case "$host_os" in
-		*linux*)
+		*linux*|*gnu*)
 			LD_SHLIB_FLAGS="-shared -Wl,-Bsymbolic"
 			;;
 		*solaris*)
@@ -209,7 +209,7 @@ AC_DEFUN([AC_LD_SONAMEFLAG],
 	AC_SUBST(SONAMEFLAG)
 	SONAMEFLAG=""
 	case "$host_os" in 
-		*linux*)
+		*linux*|*gnu*)
 			SONAMEFLAG="-Wl,-soname="
 			;;
 		*solaris*)
@@ -261,7 +261,7 @@ AC_DEFUN([AC_LIBREPLACE_LD_SHLIB_ALLOW_UNDEF_FLAG],
 	LD_ALLOW_SHLIB_UNDEF_FLAG=""
 
 	case "$host_os" in
-		*linux*)
+		*linux*|*gnu*)
 			LD_SHLIB_ALLOW_UNDEF_FLAG="-Wl,--allow-shlib-undefined"
 			;;
 		*osf*)
@@ -289,7 +289,7 @@ AC_DEFUN([AC_LIBREPLACE_MDLD_FLAGS],
 AC_DEFUN([AC_LIBREPLACE_RUNTIME_LIB_PATH_VAR],
 [
 	case "$host_os" in
-		*linux*)
+		*linux*|*gnu*)
 			LIB_PATH_VAR=LD_LIBRARY_PATH
 		;;
 		*bsd*)
