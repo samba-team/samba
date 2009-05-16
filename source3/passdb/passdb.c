@@ -627,7 +627,14 @@ bool lookup_global_sam_name(const char *name, int flags, uint32_t *rid,
 }
 
 /*************************************************************
- Change a password entry in the local smbpasswd file.
+ Change a password entry in the local passdb backend.
+
+ Assumptions:
+  - always called as root
+  - ignores the account type except when adding a new account
+  - will create/delete the unix account if the relative
+    add/delete user script is configured
+
  *************************************************************/
 
 NTSTATUS local_password_change(const char *user_name,
@@ -636,133 +643,135 @@ NTSTATUS local_password_change(const char *user_name,
 				char **pp_err_str,
 				char **pp_msg_str)
 {
-	struct samu *sam_pass=NULL;
-	uint32 other_acb;
+	TALLOC_CTX *tosctx;
+	struct samu *sam_pass;
+	uint32_t acb;
+	uint32_t rid;
 	NTSTATUS result;
+	bool user_exists;
+	int ret;
 
 	*pp_err_str = NULL;
 	*pp_msg_str = NULL;
 
-	/* Get the smb passwd entry for this user */
-
-	if ( !(sam_pass = samu_new( NULL )) ) {
+	tosctx = talloc_tos();
+	if (!tosctx) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	become_root();
-	if(!pdb_getsampwnam(sam_pass, user_name)) {
-		unbecome_root();
-		TALLOC_FREE(sam_pass);
+	sam_pass = samu_new(tosctx);
+	if (!sam_pass) {
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 
-		if ((local_flags & LOCAL_ADD_USER) || (local_flags & LOCAL_DELETE_USER)) {
-			int tmp_debug = DEBUGLEVEL;
-			struct passwd *pwd;
+	/* Get the smb passwd entry for this user */
+	user_exists = pdb_getsampwnam(sam_pass, user_name);
 
-			/* Might not exist in /etc/passwd. */
+	/* Check delete first, we don't need to do anything else if we
+	 * are going to delete the acocunt */
+	if (user_exists && (local_flags & LOCAL_DELETE_USER)) {
 
-			if (tmp_debug < 1) {
-				DEBUGLEVEL = 1;
-			}
-
-			if ( !(pwd = getpwnam_alloc(talloc_autofree_context(), user_name)) ) {
-				return NT_STATUS_NO_SUCH_USER;
-			}
-
-			/* create the struct samu and initialize the basic Unix properties */
-
-			if ( !(sam_pass = samu_new( NULL )) ) {
-				return NT_STATUS_NO_MEMORY;
-			}
-
-			result = samu_set_unix( sam_pass, pwd );
-
-			DEBUGLEVEL = tmp_debug;
-
-			TALLOC_FREE( pwd );
-
-			if (NT_STATUS_EQUAL(result, NT_STATUS_INVALID_PRIMARY_GROUP)) {
-				return result;
-			}
-
-			if (!NT_STATUS_IS_OK(result)) {
-				if (asprintf(pp_err_str, "Failed to " "initialize account for user %s: %s\n",
-						user_name, nt_errstr(result)) < 0) {
-					*pp_err_str = NULL;
-				}
-				return result;
-			}
-		} else {
-			if (asprintf(pp_err_str, "Failed to find entry for user %s.\n", user_name) < 0) {
+		result = pdb_delete_user(tosctx, sam_pass);
+		if (!NT_STATUS_IS_OK(result)) {
+			ret = asprintf(pp_err_str,
+					"Failed to delete entry for user %s.\n",
+					user_name);
+			if (ret < 0) {
 				*pp_err_str = NULL;
 			}
-			return NT_STATUS_NO_SUCH_USER;
+			result = NT_STATUS_UNSUCCESSFUL;
+		} else {
+			ret = asprintf(pp_msg_str,
+					"Deleted user %s.\n",
+					user_name);
+			if (ret < 0) {
+				*pp_msg_str = NULL;
+			}
 		}
-	} else {
-		unbecome_root();
+		goto done;
+	}
+
+	if (user_exists && (local_flags & LOCAL_ADD_USER)) {
 		/* the entry already existed */
 		local_flags &= ~LOCAL_ADD_USER;
 	}
 
-	/* the 'other' acb bits not being changed here */
-	other_acb =  (pdb_get_acct_ctrl(sam_pass) & (~(ACB_WSTRUST|ACB_DOMTRUST|ACB_SVRTRUST|ACB_NORMAL)));
-	if (local_flags & LOCAL_TRUST_ACCOUNT) {
-		if (!pdb_set_acct_ctrl(sam_pass, ACB_WSTRUST | other_acb, PDB_CHANGED) ) {
-			if (asprintf(pp_err_str, "Failed to set 'trusted workstation account' flags for user %s.\n", user_name) < 0) {
-				*pp_err_str = NULL;
-			}
-			TALLOC_FREE(sam_pass);
-			return NT_STATUS_UNSUCCESSFUL;
+	if (!user_exists && !(local_flags & LOCAL_ADD_USER)) {
+		ret = asprintf(pp_err_str,
+				"Failed to find entry for user %s.\n",
+				user_name);
+		if (ret < 0) {
+			*pp_err_str = NULL;
 		}
-	} else if (local_flags & LOCAL_INTERDOM_ACCOUNT) {
-		if (!pdb_set_acct_ctrl(sam_pass, ACB_DOMTRUST | other_acb, PDB_CHANGED)) {
-			if (asprintf(pp_err_str, "Failed to set 'domain trust account' flags for user %s.\n", user_name) < 0) {
-				*pp_err_str = NULL;
-			}
-			TALLOC_FREE(sam_pass);
-			return NT_STATUS_UNSUCCESSFUL;
+		result = NT_STATUS_NO_SUCH_USER;
+		goto done;
+	}
+
+	/* First thing add the new user if we are required to do so */
+	if (local_flags & LOCAL_ADD_USER) {
+
+		if (local_flags & LOCAL_TRUST_ACCOUNT) {
+			acb = ACB_WSTRUST;
+		} else if (local_flags & LOCAL_INTERDOM_ACCOUNT) {
+			acb = ACB_DOMTRUST;
+		} else {
+			acb = ACB_NORMAL;
 		}
-	} else {
-		if (!pdb_set_acct_ctrl(sam_pass, ACB_NORMAL | other_acb, PDB_CHANGED)) {
-			if (asprintf(pp_err_str, "Failed to set 'normal account' flags for user %s.\n", user_name) < 0) {
+
+		result = pdb_create_user(tosctx, user_name, acb, &rid);
+		if (!NT_STATUS_IS_OK(result)) {
+			ret = asprintf(pp_err_str,
+					"Failed to add entry for user %s.\n",
+					user_name);
+			if (ret < 0) {
 				*pp_err_str = NULL;
 			}
-			TALLOC_FREE(sam_pass);
-			return NT_STATUS_UNSUCCESSFUL;
+			result = NT_STATUS_UNSUCCESSFUL;
+			goto done;
+		}
+
+		sam_pass = samu_new(tosctx);
+		if (!sam_pass) {
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		/* Now get back the smb passwd entry for this new user */
+		user_exists = pdb_getsampwnam(sam_pass, user_name);
+		if (!user_exists) {
+			ret = asprintf(pp_err_str,
+					"Failed to add entry for user %s.\n",
+					user_name);
+			if (ret < 0) {
+				*pp_err_str = NULL;
+			}
+			result = NT_STATUS_UNSUCCESSFUL;
+			goto done;
 		}
 	}
+
+	acb = pdb_get_acct_ctrl(sam_pass);
 
 	/*
 	 * We are root - just write the new password
 	 * and the valid last change time.
 	 */
-
-	if (local_flags & LOCAL_DISABLE_USER) {
-		if (!pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)|ACB_DISABLED, PDB_CHANGED)) {
-			if (asprintf(pp_err_str, "Failed to set 'disabled' flag for user %s.\n", user_name) < 0) {
+	if ((local_flags & LOCAL_SET_NO_PASSWORD) && !(acb & ACB_PWNOTREQ)) {
+		acb |= ACB_PWNOTREQ;
+		if (!pdb_set_acct_ctrl(sam_pass, acb, PDB_CHANGED)) {
+			ret = asprintf(pp_err_str,
+					"Failed to set 'no password required' "
+					"flag for user %s.\n", user_name);
+			if (ret < 0) {
 				*pp_err_str = NULL;
 			}
-			TALLOC_FREE(sam_pass);
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-	} else if (local_flags & LOCAL_ENABLE_USER) {
-		if (!pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)&(~ACB_DISABLED), PDB_CHANGED)) {
-			if (asprintf(pp_err_str, "Failed to unset 'disabled' flag for user %s.\n", user_name) < 0) {
-				*pp_err_str = NULL;
-			}
-			TALLOC_FREE(sam_pass);
-			return NT_STATUS_UNSUCCESSFUL;
+			result = NT_STATUS_UNSUCCESSFUL;
+			goto done;
 		}
 	}
 
-	if (local_flags & LOCAL_SET_NO_PASSWORD) {
-		if (!pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)|ACB_PWNOTREQ, PDB_CHANGED)) {
-			if (asprintf(pp_err_str, "Failed to set 'no password required' flag for user %s.\n", user_name) < 0) {
-				*pp_err_str = NULL;
-			}
-			TALLOC_FREE(sam_pass);
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-	} else if (local_flags & LOCAL_SET_PASSWORD) {
+	if (local_flags & LOCAL_SET_PASSWORD) {
 		/*
 		 * If we're dealing with setting a completely empty user account
 		 * ie. One with a password of 'XXXX', but not set disabled (like
@@ -772,83 +781,106 @@ NTSTATUS local_password_change(const char *user_name,
 		 * and the decision hasn't really been made to disable them (ie.
 		 * don't create them disabled). JRA.
 		 */
-		if ((pdb_get_lanman_passwd(sam_pass)==NULL) && (pdb_get_acct_ctrl(sam_pass)&ACB_DISABLED)) {
-			if (!pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)&(~ACB_DISABLED), PDB_CHANGED)) {
-				if (asprintf(pp_err_str, "Failed to unset 'disabled' flag for user %s.\n", user_name) < 0) {
+		if ((pdb_get_lanman_passwd(sam_pass) == NULL) &&
+		    (acb & ACB_DISABLED)) {
+			acb &= (~ACB_DISABLED);
+			if (!pdb_set_acct_ctrl(sam_pass, acb, PDB_CHANGED)) {
+				ret = asprintf(pp_err_str,
+						"Failed to unset 'disabled' "
+						"flag for user %s.\n",
+						user_name);
+				if (ret < 0) {
 					*pp_err_str = NULL;
 				}
-				TALLOC_FREE(sam_pass);
-				return NT_STATUS_UNSUCCESSFUL;
+				result = NT_STATUS_UNSUCCESSFUL;
+				goto done;
 			}
-		}
-		if (!pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)&(~ACB_PWNOTREQ), PDB_CHANGED)) {
-			if (asprintf(pp_err_str, "Failed to unset 'no password required' flag for user %s.\n", user_name) < 0) {
-				*pp_err_str = NULL;
-			}
-			TALLOC_FREE(sam_pass);
-			return NT_STATUS_UNSUCCESSFUL;
 		}
 
-		if (!pdb_set_plaintext_passwd (sam_pass, new_passwd)) {
-			if (asprintf(pp_err_str, "Failed to set password for user %s.\n", user_name) < 0) {
+		acb &= (~ACB_PWNOTREQ);
+		if (!pdb_set_acct_ctrl(sam_pass, acb, PDB_CHANGED)) {
+			ret = asprintf(pp_err_str,
+					"Failed to unset 'no password required'"
+					" flag for user %s.\n", user_name);
+			if (ret < 0) {
 				*pp_err_str = NULL;
 			}
-			TALLOC_FREE(sam_pass);
-			return NT_STATUS_UNSUCCESSFUL;
+			result = NT_STATUS_UNSUCCESSFUL;
+			goto done;
 		}
-	}	
 
-	if (local_flags & LOCAL_ADD_USER) {
-		if (NT_STATUS_IS_OK(pdb_add_sam_account(sam_pass))) {
-			if (asprintf(pp_msg_str, "Added user %s.\n", user_name) < 0) {
-				*pp_msg_str = NULL;
-			}
-			TALLOC_FREE(sam_pass);
-			return NT_STATUS_OK;
-		} else {
-			if (asprintf(pp_err_str, "Failed to add entry for user %s.\n", user_name) < 0) {
+		if (!pdb_set_plaintext_passwd(sam_pass, new_passwd)) {
+			ret = asprintf(pp_err_str,
+					"Failed to set password for "
+					"user %s.\n", user_name);
+				if (ret < 0) {
 				*pp_err_str = NULL;
 			}
-			TALLOC_FREE(sam_pass);
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-	} else if (local_flags & LOCAL_DELETE_USER) {
-		if (!NT_STATUS_IS_OK(pdb_delete_sam_account(sam_pass))) {
-			if (asprintf(pp_err_str, "Failed to delete entry for user %s.\n", user_name) < 0) {
-				*pp_err_str = NULL;
-			}
-			TALLOC_FREE(sam_pass);
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-		if (asprintf(pp_msg_str, "Deleted user %s.\n", user_name) < 0) {
-			*pp_msg_str = NULL;
-		}
-	} else {
-		result = pdb_update_sam_account(sam_pass);
-		if(!NT_STATUS_IS_OK(result)) {
-			if (asprintf(pp_err_str, "Failed to modify entry for user %s.\n", user_name) < 0) {
-				*pp_err_str = NULL;
-			}
-			TALLOC_FREE(sam_pass);
-			return result;
-		}
-		if(local_flags & LOCAL_DISABLE_USER) {
-			if (asprintf(pp_msg_str, "Disabled user %s.\n", user_name) < 0) {
-				*pp_msg_str = NULL;
-			}
-		} else if (local_flags & LOCAL_ENABLE_USER) {
-			if (asprintf(pp_msg_str, "Enabled user %s.\n", user_name) < 0) {
-				*pp_msg_str = NULL;
-			}
-		} else if (local_flags & LOCAL_SET_NO_PASSWORD) {
-			if (asprintf(pp_msg_str, "User %s password set to none.\n", user_name) < 0) {
-				*pp_msg_str = NULL;
-			}
+			result = NT_STATUS_UNSUCCESSFUL;
+			goto done;
 		}
 	}
 
+	if ((local_flags & LOCAL_DISABLE_USER) && !(acb & ACB_DISABLED)) {
+		acb |= ACB_DISABLED;
+		if (!pdb_set_acct_ctrl(sam_pass, acb, PDB_CHANGED)) {
+			ret = asprintf(pp_err_str,
+					"Failed to set 'disabled' flag for "
+					"user %s.\n", user_name);
+			if (ret < 0) {
+				*pp_err_str = NULL;
+			}
+			result = NT_STATUS_UNSUCCESSFUL;
+			goto done;
+		}
+	}
+
+	if ((local_flags & LOCAL_ENABLE_USER) && (acb & ACB_DISABLED)) {
+		acb &= (~ACB_DISABLED);
+		if (!pdb_set_acct_ctrl(sam_pass, acb, PDB_CHANGED)) {
+			ret = asprintf(pp_err_str,
+					"Failed to unset 'disabled' flag for "
+					"user %s.\n", user_name);
+			if (ret < 0) {
+				*pp_err_str = NULL;
+			}
+			result = NT_STATUS_UNSUCCESSFUL;
+			goto done;
+		}
+	}
+
+	/* now commit changes if any */
+	result = pdb_update_sam_account(sam_pass);
+	if (!NT_STATUS_IS_OK(result)) {
+		ret = asprintf(pp_err_str,
+				"Failed to modify entry for user %s.\n",
+				user_name);
+		if (ret < 0) {
+			*pp_err_str = NULL;
+		}
+		goto done;
+	}
+
+	if (local_flags & LOCAL_ADD_USER) {
+		ret = asprintf(pp_msg_str, "Added user %s.\n", user_name);
+	} else if (local_flags & LOCAL_DISABLE_USER) {
+		ret = asprintf(pp_msg_str, "Disabled user %s.\n", user_name);
+	} else if (local_flags & LOCAL_ENABLE_USER) {
+		ret = asprintf(pp_msg_str, "Enabled user %s.\n", user_name);
+	} else if (local_flags & LOCAL_SET_NO_PASSWORD) {
+		ret = asprintf(pp_msg_str,
+				"User %s password set to none.\n", user_name);
+	}
+
+	if (ret < 0) {
+		*pp_msg_str = NULL;
+	}
+
+	result = NT_STATUS_OK;
+
+done:
 	TALLOC_FREE(sam_pass);
-	return NT_STATUS_OK;
+	return result;
 }
 
 /**********************************************************************
