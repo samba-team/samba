@@ -242,26 +242,29 @@ static NTSTATUS password_change(const char *remote_mach, char *username,
 	char *msg_str = NULL;
 
 	if (remote_mach != NULL) {
-		if (local_flags & (LOCAL_ADD_USER|LOCAL_DELETE_USER|LOCAL_DISABLE_USER|LOCAL_ENABLE_USER|
-							LOCAL_TRUST_ACCOUNT|LOCAL_SET_NO_PASSWORD)) {
+		if (local_flags & (LOCAL_ADD_USER|LOCAL_DELETE_USER|
+				   LOCAL_DISABLE_USER|LOCAL_ENABLE_USER|
+				   LOCAL_TRUST_ACCOUNT|LOCAL_SET_NO_PASSWORD)) {
 			/* these things can't be done remotely yet */
+			fprintf(stderr, "Invalid remote operation!\n");
 			return NT_STATUS_UNSUCCESSFUL;
 		}
-		ret = remote_password_change(remote_mach, username, 
+		ret = remote_password_change(remote_mach, username,
 					     old_passwd, new_pw, &err_str);
-		if (err_str != NULL)
-			fprintf(stderr, "%s", err_str);
-		SAFE_FREE(err_str);
-		return ret;
+	} else {
+		ret = local_password_change(username, local_flags, new_pw,
+					    &err_str, &msg_str);
 	}
 
-	ret = local_password_change(username, local_flags, new_pw, 
-				     &err_str, &msg_str);
-
-	if(msg_str)
+	if (msg_str) {
 		printf("%s", msg_str);
-	if(err_str)
+	}
+	if (err_str) {
 		fprintf(stderr, "%s", err_str);
+	}
+	if (!NT_STATUS_IS_OK(ret) && !err_str) {
+		fprintf(stderr, "Failed to change password!\n");
+	}
 
 	SAFE_FREE(msg_str);
 	SAFE_FREE(err_str);
@@ -430,21 +433,8 @@ static int process_root(int local_flags)
 		}
 
 		if((local_flags & LOCAL_SET_PASSWORD) && (new_passwd == NULL)) {
-			struct passwd *passwd;
-
-			if (remote_machine == NULL) {
-				passwd = getpwnam_alloc(NULL, user_name);
-
-				if (!passwd) {
-					fprintf(stderr, "Cannot locate Unix account for "
-						"'%s'!\n", user_name);
-					exit(1);
-				}
-				TALLOC_FREE(passwd);
-			}
 
 			new_passwd = prompt_for_new_password(stdin_passwd_get);
-
 			if(!new_passwd) {
 				fprintf(stderr, "Unable to get new password.\n");
 				exit(1);
@@ -455,7 +445,6 @@ static int process_root(int local_flags)
 	if (!NT_STATUS_IS_OK(password_change(remote_machine, user_name,
 					     old_passwd, new_passwd,
 					     local_flags))) {
-		fprintf(stderr,"Failed to modify password entry for user %s\n", user_name);
 		result = 1;
 		goto done;
 	} 
@@ -550,7 +539,6 @@ static int process_nonroot(int local_flags)
 
 	if (!NT_STATUS_IS_OK(password_change(remote_machine, user_name, old_pw,
 					     new_pw, 0))) {
-		fprintf(stderr,"Failed to change password for %s\n", user_name);
 		result = 1;
 		goto done;
 	}
