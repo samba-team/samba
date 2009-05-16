@@ -1,8 +1,5 @@
 .SUFFIXES: .i _wrap.c
 
-.i_wrap.c: 
-	$(SWIG) -O -Wall -python -keyword $<
-
 showflags::
 	@echo 'libtevent will be compiled with flags:'
 	@echo '  CFLAGS = $(CFLAGS)'

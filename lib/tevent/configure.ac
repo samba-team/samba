@@ -20,18 +20,5 @@ m4_include(pkg.m4)
 m4_include(libtalloc.m4)
 
 m4_include(libtevent.m4)
-AC_PATH_PROGS([PYTHON_CONFIG], [python2.6-config python2.5-config python2.4-config python-config])
-AC_PATH_PROGS([PYTHON], [python2.6 python2.5 python2.4 python])
 
-PYTHON_BUILD_TARGET="build-python"
-PYTHON_INSTALL_TARGET="install-python"
-PYTHON_CHECK_TARGET="check-python"
-AC_SUBST(PYTHON_BUILD_TARGET)
-AC_SUBST(PYTHON_INSTALL_TARGET)
-AC_SUBST(PYTHON_CHECK_TARGET)
-if test -z "$PYTHON_CONFIG"; then
-	PYTHON_BUILD_TARGET=""
-	PYTHON_INSTALL_TARGET=""
-	PYTHON_CHECK_TARGET=""
-fi
 AC_OUTPUT(Makefile tevent.pc)
