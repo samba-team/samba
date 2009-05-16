@@ -605,6 +605,7 @@ NTSTATUS _samr_OpenDomain(pipes_struct *p,
 	uint32    des_access = r->in.access_mask;
 	NTSTATUS  status;
 	size_t    sd_size;
+	uint32_t extra_access = SAMR_DOMAIN_ACCESS_CREATE_USER;
 	SE_PRIV se_rights;
 
 	/* find the connection policy handle. */
@@ -620,13 +621,25 @@ NTSTATUS _samr_OpenDomain(pipes_struct *p,
 
 	/*
 	 * Users with SeMachineAccount or SeAddUser get additional
-	 * SAMR_DOMAIN_ACCESS_CREATE_USER access, but no more.
+	 * SAMR_DOMAIN_ACCESS_CREATE_USER access.
 	 */
 	se_priv_copy( &se_rights, &se_machine_account );
 	se_priv_add( &se_rights, &se_add_users );
 
+	/*
+	 * Users with SeAddUser get the ability to manipulate groups
+	 * and aliases.
+	 */
+	if (user_has_any_privilege(p->server_info->ptok, &se_add_users)) {
+		extra_access |= (SAMR_DOMAIN_ACCESS_CREATE_GROUP |
+				SAMR_DOMAIN_ACCESS_ENUM_ACCOUNTS |
+				SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT |
+				SAMR_DOMAIN_ACCESS_LOOKUP_ALIAS |
+				SAMR_DOMAIN_ACCESS_CREATE_ALIAS);
+	}
+
 	status = access_check_samr_object( psd, p->server_info->ptok,
-		&se_rights, SAMR_DOMAIN_ACCESS_CREATE_USER, des_access,
+		&se_rights, extra_access, des_access,
 		&acc_granted, "_samr_OpenDomain" );
 
 	if ( !NT_STATUS_IS_OK(status) )
