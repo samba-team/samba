@@ -6277,7 +6277,7 @@ NTSTATUS _samr_RemoveMemberFromForeignDomain(pipes_struct *p,
 		return NT_STATUS_INVALID_HANDLE;
 
 	result = access_check_samr_function(acc_granted,
-					    STD_RIGHT_DELETE_ACCESS,
+					    SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
 					    "_samr_RemoveMemberFromForeignDomain");
 
 	if (!NT_STATUS_IS_OK(result))
