@@ -70,6 +70,11 @@ bool event_add_to_select_args(struct tevent_context *ev,
 		}
 	}
 
+	if (ev->immediate_events != NULL) {
+		*timeout = timeval_zero();
+		return true;
+	}
+
 	if (ev->timer_events == NULL) {
 		return ret;
 	}
@@ -139,6 +144,10 @@ struct timeval *get_timed_events_timeout(struct tevent_context *ev,
 
 	if (ev->timer_events == NULL) {
 		return NULL;
+	}
+	if (ev->immediate_events != NULL) {
+		*to_ret = timeval_zero();
+		return to_ret;
 	}
 
 	now = timeval_current();
