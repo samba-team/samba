@@ -90,8 +90,6 @@ SMB_EXT_LIB_FROM_PKGCONFIG(LIBTEVENT, tevent = TEVENT_REQUIRED_VERSION,
 	[],[m4_include(../lib/tevent/samba.m4)]
 )
 
-SMB_INCLUDE_MK(../lib/tevent/python.mk) 
-
 SMB_EXT_LIB_FROM_PKGCONFIG(LIBLDB, ldb = LDB_REQUIRED_VERSION,
 	[
 		SMB_INCLUDE_MK(lib/ldb/ldb_ildap/config.mk)
