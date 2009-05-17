@@ -781,12 +781,19 @@ static int net_conf_setparm(struct net_context *c, struct smbconf_ctx *conf_ctx,
 	}
 	value_str = argv[2];
 
+	werr = smbconf_transaction_start(conf_ctx);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_printf("error starting transaction: %s\n",
+			 win_errstr(werr));
+		goto done;
+	}
+
 	if (!smbconf_share_exists(conf_ctx, service)) {
 		werr = smbconf_create_share(conf_ctx, service);
 		if (!W_ERROR_IS_OK(werr)) {
 			d_fprintf(stderr, "Error creating share '%s': %s\n",
 				  service, win_errstr(werr));
-			goto done;
+			goto cancel;
 		}
 	}
 
@@ -795,10 +802,25 @@ static int net_conf_setparm(struct net_context *c, struct smbconf_ctx *conf_ctx,
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error setting value '%s': %s\n",
 			  param, win_errstr(werr));
-		goto done;
+		goto cancel;
 	}
 
-	ret = 0;
+	werr = smbconf_transaction_commit(conf_ctx);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_printf("error committing transaction: %s\n",
+			 win_errstr(werr));
+	} else {
+		ret = 0;
+	}
+
+	goto done;
+
+cancel:
+	werr = smbconf_transaction_cancel(conf_ctx);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_printf("error cancelling transaction: %s\n",
+			 win_errstr(werr));
+	}
 
 done:
 	TALLOC_FREE(mem_ctx);
