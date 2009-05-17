@@ -142,7 +142,7 @@ struct timeval *get_timed_events_timeout(struct tevent_context *ev,
 {
 	struct timeval now;
 
-	if (ev->timer_events == NULL) {
+	if ((ev->timer_events == NULL) && (ev->immediate_events == NULL)) {
 		return NULL;
 	}
 	if (ev->immediate_events != NULL) {
