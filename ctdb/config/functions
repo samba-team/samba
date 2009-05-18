@@ -248,6 +248,42 @@ ctdb_check_tcp_ports() {
 }
 
 ######################################################
+# check a unix socket
+# usage: ctdb_check_unix_socket SERVICE_NAME <socket_path>
+######################################################
+ctdb_check_unix_socket() {
+  service_name="$1"
+  socket_path="$2"
+  [ -z "$socket_path" ] && return;
+
+  # check availability of netstat first
+  NETSTAT=""
+  if [ -x $(type -p netstat) ]; then
+        NETSTAT=$(type -p netstat)
+  elif [ -x /usr/bin/netstat ]; then
+      NETSTAT=/usr/bin/netstat
+  elif [ -x /bin/netstat ]; then
+      NETSTAT=/bin/netstat
+  fi
+
+  all_ok=1
+  if [ "x$NETSTAT" != "x" ]; then
+    if $NETSTAT -l -a -n | grep -qE "^unix.*LISTEN.*${socket_path}$"; then
+      all_ok=1
+    else
+      all_ok=0
+    fi
+    else
+    [ -S ${socket_path} ] && all_ok=1 || all_ok=0
+  fi
+
+  [ $all_ok -eq 1 ] || {
+    echo "ERROR: $service_name socket $socket_path not found"
+    exit 1
+  }
+}
+
+######################################################
 # check a command returns zero status
 # usage: ctdb_check_command SERVICE_NAME <command>
 ######################################################
