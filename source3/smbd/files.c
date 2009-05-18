@@ -204,6 +204,28 @@ void file_close_user(int vuid)
 	}
 }
 
+/*
+ * Walk the files table until "fn" returns non-NULL
+ */
+
+struct files_struct *file_walk_table(
+	struct files_struct *(*fn)(struct files_struct *fsp,
+				   void *private_data),
+	void *private_data)
+{
+	struct files_struct *fsp, *next;
+
+	for (fsp = Files; fsp; fsp = next) {
+		struct files_struct *ret;
+		next = fsp->next;
+		ret = fn(fsp, private_data);
+		if (ret != NULL) {
+			return ret;
+		}
+	}
+	return NULL;
+}
+
 /****************************************************************************
  Debug to enumerate all open files in the smbd.
 ****************************************************************************/

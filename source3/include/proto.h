@@ -6285,6 +6285,10 @@ void file_close_pid(uint16 smbpid, int vuid);
 void file_init(void);
 void file_close_user(int vuid);
 void file_dump_open_table(void);
+struct files_struct *file_walk_table(
+	struct files_struct *(*fn)(struct files_struct *fsp,
+				   void *private_data),
+	void *private_data);
 files_struct *file_find_fd(int fd);
 files_struct *file_find_dif(struct file_id id, unsigned long gen_id);
 files_struct *file_find_fsp(files_struct *orig_fsp);
