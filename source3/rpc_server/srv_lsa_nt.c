@@ -411,46 +411,15 @@ NTSTATUS _lsa_OpenPolicy2(pipes_struct *p,
 NTSTATUS _lsa_OpenPolicy(pipes_struct *p,
 			 struct lsa_OpenPolicy *r)
 {
-	struct lsa_info *info;
-	SEC_DESC *psd = NULL;
-	size_t sd_size;
-	uint32 des_access= r->in.access_mask;
-	uint32 acc_granted;
-	NTSTATUS status;
+	struct lsa_OpenPolicy2 o;
 
+	o.in.system_name	= NULL; /* should be ignored */
+	o.in.attr		= r->in.attr;
+	o.in.access_mask	= r->in.access_mask;
 
-	/* map the generic bits to the lsa policy ones */
-	se_map_generic(&des_access, &lsa_generic_mapping);
+	o.out.handle		= r->out.handle;
 
-	/* get the generic lsa policy SD until we store it */
-	lsa_get_generic_sd(p->mem_ctx, &psd, &sd_size);
-
-	status = se_access_check(psd, p->server_info->ptok, des_access,
-				 &acc_granted);
-	if (!NT_STATUS_IS_OK(status)) {
-		if (p->server_info->utok.uid != sec_initial_uid()) {
-			return status;
-		}
-		DEBUG(4,("ACCESS should be DENIED (granted: %#010x;  required: %#010x)\n",
-			 acc_granted, des_access));
-		DEBUGADD(4,("but overwritten by euid == 0\n"));
-		acc_granted = des_access;
-	}
-
-	/* associate the domain SID with the (unique) handle. */
-	info = TALLOC_ZERO_P(p->mem_ctx, struct lsa_info);
-	if (info == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	sid_copy(&info->sid,get_global_sam_sid());
-	info->access = acc_granted;
-
-	/* set up the LSA QUERY INFO response */
-	if (!create_policy_hnd(p, r->out.handle, info))
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-
-	return NT_STATUS_OK;
+	return _lsa_OpenPolicy2(p, &o);
 }
 
 /***************************************************************************
