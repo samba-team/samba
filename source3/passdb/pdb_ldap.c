@@ -4337,6 +4337,7 @@ static bool ldapsam_search_firstpage(struct pdb_search *search)
 	if (state->current_entry == NULL) {
 		ldap_msgfree(state->entries);
 		state->entries = NULL;
+		return false;
 	}
 
 	return True;
