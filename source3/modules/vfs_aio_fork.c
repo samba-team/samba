@@ -357,6 +357,14 @@ static void aio_child_loop(int sockfd, struct mmap_area *map)
 			ret_struct.ret_errno = errno;
 		}
 
+		/*
+		 * Close the fd before telling our parent we're done. The
+		 * parent might close and re-open the file very quickly, and
+		 * with system-level share modes (GPFS) we would get an
+		 * unjustified SHARING_VIOLATION.
+		 */
+		close(fd);
+
 		ret = write_data(sockfd, (char *)&ret_struct,
 				 sizeof(ret_struct));
 		if (ret != sizeof(ret_struct)) {
@@ -364,8 +372,6 @@ static void aio_child_loop(int sockfd, struct mmap_area *map)
 				   strerror(errno)));
 			exit(2);
 		}
-
-		close(fd);
 	}
 }
 
