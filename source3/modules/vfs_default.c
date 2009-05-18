@@ -1423,12 +1423,32 @@ static int vfswrap_fsetxattr(struct vfs_handle_struct *handle, struct files_stru
 
 static int vfswrap_aio_read(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
 {
-	return sys_aio_read(aiocb);
+	int ret;
+	/*
+	 * aio_read must be done as root, because in the glibc aio
+	 * implementation the helper thread needs to be able to send a signal
+	 * to the main thread, even when it has done a seteuid() to a
+	 * different user.
+	 */
+	become_root();
+	ret = sys_aio_read(aiocb);
+	unbecome_root();
+	return ret;
 }
 
 static int vfswrap_aio_write(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
 {
-	return sys_aio_write(aiocb);
+	int ret;
+	/*
+	 * aio_write must be done as root, because in the glibc aio
+	 * implementation the helper thread needs to be able to send a signal
+	 * to the main thread, even when it has done a seteuid() to a
+	 * different user.
+	 */
+	become_root();
+	ret = sys_aio_write(aiocb);
+	unbecome_root();
+	return ret;
 }
 
 static ssize_t vfswrap_aio_return(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
