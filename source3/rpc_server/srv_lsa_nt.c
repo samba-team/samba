@@ -1717,7 +1717,10 @@ NTSTATUS _lsa_EnumPrivsAccount(pipes_struct *p,
 NTSTATUS _lsa_GetSystemAccessAccount(pipes_struct *p,
 				     struct lsa_GetSystemAccessAccount *r)
 {
-	struct lsa_info *info=NULL;
+	NTSTATUS status;
+	struct lsa_info *info = NULL;
+	struct lsa_EnumPrivsAccount e;
+	struct lsa_PrivilegeSet *privset;
 
 	/* find the connection policy handle. */
 
@@ -1727,8 +1730,25 @@ NTSTATUS _lsa_GetSystemAccessAccount(pipes_struct *p,
 	if (!(info->access & LSA_POLICY_VIEW_LOCAL_INFORMATION))
 		return NT_STATUS_ACCESS_DENIED;
 
-	if (!lookup_sid(p->mem_ctx, &info->sid, NULL, NULL, NULL))
-		return NT_STATUS_ACCESS_DENIED;
+	privset = talloc_zero(p->mem_ctx, struct lsa_PrivilegeSet);
+	if (!privset) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	e.in.handle = r->in.handle;
+	e.out.privs = &privset;
+
+	status = _lsa_EnumPrivsAccount(p, &e);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10,("_lsa_GetSystemAccessAccount: "
+			"failed to call _lsa_EnumPrivsAccount(): %s\n",
+			nt_errstr(status)));
+		return status;
+	}
+
+	/* Samba4 would iterate over the privset to merge the policy mode bits,
+	 * not sure samba3 can do the same here, so just return what we did in
+	 * the past - gd */
 
 	/*
 	  0x01 -> Log on locally
