@@ -1118,13 +1118,13 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 
 	switch (addr.sa.sa_family) {
 	case AF_INET:
-		DEBUG(DEBUG_ERR,("registered tcp client for %u->%s:%u (client_id %u pid %u)\n",
+		DEBUG(DEBUG_INFO,("registered tcp client for %u->%s:%u (client_id %u pid %u)\n",
 			(unsigned)ntohs(tcp_sock->dest.ip.sin_port), 
 			ctdb_addr_to_str(&tcp_sock->src),
 			(unsigned)ntohs(tcp_sock->src.ip.sin_port), client_id, client->pid));
 		break;
 	case AF_INET6:
-		DEBUG(DEBUG_ERR,("registered tcp client for %u->%s:%u (client_id %u pid %u)\n",
+		DEBUG(DEBUG_INFO,("registered tcp client for %u->%s:%u (client_id %u pid %u)\n",
 			(unsigned)ntohs(tcp_sock->dest.ip6.sin6_port), 
 			ctdb_addr_to_str(&tcp_sock->src),
 			(unsigned)ntohs(tcp_sock->src.ip6.sin6_port), client_id, client->pid));
