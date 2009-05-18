@@ -1290,7 +1290,29 @@ NTSTATUS _lsa_SetSecret(pipes_struct *p, struct lsa_SetSecret *r)
 NTSTATUS _lsa_DeleteObject(pipes_struct *p,
 			   struct lsa_DeleteObject *r)
 {
-	return NT_STATUS_ACCESS_DENIED;
+	NTSTATUS status;
+	struct lsa_info *info = NULL;
+
+	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info)) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	/* check to see if the pipe_user is root or a Domain Admin since
+	   account_pol.tdb was already opened as root, this is all we have */
+
+	if (p->server_info->utok.uid != sec_initial_uid() &&
+	    !nt_token_check_domain_rid(p->server_info->ptok,
+				       DOMAIN_GROUP_RID_ADMINS)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	status = privilege_delete_account(&info->sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10,("_lsa_DeleteObject: privilege_delete_account gave: %s\n",
+			nt_errstr(status)));
+	}
+
+	return status;
 }
 
 /***************************************************************************
