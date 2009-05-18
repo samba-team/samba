@@ -286,7 +286,8 @@ static NTSTATUS lsa_get_generic_sd(TALLOC_CTX *mem_ctx, SEC_DESC **sd, size_t *s
 
 	SEC_ACL *psa = NULL;
 
-	init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, LSA_POLICY_EXECUTE, 0);
+	init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED,
+			LSA_POLICY_READ|LSA_POLICY_EXECUTE, 0);
 
 	sid_copy(&adm_sid, get_global_sam_sid());
 	sid_append_rid(&adm_sid, DOMAIN_GROUP_RID_ADMINS);
@@ -365,6 +366,8 @@ NTSTATUS _lsa_OpenPolicy2(pipes_struct *p,
 	uint32 acc_granted;
 	NTSTATUS status;
 
+	/* Work out max allowed. */
+	map_max_allowed_access(p->server_info->ptok, &des_access);
 
 	/* map the generic bits to the lsa policy ones */
 	se_map_generic(&des_access, &lsa_generic_mapping);
@@ -372,21 +375,13 @@ NTSTATUS _lsa_OpenPolicy2(pipes_struct *p,
 	/* get the generic lsa policy SD until we store it */
 	lsa_get_generic_sd(p->mem_ctx, &psd, &sd_size);
 
-	status = se_access_check(psd, p->server_info->ptok, des_access,
-				 &acc_granted);
+	status = access_check_object(psd, p->server_info->ptok,
+		NULL, 0, des_access,
+		&acc_granted, "_lsa_OpenPolicy2" );
+
 	if (!NT_STATUS_IS_OK(status)) {
-		if (p->server_info->utok.uid != sec_initial_uid()) {
-			return status;
-		}
-		DEBUG(4,("ACCESS should be DENIED (granted: %#010x;  required: %#010x)\n",
-			 acc_granted, des_access));
-		DEBUGADD(4,("but overwritten by euid == 0\n"));
+		return status;
 	}
-
-	/* This is needed for lsa_open_account and rpcclient .... :-) */
-
-	if (p->server_info->utok.uid == sec_initial_uid())
-		acc_granted = LSA_POLICY_ALL_ACCESS;
 
 	/* associate the domain SID with the (unique) handle. */
 	info = TALLOC_ZERO_P(p->mem_ctx, struct lsa_info);
@@ -1564,7 +1559,6 @@ NTSTATUS _lsa_CreateAccount(pipes_struct *p,
 
 	return privilege_create_account( &info->sid );
 }
-
 
 /***************************************************************************
  _lsa_OpenAccount
