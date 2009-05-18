@@ -260,8 +260,8 @@ static void map_max_allowed_access(const NT_USER_TOKEN *token,
 	}
 	*pacc_requested &= ~MAXIMUM_ALLOWED_ACCESS;
 
-	/* At least try for generic read. */
-	*pacc_requested = GENERIC_READ_ACCESS;
+	/* At least try for generic read|execute - Everyone gets that. */
+	*pacc_requested = GENERIC_READ_ACCESS|GENERIC_EXECUTE_ACCESS;
 
 	/* root gets anything. */
 	if (geteuid() == sec_initial_uid()) {
