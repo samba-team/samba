@@ -7174,4 +7174,11 @@ struct tevent_req *fncall_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			       void *private_data);
 int fncall_recv(struct tevent_req *req, int *perr);
 
+/* The following definitions come from rpc_server/srv_samr_nt.c */
+NTSTATUS access_check_object( SEC_DESC *psd, NT_USER_TOKEN *token,
+				SE_PRIV *rights, uint32 rights_mask,
+				uint32 des_access, uint32 *acc_granted,
+				const char *debug);
+void map_max_allowed_access(const NT_USER_TOKEN *token,
+				uint32_t *pacc_requested);
 #endif /*  _PROTO_H_  */

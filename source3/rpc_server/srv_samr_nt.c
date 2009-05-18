@@ -173,7 +173,7 @@ static NTSTATUS make_samr_object_sd( TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd
  level of access for further checks.
 ********************************************************************/
 
-static NTSTATUS access_check_samr_object( SEC_DESC *psd, NT_USER_TOKEN *token,
+NTSTATUS access_check_object( SEC_DESC *psd, NT_USER_TOKEN *token,
                                           SE_PRIV *rights, uint32 rights_mask,
                                           uint32 des_access, uint32 *acc_granted,
 					  const char *debug )
@@ -191,7 +191,7 @@ static NTSTATUS access_check_samr_object( SEC_DESC *psd, NT_USER_TOKEN *token,
 		saved_mask = (des_access & rights_mask);
 		des_access &= ~saved_mask;
 
-		DEBUG(4,("access_check_samr_object: user rights access mask [0x%x]\n",
+		DEBUG(4,("access_check_object: user rights access mask [0x%x]\n",
 			rights_mask));
 	}
 
@@ -235,7 +235,7 @@ done:
  Map any MAXIMUM_ALLOWED_ACCESS request to a valid access set.
 ********************************************************************/
 
-static void map_max_allowed_access(const NT_USER_TOKEN *token,
+void map_max_allowed_access(const NT_USER_TOKEN *token,
 					uint32_t *pacc_requested)
 {
 	if (!((*pacc_requested) & MAXIMUM_ALLOWED_ACCESS)) {
@@ -573,7 +573,7 @@ NTSTATUS _samr_OpenDomain(pipes_struct *p,
 				SAMR_DOMAIN_ACCESS_CREATE_ALIAS);
 	}
 
-	status = access_check_samr_object( psd, p->server_info->ptok,
+	status = access_check_object( psd, p->server_info->ptok,
 		&se_rights, extra_access, des_access,
 		&acc_granted, "_samr_OpenDomain" );
 
@@ -2320,7 +2320,7 @@ NTSTATUS _samr_OpenUser(pipes_struct *p,
 
 	TALLOC_FREE(sampass);
 
-	nt_status = access_check_samr_object(psd, p->server_info->ptok,
+	nt_status = access_check_object(psd, p->server_info->ptok,
 		&se_rights, GENERIC_RIGHTS_USER_WRITE, des_access,
 		&acc_granted, "_samr_OpenUser");
 
@@ -3727,7 +3727,7 @@ NTSTATUS _samr_CreateUser2(pipes_struct *p,
 	 * just assume we have all the rights we need ?
 	 */
 
-	nt_status = access_check_samr_object(psd, p->server_info->ptok,
+	nt_status = access_check_object(psd, p->server_info->ptok,
 		&se_rights, GENERIC_RIGHTS_USER_WRITE, des_access,
 		&acc_granted, "_samr_CreateUser2");
 
@@ -3859,7 +3859,7 @@ NTSTATUS _samr_Connect2(pipes_struct *p,
 	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &sam_generic_mapping, NULL, 0);
 	se_map_generic(&des_access, &sam_generic_mapping);
 
-	nt_status = access_check_samr_object(psd, p->server_info->ptok,
+	nt_status = access_check_object(psd, p->server_info->ptok,
 		NULL, 0, des_access, &acc_granted, fn);
 
 	if ( !NT_STATUS_IS_OK(nt_status) )
@@ -4074,7 +4074,7 @@ NTSTATUS _samr_OpenAlias(pipes_struct *p,
 
 	se_priv_copy( &se_rights, &se_add_users );
 
-	status = access_check_samr_object(psd, p->server_info->ptok,
+	status = access_check_object(psd, p->server_info->ptok,
 		&se_rights, GENERIC_RIGHTS_ALIAS_ALL_ACCESS,
 		des_access, &acc_granted, "_samr_OpenAlias");
 
@@ -6124,7 +6124,7 @@ NTSTATUS _samr_OpenGroup(pipes_struct *p,
 
 	se_priv_copy( &se_rights, &se_add_users );
 
-	status = access_check_samr_object(psd, p->server_info->ptok,
+	status = access_check_object(psd, p->server_info->ptok,
 		&se_rights, GENERIC_RIGHTS_GROUP_ALL_ACCESS,
 		des_access, &acc_granted, "_samr_OpenGroup");
 
