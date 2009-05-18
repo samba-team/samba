@@ -123,10 +123,12 @@ void make_net(struct sockaddr_storage *pss_out,
  Get the netmask address for a local interface.
 ****************************************************************************/
 
-static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
+static int _get_interfaces(TALLOC_CTX *mem_ctx, struct iface_struct **pifaces)
 {
+	struct iface_struct *ifaces;
 	struct ifaddrs *iflist = NULL;
 	struct ifaddrs *ifptr = NULL;
+	int count;
 	int total = 0;
 	size_t copy_size;
 
@@ -134,10 +136,25 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 		return -1;
 	}
 
+	count = 0;
+	for (ifptr = iflist; ifptr != NULL; ifptr = ifptr->ifa_next) {
+		if (!ifptr->ifa_addr || !ifptr->ifa_netmask) {
+			continue;
+		}
+		if (!(ifptr->ifa_flags & IFF_UP)) {
+			continue;
+		}
+		count += 1;
+	}
+
+	ifaces = talloc_array(mem_ctx, struct iface_struct, count);
+	if (ifaces == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
+
 	/* Loop through interfaces, looking for given IP address */
-	for (ifptr = iflist, total = 0;
-			ifptr != NULL && total < max_interfaces;
-			ifptr = ifptr->ifa_next) {
+	for (ifptr = iflist; ifptr != NULL; ifptr = ifptr->ifa_next) {
 
 		memset(&ifaces[total], '\0', sizeof(ifaces[total]));
 
@@ -147,12 +164,12 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 			continue;
 		}
 
-		ifaces[total].flags = ifptr->ifa_flags;
-
 		/* Check the interface is up. */
-		if (!(ifaces[total].flags & IFF_UP)) {
+		if (!(ifptr->ifa_flags & IFF_UP)) {
 			continue;
 		}
+
+		ifaces[total].flags = ifptr->ifa_flags;
 
 #if defined(HAVE_IPV6)
 		if (ifptr->ifa_addr->sa_family == AF_INET6) {
@@ -183,6 +200,7 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 
 	freeifaddrs(iflist);
 
+	*pifaces = ifaces;
 	return total;
 }
 
@@ -250,14 +268,14 @@ static int iface_comp(struct iface_struct *i1, struct iface_struct *i2)
 	return 0;
 }
 
-int get_interfaces(struct iface_struct *ifaces, int max_interfaces);
 /* this wrapper is used to remove duplicates from the interface list generated
    above */
-int get_interfaces(struct iface_struct *ifaces, int max_interfaces)
+int get_interfaces(TALLOC_CTX *mem_ctx, struct iface_struct **pifaces)
 {
+	struct iface_struct *ifaces;
 	int total, i, j;
 
-	total = _get_interfaces(ifaces, max_interfaces);
+	total = _get_interfaces(mem_ctx, &ifaces);
 	if (total <= 0) return total;
 
 	/* now we need to remove duplicates */
@@ -274,6 +292,7 @@ int get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 		}
 	}
 
+	*pifaces = ifaces;
 	return total;
 }
 
