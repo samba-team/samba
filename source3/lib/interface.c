@@ -492,7 +492,7 @@ static void interpret_interface(char *token)
 
 void load_interfaces(void)
 {
-	struct iface_struct ifaces[MAX_INTERFACES];
+	struct iface_struct *ifaces = NULL;
 	const char **ptr = lp_interfaces();
 	int i;
 
@@ -507,7 +507,7 @@ void load_interfaces(void)
 	}
 
 	/* Probe the kernel for interfaces */
-	total_probed = get_interfaces(ifaces, MAX_INTERFACES);
+	total_probed = get_interfaces(talloc_tos(), &ifaces);
 
 	if (total_probed > 0) {
 		probed_ifaces = (struct iface_struct *)memdup(ifaces,
@@ -517,6 +517,7 @@ void load_interfaces(void)
 			exit(1);
 		}
 	}
+	TALLOC_FREE(ifaces);
 
 	/* if we don't have a interfaces line then use all broadcast capable
 	   interfaces except loopback */
@@ -569,15 +570,17 @@ void gfree_interfaces(void)
 
 bool interfaces_changed(void)
 {
+	bool ret = false;
 	int n;
-	struct iface_struct ifaces[MAX_INTERFACES];
+	struct iface_struct *ifaces = NULL;
 
-	n = get_interfaces(ifaces, MAX_INTERFACES);
+	n = get_interfaces(talloc_tos(), &ifaces);
 
 	if ((n > 0 )&& (n != total_probed ||
 			memcmp(ifaces, probed_ifaces, sizeof(ifaces[0])*n))) {
-		return true;
+		ret = true;
 	}
 
-	return false;
+	TALLOC_FREE(ifaces);
+	return ret;
 }

@@ -27,8 +27,6 @@
 #include "../replace/replace.h"
 #include "../replace/system/network.h"
 
-#define MAX_INTERFACES 128
-
 struct iface_struct {
 	char name[16];
 	int flags;
@@ -46,6 +44,6 @@ void make_bcast(struct sockaddr_storage *pss_out,
 void make_net(struct sockaddr_storage *pss_out,
 	      const struct sockaddr_storage *pss_in,
 	      const struct sockaddr_storage *nmask);
-int get_interfaces(struct iface_struct *ifaces, int max_interfaces);
+int get_interfaces(TALLOC_CTX *mem_ctx, struct iface_struct **pifaces);
 
 #endif
