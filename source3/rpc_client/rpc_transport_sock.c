@@ -36,6 +36,7 @@ static int rpc_transport_sock_state_destructor(struct rpc_transport_sock_state *
 }
 
 struct rpc_sock_read_state {
+	struct rpc_transport_sock_state *transp;
 	ssize_t received;
 };
 
@@ -55,7 +56,11 @@ static struct tevent_req *rpc_sock_read_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
-
+	if (sock_transp->fd == -1) {
+		tevent_req_nterror(req, NT_STATUS_CONNECTION_INVALID);
+		return tevent_req_post(req, ev);
+	}
+	state->transp = sock_transp;
 	subreq = async_recv_send(state, ev, sock_transp->fd, data, size, 0);
 	if (subreq == NULL) {
 		goto fail;
@@ -77,6 +82,10 @@ static void rpc_sock_read_done(struct tevent_req *subreq)
 
 	state->received = async_recv_recv(subreq, &err);
 	if (state->received == -1) {
+		if (err == EPIPE) {
+			close(state->transp->fd);
+			state->transp->fd = -1;
+		}
 		tevent_req_nterror(req, map_nt_error_from_unix(err));
 		return;
 	}
@@ -97,6 +106,7 @@ static NTSTATUS rpc_sock_read_recv(struct tevent_req *req, ssize_t *preceived)
 }
 
 struct rpc_sock_write_state {
+	struct rpc_transport_sock_state *transp;
 	ssize_t sent;
 };
 
@@ -116,6 +126,11 @@ static struct tevent_req *rpc_sock_write_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
+	if (sock_transp->fd == -1) {
+		tevent_req_nterror(req, NT_STATUS_CONNECTION_INVALID);
+		return tevent_req_post(req, ev);
+	}
+	state->transp = sock_transp;
 	subreq = async_send_send(state, ev, sock_transp->fd, data, size, 0);
 	if (subreq == NULL) {
 		goto fail;
@@ -137,6 +152,10 @@ static void rpc_sock_write_done(struct tevent_req *subreq)
 
 	state->sent = async_send_recv(subreq, &err);
 	if (state->sent == -1) {
+		if (err == EPIPE) {
+			close(state->transp->fd);
+			state->transp->fd = -1;
+		}
 		tevent_req_nterror(req, map_nt_error_from_unix(err));
 		return;
 	}
