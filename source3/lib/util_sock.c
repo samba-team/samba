@@ -1951,12 +1951,7 @@ bool is_myname_or_ipaddr(const char *s)
 			return false;
 		}
 
-		nics = TALLOC_ARRAY(ctx, struct iface_struct,
-					MAX_INTERFACES);
-		if (!nics) {
-			return false;
-		}
-		n = get_interfaces(nics, MAX_INTERFACES);
+		n = get_interfaces(talloc_tos(), &nics);
 		for (i=0; i<n; i++) {
 			if (sockaddr_equal((struct sockaddr *)&nics[i].ip, (struct sockaddr *)&ss)) {
 				TALLOC_FREE(nics);
