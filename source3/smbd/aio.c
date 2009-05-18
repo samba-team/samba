@@ -179,10 +179,7 @@ bool schedule_aio_read_and_X(connection_struct *conn,
 	a->aio_sigevent.sigev_signo  = RT_SIGNAL_AIO;
 	a->aio_sigevent.sigev_value.sival_int = req->mid;
 
-	become_root();
 	ret = SMB_VFS_AIO_READ(fsp, a);
-	unbecome_root();
-
 	if (ret == -1) {
 		DEBUG(0,("schedule_aio_read_and_X: aio_read failed. "
 			 "Error %s\n", strerror(errno) ));
@@ -278,10 +275,7 @@ bool schedule_aio_write_and_X(connection_struct *conn,
 	a->aio_sigevent.sigev_signo  = RT_SIGNAL_AIO;
 	a->aio_sigevent.sigev_value.sival_int = req->mid;
 
-	become_root();
 	ret = SMB_VFS_AIO_WRITE(fsp, a);
-	unbecome_root();
-
 	if (ret == -1) {
 		DEBUG(3,("schedule_aio_wrote_and_X: aio_write failed. "
 			 "Error %s\n", strerror(errno) ));
