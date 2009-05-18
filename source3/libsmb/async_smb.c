@@ -742,7 +742,7 @@ static void cli_smb_sent(struct tevent_req *subreq)
 	nwritten = writev_recv(subreq, &err);
 	TALLOC_FREE(subreq);
 	if (nwritten == -1) {
-		if (err == EPIPE) {
+		if (state->cli->fd != -1) {
 			close(state->cli->fd);
 			state->cli->fd = -1;
 		}
@@ -791,7 +791,7 @@ static void cli_smb_received(struct tevent_req *subreq)
 	received = read_smb_recv(subreq, talloc_tos(), &inbuf, &err);
 	TALLOC_FREE(subreq);
 	if (received == -1) {
-		if (err == EPIPE) {
+		if (cli->fd != -1) {
 			close(cli->fd);
 			cli->fd = -1;
 		}
