@@ -51,15 +51,11 @@ static int vfs_gpfs_kernel_flock(vfs_handle_struct *handle, files_struct *fsp,
 
 static int vfs_gpfs_close(vfs_handle_struct *handle, files_struct *fsp)
 {
-	int result;
-
 	if ((fsp->fh != NULL) && (fsp->fh->fd != -1)) {
 		set_gpfs_sharemode(fsp, 0, 0);
 	}
 
-	result = fd_close_posix(fsp);
-
-	return result;
+	return SMB_VFS_NEXT_CLOSE(handle, fsp);
 }
 
 static int vfs_gpfs_setlease(vfs_handle_struct *handle, files_struct *fsp, 
