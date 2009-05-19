@@ -1149,6 +1149,14 @@ It possible to store the principal (if allowed by the KDC) in the
 certificate and thus delegate responsibility to do the mapping between
 certificates and principals to the CA.
 
+This behavior is controlled by KDC configuration option:
+
+@example
+[kdc]
+	pkinit_principal_in_certificate = yes
+@end example
+
+
 @subsubsection Using KRB5PrincipalName in id-pkinit-san
 
 OtherName extention in the GeneralName is used to do the
@@ -1303,8 +1311,9 @@ Write about the kdc.
 	pkinit_anchors = FILE:/path/to/trust-anchors.pem
 	pkinit_pool = PKCS12:/path/to/useful-intermediate-certs.pfx
 	pkinit_pool = FILE:/path/to/other-useful-intermediate-certs.pem
-	pkinit_allow_proxy_certificate = false
+	pkinit_allow_proxy_certificate = no
 	pkinit_win2k_require_binding = yes
+	pkinit_principal_in_certificate = no
 @end example
 
 @subsection Using pki-mapping file
