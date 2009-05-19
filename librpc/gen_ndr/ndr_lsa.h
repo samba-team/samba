@@ -202,6 +202,15 @@ void ndr_print_lsa_ObjectAttribute(struct ndr_print *ndr, const char *name, cons
 enum ndr_err_code ndr_push_lsa_PolicyAccessMask(struct ndr_push *ndr, int ndr_flags, uint32_t r);
 enum ndr_err_code ndr_pull_lsa_PolicyAccessMask(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
 void ndr_print_lsa_PolicyAccessMask(struct ndr_print *ndr, const char *name, uint32_t r);
+enum ndr_err_code ndr_push_lsa_AccountAccessMask(struct ndr_push *ndr, int ndr_flags, uint32_t r);
+enum ndr_err_code ndr_pull_lsa_AccountAccessMask(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
+void ndr_print_lsa_AccountAccessMask(struct ndr_print *ndr, const char *name, uint32_t r);
+enum ndr_err_code ndr_push_lsa_SecretAccessMask(struct ndr_push *ndr, int ndr_flags, uint32_t r);
+enum ndr_err_code ndr_pull_lsa_SecretAccessMask(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
+void ndr_print_lsa_SecretAccessMask(struct ndr_print *ndr, const char *name, uint32_t r);
+enum ndr_err_code ndr_push_lsa_TrustedAccessMask(struct ndr_push *ndr, int ndr_flags, uint32_t r);
+enum ndr_err_code ndr_pull_lsa_TrustedAccessMask(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
+void ndr_print_lsa_TrustedAccessMask(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_lsa_AuditLogInfo(struct ndr_print *ndr, const char *name, const struct lsa_AuditLogInfo *r);
 void ndr_print_lsa_PolicyAuditPolicy(struct ndr_print *ndr, const char *name, enum lsa_PolicyAuditPolicy r);
 void ndr_print_lsa_AuditEventsInfo(struct ndr_print *ndr, const char *name, const struct lsa_AuditEventsInfo *r);

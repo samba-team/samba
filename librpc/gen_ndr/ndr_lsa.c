@@ -828,6 +828,83 @@ _PUBLIC_ void ndr_print_lsa_PolicyAccessMask(struct ndr_print *ndr, const char *
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "LSA_POLICY_AUDIT_LOG_ADMIN", LSA_POLICY_AUDIT_LOG_ADMIN, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "LSA_POLICY_SERVER_ADMIN", LSA_POLICY_SERVER_ADMIN, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "LSA_POLICY_LOOKUP_NAMES", LSA_POLICY_LOOKUP_NAMES, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "LSA_POLICY_NOTIFICATION", LSA_POLICY_NOTIFICATION, r);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_lsa_AccountAccessMask(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_lsa_AccountAccessMask(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_lsa_AccountAccessMask(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "LSA_ACCOUNT_VIEW", LSA_ACCOUNT_VIEW, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "LSA_ACCOUNT_ADJUST_PRIVILEGES", LSA_ACCOUNT_ADJUST_PRIVILEGES, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "LSA_ACCOUNT_ADJUST_QUOTAS", LSA_ACCOUNT_ADJUST_QUOTAS, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "LSA_ACCOUNT_ADJUST_SYSTEM_ACCESS", LSA_ACCOUNT_ADJUST_SYSTEM_ACCESS, r);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_lsa_SecretAccessMask(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_lsa_SecretAccessMask(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_lsa_SecretAccessMask(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "LSA_SECRET_SET_VALUE", LSA_SECRET_SET_VALUE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "LSA_SECRET_QUERY_VALUE", LSA_SECRET_QUERY_VALUE, r);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_lsa_TrustedAccessMask(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_lsa_TrustedAccessMask(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_lsa_TrustedAccessMask(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "LSA_TRUSTED_QUERY_DOMAIN_NAME", LSA_TRUSTED_QUERY_DOMAIN_NAME, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "LSA_TRUSTED_QUERY_CONTROLLERS", LSA_TRUSTED_QUERY_CONTROLLERS, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "LSA_TRUSTED_SET_CONTROLLERS", LSA_TRUSTED_SET_CONTROLLERS, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "LSA_TRUSTED_QUERY_POSIX", LSA_TRUSTED_QUERY_POSIX, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "LSA_TRUSTED_SET_POSIX", LSA_TRUSTED_SET_POSIX, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "LSA_TRUSTED_SET_AUTH", LSA_TRUSTED_SET_AUTH, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "LSA_TRUSTED_QUERY_AUTH", LSA_TRUSTED_QUERY_AUTH, r);
 	ndr->depth--;
 }
 
