@@ -2452,7 +2452,7 @@ if test x$enable_fam != xno; then
     if test x"$samba_cv_HAVE_LIBFAM" = x"yes" ; then
         default_shared_modules="$default_shared_modules vfs_notify_fam"
         AC_TRY_COMPILE([#include <fam.h>],
-                    [FAMCodes code = FAMChanged;],
+                    [enum FAMCodes code = FAMChanged;],
                     AC_DEFINE(HAVE_FAM_H_FAMCODES_TYPEDEF, 1,
                         [Whether fam.h contains a typedef for enum FAMCodes]),
                     [])
