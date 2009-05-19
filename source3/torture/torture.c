@@ -5809,7 +5809,7 @@ static bool run_local_wbclient(int dummy)
 		goto fail;
 	}
 
-	wb_ctx = TALLOC_ARRAY(ev, struct wb_context *, torture_numops);
+	wb_ctx = TALLOC_ARRAY(ev, struct wb_context *, nprocs);
 	if (wb_ctx == NULL) {
 		goto fail;
 	}
@@ -5817,12 +5817,14 @@ static bool run_local_wbclient(int dummy)
 	ZERO_STRUCT(wb_req);
 	wb_req.cmd = WINBINDD_PING;
 
-	for (i=0; i<torture_numops; i++) {
+	d_printf("nprocs=%d, numops=%d\n", (int)nprocs, (int)torture_numops);
+
+	for (i=0; i<nprocs; i++) {
 		wb_ctx[i] = wb_context_init(ev);
 		if (wb_ctx[i] == NULL) {
 			goto fail;
 		}
-		for (j=0; j<5; j++) {
+		for (j=0; j<torture_numops; j++) {
 			struct tevent_req *req;
 			req = wb_trans_send(ev, ev, wb_ctx[i],
 					    (j % 2) == 0, &wb_req);
@@ -5835,7 +5837,7 @@ static bool run_local_wbclient(int dummy)
 
 	i = 0;
 
-	while (i < 5 * torture_numops) {
+	while (i < nprocs * torture_numops) {
 		event_loop_once(ev);
 	}
 
