@@ -166,7 +166,7 @@ static void reply_lanman2(struct smb_request *req, uint16 choice)
  Generate the spnego negprot reply blob. Return the number of bytes used.
 ****************************************************************************/
 
-static DATA_BLOB negprot_spnego(void)
+DATA_BLOB negprot_spnego(void)
 {
 	DATA_BLOB blob;
 	nstring dos_name;
