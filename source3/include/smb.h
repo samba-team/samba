@@ -1518,7 +1518,15 @@ char *strdup(char *s);
 
 /* protocol types. It assumes that higher protocols include lower protocols
    as subsets */
-enum protocol_types {PROTOCOL_NONE,PROTOCOL_CORE,PROTOCOL_COREPLUS,PROTOCOL_LANMAN1,PROTOCOL_LANMAN2,PROTOCOL_NT1};
+enum protocol_types {
+	PROTOCOL_NONE,
+	PROTOCOL_CORE,
+	PROTOCOL_COREPLUS,
+	PROTOCOL_LANMAN1,
+	PROTOCOL_LANMAN2,
+	PROTOCOL_NT1,
+	PROTOCOL_SMB2
+};
 
 /* security levels */
 enum security_types {SEC_SHARE,SEC_USER,SEC_SERVER,SEC_DOMAIN,SEC_ADS};

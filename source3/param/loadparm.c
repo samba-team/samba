@@ -685,6 +685,7 @@ static void *lp_local_ptr(struct service *service, void *ptr);
 static void add_to_file_list(const char *fname, const char *subfname);
 
 static const struct enum_list enum_protocol[] = {
+	{PROTOCOL_SMB2, "SMB2"},
 	{PROTOCOL_NT1, "NT1"},
 	{PROTOCOL_LANMAN2, "LANMAN2"},
 	{PROTOCOL_LANMAN1, "LANMAN1"},
