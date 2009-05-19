@@ -106,6 +106,7 @@ struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock,
 	packet_set_error_handler(transport->packet, smbcli_transport_error);
 	packet_set_event_context(transport->packet, transport->socket->event.ctx);
 	packet_set_nofree(transport->packet);
+	packet_set_initial_read(transport->packet, 4);
 
 	smbcli_init_signing(transport);
 
