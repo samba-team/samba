@@ -180,6 +180,7 @@ struct wb_context *wb_context_init(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 	result->fd = -1;
+	result->is_priv = false;
 	return result;
 }
 
