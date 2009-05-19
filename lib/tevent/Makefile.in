@@ -22,11 +22,6 @@ SHLD_FLAGS = @SHLD_FLAGS@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PICFLAG = @PICFLAG@
 SHLIBEXT = @SHLIBEXT@
-PYTHON = @PYTHON@
-PYTHON_CONFIG = @PYTHON_CONFIG@
-PYTHON_BUILD_TARGET = @PYTHON_BUILD_TARGET@
-PYTHON_INSTALL_TARGET = @PYTHON_INSTALL_TARGET@
-PYTHON_CHECK_TARGET = @PYTHON_CHECK_TARGET@
 LIB_PATH_VAR = @LIB_PATH_VAR@
 teventdir = @teventdir@
 
@@ -49,7 +44,7 @@ default: all
 include $(teventdir)/tevent.mk
 include $(teventdir)/rules.mk
 
-all:: showflags dirs $(PROGS) $(TEVENT_SOLIB) libtevent.a $(PYTHON_BUILD_TARGET)
+all:: showflags dirs $(PROGS) $(TEVENT_SOLIB) libtevent.a
 
 install:: all
 $(TEVENT_SOLIB): $(TEVENT_OBJ)
@@ -66,7 +61,6 @@ shared-build: all
 
 check: test
 
-test:: $(PYTHON_CHECK_TARGET)
 installcheck:: test install
 
 clean::
