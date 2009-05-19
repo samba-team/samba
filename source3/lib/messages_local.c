@@ -102,8 +102,8 @@ NTSTATUS messaging_tdb_init(struct messaging_context *msg_ctx,
 
 	ctx->msg_ctx = msg_ctx;
 
-	ctx->tdb = tdb_wrap_open(ctx, lock_path("messages.tdb"),
-				 0, TDB_CLEAR_IF_FIRST|TDB_DEFAULT,
+	ctx->tdb = tdb_wrap_open(ctx, lock_path("messages.tdb"), 0,
+				 TDB_CLEAR_IF_FIRST|TDB_DEFAULT|TDB_VOLATILE,
 				 O_RDWR|O_CREAT,0600);
 
 	if (!ctx->tdb) {
@@ -128,9 +128,6 @@ NTSTATUS messaging_tdb_init(struct messaging_context *msg_ctx,
 	}
 
 	sec_init();
-
-	/* Activate the per-hashchain freelist */
-	tdb_set_max_dead(ctx->tdb->tdb, 5);
 
 	*presult = result;
 	return NT_STATUS_OK;
