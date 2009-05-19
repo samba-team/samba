@@ -2757,7 +2757,7 @@ static ssize_t fake_sendfile(files_struct *fsp, SMB_OFF_T startpos,
 
 		/* If we had a short read, fill with zeros. */
 		if (ret < cur_read) {
-			memset(buf, '\0', cur_read - ret);
+			memset(buf + ret, '\0', cur_read - ret);
 		}
 
 		if (write_data(smbd_server_fd(),buf,cur_read) != cur_read) {
@@ -2783,6 +2783,7 @@ static void sendfile_short_send(files_struct *fsp,
 				size_t headersize,
 				size_t smb_maxcnt)
 {
+#define SHORT_SEND_BUFSIZE 1024
 	if (nread < headersize) {
 		DEBUG(0,("sendfile_short_send: sendfile failed to send "
 			"header for file %s (%s). Terminating\n",
@@ -2793,7 +2794,7 @@ static void sendfile_short_send(files_struct *fsp,
 	nread -= headersize;
 
 	if (nread < smb_maxcnt) {
-		char *buf = SMB_CALLOC_ARRAY(char, 1024);
+		char *buf = SMB_CALLOC_ARRAY(char, SHORT_SEND_BUFSIZE);
 		if (!buf) {
 			exit_server_cleanly("sendfile_short_send: "
 				"malloc failed");
@@ -2819,7 +2820,7 @@ static void sendfile_short_send(files_struct *fsp,
 			 */
 			size_t to_write;
 
-			to_write = MIN(sizeof(buf), smb_maxcnt - nread);
+			to_write = MIN(SHORT_SEND_BUFSIZE, smb_maxcnt - nread);
 			if (write_data(smbd_server_fd(), buf, to_write) != to_write) {
 				exit_server_cleanly("sendfile_short_send: "
 					"write_data failed");
