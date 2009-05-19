@@ -618,6 +618,7 @@ static int tdgram_bsd_set_readable_handler(struct tdgram_bsd *bsds,
 					  tdgram_bsd_fde_handler,
 					  bsds);
 		if (!bsds->fde) {
+			errno = ENOMEM;
 			return -1;
 		}
 
@@ -669,6 +670,7 @@ static int tdgram_bsd_set_writeable_handler(struct tdgram_bsd *bsds,
 					  tdgram_bsd_fde_handler,
 					  bsds);
 		if (!bsds->fde) {
+			errno = ENOMEM;
 			return -1;
 		}
 
@@ -1329,6 +1331,7 @@ static int tstream_bsd_set_readable_handler(struct tstream_bsd *bsds,
 					  tstream_bsd_fde_handler,
 					  bsds);
 		if (!bsds->fde) {
+			errno = ENOMEM;
 			return -1;
 		}
 
@@ -1380,6 +1383,7 @@ static int tstream_bsd_set_writeable_handler(struct tstream_bsd *bsds,
 					  tstream_bsd_fde_handler,
 					  bsds);
 		if (!bsds->fde) {
+			errno = ENOMEM;
 			return -1;
 		}
 
