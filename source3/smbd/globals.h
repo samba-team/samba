@@ -206,6 +206,7 @@ DATA_BLOB negprot_spnego(void);
 
 bool smbd_is_smb2_header(const uint8_t *inbuf, size_t size);
 
+void reply_smb2002(struct smb_request *req, uint16_t choice);
 void smbd_smb2_first_negprot(struct smbd_server_connection *conn,
 			     const uint8_t *inbuf, size_t size);
 

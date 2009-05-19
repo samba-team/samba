@@ -24,6 +24,42 @@
 
 extern enum protocol_types Protocol;
 
+/*
+ * this is the entry point if SMB2 is selected via
+ * the SMB negprot
+ */
+void reply_smb2002(struct smb_request *req, uint16_t choice)
+{
+	uint8_t *smb2_inbuf;
+	uint8_t *smb2_hdr;
+	uint8_t *smb2_body;
+	uint8_t *smb2_dyn;
+	size_t len = 4 + SMB2_HDR_BODY + 0x24 + 2;
+
+	smb2_inbuf = talloc_zero_array(talloc_tos(), uint8_t, len);
+	if (smb2_inbuf == NULL) {
+		DEBUG(0, ("Could not push spnego blob\n"));
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
+	}
+	smb2_hdr = smb2_inbuf + 4;
+	smb2_body = smb2_hdr + SMB2_HDR_BODY;
+	smb2_dyn = smb2_body + 0x24;
+
+	SIVAL(smb2_hdr, SMB2_HDR_PROTOCOL_ID,	SMB2_MAGIC);
+	SIVAL(smb2_hdr, SMB2_HDR_LENGTH,	SMB2_HDR_BODY);
+
+	SSVAL(smb2_body, 0x00, 0x0024);	/* struct size */
+	SSVAL(smb2_body, 0x02, 0x0001);	/* dialect count */
+
+	SSVAL(smb2_dyn,  0x00, 0x0202);	/* dialect 2.002 */
+
+	req->outbuf = NULL;
+
+	smbd_smb2_first_negprot(smbd_server_conn, smb2_inbuf, len);
+	return;
+}
+
 NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 {
 	const uint8_t *inbody;
