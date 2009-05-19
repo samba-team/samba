@@ -6450,9 +6450,9 @@ static bool torture_rpc_samr_pwdlastset(struct torture_context *torture,
 	return ret;
 }
 
-struct torture_suite *torture_rpc_samr_passwords_pwdlastset(struct torture_context *tctx)
+struct torture_suite *torture_rpc_samr_passwords_pwdlastset(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(tctx, "SAMR-PASSWORDS-PWDLASTSET");
+	struct torture_suite *suite = torture_suite_create(nmem_ctx, "SAMR-PASSWORDS-PWDLASTSET");
 	struct torture_rpc_tcase *tcase;
 
 	tcase = torture_suite_add_machine_rpc_iface_tcase(suite, "samr",
