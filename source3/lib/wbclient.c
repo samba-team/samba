@@ -621,8 +621,8 @@ static void wb_trans_done(struct tevent_req *subreq)
 
 	ret = wb_simple_trans_recv(subreq, state, &state->wb_resp, &err);
 	TALLOC_FREE(subreq);
-
-	if (wb_trans_retry(req, state, map_wbc_err_from_errno(err))) {
+	if ((ret == -1)
+	    && wb_trans_retry(req, state, map_wbc_err_from_errno(err))) {
 		return;
 	}
 
