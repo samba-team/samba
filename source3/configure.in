@@ -1804,6 +1804,7 @@ if test x"$BLDSHARED" != x"true"; then
 	SHLD="shared-libraries-disabled"
 	PICFLAG="${PIE_CFLAGS}"
 	SHLIBEXT="shared_libraries_disabled"
+	merged_build_possible=no
 fi
 
 AC_MSG_CHECKING([used PICFLAG])
