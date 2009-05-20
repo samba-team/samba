@@ -149,27 +149,31 @@ static void session_request_handler(struct smb2_request *req)
 	struct smb2_session_state *state = talloc_get_type(c->private_data, 
 							   struct smb2_session_state);
 	struct smb2_session *session = req->session;
+	NTSTATUS session_key_err;
+	DATA_BLOB session_key;
+	NTSTATUS peer_status;
 
 	c->status = smb2_session_setup_recv(req, c, &state->io);
-	if (NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED) ||
-	    (NT_STATUS_IS_OK(c->status) && 
+	peer_status = c->status;
+
+	if (NT_STATUS_EQUAL(peer_status, NT_STATUS_MORE_PROCESSING_REQUIRED) ||
+	    (NT_STATUS_IS_OK(peer_status) &&
 	     NT_STATUS_EQUAL(state->gensec_status, NT_STATUS_MORE_PROCESSING_REQUIRED))) {
-		NTSTATUS session_key_err;
-		DATA_BLOB session_key;
 		c->status = gensec_update(session->gensec, c, 
 					  state->io.out.secblob,
 					  &state->io.in.secblob);
 		state->gensec_status = c->status;
 
-		session_key_err = gensec_session_key(session->gensec, &session_key);
-		if (NT_STATUS_IS_OK(session_key_err)) {
-			session->session_key = session_key;
-		}		
+		session->uid = state->io.out.uid;
 	}
 
-	session->uid = state->io.out.uid;
+	if (!NT_STATUS_IS_OK(c->status) &&
+	    !NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		composite_error(c, c->status);
+		return;
+	}
 
-	if (NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+	if (NT_STATUS_EQUAL(peer_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		state->req = smb2_session_setup_send(session, &state->io);
 		if (state->req == NULL) {
 			composite_error(c, NT_STATUS_NO_MEMORY);
@@ -181,9 +185,9 @@ static void session_request_handler(struct smb2_request *req)
 		return;
 	}
 
-	if (!NT_STATUS_IS_OK(c->status)) {
-		composite_error(c, c->status);
-		return;
+	session_key_err = gensec_session_key(session->gensec, &session_key);
+	if (NT_STATUS_IS_OK(session_key_err)) {
+		session->session_key = session_key;
 	}
 
 	if (session->transport->signing_required) {
