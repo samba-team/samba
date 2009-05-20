@@ -25,7 +25,6 @@
 #include "system/filesys.h"
 
 struct ctdb_log_state {
-	char *logfile;
 	int fd, pfd;
 	char buf[1024];
 	uint16_t buf_used;
@@ -104,6 +103,10 @@ static void ctdb_logfile_log(const char *format, va_list ap)
 int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile, bool use_syslog)
 {
 	ctdb->log = talloc_zero(ctdb, struct ctdb_log_state);
+	if (ctdb->log == NULL) {
+		printf("talloc_zero failed\n");
+		abort();
+	}
 
 	log_state = ctdb->log;
 
@@ -117,11 +120,10 @@ int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile, bool use_sy
 		dup2(1, 2);
 	} else {
 		do_debug_v = ctdb_logfile_log;
-		ctdb->log->logfile = talloc_strdup(ctdb, logfile);
 
 		ctdb->log->fd = open(logfile, O_WRONLY|O_APPEND|O_CREAT, 0666);
 		if (ctdb->log->fd == -1) {
-			printf("Failed to open logfile %s\n", ctdb->logfile);
+			printf("Failed to open logfile %s\n", logfile);
 			abort();
 		}
 	}
