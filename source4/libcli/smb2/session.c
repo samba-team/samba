@@ -207,6 +207,7 @@ struct composite_context *smb2_session_setup_spnego_send(struct smb2_session *se
 {
 	struct composite_context *c;
 	struct smb2_session_state *state;
+	const char *chosen_oid;
 
 	c = composite_create(session, session->transport->socket->event.ctx);
 	if (c == NULL) return NULL;
@@ -235,7 +236,13 @@ struct composite_context *smb2_session_setup_spnego_send(struct smb2_session *se
 	c->status = gensec_set_target_service(session->gensec, "cifs");
 	if (!composite_is_ok(c)) return c;
 
-	c->status = gensec_start_mech_by_oid(session->gensec, GENSEC_OID_SPNEGO);
+	if (session->transport->negotiate.secblob.length > 0) {
+		chosen_oid = GENSEC_OID_SPNEGO;
+	} else {
+		chosen_oid = GENSEC_OID_NTLMSSP;
+	}
+
+	c->status = gensec_start_mech_by_oid(session->gensec, chosen_oid);
 	if (!composite_is_ok(c)) return c;
 
 	c->status = gensec_update(session->gensec, c, 
