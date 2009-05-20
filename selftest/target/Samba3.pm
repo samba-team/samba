@@ -459,8 +459,10 @@ sub provision($$$$$$)
 	time server = yes
 
 	add user script = $nss_wrapper_pl --path $nss_wrapper_passwd --type passwd --action add --name %u
+	add group script = $nss_wrapper_pl --path $nss_wrapper_group --type group --action add --name %g
 	add machine script = $nss_wrapper_pl --path $nss_wrapper_passwd --type passwd --action add --name %u
 	delete user script = $nss_wrapper_pl --path $nss_wrapper_passwd --type passwd --action delete --name %u
+	delete group script = $nss_wrapper_pl --path $nss_wrapper_group --type group --action delete --name %g
 
 	kernel oplocks = no
 	kernel change notify = no
