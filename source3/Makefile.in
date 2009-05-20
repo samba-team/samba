@@ -3076,7 +3076,7 @@ etags::
 	find $(srcdir)/.. -name "*.[ch]" | xargs -n 100 etags --append $(ETAGS_OPTIONS)
 
 ctags::
-	ctags $(CTAGS_OPTIONS) `find $(srcdir)/.. -name "*.[ch]" | grep -v include/proto\.h`
+	ctags $(CTAGS_OPTIONS) `find $(srcdir)/.. -name "*.[ch]" | grep -v proto\.h`
 
 realclean:: clean
 	-rm -f config.log bin/.dummy script/findsmb script/gen-8bit-gap.sh
