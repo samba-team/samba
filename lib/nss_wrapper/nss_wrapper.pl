@@ -41,9 +41,8 @@ sub usage($;$)
 
 	--path <path>		Path of the 'passwd' or 'group' file.
 
-	--type <type>		Only 'passwd' is supported yet,
-				but 'group' and maybe 'member' will be added
-				in future.
+	--type <type>		Only 'passwd' and 'group' are supported yet,
+				maybe 'member' will be added in future.
 
 	--action <action>	'add' or 'delete'.
 
@@ -125,6 +124,30 @@ sub passwd_load($)
 	return $passwd;
 }
 
+sub group_add_entry($$);
+
+sub group_load($)
+{
+	my ($path) = @_;
+	my @lines;
+	my $group = undef;
+
+	open(GROUP, "<$path") or die("Unable to open '$path' for read");
+	@lines = <GROUP>;
+	close(GROUP);
+
+	$group->{array} = ();
+	$group->{name} = {};
+	$group->{gid} = {};
+	$group->{path} = $path;
+
+	foreach my $line (@lines) {
+		group_add_entry($group, $line);
+	}
+
+	return $group;
+}
+
 sub passwd_lookup_name($$)
 {
 	my ($passwd, $name) = @_;
@@ -134,6 +157,15 @@ sub passwd_lookup_name($$)
 	return $passwd->{name}{$name};
 }
 
+sub group_lookup_name($$)
+{
+	my ($group, $name) = @_;
+
+	return undef unless defined($group->{name}{$name});
+
+	return $group->{name}{$name};
+}
+
 sub passwd_lookup_uid($$)
 {
 	my ($passwd, $uid) = @_;
@@ -141,6 +173,15 @@ sub passwd_lookup_uid($$)
 	return undef unless defined($passwd->{uid}{$uid});
 
 	return $passwd->{uid}{$uid};
+}
+
+sub group_lookup_gid($$)
+{
+	my ($group, $gid) = @_;
+
+	return undef unless defined($group->{gid}{$gid});
+
+	return $group->{gid}{$gid};
 }
 
 sub passwd_get_free_uid($)
@@ -155,6 +196,18 @@ sub passwd_get_free_uid($)
 	return $uid;
 }
 
+sub group_get_free_gid($)
+{
+	my ($group) = @_;
+	my $gid = 1000;
+
+	while (group_lookup_gid($group, $gid)) {
+		$gid++;
+	}
+
+	return $gid;
+}
+
 sub passwd_add_entry($$)
 {
 	my ($passwd, $str) = @_;
@@ -165,6 +218,18 @@ sub passwd_add_entry($$)
 	push(@{$passwd->{array}}, \@e);
 	$passwd->{name}{$e[0]} = \@e;
 	$passwd->{uid}{$e[2]} = \@e;
+}
+
+sub group_add_entry($$)
+{
+	my ($group, $str) = @_;
+
+	chomp $str;
+	my @e = split(':', $str);
+
+	push(@{$group->{array}}, \@e);
+	$group->{name}{$e[0]} = \@e;
+	$group->{gid}{$e[2]} = \@e;
 }
 
 sub passwd_remove_entry($$)
@@ -198,6 +263,29 @@ sub passwd_save($)
 	open(PWD, ">$tmppath") or die("Unable to open '$tmppath' for write");
 	print PWD join("\n", @lines)."\n";
 	close(PWD);
+	rename($tmppath, $path) or die("Unable to rename $tmppath => $path");
+}
+
+sub group_save($)
+{
+	my ($group) = @_;
+	my @lines = ();
+	my $path = $group->{path};
+	my $tmppath = $path.$$;
+
+	foreach my $eref (@{$group->{array}}) {
+		next unless defined($eref);
+
+		my $line = join(':', @{$eref});
+		if (scalar(@{$eref}) == 3) {
+			$line .= ":";
+		}
+		push(@lines, $line);
+	}
+
+	open(GROUP, ">$tmppath") or die("Unable to open '$tmppath' for write");
+	print GROUP join("\n", @lines)."\n";
+	close(GROUP);
 	rename($tmppath, $path) or die("Unable to rename $tmppath => $path");
 }
 
@@ -248,7 +336,20 @@ sub group_add($$)
 
 	#print "group_add: '$name' in '$path'\n";
 
-	die("group_add: not implemented yet!");
+	my $group = group_load($path);
+
+	my $e = group_lookup_name($group, $name);
+	die("group[$name] already exists in '$path'") if defined($e);
+
+	my $gid = group_get_free_gid($group);
+
+	my $gwent = $name.":x:".$gid.":".""; #no members yet
+
+	group_add_entry($group, $gwent);
+
+	group_save($group);
+
+	#printf("%d\n", $gid);
 
 	return 0;
 }
