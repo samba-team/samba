@@ -145,9 +145,6 @@ int ctdb_set_nlist(struct ctdb_context *ctdb, const char *nlist)
 	ctdb->nodes     = NULL;
 	ctdb->num_nodes = 0;
 
-	talloc_free(ctdb->node_list_file);
-	ctdb->node_list_file = talloc_strdup(ctdb, nlist);
-
 	lines = file_lines_load(nlist, &nlines, ctdb);
 	if (lines == NULL) {
 		ctdb_set_error(ctdb, "Failed to load nlist '%s'\n", nlist);
