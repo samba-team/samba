@@ -5886,7 +5886,7 @@ static bool run_local_wbclient(int dummy)
 
 	BlockSignals(True, SIGPIPE);
 
-	ev = event_context_init(talloc_tos());
+	ev = tevent_context_init_byname(talloc_tos(), "epoll");
 	if (ev == NULL) {
 		goto fail;
 	}
