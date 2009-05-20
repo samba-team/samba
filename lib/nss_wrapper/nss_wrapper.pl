@@ -246,6 +246,20 @@ sub passwd_remove_entry($$)
 	delete $passwd->{uid}{${$eref}[2]};
 }
 
+sub group_remove_entry($$)
+{
+	my ($group, $eref) = @_;
+
+	for (my $i = 0; defined($group->{array}[$i]); $i++) {
+		if ($eref == $group->{array}[$i]) {
+			$group->{array}[$i] = undef;
+		}
+	}
+
+	delete $group->{name}{${$eref}[0]};
+	delete $group->{gid}{${$eref}[2]};
+}
+
 sub passwd_save($)
 {
 	my ($passwd) = @_;
@@ -360,7 +374,14 @@ sub group_delete($$)
 
 	#print "group_delete: '$name' in '$path'\n";
 
-	die("group_delete: not implemented yet!");
+	my $group = group_load($path);
+
+	my $e = group_lookup_name($group, $name);
+	die("group[$name] does not exists in '$path'") unless defined($e);
+
+	group_remove_entry($group, $e);
+
+	group_save($group);
 
 	return 0;
 }
