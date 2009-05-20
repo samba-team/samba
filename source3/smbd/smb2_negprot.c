@@ -133,6 +133,9 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	security_buffer = data_blob_const(negprot_spnego_blob.data + 16,
 					  negprot_spnego_blob.length - 16);
 
+	/* for now we want raw NTLMSSP */
+	security_buffer = data_blob_const(NULL, 0);
+
 	outbody = data_blob_talloc(req->out.vector, NULL, 0x40);
 	if (outbody.data == NULL) {
 		return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
