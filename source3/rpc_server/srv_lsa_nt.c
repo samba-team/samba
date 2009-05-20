@@ -37,12 +37,22 @@
 
 extern PRIVS privs[];
 
+enum lsa_handle_type { LSA_HANDLE_POLICY_TYPE = 1, LSA_HANDLE_ACCOUNT_TYPE };
+
 struct lsa_info {
 	DOM_SID sid;
 	uint32 access;
+	enum lsa_handle_type type;
 };
 
-const struct generic_mapping lsa_generic_mapping = {
+const struct generic_mapping lsa_account_mapping = {
+	LSA_ACCOUNT_READ,
+	LSA_ACCOUNT_WRITE,
+	LSA_ACCOUNT_EXECUTE,
+	LSA_ACCOUNT_ALL_ACCESS
+};
+
+const struct generic_mapping lsa_policy_mapping = {
 	LSA_POLICY_READ,
 	LSA_POLICY_WRITE,
 	LSA_POLICY_EXECUTE,
@@ -277,27 +287,42 @@ static NTSTATUS lookup_lsa_sids(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS lsa_get_generic_sd(TALLOC_CTX *mem_ctx, SEC_DESC **sd, size_t *sd_size)
+static NTSTATUS make_lsa_object_sd(TALLOC_CTX *mem_ctx, SEC_DESC **sd, size_t *sd_size,
+					const struct generic_mapping *map,
+					DOM_SID *sid, uint32_t sid_access)
 {
-	DOM_SID local_adm_sid;
 	DOM_SID adm_sid;
-
-	SEC_ACE ace[3];
+	SEC_ACE ace[5];
+	size_t i = 0;
 
 	SEC_ACL *psa = NULL;
 
-	init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED,
-			LSA_POLICY_READ|LSA_POLICY_EXECUTE, 0);
+	/* READ|EXECUTE access for Everyone */
 
+	init_sec_ace(&ace[i++], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED,
+			map->generic_execute | map->generic_read, 0);
+
+	/* Add Full Access 'BUILTIN\Administrators' and 'BUILTIN\Account Operators */
+
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators,
+			SEC_ACE_TYPE_ACCESS_ALLOWED, map->generic_all, 0);
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Account_Operators,
+			SEC_ACE_TYPE_ACCESS_ALLOWED, map->generic_all, 0);
+
+	/* Add Full Access for Domain Admins */
 	sid_copy(&adm_sid, get_global_sam_sid());
 	sid_append_rid(&adm_sid, DOMAIN_GROUP_RID_ADMINS);
-	init_sec_ace(&ace[1], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, LSA_POLICY_ALL_ACCESS, 0);
+	init_sec_ace(&ace[i++], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
+			map->generic_all, 0);
 
-	sid_copy(&local_adm_sid, &global_sid_Builtin);
-	sid_append_rid(&local_adm_sid, BUILTIN_ALIAS_RID_ADMINS);
-	init_sec_ace(&ace[2], &local_adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, LSA_POLICY_ALL_ACCESS, 0);
+	/* If we have a sid, give it some special access */
 
-	if((psa = make_sec_acl(mem_ctx, NT4_ACL_REVISION, 3, ace)) == NULL)
+	if (sid) {
+		init_sec_ace(&ace[i++], sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
+			sid_access, 0);
+	}
+
+	if((psa = make_sec_acl(mem_ctx, NT4_ACL_REVISION, i, ace)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
 	if((*sd = make_sec_desc(mem_ctx, SECURITY_DESCRIPTOR_REVISION_1,
@@ -370,10 +395,14 @@ NTSTATUS _lsa_OpenPolicy2(pipes_struct *p,
 	map_max_allowed_access(p->server_info->ptok, &des_access);
 
 	/* map the generic bits to the lsa policy ones */
-	se_map_generic(&des_access, &lsa_generic_mapping);
+	se_map_generic(&des_access, &lsa_policy_mapping);
 
 	/* get the generic lsa policy SD until we store it */
-	lsa_get_generic_sd(p->mem_ctx, &psd, &sd_size);
+	status = make_lsa_object_sd(p->mem_ctx, &psd, &sd_size, &lsa_policy_mapping,
+			NULL, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	status = access_check_object(psd, p->server_info->ptok,
 		NULL, 0, des_access,
@@ -391,6 +420,7 @@ NTSTATUS _lsa_OpenPolicy2(pipes_struct *p,
 
 	sid_copy(&info->sid,get_global_sam_sid());
 	info->access = acc_granted;
+	info->type = LSA_HANDLE_POLICY_TYPE;
 
 	/* set up the LSA QUERY INFO response */
 	if (!create_policy_hnd(p, r->out.handle, info))
@@ -445,6 +475,10 @@ NTSTATUS _lsa_EnumTrustDom(pipes_struct *p,
 
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
+
+	if (info->type != LSA_HANDLE_POLICY_TYPE) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
 
 	/* check if the user has enough rights */
 	if (!(info->access & LSA_POLICY_VIEW_LOCAL_INFORMATION))
@@ -515,6 +549,10 @@ NTSTATUS _lsa_QueryInfoPolicy(pipes_struct *p,
 
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&handle))
 		return NT_STATUS_INVALID_HANDLE;
+
+	if (handle->type != LSA_HANDLE_POLICY_TYPE) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
 
 	info = TALLOC_ZERO_P(p->mem_ctx, union lsa_PolicyInformation);
 	if (!info) {
@@ -771,6 +809,10 @@ NTSTATUS _lsa_LookupSids(pipes_struct *p,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
+	if (handle->type != LSA_HANDLE_POLICY_TYPE) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
 	/* check if the user has enough rights */
 	if (!(handle->access & LSA_POLICY_LOOKUP_NAMES)) {
 		return NT_STATUS_ACCESS_DENIED;
@@ -854,6 +896,10 @@ NTSTATUS _lsa_LookupSids2(pipes_struct *p,
 
 	if (check_policy) {
 		if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&handle)) {
+			return NT_STATUS_INVALID_HANDLE;
+		}
+
+		if (handle->type != LSA_HANDLE_POLICY_TYPE) {
 			return NT_STATUS_INVALID_HANDLE;
 		}
 
@@ -987,6 +1033,10 @@ NTSTATUS _lsa_LookupNames(pipes_struct *p,
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&handle)) {
 		status = NT_STATUS_INVALID_HANDLE;
 		goto done;
+	}
+
+	if (handle->type != LSA_HANDLE_POLICY_TYPE) {
+		return NT_STATUS_INVALID_HANDLE;
 	}
 
 	/* check if the user has enough rights */
@@ -1129,6 +1179,10 @@ NTSTATUS _lsa_LookupNames3(pipes_struct *p,
 			goto done;
 		}
 
+		if (handle->type != LSA_HANDLE_POLICY_TYPE) {
+			return NT_STATUS_INVALID_HANDLE;
+		}
+
 		/* check if the user has enough rights */
 		if (!(handle->access & LSA_POLICY_LOOKUP_NAMES)) {
 			status = NT_STATUS_ACCESS_DENIED;
@@ -1261,12 +1315,7 @@ NTSTATUS _lsa_DeleteObject(pipes_struct *p,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	/* check to see if the pipe_user is root or a Domain Admin since
-	   account_pol.tdb was already opened as root, this is all we have */
-
-	if (p->server_info->utok.uid != sec_initial_uid() &&
-	    !nt_token_check_domain_rid(p->server_info->ptok,
-				       DOMAIN_GROUP_RID_ADMINS)) {
+	if (!(info->access & STD_RIGHT_DELETE_ACCESS)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -1303,6 +1352,10 @@ NTSTATUS _lsa_EnumPrivs(pipes_struct *p,
 
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&handle))
 		return NT_STATUS_INVALID_HANDLE;
+
+	if (handle->type != LSA_HANDLE_POLICY_TYPE) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
 
 	/* check if the user has enough rights
 	   I don't know if it's the right one. not documented.  */
@@ -1360,6 +1413,10 @@ NTSTATUS _lsa_LookupPrivDisplayName(pipes_struct *p,
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&handle))
 		return NT_STATUS_INVALID_HANDLE;
 
+	if (handle->type != LSA_HANDLE_POLICY_TYPE) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
 	/* check if the user has enough rights */
 
 	/*
@@ -1406,6 +1463,10 @@ NTSTATUS _lsa_EnumAccounts(pipes_struct *p,
 
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&handle))
 		return NT_STATUS_INVALID_HANDLE;
+
+	if (handle->type != LSA_HANDLE_POLICY_TYPE) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
 
 	if (!(handle->access & LSA_POLICY_VIEW_LOCAL_INFORMATION))
 		return NT_STATUS_ACCESS_DENIED;
@@ -1523,21 +1584,17 @@ NTSTATUS _lsa_CreateAccount(pipes_struct *p,
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&handle))
 		return NT_STATUS_INVALID_HANDLE;
 
+	if (handle->type != LSA_HANDLE_POLICY_TYPE) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
 	/* check if the user has enough rights */
 
 	/*
 	 * I don't know if it's the right one. not documented.
 	 * but guessed with rpcclient.
 	 */
-	if (!(handle->access & LSA_POLICY_GET_PRIVATE_INFORMATION))
-		return NT_STATUS_ACCESS_DENIED;
-
-	/* check to see if the pipe_user is a Domain Admin since
-	   account_pol.tdb was already opened as root, this is all we have */
-
-	if ( p->server_info->utok.uid != sec_initial_uid()
-		&& !nt_token_check_domain_rid( p->server_info->ptok,
-					       DOMAIN_GROUP_RID_ADMINS ) )
+	if (!(handle->access & LSA_POLICY_CREATE_ACCOUNT))
 		return NT_STATUS_ACCESS_DENIED;
 
 	if ( is_privileged_sid( r->in.sid ) )
@@ -1552,6 +1609,7 @@ NTSTATUS _lsa_CreateAccount(pipes_struct *p,
 
 	info->sid = *r->in.sid;
 	info->access = r->in.access_mask;
+	info->type = LSA_HANDLE_ACCOUNT_TYPE;
 
 	/* get a (unique) handle.  open a policy on it. */
 	if (!create_policy_hnd(p, r->out.acct_handle, info))
@@ -1569,19 +1627,44 @@ NTSTATUS _lsa_OpenAccount(pipes_struct *p,
 {
 	struct lsa_info *handle;
 	struct lsa_info *info;
+	SEC_DESC *psd = NULL;
+	size_t sd_size;
+	uint32_t des_access = r->in.access_mask;
+	uint32_t acc_granted;
+	NTSTATUS status;
 
 	/* find the connection policy handle. */
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&handle))
 		return NT_STATUS_INVALID_HANDLE;
 
-	/* check if the user has enough rights */
+	if (handle->type != LSA_HANDLE_POLICY_TYPE) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
 
-	/*
-	 * I don't know if it's the right one. not documented.
-	 * but guessed with rpcclient.
-	 */
-	if (!(handle->access & LSA_POLICY_GET_PRIVATE_INFORMATION))
-		return NT_STATUS_ACCESS_DENIED;
+	/* des_access is for the account here, not the policy
+ 	 * handle - so don't check against policy handle. */
+
+	/* Work out max allowed. */
+	map_max_allowed_access(p->server_info->ptok, &des_access);
+
+	/* map the generic bits to the lsa account ones */
+	se_map_generic(&des_access, &lsa_account_mapping);
+
+	/* get the generic lsa account SD until we store it */
+	status = make_lsa_object_sd(p->mem_ctx, &psd, &sd_size,
+				&lsa_account_mapping,
+				r->in.sid, LSA_ACCOUNT_ALL_ACCESS);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = access_check_object(psd, p->server_info->ptok,
+		NULL, 0, des_access,
+		&acc_granted, "_lsa_OpenAccount" );
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	/* TODO: Fis the parsing routine before reenabling this check! */
 	#if 0
@@ -1595,7 +1678,8 @@ NTSTATUS _lsa_OpenAccount(pipes_struct *p,
 	}
 
 	info->sid = *r->in.sid;
-	info->access = r->in.access_mask;
+	info->access = acc_granted;
+	info->type = LSA_HANDLE_ACCOUNT_TYPE;
 
 	/* get a (unique) handle.  open a policy on it. */
 	if (!create_policy_hnd(p, r->out.acct_handle, info))
@@ -1624,7 +1708,11 @@ NTSTATUS _lsa_EnumPrivsAccount(pipes_struct *p,
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!(info->access & LSA_POLICY_VIEW_LOCAL_INFORMATION))
+	if (info->type != LSA_HANDLE_ACCOUNT_TYPE) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (!(info->access & LSA_ACCOUNT_VIEW))
 		return NT_STATUS_ACCESS_DENIED;
 
 	if ( !get_privileges_for_sids( &mask, &info->sid, 1 ) )
@@ -1690,7 +1778,11 @@ NTSTATUS _lsa_GetSystemAccessAccount(pipes_struct *p,
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!(info->access & LSA_POLICY_VIEW_LOCAL_INFORMATION))
+	if (info->type != LSA_HANDLE_ACCOUNT_TYPE) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (!(info->access & LSA_ACCOUNT_VIEW))
 		return NT_STATUS_ACCESS_DENIED;
 
 	privset = talloc_zero(p->mem_ctx, struct lsa_PrivilegeSet);
@@ -1742,13 +1834,13 @@ NTSTATUS _lsa_SetSystemAccessAccount(pipes_struct *p,
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	/* check to see if the pipe_user is a Domain Admin since
-	   account_pol.tdb was already opened as root, this is all we have */
+	if (info->type != LSA_HANDLE_ACCOUNT_TYPE) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
 
-	if ( p->server_info->utok.uid != sec_initial_uid()
-		&& !nt_token_check_domain_rid( p->server_info->ptok,
-					       DOMAIN_GROUP_RID_ADMINS ) )
+	if (!(info->access & LSA_ACCOUNT_ADJUST_SYSTEM_ACCESS)) {
 		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	if (!pdb_getgrsid(&map, info->sid))
 		return NT_STATUS_NO_SUCH_GROUP;
@@ -1772,13 +1864,11 @@ NTSTATUS _lsa_AddPrivilegesToAccount(pipes_struct *p,
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	/* check to see if the pipe_user is root or a Domain Admin since
-	   account_pol.tdb was already opened as root, this is all we have */
+	if (info->type != LSA_HANDLE_ACCOUNT_TYPE) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
 
-	if ( p->server_info->utok.uid != sec_initial_uid()
-		&& !nt_token_check_domain_rid( p->server_info->ptok,
-					       DOMAIN_GROUP_RID_ADMINS ) )
-	{
+	if (!(info->access & LSA_ACCOUNT_ADJUST_PRIVILEGES)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -1813,13 +1903,11 @@ NTSTATUS _lsa_RemovePrivilegesFromAccount(pipes_struct *p,
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	/* check to see if the pipe_user is root or a Domain Admin since
-	   account_pol.tdb was already opened as root, this is all we have */
+	if (info->type != LSA_HANDLE_ACCOUNT_TYPE) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
 
-	if ( p->server_info->utok.uid != sec_initial_uid()
-		&& !nt_token_check_domain_rid( p->server_info->ptok,
-					       DOMAIN_GROUP_RID_ADMINS ) )
-	{
+	if (!(info->access & LSA_ACCOUNT_ADJUST_PRIVILEGES)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -1855,29 +1943,29 @@ NTSTATUS _lsa_QuerySecurity(pipes_struct *p,
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&handle))
 		return NT_STATUS_INVALID_HANDLE;
 
-	/* check if the user has enough rights */
-	if (!(handle->access & LSA_POLICY_VIEW_LOCAL_INFORMATION))
-		return NT_STATUS_ACCESS_DENIED;
+	if (handle->type == LSA_HANDLE_POLICY_TYPE) {
+		status = make_lsa_object_sd(p->mem_ctx, &psd, &sd_size,
+				&lsa_policy_mapping, NULL, 0);
+	} else if (handle->type == LSA_HANDLE_ACCOUNT_TYPE) {
+		status = make_lsa_object_sd(p->mem_ctx, &psd, &sd_size,
+				&lsa_account_mapping,
+				&handle->sid, LSA_ACCOUNT_ALL_ACCESS);
+	} else {
+		status = NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	switch (r->in.sec_info) {
 	case 1:
 		/* SD contains only the owner */
-
-		status=lsa_get_generic_sd(p->mem_ctx, &psd, &sd_size);
-		if(!NT_STATUS_IS_OK(status))
-			return NT_STATUS_NO_MEMORY;
-
-
 		if((*r->out.sdbuf = make_sec_desc_buf(p->mem_ctx, sd_size, psd)) == NULL)
 			return NT_STATUS_NO_MEMORY;
 		break;
 	case 4:
 		/* SD contains only the ACL */
-
-		status=lsa_get_generic_sd(p->mem_ctx, &psd, &sd_size);
-		if(!NT_STATUS_IS_OK(status))
-			return NT_STATUS_NO_MEMORY;
-
 		if((*r->out.sdbuf = make_sec_desc_buf(p->mem_ctx, sd_size, psd)) == NULL)
 			return NT_STATUS_NO_MEMORY;
 		break;
@@ -1965,21 +2053,42 @@ NTSTATUS _lsa_AddAccountRights(pipes_struct *p,
 {
 	struct lsa_info *info = NULL;
 	int i = 0;
+	uint32_t acc_granted = 0;
+	SEC_DESC *psd = NULL;
+	size_t sd_size;
 	DOM_SID sid;
+	NTSTATUS status;
 
 	/* find the connection policy handle. */
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	/* check to see if the pipe_user is a Domain Admin since
-	   account_pol.tdb was already opened as root, this is all we have */
-
-	if ( p->server_info->utok.uid != sec_initial_uid()
-		&& !nt_token_check_domain_rid( p->server_info->ptok,
-					       DOMAIN_GROUP_RID_ADMINS ) )
-	{
-		return NT_STATUS_ACCESS_DENIED;
+	if (info->type != LSA_HANDLE_POLICY_TYPE) {
+		return NT_STATUS_INVALID_HANDLE;
 	}
+
+        /* get the generic lsa account SD for this SID until we store it */
+        status = make_lsa_object_sd(p->mem_ctx, &psd, &sd_size,
+                                &lsa_account_mapping,
+                                r->in.sid, LSA_ACCOUNT_ALL_ACCESS);
+        if (!NT_STATUS_IS_OK(status)) {
+                return status;
+        }
+
+	/*
+	 * From the MS DOCs. If the sid doesn't exist, ask for LSA_POLICY_CREATE_ACCOUNT
+ 	 * on the policy handle. If it does, ask for
+ 	 * LSA_ACCOUNT_ADJUST_PRIVILEGES|LSA_ACCOUNT_ADJUST_SYSTEM_ACCESS|LSA_ACCOUNT_VIEW,
+ 	 * on the account sid. We don't check here so just use the latter. JRA.
+ 	 */
+
+        status = access_check_object(psd, p->server_info->ptok,
+                NULL, 0, LSA_ACCOUNT_ADJUST_PRIVILEGES|LSA_ACCOUNT_ADJUST_SYSTEM_ACCESS|LSA_ACCOUNT_VIEW,
+                &acc_granted, "_lsa_AddAccountRights" );
+
+        if (!NT_STATUS_IS_OK(status)) {
+                return status;
+        }
 
 	/* according to an NT4 PDC, you can add privileges to SIDs even without
 	   call_lsa_create_account() first.  And you can use any arbitrary SID. */
@@ -2014,22 +2123,43 @@ NTSTATUS _lsa_RemoveAccountRights(pipes_struct *p,
 {
 	struct lsa_info *info = NULL;
 	int i = 0;
+	SEC_DESC *psd = NULL;
+	size_t sd_size;
 	DOM_SID sid;
 	const char *privname = NULL;
+	uint32_t acc_granted = 0;
+	NTSTATUS status;
 
 	/* find the connection policy handle. */
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	/* check to see if the pipe_user is a Domain Admin since
-	   account_pol.tdb was already opened as root, this is all we have */
-
-	if ( p->server_info->utok.uid != sec_initial_uid()
-		&& !nt_token_check_domain_rid( p->server_info->ptok,
-					       DOMAIN_GROUP_RID_ADMINS ) )
-	{
-		return NT_STATUS_ACCESS_DENIED;
+	if (info->type != LSA_HANDLE_POLICY_TYPE) {
+		return NT_STATUS_INVALID_HANDLE;
 	}
+
+        /* get the generic lsa account SD for this SID until we store it */
+        status = make_lsa_object_sd(p->mem_ctx, &psd, &sd_size,
+                                &lsa_account_mapping,
+                                r->in.sid, LSA_ACCOUNT_ALL_ACCESS);
+        if (!NT_STATUS_IS_OK(status)) {
+                return status;
+        }
+
+	/*
+	 * From the MS DOCs. We need
+	 * LSA_ACCOUNT_ADJUST_PRIVILEGES|LSA_ACCOUNT_ADJUST_SYSTEM_ACCESS|LSA_ACCOUNT_VIEW
+	 * and DELETE on the account sid.
+ 	 */
+
+        status = access_check_object(psd, p->server_info->ptok,
+                NULL, 0, LSA_ACCOUNT_ADJUST_PRIVILEGES|LSA_ACCOUNT_ADJUST_SYSTEM_ACCESS|
+			LSA_ACCOUNT_VIEW|STD_RIGHT_DELETE_ACCESS,
+                &acc_granted, "_lsa_AddAccountRights" );
+
+        if (!NT_STATUS_IS_OK(status)) {
+                return status;
+        }
 
 	sid_copy( &sid, r->in.sid );
 
@@ -2118,8 +2248,13 @@ NTSTATUS _lsa_EnumAccountRights(pipes_struct *p,
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!(info->access & LSA_POLICY_VIEW_LOCAL_INFORMATION))
+	if (info->type != LSA_HANDLE_POLICY_TYPE) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (!(info->access & LSA_ACCOUNT_VIEW)) {
 		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	/* according to an NT4 PDC, you can add privileges to SIDs even without
 	   call_lsa_create_account() first.  And you can use any arbitrary SID. */
@@ -2163,7 +2298,11 @@ NTSTATUS _lsa_LookupPrivValue(pipes_struct *p,
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!(info->access & LSA_POLICY_VIEW_LOCAL_INFORMATION))
+	if (info->type != LSA_HANDLE_POLICY_TYPE) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (!(info->access & LSA_POLICY_LOOKUP_NAMES))
 		return NT_STATUS_ACCESS_DENIED;
 
 	name = r->in.name->string;
