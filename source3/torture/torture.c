@@ -2084,6 +2084,80 @@ fail:
 }
 
 /*
+ * This demonstrates a problem with our use of GPFS share modes: A file
+ * descriptor sitting in the pending close queue holding a GPFS share mode
+ * blocks opening a file another time. Happens with Word 2007 temp files.
+ * With "posix locking = yes" and "gpfs:sharemodes = yes" enabled, the third
+ * open is denied with NT_STATUS_SHARING_VIOLATION.
+ */
+
+static bool run_locktest8(int dummy)
+{
+	struct cli_state *cli1;
+	const char *fname = "\\lockt8.lck";
+	uint16_t fnum1, fnum2;
+	char buf[200];
+	bool correct = False;
+	NTSTATUS status;
+
+	if (!torture_open_connection(&cli1, 0)) {
+		return False;
+	}
+
+	cli_sockopt(cli1, sockops);
+
+	printf("starting locktest8\n");
+
+	cli_unlink(cli1, fname, aSYSTEM | aHIDDEN);
+
+	status = cli_open(cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_WRITE,
+			  &fnum1);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "cli_open returned %s\n", cli_errstr(cli1));
+		return false;
+	}
+
+	memset(buf, 0, sizeof(buf));
+
+	status = cli_open(cli1, fname, O_RDONLY, DENY_NONE, &fnum2);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "cli_open second time returned %s\n",
+			  cli_errstr(cli1));
+		goto fail;
+	}
+
+	if (!cli_lock(cli1, fnum2, 1, 1, 0, READ_LOCK)) {
+		printf("Unable to apply read lock on range 1:1, error was "
+		       "%s\n", cli_errstr(cli1));
+		goto fail;
+	}
+
+	status = cli_close(cli1, fnum1);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "cli_close(fnum1) %s\n", cli_errstr(cli1));
+		goto fail;
+	}
+
+	status = cli_open(cli1, fname, O_RDWR, DENY_NONE, &fnum1);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "cli_open third time returned %s\n",
+                          cli_errstr(cli1));
+                goto fail;
+        }
+
+	correct = true;
+
+fail:
+	cli_close(cli1, fnum1);
+	cli_close(cli1, fnum2);
+	cli_unlink(cli1, fname, aSYSTEM | aHIDDEN);
+	torture_close_connection(cli1);
+
+	printf("finished locktest8\n");
+	return correct;
+}
+
+/*
 test whether fnums and tids open on one VC are available on another (a major
 security hole)
 */
@@ -6009,6 +6083,7 @@ static struct {
 	{"LOCK5",  run_locktest5,  0},
 	{"LOCK6",  run_locktest6,  0},
 	{"LOCK7",  run_locktest7,  0},
+	{"LOCK8",  run_locktest8,  0},
 	{"UNLINK", run_unlinktest, 0},
 	{"BROWSE", run_browsetest, 0},
 	{"ATTR",   run_attrtest,   0},
