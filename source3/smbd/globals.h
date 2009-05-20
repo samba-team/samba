@@ -214,6 +214,9 @@ NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
 				    NTSTATUS status, DATA_BLOB *info);
 NTSTATUS smbd_smb2_request_error(struct smbd_smb2_request *req,
 				 NTSTATUS status);
+NTSTATUS smbd_smb2_request_done_ex(struct smbd_smb2_request *req,
+				   NTSTATUS status,
+				   DATA_BLOB body, DATA_BLOB *dyn);
 NTSTATUS smbd_smb2_request_done(struct smbd_smb2_request *req,
 				DATA_BLOB body, DATA_BLOB *dyn);
 

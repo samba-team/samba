@@ -436,16 +436,18 @@ NTSTATUS smbd_smb2_request_error(struct smbd_smb2_request *req,
 	return smbd_smb2_request_error_ex(req, status, NULL);
 }
 
-NTSTATUS smbd_smb2_request_done(struct smbd_smb2_request *req,
-				DATA_BLOB body, DATA_BLOB *dyn)
+NTSTATUS smbd_smb2_request_done_ex(struct smbd_smb2_request *req,
+				   NTSTATUS status,
+				   DATA_BLOB body, DATA_BLOB *dyn)
 {
 	uint8_t *outhdr;
 	uint8_t *outdyn;
 	int i = req->current_idx;
 	uint32_t next_command_ofs;
 
-	DEBUG(10,("smbd_smb2_request_done: idx[%d] body[%u] dyn[%s:%u]\n",
-		  i, (unsigned int)body.length,
+	DEBUG(10,("smbd_smb2_request_done_ex: "
+		  "idx[%d] status[%s] body[%u] dyn[%s:%u]\n",
+		  i, nt_errstr(status), (unsigned int)body.length,
 		  dyn ? "yes": "no",
 		  (unsigned int)(dyn ? dyn->length : 0)));
 
@@ -462,7 +464,7 @@ NTSTATUS smbd_smb2_request_done(struct smbd_smb2_request *req,
 	outdyn = outhdr + SMB2_HDR_BODY + 8;
 
 	next_command_ofs = SIVAL(outhdr, SMB2_HDR_NEXT_COMMAND, 0);
-	SIVAL(outhdr, SMB2_HDR_STATUS, NT_STATUS_V(NT_STATUS_OK));
+	SIVAL(outhdr, SMB2_HDR_STATUS, NT_STATUS_V(status));
 
 	req->out.vector[i+1].iov_base = (void *)body.data;
 	req->out.vector[i+1].iov_len = body.length;
@@ -496,6 +498,12 @@ NTSTATUS smbd_smb2_request_done(struct smbd_smb2_request *req,
 	SIVAL(outhdr, SMB2_HDR_NEXT_COMMAND, next_command_ofs);
 
 	return smbd_smb2_request_reply(req);
+}
+
+NTSTATUS smbd_smb2_request_done(struct smbd_smb2_request *req,
+				DATA_BLOB body, DATA_BLOB *dyn)
+{
+	return smbd_smb2_request_done_ex(req, NT_STATUS_OK, body, dyn);
 }
 
 static void smbd_smb2_request_dispatch_compound(struct tevent_req *subreq)
