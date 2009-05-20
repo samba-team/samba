@@ -486,6 +486,7 @@ int ibwtest_getdests(struct ibwtest_ctx *tcx, char op)
 	char	*tmp;
 
 	tmp = talloc_strdup(tcx, optarg);
+	if (tmp == NULL) return -1;
 	/* hack to reuse the above ibw_initattr parser */
 	if (ibwtest_parse_attrs(tcx, tmp, &attrs, &tcx->naddrs, op))
 		return -1;
@@ -567,6 +568,7 @@ int main(int argc, char *argv[])
 			break;
 		case 'o':
 			tcx->opts = talloc_strdup(tcx, optarg);
+			if (tcx->opts) goto cleanup;
 			if (ibwtest_parse_attrs(tcx, tcx->opts, &tcx->attrs,
 				&tcx->nattrs, op))
 				goto cleanup;

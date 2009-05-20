@@ -2336,6 +2336,7 @@ int ctdb_ctrl_get_public_ipsv4(struct ctdb_context *ctdb,
 	len = offsetof(struct ctdb_all_public_ips, ips) +
 		ipsv4->num*sizeof(struct ctdb_public_ip);
 	*ips = talloc_zero_size(mem_ctx, len);
+	CTDB_NO_MEMORY(ctdb, *ips);
 	(*ips)->num = ipsv4->num;
 	for (i=0; i<ipsv4->num; i++) {
 		(*ips)->ips[i].pnn     = ipsv4->ips[i].pnn;
@@ -2708,14 +2709,24 @@ int ctdb_ctrl_get_server_id_list(struct ctdb_context *ctdb,
 */
 struct ctdb_context *ctdb_init(struct event_context *ev)
 {
+    int ret;
 	struct ctdb_context *ctdb;
 
 	ctdb = talloc_zero(ev, struct ctdb_context);
+    if (ctdb == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " talloc_zero failed.\n"));
+        return NULL;
+    }
 	ctdb->ev  = ev;
 	ctdb->idr = idr_init(ctdb);
 	CTDB_NO_MEMORY_NULL(ctdb, ctdb->idr);
 
-	ctdb_set_socketname(ctdb, CTDB_PATH);
+	ret = ctdb_set_socketname(ctdb, CTDB_PATH);
+    if (ret != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_set_socketname failed.\n"));
+        talloc_free(ctdb);
+        return NULL;
+    }
 
 	return ctdb;
 }
@@ -2735,6 +2746,7 @@ void ctdb_set_flags(struct ctdb_context *ctdb, unsigned flags)
 int ctdb_set_socketname(struct ctdb_context *ctdb, const char *socketname)
 {
 	ctdb->daemon.name = talloc_strdup(ctdb, socketname);
+    if (ctdb->daemon.name == NULL) return -1;
 	return 0;
 }
 

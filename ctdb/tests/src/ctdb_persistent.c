@@ -71,6 +71,7 @@ static void check_counters(struct ctdb_context *ctdb, TDB_DATA data)
 {
 	int i;
 	uint32_t *counters, *old_counters;
+    unsigned char *tmp_dptr;
 
 	counters     = (uint32_t *)data.dptr;
 	old_counters = (uint32_t *)old_data.dptr;
@@ -86,7 +87,14 @@ static void check_counters(struct ctdb_context *ctdb, TDB_DATA data)
 
 	if (old_data.dsize != data.dsize) {
 		old_data.dsize = data.dsize;
-		old_data.dptr = talloc_realloc_size(ctdb, old_data.dptr, old_data.dsize);
+		tmp_dptr = talloc_realloc_size(ctdb, old_data.dptr, old_data.dsize);
+		if (tmp_dptr == NULL) {
+			printf("[%4u] ERROR: talloc_realloc_size failed.\n", getpid());
+			success = false;
+			return;
+		} else {
+			old_data.dptr = tmp_dptr;
+		}
 	}
 
 	memcpy(old_data.dptr, data.dptr, data.dsize);

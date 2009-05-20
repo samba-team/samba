@@ -31,6 +31,7 @@
 int ctdb_set_transport(struct ctdb_context *ctdb, const char *transport)
 {
 	ctdb->transport = talloc_strdup(ctdb, transport);
+    if (ctdb->transport == NULL) return -1;
 	return 0;
 }
 
@@ -57,6 +58,7 @@ int ctdb_ip_to_nodeid(struct ctdb_context *ctdb, const char *nodeip)
 int ctdb_set_recovery_lock_file(struct ctdb_context *ctdb, const char *file)
 {
 	ctdb->recovery_lock_file = talloc_strdup(ctdb, file);
+    if (ctdb->recovery_lock_file == NULL) return -1;
 	return 0;
 }
 

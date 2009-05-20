@@ -92,16 +92,29 @@ static void ping_pong(int fd, int num_locks)
 	unsigned char *val;
 	unsigned char incr=0, last_incr=0;
 	unsigned char *p = NULL;
+	int ret;
 
-	ftruncate(fd, num_locks+1);
+	ret = ftruncate(fd, num_locks+1);
+	if (ret == -1) {
+		printf("ftruncate failed: %s\n", strerror(errno));
+		return;
+	}
 
 	if (use_mmap) {
 		p = mmap(NULL, num_locks+1, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+		if (p == MAP_FAILED) {
+			printf("mmap failed: %s\n", strerror(errno));
+			return;
+		}
 	}
 
 	val = (unsigned char *)calloc(num_locks+1, sizeof(unsigned char));
+	if (val == NULL) {
+		printf("calloc failed\n");
+		return;
+	}
 
-	start_timer();	
+	start_timer();
 
 	lock_range(fd, 0, 1);
 	i = 0;

@@ -80,20 +80,29 @@ static void ctdb_logfile_log(const char *format, va_list ap)
 	struct tm *tm;
 	char tbuf[100];
 	char *s2 = NULL;
+	int ret;
 
-	vasprintf(&s, format, ap);
+	ret = vasprintf(&s, format, ap);
+	if (ret == -1) {
+		write(log_state->fd, "vasprintf failed\n", strlen("vasprintf failed\n"));
+		return;
+	}
 
 	t = timeval_current();
 	tm = localtime(&t.tv_sec);
 
 	strftime(tbuf,sizeof(tbuf)-1,"%Y/%m/%d %H:%M:%S", tm);
 
-	asprintf(&s2, "%s.%06u [%5u]: %s", 
+	ret = asprintf(&s2, "%s.%06u [%5u]: %s",
 		 tbuf, (unsigned)t.tv_usec, (unsigned)getpid(), s);
 	free(s);
+	if (ret == -1) {
+		write(log_state->fd, "asprintf failed\n", strlen("asprintf failed\n"));
+		return;
+	}
 	if (s2) {
 		write(log_state->fd, s2, strlen(s2));
-		free(s2);	
+		free(s2);
 	}
 }
 
@@ -102,6 +111,7 @@ static void ctdb_logfile_log(const char *format, va_list ap)
 */
 int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile, bool use_syslog)
 {
+	int ret;
 	ctdb->log = talloc_zero(ctdb, struct ctdb_log_state);
 	if (ctdb->log == NULL) {
 		printf("talloc_zero failed\n");
@@ -117,7 +127,11 @@ int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile, bool use_sy
 		do_debug_v = ctdb_logfile_log;
 		ctdb->log->fd = 1;
 		/* also catch stderr of subcommands to stdout */
-		dup2(1, 2);
+		ret = dup2(1, 2);
+		if (ret == -1) {
+			printf("dup2 failed: %s\n", strerror(errno));
+			abort();
+		}
 	} else {
 		do_debug_v = ctdb_logfile_log;
 
@@ -193,6 +207,7 @@ static void ctdb_log_handler(struct event_context *ev, struct fd_event *fde,
 int ctdb_set_child_logging(struct ctdb_context *ctdb)
 {
 	int p[2];
+	int ret;
 
 	if (ctdb->log->fd == 1) {
 		/* not needed for stdout logging */
@@ -213,11 +228,19 @@ int ctdb_set_child_logging(struct ctdb_context *ctdb)
 	close(1);
 	close(2);
 	if (p[1] != 1) {
-		dup2(p[1], 1);
+		ret = dup2(p[1], 1);
+		if (ret == -1) {
+			printf("dup2 failed: %s\n", strerror(errno));
+			return -1;
+		}
 		close(p[1]);
 	}
 	/* also catch stderr of subcommands to the log */
-	dup2(1, 2);
+	ret = dup2(1, 2);
+	if (ret == -1) {
+		printf("dup2 failed: %s\n", strerror(errno));
+		return -1;
+	}
 
 	return 0;
 }

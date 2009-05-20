@@ -151,6 +151,7 @@ int32_t ctdb_control_event_script_start(struct ctdb_context *ctdb, TDB_DATA inda
 
 	script->next  = monitoring_status->scripts;
 	script->name  = talloc_strdup(script, name);
+	CTDB_NO_MEMORY(ctdb, script->name);
 	script->start = timeval_current();
 	monitoring_status->scripts = script;
 
@@ -298,6 +299,7 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *options)
 	char *script;
 	int count;
 	int is_monitor = 0;
+	char *d_name_dup;
 
 	if (!strcmp(options, "monitor")) {
 		is_monitor = 1;
@@ -409,7 +411,9 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *options)
 		
 		
 		/* store the event script in the tree */
-		trbt_insert32(tree, (num<<16)|count++, talloc_strdup(tree, de->d_name));
+		d_name_dup = talloc_strdup(tree, de->d_name);
+		CTDB_NO_MEMORY(ctdb, d_name_dup);
+		trbt_insert32(tree, (num<<16)|count++, d_name_dup);
 	}
 	closedir(dir);
 

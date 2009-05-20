@@ -82,6 +82,10 @@ struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *mem_ctx,
 	}
 
 	w->name = talloc_strdup(w, name);
+	if (w->name == NULL) {
+		talloc_free(w);
+		return NULL;
+	}
 
 	w->tdb = tdb_open_ex(name, hash_size, tdb_flags, 
 			     open_flags, mode, &log_ctx, NULL);

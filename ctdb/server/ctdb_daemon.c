@@ -690,6 +690,10 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 
 	/* ensure the socket is deleted on exit of the daemon */
 	domain_socket_name = talloc_strdup(talloc_autofree_context(), ctdb->daemon.name);
+	if (domain_socket_name == NULL) {
+		DEBUG(DEBUG_ALERT,(__location__ " talloc_strdup failed.\n"));
+		exit(12);
+	}
 	talloc_set_destructor(domain_socket_name, unlink_destructor);	
 
 	ctdb->ev = event_context_init(NULL);

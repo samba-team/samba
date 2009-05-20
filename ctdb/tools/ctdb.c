@@ -424,6 +424,7 @@ static int control_xpnn(struct ctdb_context *ctdb, int argc, const char **argv)
 		pnn_node = talloc(mem_ctx, struct pnn_node);
 		pnn_node->pnn = pnn++;
 		pnn_node->addr = talloc_strdup(pnn_node, node);
+		CTDB_NO_MEMORY(ctdb, pnn_node->addr);
 		pnn_node->next = pnn_nodes;
 		pnn_nodes = pnn_node;
 	}
@@ -597,6 +598,7 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 		}
 		natgw_node = talloc(ctdb, struct natgw_node);
 		natgw_node->addr = talloc_strdup(natgw_node, node);
+		CTDB_NO_MEMORY(ctdb, natgw_node->addr);
 		natgw_node->next = natgw_nodes;
 		natgw_nodes = natgw_node;
 	}
@@ -2364,7 +2366,8 @@ static int control_backupdb(struct ctdb_context *ctdb, int argc, const char **ar
 	struct db_file_header dbhdr;
 	struct ctdb_db_context *ctdb_db;
 	struct backup_data *bd;
-	int fh;
+	int fh = -1;
+	int status = -1;
 
 	if (argc != 2) {
 		DEBUG(DEBUG_ERR,("Invalid arguments\n"));
@@ -2397,6 +2400,7 @@ static int control_backupdb(struct ctdb_context *ctdb, int argc, const char **ar
 	ctdb_db = ctdb_attach(ctdb, argv[0], dbmap->dbs[i].persistent, 0);
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", argv[0]));
+		talloc_free(tmp_ctx);
 		return -1;
 	}
 
@@ -2449,16 +2453,30 @@ static int control_backupdb(struct ctdb_context *ctdb, int argc, const char **ar
 	dbhdr.size = bd->len;
 	if (strlen(argv[0]) >= MAX_DB_NAME) {
 		DEBUG(DEBUG_ERR,("Too long dbname\n"));
-		talloc_free(tmp_ctx);
-		return -1;
+		goto done;
 	}
 	strncpy(discard_const(dbhdr.name), argv[0], MAX_DB_NAME);
-	write(fh, &dbhdr, sizeof(dbhdr));
-	write(fh, bd->records, bd->len);
+	ret = write(fh, &dbhdr, sizeof(dbhdr));
+	if (ret == -1) {
+		DEBUG(DEBUG_ERR,("write failed: %s\n", strerror(errno)));
+		goto done;
+	}
+	ret = write(fh, bd->records, bd->len);
+	if (ret == -1) {
+		DEBUG(DEBUG_ERR,("write failed: %s\n", strerror(errno)));
+		goto done;
+	}
 
-	close(fh);
+	status = 0;
+done:
+	if (fh != -1) {
+		ret = close(fh);
+		if (ret == -1) {
+			DEBUG(DEBUG_ERR,("close failed: %s\n", strerror(errno)));
+		}
+	}
 	talloc_free(tmp_ctx);
-	return 0;
+	return status;
 }
 
 /*

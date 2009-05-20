@@ -117,7 +117,12 @@ struct ctdb_context *ctdb_cmdline_client(struct event_context *ev)
 	/* tell ctdb the socket address */
 	socket_name = getenv("CTDB_SOCKET");
 	if (socket_name != NULL) {
-		ctdb_set_socketname(ctdb, socket_name);
+		ret = ctdb_set_socketname(ctdb, socket_name);
+		if (ret == -1) {
+			printf("ctdb_set_socketname failed - %s\n",
+						    ctdb_errstr(ctdb));
+			exit(1);
+		}
 	}
 
 	if (ctdb_cmdline.socketname != NULL) {

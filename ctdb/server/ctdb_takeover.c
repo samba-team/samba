@@ -326,6 +326,7 @@ static void release_ip_callback(struct ctdb_context *ctdb, int status,
 	   that the cluster has been reconfigured and they should
 	   release any sockets on this IP */
 	data.dptr = (uint8_t *)talloc_strdup(state, ctdb_addr_to_str(state->addr));
+	CTDB_NO_MEMORY_VOID(ctdb, data.dptr);
 	data.dsize = strlen((char *)data.dptr)+1;
 
 	DEBUG(DEBUG_INFO,(__location__ " sending RELEASE_IP for '%s'\n", data.dptr));
@@ -444,6 +445,7 @@ static int ctdb_add_public_address(struct ctdb_context *ctdb, ctdb_sock_addr *ad
 	vnn = talloc_zero(ctdb, struct ctdb_vnn);
 	CTDB_NO_MEMORY_FATAL(ctdb, vnn);
 	vnn->iface = talloc_strdup(vnn, iface);
+	CTDB_NO_MEMORY(ctdb, vnn->iface);
 	vnn->public_address      = *addr;
 	vnn->public_netmask_bits = mask;
 	vnn->pnn                 = -1;

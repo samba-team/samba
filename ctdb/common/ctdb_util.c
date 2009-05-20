@@ -73,6 +73,7 @@ int ctdb_parse_address(struct ctdb_context *ctdb,
 	endservent();
 	
 	address->address = talloc_strdup(mem_ctx, str);
+	if (address->address == NULL) return -1;
 	if (se == NULL) {
 		address->port = CTDB_PORT;
 	} else {

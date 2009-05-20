@@ -28,8 +28,14 @@ static void _do_debug_v(const char *format, va_list ap)
 	char *s = NULL;
 	struct tm *tm;
 	char tbuf[100];
+    int ret;
 
-	vasprintf(&s, format, ap);
+	ret = vasprintf(&s, format, ap);
+	if (ret == -1) {
+		fprintf(stderr, "vasprintf failed in _do_debug_v, cannot print debug message.\n");
+		fflush(stderr);
+		return;
+	}
 
 	t = timeval_current();
 	tm = localtime(&t.tv_sec);
