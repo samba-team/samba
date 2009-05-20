@@ -3327,7 +3327,9 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_HEADERS(krb5/locate_plugin.h)
   if test x"$ac_cv_header_krb5_locate_plugin_h" = x"yes"; then
 	WINBIND_KRB5_LOCATOR="bin/winbind_krb5_locator.$SHLIBEXT"
-	EXTRA_ALL_TARGETS="$EXTRA_ALL_TARGETS $WINBIND_KRB5_LOCATOR"
+	if test x"$BLDSHARED" = x"true" ; then
+		EXTRA_ALL_TARGETS="$EXTRA_ALL_TARGETS $WINBIND_KRB5_LOCATOR"
+	fi
   fi
 fi
 
