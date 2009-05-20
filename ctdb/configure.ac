@@ -69,7 +69,7 @@ m4_include(libtdb.m4)
 m4_include(libevents.m4)
 m4_include(ib/config.m4)
 
-AC_CHECK_HEADERS(libipq.h linux/netfilter.h)
+AC_CHECK_HEADERS([libipq.h linux/netfilter.h], [], [], [#include <netinet/in.h>])
 
 IPQ_LIBS=""
 if test x"$ac_cv_header_libipq_h" = x"yes"; then
