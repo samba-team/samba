@@ -180,6 +180,11 @@ static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *req,
 	} else if (NT_STATUS_IS_OK(status)) {
 		/* TODO: setup session key for signing */
 		session->status = NT_STATUS_OK;
+		/*
+		 * we attach the session to the request
+		 * so that the response can be signed
+		 */
+		req->session = session;
 	} else {
 		return status;
 	}
@@ -188,3 +193,29 @@ static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *req,
 	return status;
 }
 
+NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
+{
+	const uint8_t *inhdr;
+	int i = req->current_idx;
+	uint64_t in_session_id;
+	void *p;
+	struct smbd_smb2_session *session;
+
+	inhdr = (const uint8_t *)req->in.vector[i+0].iov_base;
+
+	in_session_id = SVAL(inhdr, SMB2_HDR_SESSION_ID);
+
+	/* lookup an existing session */
+	p = idr_find(req->conn->smb2.sessions.idtree, in_session_id);
+	if (p == NULL) {
+		return NT_STATUS_USER_SESSION_DELETED;
+	}
+	session = talloc_get_type_abort(p, struct smbd_smb2_session);
+
+	if (!NT_STATUS_IS_OK(session->status)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	req->session = session;
+	return NT_STATUS_OK;
+}

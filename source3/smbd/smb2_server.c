@@ -288,6 +288,7 @@ static NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 	const uint8_t *inhdr;
 	int i = req->current_idx;
 	uint16_t opcode;
+	NTSTATUS status;
 
 	inhdr = (const uint8_t *)req->in.vector[i].iov_base;
 
@@ -303,35 +304,73 @@ static NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		return smbd_smb2_request_process_sesssetup(req);
 
 	case SMB2_OP_LOGOFF:
+		status = smbd_smb2_request_check_session(req);
+		if (!NT_STATUS_IS_OK(status)) {
+			return smbd_smb2_request_error(req, status);
+		}
 		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
 
-		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
 	case SMB2_OP_TCON:
+		status = smbd_smb2_request_check_session(req);
+		if (!NT_STATUS_IS_OK(status)) {
+			return smbd_smb2_request_error(req, status);
+		}
 		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
 
-		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
 	case SMB2_OP_TDIS:
+		status = smbd_smb2_request_check_session(req);
+		if (!NT_STATUS_IS_OK(status)) {
+			return smbd_smb2_request_error(req, status);
+		}
 		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
 
 	case SMB2_OP_CREATE:
+		status = smbd_smb2_request_check_session(req);
+		if (!NT_STATUS_IS_OK(status)) {
+			return smbd_smb2_request_error(req, status);
+		}
 		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
 
 	case SMB2_OP_CLOSE:
+		status = smbd_smb2_request_check_session(req);
+		if (!NT_STATUS_IS_OK(status)) {
+			return smbd_smb2_request_error(req, status);
+		}
 		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
 
 	case SMB2_OP_FLUSH:
+		status = smbd_smb2_request_check_session(req);
+		if (!NT_STATUS_IS_OK(status)) {
+			return smbd_smb2_request_error(req, status);
+		}
 		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
 
 	case SMB2_OP_READ:
+		status = smbd_smb2_request_check_session(req);
+		if (!NT_STATUS_IS_OK(status)) {
+			return smbd_smb2_request_error(req, status);
+		}
 		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
 
 	case SMB2_OP_WRITE:
+		status = smbd_smb2_request_check_session(req);
+		if (!NT_STATUS_IS_OK(status)) {
+			return smbd_smb2_request_error(req, status);
+		}
 		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
 
 	case SMB2_OP_LOCK:
+		status = smbd_smb2_request_check_session(req);
+		if (!NT_STATUS_IS_OK(status)) {
+			return smbd_smb2_request_error(req, status);
+		}
 		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
 
 	case SMB2_OP_IOCTL:
+		status = smbd_smb2_request_check_session(req);
+		if (!NT_STATUS_IS_OK(status)) {
+			return smbd_smb2_request_error(req, status);
+		}
 		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
 
 	case SMB2_OP_CANCEL:
@@ -341,18 +380,38 @@ static NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		return smbd_smb2_request_process_keepalive(req);
 
 	case SMB2_OP_FIND:
+		status = smbd_smb2_request_check_session(req);
+		if (!NT_STATUS_IS_OK(status)) {
+			return smbd_smb2_request_error(req, status);
+		}
 		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
 
 	case SMB2_OP_NOTIFY:
+		status = smbd_smb2_request_check_session(req);
+		if (!NT_STATUS_IS_OK(status)) {
+			return smbd_smb2_request_error(req, status);
+		}
 		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
 
 	case SMB2_OP_GETINFO:
+		status = smbd_smb2_request_check_session(req);
+		if (!NT_STATUS_IS_OK(status)) {
+			return smbd_smb2_request_error(req, status);
+		}
 		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
 
 	case SMB2_OP_SETINFO:
+		status = smbd_smb2_request_check_session(req);
+		if (!NT_STATUS_IS_OK(status)) {
+			return smbd_smb2_request_error(req, status);
+		}
 		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
 
 	case SMB2_OP_BREAK:
+		status = smbd_smb2_request_check_session(req);
+		if (!NT_STATUS_IS_OK(status)) {
+			return smbd_smb2_request_error(req, status);
+		}
 		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
 	}
 

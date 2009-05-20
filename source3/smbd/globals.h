@@ -201,6 +201,7 @@ extern int num_children;
 
 struct tstream_context;
 struct smbd_smb2_request;
+struct smbd_smb2_session;
 
 DATA_BLOB negprot_spnego(void);
 
@@ -220,6 +221,8 @@ NTSTATUS smbd_smb2_request_done_ex(struct smbd_smb2_request *req,
 NTSTATUS smbd_smb2_request_done(struct smbd_smb2_request *req,
 				DATA_BLOB body, DATA_BLOB *dyn);
 
+NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req);
+
 NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_process_sesssetup(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_process_keepalive(struct smbd_smb2_request *req);
@@ -228,6 +231,9 @@ struct smbd_smb2_request {
 	TALLOC_CTX *mem_pool;
 
 	struct smbd_server_connection *conn;
+
+	/* the session the request operates on, maybe NULL */
+	struct smbd_smb2_session *session;
 
 	int current_idx;
 
