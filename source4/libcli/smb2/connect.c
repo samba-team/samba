@@ -105,6 +105,8 @@ static void continue_negprot(struct smb2_request *req)
 	c->status = smb2_negprot_recv(req, c, &state->negprot);
 	if (!composite_is_ok(c)) return;
 
+	transport->negotiate.secblob = state->negprot.out.secblob;
+	talloc_steal(transport, transport->negotiate.secblob.data);
 	transport->negotiate.system_time = state->negprot.out.system_time;
 	transport->negotiate.server_start_time = state->negprot.out.server_start_time;
 	transport->negotiate.security_mode = state->negprot.out.security_mode;
