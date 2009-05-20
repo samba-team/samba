@@ -241,14 +241,14 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 		SSVAL(outhdr, SMB2_HDR_CREDIT,		0);
 		SIVAL(outhdr, SMB2_HDR_FLAGS,		SMB2_HDR_FLAG_REDIRECT);
 		SIVAL(outhdr, SMB2_HDR_NEXT_COMMAND,	next_command_ofs);
-		SIVAL(outhdr, SMB2_HDR_MESSAGE_ID,
-		      IVAL(inhdr, SMB2_HDR_MESSAGE_ID));
+		SBVAL(outhdr, SMB2_HDR_MESSAGE_ID,
+		      BVAL(inhdr, SMB2_HDR_MESSAGE_ID));
 		SIVAL(outhdr, SMB2_HDR_PID,
 		      IVAL(inhdr, SMB2_HDR_PID));
 		SIVAL(outhdr, SMB2_HDR_TID,
 		      IVAL(inhdr, SMB2_HDR_TID));
-		SIVAL(outhdr, SMB2_HDR_SESSION_ID,
-		      IVAL(inhdr, SMB2_HDR_SESSION_ID));
+		SBVAL(outhdr, SMB2_HDR_SESSION_ID,
+		      BVAL(inhdr, SMB2_HDR_SESSION_ID));
 		memset(outhdr + SMB2_HDR_SIGNATURE, 0, 16);
 
 		/* setup error body header */
