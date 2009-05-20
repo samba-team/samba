@@ -394,6 +394,48 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	return NT_STATUS_OK;
 }
 
+static void smbd_smb2_request_dispatch_compound(struct tevent_req *subreq)
+{
+	struct smbd_smb2_request *req = tevent_req_callback_data(subreq,
+					struct smbd_smb2_request);
+	struct smbd_server_connection *conn = req->conn;
+	NTSTATUS status;
+
+	tevent_wakeup_recv(subreq);
+	TALLOC_FREE(subreq);
+
+	DEBUG(10,("smbd_smb2_request_dispatch_compound: idx[%d] of %d vectors\n",
+		  req->current_idx, req->in.vector_count));
+
+	status = smbd_smb2_request_dispatch(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		smbd_server_connection_terminate(conn, nt_errstr(status));
+		return;
+	}
+}
+
+static void smbd_smb2_request_writev_done(struct tevent_req *subreq)
+{
+	struct smbd_smb2_request *req = tevent_req_callback_data(subreq,
+					struct smbd_smb2_request);
+	struct smbd_server_connection *conn = req->conn;
+	int ret;
+	int sys_errno;
+	TALLOC_CTX *mem_pool;
+
+	ret = tstream_writev_queue_recv(subreq, &sys_errno);
+	TALLOC_FREE(subreq);
+	if (ret == -1) {
+		NTSTATUS status = map_nt_error_from_unix(sys_errno);
+		smbd_server_connection_terminate(conn, nt_errstr(status));
+		return;
+	}
+
+	mem_pool = req->mem_pool;
+	req = NULL;
+	talloc_free(mem_pool);
+}
+
 NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
 				    NTSTATUS status,
 				    DATA_BLOB *info)
@@ -504,48 +546,6 @@ NTSTATUS smbd_smb2_request_done(struct smbd_smb2_request *req,
 				DATA_BLOB body, DATA_BLOB *dyn)
 {
 	return smbd_smb2_request_done_ex(req, NT_STATUS_OK, body, dyn);
-}
-
-static void smbd_smb2_request_dispatch_compound(struct tevent_req *subreq)
-{
-	struct smbd_smb2_request *req = tevent_req_callback_data(subreq,
-					struct smbd_smb2_request);
-	struct smbd_server_connection *conn = req->conn;
-	NTSTATUS status;
-
-	tevent_wakeup_recv(subreq);
-	TALLOC_FREE(subreq);
-
-	DEBUG(10,("smbd_smb2_request_dispatch_compound: idx[%d] of %d vectors\n",
-		  req->current_idx, req->in.vector_count));
-
-	status = smbd_smb2_request_dispatch(req);
-	if (!NT_STATUS_IS_OK(status)) {
-		smbd_server_connection_terminate(conn, nt_errstr(status));
-		return;
-	}
-}
-
-static void smbd_smb2_request_writev_done(struct tevent_req *subreq)
-{
-	struct smbd_smb2_request *req = tevent_req_callback_data(subreq,
-					struct smbd_smb2_request);
-	struct smbd_server_connection *conn = req->conn;
-	int ret;
-	int sys_errno;
-	TALLOC_CTX *mem_pool;
-
-	ret = tstream_writev_queue_recv(subreq, &sys_errno);
-	TALLOC_FREE(subreq);
-	if (ret == -1) {
-		NTSTATUS status = map_nt_error_from_unix(sys_errno);
-		smbd_server_connection_terminate(conn, nt_errstr(status));
-		return;
-	}
-
-	mem_pool = req->mem_pool;
-	req = NULL;
-	talloc_free(mem_pool);
 }
 
 struct smbd_smb2_request_read_state {
