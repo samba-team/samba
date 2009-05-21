@@ -11,7 +11,7 @@ the name of the test, the command to run and the environment that should be
 provided. Use the included "plantest" function to generate the required output.
 
 Testsuite behaviour
-================================
+===================
 
 Exit code
 ------------
@@ -31,27 +31,35 @@ for the last announced test.
 Accepted commands are:
 
 test
-~~~~~~~~~~~~
+~~~~
 test: <NAME>
 
 Announce that a new test with the specified name is starting
 
 success
-~~~~~~~~~~~~~~~
+~~~~~~~
 success: <NAME> 
 
 Announce that the test with the specified name is done and ran successfully.
 
 failure
-~~~~~~~~~~~~~~~
+~~~~~~~
 failure: <NAME> 
 failure: <NAME> [ REASON ]
 
 Announce that the test with the specified name failed. Optionally, it is 
 possible to specify a reason it failed.
 
+xfail
+~~~~~
+xfail: <NAME>
+xfail: <NAME> [ REASON ]
+
+Announce that the test with the specified name failed but that the failure
+was expected, e.g. it's a test for a known bug that hasn't been fixed yet.
+
 skip
-~~~~~~~~~~~~
+~~~~
 skip: <NAME>
 skip: <NAME> [ REASON ]
 
