@@ -38,7 +38,7 @@
 
 #include "version.h"
 
-void
+void ROKEN_LIB_FUNCTION
 print_version(const char *progname)
 {
     const char *package_list = heimdal_version;
