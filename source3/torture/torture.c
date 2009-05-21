@@ -4221,7 +4221,7 @@ static bool run_simple_posix_open_test(int dummy)
 
   out:
 
-	if (fnum1 != -1) {
+	if (fnum1 != (uint16_t)-1) {
 		cli_close(cli1, fnum1);
 		fnum1 = -1;
 	}
