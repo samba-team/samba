@@ -84,7 +84,9 @@ static void ctdb_logfile_log(const char *format, va_list ap)
 
 	ret = vasprintf(&s, format, ap);
 	if (ret == -1) {
-		write(log_state->fd, "vasprintf failed\n", strlen("vasprintf failed\n"));
+		const char *errstr = "vasprintf failed\n";
+
+		write(log_state->fd, errstr, strlen(errstr));
 		return;
 	}
 
@@ -97,7 +99,8 @@ static void ctdb_logfile_log(const char *format, va_list ap)
 		 tbuf, (unsigned)t.tv_usec, (unsigned)getpid(), s);
 	free(s);
 	if (ret == -1) {
-		write(log_state->fd, "asprintf failed\n", strlen("asprintf failed\n"));
+		const char *errstr = "asprintf failed\n";
+		write(log_state->fd, errstr, strlen(errstr));
 		return;
 	}
 	if (s2) {

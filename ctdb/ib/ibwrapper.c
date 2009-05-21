@@ -852,7 +852,9 @@ static int ibw_wc_recv(struct ibw_conn *conn, struct ibv_wc *wc)
 			}
 
 			if (part->to_read==0) {
-				if(pctx->receive_func(conn, part->buf, part->len)) goto error;
+				if (pctx->receive_func(conn, part->buf, part->len) != 0) {
+					goto error;
+				}
 				part->len = 0; /* tells not having partial data (any more) */
 				if (ibw_wc_mem_threshold(pconn, part, pctx->opts.recv_threshold))
 					goto error;
@@ -867,7 +869,9 @@ static int ibw_wc_recv(struct ibw_conn *conn, struct ibv_wc *wc)
 
 				/* mostly awaited case: */
 				if (msglen<=remain) {
-					if(pctx->receive_func(conn, p, msglen)) goto error;
+					if (pctx->receive_func(conn, p, msglen) != 0) {
+						goto error;
+					}
 					p += msglen;
 					remain -= msglen;
 				} else {

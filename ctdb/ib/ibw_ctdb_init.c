@@ -164,15 +164,11 @@ static int ctdb_ibw_queue_pkt(struct ctdb_node *node, uint8_t *data, uint32_t le
 		rc = ctdb_ibw_send_pkt(cn->conn, data, length);
 	} else {
 		struct ctdb_ibw_msg *p = talloc_zero(cn, struct ctdb_ibw_msg);
-		if (p == NULL) {
-			DEBUG(DEBUG_ERR, ("talloc_zero failed.\n"));
-			return -1;
-		}
+		CTDB_NO_MEMORY(node->ctdb, p);
+
 		p->data = talloc_memdup(p, data, length);
-		if (p->data == NULL) {
-			DEBUG(DEBUG_ERR, ("talloc_memdup failed.\n"));
-			return -1;
-		}
+		CTDB_NO_MEMORY(node->ctdb, p->data);
+
 		p->length = length;
 
 		DLIST_ADD_AFTER(cn->queue, p, cn->queue_last);

@@ -28,7 +28,7 @@ static void _do_debug_v(const char *format, va_list ap)
 	char *s = NULL;
 	struct tm *tm;
 	char tbuf[100];
-    int ret;
+	int ret;
 
 	ret = vasprintf(&s, format, ap);
 	if (ret == -1) {

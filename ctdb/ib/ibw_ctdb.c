@@ -166,7 +166,8 @@ int ctdb_ibw_receive_handler(struct ibw_conn *conn, void *buf, int n)
 	 * and being reused for next receive
 	 * noticed that HL requires talloc-ed memory to be stolen */
 	buf2 = talloc_zero_size(conn, n);
-	if (buf2 == NULL) return -1;
+	CTDB_NO_MEMORY(ctdb, buf2);
+
 	memcpy(buf2, buf, n);
 
 	ctdb->upcalls->recv_pkt(ctdb, (uint8_t *)buf2, (uint32_t)n);

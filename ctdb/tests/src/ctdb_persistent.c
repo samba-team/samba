@@ -71,7 +71,7 @@ static void check_counters(struct ctdb_context *ctdb, TDB_DATA data)
 {
 	int i;
 	uint32_t *counters, *old_counters;
-    unsigned char *tmp_dptr;
+	unsigned char *tmp_dptr;
 
 	counters     = (uint32_t *)data.dptr;
 	old_counters = (uint32_t *)old_data.dptr;
