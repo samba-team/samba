@@ -571,7 +571,7 @@ NTSTATUS smbd_smb2_request_done_ex(struct smbd_smb2_request *req,
 	/* the fallback dynamic buffer */
 	outdyn = outhdr + SMB2_HDR_BODY + 8;
 
-	next_command_ofs = SIVAL(outhdr, SMB2_HDR_NEXT_COMMAND, 0);
+	next_command_ofs = IVAL(outhdr, SMB2_HDR_NEXT_COMMAND);
 	SIVAL(outhdr, SMB2_HDR_STATUS, NT_STATUS_V(status));
 
 	req->out.vector[i+1].iov_base = (void *)body.data;
