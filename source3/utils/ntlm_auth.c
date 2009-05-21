@@ -26,6 +26,13 @@
 #include "includes.h"
 #include "utils/ntlm_auth.h"
 #include "../libcli/auth/libcli_auth.h"
+#include <iniparser.h>
+
+#ifndef PAM_WINBIND_CONFIG_FILE
+#define PAM_WINBIND_CONFIG_FILE "/etc/security/pam_winbind.conf"
+#endif
+
+#define WINBIND_KRB5_AUTH	0x00000080
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -125,6 +132,7 @@ static int use_cached_creds;
 
 static const char *require_membership_of;
 static const char *require_membership_of_sid;
+static const char *opt_pam_winbind_conf;
 
 static char winbind_separator(void)
 {
@@ -279,6 +287,36 @@ static bool get_require_membership_sid(void) {
 
 	return False;
 }
+
+/* 
+ * Get some configuration from pam_winbind.conf to see if we 
+ * need to contact trusted domain
+ */
+
+int get_pam_winbind_config()
+{
+	int ctrl = 0;
+	dictionary *d = NULL;
+	
+	if (!opt_pam_winbind_conf || !*opt_pam_winbind_conf) {
+		opt_pam_winbind_conf = PAM_WINBIND_CONFIG_FILE;
+	}
+
+	d = iniparser_load(CONST_DISCARD(char *, opt_pam_winbind_conf));
+	
+	if (!d) {
+		return 0;
+	}
+	
+	if (iniparser_getboolean(d, CONST_DISCARD(char *, "global:krb5_auth"), false)) {
+		ctrl |= WINBIND_KRB5_AUTH;
+	}
+
+	iniparser_freedict(d);
+	
+	return ctrl;
+}
+
 /* Authenticate a user with a plaintext password */
 
 static bool check_plaintext_auth(const char *user, const char *pass,
@@ -677,11 +715,26 @@ static NTSTATUS do_ccache_ntlm_auth(DATA_BLOB initial_msg, DATA_BLOB challenge_m
 {
 	struct winbindd_request wb_request;
 	struct winbindd_response wb_response;
+	int ctrl = 0;
 	NSS_STATUS result;
 
 	/* get winbindd to do the ntlmssp step on our behalf */
 	ZERO_STRUCT(wb_request);
 	ZERO_STRUCT(wb_response);
+
+	/*
+	 * This is tricky here. If we set krb5_auth in pam_winbind.conf
+	 * creds for users in trusted domain will be stored the winbindd
+	 * child of the trusted domain. If we ask the primary domain for
+	 * ntlm_ccache_auth, it will fail. So, we have to ask the trusted
+	 * domain's child for ccache_ntlm_auth. that is to say, we have to 
+	 * set WBFALG_PAM_CONTACT_TRUSTDOM in request.flags.
+	 */
+	ctrl = get_pam_winbind_config();
+
+	if (ctrl | WINBIND_KRB5_AUTH) {
+		wb_request.flags |= WBFLAG_PAM_CONTACT_TRUSTDOM;
+	}
 
 	fstr_sprintf(wb_request.data.ccache_ntlm_auth.user,
 		"%s%c%s", opt_domain, winbind_separator(), opt_username);
@@ -2308,7 +2361,8 @@ enum {
 	OPT_USER_SESSION_KEY,
 	OPT_DIAGNOSTICS,
 	OPT_REQUIRE_MEMBERSHIP,
-	OPT_USE_CACHED_CREDS
+	OPT_USE_CACHED_CREDS,
+	OPT_PAM_WINBIND_CONF
 };
 
  int main(int argc, const char **argv)
@@ -2347,6 +2401,7 @@ enum {
 		{ "use-cached-creds", 0, POPT_ARG_NONE, &use_cached_creds, OPT_USE_CACHED_CREDS, "Use cached credentials if no password is given"},
 		{ "diagnostics", 0, POPT_ARG_NONE, &diagnostics, OPT_DIAGNOSTICS, "Perform diagnostics on the authentictaion chain"},
 		{ "require-membership-of", 0, POPT_ARG_STRING, &require_membership_of, OPT_REQUIRE_MEMBERSHIP, "Require that a user be a member of this group (either name or SID) for authentication to succeed" },
+		{ "pam-winbind-conf", 0, POPT_ARG_STRING, &opt_pam_winbind_conf, OPT_PAM_WINBIND_CONF, "Require that request must set WBFLAG_PAM_CONTACT_TRUSTDOM when krb5 auth is required" },
 		POPT_COMMON_CONFIGFILE
 		POPT_COMMON_VERSION
 		POPT_TABLEEND
