@@ -2069,7 +2069,7 @@ NTSTATUS onefs_create_file(vfs_handle_struct *handle,
 			goto fail;
 		}
 
-		status = get_full_smb_filename(talloc_tos(), &smb_fname,
+		status = get_full_smb_filename(talloc_tos(), smb_fname,
 					       &converted_fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(smb_fname);
