@@ -28,7 +28,7 @@
 #include <netinet/ip6.h>
 #include <netinet/icmp6.h>
 #include <net/if_arp.h>
-
+#include <netpacket/packet.h>
 
 #ifndef ETHERTYPE_IP6
 #define ETHERTYPE_IP6 0x86dd
@@ -71,7 +71,7 @@ static uint16_t tcp_checksum6(uint16_t *data, size_t n, struct ip6_hdr *ip6)
 int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 {
 	int s, ret;
-	struct sockaddr sa;
+	struct sockaddr_ll sall;
 	struct ether_header *eh;
 	struct arphdr *ah;
 	struct ip6_hdr *ip6;
@@ -79,14 +79,22 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 	struct ifreq if_hwaddr;
 	unsigned char buffer[78]; /* ipv6 neigh solicitation size */
 	char *ptr;
+	char bdcast[] = {0xff,0xff,0xff,0xff,0xff,0xff};
+	struct ifreq ifr;
 
-	ZERO_STRUCT(sa);
+	ZERO_STRUCT(sall);
 
 	switch (addr->ip.sin_family) {
 	case AF_INET:
-		s = socket(AF_INET, SOCK_PACKET, htons(ETHERTYPE_ARP));
+		s = socket(PF_PACKET, SOCK_RAW, htons(ETHERTYPE_ARP));
 		if (s == -1){
 			DEBUG(DEBUG_CRIT,(__location__ " failed to open raw socket\n"));
+			return -1;
+		}
+
+		strncpy(ifr.ifr_name, iface, sizeof(ifr.ifr_name));
+		if (ioctl(s, SIOCGIFINDEX, &ifr) < 0) {
+			DEBUG(DEBUG_CRIT,(__location__ " interface '%s' not found\n", iface));
 			return -1;
 		}
 
@@ -136,8 +144,12 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 		memcpy(ptr, &addr->ip.sin_addr, 4);	  
 		ptr+=4;
 	
-		strncpy(sa.sa_data, iface, sizeof(sa.sa_data));
-		ret = sendto(s, buffer, 64, 0, &sa, sizeof(sa));
+		sall.sll_family = AF_PACKET;
+		sall.sll_halen = 6;
+		memcpy(&sall.sll_addr[0], bdcast, sall.sll_halen);
+		sall.sll_protocol = htons(ETH_P_ALL);
+		sall.sll_ifindex = ifr.ifr_ifindex;
+		ret = sendto(s, buffer, 64, 0, (struct sockaddr *)&sall, sizeof(sall));
 		if (ret < 0 ){
 			close(s);
 			DEBUG(DEBUG_CRIT,(__location__ " failed sendto\n"));
@@ -156,8 +168,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 		memcpy(ptr, &addr->ip.sin_addr, 4);	  
 		ptr+=4;
 
-		strncpy(sa.sa_data, iface, sizeof(sa.sa_data));
-		ret = sendto(s, buffer, 64, 0, &sa, sizeof(sa));
+		ret = sendto(s, buffer, 64, 0, (struct sockaddr *)&sall, sizeof(sall));
 		if (ret < 0 ){
 			DEBUG(DEBUG_CRIT,(__location__ " failed sendto\n"));
 			return -1;
@@ -166,9 +177,15 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 		close(s);
 		break;
 	case AF_INET6:
-		s = socket(AF_INET, SOCK_PACKET, htons(ETHERTYPE_IP6));
+		s = socket(PF_PACKET, SOCK_RAW, htons(ETHERTYPE_ARP));
 		if (s == -1){
 			DEBUG(DEBUG_CRIT,(__location__ " failed to open raw socket\n"));
+			return -1;
+		}
+
+		strncpy(ifr.ifr_name, iface, sizeof(ifr.ifr_name));
+		if (ioctl(s, SIOCGIFINDEX, &ifr) < 0) {
+			DEBUG(DEBUG_CRIT,(__location__ " interface '%s' not found\n", iface));
 			return -1;
 		}
 
@@ -213,8 +230,12 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 
 		icmp6->icmp6_cksum = tcp_checksum6((uint16_t *)icmp6, ntohs(ip6->ip6_plen), ip6);
 
-		strncpy(sa.sa_data, iface, sizeof(sa.sa_data));
-		ret = sendto(s, buffer, 78, 0, &sa, sizeof(sa));
+		sall.sll_family = AF_PACKET;
+		sall.sll_halen = 6;
+		memcpy(&sall.sll_addr[0], bdcast, sall.sll_halen);
+		sall.sll_protocol = htons(ETH_P_ALL);
+		sall.sll_ifindex = ifr.ifr_ifindex;
+		ret = sendto(s, buffer, 78, 0, (struct sockaddr *)&sall, sizeof(sall));
 		if (ret < 0 ){
 			close(s);
 			DEBUG(DEBUG_CRIT,(__location__ " failed sendto\n"));
