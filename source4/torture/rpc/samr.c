@@ -3999,9 +3999,11 @@ static bool test_DeleteAlias(struct dcerpc_pipe *p,
 }
 
 static bool test_CreateAlias(struct dcerpc_pipe *p, struct torture_context *tctx,
-			    struct policy_handle *domain_handle,
+			     struct policy_handle *domain_handle,
+			     const char *alias_name,
 			     struct policy_handle *alias_handle,
-			     const struct dom_sid *domain_sid)
+			     const struct dom_sid *domain_sid,
+			     bool test_alias)
 {
 	NTSTATUS status;
 	struct samr_CreateDomAlias r;
@@ -4009,7 +4011,7 @@ static bool test_CreateAlias(struct dcerpc_pipe *p, struct torture_context *tctx
 	uint32_t rid;
 	bool ret = true;
 
-	init_lsa_String(&name, TEST_ALIASNAME);
+	init_lsa_String(&name, alias_name);
 	r.in.domain_handle = domain_handle;
 	r.in.alias_name = &name;
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -4041,6 +4043,10 @@ static bool test_CreateAlias(struct dcerpc_pipe *p, struct torture_context *tctx
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("CreateAlias failed - %s\n", nt_errstr(status));
 		return false;
+	}
+
+	if (!test_alias) {
+		return ret;
 	}
 
 	if (!test_alias_ops(p, tctx, alias_handle, domain_sid)) {
@@ -4217,10 +4223,12 @@ static bool test_ChangePassword(struct dcerpc_pipe *p,
 
 static bool test_CreateUser(struct dcerpc_pipe *p, struct torture_context *tctx,
 			    struct policy_handle *domain_handle,
+			    const char *user_name,
 			    struct policy_handle *user_handle_out,
 			    struct dom_sid *domain_sid,
 			    enum torture_samr_choice which_ops,
-			    struct cli_credentials *machine_credentials)
+			    struct cli_credentials *machine_credentials,
+			    bool test_user)
 {
 
 	TALLOC_CTX *user_ctx;
@@ -4239,7 +4247,7 @@ static bool test_CreateUser(struct dcerpc_pipe *p, struct torture_context *tctx,
 
 	struct policy_handle user_handle;
 	user_ctx = talloc_named(tctx, 0, "test_CreateUser2 per-user context");
-	init_lsa_String(&name, TEST_ACCOUNT_NAME);
+	init_lsa_String(&name, user_name);
 
 	r.in.domain_handle = domain_handle;
 	r.in.account_name = &name;
@@ -4269,11 +4277,21 @@ static bool test_CreateUser(struct dcerpc_pipe *p, struct torture_context *tctx,
 		}
 		status = dcerpc_samr_CreateUser(p, user_ctx, &r);
 	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(user_ctx);
 		printf("CreateUser failed - %s\n", nt_errstr(status));
 		return false;
-	} else {
+	}
+
+	if (!test_user) {
+		if (user_handle_out) {
+			*user_handle_out = user_handle;
+		}
+		return ret;
+	}
+
+	{
 		q.in.user_handle = &user_handle;
 		q.in.level = 16;
 		q.out.info = &info;
@@ -5931,10 +5949,12 @@ static bool test_AddGroupMember(struct dcerpc_pipe *p, struct torture_context *t
 
 
 static bool test_CreateDomainGroup(struct dcerpc_pipe *p,
-								   struct torture_context *tctx,
+				   struct torture_context *tctx,
 				   struct policy_handle *domain_handle,
+				   const char *group_name,
 				   struct policy_handle *group_handle,
-				   struct dom_sid *domain_sid)
+				   struct dom_sid *domain_sid,
+				   bool test_group)
 {
 	NTSTATUS status;
 	struct samr_CreateDomainGroup r;
@@ -5942,7 +5962,7 @@ static bool test_CreateDomainGroup(struct dcerpc_pipe *p,
 	struct lsa_String name;
 	bool ret = true;
 
-	init_lsa_String(&name, TEST_GROUPNAME);
+	init_lsa_String(&name, group_name);
 
 	r.in.domain_handle = domain_handle;
 	r.in.name = &name;
@@ -5983,6 +6003,10 @@ static bool test_CreateDomainGroup(struct dcerpc_pipe *p,
 		status = dcerpc_samr_CreateDomainGroup(p, tctx, &r);
 	}
 	torture_assert_ntstatus_ok(tctx, status, "CreateDomainGroup");
+
+	if (!test_group) {
+		return ret;
+	}
 
 	if (!test_AddGroupMember(p, tctx, domain_handle, group_handle)) {
 		printf("CreateDomainGroup failed - %s\n", nt_errstr(status));
@@ -6060,7 +6084,7 @@ static bool test_OpenDomain(struct dcerpc_pipe *p, struct torture_context *tctx,
 		if (!torture_setting_bool(tctx, "samba3", false)) {
 			ret &= test_CreateUser2(p, tctx, &domain_handle, sid, which_ops, NULL);
 		}
-		ret &= test_CreateUser(p, tctx, &domain_handle, &user_handle, sid, which_ops, NULL);
+		ret &= test_CreateUser(p, tctx, &domain_handle, TEST_ACCOUNT_NAME, &user_handle, sid, which_ops, NULL, true);
 		/* This test needs 'complex' users to validate */
 		ret &= test_QueryDisplayInfo(p, tctx, &domain_handle);
 		if (!ret) {
@@ -6071,13 +6095,13 @@ static bool test_OpenDomain(struct dcerpc_pipe *p, struct torture_context *tctx,
 		if (!torture_setting_bool(tctx, "samba3", false)) {
 			ret &= test_CreateUser2(p, tctx, &domain_handle, sid, which_ops, machine_credentials);
 		}
-		ret &= test_CreateUser(p, tctx, &domain_handle, &user_handle, sid, which_ops, machine_credentials);
+		ret &= test_CreateUser(p, tctx, &domain_handle, TEST_ACCOUNT_NAME, &user_handle, sid, which_ops, machine_credentials, true);
 		if (!ret) {
 			printf("Testing PASSWORDS PWDLASTSET on domain %s failed!\n", dom_sid_string(tctx, sid));
 		}
 		break;
 	case TORTURE_SAMR_OTHER:
-		ret &= test_CreateUser(p, tctx, &domain_handle, &user_handle, sid, which_ops, NULL);
+		ret &= test_CreateUser(p, tctx, &domain_handle, TEST_ACCOUNT_NAME, &user_handle, sid, which_ops, NULL, true);
 		if (!ret) {
 			printf("Failed to CreateUser in SAMR-OTHER on domain %s!\n", dom_sid_string(tctx, sid));
 		}
@@ -6085,8 +6109,8 @@ static bool test_OpenDomain(struct dcerpc_pipe *p, struct torture_context *tctx,
 			ret &= test_QuerySecurity(p, tctx, &domain_handle);
 		}
 		ret &= test_RemoveMemberFromForeignDomain(p, tctx, &domain_handle);
-		ret &= test_CreateAlias(p, tctx, &domain_handle, &alias_handle, sid);
-		ret &= test_CreateDomainGroup(p, tctx, &domain_handle, &group_handle, sid);
+		ret &= test_CreateAlias(p, tctx, &domain_handle, TEST_ALIASNAME, &alias_handle, sid, true);
+		ret &= test_CreateDomainGroup(p, tctx, &domain_handle, TEST_GROUPNAME, &group_handle, sid, true);
 		ret &= test_QueryDomainInfo(p, tctx, &domain_handle);
 		ret &= test_QueryDomainInfo2(p, tctx, &domain_handle);
 		ret &= test_EnumDomainUsers(p, tctx, &domain_handle);
