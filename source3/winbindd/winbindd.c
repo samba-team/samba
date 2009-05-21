@@ -866,8 +866,14 @@ static void remove_client(struct winbindd_cli_state *state)
 	/* tell client, we are closing ... */
 	nwritten = write(state->sock, &c, sizeof(c));
 	if (nwritten == -1) {
-		DEBUG(2, ("final write to client failed: %s\n",
-			  strerror(errno)));
+		/* 
+		 * ignore EPIPE error here, because the other end might
+		 * have already closed the socket.
+		 */
+		if (errno != EPIPE) {
+			DEBUG(2, ("final write to client failed: %s\n",
+			  	strerror(errno)));
+		}
 	}
 
 	/* Close socket */
