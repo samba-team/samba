@@ -2031,7 +2031,8 @@ int main(int argc, char **argv, char **envp)
 				uint32 flags =  WBFLAG_PAM_KRB5 |
 						WBFLAG_PAM_CACHED_LOGIN |
 						WBFLAG_PAM_FALLBACK_AFTER_KRB5 |
-						WBFLAG_PAM_INFO3_TEXT;
+						WBFLAG_PAM_INFO3_TEXT |
+						WBFLAG_PAM_CONTACT_TRUSTDOM;
 
 				if (!wbinfo_auth_krb5(string_arg, "FILE", flags)) {
 					d_fprintf(stderr, "Could not authenticate user [%s] with "
