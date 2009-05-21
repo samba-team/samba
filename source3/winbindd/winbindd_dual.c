@@ -692,29 +692,66 @@ void winbind_msg_online(struct messaging_context *msg_ctx,
 	}
 }
 
-/* Forward the online/offline messages to our children. */
+static const char *collect_onlinestatus(TALLOC_CTX *mem_ctx)
+{
+	struct winbindd_domain *domain;
+	char *buf = NULL;
+
+	if ((buf = talloc_asprintf(mem_ctx, "global:%s ", 
+				   get_global_winbindd_state_offline() ? 
+				   "Offline":"Online")) == NULL) {
+		return NULL;
+	}
+
+	for (domain = domain_list(); domain; domain = domain->next) {
+		if ((buf = talloc_asprintf_append_buffer(buf, "%s:%s ", 
+						  domain->name, 
+						  domain->online ?
+						  "Online":"Offline")) == NULL) {
+			return NULL;
+		}
+	}
+
+	buf = talloc_asprintf_append_buffer(buf, "\n");
+
+	DEBUG(5,("collect_onlinestatus: %s", buf));
+
+	return buf;
+}
+
 void winbind_msg_onlinestatus(struct messaging_context *msg_ctx,
 			      void *private_data,
 			      uint32_t msg_type,
 			      struct server_id server_id,
 			      DATA_BLOB *data)
 {
-	struct winbindd_child *child;
+	TALLOC_CTX *mem_ctx;
+	const char *message;
+	struct server_id *sender;
+	
+	DEBUG(5,("winbind_msg_onlinestatus received.\n"));
 
-	DEBUG(10,("winbind_msg_onlinestatus: got onlinestatus message.\n"));
-
-	for (child = children; child != NULL; child = child->next) {
-		if (child->domain && child->domain->primary) {
-			DEBUG(10,("winbind_msg_onlinestatus: "
-				  "sending message to pid %u of primary domain.\n",
-				  (unsigned int)child->pid));
-			messaging_send_buf(msg_ctx, pid_to_procid(child->pid), 
-					   MSG_WINBIND_ONLINESTATUS,
-					   (uint8 *)data->data,
-					   data->length);
-			break;
-		}
+	if (!data->data) {
+		return;
 	}
+
+	sender = (struct server_id *)data->data;
+
+	mem_ctx = talloc_init("winbind_msg_onlinestatus");
+	if (mem_ctx == NULL) {
+		return;
+	}
+	
+	message = collect_onlinestatus(mem_ctx);
+	if (message == NULL) {
+		talloc_destroy(mem_ctx);
+		return;
+	}
+
+	messaging_send_buf(msg_ctx, *sender, MSG_WINBIND_ONLINESTATUS, 
+			   (uint8 *)message, strlen(message) + 1);
+
+	talloc_destroy(mem_ctx);
 }
 
 void winbind_msg_dump_event_list(struct messaging_context *msg_ctx,
@@ -1068,68 +1105,6 @@ static void child_msg_online(struct messaging_context *msg,
 	}
 }
 
-static const char *collect_onlinestatus(TALLOC_CTX *mem_ctx)
-{
-	struct winbindd_domain *domain;
-	char *buf = NULL;
-
-	if ((buf = talloc_asprintf(mem_ctx, "global:%s ", 
-				   get_global_winbindd_state_offline() ? 
-				   "Offline":"Online")) == NULL) {
-		return NULL;
-	}
-
-	for (domain = domain_list(); domain; domain = domain->next) {
-		if ((buf = talloc_asprintf_append_buffer(buf, "%s:%s ", 
-						  domain->name, 
-						  domain->online ?
-						  "Online":"Offline")) == NULL) {
-			return NULL;
-		}
-	}
-
-	buf = talloc_asprintf_append_buffer(buf, "\n");
-
-	DEBUG(5,("collect_onlinestatus: %s", buf));
-
-	return buf;
-}
-
-static void child_msg_onlinestatus(struct messaging_context *msg_ctx,
-				   void *private_data,
-				   uint32_t msg_type,
-				   struct server_id server_id,
-				   DATA_BLOB *data)
-{
-	TALLOC_CTX *mem_ctx;
-	const char *message;
-	struct server_id *sender;
-
-	DEBUG(5,("winbind_msg_onlinestatus received.\n"));
-
-	if (!data->data) {
-		return;
-	}
-
-	sender = (struct server_id *)data->data;
-
-	mem_ctx = talloc_init("winbind_msg_onlinestatus");
-	if (mem_ctx == NULL) {
-		return;
-	}
-
-	message = collect_onlinestatus(mem_ctx);
-	if (message == NULL) {
-		talloc_destroy(mem_ctx);
-		return;
-	}
-
-	messaging_send_buf(msg_ctx, *sender, MSG_WINBIND_ONLINESTATUS, 
-			   (uint8 *)message, strlen(message) + 1);
-
-	talloc_destroy(mem_ctx);
-}
-
 static void child_msg_dump_event_list(struct messaging_context *msg,
 				      void *private_data,
 				      uint32_t msg_type,
@@ -1295,8 +1270,6 @@ static bool fork_domain_child(struct winbindd_child *child)
 			   MSG_WINBIND_OFFLINE, child_msg_offline);
 	messaging_register(winbind_messaging_context(), NULL,
 			   MSG_WINBIND_ONLINE, child_msg_online);
-	messaging_register(winbind_messaging_context(), NULL,
-			   MSG_WINBIND_ONLINESTATUS, child_msg_onlinestatus);
 	messaging_register(winbind_messaging_context(), NULL,
 			   MSG_DUMP_EVENT_LIST, child_msg_dump_event_list);
 	messaging_register(winbind_messaging_context(), NULL,
