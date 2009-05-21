@@ -3,7 +3,7 @@ dnl rk_WIN32_EXPORT buildsymbol symbol-that-export
 AC_DEFUN([rk_WIN32_EXPORT],[AH_TOP([#ifdef $1
 #ifndef $2
 #ifdef _WIN32_
-#define $2_FUNCTION __declspec(dllexport) _stdcall
+#define $2_FUNCTION __declspec(dllexport) __stdcall
 #define $2_VARIABLE __declspec(dllexport)
 #else
 #define $2_FUNCTION
