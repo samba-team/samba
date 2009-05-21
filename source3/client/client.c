@@ -2296,7 +2296,7 @@ static int cmd_posix_open(void)
 	char *targetname = NULL;
 	struct cli_state *targetcli;
 	mode_t mode;
-	int fnum;
+	uint16_t fnum;
 
 	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("posix_open <filename> 0<mode>\n");
@@ -2321,10 +2321,8 @@ static int cmd_posix_open(void)
 		return 1;
 	}
 
-	fnum = cli_posix_open(targetcli, targetname, O_CREAT|O_RDWR, mode);
-	if (fnum == -1) {
-		fnum = cli_posix_open(targetcli, targetname, O_CREAT|O_RDONLY, mode);
-		if (fnum != -1) {
+	if (!NT_STATUS_IS_OK(cli_posix_open(targetcli, targetname, O_CREAT|O_RDWR, mode, &fnum))) {
+		if (!NT_STATUS_IS_OK(cli_posix_open(targetcli, targetname, O_CREAT|O_RDONLY, mode, &fnum))) {
 			d_printf("posix_open file %s: for read/write fnum %d\n", targetname, fnum);
 		} else {
 			d_printf("Failed to open file %s. %s\n", targetname, cli_errstr(cli));
@@ -2344,7 +2342,6 @@ static int cmd_posix_mkdir(void)
 	char *targetname = NULL;
 	struct cli_state *targetcli;
 	mode_t mode;
-	int fnum;
 
 	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("posix_mkdir <filename> 0<mode>\n");
@@ -2369,8 +2366,7 @@ static int cmd_posix_mkdir(void)
 		return 1;
 	}
 
-	fnum = cli_posix_mkdir(targetcli, targetname, mode);
-	if (fnum == -1) {
+	if (!NT_STATUS_IS_OK(cli_posix_mkdir(targetcli, targetname, mode))) {
 		d_printf("Failed to open file %s. %s\n", targetname, cli_errstr(cli));
 	} else {
 		d_printf("posix_mkdir created directory %s\n", targetname);

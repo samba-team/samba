@@ -2527,14 +2527,28 @@ bool cli_get_ea_list_fnum(struct cli_state *cli, uint16_t fnum,
 		TALLOC_CTX *ctx,
 		size_t *pnum_eas,
 		struct ea_struct **pea_list);
-int cli_posix_open(struct cli_state *cli, const char *fname, int flags, mode_t mode);
-int cli_posix_mkdir(struct cli_state *cli, const char *fname, mode_t mode);
+struct tevent_req *cli_posix_open_send(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct cli_state *cli,
+					const char *fname,
+					int flags,
+					mode_t mode);
+NTSTATUS cli_posix_open_recv(struct tevent_req *req, uint16_t *pfnum);
+NTSTATUS cli_posix_open(struct cli_state *cli, const char *fname,
+			int flags, mode_t mode, uint16_t *fnum);
+struct tevent_req *cli_posix_mkdir_send(TALLOC_CTX *mem_ctx,
+                                        struct event_context *ev,
+                                        struct cli_state *cli,
+                                        const char *fname,
+                                        mode_t mode);
+NTSTATUS cli_posix_mkdir_recv(struct tevent_req *req);
+NTSTATUS cli_posix_mkdir(struct cli_state *cli, const char *fname, mode_t mode);
 
 struct tevent_req *cli_posix_unlink_send(TALLOC_CTX *mem_ctx,
 					struct event_context *ev,
 					struct cli_state *cli,
 					const char *fname);
-NTSTATUS cli_posix_unlink_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx);
+NTSTATUS cli_posix_unlink_recv(struct tevent_req *req);
 NTSTATUS cli_posix_unlink(struct cli_state *cli, const char *fname);
 
 struct tevent_req *cli_posix_rmdir_send(TALLOC_CTX *mem_ctx,

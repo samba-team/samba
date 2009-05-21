@@ -3311,87 +3311,248 @@ static uint32_t open_flags_to_wire(int flags)
  Open a file - POSIX semantics. Returns fnum. Doesn't request oplock.
 ****************************************************************************/
 
-static int cli_posix_open_internal(struct cli_state *cli, const char *fname, int flags, mode_t mode, bool is_dir)
+struct posix_open_state {
+	uint16_t setup;
+	uint8_t *param;
+	uint8_t data[18];
+	uint16_t fnum; /* Out */
+};
+
+static void cli_posix_open_internal_done(struct tevent_req *subreq)
 {
-	unsigned int data_len = 0;
-	unsigned int param_len = 0;
-	uint16_t setup = TRANSACT2_SETPATHINFO;
-	char *param;
-	char data[18];
-	char *rparam=NULL, *rdata=NULL;
-	char *p;
-	uint16_t fnum = (uint16_t)-1;
-	uint32_t wire_flags = open_flags_to_wire(flags);
-	size_t srclen = 2*(strlen(fname)+1);
+	struct tevent_req *req = tevent_req_callback_data(
+				subreq, struct tevent_req);
+	struct posix_open_state *state = tevent_req_data(req, struct posix_open_state);
+	NTSTATUS status;
+	uint8_t *data;
+	uint32_t num_data;
 
-	param = SMB_MALLOC_ARRAY(char, 6+srclen+2);
-	if (!param) {
-		return false;
+	status = cli_trans_recv(subreq, state, NULL, NULL, NULL, NULL, &data, &num_data);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
 	}
-	memset(param, '\0', 6);
-	SSVAL(param,0, SMB_POSIX_PATH_OPEN);
-	p = &param[6];
+	if (num_data < 12) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	state->fnum = SVAL(data,2);
+	tevent_req_done(req);
+}
 
-	p += clistr_push(cli, p, fname, srclen, STR_TERMINATE);
-	param_len = PTR_DIFF(p, param);
+static struct tevent_req *cli_posix_open_internal_send(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct cli_state *cli,
+					const char *fname,
+					int flags,
+					mode_t mode,
+					bool is_dir)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct posix_open_state *state = NULL;
+	uint32_t wire_flags = open_flags_to_wire(flags);
 
+	req = tevent_req_create(mem_ctx, &state, struct posix_open_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	/* Setup setup word. */
+	SSVAL(&state->setup, 0, TRANSACT2_SETPATHINFO);
+
+	/* Setup param array. */
+	state->param = talloc_array(state, uint8_t, 6);
+	if (tevent_req_nomem(state->param, req)) {
+		return tevent_req_post(req, ev);
+	}
+	memset(state->param, '\0', 6);
+	SSVAL(state->param, 0, SMB_POSIX_PATH_OPEN);
+
+	state->param = trans2_bytes_push_str(state->param, cli_ucs2(cli), fname,
+				   strlen(fname)+1, NULL);
+
+	if (tevent_req_nomem(state->param, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* Setup data words. */
 	if (is_dir) {
 		wire_flags &= ~(SMB_O_RDONLY|SMB_O_RDWR|SMB_O_WRONLY);
 		wire_flags |= SMB_O_DIRECTORY;
 	}
 
-	p = data;
-	SIVAL(p,0,0); /* No oplock. */
-	SIVAL(p,4,wire_flags);
-	SIVAL(p,8,unix_perms_to_wire(mode));
-	SIVAL(p,12,0); /* Top bits of perms currently undefined. */
-	SSVAL(p,16,SMB_NO_INFO_LEVEL_RETURNED); /* No info level returned. */
+	SIVAL(state->data,0,0); /* No oplock. */
+	SIVAL(state->data,4,wire_flags);
+	SIVAL(state->data,8,unix_perms_to_wire(mode));
+	SIVAL(state->data,12,0); /* Top bits of perms currently undefined. */
+	SSVAL(state->data,16,SMB_NO_INFO_LEVEL_RETURNED); /* No info level returned. */
 
-	data_len = 18;
+	subreq = cli_trans_send(state,			/* mem ctx. */
+				ev,			/* event ctx. */
+				cli,			/* cli_state. */
+				SMBtrans2,		/* cmd. */
+				NULL,			/* pipe name. */
+				-1,			/* fid. */
+				0,			/* function. */
+				0,			/* flags. */
+				&state->setup,		/* setup. */
+				1,			/* num setup uint16_t words. */
+				0,			/* max returned setup. */
+				state->param,		/* param. */
+				talloc_get_size(state->param),/* num param. */
+				2,			/* max returned param. */
+				state->data,		/* data. */
+				18,			/* num data. */
+				12);			/* max returned data. */
 
-	if (!cli_send_trans(cli, SMBtrans2,
-			NULL,                        /* name */
-			-1, 0,                          /* fid, flags */
-			&setup, 1, 0,                   /* setup, length, max */
-			param, param_len, 0,            /* param, length, max */
-			(char *)&data,  data_len, cli->max_xmit /* data, length, max */
-			)) {
-		SAFE_FREE(param);
-		return -1;
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
 	}
+	tevent_req_set_callback(subreq, cli_posix_open_internal_done, req);
+	return req;
+}
 
-	SAFE_FREE(param);
+struct tevent_req *cli_posix_open_send(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct cli_state *cli,
+					const char *fname,
+					int flags,
+					mode_t mode)
+{
+	return cli_posix_open_internal_send(mem_ctx, ev,
+				cli, fname, flags, mode, false);
+}
 
-	if (!cli_receive_trans(cli, SMBtrans2,
-		&rparam, &param_len,
-		&rdata, &data_len)) {
-			return -1;
+NTSTATUS cli_posix_open_recv(struct tevent_req *req, uint16_t *pfnum)
+{
+	struct posix_open_state *state = tevent_req_data(req, struct posix_open_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
 	}
-
-	fnum = SVAL(rdata,2);
-
-	SAFE_FREE(rdata);
-	SAFE_FREE(rparam);
-
-	return fnum;
+	*pfnum = state->fnum;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
- open - POSIX semantics.
+ Open - POSIX semantics. Doesn't request oplock.
 ****************************************************************************/
 
-int cli_posix_open(struct cli_state *cli, const char *fname, int flags, mode_t mode)
+NTSTATUS cli_posix_open(struct cli_state *cli, const char *fname,
+			int flags, mode_t mode, uint16_t *pfnum)
 {
-	return cli_posix_open_internal(cli, fname, flags, mode, False);
+
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status = NT_STATUS_OK;
+
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	req = cli_posix_open_send(frame,
+				ev,
+				cli,
+				fname,
+				flags,
+				mode);
+	if (req == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
+	}
+
+	status = cli_posix_open_recv(req, pfnum);
+
+ fail:
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
 }
 
-/****************************************************************************
- mkdir - POSIX semantics.
-****************************************************************************/
-
-int cli_posix_mkdir(struct cli_state *cli, const char *fname, mode_t mode)
+struct tevent_req *cli_posix_mkdir_send(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct cli_state *cli,
+					const char *fname,
+					mode_t mode)
 {
-	return (cli_posix_open_internal(cli, fname, O_CREAT, mode, True) == -1) ? -1 : 0;
+	return cli_posix_open_internal_send(mem_ctx, ev,
+				cli, fname, O_CREAT, mode, true);
+}
+
+NTSTATUS cli_posix_mkdir_recv(struct tevent_req *req)
+{
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_posix_mkdir(struct cli_state *cli, const char *fname, mode_t mode)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status = NT_STATUS_OK;
+
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	req = cli_posix_mkdir_send(frame,
+				ev,
+				cli,
+				fname,
+				mode);
+	if (req == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
+	}
+
+	status = cli_posix_mkdir_recv(req);
+
+ fail:
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
 }
 
 /****************************************************************************
@@ -3489,7 +3650,7 @@ struct tevent_req *cli_posix_unlink_send(TALLOC_CTX *mem_ctx,
 	return cli_posix_unlink_internal_send(mem_ctx, ev, cli, fname, false);
 }
 
-NTSTATUS cli_posix_unlink_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx)
+NTSTATUS cli_posix_unlink_recv(struct tevent_req *req)
 {
 	NTSTATUS status;
 
@@ -3538,7 +3699,7 @@ NTSTATUS cli_posix_unlink(struct cli_state *cli, const char *fname)
 		goto fail;
 	}
 
-	status = cli_posix_unlink_recv(req, frame);
+	status = cli_posix_unlink_recv(req);
 
  fail:
 	TALLOC_FREE(frame);

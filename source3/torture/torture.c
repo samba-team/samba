@@ -4139,7 +4139,7 @@ static bool run_simple_posix_open_test(int dummy)
 	const char *dname = "\\posix:dir";
 	uint16 major, minor;
 	uint32 caplow, caphigh;
-	int fnum1 = -1;
+	uint16_t fnum1 = (uint16_t)-1;
 	bool correct = false;
 
 	printf("Starting simple POSIX open test\n");
@@ -4173,13 +4173,12 @@ static bool run_simple_posix_open_test(int dummy)
 	cli_posix_rmdir(cli1, dname);
 
 	/* Create a directory. */
-	if (cli_posix_mkdir(cli1, dname, 0777) == -1) {
+	if (!NT_STATUS_IS_OK(cli_posix_mkdir(cli1, dname, 0777))) {
 		printf("POSIX mkdir of %s failed (%s)\n", dname, cli_errstr(cli1));
 		goto out;
 	}
 
-	fnum1 = cli_posix_open(cli1, fname, O_RDWR|O_CREAT|O_EXCL, 0600);
-	if (fnum1 == -1) {
+	if (!NT_STATUS_IS_OK(cli_posix_open(cli1, fname, O_RDWR|O_CREAT|O_EXCL, 0600, &fnum1))) {
 		printf("POSIX create of %s failed (%s)\n", fname, cli_errstr(cli1));
 		goto out;
 	}
@@ -4190,8 +4189,7 @@ static bool run_simple_posix_open_test(int dummy)
 	}
 
 	/* Now open the file again for read only. */
-	fnum1 = cli_posix_open(cli1, fname, O_RDONLY, 0);
-	if (fnum1 == -1) {
+	if (!NT_STATUS_IS_OK(cli_posix_open(cli1, fname, O_RDONLY, 0, &fnum1))) {
 		printf("POSIX open of %s failed (%s)\n", fname, cli_errstr(cli1));
 		goto out;
 	}
@@ -4208,8 +4206,7 @@ static bool run_simple_posix_open_test(int dummy)
 	}
 
 	/* Ensure the file has gone. */
-	fnum1 = cli_posix_open(cli1, fname, O_RDONLY, 0);
-	if (fnum1 != -1) {
+	if (NT_STATUS_IS_OK(cli_posix_open(cli1, fname, O_RDONLY, 0, &fnum1))) {
 		printf("POSIX open of %s succeeded, should have been deleted.\n", fname);
 		goto out;
 	}
