@@ -74,8 +74,10 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	size_t body_size;
 	size_t expected_dyn_size = 0;
 	size_t c;
+	uint16_t security_mode;
 	uint16_t dialect_count;
 	uint16_t dialect;
+	uint32_t capabilities;
 
 /* TODO: drop the connection with INVALI_PARAMETER */
 
@@ -103,12 +105,12 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 
 	for (c=0; c < dialect_count; c++) {
 		dialect = SVAL(indyn, c*2);
-		if (dialect == 0x0202) {
+		if (dialect == SMB2_DIALECT_REVISION_202) {
 			break;
 		}
 	}
 
-	if (dialect != 0x0202) {
+	if (dialect != SMB2_DIALECT_REVISION_202) {
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 
@@ -129,6 +131,16 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_INTERNAL_ERROR);
 	}
 
+	security_mode = SMB2_NEGOTIATE_SIGNING_ENABLED;
+	if (lp_server_signing() == Required) {
+		security_mode |= SMB2_NEGOTIATE_SIGNING_REQUIRED;
+	}
+
+	capabilities = 0;
+	if (lp_host_msdfs()) {
+		capabilities |= SMB2_CAP_DFS;
+	}
+
 	security_offset = SMB2_HDR_BODY + 0x40;
 	security_buffer = data_blob_const(negprot_spnego_blob.data + 16,
 					  negprot_spnego_blob.length - 16);
@@ -142,13 +154,14 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	}
 
 	SSVAL(outbody.data, 0x00, 0x40 + 1);	/* struct size */
-/*TODO: indicate signing enabled */
-	SSVAL(outbody.data, 0x02, 0);		/* security mode */
+	SSVAL(outbody.data, 0x02,
+	      security_mode);			/* security mode */
 	SSVAL(outbody.data, 0x04, dialect);	/* dialect revision */
 	SSVAL(outbody.data, 0x06, 0);		/* reserved */
 	memcpy(outbody.data + 0x08,
 	       negprot_spnego_blob.data, 16);	/* server guid */
-	SIVAL(outbody.data, 0x18, 0);		/* capabilities */
+	SIVAL(outbody.data, 0x18,
+	      capabilities);			/* capabilities */
 	SIVAL(outbody.data, 0x1C, 0x00010000);	/* max transact size */
 	SIVAL(outbody.data, 0x20, 0x00010000);	/* max read size */
 	SIVAL(outbody.data, 0x24, 0x00010000);	/* max write size */
