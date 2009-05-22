@@ -68,10 +68,15 @@
 
 #define SMB2_MAGIC 0x424D53FE /* 0xFE 'S' 'M' 'B' */
 
-/* the dialects we support */
-#define SMB2_DIALECT_REVISION           0x202
-#define SMB21_DIALECT_REVISION          0x210
-#define SMB2_LONGHORN_BETA_DIALECT_REVISION	0x0 /* early beta dialect */
+/* SMB2 negotiate dialects */
+#define SMB2_DIALECT_REVISION_000       0x0000 /* early beta dialect */
+#define SMB2_DIALECT_REVISION_202       0x0202
+#define SMB2_DIALECT_REVISION_210       0x0210
+#define SMB2_DIALECT_REVISION_2FF       0x02FF
+
+#define SMB2_DIALECT_REVISION           SMB2_DIALECT_REVISION_202
+#define SMB21_DIALECT_REVISION          SMB2_DIALECT_REVISION_210
+#define SMB2_LONGHORN_BETA_DIALECT_REVISION SMB2_DIALECT_REVISION_000
 
 /* SMB2 negotiate security_mode */
 #define SMB2_NEGOTIATE_SIGNING_ENABLED   0x01
@@ -79,8 +84,13 @@
 
 /* SMB2 capabilities - only 1 so far. I'm sure more will be added */
 #define SMB2_CAP_DFS                     0x00000001
+#define SMB2_CAP_LEASING                 0x00000002 /* only in dialect 0x210 */
 /* so we can spot new caps as added */
 #define SMB2_CAP_ALL                     SMB2_CAP_DFS
+
+/* SMB2 session flags */
+#define SMB2_SESSION_FLAG_IS_GUEST       0x0001
+#define SMB2_SESSION_FLAG_IS_NULL        0x0002
 
 /* SMB2 share flags */
 #define SMB2_SHAREFLAG_MANUAL_CACHING                    0x0000
