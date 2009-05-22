@@ -1538,6 +1538,19 @@ static void tstream_bsd_readv_handler(void *private_data)
 		state->count -= 1;
 	}
 
+	/*
+	 * there're maybe some empty vectors at the end
+	 * which we need to skip, otherwise we would get
+	 * ret == 0 from the readv() call and return EPIPE
+	 */
+	while (state->count > 0) {
+		if (state->vector[0].iov_len > 0) {
+			break;
+		}
+		state->vector += 1;
+		state->count -= 1;
+	}
+
 	if (state->count > 0) {
 		/* we have more to read */
 		return;
@@ -1681,6 +1694,19 @@ static void tstream_bsd_writev_handler(void *private_data)
 			break;
 		}
 		ret -= state->vector[0].iov_len;
+		state->vector += 1;
+		state->count -= 1;
+	}
+
+	/*
+	 * there're maybe some empty vectors at the end
+	 * which we need to skip, otherwise we would get
+	 * ret == 0 from the writev() call and return EPIPE
+	 */
+	while (state->count > 0) {
+		if (state->vector[0].iov_len > 0) {
+			break;
+		}
 		state->vector += 1;
 		state->count -= 1;
 	}
