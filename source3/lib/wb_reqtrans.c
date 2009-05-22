@@ -338,30 +338,6 @@ ssize_t wb_resp_write_recv(struct tevent_req *req, int *err)
 	return state->ret;
 }
 
-static bool closed_fd(int fd)
-{
-	struct timeval tv;
-	fd_set r_fds;
-	int selret;
-
-	if (fd == -1) {
-		return true;
-	}
-
-	FD_ZERO(&r_fds);
-	FD_SET(fd, &r_fds);
-	ZERO_STRUCT(tv);
-
-	selret = select(fd+1, &r_fds, NULL, NULL, &tv);
-	if (selret == -1) {
-		return true;
-	}
-	if (selret == 0) {
-		return false;
-	}
-	return (FD_ISSET(fd, &r_fds));
-}
-
 struct wb_simple_trans_state {
 	struct tevent_context *ev;
 	int fd;
@@ -382,11 +358,6 @@ struct tevent_req *wb_simple_trans_send(TALLOC_CTX *mem_ctx,
 	req = tevent_req_create(mem_ctx, &state, struct wb_simple_trans_state);
 	if (req == NULL) {
 		return NULL;
-	}
-
-	if (closed_fd(fd)) {
-		tevent_req_error(req, EPIPE);
-		return tevent_req_post(req, ev);
 	}
 
 	wb_req->length = sizeof(struct winbindd_request);

@@ -376,7 +376,7 @@ static void wb_open_pipe_connect_nonpriv_done(struct tevent_req *subreq)
 	state->wb_req.cmd = WINBINDD_INTERFACE_VERSION;
 	state->wb_req.pid = getpid();
 
-	subreq = wb_simple_trans_send(state, state->ev, state->wb_ctx->queue,
+	subreq = wb_simple_trans_send(state, state->ev, NULL,
 				      state->wb_ctx->fd, &state->wb_req);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
@@ -408,7 +408,7 @@ static void wb_open_pipe_ping_done(struct tevent_req *subreq)
 	state->wb_req.cmd = WINBINDD_PRIV_PIPE_DIR;
 	state->wb_req.pid = getpid();
 
-	subreq = wb_simple_trans_send(state, state->ev, state->wb_ctx->queue,
+	subreq = wb_simple_trans_send(state, state->ev, NULL,
 				      state->wb_ctx->fd, &state->wb_req);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
@@ -477,6 +477,31 @@ struct wb_trans_state {
 	bool need_priv;
 };
 
+static bool closed_fd(int fd)
+{
+	struct timeval tv;
+	fd_set r_fds;
+	int selret;
+
+	if (fd == -1) {
+		return true;
+	}
+
+	FD_ZERO(&r_fds);
+	FD_SET(fd, &r_fds);
+	ZERO_STRUCT(tv);
+
+	selret = select(fd+1, &r_fds, NULL, NULL, &tv);
+	if (selret == -1) {
+		return true;
+	}
+	if (selret == 0) {
+		return false;
+	}
+	return (FD_ISSET(fd, &r_fds));
+}
+
+static void wb_trans_trigger(struct tevent_req *req, void *private_data);
 static void wb_trans_connect_done(struct tevent_req *subreq);
 static void wb_trans_done(struct tevent_req *subreq);
 static void wb_trans_retry_wait_done(struct tevent_req *subreq);
@@ -486,7 +511,7 @@ struct tevent_req *wb_trans_send(TALLOC_CTX *mem_ctx,
 				 struct wb_context *wb_ctx, bool need_priv,
 				 struct winbindd_request *wb_req)
 {
-	struct tevent_req *req, *subreq;
+	struct tevent_req *req;
 	struct wb_trans_state *state;
 
 	req = tevent_req_create(mem_ctx, &state, struct wb_trans_state);
@@ -499,27 +524,44 @@ struct tevent_req *wb_trans_send(TALLOC_CTX *mem_ctx,
 	state->num_retries = 10;
 	state->need_priv = need_priv;
 
-	if ((wb_ctx->fd == -1) || (need_priv && !wb_ctx->is_priv)) {
-		subreq = wb_open_pipe_send(state, ev, wb_ctx, need_priv);
-		if (subreq == NULL) {
-			goto fail;
+	if (!tevent_queue_add(wb_ctx->queue, ev, req, wb_trans_trigger,
+			      NULL)) {
+		tevent_req_nomem(NULL, req);
+		return tevent_req_post(req, ev);
+	}
+	return req;
+}
+
+static void wb_trans_trigger(struct tevent_req *req, void *private_data)
+{
+	struct wb_trans_state *state = tevent_req_data(
+		req, struct wb_trans_state);
+	struct tevent_req *subreq;
+
+	if ((state->wb_ctx->fd != -1) && closed_fd(state->wb_ctx->fd)) {
+		close(state->wb_ctx->fd);
+		state->wb_ctx->fd = -1;
+	}
+
+	if ((state->wb_ctx->fd == -1)
+	    || (state->need_priv && !state->wb_ctx->is_priv)) {
+		subreq = wb_open_pipe_send(state, state->ev, state->wb_ctx,
+					   state->need_priv);
+		if (tevent_req_nomem(subreq, req)) {
+			return;
 		}
 		tevent_req_set_callback(subreq, wb_trans_connect_done, req);
-		return req;
+		return;
 	}
 
 	state->wb_req->pid = getpid();
 
-	subreq = wb_simple_trans_send(state, ev, wb_ctx->queue, wb_ctx->fd,
-				      wb_req);
-	if (subreq == NULL) {
-		goto fail;
+	subreq = wb_simple_trans_send(state, state->ev, NULL,
+				      state->wb_ctx->fd, state->wb_req);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
 	}
 	tevent_req_set_callback(subreq, wb_trans_done, req);
-	return req;
- fail:
-	TALLOC_FREE(req);
-	return NULL;
 }
 
 static bool wb_trans_retry(struct tevent_req *req,
@@ -603,7 +645,7 @@ static void wb_trans_connect_done(struct tevent_req *subreq)
 		return;
 	}
 
-	subreq = wb_simple_trans_send(state, state->ev, state->wb_ctx->queue,
+	subreq = wb_simple_trans_send(state, state->ev, NULL,
 				      state->wb_ctx->fd, state->wb_req);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
