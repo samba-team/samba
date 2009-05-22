@@ -6521,7 +6521,7 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 		(FILE_SHARE_READ | FILE_SHARE_WRITE |	/* share_access */
 		    FILE_SHARE_DELETE),
 		create_disp,				/* create_disposition*/
-		0,					/* create_options */
+		FILE_NON_DIRECTORY_FILE,		/* create_options */
 		mod_unixmode,				/* file_attributes */
 		oplock_request,				/* oplock_request */
 		0,					/* allocation_size */
