@@ -893,6 +893,7 @@ static NTSTATUS idmap_ldap_unixids_to_sids(struct idmap_domain *dom,
 	TALLOC_CTX *memctx;
 	struct idmap_ldap_context *ctx;
 	LDAPMessage *result = NULL;
+	LDAPMessage *entry = NULL;
 	const char *uidNumber;
 	const char *gidNumber;
 	const char **attr_list;
@@ -988,7 +989,6 @@ again:
 	}
 
 	for (i = 0; i < count; i++) {
-		LDAPMessage *entry = NULL;
 		char *sidstr = NULL;
 	       	char *tmp = NULL;
 		enum id_type type;
