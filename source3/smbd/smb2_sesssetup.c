@@ -71,7 +71,7 @@ NTSTATUS smbd_smb2_request_process_sesssetup(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 
-	in_session_id = SVAL(inhdr, SMB2_HDR_SESSION_ID);
+	in_session_id = BVAL(inhdr, SMB2_HDR_SESSION_ID);
 	in_security_buffer.data = (uint8_t *)req->in.vector[i+2].iov_base;
 	in_security_buffer.length = in_security_length;
 
@@ -207,7 +207,7 @@ NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 
 	inhdr = (const uint8_t *)req->in.vector[i+0].iov_base;
 
-	in_session_id = SVAL(inhdr, SMB2_HDR_SESSION_ID);
+	in_session_id = BVAL(inhdr, SMB2_HDR_SESSION_ID);
 
 	/* lookup an existing session */
 	p = idr_find(req->conn->smb2.sessions.idtree, in_session_id);
