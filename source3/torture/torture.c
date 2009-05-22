@@ -4211,6 +4211,17 @@ static bool run_simple_posix_open_test(int dummy)
 		goto out;
 	}
 
+	/* What happens when we try and POSIX open a directory ? */
+	if (NT_STATUS_IS_OK(cli_posix_open(cli1, dname, O_RDONLY, 0, &fnum1))) {
+		printf("POSIX open of directory %s succeeded, should have failed.\n", fname);
+		goto out;
+	} else {
+		if (!check_error(__LINE__, cli1, ERRDOS, EISDIR,
+				NT_STATUS_FILE_IS_A_DIRECTORY)) {
+			goto out;
+		}
+	}
+
 	if (!NT_STATUS_IS_OK(cli_posix_rmdir(cli1, dname))) {
 		printf("POSIX rmdir failed (%s)\n", cli_errstr(cli1));
 		goto out;
@@ -4223,7 +4234,7 @@ static bool run_simple_posix_open_test(int dummy)
 
 	if (fnum1 != (uint16_t)-1) {
 		cli_close(cli1, fnum1);
-		fnum1 = -1;
+		fnum1 = (uint16_t)-1;
 	}
 
 	cli_setatr(cli1, fname, 0, 0);
