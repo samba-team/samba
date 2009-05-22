@@ -288,14 +288,45 @@ static NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 	const uint8_t *inhdr;
 	int i = req->current_idx;
 	uint16_t opcode;
+	uint32_t flags;
 	NTSTATUS status;
+	NTSTATUS session_status;
 
 	inhdr = (const uint8_t *)req->in.vector[i].iov_base;
 
 	/* TODO: verify more things */
 
+	flags = IVAL(inhdr, SMB2_HDR_FLAGS);
 	opcode = IVAL(inhdr, SMB2_HDR_OPCODE);
 	DEBUG(10,("smbd_smb2_request_dispatch: opcode[%u]\n", opcode));
+
+#define TMP_SMB2_ALLOWED_FLAGS ( \
+	SMB2_HDR_FLAG_CHAINED | \
+	SMB2_HDR_FLAG_SIGNED | \
+	SMB2_HDR_FLAG_DFS)
+	if ((flags & ~TMP_SMB2_ALLOWED_FLAGS) != 0) {
+		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
+	}
+#undef TMP_SMB2_ALLOWED_FLAGS
+
+	session_status = smbd_smb2_request_check_session(req);
+
+	req->do_signing = false;
+	if (flags & SMB2_HDR_FLAG_SIGNED) {
+		if (!NT_STATUS_IS_OK(session_status)) {
+			return smbd_smb2_request_error(req, session_status);
+		}
+
+		req->do_signing = true;
+		status = smb2_signing_check_pdu(req->session->session_key,
+						&req->in.vector[i], 3);
+		if (!NT_STATUS_IS_OK(status)) {
+			return smbd_smb2_request_error(req, status);
+		}
+	} else if (req->session && req->session->do_signing) {
+		return smbd_smb2_request_error(req, NT_STATUS_ACCESS_DENIED);
+	}
+
 	switch (opcode) {
 	case SMB2_OP_NEGPROT:
 		return smbd_smb2_request_process_negprot(req);
@@ -304,13 +335,15 @@ static NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		return smbd_smb2_request_process_sesssetup(req);
 
 	case SMB2_OP_LOGOFF:
-		status = smbd_smb2_request_check_session(req);
-		if (!NT_STATUS_IS_OK(status)) {
-			return smbd_smb2_request_error(req, status);
+		if (!NT_STATUS_IS_OK(session_status)) {
+			return smbd_smb2_request_error(req, session_status);
 		}
 		return smbd_smb2_request_process_logoff(req);
 
 	case SMB2_OP_TCON:
+		if (!NT_STATUS_IS_OK(session_status)) {
+			return smbd_smb2_request_error(req, session_status);
+		}
 		status = smbd_smb2_request_check_session(req);
 		if (!NT_STATUS_IS_OK(status)) {
 			return smbd_smb2_request_error(req, status);
@@ -318,9 +351,8 @@ static NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		return smbd_smb2_request_process_tcon(req);
 
 	case SMB2_OP_TDIS:
-		status = smbd_smb2_request_check_session(req);
-		if (!NT_STATUS_IS_OK(status)) {
-			return smbd_smb2_request_error(req, status);
+		if (!NT_STATUS_IS_OK(session_status)) {
+			return smbd_smb2_request_error(req, session_status);
 		}
 		status = smbd_smb2_request_check_tcon(req);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -329,9 +361,8 @@ static NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		return smbd_smb2_request_process_tdis(req);
 
 	case SMB2_OP_CREATE:
-		status = smbd_smb2_request_check_session(req);
-		if (!NT_STATUS_IS_OK(status)) {
-			return smbd_smb2_request_error(req, status);
+		if (!NT_STATUS_IS_OK(session_status)) {
+			return smbd_smb2_request_error(req, session_status);
 		}
 		status = smbd_smb2_request_check_tcon(req);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -340,9 +371,8 @@ static NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
 
 	case SMB2_OP_CLOSE:
-		status = smbd_smb2_request_check_session(req);
-		if (!NT_STATUS_IS_OK(status)) {
-			return smbd_smb2_request_error(req, status);
+		if (!NT_STATUS_IS_OK(session_status)) {
+			return smbd_smb2_request_error(req, session_status);
 		}
 		status = smbd_smb2_request_check_tcon(req);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -351,9 +381,8 @@ static NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
 
 	case SMB2_OP_FLUSH:
-		status = smbd_smb2_request_check_session(req);
-		if (!NT_STATUS_IS_OK(status)) {
-			return smbd_smb2_request_error(req, status);
+		if (!NT_STATUS_IS_OK(session_status)) {
+			return smbd_smb2_request_error(req, session_status);
 		}
 		status = smbd_smb2_request_check_tcon(req);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -362,9 +391,8 @@ static NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
 
 	case SMB2_OP_READ:
-		status = smbd_smb2_request_check_session(req);
-		if (!NT_STATUS_IS_OK(status)) {
-			return smbd_smb2_request_error(req, status);
+		if (!NT_STATUS_IS_OK(session_status)) {
+			return smbd_smb2_request_error(req, session_status);
 		}
 		status = smbd_smb2_request_check_tcon(req);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -373,9 +401,8 @@ static NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
 
 	case SMB2_OP_WRITE:
-		status = smbd_smb2_request_check_session(req);
-		if (!NT_STATUS_IS_OK(status)) {
-			return smbd_smb2_request_error(req, status);
+		if (!NT_STATUS_IS_OK(session_status)) {
+			return smbd_smb2_request_error(req, session_status);
 		}
 		status = smbd_smb2_request_check_tcon(req);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -384,9 +411,8 @@ static NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
 
 	case SMB2_OP_LOCK:
-		status = smbd_smb2_request_check_session(req);
-		if (!NT_STATUS_IS_OK(status)) {
-			return smbd_smb2_request_error(req, status);
+		if (!NT_STATUS_IS_OK(session_status)) {
+			return smbd_smb2_request_error(req, session_status);
 		}
 		status = smbd_smb2_request_check_tcon(req);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -395,9 +421,8 @@ static NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
 
 	case SMB2_OP_IOCTL:
-		status = smbd_smb2_request_check_session(req);
-		if (!NT_STATUS_IS_OK(status)) {
-			return smbd_smb2_request_error(req, status);
+		if (!NT_STATUS_IS_OK(session_status)) {
+			return smbd_smb2_request_error(req, session_status);
 		}
 		status = smbd_smb2_request_check_tcon(req);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -412,9 +437,8 @@ static NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		return smbd_smb2_request_process_keepalive(req);
 
 	case SMB2_OP_FIND:
-		status = smbd_smb2_request_check_session(req);
-		if (!NT_STATUS_IS_OK(status)) {
-			return smbd_smb2_request_error(req, status);
+		if (!NT_STATUS_IS_OK(session_status)) {
+			return smbd_smb2_request_error(req, session_status);
 		}
 		status = smbd_smb2_request_check_tcon(req);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -423,9 +447,8 @@ static NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
 
 	case SMB2_OP_NOTIFY:
-		status = smbd_smb2_request_check_session(req);
-		if (!NT_STATUS_IS_OK(status)) {
-			return smbd_smb2_request_error(req, status);
+		if (!NT_STATUS_IS_OK(session_status)) {
+			return smbd_smb2_request_error(req, session_status);
 		}
 		status = smbd_smb2_request_check_tcon(req);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -434,9 +457,8 @@ static NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
 
 	case SMB2_OP_GETINFO:
-		status = smbd_smb2_request_check_session(req);
-		if (!NT_STATUS_IS_OK(status)) {
-			return smbd_smb2_request_error(req, status);
+		if (!NT_STATUS_IS_OK(session_status)) {
+			return smbd_smb2_request_error(req, session_status);
 		}
 		status = smbd_smb2_request_check_tcon(req);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -445,9 +467,8 @@ static NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
 
 	case SMB2_OP_SETINFO:
-		status = smbd_smb2_request_check_session(req);
-		if (!NT_STATUS_IS_OK(status)) {
-			return smbd_smb2_request_error(req, status);
+		if (!NT_STATUS_IS_OK(session_status)) {
+			return smbd_smb2_request_error(req, session_status);
 		}
 		status = smbd_smb2_request_check_tcon(req);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -456,9 +477,8 @@ static NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
 
 	case SMB2_OP_BREAK:
-		status = smbd_smb2_request_check_session(req);
-		if (!NT_STATUS_IS_OK(status)) {
-			return smbd_smb2_request_error(req, status);
+		if (!NT_STATUS_IS_OK(session_status)) {
+			return smbd_smb2_request_error(req, session_status);
 		}
 		status = smbd_smb2_request_check_tcon(req);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -480,6 +500,16 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	/* TODO: sign the response here */
 
 	smb2_setup_nbt_length(req->out.vector, req->out.vector_count);
+
+	if (req->do_signing) {
+		int i = req->current_idx;
+		NTSTATUS status;
+		status = smb2_signing_sign_pdu(req->session->session_key,
+					       &req->out.vector[i], 3);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
 
 	req->current_idx += 3;
 
