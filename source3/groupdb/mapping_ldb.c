@@ -276,7 +276,7 @@ static bool get_group_map_from_ntname(const char *name, GROUP_MAP *map)
 
 	ret = ldb_search(ldb, talloc_tos(), &res, NULL, LDB_SCOPE_SUBTREE,
 			 NULL, "(&(ntName=%s)(objectClass=groupMap))", name);
-	if (ret != LDB_SUCCESS || res->count != 1) {
+	if (ret != LDB_SUCCESS || (res && res->count != 1)) {
 		goto failed;
 	}
 
