@@ -812,12 +812,11 @@ static NTSTATUS cmd_samr_enum_dom_users(struct rpc_pipe_client *cli,
 
 	/* Get domain policy handle */
 
-	result = rpccli_samr_OpenDomain(cli, mem_ctx,
-					&connect_pol,
-					access_mask,
-					&domain_sid,
-					&domain_pol);
-
+	result = get_domain_handle(cli, mem_ctx, "domain",
+				   &connect_pol,
+				   access_mask,
+				   &domain_sid,
+				   &domain_pol);
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
@@ -887,12 +886,11 @@ static NTSTATUS cmd_samr_enum_dom_groups(struct rpc_pipe_client *cli,
 
 	/* Get domain policy handle */
 
-	result = rpccli_samr_OpenDomain(cli, mem_ctx,
-					&connect_pol,
-					access_mask,
-					&domain_sid,
-					&domain_pol);
-
+	result = get_domain_handle(cli, mem_ctx, "domain",
+				   &connect_pol,
+				   access_mask,
+				   &domain_sid,
+				   &domain_pol);
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
