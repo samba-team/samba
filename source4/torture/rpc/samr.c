@@ -4887,8 +4887,9 @@ static bool check_mask(struct dcerpc_pipe *p, struct torture_context *tctx,
 	return ret;
 }
 
-static bool test_EnumDomainUsers(struct dcerpc_pipe *p, struct torture_context *tctx,
-				 struct policy_handle *handle)
+static bool test_EnumDomainUsers_all(struct dcerpc_pipe *p,
+				     struct torture_context *tctx,
+				     struct policy_handle *handle)
 {
 	NTSTATUS status = STATUS_MORE_ENTRIES;
 	struct samr_EnumDomainUsers r;
@@ -5016,9 +5017,9 @@ static bool test_EnumDomainUsers_async(struct dcerpc_pipe *p, struct torture_con
 	return true;
 }
 
-static bool test_EnumDomainGroups(struct dcerpc_pipe *p,
-				  struct torture_context *tctx,
-				  struct policy_handle *handle)
+static bool test_EnumDomainGroups_all(struct dcerpc_pipe *p,
+				      struct torture_context *tctx,
+				      struct policy_handle *handle)
 {
 	NTSTATUS status;
 	struct samr_EnumDomainGroups r;
@@ -5056,9 +5057,9 @@ static bool test_EnumDomainGroups(struct dcerpc_pipe *p,
 	return ret;
 }
 
-static bool test_EnumDomainAliases(struct dcerpc_pipe *p,
-				   struct torture_context *tctx,
-				   struct policy_handle *handle)
+static bool test_EnumDomainAliases_all(struct dcerpc_pipe *p,
+				       struct torture_context *tctx,
+				       struct policy_handle *handle)
 {
 	NTSTATUS status;
 	struct samr_EnumDomainAliases r;
@@ -6113,10 +6114,10 @@ static bool test_OpenDomain(struct dcerpc_pipe *p, struct torture_context *tctx,
 		ret &= test_CreateDomainGroup(p, tctx, &domain_handle, TEST_GROUPNAME, &group_handle, sid, true);
 		ret &= test_QueryDomainInfo(p, tctx, &domain_handle);
 		ret &= test_QueryDomainInfo2(p, tctx, &domain_handle);
-		ret &= test_EnumDomainUsers(p, tctx, &domain_handle);
+		ret &= test_EnumDomainUsers_all(p, tctx, &domain_handle);
 		ret &= test_EnumDomainUsers_async(p, tctx, &domain_handle);
-		ret &= test_EnumDomainGroups(p, tctx, &domain_handle);
-		ret &= test_EnumDomainAliases(p, tctx, &domain_handle);
+		ret &= test_EnumDomainGroups_all(p, tctx, &domain_handle);
+		ret &= test_EnumDomainAliases_all(p, tctx, &domain_handle);
 		ret &= test_QueryDisplayInfo2(p, tctx, &domain_handle);
 		ret &= test_QueryDisplayInfo3(p, tctx, &domain_handle);
 		ret &= test_QueryDisplayInfo_continue(p, tctx, &domain_handle);
