@@ -342,6 +342,7 @@ static bool closed_fd(int fd)
 {
 	struct timeval tv;
 	fd_set r_fds;
+	int selret;
 
 	if (fd == -1) {
 		return true;
@@ -351,12 +352,14 @@ static bool closed_fd(int fd)
 	FD_SET(fd, &r_fds);
 	ZERO_STRUCT(tv);
 
-	if ((select(fd+1, &r_fds, NULL, NULL, &tv) == -1)
-	    || FD_ISSET(fd, &r_fds)) {
+	selret = select(fd+1, &r_fds, NULL, NULL, &tv);
+	if (selret == -1) {
 		return true;
 	}
-
-	return false;
+	if (selret == 0) {
+		return false;
+	}
+	return (FD_ISSET(fd, &r_fds));
 }
 
 struct wb_simple_trans_state {
