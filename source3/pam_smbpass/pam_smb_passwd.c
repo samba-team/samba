@@ -229,11 +229,11 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
          */
 
         if (off( SMB_NOT_SET_PASS, ctrl )) {
-            retval = pam_get_item( pamh, PAM_OLDAUTHTOK,
-                                   (const void **)&pass_old );
+            retval = _pam_get_item( pamh, PAM_OLDAUTHTOK,
+                                   &pass_old );
         } else {
-            retval = pam_get_data( pamh, _SMB_OLD_AUTHTOK,
-                                   (const void **)&pass_old );
+            retval = _pam_get_data( pamh, _SMB_OLD_AUTHTOK,
+                                   &pass_old );
             if (retval == PAM_NO_MODULE_DATA) {
 		pass_old = NULL;
                 retval = PAM_SUCCESS;

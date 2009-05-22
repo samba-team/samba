@@ -83,7 +83,7 @@ int converse( pam_handle_t * pamh, int ctrl, int nargs
 	int retval;
 	struct pam_conv *conv;
 
-	retval = pam_get_item(pamh, PAM_CONV, (const void **) &conv);
+	retval = _pam_get_item(pamh, PAM_CONV, &conv);
 	if (retval == PAM_SUCCESS) {
 
 		retval = conv->conv(nargs, (const struct pam_message **) message
@@ -276,7 +276,7 @@ void _cleanup_failures( pam_handle_t * pamh, void *fl, int err )
 
             /* log the number of authentication failures */
             if (failure->count != 0) {
-                pam_get_item( pamh, PAM_SERVICE, (const void **) &service );
+                _pam_get_item( pamh, PAM_SERVICE, &service );
                 _log_err( LOG_NOTICE
                           , "%d authentication %s "
                             "from %s for service %s as %s(%d)"
@@ -332,7 +332,7 @@ int _smb_verify_password( pam_handle_t * pamh, struct samu *sampass,
         } else {
             const char *service;
 
-            pam_get_item( pamh, PAM_SERVICE, (const void **)&service );
+            _pam_get_item( pamh, PAM_SERVICE, &service );
             _log_err( LOG_NOTICE, "failed auth request by %s for service %s as %s",
                       uidtoname(getuid()), service ? service : "**unknown**", name);
             return PAM_AUTH_ERR;
@@ -367,7 +367,7 @@ int _smb_verify_password( pam_handle_t * pamh, struct samu *sampass,
 
         const char *service;
 
-        pam_get_item( pamh, PAM_SERVICE, (const void **)&service );
+        _pam_get_item( pamh, PAM_SERVICE, &service );
 
         if (data_name != NULL) {
             struct _pam_failed_auth *newauth = NULL;
@@ -380,7 +380,7 @@ int _smb_verify_password( pam_handle_t * pamh, struct samu *sampass,
             if (newauth != NULL) {
 
                 /* any previous failures for this user ? */
-                pam_get_data(pamh, data_name, (const void **) &old);
+                _pam_get_data(pamh, data_name, &old);
 
                 if (old != NULL) {
                     newauth->count = old->count + 1;
@@ -485,7 +485,7 @@ int _smb_read_password( pam_handle_t * pamh, unsigned int ctrl,
     /* should we obtain the password from a PAM item ? */
 
     if (on(SMB_TRY_FIRST_PASS, ctrl) || on(SMB_USE_FIRST_PASS, ctrl)) {
-        retval = pam_get_item( pamh, authtok_flag, (const void **) &item );
+        retval = _pam_get_item( pamh, authtok_flag, &item );
         if (retval != PAM_SUCCESS) {
             /* very strange. */
             _log_err( LOG_ALERT
@@ -578,8 +578,8 @@ int _smb_read_password( pam_handle_t * pamh, unsigned int ctrl,
         retval = pam_set_item( pamh, authtok_flag, (const void *)token );
         _pam_delete( token );		/* clean it up */
         if (retval != PAM_SUCCESS
-            || (retval = pam_get_item( pamh, authtok_flag
-                            ,(const void **)&item )) != PAM_SUCCESS)
+            || (retval = _pam_get_item( pamh, authtok_flag
+                            ,&item )) != PAM_SUCCESS)
         {
             _log_err( LOG_CRIT, "error manipulating password" );
             return retval;
@@ -592,7 +592,7 @@ int _smb_read_password( pam_handle_t * pamh, unsigned int ctrl,
 
         retval = pam_set_data( pamh, data_name, (void *) token, _cleanup );
         if (retval != PAM_SUCCESS
-            || (retval = pam_get_data( pamh, data_name, (const void **)&item ))
+            || (retval = _pam_get_data( pamh, data_name, &item ))
                              != PAM_SUCCESS)
         {
             _log_err( LOG_CRIT, "error manipulating password data [%s]"
@@ -629,4 +629,24 @@ int _pam_smb_approve_pass(pam_handle_t * pamh,
     }
 
     return PAM_SUCCESS;
+}
+
+/*
+ * Work around the pam API that has functions with void ** as parameters
+ * These lead to strict aliasing warnings with gcc.
+ */
+int _pam_get_item(const pam_handle_t *pamh,
+		  int item_type,
+		  const void *_item)
+{
+	const void **item = (const void **)_item;
+	return pam_get_item(pamh, item_type, item);
+}
+
+int _pam_get_data(const pam_handle_t *pamh,
+		  const char *module_data_name,
+		  const void *_data)
+{
+	const void **data = (const void **)_data;
+	return pam_get_data(pamh, module_data_name, data);
 }
