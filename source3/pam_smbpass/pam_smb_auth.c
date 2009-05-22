@@ -179,7 +179,7 @@ int pam_sm_setcred(pam_handle_t *pamh, int flags,
 
 	retval = PAM_SUCCESS;
 
-	pam_get_data(pamh, "smb_setcred_return", (const void **) &pretval);
+	_pam_get_data(pamh, "smb_setcred_return", &pretval);
 	if(pretval) {
 		retval = *pretval;
 		SAFE_FREE(pretval);
@@ -199,7 +199,7 @@ static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
 	int retval;
 
 	/* Get the authtok; if we don't have one, silently fail. */
-	retval = pam_get_item( pamh, PAM_AUTHTOK, (const void **) &pass );
+	retval = _pam_get_item( pamh, PAM_AUTHTOK, &pass );
 
 	if (retval != PAM_SUCCESS) {
 		_log_err( LOG_ALERT
