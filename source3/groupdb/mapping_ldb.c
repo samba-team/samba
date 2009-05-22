@@ -510,12 +510,11 @@ static NTSTATUS enum_aliasmem(const DOM_SID *alias, DOM_SID **sids, size_t *num)
 
 	ret = ldb_search(ldb, ldb, &res, dn, LDB_SCOPE_BASE, attrs, NULL);
 	if (ret == LDB_SUCCESS && res->count == 0) {
-		talloc_steal(dn, res);
+		talloc_free(res);
 		talloc_free(dn);
 		return NT_STATUS_OK;
 	}
 	if (ret != LDB_SUCCESS) {
-		talloc_steal(dn, res);
 		talloc_free(dn);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
