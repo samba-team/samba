@@ -225,7 +225,7 @@ static bool get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map)
 	}
 
 	ret = ldb_search(ldb, dn, &res, dn, LDB_SCOPE_BASE, NULL, NULL);
-	if (ret != LDB_SUCCESS || res->count != 1) {
+	if (ret != LDB_SUCCESS || res == NULL || res->count != 1) {
 		goto failed;
 	}
 
@@ -251,7 +251,7 @@ static bool get_group_map_from_gid(gid_t gid, GROUP_MAP *map)
 	ret = ldb_search(ldb, talloc_tos(), &res, NULL, LDB_SCOPE_SUBTREE,
 			 NULL, "(&(gidNumber=%u)(objectClass=groupMap))",
 			 (unsigned)gid);
-	if (ret != LDB_SUCCESS || res->count != 1) {
+	if (ret != LDB_SUCCESS || res == NULL || res->count != 1) {
 		goto failed;
 	}
 
@@ -276,7 +276,7 @@ static bool get_group_map_from_ntname(const char *name, GROUP_MAP *map)
 
 	ret = ldb_search(ldb, talloc_tos(), &res, NULL, LDB_SCOPE_SUBTREE,
 			 NULL, "(&(ntName=%s)(objectClass=groupMap))", name);
-	if (ret != LDB_SUCCESS || (res && res->count != 1)) {
+	if (ret != LDB_SUCCESS || res == NULL || res->count != 1) {
 		goto failed;
 	}
 
@@ -341,7 +341,7 @@ static bool enum_group_mapping(const DOM_SID *domsid, enum lsa_SidType sid_name_
 				 sid_name_use);
 	}
 
-	if (ret != LDB_SUCCESS) goto failed;
+	if (ret != LDB_SUCCESS || res == NULL) goto failed;
 
 	(*pp_rmap) = NULL;
 	*p_num_entries = 0;
@@ -390,7 +390,7 @@ static NTSTATUS one_alias_membership(const DOM_SID *member,
 	ret = ldb_search(ldb, talloc_tos(), &res, NULL, LDB_SCOPE_SUBTREE,
 			 attrs, "(&(member=%s)(objectClass=groupMap))",
 			 string_sid);
-	if (ret != LDB_SUCCESS) {
+	if (ret != LDB_SUCCESS || res == NULL) {
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		goto failed;
 	}
@@ -510,7 +510,7 @@ static NTSTATUS enum_aliasmem(const DOM_SID *alias, DOM_SID **sids, size_t *num)
 
 	ret = ldb_search(ldb, ldb, &res, dn, LDB_SCOPE_BASE, attrs, NULL);
 	talloc_steal(dn, res);
-	if (ret == LDB_SUCCESS && res->count == 0) {
+	if (ret == LDB_SUCCESS && res && res->count == 0) {
 		talloc_free(dn);
 		return NT_STATUS_OK;
 	}
