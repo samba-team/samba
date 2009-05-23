@@ -222,8 +222,11 @@ static bool get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map)
 	if (dn == NULL) goto failed;
 
 	ret = ldb_search(ldb, dn, LDB_SCOPE_BASE, NULL, NULL, &res);
+	if (ret != LDB_SUCCESS) {
+		goto failed;
+	}
 	talloc_steal(dn, res);
-	if (ret != LDB_SUCCESS || res->count != 1) {
+	if (res->count != 1) {
 		goto failed;
 	}
 
@@ -251,8 +254,13 @@ static bool get_group_map_from_gid(gid_t gid, GROUP_MAP *map)
 	if (expr == NULL) goto failed;
 
 	ret = ldb_search(ldb, NULL, LDB_SCOPE_SUBTREE, expr, NULL, &res);
+	if (ret != LDB_SUCCESS) {
+		goto failed;
+	}
 	talloc_steal(expr, res);
-	if (ret != LDB_SUCCESS || res->count != 1) goto failed;
+	if (res->count != 1) {
+		goto failed;
+	}
 	
 	if (!msg_to_group_map(res->msgs[0], map)) goto failed;
 
@@ -277,8 +285,13 @@ static bool get_group_map_from_ntname(const char *name, GROUP_MAP *map)
 	if (expr == NULL) goto failed;
 
 	ret = ldb_search(ldb, NULL, LDB_SCOPE_SUBTREE, expr, NULL, &res);
+	if (ret != LDB_SUCCESS) {
+		goto failed;
+	}
 	talloc_steal(expr, res);
-	if (ret != LDB_SUCCESS || res->count != 1) goto failed;
+	if (res->count != 1) {
+		goto failed;
+	}
 	
 	if (!msg_to_group_map(res->msgs[0], map)) goto failed;
 
@@ -342,8 +355,8 @@ static bool enum_group_mapping(const DOM_SID *domsid, enum lsa_SidType sid_name_
 	}
 
 	ret = ldb_search(ldb, basedn, LDB_SCOPE_SUBTREE, expr, NULL, &res);
-	talloc_steal(tmp_ctx, res);
 	if (ret != LDB_SUCCESS) goto failed;
+	talloc_steal(tmp_ctx, res);
 
 	(*pp_rmap) = NULL;
 	*p_num_entries = 0;
@@ -395,10 +408,10 @@ static NTSTATUS one_alias_membership(const DOM_SID *member,
 	if (expr == NULL) goto failed;
 
 	ret = ldb_search(ldb, NULL, LDB_SCOPE_SUBTREE, expr, attrs, &res);
-	talloc_steal(expr, res);
 	if (ret != LDB_SUCCESS) {
 		goto failed;
 	}
+	talloc_steal(expr, res);
 
 	for (i=0;i<res->count;i++) {
 		struct ldb_message_element *el;
@@ -516,8 +529,8 @@ static NTSTATUS enum_aliasmem(const DOM_SID *alias, DOM_SID **sids, size_t *num)
 	}
 
 	ret = ldb_search(ldb, dn, LDB_SCOPE_BASE, NULL, attrs, &res);
-	talloc_steal(dn, res);
 	if (ret == LDB_SUCCESS && res->count == 0) {
+		talloc_free(res);
 		talloc_free(dn);
 		return NT_STATUS_OK;
 	}
@@ -525,6 +538,7 @@ static NTSTATUS enum_aliasmem(const DOM_SID *alias, DOM_SID **sids, size_t *num)
 		talloc_free(dn);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
+	talloc_steal(dn, res);
 
 	el = ldb_msg_find_element(res->msgs[0], "member");
 	if (el == NULL) {
