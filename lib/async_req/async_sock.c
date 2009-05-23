@@ -327,6 +327,7 @@ struct writev_state {
 	struct iovec *iov;
 	int count;
 	size_t total_size;
+	uint16_t flags;
 };
 
 static void writev_trigger(struct tevent_req *req, void *private_data);
@@ -335,6 +336,7 @@ static void writev_handler(struct tevent_context *ev, struct tevent_fd *fde,
 
 struct tevent_req *writev_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			       struct tevent_queue *queue, int fd,
+			       bool err_on_readability,
 			       struct iovec *iov, int count)
 {
 	struct tevent_req *req;
@@ -353,11 +355,15 @@ struct tevent_req *writev_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	if (state->iov == NULL) {
 		goto fail;
 	}
+	state->flags = TEVENT_FD_WRITE;
+	if (err_on_readability) {
+		state->flags |= TEVENT_FD_READ;
+	}
 
 	if (queue == NULL) {
 		struct tevent_fd *fde;
 		fde = tevent_add_fd(state->ev, state, state->fd,
-				    TEVENT_FD_WRITE, writev_handler, req);
+				    state->flags, writev_handler, req);
 		if (tevent_req_nomem(fde, req)) {
 			return tevent_req_post(req, ev);
 		}
@@ -378,7 +384,7 @@ static void writev_trigger(struct tevent_req *req, void *private_data)
 	struct writev_state *state = tevent_req_data(req, struct writev_state);
 	struct tevent_fd *fde;
 
-	fde = tevent_add_fd(state->ev, state, state->fd, TEVENT_FD_WRITE,
+	fde = tevent_add_fd(state->ev, state, state->fd, state->flags,
 			    writev_handler, req);
 	if (fde == NULL) {
 		tevent_req_error(req, ENOMEM);
@@ -396,6 +402,11 @@ static void writev_handler(struct tevent_context *ev, struct tevent_fd *fde,
 	int i;
 
 	to_write = 0;
+
+	if (flags & TEVENT_FD_READ) {
+		tevent_req_error(req, EPIPE);
+		return;
+	}
 
 	for (i=0; i<state->count; i++) {
 		to_write += state->iov[i].iov_len;

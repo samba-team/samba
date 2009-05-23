@@ -41,6 +41,7 @@ int async_connect_recv(struct tevent_req *req, int *perrno);
 
 struct tevent_req *writev_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			       struct tevent_queue *queue, int fd,
+			       bool err_on_readability,
 			       struct iovec *iov, int count);
 ssize_t writev_recv(struct tevent_req *req, int *perrno);
 

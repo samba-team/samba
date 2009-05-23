@@ -152,7 +152,7 @@ struct tevent_req *wb_req_write_send(TALLOC_CTX *mem_ctx,
 		count = 2;
 	}
 
-	subreq = writev_send(state, ev, queue, fd, state->iov, count);
+	subreq = writev_send(state, ev, queue, fd, true, state->iov, count);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -309,7 +309,7 @@ struct tevent_req *wb_resp_write_send(TALLOC_CTX *mem_ctx,
 		count = 2;
 	}
 
-	subreq = writev_send(state, ev, queue, fd, state->iov, count);
+	subreq = writev_send(state, ev, queue, fd, true, state->iov, count);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}

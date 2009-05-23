@@ -1221,7 +1221,7 @@ struct tevent_req *np_write_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 		state->iov.iov_len = len;
 
 		subreq = writev_send(state, ev, p->write_queue, p->fd,
-				     &state->iov, 1);
+				     false, &state->iov, 1);
 		if (subreq == NULL) {
 			goto fail;
 		}
