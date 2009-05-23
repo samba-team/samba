@@ -216,6 +216,7 @@ int main(int argc, char *argv[])
 	cd = smb_iconv_open(to, from);
 	if (cd == (smb_iconv_t)-1) {
 		DEBUG(0,("unable to find from or to encoding, exiting...\n"));
+		if (out != stdout) fclose(out);
 		return 1;
 	}
 
