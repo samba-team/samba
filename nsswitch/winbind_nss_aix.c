@@ -237,6 +237,9 @@ static struct group *fill_grent(struct winbindd_gr *gr, char *gr_mem)
 
 	result->gr_mem = (char **)malloc(sizeof(char *) * (gr->num_gr_mem+1));
 	if (!result->gr_mem) {
+		free(result->gr_name);
+		free(result->gr_passwd);
+		free(result);
 		errno = ENOMEM;
 		return NULL;
 	}
