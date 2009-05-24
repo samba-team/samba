@@ -167,6 +167,8 @@ struct async_connect_state {
 	int result;
 	int sys_errno;
 	long old_sockflags;
+	socklen_t address_len;
+	struct sockaddr_storage address;
 };
 
 static void async_connect_connected(struct tevent_context *ev,
@@ -208,6 +210,13 @@ struct tevent_req *async_connect_send(TALLOC_CTX *mem_ctx,
 
 	state->fd = fd;
 	state->sys_errno = 0;
+
+	state->address_len = address_len;
+	if (address_len > sizeof(state->address)) {
+		errno = EINVAL;
+		goto post_errno;
+	}
+	memcpy(&state->address, address, address_len);
 
 	state->old_sockflags = fcntl(fd, F_GETFL, 0);
 	if (state->old_sockflags == -1) {
@@ -270,8 +279,6 @@ static void async_connect_connected(struct tevent_context *ev,
 	struct async_connect_state *state =
 		tevent_req_data(req, struct async_connect_state);
 
-	TALLOC_FREE(fde);
-
 	/*
 	 * Stevens, Network Programming says that if there's a
 	 * successful connect, the socket is only writable. Upon an
@@ -279,20 +286,23 @@ static void async_connect_connected(struct tevent_context *ev,
 	 */
 	if ((flags & (TEVENT_FD_READ|TEVENT_FD_WRITE))
 	    == (TEVENT_FD_READ|TEVENT_FD_WRITE)) {
-		int sockerr;
-		socklen_t err_len = sizeof(sockerr);
+		int ret;
 
-		if (getsockopt(state->fd, SOL_SOCKET, SO_ERROR,
-			       (void *)&sockerr, &err_len) == 0) {
-			errno = sockerr;
+		ret = connect(state->fd,
+			      (struct sockaddr *)(void *)&state->address,
+			      state->address_len);
+		if (ret == 0) {
+			TALLOC_FREE(fde);
+			tevent_req_done(req);
+			return;
 		}
 
-		state->sys_errno = errno;
-
-		DEBUG(10, ("connect returned %s\n", strerror(errno)));
-
-		fcntl(state->fd, F_SETFL, state->old_sockflags);
-		tevent_req_error(req, state->sys_errno);
+		if (errno == EINPROGRESS) {
+			/* Try again later, leave the fde around */
+			return;
+		}
+		TALLOC_FREE(fde);
+		tevent_req_error(req, errno);
 		return;
 	}
 
