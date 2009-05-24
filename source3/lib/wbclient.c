@@ -261,11 +261,6 @@ static struct tevent_req *wb_connect_send(TALLOC_CTX *mem_ctx,
 		goto nomem;
 	}
 	tevent_req_set_callback(subreq, wbc_connect_connected, result);
-
-	if (!tevent_req_set_endtime(subreq, ev, timeval_current_ofs(30, 0))) {
-		goto nomem;
-	}
-
 	return result;
 
  post_status:
