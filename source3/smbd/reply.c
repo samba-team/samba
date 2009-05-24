@@ -1030,17 +1030,13 @@ void reply_checkpath(struct smb_request *req)
 
 	reply_outbuf(req, 0, 0);
  out:
-	if (smb_fname) {
-		TALLOC_FREE(smb_fname);
-	}
+	TALLOC_FREE(smb_fname);
 	END_PROFILE(SMBcheckpath);
 	return;
 
  path_err:
 
-	if (smb_fname) {
-		TALLOC_FREE(smb_fname);
-	}
+	TALLOC_FREE(smb_fname);
 
 	END_PROFILE(SMBcheckpath);
 
@@ -1164,9 +1160,7 @@ void reply_getatr(struct smb_request *req)
 	DEBUG(3,("reply_getatr: name=%s mode=%d size=%u\n", fname, mode, (unsigned int)size ) );
 
  out:
-	if (smb_fname) {
-		TALLOC_FREE(smb_fname);
-	}
+	TALLOC_FREE(smb_fname);
 	END_PROFILE(SMBgetatr);
 	return;
 }
@@ -1272,9 +1266,7 @@ void reply_setatr(struct smb_request *req)
 
 	DEBUG( 3, ( "setatr name=%s mode=%d\n", fname, mode ) );
  out:
-	if (smb_fname) {
-		TALLOC_FREE(smb_fname);
-	}
+	TALLOC_FREE(smb_fname);
 	END_PROFILE(SMBsetatr);
 	return;
 }
@@ -2316,9 +2308,7 @@ void reply_ctemp(struct smb_request *req)
 	DEBUG( 3, ( "reply_ctemp %s fd=%d umode=0%o\n", fsp->fsp_name,
 		    fsp->fh->fd, (unsigned int)smb_fname->st.st_mode));
  out:
-	if (smb_fname) {
-		TALLOC_FREE(smb_fname);
-	}
+	TALLOC_FREE(smb_fname);
 	END_PROFILE(SMBctemp);
 	return;
 }
@@ -5246,9 +5236,7 @@ void reply_mkdir(struct smb_request *req)
 
 	DEBUG( 3, ( "mkdir %s\n", directory ) );
  out:
-	if (smb_dname) {
-		TALLOC_FREE(smb_dname);
-	}
+	TALLOC_FREE(smb_dname);
 	END_PROFILE(SMBmkdir);
 	return;
 }
@@ -5512,9 +5500,7 @@ void reply_rmdir(struct smb_request *req)
 
 	DEBUG( 3, ( "rmdir %s\n", directory ) );
  out:
-	if (smb_dname) {
-		TALLOC_FREE(smb_dname);
-	}
+	TALLOC_FREE(smb_dname);
 	END_PROFILE(SMBrmdir);
 	return;
 }
@@ -6301,12 +6287,8 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	}
 
  out:
-	if (smb_fname) {
-		TALLOC_FREE(smb_fname);
-	}
-	if (smb_fname_new) {
-		TALLOC_FREE(smb_fname_new);
-	}
+	TALLOC_FREE(smb_fname);
+	TALLOC_FREE(smb_fname_new);
 	return status;
 }
 
@@ -6871,12 +6853,8 @@ void reply_copy(struct smb_request *req)
 	reply_outbuf(req, 1, 0);
 	SSVAL(req->outbuf,smb_vwv0,count);
  out:
-	if (smb_fname) {
-		TALLOC_FREE(smb_fname);
-	}
-	if (smb_fname_new) {
-		TALLOC_FREE(smb_fname_new);
-	}
+	TALLOC_FREE(smb_fname);
+	TALLOC_FREE(smb_fname_new);
 	END_PROFILE(SMBcopy);
 	return;
 }

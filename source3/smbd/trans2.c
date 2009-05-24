@@ -4909,12 +4909,8 @@ NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 				 nt_errstr(status), newname, oldname));
 	}
  out:
-	if (smb_fname) {
-		TALLOC_FREE(smb_fname);
-	}
-	if (smb_fname_new) {
-		TALLOC_FREE(smb_fname_new);
-	}
+	TALLOC_FREE(smb_fname);
+	TALLOC_FREE(smb_fname_new);
 	return status;
 }
 
@@ -5524,9 +5520,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 					FILE_WRITE_ATTRIBUTES);
 	}
  out:
-	if (smb_fname) {
-		TALLOC_FREE(smb_fname);
-	}
+	TALLOC_FREE(smb_fname);
 	return status;
 }
 

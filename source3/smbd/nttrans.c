@@ -1316,12 +1316,8 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 		goto out;
 	}
  out:
-	if (smb_fname) {
-		TALLOC_FREE(smb_fname);
-	}
-	if (smb_fname_new) {
-		TALLOC_FREE(smb_fname_new);
-	}
+	TALLOC_FREE(smb_fname);
+	TALLOC_FREE(smb_fname_new);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3,("copy_internals: Error %s copy file %s to %s\n",
 			nt_errstr(status), oldname, newname));
