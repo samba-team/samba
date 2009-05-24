@@ -3,17 +3,17 @@
    dos mode handling functions
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) James Peach 2006
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -117,7 +117,7 @@ mode_t unix_mode(connection_struct *conn, int dosmode, const char *fname,
 
 		if (lp_map_system(SNUM(conn)) && IS_DOS_SYSTEM(dosmode))
 			result |= S_IXGRP;
- 
+
 		if (lp_map_hidden(SNUM(conn)) && IS_DOS_HIDDEN(dosmode))
 			result |= S_IXOTH;  
 
@@ -162,10 +162,10 @@ static uint32 dos_mode_from_sbuf(connection_struct *conn, const char *path, SMB_
 
 	if (MAP_SYSTEM(conn) && ((sbuf->st_ex_mode & S_IXGRP) != 0))
 		result |= aSYSTEM;
-	
+
 	if (MAP_HIDDEN(conn) && ((sbuf->st_ex_mode & S_IXOTH) != 0))
 		result |= aHIDDEN;   
-  
+
 	if (S_ISDIR(sbuf->st_ex_mode))
 		result = aDIR | (result & aRONLY);
 
@@ -179,7 +179,7 @@ static uint32 dos_mode_from_sbuf(connection_struct *conn, const char *path, SMB_
 	if (result & aSYSTEM) DEBUG(8, ("s"));
 	if (result & aDIR   ) DEBUG(8, ("d"));
 	if (result & aARCH  ) DEBUG(8, ("a"));
-	
+
 	DEBUG(8,("\n"));
 	return result;
 }
@@ -237,7 +237,7 @@ static bool get_ea_dos_attribute(connection_struct *conn, const char *path,SMB_S
 	if (dosattr & aSYSTEM) DEBUG(8, ("s"));
 	if (dosattr & aDIR   ) DEBUG(8, ("d"));
 	if (dosattr & aARCH  ) DEBUG(8, ("a"));
-	
+
 	DEBUG(8,("\n"));
 
 	return True;
@@ -332,7 +332,7 @@ uint32 dos_mode_msdfs(connection_struct *conn, const char *path,SMB_STRUCT_STAT 
 			result |= aHIDDEN;
 		}
 	}
-	
+
 	result |= dos_mode_from_sbuf(conn, path, sbuf);
 
 	/* Optimization : Only call is_hidden_path if it's not already
@@ -349,7 +349,7 @@ uint32 dos_mode_msdfs(connection_struct *conn, const char *path,SMB_STRUCT_STAT 
 	if (result & aDIR   ) DEBUG(8, ("d"));
 	if (result & aARCH  ) DEBUG(8, ("a"));
 	if (result & FILE_ATTRIBUTE_SPARSE ) DEBUG(8, ("[sparse]"));
-	
+
 	DEBUG(8,("\n"));
 
 	return(result);
@@ -493,7 +493,7 @@ uint32 dos_mode(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf)
 			result |= aHIDDEN;
 		}
 	}
-	
+
 #ifdef HAVE_STAT_DOS_FLAGS
 	used_stat_dos_flags = get_stat_dos_flags(conn, path, sbuf, &result);
 #endif
@@ -506,7 +506,6 @@ uint32 dos_mode(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf)
 		}
 	}
 
-	
 	offline = SMB_VFS_IS_OFFLINE(conn, path, sbuf);
 	if (S_ISREG(sbuf->st_ex_mode) && offline) {
 		result |= FILE_ATTRIBUTE_OFFLINE;
@@ -526,7 +525,7 @@ uint32 dos_mode(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf)
 	if (result & aDIR   ) DEBUG(8, ("d"));
 	if (result & aARCH  ) DEBUG(8, ("a"));
 	if (result & FILE_ATTRIBUTE_SPARSE ) DEBUG(8, ("[sparse]"));
-	
+
 	DEBUG(8,("\n"));
 
 	return(result);
@@ -573,7 +572,7 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 		dosmode &= ~aDIR;
 
 	old_mode = dos_mode(conn,fname,st);
-	
+
 	if (dosmode & FILE_ATTRIBUTE_OFFLINE) {
 		if (!(old_mode & FILE_ATTRIBUTE_OFFLINE)) {
 			lret = SMB_VFS_SET_OFFLINE(conn, fname);
