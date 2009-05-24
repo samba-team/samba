@@ -82,3 +82,8 @@ dn: CN=IP Security,CN=System,${DOMAINDN}
 objectClass: top
 objectClass: container
 
+dn: CN=ComPartitionSets,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+systemFlags: -1946157056
+
