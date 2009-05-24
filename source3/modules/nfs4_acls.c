@@ -760,7 +760,8 @@ NTSTATUS smb_set_nt_acl_nfs4(files_struct *fsp,
 		return NT_STATUS_OK;
 	}
 
-	theacl = smbacl4_win2nfs4(fsp->fsp_name, psd->dacl, &params, sbuf.st_uid, sbuf.st_gid);
+	theacl = smbacl4_win2nfs4(fsp->fsp_name, psd->dacl, &params,
+				  sbuf.st_ex_uid, sbuf.st_ex_gid);
 	if (!theacl)
 		return map_nt_error_from_unix(errno);
 
