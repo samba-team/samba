@@ -468,7 +468,6 @@ struct wb_trans_state {
 	struct tevent_context *ev;
 	struct winbindd_request *wb_req;
 	struct winbindd_response *wb_resp;
-	int num_retries;
 	bool need_priv;
 };
 
@@ -516,7 +515,6 @@ struct tevent_req *wb_trans_send(TALLOC_CTX *mem_ctx,
 	state->wb_ctx = wb_ctx;
 	state->ev = ev;
 	state->wb_req = wb_req;
-	state->num_retries = 10;
 	state->need_priv = need_priv;
 
 	if (!tevent_queue_add(wb_ctx->queue, ev, req, wb_trans_trigger,
@@ -574,12 +572,6 @@ static bool wb_trans_retry(struct tevent_req *req,
 		 * Winbind not around or we can't connect to the pipe. Fail
 		 * immediately.
 		 */
-		tevent_req_error(req, wbc_err);
-		return true;
-	}
-
-	state->num_retries -= 1;
-	if (state->num_retries == 0) {
 		tevent_req_error(req, wbc_err);
 		return true;
 	}
