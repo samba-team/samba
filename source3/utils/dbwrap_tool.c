@@ -151,7 +151,6 @@ struct dbwrap_op_dispatch_table dispatch_table[] = {
 	{ OP_STORE,  TYPE_INT32,  dbwrap_tool_store_int32 },
 	{ OP_STORE,  TYPE_UINT32, dbwrap_tool_store_uint32 },
 	{ OP_DELETE, TYPE_INT32,  dbwrap_tool_delete },
-	{ OP_DELETE, TYPE_UINT32, dbwrap_tool_delete },
 	{ OP_ERASE,  TYPE_INT32,  dbwrap_tool_erase },
 	{ 0, 0, NULL },
 };
