@@ -292,16 +292,10 @@ source(int argc, char **argv)
 syserr:			run_err("%s: %s", name, strerror(errno));
 			goto next;
 		}
-		switch (stb.st_mode & S_IFMT) {
-		case S_IFREG:
-			break;
-		case S_IFDIR:
-			if (iamrecursive) {
-				rsource(name, &stb);
-				goto next;
-			}
-			/* FALLTHROUGH */
-		default:
+		if (S_ISDIR(stb.st_mode) && iamrecursive) {
+			rsource(name, &stb);
+			goto next;
+		} else if (!S_ISREG(stb.st_mode)) {
 			run_err("%s: not a regular file", name);
 			goto next;
 		}
