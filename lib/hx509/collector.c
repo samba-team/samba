@@ -143,7 +143,7 @@ _hx509_collector_private_key_add(hx509_context context,
     if (private_key) {
 	key->private_key = private_key;
     } else {
-	ret = _hx509_parse_private_key(context, &alg->algorithm,
+	ret = _hx509_parse_private_key(context, alg,
 				       key_data->data, key_data->length,
 				       &key->private_key);
 	if (ret)
