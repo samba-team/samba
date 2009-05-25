@@ -456,8 +456,10 @@ file_init_common(hx509_context context,
 		    break;
 	    }
 	    rk_xfree(ptr);
-	    if (ret)
+	    if (ret) {
+		hx509_clear_error_string(context);
 		goto out;
+	    }
 	}
     }
 
