@@ -827,7 +827,6 @@ static bool remove_idle_client(void)
 struct winbindd_listen_state {
 	bool privileged;
 	int fd;
-	struct tevent_fd *fde;
 };
 
 static void winbindd_listen_fde_handler(struct tevent_context *ev,
@@ -859,6 +858,7 @@ static bool winbindd_setup_listeners(void)
 {
 	struct winbindd_listen_state *pub_state = NULL;
 	struct winbindd_listen_state *priv_state = NULL;
+	struct tevent_fd *fde;
 
 	pub_state = talloc(winbind_event_context(),
 			   struct winbindd_listen_state);
@@ -872,16 +872,14 @@ static bool winbindd_setup_listeners(void)
 		goto failed;
 	}
 
-	pub_state->fde = tevent_add_fd(winbind_event_context(),
-				       pub_state, pub_state->fd,
-				       TEVENT_FD_READ,
-				       winbindd_listen_fde_handler,
-				       pub_state);
-	if (!pub_state->fde) {
+	fde = tevent_add_fd(winbind_event_context(), pub_state, pub_state->fd,
+			    TEVENT_FD_READ, winbindd_listen_fde_handler,
+			    pub_state);
+	if (fde == NULL) {
 		close(pub_state->fd);
 		goto failed;
 	}
-	tevent_fd_set_auto_close(pub_state->fde);
+	tevent_fd_set_auto_close(fde);
 
 	priv_state = talloc(winbind_event_context(),
 			    struct winbindd_listen_state);
@@ -895,16 +893,14 @@ static bool winbindd_setup_listeners(void)
 		goto failed;
 	}
 
-	priv_state->fde = tevent_add_fd(winbind_event_context(),
-					priv_state, priv_state->fd,
-					TEVENT_FD_READ,
-					winbindd_listen_fde_handler,
-					priv_state);
-	if (!priv_state->fde) {
+	fde = tevent_add_fd(winbind_event_context(), priv_state,
+			    priv_state->fd, TEVENT_FD_READ,
+			    winbindd_listen_fde_handler, priv_state);
+	if (fde == NULL) {
 		close(priv_state->fd);
 		goto failed;
 	}
-	tevent_fd_set_auto_close(priv_state->fde);
+	tevent_fd_set_auto_close(fde);
 
 	return true;
 failed:
