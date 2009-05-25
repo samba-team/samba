@@ -212,14 +212,20 @@ static struct ctdb_rec_data *db_ctdb_marshall_loop_next(struct ctdb_marshall_buf
 
 
 
-/* start a transaction on a database */
+/**
+ * CTDB transaction destructor
+ */
 static int db_ctdb_transaction_destructor(struct db_ctdb_transaction_handle *h)
 {
 	tdb_transaction_cancel(h->ctx->wtdb->tdb);
 	return 0;
 }
 
-/* start a transaction on a database */
+/**
+ * start a transaction on a ctdb database:
+ * - lock the transaction lock key
+ * - start the tdb transaction
+ */
 static int db_ctdb_transaction_fetch_start(struct db_ctdb_transaction_handle *h)
 {
 	struct db_record *rh;
@@ -268,7 +274,10 @@ again:
 }
 
 
-/* start a transaction on a database */
+/**
+ * CTDB dbwrap API: transaction_start function
+ * starts a transaction on a persistent database
+ */
 static int db_ctdb_transaction_start(struct db_context *db)
 {
 	struct db_ctdb_transaction_handle *h;
