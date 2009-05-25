@@ -384,8 +384,10 @@ _kdc_do_kx509(krb5_context context,
 	if (ret)
 	    goto out;
 	free_RSAPublicKey(&key);
-	if (size != req->pk_key.length)
-	    ;
+	if (size != req->pk_key.length) {
+	    ret = ASN1_EXTRA_DATA;
+	    goto out;
+	}
     }
 
     ALLOC(rep.certificate);
