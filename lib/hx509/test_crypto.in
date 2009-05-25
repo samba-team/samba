@@ -184,4 +184,9 @@ echo "print certificate with utf8"
 ${hxtool} print \
 	FILE:$srcdir/data/j.pem >/dev/null 2>/dev/null || exit 1
 
+echo "Make sure that we can parse EC private keys"
+${hxtool} print --content \
+    FILE:$srcdir/data/pkinit-ec.crt,$srcdir/data/pkinit-ec.key \
+    > /dev/null || exit 1
+
 exit 0
