@@ -304,9 +304,10 @@ parse_ECParameters(hx509_context context,
     int ret;
 
     if (parameters == NULL) {
+	ret = HX509_PARSING_KEY_FAILED;
 	hx509_set_error_string(context, 0, ret,
 			       "EC parameters missing");
-	return HX509_PARSING_KEY_FAILED;
+	return ret;
     }
 
     ret = decode_ECParameters(parameters->data, parameters->length,
@@ -352,7 +353,6 @@ ecdsa_verify_signature(hx509_context context,
     heim_octet_string digest;
     int ret;
     EC_KEY *key = NULL;
-    size_t size;
     int groupnid;
     EC_GROUP *group;
     const unsigned char *p;
