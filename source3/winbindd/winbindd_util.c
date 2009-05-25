@@ -1,21 +1,21 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    Winbind daemon for ntdom nss module
 
    Copyright (C) Tim Potter 2000-2001
    Copyright (C) 2001 by Martin Pool <mbp@samba.org>
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -47,7 +47,7 @@ static struct winbindd_domain *_domain_list = NULL;
 
 /**
    When was the last scan of trusted domains done?
-   
+
    0 == not ever
 */
 
@@ -72,7 +72,7 @@ void free_domain_list(void)
 
 	while(domain) {
 		struct winbindd_domain *next = domain->next;
-		
+
 		DLIST_REMOVE(_domain_list, domain);
 		SAFE_FREE(domain);
 		domain = next;
@@ -131,28 +131,28 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 	   init_domain_list() and we'll get stuck in a loop. */
 	for (domain = _domain_list; domain; domain = domain->next) {
 		if (strequal(domain_name, domain->name) ||
-		    strequal(domain_name, domain->alt_name)) 
+		    strequal(domain_name, domain->alt_name))
 		{
-			break;			
+			break;
 		}
 
-		if (alternative_name && *alternative_name) 
+		if (alternative_name && *alternative_name)
 		{
 			if (strequal(alternative_name, domain->name) ||
-			    strequal(alternative_name, domain->alt_name)) 
+			    strequal(alternative_name, domain->alt_name))
 			{
-				break;				
+				break;
 			}
 		}
 
-		if (sid) 
+		if (sid)
 		{
 			if (is_null_sid(sid)) {
-				continue;				
+				continue;
 			}
 
 			if (sid_equal(sid, &domain->sid)) {
-				break;				
+				break;
 			}
 		}
 	}
@@ -164,8 +164,8 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 		if ( sid_equal( &domain->sid, &global_sid_NULL ) )
 			sid_copy( &domain->sid, sid );
 
-		return domain;		
-	}	
+		return domain;
+	}
 
 	/* Create new domain entry */
 
@@ -230,7 +230,7 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 
 done:
 
-	DEBUG(2,("Added domain %s %s %s\n", 
+	DEBUG(2,("Added domain %s %s %s\n",
 		 domain->name, domain->alt_name,
 		 &domain->sid?sid_string_dbg(&domain->sid):""));
 
@@ -243,8 +243,8 @@ done:
 
 struct trustdom_state {
 	TALLOC_CTX *mem_ctx;
-	bool primary;	
-	bool forest_root;	
+	bool primary;
+	bool forest_root;
 	struct winbindd_response *response;
 };
 
@@ -338,11 +338,11 @@ static void trustdom_recv(void *private_data, bool success)
 		if (!string_to_sid(&sid, sidstr)) {
 			/* Allow NULL sid for sibling domains */
 			if ( strcmp(sidstr,"S-0-0") == 0) {
-				sid_copy( &sid, &global_sid_NULL);				
-			} else {				
+				sid_copy( &sid, &global_sid_NULL);
+			} else {
 				DEBUG(0, ("Got invalid trustdom response\n"));
 				break;
-			}			
+			}
 		}
 
 		/* use the real alt_name if we have one, else pass in NULL */
@@ -375,7 +375,7 @@ static void trustdom_recv(void *private_data, bool success)
 
 	SAFE_FREE(response->extra_data.data);
 
-	/* 
+	/*
 	   Cases to consider when scanning trusts:
 	   (a) we are calling from a child domain (primary && !forest_root)
 	   (b) we are calling from the root of the forest (primary && forest_root)
@@ -412,7 +412,7 @@ static void rescan_forest_root_trusts( void )
 {
 	struct winbindd_tdc_domain *dom_list = NULL;
         size_t num_trusts = 0;
-	int i;	
+	int i;
 
 	/* The only transitive trusts supported by Windows 2003 AD are
 	   (a) Parent-Child, (b) Tree-Root, and (c) Forest.   The
@@ -426,8 +426,8 @@ static void rescan_forest_root_trusts( void )
 	for ( i=0; i<num_trusts; i++ ) {
 		struct winbindd_domain *d = NULL;
 
-		/* Find the forest root.  Don't necessarily trust 
-		   the domain_list() as our primary domain may not 
+		/* Find the forest root.  Don't necessarily trust
+		   the domain_list() as our primary domain may not
 		   have been initialized. */
 
 		if ( !(dom_list[i].trust_flags & NETR_TRUST_FLAG_TREEROOT) ) {
@@ -454,12 +454,12 @@ static void rescan_forest_root_trusts( void )
 	       		  d->name, d->alt_name ));
 
 		d->domain_flags = dom_list[i].trust_flags;
-		d->domain_type  = dom_list[i].trust_type;		
-		d->domain_trust_attribs = dom_list[i].trust_attribs;		
+		d->domain_type  = dom_list[i].trust_type;
+		d->domain_trust_attribs = dom_list[i].trust_attribs;
 
 		add_trusted_domains( d );
 
-		break;		
+		break;
 	}
 
 	TALLOC_FREE( dom_list );
@@ -477,7 +477,7 @@ static void rescan_forest_trusts( void )
 	struct winbindd_domain *d = NULL;
 	struct winbindd_tdc_domain *dom_list = NULL;
         size_t num_trusts = 0;
-	int i;	
+	int i;
 
 	/* The only transitive trusts supported by Windows 2003 AD are
 	   (a) Parent-Child, (b) Tree-Root, and (c) Forest.   The
@@ -498,7 +498,7 @@ static void rescan_forest_trusts( void )
 		/* ignore our primary and internal domains */
 
 		if ( d && (d->internal || d->primary ) )
-			continue;		
+			continue;
 
 		if ( (flags & NETR_TRUST_FLAG_INBOUND) &&
 		     (type == NETR_TRUST_TYPE_UPLEVEL) &&
@@ -526,7 +526,7 @@ static void rescan_forest_trusts( void )
 
 	TALLOC_FREE( dom_list );
 
-	return;	
+	return;
 }
 
 /*********************************************************************
@@ -566,7 +566,7 @@ void rescan_trusted_domains( void )
 
 	last_trustdom_scan = now;
 
-	return;	
+	return;
 }
 
 struct init_child_state {
@@ -805,7 +805,7 @@ bool init_domain_list(void)
 
 void check_domain_trusted( const char *name, const DOM_SID *user_sid )
 {
-	struct winbindd_domain *domain;	
+	struct winbindd_domain *domain;
 	DOM_SID dom_sid;
 	uint32 rid;
 
@@ -816,39 +816,39 @@ void check_domain_trusted( const char *name, const DOM_SID *user_sid )
 
 	domain = find_domain_from_name_noinit( name );
 	if ( domain )
-		return;	
+		return;
 
-	sid_copy( &dom_sid, user_sid );		
+	sid_copy( &dom_sid, user_sid );
 	if ( !sid_split_rid( &dom_sid, &rid ) )
 		return;
 
 	/* add the newly discovered trusted domain */
 
-	domain = add_trusted_domain( name, NULL, &cache_methods, 
+	domain = add_trusted_domain( name, NULL, &cache_methods,
 				     &dom_sid);
 
 	if ( !domain )
 		return;
 
-	/* assume this is a trust from a one-way transitive 
+	/* assume this is a trust from a one-way transitive
 	   forest trust */
 
 	domain->active_directory = True;
 	domain->domain_flags = NETR_TRUST_FLAG_OUTBOUND;
 	domain->domain_type  = NETR_TRUST_TYPE_UPLEVEL;
 	domain->internal = False;
-	domain->online = True;	
+	domain->online = True;
 
 	setup_domain_child(domain,
 			   &domain->child);
 
 	wcache_tdc_add_domain( domain );
 
-	return;	
+	return;
 }
 
-/** 
- * Given a domain name, return the struct winbindd domain info for it 
+/**
+ * Given a domain name, return the struct winbindd domain info for it
  *
  * @note Do *not* pass lp_workgroup() to this function.  domain_list
  *       may modify it's value, and free that pointer.  Instead, our local
@@ -945,7 +945,7 @@ struct winbindd_domain *find_our_domain(void)
 
 struct winbindd_domain *find_root_domain(void)
 {
-	struct winbindd_domain *ours = find_our_domain();	
+	struct winbindd_domain *ours = find_our_domain();
 
 	if ( !ours )
 		return NULL;
@@ -977,7 +977,7 @@ struct winbindd_domain *find_lookup_domain_from_sid(const DOM_SID *sid)
 {
 	/* SIDs in the S-1-22-{1,2} domain should be handled by our passdb */
 
-	if ( sid_check_is_in_unix_groups(sid) || 
+	if ( sid_check_is_in_unix_groups(sid) ||
 	     sid_check_is_unix_groups(sid) ||
 	     sid_check_is_in_unix_users(sid) ||
 	     sid_check_is_unix_users(sid) )
@@ -994,7 +994,7 @@ struct winbindd_domain *find_lookup_domain_from_sid(const DOM_SID *sid)
 	if (IS_DC || is_internal_domain(sid) || is_in_internal_domain(sid)) {
 		DEBUG(10, ("calling find_domain_from_sid\n"));
 		return find_domain_from_sid(sid);
-	}	
+	}
 
 	/* On a member server a query for SID or name can always go to our
 	 * primary DC. */
@@ -1024,9 +1024,9 @@ struct winbindd_domain *find_lookup_domain_from_name(const char *domain_name)
 
 bool winbindd_lookup_sid_by_name(TALLOC_CTX *mem_ctx,
 				 enum winbindd_cmd orig_cmd,
-				 struct winbindd_domain *domain, 
+				 struct winbindd_domain *domain,
 				 const char *domain_name,
-				 const char *name, DOM_SID *sid, 
+				 const char *name, DOM_SID *sid,
 				 enum lsa_SidType *type)
 {
 	NTSTATUS result;
@@ -1121,7 +1121,7 @@ static bool assume_domain(const char *domain)
 
 		if ( lp_winbind_use_default_domain() || lp_winbind_trusted_domains_only() )
 			return True;
-	} 
+	}
 
 	/* only left with a domain controller */
 
@@ -1144,7 +1144,7 @@ bool parse_domain_user(const char *domuser, fstring domain, fstring user)
 		if ( assume_domain(lp_workgroup())) {
 			fstrcpy(domain, lp_workgroup());
 		} else if ((p = strchr(domuser, '@')) != NULL) {
-			fstrcpy(domain, "");			
+			fstrcpy(domain, "");
 		} else {
 			return False;
 		}
@@ -1225,7 +1225,7 @@ bool canonicalize_username(fstring username_inout, fstring domain, fstring user)
 
     If we are a PDC or BDC, and this is for our domain, do likewise.
 
-    Also, if omit DOMAIN if 'winbind trusted domains only = true', as the 
+    Also, if omit DOMAIN if 'winbind trusted domains only = true', as the
     username is then unqualified in unix
 
     We always canonicalize as UPPERCASE DOMAIN, lowercase username.
@@ -1277,12 +1277,12 @@ char *fill_domain_username_talloc(TALLOC_CTX *mem_ctx,
  * Winbindd socket accessor functions
  */
 
-const char *get_winbind_pipe_dir(void) 
+const char *get_winbind_pipe_dir(void)
 {
 	return lp_parm_const_string(-1, "winbindd", "socket dir", WINBINDD_SOCKET_DIR);
 }
 
-char *get_winbind_priv_pipe_dir(void) 
+char *get_winbind_priv_pipe_dir(void)
 {
 	return lock_path(WINBINDD_PRIV_SOCKET_SUBDIR);
 }
@@ -1558,7 +1558,7 @@ bool winbindd_can_contact_domain(struct winbindd_domain *domain)
 	 * is running AD and we have no inbound trust.
 	 */
 
-	if (!IS_DC && 
+	if (!IS_DC &&
 	     domain->active_directory &&
 	    ((tdc->trust_flags & NETR_TRUST_FLAG_INBOUND) != NETR_TRUST_FLAG_INBOUND))
 	{
@@ -1570,12 +1570,12 @@ bool winbindd_can_contact_domain(struct winbindd_domain *domain)
 	/* Assume everything else is ok (probably not true but what
 	   can you do?) */
 
-	ret = true;	
+	ret = true;
 
-done:	
+done:
 	talloc_destroy(frame);
 
-	return ret;	
+	return ret;
 }
 
 /*********************************************************************
