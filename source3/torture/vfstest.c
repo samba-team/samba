@@ -397,6 +397,10 @@ static void process_file(struct vfs_state *pvfs, char *filename) {
 	while (fgets(command, 3 * PATH_MAX, file) != NULL) {
 		process_cmd(pvfs, command);
 	}
+
+	if (file != stdin) {
+		fclose(file);
+	}
 }
 
 void exit_server(const char *reason)
