@@ -346,7 +346,6 @@ int32_t ctdb_control_transaction_start(struct ctdb_context *ctdb, uint32_t id)
 		}
 
 		ret = tdb_transaction_start(ctdb_db->ltdb->tdb);
-		tdb_remove_flags(ctdb_db->ltdb->tdb, TDB_NO_NESTING);
 
 		tdb_remove_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
 
