@@ -909,73 +909,6 @@ failed:
 	return false;
 }
 
-/* Process incoming clients on listen_sock.  We use a tricky non-blocking,
-   non-forking, non-threaded model which allows us to handle many
-   simultaneous connections while remaining impervious to many denial of
-   service attacks. */
-
-static void process_loop(void)
-{
-	fd_set r_fds, w_fds;
-	int maxfd = 0, selret;
-	struct timeval timeout, ev_timeout;
-
-	run_events(winbind_event_context(), 0, NULL, NULL);
-
-	/* Initialise fd lists for select() */
-
-	FD_ZERO(&r_fds);
-	FD_ZERO(&w_fds);
-
-	timeout.tv_sec = WINBINDD_ESTABLISH_LOOP;
-	timeout.tv_usec = 0;
-
-	/* Check for any event timeouts. */
-	{
-		struct timeval now;
-		GetTimeOfDay(&now);
-
-		event_add_to_select_args(winbind_event_context(), &now,
-					 &r_fds, &w_fds, &ev_timeout, &maxfd);
-	}
-	if (get_timed_events_timeout(winbind_event_context(), &ev_timeout)) {
-		timeout = timeval_min(&timeout, &ev_timeout);
-	}
-
-	/* Call select */
-
-	selret = sys_select(maxfd + 1, &r_fds, &w_fds, NULL, &timeout);
-
-	if (selret == 0) {
-		goto no_fds_ready;
-	}
-
-	if (selret == -1) {
-		if (errno == EINTR) {
-			goto no_fds_ready;
-		}
-
-		/* Select error, something is badly wrong */
-
-		perror("select");
-		exit(1);
-	}
-
-	/* selret > 0 */
-
-	run_events(winbind_event_context(), selret, &r_fds, &w_fds);
-
-	return;
-
- no_fds_ready:
-
-	run_events(winbind_event_context(), selret, &r_fds, &w_fds);
-
-#if 0
-	winbindd_check_cache_size(time(NULL));
-#endif
-}
-
 bool winbindd_use_idmap_cache(void)
 {
 	return !opt_nocache;
@@ -1273,7 +1206,11 @@ int main(int argc, char **argv, char **envp)
 	while (1) {
 		frame = talloc_stackframe();
 
-		process_loop();
+		if (tevent_loop_once(winbind_event_context()) == -1) {
+			DEBUG(1, ("tevent_loop_once() failed: %s\n",
+				  strerror(errno)));
+			return 1;
+		}
 
 		TALLOC_FREE(frame);
 	}
