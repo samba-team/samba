@@ -948,6 +948,62 @@ CTDB_CAPABILITY_RECMASTER=no
 
 
 
+<refsect1><title>ClamAV Daemon</title>
+<para>
+CTDB has support to manage the popular anti-virus daemon ClamAV.
+This support is implemented through the
+eventscript : /etc/ctdb/events.d/31.clamd.
+</para>
+      
+<refsect2><title>Configuration</title>
+<para>
+Start by configuring CLAMAV normally and test that it works. Once this is
+done, copy the configuration files over to all the nodes so that all nodes
+share identical CLAMAV configurations.
+Once this is done you can proceed with the intructions below to activate
+CTDB support for CLAMAV.
+</para>
+
+<para>
+First, to activate CLAMAV support in CTDB, edit /etc/sysconfig/ctdb and add the two lines :
+</para>
+<screen format="linespecific">
+CTDB_MANAGES_CLAMD=yes
+CTDB_CLAMD_SOCKET="/path/to/clamd.socket"
+</screen>
+
+<para>
+Second, activate the eventscript by making it executable:
+</para>
+<screen format="linespecific">
+chmod +x /etc/ctdb/events.d/31.clamd
+</screen>
+
+<para>
+Third, CTDB will now be starting and stopping this service accordingly,
+so make sure that the system is not configured to start/stop this service
+automatically.
+On RedHat systems you can disable the system starting/stopping CLAMAV automatically by running :
+<screen format="linespecific">
+chkconfig clamd off
+</screen>
+</para>
+
+
+<para>
+Once you have restarted CTDBD, use
+<screen format="linespecific">
+ctdb scriptstatus
+</screen>
+and verify that the 31.clamd eventscript is listed and that it was executed successfully.
+</para>
+
+</refsect2>
+</refsect1>
+
+
+
+
   <refsect1><title>SEE ALSO</title>
     <para>
       ctdb(1), onnode(1)

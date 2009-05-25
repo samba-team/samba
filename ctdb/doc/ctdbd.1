@@ -1,11 +1,11 @@
 .\"     Title: ctdbd
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
-.\"      Date: 05/14/2009
+.\"      Date: 05/25/2009
 .\"    Manual: 
 .\"    Source: 
 .\"
-.TH "CTDBD" "1" "05/14/2009" "" ""
+.TH "CTDBD" "1" "05/25/2009" "" ""
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -508,6 +508,47 @@ The NAT\-GW node is assigned the CTDB_NATGW_PUBLIC_IP to the designated interfac
 All other nodes in the group are configured with a default route of metric 10 pointing to the designated NAT GW node\.
 .PP
 This is implemented in the 11\.natgw eventscript\. Please see the eventscript for further information\.
+.SH "CLAMAV DAEMON"
+.PP
+CTDB has support to manage the popular anti\-virus daemon ClamAV\. This support is implemented through the eventscript : /etc/ctdb/events\.d/31\.clamd\.
+.SS "Configuration"
+.PP
+Start by configuring CLAMAV normally and test that it works\. Once this is done, copy the configuration files over to all the nodes so that all nodes share identical CLAMAV configurations\. Once this is done you can proceed with the intructions below to activate CTDB support for CLAMAV\.
+.PP
+First, to activate CLAMAV support in CTDB, edit /etc/sysconfig/ctdb and add the two lines :
+.sp
+.RS 4
+.nf
+CTDB_MANAGES_CLAMD=yes
+CTDB_CLAMD_SOCKET="/path/to/clamd\.socket"
+.fi
+.RE
+.PP
+Second, activate the eventscript by making it executable:
+.sp
+.RS 4
+.nf
+chmod +x /etc/ctdb/events\.d/31\.clamd
+.fi
+.RE
+.PP
+Third, CTDB will now be starting and stopping this service accordingly, so make sure that the system is not configured to start/stop this service automatically\. On RedHat systems you can disable the system starting/stopping CLAMAV automatically by running :
+.sp
+.RS 4
+.nf
+chkconfig clamd off
+.fi
+.RE
+.PP
+Once you have restarted CTDBD, use
+.sp
+.RS 4
+.nf
+ctdb scriptstatus
+.fi
+.RE
+.sp
+and verify that the 31\.clamd eventscript is listed and that it was executed successfully\.
 .SH "SEE ALSO"
 .PP
 ctdb(1), onnode(1)
