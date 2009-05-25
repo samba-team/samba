@@ -48,7 +48,10 @@ enum torture_samr_choice {
 	TORTURE_SAMR_PASSWORDS_PWDLASTSET,
 	TORTURE_SAMR_USER_ATTRIBUTES,
 	TORTURE_SAMR_USER_PRIVILEGES,
-	TORTURE_SAMR_OTHER
+	TORTURE_SAMR_OTHER,
+	TORTURE_SAMR_MANY_ACCOUNTS,
+	TORTURE_SAMR_MANY_GROUPS,
+	TORTURE_SAMR_MANY_ALIASES
 };
 
 static bool test_QueryUserInfo(struct dcerpc_pipe *p,
@@ -6041,7 +6044,235 @@ static bool test_RemoveMemberFromForeignDomain(struct dcerpc_pipe *p,
 	return true;
 }
 
+static bool test_EnumDomainUsers(struct dcerpc_pipe *p,
+				 struct torture_context *tctx,
+				 struct policy_handle *domain_handle,
+				 uint32_t *total_num_entries_p)
+{
+	NTSTATUS status;
+	struct samr_EnumDomainUsers r;
+	uint32_t resume_handle = 0;
+	uint32_t num_entries = 0;
+	uint32_t total_num_entries = 0;
+	struct samr_SamArray *sam;
 
+	r.in.domain_handle = domain_handle;
+	r.in.acct_flags = ACB_NORMAL;
+	r.in.max_size = (uint32_t)-1;
+	r.in.resume_handle = &resume_handle;
+
+	r.out.sam = &sam;
+	r.out.num_entries = &num_entries;
+	r.out.resume_handle = &resume_handle;
+
+	printf("Testing EnumDomainUsers\n");
+
+	do {
+		status = dcerpc_samr_EnumDomainUsers(p, tctx, &r);
+		if (NT_STATUS_IS_ERR(status)) {
+			torture_assert_ntstatus_ok(tctx, status,
+				"failed to enumerate users");
+		}
+
+		total_num_entries += num_entries;
+	} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
+
+	if (total_num_entries_p) {
+		*total_num_entries_p = total_num_entries;
+	}
+
+	return true;
+}
+
+static bool test_EnumDomainGroups(struct dcerpc_pipe *p,
+				  struct torture_context *tctx,
+				  struct policy_handle *domain_handle,
+				  uint32_t *total_num_entries_p)
+{
+	NTSTATUS status;
+	struct samr_EnumDomainGroups r;
+	uint32_t resume_handle = 0;
+	uint32_t num_entries = 0;
+	uint32_t total_num_entries = 0;
+	struct samr_SamArray *sam;
+
+	r.in.domain_handle = domain_handle;
+	r.in.max_size = (uint32_t)-1;
+	r.in.resume_handle = &resume_handle;
+
+	r.out.sam = &sam;
+	r.out.num_entries = &num_entries;
+	r.out.resume_handle = &resume_handle;
+
+	printf("Testing EnumDomainGroups\n");
+
+	do {
+		status = dcerpc_samr_EnumDomainGroups(p, tctx, &r);
+		if (NT_STATUS_IS_ERR(status)) {
+			torture_assert_ntstatus_ok(tctx, status,
+				"failed to enumerate groups");
+		}
+
+		total_num_entries += num_entries;
+	} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
+
+	if (total_num_entries_p) {
+		*total_num_entries_p = total_num_entries;
+	}
+
+	return true;
+}
+
+static bool test_EnumDomainAliases(struct dcerpc_pipe *p,
+				   struct torture_context *tctx,
+				   struct policy_handle *domain_handle,
+				   uint32_t *total_num_entries_p)
+{
+	NTSTATUS status;
+	struct samr_EnumDomainAliases r;
+	uint32_t resume_handle = 0;
+	uint32_t num_entries = 0;
+	uint32_t total_num_entries = 0;
+	struct samr_SamArray *sam;
+
+	r.in.domain_handle = domain_handle;
+	r.in.max_size = (uint32_t)-1;
+	r.in.resume_handle = &resume_handle;
+
+	r.out.sam = &sam;
+	r.out.num_entries = &num_entries;
+	r.out.resume_handle = &resume_handle;
+
+	printf("Testing EnumDomainAliases\n");
+
+	do {
+		status = dcerpc_samr_EnumDomainAliases(p, tctx, &r);
+		if (NT_STATUS_IS_ERR(status)) {
+			torture_assert_ntstatus_ok(tctx, status,
+				"failed to enumerate aliases");
+		}
+
+		total_num_entries += num_entries;
+	} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
+
+	if (total_num_entries_p) {
+		*total_num_entries_p = total_num_entries;
+	}
+
+	return true;
+}
+
+static bool test_ManyObjects(struct dcerpc_pipe *p,
+			     struct torture_context *tctx,
+			     struct policy_handle *domain_handle,
+			     struct dom_sid *domain_sid,
+			     enum torture_samr_choice which_ops)
+{
+	uint32_t num_total = 1500;
+	uint32_t num_enum = 0;
+	uint32_t num_disp = 0;
+	uint32_t num_created = 0;
+	uint32_t num_anounced = 0;
+	bool ret = true;
+	NTSTATUS status;
+	uint32_t i;
+
+	/* query */
+
+	{
+		struct samr_QueryDomainInfo2 r;
+		union samr_DomainInfo *info;
+		r.in.domain_handle = domain_handle;
+		r.in.level = 2;
+		r.out.info = &info;
+
+		status = dcerpc_samr_QueryDomainInfo2(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status,
+			"failed to query domain info");
+
+		switch (which_ops) {
+		case TORTURE_SAMR_MANY_ACCOUNTS:
+			num_anounced = info->general.num_users;
+			break;
+		case TORTURE_SAMR_MANY_GROUPS:
+			num_anounced = info->general.num_groups;
+			break;
+		case TORTURE_SAMR_MANY_ALIASES:
+			num_anounced = info->general.num_aliases;
+			break;
+		default:
+			return false;
+		}
+	}
+
+	/* create */
+
+	for (i=0; i < num_total; i++) {
+
+		struct policy_handle handle;
+		const char *name = NULL;
+
+		ZERO_STRUCT(handle);
+
+		switch (which_ops) {
+		case TORTURE_SAMR_MANY_ACCOUNTS:
+			name = talloc_asprintf(tctx, "%s%04d", TEST_ACCOUNT_NAME, i);
+			ret &= test_CreateUser(p, tctx, domain_handle, name, &handle, domain_sid, 0, NULL, false);
+			break;
+		case TORTURE_SAMR_MANY_GROUPS:
+			name = talloc_asprintf(tctx, "%s%04d", TEST_GROUPNAME, i);
+			ret &= test_CreateDomainGroup(p, tctx, domain_handle, name, &handle, domain_sid, false);
+			break;
+		case TORTURE_SAMR_MANY_ALIASES:
+			name = talloc_asprintf(tctx, "%s%04d", TEST_ALIASNAME, i);
+			ret &= test_CreateAlias(p, tctx, domain_handle, name, &handle, domain_sid, false);
+			break;
+		default:
+			return false;
+		}
+		if (!policy_handle_empty(&handle)) {
+			ret &= test_samr_handle_Close(p, tctx, &handle);
+			num_created++;
+		}
+	}
+
+	/* enum */
+
+	switch (which_ops) {
+	case TORTURE_SAMR_MANY_ACCOUNTS:
+		ret &= test_EnumDomainUsers(p, tctx, domain_handle, &num_enum);
+		break;
+	case TORTURE_SAMR_MANY_GROUPS:
+		ret &= test_EnumDomainGroups(p, tctx, domain_handle, &num_enum);
+		break;
+	case TORTURE_SAMR_MANY_ALIASES:
+		ret &= test_EnumDomainAliases(p, tctx, domain_handle, &num_enum);
+		break;
+	default:
+		return false;
+	}
+
+	torture_assert_int_equal(tctx, num_enum, num_anounced + num_created,
+		"unexpected number of results returned in enum call");
+#if 0
+	/* TODO: dispinfo */
+
+	switch (which_ops) {
+	case TORTURE_SAMR_MANY_ACCOUNTS:
+		break;
+	case TORTURE_SAMR_MANY_GROUPS:
+		break;
+	case TORTURE_SAMR_MANY_ALIASES:
+		break;
+	default:
+		return false;
+	}
+
+	torture_assert_int_equal(tctx, num_disp, num_anounced + num_created,
+		"unexpected number of results returned in dispinfo call");
+#endif
+	return ret;
+}
 
 static bool test_Connect(struct dcerpc_pipe *p, struct torture_context *tctx,
 			 struct policy_handle *handle);
@@ -6100,6 +6331,11 @@ static bool test_OpenDomain(struct dcerpc_pipe *p, struct torture_context *tctx,
 		if (!ret) {
 			printf("Testing PASSWORDS PWDLASTSET on domain %s failed!\n", dom_sid_string(tctx, sid));
 		}
+		break;
+	case TORTURE_SAMR_MANY_ACCOUNTS:
+	case TORTURE_SAMR_MANY_GROUPS:
+	case TORTURE_SAMR_MANY_ALIASES:
+		ret &= test_ManyObjects(p, tctx, &domain_handle, sid, which_ops);
 		break;
 	case TORTURE_SAMR_OTHER:
 		ret &= test_CreateUser(p, tctx, &domain_handle, TEST_ACCOUNT_NAME, &user_handle, sid, which_ops, NULL, true);
@@ -6526,6 +6762,100 @@ struct torture_suite *torture_rpc_samr_user_privileges(TALLOC_CTX *mem_ctx)
 
 	torture_rpc_tcase_add_test_creds(tcase, "delete_privileged_user",
 					 torture_rpc_samr_users_privileges_delete_user);
+
+	return suite;
+}
+
+static bool torture_rpc_samr_many_accounts(struct torture_context *torture,
+					   struct dcerpc_pipe *p2,
+					   struct cli_credentials *machine_credentials)
+{
+	NTSTATUS status;
+	struct dcerpc_pipe *p;
+	bool ret = true;
+	struct policy_handle handle;
+
+	status = torture_rpc_connection(torture, &p, &ndr_table_samr);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
+	ret &= test_Connect(p, torture, &handle);
+
+	ret &= test_EnumDomains(p, torture, &handle,
+				TORTURE_SAMR_MANY_ACCOUNTS,
+				machine_credentials);
+
+	ret &= test_samr_handle_Close(p, torture, &handle);
+
+	return ret;
+}
+
+static bool torture_rpc_samr_many_groups(struct torture_context *torture,
+					 struct dcerpc_pipe *p2,
+					 struct cli_credentials *machine_credentials)
+{
+	NTSTATUS status;
+	struct dcerpc_pipe *p;
+	bool ret = true;
+	struct policy_handle handle;
+
+	status = torture_rpc_connection(torture, &p, &ndr_table_samr);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
+	ret &= test_Connect(p, torture, &handle);
+
+	ret &= test_EnumDomains(p, torture, &handle,
+				TORTURE_SAMR_MANY_GROUPS,
+				machine_credentials);
+
+	ret &= test_samr_handle_Close(p, torture, &handle);
+
+	return ret;
+}
+
+static bool torture_rpc_samr_many_aliases(struct torture_context *torture,
+					  struct dcerpc_pipe *p2,
+					  struct cli_credentials *machine_credentials)
+{
+	NTSTATUS status;
+	struct dcerpc_pipe *p;
+	bool ret = true;
+	struct policy_handle handle;
+
+	status = torture_rpc_connection(torture, &p, &ndr_table_samr);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
+	ret &= test_Connect(p, torture, &handle);
+
+	ret &= test_EnumDomains(p, torture, &handle,
+				TORTURE_SAMR_MANY_ALIASES,
+				machine_credentials);
+
+	ret &= test_samr_handle_Close(p, torture, &handle);
+
+	return ret;
+}
+
+struct torture_suite *torture_rpc_samr_large_dc(TALLOC_CTX *mem_ctx)
+{
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "SAMR-LARGE-DC");
+	struct torture_rpc_tcase *tcase;
+
+	tcase = torture_suite_add_machine_rpc_iface_tcase(suite, "samr",
+							  &ndr_table_samr,
+							  TEST_ACCOUNT_NAME);
+
+	torture_rpc_tcase_add_test_creds(tcase, "many_aliases",
+					 torture_rpc_samr_many_aliases);
+	torture_rpc_tcase_add_test_creds(tcase, "many_groups",
+					 torture_rpc_samr_many_groups);
+	torture_rpc_tcase_add_test_creds(tcase, "many_accounts",
+					 torture_rpc_samr_many_accounts);
 
 	return suite;
 }
