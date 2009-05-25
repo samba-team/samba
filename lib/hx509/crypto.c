@@ -296,26 +296,41 @@ heim_oid2ecnid(heim_oid *oid)
 }
 
 static int
-parse_ECParameters(heim_octet_string *parameters, int *nid)
+parse_ECParameters(hx509_context context, 
+		   heim_octet_string *parameters, int *nid)
 {
     ECParameters ecparam;
     size_t size;
     int ret;
 
+    if (parameters == NULL) {
+	hx509_set_error_string(context, 0, ret,
+			       "EC parameters missing");
+	return HX509_PARSING_KEY_FAILED;
+    }
+
     ret = decode_ECParameters(parameters->data, parameters->length,
 			      &ecparam, &size);
-    if (ret)
+    if (ret) {
+	hx509_set_error_string(context, 0, ret,
+			       "Failed to decode EC parameters");
 	return ret;
+    }
 
     if (ecparam.element != choice_ECParameters_namedCurve) {
 	free_ECParameters(&ecparam);
+	hx509_set_error_string(context, 0, ret,
+			       "EC parameters is not a named curve");
 	return HX509_CRYPTO_SIG_INVALID_FORMAT;
     }
 
     *nid = heim_oid2ecnid(&ecparam.u.namedCurve);
     free_ECParameters(&ecparam);
-    if (*nid == -1)
+    if (*nid == -1) {
+	hx509_set_error_string(context, 0, ret,
+			       "Failed to find matcing NID for EC curve");
 	return HX509_CRYPTO_SIG_INVALID_FORMAT;
+    }
     return 0;
 }
 
@@ -357,8 +372,7 @@ ecdsa_verify_signature(hx509_context context,
     /* set up EC KEY */
     spi = &signer->tbsCertificate.subjectPublicKeyInfo;
 
-    if (der_heim_oid_cmp(&spi->algorithm.algorithm, &asn1_oid_id_ecPublicKey) != 0 ||
-	spi->algorithm.parameters == NULL)
+    if (der_heim_oid_cmp(&spi->algorithm.algorithm, &asn1_oid_id_ecPublicKey) != 0)
 	return HX509_CRYPTO_SIG_INVALID_FORMAT;
 
 #ifdef HAVE_OPENSSL
@@ -366,7 +380,7 @@ ecdsa_verify_signature(hx509_context context,
      * Find the group id
      */
 
-    ret = parse_ECParameters(spi->algorithm.parameters, &groupnid);
+    ret = parse_ECParameters(context, spi->algorithm.parameters, &groupnid);
     if (ret) {
 	der_free_octet_string(&digest);
 	return ret;
@@ -936,37 +950,38 @@ ecdsa_private_key_import(hx509_context context,
 			 hx509_private_key private_key)
 {
     const unsigned char *p = data;
-    EC_GROUP *group;
-    EC_KEY *key;
-    int groupnid;
-    int ret;
+    EC_KEY **pkey = NULL;
 
-    if (keyai->parameters == NULL)
-	return HX509_PARSING_KEY_FAILED;
+    if (keyai->parameters) {
+	EC_GROUP *group;
+	int groupnid;
+	EC_KEY *key;
+	int ret;
 
-    ret = parse_ECParameters(keyai->parameters, &groupnid);
-    if (ret)
-	return ret;
-
-    key = EC_KEY_new();
-    if (key == NULL)
-	return ENOMEM;
-
-    group = EC_GROUP_new_by_curve_name(groupnid);
-    if (group == NULL) {
-	EC_KEY_free(key);
-	return ENOMEM;
-    }
-    EC_GROUP_set_asn1_flag(group, OPENSSL_EC_NAMED_CURVE);
-    if (EC_KEY_set_group(key, group) == 0) {
-	EC_KEY_free(key);
+	ret = parse_ECParameters(context, keyai->parameters, &groupnid);
+	if (ret)
+	    return ret;
+	
+	key = EC_KEY_new();
+	if (key == NULL)
+	    return ENOMEM;
+	
+	group = EC_GROUP_new_by_curve_name(groupnid);
+	if (group == NULL) {
+	    EC_KEY_free(key);
+	    return ENOMEM;
+	}
+	EC_GROUP_set_asn1_flag(group, OPENSSL_EC_NAMED_CURVE);
+	if (EC_KEY_set_group(key, group) == 0) {
+	    EC_KEY_free(key);
+	    EC_GROUP_free(group);
+	    return ENOMEM;
+	}
 	EC_GROUP_free(group);
-	return ENOMEM;
+	pkey = &key;
     }
-    EC_GROUP_free(group);
 
-
-    private_key->private_key.ecdsa = d2i_ECPrivateKey(&key, &p, len);
+    private_key->private_key.ecdsa = d2i_ECPrivateKey(pkey, &p, len);
     if (private_key->private_key.ecdsa == NULL) {
 	hx509_set_error_string(context, 0, HX509_PARSING_KEY_FAILED,
 			       "Failed to parse EC private key");
