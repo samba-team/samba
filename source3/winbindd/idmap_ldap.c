@@ -1055,6 +1055,14 @@ again:
 			TALLOC_FREE(sidstr);
 			continue;
 		}
+
+		if (map->status == ID_MAPPED) {
+			DEBUG(1, ("WARNING: duplicate %s mapping in LDAP. "
+			      "overwriting mapping %u -> %s with %u -> %s\n",
+			      (type == ID_TYPE_UID) ? "UID" : "GID",
+			      id, sid_string_dbg(map->sid), id, sidstr));
+		}
+
 		TALLOC_FREE(sidstr);
 
 		/* mapped */
