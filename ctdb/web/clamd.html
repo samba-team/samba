@@ -1,0 +1,78 @@
+<!--#set var="TITLE" value="CTDB and ClamAV Daemon" -->
+<!--#include virtual="header.html" -->
+
+<h1>Setting up ClamAV with CTDB</h1>
+
+<h2>Prereqs</h2>
+Configure CTDB as above and set it up to use public ipaddresses.<br>
+Verify that the CTDB cluster works.
+
+<h2>Configuration</h2>
+
+Configure clamd on each node on the cluster.<br><br>
+For details how to configure clamd check its documentation.
+
+<h2>/etc/sysconfig/ctdb</h2>
+
+Add the following lines to the /etc/sysconfig/ctdb configuration file.
+<pre>
+  CTDB_MANAGES_CLAMD=yes
+  CTDB_CLAMD_SOCKET="/path/to/clamd.sock"
+</pre>
+
+Disable clamd in chkconfig so that it does not start by default. Instead CTDB will start/stop clamd as required.
+<pre>
+  chkconfig clamd off
+</pre>
+
+<h2>Events script</h2>
+
+The CTDB distribution already comes with an events script for clamd in the file /etc/ctdb/events.d/31.clamd<br><br>
+There should not be any need to edit this file.
+What you need is to set it as executable, with command like this:
+<pre>
+  chmod +x /etc/ctdb/events.d/31.clamd
+</pre>
+To check if ctdb monitoring and handling with clamd, you can check outpout of command:
+<pre>
+  ctdb scriptstatus
+</pre>
+
+<h2>Restart your cluster</h2>
+Next time your cluster restarts, CTDB will start managing the clamd service.<br><br>
+If the cluster is already in production you may not want to restart the entire cluster since this would disrupt services.<br>
+
+Insted you can just disable/enable the nodes one by one. Once a node becomes enabled again it will start the clamd service.<br><br>
+
+Follow the procedure below for each node, one node at a time :
+
+<h3>1 Disable the node</h3>
+Use the ctdb command to disable the node :
+<pre>
+  ctdb -n NODE disable
+</pre>
+
+<h3>2 Wait until the cluster has recovered</h3>
+
+Use the ctdb tool to monitor until the cluster has recovered, i.e. Recovery mode is NORMAL. This should happen within seconds of when you disabled the node.
+<pre>
+  ctdb status
+</pre>
+
+<h3>3 Enable the node again</h3>
+
+Re-enable the node again which will start the newly configured vsftp service.
+<pre>
+  ctdb -n NODE enable
+</pre>
+
+<h2>See also</h2>
+
+The CLAMAV section in the ctdbd manpage.
+
+<pre>
+  man ctdbd
+</pre>
+
+<!--#include virtual="footer.html" -->
+
