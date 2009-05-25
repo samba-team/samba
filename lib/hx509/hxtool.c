@@ -704,8 +704,13 @@ pcert_print(struct print_options *opt, int argc, char **argv)
     while(argc--) {
 	int ret;
 	ret = hx509_certs_init(context, argv[0], 0, lock, &certs);
-	if (ret)
+	if (ret) {
+	    if (opt->never_fail_flag) {
+		printf("ignoreing failure: %d\n", ret);
+		continue;
+	    }
 	    hx509_err(context, 1, ret, "hx509_certs_init");
+	}
 	if (opt->info_flag)
 	    hx509_certs_info(context, certs, NULL, NULL);
 	hx509_certs_iter(context, certs, print_f, &s);
