@@ -117,11 +117,12 @@ trap "kill ${kdcpid} ${n1pid} ${n2pid} ${n3pid} 2> /dev/null; echo signal killin
 
 sleep 10
 
+#    --wrap-ext
+
 ${gssmaestro} \
     --slaves=localhost:8889 \
     --slaves=localhost:8890 \
     --slaves=localhost:8891 \
-    --wrap-ext \
     --principals=user1@${R}:u1 || exitcode=1
 
 trap "" EXIT
