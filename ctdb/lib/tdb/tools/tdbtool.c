@@ -402,15 +402,68 @@ static void speed_tdb(const char *tlimit)
 {
 	unsigned timelimit = tlimit?atoi(tlimit):0;
 	double t;
-	int ops=0;
-	if (timelimit == 0) timelimit = 10;
+	int ops;
+	if (timelimit == 0) timelimit = 5;
+
+	ops = 0;
+	printf("Testing store speed for %u seconds\n", timelimit);
+	_start_timer();
+	do {
+		long int r = random();
+		TDB_DATA key, dbuf;
+		key.dptr = "store test";
+		key.dsize = strlen(key.dptr);
+		dbuf.dptr = (unsigned char *)&r;
+		dbuf.dsize = sizeof(r);
+		tdb_store(tdb, key, dbuf, TDB_REPLACE);
+		t = _end_timer();
+		ops++;
+	} while (t < timelimit);
+	printf("%10.3f ops/sec\n", ops/t);
+
+	ops = 0;
+	printf("Testing fetch speed for %u seconds\n", timelimit);
+	_start_timer();
+	do {
+		long int r = random();
+		TDB_DATA key, dbuf;
+		key.dptr = "store test";
+		key.dsize = strlen(key.dptr);
+		dbuf.dptr = (unsigned char *)&r;
+		dbuf.dsize = sizeof(r);
+		tdb_fetch(tdb, key);
+		t = _end_timer();
+		ops++;
+	} while (t < timelimit);
+	printf("%10.3f ops/sec\n", ops/t);
+
+	ops = 0;
+	printf("Testing transaction speed for %u seconds\n", timelimit);
+	_start_timer();
+	do {
+		long int r = random();
+		TDB_DATA key, dbuf;
+		key.dptr = "transaction test";
+		key.dsize = strlen(key.dptr);
+		dbuf.dptr = (unsigned char *)&r;
+		dbuf.dsize = sizeof(r);
+		tdb_transaction_start(tdb);
+		tdb_store(tdb, key, dbuf, TDB_REPLACE);
+		tdb_transaction_commit(tdb);
+		t = _end_timer();
+		ops++;
+	} while (t < timelimit);
+	printf("%10.3f ops/sec\n", ops/t);
+
+	ops = 0;
 	printf("Testing traverse speed for %u seconds\n", timelimit);
 	_start_timer();
-	while ((t=_end_timer()) < timelimit) {
+	do {
 		tdb_traverse(tdb, traverse_fn, NULL);
-		printf("%10.3f ops/sec\r", (++ops)/t);
-	}
-	printf("\n");
+		t = _end_timer();
+		ops++;
+	} while (t < timelimit);
+	printf("%10.3f ops/sec\n", ops/t);
 }
 
 static void toggle_mmap(void)
