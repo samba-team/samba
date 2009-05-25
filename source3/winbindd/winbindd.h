@@ -51,7 +51,6 @@ struct winbindd_cli_state {
 	struct winbindd_cli_state *prev, *next;   /* Linked list pointers */
 	int sock;                                 /* Open socket from client */
 	pid_t pid;                                /* pid of client */
-	bool finished;                            /* Can delete from list */
 	bool write_extra_data;                    /* Write extra_data field */
 	time_t last_access;                       /* Time of last access (read or write) */
 	bool privileged;                           /* Is the client 'privileged' */

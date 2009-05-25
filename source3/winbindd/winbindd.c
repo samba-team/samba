@@ -29,6 +29,8 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
+static void remove_client(struct winbindd_cli_state *state);
+
 static bool opt_nocache = False;
 static bool interactive = False;
 
@@ -628,7 +630,7 @@ static void request_finished(struct winbindd_cli_state *state)
 				 state->out_queue, state->sock,
 				 &state->response);
 	if (req == NULL) {
-		state->finished = true;
+		remove_client(state);
 		return;
 	}
 	tevent_req_set_callback(req, winbind_client_response_written, state);
@@ -646,7 +648,7 @@ static void winbind_client_response_written(struct tevent_req *req)
 	if (ret == -1) {
 		DEBUG(2, ("Could not write response to client: %s\n",
 			  strerror(err)));
-		state->finished = true;
+		remove_client(state);
 		return;
 	}
 
@@ -655,7 +657,7 @@ static void winbind_client_response_written(struct tevent_req *req)
 	req = wb_req_read_send(state, winbind_event_context(), state->sock,
 			       WINBINDD_MAX_EXTRA_DATA);
 	if (req == NULL) {
-		state->finished = true;
+		remove_client(state);
 		return;
 	}
 	tevent_req_set_callback(req, winbind_client_request_read, state);
@@ -744,7 +746,7 @@ static void winbind_client_request_read(struct tevent_req *req)
 	if (ret == -1) {
 		DEBUG(2, ("Could not read client request: %s\n",
 			  strerror(err)));
-		state->finished = true;
+		remove_client(state);
 		return;
 	}
 	process_request(state);
@@ -1265,26 +1267,11 @@ int main(int argc, char **argv, char **envp)
 	TALLOC_FREE(frame);
 	/* Loop waiting for requests */
 	while (1) {
-		struct winbindd_cli_state *state;
-
 		frame = talloc_stackframe();
 
 		/* refresh the trusted domain cache */
 
 		rescan_trusted_domains();
-
-		/* Dispose of client connection if it is marked as
-		   finished */
-		state = winbindd_client_list();
-		while (state) {
-			struct winbindd_cli_state *next = state->next;
-
-			if (state->finished) {
-				remove_client(state);
-			}
-
-			state = next;
-		}
 
 		process_loop();
 
