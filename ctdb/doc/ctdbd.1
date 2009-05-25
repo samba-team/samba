@@ -134,21 +134,6 @@ If you omit this argument when using public addresses or single public ip, ctdb 
 This is the name of the lock file stored of the shared cluster filesystem that ctdbd uses to arbitrate which node has the role of recovery\-master\. This file must be stored on shared storage\.
 .RE
 .PP
-\-\-single\-public\-ip=<address>
-.RS 4
-This option is used to activate the "ipmux" or the "lvs" functionality of ctdb where the cluster provides a single public ip address for the entire cluster\. When using this option you must also use the \-\-public\-interface option\.
-.sp
-In this mode, all nodes of the cluster will expose a single ip address from all nodes with all incoming traffic to the cluster being passed through the current recmaster\. This functionality is similar to using a load\-balancing switch\.
-.sp
-All incoming packets are sent to the recmaster which will multiplex the clients across all available nodes and pass the packets on to a different node in the cluster to manage the connection based on the clients ip address\. Outgoing packets however are sent directly from the node that was choosen back to the client\. Since all incoming packets are sent through the recmaster this will have a throughput and performance impact when used\. This impact in performance primarily affects write\-performance while read\-performance should be mainly unaffected\. Only use this feature if your environment is mostly\-read (i\.e\. most traffic is from the nodes back to the clients) or if it is not important to get maximum write\-performance to the cluster\.
-.sp
-This feature is completely controlled from the eventscripts and does not require any CTDBD involvement\. However, the CTDBD daemon does need to know that the "single public ip" exists so that the CTDBD daemon will allow clients to set up killtcp to work on this ip address\.
-.sp
-CTDBD only allows clients to use killtcp to kill off (RST) tcp connections to/from an ip address that is either a normal public address or to/from the ip address specified by \-\-single\-public\-ip\. No other tcp connections are allowed to be specified with killtcp\.
-.sp
-Please note that ipmux is obsolete\. Use LVS, not ipmux\. Please see the LVS section in this manpage for instructions on how to configure and use CTDB with LVS\.
-.RE
-.PP
 \-\-socket=<filename>
 .RS 4
 This specifies the name of the domain socket that ctdbd will create\. This socket is used for local clients to attach to and communicate with the ctdbd daemon\.

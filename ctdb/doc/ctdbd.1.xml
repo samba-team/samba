@@ -254,56 +254,6 @@
         </listitem>
       </varlistentry>
 
-      <varlistentry><term>--single-public-ip=&lt;address&gt;</term>
-        <listitem>
-          <para>
-            This option is used to activate the "ipmux" or the "lvs"
-	    functionality of ctdb where the cluster provides a single 
-	    public ip address for the entire cluster. When using this option
-	    you must also use the --public-interface option.
-	    </para>
-	    <para>
-            In this mode, all nodes of the cluster will expose a single
-            ip address from all nodes with all incoming traffic to the cluster
-            being passed through the current recmaster. This functionality
-            is similar to using a load-balancing switch.
-          </para>
-          <para>
-            All incoming packets are sent to the recmaster which will multiplex
-            the clients across all available nodes and pass the packets on to
-            a different node in the cluster to manage the connection based
-            on the clients ip address. Outgoing packets however are sent
-            directly from the node that was choosen back to the client.
-            Since all incoming packets are sent through the recmaster this will
-            have a throughput and performance impact when used. This impact
-            in performance primarily affects write-performance while 
-	    read-performance should be mainly unaffected.
-            Only use this feature if your environment is mostly-read 
-            (i.e. most traffic is from the nodes back to the clients) or
-            if it is not important to get maximum write-performance to the
-	    cluster.
-          </para>
-	  <para>
-	    This feature is completely controlled from the eventscripts and 
-	    does not require any CTDBD involvement. However, the CTDBD daemon
-	    does need to know that the "single public ip" exists so that the 
-	    CTDBD daemon will allow clients to set up killtcp to work on this
-	    ip address.
-	    </para>
-	    <para>
-	    CTDBD only allows clients to use killtcp to kill off (RST) tcp
-	    connections to/from an ip address that is either a normal public
-	    address or to/from the ip address specified by --single-public-ip.
-	    No other tcp connections are allowed to be specified with killtcp.
-	  </para>
-	  <para>
-	  Please note that ipmux is obsolete. Use LVS, not ipmux.
-	  Please see the LVS section in this manpage for instructions on
-	  how to configure and use CTDB with LVS.
-	  </para>
-        </listitem>
-      </varlistentry>
-
       <varlistentry><term>--socket=&lt;filename&gt;</term>
         <listitem>
           <para>

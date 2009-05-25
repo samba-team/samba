@@ -26,8 +26,6 @@ POPT_LIBS = @POPT_LIBS@
 POPT_CFLAGS = @POPT_CFLAGS@
 POPT_OBJ = @POPT_OBJ@
 
-IPQ_LIBS = @IPQ_LIBS@
-
 CFLAGS=-g -I$(srcdir)/include -Iinclude -Ilib -Ilib/util -I$(srcdir) \
        -I@tallocdir@ -I@tdbdir@/include -I@libreplacedir@ \
 	-DVARDIR=\"$(localstatedir)\" -DETCDIR=\"$(etcdir)\" \
@@ -63,7 +61,7 @@ TEST_BINS=tests/bin/ctdb_bench tests/bin/ctdb_fetch tests/bin/ctdb_store \
 	tests/bin/ctdb_traverse tests/bin/rb_test tests/bin/ctdb_transaction \
 	@INFINIBAND_BINS@
 
-BINS = bin/ctdb @CTDB_SCSI_IO@ bin/ctdb_ipmux bin/smnotify bin/ping_pong
+BINS = bin/ctdb @CTDB_SCSI_IO@ bin/smnotify bin/ping_pong
 SBINS = bin/ctdbd
 
 DIRS = lib bin tests/bin
@@ -103,10 +101,6 @@ bin/ctdbd: $(CTDB_SERVER_OBJ)
 bin/scsi_io: $(CTDB_CLIENT_OBJ) utils/scsi_io/scsi_io.o 
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ utils/scsi_io/scsi_io.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
-
-bin/ctdb_ipmux: $(CTDB_CLIENT_OBJ) utils/ipmux/ipmux.o 
-	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ utils/ipmux/ipmux.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS) $(IPQ_LIBS)
 
 bin/ctdb: $(CTDB_CLIENT_OBJ) tools/ctdb.o tools/ctdb_vacuum.o
 	@echo Linking $@
@@ -202,7 +196,6 @@ install: all
 	mkdir -p $(DESTDIR)$(docdir)/ctdb
 	${INSTALLCMD} -m 644 ctdb.pc $(DESTDIR)$(libdir)/pkgconfig
 	${INSTALLCMD} -m 755 bin/ctdb $(DESTDIR)$(bindir)
-	${INSTALLCMD} -m 755 bin/ctdb_ipmux $(DESTDIR)$(bindir)
 	${INSTALLCMD} -m 755 bin/ctdbd $(DESTDIR)$(sbindir)
 	${INSTALLCMD} -m 755 bin/smnotify $(DESTDIR)$(bindir)
 	$(INSTALLCMD) -m 755 bin/ping_pong $(DESTDIR)$(bindir)
@@ -223,7 +216,6 @@ install: all
 	${INSTALLCMD} -m 755 config/events.d/60.nfs $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/61.nfstickle $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/70.iscsi $(DESTDIR)$(etcdir)/ctdb/events.d
-	${INSTALLCMD} -m 755 config/events.d/90.ipmux $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/91.lvs $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/99.routing $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 tools/ctdb_diagnostics $(DESTDIR)$(bindir)

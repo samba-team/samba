@@ -114,7 +114,6 @@ fi
 %{_sysconfdir}/ctdb/events.d/60.nfs
 %{_sysconfdir}/ctdb/events.d/61.nfstickle
 %{_sysconfdir}/ctdb/events.d/70.iscsi
-%{_sysconfdir}/ctdb/events.d/90.ipmux
 %{_sysconfdir}/ctdb/events.d/91.lvs
 %{_sysconfdir}/ctdb/events.d/99.routing
 %{_sysconfdir}/ctdb/statd-callout
@@ -122,7 +121,6 @@ fi
 %{_bindir}/ctdb
 %{_bindir}/smnotify
 %{_bindir}/ping_pong
-%{_bindir}/ctdb_ipmux
 %{_bindir}/ctdb_diagnostics
 %{_bindir}/onnode
 %{_mandir}/man1/ctdb.1.gz
