@@ -340,8 +340,12 @@ pem_func(hx509_context context, const char *type,
 
 	    ret = (*formats[j].func)(context, NULL, pem_ctx->c, 
 				     header, data, len, ai);
-	    if (ret == 0)
-		break;
+	    if (ret) {
+		hx509_set_error_string(context, HX509_ERROR_APPEND, ret,
+				       "Failed parseing PEM format %s", type);
+		return ret;
+	    }
+	    break;
 	}
     }
     if (j == sizeof(formats)/sizeof(formats[0])) {
