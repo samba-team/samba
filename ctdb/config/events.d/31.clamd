@@ -1,0 +1,53 @@
+#!/bin/sh
+# event script to manage clamd in a cluster environment
+
+. $CTDB_BASE/functions
+loadconfig ctdb
+
+detect_init_style
+
+case $CTDB_INIT_STYLE in
+	redhat)
+		CTDB_SERVICE_CLAMD="clamd"
+		CTDB_CONFIG_CLAMD="clamd"
+		;;
+	suse)
+		CTDB_SERVICE_CLAMD="clamav"
+		CTDB_CONFIG_CLAMD="clamav"
+		;;
+	ubuntu)
+		CTDB_SERVICE_CLAMD="clamav"
+		CTDB_CONFIG_CLAMD="clamav"
+		;;
+	*)
+		# should not happen.
+		# for now use red hat style as default
+		CTDB_SERVICE_CLAMD="clamd"
+		CTDB_CONFIG_CLAMD="clamd"
+		;;
+esac
+
+loadconfig "${CTDB_CONFIG_CLAMD}"
+
+[ "$CTDB_MANAGES_CLAMD" = "yes" ] || exit 0
+
+cmd="$1"
+shift
+
+case $cmd in 
+     startup)
+        service "${CTDB_SERVICE_CLAMD}" stop > /dev/null 2>&1
+        service "${CTDB_SERVICE_CLAMD}" start
+        ;;
+
+     shutdown)
+        service "${CTDB_SERVICE_CLAMD}" stop
+        ;;
+
+     monitor)
+        ctdb_check_unix_socket "clamd" ${CTDB_CLAMD_SOCKET}
+        ;;
+esac
+
+exit 0
+
