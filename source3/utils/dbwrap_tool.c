@@ -23,7 +23,7 @@
 
 extern bool AllowDebugChange;
 
-typedef enum { OP_FETCH, OP_STORE, OP_DELETE, OP_ERASE } dbwrap_op;
+typedef enum { OP_FETCH, OP_STORE, OP_DELETE, OP_ERASE, OP_LISTKEYS } dbwrap_op;
 
 typedef enum { TYPE_INT32, TYPE_UINT32 } dbwrap_type;
 
@@ -137,6 +137,41 @@ static int dbwrap_tool_erase(struct db_context *db,
 	return 0;
 }
 
+static int listkey_fn(struct db_record *rec, void *private_data)
+{
+	int length = rec->key.dsize;
+	unsigned char *p = (unsigned char *)rec->key.dptr;
+
+	while (length--) {
+		if (isprint(*p) && !strchr("\"\\", *p)) {
+			d_printf("%c", *p);
+		} else {
+			d_printf("\\%02X", *p);
+		}
+		p++;
+	}
+
+	d_printf("\n");
+
+	return 0;
+}
+
+static int dbwrap_tool_listkeys(struct db_context *db,
+				const char *keyname,
+				void *data)
+{
+	int ret;
+
+	ret = db->traverse_read(db, listkey_fn, NULL);
+
+	if (ret < 0) {
+		d_fprintf(stderr, "ERROR listing db keys\n");
+		return -1;
+	}
+
+	return 0;
+}
+
 struct dbwrap_op_dispatch_table {
 	dbwrap_op op;
 	dbwrap_type type;
@@ -152,6 +187,7 @@ struct dbwrap_op_dispatch_table dispatch_table[] = {
 	{ OP_STORE,  TYPE_UINT32, dbwrap_tool_store_uint32 },
 	{ OP_DELETE, TYPE_INT32,  dbwrap_tool_delete },
 	{ OP_ERASE,  TYPE_INT32,  dbwrap_tool_erase },
+	{ OP_LISTKEYS, TYPE_INT32, dbwrap_tool_listkeys },
 	{ 0, 0, NULL },
 };
 
@@ -185,7 +221,7 @@ int main(int argc, const char **argv)
 	if ((argc < 3) || (argc > 6)) {
 		d_fprintf(stderr,
 			  "USAGE: %s <database> <op> [<key> [<type> [<value>]]]\n"
-			  "       ops: fetch, store, delete, erase\n"
+			  "       ops: fetch, store, delete, erase, listkeys\n"
 			  "       types: int32, uint32\n",
 			 argv[0]);
 		goto done;
@@ -228,6 +264,13 @@ int main(int argc, const char **argv)
 			goto done;
 		}
 		op = OP_ERASE;
+	} else if (strcmp(opname, "listkeys") == 0) {
+		if (argc != 3) {
+			d_fprintf(stderr, "ERROR: operation 'listkeys' does "
+				  "not take a key argument\n");
+			goto done;
+		}
+		op = OP_LISTKEYS;
 	} else {
 		d_fprintf(stderr,
 			  "ERROR: invalid op '%s' specified\n"
