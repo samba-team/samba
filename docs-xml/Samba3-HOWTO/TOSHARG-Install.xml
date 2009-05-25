@@ -334,8 +334,8 @@
 	<variablelist>
 		<varlistentry><term>nmbd</term>
 			<listitem><para>
-			<indexterm><primary>smbd</primary></indexterm>
-			<indexterm><primary>starting samba</primary><secondary>smbd</secondary></indexterm>
+			<indexterm><primary>nmbd</primary></indexterm>
+			<indexterm><primary>starting samba</primary><secondary>nmbd</secondary></indexterm>
 			This daemon handles all name registration and resolution requests. It is the primary vehicle involved
 			in network browsing. It handles all UDP-based protocols. The <command>nmbd</command> daemon should
 			be the first command started as part of the Samba startup process.
@@ -344,8 +344,8 @@
 
 		<varlistentry><term>smbd</term>
 			<listitem><para>
-			<indexterm><primary>nmbd</primary></indexterm>
-			<indexterm><primary>starting samba</primary><secondary>nmbd</secondary></indexterm>
+			<indexterm><primary>smbd</primary></indexterm>
+			<indexterm><primary>starting samba</primary><secondary>smbd</secondary></indexterm>
 			This daemon handles all TCP/IP-based connection services for file- and print-based operations. It also
 			manages local authentication. It should be started immediately following the startup of <command>nmbd</command>.
 			</para></listitem>
