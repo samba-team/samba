@@ -4999,7 +4999,7 @@ static void init_globals(bool first_time_only)
 	   a large number of sites (tridge) */
 	Globals.bHostnameLookups = False;
 
-	string_set(&Globals.szPassdbBackend, "smbpasswd");
+	string_set(&Globals.szPassdbBackend, "tdbsam");
 	string_set(&Globals.szLdapSuffix, "");
 	string_set(&Globals.szLdapMachineSuffix, "");
 	string_set(&Globals.szLdapUserSuffix, "");
