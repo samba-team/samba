@@ -39,7 +39,7 @@ extern struct winbindd_methods cache_methods;
 
 /* Read some data from a client connection */
 
-static void child_read_request(struct winbindd_cli_state *state)
+static NTSTATUS child_read_request(struct winbindd_cli_state *state)
 {
 	NTSTATUS status;
 
@@ -51,13 +51,12 @@ static void child_read_request(struct winbindd_cli_state *state)
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("child_read_request: read_data failed: %s\n",
 			  nt_errstr(status)));
-		state->finished = True;
-		return;
+		return status;
 	}
 
 	if (state->request->extra_len == 0) {
 		state->request->extra_data.data = NULL;
-		return;
+		return NT_STATUS_OK;
 	}
 
 	DEBUG(10, ("Need to read %d extra bytes\n", (int)state->request->extra_len));
@@ -67,8 +66,7 @@ static void child_read_request(struct winbindd_cli_state *state)
 
 	if (state->request->extra_data.data == NULL) {
 		DEBUG(0, ("malloc failed\n"));
-		state->finished = True;
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* Ensure null termination */
@@ -80,9 +78,8 @@ static void child_read_request(struct winbindd_cli_state *state)
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Could not read extra data: %s\n",
 			  nt_errstr(status)));
-		state->finished = True;
-		return;
 	}
+	return status;
 }
 
 /*
@@ -1461,6 +1458,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 		TALLOC_CTX *frame = talloc_stackframe();
 		struct iovec iov[2];
 		int iov_count;
+		NTSTATUS status;
 
 		if (run_events(winbind_event_context(), 0, NULL, NULL)) {
 			TALLOC_FREE(frame);
@@ -1518,9 +1516,9 @@ static bool fork_domain_child(struct winbindd_child *child)
 		}
 
 		/* fetch a request from the main daemon */
-		child_read_request(&state);
+		status = child_read_request(&state);
 
-		if (state.finished) {
+		if (!NT_STATUS_IS_OK(status)) {
 			/* we lost contact with our parent */
 			_exit(0);
 		}
