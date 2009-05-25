@@ -379,8 +379,8 @@ NTSTATUS rpc_vampire_keytab_internals(struct net_context *c,
 	ctx->cli		= pipe_hnd;
 	ctx->ops		= &libnet_samsync_keytab_ops;
 	ctx->domain_name	= domain_name;
-	ctx->username		= c->opt_user_name;
-	ctx->password		= c->opt_password;
+	ctx->username		= get_cmdline_auth_info_username(c->auth_info);
+	ctx->password		= get_cmdline_auth_info_password(c->auth_info);
 
 	ctx->force_full_replication = c->opt_force_full_repl ? true : false;
 	ctx->clean_old_entries = c->opt_clean_old_entries ? true : false;

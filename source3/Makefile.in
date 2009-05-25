@@ -2151,7 +2151,7 @@ $(LIBSMBCLIENT_SHARED_TARGET_SONAME): $(BINARY_PREREQS) $(LIBSMBCLIENT_OBJ) $(LI
 	@echo Linking shared library $@
 	@$(SHLD_DSO) $(LIBSMBCLIENT_OBJ) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(LIBWBCLIENT_LIBS) $(LIBS) \
-		$(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS) \
+		$(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS) $(ZLIB_LIBS) \
 		@SONAMEFLAG@`basename $@`
 
 $(LIBSMBCLIENT_SHARED_TARGET): $(LIBSMBCLIENT_SHARED_TARGET_SONAME)
@@ -3076,7 +3076,7 @@ etags::
 	find $(srcdir)/.. -name "*.[ch]" | xargs -n 100 etags --append $(ETAGS_OPTIONS)
 
 ctags::
-	ctags $(CTAGS_OPTIONS) `find $(srcdir)/.. -name "*.[ch]" | grep -v include/proto\.h`
+	ctags $(CTAGS_OPTIONS) `find $(srcdir)/.. -name "*.[ch]" | grep -v proto\.h`
 
 realclean:: clean
 	-rm -f config.log bin/.dummy script/findsmb script/gen-8bit-gap.sh

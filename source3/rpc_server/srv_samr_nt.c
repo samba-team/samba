@@ -1109,6 +1109,12 @@ NTSTATUS _samr_EnumDomainGroups(pipes_struct *p,
 	make_group_sam_entry_list(p->mem_ctx, &samr_entries,
 				  num_groups, groups);
 
+	if (MAX_SAM_ENTRIES <= num_groups) {
+		status = STATUS_MORE_ENTRIES;
+	} else {
+		status = NT_STATUS_OK;
+	}
+
 	samr_array->count = num_groups;
 	samr_array->entries = samr_entries;
 
@@ -1173,6 +1179,12 @@ NTSTATUS _samr_EnumDomainAliases(pipes_struct *p,
 				  num_aliases, aliases);
 
 	DEBUG(5,("_samr_EnumDomainAliases: %d\n", __LINE__));
+
+	if (MAX_SAM_ENTRIES <= num_aliases) {
+		status = STATUS_MORE_ENTRIES;
+	} else {
+		status = NT_STATUS_OK;
+	}
 
 	samr_array->count = num_aliases;
 	samr_array->entries = samr_entries;

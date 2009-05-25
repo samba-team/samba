@@ -23,7 +23,7 @@
 
 extern bool AllowDebugChange;
 
-typedef enum { OP_FETCH, OP_STORE, OP_DELETE } dbwrap_op;
+typedef enum { OP_FETCH, OP_STORE, OP_DELETE, OP_ERASE, OP_LISTKEYS } dbwrap_op;
 
 typedef enum { TYPE_INT32, TYPE_UINT32 } dbwrap_type;
 
@@ -111,6 +111,67 @@ static int dbwrap_tool_delete(struct db_context *db,
 	return 0;
 }
 
+static int delete_fn(struct db_record *rec, void *priv)
+{
+	rec->delete_rec(rec);
+	return 0;
+}
+
+/**
+ * dbwrap_tool_erase: erase the whole data base
+ * the keyname argument is not used.
+ */
+static int dbwrap_tool_erase(struct db_context *db,
+			     const char *keyname,
+			     void *data)
+{
+	int ret;
+
+	ret = db->traverse(db, delete_fn, NULL);
+
+	if (ret < 0) {
+		d_fprintf(stderr, "ERROR erasing the database\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+static int listkey_fn(struct db_record *rec, void *private_data)
+{
+	int length = rec->key.dsize;
+	unsigned char *p = (unsigned char *)rec->key.dptr;
+
+	while (length--) {
+		if (isprint(*p) && !strchr("\"\\", *p)) {
+			d_printf("%c", *p);
+		} else {
+			d_printf("\\%02X", *p);
+		}
+		p++;
+	}
+
+	d_printf("\n");
+
+	return 0;
+}
+
+static int dbwrap_tool_listkeys(struct db_context *db,
+				const char *keyname,
+				void *data)
+{
+	int ret;
+
+	ret = db->traverse_read(db, listkey_fn, NULL);
+
+	if (ret < 0) {
+		d_fprintf(stderr, "ERROR listing db keys\n");
+		return -1;
+	}
+
+	return 0;
+}
+
 struct dbwrap_op_dispatch_table {
 	dbwrap_op op;
 	dbwrap_type type;
@@ -125,7 +186,8 @@ struct dbwrap_op_dispatch_table dispatch_table[] = {
 	{ OP_STORE,  TYPE_INT32,  dbwrap_tool_store_int32 },
 	{ OP_STORE,  TYPE_UINT32, dbwrap_tool_store_uint32 },
 	{ OP_DELETE, TYPE_INT32,  dbwrap_tool_delete },
-	{ OP_DELETE, TYPE_UINT32, dbwrap_tool_delete },
+	{ OP_ERASE,  TYPE_INT32,  dbwrap_tool_erase },
+	{ OP_LISTKEYS, TYPE_INT32, dbwrap_tool_listkeys },
 	{ 0, 0, NULL },
 };
 
@@ -140,7 +202,7 @@ int main(int argc, const char **argv)
 	const char *dbname;
 	const char *opname;
 	dbwrap_op op;
-	const char *keyname;
+	const char *keyname = "";
 	const char *keytype = "int32";
 	dbwrap_type type;
 	const char *valuestr = "0";
@@ -156,10 +218,10 @@ int main(int argc, const char **argv)
 	AllowDebugChange = false;
 	lp_load(get_dyn_CONFIGFILE(), true, false, false, true);
 
-	if ((argc != 4) && (argc != 5) && (argc != 6)) {
+	if ((argc < 3) || (argc > 6)) {
 		d_fprintf(stderr,
-			  "USAGE: %s <database> <op> <key> [<type> [<value>]]\n"
-			  "       ops: fetch, store, delete\n"
+			  "USAGE: %s <database> <op> [<key> [<type> [<value>]]]\n"
+			  "       ops: fetch, store, delete, erase, listkeys\n"
 			  "       types: int32, uint32\n",
 			 argv[0]);
 		goto done;
@@ -167,7 +229,6 @@ int main(int argc, const char **argv)
 
 	dbname = argv[1];
 	opname = argv[2];
-	keyname = argv[3];
 
 	if (strcmp(opname, "store") == 0) {
 		if (argc != 6) {
@@ -177,6 +238,7 @@ int main(int argc, const char **argv)
 		}
 		valuestr = argv[5];
 		keytype = argv[4];
+		keyname = argv[3];
 		op = OP_STORE;
 	} else if (strcmp(opname, "fetch") == 0) {
 		if (argc != 5) {
@@ -186,13 +248,29 @@ int main(int argc, const char **argv)
 		}
 		op = OP_FETCH;
 		keytype = argv[4];
+		keyname = argv[3];
 	} else if (strcmp(opname, "delete") == 0) {
 		if (argc != 4) {
 			d_fprintf(stderr, "ERROR: operation 'delete' does "
 				  "not allow type nor value argument\n");
 			goto done;
 		}
+		keyname = argv[3];
 		op = OP_DELETE;
+	} else if (strcmp(opname, "erase") == 0) {
+		if (argc != 3) {
+			d_fprintf(stderr, "ERROR: operation 'erase' does "
+				  "not take a key argument\n");
+			goto done;
+		}
+		op = OP_ERASE;
+	} else if (strcmp(opname, "listkeys") == 0) {
+		if (argc != 3) {
+			d_fprintf(stderr, "ERROR: operation 'listkeys' does "
+				  "not take a key argument\n");
+			goto done;
+		}
+		op = OP_LISTKEYS;
 	} else {
 		d_fprintf(stderr,
 			  "ERROR: invalid op '%s' specified\n"

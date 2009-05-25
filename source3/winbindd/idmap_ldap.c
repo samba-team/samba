@@ -1055,6 +1055,14 @@ again:
 			TALLOC_FREE(sidstr);
 			continue;
 		}
+
+		if (map->status == ID_MAPPED) {
+			DEBUG(1, ("WARNING: duplicate %s mapping in LDAP. "
+			      "overwriting mapping %u -> %s with %u -> %s\n",
+			      (type == ID_TYPE_UID) ? "UID" : "GID",
+			      id, sid_string_dbg(map->sid), id, sidstr));
+		}
+
 		TALLOC_FREE(sidstr);
 
 		/* mapped */
@@ -1249,8 +1257,6 @@ again:
 			continue;
 		}
 
-		TALLOC_FREE(sidstr);
-
 		/* now try to see if it is a uid, if not try with a gid
 		 * (gid is more common, but in case both uidNumber and
 		 * gidNumber are returned the SID is mapped to the uid
@@ -1268,6 +1274,7 @@ again:
 		if ( ! tmp) { /* no ids ?? */
 			DEBUG(5, ("no uidNumber, "
 				  "nor gidNumber attributes found\n"));
+			TALLOC_FREE(sidstr);
 			continue;
 		}
 
@@ -1278,10 +1285,20 @@ again:
 			DEBUG(5, ("Requested id (%u) out of range (%u - %u). "
 				  "Filtered!\n", id,
 				  ctx->filter_low_id, ctx->filter_high_id));
+			TALLOC_FREE(sidstr);
 			TALLOC_FREE(tmp);
 			continue;
 		}
 		TALLOC_FREE(tmp);
+
+		if (map->status == ID_MAPPED) {
+			DEBUG(1, ("WARNING: duplicate %s mapping in LDAP. "
+			      "overwriting mapping %s -> %u with %s -> %u\n",
+			      (type == ID_TYPE_UID) ? "UID" : "GID",
+			      sidstr, map->xid.id, sidstr, id));
+		}
+
+		TALLOC_FREE(sidstr);
 
 		/* mapped */
 		map->xid.type = type;
