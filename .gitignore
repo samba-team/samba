@@ -232,7 +232,7 @@ source4/lib/tdb/bin/tdbbackup
 source4/lib/tdb/bin/tdbdump
 source4/lib/tdb/bin/tdbtool
 source4/lib/tdb/bin/tdbtorture
-source4/lib/tdr/tdr_proto.h
+lib/tdr/tdr_proto.h
 lib/util/apidocs
 lib/util/asn1_proto.h
 lib/util/pidfile.h
@@ -316,6 +316,8 @@ librpc/gen_ndr/cli_drsblobs.h
 librpc/gen_ndr/srv_drsblobs.c
 librpc/gen_ndr/srv_drsblobs.h
 source3/setup
+librpc/gen_ndr/cli_dcerpc.[ch]
+librpc/gen_ndr/srv_dcerpc.[ch]
 librpc/gen_ndr/*wzcsvc*
 librpc/gen_ndr/*w32time*
 librpc/gen_ndr/*wmi*
