@@ -731,8 +731,7 @@ sendrequest (char *cmd, char *local, char *remote, char *lmode, int printnames)
 	    return;
 	}
 	closefunc = fclose;
-	if (fstat (fileno (fin), &st) < 0 ||
-	    (st.st_mode & S_IFMT) != S_IFREG) {
+	if (fstat (fileno (fin), &st) < 0 || !S_ISREG(st.st_mode)) {
 	    fprintf (stdout, "%s: not a plain file.\n", local);
 	    signal (SIGINT, oldintr);
 	    fclose (fin);
