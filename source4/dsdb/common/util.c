@@ -1658,6 +1658,11 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 	minPwdLength =     samdb_result_uint(res[0],   "minPwdLength", 0);
 	minPwdAge =        samdb_result_int64(res[0],  "minPwdAge", 0);
 
+	if (userAccountControl & UF_PASSWD_NOTREQD) {
+		/* see [MS-ADTS] 2.2.15 */
+		minPwdLength = 0;
+	}
+
 	if (_dominfo) {
 		struct samr_DomInfo1 *dominfo;
 		/* on failure we need to fill in the reject reasons */
@@ -1697,7 +1702,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 			
 			
 			/* possibly check password complexity */
-			if (restrictions && pwdProperties & DOMAIN_PASSWORD_COMPLEX &&
+			if (restrictions && (pwdProperties & DOMAIN_PASSWORD_COMPLEX) &&
 			    !samdb_password_complexity_ok(new_pass)) {
 				if (reject_reason) {
 					*reject_reason = SAMR_REJECT_COMPLEXITY;
