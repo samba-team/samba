@@ -45,14 +45,6 @@ extern struct winbindd_methods sam_passdb_methods;
 
 static struct winbindd_domain *_domain_list = NULL;
 
-/**
-   When was the last scan of trusted domains done?
-
-   0 == not ever
-*/
-
-static time_t last_trustdom_scan;
-
 struct winbindd_domain *domain_list(void)
 {
 	/* Initialise list */
@@ -535,19 +527,10 @@ static void rescan_forest_trusts( void )
  (c) ask the a DC in any Win2003 trusted forests
 *********************************************************************/
 
-void rescan_trusted_domains( void )
+void rescan_trusted_domains(struct tevent_context *ev, struct tevent_timer *te,
+			    struct timeval now, void *private_data)
 {
-	time_t now = time(NULL);
-
-	/* Check that we allow trusted domains at all */
-	if (!lp_allow_trusted_domains())
-		return;
-
-	/* see if the time has come... */
-
-	if ((now >= last_trustdom_scan) &&
-	    ((now-last_trustdom_scan) < WINBINDD_RESCAN_FREQ) )
-		return;
+	TALLOC_FREE(te);
 
 	/* I use to clear the cache here and start over but that
 	   caused problems in child processes that needed the
@@ -562,7 +545,13 @@ void rescan_trusted_domains( void )
 
 	add_trusted_domains( find_our_domain() );
 
-	last_trustdom_scan = now;
+	te = tevent_add_timer(
+		ev, NULL, timeval_current_ofs(WINBINDD_RESCAN_FREQ, 0),
+		rescan_trusted_domains, NULL);
+	/*
+	 * If te == NULL, there's not much we can do here. Don't fail, the
+	 * only thing we miss is new trusted domains.
+	 */
 
 	return;
 }
