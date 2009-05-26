@@ -105,8 +105,6 @@ extern int num_validated_vuids;
 extern char *my_yp_domain;
 #endif
 
-extern bool already_got_session;
-
 /*
  * Size of data we can send to client. Set
  *  by the client for all protocols above CORE.
@@ -316,6 +314,9 @@ struct smbd_smb2_tcon {
 struct pending_auth_data;
 
 struct smbd_server_connection {
+	struct {
+		bool got_session;
+	} nbt;
 	bool allow_smb2;
 	struct {
 		struct fd_event *fde;

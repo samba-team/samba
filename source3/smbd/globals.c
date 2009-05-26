@@ -107,8 +107,6 @@ int num_validated_vuids = 0;
 char *my_yp_domain = NULL;
 #endif
 
-bool already_got_session = false;
-
 /*
  * Size of data we can send to client. Set
  *  by the client for all protocols above CORE.

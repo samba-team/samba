@@ -523,7 +523,7 @@ void reply_special(char *inbuf)
 	switch (msg_type) {
 	case 0x81: /* session request */
 
-		if (already_got_session) {
+		if (sconn->nbt.got_session) {
 			exit_server_cleanly("multiple session request not permitted");
 		}
 
@@ -567,7 +567,7 @@ void reply_special(char *inbuf)
 		reload_services(True);
 		reopen_logs();
 
-		already_got_session = True;
+		sconn->nbt.got_session = true;
 		break;
 
 	case 0x89: /* session keepalive request 
