@@ -431,6 +431,16 @@ typedef uint64_t br_off;
 #define IVAL_TO_SMB_OFF_T(buf,off) ((SMB_OFF_T)(( ((uint32)(IVAL((buf),(off)))) & 0xFFFFFFFF )))
 #endif
 
+#ifndef HAVE_BLKSIZE_T
+/* This is mainly for HP/UX which defines st_blksize as long */
+typedef blksize_t long;
+#endif
+
+#ifndef HAVE_BLKCNT_T
+/* This is mainly for HP/UX which doesn't have blkcnt_t */
+typedef blkcnt_t long;
+#endif
+
 /*
  * Type for stat structure.
  */
