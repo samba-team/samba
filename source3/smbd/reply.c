@@ -685,6 +685,7 @@ void reply_tcon_and_X(struct smb_request *req)
 	char *path = NULL;
 	const char *p, *q;
 	uint16 tcon_flags;
+	struct smbd_server_connection *sconn = smbd_server_conn;
 
 	START_PROFILE(SMBtconX);
 
@@ -710,7 +711,7 @@ void reply_tcon_and_X(struct smb_request *req)
 		return;
 	}
 
-	if (global_encrypted_passwords_negotiated) {
+	if (sconn->smb1.negprot.encrypted_passwords) {
 		password = data_blob_talloc(talloc_tos(), req->buf, passlen);
 		if (lp_security() == SEC_SHARE) {
 			/*

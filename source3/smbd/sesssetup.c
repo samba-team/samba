@@ -1388,8 +1388,9 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	uint16 smb_flag2 = req->flags2;
 
 	NTSTATUS nt_status;
+	struct smbd_server_connection *sconn = smbd_server_conn;
 
-	bool doencrypt = global_encrypted_passwords_negotiated;
+	bool doencrypt = sconn->smb1.negprot.encrypted_passwords;
 
 	START_PROFILE(SMBsesssetupX);
 
@@ -1404,7 +1405,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	if (req->wct == 12 &&
 	    (req->flags2 & FLAGS2_EXTENDED_SECURITY)) {
 
-		if (!global_spnego_negotiated) {
+		if (!sconn->smb1.negprot.spnego) {
 			DEBUG(0,("reply_sesssetup_and_X:  Rejecting attempt "
 				 "at SPNEGO session setup when it was not "
 				 "negotiated.\n"));
@@ -1619,7 +1620,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 				domain, user, get_remote_machine_name()));
 
 	if (*user) {
-		if (global_spnego_negotiated) {
+		if (sconn->smb1.negprot.spnego) {
 
 			/* This has to be here, because this is a perfectly
 			 * valid behaviour for guest logons :-( */
@@ -1660,7 +1661,9 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		nt_status = check_guest_password(&server_info);
 
 	} else if (doencrypt) {
-		if (!negprot_global_auth_context) {
+		struct auth_context *negprot_auth_context = NULL;
+		negprot_auth_context = sconn->smb1.negprot.auth_context;
+		if (!negprot_auth_context) {
 			DEBUG(0, ("reply_sesssetup_and_X:  Attempted encrypted "
 				"session setup without negprot denied!\n"));
 			reply_nterror(req, nt_status_squash(
@@ -1672,8 +1675,8 @@ void reply_sesssetup_and_X(struct smb_request *req)
 						domain,
 						lm_resp, nt_resp);
 		if (NT_STATUS_IS_OK(nt_status)) {
-			nt_status = negprot_global_auth_context->check_ntlm_password(
-					negprot_global_auth_context,
+			nt_status = negprot_auth_context->check_ntlm_password(
+					negprot_auth_context,
 					user_info,
 					&server_info);
 		}

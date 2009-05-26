@@ -39,7 +39,8 @@ NTSTATUS auth_builtin_init(void);
 /* The following definitions come from auth/auth_compat.c  */
 
 NTSTATUS check_plaintext_password(const char *smb_name, DATA_BLOB plaintext_password, auth_serversupplied_info **server_info);
-bool password_ok(const char *smb_name, DATA_BLOB password_blob);
+bool password_ok(struct auth_context *actx, bool global_encrypted,
+		 const char *smb_name, DATA_BLOB password_blob);
 
 /* The following definitions come from auth/auth_domain.c  */
 

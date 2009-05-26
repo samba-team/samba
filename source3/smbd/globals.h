@@ -91,11 +91,6 @@ extern char *last_to;
 struct msg_state;
 extern struct msg_state *smbd_msg_state;
 
-extern bool global_encrypted_passwords_negotiated;
-extern bool global_spnego_negotiated;
-extern struct auth_context *negprot_global_auth_context;
-extern bool done_negprot;
-
 extern bool logged_ioctl_message;
 
 /* users from session setup */
@@ -330,6 +325,13 @@ struct smbd_server_connection {
 	struct {
 		struct fd_event *fde;
 		uint64_t num_requests;
+		struct {
+			bool encrypted_passwords;
+			bool spnego;
+			struct auth_context *auth_context;
+			bool done;
+		} negprot;
+
 		struct smb_signing_state *signing_state;
 		/* List to store partial SPNEGO auth fragments. */
 		struct pending_auth_data *pd_list;

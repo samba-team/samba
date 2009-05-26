@@ -785,6 +785,7 @@ static void exit_server_common(enum server_exit_reason how,
 	const char *const reason)
 {
 	bool had_open_conn;
+	struct smbd_server_connection *sconn = smbd_server_conn;
 
 	if (!exit_firsttime)
 		exit(0);
@@ -792,8 +793,9 @@ static void exit_server_common(enum server_exit_reason how,
 
 	change_to_root_user();
 
-	if (negprot_global_auth_context) {
-		(negprot_global_auth_context->free)(&negprot_global_auth_context);
+	if (sconn && sconn->smb1.negprot.auth_context) {
+		struct auth_context *a = sconn->smb1.negprot.auth_context;
+		a->free(&sconn->smb1.negprot.auth_context);
 	}
 
 	had_open_conn = conn_close_all();

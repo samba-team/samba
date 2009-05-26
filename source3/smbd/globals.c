@@ -93,11 +93,6 @@ char *last_to = NULL;
 
 struct msg_state *smbd_msg_state = NULL;
 
-bool global_encrypted_passwords_negotiated = false;
-bool global_spnego_negotiated = false;
-struct auth_context *negprot_global_auth_context = NULL;
-bool done_negprot = false;
-
 bool logged_ioctl_message = false;
 
 /* users from session setup */

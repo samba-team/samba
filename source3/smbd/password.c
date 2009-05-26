@@ -581,11 +581,14 @@ static char *validate_group(char *group, DATA_BLOB password,int snum)
 #ifdef HAVE_NETGROUP
 	{
 		char *host, *user, *domain;
+		struct smbd_server_connection *sconn = smbd_server_conn;
+		struct auth_context *actx = sconn->smb1.negprot.auth_context;
+		bool enc = sconn->smb1.negprot.encrypted_passwords;
 		setnetgrent(group);
 		while (getnetgrent(&host, &user, &domain)) {
 			if (user) {
 				if (user_ok(user, snum) && 
-				    password_ok(user,password)) {
+				    password_ok(actx, enc, user,password)) {
 					endnetgrent();
 					return(user);
 				}
@@ -598,6 +601,10 @@ static char *validate_group(char *group, DATA_BLOB password,int snum)
 #ifdef HAVE_GETGRENT
 	{
 		struct group *gptr;
+		struct smbd_server_connection *sconn = smbd_server_conn;
+		struct auth_context *actx = sconn->smb1.negprot.auth_context;
+		bool enc = sconn->smb1.negprot.encrypted_passwords;
+
 		setgrent();
 		while ((gptr = (struct group *)getgrent())) {
 			if (strequal(gptr->gr_name,group))
@@ -646,7 +653,7 @@ static char *validate_group(char *group, DATA_BLOB password,int snum)
 			member = member_list;
 			while (*member) {
 				if (user_ok(member,snum) &&
-				    password_ok(member,password)) {
+				    password_ok(actx, enc, member,password)) {
 					char *name = talloc_strdup(talloc_tos(),
 								member);
 					SAFE_FREE(member_list);
@@ -678,6 +685,9 @@ bool authorise_login(int snum, fstring user, DATA_BLOB password,
 		     bool *guest)
 {
 	bool ok = False;
+	struct smbd_server_connection *sconn = smbd_server_conn;
+	struct auth_context *actx = sconn->smb1.negprot.auth_context;
+	bool enc = sconn->smb1.negprot.encrypted_passwords;
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("authorise_login: checking authorisation on "
@@ -722,7 +732,7 @@ bool authorise_login(int snum, fstring user, DATA_BLOB password,
 			if (!user_ok(user2,snum))
 				continue;
 
-			if (password_ok(user2,password)) {
+			if (password_ok(actx, enc, user2,password)) {
 				ok = True;
 				fstrcpy(user,user2);
 				DEBUG(3,("authorise_login: ACCEPTED: session "
@@ -770,7 +780,7 @@ bool authorise_login(int snum, fstring user, DATA_BLOB password,
 				fstring user2;
 				fstrcpy(user2,auser);
 				if (user_ok(user2,snum) &&
-				    password_ok(user2,password)) {
+				    password_ok(actx, enc, user2,password)) {
 					ok = True;
 					fstrcpy(user,user2);
 					DEBUG(3,("authorise_login: ACCEPTED: "
