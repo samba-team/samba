@@ -3,7 +3,7 @@
 
    PAC Glue between Samba and the KDC
    
-   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005-2009
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@
 #include "auth/auth_sam.h"
 #include "auth/auth_sam_reply.h"
 #include "kdc/kdc.h"
+#include "param/param.h"
 
 struct krb5_dh_moduli;
 struct _krb5_krb_auth_data;
@@ -127,9 +128,10 @@ krb5_error_code samba_kdc_get_pac(void *priv,
 	}
 
 	nt_status = authsam_make_server_info(mem_ctx, p->samdb,
-					     p->netbios_name,
+					     lp_netbios_name(p->lp_ctx),
+					     lp_sam_name(p->lp_ctx),
+					     p->realm_dn,
 					     p->msg,
-					     p->realm_ref_msg,
 					     data_blob(NULL, 0),
 					     data_blob(NULL, 0),
 					     &server_info);
@@ -274,8 +276,8 @@ krb5_error_code samba_kdc_check_client_access(void *priv,
 	nt_status = authsam_account_ok(tmp_ctx, 
 				       p->samdb,
 				       MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT | MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT,
+				       p->realm_dn,
 				       p->msg,
-				       p->realm_ref_msg,
 				       workstation,
 				       name, true);
 	free(name);

@@ -6,7 +6,7 @@
 INIT_FUNCTION = server_service_kdc_init
 SUBSYSTEM = service
 PRIVATE_DEPENDENCIES = \
-		HEIMDAL_KDC HDB_SAMBA4
+		HEIMDAL_KDC HDB_SAMBA4 LIBSAMBA-HOSTCONFIG
 # End SUBSYSTEM KDC
 #######################
 
@@ -18,7 +18,7 @@ KDC_OBJ_FILES = $(addprefix $(kdcsrcdir)/, kdc.o kpasswdd.o)
 CFLAGS = -Iheimdal/kdc -Iheimdal/lib/hdb
 PRIVATE_DEPENDENCIES = \
 		LIBLDB auth_sam auth_sam_reply CREDENTIALS \
-		HEIMDAL_HDB
+		HEIMDAL_HDB LIBSAMBA-HOSTCONFIG
 # End SUBSYSTEM KDC
 #######################
 

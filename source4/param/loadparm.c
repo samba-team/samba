@@ -2725,3 +2725,4 @@ struct gensec_settings *lp_gensec_settings(TALLOC_CTX *mem_ctx, struct loadparm_
 	settings->target_hostname = lp_parm_string(lp_ctx, NULL, "gensec", "target_hostname");
 	return settings;
 }
+

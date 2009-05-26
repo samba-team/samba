@@ -26,7 +26,6 @@ NTSTATUS dcesrv_lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 				     struct lsa_policy_state **_state)
 {
 	struct lsa_policy_state *state;
-	struct ldb_dn *partitions_basedn;
 	struct ldb_result *dom_res;
 	const char *dom_attrs[] = {
 		"objectSid", 
@@ -35,13 +34,7 @@ NTSTATUS dcesrv_lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 		"fSMORoleOwner",
 		NULL
 	};
-	struct ldb_result *ref_res;
-	struct ldb_result *forest_ref_res;
-	const char *ref_attrs[] = {
-		"nETBIOSName",
-		"dnsRoot",
-		NULL
-	};
+	char *p;
 	int ret;
 
 	state = talloc(mem_ctx, struct lsa_policy_state);
@@ -55,11 +48,9 @@ NTSTATUS dcesrv_lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
 
-	partitions_basedn = samdb_partitions_dn(state->sam_ldb, mem_ctx);
-
 	/* work out the domain_dn - useful for so many calls its worth
 	   fetching here */
-	state->domain_dn = samdb_base_dn(state->sam_ldb);
+	state->domain_dn = ldb_get_default_basedn(state->sam_ldb);
 	if (!state->domain_dn) {
 		return NT_STATUS_NO_MEMORY;		
 	}
@@ -86,66 +77,30 @@ NTSTATUS dcesrv_lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 
 	state->domain_guid = samdb_result_guid(dom_res->msgs[0], "objectGUID");
-	if (!state->domain_sid) {
-		return NT_STATUS_NO_SUCH_DOMAIN;		
-	}
 
 	state->mixed_domain = ldb_msg_find_attr_as_uint(dom_res->msgs[0], "nTMixedDomain", 0);
 	
 	talloc_free(dom_res);
 
-	ret = ldb_search(state->sam_ldb, state, &ref_res,
-				 partitions_basedn, LDB_SCOPE_SUBTREE, ref_attrs,
-				 "(&(objectclass=crossRef)(ncName=%s))",
-				 ldb_dn_get_linearized(state->domain_dn));
-	
-	if (ret != LDB_SUCCESS) {
-		talloc_free(ref_res);
-		return NT_STATUS_INVALID_SYSTEM_SERVICE;
-	}
-	if (ref_res->count != 1) {
-		talloc_free(ref_res);
-		return NT_STATUS_NO_SUCH_DOMAIN;		
-	}
+	state->domain_name = lp_sam_name(dce_call->conn->dce_ctx->lp_ctx);
 
-	state->domain_name = ldb_msg_find_attr_as_string(ref_res->msgs[0], "nETBIOSName", NULL);
-	if (!state->domain_name) {
-		talloc_free(ref_res);
-		return NT_STATUS_NO_SUCH_DOMAIN;		
-	}
-	talloc_steal(state, state->domain_name);
-
-	state->domain_dns = ldb_msg_find_attr_as_string(ref_res->msgs[0], "dnsRoot", NULL);
+	state->domain_dns = ldb_dn_canonical_string(state, state->domain_dn);
 	if (!state->domain_dns) {
-		talloc_free(ref_res);
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
-	talloc_steal(state, state->domain_dns);
-
-	talloc_free(ref_res);
-
-	ret = ldb_search(state->sam_ldb, state, &forest_ref_res,
-				 partitions_basedn, LDB_SCOPE_SUBTREE, ref_attrs,
-				 "(&(objectclass=crossRef)(ncName=%s))",
-				 ldb_dn_get_linearized(state->forest_dn));
-	
-	if (ret != LDB_SUCCESS) {
-		talloc_free(forest_ref_res);
-		return NT_STATUS_INVALID_SYSTEM_SERVICE;
-	}
-	if (forest_ref_res->count != 1) {
-		talloc_free(forest_ref_res);
-		return NT_STATUS_NO_SUCH_DOMAIN;		
+	p = strchr(state->domain_dns, '/');
+	if (p) {
+		*p = '\0';
 	}
 
-	state->forest_dns = ldb_msg_find_attr_as_string(forest_ref_res->msgs[0], "dnsRoot", NULL);
+	state->forest_dns = ldb_dn_canonical_string(state, state->forest_dn);
 	if (!state->forest_dns) {
-		talloc_free(forest_ref_res);
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
-	talloc_steal(state, state->forest_dns);
-
-	talloc_free(forest_ref_res);
+	p = strchr(state->forest_dns, '/');
+	if (p) {
+		*p = '\0';
+	}
 
 	/* work out the builtin_dn - useful for so many calls its worth
 	   fetching here */

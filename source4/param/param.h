@@ -362,6 +362,9 @@ int param_write(struct param_context *ctx, const char *fn);
 bool lp_is_mydomain(struct loadparm_context *lp_ctx, 
 			     const char *domain);
 
+bool lp_is_my_domain_or_realm(struct loadparm_context *lp_ctx, 
+			      const char *domain);
+
 /**
   see if a string matches either our primary or one of our secondary 
   netbios aliases. do a case insensitive match
@@ -433,6 +436,8 @@ const char *lp_messaging_path(TALLOC_CTX *mem_ctx,
 				       struct loadparm_context *lp_ctx);
 struct smb_iconv_convenience *smb_iconv_convenience_init_lp(TALLOC_CTX *mem_ctx,
 							 struct loadparm_context *lp_ctx);
+
+const char *lp_sam_name(struct loadparm_context *lp_ctx);
 
 /* The following definitions come from lib/version.c  */
 

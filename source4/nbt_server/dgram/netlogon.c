@@ -45,33 +45,22 @@ static void nbtd_netlogon_getdc(struct dgram_mailslot_handler *dgmslot,
 	struct nbt_name *name = &packet->data.msg.dest_name;
 	struct nbtd_interface *reply_iface = nbtd_find_reply_iface(iface, src->addr, false);
 	struct nbt_netlogon_response_from_pdc *pdc;
-	const char *ref_attrs[] = {"nETBIOSName", NULL};
-	struct ldb_message **ref_res;
 	struct ldb_context *samctx;
-	struct ldb_dn *partitions_basedn;
 	struct nbt_netlogon_response netlogon_response;
-	int ret;
 
 	/* only answer getdc requests on the PDC or LOGON names */
 	if (name->type != NBT_NAME_PDC && name->type != NBT_NAME_LOGON) {
 		return;
 	}
 
-	samctx = iface->nbtsrv->sam_ctx;
-
-	if (!samdb_is_pdc(samctx)) {
+	if (lp_server_role(iface->nbtsrv->task->lp_ctx) != ROLE_DOMAIN_CONTROLLER
+	    || !samdb_is_pdc(samctx)) {
 		DEBUG(2, ("Not a PDC, so not processing LOGON_PRIMARY_QUERY\n"));
 		return;		
 	}
 
-	partitions_basedn = samdb_partitions_dn(samctx, packet);
-
-	ret = gendb_search(samctx, packet, partitions_basedn, &ref_res, ref_attrs,
-			   "(&(&(nETBIOSName=%s)(objectclass=crossRef))(ncName=*))", 
-			   name->name);
-	
-	if (ret != 1) {
-		DEBUG(2,("Unable to find domain reference '%s' in sam\n", name->name));
+	if (strcasecmp_m(name->name, lp_workgroup(iface->nbtsrv->task->lp_ctx)) != 0) {
+		DEBUG(5,("GetDC requested for a domian %s that we don't host\n", name->name));
 		return;
 	}
 
@@ -83,7 +72,7 @@ static void nbtd_netlogon_getdc(struct dgram_mailslot_handler *dgmslot,
 	pdc->command = NETLOGON_RESPONSE_FROM_PDC;
 	pdc->pdc_name         = lp_netbios_name(iface->nbtsrv->task->lp_ctx);
 	pdc->unicode_pdc_name = pdc->pdc_name;
-	pdc->domain_name      = samdb_result_string(ref_res[0], "nETBIOSName", name->name);;
+	pdc->domain_name      = lp_workgroup(iface->nbtsrv->task->lp_ctx);
 	pdc->nt_version       = 1;
 	pdc->lmnt_token       = 0xFFFF;
 	pdc->lm20_token       = 0xFFFF;
