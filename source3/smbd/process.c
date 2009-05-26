@@ -1462,7 +1462,7 @@ static void process_smb(struct smbd_server_connection *conn,
 	trans_num++;
 
 done:
-	conn->num_requests++;
+	conn->smb1.num_requests++;
 
 	/* The timeout_processing function isn't run nearly
 	   often enough to implement 'max log size' without
@@ -1471,7 +1471,7 @@ done:
 	   level 10.  Checking every 50 SMBs is a nice
 	   tradeoff of performance vs log file size overrun. */
 
-	if ((conn->num_requests % 50) == 0 &&
+	if ((conn->smb1.num_requests % 50) == 0 &&
 	    need_to_check_log_size()) {
 		change_to_root_user();
 		check_log_size();
@@ -2158,13 +2158,13 @@ void smbd_process(void)
 
 	max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
 
-	smbd_server_conn->fde = event_add_fd(smbd_event_context(),
-					     smbd_server_conn,
-					     smbd_server_fd(),
-					     EVENT_FD_READ,
-					     smbd_server_connection_handler,
-					     smbd_server_conn);
-	if (!smbd_server_conn->fde) {
+	smbd_server_conn->smb1.fde = event_add_fd(smbd_event_context(),
+						  smbd_server_conn,
+						  smbd_server_fd(),
+						  EVENT_FD_READ,
+						  smbd_server_connection_handler,
+						  smbd_server_conn);
+	if (!smbd_server_conn->smb1.fde) {
 		exit_server("failed to create smbd_server_connection fde");
 	}
 

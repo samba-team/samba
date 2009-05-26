@@ -35,8 +35,8 @@ bool srv_check_sign_mac(struct smbd_server_connection *conn,
 		return true;
 	}
 
-	*seqnum = smb_signing_next_seqnum(conn->signing_state, false);
-	return smb_signing_check_pdu(conn->signing_state,
+	*seqnum = smb_signing_next_seqnum(conn->smb1.signing_state, false);
+	return smb_signing_check_pdu(conn->smb1.signing_state,
 				     (const uint8_t *)inbuf,
 				     *seqnum);
 }
@@ -53,7 +53,7 @@ void srv_calculate_sign_mac(struct smbd_server_connection *conn,
 		return;
 	}
 
-	smb_signing_sign_pdu(conn->signing_state, (uint8_t *)outbuf, seqnum);
+	smb_signing_sign_pdu(conn->smb1.signing_state, (uint8_t *)outbuf, seqnum);
 }
 
 
@@ -62,7 +62,7 @@ void srv_calculate_sign_mac(struct smbd_server_connection *conn,
 ************************************************************/
 void srv_cancel_sign_response(struct smbd_server_connection *conn)
 {
-	smb_signing_cancel_reply(conn->signing_state, true);
+	smb_signing_cancel_reply(conn->smb1.signing_state, true);
 }
 
 /***********************************************************
@@ -87,9 +87,9 @@ bool srv_init_signing(struct smbd_server_connection *conn)
 		break;
 	}
 
-	conn->signing_state = smb_signing_init(smbd_event_context(),
-					       allowed, mandatory);
-	if (!conn->signing_state) {
+	conn->smb1.signing_state = smb_signing_init(smbd_event_context(),
+						    allowed, mandatory);
+	if (!conn->smb1.signing_state) {
 		return false;
 	}
 
@@ -98,7 +98,7 @@ bool srv_init_signing(struct smbd_server_connection *conn)
 
 void srv_set_signing_negotiated(struct smbd_server_connection *conn)
 {
-	smb_signing_set_negotiated(conn->signing_state);
+	smb_signing_set_negotiated(conn->smb1.signing_state);
 }
 
 /***********************************************************
@@ -108,7 +108,7 @@ void srv_set_signing_negotiated(struct smbd_server_connection *conn)
 
 bool srv_is_signing_active(struct smbd_server_connection *conn)
 {
-	return smb_signing_is_active(conn->signing_state);
+	return smb_signing_is_active(conn->smb1.signing_state);
 }
 
 
@@ -119,7 +119,7 @@ bool srv_is_signing_active(struct smbd_server_connection *conn)
 
 bool srv_is_signing_negotiated(struct smbd_server_connection *conn)
 {
-	return smb_signing_is_negotiated(conn->signing_state);
+	return smb_signing_is_negotiated(conn->smb1.signing_state);
 }
 
 /***********************************************************
@@ -136,8 +136,8 @@ void srv_set_signing(struct smbd_server_connection *conn,
 	if (!user_session_key.length)
 		return;
 
-	negotiated = smb_signing_is_negotiated(conn->signing_state);
-	mandatory = smb_signing_is_mandatory(conn->signing_state);
+	negotiated = smb_signing_is_negotiated(conn->smb1.signing_state);
+	mandatory = smb_signing_is_mandatory(conn->smb1.signing_state);
 
 	if (!negotiated && !mandatory) {
 		DEBUG(5,("srv_set_signing: signing negotiated = %u, "
@@ -146,7 +146,7 @@ void srv_set_signing(struct smbd_server_connection *conn,
 		return;
 	}
 
-	if (!smb_signing_activate(conn->signing_state,
+	if (!smb_signing_activate(conn->smb1.signing_state,
 				  user_session_key, response)) {
 		return;
 	}

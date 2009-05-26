@@ -41,7 +41,7 @@ static NTSTATUS smbd_initialize_smb2(struct smbd_server_connection *conn)
 	NTSTATUS status;
 	int ret;
 
-	TALLOC_FREE(conn->fde);
+	TALLOC_FREE(conn->smb1.fde);
 
 	conn->smb2.event_ctx = smbd_event_context();
 

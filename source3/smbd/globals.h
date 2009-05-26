@@ -330,10 +330,12 @@ struct smbd_smb2_tcon {
 };
 
 struct smbd_server_connection {
-	struct fd_event *fde;
-	uint64_t num_requests;
-	struct smb_signing_state *signing_state;
 	bool allow_smb2;
+	struct {
+		struct fd_event *fde;
+		uint64_t num_requests;
+		struct smb_signing_state *signing_state;
+	} smb1;
 	struct {
 		struct tevent_context *event_ctx;
 		struct tevent_queue *recv_queue;
