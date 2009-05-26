@@ -451,6 +451,9 @@ struct stat_ex {
 	blksize_t	st_ex_blksize;
 	blkcnt_t	st_ex_blocks;
 
+	uint32_t	st_ex_flags;
+	uint32_t	st_ex_mask;
+
 	/*
 	 * Add space for VFS internal extensions. The initial user of this
 	 * would be the onefs modules, passing the snapid from the stat calls

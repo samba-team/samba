@@ -477,6 +477,12 @@ static void init_stat_ex_from_stat (struct stat_ex *dst,
 	dst->st_ex_btime = get_create_timespec(src);
 	dst->st_ex_blksize = src->st_blksize;
 	dst->st_ex_blocks = src->st_blocks;
+
+#ifdef HAVE_STAT_ST_FLAGS
+	dst->st_ex_flags = src->st_flags;
+#else
+	dst->st_ex_flags = 0;
+#endif
 }
 
 /*******************************************************************

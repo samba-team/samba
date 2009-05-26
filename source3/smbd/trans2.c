@@ -3613,7 +3613,6 @@ static const struct {unsigned stat_fflag; unsigned smb_fflag;}
 static void map_info2_flags_from_sbuf(const SMB_STRUCT_STAT *psbuf,
 				uint32 *smb_fflags, uint32 *smb_fmask)
 {
-#ifdef HAVE_STAT_ST_FLAGS
 	int i;
 
 	for (i = 0; i < ARRAY_SIZE(info2_flags_map); ++i) {
@@ -3622,7 +3621,6 @@ static void map_info2_flags_from_sbuf(const SMB_STRUCT_STAT *psbuf,
 		    *smb_fflags |= info2_flags_map[i].smb_fflag;
 	    }
 	}
-#endif /* HAVE_STAT_ST_FLAGS */
 }
 
 static bool map_info2_flags_to_sbuf(const SMB_STRUCT_STAT *psbuf,
@@ -3630,7 +3628,6 @@ static bool map_info2_flags_to_sbuf(const SMB_STRUCT_STAT *psbuf,
 				const uint32 smb_fmask,
 				int *stat_fflags)
 {
-#ifdef HAVE_STAT_ST_FLAGS
 	uint32 max_fmask = 0;
 	int i;
 
@@ -3660,9 +3657,6 @@ static bool map_info2_flags_to_sbuf(const SMB_STRUCT_STAT *psbuf,
 	}
 
 	return True;
-#else
-	return False;
-#endif /* HAVE_STAT_ST_FLAGS */
 }
 
 
