@@ -2157,7 +2157,7 @@ void smbd_process(void)
 
 #endif
 
-	max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
+	smbd_server_conn->smb1.negprot.max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
 
 	smbd_server_conn->smb1.fde = event_add_fd(smbd_event_context(),
 						  smbd_server_conn,

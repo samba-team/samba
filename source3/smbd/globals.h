@@ -113,11 +113,6 @@ extern bool already_got_session;
  *  Set by us for CORE protocol.
  */
 extern int max_send;
-/*
- * Size of the data we can receive. Set by us.
- * Can be modified by the max xmit parameter.
- */
-extern int max_recv;
 extern uint16 last_session_tag;
 extern int trans_num;
 
@@ -330,6 +325,11 @@ struct smbd_server_connection {
 			bool spnego;
 			struct auth_context *auth_context;
 			bool done;
+			/*
+			 * Size of the data we can receive. Set by us.
+			 * Can be modified by the max xmit parameter.
+			 */
+			int max_recv;
 		} negprot;
 
 		struct smb_signing_state *signing_state;

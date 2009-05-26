@@ -611,6 +611,7 @@ void reply_tcon(struct smb_request *req)
 	const char *p;
 	DATA_BLOB password_blob;
 	TALLOC_CTX *ctx = talloc_tos();
+	struct smbd_server_connection *sconn = smbd_server_conn;
 
 	START_PROFILE(SMBtcon);
 
@@ -654,7 +655,7 @@ void reply_tcon(struct smb_request *req)
 	}
 
 	reply_outbuf(req, 2, 0);
-	SSVAL(req->outbuf,smb_vwv0,max_recv);
+	SSVAL(req->outbuf,smb_vwv0,sconn->smb1.negprot.max_recv);
 	SSVAL(req->outbuf,smb_vwv1,conn->cnum);
 	SSVAL(req->outbuf,smb_tid,conn->cnum);
 
@@ -3154,6 +3155,7 @@ void reply_lockread(struct smb_request *req)
 	files_struct *fsp;
 	struct byte_range_lock *br_lck = NULL;
 	char *p = NULL;
+	struct smbd_server_connection *sconn = smbd_server_conn;
 
 	START_PROFILE(SMBlockread);
 
@@ -3216,11 +3218,12 @@ void reply_lockread(struct smb_request *req)
 	 * However the requested READ size IS affected by max_recv. Insanity.... JRA.
 	 */
 
-	if (numtoread > max_recv) {
+	if (numtoread > sconn->smb1.negprot.max_recv) {
 		DEBUG(0,("reply_lockread: requested read size (%u) is greater than maximum allowed (%u). \
 Returning short read of maximum allowed for compatibility with Windows 2000.\n",
-			(unsigned int)numtoread, (unsigned int)max_recv ));
-		numtoread = MIN(numtoread,max_recv);
+			(unsigned int)numtoread,
+			(unsigned int)sconn->smb1.negprot.max_recv));
+		numtoread = MIN(numtoread, sconn->smb1.negprot.max_recv);
 	}
 	nread = read_file(fsp,data,startpos,numtoread);
 
@@ -3262,6 +3265,7 @@ void reply_read(struct smb_request *req)
 	int outsize = 0;
 	files_struct *fsp;
 	struct lock_struct lock;
+	struct smbd_server_connection *sconn = smbd_server_conn;
 
 	START_PROFILE(SMBread);
 
@@ -3292,11 +3296,12 @@ void reply_read(struct smb_request *req)
 	/*
 	 * The requested read size cannot be greater than max_recv. JRA.
 	 */
-	if (numtoread > max_recv) {
+	if (numtoread > sconn->smb1.negprot.max_recv) {
 		DEBUG(0,("reply_read: requested read size (%u) is greater than maximum allowed (%u). \
 Returning short read of maximum allowed for compatibility with Windows 2000.\n",
-			(unsigned int)numtoread, (unsigned int)max_recv ));
-		numtoread = MIN(numtoread,max_recv);
+			(unsigned int)numtoread,
+			(unsigned int)sconn->smb1.negprot.max_recv));
+		numtoread = MIN(numtoread, sconn->smb1.negprot.max_recv);
 	}
 
 	reply_outbuf(req, 5, numtoread+3);

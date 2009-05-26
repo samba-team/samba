@@ -117,7 +117,7 @@ static void reply_lanman1(struct smb_request *req, uint16 choice)
 
 	/* Reply, SMBlockread, SMBwritelock supported. */
 	SCVAL(req->outbuf,smb_flg,FLAG_REPLY|FLAG_SUPPORT_LOCKREAD);
-	SSVAL(req->outbuf,smb_vwv2,max_recv);
+	SSVAL(req->outbuf,smb_vwv2,sconn->smb1.negprot.max_recv);
 	SSVAL(req->outbuf,smb_vwv3,lp_maxmux()); /* maxmux */
 	SSVAL(req->outbuf,smb_vwv4,1);
 	SSVAL(req->outbuf,smb_vwv5,raw); /* tell redirector we support
@@ -166,7 +166,7 @@ static void reply_lanman2(struct smb_request *req, uint16 choice)
 
 	/* Reply, SMBlockread, SMBwritelock supported. */
 	SCVAL(req->outbuf,smb_flg,FLAG_REPLY|FLAG_SUPPORT_LOCKREAD);
-	SSVAL(req->outbuf,smb_vwv2,max_recv);
+	SSVAL(req->outbuf,smb_vwv2,sconn->smb1.negprot.max_recv);
 	SSVAL(req->outbuf,smb_vwv3,lp_maxmux());
 	SSVAL(req->outbuf,smb_vwv4,1);
 	SSVAL(req->outbuf,smb_vwv5,raw); /* readbraw and/or writebraw */
@@ -348,7 +348,8 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 	
 	SSVAL(req->outbuf,smb_vwv1+1,lp_maxmux()); /* maxmpx */
 	SSVAL(req->outbuf,smb_vwv2+1,1); /* num vcs */
-	SIVAL(req->outbuf,smb_vwv3+1,max_recv); /* max buffer. LOTS! */
+	SIVAL(req->outbuf,smb_vwv3+1,
+	      sconn->smb1.negprot.max_recv); /* max buffer. LOTS! */
 	SIVAL(req->outbuf,smb_vwv5+1,0x10000); /* raw size. full 64k */
 	SIVAL(req->outbuf,smb_vwv7+1,sys_getpid()); /* session key */
 	SIVAL(req->outbuf,smb_vwv9+1,capabilities); /* capabilities */

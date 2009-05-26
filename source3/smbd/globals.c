@@ -115,11 +115,6 @@ bool already_got_session = false;
  *  Set by us for CORE protocol.
  */
 int max_send = BUFFER_SIZE;
-/*
- * Size of the data we can receive. Set by us.
- * Can be modified by the max xmit parameter.
- */
-int max_recv = BUFFER_SIZE;
 uint16 last_session_tag = UID_FIELD_INVALID;
 int trans_num = 0;
 pid_t mypid = 0;
