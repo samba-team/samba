@@ -450,6 +450,9 @@ struct stat_ex {
 	struct timespec st_ex_btime; /* birthtime */
 	blksize_t	st_ex_blksize;
 	blkcnt_t	st_ex_blocks;
+#ifdef HAVE_STAT_ST_FLAGS
+	uint32_t	st_ex_flags;
+#endif
 
 	/*
 	 * Add space for VFS internal extensions. The initial user of this
