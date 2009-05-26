@@ -42,26 +42,12 @@ extern const char *domain_ref_attrs[];
 
 static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *sam_ctx,
 				       const char *account_name,
-				       const char *domain_name,
-				       struct ldb_message ***ret_msgs,
-				       struct ldb_message ***ret_msgs_domain_ref)
+				       struct ldb_dn *domain_dn,
+				       struct ldb_message ***ret_msgs)
 {
-	struct ldb_message **msgs_tmp;
 	struct ldb_message **msgs;
-	struct ldb_message **msgs_domain_ref;
-	struct ldb_dn *partitions_basedn = samdb_partitions_dn(sam_ctx, mem_ctx);
 
 	int ret;
-	int ret_domain;
-
-	struct ldb_dn *domain_dn = NULL;
-
-	if (domain_name) {
-		domain_dn = samdb_domain_to_dn(sam_ctx, mem_ctx, domain_name);
-		if (!domain_dn) {
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
-	}
 
 	/* pull the user attributes */
 	ret = gendb_search(sam_ctx, mem_ctx, domain_dn, &msgs, user_attrs,
@@ -72,8 +58,8 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *
 	}
 
 	if (ret == 0) {
-		DEBUG(3,("sam_search_user: Couldn't find user [%s\\%s] in samdb, under %s\n", 
-			 domain_name, account_name, ldb_dn_get_linearized(domain_dn)));
+		DEBUG(3,("sam_search_user: Couldn't find user [%s] in samdb, under %s\n", 
+			 account_name, ldb_dn_get_linearized(domain_dn)));
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
@@ -82,57 +68,7 @@ static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	if (!domain_dn) {
-		struct dom_sid *domain_sid;
-
-		domain_sid = samdb_result_sid_prefix(mem_ctx, msgs[0], "objectSid");
-		if (!domain_sid) {
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
-
-		/* find the domain's DN */
-		ret = gendb_search(sam_ctx, mem_ctx, NULL, &msgs_tmp, NULL,
-				   "(&(objectSid=%s)(objectClass=domain))", 
-				   ldap_encode_ndr_dom_sid(mem_ctx, domain_sid));
-		if (ret == -1) {
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
-		
-		if (ret == 0) {
-			DEBUG(3,("check_sam_security: Couldn't find domain_sid [%s] in passdb file.\n",
-				 dom_sid_string(mem_ctx, domain_sid)));
-			return NT_STATUS_NO_SUCH_USER;
-		}
-		
-		if (ret > 1) {
-			DEBUG(0,("Found %d records matching domain_sid [%s]\n", 
-				 ret, dom_sid_string(mem_ctx, domain_sid)));
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
-
-		domain_dn = msgs_tmp[0]->dn;
-	}
-
-	ret_domain = gendb_search(sam_ctx, mem_ctx, partitions_basedn, &msgs_domain_ref, domain_ref_attrs,
-				  "(nCName=%s)", ldb_dn_get_linearized(domain_dn));
-	if (ret_domain == -1) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-		
-	if (ret_domain == 0) {
-		DEBUG(3,("check_sam_security: Couldn't find domain [%s] in passdb file.\n",
-			 ldb_dn_get_linearized(msgs_tmp[0]->dn)));
-		return NT_STATUS_NO_SUCH_USER;
-	}
-		
-	if (ret_domain > 1) {
-		DEBUG(0,("Found %d records matching domain [%s]\n", 
-			 ret_domain, ldb_dn_get_linearized(msgs_tmp[0]->dn)));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
 	*ret_msgs = msgs;
-	*ret_msgs_domain_ref = msgs_domain_ref;
 	
 	return NT_STATUS_OK;
 }
@@ -210,14 +146,13 @@ static NTSTATUS authsam_password_ok(struct auth_context *auth_context,
 
 static NTSTATUS authsam_authenticate(struct auth_context *auth_context, 
 				     TALLOC_CTX *mem_ctx, struct ldb_context *sam_ctx, 
+				     struct ldb_dn *domain_dn,
 				     struct ldb_message **msgs,
-				     struct ldb_message **msgs_domain_ref,
 				     const struct auth_usersupplied_info *user_info, 
 				     DATA_BLOB *user_sess_key, DATA_BLOB *lm_sess_key) 
 {
 	struct samr_Password *lm_pwd, *nt_pwd;
 	NTSTATUS nt_status;
-	struct ldb_dn *domain_dn = samdb_result_dn(sam_ctx, mem_ctx, msgs_domain_ref[0], "nCName", NULL);
 
 	uint16_t acct_flags = samdb_result_acct_flags(sam_ctx, mem_ctx, msgs[0], domain_dn);
 	
@@ -245,8 +180,8 @@ static NTSTATUS authsam_authenticate(struct auth_context *auth_context,
 
 	nt_status = authsam_account_ok(mem_ctx, sam_ctx, 
 				       user_info->logon_parameters,
+				       domain_dn,
 				       msgs[0],
-				       msgs_domain_ref[0],
 				       user_info->workstation_name,
 				       user_info->mapped.account_name,
 				       false);
@@ -258,15 +193,14 @@ static NTSTATUS authsam_authenticate(struct auth_context *auth_context,
 
 static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx,
 						 TALLOC_CTX *mem_ctx,
-						 const char *domain,
 						 const struct auth_usersupplied_info *user_info, 
 						 struct auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status;
 	const char *account_name = user_info->mapped.account_name;
 	struct ldb_message **msgs;
-	struct ldb_message **domain_ref_msgs;
 	struct ldb_context *sam_ctx;
+	struct ldb_dn *domain_dn;
 	DATA_BLOB user_sess_key, lm_sess_key;
 	TALLOC_CTX *tmp_ctx;
 
@@ -286,13 +220,19 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
 
-	nt_status = authsam_search_account(tmp_ctx, sam_ctx, account_name, domain, &msgs, &domain_ref_msgs);
+	domain_dn = ldb_get_default_basedn(sam_ctx);
+	if (domain_dn == NULL) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_SUCH_DOMAIN;
+	}
+
+	nt_status = authsam_search_account(tmp_ctx, sam_ctx, account_name, domain_dn, &msgs);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
 		return nt_status;
 	}
 
-	nt_status = authsam_authenticate(ctx->auth_ctx, tmp_ctx, sam_ctx, msgs, domain_ref_msgs, user_info,
+	nt_status = authsam_authenticate(ctx->auth_ctx, tmp_ctx, sam_ctx, domain_dn, msgs, user_info,
 					 &user_sess_key, &lm_sess_key);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
@@ -300,7 +240,9 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 	}
 
 	nt_status = authsam_make_server_info(tmp_ctx, sam_ctx, lp_netbios_name(ctx->auth_ctx->lp_ctx), 
-					     msgs[0], domain_ref_msgs[0],
+ 					     lp_sam_name(ctx->auth_ctx->lp_ctx),
+					     domain_dn,
+					     msgs[0],
 					     user_sess_key, lm_sess_key,
 					     server_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -323,14 +265,6 @@ static NTSTATUS authsam_ignoredomain_want_check(struct auth_method_context *ctx,
 	}
 
 	return NT_STATUS_OK;
-}
-
-static NTSTATUS authsam_ignoredomain_check_password(struct auth_method_context *ctx,
-						    TALLOC_CTX *mem_ctx,
-						    const struct auth_usersupplied_info *user_info, 
-						    struct auth_serversupplied_info **server_info)
-{
-	return authsam_check_password_internals(ctx, mem_ctx, NULL, user_info, server_info);
 }
 
 /****************************************************************************
@@ -377,34 +311,6 @@ static NTSTATUS authsam_want_check(struct auth_method_context *ctx,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-/****************************************************************************
-Check SAM security (above) but with a few extra checks.
-****************************************************************************/
-static NTSTATUS authsam_check_password(struct auth_method_context *ctx,
-				       TALLOC_CTX *mem_ctx,
-				       const struct auth_usersupplied_info *user_info, 
-				       struct auth_serversupplied_info **server_info)
-{
-	const char *domain;
-
-	/* check whether or not we service this domain/workgroup name */
-	switch (lp_server_role(ctx->auth_ctx->lp_ctx)) {
-		case ROLE_STANDALONE:
-		case ROLE_DOMAIN_MEMBER:
-			domain = lp_netbios_name(ctx->auth_ctx->lp_ctx);
-			break;
-
-		case ROLE_DOMAIN_CONTROLLER:
-			domain = lp_workgroup(ctx->auth_ctx->lp_ctx);
-			break;
-
-		default:
-			return NT_STATUS_NO_SUCH_USER;
-	}
-
-	return authsam_check_password_internals(ctx, mem_ctx, domain, user_info, server_info);
-}
-
 				   
 /* Used in the gensec_gssapi and gensec_krb5 server-side code, where the PAC isn't available */
 NTSTATUS authsam_get_server_info_principal(TALLOC_CTX *mem_ctx, 
@@ -417,9 +323,9 @@ NTSTATUS authsam_get_server_info_principal(TALLOC_CTX *mem_ctx,
 	DATA_BLOB lm_sess_key = data_blob(NULL, 0);
 
 	struct ldb_message **msgs;
-	struct ldb_message **msgs_domain_ref;
 	struct ldb_context *sam_ctx;
-
+	struct ldb_dn *domain_dn;
+	
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	if (!tmp_ctx) {
 		return NT_STATUS_NO_MEMORY;
@@ -433,14 +339,16 @@ NTSTATUS authsam_get_server_info_principal(TALLOC_CTX *mem_ctx,
 	}
 
 	nt_status = sam_get_results_principal(sam_ctx, tmp_ctx, principal, 
-					      &msgs, &msgs_domain_ref);
+					      &domain_dn, &msgs);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
 
 	nt_status = authsam_make_server_info(tmp_ctx, sam_ctx, 
 					     lp_netbios_name(auth_context->lp_ctx),
-					     msgs[0], msgs_domain_ref[0],
+ 					     lp_workgroup(auth_context->lp_ctx),
+					     domain_dn, 
+					     msgs[0],
 					     user_sess_key, lm_sess_key,
 					     server_info);
 	if (NT_STATUS_IS_OK(nt_status)) {
@@ -454,7 +362,7 @@ static const struct auth_operations sam_ignoredomain_ops = {
 	.name		           = "sam_ignoredomain",
 	.get_challenge	           = auth_get_challenge_not_implemented,
 	.want_check	           = authsam_ignoredomain_want_check,
-	.check_password	           = authsam_ignoredomain_check_password,
+	.check_password	           = authsam_check_password_internals,
 	.get_server_info_principal = authsam_get_server_info_principal
 };
 
@@ -462,7 +370,7 @@ static const struct auth_operations sam_ops = {
 	.name		           = "sam",
 	.get_challenge	           = auth_get_challenge_not_implemented,
 	.want_check	           = authsam_want_check,
-	.check_password	           = authsam_check_password,
+	.check_password	           = authsam_check_password_internals,
 	.get_server_info_principal = authsam_get_server_info_principal
 };
 

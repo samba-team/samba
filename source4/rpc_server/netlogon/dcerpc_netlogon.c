@@ -1010,8 +1010,9 @@ static WERROR dcesrv_netr_DsRGetSiteName(struct dcesrv_call_state *dce_call, TAL
   fill in a netr_DomainTrustInfo from a ldb search result
 */
 static NTSTATUS fill_domain_trust_info(TALLOC_CTX *mem_ctx,
+				       struct loadparm_context *lp_ctx,
+				       struct ldb_context *sam_ctx,
 				       struct ldb_message *res,
-				       struct ldb_message *ref_res,
 				       struct netr_DomainTrustInfo *info, 
 				       bool is_local, bool is_trust_list)
 {
@@ -1020,9 +1021,10 @@ static NTSTATUS fill_domain_trust_info(TALLOC_CTX *mem_ctx,
 	info->trust_extension.info = talloc_zero(mem_ctx, struct netr_trust_extension);
 	info->trust_extension.length = 16;
 	info->trust_extension.info->flags = 
-		NETR_TRUST_FLAG_TREEROOT | 
+		NETR_TRUST_FLAG_TREEROOT |
 		NETR_TRUST_FLAG_IN_FOREST | 
 		NETR_TRUST_FLAG_PRIMARY;
+
 	info->trust_extension.info->parent_index = 0; /* should be index into array
 							 of parent */
 	info->trust_extension.info->trust_type = LSA_TRUST_TYPE_UPLEVEL; /* should be based on ldb search for trusts */
@@ -1032,13 +1034,21 @@ static NTSTATUS fill_domain_trust_info(TALLOC_CTX *mem_ctx,
 		/* MS-NRPC 3.5.4.3.9 - must be set to NULL for trust list */
 		info->forest.string = NULL;
 	} else {
+		char *p;
 		/* TODO: we need a common function for pulling the forest */
-		info->forest.string = samdb_result_string(ref_res, "dnsRoot", NULL);
+		info->forest.string = ldb_dn_canonical_string(info, ldb_get_root_basedn(sam_ctx));
+		if (!info->forest.string) {
+			return NT_STATUS_NO_SUCH_DOMAIN;		
+		}
+		p = strchr(info->forest.string, '/');
+		if (p) {
+			*p = '\0';
+		}
 	}
 
 	if (is_local) {
-		info->domainname.string = samdb_result_string(ref_res, "nETBIOSName", NULL);
-		info->fulldomainname.string = samdb_result_string(ref_res, "dnsRoot", NULL);
+		info->domainname.string = lp_sam_name(lp_ctx);
+		info->fulldomainname.string = lp_realm(lp_ctx);
 		info->guid = samdb_result_guid(res, "objectGUID");
 		info->sid = samdb_result_dom_sid(mem_ctx, res, "objectSid");
 	} else {
@@ -1064,13 +1074,11 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 	const char * const attrs[] = { "objectSid", 
 				       "objectGUID", "flatName", "securityIdentifier",
 				       "trustPartner", NULL };
-	const char * const ref_attrs[] = { "nETBIOSName", "dnsRoot", NULL };
 	struct ldb_context *sam_ctx;
-	struct ldb_message **res1, **res2, **ref_res;
+	struct ldb_message **res1, **res2;
 	struct netr_DomainInfo1 *info1;
-	int ret, ret1, ret2, i;
+	int ret1, ret2, i;
 	NTSTATUS status;
-	struct ldb_dn *partitions_basedn;
 
 	const char *local_domain;
 
@@ -1090,8 +1098,6 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
 
-	partitions_basedn = samdb_partitions_dn(sam_ctx, mem_ctx);
-
 	/* we need to do two searches. The first will pull our primary
 	   domain and the second will pull any trusted domains. Our
 	   primary domain is also a "trusted" domain, so we need to
@@ -1103,15 +1109,7 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 	}
 
 	/* try and find the domain */
-	ret = gendb_search(sam_ctx, mem_ctx, partitions_basedn, 
-			   &ref_res, ref_attrs, 
-			   "(&(objectClass=crossRef)(ncName=%s))", 
-			   ldb_dn_get_linearized(res1[0]->dn));
-	if (ret != 1) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
-	local_domain = samdb_result_string(ref_res[0], "nETBIOSName", NULL);
+	local_domain = lp_sam_name(dce_call->conn->dce_ctx->lp_ctx);
 
 	ret2 = gendb_search(sam_ctx, mem_ctx, NULL, &res2, attrs, "(objectClass=trustedDomain)");
 	if (ret2 == -1) {
@@ -1128,21 +1126,21 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 				       info1->num_trusts);
 	NT_STATUS_HAVE_NO_MEMORY(info1->trusts);
 
-	status = fill_domain_trust_info(mem_ctx, res1[0], ref_res[0], &info1->domaininfo, 
+	status = fill_domain_trust_info(mem_ctx, dce_call->conn->dce_ctx->lp_ctx, sam_ctx, res1[0], &info1->domaininfo, 
 					true, false);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	for (i=0;i<ret2;i++) {
-		status = fill_domain_trust_info(mem_ctx, res2[i], NULL, &info1->trusts[i], 
+		status = fill_domain_trust_info(mem_ctx, dce_call->conn->dce_ctx->lp_ctx, sam_ctx, res2[i], &info1->trusts[i], 
 						false, true);
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
 
-	status = fill_domain_trust_info(mem_ctx, res1[0], ref_res[0], &info1->trusts[i], 
+	status = fill_domain_trust_info(mem_ctx, dce_call->conn->dce_ctx->lp_ctx, sam_ctx, res1[0], &info1->trusts[i], 
 					true, true);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	info1->dns_hostname.string = samdb_result_string(ref_res[0], "dnsRoot", NULL);
+	info1->dns_hostname.string = lp_realm(dce_call->conn->dce_ctx->lp_ctx);
 	info1->workstation_flags = 
 		NETR_WS_FLAG_HANDLES_INBOUND_TRUSTS | NETR_WS_FLAG_HANDLES_SPN_UPDATE;
 	info1->supported_enc_types = 0; /* w2008 gives this 0 */
@@ -1191,7 +1189,7 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call, TA
 				   struct netr_DsRGetDCNameEx2 *r)
 {
 	const char * const attrs[] = { "objectGUID", NULL };
-	void *sam_ctx;
+	struct ldb_context *sam_ctx;
 	struct ldb_message **res;
 	struct ldb_dn *domain_dn;
 	int ret;
@@ -1206,21 +1204,19 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call, TA
 
 	/* Win7-beta will send the domain name in the form the user typed, so we have to cope
 	   with both the short and long form here */
-	if (r->in.domain_name == NULL || strcasecmp(r->in.domain_name, lp_workgroup(dce_call->conn->dce_ctx->lp_ctx)) == 0) {
-		r->in.domain_name = lp_realm(dce_call->conn->dce_ctx->lp_ctx);
+	if (r->in.domain_name != NULL && !lp_is_my_domain_or_realm(dce_call->conn->dce_ctx->lp_ctx, 
+								r->in.domain_name)) {
+		return WERR_NO_SUCH_DOMAIN;
 	}
 
-	domain_dn = samdb_dns_domain_to_dn((struct ldb_context *)sam_ctx,
-					   mem_ctx,
-					   r->in.domain_name);   
+	domain_dn = ldb_get_default_basedn(sam_ctx);
 	if (domain_dn == NULL) {
 		return WERR_DS_SERVICE_UNAVAILABLE;
 	}
 
-	ret = gendb_search_dn((struct ldb_context *)sam_ctx, mem_ctx,
+	ret = gendb_search_dn(sam_ctx, mem_ctx,
 			      domain_dn, &res, attrs);
 	if (ret != 1) {
-		return WERR_NO_SUCH_DOMAIN;
 	}
 
 	info = talloc(mem_ctx, struct netr_DsRGetDCNameInfo);
@@ -1359,10 +1355,8 @@ static WERROR dcesrv_netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce
 	struct netr_DomainTrustList *trusts;
 	void *sam_ctx;
 	int ret;
-	struct ldb_message **dom_res, **ref_res;
+	struct ldb_message **dom_res;
 	const char * const dom_attrs[] = { "objectSid", "objectGUID", NULL };
-	const char * const ref_attrs[] = { "nETBIOSName", "dnsRoot", NULL };
-	struct ldb_dn *partitions_basedn;
 
 	ZERO_STRUCT(r->out);
 
@@ -1371,24 +1365,10 @@ static WERROR dcesrv_netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce
 		return WERR_GENERAL_FAILURE;
 	}
 
-	partitions_basedn = samdb_partitions_dn((struct ldb_context *)sam_ctx,
-						mem_ctx);
-
 	ret = gendb_search_dn((struct ldb_context *)sam_ctx, mem_ctx, NULL,
 			      &dom_res, dom_attrs);
 	if (ret == -1) {
 		return WERR_GENERAL_FAILURE;		
-	}
-	if (ret != 1) {
-		return WERR_GENERAL_FAILURE;
-	}
-
-	ret = gendb_search((struct ldb_context *)sam_ctx, mem_ctx,
-			   partitions_basedn, &ref_res, ref_attrs,
-			   "(&(objectClass=crossRef)(ncName=%s))",
-			   ldb_dn_get_linearized(dom_res[0]->dn));
-	if (ret == -1) {
-		return WERR_GENERAL_FAILURE;
 	}
 	if (ret != 1) {
 		return WERR_GENERAL_FAILURE;
@@ -1406,8 +1386,8 @@ static WERROR dcesrv_netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce
 
 	/* TODO: add filtering by trust_flags, and correct trust_type
 	   and attributes */
-	trusts->array[0].netbios_name = samdb_result_string(ref_res[0], "nETBIOSName", NULL);
-	trusts->array[0].dns_name     = samdb_result_string(ref_res[0], "dnsRoot", NULL);
+	trusts->array[0].netbios_name = lp_sam_name(dce_call->conn->dce_ctx->lp_ctx);
+	trusts->array[0].dns_name     = lp_realm(dce_call->conn->dce_ctx->lp_ctx);
 	trusts->array[0].trust_flags =
 		NETR_TRUST_FLAG_TREEROOT | 
 		NETR_TRUST_FLAG_IN_FOREST | 

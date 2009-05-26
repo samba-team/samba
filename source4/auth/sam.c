@@ -139,20 +139,18 @@ static bool logon_hours_ok(struct ldb_message *msg, const char *name_for_logs)
  (ie not disabled, expired and the like).
 ****************************************************************************/
 _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
-			    struct ldb_context *sam_ctx,
-			    uint32_t logon_parameters,
-			    struct ldb_message *msg,
-			    struct ldb_message *msg_domain_ref,
-			    const char *logon_workstation,
-			    const char *name_for_logs,
-			    bool allow_domain_trust)
+				     struct ldb_context *sam_ctx,
+				     uint32_t logon_parameters,
+				     struct ldb_dn *domain_dn,
+				     struct ldb_message *msg,
+				     const char *logon_workstation,
+				     const char *name_for_logs,
+				     bool allow_domain_trust)
 {
 	uint16_t acct_flags;
 	const char *workstation_list;
 	NTTIME acct_expiry;
 	NTTIME must_change_time;
-
-	struct ldb_dn *domain_dn = samdb_result_dn(sam_ctx, mem_ctx, msg_domain_ref, "nCName", ldb_dn_new(mem_ctx, sam_ctx, NULL));
 
 	NTTIME now;
 	DEBUG(4,("authsam_account_ok: Checking SMB password for user %s\n", name_for_logs));
@@ -256,8 +254,9 @@ _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 
 _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_context *sam_ctx,
 					   const char *netbios_name,
+					   const char *domain_name,
+					   struct ldb_dn *domain_dn, 
 					   struct ldb_message *msg,
-					   struct ldb_message *msg_domain_ref,
 					   DATA_BLOB user_sess_key, DATA_BLOB lm_sess_key,
 					   struct auth_serversupplied_info **_server_info)
 {
@@ -269,7 +268,6 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_conte
 	struct dom_sid **groupSIDs = NULL;
 	struct dom_sid *account_sid;
 	struct dom_sid *primary_group_sid;
-	struct ldb_dn *domain_dn;
 	const char *str;
 	struct ldb_dn *ncname;
 	int i;
@@ -327,7 +325,8 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_conte
 
 	server_info->account_name = talloc_steal(server_info, samdb_result_string(msg, "sAMAccountName", NULL));
 
-	server_info->domain_name = talloc_steal(server_info, samdb_result_string(msg_domain_ref, "nETBIOSName", NULL));
+	server_info->domain_name = talloc_strdup(server_info, domain_name);
+	NT_STATUS_HAVE_NO_MEMORY(server_info->domain_name);
 
 	str = samdb_result_string(msg, "displayName", "");
 	server_info->full_name = talloc_strdup(server_info, str);
@@ -357,10 +356,6 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_conte
 	server_info->acct_expiry = samdb_result_account_expires(msg);
 	server_info->last_password_change = samdb_result_nttime(msg, "pwdLastSet", 0);
 
-	ncname = samdb_result_dn(sam_ctx, mem_ctx, msg_domain_ref, "nCName", NULL);
-	if (!ncname) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
 	server_info->allow_password_change
 		= samdb_result_allow_password_change(sam_ctx, mem_ctx, 
 						     ncname, msg, "pwdLastSet");
@@ -370,8 +365,6 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_conte
 	
 	server_info->logon_count = samdb_result_uint(msg, "logonCount", 0);
 	server_info->bad_password_count = samdb_result_uint(msg, "badPwdCount", 0);
-
-	domain_dn = samdb_result_dn(sam_ctx, mem_ctx, msg_domain_ref, "nCName", NULL);
 
 	server_info->acct_flags = samdb_result_acct_flags(sam_ctx, mem_ctx, 
 							  msg, domain_dn);
@@ -388,32 +381,22 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_conte
 
 NTSTATUS sam_get_results_principal(struct ldb_context *sam_ctx,
 				   TALLOC_CTX *mem_ctx, const char *principal,
-				   struct ldb_message ***msgs,
-				   struct ldb_message ***msgs_domain_ref)
+				   struct ldb_dn **domain_dn,
+				   struct ldb_message ***msgs)
 {			   
-	struct ldb_dn *user_dn, *domain_dn;
+	struct ldb_dn *user_dn;
 	NTSTATUS nt_status;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	int ret;
-	struct ldb_dn *partitions_basedn = samdb_partitions_dn(sam_ctx, mem_ctx);
 
 	if (!tmp_ctx) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	nt_status = crack_user_principal_name(sam_ctx, tmp_ctx, principal, &user_dn, &domain_dn);
+	nt_status = crack_user_principal_name(sam_ctx, tmp_ctx, principal, &user_dn, domain_dn);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
 		return nt_status;
-	}
-	
-	/* grab domain info from the reference */
-	ret = gendb_search(sam_ctx, tmp_ctx, partitions_basedn, msgs_domain_ref, domain_ref_attrs,
-			   "(ncName=%s)", ldb_dn_get_linearized(domain_dn));
-
-	if (ret != 1) {
-		talloc_free(tmp_ctx);
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 	
 	/* pull the user attributes */
@@ -423,7 +406,7 @@ NTSTATUS sam_get_results_principal(struct ldb_context *sam_ctx,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 	talloc_steal(mem_ctx, *msgs);
-	talloc_steal(mem_ctx, *msgs_domain_ref);
+	talloc_steal(mem_ctx, *domain_dn);
 	talloc_free(tmp_ctx);
 	
 	return NT_STATUS_OK;

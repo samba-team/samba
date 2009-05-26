@@ -129,7 +129,8 @@ PRIVATE_DEPENDENCIES = \
 		DCERPC_COMMON \
 		SCHANNELDB \
 		NDR_NETLOGON \
-		auth_sam
+		auth_sam \
+		LIBSAMBA-HOSTCONFIG
 # End MODULE dcerpc_netlogon
 ################################################
 

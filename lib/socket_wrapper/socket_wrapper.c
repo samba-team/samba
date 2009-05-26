@@ -118,6 +118,7 @@
 #define real_setsockopt setsockopt
 #define real_recvfrom recvfrom
 #define real_sendto sendto
+#define real_sendmsg sendmsg
 #define real_ioctl ioctl
 #define real_recv recv
 #define real_send send
@@ -2059,6 +2060,76 @@ _PUBLIC_ ssize_t swrap_send(int s, const void *buf, size_t len, int flags)
 		swrap_dump_packet(si, NULL, SWRAP_SEND_RST, NULL, 0);
 	} else {
 		swrap_dump_packet(si, NULL, SWRAP_SEND, buf, ret);
+	}
+
+	return ret;
+}
+
+_PUBLIC_ ssize_t swrap_sendmsg(int s, const struct msghdr *msg, int flags)
+{
+	int ret;
+	uint8_t *buf;
+	off_t ofs = 0;
+	size_t i;
+	size_t remain;
+	
+	struct socket_info *si = find_socket_info(s);
+
+	if (!si) {
+		return real_sendmsg(s, msg, flags);
+	}
+
+	if (si->defer_connect) {
+		struct sockaddr_un un_addr;
+		int bcast = 0;
+
+		if (si->bound == 0) {
+			ret = swrap_auto_bind(si, si->family);
+			if (ret == -1) return -1;
+		}
+
+		ret = sockaddr_convert_to_un(si, si->peername, si->peername_len,
+					     &un_addr, 0, &bcast);
+		if (ret == -1) return -1;
+
+		ret = real_connect(s, (struct sockaddr *)&un_addr,
+				   sizeof(un_addr));
+
+		/* to give better errors */
+		if (ret == -1 && errno == ENOENT) {
+			errno = EHOSTUNREACH;
+		}
+
+		if (ret == -1) {
+			return ret;
+		}
+		si->defer_connect = 0;
+	}
+
+	ret = real_sendmsg(s, msg, flags);
+	remain = ret;
+		
+	/* we capture it as one single packet */
+	buf = (uint8_t *)malloc(ret);
+	if (!buf) {
+		/* we just not capture the packet */
+		errno = 0;
+		return ret;
+	}
+	
+	for (i=0; i < msg->msg_iovlen; i++) {
+		size_t this_time = MIN(remain, msg->msg_iov[i].iov_len);
+		memcpy(buf + ofs,
+		       msg->msg_iov[i].iov_base,
+		       this_time);
+		ofs += this_time;
+		remain -= this_time;
+	}
+	
+	swrap_dump_packet(si, NULL, SWRAP_SEND, buf, ret);
+	free(buf);
+	if (ret == -1) {
+		swrap_dump_packet(si, NULL, SWRAP_SEND_RST, NULL, 0);
 	}
 
 	return ret;

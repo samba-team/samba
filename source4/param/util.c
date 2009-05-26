@@ -41,6 +41,13 @@ bool lp_is_mydomain(struct loadparm_context *lp_ctx,
 	return strequal(lp_workgroup(lp_ctx), domain);
 }
 
+bool lp_is_my_domain_or_realm(struct loadparm_context *lp_ctx, 
+			     const char *domain)
+{
+	return strequal(lp_workgroup(lp_ctx), domain) || 
+		strequal(lp_realm(lp_ctx), domain);
+}
+
 /**
   see if a string matches either our primary or one of our secondary 
   netbios aliases. do a case insensitive match
@@ -295,4 +302,14 @@ struct smb_iconv_convenience *smb_iconv_convenience_init_lp(TALLOC_CTX *mem_ctx,
 		lp_parm_bool(lp_ctx, NULL, "iconv", "native", true));
 }
 
+
+const char *lp_sam_name(struct loadparm_context *lp_ctx) 
+{
+	switch (lp_server_role(lp_ctx)) {
+	case ROLE_DOMAIN_CONTROLLER:
+		return lp_workgroup(lp_ctx);
+	default:
+		return lp_netbios_name(lp_ctx);
+	}
+}
 

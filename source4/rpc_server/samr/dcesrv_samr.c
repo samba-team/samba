@@ -273,11 +273,8 @@ static NTSTATUS dcesrv_samr_LookupDomain(struct dcesrv_call_state *dce_call, TAL
 	struct dcesrv_handle *h;
 	struct dom_sid *sid;
 	const char * const dom_attrs[] = { "objectSid", NULL};
-	const char * const ref_attrs[] = { "ncName", NULL};
 	struct ldb_message **dom_msgs;
-	struct ldb_message **ref_msgs;
 	int ret;
-	struct ldb_dn *partitions_basedn;
 
 	*r->out.sid = NULL;
 
@@ -289,27 +286,17 @@ static NTSTATUS dcesrv_samr_LookupDomain(struct dcesrv_call_state *dce_call, TAL
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	partitions_basedn = samdb_partitions_dn(c_state->sam_ctx, mem_ctx);
-
 	if (strcasecmp(r->in.domain_name->string, "BUILTIN") == 0) {
 		ret = gendb_search(c_state->sam_ctx,
 				   mem_ctx, NULL, &dom_msgs, dom_attrs,
 				   "(objectClass=builtinDomain)");
-	} else {
-		ret = gendb_search(c_state->sam_ctx,
-				   mem_ctx, partitions_basedn, &ref_msgs, ref_attrs,
-				   "(&(&(nETBIOSName=%s)(objectclass=crossRef))(ncName=*))", 
-				   ldb_binary_encode_string(mem_ctx, r->in.domain_name->string));
-		if (ret != 1) {
-			return NT_STATUS_NO_SUCH_DOMAIN;
-		}
-		
-		ret = gendb_search_dn(c_state->sam_ctx, mem_ctx, 
-				      samdb_result_dn(c_state->sam_ctx, mem_ctx,
-						      ref_msgs[0], "ncName", NULL), 
+	} else if (strcasecmp_m(r->in.domain_name->string, lp_sam_name(dce_call->conn->dce_ctx->lp_ctx)) == 0) {
+		ret = gendb_search_dn(c_state->sam_ctx,
+				      mem_ctx, ldb_get_default_basedn(c_state->sam_ctx), 
 				      &dom_msgs, dom_attrs);
+	} else {
+		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
-
 	if (ret != 1) {
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
@@ -338,12 +325,7 @@ static NTSTATUS dcesrv_samr_EnumDomains(struct dcesrv_call_state *dce_call, TALL
 	struct samr_connect_state *c_state;
 	struct dcesrv_handle *h;
 	struct samr_SamArray *array;
-	int i, start_i, ret;
-	const char * const dom_attrs[] = { "cn", NULL};
-	const char * const ref_attrs[] = { "nETBIOSName", NULL};
-	struct ldb_result *dom_res;
-	struct ldb_result *ref_res;
-	struct ldb_dn *partitions_basedn;
+	int i, start_i;
 
 	*r->out.resume_handle = 0;
 	*r->out.sam = NULL;
@@ -353,20 +335,11 @@ static NTSTATUS dcesrv_samr_EnumDomains(struct dcesrv_call_state *dce_call, TALL
 
 	c_state = h->data;
 
-	partitions_basedn = samdb_partitions_dn(c_state->sam_ctx, mem_ctx);
-
-	ret = ldb_search(c_state->sam_ctx, mem_ctx, &dom_res, ldb_get_default_basedn(c_state->sam_ctx),
-				 LDB_SCOPE_SUBTREE, dom_attrs, "(|(|(objectClass=domain)(objectClass=builtinDomain))(objectClass=samba4LocalDomain))");
-	if (ret != LDB_SUCCESS) {
-		DEBUG(0,("samdb: unable to find domains: %s\n", ldb_errstring(c_state->sam_ctx)));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
-	*r->out.resume_handle = dom_res->count;
+	*r->out.resume_handle = 2;
 
 	start_i = *r->in.resume_handle;
 
-	if (start_i >= dom_res->count) {
+	if (start_i >= 2) {
 		/* search past end of list is not an error for this call */
 		return NT_STATUS_OK;
 	}
@@ -379,27 +352,17 @@ static NTSTATUS dcesrv_samr_EnumDomains(struct dcesrv_call_state *dce_call, TALL
 	array->count = 0;
 	array->entries = NULL;
 
-	array->entries = talloc_array(mem_ctx, struct samr_SamEntry, dom_res->count - start_i);
+	array->entries = talloc_array(mem_ctx, struct samr_SamEntry, 2 - start_i);
 	if (array->entries == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	for (i=0;i<dom_res->count-start_i;i++) {
+	for (i=0;i<2-start_i;i++) {
 		array->entries[i].idx = start_i + i;
-		/* try and find the domain */
-		ret = ldb_search(c_state->sam_ctx, mem_ctx, &ref_res, partitions_basedn,
-					 LDB_SCOPE_SUBTREE, ref_attrs, "(&(objectClass=crossRef)(ncName=%s))", 
-					 ldb_dn_get_linearized(dom_res->msgs[i]->dn));
-
-		if (ret != LDB_SUCCESS) {
-			DEBUG(0,("samdb: unable to find domains: %s\n", ldb_errstring(c_state->sam_ctx)));
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
-
-		if (ref_res->count == 1) {
-			array->entries[i].name.string = samdb_result_string(ref_res->msgs[0], "nETBIOSName", NULL);
+		if (i == 0) {
+			array->entries[i].name.string = lp_sam_name(dce_call->conn->dce_ctx->lp_ctx);
 		} else {
-			array->entries[i].name.string = samdb_result_string(dom_res->msgs[i], "cn", NULL);
+			array->entries[i].name.string = "BUILTIN";
 		}
 	}
 
@@ -418,15 +381,11 @@ static NTSTATUS dcesrv_samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLO
 				struct samr_OpenDomain *r)
 {
 	struct dcesrv_handle *h_conn, *h_domain;
-	const char *domain_name;
 	struct samr_connect_state *c_state;
 	struct samr_domain_state *d_state;
 	const char * const dom_attrs[] = { "cn", NULL};
-	const char * const ref_attrs[] = { "nETBIOSName", NULL};
 	struct ldb_message **dom_msgs;
-	struct ldb_message **ref_msgs;
 	int ret;
-	struct ldb_dn *partitions_basedn;
 
 	ZERO_STRUCTP(r->out.domain_handle);
 
@@ -438,62 +397,43 @@ static NTSTATUS dcesrv_samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLO
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	partitions_basedn = samdb_partitions_dn(c_state->sam_ctx, mem_ctx);
-
-	ret = gendb_search(c_state->sam_ctx,
-			   mem_ctx, NULL, &dom_msgs, dom_attrs,
-			   "(&(objectSid=%s)(|(|(objectClass=domain)(objectClass=builtinDomain))(objectClass=samba4LocalDomain)))", 
-			   ldap_encode_ndr_dom_sid(mem_ctx, r->in.sid));
-	if (ret == 0) {
-		return NT_STATUS_NO_SUCH_DOMAIN;
-	} else if (ret > 1) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	} else if (ret == -1) {
-		DEBUG(1, ("Failed to open domain %s: %s\n", dom_sid_string(mem_ctx, r->in.sid), ldb_errstring(c_state->sam_ctx)));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	} else {
-		ret = gendb_search(c_state->sam_ctx,
-				   mem_ctx, partitions_basedn, &ref_msgs, ref_attrs,
-				   "(&(&(nETBIOSName=*)(objectclass=crossRef))(ncName=%s))", 
-				   ldb_dn_get_linearized(dom_msgs[0]->dn));
-		if (ret == 0) {
-			domain_name = ldb_msg_find_attr_as_string(dom_msgs[0], "cn", NULL);
-			if (domain_name == NULL) {
-				return NT_STATUS_NO_SUCH_DOMAIN;
-			}
-		} else if (ret == 1) {
-		
-			domain_name = ldb_msg_find_attr_as_string(ref_msgs[0], "nETBIOSName", NULL);
-			if (domain_name == NULL) {
-				return NT_STATUS_NO_SUCH_DOMAIN;
-			}
-		} else {
-			return NT_STATUS_NO_SUCH_DOMAIN;
-		}
-	}
-
 	d_state = talloc(c_state, struct samr_domain_state);
 	if (!d_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	d_state->role = lp_server_role(dce_call->conn->dce_ctx->lp_ctx);
-	d_state->connect_state = talloc_reference(d_state, c_state);
-	d_state->sam_ctx = c_state->sam_ctx;
-	d_state->domain_sid = dom_sid_dup(d_state, r->in.sid);
-	d_state->domain_name = talloc_strdup(d_state, domain_name);
-	d_state->domain_dn = ldb_dn_copy(d_state, dom_msgs[0]->dn);
-	if (!d_state->domain_sid || !d_state->domain_name || !d_state->domain_dn) {
-		talloc_free(d_state);
-		return NT_STATUS_NO_MEMORY;		
-	}
-	d_state->access_mask = r->in.access_mask;
+	d_state->domain_sid = talloc_steal(d_state, r->in.sid);
 
 	if (dom_sid_equal(d_state->domain_sid, dom_sid_parse_talloc(mem_ctx, SID_BUILTIN))) {
 		d_state->builtin = true;
+		d_state->domain_name = "BUILTIN";
 	} else {
 		d_state->builtin = false;
+		d_state->domain_name = lp_sam_name(dce_call->conn->dce_ctx->lp_ctx);
 	}
+
+	ret = gendb_search(c_state->sam_ctx,
+			   mem_ctx, ldb_get_default_basedn(c_state->sam_ctx), &dom_msgs, dom_attrs,
+			   "(objectSid=%s)", 
+			   ldap_encode_ndr_dom_sid(mem_ctx, r->in.sid));
+	
+	if (ret == 0) {
+		talloc_free(d_state);
+		return NT_STATUS_NO_SUCH_DOMAIN;
+	} else if (ret > 1) {
+		talloc_free(d_state);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	} else if (ret == -1) {
+		talloc_free(d_state);
+		DEBUG(1, ("Failed to open domain %s: %s\n", dom_sid_string(mem_ctx, r->in.sid), ldb_errstring(c_state->sam_ctx)));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	d_state->domain_dn = talloc_steal(d_state, dom_msgs[0]->dn);
+	d_state->role = lp_server_role(dce_call->conn->dce_ctx->lp_ctx);
+	d_state->connect_state = talloc_reference(d_state, c_state);
+	d_state->sam_ctx = c_state->sam_ctx;
+	d_state->access_mask = r->in.access_mask;
 
 	d_state->lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
 

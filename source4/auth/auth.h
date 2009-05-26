@@ -221,24 +221,26 @@ struct auth_critical_sizes {
 
 struct ldb_message;
 struct ldb_context;
+struct ldb_dn;
 struct gensec_security;
 
 NTSTATUS auth_get_challenge(struct auth_context *auth_ctx, const uint8_t **_chal);
 NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 			    struct ldb_context *sam_ctx,
 			    uint32_t logon_parameters,
+			    struct ldb_dn *domain_dn,
 			    struct ldb_message *msg,
-			    struct ldb_message *msg_domain_ref,
 			    const char *logon_workstation,
 			    const char *name_for_logs,
 			    bool allow_domain_trust);
 struct auth_session_info *system_session(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx);
 NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_context *sam_ctx,
 					   const char *netbios_name,
+					   const char *domain_name,
+					   struct ldb_dn *domain_dn, 
 					   struct ldb_message *msg,
-					   struct ldb_message *msg_domain_ref,
 					   DATA_BLOB user_sess_key, DATA_BLOB lm_sess_key,
-					   struct auth_serversupplied_info **_server_info);
+				  struct auth_serversupplied_info **_server_info);
 NTSTATUS auth_system_session_info(TALLOC_CTX *parent_ctx, 
 					   struct loadparm_context *lp_ctx,
 					   struct auth_session_info **_session_info) ;
