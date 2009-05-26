@@ -2578,7 +2578,7 @@ static void call_trans2qfsinfo(connection_struct *conn,
 	int snum = SNUM(conn);
 	char *fstype = lp_fstype(SNUM(conn));
 	uint32 additional_flags = 0;
-	
+
 	if (total_params < 2) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return;
@@ -2849,13 +2849,13 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			 */
 			files_struct fsp;
 			SMB_NTQUOTA_STRUCT quotas;
-			
+
 			ZERO_STRUCT(fsp);
 			ZERO_STRUCT(quotas);
-			
+
 			fsp.conn = conn;
 			fsp.fnum = -1;
-			
+
 			/* access check */
 			if (conn->server_info->utok.uid != 0) {
 				DEBUG(0,("set_user_quota: access_denied "
@@ -2865,7 +2865,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 				reply_doserror(req, ERRDOS, ERRnoaccess);
 				return;
 			}
-			
+
 			if (vfs_get_ntquota(&fsp, SMB_USER_FS_QUOTA_TYPE, NULL, &quotas)!=0) {
 				DEBUG(0,("vfs_get_ntquota() failed for service [%s]\n",lp_servicename(SNUM(conn))));
 				reply_doserror(req, ERRSRV, ERRerror);
@@ -2875,25 +2875,25 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			data_len = 48;
 
 			DEBUG(10,("SMB_FS_QUOTA_INFORMATION: for service [%s]\n",lp_servicename(SNUM(conn))));		
-		
+
 			/* Unknown1 24 NULL bytes*/
 			SBIG_UINT(pdata,0,(uint64_t)0);
 			SBIG_UINT(pdata,8,(uint64_t)0);
 			SBIG_UINT(pdata,16,(uint64_t)0);
-		
+
 			/* Default Soft Quota 8 bytes */
 			SBIG_UINT(pdata,24,quotas.softlim);
 
 			/* Default Hard Quota 8 bytes */
 			SBIG_UINT(pdata,32,quotas.hardlim);
-	
+
 			/* Quota flag 2 bytes */
 			SSVAL(pdata,40,quotas.qflags);
-		
+
 			/* Unknown3 6 NULL bytes */
 			SSVAL(pdata,42,0);
 			SIVAL(pdata,44,0);
-			
+
 			break;
 		}
 #endif /* HAVE_SYS_QUOTAS */
@@ -3300,7 +3300,7 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 			{
 				files_struct *fsp = NULL;
 				SMB_NTQUOTA_STRUCT quotas;
-	
+
 				ZERO_STRUCT(quotas);
 
 				/* access check */
@@ -3335,9 +3335,9 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 						NT_STATUS_INVALID_PARAMETER);
 					return;
 				}
-			
+
 				/* unknown_1 24 NULL bytes in pdata*/
-		
+
 				/* the soft quotas 8 bytes (uint64_t)*/
 				quotas.softlim = (uint64_t)IVAL(pdata,24);
 #ifdef LARGE_SMB_OFF_T
@@ -3353,7 +3353,7 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 					return;
 				}
 #endif /* LARGE_SMB_OFF_T */
-		
+
 				/* the hard quotas 8 bytes (uint64_t)*/
 				quotas.hardlim = (uint64_t)IVAL(pdata,32);
 #ifdef LARGE_SMB_OFF_T
@@ -3369,19 +3369,19 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 					return;
 				}
 #endif /* LARGE_SMB_OFF_T */
-		
+
 				/* quota_flags 2 bytes **/
 				quotas.qflags = SVAL(pdata,40);
-		
+
 				/* unknown_2 6 NULL bytes follow*/
-		
+
 				/* now set the quotas */
 				if (vfs_set_ntquota(fsp, SMB_USER_FS_QUOTA_TYPE, NULL, &quotas)!=0) {
 					DEBUG(0,("vfs_set_ntquota() failed for service [%s]\n",lp_servicename(SNUM(conn))));
 					reply_doserror(req, ERRSRV, ERRerror);
 					return;
 				}
-			
+
 				break;
 			}
 		default:
@@ -3564,7 +3564,7 @@ static char *store_file_unix_basic(connection_struct *conn,
 
 	SINO_T_VAL(pdata,0,(SMB_INO_T)psbuf->st_ex_ino);   /* inode number */
 	pdata += 8;
-				
+
 	SIVAL(pdata,0, unix_perms_to_wire(psbuf->st_ex_mode));     /* Standard UNIX file permissions */
 	SIVAL(pdata,4,0);
 	pdata += 8;
@@ -5035,7 +5035,7 @@ static NTSTATUS smb_set_file_dosmode(connection_struct *conn,
 			fname = fsp->fsp_name;
 		}
 	}
-		
+
 	if (dosmode) {
 		if (S_ISDIR(psbuf->st_ex_mode)) {
 			dosmode |= aDIR;
@@ -7123,7 +7123,6 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 			return;
 	}
 
-	
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->mid)) {
 			/* We have re-scheduled this call. */
@@ -7150,7 +7149,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 	SSVAL(params,0,0);
 	send_trans2_replies(conn, req, params, 2, *ppdata, data_return_size,
 			    max_data_bytes);
-  
+
 	return;
 }
 
@@ -7253,7 +7252,7 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 		reply_nterror(req, status);
 		return;
 	}
-  
+
 	/* Try and set any given EA. */
 	if (ea_list) {
 		status = set_ea(conn, NULL, directory, ea_list);
@@ -7274,7 +7273,7 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 	SSVAL(params,0,0);
 
 	send_trans2_replies(conn, req, params, 2, *ppdata, 0, max_data_bytes);
-  
+
 	return;
 }
 
@@ -7327,7 +7326,7 @@ static void call_trans2findnotifyfirst(connection_struct *conn,
 		fnf_handle = 257;
 
 	send_trans2_replies(conn, req, params, 6, *ppdata, 0, max_data_bytes);
-  
+
 	return;
 }
 
@@ -7358,7 +7357,7 @@ static void call_trans2findnotifynext(connection_struct *conn,
 	SSVAL(params,2,0); /* No EA errors */
 
 	send_trans2_replies(conn, req, params, 4, *ppdata, 0, max_data_bytes);
-  
+
 	return;
 }
 
@@ -7508,7 +7507,7 @@ void reply_findnclose(struct smb_request *req)
 		END_PROFILE(SMBfindnclose);
 		return;
 	}
-	
+
 	dptr_num = SVAL(req->vwv+0, 0);
 
 	DEBUG(3,("reply_findnclose, dptr_num = %d\n", dptr_num));
@@ -7928,7 +7927,7 @@ void reply_transs2(struct smb_request *req)
 
 	state->received_param += pcnt;
 	state->received_data += dcnt;
-		
+
 	if ((state->received_data > state->total_data) ||
 	    (state->received_param > state->total_param))
 		goto bad_param;
