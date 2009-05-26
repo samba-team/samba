@@ -105,13 +105,6 @@ extern int num_validated_vuids;
 extern char *my_yp_domain;
 #endif
 
-/*
- * Size of data we can send to client. Set
- *  by the client for all protocols above CORE.
- *  Set by us for CORE protocol.
- */
-extern int max_send;
-extern uint16 last_session_tag;
 extern int trans_num;
 
 extern pid_t mypid;
@@ -146,7 +139,6 @@ extern uint16_t last_flags;
 extern struct db_context *session_db_ctx_ptr;
 
 extern uint32_t global_client_caps;
-extern bool done_sesssetup;
 
 extern uint16_t fnf_handle;
 
@@ -333,6 +325,16 @@ struct smbd_server_connection {
 			int max_recv;
 		} negprot;
 
+		struct {
+			bool done_sesssetup;
+			/*
+			 * Size of data we can send to client. Set
+			 *  by the client for all protocols above CORE.
+			 *  Set by us for CORE protocol.
+			 */
+			int max_send;
+			uint16_t last_session_tag;
+		} sessions;
 		struct smb_signing_state *signing_state;
 		/* List to store partial SPNEGO auth fragments. */
 		struct pending_auth_data *pd_list;

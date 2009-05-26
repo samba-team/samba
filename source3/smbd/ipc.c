@@ -93,6 +93,8 @@ void send_trans_reply(connection_struct *conn,
 
 	int ldata  = rdata  ? rdata_len : 0;
 	int lparam = rparam ? rparam_len : 0;
+	struct smbd_server_connection *sconn = smbd_server_conn;
+	int max_send = sconn->smb1.sessions.max_send;
 
 	if (buffer_too_large)
 		DEBUG(5,("send_trans_reply: buffer %d too large\n", ldata ));

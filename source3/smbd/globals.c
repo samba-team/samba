@@ -107,13 +107,6 @@ int num_validated_vuids = 0;
 char *my_yp_domain = NULL;
 #endif
 
-/*
- * Size of data we can send to client. Set
- *  by the client for all protocols above CORE.
- *  Set by us for CORE protocol.
- */
-int max_send = BUFFER_SIZE;
-uint16 last_session_tag = UID_FIELD_INVALID;
 int trans_num = 0;
 pid_t mypid = 0;
 time_t last_smb_conf_reload_time = 0;
@@ -141,7 +134,6 @@ uint16_t last_flags = 0;
 struct db_context *session_db_ctx_ptr = NULL;
 
 uint32_t global_client_caps = 0;
-bool done_sesssetup = false;
 
 uint16_t fnf_handle = 257;
 

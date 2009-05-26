@@ -1803,10 +1803,11 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	SSVAL(req->outbuf,smb_uid,sess_vuid);
 	SSVAL(req->inbuf,smb_uid,sess_vuid);
 
-	if (!done_sesssetup)
-		max_send = MIN(max_send,smb_bufsize);
-
-	done_sesssetup = True;
+	if (!sconn->smb1.sessions.done_sesssetup) {
+		sconn->smb1.sessions.max_send =
+			MIN(sconn->smb1.sessions.max_send,smb_bufsize);
+	}
+	sconn->smb1.sessions.done_sesssetup = true;
 
 	END_PROFILE(SMBsesssetupX);
 	chain_reply(req);

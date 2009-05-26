@@ -1226,6 +1226,7 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 	int flags;
 	uint16 session_tag;
 	connection_struct *conn = NULL;
+	struct smbd_server_connection *sconn = smbd_server_conn;
 
 	errno = 0;
 
@@ -1269,10 +1270,10 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 	 * JRA.
 	 */
 
-	if (session_tag != last_session_tag) {
+	if (session_tag != sconn->smb1.sessions.last_session_tag) {
 		user_struct *vuser = NULL;
 
-		last_session_tag = session_tag;
+		sconn->smb1.sessions.last_session_tag = session_tag;
 		if(session_tag != UID_FIELD_INVALID) {
 			vuser = get_valid_user_struct(session_tag);
 			if (vuser) {
@@ -2160,6 +2161,10 @@ void smbd_process(void)
 	smbd_server_conn->nbt.got_session = false;
 
 	smbd_server_conn->smb1.negprot.max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
+
+	smbd_server_conn->smb1.sessions.done_sesssetup = false;
+	smbd_server_conn->smb1.sessions.max_send = BUFFER_SIZE;
+	smbd_server_conn->smb1.sessions.last_session_tag = UID_FIELD_INVALID;
 
 	smbd_server_conn->smb1.fde = event_add_fd(smbd_event_context(),
 						  smbd_server_conn,
