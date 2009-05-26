@@ -1767,15 +1767,6 @@ struct node_status_extra {
 	/* There really is more here ... */ 
 };
 
-/* For split krb5 SPNEGO blobs. */
-struct pending_auth_data {
-	struct pending_auth_data *prev, *next;
-	uint16 vuid; /* Tag for this entry. */
-	uint16 smbpid; /* Alternate tag for this entry. */
-	size_t needed_len;
-	DATA_BLOB partial_data;
-};
-
 typedef struct user_struct {
 	struct user_struct *next, *prev;
 	uint16 vuid; /* Tag for this entry. */

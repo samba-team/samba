@@ -154,10 +154,6 @@ struct db_context *session_db_ctx_ptr = NULL;
 
 uint32_t global_client_caps = 0;
 bool done_sesssetup = false;
-/****************************************************************************
- List to store partial SPNEGO auth fragments.
-****************************************************************************/
-struct pending_auth_data *pd_list = NULL;
 
 uint16_t fnf_handle = 257;
 

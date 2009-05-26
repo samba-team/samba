@@ -159,11 +159,6 @@ extern struct db_context *session_db_ctx_ptr;
 
 extern uint32_t global_client_caps;
 extern bool done_sesssetup;
-/****************************************************************************
- List to store partial SPNEGO auth fragments.
-****************************************************************************/
-struct pending_auth_data;
-extern struct pending_auth_data *pd_list;
 
 extern uint16_t fnf_handle;
 
@@ -328,12 +323,16 @@ struct smbd_smb2_tcon {
 	int snum;
 };
 
+struct pending_auth_data;
+
 struct smbd_server_connection {
 	bool allow_smb2;
 	struct {
 		struct fd_event *fde;
 		uint64_t num_requests;
 		struct smb_signing_state *signing_state;
+		/* List to store partial SPNEGO auth fragments. */
+		struct pending_auth_data *pd_list;
 	} smb1;
 	struct {
 		struct tevent_context *event_ctx;

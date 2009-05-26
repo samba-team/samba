@@ -27,6 +27,15 @@
 
 extern enum protocol_types Protocol;
 
+/* For split krb5 SPNEGO blobs. */
+struct pending_auth_data {
+	struct pending_auth_data *prev, *next;
+	uint16 vuid; /* Tag for this entry. */
+	uint16 smbpid; /* Alternate tag for this entry. */
+	size_t needed_len;
+	DATA_BLOB partial_data;
+};
+
 /*
   on a logon error possibly map the error to success if "map to guest"
   is set approriately
@@ -920,12 +929,13 @@ static void reply_spnego_auth(struct smb_request *req,
  Delete an entry on the list.
 ****************************************************************************/
 
-static void delete_partial_auth(struct pending_auth_data *pad)
+static void delete_partial_auth(struct smbd_server_connection *sconn,
+				struct pending_auth_data *pad)
 {
 	if (!pad) {
 		return;
 	}
-	DLIST_REMOVE(pd_list, pad);
+	DLIST_REMOVE(sconn->smb1.pd_list, pad);
 	data_blob_free(&pad->partial_data);
 	SAFE_FREE(pad);
 }
@@ -934,11 +944,17 @@ static void delete_partial_auth(struct pending_auth_data *pad)
  Search for a partial SPNEGO auth fragment matching an smbpid.
 ****************************************************************************/
 
-static struct pending_auth_data *get_pending_auth_data(uint16 smbpid)
+static struct pending_auth_data *get_pending_auth_data(
+		struct smbd_server_connection *sconn,
+		uint16_t smbpid)
 {
 	struct pending_auth_data *pad;
-
-	for (pad = pd_list; pad; pad = pad->next) {
+/*
+ * NOTE: using the smbpid here is completely wrong...
+ *       see [MS-SMB]
+ *       3.3.5.3 Receiving an SMB_COM_SESSION_SETUP_ANDX Request
+ */
+	for (pad = sconn->smb1.pd_list; pad; pad = pad->next) {
 		if (pad->smbpid == smbpid) {
 			break;
 		}
@@ -952,20 +968,21 @@ static struct pending_auth_data *get_pending_auth_data(uint16 smbpid)
  the blob to be more than 64k.
 ****************************************************************************/
 
-static NTSTATUS check_spnego_blob_complete(uint16 smbpid, uint16 vuid,
-		DATA_BLOB *pblob)
+static NTSTATUS check_spnego_blob_complete(struct smbd_server_connection *sconn,
+					   uint16 smbpid, uint16 vuid,
+					   DATA_BLOB *pblob)
 {
 	struct pending_auth_data *pad = NULL;
 	ASN1_DATA *data;
 	size_t needed_len = 0;
 
-	pad = get_pending_auth_data(smbpid);
+	pad = get_pending_auth_data(sconn, smbpid);
 
 	/* Ensure we have some data. */
 	if (pblob->length == 0) {
 		/* Caller can cope. */
 		DEBUG(2,("check_spnego_blob_complete: zero blob length !\n"));
-		delete_partial_auth(pad);
+		delete_partial_auth(sconn, pad);
 		return NT_STATUS_OK;
 	}
 
@@ -986,7 +1003,7 @@ static NTSTATUS check_spnego_blob_complete(uint16 smbpid, uint16 vuid,
 				(unsigned int)pad->partial_data.length,
 				(unsigned int)copy_len ));
 
-			delete_partial_auth(pad);
+			delete_partial_auth(sconn, pad);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
@@ -1022,7 +1039,7 @@ static NTSTATUS check_spnego_blob_complete(uint16 smbpid, uint16 vuid,
 			data_blob_free(pblob);
 			*pblob = pad->partial_data;
 			ZERO_STRUCT(pad->partial_data);
-			delete_partial_auth(pad);
+			delete_partial_auth(sconn, pad);
 			return NT_STATUS_OK;
 		}
 
@@ -1107,7 +1124,7 @@ static NTSTATUS check_spnego_blob_complete(uint16 smbpid, uint16 vuid,
 	}
 	pad->smbpid = smbpid;
 	pad->vuid = vuid;
-	DLIST_ADD(pd_list, pad);
+	DLIST_ADD(sconn->smb1.pd_list, pad);
 
 	return NT_STATUS_MORE_PROCESSING_REQUIRED;
 }
@@ -1133,6 +1150,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	user_struct *vuser = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	uint16 smbpid = req->smbpid;
+	struct smbd_server_connection *sconn = smbd_server_conn;
 
 	DEBUG(3,("Doing spnego session setup\n"));
 
@@ -1198,7 +1216,8 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	if (!is_partial_auth_vuid(vuid)) {
 		/* No, then try and see if this is an intermediate sessionsetup
 		 * for a large SPNEGO packet. */
-		struct pending_auth_data *pad = get_pending_auth_data(smbpid);
+		struct pending_auth_data *pad;
+		pad = get_pending_auth_data(sconn, smbpid);
 		if (pad) {
 			DEBUG(10,("reply_sesssetup_and_X_spnego: found "
 				"pending vuid %u\n",
@@ -1230,7 +1249,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	 * field is 4k. Bug #4400. JRA.
 	 */
 
-	status = check_spnego_blob_complete(smbpid, vuid, &blob1);
+	status = check_spnego_blob_complete(sconn, smbpid, vuid, &blob1);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (!NT_STATUS_EQUAL(status,
 				NT_STATUS_MORE_PROCESSING_REQUIRED)) {
