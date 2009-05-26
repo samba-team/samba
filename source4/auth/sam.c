@@ -269,7 +269,6 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_conte
 	struct dom_sid *account_sid;
 	struct dom_sid *primary_group_sid;
 	const char *str;
-	struct ldb_dn *ncname;
 	int i;
 	uint_t rid;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
@@ -358,10 +357,10 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_conte
 
 	server_info->allow_password_change
 		= samdb_result_allow_password_change(sam_ctx, mem_ctx, 
-						     ncname, msg, "pwdLastSet");
+						     domain_dn, msg, "pwdLastSet");
 	server_info->force_password_change
 		= samdb_result_force_password_change(sam_ctx, mem_ctx, 
-						     ncname, msg);
+						     domain_dn, msg);
 	
 	server_info->logon_count = samdb_result_uint(msg, "logonCount", 0);
 	server_info->bad_password_count = samdb_result_uint(msg, "badPwdCount", 0);
