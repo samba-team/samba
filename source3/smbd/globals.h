@@ -125,7 +125,6 @@ extern int max_send;
 extern int max_recv;
 extern uint16 last_session_tag;
 extern int trans_num;
-extern char *orig_inbuf;
 
 extern pid_t mypid;
 extern time_t last_smb_conf_reload_time;
