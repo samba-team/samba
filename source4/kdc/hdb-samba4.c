@@ -38,6 +38,7 @@
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "librpc/gen_ndr/netlogon.h"
+#include "libcli/security/security.h"
 #include "auth/auth.h"
 #include "auth/credentials/credentials.h"
 #include "auth/auth_sam.h"
@@ -499,7 +500,9 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 
 	struct hdb_ldb_private *p;
 	NTTIME acct_expiry;
+	NTSTATUS status;
 
+	uint32_t rid;
 	struct ldb_message_element *objectclasses;
 	struct ldb_val computer_val;
 	const char *samAccountName = ldb_msg_find_attr_as_string(msg, "samAccountName", NULL);
@@ -580,49 +583,70 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 	/* First try and figure out the flags based on the userAccountControl */
 	entry_ex->entry.flags = uf2HDBFlags(context, userAccountControl, ent_type);
 
-	if (ent_type == HDB_SAMBA4_ENT_TYPE_KRBTGT) {
-		entry_ex->entry.flags.invalid = 0;
-		entry_ex->entry.flags.server = 1;
-		entry_ex->entry.flags.forwardable = 1;
-		entry_ex->entry.flags.ok_as_delegate = 1;
-	}
-
 	/* Windows 2008 seems to enforce this (very sensible) rule by
 	 * default - don't allow offline attacks on a user's password
 	 * by asking for a ticket to them as a service (encrypted with
 	 * their probably patheticly insecure password) */
 
-	if (lp_parm_bool(lp_ctx, NULL, "kdc", "require spn for service", true)) {
+	if (entry_ex->entry.flags.server
+	    && lp_parm_bool(lp_ctx, NULL, "kdc", "require spn for service", true)) {
 		if (!is_computer && !ldb_msg_find_attr_as_string(msg, "servicePrincipalName", NULL)) {
 			entry_ex->entry.flags.server = 0;
 		}
 	}
 
-	/* use 'whenCreated' */
-	entry_ex->entry.created_by.time = ldb_msg_find_krb5time_ldap_time(msg, "whenCreated", 0);
-	/* use '???' */
-	entry_ex->entry.created_by.principal = NULL;
+	{
+		/* These (created_by, modified_by) parts of the entry are not relevant for Samba4's use
+		 * of the Heimdal KDC.  They are stored in a the traditional
+		 * DB for audit purposes, and still form part of the structure
+		 * we must return */
+		
+		/* use 'whenCreated' */
+		entry_ex->entry.created_by.time = ldb_msg_find_krb5time_ldap_time(msg, "whenCreated", 0);
+		/* use '???' */
+		entry_ex->entry.created_by.principal = NULL;
+		
+		entry_ex->entry.modified_by = (Event *) malloc(sizeof(Event));
+		if (entry_ex->entry.modified_by == NULL) {
+			krb5_set_error_string(context, "malloc: out of memory");
+			ret = ENOMEM;
+			goto out;
+		}
+		
+		/* use 'whenChanged' */
+		entry_ex->entry.modified_by->time = ldb_msg_find_krb5time_ldap_time(msg, "whenChanged", 0);
+		/* use '???' */
+		entry_ex->entry.modified_by->principal = NULL;
+	}
 
-	entry_ex->entry.modified_by = (Event *) malloc(sizeof(Event));
-	if (entry_ex->entry.modified_by == NULL) {
-		krb5_set_error_string(context, "malloc: out of memory");
-		ret = ENOMEM;
+
+	/* The lack of password controls etc applies to krbtgt by
+	 * virtue of being that particular RID */
+	status = dom_sid_split_rid(NULL, samdb_result_dom_sid(mem_ctx, msg, "objectSid"), NULL, &rid);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		ret = EINVAL;
 		goto out;
 	}
 
-	/* use 'whenChanged' */
-	entry_ex->entry.modified_by->time = ldb_msg_find_krb5time_ldap_time(msg, "whenChanged", 0);
-	/* use '???' */
-	entry_ex->entry.modified_by->principal = NULL;
+	if (rid == DOMAIN_RID_KRBTGT) {
+		entry_ex->entry.valid_end = NULL;
+		entry_ex->entry.pw_end = NULL;
 
-	entry_ex->entry.valid_start = NULL;
-
-	/* The account/password expiry only applies when the account is used as a
-	 * client (ie password login), not when used as a server */
-	if (ent_type == HDB_SAMBA4_ENT_TYPE_KRBTGT || ent_type == HDB_SAMBA4_ENT_TYPE_SERVER) {
-		/* Make very well sure we don't use this for a client,
-		 * it could bypass the above password restrictions */
+		entry_ex->entry.flags.invalid = 0;
+		entry_ex->entry.flags.server = 1;
+		entry_ex->entry.flags.change_pw = 1;
 		entry_ex->entry.flags.client = 0;
+		entry_ex->entry.flags.forwardable = 1;
+		entry_ex->entry.flags.ok_as_delegate = 1;
+	} else if (entry_ex->entry.flags.server && ent_type == HDB_SAMBA4_ENT_TYPE_SERVER) {
+		/* The account/password expiry only applies when the account is used as a
+		 * client (ie password login), not when used as a server */
+
+		/* Make very well sure we don't use this for a client,
+		 * it could bypass the password restrictions */
+		entry_ex->entry.flags.client = 0;
+
 		entry_ex->entry.valid_end = NULL;
 		entry_ex->entry.pw_end = NULL;
 
@@ -653,7 +677,9 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 			*entry_ex->entry.valid_end = nt_time_to_unix(acct_expiry);
 		}
 	}
-			
+
+	entry_ex->entry.valid_start = NULL;
+
 	entry_ex->entry.max_life = NULL;
 
 	entry_ex->entry.max_renew = NULL;
