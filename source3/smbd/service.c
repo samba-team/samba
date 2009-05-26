@@ -301,6 +301,7 @@ int add_home_service(const char *service, const char *username, const char *home
 int find_service(fstring service)
 {
 	int iService;
+	struct smbd_server_connection *sconn = smbd_server_conn;
 
 	all_string_sub(service,"\\","/",0);
 
@@ -315,7 +316,7 @@ int find_service(fstring service)
 			 * Try mapping the servicename, it may
 			 * be a Windows to unix mapped user name.
 			 */
-			if(map_username(service))
+			if(map_username(sconn, service))
 				phome_dir = get_user_home_dir(
 					talloc_tos(), service);
 		}
@@ -556,7 +557,8 @@ static NTSTATUS find_forced_group(bool force_user,
   Create an auth_serversupplied_info structure for a connection_struct
 ****************************************************************************/
 
-static NTSTATUS create_connection_server_info(TALLOC_CTX *mem_ctx, int snum,
+static NTSTATUS create_connection_server_info(struct smbd_server_connection *sconn,
+					      TALLOC_CTX *mem_ctx, int snum,
                                               struct auth_serversupplied_info *vuid_serverinfo,
 					      DATA_BLOB password,
                                               struct auth_serversupplied_info **presult)
@@ -610,11 +612,11 @@ static NTSTATUS create_connection_server_info(TALLOC_CTX *mem_ctx, int snum,
                 /* add the sharename as a possible user name if we
                    are in share mode security */
 
-                add_session_user(lp_servicename(snum));
+                add_session_user(sconn, lp_servicename(snum));
 
                 /* shall we let them in? */
 
-                if (!authorise_login(snum,user,password,&guest)) {
+                if (!authorise_login(sconn, snum,user,password,&guest)) {
                         DEBUG( 2, ( "Invalid username/password for [%s]\n",
                                     lp_servicename(snum)) );
 			return NT_STATUS_WRONG_PASSWORD;
@@ -634,10 +636,12 @@ static NTSTATUS create_connection_server_info(TALLOC_CTX *mem_ctx, int snum,
   connecting user if appropriate.
 ****************************************************************************/
 
-static connection_struct *make_connection_snum(int snum, user_struct *vuser,
-					       DATA_BLOB password, 
-					       const char *pdev,
-					       NTSTATUS *pstatus)
+static connection_struct *make_connection_snum(
+					struct smbd_server_connection *sconn,
+					int snum, user_struct *vuser,
+					DATA_BLOB password,
+					const char *pdev,
+					NTSTATUS *pstatus)
 {
 	connection_struct *conn;
 	SMB_STRUCT_STAT st;
@@ -663,7 +667,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 
 	conn->params->service = snum;
 
-	status = create_connection_server_info(
+	status = create_connection_server_info(sconn,
 		conn, snum, vuser ? vuser->server_info : NULL, password,
 		&conn->server_info);
 
@@ -679,7 +683,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		conn->force_user = true;
 	}
 
-	add_session_user(conn->server_info->unix_name);
+	add_session_user(sconn, conn->server_info->unix_name);
 
 	safe_strcpy(conn->client_address,
 			client_addr(get_client_fd(),addr,sizeof(addr)), 
@@ -1073,7 +1077,8 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
  * @param service 
 ****************************************************************************/
 
-connection_struct *make_connection(const char *service_in, DATA_BLOB password, 
+connection_struct *make_connection(struct smbd_server_connection *sconn,
+				   const char *service_in, DATA_BLOB password,
 				   const char *pdev, uint16 vuid,
 				   NTSTATUS *status)
 {
@@ -1100,7 +1105,7 @@ connection_struct *make_connection(const char *service_in, DATA_BLOB password,
 	}
 
 	if(lp_security() != SEC_SHARE) {
-		vuser = get_valid_user_struct(vuid);
+		vuser = get_valid_user_struct(sconn, vuid);
 		if (!vuser) {
 			DEBUG(1,("make_connection: refusing to connect with "
 				 "no session setup\n"));
@@ -1131,7 +1136,8 @@ connection_struct *make_connection(const char *service_in, DATA_BLOB password,
 			}
 			DEBUG(5, ("making a connection to [homes] service "
 				  "created at session setup time\n"));
-			return make_connection_snum(vuser->homes_snum,
+			return make_connection_snum(sconn,
+						    vuser->homes_snum,
 						    vuser, no_pw, 
 						    dev, status);
 		} else {
@@ -1141,14 +1147,15 @@ connection_struct *make_connection(const char *service_in, DATA_BLOB password,
 				fstring unix_username;
 				fstrcpy(unix_username,
 					current_user_info.smb_name);
-				map_username(unix_username);
+				map_username(sconn, unix_username);
 				snum = find_service(unix_username);
 			} 
 			if (snum != -1) {
 				DEBUG(5, ("making a connection to 'homes' "
 					  "service %s based on "
 					  "security=share\n", service_in));
-				return make_connection_snum(snum, NULL,
+				return make_connection_snum(sconn,
+							    snum, NULL,
 							    password,
 							    dev, status);
 			}
@@ -1159,7 +1166,8 @@ connection_struct *make_connection(const char *service_in, DATA_BLOB password,
 		DATA_BLOB no_pw = data_blob_null;
 		DEBUG(5, ("making a connection to 'homes' service [%s] "
 			  "created at session setup time\n", service_in));
-		return make_connection_snum(vuser->homes_snum,
+		return make_connection_snum(sconn,
+					    vuser->homes_snum,
 					    vuser, no_pw, 
 					    dev, status);
 	}
@@ -1197,7 +1205,7 @@ connection_struct *make_connection(const char *service_in, DATA_BLOB password,
 
 	DEBUG(5, ("making a connection to 'normal' service %s\n", service));
 
-	return make_connection_snum(snum, vuser,
+	return make_connection_snum(sconn, snum, vuser,
 				    password,
 				    dev, status);
 }

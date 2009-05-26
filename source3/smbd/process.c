@@ -1275,7 +1275,7 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 
 		sconn->smb1.sessions.last_session_tag = session_tag;
 		if(session_tag != UID_FIELD_INVALID) {
-			vuser = get_valid_user_struct(session_tag);
+			vuser = get_valid_user_struct(sconn, session_tag);
 			if (vuser) {
 				set_current_user_info(
 					vuser->server_info->sanitized_username,
@@ -2165,6 +2165,17 @@ void smbd_process(void)
 	smbd_server_conn->smb1.sessions.done_sesssetup = false;
 	smbd_server_conn->smb1.sessions.max_send = BUFFER_SIZE;
 	smbd_server_conn->smb1.sessions.last_session_tag = UID_FIELD_INVALID;
+	/* users from session setup */
+	smbd_server_conn->smb1.sessions.session_userlist = NULL;
+	/* workgroup from session setup. */
+	smbd_server_conn->smb1.sessions.session_workgroup = NULL;
+	/* this holds info on user ids that are already validated for this VC */
+	smbd_server_conn->smb1.sessions.validated_users = NULL;
+	smbd_server_conn->smb1.sessions.next_vuid = VUID_OFFSET;
+	smbd_server_conn->smb1.sessions.num_validated_vuids = 0;
+#ifdef HAVE_NETGROUP
+	smbd_server_conn->smb1.sessions.my_yp_domain = NULL;
+#endif
 
 	smbd_server_conn->smb1.fde = event_add_fd(smbd_event_context(),
 						  smbd_server_conn,

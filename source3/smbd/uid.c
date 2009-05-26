@@ -224,7 +224,8 @@ void conn_clear_vuid_cache(connection_struct *conn, uint16_t vuid)
 bool change_to_user(connection_struct *conn, uint16 vuid)
 {
 	const struct auth_serversupplied_info *server_info = NULL;
-	user_struct *vuser = get_valid_user_struct(vuid);
+	struct smbd_server_connection *sconn = smbd_server_conn;
+	user_struct *vuser = get_valid_user_struct(sconn, vuid);
 	int snum;
 	gid_t gid;
 	uid_t uid;

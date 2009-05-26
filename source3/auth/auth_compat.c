@@ -97,6 +97,7 @@ return True if the password is correct, False otherwise
 ****************************************************************************/
 
 bool password_ok(struct auth_context *actx, bool global_encrypted,
+		 const char *session_workgroup,
 		 const char *smb_name, DATA_BLOB password_blob)
 {
 
@@ -109,11 +110,11 @@ bool password_ok(struct auth_context *actx, bool global_encrypted,
 		 * but fall-through as required.
 		 * Vista sends NTLMv2 here - we need to try the client given workgroup.
 		 */
-		if (get_session_workgroup()) {
-			if (NT_STATUS_IS_OK(pass_check_smb(actx, smb_name, get_session_workgroup(), null_password, password_blob, null_password, encrypted))) {
+		if (session_workgroup) {
+			if (NT_STATUS_IS_OK(pass_check_smb(actx, smb_name, session_workgroup, null_password, password_blob, null_password, encrypted))) {
 				return True;
 			}
-			if (NT_STATUS_IS_OK(pass_check_smb(actx, smb_name, get_session_workgroup(), password_blob, null_password, null_password, encrypted))) {
+			if (NT_STATUS_IS_OK(pass_check_smb(actx, smb_name, session_workgroup, password_blob, null_password, null_password, encrypted))) {
 				return True;
 			}
 		}

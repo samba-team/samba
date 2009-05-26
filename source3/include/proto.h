@@ -40,6 +40,7 @@ NTSTATUS auth_builtin_init(void);
 
 NTSTATUS check_plaintext_password(const char *smb_name, DATA_BLOB plaintext_password, auth_serversupplied_info **server_info);
 bool password_ok(struct auth_context *actx, bool global_encrypted,
+		 const char *session_workgroup,
 		 const char *smb_name, DATA_BLOB password_blob);
 
 /* The following definitions come from auth/auth_domain.c  */
@@ -6427,7 +6428,7 @@ const struct mangle_fns *posix_mangle_init(void);
 
 /* The following definitions come from smbd/map_username.c  */
 
-bool map_username(fstring user);
+bool map_username(struct smbd_server_connection *sconn, fstring user);
 
 /* The following definitions come from smbd/message.c  */
 
@@ -6672,22 +6673,29 @@ struct kernel_oplocks *onefs_init_kernel_oplocks(TALLOC_CTX *mem_ctx);
 
 /* The following definitions come from smbd/password.c  */
 
-user_struct *get_valid_user_struct(uint16 vuid);
-bool is_partial_auth_vuid(uint16 vuid);
-user_struct *get_partial_auth_user_struct(uint16 vuid);
-void invalidate_vuid(uint16 vuid);
-void invalidate_all_vuids(void);
-int register_initial_vuid(void);
-int register_existing_vuid(uint16 vuid,
+user_struct *get_valid_user_struct(struct smbd_server_connection *sconn,
+				   uint16 vuid);
+bool is_partial_auth_vuid(struct smbd_server_connection *sconn, uint16 vuid);
+user_struct *get_partial_auth_user_struct(struct smbd_server_connection *sconn,
+					  uint16 vuid);
+void invalidate_vuid(struct smbd_server_connection *sconn, uint16 vuid);
+void invalidate_all_vuids(struct smbd_server_connection *sconn);
+int register_initial_vuid(struct smbd_server_connection *sconn);
+int register_existing_vuid(struct smbd_server_connection *sconn,
+			uint16 vuid,
 			auth_serversupplied_info *server_info,
 			DATA_BLOB response_blob,
 			const char *smb_name);
-void add_session_user(const char *user);
-void add_session_workgroup(const char *workgroup);
-const char *get_session_workgroup(void);
-bool user_in_netgroup(const char *user, const char *ngname);
-bool user_in_list(const char *user,const char **list);
-bool authorise_login(int snum, fstring user, DATA_BLOB password,
+void add_session_user(struct smbd_server_connection *sconn, const char *user);
+void add_session_workgroup(struct smbd_server_connection *sconn,
+			   const char *workgroup);
+const char *get_session_workgroup(struct smbd_server_connection *sconn);
+bool user_in_netgroup(struct smbd_server_connection *sconn,
+		      const char *user, const char *ngname);
+bool user_in_list(struct smbd_server_connection *sconn,
+		  const char *user,const char **list);
+bool authorise_login(struct smbd_server_connection *sconn,
+		     int snum, fstring user, DATA_BLOB password,
 		     bool *guest);
 
 /* The following definitions come from smbd/pipes.c  */
@@ -6949,7 +6957,8 @@ bool set_current_service(connection_struct *conn, uint16 flags, bool do_chdir);
 void load_registry_shares(void);
 int add_home_service(const char *service, const char *username, const char *homedir);
 int find_service(fstring service);
-connection_struct *make_connection(const char *service_in, DATA_BLOB password, 
+connection_struct *make_connection(struct smbd_server_connection *sconn,
+				   const char *service_in, DATA_BLOB password,
 				   const char *pdev, uint16 vuid,
 				   NTSTATUS *status);
 void close_cnum(connection_struct *conn, uint16 vuid);

@@ -26,6 +26,7 @@
    */
 
 #include "includes.h"
+#include "smbd/globals.h"
 
 #ifdef CHECK_TYPES
 #undef CHECK_TYPES
@@ -2673,6 +2674,7 @@ static bool api_SamOEMChangePassword(connection_struct *conn,uint16 vuid,
 				char **rdata,char **rparam,
 				int *rdata_len,int *rparam_len)
 {
+	struct smbd_server_connection *sconn = smbd_server_conn;
 	fstring user;
 	char *p = get_safe_str_ptr(param,tpscnt,param,2);
 	*rparam_len = 2;
@@ -2730,7 +2732,7 @@ static bool api_SamOEMChangePassword(connection_struct *conn,uint16 vuid,
 	 * function.
 	 */
 
-	(void)map_username(user);
+	(void)map_username(sconn, user);
 
 	if (NT_STATUS_IS_OK(pass_oem_change(user, (uchar*) data, (uchar *)&data[516], NULL, NULL, NULL))) {
 		SSVAL(*rparam,0,NERR_Success);
@@ -3452,6 +3454,7 @@ static bool api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 				char **rdata,char **rparam,
 				int *rdata_len,int *rparam_len)
 {
+	struct smbd_server_connection *sconn = smbd_server_conn;
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
 	char *str2 = skip_string(param,tpscnt,str1);
 	char *UserName = skip_string(param,tpscnt,str2);
@@ -3464,7 +3467,7 @@ static bool api_RNetUserGetInfo(connection_struct *conn, uint16 vuid,
 	/* get NIS home of a previously validated user - simeon */
 	/* With share level security vuid will always be zero.
 	   Don't depend on vuser being non-null !!. JRA */
-	user_struct *vuser = get_valid_user_struct(vuid);
+	user_struct *vuser = get_valid_user_struct(sconn, vuid);
 	if(vuser != NULL) {
 		DEBUG(3,("  Username of UID %d is %s\n",
 			 (int)vuser->server_info->utok.uid,
@@ -3707,6 +3710,7 @@ static bool api_WWkstaUserLogon(connection_struct *conn,uint16 vuid,
 				char **rdata,char **rparam,
 				int *rdata_len,int *rparam_len)
 {
+	struct smbd_server_connection *sconn = smbd_server_conn;
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
 	char *str2 = skip_string(param,tpscnt,str1);
 	char *p = skip_string(param,tpscnt,str2);
@@ -3715,7 +3719,7 @@ static bool api_WWkstaUserLogon(connection_struct *conn,uint16 vuid,
 	char* name;
 		/* With share level security vuid will always be zero.
 		   Don't depend on vuser being non-null !!. JRA */
-	user_struct *vuser = get_valid_user_struct(vuid);
+	user_struct *vuser = get_valid_user_struct(sconn, vuid);
 
 	if (!str1 || !str2 || !p) {
 		return False;
@@ -4654,6 +4658,7 @@ void api_reply(connection_struct *conn, uint16 vuid,
 	       int tdscnt, int tpscnt,
 	       int mdrcnt, int mprcnt)
 {
+	struct smbd_server_connection *sconn = smbd_server_conn;
 	int api_command;
 	char *rdata = NULL;
 	char *rparam = NULL;
@@ -4702,7 +4707,7 @@ void api_reply(connection_struct *conn, uint16 vuid,
 	/* Check whether this api call can be done anonymously */
 
 	if (api_commands[i].auth_user && lp_restrict_anonymous()) {
-		user_struct *user = get_valid_user_struct(vuid);
+		user_struct *user = get_valid_user_struct(sconn, vuid);
 
 		if (!user || user->server_info->guest) {
 			reply_nterror(req, NT_STATUS_ACCESS_DENIED);

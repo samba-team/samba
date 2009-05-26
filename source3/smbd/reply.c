@@ -562,7 +562,7 @@ void reply_special(char *inbuf)
 		   of possibly valid usernames if we are operating
 		   in share mode security */
 		if (lp_security() == SEC_SHARE) {
-			add_session_user(get_remote_machine_name());
+			add_session_user(sconn, get_remote_machine_name());
 		}
 
 		reload_services(True);
@@ -644,7 +644,8 @@ void reply_tcon(struct smb_request *req)
 
 	password_blob = data_blob(password, pwlen+1);
 
-	conn = make_connection(service,password_blob,dev,req->vuid,&nt_status);
+	conn = make_connection(sconn,service,password_blob,dev,
+			       req->vuid,&nt_status);
 	req->conn = conn;
 
 	data_blob_clear_free(&password_blob);
@@ -770,7 +771,7 @@ void reply_tcon_and_X(struct smb_request *req)
 
 	DEBUG(4,("Client requested device type [%s] for share [%s]\n", client_devicetype, service));
 
-	conn = make_connection(service, password, client_devicetype,
+	conn = make_connection(sconn, service, password, client_devicetype,
 			       req->vuid, &nt_status);
 	req->conn =conn;
 
@@ -2014,11 +2015,12 @@ void reply_open_and_X(struct smb_request *req)
 
 void reply_ulogoffX(struct smb_request *req)
 {
+	struct smbd_server_connection *sconn = smbd_server_conn;
 	user_struct *vuser;
 
 	START_PROFILE(SMBulogoffX);
 
-	vuser = get_valid_user_struct(req->vuid);
+	vuser = get_valid_user_struct(sconn, req->vuid);
 
 	if(vuser == NULL) {
 		DEBUG(3,("ulogoff, vuser id %d does not map to user.\n",
@@ -2031,7 +2033,7 @@ void reply_ulogoffX(struct smb_request *req)
 		file_close_user(req->vuid);
 	}
 
-	invalidate_vuid(req->vuid);
+	invalidate_vuid(sconn, req->vuid);
 
 	reply_outbuf(req, 2, 0);
 

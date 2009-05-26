@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "smbd/globals.h"
 #include "../libcli/auth/libcli_auth.h"
 
 #undef DBGC_CLASS
@@ -198,12 +199,13 @@ NTSTATUS make_user_info_map(auth_usersupplied_info **user_info,
 			    DATA_BLOB *plaintext,
 			    bool encrypted)
 {
+	struct smbd_server_connection *sconn = smbd_server_conn;
 	const char *domain;
 	NTSTATUS result;
 	bool was_mapped;
 	fstring internal_username;
 	fstrcpy(internal_username, smb_name);
-	was_mapped = map_username(internal_username);
+	was_mapped = map_username(sconn, internal_username);
 
 	DEBUG(5, ("Mapping user [%s]\\[%s] from workstation [%s]\n",
 		 client_domain, smb_name, wksta_name));
@@ -1487,6 +1489,7 @@ static NTSTATUS fill_sam_account(TALLOC_CTX *mem_ctx,
 				 struct samu *account,
 				 bool *username_was_mapped)
 {
+	struct smbd_server_connection *sconn = smbd_server_conn;
 	NTSTATUS nt_status;
 	fstring dom_user, lower_username;
 	fstring real_username;
@@ -1500,7 +1503,7 @@ static NTSTATUS fill_sam_account(TALLOC_CTX *mem_ctx,
 
 	/* Get the passwd struct.  Try to create the account is necessary. */
 
-	*username_was_mapped = map_username( dom_user );
+	*username_was_mapped = map_username(sconn, dom_user);
 
 	if ( !(passwd = smb_getpwnam( NULL, dom_user, real_username, True )) )
 		return NT_STATUS_NO_SUCH_USER;

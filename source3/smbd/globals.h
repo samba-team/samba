@@ -93,18 +93,6 @@ extern struct msg_state *smbd_msg_state;
 
 extern bool logged_ioctl_message;
 
-/* users from session setup */
-extern char *session_userlist;
-/* workgroup from session setup. */
-extern char *session_workgroup;
-/* this holds info on user ids that are already validated for this VC */
-extern user_struct *validated_users;
-extern uint16_t next_vuid;
-extern int num_validated_vuids;
-#ifdef HAVE_NETGROUP
-extern char *my_yp_domain;
-#endif
-
 extern int trans_num;
 
 extern pid_t mypid;
@@ -334,6 +322,21 @@ struct smbd_server_connection {
 			 */
 			int max_send;
 			uint16_t last_session_tag;
+
+			/* users from session setup */
+			char *session_userlist;
+			/* workgroup from session setup. */
+			char *session_workgroup;
+			/*
+			 * this holds info on user ids that are already
+			 * validated for this VC
+			 */
+			user_struct *validated_users;
+			uint16_t next_vuid;
+			int num_validated_vuids;
+#ifdef HAVE_NETGROUP
+			char *my_yp_domain;
+#endif
 		} sessions;
 		struct smb_signing_state *signing_state;
 		/* List to store partial SPNEGO auth fragments. */

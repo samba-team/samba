@@ -252,6 +252,7 @@ static void reply_spnego_kerberos(struct smb_request *req,
 	bool map_domainuser_to_guest = False;
 	bool username_was_mapped;
 	struct PAC_LOGON_INFO *logon_info = NULL;
+	struct smbd_server_connection *sconn = smbd_server_conn;
 
 	ZERO_STRUCT(ticket);
 	ZERO_STRUCT(ap_rep);
@@ -415,7 +416,7 @@ static void reply_spnego_kerberos(struct smb_request *req,
 
 	/* lookup the passwd struct, create a new user if necessary */
 
-	username_was_mapped = map_username( user );
+	username_was_mapped = map_username(sconn, user);
 
 	pw = smb_getpwnam( mem_ctx, user, real_username, True );
 
@@ -526,8 +527,8 @@ static void reply_spnego_kerberos(struct smb_request *req,
 		}
 	}
 
-	if (!is_partial_auth_vuid(sess_vuid)) {
-		sess_vuid = register_initial_vuid();
+	if (!is_partial_auth_vuid(sconn, sess_vuid)) {
+		sess_vuid = register_initial_vuid(sconn);
 	}
 
 	data_blob_free(&server_info->user_session_key);
@@ -539,7 +540,8 @@ static void reply_spnego_kerberos(struct smb_request *req,
 	 * no need to free after this on success. A better interface would copy
 	 * it.... */
 
-	sess_vuid = register_existing_vuid(sess_vuid,
+	sess_vuid = register_existing_vuid(sconn,
+					sess_vuid,
 					server_info,
 					nullblob,
 					client);
@@ -601,6 +603,7 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
 {
 	DATA_BLOB response;
 	struct auth_serversupplied_info *server_info = NULL;
+	struct smbd_server_connection *sconn = smbd_server_conn;
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		server_info = (*auth_ntlmssp_state)->server_info;
@@ -618,7 +621,7 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
 	if (NT_STATUS_IS_OK(nt_status)) {
 		DATA_BLOB nullblob = data_blob_null;
 
-		if (!is_partial_auth_vuid(vuid)) {
+		if (!is_partial_auth_vuid(sconn, vuid)) {
 			nt_status = NT_STATUS_LOGON_FAILURE;
 			goto out;
 		}
@@ -631,7 +634,7 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
 			(*auth_ntlmssp_state)->ntlmssp_state->session_key.length);
 
 		/* register_existing_vuid keeps the server info */
-		if (register_existing_vuid(vuid,
+		if (register_existing_vuid(sconn, vuid,
 				server_info, nullblob,
 				(*auth_ntlmssp_state)->ntlmssp_state->user) !=
 					vuid) {
@@ -673,7 +676,7 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
 		auth_ntlmssp_end(auth_ntlmssp_state);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			/* Kill the intermediate vuid */
-			invalidate_vuid(vuid);
+			invalidate_vuid(sconn, vuid);
 		}
 	}
 }
@@ -759,11 +762,12 @@ static void reply_spnego_negotiate(struct smb_request *req,
 	DATA_BLOB chal;
 	char *kerb_mech = NULL;
 	NTSTATUS status;
+	struct smbd_server_connection *sconn = smbd_server_conn;
 
 	status = parse_spnego_mechanisms(blob1, &secblob, &kerb_mech);
 	if (!NT_STATUS_IS_OK(status)) {
 		/* Kill the intermediate vuid */
-		invalidate_vuid(vuid);
+		invalidate_vuid(sconn, vuid);
 		reply_nterror(req, nt_status_squash(status));
 		return;
 	}
@@ -780,7 +784,7 @@ static void reply_spnego_negotiate(struct smb_request *req,
 		data_blob_free(&secblob);
 		if (destroy_vuid) {
 			/* Kill the intermediate vuid */
-			invalidate_vuid(vuid);
+			invalidate_vuid(sconn, vuid);
 		}
 		SAFE_FREE(kerb_mech);
 		return;
@@ -803,7 +807,7 @@ static void reply_spnego_negotiate(struct smb_request *req,
 	status = auth_ntlmssp_start(auth_ntlmssp_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		/* Kill the intermediate vuid */
-		invalidate_vuid(vuid);
+		invalidate_vuid(sconn, vuid);
 		reply_nterror(req, nt_status_squash(status));
 		return;
 	}
@@ -835,13 +839,14 @@ static void reply_spnego_auth(struct smb_request *req,
 	DATA_BLOB auth_reply = data_blob_null;
 	DATA_BLOB secblob = data_blob_null;
 	NTSTATUS status = NT_STATUS_LOGON_FAILURE;
+	struct smbd_server_connection *sconn = smbd_server_conn;
 
 	if (!spnego_parse_auth(blob1, &auth)) {
 #if 0
 		file_save("auth.dat", blob1.data, blob1.length);
 #endif
 		/* Kill the intermediate vuid */
-		invalidate_vuid(vuid);
+		invalidate_vuid(sconn, vuid);
 
 		reply_nterror(req, nt_status_squash(
 				      NT_STATUS_LOGON_FAILURE));
@@ -856,7 +861,7 @@ static void reply_spnego_auth(struct smb_request *req,
 
 		if (!NT_STATUS_IS_OK(status)) {
 			/* Kill the intermediate vuid */
-			invalidate_vuid(vuid);
+			invalidate_vuid(sconn, vuid);
 			reply_nterror(req, nt_status_squash(status));
 			return;
 		}
@@ -873,7 +878,7 @@ static void reply_spnego_auth(struct smb_request *req,
 			data_blob_free(&auth);
 			if (destroy_vuid) {
 				/* Kill the intermediate vuid */
-				invalidate_vuid(vuid);
+				invalidate_vuid(sconn, vuid);
 			}
 			SAFE_FREE(kerb_mech);
 			return;
@@ -884,7 +889,7 @@ static void reply_spnego_auth(struct smb_request *req,
 
 		if (kerb_mech) {
 			/* Kill the intermediate vuid */
-			invalidate_vuid(vuid);
+			invalidate_vuid(sconn, vuid);
 			DEBUG(3,("reply_spnego_auth: network "
 				"misconfiguration, client sent us a "
 				"krb5 ticket and kerberos security "
@@ -902,7 +907,7 @@ static void reply_spnego_auth(struct smb_request *req,
 		status = auth_ntlmssp_start(auth_ntlmssp_state);
 		if (!NT_STATUS_IS_OK(status)) {
 			/* Kill the intermediate vuid */
-			invalidate_vuid(vuid);
+			invalidate_vuid(sconn, vuid);
 			reply_nterror(req, nt_status_squash(status));
 			return;
 		}
@@ -1213,7 +1218,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	}
 
 	/* Did we get a valid vuid ? */
-	if (!is_partial_auth_vuid(vuid)) {
+	if (!is_partial_auth_vuid(sconn, vuid)) {
 		/* No, then try and see if this is an intermediate sessionsetup
 		 * for a large SPNEGO packet. */
 		struct pending_auth_data *pad;
@@ -1227,9 +1232,9 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	}
 
 	/* Do we have a valid vuid now ? */
-	if (!is_partial_auth_vuid(vuid)) {
+	if (!is_partial_auth_vuid(sconn, vuid)) {
 		/* No, start a new authentication setup. */
-		vuid = register_initial_vuid();
+		vuid = register_initial_vuid(sconn);
 		if (vuid == UID_FIELD_INVALID) {
 			data_blob_free(&blob1);
 			reply_nterror(req, nt_status_squash(
@@ -1238,7 +1243,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		}
 	}
 
-	vuser = get_partial_auth_user_struct(vuid);
+	vuser = get_partial_auth_user_struct(sconn, vuid);
 	/* This MUST be valid. */
 	if (!vuser) {
 		smb_panic("reply_sesssetup_and_X_spnego: invalid vuid.");
@@ -1254,7 +1259,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		if (!NT_STATUS_EQUAL(status,
 				NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 			/* Real error - kill the intermediate vuid */
-			invalidate_vuid(vuid);
+			invalidate_vuid(sconn, vuid);
 		}
 		data_blob_free(&blob1);
 		reply_nterror(req, nt_status_squash(status));
@@ -1288,7 +1293,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 			status = auth_ntlmssp_start(&vuser->auth_ntlmssp_state);
 			if (!NT_STATUS_IS_OK(status)) {
 				/* Kill the intermediate vuid */
-				invalidate_vuid(vuid);
+				invalidate_vuid(sconn, vuid);
 				data_blob_free(&blob1);
 				reply_nterror(req, nt_status_squash(status));
 				return;
@@ -1649,9 +1654,9 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		data_blob_free(&nt_resp);
 		data_blob_clear_free(&plaintext_password);
 
-		map_username(sub_user);
-		add_session_user(sub_user);
-		add_session_workgroup(domain);
+		map_username(sconn, sub_user);
+		add_session_user(sconn, sub_user);
+		add_session_workgroup(sconn, domain);
 		/* Then force it to null for the benfit of the code below */
 		user = "";
 	}
@@ -1770,7 +1775,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		TALLOC_FREE(server_info);
 	} else {
 		/* Ignore the initial vuid. */
-		sess_vuid = register_initial_vuid();
+		sess_vuid = register_initial_vuid(sconn);
 		if (sess_vuid == UID_FIELD_INVALID) {
 			data_blob_free(&nt_resp);
 			data_blob_free(&lm_resp);
@@ -1780,7 +1785,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 			return;
 		}
 		/* register_existing_vuid keeps the server info */
-		sess_vuid = register_existing_vuid(sess_vuid,
+		sess_vuid = register_existing_vuid(sconn, sess_vuid,
 					server_info,
 					nt_resp.data ? nt_resp : lm_resp,
 					sub_user);

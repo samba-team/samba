@@ -800,7 +800,9 @@ static void exit_server_common(enum server_exit_reason how,
 
 	had_open_conn = conn_close_all();
 
-	invalidate_all_vuids();
+	if (sconn) {
+		invalidate_all_vuids(sconn);
+	}
 
 	/* 3 second timeout. */
 	print_notify_send_messages(smbd_messaging_context(), 3);

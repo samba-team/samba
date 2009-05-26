@@ -68,7 +68,7 @@ static bool set_last_from_to(const char *from, const char *to)
 	return true;
 }
 
-bool map_username(fstring user)
+bool map_username(struct smbd_server_connection *sconn, fstring user)
 {
 	XFILE *f;
 	char *mapfile = lp_username_map();
@@ -184,7 +184,7 @@ bool map_username(fstring user)
 		}
 
 		if (strchr_m(dosname,'*') ||
-		    user_in_list(user, (const char **)dosuserlist)) {
+		    user_in_list(sconn, user, (const char **)dosuserlist)) {
 			DEBUG(3,("Mapped user %s to %s\n",user,unixname));
 			mapped_user = True;
 
