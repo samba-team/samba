@@ -81,10 +81,9 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 
 	/* Samba initialization. */
 	load_case_tables();
-	setup_logging("pam_smbpass",False);
         lp_set_in_client(True);
 
-	ctrl = set_ctrl(flags, argc, argv);
+	ctrl = set_ctrl(pamh, flags, argc, argv);
 
 	/* Get a few bytes so we can pass our return value to
 		pam_sm_setcred(). */
@@ -99,29 +98,29 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	retval = pam_get_user( pamh, &name, "Username: " );
 	if ( retval != PAM_SUCCESS ) {
 		if (on( SMB_DEBUG, ctrl )) {
-			_log_err(LOG_DEBUG, "auth: could not identify user");
+			_log_err(pamh, LOG_DEBUG, "auth: could not identify user");
 		}
 		AUTH_RETURN;
 	}
 	if (on( SMB_DEBUG, ctrl )) {
-		_log_err( LOG_DEBUG, "username [%s] obtained", name );
+		_log_err(pamh, LOG_DEBUG, "username [%s] obtained", name );
 	}
 
 	if (geteuid() != 0) {
-		_log_err( LOG_DEBUG, "Cannot access samba password database, not running as root.");
+		_log_err(pamh, LOG_DEBUG, "Cannot access samba password database, not running as root.");
 		retval = PAM_AUTHINFO_UNAVAIL;
 		AUTH_RETURN;
 	}
 
 	if (!initialize_password_db(True, NULL)) {
-		_log_err( LOG_ALERT, "Cannot access samba password database" );
+		_log_err(pamh, LOG_ALERT, "Cannot access samba password database" );
 		retval = PAM_AUTHINFO_UNAVAIL;
 		AUTH_RETURN;
 	}
 
 	sampass = samu_new( NULL );
     	if (!sampass) {
-		_log_err( LOG_ALERT, "Cannot talloc a samu struct" );
+		_log_err(pamh, LOG_ALERT, "Cannot talloc a samu struct" );
 		retval = nt_status_to_pam(NT_STATUS_NO_MEMORY);
 		AUTH_RETURN;
 	}
@@ -135,7 +134,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	}
 
 	if (!found) {
-		_log_err(LOG_ALERT, "Failed to find entry for user %s.", name);
+		_log_err(pamh, LOG_ALERT, "Failed to find entry for user %s.", name);
 		retval = PAM_USER_UNKNOWN;
 		TALLOC_FREE(sampass);
 		sampass = NULL;
@@ -154,7 +153,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 
 	retval = _smb_read_password(pamh, ctrl, NULL, "Password: ", NULL, _SMB_AUTHTOK, &p);
 	if (retval != PAM_SUCCESS ) {
-		_log_err(LOG_CRIT, "auth: no password provided for [%s]", name);
+		_log_err(pamh,LOG_CRIT, "auth: no password provided for [%s]", name);
 		TALLOC_FREE(sampass);
 		AUTH_RETURN;
 	}
@@ -202,7 +201,7 @@ static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
 	retval = _pam_get_item( pamh, PAM_AUTHTOK, &pass );
 
 	if (retval != PAM_SUCCESS) {
-		_log_err( LOG_ALERT
+		_log_err(pamh, LOG_ALERT
 			, "pam_get_item returned error to pam_sm_authenticate" );
 		return PAM_AUTHTOK_RECOVER_ERR;
 	} else if (pass == NULL) {
