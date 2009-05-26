@@ -14,6 +14,7 @@
  * this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
 #include "includes.h"
 #include "general.h"
 
@@ -64,17 +65,42 @@ void _cleanup(pam_handle_t *, void *, int);
 char *_pam_delete(register char *);
 
 /* syslogging function for errors and other information */
-
-void _log_err( int err, const char *format, ... )
+#ifdef HAVE_PAM_VSYSLOG
+void _log_err( pam_handle_t *pamh, int err, const char *format, ... )
 {
-    va_list args;
+	va_list args;
 
-    va_start( args, format );
-    openlog( "PAM_smbpass", LOG_CONS | LOG_PID, LOG_AUTH );
-    vsyslog( err, format, args );
-    va_end( args );
-    closelog();
+	va_start(args, format);
+	pam_vsyslog(pamh, err, format, args);
+	va_end(args);
 }
+#else
+void _log_err( pam_handle_t *pamh, int err, const char *format, ... )
+{
+	va_list args;
+	const char tag[] = "(pam_smbpass) ";
+	char *mod_format;
+
+	mod_format = SMB_MALLOC_ARRAY(char, sizeof(tag) + strlen(format));
+	/* try really, really hard to log something, since this may have
+	   been a message about a malloc() failure... */
+	if (mod_format == NULL) {
+		va_start(args, format);
+		vsyslog(err | LOG_AUTH, format, args);
+		va_end(args);
+		return;
+	}
+
+	strncpy(mod_format, tag, strlen(tag)+1);
+	strncat(mod_format, format, strlen(format));
+
+	va_start(args, format);
+	vsyslog(err | LOG_AUTH, mod_format, args);
+	va_end(args);
+
+	free(mod_format);
+}
+#endif
 
 /* this is a front-end for module-application conversations */
 
@@ -92,11 +118,11 @@ int converse( pam_handle_t * pamh, int ctrl, int nargs
 							,response, conv->appdata_ptr);
 
 		if (retval != PAM_SUCCESS && on(SMB_DEBUG, ctrl)) {
-			_log_err(LOG_DEBUG, "conversation failure [%s]"
+			_log_err(pamh, LOG_DEBUG, "conversation failure [%s]"
 					 ,pam_strerror(pamh, retval));
 		}
 	} else {
-		_log_err(LOG_ERR, "couldn't obtain coversation function [%s]"
+		_log_err(pamh, LOG_ERR, "couldn't obtain coversation function [%s]"
 				 ,pam_strerror(pamh, retval));
 	}
 
@@ -123,7 +149,7 @@ int make_remark( pam_handle_t * pamh, unsigned int ctrl
 
 /* set the control flags for the SMB module. */
 
-int set_ctrl( int flags, int argc, const char **argv )
+int set_ctrl( pam_handle_t *pamh, int flags, int argc, const char **argv )
 {
     int i = 0;
     const char *service_file = NULL;
@@ -165,7 +191,7 @@ int set_ctrl( int flags, int argc, const char **argv )
     /* Read some options from the Samba config. Can be overridden by
        the PAM config. */
     if(lp_load(service_file,True,False,False,True) == False) {
-	_log_err( LOG_ERR, "Error loading service file %s", service_file );
+	_log_err(pamh, LOG_ERR, "Error loading service file %s", service_file);
     }
 
     secrets_init();
@@ -188,7 +214,7 @@ int set_ctrl( int flags, int argc, const char **argv )
         }
 
         if (j >= SMB_CTRLS_) {
-            _log_err( LOG_ERR, "unrecognized option [%s]", *argv );
+            _log_err(pamh, LOG_ERR, "unrecognized option [%s]", *argv);
         } else {
             ctrl &= smb_args[j].mask;	/* for turning things off */
             ctrl |= smb_args[j].flag;	/* for turning things on  */
@@ -227,7 +253,7 @@ void _cleanup( pam_handle_t * pamh, void *x, int error_status )
  * evidence of old token around for later stack analysis.
  *
  */
-char * smbpXstrDup( const char *x )
+char * smbpXstrDup( pam_handle_t *pamh, const char *x )
 {
     register char *newstr = NULL;
 
@@ -237,7 +263,7 @@ char * smbpXstrDup( const char *x )
         for (i = 0; x[i]; ++i); /* length of string */
         if ((newstr = SMB_MALLOC_ARRAY(char, ++i)) == NULL) {
             i = 0;
-            _log_err( LOG_CRIT, "out of memory in smbpXstrDup" );
+            _log_err(pamh, LOG_CRIT, "out of memory in smbpXstrDup");
         } else {
             while (i-- > 0) {
                 newstr[i] = x[i];
@@ -279,7 +305,7 @@ void _cleanup_failures( pam_handle_t * pamh, void *fl, int err )
             /* log the number of authentication failures */
             if (failure->count != 0) {
                 _pam_get_item( pamh, PAM_SERVICE, &service );
-                _log_err( LOG_NOTICE
+                _log_err(pamh, LOG_NOTICE
                           , "%d authentication %s "
                             "from %s for service %s as %s(%d)"
                           , failure->count
@@ -288,7 +314,7 @@ void _cleanup_failures( pam_handle_t * pamh, void *fl, int err )
                           , service == NULL ? "**unknown**" : service 
                           , failure->user, failure->id );
                 if (failure->count > SMB_MAX_RETRIES) {
-                    _log_err( LOG_ALERT
+                    _log_err(pamh, LOG_ALERT
                               , "service(%s) ignoring max retries; %d > %d"
                               , service == NULL ? "**unknown**" : service
                               , failure->count
@@ -324,8 +350,7 @@ int _smb_verify_password( pam_handle_t * pamh, struct samu *sampass,
 
     if (!pdb_get_nt_passwd(sampass))
     {
-        _log_err( LOG_DEBUG, "user %s has null SMB password"
-                  , name );
+        _log_err(pamh, LOG_DEBUG, "user %s has null SMB password", name);
 
         if (off( SMB__NONULL, ctrl )
             && (pdb_get_acct_ctrl(sampass) & ACB_PWNOTREQ))
@@ -335,7 +360,7 @@ int _smb_verify_password( pam_handle_t * pamh, struct samu *sampass,
             const char *service;
 
             _pam_get_item( pamh, PAM_SERVICE, &service );
-            _log_err( LOG_NOTICE, "failed auth request by %s for service %s as %s",
+            _log_err(pamh, LOG_NOTICE, "failed auth request by %s for service %s as %s",
                       uidtoname(getuid()), service ? service : "**unknown**", name);
             return PAM_AUTH_ERR;
         }
@@ -343,7 +368,7 @@ int _smb_verify_password( pam_handle_t * pamh, struct samu *sampass,
 
     data_name = SMB_MALLOC_ARRAY(char, sizeof(FAIL_PREFIX) + strlen( name ));
     if (data_name == NULL) {
-        _log_err( LOG_CRIT, "no memory for data-name" );
+        _log_err(pamh, LOG_CRIT, "no memory for data-name" );
         return PAM_AUTH_ERR;
     }
     strncpy( data_name, FAIL_PREFIX, sizeof(FAIL_PREFIX) );
@@ -390,31 +415,31 @@ int _smb_verify_password( pam_handle_t * pamh, struct samu *sampass,
                         retval = PAM_MAXTRIES;
                     }
                 } else {
-                    _log_err(LOG_NOTICE,
+                    _log_err(pamh, LOG_NOTICE,
                       "failed auth request by %s for service %s as %s",
                       uidtoname(getuid()),
                       service ? service : "**unknown**", name);
                     newauth->count = 1;
                 }
 		if (!sid_to_uid(pdb_get_user_sid(sampass), &(newauth->id))) {
-                    _log_err(LOG_NOTICE,
+                    _log_err(pamh, LOG_NOTICE,
                       "failed auth request by %s for service %s as %s",
                       uidtoname(getuid()),
                       service ? service : "**unknown**", name);
 		}		
-                newauth->user = smbpXstrDup( name );
-                newauth->agent = smbpXstrDup( uidtoname( getuid() ) );
+                newauth->user = smbpXstrDup( pamh, name );
+                newauth->agent = smbpXstrDup( pamh, uidtoname( getuid() ) );
                 pam_set_data( pamh, data_name, newauth, _cleanup_failures );
 
             } else {
-                _log_err( LOG_CRIT, "no memory for failure recorder" );
-                _log_err(LOG_NOTICE,
+                _log_err(pamh, LOG_CRIT, "no memory for failure recorder" );
+                _log_err(pamh, LOG_NOTICE,
                       "failed auth request by %s for service %s as %s(%d)",
                       uidtoname(getuid()),
                       service ? service : "**unknown**", name);
             }
         }
-        _log_err(LOG_NOTICE,
+        _log_err(pamh, LOG_NOTICE,
                   "failed auth request by %s for service %s as %s(%d)",
                   uidtoname(getuid()),
                   service ? service : "**unknown**", name);
@@ -422,7 +447,7 @@ int _smb_verify_password( pam_handle_t * pamh, struct samu *sampass,
     }
 
     _pam_delete( data_name );
-    
+
     return retval;
 }
 
@@ -490,8 +515,8 @@ int _smb_read_password( pam_handle_t * pamh, unsigned int ctrl,
         retval = _pam_get_item( pamh, authtok_flag, &item );
         if (retval != PAM_SUCCESS) {
             /* very strange. */
-            _log_err( LOG_ALERT
-                      , "pam_get_item returned error to smb_read_password" );
+            _log_err(pamh, LOG_ALERT,
+                     "pam_get_item returned error to smb_read_password");
             return retval;
         } else if (item != NULL) {	/* we have a password! */
             *pass = item;
@@ -543,7 +568,7 @@ int _smb_read_password( pam_handle_t * pamh, unsigned int ctrl,
 
         if (retval == PAM_SUCCESS) {	/* a good conversation */
 
-            token = smbpXstrDup(resp[j++].resp);
+            token = smbpXstrDup(pamh, resp[j++].resp);
             if (token != NULL) {
                 if (expect == 2) {
                     /* verify that password entered correctly */
@@ -555,7 +580,8 @@ int _smb_read_password( pam_handle_t * pamh, unsigned int ctrl,
                     }
                 }
             } else {
-                _log_err(LOG_NOTICE, "could not recover authentication token");
+                _log_err(pamh, LOG_NOTICE,
+		         "could not recover authentication token");
             }
         }
 
@@ -568,7 +594,7 @@ int _smb_read_password( pam_handle_t * pamh, unsigned int ctrl,
 
     if (retval != PAM_SUCCESS) {
         if (on( SMB_DEBUG, ctrl ))
-            _log_err( LOG_DEBUG, "unable to obtain a password" );
+            _log_err(pamh, LOG_DEBUG, "unable to obtain a password");
         return retval;
     }
     /* 'token' is the entered password */
@@ -583,7 +609,7 @@ int _smb_read_password( pam_handle_t * pamh, unsigned int ctrl,
             || (retval = _pam_get_item( pamh, authtok_flag
                             ,&item )) != PAM_SUCCESS)
         {
-            _log_err( LOG_CRIT, "error manipulating password" );
+            _log_err(pamh, LOG_CRIT, "error manipulating password");
             return retval;
         }
     } else {
@@ -597,8 +623,8 @@ int _smb_read_password( pam_handle_t * pamh, unsigned int ctrl,
             || (retval = _pam_get_data( pamh, data_name, &item ))
                              != PAM_SUCCESS)
         {
-            _log_err( LOG_CRIT, "error manipulating password data [%s]"
-                      , pam_strerror( pamh, retval ));
+            _log_err(pamh, LOG_CRIT, "error manipulating password data [%s]",
+                     pam_strerror( pamh, retval ));
             _pam_delete( token );
             item = NULL;
             return retval;
@@ -622,8 +648,8 @@ int _pam_smb_approve_pass(pam_handle_t * pamh,
     if (pass_new == NULL || (pass_old && !strcmp( pass_old, pass_new )))
     {
 	if (on(SMB_DEBUG, ctrl)) {
-	    _log_err( LOG_DEBUG,
-	              "passwd: bad authentication token (null or unchanged)" );
+	    _log_err(pamh, LOG_DEBUG,
+	             "passwd: bad authentication token (null or unchanged)");
 	}
 	make_remark( pamh, ctrl, PAM_ERROR_MSG, pass_new == NULL ?
 				"No password supplied" : "Password unchanged" );
