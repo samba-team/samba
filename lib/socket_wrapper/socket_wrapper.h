@@ -49,6 +49,7 @@ int swrap_getsockopt(int s, int level, int optname, void *optval, socklen_t *opt
 int swrap_setsockopt(int s, int  level,  int  optname,  const  void  *optval, socklen_t optlen);
 ssize_t swrap_recvfrom(int s, void *buf, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen);
 ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags, const struct sockaddr *to, socklen_t tolen);
+ssize_t swrap_sendmsg(int s, const struct msghdr *msg, int flags);
 int swrap_ioctl(int s, int req, void *ptr);
 ssize_t swrap_recv(int s, void *buf, size_t len, int flags);
 ssize_t swrap_send(int s, const void *buf, size_t len, int flags);
@@ -107,6 +108,11 @@ int swrap_close(int);
 #undef sendto
 #endif
 #define sendto(s,buf,len,flags,to,tolen)          swrap_sendto(s,buf,len,flags,to,tolen)
+
+#ifdef sendmsg
+#undef sendmsg
+#endif
+#define sendmsg(s,msg,flags)            swrap_sendmsg(s,msg,flags)
 
 #ifdef ioctl
 #undef ioctl
