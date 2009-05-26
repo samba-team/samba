@@ -33,7 +33,7 @@ o The code has been cleaned up and the major basic interfaces are shared with
 o An asynchronous API has been added.
 
 net Command Changes:
-o parameter syntax made more consistent
+o Parameter syntax made more consistent.
 
 General Changes
 ===============
