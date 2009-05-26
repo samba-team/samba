@@ -58,26 +58,25 @@ int pam_sm_acct_mgmt( pam_handle_t *pamh, int flags,
 
 	/* Samba initialization. */
 	load_case_tables();
-	setup_logging( "pam_smbpass", False );
         lp_set_in_client(True);
 
-	ctrl = set_ctrl( flags, argc, argv );
+	ctrl = set_ctrl(pamh, flags, argc, argv );
 
 	/* get the username */
 
 	retval = pam_get_user( pamh, &name, "Username: " );
 	if (retval != PAM_SUCCESS) {
 		if (on( SMB_DEBUG, ctrl )) {
-			_log_err( LOG_DEBUG, "acct: could not identify user" );
+			_log_err(pamh, LOG_DEBUG, "acct: could not identify user" );
 		}
 		return retval;
 	}
 	if (on( SMB_DEBUG, ctrl )) {
-		_log_err( LOG_DEBUG, "acct: username [%s] obtained", name );
+		_log_err(pamh, LOG_DEBUG, "acct: username [%s] obtained", name );
 	}
 
 	if (geteuid() != 0) {
-		_log_err( LOG_DEBUG, "Cannot access samba password database, not running as root.");
+		_log_err(pamh, LOG_DEBUG, "Cannot access samba password database, not running as root.");
 		return PAM_AUTHINFO_UNAVAIL;
 	}
 
@@ -85,7 +84,7 @@ int pam_sm_acct_mgmt( pam_handle_t *pamh, int flags,
 		from a SIGPIPE it's not expecting */
 	oldsig_handler = CatchSignal(SIGPIPE, SIGNAL_CAST SIG_IGN);
 	if (!initialize_password_db(True, NULL)) {
-		_log_err( LOG_ALERT, "Cannot access samba password database" );
+	  _log_err(pamh, LOG_ALERT, "Cannot access samba password database" );
 		CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
 		return PAM_AUTHINFO_UNAVAIL;
 	}
@@ -99,7 +98,7 @@ int pam_sm_acct_mgmt( pam_handle_t *pamh, int flags,
 	}
 
 	if (!pdb_getsampwnam(sampass, name )) {
-		_log_err( LOG_DEBUG, "acct: could not identify user" );
+		_log_err(pamh, LOG_DEBUG, "acct: could not identify user");
         	CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
         	return PAM_USER_UNKNOWN;
 	}
@@ -112,8 +111,8 @@ int pam_sm_acct_mgmt( pam_handle_t *pamh, int flags,
 
 	if (pdb_get_acct_ctrl(sampass) & ACB_DISABLED) {
 		if (on( SMB_DEBUG, ctrl )) {
-			_log_err( LOG_DEBUG
-				, "acct: account %s is administratively disabled", name );
+			_log_err(pamh, LOG_DEBUG,
+				 "acct: account %s is administratively disabled", name);
 		}
 		make_remark( pamh, ctrl, PAM_ERROR_MSG
 			, "Your account has been disabled; "
