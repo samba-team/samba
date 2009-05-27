@@ -2619,19 +2619,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
  bool ads_pull_sid(ADS_STRUCT *ads, LDAPMessage *msg, const char *field,
 		   DOM_SID *sid)
 {
-	struct berval **values;
-	bool ret = False;
-
-	values = ldap_get_values_len(ads->ldap.ld, msg, field);
-
-	if (!values)
-		return False;
-
-	if (values[0])
-		ret = sid_parse(values[0]->bv_val, values[0]->bv_len, sid);
-	
-	ldap_value_free_len(values);
-	return ret;
+	return smbldap_pull_sid(ads->ldap.ld, msg, field, sid);
 }
 
 /**

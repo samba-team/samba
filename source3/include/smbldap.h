@@ -214,6 +214,8 @@ char * smbldap_talloc_single_attribute(LDAP *ldap_struct, LDAPMessage *entry,
 char * smbldap_talloc_smallest_attribute(LDAP *ldap_struct, LDAPMessage *entry,
 					 const char *attribute,
 					 TALLOC_CTX *mem_ctx);
+bool smbldap_pull_sid(LDAP *ld, LDAPMessage *msg, const char *attrib,
+		      struct dom_sid *sid);
 void talloc_autofree_ldapmsg(TALLOC_CTX *mem_ctx, LDAPMessage *result);
 void talloc_autofree_ldapmod(TALLOC_CTX *mem_ctx, LDAPMod **mod);
 char *smbldap_talloc_dn(TALLOC_CTX *mem_ctx, LDAP *ld,
