@@ -7,7 +7,8 @@ use Getopt::Long;
 use Cwd qw(abs_path);
 
 my $opt_help = 0;
-my $opt_path = undef;
+my $opt_passwd_path = undef;
+my $opt_group_path = undef;
 my $opt_action = undef;
 my $opt_type = undef;
 my $opt_name = undef;
@@ -23,7 +24,8 @@ sub group_delete($$);
 
 my $result = GetOptions(
 	'help|h|?'	=> \$opt_help,
-	'path=s'	=> \$opt_path,
+	'passwd_path=s'	=> \$opt_passwd_path,
+	'group_path=s'	=> \$opt_group_path,
 	'action=s'	=> \$opt_action,
 	'type=s'	=> \$opt_type,
 	'name=s'	=> \$opt_name
@@ -39,7 +41,8 @@ sub usage($;$)
 
 	--help|-h|-?		Show this help.
 
-	--path <path>		Path of the 'passwd' or 'group' file.
+	--passwd_path <path>	Path of the 'passwd' file.
+	--group_path <path>	Path of the 'group' file.
 
 	--type <type>		Only 'passwd' and 'group' are supported yet,
 				maybe 'member' will be added in future.
@@ -54,18 +57,6 @@ sub usage($;$)
 usage(1) if (not $result);
 
 usage(0) if ($opt_help);
-
-if (not defined($opt_path)) {
-	usage(1, "missing: --path <path>");
-}
-if ($opt_path eq "" or $opt_path eq "/") {
-	usage(1, "invalid: --path <path>: '$opt_path'");
-}
-my $opt_fullpath = abs_path($opt_path);
-if (not defined($opt_fullpath)) {
-	usage(1, "invalid: --path <path>: '$opt_path'");
-}
-
 
 if (not defined($opt_action)) {
 	usage(1, "missing: --action [add|delete]");
@@ -83,10 +74,13 @@ if ($opt_action eq "add") {
 if (not defined($opt_type)) {
 	usage(1, "missing: --type [passwd|group]");
 }
+my $opt_fullpath;
 if ($opt_type eq "passwd") {
 	$actionfn = $passwdfn;
+	$opt_fullpath = check_path($opt_passwd_path, $opt_type);
 } elsif ($opt_type eq "group") {
 	$actionfn = $groupfn;
+	$opt_fullpath = check_path($opt_group_path, $opt_type);
 } else {
 	usage(1, "invalid: --type [passwd|group]: '$opt_type'")
 }
@@ -99,6 +93,23 @@ if ($opt_name eq "") {
 }
 
 exit $actionfn->($opt_fullpath, $opt_name);
+
+sub check_path($$)
+{
+	my ($path,$type) = @_;
+
+	if (not defined($path)) {
+		usage(1, "missing: --$type\_path <path>");
+	}
+	if ($path eq "" or $path eq "/") {
+		usage(1, "invalid: --$type\_path <path>: '$path'");
+	}
+	my $fullpath = abs_path($path);
+	if (not defined($fullpath)) {
+		usage(1, "invalid: --$type\_path <path>: '$path'");
+	}
+	return $fullpath;
+}
 
 sub passwd_add_entry($$);
 
