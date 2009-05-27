@@ -1711,7 +1711,7 @@ static NTSTATUS pdb_default_lookup_names(struct pdb_methods *methods,
 
 static int pdb_search_destructor(struct pdb_search *search)
 {
-	if (!search->search_ended) {
+	if ((!search->search_ended) && (search->search_end != NULL)) {
 		search->search_end(search);
 	}
 	return 0;
@@ -1733,6 +1733,7 @@ struct pdb_search *pdb_search_init(TALLOC_CTX *mem_ctx,
 	result->num_entries = 0;
 	result->cache_size = 0;
 	result->search_ended = False;
+	result->search_end = NULL;
 
 	/* Segfault appropriately if not initialized */
 	result->next_entry = NULL;
