@@ -129,6 +129,14 @@ wbcErr wbcAuthenticateUserEx_recv(struct tevent_req *req,
 				  struct wbcAuthErrorInfo **error);
 
 /* Async functions from wbc_sid.c */
+struct tevent_req *wbcLookupName_send(TALLOC_CTX *mem_ctx,
+				      struct tevent_context *ev,
+				      struct wb_context *wb_ctx,
+				      const char *domain,
+				      const char *name);
+wbcErr wbcLookupName_recv(struct tevent_req *req,
+			  struct wbcDomainSid *sid,
+			  enum wbcSidType *name_type);
 struct tevent_req *wbcLookupSid_send(TALLOC_CTX *mem_ctx,
 				     struct tevent_context *ev,
 				     struct wb_context *wb_ctx,

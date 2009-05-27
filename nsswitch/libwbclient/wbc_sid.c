@@ -150,6 +150,135 @@ done:
 
 }
 
+struct wbc_lookup_name_state {
+	struct winbindd_request req;
+	struct wb_context *wb_ctx;
+	struct wbcDomainSid *sid;
+	enum wbcSidType name_type;
+};
+
+static void wbcLookupName_done(struct tevent_req *subreq);
+
+/**
+ * @brief Request a conversion of a domaind and name to a domain sid
+ *
+ * @param mem_ctx	talloc context to allocate the request from
+ * @param ev		tevent context to use for async operation
+ * @param wb_ctx	winbind context to use
+ * @param *domain	Pointer to the domain to be resolved
+ * @param *name		Pointer to the name to be resolved
+ *
+ * @return tevent_req on success, NULL on error
+ **/
+
+struct tevent_req *wbcLookupName_send(TALLOC_CTX *mem_ctx,
+				      struct tevent_context *ev,
+				      struct wb_context *wb_ctx,
+				      const char *domain,
+				      const char *name)
+{
+	struct tevent_req *req, *subreq;
+	struct wbc_lookup_name_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct wbc_lookup_name_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	ZERO_STRUCT(state->req);
+
+	state->req.cmd = WINBINDD_LOOKUPNAME;
+	strncpy(state->req.data.name.dom_name, domain,
+		sizeof(state->req.data.name.dom_name)-1);
+	strncpy(state->req.data.name.name, name,
+		sizeof(state->req.data.name.name)-1);
+	state->wb_ctx = wb_ctx;
+
+
+	subreq = wb_trans_send(state, ev, wb_ctx, false, &state->req);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_set_callback(subreq, wbcLookupName_done, req);
+	return req;
+}
+
+static void wbcLookupName_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+			subreq, struct tevent_req);
+	struct wbc_lookup_name_state *state = tevent_req_data(
+			req, struct wbc_lookup_name_state);
+	struct winbindd_response *resp;
+	wbcErr wbc_status;
+
+	wbc_status = wb_trans_recv(subreq, state, &resp);
+	TALLOC_FREE(subreq);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		tevent_req_error(req, wbc_status);
+		return;
+	}
+
+	state->sid = talloc(state, struct wbcDomainSid);
+	if (tevent_req_nomem(state->sid, req)) {
+		return;
+	}
+
+	wbc_status = wbcStringToSid(resp->data.sid.sid, state->sid);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		wbcDebug(state->wb_ctx, WBC_DEBUG_ERROR,
+			 "wbcStringToSid returned %s!\n",
+			 wbcErrorString(wbc_status));
+		tevent_req_error(req, wbc_status);
+		return;
+	}
+
+	state->name_type = (enum wbcSidType)resp->data.sid.type;
+
+	TALLOC_FREE(resp);
+
+	tevent_req_done(req);
+}
+
+/**
+ * @brief Receive a conversion a SID to a domain and name
+ *
+ * @param *
+ * @param *pname	Resolved User or group name
+ * @param *pname_type	Pointer to the resolved SID type
+ *
+ * @return #wbcErr
+ */
+
+wbcErr wbcLookupName_recv(struct tevent_req *req,
+			  struct wbcDomainSid *sid,
+			  enum wbcSidType *name_type)
+{
+	struct wbc_lookup_name_state *state = tevent_req_data(
+			req, struct wbc_lookup_name_state);
+	wbcErr wbc_status = WBC_ERR_SUCCESS;
+
+	if (!sid || !name_type) {
+		wbcDebug(state->wb_ctx, WBC_DEBUG_TRACE,
+		"Sid is %p, name_type is %p\n", sid, name_type);
+		wbc_status = WBC_ERR_INVALID_PARAM;
+		goto failed;
+	}
+
+	if (tevent_req_is_wbcerr(req, &wbc_status)) {
+		goto failed;
+	}
+
+	memcpy(sid, state->sid, sizeof(struct wbcDomainSid));
+	*name_type = state->name_type;
+
+failed:
+	tevent_req_received(req);
+	return wbc_status;
+}
+
+
 /* Convert a domain and name to SID */
 wbcErr wbcLookupName(const char *domain,
 		     const char *name,
