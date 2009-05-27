@@ -752,6 +752,7 @@ SMBD_OBJ_SRV = smbd/files.o smbd/chgpasswd.o smbd/connection.o \
 	       smbd/dnsregister.o smbd/globals.o \
 	       smbd/smb2_server.o smbd/smb2_negprot.o \
 	       smbd/smb2_sesssetup.o smbd/smb2_tcon.o smbd/smb2_glue.o \
+	       smbd/smb2_create.o \
 	       smbd/smb2_keepalive.o smbd/smb2_signing.o \
 	       $(MANGLE_OBJ) @VFS_STATIC@
 
