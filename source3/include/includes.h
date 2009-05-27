@@ -433,12 +433,12 @@ typedef uint64_t br_off;
 
 #ifndef HAVE_BLKSIZE_T
 /* This is mainly for HP/UX which defines st_blksize as long */
-typedef blksize_t long;
+typedef long blksize_t;
 #endif
 
 #ifndef HAVE_BLKCNT_T
 /* This is mainly for HP/UX which doesn't have blkcnt_t */
-typedef blkcnt_t long;
+typedef long blkcnt_t;
 #endif
 
 /*
