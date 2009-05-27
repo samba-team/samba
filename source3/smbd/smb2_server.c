@@ -59,7 +59,7 @@ static NTSTATUS smbd_initialize_smb2(struct smbd_server_connection *conn)
 	if (conn->smb2.sessions.idtree == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	conn->smb2.sessions.limit = 0x00FFFFFF;
+	conn->smb2.sessions.limit = 0x0000FFFE;
 	conn->smb2.sessions.list = NULL;
 
 	ret = tstream_bsd_existing_socket(conn, smbd_server_fd(),

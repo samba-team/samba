@@ -243,6 +243,18 @@ static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *req,
 	}
 	session->session_key = session->server_info->user_session_key;
 
+	session->compat_vuser = talloc_zero(session, user_struct);
+	if (session->compat_vuser == NULL) {
+		TALLOC_FREE(session);
+		return NT_STATUS_NO_MEMORY;
+	}
+	session->compat_vuser->auth_ntlmssp_state = session->auth_ntlmssp_state;
+	session->compat_vuser->homes_snum = -1;
+	session->compat_vuser->server_info = session->server_info;
+	session->compat_vuser->session_keystr = NULL;
+	session->compat_vuser->vuid = session->vuid;
+	DLIST_ADD(session->conn->smb1.sessions.validated_users, session->compat_vuser);
+
 	session->status = NT_STATUS_OK;
 
 	/*
@@ -280,6 +292,10 @@ NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 	if (!NT_STATUS_IS_OK(session->status)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
+
+	set_current_user_info(session->server_info->sanitized_username,
+			      session->server_info->unix_name,
+			      pdb_get_domain(session->server_info->sam_account));
 
 	req->session = session;
 	return NT_STATUS_OK;
