@@ -300,6 +300,276 @@ done:
 	return wbc_status;
 }
 
+struct wbc_authenticate_user_ex_state {
+	struct winbindd_request req;
+	struct tevent_context *ev;
+	struct wb_context *wb_ctx;
+	const struct wbcAuthUserParams *params;
+	struct wbcAuthUserInfo *info;
+	struct wbcAuthErrorInfo *error;
+};
+
+static void wbcAuthenticateUserEx_got_info(struct tevent_req *subreq);
+static void wbcAuthenticateUserEx_done(struct tevent_req *subreq);
+
+struct tevent_req *wbcAuthenticateUserEx_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct wb_context *wb_ctx,
+					const struct wbcAuthUserParams *params)
+{
+	struct tevent_req *req, *subreq;
+	struct wbc_authenticate_user_ex_state *state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct wbc_authenticate_user_ex_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	state->ev = ev;
+	state->wb_ctx = wb_ctx;
+	state->params = params;
+
+	if (!params) {
+		tevent_req_error(req, WBC_ERR_INVALID_PARAM);
+		return tevent_req_post(req, ev);
+	}
+
+	if (!params->account_name) {
+		tevent_req_error(req, WBC_ERR_INVALID_PARAM);
+		return tevent_req_post(req, ev);
+	}
+
+	ZERO_STRUCT(state->req);
+
+	if (params->flags) {
+		state->req.flags = params->flags;
+	}
+
+	switch (params->level) {
+	case WBC_AUTH_USER_LEVEL_PLAIN:
+		state->req.cmd = WINBINDD_PAM_AUTH;
+		state->req.flags |= WBFLAG_PAM_INFO3_TEXT |
+				    WBFLAG_PAM_USER_SESSION_KEY |
+				    WBFLAG_PAM_LMKEY;
+
+		if (!params->password.plaintext) {
+			tevent_req_error(req, WBC_ERR_INVALID_PARAM);
+			return tevent_req_post(req, ev);
+		}
+
+		strncpy(state->req.data.auth.pass,
+			params->password.plaintext,
+			sizeof(state->req.data.auth.pass)-1);
+
+		if (params->domain_name && params->domain_name[0]) {
+			/* We need to get the winbind separator :-( */
+			subreq = wbcInfo_send(state, ev, wb_ctx);
+			if (tevent_req_nomem(subreq, req)) {
+				return tevent_req_post(req, ev);
+			}
+
+			tevent_req_set_callback(subreq,
+						wbcAuthenticateUserEx_got_info,
+						req);
+			return req;
+		} else {
+			strncpy(state->req.data.auth.user,
+				params->account_name,
+				sizeof(state->req.data.auth.user)-1);
+		}
+
+		break;
+
+	case WBC_AUTH_USER_LEVEL_HASH:
+		tevent_req_error(req, WBC_ERR_NOT_IMPLEMENTED);
+		return tevent_req_post(req, ev);
+		/* Make some static code checkers happy */
+		break;
+
+	case WBC_AUTH_USER_LEVEL_RESPONSE:
+		state->req.cmd = WINBINDD_PAM_AUTH_CRAP;
+		state->req.flags |= WBFLAG_PAM_INFO3_TEXT |
+				    WBFLAG_PAM_USER_SESSION_KEY |
+				    WBFLAG_PAM_LMKEY;
+
+		if (params->password.response.lm_length &&
+		    !params->password.response.lm_data) {
+			tevent_req_error(req, WBC_ERR_INVALID_PARAM);
+			return tevent_req_post(req, ev);
+		}
+		if (params->password.response.lm_length == 0 &&
+		    params->password.response.lm_data) {
+			tevent_req_error(req, WBC_ERR_INVALID_PARAM);
+			return tevent_req_post(req, ev);
+		}
+
+		if (params->password.response.nt_length &&
+		    !params->password.response.nt_data) {
+			tevent_req_error(req, WBC_ERR_INVALID_PARAM);
+			return tevent_req_post(req, ev);
+		}
+		if (params->password.response.nt_length == 0&&
+		    params->password.response.nt_data) {
+			tevent_req_error(req, WBC_ERR_INVALID_PARAM);
+			return tevent_req_post(req, ev);
+		}
+
+		strncpy(state->req.data.auth_crap.user,
+			params->account_name,
+			sizeof(state->req.data.auth_crap.user)-1);
+		if (params->domain_name) {
+			strncpy(state->req.data.auth_crap.domain,
+				params->domain_name,
+				sizeof(state->req.data.auth_crap.domain)-1);
+		}
+		if (params->workstation_name) {
+			strncpy(state->req.data.auth_crap.workstation,
+				params->workstation_name,
+				sizeof(state->req.data.auth_crap.workstation)-1);
+		}
+
+		state->req.data.auth_crap.logon_parameters =
+				params->parameter_control;
+
+		memcpy(state->req.data.auth_crap.chal,
+		       params->password.response.challenge,
+		       sizeof(state->req.data.auth_crap.chal));
+
+		state->req.data.auth_crap.lm_resp_len =
+				MIN(params->password.response.lm_length,
+				    sizeof(state->req.data.auth_crap.lm_resp));
+		state->req.data.auth_crap.nt_resp_len =
+				MIN(params->password.response.nt_length,
+				    sizeof(state->req.data.auth_crap.nt_resp));
+		if (params->password.response.lm_data) {
+			memcpy(state->req.data.auth_crap.lm_resp,
+			       params->password.response.lm_data,
+			       state->req.data.auth_crap.lm_resp_len);
+		}
+		if (params->password.response.nt_data) {
+			memcpy(state->req.data.auth_crap.nt_resp,
+			       params->password.response.nt_data,
+			       state->req.data.auth_crap.nt_resp_len);
+		}
+		break;
+	default:
+		tevent_req_error(req, WBC_ERR_INVALID_PARAM);
+		return tevent_req_post(req, ev);
+		break;
+	}
+
+	subreq = wb_trans_send(state, ev, wb_ctx, false, &state->req);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_set_callback(subreq, wbcAuthenticateUserEx_done, req);
+	return req;
+}
+
+static void wbcAuthenticateUserEx_got_info(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+			subreq, struct tevent_req);
+	struct wbc_authenticate_user_ex_state *state = tevent_req_data(
+			req, struct wbc_authenticate_user_ex_state);
+	char *version_string;
+	char separator;
+	wbcErr wbc_status;
+
+	wbc_status = wbcInfo_recv(subreq, state, &separator, &version_string);
+	TALLOC_FREE(subreq);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		tevent_req_error(req, wbc_status);
+		return;
+	}
+
+	snprintf(state->req.data.auth.user,
+		 sizeof(state->req.data.auth.user)-1,
+		 "%s%c%s",
+		 state->params->domain_name,
+		 separator,
+		 state->params->account_name);
+
+	subreq = wb_trans_send(state, state->ev, state->wb_ctx, false,
+			       &state->req);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+
+	tevent_req_set_callback(subreq, wbcAuthenticateUserEx_done, req);
+	return;
+}
+
+static void wbcAuthenticateUserEx_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+			subreq, struct tevent_req);
+	struct wbc_authenticate_user_ex_state *state = tevent_req_data(
+			req, struct wbc_authenticate_user_ex_state);
+	struct winbindd_response *resp;
+	wbcErr wbc_status;
+
+	ZERO_STRUCT(resp);
+
+	wbc_status = wb_trans_recv(subreq, state, &resp);
+	TALLOC_FREE(subreq);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		tevent_req_error(req, wbc_status);
+		goto done;
+	}
+
+	if (resp->data.auth.nt_status != 0) {
+		wbc_status = wbc_create_error_info(resp, &state->error);
+		if (!WBC_ERROR_IS_OK(wbc_status)) {
+			tevent_req_error(req, wbc_status);
+			goto done;
+		}
+
+		tevent_req_error(req, WBC_ERR_AUTH_ERROR);
+		goto done;
+	}
+
+	wbc_status = wbc_create_auth_info(state, resp, &state->info);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		tevent_req_error(req, wbc_status);
+		goto done;
+	}
+
+done:
+	TALLOC_FREE(resp);
+}
+
+wbcErr wbcAuthenticateUserEx_recv(struct tevent_req *req,
+				  TALLOC_CTX *mem_ctx,
+				  struct wbcAuthUserInfo **info,
+				  struct wbcAuthErrorInfo **error)
+{
+	struct wbc_authenticate_user_ex_state *state = tevent_req_data(
+			req, struct wbc_authenticate_user_ex_state);
+	wbcErr wbc_status;
+
+	if (error) {
+		*error = NULL;
+	}
+
+	if (tevent_req_is_wbcerr(req, &wbc_status)) {
+		tevent_req_received(req);
+		if (error) {
+			*error = talloc_steal(mem_ctx, state->error);
+		}
+		return wbc_status;
+	}
+
+	if (info) {
+		*info = talloc_steal(mem_ctx, state->info);
+	}
+
+	tevent_req_received(req);
+	return wbc_status;
+}
+
 /* Authenticate with more detailed information */
 wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 			     struct wbcAuthUserInfo **info,

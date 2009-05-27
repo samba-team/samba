@@ -118,6 +118,16 @@ struct tevent_req *wbcGidToSid_send(TALLOC_CTX *mem_ctx,
 				    gid_t gid);
 wbcErr wbcGidToSid_recv(struct tevent_req *req, struct wbcDomainSid *psid);
 
+/* Async functions from wbc_pam.c */
+struct tevent_req *wbcAuthenticateUserEx_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct wb_context *wb_ctx,
+					const struct wbcAuthUserParams *params);
+wbcErr wbcAuthenticateUserEx_recv(struct tevent_req *req,
+				  TALLOC_CTX *mem_ctx,
+				  struct wbcAuthUserInfo **info,
+				  struct wbcAuthErrorInfo **error);
+
 /* Async functions from wbc_sid.c */
 struct tevent_req *wbcLookupSid_send(TALLOC_CTX *mem_ctx,
 				     struct tevent_context *ev,
