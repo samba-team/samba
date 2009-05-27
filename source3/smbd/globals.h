@@ -286,6 +286,7 @@ struct smbd_smb2_tcon {
 	struct smbd_smb2_session *session;
 	uint32_t tid;
 	int snum;
+	connection_struct *compat_conn;
 };
 
 struct pending_auth_data;

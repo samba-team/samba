@@ -827,6 +827,15 @@ static void exit_server_common(enum server_exit_reason how,
 	locking_end();
 	printing_end();
 
+	/*
+	 * we need to force the order of freeing the following,
+	 * because smbd_msg_ctx is not a talloc child of smbd_server_conn.
+	 */
+	sconn = NULL;
+	TALLOC_FREE(smbd_server_conn);
+	TALLOC_FREE(smbd_msg_ctx);
+	TALLOC_FREE(smbd_event_ctx);
+
 	if (how != SERVER_EXIT_NORMAL) {
 		int oldlevel = DEBUGLEVEL;
 

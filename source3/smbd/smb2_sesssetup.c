@@ -172,7 +172,7 @@ static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *req,
 		if (session->tcons.idtree == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		session->tcons.limit = 0x00FFFFFF;
+		session->tcons.limit = 0x0000FFFE;
 		session->tcons.list = NULL;
 
 		DLIST_ADD_END(req->conn->smb2.sessions.list, session,

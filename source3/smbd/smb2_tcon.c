@@ -110,6 +110,9 @@ static int smbd_smb2_tcon_destructor(struct smbd_smb2_tcon *tcon)
 	idr_remove(tcon->session->tcons.idtree, tcon->tid);
 	DLIST_REMOVE(tcon->session->tcons.list, tcon);
 
+	conn_free(tcon->session->conn, tcon->compat_conn);
+
+	tcon->compat_conn = NULL;
 	tcon->tid = 0;
 	tcon->session = NULL;
 
@@ -125,6 +128,7 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 	int snum = -1;
 	struct smbd_smb2_tcon *tcon;
 	int id;
+	NTSTATUS status;
 
 	if (strncmp(share, "\\\\", 2) == 0) {
 		const char *p = strchr(share+2, '\\');
@@ -158,6 +162,7 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 				tcon,
 				req->session->tcons.limit);
 	if (id == -1) {
+		TALLOC_FREE(tcon);
 		return NT_STATUS_INSUFFICIENT_RESOURCES;
 	}
 	tcon->tid = id;
@@ -167,6 +172,16 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 		      struct smbd_smb2_tcon *);
 	tcon->session = req->session;
 	talloc_set_destructor(tcon, smbd_smb2_tcon_destructor);
+
+	tcon->compat_conn = make_connection_snum(req->conn,
+					snum, req->session->compat_vuser,
+					data_blob_null, "???",
+					&status);
+	if (tcon->compat_conn == NULL) {
+		TALLOC_FREE(tcon);
+		return status;
+	}
+	tcon->compat_conn->cnum = tcon->tid;
 
 	*out_tree_id = tcon->tid;
 	return NT_STATUS_OK;
@@ -190,6 +205,10 @@ NTSTATUS smbd_smb2_request_check_tcon(struct smbd_smb2_request *req)
 		return NT_STATUS_NETWORK_NAME_DELETED;
 	}
 	tcon = talloc_get_type_abort(p, struct smbd_smb2_tcon);
+
+	if (!change_to_user(tcon->compat_conn,req->session->vuid)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	req->tcon = tcon;
 	return NT_STATUS_OK;
