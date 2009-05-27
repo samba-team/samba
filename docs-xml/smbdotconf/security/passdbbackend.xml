@@ -16,8 +16,10 @@
     <para>Available backends can include:
 	<itemizedlist>
 	    <listitem>
-		<para><command moreinfo="none">smbpasswd</command> - The default smbpasswd
-		backend. Takes a path to the smbpasswd file as an optional argument.
+		<para><command moreinfo="none">smbpasswd</command> - The old plaintext passdb
+		backend. Some Samba features will not work if this passdb
+		backend is used. Takes a path to the smbpasswd file as an
+		optional argument.
 		</para>
 	    </listitem>
 			
@@ -60,5 +62,5 @@ passdb backend = ldapsam:"ldap://ldap-1.example.com ldap-2.example.com"
 </programlisting>
 </description>
 
-<value type="default">smbpasswd</value>
+<value type="default">tdbsam</value>
 </samba:parameter>
