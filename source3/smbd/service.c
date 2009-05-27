@@ -658,7 +658,7 @@ static connection_struct *make_connection_snum(
 		return NULL;
 	}	
 
-	conn = conn_new();
+	conn = conn_new(sconn);
 	if (!conn) {
 		DEBUG(0,("Couldn't find free connection.\n"));
 		*pstatus = NT_STATUS_INSUFFICIENT_RESOURCES;
@@ -675,7 +675,7 @@ static connection_struct *make_connection_snum(
 		DEBUG(1, ("create_connection_server_info failed: %s\n",
 			  nt_errstr(status)));
 		*pstatus = status;
-		conn_free(conn);
+		conn_free(sconn, conn);
 		return NULL;
 	}
 
@@ -732,7 +732,7 @@ static connection_struct *make_connection_snum(
 		fuser = talloc_string_sub(conn, lp_force_user(snum), "%S",
 					  lp_servicename(snum));
 		if (fuser == NULL) {
-			conn_free(conn);
+			conn_free(sconn, conn);
 			*pstatus = NT_STATUS_NO_MEMORY;
 			return NULL;
 		}
@@ -741,7 +741,7 @@ static connection_struct *make_connection_snum(
 			conn, fuser, conn->server_info->guest,
 			&forced_serverinfo);
 		if (!NT_STATUS_IS_OK(status)) {
-			conn_free(conn);
+			conn_free(sconn, conn);
 			*pstatus = status;
 			return NULL;
 		}
@@ -766,7 +766,7 @@ static connection_struct *make_connection_snum(
 			&conn->server_info->utok.gid);
 
 		if (!NT_STATUS_IS_OK(status)) {
-			conn_free(conn);
+			conn_free(sconn, conn);
 			*pstatus = status;
 			return NULL;
 		}
@@ -792,14 +792,14 @@ static connection_struct *make_connection_snum(
 					pdb_get_domain(conn->server_info->sam_account),
 					lp_pathname(snum));
 		if (!s) {
-			conn_free(conn);
+			conn_free(sconn, conn);
 			*pstatus = NT_STATUS_NO_MEMORY;
 			return NULL;
 		}
 
 		if (!set_conn_connectpath(conn,s)) {
 			TALLOC_FREE(s);
-			conn_free(conn);
+			conn_free(sconn, conn);
 			*pstatus = NT_STATUS_NO_MEMORY;
 			return NULL;
 		}
@@ -831,7 +831,7 @@ static connection_struct *make_connection_snum(
 					 "denied due to security "
 					 "descriptor.\n",
 					  lp_servicename(snum)));
-				conn_free(conn);
+				conn_free(sconn, conn);
 				*pstatus = NT_STATUS_ACCESS_DENIED;
 				return NULL;
 			} else {
@@ -844,7 +844,7 @@ static connection_struct *make_connection_snum(
 	if (!smbd_vfs_init(conn)) {
 		DEBUG(0, ("vfs_init failed for service %s\n",
 			  lp_servicename(snum)));
-		conn_free(conn);
+		conn_free(sconn, conn);
 		*pstatus = NT_STATUS_BAD_NETWORK_NAME;
 		return NULL;
 	}
@@ -862,7 +862,7 @@ static connection_struct *make_connection_snum(
 			"for service %s, path %s\n",
 				lp_servicename(snum),
 				conn->connectpath));
-			conn_free(conn);
+			conn_free(sconn, conn);
 			*pstatus = NT_STATUS_BAD_NETWORK_NAME;
 			return NULL;
 		}
@@ -886,7 +886,7 @@ static connection_struct *make_connection_snum(
 
 		DEBUG(1, ("Max connections (%d) exceeded for %s\n",
 			  lp_max_connections(snum), lp_servicename(snum)));
-		conn_free(conn);
+		conn_free(sconn, conn);
 		*pstatus = NT_STATUS_INSUFFICIENT_RESOURCES;
 		return NULL;
 	}  
@@ -896,7 +896,7 @@ static connection_struct *make_connection_snum(
 	 */
 	if (!claim_connection(conn, lp_servicename(snum), 0)) {
 		DEBUG(1, ("Could not store connections entry\n"));
-		conn_free(conn);
+		conn_free(sconn, conn);
 		*pstatus = NT_STATUS_INTERNAL_DB_ERROR;
 		return NULL;
 	}  
@@ -920,7 +920,7 @@ static connection_struct *make_connection_snum(
 			DEBUG(1,("root preexec gave %d - failing "
 				 "connection\n", ret));
 			yield_connection(conn, lp_servicename(snum));
-			conn_free(conn);
+			conn_free(sconn, conn);
 			*pstatus = NT_STATUS_ACCESS_DENIED;
 			return NULL;
 		}
@@ -931,7 +931,7 @@ static connection_struct *make_connection_snum(
 		/* No point continuing if they fail the basic checks */
 		DEBUG(0,("Can't become connected user!\n"));
 		yield_connection(conn, lp_servicename(snum));
-		conn_free(conn);
+		conn_free(sconn, conn);
 		*pstatus = NT_STATUS_LOGON_FAILURE;
 		return NULL;
 	}
@@ -1067,7 +1067,7 @@ static connection_struct *make_connection_snum(
 		SMB_VFS_DISCONNECT(conn);
 	}
 	yield_connection(conn, lp_servicename(snum));
-	conn_free(conn);
+	conn_free(sconn, conn);
 	return NULL;
 }
 
@@ -1099,7 +1099,7 @@ connection_struct *make_connection(struct smbd_server_connection *sconn,
 		smb_panic("make_connection: PANIC ERROR. Called as nonroot\n");
 	}
 
-	if (conn_num_open() > 2047) {
+	if (conn_num_open(sconn) > 2047) {
 		*status = NT_STATUS_INSUFF_SERVER_RESOURCES;
 		return NULL;
 	}
@@ -1214,7 +1214,8 @@ connection_struct *make_connection(struct smbd_server_connection *sconn,
  Close a cnum.
 ****************************************************************************/
 
-void close_cnum(connection_struct *conn, uint16 vuid)
+void close_cnum(struct smbd_server_connection *sconn,
+		connection_struct *conn, uint16 vuid)
 {
 	file_close_conn(conn);
 
@@ -1268,5 +1269,5 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 		TALLOC_FREE(cmd);
 	}
 
-	conn_free(conn);
+	conn_free(sconn, conn);
 }

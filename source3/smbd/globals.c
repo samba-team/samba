@@ -43,11 +43,6 @@ bool blocking_lock_cancel_state = false;
 struct smbd_dmapi_context *dmapi_ctx = NULL;
 #endif
 
-connection_struct *Connections = NULL;
-/* number of open connections */
-struct bitmap *bmap = 0;
-int num_open = 0;
-
 
 bool dfree_broken = false;
 

@@ -42,11 +42,6 @@ struct smbd_dmapi_context;
 extern struct smbd_dmapi_context *dmapi_ctx;
 #endif
 
-extern connection_struct *Connections;
-/* number of open connections */
-extern struct bitmap *bmap;
-extern int num_open;
-
 extern bool dfree_broken;
 
 extern struct bitmap *dptr_bmap;
@@ -338,6 +333,12 @@ struct smbd_server_connection {
 			char *my_yp_domain;
 #endif
 		} sessions;
+		struct {
+			connection_struct *Connections;
+			/* number of open connections */
+			struct bitmap *bmap;
+			int num_open;
+		} tcons;
 		struct smb_signing_state *signing_state;
 		/* List to store partial SPNEGO auth fragments. */
 		struct pending_auth_data *pd_list;

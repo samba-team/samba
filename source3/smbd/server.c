@@ -784,7 +784,7 @@ static void exit_server_common(enum server_exit_reason how,
 static void exit_server_common(enum server_exit_reason how,
 	const char *const reason)
 {
-	bool had_open_conn;
+	bool had_open_conn = false;
 	struct smbd_server_connection *sconn = smbd_server_conn;
 
 	if (!exit_firsttime)
@@ -798,9 +798,8 @@ static void exit_server_common(enum server_exit_reason how,
 		a->free(&sconn->smb1.negprot.auth_context);
 	}
 
-	had_open_conn = conn_close_all();
-
 	if (sconn) {
+		had_open_conn = conn_close_all(sconn);
 		invalidate_all_vuids(sconn);
 	}
 
@@ -887,8 +886,6 @@ static bool init_structs(void )
 
 	if (!init_names())
 		return False;
-
-	conn_init();
 
 	file_init();
 

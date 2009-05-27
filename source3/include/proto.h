@@ -6156,16 +6156,18 @@ NTSTATUS delete_all_streams(connection_struct *conn, const char *fname);
 
 /* The following definitions come from smbd/conn.c  */
 
-void conn_init(void);
-int conn_num_open(void);
+void conn_init(struct smbd_server_connection *sconn);
+int conn_num_open(struct smbd_server_connection *sconn);
 bool conn_snum_used(int snum);
-connection_struct *conn_find(unsigned cnum);
-connection_struct *conn_new(void);
-bool conn_close_all(void);
-bool conn_idle_all(time_t t);
-void conn_clear_vuid_caches(uint16 vuid);
+connection_struct *conn_find(struct smbd_server_connection *sconn,
+			     unsigned cnum);
+connection_struct *conn_new(struct smbd_server_connection *sconn);
+bool conn_close_all(struct smbd_server_connection *sconn);
+bool conn_idle_all(struct smbd_server_connection *sconn, time_t t);
+void conn_clear_vuid_caches(struct smbd_server_connection *sconn, uint16 vuid);
 void conn_free_internal(connection_struct *conn);
-void conn_free(connection_struct *conn);
+void conn_free(struct smbd_server_connection *sconn,
+	       connection_struct *conn);
 void msg_force_tdis(struct messaging_context *msg,
 		    void *private_data,
 		    uint32_t msg_type,
@@ -6961,7 +6963,8 @@ connection_struct *make_connection(struct smbd_server_connection *sconn,
 				   const char *service_in, DATA_BLOB password,
 				   const char *pdev, uint16 vuid,
 				   NTSTATUS *status);
-void close_cnum(connection_struct *conn, uint16 vuid);
+void close_cnum(struct smbd_server_connection *sconn,
+		connection_struct *conn, uint16 vuid);
 
 /* The following definitions come from smbd/session.c  */
 

@@ -703,7 +703,7 @@ void reply_tcon_and_X(struct smb_request *req)
 
 	/* we might have to close an old one */
 	if ((tcon_flags & 0x1) && conn) {
-		close_cnum(conn,req->vuid);
+		close_cnum(sconn, conn,req->vuid);
 		req->conn = NULL;
 		conn = NULL;
 	}
@@ -4140,6 +4140,7 @@ bool is_valid_writeX_buffer(const uint8_t *inbuf)
 	connection_struct *conn = NULL;
 	unsigned int doff = 0;
 	size_t len = smb_len_large(inbuf);
+	struct smbd_server_connection *sconn = smbd_server_conn;
 
 	if (is_encrypted_packet(inbuf)) {
 		/* Can't do this on encrypted
@@ -4158,7 +4159,7 @@ bool is_valid_writeX_buffer(const uint8_t *inbuf)
 		return false;
 	}
 
-	conn = conn_find(SVAL(inbuf, smb_tid));
+	conn = conn_find(sconn, SVAL(inbuf, smb_tid));
 	if (conn == NULL) {
 		DEBUG(10,("is_valid_writeX_buffer: bad tid\n"));
 		return false;
@@ -4829,6 +4830,7 @@ void reply_unlock(struct smb_request *req)
 
 void reply_tdis(struct smb_request *req)
 {
+	struct smbd_server_connection *sconn = smbd_server_conn;
 	connection_struct *conn = req->conn;
 	START_PROFILE(SMBtdis);
 
@@ -4841,7 +4843,7 @@ void reply_tdis(struct smb_request *req)
 
 	conn->used = False;
 
-	close_cnum(conn,req->vuid);
+	close_cnum(sconn, conn,req->vuid);
 	req->conn = NULL;
 
 	reply_outbuf(req, 0, 0);

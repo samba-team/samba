@@ -116,7 +116,7 @@ void invalidate_vuid(struct smbd_server_connection *sconn, uint16 vuid)
 
 	/* clear the vuid from the 'cache' on each connection, and
 	   from the vuid 'owner' of connections */
-	conn_clear_vuid_caches(vuid);
+	conn_clear_vuid_caches(sconn, vuid);
 
 	TALLOC_FREE(vuser);
 	sconn->smb1.sessions.num_validated_vuids--;

@@ -357,6 +357,7 @@ void init_smb_request(struct smb_request *req,
 			size_t unread_bytes,
 			bool encrypted)
 {
+	struct smbd_server_connection *sconn = smbd_server_conn;
 	size_t req_size = smb_len(inbuf) + 4;
 	/* Ensure we have at least smb_size bytes. */
 	if (req_size < smb_size) {
@@ -377,7 +378,7 @@ void init_smb_request(struct smb_request *req,
 	req->buf    = (const uint8_t *)smb_buf(inbuf);
 	req->unread_bytes = unread_bytes;
 	req->encrypted = encrypted;
-	req->conn = conn_find(req->tid);
+	req->conn = conn_find(sconn,req->tid);
 	req->chain_fsp = NULL;
 	req->chain_outbuf = NULL;
 	smb_init_perfcount_data(&req->pcd);
@@ -1968,8 +1969,9 @@ static bool keepalive_fn(const struct timeval *now, void *private_data)
  */
 static bool deadtime_fn(const struct timeval *now, void *private_data)
 {
-	if ((conn_num_open() == 0)
-	    || (conn_idle_all(now->tv_sec))) {
+	struct smbd_server_connection *sconn = smbd_server_conn;
+	if ((conn_num_open(sconn) == 0)
+	    || (conn_idle_all(sconn, now->tv_sec))) {
 		DEBUG( 2, ( "Closing idle connection\n" ) );
 		messaging_send(smbd_messaging_context(), procid_self(),
 			       MSG_SHUTDOWN, &data_blob_null);
@@ -2176,6 +2178,8 @@ void smbd_process(void)
 #ifdef HAVE_NETGROUP
 	smbd_server_conn->smb1.sessions.my_yp_domain = NULL;
 #endif
+
+	conn_init(smbd_server_conn);
 
 	smbd_server_conn->smb1.fde = event_add_fd(smbd_event_context(),
 						  smbd_server_conn,
