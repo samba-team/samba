@@ -94,6 +94,16 @@ connection_struct *conn_new(struct smbd_server_connection *sconn)
 	int i;
         int find_offset = 1;
 
+	if (sconn->allow_smb2) {
+		if (!(conn=TALLOC_ZERO_P(NULL, connection_struct)) ||
+		    !(conn->params = TALLOC_P(conn, struct share_params))) {
+			DEBUG(0,("TALLOC_ZERO() failed!\n"));
+			TALLOC_FREE(conn);
+			return NULL;
+		}
+		return conn;
+	}
+
 find_again:
 	i = bitmap_find(sconn->smb1.tcons.bmap, find_offset);
 	
@@ -286,6 +296,11 @@ void conn_free_internal(connection_struct *conn)
 
 void conn_free(struct smbd_server_connection *sconn, connection_struct *conn)
 {
+	if (sconn->allow_smb2) {
+		conn_free_internal(conn);
+		return;
+	}
+
 	DLIST_REMOVE(sconn->smb1.tcons.Connections, conn);
 
 	bitmap_clear(sconn->smb1.tcons.bmap, conn->cnum);
