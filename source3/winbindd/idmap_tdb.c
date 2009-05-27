@@ -594,6 +594,8 @@ static NTSTATUS idmap_tdb_db_init(struct idmap_domain *dom, const char *params)
 	NTSTATUS ret;
 	struct idmap_tdb_context *ctx;
 
+	DEBUG(10, ("idmap_tdb_db_init called for domain '%s'\n", dom->name));
+
 	ctx = talloc(dom, struct idmap_tdb_context);
 	if ( ! ctx) {
 		DEBUG(0, ("Out of memory!\n"));
