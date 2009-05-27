@@ -27,6 +27,7 @@
 static bool gpfs_share_modes;
 static bool gpfs_leases;
 static bool gpfs_getrealfilename;
+static bool gpfs_winattr;
 
 static int (*gpfs_set_share_fn)(int fd, unsigned int allow, unsigned int deny);
 static int (*gpfs_set_lease_fn)(int fd, unsigned int leaseType);
@@ -34,6 +35,8 @@ static int (*gpfs_getacl_fn)(char *pathname, int flags, void *acl);
 static int (*gpfs_putacl_fn)(char *pathname, int flags, void *acl);
 static int (*gpfs_get_realfilename_path_fn)(char *pathname, char *filenamep,
 					    int *buflen);
+static int (*gpfs_set_winattrs_path_fn)(char *pathname, int flags, struct gpfs_winattr *attrs);
+static int (*gpfs_get_winattrs_path_fn)(char *pathname, struct gpfs_winattr *attrs);
 
 
 bool set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
@@ -149,6 +152,28 @@ int smbd_gpfs_get_realfilename_path(char *pathname, char *filenamep,
 	return gpfs_get_realfilename_path_fn(pathname, filenamep, buflen);
 }
 
+int get_gpfs_winattrs(char *pathname,struct gpfs_winattr *attrs)
+{
+
+        if ((!gpfs_winattr) || (gpfs_get_winattrs_path_fn == NULL)) {
+                errno = ENOSYS;
+                return -1;
+        }
+        DEBUG(0, ("gpfs_get_winattrs_path:open call %s\n",pathname));
+        return gpfs_get_winattrs_path_fn(pathname, attrs);
+}
+
+int set_gpfs_winattrs(char *pathname,int flags,struct gpfs_winattr *attrs)
+{
+        if ((!gpfs_winattr) || (gpfs_set_winattrs_path_fn == NULL)) {
+                errno = ENOSYS;
+                return -1;
+        }
+
+        DEBUG(0, ("gpfs_set_winattrs_path:open call %s\n",pathname));
+        return gpfs_set_winattrs_path_fn(pathname,flags, attrs);
+}
+
 static bool init_gpfs_function_lib(void *plibhandle_pointer,
 				   const char *libname,
 				   void *pfn_pointer, const char *fn_name)
@@ -207,11 +232,15 @@ void init_gpfs(void)
 	init_gpfs_function(&gpfs_putacl_fn, "gpfs_putacl");
 	init_gpfs_function(&gpfs_get_realfilename_path_fn,
 			   "gpfs_get_realfilename_path");
+	init_gpfs_function(&gpfs_get_winattrs_path_fn,"gpfs_get_winattrs_path");
+        init_gpfs_function(&gpfs_set_winattrs_path_fn,"gpfs_set_winattrs_path");
+
 
 	gpfs_share_modes = lp_parm_bool(-1, "gpfs", "sharemodes", True);
 	gpfs_leases      = lp_parm_bool(-1, "gpfs", "leases", True);
 	gpfs_getrealfilename = lp_parm_bool(-1, "gpfs", "getrealfilename",
 					    True);
+	gpfs_winattr = lp_parm_bool(-1, "gpfs", "winattr", False);
 
 	return;
 }
@@ -253,6 +282,18 @@ int smbd_gpfs_get_realfilename_path(char *pathname, char *fileamep,
 {
 	errno = ENOSYS;
 	return -1;
+}
+
+int set_gpfs_winattrs(char *pathname,int flags,struct gpfs_winattr *attrs)
+{
+        errno = ENOSYS;
+        return -1;
+}
+
+int get_gpfs_winattrs(char *pathname,struct gpfs_winattr *attrs)
+{
+        errno = ENOSYS;
+        return -1;
 }
 
 void init_gpfs(void)

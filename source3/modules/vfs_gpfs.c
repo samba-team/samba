@@ -876,6 +876,97 @@ static int vfs_gpfs_fchmod(vfs_handle_struct *handle, files_struct *fsp, mode_t 
 		 return rc;
 }
 
+static int gpfs_set_xattr(struct vfs_handle_struct *handle,  const char *path,
+                           const char *name, const void *value, size_t size,  int flags){
+        const char *attrstr = value;
+        unsigned int dosmode=0;
+        struct gpfs_winattr attrs;
+        int ret = 0;
+
+        DEBUG(10, ("gpfs_set_xattr: %s \n",path));
+
+        /* Only handle DOS Attributes */
+        if (strcmp(name,SAMBA_XATTR_DOS_ATTRIB) != 0){
+		DEBUG(1, ("gpfs_set_xattr:name is %s\n",name));
+		return SMB_VFS_NEXT_SETXATTR(handle,path,name,value,size,flags);
+        }
+
+        if (size < 2 || attrstr[0] != '0' || attrstr[1] != 'x' ||
+                                sscanf(attrstr, "%x", &dosmode) != 1) {
+                        DEBUG(1,("gpfs_set_xattr: Trying to set badly formed DOSATTRIB on file %s - %s\n", path, attrstr));
+                return False;
+        }
+
+        attrs.winAttrs = 0;
+        /*Just map RD_ONLY, ARCHIVE, SYSTEM and HIDDEN. Ignore the others*/
+        if (dosmode & FILE_ATTRIBUTE_ARCHIVE){
+                attrs.winAttrs |= GPFS_WINATTR_ARCHIVE;
+        }
+        if (dosmode & FILE_ATTRIBUTE_HIDDEN){
+                        attrs.winAttrs |= GPFS_WINATTR_HIDDEN;
+                }
+        if (dosmode & FILE_ATTRIBUTE_SYSTEM){
+                        attrs.winAttrs |= GPFS_WINATTR_SYSTEM;
+                }
+        if (dosmode & FILE_ATTRIBUTE_READONLY){
+                        attrs.winAttrs |= GPFS_WINATTR_READONLY;
+        }
+
+
+        ret = set_gpfs_winattrs(CONST_DISCARD(char *, path),
+				GPFS_WINATTR_SET_ATTRS, &attrs);
+        if ( ret == -1){
+                DEBUG(1, ("gpfs_set_xattr:Set GPFS attributes failed %d\n",ret));
+                return -1;
+        }
+
+        DEBUG(10, ("gpfs_set_xattr:Set attributes: 0x%x\n",attrs.winAttrs));
+        return 0;
+}
+
+static size_t gpfs_get_xattr(struct vfs_handle_struct *handle,  const char *path,
+                              const char *name, void *value, size_t size){
+        char *attrstr = value;
+        unsigned int dosmode = 0;
+        struct gpfs_winattr attrs;
+        int ret = 0;
+
+        DEBUG(10, ("gpfs_get_xattr: %s \n",path));
+
+        /* Only handle DOS Attributes */
+        if (strcmp(name,SAMBA_XATTR_DOS_ATTRIB) != 0){
+                DEBUG(1, ("gpfs_get_xattr:name is %s\n",name));
+                return SMB_VFS_NEXT_GETXATTR(handle,path,name,value,size);
+        }
+
+        ret = get_gpfs_winattrs(CONST_DISCARD(char *, path), &attrs);
+        if ( ret == -1){
+                DEBUG(1, ("gpfs_get_xattr: Get GPFS attributes failed: %d\n",ret));
+                return -1;
+        }
+
+        DEBUG(10, ("gpfs_get_xattr:Got attributes: 0x%x\n",attrs.winAttrs));
+
+        /*Just map RD_ONLY, ARCHIVE, SYSTEM and HIDDEN. Ignore the others*/
+        if (attrs.winAttrs & GPFS_WINATTR_ARCHIVE){
+                dosmode |= FILE_ATTRIBUTE_ARCHIVE;
+        }
+        if (attrs.winAttrs & GPFS_WINATTR_HIDDEN){
+                dosmode |= FILE_ATTRIBUTE_HIDDEN;
+        }
+        if (attrs.winAttrs & GPFS_WINATTR_SYSTEM){
+                dosmode |= FILE_ATTRIBUTE_SYSTEM;
+        }
+        if (attrs.winAttrs & GPFS_WINATTR_READONLY){
+                dosmode |= FILE_ATTRIBUTE_READONLY;
+        }
+
+        snprintf(attrstr, size, "0x%x", dosmode & SAMBA_ATTRIBUTES_MASK);
+        DEBUG(10, ("gpfs_get_xattr: returning %s\n",attrstr));
+        return size;
+}
+
+
 /* VFS operations structure */
 
 static vfs_op_tuple gpfs_op_tuples[] = {
@@ -935,6 +1026,14 @@ static vfs_op_tuple gpfs_op_tuples[] = {
         { SMB_VFS_OP(vfs_gpfs_close),
 	  SMB_VFS_OP_CLOSE,
 	  SMB_VFS_LAYER_TRANSPARENT },
+
+        { SMB_VFS_OP(gpfs_set_xattr),
+          SMB_VFS_OP_SETXATTR,
+          SMB_VFS_LAYER_TRANSPARENT },
+
+        { SMB_VFS_OP(gpfs_get_xattr),
+          SMB_VFS_OP_GETXATTR,
+          SMB_VFS_LAYER_TRANSPARENT },
 
         { SMB_VFS_OP(NULL), SMB_VFS_OP_NOOP, SMB_VFS_LAYER_NOOP }
 
