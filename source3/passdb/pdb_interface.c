@@ -2022,7 +2022,8 @@ NTSTATUS make_pdb_method( struct pdb_methods **methods )
 {
 	/* allocate memory for the structure as its own talloc CTX */
 
-	if ( !(*methods = TALLOC_ZERO_P(talloc_autofree_context(), struct pdb_methods) ) ) {
+	*methods = talloc_zero(talloc_autofree_context(), struct pdb_methods);
+	if (*methods == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
