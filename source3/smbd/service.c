@@ -636,8 +636,7 @@ static NTSTATUS create_connection_server_info(struct smbd_server_connection *sco
   connecting user if appropriate.
 ****************************************************************************/
 
-static connection_struct *make_connection_snum(
-					struct smbd_server_connection *sconn,
+connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 					int snum, user_struct *vuser,
 					DATA_BLOB password,
 					const char *pdev,
