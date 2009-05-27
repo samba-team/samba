@@ -200,6 +200,7 @@ NTSTATUS smbd_smb2_request_process_create(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_process_close(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_process_flush(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_process_read(struct smbd_smb2_request *req);
+NTSTATUS smbd_smb2_request_process_write(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_process_keepalive(struct smbd_smb2_request *req);
 
 struct smbd_smb2_request {
