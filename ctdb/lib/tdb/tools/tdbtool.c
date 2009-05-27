@@ -411,8 +411,8 @@ static void speed_tdb(const char *tlimit)
 	do {
 		long int r = random();
 		TDB_DATA key, dbuf;
-		key.dptr = "store test";
-		key.dsize = strlen(key.dptr);
+		key.dptr = (unsigned char *)"store test";
+		key.dsize = strlen((char *)key.dptr);
 		dbuf.dptr = (unsigned char *)&r;
 		dbuf.dsize = sizeof(r);
 		tdb_store(tdb, key, dbuf, TDB_REPLACE);
@@ -427,8 +427,8 @@ static void speed_tdb(const char *tlimit)
 	do {
 		long int r = random();
 		TDB_DATA key, dbuf;
-		key.dptr = "store test";
-		key.dsize = strlen(key.dptr);
+		key.dptr = (unsigned char *)"store test";
+		key.dsize = strlen((char *)key.dptr);
 		dbuf.dptr = (unsigned char *)&r;
 		dbuf.dsize = sizeof(r);
 		tdb_fetch(tdb, key);
@@ -443,8 +443,8 @@ static void speed_tdb(const char *tlimit)
 	do {
 		long int r = random();
 		TDB_DATA key, dbuf;
-		key.dptr = "transaction test";
-		key.dsize = strlen(key.dptr);
+		key.dptr = (unsigned char *)"transaction test";
+		key.dsize = strlen((char *)key.dptr);
 		dbuf.dptr = (unsigned char *)&r;
 		dbuf.dsize = sizeof(r);
 		tdb_transaction_start(tdb);
