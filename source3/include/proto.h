@@ -1010,13 +1010,6 @@ void srv_put_dos_date2(char *buf,int offset, time_t unixdate);
 void srv_put_dos_date3(char *buf,int offset,time_t unixdate);
 void put_long_date_timespec(char *p, struct timespec ts);
 void put_long_date(char *p, time_t t);
-struct timespec get_create_timespec(const SMB_STRUCT_STAT *st,bool fake_dirs);
-struct timespec get_atimespec(const SMB_STRUCT_STAT *pst);
-void set_atimespec(SMB_STRUCT_STAT *pst, struct timespec ts);
-struct timespec get_mtimespec(const SMB_STRUCT_STAT *pst);
-void set_mtimespec(SMB_STRUCT_STAT *pst, struct timespec ts);
-struct timespec get_ctimespec(const SMB_STRUCT_STAT *pst);
-void set_ctimespec(SMB_STRUCT_STAT *pst, struct timespec ts);
 void dos_filetime_timespec(struct timespec *tsp);
 time_t make_unix_date2(const void *date_ptr, int zone_offset);
 time_t make_unix_date3(const void *date_ptr, int zone_offset);
@@ -1113,7 +1106,7 @@ char *clean_name(TALLOC_CTX *ctx, const char *s);
 ssize_t write_data_at_offset(int fd, const char *buffer, size_t N, SMB_OFF_T pos);
 int set_blocking(int fd, bool set);
 void smb_msleep(unsigned int t);
-bool reinit_after_fork(struct messaging_context *msg_ctx,
+NTSTATUS reinit_after_fork(struct messaging_context *msg_ctx,
 		       struct event_context *ev_ctx,
 		       bool parent_longlived);
 bool yesno(const char *p);
@@ -2339,12 +2332,37 @@ void cli_reset_error(struct cli_state *cli);
 
 /* The following definitions come from libsmb/clifile.c  */
 
+struct tevent_req *cli_posix_symlink_send(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct cli_state *cli,
+					const char *oldname,
+					const char *newname);
+NTSTATUS cli_posix_symlink_recv(struct tevent_req *req);
+NTSTATUS cli_posix_symlink(struct cli_state *cli,
+			const char *oldname,
+			const char *newname);
+struct tevent_req *cli_posix_readlink_send(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct cli_state *cli,
+					const char *fname,
+					size_t len);
+NTSTATUS cli_posix_readlink_recv(struct tevent_req *req, struct cli_state *cli,
+				char *retpath, size_t len);
+NTSTATUS cli_posix_readlink(struct cli_state *cli, const char *fname,
+			char *linkpath, size_t len);
+struct tevent_req *cli_posix_hardlink_send(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct cli_state *cli,
+					const char *oldname,
+					const char *newname);
+NTSTATUS cli_posix_hardlink_recv(struct tevent_req *req);
+NTSTATUS cli_posix_hardlink(struct cli_state *cli,
+			const char *oldname,
+			const char *newname);
 uint32_t unix_perms_to_wire(mode_t perms);
 mode_t wire_perms_to_unix(uint32_t perms);
 bool cli_unix_getfacl(struct cli_state *cli, const char *name, size_t *prb_size, char **retbuf);
 bool cli_unix_stat(struct cli_state *cli, const char *name, SMB_STRUCT_STAT *sbuf);
-bool cli_unix_symlink(struct cli_state *cli, const char *oldname, const char *newname);
-bool cli_unix_hardlink(struct cli_state *cli, const char *oldname, const char *newname);
 bool cli_unix_chmod(struct cli_state *cli, const char *fname, mode_t mode);
 bool cli_unix_chown(struct cli_state *cli, const char *fname, uid_t uid, gid_t gid);
 struct tevent_req *cli_rename_send(TALLOC_CTX *mem_ctx,
@@ -4087,7 +4105,7 @@ bool lp_recursive_veto_delete(int );
 bool lp_dos_filemode(int );
 bool lp_dos_filetimes(int );
 bool lp_dos_filetime_resolution(int );
-bool lp_fake_dir_create_times(int );
+bool lp_fake_dir_create_times(void);
 bool lp_blocking_locks(int );
 bool lp_inherit_perms(int );
 bool lp_inherit_acls(int );
@@ -6174,7 +6192,7 @@ bool get_dir_entry(TALLOC_CTX *ctx,
 		char **pp_fname_out,
 		SMB_OFF_T *size,
 		uint32 *mode,
-		time_t *date,
+		struct timespec *date,
 		bool check_descend,
 		bool ask_sharemode);
 bool is_visible_file(connection_struct *conn, const char *dir_path, const char *name, SMB_STRUCT_STAT *pst, bool use_veto);

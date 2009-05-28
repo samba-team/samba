@@ -916,6 +916,14 @@
 		</varlistentry>
 
 		<varlistentry>
+		<term>readlink symlinkname</term>
+		<listitem><para>This command depends on the server supporting the CIFS
+		UNIX extensions and will fail if the server does not. Print
+		the value of the symlink "symlinkname".
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
 		<term>rd &lt;directory name&gt;</term>
 		<listitem><para>See the rmdir command. </para></listitem>
 		</varlistentry>

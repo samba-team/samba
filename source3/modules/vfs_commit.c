@@ -220,7 +220,7 @@ static int commit_open(
                 if (SMB_VFS_FSTAT(fsp, &st) == -1) {
                         return -1;
                 }
-		c->eof = st.st_size;
+		c->eof = st.st_ex_size;
         }
 
         return 0;

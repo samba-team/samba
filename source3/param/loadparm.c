@@ -351,6 +351,7 @@ struct global {
 	int cups_connection_timeout;
 	char *szSMBPerfcountModule;
 	bool bMapUntrustedToDomain;
+	bool bFakeDirCreateTimes;
 };
 
 static struct global Globals;
@@ -362,7 +363,7 @@ struct service {
 	bool valid;
 	bool autoloaded;
 	int usershare;
-	time_t usershare_last_mod;
+	struct timespec usershare_last_mod;
 	char *szService;
 	char *szPath;
 	char *szUsername;
@@ -468,7 +469,6 @@ struct service {
 	bool bDosFilemode;
 	bool bDosFiletimes;
 	bool bDosFiletimeResolution;
-	bool bFakeDirCreateTimes;
 	bool bBlockingLocks;
 	bool bInheritPerms;
 	bool bInheritACLS;
@@ -506,7 +506,7 @@ static struct service sDefault = {
 	True,			/* valid */
 	False,			/* not autoloaded */
 	0,			/* not a usershare */
-	(time_t)0,              /* No last mod time */
+	{0, },                  /* No last mod time */
 	NULL,			/* szService */
 	NULL,			/* szPath */
 	NULL,			/* szUsername */
@@ -612,7 +612,6 @@ static struct service sDefault = {
 	False,			/* bDosFilemode */
 	True,			/* bDosFiletimes */
 	False,			/* bDosFiletimeResolution */
-	False,			/* bFakeDirCreateTimes */
 	True,			/* bBlockingLocks */
 	False,			/* bInheritPerms */
 	False,			/* bInheritACLS */
@@ -4274,11 +4273,11 @@ static struct parm_struct parm_table[] = {
 	{
 		.label		= "fake directory create times",
 		.type		= P_BOOL,
-		.p_class	= P_LOCAL,
-		.ptr		= &sDefault.bFakeDirCreateTimes,
+		.p_class	= P_GLOBAL,
+		.ptr		= &Globals.bFakeDirCreateTimes,
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL,
+		.flags		= FLAG_ADVANCED | FLAG_GLOBAL,
 	},
 	{
 		.label		= "panic action",
@@ -5000,7 +4999,7 @@ static void init_globals(bool first_time_only)
 	   a large number of sites (tridge) */
 	Globals.bHostnameLookups = False;
 
-	string_set(&Globals.szPassdbBackend, "smbpasswd");
+	string_set(&Globals.szPassdbBackend, "tdbsam");
 	string_set(&Globals.szLdapSuffix, "");
 	string_set(&Globals.szLdapMachineSuffix, "");
 	string_set(&Globals.szLdapUserSuffix, "");
@@ -5584,7 +5583,7 @@ FN_LOCAL_BOOL(lp_recursive_veto_delete, bDeleteVetoFiles)
 FN_LOCAL_BOOL(lp_dos_filemode, bDosFilemode)
 FN_LOCAL_BOOL(lp_dos_filetimes, bDosFiletimes)
 FN_LOCAL_BOOL(lp_dos_filetime_resolution, bDosFiletimeResolution)
-FN_LOCAL_BOOL(lp_fake_dir_create_times, bFakeDirCreateTimes)
+FN_GLOBAL_BOOL(lp_fake_dir_create_times, &Globals.bFakeDirCreateTimes)
 FN_LOCAL_BOOL(lp_blocking_locks, bBlockingLocks)
 FN_LOCAL_BOOL(lp_inherit_perms, bInheritPerms)
 FN_LOCAL_BOOL(lp_inherit_acls, bInheritACLS)
@@ -8330,27 +8329,27 @@ static void set_allowed_client_auth(void)
 static bool check_usershare_stat(const char *fname,
 				 const SMB_STRUCT_STAT *psbuf)
 {
-	if (!S_ISREG(psbuf->st_mode)) {
+	if (!S_ISREG(psbuf->st_ex_mode)) {
 		DEBUG(0,("check_usershare_stat: file %s owned by uid %u is "
 			"not a regular file\n",
-			fname, (unsigned int)psbuf->st_uid ));
+			fname, (unsigned int)psbuf->st_ex_uid ));
 		return False;
 	}
 
 	/* Ensure this doesn't have the other write bit set. */
-	if (psbuf->st_mode & S_IWOTH) {
+	if (psbuf->st_ex_mode & S_IWOTH) {
 		DEBUG(0,("check_usershare_stat: file %s owned by uid %u allows "
 			"public write. Refusing to allow as a usershare file.\n",
-			fname, (unsigned int)psbuf->st_uid ));
+			fname, (unsigned int)psbuf->st_ex_uid ));
 		return False;
 	}
 
 	/* Should be 10k or less. */
-	if (psbuf->st_size > MAX_USERSHARE_FILE_SIZE) {
+	if (psbuf->st_ex_size > MAX_USERSHARE_FILE_SIZE) {
 		DEBUG(0,("check_usershare_stat: file %s owned by uid %u is "
 			"too large (%u) to be a user share file.\n",
-			fname, (unsigned int)psbuf->st_uid,
-			(unsigned int)psbuf->st_size ));
+			fname, (unsigned int)psbuf->st_ex_uid,
+			(unsigned int)psbuf->st_ex_size ));
 		return False;
 	}
 
@@ -8509,7 +8508,7 @@ enum usershare_err parse_usershare_file(TALLOC_CTX *ctx,
 
 	sys_closedir(dp);
 
-	if (!S_ISDIR(sbuf.st_mode)) {
+	if (!S_ISDIR(sbuf.st_ex_mode)) {
 		DEBUG(2,("parse_usershare_file: share %s path %s is not a directory.\n",
 			servicename, sharepath ));
 		return USERSHARE_PATH_NOT_DIRECTORY;
@@ -8521,7 +8520,7 @@ enum usershare_err parse_usershare_file(TALLOC_CTX *ctx,
 
 	if (lp_usershare_owner_only()) {
 		/* root can share anything. */
-		if ((psbuf->st_uid != 0) && (sbuf.st_uid != psbuf->st_uid)) {
+		if ((psbuf->st_ex_uid != 0) && (sbuf.st_ex_uid != psbuf->st_ex_uid)) {
 			return USERSHARE_PATH_NOT_ALLOWED;
 		}
 	}
@@ -8599,7 +8598,9 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 		TALLOC_FREE(canon_name);
 	}
 
-	if (iService != -1 && ServicePtrs[iService]->usershare_last_mod == lsbuf.st_mtime) {
+	if (iService != -1 &&
+	    timespec_compare(&ServicePtrs[iService]->usershare_last_mod,
+			     &lsbuf.st_ex_mtime) == 0) {
 		/* Nothing changed - Mark valid and return. */
 		DEBUG(10,("process_usershare_file: service %s not changed.\n",
 			service_name ));
@@ -8632,7 +8633,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	}
 
 	/* Is it the same dev/inode as was lstated ? */
-	if (lsbuf.st_dev != sbuf.st_dev || lsbuf.st_ino != sbuf.st_ino) {
+	if (lsbuf.st_ex_dev != sbuf.st_ex_dev || lsbuf.st_ex_ino != sbuf.st_ex_ino) {
 		close(fd);
 		DEBUG(0,("process_usershare_file: fstat of %s is a different file from lstat. "
 			"Symlink spoofing going on ?\n", fname ));
@@ -8652,7 +8653,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	close(fd);
 	if (lines == NULL) {
 		DEBUG(0,("process_usershare_file: loading file %s owned by %u failed.\n",
-			fname, (unsigned int)sbuf.st_uid ));
+			fname, (unsigned int)sbuf.st_ex_uid ));
 		SAFE_FREE(fname);
 		return -1;
 	}
@@ -8716,7 +8717,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	}
 
 	/* And note when it was loaded. */
-	ServicePtrs[iService]->usershare_last_mod = sbuf.st_mtime;
+	ServicePtrs[iService]->usershare_last_mod = sbuf.st_ex_mtime;
 	string_set(&ServicePtrs[iService]->szPath, sharepath);
 	string_set(&ServicePtrs[iService]->comment, comment);
 
@@ -8729,7 +8730,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
  Checks if a usershare entry has been modified since last load.
 ***************************************************************************/
 
-static bool usershare_exists(int iService, time_t *last_mod)
+static bool usershare_exists(int iService, struct timespec *last_mod)
 {
 	SMB_STRUCT_STAT lsbuf;
 	const char *usersharepath = Globals.szUsersharePath;
@@ -8746,13 +8747,13 @@ static bool usershare_exists(int iService, time_t *last_mod)
 		return false;
 	}
 
-	if (!S_ISREG(lsbuf.st_mode)) {
+	if (!S_ISREG(lsbuf.st_ex_mode)) {
 		SAFE_FREE(fname);
 		return false;
 	}
 
 	SAFE_FREE(fname);
-	*last_mod = lsbuf.st_mtime;
+	*last_mod = lsbuf.st_ex_mtime;
 	return true;
 }
 
@@ -8777,7 +8778,7 @@ int load_usershare_service(const char *servicename)
 		return -1;
 	}
 
-	if (!S_ISDIR(sbuf.st_mode)) {
+	if (!S_ISDIR(sbuf.st_ex_mode)) {
 		DEBUG(0,("load_usershare_service: %s is not a directory.\n",
 			usersharepath ));
 		return -1;
@@ -8789,9 +8790,9 @@ int load_usershare_service(const char *servicename)
 	 */
 
 #ifdef S_ISVTX
-	if (sbuf.st_uid != 0 || !(sbuf.st_mode & S_ISVTX) || (sbuf.st_mode & S_IWOTH)) {
+	if (sbuf.st_ex_uid != 0 || !(sbuf.st_ex_mode & S_ISVTX) || (sbuf.st_ex_mode & S_IWOTH)) {
 #else
-	if (sbuf.st_uid != 0 || (sbuf.st_mode & S_IWOTH)) {
+	if (sbuf.st_ex_uid != 0 || (sbuf.st_ex_mode & S_IWOTH)) {
 #endif
 		DEBUG(0,("load_usershare_service: directory %s is not owned by root "
 			"or does not have the sticky bit 't' set or is writable by anyone.\n",
@@ -8860,9 +8861,9 @@ int load_usershare_shares(void)
 	 */
 
 #ifdef S_ISVTX
-	if (sbuf.st_uid != 0 || !(sbuf.st_mode & S_ISVTX) || (sbuf.st_mode & S_IWOTH)) {
+	if (sbuf.st_ex_uid != 0 || !(sbuf.st_ex_mode & S_ISVTX) || (sbuf.st_ex_mode & S_IWOTH)) {
 #else
-	if (sbuf.st_uid != 0 || (sbuf.st_mode & S_IWOTH)) {
+	if (sbuf.st_ex_uid != 0 || (sbuf.st_ex_mode & S_IWOTH)) {
 #endif
 		DEBUG(0,("load_usershare_shares: directory %s is not owned by root "
 			"or does not have the sticky bit 't' set or is writable by anyone.\n",
@@ -9263,7 +9264,7 @@ int lp_servicenumber(const char *pszServiceName)
 	}
 
 	if (iService >= 0 && ServicePtrs[iService]->usershare == USERSHARE_VALID) {
-		time_t last_mod;
+		struct timespec last_mod;
 
 		if (!usershare_exists(iService, &last_mod)) {
 			/* Remove the share security tdb entry for it. */
@@ -9275,7 +9276,8 @@ int lp_servicenumber(const char *pszServiceName)
 		}
 
 		/* Has it been modified ? If so delete and reload. */
-		if (ServicePtrs[iService]->usershare_last_mod < last_mod) {
+		if (timespec_compare(&ServicePtrs[iService]->usershare_last_mod,
+				     &last_mod) < 0) {
 			/* Remove it from the array. */
 			free_service_byindex(iService);
 			/* and now reload it. */

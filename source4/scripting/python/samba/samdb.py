@@ -36,14 +36,14 @@ class SamDB(samba.Ldb):
     """The SAM database."""
 
     def __init__(self, url=None, session_info=None, credentials=None, 
-                 modules_dir=None, lp=None):
+                 modules_dir=None, lp=None, options=None):
         """Open the Sam Database.
 
         :param url: URL of the database.
         """
         self.lp = lp
         super(SamDB, self).__init__(session_info=session_info, credentials=credentials,
-                                    modules_dir=modules_dir, lp=lp)
+                                    modules_dir=modules_dir, lp=lp, options=options)
         glue.dsdb_set_global_schema(self)
         if url:
             self.connect(url)

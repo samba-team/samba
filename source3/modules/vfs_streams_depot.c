@@ -182,7 +182,7 @@ static char *stream_dir(vfs_handle_struct *handle, const char *base_path,
 	if (SMB_VFS_NEXT_STAT(handle, result, &sbuf) == 0) {
 		char *newname;
 
-		if (!S_ISDIR(sbuf.st_mode)) {
+		if (!S_ISDIR(sbuf.st_ex_mode)) {
 			errno = EINVAL;
 			goto fail;
 		}
@@ -504,7 +504,7 @@ static int streams_depot_unlink(vfs_handle_struct *handle,  const char *fname)
 		return -1;
 	}
 
-	if (sbuf.st_nlink == 1) {
+	if (sbuf.st_ex_nlink == 1) {
 		char *dirname = stream_dir(handle, fname, &sbuf, false);
 
 		if (dirname != NULL) {
@@ -652,7 +652,7 @@ static bool collect_one_stream(const char *dirname,
 
 	if (!add_one_stream(state->mem_ctx,
 			    &state->num_streams, &state->streams,
-			    dirent, sbuf.st_size,
+			    dirent, sbuf.st_ex_size,
 			    SMB_VFS_GET_ALLOC_SIZE(state->handle->conn, NULL,
 						   &sbuf))) {
 		state->status = NT_STATUS_NO_MEMORY;
@@ -698,10 +698,10 @@ static NTSTATUS streams_depot_streaminfo(vfs_handle_struct *handle,
 	state.streams = NULL;
 	state.num_streams = 0;
 
-	if (!S_ISDIR(sbuf.st_mode)) {
+	if (!S_ISDIR(sbuf.st_ex_mode)) {
 		if (!add_one_stream(mem_ctx,
 				    &state.num_streams, &state.streams,
-				    "::$DATA", sbuf.st_size,
+				    "::$DATA", sbuf.st_ex_size,
 				    SMB_VFS_GET_ALLOC_SIZE(handle->conn, fsp,
 							   &sbuf))) {
 			return NT_STATUS_NO_MEMORY;

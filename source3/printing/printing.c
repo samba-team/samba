@@ -1436,8 +1436,9 @@ void start_background_queue(void)
 		close(pause_pipe[0]);
 		pause_pipe[0] = -1;
 
-		if (!reinit_after_fork(smbd_messaging_context(),
-				       smbd_event_context(), true)) {
+		if (!NT_STATUS_IS_OK(reinit_after_fork(smbd_messaging_context(),
+						       smbd_event_context(),
+						       true))) {
 			DEBUG(0,("reinit_after_fork() failed\n"));
 			smb_panic("reinit_after_fork() failed");
 		}
@@ -2563,7 +2564,7 @@ bool print_job_end(int snum, uint32 jobid, enum file_close_type close_type)
 
 	if ((close_type == NORMAL_CLOSE || close_type == SHUTDOWN_CLOSE) &&
 				(sys_fstat(pjob->fd, &sbuf) == 0)) {
-		pjob->size = sbuf.st_size;
+		pjob->size = sbuf.st_ex_size;
 		close(pjob->fd);
 		pjob->fd = -1;
 	} else {

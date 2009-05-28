@@ -103,7 +103,7 @@ static void check_magic(struct files_struct *fsp)
 		return;
 	}
 
-	transfer_file(tmp_fd,outfd,(SMB_OFF_T)st.st_size);
+	transfer_file(tmp_fd,outfd,(SMB_OFF_T)st.st_ex_size);
 	close(tmp_fd);
 	close(outfd);
 	TALLOC_FREE(ctx);

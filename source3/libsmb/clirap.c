@@ -1105,9 +1105,9 @@ bool cli_qpathinfo_basic( struct cli_state *cli, const char *name,
 		return False;
 	}
 
-	set_atimespec(sbuf, interpret_long_date( rdata+8 )); /* Access time. */
-	set_mtimespec(sbuf, interpret_long_date( rdata+16 )); /* Write time. */
-	set_ctimespec(sbuf, interpret_long_date( rdata+24 )); /* Change time. */
+	sbuf->st_ex_atime = interpret_long_date( rdata+8 ); /* Access time. */
+	sbuf->st_ex_mtime = interpret_long_date( rdata+16 ); /* Write time. */
+	sbuf->st_ex_ctime = interpret_long_date( rdata+24 ); /* Change time. */
 
 	*attributes = IVAL( rdata, 32 );
 

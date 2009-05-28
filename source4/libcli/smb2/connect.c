@@ -164,8 +164,11 @@ static void continue_socket(struct composite_context *creq)
 	struct smbcli_socket *sock;
 	struct smb2_transport *transport;
 	struct smb2_request *req;
-	uint16_t dialects[3] = { SMB2_DIALECT_REVISION, SMB21_DIALECT_REVISION,
-				 SMB2_LONGHORN_BETA_DIALECT_REVISION };
+	uint16_t dialects[3] = {
+		SMB2_DIALECT_REVISION_000,
+		SMB2_DIALECT_REVISION_202,
+		SMB2_DIALECT_REVISION_210
+	};
 
 	c->status = smbcli_sock_connect_recv(creq, state, &sock);
 	if (!composite_is_ok(c)) return;

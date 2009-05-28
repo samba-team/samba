@@ -739,7 +739,7 @@ void check_log_size( void )
 
 	maxlog = lp_max_log_size() * 1024;
 
-	if( sys_fstat( x_fileno( dbf ), &st ) == 0 && st.st_size > maxlog ) {
+	if( sys_fstat( x_fileno( dbf ), &st ) == 0 && st.st_ex_size > maxlog ) {
 		(void)reopen_logs();
 		if( dbf && get_file_size( debugf ) > maxlog ) {
 			char *name = NULL;

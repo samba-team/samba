@@ -290,6 +290,201 @@ int sys_fcntl_long(int fd, int cmd, long arg)
 	return ret;
 }
 
+/****************************************************************************
+ Return the best approximation to a 'create time' under UNIX from a stat
+ structure.
+****************************************************************************/
+
+static time_t calc_create_time(const struct stat *st)
+{
+	time_t ret, ret1;
+
+	ret = MIN(st->st_ctime, st->st_mtime);
+	ret1 = MIN(ret, st->st_atime);
+
+	if(ret1 != (time_t)0) {
+		return ret1;
+	}
+
+	/*
+	 * One of ctime, mtime or atime was zero (probably atime).
+	 * Just return MIN(ctime, mtime).
+	 */
+	return ret;
+}
+
+/****************************************************************************
+ Return the 'create time' from a stat struct if it exists (birthtime) or else
+ use the best approximation.
+****************************************************************************/
+
+static struct timespec get_create_timespec(const struct stat *pst)
+{
+	struct timespec ret;
+
+	if (S_ISDIR(pst->st_mode) && lp_fake_dir_create_times()) {
+		ret.tv_sec = 315493200L;          /* 1/1/1980 */
+		ret.tv_nsec = 0;
+		return ret;
+	}
+
+#if defined(HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC_TV_NSEC)
+	ret = pst->st_birthtimespec;
+#elif defined(HAVE_STRUCT_STAT_ST_BIRTHTIMENSEC)
+	ret.tv_sec = pst->st_birthtime;
+	ret.tv_nsec = pst->st_birthtimenspec;
+#elif defined(HAVE_STRUCT_STAT_ST_BIRTHTIME)
+	ret.tv_sec = pst->st_birthtime;
+	ret.tv_nsec = 0;
+#else
+	ret.tv_sec = calc_create_time(pst);
+	ret.tv_nsec = 0;
+#endif
+
+	/* Deal with systems that don't initialize birthtime correctly.
+	 * Pointed out by SATOH Fumiyasu <fumiyas@osstech.jp>.
+	 */
+	if (null_timespec(ret)) {
+		ret.tv_sec = calc_create_time(pst);
+		ret.tv_nsec = 0;
+	}
+	return ret;
+}
+
+/****************************************************************************
+ Get/Set all the possible time fields from a stat struct as a timespec.
+****************************************************************************/
+
+static struct timespec get_atimespec(const struct stat *pst)
+{
+#if !defined(HAVE_STAT_HIRES_TIMESTAMPS)
+	struct timespec ret;
+
+	/* Old system - no ns timestamp. */
+	ret.tv_sec = pst->st_atime;
+	ret.tv_nsec = 0;
+	return ret;
+#else
+#if defined(HAVE_STRUCT_STAT_ST_MTIM_TV_NSEC)
+	return pst->st_atim;
+#elif defined(HAVE_STRUCT_STAT_ST_MTIMENSEC)
+	struct timespec ret;
+	ret.tv_sec = pst->st_atime;
+	ret.tv_nsec = pst->st_atimensec;
+	return ret;
+#elif defined(HAVE_STRUCT_STAT_ST_MTIME_N)
+	struct timespec ret;
+	ret.tv_sec = pst->st_atime;
+	ret.tv_nsec = pst->st_atime_n;
+	return ret;
+#elif defined(HAVE_STRUCT_STAT_ST_UMTIME)
+	struct timespec ret;
+	ret.tv_sec = pst->st_atime;
+	ret.tv_nsec = pst->st_uatime * 1000;
+	return ret;
+#elif defined(HAVE_STRUCT_STAT_ST_MTIMESPEC_TV_NSEC)
+	return pst->st_atimespec;
+#else
+#error	CONFIGURE_ERROR_IN_DETECTING_TIMESPEC_IN_STAT
+#endif
+#endif
+}
+
+static struct timespec get_mtimespec(const struct stat *pst)
+{
+#if !defined(HAVE_STAT_HIRES_TIMESTAMPS)
+	struct timespec ret;
+
+	/* Old system - no ns timestamp. */
+	ret.tv_sec = pst->st_mtime;
+	ret.tv_nsec = 0;
+	return ret;
+#else
+#if defined(HAVE_STRUCT_STAT_ST_MTIM_TV_NSEC)
+	return pst->st_mtim;
+#elif defined(HAVE_STRUCT_STAT_ST_MTIMENSEC)
+	struct timespec ret;
+	ret.tv_sec = pst->st_mtime;
+	ret.tv_nsec = pst->st_mtimensec;
+	return ret;
+#elif defined(HAVE_STRUCT_STAT_ST_MTIME_N)
+	struct timespec ret;
+	ret.tv_sec = pst->st_mtime;
+	ret.tv_nsec = pst->st_mtime_n;
+	return ret;
+#elif defined(HAVE_STRUCT_STAT_ST_UMTIME)
+	struct timespec ret;
+	ret.tv_sec = pst->st_mtime;
+	ret.tv_nsec = pst->st_umtime * 1000;
+	return ret;
+#elif defined(HAVE_STRUCT_STAT_ST_MTIMESPEC_TV_NSEC)
+	return pst->st_mtimespec;
+#else
+#error	CONFIGURE_ERROR_IN_DETECTING_TIMESPEC_IN_STAT
+#endif
+#endif
+}
+
+static struct timespec get_ctimespec(const struct stat *pst)
+{
+#if !defined(HAVE_STAT_HIRES_TIMESTAMPS)
+	struct timespec ret;
+
+	/* Old system - no ns timestamp. */
+	ret.tv_sec = pst->st_ctime;
+	ret.tv_nsec = 0;
+	return ret;
+#else
+#if defined(HAVE_STRUCT_STAT_ST_MTIM_TV_NSEC)
+	return pst->st_ctim;
+#elif defined(HAVE_STRUCT_STAT_ST_MTIMENSEC)
+	struct timespec ret;
+	ret.tv_sec = pst->st_ctime;
+	ret.tv_nsec = pst->st_ctimensec;
+	return ret;
+#elif defined(HAVE_STRUCT_STAT_ST_MTIME_N)
+	struct timespec ret;
+	ret.tv_sec = pst->st_ctime;
+	ret.tv_nsec = pst->st_ctime_n;
+	return ret;
+#elif defined(HAVE_STRUCT_STAT_ST_UMTIME)
+	struct timespec ret;
+	ret.tv_sec = pst->st_ctime;
+	ret.tv_nsec = pst->st_uctime * 1000;
+	return ret;
+#elif defined(HAVE_STRUCT_STAT_ST_MTIMESPEC_TV_NSEC)
+	return pst->st_ctimespec;
+#else
+#error	CONFIGURE_ERROR_IN_DETECTING_TIMESPEC_IN_STAT
+#endif
+#endif
+}
+
+static void init_stat_ex_from_stat (struct stat_ex *dst,
+				    const struct stat *src)
+{
+	dst->st_ex_dev = src->st_dev;
+	dst->st_ex_ino = src->st_ino;
+	dst->st_ex_mode = src->st_mode;
+	dst->st_ex_nlink = src->st_nlink;
+	dst->st_ex_uid = src->st_uid;
+	dst->st_ex_gid = src->st_gid;
+	dst->st_ex_rdev = src->st_rdev;
+	dst->st_ex_size = src->st_size;
+	dst->st_ex_atime = get_atimespec(src);
+	dst->st_ex_mtime = get_mtimespec(src);
+	dst->st_ex_ctime = get_ctimespec(src);
+	dst->st_ex_btime = get_create_timespec(src);
+	dst->st_ex_blksize = src->st_blksize;
+	dst->st_ex_blocks = src->st_blocks;
+
+#ifdef HAVE_STAT_ST_FLAGS
+	dst->st_ex_flags = src->st_flags;
+#else
+	dst->st_ex_flags = 0;
+#endif
+}
+
 /*******************************************************************
 A stat() wrapper that will deal with 64 bit filesizes.
 ********************************************************************/
@@ -300,10 +495,16 @@ int sys_stat(const char *fname,SMB_STRUCT_STAT *sbuf)
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_STAT64)
 	ret = stat64(fname, sbuf);
 #else
-	ret = stat(fname, sbuf);
+	struct stat statbuf;
+	ret = stat(fname, &statbuf);
 #endif
-	/* we always want directories to appear zero size */
-	if (ret == 0 && S_ISDIR(sbuf->st_mode)) sbuf->st_size = 0;
+	if (ret == 0) {
+		/* we always want directories to appear zero size */
+		if (S_ISDIR(statbuf.st_mode)) {
+			statbuf.st_size = 0;
+		}
+		init_stat_ex_from_stat(sbuf, &statbuf);
+	}
 	return ret;
 }
 
@@ -317,10 +518,16 @@ int sys_fstat(int fd,SMB_STRUCT_STAT *sbuf)
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_FSTAT64)
 	ret = fstat64(fd, sbuf);
 #else
-	ret = fstat(fd, sbuf);
+	struct stat statbuf;
+	ret = fstat(fd, &statbuf);
 #endif
-	/* we always want directories to appear zero size */
-	if (ret == 0 && S_ISDIR(sbuf->st_mode)) sbuf->st_size = 0;
+	if (ret == 0) {
+		/* we always want directories to appear zero size */
+		if (S_ISDIR(statbuf.st_mode)) {
+			statbuf.st_size = 0;
+		}
+		init_stat_ex_from_stat(sbuf, &statbuf);
+	}
 	return ret;
 }
 
@@ -334,10 +541,16 @@ int sys_lstat(const char *fname,SMB_STRUCT_STAT *sbuf)
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_LSTAT64)
 	ret = lstat64(fname, sbuf);
 #else
-	ret = lstat(fname, sbuf);
+	struct stat statbuf;
+	ret = lstat(fname, &statbuf);
 #endif
-	/* we always want directories to appear zero size */
-	if (ret == 0 && S_ISDIR(sbuf->st_mode)) sbuf->st_size = 0;
+	if (ret == 0) {
+		/* we always want directories to appear zero size */
+		if (S_ISDIR(statbuf.st_mode)) {
+			statbuf.st_size = 0;
+		}
+		init_stat_ex_from_stat(sbuf, &statbuf);
+	}
 	return ret;
 }
 

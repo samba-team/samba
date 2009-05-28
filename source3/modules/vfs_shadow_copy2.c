@@ -314,7 +314,7 @@ static void convert_sbuf(vfs_handle_struct *handle, const char *fname, SMB_STRUC
 		if (shash == 0) {
 			shash = 1;
 		}
-		sbuf->st_ino ^= shash;
+		sbuf->st_ex_ino ^= shash;
 	}
 }
 

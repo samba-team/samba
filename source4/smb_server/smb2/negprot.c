@@ -97,14 +97,21 @@ static NTSTATUS smb2srv_negprot_backend(struct smb2srv_request *req, struct smb2
 	NTSTATUS status;
 	struct timeval current_time;
 	struct timeval boot_time;
+	uint16_t i;
+	uint16_t dialect = 0;
 
 	/* we only do one dialect for now */
 	if (io->in.dialect_count < 1) {
 		return NT_STATUS_NOT_SUPPORTED;
 	}
-	if (io->in.dialects[0] != 0 &&
-	    io->in.dialects[0] != SMB2_DIALECT_REVISION) {
-		DEBUG(0,("Got unexpected SMB2 dialect %u\n", io->in.dialects[0]));
+	for (i=0; i < io->in.dialect_count; i++) {
+		dialect = io->in.dialects[i];
+		if (dialect == SMB2_DIALECT_REVISION_202) {
+			break;
+		}
+	}
+	if (dialect != SMB2_DIALECT_REVISION_202) {
+		DEBUG(0,("Got unexpected SMB2 dialect %u\n", dialect));
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
@@ -128,7 +135,7 @@ static NTSTATUS smb2srv_negprot_backend(struct smb2srv_request *req, struct smb2
 		req->smb_conn->smb2_signing_required = true;
 		break;
 	}
-	io->out.dialect_revision   = SMB2_DIALECT_REVISION;
+	io->out.dialect_revision   = dialect;
 	io->out.capabilities       = 0;
 	io->out.max_transact_size  = lp_parm_ulong(req->smb_conn->lp_ctx, NULL, 
 						   "smb2", "max transaction size", 0x10000);
@@ -281,7 +288,7 @@ void smb2srv_reply_smb_negprot(struct smbsrv_request *smb_req)
 
 	SSVAL(req->in.body, 0x02, 1);
 	memset(req->in.body+0x04, 0, 32);
-	SSVAL(req->in.body, 0x24, 0);
+	SSVAL(req->in.body, 0x24, SMB2_DIALECT_REVISION_202);
 
 	smb2srv_negprot_recv(req);
 	return;

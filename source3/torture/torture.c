@@ -4135,8 +4135,12 @@ static bool run_opentest(int dummy)
 static bool run_simple_posix_open_test(int dummy)
 {
 	static struct cli_state *cli1;
-	const char *fname = "\\posix:file";
-	const char *dname = "\\posix:dir";
+	const char *fname = "posix:file";
+	const char *hname = "posix:hlink";
+	const char *sname = "posix:symlink";
+	const char *dname = "posix:dir";
+	char buf[10];
+	char namebuf[11];
 	uint16 major, minor;
 	uint32 caplow, caphigh;
 	uint16_t fnum1 = (uint16_t)-1;
@@ -4171,6 +4175,10 @@ static bool run_simple_posix_open_test(int dummy)
 	cli_posix_unlink(cli1, fname);
 	cli_setatr(cli1, dname, 0, 0);
 	cli_posix_rmdir(cli1, dname);
+	cli_setatr(cli1, hname, 0, 0);
+	cli_posix_unlink(cli1, hname);
+	cli_setatr(cli1, sname, 0, 0);
+	cli_posix_unlink(cli1, sname);
 
 	/* Create a directory. */
 	if (!NT_STATUS_IS_OK(cli_posix_mkdir(cli1, dname, 0777))) {
@@ -4222,6 +4230,77 @@ static bool run_simple_posix_open_test(int dummy)
 		}
 	}
 
+	/* Create the file. */
+	if (!NT_STATUS_IS_OK(cli_posix_open(cli1, fname, O_RDWR|O_CREAT|O_EXCL, 0600, &fnum1))) {
+		printf("POSIX create of %s failed (%s)\n", fname, cli_errstr(cli1));
+		goto out;
+	}
+
+	/* Write some data into it. */
+	if (cli_write(cli1, fnum1, 0, "TEST DATA\n", 0, 10) != 10) {
+		printf("cli_write failed: %s\n", cli_errstr(cli1));
+		goto out;
+	}
+
+	cli_close(cli1, fnum1);
+
+	/* Now create a hardlink. */
+	if (!NT_STATUS_IS_OK(cli_posix_hardlink(cli1, fname, hname))) {
+		printf("POSIX hardlink of %s failed (%s)\n", hname, cli_errstr(cli1));
+		goto out;
+	}
+
+	/* Now create a symlink. */
+	if (!NT_STATUS_IS_OK(cli_posix_symlink(cli1, fname, sname))) {
+		printf("POSIX symlink of %s failed (%s)\n", sname, cli_errstr(cli1));
+		goto out;
+	}
+
+	/* Open the hardlink for read. */
+	if (!NT_STATUS_IS_OK(cli_posix_open(cli1, hname, O_RDONLY, 0, &fnum1))) {
+		printf("POSIX open of %s failed (%s)\n", hname, cli_errstr(cli1));
+		goto out;
+	}
+
+	if (cli_read(cli1, fnum1, buf, 0, 10) != 10) {
+		printf("POSIX read of %s failed (%s)\n", hname, cli_errstr(cli1));
+		goto out;
+	}
+
+	if (memcmp(buf, "TEST DATA\n", 10)) {
+		printf("invalid data read from hardlink\n");
+		goto out;
+	}
+
+	cli_close(cli1, fnum1);
+
+	/* Open the symlink for read - this should fail. A POSIX
+	   client should not be doing opens on a symlink. */
+	if (NT_STATUS_IS_OK(cli_posix_open(cli1, sname, O_RDONLY, 0, &fnum1))) {
+		printf("POSIX open of %s succeeded (should have failed)\n", sname);
+		goto out;
+	} else {
+		if (!check_error(__LINE__, cli1, ERRDOS, ERRbadpath,
+				NT_STATUS_OBJECT_PATH_NOT_FOUND)) {
+			printf("POSIX open of %s should have failed "
+				"with NT_STATUS_OBJECT_PATH_NOT_FOUND, "
+				"failed with %s instead.\n",
+				sname, cli_errstr(cli1));
+			goto out;
+		}
+	}
+
+	if (!NT_STATUS_IS_OK(cli_posix_readlink(cli1, sname, namebuf, sizeof(namebuf)))) {
+		printf("POSIX readlink on %s failed (%s)\n", sname, cli_errstr(cli1));
+		goto out;
+	}
+
+	if (strcmp(namebuf, fname) != 0) {
+		printf("POSIX readlink on %s failed to match name %s (read %s)\n",
+			sname, fname, namebuf);
+		goto out;
+	}
+
 	if (!NT_STATUS_IS_OK(cli_posix_rmdir(cli1, dname))) {
 		printf("POSIX rmdir failed (%s)\n", cli_errstr(cli1));
 		goto out;
@@ -4237,6 +4316,10 @@ static bool run_simple_posix_open_test(int dummy)
 		fnum1 = (uint16_t)-1;
 	}
 
+	cli_setatr(cli1, sname, 0, 0);
+	cli_posix_unlink(cli1, sname);
+	cli_setatr(cli1, hname, 0, 0);
+	cli_posix_unlink(cli1, hname);
 	cli_setatr(cli1, fname, 0, 0);
 	cli_posix_unlink(cli1, fname);
 	cli_setatr(cli1, dname, 0, 0);

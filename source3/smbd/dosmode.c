@@ -3,17 +3,17 @@
    dos mode handling functions
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) James Peach 2006
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -23,7 +23,7 @@
 static int set_sparse_flag(const SMB_STRUCT_STAT * const sbuf)
 {
 #if defined (HAVE_STAT_ST_BLOCKS) && defined(STAT_ST_BLOCKSIZE)
-	if (sbuf->st_size > sbuf->st_blocks * (SMB_OFF_T)STAT_ST_BLOCKSIZE) {
+	if (sbuf->st_ex_size > sbuf->st_ex_blocks * (SMB_OFF_T)STAT_ST_BLOCKSIZE) {
 		return FILE_ATTRIBUTE_SPARSE;
 	}
 #endif
@@ -88,7 +88,7 @@ mode_t unix_mode(connection_struct *conn, int dosmode, const char *fname,
 		}
 
 		/* Save for later - but explicitly remove setuid bit for safety. */
-		dir_mode = sbuf.st_mode & ~S_ISUID;
+		dir_mode = sbuf.st_ex_mode & ~S_ISUID;
 		DEBUG(2,("unix_mode(%s) inherit mode %o\n",fname,(int)dir_mode));
 		/* Clear "result" */
 		result = 0;
@@ -117,7 +117,7 @@ mode_t unix_mode(connection_struct *conn, int dosmode, const char *fname,
 
 		if (lp_map_system(SNUM(conn)) && IS_DOS_SYSTEM(dosmode))
 			result |= S_IXGRP;
- 
+
 		if (lp_map_hidden(SNUM(conn)) && IS_DOS_HIDDEN(dosmode))
 			result |= S_IXOTH;  
 
@@ -147,7 +147,7 @@ static uint32 dos_mode_from_sbuf(connection_struct *conn, const char *path, SMB_
 
 	if (ro_opts == MAP_READONLY_YES) {
 		/* Original Samba method - map inverse of user "w" bit. */
-		if ((sbuf->st_mode & S_IWUSR) == 0) {
+		if ((sbuf->st_ex_mode & S_IWUSR) == 0) {
 			result |= aRONLY;
 		}
 	} else if (ro_opts == MAP_READONLY_PERMISSIONS) {
@@ -157,16 +157,16 @@ static uint32 dos_mode_from_sbuf(connection_struct *conn, const char *path, SMB_
 		}
 	} /* Else never set the readonly bit. */
 
-	if (MAP_ARCHIVE(conn) && ((sbuf->st_mode & S_IXUSR) != 0))
+	if (MAP_ARCHIVE(conn) && ((sbuf->st_ex_mode & S_IXUSR) != 0))
 		result |= aARCH;
 
-	if (MAP_SYSTEM(conn) && ((sbuf->st_mode & S_IXGRP) != 0))
+	if (MAP_SYSTEM(conn) && ((sbuf->st_ex_mode & S_IXGRP) != 0))
 		result |= aSYSTEM;
-	
-	if (MAP_HIDDEN(conn) && ((sbuf->st_mode & S_IXOTH) != 0))
+
+	if (MAP_HIDDEN(conn) && ((sbuf->st_ex_mode & S_IXOTH) != 0))
 		result |= aHIDDEN;   
-  
-	if (S_ISDIR(sbuf->st_mode))
+
+	if (S_ISDIR(sbuf->st_ex_mode))
 		result = aDIR | (result & aRONLY);
 
 	result |= set_sparse_flag(sbuf);
@@ -179,7 +179,7 @@ static uint32 dos_mode_from_sbuf(connection_struct *conn, const char *path, SMB_
 	if (result & aSYSTEM) DEBUG(8, ("s"));
 	if (result & aDIR   ) DEBUG(8, ("d"));
 	if (result & aARCH  ) DEBUG(8, ("a"));
-	
+
 	DEBUG(8,("\n"));
 	return result;
 }
@@ -225,7 +225,7 @@ static bool get_ea_dos_attribute(connection_struct *conn, const char *path,SMB_S
                 return False;
         }
 
-	if (S_ISDIR(sbuf->st_mode)) {
+	if (S_ISDIR(sbuf->st_ex_mode)) {
 		dosattr |= aDIR;
 	}
 	*pattr = (uint32)(dosattr & SAMBA_ATTRIBUTES_MASK);
@@ -237,7 +237,7 @@ static bool get_ea_dos_attribute(connection_struct *conn, const char *path,SMB_S
 	if (dosattr & aSYSTEM) DEBUG(8, ("s"));
 	if (dosattr & aDIR   ) DEBUG(8, ("d"));
 	if (dosattr & aARCH  ) DEBUG(8, ("a"));
-	
+
 	DEBUG(8,("\n"));
 
 	return True;
@@ -332,7 +332,7 @@ uint32 dos_mode_msdfs(connection_struct *conn, const char *path,SMB_STRUCT_STAT 
 			result |= aHIDDEN;
 		}
 	}
-	
+
 	result |= dos_mode_from_sbuf(conn, path, sbuf);
 
 	/* Optimization : Only call is_hidden_path if it's not already
@@ -349,7 +349,7 @@ uint32 dos_mode_msdfs(connection_struct *conn, const char *path,SMB_STRUCT_STAT 
 	if (result & aDIR   ) DEBUG(8, ("d"));
 	if (result & aARCH  ) DEBUG(8, ("a"));
 	if (result & FILE_ATTRIBUTE_SPARSE ) DEBUG(8, ("[sparse]"));
-	
+
 	DEBUG(8,("\n"));
 
 	return(result);
@@ -406,7 +406,7 @@ static bool get_stat_dos_flags(connection_struct *conn,
 		*dosmode |= aSYSTEM;
 	if (sbuf->st_flags & UF_DOS_NOINDEX)
 		*dosmode |= FILE_ATTRIBUTE_NONINDEXED;
-	if (S_ISDIR(sbuf->st_mode))
+	if (S_ISDIR(sbuf->st_ex_mode))
 		*dosmode |= aDIR;
 
 	*dosmode |= set_sparse_flag(sbuf);
@@ -493,7 +493,7 @@ uint32 dos_mode(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf)
 			result |= aHIDDEN;
 		}
 	}
-	
+
 #ifdef HAVE_STAT_DOS_FLAGS
 	used_stat_dos_flags = get_stat_dos_flags(conn, path, sbuf, &result);
 #endif
@@ -506,9 +506,8 @@ uint32 dos_mode(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf)
 		}
 	}
 
-	
 	offline = SMB_VFS_IS_OFFLINE(conn, path, sbuf);
-	if (S_ISREG(sbuf->st_mode) && offline) {
+	if (S_ISREG(sbuf->st_ex_mode) && offline) {
 		result |= FILE_ATTRIBUTE_OFFLINE;
 	}
 
@@ -526,7 +525,7 @@ uint32 dos_mode(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf)
 	if (result & aDIR   ) DEBUG(8, ("d"));
 	if (result & aARCH  ) DEBUG(8, ("a"));
 	if (result & FILE_ATTRIBUTE_SPARSE ) DEBUG(8, ("[sparse]"));
-	
+
 	DEBUG(8,("\n"));
 
 	return(result);
@@ -563,17 +562,17 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 			return(-1);
 	}
 
-	unixmode = st->st_mode;
+	unixmode = st->st_ex_mode;
 
-	get_acl_group_bits(conn, fname, &st->st_mode);
+	get_acl_group_bits(conn, fname, &st->st_ex_mode);
 
-	if (S_ISDIR(st->st_mode))
+	if (S_ISDIR(st->st_ex_mode))
 		dosmode |= aDIR;
 	else
 		dosmode &= ~aDIR;
 
 	old_mode = dos_mode(conn,fname,st);
-	
+
 	if (dosmode & FILE_ATTRIBUTE_OFFLINE) {
 		if (!(old_mode & FILE_ATTRIBUTE_OFFLINE)) {
 			lret = SMB_VFS_SET_OFFLINE(conn, fname);
@@ -590,7 +589,7 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 	old_mode &= ~FILE_ATTRIBUTE_OFFLINE;
 
 	if (old_mode == dosmode) {
-		st->st_mode = unixmode;
+		st->st_ex_mode = unixmode;
 		return(0);
 	}
 
@@ -605,7 +604,7 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 				notify_fname(conn, NOTIFY_ACTION_MODIFIED,
 				    FILE_NOTIFY_CHANGE_ATTRIBUTES, fname);
 			}
-			st->st_mode = unixmode;
+			st->st_ex_mode = unixmode;
 			return 0;
 		}
 	}
@@ -617,7 +616,7 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 			notify_fname(conn, NOTIFY_ACTION_MODIFIED,
 				FILE_NOTIFY_CHANGE_ATTRIBUTES, fname);
 		}
-		st->st_mode = unixmode;
+		st->st_ex_mode = unixmode;
 		return 0;
 	}
 
@@ -639,10 +638,10 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 	if (!MAP_HIDDEN(conn))
 		mask |= S_IXOTH;
 
-	unixmode |= (st->st_mode & mask);
+	unixmode |= (st->st_ex_mode & mask);
 
 	/* if we previously had any r bits set then leave them alone */
-	if ((tmp = st->st_mode & (S_IRUSR|S_IRGRP|S_IROTH))) {
+	if ((tmp = st->st_ex_mode & (S_IRUSR|S_IRGRP|S_IROTH))) {
 		unixmode &= ~(S_IRUSR|S_IRGRP|S_IROTH);
 		unixmode |= tmp;
 	}
@@ -650,7 +649,7 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 	/* if we previously had any w bits set then leave them alone 
 		whilst adding in the new w bits, if the new mode is not rdonly */
 	if (!IS_DOS_READONLY(dosmode)) {
-		unixmode |= (st->st_mode & (S_IWUSR|S_IWGRP|S_IWOTH));
+		unixmode |= (st->st_ex_mode & (S_IWUSR|S_IWGRP|S_IWOTH));
 	}
 
 	ret = SMB_VFS_CHMOD(conn, fname, unixmode);
@@ -659,7 +658,7 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 			notify_fname(conn, NOTIFY_ACTION_MODIFIED,
 				     FILE_NOTIFY_CHANGE_ATTRIBUTES, fname);
 		}
-		st->st_mode = unixmode;
+		st->st_ex_mode = unixmode;
 		return 0;
 	}
 
@@ -696,7 +695,7 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 				FILE_NOTIFY_CHANGE_ATTRIBUTES, fname);
 		}
 		if (ret == 0) {
-			st->st_mode = unixmode;
+			st->st_ex_mode = unixmode;
 		}
 	}
 

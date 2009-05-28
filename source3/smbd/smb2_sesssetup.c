@@ -24,7 +24,9 @@
 
 static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *req,
 					uint64_t in_session_id,
+					uint8_t in_security_mode,
 					DATA_BLOB in_security_buffer,
+					uint16_t *out_session_flags,
 					DATA_BLOB *out_security_buffer,
 					uint64_t *out_session_id);
 
@@ -39,9 +41,11 @@ NTSTATUS smbd_smb2_request_process_sesssetup(struct smbd_smb2_request *req)
 	size_t expected_body_size = 0x19;
 	size_t body_size;
 	uint64_t in_session_id;
+	uint8_t in_security_mode;
 	uint16_t in_security_offset;
 	uint16_t in_security_length;
 	DATA_BLOB in_security_buffer;
+	uint16_t out_session_flags;
 	uint64_t out_session_id;
 	uint16_t out_security_offset;
 	DATA_BLOB out_security_buffer;
@@ -72,12 +76,15 @@ NTSTATUS smbd_smb2_request_process_sesssetup(struct smbd_smb2_request *req)
 	}
 
 	in_session_id = BVAL(inhdr, SMB2_HDR_SESSION_ID);
+	in_security_mode = CVAL(inbody, 0x03);
 	in_security_buffer.data = (uint8_t *)req->in.vector[i+2].iov_base;
 	in_security_buffer.length = in_security_length;
 
 	status = smbd_smb2_session_setup(req,
 					 in_session_id,
+					 in_security_mode,
 					 in_security_buffer,
+					 &out_session_flags,
 					 &out_security_buffer,
 					 &out_session_id);
 	if (!NT_STATUS_IS_OK(status) &&
@@ -98,7 +105,8 @@ NTSTATUS smbd_smb2_request_process_sesssetup(struct smbd_smb2_request *req)
 	SBVAL(outhdr, SMB2_HDR_SESSION_ID, out_session_id);
 
 	SSVAL(outbody.data, 0x00, 0x08 + 1);	/* struct size */
-	SSVAL(outbody.data, 0x02, 0);		/* session flags */
+	SSVAL(outbody.data, 0x02,
+	      out_session_flags);		/* session flags */
 	SSVAL(outbody.data, 0x04,
 	      out_security_offset);		/* security buffer offset */
 	SSVAL(outbody.data, 0x06,
@@ -132,12 +140,16 @@ static int smbd_smb2_session_destructor(struct smbd_smb2_session *session)
 
 static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *req,
 					uint64_t in_session_id,
+					uint8_t in_security_mode,
 					DATA_BLOB in_security_buffer,
+					uint16_t *out_session_flags,
 					DATA_BLOB *out_security_buffer,
 					uint64_t *out_session_id)
 {
 	struct smbd_smb2_session *session;
 	NTSTATUS status;
+
+	*out_session_flags = 0;
 
 	if (in_session_id == 0) {
 		int id;
@@ -185,6 +197,7 @@ static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *req,
 	if (session->auth_ntlmssp_state == NULL) {
 		status = auth_ntlmssp_start(&session->auth_ntlmssp_state);
 		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(session);
 			return status;
 		}
 	}
@@ -193,17 +206,52 @@ static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *req,
 				     in_security_buffer,
 				     out_security_buffer);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		/* nothing to do */
-	} else if (NT_STATUS_IS_OK(status)) {
-		/* TODO: setup session key for signing */
-		session->status = NT_STATUS_OK;
-		/*
-		 * we attach the session to the request
-		 * so that the response can be signed
-		 */
-		req->session = session;
-	} else {
+		*out_session_id = session->vuid;
 		return status;
+	} else if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(session);
+		return status;
+	}
+
+	/* TODO: setup session key for signing */
+
+	if ((in_security_mode & SMB2_NEGOTIATE_SIGNING_REQUIRED) ||
+	    lp_server_signing() == Required) {
+		session->do_signing = true;
+	}
+
+	if (session->auth_ntlmssp_state->server_info->guest) {
+		/* we map anonymous to guest internally */
+		*out_session_flags |= SMB2_SESSION_FLAG_IS_GUEST;
+		*out_session_flags |= SMB2_SESSION_FLAG_IS_NULL;
+		/* force no signing */
+		session->do_signing = false;
+	}
+
+	session->server_info = session->auth_ntlmssp_state->server_info;
+	data_blob_free(&session->server_info->user_session_key);
+	session->server_info->user_session_key =
+			data_blob_talloc(
+			session->server_info,
+			session->auth_ntlmssp_state->ntlmssp_state->session_key.data,
+			session->auth_ntlmssp_state->ntlmssp_state->session_key.length);
+	if (session->auth_ntlmssp_state->ntlmssp_state->session_key.length > 0) {
+		if (session->server_info->user_session_key.data == NULL) {
+			TALLOC_FREE(session);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+	session->session_key = session->server_info->user_session_key;
+
+	session->status = NT_STATUS_OK;
+
+	/*
+	 * we attach the session to the request
+	 * so that the response can be signed
+	 */
+	req->session = session;
+	if (session->do_signing) {
+		req->do_signing = true;
 	}
 
 	*out_session_id = session->vuid;

@@ -42,17 +42,17 @@ static SMB_INO_T stream_inode(const SMB_STRUCT_STAT *sbuf, const char *sname)
 	char *upper_sname;
 
 	DEBUG(10, ("stream_inode called for %lu/%lu [%s]\n",
-		   (unsigned long)sbuf->st_dev,
-		   (unsigned long)sbuf->st_ino, sname));
+		   (unsigned long)sbuf->st_ex_dev,
+		   (unsigned long)sbuf->st_ex_ino, sname));
 
 	upper_sname = talloc_strdup_upper(talloc_tos(), sname);
 	SMB_ASSERT(upper_sname != NULL);
 
         MD5Init(&ctx);
-        MD5Update(&ctx, (unsigned char *)&(sbuf->st_dev),
-		  sizeof(sbuf->st_dev));
-        MD5Update(&ctx, (unsigned char *)&(sbuf->st_ino),
-		  sizeof(sbuf->st_ino));
+        MD5Update(&ctx, (unsigned char *)&(sbuf->st_ex_dev),
+		  sizeof(sbuf->st_ex_dev));
+        MD5Update(&ctx, (unsigned char *)&(sbuf->st_ex_ino),
+		  sizeof(sbuf->st_ex_ino));
         MD5Update(&ctx, (unsigned char *)upper_sname,
 		  talloc_get_size(upper_sname)-1);
         MD5Final(hash, &ctx);
@@ -159,18 +159,18 @@ static int streams_xattr_fstat(vfs_handle_struct *handle, files_struct *fsp,
 		return -1;
 	}
 
-	sbuf->st_size = get_xattr_size(handle->conn, fsp->base_fsp,
+	sbuf->st_ex_size = get_xattr_size(handle->conn, fsp->base_fsp,
 					io->base, io->xattr_name);
-	if (sbuf->st_size == -1) {
+	if (sbuf->st_ex_size == -1) {
 		return -1;
 	}
 
-	DEBUG(10, ("sbuf->st_size = %d\n", (int)sbuf->st_size));
+	DEBUG(10, ("sbuf->st_ex_size = %d\n", (int)sbuf->st_ex_size));
 
-	sbuf->st_ino = stream_inode(sbuf, io->xattr_name);
-	sbuf->st_mode &= ~S_IFMT;
-        sbuf->st_mode |= S_IFREG;
-        sbuf->st_blocks = sbuf->st_size % STAT_ST_BLOCKSIZE + 1;
+	sbuf->st_ex_ino = stream_inode(sbuf, io->xattr_name);
+	sbuf->st_ex_mode &= ~S_IFMT;
+        sbuf->st_ex_mode |= S_IFREG;
+        sbuf->st_ex_blocks = sbuf->st_ex_size % STAT_ST_BLOCKSIZE + 1;
 
 	return 0;
 }
@@ -208,16 +208,16 @@ static int streams_xattr_stat(vfs_handle_struct *handle, const char *fname,
 		goto fail;
 	}
 
-	sbuf->st_size = get_xattr_size(handle->conn, NULL, base, xattr_name);
-	if (sbuf->st_size == -1) {
+	sbuf->st_ex_size = get_xattr_size(handle->conn, NULL, base, xattr_name);
+	if (sbuf->st_ex_size == -1) {
 		errno = ENOENT;
 		goto fail;
 	}
 
-	sbuf->st_ino = stream_inode(sbuf, xattr_name);
-	sbuf->st_mode &= ~S_IFMT;
-        sbuf->st_mode |= S_IFREG;
-        sbuf->st_blocks = sbuf->st_size % STAT_ST_BLOCKSIZE + 1;
+	sbuf->st_ex_ino = stream_inode(sbuf, xattr_name);
+	sbuf->st_ex_mode &= ~S_IFMT;
+        sbuf->st_ex_mode |= S_IFREG;
+        sbuf->st_ex_blocks = sbuf->st_ex_size % STAT_ST_BLOCKSIZE + 1;
 
 	result = 0;
  fail:
@@ -259,16 +259,16 @@ static int streams_xattr_lstat(vfs_handle_struct *handle, const char *fname,
 		goto fail;
 	}
 
-	sbuf->st_size = get_xattr_size(handle->conn, NULL, base, xattr_name);
-	if (sbuf->st_size == -1) {
+	sbuf->st_ex_size = get_xattr_size(handle->conn, NULL, base, xattr_name);
+	if (sbuf->st_ex_size == -1) {
 		errno = ENOENT;
 		goto fail;
 	}
 
-	sbuf->st_ino = stream_inode(sbuf, xattr_name);
-	sbuf->st_mode &= ~S_IFMT;
-        sbuf->st_mode |= S_IFREG;
-        sbuf->st_blocks = sbuf->st_size % STAT_ST_BLOCKSIZE + 1;
+	sbuf->st_ex_ino = stream_inode(sbuf, xattr_name);
+	sbuf->st_ex_mode &= ~S_IFMT;
+        sbuf->st_ex_mode |= S_IFREG;
+        sbuf->st_ex_blocks = sbuf->st_ex_size % STAT_ST_BLOCKSIZE + 1;
 
 	result = 0;
  fail:
@@ -740,10 +740,10 @@ static NTSTATUS streams_xattr_streaminfo(vfs_handle_struct *handle,
 	state.streams = NULL;
 	state.num_streams = 0;
 
-	if (!S_ISDIR(sbuf.st_mode)) {
+	if (!S_ISDIR(sbuf.st_ex_mode)) {
 		if (!add_one_stream(mem_ctx,
 				    &state.num_streams, &state.streams,
-				    "::$DATA", sbuf.st_size,
+				    "::$DATA", sbuf.st_ex_size,
 				    SMB_VFS_GET_ALLOC_SIZE(handle->conn, fsp,
 							   &sbuf))) {
 			return NT_STATUS_NO_MEMORY;

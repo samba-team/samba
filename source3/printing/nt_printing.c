@@ -1352,7 +1352,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 			if (SMB_VFS_FSTAT(fsp, &st) == -1) {
 				 goto error_exit;
 			}
-			old_create_time = st.st_mtime;
+			old_create_time = convert_timespec_to_time_t(st.st_ex_mtime);
 			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n",
 				(long)old_create_time));
 		}
@@ -1404,7 +1404,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 			if (SMB_VFS_FSTAT(fsp, &st) == -1) {
 				goto error_exit;
 			}
-			new_create_time = st.st_mtime;
+			new_create_time = convert_timespec_to_time_t(st.st_ex_mtime);
 			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n",
 				(long)new_create_time));
 		}

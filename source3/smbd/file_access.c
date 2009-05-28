@@ -80,7 +80,7 @@ bool can_delete_file_in_directory(connection_struct *conn, const char *fname)
 
 	/* fast paths first */
 
-	if (!S_ISDIR(sbuf.st_mode)) {
+	if (!S_ISDIR(sbuf.st_ex_mode)) {
 		return False;
 	}
 	if (conn->server_info->utok.uid == 0 || conn->admin_user) {
@@ -90,7 +90,7 @@ bool can_delete_file_in_directory(connection_struct *conn, const char *fname)
 
 #ifdef S_ISVTX
 	/* sticky bit means delete only by owner or root. */
-	if (sbuf.st_mode & S_ISVTX) {
+	if (sbuf.st_ex_mode & S_ISVTX) {
 		SMB_STRUCT_STAT sbuf_file;
 		if(SMB_VFS_STAT(conn, fname, &sbuf_file) != 0) {
 			if (errno == ENOENT) {
@@ -105,7 +105,7 @@ bool can_delete_file_in_directory(connection_struct *conn, const char *fname)
 		 * for bug #3348. Don't assume owning sticky bit
 		 * directory means write access allowed.
 		 */
-		if (conn->server_info->utok.uid != sbuf_file.st_uid) {
+		if (conn->server_info->utok.uid != sbuf_file.st_ex_uid) {
 			return False;
 		}
 	}
@@ -156,17 +156,17 @@ bool can_access_file_data(connection_struct *conn, const char *fname, SMB_STRUCT
 	}
 
 	/* Check primary owner access. */
-	if (conn->server_info->utok.uid == psbuf->st_uid) {
+	if (conn->server_info->utok.uid == psbuf->st_ex_uid) {
 		switch (access_mask) {
 			case FILE_READ_DATA:
-				return (psbuf->st_mode & S_IRUSR) ? True : False;
+				return (psbuf->st_ex_mode & S_IRUSR) ? True : False;
 
 			case FILE_WRITE_DATA:
-				return (psbuf->st_mode & S_IWUSR) ? True : False;
+				return (psbuf->st_ex_mode & S_IWUSR) ? True : False;
 
 			default: /* FILE_READ_DATA|FILE_WRITE_DATA */
 
-				if ((psbuf->st_mode & (S_IWUSR|S_IRUSR)) == (S_IWUSR|S_IRUSR)) {
+				if ((psbuf->st_ex_mode & (S_IWUSR|S_IRUSR)) == (S_IWUSR|S_IRUSR)) {
 					return True;
 				} else {
 					return False;

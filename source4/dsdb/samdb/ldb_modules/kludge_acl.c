@@ -514,7 +514,7 @@ static int kludge_acl_init(struct ldb_module *module)
 	ret = ldb_mod_register_control(module, LDB_CONTROL_SD_FLAGS_OID);
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR,
-			"partition: Unable to register control with rootdse!\n");
+			"kludge_acl: Unable to register control with rootdse!\n");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 

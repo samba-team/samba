@@ -252,7 +252,7 @@ int hpuxacl_sys_acl_set_file(vfs_handle_struct *handle,
 		DEBUG(10, ("Error in stat call: %s\n", strerror(errno)));
 		goto done;
 	}
-	if (S_ISDIR(s.st_mode)) {
+	if (S_ISDIR(s.st_ex_mode)) {
 		HPUX_ACL_T other_acl; 
 		int other_count;
 		SMB_ACL_TYPE_T other_type;

@@ -541,7 +541,7 @@ bool file_exist_stat(const char *fname,SMB_STRUCT_STAT *sbuf)
 	if (sys_stat(fname,sbuf) != 0) 
 		return(False);
 
-	return((S_ISREG(sbuf->st_mode)) || (S_ISFIFO(sbuf->st_mode)));
+	return((S_ISREG(sbuf->st_ex_mode)) || (S_ISFIFO(sbuf->st_ex_mode)));
 }
 
 /*******************************************************************
@@ -554,7 +554,7 @@ bool socket_exist(const char *fname)
 	if (sys_stat(fname,&st) != 0) 
 		return(False);
 
-	return S_ISSOCK(st.st_mode);
+	return S_ISSOCK(st.st_ex_mode);
 }
 
 /*******************************************************************
@@ -572,7 +572,7 @@ bool directory_exist_stat(char *dname,SMB_STRUCT_STAT *st)
 	if (sys_stat(dname,st) != 0) 
 		return(False);
 
-	ret = S_ISDIR(st->st_mode);
+	ret = S_ISDIR(st->st_ex_mode);
 	if(!ret)
 		errno = ENOTDIR;
 	return ret;
@@ -584,7 +584,7 @@ bool directory_exist_stat(char *dname,SMB_STRUCT_STAT *st)
 
 uint64_t get_file_size_stat(const SMB_STRUCT_STAT *sbuf)
 {
-	return sbuf->st_size;
+	return sbuf->st_ex_size;
 }
 
 /*******************************************************************
@@ -594,7 +594,7 @@ uint64_t get_file_size_stat(const SMB_STRUCT_STAT *sbuf)
 SMB_OFF_T get_file_size(char *file_name)
 {
 	SMB_STRUCT_STAT buf;
-	buf.st_size = 0;
+	buf.st_ex_size = 0;
 	if(sys_stat(file_name,&buf) != 0)
 		return (SMB_OFF_T)-1;
 	return get_file_size_stat(&buf);
@@ -927,11 +927,11 @@ void smb_msleep(unsigned int t)
 #endif
 }
 
-bool reinit_after_fork(struct messaging_context *msg_ctx,
+NTSTATUS reinit_after_fork(struct messaging_context *msg_ctx,
 		       struct event_context *ev_ctx,
 		       bool parent_longlived)
 {
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_OK;
 
 	/* Reset the state of the random
 	 * number generation system, so
@@ -942,7 +942,8 @@ bool reinit_after_fork(struct messaging_context *msg_ctx,
 	/* tdb needs special fork handling */
 	if (tdb_reopen_all(parent_longlived ? 1 : 0) == -1) {
 		DEBUG(0,("tdb_reopen_all failed.\n"));
-		return false;
+		status = NT_STATUS_OPEN_FAILED;
+		goto done;
 	}
 
 	if (ev_ctx) {
@@ -958,11 +959,10 @@ bool reinit_after_fork(struct messaging_context *msg_ctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("messaging_reinit() failed: %s\n",
 				 nt_errstr(status)));
-			return false;
 		}
 	}
-
-	return true;
+ done:
+	return status;
 }
 
 /****************************************************************************

@@ -353,7 +353,7 @@ bool vfs_directory_exist(connection_struct *conn, const char *dname, SMB_STRUCT_
 	if (SMB_VFS_STAT(conn,dname,st) != 0)
 		return(False);
 
-	ret = S_ISDIR(st->st_mode);
+	ret = S_ISDIR(st->st_ex_mode);
 	if(!ret)
 		errno = ENOTDIR;
 
@@ -393,7 +393,7 @@ bool vfs_file_exist(connection_struct *conn, const char *fname,SMB_STRUCT_STAT *
 
 	if (SMB_VFS_STAT(conn,fname,sbuf) == -1)
 		return False;
-	return(S_ISREG(sbuf->st_mode));
+	return(S_ISREG(sbuf->st_ex_mode));
 }
 
 /****************************************************************************
@@ -542,14 +542,14 @@ int vfs_allocate_file_space(files_struct *fsp, uint64_t len)
 	if (ret == -1)
 		return ret;
 
-	if (len == (uint64_t)st.st_size)
+	if (len == (uint64_t)st.st_ex_size)
 		return 0;
 
-	if (len < (uint64_t)st.st_size) {
+	if (len < (uint64_t)st.st_ex_size) {
 		/* Shrink - use ftruncate. */
 
 		DEBUG(10,("vfs_allocate_file_space: file %s, shrink. Current size %.0f\n",
-				fsp->fsp_name, (double)st.st_size ));
+				fsp->fsp_name, (double)st.st_ex_size ));
 
 		contend_level2_oplocks_begin(fsp, LEVEL2_CONTEND_ALLOC_SHRINK);
 
@@ -571,7 +571,7 @@ int vfs_allocate_file_space(files_struct *fsp, uint64_t len)
 	if (!lp_strict_allocate(SNUM(fsp->conn)))
 		return 0;
 
-	len -= st.st_size;
+	len -= st.st_ex_size;
 	len /= 1024; /* Len is now number of 1k blocks needed. */
 	space_avail = get_dfree_info(conn,fsp->fsp_name,False,&bsize,&dfree,&dsize);
 	if (space_avail == (uint64_t)-1) {
@@ -579,7 +579,7 @@ int vfs_allocate_file_space(files_struct *fsp, uint64_t len)
 	}
 
 	DEBUG(10,("vfs_allocate_file_space: file %s, grow. Current size %.0f, needed blocks = %.0f, space avail = %.0f\n",
-			fsp->fsp_name, (double)st.st_size, (double)len, (double)space_avail ));
+			fsp->fsp_name, (double)st.st_ex_size, (double)len, (double)space_avail ));
 
 	if (len > space_avail) {
 		errno = ENOSPC;
@@ -639,12 +639,12 @@ int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len)
 		return ret;
 	}
 
-	if (len <= st.st_size) {
+	if (len <= st.st_ex_size) {
 		return 0;
 	}
 
 	DEBUG(10,("vfs_fill_sparse: write zeros in file %s from len %.0f to len %.0f (%.0f bytes)\n",
-		fsp->fsp_name, (double)st.st_size, (double)len, (double)(len - st.st_size)));
+		fsp->fsp_name, (double)st.st_ex_size, (double)len, (double)(len - st.st_ex_size)));
 
 	contend_level2_oplocks_begin(fsp, LEVEL2_CONTEND_FILL_SPARSE);
 
@@ -659,8 +659,8 @@ int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len)
 		}
 	}
 
-	offset = st.st_size;
-	num_to_write = len - st.st_size;
+	offset = st.st_ex_size;
+	num_to_write = len - st.st_ex_size;
 	total = 0;
 
 	while (total < num_to_write) {
@@ -816,8 +816,8 @@ char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 		   && (cache_value.data[cache_value.length-1] == '\0'));
 
 	if ((SMB_VFS_STAT(conn, (char *)cache_value.data, &st2) == 0)
-	    && (st.st_dev == st2.st_dev) && (st.st_ino == st2.st_ino)
-	    && (S_ISDIR(st.st_mode))) {
+	    && (st.st_ex_dev == st2.st_ex_dev) && (st.st_ex_ino == st2.st_ex_ino)
+	    && (S_ISDIR(st.st_ex_mode))) {
 		/*
 		 * Ok, we're done
 		 */
@@ -973,7 +973,7 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
         if (!lp_symlinks(SNUM(conn))) {
                 SMB_STRUCT_STAT statbuf;
                 if ( (SMB_VFS_LSTAT(conn,fname,&statbuf) != -1) &&
-                                (S_ISLNK(statbuf.st_mode)) ) {
+                                (S_ISLNK(statbuf.st_ex_mode)) ) {
 			if (free_resolved_name) {
 				SAFE_FREE(resolved_name);
 			}

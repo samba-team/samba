@@ -430,7 +430,7 @@ static int copy_reg(const char *source, const char *dest)
 	if (sys_lstat (source, &source_stats) == -1)
 		return -1;
 
-	if (!S_ISREG (source_stats.st_mode))
+	if (!S_ISREG (source_stats.st_ex_mode))
 		return -1;
 
 	if((ifd = sys_open (source, O_RDONLY, 0)) < 0)
@@ -455,9 +455,9 @@ static int copy_reg(const char *source, const char *dest)
 	 */
 
 #ifdef HAVE_FCHOWN
-	if ((fchown(ofd, source_stats.st_uid, source_stats.st_gid) == -1) && (errno != EPERM))
+	if ((fchown(ofd, source_stats.st_ex_uid, source_stats.st_ex_gid) == -1) && (errno != EPERM))
 #else
-	if ((chown(dest, source_stats.st_uid, source_stats.st_gid) == -1) && (errno != EPERM))
+	if ((chown(dest, source_stats.st_ex_uid, source_stats.st_ex_gid) == -1) && (errno != EPERM))
 #endif
 		goto err;
 
@@ -467,9 +467,9 @@ static int copy_reg(const char *source, const char *dest)
 	 */
 
 #if defined(HAVE_FCHMOD)
-	if (fchmod (ofd, source_stats.st_mode & 07777))
+	if (fchmod (ofd, source_stats.st_ex_mode & 07777))
 #else
-	if (chmod (dest, source_stats.st_mode & 07777))
+	if (chmod (dest, source_stats.st_ex_mode & 07777))
 #endif
 		goto err;
 
@@ -483,8 +483,8 @@ static int copy_reg(const char *source, const char *dest)
 	{
 		struct utimbuf tv;
 
-		tv.actime = source_stats.st_atime;
-		tv.modtime = source_stats.st_mtime;
+		tv.actime = convert_timespec_to_time_t(source_stats.st_ex_atime);
+		tv.modtime = convert_timespec_to_time_t(source_stats.st_ex_mtime);
 		utime(dest, &tv);
 	}
 
@@ -575,13 +575,13 @@ static uint64_t vfswrap_get_alloc_size(vfs_handle_struct *handle,
 
 	START_PROFILE(syscall_get_alloc_size);
 
-	if(S_ISDIR(sbuf->st_mode)) {
+	if(S_ISDIR(sbuf->st_ex_mode)) {
 		result = 0;
 		goto out;
 	}
 
 #if defined(HAVE_STAT_ST_BLOCKS) && defined(STAT_ST_BLOCKSIZE)
-	result = (uint64_t)STAT_ST_BLOCKSIZE * (uint64_t)sbuf->st_blocks;
+	result = (uint64_t)STAT_ST_BLOCKSIZE * (uint64_t)sbuf->st_ex_blocks;
 #else
 	result = get_file_size_stat(sbuf);
 #endif
@@ -777,18 +777,18 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 	if (SMB_VFS_FSTAT(fsp, &st) == -1)
 		return -1;
 
-	space_to_write = len - st.st_size;
+	space_to_write = len - st.st_ex_size;
 
 #ifdef S_ISFIFO
-	if (S_ISFIFO(st.st_mode))
+	if (S_ISFIFO(st.st_ex_mode))
 		return 0;
 #endif
 
-	if (st.st_size == len)
+	if (st.st_ex_size == len)
 		return 0;
 
 	/* Shrink - just ftruncate. */
-	if (st.st_size > len)
+	if (st.st_ex_size > len)
 		return sys_ftruncate(fsp->fh->fd, len);
 
 	/* available disk space is enough or not? */
@@ -806,10 +806,10 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 	}
 
 	/* Write out the real space on disk. */
-	if (SMB_VFS_LSEEK(fsp, st.st_size, SEEK_SET) != st.st_size)
+	if (SMB_VFS_LSEEK(fsp, st.st_ex_size, SEEK_SET) != st.st_ex_size)
 		return -1;
 
-	space_to_write = len - st.st_size;
+	space_to_write = len - st.st_ex_size;
 
 	memset(zero_space, '\0', sizeof(zero_space));
 	while ( space_to_write > 0) {
@@ -872,18 +872,18 @@ static int vfswrap_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_O
 	}
 
 #ifdef S_ISFIFO
-	if (S_ISFIFO(st.st_mode)) {
+	if (S_ISFIFO(st.st_ex_mode)) {
 		result = 0;
 		goto done;
 	}
 #endif
 
-	if (st.st_size == len) {
+	if (st.st_ex_size == len) {
 		result = 0;
 		goto done;
 	}
 
-	if (st.st_size > len) {
+	if (st.st_ex_size > len) {
 		/* the sys_ftruncate should have worked */
 		goto done;
 	}
@@ -1051,8 +1051,8 @@ static struct file_id vfswrap_file_id_create(struct vfs_handle_struct *handle,
 	 * blob */
 	ZERO_STRUCT(key);
 
-	key.devid = sbuf->st_dev;
-	key.inode = sbuf->st_ino;
+	key.devid = sbuf->st_ex_dev;
+	key.inode = sbuf->st_ex_ino;
 	/* key.extid is unused by default. */
 
 	return key;
@@ -1088,7 +1088,7 @@ static NTSTATUS vfswrap_streaminfo(vfs_handle_struct *handle,
 		return map_nt_error_from_unix(errno);
 	}
 
-	if (S_ISDIR(sbuf.st_mode)) {
+	if (S_ISDIR(sbuf.st_ex_mode)) {
 		goto done;
 	}
 
@@ -1098,7 +1098,7 @@ static NTSTATUS vfswrap_streaminfo(vfs_handle_struct *handle,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	streams->size = sbuf.st_size;
+	streams->size = sbuf.st_ex_size;
 	streams->alloc_size = SMB_VFS_GET_ALLOC_SIZE(handle->conn, fsp, &sbuf);
 
 	streams->name = talloc_strdup(streams, "::$DATA");

@@ -145,7 +145,7 @@ static int show_deleted_init(struct ldb_module *module)
 	ret = ldb_mod_register_control(module, LDB_CONTROL_SHOW_DELETED_OID);
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR,
-			"extended_dn: Unable to register control with rootdse!\n");
+			"show_deleted: Unable to register control with rootdse!\n");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 

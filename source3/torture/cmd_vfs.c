@@ -157,31 +157,35 @@ static NTSTATUS cmd_readdir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc
 
 	printf("readdir: %s\n", dent->d_name);
 	if (VALID_STAT(st)) {
+		time_t tmp_time;
 		printf("  stat available");
-		if (S_ISREG(st.st_mode)) printf("  Regular File\n");
-		else if (S_ISDIR(st.st_mode)) printf("  Directory\n");
-		else if (S_ISCHR(st.st_mode)) printf("  Character Device\n");
-		else if (S_ISBLK(st.st_mode)) printf("  Block Device\n");
-		else if (S_ISFIFO(st.st_mode)) printf("  Fifo\n");
-		else if (S_ISLNK(st.st_mode)) printf("  Symbolic Link\n");
-		else if (S_ISSOCK(st.st_mode)) printf("  Socket\n");
-		printf("  Size: %10u", (unsigned int)st.st_size);
+		if (S_ISREG(st.st_ex_mode)) printf("  Regular File\n");
+		else if (S_ISDIR(st.st_ex_mode)) printf("  Directory\n");
+		else if (S_ISCHR(st.st_ex_mode)) printf("  Character Device\n");
+		else if (S_ISBLK(st.st_ex_mode)) printf("  Block Device\n");
+		else if (S_ISFIFO(st.st_ex_mode)) printf("  Fifo\n");
+		else if (S_ISLNK(st.st_ex_mode)) printf("  Symbolic Link\n");
+		else if (S_ISSOCK(st.st_ex_mode)) printf("  Socket\n");
+		printf("  Size: %10u", (unsigned int)st.st_ex_size);
 #ifdef HAVE_STAT_ST_BLOCKS
-		printf(" Blocks: %9u", (unsigned int)st.st_blocks);
+		printf(" Blocks: %9u", (unsigned int)st.st_ex_blocks);
 #endif
 #ifdef HAVE_STAT_ST_BLKSIZE
-		printf(" IO Block: %u\n", (unsigned int)st.st_blksize);
+		printf(" IO Block: %u\n", (unsigned int)st.st_ex_blksize);
 #endif
-		printf("  Device: 0x%10x", (unsigned int)st.st_dev);
-		printf(" Inode: %10u", (unsigned int)st.st_ino);
-		printf(" Links: %10u\n", (unsigned int)st.st_nlink);
-		printf("  Access: %05o", (int)((st.st_mode) & 007777));
+		printf("  Device: 0x%10x", (unsigned int)st.st_ex_dev);
+		printf(" Inode: %10u", (unsigned int)st.st_ex_ino);
+		printf(" Links: %10u\n", (unsigned int)st.st_ex_nlink);
+		printf("  Access: %05o", (int)((st.st_ex_mode) & 007777));
 		printf(" Uid: %5lu Gid: %5lu\n",
-		       (unsigned long)st.st_uid,
-		       (unsigned long)st.st_gid);
-		printf("  Access: %s", ctime(&(st.st_atime)));
-		printf("  Modify: %s", ctime(&(st.st_mtime)));
-		printf("  Change: %s", ctime(&(st.st_ctime)));
+		       (unsigned long)st.st_ex_uid,
+		       (unsigned long)st.st_ex_gid);
+		tmp_time = convert_timespec_to_time_t(st.st_ex_atime);
+		printf("  Access: %s", ctime(&tmp_time));
+		tmp_time = convert_timespec_to_time_t(st.st_ex_mtime);
+		printf("  Modify: %s", ctime(&tmp_time));
+		tmp_time = convert_timespec_to_time_t(st.st_ex_ctime);
+		printf("  Change: %s", ctime(&tmp_time));
 	}
 
 	return NT_STATUS_OK;
@@ -540,6 +544,7 @@ static NTSTATUS cmd_stat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	struct passwd *pwd = NULL;
 	struct group *grp = NULL;
 	SMB_STRUCT_STAT st;
+	time_t tmp_time;
 
 	if (argc != 2) {
 		printf("Usage: stat <fname>\n");
@@ -552,38 +557,41 @@ static NTSTATUS cmd_stat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	pwd = sys_getpwuid(st.st_uid);
+	pwd = sys_getpwuid(st.st_ex_uid);
 	if (pwd != NULL) user = pwd->pw_name;
 	else user = null_string;
-	grp = sys_getgrgid(st.st_gid);
+	grp = sys_getgrgid(st.st_ex_gid);
 	if (grp != NULL) group = grp->gr_name;
 	else group = null_string;
 
 	printf("stat: ok\n");
 	printf("  File: %s", argv[1]);
-	if (S_ISREG(st.st_mode)) printf("  Regular File\n");
-	else if (S_ISDIR(st.st_mode)) printf("  Directory\n");
-	else if (S_ISCHR(st.st_mode)) printf("  Character Device\n");
-	else if (S_ISBLK(st.st_mode)) printf("  Block Device\n");
-	else if (S_ISFIFO(st.st_mode)) printf("  Fifo\n");
-	else if (S_ISLNK(st.st_mode)) printf("  Symbolic Link\n");
-	else if (S_ISSOCK(st.st_mode)) printf("  Socket\n");
-	printf("  Size: %10u", (unsigned int)st.st_size);
+	if (S_ISREG(st.st_ex_mode)) printf("  Regular File\n");
+	else if (S_ISDIR(st.st_ex_mode)) printf("  Directory\n");
+	else if (S_ISCHR(st.st_ex_mode)) printf("  Character Device\n");
+	else if (S_ISBLK(st.st_ex_mode)) printf("  Block Device\n");
+	else if (S_ISFIFO(st.st_ex_mode)) printf("  Fifo\n");
+	else if (S_ISLNK(st.st_ex_mode)) printf("  Symbolic Link\n");
+	else if (S_ISSOCK(st.st_ex_mode)) printf("  Socket\n");
+	printf("  Size: %10u", (unsigned int)st.st_ex_size);
 #ifdef HAVE_STAT_ST_BLOCKS
-	printf(" Blocks: %9u", (unsigned int)st.st_blocks);
+	printf(" Blocks: %9u", (unsigned int)st.st_ex_blocks);
 #endif
 #ifdef HAVE_STAT_ST_BLKSIZE
-	printf(" IO Block: %u\n", (unsigned int)st.st_blksize);
+	printf(" IO Block: %u\n", (unsigned int)st.st_ex_blksize);
 #endif
-	printf("  Device: 0x%10x", (unsigned int)st.st_dev);
-	printf(" Inode: %10u", (unsigned int)st.st_ino);
-	printf(" Links: %10u\n", (unsigned int)st.st_nlink);
-	printf("  Access: %05o", (int)((st.st_mode) & 007777));
-	printf(" Uid: %5lu/%.16s Gid: %5lu/%.16s\n", (unsigned long)st.st_uid, user, 
-	       (unsigned long)st.st_gid, group);
-	printf("  Access: %s", ctime(&(st.st_atime)));
-	printf("  Modify: %s", ctime(&(st.st_mtime)));
-	printf("  Change: %s", ctime(&(st.st_ctime)));
+	printf("  Device: 0x%10x", (unsigned int)st.st_ex_dev);
+	printf(" Inode: %10u", (unsigned int)st.st_ex_ino);
+	printf(" Links: %10u\n", (unsigned int)st.st_ex_nlink);
+	printf("  Access: %05o", (int)((st.st_ex_mode) & 007777));
+	printf(" Uid: %5lu/%.16s Gid: %5lu/%.16s\n", (unsigned long)st.st_ex_uid, user,
+	       (unsigned long)st.st_ex_gid, group);
+	tmp_time = convert_timespec_to_time_t(st.st_ex_atime);
+	printf("  Access: %s", ctime(&tmp_time));
+	tmp_time = convert_timespec_to_time_t(st.st_ex_mtime);
+	printf("  Modify: %s", ctime(&tmp_time));
+	tmp_time = convert_timespec_to_time_t(st.st_ex_ctime);
+	printf("  Change: %s", ctime(&tmp_time));
 
 	return NT_STATUS_OK;
 }
@@ -597,6 +605,7 @@ static NTSTATUS cmd_fstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	struct passwd *pwd = NULL;
 	struct group *grp = NULL;
 	SMB_STRUCT_STAT st;
+	time_t tmp_time;
 
 	if (argc != 2) {
 		printf("Usage: fstat <fd>\n");
@@ -619,37 +628,40 @@ static NTSTATUS cmd_fstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	pwd = sys_getpwuid(st.st_uid);
+	pwd = sys_getpwuid(st.st_ex_uid);
 	if (pwd != NULL) user = pwd->pw_name;
 	else user = null_string;
-	grp = sys_getgrgid(st.st_gid);
+	grp = sys_getgrgid(st.st_ex_gid);
 	if (grp != NULL) group = grp->gr_name;
 	else group = null_string;
 
 	printf("fstat: ok\n");
-	if (S_ISREG(st.st_mode)) printf("  Regular File\n");
-	else if (S_ISDIR(st.st_mode)) printf("  Directory\n");
-	else if (S_ISCHR(st.st_mode)) printf("  Character Device\n");
-	else if (S_ISBLK(st.st_mode)) printf("  Block Device\n");
-	else if (S_ISFIFO(st.st_mode)) printf("  Fifo\n");
-	else if (S_ISLNK(st.st_mode)) printf("  Symbolic Link\n");
-	else if (S_ISSOCK(st.st_mode)) printf("  Socket\n");
-	printf("  Size: %10u", (unsigned int)st.st_size);
+	if (S_ISREG(st.st_ex_mode)) printf("  Regular File\n");
+	else if (S_ISDIR(st.st_ex_mode)) printf("  Directory\n");
+	else if (S_ISCHR(st.st_ex_mode)) printf("  Character Device\n");
+	else if (S_ISBLK(st.st_ex_mode)) printf("  Block Device\n");
+	else if (S_ISFIFO(st.st_ex_mode)) printf("  Fifo\n");
+	else if (S_ISLNK(st.st_ex_mode)) printf("  Symbolic Link\n");
+	else if (S_ISSOCK(st.st_ex_mode)) printf("  Socket\n");
+	printf("  Size: %10u", (unsigned int)st.st_ex_size);
 #ifdef HAVE_STAT_ST_BLOCKS
-	printf(" Blocks: %9u", (unsigned int)st.st_blocks);
+	printf(" Blocks: %9u", (unsigned int)st.st_ex_blocks);
 #endif
 #ifdef HAVE_STAT_ST_BLKSIZE
-	printf(" IO Block: %u\n", (unsigned int)st.st_blksize);
+	printf(" IO Block: %u\n", (unsigned int)st.st_ex_blksize);
 #endif
-	printf("  Device: 0x%10x", (unsigned int)st.st_dev);
-	printf(" Inode: %10u", (unsigned int)st.st_ino);
-	printf(" Links: %10u\n", (unsigned int)st.st_nlink);
-	printf("  Access: %05o", (int)((st.st_mode) & 007777));
-	printf(" Uid: %5lu/%.16s Gid: %5lu/%.16s\n", (unsigned long)st.st_uid, user, 
-	       (unsigned long)st.st_gid, group);
-	printf("  Access: %s", ctime(&(st.st_atime)));
-	printf("  Modify: %s", ctime(&(st.st_mtime)));
-	printf("  Change: %s", ctime(&(st.st_ctime)));
+	printf("  Device: 0x%10x", (unsigned int)st.st_ex_dev);
+	printf(" Inode: %10u", (unsigned int)st.st_ex_ino);
+	printf(" Links: %10u\n", (unsigned int)st.st_ex_nlink);
+	printf("  Access: %05o", (int)((st.st_ex_mode) & 007777));
+	printf(" Uid: %5lu/%.16s Gid: %5lu/%.16s\n", (unsigned long)st.st_ex_uid, user,
+	       (unsigned long)st.st_ex_gid, group);
+	tmp_time = convert_timespec_to_time_t(st.st_ex_atime);
+	printf("  Access: %s", ctime(&tmp_time));
+	tmp_time = convert_timespec_to_time_t(st.st_ex_mtime);
+	printf("  Modify: %s", ctime(&tmp_time));
+	tmp_time = convert_timespec_to_time_t(st.st_ex_ctime);
+	printf("  Change: %s", ctime(&tmp_time));
 
 	return NT_STATUS_OK;
 }
@@ -662,6 +674,7 @@ static NTSTATUS cmd_lstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	struct passwd *pwd = NULL;
 	struct group *grp = NULL;
 	SMB_STRUCT_STAT st;
+	time_t tmp_time;
 
 	if (argc != 2) {
 		printf("Usage: lstat <path>\n");
@@ -673,37 +686,40 @@ static NTSTATUS cmd_lstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	pwd = sys_getpwuid(st.st_uid);
+	pwd = sys_getpwuid(st.st_ex_uid);
 	if (pwd != NULL) user = pwd->pw_name;
 	else user = null_string;
-	grp = sys_getgrgid(st.st_gid);
+	grp = sys_getgrgid(st.st_ex_gid);
 	if (grp != NULL) group = grp->gr_name;
 	else group = null_string;
 
 	printf("lstat: ok\n");
-	if (S_ISREG(st.st_mode)) printf("  Regular File\n");
-	else if (S_ISDIR(st.st_mode)) printf("  Directory\n");
-	else if (S_ISCHR(st.st_mode)) printf("  Character Device\n");
-	else if (S_ISBLK(st.st_mode)) printf("  Block Device\n");
-	else if (S_ISFIFO(st.st_mode)) printf("  Fifo\n");
-	else if (S_ISLNK(st.st_mode)) printf("  Symbolic Link\n");
-	else if (S_ISSOCK(st.st_mode)) printf("  Socket\n");
-	printf("  Size: %10u", (unsigned int)st.st_size);
+	if (S_ISREG(st.st_ex_mode)) printf("  Regular File\n");
+	else if (S_ISDIR(st.st_ex_mode)) printf("  Directory\n");
+	else if (S_ISCHR(st.st_ex_mode)) printf("  Character Device\n");
+	else if (S_ISBLK(st.st_ex_mode)) printf("  Block Device\n");
+	else if (S_ISFIFO(st.st_ex_mode)) printf("  Fifo\n");
+	else if (S_ISLNK(st.st_ex_mode)) printf("  Symbolic Link\n");
+	else if (S_ISSOCK(st.st_ex_mode)) printf("  Socket\n");
+	printf("  Size: %10u", (unsigned int)st.st_ex_size);
 #ifdef HAVE_STAT_ST_BLOCKS
-	printf(" Blocks: %9u", (unsigned int)st.st_blocks);
+	printf(" Blocks: %9u", (unsigned int)st.st_ex_blocks);
 #endif
 #ifdef HAVE_STAT_ST_BLKSIZE
-	printf(" IO Block: %u\n", (unsigned int)st.st_blksize);
+	printf(" IO Block: %u\n", (unsigned int)st.st_ex_blksize);
 #endif
-	printf("  Device: 0x%10x", (unsigned int)st.st_dev);
-	printf(" Inode: %10u", (unsigned int)st.st_ino);
-	printf(" Links: %10u\n", (unsigned int)st.st_nlink);
-	printf("  Access: %05o", (int)((st.st_mode) & 007777));
-	printf(" Uid: %5lu/%.16s Gid: %5lu/%.16s\n", (unsigned long)st.st_uid, user, 
-	       (unsigned long)st.st_gid, group);
-	printf("  Access: %s", ctime(&(st.st_atime)));
-	printf("  Modify: %s", ctime(&(st.st_mtime)));
-	printf("  Change: %s", ctime(&(st.st_ctime)));
+	printf("  Device: 0x%10x", (unsigned int)st.st_ex_dev);
+	printf(" Inode: %10u", (unsigned int)st.st_ex_ino);
+	printf(" Links: %10u\n", (unsigned int)st.st_ex_nlink);
+	printf("  Access: %05o", (int)((st.st_ex_mode) & 007777));
+	printf(" Uid: %5lu/%.16s Gid: %5lu/%.16s\n", (unsigned long)st.st_ex_uid, user,
+	       (unsigned long)st.st_ex_gid, group);
+	tmp_time = convert_timespec_to_time_t(st.st_ex_atime);
+	printf("  Access: %s", ctime(&tmp_time));
+	tmp_time = convert_timespec_to_time_t(st.st_ex_mtime);
+	printf("  Modify: %s", ctime(&tmp_time));
+	tmp_time = convert_timespec_to_time_t(st.st_ex_ctime);
+	printf("  Change: %s", ctime(&tmp_time));
 	
 	return NT_STATUS_OK;
 }

@@ -39,7 +39,6 @@ struct ldb_control *ldb_request_get_control(struct ldb_request *req, const char 
 {
 	int i;
 
-	/* check if there's a paged request control */
 	if (req->controls != NULL) {
 		for (i = 0; req->controls[i]; i++) {
 			if (strcmp(oid, req->controls[i]->oid) == 0) {
@@ -59,7 +58,6 @@ struct ldb_control *ldb_reply_get_control(struct ldb_reply *rep, const char *oid
 {
 	int i;
 
-	/* check if there's a paged request control */
 	if (rep->controls != NULL) {
 		for (i = 0; rep->controls[i]; i++) {
 			if (strcmp(oid, rep->controls[i]->oid) == 0) {
@@ -75,7 +73,7 @@ struct ldb_control *ldb_reply_get_control(struct ldb_reply *rep, const char *oid
 
 /* saves the current controls list into the "saver" and replace the one in req with a new one excluding
 the "exclude" control */
-/* returns False on error */
+/* returns 0 on error */
 int save_controls(struct ldb_control *exclude, struct ldb_request *req, struct ldb_control ***saver)
 {
 	struct ldb_control **lcs;

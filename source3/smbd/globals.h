@@ -125,7 +125,6 @@ extern int max_send;
 extern int max_recv;
 extern uint16 last_session_tag;
 extern int trans_num;
-extern char *orig_inbuf;
 
 extern pid_t mypid;
 extern time_t last_smb_conf_reload_time;
@@ -206,6 +205,13 @@ struct smbd_smb2_tcon;
 
 DATA_BLOB negprot_spnego(void);
 
+NTSTATUS smb2_signing_sign_pdu(DATA_BLOB session_key,
+			       struct iovec *vector,
+			       int count);
+NTSTATUS smb2_signing_check_pdu(DATA_BLOB session_key,
+				const struct iovec *vector,
+				int count);
+
 bool smbd_is_smb2_header(const uint8_t *inbuf, size_t size);
 
 void reply_smb2002(struct smb_request *req, uint16_t choice);
@@ -244,6 +250,7 @@ struct smbd_smb2_request {
 	struct smbd_smb2_tcon *tcon;
 
 	int current_idx;
+	bool do_signing;
 
 	struct {
 		/* the NBT header is not allocated */
@@ -299,6 +306,9 @@ struct smbd_smb2_session {
 	NTSTATUS status;
 	uint64_t vuid;
 	AUTH_NTLMSSP_STATE *auth_ntlmssp_state;
+	struct auth_serversupplied_info *server_info;
+	DATA_BLOB session_key;
+	bool do_signing;
 
 	struct {
 		/* an id tree used to allocate tids */
@@ -319,10 +329,12 @@ struct smbd_smb2_tcon {
 };
 
 struct smbd_server_connection {
-	struct fd_event *fde;
-	uint64_t num_requests;
-	struct smb_signing_state *signing_state;
 	bool allow_smb2;
+	struct {
+		struct fd_event *fde;
+		uint64_t num_requests;
+		struct smb_signing_state *signing_state;
+	} smb1;
 	struct {
 		struct tevent_context *event_ctx;
 		struct tevent_queue *recv_queue;

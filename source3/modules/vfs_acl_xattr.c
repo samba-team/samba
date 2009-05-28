@@ -282,8 +282,8 @@ static struct security_descriptor *default_file_sd(TALLOC_CTX *mem_ctx,
 	struct security_ace *pace = NULL;
 	struct security_acl *pacl = NULL;
 
-	uid_to_sid(&owner_sid, psbuf->st_uid);
-	gid_to_sid(&group_sid, psbuf->st_gid);
+	uid_to_sid(&owner_sid, psbuf->st_ex_uid);
+	gid_to_sid(&group_sid, psbuf->st_ex_gid);
 
 	pace = TALLOC_ARRAY(mem_ctx, struct security_ace, 2);
 	if (!pace) {

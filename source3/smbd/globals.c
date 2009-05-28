@@ -127,7 +127,6 @@ int max_send = BUFFER_SIZE;
 int max_recv = BUFFER_SIZE;
 uint16 last_session_tag = UID_FIELD_INVALID;
 int trans_num = 0;
-char *orig_inbuf = NULL;
 pid_t mypid = 0;
 time_t last_smb_conf_reload_time = 0;
 time_t last_printer_reload_time = 0;

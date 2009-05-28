@@ -993,8 +993,8 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	   I have disabled this chdir check (tridge) */
 	/* the alternative is just to check the directory exists */
 	if ((ret = SMB_VFS_STAT(conn, conn->connectpath, &st)) != 0 ||
-	    !S_ISDIR(st.st_mode)) {
-		if (ret == 0 && !S_ISDIR(st.st_mode)) {
+	    !S_ISDIR(st.st_ex_mode)) {
+		if (ret == 0 && !S_ISDIR(st.st_ex_mode)) {
 			DEBUG(0,("'%s' is not a directory, when connecting to "
 				 "[%s]\n", conn->connectpath,
 				 lp_servicename(snum)));
