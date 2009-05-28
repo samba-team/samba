@@ -569,7 +569,7 @@ hx509_cms_envelope_1(hx509_context context,
     memset(content, 0, sizeof(*content));
 
     if (encryption_type == NULL)
-	encryption_type = oid_id_aes_256_cbc();
+	encryption_type = &asn1_oid_id_aes_256_cbc;
 
     if ((flags & HX509_CMS_EV_NO_KU_CHECK) == 0) {
 	ret = _hx509_check_key_usage(context, cert, 1 << 2, TRUE);
@@ -889,7 +889,7 @@ hx509_cms_verify_signed(hx509_context context,
 	    sa.len = signer_info->signedAttrs->len;
 
 	    /* verify that sigature exists */
-	    attr = find_attribute(&sa, oid_id_pkcs9_messageDigest());
+	    attr = find_attribute(&sa, &asn1_oid_id_pkcs9_messageDigest);
 	    if (attr == NULL) {
 		ret = HX509_CRYPTO_SIGNATURE_MISSING;
 		hx509_set_error_string(context, 0, ret,
@@ -933,9 +933,9 @@ hx509_cms_verify_signed(hx509_context context,
 	     * Fetch content oid inside signedAttrs or set it to
 	     * id-pkcs7-data.
 	     */
-	    attr = find_attribute(&sa, oid_id_pkcs9_contentType());
+	    attr = find_attribute(&sa, &asn1_oid_id_pkcs9_contentType);
 	    if (attr == NULL) {
-		match_oid = oid_id_pkcs7_data();
+		match_oid = &asn1_oid_id_pkcs7_data;
 	    } else {
 		if (attr->value.len != 1) {
 		    ret = HX509_CMS_DATA_OID_MISMATCH;
@@ -974,7 +974,7 @@ hx509_cms_verify_signed(hx509_context context,
 	} else {
 	    signed_data.data = content->data;
 	    signed_data.length = content->length;
-	    match_oid = oid_id_pkcs7_data();
+	    match_oid = &asn1_oid_id_pkcs7_data;
 	}
 
 	/**
@@ -1246,7 +1246,7 @@ sig_process(hx509_context context, void *ctx, hx509_cert cert)
      * If it isn't pkcs7-data send signedAttributes
      */
 
-    if (der_heim_oid_cmp(sigctx->eContentType, oid_id_pkcs7_data()) != 0) {
+    if (der_heim_oid_cmp(sigctx->eContentType, &asn1_oid_id_pkcs7_data) != 0) {
 	CMSAttributes sa;	
 	heim_octet_string sig;
 
@@ -1281,7 +1281,7 @@ sig_process(hx509_context context, void *ctx, hx509_cert cert)
 
 	ret = add_one_attribute(&signer_info->signedAttrs->val,
 				&signer_info->signedAttrs->len,
-				oid_id_pkcs9_messageDigest(),
+				&asn1_oid_id_pkcs9_messageDigest,
 				&buf);
 	if (ret) {
 	    free(buf.data);
@@ -1303,7 +1303,7 @@ sig_process(hx509_context context, void *ctx, hx509_cert cert)
 
 	ret = add_one_attribute(&signer_info->signedAttrs->val,
 				&signer_info->signedAttrs->len,
-				oid_id_pkcs9_contentType(),
+				&asn1_oid_id_pkcs9_contentType,
 				&buf);
 	if (ret) {
 	    free(buf.data);
@@ -1437,7 +1437,7 @@ hx509_cms_create_signed(hx509_context context,
     memset(&name, 0, sizeof(name));
 
     if (eContentType == NULL)
-	eContentType = oid_id_pkcs7_data();
+	eContentType = &asn1_oid_id_pkcs7_data;
 
     sigctx.digest_alg = digest_alg;
     sigctx.content.data = rk_UNCONST(data);
