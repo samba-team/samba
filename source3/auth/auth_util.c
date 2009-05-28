@@ -207,21 +207,15 @@ NTSTATUS make_user_info_map(auth_usersupplied_info **user_info,
 	DEBUG(5, ("Mapping user [%s]\\[%s] from workstation [%s]\n",
 		 client_domain, smb_name, wksta_name));
 
-	/* don't allow "" as a domain, fixes a Win9X bug
-	   where it doens't supply a domain for logon script
-	   'net use' commands.                                 */
-
-	if ( *client_domain )
-		domain = client_domain;
-	else
-		domain = lp_workgroup();
+	domain = client_domain;
 
 	/* If you connect to a Windows domain member using a bogus domain name,
 	 * the Windows box will map the BOGUS\user to SAMNAME\user.  Thus, if
 	 * the Windows box is a DC the name will become DOMAIN\user and be
 	 * authenticated against AD, if the Windows box is a member server but
 	 * not a DC the name will become WORKSTATION\user.  A standalone
-	 * non-domain member box will also map to WORKSTATION\user. */
+	 * non-domain member box will also map to WORKSTATION\user.
+	 * This also deals with the client passing in a "" domain */
 
 	if (!is_trusted_domain(domain) &&
 	    !strequal(domain, get_global_sam_name()) )
