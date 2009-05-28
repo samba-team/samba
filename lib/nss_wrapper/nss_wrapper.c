@@ -954,6 +954,7 @@ _PUBLIC_ int nwrap_getpwent_r(struct passwd *pwdst, char *buf,
 {
 	if (!nwrap_enabled()) {
 #ifdef SOLARIS_GETPWENT_R
+		struct passwd *pw;
 		pw = real_getpwent_r(pwdst, buf, buflen);
 		if (!pw) {
 			if (errno == 0) {
@@ -1188,6 +1189,7 @@ _PUBLIC_ int nwrap_getgrent_r(struct group *grdst, char *buf,
 {
 	if (!nwrap_enabled()) {
 #ifdef SOLARIS_GETGRENT_R
+		struct group *gr;
 		gr = real_getgrent_r(grdst, buf, buflen);
 		if (!gr) {
 			if (errno == 0) {
