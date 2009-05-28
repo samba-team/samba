@@ -4490,7 +4490,7 @@ _krb5_pk_kdf(krb5_context context,
     unsigned char *keydata;
     unsigned char shaoutput[SHA_DIGEST_LENGTH];
 
-    if (der_heim_oid_cmp(oid_id_pkinit_kdf_ah_sha1(), &ai->algorithm) != 0) {
+    if (der_heim_oid_cmp(&asn1_oid_id_pkinit_kdf_ah_sha1, &ai->algorithm) != 0) {
 	krb5_set_error_message(context, KRB5_PROG_ETYPE_NOSUPP,
 			       N_("KDF not supported", ""));
 	return KRB5_PROG_ETYPE_NOSUPP;
