@@ -5,17 +5,17 @@
    Copyright (C) Luke Kenneth Casson Leighton 1998 - 2000
    Copyright (C) Andrew Bartlett 2002
    Copyright (C) Simo Sorce 2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -118,7 +118,7 @@ struct samu {
 	time_t pass_last_set_time;    /* password last set time */
 	time_t pass_can_change_time;  /* password can change time */
 	time_t pass_must_change_time; /* password must change time */
-		
+
 	const char *username;     /* UNIX username string */
 	const char *domain;       /* Windows Domain name */
 	const char *nt_username;  /* Windows username string */
@@ -131,22 +131,22 @@ struct samu {
 	const char *workstations; /* login from workstations string */
 	const char *comment;
 	const char *munged_dial;  /* munged path name and dial-back tel number */
-		
+
 	DOM_SID user_sid;  
 	DOM_SID *group_sid;
-		
+
 	DATA_BLOB lm_pw; /* .data is Null if no password */
 	DATA_BLOB nt_pw; /* .data is Null if no password */
 	DATA_BLOB nt_pw_his; /* nt hashed password history .data is Null if not available */
 	char* plaintext_pw; /* is Null if not available */
-		
+
 	uint32 acct_ctrl; /* account info (ACB_xxxx bit-mask) */
 	uint32 fields_present; /* 0x00ff ffff */
-		
+
 	uint16 logon_divs; /* 168 - number of hours in a week */
 	uint32 hours_len; /* normally 21 bytes */
 	uint8 hours[MAX_HOURS_LEN];
-	
+
 	/* Was unknown_5. */
 	uint16 bad_password_count;
 	uint16 logon_count;
@@ -158,7 +158,7 @@ struct samu {
 	const struct pdb_methods *backend_private_methods;
 	void *backend_private_data; 
 	void (*backend_private_data_free_fn)(void **);
-	
+
 	/* maintain a copy of the user's struct passwd */
 
 	struct passwd *unix_pw;
@@ -221,7 +221,7 @@ struct pdb_methods
 	const char *name; /* What name got this module */
 
 	NTSTATUS (*getsampwnam)(struct pdb_methods *, struct samu *sam_acct, const char *username);
-	
+
 	NTSTATUS (*getsampwsid)(struct pdb_methods *, struct samu *sam_acct, const DOM_SID *sid);
 
 	NTSTATUS (*create_user)(struct pdb_methods *, TALLOC_CTX *tmp_ctx,
@@ -230,15 +230,15 @@ struct pdb_methods
 
 	NTSTATUS (*delete_user)(struct pdb_methods *, TALLOC_CTX *tmp_ctx,
 				struct samu *sam_acct);
-	
+
 	NTSTATUS (*add_sam_account)(struct pdb_methods *, struct samu *sampass);
-	
+
 	NTSTATUS (*update_sam_account)(struct pdb_methods *, struct samu *sampass);
-	
+
 	NTSTATUS (*delete_sam_account)(struct pdb_methods *, struct samu *username);
-	
+
 	NTSTATUS (*rename_sam_account)(struct pdb_methods *, struct samu *oldname, const char *newname);
-	
+
 	NTSTATUS (*update_login_attempts)(struct pdb_methods *methods, struct samu *sam_acct, bool success);
 
 	NTSTATUS (*getgrsid)(struct pdb_methods *methods, GROUP_MAP *map, DOM_SID sid);
@@ -378,7 +378,7 @@ struct pdb_methods
 				     struct trustdom_info ***domains);
 
 	void *private_data;  /* Private data of some kind */
-	
+
 	void (*free_private_data)(void **);
 };
 
