@@ -43,7 +43,7 @@
 #define RDP_DIRENTRIES_SIZE ((size_t)(RDP_BATCH_SIZE * sizeof(struct dirent)))
 
 static char *rdp_direntries = NULL;
-static SMB_STRUCT_STAT *rdp_stats = NULL;
+static struct stat *rdp_stats = NULL;
 static uint64_t *rdp_cookies = NULL;
 
 struct rdp_dir_state {
@@ -113,7 +113,7 @@ rdp_init(struct rdp_dir_state *dsp)
 
 	if (!rdp_stats) {
 		rdp_stats =
-		    SMB_MALLOC(RDP_BATCH_SIZE * sizeof(SMB_STRUCT_STAT));
+		    SMB_MALLOC(RDP_BATCH_SIZE * sizeof(struct stat));
 		if (!rdp_stats)
 			return ENOMEM;
 	}
@@ -367,11 +367,15 @@ onefs_readdir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp,
 	/* Return an entry from cache */
 	ret_direntp = ((SMB_STRUCT_DIRENT *)dsp->direntries_cursor);
 	if (sbuf) {
-		*sbuf = rdp_stats[dsp->stat_cursor];
+		struct stat onefs_sbuf;
+
+		onefs_sbuf = rdp_stats[dsp->stat_cursor];
+		init_stat_ex_from_onefs_stat(sbuf, &onefs_sbuf);
+
 		/* readdirplus() sets st_ino field to 0, if it was
 		 * unable to retrieve stat information for that
 		 * particular directory entry. */
-		if (sbuf->st_ino == 0)
+		if (sbuf->st_ex_ino == 0)
 			SET_STAT_INVALID(*sbuf);
 	}
 

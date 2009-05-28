@@ -393,7 +393,7 @@ onefs_canon_acl(files_struct *fsp, struct ifs_security_descriptor *sd)
 		if (error)
 			return false;
 
-		if ((sbuf.st_flags & SF_HASNTFSACL) != 0) {
+		if ((sbuf.st_ex_flags & SF_HASNTFSACL) != 0) {
 			DEBUG(10, ("Did not canonicalize ACLs because a "
 			    "Windows ACL set was found for file %s\n",
 			    fsp->fsp_name));
@@ -540,7 +540,8 @@ static bool add_sfs_aces(files_struct *fsp, struct ifs_security_descriptor *sd)
 	}
 
 	/* Only continue if this is a synthetic ACL and a directory. */
-	if (S_ISDIR(sbuf.st_mode) && (sbuf.st_flags & SF_HASNTFSACL) == 0) {
+	if (S_ISDIR(sbuf.st_ex_mode) &&
+	    (sbuf.st_ex_flags & SF_HASNTFSACL) == 0) {
 		struct ifs_ace new_aces[6];
 		struct ifs_ace *old_aces;
 		int i, num_aces_to_add = 0;

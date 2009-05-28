@@ -88,7 +88,7 @@ static uint64_t onefs_get_alloc_size(struct vfs_handle_struct *handle,
 
 	START_PROFILE(syscall_get_alloc_size);
 
-	if(S_ISDIR(sbuf->st_mode)) {
+	if(S_ISDIR(sbuf->st_ex_mode)) {
 		result = 0;
 		goto out;
 	}
@@ -115,9 +115,9 @@ static struct file_id onefs_file_id_create(struct vfs_handle_struct *handle,
 	 * blob */
 	ZERO_STRUCT(key);
 
-	key.devid = sbuf->st_dev;
-	key.inode = sbuf->st_ino;
-	key.extid = sbuf->st_snapid;
+	key.devid = sbuf->st_ex_dev;
+	key.inode = sbuf->st_ex_ino;
+	key.extid = sbuf->vfs_private;
 
 	return key;
 }
@@ -152,7 +152,7 @@ static int onefs_get_real_filename(vfs_handle_struct *handle, const char *path,
 				   const char *name, TALLOC_CTX *mem_ctx,
 				   char **found_name)
 {
-	SMB_STRUCT_STAT sb;
+	struct stat sb;
 	struct connection_struct *conn = handle->conn;
 	struct stat_extra se;
 	int result;
@@ -278,11 +278,11 @@ static vfs_op_tuple onefs_ops[] = {
 	{SMB_VFS_OP(onefs_rename), SMB_VFS_OP_RENAME,
 	 SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(onefs_stat), SMB_VFS_OP_STAT,
-	 SMB_VFS_LAYER_TRANSPARENT},
+	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(onefs_fstat), SMB_VFS_OP_FSTAT,
-	 SMB_VFS_LAYER_TRANSPARENT},
+	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(onefs_lstat), SMB_VFS_OP_LSTAT,
-	 SMB_VFS_LAYER_TRANSPARENT},
+	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(onefs_get_alloc_size), SMB_VFS_OP_GET_ALLOC_SIZE,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(onefs_unlink), SMB_VFS_OP_UNLINK,

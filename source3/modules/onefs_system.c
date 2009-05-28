@@ -666,3 +666,97 @@ out:
 
 	return ret;
 }
+
+void init_stat_ex_from_onefs_stat(struct stat_ex *dst, const struct stat *src)
+{
+	ZERO_STRUCT(*dst);
+
+	dst->st_ex_dev = src->st_dev;
+	dst->st_ex_ino = src->st_ino;
+	dst->st_ex_mode = src->st_mode;
+	dst->st_ex_nlink = src->st_nlink;
+	dst->st_ex_uid = src->st_uid;
+	dst->st_ex_gid = src->st_gid;
+	dst->st_ex_rdev = src->st_rdev;
+	dst->st_ex_size = src->st_size;
+	dst->st_ex_atime = src->st_atimespec;
+	dst->st_ex_mtime = src->st_mtimespec;
+	dst->st_ex_ctime = src->st_ctimespec;
+	dst->st_ex_btime = src->st_birthtimespec;
+	dst->st_ex_blksize = src->st_blksize;
+	dst->st_ex_blocks = src->st_blocks;
+
+	dst->st_ex_flags = src->st_flags;
+
+	dst->vfs_private = src->st_snapid;
+}
+
+int onefs_sys_stat(const char *fname, SMB_STRUCT_STAT *sbuf)
+{
+	int ret;
+	struct stat onefs_sbuf;
+
+	ret = stat(fname, &onefs_sbuf);
+
+	if (ret == 0) {
+		/* we always want directories to appear zero size */
+		if (S_ISDIR(onefs_sbuf.st_mode)) {
+			onefs_sbuf.st_size = 0;
+		}
+		init_stat_ex_from_onefs_stat(sbuf, &onefs_sbuf);
+	}
+	return ret;
+}
+
+int onefs_sys_fstat(int fd, SMB_STRUCT_STAT *sbuf)
+{
+	int ret;
+	struct stat onefs_sbuf;
+
+	ret = fstat(fd, &onefs_sbuf);
+
+	if (ret == 0) {
+		/* we always want directories to appear zero size */
+		if (S_ISDIR(onefs_sbuf.st_mode)) {
+			onefs_sbuf.st_size = 0;
+		}
+		init_stat_ex_from_onefs_stat(sbuf, &onefs_sbuf);
+	}
+	return ret;
+}
+
+int onefs_sys_fstat_at(int base_fd, const char *fname, SMB_STRUCT_STAT *sbuf,
+		       int flags)
+{
+	int ret;
+	struct stat onefs_sbuf;
+
+	ret = enc_fstatat(base_fd, fname, ENC_DEFAULT, &onefs_sbuf, flags);
+
+	if (ret == 0) {
+		/* we always want directories to appear zero size */
+		if (S_ISDIR(onefs_sbuf.st_mode)) {
+			onefs_sbuf.st_size = 0;
+		}
+		init_stat_ex_from_onefs_stat(sbuf, &onefs_sbuf);
+	}
+	return ret;
+}
+
+int onefs_sys_lstat(const char *fname, SMB_STRUCT_STAT *sbuf)
+{
+	int ret;
+	struct stat onefs_sbuf;
+
+	ret = lstat(fname, &onefs_sbuf);
+
+	if (ret == 0) {
+		/* we always want directories to appear zero size */
+		if (S_ISDIR(onefs_sbuf.st_mode)) {
+			onefs_sbuf.st_size = 0;
+		}
+		init_stat_ex_from_onefs_stat(sbuf, &onefs_sbuf);
+	}
+	return ret;
+}
+

@@ -222,81 +222,84 @@ static void merge_stat(SMB_STRUCT_STAT *stream_sbuf,
 {
 	int dos_flags = (UF_DOS_NOINDEX | UF_DOS_ARCHIVE |
 	    UF_DOS_HIDDEN | UF_DOS_RO | UF_DOS_SYSTEM);
-	stream_sbuf->st_mtime = base_sbuf->st_mtime;
-	stream_sbuf->st_ctime = base_sbuf->st_ctime;
-	stream_sbuf->st_atime = base_sbuf->st_atime;
-	stream_sbuf->st_flags &= ~dos_flags;
-	stream_sbuf->st_flags |= base_sbuf->st_flags & dos_flags;
+	stream_sbuf->st_ex_mtime = base_sbuf->st_ex_mtime;
+	stream_sbuf->st_ex_ctime = base_sbuf->st_ex_ctime;
+	stream_sbuf->st_ex_atime = base_sbuf->st_ex_atime;
+	stream_sbuf->st_ex_flags &= ~dos_flags;
+	stream_sbuf->st_ex_flags |= base_sbuf->st_ex_flags & dos_flags;
 }
 
 /* fake timestamps */
-static void onefs_adjust_stat_time(vfs_handle_struct *handle, const char *fname,
-				   SMB_STRUCT_STAT *sbuf)
+static void onefs_adjust_stat_time(struct connection_struct *conn,
+				   const char *fname, SMB_STRUCT_STAT *sbuf)
 {
 	struct onefs_vfs_share_config cfg;
 	struct timeval tv_now = {0, 0};
 	bool static_mtime = False;
 	bool static_atime = False;
 
-	if (!onefs_get_config(SNUM(handle->conn),
+	if (!onefs_get_config(SNUM(conn),
 			      ONEFS_VFS_CONFIG_FAKETIMESTAMPS, &cfg)) {
 		return;
 	}
 
-	if (IS_MTIME_STATIC_PATH(handle->conn, &cfg, fname)) {
-		sbuf->st_mtime = sbuf->st_birthtime;
+	if (IS_MTIME_STATIC_PATH(conn, &cfg, fname)) {
+		sbuf->st_ex_mtime = sbuf->st_ex_btime;
 		static_mtime = True;
 	}
-	if (IS_ATIME_STATIC_PATH(handle->conn, &cfg, fname)) {
-		sbuf->st_atime = sbuf->st_birthtime;
+	if (IS_ATIME_STATIC_PATH(conn, &cfg, fname)) {
+		sbuf->st_ex_atime = sbuf->st_ex_btime;
 		static_atime = True;
 	}
 
-	if (IS_CTIME_NOW_PATH(handle->conn, &cfg, fname)) {
+	if (IS_CTIME_NOW_PATH(conn, &cfg, fname)) {
 		if (cfg.ctime_slop < 0) {
-			sbuf->st_birthtime = INT_MAX - 1;
+			sbuf->st_ex_btime.tv_sec = INT_MAX - 1;
 		} else {
 			GetTimeOfDay(&tv_now);
-			sbuf->st_birthtime = tv_now.tv_sec + cfg.ctime_slop;
+			sbuf->st_ex_btime.tv_sec = tv_now.tv_sec +
+			    cfg.ctime_slop;
 		}
 	}
 
-	if (!static_mtime && IS_MTIME_NOW_PATH(handle->conn,&cfg,fname)) {
+	if (!static_mtime && IS_MTIME_NOW_PATH(conn,&cfg,fname)) {
 		if (cfg.mtime_slop < 0) {
-			sbuf->st_mtime = INT_MAX - 1;
+			sbuf->st_ex_mtime.tv_sec = INT_MAX - 1;
 		} else {
 			if (tv_now.tv_sec == 0)
 				GetTimeOfDay(&tv_now);
-			sbuf->st_mtime = tv_now.tv_sec + cfg.mtime_slop;
+			sbuf->st_ex_mtime.tv_sec = tv_now.tv_sec +
+			    cfg.mtime_slop;
 		}
 	}
-	if (!static_atime && IS_ATIME_NOW_PATH(handle->conn,&cfg,fname)) {
+	if (!static_atime && IS_ATIME_NOW_PATH(conn,&cfg,fname)) {
 		if (cfg.atime_slop < 0) {
-			sbuf->st_atime = INT_MAX - 1;
+			sbuf->st_ex_atime.tv_sec = INT_MAX - 1;
 		} else {
 			if (tv_now.tv_sec == 0)
 				GetTimeOfDay(&tv_now);
-			sbuf->st_atime = tv_now.tv_sec + cfg.atime_slop;
+			sbuf->st_ex_atime.tv_sec = tv_now.tv_sec +
+			    cfg.atime_slop;
 		}
 	}
 }
 
-static int stat_stream(vfs_handle_struct *handle, const char *base,
+static int stat_stream(struct connection_struct *conn, const char *base,
 		       const char *stream, SMB_STRUCT_STAT *sbuf, int flags)
 {
 	SMB_STRUCT_STAT base_sbuf;
 	int base_fd = -1, dir_fd, ret, saved_errno;
 
-	dir_fd = get_stream_dir_fd(handle->conn, base, &base_fd);
+	dir_fd = get_stream_dir_fd(conn, base, &base_fd);
 	if (dir_fd < 0) {
 		return -1;
 	}
 
 	/* Stat the stream. */
-	ret = enc_fstatat(dir_fd, stream, ENC_DEFAULT, sbuf, flags);
+	ret = onefs_sys_fstat_at(dir_fd, stream, sbuf, flags);
 	if (ret != -1) {
 		/* Now stat the base file and merge the results. */
-		ret = sys_fstat(base_fd, &base_sbuf);
+		ret = onefs_sys_fstat(base_fd, &base_sbuf);
 		if (ret != -1) {
 			merge_stat(sbuf, &base_sbuf);
 		}
@@ -322,15 +325,15 @@ int onefs_stat(vfs_handle_struct *handle, const char *path,
 		return ret;
 
 	if (!is_stream) {
-		ret = SMB_VFS_NEXT_STAT(handle, path, sbuf);
+		ret = onefs_sys_stat(path, sbuf);
 	} else if (!stream) {
 		/* If it's the ::$DATA stream just stat the base file name. */
-		ret = SMB_VFS_NEXT_STAT(handle, base, sbuf);
+		ret = onefs_sys_stat(base, sbuf);
 	} else {
-		ret = stat_stream(handle, base, stream, sbuf, 0);
+		ret = stat_stream(handle->conn, base, stream, sbuf, 0);
 	}
 
-	onefs_adjust_stat_time(handle, path, sbuf);
+	onefs_adjust_stat_time(handle->conn, path, sbuf);
 	return ret;
 }
 
@@ -341,20 +344,20 @@ int onefs_fstat(vfs_handle_struct *handle, struct files_struct *fsp,
 	int ret;
 
 	/* Stat the stream, by calling next_fstat on the stream's fd. */
-	ret = SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf);
+	ret = onefs_sys_fstat(fsp->fh->fd, sbuf);
 	if (ret == -1) {
 		return ret;
 	}
 
 	/* Stat the base file and merge the results. */
 	if (fsp != NULL && fsp->base_fsp != NULL) {
-		ret = sys_fstat(fsp->base_fsp->fh->fd, &base_sbuf);
+		ret = onefs_sys_fstat(fsp->base_fsp->fh->fd, &base_sbuf);
 		if (ret != -1) {
 			merge_stat(sbuf, &base_sbuf);
 		}
 	}
 
-	onefs_adjust_stat_time(handle, fsp->fsp_name, sbuf);
+	onefs_adjust_stat_time(handle->conn, fsp->fsp_name, sbuf);
 	return ret;
 }
 
@@ -371,16 +374,16 @@ int onefs_lstat(vfs_handle_struct *handle, const char *path,
 		return ret;
 
 	if (!is_stream) {
-		ret = SMB_VFS_NEXT_LSTAT(handle, path, sbuf);
+		ret = onefs_sys_lstat(path, sbuf);
 	} else if (!stream) {
 		/* If it's the ::$DATA stream just stat the base file name. */
-		ret = SMB_VFS_NEXT_LSTAT(handle, base, sbuf);
+		ret = onefs_sys_lstat(base, sbuf);
 	} else {
-		ret = stat_stream(handle, base, stream, sbuf,
+		ret = stat_stream(handle->conn, base, stream, sbuf,
 				  AT_SYMLINK_NOFOLLOW);
 	}
 
-	onefs_adjust_stat_time(handle, path, sbuf);
+	onefs_adjust_stat_time(handle->conn, path, sbuf);
 	return ret;
 }
 
@@ -614,7 +617,7 @@ static NTSTATUS walk_onefs_streams(connection_struct *conn, files_struct *fsp,
 
 		if (!add_one_stream(state->mem_ctx,
 				    &state->num_streams, &state->streams,
-				    dp->d_name, stream_sbuf.st_size,
+				    dp->d_name, stream_sbuf.st_ex_size,
 				    SMB_VFS_GET_ALLOC_SIZE(conn, NULL,
 							   &stream_sbuf))) {
 			state->status = NT_STATUS_NO_MEMORY;
@@ -677,10 +680,10 @@ NTSTATUS onefs_streaminfo(vfs_handle_struct *handle,
 	}
 
 	/* Add the default stream. */
-	if (S_ISREG(sbuf.st_mode)) {
+	if (S_ISREG(sbuf.st_ex_mode)) {
 		if (!add_one_stream(mem_ctx,
 				    &state.num_streams, &state.streams,
-				    "", sbuf.st_size,
+				    "", sbuf.st_ex_size,
 				    SMB_VFS_GET_ALLOC_SIZE(handle->conn, fsp,
 							   &sbuf))) {
 			return NT_STATUS_NO_MEMORY;
@@ -692,7 +695,7 @@ NTSTATUS onefs_streaminfo(vfs_handle_struct *handle,
 	state.status = NT_STATUS_OK;
 
 	/* If there are more streams, add them too. */
-	if (sbuf.st_flags & UF_HASADS) {
+	if (sbuf.st_ex_flags & UF_HASADS) {
 
 		status = walk_onefs_streams(handle->conn, fsp, fname,
 		    &state, &sbuf);

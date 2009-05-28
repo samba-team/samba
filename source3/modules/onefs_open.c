@@ -148,7 +148,7 @@ static NTSTATUS onefs_open_file(files_struct *fsp,
 	 * open flags. JRA.
 	 */
 
-	if (file_existed && S_ISFIFO(psbuf->st_mode)) {
+	if (file_existed && S_ISFIFO(psbuf->st_ex_mode)) {
 		local_flags |= O_NONBLOCK;
 	}
 #endif
@@ -289,13 +289,13 @@ static NTSTATUS onefs_open_file(files_struct *fsp,
 	 * so catch a directory open and return an EISDIR. JRA.
 	 */
 
-	if(S_ISDIR(psbuf->st_mode)) {
+	if(S_ISDIR(psbuf->st_ex_mode)) {
 		fd_close(fsp);
 		errno = EISDIR;
 		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
 
-	fsp->mode = psbuf->st_mode;
+	fsp->mode = psbuf->st_ex_mode;
 	fsp->file_id = vfs_file_id_from_sbuf(conn, psbuf);
 	fsp->vuid = req ? req->vuid : UID_FIELD_INVALID;
 	fsp->file_pid = req ? req->smbpid : 0;
@@ -661,7 +661,7 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 					  "FILE_CREATE requested for file %s "
 					  "and file already exists.\n",
 					  fname));
-				if (S_ISDIR(psbuf->st_mode)) {
+				if (S_ISDIR(psbuf->st_ex_mode)) {
 					errno = EISDIR;
 				} else {
 					errno = EEXIST;
@@ -687,13 +687,13 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 		(create_disposition == FILE_OVERWRITE_IF))) {
 		if (!open_match_attributes(conn, fname,
 					   existing_dos_attributes,
-					   new_dos_attributes, psbuf->st_mode,
+					   new_dos_attributes, psbuf->st_ex_mode,
 					   unx_mode, &new_unx_mode)) {
 			DEBUG(5, ("onefs_open_file_ntcreate: attributes "
 				  "missmatch for file %s (%x %x) (0%o, 0%o)\n",
 				  fname, existing_dos_attributes,
 				  new_dos_attributes,
-				  (unsigned int)psbuf->st_mode,
+				  (unsigned int)psbuf->st_ex_mode,
 				  (unsigned int)unx_mode ));
 			errno = EACCES;
 			return NT_STATUS_ACCESS_DENIED;
@@ -816,7 +816,7 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 	}
 
 	if (file_existed) {
-		struct timespec old_write_time = get_mtimespec(psbuf);
+		struct timespec old_write_time = psbuf->st_ex_mtime;
 		id = vfs_file_id_from_sbuf(conn, psbuf);
 
 		lck = get_share_mode_lock(talloc_tos(), id,
@@ -900,7 +900,7 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 				struct deferred_open_record state;
 				struct timespec old_write_time;
 
-				old_write_time = get_mtimespec(psbuf);
+				old_write_time = psbuf->st_ex_mtime;
 
 				DEBUG(3, ("Someone created file %s with an "
 					  "oplock after we looked: Retrying\n",
@@ -1089,7 +1089,7 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 	}
 
 	if (!file_existed) {
-		struct timespec old_write_time = get_mtimespec(psbuf);
+		struct timespec old_write_time = psbuf->st_ex_mtime;
 		/*
 		 * Deal with the race condition where two smbd's detect the
 		 * file doesn't exist and do the create at the same time. One
@@ -1267,7 +1267,7 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 	 * May be necessary depending on acl policies.
 	 */
 	if (!posix_open && !file_existed && !def_acl && !(VALID_STAT(*psbuf)
-		  && (psbuf->st_flags & SF_HASNTFSACL))) {
+		  && (psbuf->st_ex_flags & SF_HASNTFSACL))) {
 
 		int saved_errno = errno; /* We might get ENOSYS in the next
 					  * call.. */
@@ -1495,7 +1495,7 @@ static NTSTATUS onefs_open_directory(connection_struct *conn,
 			return map_nt_error_from_unix(errno);
 		}
 
-		if (!S_ISDIR(psbuf->st_mode)) {
+		if (!S_ISDIR(psbuf->st_ex_mode)) {
 			DEBUG(0, ("Directory just '%s' created is not a "
 				  "directory\n", fname));
 			return NT_STATUS_ACCESS_DENIED;
@@ -1509,9 +1509,9 @@ static NTSTATUS onefs_open_directory(connection_struct *conn,
 			 * parent dir.
 			 */
 			if (mode & ~(S_IRWXU|S_IRWXG|S_IRWXO) &&
-			    (mode & ~psbuf->st_mode)) {
-				SMB_VFS_CHMOD(conn, fname, (psbuf->st_mode |
-						  (mode & ~psbuf->st_mode)));
+			    (mode & ~psbuf->st_ex_mode)) {
+				SMB_VFS_CHMOD(conn, fname, (psbuf->st_ex_mode |
+						  (mode & ~psbuf->st_ex_mode)));
 			}
 		}
 
@@ -1533,7 +1533,7 @@ static NTSTATUS onefs_open_directory(connection_struct *conn,
 	}
 
 	/* Setup the files_struct for it. */
-	fsp->mode = psbuf->st_mode;
+	fsp->mode = psbuf->st_ex_mode;
 	fsp->file_id = vfs_file_id_from_sbuf(conn, psbuf);
 	fsp->vuid = req ? req->vuid : UID_FIELD_INVALID;
 	fsp->file_pid = req ? req->smbpid : 0;
@@ -1556,7 +1556,7 @@ static NTSTATUS onefs_open_directory(connection_struct *conn,
 
 	string_set(&fsp->fsp_name,fname);
 
-	mtimespec = get_mtimespec(psbuf);
+	mtimespec = psbuf->st_ex_mtime;
 
 	/*
 	 * Still set the samba share mode lock for correct delete-on-close
@@ -1904,7 +1904,7 @@ static NTSTATUS onefs_create_file_unixpath(connection_struct *conn,
 		}
 	}
 
-	if (!fsp->is_directory && S_ISDIR(sbuf.st_mode)) {
+	if (!fsp->is_directory && S_ISDIR(sbuf.st_ex_mode)) {
 		status = NT_STATUS_ACCESS_DENIED;
 		goto fail;
 	}
@@ -1912,7 +1912,7 @@ static NTSTATUS onefs_create_file_unixpath(connection_struct *conn,
 	/* Save the requested allocation size. */
 	if ((info == FILE_WAS_CREATED) || (info == FILE_WAS_OVERWRITTEN)) {
 		if (allocation_size
-		    && (allocation_size > sbuf.st_size)) {
+		    && (allocation_size > sbuf.st_ex_size)) {
 			fsp->initial_allocation_size = smb_roundup(
 				fsp->conn, allocation_size);
 			if (fsp->is_directory) {
@@ -1927,7 +1927,7 @@ static NTSTATUS onefs_create_file_unixpath(connection_struct *conn,
 			}
 		} else {
 			fsp->initial_allocation_size = smb_roundup(
-				fsp->conn, (uint64_t)sbuf.st_size);
+				fsp->conn, (uint64_t)sbuf.st_ex_size);
 		}
 	}
 
