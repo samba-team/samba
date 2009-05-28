@@ -2733,6 +2733,54 @@ static int cmd_link(void)
 }
 
 /****************************************************************************
+ UNIX readlink.
+****************************************************************************/
+
+static int cmd_readlink(void)
+{
+	TALLOC_CTX *ctx = talloc_tos();
+	char *name= NULL;
+	char *buf = NULL;
+	char *targetname = NULL;
+	char linkname[PATH_MAX+1];
+	struct cli_state *targetcli;
+
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
+		d_printf("readlink <name>\n");
+		return 1;
+	}
+	name = talloc_asprintf(ctx,
+			"%s%s",
+			client_get_cur_dir(),
+			buf);
+	if (!name) {
+		return 1;
+	}
+
+	if (!cli_resolve_path(ctx, "", auth_info, cli, name, &targetcli, &targetname)) {
+		d_printf("readlink %s: %s\n", name, cli_errstr(cli));
+		return 1;
+	}
+
+	if (!SERVER_HAS_UNIX_CIFS(targetcli)) {
+		d_printf("Server doesn't support UNIX CIFS calls.\n");
+		return 1;
+	}
+
+	if (!NT_STATUS_IS_OK(cli_posix_readlink(targetcli, name,
+			linkname, PATH_MAX+1))) {
+		d_printf("%s readlink on file %s\n",
+			cli_errstr(targetcli), name);
+		return 1;
+	}
+
+	d_printf("%s -> %s\n", name, linkname);
+
+	return 0;
+}
+
+
+/****************************************************************************
  UNIX symlink.
 ****************************************************************************/
 
@@ -3953,6 +4001,7 @@ static struct {
   {"q",cmd_quit,"logoff the server",{COMPL_NONE,COMPL_NONE}},
   {"queue",cmd_queue,"show the print queue",{COMPL_NONE,COMPL_NONE}},
   {"quit",cmd_quit,"logoff the server",{COMPL_NONE,COMPL_NONE}},
+  {"readlink",cmd_readlink,"filename Do a UNIX extensions readlink call on a symlink",{COMPL_REMOTE,COMPL_REMOTE}},
   {"rd",cmd_rmdir,"<directory> remove a directory",{COMPL_NONE,COMPL_NONE}},
   {"recurse",cmd_recurse,"toggle directory recursion for mget and mput",{COMPL_NONE,COMPL_NONE}},  
   {"reget",cmd_reget,"<remote name> [local name] get a file restarting at end of local file",{COMPL_REMOTE,COMPL_LOCAL}},
