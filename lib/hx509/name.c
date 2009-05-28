@@ -62,20 +62,20 @@
 
 static const struct {
     const char *n;
-    const heim_oid *(*o)(void);
+    const heim_oid *o;
     wind_profile_flags flags;
 } no[] = {
-    { "C", oid_id_at_countryName },
-    { "CN", oid_id_at_commonName },
-    { "DC", oid_id_domainComponent },
-    { "L", oid_id_at_localityName },
-    { "O", oid_id_at_organizationName },
-    { "OU", oid_id_at_organizationalUnitName },
-    { "S", oid_id_at_stateOrProvinceName },
-    { "STREET", oid_id_at_streetAddress },
-    { "UID", oid_id_Userid },
-    { "emailAddress", oid_id_pkcs9_emailAddress },
-    { "serialNumber", oid_id_at_serialNumber }
+    { "C", &asn1_oid_id_at_countryName },
+    { "CN", &asn1_oid_id_at_commonName },
+    { "DC", &asn1_oid_id_domainComponent },
+    { "L", &asn1_oid_id_at_localityName },
+    { "O", &asn1_oid_id_at_organizationName },
+    { "OU", &asn1_oid_id_at_organizationalUnitName },
+    { "S", &asn1_oid_id_at_stateOrProvinceName },
+    { "STREET", &asn1_oid_id_at_streetAddress },
+    { "UID", &asn1_oid_id_Userid },
+    { "emailAddress", &asn1_oid_id_pkcs9_emailAddress },
+    { "serialNumber", &asn1_oid_id_at_serialNumber }
 };
 
 static char *
@@ -144,7 +144,7 @@ oidtostring(const heim_oid *type)
     size_t i;
 
     for (i = 0; i < sizeof(no)/sizeof(no[0]); i++) {
-	if (der_heim_oid_cmp((*no[i].o)(), type) == 0)
+	if (der_heim_oid_cmp(no[i].o, type) == 0)
 	    return strdup(no[i].n);
     }
     if (der_print_heim_oid(type, '.', &s) != 0)
@@ -162,7 +162,7 @@ stringtooid(const char *name, size_t len, heim_oid *oid)
 
     for (i = 0; i < sizeof(no)/sizeof(no[0]); i++) {
 	if (strncasecmp(no[i].n, name, len) == 0)
-	    return der_copy_oid((*no[i].o)(), oid);
+	    return der_copy_oid(no[i].o, oid);
     }
     s = malloc(len + 1);
     if (s == NULL)
