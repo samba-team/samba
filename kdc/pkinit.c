@@ -693,7 +693,7 @@ _kdc_pk_rd_padata(krb5_context context,
 	goto out;
     }
 
-    ret = der_heim_oid_cmp(&contentInfoOid, oid_id_pkcs7_signedData());
+    ret = der_heim_oid_cmp(&contentInfoOid, &asn1_oid_id_pkcs7_signedData);
     if (ret != 0) {
 	ret = KRB5KRB_ERR_GENERIC;
 	krb5_set_error_message(context, ret,
@@ -743,8 +743,8 @@ _kdc_pk_rd_padata(krb5_context context,
     }
 
     /* Signature is correct, now verify the signed message */
-    if (der_heim_oid_cmp(&eContentType, oid_id_pkcs7_data()) != 0 &&
-	der_heim_oid_cmp(&eContentType, oid_id_pkauthdata()) != 0)
+    if (der_heim_oid_cmp(&eContentType, &asn1_oid_id_pkcs7_data) != 0 &&
+	der_heim_oid_cmp(&eContentType, &asn1_oid_id_pkauthdata) != 0)
     {
 	ret = KRB5_BADMSGTYPE;
 	krb5_set_error_message(context, ret, "got wrong oid for pkauthdata");
@@ -939,14 +939,14 @@ pk_mk_pa_reply_enckey(krb5_context context,
 	{
 	    do_win2k = 1;
 	}
-	sdAlg = oid_id_pkcs7_data();
-	evAlg = oid_id_pkcs7_data();
-	envelopedAlg = oid_id_rsadsi_des_ede3_cbc();
+	sdAlg = &asn1_oid_id_pkcs7_data;
+	evAlg = &asn1_oid_id_pkcs7_data;
+	envelopedAlg = &asn1_oid_id_rsadsi_des_ede3_cbc;
 	break;
     }
     case PKINIT_27:
-	sdAlg = oid_id_pkrkeydata();
-	evAlg = oid_id_pkcs7_signedData();
+	sdAlg = &asn1_oid_id_pkrkeydata;
+	evAlg = &asn1_oid_id_pkcs7_signedData;
 	break;
     default:
 	krb5_abortx(context, "internal pkinit error");
@@ -1047,7 +1047,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
 	goto out;
 
     if (cp->type == PKINIT_WIN2K) {
-	ret = hx509_cms_wrap_ContentInfo(oid_id_pkcs7_signedData(),
+	ret = hx509_cms_wrap_ContentInfo(&asn1_oid_id_pkcs7_signedData,
 					 &signed_data,
 					 &buf);
 	if (ret)
@@ -1067,7 +1067,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
 
     ret = _krb5_pk_mk_ContentInfo(context,
 				  &buf,
-				  oid_id_pkcs7_envelopedData(),
+				  &asn1_oid_id_pkcs7_envelopedData,
 				  content_info);
 out:
     if (ret && *kdc_cert) {
@@ -1186,7 +1186,7 @@ pk_mk_pa_reply_dh(krb5_context context,
     
     ret = hx509_cms_create_signed_1(kdc_identity->hx509ctx,
 				    0,
-				    oid_id_pkdhkeydata(),
+				    &asn1_oid_id_pkdhkeydata,
 				    buf.data,
 				    buf.length,
 				    NULL,
@@ -1203,7 +1203,7 @@ pk_mk_pa_reply_dh(krb5_context context,
 
     ret = _krb5_pk_mk_ContentInfo(context,
 				  &signed_data,
-				  oid_id_pkcs7_signedData(),
+				  &asn1_oid_id_pkcs7_signedData,
 				  content_info);
     if (ret)
 	goto out;
@@ -1560,7 +1560,7 @@ match_rfc_san(krb5_context context,
 
     ret = hx509_cert_find_subjectAltName_otherName(hx509ctx,
 						   client_cert,
-						   oid_id_pkinit_san(),
+						   &asn1_oid_id_pkinit_san,
 						   &list);
     if (ret)
 	goto out;
@@ -1621,7 +1621,7 @@ match_ms_upn_san(krb5_context context,
 
     ret = hx509_cert_find_subjectAltName_otherName(hx509ctx,
 						   client_cert,
-						   oid_id_pkinit_ms_san(),
+						   &asn1_oid_id_pkinit_ms_san,
 						   &list);
     if (ret)
 	goto out;
@@ -1971,7 +1971,7 @@ _kdc_pk_initialize(krb5_context context,
 	hx509_query_free(kdc_identity->hx509ctx, q);
 	if (ret == 0) {
 	    if (hx509_cert_check_eku(kdc_identity->hx509ctx, cert,
-				     oid_id_pkkdcekuoid(), 0)) {
+				     &asn1_oid_id_pkkdcekuoid, 0)) {
 		hx509_name name;
 		char *str;
 		ret = hx509_cert_get_subject(cert, &name);
