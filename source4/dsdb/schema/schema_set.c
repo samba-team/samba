@@ -86,6 +86,11 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 		goto op_error;
 	}
 
+	ret = ldb_msg_add_string(msg_idx, "@IDXONE", "1");
+	if (ret != LDB_SUCCESS) {
+		goto op_error;
+	}
+
 	for (attr = schema->attributes; attr; attr = attr->next) {
 		const char *syntax = attr->syntax->ldb_syntax;
 		
