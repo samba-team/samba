@@ -956,14 +956,28 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 	}
 
 	/* Check for widelinks allowed. */
-	if (!lp_widelinks(SNUM(conn))
-	    && (strncmp(conn->connectpath, resolved_name,
-			strlen(conn->connectpath)) != 0)) {
-		DEBUG(2, ("reduce_name: Bad access attempt: %s is a symlink outside the share path", fname));
-		if (free_resolved_name) {
-			SAFE_FREE(resolved_name);
-		}
-		return NT_STATUS_ACCESS_DENIED;
+	if (!lp_widelinks(SNUM(conn))) {
+		    const char *conn_rootdir;
+
+		    conn_rootdir = SMB_VFS_CONNECTPATH(conn, fname);
+		    if (conn_rootdir == NULL) {
+			    DEBUG(2, ("check_reduced_name: Could not get conn_rootdir\n"));
+			    if (free_resolved_name) {
+				    SAFE_FREE(resolved_name);
+			    }
+			    return NT_STATUS_ACCESS_DENIED;
+		    }
+
+		    if (strncmp(conn_rootdir, resolved_name,
+				strlen(conn_rootdir)) != 0) {
+			    DEBUG(2, ("reduce_name: Bad access attempt: %s is "
+				      "a symlink outside the share path",
+				      fname));
+			    if (free_resolved_name) {
+				    SAFE_FREE(resolved_name);
+			    }
+			    return NT_STATUS_ACCESS_DENIED;
+		    }
 	}
 
         /* Check if we are allowing users to follow symlinks */

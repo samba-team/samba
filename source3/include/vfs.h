@@ -221,6 +221,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_FILE_ID_CREATE,
 	SMB_VFS_OP_STREAMINFO,
 	SMB_VFS_OP_GET_REAL_FILENAME,
+	SMB_VFS_OP_CONNECTPATH,
 	SMB_VFS_OP_BRL_LOCK_WINDOWS,
 	SMB_VFS_OP_BRL_UNLOCK_WINDOWS,
 	SMB_VFS_OP_BRL_CANCEL_WINDOWS,
@@ -402,6 +403,9 @@ struct vfs_ops {
 					 TALLOC_CTX *mem_ctx,
 					 char **found_name);
 
+		const char *(*connectpath)(struct vfs_handle_struct *handle,
+					   const char *filename);
+
 		NTSTATUS (*brl_lock_windows)(struct vfs_handle_struct *handle,
 					     struct byte_range_lock *br_lck,
 					     struct lock_struct *plock,
@@ -564,6 +568,7 @@ struct vfs_ops {
 		struct vfs_handle_struct *file_id_create;
 		struct vfs_handle_struct *streaminfo;
 		struct vfs_handle_struct *get_real_filename;
+		struct vfs_handle_struct *connectpath;
 		struct vfs_handle_struct *brl_lock_windows;
 		struct vfs_handle_struct *brl_unlock_windows;
 		struct vfs_handle_struct *brl_cancel_windows;

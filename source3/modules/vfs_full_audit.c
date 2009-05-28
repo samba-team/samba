@@ -221,6 +221,8 @@ static int smb_full_audit_get_real_filename(struct vfs_handle_struct *handle,
 					    const char *name,
 					    TALLOC_CTX *mem_ctx,
 					    char **found_name);
+static const char *smb_full_audit_connectpath(vfs_handle_struct *handle,
+					      const char *fname);
 static NTSTATUS smb_full_audit_brl_lock_windows(struct vfs_handle_struct *handle,
 					        struct byte_range_lock *br_lck,
 					        struct lock_struct *plock,
@@ -483,6 +485,8 @@ static vfs_op_tuple audit_op_tuples[] = {
 	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_get_real_filename), SMB_VFS_OP_GET_REAL_FILENAME,
 	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_connectpath), SMB_VFS_OP_CONNECTPATH,
+	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_brl_lock_windows), SMB_VFS_OP_BRL_LOCK_WINDOWS,
 	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_brl_unlock_windows), SMB_VFS_OP_BRL_UNLOCK_WINDOWS,
@@ -667,6 +671,7 @@ static struct {
 	{ SMB_VFS_OP_FILE_ID_CREATE,	"file_id_create" },
 	{ SMB_VFS_OP_STREAMINFO,	"streaminfo" },
 	{ SMB_VFS_OP_GET_REAL_FILENAME, "get_real_filename" },
+	{ SMB_VFS_OP_CONNECTPATH,	"connectpath" },
 	{ SMB_VFS_OP_BRL_LOCK_WINDOWS,  "brl_lock_windows" },
 	{ SMB_VFS_OP_BRL_UNLOCK_WINDOWS, "brl_unlock_windows" },
 	{ SMB_VFS_OP_BRL_CANCEL_WINDOWS, "brl_cancel_windows" },
@@ -1723,6 +1728,19 @@ static int smb_full_audit_get_real_filename(struct vfs_handle_struct *handle,
 
 	do_log(SMB_VFS_OP_GET_REAL_FILENAME, (result == 0), handle,
 	       "%s/%s->%s", path, name, (result == 0) ? "" : *found_name);
+
+	return result;
+}
+
+static const char *smb_full_audit_connectpath(vfs_handle_struct *handle,
+					      const char *fname)
+{
+	const char *result;
+
+	result = SMB_VFS_NEXT_CONNECTPATH(handle, fname);
+
+	do_log(SMB_VFS_OP_CONNECTPATH, result != NULL, handle,
+	       "%s", fname);
 
 	return result;
 }

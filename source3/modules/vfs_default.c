@@ -1128,6 +1128,12 @@ static int vfswrap_get_real_filename(struct vfs_handle_struct *handle,
 	return -1;
 }
 
+static const char *vfswrap_connectpath(struct vfs_handle_struct *handle,
+				       const char *fname)
+{
+	return handle->conn->connectpath;
+}
+
 static NTSTATUS vfswrap_brl_lock_windows(struct vfs_handle_struct *handle,
 					 struct byte_range_lock *br_lck,
 					 struct lock_struct *plock,
@@ -1629,6 +1635,8 @@ static vfs_op_tuple vfs_default_ops[] = {
 	{SMB_VFS_OP(vfswrap_streaminfo),	SMB_VFS_OP_STREAMINFO,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(vfswrap_get_real_filename),	SMB_VFS_OP_GET_REAL_FILENAME,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(vfswrap_connectpath),	SMB_VFS_OP_CONNECTPATH,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(vfswrap_brl_lock_windows),	SMB_VFS_OP_BRL_LOCK_WINDOWS,
 	 SMB_VFS_LAYER_OPAQUE},
