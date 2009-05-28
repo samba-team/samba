@@ -39,7 +39,7 @@
 static int verbose_flag = 0;
 
 struct testcase {
-    const heim_oid *(*oid)(void);
+    const heim_oid *oid;
     krb5_data Z;
     const char *client;
     const char *server;
@@ -52,7 +52,7 @@ struct testcase {
 } tests[] = {
     /* 0 */
     {
-	oid_id_pkinit_kdf_ah_sha1, /* AlgorithmIdentifier */
+	&asn1_oid_id_pkinit_kdf_ah_sha1, /* AlgorithmIdentifier */
 	{ /* Z */
 	    256,
 	    "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -139,7 +139,7 @@ test_dh2key(krb5_context context, int i, struct testcase *c)
 
     memset(&ticket, 0, sizeof(&ticket));
 
-    ai.algorithm = *(*c->oid)();
+    ai.algorithm = *c->oid;
     ai.parameters = NULL;
 
     ret = decode_Ticket(c->ticket.data, c->ticket.length, &ticket, &size);
