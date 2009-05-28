@@ -107,7 +107,7 @@ fatal (int sock, const char *what, const char *m, ...)
     len = min(len, sizeof(buf) - 1);
     va_end(args);
     if(what != NULL)
-	syslog (LOG_ERR, "%s: %m: %s", what, buf + 1);
+	syslog (LOG_ERR, "%s: %s: %s", what, strerror(errno), buf + 1);
     else
 	syslog (LOG_ERR, "%s", buf + 1);
     net_write (sock, buf, len + 1);
@@ -123,7 +123,7 @@ read_str (int s, size_t sz, char *expl)
 	fatal(s, NULL, "%s too long", expl);
     while(p < str + sz) {
 	if(net_read(s, p, 1) != 1)
-	    syslog_and_die("read: %m");
+	    syslog_and_die("read: %s", strerror(errno));
 	if(*p == '\0')
 	    return str;
 	p++;
@@ -260,7 +260,7 @@ recv_krb5_auth (int s, u_char *buf,
     len = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | (buf[3]);
 	
     if (net_read(s, buf, len) != len)
-	syslog_and_die ("reading auth info: %m");
+	syslog_and_die ("reading auth info: %s", strerror(errno));
     if (len != sizeof(KRB5_SENDAUTH_VERSION)
 	|| memcmp (buf, KRB5_SENDAUTH_VERSION, len) != 0)
 	syslog_and_die ("bad sendauth version: %.8s", buf);
@@ -438,12 +438,12 @@ rshd_loop (int from0, int to0,
 	    if (errno == EINTR)
 		continue;
 	    else
-		syslog_and_die ("select: %m");
+		syslog_and_die ("select: %s", strerror(errno));
 	}
 	if (FD_ISSET(from0, &readset)) {
 	    ret = do_read (from0, buf, RSHD_BUFSIZ, ivec_in[0]);
 	    if (ret < 0)
-		syslog_and_die ("read: %m");
+		syslog_and_die ("read: %s", strerror(errno));
 	    else if (ret == 0) {
 		close (from0);
 		close (to0);
@@ -454,7 +454,7 @@ rshd_loop (int from0, int to0,
 	if (FD_ISSET(from1, &readset)) {
 	    ret = read (from1, buf, RSH_BUFSIZ);
 	    if (ret < 0)
-		syslog_and_die ("read: %m");
+		syslog_and_die ("read: %s", strerror(errno));
 	    else if (ret == 0) {
 		close (from1);
 		close (to1);
@@ -467,7 +467,7 @@ rshd_loop (int from0, int to0,
 	if (FD_ISSET(from2, &readset)) {
 	    ret = read (from2, buf, RSH_BUFSIZ);
 	    if (ret < 0)
-		syslog_and_die ("read: %m");
+		syslog_and_die ("read: %s", strerror(errno));
 	    else if (ret == 0) {
 		close (from2);
 		close (to2);
@@ -613,10 +613,10 @@ doit (void)
 
     thisaddr_len = sizeof(thisaddr_ss);
     if (getsockname (s, thisaddr, &thisaddr_len) < 0)
-	syslog_and_die("getsockname: %m");
+	syslog_and_die("getsockname: %s", strerror(errno));
     thataddr_len = sizeof(thataddr_ss);
     if (getpeername (s, thataddr, &thataddr_len) < 0)
-	syslog_and_die ("getpeername: %m");
+	syslog_and_die ("getpeername: %s", strerror(errno));
 
     /* check for V4MAPPED addresses? */
 
@@ -627,7 +627,7 @@ doit (void)
     port = 0;
     for(;;) {
 	if (net_read (s, p, 1) != 1)
-	    syslog_and_die ("reading port number: %m");
+	    syslog_and_die ("reading port number: %s", strerror(errno));
 	if (*p == '\0')
 	    break;
 	else if (isdigit(*p))
@@ -662,18 +662,18 @@ doit (void)
 	else
 	    errsock = socket (erraddr->sa_family, SOCK_STREAM, 0);
 	if (errsock < 0)
-	    syslog_and_die ("socket: %m");
+	    syslog_and_die ("socket: %s", strerror(errno));
 	if (connect (errsock,
 		     erraddr,
 		     socket_sockaddr_size (erraddr)) < 0) {
-	    syslog (LOG_WARNING, "connect: %m");
+	    syslog (LOG_WARNING, "connect: %s", strerror(errno));
 	    close (errsock);
 	}
     }
 
     if(do_kerberos) {
 	if (net_read (s, buf, 4) != 4)
-	    syslog_and_die ("reading auth info: %m");
+	    syslog_and_die ("reading auth info: %s", strerror(errno));
 
 #ifdef KRB5
 	    if((do_kerberos & DO_KRB5) &&
@@ -746,12 +746,12 @@ doit (void)
 
 #ifdef HAVE_SETLOGIN
     if (setlogin(pwd->pw_name) < 0)
-	syslog(LOG_ERR, "setlogin() failed: %m");
+	syslog(LOG_ERR, "setlogin() failed: %s", strerror(errno));
 #endif
 
 #ifdef HAVE_SETPCRED
     if (setpcred (pwd->pw_name, NULL) == -1)
-	syslog(LOG_ERR, "setpcred() failure: %m");
+	syslog(LOG_ERR, "setpcred() failure: %s", strerror(errno));
 #endif /* HAVE_SETPCRED */
 
     /* Apply limits if not root */
@@ -966,7 +966,7 @@ main(int argc, char **argv)
     if (do_keepalive &&
 	setsockopt(0, SOL_SOCKET, SO_KEEPALIVE, (char *)&on,
 		   sizeof(on)) < 0)
-	syslog(LOG_WARNING, "setsockopt (SO_KEEPALIVE): %m");
+	syslog(LOG_WARNING, "setsockopt (SO_KEEPALIVE): %s", strerror(errno));
 
     /* set SO_LINGER? */
 
