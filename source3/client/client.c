@@ -2725,7 +2725,7 @@ static int cmd_link(void)
 		return 1;
 	}
 
-	if (!cli_unix_hardlink(targetcli, targetname, newname)) {
+	if (!NT_STATUS_IS_OK(cli_posix_hardlink(targetcli, targetname, newname))) {
 		d_printf("%s linking files (%s -> %s)\n", cli_errstr(targetcli), newname, oldname);
 		return 1;
 	}
@@ -2776,7 +2776,7 @@ static int cmd_symlink(void)
 		return 1;
 	}
 
-	if (!cli_unix_symlink(targetcli, targetname, newname)) {
+	if (!NT_STATUS_IS_OK(cli_posix_symlink(targetcli, targetname, newname))) {
 		d_printf("%s symlinking files (%s -> %s)\n",
 			cli_errstr(targetcli), newname, targetname);
 		return 1;

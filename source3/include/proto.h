@@ -2332,12 +2332,28 @@ void cli_reset_error(struct cli_state *cli);
 
 /* The following definitions come from libsmb/clifile.c  */
 
+struct tevent_req *cli_posix_symlink_send(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct cli_state *cli,
+					const char *oldname,
+					const char *newname);
+NTSTATUS cli_posix_symlink_recv(struct tevent_req *req);
+NTSTATUS cli_posix_symlink(struct cli_state *cli,
+			const char *oldname,
+			const char *newname);
+struct tevent_req *cli_posix_hardlink_send(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct cli_state *cli,
+					const char *oldname,
+					const char *newname);
+NTSTATUS cli_posix_hardlink_recv(struct tevent_req *req);
+NTSTATUS cli_posix_hardlink(struct cli_state *cli,
+			const char *oldname,
+			const char *newname);
 uint32_t unix_perms_to_wire(mode_t perms);
 mode_t wire_perms_to_unix(uint32_t perms);
 bool cli_unix_getfacl(struct cli_state *cli, const char *name, size_t *prb_size, char **retbuf);
 bool cli_unix_stat(struct cli_state *cli, const char *name, SMB_STRUCT_STAT *sbuf);
-bool cli_unix_symlink(struct cli_state *cli, const char *oldname, const char *newname);
-bool cli_unix_hardlink(struct cli_state *cli, const char *oldname, const char *newname);
 bool cli_unix_chmod(struct cli_state *cli, const char *fname, mode_t mode);
 bool cli_unix_chown(struct cli_state *cli, const char *fname, uid_t uid, gid_t gid);
 struct tevent_req *cli_rename_send(TALLOC_CTX *mem_ctx,

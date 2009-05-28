@@ -20,74 +20,328 @@
 
 #include "includes.h"
 
+/***********************************************************
+ Common function for pushing stings, used by smb_bytes_push_str()
+ and trans_bytes_push_str(). Only difference is the align_odd
+ parameter setting.
+***********************************************************/
+
+static uint8_t *internal_bytes_push_str(uint8_t *buf, bool ucs2,
+				const char *str, size_t str_len,
+				bool align_odd,
+				size_t *pconverted_size)
+{
+	size_t buflen;
+	char *converted;
+	size_t converted_size;
+
+	if (buf == NULL) {
+		return NULL;
+	}
+
+	buflen = talloc_get_size(buf);
+
+	if (align_odd && ucs2 && (buflen % 2 == 0)) {
+		/*
+		 * We're pushing into an SMB buffer, align odd
+		 */
+		buf = TALLOC_REALLOC_ARRAY(NULL, buf, uint8_t, buflen + 1);
+		if (buf == NULL) {
+			return NULL;
+		}
+		buf[buflen] = '\0';
+		buflen += 1;
+	}
+
+	if (!convert_string_talloc(talloc_tos(), CH_UNIX,
+				   ucs2 ? CH_UTF16LE : CH_DOS,
+				   str, str_len, &converted,
+				   &converted_size, true)) {
+		return NULL;
+	}
+
+	buf = TALLOC_REALLOC_ARRAY(NULL, buf, uint8_t,
+				   buflen + converted_size);
+	if (buf == NULL) {
+		TALLOC_FREE(converted);
+		return NULL;
+	}
+
+	memcpy(buf + buflen, converted, converted_size);
+
+	TALLOC_FREE(converted);
+
+	if (pconverted_size) {
+		*pconverted_size = converted_size;
+	}
+
+	return buf;
+}
+
+/***********************************************************
+ Push a string into an SMB buffer, with odd byte alignment
+ if it's a UCS2 string.
+***********************************************************/
+
+uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2,
+			    const char *str, size_t str_len,
+			    size_t *pconverted_size)
+{
+	return internal_bytes_push_str(buf, ucs2, str, str_len,
+			true, pconverted_size);
+}
+
+/***********************************************************
+ Same as smb_bytes_push_str(), but without the odd byte
+ align for ucs2 (we're pushing into a param or data block).
+ static for now, although this will probably change when
+ other modules use async trans calls.
+***********************************************************/
+
+static uint8_t *trans2_bytes_push_str(uint8_t *buf, bool ucs2,
+			    const char *str, size_t str_len,
+			    size_t *pconverted_size)
+{
+	return internal_bytes_push_str(buf, ucs2, str, str_len,
+			false, pconverted_size);
+}
+
+
 /****************************************************************************
  Hard/Symlink a file (UNIX extensions).
  Creates new name (sym)linked to oldname.
 ****************************************************************************/
 
-static bool cli_link_internal(struct cli_state *cli, const char *oldname, const char *newname, bool hard_link)
+struct link_state {
+	uint16_t setup;
+	uint8_t *param;
+	uint8_t *data;
+};
+
+static void cli_posix_link_internal_done(struct tevent_req *subreq)
 {
-	unsigned int data_len = 0;
-	unsigned int param_len = 0;
-	uint16_t setup = TRANSACT2_SETPATHINFO;
-	char *param;
-	char *data;
-	char *rparam=NULL, *rdata=NULL;
-	char *p;
-	size_t oldlen = 2*(strlen(oldname)+1);
-	size_t newlen = 2*(strlen(newname)+1);
+	struct tevent_req *req = tevent_req_callback_data(
+				subreq, struct tevent_req);
+	struct link_state *state = tevent_req_data(req, struct link_state);
+	NTSTATUS status;
 
-	param = SMB_MALLOC_ARRAY(char, 6+newlen+2);
+	status = cli_trans_recv(subreq, state, NULL, NULL, NULL, NULL, NULL, NULL);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	tevent_req_done(req);
+}
 
-	if (!param) {
-		return false;
+static struct tevent_req *cli_posix_link_internal_send(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct cli_state *cli,
+					const char *oldname,
+					const char *newname,
+					bool hardlink)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct link_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state, struct link_state);
+	if (req == NULL) {
+		return NULL;
 	}
 
-	data = SMB_MALLOC_ARRAY(char, oldlen+2);
+	/* Setup setup word. */
+	SSVAL(&state->setup, 0, TRANSACT2_SETPATHINFO);
 
-	if (!data) {
-		SAFE_FREE(param);
-		return false;
+	/* Setup param array. */
+	state->param = talloc_array(state, uint8_t, 6);
+	if (tevent_req_nomem(state->param, req)) {
+		return tevent_req_post(req, ev);
+	}
+	memset(state->param, '\0', 6);
+	SSVAL(state->param,0,hardlink ? SMB_SET_FILE_UNIX_HLINK : SMB_SET_FILE_UNIX_LINK);
+
+	state->param = trans2_bytes_push_str(state->param, cli_ucs2(cli), newname,
+				   strlen(newname)+1, NULL);
+
+	if (tevent_req_nomem(state->param, req)) {
+		return tevent_req_post(req, ev);
 	}
 
-	SSVAL(param,0,hard_link ? SMB_SET_FILE_UNIX_HLINK : SMB_SET_FILE_UNIX_LINK);
-	SIVAL(param,2,0);
-	p = &param[6];
+	/* Setup data array. */
+	state->data = talloc_array(state, uint8_t, 0);
+	if (tevent_req_nomem(state->data, req)) {
+		return tevent_req_post(req, ev);
+	}
+	state->data = trans2_bytes_push_str(state->data, cli_ucs2(cli), oldname,
+				   strlen(oldname)+1, NULL);
 
-	p += clistr_push(cli, p, newname, newlen, STR_TERMINATE);
-	param_len = PTR_DIFF(p, param);
+	subreq = cli_trans_send(state,			/* mem ctx. */
+				ev,			/* event ctx. */
+				cli,			/* cli_state. */
+				SMBtrans2,		/* cmd. */
+				NULL,			/* pipe name. */
+				-1,			/* fid. */
+				0,			/* function. */
+				0,			/* flags. */
+				&state->setup,		/* setup. */
+				1,			/* num setup uint16_t words. */
+				0,			/* max returned setup. */
+				state->param,		/* param. */
+				talloc_get_size(state->param),	/* num param. */
+				2,			/* max returned param. */
+				state->data,		/* data. */
+				talloc_get_size(state->data),	/* num data. */
+				0);			/* max returned data. */
 
-	p = data;
-	p += clistr_push(cli, p, oldname, oldlen, STR_TERMINATE);
-	data_len = PTR_DIFF(p, data);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_posix_link_internal_done, req);
+	return req;
+}
 
-	if (!cli_send_trans(cli, SMBtrans2,
-			NULL,                        /* name */
-			-1, 0,                          /* fid, flags */
-			&setup, 1, 0,                   /* setup, length, max */
-			param, param_len, 2,            /* param, length, max */
-			data,  data_len, cli->max_xmit /* data, length, max */
-			)) {
-		SAFE_FREE(data);
-		SAFE_FREE(param);
-		return false;
+/****************************************************************************
+ Symlink a file (UNIX extensions).
+****************************************************************************/
+
+struct tevent_req *cli_posix_symlink_send(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct cli_state *cli,
+					const char *oldname,
+					const char *newname)
+{
+	return cli_posix_link_internal_send(mem_ctx, ev, cli,
+			oldname, newname, false);
+}
+
+NTSTATUS cli_posix_symlink_recv(struct tevent_req *req)
+{
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_posix_symlink(struct cli_state *cli,
+			const char *oldname,
+			const char *newname)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status = NT_STATUS_OK;
+
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
 	}
 
-	SAFE_FREE(data);
-	SAFE_FREE(param);
-
-	if (!cli_receive_trans(cli, SMBtrans2,
-			&rparam, &param_len,
-			&rdata, &data_len)) {
-			return false;
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
 	}
 
-	SAFE_FREE(data);
-	SAFE_FREE(param);
-	SAFE_FREE(rdata);
-	SAFE_FREE(rparam);
+	req = cli_posix_symlink_send(frame,
+				ev,
+				cli,
+				oldname,
+				newname);
+	if (req == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
 
-	return true;
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
+	}
+
+	status = cli_posix_symlink_recv(req);
+
+ fail:
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
+}
+
+/****************************************************************************
+ Hard link a file (UNIX extensions).
+****************************************************************************/
+
+struct tevent_req *cli_posix_hardlink_send(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct cli_state *cli,
+					const char *oldname,
+					const char *newname)
+{
+	return cli_posix_link_internal_send(mem_ctx, ev, cli,
+			oldname, newname, true);
+}
+
+NTSTATUS cli_posix_hardlink_recv(struct tevent_req *req)
+{
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_posix_hardlink(struct cli_state *cli,
+			const char *oldname,
+			const char *newname)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status = NT_STATUS_OK;
+
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	req = cli_posix_hardlink_send(frame,
+				ev,
+				cli,
+				oldname,
+				newname);
+	if (req == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
+	}
+
+	status = cli_posix_hardlink_recv(req);
+
+ fail:
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
 }
 
 /****************************************************************************
@@ -325,25 +579,6 @@ bool cli_unix_stat(struct cli_state *cli, const char *name, SMB_STRUCT_STAT *sbu
 
 	return true;
 }
-
-/****************************************************************************
- Symlink a file (UNIX extensions).
-****************************************************************************/
-
-bool cli_unix_symlink(struct cli_state *cli, const char *oldname, const char *newname)
-{
-	return cli_link_internal(cli, oldname, newname, False);
-}
-
-/****************************************************************************
- Hard a file (UNIX extensions).
-****************************************************************************/
-
-bool cli_unix_hardlink(struct cli_state *cli, const char *oldname, const char *newname)
-{
-	return cli_link_internal(cli, oldname, newname, True);
-}
-
 /****************************************************************************
  Chmod or chown a file internal (UNIX extensions).
 ****************************************************************************/
@@ -1286,92 +1521,6 @@ NTSTATUS cli_ntcreate(struct cli_state *cli,
 		cli_set_error(cli, status);
 	}
 	return status;
-}
-
-/***********************************************************
- Common function for pushing stings, used by smb_bytes_push_str()
- and trans_bytes_push_str(). Only difference is the align_odd
- parameter setting.
-***********************************************************/
-
-static uint8_t *internal_bytes_push_str(uint8_t *buf, bool ucs2,
-				const char *str, size_t str_len,
-				bool align_odd,
-				size_t *pconverted_size)
-{
-	size_t buflen;
-	char *converted;
-	size_t converted_size;
-
-	if (buf == NULL) {
-		return NULL;
-	}
-
-	buflen = talloc_get_size(buf);
-
-	if (align_odd && ucs2 && (buflen % 2 == 0)) {
-		/*
-		 * We're pushing into an SMB buffer, align odd
-		 */
-		buf = TALLOC_REALLOC_ARRAY(NULL, buf, uint8_t, buflen + 1);
-		if (buf == NULL) {
-			return NULL;
-		}
-		buf[buflen] = '\0';
-		buflen += 1;
-	}
-
-	if (!convert_string_talloc(talloc_tos(), CH_UNIX,
-				   ucs2 ? CH_UTF16LE : CH_DOS,
-				   str, str_len, &converted,
-				   &converted_size, true)) {
-		return NULL;
-	}
-
-	buf = TALLOC_REALLOC_ARRAY(NULL, buf, uint8_t,
-				   buflen + converted_size);
-	if (buf == NULL) {
-		TALLOC_FREE(converted);
-		return NULL;
-	}
-
-	memcpy(buf + buflen, converted, converted_size);
-
-	TALLOC_FREE(converted);
-
-	if (pconverted_size) {
-		*pconverted_size = converted_size;
-	}
-
-	return buf;
-}
-
-/***********************************************************
- Push a string into an SMB buffer, with odd byte alignment
- if it's a UCS2 string.
-***********************************************************/
-
-uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2,
-			    const char *str, size_t str_len,
-			    size_t *pconverted_size)
-{
-	return internal_bytes_push_str(buf, ucs2, str, str_len,
-			true, pconverted_size);
-}
-
-/***********************************************************
- Same as smb_bytes_push_str(), but without the odd byte
- align for ucs2 (we're pushing into a param or data block).
- static for now, although this will probably change when
- other modules use async trans calls.
-***********************************************************/
-
-static uint8_t *trans2_bytes_push_str(uint8_t *buf, bool ucs2,
-			    const char *str, size_t str_len,
-			    size_t *pconverted_size)
-{
-	return internal_bytes_push_str(buf, ucs2, str, str_len,
-			false, pconverted_size);
 }
 
 /****************************************************************************
