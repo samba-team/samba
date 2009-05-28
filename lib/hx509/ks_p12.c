@@ -44,7 +44,7 @@ typedef int (*collector_func)(hx509_context,
 			      const PKCS12_Attributes *);
 
 struct type {
-    const heim_oid * (*oid)(void);
+    const heim_oid *oid;
     collector_func func;
 };
 
@@ -247,7 +247,7 @@ encryptedData_parser(hx509_context context,
     if (ret)
 	return ret;
 
-    if (der_heim_oid_cmp(&contentType, oid_id_pkcs7_data()) == 0)
+    if (der_heim_oid_cmp(&contentType, &asn1_oid_id_pkcs7_data) == 0)
 	ret = parse_safe_content(context, c, content.data, content.length);
 
     der_free_octet_string(&content);
@@ -284,7 +284,7 @@ envelopedData_parser(hx509_context context,
 	return ret;
     }
 
-    if (der_heim_oid_cmp(&contentType, oid_id_pkcs7_data()) == 0)
+    if (der_heim_oid_cmp(&contentType, &asn1_oid_id_pkcs7_data) == 0)
 	ret = parse_safe_content(context, c, content.data, content.length);
 
     der_free_octet_string(&content);
@@ -295,12 +295,12 @@ envelopedData_parser(hx509_context context,
 
 
 struct type bagtypes[] = {
-    { oid_id_pkcs12_keyBag, keyBag_parser },
-    { oid_id_pkcs12_pkcs8ShroudedKeyBag, ShroudedKeyBag_parser },
-    { oid_id_pkcs12_certBag, certBag_parser },
-    { oid_id_pkcs7_data, safeContent_parser },
-    { oid_id_pkcs7_encryptedData, encryptedData_parser },
-    { oid_id_pkcs7_envelopedData, envelopedData_parser }
+    { &asn1_oid_id_pkcs12_keyBag, keyBag_parser },
+    { &asn1_oid_id_pkcs12_pkcs8ShroudedKeyBag, ShroudedKeyBag_parser },
+    { &asn1_oid_id_pkcs12_certBag, certBag_parser },
+    { &asn1_oid_id_pkcs7_data, safeContent_parser },
+    { &asn1_oid_id_pkcs7_encryptedData, encryptedData_parser },
+    { &asn1_oid_id_pkcs7_envelopedData, envelopedData_parser }
 };
 
 static void
@@ -313,7 +313,7 @@ parse_pkcs12_type(hx509_context context,
     int i;
 
     for (i = 0; i < sizeof(bagtypes)/sizeof(bagtypes[0]); i++)
-	if (der_heim_oid_cmp((*bagtypes[i].oid)(), oid) == 0)
+	if (der_heim_oid_cmp(bagtypes[i].oid, oid) == 0)
 	    (*bagtypes[i].func)(context, c, data, length, attrs);
 }
 
@@ -540,7 +540,7 @@ store_func(hx509_context context, void *ctx, hx509_cert c)
 	    free_PKCS8PrivateKeyInfo(&pki);
 	    return ret;
 	}
-	/* set attribute, oid_id_pkcs_9_at_localKeyId() */
+	/* set attribute, asn1_oid_id_pkcs_9_at_localKeyId */
 
 	ASN1_MALLOC_ENCODE(PKCS8PrivateKeyInfo, os.data, os.length,
 			   &pki, &size, ret);
