@@ -45,12 +45,14 @@ rpc="$rpc RPC-LSA-GETUSER RPC-LSA-LOOKUPSIDS RPC-LSA-LOOKUPNAMES"
 rpc="$rpc RPC-SAMR-USERS RPC-SAMR-USERS-PRIVILEGES RPC-SAMR-PASSWORDS RPC-SAMR-PASSWORDS-PWDLASTSET RPC-SAMR-LARGE-DC RPC-JOIN"
 rpc="$rpc RPC-SCHANNEL RPC-SCHANNEL2 RPC-BENCH-SCHANNEL1"
 
+local="LOCAL-NSS-WRAPPER"
+
 # NOTE: to enable the UNIX-WHOAMI test, we need to change the default share
 # config to allow guest access. I'm not sure whether this would break other
 # tests, so leaving it alone for now -- jpeach
 unix="UNIX-INFO2"
 
-tests="$base $raw $rpc $unix"
+tests="$base $raw $rpc $unix $local"
 
 if test "x$POSIX_SUBTESTS" != "x" ; then
 	tests="$POSIX_SUBTESTS"
