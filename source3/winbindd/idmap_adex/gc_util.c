@@ -716,11 +716,11 @@ done:
 
 	*name = NULL;
 
-	sid_string = sid_binstring(sid);
+	sid_string = sid_binstring(frame, sid);
 	BAIL_ON_PTR_ERROR(sid_string, nt_status);
 
 	filter = talloc_asprintf(frame, "(objectSid=%s)", sid_string);
-	SAFE_FREE(sid_string);
+	TALLOC_FREE(sid_string);
 	BAIL_ON_PTR_ERROR(filter, nt_status);
 
 	nt_status = gc_search_all_forests_unique(filter, &ads, &msg);

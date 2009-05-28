@@ -483,11 +483,11 @@ static NTSTATUS search_forest(struct likewise_cell *forest_cell,
 
 		switch (fdata->ftype) {
 		case SidFilter:
-			sid_binstr = sid_binstring(&fdata->filter.sid);
+			sid_binstr = sid_binstring(frame, &fdata->filter.sid);
 			BAIL_ON_PTR_ERROR(sid_binstr, nt_status);
 
 			filter = talloc_asprintf(frame, "(objectSid=%s)", sid_binstr);
-			SAFE_FREE(sid_binstr);
+			TALLOC_FREE(sid_binstr);
 			break;
 		case IdFilter:
 			filter = build_id_filter(fdata->filter.id.id,
