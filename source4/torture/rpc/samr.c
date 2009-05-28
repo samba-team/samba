@@ -2867,7 +2867,7 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 	int delay = 50000;
 	bool set_levels[] = { false, true };
 	bool query_levels[] = { false, true };
-	uint32_t levels[] = { 18, 21, 23, 24, 25, 26 };
+	uint32_t levels[] = { 18, 21, 26, 23, 24, 25 }; /* Second half only used when TEST_ALL_LEVELS defined */
 	uint32_t nonzeros[] = { 1, 24 };
 	uint32_t fields_present[] = {
 		0,
@@ -2918,10 +2918,15 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 	   (SetUserInfo, SetUserInfo2, QueryUserInfo, QueryUserInfo2)
 	   combinations */
 #if 0
+#define TEST_ALL_LEVELS 1
 #define TEST_SET_LEVELS 1
 #define TEST_QUERY_LEVELS 1
 #endif
+#ifdef TEST_ALL_LEVELS
 	for (l=0; l<ARRAY_SIZE(levels); l++) {
+#else
+	for (l=0; l<(ARRAY_SIZE(levels))/2; l++) {
+#endif
 	for (z=0; z<ARRAY_SIZE(nonzeros); z++) {
 	for (f=0; f<ARRAY_SIZE(fields_present); f++) {
 #ifdef TEST_SET_LEVELS
