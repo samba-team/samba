@@ -37,6 +37,7 @@ static int (*gpfs_get_realfilename_path_fn)(char *pathname, char *filenamep,
 					    int *buflen);
 static int (*gpfs_set_winattrs_path_fn)(char *pathname, int flags, struct gpfs_winattr *attrs);
 static int (*gpfs_get_winattrs_path_fn)(char *pathname, struct gpfs_winattr *attrs);
+static int (*gpfs_get_winattrs_fn)(int fd, struct gpfs_winattr *attrs);
 
 
 bool set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
@@ -163,6 +164,17 @@ int get_gpfs_winattrs(char *pathname,struct gpfs_winattr *attrs)
         return gpfs_get_winattrs_path_fn(pathname, attrs);
 }
 
+int smbd_fget_gpfs_winattrs(int fd, struct gpfs_winattr *attrs)
+{
+
+        if ((!gpfs_winattr) || (gpfs_get_winattrs_fn == NULL)) {
+                errno = ENOSYS;
+                return -1;
+        }
+        DEBUG(10, ("gpfs_get_winattrs_path:open call %d\n", fd));
+        return gpfs_get_winattrs_fn(fd, attrs);
+}
+
 int set_gpfs_winattrs(char *pathname,int flags,struct gpfs_winattr *attrs)
 {
         if ((!gpfs_winattr) || (gpfs_set_winattrs_path_fn == NULL)) {
@@ -234,6 +246,7 @@ void init_gpfs(void)
 			   "gpfs_get_realfilename_path");
 	init_gpfs_function(&gpfs_get_winattrs_path_fn,"gpfs_get_winattrs_path");
         init_gpfs_function(&gpfs_set_winattrs_path_fn,"gpfs_set_winattrs_path");
+        init_gpfs_function(&gpfs_get_winattrs_fn,"gpfs_get_winattrs");
 
 
 	gpfs_share_modes = lp_parm_bool(-1, "gpfs", "sharemodes", True);

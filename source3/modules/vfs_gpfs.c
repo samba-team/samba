@@ -966,6 +966,62 @@ static size_t gpfs_get_xattr(struct vfs_handle_struct *handle,  const char *path
         return size;
 }
 
+static int vfs_gpfs_stat(struct vfs_handle_struct *handle, const char *fname,
+			 SMB_STRUCT_STAT *sbuf)
+{
+	struct gpfs_winattr attrs;
+	int ret;
+
+	ret = SMB_VFS_NEXT_STAT(handle, fname, sbuf);
+	if (ret == -1) {
+		return -1;
+	}
+	ret = get_gpfs_winattrs(CONST_DISCARD(char *, fname), &attrs);
+	if (ret == 0) {
+		sbuf->st_ex_btime.tv_sec = attrs.creationTime.tv_sec;
+		sbuf->st_ex_btime.tv_nsec = attrs.creationTime.tv_nsec;
+	}
+	return 0;
+}
+
+static int vfs_gpfs_fstat(struct vfs_handle_struct *handle,
+			  struct files_struct *fsp, SMB_STRUCT_STAT *sbuf)
+{
+	struct gpfs_winattr attrs;
+	int ret;
+
+	ret = SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf);
+	if (ret == -1) {
+		return -1;
+	}
+	if ((fsp->fh == NULL) || (fsp->fh->fd == -1)) {
+		return 0;
+	}
+	ret = smbd_fget_gpfs_winattrs(fsp->fh->fd, &attrs);
+	if (ret == 0) {
+		sbuf->st_ex_btime.tv_sec = attrs.creationTime.tv_sec;
+		sbuf->st_ex_btime.tv_nsec = attrs.creationTime.tv_nsec;
+	}
+	return 0;
+}
+
+static int vfs_gpfs_lstat(struct vfs_handle_struct *handle, const char *path,
+			  SMB_STRUCT_STAT *sbuf)
+{
+	struct gpfs_winattr attrs;
+	int ret;
+
+	ret = SMB_VFS_NEXT_LSTAT(handle, path, sbuf);
+	if (ret == -1) {
+		return -1;
+	}
+	ret = get_gpfs_winattrs(CONST_DISCARD(char *, path), &attrs);
+	if (ret == 0) {
+		sbuf->st_ex_btime.tv_sec = attrs.creationTime.tv_sec;
+		sbuf->st_ex_btime.tv_nsec = attrs.creationTime.tv_nsec;
+	}
+	return 0;
+}
 
 /* VFS operations structure */
 
@@ -1033,6 +1089,18 @@ static vfs_op_tuple gpfs_op_tuples[] = {
 
         { SMB_VFS_OP(gpfs_get_xattr),
           SMB_VFS_OP_GETXATTR,
+          SMB_VFS_LAYER_TRANSPARENT },
+
+        { SMB_VFS_OP(vfs_gpfs_stat),
+          SMB_VFS_OP_STAT,
+          SMB_VFS_LAYER_TRANSPARENT },
+
+        { SMB_VFS_OP(vfs_gpfs_fstat),
+          SMB_VFS_OP_FSTAT,
+          SMB_VFS_LAYER_TRANSPARENT },
+
+        { SMB_VFS_OP(vfs_gpfs_lstat),
+          SMB_VFS_OP_LSTAT,
           SMB_VFS_LAYER_TRANSPARENT },
 
         { SMB_VFS_OP(NULL), SMB_VFS_OP_NOOP, SMB_VFS_LAYER_NOOP }

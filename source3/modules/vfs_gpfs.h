@@ -31,6 +31,7 @@ int smbd_gpfs_getacl(char *pathname, int flags, void *acl);
 int smbd_gpfs_putacl(char *pathname, int flags, void *acl);
 int smbd_gpfs_get_realfilename_path(char *pathname, char *filenamep,
 				    int *buflen);
+int smbd_fget_gpfs_winattrs(int fd, struct gpfs_winattr *attrs);
 int get_gpfs_winattrs(char * pathname,struct gpfs_winattr *attrs);
 int set_gpfs_winattrs(char * pathname,int flags,struct gpfs_winattr *attrs);
 void init_gpfs(void);
