@@ -12,15 +12,21 @@ my $opt_group_path = undef;
 my $opt_action = undef;
 my $opt_type = undef;
 my $opt_name = undef;
+my $opt_member = undef;
 
 my $passwdfn = undef;
 my $groupfn = undef;
+my $memberfn = undef;
 my $actionfn = undef;
 
-sub passwd_add($$);
-sub passwd_delete($$);
-sub group_add($$);
-sub group_delete($$);
+sub passwd_add($$$$);
+sub passwd_delete($$$$);
+sub group_add($$$$);
+sub group_delete($$$$);
+sub member_add($$$$);
+sub member_delete($$$$);
+
+sub check_path($$);
 
 my $result = GetOptions(
 	'help|h|?'	=> \$opt_help,
@@ -28,7 +34,8 @@ my $result = GetOptions(
 	'group_path=s'	=> \$opt_group_path,
 	'action=s'	=> \$opt_action,
 	'type=s'	=> \$opt_type,
-	'name=s'	=> \$opt_name
+	'name=s'	=> \$opt_name,
+	'member=s'	=> \$opt_member
 );
 
 sub usage($;$)
@@ -44,12 +51,13 @@ sub usage($;$)
 	--passwd_path <path>	Path of the 'passwd' file.
 	--group_path <path>	Path of the 'group' file.
 
-	--type <type>		Only 'passwd' and 'group' are supported yet,
-				maybe 'member' will be added in future.
+	--type <type>		'passwd', 'group' and 'member' are supported.
 
 	--action <action>	'add' or 'delete'.
 
 	--name <name>		The name of the object.
+
+	--member <member>	The name of the member.
 ";
 	exit($ret);
 }
@@ -64,23 +72,33 @@ if (not defined($opt_action)) {
 if ($opt_action eq "add") {
 	$passwdfn = \&passwd_add;
 	$groupfn = \&group_add;
+	$memberfn = \&member_add;
 } elsif ($opt_action eq "delete") {
 	$passwdfn = \&passwd_delete;
 	$groupfn = \&group_delete;
+	$memberfn = \&member_delete;
 } else {
 	usage(1, "invalid: --action [add|delete]: '$opt_action'");
 }
 
 if (not defined($opt_type)) {
-	usage(1, "missing: --type [passwd|group]");
+	usage(1, "missing: --type [passwd|group|member]");
 }
-my $opt_fullpath;
+if ($opt_type eq "member" and not defined($opt_member)) {
+	usage(1, "missing: --member <member>");
+}
+my $opt_fullpath_passwd;
+my $opt_fullpath_group;
 if ($opt_type eq "passwd") {
 	$actionfn = $passwdfn;
-	$opt_fullpath = check_path($opt_passwd_path, $opt_type);
+	$opt_fullpath_passwd = check_path($opt_passwd_path, $opt_type);
 } elsif ($opt_type eq "group") {
 	$actionfn = $groupfn;
-	$opt_fullpath = check_path($opt_group_path, $opt_type);
+	$opt_fullpath_group = check_path($opt_group_path, $opt_type);
+} elsif ($opt_type eq "member") {
+	$actionfn = $memberfn;
+	$opt_fullpath_passwd = check_path($opt_passwd_path, "passwd");
+	$opt_fullpath_group = check_path($opt_group_path, "group");
 } else {
 	usage(1, "invalid: --type [passwd|group]: '$opt_type'")
 }
@@ -92,7 +110,7 @@ if ($opt_name eq "") {
 	usage(1, "invalid: --name <name>");
 }
 
-exit $actionfn->($opt_fullpath, $opt_name);
+exit $actionfn->($opt_fullpath_passwd, $opt_member, $opt_fullpath_group, $opt_name);
 
 sub check_path($$)
 {
@@ -271,6 +289,62 @@ sub group_remove_entry($$)
 	delete $group->{gid}{${$eref}[2]};
 }
 
+sub group_add_member($$$)
+{
+	my ($group, $eref, $username) = @_;
+
+	my @members;
+	my $str = @$eref[3] || undef;
+	if ($str) {
+		@members = split(",", $str);
+	}
+
+	foreach my $member (@members) {
+		if ($member and $member eq $username) {
+			die("account[$username] is already member of '@$eref[0]'");
+		}
+	}
+
+	push(@members, $username);
+
+	my $gwent = @$eref[0].":x:".@$eref[2].":".join(",", @members);
+
+	group_remove_entry($group, $eref);
+
+	group_add_entry($group, $gwent);
+}
+
+sub group_delete_member($$$)
+{
+	my ($group, $eref, $username) = @_;
+
+	my @members = undef;
+	my $str = @$eref[3] || undef;
+	if ($str) {
+		@members = split(",", $str);
+	}
+	my @new_members;
+	my $removed = 0;
+
+	foreach my $member (@members) {
+		if ($member and $member ne $username) {
+			push(@new_members, $member);
+		} else {
+			$removed = 1;
+		}
+	}
+
+	if ($removed != 1) {
+		die("account[$username] is not member of '@$eref[0]'");
+	}
+
+	my $gwent = @$eref[0].":x:".@$eref[2].":".join(",", @new_members);
+
+	group_remove_entry($group, $eref);
+
+	group_add_entry($group, $gwent);
+}
+
 sub passwd_save($)
 {
 	my ($passwd) = @_;
@@ -314,9 +388,9 @@ sub group_save($)
 	rename($tmppath, $path) or die("Unable to rename $tmppath => $path");
 }
 
-sub passwd_add($$)
+sub passwd_add($$$$)
 {
-	my ($path, $name) = @_;
+	my ($path, $dummy, $dummy2, $name) = @_;
 
 	#print "passwd_add: '$name' in '$path'\n";
 
@@ -337,9 +411,9 @@ sub passwd_add($$)
 	return 0;
 }
 
-sub passwd_delete($$)
+sub passwd_delete($$$$)
 {
-	my ($path, $name) = @_;
+	my ($path, $dummy, $dummy2, $name) = @_;
 
 	#print "passwd_delete: '$name' in '$path'\n";
 
@@ -355,9 +429,9 @@ sub passwd_delete($$)
 	return 0;
 }
 
-sub group_add($$)
+sub group_add($$$$)
 {
-	my ($path, $name) = @_;
+	my ($dummy, $dummy2, $path, $name) = @_;
 
 	#print "group_add: '$name' in '$path'\n";
 
@@ -368,7 +442,7 @@ sub group_add($$)
 
 	my $gid = group_get_free_gid($group);
 
-	my $gwent = $name.":x:".$gid.":".""; #no members yet
+	my $gwent = $name.":x:".$gid.":"."";
 
 	group_add_entry($group, $gwent);
 
@@ -379,9 +453,9 @@ sub group_add($$)
 	return 0;
 }
 
-sub group_delete($$)
+sub group_delete($$$$)
 {
-	my ($path, $name) = @_;
+	my ($dummy, $dummy2, $path, $name) = @_;
 
 	#print "group_delete: '$name' in '$path'\n";
 
@@ -391,6 +465,52 @@ sub group_delete($$)
 	die("group[$name] does not exists in '$path'") unless defined($e);
 
 	group_remove_entry($group, $e);
+
+	group_save($group);
+
+	return 0;
+}
+
+sub member_add($$$$)
+{
+	my ($passwd_path, $username, $group_path, $groupname) = @_;
+
+	#print "member_add: adding '$username' in '$passwd_path' to '$groupname' in '$group_path'\n";
+
+	my $group = group_load($group_path);
+
+	my $g = group_lookup_name($group, $groupname);
+	die("group[$groupname] does not exists in '$group_path'") unless defined($g);
+
+	my $passwd = passwd_load($passwd_path);
+
+	my $u = passwd_lookup_name($passwd, $username);
+	die("account[$username] does not exists in '$passwd_path'") unless defined($u);
+
+	group_add_member($group, $g, $username);
+
+	group_save($group);
+
+	return 0;
+}
+
+sub member_delete($$$$)
+{
+	my ($passwd_path, $username, $group_path, $groupname) = @_;
+
+	#print "member_delete: removing '$username' in '$passwd_path' from '$groupname' in '$group_path'\n";
+
+	my $group = group_load($group_path);
+
+	my $g = group_lookup_name($group, $groupname);
+	die("group[$groupname] does not exists in '$group_path'") unless defined($g);
+
+	my $passwd = passwd_load($passwd_path);
+
+	my $u = passwd_lookup_name($passwd, $username);
+	die("account[$username] does not exists in '$passwd_path'") unless defined($u);
+
+	group_delete_member($group, $g, $username);
 
 	group_save($group);
 
