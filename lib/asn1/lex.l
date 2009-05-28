@@ -46,7 +46,7 @@
 #endif
 #undef ECHO
 #include "symbol.h"
-#include "parse.h"
+#include "asn1parse.h"
 #include "lex.h"
 #include "gen_locl.h"
 

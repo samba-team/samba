@@ -481,6 +481,7 @@ nodist_check_gen_SOURCES = $(gen_files_test:.x=.c)
 asn1_compile_SOURCES = 				\
 	asn1-common.h				\
 	asn1_queue.h				\
+	asn1parse.y				\
 	der.h					\
 	gen.c					\
 	gen_copy.c				\
@@ -496,7 +497,6 @@ asn1_compile_SOURCES = 				\
 	lex.l					\
 	lex.h					\
 	main.c					\
-	parse.y					\
 	symbol.c				\
 	symbol.h
 
@@ -567,12 +567,12 @@ nodist_include_HEADERS += pkcs12_asn1.h
 nodist_include_HEADERS += digest_asn1.h
 nodist_include_HEADERS += kx509_asn1.h
 
-$(asn1_compile_OBJECTS): parse.h parse.c $(srcdir)/der-protos.h
+$(asn1_compile_OBJECTS): asn1parse.h asn1parse.c $(srcdir)/der-protos.h
 $(libasn1_la_OBJECTS): krb5_asn1.h asn1_err.h $(srcdir)/der-protos.h
 $(check_gen_OBJECTS): test_asn1.h
 $(asn1_print_OBJECTS): krb5_asn1.h
 
-parse.h: parse.c
+asn1parse.h: asn1parse.c
 
 $(gen_files_k5) krb5_asn1.h: krb5_asn1_files
 $(gen_files_pkinit) pkinit_asn1.h: pkinit_asn1_files
