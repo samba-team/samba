@@ -855,8 +855,6 @@ static struct passwd *nwrap_files_getpwuid(uid_t uid)
 
 _PUBLIC_ struct passwd *nwrap_getpwuid(uid_t uid)
 {
-	int i;
-
 	if (!nwrap_enabled()) {
 		return real_getpwuid(uid);
 	}
@@ -1057,8 +1055,6 @@ static int nwrap_files_getgrnam_r(const char *name, struct group *grdst,
 _PUBLIC_ int nwrap_getgrnam_r(const char *name, struct group *grdst,
 			      char *buf, size_t buflen, struct group **grdstp)
 {
-	struct group *gr;
-
 	if (!nwrap_enabled()) {
 		return real_getgrnam_r(name, grdst, buf, buflen, grdstp);
 	}
@@ -1091,8 +1087,6 @@ static struct group *nwrap_files_getgrgid(gid_t gid)
 
 _PUBLIC_ struct group *nwrap_getgrgid(gid_t gid)
 {
-	int i;
-
 	if (!nwrap_enabled()) {
 		return real_getgrgid(gid);
 	}
