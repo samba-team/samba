@@ -379,7 +379,7 @@ int dos_attributes_to_stat_dos_flags(uint32_t dosmode)
 }
 
 /****************************************************************************
- Gets DOS attributes, accessed via st_flags in the stat struct.
+ Gets DOS attributes, accessed via st_ex_flags in the stat struct.
 ****************************************************************************/
 
 static bool get_stat_dos_flags(connection_struct *conn,
@@ -396,15 +396,15 @@ static bool get_stat_dos_flags(connection_struct *conn,
 
 	DEBUG(5, ("Getting stat dos attributes for %s.\n", fname));
 
-	if (sbuf->st_flags & UF_DOS_ARCHIVE)
+	if (sbuf->st_ex_flags & UF_DOS_ARCHIVE)
 		*dosmode |= aARCH;
-	if (sbuf->st_flags & UF_DOS_HIDDEN)
+	if (sbuf->st_ex_flags & UF_DOS_HIDDEN)
 		*dosmode |= aHIDDEN;
-	if (sbuf->st_flags & UF_DOS_RO)
+	if (sbuf->st_ex_flags & UF_DOS_RO)
 		*dosmode |= aRONLY;
-	if (sbuf->st_flags & UF_DOS_SYSTEM)
+	if (sbuf->st_ex_flags & UF_DOS_SYSTEM)
 		*dosmode |= aSYSTEM;
-	if (sbuf->st_flags & UF_DOS_NOINDEX)
+	if (sbuf->st_ex_flags & UF_DOS_NOINDEX)
 		*dosmode |= FILE_ATTRIBUTE_NONINDEXED;
 	if (S_ISDIR(sbuf->st_ex_mode))
 		*dosmode |= aDIR;
@@ -416,7 +416,7 @@ static bool get_stat_dos_flags(connection_struct *conn,
 }
 
 /****************************************************************************
- Sets DOS attributes, stored in st_flags of the inode.
+ Sets DOS attributes, stored in st_ex_flags of the inode.
 ****************************************************************************/
 
 static bool set_stat_dos_flags(connection_struct *conn,
@@ -439,15 +439,15 @@ static bool set_stat_dos_flags(connection_struct *conn,
 
 	DEBUG(5, ("Setting stat dos attributes for %s.\n", fname));
 
-	new_flags = (sbuf->st_flags & ~UF_DOS_FLAGS) |
+	new_flags = (sbuf->st_ex_flags & ~UF_DOS_FLAGS) |
 		     dos_attributes_to_stat_dos_flags(dosmode);
 
 	/* Return early if no flags changed. */
-	if (new_flags == sbuf->st_flags)
+	if (new_flags == sbuf->st_ex_flags)
 		return true;
 
 	DEBUG(5, ("Setting stat dos attributes=0x%x, prev=0x%x\n", new_flags,
-		  sbuf->st_flags));
+		  sbuf->st_ex_flags));
 
 	/* Set new flags with chflags. */
 	error = SMB_VFS_CHFLAGS(conn, fname, new_flags);
