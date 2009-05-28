@@ -120,7 +120,7 @@ SMBC_module_init(void * punused)
 }
 
 
-void
+static void
 SMBC_module_terminate(void)
 {
     gencache_shutdown();
