@@ -2374,7 +2374,15 @@ NTSTATUS cli_posix_getfacl(struct cli_state *cli,
 			TALLOC_CTX *mem_ctx,
 			size_t *prb_size,
 			char **retbuf);
-bool cli_unix_stat(struct cli_state *cli, const char *name, SMB_STRUCT_STAT *sbuf);
+struct tevent_req *cli_posix_stat_send(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct cli_state *cli,
+					const char *fname);
+NTSTATUS cli_posix_stat_recv(struct tevent_req *req,
+				SMB_STRUCT_STAT *sbuf);
+NTSTATUS cli_posix_stat(struct cli_state *cli,
+			const char *fname,
+			SMB_STRUCT_STAT *sbuf);
 bool cli_unix_chmod(struct cli_state *cli, const char *fname, mode_t mode);
 bool cli_unix_chown(struct cli_state *cli, const char *fname, uid_t uid, gid_t gid);
 struct tevent_req *cli_rename_send(TALLOC_CTX *mem_ctx,

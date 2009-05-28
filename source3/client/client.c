@@ -3037,7 +3037,7 @@ static int cmd_getfacl(void)
 		return 1;
 	}
 
-	if (!cli_unix_stat(targetcli, targetname, &sbuf)) {
+	if (!NT_STATUS_IS_OK(cli_posix_stat(targetcli, targetname, &sbuf))) {
 		d_printf("%s getfacl doing a stat on file %s\n",
 			cli_errstr(targetcli), src);
 		return 1;
@@ -3188,7 +3188,7 @@ static int cmd_stat(void)
 		return 1;
 	}
 
-	if (!cli_unix_stat(targetcli, targetname, &sbuf)) {
+	if (!NT_STATUS_IS_OK(cli_posix_stat(targetcli, targetname, &sbuf))) {
 		d_printf("%s stat file %s\n",
 			cli_errstr(targetcli), src);
 		return 1;
