@@ -524,14 +524,14 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	sidstr = sid_binstring(sid);
+	sidstr = sid_binstring(talloc_tos(), sid);
 	if (asprintf(&ldap_exp, "(objectSid=%s)", sidstr) == -1) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 	rc = ads_search_retry(ads, &msg, ldap_exp, attrs);
 	free(ldap_exp);
-	free(sidstr);
+	TALLOC_FREE(sidstr);
 	if (!ADS_ERR_OK(rc) || !msg) {
 		DEBUG(1,("query_user(sid=%s) ads_search: %s\n",
 			 sid_string_dbg(sid), ads_errstr(rc)));
@@ -1011,21 +1011,19 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	if ((sidbinstr = sid_binstring(group_sid)) == NULL) {
+	if ((sidbinstr = sid_binstring(talloc_tos(), group_sid)) == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
 	/* search for all members of the group */
-	if (!(ldap_exp = talloc_asprintf(tmp_ctx, "(objectSid=%s)",
-					 sidbinstr)))
-	{
-		SAFE_FREE(sidbinstr);
+	ldap_exp = talloc_asprintf(tmp_ctx, "(objectSid=%s)", sidbinstr);
+	TALLOC_FREE(sidbinstr);
+	if (ldap_exp == NULL) {
 		DEBUG(1, ("ads: lookup_groupmem: talloc_asprintf for ldap_exp failed!\n"));
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
-	SAFE_FREE(sidbinstr);
 
 	args.control = ADS_EXTENDED_DN_OID;
 	args.val = ADS_EXTENDED_DN_HEX_STRING;

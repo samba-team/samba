@@ -1298,7 +1298,7 @@ int sid_compare(const DOM_SID *sid1, const DOM_SID *sid2);
 int sid_compare_domain(const DOM_SID *sid1, const DOM_SID *sid2);
 bool sid_equal(const DOM_SID *sid1, const DOM_SID *sid2);
 bool non_mappable_sid(DOM_SID *sid);
-char *sid_binstring(const DOM_SID *sid);
+char *sid_binstring(TALLOC_CTX *mem_ctx, const DOM_SID *sid);
 char *sid_binstring_hex(const DOM_SID *sid);
 DOM_SID *sid_dup_talloc(TALLOC_CTX *ctx, const DOM_SID *src);
 NTSTATUS add_sid_to_array(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
@@ -1502,7 +1502,7 @@ void strupper_m(char *s);
 size_t strlen_m(const char *s);
 size_t strlen_m_term(const char *s);
 size_t strlen_m_term_null(const char *s);
-char *binary_string_rfc2254(char *buf, int len);
+char *binary_string_rfc2254(TALLOC_CTX *mem_ctx, const uint8_t *buf, int len);
 char *binary_string(char *buf, int len);
 int fstr_sprintf(fstring s, const char *fmt, ...);
 bool str_list_sub_basic( char **list, const char *smb_name,
@@ -1595,7 +1595,7 @@ int islower_ascii(int c);
 
 void smb_uuid_pack(const struct GUID uu, UUID_FLAT *ptr);
 void smb_uuid_unpack(const UUID_FLAT in, struct GUID *uu);
-char *guid_binstring(const struct GUID *guid);
+char *guid_binstring(TALLOC_CTX *mem_ctx, const struct GUID *guid);
 
 /* The following definitions come from lib/version.c  */
 
