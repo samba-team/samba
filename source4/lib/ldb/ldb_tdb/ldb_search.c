@@ -546,6 +546,13 @@ int ltdb_search(struct ltdb_context *ctx)
 		 * callback error */
 		if ( ! ctx->request_terminated && ret != LDB_SUCCESS) {
 			/* Not indexed, so we need to do a full scan */
+#if 0
+			/* useful for debugging when slow performance
+			 * is caused by unindexed searches */
+			char *expression = ldb_filter_from_tree(ctx, ctx->tree);
+			printf("FULL SEARCH: %s\n", expression);
+			talloc_free(expression);
+#endif
 			ret = ltdb_search_full(ctx);
 			if (ret != LDB_SUCCESS) {
 				ldb_set_errstring(ldb, "Indexed and full searches both failed!\n");
