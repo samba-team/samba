@@ -1186,7 +1186,7 @@ TDBTOOL_OBJ = @tdbdir@/tools/tdbtool.o $(LIBREPLACE_OBJ) \
 TDBDUMP_OBJ = @tdbdir@/tools/tdbdump.o $(LIBREPLACE_OBJ) \
 	$(SOCKET_WRAPPER_OBJ)
 
-TDBTORTURE_OBJ = @tdbdir@/tools/tdbtorture.o $(LIBREPLACE_OBJ) \
+TDBTORTURE_OBJ = @tdbdir@/tools/tdbtorture.o $(LIBTDB_OBJ) \
 	$(SOCKET_WRAPPER_OBJ)
 
 
