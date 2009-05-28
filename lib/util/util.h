@@ -817,4 +817,16 @@ bool unmap_file(void *start, size_t size);
 
 void print_asc(int level, const uint8_t *buf,int len);
 
+/**
+ * Add an id to an array of ids.
+ *
+ * num should be a pointer to an integer that holds the current
+ * number of elements in ids. It will be updated by this function.
+ */
+
+bool add_uid_to_array_unique(TALLOC_CTX *mem_ctx, uid_t uid,
+			     uid_t **uids, size_t *num_uids);
+bool add_gid_to_array_unique(TALLOC_CTX *mem_ctx, gid_t gid,
+			     gid_t **gids, size_t *num_gids);
+
 #endif /* _SAMBA_UTIL_H_ */
