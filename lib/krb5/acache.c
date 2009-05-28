@@ -501,7 +501,6 @@ acc_resolve(krb5_context context, krb5_ccache *id, const char *res)
 	if (error == 0) 
 	    context->kdc_sec_offset = offset;
 
-	error = 0;
     } else if (error == ccErrCCacheNotFound) {
 	a->ccache = NULL;
 	a->cache_name = NULL;
