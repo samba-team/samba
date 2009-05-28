@@ -1529,14 +1529,15 @@ size_t strlen_m_term_null(const char *s)
  Caller must free.
 **/
 
-char *binary_string_rfc2254(char *buf, int len)
+char *binary_string_rfc2254(TALLOC_CTX *mem_ctx, const uint8_t *buf, int len)
 {
 	char *s;
 	int i, j;
 	const char *hex = "0123456789ABCDEF";
-	s = (char *)SMB_MALLOC(len * 3 + 1);
-	if (!s)
+	s = talloc_array(mem_ctx, char, len * 3 + 1);
+	if (s == NULL) {
 		return NULL;
+	}
 	for (j=i=0;i<len;i++) {
 		s[j] = '\\';
 		s[j+1] = hex[((unsigned char)buf[i]) >> 4];

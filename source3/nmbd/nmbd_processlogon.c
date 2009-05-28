@@ -187,7 +187,7 @@ static void nmbd_proxy_logon(struct nmbd_proxy_logon_context *ctx,
 		(ndr_pull_flags_fn_t)ndr_pull_nbt_netlogon_packet);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
-		DEBUG(0,("failed parse nbt_letlogon_packet: %s\n",
+		DEBUG(0,("failed parse nbt_netlogon_packet: %s\n",
 			nt_errstr(status)));
 		TALLOC_FREE(state);
 		return;

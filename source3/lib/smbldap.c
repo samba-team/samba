@@ -389,6 +389,26 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 	return result;
 }
 
+ bool smbldap_pull_sid(LDAP *ld, LDAPMessage *msg, const char *attrib,
+		       struct dom_sid *sid)
+{
+	struct berval **values;
+	bool ret = False;
+
+	values = ldap_get_values_len(ld, msg, attrib);
+
+	if (!values) {
+		return false;
+	}
+
+	if (values[0] != NULL) {
+		ret = sid_parse(values[0]->bv_val, values[0]->bv_len, sid);
+	}
+
+	ldap_value_free_len(values);
+	return ret;
+}
+
  static int ldapmsg_destructor(LDAPMessage **result) {
 	ldap_msgfree(*result);
 	return 0;

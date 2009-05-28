@@ -43,11 +43,11 @@ void smb_uuid_unpack(const UUID_FLAT in, struct GUID *uu)
  Caller must free.
 *****************************************************************/
 
-char *guid_binstring(const struct GUID *guid)
+char *guid_binstring(TALLOC_CTX *mem_ctx, const struct GUID *guid)
 {
 	UUID_FLAT guid_flat;
 
 	smb_uuid_pack(*guid, &guid_flat);
 
-	return binary_string_rfc2254((char *)guid_flat.info, UUID_FLAT_SIZE);
+	return binary_string_rfc2254(mem_ctx, guid_flat.info, UUID_FLAT_SIZE);
 }

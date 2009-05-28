@@ -570,10 +570,10 @@ again:
 
 		ids[idx]->status = ID_UNKNOWN;
 
-		sidstr = sid_binstring(ids[idx]->sid);
+		sidstr = sid_binstring(talloc_tos(), ids[idx]->sid);
 		filter = talloc_asprintf_append_buffer(filter, "(objectSid=%s)", sidstr);
 			
-		free(sidstr);
+		TALLOC_FREE(sidstr);
 		CHECK_ALLOC_DONE(filter);
 	}
 	filter = talloc_asprintf_append_buffer(filter, "))");
@@ -894,9 +894,9 @@ static NTSTATUS nss_ad_get_info( struct nss_domain_entry *e,
 	attrs[2] = ctx->ad_schema->posix_gecos_attr;
 	attrs[3] = ctx->ad_schema->posix_gidnumber_attr;
 
-	sidstr = sid_binstring(sid);
+	sidstr = sid_binstring(mem_ctx, sid);
 	filter = talloc_asprintf(mem_ctx, "(objectSid=%s)", sidstr);
-	SAFE_FREE(sidstr);
+	TALLOC_FREE(sidstr);
 
 	if (!filter) {
 		nt_status = NT_STATUS_NO_MEMORY;
