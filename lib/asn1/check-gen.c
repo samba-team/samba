@@ -894,7 +894,7 @@ check_seq_of_size(void)
 	TESTSeqSizeOf2 ssof2ok1 = { 1, integers };
 	TESTSeqSizeOf2 ssof2ok2 = { 2, integers };
 	TESTSeqSizeOf2 ssof2f2 = { 3, integers };
-	
+
 	test_seq_of(TESTSeqSizeOf2, 0, &ssof2f1);
 	test_seq_of(TESTSeqSizeOf2, 1, &ssof2ok1);
 	test_seq_of(TESTSeqSizeOf2, 1, &ssof2ok2);
@@ -904,7 +904,7 @@ check_seq_of_size(void)
 	TESTSeqSizeOf3 ssof3f1 = { 0, NULL };
 	TESTSeqSizeOf3 ssof3ok1 = { 1, integers };
 	TESTSeqSizeOf3 ssof3ok2 = { 2, integers };
-	
+
 	test_seq_of(TESTSeqSizeOf3, 0, &ssof3f1);
 	test_seq_of(TESTSeqSizeOf3, 1, &ssof3ok1);
 	test_seq_of(TESTSeqSizeOf3, 1, &ssof3ok2);
@@ -914,7 +914,7 @@ check_seq_of_size(void)
 	TESTSeqSizeOf4 ssof4ok2 = { 1, integers };
 	TESTSeqSizeOf4 ssof4ok3 = { 2, integers };
 	TESTSeqSizeOf4 ssof4f1  = { 3, integers };
-	
+
 	test_seq_of(TESTSeqSizeOf4, 1, &ssof4ok1);
 	test_seq_of(TESTSeqSizeOf4, 1, &ssof4ok2);
 	test_seq_of(TESTSeqSizeOf4, 1, &ssof4ok3);

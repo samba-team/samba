@@ -139,7 +139,7 @@ DigestREP ::= [APPLICATION 129] SEQUENCE {
 -- qop == auth
 -- A2 = Method ":" digest-uri-value
 -- qop == auth-int
--- A2 = Method ":" digest-uri-value ":" H(entity-body) 
+-- A2 = Method ":" digest-uri-value ":" H(entity-body)
 
 -- request-digest  = HEX(KD(HEX(H(A1)),
 --    unq(nonce-value) ":" nc-value ":" unq(cnonce-value) ":" unq(qop-value) ":" HEX(H(A2))))

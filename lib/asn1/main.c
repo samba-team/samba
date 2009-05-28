@@ -145,7 +145,7 @@ main(int argc, char **argv)
 	arg[0] = option_file;
 	arg[1] = NULL;
 	len = 1;
-	
+
 	while (fgets(buf, sizeof(buf), opt) != NULL) {
 	    buf[strcspn(buf, "\n\r")] = '\0';
 
@@ -196,6 +196,6 @@ main(int argc, char **argv)
 	    free(arg[i]);
 	free(arg);
     }
-    
+   
     return 0;
 }

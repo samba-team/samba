@@ -110,7 +110,7 @@ free_type (const char *name, const Type *t, int preserve)
 	    if(t->type == TChoice)
 		fprintf(codefile, "break;\n");
 	}
-	
+
 	if(t->type == TChoice) {
 	    if (have_ellipsis)
 		fprintf(codefile,

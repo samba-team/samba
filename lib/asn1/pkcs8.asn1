@@ -24,7 +24,7 @@ PKCS8EncryptedData ::= OCTET STRING
 
 PKCS8EncryptedPrivateKeyInfo ::= SEQUENCE {
     encryptionAlgorithm AlgorithmIdentifier,
-    encryptedData PKCS8EncryptedData 
+    encryptedData PKCS8EncryptedData
 }
 
 END

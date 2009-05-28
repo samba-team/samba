@@ -353,7 +353,7 @@ decode_type (const char *name, const Type *t, int optional,
 	    decode_type (s, m->type, m->optional, forwstr, m->gen_name, NULL);
 	    free (s);
 	}
-	
+
 	break;
     }
     case TSet: {
@@ -517,7 +517,7 @@ decode_type (const char *name, const Type *t, int optional,
 	} else {
 	    fprintf(codefile,
 		    "if (e == 0 && %s != %s) { e = ASN1_BAD_ID; }\n",
-		    typestring, 
+		    typestring,
 		    is_primitive_type(t->subtype->type) ? "PRIM" : "CONS");
 	}
 
@@ -590,7 +590,7 @@ decode_type (const char *name, const Type *t, int optional,
 	    Der_class cl;
 	    Der_type  ty;
 	    unsigned  tag;
-	
+
 	    if (m->ellipsis) {
 		have_ellipsis = m;
 		continue;

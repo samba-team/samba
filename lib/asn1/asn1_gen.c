@@ -119,24 +119,24 @@ doit(const char *fn)
 				     &sz);
 	if (ret)
 	    errx(1, "der_put_length_and_tag: %d", ret);
-	
+
 	if (fwrite(p + sizeof(p) - sz , sz, 1, fout) != 1)
 	    err(1, "fwrite length/tag failed");
 	offset += sz;
-	
+
 	if (data) {
 	    size_t datalen;
-	
+
 	    datalen = strlen(data) / 2;
 	    pdata = emalloc(sz);
-	
+
 	    if (hex_decode(data, pdata, datalen) != datalen)
 		errx(1, "failed to decode data");
-	
+
 	    if (fwrite(pdata, datalen, 1, fout) != 1)
 		err(1, "fwrite data failed");
 	    offset += datalen;
-	
+
 	    free(pdata);
 	}
     }

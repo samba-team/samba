@@ -328,7 +328,7 @@ generic_decode_fail (const struct test_case *tests,
 	int ret;
 	size_t sz;
 	const void *bytes;
-	
+
 	current_test = tests[i].name;
 
 	current_state = "init";
@@ -350,7 +350,7 @@ generic_decode_fail (const struct test_case *tests,
 	    sz = 4096;
 	    bytes = NULL;
 	}
-		
+	
 	buf = map_alloc(OVERRUN, bytes, sz, &buf_map);
 
 	if (tests[i].byte_len == -1)

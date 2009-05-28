@@ -595,7 +595,7 @@ define_type (int level, const char *name, Type *t, int typedefp, int preservep)
 	    fprintf (headerfile, "struct %s {\n", typedefp ? name : "");
 	    ASN1_TAILQ_FOREACH(m, t->members, members) {
 		char *n;
-		
+	
 		asprintf (&n, "%s:1", m->gen_name);
 		if (n == NULL)
 		    errx(1, "malloc");

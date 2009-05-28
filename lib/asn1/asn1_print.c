@@ -215,7 +215,7 @@ loop (unsigned char *buf, size_t len, int indent)
 		ret = der_get_integer (buf, length, &num, NULL);
 		if (ret)
 		    errx (1, "der_get_enum: %s", error_message (ret));
-		
+	
 		printf("%u\n", num);
 		break;
 	    }

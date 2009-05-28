@@ -257,7 +257,7 @@ encode_type (const char *name, const Type *t, const char *tmpstr)
 
 	if (t->members == NULL)
 	    break;
-	
+
 	ASN1_TAILQ_FOREACH_REVERSE(m, t->members, memhead, members) {
 	    char *s;
 
@@ -388,7 +388,7 @@ encode_type (const char *name, const Type *t, const char *tmpstr)
 	int c;
 	asprintf (&tname, "%s_tag", tmpstr);
 	if (tname == NULL)
-	    errx(1, "malloc");	
+	    errx(1, "malloc");
 	c = encode_type (name, t->subtype, tname);
 	fprintf (codefile,
 		 "e = der_put_length_and_tag (p, len, ret, %s, %s, %s, &l);\n"

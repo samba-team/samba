@@ -266,8 +266,8 @@ der_get_octet_string_ber (const unsigned char *p, size_t len,
 	e = der_get_tag (p, len, &class, &type, &tag, &l);
 	if (e) goto out;
 	if (class != ASN1_C_UNIV) {
-	    e = ASN1_BAD_ID; 
-	    goto out; 
+	    e = ASN1_BAD_ID;
+	    goto out;
 	}
 	if (type == PRIM && tag == UT_EndOfContent) {
 	    if (depth == 0)
@@ -285,7 +285,7 @@ der_get_octet_string_ber (const unsigned char *p, size_t len,
 	if (e) goto out;
 	p += l;
 	len -= l;
-	
+
 	if (datalen > len)
 	    return ASN1_OVERRUN;
 
@@ -464,7 +464,7 @@ der_get_oid (const unsigned char *p, size_t len,
     ++p;
     for (n = 2; len > 0; ++n) {
 	unsigned u = 0, u1;
-	
+
 	do {
 	    --len;
 	    u1 = u * 128 + (*p++ % 128);

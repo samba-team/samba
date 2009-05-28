@@ -18,8 +18,8 @@ id-pkcs7-digestedData OBJECT IDENTIFIER ::= 		{ id-pkcs7 5 }
 id-pkcs7-encryptedData OBJECT IDENTIFIER ::= 		{ id-pkcs7 6 }
 
 CMSVersion ::= INTEGER {
-	   CMSVersion_v0(0), 
-	   CMSVersion_v1(1), 
+	   CMSVersion_v0(0),
+	   CMSVersion_v1(1),
 	   CMSVersion_v2(2),
 	   CMSVersion_v3(3),
 	   CMSVersion_v4(4)
@@ -34,7 +34,7 @@ MessageDigest ::= OCTET STRING
 
 ContentInfo ::= SEQUENCE {
 	contentType ContentType,
-	content [0] EXPLICIT heim_any OPTIONAL --  DEFINED BY contentType 
+	content [0] EXPLICIT heim_any OPTIONAL --  DEFINED BY contentType
 }
 
 EncapsulatedContentInfo ::= SEQUENCE {
@@ -53,7 +53,7 @@ IssuerAndSerialNumber ::= SEQUENCE {
 	serialNumber CertificateSerialNumber
 }
 
--- RecipientIdentifier is same as SignerIdentifier, 
+-- RecipientIdentifier is same as SignerIdentifier,
 -- lets glue them togheter and save some bytes and share code for them
 
 CMSIdentifier ::= CHOICE {
@@ -67,7 +67,7 @@ RecipientIdentifier ::= CMSIdentifier
 --- CMSAttributes are the combined UnsignedAttributes and SignedAttributes
 --- to store space and share code
 
-CMSAttributes ::= SET OF Attribute		-- SIZE (1..MAX) 
+CMSAttributes ::= SET OF Attribute		-- SIZE (1..MAX)
 
 SignatureValue ::= OCTET STRING
 
@@ -79,7 +79,7 @@ SignerInfo ::= SEQUENCE {
 		SET OF Attribute OPTIONAL,
 	signatureAlgorithm SignatureAlgorithmIdentifier,
 	signature SignatureValue,
-	unsignedAttrs [1] IMPLICIT -- CMSAttributes -- 
+	unsignedAttrs [1] IMPLICIT -- CMSAttributes --
 		SET OF Attribute OPTIONAL
 }
 

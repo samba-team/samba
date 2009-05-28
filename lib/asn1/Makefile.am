@@ -370,7 +370,7 @@ gen_files_pkinit =					\
 	asn1_KDCDHKeyInfo_Win2k.x			\
 	asn1_ReplyKeyPack_Win2k.x			\
 	asn1_PkinitSP80056AOtherInfo.x			\
-	asn1_PkinitSuppPubInfo.x 
+	asn1_PkinitSuppPubInfo.x
 
 gen_files_pkcs12 =					\
 	asn1_id_pkcs_12.x				\
