@@ -570,10 +570,7 @@ der_match_tag_and_length (const unsigned char *p, size_t len,
     ret += l;
     e = der_get_length (p, len, length_ret, &l);
     if (e) return e;
-    p += l;
-    len -= l;
-    ret += l;
-    if(size) *size = ret;
+    if(size) *size = ret + l;
     return 0;
 }
 
