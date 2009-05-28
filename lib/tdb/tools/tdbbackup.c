@@ -53,6 +53,21 @@
 
 static int failed;
 
+static struct tdb_logging_context log_ctx;
+
+#ifdef PRINTF_ATTRIBUTE
+static void tdb_log(struct tdb_context *tdb, enum tdb_debug_level level, const char *format, ...) PRINTF_ATTRIBUTE(3,4);
+#endif
+static void tdb_log(struct tdb_context *tdb, enum tdb_debug_level level, const char *format, ...)
+{
+	va_list ap;
+    
+	va_start(ap, format);
+	vfprintf(stdout, format, ap);
+	va_end(ap);
+	fflush(stdout);
+}
+
 static char *add_suffix(const char *name, const char *suffix)
 {
 	char *ret;
@@ -107,7 +122,8 @@ static int backup_tdb(const char *old_name, const char *new_name, int hash_size)
 	}
 
 	/* open the old tdb */
-	tdb = tdb_open(old_name, 0, 0, O_RDWR, 0);
+	tdb = tdb_open_ex(old_name, 0, 0, 
+			  O_RDWR, 0, &log_ctx, NULL);
 	if (!tdb) {
 		printf("Failed to open %s\n", old_name);
 		free(tmp_name);
@@ -116,10 +132,11 @@ static int backup_tdb(const char *old_name, const char *new_name, int hash_size)
 
 	/* create the new tdb */
 	unlink(tmp_name);
-	tdb_new = tdb_open(tmp_name,
-			   hash_size ? hash_size : tdb_hash_size(tdb),
-			   TDB_DEFAULT, O_RDWR|O_CREAT|O_EXCL, 
-			   st.st_mode & 0777);
+	tdb_new = tdb_open_ex(tmp_name, 
+			      hash_size ? hash_size : tdb_hash_size(tdb), 
+			      TDB_DEFAULT, 
+			      O_RDWR|O_CREAT|O_EXCL, st.st_mode & 0777, 
+			      &log_ctx, NULL);
 	if (!tdb_new) {
 		perror(tmp_name);
 		free(tmp_name);
@@ -170,7 +187,11 @@ static int backup_tdb(const char *old_name, const char *new_name, int hash_size)
 
 	/* close the new tdb and re-open read-only */
 	tdb_close(tdb_new);
-	tdb_new = tdb_open(tmp_name, 0, TDB_DEFAULT, O_RDONLY, 0);
+	tdb_new = tdb_open_ex(tmp_name, 
+			      0,
+			      TDB_DEFAULT, 
+			      O_RDONLY, 0,
+			      &log_ctx, NULL);
 	if (!tdb_new) {
 		fprintf(stderr,"failed to reopen %s\n", tmp_name);
 		unlink(tmp_name);
@@ -211,7 +232,8 @@ static int verify_tdb(const char *fname, const char *bak_name)
 	int count = -1;
 
 	/* open the tdb */
-	tdb = tdb_open(fname, 0, 0, O_RDONLY, 0);
+	tdb = tdb_open_ex(fname, 0, 0, 
+			  O_RDONLY, 0, &log_ctx, NULL);
 
 	/* traverse the tdb, then close it */
 	if (tdb) {
@@ -263,6 +285,8 @@ static void usage(void)
 	int verify = 0;
 	int hashsize = 0;
 	const char *suffix = ".bak";
+
+	log_ctx.log_fn = tdb_log;
 
 	while ((c = getopt(argc, argv, "vhs:n:")) != -1) {
 		switch (c) {
