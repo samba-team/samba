@@ -308,7 +308,7 @@ bool cli_unix_stat(struct cli_state *cli, const char *name, SMB_STRUCT_STAT *sbu
 
 	sbuf->st_uid = (uid_t) IVAL(rdata,40);      /* user ID of owner */
 	sbuf->st_gid = (gid_t) IVAL(rdata,48);      /* group ID of owner */
-	sbuf->st_mode |= unix_filetype_from_wire(IVAL(rdata, 56));
+	sbuf->st_mode = unix_filetype_from_wire(IVAL(rdata, 56));
 #if defined(HAVE_MAKEDEV)
 	{
 		uint32 dev_major = IVAL(rdata,60);
