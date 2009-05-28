@@ -2191,13 +2191,15 @@ struct hx509_crypto_data {
  *
  */
 
+static unsigned private_rc2_40_oid_data[] = { 127, 1 };
+
+static heim_oid asn1_oid_private_rc2_40 =
+    { 2, private_rc2_40_oid_data };
+
 static const heim_oid *
 oid_private_rc2_40(void)
 {
-    static unsigned oid_data[] = { 127, 1 };
-    static const heim_oid oid = { 2, oid_data };
-
-    return &oid;
+    return &asn1_oid_private_rc2_40;
 }
 
 
@@ -2844,29 +2846,29 @@ find_string2key(const heim_oid *oid,
 	*c = EVP_rc2_40_cbc();
 	*md = EVP_sha1();
 	*s2k = PBE_string2key;
-	return oid_private_rc2_40();
-    } else if (der_heim_oid_cmp(oid, oid_id_pbeWithSHAAnd128BitRC2_CBC()) == 0) {
+	return &asn1_oid_private_rc2_40;
+    } else if (der_heim_oid_cmp(oid, &asn1_oid_id_pbeWithSHAAnd128BitRC2_CBC) == 0) {
 	*c = EVP_rc2_cbc();
 	*md = EVP_sha1();
 	*s2k = PBE_string2key;
-	return oid_id_pkcs3_rc2_cbc();
+	return &asn1_oid_id_pkcs3_rc2_cbc;
 #if 0
-    } else if (der_heim_oid_cmp(oid, oid_id_pbeWithSHAAnd40BitRC4()) == 0) {
+    } else if (der_heim_oid_cmp(oid, &asn1_oid_id_pbeWithSHAAnd40BitRC4) == 0) {
 	*c = EVP_rc4_40();
 	*md = EVP_sha1();
 	*s2k = PBE_string2key;
 	return NULL;
-    } else if (der_heim_oid_cmp(oid, oid_id_pbeWithSHAAnd128BitRC4()) == 0) {
+    } else if (der_heim_oid_cmp(oid, &asn1_oid_id_pbeWithSHAAnd128BitRC4) == 0) {
 	*c = EVP_rc4();
 	*md = EVP_sha1();
 	*s2k = PBE_string2key;
-	return oid_id_pkcs3_rc4();
+	return &asn1_oid_id_pkcs3_rc4;
 #endif
-    } else if (der_heim_oid_cmp(oid, oid_id_pbeWithSHAAnd3_KeyTripleDES_CBC()) == 0) {
+    } else if (der_heim_oid_cmp(oid, &asn1_oid_id_pbeWithSHAAnd3_KeyTripleDES_CBC) == 0) {
 	*c = EVP_des_ede3_cbc();
 	*md = EVP_sha1();
 	*s2k = PBE_string2key;
-	return oid_id_pkcs3_des_ede3_cbc();
+	return &asn1_oid_id_pkcs3_des_ede3_cbc;
     }
 
     return NULL;
