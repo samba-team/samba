@@ -235,7 +235,7 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
 	if (ret)
 	    errx(1, "hx509_cms_unwrap_ContentInfo: %d", ret);
 
-	if (der_heim_oid_cmp(&oid, oid_id_pkcs7_signedData()) != 0)
+	if (der_heim_oid_cmp(&oid, &asn1_oid_id_pkcs7_signedData) != 0)
 	    errx(1, "Content is not SignedData");
 	der_free_oid(&oid);
 
@@ -387,7 +387,7 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
     if (opt->peer_alg_strings.num_strings)
 	peer_strings(context, &peer, &opt->peer_alg_strings);
 
-    parse_oid(opt->content_type_string, oid_id_pkcs7_data(), &contentType);
+    parse_oid(opt->content_type_string, &asn1_oid_id_pkcs7_data, &contentType);
 
     ret = hx509_cms_create_signed(context,
 				  flags,
@@ -414,7 +414,7 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
     if (opt->content_info_flag) {
 	heim_octet_string wo;
 
-	ret = hx509_cms_wrap_ContentInfo(oid_id_pkcs7_signedData(), &o, &wo);
+	ret = hx509_cms_wrap_ContentInfo(&asn1_oid_id_pkcs7_signedData, &o, &wo);
 	if (ret)
 	    errx(1, "hx509_cms_wrap_ContentInfo: %d", ret);
 
@@ -486,7 +486,7 @@ cms_unenvelope(struct cms_unenvelope_options *opt, int argc, char **argv)
 	if (ret)
 	    errx(1, "hx509_cms_unwrap_ContentInfo: %d", ret);
 
-	if (der_heim_oid_cmp(&oid, oid_id_pkcs7_envelopedData()) != 0)
+	if (der_heim_oid_cmp(&oid, &asn1_oid_id_pkcs7_envelopedData) != 0)
 	    errx(1, "Content is not SignedData");
 	der_free_oid(&oid);
 
@@ -573,7 +573,7 @@ cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
     if (ret)
 	errx(1, "hx509_certs_find: %d", ret);
 
-    parse_oid(opt->content_type_string, oid_id_pkcs7_data(), &contentType);
+    parse_oid(opt->content_type_string, &asn1_oid_id_pkcs7_data, &contentType);
 
     ret = hx509_cms_envelope_1(context, flags, cert, p, sz, enctype,
 			       &contentType, &o);
@@ -588,7 +588,7 @@ cms_create_enveloped(struct cms_envelope_options *opt, int argc, char **argv)
     if (opt->content_info_flag) {
 	heim_octet_string wo;
 
-	ret = hx509_cms_wrap_ContentInfo(oid_id_pkcs7_envelopedData(), &o, &wo);
+	ret = hx509_cms_wrap_ContentInfo(&asn1_oid_id_pkcs7_envelopedData, &o, &wo);
 	if (ret)
 	    errx(1, "hx509_cms_wrap_ContentInfo: %d", ret);
 
@@ -1522,26 +1522,26 @@ struct cert_type_opt {
 static int
 https_server(hx509_context context, hx509_ca_tbs tbs, struct cert_type_opt *opt)
 {
-    return hx509_ca_tbs_add_eku(context, tbs, oid_id_pkix_kp_serverAuth());
+    return hx509_ca_tbs_add_eku(context, tbs, &asn1_oid_id_pkix_kp_serverAuth);
 }
 
 static int
 https_client(hx509_context context, hx509_ca_tbs tbs, struct cert_type_opt *opt)
 {
-    return hx509_ca_tbs_add_eku(context, tbs, oid_id_pkix_kp_clientAuth());
+    return hx509_ca_tbs_add_eku(context, tbs, &asn1_oid_id_pkix_kp_clientAuth);
 }
 
 static int
 peap_server(hx509_context context, hx509_ca_tbs tbs, struct cert_type_opt *opt)
 {
-    return hx509_ca_tbs_add_eku(context, tbs, oid_id_pkix_kp_serverAuth());
+    return hx509_ca_tbs_add_eku(context, tbs, &asn1_oid_id_pkix_kp_serverAuth);
 }
 
 static int
 pkinit_kdc(hx509_context context, hx509_ca_tbs tbs, struct cert_type_opt *opt)
 {
     opt->pkinit++;
-    return hx509_ca_tbs_add_eku(context, tbs, oid_id_pkkdcekuoid());
+    return hx509_ca_tbs_add_eku(context, tbs, &asn1_oid_id_pkkdcekuoid);
 }
 
 static int
@@ -1551,21 +1551,21 @@ pkinit_client(hx509_context context, hx509_ca_tbs tbs, struct cert_type_opt *opt
 
     opt->pkinit++;
 
-    ret = hx509_ca_tbs_add_eku(context, tbs, oid_id_pkekuoid());
+    ret = hx509_ca_tbs_add_eku(context, tbs, &asn1_oid_id_pkekuoid);
     if (ret)
 	return ret;
 
-    ret = hx509_ca_tbs_add_eku(context, tbs, oid_id_ms_client_authentication());
+    ret = hx509_ca_tbs_add_eku(context, tbs, &asn1_oid_id_ms_client_authentication);
     if (ret)
 	return ret;
 
-    return hx509_ca_tbs_add_eku(context, tbs, oid_id_pkinit_ms_eku());
+    return hx509_ca_tbs_add_eku(context, tbs, &asn1_oid_id_pkinit_ms_eku);
 }
 
 static int
 email_client(hx509_context context, hx509_ca_tbs tbs, struct cert_type_opt *opt)
 {
-    return hx509_ca_tbs_add_eku(context, tbs, oid_id_pkix_kp_emailProtection());
+    return hx509_ca_tbs_add_eku(context, tbs, &asn1_oid_id_pkix_kp_emailProtection);
 }
 
 struct {
@@ -1691,7 +1691,7 @@ eval_types(hx509_context context,
 	    hx509_err(context, 1, ret, "hx509_ca_tbs_add_san_hostname");
 	
 	ret = hx509_ca_tbs_add_eku(context, tbs,
-				   oid_id_pkix_kp_emailProtection());
+				   &asn1_oid_id_pkix_kp_emailProtection);
 	if (ret)
 	    hx509_err(context, 1, ret, "hx509_ca_tbs_add_eku");
     }
@@ -1803,7 +1803,7 @@ hxtool_ca(struct certificate_sign_options *opt, int argc, char **argv)
 	struct hx509_generate_private_context *keyctx;
 
 	ret = _hx509_generate_private_key_init(context,
-					       oid_id_pkcs1_rsaEncryption(),
+					       &asn1_oid_id_pkcs1_rsaEncryption,
 					       &keyctx);
 	if (ret)
 	    hx509_err(context, 1, ret, "generate private key");
