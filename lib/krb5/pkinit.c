@@ -186,8 +186,8 @@ find_cert(krb5_context context, struct krb5_pk_identity *id,
     };
     int i, ret;
 
-    cf[0].oid = oid_id_pkekuoid();
-    cf[1].oid = oid_id_pkinit_ms_eku();
+    cf[0].oid = &asn1_oid_id_pkekuoid;
+    cf[1].oid = &asn1_oid_id_pkinit_ms_eku;
     cf[2].oid = NULL;
 
     for (i = 0; i < sizeof(cf)/sizeof(cf[0]); i++) {
@@ -468,7 +468,7 @@ build_auth_pack(krb5_context context,
 	    DomainParameters dp;
 	    heim_integer dh_pub_key;
 
-	    ret = der_copy_oid(oid_id_dhpublicnumber(),
+	    ret = der_copy_oid(&asn1_oid_id_dhpublicnumber,
 			       &a->clientPublicValue->algorithm.algorithm);
 	    if (ret)
 		return ret;
@@ -684,7 +684,7 @@ pk_mk_padata(krb5_context context,
 	if (buf.length != size)
 	    krb5_abortx(context, "internal ASN1 encoder error");
 
-	oid = oid_id_pkcs7_data();
+	oid = &asn1_oid_id_pkcs7_data;
     } else if (ctx->type == PKINIT_27) {
 	AuthPack ap;
 	
@@ -707,7 +707,7 @@ pk_mk_padata(krb5_context context,
 	if (buf.length != size)
 	    krb5_abortx(context, "internal ASN1 encoder error");
 
-	oid = oid_id_pkauthdata();
+	oid = &asn1_oid_id_pkauthdata;
     } else
 	krb5_abortx(context, "internal pkinit error");
 
@@ -717,7 +717,7 @@ pk_mk_padata(krb5_context context,
     if (ret)
 	goto out;
 
-    ret = hx509_cms_wrap_ContentInfo(oid_id_pkcs7_signedData(), &sd_buf, &buf);
+    ret = hx509_cms_wrap_ContentInfo(&asn1_oid_id_pkcs7_signedData, &sd_buf, &buf);
     krb5_data_free(&sd_buf);
     if (ret) {
 	krb5_set_error_message(context, ret,
@@ -1041,7 +1041,7 @@ pk_verify_host(krb5_context context,
 
     if (ctx->require_eku) {
 	ret = hx509_cert_check_eku(ctx->id->hx509ctx, host->cert,
-				   oid_id_pkkdcekuoid(), 0);
+				   &asn1_oid_id_pkkdcekuoid, 0);
 	if (ret) {
 	    krb5_set_error_message(context, ret,
 				   N_("No PK-INIT KDC EKU in kdc certificate", ""));
@@ -1054,7 +1054,7 @@ pk_verify_host(krb5_context context,
 
 	ret = hx509_cert_find_subjectAltName_otherName(ctx->id->hx509ctx,
 						       host->cert,
-						       oid_id_pkinit_san(),
+						       &asn1_oid_id_pkinit_san,
 						       &list);
 	if (ret) {
 	    krb5_set_error_message(context, ret,
@@ -1136,7 +1136,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
     heim_oid contentType = { 0, NULL };
     int flags = HX509_CMS_UE_DONT_REQUIRE_KU_ENCIPHERMENT;
 
-    if (der_heim_oid_cmp(oid_id_pkcs7_envelopedData(), dataType)) {
+    if (der_heim_oid_cmp(&asn1_oid_id_pkcs7_envelopedData, dataType)) {
 	krb5_set_error_message(context, EINVAL,
 			       N_("PKINIT: Invalid content type", ""));
 	return EINVAL;
@@ -1187,7 +1187,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
 	ret = hx509_cms_unwrap_ContentInfo(&content, &type, &out, NULL);
 	if (ret)
 	    goto out;
-	if (der_heim_oid_cmp(&type, oid_id_pkcs7_signedData())) {
+	if (der_heim_oid_cmp(&type, &asn1_oid_id_pkcs7_signedData)) {
 	    ret = EINVAL; /* XXX */
 	    krb5_set_error_message(context, ret,
 				   N_("PKINIT: Invalid content type", ""));
@@ -1224,13 +1224,13 @@ pk_rd_pa_reply_enckey(krb5_context context,
 
 #if 0
     if (type == PKINIT_WIN2K) {
-	if (der_heim_oid_cmp(&contentType, oid_id_pkcs7_data()) != 0) {
+	if (der_heim_oid_cmp(&contentType, &asn1_oid_id_pkcs7_data) != 0) {
 	    ret = KRB5KRB_AP_ERR_MSG_TYPE;
 	    krb5_set_error_message(context, ret, "PKINIT: reply key, wrong oid");
 	    goto out;
 	}
     } else {
-	if (der_heim_oid_cmp(&contentType, oid_id_pkrkeydata()) != 0) {
+	if (der_heim_oid_cmp(&contentType, &asn1_oid_id_pkrkeydata) != 0) {
 	    ret = KRB5KRB_AP_ERR_MSG_TYPE;
 	    krb5_set_error_message(context, ret, "PKINIT: reply key, wrong oid");
 	    goto out;
@@ -1290,7 +1290,7 @@ pk_rd_pa_reply_dh(krb5_context context,
     krb5_data_zero(&content);
     memset(&kdc_dh_info, 0, sizeof(kdc_dh_info));
 
-    if (der_heim_oid_cmp(oid_id_pkcs7_signedData(), dataType)) {
+    if (der_heim_oid_cmp(&asn1_oid_id_pkcs7_signedData, dataType)) {
 	krb5_set_error_message(context, EINVAL,
 			       N_("PKINIT: Invalid content type", ""));
 	return EINVAL;
@@ -1311,7 +1311,7 @@ pk_rd_pa_reply_dh(krb5_context context,
     if (ret)
 	goto out;
 
-    if (der_heim_oid_cmp(&contentType, oid_id_pkdhkeydata())) {
+    if (der_heim_oid_cmp(&contentType, &asn1_oid_id_pkdhkeydata)) {
 	ret = KRB5KRB_AP_ERR_MSG_TYPE;
 	krb5_set_error_message(context, ret,
 			       N_("pkinit - dh reply contains wrong oid", ""));
@@ -2370,7 +2370,7 @@ get_ms_san(hx509_context context, hx509_cert cert, char **upn)
 
     ret = hx509_cert_find_subjectAltName_otherName(context,
 						   cert,
-						   oid_id_pkinit_ms_san(),
+						   &asn1_oid_id_pkinit_ms_san,
 						   &list);
     if (ret)
 	return 0;
@@ -2443,7 +2443,7 @@ _krb5_pk_enterprise_cert(krb5_context context,
 
     hx509_query_match_option(q, HX509_QUERY_OPTION_PRIVATE_KEY);
     hx509_query_match_option(q, HX509_QUERY_OPTION_KU_DIGITALSIGNATURE);
-    hx509_query_match_eku(q, oid_id_pkinit_ms_eku());
+    hx509_query_match_eku(q, &asn1_oid_id_pkinit_ms_eku);
     hx509_query_match_cmp_func(q, find_ms_san, NULL);
 
     ret = hx509_certs_filter(hx509ctx, certs, q, &result);
