@@ -1121,14 +1121,10 @@ int ltdb_search_indexed(struct ltdb_context *ac)
 
 	if (ac->scope != LDB_SCOPE_BASE && idxattr == 1) {
 		ret = ltdb_index_dn(ac->module, ac->tree, ltdb->cache->indexlist, dn_list);
-
-		if (ret != LDB_SUCCESS && ret != LDB_ERR_NO_SUCH_OBJECT) {
-			talloc_free(dn_list);
-			return ret;
-		}
 	}
 
-	if (ac->scope == LDB_SCOPE_ONELEVEL && idxone == 1) {
+	if (ret == LDB_ERR_OPERATIONS_ERROR &&
+	    ac->scope == LDB_SCOPE_ONELEVEL && idxone == 1) {
 		ret = ltdb_index_dn_one(ac->module, ac->base, dn_list);
 	}
 
