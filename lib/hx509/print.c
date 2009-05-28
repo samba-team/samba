@@ -750,14 +750,14 @@ check_authorityInfoAccess(hx509_validate_ctx ctx,
 
 struct {
     const char *name;
-    const heim_oid *(*oid)(void);
+    const heim_oid *oid;
     int (*func)(hx509_validate_ctx ctx,
 		struct cert_status *status,
 		enum critical_flag cf,
 		const Extension *);
     enum critical_flag cf;
 } check_extension[] = {
-#define ext(name, checkname) #name, &oid_id_x509_ce_##name, check_##checkname
+#define ext(name, checkname) #name, &asn1_oid_id_x509_ce_##name, check_##checkname
     { ext(subjectDirectoryAttributes, Null), M_N_C },
     { ext(subjectKeyIdentifier, subjectKeyIdentifier), M_N_C },
     { ext(keyUsage, Null), S_C },
@@ -781,13 +781,13 @@ struct {
     { ext(freshestCRL, Null), M_N_C },
     { ext(inhibitAnyPolicy, Null), M_C },
 #undef ext
-#define ext(name, checkname) #name, &oid_id_pkix_pe_##name, check_##checkname
+#define ext(name, checkname) #name, &asn1_oid_id_pkix_pe_##name, check_##checkname
     { ext(proxyCertInfo, proxyCertInfo), M_C },
     { ext(authorityInfoAccess, authorityInfoAccess), M_C },
 #undef ext
-    { "US Fed PKI - PIV Interim", oid_id_uspkicommon_piv_interim,
+    { "US Fed PKI - PIV Interim", &asn1_oid_id_uspkicommon_piv_interim,
       check_Null, D_C },
-    { "Netscape cert comment", oid_id_netscape_cert_comment,
+    { "Netscape cert comment", &asn1_oid_id_netscape_cert_comment,
       check_Null, D_C },
     { NULL }
 };
@@ -948,7 +948,7 @@ hx509_validate_cert(hx509_context context,
 	for (i = 0; i < t->extensions->len; i++) {
 
 	    for (j = 0; check_extension[j].name; j++)
-		if (der_heim_oid_cmp((*check_extension[j].oid)(),
+		if (der_heim_oid_cmp(check_extension[j].oid,
 				     &t->extensions->val[i].extnID) == 0)
 		    break;
 	    if (check_extension[j].name == NULL) {
