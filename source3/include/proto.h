@@ -2341,6 +2341,15 @@ NTSTATUS cli_posix_symlink_recv(struct tevent_req *req);
 NTSTATUS cli_posix_symlink(struct cli_state *cli,
 			const char *oldname,
 			const char *newname);
+struct tevent_req *cli_posix_readlink_send(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct cli_state *cli,
+					const char *fname,
+					size_t len);
+NTSTATUS cli_posix_readlink_recv(struct tevent_req *req, struct cli_state *cli,
+				char *retpath, size_t len);
+NTSTATUS cli_posix_readlink(struct cli_state *cli, const char *fname,
+			char *linkpath, size_t len);
 struct tevent_req *cli_posix_hardlink_send(TALLOC_CTX *mem_ctx,
 					struct event_context *ev,
 					struct cli_state *cli,

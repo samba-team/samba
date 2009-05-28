@@ -4140,6 +4140,7 @@ static bool run_simple_posix_open_test(int dummy)
 	const char *sname = "posix:symlink";
 	const char *dname = "posix:dir";
 	char buf[10];
+	char namebuf[11];
 	uint16 major, minor;
 	uint32 caplow, caphigh;
 	uint16_t fnum1 = (uint16_t)-1;
@@ -4281,11 +4282,24 @@ static bool run_simple_posix_open_test(int dummy)
 	} else {
 		if (!check_error(__LINE__, cli1, ERRDOS, ERRbadpath,
 				NT_STATUS_OBJECT_PATH_NOT_FOUND)) {
+			printf("POSIX open of %s should have failed "
+				"with NT_STATUS_OBJECT_PATH_NOT_FOUND, "
+				"failed with %s instead.\n",
+				sname, cli_errstr(cli1));
 			goto out;
 		}
 	}
 
-	/* TODO. Add and test cli_posix_readlink() call. */
+	if (!NT_STATUS_IS_OK(cli_posix_readlink(cli1, sname, namebuf, sizeof(namebuf)))) {
+		printf("POSIX readlink on %s failed (%s)\n", sname, cli_errstr(cli1));
+		goto out;
+	}
+
+	if (strcmp(namebuf, fname) != 0) {
+		printf("POSIX readlink on %s failed to match name %s (read %s)\n",
+			sname, fname, namebuf);
+		goto out;
+	}
 
 	if (!NT_STATUS_IS_OK(cli_posix_rmdir(cli1, dname))) {
 		printf("POSIX rmdir failed (%s)\n", cli_errstr(cli1));
