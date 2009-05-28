@@ -6176,6 +6176,8 @@ static bool test_ManyObjects(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	uint32_t i;
 
+	struct policy_handle *handles = talloc_zero_array(tctx, struct policy_handle, num_total);
+	
 	/* query */
 
 	{
@@ -6208,29 +6210,25 @@ static bool test_ManyObjects(struct dcerpc_pipe *p,
 
 	for (i=0; i < num_total; i++) {
 
-		struct policy_handle handle;
 		const char *name = NULL;
-
-		ZERO_STRUCT(handle);
 
 		switch (which_ops) {
 		case TORTURE_SAMR_MANY_ACCOUNTS:
 			name = talloc_asprintf(tctx, "%s%04d", TEST_ACCOUNT_NAME, i);
-			ret &= test_CreateUser(p, tctx, domain_handle, name, &handle, domain_sid, 0, NULL, false);
+			ret &= test_CreateUser(p, tctx, domain_handle, name, &handles[i], domain_sid, 0, NULL, false);
 			break;
 		case TORTURE_SAMR_MANY_GROUPS:
 			name = talloc_asprintf(tctx, "%s%04d", TEST_GROUPNAME, i);
-			ret &= test_CreateDomainGroup(p, tctx, domain_handle, name, &handle, domain_sid, false);
+			ret &= test_CreateDomainGroup(p, tctx, domain_handle, name, &handles[i], domain_sid, false);
 			break;
 		case TORTURE_SAMR_MANY_ALIASES:
 			name = talloc_asprintf(tctx, "%s%04d", TEST_ALIASNAME, i);
-			ret &= test_CreateAlias(p, tctx, domain_handle, name, &handle, domain_sid, false);
+			ret &= test_CreateAlias(p, tctx, domain_handle, name, &handles[i], domain_sid, false);
 			break;
 		default:
 			return false;
 		}
-		if (!policy_handle_empty(&handle)) {
-			ret &= test_samr_handle_Close(p, tctx, &handle);
+		if (!policy_handle_empty(&handles[i])) {
 			num_created++;
 		}
 	}
@@ -6251,9 +6249,6 @@ static bool test_ManyObjects(struct dcerpc_pipe *p,
 		return false;
 	}
 
-	torture_assert_int_equal(tctx, num_enum, num_anounced + num_created,
-		"unexpected number of results returned in enum call");
-#if 0
 	/* TODO: dispinfo */
 
 	switch (which_ops) {
@@ -6267,9 +6262,40 @@ static bool test_ManyObjects(struct dcerpc_pipe *p,
 		return false;
 	}
 
+
+	/* delete */
+
+	for (i=0; i < num_total; i++) {
+
+		if (policy_handle_empty(&handles[i])) {
+			continue;
+		}
+
+		switch (which_ops) {
+		case TORTURE_SAMR_MANY_ACCOUNTS:
+			ret &= test_DeleteUser(p, tctx, &handles[i]);
+			break;
+		case TORTURE_SAMR_MANY_GROUPS:
+			ret &= test_DeleteDomainGroup(p, tctx, &handles[i]);
+			break;
+		case TORTURE_SAMR_MANY_ALIASES:
+			ret &= test_DeleteAlias(p, tctx, &handles[i]);
+			break;
+		default:
+			return false;
+		}
+		
+		ret &= test_samr_handle_Close(p, tctx, &handles[i]);
+	}
+
+	talloc_free(handles);
+
+#if 0
 	torture_assert_int_equal(tctx, num_disp, num_anounced + num_created,
 		"unexpected number of results returned in dispinfo call");
 #endif
+	torture_assert_int_equal(tctx, num_enum, num_anounced + num_created,
+		"unexpected number of results returned in enum call");
 	return ret;
 }
 
