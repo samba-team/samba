@@ -3043,17 +3043,16 @@ static int cmd_getfacl(void)
 		return 1;
 	}
 
-	if (!cli_unix_getfacl(targetcli, targetname, &rb_size, &retbuf)) {
+	if (!NT_STATUS_IS_OK(cli_posix_getfacl(targetcli, targetname, ctx, &rb_size, &retbuf))) {
 		d_printf("%s getfacl file %s\n",
 			cli_errstr(targetcli), src);
 		return 1;
 	}
 
 	/* ToDo : Print out the ACL values. */
-	if (SVAL(retbuf,0) != SMB_POSIX_ACL_VERSION || rb_size < 6) {
+	if (rb_size < 6 || SVAL(retbuf,0) != SMB_POSIX_ACL_VERSION) {
 		d_printf("getfacl file %s, unknown POSIX acl version %u.\n",
 			src, (unsigned int)CVAL(retbuf,0) );
-		SAFE_FREE(retbuf);
 		return 1;
 	}
 
@@ -3064,8 +3063,6 @@ static int cmd_getfacl(void)
 			src,
 			(unsigned int)(SMB_POSIX_ACL_HEADER_SIZE + SMB_POSIX_ACL_ENTRY_SIZE*(num_file_acls+num_dir_acls)),
 			(unsigned int)rb_size);
-
-		SAFE_FREE(retbuf);
 		return 1;
 	}
 
@@ -3150,7 +3147,6 @@ static int cmd_getfacl(void)
 		d_printf("%s\n", perms_to_string(permstring, perms));
 	}
 
-	SAFE_FREE(retbuf);
 	return 0;
 }
 

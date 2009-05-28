@@ -453,7 +453,6 @@ NTSTATUS cli_posix_readlink(struct cli_state *cli, const char *fname,
 	return status;
 }
 
-
 /****************************************************************************
  Hard link a file (UNIX extensions).
 ****************************************************************************/
@@ -624,58 +623,149 @@ static mode_t unix_filetype_from_wire(uint32_t wire_type)
  Do a POSIX getfacl (UNIX extensions).
 ****************************************************************************/
 
-bool cli_unix_getfacl(struct cli_state *cli, const char *name, size_t *prb_size, char **retbuf)
+struct getfacl_state {
+	uint16_t setup;
+	uint8_t *param;
+	uint32_t num_data;
+	uint8_t *data;
+};
+
+static void cli_posix_getfacl_done(struct tevent_req *subreq)
 {
-	unsigned int param_len = 0;
-	unsigned int data_len = 0;
-	uint16_t setup = TRANSACT2_QPATHINFO;
-	char *param;
-	size_t nlen = 2*(strlen(name)+1);
-	char *rparam=NULL, *rdata=NULL;
-	char *p;
+	struct tevent_req *req = tevent_req_callback_data(
+				subreq, struct tevent_req);
+	struct getfacl_state *state = tevent_req_data(req, struct getfacl_state);
+	NTSTATUS status;
 
-	param = SMB_MALLOC_ARRAY(char, 6+nlen+2);
-	if (!param) {
-		return false;
+	status = cli_trans_recv(subreq, state, NULL, NULL, NULL, NULL,
+			&state->data, &state->num_data);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+struct tevent_req *cli_posix_getfacl_send(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct cli_state *cli,
+					const char *fname)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct link_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state, struct getfacl_state);
+	if (req == NULL) {
+		return NULL;
 	}
 
-	p = param;
-	memset(p, '\0', 6);
-	SSVAL(p, 0, SMB_QUERY_POSIX_ACL);
-	p += 6;
-	p += clistr_push(cli, p, name, nlen, STR_TERMINATE);
-	param_len = PTR_DIFF(p, param);
+	/* Setup setup word. */
+	SSVAL(&state->setup, 0, TRANSACT2_QPATHINFO);
 
-	if (!cli_send_trans(cli, SMBtrans2,
-		NULL,                        /* name */
-		-1, 0,                       /* fid, flags */
-		&setup, 1, 0,                /* setup, length, max */
-		param, param_len, 2,         /* param, length, max */
-		NULL,  0, cli->max_xmit      /* data, length, max */
-		)) {
-		SAFE_FREE(param);
-		return false;
+	/* Setup param array. */
+	state->param = talloc_array(state, uint8_t, 6);
+	if (tevent_req_nomem(state->param, req)) {
+		return tevent_req_post(req, ev);
+	}
+	memset(state->param, '\0', 6);
+	SSVAL(state->param, 0, SMB_QUERY_POSIX_ACL);
+
+	state->param = trans2_bytes_push_str(state->param, cli_ucs2(cli), fname,
+				   strlen(fname)+1, NULL);
+
+	if (tevent_req_nomem(state->param, req)) {
+		return tevent_req_post(req, ev);
 	}
 
-	SAFE_FREE(param);
+	subreq = cli_trans_send(state,			/* mem ctx. */
+				ev,			/* event ctx. */
+				cli,			/* cli_state. */
+				SMBtrans2,		/* cmd. */
+				NULL,			/* pipe name. */
+				-1,			/* fid. */
+				0,			/* function. */
+				0,			/* flags. */
+				&state->setup,		/* setup. */
+				1,			/* num setup uint16_t words. */
+				0,			/* max returned setup. */
+				state->param,		/* param. */
+				talloc_get_size(state->param),	/* num param. */
+				2,			/* max returned param. */
+				NULL,			/* data. */
+				0,			/* num data. */
+				cli->max_xmit);		/* max returned data. */
 
-	if (!cli_receive_trans(cli, SMBtrans2,
-			&rparam, &param_len,
-			&rdata, &data_len)) {
-		return false;
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_posix_getfacl_done, req);
+	return req;
+}
+
+NTSTATUS cli_posix_getfacl_recv(struct tevent_req *req,
+				TALLOC_CTX *mem_ctx,
+				size_t *prb_size,
+				char **retbuf)
+{
+	struct getfacl_state *state = tevent_req_data(req, struct getfacl_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	*prb_size = (size_t)state->num_data;
+	*retbuf = (char *)talloc_move(mem_ctx, &state->data);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_posix_getfacl(struct cli_state *cli,
+			const char *fname,
+			TALLOC_CTX *mem_ctx,
+			size_t *prb_size,
+			char **retbuf)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status = NT_STATUS_OK;
+
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
 	}
 
-	if (data_len < 6) {
-		SAFE_FREE(rdata);
-		SAFE_FREE(rparam);
-		return false;
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
 	}
 
-	SAFE_FREE(rparam);
-	*retbuf = rdata;
-	*prb_size = (size_t)data_len;
+	req = cli_posix_getfacl_send(frame,
+				ev,
+				cli,
+				fname);
+	if (req == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
 
-	return true;
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
+	}
+
+	status = cli_posix_getfacl_recv(req, mem_ctx, prb_size, retbuf);
+
+ fail:
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
 }
 
 /****************************************************************************
