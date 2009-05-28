@@ -2167,7 +2167,7 @@ struct hx509cipher {
     const char *name;
     int flags;
 #define CIPHER_WEAK 1
-    const heim_oid *(*oid_func)(void);
+    const heim_oid *oid;
     const AlgorithmIdentifier *(*ai_func)(void);
     const EVP_CIPHER *(*evp_func)(void);
     int (*get_params)(hx509_context, const hx509_crypto,
@@ -2195,13 +2195,6 @@ static unsigned private_rc2_40_oid_data[] = { 127, 1 };
 
 static heim_oid asn1_oid_private_rc2_40 =
     { 2, private_rc2_40_oid_data };
-
-static const heim_oid *
-oid_private_rc2_40(void)
-{
-    return &asn1_oid_private_rc2_40;
-}
-
 
 /*
  *
@@ -2342,7 +2335,7 @@ static const struct hx509cipher ciphers[] = {
     {
 	"rc2-cbc",
 	CIPHER_WEAK,
-	oid_id_pkcs3_rc2_cbc,
+	&asn1_oid_id_pkcs3_rc2_cbc,
 	NULL,
 	EVP_rc2_cbc,
 	CMSRC2CBCParam_get,
@@ -2351,7 +2344,7 @@ static const struct hx509cipher ciphers[] = {
     {
 	"rc2-cbc",
 	CIPHER_WEAK,
-	oid_id_rsadsi_rc2_cbc,
+	&asn1_oid_id_rsadsi_rc2_cbc,
 	NULL,
 	EVP_rc2_cbc,
 	CMSRC2CBCParam_get,
@@ -2360,7 +2353,7 @@ static const struct hx509cipher ciphers[] = {
     {
 	"rc2-40-cbc",
 	CIPHER_WEAK,
-	oid_private_rc2_40,
+	&asn1_oid_private_rc2_40,
 	NULL,
 	EVP_rc2_40_cbc,
 	CMSRC2CBCParam_get,
@@ -2369,7 +2362,7 @@ static const struct hx509cipher ciphers[] = {
     {
 	"des-ede3-cbc",
 	0,
-	oid_id_pkcs3_des_ede3_cbc,
+	&asn1_oid_id_pkcs3_des_ede3_cbc,
 	NULL,
 	EVP_des_ede3_cbc,
 	CMSCBCParam_get,
@@ -2378,7 +2371,7 @@ static const struct hx509cipher ciphers[] = {
     {
 	"des-ede3-cbc",
 	0,
-	oid_id_rsadsi_des_ede3_cbc,
+	&asn1_oid_id_rsadsi_des_ede3_cbc,
 	hx509_crypto_des_rsdi_ede3_cbc,
 	EVP_des_ede3_cbc,
 	CMSCBCParam_get,
@@ -2387,7 +2380,7 @@ static const struct hx509cipher ciphers[] = {
     {
 	"aes-128-cbc",
 	0,
-	oid_id_aes_128_cbc,
+	&asn1_oid_id_aes_128_cbc,
 	hx509_crypto_aes128_cbc,
 	EVP_aes_128_cbc,
 	CMSCBCParam_get,
@@ -2396,7 +2389,7 @@ static const struct hx509cipher ciphers[] = {
     {
 	"aes-192-cbc",
 	0,
-	oid_id_aes_192_cbc,
+	&asn1_oid_id_aes_192_cbc,
 	NULL,
 	EVP_aes_192_cbc,
 	CMSCBCParam_get,
@@ -2405,7 +2398,7 @@ static const struct hx509cipher ciphers[] = {
     {
 	"aes-256-cbc",
 	0,
-	oid_id_aes_256_cbc,
+	&asn1_oid_id_aes_256_cbc,
 	hx509_crypto_aes256_cbc,
 	EVP_aes_256_cbc,
 	CMSCBCParam_get,
@@ -2419,7 +2412,7 @@ find_cipher_by_oid(const heim_oid *oid)
     int i;
 
     for (i = 0; i < sizeof(ciphers)/sizeof(ciphers[0]); i++)
-	if (der_heim_oid_cmp(oid, (*ciphers[i].oid_func)()) == 0)
+	if (der_heim_oid_cmp(oid, ciphers[i].oid) == 0)
 	    return &ciphers[i];
 
     return NULL;
@@ -2446,7 +2439,7 @@ hx509_crypto_enctype_by_name(const char *name)
     cipher = find_cipher_by_name(name);
     if (cipher == NULL)
 	return NULL;
-    return (*cipher->oid_func)();
+    return cipher->oid;
 }
 
 int
