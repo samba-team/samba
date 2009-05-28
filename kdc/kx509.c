@@ -207,7 +207,7 @@ build_certificate(krb5_context context,
 	spki.subjectPublicKey.data = key->data;
 	spki.subjectPublicKey.length = key->length * 8;
 
-	ret = der_copy_oid(oid_id_pkcs1_rsaEncryption(),
+	ret = der_copy_oid(&asn1_oid_id_pkcs1_rsaEncryption,
 			   &spki.algorithm.algorithm);
 
 	any.data = "\x05\x00";
