@@ -2872,7 +2872,7 @@ static int cmd_chmod(void)
 		return 1;
 	}
 
-	if (!cli_unix_chmod(targetcli, targetname, mode)) {
+	if (!NT_STATUS_IS_OK(cli_posix_chmod(targetcli, targetname, mode))) {
 		d_printf("%s chmod file %s 0%o\n",
 			cli_errstr(targetcli), src, (unsigned int)mode);
 		return 1;
@@ -3292,7 +3292,7 @@ static int cmd_chown(void)
 		return 1;
 	}
 
-	if (!cli_unix_chown(targetcli, targetname, uid, gid)) {
+	if (!NT_STATUS_IS_OK(cli_posix_chown(targetcli, targetname, uid, gid))) {
 		d_printf("%s chown file %s uid=%d, gid=%d\n",
 			cli_errstr(targetcli), src, (int)uid, (int)gid);
 		return 1;
