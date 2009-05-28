@@ -6335,9 +6335,14 @@ static bool test_OpenDomain(struct dcerpc_pipe *p, struct torture_context *tctx,
 	ret &= test_samr_handle_Close(p, tctx, handle);
 
 	switch (which_ops) {
-	case TORTURE_SAMR_USER_ATTRIBUTES:
-	case TORTURE_SAMR_USER_PRIVILEGES:
 	case TORTURE_SAMR_PASSWORDS:
+	case TORTURE_SAMR_USER_PRIVILEGES:
+		if (!torture_setting_bool(tctx, "samba3", false)) {
+			ret &= test_CreateUser2(p, tctx, &domain_handle, sid, which_ops, NULL);
+		}
+		ret &= test_CreateUser(p, tctx, &domain_handle, TEST_ACCOUNT_NAME, &user_handle, sid, which_ops, NULL, true);
+		break;
+	case TORTURE_SAMR_USER_ATTRIBUTES:
 		if (!torture_setting_bool(tctx, "samba3", false)) {
 			ret &= test_CreateUser2(p, tctx, &domain_handle, sid, which_ops, NULL);
 		}
