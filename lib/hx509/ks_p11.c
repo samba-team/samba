@@ -710,7 +710,7 @@ collect_cert(hx509_context context,
 	
 	_hx509_set_cert_attribute(context,
 				  cert,
-				  oid_id_pkcs_9_at_localKeyId(),
+				  &asn1_oid_id_pkcs_9_at_localKeyId,
 				  &data);
     }
 
