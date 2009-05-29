@@ -892,7 +892,7 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 	if (r->in.validation_level != 2 && r->in.validation_level != 3) {
 		DEBUG(0,("%s: bad validation_level value %d.\n",
 			fn, (int)r->in.validation_level));
-		return NT_STATUS_ACCESS_DENIED;
+		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
 	if (process_creds) {
