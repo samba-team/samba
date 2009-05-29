@@ -6284,8 +6284,6 @@ static bool test_ManyObjects(struct dcerpc_pipe *p,
 		default:
 			return false;
 		}
-		
-		ret &= test_samr_handle_Close(p, tctx, &handles[i]);
 	}
 
 	talloc_free(handles);
