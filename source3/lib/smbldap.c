@@ -389,23 +389,42 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 	return result;
 }
 
- bool smbldap_pull_sid(LDAP *ld, LDAPMessage *msg, const char *attrib,
-		       struct dom_sid *sid)
+ bool smbldap_talloc_single_blob(TALLOC_CTX *mem_ctx, LDAP *ld,
+				 LDAPMessage *msg, const char *attrib,
+				 DATA_BLOB *blob)
 {
 	struct berval **values;
-	bool ret = False;
 
 	values = ldap_get_values_len(ld, msg, attrib);
-
 	if (!values) {
 		return false;
 	}
 
-	if (values[0] != NULL) {
-		ret = sid_parse(values[0]->bv_val, values[0]->bv_len, sid);
+	if (ldap_count_values_len(values) != 1) {
+		DEBUG(10, ("Expected one value for %s, got %d\n", attrib,
+			   ldap_count_values_len(values)));
+		return false;
 	}
 
+	*blob = data_blob_talloc(mem_ctx, values[0]->bv_val,
+				 values[0]->bv_len);
 	ldap_value_free_len(values);
+
+	return (blob->data != NULL);
+}
+
+ bool smbldap_pull_sid(LDAP *ld, LDAPMessage *msg, const char *attrib,
+		       struct dom_sid *sid)
+{
+	DATA_BLOB blob;
+	bool ret;
+
+	if (!smbldap_talloc_single_blob(talloc_tos(), ld, msg, attrib,
+					&blob)) {
+		return false;
+	}
+	ret = sid_parse((char *)blob.data, blob.length, sid);
+	TALLOC_FREE(blob.data);
 	return ret;
 }
 
