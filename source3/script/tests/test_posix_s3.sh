@@ -47,15 +47,12 @@ rpc="$rpc RPC-SCHANNEL RPC-SCHANNEL2 RPC-BENCH-SCHANNEL1"
 
 local="LOCAL-NSS-WRAPPER"
 
-netapi="NETAPI-INITIALIZE NETAPI-USER"
-
-
 # NOTE: to enable the UNIX-WHOAMI test, we need to change the default share
 # config to allow guest access. I'm not sure whether this would break other
 # tests, so leaving it alone for now -- jpeach
 unix="UNIX-INFO2"
 
-tests="$base $raw $rpc $unix $local $netapi"
+tests="$base $raw $rpc $unix $local"
 
 if test "x$POSIX_SUBTESTS" != "x" ; then
 	tests="$POSIX_SUBTESTS"
