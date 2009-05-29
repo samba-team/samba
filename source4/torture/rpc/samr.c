@@ -2745,6 +2745,10 @@ static bool test_SamLogon(struct torture_context *tctx,
 	r.in.validation_level = 6;
 
 	status = dcerpc_netr_LogonSamLogonEx(p, tctx, &r);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS)) {
+		r.in.validation_level = 3;
+		status = dcerpc_netr_LogonSamLogonEx(p, tctx, &r);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_assert_ntstatus_equal(tctx, status, expected_result, "LogonSamLogonEx failed");
 		return true;
