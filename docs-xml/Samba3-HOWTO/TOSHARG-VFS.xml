@@ -276,7 +276,7 @@ quotasettings:	gid nolimit = no
 
 		<para>
 <indexterm><primary>logging</primary></indexterm>
-		This auditing tool is more felxible than most people readily will recognize. There are a number of ways
+		This auditing tool is more flexible than most people will readily recognize. There are a number of ways
 		by which useful logging information can be recorded.
 		</para>
 
