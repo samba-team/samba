@@ -617,15 +617,6 @@ failed:
 	return -1;	
 }
 
-/*
-  delete the socket on exit - called on destruction of autofree context
- */
-static int unlink_destructor(const char *name)
-{
-	unlink(name);
-	return 0;
-}
-
 static void sig_child_handler(struct event_context *ev,
 	struct signal_event *se, int signum, int count,
 	void *dont_care, 
@@ -694,7 +685,6 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 		DEBUG(DEBUG_ALERT,(__location__ " talloc_strdup failed.\n"));
 		exit(12);
 	}
-	talloc_set_destructor(domain_socket_name, unlink_destructor);	
 
 	ctdb->ev = event_context_init(NULL);
 
