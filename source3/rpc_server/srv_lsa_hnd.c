@@ -46,7 +46,7 @@ struct handle_list {
 
 /* This is the max handles across all instances of a pipe name. */
 #ifndef MAX_OPEN_POLS
-#define MAX_OPEN_POLS 1024
+#define MAX_OPEN_POLS 2048
 #endif
 
 /****************************************************************************
