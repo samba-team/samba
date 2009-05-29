@@ -57,6 +57,7 @@ _PUBLIC_ int torture_init(void)
 	extern NTSTATUS torture_rpc_init(void);
 	extern NTSTATUS torture_smb2_init(void);
 	extern NTSTATUS torture_net_init(void);
+	extern NTSTATUS torture_libnetapi_init(void);
 	extern NTSTATUS torture_raw_init(void);
 	extern NTSTATUS torture_unix_init(void);
 	extern NTSTATUS torture_winbind_init(void);
