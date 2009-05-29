@@ -230,6 +230,79 @@ static bool test_nwrap_group(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_nwrap_getgrouplist(struct torture_context *tctx,
+				    const char *user,
+				    gid_t gid,
+				    gid_t **gids_p,
+				    int *num_gids_p)
+{
+	int ret;
+	int num_groups = 0;
+	gid_t *groups = NULL;
+
+	torture_comment(tctx, "Testing getgrouplist: %s\n", user);
+
+	ret = getgrouplist(user, gid, NULL, &num_groups);
+	if (ret == -1 || num_groups != 0) {
+
+		groups = talloc_array(tctx, gid_t, num_groups);
+		torture_assert(tctx, groups, "out of memory\n");
+
+		ret = getgrouplist(user, gid, groups, &num_groups);
+	}
+
+	torture_assert(tctx, (ret != -1), "failed to call getgrouplist");
+
+	torture_comment(tctx, "%s is member in %d groups\n", user, num_groups);
+
+	if (gids_p) {
+		*gids_p = groups;
+	}
+	if (num_gids_p) {
+		*num_gids_p = num_groups;
+	}
+
+	return true;
+}
+
+static bool test_nwrap_membership(struct torture_context *tctx)
+{
+	const char *old_pwd = getenv("NSS_WRAPPER_PASSWD");
+	const char *old_group = getenv("NSS_WRAPPER_GROUP");
+	struct passwd *pwd;
+	size_t num_pwd;
+	int i;
+
+	if (!old_pwd || !old_group) {
+		torture_skip(tctx, "nothing to test\n");
+		return true;
+	}
+
+	torture_assert(tctx, test_nwrap_enum_passwd(tctx, &pwd, &num_pwd),
+						    "failed to enumerate passwd");
+
+	for (i=0; i < num_pwd; i++) {
+
+		int num_user_groups = 0;
+		gid_t *user_groups = NULL;
+		int g;
+
+		torture_assert(tctx, test_nwrap_getgrouplist(tctx,
+							     pwd[i].pw_name,
+							     pwd[i].pw_gid,
+							     &user_groups,
+							     &num_user_groups),
+							     "failed to test getgrouplist");
+
+		for (g=0; g < num_user_groups; g++) {
+			torture_assert(tctx, test_nwrap_getgrgid(tctx, user_groups[g]),
+				"failed to find the group the user is a member of");
+		}
+	}
+
+	return true;
+}
+
 static bool test_nwrap_env(struct torture_context *tctx)
 {
 	const char *old_pwd = getenv("NSS_WRAPPER_PASSWD");
@@ -253,6 +326,7 @@ struct torture_suite *torture_local_nss_wrapper(TALLOC_CTX *mem_ctx)
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "NSS-WRAPPER");
 
 	torture_suite_add_simple_test(suite, "env", test_nwrap_env);
+	torture_suite_add_simple_test(suite, "membership", test_nwrap_membership);
 
 	return suite;
 }
