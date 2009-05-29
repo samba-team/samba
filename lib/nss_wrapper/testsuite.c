@@ -116,75 +116,114 @@ static bool test_nwrap_getgrgid(struct torture_context *tctx,
 	return grp ? true : false;
 }
 
-
-static bool test_nwrap_passwd(struct torture_context *tctx)
+static bool test_nwrap_enum_passwd(struct torture_context *tctx,
+				   struct passwd **pwd_array_p,
+				   size_t *num_pwd_p)
 {
 	struct passwd *pwd;
-	const char **names = NULL;
-	uid_t *uids = NULL;
-	int num_names = 0;
-	size_t num_uids = 0;
-	int i;
+	struct passwd *pwd_array = NULL;
+	size_t num_pwd = 0;
 
 	torture_comment(tctx, "Testing setpwent\n");
 	setpwent();
 
-	while ((pwd = getpwent())) {
+	while ((pwd = getpwent()) != NULL) {
 		torture_comment(tctx, "Testing getpwent\n");
 
-		if (pwd) {
-			print_passwd(pwd);
-			add_string_to_array(tctx, pwd->pw_name, &names, &num_names);
-			add_uid_to_array_unique(tctx, pwd->pw_uid, &uids, &num_uids);
+		print_passwd(pwd);
+		if (pwd_array_p && num_pwd_p) {
+			pwd_array = talloc_realloc(tctx, pwd_array, struct passwd, num_pwd+1);
+			torture_assert(tctx, pwd_array, "out of memory");
+			pwd_array[num_pwd].pw_name = talloc_strdup(tctx, pwd->pw_name);
+			pwd_array[num_pwd].pw_uid = pwd->pw_uid;
+			pwd_array[num_pwd].pw_gid = pwd->pw_gid;
+			num_pwd++;
 		}
 	}
 
 	torture_comment(tctx, "Testing endpwent\n");
 	endpwent();
 
-	torture_assert_int_equal(tctx, num_names, num_uids, "invalid results");
+	if (pwd_array_p) {
+		*pwd_array_p = pwd_array;
+	}
+	if (num_pwd_p) {
+		*num_pwd_p = num_pwd;
+	}
 
-	for (i=0; i < num_names; i++) {
-		torture_assert(tctx, test_nwrap_getpwnam(tctx, names[i]),
+	return true;
+}
+
+static bool test_nwrap_passwd(struct torture_context *tctx)
+{
+	int i;
+	struct passwd *pwd;
+	size_t num_pwd;
+
+	torture_assert(tctx, test_nwrap_enum_passwd(tctx, &pwd, &num_pwd),
+						    "failed to enumerate passwd");
+
+	for (i=0; i < num_pwd; i++) {
+		torture_assert(tctx, test_nwrap_getpwnam(tctx, pwd[i].pw_name),
 			"failed to call getpwnam for enumerated user");
-		torture_assert(tctx, test_nwrap_getpwuid(tctx, uids[i]),
+		torture_assert(tctx, test_nwrap_getpwuid(tctx, pwd[i].pw_uid),
 			"failed to call getpwuid for enumerated user");
 	}
 
 	return true;
 }
 
-static bool test_nwrap_group(struct torture_context *tctx)
+static bool test_nwrap_enum_group(struct torture_context *tctx,
+				  struct group **grp_array_p,
+				  size_t *num_grp_p)
 {
 	struct group *grp;
-	const char **names = NULL;
-	gid_t *gids = NULL;
-	int num_names = 0;
-	size_t num_gids = 0;
-	int i;
+	struct group *grp_array = NULL;
+	size_t num_grp = 0;
 
 	torture_comment(tctx, "Testing setgrent\n");
 	setgrent();
 
-	do {
+	while ((grp = getgrent()) != NULL) {
 		torture_comment(tctx, "Testing getgrent\n");
-		grp = getgrent();
-		if (grp) {
-			print_group(grp);
-			add_string_to_array(tctx, grp->gr_name, &names, &num_names);
-			add_gid_to_array_unique(tctx, grp->gr_gid, &gids, &num_gids);
+
+		print_group(grp);
+		if (grp_array_p && num_grp_p) {
+			grp_array = talloc_realloc(tctx, grp_array, struct group, num_grp+1);
+			torture_assert(tctx, grp_array, "out of memory");
+			grp_array[num_grp].gr_name = talloc_strdup(tctx, grp->gr_name);
+			grp_array[num_grp].gr_gid = grp->gr_gid;
+			num_grp++;
 		}
-	} while (grp);
+	}
 
 	torture_comment(tctx, "Testing endgrent\n");
 	endgrent();
 
-	torture_assert_int_equal(tctx, num_names, num_gids, "invalid results");
+	if (grp_array_p) {
+		*grp_array_p = grp_array;
+	}
+	if (num_grp_p) {
+		*num_grp_p = num_grp;
+	}
 
-	for (i=0; i < num_names; i++) {
-		torture_assert(tctx, test_nwrap_getgrnam(tctx, names[i]),
+
+	return true;
+}
+
+static bool test_nwrap_group(struct torture_context *tctx)
+{
+	int i;
+	struct group *grp;
+	size_t num_grp;
+
+	torture_assert(tctx, test_nwrap_enum_group(tctx, &grp, &num_grp),
+						   "failed to enumerate group");
+
+	for (i=0; i < num_grp; i++) {
+		torture_assert(tctx, test_nwrap_getgrnam(tctx, grp[i].gr_name),
 			"failed to call getgrnam for enumerated user");
-		torture_assert(tctx, test_nwrap_getgrgid(tctx, gids[i]),
+		torture_assert(tctx, test_nwrap_getgrgid(tctx, grp[i].gr_gid),
 			"failed to call getgrgid for enumerated user");
 	}
 
