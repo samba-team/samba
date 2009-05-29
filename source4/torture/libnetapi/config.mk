@@ -10,6 +10,7 @@ PRIVATE_DEPENDENCIES = \
 # End SUBSYSTEM TORTURE_LIBNETAPI
 #################################
 
-TORTURE_LIBNETAPI_OBJ_FILES = $(addprefix $(torturesrcdir)/libnetapi/, libnetapi.o)
+TORTURE_LIBNETAPI_OBJ_FILES = $(addprefix $(torturesrcdir)/libnetapi/, libnetapi.o \
+					libnetapi_user.o)
 
 $(eval $(call proto_header_template,$(torturesrcdir)/libnetapi/proto.h,$(TORTURE_LIBNETAPI_OBJ_FILES:.o=.c)))
