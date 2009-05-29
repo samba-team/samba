@@ -1,7 +1,7 @@
 /*
    Unix SMB/CIFS implementation.
    Headers for the async winbind client library
-   Copyright (C) Kai Blin 2009
+   Copyright (C) Volker Lendecke 2008
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
