@@ -224,9 +224,9 @@ interface security
 	const int DOMAIN_RID_LOGON                 = 9;
 	const int DOMAIN_RID_ADMINISTRATOR         = 500;
 	const int DOMAIN_RID_GUEST                 = 501;
+	const int DOMAIN_RID_KRBTGT                = 502;
 	const int DOMAIN_RID_ADMINS                = 512;
 	const int DOMAIN_RID_USERS                 = 513;
-	const int DOMAIN_RID_KRBTGT                = 514;
 	const int DOMAIN_RID_DOMAIN_MEMBERS        = 515;
 	const int DOMAIN_RID_DCS                   = 516;
 	const int DOMAIN_RID_CERT_ADMINS           = 517;
