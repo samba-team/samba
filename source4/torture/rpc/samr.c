@@ -2674,7 +2674,7 @@ static bool test_QueryUserInfo_pwdlastset(struct dcerpc_pipe *p,
 }
 
 static bool test_SamLogon(struct torture_context *tctx,
-			  struct dcerpc_pipe *p, 
+			  struct dcerpc_pipe *p,
 			  struct cli_credentials *test_credentials,
 			  NTSTATUS expected_result)
 {
@@ -2908,7 +2908,7 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 	b->flags &= ~DCERPC_AUTH_OPTIONS;
 	b->flags |= DCERPC_SCHANNEL | DCERPC_SIGN | DCERPC_SCHANNEL_128;
 
-	status = dcerpc_pipe_connect_b(tctx, &np, b, 
+	status = dcerpc_pipe_connect_b(tctx, &np, b,
 				       &ndr_table_netlogon,
 				       machine_credentials, tctx->ev, tctx->lp_ctx);
 
@@ -6181,7 +6181,7 @@ static bool test_ManyObjects(struct dcerpc_pipe *p,
 	uint32_t i;
 
 	struct policy_handle *handles = talloc_zero_array(tctx, struct policy_handle, num_total);
-	
+
 	/* query */
 
 	{
