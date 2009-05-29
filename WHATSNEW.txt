@@ -224,6 +224,122 @@ Changes since 3.4.0pre1
 -----------------------
 
 
+o   Jeremy Allison <jra@samba.org>
+    * BUG 6291: Fix 'force user'.
+    * BUG 6313: ldapsam_update_sam_account() crashes while doing talloc_free on
+      malloced memory.
+    * BUG 6315: Fix smbd crashes when doing vfs_full_audit on IPC$ close event.
+    * BUG 6330: Fix DFS on AIX.
+    * Fix a bunch of compiler warnings about wrong format types.
+    * Fix the core of the SAMR access functions.
+    * Fix SAMR server for winbindd access.
+
+
+o   Michael Adam <obnox@samba.org>
+    * BUG 4271: testparm should not print includes.
+    * BUG 6292: Update config.guess from gnu.org.
+    * BUG 6320: Handle registry config source in file_list.
+    * BUG 6371: Unsuccessful 'net conf setparm' leaves empty share.
+    * BUG 6387: Fix a crash bug in idmap_ldap_unixids_to_sids.
+    * BUG 6415: Filter out of range mappings in default idmap config
+      (idmap_tdb).
+    * BUG 6416: Filter out of range mappings in default idmap config
+      (idmap_tdb2).
+    * BUG 6417: Filter out of range mappings in default idmap config
+      (idmap_ldap).
+    * Add dbwrap_tool - a tdb tool that is CTDB-aware.
+    * Hide "config backend" from swat.
+    * Fix linking with --disable-shared-libs.
+
+
+o   Kai Blin <kai@samba.org>
+    * BUG #6357: Use Samba default command line arguments in 'net'.
+
+
+o   Steven Danneman <steven.danneman@isilon.com>
+    * Fix issue with missing entries when enumerating directories.
+    * Map NULL domains to our global sam name.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 5859: Fix renaming of samr objects failed due to samr setuserinfo
+      access checks.
+    * BUG 6099: Fix NETLOGON credential chain.
+    * BUG 6253: Use correct value for password expiry calculation.
+    * BUG 6309: Support remote unjoining of Windows 2003 or greater.
+    * BUG 6340: Don't segfault when cleartext trustdom pwd could not be
+      retrieved.
+    * BUG 6372: usermanager only displaying 1024 groups and aliases.
+    * Fix driver upload for Xerox 4110 PS printer driver.
+    * Add "net dom renamecomputer" to rename machines in a domain.
+    * Inspect the correct computername string before enabling/disabling the
+      change button in netdomjoin-gui.
+    * Fix join prompt dialog test in netdomjoin-gui.
+    * Only gray out labels when not root and not connecting to remote
+      machines (netdomjoin-gui).
+    * Allow to switch between workgroups/domains with the same name
+      (netdomjoin-gui).
+    * Add NetShutdownInit and NetShutdownAbort.
+    * Fix samr access checks.
+    * Add a security model to LSA.
+
+
+o   Geza Gemes <geza@kzsdabas.hu>
+    * BUG 6136: New AFS syscall conventions.
+
+
+o   Ole Hansen <ole@redvw.com>
+    * BUG 6359: smbclient -L does not list workgroup for hosts with both IPv4
+      and IPv6 addresses
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 4831: Don't call openlog() or closelog() from pam_smbpass.
+    * Also handle DirX return codes.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 5681: Do not limit the number of network interfaces.
+    * BUG 6157: Fix handling of multi-value attribute "uid".
+    * BUG 6302: Give the VFS a chance to read from 0-byte files.
+    * BUG 6336: Fix segfault in 'net groupmap set'.
+    * BUG 6361: Make --rcfile work in smbget.
+    * Do not crash in ctdbd_traverse if ctdbd is not around.
+    * Fix Coverity ID 897.
+    * Fix a race condition in vfs_aio_fork with gpfs share modes.
+    * Fix bug disclosed by lock8 torture test.
+    * Fix a race condition in winbind leading to a panic.
+    * Attempt to fix a Debian build problem.
+
+
+o   Jim McDonough <jmcd@samba.org>
+    * Detect tight loop in tdb_find().
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 2346: Fix posix ACLs when setting an ACL without explicit ACE for the
+      owner.
+
+
+o   Tim Prouty <tprouty@samba.org>
+    * Fix chained sesssetupAndX/tconn messages.
+    * Fix strict locking with chained reads.
+    * Fix two bugs in sendfile.
+
+
+o   Slava Semushin <php-coder@altlinux.ru>
+    * Fix memory leak.
+    * Fix file descriptor leak.
+
+
+o   Aravind Srinivasan <aravind.srinivasan@isilon.com>
+    * Fallback to the legacy sid_to_(uid|gid) instead of returning NULL.
+    * Always allocate memory in dptr_ReadDirName.
+
+
+o   Marc VanHeyningen <marc.vanheyningen@isilon.com>
+    * Zero an uninitialized array.
+    * Allow child processes to exit gracefully if we are out of fds.
 
 
 ######################################################################
