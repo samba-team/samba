@@ -46,6 +46,7 @@ int nwrap_getpwent_r(struct passwd *pwbuf, char *buf,
 		     size_t buflen, struct passwd **pwbufp);
 void nwrap_endpwent(void);
 int nwrap_initgroups(const char *user, gid_t group);
+int nwrap_getgrouplist(const char *user, gid_t group, gid_t *groups, int *ngroups);
 struct group *nwrap_getgrnam(const char *name);
 int nwrap_getgrnam_r(const char *name, struct group *gbuf,
 		     char *buf, size_t buflen, struct group **gbufp);
@@ -119,6 +120,11 @@ void nwrap_endgrent(void);
 #undef initgroups
 #endif
 #define initgroups	nwrap_initgroups
+
+#ifdef getgrouplist
+#undef getgrouplist
+#endif
+#define getgrouplist	nwrap_getgrouplist
 
 #ifdef getgrnam
 #undef getgrnam
