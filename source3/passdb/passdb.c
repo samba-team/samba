@@ -649,7 +649,7 @@ NTSTATUS local_password_change(const char *user_name,
 	uint32_t rid;
 	NTSTATUS result;
 	bool user_exists;
-	int ret;
+	int ret = -1;
 
 	*pp_err_str = NULL;
 	*pp_msg_str = NULL;
