@@ -3092,7 +3092,7 @@ static bool run_deletetest(int dummy)
 		goto fail;
 	}
 
-	if (!cli_nt_delete_on_close(cli1, fnum1, True)) {
+	if (!NT_STATUS_IS_OK(cli_nt_delete_on_close(cli1, fnum1, true))) {
 		printf("[2] setting delete_on_close failed (%s)\n", cli_errstr(cli1));
 		correct = False;
 		goto fail;
@@ -3145,7 +3145,7 @@ static bool run_deletetest(int dummy)
 		goto fail;
 	}
 
-	if (!cli_nt_delete_on_close(cli1, fnum1, True)) {
+	if (!NT_STATUS_IS_OK(cli_nt_delete_on_close(cli1, fnum1, true))) {
 		printf("[3] setting delete_on_close failed (%s)\n", cli_errstr(cli1));
 		correct = False;
 		goto fail;
@@ -3201,7 +3201,7 @@ static bool run_deletetest(int dummy)
 		goto fail;
 	}
 
-	if (!cli_nt_delete_on_close(cli1, fnum1, True)) {
+	if (!NT_STATUS_IS_OK(cli_nt_delete_on_close(cli1, fnum1, true))) {
 		printf("[4] setting delete_on_close failed (%s)\n", cli_errstr(cli1));
 		correct = False;
 		goto fail;
@@ -3235,7 +3235,7 @@ static bool run_deletetest(int dummy)
 
 	/* This should fail - only allowed on NT opens with DELETE access. */
 
-	if (cli_nt_delete_on_close(cli1, fnum1, True)) {
+	if (NT_STATUS_IS_OK(cli_nt_delete_on_close(cli1, fnum1, true))) {
 		printf("[5] setting delete_on_close on OpenX file succeeded - should fail !\n");
 		correct = False;
 		goto fail;
@@ -3263,7 +3263,7 @@ static bool run_deletetest(int dummy)
 
 	/* This should fail - only allowed on NT opens with DELETE access. */
 
-	if (cli_nt_delete_on_close(cli1, fnum1, True)) {
+	if (NT_STATUS_IS_OK(cli_nt_delete_on_close(cli1, fnum1, true))) {
 		printf("[6] setting delete_on_close on file with no delete access succeeded - should fail !\n");
 		correct = False;
 		goto fail;
@@ -3288,13 +3288,13 @@ static bool run_deletetest(int dummy)
 		goto fail;
 	}
 
-	if (!cli_nt_delete_on_close(cli1, fnum1, True)) {
+	if (!NT_STATUS_IS_OK(cli_nt_delete_on_close(cli1, fnum1, true))) {
 		printf("[7] setting delete_on_close on file failed !\n");
 		correct = False;
 		goto fail;
 	}
 
-	if (!cli_nt_delete_on_close(cli1, fnum1, False)) {
+	if (!NT_STATUS_IS_OK(cli_nt_delete_on_close(cli1, fnum1, false))) {
 		printf("[7] unsetting delete_on_close on file failed !\n");
 		correct = False;
 		goto fail;
@@ -3350,7 +3350,7 @@ static bool run_deletetest(int dummy)
 		goto fail;
 	}
 
-	if (!cli_nt_delete_on_close(cli1, fnum1, True)) {
+	if (!NT_STATUS_IS_OK(cli_nt_delete_on_close(cli1, fnum1, true))) {
 		printf("[8] setting delete_on_close on file failed !\n");
 		correct = False;
 		goto fail;
@@ -3639,7 +3639,7 @@ static bool run_rename(int dummy)
 		printf("Fourth open failed - %s\n", cli_errstr(cli1));
 		return False;
 	}
-	if (!cli_nt_delete_on_close(cli1, fnum2, True)) {
+	if (!NT_STATUS_IS_OK(cli_nt_delete_on_close(cli1, fnum2, true))) {
 		printf("[8] setting delete_on_close on file failed !\n");
 		return False;
 	}

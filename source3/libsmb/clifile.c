@@ -1853,6 +1853,135 @@ NTSTATUS cli_rmdir(struct cli_state *cli, const char *dname)
  Set or clear the delete on close flag.
 ****************************************************************************/
 
+struct doc_state {
+	uint16_t setup;
+	uint8_t param[6];
+	uint8_t data[1];
+};
+
+static void cli_nt_delete_on_close_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+				subreq, struct tevent_req);
+	struct doc_state *state = tevent_req_data(req, struct doc_state);
+	NTSTATUS status;
+
+	status = cli_trans_recv(subreq, state, NULL, NULL, NULL, NULL, NULL, NULL);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+struct tevent_req *cli_nt_delete_on_close_send(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct cli_state *cli,
+					uint16_t fnum,
+					bool flag)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct doc_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state, struct doc_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	/* Setup setup word. */
+	SSVAL(&state->setup, 0, TRANSACT2_SETFILEINFO);
+
+	/* Setup param array. */
+	memset(state->param, '\0', 6);
+	SSVAL(state->param,0,fnum);
+	SSVAL(state->param,2,SMB_SET_FILE_DISPOSITION_INFO);
+
+	/* Setup data array. */
+	SCVAL(&state->data[0], 0, flag ? 1 : 0);
+
+	subreq = cli_trans_send(state,			/* mem ctx. */
+				ev,			/* event ctx. */
+				cli,			/* cli_state. */
+				SMBtrans2,		/* cmd. */
+				NULL,			/* pipe name. */
+				-1,			/* fid. */
+				0,			/* function. */
+				0,			/* flags. */
+				&state->setup,		/* setup. */
+				1,			/* num setup uint16_t words. */
+				0,			/* max returned setup. */
+				state->param,		/* param. */
+				6,			/* num param. */
+				2,			/* max returned param. */
+				state->data,		/* data. */
+				1,			/* num data. */
+				0);			/* max returned data. */
+
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_nt_delete_on_close_done, req);
+	return req;
+}
+
+NTSTATUS cli_nt_delete_on_close_recv(struct tevent_req *req)
+{
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_nt_delete_on_close(struct cli_state *cli, uint16_t fnum, bool flag)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status = NT_STATUS_OK;
+
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	req = cli_nt_delete_on_close_send(frame,
+				ev,
+				cli,
+				fnum,
+				flag);
+	if (req == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
+	}
+
+	status = cli_nt_delete_on_close_recv(req);
+
+ fail:
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
+}
+
+#if 0
 int cli_nt_delete_on_close(struct cli_state *cli, uint16_t fnum, bool flag)
 {
 	unsigned int data_len = 1;
@@ -1889,6 +2018,7 @@ int cli_nt_delete_on_close(struct cli_state *cli, uint16_t fnum, bool flag)
 
 	return true;
 }
+#endif
 
 struct cli_ntcreate_state {
 	uint16_t vwv[24];

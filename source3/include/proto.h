@@ -2442,7 +2442,13 @@ struct tevent_req *cli_rmdir_send(TALLOC_CTX *mem_ctx,
 				  const char *dname);
 NTSTATUS cli_rmdir_recv(struct tevent_req *req);
 NTSTATUS cli_rmdir(struct cli_state *cli, const char *dname);
-int cli_nt_delete_on_close(struct cli_state *cli, uint16_t fnum, bool flag);
+struct tevent_req *cli_nt_delete_on_close_send(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct cli_state *cli,
+					uint16_t fnum,
+					bool flag);
+NTSTATUS cli_nt_delete_on_close_recv(struct tevent_req *req);
+NTSTATUS cli_nt_delete_on_close(struct cli_state *cli, uint16_t fnum, bool flag);
 struct tevent_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
 				     struct event_context *ev,
 				     struct cli_state *cli,
