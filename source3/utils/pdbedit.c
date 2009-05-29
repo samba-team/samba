@@ -630,7 +630,7 @@ static int new_user(const char *username, const char *fullname,
 
 	status = local_password_change(username, flags, pwd1, &err, &msg);
 	if (!NT_STATUS_IS_OK(status)) {
-		if (err) fprintf(stderr, err);
+		if (err) fprintf(stderr, "%s", err);
 		ret = -1;
 		goto done;
 	}
@@ -738,7 +738,7 @@ static int new_machine(const char *machinename)
 		print_user_info(name, True, False);
 		ret = 0;
 	} else {
-		if (err) fprintf(stderr, err);
+		if (err) fprintf(stderr, "%s", err);
 		ret = -1;
 	}
 
