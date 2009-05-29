@@ -20,6 +20,21 @@
 
 #include "support.h"
 
+#if defined(HAVE_SECURITY_PAM_EXT_H)
+#include <security/pam_ext.h>
+#elif defined(HAVE_PAM_PAM_EXT_H)
+#include <pam/pam_ext.h>
+#endif
+
+#if defined(HAVE_SECURITY__PAM_MACROS_H)
+#include <security/_pam_macros.h>
+#elif defined(HAVE_PAM__PAM_MACROS_H)
+#include <pam/_pam_macros.h>
+#endif
+
+#ifdef HAVE_SYSLOG_H
+#include <syslog.h>
+#endif
 
 #define _pam_overwrite(x)        \
 do {                             \
