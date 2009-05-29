@@ -626,8 +626,8 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 
 		struct ip_service_name *r = &dclist[count];
 
-		r->port = dcs[count].port;
-		r->hostname = dcs[count].hostname;
+		r->port = dcs[i].port;
+		r->hostname = dcs[i].hostname;
 
 		/* If we don't have an IP list for a name, lookup it up */
 
