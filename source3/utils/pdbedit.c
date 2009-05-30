@@ -1,21 +1,21 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    passdb editing frontend
-   
-   Copyright (C) Simo Sorce      2000
-   Copyright (C) Andrew Bartlett 2001   
+
+   Copyright (C) Simo Sorce      2000-2009
+   Copyright (C) Andrew Bartlett 2001
    Copyright (C) Jelmer Vernooij 2002
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -58,9 +58,9 @@
  Add all currently available users to another db
  ********************************************************/
 
-static int export_database (struct pdb_methods *in, 
-                            struct pdb_methods *out, 
-                            const char *username) 
+static int export_database (struct pdb_methods *in,
+                            struct pdb_methods *out,
+                            const char *username)
 {
 	NTSTATUS status;
 	struct pdb_search *u_search;
@@ -149,13 +149,13 @@ static int export_database (struct pdb_methods *in,
  Add all currently available group mappings to another db
  ********************************************************/
 
-static int export_groups (struct pdb_methods *in, struct pdb_methods *out) 
+static int export_groups (struct pdb_methods *in, struct pdb_methods *out)
 {
 	GROUP_MAP *maps = NULL;
 	size_t i, entries = 0;
 	NTSTATUS status;
 
-	status = in->enum_group_mapping(in, get_global_sam_sid(), 
+	status = in->enum_group_mapping(in, get_global_sam_sid(),
 			SID_NAME_DOM_GRP, &maps, &entries, False);
 
 	if ( NT_STATUS_IS_ERR(status) ) {
@@ -176,7 +176,7 @@ static int export_groups (struct pdb_methods *in, struct pdb_methods *out)
  Reset account policies to their default values and remove marker
  ********************************************************/
 
-static int reinit_account_policies (void) 
+static int reinit_account_policies (void)
 {
 	int i;
 
@@ -261,31 +261,31 @@ static int print_sam_info (struct samu *sam_pwent, bool verbosity, bool smbpwdst
 		printf ("Munged dial:          %s\n", pdb_get_munged_dial(sam_pwent));
 
 		tmp = pdb_get_logon_time(sam_pwent);
-		printf ("Logon time:           %s\n", 
+		printf ("Logon time:           %s\n",
 				tmp ? http_timestring(talloc_tos(), tmp) : "0");
 
 		tmp = pdb_get_logoff_time(sam_pwent);
-		printf ("Logoff time:          %s\n", 
+		printf ("Logoff time:          %s\n",
 				tmp ? http_timestring(talloc_tos(), tmp) : "0");
 
 		tmp = pdb_get_kickoff_time(sam_pwent);
-		printf ("Kickoff time:         %s\n", 
+		printf ("Kickoff time:         %s\n",
 				tmp ? http_timestring(talloc_tos(), tmp) : "0");
 
 		tmp = pdb_get_pass_last_set_time(sam_pwent);
-		printf ("Password last set:    %s\n", 
+		printf ("Password last set:    %s\n",
 				tmp ? http_timestring(talloc_tos(), tmp) : "0");
 
 		tmp = pdb_get_pass_can_change_time(sam_pwent);
-		printf ("Password can change:  %s\n", 
+		printf ("Password can change:  %s\n",
 				tmp ? http_timestring(talloc_tos(), tmp) : "0");
 
 		tmp = pdb_get_pass_must_change_time(sam_pwent);
-		printf ("Password must change: %s\n", 
+		printf ("Password must change: %s\n",
 				tmp ? http_timestring(talloc_tos(), tmp) : "0");
 
 		tmp = pdb_get_bad_password_time(sam_pwent);
-		printf ("Last bad password   : %s\n", 
+		printf ("Last bad password   : %s\n",
 				tmp ? http_timestring(talloc_tos(), tmp) : "0");
 		printf ("Bad password count  : %d\n",
 			pdb_get_bad_password_count(sam_pwent));
@@ -311,7 +311,7 @@ static int print_sam_info (struct samu *sam_pwent, bool verbosity, bool smbpwdst
 		       (uint32)convert_time_t_to_uint32(pdb_get_pass_last_set_time(sam_pwent)));
 	} else {
 		uid = nametouid(pdb_get_username(sam_pwent));
-		printf ("%s:%lu:%s\n", pdb_get_username(sam_pwent), (unsigned long)uid,	
+		printf ("%s:%lu:%s\n", pdb_get_username(sam_pwent), (unsigned long)uid,
 			pdb_get_fullname(sam_pwent));
 	}
 
