@@ -497,8 +497,14 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 					goto fail;
 				}
 
-				/* ENOENT is the only valid error here. */
-				if ((errno != 0) && (errno != ENOENT)) {
+				/*
+				 * ENOENT/EACCESS are the only valid errors
+				 * here. EACCESS needs handling here for
+				 * "dropboxes", i.e. directories where users
+				 * can only put stuff with permission -wx.
+				 */
+				if ((errno != 0) && (errno != ENOENT)
+				    && (errno != EACCES)) {
 					/*
 					 * ENOTDIR and ELOOP both map to
 					 * NT_STATUS_OBJECT_PATH_NOT_FOUND
@@ -508,12 +514,11 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 							errno == ELOOP) {
 						result =
 						NT_STATUS_OBJECT_PATH_NOT_FOUND;
-						goto fail;
-					} else if (errno != EACCES) {
+					} else {
 						result =
 						map_nt_error_from_unix(errno);
-						goto fail;
 					}
+					goto fail;
 				}
 
 				/*
