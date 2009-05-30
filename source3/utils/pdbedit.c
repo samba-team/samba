@@ -53,6 +53,25 @@
 #define MASK_ALWAYS_GOOD	0x0000001F
 #define MASK_USER_GOOD		0x00405FE0
 
+static int get_sid_from_cli_string(DOM_SID *sid, const char *str_sid)
+{
+	uint32_t rid;
+
+	if (!string_to_sid(sid, str_sid)) {
+		/* not a complete sid, may be a RID,
+		 * try building a SID */
+
+		if (sscanf(str_sid, "%u", &rid) != 1) {
+			fprintf(stderr, "Error passed string is not "
+					"a complete SID or RID!\n");
+			return -1;
+		}
+		sid_copy(sid, get_global_sam_sid());
+		sid_append_rid(sid, rid);
+	}
+
+	return 0;
+}
 
 /*********************************************************
  Add all currently available users to another db
@@ -484,7 +503,6 @@ static int set_user_info(const char *username, const char *fullname,
 	uint32_t not_settable;
 	uint32_t new_flags;
 	DOM_SID u_sid;
-	int u_rid;
 	bool ret;
 
 	sam_pwent = samu_new(NULL);
@@ -548,16 +566,9 @@ static int set_user_info(const char *username, const char *fullname,
 				  PDB_CHANGED);
 	}
 	if (user_sid) {
-		if (!string_to_sid(&u_sid, user_sid)) {
-			/* not a complete sid, may be a RID,
-			 * try building a SID */
-
-			if (sscanf(user_sid, "%d", &u_rid) != 1) {
-				fprintf(stderr, "Error passed string is not a complete user SID or RID!\n");
-				return -1;
-			}
-			sid_copy(&u_sid, get_global_sam_sid());
-			sid_append_rid(&u_sid, u_rid);
+		if (get_sid_from_cli_string(&u_sid, user_sid)) {
+			fprintf(stderr, "Failed to parse SID\n");
+			return -1;
 		}
 		pdb_set_user_sid(sam_pwent, &u_sid, PDB_CHANGED);
 	}
@@ -578,6 +589,93 @@ static int set_user_info(const char *username, const char *fullname,
 	return 0;
 }
 
+static int set_machine_info(const char *machinename,
+			    const char *account_control,
+			    const char *machine_sid)
+{
+	struct samu *sam_pwent = NULL;
+	TALLOC_CTX *tosctx;
+	uint32_t acb_flags;
+	uint32_t not_settable;
+	uint32_t new_flags;
+	DOM_SID m_sid;
+	char *name;
+	int len;
+	bool ret;
+
+	len = strlen(machinename);
+	if (len == 0) {
+		fprintf(stderr, "No machine name given\n");
+		return -1;
+	}
+
+	tosctx = talloc_tos();
+	if (!tosctx) {
+		fprintf(stderr, "Out of memory!\n");
+		return -1;
+	}
+
+	sam_pwent = samu_new(tosctx);
+	if (!sam_pwent) {
+		return 1;
+	}
+
+	if (machinename[len-1] == '$') {
+		name = talloc_strdup(sam_pwent, machinename);
+	} else {
+		name = talloc_asprintf(sam_pwent, "%s$", machinename);
+	}
+	if (!name) {
+		fprintf(stderr, "Out of memory!\n");
+		TALLOC_FREE(sam_pwent);
+		return -1;
+	}
+
+	strlower_m(name);
+
+	ret = pdb_getsampwnam(sam_pwent, name);
+	if (!ret) {
+		fprintf (stderr, "Username not found!\n");
+		TALLOC_FREE(sam_pwent);
+		return -1;
+	}
+
+	if (account_control) {
+		not_settable = ~(ACB_DISABLED);
+
+		new_flags = pdb_decode_acct_ctrl(account_control);
+
+		if (new_flags & not_settable) {
+			fprintf(stderr, "Can only set [D] flags\n");
+			TALLOC_FREE(sam_pwent);
+			return -1;
+		}
+
+		acb_flags = pdb_get_acct_ctrl(sam_pwent);
+
+		pdb_set_acct_ctrl(sam_pwent,
+				  (acb_flags & not_settable) | new_flags,
+				  PDB_CHANGED);
+	}
+	if (machine_sid) {
+		if (get_sid_from_cli_string(&m_sid, machine_sid)) {
+			fprintf(stderr, "Failed to parse SID\n");
+			return -1;
+		}
+		pdb_set_user_sid(sam_pwent, &m_sid, PDB_CHANGED);
+	}
+
+	if (NT_STATUS_IS_OK(pdb_update_sam_account(sam_pwent))) {
+		print_user_info(name, True, False);
+	} else {
+		fprintf (stderr, "Unable to modify entry!\n");
+		TALLOC_FREE(sam_pwent);
+		return -1;
+	}
+	TALLOC_FREE(sam_pwent);
+	return 0;
+}
+
 /*********************************************************
  Add New User
 **********************************************************/
@@ -588,11 +686,10 @@ static int new_user(const char *username, const char *fullname,
 {
 	char *pwd1 = NULL, *pwd2 = NULL;
 	char *err = NULL, *msg = NULL;
-	struct samu *sam_pwent;
+	struct samu *sam_pwent = NULL;
 	TALLOC_CTX *tosctx;
 	NTSTATUS status;
 	DOM_SID u_sid;
-	int u_rid;
 	int flags;
 	int ret;
 
@@ -602,19 +699,10 @@ static int new_user(const char *username, const char *fullname,
 		return -1;
 	}
 
-
 	if (user_sid) {
-		if (!string_to_sid(&u_sid, user_sid)) {
-			/* not a complete sid, may be a RID,
-			 * try building a SID */
-
-			if (sscanf(user_sid, "%d", &u_rid) != 1) {
-				fprintf(stderr, "Error passed string is not a complete user SID or RID!\n");
-				ret = -1;
-				goto done;
-			}
-			sid_copy(&u_sid, get_global_sam_sid());
-			sid_append_rid(&u_sid, u_rid);
+		if (get_sid_from_cli_string(&u_sid, user_sid)) {
+			fprintf(stderr, "Failed to parse SID\n");
+			return -1;
 		}
 	}
 
@@ -680,7 +768,7 @@ done:
 	SAFE_FREE(pwd2);
 	SAFE_FREE(err);
 	SAFE_FREE(msg);
-	TALLOC_FREE(tosctx);
+	TALLOC_FREE(sam_pwent);
 	return ret;
 }
 
@@ -688,11 +776,13 @@ done:
  Add New Machine
 **********************************************************/
 
-static int new_machine(const char *machinename)
+static int new_machine(const char *machinename, char *machine_sid)
 {
 	char *err = NULL, *msg = NULL;
+	struct samu *sam_pwent = NULL;
 	TALLOC_CTX *tosctx;
 	NTSTATUS status;
+	DOM_SID m_sid;
 	char *compatpwd;
 	char *name;
 	int flags;
@@ -709,6 +799,13 @@ static int new_machine(const char *machinename)
 	if (!tosctx) {
 		fprintf(stderr, "Out of memory!\n");
 		return -1;
+	}
+
+	if (machine_sid) {
+		if (get_sid_from_cli_string(&m_sid, machine_sid)) {
+			fprintf(stderr, "Failed to parse SID\n");
+			return -1;
+		}
 	}
 
 	compatpwd = talloc_strdup(tosctx, machinename);
@@ -734,17 +831,42 @@ static int new_machine(const char *machinename)
 
 	status = local_password_change(name, flags, compatpwd, &err, &msg);
 
-	if (NT_STATUS_IS_OK(status)) {
-		print_user_info(name, True, False);
-		ret = 0;
-	} else {
+	if (!NT_STATUS_IS_OK(status)) {
 		if (err) fprintf(stderr, "%s", err);
 		ret = -1;
 	}
 
-	TALLOC_FREE(tosctx);
+	sam_pwent = samu_new(tosctx);
+	if (!sam_pwent) {
+		fprintf(stderr, "Out of memory!\n");
+		ret = -1;
+		goto done;
+	}
+
+	if (!pdb_getsampwnam(sam_pwent, name)) {
+		fprintf(stderr, "Machine %s not found!\n", name);
+		ret = -1;
+		goto done;
+	}
+
+	if (machine_sid)
+		pdb_set_user_sid(sam_pwent, &m_sid, PDB_CHANGED);
+
+	status = pdb_update_sam_account(sam_pwent);
+	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr,
+			"Failed to modify entry for %s.!\n", name);
+		ret = -1;
+		goto done;
+	}
+
+	print_user_info(name, True, False);
+	ret = 0;
+
+done:
 	SAFE_FREE(err);
 	SAFE_FREE(msg);
+	TALLOC_FREE(sam_pwent);
 	return ret;
 }
 
@@ -855,6 +977,7 @@ int main (int argc, char **argv)
 	static char *account_control = NULL;
 	static char *account_policy = NULL;
 	static char *user_sid = NULL;
+	static char *machine_sid = NULL;
 	static long int account_policy_value = 0;
 	bool account_policy_value_set = False;
 	static int badpw_reset = False;
@@ -879,6 +1002,7 @@ int main (int argc, char **argv)
 		{"profile",	'p', POPT_ARG_STRING, &profile_path, 0, "set profile path", NULL},
 		{"domain",	'I', POPT_ARG_STRING, &user_domain, 0, "set a users' domain", NULL},
 		{"user SID",	'U', POPT_ARG_STRING, &user_sid, 0, "set user SID or RID", NULL},
+		{"machine SID",	'M', POPT_ARG_STRING, &machine_sid, 0, "set machine SID or RID", NULL},
 		{"create",	'a', POPT_ARG_NONE, &add_user, 0, "create user", NULL},
 		{"modify",	'r', POPT_ARG_NONE, &modify_user, 0, "modify user", NULL},
 		{"machine",	'm', POPT_ARG_NONE, &machine, 0, "account is a machine account", NULL},
@@ -945,6 +1069,7 @@ int main (int argc, char **argv)
 			(list_users ? BIT_LIST : 0) +
 			(force_initialised_password ? BIT_FIX_INIT : 0) +
 			(user_sid ? BIT_USERSIDS : 0) +
+			(machine_sid ? BIT_USERSIDS : 0) +
 			(modify_user ? BIT_MODIFY : 0) +
 			(add_user ? BIT_CREATE : 0) +
 			(delete_user ? BIT_DELETE : 0) +
@@ -1120,7 +1245,7 @@ int main (int argc, char **argv)
 		/* account creation operations */
 		if (!(checkparms & ~(BIT_CREATE + BIT_USER + BIT_MACHINE))) {
 		       	if (checkparms & BIT_MACHINE) {
-				return new_machine(user_name);
+				return new_machine(user_name, machine_sid);
 			} else {
 				return new_user(user_name, full_name,
 						home_dir, home_drive,
@@ -1139,13 +1264,19 @@ int main (int argc, char **argv)
 		}
 
 		/* account modification operations */
-		if (!(checkparms & ~(BIT_MODIFY + BIT_USER))) {
-			return set_user_info(user_name, full_name,
-					     home_dir, acct_desc,
-					     home_drive, logon_script,
-					     profile_path, account_control,
-					     user_sid, user_domain,
-					     badpw_reset, hours_reset);
+		if (!(checkparms & ~(BIT_MODIFY + BIT_USER + BIT_MACHINE))) {
+			if (checkparms & BIT_MACHINE) {
+				return set_machine_info(user_name,
+							account_control,
+							machine_sid);
+			} else {
+				return set_user_info(user_name, full_name,
+						     home_dir, acct_desc,
+						     home_drive, logon_script,
+						     profile_path, account_control,
+						     user_sid, user_domain,
+						     badpw_reset, hours_reset);
+			}
 		}
 	}
 
