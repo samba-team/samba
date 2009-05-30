@@ -139,6 +139,88 @@
 #define NWRAP_VERBOSE(args)
 #endif
 
+struct nwrap_ops {
+	const char *name;
+	struct passwd *	(*getpwnam)(const char *name);
+	int		(*getpwnam_r)(const char *name, struct passwd *pwdst,
+				      char *buf, size_t buflen, struct passwd **pwdstp);
+	struct passwd *	(*getpwuid)(uid_t uid);
+	int		(*getpwuid_r)(uid_t uid, struct passwd *pwdst,
+				      char *buf, size_t buflen, struct passwd **pwdstp);
+	void		(*setpwent)(void);
+	struct passwd *	(*getpwent)(void);
+	int		(*getpwent_r)(struct passwd *pwdst, char *buf,
+				      size_t buflen, struct passwd **pwdstp);
+	void		(*endpwent)(void);
+	int		(*initgroups)(const char *user, gid_t group);
+	struct group *	(*getgrnam)(const char *name);
+	int		(*getgrnam_r)(const char *name, struct group *grdst,
+				      char *buf, size_t buflen, struct group **grdstp);
+	struct group *	(*getgrgid)(gid_t gid);
+	int		(*getgrgid_r)(gid_t gid, struct group *grdst,
+				      char *buf, size_t buflen, struct group **grdstp);
+	void		(*setgrent)(void);
+	struct group *	(*getgrent)(void);
+	int		(*getgrent_r)(struct group *grdst, char *buf,
+				      size_t buflen, struct group **grdstp);
+	void		(*endgrent)(void);
+	int		(*getgrouplist)(const char *user, gid_t group, gid_t *groups, int *ngroups);
+};
+
+static struct passwd *nwrap_files_getpwnam(const char *name);
+static int nwrap_files_getpwnam_r(const char *name, struct passwd *pwdst,
+				  char *buf, size_t buflen, struct passwd **pwdstp);
+static struct passwd *nwrap_files_getpwuid(uid_t uid);
+static int nwrap_files_getpwuid_r(uid_t uid, struct passwd *pwdst,
+				  char *buf, size_t buflen, struct passwd **pwdstp);
+static void nwrap_files_setpwent(void);
+static struct passwd *nwrap_files_getpwent(void);
+static int nwrap_files_getpwent_r(struct passwd *pwdst, char *buf,
+				  size_t buflen, struct passwd **pwdstp);
+static void nwrap_files_endpwent(void);
+static int nwrap_files_initgroups(const char *user, gid_t group);
+static struct group *nwrap_files_getgrnam(const char *name);
+static int nwrap_files_getgrnam_r(const char *name, struct group *grdst,
+				  char *buf, size_t buflen, struct group **grdstp);
+static struct group *nwrap_files_getgrgid(gid_t gid);
+static int nwrap_files_getgrgid_r(gid_t gid, struct group *grdst,
+				  char *buf, size_t buflen, struct group **grdstp);
+static void nwrap_files_setgrent(void);
+static struct group *nwrap_files_getgrent(void);
+static int nwrap_files_getgrent_r(struct group *grdst, char *buf,
+				  size_t buflen, struct group **grdstp);
+static void nwrap_files_endgrent(void);
+static int nwrap_files_getgrouplist(const char *user, gid_t group, gid_t *groups, int *ngroups);
+
+struct nwrap_ops nwrap_files_ops = {
+	.name		= "files",
+	.getpwnam	= nwrap_files_getpwnam,
+	.getpwnam_r	= nwrap_files_getpwnam_r,
+	.getpwuid	= nwrap_files_getpwuid,
+	.getpwuid_r	= nwrap_files_getpwuid_r,
+	.setpwent	= nwrap_files_setpwent,
+	.getpwent	= nwrap_files_getpwent,
+	.getpwent_r	= nwrap_files_getpwent_r,
+	.endpwent	= nwrap_files_endpwent,
+	.initgroups	= nwrap_files_initgroups,
+	.getgrnam	= nwrap_files_getgrnam,
+	.getgrnam_r	= nwrap_files_getgrnam_r,
+	.getgrgid	= nwrap_files_getgrgid,
+	.getgrgid_r	= nwrap_files_getgrgid_r,
+	.setgrent	= nwrap_files_setgrent,
+	.getgrent	= nwrap_files_getgrent,
+	.getgrent_r	= nwrap_files_getgrent_r,
+	.endgrent	= nwrap_files_endgrent,
+	.getgrouplist	= nwrap_files_getgrouplist
+};
+
+struct nwrap_main {
+	struct nwrap_ops *ops;
+};
+
+struct nwrap_main *nwrap_main_global;
+struct nwrap_main __nwrap_main_global;
+
 struct nwrap_cache {
 	const char *path;
 	int fd;
@@ -183,6 +265,10 @@ static void nwrap_init(void)
 
 	if (initialized) return;
 	initialized = true;
+
+	nwrap_main_global = &__nwrap_main_global;
+
+	nwrap_main_global->ops = &nwrap_files_ops;
 
 	nwrap_pw_global.cache = &__nwrap_cache_pw;
 
@@ -807,7 +893,7 @@ _PUBLIC_ struct passwd *nwrap_getpwnam(const char *name)
 		return real_getpwnam(name);
 	}
 
-	return nwrap_files_getpwnam(name);
+	return nwrap_main_global->ops->getpwnam(name);
 }
 
 static int nwrap_files_getpwnam_r(const char *name, struct passwd *pwdst,
@@ -833,7 +919,7 @@ _PUBLIC_ int nwrap_getpwnam_r(const char *name, struct passwd *pwdst,
 		return real_getpwnam_r(name, pwdst, buf, buflen, pwdstp);
 	}
 
-	return nwrap_files_getpwnam_r(name, pwdst, buf, buflen, pwdstp);
+	return nwrap_main_global->ops->getpwnam_r(name, pwdst, buf, buflen, pwdstp);
 }
 
 static struct passwd *nwrap_files_getpwuid(uid_t uid)
@@ -865,7 +951,7 @@ _PUBLIC_ struct passwd *nwrap_getpwuid(uid_t uid)
 		return real_getpwuid(uid);
 	}
 
-	return nwrap_files_getpwuid(uid);
+	return nwrap_main_global->ops->getpwuid(uid);
 }
 
 static int nwrap_files_getpwuid_r(uid_t uid, struct passwd *pwdst,
@@ -891,7 +977,7 @@ _PUBLIC_ int nwrap_getpwuid_r(uid_t uid, struct passwd *pwdst,
 		return real_getpwuid_r(uid, pwdst, buf, buflen, pwdstp);
 	}
 
-	return nwrap_files_getpwuid_r(uid, pwdst, buf, buflen, pwdstp);
+	return nwrap_main_global->ops->getpwuid_r(uid, pwdst, buf, buflen, pwdstp);
 }
 
 /* user enum functions */
@@ -907,7 +993,7 @@ _PUBLIC_ void nwrap_setpwent(void)
 		return;
 	}
 
-	nwrap_files_setpwent();
+	nwrap_main_global->ops->setpwent();
 }
 
 static struct passwd *nwrap_files_getpwent(void)
@@ -937,7 +1023,7 @@ _PUBLIC_ struct passwd *nwrap_getpwent(void)
 		return real_getpwent();
 	}
 
-	return nwrap_files_getpwent();
+	return nwrap_main_global->ops->getpwent();
 }
 
 static int nwrap_files_getpwent_r(struct passwd *pwdst, char *buf,
@@ -978,7 +1064,7 @@ _PUBLIC_ int nwrap_getpwent_r(struct passwd *pwdst, char *buf,
 #endif
 	}
 
-	return nwrap_files_getpwent_r(pwdst, buf, buflen, pwdstp);
+	return nwrap_main_global->ops->getpwent_r(pwdst, buf, buflen, pwdstp);
 }
 
 static void nwrap_files_endpwent(void)
@@ -993,7 +1079,7 @@ _PUBLIC_ void nwrap_endpwent(void)
 		return;
 	}
 
-	nwrap_files_endpwent();
+	nwrap_main_global->ops->endpwent();
 }
 
 /* misc functions */
@@ -1009,7 +1095,7 @@ _PUBLIC_ int nwrap_initgroups(const char *user, gid_t group)
 		return real_initgroups(user, group);
 	}
 
-	return nwrap_files_initgroups(user, group);
+	return nwrap_main_global->ops->initgroups(user, group);
 }
 
 /* group functions */
@@ -1042,7 +1128,7 @@ _PUBLIC_ struct group *nwrap_getgrnam(const char *name)
 		return real_getgrnam(name);
 	}
 
-	return nwrap_files_getgrnam(name);
+	return nwrap_main_global->ops->getgrnam(name);
 }
 
 static int nwrap_files_getgrnam_r(const char *name, struct group *grdst,
@@ -1068,7 +1154,7 @@ _PUBLIC_ int nwrap_getgrnam_r(const char *name, struct group *grdst,
 		return real_getgrnam_r(name, grdst, buf, buflen, grdstp);
 	}
 
-	return nwrap_files_getgrnam_r(name, grdst, buf, buflen, grdstp);
+	return nwrap_main_global->ops->getgrnam_r(name, grdst, buf, buflen, grdstp);
 }
 
 static struct group *nwrap_files_getgrgid(gid_t gid)
@@ -1100,7 +1186,7 @@ _PUBLIC_ struct group *nwrap_getgrgid(gid_t gid)
 		return real_getgrgid(gid);
 	}
 
-	return nwrap_files_getgrgid(gid);
+	return nwrap_main_global->ops->getgrgid(gid);
 }
 
 static int nwrap_files_getgrgid_r(gid_t gid, struct group *grdst,
@@ -1128,7 +1214,7 @@ _PUBLIC_ int nwrap_getgrgid_r(gid_t gid, struct group *grdst,
 		return real_getgrgid_r(gid, grdst, buf, buflen, grdstp);
 	}
 
-	return nwrap_files_getgrgid_r(gid, grdst, buf, buflen, grdstp);
+	return nwrap_main_global->ops->getgrgid_r(gid, grdst, buf, buflen, grdstp);
 }
 
 /* group enum functions */
@@ -1144,7 +1230,7 @@ _PUBLIC_ void nwrap_setgrent(void)
 		return;
 	}
 
-	nwrap_files_setgrent();
+	nwrap_main_global->ops->setgrent();
 }
 
 static struct group *nwrap_files_getgrent(void)
@@ -1174,7 +1260,7 @@ _PUBLIC_ struct group *nwrap_getgrent(void)
 		return real_getgrent();
 	}
 
-	return nwrap_files_getgrent();
+	return nwrap_main_global->ops->getgrent();
 }
 
 static int nwrap_files_getgrent_r(struct group *grdst, char *buf,
@@ -1215,7 +1301,7 @@ _PUBLIC_ int nwrap_getgrent_r(struct group *grdst, char *buf,
 #endif
 	}
 
-	return nwrap_files_getgrent_r(grdst, buf, buflen, grdstp);
+	return nwrap_main_global->ops->getgrent_r(grdst, buf, buflen, grdstp);
 }
 
 static void nwrap_files_endgrent(void)
@@ -1230,7 +1316,7 @@ _PUBLIC_ void nwrap_endgrent(void)
 		return;
 	}
 
-	nwrap_files_endgrent();
+	nwrap_main_global->ops->endgrent();
 }
 
 static int nwrap_files_getgrouplist(const char *user, gid_t group, gid_t *groups, int *ngroups)
@@ -1307,6 +1393,5 @@ _PUBLIC_ int nwrap_getgrouplist(const char *user, gid_t group, gid_t *groups, in
 		return real_getgrouplist(user, group, groups, ngroups);
 	}
 
-	return nwrap_files_getgrouplist(user, group, groups, ngroups);
+	return nwrap_main_global->ops->getgrouplist(user, group, groups, ngroups);
 }
-
