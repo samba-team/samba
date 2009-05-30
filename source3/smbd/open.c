@@ -346,7 +346,7 @@ static NTSTATUS open_file(files_struct *fsp,
 
 	if (!CAN_WRITE(conn)) {
 		/* It's a read-only share - fail if we wanted to write. */
-		if(accmode != O_RDONLY) {
+		if(accmode != O_RDONLY || (flags & O_TRUNC) || (flags & O_APPEND)) {
 			DEBUG(3,("Permission denied opening %s\n", path));
 			return NT_STATUS_ACCESS_DENIED;
 		} else if(flags & O_CREAT) {
@@ -354,8 +354,8 @@ static NTSTATUS open_file(files_struct *fsp,
 			   O_CREAT doesn't create the file if we have write
 			   access into the directory.
 			*/
-			flags &= ~O_CREAT;
-			local_flags &= ~O_CREAT;
+			flags &= ~(O_CREAT|O_EXCL);
+			local_flags &= ~(O_CREAT|O_EXCL);
 		}
 	}
 
