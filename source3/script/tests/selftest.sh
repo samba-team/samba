@@ -289,6 +289,7 @@ EOF
 cat >$NSS_WRAPPER_GROUP<<EOF
 nobody:x:65533:
 nogroup:x:65534:nobody
+root:x:65532:
 $USERNAME-group:x:$GROUPID:
 EOF
 

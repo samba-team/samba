@@ -542,6 +542,7 @@ $unix_name:x:$unix_uid:$unix_gids[0]:$unix_name gecos:$prefix_abs:/bin/false
 	open(GROUP, ">$nss_wrapper_group") or die("Unable to open $nss_wrapper_group");
 	print GROUP "nobody:x:65533:
 nogroup:x:65534:nobody
+root:x:65532:
 $unix_name-group:x:$unix_gids[0]:
 ";
 	close(GROUP);
