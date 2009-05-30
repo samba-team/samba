@@ -81,6 +81,10 @@ static void async_send_handler(struct tevent_context *ev,
 		tevent_req_data(req, struct async_send_state);
 
 	state->sent = send(state->fd, state->buf, state->len, state->flags);
+	if ((state->sent == -1) && (errno == EINTR)) {
+		/* retry */
+		return;
+	}
 	if (state->sent == -1) {
 		tevent_req_error(req, errno);
 		return;
@@ -148,6 +152,10 @@ static void async_recv_handler(struct tevent_context *ev,
 
 	state->received = recv(state->fd, state->buf, state->len,
 			       state->flags);
+	if ((state->received == -1) && (errno == EINTR)) {
+		/* retry */
+		return;
+	}
 	if (state->received == -1) {
 		tevent_req_error(req, errno);
 		return;
@@ -427,6 +435,10 @@ static void writev_handler(struct tevent_context *ev, struct tevent_fd *fde,
 	}
 
 	written = writev(state->fd, state->iov, state->count);
+	if ((written == -1) && (errno = EINTR)) {
+		/* retry */
+		return;
+	}
 	if (written == -1) {
 		tevent_req_error(req, errno);
 		return;
@@ -534,6 +546,10 @@ static void read_packet_handler(struct tevent_context *ev,
 
 	nread = recv(state->fd, state->buf+state->nread, total-state->nread,
 		     0);
+	if ((nread == -1) && (errno == EINTR)) {
+		/* retry */
+		return;
+	}
 	if (nread == -1) {
 		tevent_req_error(req, errno);
 		return;
