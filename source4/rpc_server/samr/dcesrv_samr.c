@@ -1223,6 +1223,11 @@ static NTSTATUS dcesrv_samr_CreateUser2(struct dcesrv_call_state *dce_call, TALL
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	/*
+	 * Start a transaction, so we can query and do a subsequent atomic
+	 * modify
+	 */
+
 	ret = ldb_transaction_start(d_state->sam_ctx);
 	if (ret != 0) {
 		DEBUG(0,("Failed to start a transaction for user creation: %s\n",
@@ -1292,9 +1297,7 @@ static NTSTATUS dcesrv_samr_CreateUser2(struct dcesrv_call_state *dce_call, TALL
 
 	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "sAMAccountName", account_name);
 	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "objectClass", obj_class);
-	
-	/* Start a transaction, so we can query and do a subsequent atomic modify */
-	
+
 	/* create the user */
 	ret = ldb_add(d_state->sam_ctx, msg);
 	switch (ret) {
