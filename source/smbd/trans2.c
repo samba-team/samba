@@ -6776,14 +6776,18 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 		}
 	}
 
-	if (!CAN_WRITE(conn)) {
-		reply_doserror(req, ERRSRV, ERRaccess);
-		return;
-	}
-
 	if (INFO_LEVEL_IS_UNIX(info_level) && !lp_unix_extensions()) {
 		reply_nterror(req, NT_STATUS_INVALID_LEVEL);
 		return;
+	}
+
+	if (!CAN_WRITE(conn)) {
+		/* Allow POSIX opens. The open path will deny
+		 * any non-readonly opens. */
+		if (info_level != SMB_POSIX_PATH_OPEN) {
+			reply_doserror(req, ERRSRV, ERRaccess);
+			return;
+		}
 	}
 
 	DEBUG(3,("call_trans2setfilepathinfo(%d) %s (fnum %d) info_level=%d totdata=%d\n",
