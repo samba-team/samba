@@ -904,6 +904,7 @@ _PUBLIC_ void nwrap_setpwent(void)
 {
 	if (!nwrap_enabled()) {
 		real_setpwent();
+		return;
 	}
 
 	nwrap_files_setpwent();
@@ -989,6 +990,7 @@ _PUBLIC_ void nwrap_endpwent(void)
 {
 	if (!nwrap_enabled()) {
 		real_endpwent();
+		return;
 	}
 
 	nwrap_files_endpwent();
@@ -1139,6 +1141,7 @@ _PUBLIC_ void nwrap_setgrent(void)
 {
 	if (!nwrap_enabled()) {
 		real_setgrent();
+		return;
 	}
 
 	nwrap_files_setgrent();
@@ -1224,6 +1227,7 @@ _PUBLIC_ void nwrap_endgrent(void)
 {
 	if (!nwrap_enabled()) {
 		real_endgrent();
+		return;
 	}
 
 	nwrap_files_endgrent();
