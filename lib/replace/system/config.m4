@@ -116,6 +116,7 @@ AC_VERIFY_C_PROTOTYPE([struct group *getgrent_r(struct group *src, char *buf, si
 	#include <unistd.h>
 	#include <grp.h>
 	])
+AC_CHECK_FUNCS(getgrouplist)
 
 # locale
 AC_CHECK_HEADERS(ctype.h locale.h)

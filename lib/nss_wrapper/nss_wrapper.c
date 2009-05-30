@@ -68,6 +68,11 @@
 #define getgrent_r(grdst, buf, buflen, grdstp)		ENOSYS
 #endif
 
+/* not all systems have getgrouplist */
+#ifndef HAVE_GETGROUPLIST
+#define getgrouplist(user, group, groups, ngroups)	0
+#endif
+
 /* LD_PRELOAD doesn't work yet, so REWRITE_CALLS is all we support
  * for now */
 #define REWRITE_CALLS
