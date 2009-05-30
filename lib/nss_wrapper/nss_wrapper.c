@@ -61,8 +61,8 @@
 #ifndef HAVE_GETGRNAM_R
 #define getgrnam_r(name, grdst, buf, buflen, grdstp)	ENOSYS
 #endif
-#ifndef HAVE_GETGRUID_R
-#define getgrgid_r(uid, grdst, buf, buflen, grdstp)	ENOSYS
+#ifndef HAVE_GETGRGID_R
+#define getgrgid_r(gid, grdst, buf, buflen, grdstp)	ENOSYS
 #endif
 #ifndef HAVE_GETGRENT_R
 #define getgrent_r(grdst, buf, buflen, grdstp)		ENOSYS
