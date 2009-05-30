@@ -200,9 +200,13 @@ struct wb_context *wb_context_init(TALLOC_CTX *mem_ctx, const char* dir)
 	result->is_priv = false;
 
 	if (dir != NULL) {
-		result->dir = dir;
+		result->dir = talloc_strdup(result, dir);
 	} else {
 		result->dir = winbindd_socket_dir();
+	}
+	if (result->dir == NULL) {
+		TALLOC_FREE(result);
+		return NULL;
 	}
 	return result;
 }
