@@ -10,7 +10,7 @@
 	 ** NOTE! The following LGPL license applies to the ldb
 	 ** library. This does NOT imply that all of Samba is released
 	 ** under the LGPL
-   
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -57,13 +57,13 @@ static PyObject *PyObject_FromLdbValue(struct ldb_context *ldb_ctx,
 	struct ldb_val new_val;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	PyObject *ret;
-	
+
 	new_val = *val;
 
 	ret = PyString_FromStringAndSize((const char *)new_val.data, new_val.length);
-	
+
 	talloc_free(mem_ctx);
-	
+
 	return ret;
 }
 
@@ -129,7 +129,7 @@ static struct ldb_result *PyLdbResult_AsResult(TALLOC_CTX *mem_ctx,
 {
 	struct ldb_result *res;
 	int i;
-	
+
 	if (obj == Py_None)
 		return NULL;
 
@@ -314,7 +314,7 @@ static PyObject *py_ldb_dn_new(PyTypeObject *type, PyObject *args, PyObject *kwa
 		return NULL;
 
 	ldb_ctx = PyLdb_AsLdbContext(py_ldb);
-	
+
 	ret = ldb_dn_new(ldb_ctx, ldb_ctx, str);
 	/* ldb_dn_new() doesn't accept NULL as memory context, so 
 	   we do it this way... */
@@ -378,14 +378,14 @@ static void py_ldb_debug(void *context, enum ldb_debug_level level, const char *
 static PyObject *py_ldb_set_debug(PyLdbObject *self, PyObject *args)
 {
 	PyObject *cb;
-	
+
 	if (!PyArg_ParseTuple(args, "O", &cb))
 		return NULL;
 
 	Py_INCREF(cb);
 	/* FIXME: Where do we DECREF cb ? */
 	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ldb_set_debug(self->ldb_ctx, py_ldb_debug, cb), PyLdb_AsLdbContext(self));
-	
+
 	Py_RETURN_NONE;
 }
 
@@ -519,7 +519,7 @@ static int py_ldb_init(PyLdbObject *self, PyObject *args, PyObject *kwargs)
 		if (options == NULL)
 			return -1;
 	}
-	
+
 	if (url != NULL) {
 		ret = ldb_connect(ldb, url, flags, options);
 		if (ret != LDB_SUCCESS) {
@@ -572,7 +572,7 @@ static PyObject *py_ldb_connect(PyLdbObject *self, PyObject *args, PyObject *kwa
 		if (options == NULL)
 			return NULL;
 	}
-	
+
 	ret = ldb_connect(PyLdb_AsLdbContext(self), url, flags, options);
 	talloc_free(options);
 
@@ -649,7 +649,7 @@ static PyObject *py_ldb_add(PyLdbObject *self, PyObject *args)
 	} else {
 		msg = PyLdbMessage_AsMessage(py_msg);
 	}
-	
+
 	ret = ldb_add(PyLdb_AsLdbContext(self), msg);
 	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, PyLdb_AsLdbContext(self));
 
@@ -766,18 +766,18 @@ static PyObject *py_ldb_schema_format_value(PyLdbObject *self, PyObject *args)
 
 	if (!PyArg_ParseTuple(args, "sO", &element_name, &val))
 		return NULL;
-	
+
 	mem_ctx = talloc_new(NULL);
-	
+
 	old_val.data = (uint8_t *)PyString_AsString(val);
 	old_val.length = PyString_Size(val);
-		
+
 	a = ldb_schema_attribute_by_name(PyLdb_AsLdbContext(self), element_name);
 
 	if (a == NULL) {
 		Py_RETURN_NONE;
 	}
-	
+
 	if (a->syntax->ldif_write_fn(PyLdb_AsLdbContext(self), mem_ctx, &old_val, &new_val) != 0) {
 		talloc_free(mem_ctx);
 		Py_RETURN_NONE;
@@ -859,7 +859,7 @@ static PyObject *py_ldb_search(PyLdbObject *self, PyObject *args, PyObject *kwar
 	}
 
 	ret = ldb_request(ldb_ctx, req);
-		
+
 	if (ret == LDB_SUCCESS) {
 		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
 	}
@@ -1176,11 +1176,11 @@ static PyObject *py_ldb_module_modify(PyLdbModuleObject *self, PyObject *args)
 
 	if (!PyArg_ParseTuple(args, "O", &py_message))
 		return NULL;
-	
+
 	req = talloc_zero(NULL, struct ldb_request);
 	req->operation = LDB_MODIFY;
 	req->op.mod.message = PyLdbMessage_AsMessage(py_message);
-	
+
 	mod = PyLdbModule_AsModule(self);
 	ret = mod->ops->modify(mod, req);
 
@@ -1197,11 +1197,11 @@ static PyObject *py_ldb_module_delete(PyLdbModuleObject *self, PyObject *args)
 
 	if (!PyArg_ParseTuple(args, "O", &py_dn))
 		return NULL;
-	
+
 	req = talloc_zero(NULL, struct ldb_request);
 	req->operation = LDB_DELETE;
 	req->op.del.dn = PyLdbDn_AsDn(py_dn);
-	
+
 	ret = PyLdbModule_AsModule(self)->ops->del(PyLdbModule_AsModule(self), req);
 
 	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, NULL);
@@ -1217,13 +1217,13 @@ static PyObject *py_ldb_module_rename(PyLdbModuleObject *self, PyObject *args)
 
 	if (!PyArg_ParseTuple(args, "OO", &py_dn1, &py_dn2))
 		return NULL;
-	
+
 	req = talloc_zero(NULL, struct ldb_request);
 
 	req->operation = LDB_RENAME;
 	req->op.rename.olddn = PyLdbDn_AsDn(py_dn1);
 	req->op.rename.newdn = PyLdbDn_AsDn(py_dn2);
-	
+
 	ret = PyLdbModule_AsModule(self)->ops->rename(PyLdbModule_AsModule(self), req);
 
 	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, NULL);
@@ -1725,7 +1725,7 @@ PyObject *PyLdbTree_FromTree(struct ldb_parse_tree *tree)
 		PyErr_NoMemory();
 		return NULL;
 	}
-	
+
 	ret->mem_ctx = talloc_new(NULL);
 	ret->tree = talloc_reference(ret->mem_ctx, tree);
 	return (PyObject *)ret;

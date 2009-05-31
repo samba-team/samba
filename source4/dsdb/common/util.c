@@ -6,17 +6,17 @@
    Copyright (C) Volker Lendecke 2004
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2006
    Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -106,7 +106,6 @@ const char *samdb_search_string_v(struct ldb_context *sam_ldb,
 
 	return samdb_result_string(res[0], attr_name, NULL);
 }
-				 
 
 /*
   search the sam for a single string attribute in exactly 1 record
@@ -644,10 +643,10 @@ uint32_t samdb_result_acct_flags(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ct
 	uint32_t acct_flags = samdb_uf2acb(userAccountControl); 
 	NTTIME must_change_time;
 	NTTIME now;
-	
+
 	must_change_time = samdb_result_force_password_change(sam_ctx, mem_ctx, 
 							      domain_dn, msg);
-	
+
 	/* Test account expire time */
 	unix_to_nt_time(&now, time(NULL));
 	/* check for expired password */
@@ -722,7 +721,7 @@ int samdb_find_or_add_attribute(struct ldb_context *ldb, struct ldb_message *msg
 	if (el) {
 		return LDB_SUCCESS;
 	}
-		
+
 	return samdb_msg_add_string(ldb, msg, msg, name, set_value);
 }
 
@@ -1070,7 +1069,7 @@ const struct dom_sid *samdb_domain_sid(struct ldb_context *ldb)
 	if (ret != LDB_SUCCESS) {
 		goto failed;
 	}
-	
+
 	if (res->count != 1) {
 		goto failed;
 	}
@@ -1165,7 +1164,7 @@ struct ldb_dn *samdb_ntds_settings_dn(struct ldb_context *ldb)
 	int ret;
 	struct ldb_result *root_res;
 	struct ldb_dn *settings_dn;
-	
+
 	/* see if we have a cached copy */
 	settings_dn = (struct ldb_dn *)ldb_get_opaque(ldb, "cache.settings_dn");
 	if (settings_dn) {
@@ -1176,7 +1175,6 @@ struct ldb_dn *samdb_ntds_settings_dn(struct ldb_context *ldb)
 	if (tmp_ctx == NULL) {
 		goto failed;
 	}
-	
 
 	ret = ldb_search(ldb, tmp_ctx, &root_res, ldb_dn_new(tmp_ctx, ldb, ""), LDB_SCOPE_BASE, root_attrs, NULL);
 	if (ret) {
@@ -1217,7 +1215,7 @@ const struct GUID *samdb_ntds_invocation_id(struct ldb_context *ldb)
 	int ret;
 	struct ldb_result *res;
 	struct GUID *invocation_id;
-	
+
 	/* see if we have a cached copy */
 	invocation_id = (struct GUID *)ldb_get_opaque(ldb, "cache.invocation_id");
 	if (invocation_id) {
@@ -1310,7 +1308,7 @@ const struct GUID *samdb_ntds_objectGUID(struct ldb_context *ldb)
 	int ret;
 	struct ldb_result *res;
 	struct GUID *ntds_guid;
-	
+
 	/* see if we have a cached copy */
 	ntds_guid = (struct GUID *)ldb_get_opaque(ldb, "cache.ntds_guid");
 	if (ntds_guid) {
@@ -1359,7 +1357,7 @@ bool samdb_set_ntds_objectGUID(struct ldb_context *ldb, const struct GUID *ntds_
 	TALLOC_CTX *tmp_ctx;
 	struct GUID *ntds_guid_new;
 	struct GUID *ntds_guid_old;
-	
+
 	/* see if we have a cached copy */
 	ntds_guid_old = (struct GUID *)ldb_get_opaque(ldb, "cache.ntds_guid");
 
@@ -1513,7 +1511,7 @@ int samdb_search_for_parent_domain(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 
 	local_ctx = talloc_new(mem_ctx);
 	if (local_ctx == NULL) return LDB_ERR_OPERATIONS_ERROR;
-	
+
 	while ((sdn = ldb_dn_get_parent(local_ctx, sdn))) {
 		ret = ldb_search(ldb, local_ctx, &res, sdn, LDB_SCOPE_BASE, attrs,
 				 "(|(|(objectClass=domain)(objectClass=builtinDomain))(objectClass=samba4LocalDomain))");
@@ -1680,7 +1678,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 
 	if (restrictions && new_password) {
 		char *new_pass;
-		
+
 		/* check the various password restrictions */
 		if (restrictions && minPwdLength > utf16_len_n(new_password->data, new_password->length) / 2) {
 			if (reject_reason) {
@@ -1691,7 +1689,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 
 		/* Create the NT hash */
 		mdfour(local_ntNewHash.hash, new_password->data, new_password->length);
-		
+
 		ntNewHash = &local_ntNewHash;
 
 		/* Only check complexity if we can convert it at all.  Assuming unconvertable passwords are 'strong' */
@@ -1699,8 +1697,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 					  CH_UTF16, CH_UNIX, 
 					  new_password->data, new_password->length, 
 					  (void **)&new_pass, NULL, false)) {
-			
-			
+
 			/* possibly check password complexity */
 			if (restrictions && (pwdProperties & DOMAIN_PASSWORD_COMPLEX) &&
 			    !samdb_password_complexity_ok(new_pass)) {
@@ -1709,12 +1706,11 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 				}
 				return NT_STATUS_PASSWORD_RESTRICTION;
 			}
-			
+
 			/* compute the new lm hashes (for checking history - case insenitivly!) */
 			if (E_deshash(new_pass, local_lmNewHash.hash)) {
 				lmNewHash = &local_lmNewHash;
 			}
-			
 		}
 	}
 
@@ -1726,7 +1722,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 			}
 			return NT_STATUS_PASSWORD_RESTRICTION;
 		}
-		
+
 		/* can this user change password? */
 		if (userAccountControl & UF_PASSWD_CANT_CHANGE) {
 			if (reject_reason) {
@@ -1734,7 +1730,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 			}
 			return NT_STATUS_PASSWORD_RESTRICTION;
 		}
-		
+
 		/* yes, this is a minus. The ages are in negative 100nsec units! */
 		if (pwdLastSet - minPwdAge > now_nt) {
 			if (reject_reason) {
@@ -1758,11 +1754,11 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 				return NT_STATUS_PASSWORD_RESTRICTION;
 			}
 		}
-		
+
 		/* check the password history */
 		sambaLMPwdHistory_len = MIN(sambaLMPwdHistory_len, pwdHistoryLength);
 		sambaNTPwdHistory_len = MIN(sambaNTPwdHistory_len, pwdHistoryLength);
-		
+
 		for (i=0; lmNewHash && i<sambaLMPwdHistory_len;i++) {
 			if (memcmp(lmNewHash->hash, sambaLMPwdHistory[i].hash, 16) == 0) {
 				if (reject_reason) {
@@ -1799,7 +1795,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 		} else {
 			CHECK_RET(samdb_msg_add_delete(ctx, mem_ctx, mod, "dBCSPwd"));
 		}
-		
+
 		if (ntNewHash) {
 			CHECK_RET(samdb_msg_add_hash(ctx, mem_ctx, mod, "unicodePwd", ntNewHash));
 		} else {
@@ -1871,7 +1867,7 @@ NTSTATUS samdb_set_password_sid(struct ldb_context *ctx, TALLOC_CTX *mem_ctx,
 		ldb_transaction_cancel(ctx);
 		return nt_status;
 	}
-	
+
 	/* modify the samdb record */
 	ret = samdb_replace(ctx, mem_ctx, msg);
 	if (ret != 0) {
@@ -1898,42 +1894,42 @@ NTSTATUS samdb_create_foreign_security_principal(struct ldb_context *sam_ctx, TA
 	struct ldb_dn *basedn;
 	const char *sidstr;
 	int ret;
-	
+
 	sidstr = dom_sid_string(mem_ctx, sid);
 	NT_STATUS_HAVE_NO_MEMORY(sidstr);
-	
+
 	/* We might have to create a ForeignSecurityPrincipal, even if this user
 	 * is in our own domain */
-	
+
 	msg = ldb_msg_new(mem_ctx);
 	if (msg == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	
+
 	/* TODO: Hmmm. This feels wrong. How do I find the base dn to
 	 * put the ForeignSecurityPrincipals? d_state->domain_dn does
 	 * not work, this is wrong for the Builtin domain, there's no
 	 * cn=For...,cn=Builtin,dc={BASEDN}.  -- vl
 	 */
-	
+
 	basedn = samdb_search_dn(sam_ctx, mem_ctx, NULL,
 				 "(&(objectClass=container)(cn=ForeignSecurityPrincipals))");
-	
+
 	if (basedn == NULL) {
 		DEBUG(0, ("Failed to find DN for "
 			  "ForeignSecurityPrincipal container\n"));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-	
+
 	/* add core elements to the ldb_message for the alias */
 	msg->dn = ldb_dn_copy(mem_ctx, basedn);
 	if ( ! ldb_dn_add_child_fmt(msg->dn, "CN=%s", sidstr))
 		return NT_STATUS_NO_MEMORY;
-	
+
 	samdb_msg_add_string(sam_ctx, mem_ctx, msg,
 			     "objectClass",
 			     "foreignSecurityPrincipal");
-	
+
 	/* create the alias */
 	ret = ldb_add(sam_ctx, msg);
 	if (ret != 0) {
@@ -1959,11 +1955,11 @@ struct ldb_dn *samdb_dns_domain_to_dn(struct ldb_context *ldb, TALLOC_CTX *mem_c
 	const char *binary_encoded;
 	const char **split_realm;
 	struct ldb_dn *dn;
-	
+
 	if (!tmp_ctx) {
 		return NULL;
 	}
-	
+
 	split_realm = (const char **)str_list_make(tmp_ctx, dns_domain, ".");
 	if (!split_realm) {
 		talloc_free(tmp_ctx);
@@ -2012,7 +2008,7 @@ struct ldb_dn *samdb_domain_to_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	if (ret_domain != 0) {
 		return NULL;
 	}
-	
+
 	if (res_domain_ref->count == 0) {
 		ret_domain = ldb_search(ldb, mem_ctx,
 						&res_domain_ref, 
@@ -2023,19 +2019,19 @@ struct ldb_dn *samdb_domain_to_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 		if (ret_domain != 0) {
 			return NULL;
 		}
-	
+
 		if (res_domain_ref->count == 1) {
 			return res_domain_ref->msgs[0]->dn;
 		}
 		return NULL;
 	}
-	
+
 	if (res_domain_ref->count > 1) {
 		DEBUG(0,("Found %d records matching domain [%s]\n", 
 			 ret_domain, domain_name));
 		return NULL;
 	}
-	
+
 	return samdb_result_dn(ldb, mem_ctx, res_domain_ref->msgs[0], "nCName", NULL);
 
 }
