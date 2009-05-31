@@ -887,15 +887,6 @@ static struct passwd *nwrap_files_getpwnam(const char *name)
 	return NULL;
 }
 
-_PUBLIC_ struct passwd *nwrap_getpwnam(const char *name)
-{
-	if (!nwrap_enabled()) {
-		return real_getpwnam(name);
-	}
-
-	return nwrap_main_global->ops->getpwnam(name);
-}
-
 static int nwrap_files_getpwnam_r(const char *name, struct passwd *pwdst,
 				  char *buf, size_t buflen, struct passwd **pwdstp)
 {
@@ -910,16 +901,6 @@ static int nwrap_files_getpwnam_r(const char *name, struct passwd *pwdst,
 	}
 
 	return nwrap_pw_copy_r(pw, pwdst, buf, buflen, pwdstp);
-}
-
-_PUBLIC_ int nwrap_getpwnam_r(const char *name, struct passwd *pwdst,
-			      char *buf, size_t buflen, struct passwd **pwdstp)
-{
-	if (!nwrap_enabled()) {
-		return real_getpwnam_r(name, pwdst, buf, buflen, pwdstp);
-	}
-
-	return nwrap_main_global->ops->getpwnam_r(name, pwdst, buf, buflen, pwdstp);
 }
 
 static struct passwd *nwrap_files_getpwuid(uid_t uid)
@@ -945,15 +926,6 @@ static struct passwd *nwrap_files_getpwuid(uid_t uid)
 	return NULL;
 }
 
-_PUBLIC_ struct passwd *nwrap_getpwuid(uid_t uid)
-{
-	if (!nwrap_enabled()) {
-		return real_getpwuid(uid);
-	}
-
-	return nwrap_main_global->ops->getpwuid(uid);
-}
-
 static int nwrap_files_getpwuid_r(uid_t uid, struct passwd *pwdst,
 				  char *buf, size_t buflen, struct passwd **pwdstp)
 {
@@ -970,30 +942,10 @@ static int nwrap_files_getpwuid_r(uid_t uid, struct passwd *pwdst,
 	return nwrap_pw_copy_r(pw, pwdst, buf, buflen, pwdstp);
 }
 
-_PUBLIC_ int nwrap_getpwuid_r(uid_t uid, struct passwd *pwdst,
-			      char *buf, size_t buflen, struct passwd **pwdstp)
-{
-	if (!nwrap_enabled()) {
-		return real_getpwuid_r(uid, pwdst, buf, buflen, pwdstp);
-	}
-
-	return nwrap_main_global->ops->getpwuid_r(uid, pwdst, buf, buflen, pwdstp);
-}
-
 /* user enum functions */
 static void nwrap_files_setpwent(void)
 {
 	nwrap_pw_global.idx = 0;
-}
-
-_PUBLIC_ void nwrap_setpwent(void)
-{
-	if (!nwrap_enabled()) {
-		real_setpwent();
-		return;
-	}
-
-	nwrap_main_global->ops->setpwent();
 }
 
 static struct passwd *nwrap_files_getpwent(void)
@@ -1017,15 +969,6 @@ static struct passwd *nwrap_files_getpwent(void)
 	return pw;
 }
 
-_PUBLIC_ struct passwd *nwrap_getpwent(void)
-{
-	if (!nwrap_enabled()) {
-		return real_getpwent();
-	}
-
-	return nwrap_main_global->ops->getpwent();
-}
-
 static int nwrap_files_getpwent_r(struct passwd *pwdst, char *buf,
 				  size_t buflen, struct passwd **pwdstp)
 {
@@ -1042,44 +985,9 @@ static int nwrap_files_getpwent_r(struct passwd *pwdst, char *buf,
 	return nwrap_pw_copy_r(pw, pwdst, buf, buflen, pwdstp);
 }
 
-_PUBLIC_ int nwrap_getpwent_r(struct passwd *pwdst, char *buf,
-			      size_t buflen, struct passwd **pwdstp)
-{
-	if (!nwrap_enabled()) {
-#ifdef SOLARIS_GETPWENT_R
-		struct passwd *pw;
-		pw = real_getpwent_r(pwdst, buf, buflen);
-		if (!pw) {
-			if (errno == 0) {
-				return ENOENT;
-			}
-			return errno;
-		}
-		if (pwdstp) {
-			*pwdstp = pw;
-		}
-		return 0;
-#else
-		return real_getpwent_r(pwdst, buf, buflen, pwdstp);
-#endif
-	}
-
-	return nwrap_main_global->ops->getpwent_r(pwdst, buf, buflen, pwdstp);
-}
-
 static void nwrap_files_endpwent(void)
 {
 	nwrap_pw_global.idx = 0;
-}
-
-_PUBLIC_ void nwrap_endpwent(void)
-{
-	if (!nwrap_enabled()) {
-		real_endpwent();
-		return;
-	}
-
-	nwrap_main_global->ops->endpwent();
 }
 
 /* misc functions */
@@ -1087,15 +995,6 @@ static int nwrap_files_initgroups(const char *user, gid_t group)
 {
 	/* TODO: maybe we should also fake this... */
 	return EPERM;
-}
-
-_PUBLIC_ int nwrap_initgroups(const char *user, gid_t group)
-{
-	if (!nwrap_enabled()) {
-		return real_initgroups(user, group);
-	}
-
-	return nwrap_main_global->ops->initgroups(user, group);
 }
 
 /* group functions */
@@ -1122,15 +1021,6 @@ static struct group *nwrap_files_getgrnam(const char *name)
 	return NULL;
 }
 
-_PUBLIC_ struct group *nwrap_getgrnam(const char *name)
-{
-	if (!nwrap_enabled()) {
-		return real_getgrnam(name);
-	}
-
-	return nwrap_main_global->ops->getgrnam(name);
-}
-
 static int nwrap_files_getgrnam_r(const char *name, struct group *grdst,
 				  char *buf, size_t buflen, struct group **grdstp)
 {
@@ -1145,16 +1035,6 @@ static int nwrap_files_getgrnam_r(const char *name, struct group *grdst,
 	}
 
 	return nwrap_gr_copy_r(gr, grdst, buf, buflen, grdstp);
-}
-
-_PUBLIC_ int nwrap_getgrnam_r(const char *name, struct group *grdst,
-			      char *buf, size_t buflen, struct group **grdstp)
-{
-	if (!nwrap_enabled()) {
-		return real_getgrnam_r(name, grdst, buf, buflen, grdstp);
-	}
-
-	return nwrap_main_global->ops->getgrnam_r(name, grdst, buf, buflen, grdstp);
 }
 
 static struct group *nwrap_files_getgrgid(gid_t gid)
@@ -1180,15 +1060,6 @@ static struct group *nwrap_files_getgrgid(gid_t gid)
 	return NULL;
 }
 
-_PUBLIC_ struct group *nwrap_getgrgid(gid_t gid)
-{
-	if (!nwrap_enabled()) {
-		return real_getgrgid(gid);
-	}
-
-	return nwrap_main_global->ops->getgrgid(gid);
-}
-
 static int nwrap_files_getgrgid_r(gid_t gid, struct group *grdst,
 				  char *buf, size_t buflen, struct group **grdstp)
 {
@@ -1207,30 +1078,10 @@ static int nwrap_files_getgrgid_r(gid_t gid, struct group *grdst,
 	return ENOENT;
 }
 
-_PUBLIC_ int nwrap_getgrgid_r(gid_t gid, struct group *grdst,
-			      char *buf, size_t buflen, struct group **grdstp)
-{
-	if (!nwrap_enabled()) {
-		return real_getgrgid_r(gid, grdst, buf, buflen, grdstp);
-	}
-
-	return nwrap_main_global->ops->getgrgid_r(gid, grdst, buf, buflen, grdstp);
-}
-
 /* group enum functions */
 static void nwrap_files_setgrent(void)
 {
 	nwrap_gr_global.idx = 0;
-}
-
-_PUBLIC_ void nwrap_setgrent(void)
-{
-	if (!nwrap_enabled()) {
-		real_setgrent();
-		return;
-	}
-
-	nwrap_main_global->ops->setgrent();
 }
 
 static struct group *nwrap_files_getgrent(void)
@@ -1254,15 +1105,6 @@ static struct group *nwrap_files_getgrent(void)
 	return gr;
 }
 
-_PUBLIC_ struct group *nwrap_getgrent(void)
-{
-	if (!nwrap_enabled()) {
-		return real_getgrent();
-	}
-
-	return nwrap_main_global->ops->getgrent();
-}
-
 static int nwrap_files_getgrent_r(struct group *grdst, char *buf,
 				  size_t buflen, struct group **grdstp)
 {
@@ -1279,44 +1121,9 @@ static int nwrap_files_getgrent_r(struct group *grdst, char *buf,
 	return nwrap_gr_copy_r(gr, grdst, buf, buflen, grdstp);
 }
 
-_PUBLIC_ int nwrap_getgrent_r(struct group *grdst, char *buf,
-			      size_t buflen, struct group **grdstp)
-{
-	if (!nwrap_enabled()) {
-#ifdef SOLARIS_GETGRENT_R
-		struct group *gr;
-		gr = real_getgrent_r(grdst, buf, buflen);
-		if (!gr) {
-			if (errno == 0) {
-				return ENOENT;
-			}
-			return errno;
-		}
-		if (grdstp) {
-			*grdstp = gr;
-		}
-		return 0;
-#else
-		return real_getgrent_r(grdst, buf, buflen, grdstp);
-#endif
-	}
-
-	return nwrap_main_global->ops->getgrent_r(grdst, buf, buflen, grdstp);
-}
-
 static void nwrap_files_endgrent(void)
 {
 	nwrap_gr_global.idx = 0;
-}
-
-_PUBLIC_ void nwrap_endgrent(void)
-{
-	if (!nwrap_enabled()) {
-		real_endgrent();
-		return;
-	}
-
-	nwrap_main_global->ops->endgrent();
 }
 
 static int nwrap_files_getgrouplist(const char *user, gid_t group, gid_t *groups, int *ngroups)
@@ -1385,6 +1192,203 @@ static int nwrap_files_getgrouplist(const char *user, gid_t group, gid_t *groups
 	free(groups_tmp);
 
 	return count;
+}
+
+/*
+ * PUBLIC interface
+ */
+
+_PUBLIC_ struct passwd *nwrap_getpwnam(const char *name)
+{
+	if (!nwrap_enabled()) {
+		return real_getpwnam(name);
+	}
+
+	return nwrap_main_global->ops->getpwnam(name);
+}
+
+_PUBLIC_ int nwrap_getpwnam_r(const char *name, struct passwd *pwdst,
+			      char *buf, size_t buflen, struct passwd **pwdstp)
+{
+	if (!nwrap_enabled()) {
+		return real_getpwnam_r(name, pwdst, buf, buflen, pwdstp);
+	}
+
+	return nwrap_main_global->ops->getpwnam_r(name, pwdst, buf, buflen, pwdstp);
+}
+
+_PUBLIC_ struct passwd *nwrap_getpwuid(uid_t uid)
+{
+	if (!nwrap_enabled()) {
+		return real_getpwuid(uid);
+	}
+
+	return nwrap_main_global->ops->getpwuid(uid);
+}
+
+_PUBLIC_ int nwrap_getpwuid_r(uid_t uid, struct passwd *pwdst,
+			      char *buf, size_t buflen, struct passwd **pwdstp)
+{
+	if (!nwrap_enabled()) {
+		return real_getpwuid_r(uid, pwdst, buf, buflen, pwdstp);
+	}
+
+	return nwrap_main_global->ops->getpwuid_r(uid, pwdst, buf, buflen, pwdstp);
+}
+
+_PUBLIC_ void nwrap_setpwent(void)
+{
+	if (!nwrap_enabled()) {
+		real_setpwent();
+		return;
+	}
+
+	nwrap_main_global->ops->setpwent();
+}
+
+_PUBLIC_ struct passwd *nwrap_getpwent(void)
+{
+	if (!nwrap_enabled()) {
+		return real_getpwent();
+	}
+
+	return nwrap_main_global->ops->getpwent();
+}
+
+_PUBLIC_ int nwrap_getpwent_r(struct passwd *pwdst, char *buf,
+			      size_t buflen, struct passwd **pwdstp)
+{
+	if (!nwrap_enabled()) {
+#ifdef SOLARIS_GETPWENT_R
+		struct passwd *pw;
+		pw = real_getpwent_r(pwdst, buf, buflen);
+		if (!pw) {
+			if (errno == 0) {
+				return ENOENT;
+			}
+			return errno;
+		}
+		if (pwdstp) {
+			*pwdstp = pw;
+		}
+		return 0;
+#else
+		return real_getpwent_r(pwdst, buf, buflen, pwdstp);
+#endif
+	}
+
+	return nwrap_main_global->ops->getpwent_r(pwdst, buf, buflen, pwdstp);
+}
+
+_PUBLIC_ void nwrap_endpwent(void)
+{
+	if (!nwrap_enabled()) {
+		real_endpwent();
+		return;
+	}
+
+	nwrap_main_global->ops->endpwent();
+}
+
+_PUBLIC_ int nwrap_initgroups(const char *user, gid_t group)
+{
+	if (!nwrap_enabled()) {
+		return real_initgroups(user, group);
+	}
+
+	return nwrap_main_global->ops->initgroups(user, group);
+}
+
+_PUBLIC_ struct group *nwrap_getgrnam(const char *name)
+{
+	if (!nwrap_enabled()) {
+		return real_getgrnam(name);
+	}
+
+	return nwrap_main_global->ops->getgrnam(name);
+}
+
+_PUBLIC_ int nwrap_getgrnam_r(const char *name, struct group *grdst,
+			      char *buf, size_t buflen, struct group **grdstp)
+{
+	if (!nwrap_enabled()) {
+		return real_getgrnam_r(name, grdst, buf, buflen, grdstp);
+	}
+
+	return nwrap_main_global->ops->getgrnam_r(name, grdst, buf, buflen, grdstp);
+}
+
+_PUBLIC_ struct group *nwrap_getgrgid(gid_t gid)
+{
+	if (!nwrap_enabled()) {
+		return real_getgrgid(gid);
+	}
+
+	return nwrap_main_global->ops->getgrgid(gid);
+}
+
+_PUBLIC_ int nwrap_getgrgid_r(gid_t gid, struct group *grdst,
+			      char *buf, size_t buflen, struct group **grdstp)
+{
+	if (!nwrap_enabled()) {
+		return real_getgrgid_r(gid, grdst, buf, buflen, grdstp);
+	}
+
+	return nwrap_main_global->ops->getgrgid_r(gid, grdst, buf, buflen, grdstp);
+}
+
+_PUBLIC_ void nwrap_setgrent(void)
+{
+	if (!nwrap_enabled()) {
+		real_setgrent();
+		return;
+	}
+
+	nwrap_main_global->ops->setgrent();
+}
+
+_PUBLIC_ struct group *nwrap_getgrent(void)
+{
+	if (!nwrap_enabled()) {
+		return real_getgrent();
+	}
+
+	return nwrap_main_global->ops->getgrent();
+}
+
+_PUBLIC_ int nwrap_getgrent_r(struct group *grdst, char *buf,
+			      size_t buflen, struct group **grdstp)
+{
+	if (!nwrap_enabled()) {
+#ifdef SOLARIS_GETGRENT_R
+		struct group *gr;
+		gr = real_getgrent_r(grdst, buf, buflen);
+		if (!gr) {
+			if (errno == 0) {
+				return ENOENT;
+			}
+			return errno;
+		}
+		if (grdstp) {
+			*grdstp = gr;
+		}
+		return 0;
+#else
+		return real_getgrent_r(grdst, buf, buflen, grdstp);
+#endif
+	}
+
+	return nwrap_main_global->ops->getgrent_r(grdst, buf, buflen, grdstp);
+}
+
+_PUBLIC_ void nwrap_endgrent(void)
+{
+	if (!nwrap_enabled()) {
+		real_endgrent();
+		return;
+	}
+
+	nwrap_main_global->ops->endgrent();
 }
 
 _PUBLIC_ int nwrap_getgrouplist(const char *user, gid_t group, gid_t *groups, int *ngroups)
