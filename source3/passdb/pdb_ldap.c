@@ -7,20 +7,20 @@
    Copyright (C) Andrew Bartlett		2002-2003
    Copyright (C) Stefan (metze) Metzmacher	2002-2003
    Copyright (C) Simo Sorce			2006
-    
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-   
+
 */
 
 /* TODO:
@@ -98,10 +98,10 @@ static const char* get_userattr_key2string( int schema_ver, int key )
 	switch ( schema_ver ) {
 		case SCHEMAVER_SAMBAACCOUNT:
 			return get_attr_key2string( attrib_map_v22, key );
-			
+
 		case SCHEMAVER_SAMBASAMACCOUNT:
 			return get_attr_key2string( attrib_map_v30, key );
-			
+
 		default:
 			DEBUG(0,("get_userattr_key2string: unknown schema version specified\n"));
 			break;
@@ -118,14 +118,14 @@ const char** get_userattr_list( TALLOC_CTX *mem_ctx, int schema_ver )
 	switch ( schema_ver ) {
 		case SCHEMAVER_SAMBAACCOUNT:
 			return get_attr_list( mem_ctx, attrib_map_v22 );
-			
+
 		case SCHEMAVER_SAMBASAMACCOUNT:
 			return get_attr_list( mem_ctx, attrib_map_v30 );
 		default:
 			DEBUG(0,("get_userattr_list: unknown schema version specified!\n"));
 			break;
 	}
-	
+
 	return NULL;
 }
 
@@ -140,7 +140,7 @@ static const char** get_userattr_delete_list( TALLOC_CTX *mem_ctx,
 		case SCHEMAVER_SAMBAACCOUNT:
 			return get_attr_list( mem_ctx,
 					      attrib_map_to_delete_v22 );
-			
+
 		case SCHEMAVER_SAMBASAMACCOUNT:
 			return get_attr_list( mem_ctx,
 					      attrib_map_to_delete_v30 );
@@ -148,7 +148,7 @@ static const char** get_userattr_delete_list( TALLOC_CTX *mem_ctx,
 			DEBUG(0,("get_userattr_delete_list: unknown schema version specified!\n"));
 			break;
 	}
-	
+
 	return NULL;
 }
 
@@ -162,7 +162,7 @@ static const char* get_objclass_filter( int schema_ver )
 {
 	fstring objclass_filter;
 	char *result;
-	
+
 	switch( schema_ver ) {
 		case SCHEMAVER_SAMBAACCOUNT:
 			fstr_sprintf( objclass_filter, "(objectclass=%s)", LDAP_OBJ_SAMBAACCOUNT );
@@ -175,7 +175,7 @@ static const char* get_objclass_filter( int schema_ver )
 			objclass_filter[0] = '\0';
 			break;
 	}
-	
+
 	result = talloc_strdup(talloc_tos(), objclass_filter);
 	SMB_ASSERT(result != NULL);
 	return result;
@@ -448,7 +448,7 @@ static int ldapsam_delete_entry(struct ldapsam_privates *priv,
 	}
 
 	/* Ok, delete only the SAM attributes */
-	
+
 	for (name = ldap_first_attribute(priv2ld(priv), entry, &ptr);
 	     name != NULL;
 	     name = ldap_next_attribute(priv2ld(priv), entry, ptr)) {
@@ -1501,7 +1501,7 @@ static NTSTATUS ldapsam_getsampwnam(struct pdb_methods *my_methods, struct samu 
 	int count;
 	const char ** attr_list;
 	int rc;
-	
+
 	attr_list = get_userattr_list( user, ldap_state->schema_ver );
 	append_attr(user, &attr_list,
 		    get_userattr_key2string(ldap_state->schema_ver,
@@ -1513,9 +1513,9 @@ static NTSTATUS ldapsam_getsampwnam(struct pdb_methods *my_methods, struct samu 
 
 	if ( rc != LDAP_SUCCESS ) 
 		return NT_STATUS_NO_SUCH_USER;
-	
+
 	count = ldap_count_entries(ldap_state->smbldap_state->ldap_struct, result);
-	
+
 	if (count < 1) {
 		DEBUG(4, ("ldapsam_getsampwnam: Unable to locate user [%s] count=%d\n", sname, count));
 		ldap_msgfree(result);
@@ -1572,12 +1572,12 @@ static int ldapsam_get_ldap_user_by_sid(struct ldapsam_privates *ldap_state,
 				return rc;
 			break;
 		}
-			
+
 		case SCHEMAVER_SAMBAACCOUNT:
 			if (!sid_peek_check_rid(&ldap_state->domain_sid, sid, &rid)) {
 				return rc;
 			}
-		
+
 			attr_list = get_userattr_list(NULL,
 						      ldap_state->schema_ver);
 			rc = ldapsam_search_suffix_by_rid(ldap_state, rid, result, attr_list );
@@ -1608,7 +1608,7 @@ static NTSTATUS ldapsam_getsampwsid(struct pdb_methods *my_methods, struct samu 
 		return NT_STATUS_NO_SUCH_USER;
 
 	count = ldap_count_entries(ldap_state->smbldap_state->ldap_struct, result);
-	
+
 	if (count < 1) {
 		DEBUG(4, ("ldapsam_getsampwsid: Unable to locate SID [%s] "
 			  "count=%d\n", sid_string_dbg(sid), count));
@@ -1652,11 +1652,11 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 {
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	int rc;
-	
+
 	if (!newpwd || !dn) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	
+
 	if (!mods) {
 		DEBUG(5,("ldapsam_modify_entry: mods is empty: nothing to modify\n"));
 		/* may be password change below however */
@@ -1684,12 +1684,12 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 					 ldap_op));
 				return NT_STATUS_INVALID_PARAMETER;
 		}
-		
+
 		if (rc!=LDAP_SUCCESS) {
 			return NT_STATUS_UNSUCCESSFUL;
 		}  
 	}
-	
+
 	if (!(pdb_get_acct_ctrl(newpwd)&(ACB_WSTRUST|ACB_SVRTRUST|ACB_DOMTRUST)) &&
 			(lp_ldap_passwd_sync() != LDAP_PASSWD_SYNC_OFF) &&
 			need_update(newpwd, PDB_PLAINTEXT_PW) &&
@@ -1749,7 +1749,7 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 			TALLOC_FREE(utf8_password);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
-		
+
 		TALLOC_FREE(utf8_dn);
 		TALLOC_FREE(utf8_password);
 		ber_free(ber, 1);
@@ -1846,7 +1846,7 @@ static NTSTATUS ldapsam_delete_sam_account(struct pdb_methods *my_methods,
 		result = NT_STATUS_NO_SUCH_USER;
 		goto done;
 	}
-	
+
 	rc = ldapsam_delete_entry(
 		priv, mem_ctx, entry,
 		priv->schema_ver == SCHEMAVER_SAMBASAMACCOUNT ?
@@ -1932,7 +1932,7 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, struc
 		TALLOC_FREE(dn);
 		return NT_STATUS_OK;
 	}
-	
+
 	ret = ldapsam_modify_entry(my_methods,newpwd,dn,mods,LDAP_MOD_REPLACE, element_is_changed);
 
 	if (mods != NULL) {
@@ -2670,7 +2670,7 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 				ret = NT_STATUS_NO_MEMORY;
 				goto done;
 			}
-			
+
 			filter = talloc_asprintf_append_buffer(filter, "(uid=%s)", escape_memberuid);
 			if (filter == NULL) {
 				SAFE_FREE(escape_memberuid);
@@ -2775,7 +2775,7 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 	}
 
 	ret = NT_STATUS_OK;
-	
+
  done:
 
 	if (values)
@@ -3268,7 +3268,7 @@ static NTSTATUS ldapsam_delete_group_mapping_entry(struct pdb_methods *methods,
 	rc = ldapsam_delete_entry(priv, mem_ctx, entry, LDAP_OBJ_GROUPMAP,
 				  get_attr_list(mem_ctx,
 						groupmap_attr_list_to_delete));
- 
+
 	if ((rc == LDAP_NAMING_VIOLATION) ||
 	    (rc == LDAP_NOT_ALLOWED_ON_RDN) ||
 	    (rc == LDAP_OBJECT_CLASS_VIOLATION)) {
@@ -3376,11 +3376,11 @@ static NTSTATUS ldapsam_getsamgrent(struct pdb_methods *my_methods,
 	while (!bret) {
 		if (!ldap_state->entry)
 			return ret;
-		
+
 		ldap_state->index++;
 		bret = init_group_from_ldap(ldap_state, map,
 					    ldap_state->entry);
-		
+
 		ldap_state->entry =
 			ldap_next_entry(ldap_state->smbldap_state->ldap_struct,
 					ldap_state->entry);	
@@ -3874,7 +3874,7 @@ static NTSTATUS ldapsam_get_account_policy_from_ldap(struct pdb_methods *methods
 	}
 
 	*value = (uint32)atol(vals[0]);
-	
+
 	ntstatus = NT_STATUS_OK;
 
 out:
@@ -3889,7 +3889,7 @@ out:
 
    - if user hasn't decided to use account policies inside LDAP just reuse the
      old tdb values
-   
+
    - if there is a valid cache entry, return that
    - if there is an LDAP entry, update cache and return 
    - otherwise set to default, update cache and return
@@ -3928,16 +3928,16 @@ static NTSTATUS ldapsam_get_account_policy(struct pdb_methods *methods,
 	if (!account_policy_get_default(policy_index, value)) {
 		return ntstatus;
 	}
-	
+
 /* update_ldap: */
- 
+
  	ntstatus = ldapsam_set_account_policy(methods, policy_index, *value);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		return ntstatus;
 	}
-		
+
  update_cache:
- 
+
 	if (!cache_account_policy_set(policy_index, *value)) {
 		DEBUG(0,("ldapsam_get_account_policy: failed to update local "
 			 "tdb as a cache\n"));
@@ -4467,7 +4467,7 @@ static bool ldapuser2displayentry(struct ldap_search_state *state,
 		DEBUG(0, ("talloc failed\n"));
 		return False;
 	}
-	
+
 	vals = ldap_get_values(ld, entry, "sambaSid");
 	if ((vals == NULL) || (vals[0] == NULL)) {
 		DEBUG(0, ("\"objectSid\" not found\n"));
@@ -4623,7 +4623,7 @@ static bool ldapgroup2displayentry(struct ldap_search_state *state,
 		DEBUG(0, ("talloc failed\n"));
 		return False;
 	}
-	
+
 	vals = ldap_get_values(ld, entry, "sambaSid");
 	if ((vals == NULL) || (vals[0] == NULL)) {
 		DEBUG(0, ("\"objectSid\" not found\n"));
@@ -4652,7 +4652,7 @@ static bool ldapgroup2displayentry(struct ldap_search_state *state,
 				return False;
 			}
 			break;
-	
+
 		default:
 			DEBUG(0,("unkown group type: %d\n", group_type));
 			return False;
@@ -4980,7 +4980,7 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 	uid_t uid = -1;
 	NTSTATUS ret;
 	int rc;
-	
+
 	if (((acb_info & ACB_NORMAL) && name[strlen(name)-1] == '$') ||
 	      acb_info & ACB_WSTRUST ||
 	      acb_info & ACB_SVRTRUST ||
@@ -5006,7 +5006,7 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 		DEBUG (0, ("ldapsam_create_user: More than one user with name [%s] ?!\n", name));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-	
+
 	if (num_result == 1) {
 		char *tmp;
 		/* check if it is just a posix account.
@@ -5035,7 +5035,7 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 	if (num_result == 0) {
 		add_posix = True;
 	}
-	
+
 	/* Create the basic samu structure and generate the mods for the ldap commit */
 	if (!NT_STATUS_IS_OK((ret = ldapsam_new_rid_internal(my_methods, rid)))) {
 		DEBUG(1, ("ldapsam_create_user: Could not allocate a new RID\n"));
@@ -5181,7 +5181,7 @@ static NTSTATUS ldapsam_delete_user(struct pdb_methods *my_methods, TALLOC_CTX *
 	int rc;
 
 	DEBUG(0,("ldapsam_delete_user: Attempt to delete user [%s]\n", pdb_get_username(sam_acct)));
-	
+
 	filter = talloc_asprintf(tmp_ctx,
 				 "(&(uid=%s)"
 				 "(objectClass=%s)"
@@ -5263,7 +5263,7 @@ static NTSTATUS ldapsam_create_dom_group(struct pdb_methods *my_methods,
 	DOM_SID group_sid;
 	gid_t gid = -1;
 	int rc;
-	
+
 	groupname = escape_ldap_string_alloc(name);
 	filter = talloc_asprintf(tmp_ctx, "(&(cn=%s)(objectClass=%s))",
 				 groupname, LDAP_OBJ_POSIXGROUP);
@@ -5282,7 +5282,7 @@ static NTSTATUS ldapsam_create_dom_group(struct pdb_methods *my_methods,
 		DEBUG (0, ("ldapsam_create_group: There exists more than one group with name [%s]: bailing out!\n", name));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-	
+
 	if (num_result == 1) {
 		char *tmp;
 		/* check if it is just a posix group.
@@ -5306,7 +5306,7 @@ static NTSTATUS ldapsam_create_dom_group(struct pdb_methods *my_methods,
 			DEBUG (1, ("ldapsam_create_group: Couldn't retrieve the gidNumber for [%s]?!?!\n", name));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
-		
+
 		gid = strtoul(tmp, NULL, 10);
 
 		dn = smbldap_talloc_dn(tmp_ctx, priv2ld(ldap_state), entry);
@@ -5322,7 +5322,7 @@ static NTSTATUS ldapsam_create_dom_group(struct pdb_methods *my_methods,
 		DEBUG(3,("ldapsam_create_user: Creating new posix group\n"));
 
 		is_new_entry = True;
-	
+
 		/* lets allocate a new groupid for this group */
 		if (!winbind_allocate_gid(&gid)) {
 			DEBUG (0, ("ldapsam_create_group: Unable to allocate a new group id: bailing out!\n"));
@@ -5519,7 +5519,7 @@ static NTSTATUS ldapsam_change_groupmem(struct pdb_methods *my_methods,
 	default:
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	
+
 	/* get member sid  */
 	sid_compose(&member_sid, get_global_sam_sid(), member_rid);
 
@@ -5566,7 +5566,7 @@ static NTSTATUS ldapsam_change_groupmem(struct pdb_methods *my_methods,
 		/* check if we are trying to remove the member from his primary group */
 		char *gidstr;
 		gid_t user_gid, group_gid;
-		
+
 		gidstr = smbldap_talloc_single_attribute(priv2ld(ldap_state), entry, "gidNumber", tmp_ctx);
 		if (!gidstr) {
 			DEBUG (0, ("ldapsam_change_groupmem: Unable to find the member's gid!\n"));
@@ -5574,7 +5574,7 @@ static NTSTATUS ldapsam_change_groupmem(struct pdb_methods *my_methods,
 		}
 
 		user_gid = strtoul(gidstr, NULL, 10);
-	
+
 		if (!sid_to_gid(&group_sid, &group_gid)) {
 			DEBUG (0, ("ldapsam_change_groupmem: Unable to get group gid from SID!\n"));
 			return NT_STATUS_UNSUCCESSFUL;
@@ -5649,7 +5649,7 @@ static NTSTATUS ldapsam_change_groupmem(struct pdb_methods *my_methods,
 		}
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	
+
 	return NT_STATUS_OK;
 }
 

@@ -6,20 +6,20 @@
    Copyright (C) Shahms King			2001
    Copyright (C) Andrew Bartlett		2002-2003
    Copyright (C) Stefan (metze) Metzmacher	2002-2003
-    
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-   
+
 */
 
 #include "includes.h"
@@ -217,13 +217,13 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
  const char* get_attr_key2string( ATTRIB_MAP_ENTRY table[], int key )
 {
 	int i = 0;
-	
+
 	while ( table[i].attrib != LDAP_ATTR_LIST_END ) {
 		if ( table[i].attrib == key )
 			return table[i].name;
 		i++;
 	}
-	
+
 	return NULL;
 }
 
@@ -236,7 +236,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 {
 	const char **names;
 	int i = 0;
-	
+
 	while ( table[i].attrib != LDAP_ATTR_LIST_END )
 		i++;
 	i++;
@@ -253,7 +253,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 		i++;
 	}
 	names[i] = NULL;
-	
+
 	return names;
 }
 
@@ -266,25 +266,25 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 				    int max_len)
 {
 	char **values;
-	
+
 	if ( !attribute )
 		return False;
-		
+
 	value[0] = '\0';
 
 	if ((values = ldap_get_values (ldap_struct, entry, attribute)) == NULL) {
 		DEBUG (10, ("smbldap_get_single_attribute: [%s] = [<does not exist>]\n", attribute));
-		
+
 		return False;
 	}
-	
+
 	if (convert_string(CH_UTF8, CH_UNIX,values[0], -1, value, max_len, False) == (size_t)-1) {
 		DEBUG(1, ("smbldap_get_single_attribute: string conversion of [%s] = [%s] failed!\n", 
 			  attribute, values[0]));
 		ldap_value_free(values);
 		return False;
 	}
-	
+
 	ldap_value_free(values);
 #ifdef DEBUG_PASSWORDS
 	DEBUG (100, ("smbldap_get_single_attribute: [%s] = [%s]\n", attribute, value));
@@ -533,7 +533,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 			for (; mods[i]->mod_values[j] != NULL; j++);
 		}
 		mods[i]->mod_values = SMB_REALLOC_ARRAY(mods[i]->mod_values, char *, j + 2);
-					       
+
 		if (mods[i]->mod_values == NULL) {
 			smb_panic("smbldap_set_mod: out of memory!");
 			/* notreached. */
@@ -543,8 +543,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 			smb_panic("smbldap_set_mod: String conversion failure!");
 			/* notreached. */
 		}
-		
-		
+
 		mods[i]->mod_values[j] = SMB_STRDUP(utf8_value);
 		TALLOC_FREE(utf8_value);
 		SMB_ASSERT(mods[i]->mod_values[j] != NULL);
@@ -580,9 +579,9 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 	}
 
 	/* all of our string attributes are case insensitive */
-	
+
 	if (existed && newval && (StrCaseCmp(oldval, newval) == 0)) {
-		
+
 		/* Believe it or not, but LDAP will deny a delete and
 		   an add at the same time if the values are the
 		   same... */
@@ -601,7 +600,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
 		/* This will also allow modifying single valued attributes 
 		 * in Novell NDS. In NDS you have to first remove attribute and then
 		 * you could add new value */
-		
+
 		DEBUG(10,("smbldap_make_mod: deleting attribute |%s| values |%s|\n", attribute, oldval));
 		smbldap_set_mod(mods, LDAP_MOD_DELETE, attribute, oldval);
 	}
@@ -659,7 +658,7 @@ static void smbldap_store_state(LDAP *ld, struct smbldap_state *smbldap_state)
 {
 	struct smbldap_state *tmp_ldap_state;
 	struct smbldap_state_lookup *t;
-	
+
 	if ((tmp_ldap_state = smbldap_find_state(ld))) {
 		SMB_ASSERT(tmp_ldap_state == smbldap_state);
 		return;
@@ -667,7 +666,7 @@ static void smbldap_store_state(LDAP *ld, struct smbldap_state *smbldap_state)
 
 	t = SMB_XMALLOC_P(struct smbldap_state_lookup);
 	ZERO_STRUCTP(t);
-	
+
 	DLIST_ADD_END(smbldap_state_lookup_list, t, struct smbldap_state_lookup *);
 	t->ld = ld;
 	t->smbldap_state = smbldap_state;
@@ -682,11 +681,11 @@ int smb_ldap_start_tls(LDAP *ldap_struct, int version)
 #ifdef LDAP_OPT_X_TLS
 	int rc;
 #endif
-	
+
 	if (lp_ldap_ssl() != LDAP_SSL_START_TLS) {
 		return LDAP_SUCCESS;
 	}
-	
+
 #ifdef LDAP_OPT_X_TLS
 	if (version != LDAP_VERSION3) {
 		DEBUG(0, ("Need LDAPv3 for Start TLS\n"));
@@ -716,9 +715,9 @@ int smb_ldap_setup_conn(LDAP **ldap_struct, const char *uri)
 	int rc;
 
 	DEBUG(10, ("smb_ldap_setup_connection: %s\n", uri));
-	
+
 #ifdef HAVE_LDAP_INITIALIZE
-	
+
 	rc = ldap_initialize(ldap_struct, uri);
 	if (rc) {
 		DEBUG(0, ("ldap_initialize: %s\n", ldap_err2string(rc)));
@@ -740,9 +739,9 @@ int smb_ldap_setup_conn(LDAP **ldap_struct, const char *uri)
 		if ( strnequal( uri, "URL:", 4 ) ) {
 			uri += 4;
 		}
-		
+
 		sscanf(uri, "%10[^:]://%254[^:/]:%d", protocol, host, &port);
-		
+
 		if (port == 0) {
 			if (strequal(protocol, "ldap")) {
 				port = LDAP_PORT;
@@ -752,12 +751,12 @@ int smb_ldap_setup_conn(LDAP **ldap_struct, const char *uri)
 				DEBUG(0, ("unrecognised protocol (%s)!\n", protocol));
 			}
 		}
-		
+
 		if ((*ldap_struct = ldap_init(host, port)) == NULL)	{
 			DEBUG(0, ("ldap_init failed !\n"));
 			return LDAP_OPERATIONS_ERROR;
 		}
-		
+
 	        if (strequal(protocol, "ldaps")) {
 #ifdef LDAP_OPT_X_TLS
 			int tls = LDAP_OPT_X_TLS_HARD;
@@ -765,7 +764,7 @@ int smb_ldap_setup_conn(LDAP **ldap_struct, const char *uri)
 			{
 				DEBUG(0, ("Failed to setup a TLS session\n"));
 			}
-			
+
 			DEBUG(3,("LDAPS option set...!\n"));
 #else
 			DEBUG(0,("smbldap_open_connection: Secure connection not supported by LDAP client libraries!\n"));
@@ -811,7 +810,7 @@ int smb_ldap_upgrade_conn(LDAP *ldap_struct, int *new_version)
 {
 	int version;
 	int rc;
-	
+
 	/* assume the worst */
 	*new_version = LDAP_VERSION2;
 
@@ -831,7 +830,7 @@ int smb_ldap_upgrade_conn(LDAP *ldap_struct, int *new_version)
 	if (rc) {
 		return rc;
 	}
-		
+
 	*new_version = LDAP_VERSION3;
 	return LDAP_SUCCESS;
 }
@@ -894,7 +893,7 @@ static int smbldap_open_connection (struct smbldap_state *ldap_state)
 	if (rc) {
 		return rc;
 	}
-	
+
 	DEBUG(2, ("smbldap_open_connection: connection opened\n"));
 	return rc;
 }
@@ -909,11 +908,11 @@ static int rebindproc_with_state  (LDAP * ld, char **whop, char **credp,
 				   int *methodp, int freeit, void *arg)
 {
 	struct smbldap_state *ldap_state = arg;
-	
+
 	/** @TODO Should we be doing something to check what servers we rebind to?
 	    Could we get a referral to a machine that we don't want to give our
 	    username and password to? */
-	
+
 	if (freeit) {
 		SAFE_FREE(*whop);
 		if (*credp) {
@@ -942,7 +941,7 @@ static int rebindproc_with_state  (LDAP * ld, char **whop, char **credp,
 	}
 
 	GetTimeOfDay(&ldap_state->last_rebind);
-		
+
 	return 0;
 }
 #endif /*defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)*/
@@ -1017,7 +1016,6 @@ static int rebindproc (LDAP *ldap_struct, char **whop, char **credp,
 
 	return rebindproc_with_state(ldap_struct, whop, credp,
 				     method, freeit, ldap_state);
-	
 }
 # endif /*LDAP_SET_REBIND_PROC_ARGS == 2*/
 #endif /*defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)*/
@@ -1058,7 +1056,7 @@ static int smbldap_connect_system(struct smbldap_state *ldap_state, LDAP * ldap_
 
 	/* removed the sasl_bind_s "EXTERNAL" stuff, as my testsuite 
 	   (OpenLDAP) doesnt' seem to support it */
-	   
+
 	DEBUG(10,("ldap_connect_system: Binding to ldap server %s as \"%s\"\n",
 		  ldap_state->uri, ldap_state->bind_dn));
 
@@ -1194,17 +1192,17 @@ static NTSTATUS smbldap_close(struct smbldap_state *ldap_state)
 {
 	if (!ldap_state)
 		return NT_STATUS_INVALID_PARAMETER;
-		
+
 	if (ldap_state->ldap_struct != NULL) {
 		ldap_unbind(ldap_state->ldap_struct);
 		ldap_state->ldap_struct = NULL;
 	}
 
 	smbldap_delete_state(ldap_state);
-	
+
 	DEBUG(5,("The connection to the LDAP server was closed\n"));
 	/* maybe free the results here --metze */
-	
+
 	return NT_STATUS_OK;
 }
 
@@ -1298,7 +1296,7 @@ static int smbldap_search_ext(struct smbldap_state *ldap_state,
 	size_t		converted_size;
 
 	SMB_ASSERT(ldap_state);
-	
+
 	DEBUG(5,("smbldap_search_ext: base => [%s], filter => [%s], "
 		 "scope => [%d]\n", base, filter, scope));
 
@@ -1525,7 +1523,7 @@ int smbldap_modify(struct smbldap_state *ldap_state, const char *dn, LDAPMod *at
 			}
 		}
 	}
-		
+
 	TALLOC_FREE(utf8_dn);
 	return rc;
 }
@@ -1537,7 +1535,7 @@ int smbldap_add(struct smbldap_state *ldap_state, const char *dn, LDAPMod *attrs
 	char           *utf8_dn;
 	time_t		endtime = time(NULL)+lp_ldap_timeout();
 	size_t		converted_size;
-	
+
 	SMB_ASSERT(ldap_state);
 
 	DEBUG(5,("smbldap_add: dn => [%s]\n", dn ));
@@ -1569,7 +1567,7 @@ int smbldap_add(struct smbldap_state *ldap_state, const char *dn, LDAPMod *attrs
 			}
 		}
 	}
-	
+
 	TALLOC_FREE(utf8_dn);
 	return rc;
 }
@@ -1581,7 +1579,7 @@ int smbldap_delete(struct smbldap_state *ldap_state, const char *dn)
 	char           *utf8_dn;
 	time_t		endtime = time(NULL)+lp_ldap_timeout();
 	size_t		converted_size;
-	
+
 	SMB_ASSERT(ldap_state);
 
 	DEBUG(5,("smbldap_delete: dn => [%s]\n", dn ));
@@ -1613,7 +1611,7 @@ int smbldap_delete(struct smbldap_state *ldap_state, const char *dn)
 			}
 		}
 	}
-	
+
 	TALLOC_FREE(utf8_dn);
 	return rc;
 }
@@ -1626,7 +1624,7 @@ int smbldap_extended_operation(struct smbldap_state *ldap_state,
 	int 		rc = LDAP_SERVER_DOWN;
 	int 		attempts = 0;
 	time_t		endtime = time(NULL)+lp_ldap_timeout();
-	
+
 	if (!ldap_state)
 		return (-1);
 
@@ -1655,7 +1653,7 @@ int smbldap_extended_operation(struct smbldap_state *ldap_state,
 			}
 		}
 	}
-		
+
 	return rc;
 }
 
@@ -1683,7 +1681,7 @@ static void smbldap_idle_fn(struct event_context *event_ctx,
 		DEBUG(10,("ldap connection not connected...\n"));
 		return;
 	}
-		
+
 	if ((state->last_use+SMBLDAP_IDLE_TIME) > now.tv_sec) {
 		DEBUG(10,("ldap connection not idle...\n"));
 
@@ -1694,7 +1692,7 @@ static void smbldap_idle_fn(struct event_context *event_ctx,
 			private_data);
 		return;
 	}
-		
+
 	DEBUG(7,("ldap connection idle...closing connection\n"));
 	smbldap_close(state);
 }
@@ -1706,7 +1704,7 @@ static void smbldap_idle_fn(struct event_context *event_ctx,
 void smbldap_free_struct(struct smbldap_state **ldap_state) 
 {
 	smbldap_close(*ldap_state);
-	
+
 	if ((*ldap_state)->bind_secret) {
 		memset((*ldap_state)->bind_secret, '\0', strlen((*ldap_state)->bind_secret));
 	}
