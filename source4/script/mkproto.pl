@@ -206,7 +206,7 @@ sub process_file($$$)
 				  void|bool|int|struct|char|const|\w+_[tT]\s|uint|unsigned|long|NTSTATUS|
 				  ADS_STATUS|enum\s.*\(|DATA_BLOB|WERROR|XFILE|FILE|DIR|
 			      double|TDB_CONTEXT|TDB_DATA|TALLOC_CTX|NTTIME|FN_|init_module|
-			      GtkWidget|GType|smb_ucs2_t|krb5_error_code)
+			      GtkWidget|GType|smb_ucs2_t|krb5_error_code|NET_API_STATUS)
 			      /xo);
 
 		next if ($line =~ /^int\s*main/);
