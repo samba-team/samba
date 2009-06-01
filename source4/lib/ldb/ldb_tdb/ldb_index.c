@@ -796,6 +796,18 @@ static int ltdb_index_dn_not(struct ldb_module *module,
 	return LDB_ERR_OPERATIONS_ERROR;
 }
 
+
+static bool ltdb_index_unique(struct ldb_context *ldb,
+			      const char *attr)
+{
+	const struct ldb_schema_attribute *a;
+	a = ldb_schema_attribute_by_name(ldb, attr);
+	if (a->flags & LDB_ATTR_FLAG_UNIQUE_INDEX) {
+		return true;
+	}
+	return false;
+}
+
 /*
   AND two index results
  */
@@ -806,7 +818,7 @@ static int ltdb_index_dn_and(struct ldb_module *module,
 {
 	struct ldb_context *ldb;
 	unsigned int i;
-	int ret;
+	int ret, pass;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -814,57 +826,71 @@ static int ltdb_index_dn_and(struct ldb_module *module,
 	list->dn = NULL;
 	list->count = 0;
 
-	for (i=0;i<tree->u.list.num_elements;i++) {
-		struct dn_list *list2;
-		int v;
+	for (pass=0;pass<=1;pass++) {
+		/* in the first pass we only look for unique simple
+		   equality tests, in the hope of avoiding having to look
+		   at any others */
+		bool only_unique = pass==0?true:false;
 
-		list2 = talloc(module, struct dn_list);
-		if (list2 == NULL) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
+		for (i=0;i<tree->u.list.num_elements;i++) {
+			struct dn_list *list2;
+			int v;
+			bool is_unique = false;
+			const struct ldb_parse_tree *subtree = tree->u.list.elements[i];
 
-		v = ltdb_index_dn(module, tree->u.list.elements[i], index_list, list2);
-
-		if (v == LDB_ERR_NO_SUCH_OBJECT) {
-			/* 0 && X == 0 */
-			talloc_free(list->dn);
-			talloc_free(list2);
-			return LDB_ERR_NO_SUCH_OBJECT;
-		}
-
-		if (v != LDB_SUCCESS && v != LDB_ERR_NO_SUCH_OBJECT) {
-			talloc_free(list2);
-			continue;
-		}
-
-		if (ret != LDB_SUCCESS && ret != LDB_ERR_NO_SUCH_OBJECT) {
-			ret = LDB_SUCCESS;
-			talloc_free(list->dn);
-			list->dn = talloc_move(list, &list2->dn);
-			list->count = list2->count;
-		} else {
-			if (list_intersect(ldb, list, list2) == -1) {
-				talloc_free(list2);
+			if (subtree->operation == LDB_OP_EQUALITY &&
+			    ltdb_index_unique(ldb, subtree->u.equality.attr)) {
+				is_unique = true;
+			}
+			if (is_unique != only_unique) continue;
+			
+			list2 = talloc(module, struct dn_list);
+			if (list2 == NULL) {
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
+			
+			v = ltdb_index_dn(module, subtree, index_list, list2);
+
+			if (v == LDB_ERR_NO_SUCH_OBJECT) {
+				/* 0 && X == 0 */
+				talloc_free(list->dn);
+				talloc_free(list2);
+				return LDB_ERR_NO_SUCH_OBJECT;
+			}
+			
+			if (v != LDB_SUCCESS && v != LDB_ERR_NO_SUCH_OBJECT) {
+				talloc_free(list2);
+				continue;
+			}
+			
+			if (ret != LDB_SUCCESS && ret != LDB_ERR_NO_SUCH_OBJECT) {
+				ret = LDB_SUCCESS;
+				talloc_free(list->dn);
+				list->dn = talloc_move(list, &list2->dn);
+				list->count = list2->count;
+			} else {
+				if (list_intersect(ldb, list, list2) == -1) {
+					talloc_free(list2);
+					return LDB_ERR_OPERATIONS_ERROR;
+				}
+			}
+			
+			talloc_free(list2);
+			
+			if (list->count == 0) {
+				talloc_free(list->dn);
+				return LDB_ERR_NO_SUCH_OBJECT;
+			}
+			
+			if (list->count == 1) {
+				/* it isn't worth loading the next part of the tree */
+				return ret;
+			}
 		}
-
-		talloc_free(list2);
-
-		if (list->count == 0) {
-			talloc_free(list->dn);
-			return LDB_ERR_NO_SUCH_OBJECT;
-		}
-
-		if (list->count == 1) {
-			/* it isn't worth loading the next part of the tree */
-			break;
-		}
-	}
-
+	}	
 	return ret;
 }
-
+	
 /*
   AND index results and ONE level special index
  */
