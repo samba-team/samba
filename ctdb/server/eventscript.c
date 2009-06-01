@@ -405,7 +405,7 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *options)
 			continue;
 		}
 		if (!(st.st_mode & S_IXUSR)) {
-			DEBUG(DEBUG_ERR,("Event script %s is not executable. Ignoring this event script\n", str));
+			DEBUG(DEBUG_INFO,("Event script %s is not executable. Ignoring this event script\n", str));
 			continue;
 		}
 		
