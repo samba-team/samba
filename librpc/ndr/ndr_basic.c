@@ -126,6 +126,18 @@ _PUBLIC_ enum ndr_err_code ndr_pull_uint32(struct ndr_pull *ndr, int ndr_flags, 
 }
 
 /*
+  parse a double
+*/
+_PUBLIC_ enum ndr_err_code ndr_pull_double(struct ndr_pull *ndr, int ndr_flags, double *v)
+{
+	NDR_PULL_ALIGN(ndr, 8);
+	NDR_PULL_NEED_BYTES(ndr, 8);
+	memcpy(v, ndr->data+ndr->offset, 8);
+	ndr->offset += 8;
+	return NDR_ERR_SUCCESS;
+}
+
+/*
   parse a pointer referent identifier
 */
 _PUBLIC_ enum ndr_err_code ndr_pull_generic_ptr(struct ndr_pull *ndr, uint32_t *v)
@@ -389,6 +401,18 @@ _PUBLIC_ enum ndr_err_code ndr_push_hyper(struct ndr_push *ndr, int ndr_flags, u
 }
 
 /*
+  push a double
+*/
+_PUBLIC_ enum ndr_err_code ndr_push_double(struct ndr_push *ndr, int ndr_flags, double v)
+{
+	NDR_PUSH_ALIGN(ndr, 8);
+	NDR_PUSH_NEED_BYTES(ndr, 8);
+	memcpy(ndr->data+ndr->offset, &v, 8);
+	ndr->offset += 8;
+	return NDR_ERR_SUCCESS;
+}
+
+/*
   push a pointer
 */
 _PUBLIC_ enum ndr_err_code ndr_push_pointer(struct ndr_push *ndr, int ndr_flags, void* v)
@@ -506,7 +530,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_NTTIME(struct ndr_pull *ndr, int ndr_flags, 
 }
 
 /*
-  push a NTTIME
+  push a NTTIME_1sec
 */
 _PUBLIC_ enum ndr_err_code ndr_push_NTTIME_1sec(struct ndr_push *ndr, int ndr_flags, NTTIME t)
 {
@@ -677,6 +701,11 @@ _PUBLIC_ void ndr_print_udlongr(struct ndr_print *ndr, const char *name, uint64_
 _PUBLIC_ void ndr_print_dlong(struct ndr_print *ndr, const char *name, int64_t v)
 {
 	ndr->print(ndr, "%-25s: 0x%016llx (%lld)", name, (unsigned long long)v, (long long)v);
+}
+
+_PUBLIC_ void ndr_print_double(struct ndr_print *ndr, const char *name, double v)
+{
+	ndr->print(ndr, "%-25s: %f", name, v);
 }
 
 _PUBLIC_ void ndr_print_hyper(struct ndr_print *ndr, const char *name, uint64_t v)

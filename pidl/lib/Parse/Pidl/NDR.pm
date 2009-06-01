@@ -53,6 +53,7 @@ my $scalar_alignment = {
 	'int32' => 4,
 	'uint32' => 4,
 	'hyper' => 8,
+	'double' => 8,
 	'pointer' => 8,
 	'dlong' => 4,
 	'udlong' => 4,

@@ -38,6 +38,7 @@ my %scalars = (
 	"dlong"		=> "int64_t",
 	"udlong"	=> "uint64_t",
 	"udlongr"	=> "uint64_t",
+	"double"	=> "double",
 	"pointer"	=> "void*",
 	"DATA_BLOB"	=> "DATA_BLOB",
 	"string"	=> "const char *",
