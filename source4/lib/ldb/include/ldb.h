@@ -375,6 +375,12 @@ const struct ldb_dn_extended_syntax *ldb_dn_extended_syntax_by_name(struct ldb_c
 */
 #define LDB_ATTR_FLAG_FIXED        (1<<2) 
 
+/*
+  when this is set, attempts to create two records which have the same
+  value for this attribute will return LDB_ERR_ENTRY_ALREADY_EXISTS
+ */
+#define LDB_ATTR_FLAG_UNIQUE_INDEX (1<<3)
+
 /**
   LDAP attribute syntax for a DN
 
