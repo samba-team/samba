@@ -616,9 +616,30 @@ static DATA_BLOB cli_session_setup_blob_receive(struct cli_state *cli)
 
 	/* w2k with kerberos doesn't properly null terminate this field */
 	len = smb_bufrem(cli->inbuf, p);
-	p += clistr_pull(cli->inbuf, cli->server_type, p, sizeof(fstring),
-			 len, 0);
+	if (p + len < cli->inbuf + cli->bufsize+SAFETY_MARGIN - 2) {
+		char *end_of_buf = p + len;
 
+		SSVAL(p, len, 0);
+		/* Now it's null terminated. */
+		p += clistr_pull(cli->inbuf, cli->server_type, p, sizeof(fstring),
+			-1, STR_TERMINATE);
+		/*
+		 * See if there's another string. If so it's the
+		 * server domain (part of the 'standard' Samba
+		 * server signature).
+		 */
+		if (p < end_of_buf) {
+			p += clistr_pull(cli->inbuf, cli->server_domain, p, sizeof(fstring),
+				-1, STR_TERMINATE);
+		}
+	} else {
+		/*
+		 * No room to null terminate so we can't see if there
+		 * is another string (server_domain) afterwards.
+		 */
+		p += clistr_pull(cli->inbuf, cli->server_type, p, sizeof(fstring),
+				 len, 0);
+	}
 	return blob2;
 }
 
@@ -867,7 +888,9 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 
-		fstrcpy(cli->server_domain, ntlmssp_state->server_domain);
+		if (cli->server_domain[0] == '\0') {
+			fstrcpy(cli->server_domain, ntlmssp_state->server_domain);
+		}
 		cli_set_session_key(cli, ntlmssp_state->session_key);
 
 		if (cli_simple_set_signing(
