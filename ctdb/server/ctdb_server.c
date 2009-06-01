@@ -560,7 +560,12 @@ void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 	node = ctdb->nodes[hdr->destnode];
 
-	if (hdr->destnode == ctdb->pnn) {
+	if (node->flags & NODE_FLAGS_DELETED) {
+		DEBUG(DEBUG_ERR, (__location__ " Can not queue packet to DELETED node %d\n", hdr->destnode));
+		return;
+	}
+
+	if (node->pnn == ctdb->pnn) {
 		ctdb_defer_packet(ctdb, hdr);
 	} else {
 		if (ctdb->methods == NULL) {
