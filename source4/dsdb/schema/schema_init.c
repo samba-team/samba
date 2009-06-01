@@ -583,6 +583,22 @@ WERROR dsdb_read_prefixes_from_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 	return WERR_OK;
 }
 
+/*
+  this will be replaced with something that looks at the right part of
+  the schema once we know where unique indexing information is hidden
+ */
+static bool dsdb_schema_unique_attribute(const char *attr)
+{
+	const char *attrs[] = { "samAccountName", "objectGUID", "objectSID" , NULL };
+	int i;
+	for (i=0;attrs[i];i++) {
+		if (strcasecmp(attr, attrs[i]) == 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
 
 /*
   setup the ldb_schema_attribute field for a dsdb_attribute
@@ -619,6 +635,10 @@ static int dsdb_schema_setup_ldb_schema_attribute(struct ldb_context *ldb,
 	a->name = attr->lDAPDisplayName;
 	a->flags = 0;
 	a->syntax = s;
+
+	if (dsdb_schema_unique_attribute(a->name)) {
+		a->flags |= LDB_ATTR_FLAG_UNIQUE_INDEX;
+	}
 	
 	return LDB_SUCCESS;
 }
