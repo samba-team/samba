@@ -296,7 +296,11 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 		return -1;
 	}
 
-	for (i=0;i<ctdb->num_nodes;i++) {
+	for (i=0; i < ctdb->num_nodes; i++) {
+		if (ctdb->nodes[i]->flags & NODE_FLAGS_DELETED) {
+			continue;
+		}
+
 		/* if node_ip is specified we will only try to bind to that
 		   ip.
 		*/

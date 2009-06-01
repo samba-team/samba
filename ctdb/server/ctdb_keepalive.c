@@ -37,6 +37,11 @@ static void ctdb_check_for_dead_nodes(struct event_context *ev, struct timed_eve
 	/* send a keepalive to all other nodes, unless */
 	for (i=0;i<ctdb->num_nodes;i++) {
 		struct ctdb_node *node = ctdb->nodes[i];
+
+		if (node->flags & NODE_FLAGS_DELETED) {
+			continue;
+		}
+
 		if (node->pnn == ctdb->pnn) {
 			continue;
 		}

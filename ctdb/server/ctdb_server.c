@@ -45,6 +45,9 @@ int ctdb_ip_to_nodeid(struct ctdb_context *ctdb, const char *nodeip)
 	int nodeid;
 
 	for (nodeid=0;nodeid<ctdb->num_nodes;nodeid++) {
+		if (ctdb->nodes[nodeid]->flags & NODE_FLAGS_DELETED) {
+			continue;
+		}
 		if (!strcmp(ctdb->nodes[nodeid]->address.address, nodeip)) {
 			return nodeid;
 		}
@@ -89,7 +92,7 @@ int ctdb_set_tdb_dir_persistent(struct ctdb_context *ctdb, const char *dir)
 }
 
 /*
-  add a node to the list of active nodes
+  add a node to the list of nodes
 */
 static int ctdb_add_node(struct ctdb_context *ctdb, char *nstr)
 {
@@ -137,6 +140,46 @@ static int ctdb_add_node(struct ctdb_context *ctdb, char *nstr)
 }
 
 /*
+  add an entry for a "deleted" node to the list of nodes.
+  a "deleted" node is a node that is commented out from the nodes file.
+  this is used to prevent that subsequent nodes in the nodes list
+  change their pnn value if a node is "delete" by commenting it out and then
+  using "ctdb reloadnodes" at runtime.
+*/
+static int ctdb_add_deleted_node(struct ctdb_context *ctdb)
+{
+	struct ctdb_node *node, **nodep;
+
+	nodep = talloc_realloc(ctdb, ctdb->nodes, struct ctdb_node *, ctdb->num_nodes+1);
+	CTDB_NO_MEMORY(ctdb, nodep);
+
+	ctdb->nodes = nodep;
+	nodep = &ctdb->nodes[ctdb->num_nodes];
+	(*nodep) = talloc_zero(ctdb->nodes, struct ctdb_node);
+	CTDB_NO_MEMORY(ctdb, *nodep);
+	node = *nodep;
+	
+	if (ctdb_parse_address(ctdb, node, "0.0.0.0", &node->address) != 0) {
+		DEBUG(DEBUG_ERR,("Failed to setup deleted node %d\n", ctdb->num_nodes));
+		return -1;
+	}
+	node->ctdb = ctdb;
+	node->name = talloc_strdup(node, "0.0.0.0:0");
+
+	/* this assumes that the nodes are kept in sorted order, and no gaps */
+	node->pnn = ctdb->num_nodes;
+
+	/* this node is permanently deleted/disconnected */
+	node->flags = NODE_FLAGS_DELETED|NODE_FLAGS_DISCONNECTED;
+
+	ctdb->num_nodes++;
+	node->dead_count = 0;
+
+	return 0;
+}
+
+
+/*
   setup the node list from a file
 */
 int ctdb_set_nlist(struct ctdb_context *ctdb, const char *nlist)
@@ -167,6 +210,10 @@ int ctdb_set_nlist(struct ctdb_context *ctdb, const char *nlist)
 			node++;
 		}
 		if (*node == '#') {
+			if (ctdb_add_deleted_node(ctdb) != 0) {
+				talloc_free(lines);
+				return -1;
+			}
 			continue;
 		}
 		if (strcmp(node, "") == 0) {
@@ -188,7 +235,11 @@ int ctdb_set_nlist(struct ctdb_context *ctdb, const char *nlist)
 	CTDB_NO_MEMORY(ctdb, ctdb->vnn_map->map);
 
 	for(i=0;i<ctdb->vnn_map->size;i++) {
-		ctdb->vnn_map->map[i] = i;
+		if (ctdb->nodes[i]->flags & NODE_FLAGS_DELETED) {
+			ctdb->vnn_map->map[i] = -1;
+		} else {
+			ctdb->vnn_map->map[i] = i;
+		}
 	}
 	
 	talloc_free(lines);
@@ -437,7 +488,10 @@ static void ctdb_broadcast_packet_all(struct ctdb_context *ctdb,
 				      struct ctdb_req_header *hdr)
 {
 	int i;
-	for (i=0;i<ctdb->num_nodes;i++) {
+	for (i=0; i < ctdb->num_nodes; i++) {
+		if (ctdb->nodes[i]->flags & NODE_FLAGS_DELETED) {
+			continue;
+		}
 		hdr->destnode = ctdb->nodes[i]->pnn;
 		ctdb_queue_packet(ctdb, hdr);
 	}
@@ -463,7 +517,10 @@ static void ctdb_broadcast_packet_connected(struct ctdb_context *ctdb,
 					    struct ctdb_req_header *hdr)
 {
 	int i;
-	for (i=0;i<ctdb->num_nodes;i++) {
+	for (i=0; i < ctdb->num_nodes; i++) {
+		if (ctdb->nodes[i]->flags & NODE_FLAGS_DELETED) {
+			continue;
+		}
 		if (!(ctdb->nodes[i]->flags & NODE_FLAGS_DISCONNECTED)) {
 			hdr->destnode = ctdb->nodes[i]->pnn;
 			ctdb_queue_packet(ctdb, hdr);

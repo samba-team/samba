@@ -673,6 +673,10 @@ create_merged_ip_list(struct ctdb_context *ctdb, TALLOC_CTX *tmp_ctx)
 	for (i=0;i<ctdb->num_nodes;i++) {
 		public_ips = ctdb->nodes[i]->public_ips;
 
+		if (ctdb->nodes[i]->flags & NODE_FLAGS_DELETED) {
+			continue;
+		}
+
 		/* there were no public ips for this node */
 		if (public_ips == NULL) {
 			continue;

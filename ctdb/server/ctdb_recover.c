@@ -242,6 +242,10 @@ ctdb_reload_nodes_event(struct event_context *ev, struct timed_event *te,
 			continue;
 		}
 
+		if (ctdb->nodes[i]->flags & NODE_FLAGS_DELETED) {
+			continue;
+		}
+
 		/* any new or different nodes must be added */
 		if (ctdb->methods->add_node(ctdb->nodes[i]) != 0) {
 			DEBUG(DEBUG_CRIT, (__location__ " methods->add_node failed at %d\n", i));
@@ -252,6 +256,9 @@ ctdb_reload_nodes_event(struct event_context *ev, struct timed_event *te,
 			ctdb_fatal(ctdb, "failed to connect to node. shutting down\n");
 		}
 	}
+
+	/* tell the recovery daemon to reaload the nodes file too */
+	ctdb_daemon_send_message(ctdb, ctdb->pnn, CTDB_SRVID_RELOAD_NODES, tdb_null);
 
 	talloc_free(tmp_ctx);
 	return;

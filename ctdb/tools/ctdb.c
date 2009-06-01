@@ -492,6 +492,7 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 			{ NODE_FLAGS_PERMANENTLY_DISABLED,  "DISABLED" },
 			{ NODE_FLAGS_BANNED,                "BANNED" },
 			{ NODE_FLAGS_UNHEALTHY,             "UNHEALTHY" },
+			{ NODE_FLAGS_DELETED,               "DELETED" },
 		};
 		char *flags_str = NULL;
 		int j;
