@@ -82,11 +82,18 @@ wbcErr tevent_req_simple_recv_wbcerr(struct tevent_req *req)
 	return WBC_ERR_SUCCESS;
 }
 
+struct wbc_debug_ops {
+	void (*debug)(void *context, enum wbcDebugLevel level,
+		      const char *fmt, va_list ap) PRINTF_ATTRIBUTE(3,0);
+	void *context;
+};
+
 struct wb_context {
 	struct tevent_queue *queue;
 	int fd;
 	bool is_priv;
 	const char *dir;
+	struct wbc_debug_ops debug_ops;
 };
 
 static int make_nonstd_fd(int fd)
@@ -696,4 +703,72 @@ wbcErr wb_trans_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 
 	*presponse = talloc_move(mem_ctx, &state->wb_resp);
 	return WBC_ERR_SUCCESS;
+}
+
+/********************************************************************
+ * Debug wrapper functions, modeled (with lot's of code copied as is)
+ * after the tevent debug wrapper functions
+ ********************************************************************/
+
+/*
+  this allows the user to choose their own debug function
+*/
+int wbcSetDebug(struct wb_context *wb_ctx,
+		void (*debug)(void *context,
+			      enum wbcDebugLevel level,
+			      const char *fmt,
+			      va_list ap) PRINTF_ATTRIBUTE(3,0),
+		void *context)
+{
+	wb_ctx->debug_ops.debug = debug;
+	wb_ctx->debug_ops.context = context;
+	return 0;
+}
+
+/*
+  debug function for wbcSetDebugStderr
+*/
+static void wbcDebugStderr(void *private_data,
+			   enum wbcDebugLevel level,
+			   const char *fmt,
+			   va_list ap) PRINTF_ATTRIBUTE(3,0);
+static void wbcDebugStderr(void *private_data,
+			   enum wbcDebugLevel level,
+			   const char *fmt, va_list ap)
+{
+	if (level <= WBC_DEBUG_WARNING) {
+		vfprintf(stderr, fmt, ap);
+	}
+}
+
+/*
+  convenience function to setup debug messages on stderr
+  messages of level WBC_DEBUG_WARNING and higher are printed
+*/
+int wbcSetDebugStderr(struct wb_context *wb_ctx)
+{
+	return wbcSetDebug(wb_ctx, wbcDebugStderr, wb_ctx);
+}
+
+/*
+ * log a message
+ *
+ * The default debug action is to ignore debugging messages.
+ * This is the most appropriate action for a library.
+ * Applications using the library must decide where to
+ * redirect debugging messages
+*/
+void wbcDebug(struct wb_context *wb_ctx, enum wbcDebugLevel level,
+	      const char *fmt, ...)
+{
+	va_list ap;
+	if (!wb_ctx) {
+		return;
+	}
+	if (wb_ctx->debug_ops.debug == NULL) {
+		return;
+	}
+	va_start(ap, fmt);
+	wb_ctx->debug_ops.debug(wb_ctx->debug_ops.context, level, fmt, ap);
+	va_end(ap);
 }

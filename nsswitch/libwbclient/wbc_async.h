@@ -32,6 +32,13 @@ struct wb_context;
 struct winbindd_request;
 struct winbindd_response;
 
+enum wbcDebugLevel {
+	WBC_DEBUG_FATAL,
+	WBC_DEBUG_ERROR,
+	WBC_DEBUG_WARNING,
+	WBC_DEBUG_TRACE
+};
+
 struct tevent_req *wb_trans_send(TALLOC_CTX *mem_ctx,
 				 struct tevent_context *ev,
 				 struct wb_context *wb_ctx, bool need_priv,
@@ -39,6 +46,15 @@ struct tevent_req *wb_trans_send(TALLOC_CTX *mem_ctx,
 wbcErr wb_trans_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		     struct winbindd_response **presponse);
 struct wb_context *wb_context_init(TALLOC_CTX *mem_ctx, const char* dir);
+int wbcSetDebug(struct wb_context *wb_ctx,
+		void (*debug)(void *context,
+			      enum wbcDebugLevel level,
+			      const char *fmt,
+			      va_list ap) PRINTF_ATTRIBUTE(3,0),
+		void *context);
+int wbcSetDebugStderr(struct wb_context *wb_ctx);
+void wbcDebug(struct wb_context *wb_ctx, enum wbcDebugLevel level,
+	      const char *fmt, ...) PRINTF_ATTRIBUTE(3,0);
 
 /* Definitions from wb_reqtrans.c */
 wbcErr map_wbc_err_from_errno(int error);
