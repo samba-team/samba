@@ -653,7 +653,7 @@ bool asn1_read_OctetString(struct asn1_data *data, TALLOC_CTX *mem_ctx, DATA_BLO
 	
 	if (data->has_error) {
 		data_blob_free(blob);
-		*blob = data_blob(NULL, 0);
+		*blob = data_blob_null;
 		return false;
 	}
 	return true;
