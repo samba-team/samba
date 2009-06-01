@@ -282,6 +282,7 @@ source4/torture/basic/proto.h
 source4/torture/ldap/proto.h
 source4/torture/ldb/proto.h
 source4/torture/libnet/proto.h
+source4/torture/libnetapi/proto.h
 source4/torture/local/proto.h
 source4/torture/nbench/proto.h
 source4/torture/nbt/proto.h
