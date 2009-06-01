@@ -270,9 +270,8 @@ uint32_t ctdb_get_num_active_nodes(struct ctdb_context *ctdb)
 {
 	int i;
 	uint32_t count=0;
-	for (i=0;i<ctdb->vnn_map->size;i++) {
-		struct ctdb_node *node = ctdb->nodes[ctdb->vnn_map->map[i]];
-		if (!(node->flags & NODE_FLAGS_INACTIVE)) {
+	for (i=0; i < ctdb->num_nodes; i++) {
+		if (!(ctdb->nodes[i]->flags & NODE_FLAGS_INACTIVE)) {
 			count++;
 		}
 	}
