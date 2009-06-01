@@ -189,7 +189,7 @@ struct x32{
 void
 SHA256_Update (SHA256_CTX *m, const void *v, size_t len)
 {
-    const unsigned char *p = v;
+    const unsigned char *p = (const unsigned char *)v;
     size_t old_sz = m->sz[0];
     size_t offset;
 

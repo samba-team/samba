@@ -1213,12 +1213,20 @@ static NTSTATUS dcesrv_samr_CreateUser2(struct dcesrv_call_state *dce_call, TALL
 	if (d_state->builtin) {
 		DEBUG(5, ("Cannot create a user in the BUILTIN domain"));
 		return NT_STATUS_ACCESS_DENIED;
+	} else if (r->in.acct_flags == ACB_DOMTRUST) {
+		/* Domain trust accounts must be created by the LSA calls */
+		return NT_STATUS_ACCESS_DENIED;
 	}
 	account_name = r->in.account_name->string;
 
 	if (account_name == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+
+	/*
+	 * Start a transaction, so we can query and do a subsequent atomic
+	 * modify
+	 */
 
 	ret = ldb_transaction_start(d_state->sam_ctx);
 	if (ret != 0) {
@@ -1258,6 +1266,7 @@ static NTSTATUS dcesrv_samr_CreateUser2(struct dcesrv_call_state *dce_call, TALL
 
 	} else if (r->in.acct_flags == ACB_WSTRUST) {
 		if (cn_name[cn_name_len - 1] != '$') {
+			ldb_transaction_cancel(d_state->sam_ctx);
 			return NT_STATUS_FOOBAR;
 		}
 		cn_name[cn_name_len - 1] = '\0';
@@ -1267,17 +1276,13 @@ static NTSTATUS dcesrv_samr_CreateUser2(struct dcesrv_call_state *dce_call, TALL
 
 	} else if (r->in.acct_flags == ACB_SVRTRUST) {
 		if (cn_name[cn_name_len - 1] != '$') {
+			ldb_transaction_cancel(d_state->sam_ctx);
 			return NT_STATUS_FOOBAR;		
 		}
 		cn_name[cn_name_len - 1] = '\0';
 		container = "OU=Domain Controllers";
 		obj_class = "computer";
 		samdb_msg_add_int(d_state->sam_ctx, mem_ctx, msg, "primaryGroupID", DOMAIN_RID_DCS);
-
-	} else if (r->in.acct_flags == ACB_DOMTRUST) {
-		container = "CN=Users";
-		obj_class = "user";
-
 	} else {
 		ldb_transaction_cancel(d_state->sam_ctx);
 		return NT_STATUS_INVALID_PARAMETER;
@@ -1292,9 +1297,7 @@ static NTSTATUS dcesrv_samr_CreateUser2(struct dcesrv_call_state *dce_call, TALL
 
 	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "sAMAccountName", account_name);
 	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "objectClass", obj_class);
-	
-	/* Start a transaction, so we can query and do a subsequent atomic modify */
-	
+
 	/* create the user */
 	ret = ldb_add(d_state->sam_ctx, msg);
 	switch (ret) {

@@ -42,7 +42,7 @@ OUTPUT_TYPE = MERGED_OBJ
 INIT_FUNCTION = ntvfs_posix_init 
 #PRIVATE_DEPENDENCIES = pvfs_acl_xattr pvfs_acl_nfs4
 PRIVATE_DEPENDENCIES = NDR_XATTR WRAP_XATTR BLKID ntvfs_common MESSAGING \
-			LIBWBCLIENT pvfs_acl pvfs_aio
+			LIBWBCLIENT_OLD pvfs_acl pvfs_aio
 # End MODULE ntvfs_posix
 ################################################
 

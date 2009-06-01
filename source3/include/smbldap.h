@@ -2,20 +2,20 @@
    Unix SMB/CIFS mplementation.
    LDAP protocol helper functions for SAMBA
    Copyright (C) Gerald Carter			2001-2003
-    
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-   
+
 */
 
 #ifndef _SMBLDAP_H
@@ -214,6 +214,9 @@ char * smbldap_talloc_single_attribute(LDAP *ldap_struct, LDAPMessage *entry,
 char * smbldap_talloc_smallest_attribute(LDAP *ldap_struct, LDAPMessage *entry,
 					 const char *attribute,
 					 TALLOC_CTX *mem_ctx);
+bool smbldap_talloc_single_blob(TALLOC_CTX *mem_ctx, LDAP *ld,
+				LDAPMessage *msg, const char *attrib,
+				DATA_BLOB *blob);
 bool smbldap_pull_sid(LDAP *ld, LDAPMessage *msg, const char *attrib,
 		      struct dom_sid *sid);
 void talloc_autofree_ldapmsg(TALLOC_CTX *mem_ctx, LDAPMessage *result);

@@ -128,6 +128,7 @@ SMB_INCLUDE_MK(lib/ldb/python.mk)
 SMB_ENABLE(swig_ldb,YES)
 
 m4_include(lib/tls/config.m4)
+m4_include(torture/libnetapi/config.m4)
 
 dnl m4_include(auth/kerberos/config.m4)
 m4_include(auth/gensec/config.m4)

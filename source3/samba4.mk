@@ -74,6 +74,7 @@ clustersrcdir := $(samba4srcdir)/cluster
 libnetsrcdir := $(samba4srcdir)/libnet
 authsrcdir := $(samba4srcdir)/auth
 nsswitchsrcdir := $(samba4srcdir)/../nsswitch
+libwbclientsrcdir := $(nsswitchsrcdir)/libwbclient
 libsrcdir := $(samba4srcdir)/lib
 libsocketsrcdir := $(samba4srcdir)/lib/socket
 libcharsetsrcdir := $(samba4srcdir)/../lib/util/charset

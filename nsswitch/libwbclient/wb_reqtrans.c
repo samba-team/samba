@@ -5,25 +5,41 @@
 
    Copyright (C) Volker Lendecke 2008
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
-   (at your option) any later version.
+     ** NOTE! The following LGPL license applies to the wbclient
+     ** library. This does NOT imply that all of Samba is released
+     ** under the LGPL
 
-   This program is distributed in the hope that it will be useful,
+   This library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 3 of the License, or (at your option) any later version.
+
+   This library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Library General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
+   You should have received a copy of the GNU Lesser General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
-#include "wbc_async.h"
+#include "replace.h"
+#include "system/filesys.h"
+#include "system/network.h"
+#include <talloc.h>
+#include <tevent.h>
+struct fd_event;
+struct event_context;
+#include "lib/async_req/async_sock.h"
+#include "lib/util/tevent_unix.h"
+#include "nsswitch/winbind_struct_protocol.h"
+#include "nsswitch/libwbclient/wbclient.h"
+#include "nsswitch/libwbclient/wbc_async.h"
 
+#ifdef DBGC_CLASS
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
+#endif
 
 struct req_read_state {
 	struct winbindd_request *wb_req;

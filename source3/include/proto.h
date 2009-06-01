@@ -1088,8 +1088,6 @@ struct user_auth_info *get_cmdline_auth_info_copy(TALLOC_CTX *mem_ctx,
 						 const struct user_auth_info *info);
 bool set_cmdline_auth_info_machine_account_creds(struct user_auth_info *auth_info);
 void set_cmdline_auth_info_getpass(struct user_auth_info *auth_info);
-bool add_gid_to_array_unique(TALLOC_CTX *mem_ctx, gid_t gid,
-			     gid_t **gids, size_t *num_gids);
 bool file_exist_stat(const char *fname,SMB_STRUCT_STAT *sbuf);
 bool socket_exist(const char *fname);
 bool directory_exist_stat(char *dname,SMB_STRUCT_STAT *st);
@@ -2361,10 +2359,46 @@ NTSTATUS cli_posix_hardlink(struct cli_state *cli,
 			const char *newname);
 uint32_t unix_perms_to_wire(mode_t perms);
 mode_t wire_perms_to_unix(uint32_t perms);
-bool cli_unix_getfacl(struct cli_state *cli, const char *name, size_t *prb_size, char **retbuf);
-bool cli_unix_stat(struct cli_state *cli, const char *name, SMB_STRUCT_STAT *sbuf);
-bool cli_unix_chmod(struct cli_state *cli, const char *fname, mode_t mode);
-bool cli_unix_chown(struct cli_state *cli, const char *fname, uid_t uid, gid_t gid);
+struct tevent_req *cli_posix_getfacl_send(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct cli_state *cli,
+					const char *fname);
+NTSTATUS cli_posix_getfacl_recv(struct tevent_req *req,
+				TALLOC_CTX *mem_ctx,
+				size_t *prb_size,
+				char **retbuf);
+NTSTATUS cli_posix_getfacl(struct cli_state *cli,
+			const char *fname,
+			TALLOC_CTX *mem_ctx,
+			size_t *prb_size,
+			char **retbuf);
+struct tevent_req *cli_posix_stat_send(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct cli_state *cli,
+					const char *fname);
+NTSTATUS cli_posix_stat_recv(struct tevent_req *req,
+				SMB_STRUCT_STAT *sbuf);
+NTSTATUS cli_posix_stat(struct cli_state *cli,
+			const char *fname,
+			SMB_STRUCT_STAT *sbuf);
+struct tevent_req *cli_posix_chmod_send(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct cli_state *cli,
+					const char *fname,
+					mode_t mode);
+NTSTATUS cli_posix_chmod_recv(struct tevent_req *req);
+NTSTATUS cli_posix_chmod(struct cli_state *cli, const char *fname, mode_t mode);
+struct tevent_req *cli_posix_chown_send(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct cli_state *cli,
+					const char *fname,
+					uid_t uid,
+					gid_t gid);
+NTSTATUS cli_posix_chown_recv(struct tevent_req *req);
+NTSTATUS cli_posix_chown(struct cli_state *cli,
+			const char *fname,
+			uid_t uid,
+			gid_t gid);
 struct tevent_req *cli_rename_send(TALLOC_CTX *mem_ctx,
                                 struct event_context *ev,
                                 struct cli_state *cli,
@@ -2408,7 +2442,13 @@ struct tevent_req *cli_rmdir_send(TALLOC_CTX *mem_ctx,
 				  const char *dname);
 NTSTATUS cli_rmdir_recv(struct tevent_req *req);
 NTSTATUS cli_rmdir(struct cli_state *cli, const char *dname);
-int cli_nt_delete_on_close(struct cli_state *cli, uint16_t fnum, bool flag);
+struct tevent_req *cli_nt_delete_on_close_send(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct cli_state *cli,
+					uint16_t fnum,
+					bool flag);
+NTSTATUS cli_nt_delete_on_close_recv(struct tevent_req *req);
+NTSTATUS cli_nt_delete_on_close(struct cli_state *cli, uint16_t fnum, bool flag);
 struct tevent_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
 				     struct event_context *ev,
 				     struct cli_state *cli,
@@ -2967,6 +3007,7 @@ NTSTATUS dos_to_ntstatus(uint8 eclass, uint32 ecode);
 void ntstatus_to_dos(NTSTATUS ntstatus, uint8 *eclass, uint32 *ecode);
 NTSTATUS werror_to_ntstatus(WERROR error);
 WERROR ntstatus_to_werror(NTSTATUS error);
+NTSTATUS map_nt_error_from_wbcErr(wbcErr wbc_err);
 NTSTATUS map_nt_error_from_gss(uint32 gss_maj, uint32 minor);
 
 /* The following definitions come from libsmb/namecache.c  */
@@ -4278,7 +4319,7 @@ enum brl_flavour lp_posix_cifsu_locktype(files_struct *fsp);
 void lp_set_posix_default_cifsx_readwrite_locktype(enum brl_flavour val);
 int lp_min_receive_file_size(void);
 char* lp_perfcount_module(void);
-
+void lp_set_passdb_backend(const char *backend);
 
 /* The following definitions come from param/util.c  */
 

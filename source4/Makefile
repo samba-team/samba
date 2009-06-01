@@ -58,6 +58,7 @@ clustersrcdir := cluster
 libnetsrcdir := libnet
 authsrcdir := auth
 nsswitchsrcdir := ../nsswitch
+libwbclientsrcdir := ../nsswitch/libwbclient
 libsrcdir := lib
 libsocketsrcdir := lib/socket
 libcharsetsrcdir := ../lib/util/charset

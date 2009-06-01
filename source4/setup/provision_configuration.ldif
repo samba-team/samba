@@ -96,21 +96,15 @@ dn: CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: container
 cn: Extended-Rights
-instanceType: 4
-showInAdvancedViewOnly: TRUE
 systemFlags: -2147483648
-objectCategory: CN=Container,CN=Schema,${CONFIGDN}
 
 dn: CN=Change-Rid-Master,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Change-Rid-Master
-instanceType: 4
 displayName: Change Rid Master
-showInAdvancedViewOnly: TRUE
 rightsGuid: d58d5f36-0a98-11d1-adbb-00c04fd8d5cd
 appliesTo: 6617188d-8f3c-11d0-afda-00c04fd930c9
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 29
 validAccesses: 256
 
@@ -118,12 +112,9 @@ dn: CN=Do-Garbage-Collection,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Do-Garbage-Collection
-instanceType: 4
 displayName: Do Garbage Collection
-showInAdvancedViewOnly: TRUE
 rightsGuid: fec364e0-0a98-11d1-adbb-00c04fd8d5cd
 appliesTo: f0f8ffab-1191-11d0-a060-00aa006c33ed
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 31
 validAccesses: 256
 
@@ -131,12 +122,9 @@ dn: CN=Recalculate-Hierarchy,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Recalculate-Hierarchy
-instanceType: 4
 displayName: Recalculate Hierarchy
-showInAdvancedViewOnly: TRUE
 rightsGuid: 0bc1554e-0a99-11d1-adbb-00c04fd8d5cd
 appliesTo: f0f8ffab-1191-11d0-a060-00aa006c33ed
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 32
 validAccesses: 256
 
@@ -144,12 +132,9 @@ dn: CN=Allocate-Rids,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Allocate-Rids
-instanceType: 4
 displayName: Allocate Rids
-showInAdvancedViewOnly: TRUE
 rightsGuid: 1abd7cf8-0a99-11d1-adbb-00c04fd8d5cd
 appliesTo: f0f8ffab-1191-11d0-a060-00aa006c33ed
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 33
 validAccesses: 256
 
@@ -157,12 +142,9 @@ dn: CN=Change-PDC,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Change-PDC
-instanceType: 4
 displayName: Change PDC
-showInAdvancedViewOnly: TRUE
 rightsGuid: bae50096-4752-11d1-9052-00c04fc2d4cf
 appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 34
 validAccesses: 256
 
@@ -170,12 +152,9 @@ dn: CN=Add-GUID,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Add-GUID
-instanceType: 4
 displayName: Add GUID
-showInAdvancedViewOnly: TRUE
 rightsGuid: 440820ad-65b4-11d1-a3da-0000f875ae0d
 appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 35
 validAccesses: 256
 
@@ -183,12 +162,9 @@ dn: CN=Change-Domain-Master,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Change-Domain-Master
-instanceType: 4
 displayName: Change Domain Master
-showInAdvancedViewOnly: TRUE
 rightsGuid: 014bf69c-7b3b-11d1-85f6-08002be74fab
 appliesTo: ef9e60e0-56f7-11d1-a9c6-0000f80367c1
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 36
 validAccesses: 256
 
@@ -196,14 +172,11 @@ dn: CN=Public-Information,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Public-Information
-instanceType: 4
 displayName: Public Information
-showInAdvancedViewOnly: TRUE
 rightsGuid: e48d0154-bcf8-11d1-8702-00c04fb96050
 appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
 appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
 appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 37
 validAccesses: 48
 
@@ -211,12 +184,9 @@ dn: CN=msmq-Receive-Dead-Letter,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: msmq-Receive-Dead-Letter
-instanceType: 4
 displayName: Receive Dead Letter
-showInAdvancedViewOnly: TRUE
 rightsGuid: 4b6e08c0-df3c-11d1-9c86-006008764d0e
 appliesTo: 9a0dc344-c100-11d1-bbc5-0080c76670c0
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 38
 validAccesses: 256
 
@@ -224,12 +194,9 @@ dn: CN=msmq-Peek-Dead-Letter,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: msmq-Peek-Dead-Letter
-instanceType: 4
 displayName: Peek Dead Letter
-showInAdvancedViewOnly: TRUE
 rightsGuid: 4b6e08c1-df3c-11d1-9c86-006008764d0e
 appliesTo: 9a0dc344-c100-11d1-bbc5-0080c76670c0
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 39
 validAccesses: 256
 
@@ -237,12 +204,9 @@ dn: CN=msmq-Receive-computer-Journal,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: msmq-Receive-computer-Journal
-instanceType: 4
 displayName: Receive Computer Journal
-showInAdvancedViewOnly: TRUE
 rightsGuid: 4b6e08c2-df3c-11d1-9c86-006008764d0e
 appliesTo: 9a0dc344-c100-11d1-bbc5-0080c76670c0
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 40
 validAccesses: 256
 
@@ -250,12 +214,9 @@ dn: CN=msmq-Peek-computer-Journal,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: msmq-Peek-computer-Journal
-instanceType: 4
 displayName: Peek Computer Journal
-showInAdvancedViewOnly: TRUE
 rightsGuid: 4b6e08c3-df3c-11d1-9c86-006008764d0e
 appliesTo: 9a0dc344-c100-11d1-bbc5-0080c76670c0
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 41
 validAccesses: 256
 
@@ -263,12 +224,9 @@ dn: CN=msmq-Receive,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: msmq-Receive
-instanceType: 4
 displayName: Receive Message
-showInAdvancedViewOnly: TRUE
 rightsGuid: 06bd3200-df3e-11d1-9c86-006008764d0e
 appliesTo: 9a0dc343-c100-11d1-bbc5-0080c76670c0
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 42
 validAccesses: 256
 
@@ -276,12 +234,9 @@ dn: CN=msmq-Peek,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: msmq-Peek
-instanceType: 4
 displayName: Peek Message
-showInAdvancedViewOnly: TRUE
 rightsGuid: 06bd3201-df3e-11d1-9c86-006008764d0e
 appliesTo: 9a0dc343-c100-11d1-bbc5-0080c76670c0
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 43
 validAccesses: 256
 
@@ -289,13 +244,10 @@ dn: CN=msmq-Send,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: msmq-Send
-instanceType: 4
 displayName: Send Message
-showInAdvancedViewOnly: TRUE
 rightsGuid: 06bd3202-df3e-11d1-9c86-006008764d0e
 appliesTo: 46b27aac-aafa-4ffb-b773-e5bf621ee87b
 appliesTo: 9a0dc343-c100-11d1-bbc5-0080c76670c0
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 44
 validAccesses: 256
 
@@ -303,12 +255,9 @@ dn: CN=msmq-Receive-journal,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: msmq-Receive-journal
-instanceType: 4
 displayName: Receive Journal
-showInAdvancedViewOnly: TRUE
 rightsGuid: 06bd3203-df3e-11d1-9c86-006008764d0e
 appliesTo: 9a0dc343-c100-11d1-bbc5-0080c76670c0
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 45
 validAccesses: 256
 
@@ -316,12 +265,9 @@ dn: CN=msmq-Open-Connector,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: msmq-Open-Connector
-instanceType: 4
 displayName: Open Connector Queue
-showInAdvancedViewOnly: TRUE
 rightsGuid: b4e60130-df3f-11d1-9c86-006008764d0e
 appliesTo: bf967ab3-0de6-11d0-a285-00aa003049e2
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 46
 validAccesses: 256
 
@@ -329,12 +275,9 @@ dn: CN=Apply-Group-Policy,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Apply-Group-Policy
-instanceType: 4
 displayName: Apply Group Policy
-showInAdvancedViewOnly: TRUE
 rightsGuid: edacfd8f-ffb3-11d1-b41d-00a0c968f939
 appliesTo: f30e3bc2-9ff0-11d1-b603-0000f80367c1
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 47
 validAccesses: 256
 
@@ -342,13 +285,10 @@ dn: CN=RAS-Information,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: RAS-Information
-instanceType: 4
 displayName: Remote Access Information
-showInAdvancedViewOnly: TRUE
 rightsGuid: 037088f8-0ae1-11d2-b422-00a0c968f939
 appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
 appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 48
 validAccesses: 48
 
@@ -356,12 +296,9 @@ dn: CN=DS-Install-Replica,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: DS-Install-Replica
-instanceType: 4
 displayName: Add/Remove Replica In Domain
-showInAdvancedViewOnly: TRUE
 rightsGuid: 9923a32a-3607-11d2-b9be-0000f87a36b2
 appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 49
 validAccesses: 256
 
@@ -369,12 +306,9 @@ dn: CN=Change-Infrastructure-Master,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Change-Infrastructure-Master
-instanceType: 4
 displayName: Change Infrastructure Master
-showInAdvancedViewOnly: TRUE
 rightsGuid: cc17b1fb-33d9-11d2-97d4-00c04fd8d5cd
 appliesTo: 2df90d89-009f-11d2-aa4c-00c04fd7d83a
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 50
 validAccesses: 256
 
@@ -382,12 +316,9 @@ dn: CN=Update-Schema-Cache,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Update-Schema-Cache
-instanceType: 4
 displayName: Update Schema Cache
-showInAdvancedViewOnly: TRUE
 rightsGuid: be2bb760-7f46-11d2-b9ad-00c04f79f805
 appliesTo: bf967a8f-0de6-11d0-a285-00aa003049e2
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 51
 validAccesses: 256
 
@@ -395,12 +326,9 @@ dn: CN=Recalculate-Security-Inheritance,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Recalculate-Security-Inheritance
-instanceType: 4
 displayName: Recalculate Security Inheritance
-showInAdvancedViewOnly: TRUE
 rightsGuid: 62dd28a8-7f46-11d2-b9ad-00c04f79f805
 appliesTo: f0f8ffab-1191-11d0-a060-00aa006c33ed
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 52
 validAccesses: 256
 
@@ -408,12 +336,9 @@ dn: CN=DS-Check-Stale-Phantoms,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: DS-Check-Stale-Phantoms
-instanceType: 4
 displayName: Check Stale Phantoms
-showInAdvancedViewOnly: TRUE
 rightsGuid: 69ae6200-7f46-11d2-b9ad-00c04f79f805
 appliesTo: f0f8ffab-1191-11d0-a060-00aa006c33ed
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 53
 validAccesses: 256
 
@@ -421,12 +346,9 @@ dn: CN=Certificate-Enrollment,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Certificate-Enrollment
-instanceType: 4
 displayName: Enroll
-showInAdvancedViewOnly: TRUE
 rightsGuid: 0e10c968-78fb-11d2-90d4-00c04f79dc55
 appliesTo: e5209ca2-3bba-11d2-90cc-00c04fd91ab1
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 54
 validAccesses: 256
 
@@ -434,12 +356,9 @@ dn: CN=Self-Membership,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Self-Membership
-instanceType: 4
 displayName: Add/Remove self as member
-showInAdvancedViewOnly: TRUE
 rightsGuid: bf9679c0-0de6-11d0-a285-00aa003049e2
 appliesTo: bf967a9c-0de6-11d0-a285-00aa003049e2
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 12
 validAccesses: 8
 
@@ -447,12 +366,9 @@ dn: CN=Validated-DNS-Host-Name,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Validated-DNS-Host-Name
-instanceType: 4
 displayName: Validated write to DNS host name
-showInAdvancedViewOnly: TRUE
 rightsGuid: 72e39547-7b18-11d1-adef-00c04fd8d5cd
 appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 13
 validAccesses: 8
 
@@ -460,12 +376,9 @@ dn: CN=Validated-SPN,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Validated-SPN
-instanceType: 4
 displayName: Validated write to service principal name
-showInAdvancedViewOnly: TRUE
 rightsGuid: f3a64788-5306-11d1-a9c5-0000f80367c1
 appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 14
 validAccesses: 8
 
@@ -473,13 +386,10 @@ dn: CN=Generate-RSoP-Planning,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Generate-RSoP-Planning
-instanceType: 4
 displayName: Generate Resultant Set of Policy (Planning)
-showInAdvancedViewOnly: TRUE
 rightsGuid: b7b1b3dd-ab09-4242-9e30-9980e5d322f7
 appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
 appliesTo: bf967aa5-0de6-11d0-a285-00aa003049e2
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 55
 validAccesses: 256
 
@@ -487,12 +397,9 @@ dn: CN=Refresh-Group-Cache,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Refresh-Group-Cache
-instanceType: 4
 displayName: Refresh Group Cache for Logons
-showInAdvancedViewOnly: TRUE
 rightsGuid: 9432c620-033c-4db7-8b58-14ef6d0bf477
 appliesTo: f0f8ffab-1191-11d0-a060-00aa006c33ed
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 56
 validAccesses: 256
 
@@ -500,12 +407,9 @@ dn: CN=SAM-Enumerate-Entire-Domain,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: SAM-Enumerate-Entire-Domain
-instanceType: 4
 displayName: Enumerate Entire SAM Domain
-showInAdvancedViewOnly: TRUE
 rightsGuid: 91d67418-0135-4acc-8d79-c08e857cfbec
 appliesTo: bf967aad-0de6-11d0-a285-00aa003049e2
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 57
 validAccesses: 256
 
@@ -513,13 +417,10 @@ dn: CN=Generate-RSoP-Logging,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Generate-RSoP-Logging
-instanceType: 4
 displayName: Generate Resultant Set of Policy (Logging)
-showInAdvancedViewOnly: TRUE
 rightsGuid: b7b1b3de-ab09-4242-9e30-9980e5d322f7
 appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
 appliesTo: bf967aa5-0de6-11d0-a285-00aa003049e2
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 58
 validAccesses: 256
 
@@ -527,12 +428,9 @@ dn: CN=Domain-Other-Parameters,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Domain-Other-Parameters
-instanceType: 4
 displayName: Other Domain Parameters (for use by SAM)
-showInAdvancedViewOnly: TRUE
 rightsGuid: b8119fd0-04f6-4762-ab7a-4986c76b3f9a
 appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 59
 validAccesses: 48
 
@@ -540,12 +438,9 @@ dn: CN=DNS-Host-Name-Attributes,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: DNS-Host-Name-Attributes
-instanceType: 4
 displayName: DNS Host Name Attributes
-showInAdvancedViewOnly: TRUE
 rightsGuid: 72e39547-7b18-11d1-adef-00c04fd8d5cd
 appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 60
 validAccesses: 48
 
@@ -553,12 +448,9 @@ dn: CN=Create-Inbound-Forest-Trust,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Create-Inbound-Forest-Trust
-instanceType: 4
 displayName: Create Inbound Forest Trust
-showInAdvancedViewOnly: TRUE
 rightsGuid: e2a36dc9-ae17-47c3-b58b-be34c55ba633
 appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 61
 validAccesses: 256
 
@@ -566,14 +458,11 @@ dn: CN=DS-Replication-Get-Changes-All,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: DS-Replication-Get-Changes-All
-instanceType: 4
 displayName: Replicating Directory Changes All
-showInAdvancedViewOnly: TRUE
 rightsGuid: 1131f6ad-9c07-11d1-f79f-00c04fc2dcd2
 appliesTo: bf967a8f-0de6-11d0-a285-00aa003049e2
 appliesTo: bf967a87-0de6-11d0-a285-00aa003049e2
 appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 62
 validAccesses: 256
 
@@ -581,12 +470,9 @@ dn: CN=Migrate-SID-History,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Migrate-SID-History
-instanceType: 4
 displayName: Migrate SID History
-showInAdvancedViewOnly: TRUE
 rightsGuid: BA33815A-4F93-4c76-87F3-57574BFF8109
 appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 63
 validAccesses: 256
 
@@ -594,14 +480,11 @@ dn: CN=Reanimate-Tombstones,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Reanimate-Tombstones
-instanceType: 4
 displayName: Reanimate Tombstones
-showInAdvancedViewOnly: TRUE
 rightsGuid: 45EC5156-DB7E-47bb-B53F-DBEB2D03C40F
 appliesTo: bf967a8f-0de6-11d0-a285-00aa003049e2
 appliesTo: bf967a87-0de6-11d0-a285-00aa003049e2
 appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 64
 validAccesses: 256
 
@@ -609,14 +492,11 @@ dn: CN=Allowed-To-Authenticate,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Allowed-To-Authenticate
-instanceType: 4
 displayName: Allowed to Authenticate
-showInAdvancedViewOnly: TRUE
 rightsGuid: 68B1D179-0D15-4d4f-AB71-46152E79A7BC
 appliesTo: 4828cc14-1437-45bc-9b07-ad6f015e5f28
 appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
 appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 65
 validAccesses: 256
 
@@ -624,12 +504,9 @@ dn: CN=DS-Execute-Intentions-Script,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: DS-Execute-Intentions-Script
-instanceType: 4
 displayName: Execute Forest Update Script
-showInAdvancedViewOnly: TRUE
 rightsGuid: 2f16c4a5-b98e-432c-952a-cb388ba33f2e
 appliesTo: ef9e60e0-56f7-11d1-a9c6-0000f80367c1
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 66
 validAccesses: 256
 
@@ -637,14 +514,11 @@ dn: CN=DS-Replication-Monitor-Topology,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: DS-Replication-Monitor-Topology
-instanceType: 4
 displayName: Monitor Active Directory Replication
-showInAdvancedViewOnly: TRUE
 rightsGuid: f98340fb-7c5b-4cdb-a00b-2ebdfa115a96
 appliesTo: bf967a8f-0de6-11d0-a285-00aa003049e2
 appliesTo: bf967a87-0de6-11d0-a285-00aa003049e2
 appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 67
 validAccesses: 256
 
@@ -652,12 +526,9 @@ dn: CN=Update-Password-Not-Required-Bit,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Update-Password-Not-Required-Bit
-instanceType: 4
 displayName: Update Password Not Required Bit
-showInAdvancedViewOnly: TRUE
 rightsGuid: 280f369c-67c7-438e-ae98-1d46f3c6f541
 appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 68
 validAccesses: 256
 
@@ -665,12 +536,9 @@ dn: CN=Unexpire-Password,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Unexpire-Password
-instanceType: 4
 displayName: Unexpire Password
-showInAdvancedViewOnly: TRUE
 rightsGuid: ccc2dc7d-a6ad-4a7a-8846-c04e3cc53501
 appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 69
 validAccesses: 256
 
@@ -678,12 +546,9 @@ dn: CN=Enable-Per-User-Reversibly-Encrypted-Password,CN=Extended-Rights,${CONFIG
 objectClass: top
 objectClass: controlAccessRight
 cn: Enable-Per-User-Reversibly-Encrypted-Password
-instanceType: 4
 displayName: Enable Per User Reversibly Encrypted Password
-showInAdvancedViewOnly: TRUE
 rightsGuid: 05c74c5e-4deb-43b4-bd9f-86664c2a7fd5
 appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 70
 validAccesses: 256
 
@@ -691,12 +556,9 @@ dn: CN=DS-Query-Self-Quota,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: DS-Query-Self-Quota
-instanceType: 4
 displayName: Query Self Quota
-showInAdvancedViewOnly: TRUE
 rightsGuid: 4ecc03fe-ffc0-4947-b630-eb672a8a9dbc
 appliesTo: da83fc4f-076f-4aea-b4dc-8f4dab9b5993
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 71
 validAccesses: 256
 
@@ -704,12 +566,9 @@ dn: CN=Domain-Administer-Server,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Domain-Administer-Server
-instanceType: 4
 displayName: Domain Administer Server
-showInAdvancedViewOnly: TRUE
 rightsGuid: ab721a52-1e2f-11d0-9819-00aa0040529b
 appliesTo: bf967aad-0de6-11d0-a285-00aa003049e2
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 1
 validAccesses: 256
 
@@ -717,14 +576,11 @@ dn: CN=User-Change-Password,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: User-Change-Password
-instanceType: 4
 displayName: Change Password
-showInAdvancedViewOnly: TRUE
 rightsGuid: ab721a53-1e2f-11d0-9819-00aa0040529b
 appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
 appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
 appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 2
 validAccesses: 256
 
@@ -732,14 +588,11 @@ dn: CN=User-Force-Change-Password,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: User-Force-Change-Password
-instanceType: 4
 displayName: Reset Password
-showInAdvancedViewOnly: TRUE
 rightsGuid: 00299570-246d-11d0-a768-00aa006e0529
 appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
 appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
 appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 3
 validAccesses: 256
 
@@ -747,14 +600,11 @@ dn: CN=Send-As,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Send-As
-instanceType: 4
 displayName: Send As
-showInAdvancedViewOnly: TRUE
 rightsGuid: ab721a54-1e2f-11d0-9819-00aa0040529b
 appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
 appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
 appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 4
 validAccesses: 256
 
@@ -762,14 +612,11 @@ dn: CN=Receive-As,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Receive-As
-instanceType: 4
 displayName: Receive As
-showInAdvancedViewOnly: TRUE
 rightsGuid: ab721a56-1e2f-11d0-9819-00aa0040529b
 appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
 appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
 appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 5
 validAccesses: 256
 
@@ -777,12 +624,9 @@ dn: CN=Send-To,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Send-To
-instanceType: 4
 displayName: Send To
-showInAdvancedViewOnly: TRUE
 rightsGuid: ab721a55-1e2f-11d0-9819-00aa0040529b
 appliesTo: bf967a9c-0de6-11d0-a285-00aa003049e2
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 6
 validAccesses: 256
 
@@ -790,13 +634,10 @@ dn: CN=Domain-Password,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Domain-Password
-instanceType: 4
 displayName: Domain Password & Lockout Policies
-showInAdvancedViewOnly: TRUE
 rightsGuid: c7407360-20bf-11d0-a768-00aa006e0529
 appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
 appliesTo: 19195a5a-6da0-11d0-afd3-00c04fd930c9
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 7
 validAccesses: 48
 
@@ -804,13 +645,10 @@ dn: CN=General-Information,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: General-Information
-instanceType: 4
 displayName: General Information
-showInAdvancedViewOnly: TRUE
 rightsGuid: 59ba2f42-79a2-11d0-9020-00c04fc2d3cf
 appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
 appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 8
 validAccesses: 48
 
@@ -818,14 +656,11 @@ dn: CN=User-Account-Restrictions,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: User-Account-Restrictions
-instanceType: 4
 displayName: Account Restrictions
-showInAdvancedViewOnly: TRUE
 rightsGuid: 4c164200-20c0-11d0-a768-00aa006e0529
 appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
 appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
 appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 9
 validAccesses: 48
 
@@ -833,13 +668,10 @@ dn: CN=User-Logon,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: User-Logon
-instanceType: 4
 displayName: Logon Information
-showInAdvancedViewOnly: TRUE
 rightsGuid: 5f202010-79a5-11d0-9020-00c04fc2d4cf
 appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
 appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 10
 validAccesses: 48
 
@@ -847,13 +679,10 @@ dn: CN=Membership,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Membership
-instanceType: 4
 displayName: Group Membership
-showInAdvancedViewOnly: TRUE
 rightsGuid: bc0ac240-79a9-11d0-9020-00c04fc2d4cf
 appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
 appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 11
 validAccesses: 48
 
@@ -861,12 +690,9 @@ dn: CN=Open-Address-Book,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Open-Address-Book
-instanceType: 4
 displayName: Open Address List
-showInAdvancedViewOnly: TRUE
 rightsGuid: a1990816-4298-11d1-ade2-00c04fd8d5cd
 appliesTo: 3e74f60f-3e73-11d1-a9c0-0000f80367c1
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 21
 validAccesses: 256
 
@@ -874,15 +700,12 @@ dn: CN=Personal-Information,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Personal-Information
-instanceType: 4
 displayName: Personal Information
-showInAdvancedViewOnly: TRUE
 rightsGuid: 77B5B886-944A-11d1-AEBD-0000F80367C1
 appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
 appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
 appliesTo: 5cb41ed0-0e4c-11d0-a286-00aa003049e2
 appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 23
 validAccesses: 48
 
@@ -890,14 +713,11 @@ dn: CN=Email-Information,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Email-Information
-instanceType: 4
 displayName: Phone and Mail Options
-showInAdvancedViewOnly: TRUE
 rightsGuid: E45795B2-9455-11d1-AEBD-0000F80367C1
 appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
 appliesTo: bf967a9c-0de6-11d0-a285-00aa003049e2
 appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 22
 validAccesses: 48
 
@@ -905,14 +725,11 @@ dn: CN=Web-Information,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Web-Information
-instanceType: 4
 displayName: Web Information
-showInAdvancedViewOnly: TRUE
 rightsGuid: E45795B3-9455-11d1-AEBD-0000F80367C1
 appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
 appliesTo: 5cb41ed0-0e4c-11d0-a286-00aa003049e2
 appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 24
 validAccesses: 48
 
@@ -920,14 +737,11 @@ dn: CN=DS-Replication-Get-Changes,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: DS-Replication-Get-Changes
-instanceType: 4
 displayName: Replicating Directory Changes
-showInAdvancedViewOnly: TRUE
 rightsGuid: 1131f6aa-9c07-11d1-f79f-00c04fc2dcd2
 appliesTo: bf967a8f-0de6-11d0-a285-00aa003049e2
 appliesTo: bf967a87-0de6-11d0-a285-00aa003049e2
 appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 25
 validAccesses: 256
 
@@ -935,14 +749,11 @@ dn: CN=DS-Replication-Synchronize,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: DS-Replication-Synchronize
-instanceType: 4
 displayName: Replication Synchronization
-showInAdvancedViewOnly: TRUE
 rightsGuid: 1131f6ab-9c07-11d1-f79f-00c04fc2dcd2
 appliesTo: bf967a8f-0de6-11d0-a285-00aa003049e2
 appliesTo: bf967a87-0de6-11d0-a285-00aa003049e2
 appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 26
 validAccesses: 256
 
@@ -950,14 +761,11 @@ dn: CN=DS-Replication-Manage-Topology,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: DS-Replication-Manage-Topology
-instanceType: 4
 displayName: Manage Replication Topology
-showInAdvancedViewOnly: TRUE
 rightsGuid: 1131f6ac-9c07-11d1-f79f-00c04fc2dcd2
 appliesTo: bf967a8f-0de6-11d0-a285-00aa003049e2
 appliesTo: bf967a87-0de6-11d0-a285-00aa003049e2
 appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 27
 validAccesses: 256
 
@@ -965,11 +773,8 @@ dn: CN=Change-Schema-Master,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 cn: Change-Schema-Master
-instanceType: 4
 displayName: Change Schema Master
-showInAdvancedViewOnly: TRUE
 rightsGuid: e12b56b6-0a95-11d1-adbb-00c04fd8d5cd
 appliesTo: bf967a8f-0de6-11d0-a285-00aa003049e2
-objectCategory: CN=Control-Access-Right,CN=Schema,${CONFIGDN}
 localizationDisplayId: 28
 validAccesses: 256

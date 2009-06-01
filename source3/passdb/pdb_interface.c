@@ -1330,26 +1330,6 @@ static bool pdb_default_sid_to_id(struct pdb_methods *methods,
 	return ret;
 }
 
-static bool add_uid_to_array_unique(TALLOC_CTX *mem_ctx,
-				    uid_t uid, uid_t **pp_uids, size_t *p_num)
-{
-	size_t i;
-
-	for (i=0; i<*p_num; i++) {
-		if ((*pp_uids)[i] == uid)
-			return True;
-	}
-	
-	*pp_uids = TALLOC_REALLOC_ARRAY(mem_ctx, *pp_uids, uid_t, *p_num+1);
-
-	if (*pp_uids == NULL)
-		return False;
-
-	(*pp_uids)[*p_num] = uid;
-	*p_num += 1;
-	return True;
-}
-
 static bool get_memberuids(TALLOC_CTX *mem_ctx, gid_t gid, uid_t **pp_uids, size_t *p_num)
 {
 	struct group *grp;

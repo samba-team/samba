@@ -17,7 +17,8 @@ PRIVATE_DEPENDENCIES = \
 		TORTURE_LIBCRYPTO \
 		share \
 		torture_registry \
-		PROVISION
+		PROVISION \
+		NSS_WRAPPER
 # End SUBSYSTEM TORTURE_LOCAL
 #################################
 
@@ -34,6 +35,7 @@ TORTURE_LOCAL_OBJ_FILES = \
 		$(torturesrcdir)/../../lib/util/tests/idtree.o \
 		$(torturesrcdir)/../lib/socket/testsuite.o \
 		$(torturesrcdir)/../../lib/socket_wrapper/testsuite.o \
+		$(torturesrcdir)/../../lib/nss_wrapper/testsuite.o \
 		$(torturesrcdir)/../libcli/resolve/testsuite.o \
 		$(torturesrcdir)/../../lib/util/tests/strlist.o \
 		$(torturesrcdir)/../../lib/util/tests/str.o \

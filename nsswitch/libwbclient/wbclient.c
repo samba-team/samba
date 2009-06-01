@@ -22,6 +22,8 @@
 
 /* Required Headers */
 
+#include "lib/talloc/talloc.h"
+#include "lib/tevent/tevent.h"
 #include "libwbclient.h"
 
 /* From wb_common.c */

@@ -495,39 +495,6 @@ void set_cmdline_auth_info_getpass(struct user_auth_info *auth_info)
 	TALLOC_FREE(frame);
 }
 
-/****************************************************************************
- Add a gid to an array of gids if it's not already there.
-****************************************************************************/
-
-bool add_gid_to_array_unique(TALLOC_CTX *mem_ctx, gid_t gid,
-			     gid_t **gids, size_t *num_gids)
-{
-	int i;
-
-	if ((*num_gids != 0) && (*gids == NULL)) {
-		/*
-		 * A former call to this routine has failed to allocate memory
-		 */
-		return False;
-	}
-
-	for (i=0; i<*num_gids; i++) {
-		if ((*gids)[i] == gid) {
-			return True;
-		}
-	}
-
-	*gids = TALLOC_REALLOC_ARRAY(mem_ctx, *gids, gid_t, *num_gids+1);
-	if (*gids == NULL) {
-		*num_gids = 0;
-		return False;
-	}
-
-	(*gids)[*num_gids] = gid;
-	*num_gids += 1;
-	return True;
-}
-
 /*******************************************************************
  Check if a file exists - call vfs_file_exist for samba files.
 ********************************************************************/

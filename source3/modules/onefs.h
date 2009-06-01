@@ -170,4 +170,17 @@ ssize_t onefs_sys_sendfile(connection_struct *conn, int tofd, int fromfd,
 ssize_t onefs_sys_recvfile(int fromfd, int tofd, SMB_OFF_T offset,
 			   size_t count);
 
+void init_stat_ex_from_onefs_stat(struct stat_ex *dst, const struct stat *src);
+
+int onefs_sys_stat(const char *fname, SMB_STRUCT_STAT *sbuf);
+
+int onefs_sys_fstat(int fd, SMB_STRUCT_STAT *sbuf);
+
+int onefs_sys_fstat_at(int base_fd, const char *fname, SMB_STRUCT_STAT *sbuf,
+		       int flags);
+
+int onefs_sys_lstat(const char *fname, SMB_STRUCT_STAT *sbuf);
+
+
+
 #endif /* _ONEFS_H */

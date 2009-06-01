@@ -2673,21 +2673,20 @@ static bool test_QueryUserInfo_pwdlastset(struct dcerpc_pipe *p,
 	return true;
 }
 
-static bool test_SamLogon_Creds(struct dcerpc_pipe *p, struct torture_context *tctx,
-				struct cli_credentials *machine_credentials,
-				struct cli_credentials *test_credentials,
-				struct netlogon_creds_CredentialState *creds,
-				NTSTATUS expected_result)
+static bool test_SamLogon(struct torture_context *tctx,
+			  struct dcerpc_pipe *p,
+			  struct cli_credentials *test_credentials,
+			  NTSTATUS expected_result)
 {
 	NTSTATUS status;
-	struct netr_LogonSamLogon r;
-	struct netr_Authenticator auth, auth2;
+	struct netr_LogonSamLogonEx r;
 	union netr_LogonLevel logon;
 	union netr_Validation validation;
 	uint8_t authoritative;
 	struct netr_NetworkInfo ninfo;
 	DATA_BLOB names_blob, chal, lm_resp, nt_resp;
 	int flags = CLI_CRED_NTLM_AUTH;
+	uint32_t samlogon_flags = 0;
 
 	if (lp_client_lanman_auth(tctx->lp_ctx)) {
 		flags |= CLI_CRED_LANMAN_AUTH;
@@ -2706,8 +2705,8 @@ static bool test_SamLogon_Creds(struct dcerpc_pipe *p, struct torture_context *t
 	chal = data_blob_const(ninfo.challenge,
 			       sizeof(ninfo.challenge));
 
-	names_blob = NTLMv2_generate_names_blob(tctx, cli_credentials_get_workstation(machine_credentials),
-						cli_credentials_get_domain(machine_credentials));
+	names_blob = NTLMv2_generate_names_blob(tctx, cli_credentials_get_workstation(test_credentials),
+						cli_credentials_get_domain(test_credentials));
 
 	status = cli_credentials_get_ntlm_response(test_credentials, tctx,
 						   &flags,
@@ -2728,54 +2727,36 @@ static bool test_SamLogon_Creds(struct dcerpc_pipe *p, struct torture_context *t
 		MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT;
 	ninfo.identity_info.logon_id_low = 0;
 	ninfo.identity_info.logon_id_high = 0;
-	ninfo.identity_info.workstation.string = cli_credentials_get_workstation(machine_credentials);
+	ninfo.identity_info.workstation.string = cli_credentials_get_workstation(test_credentials);
 
 	logon.network = &ninfo;
 
 	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.computer_name = cli_credentials_get_workstation(machine_credentials);
-	r.in.credential = &auth;
-	r.in.return_authenticator = &auth2;
-	r.in.logon_level = 2;
+	r.in.computer_name = cli_credentials_get_workstation(test_credentials);
+	r.in.logon_level = NetlogonNetworkInformation;
 	r.in.logon = &logon;
+	r.in.flags = &samlogon_flags;
+	r.out.flags = &samlogon_flags;
 	r.out.validation = &validation;
 	r.out.authoritative = &authoritative;
 
 	d_printf("Testing LogonSamLogon with name %s\n", ninfo.identity_info.account_name.string);
 
-	ZERO_STRUCT(auth2);
-	netlogon_creds_client_authenticator(creds, &auth);
+	r.in.validation_level = 6;
 
-	r.in.validation_level = 2;
-
-	status = dcerpc_netr_LogonSamLogon(p, tctx, &r);
+	status = dcerpc_netr_LogonSamLogonEx(p, tctx, &r);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS)) {
+		r.in.validation_level = 3;
+		status = dcerpc_netr_LogonSamLogonEx(p, tctx, &r);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
-		torture_assert_ntstatus_equal(tctx, status, expected_result, "LogonSamLogon failed");
+		torture_assert_ntstatus_equal(tctx, status, expected_result, "LogonSamLogonEx failed");
 		return true;
 	} else {
-		torture_assert_ntstatus_ok(tctx, status, "LogonSamLogon failed");
+		torture_assert_ntstatus_ok(tctx, status, "LogonSamLogonEx failed");
 	}
-
-	torture_assert(tctx, netlogon_creds_client_check(creds, &r.out.return_authenticator->cred),
-			"Credential chaining failed");
 
 	return true;
-}
-
-static bool test_SamLogon(struct torture_context *tctx,
-			  struct dcerpc_pipe *p,
-			  struct cli_credentials *machine_credentials,
-			  struct cli_credentials *test_credentials,
-			  NTSTATUS expected_result)
-{
-	struct netlogon_creds_CredentialState *creds;
-
-	if (!test_SetupCredentials(p, tctx, machine_credentials, &creds)) {
-		return false;
-	}
-
-	return test_SamLogon_Creds(p, tctx, machine_credentials, test_credentials,
-				   creds, expected_result);
 }
 
 static bool test_SamLogon_with_creds(struct torture_context *tctx,
@@ -2791,19 +2772,18 @@ static bool test_SamLogon_with_creds(struct torture_context *tctx,
 	test_credentials = cli_credentials_init(tctx);
 
 	cli_credentials_set_workstation(test_credentials,
-					TEST_ACCOUNT_NAME_PWD, CRED_SPECIFIED);
+					cli_credentials_get_workstation(machine_creds), CRED_SPECIFIED);
 	cli_credentials_set_domain(test_credentials,
-				   lp_workgroup(tctx->lp_ctx), CRED_SPECIFIED);
+				   cli_credentials_get_domain(machine_creds), CRED_SPECIFIED);
 	cli_credentials_set_username(test_credentials,
 				     acct_name, CRED_SPECIFIED);
 	cli_credentials_set_password(test_credentials,
 				     password, CRED_SPECIFIED);
-	cli_credentials_set_secure_channel_type(test_credentials, SEC_CHAN_BDC);
 
-	printf("testing samlogon as %s@%s password: %s\n",
-		acct_name, TEST_ACCOUNT_NAME_PWD, password);
+	printf("testing samlogon as %s password: %s\n",
+		acct_name, password);
 
-	if (!test_SamLogon(tctx, p, machine_creds, test_credentials,
+	if (!test_SamLogon(tctx, p, test_credentials,
 			   expected_samlogon_result)) {
 		torture_warning(tctx, "new password did not work\n");
 		ret = false;
@@ -2886,11 +2866,12 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 					struct cli_credentials *machine_credentials)
 {
 	int s = 0, q = 0, f = 0, l = 0, z = 0;
+	struct dcerpc_binding *b;
 	bool ret = true;
-	int delay = 500000;
+	int delay = 50000;
 	bool set_levels[] = { false, true };
 	bool query_levels[] = { false, true };
-	uint32_t levels[] = { 18, 21, 23, 24, 25, 26 };
+	uint32_t levels[] = { 18, 21, 26, 23, 24, 25 }; /* Second half only used when TEST_ALL_LEVELS defined */
 	uint32_t nonzeros[] = { 1, 24 };
 	uint32_t fields_present[] = {
 		0,
@@ -2915,19 +2896,41 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 			delay);
 	}
 
-	status = torture_rpc_connection(tctx, &np, &ndr_table_netlogon);
+	status = torture_rpc_binding(tctx, &b);
 	if (!NT_STATUS_IS_OK(status)) {
-		return false;
+		ret = false;
+		return ret;
+	}
+
+	/* We have to use schannel, otherwise the SamLogonEx fails
+	 * with INTERNAL_ERROR */
+
+	b->flags &= ~DCERPC_AUTH_OPTIONS;
+	b->flags |= DCERPC_SCHANNEL | DCERPC_SIGN | DCERPC_SCHANNEL_128;
+
+	status = dcerpc_pipe_connect_b(tctx, &np, b,
+				       &ndr_table_netlogon,
+				       machine_credentials, tctx->ev, tctx->lp_ctx);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("RPC pipe connect as domain member failed: %s\n", nt_errstr(status));
+		ret = false;
+		return ret;
 	}
 
 	/* set to 1 to enable testing for all possible opcode
 	   (SetUserInfo, SetUserInfo2, QueryUserInfo, QueryUserInfo2)
 	   combinations */
 #if 0
+#define TEST_ALL_LEVELS 1
 #define TEST_SET_LEVELS 1
 #define TEST_QUERY_LEVELS 1
 #endif
+#ifdef TEST_ALL_LEVELS
 	for (l=0; l<ARRAY_SIZE(levels); l++) {
+#else
+	for (l=0; l<(ARRAY_SIZE(levels))/2; l++) {
+#endif
 	for (z=0; z<ARRAY_SIZE(nonzeros); z++) {
 	for (f=0; f<ARRAY_SIZE(fields_present); f++) {
 #ifdef TEST_SET_LEVELS
@@ -4373,7 +4376,7 @@ static bool test_CreateUser2(struct dcerpc_pipe *p, struct torture_context *tctx
 		{ ACB_SVRTRUST, TEST_MACHINENAME, NT_STATUS_OK },
 		{ ACB_SVRTRUST | ACB_DISABLED, TEST_MACHINENAME, NT_STATUS_INVALID_PARAMETER },
 		{ ACB_SVRTRUST | ACB_PWNOEXP, TEST_MACHINENAME, NT_STATUS_INVALID_PARAMETER },
-		{ ACB_DOMTRUST, TEST_DOMAINNAME, NT_STATUS_OK },
+		{ ACB_DOMTRUST, TEST_DOMAINNAME, NT_STATUS_ACCESS_DENIED },
 		{ ACB_DOMTRUST | ACB_DISABLED, TEST_DOMAINNAME, NT_STATUS_INVALID_PARAMETER },
 		{ ACB_DOMTRUST | ACB_PWNOEXP, TEST_DOMAINNAME, NT_STATUS_INVALID_PARAMETER },
 		{ 0, TEST_ACCOUNT_NAME, NT_STATUS_INVALID_PARAMETER },
@@ -6177,6 +6180,8 @@ static bool test_ManyObjects(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	uint32_t i;
 
+	struct policy_handle *handles = talloc_zero_array(tctx, struct policy_handle, num_total);
+
 	/* query */
 
 	{
@@ -6209,29 +6214,25 @@ static bool test_ManyObjects(struct dcerpc_pipe *p,
 
 	for (i=0; i < num_total; i++) {
 
-		struct policy_handle handle;
 		const char *name = NULL;
-
-		ZERO_STRUCT(handle);
 
 		switch (which_ops) {
 		case TORTURE_SAMR_MANY_ACCOUNTS:
 			name = talloc_asprintf(tctx, "%s%04d", TEST_ACCOUNT_NAME, i);
-			ret &= test_CreateUser(p, tctx, domain_handle, name, &handle, domain_sid, 0, NULL, false);
+			ret &= test_CreateUser(p, tctx, domain_handle, name, &handles[i], domain_sid, 0, NULL, false);
 			break;
 		case TORTURE_SAMR_MANY_GROUPS:
 			name = talloc_asprintf(tctx, "%s%04d", TEST_GROUPNAME, i);
-			ret &= test_CreateDomainGroup(p, tctx, domain_handle, name, &handle, domain_sid, false);
+			ret &= test_CreateDomainGroup(p, tctx, domain_handle, name, &handles[i], domain_sid, false);
 			break;
 		case TORTURE_SAMR_MANY_ALIASES:
 			name = talloc_asprintf(tctx, "%s%04d", TEST_ALIASNAME, i);
-			ret &= test_CreateAlias(p, tctx, domain_handle, name, &handle, domain_sid, false);
+			ret &= test_CreateAlias(p, tctx, domain_handle, name, &handles[i], domain_sid, false);
 			break;
 		default:
 			return false;
 		}
-		if (!policy_handle_empty(&handle)) {
-			ret &= test_samr_handle_Close(p, tctx, &handle);
+		if (!policy_handle_empty(&handles[i])) {
 			num_created++;
 		}
 	}
@@ -6252,9 +6253,6 @@ static bool test_ManyObjects(struct dcerpc_pipe *p,
 		return false;
 	}
 
-	torture_assert_int_equal(tctx, num_enum, num_anounced + num_created,
-		"unexpected number of results returned in enum call");
-#if 0
 	/* TODO: dispinfo */
 
 	switch (which_ops) {
@@ -6268,9 +6266,38 @@ static bool test_ManyObjects(struct dcerpc_pipe *p,
 		return false;
 	}
 
+
+	/* delete */
+
+	for (i=0; i < num_total; i++) {
+
+		if (policy_handle_empty(&handles[i])) {
+			continue;
+		}
+
+		switch (which_ops) {
+		case TORTURE_SAMR_MANY_ACCOUNTS:
+			ret &= test_DeleteUser(p, tctx, &handles[i]);
+			break;
+		case TORTURE_SAMR_MANY_GROUPS:
+			ret &= test_DeleteDomainGroup(p, tctx, &handles[i]);
+			break;
+		case TORTURE_SAMR_MANY_ALIASES:
+			ret &= test_DeleteAlias(p, tctx, &handles[i]);
+			break;
+		default:
+			return false;
+		}
+	}
+
+	talloc_free(handles);
+
+#if 0
 	torture_assert_int_equal(tctx, num_disp, num_anounced + num_created,
 		"unexpected number of results returned in dispinfo call");
 #endif
+	torture_assert_int_equal(tctx, num_enum, num_anounced + num_created,
+		"unexpected number of results returned in enum call");
 	return ret;
 }
 
@@ -6310,9 +6337,14 @@ static bool test_OpenDomain(struct dcerpc_pipe *p, struct torture_context *tctx,
 	ret &= test_samr_handle_Close(p, tctx, handle);
 
 	switch (which_ops) {
-	case TORTURE_SAMR_USER_ATTRIBUTES:
-	case TORTURE_SAMR_USER_PRIVILEGES:
 	case TORTURE_SAMR_PASSWORDS:
+	case TORTURE_SAMR_USER_PRIVILEGES:
+		if (!torture_setting_bool(tctx, "samba3", false)) {
+			ret &= test_CreateUser2(p, tctx, &domain_handle, sid, which_ops, NULL);
+		}
+		ret &= test_CreateUser(p, tctx, &domain_handle, TEST_ACCOUNT_NAME, &user_handle, sid, which_ops, NULL, true);
+		break;
+	case TORTURE_SAMR_USER_ATTRIBUTES:
 		if (!torture_setting_bool(tctx, "samba3", false)) {
 			ret &= test_CreateUser2(p, tctx, &domain_handle, sid, which_ops, NULL);
 		}

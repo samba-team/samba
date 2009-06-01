@@ -882,6 +882,13 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
+	*r->out.authoritative = true; /* authoritative response */
+	if (r->in.validation_level != 2 && r->in.validation_level != 3) {
+		DEBUG(0,("%s: bad validation_level value %d.\n",
+			fn, (int)r->in.validation_level));
+		return NT_STATUS_INVALID_INFO_CLASS;
+	}
+
 	sam3 = TALLOC_ZERO_P(p->mem_ctx, struct netr_SamInfo3);
 	if (!sam3) {
 		return NT_STATUS_NO_MEMORY;
@@ -889,12 +896,6 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 
  	/* store the user information, if there is any. */
 	r->out.validation->sam3 = sam3;
-	*r->out.authoritative = true; /* authoritative response */
-	if (r->in.validation_level != 2 && r->in.validation_level != 3) {
-		DEBUG(0,("%s: bad validation_level value %d.\n",
-			fn, (int)r->in.validation_level));
-		return NT_STATUS_ACCESS_DENIED;
-	}
 
 	if (process_creds) {
 

@@ -43,6 +43,7 @@
 	torture_local_iconv,
 	torture_local_socket, 
 	torture_local_socket_wrapper, 
+	torture_local_nss_wrapper,
 	torture_pac, 
 	torture_local_resolve,
 	torture_local_sddl,

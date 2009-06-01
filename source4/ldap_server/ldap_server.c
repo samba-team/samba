@@ -6,17 +6,17 @@
    Copyright (C) Andrew Tridgell 2005
    Copyright (C) Volker Lendecke 2004
    Copyright (C) Stefan Metzmacher 2004
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -77,20 +77,20 @@ static void ldapsrv_process_message(struct ldapsrv_connection *conn,
 		ldapsrv_terminate_connection(conn, "no memory");
 		return;		
 	}
-	
+
 	call->request = talloc_steal(call, msg);
 	call->conn = conn;
 	call->replies = NULL;
 	call->send_callback = NULL;
 	call->send_private = NULL;
-	
+
 	/* make the call */
 	status = ldapsrv_do_call(call);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(call);
 		return;
 	}
-	
+
 	blob = data_blob(NULL, 0);
 
 	if (call->replies == NULL) {
@@ -210,7 +210,7 @@ static void ldapsrv_send(struct stream_connection *c, uint16_t flags)
 {
 	struct ldapsrv_connection *conn = 
 		talloc_get_type(c->private_data, struct ldapsrv_connection);
-	
+
 	packet_queue_run(conn->packet);
 }
 
@@ -294,7 +294,7 @@ static int ldapsrv_load_limits(struct ldapsrv_connection *conn)
 		s = sscanf((const char *)el->values[i].data, "%255[^=]=%d", policy_name, &policy_value);
 		if (ret != 2 || policy_value == 0)
 			continue;
-		
+
 		if (strcasecmp("InitRecvTimeout", policy_name) == 0) {
 			conn->limits.initial_timeout = policy_value;
 			continue;
@@ -390,7 +390,7 @@ static void ldapsrv_accept(struct stream_connection *c)
 	if (conn->sockets.tls) {
 		packet_set_unreliable_select(conn->packet);
 	}
-	
+
 	/* Ensure we don't get packets until the database is ready below */
 	packet_recv_disable(conn->packet);
 
@@ -399,7 +399,7 @@ static void ldapsrv_accept(struct stream_connection *c)
 		stream_terminate_connection(c, "Failed to init server credentials\n");
 		return;
 	}
-	
+
 	cli_credentials_set_conf(server_credentials, conn->lp_ctx);
 	status = cli_credentials_set_machine_account(server_credentials, conn->lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -483,7 +483,7 @@ static NTSTATUS add_socket(struct tevent_context *event_context,
 	if (!ldb) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-	
+
 	if (samdb_is_gc(ldb)) {
 		port = 3268;
 		status = stream_setup_socket(event_context, lp_ctx,

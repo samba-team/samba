@@ -630,21 +630,21 @@ onefs_notify_watch(vfs_handle_struct *vfs_handle,
 	}
 
 	/* Get LIN for directory */
-	if (sys_fstat(e->dir_fd, &sbuf)) {
+	if (onefs_sys_fstat(e->dir_fd, &sbuf)) {
 		DEBUG(0, ("stat on directory fd failed: %s\n",
 			  strerror(errno)));
 		status = map_nt_error_from_unix(errno);
 		goto err;
 	}
 
-	if (sbuf.st_ino == 0) {
+	if (sbuf.st_ex_ino == 0) {
 		DEBUG(0, ("0 LIN found!\n"));
 		goto err;
 	}
 
 	wc->ctx = ctx;
 	wc->watch_fd = e->dir_fd;
-	wc->watch_lin = sbuf.st_ino;
+	wc->watch_lin = sbuf.st_ex_ino;
 	wc->ifs_event_fd = ifs_event_fd;
 	wc->ifs_filter = ifs_filter;
 	wc->smb_filter = smb_filter;
@@ -669,7 +669,7 @@ onefs_notify_watch(vfs_handle_struct *vfs_handle,
 		   "ifs_filter=0x%x, watch_tree=%d, ifs_event_fd=%d, "
 		   "dir_fd=%d, dir_lin=0x%llx\n",
 		   e->path, smb_filter, ifs_filter, watch_tree,
-		   ifs_event_fd, e->dir_fd, sbuf.st_ino));
+		   ifs_event_fd, e->dir_fd, sbuf.st_ex_ino));
 
 	return NT_STATUS_OK;
 

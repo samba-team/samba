@@ -3,17 +3,21 @@
    async socket syscalls
    Copyright (C) Volker Lendecke 2008
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
-   (at your option) any later version.
+     ** NOTE! The following LGPL license applies to the async_sock
+     ** library. This does NOT imply that all of Samba is released
+     ** under the LGPL
 
-   This program is distributed in the hope that it will be useful,
+   This library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 3 of the License, or (at your option) any later version.
+
+   This library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Library General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
+   You should have received a copy of the GNU Lesser General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
@@ -77,6 +81,10 @@ static void async_send_handler(struct tevent_context *ev,
 		tevent_req_data(req, struct async_send_state);
 
 	state->sent = send(state->fd, state->buf, state->len, state->flags);
+	if ((state->sent == -1) && (errno == EINTR)) {
+		/* retry */
+		return;
+	}
 	if (state->sent == -1) {
 		tevent_req_error(req, errno);
 		return;
@@ -144,6 +152,10 @@ static void async_recv_handler(struct tevent_context *ev,
 
 	state->received = recv(state->fd, state->buf, state->len,
 			       state->flags);
+	if ((state->received == -1) && (errno == EINTR)) {
+		/* retry */
+		return;
+	}
 	if (state->received == -1) {
 		tevent_req_error(req, errno);
 		return;
@@ -422,7 +434,11 @@ static void writev_handler(struct tevent_context *ev, struct tevent_fd *fde,
 		to_write += state->iov[i].iov_len;
 	}
 
-	written = sys_writev(state->fd, state->iov, state->count);
+	written = writev(state->fd, state->iov, state->count);
+	if ((written == -1) && (errno = EINTR)) {
+		/* retry */
+		return;
+	}
 	if (written == -1) {
 		tevent_req_error(req, errno);
 		return;
@@ -530,6 +546,10 @@ static void read_packet_handler(struct tevent_context *ev,
 
 	nread = recv(state->fd, state->buf+state->nread, total-state->nread,
 		     0);
+	if ((nread == -1) && (errno == EINTR)) {
+		/* retry */
+		return;
+	}
 	if (nread == -1) {
 		tevent_req_error(req, errno);
 		return;
@@ -566,7 +586,7 @@ static void read_packet_handler(struct tevent_context *ev,
 		return;
 	}
 
-	tmp = TALLOC_REALLOC_ARRAY(state, state->buf, uint8_t, total+more);
+	tmp = talloc_realloc(state, state->buf, uint8_t, total+more);
 	if (tevent_req_nomem(tmp, req)) {
 		return;
 	}

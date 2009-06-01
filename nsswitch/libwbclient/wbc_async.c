@@ -3,22 +3,35 @@
    Infrastructure for async winbind requests
    Copyright (C) Volker Lendecke 2008
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
-   (at your option) any later version.
+     ** NOTE! The following LGPL license applies to the wbclient
+     ** library. This does NOT imply that all of Samba is released
+     ** under the LGPL
 
-   This program is distributed in the hope that it will be useful,
+   This library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 3 of the License, or (at your option) any later version.
+
+   This library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Library General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
+   You should have received a copy of the GNU Lesser General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
-#include "wbc_async.h"
+#include "replace.h"
+#include "system/filesys.h"
+#include "system/network.h"
+#include <talloc.h>
+#include <tevent.h>
+struct fd_event;
+struct event_context;
+#include "lib/async_req/async_sock.h"
+#include "nsswitch/winbind_struct_protocol.h"
+#include "nsswitch/libwbclient/wbclient.h"
+#include "nsswitch/libwbclient/wbc_async.h"
 
 wbcErr map_wbc_err_from_errno(int error)
 {
@@ -75,6 +88,7 @@ struct wb_context {
 	struct tevent_queue *queue;
 	int fd;
 	bool is_priv;
+	const char *dir;
 };
 
 static int make_nonstd_fd(int fd)
@@ -166,7 +180,10 @@ static int make_safe_fd(int fd)
 	return -1;
 }
 
-struct wb_context *wb_context_init(TALLOC_CTX *mem_ctx)
+/* Just put a prototype to avoid moving the whole function around */
+static const char *winbindd_socket_dir(void);
+
+struct wb_context *wb_context_init(TALLOC_CTX *mem_ctx, const char* dir)
 {
 	struct wb_context *result;
 
@@ -181,6 +198,16 @@ struct wb_context *wb_context_init(TALLOC_CTX *mem_ctx)
 	}
 	result->fd = -1;
 	result->is_priv = false;
+
+	if (dir != NULL) {
+		result->dir = talloc_strdup(result, dir);
+	} else {
+		result->dir = winbindd_socket_dir();
+	}
+	if (result->dir == NULL) {
+		TALLOC_FREE(result);
+		return NULL;
+	}
 	return result;
 }
 
@@ -338,7 +365,7 @@ static struct tevent_req *wb_open_pipe_send(TALLOC_CTX *mem_ctx,
 		wb_ctx->fd = -1;
 	}
 
-	subreq = wb_connect_send(state, ev, wb_ctx, winbindd_socket_dir());
+	subreq = wb_connect_send(state, ev, wb_ctx, wb_ctx->dir);
 	if (subreq == NULL) {
 		goto fail;
 	}
