@@ -1,11 +1,11 @@
 .\"     Title: ctdb
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
-.\"      Date: 03/24/2009
+.\"      Date: 06/02/2009
 .\"    Manual: 
 .\"    Source: 
 .\"
-.TH "CTDB" "1" "03/24/2009" "" ""
+.TH "CTDB" "1" "06/02/2009" "" ""
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -469,9 +469,9 @@ This command will kill the specified TCP connection by issuing a TCP RST to the 
 This command will send out a gratious arp for the specified interface through the specified interface\. This command is mainly used by the ctdb eventscripts\.
 .SS "reloadnodes"
 .PP
-This command is used when adding new nodes to an existing cluster and to reduce the disruption of this operation\. This command should never be used except when expanding an existing cluster\. This can only be used to expand a cluster\. To remove a node from the cluster you still need to shut down ctdb on all nodes, edit the nodes file and restart ctdb\.
+This command is used when adding new nodes, or removing existing nodes from an existing cluster\.
 .PP
-Procedure:
+Procedure to add a node:
 .PP
 1, To expand an existing cluster, first ensure with \'ctdb status\' that all nodes are up and running and that they are all healthy\. Do not try to expand a cluster unless it is completely healthy!
 .PP
@@ -479,11 +479,24 @@ Procedure:
 .PP
 3, Verify that all the nodes have identical /etc/ctdb/nodes files after you edited them and added the new node!
 .PP
-4, Run \'ctdb reloadnodes\' to force all nodes to reaload the nodesfile\.
+4, Run \'ctdb reloadnodes\' to force all nodes to reload the nodesfile\.
 .PP
 5, Use \'ctdb status\' on all nodes and verify that they now show the additional node\.
 .PP
 6, Install and configure the new node and bring it online\.
+.PP
+Procedure to remove a node:
+.PP
+1, To remove a node from an existing cluster, first ensure with \'ctdb status\' that all nodes, except the node to be deleted, are up and running and that they are all healthy\. Do not try to remove a node from a cluster unless the cluster is completely healthy!
+.PP
+2, Shutdown and poerwoff the node to be removed\.
+.PP
+3, On all other nodes, edit the /etc/ctdb/nodes file and comment out the node to be removed\. Do not delete the line for that node, just comment it out by adding a \'#\' at the beginning of the line\.
+.PP
+4, Run \'ctdb reloadnodes\' to force all nodes to reload the nodesfile\.
+.PP
+5, Use \'ctdb status\' on all nodes and verify that the deleted node no longer shows up in the list\.\.
+.PP
 .SS "tickle <srcip:port> <dstip:port>"
 .PP
 This command will will send a TCP tickle to the source host for the specified TCP connection\. A TCP tickle is a TCP ACK packet with an invalid sequence and acknowledge number and will when received by the source host result in it sending an immediate correct ACK back to the other end\.

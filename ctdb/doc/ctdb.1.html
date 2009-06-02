@@ -367,14 +367,9 @@ CTDB version 1
 	through the specified interface. This command is mainly used by the
 	ctdb eventscripts.
       </p></div><div class="refsect2" lang="en"><a name="id2529124"></a><h3>reloadnodes</h3><p>
-      This command is used when adding new nodes to an existing cluster and
-      to reduce the disruption of this operation. This command should never
-      be used except when expanding an existing cluster.
-      This can only be used to expand a cluster. To remove a node from the
-      cluster you still need to shut down ctdb on all nodes, edit the nodes file
-      and restart ctdb.
+      This command is used when adding new nodes, or removing existing nodes from an existing cluster.
       </p><p>
-      Procedure:
+      Procedure to add a node:
       </p><p>
       1, To expand an existing cluster, first ensure with 'ctdb status' that
       all nodes are up and running and that they are all healthy.
@@ -385,12 +380,27 @@ CTDB version 1
       </p><p>
       3, Verify that all the nodes have identical /etc/ctdb/nodes files after you edited them and added the new node!
       </p><p>
-      4, Run 'ctdb reloadnodes' to force all nodes to reaload the nodesfile.
+      4, Run 'ctdb reloadnodes' to force all nodes to reload the nodesfile.
       </p><p>
       5, Use 'ctdb status' on all nodes and verify that they now show the additional node.
       </p><p>
       6, Install and configure the new node and bring it online.
-      </p></div><div class="refsect2" lang="en"><a name="id2529176"></a><h3>tickle &lt;srcip:port&gt; &lt;dstip:port&gt;</h3><p>
+      </p><p>
+      Procedure to remove a node:
+      </p><p>
+      1, To remove a node from an existing cluster, first ensure with 'ctdb status' that
+      all nodes, except the node to be deleted, are up and running and that they are all healthy.
+      Do not try to remove a node from a cluster unless the cluster is completely healthy!
+      </p><p>
+      2, Shutdown and poerwoff the node to be removed.
+      </p><p>
+      3, On all other nodes, edit the /etc/ctdb/nodes file and comment out the node to be removed. Do not delete the line for that node, just comment it out by adding a '#' at the beginning of the line.
+      </p><p>
+      4, Run 'ctdb reloadnodes' to force all nodes to reload the nodesfile.
+      </p><p>
+      5, Use 'ctdb status' on all nodes and verify that the deleted node no longer shows up in the list..
+      </p><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529208"></a><h3>tickle &lt;srcip:port&gt; &lt;dstip:port&gt;</h3><p>
         This command will will send a TCP tickle to the source host for the
         specified TCP connection.
 	A TCP tickle is a TCP ACK packet with an invalid sequence and 
@@ -402,10 +412,10 @@ CTDB version 1
         TCP connection has been disrupted and that the client will need
         to reestablish. This greatly speeds up the time it takes for a client
         to detect and reestablish after an IP failover in the ctdb cluster.
-      </p></div><div class="refsect2" lang="en"><a name="id2529200"></a><h3>gettickles &lt;ip&gt;</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529233"></a><h3>gettickles &lt;ip&gt;</h3><p>
 	This command is used to show which TCP connections are registered with
 	CTDB to be "tickled" if there is a failover.
-      </p></div><div class="refsect2" lang="en"><a name="id2529212"></a><h3>repack [max_freelist]</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529244"></a><h3>repack [max_freelist]</h3><p>
 	Over time, when records are created and deleted in a TDB, the TDB list of free space will become fragmented. This can lead to a slowdown in accessing TDB records.
 	This command is used to defragment a TDB database and pruning the freelist.
       </p><p>
@@ -420,7 +430,7 @@ CTDB version 1
 	Example: ctdb repack 1000
       </p><p>
 	 By default, this operation is issued from the 00.ctdb event script every 5 minutes.
-      </p></div><div class="refsect2" lang="en"><a name="id2529258"></a><h3>vacuum [max_records]</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529290"></a><h3>vacuum [max_records]</h3><p>
 	Over time CTDB databases will fill up with empty deleted records which will lead to a progressive slow down of CTDB database access.
 	This command is used to prune all databases and delete all empty records from the cluster.
       </p><p>
@@ -436,12 +446,12 @@ CTDB version 1
 	Example: ctdb vacuum
       </p><p>
 	 By default, this operation is issued from the 00.ctdb event script every 5 minutes.
-      </p></div></div><div class="refsect1" lang="en"><a name="id2529295"></a><h2>Debugging Commands</h2><p>
+      </p></div></div><div class="refsect1" lang="en"><a name="id2529327"></a><h2>Debugging Commands</h2><p>
       These commands are primarily used for CTDB development and testing and
       should not be used for normal administration.
-    </p><div class="refsect2" lang="en"><a name="id2529305"></a><h3>process-exists &lt;pid&gt;</h3><p>
+    </p><div class="refsect2" lang="en"><a name="id2529337"></a><h3>process-exists &lt;pid&gt;</h3><p>
         This command checks if a specific process exists on the CTDB host. This is mainly used by Samba to check if remote instances of samba are still running or not.
-      </p></div><div class="refsect2" lang="en"><a name="id2529317"></a><h3>getdbmap</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529350"></a><h3>getdbmap</h3><p>
         This command lists all clustered TDB databases that the CTDB daemon has attached to. Some databases are flagged as PERSISTENT, this means that the database stores data persistently and the data will remain across reboots. One example of such a database is secrets.tdb where information about how the cluster was joined to the domain is stored.
 	</p><p>
 	Most databases are not persistent and only store the state information that the currently running samba daemons need. These databases are always wiped when ctdb/samba starts and when a node is rebooted.
@@ -460,25 +470,25 @@ dbid:0x2672a57f name:idmap2.tdb path:/var/ctdb/persistent/idmap2.tdb.0 PERSISTEN
 dbid:0xb775fff6 name:secrets.tdb path:/var/ctdb/persistent/secrets.tdb.0 PERSISTENT
 dbid:0xe98e08b6 name:group_mapping.tdb path:/var/ctdb/persistent/group_mapping.tdb.0 PERSISTENT
 dbid:0x7bbbd26c name:passdb.tdb path:/var/ctdb/persistent/passdb.tdb.0 PERSISTENT
-      </pre></div><div class="refsect2" lang="en"><a name="id2529364"></a><h3>catdb &lt;dbname&gt;</h3><p>
+      </pre></div><div class="refsect2" lang="en"><a name="id2529396"></a><h3>catdb &lt;dbname&gt;</h3><p>
         This command will dump a clustered TDB database to the screen. This is a debugging command.
-      </p></div><div class="refsect2" lang="en"><a name="id2529374"></a><h3>getmonmode</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529407"></a><h3>getmonmode</h3><p>
         This command returns the monutoring mode of a node. The monitoring mode is either ACTIVE or DISABLED. Normally a node will continously monitor that all other nodes that are expected are in fact connected and that they respond to commands.
       </p><p>
         ACTIVE - This is the normal mode. The node is actively monitoring all other nodes, both that the transport is connected and also that the node responds to commands. If a node becomes unavailable, it will be marked as DISCONNECTED and a recovery is initiated to restore the cluster.
       </p><p>
         DISABLED - This node is not monitoring that other nodes are available. In this mode a node failure will not be detected and no recovery will be performed. This mode is useful when for debugging purposes one wants to attach GDB to a ctdb process but wants to prevent the rest of the cluster from marking this node as DISCONNECTED and do a recovery.
-      </p></div><div class="refsect2" lang="en"><a name="id2529405"></a><h3>setmonmode &lt;0|1&gt;</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529438"></a><h3>setmonmode &lt;0|1&gt;</h3><p>
         This command can be used to explicitely disable/enable monitoring mode on a node. The main purpose is if one wants to attach GDB to a running ctdb daemon but wants to prevent the other nodes from marking it as DISCONNECTED and issuing a recovery. To do this, set monitoring mode to 0 on all nodes before attaching with GDB. Remember to set monitoring mode back to 1 afterwards.
-      </p></div><div class="refsect2" lang="en"><a name="id2529421"></a><h3>attach &lt;dbname&gt;</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529453"></a><h3>attach &lt;dbname&gt;</h3><p>
         This is a debugging command. This command will make the CTDB daemon create a new CTDB database and attach to it.
-      </p></div><div class="refsect2" lang="en"><a name="id2529432"></a><h3>dumpmemory</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529464"></a><h3>dumpmemory</h3><p>
         This is a debugging command. This command will make the ctdb
         daemon to write a fill memory allocation map to standard output.
-      </p></div><div class="refsect2" lang="en"><a name="id2529444"></a><h3>rddumpmemory</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529476"></a><h3>rddumpmemory</h3><p>
         This is a debugging command. This command will dump the talloc memory
 	allocation tree for the recovery daemon to standard output.
-      </p></div><div class="refsect2" lang="en"><a name="id2529455"></a><h3>freeze</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529487"></a><h3>freeze</h3><p>
         This command will lock all the local TDB databases causing clients 
         that are accessing these TDBs such as samba3 to block until the
         databases are thawed.
@@ -486,20 +496,20 @@ dbid:0x7bbbd26c name:passdb.tdb path:/var/ctdb/persistent/passdb.tdb.0 PERSISTEN
         This is primarily used by the recovery daemon to stop all samba
         daemons from accessing any databases while the database is recovered
         and rebuilt.
-      </p></div><div class="refsect2" lang="en"><a name="id2529473"></a><h3>thaw</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529506"></a><h3>thaw</h3><p>
         Thaw a previously frozen node.
-      </p></div><div class="refsect2" lang="en"><a name="id2529483"></a><h3>eventscript &lt;arguments&gt;</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529515"></a><h3>eventscript &lt;arguments&gt;</h3><p>
         This is a debugging command. This command can be used to manually
 	invoke and run the eventscritps with arbitrary arguments.
-      </p></div><div class="refsect2" lang="en"><a name="id2529495"></a><h3>backupdb &lt;database&gt; &lt;file&gt;</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529527"></a><h3>backupdb &lt;database&gt; &lt;file&gt;</h3><p>
         This command can be used to copy the entire content of a database out to a file. This file can later be read back into ctdb using the restoredb command.
 This is mainly useful for backing up persistent databases such as secrets.tdb and similar.
-      </p></div><div class="refsect2" lang="en"><a name="id2529509"></a><h3>restoredb &lt;file&gt;</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2529541"></a><h3>restoredb &lt;file&gt;</h3><p>
         This command restores a persistent database that was previously backed up using backupdb.
-      </p></div></div><div class="refsect1" lang="en"><a name="id2529521"></a><h2>SEE ALSO</h2><p>
+      </p></div></div><div class="refsect1" lang="en"><a name="id2529553"></a><h2>SEE ALSO</h2><p>
       ctdbd(1), onnode(1)
       <a class="ulink" href="http://ctdb.samba.org/" target="_top">http://ctdb.samba.org/</a>
-    </p></div><div class="refsect1" lang="en"><a name="id2529534"></a><h2>COPYRIGHT/LICENSE</h2><div class="literallayout"><p><br>
+    </p></div><div class="refsect1" lang="en"><a name="id2529566"></a><h2>COPYRIGHT/LICENSE</h2><div class="literallayout"><p><br>
 Copyright (C) Andrew Tridgell 2007<br>
 Copyright (C) Ronnie sahlberg 2007<br>
 <br>
