@@ -24,6 +24,21 @@
 #include "lib/replace/system/passwd.h"
 #include "lib/nss_wrapper/nss_wrapper.h"
 
+static bool copy_passwd(struct torture_context *tctx,
+			const struct passwd *pwd,
+			struct passwd *p)
+{
+	p->pw_name	= talloc_strdup(tctx, pwd->pw_name);
+	p->pw_passwd	= talloc_strdup(tctx, pwd->pw_passwd);
+	p->pw_uid	= pwd->pw_uid;
+	p->pw_gid	= pwd->pw_gid;
+	p->pw_gecos	= talloc_strdup(tctx, pwd->pw_gecos);
+	p->pw_dir	= talloc_strdup(tctx, pwd->pw_dir);
+	p->pw_shell	= talloc_strdup(tctx, pwd->pw_shell);
+
+	return true;
+}
+
 static void print_passwd(struct passwd *pwd)
 {
 	printf("%s:%s:%lu:%lu:%s:%s:%s\n",
@@ -65,6 +80,26 @@ static bool test_nwrap_getpwuid(struct torture_context *tctx,
 	}
 
 	return pwd ? true : false;
+}
+
+static bool copy_group(struct torture_context *tctx,
+		       const struct group *grp,
+		       struct group *g)
+{
+	int i;
+
+	g->gr_name	= talloc_strdup(tctx, grp->gr_name);
+	g->gr_passwd	= talloc_strdup(tctx, grp->gr_passwd);
+	g->gr_gid	= grp->gr_gid;
+	g->gr_mem	= NULL;
+
+	for (i=0; grp->gr_mem && grp->gr_mem[i]; i++) {
+		g->gr_mem = talloc_realloc(tctx, g->gr_mem, char *, i + 2);
+		g->gr_mem[i] = talloc_strdup(g->gr_mem, grp->gr_mem[i]);
+		g->gr_mem[i+1] = NULL;
+	}
+
+	return true;
 }
 
 static void print_group(struct group *grp)
@@ -134,9 +169,7 @@ static bool test_nwrap_enum_passwd(struct torture_context *tctx,
 		if (pwd_array_p && num_pwd_p) {
 			pwd_array = talloc_realloc(tctx, pwd_array, struct passwd, num_pwd+1);
 			torture_assert(tctx, pwd_array, "out of memory");
-			pwd_array[num_pwd].pw_name = talloc_strdup(tctx, pwd->pw_name);
-			pwd_array[num_pwd].pw_uid = pwd->pw_uid;
-			pwd_array[num_pwd].pw_gid = pwd->pw_gid;
+			copy_passwd(tctx, pwd, &pwd_array[num_pwd]);
 			num_pwd++;
 		}
 	}
@@ -191,8 +224,7 @@ static bool test_nwrap_enum_group(struct torture_context *tctx,
 		if (grp_array_p && num_grp_p) {
 			grp_array = talloc_realloc(tctx, grp_array, struct group, num_grp+1);
 			torture_assert(tctx, grp_array, "out of memory");
-			grp_array[num_grp].gr_name = talloc_strdup(tctx, grp->gr_name);
-			grp_array[num_grp].gr_gid = grp->gr_gid;
+			copy_group(tctx, grp, &grp_array[num_grp]);
 			num_grp++;
 		}
 	}
