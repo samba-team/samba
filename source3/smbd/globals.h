@@ -189,6 +189,8 @@ NTSTATUS smbd_smb2_request_done(struct smbd_smb2_request *req,
 NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_check_tcon(struct smbd_smb2_request *req);
 
+struct smb_request *smbd_smb2_fake_smb_request(struct smbd_smb2_request *req);
+
 NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_process_sesssetup(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_process_logoff(struct smbd_smb2_request *req);
