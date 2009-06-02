@@ -82,6 +82,10 @@ static void verify_node(struct ctdb_context *ctdb)
 		DEBUG(DEBUG_ERR, ("Node %u does not exist\n", options.pnn));
 		exit(ERR_NONODE);
 	}
+	if (nodemap->nodes[options.pnn].flags & NODE_FLAGS_DELETED) {
+		DEBUG(DEBUG_ERR, ("Node %u is DELETED\n", options.pnn));
+		exit(ERR_DISNODE);
+	}
 	if (nodemap->nodes[options.pnn].flags & NODE_FLAGS_DISCONNECTED) {
 		DEBUG(DEBUG_ERR, ("Node %u is DISCONNECTED\n", options.pnn));
 		exit(ERR_DISNODE);
@@ -472,6 +476,9 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 	if(options.machinereadable){
 		printf(":Node:IP:Disconnected:Banned:Disabled:Unhealthy:\n");
 		for(i=0;i<nodemap->num;i++){
+			if (nodemap->nodes[i].flags & NODE_FLAGS_DELETED) {
+				continue;
+			}
 			printf(":%d:%s:%d:%d:%d:%d:\n", nodemap->nodes[i].pnn,
 				ctdb_addr_to_str(&nodemap->nodes[i].addr),
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_DISCONNECTED),
@@ -492,9 +499,14 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 			{ NODE_FLAGS_PERMANENTLY_DISABLED,  "DISABLED" },
 			{ NODE_FLAGS_BANNED,                "BANNED" },
 			{ NODE_FLAGS_UNHEALTHY,             "UNHEALTHY" },
+			{ NODE_FLAGS_DELETED,               "DELETED" },
 		};
 		char *flags_str = NULL;
 		int j;
+
+		if (nodemap->nodes[i].flags & NODE_FLAGS_DELETED) {
+			continue;
+		}
 		for (j=0;j<ARRAY_SIZE(flag_names);j++) {
 			if (nodemap->nodes[i].flags & flag_names[j].flag) {
 				if (flags_str == NULL) {
@@ -644,6 +656,9 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 
 	/* print the pruned list of nodes belonging to this natgw list */
 	for(i=0;i<nodemap->num;i++){
+		if (nodemap->nodes[i].flags & NODE_FLAGS_DELETED) {
+			continue;
+		}
 		printf(":%d:%s:%d:%d:%d:%d:\n", nodemap->nodes[i].pnn,
 			ctdb_addr_to_str(&nodemap->nodes[i].addr),
 		       !!(nodemap->nodes[i].flags&NODE_FLAGS_DISCONNECTED),
@@ -925,6 +940,9 @@ control_get_all_public_ips(struct ctdb_context *ctdb, TALLOC_CTX *tmp_ctx, struc
 	ip_tree = trbt_create(tmp_ctx, 0);
 
 	for(i=0;i<nodemap->num;i++){
+		if (nodemap->nodes[i].flags & NODE_FLAGS_DELETED) {
+			continue;
+		}
 		if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
 			continue;
 		}
@@ -986,7 +1004,7 @@ find_other_host_for_public_ip(struct ctdb_context *ctdb, ctdb_sock_addr *addr)
 	}
 
 	for(i=0;i<nodemap->num;i++){
-		if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
+		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
 			continue;
 		}
 		if (nodemap->nodes[i].pnn == options.pnn) {
@@ -1103,7 +1121,7 @@ static int control_delip_all(struct ctdb_context *ctdb, int argc, const char **a
 
 	/* remove it from the nodes that are not hosting the ip currently */
 	for(i=0;i<nodemap->num;i++){
-		if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
+		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
 			continue;
 		}
 		if (ctdb_ctrl_get_public_ips(ctdb, TIMELIMIT(), nodemap->nodes[i].pnn, tmp_ctx, &ips) != 0) {
@@ -1131,7 +1149,7 @@ static int control_delip_all(struct ctdb_context *ctdb, int argc, const char **a
 
 	/* remove it from every node (also the one hosting it) */
 	for(i=0;i<nodemap->num;i++){
-		if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
+		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
 			continue;
 		}
 		if (ctdb_ctrl_get_public_ips(ctdb, TIMELIMIT(), nodemap->nodes[i].pnn, tmp_ctx, &ips) != 0) {
@@ -2782,6 +2800,9 @@ static int control_listnodes(struct ctdb_context *ctdb, int argc, const char **a
 	}
 
 	for(i=0;i<nodemap->num;i++){
+		if (nodemap->nodes[i].flags & NODE_FLAGS_DELETED) {
+			continue;
+		}
 		printf("%s\n", ctdb_addr_to_str(&nodemap->nodes[i].addr));
 	}
 

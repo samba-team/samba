@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.82
+Version: 1.0.83
 Release: 1
 Epoch: 0
 License: GNU GPL version 3
@@ -131,6 +131,30 @@ fi
 %{_libdir}/pkgconfig/ctdb.pc
 
 %changelog
+* Tue Jun 2 2009 : Version 1.0.83
+ - Document how to remove a ndoe from a running cluster.
+ - Hide all deleted nodes from ctdb output.
+ - Lower the loglevel on some eventscript related items
+ - Dont queue packets to deleted nodes
+ - When building initial vnnmap, ignode any nonexisting nodes
+ - Add a new nodestate : DELETED that is used when deleting a node from an
+   existing cluster.
+ - dont remove the ctdb socket when shutting down. This prevents a race in the
+   initscripts when restarting ctdb quickly after stopping it.
+ - TDB nesting reworked.
+ - Remove obsolete ipmux
+ - From Flavio Carmo Junior: Add eventscript and documentation for ClamAV antivirus engine
+ - From Sumit Bose: fix the regex in the test to handle the new ctdb
+   statistics output that was recently added.
+ - change the socket type we use for grauitious arps from the obsolete
+   AF_INET/SOCK_PACKET to instead use PF_PACKET/SOCK_RAW.
+ - Check return codes for some functions, from Sumit Bose, based on codereview by Jim Meyering.
+ - Sumit Bose: Remove structure memeber node_list_file that is no longer used.
+ - Sumit Bose: fix configure warning for netfilter.h
+ - Updates to the webpages by Volker.
+ - Remove error messages about missing /var/log/log.ctdb file from ctdb_diagnostics.sh from christian Ambach
+ - Additional error logs if hte eventscript switching from dameon to client mode fails.
+ - track how long it takes for ctdbd and the recovery daemon to perform the rec-lock fcntl() lock attemt and show this in the ctdb statistics output.
 * Thu May 14 2009 : Version 1.0.82
  - Update the "ctdb lvsmaster" command to return -1 on error.
  - Add a -Y flag to "ctdb lvsmaster"

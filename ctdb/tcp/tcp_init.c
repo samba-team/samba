@@ -69,7 +69,10 @@ static int ctdb_tcp_initialise(struct ctdb_context *ctdb)
 		exit(1);
 	}
 
-	for (i=0; i<ctdb->num_nodes; i++) {
+	for (i=0; i < ctdb->num_nodes; i++) {
+		if (ctdb->nodes[i]->flags & NODE_FLAGS_DELETED) {
+			continue;
+		}
 		if (ctdb_tcp_add_node(ctdb->nodes[i]) != 0) {
 			DEBUG(DEBUG_CRIT, ("methods->add_node failed at %d\n", i));
 			return -1;
@@ -135,7 +138,10 @@ static int ctdb_tcp_start(struct ctdb_context *ctdb)
 {
 	int i;
 
-	for (i=0; i<ctdb->num_nodes; i++) {
+	for (i=0; i < ctdb->num_nodes; i++) {
+		if (ctdb->nodes[i]->flags & NODE_FLAGS_DELETED) {
+			continue;
+		}
 		ctdb_tcp_connect_node(ctdb->nodes[i]);
 	}
 

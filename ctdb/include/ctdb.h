@@ -101,6 +101,11 @@ struct ctdb_call_info {
  */
 #define CTDB_SRVID_PUSH_NODE_FLAGS 0xF900000000000000LL
 
+/* 
+   a message ID to get the recovery daemon to reload the nodes file
+ */
+#define CTDB_SRVID_RELOAD_NODES 0xFA00000000000000LL
+
 
 
 /* used on the domain socket, send a pdu to the local daemon */

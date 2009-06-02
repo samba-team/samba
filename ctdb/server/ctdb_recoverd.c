@@ -1332,12 +1332,6 @@ static int do_recovery(struct ctdb_recoverd *rec,
 
 	DEBUG(DEBUG_NOTICE, (__location__ " Starting do_recovery\n"));
 
-	if (ctdb->num_nodes != nodemap->num) {
-		DEBUG(DEBUG_ERR, (__location__ " ctdb->num_nodes (%d) != nodemap->num (%d) reloading nodes file\n", ctdb->num_nodes, nodemap->num));
-		reload_nodes_file(ctdb);
-		return -1;
-	}
-
 	/* if recovery fails, force it again */
 	rec->need_recovery = true;
 
@@ -1802,6 +1796,21 @@ DEBUG(DEBUG_ERR, ("recovery master memory dump\n"));
 
 	talloc_free(tmp_ctx);
 }
+
+/*
+  handler for reload_nodes
+*/
+static void reload_nodes_handler(struct ctdb_context *ctdb, uint64_t srvid, 
+			     TDB_DATA data, void *private_data)
+{
+	struct ctdb_recoverd *rec = talloc_get_type(private_data, struct ctdb_recoverd);
+
+	DEBUG(DEBUG_ERR, (__location__ " Reload nodes file from recovery daemon\n"));
+
+	reload_nodes_file(rec->ctdb);
+}
+
+
 
 /*
   handler for recovery master elections
@@ -2371,6 +2380,9 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	/* register a message port for vacuum fetch */
 	ctdb_set_message_handler(ctdb, CTDB_SRVID_VACUUM_FETCH, vacuum_fetch_handler, rec);
 
+	/* register a message port for reloadnodes  */
+	ctdb_set_message_handler(ctdb, CTDB_SRVID_RELOAD_NODES, reload_nodes_handler, rec);
+
 again:
 	if (mem_ctx) {
 		talloc_free(mem_ctx);
@@ -2591,14 +2603,16 @@ again:
 		goto again;
 	}
 	for (j=0; j<nodemap->num; j++) {
-		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
-			continue;
-		}
 		/* release any existing data */
 		if (ctdb->nodes[j]->public_ips) {
 			talloc_free(ctdb->nodes[j]->public_ips);
 			ctdb->nodes[j]->public_ips = NULL;
 		}
+
+		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
+			continue;
+		}
+
 		/* grab a new shiny list of public ips from the node */
 		if (ctdb_ctrl_get_public_ips(ctdb, CONTROL_TIMEOUT(),
 			ctdb->nodes[j]->pnn, 
