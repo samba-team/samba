@@ -297,6 +297,28 @@ static bool test_nwrap_getgrouplist(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_nwrap_membership_user(struct torture_context *tctx,
+				       const struct passwd *pwd)
+{
+	int num_user_groups = 0;
+	gid_t *user_groups = NULL;
+	int g;
+
+	torture_assert(tctx, test_nwrap_getgrouplist(tctx,
+						     pwd->pw_name,
+						     pwd->pw_gid,
+						     &user_groups,
+						     &num_user_groups),
+						     "failed to test getgrouplist");
+
+	for (g=0; g < num_user_groups; g++) {
+		torture_assert(tctx, test_nwrap_getgrgid(tctx, user_groups[g]),
+			"failed to find the group the user is a member of");
+	}
+
+	return true;
+}
+
 static bool test_nwrap_membership(struct torture_context *tctx)
 {
 	const char *old_pwd = getenv("NSS_WRAPPER_PASSWD");
@@ -315,21 +337,9 @@ static bool test_nwrap_membership(struct torture_context *tctx)
 
 	for (i=0; i < num_pwd; i++) {
 
-		int num_user_groups = 0;
-		gid_t *user_groups = NULL;
-		int g;
+		torture_assert(tctx, test_nwrap_membership_user(tctx, &pwd[i]),
+			"failde to test membership for user");
 
-		torture_assert(tctx, test_nwrap_getgrouplist(tctx,
-							     pwd[i].pw_name,
-							     pwd[i].pw_gid,
-							     &user_groups,
-							     &num_user_groups),
-							     "failed to test getgrouplist");
-
-		for (g=0; g < num_user_groups; g++) {
-			torture_assert(tctx, test_nwrap_getgrgid(tctx, user_groups[g]),
-				"failed to find the group the user is a member of");
-		}
 	}
 
 	return true;
