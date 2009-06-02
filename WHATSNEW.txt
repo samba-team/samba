@@ -13,6 +13,9 @@ system at https://bugzilla.samba.org/.
 Major enhancements in Samba 3.4.0 include:
 ------------------------------------------
 
+Configuration changes:
+o The default passdb backend has been changed to 'tdbsam'!
+
 General changes:
 o Samba4 and Samba3 sources are included in the tarball
 
@@ -34,6 +37,22 @@ o An asynchronous API has been added.
 
 net Command Changes:
 o Parameter syntax made more consistent.
+
+
+Configuration changes
+=====================
+
+!!! ATTENTION !!!
+The default passdb backend has been changed to 'tdbsam'! That breaks existing
+setups using the 'smbpasswd' backend without explicit declaration! Please use
+'passdb backend = smbpasswd' if you would like to stick to the 'smbpasswd'
+backend or convert your smbpasswd entries using e.g. 'pdbedit -i smbpasswd -e
+tdbsam'.
+
+The 'tdbsam' backend is much more flexible concerning per user settings
+like 'profile path' or 'home directory' and there are some commands which do not
+work with the 'smbpasswd' backend at all.
+
 
 General Changes
 ===============
@@ -148,6 +167,7 @@ smb.conf changes
    kerberos method		       New	       default
    map untrusted to domain	       New	       No
    max open files		       Changed Default auto detected
+   passdb backend		       Changed Default tdbsam
    perfcount module		       New	       ""
    use kerberos keytab		       Removed
 
