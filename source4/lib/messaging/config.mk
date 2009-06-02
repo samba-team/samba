@@ -13,6 +13,6 @@ MESSAGING_OBJ_FILES = $(libmessagingsrcdir)/messaging.o
 
 [PYTHON::python_messaging]
 LIBRARY_REALNAME = samba/messaging.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = MESSAGING LIBEVENTS python_irpc
+PRIVATE_DEPENDENCIES = MESSAGING LIBEVENTS python_irpc pyparam_util
 
 python_messaging_OBJ_FILES = $(libmessagingsrcdir)/pymessaging.o

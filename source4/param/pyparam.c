@@ -325,15 +325,6 @@ PyTypeObject PyLoadparmService = {
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
-struct loadparm_context *py_default_loadparm_context(TALLOC_CTX *mem_ctx)
-{
-    struct loadparm_context *ret;
-    ret = loadparm_init(mem_ctx);
-    if (!lp_load_default(ret))
-        return NULL;
-    return ret;
-}
-
 static PyObject *py_default_path(PyObject *self)
 {
     return PyString_FromString(lp_default_path());

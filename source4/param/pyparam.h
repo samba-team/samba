@@ -21,5 +21,6 @@
 #define _PYPARAM_H_
 
 _PUBLIC_ struct loadparm_context *lp_from_py_object(PyObject *py_obj);
+_PUBLIC_ struct loadparm_context *py_default_loadparm_context(TALLOC_CTX *mem_ctx);
 
 #endif /* _PYPARAM_H_ */

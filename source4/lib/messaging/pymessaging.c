@@ -29,6 +29,7 @@
 #include "lib/events/events.h"
 #include "cluster/cluster.h"
 #include "param/param.h"
+#include "param/pyparam.h"
 
 #ifndef Py_RETURN_NONE
 #define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
@@ -36,9 +37,6 @@
 
 PyAPI_DATA(PyTypeObject) messaging_Type;
 PyAPI_DATA(PyTypeObject) irpc_ClientConnectionType;
-
-/* FIXME: This prototype should be in param/pyparam.h */
-struct loadparm_context *py_default_loadparm_context(TALLOC_CTX *mem_ctx);
 
 /* FIXME: This prototype should be in py_irpc.h, or shared otherwise */
 extern const struct PyNdrRpcMethodDef py_ndr_irpc_methods[];
