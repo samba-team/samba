@@ -93,6 +93,8 @@ set_retval() {
 	return $1
 }
 
+ctdbd=${CTDBD:-/usr/sbin/ctdbd}
+
 start() {
 	echo -n $"Starting ctdbd service: "
 
@@ -118,22 +120,24 @@ start() {
 
 	case $init_style in
 	    valgrind)
-		valgrind -q --log-file=/var/log/ctdb_valgrind /usr/sbin/ctdbd --nosetsched $CTDB_OPTIONS 
+		daemon valgrind -q --log-file=/var/log/ctdb_valgrind \
+		    $ctdbd --nosetsched $CTDB_OPTIONS 
 		RETVAL=0
 		;;
 	    suse)
-		startproc /usr/sbin/ctdbd $CTDB_OPTIONS
+		startproc $ctdbd $CTDB_OPTIONS
 		rc_status -v
 		RETVAL=$?
 		;;
 	    redhat)
-		daemon ctdbd $CTDB_OPTIONS
+		daemon $ctdbd $CTDB_OPTIONS
 		RETVAL=$?
 		echo
 		[ $RETVAL -eq 0 ] && touch /var/lock/subsys/ctdb || RETVAL=1
 		;;
 	    ubuntu)
-		start-stop-daemon --start --quiet --background --exec /usr/sbin/ctdbd -- $CTDB_OPTIONS
+		start-stop-daemon --start --quiet --background \
+		    --exec $ctdbd -- $CTDB_OPTIONS
 		RETVAL=$?
 		;;
 	esac
@@ -152,7 +156,7 @@ start() {
 
 stop() {
 	echo -n $"Shutting down ctdbd service: "
-	ctdb ping >& /dev/null || {
+	pkill -0 -f $ctdbd || {
 	    echo -n "  Warning: ctdbd not running ! "
 	    case $init_style in
 		suse)
@@ -164,20 +168,15 @@ stop() {
 	    esac
 	    return 0
 	}
-	ctdb shutdown
+	ctdb shutdown >/dev/null 2>&1
 	RETVAL=$?
 	count=0
-	if [ "$init_style" = "valgrind" ]; then
-	    # very crude method
-	    sleep 2
-	    pkill -9 -f valgrind
-	fi
-	while killall -q -0 ctdbd; do
+	while pkill -0 -f $ctdbd ; do
 	    sleep 1
-	    count=`expr $count + 1`
+	    count=$(($count + 1))
 	    [ $count -gt 10 ] && {
 		echo -n $"killing ctdbd "
-		killall -q -9 ctdbd
+		pkill -9 -f $ctdbd
 		pkill -9 -f $CTDB_BASE/events.d/
 	    }
 	done
