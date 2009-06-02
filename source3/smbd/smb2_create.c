@@ -213,47 +213,50 @@ static NTSTATUS smbd_smb2_create(struct smbd_smb2_request *req,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* If it's an IPC, pass off the pipe handler. */
-	if (IS_IPC(req->tcon->compat_conn)) {
+	if (IS_IPC(smbreq->conn)) {
 		return NT_STATUS_NOT_IMPLEMENTED;
-	}
+	} else if (CAN_PRINT(smbreq->conn)) {
+		status = file_new(smbreq, smbreq->conn, &result);
+		if(!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 
-	if (CAN_PRINT(req->tcon->compat_conn)) {
-		return NT_STATUS_NOT_IMPLEMENTED;
-	}
+		status = print_fsp_open(smbreq,
+					smbreq->conn,
+					in_name,
+					smbreq->vuid,
+					result,
+					&sbuf);
+		if (!NT_STATUS_IS_OK(status)) {
+			file_free(smbreq, result);
+			return status;
+		}
+		info = FILE_WAS_CREATED;
+	} else {
+		/* these are ignored for SMB2 */
+		in_create_options &= ~(0x10);/* NTCREATEX_OPTIONS_SYNC_ALERT */
+		in_create_options &= ~(0x20);/* NTCREATEX_OPTIONS_ASYNC_ALERT */
 
-	switch (in_oplock_level) {
-	case SMB2_OPLOCK_LEVEL_BATCH:
-		break;
-	case SMB2_OPLOCK_LEVEL_EXCLUSIVE:
-		break;
-	default:
-		break;
-	}
-
-	/* these are ignored for SMB2 */
-	in_create_options &= ~(0x10);/* NTCREATEX_OPTIONS_SYNC_ALERT */
-	in_create_options &= ~(0x20);/* NTCREATEX_OPTIONS_ASYNC_ALERT */
-
-	status = SMB_VFS_CREATE_FILE(req->tcon->compat_conn,
-				     smbreq,
-				     0, /* root_dir_fid */
-				     in_name,
-				     CFF_DOS_PATH, /* create_file_flags */
-				     in_desired_access,
-				     in_share_access,
-				     in_create_disposition,
-				     in_create_options,
-				     in_file_attributes,
-				     0, /* oplock_request */
-				     0, /* allocation_size */
-				     NULL, /* security_descriptor */
-				     NULL, /* ea_list */
-				     &result,
-				     &info,
-				     &sbuf);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		status = SMB_VFS_CREATE_FILE(req->tcon->compat_conn,
+					     smbreq,
+					     0, /* root_dir_fid */
+					     in_name,
+					     CFF_DOS_PATH, /* create_file_flags */
+					     in_desired_access,
+					     in_share_access,
+					     in_create_disposition,
+					     in_create_options,
+					     in_file_attributes,
+					     0, /* oplock_request */
+					     0, /* allocation_size */
+					     NULL, /* security_descriptor */
+					     NULL, /* ea_list */
+					     &result,
+					     &info,
+					     &sbuf);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 
 	*out_oplock_level	= 0;
