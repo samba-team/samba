@@ -651,6 +651,15 @@ extern bool ntstatus_check_dos_mapping;
 	}\
 } while (0)
 
+/* This varient is for when you want to free a local
+   temporary memory context in the error path */
+#define NT_STATUS_HAVE_NO_MEMORY_AND_FREE(x, ctx) do {	\
+	if (!(x)) {\
+		talloc_free(ctx); \
+		return NT_STATUS_NO_MEMORY;\
+	}\
+} while (0)
+
 #define NT_STATUS_IS_OK_RETURN(x) do { \
 	if (NT_STATUS_IS_OK(x)) {\
 		return x;\
