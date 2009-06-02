@@ -188,7 +188,7 @@ AC_DEFUN([SMB_ENABLE],
 $1_ENABLE = $2
 "
 SMB_INFO_ENABLES="$SMB_INFO_ENABLES
-\$enabled{$1} = \"$2\";"
+\$enabled{\"$1\"} = \"$2\";"
 ])
 
 dnl SMB_MAKE_SETTINGS(text)

@@ -46,7 +46,7 @@
 
 #ifndef MOUNT_CIFS_VENDOR_SUFFIX
  #ifdef _SAMBA_BUILD_
-  #include "include/version.h"
+  #include "version.h"
   #ifdef SAMBA_VERSION_VENDOR_SUFFIX
    #define MOUNT_CIFS_VENDOR_SUFFIX "-"SAMBA_VERSION_OFFICIAL_STRING"-"SAMBA_VERSION_VENDOR_SUFFIX
   #else
