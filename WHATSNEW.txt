@@ -19,6 +19,49 @@ Changes since 3.2.11
 --------------------
 
 
+o   Michael Adam <obnox@samba.org>
+    * Prevent creation of keys containing the '/' character.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 6099: Fix joining of Win7 into Samba domain.
+    * BUG 6279: Fix Winbind crash.
+    * BUG 6291: Fix "force user".
+    * BUG 6386: Groupdb mapping fix.
+    * Fix bug in processing of open modes in POSIX open.
+
+
+o   Guenther Deschner <gd@samba.org>
+    * BUG 6301: Fix samr_ConnectVersion enum which is 32bit not 16bit.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * Also handle DirX return codes.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 5798: CFLAGS info lost in configure.
+    * BUG 6382: Fix case insensitive access to DFS links.
+    * Fix a race condition in winbind leading to a panic.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 2346: Fix posix acls when setting an ACL without explicit ACE for the
+      owner.
+    * Fix a crash bug if we timeout in net rpc trustdom list.
+
+
+o   D.L. Meyer <dlmeyer@uiuc.edu>
+    * BUG 5832: Fix build on RHEL when ccache is not available.
+
+
+o   Karolin Seeger <kseeger@samba.org>
+    * BUG 5853: Add keyutils-devel to build requires.
+
+
+o   Simo Sorce <ssorce@redhat.com>
+    * Fix profile acls in some corner cases.
+
 
 
 ######################################################################
