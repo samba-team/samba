@@ -277,10 +277,12 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 	return NT_STATUS_OK;
 }
 
-static void smbd_server_connection_terminate(struct smbd_server_connection *conn,
-					     const char *reason)
+void smbd_server_connection_terminate_ex(struct smbd_server_connection *sconn,
+					 const char *reason,
+					 const char *location)
 {
-	DEBUG(10,("smbd_server_connection_terminate: reason[%s]\n", reason));
+	DEBUG(10,("smbd_server_connection_terminate_ex: reason[%s] at %s\n",
+		  reason, location));
 	exit_server_cleanly(reason);
 }
 

@@ -170,6 +170,12 @@ NTSTATUS smb2_signing_check_pdu(DATA_BLOB session_key,
 				const struct iovec *vector,
 				int count);
 
+void smbd_server_connection_terminate_ex(struct smbd_server_connection *sconn,
+					 const char *reason,
+					 const char *location);
+#define smbd_server_connection_terminate(sconn, reason) \
+	smbd_server_connection_terminate_ex(sconn, reason, __location__)
+
 bool smbd_is_smb2_header(const uint8_t *inbuf, size_t size);
 
 void reply_smb2002(struct smb_request *req, uint16_t choice);
