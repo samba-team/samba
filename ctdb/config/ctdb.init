@@ -120,7 +120,7 @@ start() {
 
 	case $init_style in
 	    valgrind)
-		daemon valgrind -q --log-file=/var/log/ctdb_valgrind \
+		valgrind -q --log-file=/var/log/ctdb_valgrind \
 		    $ctdbd --nosetsched $CTDB_OPTIONS 
 		RETVAL=0
 		;;
