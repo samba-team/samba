@@ -302,6 +302,7 @@ o   Günther Deschner <gd@samba.org>
     * Add NetShutdownInit and NetShutdownAbort.
     * Fix samr access checks.
     * Add a security model to LSA.
+    * Fix nss_wrapper build for Solaris.
 
 
 o   Geza Gemes <geza@kzsdabas.hu>
@@ -355,6 +356,10 @@ o   Slava Semushin <php-coder@altlinux.ru>
 o   Aravind Srinivasan <aravind.srinivasan@isilon.com>
     * Fallback to the legacy sid_to_(uid|gid) instead of returning NULL.
     * Always allocate memory in dptr_ReadDirName.
+
+
+o   Kumar Thangavelu <Kumar.Thangavelu@riverbed.com>
+    * Fix 'net' crash during domain join.
 
 
 o   Marc VanHeyningen <marc.vanheyningen@isilon.com>
