@@ -497,8 +497,6 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 {
 	struct tevent_req *subreq;
 
-	/* TODO: sign the response here */
-
 	smb2_setup_nbt_length(req->out.vector, req->out.vector_count);
 
 	if (req->do_signing) {
