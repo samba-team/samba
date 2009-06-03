@@ -23,7 +23,11 @@
 #include "../source4/libcli/smb2/smb2_constants.h"
 
 static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
-				       const char *share,
+				       const char *in_path,
+				       uint8_t *out_share_type,
+				       uint32_t *out_share_flags,
+				       uint32_t *out_capabilities,
+				       uint32_t *out_maximal_access,
 				       uint32_t *out_tree_id);
 
 NTSTATUS smbd_smb2_request_process_tcon(struct smbd_smb2_request *req)
@@ -39,6 +43,10 @@ NTSTATUS smbd_smb2_request_process_tcon(struct smbd_smb2_request *req)
 	DATA_BLOB in_path_buffer;
 	char *in_path_string;
 	size_t in_path_string_size;
+	uint8_t out_share_type;
+	uint32_t out_share_flags;
+	uint32_t out_capabilities;
+	uint32_t out_maximal_access;
 	uint32_t out_tree_id;
 	NTSTATUS status;
 	bool ok;
@@ -77,7 +85,12 @@ NTSTATUS smbd_smb2_request_process_tcon(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_ILLEGAL_CHARACTER);
 	}
 
-	status = smbd_smb2_tree_connect(req, in_path_string, &out_tree_id);
+	status = smbd_smb2_tree_connect(req, in_path_string,
+					&out_share_type,
+					&out_share_flags,
+					&out_capabilities,
+					&out_maximal_access,
+					&out_tree_id);
 	if (!NT_STATUS_IS_OK(status)) {
 		return smbd_smb2_request_error(req, status);
 	}
@@ -92,11 +105,15 @@ NTSTATUS smbd_smb2_request_process_tcon(struct smbd_smb2_request *req)
 	SIVAL(outhdr, SMB2_HDR_TID, out_tree_id);
 
 	SSVAL(outbody.data, 0x00, 0x10);	/* struct size */
-	SCVAL(outbody.data, 0x02, 0);		/* share type */
+	SCVAL(outbody.data, 0x02,
+	      out_share_type);			/* share type */
 	SCVAL(outbody.data, 0x03, 0);		/* reserved */
-	SIVAL(outbody.data, 0x04, 0);		/* share flags */
-	SIVAL(outbody.data, 0x08, 0);		/* capabilities */
-	SIVAL(outbody.data, 0x0C, 0);		/* maximal access */
+	SIVAL(outbody.data, 0x04,
+	      out_share_flags);			/* share flags */
+	SIVAL(outbody.data, 0x08,
+	      out_capabilities);		/* capabilities */
+	SIVAL(outbody.data, 0x0C,
+	      out_maximal_access);		/* maximal access */
 
 	return smbd_smb2_request_done(req, outbody, NULL);
 }
@@ -121,6 +138,10 @@ static int smbd_smb2_tcon_destructor(struct smbd_smb2_tcon *tcon)
 
 static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 				       const char *in_path,
+				       uint8_t *out_share_type,
+				       uint32_t *out_share_flags,
+				       uint32_t *out_capabilities,
+				       uint32_t *out_maximal_access,
 				       uint32_t *out_tree_id)
 {
 	const char *share = in_path;
@@ -182,6 +203,11 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 		return status;
 	}
 	tcon->compat_conn->cnum = tcon->tid;
+
+	*out_share_type = 0x01;
+	*out_share_flags = SMB2_SHAREFLAG_ALL;
+	*out_capabilities = 0;
+	*out_maximal_access = FILE_GENERIC_ALL;
 
 	*out_tree_id = tcon->tid;
 	return NT_STATUS_OK;
