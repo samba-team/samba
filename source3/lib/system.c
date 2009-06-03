@@ -94,7 +94,7 @@ int sys_usleep(long usecs)
 	 * is not SPEC1170 complient... grumble... JRA.
 	 */
 
-	if(usecs < 0 || usecs > 1000000) {
+	if(usecs < 0 || usecs > 999999) {
 		errno = EINVAL;
 		return -1;
 	}
