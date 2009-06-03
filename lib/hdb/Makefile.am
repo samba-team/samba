@@ -95,6 +95,7 @@ libhdb_la_LIBADD = \
 	$(LIB_NDBM)
 
 $(libhdb_la_OBJECTS): $(srcdir)/hdb-protos.h $(srcdir)/hdb-private.h
+$(libhdb_la_OBJECTS): hdb_asn1.h
 
 $(srcdir)/hdb-protos.h:
 	cd $(srcdir); perl ../../cf/make-proto.pl -q -P comment -o hdb-protos.h $(dist_libhdb_la_SOURCES) || rm -f hdb-protos.h
