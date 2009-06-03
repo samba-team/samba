@@ -127,7 +127,7 @@ check-local::
 	  test "$$failed" -eq 0 || exit 1; \
 	fi
 
-SUFFIXES += .x .z
+SUFFIXES += .x .z .hx
 
 .x.c:
 	@cmp -s $< $@ 2> /dev/null || cp $< $@
