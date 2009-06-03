@@ -241,7 +241,9 @@ spnego_files =					\
 BUILTHEADERS = \
 	$(srcdir)/krb5/gsskrb5-private.h \
 	$(srcdir)/spnego/spnego-private.h \
-	$(srcdir)/ntlm/ntlm-private.h
+	$(srcdir)/ntlm/ntlm-private.h \
+	spengo_asn1.h \
+	gssapi_asn1.h
 
 $(libgssapi_la_OBJECTS): $(BUILTHEADERS)
 $(test_context_OBJECTS): $(BUILTHEADERS)
