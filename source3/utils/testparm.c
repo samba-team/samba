@@ -296,7 +296,6 @@ rameter is ignored when using CUPS libraries.\n",
 	static int show_all_parameters = False;
 	int ret = 0;
 	poptContext pc;
-	static const char *term_code = "";
 	static char *parameter_name = NULL;
 	static const char *section_name = NULL;
 	static char *new_local_machine = NULL;
@@ -310,7 +309,6 @@ rameter is ignored when using CUPS libraries.\n",
 		{"suppress-prompt", 's', POPT_ARG_VAL, &silent_mode, 1, "Suppress prompt for enter"},
 		{"verbose", 'v', POPT_ARG_NONE, &show_defaults, 1, "Show default options too"},
 		{"server", 'L',POPT_ARG_STRING, &new_local_machine, 0, "Set %%L macro to servername\n"},
-		{"encoding", 't', POPT_ARG_STRING, &term_code, 0, "Print parameters with encoding"},
 		{"skip-logic-checks", 'l', POPT_ARG_NONE, &skip_logic_checks, 1, "Skip the global checks"},
 		{"show-all-parameters", '\0', POPT_ARG_VAL, &show_all_parameters, True, "Show the parameters, type, possible values" },
 		{"parameter-name", '\0', POPT_ARG_STRING, &parameter_name, 0, "Limit testparm to a named parameter" },

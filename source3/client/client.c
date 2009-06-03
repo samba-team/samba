@@ -4738,7 +4738,6 @@ static int do_message_op(struct user_auth_info *a_info)
 	int opt;
 	char *query_host = NULL;
 	bool message = false;
-	char *term_code = NULL;
 	static const char *new_name_resolve_order = NULL;
 	poptContext pc;
 	char *p;
@@ -4754,7 +4753,6 @@ static int do_message_op(struct user_auth_info *a_info)
 		{ "ip-address", 'I', POPT_ARG_STRING, NULL, 'I', "Use this IP to connect to", "IP" },
 		{ "stderr", 'E', POPT_ARG_NONE, NULL, 'E', "Write messages to stderr instead of stdout" },
 		{ "list", 'L', POPT_ARG_STRING, NULL, 'L', "Get a list of shares available on a host", "HOST" },
-		{ "terminal", 't', POPT_ARG_STRING, NULL, 't', "Terminal I/O code {sjis|euc|jis7|jis8|junet|hex}", "CODE" },
 		{ "max-protocol", 'm', POPT_ARG_STRING, NULL, 'm', "Set the max protocol level", "LEVEL" },
 		{ "tar", 'T', POPT_ARG_STRING, NULL, 'T', "Command line tar", "<c|x>IXFqgbNan" },
 		{ "directory", 'D', POPT_ARG_STRING, NULL, 'D', "Start from directory", "DIR" },
@@ -4771,15 +4769,6 @@ static int do_message_op(struct user_auth_info *a_info)
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (!client_set_cur_dir("\\")) {
-		exit(ENOMEM);
-	}
-
-#ifdef KANJI
-	term_code = talloc_strdup(frame,KANJI);
-#else /* KANJI */
-	term_code = talloc_strdup(frame,"");
-#endif /* KANJI */
-	if (!term_code) {
 		exit(ENOMEM);
 	}
 
@@ -4873,12 +4862,6 @@ static int do_message_op(struct user_auth_info *a_info)
 		case 'L':
 			query_host = talloc_strdup(frame, poptGetOptArg(pc));
 			if (!query_host) {
-				exit(ENOMEM);
-			}
-			break;
-		case 't':
-			term_code = talloc_strdup(frame,poptGetOptArg(pc));
-			if (!term_code) {
 				exit(ENOMEM);
 			}
 			break;
