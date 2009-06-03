@@ -83,12 +83,19 @@ init_generate (const char *filename, const char *base)
 	if (headerbase == NULL)
 	    errx(1, "strdup");
     }
-    asprintf(&header, "%s.hx", headerbase);
+
+    /* public header file */
+    asprintf(&header, "%s.h", headerbase);
     if (header == NULL)
 	errx(1, "malloc");
-    headerfile = fopen (header, "w");
+    asprintf(&fn, "%s.hx", headerbase);
+    if (fn == NULL)
+	errx(1, "malloc");
+    headerfile = fopen (fn, "w");
     if (headerfile == NULL)
-	err (1, "open %s", header);
+	err (1, "open %s", fn);
+    free(fn);
+
     fprintf (headerfile,
 	     "/* Generated from %s */\n"
 	     "/* Do not edit */\n\n",
