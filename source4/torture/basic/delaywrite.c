@@ -30,6 +30,10 @@
 #include "libcli/libcli.h"
 #include "torture/util.h"
 
+#define W2K8R2_TIMEDELAY_SECS 1
+#define W2K3_TIMEDELAY_SECS 2
+#define TIMEDELAY_SECS W2K3_TIMEDELAY_SECS
+
 #define BASEDIR "\\delaywrite"
 
 static bool test_delayed_write_update(struct torture_context *tctx, struct smbcli_state *cli)
@@ -97,7 +101,7 @@ static bool test_delayed_write_update(struct torture_context *tctx, struct smbcl
 		       nt_time_string(tctx, finfo2.basic_info.out.write_time));
 		if (finfo1.basic_info.out.write_time != finfo2.basic_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
-			if (diff < (2 * sec * 0.75)) { /* 0.75 to cope with vmware timing */
+			if (diff < (TIMEDELAY_SECS * sec * 0.75)) { /* 0.75 to cope with vmware timing */
 				torture_comment(tctx, "Server updated write_time after %.2f seconds"
 						"(1 sec == %.2f)(wrong!)\n",
 						diff, sec);
@@ -1151,7 +1155,7 @@ static bool test_delayed_write_update2(struct torture_context *tctx, struct smbc
 		       nt_time_string(tctx, finfo2.basic_info.out.write_time));
 		if (finfo1.basic_info.out.write_time != finfo2.basic_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
-			if (diff < (2 * sec * 0.75)) { /* 0.75 to cope with vmware timing */
+			if (diff < (TIMEDELAY_SECS * sec * 0.75)) { /* 0.75 to cope with vmware timing */
 				torture_comment(tctx, "Server updated write_time after %.2f seconds"
 						"(1sec == %.2f) (wrong!)\n",
 						diff, sec);
@@ -1505,7 +1509,7 @@ static bool test_delayed_write_update3(struct torture_context *tctx,
 
 		if (finfo1.basic_info.out.write_time > finfo0.basic_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
-			if (diff < (2 * sec * 0.75)) { /* 0.75 to cope with vmware timing */
+			if (diff < (TIMEDELAY_SECS * sec * 0.75)) { /* 0.75 to cope with vmware timing */
 				torture_comment(tctx, "Server updated write_time after %.2f seconds "
 						"(1sec == %.2f) (wrong!)\n",
 						diff, sec);
@@ -1547,7 +1551,7 @@ static bool test_delayed_write_update3(struct torture_context *tctx,
 			ret = false;
 			break;
 		}
-		msleep(2 * msec);
+		msleep(1 * msec);
 	}
 
 	GET_INFO_BOTH(finfo2,pinfo2);
@@ -1671,7 +1675,7 @@ static bool test_delayed_write_update3a(struct torture_context *tctx,
 
 		if (finfo1.basic_info.out.write_time > finfo0.basic_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
-			if (diff < (2 * sec * 0.75)) { /* 0.75 to cope with vmware timing */
+			if (diff < (TIMEDELAY_SECS * sec * 0.75)) { /* 0.75 to cope with vmware timing */
 				torture_comment(tctx, "Server updated write_time after %.2f seconds "
 						"(1sec == %.2f) (wrong!)\n",
 						diff, sec);
@@ -1882,7 +1886,7 @@ static bool test_delayed_write_update3b(struct torture_context *tctx,
 
 		if (finfo1.basic_info.out.write_time > finfo0.basic_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
-			if (diff < (2 * sec * 0.75)) { /* 0.75 to cope with vmware timing */
+			if (diff < (TIMEDELAY_SECS * sec * 0.75)) { /* 0.75 to cope with vmware timing */
 				torture_comment(tctx, "Server updated write_time after %.2f seconds "
 						"(1sec == %.2f) (wrong!)\n",
 						diff, sec);
@@ -2257,7 +2261,7 @@ static bool test_delayed_write_update4(struct torture_context *tctx,
 
 		if (finfo1.basic_info.out.write_time > finfo0.basic_info.out.write_time) {
 			double diff = timeval_elapsed(&start);
-			if (diff < (2 * sec * 0.75)) { /* 0.75 to cope with vmware timing */
+			if (diff < (TIMEDELAY_SECS * sec * 0.75)) { /* 0.75 to cope with vmware timing */
 				torture_comment(tctx, "Server updated write_time after %.2f seconds "
 						"(1sec == %.2f) (wrong!)\n",
 						diff, sec);
