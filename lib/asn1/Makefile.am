@@ -574,16 +574,16 @@ $(asn1_print_OBJECTS): krb5_asn1.h
 
 asn1parse.h: asn1parse.c
 
-$(gen_files_k5) krb5_asn1.h: krb5_asn1_files
-$(gen_files_pkinit) pkinit_asn1.h: pkinit_asn1_files
-$(gen_files_pkcs8) pkcs8_asn1.h: pkcs8_asn1_files
-$(gen_files_pkcs9) pkcs9_asn1.h: pkcs9_asn1_files
-$(gen_files_pkcs12) pkcs12_asn1.h: pkcs12_asn1_files
-$(gen_files_digest) digest_asn1.h: digest_asn1_files
-$(gen_files_kx509) kx509_asn1.h: kx509_asn1_files
-$(gen_files_rfc2459) rfc2459_asn1.h: rfc2459_asn1_files
-$(gen_files_cms) cms_asn1.h: cms_asn1_files
-$(gen_files_test) test_asn1.h: test_asn1_files
+$(gen_files_k5) krb5_asn1.hx: krb5_asn1_files
+$(gen_files_pkinit) pkinit_asn1.hx: pkinit_asn1_files
+$(gen_files_pkcs8) pkcs8_asn1.hx: pkcs8_asn1_files
+$(gen_files_pkcs9) pkcs9_asn1.hx: pkcs9_asn1_files
+$(gen_files_pkcs12) pkcs12_asn1.hx: pkcs12_asn1_files
+$(gen_files_digest) digest_asn1.hx: digest_asn1_files
+$(gen_files_kx509) kx509_asn1.hx: kx509_asn1_files
+$(gen_files_rfc2459) rfc2459_asn1.hx: rfc2459_asn1_files
+$(gen_files_cms) cms_asn1.hx: cms_asn1_files
+$(gen_files_test) test_asn1.hx: test_asn1_files
 
 rfc2459_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/rfc2459.asn1
 	./asn1_compile$(EXEEXT) --preserve-binary=TBSCertificate --preserve-binary=TBSCRLCertList --preserve-binary=Name --sequence=GeneralNames --sequence=Extensions --sequence=CRLDistributionPoints $(srcdir)/rfc2459.asn1 rfc2459_asn1 || (rm -f rfc2459_asn1_files ; exit 1)
