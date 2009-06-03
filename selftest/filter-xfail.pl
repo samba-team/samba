@@ -157,6 +157,6 @@ sub end_test($$$$$)
 my $msg_ops = {};
 bless $msg_ops;
 
-parse_results($msg_ops, $statistics, *STDIN, sub { return 0; }, []);
+parse_results($msg_ops, $statistics, *STDIN, []);
 
 0;

@@ -77,23 +77,10 @@ when the server is running locally.
 Will prevent TCP and UDP ports being opened on the local host but 
 (transparently) redirects these calls to use unix domain sockets.
 
-=item I<--expected-failures>
-
-Specify a file containing a list of tests that are expected to fail. Failures for 
-these tests will be counted as successes, successes will be counted as failures.
-
-The format for the file is, one entry per line:
-
-TESTSUITE-NAME.TEST-NAME
-
-The reason for a test can also be specified, by adding a hash sign (#) and the reason 
-after the test name.
-
 =item I<--exclude>
 
 Specify a file containing a list of tests that should be skipped. Possible 
-candidates are tests that segfault the server, flip or don't end. The format of this file is the same as 
-for the --expected-failures flag.
+candidates are tests that segfault the server, flip or don't end. 
 
 =item I<--include>
 
@@ -157,7 +144,6 @@ my $opt_socket_wrapper_pcap = undef;
 my $opt_socket_wrapper_keep_pcap = undef;
 my $opt_one = 0;
 my $opt_immediate = 0;
-my $opt_expected_failures = undef;
 my @opt_exclude = ();
 my @opt_include = ();
 my $opt_verbose = 0;
@@ -176,7 +162,6 @@ my $builddir = ".";
 my $exeext = "";
 my $prefix = "./st";
 
-my @expected_failures = ();
 my @includes = ();
 my @excludes = ();
 
@@ -203,12 +188,6 @@ sub find_in_list($$)
 	}
 
 	return undef;
-}
-
-sub expecting_failure($)
-{
-	my ($name) = @_;
-	return find_in_list(\@expected_failures, $name);
 }
 
 sub skip($)
@@ -265,7 +244,7 @@ sub run_testsuite($$$$$$)
 	}
 
 	my $expected_ret = parse_results(
-		$msg_ops, $statistics, *RESULT, \&expecting_failure, [$name]);
+		$msg_ops, $statistics, *RESULT, [$name]);
 
 	my $envlog = getlog_env($envname);
 	$msg_ops->output_msg("ENVLOG: $envlog\n") if ($envlog ne "");
@@ -323,7 +302,6 @@ Target Specific:
                             failed
  --socket-wrapper           enable socket wrapper
  --bindir=PATH              path to target binaries
- --expected-failures=FILE   specify list of tests that is guaranteed to fail
 
 Samba4 Specific:
  --ldap=openldap|fedora-ds  back samba onto specified ldap server
@@ -351,7 +329,6 @@ my $result = GetOptions (
 		'quick' => \$opt_quick,
 		'one' => \$opt_one,
 		'immediate' => \$opt_immediate,
-		'expected-failures=s' => \$opt_expected_failures,
 		'exclude=s' => \@opt_exclude,
 		'include=s' => \@opt_include,
 		'srcdir=s' => \$srcdir,
@@ -535,10 +512,6 @@ sub read_test_regexes($)
 	}
 	close(LF);
 	return @ret;
-}
-
-if (defined($opt_expected_failures)) {
-	@expected_failures = read_test_regexes($opt_expected_failures);
 }
 
 foreach (@opt_exclude) {

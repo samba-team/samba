@@ -23,9 +23,9 @@ require Exporter;
 
 use strict;
 
-sub parse_results($$$$$)
+sub parse_results($$$$)
 {
-	my ($msg_ops, $statistics, $fh, $expecting_failure, $open_tests) = @_;
+	my ($msg_ops, $statistics, $fh, $open_tests) = @_;
 	my $unexpected_ok = 0;
 	my $expected_fail = 0;
 	my $unexpected_fail = 0;
@@ -39,7 +39,7 @@ sub parse_results($$$$$)
 			push (@$open_tests, $1);
 		} elsif (/^time: (\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)Z\n/) {
 			$msg_ops->report_time(mktime($6, $5, $4, $3, $2, $1));
-		} elsif (/^(success|successful|failure|fail|skip|knownfail|error): (.*?)( \[)?([ \t]*)\n/) {
+		} elsif (/^(success|successful|failure|fail|skip|knownfail|error|xfail): (.*?)( \[)?([ \t]*)\n/) {
 			$msg_ops->control_msg($_);
 			my $reason = undef;
 			if ($3) {
@@ -60,29 +60,18 @@ sub parse_results($$$$$)
 			my $result = $1;
 			if ($1 eq "success" or $1 eq "successful") {
 				pop(@$open_tests); #FIXME: Check that popped value == $2
-				if ($expecting_failure->(join(".", @$open_tests) . ".$2")) {
-					$statistics->{TESTS_UNEXPECTED_OK}++;
-					$msg_ops->end_test($open_tests, $2, $1, 1, $reason);
-					$unexpected_ok++;
-				} else {
-					$statistics->{TESTS_EXPECTED_OK}++;
-					$msg_ops->end_test($open_tests, $2, $1, 0, $reason);
-				}
-			} elsif ($1 eq "failure" or $1 eq "fail") {
-				pop(@$open_tests); #FIXME: Check that popped value == $2
-				if ($expecting_failure->(join(".", @$open_tests) . ".$2")) {
-					$statistics->{TESTS_EXPECTED_FAIL}++;
-					$msg_ops->end_test($open_tests, $2, $1, 0, $reason);
-					$expected_fail++;
-				} else {
-					$statistics->{TESTS_UNEXPECTED_FAIL}++;
-					$msg_ops->end_test($open_tests, $2, $1, 1, $reason);
-					$unexpected_fail++;
-				}
-			} elsif ($1 eq "knownfail") {
+				$statistics->{TESTS_EXPECTED_OK}++;
+				$msg_ops->end_test($open_tests, $2, $1, 0, $reason);
+			} elsif ($1 eq "xfail" or $1 eq "knownfail") {
 				pop(@$open_tests); #FIXME: Check that popped value == $2
 				$statistics->{TESTS_EXPECTED_FAIL}++;
 				$msg_ops->end_test($open_tests, $2, $1, 0, $reason);
+				$expected_fail++;
+			} elsif ($1 eq "failure" or $1 eq "fail") {
+				pop(@$open_tests); #FIXME: Check that popped value == $2
+				$statistics->{TESTS_UNEXPECTED_FAIL}++;
+				$msg_ops->end_test($open_tests, $2, $1, 1, $reason);
+				$unexpected_fail++;
 			} elsif ($1 eq "skip") {
 				$statistics->{TESTS_SKIP}++;
 				pop(@$open_tests); #FIXME: Check that popped value == $2

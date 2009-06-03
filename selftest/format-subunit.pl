@@ -61,7 +61,7 @@ if ($opt_format eq "buildfarm") {
 }
 
 my $expected_ret = parse_results(
-	$msg_ops, $statistics, *STDIN, sub { return 0; }, []);
+	$msg_ops, $statistics, *STDIN, []);
 
 $msg_ops->summary();
 
