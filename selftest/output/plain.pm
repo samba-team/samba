@@ -143,7 +143,11 @@ sub end_test($$$$$)
 	my ($self, $parents, $testname, $result, $unexpected, $reason) = @_;
 	
 	if ($#$parents == -1) {
-		$self->end_testsuite($testname, $result, $unexpected, $reason);
+		if ($result eq "skip") {
+			$self->skip_testsuite($testname, $reason);
+		} else {
+			$self->end_testsuite($testname, $result, $unexpected, $reason);
+		}
 		return;
 	}
 
@@ -233,7 +237,9 @@ sub skip_testsuite($$)
 
 	push (@{$self->{skips}->{$reason}}, $name);
 
-	$self->{totalsuites}--;
+	if ($self->{totalsuites}) {
+		$self->{totalsuites}--;
+	}
 }
 
 1;
