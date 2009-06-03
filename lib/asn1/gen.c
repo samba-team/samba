@@ -83,7 +83,7 @@ init_generate (const char *filename, const char *base)
 	if (headerbase == NULL)
 	    errx(1, "strdup");
     }
-    asprintf(&header, "%s.h", headerbase);
+    asprintf(&header, "%s.hx", headerbase);
     if (header == NULL)
 	errx(1, "malloc");
     headerfile = fopen (header, "w");
