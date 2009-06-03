@@ -241,9 +241,7 @@ spnego_files =					\
 BUILTHEADERS = \
 	$(srcdir)/krb5/gsskrb5-private.h \
 	$(srcdir)/spnego/spnego-private.h \
-	$(srcdir)/ntlm/ntlm-private.h \
-	spengo_asn1.h \
-	gssapi_asn1.h
+	$(srcdir)/ntlm/ntlm-private.h
 
 $(libgssapi_la_OBJECTS): $(BUILTHEADERS)
 $(test_context_OBJECTS): $(BUILTHEADERS)
@@ -258,8 +256,8 @@ CLEANFILES = $(BUILT_SOURCES) \
 	$(gssapi_files) gssapi_asn1.h gssapi_asn1_files \
 	gss-commands.h gss-commands.c
 
-$(spnego_files) spnego_asn1.h: spnego_asn1_files
-$(gssapi_files) gssapi_asn1.h: gssapi_asn1_files
+$(spnego_files) spnego_asn1.hx: spnego_asn1_files
+$(gssapi_files) gssapi_asn1.hx: gssapi_asn1_files
 
 spnego_asn1_files: ../asn1/asn1_compile$(EXEEXT) $(srcdir)/spnego/spnego.asn1 $(srcdir)/spnego/spnego.opt
 	../asn1/asn1_compile$(EXEEXT) --option-file=$(srcdir)/spnego/spnego.opt $(srcdir)/spnego/spnego.asn1 spnego_asn1
