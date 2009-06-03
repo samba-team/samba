@@ -2910,7 +2910,7 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 	struct dcerpc_pipe *np = NULL;
 
 	if (torture_setting_bool(tctx, "samba3", false)) {
-		delay = 1000000;
+		delay = 999999;
 		printf("Samba3 has second granularity, setting delay to: %d\n",
 			delay);
 	}
