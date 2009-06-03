@@ -293,6 +293,7 @@ elif $PERL -e 'eval require Test::More;' > /dev/null 2>&1; then
   for f in $samba4srcdir/../pidl/tests/*.pl; do
      plantest "pidl.`basename $f .pl`" none $PERL $f "|" $PERL $samba4srcdir/../lib/subunit/tap2subunit
   done
+ plantest "selftest.samba4.pl" none $PERL $samba4srcdir/../selftest/test_samba4.pl "|" $PERL $samba4srcdir/../lib/subunit/tap2subunit
 else 
    echo "Skipping pidl tests - Test::More not installed"
 fi
