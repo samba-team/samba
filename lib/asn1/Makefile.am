@@ -568,7 +568,7 @@ nodist_include_HEADERS += digest_asn1.h
 nodist_include_HEADERS += kx509_asn1.h
 
 $(asn1_compile_OBJECTS): asn1parse.h asn1parse.c $(srcdir)/der-protos.h
-$(libasn1_la_OBJECTS): krb5_asn1.h asn1_err.h $(srcdir)/der-protos.h
+$(libasn1_la_OBJECTS): $(nodist_include_HEADERS) $(srcdir)/der-protos.h
 $(check_gen_OBJECTS): test_asn1.h
 $(asn1_print_OBJECTS): krb5_asn1.h
 
