@@ -65,7 +65,11 @@ sub start_testsuite($$)
 	$self->{test_output}->{$name} = "" unless($self->{verbose});
 
 	my $out = "";
-	$out .= "[$self->{index}/$self->{totalsuites} in ".$duration."s";
+	$out .= "[$self->{index}";
+	if ($self->{totalsuites}) {
+		$out .= "/$self->{totalsuites}";
+	}
+	$out.= " in ".$duration."s";
 	$out .= sprintf(", %d errors", ($#{$self->{suitesfailed}}+1)) if ($#{$self->{suitesfailed}} > -1);
 	$out .= "] $name"; 
 	if ($self->{immediate}) {
