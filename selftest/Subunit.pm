@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 package Subunit;
+use POSIX;
 
 require Exporter;
 @ISA = qw(Exporter);
@@ -36,6 +37,8 @@ sub parse_results($$$$$)
 			$msg_ops->control_msg($_);
 			$msg_ops->start_test($open_tests, $1);
 			push (@$open_tests, $1);
+		} elsif (/^time: (\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)Z\n/) {
+			$msg_ops->report_time(mktime($6, $5, $4, $3, $2, $1));
 		} elsif (/^(success|successful|failure|skip|knownfail|error): (.*?)( \[)?([ \t]*)\n/) {
 			$msg_ops->control_msg($_);
 			my $reason = undef;
