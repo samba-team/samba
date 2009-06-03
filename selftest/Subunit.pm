@@ -39,7 +39,7 @@ sub parse_results($$$$$)
 			push (@$open_tests, $1);
 		} elsif (/^time: (\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)Z\n/) {
 			$msg_ops->report_time(mktime($6, $5, $4, $3, $2, $1));
-		} elsif (/^(success|successful|failure|skip|knownfail|error): (.*?)( \[)?([ \t]*)\n/) {
+		} elsif (/^(success|successful|failure|fail|skip|knownfail|error): (.*?)( \[)?([ \t]*)\n/) {
 			$msg_ops->control_msg($_);
 			my $reason = undef;
 			if ($3) {
@@ -68,7 +68,7 @@ sub parse_results($$$$$)
 					$statistics->{TESTS_EXPECTED_OK}++;
 					$msg_ops->end_test($open_tests, $2, $1, 0, $reason);
 				}
-			} elsif ($1 eq "failure") {
+			} elsif ($1 eq "failure" or $1 eq "fail") {
 				pop(@$open_tests); #FIXME: Check that popped value == $2
 				if ($expecting_failure->(join(".", @$open_tests) . ".$2")) {
 					$statistics->{TESTS_EXPECTED_FAIL}++;
