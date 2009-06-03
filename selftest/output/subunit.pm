@@ -36,8 +36,7 @@ sub new($) {
 sub report_time($$)
 {
 	my ($self, $time) = @_;
-	my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime($time);
-	printf "time: %04d-%02d-%02d %02d:%02d:%02dZ\n", $year+1900, $mon, $mday, $hour, $min, $sec;
+	Subunit::report_time($time);
 }
 
 sub start_testsuite($$)
@@ -46,7 +45,7 @@ sub start_testsuite($$)
 
 	$self->{NAME} = $name;
 	
-	print "test: $self->{NAME}\n";
+	Subunit::start_test($self->{NAME});
 }
 
 sub output_msg($$)
@@ -67,18 +66,14 @@ sub end_testsuite($$$$$$)
 
 	if ($result eq "failure" and not $unexpected) { $result = "xfail"; }
 
-	if ($reason) {
-		print "$result: $name [ $reason ]\n";
-	} else {
-		print "$result: $name\n";
-	}
+	Subunit::end_test($name, $result, $reason);
 }
 
 sub start_test($$$)
 {
 	my ($self, $parents, $testname) = @_;
 
-	print "test: $testname\n";
+	Subunit::start_test($testname);
 }
 
 sub end_test($$$$$)
@@ -87,11 +82,7 @@ sub end_test($$$$$)
 
 	if ($result eq "fail" and not $unexpected) { $result = "xfail"; }
 
-	if ($reason) {
-		print "$result: $testname [ $reason ]\n";
-	} else {
-		print "$result: $testname\n";
-	}
+	Subunit::end_test($testname, $result, $reason);
 }
 
 sub summary($)
@@ -103,7 +94,8 @@ sub skip_testsuite($$$$)
 {
 	my ($self, $name, $reason) = @_;
 
-	print "skip: $name\n";
+	Subunit::start_test($name);
+	Subunit::end_test($name, "skip");
 }
 
 1;

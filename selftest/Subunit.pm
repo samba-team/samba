@@ -113,4 +113,29 @@ sub parse_results($$$$$)
 	return 1;
 }
 
+sub start_test($)
+{
+	my ($testname) = @_;
+	print "test: $testname\n";
+}
+
+sub end_test($$;$)
+{
+	my $name = shift;
+	my $result = shift;
+	my $reason = shift;
+	if ($reason) {
+		print "$result: $name [ $reason ]\n";
+	} else {
+		print "$result: $name\n";
+	}
+}
+
+sub report_time($)
+{
+	my ($time) = @_;
+	my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime($time);
+	printf "time: %04d-%02d-%02d %02d:%02d:%02dZ\n", $year+1900, $mon, $mday, $hour, $min, $sec;
+}
+
 1;
