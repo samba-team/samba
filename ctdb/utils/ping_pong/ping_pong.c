@@ -37,7 +37,9 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
+#ifndef _AIX
 #include <getopt.h>
+#endif
 #include <sys/mman.h>
 
 static struct timeval tp1,tp2;
