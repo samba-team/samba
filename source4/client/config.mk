@@ -32,10 +32,9 @@ INSTALLDIR = BINDIR
 umount.cifs_OBJ_FILES = ../client/umount.cifs.o \
 					   ../client/mtab.o
 
-[BINARY::cifs.upcall]
-INSTALLDIR = BINDIR
-
-cifs.upcall_OBJ_FILES = ../client/cifs.upcall.o
+#[BINARY::cifs.upcall]
+#INSTALLDIR = BINDIR
+#cifs.upcall_OBJ_FILES = ../client/cifs.upcall.o
 
 #################################
 # Start BINARY cifsdd
