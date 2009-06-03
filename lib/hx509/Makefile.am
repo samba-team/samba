@@ -126,6 +126,7 @@ crmf_asn1_files: $(asn1_compile) $(srcdir)/crmf.asn1
 	$(asn1_compile) $(srcdir)/crmf.asn1 crmf_asn1 || (rm -f crmf_asn1_files ; exit 1)
 
 $(libhx509_la_OBJECTS): $(srcdir)/hx509-protos.h $(srcdir)/hx509-private.h $(srcdir)/hx_locl.h
+$(libhx509_la_OBJECTS): ocsp_asn1.h pkcs10_asn1.h
 
 $(srcdir)/hx509-protos.h:
 	cd $(srcdir) && perl ../../cf/make-proto.pl -R '^(_|^C)' -E HX509_LIB -q -P comment -o hx509-protos.h $(dist_libhx509_la_SOURCES) || rm -f hx509-protos.h
