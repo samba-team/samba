@@ -2832,9 +2832,9 @@ static int control_listnodes(struct ctdb_context *ctdb, int argc, const char **a
 		}
 
 		for(i=0;i<nodemap->num;i++){
-//			if (nodemap->nodes[i].flags & NODE_FLAGS_DELETED) {
-//				continue;
-//			}
+			if (nodemap->nodes[i].flags & NODE_FLAGS_DELETED) {
+				continue;
+			}
 			if (options.machinereadable){
 				printf(":%d:%s:\n", nodemap->nodes[i].pnn, ctdb_addr_to_str(&nodemap->nodes[i].addr));
 			} else {
