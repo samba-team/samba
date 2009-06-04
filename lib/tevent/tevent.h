@@ -252,6 +252,10 @@ bool tevent_req_set_endtime(struct tevent_req *req,
 			    struct tevent_context *ev,
 			    struct timeval endtime);
 
+void _tevent_req_notify_callback(struct tevent_req *req, const char *location);
+#define tevent_req_notify_callback(req)		\
+	_tevent_req_notify_callback(req, __location__)
+
 void _tevent_req_done(struct tevent_req *req,
 		      const char *location);
 #define tevent_req_done(req) \
