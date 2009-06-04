@@ -22,6 +22,7 @@
 
 /* Required Headers */
 
+#include "replace.h"
 #include "libwbclient.h"
 
 /* Convert a Windows SID to a Unix uid, allocating an uid if needed */

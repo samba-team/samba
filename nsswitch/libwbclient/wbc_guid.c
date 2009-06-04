@@ -22,6 +22,7 @@
 
 /* Required Headers */
 
+#include "replace.h"
 #include "libwbclient.h"
 
 /* Convert a binary GUID to a character string */

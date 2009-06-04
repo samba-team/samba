@@ -22,6 +22,7 @@
 
 /* Required Headers */
 
+#include "replace.h"
 #include "lib/talloc/talloc.h"
 #include "lib/tevent/tevent.h"
 #include "libwbclient.h"
