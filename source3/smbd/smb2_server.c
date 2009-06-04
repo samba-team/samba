@@ -245,7 +245,8 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 		      NT_STATUS_V(NT_STATUS_INTERNAL_ERROR));
 		SSVAL(outhdr, SMB2_HDR_OPCODE,
 		      SVAL(inhdr, SMB2_HDR_OPCODE));
-		SSVAL(outhdr, SMB2_HDR_CREDIT,		0);
+		/* Make up a number for now... JRA. FIXME ! FIXME !*/
+		SSVAL(outhdr, SMB2_HDR_CREDIT,		20);
 		SIVAL(outhdr, SMB2_HDR_FLAGS,		SMB2_HDR_FLAG_REDIRECT);
 		SIVAL(outhdr, SMB2_HDR_NEXT_COMMAND,	next_command_ofs);
 		SBVAL(outhdr, SMB2_HDR_MESSAGE_ID,

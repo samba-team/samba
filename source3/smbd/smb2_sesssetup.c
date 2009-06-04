@@ -150,6 +150,7 @@ static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *req,
 	NTSTATUS status;
 
 	*out_session_flags = 0;
+	*out_session_id = 0;
 
 	if (in_session_id == 0) {
 		int id;
@@ -202,15 +203,75 @@ static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *req,
 		}
 	}
 
-	status = auth_ntlmssp_update(session->auth_ntlmssp_state,
-				     in_security_buffer,
-				     out_security_buffer);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+	if (in_security_buffer.data[0] == ASN1_APPLICATION(0)) {
+		DATA_BLOB secblob_in;
+		DATA_BLOB chal_out;
+		char *kerb_mech = NULL;
+
+		status = parse_spnego_mechanisms(in_security_buffer,
+				&secblob_in, &kerb_mech);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(session);
+			return nt_status_squash(status);
+		}
+
+		/* For now, just SPNEGO NTLMSSP - krb5 goes here later.. */
+		status = auth_ntlmssp_update(session->auth_ntlmssp_state,
+					     secblob_in,
+					     &chal_out);
+
+		if (!NT_STATUS_IS_OK(status) &&
+				!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			auth_ntlmssp_end(&session->auth_ntlmssp_state);
+			TALLOC_FREE(session);
+			return nt_status_squash(status);
+		}
+
+		*out_security_buffer = spnego_gen_auth_response(&chal_out,
+                                status, OID_NTLMSSP);
+
 		*out_session_id = session->vuid;
 		return status;
-	} else if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(session);
-		return status;
+	} else if (in_security_buffer.data[0] == ASN1_CONTEXT(1)) {
+		DATA_BLOB auth = data_blob_null;
+		DATA_BLOB auth_out = data_blob_null;
+
+		/* its an auth packet */
+		if (!spnego_parse_auth(in_security_buffer, &auth)) {
+			TALLOC_FREE(session);
+			return NT_STATUS_LOGON_FAILURE;
+		}
+		/* For now, just SPNEGO NTLMSSP - krb5 goes here later.. */
+		status = auth_ntlmssp_update(session->auth_ntlmssp_state,
+					     auth,
+					     &auth_out);
+		if (!NT_STATUS_IS_OK(status)) {
+			auth_ntlmssp_end(&session->auth_ntlmssp_state);
+			TALLOC_FREE(session);
+			return nt_status_squash(status);
+		}
+
+		*out_security_buffer = spnego_gen_auth_response(&auth_out,
+                                status, NULL);
+
+		*out_session_id = session->vuid;
+	} else if (strncmp((char *)(in_security_buffer.data), "NTLMSSP", 7) == 0) {
+
+		/* RAW NTLMSSP */
+		status = auth_ntlmssp_update(session->auth_ntlmssp_state,
+					     in_security_buffer,
+					     out_security_buffer);
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			*out_session_id = session->vuid;
+			return status;
+		}
+		if (!NT_STATUS_IS_OK(status)) {
+			auth_ntlmssp_end(&session->auth_ntlmssp_state);
+			TALLOC_FREE(session);
+			return nt_status_squash(status);
+		}
+		*out_session_id = session->vuid;
 	}
 
 	/* TODO: setup session key for signing */
