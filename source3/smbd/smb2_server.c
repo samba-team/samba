@@ -583,16 +583,17 @@ static void smbd_smb2_request_writev_done(struct tevent_req *subreq)
 	talloc_free(mem_pool);
 }
 
-NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
+static NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
 				    NTSTATUS status,
+				    const char *wherestr,
 				    DATA_BLOB *info)
 {
 	uint8_t *outhdr;
 	uint8_t *outbody;
 	int i = req->current_idx;
 
-	DEBUG(10,("smbd_smb2_request_error_ex: idx[%d] status[%s]%s\n",
-		  i, nt_errstr(status), info ? " +info" : ""));
+	DEBUG(10,("smbd_smb2_request_error_ex: idx[%d] status[%s] at %s |%s|\n",
+		  i, nt_errstr(status), wherestr, info ? " +info" : ""));
 
 	outhdr = (uint8_t *)req->out.vector[i].iov_base;
 
@@ -619,10 +620,10 @@ NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
 	return smbd_smb2_request_reply(req);
 }
 
-NTSTATUS smbd_smb2_request_error(struct smbd_smb2_request *req,
-				 NTSTATUS status)
+NTSTATUS smbd_smb2_request_error_(struct smbd_smb2_request *req,
+				 NTSTATUS status, const char *wherestr)
 {
-	return smbd_smb2_request_error_ex(req, status, NULL);
+	return smbd_smb2_request_error_ex(req, status, wherestr, NULL);
 }
 
 NTSTATUS smbd_smb2_request_done_ex(struct smbd_smb2_request *req,

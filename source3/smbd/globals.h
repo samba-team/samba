@@ -176,10 +176,9 @@ void reply_smb2002(struct smb_request *req, uint16_t choice);
 void smbd_smb2_first_negprot(struct smbd_server_connection *conn,
 			     const uint8_t *inbuf, size_t size);
 
-NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
-				    NTSTATUS status, DATA_BLOB *info);
-NTSTATUS smbd_smb2_request_error(struct smbd_smb2_request *req,
-				 NTSTATUS status);
+NTSTATUS smbd_smb2_request_error_(struct smbd_smb2_request *req,
+				 NTSTATUS status,
+				 const char *wherestr);
 NTSTATUS smbd_smb2_request_done_ex(struct smbd_smb2_request *req,
 				   NTSTATUS status,
 				   DATA_BLOB body, DATA_BLOB *dyn);
