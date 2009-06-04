@@ -892,7 +892,7 @@ static int nwrap_files_getpwnam_r(const char *name, struct passwd *pwdst,
 {
 	struct passwd *pw;
 
-	pw = nwrap_getpwnam(name);
+	pw = nwrap_files_getpwnam(name);
 	if (!pw) {
 		if (errno == 0) {
 			return ENOENT;
@@ -931,7 +931,7 @@ static int nwrap_files_getpwuid_r(uid_t uid, struct passwd *pwdst,
 {
 	struct passwd *pw;
 
-	pw = nwrap_getpwuid(uid);
+	pw = nwrap_files_getpwuid(uid);
 	if (!pw) {
 		if (errno == 0) {
 			return ENOENT;
@@ -974,7 +974,7 @@ static int nwrap_files_getpwent_r(struct passwd *pwdst, char *buf,
 {
 	struct passwd *pw;
 
-	pw = nwrap_getpwent();
+	pw = nwrap_files_getpwent();
 	if (!pw) {
 		if (errno == 0) {
 			return ENOENT;
@@ -1026,7 +1026,7 @@ static int nwrap_files_getgrnam_r(const char *name, struct group *grdst,
 {
 	struct group *gr;
 
-	gr = nwrap_getgrnam(name);
+	gr = nwrap_files_getgrnam(name);
 	if (!gr) {
 		if (errno == 0) {
 			return ENOENT;
@@ -1065,7 +1065,7 @@ static int nwrap_files_getgrgid_r(gid_t gid, struct group *grdst,
 {
 	struct group *gr;
 
-	gr = nwrap_getgrgid(gid);
+	gr = nwrap_files_getgrgid(gid);
 	if (!gr) {
 		if (errno == 0) {
 			return ENOENT;
@@ -1074,8 +1074,6 @@ static int nwrap_files_getgrgid_r(gid_t gid, struct group *grdst,
 	}
 
 	return nwrap_gr_copy_r(gr, grdst, buf, buflen, grdstp);
-
-	return ENOENT;
 }
 
 /* group enum functions */
@@ -1110,7 +1108,7 @@ static int nwrap_files_getgrent_r(struct group *grdst, char *buf,
 {
 	struct group *gr;
 
-	gr = nwrap_getgrent();
+	gr = nwrap_files_getgrent();
 	if (!gr) {
 		if (errno == 0) {
 			return ENOENT;
@@ -1144,7 +1142,7 @@ static int nwrap_files_getgrouplist(const char *user, gid_t group, gid_t *groups
 
 	memcpy(groups_tmp, &group, sizeof(gid_t));
 
-	grp = nwrap_getgrgid(group);
+	grp = nwrap_files_getgrgid(group);
 	if (grp) {
 		name_of_group = grp->gr_name;
 	}
