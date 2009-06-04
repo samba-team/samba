@@ -217,6 +217,7 @@ sub run_testsuite($$$$$)
 	my $pcap_file = setup_pcap($name);
 
 	Subunit::report_time(time());
+	Subunit::prefix($name);
 	Subunit::start_test($name);
 
 	my $ret = system("$cmd 2>&1");
@@ -226,10 +227,10 @@ sub run_testsuite($$$$$)
 	}
 	my $envlog = getlog_env($envname);
 	if ($envlog ne "") {
-		print "ENVLOG: $envlog\n";
+		print "envlog: $envlog\n";
 	}
 
-	print "CMD: $cmd\n";
+	print "command: $cmd\n";
 
 	my $exitcode = $ret >> 8;
 

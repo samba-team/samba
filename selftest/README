@@ -50,6 +50,8 @@ failure: <NAME> [ REASON ]
 Announce that the test with the specified name failed. Optionally, it is 
 possible to specify a reason it failed.
 
+The alias "fail" will also work.
+
 xfail
 ~~~~~
 xfail: <NAME>
@@ -57,6 +59,8 @@ xfail: <NAME> [ REASON ]
 
 Announce that the test with the specified name failed but that the failure
 was expected, e.g. it's a test for a known bug that hasn't been fixed yet.
+Alternatively it is also possible to simply return "failure:" here but 
+specify in the samba4-knownfailures file that it is failing.
 
 skip
 ~~~~
@@ -66,14 +70,19 @@ skip: <NAME> [ REASON ]
 Announce that the test with the specified name was skipped. Optionally a 
 reason can be specified.
 
-knownfail
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-knownfail: <NAME>
-knownfail: <NAME> [ REASON ]
+time
+~~~~
+time: YYYY-MM-DD HH:mm:ssZ
 
-Announce that the test with the specified name was run and failed as expected.
-Alternatively it is also possible to simply return "failure:" here but 
-specify in the samba4-knownfailures file that it is failing.
+Announce the current time. This may be used to calculate the duration of 
+various tests.
+
+prefix
+~~~~~~
+prefix: Prefix
+
+Change the global prefix for test names. To unset the prefix, specify an empty 
+string.
 
 Environments
 ============
