@@ -231,6 +231,10 @@ static NTSTATUS smbd_smb2_create(struct smbd_smb2_request *req,
 		break;
 	}
 
+	/* these are ignored for SMB2 */
+	in_create_options &= ~(0x10);/* NTCREATEX_OPTIONS_SYNC_ALERT */
+	in_create_options &= ~(0x20);/* NTCREATEX_OPTIONS_ASYNC_ALERT */
+
 	status = SMB_VFS_CREATE_FILE(req->tcon->compat_conn,
 				     smbreq,
 				     0, /* root_dir_fid */
