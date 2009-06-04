@@ -921,17 +921,14 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 					    krb5_const_principal principal,
 					    enum hdb_ldb_ent_type ent_type,
 					    struct ldb_dn *realm_dn,
-					    struct ldb_message ***pmsg)
+					    struct ldb_message **pmsg)
 {
 	krb5_error_code ret;
 	int lret;
 	char *filter = NULL;
 	const char * const *princ_attrs = user_attrs;
-
 	char *short_princ;
 	char *short_princ_talloc;
-
-	struct ldb_result *res = NULL;
 
 	ret = krb5_unparse_name_flags(context, principal,  KRB5_PRINCIPAL_UNPARSE_NO_REALM, &short_princ);
 
@@ -969,19 +966,18 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 		return ENOMEM;
 	}
 
-	lret = ldb_search(ldb_ctx, mem_ctx, &res, realm_dn,
-			  LDB_SCOPE_SUBTREE, princ_attrs, "%s", filter);
-	if (lret != LDB_SUCCESS) {
-		DEBUG(3, ("Failed to search for %s: %s\n", filter, ldb_errstring(ldb_ctx)));
-		return HDB_ERR_NOENTRY;
-	} else if (res->count == 0 || res->count > 1) {
-		DEBUG(3, ("Failed find a single entry for %s: got %d\n", filter, res->count));
-		talloc_free(res);
+	lret = gendb_search_single_extended_dn(ldb_ctx, mem_ctx, 
+					       realm_dn, LDB_SCOPE_SUBTREE,
+					       pmsg, princ_attrs, "%s", filter);
+	if (lret == LDB_ERR_NO_SUCH_OBJECT) {
+		DEBUG(3, ("Failed find a entry for %s\n", filter));
 		return HDB_ERR_NOENTRY;
 	}
-	talloc_steal(mem_ctx, res->msgs);
-	*pmsg = res->msgs;
-	talloc_free(res);
+	if (lret != LDB_SUCCESS) {
+		DEBUG(3, ("Failed single search for for %s - %s\n", 
+			  filter, ldb_errstring(ldb_ctx)));
+		return HDB_ERR_NOENTRY;
+	}
 	return 0;
 }
 
@@ -989,7 +985,7 @@ static krb5_error_code LDB_lookup_trust(krb5_context context, struct ldb_context
 					TALLOC_CTX *mem_ctx,
 					const char *realm,
 					struct ldb_dn *realm_dn,
-					struct ldb_message ***pmsg)
+					struct ldb_message **pmsg)
 {
 	int lret;
 	char *filter = NULL;
@@ -1015,7 +1011,7 @@ static krb5_error_code LDB_lookup_trust(krb5_context context, struct ldb_context
 		return HDB_ERR_NOENTRY;
 	}
 	talloc_steal(mem_ctx, res->msgs);
-	*pmsg = res->msgs;
+	*pmsg = res->msgs[0];
 	talloc_free(res);
 	return 0;
 }
@@ -1060,7 +1056,7 @@ static krb5_error_code LDB_fetch_client(krb5_context context, HDB *db,
 	char *principal_string;
 	struct ldb_dn *realm_dn;
 	krb5_error_code ret;
-	struct ldb_message **msg = NULL;
+	struct ldb_message *msg = NULL;
 
 	ret = krb5_unparse_name(context, principal, &principal_string);
 	
@@ -1082,7 +1078,7 @@ static krb5_error_code LDB_fetch_client(krb5_context context, HDB *db,
 	
 	ret = LDB_message2entry(context, db, mem_ctx, 
 				principal, HDB_SAMBA4_ENT_TYPE_CLIENT,
-				realm_dn, msg[0], entry_ex);
+				realm_dn, msg, entry_ex);
 	return ret;
 }
 
@@ -1093,7 +1089,7 @@ static krb5_error_code LDB_fetch_krbtgt(krb5_context context, HDB *db,
 					hdb_entry_ex *entry_ex)
 {
 	krb5_error_code ret;
-	struct ldb_message **msg = NULL;
+	struct ldb_message *msg = NULL;
 	struct ldb_dn *realm_dn = ldb_get_default_basedn(db->hdb_db);
 	const char *realm;
 	struct loadparm_context *lp_ctx = talloc_get_type(ldb_get_opaque(db->hdb_db, "loadparm"), struct loadparm_context);
@@ -1146,7 +1142,7 @@ static krb5_error_code LDB_fetch_krbtgt(krb5_context context, HDB *db,
 		
 		ret = LDB_message2entry(context, db, mem_ctx, 
 					principal, HDB_SAMBA4_ENT_TYPE_KRBTGT, 
-					realm_dn, msg[0], entry_ex);
+					realm_dn, msg, entry_ex);
 		if (ret != 0) {
 			krb5_warnx(context, "LDB_fetch: self krbtgt message2entry failed");	
 		}
@@ -1183,7 +1179,7 @@ static krb5_error_code LDB_fetch_krbtgt(krb5_context context, HDB *db,
 		
 		ret = LDB_trust_message2entry(context, db, lp_ctx, mem_ctx, 
 					      principal, direction, 
-					      realm_dn, msg[0], entry_ex);
+					      realm_dn, msg, entry_ex);
 		if (ret != 0) {
 			krb5_warnx(context, "LDB_fetch: trust_message2entry failed");	
 		}
@@ -1204,7 +1200,7 @@ static krb5_error_code LDB_fetch_server(krb5_context context, HDB *db,
 {
 	krb5_error_code ret;
 	const char *realm;
-	struct ldb_message **msg = NULL;
+	struct ldb_message *msg = NULL;
 	struct ldb_dn *realm_dn;
 	if (principal->name.name_string.len >= 2) {
 		/* 'normal server' case */
@@ -1232,10 +1228,12 @@ static krb5_error_code LDB_fetch_server(krb5_context context, HDB *db,
 			return HDB_ERR_NOENTRY;
 		}
 		
-		ldb_ret = gendb_search_dn((struct ldb_context *)db->hdb_db,
-					  mem_ctx, user_dn, &msg, user_attrs);
-		
-		if (ldb_ret != 1) {
+		ldb_ret = gendb_search_single_extended_dn((struct ldb_context *)db->hdb_db,
+							  mem_ctx, 
+							  user_dn, LDB_SCOPE_BASE,
+							  &msg, user_attrs,
+							  "(objectClass=*)");
+		if (ldb_ret != LDB_SUCCESS) {
 			return HDB_ERR_NOENTRY;
 		}
 		
@@ -1257,7 +1255,7 @@ static krb5_error_code LDB_fetch_server(krb5_context context, HDB *db,
 
 	ret = LDB_message2entry(context, db, mem_ctx, 
 				principal, HDB_SAMBA4_ENT_TYPE_SERVER,
-				realm_dn, msg[0], entry_ex);
+				realm_dn, msg, entry_ex);
 	if (ret != 0) {
 		krb5_warnx(context, "LDB_fetch: message2entry failed");	
 	}

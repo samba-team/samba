@@ -28,6 +28,7 @@
 #include "libcli/security/security.h"
 #include "libcli/ldap/ldap.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
+#include "librpc/gen_ndr/ndr_security.h"
 #include "param/param.h"
 #include "auth/auth_sam.h"
 
@@ -66,6 +67,7 @@ const char *user_attrs[] = {
 	"badPwdCount",
 	"logonCount",
 	"primaryGroupID",
+	"memberOf",
 	NULL,
 };
 
@@ -261,9 +263,7 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_conte
 					   struct auth_serversupplied_info **_server_info)
 {
 	struct auth_serversupplied_info *server_info;
-	struct ldb_message **group_msgs;
-	int group_ret;
-	const char *group_attrs[3] = { "sAMAccountType", "objectSid", NULL }; 
+	int group_ret = 0;
 	/* find list of sids */
 	struct dom_sid **groupSIDs = NULL;
 	struct dom_sid *account_sid;
@@ -271,39 +271,48 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_conte
 	const char *str;
 	int i;
 	uint_t rid;
-	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);	
+	struct ldb_message_element *el;
 
-	group_ret = gendb_search(sam_ctx,
-				 tmp_ctx, NULL, &group_msgs, group_attrs,
-				 "(&(member=%s)(sAMAccountType=*))", 
-				 ldb_dn_get_linearized(msg->dn));
-	if (group_ret == -1) {
-		talloc_free(tmp_ctx);
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
-	server_info = talloc(mem_ctx, struct auth_serversupplied_info);
-	NT_STATUS_HAVE_NO_MEMORY(server_info);
+	server_info = talloc(tmp_ctx, struct auth_serversupplied_info);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info, tmp_ctx);
 	
-	if (group_ret > 0) {
+	el = ldb_msg_find_element(msg, "memberOf");
+	if (el != NULL) {
+		group_ret = el->num_values;
 		groupSIDs = talloc_array(server_info, struct dom_sid *, group_ret);
-		NT_STATUS_HAVE_NO_MEMORY(groupSIDs);
+		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(groupSIDs, tmp_ctx);
 	}
 
-	/* Need to unroll some nested groups, but not aliases */
+	/* TODO Note: this is incomplete. We need to unroll some
+	 * nested groups, but not aliases */
 	for (i = 0; i < group_ret; i++) {
-		groupSIDs[i] = samdb_result_dom_sid(groupSIDs, 
-						    group_msgs[i], "objectSid");
-		NT_STATUS_HAVE_NO_MEMORY(groupSIDs[i]);
-	}
+		struct ldb_dn *dn;
+		const struct ldb_val *v;
+		enum ndr_err_code ndr_err;
 
-	talloc_free(tmp_ctx);
+		dn = ldb_dn_from_ldb_val(tmp_ctx, sam_ctx, &el->values[i]);
+		if (dn == NULL) {
+			talloc_free(tmp_ctx);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+		v = ldb_dn_get_extended_component(dn, "SID");
+		groupSIDs[i] = talloc(groupSIDs, struct dom_sid);
+		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(groupSIDs[i], tmp_ctx);
+
+		ndr_err = ndr_pull_struct_blob(v, groupSIDs[i], NULL, groupSIDs[i], 
+					       (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			talloc_free(tmp_ctx);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+	}
 
 	account_sid = samdb_result_dom_sid(server_info, msg, "objectSid");
-	NT_STATUS_HAVE_NO_MEMORY(account_sid);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(account_sid, tmp_ctx);
 
 	primary_group_sid = dom_sid_dup(server_info, account_sid);
-	NT_STATUS_HAVE_NO_MEMORY(primary_group_sid);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(primary_group_sid, tmp_ctx);
 
 	rid = samdb_result_uint(msg, "primaryGroupID", ~0);
 	if (rid == ~0) {
@@ -325,30 +334,30 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_conte
 	server_info->account_name = talloc_steal(server_info, samdb_result_string(msg, "sAMAccountName", NULL));
 
 	server_info->domain_name = talloc_strdup(server_info, domain_name);
-	NT_STATUS_HAVE_NO_MEMORY(server_info->domain_name);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->domain_name, tmp_ctx);
 
 	str = samdb_result_string(msg, "displayName", "");
 	server_info->full_name = talloc_strdup(server_info, str);
-	NT_STATUS_HAVE_NO_MEMORY(server_info->full_name);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->full_name, tmp_ctx);
 
 	str = samdb_result_string(msg, "scriptPath", "");
 	server_info->logon_script = talloc_strdup(server_info, str);
-	NT_STATUS_HAVE_NO_MEMORY(server_info->logon_script);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->logon_script, tmp_ctx);
 
 	str = samdb_result_string(msg, "profilePath", "");
 	server_info->profile_path = talloc_strdup(server_info, str);
-	NT_STATUS_HAVE_NO_MEMORY(server_info->profile_path);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->profile_path, tmp_ctx);
 
 	str = samdb_result_string(msg, "homeDirectory", "");
 	server_info->home_directory = talloc_strdup(server_info, str);
-	NT_STATUS_HAVE_NO_MEMORY(server_info->home_directory);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->home_directory, tmp_ctx);
 
 	str = samdb_result_string(msg, "homeDrive", "");
 	server_info->home_drive = talloc_strdup(server_info, str);
-	NT_STATUS_HAVE_NO_MEMORY(server_info->home_drive);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->home_drive, tmp_ctx);
 
 	server_info->logon_server = talloc_strdup(server_info, netbios_name);
-	NT_STATUS_HAVE_NO_MEMORY(server_info->logon_server);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->logon_server, tmp_ctx);
 
 	server_info->last_logon = samdb_result_nttime(msg, "lastLogon", 0);
 	server_info->last_logoff = samdb_result_nttime(msg, "lastLogoff", 0);
@@ -373,7 +382,7 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_conte
 
 	server_info->authenticated = true;
 
-	*_server_info = server_info;
+	*_server_info = talloc_steal(mem_ctx, server_info);
 
 	return NT_STATUS_OK;
 }
@@ -381,7 +390,7 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_conte
 NTSTATUS sam_get_results_principal(struct ldb_context *sam_ctx,
 				   TALLOC_CTX *mem_ctx, const char *principal,
 				   struct ldb_dn **domain_dn,
-				   struct ldb_message ***msgs)
+				   struct ldb_message **msg)
 {			   
 	struct ldb_dn *user_dn;
 	NTSTATUS nt_status;
@@ -399,12 +408,13 @@ NTSTATUS sam_get_results_principal(struct ldb_context *sam_ctx,
 	}
 	
 	/* pull the user attributes */
-	ret = gendb_search_dn(sam_ctx, tmp_ctx, user_dn, msgs, user_attrs);
-	if (ret != 1) {
+	ret = gendb_search_single_extended_dn(sam_ctx, tmp_ctx, user_dn, LDB_SCOPE_BASE,
+					      msg, user_attrs, "(objectClass=*)");
+	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-	talloc_steal(mem_ctx, *msgs);
+	talloc_steal(mem_ctx, *msg);
 	talloc_steal(mem_ctx, *domain_dn);
 	talloc_free(tmp_ctx);
 	

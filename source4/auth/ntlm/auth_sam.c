@@ -43,32 +43,23 @@ extern const char *domain_ref_attrs[];
 static NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *sam_ctx,
 				       const char *account_name,
 				       struct ldb_dn *domain_dn,
-				       struct ldb_message ***ret_msgs)
+				       struct ldb_message **ret_msg)
 {
-	struct ldb_message **msgs;
-
 	int ret;
 
 	/* pull the user attributes */
-	ret = gendb_search(sam_ctx, mem_ctx, domain_dn, &msgs, user_attrs,
-			   "(&(sAMAccountName=%s)(objectclass=user))", 
-			   ldb_binary_encode_string(mem_ctx, account_name));
-	if (ret == -1) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
-	if (ret == 0) {
+	ret = gendb_search_single_extended_dn(sam_ctx, mem_ctx, domain_dn, LDB_SCOPE_SUBTREE,
+					      ret_msg, user_attrs,
+					      "(&(sAMAccountName=%s)(objectclass=user))", 
+					      ldb_binary_encode_string(mem_ctx, account_name));
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		DEBUG(3,("sam_search_user: Couldn't find user [%s] in samdb, under %s\n", 
 			 account_name, ldb_dn_get_linearized(domain_dn)));
-		return NT_STATUS_NO_SUCH_USER;
+		return NT_STATUS_NO_SUCH_USER;		
 	}
-
-	if (ret > 1) {
-		DEBUG(0,("Found %d records matching user [%s]\n", ret, account_name));
+	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-
-	*ret_msgs = msgs;
 	
 	return NT_STATUS_OK;
 }
@@ -147,14 +138,14 @@ static NTSTATUS authsam_password_ok(struct auth_context *auth_context,
 static NTSTATUS authsam_authenticate(struct auth_context *auth_context, 
 				     TALLOC_CTX *mem_ctx, struct ldb_context *sam_ctx, 
 				     struct ldb_dn *domain_dn,
-				     struct ldb_message **msgs,
+				     struct ldb_message *msg,
 				     const struct auth_usersupplied_info *user_info, 
 				     DATA_BLOB *user_sess_key, DATA_BLOB *lm_sess_key) 
 {
 	struct samr_Password *lm_pwd, *nt_pwd;
 	NTSTATUS nt_status;
 
-	uint16_t acct_flags = samdb_result_acct_flags(sam_ctx, mem_ctx, msgs[0], domain_dn);
+	uint16_t acct_flags = samdb_result_acct_flags(sam_ctx, mem_ctx, msg, domain_dn);
 	
 	/* Quit if the account was locked out. */
 	if (acct_flags & ACB_AUTOLOCK) {
@@ -170,7 +161,7 @@ static NTSTATUS authsam_authenticate(struct auth_context *auth_context,
 		}
 	}
 
-	nt_status = samdb_result_passwords(mem_ctx, auth_context->lp_ctx, msgs[0], &lm_pwd, &nt_pwd);
+	nt_status = samdb_result_passwords(mem_ctx, auth_context->lp_ctx, msg, &lm_pwd, &nt_pwd);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	nt_status = authsam_password_ok(auth_context, mem_ctx, 
@@ -181,7 +172,7 @@ static NTSTATUS authsam_authenticate(struct auth_context *auth_context,
 	nt_status = authsam_account_ok(mem_ctx, sam_ctx, 
 				       user_info->logon_parameters,
 				       domain_dn,
-				       msgs[0],
+				       msg,
 				       user_info->workstation_name,
 				       user_info->mapped.account_name,
 				       false);
@@ -198,7 +189,7 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 {
 	NTSTATUS nt_status;
 	const char *account_name = user_info->mapped.account_name;
-	struct ldb_message **msgs;
+	struct ldb_message *msg;
 	struct ldb_context *sam_ctx;
 	struct ldb_dn *domain_dn;
 	DATA_BLOB user_sess_key, lm_sess_key;
@@ -226,13 +217,13 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
 
-	nt_status = authsam_search_account(tmp_ctx, sam_ctx, account_name, domain_dn, &msgs);
+	nt_status = authsam_search_account(tmp_ctx, sam_ctx, account_name, domain_dn, &msg);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
 		return nt_status;
 	}
 
-	nt_status = authsam_authenticate(ctx->auth_ctx, tmp_ctx, sam_ctx, domain_dn, msgs, user_info,
+	nt_status = authsam_authenticate(ctx->auth_ctx, tmp_ctx, sam_ctx, domain_dn, msg, user_info,
 					 &user_sess_key, &lm_sess_key);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
@@ -242,7 +233,7 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 	nt_status = authsam_make_server_info(tmp_ctx, sam_ctx, lp_netbios_name(ctx->auth_ctx->lp_ctx), 
  					     lp_sam_name(ctx->auth_ctx->lp_ctx),
 					     domain_dn,
-					     msgs[0],
+					     msg,
 					     user_sess_key, lm_sess_key,
 					     server_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -322,7 +313,7 @@ NTSTATUS authsam_get_server_info_principal(TALLOC_CTX *mem_ctx,
 	DATA_BLOB user_sess_key = data_blob(NULL, 0);
 	DATA_BLOB lm_sess_key = data_blob(NULL, 0);
 
-	struct ldb_message **msgs;
+	struct ldb_message *msg;
 	struct ldb_context *sam_ctx;
 	struct ldb_dn *domain_dn;
 	
@@ -339,7 +330,7 @@ NTSTATUS authsam_get_server_info_principal(TALLOC_CTX *mem_ctx,
 	}
 
 	nt_status = sam_get_results_principal(sam_ctx, tmp_ctx, principal, 
-					      &domain_dn, &msgs);
+					      &domain_dn, &msg);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
@@ -348,7 +339,7 @@ NTSTATUS authsam_get_server_info_principal(TALLOC_CTX *mem_ctx,
 					     lp_netbios_name(auth_context->lp_ctx),
  					     lp_workgroup(auth_context->lp_ctx),
 					     domain_dn, 
-					     msgs[0],
+					     msg,
 					     user_sess_key, lm_sess_key,
 					     server_info);
 	if (NT_STATUS_IS_OK(nt_status)) {
