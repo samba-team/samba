@@ -1376,102 +1376,421 @@ static void nwrap_files_endgrent(struct nwrap_backend *b)
  * module backend
  */
 
+#ifndef SAFE_FREE
+#define SAFE_FREE(x) do { if ((x) != NULL) {free(x); (x)=NULL;} } while(0)
+#endif
+
 static struct passwd *nwrap_module_getpwnam(struct nwrap_backend *b,
 					    const char *name)
 {
-	return NULL;
+	static struct passwd pwd;
+	static char buf[1000];
+	NSS_STATUS status;
+
+	if (!b->fns->_nss_getpwnam_r) {
+		return NULL;
+	}
+
+	status = b->fns->_nss_getpwnam_r(name, &pwd, buf, sizeof(buf), &errno);
+	if (status == NSS_STATUS_NOTFOUND) {
+		return NULL;
+	}
+	if (status != NSS_STATUS_SUCCESS) {
+		return NULL;
+	}
+	return &pwd;
 }
 
 static int nwrap_module_getpwnam_r(struct nwrap_backend *b,
 				   const char *name, struct passwd *pwdst,
 				   char *buf, size_t buflen, struct passwd **pwdstp)
 {
-	return ENOENT;
+	int ret;
+
+	if (!b->fns->_nss_getpwnam_r) {
+		return NSS_STATUS_NOTFOUND;
+	}
+
+	ret = b->fns->_nss_getpwnam_r(name, pwdst, buf, buflen, &errno);
+	switch (ret) {
+	case NSS_STATUS_SUCCESS:
+		return 0;
+	case NSS_STATUS_NOTFOUND:
+		if (errno != 0) {
+			return errno;
+		}
+		return ENOENT;
+	case NSS_STATUS_TRYAGAIN:
+		if (errno != 0) {
+			return errno;
+		}
+		return ERANGE;
+	default:
+		if (errno != 0) {
+			return errno;
+		}
+		return ret;
+	}
 }
 
 static struct passwd *nwrap_module_getpwuid(struct nwrap_backend *b,
 					    uid_t uid)
 {
-	return NULL;
+	static struct passwd pwd;
+	static char buf[1000];
+	NSS_STATUS status;
+
+	if (!b->fns->_nss_getpwuid_r) {
+		return NULL;
+	}
+
+	status = b->fns->_nss_getpwuid_r(uid, &pwd, buf, sizeof(buf), &errno);
+	if (status == NSS_STATUS_NOTFOUND) {
+		return NULL;
+	}
+	if (status != NSS_STATUS_SUCCESS) {
+		return NULL;
+	}
+	return &pwd;
 }
 
 static int nwrap_module_getpwuid_r(struct nwrap_backend *b,
 				   uid_t uid, struct passwd *pwdst,
 				   char *buf, size_t buflen, struct passwd **pwdstp)
 {
-	return ENOENT;
+	int ret;
+
+	if (!b->fns->_nss_getpwuid_r) {
+		return ENOENT;
+	}
+
+	ret = b->fns->_nss_getpwuid_r(uid, pwdst, buf, buflen, &errno);
+	switch (ret) {
+	case NSS_STATUS_SUCCESS:
+		return 0;
+	case NSS_STATUS_NOTFOUND:
+		if (errno != 0) {
+			return errno;
+		}
+		return ENOENT;
+	case NSS_STATUS_TRYAGAIN:
+		if (errno != 0) {
+			return errno;
+		}
+		return ERANGE;
+	default:
+		if (errno != 0) {
+			return errno;
+		}
+		return ret;
+	}
 }
 
 static void nwrap_module_setpwent(struct nwrap_backend *b)
 {
+	if (!b->fns->_nss_setpwent) {
+		return;
+	}
+
+	b->fns->_nss_setpwent();
 }
 
 static struct passwd *nwrap_module_getpwent(struct nwrap_backend *b)
 {
-	return NULL;
+	static struct passwd pwd;
+	static char buf[1000];
+	NSS_STATUS status;
+
+	if (!b->fns->_nss_getpwent_r) {
+		return NULL;
+	}
+
+	status = b->fns->_nss_getpwent_r(&pwd, buf, sizeof(buf), &errno);
+	if (status == NSS_STATUS_NOTFOUND) {
+		return NULL;
+	}
+	if (status != NSS_STATUS_SUCCESS) {
+		return NULL;
+	}
+	return &pwd;
 }
 
 static int nwrap_module_getpwent_r(struct nwrap_backend *b,
 				   struct passwd *pwdst, char *buf,
 				   size_t buflen, struct passwd **pwdstp)
 {
-	return ENOENT;
+	int ret;
+
+	if (!b->fns->_nss_getpwent_r) {
+		return ENOENT;
+	}
+
+	ret = b->fns->_nss_getpwent_r(pwdst, buf, buflen, &errno);
+	switch (ret) {
+	case NSS_STATUS_SUCCESS:
+		return 0;
+	case NSS_STATUS_NOTFOUND:
+		if (errno != 0) {
+			return errno;
+		}
+		return ENOENT;
+	case NSS_STATUS_TRYAGAIN:
+		if (errno != 0) {
+			return errno;
+		}
+		return ERANGE;
+	default:
+		if (errno != 0) {
+			return errno;
+		}
+		return ret;
+	}
 }
 
 static void nwrap_module_endpwent(struct nwrap_backend *b)
 {
+	if (!b->fns->_nss_endpwent) {
+		return;
+	}
+
+	b->fns->_nss_endpwent();
 }
 
 static int nwrap_module_initgroups(struct nwrap_backend *b,
 				   const char *user, gid_t group)
 {
-	return -1;
+	gid_t *groups;
+	long int start;
+	long int size;
+
+	if (!b->fns->_nss_initgroups) {
+		return NSS_STATUS_UNAVAIL;
+	}
+
+	return b->fns->_nss_initgroups(user, group, &start, &size, &groups, 0, &errno);
 }
 
 static struct group *nwrap_module_getgrnam(struct nwrap_backend *b,
 					   const char *name)
 {
-	return NULL;
+	static struct group grp;
+	static char *buf;
+	static int buflen = 1000;
+	NSS_STATUS status;
+
+	if (!b->fns->_nss_getgrnam_r) {
+		return NULL;
+	}
+
+	if (!buf) {
+		buf = (char *)malloc(buflen);
+	}
+again:
+	status = b->fns->_nss_getgrnam_r(name, &grp, buf, buflen, &errno);
+	if (status == NSS_STATUS_TRYAGAIN) {
+		buflen *= 2;
+		buf = (char *)realloc(buf, buflen);
+		if (!buf) {
+			return NULL;
+		}
+		goto again;
+	}
+	if (status == NSS_STATUS_NOTFOUND) {
+		SAFE_FREE(buf);
+		return NULL;
+	}
+	if (status != NSS_STATUS_SUCCESS) {
+		SAFE_FREE(buf);
+		return NULL;
+	}
+	return &grp;
 }
 
 static int nwrap_module_getgrnam_r(struct nwrap_backend *b,
 				   const char *name, struct group *grdst,
 				   char *buf, size_t buflen, struct group **grdstp)
 {
-	return ENOENT;
+	int ret;
+
+	if (!b->fns->_nss_getgrnam_r) {
+		return ENOENT;
+	}
+
+	ret = b->fns->_nss_getgrnam_r(name, grdst, buf, buflen, &errno);
+	switch (ret) {
+	case NSS_STATUS_SUCCESS:
+		return 0;
+	case NSS_STATUS_NOTFOUND:
+		if (errno != 0) {
+			return errno;
+		}
+		return ENOENT;
+	case NSS_STATUS_TRYAGAIN:
+		if (errno != 0) {
+			return errno;
+		}
+		return ERANGE;
+	default:
+		if (errno != 0) {
+			return errno;
+		}
+		return ret;
+	}
 }
 
 static struct group *nwrap_module_getgrgid(struct nwrap_backend *b,
 					   gid_t gid)
 {
-	return NULL;
+	static struct group grp;
+	static char *buf;
+	static int buflen = 1000;
+	NSS_STATUS status;
+
+	if (!b->fns->_nss_getgrgid_r) {
+		return NULL;
+	}
+
+	if (!buf) {
+		buf = (char *)malloc(buflen);
+	}
+
+again:
+	status = b->fns->_nss_getgrgid_r(gid, &grp, buf, buflen, &errno);
+	if (status == NSS_STATUS_TRYAGAIN) {
+		buflen *= 2;
+		buf = (char *)realloc(buf, buflen);
+		if (!buf) {
+			return NULL;
+		}
+		goto again;
+	}
+	if (status == NSS_STATUS_NOTFOUND) {
+		SAFE_FREE(buf);
+		return NULL;
+	}
+	if (status != NSS_STATUS_SUCCESS) {
+		SAFE_FREE(buf);
+		return NULL;
+	}
+	return &grp;
 }
 
 static int nwrap_module_getgrgid_r(struct nwrap_backend *b,
 				   gid_t gid, struct group *grdst,
 				   char *buf, size_t buflen, struct group **grdstp)
 {
-	return ENOENT;
+	int ret;
+
+	if (!b->fns->_nss_getgrgid_r) {
+		return ENOENT;
+	}
+
+	ret = b->fns->_nss_getgrgid_r(gid, grdst, buf, buflen, &errno);
+	switch (ret) {
+	case NSS_STATUS_SUCCESS:
+		return 0;
+	case NSS_STATUS_NOTFOUND:
+		if (errno != 0) {
+			return errno;
+		}
+		return ENOENT;
+	case NSS_STATUS_TRYAGAIN:
+		if (errno != 0) {
+			return errno;
+		}
+		return ERANGE;
+	default:
+		if (errno != 0) {
+			return errno;
+		}
+		return ret;
+	}
 }
 
 static void nwrap_module_setgrent(struct nwrap_backend *b)
 {
+	if (!b->fns->_nss_setgrent) {
+		return;
+	}
+
+	b->fns->_nss_setgrent();
 }
 
 static struct group *nwrap_module_getgrent(struct nwrap_backend *b)
 {
-	return NULL;
+	static struct group grp;
+	static char *buf;
+	static int buflen = 1024;
+	NSS_STATUS status;
+
+	if (!b->fns->_nss_getgrent_r) {
+		return NULL;
+	}
+
+	if (!buf) {
+		buf = (char *)malloc(buflen);
+	}
+
+again:
+	status = b->fns->_nss_getgrent_r(&grp, buf, buflen, &errno);
+	if (status == NSS_STATUS_TRYAGAIN) {
+		buflen *= 2;
+		buf = (char *)realloc(buf, buflen);
+		if (!buf) {
+			return NULL;
+		}
+		goto again;
+	}
+	if (status == NSS_STATUS_NOTFOUND) {
+		SAFE_FREE(buf);
+		return NULL;
+	}
+	if (status != NSS_STATUS_SUCCESS) {
+		SAFE_FREE(buf);
+		return NULL;
+	}
+	return &grp;
 }
 
 static int nwrap_module_getgrent_r(struct nwrap_backend *b,
 				   struct group *grdst, char *buf,
 				   size_t buflen, struct group **grdstp)
 {
-	return 0;
+	int ret;
+
+	if (!b->fns->_nss_getgrent_r) {
+		return ENOENT;
+	}
+
+	ret = b->fns->_nss_getgrent_r(grdst, buf, buflen, &errno);
+	switch (ret) {
+	case NSS_STATUS_SUCCESS:
+		return 0;
+	case NSS_STATUS_NOTFOUND:
+		if (errno != 0) {
+			return errno;
+		}
+		return ENOENT;
+	case NSS_STATUS_TRYAGAIN:
+		if (errno != 0) {
+			return errno;
+		}
+		return ERANGE;
+	default:
+		if (errno != 0) {
+			return errno;
+		}
+		return ret;
+	}
 }
 
 static void nwrap_module_endgrent(struct nwrap_backend *b)
 {
+	if (!b->fns->_nss_endgrent) {
+		return;
+	}
+
+	b->fns->_nss_endgrent();
 }
 
 /*
