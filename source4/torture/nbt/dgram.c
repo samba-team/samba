@@ -341,6 +341,8 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 	dgmslot = dgram_mailslot_temp(dgmsock, NBT_MAILSLOT_GETDC,
 				      netlogon_handler, NULL);
 	
+	torture_assert(tctx, dgmslot != NULL, "Error getting a Mailslot for GetDC reply");
+
 	ZERO_STRUCT(logon);
 	logon.command = LOGON_SAM_LOGON_REQUEST;
 	logon.req.logon.request_count = 0;
