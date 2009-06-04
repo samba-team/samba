@@ -1384,6 +1384,13 @@ _PUBLIC_ int swrap_socket(int family, int type, int protocol)
 {
 	struct socket_info *si;
 	int fd;
+	int real_type = type;
+#ifdef SOCK_CLOEXEC
+	real_type &= ~SOCK_CLOEXEC;
+#endif
+#ifdef SOCK_NONBLOCK
+	real_type &= ~SOCK_NONBLOCK;
+#endif
 
 	if (!socket_wrapper_dir()) {
 		return real_socket(family, type, protocol);
@@ -1402,7 +1409,7 @@ _PUBLIC_ int swrap_socket(int family, int type, int protocol)
 		return -1;
 	}
 
-	switch (type) {
+	switch (real_type) {
 	case SOCK_STREAM:
 		break;
 	case SOCK_DGRAM:
@@ -1416,12 +1423,12 @@ _PUBLIC_ int swrap_socket(int family, int type, int protocol)
 	case 0:
 		break;
 	case 6:
-		if (type == SOCK_STREAM) {
+		if (real_type == SOCK_STREAM) {
 			break;
 		}
 		/*fall through*/
 	case 17:
-		if (type == SOCK_DGRAM) {
+		if (real_type == SOCK_DGRAM) {
 			break;
 		}
 		/*fall through*/
@@ -1430,6 +1437,8 @@ _PUBLIC_ int swrap_socket(int family, int type, int protocol)
 		return -1;
 	}
 
+	/* We must call real_socket with type, from the caller, not the version we removed
+	   SOCK_CLOEXEC and SOCK_NONBLOCK from */
 	fd = real_socket(AF_UNIX, type, 0);
 
 	if (fd == -1) return -1;
@@ -1437,7 +1446,10 @@ _PUBLIC_ int swrap_socket(int family, int type, int protocol)
 	si = (struct socket_info *)calloc(1, sizeof(struct socket_info));
 
 	si->family = family;
-	si->type = type;
+
+	/* however, the rest of the socket_wrapper code expects just
+	 * the type, not the flags */
+	si->type = real_type;
 	si->protocol = protocol;
 	si->fd = fd;
 
