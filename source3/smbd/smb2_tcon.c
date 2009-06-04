@@ -236,6 +236,11 @@ NTSTATUS smbd_smb2_request_check_tcon(struct smbd_smb2_request *req)
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
+	/* should we pass FLAG_CASELESS_PATHNAMES here? */
+	if (!set_current_service(tcon->compat_conn, 0, true)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	req->tcon = tcon;
 	return NT_STATUS_OK;
 }
