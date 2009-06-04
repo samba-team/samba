@@ -164,7 +164,6 @@ struct nwrap_ops {
 	int		(*nw_getgrent_r)(struct group *grdst, char *buf,
 				      size_t buflen, struct group **grdstp);
 	void		(*nw_endgrent)(void);
-	int		(*nw_getgrouplist)(const char *user, gid_t group, gid_t *groups, int *ngroups);
 };
 
 static struct passwd *nwrap_files_getpwnam(const char *name);
@@ -190,7 +189,6 @@ static struct group *nwrap_files_getgrent(void);
 static int nwrap_files_getgrent_r(struct group *grdst, char *buf,
 				  size_t buflen, struct group **grdstp);
 static void nwrap_files_endgrent(void);
-static int nwrap_files_getgrouplist(const char *user, gid_t group, gid_t *groups, int *ngroups);
 
 struct nwrap_ops nwrap_files_ops = {
 	.name		= "files",
@@ -211,7 +209,6 @@ struct nwrap_ops nwrap_files_ops = {
 	.nw_getgrent	= nwrap_files_getgrent,
 	.nw_getgrent_r	= nwrap_files_getgrent_r,
 	.nw_endgrent	= nwrap_files_endgrent,
-	.nw_getgrouplist= nwrap_files_getgrouplist
 };
 
 struct nwrap_main {
@@ -1124,74 +1121,6 @@ static void nwrap_files_endgrent(void)
 	nwrap_gr_global.idx = 0;
 }
 
-static int nwrap_files_getgrouplist(const char *user, gid_t group, gid_t *groups, int *ngroups)
-{
-	struct group *grp;
-	gid_t *groups_tmp;
-	int count = 1;
-	const char *name_of_group = NULL;
-
-	NWRAP_DEBUG(("%s: getgrouplist called for %s\n", __location__, user));
-
-	groups_tmp = (gid_t *)malloc(count * sizeof(gid_t));
-	if (!groups_tmp) {
-		NWRAP_ERROR(("%s:calloc failed\n",__location__));
-		errno = ENOMEM;
-		return -1;
-	}
-
-	memcpy(groups_tmp, &group, sizeof(gid_t));
-
-	grp = nwrap_files_getgrgid(group);
-	if (grp) {
-		name_of_group = grp->gr_name;
-	}
-
-	nwrap_files_setgrent();
-	while ((grp = nwrap_files_getgrent()) != NULL) {
-		int i = 0;
-
-		NWRAP_VERBOSE(("%s: inspecting %s for group membership\n",
-			       __location__, grp->gr_name));
-
-		for (i=0; grp->gr_mem && grp->gr_mem[i] != NULL; i++) {
-
-			if ((strcmp(user, grp->gr_mem[i]) == 0) &&
-			    (strcmp(name_of_group, grp->gr_name) != 0)) {
-
-				NWRAP_DEBUG(("%s: %s is member of %s\n",
-					__location__, user, grp->gr_name));
-
-				groups_tmp = (gid_t *)realloc(groups_tmp, (count + 1) * sizeof(gid_t));
-				if (!groups_tmp) {
-					NWRAP_ERROR(("%s:calloc failed\n",__location__));
-					errno = ENOMEM;
-					return -1;
-				}
-
-				memcpy(&groups_tmp[count], &grp->gr_gid, sizeof(gid_t));
-				count++;
-			}
-		}
-	}
-	nwrap_files_endgrent();
-
-	NWRAP_VERBOSE(("%s: %s is member of %d groups: %d\n",
-		       __location__, user, *ngroups));
-
-	if (*ngroups < count) {
-		*ngroups = count;
-		free(groups_tmp);
-		return -1;
-	}
-
-	*ngroups = count;
-	memcpy(groups, groups_tmp, count * sizeof(gid_t));
-	free(groups_tmp);
-
-	return count;
-}
-
 /*
  * PUBLIC interface
  */
@@ -1391,9 +1320,72 @@ _PUBLIC_ void nwrap_endgrent(void)
 
 _PUBLIC_ int nwrap_getgrouplist(const char *user, gid_t group, gid_t *groups, int *ngroups)
 {
+	struct group *grp;
+	gid_t *groups_tmp;
+	int count = 1;
+	const char *name_of_group = NULL;
+
 	if (!nwrap_enabled()) {
 		return real_getgrouplist(user, group, groups, ngroups);
 	}
 
-	return nwrap_main_global->ops->nw_getgrouplist(user, group, groups, ngroups);
+	NWRAP_DEBUG(("%s: getgrouplist called for %s\n", __location__, user));
+
+	groups_tmp = (gid_t *)malloc(count * sizeof(gid_t));
+	if (!groups_tmp) {
+		NWRAP_ERROR(("%s:calloc failed\n",__location__));
+		errno = ENOMEM;
+		return -1;
+	}
+
+	memcpy(groups_tmp, &group, sizeof(gid_t));
+
+	grp = nwrap_getgrgid(group);
+	if (grp) {
+		name_of_group = grp->gr_name;
+	}
+
+	nwrap_setgrent();
+	while ((grp = nwrap_getgrent()) != NULL) {
+		int i = 0;
+
+		NWRAP_VERBOSE(("%s: inspecting %s for group membership\n",
+			       __location__, grp->gr_name));
+
+		for (i=0; grp->gr_mem && grp->gr_mem[i] != NULL; i++) {
+
+			if ((strcmp(user, grp->gr_mem[i]) == 0) &&
+			    (strcmp(name_of_group, grp->gr_name) != 0)) {
+
+				NWRAP_DEBUG(("%s: %s is member of %s\n",
+					__location__, user, grp->gr_name));
+
+				groups_tmp = (gid_t *)realloc(groups_tmp, (count + 1) * sizeof(gid_t));
+				if (!groups_tmp) {
+					NWRAP_ERROR(("%s:calloc failed\n",__location__));
+					errno = ENOMEM;
+					return -1;
+				}
+
+				memcpy(&groups_tmp[count], &grp->gr_gid, sizeof(gid_t));
+				count++;
+			}
+		}
+	}
+	nwrap_endgrent();
+
+	NWRAP_VERBOSE(("%s: %s is member of %d groups: %d\n",
+		       __location__, user, *ngroups));
+
+	if (*ngroups < count) {
+		*ngroups = count;
+		free(groups_tmp);
+		return -1;
+	}
+
+	*ngroups = count;
+	memcpy(groups, groups_tmp, count * sizeof(gid_t));
+	free(groups_tmp);
+
+	return count;
 }
