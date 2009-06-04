@@ -383,20 +383,15 @@ struct pnn_node {
 	int pnn;
 };
 
-/*
-  show the PNN of the current node
-  discover the pnn by loading the nodes file and try to bind to all
-  addresses one at a time until the ip address is found.
- */
-static int control_xpnn(struct ctdb_context *ctdb, int argc, const char **argv)
+static struct pnn_node *read_nodes_file(TALLOC_CTX *mem_ctx)
 {
-	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	const char *nodes_list;
 	int nlines;
 	char **lines;
+	int i, pnn;
 	struct pnn_node *pnn_nodes = NULL;
 	struct pnn_node *pnn_node;
-	int i, pnn;
+	struct pnn_node *tmp_node;
 
 	/* read the nodes file */
 	nodes_list = getenv("CTDB_NODES");
@@ -405,8 +400,7 @@ static int control_xpnn(struct ctdb_context *ctdb, int argc, const char **argv)
 	}
 	lines = file_lines_load(nodes_list, &nlines, mem_ctx);
 	if (lines == NULL) {
-		ctdb_set_error(ctdb, "Failed to load nodes list '%s'\n", nodes_list);
-		return -1;
+		return NULL;
 	}
 	while (nlines > 0 && strcmp(lines[nlines-1], "") == 0) {
 		nlines--;
@@ -420,6 +414,7 @@ static int control_xpnn(struct ctdb_context *ctdb, int argc, const char **argv)
 			node++;
 		}
 		if (*node == '#') {
+			pnn++;
 			continue;
 		}
 		if (strcmp(node, "") == 0) {
@@ -428,26 +423,60 @@ static int control_xpnn(struct ctdb_context *ctdb, int argc, const char **argv)
 		pnn_node = talloc(mem_ctx, struct pnn_node);
 		pnn_node->pnn = pnn++;
 		pnn_node->addr = talloc_strdup(pnn_node, node);
-		CTDB_NO_MEMORY(ctdb, pnn_node->addr);
 		pnn_node->next = pnn_nodes;
 		pnn_nodes = pnn_node;
+	}
+
+	/* swap them around so we return them in incrementing order */
+	pnn_node = pnn_nodes;
+	pnn_nodes = NULL;
+	while (pnn_node) {
+		tmp_node = pnn_node;
+		pnn_node = pnn_node->next;
+
+		tmp_node->next = pnn_nodes;
+		pnn_nodes = tmp_node;
+	}
+
+	return pnn_nodes;
+}
+
+/*
+  show the PNN of the current node
+  discover the pnn by loading the nodes file and try to bind to all
+  addresses one at a time until the ip address is found.
+ */
+static int control_xpnn(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	struct pnn_node *pnn_nodes;
+	struct pnn_node *pnn_node;
+
+	pnn_nodes = read_nodes_file(mem_ctx);
+	if (pnn_nodes == NULL) {
+		DEBUG(DEBUG_ERR,("Failed to read nodes file\n"));
+		talloc_free(mem_ctx);
+		return -1;
 	}
 
 	for(pnn_node=pnn_nodes;pnn_node;pnn_node=pnn_node->next) {
 		ctdb_sock_addr addr;
 
 		if (parse_ip(pnn_node->addr, NULL, 63999, &addr) == 0) {
-			DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s' in nodes file %s\n", pnn_node->addr, nodes_list));
+			DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s' in nodes file\n", pnn_node->addr));
+			talloc_free(mem_ctx);
 			return -1;
 		}
 
 		if (ctdb_sys_have_ip(&addr)) {
 			printf("PNN:%d\n", pnn_node->pnn);
+			talloc_free(mem_ctx);
 			return 0;
 		}
 	}
 
 	printf("Failed to detect which PNN this node is\n");
+	talloc_free(mem_ctx);
 	return -1;
 }
 
@@ -2787,23 +2816,59 @@ static int control_rddumpmemory(struct ctdb_context *ctdb, int argc, const char 
 
 /*
   list all nodes in the cluster
+  if the daemon is running, we read the data from the daemon.
+  if the daemon is not running we parse the nodes file directly
  */
 static int control_listnodes(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int i, ret;
 	struct ctdb_node_map *nodemap=NULL;
 
-	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), options.pnn, ctdb, &nodemap);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get nodemap from node %u\n", options.pnn));
-		return ret;
-	}
-
-	for(i=0;i<nodemap->num;i++){
-		if (nodemap->nodes[i].flags & NODE_FLAGS_DELETED) {
-			continue;
+	if (ctdb != NULL) {
+		ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), options.pnn, ctdb, &nodemap);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, ("Unable to get nodemap from node %u\n", options.pnn));
+			return ret;
 		}
-		printf("%s\n", ctdb_addr_to_str(&nodemap->nodes[i].addr));
+
+		for(i=0;i<nodemap->num;i++){
+//			if (nodemap->nodes[i].flags & NODE_FLAGS_DELETED) {
+//				continue;
+//			}
+			if (options.machinereadable){
+				printf(":%d:%s:\n", nodemap->nodes[i].pnn, ctdb_addr_to_str(&nodemap->nodes[i].addr));
+			} else {
+				printf("%s\n", ctdb_addr_to_str(&nodemap->nodes[i].addr));
+			}
+		}
+	} else {
+		TALLOC_CTX *mem_ctx = talloc_new(NULL);
+		struct pnn_node *pnn_nodes;
+		struct pnn_node *pnn_node;
+	
+		pnn_nodes = read_nodes_file(mem_ctx);
+		if (pnn_nodes == NULL) {
+			DEBUG(DEBUG_ERR,("Failed to read nodes file\n"));
+			talloc_free(mem_ctx);
+			return -1;
+		}
+
+		for(pnn_node=pnn_nodes;pnn_node;pnn_node=pnn_node->next) {
+			ctdb_sock_addr addr;
+
+			if (parse_ip(pnn_node->addr, NULL, 63999, &addr) == 0) {
+				DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s' in nodes file\n", pnn_node->addr));
+				talloc_free(mem_ctx);
+				return -1;
+			}
+
+			if (options.machinereadable){
+				printf(":%d:%s:\n", pnn_node->pnn, pnn_node->addr);
+			} else {
+				printf("%s\n", pnn_node->addr);
+			}
+		}
+		talloc_free(mem_ctx);
 	}
 
 	return 0;
@@ -2885,8 +2950,8 @@ static const struct {
 	{ "pnn",             control_pnn,               true,	false,  "show the pnn of the currnet node" },
 	{ "lvs",             control_lvs,               true,	false,  "show lvs configuration" },
 	{ "lvsmaster",       control_lvsmaster,         true,	false,  "show which node is the lvs master" },
-	{ "disablemonitor",      control_disable_monmode,        true,	false,  "set monitoring mode to DISABLE" },
-	{ "enablemonitor",      control_enable_monmode,        true,	false,  "set monitoring mode to ACTIVE" },
+	{ "disablemonitor",      control_disable_monmode,true,	false,  "set monitoring mode to DISABLE" },
+	{ "enablemonitor",      control_enable_monmode, true,	false,  "set monitoring mode to ACTIVE" },
 	{ "setdebug",        control_setdebug,          true,	false,  "set debug level",                      "<EMERG|ALERT|CRIT|ERR|WARNING|NOTICE|INFO|DEBUG>" },
 	{ "getdebug",        control_getdebug,          true,	false,  "get debug level" },
 	{ "attach",          control_attach,            true,	false,  "attach to a database",                 "<dbname>" },
@@ -2913,19 +2978,19 @@ static const struct {
 	{ "getsrvids",       getsrvids,			false,	false, "get a list of all server ids"},
 	{ "vacuum",          ctdb_vacuum,		false,	false, "vacuum the databases of empty records", "[max_records]"},
 	{ "repack",          ctdb_repack,		false,	false, "repack all databases", "[max_freelist]"},
-	{ "listnodes",       control_listnodes,		false,	false, "list all nodes in the cluster"},
-	{ "reloadnodes",     control_reload_nodes_file,		false,	false, "reload the nodes file and restart the transport on all nodes"},
+	{ "listnodes",       control_listnodes,		false,	true, "list all nodes in the cluster"},
+	{ "reloadnodes",     control_reload_nodes_file,	false,	false, "reload the nodes file and restart the transport on all nodes"},
 	{ "moveip",          control_moveip,		false,	false, "move/failover an ip address to another node", "<ip> <node>"},
 	{ "addip",           control_addip,		true,	false, "add a ip address to a node", "<ip/mask> <iface>"},
 	{ "delip",           control_delip,		false,	false, "delete an ip address from a node", "<ip>"},
 	{ "eventscript",     control_eventscript,	true,	false, "run the eventscript with the given parameters on a node", "<arguments>"},
 	{ "backupdb",        control_backupdb,          false,	false, "backup the database into a file.", "<database> <file>"},
-	{ "restoredb",        control_restoredb,          false,	false, "restore the database from a file.", "<file>"},
-	{ "recmaster",        control_recmaster,          false,	false, "show the pnn for the recovery master."},
-	{ "setflags",        control_setflags,            false,	false, "set flags for a node in the nodemap.", "<node> <flags>"},
-	{ "scriptstatus",        control_scriptstatus,    false,	false, "show the status of the monitoring scripts"},
-	{ "natgwlist",        control_natgwlist,    false,	false, "show the nodes belonging to this natgw configuration"},
-	{ "xpnn",             control_xpnn,               true,	true,  "find the pnn of the local node without talking to the daemon (unreliable)" },
+	{ "restoredb",        control_restoredb,        false,	false, "restore the database from a file.", "<file>"},
+	{ "recmaster",        control_recmaster,        false,	false, "show the pnn for the recovery master."},
+	{ "setflags",        control_setflags,          false,	false, "set flags for a node in the nodemap.", "<node> <flags>"},
+	{ "scriptstatus",        control_scriptstatus,  false,	false, "show the status of the monitoring scripts"},
+	{ "natgwlist",        control_natgwlist,        false,	false, "show the nodes belonging to this natgw configuration"},
+	{ "xpnn",             control_xpnn,             true,	true,  "find the pnn of the local node without talking to the daemon (unreliable)" },
 };
 
 /*
@@ -3039,9 +3104,14 @@ int main(int argc, const char *argv[])
 		if (strcmp(control, ctdb_commands[i].name) == 0) {
 			int j;
 
+			if (ctdb_commands[i].without_daemon == true) {
+				close(2);
+			}
+
+			/* initialise ctdb */
+			ctdb = ctdb_cmdline_client(ev);
+
 			if (ctdb_commands[i].without_daemon == false) {
-				/* initialise ctdb */
-				ctdb = ctdb_cmdline_client(ev);
 				if (ctdb == NULL) {
 					DEBUG(DEBUG_ERR, ("Failed to init ctdb\n"));
 					exit(1);
