@@ -913,10 +913,15 @@ failed:
 
  krb5_error_code smb_krb5_kt_free_entry(krb5_context context, krb5_keytab_entry *kt_entry)
 {
-#if defined(HAVE_KRB5_KT_FREE_ENTRY)
-	return krb5_kt_free_entry(context, kt_entry);
-#elif defined(HAVE_KRB5_FREE_KEYTAB_ENTRY_CONTENTS)
+/* Try krb5_free_keytab_entry_contents first, since
+ * MIT Kerberos >= 1.7 has both krb5_free_keytab_entry_contents and
+ * krb5_kt_free_entry but only has a prototype for the first, while the
+ * second is considered private.
+ */
+#if defined(HAVE_KRB5_FREE_KEYTAB_ENTRY_CONTENTS)
 	return krb5_free_keytab_entry_contents(context, kt_entry);
+#elif defined(HAVE_KRB5_KT_FREE_ENTRY)
+	return krb5_kt_free_entry(context, kt_entry);
 #else
 #error UNKNOWN_KT_FREE_FUNCTION
 #endif
