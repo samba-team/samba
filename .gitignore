@@ -180,7 +180,6 @@ source4/include/config_tmp.h.in
 source4/kdc/pac_glue.h
 source4/ldap_server/proto.h
 source4/lib/charset/charset_proto.h
-source4/libcli/auth/proto.h
 source4/libcli/composite/proto.h
 source4/libcli/finddcs.h
 source4/libcli/ldap/ldap_proto.h
