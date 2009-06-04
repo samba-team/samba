@@ -72,6 +72,33 @@ static bool test_nwrap_getpwnam(struct torture_context *tctx,
 	return pwd ? true : false;
 }
 
+static bool test_nwrap_getpwnam_r(struct torture_context *tctx,
+				  const char *name,
+				  struct passwd *pwd_p)
+{
+	struct passwd pwd, *pwdp;
+	char buffer[4096];
+	int ret;
+
+	torture_comment(tctx, "Testing getpwnam_r: %s\n", name);
+
+	ret = getpwnam_r(name, &pwd, buffer, sizeof(buffer), &pwdp);
+	if (ret != 0) {
+		if (ret != ENOENT) {
+			torture_comment(tctx, "got %d return code\n", ret);
+		}
+		return false;
+	}
+
+	print_passwd(&pwd);
+
+	if (pwd_p) {
+		copy_passwd(tctx, &pwd, pwd_p);
+	}
+
+	return true;
+}
+
 static bool test_nwrap_getpwuid(struct torture_context *tctx,
 				uid_t uid,
 				struct passwd *pwd_p)
@@ -91,6 +118,34 @@ static bool test_nwrap_getpwuid(struct torture_context *tctx,
 
 	return pwd ? true : false;
 }
+
+static bool test_nwrap_getpwuid_r(struct torture_context *tctx,
+				  uid_t uid,
+				  struct passwd *pwd_p)
+{
+	struct passwd pwd, *pwdp;
+	char buffer[4096];
+	int ret;
+
+	torture_comment(tctx, "Testing getpwuid_r: %lu\n", (unsigned long)uid);
+
+	ret = getpwuid_r(uid, &pwd, buffer, sizeof(buffer), &pwdp);
+	if (ret != 0) {
+		if (ret != ENOENT) {
+			torture_comment(tctx, "got %d return code\n", ret);
+		}
+		return false;
+	}
+
+	print_passwd(&pwd);
+
+	if (pwd_p) {
+		copy_passwd(tctx, &pwd, pwd_p);
+	}
+
+	return true;
+}
+
 
 static bool copy_group(struct torture_context *tctx,
 		       const struct group *grp,
@@ -207,6 +262,51 @@ static bool test_nwrap_enum_passwd(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_nwrap_enum_r_passwd(struct torture_context *tctx,
+				     struct passwd **pwd_array_p,
+				     size_t *num_pwd_p)
+{
+	struct passwd pwd, *pwdp;
+	struct passwd *pwd_array = NULL;
+	size_t num_pwd = 0;
+	char buffer[4096];
+	int ret;
+
+	torture_comment(tctx, "Testing setpwent\n");
+	setpwent();
+
+	while (1) {
+		torture_comment(tctx, "Testing getpwent_r\n");
+
+		ret = getpwent_r(&pwd, buffer, sizeof(buffer), &pwdp);
+		if (ret != 0) {
+			if (ret != ENOENT) {
+				torture_comment(tctx, "got %d return code\n", ret);
+			}
+			break;
+		}
+		print_passwd(&pwd);
+		if (pwd_array_p && num_pwd_p) {
+			pwd_array = talloc_realloc(tctx, pwd_array, struct passwd, num_pwd+1);
+			torture_assert(tctx, pwd_array, "out of memory");
+			copy_passwd(tctx, &pwd, &pwd_array[num_pwd]);
+			num_pwd++;
+		}
+	}
+
+	torture_comment(tctx, "Testing endpwent\n");
+	endpwent();
+
+	if (pwd_array_p) {
+		*pwd_array_p = pwd_array;
+	}
+	if (num_pwd_p) {
+		*num_pwd_p = num_pwd;
+	}
+
+	return true;
+}
+
 static bool torture_assert_passwd_equal(struct torture_context *tctx,
 					const struct passwd *p1,
 					const struct passwd *p2,
@@ -243,6 +343,27 @@ static bool test_nwrap_passwd(struct torture_context *tctx)
 			"getpwent and getpwuid gave different results");
 		torture_assert_passwd_equal(tctx, &pwd1, &pwd2,
 			"getpwnam and getpwuid gave different results");
+	}
+
+	return true;
+}
+
+static bool test_nwrap_passwd_r(struct torture_context *tctx)
+{
+	int i;
+	struct passwd *pwd, pwd1, pwd2;
+	size_t num_pwd;
+
+	torture_assert(tctx, test_nwrap_enum_r_passwd(tctx, &pwd, &num_pwd),
+						      "failed to enumerate passwd");
+
+	for (i=0; i < num_pwd; i++) {
+		torture_assert(tctx, test_nwrap_getpwnam_r(tctx, pwd[i].pw_name, &pwd1),
+			"failed to call getpwnam_r for enumerated user");
+		torture_assert(tctx, test_nwrap_getpwuid_r(tctx, pwd[i].pw_uid, &pwd2),
+			"failed to call getpwuid_r for enumerated user");
+		torture_assert_passwd_equal(tctx, &pwd1, &pwd2,
+			"getpwnam_r and getpwuid_r gave different results");
 	}
 
 	return true;
@@ -489,11 +610,31 @@ static bool test_nwrap_enumeration(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_nwrap_reentrant_enumeration(struct torture_context *tctx)
+{
+	const char *old_pwd = getenv("NSS_WRAPPER_PASSWD");
+	const char *old_group = getenv("NSS_WRAPPER_GROUP");
+
+	if (!old_pwd || !old_group) {
+		torture_skip(tctx, "nothing to test\n");
+		return true;
+	}
+
+	torture_comment(tctx, "Testing re-entrant calls\n");
+
+	torture_assert(tctx, test_nwrap_passwd_r(tctx),
+			"failed to test users");
+
+	return true;
+}
+
+
 struct torture_suite *torture_local_nss_wrapper(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "NSS-WRAPPER");
 
 	torture_suite_add_simple_test(suite, "enumeration", test_nwrap_enumeration);
+	torture_suite_add_simple_test(suite, "reentrant enumeration", test_nwrap_reentrant_enumeration);
 	torture_suite_add_simple_test(suite, "membership", test_nwrap_membership);
 
 	return suite;
