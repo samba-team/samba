@@ -206,6 +206,34 @@ static bool test_nwrap_getgrnam(struct torture_context *tctx,
 	return grp ? true : false;
 }
 
+static bool test_nwrap_getgrnam_r(struct torture_context *tctx,
+				  const char *name,
+				  struct group *grp_p)
+{
+	struct group grp, *grpp;
+	char buffer[4096];
+	int ret;
+
+	torture_comment(tctx, "Testing getgrnam_r: %s\n", name);
+
+	ret = getgrnam_r(name, &grp, buffer, sizeof(buffer), &grpp);
+	if (ret != 0) {
+		if (ret != ENOENT) {
+			torture_comment(tctx, "got %d return code\n", ret);
+		}
+		return false;
+	}
+
+	print_group(&grp);
+
+	if (grp_p) {
+		copy_group(tctx, &grp, grp_p);
+	}
+
+	return true;
+}
+
+
 static bool test_nwrap_getgrgid(struct torture_context *tctx,
 				gid_t gid,
 				struct group *grp_p)
@@ -224,6 +252,33 @@ static bool test_nwrap_getgrgid(struct torture_context *tctx,
 	}
 
 	return grp ? true : false;
+}
+
+static bool test_nwrap_getgrgid_r(struct torture_context *tctx,
+				  gid_t gid,
+				  struct group *grp_p)
+{
+	struct group grp, *grpp;
+	char buffer[4096];
+	int ret;
+
+	torture_comment(tctx, "Testing getgrgid_r: %lu\n", (unsigned long)gid);
+
+	ret = getgrgid_r(gid, &grp, buffer, sizeof(buffer), &grpp);
+	if (ret != 0) {
+		if (ret != ENOENT) {
+			torture_comment(tctx, "got %d return code\n", ret);
+		}
+		return false;
+	}
+
+	print_group(&grp);
+
+	if (grp_p) {
+		copy_group(tctx, &grp, grp_p);
+	}
+
+	return true;
 }
 
 static bool test_nwrap_enum_passwd(struct torture_context *tctx,
@@ -360,8 +415,12 @@ static bool test_nwrap_passwd_r(struct torture_context *tctx)
 	for (i=0; i < num_pwd; i++) {
 		torture_assert(tctx, test_nwrap_getpwnam_r(tctx, pwd[i].pw_name, &pwd1),
 			"failed to call getpwnam_r for enumerated user");
+		torture_assert_passwd_equal(tctx, &pwd[i], &pwd1,
+			"getpwent_r and getpwnam_r gave different results");
 		torture_assert(tctx, test_nwrap_getpwuid_r(tctx, pwd[i].pw_uid, &pwd2),
 			"failed to call getpwuid_r for enumerated user");
+		torture_assert_passwd_equal(tctx, &pwd[i], &pwd2,
+			"getpwent_r and getpwuid_r gave different results");
 		torture_assert_passwd_equal(tctx, &pwd1, &pwd2,
 			"getpwnam_r and getpwuid_r gave different results");
 	}
@@ -388,6 +447,51 @@ static bool test_nwrap_enum_group(struct torture_context *tctx,
 			grp_array = talloc_realloc(tctx, grp_array, struct group, num_grp+1);
 			torture_assert(tctx, grp_array, "out of memory");
 			copy_group(tctx, grp, &grp_array[num_grp]);
+			num_grp++;
+		}
+	}
+
+	torture_comment(tctx, "Testing endgrent\n");
+	endgrent();
+
+	if (grp_array_p) {
+		*grp_array_p = grp_array;
+	}
+	if (num_grp_p) {
+		*num_grp_p = num_grp;
+	}
+
+	return true;
+}
+
+static bool test_nwrap_enum_r_group(struct torture_context *tctx,
+				    struct group **grp_array_p,
+				    size_t *num_grp_p)
+{
+	struct group grp, *grpp;
+	struct group *grp_array = NULL;
+	size_t num_grp = 0;
+	char buffer[4096];
+	int ret;
+
+	torture_comment(tctx, "Testing setgrent\n");
+	setgrent();
+
+	while (1) {
+		torture_comment(tctx, "Testing getgrent_r\n");
+
+		ret = getgrent_r(&grp, buffer, sizeof(buffer), &grpp);
+		if (ret != 0) {
+			if (ret != ENOENT) {
+				torture_comment(tctx, "got %d return code\n", ret);
+			}
+			break;
+		}
+		print_group(&grp);
+		if (grp_array_p && num_grp_p) {
+			grp_array = talloc_realloc(tctx, grp_array, struct group, num_grp+1);
+			torture_assert(tctx, grp_array, "out of memory");
+			copy_group(tctx, &grp, &grp_array[num_grp]);
 			num_grp++;
 		}
 	}
@@ -450,6 +554,31 @@ static bool test_nwrap_group(struct torture_context *tctx)
 			"getgrent and getgruid gave different results");
 		torture_assert_group_equal(tctx, &grp1, &grp2,
 			"getgrnam and getgrgid gave different results");
+	}
+
+	return true;
+}
+
+static bool test_nwrap_group_r(struct torture_context *tctx)
+{
+	int i;
+	struct group *grp, grp1, grp2;
+	size_t num_grp;
+
+	torture_assert(tctx, test_nwrap_enum_r_group(tctx, &grp, &num_grp),
+						     "failed to enumerate group");
+
+	for (i=0; i < num_grp; i++) {
+		torture_assert(tctx, test_nwrap_getgrnam_r(tctx, grp[i].gr_name, &grp1),
+			"failed to call getgrnam_r for enumerated user");
+		torture_assert_group_equal(tctx, &grp[i], &grp1,
+			"getgrent_r and getgrnam_r gave different results");
+		torture_assert(tctx, test_nwrap_getgrgid_r(tctx, grp[i].gr_gid, &grp2),
+			"failed to call getgrgid_r for enumerated user");
+		torture_assert_group_equal(tctx, &grp[i], &grp2,
+			"getgrent_r and getgrgid_r gave different results");
+		torture_assert_group_equal(tctx, &grp1, &grp2,
+			"getgrnam_r and getgrgid_r gave different results");
 	}
 
 	return true;
@@ -624,6 +753,8 @@ static bool test_nwrap_reentrant_enumeration(struct torture_context *tctx)
 
 	torture_assert(tctx, test_nwrap_passwd_r(tctx),
 			"failed to test users");
+	torture_assert(tctx, test_nwrap_group_r(tctx),
+			"failed to test groups");
 
 	return true;
 }
