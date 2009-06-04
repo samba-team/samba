@@ -45,7 +45,7 @@ bool torture_register_suite(struct torture_suite *suite)
 	return torture_suite_add_suite(torture_root, suite);
 }
 
-#ifndef HAVE_NETAPI_H
+#ifndef ENABLE_LIBNETAPI
 NTSTATUS torture_libnetapi_init(void)
 {
 	return NT_STATUS_OK;
@@ -63,9 +63,7 @@ _PUBLIC_ int torture_init(void)
 	extern NTSTATUS torture_rpc_init(void);
 	extern NTSTATUS torture_smb2_init(void);
 	extern NTSTATUS torture_net_init(void);
-#ifdef HAVE_NETAPI_H
 	extern NTSTATUS torture_libnetapi_init(void);
-#endif
 	extern NTSTATUS torture_raw_init(void);
 	extern NTSTATUS torture_unix_init(void);
 	extern NTSTATUS torture_winbind_init(void);

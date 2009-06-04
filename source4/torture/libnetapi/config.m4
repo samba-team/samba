@@ -20,7 +20,12 @@ SMB_ENABLE(TORTURE_LIBNETAPI,NO)
 if test x$use_netapi != xno; then
 	AC_CHECK_HEADERS(netapi.h)
 	AC_CHECK_LIB_EXT(netapi, NETAPI_LIBS, libnetapi_init)
-	if test x"$ac_cv_header_netapi_h" = x"yes" -a x"$ac_cv_lib_ext_netapi_libnetapi_init" = x"yes";then
+	AC_CHECK_LIB_EXT(netapi, NETAPI_LIBS, NetUserModalsGet)
+	AC_CHECK_LIB_EXT(netapi, NETAPI_LIBS, NetUserGetGroups)
+	AC_CHECK_LIB_EXT(netapi, NETAPI_LIBS, NetUserGetInfo)
+	AC_CHECK_LIB_EXT(netapi, NETAPI_LIBS, NetUserSetInfo)
+	if test x"$ac_cv_header_netapi_h" = x"yes" -a x"$ac_cv_lib_ext_netapi_libnetapi_init" = x"yes" -a x"$ac_cv_lib_ext_netapi_NetUserModalsGet" = x"yes" -a x"$ac_cv_lib_ext_netapi_NetUserGetGroups" = x"yes" -a x"$ac_cv_lib_ext_netapi_NetUserGetInfo" = x"yes" -a x"$ac_cv_lib_ext_netapi_NetUserSetInfo" = x"yes";then
+		AC_DEFINE(ENABLE_LIBNETAPI,1,[Whether we have libnetapi on the host system])
 		SMB_ENABLE(NETAPI,YES)
 		SMB_ENABLE(TORTURE_LIBNETAPI,YES)
 	else
