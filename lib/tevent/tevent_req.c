@@ -117,15 +117,20 @@ struct tevent_req *_tevent_req_create(TALLOC_CTX *mem_ctx,
 	return req;
 }
 
+void _tevent_req_notify_callback(struct tevent_req *req, const char *location)
+{
+	req->internal.finish_location = location;
+	if (req->async.fn != NULL) {
+		req->async.fn(req);
+	}
+}
+
 static void tevent_req_finish(struct tevent_req *req,
 			      enum tevent_req_state state,
 			      const char *location)
 {
 	req->internal.state = state;
-	req->internal.finish_location = location;
-	if (req->async.fn != NULL) {
-		req->async.fn(req);
-	}
+	_tevent_req_notify_callback(req, location);
 }
 
 /**
