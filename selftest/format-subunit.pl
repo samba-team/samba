@@ -3,6 +3,38 @@
 # Copyright (C) Jelmer Vernooij <jelmer@samba.org>
 # Published under the GNU GPL, v3 or later
 
+=pod
+
+=head1 NAME
+
+format-subunit [--format=<NAME>] [--immediate] < instream > outstream
+
+=head1 SYNOPSIS
+
+Format the output of a subunit stream.
+
+=head1 OPTIONS
+
+=over 4
+
+=item I<--immediate>
+
+Show errors as soon as they happen rather than at the end of the test run.
+
+=item I<--format>=FORMAT
+
+Choose the format to print. Currently supported are plain, html or buildfarm.
+
+=head1 LICENSE
+
+GNU General Public License, version 3 or later.
+
+=head1 AUTHOR
+
+Jelmer Vernooij <jelmer@samba.org>
+		
+=cut
+
 use Getopt::Long;
 use strict;
 use FindBin qw($RealBin $Script);
@@ -60,8 +92,7 @@ if ($opt_format eq "buildfarm") {
 	die("Invalid output format '$opt_format'");
 }
 
-my $expected_ret = parse_results(
-	$msg_ops, $statistics, *STDIN, []);
+my $expected_ret = parse_results($msg_ops, $statistics, *STDIN, []);
 
 $msg_ops->summary();
 

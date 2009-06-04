@@ -29,9 +29,10 @@ use BuildFarm;
 use strict;
 
 sub new($$$) {
-	my ($class) = @_;
+	my ($class, $statistics) = @_;
 	my $self = {
 		test_output => {},
+		statistics => $statistics,
 		last_time => 0,
 		start_time => undef,
 	};
@@ -111,6 +112,8 @@ sub summary($)
 	my ($self) = @_;
 	
 	BuildFarm::summary($self->{last_time} - $self->{start_time});
+
+	print "TEST STATUS: $self->{statistics}->{SUITES_FAIL}\n";
 }
 
 sub skip_testsuite($$$)

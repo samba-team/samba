@@ -26,7 +26,7 @@ selftest - Samba test runner
 
 selftest --help
 
-selftest [--srcdir=DIR] [--builddir=DIR] [--exeext=EXT][--target=samba4|samba3|win|kvm] [--socket-wrapper] [--quick] [--exclude=FILE] [--include=FILE] [--one] [--prefix=prefix] [--immediate] [--testlist=FILE] [TESTS]
+selftest [--srcdir=DIR] [--builddir=DIR] [--exeext=EXT][--target=samba4|samba3|win|kvm] [--socket-wrapper] [--quick] [--exclude=FILE] [--include=FILE] [--one] [--prefix=prefix] [--testlist=FILE] [TESTS]
 
 =head1 DESCRIPTION
 
@@ -56,10 +56,6 @@ Executable extention
 
 Change directory to run tests in. Default is 'st'.
 
-=item I<--immediate>
-
-Show errors as soon as they happen rather than at the end of the test run.
-		
 =item I<--target samba4|samba3|win|kvm>
 
 Specify test target against which to run. Default is 'samba4'.
@@ -143,7 +139,6 @@ my $opt_socket_wrapper = 0;
 my $opt_socket_wrapper_pcap = undef;
 my $opt_socket_wrapper_keep_pcap = undef;
 my $opt_one = 0;
-my $opt_immediate = 0;
 my @opt_exclude = ();
 my @opt_include = ();
 my $opt_verbose = 0;
@@ -154,7 +149,6 @@ my $opt_analyse_cmd = undef;
 my $opt_resetup_env = undef;
 my $opt_bindir = undef;
 my $opt_no_lazy_setup = undef;
-my $opt_format = "plain";
 my @testlists = ();
 
 my $srcdir = ".";
@@ -164,17 +158,6 @@ my $prefix = "./st";
 
 my @includes = ();
 my @excludes = ();
-
-my $statistics = {
-	SUITES_FAIL => 0,
-
-	TESTS_UNEXPECTED_OK => 0,
-	TESTS_EXPECTED_OK => 0,
-	TESTS_UNEXPECTED_FAIL => 0,
-	TESTS_EXPECTED_FAIL => 0,
-	TESTS_ERROR => 0,
-	TESTS_SKIP => 0,
-};
 
 sub find_in_list($$)
 {
@@ -216,65 +199,61 @@ sub setup_pcap($)
 	return $pcap_file;
 }
 
-sub cleanup_pcap($$$)
+sub cleanup_pcap($$)
 {
-	my ($pcap_file, $expected_ret, $ret) = @_;
+	my ($pcap_file, $exitcode) = @_;
 
 	return unless ($opt_socket_wrapper_pcap);
 	return if ($opt_socket_wrapper_keep_pcap);
-	return unless ($expected_ret == $ret);
+	return unless ($exitcode == 0);
 	return unless defined($pcap_file);
 
 	unlink($pcap_file);
 }
 
-sub run_testsuite($$$$$$)
+sub run_testsuite($$$$$)
 {
-	my ($envname, $name, $cmd, $i, $totalsuites, $msg_ops) = @_;
+	my ($envname, $name, $cmd, $i, $totalsuites) = @_;
 	my $pcap_file = setup_pcap($name);
 
-	$msg_ops->report_time(time());
-	$msg_ops->start_test([], $name);
+	Subunit::report_time(time());
+	Subunit::start_test($name);
 
-	unless (open(RESULT, "$cmd 2>&1|")) {
-		$statistics->{TESTS_ERROR}++;
-		$msg_ops->end_test([], $name, "error", 1, "Unable to run $cmd: $!");
-		$statistics->{SUITES_FAIL}++;
+	my $ret = system("$cmd 2>&1");
+	if ($ret == -1) {
+		Subunit::end_test($name, "error", "Unable to run $cmd: $!");
 		return 0;
 	}
-
-	my $expected_ret = parse_results(
-		$msg_ops, $statistics, *RESULT, [$name]);
-
 	my $envlog = getlog_env($envname);
-	$msg_ops->output_msg("ENVLOG: $envlog\n") if ($envlog ne "");
-
-	$msg_ops->output_msg("CMD: $cmd\n");
-
-	my $ret = close(RESULT);
-	$ret = 0 unless $ret == 1;
-
-	my $exitcode = $? >> 8;
-
-	$msg_ops->report_time(time());
-	if ($ret == 1) {
-		$msg_ops->end_test([], $name, "success", $expected_ret != $ret, undef); 
-	} else {
-		$msg_ops->end_test([], $name, "failure", $expected_ret != $ret, "Exit code was $exitcode");
+	if ($envlog ne "") {
+		print "ENVLOG: $envlog\n";
 	}
 
-	cleanup_pcap($pcap_file, $expected_ret, $ret);
+	print "CMD: $cmd\n";
+
+	my $exitcode = $ret >> 8;
+
+	Subunit::report_time(time());
+	my $reason = "Exit code was $exitcode";
+	my $result;
+	if ($exitcode == 0) {
+		$result = "success";
+	} else {
+		$result = "failure";
+	}
+	Subunit::end_test($name, $result, $reason);
+
+	cleanup_pcap($pcap_file, $exitcode);
 
 	if (not $opt_socket_wrapper_keep_pcap and defined($pcap_file)) {
-		$msg_ops->output_msg("PCAP FILE: $pcap_file\n");
+		print "PCAP FILE: $pcap_file\n";
 	}
 
-	if ($ret != $expected_ret) {
-		$statistics->{SUITES_FAIL}++;
+	if ($exitcode != 0) {
 		exit(1) if ($opt_one);
 	}
 
-	return ($ret == $expected_ret);
+	return $exitcode;
 }
 
 sub ShowHelp()
@@ -312,7 +291,6 @@ Kvm Specific:
 Behaviour:
  --quick                    run quick overall test
  --one                      abort when the first test fails
- --immediate                print test output for failed tests during run
  --verbose                  be verbose
  --analyse-cmd CMD          command to run after each test
 ";
@@ -328,7 +306,6 @@ my $result = GetOptions (
 		'socket-wrapper-keep-pcap' => \$opt_socket_wrapper_keep_pcap,
 		'quick' => \$opt_quick,
 		'one' => \$opt_one,
-		'immediate' => \$opt_immediate,
 		'exclude=s' => \@opt_exclude,
 		'include=s' => \@opt_include,
 		'srcdir=s' => \$srcdir,
@@ -341,7 +318,6 @@ my $result = GetOptions (
 		'no-lazy-setup' => \$opt_no_lazy_setup,
 		'resetup-environment' => \$opt_resetup_env,
 		'bindir:s' => \$opt_bindir,
-		'format=s' => \$opt_format,
 		'image=s' => \$opt_image,
 		'testlist=s' => \@testlists
 	    );
@@ -400,11 +376,6 @@ $ENV{SRCDIR_ABS} = $srcdir_abs;
 $ENV{BUILDDIR} = $builddir;
 $ENV{BUILDDIR_ABS} = $builddir_abs;
 $ENV{EXEEXT} = $exeext;
-
-if (defined($ENV{RUN_FROM_BUILD_FARM}) and 
-	($ENV{RUN_FROM_BUILD_FARM} eq "yes")) {
-	$opt_format = "buildfarm";
-}
 
 my $tls_enabled = not $opt_quick;
 $ENV{TLS_ENABLED} = ($tls_enabled?"yes":"no");
@@ -650,30 +621,13 @@ foreach my $fn (@testlists) {
 	}
 }
 
-my $msg_ops;
-if ($opt_format eq "buildfarm") {
-	require output::buildfarm;
-	$msg_ops = new output::buildfarm($statistics);
-} elsif ($opt_format eq "plain") {
-	require output::plain;
-	$msg_ops = new output::plain("$prefix/summary", $opt_verbose, $opt_immediate, $statistics, $#available+1);
-} elsif ($opt_format eq "html") {
-	require output::html;
-	mkdir("test-results", 0777);
-	$msg_ops = new output::html("test-results", $statistics);
-} elsif ($opt_format eq "subunit") {
-	require output::subunit;
-	$msg_ops = new output::subunit();
-} else {
-	die("Invalid output format '$opt_format'");
-}
-$msg_ops->report_time(time());
+Subunit::report_time(time());
 
 foreach (@available) {
 	my $name = $$_[0];
 	my $skipreason = skip($name);
 	if ($skipreason) {
-		$msg_ops->skip_testsuite($name, $skipreason);
+		Subunit::end_test($name, "skip", $skipreason);
 	} else {
 		push(@todo, $_); 
 	}
@@ -861,13 +815,12 @@ $envvarstr
 		
 		my $envvars = setup_env($envname);
 		if (not defined($envvars)) {
-			$msg_ops->skip_testsuite($name, 
+			Subunit::end_test($name, "skip", 
 				"unable to set up environment $envname");
 			next;
 		}
 
-		run_testsuite($envname, $name, $cmd, $i, $suitestotal, 
-		              $msg_ops);
+		run_testsuite($envname, $name, $cmd, $i, $suitestotal);
 
 		if (defined($opt_analyse_cmd)) {
 			system("$opt_analyse_cmd \"$name\"");
@@ -883,8 +836,6 @@ teardown_env($_) foreach (keys %running_envs);
 
 $target->stop();
 
-$msg_ops->summary();
-
 my $failed = 0;
 
 # if there were any valgrind failures, show them
@@ -897,9 +848,4 @@ foreach (<$prefix/valgrind.log*>) {
 	    system("cat $_");
 	}
 }
-
-if ($opt_format eq "buildfarm") {
-	print "TEST STATUS: $statistics->{SUITES_FAIL}\n";
-}
-
-exit $statistics->{SUITES_FAIL};
+exit 0;

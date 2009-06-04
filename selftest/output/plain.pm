@@ -87,8 +87,10 @@ sub output_msg($$)
 		require FileHandle;
 		print $output;
 		STDOUT->flush();
-	} else {
+	} elsif (defined($self->{NAME})) {
 		$self->{test_output}->{$self->{NAME}} .= $output;
+	} else {
+		print $output;
 	}
 }
 
@@ -96,7 +98,7 @@ sub control_msg($$)
 {
 	my ($self, $output) = @_;
 
-	$self->output_msg($output);
+	#$self->output_msg($output);
 }
 
 sub end_testsuite($$$$$)
@@ -157,6 +159,7 @@ sub end_test($$$$$)
 		$self->{test_output}->{$self->{NAME}} = "";
 		if (not $self->{immediate}) {
 			if ($result eq "failure") { print "f"; }
+			elsif ($result eq "xfail") { print "X"; }
 			elsif ($result eq "skip") { print "s"; }
 			elsif ($result eq "success") { print "."; }
 			else { print "?($result)"; }
@@ -231,10 +234,13 @@ sub summary($)
 
 }
 
-sub skip_testsuite($$)
+sub skip_testsuite($$$)
 {
 	my ($self, $name, $reason) = @_;
 
+	unless (defined($reason)) {
+		$reason = "UNKNOWN";
+	}
 	push (@{$self->{skips}->{$reason}}, $name);
 
 	if ($self->{totalsuites}) {

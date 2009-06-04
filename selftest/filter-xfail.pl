@@ -56,12 +56,19 @@ use lib "$RealBin";
 use Subunit qw(parse_results);
 
 my $opt_expected_failures = undef;
+my $opt_help = 0;
 my @expected_failures = ();
 
 my $result = GetOptions(
 		'expected-failures=s' => \$opt_expected_failures,
+		'help' => \$opt_help,
 	);
 exit(1) if (not $result);
+
+if ($opt_help) {
+	print "Usage: filter-xfail [--expected-failures=FILE]... < instream > outstream\n";
+	exit(0);
+}
 
 sub read_test_regexes($)
 {
