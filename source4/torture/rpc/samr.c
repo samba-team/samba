@@ -6297,9 +6297,9 @@ static bool test_ManyObjects(struct dcerpc_pipe *p,
 		"unexpected number of results returned in dispinfo call");
 #endif
 	if (which_ops == TORTURE_SAMR_MANY_ACCOUNTS && num_enum != num_anounced + num_created) {
-		torture_comment(tctx, 
-				"unexpected number of results (%u) returned in enum call, expected %u", 
-				num_enum != num_anounced + num_created);
+		torture_comment(tctx,
+				"unexpected number of results (%u) returned in enum call, expected %u\n",
+				num_enum, num_anounced + num_created);
 	}
 	return ret;
 }
