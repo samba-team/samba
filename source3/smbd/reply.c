@@ -4953,6 +4953,7 @@ void reply_printopen(struct smb_request *req)
 	status = print_fsp_open(req, conn, NULL, req->vuid, fsp, &sbuf);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		file_free(req, fsp);
 		reply_nterror(req, status);
 		END_PROFILE(SMBsplopen);
 		return;
