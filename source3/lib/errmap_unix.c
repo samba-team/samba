@@ -43,6 +43,9 @@ const struct unix_error_map unix_dos_nt_errmap[] = {
 #ifdef ELOOP
 	{ ELOOP, ERRDOS, ERRbadpath, NT_STATUS_OBJECT_PATH_NOT_FOUND },
 #endif
+#ifdef EFTYPE
+	{ EFTYPE, ERRDOS, ERRbadpath, NT_STATUS_OBJECT_PATH_NOT_FOUND },
+#endif
 #ifdef EDQUOT
 	{ EDQUOT, ERRHRD, ERRdiskfull, NT_STATUS_DISK_FULL }, /* Windows apps need this, not NT_STATUS_QUOTA_EXCEEDED */
 #endif
