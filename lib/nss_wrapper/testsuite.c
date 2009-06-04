@@ -235,8 +235,12 @@ static bool test_nwrap_passwd(struct torture_context *tctx)
 	for (i=0; i < num_pwd; i++) {
 		torture_assert(tctx, test_nwrap_getpwnam(tctx, pwd[i].pw_name, &pwd1),
 			"failed to call getpwnam for enumerated user");
+		torture_assert_passwd_equal(tctx, &pwd[i], &pwd1,
+			"getpwent and getpwnam gave different results");
 		torture_assert(tctx, test_nwrap_getpwuid(tctx, pwd[i].pw_uid, &pwd2),
 			"failed to call getpwuid for enumerated user");
+		torture_assert_passwd_equal(tctx, &pwd[i], &pwd2,
+			"getpwent and getpwuid gave different results");
 		torture_assert_passwd_equal(tctx, &pwd1, &pwd2,
 			"getpwnam and getpwuid gave different results");
 	}
@@ -317,8 +321,12 @@ static bool test_nwrap_group(struct torture_context *tctx)
 	for (i=0; i < num_grp; i++) {
 		torture_assert(tctx, test_nwrap_getgrnam(tctx, grp[i].gr_name, &grp1),
 			"failed to call getgrnam for enumerated user");
+		torture_assert_group_equal(tctx, &grp[i], &grp1,
+			"getgrent and getgrnam gave different results");
 		torture_assert(tctx, test_nwrap_getgrgid(tctx, grp[i].gr_gid, &grp2),
 			"failed to call getgrgid for enumerated user");
+		torture_assert_group_equal(tctx, &grp[i], &grp2,
+			"getgrent and getgruid gave different results");
 		torture_assert_group_equal(tctx, &grp1, &grp2,
 			"getgrnam and getgrgid gave different results");
 	}
