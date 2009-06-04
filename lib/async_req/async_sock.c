@@ -425,7 +425,7 @@ static void writev_handler(struct tevent_context *ev, struct tevent_fd *fde,
 
 	to_write = 0;
 
-	if (flags & TEVENT_FD_READ) {
+	if ((state->flags & TEVENT_FD_READ) && (flags & TEVENT_FD_READ)) {
 		tevent_req_error(req, EPIPE);
 		return;
 	}
