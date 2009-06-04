@@ -37,6 +37,7 @@
 #include "../replace/replace.h"
 #include "system/passwd.h"
 #include "system/filesys.h"
+#include "../nsswitch/nsstest.h"
 
 #else /* _SAMBA_BUILD_ */
 
@@ -139,9 +140,33 @@
 #define NWRAP_VERBOSE(args)
 #endif
 
+struct nwrap_module_nss_fns {
+	NSS_STATUS (*_nss_getpwnam_r)(const char *name, struct passwd *result, char *buffer,
+				      size_t buflen, int *errnop);
+	NSS_STATUS (*_nss_getpwuid_r)(uid_t uid, struct passwd *result, char *buffer,
+				      size_t buflen, int *errnop);
+	NSS_STATUS (*_nss_setpwent)(void);
+	NSS_STATUS (*_nss_getpwent_r)(struct passwd *result, char *buffer,
+				      size_t buflen, int *errnop);
+	NSS_STATUS (*_nss_endpwent)(void);
+	NSS_STATUS (*_nss_initgroups)(const char *user, gid_t group, long int *start,
+				      long int *size, gid_t **groups, long int limit, int *errnop);
+	NSS_STATUS (*_nss_getgrnam_r)(const char *name, struct group *result, char *buffer,
+				      size_t buflen, int *errnop);
+	NSS_STATUS (*_nss_getgrgid_r)(gid_t gid, struct group *result, char *buffer,
+				      size_t buflen, int *errnop);
+	NSS_STATUS (*_nss_setgrent)(void);
+	NSS_STATUS (*_nss_getgrent_r)(struct group *result, char *buffer,
+				      size_t buflen, int *errnop);
+	NSS_STATUS (*_nss_endgrent)(void);
+};
+
 struct nwrap_backend {
 	const char *name;
+	const char *so_path;
+	void *so_handle;
 	struct nwrap_ops *ops;
+	struct nwrap_module_nss_fns *fns;
 };
 
 struct nwrap_ops {
@@ -286,8 +311,94 @@ struct nwrap_gr nwrap_gr_global;
 static bool nwrap_gr_parse_line(struct nwrap_cache *nwrap, char *line);
 static void nwrap_gr_unload(struct nwrap_cache *nwrap);
 
+static void *nwrap_load_module_fn(struct nwrap_backend *b,
+				  const char *fn_name)
+{
+	void *res;
+	char *s;
+
+	if (!b->so_handle) {
+		NWRAP_ERROR(("%s: no handle\n",
+			     __location__));
+		return NULL;
+	}
+
+	if (asprintf(&s, "_nss_%s_%s", b->name, fn_name) == -1) {
+		NWRAP_ERROR(("%s: out of memory\n",
+			     __location__));
+		return NULL;
+	}
+
+	res = dlsym(b->so_handle, s);
+	if (!res) {
+		NWRAP_ERROR(("%s: cannot find function %s in %s\n",
+			     __location__, s, b->so_path));
+	}
+	free(s);
+	s = NULL;
+	return res;
+}
+
+static struct nwrap_module_nss_fns *nwrap_load_module_fns(struct nwrap_backend *b)
+{
+	struct nwrap_module_nss_fns *fns;
+
+	if (!b->so_handle) {
+		return NULL;
+	}
+
+	fns = (struct nwrap_module_nss_fns *)malloc(sizeof(struct nwrap_module_nss_fns));
+	if (!fns) {
+		return NULL;
+	}
+
+	fns->_nss_getpwnam_r	= (NSS_STATUS (*)(const char *, struct passwd *, char *, size_t, int *))
+				  nwrap_load_module_fn(b, "getpwnam_r");
+	fns->_nss_getpwuid_r	= (NSS_STATUS (*)(uid_t, struct passwd *, char *, size_t, int *))
+				  nwrap_load_module_fn(b, "getpwuid_r");
+	fns->_nss_setpwent	= (NSS_STATUS(*)(void))
+				  nwrap_load_module_fn(b, "setpwent");
+	fns->_nss_getpwent_r	= (NSS_STATUS (*)(struct passwd *, char *, size_t, int *))
+				  nwrap_load_module_fn(b, "getpwent_r");
+	fns->_nss_endpwent	= (NSS_STATUS(*)(void))
+				  nwrap_load_module_fn(b, "endpwent");
+	fns->_nss_initgroups	= (NSS_STATUS (*)(const char *, gid_t, long int *, long int *, gid_t **, long int, int *))
+				  nwrap_load_module_fn(b, "initgroups_dyn");
+	fns->_nss_getgrnam_r	= (NSS_STATUS (*)(const char *, struct group *, char *, size_t, int *))
+				  nwrap_load_module_fn(b, "getgrnam_r");
+	fns->_nss_getgrgid_r	= (NSS_STATUS (*)(gid_t, struct group *, char *, size_t, int *))
+				  nwrap_load_module_fn(b, "getgrgid_r");
+	fns->_nss_setgrent	= (NSS_STATUS(*)(void))
+				  nwrap_load_module_fn(b, "setgrent");
+	fns->_nss_getgrent_r	= (NSS_STATUS (*)(struct group *, char *, size_t, int *))
+				  nwrap_load_module_fn(b, "getgrent_r");
+	fns->_nss_endgrent	= (NSS_STATUS(*)(void))
+				  nwrap_load_module_fn(b, "endgrent");
+
+	return fns;
+}
+
+static void *nwrap_load_module(const char *so_path)
+{
+	void *h;
+
+	if (!so_path || !strlen(so_path)) {
+		return NULL;
+	}
+
+	h = dlopen(so_path, RTLD_LAZY);
+	if (!h) {
+		NWRAP_ERROR(("%s: cannot open shared library %s\n",
+			     __location__, so_path));
+		return NULL;
+	}
+
+	return h;
+}
+
 static bool nwrap_module_init(const char *name,
 			      struct nwrap_ops *ops,
+			      const char *so_path,
 			      int *num_backends,
 			      struct nwrap_backend **backends)
 {
@@ -300,6 +411,9 @@ static bool nwrap_module_init(const char *name,
 
 	(*backends)[*num_backends].name = name;
 	(*backends)[*num_backends].ops = ops;
+	(*backends)[*num_backends].so_path = so_path;
+	(*backends)[*num_backends].so_handle = nwrap_load_module(so_path);
+	(*backends)[*num_backends].fns = nwrap_load_module_fns(&((*backends)[*num_backends]));
 
 	(*num_backends)++;
 
@@ -311,7 +425,7 @@ static void nwrap_backend_init(struct nwrap_main *r)
 	r->num_backends = 0;
 	r->backends = NULL;
 
-	if (!nwrap_module_init("files", &nwrap_files_ops,
+	if (!nwrap_module_init("files", &nwrap_files_ops, NULL,
 			       &r->num_backends,
 			       &r->backends)) {
 		NWRAP_ERROR(("%s: failed to initialize 'files' backend\n",
