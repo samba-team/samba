@@ -471,7 +471,7 @@ static bool test_nwrap_membership(struct torture_context *tctx)
 	return true;
 }
 
-static bool test_nwrap_env(struct torture_context *tctx)
+static bool test_nwrap_enumeration(struct torture_context *tctx)
 {
 	const char *old_pwd = getenv("NSS_WRAPPER_PASSWD");
 	const char *old_group = getenv("NSS_WRAPPER_GROUP");
@@ -493,7 +493,7 @@ struct torture_suite *torture_local_nss_wrapper(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "NSS-WRAPPER");
 
-	torture_suite_add_simple_test(suite, "env", test_nwrap_env);
+	torture_suite_add_simple_test(suite, "enumeration", test_nwrap_enumeration);
 	torture_suite_add_simple_test(suite, "membership", test_nwrap_membership);
 
 	return suite;
