@@ -127,6 +127,7 @@ static void smbd_smb2_request_read_done(struct tevent_req *subreq)
 							 nt_errstr(error));
 			return;
 		}
+		return;
 	}
 
 	out_data_offset = SMB2_HDR_BODY + 0x10;
@@ -141,6 +142,7 @@ static void smbd_smb2_request_read_done(struct tevent_req *subreq)
 							 nt_errstr(error));
 			return;
 		}
+		return;
 	}
 
 	SSVAL(outbody.data, 0x00, 0x10 + 1);	/* struct size */
