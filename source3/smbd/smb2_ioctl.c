@@ -183,6 +183,9 @@ struct smbd_smb2_ioctl_state {
 	DATA_BLOB out_output;
 };
 
+static void smbd_smb2_ioctl_pipe_write_done(struct tevent_req *subreq);
+static void smbd_smb2_ioctl_pipe_read_done(struct tevent_req *subreq);
+
 static struct tevent_req *smbd_smb2_ioctl_send(TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
 					       struct smbd_smb2_request *smb2req,
@@ -237,6 +240,35 @@ static struct tevent_req *smbd_smb2_ioctl_send(TALLOC_CTX *mem_ctx,
 	}
 
 	switch (in_ctl_code) {
+	case 0x0011C017: /* FSCTL_PIPE_TRANSCEIVE */
+
+		if (!IS_IPC(smbreq->conn)) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_DEVICE_REQUEST);
+			return tevent_req_post(req, ev);
+		}
+
+		if (fsp == NULL) {
+			tevent_req_nterror(req, NT_STATUS_FILE_CLOSED);
+			return tevent_req_post(req, ev);
+		}
+
+		if (!fsp_is_np(fsp)) {
+			tevent_req_nterror(req, NT_STATUS_FILE_CLOSED);
+			return tevent_req_post(req, ev);
+		}
+
+		subreq = np_write_send(state, ev,
+				       fsp->fake_file_handle,
+				       in_input.data,
+				       in_input.length);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq,
+					smbd_smb2_ioctl_pipe_write_done,
+					req);
+		return req;
+
 	default:
 		if (IS_IPC(smbreq->conn)) {
 			tevent_req_nterror(req, NT_STATUS_FS_DRIVER_REQUIRED);
@@ -248,6 +280,66 @@ static struct tevent_req *smbd_smb2_ioctl_send(TALLOC_CTX *mem_ctx,
 
 	tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 	return tevent_req_post(req, ev);
+}
+
+static void smbd_smb2_ioctl_pipe_write_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(subreq,
+				 struct tevent_req);
+	struct smbd_smb2_ioctl_state *state = tevent_req_data(req,
+					      struct smbd_smb2_ioctl_state);
+	NTSTATUS status;
+	ssize_t nwritten = -1;
+
+	status = np_write_recv(subreq, &nwritten);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	if (nwritten != state->in_input.length) {
+		tevent_req_nterror(req, NT_STATUS_PIPE_NOT_AVAILABLE);
+		return;
+	}
+
+	state->out_output = data_blob_talloc(state, NULL, state->in_max_output);
+	if (state->in_max_output > 0 &&
+	    tevent_req_nomem(state->out_output.data, req)) {
+		return;
+	}
+
+	subreq = np_read_send(state->smbreq->conn,
+			      state->smb2req->conn->smb2.event_ctx,
+			      state->fsp->fake_file_handle,
+			      state->out_output.data,
+			      state->out_output.length);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, smbd_smb2_ioctl_pipe_read_done, req);
+}
+
+static void smbd_smb2_ioctl_pipe_read_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(subreq,
+				 struct tevent_req);
+	struct smbd_smb2_ioctl_state *state = tevent_req_data(req,
+					      struct smbd_smb2_ioctl_state);
+	NTSTATUS status;
+	ssize_t nread;
+	bool is_data_outstanding;
+
+	status = np_read_recv(subreq, &nread, &is_data_outstanding);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	state->out_output.length = nread;
+
+	tevent_req_done(req);
 }
 
 static NTSTATUS smbd_smb2_ioctl_recv(struct tevent_req *req,
