@@ -337,6 +337,7 @@ int main (int argc, char **argv)
 		if(!out) { 
 			perror("fopen"); 
 			fprintf(stderr, "Can't find %s, using stdout...\n", outfile);
+			return 1;
 		}
 	}
 
