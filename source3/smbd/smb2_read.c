@@ -171,6 +171,8 @@ struct smbd_smb2_read_state {
 	uint32_t out_remaining;
 };
 
+static void smbd_smb2_read_pipe_done(struct tevent_req *subreq);
+
 static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 					      struct tevent_context *ev,
 					      struct smbd_smb2_request *smb2req,
@@ -220,18 +222,34 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	if (!CHECK_READ(fsp, smbreq)) {
-		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
-		return tevent_req_post(req, ev);
-	}
-
 	state->out_data = data_blob_talloc(state, NULL, in_length);
 	if (in_length > 0 && tevent_req_nomem(state->out_data.data, req)) {
 		return tevent_req_post(req, ev);
 	}
 
 	if (IS_IPC(smbreq->conn)) {
-		tevent_req_nterror(req, NT_STATUS_NOT_IMPLEMENTED);
+		struct tevent_req *subreq;
+
+		if (!fsp_is_np(fsp)) {
+			tevent_req_nterror(req, NT_STATUS_FILE_CLOSED);
+			return tevent_req_post(req, ev);
+		}
+
+		subreq = np_read_send(state, smbd_event_context(),
+				      fsp->fake_file_handle,
+				      state->out_data.data,
+				      state->out_data.length);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq,
+					smbd_smb2_read_pipe_done,
+					req);
+		return req;
+	}
+
+	if (!CHECK_READ(fsp, smbreq)) {
+		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
 		return tevent_req_post(req, ev);
 	}
 
@@ -271,6 +289,34 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 	state->out_remaining = 0;
 	tevent_req_done(req);
 	return tevent_req_post(req, ev);
+}
+
+static void smbd_smb2_read_pipe_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(subreq,
+				 struct tevent_req);
+	struct smbd_smb2_read_state *state = tevent_req_data(req,
+					     struct smbd_smb2_read_state);
+	NTSTATUS status;
+	ssize_t nread = -1;
+	bool is_data_outstanding;
+
+	status = np_read_recv(subreq, &nread, &is_data_outstanding);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	if (nread == 0 && state->out_data.length != 0) {
+		tevent_req_nterror(req, NT_STATUS_END_OF_FILE);
+		return;
+	}
+
+	state->out_data.length = nread;
+	state->out_remaining = 0;
+
+	tevent_req_done(req);
 }
 
 static NTSTATUS smbd_smb2_read_recv(struct tevent_req *req,
