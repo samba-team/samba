@@ -412,6 +412,9 @@ static NTSTATUS builtin_lookup_groupmem(struct winbindd_domain *domain,
 				DOM_SID **sid_mem, char ***names,
 				uint32 **name_types)
 {
+	DEBUG(10,("passdb: lookup_groupmem (builtin) %s sid=%s\n", domain->name,
+		  sid_string_dbg(group_sid)));
+
 	*num_names = 0;
 	*sid_mem = NULL;
 	*names = NULL;
@@ -570,6 +573,9 @@ static NTSTATUS sam_lookup_groupmem(struct winbindd_domain *domain,
 	struct lsa_dom_info *lsa_domains;
 	struct lsa_name_info *lsa_names;
 	TALLOC_CTX *tmp_ctx;
+
+	DEBUG(10,("passdb: lookup_groupmem (sam) %s sid=%s\n", domain->name,
+		  sid_string_dbg(group_sid)));
 
 	if (!sid_check_is_in_our_domain(group_sid)) {
 		/* There's no groups, only aliases in BUILTIN */

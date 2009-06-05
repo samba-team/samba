@@ -460,6 +460,8 @@ static NTSTATUS expand_groups( TALLOC_CTX *ctx,
 	*new_glist = NULL;
 	*n_new_glist = 0;
 
+	DEBUG(10,("expand_groups:\n"));
+
 	for ( i=0; i<n_glist; i++ ) {
 		tmp_ctx = talloc_new( ctx );
 
@@ -469,8 +471,12 @@ static NTSTATUS expand_groups( TALLOC_CTX *ctx,
 						     &glist[i], &num_names,
 						     &sid_mem, &names,
 						     &name_types);
-		if ( !NT_STATUS_IS_OK(status) )
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10,("expand_groups: lookup_groupmem for "
+				"sid %s failed with: %s\n",
+				sid_string_dbg(&glist[i]), nt_errstr(status)));
 			goto out;
+		}
 
 		/* Separate users and groups into two lists */
 
@@ -513,6 +519,11 @@ static NTSTATUS expand_groups( TALLOC_CTX *ctx,
 
  out:
 	TALLOC_FREE( tmp_ctx );
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10,("expand_groups: returning with %s\n",
+			nt_errstr(status)));
+	}
 
 	return status;
 }
@@ -726,7 +737,8 @@ done:
 
 	talloc_destroy(mem_ctx);
 
-	DEBUG(10, ("fill_grent_mem returning %d\n", result));
+	DEBUG(10,("fill_grent_mem returning %s\n",
+		result == true ? "true" : "false"));
 
 	return result;
 }
