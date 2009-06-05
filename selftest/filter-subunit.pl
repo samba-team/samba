@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# Fix fail -> xfail in subunit streams based on a list of regular expressions
+# Filter a subunit stream
 # Copyright (C) Jelmer Vernooij <jelmer@samba.org>
 # Published under the GNU GPL, v3 or later
 
@@ -7,13 +7,13 @@
 
 =head1 NAME
 
-filter-xfail - Filter known failures in a subunit stream
+filter-subunit - Filter a subunit stream
 
 =head1 SYNOPSIS
 
-filter-xfail --help
+filter-subunit --help
 
-filter-xfail --known-failures=FILE < in-stream > out-stream
+filter-subunit --prefix=PREFIX --known-failures=FILE < in-stream > out-stream
 
 =head1 DESCRIPTION
 
@@ -23,6 +23,10 @@ based on a list of regular expressions.
 =head1 OPTIONS
 
 =over 4
+
+=item I<--prefix>
+
+Add the specified prefix to all test names.
 
 =item I<--expected-failures>
 
@@ -57,16 +61,18 @@ use Subunit qw(parse_results);
 
 my $opt_expected_failures = undef;
 my $opt_help = 0;
+my $opt_prefix = undef;
 my @expected_failures = ();
 
 my $result = GetOptions(
 		'expected-failures=s' => \$opt_expected_failures,
+		'prefix=s' => \$opt_prefix,
 		'help' => \$opt_help,
 	);
 exit(1) if (not $result);
 
 if ($opt_help) {
-	print "Usage: filter-xfail [--expected-failures=FILE]... < instream > outstream\n";
+	print "Usage: filter-subunit [--prefix=PREFIX] [--expected-failures=FILE]... < instream > outstream\n";
 	exit(0);
 }
 
@@ -145,6 +151,10 @@ sub start_test($$$)
 {
 	my ($self, $parents, $testname) = @_;
 
+	if (defined($opt_prefix)) {
+		$testname = $opt_prefix.$testname;
+	}
+
 	Subunit::start_test($testname);
 }
 
@@ -152,9 +162,12 @@ sub end_test($$$$$)
 {
 	my ($self, $parents, $testname, $result, $unexpected, $reason) = @_;
 
+	if (defined($opt_prefix)) {
+		$testname = $opt_prefix.$testname;
+	}
+
 	if (($result eq "fail" or $result eq "failure") and not $unexpected) { $result = "xfail"; }
-	my $fullname = join(".", @$parents) . ".$testname";
-	if (expecting_failure($fullname) and ($result eq "fail" or $result eq "failure")) {
+	if (expecting_failure($testname) and ($result eq "fail" or $result eq "failure")) {
 		$result = "xfail";
 	}
 

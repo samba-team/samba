@@ -8,7 +8,7 @@ SELFTEST = $(LD_LIBPATH_OVERRIDE) PYTHON=$(PYTHON) \
 
 SELFTEST_NOSLOW_OPTS = --exclude=$(srcdir)/selftest/slow
 SELFTEST_QUICK_OPTS = $(SELFTEST_NOSLOW_OPTS) --quick --include=$(srcdir)/selftest/quick
-FILTER_XFAIL = $(PERL) $(selftestdir)/filter-xfail.pl --expected-failures=$(srcdir)/selftest/knownfail
+FILTER_XFAIL = $(PERL) $(selftestdir)/filter-subunit.pl --expected-failures=$(srcdir)/selftest/knownfail
 FORMAT_TEST_OUTPUT = $(FILTER_XFAIL) | $(PERL) $(selftestdir)/format-subunit.pl --format=$(TEST_FORMAT)
 
 subunittest:: everything

@@ -77,12 +77,37 @@ time: YYYY-MM-DD HH:mm:ssZ
 Announce the current time. This may be used to calculate the duration of 
 various tests.
 
-prefix
-~~~~~~
-prefix: Prefix
+The following are Samba extensions to Subunit:
 
-Change the global prefix for test names. To unset the prefix, specify an empty 
-string.
+testsuite-count
+~~~~~~~~~~~~~~~
+testsuite-count: number
+
+Announce the number of tests that is going to be run.
+
+start-testsuite
+~~~~~~~~~
+start-testsuite: name
+
+The testsuite name is used as prefix for all containing tests.
+
+skip-testsuite
+~~~~~~~~~~~~~~
+skip-testsuite: name
+
+Mark the testsuite with the specified name as skipped.
+
+testsuite-success
+~~~~~~~~~~~~~~~~~
+testsuite-success: name
+
+Indicate that the testsuite has succeeded successfully.
+
+testsuite-fail
+~~~~~~~~~~~~~~
+testsuite-fail: name
+
+Indicate that a testsuite has failed.
 
 Environments
 ============

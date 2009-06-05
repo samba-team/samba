@@ -220,7 +220,7 @@ sub run_testsuite($$$$$)
 	Subunit::prefix($name);
 	Subunit::start_test($name);
 
-	my $ret = system("$cmd 2>&1");
+	my $ret = system("$cmd | $RealBin/filter-subunit.pl --prefix \"$name.\" 2>&1");
 	if ($ret == -1) {
 		Subunit::end_test($name, "error", "Unable to run $cmd: $!");
 		return 0;
