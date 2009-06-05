@@ -663,8 +663,7 @@ NTSTATUS smbd_smb2_request_done_ex(struct smbd_smb2_request *req,
 			req->out.vector[i+2].iov_base	= (void *)dyn->data;
 			req->out.vector[i+2].iov_len	= dyn->length;
 		} else {
-			req->out.vector[i+2].iov_base	= (void *)outdyn;
-			req->out.vector[i+2].iov_len	= 1;
+			/* the dyn section is already initialized */
 		}
 	} else {
 		req->out.vector[i+2].iov_base = NULL;
