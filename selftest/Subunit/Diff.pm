@@ -44,10 +44,9 @@ sub new {
 	bless($self, $class);
 }
 
-sub diff($$)
+sub from_file($)
 {
-	my ($fh1, $fh2) = @_;
-	my $ret = {};
+	my ($path) = @_;
 	my $statistics = {
 		TESTS_UNEXPECTED_OK => 0,
 		TESTS_EXPECTED_OK => 0,
@@ -56,10 +55,18 @@ sub diff($$)
 		TESTS_ERROR => 0,
 		TESTS_SKIP => 0,
 	};
-	my $old = new Subunit::Diff();
-	parse_results($old, $statistics, $fh1);
-	my $new = new Subunit::Diff();
-	parse_results($new, $statistics, $fh2);
+
+	my $ret = new Subunit::Diff();
+	open(IN, $path) or return;
+	parse_results($ret, $statistics, IN);
+	close(IN);
+	return $ret;
+}
+
+sub diff($$)
+{
+	my ($old, $new) = @_;
+	my $ret = {};
 
 	foreach my $testname (keys %$old) {
 		if ($new->{$testname} ne $old->{$testname}) {
