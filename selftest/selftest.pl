@@ -129,7 +129,7 @@ use Getopt::Long;
 use POSIX;
 use Cwd qw(abs_path);
 use lib "$RealBin";
-use Subunit qw(parse_results);
+use Subunit;
 use SocketWrapper;
 
 my $opt_help = 0;

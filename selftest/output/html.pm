@@ -24,8 +24,6 @@ use warnings;
 use FindBin qw($RealBin);
 use lib "$RealBin/..";
 
-use Subunit qw(parse_results);
-
 sub new($$$) {
 	my ($class, $dirname, $statistics) = @_;
 	my $self = { 

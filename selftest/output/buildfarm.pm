@@ -23,7 +23,6 @@ use Exporter;
 use FindBin qw($RealBin);
 use lib "$RealBin/..";
 
-use Subunit qw(parse_results);
 use BuildFarm;
 
 use strict;
