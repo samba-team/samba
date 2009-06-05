@@ -22,24 +22,26 @@
 #include "smbd/globals.h"
 #include "../source4/libcli/smb2/smb2_constants.h"
 
-static NTSTATUS smbd_smb2_read(struct smbd_smb2_request *req,
-			       uint32_t in_smbpid,
-			       uint64_t in_file_id_volatile,
-			       uint32_t in_length,
-			       uint64_t in_offset,
-			       uint32_t in_minimum,
-			       uint32_t in_remaining,
-			       DATA_BLOB *out_data_buffer,
-			       uint32_t *out_remaining);
+static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
+					      struct tevent_context *ev,
+					      struct smbd_smb2_request *smb2req,
+					      uint32_t in_smbpid,
+					      uint64_t in_file_id_volatile,
+					      uint32_t in_length,
+					      uint64_t in_offset,
+					      uint32_t in_minimum,
+					      uint32_t in_remaining);
+static NTSTATUS smbd_smb2_read_recv(struct tevent_req *req,
+				    TALLOC_CTX *mem_ctx,
+				    DATA_BLOB *out_data,
+				    uint32_t *out_remaining);
 
+static void smbd_smb2_request_read_done(struct tevent_req *subreq);
 NTSTATUS smbd_smb2_request_process_read(struct smbd_smb2_request *req)
 {
 	const uint8_t *inhdr;
 	const uint8_t *inbody;
 	int i = req->current_idx;
-	uint8_t *outhdr;
-	DATA_BLOB outbody;
-	DATA_BLOB outdyn;
 	size_t expected_body_size = 0x31;
 	size_t body_size;
 	uint32_t in_smbpid;
@@ -49,10 +51,7 @@ NTSTATUS smbd_smb2_request_process_read(struct smbd_smb2_request *req)
 	uint64_t in_file_id_volatile;
 	uint32_t in_minimum_count;
 	uint32_t in_remaining_bytes;
-	uint8_t out_data_offset;
-	DATA_BLOB out_data_buffer;
-	uint32_t out_data_remaining;
-	NTSTATUS status;
+	struct tevent_req *subreq;
 
 	inhdr = (const uint8_t *)req->in.vector[i+0].iov_base;
 	if (req->in.vector[i+1].iov_len != (expected_body_size & 0xFFFFFFFE)) {
@@ -86,17 +85,48 @@ NTSTATUS smbd_smb2_request_process_read(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_FILE_CLOSED);
 	}
 
-	status = smbd_smb2_read(req,
-				in_smbpid,
-				in_file_id_volatile,
-				in_length,
-				in_offset,
-				in_minimum_count,
-				in_remaining_bytes,
-				&out_data_buffer,
-				&out_data_remaining);
+	subreq = smbd_smb2_read_send(req,
+				     req->conn->smb2.event_ctx,
+				     req,
+				     in_smbpid,
+				     in_file_id_volatile,
+				     in_length,
+				     in_offset,
+				     in_minimum_count,
+				     in_remaining_bytes);
+	if (subreq == NULL) {
+		return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
+	}
+	tevent_req_set_callback(subreq, smbd_smb2_request_read_done, req);
+	return NT_STATUS_OK;
+}
+
+static void smbd_smb2_request_read_done(struct tevent_req *subreq)
+{
+	struct smbd_smb2_request *req = tevent_req_callback_data(subreq,
+					struct smbd_smb2_request);
+	int i = req->current_idx;
+	uint8_t *outhdr;
+	DATA_BLOB outbody;
+	DATA_BLOB outdyn;
+	uint8_t out_data_offset;
+	DATA_BLOB out_data_buffer;
+	uint32_t out_data_remaining;
+	NTSTATUS status;
+	NTSTATUS error; /* transport error */
+
+	status = smbd_smb2_read_recv(subreq,
+				     req,
+				     &out_data_buffer,
+				     &out_data_remaining);
+	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		return smbd_smb2_request_error(req, status);
+		error = smbd_smb2_request_error(req, status);
+		if (!NT_STATUS_IS_OK(error)) {
+			smbd_server_connection_terminate(req->conn,
+							 nt_errstr(error));
+			return;
+		}
 	}
 
 	out_data_offset = SMB2_HDR_BODY + 0x10;
@@ -105,7 +135,12 @@ NTSTATUS smbd_smb2_request_process_read(struct smbd_smb2_request *req)
 
 	outbody = data_blob_talloc(req->out.vector, NULL, 0x10);
 	if (outbody.data == NULL) {
-		return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
+		error = smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
+		if (!NT_STATUS_IS_OK(error)) {
+			smbd_server_connection_terminate(req->conn,
+							 nt_errstr(error));
+			return;
+		}
 	}
 
 	SSVAL(outbody.data, 0x00, 0x10 + 1);	/* struct size */
@@ -120,56 +155,82 @@ NTSTATUS smbd_smb2_request_process_read(struct smbd_smb2_request *req)
 
 	outdyn = out_data_buffer;
 
-	return smbd_smb2_request_done(req, outbody, &outdyn);
+	error = smbd_smb2_request_done(req, outbody, &outdyn);
+	if (!NT_STATUS_IS_OK(error)) {
+		smbd_server_connection_terminate(req->conn,
+						 nt_errstr(error));
+		return;
+	}
 }
 
-static NTSTATUS smbd_smb2_read(struct smbd_smb2_request *req,
-			       uint32_t in_smbpid,
-			       uint64_t in_file_id_volatile,
-			       uint32_t in_length,
-			       uint64_t in_offset,
-			       uint32_t in_minimum,
-			       uint32_t in_remaining,
-			       DATA_BLOB *out_data_buffer,
-			       uint32_t *out_remaining)
+struct smbd_smb2_read_state {
+	struct smbd_smb2_request *smb2req;
+	DATA_BLOB out_data;
+	uint32_t out_remaining;
+};
+
+static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
+					      struct tevent_context *ev,
+					      struct smbd_smb2_request *smb2req,
+					      uint32_t in_smbpid,
+					      uint64_t in_file_id_volatile,
+					      uint32_t in_length,
+					      uint64_t in_offset,
+					      uint32_t in_minimum,
+					      uint32_t in_remaining)
 {
+	struct tevent_req *req;
+	struct smbd_smb2_read_state *state;
 	struct smb_request *smbreq;
-	connection_struct *conn = req->tcon->compat_conn;
+	connection_struct *conn = smb2req->tcon->compat_conn;
 	files_struct *fsp;
 	ssize_t nread = -1;
 	struct lock_struct lock;
 
+	req = tevent_req_create(mem_ctx, &state,
+				struct smbd_smb2_read_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->smb2req = smb2req;
+	state->out_data = data_blob_null;
+	state->out_remaining = 0;
+
 	DEBUG(10,("smbd_smb2_read: file_id[0x%016llX]\n",
 		  (unsigned long long)in_file_id_volatile));
 
-	smbreq = smbd_smb2_fake_smb_request(req);
-	if (smbreq == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/* If it's an IPC, pass off the pipe handler. */
-	if (IS_IPC(conn)) {
-		return NT_STATUS_NOT_IMPLEMENTED;
+	smbreq = smbd_smb2_fake_smb_request(smb2req);
+	if (tevent_req_nomem(smbreq, req)) {
+		return tevent_req_post(req, ev);
 	}
 
 	fsp = file_fsp(smbreq, (uint16_t)in_file_id_volatile);
 	if (fsp == NULL) {
-		return NT_STATUS_FILE_CLOSED;
+		tevent_req_nterror(req, NT_STATUS_FILE_CLOSED);
+		return tevent_req_post(req, ev);
 	}
 	if (conn != fsp->conn) {
-		return NT_STATUS_FILE_CLOSED;
+		tevent_req_nterror(req, NT_STATUS_FILE_CLOSED);
+		return tevent_req_post(req, ev);
 	}
-	if (req->session->vuid != fsp->vuid) {
-		return NT_STATUS_FILE_CLOSED;
+	if (smb2req->session->vuid != fsp->vuid) {
+		tevent_req_nterror(req, NT_STATUS_FILE_CLOSED);
+		return tevent_req_post(req, ev);
 	}
 
 	if (!CHECK_READ(fsp, smbreq)) {
-		return NT_STATUS_ACCESS_DENIED;
+		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+		return tevent_req_post(req, ev);
 	}
 
-	*out_data_buffer = data_blob_talloc(req, NULL, in_length);
-	if (in_length > 0 && out_data_buffer->data == NULL) {
-		return NT_STATUS_NO_MEMORY;
+	state->out_data = data_blob_talloc(state, NULL, in_length);
+	if (in_length > 0 && tevent_req_nomem(state->out_data.data, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	if (IS_IPC(smbreq->conn)) {
+		tevent_req_nterror(req, NT_STATUS_NOT_IMPLEMENTED);
+		return tevent_req_post(req, ev);
 	}
 
 	init_strict_lock_struct(fsp,
@@ -180,11 +241,12 @@ static NTSTATUS smbd_smb2_read(struct smbd_smb2_request *req,
 				&lock);
 
 	if (!SMB_VFS_STRICT_LOCK(conn, fsp, &lock)) {
-		return NT_STATUS_FILE_LOCK_CONFLICT;
+		tevent_req_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
+		return tevent_req_post(req, ev);
 	}
 
 	nread = read_file(fsp,
-			  (char *)out_data_buffer->data,
+			  (char *)state->out_data.data,
 			  in_offset,
 			  in_length);
 
@@ -193,15 +255,40 @@ static NTSTATUS smbd_smb2_read(struct smbd_smb2_request *req,
 	if (nread < 0) {
 		DEBUG(5,("smbd_smb2_read: read_file[%s] nread[%lld]\n",
 			fsp->fsp_name, (long long)nread));
-		return NT_STATUS_ACCESS_DENIED;
+		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+		return tevent_req_post(req, ev);
 	}
 	if (nread == 0 && in_length != 0) {
 		DEBUG(5,("smbd_smb2_read: read_file[%s] end of file\n",
 			fsp->fsp_name));
-		return NT_STATUS_END_OF_FILE;
+		tevent_req_nterror(req, NT_STATUS_END_OF_FILE);
+		return tevent_req_post(req, ev);
 	}
 
-	out_data_buffer->length = nread;
-	*out_remaining = 0;
+	state->out_data.length = nread;
+	state->out_remaining = 0;
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
+
+static NTSTATUS smbd_smb2_read_recv(struct tevent_req *req,
+				    TALLOC_CTX *mem_ctx,
+				    DATA_BLOB *out_data,
+				    uint32_t *out_remaining)
+{
+	NTSTATUS status;
+	struct smbd_smb2_read_state *state = tevent_req_data(req,
+					     struct smbd_smb2_read_state);
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	*out_data = state->out_data;
+	talloc_steal(mem_ctx, out_data->data);
+	*out_remaining = state->out_remaining;
+
+	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
