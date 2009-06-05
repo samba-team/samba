@@ -1092,6 +1092,15 @@ static int control_addip(struct ctdb_context *ctdb, int argc, const char **argv)
 	}
 
 
+	/* check if some other node is already serving this ip, if not,
+	 * we will claim it
+	 */
+	for (i=0;i<ips->num;i++) {
+		if (ctdb_same_ip(&addr, &ips->ips[i].addr)) {
+			break;
+		}
+	}
+
 	len = offsetof(struct ctdb_control_ip_iface, iface) + strlen(argv[1]) + 1;
 	pub = talloc_size(tmp_ctx, len); 
 	CTDB_NO_MEMORY(ctdb, pub);
@@ -1108,21 +1117,20 @@ static int control_addip(struct ctdb_context *ctdb, int argc, const char **argv)
 		return ret;
 	}
 
-
-	/* check if some other node is already serving this ip, if not,
-	 * we will claim it
-	 */
-	for (i=0;i<ips->num;i++) {
-		if (ctdb_same_ip(&addr, &ips->ips[i].addr)) {
-			break;
-		}
-	}
 	/* no one has this ip so we claim it */
 	if (i == ips->num) {
-		ret = control_send_release(ctdb, options.pnn, &addr);
-	} else {
-		ret = control_send_release(ctdb, ips->ips[i].pnn, &addr);
+		struct ctdb_public_ip ip;
+
+		ip.pnn  = options.pnn;
+		ip.addr = addr;
+
+		ret = ctdb_ctrl_takeover_ip(ctdb, TIMELIMIT(), options.pnn, &ip);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,("Failed to take over IP on node %d\n", options.pnn));
+			return -1;
+		}
 	}
+
 
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("Failed to send 'change ip' to all nodes\n"));
