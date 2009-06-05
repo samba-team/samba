@@ -223,17 +223,17 @@ struct tevent_req *async_connect_send(TALLOC_CTX *mem_ctx,
 	state->fd = fd;
 	state->sys_errno = 0;
 
+	state->old_sockflags = fcntl(fd, F_GETFL, 0);
+	if (state->old_sockflags == -1) {
+		goto post_errno;
+	}
+
 	state->address_len = address_len;
 	if (address_len > sizeof(state->address)) {
 		errno = EINVAL;
 		goto post_errno;
 	}
 	memcpy(&state->address, address, address_len);
-
-	state->old_sockflags = fcntl(fd, F_GETFL, 0);
-	if (state->old_sockflags == -1) {
-		goto post_errno;
-	}
 
 	set_blocking(fd, false);
 
