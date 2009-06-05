@@ -46,6 +46,7 @@ struct smb_request *smbd_smb2_fake_smb_request(struct smbd_smb2_request *req)
 	if (IVAL(inhdr, SMB2_HDR_FLAGS) & SMB2_HDR_FLAG_DFS) {
 		smbreq->flags2 |= FLAGS2_DFS_PATHNAMES;
 	}
+	smbreq->chain_fsp = req->compat_chain_fsp;
 
 	return smbreq;
 }

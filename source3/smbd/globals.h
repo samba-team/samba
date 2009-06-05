@@ -227,6 +227,8 @@ struct smbd_smb2_request {
 	int current_idx;
 	bool do_signing;
 
+	struct files_struct *compat_chain_fsp;
+
 	struct {
 		/* the NBT header is not allocated */
 		uint8_t nbt_hdr[4];

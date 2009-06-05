@@ -275,6 +275,8 @@ static NTSTATUS smbd_smb2_create(struct smbd_smb2_request *req,
 		}
 	}
 
+	req->compat_chain_fsp = smbreq->chain_fsp;
+
 	*out_oplock_level	= 0;
 	if ((in_create_disposition == FILE_SUPERSEDE)
 	    && (info == FILE_WAS_OVERWRITTEN)) {
