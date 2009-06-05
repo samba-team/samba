@@ -120,7 +120,9 @@ static void smbd_smb2_request_ioctl_done(struct tevent_req *subreq)
 
 	status = smbd_smb2_ioctl_recv(subreq, req, &out_output_buffer);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_EQUAL(status, STATUS_BUFFER_OVERFLOW)) {
+		/* also ok */
+	} else if (!NT_STATUS_IS_OK(status)) {
 		error = smbd_smb2_request_error(req, status);
 		if (!NT_STATUS_IS_OK(error)) {
 			smbd_server_connection_terminate(req->conn,
@@ -166,7 +168,8 @@ static void smbd_smb2_request_ioctl_done(struct tevent_req *subreq)
 	 */
 	outdyn = out_output_buffer;
 
-	error = smbd_smb2_request_done(req, outbody, &outdyn);
+	error = smbd_smb2_request_done_ex(req, status, outbody, &outdyn,
+					  __location__);
 	if (!NT_STATUS_IS_OK(error)) {
 		smbd_server_connection_terminate(req->conn,
 						 nt_errstr(error));
@@ -351,13 +354,15 @@ static NTSTATUS smbd_smb2_ioctl_recv(struct tevent_req *req,
 					      struct smbd_smb2_ioctl_state);
 
 	if (tevent_req_is_nterror(req, &status)) {
-		tevent_req_received(req);
-		return status;
+		if (!NT_STATUS_EQUAL(status, STATUS_BUFFER_OVERFLOW)) {
+			tevent_req_received(req);
+			return status;
+		}
 	}
 
 	*out_output = state->out_output;
 	talloc_steal(mem_ctx, out_output->data);
 
 	tevent_req_received(req);
-	return NT_STATUS_OK;
+	return status;
 }
