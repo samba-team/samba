@@ -58,7 +58,7 @@ sub from_file($)
 
 	my $ret = new Subunit::Diff();
 	open(IN, $path) or return;
-	parse_results($ret, $statistics, IN);
+	parse_results($ret, $statistics, *IN);
 	close(IN);
 	return $ret;
 }

@@ -14,7 +14,7 @@ my $new = Subunit::Diff::from_file($ARGV[1]);
 
 my $ret = Subunit::Diff::diff($old, $new);
 
-foreach my $e (keys %$ret) {
+foreach my $e (sort(keys %$ret)) {
 	printf "%s: %s -> %s\n", $e, $ret->{$e}[0], $ret->{$e}[1];
 }
 
