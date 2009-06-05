@@ -61,6 +61,10 @@ sub new($$$) {
 	return $self;
 }
 
+sub testsuite_count($$)
+{
+}
+
 sub print_html_header($$$)
 {
 	my ($self, $title, $fh) = @_;
@@ -118,6 +122,7 @@ sub control_msg($$)
 {
 	my ($self, $output) = @_;
 
+	# Perhaps the CSS should hide this by default?
 	$self->{msg} .=  "<span class=\"control\">$output<br/></span>\n";
 }
 
@@ -126,15 +131,17 @@ sub output_msg($$)
 	my ($self, $output) = @_;
 
 	unless (defined($self->{active_test})) {
-		print TEST "$output<br/>";
+		if (defined($self->{NAME})) {
+			print TEST "$output<br/>";
+		}
 	} else {
 		$self->{msg} .= "$output<br/>";
 	}
 }
 
-sub end_testsuite($$$$)
+sub end_testsuite($$$)
 {
-	my ($self, $name, $result, $unexpected, $reason) = @_;
+	my ($self, $name, $result, $reason) = @_;
 
 	print TEST "</table>\n";
 
@@ -148,12 +155,10 @@ sub end_testsuite($$$$)
 	print INDEX "  <td class=\"testSuite\"><a href=\"$self->{HTMLFILE}\">$name</a></td>\n";
 	my $st = $self->{local_statistics};
 
-	if (not $unexpected) {
-		if ($result eq "failure") {
-			print INDEX "  <td class=\"resultExpectedFailure\">";
-		} else {
-			print INDEX "  <td class=\"resultOk\">";
-		}
+	if ($result eq "xfail") {
+		print INDEX "  <td class=\"resultExpectedFailure\">";
+	} elsif ($result eq "success") {
+		print INDEX "  <td class=\"resultOk\">";
 	} else {
 		print INDEX "  <td class=\"resultFailure\">";
 	}
@@ -180,16 +185,14 @@ sub end_testsuite($$$$)
 	}
 
 	if ($l == 0) {
-		if (not $unexpected) {
-			print INDEX "OK";
-		} else {
-			print INDEX "FAIL";
-		}
+		print INDEX uc($result);
 	}
 
 	print INDEX "</td>";
 		
 	print INDEX "</tr>\n";
+
+	$self->{NAME} = undef;
 }
 
 sub report_time($$)

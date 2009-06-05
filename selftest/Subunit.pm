@@ -38,7 +38,7 @@ sub parse_results($$$$)
 			$msg_ops->start_test($1);
 			push (@$open_tests, $1);
 		} elsif (/^time: (\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)Z\n/) {
-			$msg_ops->report_time(mktime($6, $5, $4, $3, $2, $1));
+			$msg_ops->report_time(mktime($6, $5, $4, $3, $2, $1-1900));
 		} elsif (/^(success|successful|failure|fail|skip|knownfail|error|xfail|skip-testsuite|testsuite-failure|testsuite-success|testsuite-error): (.*?)( \[)?([ \t]*)\n/) {
 			$msg_ops->control_msg($_);
 			my $result = $1;
@@ -197,11 +197,11 @@ sub end_testsuite($$;$)
 	my $result = shift;
 	my $reason = shift;
 	if ($reason) {
-		print "testsuite-$result: $name [";
-		print "$reason";
+		print "testsuite-$result: $name [\n";
+		print "$reason\n";
 		print "]\n";
 	} else {
-		print "$result: $name\n";
+		print "testsuite-$result: $name\n";
 	}
 }
 

@@ -238,14 +238,11 @@ sub run_testsuite($$$$$)
 	my $exitcode = $ret >> 8;
 
 	Subunit::report_time(time());
-	my $reason = "Exit code was $exitcode";
-	my $result;
 	if ($exitcode == 0) {
-		$result = "success";
+		Subunit::end_testsuite($name, "success");
 	} else {
-		$result = "failure";
+		Subunit::end_testsuite($name, "failure", "Exit code was $exitcode");
 	}
-	Subunit::end_testsuite($name, $result, $reason);
 
 	cleanup_pcap($pcap_file, $exitcode);
 

@@ -52,12 +52,12 @@ Jelmer Vernooij
 
 =cut
 
-
 use Getopt::Long;
 use strict;
 use FindBin qw($RealBin $Script);
 use lib "$RealBin";
 use Subunit qw(parse_results);
+use Subunit::Filter;
 
 my $opt_expected_failures = undef;
 my $opt_help = 0;
@@ -76,47 +76,8 @@ if ($opt_help) {
 	exit(0);
 }
 
-sub read_test_regexes($)
-{
-	my ($name) = @_;
-	my @ret = ();
-	open(LF, "<$name") or die("unable to read $name: $!");
-	while (<LF>) { 
-		chomp; 
-		next if (/^#/);
-		if (/^(.*?)([ \t]+)\#([\t ]*)(.*?)$/) {
-			push (@ret, [$1, $4]);
-		} else {
-			s/^(.*?)([ \t]+)\#([\t ]*)(.*?)$//;
-			push (@ret, [$_, undef]); 
-		}
-	}
-	close(LF);
-	return @ret;
-}
-
 if (defined($opt_expected_failures)) {
-	@expected_failures = read_test_regexes($opt_expected_failures);
-}
-
-sub find_in_list($$)
-{
-	my ($list, $fullname) = @_;
-
-	foreach (@$list) {
-		if ($fullname =~ /$$_[0]/) {
-			 return ($$_[1]) if ($$_[1]);
-			 return "NO REASON SPECIFIED";
-		}
-	}
-
-	return undef;
-}
-
-sub expecting_failure($)
-{
-	my ($name) = @_;
-	return find_in_list(\@expected_failures, $name);
+	@expected_failures = Subunit::Filter::read_test_regexes($opt_expected_failures);
 }
 
 my $statistics = {
@@ -130,75 +91,7 @@ my $statistics = {
 	TESTS_SKIP => 0,
 };
 
-sub control_msg()
-{
-	# We regenerate control messages, so ignore this
-}
-
-sub report_time($$)
-{
-	my ($self, $time) = @_;
-	Subunit::report_time($time);
-}
-
-sub output_msg($$)
-{
-	my ($self, $msg) = @_;
-	print $msg;
-}
-
-sub start_test($$)
-{
-	my ($self, $testname) = @_;
-
-	if (defined($opt_prefix)) {
-		$testname = $opt_prefix.$testname;
-	}
-
-	Subunit::start_test($testname);
-}
-
-sub end_test($$$$$)
-{
-	my ($self, $testname, $result, $unexpected, $reason) = @_;
-
-	if (defined($opt_prefix)) {
-		$testname = $opt_prefix.$testname;
-	}
-
-	if (($result eq "fail" or $result eq "failure") and not $unexpected) { $result = "xfail"; }
-	if (expecting_failure($testname) and ($result eq "fail" or $result eq "failure")) {
-		$result = "xfail";
-	}
-
-	Subunit::end_test($testname, $result, $reason);
-}
-
-sub skip_testsuite($;$)
-{
-	Subunit::skip_testsuite(@_);
-}
-
-sub start_testsuite($;$)
-{
-	my ($self, $name) = @_;
-	Subunit::start_testsuite($name);
-}
-
-sub end_testsuite($$;$)
-{
-	my ($self, $name, $result, $reason) = @_;
-	Subunit::end_testsuite($name, $result, $reason);
-}
-
-sub testsuite_count($$)
-{
-	my ($self, $count) = @_;
-	Subunit::testsuite_count($count);
-}
-
-my $msg_ops = {};
-bless $msg_ops;
+my $msg_ops = new Subunit::Filter($opt_prefix, \@expected_failures);
 
 parse_results($msg_ops, $statistics, *STDIN, []);
 

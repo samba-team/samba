@@ -38,6 +38,10 @@ sub new($$$) {
 	bless($self, $class);
 }
 
+sub testsuite_count($$)
+{
+}
+
 sub report_time($$)
 {
 	my ($self, $time) = @_;

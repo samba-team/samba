@@ -66,7 +66,7 @@ sub end_testsuite($$$$$$)
 
 	if ($result eq "failure" and not $unexpected) { $result = "xfail"; }
 
-	Subunit::end_test($name, $result, $reason);
+	Subunit::end_testsuite($name, $result, $reason);
 }
 
 sub start_test($$)
