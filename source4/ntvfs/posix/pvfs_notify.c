@@ -34,6 +34,7 @@ struct pvfs_notify_buffer {
 	struct notify_changes *changes;
 	uint32_t max_buffer_size;
 	uint32_t current_buffer_size;
+	bool overflowed;
 
 	/* a list of requests waiting for events on this handle */
 	struct notify_pending {
@@ -71,7 +72,7 @@ static void pvfs_notify_send(struct pvfs_notify_buffer *notify_buffer,
 		while (notify_buffer->pending) {
 			pvfs_notify_send(notify_buffer, NT_STATUS_OK, immediate);
 		}
-		talloc_free(notify_buffer);
+		notify_buffer->overflowed = true;
 		return;
 	}
 
@@ -88,6 +89,7 @@ static void pvfs_notify_send(struct pvfs_notify_buffer *notify_buffer,
 	info->nttrans.out.num_changes = notify_buffer->num_changes;
 	info->nttrans.out.changes = talloc_steal(req, notify_buffer->changes);
 	notify_buffer->num_changes = 0;
+	notify_buffer->overflowed = false;
 	notify_buffer->changes = NULL;
 	notify_buffer->current_buffer_size = 0;
 
@@ -132,6 +134,10 @@ static void pvfs_notify_callback(void *private_data, const struct notify_event *
 	size_t len;
 	struct notify_changes *n2;
 	char *new_path;
+
+	if (n->overflowed) {
+		return;
+	}
 
 	n2 = talloc_realloc(n, n->changes, struct notify_changes, n->num_changes+1);
 	if (n2 == NULL) {
@@ -267,7 +273,8 @@ NTSTATUS pvfs_notify(struct ntvfs_module_context *ntvfs,
 	DLIST_ADD_END(f->notify_buffer->pending, pending, struct notify_pending *);
 
 	/* if the buffer is empty then start waiting */
-	if (f->notify_buffer->num_changes == 0) {
+	if (f->notify_buffer->num_changes == 0 && 
+	    !f->notify_buffer->overflowed) {
 		struct pvfs_wait *wait_handle;
 		wait_handle = pvfs_wait_message(pvfs, req, -1,
 						timeval_zero(),
