@@ -1018,6 +1018,10 @@ struct tevent_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 		state->salen = sizeof(struct sockaddr_in);
 	}
 
+	if (pss->ss_family == AF_UNIX) {
+		state->salen = sizeof(struct sockaddr_un);
+	}
+
 	print_sockaddr(addr, sizeof(addr), &state->ss);
 	DEBUG(3,("Connecting to %s at port %u\n", addr,	(unsigned int)port));
 
