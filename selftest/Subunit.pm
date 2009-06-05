@@ -29,7 +29,6 @@ sub parse_results($$$$)
 	my $unexpected_ok = 0;
 	my $expected_fail = 0;
 	my $unexpected_fail = 0;
-	my $prefix = "";
 	my $unexpected_err = 0;
 	my $orig_open_len = $#$open_tests;
 
@@ -40,8 +39,6 @@ sub parse_results($$$$)
 			push (@$open_tests, $1);
 		} elsif (/^time: (\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)Z\n/) {
 			$msg_ops->report_time(mktime($6, $5, $4, $3, $2, $1));
-		} elsif (/^prefix: (.*)\n/) {
-			$prefix = $1;
 		} elsif (/^(success|successful|failure|fail|skip|knownfail|error|xfail): (.*?)( \[)?([ \t]*)\n/) {
 			$msg_ops->control_msg($_);
 			my $result = $1;
@@ -58,23 +55,23 @@ sub parse_results($$$$)
 				
 				unless ($terminated) {
 					$statistics->{TESTS_ERROR}++;
-					$msg_ops->end_test($open_tests, $testname, $result, 1, "reason interrupted");
+					$msg_ops->end_test($testname, $result, 1, "reason interrupted");
 					return 1;
 				}
 			}
 			if ($result eq "success" or $result eq "successful") {
 				pop(@$open_tests); #FIXME: Check that popped value == $testname 
 				$statistics->{TESTS_EXPECTED_OK}++;
-				$msg_ops->end_test($open_tests, $testname, $result, 0, $reason);
+				$msg_ops->end_test($testname, $result, 0, $reason);
 			} elsif ($result eq "xfail" or $result eq "knownfail") {
 				pop(@$open_tests); #FIXME: Check that popped value == $testname
 				$statistics->{TESTS_EXPECTED_FAIL}++;
-				$msg_ops->end_test($open_tests, $testname, $result, 0, $reason);
+				$msg_ops->end_test($testname, $result, 0, $reason);
 				$expected_fail++;
 			} elsif ($result eq "failure" or $result eq "fail") {
 				pop(@$open_tests); #FIXME: Check that popped value == $testname
 				$statistics->{TESTS_UNEXPECTED_FAIL}++;
-				$msg_ops->end_test($open_tests, $testname, $result, 1, $reason);
+				$msg_ops->end_test($testname, $result, 1, $reason);
 				$unexpected_fail++;
 			} elsif ($result eq "skip") {
 				$statistics->{TESTS_SKIP}++;
@@ -82,11 +79,11 @@ sub parse_results($$$$)
 				if (defined($last) and $last ne $testname) {
 					push (@$open_tests, $testname);
 				}
-				$msg_ops->end_test($open_tests, $testname, $result, 0, $reason);
+				$msg_ops->end_test($testname, $result, 0, $reason);
 			} elsif ($result eq "error") {
 				$statistics->{TESTS_ERROR}++;
 				pop(@$open_tests); #FIXME: Check that popped value == $testname
-				$msg_ops->end_test($open_tests, $testname, $result, 1, $reason);
+				$msg_ops->end_test($testname, $result, 1, $reason);
 				$unexpected_err++;
 			}
 		} else {
@@ -134,12 +131,6 @@ sub report_time($)
 	my ($time) = @_;
 	my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime($time);
 	printf "time: %04d-%02d-%02d %02d:%02d:%02dZ\n", $year+1900, $mon, $mday, $hour, $min, $sec;
-}
-
-sub prefix($)
-{
-	my ($prefix) = @_;
-	print "prefix: $prefix\n";
 }
 
 1;

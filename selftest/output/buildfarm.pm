@@ -87,23 +87,15 @@ sub end_testsuite($$$$$$)
 
 sub start_test($$$)
 {
-	my ($self, $parents, $testname) = @_;
-
-	if ($#$parents == -1) {
-		$self->start_testsuite($testname);
-	}
+	my ($self, $testname) = @_;
 }
 
 sub end_test($$$$$)
 {
-	my ($self, $parents, $testname, $result, $unexpected, $reason) = @_;
+	my ($self, $testname, $result, $unexpected, $reason) = @_;
 
 	if ($unexpected) {
 		$self->{test_output}->{$self->{NAME}} .= "UNEXPECTED($result): $testname\n";
-	}
-
-	if ($#$parents == -1) {
-		$self->end_testsuite($testname, $result, $unexpected, $reason); 
 	}
 }
 

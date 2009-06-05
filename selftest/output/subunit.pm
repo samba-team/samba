@@ -69,16 +69,16 @@ sub end_testsuite($$$$$$)
 	Subunit::end_test($name, $result, $reason);
 }
 
-sub start_test($$$)
+sub start_test($$)
 {
-	my ($self, $parents, $testname) = @_;
+	my ($self, $testname) = @_;
 
 	Subunit::start_test($testname);
 }
 
 sub end_test($$$$$)
 {
-	my ($self, $parents, $testname, $result, $unexpected, $reason) = @_;
+	my ($self, $testname, $result, $unexpected, $reason) = @_;
 
 	if ($result eq "fail" and not $unexpected) { $result = "xfail"; }
 

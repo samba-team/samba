@@ -94,6 +94,8 @@ sub start_testsuite($$)
 {
 	my ($self, $name) = @_;
 
+	$self->{START_TIME} = $self->{last_time};
+
 	$self->{local_statistics} = {
 		success => 0,
 		skip => 0,
@@ -200,26 +202,15 @@ sub report_time($$)
 
 sub start_test($$)
 {
-	my ($self, $parents, $testname) = @_;
-
-	if ($#$parents == -1) {
-		$self->{START_TIME} = $self->{last_time};
-		$self->start_testsuite($testname);
-		return;
-	}
+	my ($self, $testname) = @_;
 
 	$self->{active_test} = $testname;
 	$self->{msg} = "";
 }
 
-sub end_test($$$$$$)
+sub end_test($$$$)
 {
-	my ($self, $parents, $testname, $result, $unexpected, $reason) = @_;
-
-	if ($#$parents == -1) {
-		$self->end_testsuite($testname, $result, $unexpected, $reason);
-		return;
-	}
+	my ($self, $testname, $result, $unexpected, $reason) = @_;
 
 	print TEST "<tr>";
 

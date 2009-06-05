@@ -217,7 +217,6 @@ sub run_testsuite($$$$$)
 	my $pcap_file = setup_pcap($name);
 
 	Subunit::report_time(time());
-	Subunit::prefix($name);
 	Subunit::start_test($name);
 
 	my $ret = system("$cmd | $RealBin/filter-subunit.pl --prefix \"$name.\" 2>&1");

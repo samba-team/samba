@@ -133,26 +133,13 @@ sub end_testsuite($$$$$)
 
 sub start_test($$$)
 {
-	my ($self, $parents, $testname) = @_;
-
-	if ($#$parents == -1) {
-		$self->start_testsuite($testname);
-	}
+	my ($self, $testname) = @_;
 }
 
 sub end_test($$$$$)
 {
-	my ($self, $parents, $testname, $result, $unexpected, $reason) = @_;
+	my ($self, $testname, $result, $unexpected, $reason) = @_;
 	
-	if ($#$parents == -1) {
-		if ($result eq "skip") {
-			$self->skip_testsuite($testname, $reason);
-		} else {
-			$self->end_testsuite($testname, $result, $unexpected, $reason);
-		}
-		return;
-	}
-
 	my $append = "";
 
 	unless ($unexpected) {
@@ -167,9 +154,7 @@ sub end_test($$$$$)
 		return;
 	}
 
-	my $fullname = join(".", @$parents).".$testname";
-
-	$append = "UNEXPECTED($result): $testname ($fullname)\n";
+	$append = "UNEXPECTED($result): $testname\n";
 
 	$self->{test_output}->{$self->{NAME}} .= $append;
 
