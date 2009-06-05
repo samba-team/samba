@@ -311,7 +311,7 @@ static struct tevent_req *smbd_smb2_ioctl_send(TALLOC_CTX *mem_ctx,
 		}
 
 		if (overflow) {
-			tevent_req_nterror(STATUS_BUFFER_OVERFLOW);
+			tevent_req_nterror(req, STATUS_BUFFER_OVERFLOW);
 		} else {
 			tevent_req_done(req);
 		}
