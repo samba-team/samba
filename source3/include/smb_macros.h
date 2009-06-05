@@ -339,7 +339,4 @@ extern const char toupper_ascii_fast_table[];
 #define toupper_ascii_fast(c) toupper_ascii_fast_table[(unsigned int)(c)];
 #endif
 
-#define smbd_smb2_request_error(req, status) \
-	smbd_smb2_request_error_((req), (status), __location__)
-
 #endif /* _SMB_MACROS_H */

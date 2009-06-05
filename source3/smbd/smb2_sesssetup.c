@@ -114,7 +114,8 @@ NTSTATUS smbd_smb2_request_process_sesssetup(struct smbd_smb2_request *req)
 
 	outdyn = out_security_buffer;
 
-	return smbd_smb2_request_done_ex(req, status, outbody, &outdyn);
+	return smbd_smb2_request_done_ex(req, status, outbody, &outdyn,
+					 __location__);
 }
 
 static int smbd_smb2_session_destructor(struct smbd_smb2_session *session)

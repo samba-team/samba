@@ -583,17 +583,18 @@ static void smbd_smb2_request_writev_done(struct tevent_req *subreq)
 	talloc_free(mem_pool);
 }
 
-static NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
+NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
 				    NTSTATUS status,
-				    const char *wherestr,
-				    DATA_BLOB *info)
+				    DATA_BLOB *info,
+				    const char *location)
 {
 	uint8_t *outhdr;
 	uint8_t *outbody;
 	int i = req->current_idx;
 
-	DEBUG(10,("smbd_smb2_request_error_ex: idx[%d] status[%s] at %s |%s|\n",
-		  i, nt_errstr(status), wherestr, info ? " +info" : ""));
+	DEBUG(10,("smbd_smb2_request_error_ex: idx[%d] status[%s] |%s| at %s\n",
+		  i, nt_errstr(status), info ? " +info" : "",
+		  location));
 
 	outhdr = (uint8_t *)req->out.vector[i].iov_base;
 
@@ -620,15 +621,10 @@ static NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
 	return smbd_smb2_request_reply(req);
 }
 
-NTSTATUS smbd_smb2_request_error_(struct smbd_smb2_request *req,
-				 NTSTATUS status, const char *wherestr)
-{
-	return smbd_smb2_request_error_ex(req, status, wherestr, NULL);
-}
-
 NTSTATUS smbd_smb2_request_done_ex(struct smbd_smb2_request *req,
 				   NTSTATUS status,
-				   DATA_BLOB body, DATA_BLOB *dyn)
+				   DATA_BLOB body, DATA_BLOB *dyn,
+				   const char *location)
 {
 	uint8_t *outhdr;
 	uint8_t *outdyn;
@@ -636,10 +632,11 @@ NTSTATUS smbd_smb2_request_done_ex(struct smbd_smb2_request *req,
 	uint32_t next_command_ofs;
 
 	DEBUG(10,("smbd_smb2_request_done_ex: "
-		  "idx[%d] status[%s] body[%u] dyn[%s:%u]\n",
+		  "idx[%d] status[%s] body[%u] dyn[%s:%u] at %s\n",
 		  i, nt_errstr(status), (unsigned int)body.length,
 		  dyn ? "yes": "no",
-		  (unsigned int)(dyn ? dyn->length : 0)));
+		  (unsigned int)(dyn ? dyn->length : 0),
+		  location));
 
 	if (body.length < 2) {
 		return smbd_smb2_request_error(req, NT_STATUS_INTERNAL_ERROR);
@@ -688,12 +685,6 @@ NTSTATUS smbd_smb2_request_done_ex(struct smbd_smb2_request *req,
 	SIVAL(outhdr, SMB2_HDR_NEXT_COMMAND, next_command_ofs);
 
 	return smbd_smb2_request_reply(req);
-}
-
-NTSTATUS smbd_smb2_request_done(struct smbd_smb2_request *req,
-				DATA_BLOB body, DATA_BLOB *dyn)
-{
-	return smbd_smb2_request_done_ex(req, NT_STATUS_OK, body, dyn);
 }
 
 struct smbd_smb2_request_read_state {
