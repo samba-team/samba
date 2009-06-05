@@ -22,33 +22,34 @@
 #include "smbd/globals.h"
 #include "../source4/libcli/smb2/smb2_constants.h"
 
-static NTSTATUS smbd_smb2_create(struct smbd_smb2_request *req,
-				 uint8_t in_oplock_level,
-				 uint32_t in_impersonation_level,
-				 uint32_t in_desired_access,
-				 uint32_t in_file_attributes,
-				 uint32_t in_share_access,
-				 uint32_t in_create_disposition,
-				 uint32_t in_create_options,
-				 const char *in_name,
-				 uint8_t *out_oplock_level,
-				 uint32_t *out_create_action,
-				 NTTIME *out_creation_time,
-				 NTTIME *out_last_access_time,
-				 NTTIME *out_last_write_time,
-				 NTTIME *out_change_time,
-				 uint64_t *out_allocation_size,
-				 uint64_t *out_end_of_file,
-				 uint32_t *out_file_attributes,
-				 uint64_t *out_file_id_volatile);
+static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
+						struct tevent_context *ev,
+						struct smbd_smb2_request *smb2req,
+						uint8_t in_oplock_level,
+						uint32_t in_impersonation_level,
+						uint32_t in_desired_access,
+						uint32_t in_file_attributes,
+						uint32_t in_share_access,
+						uint32_t in_create_disposition,
+						uint32_t in_create_options,
+						const char *in_name);
+static NTSTATUS smbd_smb2_create_recv(struct tevent_req *req,
+				      uint8_t *out_oplock_level,
+				      uint32_t *out_create_action,
+				      NTTIME *out_creation_time,
+				      NTTIME *out_last_access_time,
+				      NTTIME *out_last_write_time,
+				      NTTIME *out_change_time,
+				      uint64_t *out_allocation_size,
+				      uint64_t *out_end_of_file,
+				      uint32_t *out_file_attributes,
+				      uint64_t *out_file_id_volatile);
 
+static void smbd_smb2_request_create_done(struct tevent_req *subreq);
 NTSTATUS smbd_smb2_request_process_create(struct smbd_smb2_request *req)
 {
 	const uint8_t *inbody;
 	int i = req->current_idx;
-	uint8_t *outhdr;
-	DATA_BLOB outbody;
-	DATA_BLOB outdyn;
 	size_t expected_body_size = 0x39;
 	size_t body_size;
 	uint8_t in_oplock_level;
@@ -63,18 +64,8 @@ NTSTATUS smbd_smb2_request_process_create(struct smbd_smb2_request *req)
 	DATA_BLOB in_name_buffer;
 	char *in_name_string;
 	size_t in_name_string_size;
-	uint8_t out_oplock_level;
-	uint32_t out_create_action;
-	NTTIME out_creation_time;
-	NTTIME out_last_access_time;
-	NTTIME out_last_write_time;
-	NTTIME out_change_time;
-	uint64_t out_allocation_size;
-	uint64_t out_end_of_file;
-	uint32_t out_file_attributes;
-	uint64_t out_file_id_volatile;
-	NTSTATUS status;
 	bool ok;
+	struct tevent_req *subreq;
 
 	if (req->in.vector[i+1].iov_len != (expected_body_size & 0xFFFFFFFE)) {
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
@@ -117,34 +108,78 @@ NTSTATUS smbd_smb2_request_process_create(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_ILLEGAL_CHARACTER);
 	}
 
-	status = smbd_smb2_create(req,
-				  in_oplock_level,
-				  in_impersonation_level,
-				  in_desired_access,
-				  in_file_attributes,
-				  in_share_access,
-				  in_create_disposition,
-				  in_create_options,
-				  in_name_string,
-				  &out_oplock_level,
-				  &out_create_action,
-				  &out_creation_time,
-				  &out_last_access_time,
-				  &out_last_write_time,
-				  &out_change_time,
-				  &out_allocation_size,
-				  &out_end_of_file,
-				  &out_file_attributes,
-				  &out_file_id_volatile);
+	subreq = smbd_smb2_create_send(req,
+				       req->conn->smb2.event_ctx,
+				       req,
+				       in_oplock_level,
+				       in_impersonation_level,
+				       in_desired_access,
+				       in_file_attributes,
+				       in_share_access,
+				       in_create_disposition,
+				       in_create_options,
+				       in_name_string);
+	if (subreq == NULL) {
+		return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
+	}
+	tevent_req_set_callback(subreq, smbd_smb2_request_create_done, req);
+	return NT_STATUS_OK;
+}
+
+static void smbd_smb2_request_create_done(struct tevent_req *subreq)
+{
+	struct smbd_smb2_request *req = tevent_req_callback_data(subreq,
+					struct smbd_smb2_request);
+	int i = req->current_idx;
+	uint8_t *outhdr;
+	DATA_BLOB outbody;
+	DATA_BLOB outdyn;
+	uint8_t out_oplock_level;
+	uint32_t out_create_action;
+	NTTIME out_creation_time;
+	NTTIME out_last_access_time;
+	NTTIME out_last_write_time;
+	NTTIME out_change_time;
+	uint64_t out_allocation_size;
+	uint64_t out_end_of_file;
+	uint32_t out_file_attributes;
+	uint64_t out_file_id_volatile;
+	NTSTATUS status;
+	NTSTATUS error; /* transport error */
+
+	status = smbd_smb2_create_recv(subreq,
+				       &out_oplock_level,
+				       &out_create_action,
+				       &out_creation_time,
+				       &out_last_access_time,
+				       &out_last_write_time,
+				       &out_change_time,
+				       &out_allocation_size,
+				       &out_end_of_file,
+				       &out_file_attributes,
+				       &out_file_id_volatile);
+	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		return smbd_smb2_request_error(req, status);
+		error = smbd_smb2_request_error(req, status);
+		if (!NT_STATUS_IS_OK(error)) {
+			smbd_server_connection_terminate(req->conn,
+							 nt_errstr(error));
+			return;
+		}
+		return;
 	}
 
 	outhdr = (uint8_t *)req->out.vector[i].iov_base;
 
 	outbody = data_blob_talloc(req->out.vector, NULL, 0x58);
 	if (outbody.data == NULL) {
-		return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
+		error = smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
+		if (!NT_STATUS_IS_OK(error)) {
+			smbd_server_connection_terminate(req->conn,
+							 nt_errstr(error));
+			return;
+		}
+		return;
 	}
 
 	SSVAL(outbody.data, 0x00, 0x58 + 1);	/* struct size */
@@ -176,48 +211,69 @@ NTSTATUS smbd_smb2_request_process_create(struct smbd_smb2_request *req)
 
 	outdyn = data_blob_const(NULL, 0);
 
-	return smbd_smb2_request_done(req, outbody, &outdyn);
+	error = smbd_smb2_request_done(req, outbody, &outdyn);
+	if (!NT_STATUS_IS_OK(error)) {
+		smbd_server_connection_terminate(req->conn,
+						 nt_errstr(error));
+		return;
+	}
 }
 
-static NTSTATUS smbd_smb2_create(struct smbd_smb2_request *req,
-				 uint8_t in_oplock_level,
-				 uint32_t in_impersonation_level,
-				 uint32_t in_desired_access,
-				 uint32_t in_file_attributes,
-				 uint32_t in_share_access,
-				 uint32_t in_create_disposition,
-				 uint32_t in_create_options,
-				 const char *in_name,
-				 uint8_t *out_oplock_level,
-				 uint32_t *out_create_action,
-				 NTTIME *out_creation_time,
-				 NTTIME *out_last_access_time,
-				 NTTIME *out_last_write_time,
-				 NTTIME *out_change_time,
-				 uint64_t *out_allocation_size,
-				 uint64_t *out_end_of_file,
-				 uint32_t *out_file_attributes,
-				 uint64_t *out_file_id_volatile)
+struct smbd_smb2_create_state {
+	struct smbd_smb2_request *smb2req;
+	uint8_t out_oplock_level;
+	uint32_t out_create_action;
+	NTTIME out_creation_time;
+	NTTIME out_last_access_time;
+	NTTIME out_last_write_time;
+	NTTIME out_change_time;
+	uint64_t out_allocation_size;
+	uint64_t out_end_of_file;
+	uint32_t out_file_attributes;
+	uint64_t out_file_id_volatile;
+};
+
+static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
+						struct tevent_context *ev,
+						struct smbd_smb2_request *smb2req,
+						uint8_t in_oplock_level,
+						uint32_t in_impersonation_level,
+						uint32_t in_desired_access,
+						uint32_t in_file_attributes,
+						uint32_t in_share_access,
+						uint32_t in_create_disposition,
+						uint32_t in_create_options,
+						const char *in_name)
 {
+	struct tevent_req *req;
+	struct smbd_smb2_create_state *state;
 	NTSTATUS status;
 	struct smb_request *smbreq;
 	files_struct *result;
 	int info;
 	SMB_STRUCT_STAT sbuf;
 
+	req = tevent_req_create(mem_ctx, &state,
+				struct smbd_smb2_create_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->smb2req = smb2req;
+
 	DEBUG(10,("smbd_smb2_create: name[%s]\n",
 		  in_name));
 
-	smbreq = smbd_smb2_fake_smb_request(req);
-	if (smbreq == NULL) {
-		return NT_STATUS_NO_MEMORY;
+	smbreq = smbd_smb2_fake_smb_request(smb2req);
+	if (tevent_req_nomem(smbreq, req)) {
+		return tevent_req_post(req, ev);
 	}
 
 	if (IS_IPC(smbreq->conn)) {
 		const char *pipe_name = in_name;
 
 		if (!lp_nt_pipe_support()) {
-			return NT_STATUS_ACCESS_DENIED;
+			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return tevent_req_post(req, ev);
 		}
 
 		/* Strip \\ off the name. */
@@ -227,14 +283,16 @@ static NTSTATUS smbd_smb2_create(struct smbd_smb2_request *req,
 
 		status = open_np_file(smbreq, pipe_name, &result);
 		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+			tevent_req_nterror(req, status);
+			return tevent_req_post(req, ev);
 		}
-		info = 0;
+		info = FILE_WAS_OPENED;
 		ZERO_STRUCT(sbuf);
 	} else if (CAN_PRINT(smbreq->conn)) {
 		status = file_new(smbreq, smbreq->conn, &result);
 		if(!NT_STATUS_IS_OK(status)) {
-			return status;
+			tevent_req_nterror(req, status);
+			return tevent_req_post(req, ev);
 		}
 
 		status = print_fsp_open(smbreq,
@@ -245,7 +303,8 @@ static NTSTATUS smbd_smb2_create(struct smbd_smb2_request *req,
 					&sbuf);
 		if (!NT_STATUS_IS_OK(status)) {
 			file_free(smbreq, result);
-			return status;
+			tevent_req_nterror(req, status);
+			return tevent_req_post(req, ev);
 		}
 		info = FILE_WAS_CREATED;
 	} else {
@@ -253,7 +312,7 @@ static NTSTATUS smbd_smb2_create(struct smbd_smb2_request *req,
 		in_create_options &= ~(0x10);/* NTCREATEX_OPTIONS_SYNC_ALERT */
 		in_create_options &= ~(0x20);/* NTCREATEX_OPTIONS_ASYNC_ALERT */
 
-		status = SMB_VFS_CREATE_FILE(req->tcon->compat_conn,
+		status = SMB_VFS_CREATE_FILE(smbreq->conn,
 					     smbreq,
 					     0, /* root_dir_fid */
 					     in_name,
@@ -271,29 +330,70 @@ static NTSTATUS smbd_smb2_create(struct smbd_smb2_request *req,
 					     &info,
 					     &sbuf);
 		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+			tevent_req_nterror(req, status);
+			return tevent_req_post(req, ev);
 		}
 	}
 
-	req->compat_chain_fsp = smbreq->chain_fsp;
+	smb2req->compat_chain_fsp = smbreq->chain_fsp;
 
-	*out_oplock_level	= 0;
+	state->out_oplock_level	= 0;
 	if ((in_create_disposition == FILE_SUPERSEDE)
 	    && (info == FILE_WAS_OVERWRITTEN)) {
-		*out_create_action = FILE_WAS_SUPERSEDED;
+		state->out_create_action = FILE_WAS_SUPERSEDED;
 	} else {
-		*out_create_action = info;
+		state->out_create_action = info;
 	}
-	unix_timespec_to_nt_time(out_creation_time, sbuf.st_ex_btime);
-	unix_timespec_to_nt_time(out_last_access_time, sbuf.st_ex_atime);
-	unix_timespec_to_nt_time(out_last_write_time,sbuf.st_ex_mtime);
-	unix_timespec_to_nt_time(out_change_time, sbuf.st_ex_ctime);
-	*out_allocation_size	= sbuf.st_ex_blksize * sbuf.st_ex_blocks;
-	*out_end_of_file	= sbuf.st_ex_size;
-	*out_file_attributes	= dos_mode(result->conn,result->fsp_name,&sbuf);
-	if (*out_file_attributes == 0) {
-		*out_file_attributes = FILE_ATTRIBUTE_NORMAL;
+	unix_timespec_to_nt_time(&state->out_creation_time, sbuf.st_ex_btime);
+	unix_timespec_to_nt_time(&state->out_last_access_time, sbuf.st_ex_atime);
+	unix_timespec_to_nt_time(&state->out_last_write_time,sbuf.st_ex_mtime);
+	unix_timespec_to_nt_time(&state->out_change_time, sbuf.st_ex_ctime);
+	state->out_allocation_size	= sbuf.st_ex_blksize * sbuf.st_ex_blocks;
+	state->out_end_of_file		= sbuf.st_ex_size;
+	state->out_file_attributes	= dos_mode(result->conn,
+						   result->fsp_name,
+						   &sbuf);
+	if (state->out_file_attributes == 0) {
+		state->out_file_attributes = FILE_ATTRIBUTE_NORMAL;
 	}
-	*out_file_id_volatile = result->fnum;
+	state->out_file_id_volatile = result->fnum;
+
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
+
+static NTSTATUS smbd_smb2_create_recv(struct tevent_req *req,
+				      uint8_t *out_oplock_level,
+				      uint32_t *out_create_action,
+				      NTTIME *out_creation_time,
+				      NTTIME *out_last_access_time,
+				      NTTIME *out_last_write_time,
+				      NTTIME *out_change_time,
+				      uint64_t *out_allocation_size,
+				      uint64_t *out_end_of_file,
+				      uint32_t *out_file_attributes,
+				      uint64_t *out_file_id_volatile)
+{
+	NTSTATUS status;
+	struct smbd_smb2_create_state *state = tevent_req_data(req,
+					       struct smbd_smb2_create_state);
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	*out_oplock_level	= state->out_oplock_level;
+	*out_create_action	= state->out_create_action;
+	*out_creation_time	= state->out_creation_time;
+	*out_last_access_time	= state->out_last_access_time;
+	*out_last_write_time	= state->out_last_write_time;
+	*out_change_time	= state->out_change_time;
+	*out_allocation_size	= state->out_allocation_size;
+	*out_end_of_file	= state->out_end_of_file;
+	*out_file_attributes	= state->out_file_attributes;
+	*out_file_id_volatile	= state->out_file_id_volatile;
+
+	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
