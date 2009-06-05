@@ -464,6 +464,7 @@ static bool nwrap_module_init(const char *name,
 	if (!*backends) {
 		NWRAP_ERROR(("%s: out of memory\n",
 			     __location__));
+		return false;
 	}
 
 	(*backends)[*num_backends].name = name;
