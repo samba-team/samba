@@ -2032,6 +2032,8 @@ WERROR _srvsvc_NetRemoteTOD(pipes_struct *p,
 WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p,
 				  struct srvsvc_NetGetFileSecurity *r)
 {
+	struct smb_filename *smb_fname = NULL;
+	char *fname = NULL;
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
 	fstring servicename;
@@ -2065,12 +2067,25 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p,
 		goto error_exit;
 	}
 
+	nt_status = unix_convert(talloc_tos(), conn, r->in.file, &smb_fname,
+				 0);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		werr = ntstatus_to_werror(nt_status);
+		goto error_exit;
+	}
+
+	nt_status = get_full_smb_filename(talloc_tos(), smb_fname, &fname);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		werr = ntstatus_to_werror(nt_status);
+		goto error_exit;
+	}
+
 	nt_status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		NULL,					/* req */
 		0,					/* root_dir_fid */
-		r->in.file,				/* fname */
-		CFF_DOS_PATH,				/* create_file_flags */
+		fname,					/* fname */
+		0,					/* create_file_flags */
 		FILE_READ_ATTRIBUTES,			/* access_mask */
 		FILE_SHARE_READ|FILE_SHARE_WRITE,	/* share_access */
 		FILE_OPEN,				/* create_disposition*/
@@ -2086,7 +2101,7 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p,
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("_srvsvc_NetGetFileSecurity: can't open %s\n",
-			 r->in.file));
+			 fname));
 		werr = ntstatus_to_werror(nt_status);
 		goto error_exit;
 	}
@@ -2098,7 +2113,7 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p,
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("_srvsvc_NetGetFileSecurity: Unable to get NT ACL "
-			 "for file %s\n", r->in.file));
+			 "for file %s\n", fname));
 		werr = ntstatus_to_werror(nt_status);
 		goto error_exit;
 	}
@@ -2121,7 +2136,8 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p,
 	close_file(NULL, fsp, NORMAL_CLOSE);
 	vfs_ChDir(conn, oldcwd);
 	conn_free_internal(conn);
-	return WERR_OK;
+	werr = WERR_OK;
+	goto done;
 
 error_exit:
 
@@ -2137,6 +2153,9 @@ error_exit:
 		conn_free_internal(conn);
 	}
 
+ done:
+	TALLOC_FREE(smb_fname);
+
 	return werr;
 }
 
@@ -2148,6 +2167,8 @@ error_exit:
 WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p,
 				  struct srvsvc_NetSetFileSecurity *r)
 {
+	struct smb_filename *smb_fname = NULL;
+	char *fname = NULL;
 	fstring servicename;
 	files_struct *fsp = NULL;
 	SMB_STRUCT_STAT st;
@@ -2180,12 +2201,25 @@ WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p,
 		goto error_exit;
 	}
 
+	nt_status = unix_convert(talloc_tos(), conn, r->in.file, &smb_fname,
+				 0);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		werr = ntstatus_to_werror(nt_status);
+		goto error_exit;
+	}
+
+	nt_status = get_full_smb_filename(talloc_tos(), smb_fname, &fname);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		werr = ntstatus_to_werror(nt_status);
+		goto error_exit;
+	}
+
 	nt_status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		NULL,					/* req */
 		0,					/* root_dir_fid */
-		r->in.file,				/* fname */
-		CFF_DOS_PATH,				/* create_file_flags */
+		fname,					/* fname */
+		0,					/* create_file_flags */
 		FILE_WRITE_ATTRIBUTES,			/* access_mask */
 		FILE_SHARE_READ|FILE_SHARE_WRITE,	/* share_access */
 		FILE_OPEN,				/* create_disposition*/
@@ -2201,7 +2235,7 @@ WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p,
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("_srvsvc_NetSetFileSecurity: can't open %s\n",
-			 r->in.file));
+			 fname));
 		werr = ntstatus_to_werror(nt_status);
 		goto error_exit;
 	}
@@ -2240,7 +2274,8 @@ WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p,
 	close_file(NULL, fsp, NORMAL_CLOSE);
 	vfs_ChDir(conn, oldcwd);
 	conn_free_internal(conn);
-	return WERR_OK;
+	werr = WERR_OK;
+	goto done;
 
 error_exit:
 
@@ -2255,6 +2290,9 @@ error_exit:
 	if (conn) {
 		conn_free_internal(conn);
 	}
+
+ done:
+	TALLOC_FREE(smb_fname);
 
 	return werr;
 }

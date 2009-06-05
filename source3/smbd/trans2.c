@@ -869,6 +869,7 @@ static void call_trans2open(connection_struct *conn,
 			    char **ppdata, int total_data,
 			    unsigned int max_data_bytes)
 {
+	struct smb_filename *smb_fname = NULL;
 	char *params = *pparams;
 	char *pdata = *ppdata;
 	int deny_mode;
@@ -886,7 +887,6 @@ static void call_trans2open(connection_struct *conn,
 	SMB_OFF_T size=0;
 	int fattr=0,mtime=0;
 	SMB_INO_T inode = 0;
-	SMB_STRUCT_STAT sbuf;
 	int smb_action = 0;
 	files_struct *fsp;
 	struct ea_list *ea_list = NULL;
@@ -898,15 +898,13 @@ static void call_trans2open(connection_struct *conn,
 	uint32 create_options = 0;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	SET_STAT_INVALID(sbuf);
-
 	/*
 	 * Ensure we have enough parameters to perform the operation.
 	 */
 
 	if (total_params < 29) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return;
+		goto out;
 	}
 
 	flags = SVAL(params, 0);
@@ -928,7 +926,7 @@ static void call_trans2open(connection_struct *conn,
 
 	if (IS_IPC(conn)) {
 		reply_doserror(req, ERRSRV, ERRaccess);
-		return;
+		goto out;
 	}
 
 	srvstr_get_path(ctx, params, req->flags2, &fname, pname,
@@ -936,7 +934,7 @@ static void call_trans2open(connection_struct *conn,
 			&status);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
-		return;
+		goto out;
 	}
 
 	DEBUG(3,("call_trans2open %s deny_mode=0x%x attr=%d ofun=0x%x size=%d\n",
@@ -945,7 +943,7 @@ static void call_trans2open(connection_struct *conn,
 
 	if (open_ofun == 0) {
 		reply_nterror(req, NT_STATUS_OBJECT_NAME_COLLISION);
-		return;
+		goto out;
 	}
 
 	if (!map_open_params_to_ntcreate(fname, deny_mode, open_ofun,
@@ -954,37 +952,49 @@ static void call_trans2open(connection_struct *conn,
 				&create_disposition,
 				&create_options)) {
 		reply_doserror(req, ERRDOS, ERRbadaccess);
-		return;
+		goto out;
 	}
 
 	/* Any data in this call is an EA list. */
 	if (total_data && (total_data != 4) && !lp_ea_support(SNUM(conn))) {
 		reply_nterror(req, NT_STATUS_EAS_NOT_SUPPORTED);
-		return;
+		goto out;
 	}
 
 	if (total_data != 4) {
 		if (total_data < 10) {
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			return;
+			goto out;
 		}
 
 		if (IVAL(pdata,0) > total_data) {
 			DEBUG(10,("call_trans2open: bad total data size (%u) > %u\n",
 				IVAL(pdata,0), (unsigned int)total_data));
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			return;
+			goto out;
 		}
 
 		ea_list = read_ea_list(talloc_tos(), pdata + 4,
 				       total_data - 4);
 		if (!ea_list) {
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			return;
+			goto out;
 		}
 	} else if (IVAL(pdata,0) != 4) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return;
+		goto out;
+	}
+
+	status = unix_convert(ctx, conn, fname, &smb_fname, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+		goto out;
+	}
+
+	status = get_full_smb_filename(ctx, smb_fname, &fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+		goto out;
 	}
 
 	status = SMB_VFS_CREATE_FILE(
@@ -992,7 +1002,7 @@ static void call_trans2open(connection_struct *conn,
 		req,					/* req */
 		0,					/* root_dir_fid */
 		fname,					/* fname */
-		CFF_DOS_PATH,				/* create_file_flags */
+		0,					/* create_file_flags */
 		access_mask,				/* access_mask */
 		share_mode,				/* share_access */
 		create_disposition,			/* create_disposition*/
@@ -1004,32 +1014,32 @@ static void call_trans2open(connection_struct *conn,
 		ea_list,				/* ea_list */
 		&fsp,					/* result */
 		&smb_action,				/* pinfo */
-		&sbuf);					/* psbuf */
+		&smb_fname->st);			/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->mid)) {
 			/* We have re-scheduled this call. */
-			return;
+			goto out;
 		}
 		reply_openerror(req, status);
-		return;
+		goto out;
 	}
 
-	size = get_file_size_stat(&sbuf);
-	fattr = dos_mode(conn,fsp->fsp_name,&sbuf);
-	mtime = convert_timespec_to_time_t(sbuf.st_ex_mtime);
-	inode = sbuf.st_ex_ino;
+	size = get_file_size_stat(&smb_fname->st);
+	fattr = dos_mode(conn, fsp->fsp_name, &smb_fname->st);
+	mtime = convert_timespec_to_time_t(smb_fname->st.st_ex_mtime);
+	inode = smb_fname->st.st_ex_ino;
 	if (fattr & aDIR) {
 		close_file(req, fsp, ERROR_CLOSE);
 		reply_doserror(req, ERRDOS,ERRnoaccess);
-		return;
+		goto out;
 	}
 
 	/* Realloc the size of parameters and data we will return */
 	*pparams = (char *)SMB_REALLOC(*pparams, 30);
 	if(*pparams == NULL ) {
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		return;
+		goto out;
 	}
 	params = *pparams;
 
@@ -1061,6 +1071,8 @@ static void call_trans2open(connection_struct *conn,
 
 	/* Send the required number of replies */
 	send_trans2_replies(conn, req, params, 30, *ppdata, 0, max_data_bytes);
+ out:
+	TALLOC_FREE(smb_fname);
 }
 
 /*********************************************************
