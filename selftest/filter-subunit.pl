@@ -93,6 +93,6 @@ my $statistics = {
 
 my $msg_ops = new Subunit::Filter($opt_prefix, \@expected_failures);
 
-parse_results($msg_ops, $statistics, *STDIN, []);
+parse_results($msg_ops, $statistics, *STDIN);
 
 0;

@@ -23,14 +23,14 @@ require Exporter;
 
 use strict;
 
-sub parse_results($$$$)
+sub parse_results($$$)
 {
-	my ($msg_ops, $statistics, $fh, $open_tests) = @_;
+	my ($msg_ops, $statistics, $fh) = @_;
 	my $unexpected_ok = 0;
 	my $expected_fail = 0;
 	my $unexpected_fail = 0;
 	my $unexpected_err = 0;
-	my $orig_open_len = $#$open_tests;
+	my $open_tests = [];
 
 	while(<$fh>) {
 		if (/^test: (.+)\n/) {
@@ -103,7 +103,7 @@ sub parse_results($$$$)
 		}
 	}
 
-	while ($#$open_tests > $orig_open_len) {
+	while ($#$open_tests+1 > 0) {
 		$msg_ops->end_test(pop(@$open_tests), "error", 1,
 				   "was started but never finished!");
 		$statistics->{TESTS_ERROR}++;

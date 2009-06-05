@@ -40,17 +40,6 @@ sub find_in_list($$)
 	return undef;
 }
 
-my $statistics = {
-	SUITES_FAIL => 0,
-
-	TESTS_UNEXPECTED_OK => 0,
-	TESTS_EXPECTED_OK => 0,
-	TESTS_UNEXPECTED_FAIL => 0,
-	TESTS_EXPECTED_FAIL => 0,
-	TESTS_ERROR => 0,
-	TESTS_SKIP => 0,
-};
-
 sub control_msg()
 {
 	# We regenerate control messages, so ignore this

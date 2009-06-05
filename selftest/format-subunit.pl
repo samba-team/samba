@@ -92,7 +92,7 @@ if ($opt_format eq "buildfarm") {
 	die("Invalid output format '$opt_format'");
 }
 
-my $expected_ret = parse_results($msg_ops, $statistics, *STDIN, []);
+my $expected_ret = parse_results($msg_ops, $statistics, *STDIN);
 
 $msg_ops->summary();
 
