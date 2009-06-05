@@ -81,8 +81,6 @@ if (defined($opt_expected_failures)) {
 }
 
 my $statistics = {
-	SUITES_FAIL => 0,
-
 	TESTS_UNEXPECTED_OK => 0,
 	TESTS_EXPECTED_OK => 0,
 	TESTS_UNEXPECTED_FAIL => 0,

@@ -222,8 +222,6 @@ sub run_testsuite($$$$$)
 
 	open(RESULTS, "$cmd 2>&1|");
 	my $statistics = {
-		SUITES_FAIL => 0,
-
 		TESTS_UNEXPECTED_OK => 0,
 		TESTS_EXPECTED_OK => 0,
 		TESTS_UNEXPECTED_FAIL => 0,

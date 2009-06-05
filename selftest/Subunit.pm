@@ -187,7 +187,7 @@ sub skip_testsuite($;$)
 {
 	my ($name, $reason) = @_;
 	if ($reason) {
-		print "skip-testsuite: $name [$reason]\n";
+		print "skip-testsuite: $name [\n$reason\n]\n";
 	} else {
 		print "skip-testsuite: $name\n";
 	}
