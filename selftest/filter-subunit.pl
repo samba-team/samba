@@ -147,9 +147,9 @@ sub output_msg($$)
 	print $msg;
 }
 
-sub start_test($$$)
+sub start_test($$)
 {
-	my ($self, $parents, $testname) = @_;
+	my ($self, $testname) = @_;
 
 	if (defined($opt_prefix)) {
 		$testname = $opt_prefix.$testname;
@@ -160,7 +160,7 @@ sub start_test($$$)
 
 sub end_test($$$$$)
 {
-	my ($self, $parents, $testname, $result, $unexpected, $reason) = @_;
+	my ($self, $testname, $result, $unexpected, $reason) = @_;
 
 	if (defined($opt_prefix)) {
 		$testname = $opt_prefix.$testname;
@@ -172,6 +172,29 @@ sub end_test($$$$$)
 	}
 
 	Subunit::end_test($testname, $result, $reason);
+}
+
+sub skip_testsuite($;$)
+{
+	Subunit::skip_testsuite(@_);
+}
+
+sub start_testsuite($;$)
+{
+	my ($self, $name) = @_;
+	Subunit::start_testsuite($name);
+}
+
+sub end_testsuite($$;$)
+{
+	my ($self, $name, $result, $reason) = @_;
+	Subunit::end_testsuite($name, $result, $reason);
+}
+
+sub testsuite_count($$)
+{
+	my ($self, $count) = @_;
+	Subunit::testsuite_count($count);
 }
 
 my $msg_ops = {};

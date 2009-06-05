@@ -35,11 +35,11 @@ sub parse_results($$$$)
 	while(<$fh>) {
 		if (/^test: (.+)\n/) {
 			$msg_ops->control_msg($_);
-			$msg_ops->start_test($open_tests, $1);
+			$msg_ops->start_test($1);
 			push (@$open_tests, $1);
 		} elsif (/^time: (\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)Z\n/) {
 			$msg_ops->report_time(mktime($6, $5, $4, $3, $2, $1));
-		} elsif (/^(success|successful|failure|fail|skip|knownfail|error|xfail): (.*?)( \[)?([ \t]*)\n/) {
+		} elsif (/^(success|successful|failure|fail|skip|knownfail|error|xfail|skip-testsuite|testsuite-failure|testsuite-success|testsuite-error): (.*?)( \[)?([ \t]*)\n/) {
 			$msg_ops->control_msg($_);
 			my $result = $1;
 			my $testname = $2;
@@ -55,7 +55,7 @@ sub parse_results($$$$)
 				
 				unless ($terminated) {
 					$statistics->{TESTS_ERROR}++;
-					$msg_ops->end_test($testname, $result, 1, "reason interrupted");
+					$msg_ops->end_test($testname, "error", 1, "reason ($result) interrupted");
 					return 1;
 				}
 			}
@@ -85,14 +85,26 @@ sub parse_results($$$$)
 				pop(@$open_tests); #FIXME: Check that popped value == $testname
 				$msg_ops->end_test($testname, $result, 1, $reason);
 				$unexpected_err++;
-			}
+			} elsif ($result eq "skip-testsuite") {
+				$msg_ops->skip_testsuite($testname);
+			} elsif ($result eq "testsuite-success") {
+				$msg_ops->end_testsuite($testname, "success", $reason);
+			} elsif ($result eq "testsuite-failure") {
+				$msg_ops->end_testsuite($testname, "failure", $reason);
+			} elsif ($result eq "testsuite-error") {
+				$msg_ops->end_testsuite($testname, "error", $reason);
+			} 
+		} elsif (/^testsuite: (.*)\n/) {
+			$msg_ops->start_testsuite($1);
+		} elsif (/^testsuite-count: (\d+)\n/) {
+			$msg_ops->testsuite_count($1);
 		} else {
 			$msg_ops->output_msg($_);
 		}
 	}
 
 	while ($#$open_tests > $orig_open_len) {
-		$msg_ops->end_test($open_tests, pop(@$open_tests), "error", 1,
+		$msg_ops->end_test(pop(@$open_tests), "error", 1,
 				   "was started but never finished!");
 		$statistics->{TESTS_ERROR}++;
 		$unexpected_err++;
@@ -118,7 +130,7 @@ sub end_test($$;$)
 	my $result = shift;
 	my $reason = shift;
 	if ($reason) {
-		print "$result: $name [";
+		print "$result: $name [\n";
 		print "$reason";
 		print "]\n";
 	} else {
@@ -126,11 +138,77 @@ sub end_test($$;$)
 	}
 }
 
+sub skip_test($;$)
+{
+	my $name = shift;
+	my $reason = shift;
+	end_test($name, "skip", $reason);
+}
+
+sub fail_test($;$)
+{
+	my $name = shift;
+	my $reason = shift;
+	end_test($name, "fail", $reason);
+}
+
+sub success_test($;$)
+{
+	my $name = shift;
+	my $reason = shift;
+	end_test($name, "success", $reason);
+}
+
+sub xfail_test($;$)
+{
+	my $name = shift;
+	my $reason = shift;
+	end_test($name, "xfail", $reason);
+}
+
 sub report_time($)
 {
 	my ($time) = @_;
 	my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime($time);
 	printf "time: %04d-%02d-%02d %02d:%02d:%02dZ\n", $year+1900, $mon, $mday, $hour, $min, $sec;
+}
+
+# The following are Samba extensions:
+
+sub start_testsuite($)
+{
+	my ($name) = @_;
+	print "testsuite: $name\n";
+}
+
+sub skip_testsuite($;$)
+{
+	my ($name, $reason) = @_;
+	if ($reason) {
+		print "skip-testsuite: $name [$reason]\n";
+	} else {
+		print "skip-testsuite: $name\n";
+	}
+}
+
+sub end_testsuite($$;$)
+{
+	my $name = shift;
+	my $result = shift;
+	my $reason = shift;
+	if ($reason) {
+		print "testsuite-$result: $name [";
+		print "$reason";
+		print "]\n";
+	} else {
+		print "$result: $name\n";
+	}
+}
+
+sub testsuite_count($)
+{
+	my ($count) = @_;
+	print "testsuite-count: $count\n";
 }
 
 1;

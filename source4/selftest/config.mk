@@ -11,7 +11,7 @@ SELFTEST_QUICK_OPTS = $(SELFTEST_NOSLOW_OPTS) --quick --include=$(srcdir)/selfte
 FILTER_XFAIL = $(PERL) $(selftestdir)/filter-subunit.pl --expected-failures=$(srcdir)/selftest/knownfail
 FORMAT_TEST_OUTPUT = $(FILTER_XFAIL) | $(PERL) $(selftestdir)/format-subunit.pl --format=$(TEST_FORMAT)
 
-subunittest:: everything
+test-subunit:: everything
 	$(SELFTEST) --socket-wrapper $(TESTS)
 
 slowtest:: everything
@@ -45,6 +45,9 @@ test-noswrap:: everything
 
 quicktest:: all
 	$(SELFTEST) $(SELFTEST_QUICK_OPTS) --socket-wrapper $(TESTS) | $(FORMAT_TEST_OUTPUT) --immediate 
+
+quicktest-subunit:: all
+	$(SELFTEST) $(SELFTEST_QUICK_OPTS) --socket-wrapper $(TESTS)
 
 quicktestone:: all
 	$(SELFTEST) $(SELFTEST_QUICK_OPTS) --socket-wrapper --one $(TESTS) | $(FORMAT_TEST_OUTPUT)

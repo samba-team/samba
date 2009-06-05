@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 # Plain text output for selftest
-# Copyright (C) 2008 Jelmer Vernooij <jelmer@samba.org>
+# Copyright (C) 2008-2009 Jelmer Vernooij <jelmer@samba.org>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -39,6 +39,12 @@ sub new($$$$$$$) {
 		totalsuites => $totaltests,
 	};
 	bless($self, $class);
+}
+
+sub testsuite_count($$)
+{
+	my ($self, $count) = @_;
+	$self->{totalsuites} = $count;
 }
 
 sub report_time($$)
@@ -101,23 +107,21 @@ sub control_msg($$)
 	#$self->output_msg($output);
 }
 
-sub end_testsuite($$$$$)
+sub end_testsuite($$$$)
 {
-	my ($self, $name, $result, $unexpected, $reason) = @_;
+	my ($self, $name, $result, $reason) = @_;
 	my $out = "";
+	my $unexpected = 0;
 
-	if ($unexpected) {
-		if ($result eq "success" and not defined($reason)) {
-			$reason = "Expected negative exit code, got positive exit code";
-		} 
+	if ($result eq "success" or $result eq "xfail") {
+		$self->{suites_ok}++;
+	} else {
 		$self->output_msg("ERROR: $reason\n");
 		push (@{$self->{suitesfailed}}, $name);
-	} else {
-		$self->{suites_ok}++;
-	}
-
-	if ($unexpected and $self->{immediate} and not $self->{verbose}) {
-		$out .= $self->{test_output}->{$name};
+		if ($self->{immediate} and not $self->{verbose}) {
+			$out .= $self->{test_output}->{$name};
+		}
+		$unexpected = 1;
 	}
 
 	if (not $self->{immediate}) {

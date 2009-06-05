@@ -166,7 +166,7 @@ sub find_in_list($$)
 	foreach (@$list) {
 		if ($fullname =~ /$$_[0]/) {
 			 return ($$_[1]) if ($$_[1]);
-			 return "NO REASON SPECIFIED";
+			 return "";
 		}
 	}
 
@@ -217,11 +217,15 @@ sub run_testsuite($$$$$)
 	my $pcap_file = setup_pcap($name);
 
 	Subunit::report_time(time());
-	Subunit::start_test($name);
+	Subunit::start_testsuite($name);
 
-	my $ret = system("$cmd | $RealBin/filter-subunit.pl --prefix \"$name.\" 2>&1");
+	system("$cmd 2>&1 | $RealBin/filter-subunit.pl --prefix \"$name.\"");
+	my $ret = $?;
 	if ($ret == -1) {
-		Subunit::end_test($name, "error", "Unable to run $cmd: $!");
+		Subunit::end_testsuite($name, "error", "Unable to run $cmd: $!");
+		return 0;
+	} elsif ($ret & 127) {
+		Subunit::end_testsuite($name, "error", sprintf("Testsuite died with signal %d, %s coredump", ($ret & 127), ($ret & 128) ? "with": "without"));
 		return 0;
 	}
 	my $envlog = getlog_env($envname);
@@ -241,7 +245,7 @@ sub run_testsuite($$$$$)
 	} else {
 		$result = "failure";
 	}
-	Subunit::end_test($name, $result, $reason);
+	Subunit::end_testsuite($name, $result, $reason);
 
 	cleanup_pcap($pcap_file, $exitcode);
 
@@ -616,18 +620,19 @@ my @available = ();
 foreach my $fn (@testlists) {
 	foreach (read_testlist($fn)) {
 		my $name = $$_[0];
-		next if (@includes and not find_in_list(\@includes, $name));
+		next if (@includes and not defined(find_in_list(\@includes, $name)));
 		push (@available, $_);
 	}
 }
 
+Subunit::testsuite_count($#available+1);
 Subunit::report_time(time());
 
 foreach (@available) {
 	my $name = $$_[0];
 	my $skipreason = skip($name);
-	if ($skipreason) {
-		Subunit::end_test($name, "skip", $skipreason);
+	if (defined($skipreason)) {
+		Subunit::skip_testsuite($name, $skipreason);
 	} else {
 		push(@todo, $_); 
 	}
@@ -815,7 +820,7 @@ $envvarstr
 		
 		my $envvars = setup_env($envname);
 		if (not defined($envvars)) {
-			Subunit::end_test($name, "skip", 
+			Subunit::skip_testsuite($name, 
 				"unable to set up environment $envname");
 			next;
 		}
