@@ -243,6 +243,80 @@ static struct tevent_req *smbd_smb2_ioctl_send(TALLOC_CTX *mem_ctx,
 	}
 
 	switch (in_ctl_code) {
+	case 0x00060194: /* FSCTL_DFS_GET_REFERRALS */
+	{
+		uint16_t in_max_referral_level;
+		DATA_BLOB in_file_name_buffer;
+		char *in_file_name_string;
+		size_t in_file_name_string_size;
+		bool ok;
+		bool overflow = false;
+		NTSTATUS status;
+		int dfs_size;
+		char *dfs_data = NULL;
+
+		if (!IS_IPC(smbreq->conn)) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_DEVICE_REQUEST);
+			return tevent_req_post(req, ev);
+		}
+
+		if (!lp_host_msdfs()) {
+			tevent_req_nterror(req, NT_STATUS_FS_DRIVER_REQUIRED);
+			return tevent_req_post(req, ev);
+		}
+
+		if (in_input.length < (2 + 2)) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return tevent_req_post(req, ev);
+		}
+
+		in_max_referral_level = SVAL(in_input.data, 0);
+		in_file_name_buffer.data = in_input.data + 2;
+		in_file_name_buffer.length = in_input.length - 2;
+
+		ok = convert_string_talloc(state, CH_UTF16, CH_UNIX,
+					   in_file_name_buffer.data,
+					   in_file_name_buffer.length,
+					   &in_file_name_string,
+					   &in_file_name_string_size, false);
+		if (!ok) {
+			tevent_req_nterror(req, NT_STATUS_ILLEGAL_CHARACTER);
+			return tevent_req_post(req, ev);
+		}
+
+		dfs_size = setup_dfs_referral(smbreq->conn,
+					      in_file_name_string,
+					      in_max_referral_level,
+					      &dfs_data, &status);
+		if (dfs_size < 0) {
+			tevent_req_nterror(req, status);
+			return tevent_req_post(req, ev);
+		}
+
+		if (dfs_size > in_max_output) {
+			/*
+			 * TODO: we need a testsuite for this
+			 */
+			overflow = true;
+			dfs_size = in_max_output;
+		}
+
+		state->out_output = data_blob_talloc(state,
+						     (uint8_t *)dfs_data,
+						     dfs_size);
+		SAFE_FREE(dfs_data);
+		if (dfs_size > 0 &&
+		    tevent_req_nomem(state->out_output.data, req)) {
+			return tevent_req_post(req, ev);
+		}
+
+		if (overflow) {
+			tevent_req_nterror(STATUS_BUFFER_OVERFLOW);
+		} else {
+			tevent_req_done(req);
+		}
+		return tevent_req_post(req, ev);
+	}
 	case 0x0011C017: /* FSCTL_PIPE_TRANSCEIVE */
 
 		if (!IS_IPC(smbreq->conn)) {
