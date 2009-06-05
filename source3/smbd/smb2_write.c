@@ -168,6 +168,8 @@ struct smbd_smb2_write_state {
 	uint32_t out_count;
 };
 
+static void smbd_smb2_write_pipe_done(struct tevent_req *subreq);
+
 static struct tevent_req *smbd_smb2_write_send(TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
 					       struct smbd_smb2_request *smb2req,
@@ -218,13 +220,29 @@ static struct tevent_req *smbd_smb2_write_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	if (!CHECK_WRITE(fsp)) {
-		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
-		return tevent_req_post(req, ev);
+	if (IS_IPC(smbreq->conn)) {
+		struct tevent_req *subreq;
+
+		if (!fsp_is_np(fsp)) {
+			tevent_req_nterror(req, NT_STATUS_FILE_CLOSED);
+			return tevent_req_post(req, ev);
+		}
+
+		subreq = np_write_send(state, smbd_event_context(),
+				       fsp->fake_file_handle,
+				       in_data.data,
+				       in_data.length);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq,
+					smbd_smb2_write_pipe_done,
+					req);
+		return req;
 	}
 
-	if (IS_IPC(smbreq->conn)) {
-		tevent_req_nterror(req, NT_STATUS_NOT_IMPLEMENTED);
+	if (!CHECK_WRITE(fsp)) {
+		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
 		return tevent_req_post(req, ev);
 	}
 
@@ -276,6 +294,32 @@ static struct tevent_req *smbd_smb2_write_send(TALLOC_CTX *mem_ctx,
 
 	tevent_req_done(req);
 	return tevent_req_post(req, ev);
+}
+
+static void smbd_smb2_write_pipe_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(subreq,
+				 struct tevent_req);
+	struct smbd_smb2_write_state *state = tevent_req_data(req,
+					      struct smbd_smb2_write_state);
+	NTSTATUS status;
+	ssize_t nwritten = -1;
+
+	status = np_write_recv(subreq, &nwritten);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	if ((nwritten == 0 && state->in_length != 0) || (nwritten < 0)) {
+		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+		return;
+	}
+
+	state->out_count = nwritten;
+
+	tevent_req_done(req);
 }
 
 static NTSTATUS smbd_smb2_write_recv(struct tevent_req *req,
