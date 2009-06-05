@@ -816,7 +816,7 @@ static int nwrap_gr_copy_r(const struct group *src, struct group *dst,
 {
 	char *first;
 	char **lastm;
-	char *last;
+	char *last = NULL;
 	off_t ofsb;
 	off_t ofsm;
 	off_t ofs;
@@ -825,9 +825,14 @@ static int nwrap_gr_copy_r(const struct group *src, struct group *dst,
 	first = src->gr_name;
 
 	lastm = src->gr_mem;
-	while (*lastm) lastm++;
+	while (*lastm) {
+		last = *lastm;
+		lastm++;
+	}
 
-	last = *lastm;
+	if (last == NULL) {
+		last = src->gr_passwd;
+	}
 	while (*last) last++;
 
 	ofsb = PTR_DIFF(last + 1, first);
