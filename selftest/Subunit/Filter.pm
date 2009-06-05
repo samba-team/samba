@@ -76,10 +76,14 @@ sub end_test($$$$$)
 		$testname = $self->{prefix}.$testname;
 	}
 
-	if (($result eq "fail" or $result eq "failure") and not $unexpected) { $result = "xfail"; }
+	if (($result eq "fail" or $result eq "failure") and not $unexpected) {
+		$result = "xfail";
+		$self->{xfail_added}++;
+	}
 	my $xfail_reason = find_in_list($self->{expected_failures}, $testname);
 	if (defined($xfail_reason) and ($result eq "fail" or $result eq "failure")) {
 		$result = "xfail";
+		$self->{xfail_added}++;
 		$reason .= $xfail_reason;
 	}
 
@@ -95,11 +99,16 @@ sub start_testsuite($;$)
 {
 	my ($self, $name) = @_;
 	Subunit::start_testsuite($name);
+	$self->{xfail_added} = 0;
 }
 
 sub end_testsuite($$;$)
 {
 	my ($self, $name, $result, $reason) = @_;
+	if ($self->{xfail_added} and ($result eq "fail" or $result eq "failure")) {
+		$result = "xfail";
+	}
+		
 	Subunit::end_testsuite($name, $result, $reason);
 }
 
@@ -115,6 +124,7 @@ sub new {
 	my $self = { 
 		prefix => $prefix,
 		expected_failures => $expected_failures,
+		xfail_added => 0,
 	};
 	bless($self, $class);
 }

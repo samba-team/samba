@@ -86,6 +86,9 @@ sub end_testsuite($$$$$$)
 	BuildFarm::end_testsuite($name, ($self->{last_time} - $self->{START_TIME}), 
 		                     (not $unexpected), $self->{test_output}->{$name}, 
 							 $reason);
+	if ($result ne "success") {
+		$self->{statistics}->{SUITES_FAIL}++;
+	}
 }
 
 sub start_test($$$)

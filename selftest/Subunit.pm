@@ -39,7 +39,7 @@ sub parse_results($$$)
 			push (@$open_tests, $1);
 		} elsif (/^time: (\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)Z\n/) {
 			$msg_ops->report_time(mktime($6, $5, $4, $3, $2, $1-1900));
-		} elsif (/^(success|successful|failure|fail|skip|knownfail|error|xfail|skip-testsuite|testsuite-failure|testsuite-success|testsuite-error): (.*?)( \[)?([ \t]*)\n/) {
+		} elsif (/^(success|successful|failure|fail|skip|knownfail|error|xfail|skip-testsuite|testsuite-failure|testsuite-xfail|testsuite-success|testsuite-error): (.*?)( \[)?([ \t]*)\n/) {
 			$msg_ops->control_msg($_);
 			my $result = $1;
 			my $testname = $2;
@@ -91,6 +91,8 @@ sub parse_results($$$)
 				$msg_ops->end_testsuite($testname, "success", $reason);
 			} elsif ($result eq "testsuite-failure") {
 				$msg_ops->end_testsuite($testname, "failure", $reason);
+			} elsif ($result eq "testsuite-xfail") {
+				$msg_ops->end_testsuite($testname, "xfail", $reason);
 			} elsif ($result eq "testsuite-error") {
 				$msg_ops->end_testsuite($testname, "error", $reason);
 			} 

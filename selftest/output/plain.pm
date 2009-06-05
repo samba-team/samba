@@ -125,7 +125,7 @@ sub end_testsuite($$$$)
 	}
 
 	if (not $self->{immediate}) {
-		if (not $unexpected) {
+		unless($unexpected) {
 			$out .= " ok\n";
 		} else {
 			$out .= " " . uc($result) . "\n";

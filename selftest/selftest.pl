@@ -129,7 +129,8 @@ use Getopt::Long;
 use POSIX;
 use Cwd qw(abs_path);
 use lib "$RealBin";
-use Subunit;
+use Subunit qw(parse_results);
+use Subunit::Filter;
 use SocketWrapper;
 
 my $opt_help = 0;
@@ -219,12 +220,34 @@ sub run_testsuite($$$$$)
 	Subunit::report_time(time());
 	Subunit::start_testsuite($name);
 
-	system("$cmd 2>&1 | $RealBin/filter-subunit.pl --prefix \"$name.\"");
-	my $ret = $?;
-	if ($ret == -1) {
-		Subunit::end_testsuite($name, "error", "Unable to run $cmd: $!");
-		return 0;
-	} elsif ($ret & 127) {
+	open(RESULTS, "$cmd 2>&1|");
+	my $statistics = {
+		SUITES_FAIL => 0,
+
+		TESTS_UNEXPECTED_OK => 0,
+		TESTS_EXPECTED_OK => 0,
+		TESTS_UNEXPECTED_FAIL => 0,
+		TESTS_EXPECTED_FAIL => 0,
+		TESTS_ERROR => 0,
+		TESTS_SKIP => 0,
+	};
+
+	my $msg_ops = new Subunit::Filter("$name\.", []);
+
+	parse_results($msg_ops, $statistics, *RESULTS);
+
+	my $ret = 0;
+
+	unless (close(RESULTS)) {
+		if ($!) {
+			Subunit::end_testsuite($name, "error", "Unable to run $cmd: $!");
+			return 0;
+		} else {
+			$ret = $?;
+		}
+	} 
+
+	if ($ret & 127) {
 		Subunit::end_testsuite($name, "error", sprintf("Testsuite died with signal %d, %s coredump", ($ret & 127), ($ret & 128) ? "with": "without"));
 		return 0;
 	}
