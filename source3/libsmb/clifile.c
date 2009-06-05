@@ -1981,45 +1981,6 @@ NTSTATUS cli_nt_delete_on_close(struct cli_state *cli, uint16_t fnum, bool flag)
 	return status;
 }
 
-#if 0
-int cli_nt_delete_on_close(struct cli_state *cli, uint16_t fnum, bool flag)
-{
-	unsigned int data_len = 1;
-	unsigned int param_len = 6;
-	uint16_t setup = TRANSACT2_SETFILEINFO;
-	char param[6];
-	unsigned char data;
-	char *rparam=NULL, *rdata=NULL;
-
-	memset(param, 0, param_len);
-	SSVAL(param,0,fnum);
-	SSVAL(param,2,SMB_SET_FILE_DISPOSITION_INFO);
-
-	data = flag ? 1 : 0;
-
-	if (!cli_send_trans(cli, SMBtrans2,
-			NULL,                        /* name */
-			-1, 0,                          /* fid, flags */
-			&setup, 1, 0,                   /* setup, length, max */
-			param, param_len, 2,            /* param, length, max */
-			(char *)&data,  data_len, cli->max_xmit /* data, length, max */
-			)) {
-		return false;
-	}
-
-	if (!cli_receive_trans(cli, SMBtrans2,
-			&rparam, &param_len,
-			&rdata, &data_len)) {
-		return false;
-	}
-
-	SAFE_FREE(rdata);
-	SAFE_FREE(rparam);
-
-	return true;
-}
-#endif
-
 struct cli_ntcreate_state {
 	uint16_t vwv[24];
 	uint16_t fnum;
@@ -2506,50 +2467,133 @@ NTSTATUS cli_close(struct cli_state *cli, uint16_t fnum)
  Truncate a file to a specified size
 ****************************************************************************/
 
-bool cli_ftruncate(struct cli_state *cli, uint16_t fnum, uint64_t size)
+struct ftrunc_state {
+	uint16_t setup;
+	uint8_t param[6];
+	uint8_t data[8];
+};
+
+static void cli_ftruncate_done(struct tevent_req *subreq)
 {
-	unsigned int param_len = 6;
-	unsigned int data_len = 8;
-	uint16_t setup = TRANSACT2_SETFILEINFO;
-	char param[6];
-	unsigned char data[8];
-	char *rparam=NULL, *rdata=NULL;
-	int saved_timeout = cli->timeout;
+	struct tevent_req *req = tevent_req_callback_data(
+				subreq, struct tevent_req);
+	struct ftrunc_state *state = tevent_req_data(req, struct ftrunc_state);
+	NTSTATUS status;
 
-	SSVAL(param,0,fnum);
-	SSVAL(param,2,SMB_SET_FILE_END_OF_FILE_INFO);
-	SSVAL(param,4,0);
-
-        SBVAL(data, 0, size);
-
-	if (!cli_send_trans(cli, SMBtrans2,
-                            NULL,                    /* name */
-                            -1, 0,                   /* fid, flags */
-                            &setup, 1, 0,            /* setup, length, max */
-                            param, param_len, 2,     /* param, length, max */
-                            (char *)&data,  data_len,/* data, length, ... */
-                            cli->max_xmit)) {        /* ... max */
-		cli->timeout = saved_timeout;
-		return False;
+	status = cli_trans_recv(subreq, state, NULL, NULL, NULL, NULL, NULL, NULL);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
 	}
-
-	if (!cli_receive_trans(cli, SMBtrans2,
-				&rparam, &param_len,
-				&rdata, &data_len)) {
-		cli->timeout = saved_timeout;
-		SAFE_FREE(rdata);
-		SAFE_FREE(rparam);
-		return False;
-	}
-
-	cli->timeout = saved_timeout;
-
-	SAFE_FREE(rdata);
-	SAFE_FREE(rparam);
-
-	return True;
+	tevent_req_done(req);
 }
 
+struct tevent_req *cli_ftruncate_send(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct cli_state *cli,
+					uint16_t fnum,
+					uint64_t size)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct ftrunc_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state, struct ftrunc_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	/* Setup setup word. */
+	SSVAL(&state->setup, 0, TRANSACT2_SETFILEINFO);
+
+	/* Setup param array. */
+	SSVAL(state->param,0,fnum);
+	SSVAL(state->param,2,SMB_SET_FILE_END_OF_FILE_INFO);
+	SSVAL(state->param,4,0);
+
+	/* Setup data array. */
+        SBVAL(state->data, 0, size);
+
+	subreq = cli_trans_send(state,			/* mem ctx. */
+				ev,			/* event ctx. */
+				cli,			/* cli_state. */
+				SMBtrans2,		/* cmd. */
+				NULL,			/* pipe name. */
+				-1,			/* fid. */
+				0,			/* function. */
+				0,			/* flags. */
+				&state->setup,		/* setup. */
+				1,			/* num setup uint16_t words. */
+				0,			/* max returned setup. */
+				state->param,		/* param. */
+				6,			/* num param. */
+				2,			/* max returned param. */
+				state->data,		/* data. */
+				8,			/* num data. */
+				0);			/* max returned data. */
+
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_ftruncate_done, req);
+	return req;
+}
+
+NTSTATUS cli_ftruncate_recv(struct tevent_req *req)
+{
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_ftruncate(struct cli_state *cli, uint16_t fnum, uint64_t size)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status = NT_STATUS_OK;
+
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	req = cli_ftruncate_send(frame,
+				ev,
+				cli,
+				fnum,
+				size);
+	if (req == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
+	}
+
+	status = cli_ftruncate_recv(req);
+
+ fail:
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
+}
 
 /****************************************************************************
  send a lock with a specified locktype

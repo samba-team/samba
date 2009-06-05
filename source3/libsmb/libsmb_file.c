@@ -867,7 +867,7 @@ SMBC_ftruncate_ctx(SMBCCTX *context,
 	}
 	/*d_printf(">>>fstat: resolved path as %s\n", targetpath);*/
         
-        if (!cli_ftruncate(targetcli, file->cli_fd, size)) {
+        if (!NT_STATUS_IS_OK(cli_ftruncate(targetcli, file->cli_fd, (uint64_t)size))) {
                 errno = EINVAL;
                 TALLOC_FREE(frame);
                 return -1;

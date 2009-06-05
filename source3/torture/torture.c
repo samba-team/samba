@@ -4144,6 +4144,7 @@ static bool run_simple_posix_open_test(int dummy)
 	uint16 major, minor;
 	uint32 caplow, caphigh;
 	uint16_t fnum1 = (uint16_t)-1;
+	SMB_STRUCT_STAT sbuf;
 	bool correct = false;
 
 	printf("Starting simple POSIX open test\n");
@@ -4188,6 +4189,29 @@ static bool run_simple_posix_open_test(int dummy)
 
 	if (!NT_STATUS_IS_OK(cli_posix_open(cli1, fname, O_RDWR|O_CREAT|O_EXCL, 0600, &fnum1))) {
 		printf("POSIX create of %s failed (%s)\n", fname, cli_errstr(cli1));
+		goto out;
+	}
+
+	/* Test ftruncate - set file size. */
+	if (!NT_STATUS_IS_OK(cli_ftruncate(cli1, fnum1, 1000))) {
+		printf("ftruncate failed (%s)\n", cli_errstr(cli1));
+		goto out;
+	}
+
+	/* Ensure st_size == 1000 */
+	if (!NT_STATUS_IS_OK(cli_posix_stat(cli1, fname, &sbuf))) {
+		printf("stat failed (%s)\n", cli_errstr(cli1));
+		goto out;
+	}
+
+	if (sbuf.st_ex_size != 1000) {
+		printf("ftruncate - stat size (%u) != 1000\n", (unsigned int)sbuf.st_ex_size);
+		goto out;
+	}
+
+	/* Test ftruncate - set file size back to zero. */
+	if (!NT_STATUS_IS_OK(cli_ftruncate(cli1, fnum1, 0))) {
+		printf("ftruncate failed (%s)\n", cli_errstr(cli1));
 		goto out;
 	}
 

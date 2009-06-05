@@ -2494,7 +2494,13 @@ struct tevent_req *cli_close_send(TALLOC_CTX *mem_ctx,
 				  struct cli_state *cli, uint16_t fnum);
 NTSTATUS cli_close_recv(struct tevent_req *req);
 NTSTATUS cli_close(struct cli_state *cli, uint16_t fnum);
-bool cli_ftruncate(struct cli_state *cli, uint16_t fnum, uint64_t size);
+struct tevent_req *cli_ftruncate_send(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct cli_state *cli,
+					uint16_t fnum,
+					uint64_t size);
+NTSTATUS cli_ftruncate_recv(struct tevent_req *req);
+NTSTATUS cli_ftruncate(struct cli_state *cli, uint16_t fnum, uint64_t size);
 NTSTATUS cli_locktype(struct cli_state *cli, uint16_t fnum,
 		      uint32_t offset, uint32_t len,
 		      int timeout, unsigned char locktype);
