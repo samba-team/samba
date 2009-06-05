@@ -214,7 +214,23 @@ static NTSTATUS smbd_smb2_create(struct smbd_smb2_request *req,
 	}
 
 	if (IS_IPC(smbreq->conn)) {
-		return NT_STATUS_NOT_IMPLEMENTED;
+		const char *pipe_name = in_name;
+
+		if (!lp_nt_pipe_support()) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+
+		/* Strip \\ off the name. */
+		if (pipe_name[0] == '\\') {
+			pipe_name++;
+		}
+
+		status = open_np_file(smbreq, pipe_name, &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		info = 0;
+		ZERO_STRUCT(sbuf);
 	} else if (CAN_PRINT(smbreq->conn)) {
 		status = file_new(smbreq, smbreq->conn, &result);
 		if(!NT_STATUS_IS_OK(status)) {
