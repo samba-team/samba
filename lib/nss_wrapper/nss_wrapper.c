@@ -632,7 +632,7 @@ failed:
 	return false;
 }
 
-static void nwrap_cache_unload(struct nwrap_cache *nwrap)
+static void nwrap_files_cache_unload(struct nwrap_cache *nwrap)
 {
 	nwrap->unload(nwrap);
 
@@ -641,7 +641,7 @@ static void nwrap_cache_unload(struct nwrap_cache *nwrap)
 	nwrap->buf = NULL;
 }
 
-static void nwrap_cache_reload(struct nwrap_cache *nwrap)
+static void nwrap_files_cache_reload(struct nwrap_cache *nwrap)
 {
 	struct stat st;
 	int ret;
@@ -692,13 +692,13 @@ reopen:
 
 	nwrap->st = st;
 
-	nwrap_cache_unload(nwrap);
+	nwrap_files_cache_unload(nwrap);
 
 	ok = nwrap_parse_file(nwrap);
 	if (!ok) {
 		NWRAP_ERROR(("%s: failed to reload %s\n",
 			     __location__, nwrap->path));
-		nwrap_cache_unload(nwrap);
+		nwrap_files_cache_unload(nwrap);
 	}
 	NWRAP_DEBUG(("%s: reloaded %s\n",
 		     __location__, nwrap->path));
@@ -1118,7 +1118,7 @@ static struct passwd *nwrap_files_getpwnam(struct nwrap_backend *b,
 {
 	int i;
 
-	nwrap_cache_reload(nwrap_pw_global.cache);
+	nwrap_files_cache_reload(nwrap_pw_global.cache);
 
 	for (i=0; i<nwrap_pw_global.num; i++) {
 		if (strcmp(nwrap_pw_global.list[i].pw_name, name) == 0) {
@@ -1159,7 +1159,7 @@ static struct passwd *nwrap_files_getpwuid(struct nwrap_backend *b,
 {
 	int i;
 
-	nwrap_cache_reload(nwrap_pw_global.cache);
+	nwrap_files_cache_reload(nwrap_pw_global.cache);
 
 	for (i=0; i<nwrap_pw_global.num; i++) {
 		if (nwrap_pw_global.list[i].pw_uid == uid) {
@@ -1206,7 +1206,7 @@ static struct passwd *nwrap_files_getpwent(struct nwrap_backend *b)
 	struct passwd *pw;
 
 	if (nwrap_pw_global.idx == 0) {
-		nwrap_cache_reload(nwrap_pw_global.cache);
+		nwrap_files_cache_reload(nwrap_pw_global.cache);
 	}
 
 	if (nwrap_pw_global.idx >= nwrap_pw_global.num) {
@@ -1258,7 +1258,7 @@ static struct group *nwrap_files_getgrnam(struct nwrap_backend *b,
 {
 	int i;
 
-	nwrap_cache_reload(nwrap_gr_global.cache);
+	nwrap_files_cache_reload(nwrap_gr_global.cache);
 
 	for (i=0; i<nwrap_gr_global.num; i++) {
 		if (strcmp(nwrap_gr_global.list[i].gr_name, name) == 0) {
@@ -1299,7 +1299,7 @@ static struct group *nwrap_files_getgrgid(struct nwrap_backend *b,
 {
 	int i;
 
-	nwrap_cache_reload(nwrap_gr_global.cache);
+	nwrap_files_cache_reload(nwrap_gr_global.cache);
 
 	for (i=0; i<nwrap_gr_global.num; i++) {
 		if (nwrap_gr_global.list[i].gr_gid == gid) {
@@ -1346,7 +1346,7 @@ static struct group *nwrap_files_getgrent(struct nwrap_backend *b)
 	struct group *gr;
 
 	if (nwrap_gr_global.idx == 0) {
-		nwrap_cache_reload(nwrap_gr_global.cache);
+		nwrap_files_cache_reload(nwrap_gr_global.cache);
 	}
 
 	if (nwrap_gr_global.idx >= nwrap_gr_global.num) {
