@@ -37,6 +37,7 @@ is_deeply(getType("uint16"), {
 
 is_deeply(getType("double"), {
 		NAME => "double",
+		BASEFILE => "<builtin>",
 		TYPE => "TYPEDEF",
 		DATA => { NAME => "double", TYPE => "SCALAR" }});
 
