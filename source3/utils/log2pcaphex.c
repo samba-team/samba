@@ -118,7 +118,7 @@ typedef struct {
 
 static hdr_tcp_t HDR_TCP = {139, 139, 0, 0, 0x50, 0, 0, 0, 0};
 
-void print_pcap_header(FILE *out)
+static void print_pcap_header(FILE *out)
 {
 	struct tcpdump_file_header h;
 	h.magic = TCPDUMP_MAGIC;
@@ -131,7 +131,8 @@ void print_pcap_header(FILE *out)
 	fwrite(&h, sizeof(struct tcpdump_file_header), 1, out);
 }
 
-void print_pcap_packet(FILE *out, unsigned char *data, long length, long caplen)
+static void print_pcap_packet(FILE *out, unsigned char *data, long length,
+			      long caplen)
 {
 	static int i = 0;
 	struct tcpdump_packet p;
@@ -144,7 +145,7 @@ void print_pcap_packet(FILE *out, unsigned char *data, long length, long caplen)
 	fwrite(data, sizeof(unsigned char), caplen, out);
 }
 
-void print_hex_packet(FILE *out, unsigned char *data, long length)
+static void print_hex_packet(FILE *out, unsigned char *data, long length)
 {
 	long i,cur = 0;
 	while(cur < length) {
@@ -158,13 +159,14 @@ void print_hex_packet(FILE *out, unsigned char *data, long length)
 	}
 }
 
-void print_netbios_packet(FILE *out, unsigned char *data, long length, long actual_length)
+static void print_netbios_packet(FILE *out, unsigned char *data, long length,
+				 long actual_length)
 {	
 	unsigned char *newdata; long offset = 0;
 	long newlen;
 	
 	newlen = length+sizeof(HDR_IP)+sizeof(HDR_TCP);
-	newdata = malloc(newlen);
+	newdata = (unsigned char *)malloc(newlen);
 
 	HDR_IP.packet_length = htons(newlen);
 	HDR_TCP.window = htons(0x2000);
@@ -206,12 +208,14 @@ long line_num = 0;
  *   smb_vwv[ 2]=    1 (0x1)
  *   smb_bcc=87
  */
-void read_log_msg(FILE *in, unsigned char **_buffer, unsigned short *buffersize, long *data_offset, long *data_length)
+static void read_log_msg(FILE *in, unsigned char **_buffer,
+			 unsigned short *buffersize, long *data_offset,
+			 long *data_length)
 {
 	unsigned char *buffer;
 	int tmp; long i;
 	assert(fscanf(in, " size=%hu\n", buffersize)); line_num++;
-	buffer = malloc(*buffersize+4); /* +4 for NBSS Header */
+	buffer = (unsigned char *)malloc(*buffersize+4); /* +4 for NBSS Header */
 	memset(buffer, 0, *buffersize+4);
 	/* NetBIOS Session Service */
 	buffer[0] = 0x00;
@@ -256,7 +260,7 @@ void read_log_msg(FILE *in, unsigned char **_buffer, unsigned short *buffersize,
  *   [040] 00 34 00 2E 00 30 00 00  00 49 00 53 00 49 00 4C  .4...0.. .I.S.I.L
  *   [050] 00 4F 00 4E 00 00 00                              .O.N...
  */
-long read_log_data(FILE *in, unsigned char *buffer, long data_length)
+static long read_log_data(FILE *in, unsigned char *buffer, long data_length)
 {
 	long i, addr; char real[2][16]; int ret;
 	unsigned int tmp;
