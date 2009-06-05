@@ -3465,14 +3465,11 @@ NTSTATUS append_parent_acl(files_struct *fsp,
 	char *parent_name = NULL;
 	SEC_ACE *new_ace = NULL;
 	unsigned int num_aces = pcsd->dacl->num_aces;
-	SMB_STRUCT_STAT sbuf;
 	NTSTATUS status;
 	int info;
 	unsigned int i, j;
 	SEC_DESC *psd = dup_sec_desc(talloc_tos(), pcsd);
 	bool is_dacl_protected = (pcsd->type & SEC_DESC_DACL_PROTECTED);
-
-	ZERO_STRUCT(sbuf);
 
 	if (psd == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -3499,7 +3496,7 @@ NTSTATUS append_parent_acl(files_struct *fsp,
 		NULL,					/* ea_list */
 		&parent_fsp,				/* result */
 		&info,					/* pinfo */
-		&sbuf);					/* psbuf */
+		NULL);					/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

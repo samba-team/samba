@@ -2601,11 +2601,8 @@ static NTSTATUS open_directory(connection_struct *conn,
 NTSTATUS create_directory(connection_struct *conn, struct smb_request *req, const char *directory)
 {
 	NTSTATUS status;
-	SMB_STRUCT_STAT sbuf;
 	files_struct *fsp;
 
-	SET_STAT_INVALID(sbuf);
-	
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
@@ -2623,7 +2620,7 @@ NTSTATUS create_directory(connection_struct *conn, struct smb_request *req, cons
 		NULL,					/* ea_list */
 		&fsp,					/* result */
 		NULL,					/* pinfo */
-		&sbuf);					/* psbuf */
+		NULL);					/* psbuf */
 
 	if (NT_STATUS_IS_OK(status)) {
 		close_file(req, fsp, NORMAL_CLOSE);
