@@ -514,7 +514,7 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 
 	req->current_idx += 3;
 
-	if (req->current_idx > req->in.vector_count) {
+	if (req->current_idx < req->out.vector_count) {
 		struct timeval zero = timeval_zero();
 		subreq = tevent_wakeup_send(req,
 					    req->conn->smb2.event_ctx,
