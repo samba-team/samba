@@ -1263,9 +1263,15 @@ static int control_delip(struct ctdb_context *ctdb, int argc, const char **argv)
 	if (ips->ips[i].pnn == options.pnn) {
 		ret = find_other_host_for_public_ip(ctdb, &addr);
 		if (ret != -1) {
-			ret = control_send_release(ctdb, ret, &addr);
+			struct ctdb_public_ip ip;
+
+			ip.pnn  = ret;
+			ip.addr = addr;
+
+			ret = ctdb_ctrl_takeover_ip(ctdb, TIMELIMIT(), ret, &ip);
 			if (ret != 0) {
-				DEBUG(DEBUG_ERR, ("Failed to migrate this ip to another node. Use moveip of recover to reassign this address to a node\n"));
+				DEBUG(DEBUG_ERR,("Failed to take over IP on node %d\n", options.pnn));
+				return -1;
 			}
 		}
 	}
