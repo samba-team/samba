@@ -419,6 +419,8 @@ get_dh_param(krb5_context context,
     return ret;
 }
 
+#ifdef HAVE_OPENSSL
+
 static krb5_error_code
 get_ecdh_param(krb5_context context,
 	       krb5_kdc_configuration *config,
@@ -479,6 +481,8 @@ get_ecdh_param(krb5_context context,
     free_ECParameters(&ecp);
     return ret;
 }
+
+#endif /* HAVE_OPENSSL */
 
 krb5_error_code
 _kdc_pk_rd_padata(krb5_context context,
