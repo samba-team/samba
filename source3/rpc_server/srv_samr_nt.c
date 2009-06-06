@@ -1407,8 +1407,6 @@ NTSTATUS _samr_QueryDisplayInfo(pipes_struct *p,
 	uint32 struct_size=0x20; /* W2K always reply that, client doesn't care */
 
 	uint32 max_entries = r->in.max_entries;
-	uint32 enum_context = r->in.start_idx;
-	uint32 max_size = r->in.buf_size;
 
 	union samr_DispInfo *disp_info = r->out.info;
 
@@ -1468,9 +1466,9 @@ NTSTATUS _samr_QueryDisplayInfo(pipes_struct *p,
 	}
 
 	/* first limit the number of entries we will return */
-	if(max_entries > max_sam_entries) {
+	if (r->in.max_entries > max_sam_entries) {
 		DEBUG(5, ("_samr_QueryDisplayInfo: client requested %d "
-			  "entries, limiting to %d\n", max_entries,
+			  "entries, limiting to %d\n", r->in.max_entries,
 			  max_sam_entries));
 		max_entries = max_sam_entries;
 	}
@@ -1480,8 +1478,8 @@ NTSTATUS _samr_QueryDisplayInfo(pipes_struct *p,
 
 	temp_size=max_entries*struct_size;
 
-	if (temp_size>max_size) {
-		max_entries=MIN((max_size/struct_size),max_entries);;
+	if (temp_size > r->in.buf_size) {
+		max_entries = MIN((r->in.buf_size / struct_size),max_entries);;
 		DEBUG(5, ("_samr_QueryDisplayInfo: buffer size limits to "
 			  "only %d entries\n", max_entries));
 	}
@@ -1501,14 +1499,14 @@ NTSTATUS _samr_QueryDisplayInfo(pipes_struct *p,
 				return NT_STATUS_ACCESS_DENIED;
 			}
 			DEBUG(10,("_samr_QueryDisplayInfo: starting user enumeration at index %u\n",
-				(unsigned  int)enum_context ));
+				(unsigned  int)r->in.start_idx));
 		} else {
 			DEBUG(10,("_samr_QueryDisplayInfo: using cached user enumeration at index %u\n",
-				(unsigned  int)enum_context ));
+				(unsigned  int)r->in.start_idx));
 		}
 
 		num_account = pdb_search_entries(dinfo->disp_info->users,
-						 enum_context, max_entries,
+						 r->in.start_idx, max_entries,
 						 &entries);
 		break;
 	case 2:
@@ -1520,14 +1518,14 @@ NTSTATUS _samr_QueryDisplayInfo(pipes_struct *p,
 				return NT_STATUS_ACCESS_DENIED;
 			}
 			DEBUG(10,("_samr_QueryDisplayInfo: starting machine enumeration at index %u\n",
-				(unsigned  int)enum_context ));
+				(unsigned  int)r->in.start_idx));
 		} else {
 			DEBUG(10,("_samr_QueryDisplayInfo: using cached machine enumeration at index %u\n",
-				(unsigned  int)enum_context ));
+				(unsigned  int)r->in.start_idx));
 		}
 
 		num_account = pdb_search_entries(dinfo->disp_info->machines,
-						 enum_context, max_entries,
+						 r->in.start_idx, max_entries,
 						 &entries);
 		break;
 	case 3:
@@ -1540,14 +1538,14 @@ NTSTATUS _samr_QueryDisplayInfo(pipes_struct *p,
 				return NT_STATUS_ACCESS_DENIED;
 			}
 			DEBUG(10,("_samr_QueryDisplayInfo: starting group enumeration at index %u\n",
-				(unsigned  int)enum_context ));
+				(unsigned  int)r->in.start_idx));
 		} else {
 			DEBUG(10,("_samr_QueryDisplayInfo: using cached group enumeration at index %u\n",
-				(unsigned  int)enum_context ));
+				(unsigned  int)r->in.start_idx));
 		}
 
 		num_account = pdb_search_entries(dinfo->disp_info->groups,
-						 enum_context, max_entries,
+						 r->in.start_idx, max_entries,
 						 &entries);
 		break;
 	default:
@@ -1562,27 +1560,27 @@ NTSTATUS _samr_QueryDisplayInfo(pipes_struct *p,
 	switch (r->in.level) {
 	case 1:
 		disp_ret = init_samr_dispinfo_1(p->mem_ctx, &disp_info->info1,
-						num_account, enum_context,
+						num_account, r->in.start_idx,
 						entries);
 		break;
 	case 2:
 		disp_ret = init_samr_dispinfo_2(p->mem_ctx, &disp_info->info2,
-						num_account, enum_context,
+						num_account, r->in.start_idx,
 						entries);
 		break;
 	case 3:
 		disp_ret = init_samr_dispinfo_3(p->mem_ctx, &disp_info->info3,
-						num_account, enum_context,
+						num_account, r->in.start_idx,
 						entries);
 		break;
 	case 4:
 		disp_ret = init_samr_dispinfo_4(p->mem_ctx, &disp_info->info4,
-						num_account, enum_context,
+						num_account, r->in.start_idx,
 						entries);
 		break;
 	case 5:
 		disp_ret = init_samr_dispinfo_5(p->mem_ctx, &disp_info->info5,
-						num_account, enum_context,
+						num_account, r->in.start_idx,
 						entries);
 		break;
 	default:
