@@ -116,7 +116,6 @@ dist_libkrb5_la_SOURCES =			\
 	get_host_realm.c			\
 	get_in_tkt.c				\
 	get_port.c				\
-	heim_threads.h				\
 	init_creds.c				\
 	init_creds_pw.c				\
 	kcm.c					\
@@ -271,7 +270,6 @@ krb5dir = $(includedir)/krb5
 krb5_HEADERS = locate_plugin.h send_to_kdc_plugin.h
 
 build_HEADERZ = \
-	heim_threads.h \
 	$(krb5_HEADERS) \
 	krb_err.h
 
