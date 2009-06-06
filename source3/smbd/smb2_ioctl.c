@@ -109,10 +109,15 @@ static void smbd_smb2_request_ioctl_done(struct tevent_req *subreq)
 {
 	struct smbd_smb2_request *req = tevent_req_callback_data(subreq,
 					struct smbd_smb2_request);
+	const uint8_t *inbody;
 	int i = req->current_idx;
 	uint8_t *outhdr;
 	DATA_BLOB outbody;
 	DATA_BLOB outdyn;
+	uint32_t in_ctl_code;
+	uint64_t in_file_id_persistent;
+	uint64_t in_file_id_volatile;
+	uint32_t out_input_offset;
 	uint32_t out_output_offset;
 	DATA_BLOB out_output_buffer;
 	NTSTATUS status;
@@ -132,7 +137,14 @@ static void smbd_smb2_request_ioctl_done(struct tevent_req *subreq)
 		return;
 	}
 
+	out_input_offset = SMB2_HDR_BODY + 0x30;
 	out_output_offset = SMB2_HDR_BODY + 0x30;
+
+	inbody = (const uint8_t *)req->in.vector[i+1].iov_base;
+
+	in_ctl_code		= IVAL(inbody, 0x04);
+	in_file_id_persistent	= BVAL(inbody, 0x08);
+	in_file_id_volatile	= BVAL(inbody, 0x10);
 
 	outhdr = (uint8_t *)req->out.vector[i].iov_base;
 
@@ -149,10 +161,14 @@ static void smbd_smb2_request_ioctl_done(struct tevent_req *subreq)
 
 	SSVAL(outbody.data, 0x00, 0x30 + 1);	/* struct size */
 	SSVAL(outbody.data, 0x02, 0);		/* reserved */
-	SIVAL(outbody.data, 0x04, 0);		/* ctl code */
-	SBVAL(outbody.data, 0x08, 0);		/* file id (persistent) */
-	SBVAL(outbody.data, 0x10, 0);		/* file id (volatile) */
-	SIVAL(outbody.data, 0x18, 0);		/* input offset */
+	SIVAL(outbody.data, 0x04,
+	      in_ctl_code);			/* ctl code */
+	SBVAL(outbody.data, 0x08,
+	      in_file_id_persistent);		/* file id (persistent) */
+	SBVAL(outbody.data, 0x10,
+	      in_file_id_volatile);		/* file id (volatile) */
+	SIVAL(outbody.data, 0x18,
+	      out_input_offset);		/* input offset */
 	SIVAL(outbody.data, 0x1C, 0);		/* input count */
 	SIVAL(outbody.data, 0x20,
 	      out_output_offset);		/* output offset */
@@ -162,9 +178,9 @@ static void smbd_smb2_request_ioctl_done(struct tevent_req *subreq)
 	SIVAL(outbody.data, 0x2C, 0);		/* reserved */
 
 	/*
-	 * Note: Windows sends back also the input from the request.
-	 *       I think this is stupid and I hope not required.
-	 *       For now we avoid a talloc + memcopy here...
+	 * Note: Windows Vista and 2008 send back also the
+	 *       input from the request. But it was fixed in
+	 *       Windows 7.
 	 */
 	outdyn = out_output_buffer;
 
