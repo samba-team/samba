@@ -477,7 +477,7 @@ CLDAP_OBJ = libads/cldap.o \
 	../lib/util/idtree.o \
 	$(LIBCLI_LDAP_MESSAGE_OBJ) $(LIBCLI_LDAP_NDR_OBJ) $(LIBTSOCKET_OBJ)
 
-TLDAP_OBJ = lib/tldap.o
+TLDAP_OBJ = lib/tldap.o lib/tldap_util.o
 
 LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/clikrb5.o libsmb/clispnego.o ../lib/util/asn1.o \

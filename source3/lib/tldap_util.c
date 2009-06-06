@@ -1,0 +1,351 @@
+/*
+   Unix SMB/CIFS implementation.
+   Infrastructure for async ldap client requests
+   Copyright (C) Volker Lendecke 2009
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#include "includes.h"
+
+bool tldap_entry_values(struct tldap_message *msg, const char *attribute,
+			int *num_values, DATA_BLOB **values)
+{
+	struct tldap_attribute *attributes;
+	int i, num_attributes;
+
+	if (!tldap_entry_attributes(msg, &num_attributes, &attributes)) {
+		return false;
+	}
+
+	for (i=0; i<num_attributes; i++) {
+		if (strequal(attribute, attributes[i].name)) {
+			break;
+		}
+	}
+	if (i == num_attributes) {
+		return false;
+	}
+	*num_values = attributes[i].num_values;
+	*values = attributes[i].values;
+	return true;
+}
+
+bool tldap_get_single_valueblob(struct tldap_message *msg,
+				const char *attribute, DATA_BLOB *blob)
+{
+	int num_values;
+	DATA_BLOB *values;
+
+	if (attribute == NULL) {
+		return NULL;
+	}
+	if (!tldap_entry_values(msg, attribute, &num_values, &values)) {
+		return NULL;
+	}
+	if (num_values != 1) {
+		return NULL;
+	}
+	*blob = values[0];
+	return true;
+}
+
+char *tldap_talloc_single_attribute(struct tldap_message *msg,
+				    const char *attribute,
+				    TALLOC_CTX *mem_ctx)
+{
+	DATA_BLOB val;
+	char *result;
+	size_t len;
+
+	if (!tldap_get_single_valueblob(msg, attribute, &val)) {
+		return false;
+	}
+	if (!convert_string_talloc(mem_ctx, CH_UTF8, CH_UNIX,
+				   val.data, val.length,
+				   &result, &len, false)) {
+		return NULL;
+	}
+	return result;
+}
+
+bool tldap_pull_binsid(struct tldap_message *msg, const char *attribute,
+		       struct dom_sid *sid)
+{
+	DATA_BLOB val;
+
+	if (!tldap_get_single_valueblob(msg, attribute, &val)) {
+		return false;
+	}
+	return sid_parse((char *)val.data, val.length, sid);
+}
+
+static bool tldap_add_blob_vals(TALLOC_CTX *mem_ctx, struct tldap_mod *mod,
+				int num_newvals, DATA_BLOB *newvals)
+{
+	int num_values = talloc_array_length(mod->values);
+	int i;
+	DATA_BLOB *tmp;
+
+	tmp = talloc_realloc(mem_ctx, mod->values, DATA_BLOB,
+			     num_values + num_newvals);
+	if (tmp == NULL) {
+		return false;
+	}
+	mod->values = tmp;
+
+	for (i=0; i<num_newvals; i++) {
+		mod->values[i+num_values].data = (uint8_t *)talloc_memdup(
+			mod->values, newvals[i].data, newvals[i].length);
+		if (mod->values[i+num_values].data == NULL) {
+			return false;
+		}
+		mod->values[i+num_values].length = newvals[i].length;
+	}
+	mod->num_values = num_values + num_newvals;
+	return true;
+}
+
+bool tldap_add_mod_blobs(TALLOC_CTX *mem_ctx, struct tldap_mod **pmods,
+			 int mod_op, const char *attrib,
+			 int num_newvals, DATA_BLOB *newvals)
+{
+	struct tldap_mod new_mod;
+	struct tldap_mod *mods = *pmods;
+	struct tldap_mod *mod = NULL;
+	int i, num_mods;
+
+	if (mods == NULL) {
+		mods = talloc_array(mem_ctx, struct tldap_mod, 0);
+	}
+	if (mods == NULL) {
+		return false;
+	}
+
+	num_mods = talloc_array_length(mods);
+
+	for (i=0; i<num_mods; i++) {
+		if ((mods[i].mod_op == mod_op)
+		    && strequal(mods[i].attribute, attrib)) {
+			mod = &mods[i];
+			break;
+		}
+	}
+
+	if (mod == NULL) {
+		new_mod.mod_op = mod_op;
+		new_mod.attribute = talloc_strdup(mods, attrib);
+		if (new_mod.attribute == NULL) {
+			return false;
+		}
+		new_mod.num_values = 0;
+		new_mod.values = NULL;
+		mod = &new_mod;
+	}
+
+	if ((num_newvals != 0)
+	    && !tldap_add_blob_vals(mods, mod, num_newvals, newvals)) {
+		return false;
+	}
+
+	if (i == num_mods) {
+		mods = talloc_realloc(talloc_tos(), mods, struct tldap_mod,
+				      num_mods+1);
+		if (mods == NULL) {
+			return false;
+		}
+		mods[num_mods] = *mod;
+	}
+
+	*pmods = mods;
+	return true;
+}
+
+static bool tldap_make_mod_blob_int(struct tldap_message *existing,
+				    TALLOC_CTX *mem_ctx,
+				    int *pnum_mods, struct tldap_mod **pmods,
+				    const char *attrib, DATA_BLOB newval,
+				    int (*comparison)(const DATA_BLOB *d1,
+						      const DATA_BLOB *d2))
+{
+	int num_values = 0;
+	DATA_BLOB *values = NULL;
+	DATA_BLOB oldval = data_blob_null;
+
+	if ((existing != NULL)
+	    && tldap_entry_values(existing, attrib, &num_values, &values)) {
+
+		if (num_values > 1) {
+			/* can't change multivalue attributes atm */
+			return false;
+		}
+		if (num_values == 1) {
+			oldval = values[0];
+		}
+	}
+
+	if ((oldval.data != NULL) && (newval.data != NULL)
+	    && (comparison(&oldval, &newval) == 0)) {
+		/* Believe it or not, but LDAP will deny a delete and
+		   an add at the same time if the values are the
+		   same... */
+		DEBUG(10,("smbldap_make_mod_blob: attribute |%s| not "
+			  "changed.\n", attrib));
+		return true;
+	}
+
+	if (oldval.data != NULL) {
+		/* By deleting exactly the value we found in the entry this
+		 * should be race-free in the sense that the LDAP-Server will
+		 * deny the complete operation if somebody changed the
+		 * attribute behind our back. */
+		/* This will also allow modifying single valued attributes in
+		 * Novell NDS. In NDS you have to first remove attribute and
+		 * then you could add new value */
+
+		DEBUG(10, ("smbldap_make_mod_blob: deleting attribute |%s|\n",
+			   attrib));
+		if (!tldap_add_mod_blobs(mem_ctx, pmods, TLDAP_MOD_DELETE,
+					 attrib, 1, &oldval)) {
+			return false;
+		}
+	}
+
+	/* Regardless of the real operation (add or modify)
+	   we add the new value here. We rely on deleting
+	   the old value, should it exist. */
+
+	if (newval.data != NULL) {
+		DEBUG(10, ("smbldap_make_mod: adding attribute |%s| value len "
+			   "%d\n", attrib, (int)newval.length));
+	        if (!tldap_add_mod_blobs(mem_ctx, pmods, TLDAP_MOD_ADD,
+					 attrib, 1, &newval)) {
+			return false;
+		}
+	}
+	*pnum_mods = talloc_array_length(*pmods);
+	return true;
+}
+
+bool tldap_make_mod_blob(struct tldap_message *existing, TALLOC_CTX *mem_ctx,
+			 int *pnum_mods, struct tldap_mod **pmods,
+			 const char *attrib, DATA_BLOB newval)
+{
+	return tldap_make_mod_blob_int(existing, mem_ctx, pnum_mods, pmods,
+				       attrib, newval, data_blob_cmp);
+}
+
+static int compare_utf8_blobs(const DATA_BLOB *d1, const DATA_BLOB *d2)
+{
+	char *s1, *s2;
+	size_t s1len, s2len;
+	int ret;
+
+	if (!convert_string_talloc(talloc_tos(), CH_UTF8, CH_UNIX, d1->data,
+				   d1->length, &s1, &s1len, false)) {
+		/* can't do much here */
+		return 0;
+	}
+	if (!convert_string_talloc(talloc_tos(), CH_UTF8, CH_UNIX, d2->data,
+				   d2->length, &s2, &s2len, false)) {
+		/* can't do much here */
+		TALLOC_FREE(s1);
+		return 0;
+	}
+	ret = StrCaseCmp(s1, s2);
+	TALLOC_FREE(s2);
+	TALLOC_FREE(s1);
+	return ret;
+}
+
+bool tldap_make_mod_fmt(struct tldap_message *existing, TALLOC_CTX *mem_ctx,
+			int *pnum_mods, struct tldap_mod **pmods,
+			const char *attrib, const char *fmt, ...)
+{
+	va_list ap;
+	char *newval;
+	bool ret;
+	DATA_BLOB blob = data_blob_null;
+
+	va_start(ap, fmt);
+	newval = talloc_vasprintf(talloc_tos(), fmt, ap);
+	va_end(ap);
+
+	if (newval == NULL) {
+		return false;
+	}
+
+	blob.length = strlen(newval);
+	if (blob.length != 0) {
+		blob.data = CONST_DISCARD(uint8_t *, newval);
+	}
+	ret = tldap_make_mod_blob_int(existing, mem_ctx, pnum_mods, pmods,
+				      attrib, blob, compare_utf8_blobs);
+	TALLOC_FREE(newval);
+	return ret;
+}
+
+const char *tldap_errstr(TALLOC_CTX *mem_ctx, struct tldap_context *ld, int rc)
+{
+	const char *ld_error = NULL;
+	char *res;
+
+	ld_error = tldap_ctx_diagnosticmessage(ld);
+	res = talloc_asprintf(mem_ctx, "LDAP error %d (%s), %s", rc,
+			      tldap_err2string(rc),
+			      ld_error ? ld_error : "unknown");
+	return res;
+}
+
+int tldap_search_fmt(struct tldap_context *ld, const char *base, int scope,
+		     const char *attrs[], int num_attrs, int attrsonly,
+		     TALLOC_CTX *mem_ctx, struct tldap_message ***res,
+		     const char *fmt, ...)
+{
+	va_list ap;
+	char *filter;
+	int ret;
+
+	va_start(ap, fmt);
+	filter = talloc_vasprintf(talloc_tos(), fmt, ap);
+	va_end(ap);
+
+	if (filter == NULL) {
+		return TLDAP_NO_MEMORY;
+	}
+	ret = tldap_search(ld, base, scope, filter,
+			   attrs, num_attrs, attrsonly,
+			   NULL /*sctrls*/, NULL /*cctrls*/,
+			   0 /*timelimit*/, 0 /*sizelimit*/, 0 /*deref*/,
+			   mem_ctx, res, NULL);
+	TALLOC_FREE(filter);
+	return ret;
+}
+
+bool tldap_pull_uint64(struct tldap_message *msg, const char *attr,
+		       uint64_t *presult)
+{
+	char *str;
+	uint64_t result;
+
+	str = tldap_talloc_single_attribute(msg, attr, talloc_tos());
+	if (str == NULL) {
+		DEBUG(10, ("Could not find attribute %s\n", attr));
+		return false;
+	}
+	result = strtoull(str, NULL, 10);
+	TALLOC_FREE(str);
+	*presult = result;
+	return true;
+}
