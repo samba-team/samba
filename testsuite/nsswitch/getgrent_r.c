@@ -21,7 +21,7 @@ void dump_grent(char *id)
 
     sprintf(fname, "/tmp/getgrent_r-%s.out-%d", id, getpid());
 
-    if ((fptr = fopen(fname, "w")) < 0) {
+    if ((fptr = fopen(fname, "w")) == NULL) {
         fprintf(stderr, "ERROR: could not open file %s: %s\n", fname,
                 sys_errlist[errno]);
         return;
