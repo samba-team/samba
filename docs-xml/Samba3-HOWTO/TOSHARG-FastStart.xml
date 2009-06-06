@@ -1214,7 +1214,7 @@ userPassword: {SSHA}0jBHgQ1vp4EDX2rEMMfIudvRMJoGwjVb
 <smbconfoption name="ldap user suffix">ou=People</smbconfoption>
 <smbconfoption name="ldap group suffix">ou=People</smbconfoption>
 <smbconfoption name="ldap idmap suffix">ou=People</smbconfoption>
-<smbconfoption name="ldap admin dn">cn=Manager</smbconfoption>
+<smbconfoption name="ldap admin dn">cn=Manager,dc=quenya,dc=org</smbconfoption>
 <smbconfoption name="ldap ssl">no</smbconfoption>
 <smbconfoption name="ldap passwd sync">Yes</smbconfoption>
 <smbconfoption name="idmap uid">15000-20000</smbconfoption>
@@ -1281,7 +1281,7 @@ userPassword: {SSHA}0jBHgQ1vp4EDX2rEMMfIudvRMJoGwjVb
 <smbconfoption name="ldap user suffix">ou=People</smbconfoption>
 <smbconfoption name="ldap group suffix">ou=People</smbconfoption>
 <smbconfoption name="ldap idmap suffix">ou=People</smbconfoption>
-<smbconfoption name="ldap admin dn">cn=Manager</smbconfoption>
+<smbconfoption name="ldap admin dn">cn=Manager,dc=quenya,dc=org</smbconfoption>
 <smbconfoption name="ldap ssl">no</smbconfoption>
 <smbconfoption name="ldap passwd sync">Yes</smbconfoption>
 <smbconfoption name="idmap uid">15000-20000</smbconfoption>
