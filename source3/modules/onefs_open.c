@@ -2056,38 +2056,12 @@ NTSTATUS onefs_create_file(vfs_handle_struct *handle,
 		case_state = set_posix_case_semantics(talloc_tos(), conn);
 	}
 
-	/* Convert dos path to unix path if it hasn't already been done. */
-	if (create_file_flags & CFF_DOS_PATH) {
-		struct smb_filename *smb_fname = NULL;
-		char *converted_fname;
-
-		SET_STAT_INVALID(sbuf);
-
-		status = unix_convert(talloc_tos(), conn, fname, &smb_fname,
-				      0);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto fail;
-		}
-
-		status = get_full_smb_filename(talloc_tos(), smb_fname,
-					       &converted_fname);
-		if (!NT_STATUS_IS_OK(status)) {
-			TALLOC_FREE(smb_fname);
-			goto fail;
-		}
-
-		sbuf = smb_fname->st;
-		fname = converted_fname;
-		TALLOC_FREE(smb_fname);
+	if (psbuf != NULL) {
+		sbuf = *psbuf;
 	} else {
-		if (psbuf != NULL) {
-			sbuf = *psbuf;
-		} else {
-			if (SMB_VFS_STAT(conn, fname, &sbuf) == -1) {
-				SET_STAT_INVALID(sbuf);
-			}
+		if (SMB_VFS_STAT(conn, fname, &sbuf) == -1) {
+			SET_STAT_INVALID(sbuf);
 		}
-
 	}
 
 	TALLOC_FREE(case_state);
