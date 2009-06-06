@@ -1410,7 +1410,7 @@ NTSTATUS _samr_QueryDisplayInfo(pipes_struct *p,
 
 	union samr_DispInfo *disp_info = r->out.info;
 
-	uint32 temp_size=0, total_data_size=0;
+	uint32 temp_size=0;
 	NTSTATUS disp_ret = NT_STATUS_UNSUCCESSFUL;
 	uint32 num_account = 0;
 	enum remote_arch_types ra_type = get_remote_arch();
@@ -1591,9 +1591,6 @@ NTSTATUS _samr_QueryDisplayInfo(pipes_struct *p,
 	if (!NT_STATUS_IS_OK(disp_ret))
 		return disp_ret;
 
-	/* calculate the total size */
-	total_data_size=num_account*struct_size;
-
 	if (max_entries <= num_account) {
 		status = STATUS_MORE_ENTRIES;
 	} else {
@@ -1605,7 +1602,7 @@ NTSTATUS _samr_QueryDisplayInfo(pipes_struct *p,
 
 	DEBUG(5, ("_samr_QueryDisplayInfo: %d\n", __LINE__));
 
-	*r->out.total_size = total_data_size;
+	*r->out.total_size = num_account * struct_size;
 	*r->out.returned_size = temp_size;
 
 	return status;
