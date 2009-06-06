@@ -3840,8 +3840,9 @@ static bool test_alias_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
 		ret = false;
 	}
 
-	if (torture_setting_bool(tctx, "samba4", false)) {
-		printf("skipping MultipleMembers Alias tests against Samba4\n");
+	if (torture_setting_bool(tctx, "samba3", false) ||
+	    torture_setting_bool(tctx, "samba4", false)) {
+		printf("skipping MultipleMembers Alias tests against Samba\n");
 		return ret;
 	}
 
