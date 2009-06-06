@@ -438,7 +438,7 @@ dnl These are preferably build shared, and static if dlopen() is not available
 default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_full_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap vfs_expand_msdfs vfs_shadow_copy vfs_shadow_copy2 charset_CP850 charset_CP437 auth_script vfs_readahead vfs_xattr_tdb vfs_streams_xattr vfs_streams_depot vfs_acl_xattr vfs_acl_tdb vfs_smb_traffic_analyzer vfs_preopen"
 
 if test "x$developer" = xyes; then
-   default_static_modules="$default_static_modules rpc_rpcecho"
+   default_static_modules="$default_static_modules rpc_rpcecho pdb_ads"
    default_shared_modules="$default_shared_modules charset_weird perfcount_test"
 fi
 
@@ -6212,6 +6212,7 @@ fi
 
 SMB_MODULE(pdb_ldap, passdb/pdb_ldap.o passdb/pdb_nds.o, "bin/ldapsam.$SHLIBEXT", PDB,
 		   [ PASSDB_LIBS="$PASSDB_LIBS $LDAP_LIBS" ] )
+SMB_MODULE(pdb_ads, passdb/pdb_ads.o \$(TLDAP_OBJ), "bin/ads.$SHLIBEXT", PDB)
 SMB_MODULE(pdb_smbpasswd, passdb/pdb_smbpasswd.o, "bin/smbpasswd.$SHLIBEXT", PDB)
 SMB_MODULE(pdb_tdbsam, passdb/pdb_tdb.o, "bin/tdbsam.$SHLIBEXT", PDB)
 SMB_MODULE(pdb_wbc_sam, passdb/pdb_wbc_sam.o, "bin/wbc_sam.$SHLIBEXT", PDB)

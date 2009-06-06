@@ -2570,6 +2570,10 @@ bin/ldapsam.@SHLIBEXT@: $(BINARY_PREREQS) passdb/pdb_ldap.o passdb/pdb_nds.o
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) passdb/pdb_ldap.o passdb/pdb_nds.o $(LDAP_LIBS)
 
+bin/ads.@SHLIBEXT@: $(BINARY_PREREQS) passdb/pdb_ads.o
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) passdb/pdb_ads.o
+
 bin/tdbsam.@SHLIBEXT@: $(BINARY_PREREQS) passdb/pdb_tdb.o
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) passdb/pdb_tdb.o
