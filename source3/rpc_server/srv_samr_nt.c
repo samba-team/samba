@@ -939,18 +939,18 @@ NTSTATUS _samr_EnumDomainUsers(pipes_struct *p,
 		return status;
 	}
 
+	samr_array = TALLOC_ZERO_P(p->mem_ctx, struct samr_SamArray);
+	if (!samr_array) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	*r->out.sam = samr_array;
+
 	if (sid_check_is_builtin(&dinfo->sid)) {
 		/* No users in builtin. */
 		*r->out.resume_handle = *r->in.resume_handle;
 		DEBUG(5,("_samr_EnumDomainUsers: No users in BUILTIN\n"));
 		return status;
 	}
-
-	samr_array = TALLOC_ZERO_P(p->mem_ctx, struct samr_SamArray);
-	if (!samr_array) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	*r->out.sam = samr_array;
 
 	become_root();
 
@@ -1074,16 +1074,17 @@ NTSTATUS _samr_EnumDomainGroups(pipes_struct *p,
 
 	DEBUG(5,("_samr_EnumDomainGroups: %d\n", __LINE__));
 
+	samr_array = TALLOC_ZERO_P(p->mem_ctx, struct samr_SamArray);
+	if (!samr_array) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	*r->out.sam = samr_array;
+
 	if (sid_check_is_builtin(&dinfo->sid)) {
 		/* No groups in builtin. */
 		*r->out.resume_handle = *r->in.resume_handle;
 		DEBUG(5,("_samr_EnumDomainGroups: No groups in BUILTIN\n"));
 		return status;
-	}
-
-	samr_array = TALLOC_ZERO_P(p->mem_ctx, struct samr_SamArray);
-	if (!samr_array) {
-		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* the domain group array is being allocated in the function below */
@@ -1119,7 +1120,6 @@ NTSTATUS _samr_EnumDomainGroups(pipes_struct *p,
 	samr_array->count = num_groups;
 	samr_array->entries = samr_entries;
 
-	*r->out.sam = samr_array;
 	*r->out.num_entries = num_groups;
 	*r->out.resume_handle = num_groups + *r->in.resume_handle;
 
