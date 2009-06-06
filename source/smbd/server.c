@@ -590,10 +590,6 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 
 	/* Kick off our mDNS registration. */
 	if (dns_port != 0) {
-#ifdef WITH_DNSSD_SUPPORT
-		dns_register_smbd(&dns_reg, dns_port, &maxfd,
-				  &r_fds, &idle_timeout);
-#endif
 #ifdef WITH_AVAHI_SUPPORT
 		void *avahi_conn;
 		avahi_conn = avahi_start_register(
