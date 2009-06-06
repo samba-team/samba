@@ -28,7 +28,7 @@ struct tldap_message;
 
 struct tldap_control {
 	const char *oid;
-	struct berval value;
+	DATA_BLOB value;
 	bool iscritical;
 };
 
