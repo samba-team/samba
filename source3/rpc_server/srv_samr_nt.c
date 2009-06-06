@@ -5956,6 +5956,8 @@ NTSTATUS _samr_SetGroupInfo(pipes_struct *p,
 		case 2:
 			/* group rename is not supported yet */
 			return NT_STATUS_NOT_SUPPORTED;
+		case 3:
+			break;
 		case 4:
 			fstrcpy(map.comment, r->in.info->description.string);
 			break;
