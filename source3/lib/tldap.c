@@ -735,8 +735,10 @@ struct tevent_req *tldap_sasl_bind_send(TALLOC_CTX *mem_ctx,
 					const char *dn,
 					const char *mechanism,
 					DATA_BLOB *creds,
-					struct tldap_control **sctrls,
-					struct tldap_control **cctrls)
+					struct tldap_control *sctrls,
+					int num_sctrls,
+					struct tldap_control *cctrls,
+					int num_cctrls)
 {
 	struct tevent_req *req, *subreq;
 	struct tldap_req_state *state;
@@ -830,8 +832,10 @@ int tldap_sasl_bind(struct tldap_context *ld,
 		    const char *dn,
 		    const char *mechanism,
 		    DATA_BLOB *creds,
-		    struct tldap_control **sctrls,
-		    struct tldap_control **cctrls)
+		    struct tldap_control *sctrls,
+		    int num_sctrls,
+		    struct tldap_control *cctrls,
+		    int num_cctrls)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
@@ -845,7 +849,7 @@ int tldap_sasl_bind(struct tldap_context *ld,
 	}
 
 	req = tldap_sasl_bind_send(frame, ev, ld, dn, mechanism, creds,
-				   sctrls, cctrls);
+				   sctrls, num_sctrls, cctrls, num_cctrls);
 	if (req == NULL) {
 		result = TLDAP_NO_MEMORY;
 		goto fail;
@@ -878,8 +882,8 @@ struct tevent_req *tldap_simple_bind_send(TALLOC_CTX *mem_ctx,
 		cred.data = (uint8_t *)"";
 		cred.length = 0;
 	}
-	return tldap_sasl_bind_send(mem_ctx, ev, ld, dn, NULL, &cred, NULL,
-				    NULL);
+	return tldap_sasl_bind_send(mem_ctx, ev, ld, dn, NULL, &cred, NULL, 0,
+				    NULL, 0);
 }
 
 int tldap_simple_bind_recv(struct tevent_req *req)
@@ -899,7 +903,7 @@ int tldap_simple_bind(struct tldap_context *ld, const char *dn,
 		cred.data = (uint8_t *)"";
 		cred.length = 0;
 	}
-	return tldap_sasl_bind(ld, dn, NULL, &cred, NULL, NULL);
+	return tldap_sasl_bind(ld, dn, NULL, &cred, NULL, 0, NULL, 0);
 }
 
 /*****************************************************************************/
@@ -1088,8 +1092,10 @@ struct tevent_req *tldap_search_send(TALLOC_CTX *mem_ctx,
 				     const char **attrs,
 				     int num_attrs,
 				     int attrsonly,
-				     struct tldap_control **sctrls,
-				     struct tldap_control **cctrls,
+				     struct tldap_control *sctrls,
+				     int num_sctrls,
+				     struct tldap_control *cctrls,
+				     int num_cctrls,
 				     int timelimit,
 				     int sizelimit,
 				     int deref)
@@ -1256,7 +1262,8 @@ static void tldap_search_cb(struct tevent_req *req)
 int tldap_search(struct tldap_context *ld,
 		 const char *base, int scope, const char *filter,
 		 const char **attrs, int num_attrs, int attrsonly,
-		 struct tldap_control **sctrls, struct tldap_control **cctrls,
+		 struct tldap_control *sctrls, int num_sctrls,
+		 struct tldap_control *cctrls, int num_cctrls,
 		 int timelimit, int sizelimit, int deref,
 		 TALLOC_CTX *mem_ctx, struct tldap_message ***entries,
 		 struct tldap_message ***refs)
@@ -1278,8 +1285,8 @@ int tldap_search(struct tldap_context *ld,
 
 	req = tldap_search_send(frame, ev, ld, base, scope, filter,
 				attrs, num_attrs, attrsonly,
-				sctrls, cctrls, timelimit,
-				sizelimit, deref);
+				sctrls, num_sctrls, cctrls, num_cctrls,
+				timelimit, sizelimit, deref);
 	if (req == NULL) {
 		state.rc = TLDAP_NO_MEMORY;
 		goto fail;
@@ -1454,10 +1461,12 @@ struct tevent_req *tldap_add_send(TALLOC_CTX *mem_ctx,
 				  struct tevent_context *ev,
 				  struct tldap_context *ld,
 				  const char *dn,
-				  int num_attributes,
 				  struct tldap_mod *attributes,
-				  struct tldap_control **sctrls,
-				  struct tldap_control **cctrls)
+				  int num_attributes,
+				  struct tldap_control *sctrls,
+				  int num_sctrls,
+				  struct tldap_control *cctrls,
+				  int num_cctrls)
 {
 	struct tevent_req *req, *subreq;
 	struct tldap_req_state *state;
@@ -1510,7 +1519,8 @@ int tldap_add_recv(struct tevent_req *req)
 
 int tldap_add(struct tldap_context *ld, const char *dn,
 	      int num_attributes, struct tldap_mod *attributes,
-	      struct tldap_control **sctrls, struct tldap_control **cctrls)
+	      struct tldap_control *sctrls, int num_sctrls,
+	      struct tldap_control *cctrls, int num_cctrls)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
@@ -1523,8 +1533,8 @@ int tldap_add(struct tldap_context *ld, const char *dn,
 		goto fail;
 	}
 
-	req = tldap_add_send(frame, ev, ld, dn, num_attributes, attributes,
-			     sctrls, cctrls);
+	req = tldap_add_send(frame, ev, ld, dn, attributes, num_attributes,
+			     sctrls, num_sctrls, cctrls, num_cctrls);
 	if (req == NULL) {
 		result = TLDAP_NO_MEMORY;
 		goto fail;
@@ -1549,8 +1559,10 @@ struct tevent_req *tldap_modify_send(TALLOC_CTX *mem_ctx,
 				     struct tldap_context *ld,
 				     const char *dn,
 				     int num_mods, struct tldap_mod *mods,
-				     struct tldap_control **sctrls,
-				     struct tldap_control **cctrls)
+				     struct tldap_control *sctrls,
+				     int num_sctrls,
+				     struct tldap_control *cctrls,
+				     int num_cctrls)
 {
 	struct tevent_req *req, *subreq;
 	struct tldap_req_state *state;
@@ -1606,7 +1618,8 @@ int tldap_modify_recv(struct tevent_req *req)
 
 int tldap_modify(struct tldap_context *ld, const char *dn,
 		 int num_mods, struct tldap_mod *mods,
-		 struct tldap_control **sctrls, struct tldap_control **cctrls)
+		 struct tldap_control *sctrls, int num_sctrls,
+		 struct tldap_control *cctrls, int num_cctrls)
  {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
@@ -1620,7 +1633,7 @@ int tldap_modify(struct tldap_context *ld, const char *dn,
 	}
 
 	req = tldap_modify_send(frame, ev, ld, dn, num_mods, mods,
-				sctrls, cctrls);
+				sctrls, num_sctrls, cctrls, num_cctrls);
 	if (req == NULL) {
 		result = TLDAP_NO_MEMORY;
 		goto fail;
@@ -1644,8 +1657,10 @@ struct tevent_req *tldap_delete_send(TALLOC_CTX *mem_ctx,
 				     struct tevent_context *ev,
 				     struct tldap_context *ld,
 				     const char *dn,
-				     struct tldap_control **sctrls,
-				     struct tldap_control **cctrls)
+				     struct tldap_control *sctrls,
+				     int num_sctrls,
+				     struct tldap_control *cctrls,
+				     int num_cctrls)
 {
 	struct tevent_req *req, *subreq;
 	struct tldap_req_state *state;
@@ -1678,7 +1693,8 @@ int tldap_delete_recv(struct tevent_req *req)
 }
 
 int tldap_delete(struct tldap_context *ld, const char *dn,
-		 struct tldap_control **sctrls, struct tldap_control **cctrls)
+		 struct tldap_control *sctrls, int num_sctrls,
+		 struct tldap_control *cctrls, int num_cctrls)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
@@ -1691,7 +1707,8 @@ int tldap_delete(struct tldap_context *ld, const char *dn,
 		goto fail;
 	}
 
-	req = tldap_delete_send(frame, ev, ld, dn, sctrls, cctrls);
+	req = tldap_delete_send(frame, ev, ld, dn, sctrls, num_sctrls,
+				cctrls, num_cctrls);
 	if (req == NULL) {
 		result = TLDAP_NO_MEMORY;
 		goto fail;

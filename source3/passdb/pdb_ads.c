@@ -400,7 +400,7 @@ static NTSTATUS pdb_ads_create_user(struct pdb_methods *m,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	rc = tldap_add(state->ld, dn, num_mods, mods, NULL, NULL);
+	rc = tldap_add(state->ld, dn, num_mods, mods, NULL, 0, NULL, 0);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_add failed %s\n",
 			   tldap_errstr(debug_ctx(), state->ld, rc)));
@@ -454,7 +454,7 @@ static NTSTATUS pdb_ads_delete_user(struct pdb_methods *m,
 		return status;
 	}
 
-	rc = tldap_delete(state->ld, dn, NULL, NULL);
+	rc = tldap_delete(state->ld, dn, NULL, 0, NULL, 0);
 	TALLOC_FREE(dn);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_delete for %s failed: %s\n", dn,
@@ -489,7 +489,8 @@ static NTSTATUS pdb_ads_update_sam_account(struct pdb_methods *m,
 		return NT_STATUS_OK;
 	}
 
-	rc = tldap_modify(state->ld, priv->dn, num_mods, mods, NULL, NULL);
+	rc = tldap_modify(state->ld, priv->dn, num_mods, mods, NULL, 0,
+			  NULL, 0);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_modify for %s failed: %s\n", priv->dn,
 			   tldap_errstr(debug_ctx(), state->ld, rc)));
@@ -669,7 +670,7 @@ static NTSTATUS pdb_ads_create_dom_group(struct pdb_methods *m,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	rc = tldap_add(state->ld, dn, num_mods, mods, NULL, NULL);
+	rc = tldap_add(state->ld, dn, num_mods, mods, NULL, 0, NULL, 0);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_add failed %s\n",
 			   tldap_errstr(debug_ctx(), state->ld, rc)));
@@ -747,7 +748,7 @@ static NTSTATUS pdb_ads_delete_dom_group(struct pdb_methods *m,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	rc = tldap_delete(state->ld, dn, NULL, NULL);
+	rc = tldap_delete(state->ld, dn, NULL, 0, NULL, 0);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_delete failed: %s\n",
 			   tldap_errstr(debug_ctx(), state->ld, rc)));
@@ -952,7 +953,7 @@ static NTSTATUS pdb_ads_mod_groupmem(struct pdb_methods *m,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	rc = tldap_modify(state->ld, groupdn, 1, mods, NULL, NULL);
+	rc = tldap_modify(state->ld, groupdn, 1, mods, NULL, 0, NULL, 0);
 	TALLOC_FREE(frame);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_modify failed: %s\n",
@@ -1021,7 +1022,7 @@ static NTSTATUS pdb_ads_create_alias(struct pdb_methods *m,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	rc = tldap_add(state->ld, dn, num_mods, mods, NULL, NULL);
+	rc = tldap_add(state->ld, dn, num_mods, mods, NULL, 0, NULL, 0);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_add failed %s\n",
 			   tldap_errstr(debug_ctx(), state->ld, rc)));
@@ -1097,7 +1098,7 @@ static NTSTATUS pdb_ads_delete_alias(struct pdb_methods *m,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	rc = tldap_delete(state->ld, dn, NULL, NULL);
+	rc = tldap_delete(state->ld, dn, NULL, 0, NULL, 0);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_delete failed: %s\n",
 			   tldap_errstr(debug_ctx(), state->ld, rc)));
@@ -1172,7 +1173,7 @@ static NTSTATUS pdb_ads_set_aliasinfo(struct pdb_methods *m,
 		return NT_STATUS_OK;
 	}
 
-	rc = tldap_modify(state->ld, dn, num_mods, mods, NULL, NULL);
+	rc = tldap_modify(state->ld, dn, num_mods, mods, NULL, 0, NULL, 0);
 	TALLOC_FREE(msg);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_modify failed: %s\n",
@@ -1262,7 +1263,7 @@ static NTSTATUS pdb_ads_mod_aliasmem(struct pdb_methods *m,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	rc = tldap_modify(state->ld, aliasdn, 1, mods, NULL, NULL);
+	rc = tldap_modify(state->ld, aliasdn, 1, mods, NULL, 0, NULL, 0);
 	TALLOC_FREE(frame);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_modify failed: %s\n",

@@ -58,15 +58,19 @@ struct tevent_req *tldap_sasl_bind_send(TALLOC_CTX *mem_ctx,
 					const char *dn,
 					const char *mechanism,
 					DATA_BLOB *creds,
-					struct tldap_control **sctrls,
-					struct tldap_control **cctrls);
+					struct tldap_control *sctrls,
+					int num_sctrls,
+					struct tldap_control *cctrls,
+					int num_cctrls);
 int tldap_sasl_bind_recv(struct tevent_req *req);
 int tldap_sasl_bind(struct tldap_context *ldap,
 		    const char *dn,
 		    const char *mechanism,
 		    DATA_BLOB *creds,
-		    struct tldap_control **sctrls,
-		    struct tldap_control **cctrls);
+		    struct tldap_control *sctrls,
+		    int num_sctrls,
+		    struct tldap_control *cctrls,
+		    int num_ctrls);
 
 struct tevent_req *tldap_simple_bind_send(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev,
@@ -85,8 +89,10 @@ struct tevent_req *tldap_search_send(TALLOC_CTX *mem_ctx,
 				     const char **attrs,
 				     int num_attrs,
 				     int attrsonly,
-				     struct tldap_control **sctrls,
-				     struct tldap_control **cctrls,
+				     struct tldap_control *sctrls,
+				     int num_sctrls,
+				     struct tldap_control *cctrls,
+				     int num_cctrls,
 				     int timelimit,
 				     int sizelimit,
 				     int deref);
@@ -95,7 +101,8 @@ int tldap_search_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 int tldap_search(struct tldap_context *ld,
 		 const char *base, int scope, const char *filter,
 		 const char **attrs, int num_attrs, int attrsonly,
-		 struct tldap_control **sctrls, struct tldap_control **cctrls,
+		 struct tldap_control *sctrls, int num_sctrls,
+		 struct tldap_control *cctrls, int num_cctrls,
 		 int timelimit, int sizelimit, int deref,
 		 TALLOC_CTX *mem_ctx, struct tldap_message ***pentries,
 		 struct tldap_message ***refs);
@@ -107,38 +114,45 @@ struct tevent_req *tldap_add_send(TALLOC_CTX *mem_ctx,
 				  struct tevent_context *ev,
 				  struct tldap_context *ld,
 				  const char *dn,
-				  int num_attributes,
 				  struct tldap_mod *attributes,
-				  struct tldap_control **sctrls,
-				  struct tldap_control **cctrls);
+				  int num_attributes,
+				  struct tldap_control *sctrls,
+				  int num_sctrls,
+				  struct tldap_control *cctrls,
+				  int num_cctrls);
 int tldap_add_recv(struct tevent_req *req);
 int tldap_add(struct tldap_context *ld, const char *dn,
 	      int num_attributes, struct tldap_mod *attributes,
-	      struct tldap_control **sctrls, struct tldap_control **cctrls);
+	      struct tldap_control *sctrls, int num_sctrls,
+	      struct tldap_control *cctrls, int num_cctrls);
 
 struct tevent_req *tldap_modify_send(TALLOC_CTX *mem_ctx,
 				     struct tevent_context *ev,
 				     struct tldap_context *ld,
 				     const char *dn,
 				     int num_mods, struct tldap_mod *mods,
-				     struct tldap_control **sctrls,
-				     struct tldap_control **cctrls);
+				     struct tldap_control *sctrls,
+				     int num_sctrls,
+				     struct tldap_control *cctrls,
+				     int num_cctrls);
 int tldap_modify_recv(struct tevent_req *req);
 int tldap_modify(struct tldap_context *ld, const char *dn,
 		 int num_mods, struct tldap_mod *mods,
-		 struct tldap_control **sctrls, struct tldap_control **cctrls);
-
+		 struct tldap_control *sctrls, int num_sctrls,
+		 struct tldap_control *cctrls, int num_cctrls);
 
 struct tevent_req *tldap_delete_send(TALLOC_CTX *mem_ctx,
 				     struct tevent_context *ev,
 				     struct tldap_context *ld,
 				     const char *dn,
-				     struct tldap_control **sctrls,
-				     struct tldap_control **cctrls);
+				     struct tldap_control *sctrls,
+				     int num_sctrls,
+				     struct tldap_control *cctrls,
+				     int num_cctrls);
 int tldap_delete_recv(struct tevent_req *req);
 int tldap_delete(struct tldap_context *ld, const char *dn,
-		 struct tldap_control **sctrls, struct tldap_control **cctrls);
-
+		 struct tldap_control *sctrls, int num_sctrls,
+		 struct tldap_control *cctrls, int num_cctrls);
 
 int tldap_msg_id(const struct tldap_message *msg);
 int tldap_msg_type(const struct tldap_message *msg);

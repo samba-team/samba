@@ -343,7 +343,7 @@ int tldap_search_fmt(struct tldap_context *ld, const char *base, int scope,
 	}
 	ret = tldap_search(ld, base, scope, filter,
 			   attrs, num_attrs, attrsonly,
-			   NULL /*sctrls*/, NULL /*cctrls*/,
+			   NULL /*sctrls*/, 0, NULL /*cctrls*/, 0,
 			   0 /*timelimit*/, 0 /*sizelimit*/, 0 /*deref*/,
 			   mem_ctx, res, NULL);
 	TALLOC_FREE(filter);
@@ -404,7 +404,7 @@ struct tevent_req *tldap_fetch_rootdse_send(TALLOC_CTX *mem_ctx,
 
 	subreq = tldap_search_send(
 		mem_ctx, ev, ld, "", TLDAP_SCOPE_BASE, "(objectclass=*)",
-		attrs, ARRAY_SIZE(attrs), 0, NULL, NULL, 0, 0, 0);
+		attrs, ARRAY_SIZE(attrs), 0, NULL, 0, NULL, 0, 0, 0, 0);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
