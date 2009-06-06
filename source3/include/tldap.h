@@ -29,7 +29,7 @@ struct tldap_message;
 struct tldap_control {
 	const char *oid;
 	DATA_BLOB value;
-	bool iscritical;
+	bool critical;
 };
 
 struct tldap_attribute {
@@ -104,7 +104,7 @@ int tldap_search(struct tldap_context *ld,
 		 struct tldap_control *sctrls, int num_sctrls,
 		 struct tldap_control *cctrls, int num_cctrls,
 		 int timelimit, int sizelimit, int deref,
-		 TALLOC_CTX *mem_ctx, struct tldap_message ***pentries,
+		 TALLOC_CTX *mem_ctx, struct tldap_message ***entries,
 		 struct tldap_message ***refs);
 bool tldap_entry_dn(struct tldap_message *msg, char **dn);
 bool tldap_entry_attributes(struct tldap_message *msg, int *num_attributes,
@@ -159,9 +159,13 @@ int tldap_msg_type(const struct tldap_message *msg);
 const char *tldap_req_matcheddn(struct tevent_req *req);
 const char *tldap_req_diagnosticmessage(struct tevent_req *req);
 const char *tldap_req_referral(struct tevent_req *req);
+void tldap_req_sctrls(struct tevent_req *req, int *num_sctrls,
+		      struct tldap_control **sctrls);
 const char *tldap_ctx_matcheddn(struct tldap_context *ctx);
 const char *tldap_ctx_diagnosticmessage(struct tldap_context *ctx);
 const char *tldap_ctx_referral(struct tldap_context *ctx);
+void tldap_ctx_sctrls(struct tldap_context *ctx, int *num_sctrls,
+		      struct tldap_control **sctrls);
 const char *tldap_err2string(int rc);
 
 /* DEBUG */

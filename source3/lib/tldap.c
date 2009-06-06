@@ -64,6 +64,7 @@ struct tldap_context {
 	char *res_matcheddn;
 	char *res_diagnosticmessage;
 	char *res_referral;
+	struct tldap_control *res_sctrls;
 
 	/* debug */
 	void (*log_fn)(void *context, enum tldap_debug_level level,
@@ -347,13 +348,44 @@ struct tldap_msg_state {
 	uint8_t *inbuf;
 };
 
+static void tldap_push_controls(struct asn1_data *data,
+				struct tldap_control *sctrls,
+				int num_sctrls)
+{
+	int i;
+
+	if ((sctrls == NULL) || (num_sctrls == 0)) {
+		return;
+	}
+
+	asn1_push_tag(data, ASN1_CONTEXT(0));
+
+	for (i=0; i<num_sctrls; i++) {
+		struct tldap_control *c = &sctrls[i];
+		asn1_push_tag(data, ASN1_SEQUENCE(0));
+		asn1_write_OctetString(data, c->oid, strlen(c->oid));
+		if (c->critical) {
+			asn1_write_BOOLEAN(data, true);
+		}
+		if (c->value.data != NULL) {
+			asn1_write_OctetString(data, c->value.data,
+					       c->value.length);
+		}
+		asn1_pop_tag(data); /* ASN1_SEQUENCE(0) */
+	}
+
+	asn1_pop_tag(data); /* ASN1_CONTEXT(0) */
+}
+
 static void tldap_msg_sent(struct tevent_req *subreq);
 static void tldap_msg_received(struct tevent_req *subreq);
 
 static struct tevent_req *tldap_msg_send(TALLOC_CTX *mem_ctx,
 					 struct tevent_context *ev,
 					 struct tldap_context *ld,
-					 int id, struct asn1_data *data)
+					 int id, struct asn1_data *data,
+					 struct tldap_control *sctrls,
+					 int num_sctrls)
 {
 	struct tevent_req *req, *subreq;
 	struct tldap_msg_state *state;
@@ -369,6 +401,8 @@ static struct tevent_req *tldap_msg_send(TALLOC_CTX *mem_ctx,
 	state->ld = ld;
 	state->ev = ev;
 	state->id = id;
+
+	tldap_push_controls(data, sctrls, num_sctrls);
 
 	asn1_pop_tag(data);
 
@@ -640,6 +674,7 @@ struct tldap_req_state {
 	char *res_matcheddn;
 	char *res_diagnosticmessage;
 	char *res_referral;
+	struct tldap_control *res_sctrls;
 };
 
 static struct tevent_req *tldap_req_create(TALLOC_CTX *mem_ctx,
@@ -678,12 +713,14 @@ static void tldap_save_errors(struct tldap_context *ctx,
 	TALLOC_FREE(ctx->res_matcheddn);
 	TALLOC_FREE(ctx->res_diagnosticmessage);
 	TALLOC_FREE(ctx->res_referral);
+	TALLOC_FREE(ctx->res_sctrls);
 
 	ctx->lderr = state->lderr;
 	ctx->res_matcheddn = talloc_move(ctx, &state->res_matcheddn);
 	ctx->res_diagnosticmessage = talloc_move(
 		ctx, &state->res_diagnosticmessage);
 	ctx->res_referral = talloc_move(ctx, &state->res_referral);
+	ctx->res_sctrls = talloc_move(ctx, &state->res_sctrls);
 }
 
 static char *blob2string_talloc(TALLOC_CTX *mem_ctx, DATA_BLOB blob)
@@ -776,7 +813,8 @@ struct tevent_req *tldap_sasl_bind_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = tldap_msg_send(state, ev, ld, state->id, state->out);
+	subreq = tldap_msg_send(state, ev, ld, state->id, state->out,
+				sctrls, num_sctrls);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -1128,7 +1166,8 @@ struct tevent_req *tldap_search_send(TALLOC_CTX *mem_ctx,
 	asn1_pop_tag(state->out);
 	asn1_pop_tag(state->out);
 
-	subreq = tldap_msg_send(state, ev, ld, state->id, state->out);
+	subreq = tldap_msg_send(state, ev, ld, state->id, state->out,
+				sctrls, num_sctrls);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -1415,6 +1454,62 @@ bool tldap_entry_attributes(struct tldap_message *msg, int *num_attributes,
 	return true;
 }
 
+static bool tldap_decode_controls(struct tldap_req_state *state)
+{
+	struct asn1_data *data = state->result->data;
+	struct tldap_control *sctrls = NULL;
+	int num_controls = 0;
+
+	state->res_sctrls = NULL;
+
+	if (!asn1_peek_tag(data, ASN1_CONTEXT(0))) {
+		return true;
+	}
+
+	asn1_start_tag(data, ASN1_CONTEXT(0));
+
+	while (asn1_peek_tag(data, ASN1_SEQUENCE(0))) {
+		struct tldap_control *c;
+		char *oid = NULL;
+
+		sctrls = talloc_realloc(state, sctrls, struct tldap_control,
+					num_controls + 1);
+		if (sctrls == NULL) {
+			return false;
+		}
+		c = &sctrls[num_controls];
+
+		asn1_start_tag(data, ASN1_SEQUENCE(0));
+		asn1_read_OctetString_talloc(state, data, &oid);
+		if ((data->has_error) || (oid == NULL)) {
+			return false;
+		}
+		c->oid = oid;
+		if (asn1_peek_tag(data, ASN1_BOOLEAN)) {
+			asn1_read_BOOLEAN(data, &c->critical);
+		} else {
+			c->critical = false;
+		}
+		c->value = data_blob_null;
+		if (asn1_peek_tag(data, ASN1_OCTET_STRING) &&
+		    !asn1_read_OctetString(data, state, &c->value)) {
+			return false;
+		}
+		asn1_end_tag(data); /* ASN1_SEQUENCE(0) */
+
+		num_controls += 1;
+	}
+
+	asn1_end_tag(data); 	/* ASN1_CONTEXT(0) */
+
+	if (data->has_error) {
+		TALLOC_FREE(sctrls);
+		return false;
+	}
+	state->res_sctrls = sctrls;
+	return true;
+}
+
 static void tldap_simple_done(struct tevent_req *subreq, int type)
 {
 	struct tevent_req *req = tevent_req_callback_data(
@@ -1435,7 +1530,8 @@ static void tldap_simple_done(struct tevent_req *subreq, int type)
 	}
 	if (!asn1_start_tag(state->result->data, state->result->type) ||
 	    !tldap_decode_response(state) ||
-	    !asn1_end_tag(state->result->data)) {
+	    !asn1_end_tag(state->result->data) ||
+	    !tldap_decode_controls(state)) {
 		tevent_req_error(req, TLDAP_DECODING_ERROR);
 		return;
 	}
@@ -1499,7 +1595,8 @@ struct tevent_req *tldap_add_send(TALLOC_CTX *mem_ctx,
 	asn1_pop_tag(state->out);
 	asn1_pop_tag(state->out);
 
-	subreq = tldap_msg_send(state, ev, ld, state->id, state->out);
+	subreq = tldap_msg_send(state, ev, ld, state->id, state->out,
+				sctrls, num_sctrls);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -1598,7 +1695,8 @@ struct tevent_req *tldap_modify_send(TALLOC_CTX *mem_ctx,
 	asn1_pop_tag(state->out);
 	asn1_pop_tag(state->out);
 
-	subreq = tldap_msg_send(state, ev, ld, state->id, state->out);
+	subreq = tldap_msg_send(state, ev, ld, state->id, state->out,
+				sctrls, num_sctrls);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -1674,7 +1772,8 @@ struct tevent_req *tldap_delete_send(TALLOC_CTX *mem_ctx,
 	asn1_write(state->out, dn, strlen(dn));
 	asn1_pop_tag(state->out);
 
-	subreq = tldap_msg_send(state, ev, ld, state->id, state->out);
+	subreq = tldap_msg_send(state, ev, ld, state->id, state->out,
+				sctrls, num_sctrls);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -1757,6 +1856,15 @@ const char *tldap_req_referral(struct tevent_req *req)
 	return state->res_referral;
 }
 
+void tldap_req_sctrls(struct tevent_req *req, int *num_sctrls,
+		      struct tldap_control **sctrls)
+{
+	struct tldap_req_state *state = tevent_req_data(
+		req, struct tldap_req_state);
+	*sctrls = state->res_sctrls;
+	*num_sctrls = talloc_array_length(state->res_sctrls);
+}
+
 const char *tldap_ctx_matcheddn(struct tldap_context *ctx)
 {
 	return ctx->res_matcheddn;
@@ -1770,6 +1878,13 @@ const char *tldap_ctx_diagnosticmessage(struct tldap_context *ctx)
 const char *tldap_ctx_referral(struct tldap_context *ctx)
 {
 	return ctx->res_referral;
+}
+
+void tldap_ctx_sctrls(struct tldap_context *ctx, int *num_sctrls,
+		      struct tldap_control **sctrls)
+{
+	*sctrls = ctx->res_sctrls;
+	*num_sctrls = talloc_array_length(ctx->res_sctrls);
 }
 
 const char *tldap_err2string(int rc)
