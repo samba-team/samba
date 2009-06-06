@@ -336,7 +336,7 @@ static struct tevent_req *smbd_smb2_ioctl_send(TALLOC_CTX *mem_ctx,
 	case 0x0011C017: /* FSCTL_PIPE_TRANSCEIVE */
 
 		if (!IS_IPC(smbreq->conn)) {
-			tevent_req_nterror(req, NT_STATUS_INVALID_DEVICE_REQUEST);
+			tevent_req_nterror(req, NT_STATUS_NOT_SUPPORTED);
 			return tevent_req_post(req, ev);
 		}
 
