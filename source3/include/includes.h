@@ -684,6 +684,7 @@ struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 #include "eventlog.h"
 #include "../lib/util/smb_threads.h"
 #include "../lib/util/smb_threads_internal.h"
+#include "tldap.h"
 
 #include "lib/smbconf/smbconf.h"
 #include "lib/smbconf/smbconf_init.h"
