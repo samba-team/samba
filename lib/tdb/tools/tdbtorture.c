@@ -316,6 +316,8 @@ static void usage(void)
 		pids[j] = 0;
 	}
 
+	free(pids);
+
 	if (error_count == 0) {
 		printf("OK\n");
 	}
