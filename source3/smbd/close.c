@@ -27,7 +27,7 @@ extern struct current_user current_user;
  Run a file if it is a magic script.
 ****************************************************************************/
 
-static void check_magic(struct files_struct *fsp)
+static NTSTATUS check_magic(struct files_struct *fsp)
 {
 	int ret;
 	const char *magic_output = NULL;
@@ -38,7 +38,7 @@ static void check_magic(struct files_struct *fsp)
 	struct connection_struct *conn = fsp->conn;
 
 	if (!*lp_magicscript(SNUM(conn))) {
-		return;
+		return NT_STATUS_OK;
 	}
 
 	DEBUG(5,("checking magic for %s\n",fsp->fsp_name));
@@ -50,7 +50,7 @@ static void check_magic(struct files_struct *fsp)
 	}
 
 	if (!strequal(lp_magicscript(SNUM(conn)),p)) {
-		return;
+		return NT_STATUS_OK;
 	}
 
 	ctx = talloc_stackframe();
@@ -64,19 +64,19 @@ static void check_magic(struct files_struct *fsp)
 	}
 	if (!magic_output) {
 		TALLOC_FREE(ctx);
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* Ensure we don't depend on user's PATH. */
 	p = talloc_asprintf(ctx, "./%s", fsp->fsp_name);
 	if (!p) {
 		TALLOC_FREE(ctx);
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (chmod(fsp->fsp_name,0755) == -1) {
 		TALLOC_FREE(ctx);
-		return;
+		return map_nt_error_from_unix(errno);
 	}
 	ret = smbrun(p,&tmp_fd);
 	DEBUG(3,("Invoking magic command %s gave %d\n",
@@ -88,25 +88,32 @@ static void check_magic(struct files_struct *fsp)
 			close(tmp_fd);
 		}
 		TALLOC_FREE(ctx);
-		return;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 	outfd = open(magic_output, O_CREAT|O_EXCL|O_RDWR, 0600);
 	if (outfd == -1) {
+		int err = errno;
 		close(tmp_fd);
 		TALLOC_FREE(ctx);
-		return;
+		return map_nt_error_from_unix(err);
 	}
 
 	if (sys_fstat(tmp_fd,&st) == -1) {
+		int err = errno;
 		close(tmp_fd);
 		close(outfd);
-		return;
+		TALLOC_FREE(ctx);
+		return map_nt_error_from_unix(err);
 	}
 
 	transfer_file(tmp_fd,outfd,(SMB_OFF_T)st.st_ex_size);
 	close(tmp_fd);
-	close(outfd);
+	if (close(outfd) == -1) {
+		TALLOC_FREE(ctx);
+		return map_nt_error_from_unix(errno);
+	}
 	TALLOC_FREE(ctx);
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -587,7 +594,8 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 
 	/* check for magic scripts */
 	if (close_type == NORMAL_CLOSE) {
-		check_magic(fsp);
+		tmp = check_magic(fsp);
+		status = ntstatus_keeperror(status, tmp);
 	}
 
 	/*
