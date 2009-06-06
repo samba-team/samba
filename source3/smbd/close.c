@@ -514,6 +514,14 @@ static NTSTATUS update_write_time_on_close(struct files_struct *fsp)
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS ntstatus_keeperror(NTSTATUS s1, NTSTATUS s2)
+{
+	if (!NT_STATUS_IS_OK(s1)) {
+		return s1;
+	}
+	return s2;
+}
+
 /****************************************************************************
  Close a file.
 
@@ -526,10 +534,7 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 				  enum file_close_type close_type)
 {
 	NTSTATUS status = NT_STATUS_OK;
-	NTSTATUS saved_status1 = NT_STATUS_OK;
-	NTSTATUS saved_status2 = NT_STATUS_OK;
-	NTSTATUS saved_status3 = NT_STATUS_OK;
-	NTSTATUS saved_status4 = NT_STATUS_OK;
+	NTSTATUS tmp;
 	connection_struct *conn = fsp->conn;
 
 	if (fsp->aio_write_behind) {
@@ -539,7 +544,8 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 		 */
 		int ret = wait_for_aio_completion(fsp);
 		if (ret) {
-			saved_status1 = map_nt_error_from_unix(ret);
+			status = ntstatus_keeperror(
+				status, map_nt_error_from_unix(ret));
 		}
 	} else {
 		cancel_aio_by_fsp(fsp);
@@ -550,7 +556,8 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 	 * error here, we must remember this.
 	 */
 
-	saved_status2 = close_filestruct(fsp);
+	tmp = close_filestruct(fsp);
+	status = ntstatus_keeperror(status, tmp);
 
 	if (fsp->print_file) {
 		print_fsp_end(fsp, close_type);
@@ -569,12 +576,14 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 
 	if (fsp->fh->ref_count == 1) {
 		/* Should we return on error here... ? */
-		saved_status3 = close_remove_share_mode(fsp, close_type);
+		tmp = close_remove_share_mode(fsp, close_type);
+		status = ntstatus_keeperror(status, tmp);
 	}
 
 	locking_close_file(smbd_messaging_context(), fsp);
 
-	status = fd_close(fsp);
+	tmp = fd_close(fsp);
+	status = ntstatus_keeperror(status, tmp);
 
 	/* check for magic scripts */
 	if (close_type == NORMAL_CLOSE) {
@@ -585,26 +594,16 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 	 * Ensure pending modtime is set after close.
 	 */
 
-	saved_status4 = update_write_time_on_close(fsp);
-	if (NT_STATUS_EQUAL(saved_status4, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+	tmp = update_write_time_on_close(fsp);
+	if (NT_STATUS_EQUAL(tmp, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 		/* Someone renamed the file or a parent directory containing
 		 * this file. We can't do anything about this, we don't have
 		 * an "update timestamp by fd" call in POSIX. Eat the error. */
 
-		saved_status4 = NT_STATUS_OK;
+		tmp = NT_STATUS_OK;
 	}
 
-	if (NT_STATUS_IS_OK(status)) {
-		if (!NT_STATUS_IS_OK(saved_status1)) {
-			status = saved_status1;
-		} else if (!NT_STATUS_IS_OK(saved_status2)) {
-			status = saved_status2;
-		} else if (!NT_STATUS_IS_OK(saved_status3)) {
-			status = saved_status3;
-		} else if (!NT_STATUS_IS_OK(saved_status4)) {
-			status = saved_status4;
-		}
-	}
+	status = ntstatus_keeperror(status, tmp);
 
 	DEBUG(2,("%s closed file %s (numopen=%d) %s\n",
 		conn->server_info->unix_name,fsp->fsp_name,
