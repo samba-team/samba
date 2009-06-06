@@ -1603,7 +1603,7 @@ NTSTATUS _samr_QueryDisplayInfo(pipes_struct *p,
 	DEBUG(5, ("_samr_QueryDisplayInfo: %d\n", __LINE__));
 
 	*r->out.total_size = num_account * struct_size;
-	*r->out.returned_size = temp_size;
+	*r->out.returned_size = num_account ? temp_size : 0;
 
 	return status;
 }
