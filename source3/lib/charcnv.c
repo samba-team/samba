@@ -558,7 +558,7 @@ bool convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
 		return false;
 	}
 	if (srclen == 0) {
-		ob = ((ctx != NULL) ? talloc_strdup(ctx, "") : SMB_STRDUP(""));
+		ob = talloc_strdup(ctx, "");
 		if (ob == NULL) {
 			errno = ENOMEM;
 			return false;
@@ -587,7 +587,7 @@ bool convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
 		if (!conv_silent)
 			DEBUG(0, ("convert_string_talloc: destlen wrapped !\n"));
 		if (!ctx)
-			SAFE_FREE(outbuf);
+			TALLOC_FREE(outbuf);
 		errno = EOPNOTSUPP;
 		return false;
 	} else {
