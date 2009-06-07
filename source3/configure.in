@@ -216,16 +216,6 @@ if test x"$ac_cv_prog_gcc" = x"yes" ; then
        fi
 fi
 
-AC_ARG_ENABLE(dmalloc, [AS_HELP_STRING([--enable-dmalloc], [Enable heap debugging [default=no]])])
-
-if test "x$enable_dmalloc" = xyes
-then
-	AC_DEFINE(ENABLE_DMALLOC, 1, [Define to turn on dmalloc debugging])
-	AC_DEFINE(DMALLOC_FUNC_CHECK, 1,
-                  [Define to check invariants around some common functions])
-	LIBS="$LIBS -ldmalloc"	
-fi
-
 #################################################
 # check for a shared memory profiling support
 AC_MSG_CHECKING(whether to use profiling)
@@ -6458,6 +6448,16 @@ AC_ZLIB([ZLIB_OBJS=""], [
 	done
 	CFLAGS="-I../lib/zlib $CFLAGS"
 ])
+
+AC_ARG_ENABLE(dmalloc, [AS_HELP_STRING([--enable-dmalloc], [Enable heap debugging [default=no]])])
+
+if test "x$enable_dmalloc" = xyes
+then
+	AC_DEFINE(ENABLE_DMALLOC, 1, [Define to turn on dmalloc debugging])
+	AC_DEFINE(DMALLOC_FUNC_CHECK, 1,
+                  [Define to check invariants around some common functions])
+	LIBS="$LIBS -ldmalloc"
+fi
 
 dnl Remove -L/usr/lib/? from LDFLAGS and LIBS
 LIB_REMOVE_USR_LIB(LDFLAGS)
