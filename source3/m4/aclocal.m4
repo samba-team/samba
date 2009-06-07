@@ -99,14 +99,14 @@ case "$withval" in
 		build_lib=yes
 		;;
 	*)
-		AC_MSG_RESULT(yes)
+		AC_MSG_RESULT(no)
 		build_lib=no
 		;;
 esac
 ],
 [
 # if unspecified, default is not to build
-AC_MSG_RESULT(yes)
+AC_MSG_RESULT(no)
 build_lib=no
 ]
 )
