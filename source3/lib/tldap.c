@@ -1538,7 +1538,7 @@ struct tevent_req *tldap_delete_send(TALLOC_CTX *mem_ctx,
 	}
 
 	asn1_push_tag(state->out, TLDAP_REQ_DELETE);
-	asn1_write_OctetString(state->out, dn, strlen(dn));
+	asn1_write(state->out, dn, strlen(dn));
 	asn1_pop_tag(state->out);
 
 	subreq = tldap_msg_send(state, ev, ld, state->id, state->out);
