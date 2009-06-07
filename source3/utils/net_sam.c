@@ -922,6 +922,34 @@ static int net_sam_unmapunixgroup(struct net_context *c, int argc, const char **
 }
 
 /*
+ * Create a domain group
+ */
+
+static int net_sam_createdomaingroup(struct net_context *c, int argc,
+				     const char **argv)
+{
+	NTSTATUS status;
+	uint32 rid;
+
+	if (argc != 1 || c->display_usage) {
+		d_fprintf(stderr, "usage: net sam createdomaingroup <name>\n");
+		return -1;
+	}
+
+	status = pdb_create_dom_group(talloc_tos(), argv[0], &rid);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "Creating %s failed with %s\n",
+			  argv[0], nt_errstr(status));
+		return -1;
+	}
+
+	d_printf("Created domain group %s with RID %d\n", argv[0], rid);
+
+	return 0;
+}
+
+/*
  * Create a local group
  */
 
@@ -1828,6 +1856,14 @@ int net_sam(struct net_context *c, int argc, const char **argv)
 			"Create a new local group",
 			"net sam createlocalgroup\n"
 			"    Create a new local group"
+		},
+		{
+			"createdomaingroup",
+			net_sam_createdomaingroup,
+			NET_TRANSPORT_LOCAL,
+			"Create a new group",
+			"net sam createdomaingroup\n"
+			"    Create a new group"
 		},
 		{
 			"deletelocalgroup",
