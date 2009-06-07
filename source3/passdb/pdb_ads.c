@@ -22,6 +22,9 @@
 static NTSTATUS pdb_ads_getsampwsid(struct pdb_methods *m,
 				    struct samu *sam_acct,
 				    const DOM_SID *sid);
+static bool pdb_ads_gid_to_sid(struct pdb_methods *m, gid_t gid,
+			       DOM_SID *sid);
+
 
 struct pdb_ads_state {
 	struct tldap_context *ld;
@@ -294,7 +297,7 @@ static NTSTATUS pdb_ads_getsampwfilter(struct pdb_methods *m,
 
 	rc = tldap_search_fmt(state->ld, state->domaindn, TLDAP_SCOPE_SUB,
 			      attrs, ARRAY_SIZE(attrs), 0, talloc_tos(),
-			      &users, filter);
+			      &users, "%s", filter);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_search failed %s\n",
 			   tldap_errstr(debug_ctx(), state->ld, rc)));
@@ -487,22 +490,115 @@ static NTSTATUS pdb_ads_update_login_attempts(struct pdb_methods *m,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
+static NTSTATUS pdb_ads_getgrfilter(struct pdb_methods *m, GROUP_MAP *map,
+				    const char *filter)
+{
+	struct pdb_ads_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_ads_state);
+	const char *attrs[4] = { "objectSid", "description", "samAccountName",
+				 "groupType" };
+	char *str;
+	struct tldap_message **group;
+	uint32_t grouptype;
+	int rc;
+
+	rc = tldap_search_fmt(state->ld, state->domaindn, TLDAP_SCOPE_SUB,
+			      attrs, ARRAY_SIZE(attrs), 0, talloc_tos(),
+			      &group, "%s", filter);
+	if (rc != TLDAP_SUCCESS) {
+		DEBUG(10, ("ldap_search failed %s\n",
+			   tldap_errstr(debug_ctx(), state->ld, rc)));
+		return NT_STATUS_LDAP(rc);
+	}
+	if (talloc_array_length(group) != 1) {
+		DEBUG(10, ("Expected 1 user, got %d\n",
+			   talloc_array_length(group)));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	if (!tldap_pull_binsid(group[0], "objectSid", &map->sid)) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	map->gid = pdb_ads_sid2gid(&map->sid);
+
+	if (!tldap_pull_uint32(group[0], "groupType", &grouptype)) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	switch (grouptype) {
+	case GTYPE_SECURITY_BUILTIN_LOCAL_GROUP:
+	case GTYPE_SECURITY_DOMAIN_LOCAL_GROUP:
+		map->sid_name_use = SID_NAME_ALIAS;
+		break;
+	case GTYPE_SECURITY_GLOBAL_GROUP:
+		map->sid_name_use = SID_NAME_DOM_GRP;
+		break;
+	default:
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	str = tldap_talloc_single_attribute(group[0], "samAccountName",
+					    talloc_tos());
+	if (str == NULL) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	fstrcpy(map->nt_name, str);
+	TALLOC_FREE(str);
+
+	str = tldap_talloc_single_attribute(group[0], "description",
+					    talloc_tos());
+	if (str != NULL) {
+		fstrcpy(map->comment, str);
+		TALLOC_FREE(str);
+	} else {
+		map->comment[0] = '\0';
+	}
+
+	TALLOC_FREE(group);
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS pdb_ads_getgrsid(struct pdb_methods *m, GROUP_MAP *map,
 				 DOM_SID sid)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	char *filter;
+	NTSTATUS status;
+
+	filter = talloc_asprintf(talloc_tos(),
+				 "(&(objectsid=%s)(objectclass=group))",
+				 sid_string_talloc(talloc_tos(), &sid));
+	if (filter == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = pdb_ads_getgrfilter(m, map, filter);
+	TALLOC_FREE(filter);
+	return status;
 }
 
 static NTSTATUS pdb_ads_getgrgid(struct pdb_methods *m, GROUP_MAP *map,
 				 gid_t gid)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct dom_sid sid;
+	pdb_ads_gid_to_sid(m, gid, &sid);
+	return pdb_ads_getgrsid(m, map, sid);
 }
 
 static NTSTATUS pdb_ads_getgrnam(struct pdb_methods *m, GROUP_MAP *map,
 				 const char *name)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	char *filter;
+	NTSTATUS status;
+
+	filter = talloc_asprintf(talloc_tos(),
+				 "(&(samaccountname=%s)(objectclass=group))",
+				 name);
+	if (filter == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = pdb_ads_getgrfilter(m, map, filter);
+	TALLOC_FREE(filter);
+	return status;
 }
 
 static NTSTATUS pdb_ads_create_dom_group(struct pdb_methods *m,
@@ -1002,13 +1098,19 @@ static bool pdb_ads_uid_to_rid(struct pdb_methods *m, uid_t uid,
 static bool pdb_ads_uid_to_sid(struct pdb_methods *m, uid_t uid,
 			       DOM_SID *sid)
 {
-	return false;
+	struct pdb_ads_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_ads_state);
+	sid_compose(sid, &state->domainsid, uid);
+	return true;
 }
 
 static bool pdb_ads_gid_to_sid(struct pdb_methods *m, gid_t gid,
 			       DOM_SID *sid)
 {
-	return false;
+	struct pdb_ads_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_ads_state);
+	sid_compose(sid, &state->domainsid, gid);
+	return true;
 }
 
 static bool pdb_ads_sid_to_id(struct pdb_methods *m, const DOM_SID *sid,
