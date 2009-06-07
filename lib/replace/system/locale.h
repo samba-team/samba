@@ -35,4 +35,8 @@
 #include <locale.h>
 #endif
 
+#ifdef HAVE_LANGINFO_H
+#include <langinfo.h>
+#endif
+
 #endif
