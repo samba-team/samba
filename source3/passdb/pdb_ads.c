@@ -878,7 +878,50 @@ static NTSTATUS pdb_ads_create_alias(struct pdb_methods *m,
 static NTSTATUS pdb_ads_delete_alias(struct pdb_methods *m,
 				     const DOM_SID *sid)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct pdb_ads_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_ads_state);
+	struct tldap_message **alias;
+	char *sidstr, *dn;
+	int rc;
+
+	sidstr = sid_binstring(talloc_tos(), sid);
+	if (sidstr == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	rc = tldap_search_fmt(state->ld, state->domaindn, TLDAP_SCOPE_SUB,
+			      NULL, 0, 0, talloc_tos(), &alias,
+			      "(&(objectSid=%s)(objectclass=group)"
+			      "(|(grouptype=%d)(grouptype=%d)))",
+			      sidstr, GTYPE_SECURITY_BUILTIN_LOCAL_GROUP,
+			      GTYPE_SECURITY_DOMAIN_LOCAL_GROUP);
+	TALLOC_FREE(sidstr);
+	if (rc != TLDAP_SUCCESS) {
+		DEBUG(10, ("ldap_search failed: %s\n",
+			   tldap_errstr(debug_ctx(), state->ld, rc)));
+		TALLOC_FREE(dn);
+		return NT_STATUS_LDAP(rc);
+	}
+	if (talloc_array_length(alias) != 1) {
+		DEBUG(10, ("Expected 1 alias, got %d\n",
+			   talloc_array_length(alias)));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	if (!tldap_entry_dn(alias[0], &dn)) {
+		DEBUG(10, ("Could not get DN for alias %s\n",
+			   sid_string_dbg(sid)));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	rc = tldap_delete(state->ld, dn, NULL, NULL);
+	if (rc != TLDAP_SUCCESS) {
+		DEBUG(10, ("ldap_delete failed: %s\n",
+			   tldap_errstr(debug_ctx(), state->ld, rc)));
+		TALLOC_FREE(dn);
+		return NT_STATUS_LDAP(rc);
+	}
+
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS pdb_ads_get_aliasinfo(struct pdb_methods *m,
