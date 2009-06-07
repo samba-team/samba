@@ -529,7 +529,7 @@ static NTSTATUS enum_aliasmem(const DOM_SID *alias, DOM_SID **sids, size_t *num)
 	el = ldb_msg_find_element(res->msgs[0], "member");
 	if (el == NULL) {
 		talloc_free(dn);
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		return NT_STATUS_OK;
 	}
 	
 	for (i=0;i<el->num_values;i++) {
