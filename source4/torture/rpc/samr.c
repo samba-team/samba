@@ -5592,7 +5592,9 @@ static bool test_QueryDomainInfo(struct dcerpc_pipe *p, struct torture_context *
 			if (strcmp(info->general.oem_information.string, domain_comment) != 0) {
 				printf("QueryDomainInfo level %u returned different oem_information (comment) (%s, expected %s)\n",
 				       levels[i], info->general.oem_information.string, domain_comment);
-				ret = false;
+				if (!torture_setting_bool(tctx, "samba3", false)) {
+					ret = false;
+				}
 			}
 			if (!info->general.primary.string) {
 				printf("QueryDomainInfo level %u returned no PDC name\n",
@@ -5609,7 +5611,9 @@ static bool test_QueryDomainInfo(struct dcerpc_pipe *p, struct torture_context *
 			if (strcmp(info->oem.oem_information.string, domain_comment) != 0) {
 				printf("QueryDomainInfo level %u returned different oem_information (comment) (%s, expected %s)\n",
 				       levels[i], info->oem.oem_information.string, domain_comment);
-				ret = false;
+				if (!torture_setting_bool(tctx, "samba3", false)) {
+					ret = false;
+				}
 			}
 			break;
 		case 6:
@@ -5623,7 +5627,9 @@ static bool test_QueryDomainInfo(struct dcerpc_pipe *p, struct torture_context *
 			if (strcmp(info->general2.general.oem_information.string, domain_comment) != 0) {
 				printf("QueryDomainInfo level %u returned different comment (%s, expected %s)\n",
 				       levels[i], info->general2.general.oem_information.string, domain_comment);
-				ret = false;
+				if (!torture_setting_bool(tctx, "samba3", false)) {
+					ret = false;
+				}
 			}
 			break;
 		}
@@ -5927,7 +5933,7 @@ static bool test_AddGroupMember(struct dcerpc_pipe *p, struct torture_context *t
 
 	if (torture_setting_bool(tctx, "samba4", false) ||
 	    torture_setting_bool(tctx, "samba3", false)) {
-		torture_comment(tctx, "skipping SetMemberAttributesOfGroup test against Samba4\n");
+		torture_comment(tctx, "skipping SetMemberAttributesOfGroup test against Samba\n");
 	} else {
 		/* this one is quite strange. I am using random inputs in the
 		   hope of triggering an error that might give us a clue */
