@@ -856,8 +856,8 @@ static bool pdb_ads_search_users(struct pdb_methods *m,
 	struct pdb_ads_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_ads_state);
 	struct pdb_ads_search_state *sstate;
-	const char * attrs[] = { "objectSid", "sAMAccountName",
-				 "userAccountControl" };
+	const char * attrs[] = { "objectSid", "sAMAccountName", "displayName",
+				 "userAccountControl", "description" };
 	struct tldap_message **users;
 	int i, rc, num_users;
 
@@ -901,9 +901,21 @@ static bool pdb_ads_search_users(struct pdb_methods *m,
 		}
 		sid_peek_rid(&sid, &e->rid);
 		e->acct_flags = ACB_NORMAL;
-		e->account_name = "Name";
-		e->fullname = "Full Name";
-		e->description = "Beschreibung";
+		e->account_name = tldap_talloc_single_attribute(
+			users[i], "samAccountName", sstate->entries);
+		if (e->account_name == NULL) {
+			return false;
+		}
+		e->fullname = tldap_talloc_single_attribute(
+                        users[i], "displayName", sstate->entries);
+		if (e->fullname == NULL) {
+			e->fullname = "";
+		}
+		e->description = tldap_talloc_single_attribute(
+                        users[i], "description", sstate->entries);
+		if (e->description == NULL) {
+			e->description = "";
+		}
 
 		sstate->num_entries += 1;
 		if (sstate->num_entries >= num_users) {
