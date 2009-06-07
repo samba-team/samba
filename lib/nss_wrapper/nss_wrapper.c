@@ -1,5 +1,6 @@
 /*
  * Copyright (C) Stefan Metzmacher 2007 <metze@samba.org>
+ * Copyright (C) Guenther Deschner 2009 <gd@samba.org>
  *
  * All rights reserved.
  *
