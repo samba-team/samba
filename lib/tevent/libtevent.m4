@@ -38,3 +38,8 @@ if test x"$ac_cv_header_sys_epoll_h" = x"yes" -a x"$ac_cv_func_epoll_create" = x
    AC_DEFINE(HAVE_EPOLL, 1, [Whether epoll available])
 fi
 
+if test x"$VERSIONSCRIPT" != "x"; then
+    EXPORTSFILE=tevent.exports
+    AC_SUBST(EXPORTSFILE)
+fi
+
