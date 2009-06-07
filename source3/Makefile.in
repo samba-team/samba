@@ -53,6 +53,7 @@ AWK=@AWK@
 PICFLAG=@PICFLAG@
 DYNEXP=@DYNEXP@
 PERL=@PERL@
+LIBDL=@LIBDL@
 
 PIDL_ARGS=@PIDL_ARGS@
 
@@ -3164,7 +3165,7 @@ test_pam_modules:: pam_modules
 	@$(LIB_PATH_VAR)=./bin && \
 	export $(LIB_PATH_VAR) && \
 	for module in $(PAM_MODULES); do \
-		./script/tests/dlopen.sh -lpam -ldl bin/$${module}.@SHLIBEXT@ \
+		./script/tests/dlopen.sh -lpam ${LIBDL} bin/$${module}.@SHLIBEXT@ \
 			|| exit 1; \
 	done
 
