@@ -828,6 +828,9 @@ AC_DEFUN([SMB_IF_RTSIGNAL_BUG],
 #include <fcntl.h>
 #include <signal.h>
 
+#ifndef SIGRTMIN
+#define SIGRTMIN NSIG
+#endif
 /* from smbd/notify_kernel.c */
 #ifndef RT_SIGNAL_NOTIFY
 #define RT_SIGNAL_NOTIFY (SIGRTMIN+2)
