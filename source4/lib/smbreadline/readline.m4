@@ -69,7 +69,10 @@ AC_CHECK_LIB(readline, rl_completion_matches,
 	     [$TERMLIBS])
 
 # not all readline libs have rl_event_hook or history_list
-AC_CHECK_DECLS(rl_event_hook, [], [], [#include <readline/readline.h>])
+AC_CHECK_DECLS(rl_event_hook, [], [], [
+    #include <stdio.h>
+    #include <readline/readline.h>
+])
 AC_CHECK_LIB(readline, history_list,
 	     [AC_DEFINE(HAVE_HISTORY_LIST, 1, [Do we have history_list?])],
 	     [],
