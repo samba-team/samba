@@ -49,5 +49,7 @@ int tldap_search_fmt(struct tldap_context *ld, const char *base, int scope,
 		     const char *fmt, ...);
 bool tldap_pull_uint64(struct tldap_message *msg, const char *attr,
 		       uint64_t *presult);
+bool tldap_pull_uint32(struct tldap_message *msg, const char *attr,
+		       uint32_t *presult);
 
 #endif

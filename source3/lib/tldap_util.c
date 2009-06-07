@@ -349,3 +349,15 @@ bool tldap_pull_uint64(struct tldap_message *msg, const char *attr,
 	*presult = result;
 	return true;
 }
+
+bool tldap_pull_uint32(struct tldap_message *msg, const char *attr,
+		       uint32_t *presult)
+{
+	uint64_t result;
+
+	if (!tldap_pull_uint64(msg, attr, &result)) {
+		return false;
+	}
+	*presult = (uint32_t)result;
+	return true;
+}
