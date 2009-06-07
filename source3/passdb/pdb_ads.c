@@ -605,7 +605,75 @@ static NTSTATUS pdb_ads_create_dom_group(struct pdb_methods *m,
 					 TALLOC_CTX *mem_ctx, const char *name,
 					 uint32 *rid)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct pdb_ads_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_ads_state);
+	const char *attrs[1] = { "objectSid" };
+	int num_mods = 0;
+	struct tldap_mod *mods = NULL;
+	struct tldap_message **alias;
+	struct dom_sid sid;
+	char *dn;
+	int rc;
+	bool ok = true;
+
+	dn = talloc_asprintf(talloc_tos(), "cn=%s,cn=users,%s", name,
+			     state->domaindn);
+	if (dn == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ok &= tldap_make_mod_fmt(
+		NULL, talloc_tos(), &num_mods, &mods, "samAccountName", "%s",
+		name);
+	ok &= tldap_make_mod_fmt(
+		NULL, talloc_tos(), &num_mods, &mods, "objectClass", "group");
+	ok &= tldap_make_mod_fmt(
+		NULL, talloc_tos(), &num_mods, &mods, "groupType",
+		"%d", (int)GTYPE_SECURITY_GLOBAL_GROUP);
+
+	if (!ok) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	rc = tldap_add(state->ld, dn, num_mods, mods, NULL, NULL);
+	if (rc != TLDAP_SUCCESS) {
+		DEBUG(10, ("ldap_add failed %s\n",
+			   tldap_errstr(debug_ctx(), state->ld, rc)));
+		TALLOC_FREE(frame);
+		return NT_STATUS_LDAP(rc);
+	}
+
+	rc = tldap_search_fmt(
+		state->ld, state->domaindn, TLDAP_SCOPE_SUB,
+		attrs, ARRAY_SIZE(attrs), 0, talloc_tos(), &alias,
+		"(&(objectclass=group)(samaccountname=%s))", name);
+	if (rc != TLDAP_SUCCESS) {
+		DEBUG(10, ("Could not find just created alias %s: %s\n",
+			   name, tldap_errstr(debug_ctx(), state->ld, rc)));
+		TALLOC_FREE(frame);
+		return NT_STATUS_LDAP(rc);
+	}
+
+	if (talloc_array_length(alias) != 1) {
+		DEBUG(10, ("Got %d alias, expected one\n",
+			   (int)talloc_array_length(alias)));
+		TALLOC_FREE(frame);
+		return NT_STATUS_LDAP(rc);
+	}
+
+	if (!tldap_pull_binsid(alias[0], "objectSid", &sid)) {
+		DEBUG(10, ("Could not fetch objectSid from alias %s\n",
+			   name));
+		TALLOC_FREE(frame);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	sid_peek_rid(&sid, rid);
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS pdb_ads_delete_dom_group(struct pdb_methods *m,
