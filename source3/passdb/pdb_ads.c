@@ -849,9 +849,10 @@ static void pdb_ads_search_end(struct pdb_search *search)
 	TALLOC_FREE(state);
 }
 
-static bool pdb_ads_search_users(struct pdb_methods *m,
-				 struct pdb_search *search,
-				 uint32 acct_flags)
+static bool pdb_ads_search_filter(struct pdb_methods *m,
+				  struct pdb_search *search,
+				  const char *filter,
+				  struct pdb_ads_search_state **pstate)
 {
 	struct pdb_ads_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_ads_state);
@@ -865,12 +866,11 @@ static bool pdb_ads_search_users(struct pdb_methods *m,
 	if (sstate == NULL) {
 		return false;
 	}
-	sstate->acct_flags = acct_flags;
 
 	rc = tldap_search_fmt(
 		state->ld, state->domaindn, TLDAP_SCOPE_SUB,
 		attrs, ARRAY_SIZE(attrs), 0, talloc_tos(), &users,
-		"(objectclass=user)");
+		"%s", filter);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_search_ext_s failed: %s\n",
 			   tldap_errstr(debug_ctx(), state->ld, rc)));
@@ -926,20 +926,71 @@ static bool pdb_ads_search_users(struct pdb_methods *m,
 	search->private_data = sstate;
 	search->next_entry = pdb_ads_next_entry;
 	search->search_end = pdb_ads_search_end;
+	*pstate = sstate;
+	return true;
+}
+
+static bool pdb_ads_search_users(struct pdb_methods *m,
+				 struct pdb_search *search,
+				 uint32 acct_flags)
+{
+	struct pdb_ads_search_state *sstate;
+	bool ret;
+
+	ret = pdb_ads_search_filter(m, search, "(objectclass=user)", &sstate);
+	if (!ret) {
+		return false;
+	}
+	sstate->acct_flags = acct_flags;
 	return true;
 }
 
 static bool pdb_ads_search_groups(struct pdb_methods *m,
 				  struct pdb_search *search)
 {
-	return false;
+	struct pdb_ads_search_state *sstate;
+	char *filter;
+	bool ret;
+
+	filter = talloc_asprintf(talloc_tos(),
+				 "(&(grouptype=%d)(objectclass=group))",
+				 GTYPE_SECURITY_GLOBAL_GROUP);
+	if (filter == NULL) {
+		return false;
+	}
+	ret = pdb_ads_search_filter(m, search, filter, &sstate);
+	TALLOC_FREE(filter);
+	if (!ret) {
+		return false;
+	}
+	sstate->acct_flags = 0;
+	return true;
 }
 
 static bool pdb_ads_search_aliases(struct pdb_methods *m,
 				   struct pdb_search *search,
 				   const DOM_SID *sid)
 {
-	return false;
+	struct pdb_ads_search_state *sstate;
+	char *filter;
+	bool ret;
+
+	filter = talloc_asprintf(
+		talloc_tos(), "(&(grouptype=%d)(objectclass=group))",
+		sid_check_is_builtin(sid)
+		? GTYPE_SECURITY_BUILTIN_LOCAL_GROUP
+		: GTYPE_SECURITY_DOMAIN_LOCAL_GROUP);
+
+	if (filter == NULL) {
+		return false;
+	}
+	ret = pdb_ads_search_filter(m, search, filter, &sstate);
+	TALLOC_FREE(filter);
+	if (!ret) {
+		return false;
+	}
+	sstate->acct_flags = 0;
+	return true;
 }
 
 static bool pdb_ads_uid_to_rid(struct pdb_methods *m, uid_t uid,
