@@ -31,3 +31,8 @@ if test $ac_cv_sizeof_size_t -lt $ac_cv_sizeof_void_p; then
 	AC_WARN([sizeof(void *) = $ac_cv_sizeof_void_p])
 	AC_ERROR([sizeof(size_t) < sizeof(void *)])
 fi
+
+if test x"$VERSIONSCRIPT" != "x"; then
+    EXPORTSFILE=talloc.exports
+    AC_SUBST(EXPORTSFILE)
+fi

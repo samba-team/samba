@@ -30,6 +30,7 @@ doc:: talloc.3 talloc.3.html
 
 clean::
 	rm -f *~ $(LIBOBJ) $(TALLOC_SOLIB) $(TALLOC_STLIB) testsuite testsuite.o testsuite_main.o *.gc?? talloc.3 talloc.3.html
+	rm -fr abi
 
 test:: testsuite
 	./testsuite

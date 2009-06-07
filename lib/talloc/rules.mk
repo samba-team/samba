@@ -6,7 +6,7 @@ showflags::
 	@echo '  LIBS = $(LIBS)'
 
 .c.o:
-	$(CC) $(PICFLAG) -o $@ -c $< $(CFLAGS)
+	$(CC) $(PICFLAG) $(ABI_CHECK) -o $@ -c $< $(CFLAGS)
 
 .3.xml.3:
 	-test -z "$(XSLTPROC)" || $(XSLTPROC) -o $@ http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl $<

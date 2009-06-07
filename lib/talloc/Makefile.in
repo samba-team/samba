@@ -24,13 +24,17 @@ tallocdir = @tallocdir@
 
 LIBOBJ = $(TALLOC_OBJ) @LIBREPLACEOBJ@
 
+SONAMEFLAG = @SONAMEFLAG@
+VERSIONSCRIPT = @VERSIONSCRIPT@
+EXPORTSFILE = @EXPORTSFILE@
+
 all:: showflags $(EXTRA_TARGETS)
 
 include $(tallocdir)/rules.mk
 include $(tallocdir)/talloc.mk
 
 $(TALLOC_SOLIB): $(LIBOBJ)
-	$(SHLD) $(SHLD_FLAGS) -o $@ $(LIBOBJ) @SONAMEFLAG@$(TALLOC_SONAME)
+	$(SHLD) $(SHLD_FLAGS) -o $@ $(LIBOBJ) $(VERSIONSCRIPT) $(EXPORTSFILE) $(SONAMEFLAG)$(TALLOC_SONAME)
 
 shared-build: all
 	${INSTALLCMD} -d $(sharedbuilddir)/lib
