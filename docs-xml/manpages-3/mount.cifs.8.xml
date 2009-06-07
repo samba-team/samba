@@ -47,9 +47,6 @@ by the popular Open Source server Samba.
 	specified as <emphasis>service</emphasis> (using //server/share syntax,
 	where "server" is the server name or IP address and "share" is the name
 	of the share) to the local directory <emphasis>mount-point</emphasis>.
-	It is possible to set the mode for mount.cifs to setuid root to allow
-	non-root users to mount shares to directories for which they
-	have write permission.
 	</para>
 
 	<para>
@@ -128,52 +125,53 @@ credentials file properly.
 
 	<varlistentry>
 		<term>uid=<replaceable>arg</replaceable></term>
+		<listitem>
 
-		<listitem><para>sets the uid that will own all files on
-	the mounted filesystem.
-	It may be specified as either a username or a numeric uid.
-	For mounts to servers which do support the CIFS Unix extensions, 
-        such as a properly configured Samba server, the server provides
-                the uid, gid and mode so this parameter should not be
-                specified unless the server and client uid and gid
-                numbering differ.  If the server and client are in the
-                same domain (e.g. running winbind or nss_ldap) and
-                the server supports the Unix Extensions then the uid
-                and gid can be retrieved from the server (and uid
-                and gid would not have to be specified on the mount.
-                For servers which do not support the CIFS Unix
-                extensions, the default uid (and gid) returned on lookup 
-                of existing files will be the uid (gid) of the person
-                who executed the mount (root, except when mount.cifs
-                is configured setuid for user mounts) unless the "uid="
-                (gid) mount option is specified.  For the uid (gid) of newly
-                created files and directories, ie files created since
-                the last mount of the server share, the expected uid
-                (gid) is cached as long as the inode remains in
-                memory on the client.   Also note that permission
-                checks (authorization checks) on accesses to a file occur
-                at the server, but there are cases in which an administrator
-                may want to restrict at the client as well.  For those
-                servers which do not report a uid/gid owner
-                (such as Windows), permissions can also be checked at the
-                client, and a crude form of client side permission checking
-                can be enabled by specifying file_mode and dir_mode on
-                the client.  Note that the mount.cifs helper must be
-                at version 1.10 or higher to support specifying the uid
-                (or gid) in non-numeric form.
-	</para></listitem>
-	</varlistentry>
+	<para>sets the uid that will own all files or directories on the
+mounted filesystem when the server does not provide ownership
+information. It may be specified as either a username or a numeric uid.
+When not specified, the default is uid 0.  The mount.cifs helper must be
+at version 1.10 or higher to support specifying the uid in non-numeric
+form. See the section on FILE AND DIRECTORY OWNERSHIP AND PERMISSIONS below for more
+information.  </para>
 
-	<varlistentry>
-		<term>gid=<replaceable>arg</replaceable></term>
+</listitem>
+</varlistentry>
 
-		<listitem><para>sets the gid that will own all files on
-the mounted filesystem.  It may be specified as either a groupname or a numeric 
-gid. For other considerations see the description of uid above. 
-		</para></listitem>
-	</varlistentry>
+<varlistentry>
+	<term>forceuid</term>
+	<listitem>
+		<para>instructs the client to ignore any uid provided by
+the server for files and directories and to always assign the owner to
+be the value of the uid= option. See the section on FILE AND DIRECTORY OWNERSHIP AND PERMISSIONS below for more information.</para>
+	</listitem>
+</varlistentry>
 
-	<varlistentry>
+<varlistentry>
+	<term>gid=<replaceable>arg</replaceable></term>
+	<listitem>
+
+		<para>sets the gid that will own all files or
+directories on the mounted filesystem when the server does not provide
+ownership information.  It may be specified as either a groupname or a
+numeric gid.  When not specified, the default is gid 0. The mount.cifs
+helper must be at version 1.10 or higher to support specifying the gid
+in non-numeric form. See the section on FILE AND DIRECTORY OWNERSHIP AND
+PERMISSIONS below for more information.</para>
+
+	</listitem>
+</varlistentry>
+
+<varlistentry>
+	<term>forcegid</term>
+	<listitem>
+		<para>instructs the client to ignore any gid provided by
+the server for files and directories and to always assign the owner to
+be the value of the gid= option. See the section on FILE AND DIRECTORY OWNERSHIP AND PERMISSIONS below for more information.</para>
+	</listitem>
+</varlistentry>
+
+<varlistentry>
 		<term>port=<replaceable>arg</replaceable></term>
 
 		<listitem><para>sets the port number on the server to attempt to contact to negotiate
@@ -312,6 +310,13 @@ port 445 is tried and if no response then port 139 is tried.
                 target machine done by the server software (of the server
                 ACL against the user name provided at mount time).</para></listitem>
         </varlistentry>
+
+	<varlistentry>
+		<term>dynperm</term>
+		<listitem><para>Instructs the server to maintain ownership and
+permissions in memory that can't be stored on the server. This information can disappear at any time (whenever the inode is flushed from the cache), so while this may help make some applications work, it's behavior is somewhat unreliable. See the section below on FILE AND DIRECTORY OWNERSHIP AND PERMISSIONS for more information.
+		</para></listitem>
+	</varlistentry>
 
         <varlistentry>
                 <term>directio</term>
@@ -518,6 +523,46 @@ port 445 is tried and if no response then port 139 is tried.
 </refsect1>
 
 <refsect1>
+	<title>FILE AND DIRECTORY OWNERSHIP AND PERMISSIONS</title>
+
+	<para> The core CIFS protocol does not provide unix ownership
+information or mode for files and directories. Because of this, files
+and directories will generally appear to be owned by whatever values the
+uid= or gid= options are set, and will have permissions set to the
+default file_mode and dir_mode for the mount. Attempting to change these
+values via chmod/chown will return success but have no effect.</para>
+
+	<para>When the client and server negotiate unix extensions,
+files and directories will be assigned the uid, gid, and mode provided
+by the server. Because CIFS mounts are generally single-user, and the
+same credentials are used no matter what user accesses the mount, newly
+created files and directories will generally be given ownership
+corresponding to whatever credentials were used to mount the
+share.</para>
+
+	<para>If the uid's and gid's being used do not match on the
+client and server, the forceuid and forcegid options may be helpful.
+Note however, that there is no corresponding option to override the
+mode. Permissions assigned to a file when forceuid or forcegid are in
+effect may not reflect the the real permissions.</para>
+
+	<para>When unix extensions are not negotiated, it's also
+possible to emulate them locally on the server using the "dynperm" mount
+option. When this mount option is in effect, newly created files and
+directories will receive what appear to be proper permissions. These
+permissions are not stored on the server however and can disappear at
+any time in the future (subject to the whims of the kernel flushing out
+the inode cache). In general, this mount option is discouraged.
+	</para>
+
+	<para>It's also possible to override permission checking on the client
+altogether via the noperm option. Server-side permission checks cannot be
+overriden. The permission checks done by the server will always correspond to
+the credentials used to mount the share, and not necessarily to the user who is accessing the share.</para>
+
+</refsect1>
+
+<refsect1>
 	<title>ENVIRONMENT VARIABLES</title>
 
 	<para>
@@ -543,7 +588,7 @@ read and used as the password.
 <refsect1>
 	<title>NOTES</title>
 	
-	<para>This command may be used only by root, unless installed setuid, in which case the noeexec and nosuid mount flags are enabled.</para>
+	<para>This command may be used only by root, unless installed setuid, in which case the noeexec and nosuid mount flags are enabled. When installed as a setuid program, the program follows the conventions set forth by the mount program for user mounts.</para>
 </refsect1>
 
 <refsect1>
