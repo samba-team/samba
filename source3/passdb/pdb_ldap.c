@@ -3977,6 +3977,11 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 		goto done;
 	}
 
+	if (num_rids == 0) {
+		result = NT_STATUS_NONE_MAPPED;
+		goto done;
+	}
+
 	for (i=0; i<num_rids; i++)
 		attrs[i] = SID_NAME_UNKNOWN;
 
