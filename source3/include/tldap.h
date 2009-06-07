@@ -158,13 +158,15 @@ const char *tldap_err2string(int rc);
 #define TLDAP_RES_MODIFY (7 + 0x60)
 #define TLDAP_REQ_ADD (8 + 0x60)
 #define TLDAP_RES_ADD (9 + 0x60)
-#define TLDAP_REQ_DELETE (10 + 0x60)
+/* ASN1_APPLICATION_SIMPLE instead of ASN1_APPLICATION */
+#define TLDAP_REQ_DELETE (10 + 0x40)
 #define TLDAP_RES_DELETE (11 + 0x60)
 #define TLDAP_REQ_MODDN (12 + 0x60)
 #define TLDAP_RES_MODDN (13 + 0x60)
 #define TLDAP_REQ_COMPARE (14 + 0x60)
 #define TLDAP_RES_COMPARE (15 + 0x60)
-#define TLDAP_REQ_ABANDON (16 + 0x60)
+/* ASN1_APPLICATION_SIMPLE instead of ASN1_APPLICATION */
+#define TLDAP_REQ_ABANDON (16 + 0x40)
 #define TLDAP_RES_SEARCH_REFERENCE (19 + 0x60)
 #define TLDAP_REQ_EXTENDED (23 + 0x60)
 #define TLDAP_RES_EXTENDED (24 + 0x60)
