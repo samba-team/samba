@@ -586,8 +586,7 @@ bool convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
 		/* wrapped ! abort. */
 		if (!conv_silent)
 			DEBUG(0, ("convert_string_talloc: destlen wrapped !\n"));
-		if (!ctx)
-			TALLOC_FREE(outbuf);
+		TALLOC_FREE(outbuf);
 		errno = EOPNOTSUPP;
 		return false;
 	} else {
