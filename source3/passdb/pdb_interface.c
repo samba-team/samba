@@ -133,7 +133,7 @@ NTSTATUS make_pdb_method_name(struct pdb_methods **methods, const char *selected
 	DEBUG(5,("Attempting to find a passdb backend to match %s (%s)\n", selected, module_name));
 
 	entry = pdb_find_backend_entry(module_name);
-	
+
 	/* Try to find a module that contains this module */
 	if (!entry) { 
 		DEBUG(2,("No builtin backend found, trying to load plugin\n"));
@@ -143,7 +143,7 @@ NTSTATUS make_pdb_method_name(struct pdb_methods **methods, const char *selected
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
-	
+
 	/* No such backend found */
 	if(!entry) { 
 		DEBUG(0,("No builtin nor plugin backend for %s found\n", module_name));
@@ -247,13 +247,13 @@ bool guest_user_info( struct samu *user )
 	struct passwd *pwd;
 	NTSTATUS result;
 	const char *guestname = lp_guestaccount();
-	
+
 	if ( !(pwd = getpwnam_alloc(talloc_autofree_context(), guestname ) ) ) {
 		DEBUG(0,("guest_user_info: Unable to locate guest account [%s]!\n", 
 			guestname));
 		return False;
 	}
-	
+
 	result = samu_set_unix(user, pwd );
 
 	TALLOC_FREE( pwd );
@@ -279,7 +279,7 @@ bool pdb_getsampwsid(struct samu *sam_acct, const DOM_SID *sid)
 		DEBUG(6,("pdb_getsampwsid: Building guest account\n"));
 		return guest_user_info( sam_acct );
 	}
-	
+
 	/* check the cache first */
 
 	cache_data = memcache_lookup_talloc(
@@ -453,7 +453,7 @@ static NTSTATUS pdb_default_delete_user(struct pdb_methods *methods,
 	strlower_m( username );
 
 	smb_delete_user( username );
-	
+
 	return status;
 }
 
@@ -583,7 +583,7 @@ static NTSTATUS pdb_default_create_dom_group(struct pdb_methods *methods,
 	}
 
 	sid_compose(&group_sid, get_global_sam_sid(), *rid);
-		
+
 	return add_initial_entry(grp->gr_gid, sid_to_fstring(tmp, &group_sid),
 				 SID_NAME_DOM_GRP, name, NULL);
 }
@@ -640,7 +640,7 @@ static NTSTATUS pdb_default_delete_dom_group(struct pdb_methods *methods,
 	}
 
 	/* Don't check the result of smb_delete_group */
-	
+
 	smb_delete_group(grp_name);
 
 	return NT_STATUS_OK;
@@ -688,22 +688,22 @@ NTSTATUS pdb_enum_group_members(TALLOC_CTX *mem_ctx,
 
 	result = pdb->enum_group_members(pdb, mem_ctx, 
 			sid, pp_member_rids, p_num_members);
-		
+
 	/* special check for rid 513 */
-		
+
 	if ( !NT_STATUS_IS_OK( result ) ) {
 		uint32 rid;
-		
+
 		sid_peek_rid( sid, &rid );
-		
+
 		if ( rid == DOMAIN_GROUP_RID_USERS ) {
 			*p_num_members = 0;
 			*pp_member_rids = NULL;
-			
+
 			return NT_STATUS_OK;
 		}
 	}
-	
+
 	return result;
 }
 
@@ -992,11 +992,11 @@ bool pdb_get_account_policy(int policy_index, uint32 *value)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
 	NTSTATUS status;
-	
+
 	become_root();
 	status = pdb->get_account_policy(pdb, policy_index, value);
 	unbecome_root();
-	
+
 	return NT_STATUS_IS_OK(status);	
 }
 
@@ -1190,7 +1190,7 @@ static bool pdb_default_uid_to_sid(struct pdb_methods *methods, uid_t uid,
 	struct samu *sampw = NULL;
 	struct passwd *unix_pw;
 	bool ret;
-	
+
 	unix_pw = sys_getpwuid( uid );
 
 	if ( !unix_pw ) {
@@ -1198,7 +1198,7 @@ static bool pdb_default_uid_to_sid(struct pdb_methods *methods, uid_t uid,
 			 "%lu\n", (unsigned long)uid));
 		return False;
 	}
-	
+
 	if ( !(sampw = samu_new( NULL )) ) {
 		DEBUG(0,("pdb_default_uid_to_rid: samu_new() failed!\n"));
 		return False;
@@ -1233,7 +1233,7 @@ static bool pdb_default_uid_to_rid(struct pdb_methods *methods, uid_t uid,
 	if (!ret) {
 		return ret;
 	}
-	
+
 	ret = sid_peek_check_rid(get_global_sam_sid(), &sid, rid);
 
 	if (!ret) {
@@ -1287,7 +1287,7 @@ static bool pdb_default_sid_to_id(struct pdb_methods *methods,
 		ret = True;		
 		goto done;		
 	}
-	
+
 	/* check for "Unix Group" */
 
 	if ( sid_peek_check_rid(&global_sid_Unix_Groups, sid, &rid) ) {
@@ -1296,7 +1296,7 @@ static bool pdb_default_sid_to_id(struct pdb_methods *methods,
 		ret = True;		
 		goto done;		
 	}
-	
+
 	/* BUILTIN */
 
 	if (sid_check_is_in_builtin(sid) ||
@@ -1382,7 +1382,7 @@ static bool get_memberuids(TALLOC_CTX *mem_ctx, gid_t gid, uid_t **pp_uids, size
 	if (!winbind_env) {
 		(void)winbind_on();
 	}
-	
+
 	return ret;
 }
 
@@ -1439,17 +1439,17 @@ static NTSTATUS pdb_default_enum_group_memberships(struct pdb_methods *methods,
 	gid_t gid;
 	struct passwd *pw;
 	const char *username = pdb_get_username(user);
-	
+
 
 	/* Ignore the primary group SID.  Honor the real Unix primary group.
 	   The primary group SID is only of real use to Windows clients */
-	   
+
 	if ( !(pw = getpwnam_alloc(mem_ctx, username)) ) {
 		return NT_STATUS_NO_SUCH_USER;
 	}
-	
+
 	gid = pw->pw_gid;
-	
+
 	TALLOC_FREE( pw );
 
 	if (!getgroups_unix_user(mem_ctx, username, gid, pp_gids, p_num_groups)) {
@@ -1489,13 +1489,13 @@ static bool lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid,
 	DOM_SID sid;
 
 	*psid_name_use = SID_NAME_UNKNOWN;
-	
+
 	DEBUG(5,("lookup_global_sam_rid: looking up RID %u.\n",
 		 (unsigned int)rid));
 
 	sid_copy(&sid, get_global_sam_sid());
 	sid_append_rid(&sid, rid);
-	
+
 	/* see if the passdb can help us with the name of the user */
 
 	if ( !(sam_account = samu_new( NULL )) ) {
@@ -1531,14 +1531,14 @@ static bool lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid,
 		return True;
 	}
 	TALLOC_FREE(sam_account);
-	
+
 	ret = pdb_getgrsid(&map, sid);
 	unbecome_root();
 	/* END BECOME_ROOT BLOCK */
-  
+
 	/* do not resolve SIDs to a name unless there is a valid 
 	   gid associated with it */
-		   
+
 	if ( ret && (map.gid != (gid_t)-1) ) {
 		*name = talloc_strdup(mem_ctx, map.nt_name);
 		*psid_name_use = map.sid_name_use;
@@ -1549,7 +1549,7 @@ static bool lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid,
 
 		return True;
 	}
-	
+
 	/* Windows will always map RID 513 to something.  On a non-domain 
 	   controller, this gets mapped to SERVER\None. */
 
@@ -1557,11 +1557,11 @@ static bool lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid,
 		DEBUG(5, ("Can't find a unix id for an unmapped group\n"));
 		return False;
 	}
-	
+
 	if ( rid == DOMAIN_GROUP_RID_USERS ) {
 		*name = talloc_strdup(mem_ctx, "None" );
 		*psid_name_use = SID_NAME_DOM_GRP;
-		
+
 		return True;
 	}
 
