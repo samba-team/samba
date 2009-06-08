@@ -952,11 +952,94 @@ static NTSTATUS pdb_ads_del_aliasmem(struct pdb_methods *m,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS pdb_ads_enum_aliasmem(struct pdb_methods *m,
-				      const DOM_SID *alias, DOM_SID **members,
-				      size_t *p_num_members)
+static bool pdb_ads_dnblob2sid(struct tldap_context *ld, DATA_BLOB *dnblob,
+			       struct dom_sid *psid)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	const char *attrs[1] = { "objectSid" };
+	struct tldap_message **msg;
+	char *dn;
+	size_t len;
+	int rc;
+	bool ret;
+
+	if (!convert_string_talloc(talloc_tos(), CH_UTF8, CH_UNIX,
+				   dnblob->data, dnblob->length, &dn, &len,
+				   false)) {
+		return false;
+	}
+	rc = tldap_search_fmt(ld, dn, TLDAP_SCOPE_BASE,
+			      attrs, ARRAY_SIZE(attrs), 0, talloc_tos(),
+			      &msg, "(objectclass=*)");
+	TALLOC_FREE(dn);
+	if (talloc_array_length(msg) != 1) {
+		DEBUG(10, ("Got %d objects, expected one\n",
+			   (int)talloc_array_length(msg)));
+		TALLOC_FREE(msg);
+		return false;
+	}
+
+	ret = tldap_pull_binsid(msg[0], "objectSid", psid);
+	TALLOC_FREE(msg);
+	return ret;
+}
+
+static NTSTATUS pdb_ads_enum_aliasmem(struct pdb_methods *m,
+				      const DOM_SID *alias,
+				      TALLOC_CTX *mem_ctx,
+				      DOM_SID **pmembers,
+				      size_t *pnum_members)
+{
+	struct pdb_ads_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_ads_state);
+	const char *attrs[1] = { "member" };
+	char *sidstr;
+	struct tldap_message **msg;
+	int i, rc, num_members;
+	DATA_BLOB *blobs;
+	struct dom_sid *members;
+
+	sidstr = sid_binstring(talloc_tos(), alias);
+	NT_STATUS_HAVE_NO_MEMORY(sidstr);
+
+	rc = tldap_search_fmt(state->ld, state->domaindn, TLDAP_SCOPE_SUB,
+			      attrs, ARRAY_SIZE(attrs), 0, talloc_tos(), &msg,
+			      "(objectsid=%s)", sidstr);
+	TALLOC_FREE(sidstr);
+	if (rc != TLDAP_SUCCESS) {
+		DEBUG(10, ("ldap_search failed %s\n",
+			   tldap_errstr(debug_ctx(), state->ld, rc)));
+		return NT_STATUS_LDAP(rc);
+	}
+	switch talloc_array_length(msg) {
+	case 0:
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		break;
+	case 1:
+		break;
+	default:
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		break;
+	}
+
+	if (!tldap_entry_values(msg[0], "member", &num_members, &blobs)) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	members = talloc_array(mem_ctx, struct dom_sid, num_members);
+	if (members == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0; i<num_members; i++) {
+		if (!pdb_ads_dnblob2sid(state->ld, &blobs[i], &members[i])) {
+			TALLOC_FREE(members);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+	}
+
+	*pmembers = members;
+	*pnum_members = num_members;
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS pdb_ads_enum_alias_memberships(struct pdb_methods *m,
