@@ -134,10 +134,10 @@ struct smb2_request *smb2_request_init(struct smb2_transport *transport, uint16_
 	SSVAL(req->out.hdr, SMB2_HDR_EPOCH,		0);
 	SIVAL(req->out.hdr, SMB2_HDR_STATUS,		0);
 	SSVAL(req->out.hdr, SMB2_HDR_OPCODE,		opcode);
-	SSVAL(req->out.hdr, SMB2_HDR_CREDIT,		0);
+	SSVAL(req->out.hdr, SMB2_HDR_CREDIT,		transport->credits.ask_num);
 	SIVAL(req->out.hdr, SMB2_HDR_FLAGS,		flags);
 	SIVAL(req->out.hdr, SMB2_HDR_NEXT_COMMAND,	0);
-	SBVAL(req->out.hdr, SMB2_HDR_MESSAGE_ID,		req->seqnum);
+	SBVAL(req->out.hdr, SMB2_HDR_MESSAGE_ID,	req->seqnum);
 	SIVAL(req->out.hdr, SMB2_HDR_PID,		0);
 	SIVAL(req->out.hdr, SMB2_HDR_TID,		0);
 	SBVAL(req->out.hdr, SMB2_HDR_SESSION_ID,		0);

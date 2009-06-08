@@ -86,6 +86,10 @@ struct smb2_transport {
 		struct smb2_request_buffer buffer;
 	} compound;
 
+	struct {
+		uint16_t ask_num;
+	} credits;
+
 	/* a list of requests that are pending for receive on this
 	   connection */
 	struct smb2_request *pending_recv;
