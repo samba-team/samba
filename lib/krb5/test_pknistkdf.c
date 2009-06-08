@@ -200,6 +200,7 @@ test_dh2key(krb5_context context, int i, struct testcase *c)
 	krb5_errx(context, 1, "resulting key wrong: %d", i);
 
     krb5_free_keyblock_contents(context, &key);
+    free_Ticket(&ticket);
 }
 
 
