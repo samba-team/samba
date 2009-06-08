@@ -307,6 +307,22 @@ typedef unsigned short int sa_family_t;
 #endif
 #endif
 
+#ifndef IOV_MAX
+# ifdef UIO_MAXIOV
+#  define IOV_MAX UIO_MAXIOV
+# else
+#  ifdef __sgi
+    /*
+     * IRIX 6.5 has sysconf(_SC_IOV_MAX)
+     * which might return 512 or bigger
+     */
+#   define IOV_MAX 512
+#  else
+#   error IOV_MAX and UIO_MAXIOV undefined
+#  endif
+# endif
+#endif
+
 #ifndef HAVE_STRUCT_ADDRINFO
 #define HAVE_STRUCT_ADDRINFO
 struct addrinfo {
