@@ -33,8 +33,6 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id$");
-
 /**
  * Convert the getaddrinfo() error code to a Kerberos et error code.
  *

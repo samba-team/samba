@@ -33,8 +33,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 typedef struct krb5_fcache{
     char *filename;
     int version;
@@ -233,8 +231,8 @@ scrub_file (int fd)
  * hardlink)
  */
 
-static krb5_error_code
-erase_file(krb5_context context, const char *filename)
+krb5_error_code
+_krb5_erase_file(krb5_context context, const char *filename)
 {
     int fd;
     struct stat sb1, sb2;
@@ -453,7 +451,7 @@ static krb5_error_code
 fcc_destroy(krb5_context context,
 	    krb5_ccache id)
 {
-    erase_file(context, FILENAME(id));
+    _krb5_erase_file(context, FILENAME(id));
     return 0;
 }
 
@@ -740,8 +738,10 @@ fcc_remove_cred(krb5_context context,
 {
     krb5_error_code ret;
     krb5_ccache copy, newfile;
+    char *newname;
+    int fd;
 
-    ret = krb5_cc_gen_new(context, &krb5_mcc_ops, &copy);
+    ret = krb5_cc_new_unique(context, krb5_cc_type_memory, NULL, &copy);
     if (ret)
 	return ret;
 
@@ -757,8 +757,24 @@ fcc_remove_cred(krb5_context context,
 	return ret;
     }
 
-    ret = krb5_cc_gen_new(context, &krb5_fcc_ops, &newfile);
+    asprintf(&newname, "FILE:%s.XXXXXX", FILENAME(id));
+    if (newname == NULL) {
+	krb5_cc_destroy(context, copy);
+	return ret;
+    }
+
+    fd = mkstemp(&newname[5]);
+    if (fd < 0) {
+	ret = errno;
+	krb5_cc_destroy(context, copy);
+	return ret;
+    }
+    close(fd);
+
+    ret = krb5_cc_resolve(context, newname, &newfile);
     if (ret) {
+	unlink(&newname[5]);
+	free(newname);
 	krb5_cc_destroy(context, copy);
 	return ret;
     }
@@ -766,11 +782,18 @@ fcc_remove_cred(krb5_context context,
     ret = krb5_cc_copy_cache(context, copy, newfile);
     krb5_cc_destroy(context, copy);
     if (ret) {
+	free(newname);
 	krb5_cc_destroy(context, newfile);
 	return ret;
     }
 
-    return krb5_cc_move(context, newfile, id);
+    ret = rename(&newname[5], FILENAME(id));
+    if (ret)
+	ret = errno;
+    free(newname);
+    krb5_cc_close(context, newfile);
+
+    return ret;
 }
 
 static krb5_error_code
@@ -822,12 +845,13 @@ fcc_get_cache_next(krb5_context context, krb5_cc_cursor cursor, krb5_ccache *id)
     iter->first = 0;
 
     fn = krb5_cc_default_name(context);
-    if (strncasecmp(fn, "FILE:", 5) != 0) {
+    if (fn == NULL || strncasecmp(fn, "FILE:", 5) != 0) {
 	ret = _krb5_expand_default_cc_name(context,
 					   KRB5_DEFAULT_CCNAME_FILE,
 					   &expandedfn);
 	if (ret)
 	    return ret;
+	fn = expandedfn;
     }
     ret = krb5_cc_resolve(context, fn, id);
     if (expandedfn)
@@ -900,10 +924,10 @@ fcc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
 	fcc_unlock(context, fd1);
 	close(fd1);
 
-	erase_file(context, FILENAME(from));
+	_krb5_erase_file(context, FILENAME(from));
 
 	if (ret) {
-	    erase_file(context, FILENAME(to));
+	    _krb5_erase_file(context, FILENAME(to));
 	    return ret;
 	}
     }
@@ -913,10 +937,14 @@ fcc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
 	krb5_storage *sp;
 	int fd;
 	ret = init_fcc (context, to, &sp, &fd);
-	krb5_storage_free(sp);
+	if (sp)
+	    krb5_storage_free(sp);
 	fcc_unlock(context, fd);
 	close(fd);
     }
+
+    fcc_destroy(context, from);
+
     return ret;
 }
 

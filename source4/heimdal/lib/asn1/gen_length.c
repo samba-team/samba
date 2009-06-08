@@ -139,7 +139,7 @@ length_type (const char *name, const Type *t,
 
 	ASN1_TAILQ_FOREACH(m, t->members, members) {
 	    char *s;
-	
+
 	    if (m->ellipsis) {
 		have_ellipsis = m;
 		continue;

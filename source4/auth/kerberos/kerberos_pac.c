@@ -96,7 +96,7 @@ krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 	krb5_principal client_principal_pac;
 	int i;
 
-	krb5_clear_error_string(context);
+	krb5_clear_error_message(context);
 
 	if (k5ret) {
 		*k5ret = KRB5_PARSE_MALFORMED;

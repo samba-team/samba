@@ -28,9 +28,12 @@ if (not defined $options) {
 }
 
 my $header = "$dirname/$prefix.h";
+my $headerx = "$dirname/$prefix.hx";
 
 print "basics:: $header\n";
-print "$header: \$(heimdalsrcdir)/$file \$(ASN1C)\n";
+print "$header: $headerx\n";
+print "\t\@cp $headerx $header\n";
+print "$headerx: \$(heimdalsrcdir)/$file \$(ASN1C)\n";
 print "\t\@echo \"Compiling ASN1 file \$(heimdalsrcdir)/$file\"\n";
 print "\t\@\$(heimdalbuildsrcdir)/asn1_compile_wrapper.sh \$(builddir) $dirname \$(ASN1C) \$(call abspath,\$(heimdalsrcdir)/$file) $prefix $options\n\n";
 

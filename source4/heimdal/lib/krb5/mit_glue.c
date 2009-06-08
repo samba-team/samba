@@ -31,8 +31,9 @@
  * SUCH DAMAGE.
  */
 
+#define KRB5_DEPRECATED
+
 #include "krb5_locl.h"
-RCSID("$Id$");
 
 #ifndef HEIMDAL_SMALLER
 
@@ -315,8 +316,9 @@ krb5_c_enctype_compare(krb5_context context,
 		       krb5_enctype e1,
 		       krb5_enctype e2,
 		       krb5_boolean *similar)
+    KRB5_DEPRECATED
 {
-    *similar = krb5_enctypes_compatible_keys(context, e1, e2);
+    *similar = (e1 == e2);
     return 0;
 }
 
@@ -368,6 +370,20 @@ krb5_c_prf(krb5_context context,
     krb5_crypto_destroy(context, crypto);
 
     return ret;
+}
+
+/**
+ * MIT compat glue
+ *
+ * @ingroup krb5_ccache
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_cc_copy_creds(krb5_context context,
+		   const krb5_ccache from,
+		   krb5_ccache to)
+{
+    return krb5_cc_copy_cache(context, from, to);
 }
 
 #endif /* HEIMDAL_SMALLER */

@@ -50,7 +50,6 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id$");
 
 struct revoke_crl {
     char *path;
@@ -235,7 +234,7 @@ verify_ocsp(hx509_context context,
 	}
 
 	ret = hx509_cert_check_eku(context, signer,
-				   oid_id_pkix_kp_OCSPSigning(), 0);
+				   &asn1_oid_id_pkix_kp_OCSPSigning, 0);
 	if (ret)
 	    goto out;
     }
@@ -295,7 +294,7 @@ parse_ocsp_basic(const void *data, size_t length, OCSPBasicOCSPResponse *basic)
     }
 
     ret = der_heim_oid_cmp(&resp.responseBytes->responseType,
-			   oid_id_pkix_ocsp_basic());
+			   &asn1_oid_id_pkix_ocsp_basic);
     if (ret != 0) {
 	free_OCSPResponse(&resp);
 	return HX509_REVOKE_WRONG_DATA;
@@ -1011,8 +1010,7 @@ hx509_ocsp_request(hx509_context context,
 	    goto out;
 	}
 	es->len = 1;
-	
-	ret = der_copy_oid(oid_id_pkix_ocsp_nonce(), &es->val[0].extnID);
+	ret = der_copy_oid(&asn1_oid_id_pkix_ocsp_nonce, &es->val[0].extnID);
 	if (ret) {
 	    free_OCSPRequest(&req);
 	    return ret;

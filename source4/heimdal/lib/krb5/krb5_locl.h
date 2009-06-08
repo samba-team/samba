@@ -36,9 +36,7 @@
 #ifndef __KRB5_LOCL_H__
 #define __KRB5_LOCL_H__
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include <errno.h>
 #include <ctype.h>
@@ -214,11 +212,14 @@ struct _krb5_get_init_creds_opt_private {
     krb5_get_init_creds_tristate req_pac;
     /* PKINIT */
     krb5_pk_init_ctx pk_init_ctx;
-    KRB_ERROR *error;
     krb5_get_init_creds_tristate addressless;
     int flags;
 #define KRB5_INIT_CREDS_CANONICALIZE		1
 #define KRB5_INIT_CREDS_NO_C_CANON_CHECK	2
+    struct {
+        krb5_gic_process_last_req func;
+        void *ctx;
+    } lr;
 };
 
 typedef struct krb5_context_data {
@@ -261,6 +262,7 @@ typedef struct krb5_context_data {
     int flags;
 #define KRB5_CTX_F_DNS_CANONICALIZE_HOSTNAME	1
 #define KRB5_CTX_F_CHECK_PAC			2
+#define KRB5_CTX_F_HOMEDIR_ACCESS		4
     struct send_to_kdc *send_to_kdc;
 } krb5_context_data;
 
@@ -295,6 +297,7 @@ struct krb5_pk_identity {
     hx509_context hx509ctx;
     hx509_verify_ctx verify_ctx;
     hx509_certs certs;
+    hx509_cert cert;
     hx509_certs anchors;
     hx509_certs certpool;
     hx509_revoke_ctx revokectx;

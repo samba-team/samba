@@ -94,11 +94,11 @@
 {
 	char *ret;
 	
-#if defined(HAVE_KRB5_GET_ERROR_STRING) && defined(HAVE_KRB5_FREE_ERROR_STRING) 	
-	char *context_error = krb5_get_error_string(context);
+#if defined(HAVE_KRB5_GET_ERROR_MESSAGE) && defined(HAVE_KRB5_FREE_ERROR_MESSAGE) 	
+	const char *context_error = krb5_get_error_message(context, code);
 	if (context_error) {
 		ret = talloc_asprintf(mem_ctx, "%s: %s", error_message(code), context_error);
-		krb5_free_error_string(context, context_error);
+		krb5_free_error_message(context, context_error);
 		return ret;
 	}
 #endif

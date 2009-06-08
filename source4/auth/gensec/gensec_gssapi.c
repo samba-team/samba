@@ -170,6 +170,9 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 	gensec_gssapi_state->input_chan_bindings = GSS_C_NO_CHANNEL_BINDINGS;
 	
 	gensec_gssapi_state->want_flags = 0;
+	if (gensec_setting_bool(gensec_security->settings, "gensec_gssapi", "delegation_by_kdc_policy", true)) {
+		gensec_gssapi_state->want_flags |= GSS_C_DELEG_POLICY_FLAG;
+	}
 	if (gensec_setting_bool(gensec_security->settings, "gensec_gssapi", "mutual", true)) {
 		gensec_gssapi_state->want_flags |= GSS_C_MUTUAL_FLAG;
 	}

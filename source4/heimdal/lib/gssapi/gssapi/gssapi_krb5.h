@@ -36,7 +36,7 @@
 #ifndef GSSAPI_KRB5_H_
 #define GSSAPI_KRB5_H_
 
-#include <gssapi/gssapi.h>
+#include <gssapi.h>
 
 #ifdef __cplusplus
 extern "C" {

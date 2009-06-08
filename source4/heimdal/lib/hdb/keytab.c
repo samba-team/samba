@@ -59,7 +59,7 @@ hdb_resolve(krb5_context context, const char *name, krb5_keytab id)
 	return ENOMEM;
     }
     db = name;
-    mkey = strrchr(name, ':');
+    mkey = strchr(name, ':');
     if(mkey == NULL || mkey[1] == '\0') {
 	if(*name == '\0')
 	    d->dbname = NULL;
@@ -147,7 +147,7 @@ find_db (krb5_context context,
     const krb5_config_binding *top_bind = NULL;
     const krb5_config_binding *default_binding = NULL;
     const krb5_config_binding *db;
-    krb5_realm *prealm = krb5_princ_realm(context, rk_UNCONST(principal));
+    krb5_const_realm realm = krb5_principal_get_realm(context, principal);
 
     *dbname = *mkey = NULL;
 
@@ -169,7 +169,7 @@ find_db (krb5_context context,
 		krb5_warnx(context, "WARNING: using the first encountered");
 	    } else
 		default_binding = db;
-	} else if (strcmp (*prealm, p) == 0) {
+	} else if (strcmp (realm, p) == 0) {
 	    set_config (context, db, dbname, mkey);
 	    break;
 	}
@@ -263,6 +263,7 @@ krb5_kt_ops hdb_kt_ops = {
     hdb_resolve,
     hdb_get_name,
     hdb_close,
+    NULL,		/* destroy */
     hdb_get_entry,
     NULL,		/* start_seq_get */
     NULL,		/* next_entry */

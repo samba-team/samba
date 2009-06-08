@@ -40,23 +40,27 @@
 {
 	krb5_error_code code = 0;
 	krb5_creds my_creds;
-	krb5_get_init_creds_opt options;
+	krb5_get_init_creds_opt *options;
 
-	krb5_get_init_creds_opt_init(&options);
+	if ((code = krb5_get_init_creds_opt_alloc(ctx, &options))) {
+		return code;
+	}
 
-	krb5_get_init_creds_opt_set_default_flags(ctx, NULL, NULL, &options);
+	krb5_get_init_creds_opt_set_default_flags(ctx, NULL, NULL, options);
 
 	if ((code = krb5_get_init_creds_keyblock(ctx, &my_creds, principal, keyblock,
-						 0, NULL, &options))) {
+						 0, NULL, options))) {
 		return code;
 	}
 	
 	if ((code = krb5_cc_initialize(ctx, cc, principal))) {
+		krb5_get_init_creds_opt_free(ctx, options);
 		krb5_free_cred_contents(ctx, &my_creds);
 		return code;
 	}
 	
 	if ((code = krb5_cc_store_cred(ctx, cc, &my_creds))) {
+		krb5_get_init_creds_opt_free(ctx, options);
 		krb5_free_cred_contents(ctx, &my_creds);
 		return code;
 	}
@@ -69,6 +73,7 @@
 		*kdc_time = (time_t) my_creds.times.starttime;
 	}
 
+	krb5_get_init_creds_opt_free(ctx, options);
 	krb5_free_cred_contents(ctx, &my_creds);
 	
 	return 0;
@@ -84,24 +89,28 @@
 {
 	krb5_error_code code = 0;
 	krb5_creds my_creds;
-	krb5_get_init_creds_opt options;
+	krb5_get_init_creds_opt *options;
 
-	krb5_get_init_creds_opt_init(&options);
+	if ((code = krb5_get_init_creds_opt_alloc(ctx, &options))) {
+		return code;
+	}
 
-	krb5_get_init_creds_opt_set_default_flags(ctx, NULL, NULL, &options);
+	krb5_get_init_creds_opt_set_default_flags(ctx, NULL, NULL, options);
 
 	if ((code = krb5_get_init_creds_password(ctx, &my_creds, principal, password, 
 						 NULL, 
-						 NULL, 0, NULL, &options))) {
+						 NULL, 0, NULL, options))) {
 		return code;
 	}
 	
 	if ((code = krb5_cc_initialize(ctx, cc, principal))) {
+		krb5_get_init_creds_opt_free(ctx, options);
 		krb5_free_cred_contents(ctx, &my_creds);
 		return code;
 	}
 	
 	if ((code = krb5_cc_store_cred(ctx, cc, &my_creds))) {
+		krb5_get_init_creds_opt_free(ctx, options);
 		krb5_free_cred_contents(ctx, &my_creds);
 		return code;
 	}
@@ -114,6 +123,7 @@
 		*kdc_time = (time_t) my_creds.times.starttime;
 	}
 
+	krb5_get_init_creds_opt_free(ctx, options);
 	krb5_free_cred_contents(ctx, &my_creds);
 	
 	return 0;

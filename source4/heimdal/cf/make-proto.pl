@@ -100,13 +100,16 @@ while(<>) {
 	s/^\s*//;
 	s/\s*$//;
 	s/\s+/ /g;
-	if($_ =~ /\)$/){
+	if($_ =~ /\)$/ or $_ =~ /DEPRECATED$/){
 	    if(!/^static/ && !/^PRIVATE/){
-		if(/(.*)(__attribute__\s?\(.*\))/) {
-		    $attr = $2;
+		$attr = "";
+		if(m/(.*)(__attribute__\s?\(.*\))/) {
+		    $attr .= " $2";
 		    $_ = $1;
-		} else {
-		    $attr = "";
+		}
+		if(m/(.*)\s(\w+DEPRECATED)/) {
+		    $attr .= " $2";
+		    $_ = $1;
 		}
 		# remove outer ()
 		s/\s*\(/</;
@@ -308,7 +311,7 @@ extern \"C\" {
 if ($opt_E) {
     $public_h_header .= "#ifndef $opt_E
 #if defined(_WIN32)
-#define ${opt_E}_FUNCTION _stdcall __declspec(dllimport)
+#define ${opt_E}_FUNCTION __stdcall __declspec(dllimport)
 #define ${opt_E}_VARIABLE __declspec(dllimport)
 #else
 #define ${opt_E}_FUNCTION
@@ -320,7 +323,7 @@ if ($opt_E) {
     
     $private_h_header .= "#ifndef $opt_E
 #if defined(_WIN32)
-#define ${opt_E}_FUNCTION _stdcall __declspec(dllimport)
+#define ${opt_E}_FUNCTION __stdcall __declspec(dllimport)
 #define ${opt_E}_VARIABLE __declspec(dllimport)
 #else
 #define ${opt_E}_FUNCTION

@@ -34,8 +34,6 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id$");
-
 /*
  *
  */
@@ -48,6 +46,209 @@ krb5_kdc_update_time(struct timeval *tv)
     else
 	_kdc_now = *tv;
 }
+
+static krb5_error_code 
+kdc_as_req(krb5_context context,
+	   krb5_kdc_configuration *config,
+	   krb5_data *req_buffer,
+	   krb5_data *reply,
+	   const char *from,
+	   struct sockaddr *addr,
+	   int datagram_reply,
+	   int *claim)
+{
+    krb5_error_code ret;
+    KDC_REQ req;
+    size_t len;
+
+    ret = decode_AS_REQ(req_buffer->data, req_buffer->length, &req, &len);
+    if (ret)
+	return ret;
+
+    *claim = 1;
+
+    ret = _kdc_as_rep(context, config, &req, req_buffer,
+		      reply, from, addr, datagram_reply);
+    free_AS_REQ(&req);
+    return ret;
+}
+
+
+static krb5_error_code 
+kdc_tgs_req(krb5_context context,
+	    krb5_kdc_configuration *config,
+	    krb5_data *req_buffer,
+	    krb5_data *reply,
+	    const char *from,
+	    struct sockaddr *addr,
+	    int datagram_reply,
+	    int *claim)
+{
+    krb5_error_code ret;
+    KDC_REQ req;
+    size_t len;
+
+    ret = decode_TGS_REQ(req_buffer->data, req_buffer->length, &req, &len);
+    if (ret)
+	return ret;
+    
+    *claim = 1;
+
+    ret = _kdc_tgs_rep(context, config, &req, reply, 
+		       from, addr, datagram_reply);
+    free_TGS_REQ(&req);
+    return ret;
+}
+
+#ifdef DIGEST
+
+static krb5_error_code 
+kdc_digest(krb5_context context,
+	   krb5_kdc_configuration *config,
+	   krb5_data *req_buffer,
+	   krb5_data *reply,
+	   const char *from,
+	   struct sockaddr *addr,
+	   int datagram_reply,
+	   int *claim)
+{
+    DigestREQ digestreq;
+    krb5_error_code ret;
+    size_t len;
+
+    ret = decode_DigestREQ(req_buffer->data, req_buffer->length,
+			   &digestreq, &len);
+    if (ret)
+	return ret;
+
+    *claim = 1;
+
+    ret = _kdc_do_digest(context, config, &digestreq, reply, from, addr);
+    free_DigestREQ(&digestreq);
+    return ret;
+}
+
+#endif
+
+#ifdef KX509
+
+static krb5_error_code 
+kdc_kx509(krb5_context context,
+	  krb5_kdc_configuration *config,
+	  krb5_data *req_buffer,
+	  krb5_data *reply,
+	  const char *from,
+	  struct sockaddr *addr,
+	  int datagram_reply,
+	  int *claim)
+{
+    Kx509Request kx509req;
+    krb5_error_code ret;
+    size_t len;
+
+    ret = _kdc_try_kx509_request(req_buffer->data, req_buffer->length,
+				 &kx509req, &len);
+    if (ret)
+	return ret;
+
+    *claim = 1;
+
+    ret = _kdc_do_kx509(context, config, &kx509req, reply, from, addr);
+    free_Kx509Request(&kx509req);
+    return ret;
+}
+
+#endif
+
+
+#ifdef KRB4
+
+static krb5_error_code 
+kdc_524(krb5_context context,
+	krb5_kdc_configuration *config,
+	krb5_data *req_buffer,
+	krb5_data *reply,
+	const char *from,
+	struct sockaddr *addr,
+	int datagram_reply,
+	int *claim)
+{
+    krb5_error_code ret;
+    Ticket ticket;
+    size_t len;
+
+    ret = decode_Ticket(req_buffer->data, req_buffer->length, &ticket, &len);
+    if (ret)
+	return ret;
+
+    *claim = 1;
+
+    ret = _kdc_do_524(context, config, &ticket, reply, from, addr);
+    free_Ticket(&ticket);
+    return ret;
+}
+
+static krb5_error_code 
+kdc_krb4(krb5_context context,
+	 krb5_kdc_configuration *config,
+	 krb5_data *req_buffer,
+	 krb5_data *reply,
+	 const char *from,
+	 struct sockaddr *addr,
+	 int datagram_reply,
+	 int *claim)
+{
+    if (_kdc_maybe_version4(req_buffer->data, req_buffer->length) == 0)
+	return -1;
+
+    *claim = 1;
+
+    return _kdc_do_version4(context, config, 
+			   req_buffer->data, req_buffer->length, 
+			   reply, from,
+			   (struct sockaddr_in*)addr);
+}
+
+static krb5_error_code 
+kdc_kaserver(krb5_context context,
+	     krb5_kdc_configuration *config,
+	     krb5_data *req_buffer,
+	     krb5_data *reply,
+	     const char *from,
+	     struct sockaddr *addr,
+	     int datagram_reply,
+	     int *claim)
+{
+    if (config->enable_kaserver == 0)
+	return -1;
+
+    *claim = 1;
+
+    return _kdc_do_kaserver(context, config, 
+			    req_buffer->data, req_buffer->length, 
+			    reply, from,
+			    (struct sockaddr_in*)addr);
+}
+
+#endif /* KRB4 */
+
+
+static struct krb5_kdc_service services[] =  {
+    { KS_KRB5,		kdc_as_req },
+    { KS_KRB5,		kdc_tgs_req },
+#ifdef DIGEST
+    { 0,		kdc_digest },
+#endif
+#ifdef KX509
+    { 0,		kdc_kx509 },
+#endif
+#ifdef KRB4
+    { 0,		kdc_524 },
+    { KS_NO_LENGTH,	kdc_krb4 },
+    { 0,		kdc_kaserver },
+#endif
+    { 0, NULL }
+};
 
 /*
  * handle the request in `buf, len', from `addr' (or `from' as a string),
@@ -65,50 +266,25 @@ krb5_kdc_process_request(krb5_context context,
 			 struct sockaddr *addr,
 			 int datagram_reply)
 {
-    KDC_REQ req;
-    Ticket ticket;
-    DigestREQ digestreq;
-    Kx509Request kx509req;
     krb5_error_code ret;
-    size_t i;
+    unsigned int i;
+    krb5_data req_buffer;
+    int claim = 0;
+    
+    req_buffer.data = buf;
+    req_buffer.length = len;
 
-    if(decode_AS_REQ(buf, len, &req, &i) == 0){
-	krb5_data req_buffer;
-
-	req_buffer.data = buf;
-	req_buffer.length = len;
-
-	ret = _kdc_as_rep(context, config, &req, &req_buffer,
-			  reply, from, addr, datagram_reply);
-	free_AS_REQ(&req);
-	return ret;
-    }else if(decode_TGS_REQ(buf, len, &req, &i) == 0){
-	ret = _kdc_tgs_rep(context, config, &req, reply, from, addr, datagram_reply);
-	free_TGS_REQ(&req);
-	return ret;
-    }else if(decode_Ticket(buf, len, &ticket, &i) == 0){
-	ret = _kdc_do_524(context, config, &ticket, reply, from, addr);
-	free_Ticket(&ticket);
-	return ret;
-    }else if(decode_DigestREQ(buf, len, &digestreq, &i) == 0){
-	ret = _kdc_do_digest(context, config, &digestreq, reply, from, addr);
-	free_DigestREQ(&digestreq);
-	return ret;
-    } else if (_kdc_try_kx509_request(buf, len, &kx509req, &i) == 0) {
-	ret = _kdc_do_kx509(context, config, &kx509req, reply, from, addr);
-	free_Kx509Request(&kx509req);
-	return ret;
-    } else if(_kdc_maybe_version4(buf, len)){
-	*prependlength = FALSE; /* elbitapmoc sdrawkcab XXX */
-	ret = _kdc_do_version4(context, config, buf, len, reply, from,
-			       (struct sockaddr_in*)addr);
-	return ret;
-    } else if (config->enable_kaserver) {
-	ret = _kdc_do_kaserver(context, config, buf, len, reply, from,
-			       (struct sockaddr_in*)addr);
-	return ret;
+    for (i = 0; services[i].process != NULL; i++) {
+	ret = (*services[i].process)(context, config, &req_buffer,
+				     reply, from, addr, datagram_reply,
+				     &claim);
+	if (claim) {
+	    if (services[i].flags & KS_NO_LENGTH)
+		*prependlength = 0;
+	    return ret;
+	}
     }
-			
+
     return -1;
 }
 
@@ -129,25 +305,24 @@ krb5_kdc_process_krb5_request(krb5_context context,
 			      struct sockaddr *addr,
 			      int datagram_reply)
 {
-    KDC_REQ req;
     krb5_error_code ret;
-    size_t i;
+    unsigned int i;
+    krb5_data req_buffer;
+    int claim = 0;
+    
+    req_buffer.data = buf;
+    req_buffer.length = len;
 
-    if(decode_AS_REQ(buf, len, &req, &i) == 0){
-	krb5_data req_buffer;
-
-	req_buffer.data = buf;
-	req_buffer.length = len;
-
-	ret = _kdc_as_rep(context, config, &req, &req_buffer,
-			  reply, from, addr, datagram_reply);
-	free_AS_REQ(&req);
-	return ret;
-    }else if(decode_TGS_REQ(buf, len, &req, &i) == 0){
-	ret = _kdc_tgs_rep(context, config, &req, reply, from, addr, datagram_reply);
-	free_TGS_REQ(&req);
-	return ret;
+    for (i = 0; services[i].process != NULL; i++) {
+	if ((services[i].flags & KS_KRB5) == 0)
+	    continue;
+	ret = (*services[i].process)(context, config, &req_buffer,
+				     reply, from, addr, datagram_reply,
+				     &claim);
+	if (claim)
+	    return ret;
     }
+			
     return -1;
 }
 

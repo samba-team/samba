@@ -36,14 +36,19 @@
 #undef __attribute__
 #define __attribute__(x)
 
-RCSID("$Id$");
+/**
+ * @page krb5_init_creds_intro The initial credential handing functions
+ * @section section_krb5_init_creds Initial credential
+ *
+ * Functions to get initial credentials: @ref krb5_credential .
+ */
 
-void KRB5_LIB_FUNCTION
-krb5_get_init_creds_opt_init(krb5_get_init_creds_opt *opt)
-    __attribute__((deprecated))
-{
-    memset (opt, 0, sizeof(*opt));
-}
+/**
+ * Allocate a new krb5_get_init_creds_opt structure, free with
+ * krb5_get_init_creds_opt_free().
+ *
+ * @ingroup krb5_credential
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_alloc(krb5_context context,
@@ -71,67 +76,11 @@ krb5_get_init_creds_opt_alloc(krb5_context context,
     return 0;
 }
 
-krb5_error_code
-_krb5_get_init_creds_opt_copy(krb5_context context,
-			      const krb5_get_init_creds_opt *in,
-			      krb5_get_init_creds_opt **out)
-{
-    krb5_get_init_creds_opt *opt;
-
-    *out = NULL;
-    opt = calloc(1, sizeof(*opt));
-    if (opt == NULL) {
-	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
-	return ENOMEM;
-    }
-    if (in)
-	*opt = *in;
-    if(opt->opt_private == NULL) {
-	opt->opt_private = calloc(1, sizeof(*opt->opt_private));
-	if (opt->opt_private == NULL) {
-	    krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
-	    free(opt);
-	    return ENOMEM;
-	}
-	opt->opt_private->refcount = 1;
-    } else
-	opt->opt_private->refcount++;
-    *out = opt;
-    return 0;
-}
-
-void KRB5_LIB_FUNCTION
-_krb5_get_init_creds_opt_free_krb5_error(krb5_get_init_creds_opt *opt)
-{
-    if (opt->opt_private == NULL || opt->opt_private->error == NULL)
-	return;
-    free_KRB_ERROR(opt->opt_private->error);
-    free(opt->opt_private->error);
-    opt->opt_private->error = NULL;
-}
-
-void KRB5_LIB_FUNCTION
-_krb5_get_init_creds_opt_set_krb5_error(krb5_context context,
-					krb5_get_init_creds_opt *opt,
-					const KRB_ERROR *error)
-{
-    krb5_error_code ret;
-
-    if (opt->opt_private == NULL)
-	return;
-
-    _krb5_get_init_creds_opt_free_krb5_error(opt);
-
-    opt->opt_private->error = malloc(sizeof(*opt->opt_private->error));
-    if (opt->opt_private->error == NULL)
-	return;
-    ret = copy_KRB_ERROR(error, opt->opt_private->error);
-    if (ret) {
-	free(opt->opt_private->error);
-	opt->opt_private->error = NULL;
-    }	
-}
-
+/**
+ * Free krb5_get_init_creds_opt structure.
+ *
+ * @ingroup krb5_credential
+ */
 
 void KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_free(krb5_context context,
@@ -142,7 +91,6 @@ krb5_get_init_creds_opt_free(krb5_context context,
     if (opt->opt_private->refcount < 1) /* abort ? */
 	return;
     if (--opt->opt_private->refcount == 0) {
-	_krb5_get_init_creds_opt_free_krb5_error(opt);
 	_krb5_get_init_creds_opt_free_pkinit(opt);
 	free(opt->opt_private);
     }
@@ -369,35 +317,6 @@ krb5_get_init_creds_opt_set_pac_request(krb5_context context,
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_get_init_creds_opt_get_error(krb5_context context,
-				  krb5_get_init_creds_opt *opt,
-				  KRB_ERROR **error)
-{
-    krb5_error_code ret;
-
-    *error = NULL;
-
-    ret = require_ext_opt(context, opt, "init_creds_opt_get_error");
-    if (ret)
-	return ret;
-
-    if (opt->opt_private->error == NULL)
-	return 0;
-
-    *error = malloc(sizeof(**error));
-    if (*error == NULL) {
-	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
-	return ENOMEM;
-    }
-
-    ret = copy_KRB_ERROR(opt->opt_private->error, *error);
-    if (ret)
-	krb5_clear_error_message(context);
-
-    return 0;
-}
-
-krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_set_addressless(krb5_context context,
 					krb5_get_init_creds_opt *opt,
 					krb5_boolean addressless)
@@ -445,3 +364,54 @@ krb5_get_init_creds_opt_set_win2k(krb5_context context,
     return 0;
 }
 
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_get_init_creds_opt_set_process_last_req(krb5_context context,
+					     krb5_get_init_creds_opt *opt,
+					     krb5_gic_process_last_req func,
+					     void *ctx)
+{
+    krb5_error_code ret;
+    ret = require_ext_opt(context, opt, "init_creds_opt_set_win2k");
+    if (ret)
+	return ret;
+
+    opt->opt_private->lr.func = func;
+    opt->opt_private->lr.ctx = ctx;
+
+    return 0;
+}
+
+
+#ifndef HEIMDAL_SMALLER
+
+void KRB5_LIB_FUNCTION
+krb5_get_init_creds_opt_init(krb5_get_init_creds_opt *opt)
+    KRB5_DEPRECATED
+{
+    memset (opt, 0, sizeof(*opt));
+}
+
+/**
+ * Deprecated: use the new krb5_init_creds_init() and
+ * krb5_init_creds_get_error().
+ *
+ * @ingroup krb5_deprecated
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_get_init_creds_opt_get_error(krb5_context context,
+				  krb5_get_init_creds_opt *opt,
+				  KRB_ERROR **error)
+    KRB5_DEPRECATED
+{
+    *error = calloc(1, sizeof(**error));
+    if (*error == NULL) {
+	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
+	return ENOMEM;
+    }
+
+    return 0;
+}
+
+#endif /* HEIMDAL_SMALLER */

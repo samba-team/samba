@@ -384,7 +384,7 @@ der_put_tag (unsigned char *p, size_t len, Der_class class, Der_type type,
     } else {
 	size_t ret = 0;
 	unsigned int continuation = 0;
-	
+
 	do {
 	    if (len < 1)
 		return ASN1_OVERFLOW;

@@ -33,8 +33,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 /**
  * Set the absolute time that the caller knows the kdc has so the
  * kerberos library can calculate the relative diffrence beteen the

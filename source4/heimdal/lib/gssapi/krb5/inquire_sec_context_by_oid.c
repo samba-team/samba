@@ -30,7 +30,7 @@
  * SUCH DAMAGE.
  */
 
-#include "krb5/gsskrb5_locl.h"
+#include "gsskrb5_locl.h"
 
 RCSID("$Id$");
 
@@ -242,7 +242,7 @@ static OM_uint32 inquire_sec_context_has_updated_spnego
      * mechanism.
      */
     HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
-    _gsskrb5i_is_cfx(context_handle, &is_updated);
+    is_updated = (context_handle->more_flags & IS_CFX);
     if (is_updated == 0) {
 	krb5_keyblock *acceptor_subkey;
 
@@ -282,7 +282,7 @@ export_lucid_sec_context_v1(OM_uint32 *minor_status,
 
     HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
 
-    _gsskrb5i_is_cfx(context_handle, &is_cfx);
+    is_cfx = (context_handle->more_flags & IS_CFX);
 
     sp = krb5_storage_emem();
     if (sp == NULL) {
@@ -445,6 +445,7 @@ get_service_keyblock
     HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
     if (ctx->service_keyblock == NULL) {
 	HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
+	krb5_storage_free(sp);
 	_gsskrb5_set_status(EINVAL, "No service keyblock on gssapi context");
 	*minor_status = EINVAL;
 	return GSS_S_FAILURE;

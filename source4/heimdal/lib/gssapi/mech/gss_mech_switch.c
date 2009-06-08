@@ -186,6 +186,15 @@ add_builtin(gssapi_mech_interface mech)
     gss_add_oid_set_member(&minor_status,
 			   &m->gm_mech.gm_mech_oid, &_gss_mech_oids);
 
+    /* pick up the oid sets of names */
+
+    if (m->gm_mech.gm_inquire_names_for_mech) {
+	(*m->gm_mech.gm_inquire_names_for_mech)(&minor_status,
+	    &m->gm_mech.gm_mech_oid, &m->gm_name_types);
+    } else {
+	gss_create_empty_oid_set(&minor_status, &m->gm_name_types);
+    }
+
     SLIST_INSERT_HEAD(&_gss_mechs, m, gm_link);
     return 0;
 }
@@ -221,9 +230,7 @@ _gss_load_mech(void)
 
 	add_builtin(__gss_krb5_initialize());
 	add_builtin(__gss_spnego_initialize());
-#ifndef HEIMDAL_SMALLER
 	add_builtin(__gss_ntlm_initialize());
-#endif
 
 #ifdef HAVE_DLOPEN
 	fp = fopen(_PATH_GSS_MECH, "r");
@@ -308,6 +315,9 @@ _gss_load_mech(void)
 		OPTSYM(set_sec_context_option);
 		OPTSYM(set_cred_option);
 		OPTSYM(pseudo_random);
+		OPTSYM(wrap_iov);
+		OPTSYM(unwrap_iov);
+		OPTSYM(wrap_iov_length);
 
 		SLIST_INSERT_HEAD(&_gss_mechs, m, gm_link);
 		continue;

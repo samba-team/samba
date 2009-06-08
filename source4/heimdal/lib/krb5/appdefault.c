@@ -33,8 +33,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 void KRB5_LIB_FUNCTION
 krb5_appdefault_boolean(krb5_context context, const char *appname,
 			krb5_const_realm realm, const char *option,

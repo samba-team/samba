@@ -39,6 +39,7 @@ struct krb5_storage_data {
     ssize_t (*fetch)(struct krb5_storage_data*, void*, size_t);
     ssize_t (*store)(struct krb5_storage_data*, const void*, size_t);
     off_t (*seek)(struct krb5_storage_data*, off_t, int);
+    int (*trunc)(struct krb5_storage_data*, off_t);
     void (*free)(struct krb5_storage_data*);
     krb5_flags flags;
     int eof_code;

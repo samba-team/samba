@@ -30,7 +30,7 @@
  * SUCH DAMAGE.
  */
 
-#include "spnego/spnego_locl.h"
+#include "spnego_locl.h"
 
 RCSID("$Id$");
 

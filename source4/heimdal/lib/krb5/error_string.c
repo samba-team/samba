@@ -33,10 +33,8 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 #undef __attribute__
-#define __attribute__(X)
+#define __attribute__(x)
 
 /**
  * Clears the error message from the Kerberos 5 context.
@@ -172,6 +170,9 @@ krb5_get_error_message(krb5_context context, krb5_error_code code)
     }
     HEIMDAL_MUTEX_unlock(context->mutex);
 
+    if (code == 0)
+	return strdup("Success");
+
     cstr = krb5_get_err_text(context, code);
     if (cstr)
 	return strdup(cstr);
@@ -198,80 +199,3 @@ krb5_free_error_message(krb5_context context, const char *msg)
 {
     free(rk_UNCONST(msg));
 }
-
-#ifndef HEIMDAL_SMALLER
-
-/**
- * Free the error message returned by krb5_get_error_string(),
- * deprecated, use krb5_free_error_message().
- *
- * @param context Kerberos context
- * @param msg error message to free
- *
- * @ingroup krb5_deprecated
- */
-
-void KRB5_LIB_FUNCTION
-krb5_free_error_string(krb5_context context, char *str)
-    __attribute__((deprecated))
-{
-    krb5_free_error_message(context, str);
-}
-
-/**
- * Set the error message returned by krb5_get_error_string(),
- * deprecated, use krb5_set_error_message().
- *
- * @param context Kerberos context
- * @param msg error message to free
- *
- * @ingroup krb5_deprecated
- */
-
-krb5_error_code KRB5_LIB_FUNCTION
-krb5_set_error_string(krb5_context context, const char *fmt, ...)
-    __attribute__((format (printf, 2, 3))) __attribute__((deprecated))
-{
-    va_list ap;
-
-    va_start(ap, fmt);
-    krb5_vset_error_message (context, 0, fmt, ap);
-    va_end(ap);
-    return 0;
-}
-
-/**
- * Set the error message returned by krb5_get_error_string(),
- * deprecated, use krb5_set_error_message().
- *
- * @param context Kerberos context
- * @param msg error message to free
- *
- * @ingroup krb5_deprecated
- */
-
-krb5_error_code KRB5_LIB_FUNCTION
-krb5_vset_error_string(krb5_context context, const char *fmt, va_list args)
-    __attribute__ ((format (printf, 2, 0))) __attribute__((deprecated))
-{
-    krb5_vset_error_message(context, 0, fmt, args);
-    return 0;
-}
-
-/**
- * Clar the error message returned by krb5_get_error_string(),
- * deprecated, use krb5_clear_error_message().
- *
- * @param context Kerberos context
- *
- * @ingroup krb5_deprecated
- */
-
-void KRB5_LIB_FUNCTION
-krb5_clear_error_string(krb5_context context)
-     __attribute__((deprecated))
-{
-    krb5_clear_error_message(context);
-}
-
-#endif /* !HEIMDAL_SMALLER */

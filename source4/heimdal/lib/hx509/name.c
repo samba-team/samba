@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004 - 2007 Kungliga Tekniska Högskolan
+ * Copyright (c) 2004 - 2009 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
@@ -33,7 +33,6 @@
 
 #include "hx_locl.h"
 #include <wind.h>
-RCSID("$Id$");
 
 /**
  * @page page_name PKIX/X.509 Names
@@ -63,20 +62,20 @@ RCSID("$Id$");
 
 static const struct {
     const char *n;
-    const heim_oid *(*o)(void);
+    const heim_oid *o;
     wind_profile_flags flags;
 } no[] = {
-    { "C", oid_id_at_countryName },
-    { "CN", oid_id_at_commonName },
-    { "DC", oid_id_domainComponent },
-    { "L", oid_id_at_localityName },
-    { "O", oid_id_at_organizationName },
-    { "OU", oid_id_at_organizationalUnitName },
-    { "S", oid_id_at_stateOrProvinceName },
-    { "STREET", oid_id_at_streetAddress },
-    { "UID", oid_id_Userid },
-    { "emailAddress", oid_id_pkcs9_emailAddress },
-    { "serialNumber", oid_id_at_serialNumber }
+    { "C", &asn1_oid_id_at_countryName },
+    { "CN", &asn1_oid_id_at_commonName },
+    { "DC", &asn1_oid_id_domainComponent },
+    { "L", &asn1_oid_id_at_localityName },
+    { "O", &asn1_oid_id_at_organizationName },
+    { "OU", &asn1_oid_id_at_organizationalUnitName },
+    { "S", &asn1_oid_id_at_stateOrProvinceName },
+    { "STREET", &asn1_oid_id_at_streetAddress },
+    { "UID", &asn1_oid_id_Userid },
+    { "emailAddress", &asn1_oid_id_pkcs9_emailAddress },
+    { "serialNumber", &asn1_oid_id_at_serialNumber }
 };
 
 static char *
@@ -145,7 +144,7 @@ oidtostring(const heim_oid *type)
     size_t i;
 
     for (i = 0; i < sizeof(no)/sizeof(no[0]); i++) {
-	if (der_heim_oid_cmp((*no[i].o)(), type) == 0)
+	if (der_heim_oid_cmp(no[i].o, type) == 0)
 	    return strdup(no[i].n);
     }
     if (der_print_heim_oid(type, '.', &s) != 0)
@@ -163,7 +162,7 @@ stringtooid(const char *name, size_t len, heim_oid *oid)
 
     for (i = 0; i < sizeof(no)/sizeof(no[0]); i++) {
 	if (strncasecmp(no[i].n, name, len) == 0)
-	    return der_copy_oid((*no[i].o)(), oid);
+	    return der_copy_oid(no[i].o, oid);
     }
     s = malloc(len + 1);
     if (s == NULL)
@@ -197,7 +196,7 @@ int
 _hx509_Name_to_string(const Name *n, char **str)
 {
     size_t total_len = 0;
-    int i, j;
+    int i, j, ret;
 
     *str = strdup("");
     if (*str == NULL)
@@ -224,15 +223,20 @@ _hx509_Name_to_string(const Name *n, char **str)
 		ss = ds->u.utf8String;
 		break;
 	    case choice_DirectoryString_bmpString: {
-		uint16_t *bmp = ds->u.bmpString.data;
+	        const uint16_t *bmp = ds->u.bmpString.data;
 		size_t bmplen = ds->u.bmpString.length;
 		size_t k;
 
-		ss = malloc(bmplen + 1);
+		ret = wind_ucs2utf8_length(bmp, bmplen, &k);
+		if (ret)
+		    return ret;
+		
+		ss = malloc(k + 1);
 		if (ss == NULL)
 		    _hx509_abort("allocation failure"); /* XXX */
-		for (k = 0; k < bmplen; k++)
-		    ss[k] = bmp[k] & 0xff; /* XXX */
+		ret = wind_ucs2utf8(bmp, bmplen, ss, NULL);
+		if (ret)
+		    return ret;
 		ss[k] = '\0';
 		break;
 	    }
@@ -244,15 +248,20 @@ _hx509_Name_to_string(const Name *n, char **str)
 		ss[ds->u.teletexString.length] = '\0';
 		break;
 	    case choice_DirectoryString_universalString: {
-		uint32_t *uni = ds->u.universalString.data;
+	        const uint32_t *uni = ds->u.universalString.data;
 		size_t unilen = ds->u.universalString.length;
 		size_t k;
 
-		ss = malloc(unilen + 1);
+		ret = wind_ucs4utf8_length(uni, unilen, &k);
+		if (ret)
+		    return ret;
+
+		ss = malloc(k + 1);
 		if (ss == NULL)
 		    _hx509_abort("allocation failure"); /* XXX */
-		for (k = 0; k < unilen; k++)
-		    ss[k] = uni[k] & 0xff; /* XXX */
+		ret = wind_ucs4utf8(uni, unilen, ss, NULL);
+		if (ret)
+		    return ret;
 		ss[k] = '\0';
 		break;
 	    }
@@ -344,8 +353,10 @@ dsstringprep(const DirectoryString *ds, uint32_t **rname, size_t *rlen)
 	if (name == NULL)
 	    return ENOMEM;
 	ret = wind_utf8ucs4(ds->u.utf8String, name, &len);
-	if (ret)
+	if (ret) {
+	    free(name);
 	    return ret;
+	}
 	break;
     default:
 	_hx509_abort("unknown directory type: %d", ds->element);

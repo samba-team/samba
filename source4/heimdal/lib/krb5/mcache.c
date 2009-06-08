@@ -33,8 +33,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 typedef struct krb5_mcache {
     char *name;
     unsigned int refcnt;

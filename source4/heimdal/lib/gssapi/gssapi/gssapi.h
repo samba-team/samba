@@ -53,6 +53,10 @@
 #endif
 #endif
 
+#ifndef GSSAPI_DEPRECATED
+#define GSSAPI_DEPRECATED __attribute__((deprecated))
+#endif
+
 /*
  * Now define the three implementation-dependent types.
  */
@@ -101,6 +105,11 @@ typedef struct gss_buffer_set_desc_struct {
       size_t count;
       gss_buffer_desc *elements;
 } gss_buffer_set_desc, *gss_buffer_set_t;
+
+typedef struct gss_iov_buffer_desc_struct {
+    OM_uint32 type;
+    gss_buffer_desc buffer;
+} gss_iov_buffer_desc, *gss_iov_buffer_t;
 
 /*
  * For now, define a QOP-type as an OM_uint32
@@ -178,6 +187,7 @@ typedef OM_uint32 gss_qop_t;
 #define GSS_C_NO_CREDENTIAL ((gss_cred_id_t) 0)
 #define GSS_C_NO_CHANNEL_BINDINGS ((gss_channel_bindings_t) 0)
 #define GSS_C_EMPTY_BUFFER {0, NULL}
+#define GSS_C_NO_IOV_BUFFER ((gss_iov_buffer_t)0)
 
 /*
  * Some alternate names for a couple of the above
@@ -205,6 +215,27 @@ typedef OM_uint32 gss_qop_t;
  * credential or security context
  */
 #define GSS_C_INDEFINITE 0xfffffffful
+
+/*
+ * Type of gss_wrap_iov()/gss_unwrap_iov().
+ */
+
+#define GSS_IOV_BUFFER_TYPE_EMPTY 0
+#define GSS_IOV_BUFFER_TYPE_DATA 1
+#define GSS_IOV_BUFFER_TYPE_HEADER 2
+#define GSS_IOV_BUFFER_TYPE_MECH_PARAMS 3
+
+#define GSS_IOV_BUFFER_TYPE_TRAILER 7
+#define GSS_IOV_BUFFER_TYPE_PADDING 9
+#define GSS_IOV_BUFFER_TYPE_STREAM 10
+#define GSS_IOV_BUFFER_TYPE_SIGN_ONLY 11
+
+#define GSS_IOV_BUFFER_TYPE_FLAG_MASK 0xffff0000
+#define GSS_IOV_BUFFER_TYPE_FLAG_ALLOCATE 0x00010000
+#define GSS_IOV_BUFFER_TYPE_FLAG_ALLOCATED 0x00020000
+
+#define GSS_IOV_BUFFER_TYPE(_t) ((_t) & ~GSS_IOV_BUFFER_TYPE_FLAG_MASK)
+#define GSS_IOV_BUFFER_FLAGS(_t) ((_t) & GSS_IOV_BUFFER_TYPE_FLAG_MASK)
 
 #ifdef __cplusplus
 extern "C" {
@@ -310,12 +341,6 @@ extern GSSAPI_LIB_VARIABLE gss_OID GSS_C_NT_EXPORT_NAME;
  */
 
 extern GSSAPI_LIB_VARIABLE gss_OID GSS_SASL_DIGEST_MD5_MECHANISM;
-
-/*
- * NTLM mechanism
- */
-
-extern GSSAPI_LIB_VARIABLE gss_OID GSS_NTLM_MECHANISM;
 
 /* Major status codes */
 
@@ -744,6 +769,75 @@ gss_pseudo_random
 	);
 
 /*
+ * AEAD support
+ */
+
+OM_uint32 GSSAPI_LIB_FUNCTION
+gss_wrap_iov(OM_uint32 * /* minor_status */,
+	     gss_ctx_id_t /* context_handle */,
+	     int /* conf_req_flag */,
+	     gss_qop_t /* qop_req */,
+	     int * /* conf_state */,
+	     gss_iov_buffer_desc * /*iov */,
+	     int /* iov_count */);
+
+OM_uint32 GSSAPI_LIB_FUNCTION
+gss_unwrap_iov(OM_uint32 * /* minor_status */,
+	       gss_ctx_id_t /* context_handle */,
+	       int * /* conf_state */,
+	       gss_qop_t * /* qop_state */,
+	       gss_iov_buffer_desc * /* iov */,
+	       int /* iov_count */);
+    
+OM_uint32  GSSAPI_LIB_FUNCTION
+gss_wrap_iov_length(OM_uint32 * /* minor_status */,
+		    gss_ctx_id_t /* context_handle */,
+		    int /* conf_req_flag */,
+		    gss_qop_t /* qop_req */,
+		    int * /* conf_state */,
+		    gss_iov_buffer_desc * /* iov */,
+		    int /* iov_count */);
+
+OM_uint32 GSSAPI_LIB_FUNCTION
+gss_release_iov_buffer(OM_uint32 * /* minor_status */,
+		       gss_iov_buffer_desc * /* iov */,
+		       int /* iov_count */);
+
+
+OM_uint32
+gss_store_cred(OM_uint32         * /* minor_status */,
+	       gss_cred_id_t     /* input_cred_handle */,
+	       gss_cred_usage_t  /* cred_usage */,
+	       const gss_OID     /* desired_mech */,
+	       OM_uint32         /* overwrite_cred */,
+	       OM_uint32         /* default_cred */,
+	       gss_OID_set       * /* elements_stored */,
+	       gss_cred_usage_t  * /* cred_usage_stored */);
+
+
+/*
+ * Query functions
+ */
+
+typedef struct {
+    size_t header; /**< size of header */
+    size_t trailer; /**< size of trailer */
+    size_t max_msg_size; /**< maximum message size */
+    size_t buffers; /**< extra GSS_IOV_BUFFER_TYPE_EMPTY buffer to pass */
+    size_t blocksize; /**< Specificed optimal size of messages, also
+			 is the maximum padding size
+			 (GSS_IOV_BUFFER_TYPE_PADDING) */
+} gss_context_stream_sizes; 
+
+extern gss_OID GSSAPI_LIB_VARIABLE GSS_C_ATTR_STREAM_SIZES;
+
+
+OM_uint32 GSSAPI_LIB_FUNCTION
+gss_context_query_attributes(OM_uint32 * /* minor_status */,
+			     gss_OID /* attribute */,
+			     void * /*data*/,
+			     size_t /* len */);
+/*
  * The following routines are obsolete variants of gss_get_mic,
  * gss_verify_mic, gss_wrap and gss_unwrap.  They should be
  * provided by GSSAPI V2 implementations for backwards
@@ -754,7 +848,7 @@ gss_pseudo_random
  * obsolete versions of these routines and their current forms.
  */
 
-OM_uint32 GSSAPI_LIB_FUNCTION gss_sign
+OM_uint32 GSSAPI_LIB_FUNCTION GSSAPI_DEPRECATED gss_sign
            (OM_uint32 * /*minor_status*/,
             gss_ctx_id_t /*context_handle*/,
             int /*qop_req*/,
@@ -762,7 +856,7 @@ OM_uint32 GSSAPI_LIB_FUNCTION gss_sign
             gss_buffer_t /*message_token*/
            );
 
-OM_uint32 GSSAPI_LIB_FUNCTION gss_verify
+OM_uint32 GSSAPI_LIB_FUNCTION GSSAPI_DEPRECATED gss_verify
            (OM_uint32 * /*minor_status*/,
             gss_ctx_id_t /*context_handle*/,
             gss_buffer_t /*message_buffer*/,
@@ -770,7 +864,7 @@ OM_uint32 GSSAPI_LIB_FUNCTION gss_verify
             int * /*qop_state*/
            );
 
-OM_uint32 GSSAPI_LIB_FUNCTION gss_seal
+OM_uint32 GSSAPI_LIB_FUNCTION GSSAPI_DEPRECATED gss_seal
            (OM_uint32 * /*minor_status*/,
             gss_ctx_id_t /*context_handle*/,
             int /*conf_req_flag*/,
@@ -780,7 +874,7 @@ OM_uint32 GSSAPI_LIB_FUNCTION gss_seal
             gss_buffer_t /*output_message_buffer*/
            );
 
-OM_uint32 GSSAPI_LIB_FUNCTION gss_unseal
+OM_uint32 GSSAPI_LIB_FUNCTION GSSAPI_DEPRECATED gss_unseal
            (OM_uint32 * /*minor_status*/,
             gss_ctx_id_t /*context_handle*/,
             gss_buffer_t /*input_message_buffer*/,
@@ -808,8 +902,5 @@ gss_decapsulate_token(gss_buffer_t /* input_token */,
 #ifdef __cplusplus
 }
 #endif
-
-#include <gssapi/gssapi_krb5.h>
-#include <gssapi/gssapi_spnego.h>
 
 #endif /* GSSAPI_GSSAPI_H_ */

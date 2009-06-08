@@ -84,6 +84,7 @@ krb5_kdc_get_config(krb5_context context, krb5_kdc_configuration **config)
 	krb5_config_get_bool_default(context, NULL,
 				     c->enable_v4,
 				     "kdc", "enable-524", NULL);
+#ifdef DIGEST
     c->enable_digest =
 	krb5_config_get_bool_default(context, NULL,
 				     FALSE,
@@ -110,7 +111,9 @@ krb5_kdc_get_config(krb5_context context, krb5_kdc_configuration **config)
 	    c->enable_digest = 0;
 	}
     }
+#endif
 
+#ifdef KX509
     c->enable_kx509 =
 	krb5_config_get_bool_default(context, NULL,
 				     FALSE,
@@ -129,6 +132,7 @@ krb5_kdc_get_config(krb5_context context, krb5_kdc_configuration **config)
 	    c->enable_kx509 = FALSE;
 	}
     }
+#endif
 
     c->check_ticket_addresses =
 	krb5_config_get_bool_default(context, NULL,
@@ -220,7 +224,7 @@ krb5_kdc_get_config(krb5_context context, krb5_kdc_configuration **config)
 				     "enable-pkinit",
 				     NULL);
     if (c->enable_pkinit) {
-	const char *user_id, *anchors, *ocsp_file;
+	const char *user_id, *anchors, *file;
 	char **pool_list, **revoke_list;
 
 	user_id =
@@ -242,14 +246,22 @@ krb5_kdc_get_config(krb5_context context, krb5_kdc_configuration **config)
 	    krb5_config_get_strings(context, NULL,
 				    "kdc", "pkinit_revoke", NULL);
 
-	ocsp_file =
-	    krb5_config_get_string(context, NULL,
-				   "kdc", "pkinit_kdc_ocsp", NULL);
-	if (ocsp_file) {
-	    c->pkinit_kdc_ocsp_file = strdup(ocsp_file);
+	file = krb5_config_get_string(context, NULL,
+				      "kdc", "pkinit_kdc_ocsp", NULL);
+	if (file) {
+	    c->pkinit_kdc_ocsp_file = strdup(file);
 	    if (c->pkinit_kdc_ocsp_file == NULL)
 		krb5_errx(context, 1, "out of memory");
 	}
+
+	file = krb5_config_get_string(context, NULL,
+				      "kdc", "pkinit_kdc_friendly_name", NULL);
+	if (file) {
+	    c->pkinit_kdc_friendly_name = strdup(file);
+	    if (c->pkinit_kdc_friendly_name == NULL)
+		krb5_errx(context, 1, "out of memory");
+	}
+
 
 	_kdc_pk_initialize(context, c, user_id, anchors,
 			   pool_list, revoke_list);

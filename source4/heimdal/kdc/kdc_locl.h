@@ -42,6 +42,8 @@
 #include "kdc.h"
 
 typedef struct pk_client_params pk_client_params;
+struct DigestREQ;
+struct Kx509Request;
 #include <kdc-private.h>
 
 extern sig_atomic_t exit_flag;
@@ -52,9 +54,12 @@ extern krb5_addresses explicit_addresses;
 
 extern int enable_http;
 
+#ifdef SUPPORT_DETACH
+
 #define DETACH_IS_DEFAULT FALSE
 
 extern int detach_from_console;
+#endif
 
 extern const struct units _kdc_digestunits[];
 

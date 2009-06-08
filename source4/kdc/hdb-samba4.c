@@ -282,23 +282,23 @@ static krb5_error_code LDB_message2entry_keys(krb5_context context,
 		ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, iconv_convenience, &_pkb,
 					       (ndr_pull_flags_fn_t)ndr_pull_package_PrimaryKerberosBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			krb5_set_error_string(context, "LDB_message2entry_keys: could not parse package_PrimaryKerberosBlob");
-			krb5_warnx(context, "LDB_message2entry_keys: could not parse package_PrimaryKerberosBlob");
 			ret = EINVAL;
+			krb5_set_error_message(context, ret, "LDB_message2entry_keys: could not parse package_PrimaryKerberosBlob");
+			krb5_warnx(context, "LDB_message2entry_keys: could not parse package_PrimaryKerberosBlob");
 			goto out;
 		}
 
 		if (newer_keys && _pkb.version != 4) {
-			krb5_set_error_string(context, "LDB_message2entry_keys: Primary:Kerberos-Newer-Keys not version 4");
-			krb5_warnx(context, "LDB_message2entry_keys: Primary:Kerberos-Newer-Keys not version 4");
 			ret = EINVAL;
+			krb5_set_error_message(context, ret, "LDB_message2entry_keys: Primary:Kerberos-Newer-Keys not version 4");
+			krb5_warnx(context, "LDB_message2entry_keys: Primary:Kerberos-Newer-Keys not version 4");
 			goto out;
 		}
 
 		if (!newer_keys && _pkb.version != 3) {
-			krb5_set_error_string(context, "LDB_message2entry_keys: could not parse Primary:Kerberos not version 3");
-			krb5_warnx(context, "LDB_message2entry_keys: could not parse Primary:Kerberos not version 3");
 			ret = EINVAL;
+			krb5_set_error_message(context, ret, "LDB_message2entry_keys: could not parse Primary:Kerberos not version 3");
+			krb5_warnx(context, "LDB_message2entry_keys: could not parse Primary:Kerberos not version 3");
 			goto out;
 		}
 
@@ -510,8 +510,8 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 	computer_val.length = strlen((const char *)computer_val.data);
 	
 	if (!samAccountName) {
-		krb5_set_error_string(context, "LDB_message2entry: no samAccountName present");
 		ret = ENOENT;
+		krb5_set_error_message(context, ret, "LDB_message2entry: no samAccountName present");
 		goto out;
 	}
 
@@ -524,8 +524,8 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 	memset(entry_ex, 0, sizeof(*entry_ex));
 
 	if (!realm) {
-		krb5_set_error_string(context, "talloc_strdup: out of memory");
 		ret = ENOMEM;
+		krb5_set_error_message(context, ret, "talloc_strdup: out of memory");
 		goto out;
 	}
 			
@@ -556,10 +556,9 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 	if (ent_type == HDB_SAMBA4_ENT_TYPE_ANY && principal == NULL) {
 		krb5_make_principal(context, &entry_ex->entry.principal, realm, samAccountName, NULL);
 	} else {
-		char *strdup_realm;
 		ret = copy_Principal(principal, entry_ex->entry.principal);
 		if (ret) {
-			krb5_clear_error_string(context);
+			krb5_clear_error_message(context);
 			goto out;
 		}
 
@@ -570,14 +569,7 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 		 * we determine from our records */
 		
 		/* this has to be with malloc() */
-		strdup_realm = strdup(realm);
-		if (!strdup_realm) {
-			ret = ENOMEM;
-			krb5_clear_error_string(context);
-			goto out;
-		}
-		free(*krb5_princ_realm(context, entry_ex->entry.principal));
-		krb5_princ_set_realm(context, entry_ex->entry.principal, &strdup_realm);
+		krb5_principal_set_realm(context, entry_ex->entry.principal, realm);
 	}
 
 	/* First try and figure out the flags based on the userAccountControl */
@@ -608,8 +600,8 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 		
 		entry_ex->entry.modified_by = (Event *) malloc(sizeof(Event));
 		if (entry_ex->entry.modified_by == NULL) {
-			krb5_set_error_string(context, "malloc: out of memory");
 			ret = ENOMEM;
+			krb5_set_error_message(context, ret, "malloc: out of memory");
 			goto out;
 		}
 		
@@ -695,14 +687,14 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 
 	entry_ex->entry.etypes = malloc(sizeof(*(entry_ex->entry.etypes)));
 	if (entry_ex->entry.etypes == NULL) {
-		krb5_clear_error_string(context);
+		krb5_clear_error_message(context);
 		ret = ENOMEM;
 		goto out;
 	}
 	entry_ex->entry.etypes->len = entry_ex->entry.keys.len;
 	entry_ex->entry.etypes->val = calloc(entry_ex->entry.etypes->len, sizeof(int));
 	if (entry_ex->entry.etypes->val == NULL) {
-		krb5_clear_error_string(context);
+		krb5_clear_error_message(context);
 		ret = ENOMEM;
 		goto out;
 	}
@@ -739,7 +731,6 @@ static krb5_error_code LDB_trust_message2entry(krb5_context context, HDB *db,
 	
 	const char *dnsdomain;
 	char *realm;
-	char *strdup_realm;
 	DATA_BLOB password_utf16;
 	struct samr_Password password_hash;
 	const struct ldb_val *password_val;
@@ -849,7 +840,7 @@ static krb5_error_code LDB_trust_message2entry(krb5_context context, HDB *db,
 
 	ret = copy_Principal(principal, entry_ex->entry.principal);
 	if (ret) {
-		krb5_clear_error_string(context);
+		krb5_clear_error_message(context);
 		goto out;
 	}
 	
@@ -859,16 +850,7 @@ static krb5_error_code LDB_trust_message2entry(krb5_context context, HDB *db,
 	 * replace the client principal's realm with the one
 	 * we determine from our records */
 	
-	/* this has to be with malloc() */
-	strdup_realm = strdup(realm);
-	if (!strdup_realm) {
-		ret = ENOMEM;
-		krb5_clear_error_string(context);
-		goto out;
-	}
-	free(*krb5_princ_realm(context, entry_ex->entry.principal));
-	krb5_princ_set_realm(context, entry_ex->entry.principal, &strdup_realm);
-	
+	krb5_principal_set_realm(context, entry_ex->entry.principal, realm);
 	entry_ex->entry.flags = int2HDBFlags(0);
 	entry_ex->entry.flags.immutable = 1;
 	entry_ex->entry.flags.invalid = 0;
@@ -885,14 +867,14 @@ static krb5_error_code LDB_trust_message2entry(krb5_context context, HDB *db,
 
 	entry_ex->entry.etypes = malloc(sizeof(*(entry_ex->entry.etypes)));
 	if (entry_ex->entry.etypes == NULL) {
-		krb5_clear_error_string(context);
+		krb5_clear_error_message(context);
 		ret = ENOMEM;
 		goto out;
 	}
 	entry_ex->entry.etypes->len = entry_ex->entry.keys.len;
 	entry_ex->entry.etypes->val = calloc(entry_ex->entry.etypes->len, sizeof(int));
 	if (entry_ex->entry.etypes->val == NULL) {
-		krb5_clear_error_string(context);
+		krb5_clear_error_message(context);
 		ret = ENOMEM;
 		goto out;
 	}
@@ -933,7 +915,7 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 	ret = krb5_unparse_name_flags(context, principal,  KRB5_PRINCIPAL_UNPARSE_NO_REALM, &short_princ);
 
 	if (ret != 0) {
-		krb5_set_error_string(context, "LDB_lookup_principal: could not parse principal");
+		krb5_set_error_message(context, ret, "LDB_lookup_principal: could not parse principal");
 		krb5_warnx(context, "LDB_lookup_principal: could not parse principal");
 		return ret;
 	}
@@ -941,8 +923,9 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 	short_princ_talloc = talloc_strdup(mem_ctx, short_princ);
 	free(short_princ);
 	if (!short_princ_talloc) {
-		krb5_set_error_string(context, "LDB_lookup_principal: talloc_strdup() failed!");
-		return ENOMEM;
+		ret = ENOMEM;
+		krb5_set_error_message(context, ret, "LDB_lookup_principal: talloc_strdup() failed!");
+		return ret;
 	}
 
 	switch (ent_type) {
@@ -962,8 +945,9 @@ static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_con
 	}
 
 	if (!filter) {
-		krb5_set_error_string(context, "talloc_asprintf: out of memory");
-		return ENOMEM;
+		ret = ENOMEM;
+		krb5_set_error_message(context, ret, "talloc_asprintf: out of memory");
+		return ret;
 	}
 
 	lret = gendb_search_single_extended_dn(ldb_ctx, mem_ctx, 
@@ -988,6 +972,7 @@ static krb5_error_code LDB_lookup_trust(krb5_context context, struct ldb_context
 					struct ldb_message **pmsg)
 {
 	int lret;
+	krb5_error_code ret;
 	char *filter = NULL;
 	const char * const *attrs = trust_attrs;
 
@@ -995,8 +980,9 @@ static krb5_error_code LDB_lookup_trust(krb5_context context, struct ldb_context
 	filter = talloc_asprintf(mem_ctx, "(&(objectClass=trustedDomain)(|(flatname=%s)(trustPartner=%s)))", realm, realm);
 
 	if (!filter) {
-		krb5_set_error_string(context, "talloc_asprintf: out of memory");
-		return ENOMEM;
+		ret = ENOMEM;
+		krb5_set_error_message(context, ret, "talloc_asprintf: out of memory");
+		return ret;
 	}
 
 	lret = ldb_search(ldb_ctx, mem_ctx, &res,
@@ -1019,9 +1005,10 @@ static krb5_error_code LDB_lookup_trust(krb5_context context, struct ldb_context
 static krb5_error_code LDB_open(krb5_context context, HDB *db, int flags, mode_t mode)
 {
 	if (db->hdb_master_key_set) {
+		krb5_error_code ret = HDB_ERR_NOENTRY;
 		krb5_warnx(context, "LDB_open: use of a master key incompatible with LDB\n");
-		krb5_set_error_string(context, "LDB_open: use of a master key incompatible with LDB\n");
-		return HDB_ERR_NOENTRY;
+		krb5_set_error_message(context, ret, "LDB_open: use of a master key incompatible with LDB\n");
+		return ret;
 	}		
 
 	return 0;
@@ -1112,8 +1099,9 @@ static krb5_error_code LDB_fetch_krbtgt(krb5_context context, HDB *db,
  		
  		char *realm_fixed = strupper_talloc(mem_ctx, lp_realm(lp_ctx));
  		if (!realm_fixed) {
- 			krb5_set_error_string(context, "strupper_talloc: out of memory");
- 			return ENOMEM;
+			ret = ENOMEM;
+ 			krb5_set_error_message(context, ret, "strupper_talloc: out of memory");
+ 			return ret;
  		}
  		
  		ret = krb5_copy_principal(context, principal, &alloc_principal);
@@ -1125,8 +1113,9 @@ static krb5_error_code LDB_fetch_krbtgt(krb5_context context, HDB *db,
 		alloc_principal->name.name_string.val[1] = strdup(realm_fixed);
  		talloc_free(realm_fixed);
  		if (!alloc_principal->name.name_string.val[1]) {
- 			krb5_set_error_string(context, "LDB_fetch: strdup() failed!");
- 			return ENOMEM;
+			ret = ENOMEM;
+ 			krb5_set_error_message(context, ret, "LDB_fetch: strdup() failed!");
+ 			return ret;
  		}
  		principal = alloc_principal;
 
@@ -1136,7 +1125,7 @@ static krb5_error_code LDB_fetch_krbtgt(krb5_context context, HDB *db,
 		
 		if (ret != 0) {
 			krb5_warnx(context, "LDB_fetch: could not find principal in DB");
-			krb5_set_error_string(context, "LDB_fetch: could not find principal in DB");
+			krb5_set_error_message(context, ret, "LDB_fetch: could not find principal in DB");
 			return ret;
 		}
 		
@@ -1173,7 +1162,7 @@ static krb5_error_code LDB_fetch_krbtgt(krb5_context context, HDB *db,
 		
 		if (ret != 0) {
 			krb5_warnx(context, "LDB_fetch: could not find principal in DB");
-			krb5_set_error_string(context, "LDB_fetch: could not find principal in DB");
+			krb5_set_error_message(context, ret, "LDB_fetch: could not find principal in DB");
 			return ret;
 		}
 		
@@ -1273,8 +1262,9 @@ static krb5_error_code LDB_fetch(krb5_context context, HDB *db,
 	TALLOC_CTX *mem_ctx = talloc_named(db, 0, "LDB_fetch context");
 
 	if (!mem_ctx) {
-		krb5_set_error_string(context, "LDB_fetch: talloc_named() failed!");
-		return ENOMEM;
+		ret = ENOMEM;
+		krb5_set_error_message(context, ret, "LDB_fetch: talloc_named() failed!");
+		return ret;
 	}
 
 	if (flags & HDB_F_GET_CLIENT) {
@@ -1333,8 +1323,9 @@ static krb5_error_code LDB_seq(krb5_context context, HDB *db, unsigned flags, hd
 	mem_ctx = talloc_named(priv, 0, "LDB_seq context");
 
 	if (!mem_ctx) {
-		krb5_set_error_string(context, "LDB_seq: talloc_named() failed!");
-		return ENOMEM;
+		ret = ENOMEM;
+		krb5_set_error_message(context, ret, "LDB_seq: talloc_named() failed!");
+		return ret;
 	}
 
 	if (priv->index < priv->count) {
@@ -1373,8 +1364,9 @@ static krb5_error_code LDB_firstkey(krb5_context context, HDB *db, unsigned flag
 
 	priv = (struct hdb_ldb_seq *) talloc(db, struct hdb_ldb_seq);
 	if (!priv) {
-		krb5_set_error_string(context, "talloc: out of memory");
-		return ENOMEM;
+		ret = ENOMEM;
+		krb5_set_error_message(context, ret, "talloc: out of memory");
+		return ret;
 	}
 
 	priv->ctx = ldb_ctx;
@@ -1386,8 +1378,9 @@ static krb5_error_code LDB_firstkey(krb5_context context, HDB *db, unsigned flag
 	mem_ctx = talloc_named(priv, 0, "LDB_firstkey context");
 
 	if (!mem_ctx) {
-		krb5_set_error_string(context, "LDB_firstkey: talloc_named() failed!");
-		return ENOMEM;
+		ret = ENOMEM;
+		krb5_set_error_message(context, ret, "LDB_firstkey: talloc_named() failed!");
+		return ret;
 	}
 
 	ret = krb5_get_default_realm(context, &realm);
@@ -1448,7 +1441,7 @@ NTSTATUS kdc_hdb_samba4_create(TALLOC_CTX *mem_ctx,
 	struct auth_session_info *session_info;
 	*db = talloc(mem_ctx, HDB);
 	if (!*db) {
-		krb5_set_error_string(context, "malloc: out of memory");
+		krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 		return NT_STATUS_NO_MEMORY;
 	}
 

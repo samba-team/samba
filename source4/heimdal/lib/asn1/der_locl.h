@@ -36,9 +36,9 @@
 #ifndef __DER_LOCL_H__
 #define __DER_LOCL_H__
 
-#ifdef HAVE_CONFIG_H
+
 #include <config.h>
-#endif
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>

@@ -33,8 +33,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 PA_DATA *
 krb5_find_padata(PA_DATA *val, unsigned len, int type, int *idx)
 {

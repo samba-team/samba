@@ -67,15 +67,21 @@ decode_heim_any(const unsigned char *p, size_t len,
 	return ASN1_OVERFLOW;
     e = der_get_length(p + l, len - l, &length, &len_len);
     if (e) return e;
-    if (length + len_len + l > len)
-	return ASN1_OVERFLOW;
-
+    if (length == ASN1_INDEFINITE) {
+        if (len < len_len + l)
+	    return ASN1_OVERFLOW;
+	length = len - (len_len + l);
+    } else {
+	if (len < length + len_len + l)
+	    return ASN1_OVERFLOW;
+    }
+   
     data->data = malloc(length + len_len + l);
     if (data->data == NULL)
 	return ENOMEM;
     data->length = length + len_len + l;
     memcpy(data->data, p, length + len_len + l);
-
+   
     if (size)
 	*size = length + len_len + l;
 

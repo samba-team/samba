@@ -33,8 +33,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 static krb5_error_code
 copy_hostname(krb5_context context,
 	      const char *orig_hostname,
@@ -50,9 +48,19 @@ copy_hostname(krb5_context context,
     return 0;
 }
 
-/*
- * Try to make `orig_hostname' into a more canonical one in the newly
- * allocated space returned in `new_hostname'.
+/**
+ * krb5_expand_hostname() tries to make orig_hostname into a more
+ * canonical one in the newly allocated space returned in
+ * new_hostname.
+
+ * @param context a Keberos context
+ * @param orig_hostname hostname to canonicalise.
+ * @param new_hostname output hostname, caller must free hostname with
+ *        krb5_xfree().
+ *
+ * @return Return an error code or 0, see krb5_get_error_message().
+ *
+ * @ingroup krb5_support
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -114,9 +122,22 @@ vanilla_hostname (krb5_context context,
     return 0;
 }
 
-/*
- * expand `hostname' to a name we believe to be a hostname in newly
- * allocated space in `host' and return realms in `realms'.
+/**
+ * krb5_expand_hostname_realms() expands orig_hostname to a name we
+ * believe to be a hostname in newly allocated space in new_hostname
+ * and return the realms new_hostname is believed to belong to in
+ * realms.
+ *
+ * @param context a Keberos context
+ * @param orig_hostname hostname to canonicalise.
+ * @param new_hostname output hostname, caller must free hostname with
+ *        krb5_xfree().
+ * @param realms output possible realms, is an array that is terminated
+ *        with NULL. Caller must free with krb5_free_host_realm().
+ *
+ * @return Return an error code or 0, see krb5_get_error_message().
+ *
+ * @ingroup krb5_support
  */
 
 krb5_error_code KRB5_LIB_FUNCTION

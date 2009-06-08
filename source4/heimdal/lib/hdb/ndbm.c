@@ -53,9 +53,7 @@ struct ndbm_db {
 static krb5_error_code
 NDBM_destroy(krb5_context context, HDB *db)
 {
-    krb5_error_code ret;
-
-    ret = hdb_clear_master_key (context, db);
+    hdb_clear_master_key (context, db);
     free(db->hdb_name);
     free(db);
     return 0;

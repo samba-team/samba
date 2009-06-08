@@ -75,8 +75,10 @@ typedef struct krb5_kdc_configuration {
     krb5_boolean enable_pkinit;
     krb5_boolean pkinit_princ_in_cert;
     char *pkinit_kdc_ocsp_file;
+    char *pkinit_kdc_friendly_name;
     int pkinit_dh_min_bits;
     int pkinit_require_binding;
+    int pkinit_allow_proxy_certs;
 
     krb5_log_facility *logf;
 
@@ -90,6 +92,20 @@ typedef struct krb5_kdc_configuration {
     const char *kx509_ca;
 
 } krb5_kdc_configuration;
+
+struct krb5_kdc_service {
+    unsigned int flags;
+#define KS_KRB5		1
+#define KS_NO_LENGTH	2
+    krb5_error_code (*process)(krb5_context context,
+			       krb5_kdc_configuration *config,
+			       krb5_data *req_buffer,
+			       krb5_data *reply,
+			       const char *from,
+			       struct sockaddr *addr,
+			       int datagram_reply,
+			       int *claim);
+};
 
 #include <kdc-protos.h>
 

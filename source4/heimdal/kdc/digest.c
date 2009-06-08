@@ -34,7 +34,7 @@
 #include "kdc_locl.h"
 #include <hex.h>
 
-RCSID("$Id$");
+#ifdef DIGEST
 
 #define MS_CHAP_V2	0x20
 #define CHAP_MD5	0x10
@@ -201,7 +201,7 @@ get_password_entry(krb5_context context,
 krb5_error_code
 _kdc_do_digest(krb5_context context,
 	       krb5_kdc_configuration *config,
-	       const DigestREQ *req, krb5_data *reply,
+	       const struct DigestREQ *req, krb5_data *reply,
 	       const char *from, struct sockaddr *addr)
 {
     krb5_error_code ret = 0;
@@ -234,6 +234,7 @@ _kdc_do_digest(krb5_context context,
     memset(&ireq, 0, sizeof(ireq));
     memset(&r, 0, sizeof(r));
     memset(&rep, 0, sizeof(rep));
+    memset(&res, 0, sizeof(res));
 
     kdc_log(context, config, 0, "Digest request from %s", from);
 
@@ -487,6 +488,7 @@ _kdc_do_digest(krb5_context context,
 
 	hex_encode(buf.data, buf.length, &r.u.initReply.opaque);
 	free(buf.data);
+	krb5_data_zero(&buf);
 	if (r.u.initReply.opaque == NULL) {
 	    krb5_clear_error_message(context);
 	    ret = ENOMEM;
@@ -539,8 +541,10 @@ _kdc_do_digest(krb5_context context,
 
 	ret = decode_Checksum(buf.data, buf.length, &res, NULL);
 	free(buf.data);
+	krb5_data_zero(&buf);
 	if (ret) {
-	    krb5_set_error_message(context, ret, "Failed to decode digest Checksum");
+	    krb5_set_error_message(context, ret,
+				   "Failed to decode digest Checksum");
 	    goto out;
 	}
 	
@@ -582,6 +586,8 @@ _kdc_do_digest(krb5_context context,
 	ret = krb5_verify_checksum(context, crypto,
 				   KRB5_KU_DIGEST_OPAQUE,
 				   buf.data, buf.length, &res);
+	free_Checksum(&res);
+	krb5_data_free(&buf);
 	krb5_crypto_destroy(context, crypto);
 	crypto = NULL;
 	if (ret)
@@ -1165,6 +1171,8 @@ _kdc_do_digest(krb5_context context,
 	    krb5_set_error_message(context, ret, "NTLM storage read flags");
 	    goto out;
 	}
+	krb5_storage_free(sp);
+	sp = NULL;
 	krb5_data_free(&buf);
 
 	if ((flags & NTLM_NEG_NTLM) == 0) {
@@ -1450,9 +1458,12 @@ _kdc_do_digest(krb5_context context,
 	free (client_name);
     krb5_data_free(&buf);
     krb5_data_free(&serverNonce);
+    free_Checksum(&res);
     free_DigestREP(&rep);
     free_DigestRepInner(&r);
     free_DigestReqInner(&ireq);
 
     return ret;
 }
+
+#endif /* DIGEST */

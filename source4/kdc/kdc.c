@@ -661,7 +661,9 @@ static NTSTATUS kdc_check_generic_kerberos(struct irpc_message *msg,
 
 static struct hdb_method hdb_samba4 = {
 	.interface_version = HDB_INTERFACE_VERSION,
-	.prefix = "samba4:",
+	.prefix = "samba4", /* Only used in the hdb-backed keytab code
+			     * for a keytab of 'samba4:', to find
+			     * kpasswd's key in the main DB */
 	.create = hdb_samba4_create
 };
 
@@ -722,7 +724,7 @@ static void kdc_task_init(struct task_server *task)
 		task_server_terminate(task, "kdc: failed to get KDC configuration");
 		return;
 	}
-
+ 
 	kdc->config->logf = kdc->smb_krb5_context->logf;
 	kdc->config->db = talloc(kdc, struct HDB *);
 	if (!kdc->config->db) {

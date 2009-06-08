@@ -34,8 +34,6 @@
 #include "krb5_locl.h"
 #include <com_err.h>
 
-RCSID("$Id$");
-
 #define INIT_FIELD(C, T, E, D, F)					\
     (C)->E = krb5_config_get_ ## T ## _default ((C), NULL, (D), 	\
 						"libdefaults", F, NULL)
@@ -243,9 +241,7 @@ cc_ops_register(krb5_context context)
     krb5_cc_register(context, &krb5_acc_ops, TRUE);
     krb5_cc_register(context, &krb5_fcc_ops, TRUE);
     krb5_cc_register(context, &krb5_mcc_ops, TRUE);
-#ifdef HAVE_SQLITE
     krb5_cc_register(context, &krb5_scc_ops, TRUE);
-#endif
 #ifdef HAVE_KCM
     krb5_cc_register(context, &krb5_kcm_ops, TRUE);
 #endif
@@ -310,6 +306,8 @@ krb5_init_context(krb5_context *context)
     }
     HEIMDAL_MUTEX_init(p->mutex);
 
+    p->flags |= KRB5_CTX_F_HOMEDIR_ACCESS;
+
     ret = krb5_get_default_config_files(&files);
     if(ret)
 	goto out;
@@ -336,7 +334,7 @@ out:
  * Make a copy for the Kerberos 5 context, allocated krb5_contex shoud
  * be freed with krb5_free_context().
  *
- * @param in the Kerberos context to copy
+ * @param context the Kerberos context to copy
  * @param out the copy of the Kerberos, set to NULL error.
  *
  * @return Returns 0 to indicate success.  Otherwise an kerberos et
@@ -453,10 +451,10 @@ krb5_free_context(krb5_context context)
     krb5_set_extra_addresses(context, NULL);
     krb5_set_ignore_addresses(context, NULL);
     krb5_set_send_to_kdc_func(context, NULL, NULL);
-    if (context->mutex != NULL) {
-	HEIMDAL_MUTEX_destroy(context->mutex);
-	free(context->mutex);
-    }
+
+    HEIMDAL_MUTEX_destroy(context->mutex);
+    free(context->mutex);
+
     memset(context, 0, sizeof(*context));
     free(context);
 }
@@ -552,7 +550,7 @@ krb5_prepend_config_files(const char *filelist, char **pq, char ***ret_pp)
 	    krb5_free_config_files(pp);
 	    return ENOMEM;
 	}
-	l = strsep_copy(&p, ":", fn, l + 1);
+	(void)strsep_copy(&p, ":", fn, l + 1);
 	ret = add_file(&pp, &len, fn);
 	if (ret) {
 	    krb5_free_config_files(pp);
@@ -641,7 +639,8 @@ krb5_get_default_config_files(char ***pfilenames)
 /**
  * Free a list of configuration files.
  *
- * @param filenames list to be freed.
+ * @param filenames list, terminated with a NULL pointer, to be
+ * freed. NULL is an valid argument.
  *
  * @return Returns 0 to indicate success. Otherwise an kerberos et
  * error code is returned, see krb5_get_error_message().
@@ -653,7 +652,7 @@ void KRB5_LIB_FUNCTION
 krb5_free_config_files(char **filenames)
 {
     char **p;
-    for(p = filenames; *p != NULL; p++)
+    for(p = filenames; p && *p != NULL; p++)
 	free(*p);
     free(filenames);
 }
@@ -1225,4 +1224,116 @@ void KRB5_LIB_FUNCTION
 krb5_set_max_time_skew (krb5_context context, time_t t)
 {
     context->max_skew = t;
+}
+
+/**
+ * Init encryption types in len, val with etypes.
+ *
+ * @param context Kerberos 5 context.
+ * @param len output length of val.
+ * @param val output array of enctypes.
+ * @param etypes etypes to set val and len to, if NULL, use default enctypes.
+
+ * @return Returns 0 to indicate success. Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_init_etype (krb5_context context,
+		 unsigned *len,
+		 krb5_enctype **val,
+		 const krb5_enctype *etypes)
+{
+    unsigned int i;
+    krb5_error_code ret;
+    krb5_enctype *tmp = NULL;
+
+    ret = 0;
+    if (etypes == NULL) {
+	ret = krb5_get_default_in_tkt_etypes(context, &tmp);
+	if (ret)
+	    return ret;
+	etypes = tmp;
+    }
+
+    for (i = 0; etypes[i]; ++i)
+	;
+    *len = i;
+    *val = malloc(i * sizeof(**val));
+    if (i != 0 && *val == NULL) {
+	ret = ENOMEM;
+	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
+	goto cleanup;
+    }
+    memmove (*val,
+	     etypes,
+	     i * sizeof(*tmp));
+cleanup:
+    if (tmp != NULL)
+	free (tmp);
+    return ret;
+}
+
+/*
+ * Allow homedir accces
+ */
+
+static HEIMDAL_MUTEX homedir_mutex = HEIMDAL_MUTEX_INITIALIZER;
+static krb5_boolean allow_homedir = TRUE;
+
+krb5_boolean
+_krb5_homedir_access(krb5_context context)
+{
+    krb5_boolean allow;
+
+    /* is never allowed for root */
+    if (geteuid() == 0)
+	return FALSE;
+
+    if (context && (context->flags & KRB5_CTX_F_HOMEDIR_ACCESS) == 0)
+	return FALSE;
+
+    HEIMDAL_MUTEX_lock(&homedir_mutex);
+    allow = allow_homedir;
+    HEIMDAL_MUTEX_unlock(&homedir_mutex);
+    return allow;
+}
+
+/**
+ * Enable and disable home directory access on either the global state
+ * or the krb5_context state. By calling krb5_set_home_dir_access()
+ * with context set to NULL, the global state is configured otherwise
+ * the state for the krb5_context is modified.
+ *
+ * For home directory access to be allowed, both the global state and
+ * the krb5_context state have to be allowed.
+ *
+ * Administrator (root user), never uses the home directory.
+ *
+ * @param context a Kerberos 5 context or NULL
+ * @param allow allow if TRUE home directory
+ * @return the old value
+ *
+ */
+
+krb5_boolean
+krb5_set_home_dir_access(krb5_context context, krb5_boolean allow)
+{
+    krb5_boolean old;
+    if (context) {
+	old = (context->flags & KRB5_CTX_F_HOMEDIR_ACCESS) ? TRUE : FALSE;
+	if (allow)
+	    context->flags |= KRB5_CTX_F_HOMEDIR_ACCESS;
+	else
+	    context->flags &= ~KRB5_CTX_F_HOMEDIR_ACCESS;
+    } else {
+	HEIMDAL_MUTEX_lock(&homedir_mutex);
+	old = allow_homedir;
+	allow_homedir = allow;
+	HEIMDAL_MUTEX_unlock(&homedir_mutex);
+    }
+
+    return old;
 }

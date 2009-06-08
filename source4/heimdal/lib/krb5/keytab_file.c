@@ -33,8 +33,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 #define KRB5_KT_VNO_1 1
 #define KRB5_KT_VNO_2 2
 #define KRB5_KT_VNO   KRB5_KT_VNO_2
@@ -332,6 +330,14 @@ fkt_close(krb5_context context, krb5_keytab id)
 }
 
 static krb5_error_code
+fkt_destroy(krb5_context context, krb5_keytab id)
+{
+    struct fkt_data *d = id->data;
+    _krb5_erase_file(context, d->filename);
+    return 0;
+}
+
+static krb5_error_code
 fkt_get_name(krb5_context context,
 	     krb5_keytab id,
 	     char *name,
@@ -445,6 +451,7 @@ fkt_next_entry_int(krb5_context context,
     int ret;
     int8_t tmp8;
     int32_t tmp32;
+    uint32_t utmp32;
     off_t pos, curpos;
 
     pos = krb5_storage_seek(cursor->sp, 0, SEEK_CUR);
@@ -459,8 +466,8 @@ loop:
     ret = krb5_kt_ret_principal (context, d, cursor->sp, &entry->principal);
     if (ret)
 	goto out;
-    ret = krb5_ret_int32(cursor->sp, &tmp32);
-    entry->timestamp = tmp32;
+    ret = krb5_ret_uint32(cursor->sp, &utmp32);
+    entry->timestamp = utmp32;
     if (ret)
 	goto out;
     ret = krb5_ret_int8(cursor->sp, &tmp8);
@@ -476,10 +483,19 @@ loop:
     curpos = krb5_storage_seek(cursor->sp, 0, SEEK_CUR);
     if(len + 4 + pos - curpos >= 4) {
 	ret = krb5_ret_int32(cursor->sp, &tmp32);
-	if (ret == 0 && tmp32 != 0) {
+	if (ret == 0 && tmp32 != 0)
 	    entry->vno = tmp32;
-	}
     }
+    /* there might be a flags field here */
+    if(len + 4 + pos - curpos >= 8) {
+	ret = krb5_ret_uint32(cursor->sp, &utmp32);
+	if (ret == 0)
+	    entry->flags = tmp32;
+    } else
+	entry->flags = 0;
+
+    entry->aliases = NULL;
+
     if(start) *start = pos;
     if(end) *end = pos + 4 + len;
  out:
@@ -653,6 +669,15 @@ fkt_add_entry(krb5_context context,
 		krb5_storage_free(emem);
 		goto out;
 	    }
+	    ret = krb5_store_uint32 (emem, entry->flags);
+	    if (ret) {
+		krb5_set_error_message(context, ret,
+				       N_("Failed storing extended kvno "
+					  "in keytab %s", ""),
+				       d->filename);
+		krb5_storage_free(emem);
+		goto out;
+	    }
 	}
 
 	ret = krb5_storage_to_data(emem, &keytab);
@@ -744,6 +769,7 @@ const krb5_kt_ops krb5_fkt_ops = {
     fkt_resolve,
     fkt_get_name,
     fkt_close,
+    fkt_destroy,
     NULL, /* get */
     fkt_start_seq_get,
     fkt_next_entry,
@@ -757,6 +783,7 @@ const krb5_kt_ops krb5_wrfkt_ops = {
     fkt_resolve,
     fkt_get_name,
     fkt_close,
+    fkt_destroy,
     NULL, /* get */
     fkt_start_seq_get,
     fkt_next_entry,
@@ -770,6 +797,7 @@ const krb5_kt_ops krb5_javakt_ops = {
     fkt_resolve_java14,
     fkt_get_name,
     fkt_close,
+    fkt_destroy,
     NULL, /* get */
     fkt_start_seq_get,
     fkt_next_entry,

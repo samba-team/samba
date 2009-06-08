@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 
-#include "krb5/gsskrb5_locl.h"
+#include "gsskrb5_locl.h"
 
 RCSID("$Id$");
 
@@ -131,6 +131,7 @@ _gsskrb5_create_ctx(
     krb5_data_zero(&ctx->fwd_data);
     ctx->lifetime		= GSS_C_INDEFINITE;
     ctx->order			= NULL;
+    ctx->crypto			= NULL;
     HEIMDAL_MUTEX_init(&ctx->ctx_id_mutex);
 
     kret = krb5_auth_con_init (context, &ctx->auth_context);
@@ -257,7 +258,8 @@ gsskrb5_initiator_ready(
 
     krb5_auth_getremoteseqnumber (context, ctx->auth_context, &seq_number);
 
-    _gsskrb5i_is_cfx(ctx, &is_cfx);
+    _gsskrb5i_is_cfx(context, ctx, 0);
+    is_cfx = (ctx->more_flags & IS_CFX);
 
     ret = _gssapi_msg_order_create(minor_status,
 				   &ctx->order,
@@ -552,8 +554,10 @@ init_auth_restart
 	flags |= GSS_C_REPLAY_FLAG;
     if (req_flags & GSS_C_SEQUENCE_FLAG)
 	flags |= GSS_C_SEQUENCE_FLAG;
+#if 0
     if (req_flags & GSS_C_ANON_FLAG)
 	;                               /* XXX */
+#endif
     if (req_flags & GSS_C_DCE_STYLE) {
 	/* GSS_C_DCE_STYLE implies GSS_C_MUTUAL_FLAG */
 	flags |= GSS_C_DCE_STYLE | GSS_C_MUTUAL_FLAG;
@@ -686,7 +690,6 @@ repl_mutual
     krb5_error_code kret;
     krb5_data indata;
     krb5_ap_rep_enc_part *repl;
-    int is_cfx = 0;
 
     output_token->length = 0;
     output_token->value = NULL;
@@ -758,20 +761,6 @@ repl_mutual
     }
     krb5_free_ap_rep_enc_part (context,
 			       repl);
-
-    _gsskrb5i_is_cfx(ctx, &is_cfx);
-    if (is_cfx) {
-	krb5_keyblock *key = NULL;
-
-	kret = krb5_auth_con_getremotesubkey(context,
-					     ctx->auth_context,
-					     &key);
-	if (kret == 0 && key != NULL) {
-    	    ctx->more_flags |= ACCEPTOR_SUBKEY;
-	    krb5_free_keyblock (context, key);
-	}
-    }
-
 
     *minor_status = 0;
     if (time_rec) {

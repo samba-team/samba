@@ -31,10 +31,7 @@
  * SUCH DAMAGE.
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id$");
-#endif
 
 #include "roken.h"
 #include <err.h>
@@ -152,17 +149,17 @@ socket_sockaddr_size (const struct sockaddr *sa)
  */
 
 void * ROKEN_LIB_FUNCTION
-socket_get_address (struct sockaddr *sa)
+socket_get_address (const struct sockaddr *sa)
 {
     switch (sa->sa_family) {
     case AF_INET : {
-	struct sockaddr_in *sin4 = (struct sockaddr_in *)sa;
-	return &sin4->sin_addr;
+	const struct sockaddr_in *sin4 = (const struct sockaddr_in *)sa;
+	return rk_UNCONST(&sin4->sin_addr);
     }
 #ifdef HAVE_IPV6
     case AF_INET6 : {
-	struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)sa;
-	return &sin6->sin6_addr;
+	const struct sockaddr_in6 *sin6 = (const struct sockaddr_in6 *)sa;
+	return rk_UNCONST(&sin6->sin6_addr);
     }
 #endif
     default :

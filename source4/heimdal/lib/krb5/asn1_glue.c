@@ -37,8 +37,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 krb5_error_code KRB5_LIB_FUNCTION
 _krb5_principal2principalname (PrincipalName *p,
 			       const krb5_principal from)
@@ -52,13 +50,23 @@ _krb5_principalname2krb5_principal (krb5_context context,
 				    const PrincipalName from,
 				    const Realm realm)
 {
-    krb5_principal p = malloc(sizeof(*p));
+    krb5_error_code ret;
+    krb5_principal p;
+
+    p = malloc(sizeof(*p));
     if (p == NULL)
 	return ENOMEM;
-    copy_PrincipalName(&from, &p->name);
+    ret = copy_PrincipalName(&from, &p->name);
+    if (ret) {
+	free(p);
+	return ret;
+    }
     p->realm = strdup(realm);
-    if (p->realm == NULL)
+    if (p->realm == NULL) {
+	free_PrincipalName(&p->name);
+        free(p);
 	return ENOMEM;
+    }
     *principal = p;
     return 0;
 }

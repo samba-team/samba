@@ -46,7 +46,7 @@
 #endif
 #undef ECHO
 #include "symbol.h"
-#include "parse.h"
+#include "asn1parse.h"
 #include "lex.h"
 #include "gen_locl.h"
 
@@ -216,7 +216,7 @@ WITH			{ return kw_WITH; }
 			    char *p = buf;
 			    int f = 0;
 			    int skip_ws = 0;
-			
+		
 			    while((c = input()) != EOF) {
 				if(isspace(c) && skip_ws) {
 				    if(c == '\n')
@@ -224,7 +224,7 @@ WITH			{ return kw_WITH; }
 				    continue;
 				}
 				skip_ws = 0;
-				
+			
 				if(c == '"') {
 				    if(f) {
 					*p++ = '"';

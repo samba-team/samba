@@ -32,7 +32,6 @@
  */
 
 #include "krb5_locl.h"
-RCSID("$Id$");
 
 #include "krb5-v4compat.h"
 
@@ -217,14 +216,16 @@ write_v4_cc(krb5_context context, const char *tkfile,
     ret = write(fd, data.data, data.length);
     if (ret != data.length)
 	ret = KRB5_CC_IO;
+    else
+	ret = 0;
 
-    krb5_free_data_contents(context, &data);
+    krb5_data_free(&data);
 
     flock(fd, LOCK_UN);
     free(path);
     close(fd);
 
-    return 0;
+    return ret;
 }
 
 /*

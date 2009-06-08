@@ -33,8 +33,6 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id$");
-
 static krb5_error_code
 add_addrs(krb5_context context,
 	  krb5_addresses *addr,

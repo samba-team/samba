@@ -33,8 +33,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 /* memory operations -------------------------------------------- */
 
 struct mkt_data {
@@ -228,6 +226,7 @@ const krb5_kt_ops krb5_mkt_ops = {
     mkt_resolve,
     mkt_get_name,
     mkt_close,
+    NULL, /* destroy */
     NULL, /* get */
     mkt_start_seq_get,
     mkt_next_entry,

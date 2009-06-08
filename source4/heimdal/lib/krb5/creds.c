@@ -33,23 +33,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
-#undef __attribute__
-#define __attribute__(X)
-
-#ifndef HEIMDAL_SMALLER
-
-/* keep this for compatibility with older code */
-krb5_error_code KRB5_LIB_FUNCTION
-krb5_free_creds_contents (krb5_context context, krb5_creds *c)
-    __attribute__((deprecated))
-{
-    return krb5_free_cred_contents (context, c);
-}
-
-#endif /* HEIMDAL_SMALLER */
-
 /**
  * Free content of krb5_creds.
  *
@@ -235,9 +218,7 @@ krb5_compare_creds(krb5_context context, krb5_flags whichfields,
     }
 	
     if (match && (whichfields & KRB5_TC_MATCH_KEYTYPE))
-	match = krb5_enctypes_compatible_keys(context,
-					      mcreds->session.keytype,
-					      creds->session.keytype);
+        match = mcreds->session.keytype == creds->session.keytype;
 
     if (match && (whichfields & KRB5_TC_MATCH_FLAGS_EXACT))
 	match = mcreds->flags.i == creds->flags.i;

@@ -51,6 +51,10 @@
 #define KRB5KDC_ERR_KEY_EXP KRB5KDC_ERR_KEY_EXPIRED
 #endif
 
+#ifndef KRB5_DEPRECATED
+#define KRB5_DEPRECATED __attribute__((deprecated))
+#endif
+
 /* simple constants */
 
 #ifndef TRUE
@@ -91,6 +95,8 @@ typedef CKSUMTYPE krb5_cksumtype;
 typedef Checksum krb5_checksum;
 
 typedef ENCTYPE krb5_enctype;
+
+typedef struct krb5_get_init_creds_ctx *krb5_init_creds_context;
 
 typedef heim_octet_string krb5_data;
 
@@ -219,6 +225,8 @@ typedef enum krb5_key_usage {
     /* Keyusage for the server referral in a TGS req */
     KRB5_KU_SAM_ENC_NONCE_SAD = 27,
     /* Encryption of the SAM-NONCE-OR-SAD field */
+    KRB5_KU_PA_PKINIT_KX = 44,
+    /* Encryption type of the kdc session contribution in pk-init */
     KRB5_KU_DIGEST_ENCRYPT = -18,
     /* Encryption key usage used in the digest encryption field */
     KRB5_KU_DIGEST_OPAQUE = -19,
@@ -272,13 +280,13 @@ typedef HostAddress krb5_address;
 typedef HostAddresses krb5_addresses;
 
 typedef enum krb5_keytype {
-    KEYTYPE_NULL	= 0,
-    KEYTYPE_DES		= 1,
-    KEYTYPE_DES3	= 7,
-    KEYTYPE_AES128	= 17,
-    KEYTYPE_AES256	= 18,
-    KEYTYPE_ARCFOUR	= 23,
-    KEYTYPE_ARCFOUR_56	= 24
+    KEYTYPE_NULL	= ETYPE_NULL,
+    KEYTYPE_DES		= ETYPE_DES_CBC_CRC,
+    KEYTYPE_DES3	= ETYPE_OLD_DES3_CBC_SHA1,
+    KEYTYPE_AES128	= ETYPE_AES128_CTS_HMAC_SHA1_96,
+    KEYTYPE_AES256	= ETYPE_AES256_CTS_HMAC_SHA1_96,
+    KEYTYPE_ARCFOUR	= ETYPE_ARCFOUR_HMAC_MD5,
+    KEYTYPE_ARCFOUR_56	= ETYPE_ARCFOUR_HMAC_MD5_56
 } krb5_keytype;
 
 typedef EncryptionKey krb5_keyblock;
@@ -317,6 +325,7 @@ typedef const char *krb5_const_realm; /* stupid language */
 typedef Principal krb5_principal_data;
 typedef struct Principal *krb5_principal;
 typedef const struct Principal *krb5_const_principal;
+typedef struct Principals *krb5_principals;
 
 typedef time_t krb5_deltat;
 typedef time_t krb5_timestamp;
@@ -478,6 +487,8 @@ typedef struct krb5_keytab_entry {
     krb5_kvno vno;
     krb5_keyblock keyblock;
     uint32_t timestamp;
+    uint32_t flags;
+    krb5_principals aliases;
 } krb5_keytab_entry;
 
 typedef struct krb5_kt_cursor {
@@ -497,6 +508,7 @@ struct krb5_keytab_data {
     krb5_error_code (*resolve)(krb5_context, const char*, krb5_keytab);
     krb5_error_code (*get_name)(krb5_context, krb5_keytab, char*, size_t);
     krb5_error_code (*close)(krb5_context, krb5_keytab);
+    krb5_error_code (*destroy)(krb5_context, krb5_keytab);
     krb5_error_code (*get)(krb5_context, krb5_keytab, krb5_const_principal,
 			   krb5_kvno, krb5_enctype, krb5_keytab_entry*);
     krb5_error_code (*start_seq_get)(krb5_context, krb5_keytab, krb5_kt_cursor*);
@@ -593,7 +605,8 @@ typedef EncAPRepPart krb5_ap_rep_enc_part;
 
 #define KRB5_TGS_NAME_SIZE (6)
 #define KRB5_TGS_NAME ("krbtgt")
-
+#define KRB5_WELLKNOWN_NAME ("WELLKNOWN")
+#define KRB5_ANON_NAME ("ANONYMOUS")
 #define KRB5_DIGEST_NAME ("digest")
 
 typedef enum {
@@ -636,7 +649,7 @@ typedef krb5_error_code (*krb5_s2k_proc)(krb5_context /*context*/,
 
 struct _krb5_get_init_creds_opt_private;
 
-typedef struct _krb5_get_init_creds_opt {
+struct _krb5_get_init_creds_opt {
     krb5_flags flags;
     krb5_deltat tkt_life;
     krb5_deltat renew_life;
@@ -652,7 +665,9 @@ typedef struct _krb5_get_init_creds_opt {
     int preauth_list_length;
     krb5_data *salt;
     struct _krb5_get_init_creds_opt_private *opt_private;
-} krb5_get_init_creds_opt;
+};
+
+typedef struct _krb5_get_init_creds_opt krb5_get_init_creds_opt;
 
 #define KRB5_GET_INIT_CREDS_OPT_TKT_LIFE	0x0001
 #define KRB5_GET_INIT_CREDS_OPT_RENEW_LIFE	0x0002
@@ -661,7 +676,7 @@ typedef struct _krb5_get_init_creds_opt {
 #define KRB5_GET_INIT_CREDS_OPT_ETYPE_LIST	0x0010
 #define KRB5_GET_INIT_CREDS_OPT_ADDRESS_LIST	0x0020
 #define KRB5_GET_INIT_CREDS_OPT_PREAUTH_LIST	0x0040
-#define KRB5_GET_INIT_CREDS_OPT_SALT		0x0080
+#define KRB5_GET_INIT_CREDS_OPT_SALT		0x0080 /* no supported */
 #define KRB5_GET_INIT_CREDS_OPT_ANONYMOUS	0x0100
 #define KRB5_GET_INIT_CREDS_OPT_DISABLE_TRANSITED_CHECK	0x0200
 
@@ -727,22 +742,22 @@ enum {
 typedef krb5_error_code (*krb5_send_to_kdc_func)(krb5_context,
 						 void *,
 						 krb5_krbhst_info *,
-						 time_t timeout,
+						 time_t,
 						 const krb5_data *,
 						 krb5_data *);
 
-/* flags for krb5_parse_name_flags */
+/** flags for krb5_parse_name_flags */
 enum {
-    KRB5_PRINCIPAL_PARSE_NO_REALM = 1,
-    KRB5_PRINCIPAL_PARSE_MUST_REALM = 2,
-    KRB5_PRINCIPAL_PARSE_ENTERPRISE = 4
+    KRB5_PRINCIPAL_PARSE_NO_REALM = 1, /**< Require that there are no realm */
+    KRB5_PRINCIPAL_PARSE_REQUIRE_REALM = 2, /**< Require a realm present */
+    KRB5_PRINCIPAL_PARSE_ENTERPRISE = 4 /**< Parse as a NT-ENTERPRISE name */
 };
 
-/* flags for krb5_unparse_name_flags */
+/** flags for krb5_unparse_name_flags */
 enum {
-    KRB5_PRINCIPAL_UNPARSE_SHORT = 1,
-    KRB5_PRINCIPAL_UNPARSE_NO_REALM = 2,
-    KRB5_PRINCIPAL_UNPARSE_DISPLAY = 4
+    KRB5_PRINCIPAL_UNPARSE_SHORT = 1, /**< No realm if it is the default realm */
+    KRB5_PRINCIPAL_UNPARSE_NO_REALM = 2, /**< No realm */
+    KRB5_PRINCIPAL_UNPARSE_DISPLAY = 4 /**< No quoting */
 };
 
 typedef struct krb5_sendto_ctx_data *krb5_sendto_ctx;
@@ -787,6 +802,20 @@ typedef struct krb5_crypto_iov {
 } krb5_crypto_iov;
 
 
+/* Glue for MIT */
+
+typedef struct {
+    int32_t lr_type;
+    krb5_timestamp value;
+} krb5_last_req_entry;
+
+typedef krb5_error_code
+(*krb5_gic_process_last_req)(krb5_context, krb5_last_req_entry **, void *);
+
+/*
+ *
+ */
+
 #include <krb5-protos.h>
 
 /* variables */
@@ -809,6 +838,12 @@ extern KRB5_LIB_VARIABLE const krb5_kt_ops krb5_akf_ops;
 extern KRB5_LIB_VARIABLE const krb5_kt_ops krb4_fkt_ops;
 extern KRB5_LIB_VARIABLE const krb5_kt_ops krb5_srvtab_fkt_ops;
 extern KRB5_LIB_VARIABLE const krb5_kt_ops krb5_any_ops;
+
+extern KRB5_LIB_VARIABLE const char *krb5_cc_type_api;
+extern KRB5_LIB_VARIABLE const char *krb5_cc_type_file;
+extern KRB5_LIB_VARIABLE const char *krb5_cc_type_memory;
+extern KRB5_LIB_VARIABLE const char *krb5_cc_type_kcm;
+extern KRB5_LIB_VARIABLE const char *krb5_cc_type_scc;
 
 #endif /* __KRB5_H__ */
 

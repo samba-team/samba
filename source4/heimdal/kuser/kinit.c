@@ -32,11 +32,19 @@
  */
 
 #include "kuser_locl.h"
-RCSID("$Id$");
 
+#ifndef HEIMDAL_SMALLER
 #include "krb5-v4compat.h"
+#endif
 
+struct krb5_dh_moduli;
+struct AlgorithmIdentifier;
+struct _krb5_krb_auth_data;
+#include <krb5-private.h>
+
+#ifndef NO_NTLM
 #include "heimntlm.h"
+#endif
 
 int forwardable_flag	= -1;
 int proxiable_flag	= -1;
@@ -54,6 +62,7 @@ char *renew_life	= NULL;
 char *server_str	= NULL;
 char *cred_cache	= NULL;
 char *start_str		= NULL;
+static int switch_cache_flags = 1;
 struct getarg_strings etype_str;
 int use_keytab		= 0;
 char *keytab_str	= NULL;
@@ -66,13 +75,17 @@ static char *krb4_cc_name;
 int fcache_version;
 char *password_file	= NULL;
 char *pk_user_id	= NULL;
+int pk_enterprise_flag = 0;
 char *pk_x509_anchors	= NULL;
 int pk_use_enckey	= 0;
 static int canonicalize_flag = 0;
+static int enterprise_flag = 0;
 static int ok_as_delegate_flag = 0;
 static int use_referrals_flag = 0;
 static int windows_flag = 0;
+#ifndef NO_NTLM
 static char *ntlm_domain;
+#endif
 
 
 static struct getargs args[] = {
@@ -154,7 +167,13 @@ static struct getargs args[] = {
 
     { "canonicalize",0,   arg_flag, &canonicalize_flag,
       NP_("canonicalize client principal", "") },
+
+    { "enterprise",0,   arg_flag, &enterprise_flag,
+      NP_("parse principal as a KRB5-NT-ENTERPRISE name", "") },
 #ifdef PKINIT
+    { "pk-enterprise",	0,	arg_flag,	&pk_enterprise_flag,
+      NP_("use enterprise name from certificate", "") },
+
     { "pk-user",	'C',	arg_string,	&pk_user_id,
       NP_("principal's public/private/certificate identifier", ""), "id" },
 
@@ -164,8 +183,13 @@ static struct getargs args[] = {
     { "pk-use-enckey",	0,  arg_flag, &pk_use_enckey,
       NP_("Use RSA encrypted reply (instead of DH)", "") },
 #endif
+#ifndef NO_NTLM
     { "ntlm-domain",	0,  arg_string, &ntlm_domain,
       NP_("NTLM domain", ""), "domain" },
+#endif
+
+    { "change-default",  0,  arg_negative_flag, &switch_cache_flags,
+      NP_("switch the default cache to the new credentials cache", "") },
 
     { "ok-as-delegate",	0,  arg_flag, &ok_as_delegate_flag,
       NP_("honor ok-as-delegate on tickets", "") },
@@ -198,13 +222,13 @@ get_server(krb5_context context,
 	   const char *server,
 	   krb5_principal *princ)
 {
-    krb5_realm *client_realm;
+    krb5_const_realm realm;
     if(server)
 	return krb5_parse_name(context, server, princ);
 
-    client_realm = krb5_princ_realm (context, client);
-    return krb5_make_principal(context, princ, *client_realm,
-			       KRB5_TGS_NAME, *client_realm, NULL);
+    realm = krb5_principal_get_realm(context, client);
+    return krb5_make_principal(context, princ, realm,
+			       KRB5_TGS_NAME, realm, NULL);
 }
 
 #ifndef HEIMDAL_SMALLER
@@ -301,7 +325,7 @@ renew_validate(krb5_context context,
     else if (out)
 	flags.b.proxiable 	  = out->flags.b.proxiable;
 
-    if (anonymous_flag != -1)
+    if (anonymous_flag)
 	flags.b.request_anonymous = anonymous_flag;
     if(life)
 	in.times.endtime = time(NULL) + life;
@@ -337,8 +361,10 @@ renew_validate(krb5_context context,
 	if(get_v4_tgt)
 	    do_524init(context, cache, out, NULL);
 #endif
+#ifndef NO_AFS
 	if(do_afslog && k_hasafs())
 	    krb5_afslog(context, cache, NULL, NULL);
+#endif
     }
 
     krb5_free_creds (context, out);
@@ -350,6 +376,8 @@ out:
     krb5_free_cred_contents(context, &in);
     return ret;
 }
+
+#ifndef NO_NTLM
 
 static krb5_error_code
 store_ntlmkey(krb5_context context, krb5_ccache id,
@@ -372,6 +400,7 @@ store_ntlmkey(krb5_context context, krb5_ccache id,
     free(name);
     return ret;
 }
+#endif
 
 static krb5_error_code
 get_new_tickets(krb5_context context,
@@ -388,10 +417,11 @@ get_new_tickets(krb5_context context,
     krb5_deltat renew = 0;
     char *renewstr = NULL;
     krb5_enctype *enctype = NULL;
-    struct ntlm_buf ntlmkey;
     krb5_ccache tempccache;
-
+#ifndef NO_NTLM
+    struct ntlm_buf ntlmkey;
     memset(&ntlmkey, 0, sizeof(ntlmkey));
+#endif
     passwd[0] = '\0';
 
     if (password_file) {
@@ -428,21 +458,24 @@ get_new_tickets(krb5_context context,
 	krb5_get_init_creds_opt_set_forwardable (opt, forwardable_flag);
     if(proxiable_flag != -1)
 	krb5_get_init_creds_opt_set_proxiable (opt, proxiable_flag);
-    if(anonymous_flag != -1)
+    if(anonymous_flag)
 	krb5_get_init_creds_opt_set_anonymous (opt, anonymous_flag);
     if (pac_flag != -1)
 	krb5_get_init_creds_opt_set_pac_request(context, opt,
 						pac_flag ? TRUE : FALSE);
     if (canonicalize_flag)
 	krb5_get_init_creds_opt_set_canonicalize(context, opt, TRUE);
-    if (pk_user_id) {
+    if (pk_enterprise_flag && windows_flag)
+	krb5_get_init_creds_opt_set_win2k(context, opt, TRUE);
+    if (pk_user_id || anonymous_flag) {
 	ret = krb5_get_init_creds_opt_set_pkinit(context, opt,
 						 principal,
 						 pk_user_id,
 						 pk_x509_anchors,
 						 NULL,
 						 NULL,
-						 pk_use_enckey ? 2 : 0,
+						 pk_use_enckey ? 2 : 0 |
+						 anonymous_flag ? 4 : 0,
 						 krb5_prompter_posix,
 						 NULL,
 						 passwd);
@@ -510,7 +543,7 @@ get_new_tickets(krb5_context context,
 					  server_str,
 					  opt);
 	krb5_kt_close(context, kt);
-    } else if (pk_user_id) {
+    } else if (pk_user_id || anonymous_flag) {
 	ret = krb5_get_init_creds_password (context,
 					    &cred,
 					    principal,
@@ -552,8 +585,10 @@ get_new_tickets(krb5_context context,
 					    opt);
     }
     krb5_get_init_creds_opt_free(context, opt);
+#ifndef NO_NTLM
     if (ntlm_domain && passwd[0])
 	heim_ntlm_nt_key(passwd, &ntlmkey);
+#endif
     memset(passwd, 0, sizeof(passwd));
 
     switch(ret){
@@ -611,8 +646,13 @@ get_new_tickets(krb5_context context,
     if (ret)
 	krb5_err (context, 1, ret, "krb5_cc_move");
 
+    if (switch_cache_flags)
+	krb5_cc_switch(context, ccache);
+
+#ifndef NO_NTLM
     if (ntlm_domain && ntlmkey.data)
 	store_ntlmkey(context, ccache, ntlm_domain, &ntlmkey);
+#endif
 
     if (ok_as_delegate_flag || windows_flag || use_referrals_flag) {
 	unsigned char d = 0;
@@ -704,8 +744,10 @@ renew_func(void *ptr)
     if(get_v4_tgt || convert_524)
 	do_524init(ctx->context, ctx->ccache, NULL, server_str);
 #endif
+#ifndef NO_AFS
     if(do_afslog && k_hasafs())
 	krb5_afslog(ctx->context, ctx->ccache, NULL, NULL);
+#endif
 
     expire = ticket_lifetime(ctx->context, ctx->ccache, ctx->principal,
 			     server_str) / 2;
@@ -751,17 +793,35 @@ main (int argc, char **argv)
     argc -= optidx;
     argv += optidx;
 
-    if (canonicalize_flag)
+    if (canonicalize_flag || enterprise_flag)
 	parseflags |= KRB5_PRINCIPAL_PARSE_ENTERPRISE;
 
-    if (argv[0]) {
-	ret = krb5_parse_name_flags (context, argv[0], parseflags, &principal);
+    if (pk_enterprise_flag) {
+	ret = _krb5_pk_enterprise_cert(context, pk_user_id,
+				       argv[0], &principal);
 	if (ret)
-	    krb5_err (context, 1, ret, "krb5_parse_name");
+	    krb5_err(context, 1, ret, "krb5_pk_enterprise_certs");
+
+    } else if (anonymous_flag) {
+
+	ret = krb5_make_principal(context, &principal, argv[0],
+				  KRB5_WELLKNOWN_NAME, KRB5_ANON_NAME, 
+				  NULL);
+	if (ret)
+	    krb5_err(context, 1, ret, "krb5_build_principal");
+	krb5_principal_set_type(context, principal, KRB5_NT_WELLKNOWN);
+
     } else {
-	ret = krb5_get_default_principal (context, &principal);
-	if (ret)
-	    krb5_err (context, 1, ret, "krb5_get_default_principal");
+	if (argv[0]) {
+	    ret = krb5_parse_name_flags (context, argv[0], parseflags,
+					 &principal);
+	    if (ret)
+		krb5_err (context, 1, ret, "krb5_parse_name");
+	} else {
+	    ret = krb5_get_default_principal (context, &principal);
+	    if (ret)
+		krb5_err (context, 1, ret, "krb5_get_default_principal");
+	}
     }
 
     if(fcache_version)
@@ -788,7 +848,7 @@ main (int argc, char **argv)
     else {
 	if(argc > 1) {
 	    char s[1024];
-	    ret = krb5_cc_gen_new(context, &krb5_fcc_ops, &ccache);
+	    ret = krb5_cc_new_unique(context, NULL, NULL, &ccache);
 	    if(ret)
 		krb5_err(context, 1, ret, "creating cred cache");
 	    snprintf(s, sizeof(s), "%s:%s",
@@ -818,8 +878,10 @@ main (int argc, char **argv)
     if (ret)
 	krb5_err (context, 1, ret, N_("resolving credentials cache", ""));
 
+#ifndef NO_AFS
     if(argc > 1 && k_hasafs ())
 	k_setpag();
+#endif
 
     if (lifetime) {
 	int tmp = parse_time (lifetime, "s");
@@ -863,8 +925,10 @@ main (int argc, char **argv)
     if(get_v4_tgt || convert_524)
 	do_524init(context, ccache, NULL, server_str);
 #endif
+#ifndef NO_AFS
     if(do_afslog && k_hasafs())
 	krb5_afslog(context, ccache, NULL, NULL);
+#endif
     if(argc > 1) {
 	struct renew_ctx ctx;
 	time_t timeout;
@@ -889,8 +953,10 @@ main (int argc, char **argv)
 #ifndef HEIMDAL_SMALLER
 	_krb5_krb_dest_tkt(context, krb4_cc_name);
 #endif
+#ifndef NO_AFS
 	if(k_hasafs())
 	    k_unlog();
+#endif
     } else {
 	krb5_cc_close (context, ccache);
 	ret = 0;

@@ -33,8 +33,6 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id$");
-
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_rd_rep(krb5_context context,
 	    krb5_auth_context auth_context,
@@ -48,7 +46,6 @@ krb5_rd_rep(krb5_context context,
     krb5_crypto crypto;
 
     krb5_data_zero (&data);
-    ret = 0;
 
     ret = decode_AP_REP(inbuf->data, inbuf->length, &ap_rep, &len);
     if (ret)
@@ -82,13 +79,11 @@ krb5_rd_rep(krb5_context context,
 	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
 	goto out;
     }
-    ret = krb5_decode_EncAPRepPart(context,
-				   data.data,
-				   data.length,
-				   *repl,
-				   &len);
-    if (ret)
+    ret = decode_EncAPRepPart(data.data, data.length, *repl, &len);
+    if (ret) {
+	krb5_set_error_message(context, ret, N_("Failed to decode EncAPRepPart", ""));
 	return ret;
+    }
 
     if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_TIME) {
 	if ((*repl)->ctime != auth_context->authenticator->ctime ||

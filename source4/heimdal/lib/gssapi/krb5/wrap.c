@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 
-#include "krb5/gsskrb5_locl.h"
+#include "gsskrb5_locl.h"
 
 RCSID("$Id$");
 
@@ -154,6 +154,11 @@ _gsskrb5_wrap_size_limit (
 
   GSSAPI_KRB5_INIT (&context);
 
+  if (ctx->more_flags & IS_CFX)
+      return _gssapi_wrap_size_cfx(minor_status, ctx, context,
+				   conf_req_flag, qop_req,
+				   req_output_size, max_input_size);
+
   HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
   ret = _gsskrb5i_get_token_key(ctx, context, &key);
   HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
@@ -177,9 +182,7 @@ _gsskrb5_wrap_size_limit (
       ret = sub_wrap_size(req_output_size, max_input_size, 8, 34);
       break;
   default :
-      ret = _gssapi_wrap_size_cfx(minor_status, ctx, context,
-				  conf_req_flag, qop_req,
-				  req_output_size, max_input_size, key);
+      abort();
       break;
   }
   krb5_free_keyblock (context, key);
@@ -530,7 +533,15 @@ OM_uint32 _gsskrb5_wrap
   krb5_keytype keytype;
   const gsskrb5_ctx ctx = (const gsskrb5_ctx) context_handle;
 
+  output_message_buffer->value = NULL;
+  output_message_buffer->length = 0;
+
   GSSAPI_KRB5_INIT (&context);
+
+  if (ctx->more_flags & IS_CFX)
+      return _gssapi_wrap_cfx (minor_status, ctx, context, conf_req_flag,
+			       qop_req, input_message_buffer, conf_state,
+			       output_message_buffer);
 
   HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
   ret = _gsskrb5i_get_token_key(ctx, context, &key);
@@ -559,9 +570,7 @@ OM_uint32 _gsskrb5_wrap
 				  output_message_buffer, key);
       break;
   default :
-      ret = _gssapi_wrap_cfx (minor_status, ctx, context, conf_req_flag,
-			      qop_req, input_message_buffer, conf_state,
-			      output_message_buffer, key);
+      abort();
       break;
   }
   krb5_free_keyblock (context, key);

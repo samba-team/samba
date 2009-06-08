@@ -31,9 +31,9 @@
  * SUCH DAMAGE.
  */
 
-#include <krb5_locl.h>
+#define KRB5_DEPRECATED
 
-RCSID("$Id$");
+#include <krb5_locl.h>
 
 #undef __attribute__
 #define __attribute__(X)
@@ -82,7 +82,6 @@ chgpw_send_request (krb5_context context,
     krb5_data passwd_data;
     size_t len;
     u_char header[6];
-    u_char *p;
     struct iovec iov[3];
     struct msghdr msghdr;
 
@@ -118,13 +117,12 @@ chgpw_send_request (krb5_context context,
 	goto out2;
 
     len = 6 + ap_req_data.length + krb_priv_data.length;
-    p = header;
-    *p++ = (len >> 8) & 0xFF;
-    *p++ = (len >> 0) & 0xFF;
-    *p++ = 0;
-    *p++ = 1;
-    *p++ = (ap_req_data.length >> 8) & 0xFF;
-    *p++ = (ap_req_data.length >> 0) & 0xFF;
+    header[0] = (len >> 8) & 0xFF;
+    header[1] = (len >> 0) & 0xFF;
+    header[2] = 0;
+    header[3] = 1;
+    header[4] = (ap_req_data.length >> 8) & 0xFF;
+    header[5] = (ap_req_data.length >> 0) & 0xFF;
 
     memset(&msghdr, 0, sizeof(msghdr));
     msghdr.msg_name       = NULL;
@@ -231,7 +229,7 @@ setpw_send_request (krb5_context context,
     *p++ = 0xff;
     *p++ = 0x80;
     *p++ = (ap_req_data.length >> 8) & 0xFF;
-    *p++ = (ap_req_data.length >> 0) & 0xFF;
+    *p   = (ap_req_data.length >> 0) & 0xFF;
 
     memset(&msghdr, 0, sizeof(msghdr));
     msghdr.msg_name       = NULL;
@@ -693,7 +691,7 @@ krb5_change_password (krb5_context	context,
 		      int		*result_code,
 		      krb5_data		*result_code_string,
 		      krb5_data		*result_string)
-    __attribute__((deprecated))
+    KRB5_DEPRECATED
 {
     struct kpwd_proc *p = find_chpw_proto("change password");
 
@@ -711,7 +709,7 @@ krb5_change_password (krb5_context	context,
 #endif /* HEIMDAL_SMALLER */
 
 /**
- * Change passwrod using creds.
+ * Change password using creds.
  *
  * @param context a Keberos context
  * @param creds The initial kadmin/passwd for the principal or an admin principal
@@ -766,8 +764,6 @@ krb5_set_password(krb5_context context,
 	krb5_free_principal(context, principal);
     return ret;
 }
-
-#ifndef HEIMDAL_SMALLER
 
 /*
  *
@@ -833,8 +829,6 @@ krb5_set_password_using_ccache(krb5_context context,
 	krb5_free_principal(context, principal);
     return ret;
 }
-
-#endif /* !HEIMDAL_SMALLER */
 
 /*
  *

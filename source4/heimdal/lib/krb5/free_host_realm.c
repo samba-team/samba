@@ -33,10 +33,15 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
-/*
+/**
  * Free all memory allocated by `realmlist'
+ *
+ * @param context A Kerberos 5 context.
+ * @param realmlist realmlist to free, NULL is ok
+ *
+ * @return a Kerberos error code, always 0.
+ *
+ * @ingroup krb5_support
  */
 
 krb5_error_code KRB5_LIB_FUNCTION

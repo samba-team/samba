@@ -34,7 +34,7 @@
  *  glue routine for _gsskrb5_inquire_sec_context_by_oid
  */
 
-#include "krb5/gsskrb5_locl.h"
+#include "gsskrb5_locl.h"
 
 RCSID("$Id$");
 

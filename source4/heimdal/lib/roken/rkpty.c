@@ -52,6 +52,10 @@
 #include <libutil.h>
 #endif
 
+#ifdef	STREAMSPTY
+#include <stropts.h>
+#endif /* STREAMPTY */
+
 #include "roken.h"
 #include <getarg.h>
 
@@ -93,6 +97,39 @@ open_pty(void)
     if(openpty(&master, &slave, line, 0, 0) == 0)
 	return;
 #endif /* HAVE_OPENPTY .... */
+#ifdef STREAMSPTY
+    {
+	char *clone[] = {
+	    "/dev/ptc",
+	    "/dev/ptmx", 
+	    "/dev/ptm",
+	    "/dev/ptym/clone", 
+	    NULL
+	};
+	char **q;
+
+	for(q = clone; *q; q++){
+	    master = open(*q, O_RDWR);
+	    if(master >= 0){
+#ifdef HAVE_GRANTPT
+		grantpt(master);
+#endif
+#ifdef HAVE_UNLOCKPT
+		unlockpt(master);
+#endif
+		strlcpy(line, ptsname(master), sizeof(line));
+		slave = open(line, O_RDWR);
+		if (slave < 0)
+		    errx(1, "failed to open slave when using %s", q);
+		ioctl(slave, I_PUSH, "ptem");
+		ioctl(slave, I_PUSH, "ldterm");
+
+		return;
+	    }
+	}
+    }
+#endif /* STREAMSPTY */
+
     /* more cases, like open /dev/ptmx, etc */
 
     exit(77);
@@ -302,7 +339,6 @@ main(int argc, char **argv)
     parse_configuration(argv[0]);
 
     argv += 1;
-    argc -= 1;
 
     open_pty();
 

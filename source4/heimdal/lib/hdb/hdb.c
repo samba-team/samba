@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2008 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
@@ -31,11 +31,6 @@
  * SUCH DAMAGE.
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-#include "krb5.h"
 #include "krb5_locl.h"
 #include "hdb_locl.h"
 RCSID("$Id$");
@@ -44,24 +39,49 @@ RCSID("$Id$");
 #include <dlfcn.h>
 #endif
 
+/*! @mainpage Heimdal database backend library
+ *
+ * @section intro Introduction
+ *
+ * Heimdal libhdb library provides the backend support for Heimdal kdc
+ * and kadmind. Its here where plugins for diffrent database engines
+ * can be pluged in and extend support for here Heimdal get the
+ * principal and policy data from.
+ *
+ * Example of Heimdal backend are:
+ * - Berkeley DB 1.85
+ * - Berkeley DB 3.0
+ * - Berkeley DB 4.0
+ * - New Berkeley DB
+ * - LDAP
+ *
+ *
+ * The project web page: http://www.h5l.org/
+ *
+ */
+
+
+
 static struct hdb_method methods[] = {
 #if HAVE_DB1 || HAVE_DB3
-    {HDB_INTERFACE_VERSION, "db:",	hdb_db_create},
+    { HDB_INTERFACE_VERSION, "db:",	hdb_db_create},
 #endif
 #if HAVE_NDBM
-    {HDB_INTERFACE_VERSION, "ndbm:",	hdb_ndbm_create},
+    { HDB_INTERFACE_VERSION, "ndbm:",	hdb_ndbm_create},
 #endif
 #if defined(OPENLDAP) && !defined(OPENLDAP_MODULE)
-    {HDB_INTERFACE_VERSION, "ldap:",	hdb_ldap_create},
-    {HDB_INTERFACE_VERSION, "ldapi:",	hdb_ldapi_create},
+    { HDB_INTERFACE_VERSION, "ldap:",	hdb_ldap_create},
+    { HDB_INTERFACE_VERSION, "ldapi:",	hdb_ldapi_create},
 #endif
     {0, NULL,	NULL}
 };
 
 #if HAVE_DB1 || HAVE_DB3
-static struct hdb_method dbmetod = {"",	hdb_db_create };
+static struct hdb_method dbmetod =
+    { HDB_INTERFACE_VERSION, "", hdb_db_create };
 #elif defined(HAVE_NDBM)
-static struct hdb_method dbmetod = {"",	hdb_ndbm_create };
+static struct hdb_method dbmetod =
+    { HDB_INTERFACE_VERSION, "", hdb_ndbm_create };
 #endif
 
 
@@ -265,9 +285,10 @@ find_dynamic_method (krb5_context context,
     len = p - filename;
     *rest = filename + len + 1;
 
-    prefix = strndup(filename, len);
+    prefix = malloc(len + 1);
     if (prefix == NULL)
 	krb5_errx(context, 1, "out of memory");
+    strlcpy(prefix, filename, len + 1);
 
     if (asprintf(&path, LIBDIR "/hdb_%s.so", prefix) == -1)
 	krb5_errx(context, 1, "out of memory");
@@ -389,6 +410,14 @@ hdb_list_builtin(krb5_context context, char **list)
     *list = buf;
     return 0;
 }
+
+/**
+ * Create a handle for a Kerberos database
+ *
+ * Create a handle for a Kerberos database backend specified by a
+ * filename.  Doesn't create a file if its doesn't exists, you have to
+ * use O_CREAT to tell the backend to create the file.
+ */
 
 krb5_error_code
 hdb_create(krb5_context context, HDB **db, const char *filename)

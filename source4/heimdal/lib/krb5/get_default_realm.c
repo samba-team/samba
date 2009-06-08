@@ -33,8 +33,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 /*
  * Return a NULL-terminated list of default realms in `realms'.
  * Free this memory with krb5_free_host_realm.

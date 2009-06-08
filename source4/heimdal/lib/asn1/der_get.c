@@ -33,10 +33,6 @@
 
 #include "der_locl.h"
 
-RCSID("$Id$");
-
-#include <version.h>
-
 /*
  * All decoding functions take a pointer `p' to first position in
  * which to read, from the left, `len' which means the maximum number
@@ -252,6 +248,75 @@ der_get_octet_string (const unsigned char *p, size_t len,
 }
 
 int
+der_get_octet_string_ber (const unsigned char *p, size_t len,
+			  heim_octet_string *data, size_t *size)
+{
+    int e;
+    Der_type type;
+    Der_class class;
+    unsigned int tag, depth = 0;
+    size_t l, datalen, oldlen = len;
+
+    data->length = 0;
+    data->data = NULL;
+
+    while (len) {
+	e = der_get_tag (p, len, &class, &type, &tag, &l);
+	if (e) goto out;
+	if (class != ASN1_C_UNIV) {
+	    e = ASN1_BAD_ID;
+	    goto out;
+	}
+	if (type == PRIM && tag == UT_EndOfContent) {
+	    if (depth == 0)
+		break;
+	    depth--;
+	}
+	if (tag != UT_OctetString) {
+	    e = ASN1_BAD_ID;
+	    goto out;
+	}
+
+	p += l;
+	len -= l;
+	e = der_get_length (p, len, &datalen, &l);
+	if (e) goto out;
+	p += l;
+	len -= l;
+
+	if (datalen > len)
+	    return ASN1_OVERRUN;
+
+	if (type == PRIM) {
+	    void *ptr;
+
+	    ptr = realloc(data->data, data->length + datalen);
+	    if (ptr == NULL) {
+		e = ENOMEM;
+		goto out;
+	    }
+	    data->data = ptr;
+	    memcpy(((unsigned char *)data->data) + data->length, p, datalen);
+	    data->length += datalen;
+	} else
+	    depth++;
+
+	p += datalen;
+	len -= datalen;
+    }
+    if (depth != 0)
+	return ASN1_INDEF_OVERRUN;
+    if(size) *size = oldlen - len;
+    return 0;
+ out:
+    free(data->data);
+    data->data = NULL;
+    data->length = 0;
+    return e;
+}
+
+
+int
 der_get_heim_integer (const unsigned char *p, size_t len,
 		      heim_integer *data, size_t *size)
 {
@@ -397,7 +462,7 @@ der_get_oid (const unsigned char *p, size_t len,
     ++p;
     for (n = 2; len > 0; ++n) {
 	unsigned u = 0, u1;
-	
+
 	do {
 	    --len;
 	    u1 = u * 128 + (*p++ % 128);
@@ -457,15 +522,28 @@ der_match_tag (const unsigned char *p, size_t len,
 	       Der_class class, Der_type type,
 	       unsigned int tag, size_t *size)
 {
+    Der_type thistype;
+    int e;
+
+    e = der_match_tag2(p, len, class, &thistype, tag, size);
+    if (e) return e;
+    if (thistype != type) return ASN1_BAD_ID;
+    return 0;
+}
+
+int
+der_match_tag2 (const unsigned char *p, size_t len,
+		Der_class class, Der_type *type,
+		unsigned int tag, size_t *size)
+{
     size_t l;
     Der_class thisclass;
-    Der_type thistype;
     unsigned int thistag;
     int e;
 
-    e = der_get_tag (p, len, &thisclass, &thistype, &thistag, &l);
+    e = der_get_tag (p, len, &thisclass, type, &thistag, &l);
     if (e) return e;
-    if (class != thisclass || type != thistype)
+    if (class != thisclass)
 	return ASN1_BAD_ID;
     if(tag > thistag)
 	return ASN1_MISPLACED_FIELD;
@@ -477,25 +555,24 @@ der_match_tag (const unsigned char *p, size_t len,
 
 int
 der_match_tag_and_length (const unsigned char *p, size_t len,
-			  Der_class class, Der_type type, unsigned int tag,
+			  Der_class class, Der_type *type, unsigned int tag,
 			  size_t *length_ret, size_t *size)
 {
     size_t l, ret = 0;
     int e;
 
-    e = der_match_tag (p, len, class, type, tag, &l);
+    e = der_match_tag2 (p, len, class, type, tag, &l);
     if (e) return e;
     p += l;
     len -= l;
     ret += l;
     e = der_get_length (p, len, length_ret, &l);
     if (e) return e;
-    p += l;
-    len -= l;
-    ret += l;
-    if(size) *size = ret;
+    if(size) *size = ret + l;
     return 0;
 }
+
+
 
 /*
  * Old versions of DCE was based on a very early beta of the MIT code,
@@ -539,8 +616,11 @@ der_get_bit_string (const unsigned char *p, size_t len,
     data->data = malloc(len - 1);
     if (data->data == NULL && (len - 1) != 0)
 	return ENOMEM;
-    memcpy (data->data, p + 1, len - 1);
-    data->length -= p[0];
+    /* copy data is there is data to copy */
+    if (len - 1 != 0) {
+      memcpy (data->data, p + 1, len - 1);
+      data->length -= p[0];
+    }
     if(size) *size = len;
     return 0;
 }

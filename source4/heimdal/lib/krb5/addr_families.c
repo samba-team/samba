@@ -33,8 +33,6 @@
 
 #include "krb5_locl.h"
 
-RCSID("$Id$");
-
 struct addr_operations {
     int af;
     krb5_address_type atype;
@@ -678,6 +676,9 @@ addrport_print_addr (const krb5_address *addr, char *str, size_t len)
     krb5_storage *sp;
 
     sp = krb5_storage_from_data((krb5_data*)rk_UNCONST(&addr->address));
+    if (sp == NULL)
+        return ENOMEM;
+
     /* for totally obscure reasons, these are not in network byteorder */
     krb5_storage_set_byteorder(sp, KRB5_STORAGE_BYTEORDER_LE);
 
@@ -1142,10 +1143,12 @@ krb5_parse_address(krb5_context context,
     for (a = ai, i = 0; a != NULL; a = a->ai_next) {
 	if (krb5_sockaddr2address (context, ai->ai_addr, &addresses->val[i]))
 	    continue;
-	if(krb5_address_search(context, &addresses->val[i], addresses))
+	if(krb5_address_search(context, &addresses->val[i], addresses)) {
+	    krb5_free_address(context, &addresses->val[i]);
 	    continue;
-	addresses->len = i;
+	}
 	i++;
+	addresses->len = i;
     }
     freeaddrinfo (ai);
     return 0;
@@ -1454,7 +1457,6 @@ krb5_make_addrport (krb5_context context,
     *p++ = (2 >> 24) & 0xFF;
 
     memcpy (p, &port, 2);
-    p += 2;
 
     return 0;
 }

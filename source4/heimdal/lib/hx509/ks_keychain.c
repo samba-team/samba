@@ -32,7 +32,6 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id$");
 
 #ifdef HAVE_FRAMEWORK_SECURITY
 
@@ -119,6 +118,8 @@ kc_rsa_private_encrypt(int flen,
     CSSM_DATA sig, in;
     int fret = 0;
 
+    if (padding != RSA_PKCS1_PADDING)
+	return -1;
 
     cret = SecKeyGetCSSMKey(privKeyRef, &cssmKey);
     if(cret) abort();
@@ -157,7 +158,62 @@ static int
 kc_rsa_private_decrypt(int flen, const unsigned char *from, unsigned char *to,
 		       RSA * rsa, int padding)
 {
-    return -1;
+    struct kc_rsa *kc = RSA_get_app_data(rsa);
+
+    CSSM_RETURN cret;
+    OSStatus ret;
+    const CSSM_ACCESS_CREDENTIALS *creds;
+    SecKeyRef privKeyRef = (SecKeyRef)kc->item;
+    CSSM_CSP_HANDLE cspHandle;
+    const CSSM_KEY *cssmKey;
+    CSSM_CC_HANDLE handle = 0;
+    CSSM_DATA out, in, rem;
+    int fret = 0;
+    CSSM_SIZE outlen = 0;
+    char remdata[1024];
+
+    if (padding != RSA_PKCS1_PADDING)
+	return -1;
+
+    cret = SecKeyGetCSSMKey(privKeyRef, &cssmKey);
+    if(cret) abort();
+
+    cret = SecKeyGetCSPHandle(privKeyRef, &cspHandle);
+    if(cret) abort();
+
+    ret = SecKeyGetCredentials(privKeyRef, CSSM_ACL_AUTHORIZATION_DECRYPT,
+			       kSecCredentialTypeDefault, &creds);
+    if(ret) abort();
+
+
+    ret = CSSM_CSP_CreateAsymmetricContext (cspHandle,
+					    CSSM_ALGID_RSA,
+					    creds,
+					    cssmKey,
+					    CSSM_PADDING_PKCS1,
+					    &handle);
+    if(ret) abort();
+
+    in.Data = (uint8 *)from;
+    in.Length = flen;
+	
+    out.Data = (uint8 *)to;
+    out.Length = kc->keysize;
+	
+    rem.Data = (uint8 *)remdata;
+    rem.Length = sizeof(remdata);
+
+    cret = CSSM_DecryptData(handle, &in, 1, &out, 1, &outlen, &rem);
+    if(cret) {
+	/* cssmErrorString(cret); */
+	fret = -1;
+    } else
+	fret = out.Length;
+
+    if(handle)
+	CSSM_DeleteContext(handle);
+
+    return fret;
 }
 
 static int
@@ -504,8 +560,7 @@ keychain_iter_end(hx509_context context,
     struct iter *iter = cursor;
 
     if (iter->certs) {
-	int ret;
-	ret = hx509_certs_end_seq(context, iter->certs, iter->cursor);
+	hx509_certs_end_seq(context, iter->certs, iter->cursor);
 	hx509_certs_free(&iter->certs);
     } else {
 	CFRelease(iter->searchRef);

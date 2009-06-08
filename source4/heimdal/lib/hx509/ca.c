@@ -33,7 +33,6 @@
 
 #include "hx_locl.h"
 #include <pkinit_asn1.h>
-RCSID("$Id$");
 
 /**
  * @page page_ca Hx509 CA functions
@@ -672,7 +671,7 @@ hx509_ca_tbs_add_san_pkinit(hx509_context context,
 
     ret = hx509_ca_tbs_add_san_otherName(context,
 					 tbs,
-					 oid_id_pkinit_san(),
+					 &asn1_oid_id_pkinit_san,
 					 &os);
     free(os.data);
 out:
@@ -736,7 +735,7 @@ hx509_ca_tbs_add_san_ms_upn(hx509_context context,
 			    hx509_ca_tbs tbs,
 			    const char *principal)
 {
-    return add_utf8_san(context, tbs, oid_id_pkinit_ms_san(), principal);
+    return add_utf8_san(context, tbs, &asn1_oid_id_pkinit_ms_san, principal);
 }
 
 /**
@@ -757,7 +756,7 @@ hx509_ca_tbs_add_san_jid(hx509_context context,
 			 hx509_ca_tbs tbs,
 			 const char *jid)
 {
-    return add_utf8_san(context, tbs, oid_id_pkix_on_xmppAddr(), jid);
+    return add_utf8_san(context, tbs, &asn1_oid_id_pkix_on_xmppAddr, jid);
 }
 
 
@@ -926,7 +925,7 @@ build_proxy_prefix(hx509_context context, const Name *issuer, Name *subject)
 	return ENOMEM;
     }
     /* prefix with CN=<ts>,...*/
-    ret = _hx509_name_modify(context, subject, 1, oid_id_at_commonName(), tstr);
+    ret = _hx509_name_modify(context, subject, 1, &asn1_oid_id_at_commonName, tstr);
     free(tstr);
     if (ret)
 	free_Name(subject);
@@ -1110,7 +1109,7 @@ ca_sign(hx509_context context,
 	data.length = 34;
 
 	ret = add_extension(context, tbsc, 0,
-			    oid_id_ms_cert_enroll_domaincontroller(),
+			    &asn1_oid_id_ms_cert_enroll_domaincontroller,
 			    &data);
 	if (ret)
 	    goto out;
@@ -1129,7 +1128,7 @@ ca_sign(hx509_context context,
 	if (size != data.length)
 	    _hx509_abort("internal ASN.1 encoder error");
 	ret = add_extension(context, tbsc, 1,
-			    oid_id_x509_ce_keyUsage(), &data);
+			    &asn1_oid_id_x509_ce_keyUsage, &data);
 	free(data.data);
 	if (ret)
 	    goto out;
@@ -1146,7 +1145,7 @@ ca_sign(hx509_context context,
 	if (size != data.length)
 	    _hx509_abort("internal ASN.1 encoder error");
 	ret = add_extension(context, tbsc, 0,
-			    oid_id_x509_ce_extKeyUsage(), &data);
+			    &asn1_oid_id_x509_ce_extKeyUsage, &data);
 	free(data.data);
 	if (ret)
 	    goto out;
@@ -1163,7 +1162,7 @@ ca_sign(hx509_context context,
 	if (size != data.length)
 	    _hx509_abort("internal ASN.1 encoder error");
 	ret = add_extension(context, tbsc, 0,
-			    oid_id_x509_ce_subjectAltName(),
+			    &asn1_oid_id_x509_ce_subjectAltName,
 			    &data);
 	free(data.data);
 	if (ret)
@@ -1181,7 +1180,7 @@ ca_sign(hx509_context context,
 	if (size != data.length)
 	    _hx509_abort("internal ASN.1 encoder error");
 	ret = add_extension(context, tbsc, 0,
-			    oid_id_x509_ce_authorityKeyIdentifier(),
+			    &asn1_oid_id_x509_ce_authorityKeyIdentifier,
 			    &data);
 	free(data.data);
 	if (ret)
@@ -1214,7 +1213,7 @@ ca_sign(hx509_context context,
 	if (size != data.length)
 	    _hx509_abort("internal ASN.1 encoder error");
 	ret = add_extension(context, tbsc, 0,
-			    oid_id_x509_ce_subjectKeyIdentifier(),
+			    &asn1_oid_id_x509_ce_subjectKeyIdentifier,
 			    &data);
 	free(data.data);
 	if (ret)
@@ -1247,7 +1246,7 @@ ca_sign(hx509_context context,
 	    _hx509_abort("internal ASN.1 encoder error");
 	/* Critical if this is a CA */
 	ret = add_extension(context, tbsc, tbs->flags.ca,
-			    oid_id_x509_ce_basicConstraints(),
+			    &asn1_oid_id_x509_ce_basicConstraints,
 			    &data);
 	free(data.data);
 	if (ret)
@@ -1271,7 +1270,7 @@ ca_sign(hx509_context context,
 	    *info.pCPathLenConstraint = tbs->pathLenConstraint;
 	}
 
-	ret = der_copy_oid(oid_id_pkix_ppl_inheritAll(),
+	ret = der_copy_oid(&asn1_oid_id_pkix_ppl_inheritAll,
 			   &info.proxyPolicy.policyLanguage);
 	if (ret) {
 	    free_ProxyCertInfo(&info);
@@ -1289,7 +1288,7 @@ ca_sign(hx509_context context,
 	if (size != data.length)
 	    _hx509_abort("internal ASN.1 encoder error");
 	ret = add_extension(context, tbsc, 0,
-			    oid_id_pkix_pe_proxyCertInfo(),
+			    &asn1_oid_id_pkix_pe_proxyCertInfo,
 			    &data);
 	free(data.data);
 	if (ret)
@@ -1307,7 +1306,7 @@ ca_sign(hx509_context context,
 	if (size != data.length)
 	    _hx509_abort("internal ASN.1 encoder error");
 	ret = add_extension(context, tbsc, FALSE,
-			    oid_id_x509_ce_cRLDistributionPoints(),
+			    &asn1_oid_id_x509_ce_cRLDistributionPoints,
 			    &data);
 	free(data.data);
 	if (ret)
@@ -1399,8 +1398,7 @@ get_AuthorityKeyIdentifier(hx509_context context,
 	 */
 
 	ret = copy_Name(&certificate->tbsCertificate.subject, &name);
-	if (ai->authorityCertSerialNumber == NULL) {
-	    ret = ENOMEM;
+	if (ret) {
 	    hx509_set_error_string(context, 0, ret, "Out of memory");
 	    goto out;
 	}

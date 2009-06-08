@@ -149,7 +149,7 @@ copy_type (const char *from, const char *to, const Type *t, int preserve)
 			to, have_ellipsis->gen_name);
 		used_fail++;
 	    }
-	    fprintf(codefile, "}\n");	
+	    fprintf(codefile, "}\n");
 	}
 	break;
     }

@@ -36,14 +36,13 @@
 #ifndef GSSKRB5_LOCL_H
 #define GSSKRB5_LOCL_H
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include <krb5_locl.h>
 #include <gkrb5_err.h>
 #include <gssapi.h>
 #include <gssapi_mech.h>
+#include <gssapi_krb5.h>
 #include <assert.h>
 
 #include "cfx.h"
@@ -54,7 +53,7 @@
 
 struct gss_msg_order;
 
-typedef struct {
+typedef struct gsskrb5_ctx {
   struct krb5_auth_context_data *auth_context;
   krb5_principal source, target;
 #define IS_DCE_STYLE(ctx) (((ctx)->flags & GSS_C_DCE_STYLE) != 0)
@@ -64,7 +63,8 @@ typedef struct {
          COMPAT_OLD_DES3_SELECTED = 8,
 	 ACCEPTOR_SUBKEY = 16,
 	 RETRIED = 32,
-	 CLOSE_CCACHE = 64
+	 CLOSE_CCACHE = 64,
+	 IS_CFX = 128
   } more_flags;
   enum gss_ctx_id_t_state {
       /* initiator states */
@@ -85,6 +85,7 @@ typedef struct {
   struct gss_msg_order *order;
   krb5_keyblock *service_keyblock;
   krb5_data fwd_data;
+  krb5_crypto crypto;
 } *gsskrb5_ctx;
 
 typedef struct {
@@ -119,7 +120,7 @@ struct gssapi_thr_context {
  * Prototypes
  */
 
-#include <krb5/gsskrb5-private.h>
+#include <gsskrb5-private.h>
 
 #define GSSAPI_KRB5_INIT(ctx) do {				\
     krb5_error_code kret_gss_init;				\

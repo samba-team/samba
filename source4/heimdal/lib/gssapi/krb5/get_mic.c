@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 
-#include "krb5/gsskrb5_locl.h"
+#include "gsskrb5_locl.h"
 
 RCSID("$Id$");
 
@@ -284,6 +284,10 @@ OM_uint32 _gsskrb5_get_mic
 
   GSSAPI_KRB5_INIT (&context);
 
+  if (ctx->more_flags & IS_CFX)
+      return _gssapi_mic_cfx (minor_status, ctx, context, qop_req,
+			      message_buffer, message_token);
+
   HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
   ret = _gsskrb5i_get_token_key(ctx, context, &key);
   HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
@@ -308,8 +312,7 @@ OM_uint32 _gsskrb5_get_mic
 				     message_buffer, message_token, key);
       break;
   default :
-      ret = _gssapi_mic_cfx (minor_status, ctx, context, qop_req,
-			     message_buffer, message_token, key);
+      abort();
       break;
   }
   krb5_free_keyblock (context, key);

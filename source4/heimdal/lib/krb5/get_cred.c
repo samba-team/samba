@@ -33,8 +33,6 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id$");
-
 /*
  * Take the `body' and encode it into `padata' using the credentials
  * in `creds'.
@@ -375,17 +373,18 @@ decrypt_tkt_with_subkey (krb5_context context,
     if (ret)
 	return ret;
 
-    ret = krb5_decode_EncASRepPart(context,
-				   data.data,
+    ret = decode_EncASRepPart(data.data,
+			      data.length,
+			      &dec_rep->enc_part,
+			      &size);
+    if (ret)
+	ret = decode_EncTGSRepPart(data.data,
 				   data.length,
 				   &dec_rep->enc_part,
 				   &size);
     if (ret)
-	ret = krb5_decode_EncTGSRepPart(context,
-					data.data,
-					data.length,
-					&dec_rep->enc_part,
-					&size);
+      krb5_set_error_message(context, ret, 
+			     N_("Failed to decode encpart in ticket", ""));
     krb5_data_free (&data);
     return ret;
 }
@@ -477,7 +476,7 @@ get_cred_kdc(krb5_context context,
 	if (len != size)
 	    krb5_abortx(context, "internal asn1 error");
 	
-	ret = krb5_padata_add(context, &padata, KRB5_PADATA_S4U2SELF, buf, len);
+	ret = krb5_padata_add(context, &padata, KRB5_PADATA_FOR_USER, buf, len);
 	if (ret)
 	    goto out;
     }
@@ -561,7 +560,7 @@ get_cred_kdc(krb5_context context,
     } else if(krb5_rd_error(context, &resp, &error) == 0) {
 	ret = krb5_error_from_rd_error(context, &error, in_creds);
 	krb5_free_error_contents(context, &error);
-    } else if(resp.data && ((char*)resp.data)[0] == 4) {
+    } else if(resp.length > 0 && ((char*)resp.data)[0] == 4) {
 	ret = KRB5KRB_AP_ERR_V4_REPLY;
 	krb5_clear_error_message(context);
     } else {
@@ -1217,6 +1216,10 @@ krb5_get_creds_opt_free(krb5_context context, krb5_get_creds_opt opt)
 {
     if (opt->self)
 	krb5_free_principal(context, opt->self);
+    if (opt->ticket) {
+	free_Ticket(opt->ticket);
+	free(opt->ticket);
+    }
     memset(opt, 0, sizeof(*opt));
     free(opt);
 }

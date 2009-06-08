@@ -32,7 +32,6 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id$");
 
 /**
  * @page page_print Hx509 printing functions
@@ -547,14 +546,14 @@ check_CRLDistributionPoints(hx509_validate_ctx ctx,
 
 struct {
     const char *name;
-    const heim_oid *(*oid)(void);
+    const heim_oid *oid;
     int (*func)(hx509_validate_ctx, heim_any *);
-} check_altname[] = {
-    { "pk-init", oid_id_pkinit_san, check_pkinit_san },
-    { "jabber", oid_id_pkix_on_xmppAddr, check_utf8_string_san },
-    { "dns-srv", oid_id_pkix_on_dnsSRV, check_altnull },
-    { "card-id", oid_id_uspkicommon_card_id, check_altnull },
-    { "Microsoft NT-PRINCIPAL-NAME", oid_id_pkinit_ms_san, check_utf8_string_san }
+} altname_types[] = {
+    { "pk-init", &asn1_oid_id_pkinit_san, check_pkinit_san },
+    { "jabber", &asn1_oid_id_pkix_on_xmppAddr, check_utf8_string_san },
+    { "dns-srv", &asn1_oid_id_pkix_on_dnsSRV, check_altnull },
+    { "card-id", &asn1_oid_id_uspkicommon_card_id, check_altnull },
+    { "Microsoft NT-PRINCIPAL-NAME", &asn1_oid_id_pkinit_ms_san, check_utf8_string_san }
 };
 
 static int
@@ -597,17 +596,17 @@ check_altName(hx509_validate_ctx ctx,
 	    validate_print(ctx, HX509_VALIDATE_F_VERBOSE,
 			   "%sAltName otherName ", name);
 
-	    for (j = 0; j < sizeof(check_altname)/sizeof(check_altname[0]); j++) {
-		if (der_heim_oid_cmp((*check_altname[j].oid)(),
+	    for (j = 0; j < sizeof(altname_types)/sizeof(altname_types[0]); j++) {
+		if (der_heim_oid_cmp(altname_types[j].oid,
 				     &gn.val[i].u.otherName.type_id) != 0)
 		    continue;
 		
 		validate_print(ctx, HX509_VALIDATE_F_VERBOSE, "%s: ",
-			       check_altname[j].name);
-		(*check_altname[j].func)(ctx, &gn.val[i].u.otherName.value);
+			       altname_types[j].name);
+		(*altname_types[j].func)(ctx, &gn.val[i].u.otherName.value);
 		break;
 	    }
-	    if (j == sizeof(check_altname)/sizeof(check_altname[0])) {
+	    if (j == sizeof(altname_types)/sizeof(altname_types[0])) {
 		hx509_oid_print(&gn.val[i].u.otherName.type_id,
 				validate_vprint, ctx);
 		validate_print(ctx, HX509_VALIDATE_F_VERBOSE, " unknown");
@@ -751,14 +750,14 @@ check_authorityInfoAccess(hx509_validate_ctx ctx,
 
 struct {
     const char *name;
-    const heim_oid *(*oid)(void);
+    const heim_oid *oid;
     int (*func)(hx509_validate_ctx ctx,
 		struct cert_status *status,
 		enum critical_flag cf,
 		const Extension *);
     enum critical_flag cf;
 } check_extension[] = {
-#define ext(name, checkname) #name, &oid_id_x509_ce_##name, check_##checkname
+#define ext(name, checkname) #name, &asn1_oid_id_x509_ce_##name, check_##checkname
     { ext(subjectDirectoryAttributes, Null), M_N_C },
     { ext(subjectKeyIdentifier, subjectKeyIdentifier), M_N_C },
     { ext(keyUsage, Null), S_C },
@@ -782,13 +781,13 @@ struct {
     { ext(freshestCRL, Null), M_N_C },
     { ext(inhibitAnyPolicy, Null), M_C },
 #undef ext
-#define ext(name, checkname) #name, &oid_id_pkix_pe_##name, check_##checkname
+#define ext(name, checkname) #name, &asn1_oid_id_pkix_pe_##name, check_##checkname
     { ext(proxyCertInfo, proxyCertInfo), M_C },
     { ext(authorityInfoAccess, authorityInfoAccess), M_C },
 #undef ext
-    { "US Fed PKI - PIV Interim", oid_id_uspkicommon_piv_interim,
+    { "US Fed PKI - PIV Interim", &asn1_oid_id_uspkicommon_piv_interim,
       check_Null, D_C },
-    { "Netscape cert comment", oid_id_netscape_cert_comment,
+    { "Netscape cert comment", &asn1_oid_id_netscape_cert_comment,
       check_Null, D_C },
     { NULL }
 };
@@ -949,7 +948,7 @@ hx509_validate_cert(hx509_context context,
 	for (i = 0; i < t->extensions->len; i++) {
 
 	    for (j = 0; check_extension[j].name; j++)
-		if (der_heim_oid_cmp((*check_extension[j].oid)(),
+		if (der_heim_oid_cmp(check_extension[j].oid,
 				     &t->extensions->val[i].extnID) == 0)
 		    break;
 	    if (check_extension[j].name == NULL) {

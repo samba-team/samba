@@ -33,8 +33,6 @@
 
 #include <krb5_locl.h>
 
-RCSID("$Id$");
-
 static krb5_error_code
 compare_addrs(krb5_context context,
 	      krb5_address *a,
@@ -149,15 +147,18 @@ krb5_rd_cred(krb5_context context,
 	    goto out;
     }
 
-    ret = krb5_decode_EncKrbCredPart (context,
-				      enc_krb_cred_part_data.data,
-				      enc_krb_cred_part_data.length,
-				      &enc_krb_cred_part,
-				      &len);
+    ret = decode_EncKrbCredPart(enc_krb_cred_part_data.data,
+				enc_krb_cred_part_data.length,
+				&enc_krb_cred_part,
+				&len);
     if (enc_krb_cred_part_data.data != cred.enc_part.cipher.data)
 	krb5_data_free(&enc_krb_cred_part_data);
-    if (ret)
+    if (ret) {
+	krb5_set_error_message(context, ret,
+			       N_("Failed to decode "
+				  "encrypte credential part", ""));
 	goto out;
+    }
 
     /* check sender address */
 

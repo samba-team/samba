@@ -31,10 +31,7 @@
  * SUCH DAMAGE.
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id$");
-#endif
 
 #ifndef HAVE_H_ERRNO
 int h_errno = -17; /* Some magic number */

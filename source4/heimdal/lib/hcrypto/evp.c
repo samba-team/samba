@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006 - 2008 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
@@ -34,8 +34,6 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-
-RCSID("$Id$");
 
 #define HC_DEPRECATED
 #define HC_DEPRECATED_CRYPTO
@@ -511,13 +509,6 @@ EVP_md_null(void)
     };
     return &null;
 }
-
-#if 0
-int	EVP_DigestInit(EVP_MD_CTX *ctx, const EVP_MD *type);
-int	EVP_DigestFinal(EVP_MD_CTX *ctx,unsigned char *md,unsigned int *s);
-int	EVP_SignFinal(EVP_MD_CTX *, void *, size_t *, EVP_PKEY *);
-int	EVP_VerifyFinal(EVP_MD_CTX *, const void *, size_t, EVP_PKEY *);
-#endif
 
 /**
  * Return the block size of the cipher.
@@ -1650,6 +1641,11 @@ EVP_CIPHER_CTX_rand_key(EVP_CIPHER_CTX *ctx, void *key)
 /**
  * Perform a operation on a ctx
  *
+ * @param ctx context to perform operation on.
+ * @param type type of operation.
+ * @param arg argument to operation.
+ * @param data addition data to operation.
+
  * @return 1 for success, 0 for failure.
  *
  * @ingroup hcrypto_core

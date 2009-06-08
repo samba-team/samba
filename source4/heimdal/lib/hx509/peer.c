@@ -32,7 +32,6 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id$");
 
 /**
  * @page page_peer Hx509 crypto selecting functions
@@ -118,6 +117,39 @@ hx509_peer_info_set_cert(hx509_peer_info peer,
 	hx509_cert_free(peer->cert);
     peer->cert = hx509_cert_ref(cert);
     return 0;
+}
+
+/**
+ * Add an additional algorithm that the peer supports.
+ *
+ * @param context A hx509 context.
+ * @param peer the peer to set the new algorithms for
+ * @param val an AlgorithmsIdentier to add
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_peer
+ */
+
+int
+hx509_peer_info_add_cms_alg(hx509_context context,
+			    hx509_peer_info peer,
+			    const AlgorithmIdentifier *val)
+{
+    void *ptr;
+    int ret;
+
+    ptr = realloc(peer->val, sizeof(peer->val[0]) * (peer->len + 1));
+    if (ptr == NULL) {
+	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
+	return ENOMEM;
+    }
+    ret = copy_AlgorithmIdentifier(val, &peer->val[peer->len]);
+    if (ret == 0)
+	peer->len += 1;
+    else
+	hx509_set_error_string(context, 0, ret, "out of memory");
+    return ret;
 }
 
 /**

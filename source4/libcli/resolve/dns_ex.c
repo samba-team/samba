@@ -81,13 +81,13 @@ static int dns_ex_destructor(struct dns_ex_state *state)
 */
 static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 {
-	struct dns_reply *reply;
-	struct resource_record *rr;
+	struct rk_dns_reply *reply;
+	struct rk_resource_record *rr;
 	uint32_t count = 0;
 	uint32_t srv_valid = 0;
-	struct resource_record **srv_rr;
+	struct rk_resource_record **srv_rr;
 	uint32_t addrs_valid = 0;
-	struct resource_record **addrs_rr;
+	struct rk_resource_record **addrs_rr;
 	char *addrs;
 	bool first;
 	uint32_t i;
@@ -95,25 +95,25 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 
 	/* this is the blocking call we are going to lots of trouble
 	   to avoid in the parent */
-	reply = dns_lookup(state->name.name, do_srv?"SRV":"A");
+	reply = rk_dns_lookup(state->name.name, do_srv?"SRV":"A");
 	if (!reply) {
 		goto done;
 	}
 
 	if (do_srv) {
-		dns_srv_order(reply);
+		rk_dns_srv_order(reply);
 	}
 
 	/* Loop over all returned records and pick the "srv" records */
 	for (rr=reply->head; rr; rr=rr->next) {
 		/* we are only interested in the IN class */
-		if (rr->class != C_IN) {
+		if (rr->class != rk_ns_c_in) {
 			continue;
 		}
 
 		if (do_srv) {
 			/* we are only interested in SRV records */
-			if (rr->type != T_SRV) {
+			if (rr->type != rk_ns_t_srv) {
 				continue;
 			}
 
@@ -129,7 +129,7 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 		} else {
 			/* we are only interested in A records */
 			/* TODO: add AAAA support */
-			if (rr->type != T_A) {
+			if (rr->type != rk_ns_t_a) {
 				continue;
 			}
 
@@ -146,14 +146,14 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 	}
 
 	srv_rr = talloc_zero_array(state,
-				   struct resource_record *,
+				   struct rk_resource_record *,
 				   count);
 	if (!srv_rr) {
 		goto done;
 	}
 
 	addrs_rr = talloc_zero_array(state,
-				     struct resource_record *,
+				     struct rk_resource_record *,
 				     count);
 	if (!addrs_rr) {
 		goto done;
@@ -162,13 +162,13 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 	/* Loop over all returned records and pick the records */
 	for (rr=reply->head;rr;rr=rr->next) {
 		/* we are only interested in the IN class */
-		if (rr->class != C_IN) {
+		if (rr->class != rk_ns_c_in) {
 			continue;
 		}
 
 		if (do_srv) {
 			/* we are only interested in SRV records */
-			if (rr->type != T_SRV) {
+			if (rr->type != rk_ns_c_in) {
 				continue;
 			}
 
@@ -187,7 +187,7 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 		} else {
 			/* we are only interested in A records */
 			/* TODO: add AAAA support */
-			if (rr->type != T_A) {
+			if (rr->type != rk_ns_t_a) {
 				continue;
 			}
 
@@ -204,12 +204,12 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 	for (i=0; i < srv_valid; i++) {
 		for (rr=reply->head;rr;rr=rr->next) {
 
-			if (rr->class != C_IN) {
+			if (rr->class != rk_ns_c_in) {
 				continue;
 			}
 
 			/* we are only interested in SRV records */
-			if (rr->type != T_A) {
+			if (rr->type != rk_ns_t_a) {
 				continue;
 			}
 

@@ -258,6 +258,8 @@ if test x"$with_krb5_support" != x"no"; then
 	AC_CHECK_FUNC_EXT(krb5_enctypes_compatible_keys, $KRB5_LIBS)
 	AC_CHECK_FUNC_EXT(krb5_get_error_string, $KRB5_LIBS)
 	AC_CHECK_FUNC_EXT(krb5_free_error_string, $KRB5_LIBS)
+	AC_CHECK_FUNC_EXT(krb5_get_error_message, $KRB5_LIBS)
+	AC_CHECK_FUNC_EXT(krb5_free_error_message, $KRB5_LIBS)
 	AC_CHECK_FUNC_EXT(krb5_initlog, $KRB5_LIBS)
 	AC_CHECK_FUNC_EXT(krb5_addlog_func, $KRB5_LIBS)
 	AC_CHECK_FUNC_EXT(krb5_set_warn_dest, $KRB5_LIBS)

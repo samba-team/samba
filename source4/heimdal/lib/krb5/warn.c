@@ -34,8 +34,6 @@
 #include "krb5_locl.h"
 #include <err.h>
 
-RCSID("$Id$");
-
 static krb5_error_code _warnerr(krb5_context context, int do_errtext,
 	 krb5_error_code code, int level, const char *fmt, va_list ap)
 	__attribute__((__format__(__printf__, 5, 0)));
@@ -96,6 +94,18 @@ _warnerr(krb5_context context, int do_errtext,
 #undef __attribute__
 #define __attribute__(X)
 
+/**
+ * Log a warning to the log, default stderr, include the error from
+ * the last failure.
+ *
+ * @param context A Kerberos 5 context.
+ * @param code error code of the last error
+ * @param fmt message to print
+ * @param ap arguments
+ *
+ * @ingroup krb5_error
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_vwarn(krb5_context context, krb5_error_code code,
 	   const char *fmt, va_list ap)
@@ -104,6 +114,16 @@ krb5_vwarn(krb5_context context, krb5_error_code code,
     return _warnerr(context, 1, code, 1, fmt, ap);
 }
 
+/**
+ * Log a warning to the log, default stderr, include the error from
+ * the last failure.
+ *
+ * @param context A Kerberos 5 context.
+ * @param code error code of the last error
+ * @param fmt message to print
+ *
+ * @ingroup krb5_error
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_warn(krb5_context context, krb5_error_code code, const char *fmt, ...)
@@ -113,12 +133,31 @@ krb5_warn(krb5_context context, krb5_error_code code, const char *fmt, ...)
     return ret;
 }
 
+/**
+ * Log a warning to the log, default stderr.
+ *
+ * @param context A Kerberos 5 context.
+ * @param fmt message to print
+ * @param ap arguments
+ *
+ * @ingroup krb5_error
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_vwarnx(krb5_context context, const char *fmt, va_list ap)
      __attribute__ ((format (printf, 2, 0)))
 {
     return _warnerr(context, 0, 0, 1, fmt, ap);
 }
+
+/**
+ * Log a warning to the log, default stderr.
+ *
+ * @param context A Kerberos 5 context.
+ * @param fmt message to print
+ *
+ * @ingroup krb5_error
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_warnx(krb5_context context, const char *fmt, ...)
@@ -127,6 +166,19 @@ krb5_warnx(krb5_context context, const char *fmt, ...)
     FUNC(0, 0, 1);
     return ret;
 }
+
+/**
+ * Log a warning to the log, default stderr, include bthe error from
+ * the last failure and then exit.
+ *
+ * @param context A Kerberos 5 context
+ * @param eval the exit code to exit with
+ * @param code error code of the last error
+ * @param fmt message to print
+ * @param ap arguments
+ *
+ * @ingroup krb5_error
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_verr(krb5_context context, int eval, krb5_error_code code,
@@ -137,6 +189,17 @@ krb5_verr(krb5_context context, int eval, krb5_error_code code,
     exit(eval);
 }
 
+/**
+ * Log a warning to the log, default stderr, include bthe error from
+ * the last failure and then exit.
+ *
+ * @param context A Kerberos 5 context
+ * @param eval the exit code to exit with
+ * @param code error code of the last error
+ * @param fmt message to print
+ *
+ * @ingroup krb5_error
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_err(krb5_context context, int eval, krb5_error_code code,
@@ -147,6 +210,17 @@ krb5_err(krb5_context context, int eval, krb5_error_code code,
     exit(eval);
 }
 
+/**
+ * Log a warning to the log, default stderr, and then exit.
+ *
+ * @param context A Kerberos 5 context
+ * @param eval the exit code to exit with
+ * @param fmt message to print
+ * @param ap arguments
+ *
+ * @ingroup krb5_error
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_verrx(krb5_context context, int eval, const char *fmt, va_list ap)
      __attribute__ ((noreturn, format (printf, 3, 0)))
@@ -155,6 +229,16 @@ krb5_verrx(krb5_context context, int eval, const char *fmt, va_list ap)
     exit(eval);
 }
 
+/**
+ * Log a warning to the log, default stderr, and then exit.
+ *
+ * @param context A Kerberos 5 context
+ * @param eval the exit code to exit with
+ * @param fmt message to print
+ *
+ * @ingroup krb5_error
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_errx(krb5_context context, int eval, const char *fmt, ...)
      __attribute__ ((noreturn, format (printf, 3, 4)))
@@ -162,6 +246,18 @@ krb5_errx(krb5_context context, int eval, const char *fmt, ...)
     FUNC(0, 0, 0);
     exit(eval);
 }
+
+/**
+ * Log a warning to the log, default stderr, include bthe error from
+ * the last failure and then abort.
+ *
+ * @param context A Kerberos 5 context
+ * @param code error code of the last error
+ * @param fmt message to print
+ * @param ap arguments
+ *
+ * @ingroup krb5_error
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_vabort(krb5_context context, krb5_error_code code,
@@ -172,6 +268,16 @@ krb5_vabort(krb5_context context, krb5_error_code code,
     abort();
 }
 
+/**
+ * Log a warning to the log, default stderr, include bthe error from
+ * the last failure and then abort.
+ *
+ * @param context A Kerberos 5 context
+ * @param code error code of the last error
+ * @param fmt message to print
+ *
+ * @ingroup krb5_error
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_abort(krb5_context context, krb5_error_code code, const char *fmt, ...)
@@ -189,6 +295,16 @@ krb5_vabortx(krb5_context context, const char *fmt, va_list ap)
     abort();
 }
 
+/**
+ * Log a warning to the log, default stderr, and then abort.
+ *
+ * @param context A Kerberos 5 context
+ * @param code error code of the last error
+ * @param fmt message to print
+ *
+ * @ingroup krb5_error
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_abortx(krb5_context context, const char *fmt, ...)
      __attribute__ ((noreturn, format (printf, 2, 3)))
@@ -197,12 +313,29 @@ krb5_abortx(krb5_context context, const char *fmt, ...)
     abort();
 }
 
+/**
+ * Set the default logging facility.
+ *
+ * @param context A Kerberos 5 context
+ * @param fac Facility to use for logging.
+ *
+ * @ingroup krb5_error
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_set_warn_dest(krb5_context context, krb5_log_facility *fac)
 {
     context->warn_dest = fac;
     return 0;
 }
+
+/**
+ * Get the default logging facility.
+ *
+ * @param context A Kerberos 5 context
+ *
+ * @ingroup krb5_error
+ */
 
 krb5_log_facility * KRB5_LIB_FUNCTION
 krb5_get_warn_dest(krb5_context context)

@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 
-#include "spnego/spnego_locl.h"
+#include "spnego_locl.h"
 
 RCSID("$Id$");
 
@@ -494,7 +494,7 @@ acceptor_complete(OM_uint32 * minor_status,
 	    *get_mic = 1;
 	}
 	
-	if (verify_mic || get_mic) {
+	if (verify_mic || *get_mic) {
 	    int eret;
 	    size_t buf_len;
 	
@@ -512,7 +512,7 @@ acceptor_complete(OM_uint32 * minor_status,
 	if (verify_mic) {
 	    ret = verify_mechlist_mic(minor_status, ctx, mech_buf, mic);
 	    if (ret) {
-		if (get_mic)
+		if (*get_mic)
 		    send_reject (minor_status, output_token);
 		if (buf.value)
 		    free(buf.value);

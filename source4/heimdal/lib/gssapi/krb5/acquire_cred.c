@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 
-#include "krb5/gsskrb5_locl.h"
+#include "gsskrb5_locl.h"
 
 RCSID("$Id$");
 
@@ -187,7 +187,8 @@ static OM_uint32 acquire_initiator_cred
 	krb5_get_init_creds_opt_free(context, opt);
 	if (kret)
 	    goto end;
-	kret = krb5_cc_gen_new(context, &krb5_mcc_ops, &ccache);
+	kret = krb5_cc_new_unique(context, krb5_cc_type_memory,
+				  NULL, &ccache);
 	if (kret)
 	    goto end;
 	kret = krb5_cc_initialize(context, ccache, cred.client);

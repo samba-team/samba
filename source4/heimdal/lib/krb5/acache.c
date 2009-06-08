@@ -37,12 +37,8 @@
 #include <dlfcn.h>
 #endif
 
-RCSID("$Id$");
-
-/* XXX should we fetch these for each open ? */
 static HEIMDAL_MUTEX acc_mutex = HEIMDAL_MUTEX_INITIALIZER;
 static cc_initialize_func init_func;
-
 #ifdef HAVE_DLOPEN
 static void *cc_handle;
 #endif
@@ -135,7 +131,7 @@ init_ccapi(krb5_context context)
 #else
     HEIMDAL_MUTEX_unlock(&acc_mutex);
     krb5_set_error_message(context, KRB5_CC_NOSUPP,
-			   N_("no support for shared object", "file, error"));
+			   N_("no support for shared object", ""));
     return KRB5_CC_NOSUPP;
 #endif
 }
@@ -342,6 +338,7 @@ make_ccred_from_cred(krb5_context context,
 	addr->length = incred->addresses.val[i].address.length;
 	addr->data = malloc(addr->length);
 	if (addr->data == NULL) {
+	    free(addr);
 	    ret = ENOMEM;
 	    goto fail;
 	}
@@ -490,16 +487,23 @@ acc_resolve(krb5_context context, krb5_ccache *id, const char *res)
 
     error = (*a->context->func->open_ccache)(a->context, res, &a->ccache);
     if (error == ccNoError) {
+	cc_time_t offset;
 	error = get_cc_name(a);
 	if (error != ccNoError) {
 	    acc_close(context, *id);
 	    *id = NULL;
 	    return translate_cc_error(context, error);
 	}
+
+	error = (*a->ccache->func->get_kdc_time_offset)(a->ccache,
+							cc_credentials_v5,
+							&offset);
+	if (error == 0) 
+	    context->kdc_sec_offset = offset;
+
     } else if (error == ccErrCCacheNotFound) {
 	a->ccache = NULL;
 	a->cache_name = NULL;
-	error = 0;
     } else {
 	*id = NULL;
 	return translate_cc_error(context, error);
@@ -571,6 +575,11 @@ acc_initialize(krb5_context context,
 						  cc_credentials_v5,
 						  name);
     }
+
+    if (error == 0 && context->kdc_sec_offset)
+	error = (*a->ccache->func->set_kdc_time_offset)(a->ccache,
+							cc_credentials_v5,
+							context->kdc_sec_offset);
 
     return translate_cc_error(context, error);
 }
@@ -946,8 +955,10 @@ acc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
 	    return translate_cc_error(context, error);
     }
 
-
     error = (*ato->ccache->func->move)(afrom->ccache, ato->ccache);
+
+    acc_destroy(context, from);
+
     return translate_cc_error(context, error);
 }
 

@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 1997 - 2001, 2003 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
@@ -172,8 +173,8 @@ parse_key_set(krb5_context context, const char *key,
 	if(salt->salttype == KRB5_PW_SALT)
 	    ret = krb5_get_pw_salt(context, principal, salt);
 	else if(salt->salttype == KRB5_AFS3_SALT) {
-	    krb5_realm *realm = krb5_princ_realm(context, principal);
-	    salt->saltvalue.data = strdup(*realm);
+	    krb5_const_realm realm = krb5_principal_get_realm(context, principal);
+	    salt->saltvalue.data = strdup(realm);
 	    if(salt->saltvalue.data == NULL) {
 		krb5_set_error_message(context, ENOMEM,
 				       "out of memory while "
@@ -181,7 +182,7 @@ parse_key_set(krb5_context context, const char *key,
 		return ENOMEM;
 	    }
 	    strlwr(salt->saltvalue.data);
-	    salt->saltvalue.length = strlen(*realm);
+	    salt->saltvalue.length = strlen(realm);
 	}
     }
 
@@ -217,7 +218,7 @@ add_enctype_to_key_set(Key **key_set, size_t *nkeyset,
     key.key.keyvalue.data = NULL;
 
     if (salt) {
-	key.salt = malloc(sizeof(*key.salt));
+	key.salt = calloc(1, sizeof(*key.salt));
 	if (key.salt == NULL) {
 	    free_Key(&key);
 	    return ENOMEM;
@@ -259,7 +260,6 @@ hdb_generate_key_set(krb5_context context, krb5_principal principal,
     Key *k, *key_set;
     int i, j;
     char *default_keytypes[] = {
-	"des:pw-salt",
 	"aes256-cts-hmac-sha1-96:pw-salt",
 	"des3-cbc-sha1:pw-salt",
 	"arcfour-hmac-md5:pw-salt",
@@ -270,9 +270,6 @@ hdb_generate_key_set(krb5_context context, krb5_principal principal,
 				     "default_keys", NULL);
     if (ktypes == NULL)
 	ktypes = default_keytypes;
-
-    if (ktypes == NULL)
-	abort();
 
     *ret_key_set = key_set = NULL;
     *nkeyset = 0;

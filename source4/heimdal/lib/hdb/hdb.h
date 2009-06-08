@@ -66,65 +66,122 @@ typedef struct hdb_entry_ex {
 } hdb_entry_ex;
 
 
+/**
+ * HDB backend function pointer structure
+ *
+ * The HDB structure is what the KDC and kadmind framework uses to
+ * query the backend database when talking about principals.
+ */
+
 typedef struct HDB{
     void *hdb_db;
-    void *hdb_dbc;
+    void *hdb_dbc; /** don't use, only for DB3 */
     char *hdb_name;
     int hdb_master_key_set;
     hdb_master_key hdb_master_key;
     int hdb_openp;
 
-    krb5_error_code (*hdb_open)(krb5_context,
-				struct HDB*,
-				int,
-				mode_t);
-    krb5_error_code (*hdb_close)(krb5_context,
-				 struct HDB*);
-    void	    (*hdb_free)(krb5_context,
-				struct HDB*,
-				hdb_entry_ex*);
-    krb5_error_code (*hdb_fetch)(krb5_context,
-				 struct HDB*,
-				 krb5_const_principal,
-				 unsigned,
+    /**
+     * Open (or create) the a Kerberos database.
+     *
+     * Open (or create) the a Kerberos database that was resolved with
+     * hdb_create(). The third and fourth flag to the function are the
+     * same as open(), thus passing O_CREAT will create the data base
+     * if it doesn't exists.
+     *
+     * Then done the caller should call hdb_close(), and to release
+     * all resources hdb_destroy().
+     */
+    krb5_error_code (*hdb_open)(krb5_context, struct HDB*, int, mode_t);
+    /**
+     * Close the database for transaction
+     *
+     * Closes the database for further transactions, wont release any
+     * permanant resources. the database can be ->hdb_open-ed again.
+     */
+    krb5_error_code (*hdb_close)(krb5_context, struct HDB*);
+    /**
+     * Free an entry after use.
+     */
+    void	    (*hdb_free)(krb5_context, struct HDB*, hdb_entry_ex*);
+    /**
+     * Fetch an entry from the backend
+     *
+     * Fetch an entry from the backend, flags are what type of entry
+     * should be fetch: client, server, krbtgt.
+     */
+    krb5_error_code (*hdb_fetch)(krb5_context, struct HDB*,
+				 krb5_const_principal, unsigned,
 				 hdb_entry_ex*);
-    krb5_error_code (*hdb_store)(krb5_context,
-				 struct HDB*,
-				 unsigned,
-				 hdb_entry_ex*);
-    krb5_error_code (*hdb_remove)(krb5_context,
-				  struct HDB*,
+    /**
+     * Store an entry to database
+     */
+    krb5_error_code (*hdb_store)(krb5_context, struct HDB*,
+				 unsigned, hdb_entry_ex*);
+    /**
+     * Remove an entry from the database.
+     */
+    krb5_error_code (*hdb_remove)(krb5_context, struct HDB*,
 				  krb5_const_principal);
-    krb5_error_code (*hdb_firstkey)(krb5_context,
-				    struct HDB*,
-				    unsigned,
-				    hdb_entry_ex*);
-    krb5_error_code (*hdb_nextkey)(krb5_context,
-				   struct HDB*,
-				   unsigned,
-				   hdb_entry_ex*);
-    krb5_error_code (*hdb_lock)(krb5_context,
-				struct HDB*,
-				int operation);
-    krb5_error_code (*hdb_unlock)(krb5_context,
-				  struct HDB*);
-    krb5_error_code (*hdb_rename)(krb5_context,
-				  struct HDB*,
-				  const char*);
-    krb5_error_code (*hdb__get)(krb5_context,
-				struct HDB*,
-				krb5_data,
-				krb5_data*);
-    krb5_error_code (*hdb__put)(krb5_context,
-				struct HDB*,
-				int,
-				krb5_data,
-				krb5_data);
-    krb5_error_code (*hdb__del)(krb5_context,
-				struct HDB*,
-				krb5_data);
-    krb5_error_code (*hdb_destroy)(krb5_context,
-				   struct HDB*);
+    /**
+     * As part of iteration, fetch one entry
+     */
+    krb5_error_code (*hdb_firstkey)(krb5_context, struct HDB*,
+				    unsigned, hdb_entry_ex*);
+    /**
+     * As part of iteration, fetch next entry
+     */
+    krb5_error_code (*hdb_nextkey)(krb5_context, struct HDB*, 
+				   unsigned, hdb_entry_ex*);
+    /**
+     * Lock database
+     *
+     * A lock can only be held by one consumers. Transaction can still
+     * happen on the database while the lock is held, so the entry is
+     * only useful for syncroning creation of the database and renaming of the database.
+     */
+    krb5_error_code (*hdb_lock)(krb5_context, struct HDB*, int);
+    /**
+     * Unlock database
+     */
+    krb5_error_code (*hdb_unlock)(krb5_context, struct HDB*);
+    /**
+     * Rename the data base.
+     */
+    krb5_error_code (*hdb_rename)(krb5_context, struct HDB*, const char*);
+    /**
+     * Get an hdb_entry from a classical DB backend
+     *
+     * If the database is a classical DB (ie BDB, NDBM, GDBM, etc)
+     * backend, this function will take a principal key (krb5_data)
+     * and return all data related to principal in the return
+     * krb5_data. The returned encoded entry is of type hdb_entry or
+     * hdb_entry_alias.
+     */
+    krb5_error_code (*hdb__get)(krb5_context, struct HDB*,
+				krb5_data, krb5_data*);
+    /**
+     * Store an hdb_entry from a classical DB backend
+     *
+     * Same discussion as in @ref HDB::hdb__get
+     */
+    krb5_error_code (*hdb__put)(krb5_context, struct HDB*, int,
+				krb5_data, krb5_data);
+    /**
+     * Delete and hdb_entry from a classical DB backend
+     *
+     * Same discussion as in @ref HDB::hdb__get
+     */
+    krb5_error_code (*hdb__del)(krb5_context, struct HDB*, krb5_data);
+    /**
+     * Destroy the handle to the database.
+     *
+     * Destroy the handle to the database, deallocate all memory and
+     * related resources. Does not remove any permanent data. Its the
+     * logical reverse of hdb_create() function that is the entry
+     * point for the module.
+     */
+    krb5_error_code (*hdb_destroy)(krb5_context, struct HDB*);
 }HDB;
 
 #define HDB_INTERFACE_VERSION	4

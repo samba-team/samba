@@ -32,7 +32,7 @@
  */
 
 #include "krb5_locl.h"
-RCSID("$Id$");
+
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
 #endif
@@ -54,7 +54,13 @@ struct plugin {
 static HEIMDAL_MUTEX plugin_mutex = HEIMDAL_MUTEX_INITIALIZER;
 static struct plugin *registered = NULL;
 
-static const char *plugin_dir = LIBDIR "/plugin/krb5";
+static const char *sysplugin_dirs[] =  { 
+    LIBDIR "/plugin/krb5",
+#ifdef __APPLE__
+    "/System/Library/KerberosPlugins/KerberosFrameworkPlugins",
+#endif
+    NULL
+};
 
 /*
  *
@@ -94,8 +100,11 @@ loadlib(krb5_context context,
 #ifndef RTLD_LAZY
 #define RTLD_LAZY 0
 #endif
+#ifndef RTLD_LOCAL
+#define RTLD_LOCAL 0
+#endif
 
-    (*e)->dsohandle = dlopen(lib, RTLD_LAZY);
+    (*e)->dsohandle = dlopen(lib, RTLD_LOCAL|RTLD_LAZY);
     if ((*e)->dsohandle == NULL) {
 	free(*e);
 	*e = NULL;
@@ -173,7 +182,6 @@ _krb5_plugin_find(krb5_context context,
     struct krb5_plugin *e;
     struct plugin *p;
     krb5_error_code ret;
-    char *sysdirs[2] = { NULL, NULL };
     char **dirs = NULL, **di;
     struct dirent *entry;
     char *path;
@@ -205,10 +213,8 @@ _krb5_plugin_find(krb5_context context,
 
     dirs = krb5_config_get_strings(context, NULL, "libdefaults",
 				   "plugin_dir", NULL);
-    if (dirs == NULL) {
-	sysdirs[0] = rk_UNCONST(plugin_dir);
-	dirs = sysdirs;
-    }
+    if (dirs == NULL)
+	dirs = rk_UNCONST(sysplugin_dirs);
 
     for (di = dirs; *di != NULL; di++) {
 
@@ -218,7 +224,23 @@ _krb5_plugin_find(krb5_context context,
 	rk_cloexec(dirfd(d));
 
 	while ((entry = readdir(d)) != NULL) {
-	    asprintf(&path, "%s/%s", *di, entry->d_name);
+	    char *n = entry->d_name;
+
+	    /* skip . and .. */
+	    if (n[0] == '.' && (n[1] == '\0' || (n[1] == '.' && n[2] == '\0')))
+		continue;
+
+	    path = NULL;
+#ifdef __APPLE__
+	    { /* support loading bundles on MacOS */
+		size_t len = strlen(n);
+		if (len > 7 && strcmp(&n[len - 7],  ".bundle") == 0)
+		    asprintf(&path, "%s/%s/Contents/MacOS/%.*s", *di, n, (int)(len - 7), n);
+	    }
+#endif
+	    if (path == NULL)
+		asprintf(&path, "%s/%s", *di, n);
+
 	    if (path == NULL) {
 		ret = ENOMEM;
 		krb5_set_error_message(context, ret, "malloc: out of memory");
@@ -234,7 +256,7 @@ _krb5_plugin_find(krb5_context context,
 	}
 	closedir(d);
     }
-    if (dirs != sysdirs)
+    if (dirs != rk_UNCONST(sysplugin_dirs))
 	krb5_config_free_strings(dirs);
 #endif /* HAVE_DLOPEN */
 
@@ -246,7 +268,7 @@ _krb5_plugin_find(krb5_context context,
     return 0;
 
 out:
-    if (dirs && dirs != sysdirs)
+    if (dirs != rk_UNCONST(sysplugin_dirs))
 	krb5_config_free_strings(dirs);
     if (d)
 	closedir(d);

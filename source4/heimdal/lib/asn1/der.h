@@ -52,7 +52,7 @@ typedef enum {PRIM = 0, CONS = 1} Der_type;
 enum {
     UT_EndOfContent	= 0,
     UT_Boolean		= 1,
-    UT_Integer		= 2,	
+    UT_Integer		= 2,
     UT_BitString	= 3,
     UT_OctetString	= 4,
     UT_Null		= 5,

@@ -36,14 +36,14 @@
 #include <rfc2459_asn1.h>
 #include <hx509.h>
 
-RCSID("$Id$");
+#ifdef KX509
 
 /*
  *
  */
 
 krb5_error_code
-_kdc_try_kx509_request(void *ptr, size_t len, Kx509Request *req, size_t *size)
+_kdc_try_kx509_request(void *ptr, size_t len, struct Kx509Request *req, size_t *size)
 {
     if (len < 4)
 	return -1;
@@ -97,16 +97,15 @@ calculate_reply_hash(krb5_context context,
 		     krb5_keyblock *key,
 		     Kx509Response *rep)
 {
+    krb5_error_code ret;
     HMAC_CTX ctx;
 
     HMAC_CTX_init(&ctx);
 
-    HMAC_Init_ex(&ctx,
-		 key->keyvalue.data, key->keyvalue.length,
+    HMAC_Init_ex(&ctx, key->keyvalue.data, key->keyvalue.length,
 		 EVP_sha1(), NULL);
-    rep->hash->length = HMAC_size(&ctx);
-    rep->hash->data = malloc(rep->hash->length);
-    if (rep->hash->data == NULL) {
+    ret = krb5_data_alloc(rep->hash, HMAC_size(&ctx));
+    if (ret) {
 	HMAC_CTX_cleanup(&ctx);
 	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
@@ -208,7 +207,7 @@ build_certificate(krb5_context context,
 	spki.subjectPublicKey.data = key->data;
 	spki.subjectPublicKey.length = key->length * 8;
 
-	ret = der_copy_oid(oid_id_pkcs1_rsaEncryption(),
+	ret = der_copy_oid(&asn1_oid_id_pkcs1_rsaEncryption,
 			   &spki.algorithm.algorithm);
 
 	any.data = "\x05\x00";
@@ -289,7 +288,7 @@ out:
 krb5_error_code
 _kdc_do_kx509(krb5_context context,
 	      krb5_kdc_configuration *config,
-	      const Kx509Request *req, krb5_data *reply,
+	      const struct Kx509Request *req, krb5_data *reply,
 	      const char *from, struct sockaddr *addr)
 {
     krb5_error_code ret;
@@ -385,8 +384,10 @@ _kdc_do_kx509(krb5_context context,
 	if (ret)
 	    goto out;
 	free_RSAPublicKey(&key);
-	if (size != req->pk_key.length)
-	    ;
+	if (size != req->pk_key.length) {
+	    ret = ASN1_EXTRA_DATA;
+	    goto out;
+	}
     }
 
     ALLOC(rep.certificate);
@@ -458,3 +459,5 @@ out:
 
     return 0;
 }
+
+#endif /* KX509 */

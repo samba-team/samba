@@ -169,23 +169,24 @@ read_master_mit(krb5_context context, const char *filename,
 	return errno;
     }
     krb5_storage_set_flags(sp, KRB5_STORAGE_HOST_BYTEORDER);
-#if 0
     /* could possibly use ret_keyblock here, but do it with more
        checks for now */
-    ret = krb5_ret_keyblock(sp, &key);
-#else
-    ret = krb5_ret_int16(sp, &enctype);
-    if((htons(enctype) & 0xff00) == 0x3000) {
-	ret = HEIM_ERR_BAD_MKEY;
-	krb5_set_error_message(context, ret, "unknown keytype in %s: %#x, expected %#x",
-			       filename, htons(enctype), 0x3000);
-	goto out;
+    {
+	ret = krb5_ret_int16(sp, &enctype);
+	if (ret)
+	    goto out;
+	if((htons(enctype) & 0xff00) == 0x3000) {
+	    ret = HEIM_ERR_BAD_MKEY;
+	    krb5_set_error_message(context, ret, "unknown keytype in %s: "
+				   "%#x, expected %#x",
+				   filename, htons(enctype), 0x3000);
+	    goto out;
+	}
+	key.keytype = enctype;
+	ret = krb5_ret_data(sp, &key.keyvalue);
+	if(ret)
+	    goto out;
     }
-    key.keytype = enctype;
-    ret = krb5_ret_data(sp, &key.keyvalue);
-    if(ret)
-	goto out;
-#endif
     ret = hdb_process_master_key(context, 0, &key, 0, mkey);
     krb5_free_keyblock_contents(context, &key);
   out:

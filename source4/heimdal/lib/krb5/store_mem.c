@@ -34,8 +34,6 @@
 #include "krb5_locl.h"
 #include "store-int.h"
 
-RCSID("$Id$");
-
 typedef struct mem_storage{
     unsigned char *base;
     size_t size;
@@ -93,6 +91,37 @@ mem_seek(krb5_storage *sp, off_t offset, int whence)
     return s->ptr - s->base;
 }
 
+static int
+mem_trunc(krb5_storage *sp, off_t offset)
+{
+    mem_storage *s = (mem_storage*)sp->data;
+    if(offset > s->size)
+	return ERANGE;
+    s->size = offset;
+    if ((s->ptr - s->base) > offset)
+	s->ptr = s->base + offset;
+    return 0;
+}
+
+static int
+mem_no_trunc(krb5_storage *sp, off_t offset)
+{
+    return EINVAL;
+}
+
+/**
+ * 
+ *
+ * @return A krb5_storage on success, or NULL on out of memory error.
+ *
+ * @ingroup krb5_storage
+ *
+ * @sa krb5_storage_from_emem()
+ * @sa krb5_storage_from_readonly_mem()
+ * @sa krb5_storage_from_data()
+ * @sa krb5_storage_from_fd()
+ */
+
 krb5_storage * KRB5_LIB_FUNCTION
 krb5_storage_from_mem(void *buf, size_t len)
 {
@@ -114,15 +143,42 @@ krb5_storage_from_mem(void *buf, size_t len)
     sp->fetch = mem_fetch;
     sp->store = mem_store;
     sp->seek = mem_seek;
+    sp->trunc = mem_trunc;
     sp->free = NULL;
     return sp;
 }
+
+/**
+ * 
+ *
+ * @return A krb5_storage on success, or NULL on out of memory error.
+ *
+ * @ingroup krb5_storage
+ *
+ * @sa krb5_storage_from_emem()
+ * @sa krb5_storage_from_mem()
+ * @sa krb5_storage_from_readonly_mem()
+ * @sa krb5_storage_from_fd()
+ */
 
 krb5_storage * KRB5_LIB_FUNCTION
 krb5_storage_from_data(krb5_data *data)
 {
     return krb5_storage_from_mem(data->data, data->length);
 }
+
+/**
+ * 
+ *
+ * @return A krb5_storage on success, or NULL on out of memory error.
+ *
+ * @ingroup krb5_storage
+ *
+ * @sa krb5_storage_from_emem()
+ * @sa krb5_storage_from_mem()
+ * @sa krb5_storage_from_data()
+ * @sa krb5_storage_from_fd()
+ */
 
 krb5_storage * KRB5_LIB_FUNCTION
 krb5_storage_from_readonly_mem(const void *buf, size_t len)
@@ -145,6 +201,7 @@ krb5_storage_from_readonly_mem(const void *buf, size_t len)
     sp->fetch = mem_fetch;
     sp->store = mem_no_store;
     sp->seek = mem_seek;
+    sp->trunc = mem_no_trunc;
     sp->free = NULL;
     return sp;
 }

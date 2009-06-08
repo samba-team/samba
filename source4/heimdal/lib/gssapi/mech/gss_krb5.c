@@ -278,7 +278,7 @@ gss_krb5_export_lucid_sec_context(OM_uint32 *minor_status,
 	|| *context_handle == GSS_C_NO_CONTEXT
 	|| version != 1)
     {
-	ret = EINVAL;
+	*minor_status = EINVAL;
 	return GSS_S_FAILURE;
     }
 
@@ -715,7 +715,7 @@ gsskrb5_extract_key(OM_uint32 *minor_status,
     krb5_storage *sp = NULL;
 
     if (context_handle == GSS_C_NO_CONTEXT) {
-	ret = EINVAL;
+	*minor_status = EINVAL;
 	return GSS_S_FAILURE;
     }
 

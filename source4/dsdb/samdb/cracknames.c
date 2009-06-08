@@ -55,18 +55,18 @@ static WERROR dns_domain_from_principal(TALLOC_CTX *mem_ctx, struct smb_krb5_con
 	krb5_error_code ret;
 	krb5_principal principal;
 	/* perhaps it's a principal with a realm, so return the right 'domain only' response */
-	char **realm;
+	char *realm;
 	ret = krb5_parse_name_flags(smb_krb5_context->krb5_context, name, 
-				    KRB5_PRINCIPAL_PARSE_MUST_REALM, &principal);
+				    KRB5_PRINCIPAL_PARSE_REQUIRE_REALM, &principal);
 	if (ret) {
 		info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 		return WERR_OK;
 	}
 
 	/* This isn't an allocation assignemnt, so it is free'ed with the krb5_free_principal */
-	realm = krb5_princ_realm(smb_krb5_context->krb5_context, principal);
+	realm = krb5_principal_get_realm(smb_krb5_context->krb5_context, principal);
 	
-	info1->dns_domain_name	= talloc_strdup(mem_ctx, *realm);
+	info1->dns_domain_name	= talloc_strdup(mem_ctx, realm);
 	krb5_free_principal(smb_krb5_context->krb5_context, principal);
 	
 	W_ERROR_HAVE_NO_MEMORY(info1->dns_domain_name);
@@ -271,7 +271,7 @@ static WERROR DsCrackNameUPN(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	const char *result_filter = NULL;
 	krb5_error_code ret;
 	krb5_principal principal;
-	char **realm;
+	char *realm;
 	char *unparsed_name_short;
 	const char *domain_attrs[] = { NULL };
 	struct ldb_result *domain_res = NULL;
@@ -283,21 +283,21 @@ static WERROR DsCrackNameUPN(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	}
 
 	ret = krb5_parse_name_flags(smb_krb5_context->krb5_context, name, 
-				    KRB5_PRINCIPAL_PARSE_MUST_REALM, &principal);
+				    KRB5_PRINCIPAL_PARSE_REQUIRE_REALM, &principal);
 	if (ret) {
 		info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 		return WERR_OK;
 	}
 	
-	realm = krb5_princ_realm(smb_krb5_context->krb5_context, principal);
+	realm = krb5_principal_get_realm(smb_krb5_context->krb5_context, principal);
 
 	ldb_ret = ldb_search(sam_ctx, mem_ctx, &domain_res,
 				     samdb_partitions_dn(sam_ctx, mem_ctx), 
 				     LDB_SCOPE_ONELEVEL,
 				     domain_attrs,
 				     "(&(&(|(&(dnsRoot=%s)(nETBIOSName=*))(nETBIOSName=%s))(objectclass=crossRef))(ncName=*))",
-				     ldb_binary_encode_string(mem_ctx, *realm), 
-				     ldb_binary_encode_string(mem_ctx, *realm));
+				     ldb_binary_encode_string(mem_ctx, realm), 
+				     ldb_binary_encode_string(mem_ctx, realm));
 
 	if (ldb_ret != LDB_SUCCESS) {
 		DEBUG(2, ("DsCrackNameUPN domain ref search failed: %s", ldb_errstring(sam_ctx)));

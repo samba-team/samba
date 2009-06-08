@@ -1,4 +1,4 @@
-#include "mech/mech_locl.h"
+#include "mech_locl.h"
 #include "heim_threads.h"
 
 RCSID("$Id$");

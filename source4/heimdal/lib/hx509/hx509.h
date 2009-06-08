@@ -36,8 +36,9 @@
 #ifndef HEIMDAL_HX509_H
 #define HEIMDAL_HX509_H 1
 
-#include <heim_asn1.h>
 #include <rfc2459_asn1.h>
+#include <stdarg.h>
+#include <stdio.h>
 
 typedef struct hx509_cert_attribute_data *hx509_cert_attribute;
 typedef struct hx509_cert_data *hx509_cert;
@@ -124,6 +125,17 @@ typedef enum {
 
 /* flags to hx509_cms_unenvelope */
 #define HX509_CMS_UE_DONT_REQUIRE_KU_ENCIPHERMENT	0x01
+#define HX509_CMS_UE_ALLOW_WEAK				0x02
+
+/* flags to hx509_cms_envelope_1 */
+#define HX509_CMS_EV_NO_KU_CHECK			0x01
+#define HX509_CMS_EV_ALLOW_WEAK				0x02
+
+/* flags to hx509_cms_verify_signed */
+#define HX509_CMS_VS_ALLOW_DATA_OID_MISMATCH		0x01
+#define HX509_CMS_VS_NO_KU_CHECK			0x02
+#define HX509_CMS_VS_ALLOW_ZERO_SIGNER			0x04
+#define HX509_CMS_VS_NO_VALIDATE			0x08
 
 /* selectors passed to hx509_crypto_select and hx509_crypto_available */
 #define HX509_SELECT_ALL 0
@@ -142,8 +154,9 @@ typedef enum {
 #define HX509_CA_TEMPLATE_EKU 64
 
 /* flags hx509_cms_create_signed* */
-#define HX509_CMS_SIGATURE_DETACHED 1
-#define HX509_CMS_SIGATURE_ID_NAME 2
+#define HX509_CMS_SIGNATURE_DETACHED			0x01
+#define HX509_CMS_SIGNATURE_ID_NAME			0x02
+#define HX509_CMS_SIGNATURE_NO_SIGNER			0x04
 
 /* hx509_verify_hostname nametype */
 typedef enum  {
