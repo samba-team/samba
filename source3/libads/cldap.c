@@ -38,29 +38,20 @@ bool ads_cldap_netlogon(TALLOC_CTX *mem_ctx,
 	struct cldap_netlogon io;
 	struct netlogon_samlogon_response *reply;
 	NTSTATUS status;
-	struct in_addr addr;
-	char addrstr[INET_ADDRSTRLEN];
+	struct sockaddr_storage ss;
+	char addrstr[INET6_ADDRSTRLEN];
 	const char *dest_str;
 	int ret;
 	struct tsocket_address *dest_addr;
 
-	/* TODO: support ipv6 */
-
-	addr = interpret_addr2(server);
-	if (is_zero_ip_v4(addr)) {
+	if (!interpret_string_addr(&ss, server, 0)) {
 		DEBUG(2,("Failed to resolve[%s] into an address for cldap\n",
-			 server));
+			server));
 		return false;
 	}
-	dest_str = inet_ntop(AF_INET, &addr,
-			     addrstr, sizeof(addrstr));
-	if (!dest_str) {
-		DEBUG(2,("Failed to resolve[%s] into an address for cldap\n",
-			 server));
-		return false;
-	}
+	dest_str = print_sockaddr(addrstr, sizeof(addrstr), &ss);
 
-	ret = tsocket_address_inet_from_strings(mem_ctx, "ipv4",
+	ret = tsocket_address_inet_from_strings(mem_ctx, "ip",
 						dest_str, LDAP_PORT,
 						&dest_addr);
 	if (ret != 0) {

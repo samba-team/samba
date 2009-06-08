@@ -320,7 +320,7 @@ NTSTATUS cldap_socket_init(TALLOC_CTX *mem_ctx,
 	c->event.ctx = ev;
 
 	if (!local_addr) {
-		ret = tsocket_address_inet_from_strings(c, "ipv4",
+		ret = tsocket_address_inet_from_strings(c, "ip",
 							NULL, 0,
 							&any);
 		if (ret != 0) {
@@ -550,7 +550,7 @@ struct tevent_req *cldap_search_send(TALLOC_CTX *mem_ctx,
 			goto post;
 		}
 		ret = tsocket_address_inet_from_strings(state,
-						        "ipv4",
+						        "ip",
 						        io->in.dest_address,
 						        io->in.dest_port,
 							&state->request.dest);
