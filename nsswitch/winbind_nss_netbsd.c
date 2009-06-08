@@ -124,7 +124,7 @@ netbsdwinbind_getgrent_r(void *nsrv, void *nscb, va_list ap)
 	*result = NULL;
 	rerrno = 0;
 
-	rv = _nss_winbind_getgrent_r(grp, buffer, buflen, rerrno);
+	rv = _nss_winbind_getgrent_r(grp, buffer, buflen, &rerrno);
 	if (rv == NS_SUCCESS)
 		*result = grp;
 	else
@@ -312,7 +312,7 @@ netbsdwinbind_getpwent_r(void *nsrv, void *nscb, va_list ap)
 	*result = NULL;
 	rerrno = 0;
 
-	rv = _nss_winbind_getpwent_r(pw, buffer, buflen, rerrno);
+	rv = _nss_winbind_getpwent_r(pw, buffer, buflen, &rerrno);
 	if (rv == NS_SUCCESS)
 		*result = pw;
 	else
