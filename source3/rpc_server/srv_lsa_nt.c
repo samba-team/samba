@@ -333,49 +333,6 @@ static NTSTATUS make_lsa_object_sd(TALLOC_CTX *mem_ctx, SEC_DESC **sd, size_t *s
 	return NT_STATUS_OK;
 }
 
-#if 0	/* AD DC work in ongoing in Samba 4 */
-
-/***************************************************************************
- Init_dns_dom_info.
-***************************************************************************/
-
-static void init_dns_dom_info(LSA_DNS_DOM_INFO *r_l, const char *nb_name,
-			      const char *dns_name, const char *forest_name,
-			      struct GUID *dom_guid, DOM_SID *dom_sid)
-{
-	if (nb_name && *nb_name) {
-		init_unistr2(&r_l->uni_nb_dom_name, nb_name, UNI_FLAGS_NONE);
-		init_uni_hdr(&r_l->hdr_nb_dom_name, &r_l->uni_nb_dom_name);
-		r_l->hdr_nb_dom_name.uni_max_len += 2;
-		r_l->uni_nb_dom_name.uni_max_len += 1;
-	}
-
-	if (dns_name && *dns_name) {
-		init_unistr2(&r_l->uni_dns_dom_name, dns_name, UNI_FLAGS_NONE);
-		init_uni_hdr(&r_l->hdr_dns_dom_name, &r_l->uni_dns_dom_name);
-		r_l->hdr_dns_dom_name.uni_max_len += 2;
-		r_l->uni_dns_dom_name.uni_max_len += 1;
-	}
-
-	if (forest_name && *forest_name) {
-		init_unistr2(&r_l->uni_forest_name, forest_name, UNI_FLAGS_NONE);
-		init_uni_hdr(&r_l->hdr_forest_name, &r_l->uni_forest_name);
-		r_l->hdr_forest_name.uni_max_len += 2;
-		r_l->uni_forest_name.uni_max_len += 1;
-	}
-
-	/* how do we init the guid ? probably should write an init fn */
-	if (dom_guid) {
-		memcpy(&r_l->dom_guid, dom_guid, sizeof(struct GUID));
-	}
-
-	if (dom_sid) {
-		r_l->ptr_dom_sid = 1;
-		init_dom_sid2(&r_l->dom_sid, dom_sid);
-	}
-}
-#endif	/* AD DC work in ongoing in Samba 4 */
-
 
 /***************************************************************************
  _lsa_OpenPolicy2
@@ -1975,74 +1932,6 @@ NTSTATUS _lsa_QuerySecurity(pipes_struct *p,
 
 	return status;
 }
-
-#if 0 	/* AD DC work in ongoing in Samba 4 */
-
-/***************************************************************************
- ***************************************************************************/
-
- NTSTATUS _lsa_query_info2(pipes_struct *p, LSA_Q_QUERY_INFO2 *q_u, LSA_R_QUERY_INFO2 *r_u)
-{
-	struct lsa_info *handle;
-	const char *nb_name;
-	char *dns_name = NULL;
-	char *forest_name = NULL;
-	DOM_SID *sid = NULL;
-	struct GUID guid;
-	fstring dnsdomname;
-
-	ZERO_STRUCT(guid);
-	r_u->status = NT_STATUS_OK;
-
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&handle))
-		return NT_STATUS_INVALID_HANDLE;
-
-	switch (q_u->info_class) {
-	case 0x0c:
-		/* check if the user has enough rights */
-		if (!(handle->access & LSA_POLICY_VIEW_LOCAL_INFORMATION))
-			return NT_STATUS_ACCESS_DENIED;
-
-		/* Request PolicyPrimaryDomainInformation. */
-		switch (lp_server_role()) {
-			case ROLE_DOMAIN_PDC:
-			case ROLE_DOMAIN_BDC:
-				nb_name = get_global_sam_name();
-				/* ugly temp hack for these next two */
-
-				/* This should be a 'netbios domain -> DNS domain' mapping */
-				dnsdomname = get_mydnsdomname(p->mem_ctx);
-				if (!dnsdomname || !*dnsdomname) {
-					return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-				}
-				strlower_m(dnsdomname);
-
-				dns_name = dnsdomname;
-				forest_name = dnsdomname;
-
-				sid = get_global_sam_sid();
-				secrets_fetch_domain_guid(lp_workgroup(), &guid);
-				break;
-			default:
-				return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-		}
-		init_dns_dom_info(&r_u->info.dns_dom_info, nb_name, dns_name,
-				  forest_name,&guid,sid);
-		break;
-	default:
-		DEBUG(0,("_lsa_query_info2: unknown info level in Lsa Query: %d\n", q_u->info_class));
-		r_u->status = NT_STATUS_INVALID_INFO_CLASS;
-		break;
-	}
-
-	if (NT_STATUS_IS_OK(r_u->status)) {
-		r_u->ptr = 0x1;
-		r_u->info_class = q_u->info_class;
-	}
-
-	return r_u->status;
-}
-#endif	/* AD DC work in ongoing in Samba 4 */
 
 /***************************************************************************
  _lsa_AddAccountRights
