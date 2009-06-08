@@ -512,7 +512,7 @@ static NTSTATUS pdb_ads_getgrfilter(struct pdb_methods *m, GROUP_MAP *map,
 	}
 	if (talloc_array_length(group) != 1) {
 		DEBUG(10, ("Expected 1 user, got %d\n",
-			   talloc_array_length(group)));
+			   (int)talloc_array_length(group)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -904,7 +904,7 @@ static NTSTATUS pdb_ads_delete_alias(struct pdb_methods *m,
 	}
 	if (talloc_array_length(alias) != 1) {
 		DEBUG(10, ("Expected 1 alias, got %d\n",
-			   talloc_array_length(alias)));
+			   (int)talloc_array_length(alias)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 	if (!tldap_entry_dn(alias[0], &dn)) {
