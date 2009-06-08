@@ -962,7 +962,7 @@ static int rap_group_add(struct net_context *c, int argc, const char **argv)
 	/* BB check for length 21 or smaller explicitly ? BB */
 	safe_strcpy(grinfo.group_name, argv[0], sizeof(grinfo.group_name)-1);
 	grinfo.reserved1 = '\0';
-	grinfo.comment = smb_xstrdup(c->opt_comment);
+	grinfo.comment = smb_xstrdup(c->opt_comment ? c->opt_comment : "");
 
 	ret = cli_NetGroupAdd(cli, &grinfo);
 	cli_shutdown(cli);
