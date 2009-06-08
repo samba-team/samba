@@ -110,7 +110,12 @@ emem_trunc(krb5_storage *sp, off_t offset)
      * If offset is larget then current size, or current size is
      * shrunk more then half of the current size, adjust buffer.
      */
-    if (offset > s->size || (s->size / 2) > offset) {
+    if (offset == 0) {
+	free(s->base);
+	s->size = 0;
+	s->base = NULL;
+	s->ptr = NULL;
+    } else if (offset > s->size || (s->size / 2) > offset) {
 	void *base;
 	size_t off;
 	off = s->ptr - s->base;
