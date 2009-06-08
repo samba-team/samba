@@ -24,7 +24,8 @@ TORTURE_SMB2_OBJ_FILES = $(addprefix $(torturesrcdir)/smb2/, \
 		oplocks.o \
 		lease.o \
 		create.o \
-		read.o)
+		read.o \
+		compound.o)
 
 
 $(eval $(call proto_header_template,$(torturesrcdir)/smb2/proto.h,$(TORTURE_SMB2_OBJ_FILES:.o=.c)))
