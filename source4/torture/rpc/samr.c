@@ -6347,7 +6347,7 @@ static bool test_ManyObjects(struct dcerpc_pipe *p,
 		return false;
 	}
 
-	/* delete */
+	/* close or delete */
 
 	for (i=0; i < num_total; i++) {
 
@@ -6355,18 +6355,22 @@ static bool test_ManyObjects(struct dcerpc_pipe *p,
 			continue;
 		}
 
-		switch (which_ops) {
-		case TORTURE_SAMR_MANY_ACCOUNTS:
-			ret &= test_DeleteUser(p, tctx, &handles[i]);
-			break;
-		case TORTURE_SAMR_MANY_GROUPS:
-			ret &= test_DeleteDomainGroup(p, tctx, &handles[i]);
-			break;
-		case TORTURE_SAMR_MANY_ALIASES:
-			ret &= test_DeleteAlias(p, tctx, &handles[i]);
-			break;
-		default:
-			return false;
+		if (torture_setting_bool(tctx, "samba3", false)) {
+			ret &= test_samr_handle_Close(p, tctx, &handles[i]);
+		} else {
+			switch (which_ops) {
+			case TORTURE_SAMR_MANY_ACCOUNTS:
+				ret &= test_DeleteUser(p, tctx, &handles[i]);
+				break;
+			case TORTURE_SAMR_MANY_GROUPS:
+				ret &= test_DeleteDomainGroup(p, tctx, &handles[i]);
+				break;
+			case TORTURE_SAMR_MANY_ALIASES:
+				ret &= test_DeleteAlias(p, tctx, &handles[i]);
+				break;
+			default:
+				return false;
+			}
 		}
 	}
 
