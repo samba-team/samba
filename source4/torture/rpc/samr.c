@@ -6172,6 +6172,77 @@ static bool test_EnumDomainAliases(struct dcerpc_pipe *p,
 	return true;
 }
 
+static bool test_QueryDisplayInfo_level(struct dcerpc_pipe *p,
+					struct torture_context *tctx,
+					struct policy_handle *handle,
+					uint16_t level,
+					uint32_t *total_num_entries_p)
+{
+	NTSTATUS status;
+	struct samr_QueryDisplayInfo r;
+	uint32_t total_num_entries = 0;
+
+	r.in.domain_handle = handle;
+	r.in.level = level;
+	r.in.start_idx = 0;
+	r.in.max_entries = (uint32_t)-1;
+	r.in.buf_size = (uint32_t)-1;
+
+	printf("Testing QueryDisplayInfo\n");
+
+	do {
+		uint32_t total_size;
+		uint32_t returned_size;
+		union samr_DispInfo info;
+
+		r.out.total_size = &total_size;
+		r.out.returned_size = &returned_size;
+		r.out.info = &info;
+
+		status = dcerpc_samr_QueryDisplayInfo(p, tctx, &r);
+		if (NT_STATUS_IS_ERR(status)) {
+			torture_assert_ntstatus_ok(tctx, status,
+				"failed to query displayinfo");
+		}
+
+		if (*r.out.returned_size == 0) {
+			break;
+		}
+
+		switch (r.in.level) {
+		case 1:
+			total_num_entries += info.info1.count;
+			r.in.start_idx += info.info1.entries[info.info1.count - 1].idx + 1;
+			break;
+		case 2:
+			total_num_entries += info.info2.count;
+			r.in.start_idx += info.info2.entries[info.info2.count - 1].idx + 1;
+			break;
+		case 3:
+			total_num_entries += info.info3.count;
+			r.in.start_idx += info.info3.entries[info.info3.count - 1].idx + 1;
+			break;
+		case 4:
+			total_num_entries += info.info4.count;
+			r.in.start_idx += info.info4.entries[info.info4.count - 1].idx + 1;
+			break;
+		case 5:
+			total_num_entries += info.info5.count;
+			r.in.start_idx += info.info5.entries[info.info5.count - 1].idx + 1;
+			break;
+		default:
+			return false;
+		}
+
+	} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
+
+	if (total_num_entries_p) {
+		*total_num_entries_p = total_num_entries;
+	}
+
+	return true;
+}
+
 static bool test_ManyObjects(struct dcerpc_pipe *p,
 			     struct torture_context *tctx,
 			     struct policy_handle *domain_handle,
@@ -6260,19 +6331,21 @@ static bool test_ManyObjects(struct dcerpc_pipe *p,
 		return false;
 	}
 
-	/* TODO: dispinfo */
+	/* dispinfo */
 
 	switch (which_ops) {
 	case TORTURE_SAMR_MANY_ACCOUNTS:
+		ret &= test_QueryDisplayInfo_level(p, tctx, domain_handle, 1, &num_disp);
 		break;
 	case TORTURE_SAMR_MANY_GROUPS:
+		ret &= test_QueryDisplayInfo_level(p, tctx, domain_handle, 3, &num_disp);
 		break;
 	case TORTURE_SAMR_MANY_ALIASES:
+		/* no aliases in dispinfo */
 		break;
 	default:
 		return false;
 	}
-
 
 	/* delete */
 
@@ -6299,14 +6372,14 @@ static bool test_ManyObjects(struct dcerpc_pipe *p,
 
 	talloc_free(handles);
 
-#if 0
-	torture_assert_int_equal(tctx, num_disp, num_anounced + num_created,
-		"unexpected number of results returned in dispinfo call");
-#endif
 	if (which_ops == TORTURE_SAMR_MANY_ACCOUNTS && num_enum != num_anounced + num_created) {
 		torture_comment(tctx,
 				"unexpected number of results (%u) returned in enum call, expected %u\n",
 				num_enum, num_anounced + num_created);
+
+		torture_comment(tctx,
+				"unexpected number of results (%u) returned in dispinfo, call, expected %u\n",
+				num_disp, num_anounced + num_created);
 	}
 	return ret;
 }
