@@ -586,7 +586,7 @@ static bool test_nwrap_group(struct torture_context *tctx)
 		torture_assert(tctx, test_nwrap_getgrgid(tctx, grp[i].gr_gid, &grp2),
 			"failed to call getgrgid for enumerated user");
 		torture_assert_group_equal(tctx, &grp[i], &grp2,
-			"getgrent and getgruid gave different results");
+			"getgrent and getgrgid gave different results");
 		torture_assert_group_equal(tctx, &grp1, &grp2,
 			"getgrnam and getgrgid gave different results");
 	}
