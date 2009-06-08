@@ -826,6 +826,7 @@ static int rap_user_add(struct net_context *c, int argc, const char **argv)
 	userinfo.priv = 1;
 	userinfo.home_dir = NULL;
 	userinfo.logon_script = NULL;
+	userinfo.passwrd[0] = '\0';
 
 	ret = cli_NetUserAdd(cli, &userinfo);
 
