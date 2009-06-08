@@ -822,7 +822,7 @@ static int rap_user_add(struct net_context *c, int argc, const char **argv)
 
 	userinfo.userflags = c->opt_flags;
 	userinfo.reserved1 = '\0';
-	userinfo.comment = smb_xstrdup(c->opt_comment);
+        userinfo.comment = smb_xstrdup(c->opt_comment ? c->opt_comment : "");
 	userinfo.priv = 1;
 	userinfo.home_dir = NULL;
 	userinfo.logon_script = NULL;
