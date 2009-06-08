@@ -786,21 +786,28 @@ static NTSTATUS cmd_samr_enum_dom_users(struct rpc_pipe_client *cli,
 {
 	struct policy_handle connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint32 start_idx, size, num_dom_users, i;
+	uint32 start_idx, num_dom_users, i;
 	struct samr_SamArray *dom_users = NULL;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	uint32 acb_mask = ACB_NORMAL;
+	uint32_t size = 0xffff;
 
-	if ((argc < 1) || (argc > 3)) {
-		printf("Usage: %s [access_mask] [acb_mask]\n", argv[0]);
+	if ((argc < 1) || (argc > 4)) {
+		printf("Usage: %s [access_mask] [acb_mask] [size]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
-	if (argc > 1)
+	if (argc > 1) {
 		sscanf(argv[1], "%x", &access_mask);
+	}
 
-	if (argc > 2)
+	if (argc > 2) {
 		sscanf(argv[2], "%x", &acb_mask);
+	}
+
+	if (argc > 3) {
+		sscanf(argv[3], "%x", &size);
+	}
 
 	/* Get sam policy handle */
 
@@ -824,7 +831,6 @@ static NTSTATUS cmd_samr_enum_dom_users(struct rpc_pipe_client *cli,
 	/* Enumerate domain users */
 
 	start_idx = 0;
-	size = 0xffff;
 
 	do {
 		result = rpccli_samr_EnumDomainUsers(cli, mem_ctx,
@@ -864,17 +870,23 @@ static NTSTATUS cmd_samr_enum_dom_groups(struct rpc_pipe_client *cli,
 {
 	struct policy_handle connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint32 start_idx, size, num_dom_groups, i;
+	uint32 start_idx, num_dom_groups, i;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	struct samr_SamArray *dom_groups = NULL;
+	uint32_t size = 0xffff;
 
-	if ((argc < 1) || (argc > 2)) {
-		printf("Usage: %s [access_mask]\n", argv[0]);
+	if ((argc < 1) || (argc > 3)) {
+		printf("Usage: %s [access_mask] [max_size]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
-	if (argc > 1)
+	if (argc > 1) {
 		sscanf(argv[1], "%x", &access_mask);
+	}
+
+	if (argc > 2) {
+		sscanf(argv[2], "%x", &size);
+	}
 
 	/* Get sam policy handle */
 
@@ -898,7 +910,6 @@ static NTSTATUS cmd_samr_enum_dom_groups(struct rpc_pipe_client *cli,
 	/* Enumerate domain groups */
 
 	start_idx = 0;
-	size = 0xffff;
 
 	do {
 		result = rpccli_samr_EnumDomainGroups(cli, mem_ctx,
@@ -936,17 +947,23 @@ static NTSTATUS cmd_samr_enum_als_groups(struct rpc_pipe_client *cli,
 {
 	struct policy_handle connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint32 start_idx, size, num_als_groups, i;
+	uint32 start_idx, num_als_groups, i;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	struct samr_SamArray *als_groups = NULL;
+	uint32_t size = 0xffff;
 
-	if ((argc < 2) || (argc > 3)) {
-		printf("Usage: %s builtin|domain [access mask]\n", argv[0]);
+	if ((argc < 2) || (argc > 4)) {
+		printf("Usage: %s builtin|domain [access mask] [max_size]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
-	if (argc > 2)
+	if (argc > 2) {
 		sscanf(argv[2], "%x", &access_mask);
+	}
+
+	if (argc > 3) {
+		sscanf(argv[3], "%x", &size);
+	}
 
 	/* Get sam policy handle */
 
@@ -971,7 +988,6 @@ static NTSTATUS cmd_samr_enum_als_groups(struct rpc_pipe_client *cli,
 	/* Enumerate alias groups */
 
 	start_idx = 0;
-	size = 0xffff;		/* Number of groups to retrieve */
 
 	do {
 		result = rpccli_samr_EnumDomainAliases(cli, mem_ctx,
