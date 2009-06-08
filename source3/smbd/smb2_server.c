@@ -1107,6 +1107,14 @@ static void smbd_smb2_request_incoming(struct tevent_req *subreq)
 		return;
 	}
 
+	if (req->in.nbt_hdr[0] != 0x00) {
+		DEBUG(1,("smbd_smb2_request_incoming: ignore NBT[0x%02X] msg\n",
+			 req->in.nbt_hdr[0]));
+		talloc_free(req->mem_pool);
+		req = NULL;
+		goto next;
+	}
+
 	/* TODO: validate the incoming request */
 	req->current_idx = 1;
 
@@ -1125,6 +1133,7 @@ static void smbd_smb2_request_incoming(struct tevent_req *subreq)
 		return;
 	}
 
+next:
 	/* ask for the next request (this constructs the main loop) */
 	subreq = smbd_smb2_request_read_send(conn,conn->smb2.event_ctx, conn);
 	if (subreq == NULL) {
