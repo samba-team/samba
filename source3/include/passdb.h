@@ -311,8 +311,8 @@ struct pdb_methods
 	NTSTATUS (*del_aliasmem)(struct pdb_methods *methods,
 				 const DOM_SID *alias, const DOM_SID *member);
 	NTSTATUS (*enum_aliasmem)(struct pdb_methods *methods,
-				  const DOM_SID *alias, DOM_SID **members,
-				  size_t *p_num_members);
+				  const DOM_SID *alias, TALLOC_CTX *mem_ctx,
+				  DOM_SID **members, size_t *p_num_members);
 	NTSTATUS (*enum_alias_memberships)(struct pdb_methods *methods,
 					   TALLOC_CTX *mem_ctx,
 					   const DOM_SID *domain_sid,

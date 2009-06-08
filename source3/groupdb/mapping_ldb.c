@@ -488,7 +488,8 @@ static NTSTATUS del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 /*
   enumerate sids that have the given alias set in member
 */
-static NTSTATUS enum_aliasmem(const DOM_SID *alias, DOM_SID **sids, size_t *num)
+static NTSTATUS enum_aliasmem(const DOM_SID *alias, TALLOC_CTX *mem_ctx,
+			      DOM_SID **sids, size_t *num)
 {
 	const char *attrs[] = {
 		"member",
@@ -529,7 +530,7 @@ static NTSTATUS enum_aliasmem(const DOM_SID *alias, DOM_SID **sids, size_t *num)
 	for (i=0;i<el->num_values;i++) {
 		DOM_SID sid;
 		string_to_sid(&sid, (const char *)el->values[i].data);
-		status = add_sid_to_array_unique(NULL, &sid, sids, num);
+		status = add_sid_to_array_unique(mem_ctx, &sid, sids, num);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}

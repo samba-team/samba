@@ -732,7 +732,8 @@ static int net_groupmap_listmem(struct net_context *c, int argc, const char **ar
 	members = NULL;
 	num = 0;
 
-	if (!NT_STATUS_IS_OK(pdb_enum_aliasmem(&alias, &members, &num))) {
+	if (!NT_STATUS_IS_OK(pdb_enum_aliasmem(&alias, talloc_tos(),
+					       &members, &num))) {
 		d_fprintf(stderr, "Could not list members for sid %s\n", argv[0]);
 		return -1;
 	}

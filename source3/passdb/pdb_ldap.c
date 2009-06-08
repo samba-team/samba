@@ -3564,6 +3564,7 @@ static NTSTATUS ldapsam_del_aliasmem(struct pdb_methods *methods,
 
 static NTSTATUS ldapsam_enum_aliasmem(struct pdb_methods *methods,
 				      const DOM_SID *alias,
+				      TALLOC_CTX *mem_ctx,
 				      DOM_SID **pp_members,
 				      size_t *p_num_members)
 {
@@ -3656,7 +3657,7 @@ static NTSTATUS ldapsam_enum_aliasmem(struct pdb_methods *methods,
 		if (!string_to_sid(&member, values[i]))
 			continue;
 
-		status = add_sid_to_array(NULL, &member, pp_members,
+		status = add_sid_to_array(mem_ctx, &member, pp_members,
 					  &num_members);
 		if (!NT_STATUS_IS_OK(status)) {
 			ldap_value_free(values);

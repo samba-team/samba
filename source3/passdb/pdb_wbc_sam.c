@@ -366,8 +366,10 @@ static NTSTATUS pdb_wbc_sam_get_aliasinfo(struct pdb_methods *methods,
 }
 
 static NTSTATUS pdb_wbc_sam_enum_aliasmem(struct pdb_methods *methods,
-				   const DOM_SID *alias, DOM_SID **pp_members,
-				   size_t *p_num_members)
+					  const DOM_SID *alias,
+					  TALLOC_CTX *mem_ctx,
+					  DOM_SID **pp_members,
+					  size_t *p_num_members)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }

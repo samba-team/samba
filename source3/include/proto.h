@@ -231,7 +231,8 @@ NTSTATUS pdb_default_add_aliasmem(struct pdb_methods *methods,
 NTSTATUS pdb_default_del_aliasmem(struct pdb_methods *methods,
 				  const DOM_SID *alias, const DOM_SID *member);
 NTSTATUS pdb_default_enum_aliasmem(struct pdb_methods *methods,
-				   const DOM_SID *alias, DOM_SID **pp_members,
+				   const DOM_SID *alias, TALLOC_CTX *mem_ctx,
+				   DOM_SID **pp_members,
 				   size_t *p_num_members);
 NTSTATUS pdb_default_alias_memberships(struct pdb_methods *methods,
 				       TALLOC_CTX *mem_ctx,
@@ -4547,7 +4548,7 @@ NTSTATUS pdb_get_aliasinfo(const DOM_SID *sid, struct acct_info *info);
 NTSTATUS pdb_set_aliasinfo(const DOM_SID *sid, struct acct_info *info);
 NTSTATUS pdb_add_aliasmem(const DOM_SID *alias, const DOM_SID *member);
 NTSTATUS pdb_del_aliasmem(const DOM_SID *alias, const DOM_SID *member);
-NTSTATUS pdb_enum_aliasmem(const DOM_SID *alias,
+NTSTATUS pdb_enum_aliasmem(const DOM_SID *alias, TALLOC_CTX *mem_ctx,
 			   DOM_SID **pp_members, size_t *p_num_members);
 NTSTATUS pdb_enum_alias_memberships(TALLOC_CTX *mem_ctx,
 				    const DOM_SID *domain_sid,

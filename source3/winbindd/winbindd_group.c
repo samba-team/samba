@@ -157,8 +157,8 @@ static bool fill_passdb_alias_grmem(struct winbindd_domain *domain,
 	*gr_mem = NULL;
 	*gr_mem_len = 0;
 
-	if (!NT_STATUS_IS_OK(pdb_enum_aliasmem(group_sid, &members,
-					       &num_members)))
+	if (!NT_STATUS_IS_OK(pdb_enum_aliasmem(group_sid, talloc_tos(),
+					       &members, &num_members)))
 		return True;
 
 	for (i=0; i<num_members; i++) {

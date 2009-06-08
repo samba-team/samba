@@ -1233,7 +1233,8 @@ static int net_sam_listmem(struct net_context *c, int argc, const char **argv)
 		DOM_SID *members = NULL;
 		size_t i, num_members = 0;
 
-		status = pdb_enum_aliasmem(&group, &members, &num_members);
+		status = pdb_enum_aliasmem(&group, talloc_tos(), &members,
+					   &num_members);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			d_fprintf(stderr, "Listing group members failed with "

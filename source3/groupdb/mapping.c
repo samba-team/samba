@@ -606,14 +606,15 @@ NTSTATUS pdb_default_del_aliasmem(struct pdb_methods *methods,
 }
 
 NTSTATUS pdb_default_enum_aliasmem(struct pdb_methods *methods,
-				   const DOM_SID *alias, DOM_SID **pp_members,
-				   size_t *p_num_members)
+				   const DOM_SID *alias, TALLOC_CTX *mem_ctx,
+				   DOM_SID **pp_members, size_t *p_num_members)
 {
 	if (!init_group_mapping()) {
 		DEBUG(0,("failed to initialize group mapping\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	return backend->enum_aliasmem(alias, pp_members, p_num_members);
+	return backend->enum_aliasmem(alias, mem_ctx, pp_members,
+				      p_num_members);
 }
 
 NTSTATUS pdb_default_alias_memberships(struct pdb_methods *methods,

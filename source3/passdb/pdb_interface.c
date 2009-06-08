@@ -933,11 +933,12 @@ NTSTATUS pdb_del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 	return pdb->del_aliasmem(pdb, alias, member);
 }
 
-NTSTATUS pdb_enum_aliasmem(const DOM_SID *alias,
+NTSTATUS pdb_enum_aliasmem(const DOM_SID *alias, TALLOC_CTX *mem_ctx,
 			   DOM_SID **pp_members, size_t *p_num_members)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
-	return pdb->enum_aliasmem(pdb, alias, pp_members, p_num_members);
+	return pdb->enum_aliasmem(pdb, alias, mem_ctx, pp_members,
+				  p_num_members);
 }
 
 NTSTATUS pdb_enum_alias_memberships(TALLOC_CTX *mem_ctx,

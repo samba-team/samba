@@ -5265,7 +5265,8 @@ NTSTATUS _samr_GetMembersInAlias(pipes_struct *p,
 	DEBUG(10, ("sid is %s\n", sid_string_dbg(&ainfo->sid)));
 
 	become_root();
-	status = pdb_enum_aliasmem(&ainfo->sid, &pdb_sids, &num_sids);
+	status = pdb_enum_aliasmem(&ainfo->sid, talloc_tos(), &pdb_sids,
+				   &num_sids);
 	unbecome_root();
 
 	if (!NT_STATUS_IS_OK(status)) {

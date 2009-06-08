@@ -535,6 +535,7 @@ static NTSTATUS add_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 }
 
 struct aliasmem_state {
+	TALLOC_CTX *mem_ctx;
 	const DOM_SID *alias;
 	DOM_SID **sids;
 	size_t *num;
@@ -580,7 +581,7 @@ static int collect_aliasmem(struct db_record *rec, void *priv)
 		if (!string_to_sid(&member, member_string))
 			continue;
 
-		if (!NT_STATUS_IS_OK(add_sid_to_array(NULL, &member,
+		if (!NT_STATUS_IS_OK(add_sid_to_array(state->mem_ctx, &member,
 						      state->sids,
 						      state->num)))
 		{
@@ -593,7 +594,8 @@ static int collect_aliasmem(struct db_record *rec, void *priv)
 	return 0;
 }
 
-static NTSTATUS enum_aliasmem(const DOM_SID *alias, DOM_SID **sids, size_t *num)
+static NTSTATUS enum_aliasmem(const DOM_SID *alias, TALLOC_CTX *mem_ctx,
+			      DOM_SID **sids, size_t *num)
 {
 	GROUP_MAP map;
 	struct aliasmem_state state;
@@ -611,6 +613,7 @@ static NTSTATUS enum_aliasmem(const DOM_SID *alias, DOM_SID **sids, size_t *num)
 	state.alias = alias;
 	state.sids = sids;
 	state.num = num;
+	state.mem_ctx = mem_ctx;
 
 	db->traverse_read(db, collect_aliasmem, &state);
 	return NT_STATUS_OK;

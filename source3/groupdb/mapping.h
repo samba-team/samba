@@ -29,5 +29,6 @@ struct mapping_backend {
 					 DOM_SID **sids, size_t *num);
 	NTSTATUS (*add_aliasmem)(const DOM_SID *alias, const DOM_SID *member);
 	NTSTATUS (*del_aliasmem)(const DOM_SID *alias, const DOM_SID *member);
-	NTSTATUS (*enum_aliasmem)(const DOM_SID *alias, DOM_SID **sids, size_t *num);
+	NTSTATUS (*enum_aliasmem)(const DOM_SID *alias, TALLOC_CTX *mem_ctx,
+				  DOM_SID **sids, size_t *num);
 };
