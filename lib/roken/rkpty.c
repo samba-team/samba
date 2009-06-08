@@ -48,6 +48,9 @@
 #ifdef HAVE_UTIL_H
 #include <util.h>
 #endif
+#ifdef HAVE_LIBUTIL_H
+#include <libutil.h>
+#endif
 
 #ifdef	STREAMSPTY
 #include <stropts.h>
