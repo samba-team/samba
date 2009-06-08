@@ -28,18 +28,14 @@
 #include "system/network.h"
 #include <talloc.h>
 #include <tevent.h>
-struct fd_event;
-struct event_context;
 #include "lib/async_req/async_sock.h"
 #include "lib/util/tevent_unix.h"
 #include "nsswitch/winbind_struct_protocol.h"
 #include "nsswitch/libwbclient/wbclient.h"
 #include "nsswitch/libwbclient/wbc_async.h"
 
-#ifdef DBGC_CLASS
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_WINBIND
-#endif
+/* can't use DEBUG here... */
+#define DEBUG(a,b)
 
 struct req_read_state {
 	struct winbindd_request *wb_req;

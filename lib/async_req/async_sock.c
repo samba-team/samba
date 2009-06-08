@@ -21,12 +21,16 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
-#include "lib/talloc/talloc.h"
-#include "lib/tevent/tevent.h"
+#include "replace.h"
+#include "system/network.h"
+#include "system/filesys.h"
+#include <talloc.h>
+#include <tevent.h>
 #include "lib/async_req/async_sock.h"
+
+/* Note: lib/util/ is currently GPL */
 #include "lib/util/tevent_unix.h"
-#include <fcntl.h>
+#include "lib/util/util.h"
 
 #ifndef TALLOC_FREE
 #define TALLOC_FREE(ctx) do { talloc_free(ctx); ctx=NULL; } while(0)

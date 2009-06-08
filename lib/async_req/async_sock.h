@@ -24,7 +24,8 @@
 #ifndef __ASYNC_SOCK_H__
 #define __ASYNC_SOCK_H__
 
-#include "includes.h"
+#include <talloc.h>
+#include <tevent.h>
 
 struct tevent_req *async_send_send(TALLOC_CTX *mem_ctx,
 				   struct tevent_context *ev,

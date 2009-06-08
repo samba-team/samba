@@ -26,8 +26,6 @@
 #include "system/network.h"
 #include <talloc.h>
 #include <tevent.h>
-struct fd_event;
-struct event_context;
 #include "lib/async_req/async_sock.h"
 #include "nsswitch/winbind_struct_protocol.h"
 #include "nsswitch/libwbclient/wbclient.h"
@@ -254,7 +252,7 @@ static struct tevent_req *wb_connect_send(TALLOC_CTX *mem_ctx,
 
 	/* Connect to socket */
 
-	path = talloc_asprintf(talloc_tos(), "%s/%s", dir,
+	path = talloc_asprintf(mem_ctx, "%s/%s", dir,
 			       WINBINDD_SOCKET_NAME);
 	if (path == NULL) {
 		goto nomem;
@@ -613,7 +611,7 @@ static bool wb_trans_retry(struct tevent_req *req,
 	}
 
 	subreq = tevent_wakeup_send(state, state->ev,
-				    timeval_current_ofs(1, 0));
+				    tevent_timeval_current_ofs(1, 0));
 	if (tevent_req_nomem(subreq, req)) {
 		return true;
 	}
