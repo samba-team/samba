@@ -1214,6 +1214,8 @@ static int net_sam_listmem(struct net_context *c, int argc, const char **argv)
 {
 	const char *groupdomain, *groupname;
 	DOM_SID group;
+	DOM_SID *members = NULL;
+	size_t i, num_members = 0;
 	enum lsa_SidType grouptype;
 	NTSTATUS status;
 
@@ -1230,36 +1232,54 @@ static int net_sam_listmem(struct net_context *c, int argc, const char **argv)
 
 	if ((grouptype == SID_NAME_ALIAS) ||
 	    (grouptype == SID_NAME_WKN_GRP)) {
-		DOM_SID *members = NULL;
-		size_t i, num_members = 0;
-
 		status = pdb_enum_aliasmem(&group, talloc_tos(), &members,
 					   &num_members);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_fprintf(stderr, "Listing group members failed with "
+				  "%s\n", nt_errstr(status));
+			return -1;
+		}
+	} else if (grouptype == SID_NAME_DOM_GRP) {
+		uint32_t *rids;
 
+		status = pdb_enum_group_members(talloc_tos(), &group,
+						&rids, &num_members);
 		if (!NT_STATUS_IS_OK(status)) {
 			d_fprintf(stderr, "Listing group members failed with "
 				  "%s\n", nt_errstr(status));
 			return -1;
 		}
 
-		d_printf("%s\\%s has %u members\n", groupdomain, groupname,
-			 (unsigned int)num_members);
-		for (i=0; i<num_members; i++) {
-			const char *dom, *name;
-			if (lookup_sid(talloc_tos(), &members[i],
-				       &dom, &name, NULL)) {
-				d_printf(" %s\\%s\n", dom, name);
-			} else {
-				d_printf(" %s\n", sid_string_tos(&members[i]));
-			}
+		members = talloc_array(talloc_tos(), struct dom_sid,
+				       num_members);
+		if (members == NULL) {
+			TALLOC_FREE(rids);
+			return -1;
 		}
 
-		TALLOC_FREE(members);
+		for (i=0; i<num_members; i++) {
+			sid_compose(&members[i], get_global_sam_sid(),
+				    rids[i]);
+		}
+		TALLOC_FREE(rids);
 	} else {
 		d_fprintf(stderr, "Can only list local group members so far.\n"
 			  "%s is a %s\n", argv[0], sid_type_lookup(grouptype));
 		return -1;
 	}
+
+	d_printf("%s\\%s has %u members\n", groupdomain, groupname,
+		 (unsigned int)num_members);
+	for (i=0; i<num_members; i++) {
+		const char *dom, *name;
+		if (lookup_sid(talloc_tos(), &members[i], &dom, &name, NULL)) {
+			d_printf(" %s\\%s\n", dom, name);
+		} else {
+			d_printf(" %s\n", sid_string_tos(&members[i]));
+		}
+	}
+
+		TALLOC_FREE(members);
 
 	return 0;
 }
