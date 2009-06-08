@@ -172,6 +172,23 @@ bool tldap_add_mod_blobs(TALLOC_CTX *mem_ctx, struct tldap_mod **pmods,
 	return true;
 }
 
+bool tldap_add_mod_str(TALLOC_CTX *mem_ctx, struct tldap_mod **pmods,
+		       int mod_op, const char *attrib, const char *str)
+{
+	DATA_BLOB utf8;
+	bool ret;
+
+	if (!convert_string_talloc(talloc_tos(), CH_UNIX, CH_UTF8, str,
+				   strlen(str), &utf8.data, &utf8.length,
+				   false)) {
+		return false;
+	}
+
+	ret = tldap_add_mod_blobs(mem_ctx, pmods, mod_op, attrib, 1, &utf8);
+	TALLOC_FREE(utf8.data);
+	return ret;
+}
+
 static bool tldap_make_mod_blob_int(struct tldap_message *existing,
 				    TALLOC_CTX *mem_ctx,
 				    int *pnum_mods, struct tldap_mod **pmods,
