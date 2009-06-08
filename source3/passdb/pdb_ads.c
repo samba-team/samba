@@ -266,7 +266,7 @@ static bool pdb_ads_init_ads_from_sam(struct pdb_ads_state *state,
 
 	ret &= tldap_make_mod_fmt(
 		existing, mem_ctx, pnum_mods, pmods, "displayName",
-		pdb_get_fullname(sam));
+		"%s", pdb_get_fullname(sam));
 
 	ret &= tldap_make_mod_blob(
 		existing, mem_ctx, pnum_mods, pmods, "unicodePwd",
