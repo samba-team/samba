@@ -52,7 +52,6 @@ AC_CHECK_HEADERS([				\
 	errno.h					\
 	inttypes.h				\
 	netdb.h					\
-	pty.h					\
 	signal.h				\
 	sys/bswap.h				\
 	sys/file.h				\
@@ -164,6 +163,7 @@ m4_include(heimdal/cf/find-func-no-libs.m4)
 m4_include(heimdal/cf/find-func-no-libs2.m4)
 m4_include(heimdal/cf/resolv.m4)
 
+AC_CHECK_HEADERS([pty.h util.h libutil.h])
 
 AC_CHECK_LIB_EXT(util, OPENPTY_LIBS, openpty)
 
