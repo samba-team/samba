@@ -236,5 +236,8 @@ int main(int argc, char **argv)
     fprintf(f, "\n");
 #endif /* KRB5 */
     fprintf(f, "#endif /* %s */\n", hb);
+
+    if (f != stdout)
+	fclose(f);
     return 0;
 }
