@@ -463,18 +463,31 @@ static NTSTATUS expand_groups( TALLOC_CTX *ctx,
 	DEBUG(10,("expand_groups:\n"));
 
 	for ( i=0; i<n_glist; i++ ) {
+
+		NTSTATUS lookup_status;
+
 		tmp_ctx = talloc_new( ctx );
 
 		/* Lookup the group membership */
 
-		status = d->methods->lookup_groupmem(d, tmp_ctx,
+		lookup_status = d->methods->lookup_groupmem(d, tmp_ctx,
 						     &glist[i], &num_names,
 						     &sid_mem, &names,
 						     &name_types);
-		if (!NT_STATUS_IS_OK(status)) {
+		if (!NT_STATUS_IS_OK(lookup_status)) {
 			DEBUG(10,("expand_groups: lookup_groupmem for "
 				"sid %s failed with: %s\n",
-				sid_string_dbg(&glist[i]), nt_errstr(status)));
+				sid_string_dbg(&glist[i]),
+				nt_errstr(lookup_status)));
+
+			/* we might have hit a logic error when called for an
+			 * alias, in that case just continue with group
+			 * expansion - Guenther */
+
+			if (NT_STATUS_EQUAL(lookup_status, NT_STATUS_NO_SUCH_GROUP)) {
+				continue;
+			}
+			status = lookup_status;
 			goto out;
 		}
 
