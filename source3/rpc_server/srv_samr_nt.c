@@ -78,7 +78,7 @@ typedef struct disp_info {
 	struct pdb_search *groups; /* querydispinfo 3 and 5, enumgroups */
 	struct pdb_search *aliases; /* enumaliases */
 
-	uint16 enum_acb_mask;
+	uint32_t enum_acb_mask;
 	struct pdb_search *enum_users; /* enumusers with a mask */
 
 	struct timed_event *cache_timeout_event; /* cache idle timeout
