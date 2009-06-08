@@ -24,6 +24,8 @@ static NTSTATUS pdb_ads_getsampwsid(struct pdb_methods *m,
 				    const DOM_SID *sid);
 static bool pdb_ads_gid_to_sid(struct pdb_methods *m, gid_t gid,
 			       DOM_SID *sid);
+static bool pdb_ads_dnblob2sid(struct tldap_context *ld, DATA_BLOB *dnblob,
+			       struct dom_sid *psid);
 
 
 struct pdb_ads_state {
@@ -713,10 +715,62 @@ static NTSTATUS pdb_ads_enum_group_mapping(struct pdb_methods *m,
 static NTSTATUS pdb_ads_enum_group_members(struct pdb_methods *m,
 					   TALLOC_CTX *mem_ctx,
 					   const DOM_SID *group,
-					   uint32 **pp_member_rids,
-					   size_t *p_num_members)
+					   uint32 **pmembers,
+					   size_t *pnum_members)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct pdb_ads_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_ads_state);
+	const char *attrs[1] = { "member" };
+	char *sidstr;
+	struct tldap_message **msg;
+	int i, rc, num_members;
+	DATA_BLOB *blobs;
+	uint32_t *members;
+
+	sidstr = sid_binstring(talloc_tos(), group);
+	NT_STATUS_HAVE_NO_MEMORY(sidstr);
+
+	rc = tldap_search_fmt(state->ld, state->domaindn, TLDAP_SCOPE_SUB,
+			      attrs, ARRAY_SIZE(attrs), 0, talloc_tos(), &msg,
+			      "(objectsid=%s)", sidstr);
+	TALLOC_FREE(sidstr);
+	if (rc != TLDAP_SUCCESS) {
+		DEBUG(10, ("ldap_search failed %s\n",
+			   tldap_errstr(debug_ctx(), state->ld, rc)));
+		return NT_STATUS_LDAP(rc);
+	}
+	switch talloc_array_length(msg) {
+	case 0:
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		break;
+	case 1:
+		break;
+	default:
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		break;
+	}
+
+	if (!tldap_entry_values(msg[0], "member", &num_members, &blobs)) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	members = talloc_array(mem_ctx, uint32_t, num_members);
+	if (members == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0; i<num_members; i++) {
+		struct dom_sid sid;
+		if (!pdb_ads_dnblob2sid(state->ld, &blobs[i], &sid)
+		    || !sid_peek_rid(&sid, &members[i])) {
+			TALLOC_FREE(members);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+	}
+
+	*pmembers = members;
+	*pnum_members = num_members;
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS pdb_ads_enum_group_memberships(struct pdb_methods *m,
