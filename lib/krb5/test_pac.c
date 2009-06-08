@@ -281,6 +281,7 @@ main(int argc, char **argv)
 	krb5_errx(context, 1, "krb5_pac_verify");
 
     krb5_pac_free(context, pac);
+    krb5_free_principal(context, p2);
 
     /*
      * Test empty free
