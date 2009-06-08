@@ -63,6 +63,8 @@ struct smb2_request *smb2_request_init(struct smb2_transport *transport, uint16_
 {
 	struct smb2_request *req;
 	uint64_t seqnum;
+	uint32_t hdr_offset;
+	uint32_t flags = 0;
 
 	if (body_dynamic_present) {
 		if (body_dynamic_size == 0) {
@@ -92,16 +94,34 @@ struct smb2_request *smb2_request_init(struct smb2_transport *transport, uint16_
 	ZERO_STRUCT(req->cancel);
 	ZERO_STRUCT(req->in);
 
-	req->out.size      = SMB2_HDR_BODY+NBT_HDR_SIZE+body_fixed_size;
+	if (transport->compound.missing > 0) {
+		transport->compound.missing -= 1;
+		req->out = transport->compound.buffer;
+		ZERO_STRUCT(transport->compound.buffer);
+		if (transport->compound.related) {
+			flags |= SMB2_HDR_FLAG_CHAINED;
+		}
+	} else {
+		ZERO_STRUCT(req->out);
+	}
 
+	if (req->out.size > 0) {
+		hdr_offset = req->out.size;
+	} else {
+		hdr_offset = NBT_HDR_SIZE;
+	}
+
+	req->out.size      = hdr_offset + SMB2_HDR_BODY + body_fixed_size;
 	req->out.allocated = req->out.size + body_dynamic_size;
-	req->out.buffer    = talloc_array(req, uint8_t, req->out.allocated);
+
+	req->out.buffer = talloc_realloc(req, req->out.buffer,
+					 uint8_t, req->out.allocated);
 	if (req->out.buffer == NULL) {
 		talloc_free(req);
 		return NULL;
 	}
 
-	req->out.hdr       = req->out.buffer + NBT_HDR_SIZE;
+	req->out.hdr       = req->out.buffer + hdr_offset;
 	req->out.body      = req->out.hdr + SMB2_HDR_BODY;
 	req->out.body_fixed= body_fixed_size;
 	req->out.body_size = body_fixed_size;
@@ -113,7 +133,7 @@ struct smb2_request *smb2_request_init(struct smb2_transport *transport, uint16_
 	SIVAL(req->out.hdr, SMB2_HDR_STATUS,		0);
 	SSVAL(req->out.hdr, SMB2_HDR_OPCODE,		opcode);
 	SSVAL(req->out.hdr, SMB2_HDR_CREDIT,		0);
-	SIVAL(req->out.hdr, SMB2_HDR_FLAGS,		0);
+	SIVAL(req->out.hdr, SMB2_HDR_FLAGS,		flags);
 	SIVAL(req->out.hdr, SMB2_HDR_NEXT_COMMAND,	0);
 	SBVAL(req->out.hdr, SMB2_HDR_MESSAGE_ID,		req->seqnum);
 	SIVAL(req->out.hdr, SMB2_HDR_PID,		0);
@@ -245,8 +265,9 @@ static size_t smb2_padding_fix(struct smb2_request_buffer *buf)
 /*
   grow a SMB2 buffer by the specified amount
 */
-static NTSTATUS smb2_grow_buffer(struct smb2_request_buffer *buf, size_t increase)
+NTSTATUS smb2_grow_buffer(struct smb2_request_buffer *buf, size_t increase)
 {
+	size_t hdr_ofs;
 	size_t dynamic_ofs;
 	uint8_t *buffer_ptr;
 	uint32_t newsize = buf->size + increase;
@@ -256,13 +277,14 @@ static NTSTATUS smb2_grow_buffer(struct smb2_request_buffer *buf, size_t increas
 
 	if (newsize <= buf->allocated) return NT_STATUS_OK;
 
+	hdr_ofs = buf->hdr - buf->buffer;
 	dynamic_ofs = buf->dynamic - buf->buffer;
 
 	buffer_ptr = talloc_realloc(buf, buf->buffer, uint8_t, newsize);
 	NT_STATUS_HAVE_NO_MEMORY(buffer_ptr);
 
 	buf->buffer	= buffer_ptr;
-	buf->hdr	= buf->buffer + NBT_HDR_SIZE;
+	buf->hdr	= buf->buffer + hdr_ofs;
 	buf->body	= buf->hdr    + SMB2_HDR_BODY;
 	buf->dynamic	= buf->buffer + dynamic_ofs;
 	buf->allocated	= newsize;

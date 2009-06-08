@@ -40,6 +40,35 @@ struct smb2_negotiate {
 	uint16_t dialect_revision;
 };
 
+struct smb2_request_buffer {
+	/* the raw SMB2 buffer, including the 4 byte length header */
+	uint8_t *buffer;
+
+	/* the size of the raw buffer, including 4 byte header */
+	size_t size;
+
+	/* how much has been allocated - on reply the buffer is over-allocated to
+	   prevent too many realloc() calls
+	*/
+	size_t allocated;
+
+	/* the start of the SMB2 header - this is always buffer+4 */
+	uint8_t *hdr;
+
+	/* the packet body */
+	uint8_t *body;
+	size_t body_fixed;
+	size_t body_size;
+
+	/* this point to the next dynamic byte that can be used
+	 * this will be moved when some dynamic data is pushed
+	 */
+	uint8_t *dynamic;
+
+	/* this is used to range check and align strings and buffers */
+	struct request_bufinfo bufinfo;
+};
+
 /* this is the context for the smb2 transport layer */
 struct smb2_transport {
 	/* socket level info */
@@ -49,6 +78,13 @@ struct smb2_transport {
 
 	/* next seqnum to allocate */
 	uint64_t seqnum;
+
+	/* the details for coumpounded requests */
+	struct {
+		uint32_t missing;
+		bool related;
+		struct smb2_request_buffer buffer;
+	} compound;
 
 	/* a list of requests that are pending for receive on this
 	   connection */
@@ -109,35 +145,6 @@ struct smb2_session {
 	bool signing_active;
 };
 
-
-struct smb2_request_buffer {
-	/* the raw SMB2 buffer, including the 4 byte length header */
-	uint8_t *buffer;
-	
-	/* the size of the raw buffer, including 4 byte header */
-	size_t size;
-	
-	/* how much has been allocated - on reply the buffer is over-allocated to 
-	   prevent too many realloc() calls 
-	*/
-	size_t allocated;
-	
-	/* the start of the SMB2 header - this is always buffer+4 */
-	uint8_t *hdr;
-	
-	/* the packet body */
-	uint8_t *body;
-	size_t body_fixed;
-	size_t body_size;
-
-	/* this point to the next dynamic byte that can be used
-	 * this will be moved when some dynamic data is pushed
-	 */
-	uint8_t *dynamic;
-
-	/* this is used to range check and align strings and buffers */
-	struct request_bufinfo bufinfo;
-};
 
 
 /*

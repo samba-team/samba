@@ -208,6 +208,28 @@ static NTSTATUS smb2_handle_oplock_break(struct smb2_transport *transport,
 	return NT_STATUS_OK;
 }
 
+struct smb2_transport_compount_response_state {
+	struct smb2_transport *transport;
+	DATA_BLOB blob;
+};
+
+static void smb2_transport_compound_response_handler(struct tevent_context *ctx,
+						     struct tevent_immediate *im,
+						     void *private_data)
+{
+	struct smb2_transport_compount_response_state *state =
+		talloc_get_type_abort(private_data,
+		struct smb2_transport_compount_response_state);
+	struct smb2_transport *transport = state->transport;
+	NTSTATUS status;
+
+	status = smb2_transport_finish_recv(transport, state->blob);
+	TALLOC_FREE(state);
+	if (!NT_STATUS_IS_OK(status)) {
+		smb2_transport_error(transport, status);
+	}
+}
+
 /*
   we have a full request in our receive buffer - match it to a pending request
   and process
@@ -226,6 +248,7 @@ static NTSTATUS smb2_transport_finish_recv(void *private_data, DATA_BLOB blob)
 	uint32_t i;
 	uint16_t opcode;
 	NTSTATUS status;
+	uint32_t next_ofs;
 
 	buffer = blob.data;
 	len = blob.length;
@@ -285,6 +308,18 @@ static NTSTATUS smb2_transport_finish_recv(void *private_data, DATA_BLOB blob)
 		return NT_STATUS_OK;
 	}
 
+	next_ofs = IVAL(req->in.hdr, SMB2_HDR_NEXT_COMMAND);
+	if (next_ofs > 0) {
+		if (smb2_oob(&req->in, req->in.hdr + next_ofs, SMB2_HDR_BODY + 2)) {
+			DEBUG(1,("SMB2 request invalid next offset 0x%x\n",
+				 next_ofs));
+			goto error;
+		}
+
+		req->in.size = NBT_HDR_SIZE + next_ofs;
+		req->in.body_size = req->in.size - (SMB2_HDR_BODY+NBT_HDR_SIZE);
+	}
+
 	if (req->session && req->session->signing_active) {
 		status = smb2_check_signature(&req->in, 
 					      req->session->session_key);
@@ -312,6 +347,36 @@ static NTSTATUS smb2_transport_finish_recv(void *private_data, DATA_BLOB blob)
 
 	DEBUG(2, ("SMB2 RECV seqnum=0x%llx\n", (long long)req->seqnum));
 	dump_data(5, req->in.body, req->in.body_size);
+
+	if (next_ofs > 0) {
+		struct tevent_immediate *im;
+		struct smb2_transport_compount_response_state *state;
+
+		state = talloc(transport,
+			       struct smb2_transport_compount_response_state);
+		if (!state) {
+			goto error;
+		}
+		state->transport = transport;
+
+		state->blob = data_blob_talloc(state, NULL,
+					       blob.length - next_ofs);
+		if (!state->blob.data) {
+			goto error;
+		}
+		im = tevent_create_immediate(state);
+		if (!im) {
+			TALLOC_FREE(state);
+			goto error;
+		}
+		_smb2_setlen(state->blob.data, state->blob.length - NBT_HDR_SIZE);
+		memcpy(state->blob.data + NBT_HDR_SIZE,
+		       req->in.hdr + next_ofs,
+		       req->in.allocated - req->in.size);
+		tevent_schedule_immediate(im, transport->socket->event.ctx,
+					  smb2_transport_compound_response_handler,
+					  state);
+	}
 
 	/* if this request has an async handler then call that to
 	   notify that the reply has been received. This might destroy
@@ -367,25 +432,67 @@ static int smb2_request_destructor(struct smb2_request *req)
 	return 0;
 }
 
+static NTSTATUS smb2_transport_raw_send(struct smb2_transport *transport,
+					struct smb2_request_buffer *buffer)
+{
+	DATA_BLOB blob;
+	NTSTATUS status;
+
+	/* check if the transport is dead */
+	if (transport->socket->sock == NULL) {
+		return NT_STATUS_NET_WRITE_FAULT;
+	}
+
+	_smb2_setlen(buffer->buffer, buffer->size - NBT_HDR_SIZE);
+	blob = data_blob_const(buffer->buffer, buffer->size);
+	status = packet_send(transport->packet, blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
 
 /*
   put a request into the send queue
 */
 void smb2_transport_send(struct smb2_request *req)
 {
-	DATA_BLOB blob;
 	NTSTATUS status;
-
-	_smb2_setlen(req->out.buffer, req->out.size - NBT_HDR_SIZE);
 
 	DEBUG(2, ("SMB2 send seqnum=0x%llx\n", (long long)req->seqnum));
 	dump_data(5, req->out.body, req->out.body_size);
 
-	/* check if the transport is dead */
-	if (req->transport->socket->sock == NULL) {
-		req->state = SMB2_REQUEST_ERROR;
-		req->status = NT_STATUS_NET_WRITE_FAULT;
-		return;
+	if (req->transport->compound.missing > 0) {
+		off_t next_ofs;
+		size_t pad = 0;
+		uint8_t *end;
+
+		end = req->out.buffer + req->out.size;
+
+		/*
+		 * we need to set dynamic otherwise
+		 * smb2_grow_buffer segfaults
+		 */
+		if (req->out.dynamic == NULL) {
+			req->out.dynamic = end;
+		}
+
+		next_ofs = end - req->out.hdr;
+		if ((next_ofs % 8) > 0) {
+			pad = 8 - (next_ofs % 8);
+		}
+		next_ofs += pad;
+
+		status = smb2_grow_buffer(&req->out, pad);
+		if (!NT_STATUS_IS_OK(status)) {
+			req->state = SMB2_REQUEST_ERROR;
+			req->status = status;
+			return;
+		}
+		req->out.size += pad;
+
+		SIVAL(req->out.hdr, SMB2_HDR_NEXT_COMMAND, next_ofs);
 	}
 
 	/* possibly sign the message */
@@ -397,14 +504,19 @@ void smb2_transport_send(struct smb2_request *req)
 			return;
 		}
 	}
-	
-	blob = data_blob_const(req->out.buffer, req->out.size);
-	status = packet_send(req->transport->packet, blob);
-	if (!NT_STATUS_IS_OK(status)) {
-		req->state = SMB2_REQUEST_ERROR;
-		req->status = status;
-		return;
+
+	if (req->transport->compound.missing > 0) {
+		req->transport->compound.buffer = req->out;
+	} else {
+		status = smb2_transport_raw_send(req->transport,
+						 &req->out);
+		if (!NT_STATUS_IS_OK(status)) {
+			req->state = SMB2_REQUEST_ERROR;
+			req->status = status;
+			return;
+		}
 	}
+	ZERO_STRUCT(req->out);
 
 	req->state = SMB2_REQUEST_RECV;
 	DLIST_ADD(req->transport->pending_recv, req);
@@ -417,6 +529,20 @@ void smb2_transport_send(struct smb2_request *req)
 	}
 
 	talloc_set_destructor(req, smb2_request_destructor);
+}
+
+NTSTATUS smb2_transport_compound_start(struct smb2_transport *transport,
+				       uint32_t num)
+{
+	ZERO_STRUCT(transport->compound);
+	transport->compound.missing = num;
+	return NT_STATUS_OK;
+}
+
+void smb2_transport_compound_set_related(struct smb2_transport *transport,
+					 bool related)
+{
+	transport->compound.related = related;
 }
 
 static void idle_handler(struct tevent_context *ev, 
