@@ -186,6 +186,79 @@ static NTSTATUS smbd_smb2_request_create(struct smbd_server_connection *conn,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS smbd_smb2_request_validate(struct smbd_smb2_request *req)
+{
+	int count;
+	int idx;
+	bool compound_related = false;
+
+	count = req->in.vector_count;
+
+	if (count < 4) {
+		/* It's not a SMB2 request */
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	for (idx=1; idx < count; idx += 3) {
+		const uint8_t *inhdr = NULL;
+		uint32_t flags;
+
+		if (req->in.vector[idx].iov_len != SMB2_HDR_BODY) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		if (req->in.vector[idx+1].iov_len < 2) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		inhdr = (const uint8_t *)req->in.vector[idx].iov_base;
+
+		/* setup the SMB2 header */
+		if (IVAL(inhdr, SMB2_HDR_PROTOCOL_ID) != SMB2_MAGIC) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		flags = IVAL(inhdr, SMB2_HDR_FLAGS);
+		if (idx == 1) {
+			/*
+			 * the 1st request should never have the
+			 * SMB2_HDR_FLAG_CHAINED flag set
+			 */
+			if (flags & SMB2_HDR_FLAG_CHAINED) {
+				req->next_status = NT_STATUS_INVALID_PARAMETER;
+				return NT_STATUS_OK;
+			}
+		} else if (idx == 4) {
+			/*
+			 * the 2nd request triggers related vs. unrelated
+			 * compounded requests
+			 */
+			if (flags & SMB2_HDR_FLAG_CHAINED) {
+				compound_related = true;
+			}
+		} else if (idx > 4) {
+			/*
+			 * all other requests should match the 2nd one
+			 */
+			if (flags & SMB2_HDR_FLAG_CHAINED) {
+				if (!compound_related) {
+					req->next_status =
+						NT_STATUS_INVALID_PARAMETER;
+					return NT_STATUS_OK;
+				}
+			} else {
+				if (compound_related) {
+					req->next_status =
+						NT_STATUS_INVALID_PARAMETER;
+					return NT_STATUS_OK;
+				}
+			}
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 {
 	struct iovec *vector;
@@ -321,6 +394,16 @@ static NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		}
 	} else if (req->session && req->session->do_signing) {
 		return smbd_smb2_request_error(req, NT_STATUS_ACCESS_DENIED);
+	}
+
+	/*
+	 * This check is mostly for giving the correct error code
+	 * for compounded requests.
+	 *
+	 * TODO: we may need to move this after the session and tcon checks.
+	 */
+	if (!NT_STATUS_IS_OK(req->next_status)) {
+		return smbd_smb2_request_error(req, req->next_status);
 	}
 
 	switch (opcode) {
@@ -609,9 +692,11 @@ NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
 		req->out.vector[i+2].iov_len = 0;
 	}
 
-	/* the error packet is the last response in the chain */
-	SIVAL(outhdr, SMB2_HDR_NEXT_COMMAND, 0);
-	req->out.vector_count = req->current_idx + 3;
+	/*
+	 * if a request fails, all other remaining
+	 * compounded requests should fail too
+	 */
+	req->next_status = NT_STATUS_INVALID_PARAMETER;
 
 	return smbd_smb2_request_reply(req);
 }
@@ -1115,11 +1200,16 @@ static void smbd_smb2_request_incoming(struct tevent_req *subreq)
 		goto next;
 	}
 
-	/* TODO: validate the incoming request */
 	req->current_idx = 1;
 
 	DEBUG(10,("smbd_smb2_request_incoming: idx[%d] of %d vectors\n",
 		 req->current_idx, req->in.vector_count));
+
+	status = smbd_smb2_request_validate(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		smbd_server_connection_terminate(conn, nt_errstr(status));
+		return;
+	}
 
 	status = smbd_smb2_request_setup_out(req);
 	if (!NT_STATUS_IS_OK(status)) {

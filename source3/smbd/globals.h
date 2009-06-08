@@ -229,6 +229,8 @@ struct smbd_smb2_request {
 
 	struct files_struct *compat_chain_fsp;
 
+	NTSTATUS next_status;
+
 	struct {
 		/* the NBT header is not allocated */
 		uint8_t nbt_hdr[4];
