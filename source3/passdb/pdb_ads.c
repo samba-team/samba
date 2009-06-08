@@ -938,18 +938,115 @@ static NTSTATUS pdb_ads_set_aliasinfo(struct pdb_methods *m,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
+static NTSTATUS pdb_ads_sid2dn(struct pdb_ads_state *state,
+			       const struct dom_sid *sid,
+			       TALLOC_CTX *mem_ctx, char **pdn)
+{
+	struct tldap_message **msg;
+	char *sidstr, *dn;
+	int rc;
+
+	sidstr = sid_binstring(talloc_tos(), sid);
+	NT_STATUS_HAVE_NO_MEMORY(sidstr);
+
+	rc = tldap_search_fmt(state->ld, state->domaindn, TLDAP_SCOPE_SUB,
+			      NULL, 0, 0, talloc_tos(), &msg,
+			      "(objectsid=%s)", sidstr);
+	TALLOC_FREE(sidstr);
+	if (rc != TLDAP_SUCCESS) {
+		DEBUG(10, ("ldap_search failed %s\n",
+			   tldap_errstr(debug_ctx(), state->ld, rc)));
+		return NT_STATUS_LDAP(rc);
+	}
+
+	switch talloc_array_length(msg) {
+	case 0:
+		return NT_STATUS_NOT_FOUND;
+	case 1:
+		break;
+	default:
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	if (!tldap_entry_dn(msg[0], &dn)) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	dn = talloc_strdup(mem_ctx, dn);
+	if (dn == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	TALLOC_FREE(msg);
+
+	*pdn = dn;
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS pdb_ads_mod_aliasmem(struct pdb_methods *m,
+				     const DOM_SID *alias,
+				     const DOM_SID *member,
+				     int mod_op)
+{
+	struct pdb_ads_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_ads_state);
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tldap_mod *mods;
+	int rc;
+	char *aliasdn, *memberdn;
+	NTSTATUS status;
+
+	status = pdb_ads_sid2dn(state, alias, talloc_tos(), &aliasdn);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("pdb_ads_sid2dn (%s) failed: %s\n",
+			   sid_string_dbg(alias), nt_errstr(status)));
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_SUCH_ALIAS;
+	}
+	status = pdb_ads_sid2dn(state, member, talloc_tos(), &memberdn);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("pdb_ads_sid2dn (%s) failed: %s\n",
+			   sid_string_dbg(member), nt_errstr(status)));
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	mods = NULL;
+
+	if (!tldap_add_mod_str(talloc_tos(), &mods, mod_op,
+			       "member", memberdn)) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	rc = tldap_modify(state->ld, aliasdn, 1, mods, NULL, NULL);
+	TALLOC_FREE(frame);
+	if (rc != TLDAP_SUCCESS) {
+		DEBUG(10, ("ldap_modify failed: %s\n",
+			   tldap_errstr(debug_ctx(), state->ld, rc)));
+		if (rc == TLDAP_TYPE_OR_VALUE_EXISTS) {
+			return NT_STATUS_MEMBER_IN_ALIAS;
+		}
+		if (rc == TLDAP_NO_SUCH_ATTRIBUTE) {
+			return NT_STATUS_MEMBER_NOT_IN_ALIAS;
+		}
+		return NT_STATUS_LDAP(rc);
+	}
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS pdb_ads_add_aliasmem(struct pdb_methods *m,
 				     const DOM_SID *alias,
 				     const DOM_SID *member)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return pdb_ads_mod_aliasmem(m, alias, member, TLDAP_MOD_ADD);
 }
 
 static NTSTATUS pdb_ads_del_aliasmem(struct pdb_methods *m,
 				     const DOM_SID *alias,
 				     const DOM_SID *member)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return pdb_ads_mod_aliasmem(m, alias, member, TLDAP_MOD_DELETE);
 }
 
 static bool pdb_ads_dnblob2sid(struct tldap_context *ld, DATA_BLOB *dnblob,
