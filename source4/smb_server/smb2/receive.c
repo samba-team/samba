@@ -352,8 +352,6 @@ static NTSTATUS smb2srv_reply(struct smb2srv_request *req)
 		return NT_STATUS_OK;					
 	}
 
-	/* TODO: check the seqnum */
-
 	switch (opcode) {
 	case SMB2_OP_NEGPROT:
 		smb2srv_negprot_recv(req);
