@@ -33,11 +33,14 @@ NTSTATUS smb2_sign_message(struct smb2_request_buffer *buf, DATA_BLOB session_ke
 	struct HMACSHA256Context m;
 	uint8_t res[32];
 	uint64_t session_id;
+	size_t hdr_offset;
 
 	if (buf->size < NBT_HDR_SIZE + SMB2_HDR_SIGNATURE + 16) {
 		/* can't sign non-SMB2 messages */
 		return NT_STATUS_OK;
 	}
+
+	hdr_offset = buf->hdr - buf->buffer;
 
 	session_id = BVAL(buf->hdr, SMB2_HDR_SESSION_ID);
 	if (session_id == 0) {
@@ -58,7 +61,7 @@ NTSTATUS smb2_sign_message(struct smb2_request_buffer *buf, DATA_BLOB session_ke
 
 	ZERO_STRUCT(m);
 	hmac_sha256_init(session_key.data, MIN(session_key.length, 16), &m);
-	hmac_sha256_update(buf->buffer+NBT_HDR_SIZE, buf->size-NBT_HDR_SIZE, &m);
+	hmac_sha256_update(buf->hdr, buf->size-hdr_offset, &m);
 	hmac_sha256_final(res, &m);
 	DEBUG(5,("signed SMB2 message of size %u\n", (unsigned)buf->size - NBT_HDR_SIZE));
 
@@ -76,11 +79,14 @@ NTSTATUS smb2_check_signature(struct smb2_request_buffer *buf, DATA_BLOB session
 	struct HMACSHA256Context m;
 	uint8_t res[SHA256_DIGEST_LENGTH];
 	uint8_t sig[16];
+	size_t hdr_offset;
 
 	if (buf->size < NBT_HDR_SIZE + SMB2_HDR_SIGNATURE + 16) {
 		/* can't check non-SMB2 messages */
 		return NT_STATUS_OK;
 	}
+
+	hdr_offset = buf->hdr - buf->buffer;
 
 	session_id = BVAL(buf->hdr, SMB2_HDR_SESSION_ID);
 	if (session_id == 0) {
@@ -100,7 +106,7 @@ NTSTATUS smb2_check_signature(struct smb2_request_buffer *buf, DATA_BLOB session
 
 	ZERO_STRUCT(m);
 	hmac_sha256_init(session_key.data, MIN(session_key.length, 16), &m);
-	hmac_sha256_update(buf->hdr, buf->size-NBT_HDR_SIZE, &m);
+	hmac_sha256_update(buf->hdr, buf->size-hdr_offset, &m);
 	hmac_sha256_final(res, &m);
 
 	memcpy(buf->hdr+SMB2_HDR_SIGNATURE, sig, 16);
