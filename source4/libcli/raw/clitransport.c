@@ -593,6 +593,13 @@ void smbcli_transport_send(struct smbcli_request *req)
 		return;
 	}
 
+	packet_queue_run(req->transport->packet);
+	if (req->transport->socket->sock == NULL) {
+		req->state = SMBCLI_REQUEST_ERROR;
+		req->status = NT_STATUS_NET_WRITE_FAULT;
+		return;
+	}
+
 	if (req->one_way_request) {
 		req->state = SMBCLI_REQUEST_DONE;
 		smbcli_request_destroy(req);
