@@ -71,13 +71,12 @@ case "$host_os" in
 		PICFLAG="-O2"
 		;;
 	*hpux*)
-		if test $ac_cv_prog_cc_Ae = yes; then
-			PICFLAG="+z +ESnolit"
-		elif test "${GCC}" = "yes"; then
+		if test "${GCC}" = "yes"; then
 			PICFLAG="-fPIC"
-		fi
-		if test "$host_cpu" = "ia64"; then
-			PICFLAG="+z"
+		elif test "$host_cpu" = "ia64"; then
+		        PICFLAG="+z"
+		elif test $ac_cv_prog_cc_Ae = yes; then
+			PICFLAG="+z +ESnolit"
 		fi
 		;;
 	*osf*)
