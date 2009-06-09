@@ -399,17 +399,18 @@ static NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_ACCESS_DENIED);
 	}
 
-	/*
-	 * This check is mostly for giving the correct error code
-	 * for compounded requests.
-	 *
-	 * TODO: we may need to move this after the session and tcon checks.
-	 */
-	if (!NT_STATUS_IS_OK(req->next_status)) {
-		return smbd_smb2_request_error(req, req->next_status);
-	}
-
-	if ((flags & SMB2_HDR_FLAG_CHAINED) == 0) {
+	if (flags & SMB2_HDR_FLAG_CHAINED) {
+		/*
+		 * This check is mostly for giving the correct error code
+		 * for compounded requests.
+		 *
+		 * TODO: we may need to move this after the session
+		 *       and tcon checks.
+		 */
+		if (!NT_STATUS_IS_OK(req->next_status)) {
+			return smbd_smb2_request_error(req, req->next_status);
+		}
+	} else {
 		req->compat_chain_fsp = NULL;
 	}
 
