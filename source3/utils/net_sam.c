@@ -1178,6 +1178,18 @@ static int net_sam_addmem(struct net_context *c, int argc, const char **argv)
 				  "with %s\n", nt_errstr(status));
 			return -1;
 		}
+	} else if (grouptype == SID_NAME_DOM_GRP) {
+		uint32_t grouprid, memberrid;
+
+		sid_peek_rid(&group, &grouprid);
+		sid_peek_rid(&member, &memberrid);
+
+		status = pdb_add_groupmem(talloc_tos(), grouprid, memberrid);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_fprintf(stderr, "Adding domain group member failed "
+				  "with %s\n", nt_errstr(status));
+			return -1;
+		}
 	} else {
 		d_fprintf(stderr, "Can only add members to local groups so "
 			  "far, %s is a %s\n", argv[0],
@@ -1231,6 +1243,18 @@ static int net_sam_delmem(struct net_context *c, int argc, const char **argv)
 		if (!NT_STATUS_IS_OK(status)) {
 			d_fprintf(stderr, "Deleting local group member failed "
 				  "with %s\n", nt_errstr(status));
+			return -1;
+		}
+	} else if (grouptype == SID_NAME_DOM_GRP) {
+		uint32_t grouprid, memberrid;
+
+		sid_peek_rid(&group, &grouprid);
+		sid_peek_rid(&member, &memberrid);
+
+		status = pdb_del_groupmem(talloc_tos(), grouprid, memberrid);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_fprintf(stderr, "Deleting domain group member "
+				  "failed with %s\n", nt_errstr(status));
 			return -1;
 		}
 	} else {
