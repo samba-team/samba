@@ -821,6 +821,94 @@ NTSTATUS smbd_smb2_request_done_ex(struct smbd_smb2_request *req,
 	return smbd_smb2_request_reply(req);
 }
 
+struct smbd_smb2_send_oplock_break_state {
+	struct smbd_server_connection *sconn;
+	uint8_t buf[4 + SMB2_HDR_BODY + 0x18];
+	struct iovec vector;
+};
+
+static void smbd_smb2_oplock_break_writev_done(struct tevent_req *subreq);
+
+NTSTATUS smbd_smb2_send_oplock_break(struct smbd_server_connection *sconn,
+				     uint64_t file_id_persistent,
+				     uint64_t file_id_volatile,
+				     uint8_t oplock_level)
+{
+	struct smbd_smb2_send_oplock_break_state *state;
+	struct tevent_req *subreq;
+	uint8_t *hdr;
+	uint8_t *body;
+
+	state = talloc(sconn, struct smbd_smb2_send_oplock_break_state);
+	if (state == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	state->sconn = sconn;
+
+	state->vector.iov_base = (void *)state->buf;
+	state->vector.iov_len = sizeof(state->buf);
+
+	_smb2_setlen(state->buf, sizeof(state->buf) - 4);
+	hdr = state->buf + 4;
+	body = hdr + SMB2_HDR_BODY;
+
+	SIVAL(hdr, 0,				SMB2_MAGIC);
+	SSVAL(hdr, SMB2_HDR_LENGTH,		SMB2_HDR_BODY);
+	SSVAL(hdr, SMB2_HDR_EPOCH,		0);
+	SIVAL(hdr, SMB2_HDR_STATUS,		0);
+	SSVAL(hdr, SMB2_HDR_OPCODE,		SMB2_OP_BREAK);
+	SSVAL(hdr, SMB2_HDR_CREDIT,		0);
+	SIVAL(hdr, SMB2_HDR_FLAGS,		SMB2_HDR_FLAG_REDIRECT);
+	SIVAL(hdr, SMB2_HDR_NEXT_COMMAND,	0);
+	SBVAL(hdr, SMB2_HDR_MESSAGE_ID,		UINT64_MAX);
+	SIVAL(hdr, SMB2_HDR_PID,		0);
+	SIVAL(hdr, SMB2_HDR_TID,		0);
+	SBVAL(hdr, SMB2_HDR_SESSION_ID,		0);
+	memset(hdr+SMB2_HDR_SIGNATURE, 0, 16);
+
+	SSVAL(body, 0x00, 0x18);
+
+	SCVAL(body, 0x02, oplock_level);
+	SCVAL(body, 0x03, 0);		/* reserved */
+	SIVAL(body, 0x04, 0);		/* reserved */
+	SBVAL(body, 0x08, file_id_persistent);
+	SBVAL(body, 0x10, file_id_volatile);
+
+	subreq = tstream_writev_queue_send(state,
+					   sconn->smb2.event_ctx,
+					   sconn->smb2.stream,
+					   sconn->smb2.send_queue,
+					   &state->vector, 1);
+	if (subreq == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	tevent_req_set_callback(subreq,
+				smbd_smb2_oplock_break_writev_done,
+				state);
+
+	return NT_STATUS_OK;
+}
+
+static void smbd_smb2_oplock_break_writev_done(struct tevent_req *subreq)
+{
+	struct smbd_smb2_send_oplock_break_state *state =
+		tevent_req_callback_data(subreq,
+		struct smbd_smb2_send_oplock_break_state);
+	struct smbd_server_connection *sconn = state->sconn;
+	int ret;
+	int sys_errno;
+
+	ret = tstream_writev_queue_recv(subreq, &sys_errno);
+	TALLOC_FREE(subreq);
+	if (ret == -1) {
+		NTSTATUS status = map_nt_error_from_unix(sys_errno);
+		smbd_server_connection_terminate(sconn, nt_errstr(status));
+		return;
+	}
+
+	TALLOC_FREE(state);
+}
+
 struct smbd_smb2_request_read_state {
 	size_t missing;
 	bool asked_for_header;
