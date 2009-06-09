@@ -791,39 +791,6 @@ static int control_get_tickles(struct ctdb_context *ctdb, int argc, const char *
 	return 0;
 }
 
-/* send a release ip to all nodes */
-static int control_send_release(struct ctdb_context *ctdb, uint32_t pnn,
-ctdb_sock_addr *addr)
-{
-	int ret;
-	struct ctdb_public_ip pip;
-	TDB_DATA data;
-	struct ctdb_node_map *nodemap=NULL;
-
-	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
-		return ret;
-	}
-
-	/* send a moveip message to the recovery master */
-	pip.pnn    = pnn;
-	pip.addr   = *addr;
-	data.dsize = sizeof(pip);
-	data.dptr  = (unsigned char *)&pip;
-
-
-	/* send release ip to all nodes */
-	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_RELEASE_IP,
-			list_of_active_nodes(ctdb, nodemap, ctdb, true),
-			TIMELIMIT(), false, data,
-			NULL, NULL, NULL) != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to send 'ReleaseIP' to all nodes.\n"));
-		return -1;
-	}
-
-	return 0;
-}
 
 /*
   move/failover an ip address to a specific node
@@ -834,40 +801,53 @@ static int control_moveip(struct ctdb_context *ctdb, int argc, const char **argv
 	ctdb_sock_addr addr;
 	uint32_t value;
 	struct ctdb_all_public_ips *ips;
+	struct ctdb_public_ip ip;
+	uint32_t *nodes;
 	int i, ret;
+	TDB_DATA data;
+	struct ctdb_node_map *nodemap=NULL;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 
 	if (argc < 2) {
 		usage();
+		talloc_free(tmp_ctx);
+		return -1;
 	}
 
 	if (parse_ip(argv[0], NULL, 0, &addr) == 0) {
 		DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s'\n", argv[0]));
+		talloc_free(tmp_ctx);
 		return -1;
 	}
 
 
 	if (sscanf(argv[1], "%u", &pnn) != 1) {
 		DEBUG(DEBUG_ERR, ("Badly formed pnn\n"));
+		talloc_free(tmp_ctx);
 		return -1;
 	}
 
 	ret = ctdb_ctrl_get_tunable(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, "DeterministicIPs", &value);
 	if (ret == -1) {
 		DEBUG(DEBUG_ERR, ("Unable to get tunable variable 'DeterministicIPs' from local node\n"));
+		talloc_free(tmp_ctx);
 		return -1;
 	}
 	if (value != 0) {
 		DEBUG(DEBUG_ERR, ("The tunable 'DeterministicIPs' is set. You can only move ip addresses when this feature is disabled\n"));
+		talloc_free(tmp_ctx);
 		return -1;
 	}
 
 	ret = ctdb_ctrl_get_tunable(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, "NoIPFailback", &value);
 	if (ret == -1) {
 		DEBUG(DEBUG_ERR, ("Unable to get tunable variable 'NoIPFailback' from local node\n"));
+		talloc_free(tmp_ctx);
 		return -1;
 	}
 	if (value == 0) {
 		DEBUG(DEBUG_ERR, ("The tunable 'NoIPFailback' is NOT set. You can only move ip addresses when this feature is enabled\n"));
+		talloc_free(tmp_ctx);
 		return -1;
 	}
 
@@ -875,6 +855,7 @@ static int control_moveip(struct ctdb_context *ctdb, int argc, const char **argv
 	ret = ctdb_ctrl_get_public_ips(ctdb, TIMELIMIT(), pnn, ctdb, &ips);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("Unable to get public ip list from node %u\n", pnn));
+		talloc_free(tmp_ctx);
 		return -1;
 	}
 
@@ -886,20 +867,49 @@ static int control_moveip(struct ctdb_context *ctdb, int argc, const char **argv
 	if (i==ips->num) {
 		DEBUG(DEBUG_ERR, ("Node %u can not host ip address '%s'\n",
 			pnn, ctdb_addr_to_str(&addr)));
+		talloc_free(tmp_ctx);
 		return -1;
 	}
 	if (ips->ips[i].pnn == pnn) {
 		DEBUG(DEBUG_ERR, ("Host %u is already hosting '%s'\n",
 			pnn, ctdb_addr_to_str(&ips->ips[i].addr)));
+		talloc_free(tmp_ctx);
 		return -1;
 	}
 
-	ret = control_send_release(ctdb, pnn, &ips->ips[i].addr);
+	ip.pnn  = pnn;
+	ip.addr = addr;
+
+	data.dptr  = (uint8_t *)&ip;
+	data.dsize = sizeof(ip);
+
+	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), options.pnn, tmp_ctx, &nodemap);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Failed to send 'change ip' to all nodes\n"));;
+		DEBUG(DEBUG_ERR, ("Unable to get nodemap from node %u\n", options.pnn));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+       	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
+	ret = ctdb_client_async_control(ctdb, CTDB_CONTROL_RELEASE_IP,
+					nodes, TIMELIMIT(),
+					false, data,
+					NULL, NULL,
+					NULL);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to release IP on nodes\n"));
+		talloc_free(tmp_ctx);
 		return -1;
 	}
 
+	ret = ctdb_ctrl_takeover_ip(ctdb, TIMELIMIT(), pnn, &ip);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to take over IP on node %d\n", pnn));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	talloc_free(tmp_ctx);
 	return 0;
 }
 
