@@ -218,11 +218,14 @@ static void smb2srv_chain_reply(struct smb2srv_request *p_req)
 	smb2srv_setup_bufinfo(req);
 
 	flags = IVAL(req->in.hdr, SMB2_HDR_FLAGS);
-	if ((flags & SMB2_HDR_FLAG_CHAINED) && p_req->chained_file_handle) {
-		memcpy(req->_chained_file_handle,
-		       p_req->_chained_file_handle,
-		       sizeof(req->_chained_file_handle));
-		req->chained_file_handle = req->_chained_file_handle;
+	if (flags & SMB2_HDR_FLAG_CHAINED) {
+		if (p_req->chained_file_handle) {
+			memcpy(req->_chained_file_handle,
+			       p_req->_chained_file_handle,
+			       sizeof(req->_chained_file_handle));
+			req->chained_file_handle = req->_chained_file_handle;
+		}
+		req->chain_status = p_req->chain_status;
 	}
 
 	/* 
@@ -298,6 +301,8 @@ void smb2srv_send_error(struct smb2srv_request *req, NTSTATUS error)
 	SSVAL(req->out.body, 0x02, 0);
 	SIVAL(req->out.body, 0x04, 0);
 
+	req->chain_status = NT_STATUS_INVALID_PARAMETER;
+
 	smb2srv_send_reply(req);
 }
 
@@ -350,6 +355,11 @@ static NTSTATUS smb2srv_reply(struct smb2srv_request *req)
 		/* we require signing and this request was not signed */
 		smb2srv_send_error(req, NT_STATUS_ACCESS_DENIED);
 		return NT_STATUS_OK;					
+	}
+
+	if (!NT_STATUS_IS_OK(req->chain_status)) {
+		smb2srv_send_error(req, req->chain_status);
+		return NT_STATUS_OK;
 	}
 
 	switch (opcode) {

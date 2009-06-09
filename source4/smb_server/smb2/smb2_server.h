@@ -58,6 +58,9 @@ struct smb2srv_request {
 	/* the offset to the next SMB2 Header for chained requests */
 	uint32_t chain_offset;
 
+	/* the status we return for following chained requests */
+	NTSTATUS chain_status;
+
 	/* chained file handle */
 	uint8_t _chained_file_handle[16];
 	uint8_t *chained_file_handle;
