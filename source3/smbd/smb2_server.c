@@ -751,9 +751,54 @@ NTSTATUS smbd_smb2_request_done_ex(struct smbd_smb2_request *req,
 		next_command_ofs += req->out.vector[i+2].iov_len;
 	}
 
-	/* TODO: we need to add padding ... */
 	if ((next_command_ofs % 8) != 0) {
-		return smbd_smb2_request_error(req, NT_STATUS_INTERNAL_ERROR);
+		size_t pad_size = 8 - (next_command_ofs % 8);
+		if (req->out.vector[i+2].iov_len == 0) {
+			/*
+			 * if the dyn buffer is empty
+			 * we can use it to add padding
+			 */
+			uint8_t *pad;
+
+			pad = talloc_zero_array(req->out.vector,
+						uint8_t, pad_size);
+			if (pad == NULL) {
+				return smbd_smb2_request_error(req,
+						NT_STATUS_NO_MEMORY);
+			}
+
+			req->out.vector[i+2].iov_base = (void *)pad;
+			req->out.vector[i+2].iov_len = pad_size;
+		} else {
+			/*
+			 * For now we copy the dynamic buffer
+			 * and add the padding to the new buffer
+			 */
+			size_t old_size;
+			uint8_t *old_dyn;
+			size_t new_size;
+			uint8_t *new_dyn;
+
+			old_size = req->out.vector[i+2].iov_len;
+			old_dyn = (uint8_t *)req->out.vector[i+2].iov_base;
+
+			new_size = old_size + pad_size;
+			new_dyn = talloc_array(req->out.vector,
+					       uint8_t, new_size);
+			if (new_dyn == NULL) {
+				return smbd_smb2_request_error(req,
+						NT_STATUS_NO_MEMORY);
+			}
+
+			memcpy(new_dyn, old_dyn, old_size);
+			memset(new_dyn + old_size, 0, pad_size);
+
+			req->out.vector[i+2].iov_base = (void *)new_dyn;
+			req->out.vector[i+2].iov_len = new_size;
+
+			TALLOC_FREE(old_dyn);
+		}
+		next_command_ofs += pad_size;
 	}
 
 	SIVAL(outhdr, SMB2_HDR_NEXT_COMMAND, next_command_ofs);
