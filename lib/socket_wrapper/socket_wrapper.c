@@ -348,7 +348,7 @@ static int convert_in_un_remote(struct socket_info *si, const struct sockaddr *i
 
 	if (bcast) *bcast = 0;
 
-	switch (si->family) {
+	switch (inaddr->sa_family) {
 	case AF_INET: {
 		const struct sockaddr_in *in = 
 		    (const struct sockaddr_in *)inaddr;
