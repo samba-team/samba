@@ -90,7 +90,9 @@ NTSTATUS smbd_smb2_request_process_write(struct smbd_smb2_request *req)
 	in_data_buffer.data = (uint8_t *)req->in.vector[i+2].iov_base;
 	in_data_buffer.length = in_data_length;
 
-	if (in_file_id_persistent != 0) {
+	if (req->compat_chain_fsp) {
+		/* skip check */
+	} else if (in_file_id_persistent != 0) {
 		return smbd_smb2_request_error(req, NT_STATUS_FILE_CLOSED);
 	}
 

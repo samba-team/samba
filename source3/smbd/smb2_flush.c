@@ -55,7 +55,9 @@ NTSTATUS smbd_smb2_request_process_flush(struct smbd_smb2_request *req)
 	in_file_id_persistent	= BVAL(inbody, 0x08);
 	in_file_id_volatile	= BVAL(inbody, 0x10);
 
-	if (in_file_id_persistent != 0) {
+	if (req->compat_chain_fsp) {
+		/* skip check */
+	} else if (in_file_id_persistent != 0) {
 		return smbd_smb2_request_error(req, NT_STATUS_FILE_CLOSED);
 	}
 

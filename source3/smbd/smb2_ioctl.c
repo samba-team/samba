@@ -83,8 +83,10 @@ NTSTATUS smbd_smb2_request_process_ioctl(struct smbd_smb2_request *req)
 	in_input_buffer.data = (uint8_t *)req->in.vector[i+2].iov_base;
 	in_input_buffer.length = in_input_length;
 
-	if (in_file_id_persistent == UINT64_MAX &&
-	    in_file_id_volatile == UINT64_MAX) {
+	if (req->compat_chain_fsp) {
+		/* skip check */
+	} else if (in_file_id_persistent == UINT64_MAX &&
+		   in_file_id_volatile == UINT64_MAX) {
 		/* without a handle */
 	} else if (in_file_id_persistent != 0) {
 		return smbd_smb2_request_error(req, NT_STATUS_FILE_CLOSED);
