@@ -62,6 +62,7 @@ plansmbtorturetest() {
 samba4srcdir="`dirname $0`/.."
 samba4bindir="$BUILDDIR/bin"
 smb4torture="$samba4bindir/smbtorture${EXEEXT}"
+TAP2SUBUNIT="$PERL $samba4srcdir/../lib/subunit/tap2subunit"
 $smb4torture -V
 
 bbdir=../testprogs/blackbox
@@ -291,9 +292,9 @@ if test x"${PIDL_TESTS_SKIP}" = x"yes"; then
    echo "Skipping pidl tests - PIDL_TESTS_SKIP=yes"
 elif $PERL -e 'eval require Test::More;' > /dev/null 2>&1; then
   for f in $samba4srcdir/../pidl/tests/*.pl; do
-     plantest "pidl.`basename $f .pl`" none $PERL $f "|" $PERL $samba4srcdir/../lib/subunit/tap2subunit
+     plantest "pidl.`basename $f .pl`" none $PERL $f "|" $TAP2SUBUNIT 
   done
- plantest "selftest.samba4.pl" none $PERL $samba4srcdir/../selftest/test_samba4.pl "|" $PERL $samba4srcdir/../lib/subunit/tap2subunit
+ plantest "selftest.samba4.pl" none $PERL $samba4srcdir/../selftest/test_samba4.pl "|" $TAP2SUBUNIT
 else 
    echo "Skipping pidl tests - Test::More not installed"
 fi
