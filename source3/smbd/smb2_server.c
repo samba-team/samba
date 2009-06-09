@@ -277,6 +277,7 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 
 	for (idx=1; idx < count; idx += 3) {
 		const uint8_t *inhdr = NULL;
+		uint32_t in_flags;
 		uint8_t *outhdr = NULL;
 		uint8_t *outbody = NULL;
 		uint32_t next_command_ofs = 0;
@@ -288,6 +289,7 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 		}
 
 		inhdr = (const uint8_t *)req->in.vector[idx].iov_base;
+		in_flags = IVAL(inhdr, SMB2_HDR_FLAGS);
 
 		outhdr = talloc_array(vector, uint8_t,
 				      SMB2_HDR_BODY + 8);
@@ -316,7 +318,8 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 		      SVAL(inhdr, SMB2_HDR_OPCODE));
 		/* Make up a number for now... JRA. FIXME ! FIXME !*/
 		SSVAL(outhdr, SMB2_HDR_CREDIT,		20);
-		SIVAL(outhdr, SMB2_HDR_FLAGS,		SMB2_HDR_FLAG_REDIRECT);
+		SIVAL(outhdr, SMB2_HDR_FLAGS,
+		      IVAL(inhdr, SMB2_HDR_FLAGS) | SMB2_HDR_FLAG_REDIRECT);
 		SIVAL(outhdr, SMB2_HDR_NEXT_COMMAND,	next_command_ofs);
 		SBVAL(outhdr, SMB2_HDR_MESSAGE_ID,
 		      BVAL(inhdr, SMB2_HDR_MESSAGE_ID));
