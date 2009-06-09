@@ -470,6 +470,7 @@ NTSTATUS smbsrv_recv_smb2_request(void *private_data, DATA_BLOB blob)
 	uint32_t protocol_version;
 	uint16_t buffer_code;
 	uint32_t dynamic_size;
+	uint32_t flags;
 
 	smb_conn->statistics.last_request_time = cur_time;
 
@@ -542,6 +543,12 @@ NTSTATUS smbsrv_recv_smb2_request(void *private_data, DATA_BLOB blob)
 	 * TODO: - make sure the length field is 64
 	 *       - make sure it's a request
 	 */
+
+	flags = IVAL(req->in.hdr, SMB2_HDR_FLAGS);
+	/* the first request should never have the related flag set */
+	if (flags & SMB2_HDR_FLAG_CHAINED) {
+		req->chain_status = NT_STATUS_INVALID_PARAMETER;
+	}
 
 	return smb2srv_reply(req);
 }
