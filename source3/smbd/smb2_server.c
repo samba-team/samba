@@ -206,27 +206,23 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 		const uint8_t *inhdr = NULL;
 		uint8_t *outhdr = NULL;
 		uint8_t *outbody = NULL;
-		uint8_t *outdyn = NULL;
-		size_t outdyn_size = 1;
 		uint32_t next_command_ofs = 0;
 		struct iovec *current = &vector[idx];
 
 		if ((idx + 3) < count) {
 			/* we have a next command */
-			next_command_ofs = SMB2_HDR_BODY + 8 + 8;
-			outdyn_size = 8;
+			next_command_ofs = SMB2_HDR_BODY + 8;
 		}
 
 		inhdr = (const uint8_t *)req->in.vector[idx].iov_base;
 
 		outhdr = talloc_array(vector, uint8_t,
-				      SMB2_HDR_BODY + 8 + outdyn_size);
+				      SMB2_HDR_BODY + 8);
 		if (outhdr == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
 
 		outbody = outhdr + SMB2_HDR_BODY;
-		outdyn = outbody + 8;
 
 		current[0].iov_base	= (void *)outhdr;
 		current[0].iov_len	= SMB2_HDR_BODY;
@@ -234,8 +230,8 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 		current[1].iov_base	= (void *)outbody;
 		current[1].iov_len	= 8;
 
-		current[2].iov_base	= (void *)outdyn;
-		current[2].iov_len	= outdyn_size;
+		current[2].iov_base	= NULL;
+		current[2].iov_len	= 0;
 
 		/* setup the SMB2 header */
 		SIVAL(outhdr, SMB2_HDR_PROTOCOL_ID,	SMB2_MAGIC);
@@ -260,12 +256,9 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 		memset(outhdr + SMB2_HDR_SIGNATURE, 0, 16);
 
 		/* setup error body header */
-		SSVAL(outbody, 0x00, 9);
+		SSVAL(outbody, 0x00, 0x08 + 1);
 		SSVAL(outbody, 0x02, 0);
 		SIVAL(outbody, 0x04, 0);
-
-		/* setup the dynamic part */
-		SCVAL(outdyn, 0x00, 0);
 	}
 
 	req->out.vector = vector;
@@ -612,8 +605,8 @@ NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
 		req->out.vector[i+2].iov_base	= (void *)info->data;
 		req->out.vector[i+2].iov_len	= info->length;
 	} else {
-		req->out.vector[i+2].iov_base = (void *)(outbody + 8);
-		req->out.vector[i+2].iov_len = 1;
+		req->out.vector[i+2].iov_base = NULL;
+		req->out.vector[i+2].iov_len = 0;
 	}
 
 	/* the error packet is the last response in the chain */
@@ -659,12 +652,8 @@ NTSTATUS smbd_smb2_request_done_ex(struct smbd_smb2_request *req,
 	req->out.vector[i+1].iov_len = body.length;
 
 	if (dyn) {
-		if (dyn->length > 0) {
-			req->out.vector[i+2].iov_base	= (void *)dyn->data;
-			req->out.vector[i+2].iov_len	= dyn->length;
-		} else {
-			/* the dyn section is already initialized */
-		}
+		req->out.vector[i+2].iov_base	= (void *)dyn->data;
+		req->out.vector[i+2].iov_len	= dyn->length;
 	} else {
 		req->out.vector[i+2].iov_base = NULL;
 		req->out.vector[i+2].iov_len = 0;
@@ -682,7 +671,6 @@ NTSTATUS smbd_smb2_request_done_ex(struct smbd_smb2_request *req,
 		return smbd_smb2_request_error(req, NT_STATUS_INTERNAL_ERROR);
 	}
 
-	/* the error packet is the last response in the chain */
 	SIVAL(outhdr, SMB2_HDR_NEXT_COMMAND, next_command_ofs);
 
 	return smbd_smb2_request_reply(req);
