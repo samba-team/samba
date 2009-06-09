@@ -5974,7 +5974,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_lsa_CreateAccount(struct ndr_push *ndr, int 
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_dom_sid2(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sid));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.access_mask));
+		NDR_CHECK(ndr_push_lsa_AccountAccessMask(ndr, NDR_SCALARS, r->in.access_mask));
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.acct_handle == NULL) {
@@ -6008,7 +6008,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_CreateAccount(struct ndr_pull *ndr, int 
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.sid, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_dom_sid2(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sid));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sid_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.access_mask));
+		NDR_CHECK(ndr_pull_lsa_AccountAccessMask(ndr, NDR_SCALARS, &r->in.access_mask));
 		NDR_PULL_ALLOC(ndr, r->out.acct_handle);
 		ZERO_STRUCTP(r->out.acct_handle);
 	}
@@ -6043,7 +6043,7 @@ _PUBLIC_ void ndr_print_lsa_CreateAccount(struct ndr_print *ndr, const char *nam
 		ndr->depth++;
 		ndr_print_dom_sid2(ndr, "sid", r->in.sid);
 		ndr->depth--;
-		ndr_print_uint32(ndr, "access_mask", r->in.access_mask);
+		ndr_print_lsa_AccountAccessMask(ndr, "access_mask", r->in.access_mask);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
@@ -6186,7 +6186,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_lsa_CreateTrustedDomain(struct ndr_push *ndr
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_lsa_DomainInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.info));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.access_mask));
+		NDR_CHECK(ndr_push_lsa_TrustedAccessMask(ndr, NDR_SCALARS, r->in.access_mask));
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.trustdom_handle == NULL) {
@@ -6220,7 +6220,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_CreateTrustedDomain(struct ndr_pull *ndr
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.info, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_lsa_DomainInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.info));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.access_mask));
+		NDR_CHECK(ndr_pull_lsa_TrustedAccessMask(ndr, NDR_SCALARS, &r->in.access_mask));
 		NDR_PULL_ALLOC(ndr, r->out.trustdom_handle);
 		ZERO_STRUCTP(r->out.trustdom_handle);
 	}
@@ -6255,7 +6255,7 @@ _PUBLIC_ void ndr_print_lsa_CreateTrustedDomain(struct ndr_print *ndr, const cha
 		ndr->depth++;
 		ndr_print_lsa_DomainInfo(ndr, "info", r->in.info);
 		ndr->depth--;
-		ndr_print_uint32(ndr, "access_mask", r->in.access_mask);
+		ndr_print_lsa_TrustedAccessMask(ndr, "access_mask", r->in.access_mask);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
@@ -6783,7 +6783,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_lsa_CreateSecret(struct ndr_push *ndr, int f
 		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.name));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.access_mask));
+		NDR_CHECK(ndr_push_lsa_SecretAccessMask(ndr, NDR_SCALARS, r->in.access_mask));
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.sec_handle == NULL) {
@@ -6810,7 +6810,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_CreateSecret(struct ndr_pull *ndr, int f
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.name));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.access_mask));
+		NDR_CHECK(ndr_pull_lsa_SecretAccessMask(ndr, NDR_SCALARS, &r->in.access_mask));
 		NDR_PULL_ALLOC(ndr, r->out.sec_handle);
 		ZERO_STRUCTP(r->out.sec_handle);
 	}
@@ -6842,7 +6842,7 @@ _PUBLIC_ void ndr_print_lsa_CreateSecret(struct ndr_print *ndr, const char *name
 		ndr_print_policy_handle(ndr, "handle", r->in.handle);
 		ndr->depth--;
 		ndr_print_lsa_String(ndr, "name", &r->in.name);
-		ndr_print_uint32(ndr, "access_mask", r->in.access_mask);
+		ndr_print_lsa_SecretAccessMask(ndr, "access_mask", r->in.access_mask);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
@@ -6869,7 +6869,7 @@ static enum ndr_err_code ndr_push_lsa_OpenAccount(struct ndr_push *ndr, int flag
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_dom_sid2(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sid));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.access_mask));
+		NDR_CHECK(ndr_push_lsa_AccountAccessMask(ndr, NDR_SCALARS, r->in.access_mask));
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.acct_handle == NULL) {
@@ -6903,7 +6903,7 @@ static enum ndr_err_code ndr_pull_lsa_OpenAccount(struct ndr_pull *ndr, int flag
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.sid, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_dom_sid2(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sid));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sid_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.access_mask));
+		NDR_CHECK(ndr_pull_lsa_AccountAccessMask(ndr, NDR_SCALARS, &r->in.access_mask));
 		NDR_PULL_ALLOC(ndr, r->out.acct_handle);
 		ZERO_STRUCTP(r->out.acct_handle);
 	}
@@ -6938,7 +6938,7 @@ _PUBLIC_ void ndr_print_lsa_OpenAccount(struct ndr_print *ndr, const char *name,
 		ndr->depth++;
 		ndr_print_dom_sid2(ndr, "sid", r->in.sid);
 		ndr->depth--;
-		ndr_print_uint32(ndr, "access_mask", r->in.access_mask);
+		ndr_print_lsa_AccountAccessMask(ndr, "access_mask", r->in.access_mask);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
@@ -7303,7 +7303,7 @@ static enum ndr_err_code ndr_push_lsa_GetSystemAccessAccount(struct ndr_push *nd
 		if (r->out.access_mask == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.access_mask));
+		NDR_CHECK(ndr_push_lsa_AccountAccessMask(ndr, NDR_SCALARS, *r->out.access_mask));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -7332,7 +7332,7 @@ static enum ndr_err_code ndr_pull_lsa_GetSystemAccessAccount(struct ndr_pull *nd
 		}
 		_mem_save_access_mask_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.access_mask, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.access_mask));
+		NDR_CHECK(ndr_pull_lsa_AccountAccessMask(ndr, NDR_SCALARS, r->out.access_mask));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_access_mask_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
@@ -7360,7 +7360,7 @@ _PUBLIC_ void ndr_print_lsa_GetSystemAccessAccount(struct ndr_print *ndr, const 
 		ndr->depth++;
 		ndr_print_ptr(ndr, "access_mask", r->out.access_mask);
 		ndr->depth++;
-		ndr_print_uint32(ndr, "access_mask", *r->out.access_mask);
+		ndr_print_lsa_AccountAccessMask(ndr, "access_mask", *r->out.access_mask);
 		ndr->depth--;
 		ndr_print_NTSTATUS(ndr, "result", r->out.result);
 		ndr->depth--;
@@ -7375,7 +7375,7 @@ static enum ndr_err_code ndr_push_lsa_SetSystemAccessAccount(struct ndr_push *nd
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.access_mask));
+		NDR_CHECK(ndr_push_lsa_AccountAccessMask(ndr, NDR_SCALARS, r->in.access_mask));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
@@ -7394,7 +7394,7 @@ static enum ndr_err_code ndr_pull_lsa_SetSystemAccessAccount(struct ndr_pull *nd
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.access_mask));
+		NDR_CHECK(ndr_pull_lsa_AccountAccessMask(ndr, NDR_SCALARS, &r->in.access_mask));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
@@ -7416,7 +7416,7 @@ _PUBLIC_ void ndr_print_lsa_SetSystemAccessAccount(struct ndr_print *ndr, const 
 		ndr->depth++;
 		ndr_print_policy_handle(ndr, "handle", r->in.handle);
 		ndr->depth--;
-		ndr_print_uint32(ndr, "access_mask", r->in.access_mask);
+		ndr_print_lsa_AccountAccessMask(ndr, "access_mask", r->in.access_mask);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
@@ -7439,7 +7439,7 @@ static enum ndr_err_code ndr_push_lsa_OpenTrustedDomain(struct ndr_push *ndr, in
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_dom_sid2(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sid));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.access_mask));
+		NDR_CHECK(ndr_push_lsa_TrustedAccessMask(ndr, NDR_SCALARS, r->in.access_mask));
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.trustdom_handle == NULL) {
@@ -7473,7 +7473,7 @@ static enum ndr_err_code ndr_pull_lsa_OpenTrustedDomain(struct ndr_pull *ndr, in
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.sid, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_dom_sid2(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sid));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sid_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.access_mask));
+		NDR_CHECK(ndr_pull_lsa_TrustedAccessMask(ndr, NDR_SCALARS, &r->in.access_mask));
 		NDR_PULL_ALLOC(ndr, r->out.trustdom_handle);
 		ZERO_STRUCTP(r->out.trustdom_handle);
 	}
@@ -7508,7 +7508,7 @@ _PUBLIC_ void ndr_print_lsa_OpenTrustedDomain(struct ndr_print *ndr, const char 
 		ndr->depth++;
 		ndr_print_dom_sid2(ndr, "sid", r->in.sid);
 		ndr->depth--;
-		ndr_print_uint32(ndr, "access_mask", r->in.access_mask);
+		ndr_print_lsa_TrustedAccessMask(ndr, "access_mask", r->in.access_mask);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
@@ -7715,7 +7715,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_lsa_OpenSecret(struct ndr_push *ndr, int fla
 		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.name));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.access_mask));
+		NDR_CHECK(ndr_push_lsa_SecretAccessMask(ndr, NDR_SCALARS, r->in.access_mask));
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.sec_handle == NULL) {
@@ -7742,7 +7742,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_OpenSecret(struct ndr_pull *ndr, int fla
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.name));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.access_mask));
+		NDR_CHECK(ndr_pull_lsa_SecretAccessMask(ndr, NDR_SCALARS, &r->in.access_mask));
 		NDR_PULL_ALLOC(ndr, r->out.sec_handle);
 		ZERO_STRUCTP(r->out.sec_handle);
 	}
@@ -7774,7 +7774,7 @@ _PUBLIC_ void ndr_print_lsa_OpenSecret(struct ndr_print *ndr, const char *name, 
 		ndr_print_policy_handle(ndr, "handle", r->in.handle);
 		ndr->depth--;
 		ndr_print_lsa_String(ndr, "name", &r->in.name);
-		ndr_print_uint32(ndr, "access_mask", r->in.access_mask);
+		ndr_print_lsa_SecretAccessMask(ndr, "access_mask", r->in.access_mask);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
