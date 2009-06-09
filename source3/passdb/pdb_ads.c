@@ -475,6 +475,11 @@ static NTSTATUS pdb_ads_update_sam_account(struct pdb_methods *m,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	if (num_mods == 0) {
+		/* Nothing to do, just return success */
+		return NT_STATUS_OK;
+	}
+
 	rc = tldap_modify(state->ld, priv->dn, num_mods, mods, NULL, NULL);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_modify for %s failed: %s\n", priv->dn,
