@@ -827,29 +827,6 @@ static int control_moveip(struct ctdb_context *ctdb, int argc, const char **argv
 		return -1;
 	}
 
-	ret = ctdb_ctrl_get_tunable(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, "DeterministicIPs", &value);
-	if (ret == -1) {
-		DEBUG(DEBUG_ERR, ("Unable to get tunable variable 'DeterministicIPs' from local node\n"));
-		talloc_free(tmp_ctx);
-		return -1;
-	}
-	if (value != 0) {
-		DEBUG(DEBUG_ERR, ("The tunable 'DeterministicIPs' is set. You can only move ip addresses when this feature is disabled\n"));
-		talloc_free(tmp_ctx);
-		return -1;
-	}
-
-	ret = ctdb_ctrl_get_tunable(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, "NoIPFailback", &value);
-	if (ret == -1) {
-		DEBUG(DEBUG_ERR, ("Unable to get tunable variable 'NoIPFailback' from local node\n"));
-		talloc_free(tmp_ctx);
-		return -1;
-	}
-	if (value == 0) {
-		DEBUG(DEBUG_ERR, ("The tunable 'NoIPFailback' is NOT set. You can only move ip addresses when this feature is enabled\n"));
-		talloc_free(tmp_ctx);
-		return -1;
-	}
 
 	/* read the public ip list from the node */
 	ret = ctdb_ctrl_get_public_ips(ctdb, TIMELIMIT(), pnn, ctdb, &ips);
