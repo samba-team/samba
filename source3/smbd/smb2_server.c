@@ -237,6 +237,12 @@ static NTSTATUS smbd_smb2_request_validate(struct smbd_smb2_request *req)
 				compound_related = true;
 			}
 		} else if (idx > 4) {
+#if 0
+			/*
+			 * It seems the this tests are wrong
+			 * see the SMB2-COMPOUND test
+			 */
+
 			/*
 			 * all other requests should match the 2nd one
 			 */
@@ -253,6 +259,7 @@ static NTSTATUS smbd_smb2_request_validate(struct smbd_smb2_request *req)
 					return NT_STATUS_OK;
 				}
 			}
+#endif
 		}
 	}
 
