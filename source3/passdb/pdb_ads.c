@@ -19,15 +19,6 @@
 
 #include "includes.h"
 
-static NTSTATUS pdb_ads_getsampwsid(struct pdb_methods *m,
-				    struct samu *sam_acct,
-				    const DOM_SID *sid);
-static bool pdb_ads_gid_to_sid(struct pdb_methods *m, gid_t gid,
-			       DOM_SID *sid);
-static bool pdb_ads_dnblob2sid(struct tldap_context *ld, DATA_BLOB *dnblob,
-			       struct dom_sid *psid);
-
-
 struct pdb_ads_state {
 	struct tldap_context *ld;
 	struct dom_sid domainsid;
@@ -35,6 +26,17 @@ struct pdb_ads_state {
 	char *configdn;
 	char *netbiosname;
 };
+
+static NTSTATUS pdb_ads_getsampwsid(struct pdb_methods *m,
+				    struct samu *sam_acct,
+				    const DOM_SID *sid);
+static bool pdb_ads_gid_to_sid(struct pdb_methods *m, gid_t gid,
+			       DOM_SID *sid);
+static bool pdb_ads_dnblob2sid(struct tldap_context *ld, DATA_BLOB *dnblob,
+			       struct dom_sid *psid);
+static NTSTATUS pdb_ads_sid2dn(struct pdb_ads_state *state,
+			       const struct dom_sid *sid,
+			       TALLOC_CTX *mem_ctx, char **pdn);
 
 static bool pdb_ads_pull_time(struct tldap_message *msg, const char *attr,
 			      time_t *ptime)
@@ -887,18 +889,74 @@ static NTSTATUS pdb_ads_set_unix_primary_group(struct pdb_methods *m,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
+static NTSTATUS pdb_ads_mod_groupmem(struct pdb_methods *m,
+				     TALLOC_CTX *mem_ctx,
+				     uint32 grouprid, uint32 memberrid,
+				     int mod_op)
+{
+	struct pdb_ads_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_ads_state);
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct dom_sid groupsid, membersid;
+	char *groupdn, *memberdn;
+	struct tldap_mod *mods;
+	int rc;
+	NTSTATUS status;
+
+	sid_compose(&groupsid, &state->domainsid, grouprid);
+	sid_compose(&membersid, &state->domainsid, memberrid);
+
+	status = pdb_ads_sid2dn(state, &groupsid, talloc_tos(), &groupdn);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_SUCH_GROUP;
+	}
+	status = pdb_ads_sid2dn(state, &membersid, talloc_tos(), &memberdn);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	mods = NULL;
+
+	if (!tldap_add_mod_str(talloc_tos(), &mods, mod_op,
+			       "member", memberdn)) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	rc = tldap_modify(state->ld, groupdn, 1, mods, NULL, NULL);
+	TALLOC_FREE(frame);
+	if (rc != TLDAP_SUCCESS) {
+		DEBUG(10, ("ldap_modify failed: %s\n",
+			   tldap_errstr(debug_ctx(), state->ld, rc)));
+		if (rc == TLDAP_TYPE_OR_VALUE_EXISTS) {
+			return NT_STATUS_MEMBER_IN_GROUP;
+		}
+		if (rc == TLDAP_NO_SUCH_ATTRIBUTE) {
+			return NT_STATUS_MEMBER_NOT_IN_GROUP;
+		}
+		return NT_STATUS_LDAP(rc);
+	}
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS pdb_ads_add_groupmem(struct pdb_methods *m,
 				     TALLOC_CTX *mem_ctx,
 				     uint32 group_rid, uint32 member_rid)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return pdb_ads_mod_groupmem(m, mem_ctx, group_rid, member_rid,
+				    TLDAP_MOD_ADD);
 }
 
 static NTSTATUS pdb_ads_del_groupmem(struct pdb_methods *m,
 				     TALLOC_CTX *mem_ctx,
 				     uint32 group_rid, uint32 member_rid)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return pdb_ads_mod_groupmem(m, mem_ctx, group_rid, member_rid,
+				    TLDAP_MOD_DELETE);
 }
 
 static NTSTATUS pdb_ads_create_alias(struct pdb_methods *m,
