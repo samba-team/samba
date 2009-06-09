@@ -104,6 +104,11 @@ NTSTATUS smbd_smb2_request_process_ioctl(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
 	}
 	tevent_req_set_callback(subreq, smbd_smb2_request_ioctl_done, req);
+
+	if (tevent_req_is_in_progress(subreq)) {
+		return smbd_smb2_request_pending_queue(req);
+	}
+
 	return NT_STATUS_OK;
 }
 
