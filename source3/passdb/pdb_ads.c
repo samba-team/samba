@@ -273,6 +273,26 @@ static bool pdb_ads_init_ads_from_sam(struct pdb_ads_state *state,
 		existing, mem_ctx, pnum_mods, pmods, "dBCSPwd",
 		data_blob_const(pdb_get_lanman_passwd(sam), NT_HASH_LEN));
 
+	ret &= tldap_make_mod_fmt(
+		existing, mem_ctx, pnum_mods, pmods, "userAccountControl",
+		"%d", ads_acb2uf(pdb_get_acct_ctrl(sam)));
+
+	ret &= tldap_make_mod_fmt(
+		existing, mem_ctx, pnum_mods, pmods, "homeDirectory",
+		"%s", pdb_get_homedir(sam));
+
+	ret &= tldap_make_mod_fmt(
+		existing, mem_ctx, pnum_mods, pmods, "homeDrive",
+		"%s", pdb_get_dir_drive(sam));
+
+	ret &= tldap_make_mod_fmt(
+		existing, mem_ctx, pnum_mods, pmods, "scriptPath",
+		"%s", pdb_get_logon_script(sam));
+
+	ret &= tldap_make_mod_fmt(
+		existing, mem_ctx, pnum_mods, pmods, "profilePath",
+		"%s", pdb_get_profile_path(sam));
+
 	return ret;
 }
 
