@@ -65,6 +65,7 @@ struct smb2_request *smb2_request_init(struct smb2_transport *transport, uint16_
 	uint64_t seqnum;
 	uint32_t hdr_offset;
 	uint32_t flags = 0;
+	bool compound = false;
 
 	if (body_dynamic_present) {
 		if (body_dynamic_size == 0) {
@@ -95,6 +96,7 @@ struct smb2_request *smb2_request_init(struct smb2_transport *transport, uint16_
 	ZERO_STRUCT(req->in);
 
 	if (transport->compound.missing > 0) {
+		compound = true;
 		transport->compound.missing -= 1;
 		req->out = transport->compound.buffer;
 		ZERO_STRUCT(transport->compound.buffer);
@@ -148,7 +150,7 @@ struct smb2_request *smb2_request_init(struct smb2_transport *transport, uint16_
 	 * if we have a dynamic part, make sure the first byte
 	 * which is always be part of the packet is initialized
 	 */
-	if (body_dynamic_size) {
+	if (body_dynamic_size && !compound) {
 		req->out.size += 1;
 		SCVAL(req->out.dynamic, 0, 0);
 	}
@@ -257,7 +259,9 @@ size_t smb2_padding_size(uint32_t offset, size_t n)
 static size_t smb2_padding_fix(struct smb2_request_buffer *buf)
 {
 	if (buf->dynamic == (buf->body + buf->body_fixed)) {
-		return 1;
+		if (buf->dynamic != (buf->buffer + buf->size)) {
+			return 1;
+		}
 	}
 	return 0;
 }
