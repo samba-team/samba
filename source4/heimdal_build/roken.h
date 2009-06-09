@@ -85,6 +85,13 @@
 #define HAVE_INNETGR
 #endif
 
+/* we lie about having pidfile() so that NetBSD5 can compile. Nothing
+   in the parts of heimdal we use actually uses pidfile(), and we
+   don't use it in Samba, so this works, although its ugly */
+#ifndef HAVE_PIDFILE
+#define HAVE_PIDFILE
+#endif
+
 #if (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1 )
 #ifndef HAVE___ATTRIBUTE__
 #define HAVE___ATTRIBUTE__
