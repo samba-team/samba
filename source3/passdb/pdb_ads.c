@@ -909,7 +909,6 @@ static NTSTATUS pdb_ads_mod_groupmem(struct pdb_methods *m,
 	status = pdb_ads_sid2dn(state, &groupsid, talloc_tos(), &groupdn);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
-		TALLOC_FREE(frame);
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
 	status = pdb_ads_sid2dn(state, &membersid, talloc_tos(), &memberdn);
