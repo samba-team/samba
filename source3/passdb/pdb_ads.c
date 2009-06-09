@@ -158,7 +158,6 @@ static NTSTATUS pdb_ads_init_sam_from_ads(struct pdb_methods *m,
 		goto fail;
 	}
 	pdb_set_username(sam, str, PDB_SET);
-	TALLOC_FREE(str);
 
 	if (pdb_ads_pull_time(entry, "lastLogon", &tmp_time)) {
 		pdb_set_logon_time(sam, tmp_time, PDB_SET);
@@ -171,12 +170,6 @@ static NTSTATUS pdb_ads_init_sam_from_ads(struct pdb_methods *m,
 	}
 	if (pdb_ads_pull_time(entry, "accountExpires", &tmp_time)) {
 		pdb_set_pass_last_set_time(sam, tmp_time, PDB_SET);
-	}
-
-	str = tldap_talloc_single_attribute(entry, "samAccoutName",
-					    talloc_tos());
-	if (str != NULL) {
-		pdb_set_username(sam, str, PDB_SET);
 	}
 
 	str = tldap_talloc_single_attribute(entry, "displayName",
