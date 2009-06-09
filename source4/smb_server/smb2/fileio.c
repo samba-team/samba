@@ -182,6 +182,10 @@ static void smb2srv_close_send(struct ntvfs_request *ntvfs)
 	SBVAL(req->out.body,	0x30,	io->smb2.out.size);
 	SIVAL(req->out.body,	0x38,	io->smb2.out.file_attr);
 
+	/* also destroy the chained file handle */
+	req->chained_file_handle = NULL;
+	memset(req->_chained_file_handle, 0, sizeof(req->_chained_file_handle));
+
 	smb2srv_send_reply(req);
 }
 
