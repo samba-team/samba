@@ -539,10 +539,12 @@ struct tevent_req *tstream_readv_send(TALLOC_CTX *mem_ctx,
 	state->ret = -1;
 
 	/* first check if the input is ok */
+#ifdef IOV_MAX
 	if (count > IOV_MAX) {
 		tevent_req_error(req, EMSGSIZE);
 		goto post;
 	}
+#endif
 
 	for (i=0; i < count; i++) {
 		int tmp = to_read;
@@ -658,10 +660,12 @@ struct tevent_req *tstream_writev_send(TALLOC_CTX *mem_ctx,
 	state->ret = -1;
 
 	/* first check if the input is ok */
+#ifdef IOV_MAX
 	if (count > IOV_MAX) {
 		tevent_req_error(req, EMSGSIZE);
 		goto post;
 	}
+#endif
 
 	for (i=0; i < count; i++) {
 		int tmp = to_write;
