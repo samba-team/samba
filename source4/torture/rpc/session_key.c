@@ -215,7 +215,7 @@ static const bool bool_vals[] = { true, false };
 /* TEST session key correctness by pushing and pulling secrets */
 struct torture_suite *torture_rpc_lsa_secrets(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "SECRETS");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "LSA-SECRETS");
 	int keyexchange, ntlm2, lm_key;
 
 	for (keyexchange = 0; keyexchange < ARRAY_SIZE(bool_vals); keyexchange++) {
