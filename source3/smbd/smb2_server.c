@@ -406,6 +406,10 @@ static NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, req->next_status);
 	}
 
+	if ((flags & SMB2_HDR_FLAG_CHAINED) == 0) {
+		req->compat_chain_fsp = NULL;
+	}
+
 	switch (opcode) {
 	case SMB2_OP_NEGPROT:
 		return smbd_smb2_request_process_negprot(req);
