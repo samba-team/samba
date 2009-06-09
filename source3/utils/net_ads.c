@@ -953,6 +953,7 @@ static NTSTATUS net_ads_join_ok(struct net_context *c)
 	}
 
 	set_cmdline_auth_info_use_machine_account(c->auth_info);
+	set_cmdline_auth_info_machine_account_creds(c->auth_info);
 
 	status = ads_startup(c, true, &ads);
 	if (!ADS_ERR_OK(status)) {
