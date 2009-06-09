@@ -799,7 +799,6 @@ static int control_moveip(struct ctdb_context *ctdb, int argc, const char **argv
 {
 	uint32_t pnn;
 	ctdb_sock_addr addr;
-	uint32_t value;
 	struct ctdb_all_public_ips *ips;
 	struct ctdb_public_ip ip;
 	uint32_t *nodes;
