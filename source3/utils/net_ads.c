@@ -236,7 +236,8 @@ retry:
 		set_cmdline_auth_info_getpass(c->auth_info);
 	}
 
-	if (get_cmdline_auth_info_got_pass(c->auth_info)) {
+	if (get_cmdline_auth_info_got_pass(c->auth_info) ||
+	    !get_cmdline_auth_info_use_kerberos(c->auth_info)) {
 		use_in_memory_ccache();
 		SAFE_FREE(ads->auth.password);
 		ads->auth.password = smb_xstrdup(
