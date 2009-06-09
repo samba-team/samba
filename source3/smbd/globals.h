@@ -219,7 +219,10 @@ NTSTATUS smbd_smb2_request_process_ioctl(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_process_keepalive(struct smbd_smb2_request *req);
 
 struct smbd_smb2_request {
+	struct smbd_smb2_request *prev, *next;
+
 	TALLOC_CTX *mem_pool;
+	struct smbd_smb2_request **parent;
 
 	struct smbd_server_connection *conn;
 
@@ -388,6 +391,7 @@ struct smbd_server_connection {
 
 			struct smbd_smb2_session *list;
 		} sessions;
+		struct smbd_smb2_request *requests;
 	} smb2;
 };
 

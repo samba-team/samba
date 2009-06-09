@@ -95,11 +95,66 @@ static void smb2_setup_nbt_length(struct iovec *vector, int count)
 	_smb2_setlen(vector[0].iov_base, len);
 }
 
+static int smbd_smb2_request_parent_destructor(struct smbd_smb2_request **req)
+{
+	if (*req) {
+		(*req)->parent = NULL;
+		(*req)->mem_pool = NULL;
+	}
+
+	return 0;
+}
+
+static int smbd_smb2_request_destructor(struct smbd_smb2_request *req)
+{
+	if (req->out.vector) {
+		DLIST_REMOVE(req->conn->smb2.requests, req);
+	}
+
+	if (req->parent) {
+		*req->parent = NULL;
+		talloc_free(req->mem_pool);
+	}
+
+	return 0;
+}
+
+static struct smbd_smb2_request *smbd_smb2_request_allocate(TALLOC_CTX *mem_ctx)
+{
+	TALLOC_CTX *mem_pool;
+	struct smbd_smb2_request **parent;
+	struct smbd_smb2_request *req;
+
+	mem_pool = talloc_pool(mem_ctx, 8192);
+	if (mem_pool == NULL) {
+		return NULL;
+	}
+
+	parent = talloc(mem_pool, struct smbd_smb2_request *);
+	if (parent == NULL) {
+		talloc_free(mem_pool);
+		return NULL;
+	}
+
+	req = talloc_zero(parent, struct smbd_smb2_request);
+	if (req == NULL) {
+		talloc_free(mem_pool);
+		return NULL;
+	}
+	*parent		= req;
+	req->mem_pool	= mem_pool;
+	req->parent	= parent;
+
+	talloc_set_destructor(parent, smbd_smb2_request_parent_destructor);
+	talloc_set_destructor(req, smbd_smb2_request_destructor);
+
+	return req;
+}
+
 static NTSTATUS smbd_smb2_request_create(struct smbd_server_connection *conn,
 					 const uint8_t *inbuf, size_t size,
 					 struct smbd_smb2_request **_req)
 {
-	TALLOC_CTX *mem_pool;
 	struct smbd_smb2_request *req;
 	uint32_t protocol_version;
 	const uint8_t *inhdr = NULL;
@@ -135,24 +190,17 @@ static NTSTATUS smbd_smb2_request_create(struct smbd_server_connection *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	mem_pool = talloc_pool(conn, 8192);
-	if (mem_pool == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	req = talloc_zero(mem_pool, struct smbd_smb2_request);
+	req = smbd_smb2_request_allocate(conn);
 	if (req == NULL) {
-		talloc_free(mem_pool);
 		return NT_STATUS_NO_MEMORY;
 	}
-	req->mem_pool	= mem_pool;
-	req->conn	= conn;
+	req->conn = conn;
 
 	talloc_steal(req, inbuf);
 
 	req->in.vector = talloc_array(req, struct iovec, 4);
 	if (req->in.vector == NULL) {
-		talloc_free(mem_pool);
+		TALLOC_FREE(req);
 		return NT_STATUS_NO_MEMORY;
 	}
 	req->in.vector_count = 4;
@@ -349,6 +397,8 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 
 	/* setup the length of the NBT packet */
 	smb2_setup_nbt_length(req->out.vector, req->out.vector_count);
+
+	DLIST_ADD_END(req->conn->smb2.requests, req, struct smbd_smb2_request *);
 
 	return NT_STATUS_OK;
 }
@@ -661,19 +711,15 @@ static void smbd_smb2_request_writev_done(struct tevent_req *subreq)
 	struct smbd_server_connection *conn = req->conn;
 	int ret;
 	int sys_errno;
-	TALLOC_CTX *mem_pool;
 
 	ret = tstream_writev_queue_recv(subreq, &sys_errno);
 	TALLOC_FREE(subreq);
+	TALLOC_FREE(req);
 	if (ret == -1) {
 		NTSTATUS status = map_nt_error_from_unix(sys_errno);
 		smbd_server_connection_terminate(conn, nt_errstr(status));
 		return;
 	}
-
-	mem_pool = req->mem_pool;
-	req = NULL;
-	talloc_free(mem_pool);
 }
 
 NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
@@ -929,7 +975,6 @@ static struct tevent_req *smbd_smb2_request_read_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req;
 	struct smbd_smb2_request_read_state *state;
 	struct tevent_req *subreq;
-	TALLOC_CTX *mem_pool;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smbd_smb2_request_read_state);
@@ -939,18 +984,11 @@ static struct tevent_req *smbd_smb2_request_read_send(TALLOC_CTX *mem_ctx,
 	state->missing = 0;
 	state->asked_for_header = false;
 
-	mem_pool = talloc_pool(state, 8192);
-	if (tevent_req_nomem(mem_pool, req)) {
-		return tevent_req_post(req, ev);
-	}
-
-	state->smb2_req = talloc_zero(mem_pool, struct smbd_smb2_request);
+	state->smb2_req = smbd_smb2_request_allocate(state);
 	if (tevent_req_nomem(state->smb2_req, req)) {
 		return tevent_req_post(req, ev);
 	}
-
-	state->smb2_req->mem_pool	= mem_pool;
-	state->smb2_req->conn		= conn;
+	state->smb2_req->conn = conn;
 
 	subreq = tstream_readv_pdu_queue_send(state, ev, conn->smb2.stream,
 					      conn->smb2.recv_queue,
@@ -1343,8 +1381,7 @@ static void smbd_smb2_request_incoming(struct tevent_req *subreq)
 	if (req->in.nbt_hdr[0] != 0x00) {
 		DEBUG(1,("smbd_smb2_request_incoming: ignore NBT[0x%02X] msg\n",
 			 req->in.nbt_hdr[0]));
-		talloc_free(req->mem_pool);
-		req = NULL;
+		TALLOC_FREE(req);
 		goto next;
 	}
 
