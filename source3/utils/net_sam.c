@@ -950,6 +950,51 @@ static int net_sam_createdomaingroup(struct net_context *c, int argc,
 }
 
 /*
+ * Delete a domain group
+ */
+
+static int net_sam_deletedomaingroup(struct net_context *c, int argc,
+				     const char **argv)
+{
+	DOM_SID sid;
+	uint32_t rid;
+        enum lsa_SidType type;
+        const char *dom, *name;
+	NTSTATUS status;
+
+	if (argc != 1 || c->display_usage) {
+		d_fprintf(stderr, "usage: net sam deletelocalgroup <name>\n");
+		return -1;
+	}
+
+	if (!lookup_name(talloc_tos(), argv[0], LOOKUP_NAME_LOCAL,
+			 &dom, &name, &sid, &type)) {
+		d_fprintf(stderr, "Could not find %s.\n", argv[0]);
+		return -1;
+	}
+
+	if (type != SID_NAME_DOM_GRP) {
+		d_fprintf(stderr, "%s is a %s, not a domain group.\n", argv[0],
+			  sid_type_lookup(type));
+		return -1;
+	}
+
+	sid_peek_rid(&sid, &rid);
+
+	status = pdb_delete_dom_group(talloc_tos(), rid);
+
+	if (!NT_STATUS_IS_OK(status)) {
+                d_fprintf(stderr, "Deleting domain group %s failed with %s\n",
+                          argv[0], nt_errstr(status));
+                return -1;
+        }
+
+	d_printf("Deleted domain group %s.\n", argv[0]);
+
+	return 0;
+}
+
+/*
  * Create a local group
  */
 
@@ -1893,6 +1938,14 @@ int net_sam(struct net_context *c, int argc, const char **argv)
 			"Delete an existing local group",
 			"net sam deletelocalgroup\n"
 			"    Delete an existing local group"
+		},
+		{
+			"deletedomaingroup",
+			net_sam_deletedomaingroup,
+			NET_TRANSPORT_LOCAL,
+			"Delete a domain group",
+			"net sam deletedomaingroup\n"
+			"    Delete a group"
 		},
 		{
 			"mapunixgroup",
