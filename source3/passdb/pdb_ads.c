@@ -681,7 +681,53 @@ static NTSTATUS pdb_ads_create_dom_group(struct pdb_methods *m,
 static NTSTATUS pdb_ads_delete_dom_group(struct pdb_methods *m,
 					 TALLOC_CTX *mem_ctx, uint32 rid)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct pdb_ads_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_ads_state);
+	struct dom_sid sid;
+	char *sidstr;
+	struct tldap_message **msg;
+	char *dn;
+	int rc;
+
+	sid_compose(&sid, &state->domainsid, rid);
+
+	sidstr = sid_binstring(talloc_tos(), &sid);
+	NT_STATUS_HAVE_NO_MEMORY(sidstr);
+
+	rc = tldap_search_fmt(state->ld, state->domaindn, TLDAP_SCOPE_SUB,
+			      NULL, 0, 0, talloc_tos(), &msg,
+			      ("(&(objectSid=%s)(objectClass=group))"),
+			      sidstr);
+	TALLOC_FREE(sidstr);
+	if (rc != TLDAP_SUCCESS) {
+		DEBUG(10, ("ldap_search failed %s\n",
+			   tldap_errstr(debug_ctx(), state->ld, rc)));
+		return NT_STATUS_LDAP(rc);
+	}
+
+	switch talloc_array_length(msg) {
+	case 0:
+		return NT_STATUS_NO_SUCH_GROUP;
+	case 1:
+		break;
+	default:
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	if (!tldap_entry_dn(msg[0], &dn)) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	rc = tldap_delete(state->ld, dn, NULL, NULL);
+	if (rc != TLDAP_SUCCESS) {
+		DEBUG(10, ("ldap_delete failed: %s\n",
+			   tldap_errstr(debug_ctx(), state->ld, rc)));
+		TALLOC_FREE(dn);
+		return NT_STATUS_LDAP(rc);
+	}
+
+	TALLOC_FREE(msg);
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS pdb_ads_add_group_mapping_entry(struct pdb_methods *m,
