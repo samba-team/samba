@@ -28,8 +28,11 @@
 struct net_context {
 	const char *opt_requester_name;
 	const char *opt_host;
-	int opt_long_list_entries;
+	const char *opt_password;
+	const char *opt_user_name;
+	bool opt_user_specified;
 	const char *opt_workgroup;
+	int opt_long_list_entries;
 	int opt_reboot;
 	int opt_force;
 	int opt_stdin;
@@ -42,6 +45,7 @@ struct net_context {
 	int opt_timeout;
 	int opt_request_timeout;
 	const char *opt_target_workgroup;
+	int opt_machine_pass;
 	int opt_localgroup;
 	int opt_domaingroup;
 	int do_talloc_report;
@@ -53,14 +57,15 @@ struct net_context {
 	const char *opt_exclude;
 	const char *opt_destination;
 	int opt_testmode;
+	bool opt_kerberos;
 	int opt_force_full_repl;
 	int opt_single_obj_repl;
 	int opt_clean_old_entries;
 
 	int opt_have_ip;
 	struct sockaddr_storage opt_dest_ip;
+	bool smb_encrypt;
 	struct libnetapi_ctx *netapi_ctx;
-	struct user_auth_info *auth_info;
 
 	bool display_usage;
 	void *private_data;

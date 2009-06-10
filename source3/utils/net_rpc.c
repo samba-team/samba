@@ -24,8 +24,7 @@
 #include "utils/net.h"
 
 static int net_mode_share;
-static bool sync_files(struct copy_clistate *cp_clistate, const char *mask,
-		       const struct user_auth_info *auth_info);
+static bool sync_files(struct copy_clistate *cp_clistate, const char *mask);
 
 /**
  * @file net_rpc.c
@@ -122,7 +121,6 @@ int run_rpc_command(struct net_context *c,
 	DOM_SID *domain_sid;
 	const char *domain_name;
 	int ret = -1;
-	struct user_auth_info *ai = c->auth_info;
 
 	/* make use of cli_state handed over as an argument, if possible */
 	if (!cli_arg) {
@@ -172,10 +170,8 @@ int run_rpc_command(struct net_context *c,
 				nt_status = cli_rpc_pipe_open_ntlmssp(
 					cli, interface,
 					PIPE_AUTH_LEVEL_PRIVACY,
-					lp_workgroup(),
-					get_cmdline_auth_info_username(ai),
-					get_cmdline_auth_info_password(ai),
-					&pipe_hnd);
+					lp_workgroup(), c->opt_user_name,
+					c->opt_password, &pipe_hnd);
 			} else {
 				nt_status = cli_rpc_pipe_open_noauth(
 					cli, interface,
@@ -943,12 +939,9 @@ int net_rpc_user(struct net_context *c, int argc, const char **argv)
 	if (status != 0) {
 		return -1;
 	}
-	set_cmdline_auth_info_getpass(c->auth_info);
-	libnetapi_set_username(c->netapi_ctx,
-			       get_cmdline_auth_info_username(c->auth_info));
-	libnetapi_set_password(c->netapi_ctx,
-			       get_cmdline_auth_info_password(c->auth_info));
-	if (get_cmdline_auth_info_use_kerberos(c->auth_info)) {
+	libnetapi_set_username(c->netapi_ctx, c->opt_user_name);
+	libnetapi_set_password(c->netapi_ctx, c->opt_password);
+	if (c->opt_kerberos) {
 		libnetapi_set_use_kerberos(c->netapi_ctx);
 	}
 
@@ -2762,12 +2755,9 @@ int net_rpc_group(struct net_context *c, int argc, const char **argv)
 	if (status != 0) {
 		return -1;
 	}
-	set_cmdline_auth_info_getpass(c->auth_info);
-	libnetapi_set_username(c->netapi_ctx,
-			       get_cmdline_auth_info_username(c->auth_info));
-	libnetapi_set_password(c->netapi_ctx,
-			       get_cmdline_auth_info_password(c->auth_info));
-	if (get_cmdline_auth_info_use_kerberos(c->auth_info)) {
+	libnetapi_set_username(c->netapi_ctx, c->opt_user_name);
+	libnetapi_set_password(c->netapi_ctx, c->opt_password);
+	if (c->opt_kerberos) {
 		libnetapi_set_use_kerberos(c->netapi_ctx);
 	}
 
@@ -3254,7 +3244,7 @@ static void copy_fn(const char *mnt, file_info *f,
 
 		old_dir = local_state->cwd;
 		local_state->cwd = dir;
-		if (!sync_files(local_state, new_mask, c->auth_info))
+		if (!sync_files(local_state, new_mask))
 			printf("could not handle files\n");
 		local_state->cwd = old_dir;
 
@@ -3301,18 +3291,15 @@ static void copy_fn(const char *mnt, file_info *f,
  *
  * @return 		Boolean result
  **/
-static bool sync_files(struct copy_clistate *cp_clistate, const char *mask,
-		       const struct user_auth_info *auth_info)
+static bool sync_files(struct copy_clistate *cp_clistate, const char *mask)
 {
 	struct cli_state *targetcli;
 	char *targetpath = NULL;
 
 	DEBUG(3,("calling cli_list with mask: %s\n", mask));
 
-
-	if ( !cli_resolve_path(talloc_tos(), "", auth_info,
-			       cp_clistate->cli_share_src, mask, &targetcli,
-			       &targetpath ) ) {
+	if ( !cli_resolve_path(talloc_tos(), "", NULL, cp_clistate->cli_share_src,
+				mask, &targetcli, &targetpath ) ) {
 		d_fprintf(stderr, "cli_resolve_path %s failed with error: %s\n", 
 			mask, cli_errstr(cp_clistate->cli_share_src));
 		return false;
@@ -3475,7 +3462,7 @@ static NTSTATUS rpc_share_migrate_files_internals(struct net_context *c,
 			goto done;
 		}
 
-		if (!sync_files(&cp_clistate, mask, c->auth_info)) {
+		if (!sync_files(&cp_clistate, mask)) {
 			d_fprintf(stderr, "could not handle files for share: %s\n", info502.name);
 			nt_status = NT_STATUS_UNSUCCESSFUL;
 			goto done;
@@ -4577,12 +4564,9 @@ int net_rpc_share(struct net_context *c, int argc, const char **argv)
 	if (status != 0) {
 		return -1;
 	}
-	set_cmdline_auth_info_getpass(c->auth_info);
-	libnetapi_set_username(c->netapi_ctx,
-			       get_cmdline_auth_info_username(c->auth_info));
-	libnetapi_set_password(c->netapi_ctx,
-			       get_cmdline_auth_info_password(c->auth_info));
-	if (get_cmdline_auth_info_use_kerberos(c->auth_info)) {
+	libnetapi_set_username(c->netapi_ctx, c->opt_user_name);
+	libnetapi_set_password(c->netapi_ctx, c->opt_password);
+	if (c->opt_kerberos) {
 		libnetapi_set_use_kerberos(c->netapi_ctx);
 	}
 
@@ -4855,12 +4839,9 @@ int net_rpc_file(struct net_context *c, int argc, const char **argv)
 	if (status != 0) {
 		return -1;
 	}
-	set_cmdline_auth_info_getpass(c->auth_info);
-	libnetapi_set_username(c->netapi_ctx,
-			       get_cmdline_auth_info_username(c->auth_info));
-	libnetapi_set_password(c->netapi_ctx,
-			       get_cmdline_auth_info_password(c->auth_info));
-	if (get_cmdline_auth_info_use_kerberos(c->auth_info)) {
+	libnetapi_set_username(c->netapi_ctx, c->opt_user_name);
+	libnetapi_set_password(c->netapi_ctx, c->opt_password);
+	if (c->opt_kerberos) {
 		libnetapi_set_use_kerberos(c->netapi_ctx);
 	}
 
@@ -5550,7 +5531,7 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 		c->opt_workgroup = smb_xstrdup(domain_name);
 	};
 
-	set_cmdline_auth_info_username(c->auth_info, acct_name);
+	c->opt_user_name = acct_name;
 
 	/* find the domain controller */
 	if (!net_find_pdc(&server_ss, pdc_name, domain_name)) {
@@ -5647,9 +5628,7 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 	 * Store the password in secrets db
 	 */
 
-	if (!pdb_set_trusteddom_pw(domain_name,
-				   get_cmdline_auth_info_password(c->auth_info),
-				   domain_sid)) {
+	if (!pdb_set_trusteddom_pw(domain_name, c->opt_password, domain_sid)) {
 		DEBUG(0, ("Storing password for trusted domain failed.\n"));
 		cli_shutdown(cli);
 		talloc_destroy(mem_ctx);
@@ -7209,12 +7188,9 @@ int net_rpc(struct net_context *c, int argc, const char **argv)
 	if (status != 0) {
 		return -1;
 	}
-	set_cmdline_auth_info_getpass(c->auth_info);
-	libnetapi_set_username(c->netapi_ctx,
-			       get_cmdline_auth_info_username(c->auth_info));
-	libnetapi_set_password(c->netapi_ctx,
-			       get_cmdline_auth_info_password(c->auth_info));
-	if (get_cmdline_auth_info_use_kerberos(c->auth_info)) {
+	libnetapi_set_username(c->netapi_ctx, c->opt_user_name);
+	libnetapi_set_password(c->netapi_ctx, c->opt_password);
+	if (c->opt_kerberos) {
 		libnetapi_set_use_kerberos(c->netapi_ctx);
 	}
 
