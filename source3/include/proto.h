@@ -2582,7 +2582,19 @@ struct tevent_req *cli_dskattr_send(TALLOC_CTX *mem_ctx,
 NTSTATUS cli_dskattr_recv(struct tevent_req *req, int *bsize, int *total,
 			  int *avail);
 NTSTATUS cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail);
-int cli_ctemp(struct cli_state *cli, const char *path, char **tmp_path);
+struct tevent_req *cli_ctemp_send(TALLOC_CTX *mem_ctx,
+				struct event_context *ev,
+				struct cli_state *cli,
+				const char *path);
+NTSTATUS cli_ctemp_recv(struct tevent_req *req,
+			TALLOC_CTX *ctx,
+			uint16_t *pfnum,
+			char **outfile);
+NTSTATUS cli_ctemp(struct cli_state *cli,
+			TALLOC_CTX *ctx,
+			const char *path,
+			uint16_t *pfnum,
+			char **out_path);
 NTSTATUS cli_raw_ioctl(struct cli_state *cli, uint16_t fnum, uint32_t code, DATA_BLOB *blob);
 bool cli_set_ea_path(struct cli_state *cli, const char *path, const char *ea_name, const char *ea_val, size_t ea_len);
 bool cli_set_ea_fnum(struct cli_state *cli, uint16_t fnum, const char *ea_name, const char *ea_val, size_t ea_len);

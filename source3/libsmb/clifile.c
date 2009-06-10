@@ -3740,57 +3740,156 @@ NTSTATUS cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail)
  Create and open a temporary file.
 ****************************************************************************/
 
-int cli_ctemp(struct cli_state *cli, const char *path, char **tmp_path)
+static void cli_ctemp_done(struct tevent_req *subreq);
+
+struct ctemp_state {
+	uint16_t vwv[3];
+	char *ret_path;
+	uint16_t fnum;
+};
+
+struct tevent_req *cli_ctemp_send(TALLOC_CTX *mem_ctx,
+				struct event_context *ev,
+				struct cli_state *cli,
+				const char *path)
 {
-	int len;
-	char *p;
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct ctemp_state *state = NULL;
+	uint8_t additional_flags = 0;
+	uint8_t *bytes = NULL;
 
-	memset(cli->outbuf,'\0',smb_size);
-	memset(cli->inbuf,'\0',smb_size);
-
-	cli_set_message(cli->outbuf,3,0,True);
-
-	SCVAL(cli->outbuf,smb_com,SMBctemp);
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
-
-	SSVAL(cli->outbuf,smb_vwv0,0);
-	SIVALS(cli->outbuf,smb_vwv1,-1);
-
-	p = smb_buf(cli->outbuf);
-	*p++ = 4;
-	p += clistr_push(cli, p, path,
-			cli->bufsize - PTR_DIFF(p,cli->outbuf), STR_TERMINATE);
-
-	cli_setup_bcc(cli, p);
-
-	cli_send_smb(cli);
-	if (!cli_receive_smb(cli)) {
-		return -1;
+	req = tevent_req_create(mem_ctx, &state, struct ctemp_state);
+	if (req == NULL) {
+		return NULL;
 	}
 
-	if (cli_is_error(cli)) {
-		return -1;
+	SSVAL(state->vwv,0,0);
+	SIVALS(state->vwv+1,0,-1);
+
+	bytes = talloc_array(state, uint8_t, 1);
+	if (tevent_req_nomem(bytes, req)) {
+		return tevent_req_post(req, ev);
+	}
+	bytes[0] = 4;
+	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), path,
+				   strlen(path)+1, NULL);
+	if (tevent_req_nomem(bytes, req)) {
+		return tevent_req_post(req, ev);
 	}
 
-	/* despite the spec, the result has a -1, followed by
-	   length, followed by name */
-	p = smb_buf(cli->inbuf);
-	p += 4;
-	len = smb_buflen(cli->inbuf) - 4;
-	if (len <= 0 || len > PATH_MAX) return -1;
+	subreq = cli_smb_send(state, ev, cli, SMBctemp, additional_flags,
+			      3, state->vwv, talloc_get_size(bytes), bytes);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_ctemp_done, req);
+	return req;
+}
 
-	if (tmp_path) {
-		char *path2 = SMB_MALLOC_ARRAY(char, len+1);
-		if (!path2) {
-			return -1;
-		}
-		clistr_pull(cli->inbuf, path2, p,
-			    len+1, len, STR_ASCII);
-		*tmp_path = path2;
+static void cli_ctemp_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+				subreq, struct tevent_req);
+	struct ctemp_state *state = tevent_req_data(
+				req, struct ctemp_state);
+	NTSTATUS status;
+	uint8_t wcnt;
+	uint16_t *vwv;
+	uint32_t num_bytes = 0;
+	uint8_t *bytes = NULL;
+
+	status = cli_smb_recv(subreq, 1, &wcnt, &vwv, &num_bytes, &bytes);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
 	}
 
-	return SVAL(cli->inbuf,smb_vwv0);
+	state->fnum = SVAL(vwv+0, 0);
+
+	/* From W2K3, the result is just the ASCII name */
+	if (num_bytes < 2) {
+		tevent_req_nterror(req, NT_STATUS_DATA_ERROR);
+		return;
+	}
+
+	if (pull_string_talloc(state,
+			NULL,
+			0,
+			&state->ret_path,
+			bytes,
+			num_bytes,
+			STR_ASCII) == 0) {
+		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_ctemp_recv(struct tevent_req *req,
+			TALLOC_CTX *ctx,
+			uint16_t *pfnum,
+			char **outfile)
+{
+	struct ctemp_state *state = tevent_req_data(req,
+			struct ctemp_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	*pfnum = state->fnum;
+	*outfile = talloc_strdup(ctx, state->ret_path);
+	if (!*outfile) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_ctemp(struct cli_state *cli,
+			TALLOC_CTX *ctx,
+			const char *path,
+			uint16_t *pfnum,
+			char **out_path)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_OK;
+
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	req = cli_ctemp_send(frame, ev, cli, path);
+	if (req == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
+	}
+
+	status = cli_ctemp_recv(req, ctx, pfnum, out_path);
+
+ fail:
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
 }
 
 /*

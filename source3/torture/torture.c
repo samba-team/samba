@@ -3908,8 +3908,7 @@ static bool run_opentest(int dummy)
 
 
 	printf("testing ctemp\n");
-	fnum1 = cli_ctemp(cli1, "\\", &tmp_path);
-	if (fnum1 == (uint16_t)-1) {
+	if (!NT_STATUS_IS_OK(cli_ctemp(cli1, talloc_tos(), "\\", &fnum1, &tmp_path))) {
 		printf("ctemp failed (%s)\n", cli_errstr(cli1));
 		return False;
 	}

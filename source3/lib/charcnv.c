@@ -1046,9 +1046,7 @@ size_t pull_ascii(char *dest, const void *src, size_t dest_len, size_t src_len, 
 
 /**
  * Copy a string from a dos codepage source to a unix char* destination.
- Talloc version.
- Uses malloc if TALLOC_CTX is NULL (this is a bad interface and
- needs fixing. JRA).
+ * Talloc version.
  *
  * The resulting string in "dest" is always null terminated.
  *
