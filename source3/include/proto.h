@@ -6622,7 +6622,8 @@ NTSTATUS open_file_fchmod(struct smb_request *req, connection_struct *conn,
 			  const char *fname,
 			  SMB_STRUCT_STAT *psbuf, files_struct **result);
 NTSTATUS close_file_fchmod(struct smb_request *req, files_struct *fsp);
-NTSTATUS create_directory(connection_struct *conn, struct smb_request *req, const char *directory);
+NTSTATUS create_directory(connection_struct *conn, struct smb_request *req,
+			  const struct smb_filename *smb_dname);
 void msg_file_was_renamed(struct messaging_context *msg,
 			  void *private_data,
 			  uint32_t msg_type,
@@ -6917,8 +6918,8 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 void reply_mv(struct smb_request *req);
 NTSTATUS copy_file(TALLOC_CTX *ctx,
 			connection_struct *conn,
-			const char *src,
-			const char *dest1,
+			struct smb_filename *smb_fname_src,
+			struct smb_filename *smb_fname_dst,
 			int ofun,
 			int count,
 			bool target_is_directory);
@@ -7122,7 +7123,7 @@ void *vfs_fetch_fsp_extension(vfs_handle_struct *handle, files_struct *fsp);
 bool smbd_vfs_init(connection_struct *conn);
 bool vfs_directory_exist(connection_struct *conn, const char *dname, SMB_STRUCT_STAT *st);
 bool vfs_object_exist(connection_struct *conn,const char *fname,SMB_STRUCT_STAT *sbuf);
-bool vfs_file_exist(connection_struct *conn, const char *fname,SMB_STRUCT_STAT *sbuf);
+NTSTATUS vfs_file_exist(connection_struct *conn, struct smb_filename *smb_fname);
 ssize_t vfs_read_data(files_struct *fsp, char *buf, size_t byte_count);
 ssize_t vfs_pread_data(files_struct *fsp, char *buf,
                 size_t byte_count, SMB_OFF_T offset);

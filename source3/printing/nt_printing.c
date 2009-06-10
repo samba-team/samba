@@ -634,40 +634,30 @@ bool nt_printing_init(struct messaging_context *msg_ctx)
  Function to allow filename parsing "the old way".
 ********************************************************************/
 
-static char *driver_unix_convert(connection_struct *conn,
-		const char *old_name,
-		SMB_STRUCT_STAT *pst)
+static NTSTATUS driver_unix_convert(connection_struct *conn,
+				    const char *old_name,
+				    struct smb_filename **smb_fname)
 {
 	NTSTATUS status;
 	TALLOC_CTX *ctx = talloc_tos();
-	struct smb_filename *smb_fname = NULL;
 	char *name = talloc_strdup(ctx, old_name);
-	char *new_name = NULL;
 
 	if (!name) {
-		return NULL;
+		return NT_STATUS_NO_MEMORY;
 	}
 	unix_format(name);
 	name = unix_clean_name(ctx, name);
 	if (!name) {
-		return NULL;
+		return NT_STATUS_NO_MEMORY;
 	}
 	trim_string(name,"/","/");
 
-	status = unix_convert(ctx, conn, name, &smb_fname, 0);
+	status = unix_convert(ctx, conn, name, smb_fname, 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		return NULL;
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	*pst = smb_fname->st;
-	status = get_full_smb_filename(ctx, smb_fname, &new_name);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(smb_fname);
-		return NULL;
-	}
-
-	TALLOC_FREE(smb_fname);
-	return new_name;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -1297,11 +1287,13 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 	uint32 old_minor;
 	time_t old_create_time;
 
+	struct smb_filename *smb_fname = NULL;
 	files_struct    *fsp = NULL;
 	SMB_STRUCT_STAT st;
 	SMB_STRUCT_STAT stat_buf;
 
 	NTSTATUS status;
+	int ret;
 
 	SET_STAT_INVALID(st);
 	SET_STAT_INVALID(stat_buf);
@@ -1309,8 +1301,13 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 	old_create_time = (time_t)0;
 
 	/* Get file version info (if available) for previous file (if it exists) */
-	filepath = driver_unix_convert(conn,old_file,&stat_buf);
-	if (!filepath) {
+	status = driver_unix_convert(conn, old_file, &smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto error_exit;
+	}
+
+	status = get_full_smb_filename(talloc_tos(), smb_fname, &filepath);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto error_exit;
 	}
 
@@ -1337,10 +1334,11 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 		/* Old file not found, so by definition new file is in fact newer */
 		DEBUG(10,("file_version_is_newer: Can't open old file [%s], errno = %d\n",
 				filepath, errno));
-		return 1;
+		ret = 1;
+		goto done;
 
 	} else {
-		int ret = get_file_version(fsp, old_file, &old_major, &old_minor);
+		ret = get_file_version(fsp, old_file, &old_major, &old_minor);
 		if (ret == -1) {
 			goto error_exit;
 		}
@@ -1361,8 +1359,13 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 	fsp = NULL;
 
 	/* Get file version info (if available) for new file */
-	filepath = driver_unix_convert(conn,new_file,&stat_buf);
-	if (!filepath) {
+	status = driver_unix_convert(conn, new_file, &smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto error_exit;
+	}
+
+	status = get_full_smb_filename(talloc_tos(), smb_fname, &filepath);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto error_exit;
 	}
 
@@ -1392,7 +1395,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 		goto error_exit;
 
 	} else {
-		int ret = get_file_version(fsp, new_file, &new_major, &new_minor);
+		ret = get_file_version(fsp, new_file, &new_major, &new_minor);
 		if (ret == -1) {
 			goto error_exit;
 		}
@@ -1418,29 +1421,36 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 			(new_major == old_major && new_minor > old_minor)) {
 
 			DEBUG(6,("file_version_is_newer: Replacing [%s] with [%s]\n", old_file, new_file));
-			return 1;
+			ret = 1;
+			goto done;
 		}
 		else {
 			DEBUG(6,("file_version_is_newer: Leaving [%s] unchanged\n", old_file));
-			return 0;
+			ret = 0;
+			goto done;
 		}
 
 	} else {
 		/* Compare modification time/dates and choose the newest time/date */
 		if (new_create_time > old_create_time) {
 			DEBUG(6,("file_version_is_newer: Replacing [%s] with [%s]\n", old_file, new_file));
-			return 1;
+			ret = 1;
+			goto done;
 		}
 		else {
 			DEBUG(6,("file_version_is_newer: Leaving [%s] unchanged\n", old_file));
-			return 0;
+			ret = 0;
+			goto done;
 		}
 	}
 
-	error_exit:
-		if(fsp)
-			close_file(NULL, fsp, NORMAL_CLOSE);
-		return -1;
+ error_exit:
+	if(fsp)
+		close_file(NULL, fsp, NORMAL_CLOSE);
+	ret = -1;
+ done:
+	TALLOC_FREE(smb_fname);
+	return ret;
 }
 
 /****************************************************************************
@@ -1453,7 +1463,8 @@ static uint32 get_correct_cversion(struct pipes_struct *p,
 {
 	int               cversion;
 	NTSTATUS          nt_status;
- 	char *driverpath = NULL;
+	struct smb_filename *smb_fname = NULL;
+	char *driverpath = NULL;
 	files_struct      *fsp = NULL;
 	SMB_STRUCT_STAT   st;
 	connection_struct *conn = NULL;
@@ -1509,14 +1520,21 @@ static uint32 get_correct_cversion(struct pipes_struct *p,
 		goto error_exit;
 	}
 
-	driverpath = driver_unix_convert(conn,driverpath,&st);
-	if (!driverpath) {
-		*perr = WERR_NOMEM;
+	nt_status = driver_unix_convert(conn, driverpath, &smb_fname);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		*perr = ntstatus_to_werror(nt_status);
 		goto error_exit;
 	}
 
-	if (!vfs_file_exist(conn, driverpath, &st)) {
+	nt_status = vfs_file_exist(conn, smb_fname);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		*perr = WERR_BADFILE;
+		goto error_exit;
+	}
+
+	status = get_full_smb_filename(talloc_tos(), smb_fname, &driverpath);
+	if (!NT_STATUS_IS_OK(status)) {
+		*perr = WERR_NOMEM;
 		goto error_exit;
 	}
 
@@ -1586,6 +1604,7 @@ static uint32 get_correct_cversion(struct pipes_struct *p,
  error_exit:
 	cversion = -1;
  done:
+	TALLOC_FREE(smb_fname);
 	if (fsp != NULL) {
 		close_file(NULL, fsp, NORMAL_CLOSE);
 	}
@@ -1811,10 +1830,12 @@ static WERROR move_driver_file_to_download_area(TALLOC_CTX *mem_ctx,
 						uint32_t driver_version,
 						uint32_t version)
 {
+	struct smb_filename *smb_fname_old = NULL;
+	struct smb_filename *smb_fname_new = NULL;
 	char *old_name = NULL;
 	char *new_name = NULL;
-	SMB_STRUCT_STAT st;
 	NTSTATUS status;
+	WERROR ret;
 
 	old_name = talloc_asprintf(mem_ctx, "%s/%s",
 				   short_architecture, driver_file);
@@ -1826,25 +1847,45 @@ static WERROR move_driver_file_to_download_area(TALLOC_CTX *mem_ctx,
 
 	if (version != -1 && (version = file_version_is_newer(conn, old_name, new_name)) > 0) {
 
-		old_name = driver_unix_convert(conn, old_name, &st);
-		W_ERROR_HAVE_NO_MEMORY(old_name);
+		status = driver_unix_convert(conn, old_name, &smb_fname_old);
+		if (!NT_STATUS_IS_OK(status)) {
+			ret = WERR_NOMEM;
+			goto out;
+		}
 
-		DEBUG(10,("move_driver_file_to_download_area: copying '%s' to '%s'\n",
-			old_name, new_name));
+		/* Setup a synthetic smb_filename struct */
+		smb_fname_new = TALLOC_ZERO_P(mem_ctx, struct smb_filename);
+		if (!smb_fname_new) {
+			ret = WERR_NOMEM;
+			goto out;
+		}
 
-		status = copy_file(mem_ctx, conn, old_name, new_name,
+		smb_fname_new->base_name = new_name;
+
+		DEBUG(10,("move_driver_file_to_download_area: copying '%s' to "
+			  "'%s'\n", smb_fname_old->base_name,
+			  smb_fname_new->base_name));
+
+		status = copy_file(mem_ctx, conn, smb_fname_old, smb_fname_new,
 				   OPENX_FILE_EXISTS_TRUNCATE |
 				   OPENX_FILE_CREATE_IF_NOT_EXIST,
 				   0, false);
 
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,("move_driver_file_to_download_area: Unable to rename [%s] to [%s]: %s\n",
-				old_name, new_name, nt_errstr(status)));
-			return WERR_ACCESS_DENIED;
+			DEBUG(0,("move_driver_file_to_download_area: Unable "
+				 "to rename [%s] to [%s]: %s\n",
+				 smb_fname_old->base_name, new_name,
+				 nt_errstr(status)));
+			ret = WERR_ACCESS_DENIED;
+			goto out;
 		}
 	}
 
-	return WERR_OK;
+	ret = WERR_OK;
+ out:
+	TALLOC_FREE(smb_fname_old);
+	TALLOC_FREE(smb_fname_new);
+	return ret;
 }
 
 WERROR move_driver_to_download_area(struct pipes_struct *p,
@@ -1854,10 +1895,10 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver;
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 converted_driver;
 	const char *short_architecture;
+	struct smb_filename *smb_dname = NULL;
 	char *new_dir = NULL;
 	connection_struct *conn = NULL;
 	NTSTATUS nt_status;
-	SMB_STRUCT_STAT st;
 	int i;
 	TALLOC_CTX *ctx = talloc_tos();
 	int ver = 0;
@@ -1911,15 +1952,15 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 		*perr = WERR_NOMEM;
 		goto err_exit;
 	}
-	new_dir = driver_unix_convert(conn,new_dir,&st);
-	if (!new_dir) {
+	nt_status = driver_unix_convert(conn, new_dir, &smb_dname);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		*perr = WERR_NOMEM;
 		goto err_exit;
 	}
 
-	DEBUG(5,("Creating first directory: %s\n", new_dir));
+	DEBUG(5,("Creating first directory: %s\n", smb_dname->base_name));
 
-	create_directory(conn, NULL, new_dir);
+	create_directory(conn, NULL, smb_dname);
 
 	/* For each driver file, archi\filexxx.yyy, if there is a duplicate file
 	 * listed for this driver which has already been moved, skip it (note:
@@ -2044,6 +2085,7 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 	}
 
   err_exit:
+	TALLOC_FREE(smb_dname);
 
 	if (conn != NULL) {
 		vfs_ChDir(conn, oldcwd);

@@ -7208,23 +7208,17 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 		return;
 	}
 
-	status = get_full_smb_filename(ctx, smb_dname, &directory);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
-		return;
-	}
-
-	status = check_name(conn, directory);
+	status = check_name(conn, smb_dname->base_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5,("call_trans2mkdir error (%s)\n", nt_errstr(status)));
 		reply_nterror(req, status);
-		return;
+		goto out;
 	}
 
 	/* Any data in this call is an EA list. */
 	if (total_data && (total_data != 4) && !lp_ea_support(SNUM(conn))) {
 		reply_nterror(req, NT_STATUS_EAS_NOT_SUPPORTED);
-		return;
+		goto out;
 	}
 
 	/*
@@ -7236,21 +7230,21 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 	if (total_data != 4) {
 		if (total_data < 10) {
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			return;
+			goto out;
 		}
 
 		if (IVAL(pdata,0) > total_data) {
 			DEBUG(10,("call_trans2mkdir: bad total data size (%u) > %u\n",
 				IVAL(pdata,0), (unsigned int)total_data));
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			return;
+			goto out;
 		}
 
 		ea_list = read_ea_list(talloc_tos(), pdata + 4,
 				       total_data - 4);
 		if (!ea_list) {
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			return;
+			goto out;
 		}
 	}
 	/* If total_data == 4 Windows doesn't care what values
@@ -7258,19 +7252,19 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 	 * The System i QNTC IBM SMB client puts bad values here,
 	 * so ignore them. */
 
-	status = create_directory(conn, req, directory);
+	status = create_directory(conn, req, smb_dname);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
-		return;
+		goto out;
 	}
 
 	/* Try and set any given EA. */
 	if (ea_list) {
-		status = set_ea(conn, NULL, directory, ea_list);
+		status = set_ea(conn, NULL, smb_dname->base_name, ea_list);
 		if (!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);
-			return;
+			goto out;
 		}
 	}
 
@@ -7278,7 +7272,7 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 	*pparams = (char *)SMB_REALLOC(*pparams,2);
 	if(*pparams == NULL) {
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		return;
+		goto out;
 	}
 	params = *pparams;
 
@@ -7286,6 +7280,8 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 
 	send_trans2_replies(conn, req, params, 2, *ppdata, 0, max_data_bytes);
 
+ out:
+	TALLOC_FREE(smb_dname);
 	return;
 }
 

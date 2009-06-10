@@ -382,18 +382,28 @@ bool vfs_object_exist(connection_struct *conn,const char *fname,SMB_STRUCT_STAT 
  Check if a file exists in the vfs.
 ********************************************************************/
 
-bool vfs_file_exist(connection_struct *conn, const char *fname,SMB_STRUCT_STAT *sbuf)
+NTSTATUS vfs_file_exist(connection_struct *conn, struct smb_filename *smb_fname)
 {
-	SMB_STRUCT_STAT st;
+	char *fname = NULL;
+	NTSTATUS status;
 
-	if (!sbuf)
-		sbuf = &st;
+	status = get_full_smb_filename(talloc_tos(), smb_fname, &fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
 
-	ZERO_STRUCTP(sbuf);
+	status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	if (SMB_VFS_STAT(conn, fname, &smb_fname->st) == -1) {
+		goto out;
+	}
 
-	if (SMB_VFS_STAT(conn,fname,sbuf) == -1)
-		return False;
-	return(S_ISREG(sbuf->st_ex_mode));
+	/* Only return OK if stat was successful and S_ISREG */
+	if (S_ISREG(smb_fname->st.st_ex_mode)) {
+		status = NT_STATUS_OK;
+	}
+ out:
+	TALLOC_FREE(fname);
+	return status;
 }
 
 /****************************************************************************

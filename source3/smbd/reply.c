@@ -5233,19 +5233,13 @@ void reply_mkdir(struct smb_request *req)
 		goto out;
 	}
 
-	status = get_full_smb_filename(ctx, smb_dname, &directory);
+	status = check_name(conn, smb_dname->base_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		goto out;
 	}
 
-	status = check_name(conn, directory);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
-		goto out;
-	}
-
-	status = create_directory(conn, req, directory);
+	status = create_directory(conn, req, smb_dname);
 
 	DEBUG(5, ("create_directory returned %s\n", nt_errstr(status)));
 
@@ -5268,7 +5262,7 @@ void reply_mkdir(struct smb_request *req)
 
 	reply_outbuf(req, 0, 0);
 
-	DEBUG( 3, ( "mkdir %s\n", directory ) );
+	DEBUG(3, ("mkdir %s\n", smb_dname->base_name));
  out:
 	TALLOC_FREE(smb_dname);
 	END_PROFILE(SMBmkdir);
@@ -6434,59 +6428,80 @@ void reply_mv(struct smb_request *req)
 
 NTSTATUS copy_file(TALLOC_CTX *ctx,
 			connection_struct *conn,
-			const char *src,
-			const char *dest1,
+			struct smb_filename *smb_fname_src,
+			struct smb_filename *smb_fname_dst,
 			int ofun,
 			int count,
 			bool target_is_directory)
 {
-	SMB_STRUCT_STAT src_sbuf, sbuf2;
+	struct smb_filename *smb_fname_dst_tmp = NULL;
+	char *fname_src = NULL;
+	char *fname_dst = NULL;
 	SMB_OFF_T ret=-1;
 	files_struct *fsp1,*fsp2;
-	char *dest = NULL;
  	uint32 dosattrs;
 	uint32 new_create_disposition;
 	NTSTATUS status;
 
-	dest = talloc_strdup(ctx, dest1);
-	if (!dest) {
-		return NT_STATUS_NO_MEMORY;
+
+	status = copy_smb_filename(ctx, smb_fname_dst, &smb_fname_dst_tmp);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
+
+	/*
+	 * If the target is a directory, extract the last component from the
+	 * src filename and append it to the dst filename
+	 */
 	if (target_is_directory) {
-		const char *p = strrchr_m(src,'/');
+		const char *p;
+
+		/* dest/target can't be a stream if it's a directory. */
+		SMB_ASSERT(smb_fname_dst->stream_name == NULL);
+
+		p = strrchr_m(smb_fname_src->base_name,'/');
 		if (p) {
 			p++;
 		} else {
-			p = src;
+			p = smb_fname_src->base_name;
 		}
-		dest = talloc_asprintf_append(dest,
-				"/%s",
-				p);
-		if (!dest) {
-			return NT_STATUS_NO_MEMORY;
+		smb_fname_dst_tmp->base_name =
+		    talloc_asprintf_append(smb_fname_dst_tmp->base_name, "/%s",
+					   p);
+		if (!smb_fname_dst_tmp->base_name) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
 		}
 	}
 
-	if (!vfs_file_exist(conn,src,&src_sbuf)) {
-		TALLOC_FREE(dest);
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	status = vfs_file_exist(conn, smb_fname_src);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
 	}
 
 	if (!target_is_directory && count) {
 		new_create_disposition = FILE_OPEN;
 	} else {
-		if (!map_open_params_to_ntcreate(dest1,0,ofun,
-				NULL, NULL, &new_create_disposition, NULL)) {
-			TALLOC_FREE(dest);
-			return NT_STATUS_INVALID_PARAMETER;
+		if (!map_open_params_to_ntcreate(smb_fname_dst_tmp->base_name,
+						 0, ofun, NULL, NULL,
+						 &new_create_disposition,
+						 NULL)) {
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto out;
 		}
 	}
 
+	status = get_full_smb_filename(talloc_tos(), smb_fname_src, &fname_src);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	/* Open the src file for reading. */
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		NULL,					/* req */
 		0,					/* root_dir_fid */
-		src,					/* fname */
+		fname_src,	       			/* fname */
 		0,					/* create_file_flags */
 		FILE_GENERIC_READ,			/* access_mask */
 		FILE_SHARE_READ | FILE_SHARE_WRITE,	/* share_access */
@@ -6499,23 +6514,29 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 		NULL,					/* ea_list */
 		&fsp1,					/* result */
 		NULL,					/* pinfo */
-		&src_sbuf);				/* psbuf */
+		&smb_fname_src->st);			/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(dest);
-		return status;
+		goto out;
 	}
 
-	dosattrs = dos_mode(conn, src, &src_sbuf);
-	if (SMB_VFS_STAT(conn,dest,&sbuf2) == -1) {
-		ZERO_STRUCTP(&sbuf2);
+	dosattrs = dos_mode(conn, fname_src, &smb_fname_src->st);
+
+	status = get_full_smb_filename(talloc_tos(), smb_fname_dst_tmp, &fname_dst);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
 	}
 
+	if (SMB_VFS_STAT(conn, fname_dst, &smb_fname_dst_tmp->st) == -1) {
+		ZERO_STRUCTP(&smb_fname_dst_tmp->st);
+	}
+
+	/* Open the dst file for writing. */
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		NULL,					/* req */
 		0,					/* root_dir_fid */
-		dest,					/* fname */
+		fname_dst,				/* fname */
 		0,					/* create_file_flags */
 		FILE_GENERIC_WRITE,			/* access_mask */
 		FILE_SHARE_READ | FILE_SHARE_WRITE,	/* share_access */
@@ -6528,13 +6549,11 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 		NULL,					/* ea_list */
 		&fsp2,					/* result */
 		NULL,					/* pinfo */
-		&sbuf2);				/* psbuf */
-
-	TALLOC_FREE(dest);
+		&smb_fname_dst_tmp->st);		/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		close_file(NULL, fsp1, ERROR_CLOSE);
-		return status;
+		goto out;
 	}
 
 	if ((ofun&3) == 1) {
@@ -6544,18 +6563,19 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 			 * Stop the copy from occurring.
 			 */
 			ret = -1;
-			src_sbuf.st_ex_size = 0;
+			smb_fname_src->st.st_ex_size = 0;
 		}
 	}
 
-	if (src_sbuf.st_ex_size) {
-		ret = vfs_transfer_file(fsp1, fsp2, src_sbuf.st_ex_size);
+	/* Do the actual copy. */
+	if (smb_fname_src->st.st_ex_size) {
+		ret = vfs_transfer_file(fsp1, fsp2, smb_fname_src->st.st_ex_size);
 	}
 
 	close_file(NULL, fsp1, NORMAL_CLOSE);
 
 	/* Ensure the modtime is set correctly on the destination file. */
-	set_close_write_time(fsp2, src_sbuf.st_ex_mtime);
+	set_close_write_time(fsp2, smb_fname_src->st.st_ex_mtime);
 
 	/*
 	 * As we are opening fsp1 read-only we only expect
@@ -6566,14 +6586,21 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 	status = close_file(NULL, fsp2, NORMAL_CLOSE);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto out;
 	}
 
-	if (ret != (SMB_OFF_T)src_sbuf.st_ex_size) {
-		return NT_STATUS_DISK_FULL;
+	if (ret != (SMB_OFF_T)smb_fname_src->st.st_ex_size) {
+		status = NT_STATUS_DISK_FULL;
+		goto out;
 	}
 
-	return NT_STATUS_OK;
+	status = NT_STATUS_OK;
+
+ out:
+	TALLOC_FREE(smb_fname_dst_tmp);
+	TALLOC_FREE(fname_src);
+	TALLOC_FREE(fname_dst);
+	return status;
 }
 
 /****************************************************************************
@@ -6583,13 +6610,12 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 void reply_copy(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
-	struct smb_filename *smb_fname = NULL;
-	struct smb_filename *smb_fname_new = NULL;
-	char *name = NULL;
-	char *newname = NULL;
-	char *directory = NULL;
-	const char *mask = NULL;
-	const char mask_star[] = "*";
+	struct smb_filename *smb_fname_src = NULL;
+	struct smb_filename *smb_fname_dst = NULL;
+	char *fname_src = NULL;
+	char *fname_dst = NULL;
+	char *fname_src_mask = NULL;
+	char *fname_src_dir = NULL;
 	const char *p;
 	int count=0;
 	int error = ERRnoaccess;
@@ -6615,20 +6641,20 @@ void reply_copy(struct smb_request *req)
 	flags = SVAL(req->vwv+2, 0);
 
 	p = (const char *)req->buf;
-	p += srvstr_get_path_req_wcard(ctx, req, &name, p, STR_TERMINATE,
+	p += srvstr_get_path_req_wcard(ctx, req, &fname_src, p, STR_TERMINATE,
 				       &status, &source_has_wild);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		goto out;
 	}
-	p += srvstr_get_path_req_wcard(ctx, req, &newname, p, STR_TERMINATE,
+	p += srvstr_get_path_req_wcard(ctx, req, &fname_dst, p, STR_TERMINATE,
 				       &status, &dest_has_wild);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		goto out;
 	}
 
-	DEBUG(3,("reply_copy : %s -> %s\n",name,newname));
+	DEBUG(3,("reply_copy : %s -> %s\n", fname_src, fname_dst));
 
 	if (tid2 != conn->cnum) {
 		/* can't currently handle inter share copies XXXX */
@@ -6639,8 +6665,8 @@ void reply_copy(struct smb_request *req)
 
 	status = resolve_dfspath_wcard(ctx, conn,
 				       req->flags2 & FLAGS2_DFS_PATHNAMES,
-				       name,
-				       &name,
+				       fname_src,
+				       &fname_src,
 				       &source_has_wild);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -6654,8 +6680,8 @@ void reply_copy(struct smb_request *req)
 
 	status = resolve_dfspath_wcard(ctx, conn,
 				       req->flags2 & FLAGS2_DFS_PATHNAMES,
-				       newname,
-				       &newname,
+				       fname_dst,
+				       &fname_dst,
 				       &dest_has_wild);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -6667,33 +6693,21 @@ void reply_copy(struct smb_request *req)
 		goto out;
 	}
 
-	status = unix_convert(ctx, conn, name, &smb_fname,
+	status = unix_convert(ctx, conn, fname_src, &smb_fname_src,
 			      source_has_wild ? UCF_ALLOW_WCARD_LCOMP : 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		goto out;
 	}
 
-	status = get_full_smb_filename(ctx, smb_fname, &name);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
-		goto out;
-	}
-
-	status = unix_convert(ctx, conn, newname, &smb_fname_new,
+	status = unix_convert(ctx, conn, fname_dst, &smb_fname_dst,
 			      dest_has_wild ? UCF_ALLOW_WCARD_LCOMP : 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		goto out;
 	}
 
-	status = get_full_smb_filename(ctx, smb_fname_new, &newname);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
-		goto out;
-	}
-
-	target_is_directory = VALID_STAT_OF_DIR(smb_fname_new->st);
+	target_is_directory = VALID_STAT_OF_DIR(smb_fname_dst->st);
 
 	if ((flags&1) && target_is_directory) {
 		reply_doserror(req, ERRDOS, ERRbadfile);
@@ -6705,23 +6719,25 @@ void reply_copy(struct smb_request *req)
 		goto out;
 	}
 
-	if ((flags&(1<<5)) && VALID_STAT_OF_DIR(smb_fname->st)) {
+	if ((flags&(1<<5)) && VALID_STAT_OF_DIR(smb_fname_src->st)) {
 		/* wants a tree copy! XXXX */
 		DEBUG(3,("Rejecting tree copy\n"));
 		reply_doserror(req, ERRSRV, ERRerror);
 		goto out;
 	}
 
-	p = strrchr_m(name,'/');
+	/* Split up the directory from the filename/mask. */
+	p = strrchr_m(smb_fname_src->base_name,'/');
 	if (p != NULL) {
-		directory = talloc_strndup(ctx, name, PTR_DIFF(p, name));
-		mask = p+1;
+		fname_src_dir = talloc_strndup(ctx, smb_fname_src->base_name,
+					   PTR_DIFF(p, smb_fname_src->base_name));
+		fname_src_mask = talloc_strdup(ctx, p+1);
 	} else {
-		directory = talloc_strdup(ctx, "./");
-		mask = name;
+		fname_src_dir = talloc_strdup(ctx, "./");
+		fname_src_mask = talloc_strdup(ctx, smb_fname_src->base_name);
 	}
 
-	if (!directory) {
+	if (!fname_src_dir || !fname_src_mask) {
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		goto out;
 	}
@@ -6734,47 +6750,62 @@ void reply_copy(struct smb_request *req)
 	 * for a possible mangle. This patch from
 	 * Tine Smukavec <valentin.smukavec@hermes.si>.
 	 */
-
-	if (!VALID_STAT(smb_fname->st) &&
-	    mangle_is_mangled(mask, conn->params)) {
+	if (!VALID_STAT(smb_fname_src->st) &&
+	    mangle_is_mangled(fname_src_mask, conn->params)) {
 		char *new_mask = NULL;
-		mangle_lookup_name_from_8_3(ctx,
-					mask,
-					&new_mask,
-					conn->params );
+		mangle_lookup_name_from_8_3(ctx, fname_src_mask,
+					    &new_mask, conn->params);
+
+		/* Use demangled name if one was successfully found. */
 		if (new_mask) {
-			mask = new_mask;
+			TALLOC_FREE(fname_src_mask);
+			fname_src_mask = new_mask;
 		}
 	}
 
 	if (!source_has_wild) {
-		directory = talloc_asprintf_append(directory,
-				"/%s",
-				mask);
+
+		/*
+		 * Only one file needs to be copied. Append the mask back onto
+		 * the directory.
+		 */
+		TALLOC_FREE(smb_fname_src->base_name);
+		smb_fname_src->base_name = talloc_asprintf(smb_fname_src,
+							   "%s/%s",
+							   fname_src_dir,
+							   fname_src_mask);
+		if (!smb_fname_src->base_name) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			goto out;
+		}
+
 		if (dest_has_wild) {
-			char *mod_newname = NULL;
-			if (!resolve_wildcards(ctx,
-					directory,newname,&mod_newname)) {
+			char *fname_dst_mod = NULL;
+			if (!resolve_wildcards(smb_fname_dst,
+					       smb_fname_src->base_name,
+					       smb_fname_dst->base_name,
+					       &fname_dst_mod)) {
 				reply_nterror(req, NT_STATUS_NO_MEMORY);
 				goto out;
 			}
-			newname = mod_newname;
+			TALLOC_FREE(smb_fname_dst->base_name);
+			smb_fname_dst->base_name = fname_dst_mod;
 		}
 
-		status = check_name(conn, directory);
+		status = check_name(conn, smb_fname_src->base_name);
 		if (!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);
 			goto out;
 		}
 
-		status = check_name(conn, newname);
+		status = check_name(conn, smb_fname_dst->base_name);
 		if (!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);
 			goto out;
 		}
 
-		status = copy_file(ctx,conn,directory,newname,ofun,
-				count,target_is_directory);
+		status = copy_file(ctx, conn, smb_fname_src, smb_fname_dst,
+				   ofun, count, target_is_directory);
 
 		if(!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);
@@ -6787,17 +6818,34 @@ void reply_copy(struct smb_request *req)
 		const char *dname = NULL;
 		long offset = 0;
 
-		if (strequal(mask,"????????.???")) {
-			mask = mask_star;
+		/*
+		 * There is a wildcard that requires us to actually read the
+		 * src dir and copy each file matching the mask to the dst.
+		 * Right now streams won't be copied, but this could
+		 * presumably be added with a nested loop for reach dir entry.
+		 */
+		SMB_ASSERT(!smb_fname_src->stream_name);
+		SMB_ASSERT(!smb_fname_dst->stream_name);
+
+		smb_fname_src->stream_name = NULL;
+		smb_fname_dst->stream_name = NULL;
+
+		if (strequal(fname_src_mask,"????????.???")) {
+			TALLOC_FREE(fname_src_mask);
+			fname_src_mask = talloc_strdup(ctx, "*");
+			if (!fname_src_mask) {
+				reply_nterror(req, NT_STATUS_NO_MEMORY);
+				goto out;
+			}
 		}
 
-		status = check_name(conn, directory);
+		status = check_name(conn, fname_src_dir);
 		if (!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);
 			goto out;
 		}
 
-		dir_hnd = OpenDir(talloc_tos(), conn, directory, mask, 0);
+		dir_hnd = OpenDir(ctx, conn, fname_src_dir, fname_src_mask, 0);
 		if (dir_hnd == NULL) {
 			status = map_nt_error_from_unix(errno);
 			reply_nterror(req, status);
@@ -6806,37 +6854,42 @@ void reply_copy(struct smb_request *req)
 
 		error = ERRbadfile;
 
+		/* Iterate over the src dir copying each entry to the dst. */
 		while ((dname = ReadDirName(dir_hnd, &offset,
-					    &smb_fname->st))) {
+					    &smb_fname_src->st))) {
 			char *destname = NULL;
-			char *fname = NULL;
 
 			if (ISDOT(dname) || ISDOTDOT(dname)) {
 				continue;
 			}
 
-			if (!is_visible_file(conn, directory, dname,
-					     &smb_fname->st, False)) {
+			if (!is_visible_file(conn, fname_src_dir, dname,
+					     &smb_fname_src->st, false)) {
 				continue;
 			}
 
-			if(!mask_match(dname, mask, conn->case_sensitive)) {
+			if(!mask_match(dname, fname_src_mask,
+				       conn->case_sensitive)) {
 				continue;
 			}
 
 			error = ERRnoaccess;
-			fname = talloc_asprintf(ctx,
-					"%s/%s",
-					directory,
-					dname);
-			if (!fname) {
+
+			/* Get the src smb_fname struct setup. */
+			TALLOC_FREE(smb_fname_src->base_name);
+			smb_fname_src->base_name =
+			    talloc_asprintf(smb_fname_src, "%s/%s",
+					    fname_src_dir, dname);
+
+			if (!smb_fname_src->base_name) {
 				TALLOC_FREE(dir_hnd);
 				reply_nterror(req, NT_STATUS_NO_MEMORY);
 				goto out;
 			}
 
-			if (!resolve_wildcards(ctx,
-					fname,newname,&destname)) {
+			if (!resolve_wildcards(ctx, smb_fname_src->base_name,
+					       smb_fname_dst->base_name,
+					       &destname)) {
 				continue;
 			}
 			if (!destname) {
@@ -6845,29 +6898,33 @@ void reply_copy(struct smb_request *req)
 				goto out;
 			}
 
-			status = check_name(conn, fname);
+			TALLOC_FREE(smb_fname_dst->base_name);
+			smb_fname_dst->base_name = destname;
+
+			status = check_name(conn, smb_fname_src->base_name);
 			if (!NT_STATUS_IS_OK(status)) {
 				TALLOC_FREE(dir_hnd);
 				reply_nterror(req, status);
 				goto out;
 			}
 
-			status = check_name(conn, destname);
+			status = check_name(conn, smb_fname_dst->base_name);
 			if (!NT_STATUS_IS_OK(status)) {
 				TALLOC_FREE(dir_hnd);
 				reply_nterror(req, status);
 				goto out;
 			}
 
-			DEBUG(3,("reply_copy : doing copy on %s -> %s\n",fname, destname));
+			DEBUG(3,("reply_copy : doing copy on %s -> %s\n",
+				smb_fname_src->base_name,
+				smb_fname_dst->base_name));
 
-			status = copy_file(ctx,conn,fname,destname,ofun,
-					count,target_is_directory);
+			status = copy_file(ctx, conn, smb_fname_src,
+					   smb_fname_dst, ofun,	count,
+					   target_is_directory);
 			if (NT_STATUS_IS_OK(status)) {
 				count++;
 			}
-			TALLOC_FREE(fname);
-			TALLOC_FREE(destname);
 		}
 		TALLOC_FREE(dir_hnd);
 	}
@@ -6887,8 +6944,13 @@ void reply_copy(struct smb_request *req)
 	reply_outbuf(req, 1, 0);
 	SSVAL(req->outbuf,smb_vwv0,count);
  out:
-	TALLOC_FREE(smb_fname);
-	TALLOC_FREE(smb_fname_new);
+	TALLOC_FREE(smb_fname_src);
+	TALLOC_FREE(smb_fname_dst);
+	TALLOC_FREE(fname_src);
+	TALLOC_FREE(fname_dst);
+	TALLOC_FREE(fname_src_mask);
+	TALLOC_FREE(fname_src_dir);
+
 	END_PROFILE(SMBcopy);
 	return;
 }

@@ -2598,10 +2598,17 @@ static NTSTATUS open_directory(connection_struct *conn,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS create_directory(connection_struct *conn, struct smb_request *req, const char *directory)
+NTSTATUS create_directory(connection_struct *conn, struct smb_request *req,
+			  const struct smb_filename *smb_dname)
 {
 	NTSTATUS status;
 	files_struct *fsp;
+	char *directory = NULL;
+
+	status = get_full_smb_filename(talloc_tos(), smb_dname, &directory);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
 
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
@@ -2625,7 +2632,8 @@ NTSTATUS create_directory(connection_struct *conn, struct smb_request *req, cons
 	if (NT_STATUS_IS_OK(status)) {
 		close_file(req, fsp, NORMAL_CLOSE);
 	}
-
+ out:
+	TALLOC_FREE(directory);
 	return status;
 }
 
