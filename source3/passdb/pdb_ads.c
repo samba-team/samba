@@ -443,12 +443,20 @@ static NTSTATUS pdb_ads_delete_user(struct pdb_methods *m,
 {
 	struct pdb_ads_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_ads_state);
-	struct pdb_ads_samu_private *priv = pdb_ads_get_samu_private(m, sam);
+	NTSTATUS status;
+	char *dn;
 	int rc;
 
-	rc = tldap_delete(state->ld, priv->dn, NULL, NULL);
+	status = pdb_ads_sid2dn(state, pdb_get_user_sid(sam), talloc_tos(),
+				&dn);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	rc = tldap_delete(state->ld, dn, NULL, NULL);
+	TALLOC_FREE(dn);
 	if (rc != TLDAP_SUCCESS) {
-		DEBUG(10, ("ldap_delete for %s failed: %s\n", priv->dn,
+		DEBUG(10, ("ldap_delete for %s failed: %s\n", dn,
 			   tldap_errstr(debug_ctx(), state->ld, rc)));
 		return NT_STATUS_LDAP(rc);
 	}
