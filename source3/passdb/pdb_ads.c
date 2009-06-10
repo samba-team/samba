@@ -1111,7 +1111,74 @@ static NTSTATUS pdb_ads_set_aliasinfo(struct pdb_methods *m,
 				      const DOM_SID *sid,
 				      struct acct_info *info)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct pdb_ads_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_ads_state);
+	const char *attrs[3] = { "objectSid", "description",
+				 "samAccountName" };
+	struct tldap_message **msg;
+	char *sidstr, *dn;
+	int rc;
+	struct tldap_mod *mods;
+	int num_mods;
+	bool ok;
+
+	sidstr = sid_binstring(talloc_tos(), sid);
+	NT_STATUS_HAVE_NO_MEMORY(sidstr);
+
+	rc = tldap_search_fmt(state->ld, state->domaindn, TLDAP_SCOPE_SUB,
+			      attrs, ARRAY_SIZE(attrs), 0, talloc_tos(),
+			      &msg, "(&(objectSid=%s)(objectclass=group)"
+			      "(|(grouptype=%d)(grouptype=%d)))",
+			      sidstr, GTYPE_SECURITY_BUILTIN_LOCAL_GROUP,
+			      GTYPE_SECURITY_DOMAIN_LOCAL_GROUP);
+	TALLOC_FREE(sidstr);
+	if (rc != TLDAP_SUCCESS) {
+		DEBUG(10, ("ldap_search failed %s\n",
+			   tldap_errstr(debug_ctx(), state->ld, rc)));
+		return NT_STATUS_LDAP(rc);
+	}
+	switch talloc_array_length(msg) {
+	case 0:
+		return NT_STATUS_NO_SUCH_ALIAS;
+	case 1:
+		break;
+	default:
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	if (!tldap_entry_dn(msg[0], &dn)) {
+		TALLOC_FREE(msg);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	mods = NULL;
+	num_mods = 0;
+	ok = true;
+
+	ok &= tldap_make_mod_fmt(
+		msg[0], msg, &num_mods, &mods, "description",
+		"%s", info->acct_desc);
+	ok &= tldap_make_mod_fmt(
+		msg[0], msg, &num_mods, &mods, "samAccountName",
+		"%s", info->acct_name);
+	if (!ok) {
+		TALLOC_FREE(msg);
+		return NT_STATUS_NO_MEMORY;
+	}
+	if (num_mods == 0) {
+		/* no change */
+		TALLOC_FREE(msg);
+		return NT_STATUS_OK;
+	}
+
+	rc = tldap_modify(state->ld, dn, num_mods, mods, NULL, NULL);
+	TALLOC_FREE(msg);
+	if (rc != TLDAP_SUCCESS) {
+		DEBUG(10, ("ldap_modify failed: %s\n",
+			   tldap_errstr(debug_ctx(), state->ld, rc)));
+		return NT_STATUS_LDAP(rc);
+	}
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS pdb_ads_sid2dn(struct pdb_ads_state *state,
