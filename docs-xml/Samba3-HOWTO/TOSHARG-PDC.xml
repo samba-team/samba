@@ -306,7 +306,7 @@ many SSO solutions are an administrative nightmare.
 <indexterm><primary>SSO</primary></indexterm>
 SSO implementations utilize centralization of all user account information. Depending on environmental
 complexity and the age of the systems over which a SSO solution is implemented, it may not be possible to
-change the solution architecture so as to accomodate a new identity management and user authentication system.
+change the solution architecture so as to accommodate a new identity management and user authentication system.
 Many SSO solutions involving legacy systems consist of a new super-structure that handles authentication on
 behalf of the user. The software that gets layered over the old system may simply implement a proxy
 authentication system. This means that the addition of SSO increases over-all information systems complexity.
@@ -375,8 +375,8 @@ that share live services. The Liberty Alliance, an industry group formed to prom
 standards, has adopted SAML 1.1 as part of its application framework. Microsoft and IBM have proposed an
 alternative specification called WS-Security. Some believe that the competing technologies and methods may
 converge when the SAML 2.0 standard is introduced. A few Web access-management products support SAML today,
-but implemention of the technology mostly requires customization to integrate applications and develop user
-interfaces. In a nust-shell, that is why FIM is a big and growing industry.
+but implementation of the technology mostly requires customization to integrate applications and develop user
+interfaces. In a nutshell, that is why FIM is a big and growing industry.
 </para>
 
 <para>
