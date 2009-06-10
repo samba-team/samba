@@ -5134,7 +5134,6 @@ static bool delete_driver_files(struct pipes_struct *rpc_pipe,
 	const char *file;
 	connection_struct *conn;
 	NTSTATUS nt_status;
-	SMB_STRUCT_STAT  st;
 	char *oldcwd;
 	fstring printdollar;
 	int printdollar_snum;
@@ -5172,7 +5171,6 @@ static bool delete_driver_files(struct pipes_struct *rpc_pipe,
 	if ( *info_3->driverpath ) {
 		if ( (s = strchr( &info_3->driverpath[1], '\\' )) != NULL ) {
 			file = s;
-			driver_unix_convert(conn,file,&st);
 			DEBUG(10,("deleting driverfile [%s]\n", s));
 			unlink_internals(conn, NULL, 0, file, False);
 		}
@@ -5181,7 +5179,6 @@ static bool delete_driver_files(struct pipes_struct *rpc_pipe,
 	if ( *info_3->configfile ) {
 		if ( (s = strchr( &info_3->configfile[1], '\\' )) != NULL ) {
 			file = s;
-			driver_unix_convert(conn,file,&st);
 			DEBUG(10,("deleting configfile [%s]\n", s));
 			unlink_internals(conn, NULL, 0, file, False);
 		}
@@ -5190,7 +5187,6 @@ static bool delete_driver_files(struct pipes_struct *rpc_pipe,
 	if ( *info_3->datafile ) {
 		if ( (s = strchr( &info_3->datafile[1], '\\' )) != NULL ) {
 			file = s;
-			driver_unix_convert(conn,file,&st);
 			DEBUG(10,("deleting datafile [%s]\n", s));
 			unlink_internals(conn, NULL, 0, file, False);
 		}
@@ -5199,7 +5195,6 @@ static bool delete_driver_files(struct pipes_struct *rpc_pipe,
 	if ( *info_3->helpfile ) {
 		if ( (s = strchr( &info_3->helpfile[1], '\\' )) != NULL ) {
 			file = s;
-			driver_unix_convert(conn,file,&st);
 			DEBUG(10,("deleting helpfile [%s]\n", s));
 			unlink_internals(conn, NULL, 0, file, False);
 		}
@@ -5215,7 +5210,6 @@ static bool delete_driver_files(struct pipes_struct *rpc_pipe,
 
 			if ( (p = strchr( info_3->dependentfiles[i]+1, '\\' )) != NULL ) {
 				file = p;
-				driver_unix_convert(conn,file,&st);
 				DEBUG(10,("deleting dependent file [%s]\n", file));
 				unlink_internals(conn, NULL, 0, file, False);
 			}
