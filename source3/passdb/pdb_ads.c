@@ -1107,13 +1107,6 @@ static NTSTATUS pdb_ads_delete_alias(struct pdb_methods *m,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS pdb_ads_get_aliasinfo(struct pdb_methods *m,
-				      const DOM_SID *sid,
-				      struct acct_info *info)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
 static NTSTATUS pdb_ads_set_aliasinfo(struct pdb_methods *m,
 				      const DOM_SID *sid,
 				      struct acct_info *info)
@@ -1767,7 +1760,7 @@ static void pdb_ads_init_methods(struct pdb_methods *m)
 	m->del_groupmem = pdb_ads_del_groupmem;
 	m->create_alias = pdb_ads_create_alias;
 	m->delete_alias = pdb_ads_delete_alias;
-	m->get_aliasinfo = pdb_ads_get_aliasinfo;
+	m->get_aliasinfo = pdb_default_get_aliasinfo;
 	m->set_aliasinfo = pdb_ads_set_aliasinfo;
 	m->add_aliasmem = pdb_ads_add_aliasmem;
 	m->del_aliasmem = pdb_ads_del_aliasmem;
