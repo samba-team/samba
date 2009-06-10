@@ -106,7 +106,7 @@ void _log_err( pam_handle_t *pamh, int err, const char *format, ... )
 	}
 
 	strncpy(mod_format, tag, strlen(tag)+1);
-	strncat(mod_format, format, strlen(format));
+	strlcat(mod_format, format, strlen(format)+1);
 
 	va_start(args, format);
 	vsyslog(err | LOG_AUTH, mod_format, args);
