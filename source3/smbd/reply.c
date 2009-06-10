@@ -1327,6 +1327,38 @@ void reply_dskattr(struct smb_request *req)
 	return;
 }
 
+/*
+ * Utility function to split the filename from the directory.
+ */
+static NTSTATUS split_fname_dir_mask(TALLOC_CTX *ctx, const char *fname_in,
+				     char **fname_dir_out,
+				     char **fname_mask_out)
+{
+	const char *p = NULL;
+	char *fname_dir = NULL;
+	char *fname_mask = NULL;
+
+	p = strrchr_m(fname_in, '/');
+	if (!p) {
+		fname_dir = talloc_strdup(ctx, ".");
+		fname_mask = talloc_strdup(ctx, fname_in);
+	} else {
+		fname_dir = talloc_strndup(ctx, fname_in,
+		    PTR_DIFF(p, fname_in));
+		fname_mask = talloc_strdup(ctx, p+1);
+	}
+
+	if (!fname_dir || !fname_mask) {
+		TALLOC_FREE(fname_dir);
+		TALLOC_FREE(fname_mask);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	*fname_dir_out = fname_dir;
+	*fname_mask_out = fname_mask;
+	return NT_STATUS_OK;
+}
+
 /****************************************************************************
  Reply to a search.
  Can be called from SMBsearch, SMBffirst or SMBfunique.
@@ -6727,17 +6759,9 @@ void reply_copy(struct smb_request *req)
 	}
 
 	/* Split up the directory from the filename/mask. */
-	p = strrchr_m(smb_fname_src->base_name,'/');
-	if (p != NULL) {
-		fname_src_dir = talloc_strndup(ctx, smb_fname_src->base_name,
-					   PTR_DIFF(p, smb_fname_src->base_name));
-		fname_src_mask = talloc_strdup(ctx, p+1);
-	} else {
-		fname_src_dir = talloc_strdup(ctx, "./");
-		fname_src_mask = talloc_strdup(ctx, smb_fname_src->base_name);
-	}
-
-	if (!fname_src_dir || !fname_src_mask) {
+	status = split_fname_dir_mask(ctx, smb_fname_src->base_name,
+				      &fname_src_dir, &fname_src_mask);
+	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		goto out;
 	}
