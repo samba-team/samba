@@ -1,16 +1,17 @@
                    =============================
-                   Release Notes for Samba 3.3.4
-			  April, 29  2009
+                   Release Notes for Samba 3.3.5
+			  June, 16  2009
                    =============================
 
 
 This is the latest bugfix release of the Samba 3.3 series.
 
-Major enhancements in Samba 3.3.4 include:
+Major enhancements in Samba 3.3.5 include:
 
-    o Fix domain logins for WinXP clients pre SP3 (bug #6263).
-    o Fix samr_OpenDomain access checks (bug #6089).
-    o Fix usrmgr.exe creating a user (bug #6243).
+    o Fix posix acls when setting an ACL without explicit ACE for the
+      owner (bug #2346).
+    o Fix joining of Win7 into Samba domain (bug #6099).
+    o Fix joining of Win2000 SP4 clients (bug #6301).
 
 
 ######################################################################
@@ -18,61 +19,72 @@ Changes
 #######
 
 
-Changes since 3.3.3:
+Changes since 3.3.4:
 --------------------
 
 
 o   Michael Adam <obnox@samba.org>
-    * net conf: Save share name as given, not as lower case only.
-    * Prevent creation of registry keys containing the '/' character.
+    * BUG 6320: Handle registry config source in file_list.
+    * BUG 6415: Filter out of range mappings in default idmap config in
+      idmap_tdb.
+    * BUG 6416: Filter out of range mappings in default idmap config in
+      idmap_tdb2.
+    * BUG 6417: Filter out of range mappings in default idmap config in
+      idmap_ldap.
+    * Prevent infinite include nesting.
+    * Mark registry shares without path unavailable.
 
 
 o   Jeremy Allison <jra@samba.org>
-    * BUG 6089: Fix samr_OpenDomain access checks.
-    * BUG 6254: Fix IPv6 PUT/GET errors to an SMB server (3.3) with
-      "msdfs root" set to "yes".
-    * BUG 6279: Fix Winbind crash.
-    * Allow pdbedit to change a user rid/sid.
-    * When doing a cli_ulogoff don't invalidate the cnum, invalidate the vuid.
-    * Don't access a freed structure when logging off and re-using a vuid.
+    * BUG 6099: Fix joining of Win7 into Samba domain.
+    * BUG 6315: smbd crashes doing vfs_full_audit on IPC$ close event.
+    * BUG 6330: Fix DFS on AIX.
 
 
-o   Günther Deschner <gd@samba.org>
-    * BUG 5329: Add "net rpc service delete/create".
-    * BUG 6238: Make sure wbcLogoffUserParams are properly initialized before
-      freed.
-    * BUG 6263: Fix domain logins for WinXP clients pre SP3.
-    * BUG 6286: Call init function for builtin idmap modules before probing for
-      them as shared modules.
-    * Try to to fix password_expired flag handling.
-    * Make sure to grey out change fields in the netdomjoin-gui when not
-      running as root.
+o   Guenther Deschner <gd@samba.org>
+    * BUG 6099: Fix joining of Win7 into Samba domain.
+    * BUG 6157: Fix handling of multi-value attribute "uid".
+    * BUG 6301: Fix joining of Win2000 SP4 clients.
+    * BUG 6309: Support remote unjoining of Windows 2003 or greater.
+    * BUG 6372: Fix usermanager only displaying 1024 groups and aliases.
 
 
-o   Jim McDonough <jmcd@samba.org>
-    * Don't look up local user for remote changes, even when root.
+o   Björn Jacke <bj@sernet.de>
+    * Also handle DirX return codes.
 
 
 o   Volker Lendecke <vl@samba.org>
-    * BUG 6243: Fix usrmgr.exe creating a user.
-    * Use procid_str in debug messages for better cluster-debuggability.
-    * Use cluster-aware procid_is_me instead of comparing pids.
-    * Fix smbd crash for close_on_completion.
-    * Fix a memleak in an unlikely error path in change_notify_create().
-    * Do not use the file system GET_REAL_FILENAME for mangled names.
+    * BUG 6336: Fix 'net groupmap set' segfault.
+    * BUG 6361: Make --rcfile work in smbget.
+    * BUG 6365: Re-Add the "dropbox" functionality with -wx rights on a
+      directory.
+    * BUG 6382: Fix case insensitive access to DFS links.
+    * BUG 6441: Fix the compile with --enable-dnssd.
+    * BUG 6449: 'net rap user add' crashes without -C option.
+    * Fix Coverity ID 897.
+    * Do not crash in ctdbd_traverse if ctdbd is not around.
+    * Fix a race condition in winbind leading to a panic.
+
+
+o   TAKAHASHI Motonobu <monyo@samba.gr.jp>
+    * BUG 5897: Fix shutdown script example in the smb.conf manpage.
 
 
 o   Stefan Metzmacher <metze@samba.org>
-    * Fix a crash bug if we timeout in net rpc trustdom list.
-    * Add '--request-timeout' option to net.
+    * BUG 2346: Fix posix acls when setting an ACL without explicit ACE for the
+      owner.
 
 
-o   Martin Schwenke <martin@meltin.net>
-    * In net_conf_import, start a transaction when importing a single share.
+o   D.L. Meyer <dlmeyer@uiuc.edu>
+    * BUG 5832: Fix build on RHEL when ccache is not available.
 
 
-o   Simo Sorce <ssorce@redhat.com>
-    * Fix writing of roaming profiles with "profile acls" set to "yes".
+o   Karolin Seeger <kseeger@samba.org>
+    * BUG 5853: Add keyutils-devel to build requires to fix build on RHEL.
+
+
+o   Marc VanHeyningen <marc.vanheyningen@isilon.com>
+    * Zero an uninitialized array.
 
 
 ######################################################################
