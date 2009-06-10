@@ -1548,6 +1548,8 @@ mount_retry:
 			ipaddr = inet_ntop(AF_INET, &addr4->sin_addr, optionstail,
 					   options_size - current_len);
 			break;
+		default:
+			ipaddr = NULL;
 		}
 
 		/* if the address looks bogus, try the next one */
