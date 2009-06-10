@@ -3144,7 +3144,7 @@ test_shlibs:
 	@$(LIB_PATH_VAR)=./bin && \
 	export $(LIB_PATH_VAR) && \
 	for module in $?; do \
-		./script/tests/dlopen.sh $${module} \
+		./script/tests/dlopen.sh $(LIBDL) $${module} \
 			|| exit 1; \
 	done
 
@@ -3154,7 +3154,7 @@ test_nss_modules:: nss_modules
 	@$(LIB_PATH_VAR)=./bin && \
 	export $(LIB_PATH_VAR) && \
 	for module in $(NSS_MODULES); do \
-		./script/tests/dlopen.sh $${module} \
+		./script/tests/dlopen.sh $(LIBDL) $${module} \
 			|| exit 1; \
 	done
 
