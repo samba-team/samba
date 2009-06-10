@@ -332,6 +332,29 @@ bool asn1_read_BOOLEAN(struct asn1_data *data, bool *v)
 	return !data->has_error;
 }
 
+/* write a BOOLEAN in a simple context */
+bool asn1_write_BOOLEAN_context(struct asn1_data *data, bool v, int context)
+{
+	asn1_push_tag(data, ASN1_CONTEXT_SIMPLE(context));
+	asn1_write_uint8(data, v ? 0xFF : 0);
+	asn1_pop_tag(data);
+	return !data->has_error;
+}
+
+bool asn1_read_BOOLEAN_context(struct asn1_data *data, bool *v, int context)
+{
+	uint8_t tmp = 0;
+	asn1_start_tag(data, ASN1_CONTEXT_SIMPLE(context));
+	asn1_read_uint8(data, &tmp);
+	if (tmp == 0xFF) {
+		*v = true;
+	} else {
+		*v = false;
+	}
+	asn1_end_tag(data);
+	return !data->has_error;
+}
+
 /* check a BOOLEAN */
 bool asn1_check_BOOLEAN(struct asn1_data *data, bool v)
 {
