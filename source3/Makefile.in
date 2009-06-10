@@ -1897,7 +1897,11 @@ LIBWBCLIENT_OBJ0 = ../nsswitch/libwbclient/wbclient.o \
 
 LIBWBCLIENT_OBJ = $(LIBWBCLIENT_OBJ0) \
 		  $(WBCOMMON_OBJ) \
-		  $(LIBREPLACE_OBJ)
+		  $(LIBREPLACE_OBJ) \
+		  ../lib/async_req/async_sock.o \
+		  ../lib/util/tevent_unix.o \
+		  ../lib/util/blocking.o \
+		  $(SOCKET_WRAPPER_OBJ) @LIBTEVENT_OBJ0@
 
 LIBWBCLIENT_SHARED_TARGET=@LIBWBCLIENT_SHARED_TARGET@
 LIBWBCLIENT_SOVER=@LIBWBCLIENT_SOVER@
