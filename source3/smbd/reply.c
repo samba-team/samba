@@ -2417,10 +2417,10 @@ static NTSTATUS can_rename(connection_struct *conn, files_struct *fsp,
 
 static NTSTATUS do_unlink(connection_struct *conn,
 			struct smb_request *req,
-			const char *fname,
+			struct smb_filename *smb_fname,
 			uint32 dirtype)
 {
-	SMB_STRUCT_STAT sbuf;
+	char *fname = NULL;
 	uint32 fattr;
 	files_struct *fsp;
 	uint32 dirtype_orig = dirtype;
@@ -2432,11 +2432,16 @@ static NTSTATUS do_unlink(connection_struct *conn,
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
 	}
 
-	if (SMB_VFS_LSTAT(conn,fname,&sbuf) != 0) {
+	status = get_full_smb_filename(smb_fname, smb_fname, &fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (SMB_VFS_LSTAT(conn, fname, &smb_fname->st) != 0) {
 		return map_nt_error_from_unix(errno);
 	}
 
-	fattr = dos_mode(conn,fname,&sbuf);
+	fattr = dos_mode(conn, fname, &smb_fname->st);
 
 	if (dirtype & FILE_ATTRIBUTE_NORMAL) {
 		dirtype = aDIR|aARCH|aRONLY;
@@ -2527,7 +2532,7 @@ static NTSTATUS do_unlink(connection_struct *conn,
 		 NULL,			/* ea_list */
 		 &fsp,			/* result */
 		 NULL,			/* pinfo */
-		 &sbuf);		/* psbuf */
+		 &smb_fname->st);	/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("SMB_VFS_CREATEFILE failed: %s\n",
@@ -2553,39 +2558,23 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 			  uint32 dirtype, const char *name_in, bool has_wild)
 {
 	struct smb_filename *smb_fname = NULL;
-	const char *directory = NULL;
-	char *mask = NULL;
-	char *name = NULL;
-	char *p = NULL;
+	char *fname_dir = NULL;
+	char *fname_mask = NULL;
 	int count=0;
 	NTSTATUS status = NT_STATUS_OK;
-	SMB_STRUCT_STAT st;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	status = unix_convert(ctx, conn, name_in, &smb_fname,
 			      has_wild ? UCF_ALLOW_WCARD_LCOMP : 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto out;
 	}
 
-	status = get_full_smb_filename(ctx, smb_fname, &name);
+	/* Split up the directory from the filename/mask. */
+	status = split_fname_dir_mask(ctx, smb_fname->base_name,
+				      &fname_dir, &fname_mask);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(smb_fname);
-		return status;
-	}
-
-	p = strrchr_m(name,'/');
-	if (!p) {
-		directory = talloc_strdup(ctx, ".");
-		if (!directory) {
-			TALLOC_FREE(smb_fname);
-			return NT_STATUS_NO_MEMORY;
-		}
-		mask = name;
-	} else {
-		*p = 0;
-		directory = name;
-		mask = p+1;
+		goto out;
 	}
 
 	/*
@@ -2597,38 +2586,44 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 	 * Tine Smukavec <valentin.smukavec@hermes.si>.
 	 */
 
-	if (!VALID_STAT(smb_fname->st) && mangle_is_mangled(mask,conn->params)) {
+	if (!VALID_STAT(smb_fname->st) &&
+	    mangle_is_mangled(fname_mask, conn->params)) {
 		char *new_mask = NULL;
-		mangle_lookup_name_from_8_3(ctx,
-				mask,
-				&new_mask,
-				conn->params );
+		mangle_lookup_name_from_8_3(ctx, fname_mask,
+					    &new_mask, conn->params);
 		if (new_mask) {
-			mask = new_mask;
+			TALLOC_FREE(fname_mask);
+			fname_mask = new_mask;
 		}
 	}
-	TALLOC_FREE(smb_fname);
 
 	if (!has_wild) {
-		directory = talloc_asprintf(ctx,
-				"%s/%s",
-				directory,
-				mask);
-		if (!directory) {
-			return NT_STATUS_NO_MEMORY;
+
+		/*
+		 * Only one file needs to be unlinked. Append the mask back
+		 * onto the directory.
+		 */
+		TALLOC_FREE(smb_fname->base_name);
+		smb_fname->base_name = talloc_asprintf(smb_fname,
+						       "%s/%s",
+						       fname_dir,
+						       fname_mask);
+		if (!smb_fname->base_name) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
 		}
 		if (dirtype == 0) {
 			dirtype = FILE_ATTRIBUTE_NORMAL;
 		}
 
-		status = check_name(conn, directory);
+		status = check_name(conn, smb_fname->base_name);
 		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+			goto out;
 		}
 
-		status = do_unlink(conn, req, directory, dirtype);
+		status = do_unlink(conn, req, smb_fname, dirtype);
 		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+			goto out;
 		}
 
 		count++;
@@ -2638,23 +2633,29 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 		const char *dname;
 
 		if ((dirtype & SAMBA_ATTRIBUTES_MASK) == aDIR) {
-			return NT_STATUS_OBJECT_NAME_INVALID;
+			status = NT_STATUS_OBJECT_NAME_INVALID;
+			goto out;
 		}
 
-		if (strequal(mask,"????????.???")) {
-			mask[0] = '*';
-			mask[1] = '\0';
+		if (strequal(fname_mask,"????????.???")) {
+			TALLOC_FREE(fname_mask);
+			fname_mask = talloc_strdup(ctx, "*");
+			if (!fname_mask) {
+				status = NT_STATUS_NO_MEMORY;
+				goto out;
+			}
 		}
 
-		status = check_name(conn, directory);
+		status = check_name(conn, fname_dir);
 		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+			goto out;
 		}
 
-		dir_hnd = OpenDir(talloc_tos(), conn, directory, mask,
+		dir_hnd = OpenDir(talloc_tos(), conn, fname_dir, fname_mask,
 				  dirtype);
 		if (dir_hnd == NULL) {
-			return map_nt_error_from_unix(errno);
+			status = map_nt_error_from_unix(errno);
+			goto out;
 		}
 
 		/* XXXX the CIFS spec says that if bit0 of the flags2 field is set then
@@ -2664,12 +2665,10 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 
 		status = NT_STATUS_NO_SUCH_FILE;
 
-		while ((dname = ReadDirName(dir_hnd, &offset, &st))) {
-			char *fname = NULL;
-
-			if (!is_visible_file(conn, directory, dname, &st,
-			    true))
-			{
+		while ((dname = ReadDirName(dir_hnd, &offset,
+					    &smb_fname->st))) {
+			if (!is_visible_file(conn, fname_dir, dname,
+					     &smb_fname->st, true)) {
 				continue;
 			}
 
@@ -2678,34 +2677,36 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 				continue;
 			}
 
-			if(!mask_match(dname, mask, conn->case_sensitive)) {
+			if(!mask_match(dname, fname_mask,
+				       conn->case_sensitive)) {
 				continue;
 			}
 
-			fname = talloc_asprintf(ctx, "%s/%s",
-					directory,
-					dname);
-			if (!fname) {
-				return NT_STATUS_NO_MEMORY;
+			TALLOC_FREE(smb_fname->base_name);
+			smb_fname->base_name =
+			    talloc_asprintf(smb_fname, "%s/%s",
+					    fname_dir, dname);
+
+			if (!smb_fname->base_name) {
+				TALLOC_FREE(dir_hnd);
+				status = NT_STATUS_NO_MEMORY;
+				goto out;
 			}
 
-			status = check_name(conn, fname);
+			status = check_name(conn, smb_fname->base_name);
 			if (!NT_STATUS_IS_OK(status)) {
 				TALLOC_FREE(dir_hnd);
-				return status;
+				goto out;
 			}
 
-			status = do_unlink(conn, req, fname, dirtype);
+			status = do_unlink(conn, req, smb_fname, dirtype);
 			if (!NT_STATUS_IS_OK(status)) {
-				TALLOC_FREE(fname);
 				continue;
 			}
 
 			count++;
 			DEBUG(3,("unlink_internals: successful unlink [%s]\n",
-				 fname));
-
-			TALLOC_FREE(fname);
+				 smb_fname->base_name));
 		}
 		TALLOC_FREE(dir_hnd);
 	}
@@ -2714,6 +2715,10 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 		status = map_nt_error_from_unix(errno);
 	}
 
+ out:
+	TALLOC_FREE(smb_fname);
+	TALLOC_FREE(fname_dir);
+	TALLOC_FREE(fname_mask);
 	return status;
 }
 
