@@ -1337,10 +1337,76 @@ static NTSTATUS pdb_ads_lookup_rids(struct pdb_methods *m,
 				    const DOM_SID *domain_sid,
 				    int num_rids,
 				    uint32 *rids,
-				    const char **pp_names,
-				    enum lsa_SidType *attrs)
+				    const char **names,
+				    enum lsa_SidType *lsa_attrs)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct pdb_ads_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_ads_state);
+	const char *attrs[2] = { "sAMAccountType", "sAMAccountName" };
+	int i, num_mapped;
+
+	if (num_rids == 0) {
+		return NT_STATUS_NONE_MAPPED;
+	}
+
+	num_mapped = 0;
+
+	for (i=0; i<num_rids; i++) {
+		struct dom_sid sid;
+		struct tldap_message **msg;
+		char *sidstr;
+		uint32_t attr;
+		int rc;
+
+		lsa_attrs[i] = SID_NAME_UNKNOWN;
+
+		sid_compose(&sid, domain_sid, rids[i]);
+
+		sidstr = sid_binstring(talloc_tos(), &sid);
+		NT_STATUS_HAVE_NO_MEMORY(sidstr);
+
+		rc = tldap_search_fmt(state->ld, state->domaindn,
+				      TLDAP_SCOPE_SUB, attrs,
+				      ARRAY_SIZE(attrs), 0, talloc_tos(),
+				      &msg, "(objectsid=%s)", sidstr);
+		TALLOC_FREE(sidstr);
+		if (rc != TLDAP_SUCCESS) {
+			DEBUG(10, ("ldap_search failed %s\n",
+				   tldap_errstr(debug_ctx(), state->ld, rc)));
+			continue;
+		}
+
+		switch talloc_array_length(msg) {
+		case 0:
+			DEBUG(10, ("rid %d not found\n", (int)rids[i]));
+			continue;
+		case 1:
+			break;
+		default:
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		names[i] = tldap_talloc_single_attribute(
+			msg[0], "samAccountName", talloc_tos());
+		if (names[i] == NULL) {
+			DEBUG(10, ("no samAccountName\n"));
+			continue;
+		}
+		if (!tldap_pull_uint32(msg[0], "samAccountType", &attr)) {
+			DEBUG(10, ("no samAccountType"));
+			continue;
+		}
+		lsa_attrs[i] = ads_atype_map(attr);
+		num_mapped += 1;
+	}
+
+	if (num_mapped == 0) {
+		return NT_STATUS_NONE_MAPPED;
+	}
+	if (num_mapped < num_rids) {
+		return STATUS_SOME_UNMAPPED;
+	}
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS pdb_ads_lookup_names(struct pdb_methods *m,
