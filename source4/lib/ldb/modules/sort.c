@@ -117,10 +117,13 @@ static int sort_compare(struct ldb_message **msg1, struct ldb_message **msg2, vo
 	el1 = ldb_msg_find_element(*msg1, ac->attributeName);
 	el2 = ldb_msg_find_element(*msg2, ac->attributeName);
 
-	if (!el1 || !el2) {
-		/* the attribute was not found return and
-		 * set an error */
-		ac->sort_result = LDB_ERR_UNWILLING_TO_PERFORM;
+	if (!el1 && el2) {
+		return 1;
+	}
+	if (el1 && !el2) {
+		return -1;
+	}
+	if (!el1 && !el2) {
 		return 0;
 	}
 
