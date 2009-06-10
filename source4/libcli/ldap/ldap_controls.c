@@ -126,9 +126,9 @@ static bool decode_server_sort_request(void *mem_ctx, DATA_BLOB in, void *_out)
 			}
 		}
 
-		if (asn1_peek_tag(data, ASN1_BOOLEAN)) {
+		if (asn1_peek_tag(data, ASN1_CONTEXT_SIMPLE(1))) {
 			bool reverse;
-			if (!asn1_read_BOOLEAN(data, &reverse)) {
+			if (!asn1_read_BOOLEAN_context(data, &reverse, 1)) {
 			return false;
 			}
 			lssc[num]->reverse = reverse;
@@ -688,6 +688,13 @@ static bool encode_server_sort_request(void *mem_ctx, void *in, DATA_BLOB *out)
 		return false;
 	}
 
+	/*
+	  RFC2891 section 1.1:
+	    SortKeyList ::= SEQUENCE OF SEQUENCE {
+	      attributeType   AttributeDescription,
+	      orderingRule    [0] MatchingRuleId OPTIONAL,
+	      reverseOrder    [1] BOOLEAN DEFAULT FALSE }
+	*/
 	for (num = 0; lssc[num]; num++) {
 		if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) {
 			return false;
@@ -704,7 +711,7 @@ static bool encode_server_sort_request(void *mem_ctx, void *in, DATA_BLOB *out)
 		}
 
 		if (lssc[num]->reverse) {
-			if (!asn1_write_BOOLEAN(data, lssc[num]->reverse)) {
+			if (!asn1_write_BOOLEAN_context(data, lssc[num]->reverse, 1)) {
 				return false;
 			}
 		}
