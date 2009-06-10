@@ -9,10 +9,10 @@ This is a maintenance release of the Samba 3.2 series.
 Major enhancements in 3.2.12 include:
 
     o Fix posix acls when setting an ACL without explicit ACE for the
-      owner.
-    o Fix "force user".
-    o Fix Winbind crash.
-    o Fix joining of Win7 into Samba domain.
+      owner (bug #2346).
+    o Fix "force user" (bug #6291).
+    o Fix Winbind crash (bug #6279).
+    o Fix joining of Win7 into Samba domain (bug #6099).
 
 
 ######################################################################
@@ -36,8 +36,10 @@ o   Jeremy Allison <jra@samba.org>
 
 
 o   Guenther Deschner <gd@samba.org>
+    * BUG 6099: Fix joining of Win7 into Samba domain.
     * BUG 6301: Fix samr_ConnectVersion enum which is 32bit not 16bit.
     * BUG 6372: Fix usermanager only displaying 1024 groups and aliases.
+    * Protect netlogon_creds_server_step() against NULL creds.
 
 
 o   Björn Jacke <bj@sernet.de>
