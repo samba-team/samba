@@ -216,9 +216,6 @@ int ldb_comparison_fold(struct ldb_context *ldb, void *mem_ctx,
 		while (*s1 == ' ') { s1++; n1--; }
 		while (*s2 == ' ') { s2++; n2--; }
 	}
-	if (n1 != n2) {
-		return n1 - n2;
-	}
 	return (int)(toupper(*s1)) - (int)(toupper(*s2));
 
 utf8str:
