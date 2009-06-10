@@ -97,6 +97,45 @@ NTSTATUS get_full_smb_filename(TALLOC_CTX *ctx, const struct smb_filename *smb_f
 	return NT_STATUS_OK;
 }
 
+NTSTATUS copy_smb_filename(TALLOC_CTX *ctx,
+			   const struct smb_filename *smb_fname_in,
+			   struct smb_filename **smb_fname_out)
+{
+
+	*smb_fname_out = TALLOC_ZERO_P(ctx, struct smb_filename);
+	if (*smb_fname_out == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (smb_fname_in->base_name) {
+		(*smb_fname_out)->base_name =
+		    talloc_strdup(*smb_fname_out, smb_fname_in->base_name);
+		if ((*smb_fname_out)->base_name)
+			goto no_mem_err;
+	}
+
+	if (smb_fname_in->stream_name) {
+		(*smb_fname_out)->stream_name =
+		    talloc_strdup(*smb_fname_out, smb_fname_in->stream_name);
+		if ((*smb_fname_out)->stream_name)
+			goto no_mem_err;
+	}
+
+	if (smb_fname_in->original_lcomp) {
+		(*smb_fname_out)->original_lcomp =
+		    talloc_strdup(*smb_fname_out, smb_fname_in->original_lcomp);
+		if ((*smb_fname_out)->original_lcomp)
+			goto no_mem_err;
+	}
+
+	(*smb_fname_out)->st = smb_fname_in->st;
+	return NT_STATUS_OK;
+
+ no_mem_err:
+	TALLOC_FREE(*smb_fname_out);
+	return NT_STATUS_NO_MEMORY;
+}
+
 /****************************************************************************
 This routine is called to convert names from the dos namespace to unix
 namespace. It needs to handle any case conversions, mangling, format changes,
