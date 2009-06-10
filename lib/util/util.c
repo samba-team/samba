@@ -146,37 +146,6 @@ _PUBLIC_ bool directory_create_or_exist(const char *dname, uid_t uid,
 
 
 /**
- Set a fd into blocking/nonblocking mode. Uses POSIX O_NONBLOCK if available,
- else
-  if SYSV use O_NDELAY
-  if BSD use FNDELAY
-**/
-
-_PUBLIC_ int set_blocking(int fd, bool set)
-{
-	int val;
-#ifdef O_NONBLOCK
-#define FLAG_TO_SET O_NONBLOCK
-#else
-#ifdef SYSV
-#define FLAG_TO_SET O_NDELAY
-#else /* BSD */
-#define FLAG_TO_SET FNDELAY
-#endif
-#endif
-
-	if((val = fcntl(fd, F_GETFL, 0)) == -1)
-		return -1;
-	if(set) /* Turn blocking on - ie. clear nonblock flag */
-		val &= ~FLAG_TO_SET;
-	else
-		val |= FLAG_TO_SET;
-	return fcntl( fd, F_SETFL, val);
-#undef FLAG_TO_SET
-}
-
-
-/**
  Sleep for a specified number of milliseconds.
 **/
 
