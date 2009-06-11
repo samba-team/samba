@@ -1438,7 +1438,7 @@ static NTSTATUS pdb_ads_enum_alias_memberships(struct pdb_methods *m,
 		goto done;
 	}
 
-	rc = tldap_search_fmt(state->ld, state->domaindn, LDAP_SCOPE_SUB,
+	rc = tldap_search_fmt(state->ld, state->domaindn, TLDAP_SCOPE_SUB,
 			      attrs, ARRAY_SIZE(attrs), 0, talloc_tos(),
 			      &msg, "%s))", filter);
 	TALLOC_FREE(filter);
