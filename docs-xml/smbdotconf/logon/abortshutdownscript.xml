@@ -9,7 +9,7 @@
 	should stop a shutdown procedure issued by the <smbconfoption name="shutdown script"/>.</para>
 		
 	<para>If the connected user posseses the <constant>SeRemoteShutdownPrivilege</constant>,
-	right, this command will be run as user.</para>
+	right, this command will be run as root.</para>
 </description>
 <value type="default">&quot;&quot;</value>
 <value type="example">/sbin/shutdown -c</value>
