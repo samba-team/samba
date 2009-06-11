@@ -6026,13 +6026,10 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			bool dest_has_wild,
 			uint32_t access_mask)
 {
-	struct smb_filename *smb_fname = NULL;
-	struct smb_filename *smb_fname_new = NULL;
-	char *directory = NULL;
-	char *mask = NULL;
-	char *name = NULL;
-	char *newname = NULL;
-	char *p;
+	struct smb_filename *smb_fname_src = NULL;
+	struct smb_filename *smb_fname_dst = NULL;
+	char *fname_src_dir = NULL;
+	char *fname_src_mask = NULL;
 	int count=0;
 	NTSTATUS status = NT_STATUS_OK;
 	struct smb_Dir *dir_hnd = NULL;
@@ -6041,25 +6038,15 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	int create_options = 0;
 	bool posix_pathnames = lp_posix_pathnames();
 
-	status = unix_convert(ctx, conn, name_in, &smb_fname,
+	status = unix_convert(ctx, conn, name_in, &smb_fname_src,
 			      src_has_wild ? UCF_ALLOW_WCARD_LCOMP : 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
 
-	status = get_full_smb_filename(ctx, smb_fname, &name);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-
-	status = unix_convert(ctx, conn, newname_in, &smb_fname_new,
+	status = unix_convert(ctx, conn, newname_in, &smb_fname_dst,
 			      (UCF_SAVE_LCOMP |
 			       (dest_has_wild ? UCF_ALLOW_WCARD_LCOMP : 0)));
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-
-	status = get_full_smb_filename(ctx, smb_fname_new, &newname);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
@@ -6073,23 +6060,12 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	 * as this is checked in resolve_wildcards().
 	 */
 
-	p = strrchr_m(name,'/');
-	if (!p) {
-		directory = talloc_strdup(ctx, ".");
-		if (!directory) {
-			status = NT_STATUS_NO_MEMORY;
-			goto out;
-		}
-		mask = name;
-	} else {
-		*p = 0;
-		directory = talloc_strdup(ctx, name);
-		if (!directory) {
-			status = NT_STATUS_NO_MEMORY;
-			goto out;
-		}
-		mask = p+1;
-		*p = '/'; /* Replace needed for exceptional test below. */
+	/* Split up the directory from the filename/mask. */
+	status = split_fname_dir_mask(ctx, smb_fname_src->base_name,
+				      &fname_src_dir, &fname_src_mask);
+	if (!NT_STATUS_IS_OK(status)) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
 	}
 
 	/*
@@ -6101,41 +6077,47 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	 * Tine Smukavec <valentin.smukavec@hermes.si>.
 	 */
 
-	if (!VALID_STAT(smb_fname->st) && mangle_is_mangled(mask, conn->params)) {
+	if (!VALID_STAT(smb_fname_src->st) &&
+	    mangle_is_mangled(fname_src_mask, conn->params)) {
 		char *new_mask = NULL;
-		mangle_lookup_name_from_8_3(ctx,
-					mask,
-					&new_mask,
-					conn->params );
+		mangle_lookup_name_from_8_3(ctx, fname_src_mask, &new_mask,
+					    conn->params);
 		if (new_mask) {
-			mask = new_mask;
+			TALLOC_FREE(fname_src_mask);
+			fname_src_mask = new_mask;
 		}
 	}
 
 	if (!src_has_wild) {
 		files_struct *fsp;
+		char *fname_src = NULL;
+		char *fname_dst = NULL;
 
 		/*
-		 * No wildcards - just process the one file.
+		 * Only one file needs to be renamied. Append the mask back
+		 * onto the directory.
 		 */
-		/* Add a terminating '/' to the directory name. */
-		directory = talloc_asprintf_append(directory,
-				"/%s",
-				mask);
-		if (!directory) {
+		TALLOC_FREE(smb_fname_src->base_name);
+		smb_fname_src->base_name = talloc_asprintf(smb_fname_src,
+							   "%s/%s",
+							   fname_src_dir,
+							   fname_src_mask);
+		if (!smb_fname_src->base_name) {
 			status = NT_STATUS_NO_MEMORY;
 			goto out;
 		}
 
-		/* Ensure newname contains a '/' also */
-		if(strrchr_m(newname,'/') == 0) {
-			newname = talloc_asprintf(ctx,
-						"./%s",
-						newname);
-			if (!newname) {
+		/* Ensure dst fname contains a '/' also */
+		if(strrchr_m(smb_fname_dst->base_name, '/') == 0) {
+			char *tmp;
+			tmp = talloc_asprintf(smb_fname_dst, "./%s",
+					      smb_fname_dst->base_name);
+			if (!tmp) {
 				status = NT_STATUS_NO_MEMORY;
 				goto out;
 			}
+			TALLOC_FREE(smb_fname_dst->base_name);
+			smb_fname_dst->base_name = tmp;
 		}
 
 		DEBUG(3, ("rename_internals: case_sensitive = %d, "
@@ -6143,32 +6125,41 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			  "directory = %s, newname = %s, "
 			  "last_component_dest = %s\n",
 			  conn->case_sensitive, conn->case_preserve,
-			  conn->short_case_preserve, directory,
-			  newname, smb_fname_new->original_lcomp));
+			  conn->short_case_preserve, smb_fname_src->base_name,
+			  smb_fname_dst->base_name,
+			  smb_fname_dst->original_lcomp));
 
 		/* The dest name still may have wildcards. */
 		if (dest_has_wild) {
-			char *mod_newname = NULL;
-			if (!resolve_wildcards(ctx,
-					directory,newname,&mod_newname)) {
+			char *fname_dst_mod = NULL;
+			if (!resolve_wildcards(smb_fname_dst,
+					       smb_fname_src->base_name,
+					       smb_fname_dst->base_name,
+					       &fname_dst_mod)) {
 				DEBUG(6, ("rename_internals: resolve_wildcards "
-					"%s %s failed\n",
-					directory,
-					newname));
+					  "%s %s failed\n",
+					  smb_fname_src->base_name,
+					  smb_fname_dst->base_name));
 				status = NT_STATUS_NO_MEMORY;
 				goto out;
 			}
-			newname = mod_newname;
+			TALLOC_FREE(smb_fname_dst->base_name);
+			smb_fname_dst->base_name = fname_dst_mod;
 		}
 
-		ZERO_STRUCT(smb_fname->st);
+		status = get_full_smb_filename(ctx, smb_fname_src, &fname_src);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto out;
+		}
+
+		ZERO_STRUCT(smb_fname_src->st);
 		if (posix_pathnames) {
-			SMB_VFS_LSTAT(conn, directory, &smb_fname->st);
+			SMB_VFS_LSTAT(conn, fname_src, &smb_fname_src->st);
 		} else {
-			SMB_VFS_STAT(conn, directory, &smb_fname->st);
+			SMB_VFS_STAT(conn, fname_src, &smb_fname_src->st);
 		}
 
-		if (S_ISDIR(smb_fname->st.st_ex_mode)) {
+		if (S_ISDIR(smb_fname_src->st.st_ex_mode)) {
 			create_options |= FILE_DIRECTORY_FILE;
 		}
 
@@ -6176,7 +6167,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			conn,				/* conn */
 			req,				/* req */
 			0,				/* root_dir_fid */
-			directory,			/* fname */
+			fname_src,			/* fname */
 			0,				/* create_file_flags */
 			access_mask,			/* access_mask */
 			(FILE_SHARE_READ |		/* share_access */
@@ -6190,40 +6181,54 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			NULL,				/* ea_list */
 			&fsp,				/* result */
 			NULL,				/* pinfo */
-			&smb_fname->st);		/* psbuf */
+			&smb_fname_src->st);		/* psbuf */
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("Could not open rename source %s: %s\n",
-				  directory, nt_errstr(status)));
+				  fname_src, nt_errstr(status)));
+			TALLOC_FREE(fname_src);
 			goto out;
 		}
 
-		status = rename_internals_fsp(conn, fsp, newname,
-					      smb_fname_new->original_lcomp,
+		status = get_full_smb_filename(ctx, smb_fname_dst, &fname_dst);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(fname_src);
+			goto out;
+		}
+
+		status = rename_internals_fsp(conn, fsp, fname_dst,
+					      smb_fname_dst->original_lcomp,
 					      attrs, replace_if_exists);
 
 		close_file(req, fsp, NORMAL_CLOSE);
 
 		DEBUG(3, ("rename_internals: Error %s rename %s -> %s\n",
-			  nt_errstr(status), directory,newname));
+			  nt_errstr(status), fname_src, fname_dst));
 
+		TALLOC_FREE(fname_src);
+		TALLOC_FREE(fname_dst);
 		goto out;
 	}
 
 	/*
 	 * Wildcards - process each file that matches.
 	 */
-	if (strequal(mask,"????????.???")) {
-		mask[0] = '*';
-		mask[1] = '\0';
+	if (strequal(fname_src_mask, "????????.???")) {
+		TALLOC_FREE(fname_src_mask);
+		fname_src_mask = talloc_strdup(ctx, "*");
+		if (!fname_src_mask) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
 	}
 
-	status = check_name(conn, directory);
+	status = check_name(conn, fname_src_dir);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
 
-	dir_hnd = OpenDir(talloc_tos(), conn, directory, mask, attrs);
+	dir_hnd = OpenDir(talloc_tos(), conn, fname_src_dir, fname_src_mask,
+			  attrs);
 	if (dir_hnd == NULL) {
 		status = map_nt_error_from_unix(errno);
 		goto out;
@@ -6235,9 +6240,10 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	 * - gentest fix. JRA
 	 */
 
-	while ((dname = ReadDirName(dir_hnd, &offset, &smb_fname->st))) {
+	while ((dname = ReadDirName(dir_hnd, &offset, &smb_fname_src->st))) {
 		files_struct *fsp = NULL;
-		char *fname = NULL;
+		char *fname_src = NULL;
+		char *fname_dst = NULL;
 		char *destname = NULL;
 		bool sysdir_entry = False;
 
@@ -6250,12 +6256,12 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			}
 		}
 
-		if (!is_visible_file(conn, directory, dname, &smb_fname->st,
-				     False)) {
+		if (!is_visible_file(conn, fname_src_dir, dname,
+				     &smb_fname_src->st, false)) {
 			continue;
 		}
 
-		if(!mask_match(dname, mask, conn->case_sensitive)) {
+		if(!mask_match(dname, fname_src_mask, conn->case_sensitive)) {
 			continue;
 		}
 
@@ -6264,20 +6270,21 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			break;
 		}
 
-		fname = talloc_asprintf(ctx,
-				"%s/%s",
-				directory,
-				dname);
-		if (!fname) {
+		TALLOC_FREE(smb_fname_src->base_name);
+		smb_fname_src->base_name = talloc_asprintf(smb_fname_src,
+							   "%s/%s",
+							   fname_src_dir,
+							   dname);
+		if (!smb_fname_src->base_name) {
 			status = NT_STATUS_NO_MEMORY;
 			goto out;
 		}
 
-		if (!resolve_wildcards(ctx,
-				fname,newname,&destname)) {
+		if (!resolve_wildcards(ctx, smb_fname_src->base_name,
+				       smb_fname_dst->base_name,
+				       &destname)) {
 			DEBUG(6, ("resolve_wildcards %s %s failed\n",
-				  fname, destname));
-			TALLOC_FREE(fname);
+				  smb_fname_src->base_name, destname));
 			continue;
 		}
 		if (!destname) {
@@ -6285,16 +6292,30 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			goto out;
 		}
 
-		ZERO_STRUCT(smb_fname->st);
+		TALLOC_FREE(smb_fname_dst->base_name);
+		smb_fname_dst->base_name = destname;
+
+		status = get_full_smb_filename(ctx, smb_fname_src, &fname_src);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto out;
+		}
+
+		status = get_full_smb_filename(ctx, smb_fname_dst, &fname_dst);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(fname_src);
+			goto out;
+		}
+
+		ZERO_STRUCT(smb_fname_src->st);
 		if (posix_pathnames) {
-			SMB_VFS_LSTAT(conn, fname, &smb_fname->st);
+			SMB_VFS_LSTAT(conn, fname_src, &smb_fname_src->st);
 		} else {
-			SMB_VFS_STAT(conn, fname, &smb_fname->st);
+			SMB_VFS_STAT(conn, fname_src, &smb_fname_src->st);
 		}
 
 		create_options = 0;
 
-		if (S_ISDIR(smb_fname->st.st_ex_mode)) {
+		if (S_ISDIR(smb_fname_src->st.st_ex_mode)) {
 			create_options |= FILE_DIRECTORY_FILE;
 		}
 
@@ -6302,7 +6323,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			conn,				/* conn */
 			req,				/* req */
 			0,				/* root_dir_fid */
-			fname,				/* fname */
+			fname_src,			/* fname */
 			0,				/* create_file_flags */
 			access_mask,			/* access_mask */
 			(FILE_SHARE_READ |		/* share_access */
@@ -6316,16 +6337,18 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			NULL,				/* ea_list */
 			&fsp,				/* result */
 			NULL,				/* pinfo */
-			&smb_fname->st);		/* psbuf */
+			&smb_fname_src->st);		/* psbuf */
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3,("rename_internals: SMB_VFS_CREATE_FILE "
 				 "returned %s rename %s -> %s\n",
-				 nt_errstr(status), directory, newname));
+				nt_errstr(status), fname_src, fname_dst));
+			TALLOC_FREE(fname_src);
+			TALLOC_FREE(fname_dst);
 			break;
 		}
 
-		status = rename_internals_fsp(conn, fsp, destname, dname,
+		status = rename_internals_fsp(conn, fsp, fname_dst, dname,
 					      attrs, replace_if_exists);
 
 		close_file(req, fsp, NORMAL_CLOSE);
@@ -6333,17 +6356,19 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("rename_internals_fsp returned %s for "
 				  "rename %s -> %s\n", nt_errstr(status),
-				  directory, newname));
+				  fname_src, fname_dst));
 			break;
+			TALLOC_FREE(fname_src);
+			TALLOC_FREE(fname_dst);
 		}
 
 		count++;
 
 		DEBUG(3,("rename_internals: doing rename on %s -> "
-			 "%s\n",fname,destname));
+			 "%s\n", fname_src, fname_dst));
 
-		TALLOC_FREE(fname);
-		TALLOC_FREE(destname);
+		TALLOC_FREE(fname_src);
+		TALLOC_FREE(fname_dst);
 	}
 	TALLOC_FREE(dir_hnd);
 
@@ -6352,8 +6377,10 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	}
 
  out:
-	TALLOC_FREE(smb_fname);
-	TALLOC_FREE(smb_fname_new);
+	TALLOC_FREE(smb_fname_src);
+	TALLOC_FREE(smb_fname_dst);
+	TALLOC_FREE(fname_src_dir);
+	TALLOC_FREE(fname_src_mask);
 	return status;
 }
 
