@@ -2113,10 +2113,10 @@ void *smb_xmalloc_array(size_t size, unsigned int count)
 	va_copy(ap2, ap);
 
 	n = vasprintf(ptr, format, ap2);
+	va_end(ap2);
 	if (n == -1 || ! *ptr) {
 		smb_panic("smb_xvasprintf: out of memory");
 	}
-	va_end(ap2);
 	return n;
 }
 

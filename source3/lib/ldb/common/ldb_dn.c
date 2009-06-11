@@ -362,9 +362,9 @@ struct ldb_dn *ldb_dn_new_fmt(void *mem_ctx, struct ldb_context *ldb, const char
 
 	va_start(ap, new_fmt);
 	strdn = talloc_vasprintf(mem_ctx, new_fmt, ap);
+	va_end(ap);
 	if (strdn == NULL)
 		return NULL;
-	va_end(ap);
 
 	dn = ldb_dn_explode(mem_ctx, strdn);
 
