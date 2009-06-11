@@ -69,14 +69,22 @@ sub output_msg($$)
 {
 	my ($self, $output) = @_;
 
-	$self->{test_output}->{$self->{NAME}} .= $output;
+	if (defined($self->{NAME})) {
+		$self->{test_output}->{$self->{NAME}} .= $output;
+	} else {
+		print $output;
+	}
 }
 
 sub control_msg($$)
 {
 	my ($self, $output) = @_;
 
-	$self->{test_output}->{$self->{NAME}} .= $output;
+	if (defined($self->{NAME})) {
+		$self->{test_output}->{$self->{NAME}} .= $output;
+	} else {
+		print $output;
+	}
 }
 
 sub end_testsuite($$$$$$)
@@ -89,6 +97,7 @@ sub end_testsuite($$$$$$)
 	if ($result ne "success") {
 		$self->{statistics}->{SUITES_FAIL}++;
 	}
+	$self->{NAME} = undef;
 }
 
 sub start_test($$$)
