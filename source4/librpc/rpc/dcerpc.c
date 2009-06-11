@@ -114,6 +114,10 @@ _PUBLIC_ struct dcerpc_pipe *dcerpc_pipe_init(TALLOC_CTX *mem_ctx, struct tevent
 	ZERO_STRUCT(p->syntax);
 	ZERO_STRUCT(p->transfer_syntax);
 
+	if (DEBUGLVL(100)) {
+		p->conn->flags |= DCERPC_DEBUG_PRINT_BOTH;
+	}
+
 	return p;
 }
 
