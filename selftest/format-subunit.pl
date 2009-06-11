@@ -85,9 +85,6 @@ if ($opt_format eq "buildfarm") {
 	require output::html;
 	mkdir("test-results", 0777);
 	$msg_ops = new output::html("test-results", $statistics);
-} elsif ($opt_format eq "subunit") {
-	require output::subunit;
-	$msg_ops = new output::subunit();
 } else {
 	die("Invalid output format '$opt_format'");
 }
