@@ -92,7 +92,8 @@ sub end_test($$$$$)
 
 sub skip_testsuite($;$)
 {
-	Subunit::skip_testsuite(@_);
+	my ($self, $name, $reason) = @_;
+	Subunit::skip_testsuite($name, $reason);
 }
 
 sub start_testsuite($;$)
