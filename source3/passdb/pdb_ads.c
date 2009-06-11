@@ -1387,10 +1387,95 @@ static NTSTATUS pdb_ads_enum_alias_memberships(struct pdb_methods *m,
 					       const DOM_SID *domain_sid,
 					       const DOM_SID *members,
 					       size_t num_members,
-					       uint32 **pp_alias_rids,
-					       size_t *p_num_alias_rids)
+					       uint32_t **palias_rids,
+					       size_t *pnum_alias_rids)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct pdb_ads_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_ads_state);
+	const char *attrs[1] = { "objectSid" };
+	struct tldap_message **msg;
+	uint32_t *alias_rids = NULL;
+	size_t num_alias_rids = 0;
+	int i, rc, count;
+	bool got_members = false;
+	char *filter;
+	NTSTATUS status;
+
+	/*
+	 * TODO: Get the filter right so that we only get the aliases from
+	 * either the SAM or BUILTIN
+	 */
+
+	filter = talloc_asprintf(talloc_tos(),
+				 "(&(|(grouptype=%d)(grouptype=%d))"
+				 "(objectclass=group)(|",
+				 GTYPE_SECURITY_BUILTIN_LOCAL_GROUP,
+				 GTYPE_SECURITY_DOMAIN_LOCAL_GROUP);
+	if (filter == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0; i<num_members; i++) {
+		char *dn;
+
+		status = pdb_ads_sid2dn(state, &members[i], talloc_tos(), &dn);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10, ("pdb_ads_sid2dn failed for %s: %s\n",
+				   sid_string_dbg(&members[i]),
+				   nt_errstr(status)));
+			continue;
+		}
+		filter = talloc_asprintf_append_buffer(
+			filter, "(member=%s)", dn);
+		TALLOC_FREE(dn);
+		if (filter == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		got_members = true;
+	}
+
+	if (!got_members) {
+		goto done;
+	}
+
+	rc = tldap_search_fmt(state->ld, state->domaindn, LDAP_SCOPE_SUB,
+			      attrs, ARRAY_SIZE(attrs), 0, talloc_tos(),
+			      &msg, "%s))", filter);
+	TALLOC_FREE(filter);
+	if (rc != TLDAP_SUCCESS) {
+		DEBUG(10, ("tldap_search failed %s\n",
+			   tldap_errstr(debug_ctx(), state->ld, rc)));
+		return NT_STATUS_LDAP(rc);
+	}
+
+	count = talloc_array_length(msg);
+	if (count == 0) {
+		goto done;
+	}
+
+	alias_rids = talloc_array(mem_ctx, uint32_t, count);
+	if (alias_rids == NULL) {
+		TALLOC_FREE(msg);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0; i<count; i++) {
+		struct dom_sid sid;
+
+		if (!tldap_pull_binsid(msg[i], "objectSid", &sid)) {
+			DEBUG(10, ("Could not pull SID for member %d\n", i));
+			continue;
+		}
+		if (sid_peek_check_rid(domain_sid, &sid,
+				       &alias_rids[num_alias_rids])) {
+			num_alias_rids += 1;
+		}
+	}
+done:
+	TALLOC_FREE(msg);
+	*palias_rids = alias_rids;
+	*pnum_alias_rids = 0;
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS pdb_ads_lookup_rids(struct pdb_methods *m,
