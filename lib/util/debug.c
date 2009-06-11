@@ -172,7 +172,7 @@ _PUBLIC_ void reopen_logs(void)
 		} else {
 			DEBUG(1, ("Failed to find name for file-based logfile!\n"));
 		}
-		state.reopening_false = true;
+		state.reopening_logs = false;
 
 		break;
 	}
