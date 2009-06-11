@@ -1,10 +1,10 @@
-                   =================================
-                   Release Notes for Samba 3.4.0pre2
-			    June 02, 2009
-                   =================================
+                   ================================
+                   Release Notes for Samba 3.4.0rc1
+			    June 17, 2009
+                   ================================
 
 
-This is the second preview release of Samba 3.4.  This is *not*
+This is the first release candidate of Samba 3.4.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -238,6 +238,24 @@ o   Danny Tylman <danny.tylman@insightix.com>
 o   Jelmer Vernooij <jelmer@samba.org>
     * Make merged build possible.
     * Move common libraries to the shared lib/ directory.
+
+
+Changes since 3.4.0pre2
+-----------------------
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 5456: Fix "net ads testjoin".
+    * BUG 6458: Fix uninitialized variable in local_password_change().
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 6449: 'net rap user add' crashes without -C option.
+
+
+o   Simo Sorce <idra@samba.org>
+    * BUG 6081: Make it possible to change machine account sids.
+    * BUG 6333: Consolidate create/delete account paths in pdbedit.
 
 
 Changes since 3.4.0pre1
