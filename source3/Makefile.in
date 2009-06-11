@@ -3207,9 +3207,12 @@ selftest:: all torture timelimit
 		$(PERL) $(selftestdir)/selftest.pl \
 		--prefix=${selftest_prefix} --target=samba3 \
 		--testlist="$(srcdir)/selftest/tests.sh|" \
-		--expected-failures=$(srcdir)/selftest/knownfail \
 		--exclude=$(srcdir)/selftest/skip \
-		--socket-wrapper $(TESTS) --format=$(SELFTEST_FORMAT) --immediate
+		--socket-wrapper $(TESTS) | \
+		$(PERL) $(selftestdir)/filter-subunit.pl \
+		--expected-failures=$(srcdir)/selftest/knownfail | \
+		$(PERL) $(selftestdir)/format-subunit.pl --format=$(SELFTEST_FORMAT) \
+		--immediate
 
 selftest-%:
 	$(MAKE) selftest TESTS=$*
