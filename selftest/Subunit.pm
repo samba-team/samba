@@ -26,7 +26,6 @@ use strict;
 sub parse_results($$$)
 {
 	my ($msg_ops, $statistics, $fh) = @_;
-	my $unexpected_ok = 0;
 	my $expected_fail = 0;
 	my $unexpected_fail = 0;
 	my $unexpected_err = 0;
@@ -114,10 +113,7 @@ sub parse_results($$$)
 
 	return 1 if $unexpected_err > 0;
 	return 1 if $unexpected_fail > 0;
-	return 1 if $unexpected_ok > 0 and $expected_fail > 0;
-	return 0 if $unexpected_ok > 0 and $expected_fail == 0;
-	return 0 if $expected_fail > 0;
-	return 1;
+	return 0;
 }
 
 sub start_test($)
