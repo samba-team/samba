@@ -50,6 +50,7 @@ static struct {
 	int fd;
 	enum debug_logtype logtype;
 	const char *prog_name;
+	bool reopening_logs;
 } state;
 
 static bool reopen_logs_scheduled;
@@ -139,6 +140,9 @@ _PUBLIC_ void reopen_logs(void)
 {
 	char *fname = NULL;
 	int old_fd = state.fd;
+	if (state.reopening_logs) {
+		return;
+	}
 
 	switch (state.logtype) {
 	case DEBUG_STDOUT:
@@ -150,6 +154,7 @@ _PUBLIC_ void reopen_logs(void)
 		break;
 
 	case DEBUG_FILE:
+		state.reopening_logs = true;
 		if (logfile && (*logfile) == '/') {
 			fname = strdup(logfile);
 		} else {
@@ -167,6 +172,7 @@ _PUBLIC_ void reopen_logs(void)
 		} else {
 			DEBUG(1, ("Failed to find name for file-based logfile!\n"));
 		}
+		state.reopening_false = true;
 
 		break;
 	}
