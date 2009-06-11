@@ -87,9 +87,16 @@ sub control_msg($$)
 	}
 }
 
-sub end_testsuite($$$$$$)
+sub end_testsuite($$$$$)
 {
-	my ($self, $name, $result, $unexpected, $reason) = @_;
+	my ($self, $name, $result, $reason) = @_;
+
+	my $unexpected;
+	if ($result eq "failure" or $result eq "fail" or $result eq "error") {
+		$unexpected = 1;
+	} else {
+		$unexpected = 0;
+	}
 
 	BuildFarm::end_testsuite($name, ($self->{last_time} - $self->{START_TIME}), 
 		                     (not $unexpected), $self->{test_output}->{$name}, 
