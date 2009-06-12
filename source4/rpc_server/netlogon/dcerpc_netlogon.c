@@ -786,13 +786,40 @@ static NTSTATUS dcesrv_netr_DatabaseDeltas(struct dcesrv_call_state *dce_call, T
 
 
 /* 
+  netr_DatabaseSync2 
+*/
+static NTSTATUS dcesrv_netr_DatabaseSync2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_DatabaseSync2 *r)
+{
+	/* win2k3 native mode returns  "NOT IMPLEMENTED" for this call */
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+
+/* 
   netr_DatabaseSync 
 */
 static NTSTATUS dcesrv_netr_DatabaseSync(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_DatabaseSync *r)
 {
-	/* win2k3 native mode returns  "NOT IMPLEMENTED" for this call */
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct netr_DatabaseSync2 r2;
+	NTSTATUS status;
+
+	ZERO_STRUCT(r2);
+
+	r2.in.logon_server = r->in.logon_server;
+	r2.in.computername = r->in.computername;
+	r2.in.credential = r->in.credential;
+	r2.in.database_id = r->in.database_id;
+	r2.in.restart_state = SYNCSTATE_NORMAL_STATE;
+	r2.in.sync_context = r->in.sync_context;
+	r2.out.sync_context = r->out.sync_context;
+	r2.out.delta_enum_array = r->out.delta_enum_array;
+	r2.in.preferredmaximumlength = r->in.preferredmaximumlength;
+
+	status = dcesrv_netr_DatabaseSync2(dce_call, mem_ctx, &r2);
+
+	return status;
 }
 
 
@@ -863,12 +890,64 @@ static WERROR dcesrv_netr_GetDcName(struct dcesrv_call_state *dce_call, TALLOC_C
 
 
 /* 
+  netr_LogonControl2Ex 
+*/
+static WERROR dcesrv_netr_LogonControl2Ex(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_LogonControl2Ex *r)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+
+/* 
   netr_LogonControl 
 */
 static WERROR dcesrv_netr_LogonControl(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_LogonControl *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct netr_LogonControl2Ex r2;
+	WERROR werr;
+
+	if (r->in.level == 0x00000001) {
+		ZERO_STRUCT(r2);
+
+		r2.in.logon_server = r->in.logon_server;
+		r2.in.function_code = r->in.function_code;
+		r2.in.level = r->in.level;
+		r2.in.data = NULL;
+		r2.out.query = r->out.query;
+
+		werr = dcesrv_netr_LogonControl2Ex(dce_call, mem_ctx, &r2);
+	} else if (r->in.level == 0x00000002) {
+		werr = WERR_NOT_SUPPORTED;
+	} else {
+		werr = WERR_UNKNOWN_LEVEL;
+	}
+
+	return werr;
+}
+
+
+/* 
+  netr_LogonControl2 
+*/
+static WERROR dcesrv_netr_LogonControl2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_LogonControl2 *r)
+{
+	struct netr_LogonControl2Ex r2;
+	WERROR werr;
+
+	ZERO_STRUCT(r2);
+
+	r2.in.logon_server = r->in.logon_server;
+	r2.in.function_code = r->in.function_code;
+	r2.in.level = r->in.level;
+	r2.in.data = r->in.data;
+	r2.out.query = r->out.query;
+
+	werr = dcesrv_netr_LogonControl2Ex(dce_call, mem_ctx, &r2);
+
+	return werr;
 }
 
 
@@ -894,41 +973,10 @@ static WERROR dcesrv_netr_GetAnyDCName(struct dcesrv_call_state *dce_call, TALLO
 
 
 /* 
-  netr_LogonControl2 
-*/
-static WERROR dcesrv_netr_LogonControl2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct netr_LogonControl2 *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-}
-
-
-/* 
-  netr_DatabaseSync2 
-*/
-static NTSTATUS dcesrv_netr_DatabaseSync2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct netr_DatabaseSync2 *r)
-{
-	/* win2k3 native mode returns  "NOT IMPLEMENTED" for this call */
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-
-/* 
   netr_DatabaseRedo 
 */
 static NTSTATUS dcesrv_netr_DatabaseRedo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_DatabaseRedo *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-}
-
-
-/* 
-  netr_LogonControl2Ex 
-*/
-static WERROR dcesrv_netr_LogonControl2Ex(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct netr_LogonControl2Ex *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }

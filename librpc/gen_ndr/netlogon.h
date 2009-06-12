@@ -744,6 +744,33 @@ union netr_CONTROL_DATA_INFORMATION {
 #define NETLOGON_NEG_AUTHENTICATED_RPC_LSASS ( 0x20000000 )
 #define NETLOGON_NEG_AUTHENTICATED_RPC ( 0x40000000 )
 
+enum SyncStateEnum
+#ifndef USE_UINT_ENUMS
+ {
+	SYNCSTATE_NORMAL_STATE=0,
+	SYNCSTATE_DOMAIN_STATE=1,
+	SYNCSTATE_GROUP_STATE=2,
+	SYNCSTATE_UAS_BUILT_IN_GROUP_STATE=3,
+	SYNCSTATE_USER_STATE=4,
+	SYNCSTATE_GROUP_MEMBER_STATE=5,
+	SYNCSTATE_ALIAS_STATE=6,
+	SYNCSTATE_ALIAS_MEMBER_STATE=7,
+	SYNCSTATE_SAM_DONE_STATE=8
+}
+#else
+ { __donnot_use_enum_SyncStateEnum=0x7FFFFFFF}
+#define SYNCSTATE_NORMAL_STATE ( 0 )
+#define SYNCSTATE_DOMAIN_STATE ( 1 )
+#define SYNCSTATE_GROUP_STATE ( 2 )
+#define SYNCSTATE_UAS_BUILT_IN_GROUP_STATE ( 3 )
+#define SYNCSTATE_USER_STATE ( 4 )
+#define SYNCSTATE_GROUP_MEMBER_STATE ( 5 )
+#define SYNCSTATE_ALIAS_STATE ( 6 )
+#define SYNCSTATE_ALIAS_MEMBER_STATE ( 7 )
+#define SYNCSTATE_SAM_DONE_STATE ( 8 )
+#endif
+;
+
 /* bitmap netr_ChangeLogFlags */
 #define NETR_CHANGELOG_IMMEDIATE_REPL_REQUIRED ( 0x0001 )
 #define NETR_CHANGELOG_CHANGED_PASSWORD ( 0x0002 )
@@ -1228,7 +1255,7 @@ struct netr_LogonControl {
 	} in;
 
 	struct {
-		union netr_CONTROL_QUERY_INFORMATION *info;/* [ref,switch_is(level)] */
+		union netr_CONTROL_QUERY_INFORMATION *query;/* [ref,switch_is(level)] */
 		WERROR result;
 	} out;
 
@@ -1290,7 +1317,7 @@ struct netr_DatabaseSync2 {
 		const char *computername;/* [charset(UTF16)] */
 		struct netr_Authenticator *credential;/* [ref] */
 		enum netr_SamDatabaseID database_id;
-		uint16_t restart_state;
+		enum SyncStateEnum restart_state;
 		uint32_t preferredmaximumlength;
 		struct netr_Authenticator *return_authenticator;/* [ref] */
 		uint32_t *sync_context;/* [ref] */

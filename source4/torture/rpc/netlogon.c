@@ -1491,12 +1491,12 @@ static bool test_LogonControl(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct netr_LogonControl r;
-	union netr_CONTROL_QUERY_INFORMATION info;
+	union netr_CONTROL_QUERY_INFORMATION query;
 	int i;
 
 	r.in.logon_server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.function_code = 1;
-	r.out.info = &info;
+	r.out.query = &query;
 
 	for (i=1;i<4;i++) {
 		r.in.level = i;

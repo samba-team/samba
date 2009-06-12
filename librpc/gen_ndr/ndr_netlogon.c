@@ -6500,6 +6500,38 @@ _PUBLIC_ void ndr_print_netr_NegotiateFlags(struct ndr_print *ndr, const char *n
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_SyncStateEnum(struct ndr_push *ndr, int ndr_flags, enum SyncStateEnum r)
+{
+	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_SyncStateEnum(struct ndr_pull *ndr, int ndr_flags, enum SyncStateEnum *r)
+{
+	uint16_t v;
+	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SyncStateEnum(struct ndr_print *ndr, const char *name, enum SyncStateEnum r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case SYNCSTATE_NORMAL_STATE: val = "SYNCSTATE_NORMAL_STATE"; break;
+		case SYNCSTATE_DOMAIN_STATE: val = "SYNCSTATE_DOMAIN_STATE"; break;
+		case SYNCSTATE_GROUP_STATE: val = "SYNCSTATE_GROUP_STATE"; break;
+		case SYNCSTATE_UAS_BUILT_IN_GROUP_STATE: val = "SYNCSTATE_UAS_BUILT_IN_GROUP_STATE"; break;
+		case SYNCSTATE_USER_STATE: val = "SYNCSTATE_USER_STATE"; break;
+		case SYNCSTATE_GROUP_MEMBER_STATE: val = "SYNCSTATE_GROUP_MEMBER_STATE"; break;
+		case SYNCSTATE_ALIAS_STATE: val = "SYNCSTATE_ALIAS_STATE"; break;
+		case SYNCSTATE_ALIAS_MEMBER_STATE: val = "SYNCSTATE_ALIAS_MEMBER_STATE"; break;
+		case SYNCSTATE_SAM_DONE_STATE: val = "SYNCSTATE_SAM_DONE_STATE"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
 static enum ndr_err_code ndr_push_netr_ChangeLogFlags(struct ndr_push *ndr, int ndr_flags, uint16_t r)
 {
 	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
@@ -11110,11 +11142,11 @@ static enum ndr_err_code ndr_push_netr_LogonControl(struct ndr_push *ndr, int fl
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.level));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.info == NULL) {
+		if (r->out.query == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_set_switch_value(ndr, r->out.info, r->in.level));
-		NDR_CHECK(ndr_push_netr_CONTROL_QUERY_INFORMATION(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.info));
+		NDR_CHECK(ndr_push_set_switch_value(ndr, r->out.query, r->in.level));
+		NDR_CHECK(ndr_push_netr_CONTROL_QUERY_INFORMATION(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.query));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -11124,7 +11156,7 @@ static enum ndr_err_code ndr_pull_netr_LogonControl(struct ndr_pull *ndr, int fl
 {
 	uint32_t _ptr_logon_server;
 	TALLOC_CTX *_mem_save_logon_server_0;
-	TALLOC_CTX *_mem_save_info_0;
+	TALLOC_CTX *_mem_save_query_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -11148,18 +11180,18 @@ static enum ndr_err_code ndr_pull_netr_LogonControl(struct ndr_pull *ndr, int fl
 		}
 		NDR_CHECK(ndr_pull_netr_LogonControlCode(ndr, NDR_SCALARS, &r->in.function_code));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.level));
-		NDR_PULL_ALLOC(ndr, r->out.info);
-		ZERO_STRUCTP(r->out.info);
+		NDR_PULL_ALLOC(ndr, r->out.query);
+		ZERO_STRUCTP(r->out.query);
 	}
 	if (flags & NDR_OUT) {
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC(ndr, r->out.info);
+			NDR_PULL_ALLOC(ndr, r->out.query);
 		}
-		_mem_save_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->out.info, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_set_switch_value(ndr, r->out.info, r->in.level));
-		NDR_CHECK(ndr_pull_netr_CONTROL_QUERY_INFORMATION(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.info));
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, LIBNDR_FLAG_REF_ALLOC);
+		_mem_save_query_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.query, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, r->out.query, r->in.level));
+		NDR_CHECK(ndr_pull_netr_CONTROL_QUERY_INFORMATION(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.query));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_query_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -11188,10 +11220,10 @@ _PUBLIC_ void ndr_print_netr_LogonControl(struct ndr_print *ndr, const char *nam
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "netr_LogonControl");
 		ndr->depth++;
-		ndr_print_ptr(ndr, "info", r->out.info);
+		ndr_print_ptr(ndr, "query", r->out.query);
 		ndr->depth++;
-		ndr_print_set_switch_value(ndr, r->out.info, r->in.level);
-		ndr_print_netr_CONTROL_QUERY_INFORMATION(ndr, "info", r->out.info);
+		ndr_print_set_switch_value(ndr, r->out.query, r->in.level);
+		ndr_print_netr_CONTROL_QUERY_INFORMATION(ndr, "query", r->out.query);
 		ndr->depth--;
 		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
@@ -11668,7 +11700,7 @@ static enum ndr_err_code ndr_push_netr_DatabaseSync2(struct ndr_push *ndr, int f
 		}
 		NDR_CHECK(ndr_push_netr_Authenticator(ndr, NDR_SCALARS, r->in.return_authenticator));
 		NDR_CHECK(ndr_push_netr_SamDatabaseID(ndr, NDR_SCALARS, r->in.database_id));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.restart_state));
+		NDR_CHECK(ndr_push_SyncStateEnum(ndr, NDR_SCALARS, r->in.restart_state));
 		if (r->in.sync_context == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -11736,7 +11768,7 @@ static enum ndr_err_code ndr_pull_netr_DatabaseSync2(struct ndr_pull *ndr, int f
 		NDR_CHECK(ndr_pull_netr_Authenticator(ndr, NDR_SCALARS, r->in.return_authenticator));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_return_authenticator_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_netr_SamDatabaseID(ndr, NDR_SCALARS, &r->in.database_id));
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.restart_state));
+		NDR_CHECK(ndr_pull_SyncStateEnum(ndr, NDR_SCALARS, &r->in.restart_state));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.sync_context);
 		}
@@ -11811,7 +11843,7 @@ _PUBLIC_ void ndr_print_netr_DatabaseSync2(struct ndr_print *ndr, const char *na
 		ndr_print_netr_Authenticator(ndr, "return_authenticator", r->in.return_authenticator);
 		ndr->depth--;
 		ndr_print_netr_SamDatabaseID(ndr, "database_id", r->in.database_id);
-		ndr_print_uint16(ndr, "restart_state", r->in.restart_state);
+		ndr_print_SyncStateEnum(ndr, "restart_state", r->in.restart_state);
 		ndr_print_ptr(ndr, "sync_context", r->in.sync_context);
 		ndr->depth++;
 		ndr_print_uint32(ndr, "sync_context", *r->in.sync_context);

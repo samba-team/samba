@@ -637,7 +637,7 @@ NTSTATUS rpccli_netr_LogonControl(struct rpc_pipe_client *cli,
 				  const char *logon_server /* [in] [unique,charset(UTF16)] */,
 				  enum netr_LogonControlCode function_code /* [in]  */,
 				  uint32_t level /* [in]  */,
-				  union netr_CONTROL_QUERY_INFORMATION *info /* [out] [ref,switch_is(level)] */,
+				  union netr_CONTROL_QUERY_INFORMATION *query /* [out] [ref,switch_is(level)] */,
 				  WERROR *werror)
 {
 	struct netr_LogonControl r;
@@ -671,7 +671,7 @@ NTSTATUS rpccli_netr_LogonControl(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	*info = *r.out.info;
+	*query = *r.out.query;
 
 	/* Return result */
 	if (werror) {
@@ -837,7 +837,7 @@ NTSTATUS rpccli_netr_DatabaseSync2(struct rpc_pipe_client *cli,
 				   struct netr_Authenticator *credential /* [in] [ref] */,
 				   struct netr_Authenticator *return_authenticator /* [in,out] [ref] */,
 				   enum netr_SamDatabaseID database_id /* [in]  */,
-				   uint16_t restart_state /* [in]  */,
+				   enum SyncStateEnum restart_state /* [in]  */,
 				   uint32_t *sync_context /* [in,out] [ref] */,
 				   struct netr_DELTA_ENUM_ARRAY **delta_enum_array /* [out] [ref] */,
 				   uint32_t preferredmaximumlength /* [in]  */)

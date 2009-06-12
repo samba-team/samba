@@ -1050,8 +1050,8 @@ static bool api_netr_LogonControl(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.info = talloc_zero(r, union netr_CONTROL_QUERY_INFORMATION);
-	if (r->out.info == NULL) {
+	r->out.query = talloc_zero(r, union netr_CONTROL_QUERY_INFORMATION);
+	if (r->out.query == NULL) {
 		talloc_free(r);
 		return false;
 	}
@@ -4092,8 +4092,8 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		case NDR_NETR_LOGONCONTROL: {
 			struct netr_LogonControl *r = (struct netr_LogonControl *)_r;
 			ZERO_STRUCT(r->out);
-			r->out.info = talloc_zero(mem_ctx, union netr_CONTROL_QUERY_INFORMATION);
-			if (r->out.info == NULL) {
+			r->out.query = talloc_zero(mem_ctx, union netr_CONTROL_QUERY_INFORMATION);
+			if (r->out.query == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 

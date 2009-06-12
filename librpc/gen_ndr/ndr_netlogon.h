@@ -192,6 +192,7 @@ void ndr_print_netr_CONTROL_QUERY_INFORMATION(struct ndr_print *ndr, const char 
 void ndr_print_netr_LogonControlCode(struct ndr_print *ndr, const char *name, enum netr_LogonControlCode r);
 void ndr_print_netr_CONTROL_DATA_INFORMATION(struct ndr_print *ndr, const char *name, const union netr_CONTROL_DATA_INFORMATION *r);
 void ndr_print_netr_NegotiateFlags(struct ndr_print *ndr, const char *name, uint32_t r);
+void ndr_print_SyncStateEnum(struct ndr_print *ndr, const char *name, enum SyncStateEnum r);
 void ndr_print_netr_ChangeLogFlags(struct ndr_print *ndr, const char *name, uint16_t r);
 void ndr_print_netr_ChangeLogObject(struct ndr_print *ndr, const char *name, const union netr_ChangeLogObject *r);
 enum ndr_err_code ndr_push_netr_ChangeLogEntry(struct ndr_push *ndr, int ndr_flags, const struct netr_ChangeLogEntry *r);
