@@ -54,35 +54,37 @@ sub parse_results($$$)
 				
 				unless ($terminated) {
 					$statistics->{TESTS_ERROR}++;
-					$msg_ops->end_test($testname, "error", 1, "reason ($result) interrupted");
+					$msg_ops->end_test($testname, "error", 1, 
+						               "reason ($result) interrupted");
 					return 1;
 				}
 			}
 			if ($result eq "success" or $result eq "successful") {
 				pop(@$open_tests); #FIXME: Check that popped value == $testname 
 				$statistics->{TESTS_EXPECTED_OK}++;
-				$msg_ops->end_test($testname, $result, 0, $reason);
+				$msg_ops->end_test($testname, "success", 0, $reason);
 			} elsif ($result eq "xfail" or $result eq "knownfail") {
 				pop(@$open_tests); #FIXME: Check that popped value == $testname
 				$statistics->{TESTS_EXPECTED_FAIL}++;
-				$msg_ops->end_test($testname, $result, 0, $reason);
+				$msg_ops->end_test($testname, "xfail", 0, $reason);
 				$expected_fail++;
 			} elsif ($result eq "failure" or $result eq "fail") {
 				pop(@$open_tests); #FIXME: Check that popped value == $testname
 				$statistics->{TESTS_UNEXPECTED_FAIL}++;
-				$msg_ops->end_test($testname, $result, 1, $reason);
+				$msg_ops->end_test($testname, "failure", 1, $reason);
 				$unexpected_fail++;
 			} elsif ($result eq "skip") {
 				$statistics->{TESTS_SKIP}++;
+				# Allow tests to be skipped without prior announcement of test
 				my $last = pop(@$open_tests);
 				if (defined($last) and $last ne $testname) {
 					push (@$open_tests, $testname);
 				}
-				$msg_ops->end_test($testname, $result, 0, $reason);
+				$msg_ops->end_test($testname, "skip", 0, $reason);
 			} elsif ($result eq "error") {
 				$statistics->{TESTS_ERROR}++;
 				pop(@$open_tests); #FIXME: Check that popped value == $testname
-				$msg_ops->end_test($testname, $result, 1, $reason);
+				$msg_ops->end_test($testname, "error", 1, $reason);
 				$unexpected_err++;
 			} elsif ($result eq "skip-testsuite") {
 				$msg_ops->skip_testsuite($testname);
