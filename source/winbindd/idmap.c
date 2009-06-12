@@ -555,8 +555,12 @@ NTSTATUS idmap_init(void)
 		 * set the destructor for this domain */
 		talloc_set_destructor(dom, close_domain_destructor);
 
-		dom->params = talloc_strdup(dom, compat_params);
-		IDMAP_CHECK_ALLOC(dom->params);
+		if (compat_params) {
+			dom->params = talloc_strdup(dom, compat_params);
+			IDMAP_CHECK_ALLOC(dom->params);
+		} else {
+			dom->params = NULL;
+		}
 
 		/* Finally instance a backend copy for this domain */
 		ret = dom->methods->init(dom);
