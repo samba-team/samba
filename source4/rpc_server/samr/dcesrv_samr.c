@@ -29,7 +29,7 @@
 #include "system/time.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
-#include "dsdb/common/flags.h"
+#include "../libds/common/flags.h"
 #include "dsdb/samdb/samdb.h"
 #include "libcli/ldap/ldap_ndr.h"
 #include "libcli/security/security.h"

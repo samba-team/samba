@@ -38,7 +38,7 @@
 #include "ldb_module.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "dsdb/samdb/samdb.h"
-#include "dsdb/common/flags.h"
+#include "../libds/common/flags.h"
 
 struct it_context {
 	struct ldb_module *module;

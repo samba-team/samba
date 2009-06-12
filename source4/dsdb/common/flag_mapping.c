@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/samr.h"
-#include "dsdb/common/flags.h"
+#include "../libds/common/flags.h"
 #include "lib/ldb/include/ldb.h"
 #include "dsdb/common/proto.h"
 

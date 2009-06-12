@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "system/passwd.h"
-#include "dsdb/common/flags.h"
+#include "../libds/common/flags.h"
 #include "dsdb/samdb/samdb.h"
 #include "auth/auth.h"
 #include "libcli/ldap/ldap_ndr.h"

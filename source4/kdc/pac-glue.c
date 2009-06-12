@@ -21,7 +21,7 @@
 */
 
 #include "includes.h"
-#include "dsdb/common/flags.h"
+#include "../libds/common/flags.h"
 #include "lib/ldb/include/ldb.h"
 #include "librpc/gen_ndr/ndr_krb5pac.h"
 #include "librpc/gen_ndr/krb5pac.h"

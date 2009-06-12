@@ -42,7 +42,7 @@
 #include "auth/kerberos/kerberos.h"
 #include "system/time.h"
 #include "dsdb/samdb/samdb.h"
-#include "dsdb/common/flags.h"
+#include "../libds/common/flags.h"
 #include "dsdb/samdb/ldb_modules/password_modules.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"

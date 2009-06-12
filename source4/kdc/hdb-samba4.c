@@ -34,7 +34,7 @@
 
 #include "includes.h"
 #include "system/time.h"
-#include "dsdb/common/flags.h"
+#include "../libds/common/flags.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "librpc/gen_ndr/netlogon.h"

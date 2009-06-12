@@ -31,7 +31,7 @@
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/gen_ndr/ndr_misc.h"
-#include "dsdb/common/flags.h"
+#include "../libds/common/flags.h"
 #include "dsdb/common/proto.h"
 #include "libcli/ldap/ldap_ndr.h"
 #include "param/param.h"

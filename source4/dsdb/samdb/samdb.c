@@ -36,7 +36,7 @@
 #include "ldb_wrap.h"
 #include "../lib/util/util_ldb.h"
 #include "dsdb/samdb/samdb.h"
-#include "dsdb/common/flags.h"
+#include "../libds/common/flags.h"
 #include "param/param.h"
 #include "lib/events/events.h"
 #include "auth/credentials/credentials.h"

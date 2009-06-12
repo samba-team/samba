@@ -27,7 +27,7 @@
 #include "auth/auth.h"
 #include "auth/auth_sam_reply.h"
 #include "dsdb/samdb/samdb.h"
-#include "dsdb/common/flags.h"
+#include "../libds/common/flags.h"
 #include "rpc_server/samr/proto.h"
 #include "../lib/util/util_ldb.h"
 #include "libcli/auth/libcli_auth.h"

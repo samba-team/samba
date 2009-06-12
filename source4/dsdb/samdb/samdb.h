@@ -38,7 +38,7 @@ struct tevent_context;
 #include "dsdb/schema/schema.h"
 #include "dsdb/samdb/samdb_proto.h"
 #include "dsdb/common/proto.h"
-#include "dsdb/common/flags.h"
+#include "../libds/common/flags.h"
 
 #define DSDB_CONTROL_CURRENT_PARTITION_OID "1.3.6.1.4.1.7165.4.3.2"
 struct dsdb_control_current_partition {
