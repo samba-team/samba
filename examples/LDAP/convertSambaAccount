@@ -156,9 +156,9 @@ while ( !$ldif->eof ) {
 	@adds = ();
 	@dels = ();
 	foreach $obj ( @objclasses ) {
-		if ( "$obj" eq "sambaAccount" ) {
+		if ( lc($obj) eq "sambaaccount" ) {
 			$is_samba_account = 1;
-		} elsif ( "$obj" eq "sambaGroupMapping" ) {
+		} elsif ( lc($obj) eq "sambagroupmapping" ) {
 			$is_samba_group = 1;
 		}
 	}
