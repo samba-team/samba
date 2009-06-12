@@ -218,7 +218,6 @@ _PUBLIC_ void ndr_print_debug(ndr_print_fn_t fn, const char *name, void *ptr)
 	ndr->print = ndr_print_debug_helper;
 	ndr->depth = 1;
 	ndr->flags = 0;
-	ndr->iconv_convenience = global_iconv_convenience;
 	fn(ndr, name, ptr);
 	talloc_free(ndr);
 }
@@ -237,7 +236,6 @@ _PUBLIC_ void ndr_print_union_debug(ndr_print_fn_t fn, const char *name, uint32_
 	ndr->print = ndr_print_debug_helper;
 	ndr->depth = 1;
 	ndr->flags = 0;
-	ndr->iconv_convenience = global_iconv_convenience;
 	ndr_print_set_switch_value(ndr, ptr, level);
 	fn(ndr, name, ptr);
 	talloc_free(ndr);
@@ -257,7 +255,6 @@ _PUBLIC_ void ndr_print_function_debug(ndr_print_function_t fn, const char *name
 	ndr->print = ndr_print_debug_helper;
 	ndr->depth = 1;
 	ndr->flags = 0;
-	ndr->iconv_convenience = global_iconv_convenience;
 	fn(ndr, name, flags, ptr);
 	talloc_free(ndr);
 }
@@ -279,7 +276,6 @@ _PUBLIC_ char *ndr_print_struct_string(TALLOC_CTX *mem_ctx, ndr_print_fn_t fn, c
 	ndr->print = ndr_print_string_helper;
 	ndr->depth = 1;
 	ndr->flags = 0;
-	ndr->iconv_convenience = global_iconv_convenience;
 	fn(ndr, name, ptr);
 	ret = talloc_steal(mem_ctx, (char *)ndr->private_data);
 failed:
@@ -304,7 +300,6 @@ _PUBLIC_ char *ndr_print_union_string(TALLOC_CTX *mem_ctx, ndr_print_fn_t fn, co
 	ndr->print = ndr_print_string_helper;
 	ndr->depth = 1;
 	ndr->flags = 0;
-	ndr->iconv_convenience = global_iconv_convenience;
 	ndr_print_set_switch_value(ndr, ptr, level);
 	fn(ndr, name, ptr);
 	ret = talloc_steal(mem_ctx, (char *)ndr->private_data);
