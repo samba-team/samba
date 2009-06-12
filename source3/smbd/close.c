@@ -106,7 +106,13 @@ static NTSTATUS check_magic(struct files_struct *fsp)
 		return map_nt_error_from_unix(err);
 	}
 
-	transfer_file(tmp_fd,outfd,(SMB_OFF_T)st.st_ex_size);
+	if (transfer_file(tmp_fd,outfd,(SMB_OFF_T)st.st_ex_size) == (SMB_OFF_T)-1) {
+		int err = errno;
+		close(tmp_fd);
+		close(outfd);
+		TALLOC_FREE(ctx);
+		return map_nt_error_from_unix(err);
+	}
 	close(tmp_fd);
 	if (close(outfd) == -1) {
 		TALLOC_FREE(ctx);
