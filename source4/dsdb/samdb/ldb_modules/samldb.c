@@ -572,7 +572,7 @@ static int samldb_check_samAccountType(struct samldb_ctx *ac)
 						"userAccountControl invalid");
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		} else {
-			account_type = samdb_uf2atype(uac);
+			account_type = ds_uf2atype(uac);
 			ret = samdb_msg_add_uint(ldb,
 						 ac->msg, ac->msg,
 						 "sAMAccountType",
@@ -590,7 +590,7 @@ static int samldb_check_samAccountType(struct samldb_ctx *ac)
 						"groupType invalid");
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		} else {
-			account_type = samdb_gtype2atype(group_type);
+			account_type = ds_gtype2atype(group_type);
 			ret = samdb_msg_add_uint(ldb,
 						 ac->msg, ac->msg,
 						 "sAMAccountType",
@@ -1280,7 +1280,7 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 		req->op.mod.message = msg = ldb_msg_copy_shallow(req, req->op.mod.message);
 
 		group_type = strtoul((const char *)el->values[0].data, NULL, 0);
-		account_type =  samdb_gtype2atype(group_type);
+		account_type =  ds_gtype2atype(group_type);
 		ret = samdb_msg_add_uint(ldb, msg, msg,
 					 "sAMAccountType",
 					 account_type);
@@ -1296,7 +1296,7 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 		req->op.mod.message = msg = ldb_msg_copy_shallow(req, req->op.mod.message);
 
 		user_account_control = strtoul((const char *)el->values[0].data, NULL, 0);
-		account_type = samdb_uf2atype(user_account_control);
+		account_type = ds_uf2atype(user_account_control);
 		ret = samdb_msg_add_uint(ldb, msg, msg,
 					 "sAMAccountType",
 					 account_type);

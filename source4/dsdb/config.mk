@@ -26,8 +26,8 @@ PRIVATE_DEPENDENCIES = LIBLDB
 
 SAMDB_COMMON_OBJ_FILES = $(addprefix $(dsdbsrcdir)/common/, \
 		sidmap.o \
-		flag_mapping.o \
-		util.o)
+		util.o) \
+		../libds/common/flag_mapping.o
 $(eval $(call proto_header_template,$(dsdbsrcdir)/common/proto.h,$(SAMDB_COMMON_OBJ_FILES:.o=.c)))
 
 [SUBSYSTEM::SAMDB_SCHEMA]

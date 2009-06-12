@@ -250,7 +250,7 @@ static NTSTATUS pdb_ads_init_sam_from_priv(struct pdb_methods *m,
 		DEBUG(10, ("Could not pull userAccountControl\n"));
 		goto fail;
 	}
-	pdb_set_acct_ctrl(sam, ads_uf2acb(n), PDB_SET);
+	pdb_set_acct_ctrl(sam, ds_uf2acb(n), PDB_SET);
 
 	if (tldap_get_single_valueblob(entry, "unicodePwd", &blob)) {
 		if (blob.length != NT_HASH_LEN) {
@@ -310,7 +310,7 @@ static bool pdb_ads_init_ads_from_sam(struct pdb_ads_state *state,
 
 	ret &= tldap_make_mod_fmt(
 		existing, mem_ctx, pnum_mods, pmods, "userAccountControl",
-		"%d", ads_acb2uf(pdb_get_acct_ctrl(sam)));
+		"%d", ds_acb2uf(pdb_get_acct_ctrl(sam)));
 
 	ret &= tldap_make_mod_fmt(
 		existing, mem_ctx, pnum_mods, pmods, "homeDirectory",
@@ -1682,7 +1682,7 @@ static NTSTATUS pdb_ads_lookup_rids(struct pdb_methods *m,
 			DEBUG(10, ("no samAccountType"));
 			continue;
 		}
-		lsa_attrs[i] = ads_atype_map(attr);
+		lsa_attrs[i] = ds_atype_map(attr);
 		num_mapped += 1;
 	}
 

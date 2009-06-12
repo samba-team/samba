@@ -1678,13 +1678,6 @@ ADS_STRUCT *ads_init(const char *realm,
 		     const char *ldap_server);
 void ads_destroy(ADS_STRUCT **ads);
 
-/* The following definitions come from libads/ads_utils.c  */
-
-uint32 ads_acb2uf(uint32 acb);
-uint32 ads_uf2acb(uint32 uf);
-uint32 ads_uf2atype(uint32 uf);
-uint32 ads_gtype2atype(uint32 gtype);
-enum lsa_SidType ads_atype_map(uint32 atype);
 const char *ads_get_ldap_server_name(ADS_STRUCT *ads);
 
 /* The following definitions come from libads/authdata.c  */
@@ -7262,4 +7255,13 @@ NTSTATUS access_check_object( SEC_DESC *psd, NT_USER_TOKEN *token,
 				const char *debug);
 void map_max_allowed_access(const NT_USER_TOKEN *token,
 				uint32_t *pacc_requested);
+
+/* The following definitions come from ../libds/common/flag_mapping.c  */
+
+uint32_t ds_acb2uf(uint32_t acb);
+uint32_t ds_uf2acb(uint32_t uf);
+uint32_t ds_uf2atype(uint32_t uf);
+uint32_t ds_gtype2atype(uint32_t gtype);
+enum lsa_SidType ds_atype_map(uint32_t atype);
+
 #endif /*  _PROTO_H_  */

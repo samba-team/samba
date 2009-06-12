@@ -394,7 +394,7 @@ static NTSTATUS dcesrv_lsa_lookup_name(struct tevent_context *ev_ctx,
 
 		atype = samdb_result_uint(res[i], "sAMAccountType", 0);
 			
-		*rtype = samdb_atype_map(atype);
+		*rtype = ds_atype_map(atype);
 		if (*rtype == SID_NAME_UNKNOWN) {
 			return STATUS_SOME_UNMAPPED;
 		}
@@ -503,7 +503,7 @@ static NTSTATUS dcesrv_lsa_lookup_sid(struct lsa_policy_state *state, TALLOC_CTX
 
 		atype = samdb_result_uint(res[0], "sAMAccountType", 0);
 
-		*rtype = samdb_atype_map(atype);
+		*rtype = ds_atype_map(atype);
 
 		return NT_STATUS_OK;
 	}

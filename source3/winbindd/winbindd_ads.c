@@ -210,7 +210,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 		gid_t primary_gid = (gid_t)-1;
 
 		if (!ads_pull_uint32(ads, msg, "sAMAccountType", &atype) ||
-		    ads_atype_map(atype) != SID_NAME_USER) {
+		    ds_atype_map(atype) != SID_NAME_USER) {
 			DEBUG(1,("Not a user account? atype=0x%x\n", atype));
 			continue;
 		}

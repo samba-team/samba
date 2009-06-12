@@ -189,7 +189,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 					 "(!(userAccountControl:" LDB_OID_COMPARATOR_AND ":=%u))"
 					 "(userAccountControl:" LDB_OID_COMPARATOR_OR ":=%u))", 
 					 ldb_binary_encode_string(mem_ctx, user),
-					 UF_ACCOUNTDISABLE, samdb_acb2uf(acct_control));
+					 UF_ACCOUNTDISABLE, ds_acb2uf(acct_control));
 		if (ret != LDB_SUCCESS) {
 			DEBUG(2,("Unable to find referece to user '%s' with ACB 0x%8x under %s: %s\n",
 				 user, acct_control, ldb_dn_get_linearized(dom_res->msgs[0]->dn),
