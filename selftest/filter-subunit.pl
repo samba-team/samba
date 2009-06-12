@@ -94,6 +94,4 @@ my $statistics = {
 my $msg_ops = new Subunit::Filter($opt_prefix, \@expected_failures, 
 	                              $opt_strip_ok_output);
 
-parse_results($msg_ops, $statistics, *STDIN);
-
-0;
+exit(parse_results($msg_ops, $statistics, *STDIN));
