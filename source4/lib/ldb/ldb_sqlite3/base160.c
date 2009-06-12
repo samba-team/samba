@@ -122,7 +122,7 @@ lsqlite3_base160Next(char base160[])
      * We need a minimum of four digits, and we will always get a multiple of
      * four digits.
      */
-    if (len = strlen(pBase160)) >= 4)
+    if ((len = strlen(pBase160)) >= 4)
     {
         pBase160 += strlen(pBase160) - 1;
 
