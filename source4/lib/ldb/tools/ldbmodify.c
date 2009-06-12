@@ -105,6 +105,7 @@ int main(int argc, const char **argv)
 				exit(1);
 			}
 			ret = process_file(ldb, f, &count);
+			fclose(f);
 		}
 	}
 
