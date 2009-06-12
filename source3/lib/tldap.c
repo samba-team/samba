@@ -281,6 +281,9 @@ static struct tevent_req *tldap_msg_send(TALLOC_CTX *mem_ctx,
 	struct tldap_msg_state *state;
 	DATA_BLOB blob;
 
+	tldap_debug(ld, TLDAP_DEBUG_TRACE, "tldap_msg_send: sending msg %d\n",
+		    id);
+
 	req = tevent_req_create(mem_ctx, &state, struct tldap_msg_state);
 	if (req == NULL) {
 		return NULL;
@@ -436,6 +439,7 @@ static void tldap_msg_received(struct tevent_req *subreq)
 	size_t num_pending;
 	int i, err, status;
 	int id;
+	uint8_t type;
 	bool ok;
 
 	received = read_ldap_recv(subreq, talloc_tos(), &inbuf, &err);
@@ -455,11 +459,15 @@ static void tldap_msg_received(struct tevent_req *subreq)
 	ok = true;
 	ok &= asn1_start_tag(data, ASN1_SEQUENCE(0));
 	ok &= asn1_read_Integer(data, &id);
+	ok &= asn1_peek_uint8(data, &type);
 
 	if (!ok) {
 		status = TLDAP_PROTOCOL_ERROR;
 		goto fail;
 	}
+
+	tldap_debug(ld, TLDAP_DEBUG_TRACE, "tldap_msg_received: got msg %d "
+		    "type %d\n", id, (int)type);
 
 	num_pending = talloc_array_length(ld->pending);
 
@@ -470,6 +478,8 @@ static void tldap_msg_received(struct tevent_req *subreq)
 	}
 	if (i == num_pending) {
 		/* Dump unexpected reply */
+		tldap_debug(ld, TLDAP_DEBUG_WARNING, "tldap_msg_received: "
+			    "No request pending for msg %d\n", id);
 		TALLOC_FREE(inbuf);
 		goto done;
 	}
