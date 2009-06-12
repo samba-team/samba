@@ -54,7 +54,11 @@ sub report_time($$)
 sub output_msg($$)
 {
 	my ($self, $msg) = @_;
-	print $msg;
+	unless(defined($self->{output})) {
+		print $msg;
+	} else {
+		$self->{output}.=$msg;
+	}
 }
 
 sub start_test($$)
@@ -63,6 +67,10 @@ sub start_test($$)
 
 	if (defined($self->{prefix})) {
 		$testname = $self->{prefix}.$testname;
+	}
+
+	if ($self->{strip_ok_output}) {
+		$self->{output} = "";
 	}
 
 	Subunit::start_test($testname);
@@ -86,6 +94,13 @@ sub end_test($$$$$)
 		$self->{xfail_added}++;
 		$reason .= $xfail_reason;
 	}
+
+	if ($self->{strip_ok_output}) {
+		unless ($result eq "success" or $result eq "xfail" or $result eq "skip") {
+			print $self->{output}
+		}
+	}
+	$self->{output} = undef;
 
 	Subunit::end_test($testname, $result, $reason);
 }
@@ -120,11 +135,12 @@ sub testsuite_count($$)
 }
 
 sub new {
-	my ($class, $prefix, $expected_failures) = @_;
+	my ($class, $prefix, $expected_failures, $strip_ok_output) = @_;
 
 	my $self = { 
 		prefix => $prefix,
 		expected_failures => $expected_failures,
+		strip_ok_output => $strip_ok_output,
 		xfail_added => 0,
 	};
 	bless($self, $class);

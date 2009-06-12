@@ -19,7 +19,7 @@ slowtest:: everything
 
 ifeq ($(RUN_FROM_BUILD_FARM),yes)
 test:: everything
-	$(SELFTEST) $(SELFTEST_NOSLOW_OPTS) $(DEFAULT_TEST_OPTIONS) $(TESTS) | $(FILTER_XFAIL)
+	$(SELFTEST) $(SELFTEST_NOSLOW_OPTS) $(DEFAULT_TEST_OPTIONS) $(TESTS) | $(FILTER_XFAIL) --strip-passed-output
 else
 test:: everything
 	$(SELFTEST) $(SELFTEST_NOSLOW_OPTS) $(DEFAULT_TEST_OPTIONS) $(TESTS) | $(FORMAT_TEST_OUTPUT) --immediate 

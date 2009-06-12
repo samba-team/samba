@@ -62,10 +62,12 @@ use Subunit::Filter;
 my $opt_expected_failures = undef;
 my $opt_help = 0;
 my $opt_prefix = undef;
+my $opt_strip_ok_output = 0;
 my @expected_failures = ();
 
 my $result = GetOptions(
 		'expected-failures=s' => \$opt_expected_failures,
+		'strip-passed-output' => \$opt_strip_ok_output,
 		'prefix=s' => \$opt_prefix,
 		'help' => \$opt_help,
 	);
@@ -89,7 +91,8 @@ my $statistics = {
 	TESTS_SKIP => 0,
 };
 
-my $msg_ops = new Subunit::Filter($opt_prefix, \@expected_failures);
+my $msg_ops = new Subunit::Filter($opt_prefix, \@expected_failures, 
+	                              $opt_strip_ok_output);
 
 parse_results($msg_ops, $statistics, *STDIN);
 
