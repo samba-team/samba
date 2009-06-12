@@ -17,8 +17,13 @@ test-subunit:: everything
 slowtest:: everything
 	$(SELFTEST) $(DEFAULT_TEST_OPTIONS) $(TESTS) | $(FORMAT_TEST_OUTPUT) --immediate 
 
+ifeq ($(RUN_FROM_BUILD_FARM),yes)
+test:: everything
+	$(SELFTEST) $(SELFTEST_NOSLOW_OPTS) $(DEFAULT_TEST_OPTIONS) $(TESTS) | $(FILTER_XFAIL)
+else
 test:: everything
 	$(SELFTEST) $(SELFTEST_NOSLOW_OPTS) $(DEFAULT_TEST_OPTIONS) $(TESTS) | $(FORMAT_TEST_OUTPUT) --immediate 
+endif
 
 kvmtest:: everything
 	$(SELFTEST) $(SELFTEST_NOSLOW_OPTS) $(DEFAULT_TEST_OPTIONS) \
