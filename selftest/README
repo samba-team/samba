@@ -3,6 +3,15 @@
 This directory contains test scripts that are useful for running a
 bunch of tests all at once. 
 
+There are two parts to this: 
+
+ * The test runner (selftest/selftest.pl)
+ * The test formatter
+
+selftest.pl simply outputs subunit, which can then be formatted or analyzed 
+by tools that understand the subunit protocol. One of these tools is 
+format-subunit.pl, which is used by default as part of "make test".
+
 Available testsuites
 ====================
 The available testsuites are obtained from a script, usually 
