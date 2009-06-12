@@ -228,8 +228,7 @@ static int vfswrap_open(vfs_handle_struct *handle,  const char *fname,
 static NTSTATUS vfswrap_create_file(vfs_handle_struct *handle,
 				    struct smb_request *req,
 				    uint16_t root_dir_fid,
-				    const char *fname,
-				    uint32_t create_file_flags,
+				    struct smb_filename *smb_fname,
 				    uint32_t access_mask,
 				    uint32_t share_access,
 				    uint32_t create_disposition,
@@ -240,15 +239,14 @@ static NTSTATUS vfswrap_create_file(vfs_handle_struct *handle,
 				    struct security_descriptor *sd,
 				    struct ea_list *ea_list,
 				    files_struct **result,
-				    int *pinfo,
-				    SMB_STRUCT_STAT *psbuf)
+				    int *pinfo)
 {
-	return create_file_default(handle->conn, req, root_dir_fid, fname,
-				   create_file_flags, access_mask, share_access,
+	return create_file_default(handle->conn, req, root_dir_fid, smb_fname,
+				   access_mask, share_access,
 				   create_disposition, create_options,
 				   file_attributes, oplock_request,
-				   allocation_size, sd, ea_list, result, pinfo,
-				   psbuf);
+				   allocation_size, sd, ea_list, result,
+				   pinfo);
 }
 
 static int vfswrap_close(vfs_handle_struct *handle, files_struct *fsp)

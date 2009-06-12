@@ -3459,6 +3459,7 @@ NTSTATUS append_parent_acl(files_struct *fsp,
 				const SEC_DESC *pcsd,
 				SEC_DESC **pp_new_sd)
 {
+	struct smb_filename *smb_dname = NULL;
 	SEC_DESC *parent_sd = NULL;
 	files_struct *parent_fsp = NULL;
 	TALLOC_CTX *mem_ctx = talloc_tos();
@@ -3479,12 +3480,17 @@ NTSTATUS append_parent_acl(files_struct *fsp,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	status = create_synthetic_smb_fname_split(mem_ctx, parent_name, NULL,
+						  &smb_dname);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
 	status = SMB_VFS_CREATE_FILE(
 		fsp->conn,				/* conn */
 		NULL,					/* req */
 		0,					/* root_dir_fid */
-		parent_name,				/* fname */
-		0,					/* create_file_flags */
+		smb_dname,				/* fname */
 		FILE_READ_ATTRIBUTES,			/* access_mask */
 		FILE_SHARE_NONE,			/* share_access */
 		FILE_OPEN,				/* create_disposition*/
@@ -3495,8 +3501,9 @@ NTSTATUS append_parent_acl(files_struct *fsp,
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&parent_fsp,				/* result */
-		&info,					/* pinfo */
-		NULL);					/* psbuf */
+		&info);					/* pinfo */
+
+	TALLOC_FREE(smb_fname);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

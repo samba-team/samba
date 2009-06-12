@@ -1783,18 +1783,11 @@ void reply_open(struct smb_request *req)
 		goto out;
 	}
 
-	status = get_full_smb_filename(ctx, smb_fname, &fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
-		goto out;
-	}
-
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
 		0,					/* root_dir_fid */
-		fname,					/* fname */
-		0,					/* create_file_flags */
+		smb_fname,				/* fname */
 		access_mask,				/* access_mask */
 		share_mode,				/* share_access */
 		create_disposition,			/* create_disposition*/
@@ -1805,8 +1798,7 @@ void reply_open(struct smb_request *req)
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
-		&info,					/* pinfo */
-		&smb_fname->st);			/* psbuf */
+		&info);					/* pinfo */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->mid)) {
@@ -1936,18 +1928,11 @@ void reply_open_and_X(struct smb_request *req)
 		goto out;
 	}
 
-	status = get_full_smb_filename(ctx, smb_fname, &fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
-		goto out;
-	}
-
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
 		0,					/* root_dir_fid */
-		fname,					/* fname */
-		0,					/* create_file_flags */
+		smb_fname,				/* fname */
 		access_mask,				/* access_mask */
 		share_mode,				/* share_access */
 		create_disposition,			/* create_disposition*/
@@ -1958,8 +1943,7 @@ void reply_open_and_X(struct smb_request *req)
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
-		&smb_action,				/* pinfo */
-		&smb_fname->st);			/* psbuf */
+		&smb_action);				/* pinfo */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->mid)) {
@@ -2147,18 +2131,11 @@ void reply_mknew(struct smb_request *req)
 		goto out;
 	}
 
-	status = get_full_smb_filename(ctx, smb_fname, &fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
-		goto out;
-	}
-
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
 		0,					/* root_dir_fid */
-		fname,					/* fname */
-		0,				/* create_file_flags */
+		smb_fname,				/* fname */
 		access_mask,				/* access_mask */
 		share_mode,				/* share_access */
 		create_disposition,			/* create_disposition*/
@@ -2169,8 +2146,7 @@ void reply_mknew(struct smb_request *req)
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
-		NULL,					/* pinfo */
-		&smb_fname->st);			/* psbuf */
+		NULL);					/* pinfo */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->mid)) {
@@ -2278,34 +2254,27 @@ void reply_ctemp(struct smb_request *req)
 		goto out;
 	}
 
-	status = get_full_smb_filename(ctx, smb_fname, &fname);
+	status = check_name(conn, smb_fname->base_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		goto out;
 	}
 
-	status = check_name(conn, fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
-		goto out;
-	}
-
-	tmpfd = mkstemp(fname);
+	tmpfd = mkstemp(smb_fname->base_name);
 	if (tmpfd == -1) {
 		reply_unixerror(req, ERRDOS, ERRnoaccess);
 		goto out;
 	}
 
 	SET_STAT_INVALID(smb_fname->st);
-	SMB_VFS_STAT(conn, fname, &smb_fname->st);
+	SMB_VFS_STAT(conn, smb_fname->base_name, &smb_fname->st);
 
 	/* We should fail if file does not exist. */
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
 		0,					/* root_dir_fid */
-		fname,					/* fname */
-		0,					/* create_file_flags */
+		smb_fname,				/* fname */
 		FILE_GENERIC_READ | FILE_GENERIC_WRITE, /* access_mask */
 		FILE_SHARE_READ | FILE_SHARE_WRITE,	/* share_access */
 		FILE_OPEN,				/* create_disposition*/
@@ -2316,8 +2285,7 @@ void reply_ctemp(struct smb_request *req)
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
-		NULL,					/* pinfo */
-		&smb_fname->st);			/* psbuf */
+		NULL);					/* pinfo */
 
 	/* close fd from mkstemp() */
 	close(tmpfd);
@@ -2519,8 +2487,7 @@ static NTSTATUS do_unlink(connection_struct *conn,
 		(conn,			/* conn */
 		 req,			/* req */
 		 0,			/* root_dir_fid */
-		 fname,			/* fname */
-		 0,			/* create_file_flags */
+		 smb_fname,		/* fname */
 		 DELETE_ACCESS,		/* access_mask */
 		 FILE_SHARE_NONE,	/* share_access */
 		 FILE_OPEN,		/* create_disposition*/
@@ -2531,8 +2498,7 @@ static NTSTATUS do_unlink(connection_struct *conn,
 		 NULL,			/* sd */
 		 NULL,			/* ea_list */
 		 &fsp,			/* result */
-		 NULL,			/* pinfo */
-		 &smb_fname->st);	/* psbuf */
+		 NULL);			/* pinfo */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("SMB_VFS_CREATEFILE failed: %s\n",
@@ -6125,8 +6091,9 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			  "directory = %s, newname = %s, "
 			  "last_component_dest = %s\n",
 			  conn->case_sensitive, conn->case_preserve,
-			  conn->short_case_preserve, smb_fname_src->base_name,
-			  smb_fname_dst->base_name,
+			  conn->short_case_preserve,
+			  smb_fname_str_dbg(smb_fname_src),
+			  smb_fname_str_dbg(smb_fname_dst),
 			  smb_fname_dst->original_lcomp));
 
 		/* The dest name still may have wildcards. */
@@ -6163,12 +6130,13 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			create_options |= FILE_DIRECTORY_FILE;
 		}
 
+		TALLOC_FREE(fname_src);
+
 		status = SMB_VFS_CREATE_FILE(
 			conn,				/* conn */
 			req,				/* req */
 			0,				/* root_dir_fid */
-			fname_src,			/* fname */
-			0,				/* create_file_flags */
+			smb_fname_src,			/* fname */
 			access_mask,			/* access_mask */
 			(FILE_SHARE_READ |		/* share_access */
 			    FILE_SHARE_WRITE),
@@ -6180,13 +6148,12 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			NULL,				/* sd */
 			NULL,				/* ea_list */
 			&fsp,				/* result */
-			NULL,				/* pinfo */
-			&smb_fname_src->st);		/* psbuf */
+			NULL);				/* pinfo */
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("Could not open rename source %s: %s\n",
-				  fname_src, nt_errstr(status)));
-			TALLOC_FREE(fname_src);
+				  smb_fname_str_dbg(smb_fname_src),
+				  nt_errstr(status)));
 			goto out;
 		}
 
@@ -6200,13 +6167,14 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 					      smb_fname_dst->original_lcomp,
 					      attrs, replace_if_exists);
 
+		TALLOC_FREE(fname_dst);
+
 		close_file(req, fsp, NORMAL_CLOSE);
 
 		DEBUG(3, ("rename_internals: Error %s rename %s -> %s\n",
-			  nt_errstr(status), fname_src, fname_dst));
+			  nt_errstr(status), smb_fname_str_dbg(smb_fname_src),
+			  smb_fname_str_dbg(smb_fname_dst)));
 
-		TALLOC_FREE(fname_src);
-		TALLOC_FREE(fname_dst);
 		goto out;
 	}
 
@@ -6300,18 +6268,14 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			goto out;
 		}
 
-		status = get_full_smb_filename(ctx, smb_fname_dst, &fname_dst);
-		if (!NT_STATUS_IS_OK(status)) {
-			TALLOC_FREE(fname_src);
-			goto out;
-		}
-
 		ZERO_STRUCT(smb_fname_src->st);
 		if (posix_pathnames) {
 			SMB_VFS_LSTAT(conn, fname_src, &smb_fname_src->st);
 		} else {
 			SMB_VFS_STAT(conn, fname_src, &smb_fname_src->st);
 		}
+
+		TALLOC_FREE(fname_src);
 
 		create_options = 0;
 
@@ -6323,8 +6287,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			conn,				/* conn */
 			req,				/* req */
 			0,				/* root_dir_fid */
-			fname_src,			/* fname */
-			0,				/* create_file_flags */
+			smb_fname_src,			/* fname */
 			access_mask,			/* access_mask */
 			(FILE_SHARE_READ |		/* share_access */
 			    FILE_SHARE_WRITE),
@@ -6336,39 +6299,43 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			NULL,				/* sd */
 			NULL,				/* ea_list */
 			&fsp,				/* result */
-			NULL,				/* pinfo */
-			&smb_fname_src->st);		/* psbuf */
+			NULL);				/* pinfo */
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3,("rename_internals: SMB_VFS_CREATE_FILE "
 				 "returned %s rename %s -> %s\n",
-				nt_errstr(status), fname_src, fname_dst));
-			TALLOC_FREE(fname_src);
-			TALLOC_FREE(fname_dst);
+				 nt_errstr(status),
+				 smb_fname_str_dbg(smb_fname_src),
+				 smb_fname_str_dbg(smb_fname_dst)));
 			break;
+		}
+
+		status = get_full_smb_filename(ctx, smb_fname_dst, &fname_dst);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto out;
 		}
 
 		status = rename_internals_fsp(conn, fsp, fname_dst, dname,
 					      attrs, replace_if_exists);
+
+		TALLOC_FREE(fname_dst);
 
 		close_file(req, fsp, NORMAL_CLOSE);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("rename_internals_fsp returned %s for "
 				  "rename %s -> %s\n", nt_errstr(status),
-				  fname_src, fname_dst));
+				  smb_fname_str_dbg(smb_fname_src),
+				  smb_fname_str_dbg(smb_fname_dst)));
 			break;
-			TALLOC_FREE(fname_src);
-			TALLOC_FREE(fname_dst);
 		}
 
 		count++;
 
 		DEBUG(3,("rename_internals: doing rename on %s -> "
-			 "%s\n", fname_src, fname_dst));
+			 "%s\n", smb_fname_str_dbg(smb_fname_src),
+			 smb_fname_str_dbg(smb_fname_src)));
 
-		TALLOC_FREE(fname_src);
-		TALLOC_FREE(fname_dst);
 	}
 	TALLOC_FREE(dir_hnd);
 
@@ -6555,18 +6522,12 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 		}
 	}
 
-	status = get_full_smb_filename(talloc_tos(), smb_fname_src, &fname_src);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-
 	/* Open the src file for reading. */
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		NULL,					/* req */
 		0,					/* root_dir_fid */
-		fname_src,	       			/* fname */
-		0,					/* create_file_flags */
+		smb_fname_src,	       			/* fname */
 		FILE_GENERIC_READ,			/* access_mask */
 		FILE_SHARE_READ | FILE_SHARE_WRITE,	/* share_access */
 		FILE_OPEN,				/* create_disposition*/
@@ -6577,14 +6538,20 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp1,					/* result */
-		NULL,					/* pinfo */
-		&smb_fname_src->st);			/* psbuf */
+		NULL);					/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
 
+	status = get_full_smb_filename(talloc_tos(), smb_fname_src, &fname_src);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
 	dosattrs = dos_mode(conn, fname_src, &smb_fname_src->st);
+
+	TALLOC_FREE(fname_src);
 
 	status = get_full_smb_filename(talloc_tos(), smb_fname_dst_tmp, &fname_dst);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -6595,13 +6562,14 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 		ZERO_STRUCTP(&smb_fname_dst_tmp->st);
 	}
 
+	TALLOC_FREE(fname_dst);
+
 	/* Open the dst file for writing. */
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		NULL,					/* req */
 		0,					/* root_dir_fid */
-		fname_dst,				/* fname */
-		0,					/* create_file_flags */
+		smb_fname_dst,				/* fname */
 		FILE_GENERIC_WRITE,			/* access_mask */
 		FILE_SHARE_READ | FILE_SHARE_WRITE,	/* share_access */
 		new_create_disposition,			/* create_disposition*/
@@ -6612,8 +6580,7 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp2,					/* result */
-		NULL,					/* pinfo */
-		&smb_fname_dst_tmp->st);		/* psbuf */
+		NULL);					/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		close_file(NULL, fsp1, ERROR_CLOSE);
@@ -6662,8 +6629,6 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 
  out:
 	TALLOC_FREE(smb_fname_dst_tmp);
-	TALLOC_FREE(fname_src);
-	TALLOC_FREE(fname_dst);
 	return status;
 }
 

@@ -117,8 +117,9 @@
 /* Leave at 25 - not yet released. Add init_search_op call. - sdann */
 /* Leave at 25 - not yet released. Add locking calls. -- zkirsch. */
 /* Leave at 25 - not yet released. Add strict locking calls. -- drichards. */
+/* Changed to version 26 - Plumb struct smb_filename to SMB_VFS_CREATE_FILE. */
 
-#define SMB_VFS_INTERFACE_VERSION 25
+#define SMB_VFS_INTERFACE_VERSION 26
 
 
 /* to bug old modules which are trying to compile with the old functions */
@@ -145,6 +146,7 @@ struct smb_request;
 struct ea_list;
 struct smb_file_time;
 struct blocking_lock_record;
+struct smb_filename;
 
 /*
     Available VFS operations. These values must be in sync with vfs_ops struct
@@ -332,8 +334,7 @@ struct vfs_ops {
 		NTSTATUS (*create_file)(struct vfs_handle_struct *handle,
 					struct smb_request *req,
 					uint16_t root_dir_fid,
-					const char *fname,
-					uint32_t create_file_flags,
+					struct smb_filename *smb_fname,
 					uint32_t access_mask,
 					uint32_t share_access,
 					uint32_t create_disposition,
@@ -344,8 +345,7 @@ struct vfs_ops {
 					struct security_descriptor *sd,
 					struct ea_list *ea_list,
 					files_struct **result,
-					int *pinfo,
-					SMB_STRUCT_STAT *psbuf);
+					int *pinfo);
 		int (*close_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp);
 		ssize_t (*vfs_read)(struct vfs_handle_struct *handle, struct files_struct *fsp, void *data, size_t n);
 		ssize_t (*pread)(struct vfs_handle_struct *handle, struct files_struct *fsp, void *data, size_t n, SMB_OFF_T offset);

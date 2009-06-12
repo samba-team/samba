@@ -2202,6 +2202,7 @@ NTSTATUS open_file_fchmod(struct smb_request *req, connection_struct *conn,
 			  const char *fname,
 			  SMB_STRUCT_STAT *psbuf, files_struct **result)
 {
+	struct smb_filename *smb_fname = NULL;
 	files_struct *fsp = NULL;
 	NTSTATUS status;
 
@@ -2214,12 +2215,17 @@ NTSTATUS open_file_fchmod(struct smb_request *req, connection_struct *conn,
 		return status;
 	}
 
-	status = SMB_VFS_CREATE_FILE(
+	status = create_synthetic_smb_fname_split(talloc_tos(), fname, psbuf,
+						  &smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+        status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		NULL,					/* req */
 		0,					/* root_dir_fid */
-		fname,					/* fname */
-		0,					/* create_file_flags */
+		smb_fname,				/* fname */
 		FILE_WRITE_DATA,			/* access_mask */
 		(FILE_SHARE_READ | FILE_SHARE_WRITE |	/* share_access */
 		    FILE_SHARE_DELETE),
@@ -2231,8 +2237,10 @@ NTSTATUS open_file_fchmod(struct smb_request *req, connection_struct *conn,
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
-		NULL,					/* pinfo */
-		psbuf);					/* psbuf */
+		NULL);					/* psbuf */
+
+	*psbuf = smb_fname->st;
+	TALLOC_FREE(smb_fname);
 
 	/*
 	 * This is not a user visible file open.
@@ -2599,23 +2607,16 @@ static NTSTATUS open_directory(connection_struct *conn,
 }
 
 NTSTATUS create_directory(connection_struct *conn, struct smb_request *req,
-			  const struct smb_filename *smb_dname)
+			  struct smb_filename *smb_dname)
 {
 	NTSTATUS status;
 	files_struct *fsp;
-	char *directory = NULL;
-
-	status = get_full_smb_filename(talloc_tos(), smb_dname, &directory);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
 
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
 		0,					/* root_dir_fid */
-		directory,				/* fname */
-		0,					/* create_file_flags */
+		smb_dname,				/* fname */
 		FILE_READ_ATTRIBUTES,			/* access_mask */
 		FILE_SHARE_NONE,			/* share_access */
 		FILE_CREATE,				/* create_disposition*/
@@ -2626,14 +2627,12 @@ NTSTATUS create_directory(connection_struct *conn, struct smb_request *req,
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
-		NULL,					/* pinfo */
-		NULL);					/* psbuf */
+		NULL);					/* pinfo */
 
 	if (NT_STATUS_IS_OK(status)) {
 		close_file(req, fsp, NORMAL_CLOSE);
 	}
- out:
-	TALLOC_FREE(directory);
+
 	return status;
 }
 
@@ -2787,7 +2786,9 @@ NTSTATUS open_streams_for_delete(connection_struct *conn,
 	}
 
 	for (i=0; i<num_streams; i++) {
-		char *streamname;
+		struct smb_filename *smb_fname = NULL;
+		char *streamname = NULL;
+		SMB_STRUCT_STAT sbuf;
 
 		if (strequal(stream_info[i].name, "::$DATA")) {
 			streams[i] = NULL;
@@ -2796,10 +2797,21 @@ NTSTATUS open_streams_for_delete(connection_struct *conn,
 
 		streamname = talloc_asprintf(talloc_tos(), "%s%s", fname,
 					     stream_info[i].name);
-
 		if (streamname == NULL) {
 			DEBUG(0, ("talloc_aprintf failed\n"));
 			status = NT_STATUS_NO_MEMORY;
+		}
+
+		if (SMB_VFS_STAT(conn, streamname, &sbuf) == -1) {
+			SET_STAT_INVALID(sbuf);
+		}
+
+		TALLOC_FREE(streamname);
+
+		status = create_synthetic_smb_fname(talloc_tos(), fname,
+						    stream_info[i].name,
+						    &sbuf, &smb_fname);
+		if (!NT_STATUS_IS_OK(status)) {
 			goto fail;
 		}
 
@@ -2807,8 +2819,7 @@ NTSTATUS open_streams_for_delete(connection_struct *conn,
 			 conn,			/* conn */
 			 NULL,			/* req */
 			 0,			/* root_dir_fid */
-			 streamname,		/* fname */
-			 0,			/* create_file_flags */
+			 smb_fname,		/* fname */
 			 DELETE_ACCESS,		/* access_mask */
 			 (FILE_SHARE_READ |	/* share_access */
 			     FILE_SHARE_WRITE | FILE_SHARE_DELETE),
@@ -2820,16 +2831,17 @@ NTSTATUS open_streams_for_delete(connection_struct *conn,
 			 NULL,			/* sd */
 			 NULL,			/* ea_list */
 			 &streams[i],		/* result */
-			 NULL,			/* pinfo */
-			 NULL);			/* psbuf */
-
-		TALLOC_FREE(streamname);
+			 NULL);			/* pinfo */
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10, ("Could not open stream %s: %s\n",
-				   streamname, nt_errstr(status)));
+				   smb_fname_str_dbg(smb_fname),
+				   nt_errstr(status)));
+
+			TALLOC_FREE(smb_fname);
 			break;
 		}
+		TALLOC_FREE(smb_fname);
 	}
 
 	/*
@@ -3323,8 +3335,7 @@ NTSTATUS get_relative_fid_filename(connection_struct *conn,
 NTSTATUS create_file_default(connection_struct *conn,
 			     struct smb_request *req,
 			     uint16_t root_dir_fid,
-			     const char *fname,
-			     uint32_t create_file_flags,
+			     struct smb_filename *smb_fname,
 			     uint32_t access_mask,
 			     uint32_t share_access,
 			     uint32_t create_disposition,
@@ -3336,13 +3347,11 @@ NTSTATUS create_file_default(connection_struct *conn,
 			     struct ea_list *ea_list,
 
 			     files_struct **result,
-			     int *pinfo,
-			     SMB_STRUCT_STAT *psbuf)
+			     int *pinfo)
 {
-	struct case_semantics_state *case_state = NULL;
-	SMB_STRUCT_STAT sbuf;
 	int info = FILE_WAS_OPENED;
 	files_struct *fsp = NULL;
+	char *fname = NULL;
 	NTSTATUS status;
 
 	DEBUG(10,("create_file: access_mask = 0x%x "
@@ -3350,7 +3359,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 		  "create_disposition = 0x%x create_options = 0x%x "
 		  "oplock_request = 0x%x "
 		  "root_dir_fid = 0x%x, ea_list = 0x%p, sd = 0x%p, "
-		  "create_file_flags = 0x%x, fname = %s\n",
+		  "fname = %s\n",
 		  (unsigned int)access_mask,
 		  (unsigned int)file_attributes,
 		  (unsigned int)share_access,
@@ -3358,7 +3367,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 		  (unsigned int)create_options,
 		  (unsigned int)oplock_request,
 		  (unsigned int)root_dir_fid,
-		  ea_list, sd, create_file_flags, fname));
+		  ea_list, sd, smb_fname_str_dbg(smb_fname)));
 
 	/* MSDFS pathname processing must be done FIRST.
 	   MSDFS pathnames containing IPv6 addresses can
@@ -3368,7 +3377,8 @@ NTSTATUS create_file_default(connection_struct *conn,
 	if ((req != NULL) && (req->flags2 & FLAGS2_DFS_PATHNAMES)) {
 		char *resolved_fname;
 
-		status = resolve_dfspath(talloc_tos(), conn, true, fname,
+		status = resolve_dfspath(talloc_tos(), conn, true,
+					 smb_fname->base_name,
 					 &resolved_fname);
 
 		if (!NT_STATUS_IS_OK(status)) {
@@ -3380,7 +3390,13 @@ NTSTATUS create_file_default(connection_struct *conn,
 			 */
 			goto fail;
 		}
-		fname = resolved_fname;
+		TALLOC_FREE(smb_fname->base_name);
+		smb_fname->base_name = resolved_fname;
+	}
+
+	status = get_full_smb_filename(talloc_tos(), smb_fname, &fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
 	}
 
 	/*
@@ -3428,7 +3444,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 				goto fail;
 			}
 
-			ZERO_STRUCT(sbuf);
+			ZERO_STRUCT(smb_fname->st);
 			goto done;
 		}
 
@@ -3437,24 +3453,6 @@ NTSTATUS create_file_default(connection_struct *conn,
 			goto fail;
 		}
 	}
-
-	/*
-	 * Check if POSIX semantics are wanted.
-	 */
-
-	if (file_attributes & FILE_FLAG_POSIX_SEMANTICS) {
-		case_state = set_posix_case_semantics(talloc_tos(), conn);
-	}
-
-	if (psbuf != NULL) {
-		sbuf = *psbuf;
-	} else {
-		if (SMB_VFS_STAT(conn, fname, &sbuf) == -1) {
-			SET_STAT_INVALID(sbuf);
-		}
-	}
-
-	TALLOC_FREE(case_state);
 
 	/* All file access must go through check_name() */
 
@@ -3467,7 +3465,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 		conn, req, fname, access_mask, share_access,
 		create_disposition, create_options, file_attributes,
 		oplock_request, allocation_size, sd, ea_list,
-		&fsp, &info, &sbuf);
+		&fsp, &info, &smb_fname->st);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
@@ -3479,9 +3477,6 @@ NTSTATUS create_file_default(connection_struct *conn,
 	*result = fsp;
 	if (pinfo != NULL) {
 		*pinfo = info;
-	}
-	if (psbuf != NULL) {
-		*psbuf = sbuf;
 	}
 	return NT_STATUS_OK;
 

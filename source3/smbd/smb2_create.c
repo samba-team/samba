@@ -309,8 +309,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		}
 		info = FILE_WAS_CREATED;
 	} else {
-		char *fname = NULL;
-
 		/* these are ignored for SMB2 */
 		in_create_options &= ~(0x10);/* NTCREATEX_OPTIONS_SYNC_ALERT */
 		in_create_options &= ~(0x20);/* NTCREATEX_OPTIONS_ASYNC_ALERT */
@@ -321,16 +319,10 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			goto out;
 		}
 
-		status = get_full_smb_filename(talloc_tos(), smb_fname, &fname);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto out;
-		}
-
 		status = SMB_VFS_CREATE_FILE(smbreq->conn,
 					     smbreq,
 					     0, /* root_dir_fid */
-					     fname,
-					     0, /* create_file_flags */
+					     smb_fname,
 					     in_desired_access,
 					     in_share_access,
 					     in_create_disposition,
@@ -341,8 +333,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 					     NULL, /* security_descriptor */
 					     NULL, /* ea_list */
 					     &result,
-					     &info,
-					     &smb_fname->st);
+					     &info);
 		if (!NT_STATUS_IS_OK(status)) {
 			tevent_req_nterror(req, status);
 			goto out;

@@ -1277,7 +1277,6 @@ the modification date). Otherwise chose the numerically larger version number.
 static int file_version_is_newer(connection_struct *conn, fstring new_file, fstring old_file)
 {
 	bool use_version = true;
-	char *filepath = NULL;
 
 	uint32 new_major;
 	uint32 new_minor;
@@ -1290,13 +1289,11 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 	struct smb_filename *smb_fname = NULL;
 	files_struct    *fsp = NULL;
 	SMB_STRUCT_STAT st;
-	SMB_STRUCT_STAT stat_buf;
 
 	NTSTATUS status;
 	int ret;
 
 	SET_STAT_INVALID(st);
-	SET_STAT_INVALID(stat_buf);
 	new_create_time = (time_t)0;
 	old_create_time = (time_t)0;
 
@@ -1306,17 +1303,11 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 		goto error_exit;
 	}
 
-	status = get_full_smb_filename(talloc_tos(), smb_fname, &filepath);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto error_exit;
-	}
-
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		NULL,					/* req */
 		0,					/* root_dir_fid */
-		filepath,				/* fname */
-		0,					/* create_file_flags */
+		smb_fname,				/* fname */
 		FILE_GENERIC_READ,			/* access_mask */
 		FILE_SHARE_READ | FILE_SHARE_WRITE,	/* share_access */
 		FILE_OPEN,				/* create_disposition*/
@@ -1327,13 +1318,13 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
-		NULL,					/* pinfo */
-		&stat_buf);				/* psbuf */
+		NULL);					/* pinfo */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		/* Old file not found, so by definition new file is in fact newer */
-		DEBUG(10,("file_version_is_newer: Can't open old file [%s], errno = %d\n",
-				filepath, errno));
+		DEBUG(10,("file_version_is_newer: Can't open old file [%s], "
+			  "errno = %d\n", smb_fname_str_dbg(smb_fname),
+			  errno));
 		ret = 1;
 		goto done;
 
@@ -1364,17 +1355,11 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 		goto error_exit;
 	}
 
-	status = get_full_smb_filename(talloc_tos(), smb_fname, &filepath);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto error_exit;
-	}
-
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		NULL,					/* req */
 		0,					/* root_dir_fid */
-		filepath,				/* fname */
-		0,					/* create_file_flags */
+		smb_fname,				/* fname */
 		FILE_GENERIC_READ,			/* access_mask */
 		FILE_SHARE_READ | FILE_SHARE_WRITE,	/* share_access */
 		FILE_OPEN,				/* create_disposition*/
@@ -1385,13 +1370,12 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
-		NULL,					/* pinfo */
-		&stat_buf);				/* psbuf */
+		NULL);					/* pinfo */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		/* New file not found, this shouldn't occur if the caller did its job */
-		DEBUG(3,("file_version_is_newer: Can't open new file [%s], errno = %d\n",
-				filepath, errno));
+		DEBUG(3,("file_version_is_newer: Can't open new file [%s], "
+			 "errno = %d\n", smb_fname_str_dbg(smb_fname), errno));
 		goto error_exit;
 
 	} else {
@@ -1466,14 +1450,11 @@ static uint32 get_correct_cversion(struct pipes_struct *p,
 	struct smb_filename *smb_fname = NULL;
 	char *driverpath = NULL;
 	files_struct      *fsp = NULL;
-	SMB_STRUCT_STAT   st;
 	connection_struct *conn = NULL;
 	NTSTATUS status;
 	char *oldcwd;
 	fstring printdollar;
 	int printdollar_snum;
-
-	SET_STAT_INVALID(st);
 
 	*perr = WERR_INVALID_PARAM;
 
@@ -1532,18 +1513,11 @@ static uint32 get_correct_cversion(struct pipes_struct *p,
 		goto error_exit;
 	}
 
-	status = get_full_smb_filename(talloc_tos(), smb_fname, &driverpath);
-	if (!NT_STATUS_IS_OK(status)) {
-		*perr = WERR_NOMEM;
-		goto error_exit;
-	}
-
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		NULL,					/* req */
 		0,					/* root_dir_fid */
-		driverpath,				/* fname */
-		0,					/* create_file_flags */
+		smb_fname,				/* fname */
 		FILE_GENERIC_READ,			/* access_mask */
 		FILE_SHARE_READ | FILE_SHARE_WRITE,	/* share_access */
 		FILE_OPEN,				/* create_disposition*/
@@ -1554,22 +1528,25 @@ static uint32 get_correct_cversion(struct pipes_struct *p,
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
-		NULL,					/* pinfo */
-		&st);					/* psbuf */
+		NULL);					/* pinfo */
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3,("get_correct_cversion: Can't open file [%s], errno = %d\n",
-				driverpath, errno));
+		DEBUG(3,("get_correct_cversion: Can't open file [%s], errno = "
+			 "%d\n", smb_fname_str_dbg(smb_fname), errno));
 		*perr = WERR_ACCESS_DENIED;
 		goto error_exit;
 	} else {
 		uint32 major;
 		uint32 minor;
-		int    ret = get_file_version(fsp, driverpath, &major, &minor);
+		int    ret;
+
+		ret = get_file_version(fsp, smb_fname->base_name, &major, &minor);
 		if (ret == -1) goto error_exit;
 
 		if (!ret) {
-			DEBUG(6,("get_correct_cversion: Version info not found [%s]\n", driverpath));
+			DEBUG(6,("get_correct_cversion: Version info not "
+				 "found [%s]\n",
+				 smb_fname_str_dbg(smb_fname)));
 			goto error_exit;
 		}
 
@@ -1587,17 +1564,20 @@ static uint32 get_correct_cversion(struct pipes_struct *p,
 				break;
 
 			default:
-				DEBUG(6,("get_correct_cversion: cversion invalid [%s]  cversion = %d\n",
-					driverpath, cversion));
+				DEBUG(6,("get_correct_cversion: cversion "
+					 "invalid [%s]  cversion = %d\n",
+					 smb_fname_str_dbg(smb_fname),
+					 cversion));
 				goto error_exit;
 		}
 
-		DEBUG(10,("get_correct_cversion: Version info found [%s]  major = 0x%x  minor = 0x%x\n",
-				  driverpath, major, minor));
+		DEBUG(10,("get_correct_cversion: Version info found [%s] major"
+			  " = 0x%x  minor = 0x%x\n",
+			  smb_fname_str_dbg(smb_fname), major, minor));
 	}
 
 	DEBUG(10,("get_correct_cversion: Driver file [%s] cversion = %d\n",
-		driverpath, cversion));
+		  smb_fname_str_dbg(smb_fname), cversion));
 
 	goto done;
 

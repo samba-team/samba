@@ -115,8 +115,7 @@ static int smb_full_audit_open(vfs_handle_struct *handle,
 static NTSTATUS smb_full_audit_create_file(vfs_handle_struct *handle,
 				      struct smb_request *req,
 				      uint16_t root_dir_fid,
-				      const char *fname,
-				      uint32_t create_file_flags,
+				      struct smb_filename *smb_fname,
 				      uint32_t access_mask,
 				      uint32_t share_access,
 				      uint32_t create_disposition,
@@ -127,8 +126,7 @@ static NTSTATUS smb_full_audit_create_file(vfs_handle_struct *handle,
 				      struct security_descriptor *sd,
 				      struct ea_list *ea_list,
 				      files_struct **result,
-				      int *pinfo,
-				      SMB_STRUCT_STAT *psbuf);
+				      int *pinfo);
 static int smb_full_audit_close(vfs_handle_struct *handle, files_struct *fsp);
 static ssize_t smb_full_audit_read(vfs_handle_struct *handle, files_struct *fsp,
 			  void *data, size_t n);
@@ -1197,8 +1195,7 @@ static int smb_full_audit_open(vfs_handle_struct *handle,
 static NTSTATUS smb_full_audit_create_file(vfs_handle_struct *handle,
 				      struct smb_request *req,
 				      uint16_t root_dir_fid,
-				      const char *fname,
-				      uint32_t create_file_flags,
+				      struct smb_filename *smb_fname,
 				      uint32_t access_mask,
 				      uint32_t share_access,
 				      uint32_t create_disposition,
@@ -1209,8 +1206,7 @@ static NTSTATUS smb_full_audit_create_file(vfs_handle_struct *handle,
 				      struct security_descriptor *sd,
 				      struct ea_list *ea_list,
 				      files_struct **result_fsp,
-				      int *pinfo,
-				      SMB_STRUCT_STAT *psbuf)
+				      int *pinfo)
 {
 	NTSTATUS result;
 
@@ -1218,8 +1214,7 @@ static NTSTATUS smb_full_audit_create_file(vfs_handle_struct *handle,
 		handle,					/* handle */
 		req,					/* req */
 		root_dir_fid,				/* root_dir_fid */
-		fname,					/* fname */
-		create_file_flags,			/* create_file_flags */
+		smb_fname,				/* fname */
 		access_mask,				/* access_mask */
 		share_access,				/* share_access */
 		create_disposition,			/* create_disposition*/
@@ -1230,11 +1225,10 @@ static NTSTATUS smb_full_audit_create_file(vfs_handle_struct *handle,
 		sd,					/* sd */
 		ea_list,				/* ea_list */
 		result_fsp,				/* result */
-		pinfo,					/* pinfo */
-		psbuf);					/* psbuf */
+		pinfo);					/* pinfo */
 
 	do_log(SMB_VFS_OP_CREATE_FILE, (NT_STATUS_IS_OK(result)), handle, "0x%x|%s",
-	       access_mask, fname);
+	       access_mask, smb_fname_str_dbg(smb_fname));
 
 	return result;
 }

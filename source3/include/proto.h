@@ -6632,7 +6632,7 @@ NTSTATUS open_file_fchmod(struct smb_request *req, connection_struct *conn,
 			  SMB_STRUCT_STAT *psbuf, files_struct **result);
 NTSTATUS close_file_fchmod(struct smb_request *req, files_struct *fsp);
 NTSTATUS create_directory(connection_struct *conn, struct smb_request *req,
-			  const struct smb_filename *smb_dname);
+			  struct smb_filename *smb_dname);
 void msg_file_was_renamed(struct messaging_context *msg,
 			  void *private_data,
 			  uint32_t msg_type,
@@ -6646,8 +6646,7 @@ NTSTATUS open_streams_for_delete(connection_struct *conn,
 NTSTATUS create_file_default(connection_struct *conn,
 			     struct smb_request *req,
 			     uint16_t root_dir_fid,
-			     const char *fname,
-			     uint32_t create_file_flags,
+			     struct smb_filename * smb_fname,
 			     uint32_t access_mask,
 			     uint32_t share_access,
 			     uint32_t create_disposition,
@@ -6659,8 +6658,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 			     struct ea_list *ea_list,
 
 			     files_struct **result,
-			     int *pinfo,
-			     SMB_STRUCT_STAT *psbuf);
+			     int *pinfo);
 NTSTATUS get_relative_fid_filename(connection_struct *conn,
 				   struct smb_request *req,
 				   uint16_t root_dir_fid,

@@ -513,18 +513,11 @@ void reply_ntcreate_and_X(struct smb_request *req)
 		goto out;
 	}
 
-	status = get_full_smb_filename(ctx, smb_fname, &fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
-		goto out;
-	}
-
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
 		root_dir_fid,				/* root_dir_fid */
-		fname,					/* fname */
-		0,					/* create_file_flags */
+		smb_fname,				/* fname */
 		access_mask,				/* access_mask */
 		share_access,				/* share_access */
 		create_disposition,			/* create_disposition*/
@@ -535,8 +528,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
-		&info,					/* pinfo */
-		&smb_fname->st);			/* psbuf */
+		&info);					/* pinfo */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->mid)) {
@@ -996,18 +988,11 @@ static void call_nt_transact_create(connection_struct *conn,
 		goto out;
 	}
 
-	status = get_full_smb_filename(ctx, smb_fname, &fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
-		goto out;
-	}
-
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
 		root_dir_fid,				/* root_dir_fid */
-		fname,					/* fname */
-		0,					/* create_file_flags */
+		smb_fname,				/* fname */
 		access_mask,				/* access_mask */
 		share_access,				/* share_access */
 		create_disposition,			/* create_disposition*/
@@ -1018,8 +1003,7 @@ static void call_nt_transact_create(connection_struct *conn,
 		sd,					/* sd */
 		ea_list,				/* ea_list */
 		&fsp,					/* result */
-		&info,					/* pinfo */
-		&smb_fname->st);			/* psbuf */
+		&info);					/* pinfo */
 
 	if(!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->mid)) {
@@ -1173,8 +1157,8 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 				const char *newname_in,
 				uint32 attrs)
 {
-	struct smb_filename *smb_fname = NULL;
-	struct smb_filename *smb_fname_new = NULL;
+	struct smb_filename *smb_fname_src = NULL;
+	struct smb_filename *smb_fname_dst = NULL;
 	char *oldname = NULL;
 	char *newname = NULL;
 	files_struct *fsp1,*fsp2;
@@ -1189,75 +1173,71 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 		goto out;
 	}
 
-	status = unix_convert(ctx, conn, oldname_in, &smb_fname, 0);
+	status = unix_convert(ctx, conn, oldname_in, &smb_fname_src, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
 
-	status = get_full_smb_filename(ctx, smb_fname, &oldname);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-
-	status = check_name(conn, oldname);
+	status = check_name(conn, smb_fname_src->base_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
 
         /* Source must already exist. */
-	if (!VALID_STAT(smb_fname->st)) {
+	if (!VALID_STAT(smb_fname_src->st)) {
 		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		goto out;
 	}
+
+	status = get_full_smb_filename(ctx, smb_fname_src, &oldname);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
 	/* Ensure attributes match. */
-	fattr = dos_mode(conn, oldname, &smb_fname->st);
+	fattr = dos_mode(conn, oldname, &smb_fname_src->st);
 	if ((fattr & ~attrs) & (aHIDDEN | aSYSTEM)) {
 		status = NT_STATUS_NO_SUCH_FILE;
 		goto out;
 	}
 
-	status = unix_convert(ctx, conn, newname_in, &smb_fname_new, 0);
+	status = unix_convert(ctx, conn, newname_in, &smb_fname_dst, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
 
-	status = get_full_smb_filename(ctx, smb_fname_new, &newname);
+	status = check_name(conn, smb_fname_dst->base_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
 
-	status = check_name(conn, newname);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-
-	/* Disallow if newname already exists. */
-	if (VALID_STAT(smb_fname_new->st)) {
+	/* Disallow if dst file already exists. */
+	if (VALID_STAT(smb_fname_dst->st)) {
 		status = NT_STATUS_OBJECT_NAME_COLLISION;
 		goto out;
 	}
 
 	/* No links from a directory. */
-	if (S_ISDIR(smb_fname->st.st_ex_mode)) {
+	if (S_ISDIR(smb_fname_src->st.st_ex_mode)) {
 		status = NT_STATUS_FILE_IS_A_DIRECTORY;
 		goto out;
 	}
 
 	/* Ensure this is within the share. */
-	status = check_reduced_name(conn, oldname);
+	status = check_reduced_name(conn, smb_fname_src->base_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
 
 	DEBUG(10,("copy_internals: doing file copy %s to %s\n",
-				oldname, newname));
+		  smb_fname_str_dbg(smb_fname_src),
+		  smb_fname_str_dbg(smb_fname_dst)));
 
         status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
 		0,					/* root_dir_fid */
-		oldname,				/* fname */
-		0,					/* create_file_flags */
+		smb_fname_src,				/* fname */
 		FILE_READ_DATA,				/* access_mask */
 		(FILE_SHARE_READ | FILE_SHARE_WRITE |	/* share_access */
 		    FILE_SHARE_DELETE),
@@ -1269,8 +1249,7 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp1,					/* result */
-		&info,					/* pinfo */
-		&smb_fname->st);			/* psbuf */
+		&info);					/* pinfo */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
@@ -1280,8 +1259,7 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 		conn,					/* conn */
 		req,					/* req */
 		0,					/* root_dir_fid */
-		newname,				/* fname */
-		0,					/* create_file_flags */
+		smb_fname_dst,				/* fname */
 		FILE_WRITE_DATA,			/* access_mask */
 		(FILE_SHARE_READ | FILE_SHARE_WRITE |	/* share_access */
 		    FILE_SHARE_DELETE),
@@ -1293,16 +1271,15 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp2,					/* result */
-		&info,					/* pinfo */
-		&smb_fname_new->st);			/* psbuf */
+		&info);					/* pinfo */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		close_file(NULL, fsp1, ERROR_CLOSE);
 		goto out;
 	}
 
-	if (smb_fname->st.st_ex_size) {
-		ret = vfs_transfer_file(fsp1, fsp2, smb_fname->st.st_ex_size);
+	if (smb_fname_src->st.st_ex_size) {
+		ret = vfs_transfer_file(fsp1, fsp2, smb_fname_src->st.st_ex_size);
 	}
 
 	/*
@@ -1314,9 +1291,14 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 	close_file(NULL, fsp1, NORMAL_CLOSE);
 
 	/* Ensure the modtime is set correctly on the destination file. */
-	set_close_write_time(fsp2, smb_fname->st.st_ex_mtime);
+	set_close_write_time(fsp2, smb_fname_src->st.st_ex_mtime);
 
 	status = close_file(NULL, fsp2, NORMAL_CLOSE);
+
+	status = get_full_smb_filename(ctx, smb_fname_dst, &newname);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
 
 	/* Grrr. We have to do this as open_file_ntcreate adds aARCH when it
 	   creates the file. This isn't the correct thing to do in the copy
@@ -1325,21 +1307,26 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
-	file_set_dosmode(conn, newname, fattr, &smb_fname_new->st, parent,
+	file_set_dosmode(conn, newname, fattr, &smb_fname_dst->st, parent,
 			 false);
 	TALLOC_FREE(parent);
 
-	if (ret < (SMB_OFF_T)smb_fname->st.st_ex_size) {
+	if (ret < (SMB_OFF_T)smb_fname_src->st.st_ex_size) {
 		status = NT_STATUS_DISK_FULL;
 		goto out;
 	}
  out:
-	TALLOC_FREE(smb_fname);
-	TALLOC_FREE(smb_fname_new);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3,("copy_internals: Error %s copy file %s to %s\n",
-			nt_errstr(status), oldname, newname));
+			nt_errstr(status), smb_fname_str_dbg(smb_fname_src),
+			smb_fname_str_dbg(smb_fname_dst)));
 	}
+
+	TALLOC_FREE(smb_fname_src);
+	TALLOC_FREE(smb_fname_dst);
+	TALLOC_FREE(oldname);
+	TALLOC_FREE(newname);
+
 	return status;
 }
 
