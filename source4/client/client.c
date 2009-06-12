@@ -3290,15 +3290,18 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 			lp_gensec_settings(ctx, cmdline_lp_ctx)))
 		return 1;
 
-	if (base_directory) 
+	if (base_directory) {
 		do_cd(ctx, base_directory);
+		free(base_directory);
+	}
 	
 	if (cmdstr) {
 		rc = process_command_string(ctx, cmdstr);
 	} else {
 		rc = process_stdin(ctx);
 	}
-  
+
+	free(desthost);
 	talloc_free(mem_ctx);
 
 	return rc;
