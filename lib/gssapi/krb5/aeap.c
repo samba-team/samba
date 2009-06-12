@@ -35,6 +35,7 @@
 
 #include <roken.h>
 
+#if 0
 static OM_uint32
 iov_allocate(OM_uint32 *minor_status, gss_iov_buffer_desc *iov, int iov_count)
 {
@@ -94,6 +95,7 @@ iov_map(OM_uint32 *minor_status,
     }
     return GSS_S_COMPLETE;
 }
+#endif
 
 OM_uint32 GSSAPI_LIB_FUNCTION
 _gk_wrap_iov(OM_uint32 * minor_status,
@@ -104,6 +106,9 @@ _gk_wrap_iov(OM_uint32 * minor_status,
 	     gss_iov_buffer_desc *iov,
 	     int iov_count)
 {
+#if 1
+    return GSS_S_FAILURE;
+#else
     gsskrb5_ctx ctx = (gsskrb5_ctx) context_handle;
     krb5_context context;
     OM_uint32 major_status, junk;
@@ -148,6 +153,7 @@ _gk_wrap_iov(OM_uint32 * minor_status,
 
     *minor_status = 0;
     return GSS_S_COMPLETE;
+#endif
 }
 
 OM_uint32 GSSAPI_LIB_FUNCTION
@@ -158,6 +164,9 @@ _gk_unwrap_iov(OM_uint32 *minor_status,
 	       gss_iov_buffer_desc *iov,
 	       int iov_count)
 {
+#if 1
+    return GSS_S_FAILURE;
+#else
     gsskrb5_ctx ctx = (gsskrb5_ctx) context_handle;
     krb5_context context;
     krb5_error_code ret;
@@ -202,6 +211,7 @@ _gk_unwrap_iov(OM_uint32 *minor_status,
 
     *minor_status = 0;
     return GSS_S_COMPLETE;
+#endif
 }
 
 OM_uint32  GSSAPI_LIB_FUNCTION
@@ -213,6 +223,9 @@ _gk_wrap_iov_length(OM_uint32 * minor_status,
 		    gss_iov_buffer_desc *iov,
 		    int iov_count)
 {
+#if 1
+    return GSS_S_FAILURE;
+#else
     gsskrb5_ctx ctx = (gsskrb5_ctx) context_handle;
     krb5_context context;
     unsigned int i;
@@ -268,4 +281,5 @@ _gk_wrap_iov_length(OM_uint32 * minor_status,
     }
 
     return GSS_S_COMPLETE;
+#endif
 }
