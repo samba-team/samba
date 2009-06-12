@@ -9,9 +9,9 @@
 # * Testsuite hangs indefinitely
 #
 # If a testsuite is partially succeeding, please list the failing bits 
-# in the samba4-knownfail file rather than disabling the testsuite completely.
+# in the selftest/knownfail file rather than disabling the testsuite completely.
 #
-# If a testsuite is very slow, please add it to samba4-slow instead.
+# If a testsuite is very slow, please add it to selftest/slow instead.
 #
 # Please add a comment for each testsuite you disable explaining why 
 # it is being skipped.
