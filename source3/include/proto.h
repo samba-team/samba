@@ -6362,6 +6362,15 @@ int fsp_stat(files_struct *fsp, SMB_STRUCT_STAT *pst);
 
 NTSTATUS get_full_smb_filename(TALLOC_CTX *ctx, const struct smb_filename *smb_fname,
 			      char **full_name);
+NTSTATUS create_synthetic_smb_fname(TALLOC_CTX *ctx, const char *base_name,
+				    const char *stream_name,
+				    SMB_STRUCT_STAT *psbuf,
+				    struct smb_filename **smb_fname_out);
+NTSTATUS create_synthetic_smb_fname_split(TALLOC_CTX *ctx,
+					  const char *fname,
+					  SMB_STRUCT_STAT *psbuf,
+					  struct smb_filename **smb_fname_out);
+char *smb_fname_str_dbg(const struct smb_filename *smb_fname);
 NTSTATUS copy_smb_filename(TALLOC_CTX *ctx,
 			   const struct smb_filename *smb_fname_in,
 			   struct smb_filename **smb_fname_out);
