@@ -1601,7 +1601,7 @@ krb5_init_creds_step(krb5_context context,
 		    ret = 0; 
 	    } else if (ret == KRB5_KDC_ERR_WRONG_REALM && ctx->flags.canonicalize) {
 	        /* client referal to a new realm */
-		if (ctx->error.crealm) {
+		if (ctx->error.crealm == NULL) {
 		    krb5_set_error_message(context, ret,
 					   N_("Got a client referral, not but no realm", ""));
 		    goto out;
