@@ -92,7 +92,8 @@ bool can_delete_file_in_directory(connection_struct *conn, const char *fname)
 	}
 
 #ifdef S_ISVTX
-	/* sticky bit means delete only by owner or root. */
+	/* sticky bit means delete only by owner of file or by root or
+	 * by owner of directory. */
 	if (sbuf.st_mode & S_ISVTX) {
 		SMB_STRUCT_STAT sbuf_file;
 		if(SMB_VFS_STAT(conn, fname, &sbuf_file) != 0) {
@@ -101,14 +102,24 @@ bool can_delete_file_in_directory(connection_struct *conn, const char *fname)
 				 * yes we'll be able to delete it. */
 				return True;
 			}
+			DEBUG(10,("can_delete_file_in_directory: can't "
+				"stat file %s (%s)",
+				fname, strerror(errno) ));
 			return False;
 		}
 		/*
 		 * Patch from SATOH Fumiyasu <fumiyas@miraclelinux.com>
 		 * for bug #3348. Don't assume owning sticky bit
 		 * directory means write access allowed.
+		 * Fail to delete if we're not the owner of the file,
+		 * or the owner of the directory as we have no possible
+		 * chance of deleting. Otherwise, go on and check the ACL.
 		 */
-		if (conn->server_info->utok.uid != sbuf_file.st_uid) {
+		if ((conn->server_info->utok.uid != sbuf.st_uid) &&
+				(conn->server_info->utok.uid != sbuf_file.st_uid)) {
+			DEBUG(10,("can_delete_file_in_directory: not "
+				"owner of file %s or directory %s",
+				fname, dname));
 			return False;
 		}
 	}
