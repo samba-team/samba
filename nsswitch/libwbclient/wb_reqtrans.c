@@ -84,6 +84,11 @@ static ssize_t wb_req_more(uint8_t *buf, size_t buflen, void *private_data)
 		return sizeof(struct winbindd_request) - 4;
 	}
 
+	if (buflen > sizeof(struct winbindd_request)) {
+		/* We've been here, we're done */
+		return 0;
+	}
+
 	if ((state->max_extra_data != 0)
 	    && (req->extra_len > state->max_extra_data)) {
 		DEBUG(3, ("Got request with %d bytes extra data on "
