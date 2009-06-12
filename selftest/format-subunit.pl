@@ -23,7 +23,7 @@ Show errors as soon as they happen rather than at the end of the test run.
 
 =item I<--format>=FORMAT
 
-Choose the format to print. Currently supported are plain, html or buildfarm.
+Choose the format to print. Currently supported are plain or html.
 
 =head1 LICENSE
 
@@ -57,11 +57,6 @@ my $result = GetOptions (
 
 exit(1) if (not $result);
 
-if (defined($ENV{RUN_FROM_BUILD_FARM}) and 
-	($ENV{RUN_FROM_BUILD_FARM} eq "yes")) {
-	$opt_format = "buildfarm";
-}
-
 my $msg_ops;
 
 my $statistics = {
@@ -75,10 +70,7 @@ my $statistics = {
 	TESTS_SKIP => 0,
 };
 
-if ($opt_format eq "buildfarm") {
-	require output::buildfarm;
-	$msg_ops = new output::buildfarm($statistics);
-} elsif ($opt_format eq "plain") {
+if ($opt_format eq "plain") {
 	require output::plain;
 	$msg_ops = new output::plain("$opt_prefix/summary", $opt_verbose, $opt_immediate, $statistics, undef);
 } elsif ($opt_format eq "html") {
