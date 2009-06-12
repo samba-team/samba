@@ -1947,6 +1947,39 @@ static void free_private_data(void **vp)
 	return;
 }
 
+/*
+  this is used to catch debug messages from events
+*/
+static void s3_tldap_debug(void *context, enum tldap_debug_level level,
+			   const char *fmt, va_list ap)  PRINTF_ATTRIBUTE(3,0);
+
+static void s3_tldap_debug(void *context, enum tldap_debug_level level,
+			   const char *fmt, va_list ap)
+{
+	int samba_level = -1;
+	char *s = NULL;
+	switch (level) {
+	case TLDAP_DEBUG_FATAL:
+		samba_level = 0;
+		break;
+	case TLDAP_DEBUG_ERROR:
+		samba_level = 1;
+		break;
+	case TLDAP_DEBUG_WARNING:
+		samba_level = 2;
+		break;
+	case TLDAP_DEBUG_TRACE:
+		samba_level = 10;
+		break;
+
+	};
+	if (vasprintf(&s, fmt, ap) == -1) {
+		return;
+	}
+	DEBUG(samba_level, ("tldap: %s", s));
+	free(s);
+}
+
 static NTSTATUS pdb_ads_connect(struct pdb_ads_state *state,
 				const char *location)
 {
@@ -1979,6 +2012,7 @@ static NTSTATUS pdb_ads_connect(struct pdb_ads_state *state,
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
+	tldap_set_debug(state->ld, s3_tldap_debug, NULL);
 
 	rc = tldap_search_fmt(
 		state->ld, "", TLDAP_SCOPE_BASE,
