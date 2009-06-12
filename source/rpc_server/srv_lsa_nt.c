@@ -1629,9 +1629,6 @@ NTSTATUS _lsa_EnumPrivsAccount(pipes_struct *p,
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!(info->access & LSA_POLICY_VIEW_LOCAL_INFORMATION))
-		return NT_STATUS_ACCESS_DENIED;
-
 	if ( !get_privileges_for_sids( &mask, &info->sid, 1 ) )
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
@@ -1691,9 +1688,6 @@ NTSTATUS _lsa_GetSystemAccessAccount(pipes_struct *p,
 
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
-
-	if (!(info->access & LSA_POLICY_VIEW_LOCAL_INFORMATION))
-		return NT_STATUS_ACCESS_DENIED;
 
 	if (!lookup_sid(p->mem_ctx, &info->sid, NULL, NULL, NULL))
 		return NT_STATUS_ACCESS_DENIED;
@@ -2097,9 +2091,6 @@ NTSTATUS _lsa_EnumAccountRights(pipes_struct *p,
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!(info->access & LSA_POLICY_VIEW_LOCAL_INFORMATION))
-		return NT_STATUS_ACCESS_DENIED;
-
 	/* according to an NT4 PDC, you can add privileges to SIDs even without
 	   call_lsa_create_account() first.  And you can use any arbitrary SID. */
 
@@ -2141,9 +2132,6 @@ NTSTATUS _lsa_LookupPrivValue(pipes_struct *p,
 
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
-
-	if (!(info->access & LSA_POLICY_VIEW_LOCAL_INFORMATION))
-		return NT_STATUS_ACCESS_DENIED;
 
 	name = r->in.name->string;
 
