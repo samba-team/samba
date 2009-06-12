@@ -59,6 +59,11 @@ struct tldap_context {
 	char *res_matcheddn;
 	char *res_diagnosticmessage;
 	char *res_referral;
+
+	/* debug */
+	void (*log_fn)(void *context, enum tldap_debug_level level,
+		       const char *fmt, va_list ap);
+	void *log_private;
 };
 
 struct tldap_message {
@@ -71,6 +76,33 @@ struct tldap_message {
 	char *dn;
 	struct tldap_attribute *attribs;
 };
+
+void tldap_set_debug(struct tldap_context *ld,
+		     void (*log_fn)(void *log_private,
+				    enum tldap_debug_level level,
+				    const char *fmt,
+				    va_list ap) PRINTF_ATTRIBUTE(3,0),
+		     void *log_private)
+{
+	ld->log_fn = log_fn;
+	ld->log_private = log_private;
+}
+
+static void tldap_debug(struct tldap_context *ld,
+			 enum tldap_debug_level level,
+			 const char *fmt, ...)
+{
+	va_list ap;
+	if (!ld) {
+		return;
+	}
+	if (ld->log_fn == NULL) {
+		return;
+	}
+	va_start(ap, fmt);
+	ld->log_fn(ld->log_private, level, fmt, ap);
+	va_end(ap);
+}
 
 static int tldap_next_msgid(struct tldap_context *ld)
 {

@@ -145,6 +145,21 @@ const char *tldap_ctx_diagnosticmessage(struct tldap_context *ctx);
 const char *tldap_ctx_referral(struct tldap_context *ctx);
 const char *tldap_err2string(int rc);
 
+/* DEBUG */
+enum tldap_debug_level {
+	TLDAP_DEBUG_FATAL,
+	TLDAP_DEBUG_ERROR,
+	TLDAP_DEBUG_WARNING,
+	TLDAP_DEBUG_TRACE
+};
+
+void tldap_set_debug(struct tldap_context *ld,
+		     void (*log_fn)(void *log_private,
+				    enum tldap_debug_level level,
+				    const char *fmt,
+				    va_list ap) PRINTF_ATTRIBUTE(3,0),
+		     void *log_private);
+
 /*
  * "+ 0x60" is from ASN1_APPLICATION
  */
