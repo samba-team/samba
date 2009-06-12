@@ -71,6 +71,7 @@ bool msrpc_gen(TALLOC_CTX *mem_ctx,
 				(smb_ucs2_t **)(void *)&pointers[i].data,
 				s, &n);
 			if (!ret) {
+				va_end(ap);
 				return false;
 			}
 			pointers[i].length = n;
@@ -84,6 +85,7 @@ bool msrpc_gen(TALLOC_CTX *mem_ctx,
 				pointers, (char **)(void *)&pointers[i].data,
 				s, &n);
 			if (!ret) {
+				va_end(ap);
 				return false;
 			}
 			pointers[i].length = n;
@@ -99,6 +101,7 @@ bool msrpc_gen(TALLOC_CTX *mem_ctx,
 				(smb_ucs2_t **)(void *)&pointers[i].data,
 				s, &n);
 			if (!ret) {
+				va_end(ap);
 				return false;
 			}
 			pointers[i].length = n;
@@ -192,6 +195,7 @@ bool msrpc_gen(TALLOC_CTX *mem_ctx,
 /* a helpful macro to avoid running over the end of our blob */
 #define NEED_DATA(amount) \
 if ((head_ofs + amount) > blob->length) { \
+        va_end(ap); \
         return false; \
 }
 

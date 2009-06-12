@@ -55,12 +55,9 @@ smbw_ref -- manipulate reference counts
 ******************************************************/
 int smbw_ref(int client_fd, Ref_Count_Type type, ...)
 {
-        va_list ap;
-
         /* client id values begin at SMBC_BASE_FC. */
         client_fd -= SMBC_BASE_FD;
 
-        va_start(ap, type);
         switch(type)
         {
         case SMBW_RCT_Increment:
@@ -73,9 +70,16 @@ int smbw_ref(int client_fd, Ref_Count_Type type, ...)
                 return smbw_ref_count[client_fd];
 
         case SMBW_RCT_Set:
-                return (smbw_ref_count[client_fd] = va_arg(ap, int));
+		{
+			va_list ap;
+			int ret;
+
+			va_start(ap, type);
+			ret = (smbw_ref_count[client_fd] = va_arg(ap, int));
+			va_end(ap);
+			return ret;
+		}
         }
-        va_end(ap);
 
         /* never gets here */
         return -1;

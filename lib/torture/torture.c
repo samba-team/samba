@@ -107,6 +107,7 @@ void torture_comment(struct torture_context *context, const char *comment, ...)
 
 	va_start(ap, comment);
 	tmp = talloc_vasprintf(context, comment, ap);
+	va_end(ap);
 		
 	context->results->ui_ops->comment(context, tmp);
 	
@@ -126,6 +127,7 @@ void torture_warning(struct torture_context *context, const char *comment, ...)
 
 	va_start(ap, comment);
 	tmp = talloc_vasprintf(context, comment, ap);
+	va_end(ap);
 
 	context->results->ui_ops->warning(context, tmp);
 
