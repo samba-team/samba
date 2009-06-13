@@ -367,40 +367,6 @@ const static struct torture_ui_ops std_ui_ops = {
 };
 
 
-static void quiet_suite_start(struct torture_context *ctx,
-			      struct torture_suite *suite)
-{
-	int i;
-	ctx->results->quiet = true;
-	for (i = 1; i < ctx->level; i++) putchar('\t');
-	printf("%s: ", suite->name);
-	fflush(stdout);
-}
-
-static void quiet_suite_finish(struct torture_context *ctx,
-			       struct torture_suite *suite)
-{
-	putchar('\n');
-}
-
-static void quiet_test_result(struct torture_context *context, 
-			      enum torture_result res, const char *reason)
-{
-	fflush(stdout);
-	switch (res) {
-	case TORTURE_OK: putchar('.'); break;
-	case TORTURE_FAIL: putchar('F'); break;
-	case TORTURE_ERROR: putchar('E'); break;
-	case TORTURE_SKIP: putchar('I'); break;
-	}
-}
-
-const static struct torture_ui_ops quiet_ui_ops = {
-	.suite_start = quiet_suite_start,
-	.suite_finish = quiet_suite_finish,
-	.test_result = quiet_test_result
-};
-
 static void run_shell(struct torture_context *tctx)
 {
 	char *cline;
@@ -624,8 +590,6 @@ int main(int argc,char *argv[])
 		ui_ops = &std_ui_ops;
 	} else if (!strcmp(ui_ops_name, "subunit")) {
 		ui_ops = &torture_subunit_ui_ops;
-	} else if (!strcmp(ui_ops_name, "quiet")) {
-		ui_ops = &quiet_ui_ops;
 	} else {
 		printf("Unknown output format '%s'\n", ui_ops_name);
 		exit(1);
