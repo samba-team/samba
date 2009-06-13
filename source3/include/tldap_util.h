@@ -54,4 +54,11 @@ bool tldap_pull_uint64(struct tldap_message *msg, const char *attr,
 bool tldap_pull_uint32(struct tldap_message *msg, const char *attr,
 		       uint32_t *presult);
 
+struct tevent_req *tldap_fetch_rootdse_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct tldap_context *ld);
+int tldap_fetch_rootdse_recv(struct tevent_req *req);
+int tldap_fetch_rootdse(struct tldap_context *ld);
+struct tldap_message *tldap_rootdse(struct tldap_context *ld);
+
 #endif

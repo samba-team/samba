@@ -378,3 +378,134 @@ bool tldap_pull_uint32(struct tldap_message *msg, const char *attr,
 	*presult = (uint32_t)result;
 	return true;
 }
+
+struct tldap_fetch_rootdse_state {
+	struct tldap_context *ld;
+	struct tldap_message *rootdse;
+};
+
+static void tldap_fetch_rootdse_done(struct tevent_req *subreq);
+
+struct tevent_req *tldap_fetch_rootdse_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct tldap_context *ld)
+{
+	struct tevent_req *req, *subreq;
+	struct tldap_fetch_rootdse_state *state;
+	static const char *attrs[2] = { "*", "+" };
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct tldap_fetch_rootdse_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ld = ld;
+	state->rootdse = NULL;
+
+	subreq = tldap_search_send(
+		mem_ctx, ev, ld, "", TLDAP_SCOPE_BASE, "(objectclass=*)",
+		attrs, ARRAY_SIZE(attrs), 0, NULL, NULL, 0, 0, 0);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, tldap_fetch_rootdse_done, req);
+	return req;
+}
+
+static void tldap_fetch_rootdse_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct tldap_fetch_rootdse_state *state = tevent_req_data(
+		req, struct tldap_fetch_rootdse_state);
+	struct tldap_message *msg;
+	int rc;
+
+	rc = tldap_search_recv(subreq, state, &msg);
+	if (rc != TLDAP_SUCCESS) {
+		TALLOC_FREE(subreq);
+		tevent_req_error(req, rc);
+		return;
+	}
+
+	switch (tldap_msg_type(msg)) {
+	case TLDAP_RES_SEARCH_ENTRY:
+		if (state->rootdse != NULL) {
+			goto protocol_error;
+		}
+		state->rootdse = msg;
+		break;
+	case TLDAP_RES_SEARCH_RESULT:
+		TALLOC_FREE(subreq);
+		if (state->rootdse == NULL) {
+			goto protocol_error;
+		}
+		tevent_req_done(req);
+		break;
+	default:
+		goto protocol_error;
+	}
+	tevent_req_done(req);
+	return;
+
+protocol_error:
+	tevent_req_error(req, TLDAP_PROTOCOL_ERROR);
+	return;
+}
+
+int tldap_fetch_rootdse_recv(struct tevent_req *req)
+{
+	struct tldap_fetch_rootdse_state *state = tevent_req_data(
+		req, struct tldap_fetch_rootdse_state);
+	int err;
+	char *dn;
+
+	if (tevent_req_is_ldap_error(req, &err)) {
+		return err;
+	}
+	/* Trigger parsing the dn, just to make sure it's ok */
+	if (!tldap_entry_dn(state->rootdse, &dn)) {
+		return TLDAP_DECODING_ERROR;
+	}
+	if (!tldap_context_setattr(state->ld, "tldap:rootdse",
+				   &state->rootdse)) {
+		return TLDAP_NO_MEMORY;
+	}
+	return 0;
+}
+
+int tldap_fetch_rootdse(struct tldap_context *ld)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	int result;
+
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		result = TLDAP_NO_MEMORY;
+		goto fail;
+	}
+
+	req = tldap_fetch_rootdse_send(frame, ev, ld);
+	if (req == NULL) {
+		result = TLDAP_NO_MEMORY;
+		goto fail;
+	}
+
+	if (!tevent_req_poll(req, ev)) {
+		result = TLDAP_OPERATIONS_ERROR;
+		goto fail;
+	}
+
+	result = tldap_fetch_rootdse_recv(req);
+ fail:
+	TALLOC_FREE(frame);
+	return result;
+}
+
+struct tldap_message *tldap_rootdse(struct tldap_context *ld)
+{
+	return talloc_get_type(tldap_context_getattr(ld, "tldap:rootdse"),
+			       struct tldap_message);
+}
