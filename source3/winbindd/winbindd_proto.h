@@ -271,6 +271,12 @@ struct tevent_req *wb_child_request_send(TALLOC_CTX *mem_ctx,
 					 struct winbindd_request *request);
 int wb_child_request_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			  struct winbindd_response **presponse, int *err);
+struct tevent_req *wb_domain_request_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct winbindd_domain *domain,
+					  struct winbindd_request *request);
+int wb_domain_request_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			   struct winbindd_response **presponse, int *err);
 
 void async_request(TALLOC_CTX *mem_ctx, struct winbindd_child *child,
 		   struct winbindd_request *request,

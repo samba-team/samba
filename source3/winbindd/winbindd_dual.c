@@ -190,6 +190,190 @@ int wb_child_request_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
+struct wb_domain_request_state {
+	struct tevent_context *ev;
+	struct winbindd_domain *domain;
+	struct winbindd_request *request;
+	struct winbindd_request *init_req;
+	struct winbindd_response *response;
+};
+
+static void wb_domain_request_gotdc(struct tevent_req *subreq);
+static void wb_domain_request_initialized(struct tevent_req *subreq);
+static void wb_domain_request_done(struct tevent_req *subreq);
+
+struct tevent_req *wb_domain_request_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct winbindd_domain *domain,
+					  struct winbindd_request *request)
+{
+	struct tevent_req *req, *subreq;
+	struct wb_domain_request_state *state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct wb_domain_request_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	if (domain->initialized) {
+		subreq = wb_child_request_send(state, ev, &domain->child,
+					       request);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, wb_domain_request_done, req);
+		return req;
+	}
+
+	state->domain = domain;
+	state->ev = ev;
+	state->request = request;
+
+	state->init_req = talloc_zero(state, struct winbindd_request);
+	if (tevent_req_nomem(state->init_req, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	if (IS_DC || domain->primary || domain->internal) {
+		/* The primary domain has to find the DC name itself */
+		state->init_req->cmd = WINBINDD_INIT_CONNECTION;
+		fstrcpy(state->init_req->domain_name, domain->name);
+		state->init_req->data.init_conn.is_primary =
+			domain->primary ? true : false;
+		fstrcpy(state->init_req->data.init_conn.dcname, "");
+
+		subreq = wb_child_request_send(state, ev, &domain->child,
+					       state->init_req);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, wb_domain_request_initialized,
+					req);
+		return req;
+	}
+
+	/*
+	 * Ask our DC for a DC name
+	 */
+	domain = find_our_domain();
+
+	/* This is *not* the primary domain, let's ask our DC about a DC
+	 * name */
+
+	state->init_req->cmd = WINBINDD_GETDCNAME;
+	fstrcpy(state->init_req->domain_name, domain->name);
+
+	subreq = wb_child_request_send(state, ev, &domain->child, request);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, wb_domain_request_gotdc, req);
+	return req;
+}
+
+static void wb_domain_request_gotdc(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct wb_domain_request_state *state = tevent_req_data(
+		req, struct wb_domain_request_state);
+	struct winbindd_response *response;
+	int ret, err;
+
+	ret = wb_child_request_recv(subreq, talloc_tos(), &response, &err);
+	TALLOC_FREE(subreq);
+	if (ret == -1) {
+		tevent_req_error(req, err);
+		return;
+	}
+	state->init_req->cmd = WINBINDD_INIT_CONNECTION;
+	fstrcpy(state->init_req->domain_name, state->domain->name);
+	state->init_req->data.init_conn.is_primary = False;
+	fstrcpy(state->init_req->data.init_conn.dcname,
+		response->data.dc_name);
+
+	TALLOC_FREE(response);
+
+	subreq = wb_child_request_send(state, state->ev, &state->domain->child,
+				       state->init_req);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, wb_domain_request_initialized, req);
+}
+
+static void wb_domain_request_initialized(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct wb_domain_request_state *state = tevent_req_data(
+		req, struct wb_domain_request_state);
+	struct winbindd_response *response;
+	int ret, err;
+
+	ret = wb_child_request_recv(subreq, talloc_tos(), &response, &err);
+	TALLOC_FREE(subreq);
+	if (ret == -1) {
+		tevent_req_error(req, err);
+		return;
+	}
+
+	if (!string_to_sid(&state->domain->sid,
+			   response->data.domain_info.sid)) {
+		DEBUG(1,("init_child_recv: Could not convert sid %s "
+			"from string\n", response->data.domain_info.sid));
+		tevent_req_error(req, EINVAL);
+		return;
+	}
+	fstrcpy(state->domain->name, response->data.domain_info.name);
+	fstrcpy(state->domain->alt_name, response->data.domain_info.alt_name);
+	state->domain->native_mode = response->data.domain_info.native_mode;
+	state->domain->active_directory =
+		response->data.domain_info.active_directory;
+	state->domain->initialized = true;
+
+	TALLOC_FREE(response);
+
+	subreq = wb_child_request_send(state, state->ev, &state->domain->child,
+				       state->request);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, wb_domain_request_done, req);
+}
+
+static void wb_domain_request_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct wb_domain_request_state *state = tevent_req_data(
+		req, struct wb_domain_request_state);
+	int ret, err;
+
+	ret = wb_child_request_recv(subreq, talloc_tos(), &state->response,
+				    &err);
+	TALLOC_FREE(subreq);
+	if (ret == -1) {
+		tevent_req_error(req, err);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+int wb_domain_request_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			   struct winbindd_response **presponse, int *err)
+{
+	struct wb_domain_request_state *state = tevent_req_data(
+		req, struct wb_domain_request_state);
+
+	if (tevent_req_is_unix_error(req, err)) {
+		return -1;
+	}
+	*presponse = talloc_move(mem_ctx, &state->response);
+	return 0;
+}
+
 /*
  * Machinery for async requests sent to children. You set up a
  * winbindd_request, select a child to query, and issue a async_request
