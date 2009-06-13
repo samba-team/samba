@@ -430,7 +430,7 @@ int main(int argc,char *argv[])
 	static const char *target = "other";
 	NTSTATUS status;
 	int shell = false;
-	static const char *ui_ops_name = "simple";
+	static const char *ui_ops_name = "subunit";
 	const char *basedir = NULL;
 	const char *extra_module = NULL;
 	static int list_tests = 0;
