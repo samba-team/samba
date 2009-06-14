@@ -531,10 +531,10 @@ static void process_request(struct winbindd_cli_state *state)
 	struct winbindd_dispatch_table *table = dispatch_table;
 	struct winbindd_async_dispatch_table *atable;
 
-	ZERO_STRUCT(state->response);
+	ZERO_STRUCTP(state->response);
 
-	state->response.result = WINBINDD_PENDING;
-	state->response.length = sizeof(struct winbindd_response);
+	state->response->result = WINBINDD_PENDING;
+	state->response->length = sizeof(struct winbindd_response);
 
 	state->mem_ctx = talloc_init("winbind request");
 	if (state->mem_ctx == NULL)
@@ -599,9 +599,9 @@ static void wb_request_done(struct tevent_req *req)
 		DEBUG(10, ("returning %s\n", nt_errstr(status)));
 		request_error(state);
 	}
-	state->response = *response;
-	state->response.result = WINBINDD_PENDING;
-	state->response.length = sizeof(struct winbindd_response);
+	state->response = response;
+	state->response->result = WINBINDD_PENDING;
+	state->response->length = sizeof(struct winbindd_response);
 	request_ok(state);
 }
 
@@ -628,7 +628,7 @@ static void request_finished(struct winbindd_cli_state *state)
 
 	req = wb_resp_write_send(state, winbind_event_context(),
 				 state->out_queue, state->sock,
-				 &state->response);
+				 state->response);
 	if (req == NULL) {
 		remove_client(state);
 		return;
@@ -665,15 +665,15 @@ static void winbind_client_response_written(struct tevent_req *req)
 
 void request_error(struct winbindd_cli_state *state)
 {
-	SMB_ASSERT(state->response.result == WINBINDD_PENDING);
-	state->response.result = WINBINDD_ERROR;
+	SMB_ASSERT(state->response->result == WINBINDD_PENDING);
+	state->response->result = WINBINDD_ERROR;
 	request_finished(state);
 }
 
 void request_ok(struct winbindd_cli_state *state)
 {
-	SMB_ASSERT(state->response.result == WINBINDD_PENDING);
-	state->response.result = WINBINDD_OK;
+	SMB_ASSERT(state->response->result == WINBINDD_PENDING);
+	state->response->result = WINBINDD_OK;
 	request_finished(state);
 }
 
@@ -709,6 +709,7 @@ static void new_connection(int listen_sock, bool privileged)
 	}
 
 	state->sock = sock;
+	state->response = &state->_response;
 
 	state->out_queue = tevent_queue_create(state, "winbind client reply");
 	if (state->out_queue == NULL) {
@@ -804,7 +805,7 @@ static bool remove_idle_client(void)
 	int nidle = 0;
 
 	for (state = winbindd_client_list(); state; state = state->next) {
-		if (state->response.result != WINBINDD_PENDING &&
+		if (state->response->result != WINBINDD_PENDING &&
 		    !state->getpwent_state && !state->getgrent_state) {
 			nidle++;
 			if (!last_access || state->last_access < last_access) {

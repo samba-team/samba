@@ -142,15 +142,15 @@ static enum winbindd_result dual_dsgetdcname(struct winbindd_domain *domain,
 		return WINBINDD_ERROR;
 	}
 
-	fstrcpy(state->response.data.dsgetdcname.dc_unc, info->dc_unc);
-	fstrcpy(state->response.data.dsgetdcname.dc_address, info->dc_address);
-	state->response.data.dsgetdcname.dc_address_type = info->dc_address_type;
-	fstrcpy(state->response.data.dsgetdcname.domain_guid, guid_str);
-	fstrcpy(state->response.data.dsgetdcname.domain_name, info->domain_name);
-	fstrcpy(state->response.data.dsgetdcname.forest_name, info->forest_name);
-	state->response.data.dsgetdcname.dc_flags = info->dc_flags;
-	fstrcpy(state->response.data.dsgetdcname.dc_site_name, info->dc_site_name);
-	fstrcpy(state->response.data.dsgetdcname.client_site_name, info->client_site_name);
+	fstrcpy(state->response->data.dsgetdcname.dc_unc, info->dc_unc);
+	fstrcpy(state->response->data.dsgetdcname.dc_address, info->dc_address);
+	state->response->data.dsgetdcname.dc_address_type = info->dc_address_type;
+	fstrcpy(state->response->data.dsgetdcname.domain_guid, guid_str);
+	fstrcpy(state->response->data.dsgetdcname.domain_name, info->domain_name);
+	fstrcpy(state->response->data.dsgetdcname.forest_name, info->forest_name);
+	state->response->data.dsgetdcname.dc_flags = info->dc_flags;
+	fstrcpy(state->response->data.dsgetdcname.dc_site_name, info->dc_site_name);
+	fstrcpy(state->response->data.dsgetdcname.client_site_name, info->client_site_name);
 
 	return WINBINDD_OK;
 }

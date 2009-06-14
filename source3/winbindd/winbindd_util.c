@@ -581,15 +581,15 @@ enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domai
 			"online = %d\n", domain->name, (int)domain->online ));
 	}
 
-	fstrcpy(state->response.data.domain_info.name, domain->name);
-	fstrcpy(state->response.data.domain_info.alt_name, domain->alt_name);
-	sid_to_fstring(state->response.data.domain_info.sid, &domain->sid);
+	fstrcpy(state->response->data.domain_info.name, domain->name);
+	fstrcpy(state->response->data.domain_info.alt_name, domain->alt_name);
+	sid_to_fstring(state->response->data.domain_info.sid, &domain->sid);
 
-	state->response.data.domain_info.native_mode
+	state->response->data.domain_info.native_mode
 		= domain->native_mode;
-	state->response.data.domain_info.active_directory
+	state->response->data.domain_info.active_directory
 		= domain->active_directory;
-	state->response.data.domain_info.primary
+	state->response->data.domain_info.primary
 		= domain->primary;
 
 	return WINBINDD_OK;

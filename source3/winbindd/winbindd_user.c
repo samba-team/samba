@@ -178,13 +178,15 @@ enum winbindd_result winbindd_dual_userinfo(struct winbindd_domain *domain,
 		return WINBINDD_ERROR;
 	}
 
-	fstrcpy(state->response.data.user_info.acct_name, user_info.acct_name);
-	fstrcpy(state->response.data.user_info.full_name, user_info.full_name);
-	fstrcpy(state->response.data.user_info.homedir, user_info.homedir);
-	fstrcpy(state->response.data.user_info.shell, user_info.shell);
-	state->response.data.user_info.primary_gid = user_info.primary_gid;
+	fstrcpy(state->response->data.user_info.acct_name,
+		user_info.acct_name);
+	fstrcpy(state->response->data.user_info.full_name,
+		user_info.full_name);
+	fstrcpy(state->response->data.user_info.homedir, user_info.homedir);
+	fstrcpy(state->response->data.user_info.shell, user_info.shell);
+	state->response->data.user_info.primary_gid = user_info.primary_gid;
 	if (!sid_peek_check_rid(&domain->sid, &user_info.group_sid,
-				&state->response.data.user_info.group_rid)) {
+				&state->response->data.user_info.group_rid)) {
 		DEBUG(1, ("Could not extract group rid out of %s\n",
 			  sid_string_dbg(&sid)));
 		return WINBINDD_ERROR;
@@ -371,7 +373,7 @@ static void getpwsid_sid2gid_recv(void *private_data, bool success, gid_t gid)
 		s->gid = gid;
 	}
 
-	pw = &s->state->response.data.pw;
+	pw = &s->state->response->data.pw;
 	pw->pw_uid = s->uid;
 	pw->pw_gid = s->gid;
 
@@ -785,7 +787,7 @@ void winbindd_getpwent(struct winbindd_cli_state *state)
 		request_error(state);
 		return;
 	}
-	state->response.extra_data.data = user_list;
+	state->response->extra_data.data = user_list;
 
 	if (!state->getpwent_initialized)
 		winbindd_setpwent_internal(state);
@@ -846,8 +848,8 @@ void winbindd_getpwent(struct winbindd_cli_state *state)
 		if (result) {
 
 			user_list_ndx++;
-			state->response.data.num_entries++;
-			state->response.length += sizeof(struct winbindd_pw);
+			state->response->data.num_entries++;
+			state->response->length += sizeof(struct winbindd_pw);
 
 		} else
 			DEBUG(1, ("could not lookup domain user %s\n",

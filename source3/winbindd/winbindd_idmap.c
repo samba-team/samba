@@ -299,11 +299,11 @@ enum winbindd_result winbindd_dual_sid2uid(struct winbindd_domain *domain,
 	}
 
 	result = idmap_sid_to_uid(state->request->domain_name, &sid,
-				  &state->response.data.uid);
+				  &state->response->data.uid);
 
 	DEBUG(10, ("winbindd_dual_sid2uid: 0x%08x - %s - %u\n",
 		   NT_STATUS_V(result), sid_string_dbg(&sid),
-		   (unsigned int)state->response.data.uid));
+		   (unsigned int)state->response->data.uid));
 
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
@@ -372,11 +372,11 @@ enum winbindd_result winbindd_dual_sid2gid(struct winbindd_domain *domain,
 	/* Find gid for this sid and return it, possibly ask the slow remote idmap */
 
 	result = idmap_sid_to_gid(state->request->domain_name, &sid,
-				  &state->response.data.gid);
+				  &state->response->data.gid);
 
 	DEBUG(10, ("winbindd_dual_sid2gid: 0x%08x - %s - %u\n",
 		   NT_STATUS_V(result), sid_string_dbg(&sid),
-		   (unsigned int)state->response.data.gid));
+		   (unsigned int)state->response->data.gid));
 
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
@@ -444,8 +444,8 @@ enum winbindd_result winbindd_dual_uid2sid(struct winbindd_domain *domain,
 				  state->request->data.uid);
 
 	if (NT_STATUS_IS_OK(result)) {
-		sid_to_fstring(state->response.data.sid.sid, &sid);
-		state->response.data.sid.type = SID_NAME_USER;
+		sid_to_fstring(state->response->data.sid.sid, &sid);
+		state->response->data.sid.type = SID_NAME_USER;
 		return WINBINDD_OK;
 	}
 
@@ -512,11 +512,11 @@ enum winbindd_result winbindd_dual_gid2sid(struct winbindd_domain *domain,
 				  state->request->data.gid);
 
 	if (NT_STATUS_IS_OK(result)) {
-		sid_to_fstring(state->response.data.sid.sid, &sid);
+		sid_to_fstring(state->response->data.sid.sid, &sid);
 		DEBUG(10, ("[%5lu]: retrieved sid: %s\n",
 			   (unsigned long)state->pid,
-			   state->response.data.sid.sid));
-		state->response.data.sid.type = SID_NAME_DOM_GRP;
+			   state->response->data.sid.sid));
+		state->response->data.sid.type = SID_NAME_DOM_GRP;
 		return WINBINDD_OK;
 	}
 

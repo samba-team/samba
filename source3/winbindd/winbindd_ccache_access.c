@@ -246,7 +246,7 @@ enum winbindd_result winbindd_dual_ccache_ntlm_auth(struct winbindd_domain *doma
 	if (initial_blob_len == 0 && challenge_blob_len == 0) {
 		/* this is just a probe to see if credentials are available. */
 		result = NT_STATUS_OK;
-		state->response.data.ccache_ntlm_auth.auth_blob_len = 0;
+		state->response->data.ccache_ntlm_auth.auth_blob_len = 0;
 		goto process_result;
 	}
 
@@ -269,14 +269,14 @@ enum winbindd_result winbindd_dual_ccache_ntlm_auth(struct winbindd_domain *doma
 		goto process_result;
 	}
 
-	state->response.extra_data.data = talloc_memdup(
+	state->response->extra_data.data = talloc_memdup(
 		state->mem_ctx, auth.data, auth.length);
-	if (!state->response.extra_data.data) {
+	if (!state->response->extra_data.data) {
 		result = NT_STATUS_NO_MEMORY;
 		goto process_result;
 	}
-	state->response.length += auth.length;
-	state->response.data.ccache_ntlm_auth.auth_blob_len = auth.length;
+	state->response->length += auth.length;
+	state->response->data.ccache_ntlm_auth.auth_blob_len = auth.length;
 
 	data_blob_free(&auth);
 

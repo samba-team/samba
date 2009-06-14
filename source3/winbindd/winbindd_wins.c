@@ -185,7 +185,7 @@ void winbindd_wins_byip(struct winbindd_cli_state *state)
 	    response[strlen(response)-1] = '\n';
 	    SAFE_FREE(status);
 	}
-	fstrcpy(state->response.data.winsresp,response);
+	fstrcpy(state->response->data.winsresp,response);
 	request_ok(state);
 }
 
@@ -241,7 +241,7 @@ void winbindd_wins_byname(struct winbindd_cli_state *state)
 		return;
 	}
 
-	fstrcpy(state->response.data.winsresp,response);
+	fstrcpy(state->response->data.winsresp,response);
 
 	request_ok(state);
 }

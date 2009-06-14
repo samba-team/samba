@@ -86,10 +86,10 @@ enum winbindd_result winbindd_dual_check_machine_acct(struct winbindd_domain *do
                   "good" : "bad"));
 
  done:
-	set_auth_errors(&state->response, result);
+	set_auth_errors(state->response, result);
 
 	DEBUG(NT_STATUS_IS_OK(result) ? 5 : 2, ("Checking the trust account password returned %s\n", 
-						state->response.data.auth.nt_status_string));
+						state->response->data.auth.nt_status_string));
 
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
@@ -209,8 +209,8 @@ static void listent_recv(void *private_data, bool success, fstring dom_name,
 
 	/* Return list of all users/groups to the client */
 	if (state->extra_data) {
-		state->cli_state->response.extra_data.data = state->extra_data;
-		state->cli_state->response.length += state->extra_data_len;
+		state->cli_state->response->extra_data.data = state->extra_data;
+		state->cli_state->response->length += state->extra_data_len;
 	}
 
 	request_ok(state->cli_state);
@@ -333,8 +333,8 @@ void winbindd_list_trusted_domains(struct winbindd_cli_state *state)
 	}
 
 	if (extra_data_len > 0) {
-		state->response.extra_data.data = extra_data;
-		state->response.length += extra_data_len+1;
+		state->response->extra_data.data = extra_data;
+		state->response->length += extra_data_len+1;
 	}
 
 	request_ok(state);	
@@ -407,8 +407,8 @@ enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *
 	}
 
 	if (extra_data_len > 0) {
-		state->response.extra_data.data = extra_data;
-		state->response.length += extra_data_len+1;
+		state->response->extra_data.data = extra_data;
+		state->response->length += extra_data_len+1;
 	}
 
 	return WINBINDD_OK;
@@ -426,7 +426,7 @@ void winbindd_getdcname(struct winbindd_cli_state *state)
 
 	domain = find_domain_from_name_noinit(state->request->domain_name);
 	if (domain && domain->internal) {
-		fstrcpy(state->response.data.dc_name, global_myname());
+		fstrcpy(state->response->data.dc_name, global_myname());
 		request_ok(state);	
 		return;
 	}
@@ -502,7 +502,7 @@ enum winbindd_result winbindd_dual_getdcname(struct winbindd_domain *domain,
 		p+=1;
 	}
 
-	fstrcpy(state->response.data.dc_name, p);
+	fstrcpy(state->response->data.dc_name, p);
 	return WINBINDD_OK;
 }
 
@@ -602,10 +602,10 @@ static void sequence_recv(void *private_data, bool success)
 
 	if (state->domain == NULL) {
 		struct winbindd_cli_state *cli_state = state->cli_state;
-		cli_state->response.length =
-			sizeof(cli_state->response) +
+		cli_state->response->length =
+			sizeof(struct winbindd_response) +
 			strlen(state->extra_data) + 1;
-		cli_state->response.extra_data.data = state->extra_data;
+		cli_state->response->extra_data.data = state->extra_data;
 		request_ok(cli_state);
 		return;
 	}
@@ -630,7 +630,7 @@ enum winbindd_result winbindd_dual_show_sequence(struct winbindd_domain *domain,
 
 	domain->methods->sequence_number(domain, &domain->sequence_number);
 
-	state->response.data.sequence_number =
+	state->response->data.sequence_number =
 		domain->sequence_number;
 
 	return WINBINDD_OK;
@@ -663,17 +663,17 @@ void winbindd_domain_info(struct winbindd_cli_state *cli)
 	}
 
 	if (domain->initialized) {
-		fstrcpy(cli->response.data.domain_info.name,
+		fstrcpy(cli->response->data.domain_info.name,
 			domain->name);
-		fstrcpy(cli->response.data.domain_info.alt_name,
+		fstrcpy(cli->response->data.domain_info.alt_name,
 			domain->alt_name);
-		sid_to_fstring(cli->response.data.domain_info.sid,
+		sid_to_fstring(cli->response->data.domain_info.sid,
 			       &domain->sid);
-		cli->response.data.domain_info.native_mode =
+		cli->response->data.domain_info.native_mode =
 			domain->native_mode;
-		cli->response.data.domain_info.active_directory =
+		cli->response->data.domain_info.active_directory =
 			domain->active_directory;
-		cli->response.data.domain_info.primary =
+		cli->response->data.domain_info.primary =
 			domain->primary;
 		request_ok(cli);
 		return;
@@ -724,18 +724,18 @@ static void domain_info_done(struct tevent_req *req)
 		return;
 	}
 
-	fstrcpy(state->cli->response.data.domain_info.name,
+	fstrcpy(state->cli->response->data.domain_info.name,
 		state->domain->name);
-	fstrcpy(state->cli->response.data.domain_info.alt_name,
+	fstrcpy(state->cli->response->data.domain_info.alt_name,
 		state->domain->alt_name);
-	sid_to_fstring(state->cli->response.data.domain_info.sid,
+	sid_to_fstring(state->cli->response->data.domain_info.sid,
 		       &state->domain->sid);
 
-	state->cli->response.data.domain_info.native_mode =
+	state->cli->response->data.domain_info.native_mode =
 		state->domain->native_mode;
-	state->cli->response.data.domain_info.active_directory =
+	state->cli->response->data.domain_info.active_directory =
 		state->domain->active_directory;
-	state->cli->response.data.domain_info.primary =
+	state->cli->response->data.domain_info.primary =
 		state->domain->primary;
 
 	request_ok(state->cli);
@@ -754,8 +754,8 @@ void winbindd_info(struct winbindd_cli_state *state)
 
 	DEBUG(3, ("[%5lu]: request misc info\n", (unsigned long)state->pid));
 
-	state->response.data.info.winbind_separator = *lp_winbind_separator();
-	fstrcpy(state->response.data.info.samba_version, samba_version_string());
+	state->response->data.info.winbind_separator = *lp_winbind_separator();
+	fstrcpy(state->response->data.info.samba_version, samba_version_string());
 	request_ok(state);
 }
 
@@ -766,7 +766,7 @@ void winbindd_interface_version(struct winbindd_cli_state *state)
 	DEBUG(3, ("[%5lu]: request interface version\n",
 		  (unsigned long)state->pid));
 	
-	state->response.data.interface_version = WINBIND_INTERFACE_VERSION;
+	state->response->data.interface_version = WINBIND_INTERFACE_VERSION;
 	request_ok(state);
 }
 
@@ -776,7 +776,7 @@ void winbindd_domain_name(struct winbindd_cli_state *state)
 {
 	DEBUG(3, ("[%5lu]: request domain name\n", (unsigned long)state->pid));
 	
-	fstrcpy(state->response.data.domain_name, lp_workgroup());
+	fstrcpy(state->response->data.domain_name, lp_workgroup());
 	request_ok(state);
 }
 
@@ -787,7 +787,7 @@ void winbindd_netbios_name(struct winbindd_cli_state *state)
 	DEBUG(3, ("[%5lu]: request netbios name\n",
 		  (unsigned long)state->pid));
 	
-	fstrcpy(state->response.data.netbios_name, global_myname());
+	fstrcpy(state->response->data.netbios_name, global_myname());
 	request_ok(state);
 }
 
@@ -800,12 +800,12 @@ void winbindd_priv_pipe_dir(struct winbindd_cli_state *state)
 		  (unsigned long)state->pid));
 	
 	priv_dir = get_winbind_priv_pipe_dir();
-	state->response.extra_data.data = talloc_move(state->mem_ctx,
+	state->response->extra_data.data = talloc_move(state->mem_ctx,
 						      &priv_dir);
 
 	/* must add one to length to copy the 0 for string termination */
-	state->response.length +=
-		strlen((char *)state->response.extra_data.data) + 1;
+	state->response->length +=
+		strlen((char *)state->response->extra_data.data) + 1;
 
 	request_ok(state);
 }

@@ -888,7 +888,7 @@ static void getgrsid_sid2gid_recv(void *private_data, bool success, gid_t gid)
 		return;
 	}
 
-	if (!fill_grent(s->state->mem_ctx, &s->state->response.data.gr,
+	if (!fill_grent(s->state->mem_ctx, &s->state->response->data.gr,
 			dom_name, group_name, gid) ||
 	    !fill_grent_mem(domain, s->state, &s->group_sid, s->group_type,
 			    &num_gr_mem, &gr_mem, &gr_mem_len))
@@ -897,16 +897,16 @@ static void getgrsid_sid2gid_recv(void *private_data, bool success, gid_t gid)
 		return;
 	}
 
-	s->state->response.data.gr.num_gr_mem = (uint32)num_gr_mem;
+	s->state->response->data.gr.num_gr_mem = (uint32)num_gr_mem;
 
 	/* Group membership lives at start of extra data */
 
-	s->state->response.data.gr.gr_mem_ofs = 0;
+	s->state->response->data.gr.gr_mem_ofs = 0;
 
-	s->state->response.length += gr_mem_len;
-	s->state->response.extra_data.data = talloc_memdup(
+	s->state->response->length += gr_mem_len;
+	s->state->response->extra_data.data = talloc_memdup(
 		s->state->mem_ctx, gr_mem, gr_mem_len);
-	if (s->state->response.extra_data.data == NULL) {
+	if (s->state->response->extra_data.data == NULL) {
 		request_error(s->state);
 		return;
 	}
@@ -1308,9 +1308,9 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 		request_error(state);
 		return;
 	}
-	state->response.extra_data.data = group_list;
+	state->response->extra_data.data = group_list;
 
-	state->response.data.num_entries = 0;
+	state->response->data.num_entries = 0;
 
 	if (!state->getgrent_initialized)
 		winbindd_setgrent_internal(state);
@@ -1481,12 +1481,12 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 		if (result) {
 
 			DEBUG(10, ("adding group num_entries = %d\n",
-				   state->response.data.num_entries));
+				   state->response->data.num_entries));
 
 			group_list_ndx++;
-			state->response.data.num_entries++;
+			state->response->data.num_entries++;
 
-			state->response.length +=
+			state->response->length +=
 				sizeof(struct winbindd_gr);
 
 		} else {
@@ -1500,11 +1500,11 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 	if (group_list_ndx == 0)
 		goto done;
 
-	state->response.extra_data.data = talloc_realloc_size(
-		state->mem_ctx, state->response.extra_data.data,
+	state->response->extra_data.data = talloc_realloc_size(
+		state->mem_ctx, state->response->extra_data.data,
 		group_list_ndx * sizeof(struct winbindd_gr) + gr_mem_list_len);
 
-	if (!state->response.extra_data.data) {
+	if (!state->response->extra_data.data) {
 		DEBUG(0, ("out of memory\n"));
 		group_list_ndx = 0;
 		SAFE_FREE(gr_mem_list);
@@ -1512,11 +1512,11 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 		return;
 	}
 
-	memcpy(&((char *)state->response.extra_data.data)
+	memcpy(&((char *)state->response->extra_data.data)
 	       [group_list_ndx * sizeof(struct winbindd_gr)],
 	       gr_mem_list, gr_mem_list_len);
 
-	state->response.length += gr_mem_list_len;
+	state->response->length += gr_mem_list_len;
 
 	DEBUG(10, ("returning %d groups, length = %d\n",
 		   group_list_ndx, gr_mem_list_len));
@@ -1724,10 +1724,10 @@ static void getgroups_sid2gid_recv(void *private_data, bool success, gid_t gid)
 		return;
 	}
 
-	s->state->response.data.num_entries = s->num_token_gids;
+	s->state->response->data.num_entries = s->num_token_gids;
 	if (s->num_token_gids) {
-		s->state->response.extra_data.data = s->token_gids;
-		s->state->response.length += s->num_token_gids * sizeof(gid_t);
+		s->state->response->extra_data.data = s->token_gids;
+		s->state->response->length += s->num_token_gids * sizeof(gid_t);
 	}
 	request_ok(s->state);
 }
@@ -1809,9 +1809,9 @@ static void getusersids_recv(void *private_data, bool success, DOM_SID *sids,
 	}
 
 	/* Send data back to client */
-	state->response.data.num_entries = num_sids;
-	state->response.extra_data.data = ret;
-	state->response.length += ret_size;
+	state->response->data.num_entries = num_sids;
+	state->response->extra_data.data = ret;
+	state->response->length += ret_size;
 	request_ok(state);
 }
 
@@ -1868,8 +1868,8 @@ enum winbindd_result winbindd_dual_getuserdomgroups(struct winbindd_domain *doma
 		return WINBINDD_ERROR;
 
 	if (num_groups == 0) {
-		state->response.data.num_entries = 0;
-		state->response.extra_data.data = NULL;
+		state->response->data.num_entries = 0;
+		state->response->extra_data.data = NULL;
 		return WINBINDD_OK;
 	}
 
@@ -1880,9 +1880,9 @@ enum winbindd_result winbindd_dual_getuserdomgroups(struct winbindd_domain *doma
 		return WINBINDD_ERROR;
 	}
 
-	state->response.extra_data.data = sidstring;
-	state->response.length += len+1;
-	state->response.data.num_entries = num_groups;
+	state->response->extra_data.data = sidstring;
+	state->response->length += len+1;
+	state->response->data.num_entries = num_groups;
 
 	return WINBINDD_OK;
 }
@@ -1979,18 +1979,18 @@ enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_domain *domain,
 
 	if (!print_sidlist(state->mem_ctx, sids, num_sids, &sidstr, &len)) {
 		DEBUG(0, ("Could not print_sidlist\n"));
-		state->response.extra_data.data = NULL;
+		state->response->extra_data.data = NULL;
 		return WINBINDD_ERROR;
 	}
 
-	state->response.extra_data.data = NULL;
+	state->response->extra_data.data = NULL;
 
 	if (sidstr) {
-		state->response.extra_data.data = sidstr;
+		state->response->extra_data.data = sidstr;
 		DEBUG(10, ("aliases_list: %s\n",
-			   (char *)state->response.extra_data.data));
-		state->response.length += len+1;
-		state->response.data.num_entries = num_sids;
+			   (char *)state->response->extra_data.data));
+		state->response->length += len+1;
+		state->response->data.num_entries = num_sids;
 	}
 
 	return WINBINDD_OK;

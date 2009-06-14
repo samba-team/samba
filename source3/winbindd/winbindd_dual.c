@@ -516,13 +516,13 @@ static void recvfrom_child(void *private_data_data, bool success)
 {
 	struct winbindd_cli_state *state =
 		talloc_get_type_abort(private_data_data, struct winbindd_cli_state);
-	enum winbindd_result result = state->response.result;
+	enum winbindd_result result = state->response->result;
 
 	/* This is an optimization: The child has written directly to the
 	 * response buffer. The request itself is still in pending state,
 	 * state that in the result code. */
 
-	state->response.result = WINBINDD_PENDING;
+	state->response->result = WINBINDD_PENDING;
 
 	if ((!success) || (result != WINBINDD_OK)) {
 		request_error(state);
@@ -536,14 +536,14 @@ void sendto_child(struct winbindd_cli_state *state,
 		  struct winbindd_child *child)
 {
 	async_request(state->mem_ctx, child, state->request,
-		      &state->response, recvfrom_child, state);
+		      state->response, recvfrom_child, state);
 }
 
 void sendto_domain(struct winbindd_cli_state *state,
 		   struct winbindd_domain *domain)
 {
 	async_domain_request(state->mem_ctx, domain,
-			     state->request, &state->response,
+			     state->request, state->response,
 			     recvfrom_child, state);
 }
 
@@ -556,8 +556,8 @@ static void child_process_request(struct winbindd_child *child,
 	/* Free response data - we may be interrupted and receive another
 	   command before being able to send this data off. */
 
-	state->response.result = WINBINDD_ERROR;
-	state->response.length = sizeof(struct winbindd_response);
+	state->response->result = WINBINDD_ERROR;
+	state->response->length = sizeof(struct winbindd_response);
 
 	/* as all requests in the child are sync, we can use talloc_tos() */
 	state->mem_ctx = talloc_tos();
@@ -568,14 +568,14 @@ static void child_process_request(struct winbindd_child *child,
 		if (state->request->cmd == table->struct_cmd) {
 			DEBUG(10,("child_process_request: request fn %s\n",
 				  table->name));
-			state->response.result = table->struct_fn(domain, state);
+			state->response->result = table->struct_fn(domain, state);
 			return;
 		}
 	}
 
 	DEBUG(1 ,("child_process_request: unknown request fn number %d\n",
 		  (int)state->request->cmd));
-	state->response.result = WINBINDD_ERROR;
+	state->response->result = WINBINDD_ERROR;
 }
 
 void setup_child(struct winbindd_child *child,
@@ -1334,6 +1334,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 	ZERO_STRUCT(state);
 	state.pid = sys_getpid();
 	state.request = &state._request;
+	state.response = &state._response;
 
 	child->pid = sys_fork();
 
@@ -1525,7 +1526,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 
 		DEBUG(4,("child daemon request %d\n", (int)state.request->cmd));
 
-		ZERO_STRUCT(state.response);
+		ZERO_STRUCTP(state.response);
 		state.request->null_term = '\0';
 		child_process_request(child, &state);
 
@@ -1534,22 +1535,22 @@ static bool fork_domain_child(struct winbindd_child *child)
 
 		SAFE_FREE(state.request->extra_data.data);
 
-		iov[0].iov_base = (void *)&state.response;
+		iov[0].iov_base = (void *)state.response;
 		iov[0].iov_len = sizeof(struct winbindd_response);
 		iov_count = 1;
 
-		if (state.response.length > sizeof(struct winbindd_response)) {
+		if (state.response->length > sizeof(struct winbindd_response)) {
 			iov[1].iov_base =
-				(void *)state.response.extra_data.data;
-			iov[1].iov_len = state.response.length-iov[0].iov_len;
+				(void *)state.response->extra_data.data;
+			iov[1].iov_len = state.response->length-iov[0].iov_len;
 			iov_count = 2;
 		}
 
 		DEBUG(10, ("Writing %d bytes to parent\n",
-			   (int)state.response.length));
+			   (int)state.response->length));
 
 		if (write_data_iov(state.sock, iov, iov_count) !=
-		    state.response.length) {
+		    state.response->length) {
 			DEBUG(0, ("Could not write result\n"));
 			exit(1);
 		}

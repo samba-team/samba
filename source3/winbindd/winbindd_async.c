@@ -255,9 +255,9 @@ enum winbindd_result winbindd_dual_lookupsid(struct winbindd_domain *domain,
 		return WINBINDD_ERROR;
 	}
 
-	fstrcpy(state->response.data.name.dom_name, dom_name);
-	fstrcpy(state->response.data.name.name, name);
-	state->response.data.name.type = type;
+	fstrcpy(state->response->data.name.dom_name, dom_name);
+	fstrcpy(state->response->data.name.name, name);
+	state->response->data.name.type = type;
 
 	TALLOC_FREE(dom_name);
 	TALLOC_FREE(name);
@@ -447,8 +447,8 @@ enum winbindd_result winbindd_dual_lookupname(struct winbindd_domain *domain,
 		return WINBINDD_ERROR;
 	}
 
-	sid_to_fstring(state->response.data.sid.sid, &sid);
-	state->response.data.sid.type = type;
+	sid_to_fstring(state->response->data.sid.sid, &sid);
+	state->response->data.sid.type = type;
 
 	return WINBINDD_OK;
 }
@@ -501,7 +501,7 @@ enum winbindd_result winbindd_dual_list_users(struct winbindd_domain *domain,
 	uint32_t extra_data_len = 0, i;
 
 	/* Must copy domain into response first for debugging in parent */
-	fstrcpy(state->response.data.name.dom_name, domain->name);
+	fstrcpy(state->response->data.name.dom_name, domain->name);
 
 	/* Query user info */
 	methods = domain->methods;
@@ -545,8 +545,8 @@ enum winbindd_result winbindd_dual_list_users(struct winbindd_domain *domain,
 	if (extra_data) {
 		/* remove trailing ',' */
 		extra_data[extra_data_len - 1] = '\0';
-		state->response.extra_data.data = extra_data;
-		state->response.length += extra_data_len;
+		state->response->extra_data.data = extra_data;
+		state->response->length += extra_data_len;
 	}
 
 	return WINBINDD_OK;
@@ -562,7 +562,7 @@ enum winbindd_result winbindd_dual_list_groups(struct winbindd_domain *domain,
 	ZERO_STRUCT(groups);
 
 	/* Must copy domain into response first for debugging in parent */
-	fstrcpy(state->response.data.name.dom_name, domain->name);
+	fstrcpy(state->response->data.name.dom_name, domain->name);
 	fstrcpy(groups.domain_name, domain->name);
 
 	/* Get list of sam groups */
@@ -603,8 +603,8 @@ enum winbindd_result winbindd_dual_list_groups(struct winbindd_domain *domain,
 	if (extra_data) {
 		/* remove trailing ',' */
 		extra_data[extra_data_len - 1] = '\0';
-		state->response.extra_data.data = extra_data;
-		state->response.length += extra_data_len;
+		state->response->extra_data.data = extra_data;
+		state->response->length += extra_data_len;
 	}
 
 	return WINBINDD_OK;
@@ -734,11 +734,11 @@ enum winbindd_result winbindd_dual_lookuprids(struct winbindd_domain *domain,
 			       "%d %s\n", types[i], names[i]);
 	}
 
-	fstrcpy(state->response.data.domain_name, domain_name);
+	fstrcpy(state->response->data.domain_name, domain_name);
 
 	if (result != NULL) {
-		state->response.extra_data.data = result;
-		state->response.length += len+1;
+		state->response->extra_data.data = result;
+		state->response->length += len+1;
 	}
 
 	return WINBINDD_OK;

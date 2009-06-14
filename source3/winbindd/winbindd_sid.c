@@ -63,9 +63,9 @@ static void lookupsid_recv(void *private_data, bool success,
 		return;
 	}
 
-	fstrcpy(state->response.data.name.dom_name, dom_name);
-	fstrcpy(state->response.data.name.name, name);
-	state->response.data.name.type = type;
+	fstrcpy(state->response->data.name.dom_name, dom_name);
+	fstrcpy(state->response->data.name.name, name);
+	state->response->data.name.type = type;
 	request_ok(state);
 }
 
@@ -118,8 +118,8 @@ static void lookupname_recv(void *private_data, bool success,
 		return;
 	}
 
-	sid_to_fstring(state->response.data.sid.sid, sid);
-	state->response.data.sid.type = type;
+	sid_to_fstring(state->response->data.sid.sid, sid);
+	state->response->data.sid.type = type;
 	request_ok(state);
 	return;
 }
@@ -170,7 +170,7 @@ static void sid2uid_recv(void *private_data, bool success, uid_t uid)
 		return;
 	}
 
-	state->response.data.uid = uid;
+	state->response->data.uid = uid;
 	request_ok(state);
 }
 
@@ -248,7 +248,7 @@ void winbindd_sid_to_uid(struct winbindd_cli_state *state)
 			return;
 		}
 		DEBUG(10, ("Returning positive cache entry\n"));
-		state->response.data.uid = uid;
+		state->response->data.uid = uid;
 		request_ok(state);
 		return;
 	}
@@ -279,7 +279,7 @@ static void sid2gid_recv(void *private_data, bool success, gid_t gid)
 		return;
 	}
 
-	state->response.data.gid = gid;
+	state->response->data.gid = gid;
 	request_ok(state);
 }
 
@@ -360,7 +360,7 @@ void winbindd_sid_to_gid(struct winbindd_cli_state *state)
 			return;
 		}
 		DEBUG(10, ("Returning positive cache entry\n"));
-		state->response.data.gid = gid;
+		state->response->data.gid = gid;
 		request_ok(state);
 		return;
 	}
@@ -509,8 +509,8 @@ static void uid2sid_recv(void *private_data, bool success, const char *sidstr)
 		  (unsigned long)(state->request->data.uid), sidstr));
 
 	idmap_cache_set_sid2uid(&sid, state->request->data.uid);
-	fstrcpy(state->response.data.sid.sid, sidstr);
-	state->response.data.sid.type = SID_NAME_USER;
+	fstrcpy(state->response->data.sid.sid, sidstr);
+	state->response->data.sid.type = SID_NAME_USER;
 	request_ok(state);
 	return;
 }
@@ -538,7 +538,7 @@ void winbindd_uid_to_sid(struct winbindd_cli_state *state)
 			return;
 		}
 		DEBUG(10, ("Returning positive cache entry\n"));
-		sid_to_fstring(state->response.data.sid.sid, &sid);
+		sid_to_fstring(state->response->data.sid.sid, &sid);
 		request_ok(state);
 		return;
 	}
@@ -566,8 +566,8 @@ static void gid2sid_recv(void *private_data, bool success, const char *sidstr)
 		  (unsigned long)(state->request->data.gid), sidstr));
 
 	idmap_cache_set_sid2gid(&sid, state->request->data.gid);
-	fstrcpy(state->response.data.sid.sid, sidstr);
-	state->response.data.sid.type = SID_NAME_DOM_GRP;
+	fstrcpy(state->response->data.sid.sid, sidstr);
+	state->response->data.sid.type = SID_NAME_DOM_GRP;
 	request_ok(state);
 	return;
 }
@@ -596,7 +596,7 @@ void winbindd_gid_to_sid(struct winbindd_cli_state *state)
 			return;
 		}
 		DEBUG(10, ("Returning positive cache entry\n"));
-		sid_to_fstring(state->response.data.sid.sid, &sid);
+		sid_to_fstring(state->response->data.sid.sid, &sid);
 		request_ok(state);
 		return;
 	}
@@ -626,7 +626,7 @@ enum winbindd_result winbindd_dual_allocate_uid(struct winbindd_domain *domain,
 	if (!NT_STATUS_IS_OK(idmap_allocate_uid(&xid))) {
 		return WINBINDD_ERROR;
 	}
-	state->response.data.uid = xid.id;
+	state->response->data.uid = xid.id;
 	return WINBINDD_OK;
 }
 
@@ -650,6 +650,6 @@ enum winbindd_result winbindd_dual_allocate_gid(struct winbindd_domain *domain,
 	if (!NT_STATUS_IS_OK(idmap_allocate_gid(&xid))) {
 		return WINBINDD_ERROR;
 	}
-	state->response.data.gid = xid.id;
+	state->response->data.gid = xid.id;
 	return WINBINDD_OK;
 }
