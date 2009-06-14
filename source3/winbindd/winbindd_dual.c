@@ -1316,6 +1316,8 @@ static bool fork_domain_child(struct winbindd_child *child)
 {
 	int fdpair[2];
 	struct winbindd_cli_state state;
+	struct winbindd_request request;
+	struct winbindd_response response;
 	struct winbindd_domain *primary_domain = NULL;
 
 	if (child->domain) {
@@ -1333,8 +1335,8 @@ static bool fork_domain_child(struct winbindd_child *child)
 
 	ZERO_STRUCT(state);
 	state.pid = sys_getpid();
-	state.request = &state._request;
-	state.response = &state._response;
+	state.request = &request;
+	state.response = &response;
 
 	child->pid = sys_fork();
 

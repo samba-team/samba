@@ -531,11 +531,6 @@ static void process_request(struct winbindd_cli_state *state)
 	struct winbindd_dispatch_table *table = dispatch_table;
 	struct winbindd_async_dispatch_table *atable;
 
-	ZERO_STRUCTP(state->response);
-
-	state->response->result = WINBINDD_PENDING;
-	state->response->length = sizeof(struct winbindd_response);
-
 	state->mem_ctx = talloc_init("winbind request");
 	if (state->mem_ctx == NULL)
 		return;
@@ -569,6 +564,16 @@ static void process_request(struct winbindd_cli_state *state)
 		state->recv_fn = atable->recv_req;
 		return;
 	}
+
+	state->response = talloc_zero(state->mem_ctx,
+				      struct winbindd_response);
+	if (state->response == NULL) {
+		DEBUG(10, ("talloc failed\n"));
+		remove_client(state);
+		return;
+	}
+	state->response->result = WINBINDD_PENDING;
+	state->response->length = sizeof(struct winbindd_response);
 
 	for (table = dispatch_table; table->fn; table++) {
 		if (state->request->cmd == table->cmd) {
@@ -709,7 +714,6 @@ static void new_connection(int listen_sock, bool privileged)
 	}
 
 	state->sock = sock;
-	state->response = &state->_response;
 
 	state->out_queue = tevent_queue_create(state, "winbind client reply");
 	if (state->out_queue == NULL) {

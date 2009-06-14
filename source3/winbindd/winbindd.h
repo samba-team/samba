@@ -58,10 +58,8 @@ struct winbindd_cli_state {
 	NTSTATUS (*recv_fn)(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			    struct winbindd_response **presp);
 	struct winbindd_request *request;         /* Request from client */
-	struct winbindd_request _request;
 	struct tevent_queue *out_queue;
-	struct winbindd_response *response;
-	struct winbindd_response _response;        /* Respose to client */
+	struct winbindd_response *response;        /* Respose to client */
 	bool getpwent_initialized;                /* Has getpwent_state been
 						   * initialized? */
 	bool getgrent_initialized;                /* Has getgrent_state been
