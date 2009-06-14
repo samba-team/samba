@@ -504,7 +504,7 @@ static void async_domain_request_done(struct tevent_req *req)
 	ret = wb_domain_request_recv(req, state, &response, &err);
 	TALLOC_FREE(req);
 	if (ret == -1) {
-		DEBUG(5, ("wb_domain_request returned %s\n", strerror(errno)));
+		DEBUG(5, ("wb_domain_request returned %s\n", strerror(err)));
 		state->continuation(state->private_data_data, false);
 		return;
 	}
