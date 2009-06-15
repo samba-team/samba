@@ -170,6 +170,50 @@
 </refsect1>
 
 <refsect1>
+	<title>PAM DATA EXPORTS</title>
+
+	<para>This section describes the data exported in the PAM stack which could be used in other PAM modules.</para>
+
+	<varlistentry>
+		<term>PAM_WINBIND_HOMEDIR</term>
+		<listitem>
+			<para>
+				This is the Windows Home Directory set in the profile tab in the user settings
+				on the Active Directory Server. This could be a local path or a directory on a
+				share mapped to a drive.
+			</para>
+		</listitem>
+	</varlistentry>
+	<varlistentry>
+		<term>PAM_WINBIND_LOGONSCRIPT</term>
+		<listitem>
+			<para>
+				The path to the logon script which should be executed if a user logs in. This is
+				normally a relative path to the script stored on the server.
+			</para>
+		</listitem>
+	</varlistentry>
+	<varlistentry>
+		<term>PAM_WINBIND_LOGONSERVER</term>
+		<listitem>
+			<para>
+				This exports the Active Directory server we are authenticating against. This can be
+				used as a variable later.
+			</para>
+		</listitem>
+	</varlistentry>
+	<varlistentry>
+		<term>PAM_WINBIND_PROFILEPATH</term>
+		<listitem>
+			<para>
+				This is the profile path set in the profile tab in the user settings. Noramlly
+				the home directory is synced with this directory on a share.
+			</para>
+		</listitem>
+	</varlistentry>
+</refsect1>
+
+<refsect1>
 	<title>SEE ALSO</title>
 	<para><citerefentry>
 	<refentrytitle>wbinfo</refentrytitle>
