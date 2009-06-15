@@ -15,7 +15,7 @@ showflags::
 .c.o:
 	@echo Compiling $*.c
 	@mkdir -p `dirname $@`
-	@$(CC) $(PICFLAG) $(CFLAGS) -c $< -o $@
+	@$(CC) $(PICFLAG) $(CFLAGS) $(ABI_CHECK) -c $< -o $@
 
 distclean::
 	rm -f *~ */*~

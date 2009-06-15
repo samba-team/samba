@@ -28,3 +28,8 @@ AC_CHECK_HEADERS(getopt.h sys/select.h sys/time.h)
 
 AC_HAVE_DECL(pread, [#include <unistd.h>])
 AC_HAVE_DECL(pwrite, [#include <unistd.h>])
+
+if test x"$VERSIONSCRIPT" != "x"; then
+    EXPORTSFILE=tdb.exports
+    AC_SUBST(EXPORTSFILE)
+fi
