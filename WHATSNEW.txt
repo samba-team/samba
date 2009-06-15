@@ -71,7 +71,7 @@ o   Sébastien Prud'homme <sebastien.prudhomme@gmail.com>
 
 
 o   Karolin Seeger <kseeger@samba.org>
-    * BUG 5853: Add keyutils-devel to build requires.
+    * BUG 5835: Add keyutils-devel to build requires.
 
 
 o   Simo Sorce <ssorce@redhat.com>
