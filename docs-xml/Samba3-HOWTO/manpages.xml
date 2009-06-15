@@ -22,7 +22,7 @@
 	<xi:include href="../manpages-3/nmbd.8.xml"/>
 	<xi:include href="../manpages-3/nmblookup.1.xml"/>
 	<xi:include href="../manpages-3/ntlm_auth.1.xml"/>
-	<xi:include href="../manpages-3/pam_winbind.7.xml"/>
+	<xi:include href="../manpages-3/pam_winbind.8.xml"/>
 	<xi:include href="../manpages-3/pdbedit.8.xml"/>
 	<xi:include href="../manpages-3/profiles.1.xml"/>
 	<xi:include href="../manpages-3/rpcclient.1.xml"/>
