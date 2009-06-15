@@ -216,8 +216,9 @@ int onefs_load_config(connection_struct *conn)
 bool onefs_get_config(int snum, int config_type,
 		      struct onefs_vfs_share_config *cfg)
 {
-	if (vfs_share_config[snum].init_flags & config_type)
-		*cfg = vfs_share_config[snum];
+	if ((pvfs_share_config != NULL) &&
+	    (pvfs_share_config[snum].init_flags & config_type))
+		*cfg = pvfs_share_config[snum];
 	else
 		return false;
 
