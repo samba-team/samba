@@ -90,7 +90,7 @@ o   Andreas Schneider <mail@cynapses.org>
 
 
 o   Karolin Seeger <kseeger@samba.org>
-    * BUG 5853: Add keyutils-devel to build requires to fix build on RHEL.
+    * BUG 5835: Add keyutils-devel to build requires to fix build on RHEL.
 
 
 o   Marc VanHeyningen <marc.vanheyningen@isilon.com>
