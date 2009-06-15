@@ -155,7 +155,7 @@ void nt_lm_owf_gen(const char *pwd, uint8_t nt_p16[16], uint8_t p16[16])
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("nt_lm_owf_gen: pwd, nt#\n"));
-	dump_data(120, (uint8_t *)pwd, strlen(pwd));
+	dump_data(120, (const uint8_t *)pwd, strlen(pwd));
 	dump_data(100, nt_p16, 16);
 #endif
 
@@ -163,7 +163,7 @@ void nt_lm_owf_gen(const char *pwd, uint8_t nt_p16[16], uint8_t p16[16])
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("nt_lm_owf_gen: pwd, lm#\n"));
-	dump_data(120, (uint8_t *)pwd, strlen(pwd));
+	dump_data(120, (const uint8_t *)pwd, strlen(pwd));
 	dump_data(100, p16, 16);
 #endif
 }
