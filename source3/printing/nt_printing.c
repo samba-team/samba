@@ -1823,7 +1823,10 @@ static WERROR move_driver_file_to_download_area(TALLOC_CTX *mem_ctx,
 
 	new_name = talloc_asprintf(mem_ctx, "%s/%d/%s",
 				   short_architecture, driver_version, driver_file);
-	W_ERROR_HAVE_NO_MEMORY(new_name);
+	if (new_name == NULL) {
+		TALLOC_FREE(old_name);
+		return WERR_NOMEM;
+	}
 
 	if (version != -1 && (version = file_version_is_newer(conn, old_name, new_name)) > 0) {
 
