@@ -29,6 +29,31 @@
 </refsect1>
 
 <refsect1>
+	<title>SYNOPSIS</title>
+
+	<para>
+		Edit the PAM system config /etc/pam.d/service and modify it as the following example shows:
+		<programlisting>
+			    ...
+			    auth      required        pam_env.so
+			    auth      sufficient      pam_unix2.so
+			+++ auth      required        pam_winbind.so  use_first_pass
+			    account   requisite       pam_unix2.so
+			+++ account   required        pam_winbind.so  use_first_pass
+			+++ password  sufficient      pam_winbind.so
+			    password  requisite       pam_pwcheck.so  cracklib
+			    password  required        pam_unix2.so    use_authtok
+			    session   required        pam_unix2.so
+			+++ session   required        pam_winbind.so
+			    ...
+		</programlisting>
+
+		Make sure that pam_winbind is one of the first modules in the session part. It may retrieve
+		kerberos tickets which are needed by other modules.
+	</para>
+</refsect1>
+
+<refsect1>
 	<title>OPTIONS</title>
 	<para>
 	
