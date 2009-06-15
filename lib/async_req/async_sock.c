@@ -439,7 +439,7 @@ static void writev_handler(struct tevent_context *ev, struct tevent_fd *fde,
 	}
 
 	written = writev(state->fd, state->iov, state->count);
-	if ((written == -1) && (errno = EINTR)) {
+	if ((written == -1) && (errno == EINTR)) {
 		/* retry */
 		return;
 	}
