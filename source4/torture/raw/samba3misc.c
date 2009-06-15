@@ -669,6 +669,35 @@ bool torture_samba3_caseinsensitive(struct torture_context *torture)
 	return ret;
 }
 
+static void close_locked_file(struct tevent_context *ev,
+			      struct tevent_timer *te,
+			      struct timeval now,
+			      void *private_data)
+{
+	int *pfd = (int *)private_data;
+
+	TALLOC_FREE(te);
+
+	if (*pfd != -1) {
+		close(*pfd);
+		*pfd = -1;
+	}
+}
+
+struct lock_result_state {
+	NTSTATUS status;
+	bool done;
+};
+
+static void receive_lock_result(struct smbcli_request *req)
+{
+	struct lock_result_state *state =
+		(struct lock_result_state *)req->async.private_data;
+
+	state->status = smbcli_request_simple_recv(req);
+	state->done = true;
+}
+
 /*
  * Check that Samba3 correctly deals with conflicting posix byte range locks
  * on an underlying file
@@ -695,6 +724,9 @@ bool torture_samba3_posixtimedlock(struct torture_context *tctx)
 	union smb_lock io;
 	struct smb_lock_entry lock_entry;
 	struct smbcli_request *req;
+	struct lock_result_state lock_result;
+
+	struct tevent_timer *te;
 
 	if (!torture_open_connection(&cli, tctx, 0)) {
 		ret = false;
@@ -799,17 +831,30 @@ bool torture_samba3_posixtimedlock(struct torture_context *tctx)
 		goto done;
 	}
 
-	/*
-	 * Ship the async timed request to the server
-	 */
-	event_loop_once(req->transport->socket->event.ctx);
-	msleep(500);
+	lock_result.done = false;
+	req->async.fn = receive_lock_result;
+	req->async.private_data = &lock_result;
 
-	close(fd);
+	te = tevent_add_timer(req->transport->socket->event.ctx,
+			      tctx, timeval_current_ofs(1, 0),
+			      close_locked_file, &fd);
+	if (te == NULL) {
+		torture_warning(tctx, "tevent_add_timer failed\n");
+		ret = false;
+		goto done;
+	}
 
-	status = smbcli_request_simple_recv(req);
+	while ((fd != -1) || (!lock_result.done)) {
+		if (tevent_loop_once(req->transport->socket->event.ctx)
+		    == -1) {
+			torture_warning(tctx, "tevent_loop_once failed: %s\n",
+					strerror(errno));
+			ret = false;
+			goto done;
+		}
+	}
 
-	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_STATUS(lock_result.status, NT_STATUS_OK);
 
  done:
 	if (fnum != -1) {
