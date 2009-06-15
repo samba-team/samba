@@ -54,6 +54,7 @@ static bool test_cldap_netlogon(struct torture_context *tctx, const char *dest)
 						dest,
 						lp_cldap_port(tctx->lp_ctx),
 						&dest_addr);
+	CHECK_VAL(ret, 0);
 
 	status = cldap_socket_init(tctx, NULL, NULL, dest_addr, &cldap);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -251,6 +252,7 @@ static bool test_cldap_netlogon_flags(struct torture_context *tctx,
 	uint32_t server_type;
 	struct smb_iconv_convenience *iconv_convenience = lp_iconv_convenience(tctx->lp_ctx);
 
+	/* cldap_socket_init should now know about the dest. address */
 	status = cldap_socket_init(tctx, NULL, NULL, NULL, &cldap);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
@@ -361,9 +363,9 @@ static bool test_cldap_netlogon_flag_ds_dns_forest(struct torture_context *tctx,
 	uint32_t server_type;
 	struct netlogon_samlogon_response n1;
 	struct smb_iconv_convenience *iconv_convenience = lp_iconv_convenience(tctx->lp_ctx);
-
 	bool result = true;
 
+	/* cldap_socket_init should now know about the dest. address */
 	status = cldap_socket_init(tctx, NULL, NULL, NULL, &cldap);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
@@ -437,6 +439,7 @@ static bool test_cldap_generic(struct torture_context *tctx, const char *dest)
 	const char *attrs2[] = { "currentTime", "highestCommittedUSN", "netlogon", NULL };
 	const char *attrs3[] = { "netlogon", NULL };
 
+	/* cldap_socket_init should now know about the dest. address */
 	status = cldap_socket_init(tctx, NULL, NULL, NULL, &cldap);
 	CHECK_STATUS(status, NT_STATUS_OK);
 

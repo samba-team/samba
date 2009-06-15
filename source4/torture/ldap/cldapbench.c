@@ -25,6 +25,9 @@
 #include "libcli/resolve/resolve.h"
 #include "torture/torture.h"
 #include "param/param.h"
+#include "../lib/tsocket/tsocket.h"
+
+#define CHECK_VAL(v, correct) torture_assert_int_equal(tctx, (v), (correct), "incorrect value");
 
 struct bench_state {
 	struct torture_context *tctx;
@@ -58,13 +61,20 @@ static bool bench_cldap_netlogon(struct torture_context *tctx, const char *addre
 	struct cldap_socket *cldap;
 	int num_sent=0;
 	struct timeval tv = timeval_current();
-	bool ret = true;
 	int timelimit = torture_setting_int(tctx, "timelimit", 10);
 	struct cldap_netlogon search;
 	struct bench_state *state;
 	NTSTATUS status;
+	struct tsocket_address *dest_addr;
+	int ret;
 
-	status = cldap_socket_init(tctx, tctx->ev, NULL, NULL, &cldap);
+	ret = tsocket_address_inet_from_strings(tctx, "ip",
+						address,
+						lp_cldap_port(tctx->lp_ctx),
+						&dest_addr);
+	CHECK_VAL(ret, 0);
+
+	status = cldap_socket_init(tctx, tctx->ev, NULL, dest_addr, &cldap);
 	torture_assert_ntstatus_ok(tctx, status, "cldap_socket_init");
 
 	state = talloc_zero(tctx, struct bench_state);
@@ -107,7 +117,7 @@ static bool bench_cldap_netlogon(struct torture_context *tctx, const char *addre
 	       state->fail_count);
 
 	talloc_free(cldap);
-	return ret;
+	return true;
 }
 
 static void request_rootdse_handler(struct tevent_req *req)
@@ -134,12 +144,12 @@ static bool bench_cldap_rootdse(struct torture_context *tctx, const char *addres
 	struct cldap_socket *cldap;
 	int num_sent=0;
 	struct timeval tv = timeval_current();
-	bool ret = true;
 	int timelimit = torture_setting_int(tctx, "timelimit", 10);
 	struct cldap_search search;
 	struct bench_state *state;
 	NTSTATUS status;
 
+	/* cldap_socket_init should now know about the dest. address */
 	status = cldap_socket_init(tctx, tctx->ev, NULL, NULL, &cldap);
 	torture_assert_ntstatus_ok(tctx, status, "cldap_socket_init");
 
@@ -183,7 +193,7 @@ static bool bench_cldap_rootdse(struct torture_context *tctx, const char *addres
 	       state->fail_count);
 
 	talloc_free(cldap);
-	return ret;
+	return true;
 }
 
 /*
