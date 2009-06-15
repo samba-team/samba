@@ -46,8 +46,7 @@ void onefs_init_search_op(struct vfs_handle_struct *handle,
 NTSTATUS onefs_create_file(vfs_handle_struct *handle,
 			   struct smb_request *req,
 			   uint16_t root_dir_fid,
-			   const char *fname,
-			   uint32_t create_file_flags,
+			   struct smb_filename *smb_fname,
 			   uint32_t access_mask,
 			   uint32_t share_access,
 			   uint32_t create_disposition,
@@ -58,8 +57,7 @@ NTSTATUS onefs_create_file(vfs_handle_struct *handle,
 			   struct security_descriptor *sd,
 			   struct ea_list *ea_list,
 			   files_struct **result,
-			   int *pinfo,
-			   SMB_STRUCT_STAT *psbuf);
+			   int *pinfo);
 
 int onefs_close(vfs_handle_struct *handle, struct files_struct *fsp);
 

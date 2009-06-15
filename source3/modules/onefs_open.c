@@ -1981,8 +1981,7 @@ static void destroy_onefs_fsp_data(void *p_data)
 NTSTATUS onefs_create_file(vfs_handle_struct *handle,
 			   struct smb_request *req,
 			   uint16_t root_dir_fid,
-			   const char *fname,
-			   uint32_t create_file_flags,
+			   struct smb_filename *smb_fname,
 			   uint32_t access_mask,
 			   uint32_t share_access,
 			   uint32_t create_disposition,
@@ -1993,15 +1992,13 @@ NTSTATUS onefs_create_file(vfs_handle_struct *handle,
 			   struct security_descriptor *sd,
 			   struct ea_list *ea_list,
 			   files_struct **result,
-			   int *pinfo,
-			   SMB_STRUCT_STAT *psbuf)
+			   int *pinfo)
 {
 	connection_struct *conn = handle->conn;
-	struct case_semantics_state *case_state = NULL;
 	struct onefs_fsp_data fsp_data = {};
-	SMB_STRUCT_STAT sbuf;
 	int info = FILE_WAS_OPENED;
 	files_struct *fsp = NULL;
+	char *fname = NULL;
 	NTSTATUS status;
 
 	DEBUG(10,("onefs_create_file: access_mask = 0x%x "
@@ -2009,7 +2006,7 @@ NTSTATUS onefs_create_file(vfs_handle_struct *handle,
 		  "create_disposition = 0x%x create_options = 0x%x "
 		  "oplock_request = 0x%x "
 		  "root_dir_fid = 0x%x, ea_list = 0x%p, sd = 0x%p, "
-		  "create_file_flags = 0x%x, fname = %s\n",
+		  "fname = %s\n",
 		  (unsigned int)access_mask,
 		  (unsigned int)file_attributes,
 		  (unsigned int)share_access,
@@ -2017,7 +2014,7 @@ NTSTATUS onefs_create_file(vfs_handle_struct *handle,
 		  (unsigned int)create_options,
 		  (unsigned int)oplock_request,
 		  (unsigned int)root_dir_fid,
-		  ea_list, sd, create_file_flags, fname));
+		  ea_list, sd, smb_fname_str_dbg(smb_fname)));
 
 	/* Get the file name if root_dir_fid was specified. */
 	if (root_dir_fid != 0) {
@@ -2036,7 +2033,8 @@ NTSTATUS onefs_create_file(vfs_handle_struct *handle,
 	if ((req != NULL) && (req->flags2 & FLAGS2_DFS_PATHNAMES)) {
 		char *resolved_fname;
 
-		status = resolve_dfspath(talloc_tos(), conn, true, fname,
+		status = resolve_dfspath(talloc_tos(), conn, true,
+					 smb_fname->base_name,
 					 &resolved_fname);
 
 		if (!NT_STATUS_IS_OK(status)) {
@@ -2048,23 +2046,14 @@ NTSTATUS onefs_create_file(vfs_handle_struct *handle,
 			 */
 			goto fail;
 		}
-		fname = resolved_fname;
+		TALLOC_FREE(smb_fname->base_name);
+		smb_fname->base_name = resolved_fname;
 	}
 
-	/* Check if POSIX semantics are wanted. */
-	if (file_attributes & FILE_FLAG_POSIX_SEMANTICS) {
-		case_state = set_posix_case_semantics(talloc_tos(), conn);
+	status = get_full_smb_filename(talloc_tos(), smb_fname, &fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
 	}
-
-	if (psbuf != NULL) {
-		sbuf = *psbuf;
-	} else {
-		if (SMB_VFS_STAT(conn, fname, &sbuf) == -1) {
-			SET_STAT_INVALID(sbuf);
-		}
-	}
-
-	TALLOC_FREE(case_state);
 
 	/* All file access must go through check_name() */
 	status = check_name(conn, fname);
@@ -2088,7 +2077,7 @@ NTSTATUS onefs_create_file(vfs_handle_struct *handle,
 		&fsp,					/* result */
 		&info,					/* pinfo */
 		&fsp_data,			       	/* fsp_data */
-		&sbuf);					/* psbuf */
+		&smb_fname->st);			/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
@@ -2119,9 +2108,6 @@ NTSTATUS onefs_create_file(vfs_handle_struct *handle,
 	*result = fsp;
 	if (pinfo != NULL) {
 		*pinfo = info;
-	}
-	if (psbuf != NULL) {
-		*psbuf = sbuf;
 	}
 	return NT_STATUS_OK;
 

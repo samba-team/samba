@@ -143,6 +143,27 @@ onefs_shadow_copy_get_shadow_copy_data(vfs_handle_struct *handle,
 	return ret;						      \
 	} while (0)						      \
 
+/*
+ * XXX: Convert osc_canonicalize_path to use talloc instead of malloc.
+ */
+#define SHADOW_NEXT_SMB_FNAME(op, args, rtype) do {		      \
+		char *smb_base_name_tmp = NULL;			      \
+		char *cpath = NULL;				      \
+		char *snap_component = NULL;			      \
+		rtype ret;					      \
+		smb_base_name_tmp = smb_fname->base_name;	      \
+		if (shadow_copy_match_name(smb_fname->base_name,      \
+			&snap_component)) {				\
+			cpath = osc_canonicalize_path(smb_fname->base_name, \
+			    snap_component);				\
+			smb_fname->base_name = cpath;			\
+		}							\
+		ret = SMB_VFS_NEXT_ ## op args;				\
+		smb_fname->base_name = smb_base_name_tmp;		\
+		SAFE_FREE(cpath);					\
+		return ret;						\
+	} while (0)							\
+
 
 
 static uint64_t
@@ -205,8 +226,7 @@ static NTSTATUS
 onefs_shadow_copy_create_file(vfs_handle_struct *handle,
 			      struct smb_request *req,
 			      uint16_t root_dir_fid,
-			      const char *path,
-			      uint32_t create_file_flags,
+			      struct smb_filename *smb_fname,
 			      uint32_t access_mask,
 			      uint32_t share_access,
 			      uint32_t create_disposition,
@@ -217,16 +237,15 @@ onefs_shadow_copy_create_file(vfs_handle_struct *handle,
 			      struct security_descriptor *sd,
 			      struct ea_list *ea_list,
 			      files_struct **result,
-			      int *pinfo,
-			      SMB_STRUCT_STAT *psbuf)
+			      int *pinfo)
 {
-	SHADOW_NEXT(CREATE_FILE,
-		    (handle, req, root_dir_fid, cpath ?: path,
-			create_file_flags, access_mask, share_access,
-			create_disposition, create_options, file_attributes,
-			oplock_request, allocation_size, sd, ea_list, result,
-			pinfo, psbuf),
-		    NTSTATUS);
+	SHADOW_NEXT_SMB_FNAME(CREATE_FILE,
+			      (handle, req, root_dir_fid, smb_fname,
+				  access_mask, share_access,
+				  create_disposition, create_options,
+				  file_attributes, oplock_request,
+				  allocation_size, sd, ea_list, result, pinfo),
+			      NTSTATUS);
 }
 
 /**
