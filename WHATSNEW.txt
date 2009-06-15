@@ -8,6 +8,7 @@ This is the latest bugfix release of the Samba 3.3 series.
 
 Major enhancements in Samba 3.3.5 include:
 
+    o Fix SAMR and LSA checks (bug #6089, #6289)
     o Fix posix acls when setting an ACL without explicit ACE for the
       owner (bug #2346).
     o Fix joining of Win7 into Samba domain (bug #6099).
@@ -36,7 +37,11 @@ o   Michael Adam <obnox@samba.org>
 
 
 o   Jeremy Allison <jra@samba.org>
+    * BUG 6089: Revert the extra SAMR and LSA checks.
     * BUG 6099: Fix joining of Win7 into Samba domain.
+    * BUG 6289: Revert the extra SAMR and LSA checks.
+    * BUG 6297: Owner of sticky directory cannot delete files created by
+      others.
     * BUG 6315: smbd crashes doing vfs_full_audit on IPC$ close event.
     * BUG 6330: Fix DFS on AIX.
 
@@ -47,6 +52,7 @@ o   Guenther Deschner <gd@samba.org>
     * BUG 6301: Fix joining of Win2000 SP4 clients.
     * BUG 6309: Support remote unjoining of Windows 2003 or greater.
     * BUG 6372: Fix usermanager only displaying 1024 groups and aliases.
+    * BUG 6465: Fix enumeration of empty aliases (ldb backend).
 
 
 o   Björn Jacke <bj@sernet.de>
@@ -77,6 +83,10 @@ o   Stefan Metzmacher <metze@samba.org>
 
 o   D.L. Meyer <dlmeyer@uiuc.edu>
     * BUG 5832: Fix build on RHEL when ccache is not available.
+
+
+o   Andreas Schneider <mail@cynapses.org>
+    * Some man pam_winbind improvements.
 
 
 o   Karolin Seeger <kseeger@samba.org>
