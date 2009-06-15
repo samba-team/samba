@@ -248,6 +248,22 @@ AC_DEFUN([AC_LD_SONAMEFLAG],
 		esac
 ])
 
+AC_DEFUN([AC_LD_VERSIONSCRIPT],
+[
+	AC_SUBST(VERSIONSCRIPT)
+	VERSIONSCRIPT=""
+	case "$host_os" in 
+		*linux*|*gnu*)
+			VERSIONSCRIPT="-Wl,--version-script"
+			;;
+		*solaris*)
+			if test "${GCC}" = "yes"; then
+				VERSIONSCRIPT="-Wl,--version-script"
+			fi
+			;;
+		esac
+])
+
 AC_DEFUN([AC_LIBREPLACE_MDLD],
 [
 	AC_REQUIRE([AC_LIBREPLACE_LD_SHLIB_LINKER])
