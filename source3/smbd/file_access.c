@@ -60,7 +60,8 @@ bool can_access_file_acl(struct connection_struct *conn,
  this to successfully return ACCESS_DENIED on a file open for delete access.
 ****************************************************************************/
 
-bool can_delete_file_in_directory(connection_struct *conn, const char *fname)
+bool can_delete_file_in_directory(connection_struct *conn,
+				  const struct smb_filename *smb_fname)
 {
 	SMB_STRUCT_STAT sbuf;
 	TALLOC_CTX *ctx = talloc_tos();
@@ -71,7 +72,7 @@ bool can_delete_file_in_directory(connection_struct *conn, const char *fname)
 	}
 
 	/* Get the parent directory permission mask and owners. */
-	if (!parent_dirname(ctx, fname, &dname, NULL)) {
+	if (!parent_dirname(ctx, smb_fname->base_name, &dname, NULL)) {
 		return False;
 	}
 	if(SMB_VFS_STAT(conn, dname, &sbuf) != 0) {
@@ -93,17 +94,29 @@ bool can_delete_file_in_directory(connection_struct *conn, const char *fname)
 	 * by owner of directory. */
 	if (sbuf.st_ex_mode & S_ISVTX) {
 		SMB_STRUCT_STAT sbuf_file;
+		char *fname = NULL;
+		NTSTATUS status;
+
+		status = get_full_smb_filename(talloc_tos(), smb_fname,
+					       &fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			return false;
+		}
 		if(SMB_VFS_STAT(conn, fname, &sbuf_file) != 0) {
+			TALLOC_FREE(fname);
 			if (errno == ENOENT) {
 				/* If the file doesn't already exist then
 				 * yes we'll be able to delete it. */
 				return True;
 			}
 			DEBUG(10,("can_delete_file_in_directory: can't "
-				"stat file %s (%s)",
-				fname, strerror(errno) ));
+				  "stat file %s (%s)",
+				  smb_fname_str_dbg(smb_fname),
+				  strerror(errno) ));
 			return False;
 		}
+		TALLOC_FREE(fname);
+
 		/*
 		 * Patch from SATOH Fumiyasu <fumiyas@miraclelinux.com>
 		 * for bug #3348. Don't assume owning sticky bit
@@ -115,8 +128,8 @@ bool can_delete_file_in_directory(connection_struct *conn, const char *fname)
 		if ((conn->server_info->utok.uid != sbuf.st_ex_uid) &&
 				(conn->server_info->utok.uid != sbuf_file.st_ex_uid)) {
 			DEBUG(10,("can_delete_file_in_directory: not "
-				"owner of file %s or directory %s",
-				fname, dname));
+				  "owner of file %s or directory %s",
+				  smb_fname_str_dbg(smb_fname), dname));
 			return False;
 		}
 	}

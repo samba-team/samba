@@ -685,8 +685,7 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 	if (!posix_open && file_existed &&
 	    ((create_disposition == FILE_OVERWRITE) ||
 		(create_disposition == FILE_OVERWRITE_IF))) {
-		if (!open_match_attributes(conn, fname,
-					   existing_dos_attributes,
+		if (!open_match_attributes(conn, existing_dos_attributes,
 					   new_dos_attributes, psbuf->st_ex_mode,
 					   unx_mode, &new_unx_mode)) {
 			DEBUG(5, ("onefs_open_file_ntcreate: attributes "
@@ -2018,15 +2017,11 @@ NTSTATUS onefs_create_file(vfs_handle_struct *handle,
 
 	/* Get the file name if root_dir_fid was specified. */
 	if (root_dir_fid != 0) {
-		char *new_fname;
-
 		status = get_relative_fid_filename(conn, req, root_dir_fid,
-						   fname, &new_fname);
+						   smb_fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto fail;
 		}
-
-		fname = new_fname;
 	}
 
 	/* Resolve the file name if this was a DFS pathname. */

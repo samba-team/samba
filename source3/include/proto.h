@@ -6337,7 +6337,8 @@ NTSTATUS close_fake_file(struct smb_request *req, files_struct *fsp);
 bool can_access_file_acl(struct connection_struct *conn,
 				const char * fname,
 				uint32_t access_mask);
-bool can_delete_file_in_directory(connection_struct *conn, const char *fname);
+bool can_delete_file_in_directory(connection_struct *conn,
+				  const struct smb_filename *smb_fname);
 bool can_access_file_data(connection_struct *conn, const char *fname, SMB_STRUCT_STAT *psbuf, uint32 access_mask);
 bool can_write_to_file(connection_struct *conn, const char *fname, SMB_STRUCT_STAT *psbuf);
 bool directory_has_default_acl(connection_struct *conn, const char *fname);
@@ -6581,6 +6582,7 @@ void send_nt_replies(connection_struct *conn,
 		     char *params, int paramsize,
 		     char *pdata, int datasize);
 bool is_ntfs_stream_name(const char *fname);
+bool is_ntfs_stream_smb_fname(const struct smb_filename *smb_fname);
 void reply_ntcreate_and_X(struct smb_request *req);
 void reply_ntcancel(struct smb_request *req);
 void reply_ntrename(struct smb_request *req);
@@ -6606,7 +6608,6 @@ bool is_stat_open(uint32 access_mask);
 bool request_timed_out(struct timeval request_time,
 		       struct timeval timeout);
 bool open_match_attributes(connection_struct *conn,
-			   const char *path,
 			   uint32 old_dos_attr,
 			   uint32 new_dos_attr,
 			   mode_t existing_unx_mode,
@@ -6662,7 +6663,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 NTSTATUS get_relative_fid_filename(connection_struct *conn,
 				   struct smb_request *req,
 				   uint16_t root_dir_fid,
-				   const char *fname, char **new_fname);
+				   struct smb_filename *smb_fname);
 
 /* The following definitions come from smbd/oplock.c  */
 

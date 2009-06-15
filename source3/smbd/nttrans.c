@@ -306,6 +306,18 @@ bool is_ntfs_stream_name(const char *fname)
 }
 
 /****************************************************************************
+ Simple check to determine if the filename is a stream.
+ ***************************************************************************/
+bool is_ntfs_stream_smb_fname(const struct smb_filename *smb_fname)
+{
+	if (lp_posix_pathnames()) {
+		return false;
+	}
+
+	return smb_fname->stream_name;
+}
+
+/****************************************************************************
  Reply to an NT create and X call on a pipe
 ****************************************************************************/
 
