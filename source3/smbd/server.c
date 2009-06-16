@@ -180,19 +180,33 @@ static void msg_inject_fault(struct messaging_context *msg,
 }
 #endif /* DEVELOPER */
 
-struct child_pid {
-	struct child_pid *prev, *next;
-	pid_t pid;
-};
+/*
+ * Parent smbd process sets its own debug level first and then
+ * sends a message to all the smbd children to adjust their debug
+ * level to that of the parent.
+ */
+
+static void smbd_msg_debug(struct messaging_context *msg_ctx,
+			   void *private_data,
+			   uint32_t msg_type,
+			   struct server_id server_id,
+			   DATA_BLOB *data)
+{
+	struct child_pid *child;
+
+	debug_message(msg_ctx, private_data, MSG_DEBUG, server_id, data);
+
+	for (child = children; child != NULL; child = child->next) {
+		messaging_send_buf(msg_ctx, pid_to_procid(child->pid),
+				   MSG_DEBUG,
+				   data->data,
+				   strlen((char *) data->data) + 1);
+	}
+}
 
 static void add_child_pid(pid_t pid)
 {
 	struct child_pid *child;
-
-	if (lp_max_smbd_processes() == 0) {
-		/* Don't bother with the child list if we don't care anyway */
-		return;
-	}
 
 	child = SMB_MALLOC_P(struct child_pid);
 	if (child == NULL) {
@@ -217,11 +231,6 @@ static void remove_child_pid(pid_t pid, bool unclean_shutdown)
 				   MSG_SMB_BRL_VALIDATE, NULL, 0);
 		message_send_all(smbd_messaging_context(), 
 				 MSG_SMB_UNLOCK, NULL, 0, NULL);
-	}
-
-	if (lp_max_smbd_processes() == 0) {
-		/* Don't bother with the child list if we don't care anyway */
-		return;
 	}
 
 	for (child = children; child != NULL; child = child->next) {
@@ -636,6 +645,8 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 			   MSG_SMB_CONF_UPDATED, smb_conf_updated);
 	messaging_register(smbd_messaging_context(), NULL,
 			   MSG_SMB_STAT_CACHE_DELETE, smb_stat_cache_delete);
+	messaging_register(smbd_messaging_context(), NULL,
+			   MSG_DEBUG, smbd_msg_debug);
 	brl_register_msgs(smbd_messaging_context());
 
 #ifdef CLUSTER_SUPPORT

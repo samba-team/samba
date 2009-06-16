@@ -1399,6 +1399,22 @@ static void printing_pause_fd_handler(struct tevent_context *ev,
 	exit_server_cleanly(NULL);
 }
 
+static void add_child_pid(pid_t pid)
+{
+	extern struct child_pid *children;
+	struct child_pid *child;
+	extern int num_children;
+
+        child = SMB_MALLOC_P(struct child_pid);
+        if (child == NULL) {
+                DEBUG(0, ("Could not add child struct -- malloc failed\n"));
+                return;
+        }
+        child->pid = pid;
+        DLIST_ADD(children, child);
+        num_children += 1;
+}
+
 static pid_t background_lpq_updater_pid = -1;
 
 /****************************************************************************
@@ -1425,6 +1441,9 @@ void start_background_queue(void)
 		DEBUG(5,("start_background_queue: background LPQ thread failed to start. %s\n", strerror(errno) ));
 		exit(1);
 	}
+
+	/* Track the printing pid along with other smbd children */
+	add_child_pid(background_lpq_updater_pid);
 
 	if(background_lpq_updater_pid == 0) {
 		struct tevent_fd *fde;

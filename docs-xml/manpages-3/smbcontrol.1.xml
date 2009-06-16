@@ -121,7 +121,10 @@
 	<varlistentry>
 	<term>debug</term>
 	<listitem><para>Set debug level to the value specified by the 
-	parameter. This can be sent to any of the destinations.</para>
+	parameter. This can be sent to any of the destinations. If this
+	message is sent to either the smbd or winbindd daemons, the parent
+	process will rebroadcast the message to all child processes changing
+	the debug level in each one.</para>
 	</listitem>
 	</varlistentry>
 

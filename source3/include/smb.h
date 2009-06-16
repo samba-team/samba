@@ -1927,4 +1927,10 @@ struct smb_filename {
 	SMB_STRUCT_STAT st;
 };
 
+/* struct for maintaining the child processes that get spawned from smbd */
+struct child_pid {
+	struct child_pid *prev, *next;
+	pid_t pid;
+};
+
 #endif /* _SMB_H */

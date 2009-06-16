@@ -2103,6 +2103,15 @@ void smbd_process(void)
 	messaging_register(smbd_messaging_context(), NULL,
 			   MSG_SMB_CLOSE_FILE, msg_close_file);
 
+	/*
+	 * Use the default MSG_DEBUG handler to avoid rebroadcasting
+	 * MSGs to all child processes
+	 */
+	messaging_deregister(smbd_messaging_context(),
+			     MSG_DEBUG, NULL);
+	messaging_register(smbd_messaging_context(), NULL,
+			   MSG_DEBUG, debug_message);
+
 	if ((lp_keepalive() != 0)
 	    && !(event_add_idle(smbd_event_context(), NULL,
 				timeval_set(lp_keepalive(), 0),
