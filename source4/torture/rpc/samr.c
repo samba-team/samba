@@ -3303,7 +3303,7 @@ static bool test_DeleteUser_with_privs(struct dcerpc_pipe *p,
 		struct lsa_EnumAccountRights r;
 		struct lsa_RightSet rights;
 
-		printf("Testing LSA EnumAccountRights\n");
+		torture_comment(tctx, "Testing LSA EnumAccountRights\n");
 
 		r.in.handle = lsa_handle;
 		r.in.sid = user_sid;
@@ -3319,7 +3319,7 @@ static bool test_DeleteUser_with_privs(struct dcerpc_pipe *p,
 		struct lsa_StringLarge names[2];
 		struct lsa_AddAccountRights r;
 
-		printf("Testing LSA AddAccountRights\n");
+		torture_comment(tctx, "Testing LSA AddAccountRights\n");
 
 		init_lsa_StringLarge(&names[0], "SeMachineAccountPrivilege");
 		init_lsa_StringLarge(&names[1], NULL);
@@ -3343,7 +3343,7 @@ static bool test_DeleteUser_with_privs(struct dcerpc_pipe *p,
 		int i;
 		bool found_sid = false;
 
-		printf("Testing LSA EnumAccounts\n");
+		torture_comment(tctx, "Testing LSA EnumAccounts\n");
 
 		r.in.handle = lsa_handle;
 		r.in.num_entries = 0x1000;
@@ -3369,7 +3369,7 @@ static bool test_DeleteUser_with_privs(struct dcerpc_pipe *p,
 		struct lsa_EnumAccountRights r;
 		struct lsa_RightSet user_rights;
 
-		printf("Testing LSA EnumAccountRights\n");
+		torture_comment(tctx, "Testing LSA EnumAccountRights\n");
 
 		r.in.handle = lsa_handle;
 		r.in.sid = user_sid;
@@ -3388,7 +3388,7 @@ static bool test_DeleteUser_with_privs(struct dcerpc_pipe *p,
 	{
 		struct lsa_OpenAccount r;
 
-		printf("Testing LSA OpenAccount\n");
+		torture_comment(tctx, "Testing LSA OpenAccount\n");
 
 		r.in.handle = lsa_handle;
 		r.in.sid = user_sid;
@@ -3404,7 +3404,7 @@ static bool test_DeleteUser_with_privs(struct dcerpc_pipe *p,
 		struct lsa_GetSystemAccessAccount r;
 		uint32_t access_mask;
 
-		printf("Testing LSA GetSystemAccessAccount\n");
+		torture_comment(tctx, "Testing LSA GetSystemAccessAccount\n");
 
 		r.in.handle = &lsa_acct_handle;
 		r.out.access_mask = &access_mask;
@@ -3417,7 +3417,7 @@ static bool test_DeleteUser_with_privs(struct dcerpc_pipe *p,
 	{
 		struct lsa_Close r;
 
-		printf("Testing LSA Close\n");
+		torture_comment(tctx, "Testing LSA Close\n");
 
 		r.in.handle = &lsa_acct_handle;
 		r.out.handle = &lsa_acct_handle;
@@ -3430,7 +3430,7 @@ static bool test_DeleteUser_with_privs(struct dcerpc_pipe *p,
 	{
 		struct samr_DeleteUser r;
 
-		printf("Testing SAMR DeleteUser\n");
+		torture_comment(tctx, "Testing SAMR DeleteUser\n");
 
 		r.in.user_handle = user_handle;
 		r.out.user_handle = user_handle;
@@ -3446,7 +3446,7 @@ static bool test_DeleteUser_with_privs(struct dcerpc_pipe *p,
 		int i;
 		bool found_sid = false;
 
-		printf("Testing LSA EnumAccounts\n");
+		torture_comment(tctx, "Testing LSA EnumAccounts\n");
 
 		r.in.handle = lsa_handle;
 		r.in.num_entries = 0x1000;
@@ -3472,7 +3472,7 @@ static bool test_DeleteUser_with_privs(struct dcerpc_pipe *p,
 		struct lsa_EnumAccountRights r;
 		struct lsa_RightSet user_rights;
 
-		printf("Testing LSA EnumAccountRights\n");
+		torture_comment(tctx, "Testing LSA EnumAccountRights\n");
 
 		r.in.handle = lsa_handle;
 		r.in.sid = user_sid;
@@ -3491,7 +3491,7 @@ static bool test_DeleteUser_with_privs(struct dcerpc_pipe *p,
 	{
 		struct lsa_OpenAccount r;
 
-		printf("Testing LSA OpenAccount\n");
+		torture_comment(tctx, "Testing LSA OpenAccount\n");
 
 		r.in.handle = lsa_handle;
 		r.in.sid = user_sid;
@@ -3507,7 +3507,7 @@ static bool test_DeleteUser_with_privs(struct dcerpc_pipe *p,
 		struct lsa_GetSystemAccessAccount r;
 		uint32_t access_mask;
 
-		printf("Testing LSA GetSystemAccessAccount\n");
+		torture_comment(tctx, "Testing LSA GetSystemAccessAccount\n");
 
 		r.in.handle = &lsa_acct_handle;
 		r.out.access_mask = &access_mask;
@@ -3520,7 +3520,7 @@ static bool test_DeleteUser_with_privs(struct dcerpc_pipe *p,
 	{
 		struct lsa_DeleteObject r;
 
-		printf("Testing LSA DeleteObject\n");
+		torture_comment(tctx, "Testing LSA DeleteObject\n");
 
 		r.in.handle = &lsa_acct_handle;
 		r.out.handle = &lsa_acct_handle;
@@ -3537,7 +3537,7 @@ static bool test_DeleteUser_with_privs(struct dcerpc_pipe *p,
 		int i;
 		bool found_sid = false;
 
-		printf("Testing LSA EnumAccounts\n");
+		torture_comment(tctx, "Testing LSA EnumAccounts\n");
 
 		r.in.handle = lsa_handle;
 		r.in.num_entries = 0x1000;
@@ -3563,7 +3563,7 @@ static bool test_DeleteUser_with_privs(struct dcerpc_pipe *p,
 		struct lsa_EnumAccountRights r;
 		struct lsa_RightSet user_rights;
 
-		printf("Testing LSA EnumAccountRights\n");
+		torture_comment(tctx, "Testing LSA EnumAccountRights\n");
 
 		r.in.handle = lsa_handle;
 		r.in.sid = user_sid;
