@@ -1746,6 +1746,8 @@ WERROR NetUserSetInfo_r(struct libnetapi_ctx *ctx,
 
 	switch (r->in.level) {
 		case 0:
+			user_mask = SAMR_USER_ACCESS_SET_ATTRIBUTES;
+			break;
 		case 1003:
 			user_mask = SAMR_USER_ACCESS_SET_PASSWORD;
 			break;
