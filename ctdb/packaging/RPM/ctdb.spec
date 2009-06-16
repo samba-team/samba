@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.83
+Version: 1.0.84
 Release: 1
 Epoch: 0
 License: GNU GPL version 3
@@ -131,6 +131,8 @@ fi
 %{_libdir}/pkgconfig/ctdb.pc
 
 %changelog
+* Tue Jun 2 2009 : Version 1.0.84
+ - Fix a bug in onnode that could not handle dead nodes
 * Tue Jun 2 2009 : Version 1.0.83
  - Document how to remove a ndoe from a running cluster.
  - Hide all deleted nodes from ctdb output.

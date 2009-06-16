@@ -309,7 +309,7 @@ int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 				 CTDB_SRVID_SET_NODE_FLAGS, indata);
 
 	/* if we have become banned, we should go into recovery mode */
-	if ((node->flags & NODE_FLAGS_BANNED) && !(c->old_flags & NODE_FLAGS_BANNED)) {
+	if ((node->flags & NODE_FLAGS_BANNED) && !(c->old_flags & NODE_FLAGS_BANNED) && (node->pnn == ctdb->pnn)) {
 		/* make sure we are frozen */
 		DEBUG(DEBUG_NOTICE,("This node has been banned - forcing freeze and recovery\n"));
 		/* Reset the generation id to 1 to make us ignore any

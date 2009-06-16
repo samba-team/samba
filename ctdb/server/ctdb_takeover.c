@@ -2021,7 +2021,7 @@ int32_t ctdb_control_send_gratious_arp(struct ctdb_context *ctdb, TDB_DATA indat
 int32_t ctdb_control_add_public_address(struct ctdb_context *ctdb, TDB_DATA indata)
 {
 	struct ctdb_control_ip_iface *pub = (struct ctdb_control_ip_iface *)indata.dptr;
-
+	int ret;
 
 	/* verify the size of indata */
 	if (indata.dsize < offsetof(struct ctdb_control_ip_iface, iface)) {
@@ -2039,7 +2039,14 @@ int32_t ctdb_control_add_public_address(struct ctdb_context *ctdb, TDB_DATA inda
 		return -1;
 	}
 
-	return ctdb_add_public_address(ctdb, &pub->addr, pub->mask, &pub->iface[0]);
+	ret = ctdb_add_public_address(ctdb, &pub->addr, pub->mask, &pub->iface[0]);
+
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to add public address\n"));
+		return -1;
+	}
+
+	return 0;
 }
 
 /*

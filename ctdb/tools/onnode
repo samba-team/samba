@@ -95,7 +95,7 @@ echo_nth ()
     shift $n
     local node="$1"
 
-    if [ -n "$node" ] ; then
+    if [ -n "$node" -a "$node" != "#DEAD" ] ; then
 	echo $node
     else
 	echo "${prog}: \"node ${n}\" does not exist" >&2
@@ -206,7 +206,7 @@ get_nodes ()
 	all_nodes="$CTDB_NODES_SOCKETS"
     else
 	[ -f "$CTDB_NODES_FILE" ] || CTDB_NODES_FILE=/etc/ctdb/nodes
-	all_nodes=$(egrep '^[[:alnum:]]' $CTDB_NODES_FILE)
+	all_nodes=$(sed -e 's@#.*@@g' -e 's@ *@@g' -e 's@^$@#DEAD@' $CTDB_NODES_FILE)
     fi
 
     local nodes=""
@@ -215,7 +215,8 @@ get_nodes ()
 	[ $? != 0 ] && exit 1  # Required to catch exit in above subshell.
 	case "$n" in
 	    all)
-		echo $all_nodes ;;
+		echo "${all_nodes//#DEAD/}"
+		;;
 	    ok|healthy) 
 		get_nodes_with_status "$all_nodes" "healthy" || exit 1
 		;;
