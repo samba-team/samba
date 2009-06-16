@@ -22,7 +22,8 @@
 #include <netapi.h>
 #include "torture/libnetapi/proto.h"
 
-#define TORTURE_TEST_USER "testuser"
+#define TORTURE_TEST_USER "torture_testuser"
+#define TORTURE_TEST_USER2 "torture_testuser2"
 
 #define NETAPI_STATUS(tctx, x,y,fn) \
 	torture_warning(tctx, "FAILURE: line %d: %s failed with status: %s (%d)\n", \
@@ -342,7 +343,6 @@ static NET_API_STATUS test_netusergetgroups(struct torture_context *tctx,
 bool torture_libnetapi_user(struct torture_context *tctx)
 {
 	NET_API_STATUS status = 0;
-	const char *username, *username2;
 	uint8_t *buffer = NULL;
 	uint32_t levels[] = { 0, 1, 2, 3, 4, 10, 11, 20, 23 };
 	uint32_t enum_levels[] = { 0, 1, 2, 3, 4, 10, 11, 20, 23 };
@@ -360,16 +360,14 @@ bool torture_libnetapi_user(struct torture_context *tctx)
 
 	torture_comment(tctx, "NetUser tests\n");
 
-	username = "torture_test_user";
-	username2 = "torture_test_user2";
-
 	/* cleanup */
-	NetUserDel(hostname, username);
-	NetUserDel(hostname, username2);
+
+	NetUserDel(hostname, TORTURE_TEST_USER);
+	NetUserDel(hostname, TORTURE_TEST_USER2);
 
 	/* add a user */
 
-	status = test_netuseradd(tctx, hostname, username);
+	status = test_netuseradd(tctx, hostname, TORTURE_TEST_USER);
 	if (status) {
 		NETAPI_STATUS(tctx, ctx, status, "NetUserAdd");
 		goto out;
@@ -379,7 +377,7 @@ bool torture_libnetapi_user(struct torture_context *tctx)
 
 	for (i=0; i<ARRAY_SIZE(enum_levels); i++) {
 
-		status = test_netuserenum(tctx, hostname, enum_levels[i], username);
+		status = test_netuserenum(tctx, hostname, enum_levels[i], TORTURE_TEST_USER);
 		if (status) {
 			NETAPI_STATUS(tctx, ctx, status, "NetUserEnum");
 			goto out;
@@ -392,7 +390,7 @@ bool torture_libnetapi_user(struct torture_context *tctx)
 
 		torture_comment(tctx, "testing NetUserGetInfo level %d\n", levels[i]);
 
-		status = NetUserGetInfo(hostname, username, levels[i], &buffer);
+		status = NetUserGetInfo(hostname, TORTURE_TEST_USER, levels[i], &buffer);
 		if (status && status != 124) {
 			NETAPI_STATUS(tctx, ctx, status, "NetUserGetInfo");
 			goto out;
@@ -403,7 +401,7 @@ bool torture_libnetapi_user(struct torture_context *tctx)
 
 	for (i=0; i<ARRAY_SIZE(getgr_levels); i++) {
 
-		status = test_netusergetgroups(tctx, hostname, getgr_levels[i], username, NULL);
+		status = test_netusergetgroups(tctx, hostname, getgr_levels[i], TORTURE_TEST_USER, NULL);
 		if (status) {
 			NETAPI_STATUS(tctx, ctx, status, "NetUserGetGroups");
 			goto out;
@@ -416,7 +414,7 @@ bool torture_libnetapi_user(struct torture_context *tctx)
 
 	u1007.usri1007_comment = "NetApi modified user";
 
-	status = NetUserSetInfo(hostname, username, 1007, (uint8_t *)&u1007, &parm_err);
+	status = NetUserSetInfo(hostname, TORTURE_TEST_USER, 1007, (uint8_t *)&u1007, &parm_err);
 	if (status) {
 		NETAPI_STATUS(tctx, ctx, status, "NetUserSetInfo");
 		goto out;
@@ -425,7 +423,7 @@ bool torture_libnetapi_user(struct torture_context *tctx)
 	/* query info */
 
 	for (i=0; i<ARRAY_SIZE(levels); i++) {
-		status = NetUserGetInfo(hostname, username, levels[i], &buffer);
+		status = NetUserGetInfo(hostname, TORTURE_TEST_USER, levels[i], &buffer);
 		if (status && status != 124) {
 			NETAPI_STATUS(tctx, ctx, status, "NetUserGetInfo");
 			goto out;
@@ -436,7 +434,7 @@ bool torture_libnetapi_user(struct torture_context *tctx)
 
 	torture_comment(tctx, "testing NetUserDel\n");
 
-	status = NetUserDel(hostname, username);
+	status = NetUserDel(hostname, TORTURE_TEST_USER);
 	if (status) {
 		NETAPI_STATUS(tctx, ctx, status, "NetUserDel");
 		goto out;
@@ -444,7 +442,7 @@ bool torture_libnetapi_user(struct torture_context *tctx)
 
 	/* should not exist anymore */
 
-	status = NetUserGetInfo(hostname, username, 0, &buffer);
+	status = NetUserGetInfo(hostname, TORTURE_TEST_USER, 0, &buffer);
 	if (status == 0) {
 		NETAPI_STATUS(tctx, ctx, status, "NetUserGetInfo");
 		status = -1;
@@ -461,8 +459,8 @@ bool torture_libnetapi_user(struct torture_context *tctx)
 	torture_comment(tctx, "NetUser tests succeeded\n");
  out:
 	/* cleanup */
-	NetUserDel(hostname, username);
-	NetUserDel(hostname, username2);
+	NetUserDel(hostname, TORTURE_TEST_USER);
+	NetUserDel(hostname, TORTURE_TEST_USER2);
 
 	if (status != 0) {
 		torture_comment(tctx, "NetUser testsuite failed with: %s\n",
