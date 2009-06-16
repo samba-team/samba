@@ -20,14 +20,46 @@ from samba.shares import SharesContainer
 from unittest import TestCase
 
 
+class MockService(object):
+
+    def __init__(self, data):
+        self.data = data
+
+    def __getitem__(self, name):
+        return self.data[name]
+
+
+class MockLoadParm(object):
+
+    def __init__(self, data):
+        self.data = data
+
+    def __getitem__(self, name):
+        return MockService(self.data[name])
+
+    def __contains__(self, name):
+        return name in self.data
+
+    def __len__(self):
+        return len(self.data)
+
+    def services(self):
+        return self.data.keys()
+
+
 class ShareTests(TestCase):
 
     def _get_shares(self, conf):
-        return SharesContainer(conf)
+        return SharesContainer(MockLoadParm(conf))
 
     def test_len_no_global(self):
         shares = self._get_shares({})
         self.assertEquals(0, len(shares))
+
+    def test_iter(self):
+        self.assertEquals([], list(self._get_shares({})))
+        self.assertEquals([], list(self._get_shares({"global":{}})))
+        self.assertEquals(["bla"], list(self._get_shares({"global":{}, "bla":{}})))
 
     def test_len(self):
         shares = self._get_shares({"global": {}})

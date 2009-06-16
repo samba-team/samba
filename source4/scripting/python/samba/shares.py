@@ -41,8 +41,11 @@ class SharesContainer(object):
             return len(self._lp)-1
         return len(self._lp)
 
+    def keys(self):
+        return [name for name in self._lp.services() if name != "global"]
+
     def __iter__(self):
-        return self.lp.services()
+        return iter(self.keys())
 
 
 class Share(object):

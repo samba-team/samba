@@ -232,6 +232,20 @@ static PyObject *py_lp_ctx_private_path(py_talloc_Object *self, PyObject *args)
 	return ret;
 }
 
+static PyObject *py_lp_ctx_services(py_talloc_Object *self)
+{
+	struct loadparm_context *lp_ctx = PyLoadparmContext_AsLoadparmContext(self);
+	const char **names;
+	PyObject *ret;
+	int i;
+	names = lp_server_services(lp_ctx);
+	ret = PyList_New(str_list_length(names));
+	for (i = 0; names[i]; i++) {
+		PyList_SetItem(ret, i, PyString_FromString(names[i]));
+	}
+	return ret;
+}
+
 static PyMethodDef py_lp_ctx_methods[] = {
 	{ "load", (PyCFunction)py_lp_ctx_load, METH_VARARGS, 
 		"S.load(filename) -> None\n"
@@ -253,6 +267,8 @@ static PyMethodDef py_lp_ctx_methods[] = {
 		"Change a parameter." },
 	{ "private_path", (PyCFunction)py_lp_ctx_private_path, METH_VARARGS,
 		"S.private_path(name) -> path\n" },
+	{ "services", (PyCFunction)py_lp_ctx_services, METH_NOARGS,
+		"S.services() -> list" },
 	{ NULL }
 };
 
