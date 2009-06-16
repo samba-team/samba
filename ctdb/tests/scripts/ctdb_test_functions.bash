@@ -61,7 +61,7 @@ ctdb_test_exit ()
 
     [ $(($testfailures+0)) -eq 0 -a $status -ne 0 ] && testfailures=$status
 
-    eval "$ctdb_test_exit_hook"
+    eval "$ctdb_test_exit_hook" || true
     unset ctdb_test_exit_hook
 
     if ! onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy ; then
@@ -77,6 +77,11 @@ ctdb_test_exit ()
     fi
 
     test_exit
+}
+
+ctdb_test_exit_hook_add ()
+{
+    ctdb_test_exit_hook="${ctdb_test_exit_hook}${ctdb_test_exit_hook:+ ; }$*"
 }
 
 ctdb_test_run ()
@@ -148,6 +153,14 @@ ctdb_test_init ()
     ctdb_test_cmd_options $@
 
     trap "ctdb_test_exit" 0
+}
+
+ctdb_test_check_real_cluster ()
+{
+    [ -n "$CTDB_TEST_REAL_CLUSTER" ] && return 0
+
+    echo "ERROR: This test must be run on a real/virtual cluster, not local daemons."
+    return 1
 }
 
 ########################################
@@ -399,6 +412,63 @@ wait_until_ips_are_on_nodeglob ()
     echo "Waiting for IPs to fail over..."
 
     wait_until 60 ips_are_on_nodeglob "$@"
+}
+
+get_src_socket ()
+{
+    local proto="$1"
+    local dst_socket="$2"
+    local pid="$3"
+    local prog="$4"
+
+    local pat="^${proto}[[:space:]]+[[:digit:]]+[[:space:]]+[[:digit:]]+[[:space:]]+[^[:space:]]+[[:space:]]+${dst_socket//./\\.}[[:space:]]+ESTABLISHED[[:space:]]+${pid}/${prog}[[:space:]]*\$"
+    out=$(netstat -tanp |
+	egrep "$pat" |
+	awk '{ print $4 }')
+
+    [ -n "$out" ]
+}
+
+wait_until_get_src_socket ()
+{
+    local proto="$1"
+    local dst_socket="$2"
+    local pid="$3"
+    local prog="$4"
+
+    echo "Waiting for ${prog} to establish connection to ${dst_socket}..."
+
+    wait_until 5 get_src_socket "$@"
+}
+
+# filename will be in $tcpdump_filename, pid in $tcpdump_pid
+# By default, wait for 1 matching packet on any interface.
+tcpdump_start ()
+{
+    local filter="$1"
+    local count="${2:-1}"
+    local iface="${3:-any}"
+
+    echo "Running tcpdump to capture ${count} packet(s) on interface ${iface}."
+    tcpdump_filename=$(mktemp)
+    ctdb_test_exit_hook_add "rm -f $tcpdump_filename"
+    tcpdump -s 1500 -w $tcpdump_filename -c "$count" -i "$iface" "$filter" &
+    tcpdump_pid=$!
+    ctdb_test_exit_hook_add "kill $tcpdump_pid >/dev/null 2>&1"
+    echo "Waiting for tcpdump output file to be initialised..."
+    wait_until 10 test -f $tcpdump_filename
+    sleep_for 1
+}
+
+not ()
+{
+    ! "$@"
+}
+
+tcpdump_wait ()
+{
+    echo "Waiting for tcpdump to complete..."
+    wait_until 5 not kill -0 $tcpdump_pid >/dev/null 2>&1	
 }
 
 #######################################
