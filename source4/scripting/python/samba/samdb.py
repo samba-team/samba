@@ -152,7 +152,7 @@ userAccountControl: %u
             raise
         self.transaction_commit()
 
-    def setpassword(self, filter, password):
+    def setpassword(self, filter, password, must_change_at_next_login=False):
         """Set a password on a user record
         
         :param filter: LDAP filter to find the user (eg samccountname=name)
@@ -184,6 +184,15 @@ userPassword:: %s
 
             self.modify_ldif(setpw)
 
+            if must_change_at_next_login:
+                mod = """
+dn: %s
+changetype: modify
+replace: pwdLastSet
+pwdLastSet: 0
+""" % (user_dn)
+                self.modify_ldif(mod)
+
             #  modify the userAccountControl to remove the disabled bit
             self.enable_account(user_dn)
         except:
@@ -212,7 +221,7 @@ userPassword:: %s
         glue.dsdb_set_ntds_invocation_id(self, invocation_id)
 
     def setexpiry(self, user, expiry_seconds, noexpiry):
-        """Set the password expiry for a user
+        """Set the account expiry for a user
         
         :param expiry_seconds: expiry time from now in seconds
         :param noexpiry: if set, then don't expire password
@@ -246,3 +255,4 @@ accountExpires: %u
             self.transaction_cancel()
             raise
         self.transaction_commit();
+

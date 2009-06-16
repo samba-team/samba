@@ -18,4 +18,6 @@ testit "newuser" $PYTHON ./setup/newuser --configfile=$PREFIX/simple-dc/etc/smb.
 
 testit "setpassword" $PYTHON ./setup/setpassword --configfile=$PREFIX/simple-dc/etc/smb.conf testuser --newpassword=testpass
 
+testit "setpassword" $PYTHON ./setup/setpassword --configfile=$PREFIX/simple-dc/etc/smb.conf testuser --newpassword=testpass --must-change-at-next-login
+
 exit $failed
