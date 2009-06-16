@@ -609,7 +609,9 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 						     ret, mem_ctx)));
 		if (gensec_security->auth_context && 
 		    !gensec_setting_bool(gensec_security->settings, "gensec", "require_pac", false)) {
-			DEBUG(1, ("Unable to find PAC, resorting to local user lookup: %s"));
+			DEBUG(1, ("Unable to find PAC for %s, resorting to local user lookup: %s",
+				  principal_string, smb_get_krb5_error_message(context, 
+						     ret, mem_ctx)));
 			nt_status = gensec_security->auth_context->get_server_info_principal(mem_ctx, 
 											     gensec_security->auth_context, 
 											     principal_string,
