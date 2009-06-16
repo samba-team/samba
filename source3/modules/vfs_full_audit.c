@@ -111,7 +111,7 @@ static int smb_full_audit_closedir(vfs_handle_struct *handle,
 static void smb_full_audit_init_search_op(vfs_handle_struct *handle,
 			SMB_STRUCT_DIR *dirp);
 static int smb_full_audit_open(vfs_handle_struct *handle,
-		      const char *fname, files_struct *fsp, int flags, mode_t mode);
+		      struct smb_filename *smb_fnmae, files_struct *fsp, int flags, mode_t mode);
 static NTSTATUS smb_full_audit_create_file(vfs_handle_struct *handle,
 				      struct smb_request *req,
 				      uint16_t root_dir_fid,
@@ -1179,15 +1179,16 @@ static void smb_full_audit_init_search_op(vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_open(vfs_handle_struct *handle,
-		      const char *fname, files_struct *fsp, int flags, mode_t mode)
+			       struct smb_filename *smb_fname,
+			       files_struct *fsp, int flags, mode_t mode)
 {
 	int result;
 	
-	result = SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode);
+	result = SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
 
 	do_log(SMB_VFS_OP_OPEN, (result >= 0), handle, "%s|%s",
 	       ((flags & O_WRONLY) || (flags & O_RDWR))?"w":"r",
-	       fname);
+	       smb_fname_str_dbg(smb_fname));
 
 	return result;
 }

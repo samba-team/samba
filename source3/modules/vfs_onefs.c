@@ -47,12 +47,13 @@ static int onefs_mkdir(vfs_handle_struct *handle, const char *path,
 	return SMB_VFS_NEXT_MKDIR(handle, path, mode);
 }
 
-static int onefs_open(vfs_handle_struct *handle, const char *fname,
+static int onefs_open(vfs_handle_struct *handle,
+		      struct smb_filename *smb_fname,
 		      files_struct *fsp, int flags, mode_t mode)
 {
 	/* SMB_VFS_OPEN should never be called in vfs_onefs */
 	SMB_ASSERT(false);
-	return SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode);
+	return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
 }
 
 static ssize_t onefs_sendfile(vfs_handle_struct *handle, int tofd,

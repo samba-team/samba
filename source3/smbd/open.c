@@ -119,7 +119,7 @@ static NTSTATUS check_open_rights(struct connection_struct *conn,
 ****************************************************************************/
 
 static NTSTATUS fd_open(struct connection_struct *conn,
-		    const char *fname, 
+		    struct smb_filename *smb_fname,
 		    files_struct *fsp,
 		    int flags,
 		    mode_t mode)
@@ -137,7 +137,7 @@ static NTSTATUS fd_open(struct connection_struct *conn,
 	}
 #endif
 
-	fsp->fh->fd = SMB_VFS_OPEN(conn,fname,fsp,flags,mode);
+	fsp->fh->fd = SMB_VFS_OPEN(conn, smb_fname, fsp, flags, mode);
 	if (fsp->fh->fd == -1) {
 		status = map_nt_error_from_unix(errno);
 		if (errno == EMFILE) {
@@ -155,7 +155,7 @@ static NTSTATUS fd_open(struct connection_struct *conn,
 	}
 
 	DEBUG(10,("fd_open: name %s, flags = 0%o mode = 0%o, fd = %d. %s\n",
-		    fname, flags, (int)mode, fsp->fh->fd,
+		  smb_fname_str_dbg(smb_fname), flags, (int)mode, fsp->fh->fd,
 		(fsp->fh->fd == -1) ? strerror(errno) : "" ));
 
 	return status;
@@ -422,7 +422,7 @@ static NTSTATUS open_file(files_struct *fsp,
 		}
 
 		/* Actually do the open */
-		status = fd_open(conn, path, fsp, local_flags, unx_mode);
+		status = fd_open(conn, smb_fname, fsp, local_flags, unx_mode);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3,("Error opening file %s (%s) (local_flags=%d) "
 				 "(flags=%d)\n", smb_fname_str_dbg(smb_fname),

@@ -88,6 +88,43 @@ static ssize_t get_xattr_size(connection_struct *conn,
 	return result;
 }
 
+/**
+ * Given a stream name, populate xattr_name with the xattr name to use for
+ * accessing the stream.
+ */
+static NTSTATUS streams_xattr_get_name(TALLOC_CTX *ctx,
+				       const char *stream_name,
+				       char **xattr_name)
+{
+	char *stype;
+
+	stype = strchr_m(stream_name + 1, ':');
+
+	*xattr_name = talloc_asprintf(ctx, "%s%s",
+				      SAMBA_XATTR_DOSSTREAM_PREFIX,
+				      stream_name + 1);
+	if (*xattr_name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (stype == NULL) {
+		/* Append an explicit stream type if one wasn't specified. */
+		*xattr_name = talloc_asprintf(ctx, "%s:$DATA",
+					       *xattr_name);
+		if (*xattr_name == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	} else {
+		/* Normalize the stream type to upercase. */
+		strupper_m(strrchr_m(*xattr_name, ':') + 1);
+	}
+
+	DEBUG(10, ("xattr_name: %s, stream_name: %s\n", *xattr_name,
+		   stream_name));
+
+	return NT_STATUS_OK;
+}
+
 static bool streams_xattr_recheck(struct stream_io *sio)
 {
 	NTSTATUS status;
@@ -277,43 +314,54 @@ static int streams_xattr_lstat(vfs_handle_struct *handle, const char *fname,
 	return result;
 }
 
-static int streams_xattr_open(vfs_handle_struct *handle,  const char *fname,
+static int streams_xattr_open(vfs_handle_struct *handle,
+			      struct smb_filename *smb_fname,
 			      files_struct *fsp, int flags, mode_t mode)
 {
-	TALLOC_CTX *frame;
 	NTSTATUS status;
+	struct smb_filename *smb_fname_base = NULL;
 	struct stream_io *sio;
-	char *base, *sname;
 	struct ea_struct ea;
-	char *xattr_name;
+	char *xattr_name = NULL;
 	int baseflags;
 	int hostfd = -1;
 
-	DEBUG(10, ("streams_xattr_open called for %s\n", fname));
+	DEBUG(10, ("streams_xattr_open called for %s\n",
+		   smb_fname_str_dbg(smb_fname)));
 
-	if (!is_ntfs_stream_name(fname)) {
-		return SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode);
+	if (!is_ntfs_stream_smb_fname(smb_fname)) {
+		return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
 	}
 
-	frame = talloc_stackframe();
+	/* If the default stream is requested, just open the base file. */
+	if (is_ntfs_default_stream_smb_fname(smb_fname)) {
+		char *tmp_stream_name;
+		int ret;
 
-	status = split_ntfs_stream_name(talloc_tos(), fname,
-					&base, &sname);
+		tmp_stream_name = smb_fname->stream_name;
+		smb_fname->stream_name = NULL;
+
+		ret = SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
+
+		smb_fname->stream_name = tmp_stream_name;
+
+		return ret;
+	}
+
+	status = streams_xattr_get_name(talloc_tos(), smb_fname->stream_name,
+					&xattr_name);
 	if (!NT_STATUS_IS_OK(status)) {
-		errno = EINVAL;
+		errno = map_errno_from_nt_status(status);
 		goto fail;
 	}
 
-	if (sname == NULL) {
-		hostfd = SMB_VFS_NEXT_OPEN(handle, base, fsp, flags, mode);
-		talloc_free(frame);
-		return hostfd;
-	}
-
-	xattr_name = talloc_asprintf(talloc_tos(), "%s%s",
-				     SAMBA_XATTR_DOSSTREAM_PREFIX, sname);
-	if (xattr_name == NULL) {
-		errno = ENOMEM;
+	/* Create an smb_filename with stream_name == NULL. */
+	status = create_synthetic_smb_fname(talloc_tos(),
+					    smb_fname->base_name,
+					    NULL, NULL,
+					    &smb_fname_base);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
 		goto fail;
 	}
 
@@ -326,7 +374,10 @@ static int streams_xattr_open(vfs_handle_struct *handle,  const char *fname,
         baseflags &= ~O_EXCL;
         baseflags &= ~O_CREAT;
 
-        hostfd = SMB_VFS_OPEN(handle->conn, base, fsp, baseflags, mode);
+        hostfd = SMB_VFS_OPEN(handle->conn, smb_fname_base, fsp,
+			      baseflags, mode);
+
+	TALLOC_FREE(smb_fname_base);
 
         /* It is legit to open a stream on a directory, but the base
          * fd has to be read-only.
@@ -334,7 +385,7 @@ static int streams_xattr_open(vfs_handle_struct *handle,  const char *fname,
         if ((hostfd == -1) && (errno == EISDIR)) {
                 baseflags &= ~O_ACCMODE;
                 baseflags |= O_RDONLY;
-                hostfd = SMB_VFS_OPEN(handle->conn, fname, fsp, baseflags,
+                hostfd = SMB_VFS_OPEN(handle->conn, smb_fname, fsp, baseflags,
 				      mode);
         }
 
@@ -342,8 +393,8 @@ static int streams_xattr_open(vfs_handle_struct *handle,  const char *fname,
 		goto fail;
         }
 
-	status = get_ea_value(talloc_tos(), handle->conn, NULL, base,
-			      xattr_name, &ea);
+	status = get_ea_value(talloc_tos(), handle->conn, NULL,
+			      smb_fname->base_name, xattr_name, &ea);
 
 	DEBUG(10, ("get_ea_value returned %s\n", nt_errstr(status)));
 
@@ -355,7 +406,7 @@ static int streams_xattr_open(vfs_handle_struct *handle,  const char *fname,
 		 * file for us.
 		 */
 		DEBUG(10, ("streams_xattr_open: base file %s not around, "
-			   "returning ENOENT\n", base));
+			   "returning ENOENT\n", smb_fname->base_name));
 		errno = ENOENT;
 		goto fail;
 	}
@@ -372,7 +423,7 @@ static int streams_xattr_open(vfs_handle_struct *handle,  const char *fname,
                         char null = '\0';
 
 			DEBUG(10, ("creating attribute %s on file %s\n",
-				   xattr_name, base));
+				   xattr_name, smb_fname->base_name));
 
 			if (fsp->base_fsp->fh->fd != -1) {
                         	if (SMB_VFS_FSETXATTR(
@@ -383,8 +434,8 @@ static int streams_xattr_open(vfs_handle_struct *handle,  const char *fname,
 				}
 			} else {
 	                        if (SMB_VFS_SETXATTR(
-					handle->conn, base, xattr_name,
-					&null, sizeof(null),
+					handle->conn, smb_fname->base_name,
+					xattr_name, &null, sizeof(null),
 					flags & O_EXCL ? XATTR_CREATE : 0) == -1) {
 					goto fail;
 				}
@@ -403,8 +454,8 @@ static int streams_xattr_open(vfs_handle_struct *handle,  const char *fname,
 			}
 		} else {
 			if (SMB_VFS_SETXATTR(
-					handle->conn, base, xattr_name,
-					&null, sizeof(null),
+					handle->conn, smb_fname->base_name,
+					xattr_name, &null, sizeof(null),
 					flags & O_EXCL ? XATTR_CREATE : 0) == -1) {
 				goto fail;
 			}
@@ -422,7 +473,7 @@ static int streams_xattr_open(vfs_handle_struct *handle,  const char *fname,
         sio->xattr_name = talloc_strdup(VFS_MEMCTX_FSP_EXTENSION(handle, fsp),
 					xattr_name);
         sio->base = talloc_strdup(VFS_MEMCTX_FSP_EXTENSION(handle, fsp),
-				  base);
+				  smb_fname->base_name);
 	sio->fsp_name_ptr = fsp->fsp_name;
 	sio->handle = handle;
 	sio->fsp = fsp;
@@ -432,7 +483,6 @@ static int streams_xattr_open(vfs_handle_struct *handle,  const char *fname,
 		goto fail;
 	}
 
-	TALLOC_FREE(frame);
 	return hostfd;
 
  fail:
@@ -444,7 +494,6 @@ static int streams_xattr_open(vfs_handle_struct *handle,  const char *fname,
 		SMB_VFS_CLOSE(fsp);
 	}
 
-	TALLOC_FREE(frame);
 	return -1;
 }
 

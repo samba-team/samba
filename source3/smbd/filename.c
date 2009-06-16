@@ -115,8 +115,6 @@ NTSTATUS create_synthetic_smb_fname(TALLOC_CTX *ctx, const char *base_name,
 {
 	struct smb_filename smb_fname_loc;
 
-	SMB_ASSERT(psbuf);
-
 	ZERO_STRUCT(smb_fname_loc);
 
 	/* Setup the base_name/stream_name. */
@@ -124,7 +122,8 @@ NTSTATUS create_synthetic_smb_fname(TALLOC_CTX *ctx, const char *base_name,
 	smb_fname_loc.stream_name = CONST_DISCARD(char *, stream_name);
 
 	/* Copy the psbuf if one was given. */
-	smb_fname_loc.st = *psbuf;
+	if (psbuf)
+		smb_fname_loc.st = *psbuf;
 
 	/* Let copy_smb_filename() do the heavy lifting. */
 	return copy_smb_filename(ctx, &smb_fname_loc, smb_fname_out);

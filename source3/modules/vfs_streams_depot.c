@@ -267,6 +267,69 @@ static char *stream_dir(vfs_handle_struct *handle, const char *base_path,
 	TALLOC_FREE(result);
 	return NULL;
 }
+/**
+ * Given a stream name, populate smb_fname_out with the actual location of the
+ * stream.
+ */
+static NTSTATUS stream_smb_fname(vfs_handle_struct *handle,
+				 const struct smb_filename *smb_fname,
+				 struct smb_filename **smb_fname_out,
+				 bool create_dir)
+{
+	char *dirname, *stream_fname;
+	const char *stype;
+	NTSTATUS status;
+
+	*smb_fname_out = NULL;
+
+	dirname = stream_dir(handle, smb_fname->base_name, NULL, create_dir);
+
+	if (dirname == NULL) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
+	}
+
+	stype = strchr_m(smb_fname->stream_name + 1, ':');
+
+	stream_fname = talloc_asprintf(talloc_tos(), "%s/%s", dirname,
+				       smb_fname->stream_name);
+
+	if (stream_fname == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	if (stype == NULL) {
+		/* Append an explicit stream type if one wasn't specified. */
+		stream_fname = talloc_asprintf(talloc_tos(), "%s:$DATA",
+					       stream_fname);
+		if (stream_fname == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+	} else {
+		/* Normalize the stream type to upercase. */
+		strupper_m(strrchr_m(stream_fname, ':') + 1);
+	}
+
+	DEBUG(10, ("stream filename = %s\n", stream_fname));
+
+	/* Create an smb_filename with stream_name == NULL. */
+	status = create_synthetic_smb_fname(talloc_tos(),
+					    stream_fname,
+					    NULL, NULL,
+					    smb_fname_out);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
+
+ fail:
+	DEBUG(5, ("stream_name failed: %s\n", strerror(errno)));
+	TALLOC_FREE(*smb_fname_out);
+	return status;
+}
 
 static char *stream_name(vfs_handle_struct *handle, const char *fname,
 			 bool create_dir)
@@ -422,50 +485,52 @@ static int streams_depot_lstat(vfs_handle_struct *handle, const char *fname,
 	return ret;
 }
 
-static int streams_depot_open(vfs_handle_struct *handle,  const char *fname,
+static int streams_depot_open(vfs_handle_struct *handle,
+			      struct smb_filename *smb_fname,
 			      files_struct *fsp, int flags, mode_t mode)
 {
-	TALLOC_CTX *frame;
-	char *base = NULL;
-	char *sname = NULL;
+	struct smb_filename *smb_fname_stream = NULL;
 	SMB_STRUCT_STAT base_sbuf;
-	char *stream_fname;
+	NTSTATUS status;
 	int ret = -1;
 
-	if (!is_ntfs_stream_name(fname)) {
-		return SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode);
+	if (!is_ntfs_stream_smb_fname(smb_fname)) {
+		ret = SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
+		return ret;
 	}
 
-	frame = talloc_stackframe();
+	/* If the default stream is requested, just open the base file. */
+	if (is_ntfs_default_stream_smb_fname(smb_fname)) {
+		char *tmp_stream_name;
 
-	if (!NT_STATUS_IS_OK(split_ntfs_stream_name(talloc_tos(), fname,
-						    &base, &sname))) {
-		errno = ENOMEM;
-		goto done;
+		tmp_stream_name = smb_fname->stream_name;
+		smb_fname->stream_name = NULL;
+
+		ret = SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
+
+		smb_fname->stream_name = tmp_stream_name;
+
+		return ret;
 	}
 
-	if (!sname) {
-		ret = SMB_VFS_NEXT_OPEN(handle, base, fsp, flags, mode);
-		goto done;
-	}
-
-	ret = SMB_VFS_NEXT_STAT(handle, base, &base_sbuf);
+	/* Ensure the base file still exists. */
+	ret = SMB_VFS_NEXT_STAT(handle, smb_fname->base_name, &base_sbuf);
 
 	if (ret == -1) {
 		goto done;
 	}
 
-	TALLOC_FREE(base);
-
-	stream_fname = stream_name(handle, fname, true);
-	if (stream_fname == NULL) {
+	status = stream_smb_fname(handle, smb_fname, &smb_fname_stream, true);
+	if (!NT_STATUS_IS_OK(status)) {
+		ret = -1;
+		errno = map_errno_from_nt_status(status);
 		goto done;
 	}
 
-	ret = SMB_VFS_NEXT_OPEN(handle, stream_fname, fsp, flags, mode);
+	ret = SMB_VFS_NEXT_OPEN(handle, smb_fname_stream, fsp, flags, mode);
 
  done:
-	TALLOC_FREE(frame);
+	TALLOC_FREE(smb_fname_stream);
 	return ret;
 }
 

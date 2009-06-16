@@ -318,6 +318,22 @@ bool is_ntfs_stream_smb_fname(const struct smb_filename *smb_fname)
 }
 
 /****************************************************************************
+ Returns true if the filename's stream == "::$DATA"
+ ***************************************************************************/
+bool is_ntfs_default_stream_smb_fname(const struct smb_filename *smb_fname)
+{
+	if (lp_posix_pathnames()) {
+		return false;
+	}
+
+	if (!smb_fname->stream_name) {
+		return false;
+	}
+
+	return StrCaseCmp(smb_fname->stream_name, "::$DATA") == 0;
+}
+
+/****************************************************************************
  Reply to an NT create and X call on a pipe
 ****************************************************************************/
 

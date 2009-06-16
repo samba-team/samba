@@ -117,7 +117,8 @@
 /* Leave at 25 - not yet released. Add init_search_op call. - sdann */
 /* Leave at 25 - not yet released. Add locking calls. -- zkirsch. */
 /* Leave at 25 - not yet released. Add strict locking calls. -- drichards. */
-/* Changed to version 26 - Plumb struct smb_filename to SMB_VFS_CREATE_FILE. */
+/* Changed to version 26 - Plumb struct smb_filename to SMB_VFS_CREATE_FILE,
+			   SMB_VFS_OPEN. */
 
 #define SMB_VFS_INTERFACE_VERSION 26
 
@@ -330,7 +331,9 @@ struct vfs_ops {
 
 		/* File operations */
 
-		int (*open)(struct vfs_handle_struct *handle, const char *fname, files_struct *fsp, int flags, mode_t mode);
+		int (*open)(struct vfs_handle_struct *handle,
+			    struct smb_filename *smb_fname, files_struct *fsp,
+			    int flags, mode_t mode);
 		NTSTATUS (*create_file)(struct vfs_handle_struct *handle,
 					struct smb_request *req,
 					uint16_t root_dir_fid,

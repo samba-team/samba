@@ -6583,6 +6583,7 @@ void send_nt_replies(connection_struct *conn,
 		     char *pdata, int datasize);
 bool is_ntfs_stream_name(const char *fname);
 bool is_ntfs_stream_smb_fname(const struct smb_filename *smb_fname);
+bool is_ntfs_default_stream_smb_fname(const struct smb_filename *smb_fname);
 void reply_ntcreate_and_X(struct smb_request *req);
 void reply_ntcancel(struct smb_request *req);
 void reply_ntrename(struct smb_request *req);

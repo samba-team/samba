@@ -214,13 +214,31 @@ static void vfswrap_init_search_op(vfs_handle_struct *handle,
 
 /* File operations */
 
-static int vfswrap_open(vfs_handle_struct *handle,  const char *fname,
-	files_struct *fsp, int flags, mode_t mode)
+static int vfswrap_open(vfs_handle_struct *handle,
+			struct smb_filename *smb_fname,
+			files_struct *fsp, int flags, mode_t mode)
 {
 	int result;
+	NTSTATUS status;
+	char *fname = NULL;
 
 	START_PROFILE(syscall_open);
+
+	/*
+	 * XXX: Should an error be returned if there is a stream rather than
+	 * trying to open a filename with a ':'?
+	 */
+	status = get_full_smb_filename(talloc_tos(), smb_fname,
+				       &fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		return -1;
+	}
+
 	result = sys_open(fname, flags, mode);
+
+	TALLOC_FREE(fname);
+
 	END_PROFILE(syscall_open);
 	return result;
 }

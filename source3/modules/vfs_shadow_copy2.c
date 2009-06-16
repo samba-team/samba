@@ -115,6 +115,28 @@ static inline bool shadow_copy2_match_name(const char *name)
 	} \
 } while (0)
 
+#define _SHADOW2_NEXT_SMB_FNAME(op, args, rtype, eret, extra) do { \
+	if (shadow_copy2_match_name(smb_fname->base_name)) { \
+		char *name2; \
+		char *smb_base_name_tmp = NULL; \
+		rtype ret; \
+		name2 = convert_shadow2_name(handle, smb_fname->base_name); \
+		if (name2 == NULL) { \
+			errno = EINVAL; \
+			return eret; \
+		} \
+		smb_base_name_tmp = smb_fname->base_name; \
+		smb_fname->base_name = name2; \
+		ret = SMB_VFS_NEXT_ ## op args; \
+		smb_fname->base_name = smb_base_name_tmp; \
+		talloc_free(name2); \
+		if (ret != eret) extra; \
+		return ret; \
+	} else { \
+		return SMB_VFS_NEXT_ ## op args; \
+	} \
+} while (0)
+
 /*
   convert a name to the shadow directory: NTSTATUS-specific handling
  */
@@ -142,6 +164,8 @@ static inline bool shadow_copy2_match_name(const char *name)
 #define SHADOW2_NTSTATUS_NEXT(op, args, eret) _SHADOW2_NTSTATUS_NEXT(op, args, eret, )
 
 #define SHADOW2_NEXT(op, args, rtype, eret) _SHADOW2_NEXT(op, args, rtype, eret, )
+
+#define SHADOW2_NEXT_SMB_FNAME(op, args, rtype, eret) _SHADOW2_NEXT_SMB_FNAME(op, args, rtype, eret, )
 
 #define SHADOW2_NEXT2(op, args) do { \
 	if (shadow_copy2_match_name(oldname) || shadow_copy2_match_name(newname)) { \
@@ -337,9 +361,12 @@ static int shadow_copy2_link(vfs_handle_struct *handle,
 }
 
 static int shadow_copy2_open(vfs_handle_struct *handle,
-			     const char *fname, files_struct *fsp, int flags, mode_t mode)
+			     struct smb_filename *smb_fname, files_struct *fsp,
+			     int flags, mode_t mode)
 {
-	SHADOW2_NEXT(OPEN, (handle, name, fsp, flags, mode), int, -1);
+	SHADOW2_NEXT_SMB_FNAME(OPEN,
+			       (handle, smb_fname, fsp, flags, mode),
+			       int, -1);
 }
 
 static SMB_STRUCT_DIR *shadow_copy2_opendir(vfs_handle_struct *handle,

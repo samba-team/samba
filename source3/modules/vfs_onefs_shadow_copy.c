@@ -214,12 +214,13 @@ onefs_shadow_copy_rmdir(vfs_handle_struct *handle, const char *path)
 }
 
 static int
-onefs_shadow_copy_open(vfs_handle_struct *handle, const char *path,
-		       files_struct *fsp, int flags, mode_t mode)
+onefs_shadow_copy_open(vfs_handle_struct *handle,
+		       struct smb_filename *smb_fname, files_struct *fsp,
+		       int flags, mode_t mode)
 {
-	SHADOW_NEXT(OPEN,
-		    (handle, cpath ?: path, fsp, flags, mode),
-		    int);
+	SHADOW_NEXT_SMB_FNAME(OPEN,
+			      (handle, smb_fname, fsp, flags, mode),
+			      int);
 }
 
 static NTSTATUS

@@ -371,21 +371,22 @@ static bool preopen_parse_fname(const char *fname, unsigned long *pnum,
 	return true;
 }
 
-static int preopen_open(vfs_handle_struct *handle, const char *fname,
-			files_struct *fsp, int flags, mode_t mode)
+static int preopen_open(vfs_handle_struct *handle,
+			struct smb_filename *smb_fname, files_struct *fsp,
+			int flags, mode_t mode)
 {
 	struct preopen_state *state;
 	int res;
 	unsigned long num;
 
-	DEBUG(10, ("preopen_open called on %s\n", fname));
+	DEBUG(10, ("preopen_open called on %s\n", smb_fname_str_dbg(smb_fname)));
 
 	state = preopen_state_get(handle);
 	if (state == NULL) {
-		return SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode);
+		return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
 	}
 
-	res = SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode);
+	res = SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
 	if (res == -1) {
 		return -1;
 	}
@@ -394,15 +395,15 @@ static int preopen_open(vfs_handle_struct *handle, const char *fname,
 		return res;
 	}
 
-	if (!is_in_path(fname, state->preopen_names, true)) {
+	if (!is_in_path(smb_fname->base_name, state->preopen_names, true)) {
 		DEBUG(10, ("%s does not match the preopen:names list\n",
-			   fname));
+			   smb_fname_str_dbg(smb_fname)));
 		return res;
 	}
 
 	TALLOC_FREE(state->template_fname);
 	state->template_fname = talloc_asprintf(
-		state, "%s/%s", fsp->conn->connectpath, fname);
+		state, "%s/%s", fsp->conn->connectpath, smb_fname->base_name);
 
 	if (state->template_fname == NULL) {
 		return res;

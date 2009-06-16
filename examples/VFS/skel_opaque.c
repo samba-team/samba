@@ -122,9 +122,10 @@ static int skel_closedir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dir)
 	return vfswrap_closedir(NULL,  dir);
 }
 
-static int skel_open(vfs_handle_struct *handle,  const char *fname, files_struct *fsp, int flags, mode_t mode)
+static int skel_open(vfs_handle_struct *handle,  struct smb_fname *smb_fname,
+		     files_struct *fsp, int flags, mode_t mode)
 {
-	return vfswrap_open(NULL,  fname, flags, mode);
+	return vfswrap_open(NULL, smb_fname, flags, mode);
 }
 
 static int skel_close(vfs_handle_struct *handle, files_struct *fsp)

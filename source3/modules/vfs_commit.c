@@ -167,7 +167,7 @@ static int commit_connect(
 
 static int commit_open(
 	vfs_handle_struct * handle,
-	const char *	    fname,
+	struct smb_filename *smb_fname,
 	files_struct *	    fsp,
 	int		    flags,
 	mode_t		    mode)
@@ -179,7 +179,7 @@ static int commit_open(
 
         /* Don't bother with read-only files. */
         if ((flags & O_ACCMODE) == O_RDONLY) {
-                return SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode);
+                return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
         }
 
         /* Read and check module configuration */
@@ -208,7 +208,7 @@ static int commit_open(
                 }
         }
 
-        fd = SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode);
+        fd = SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
 	if (fd == -1) {
 		VFS_REMOVE_FSP_EXTENSION(handle, fsp);
 		return fd;

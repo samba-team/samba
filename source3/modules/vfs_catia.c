@@ -133,18 +133,30 @@ static SMB_STRUCT_DIRENT *catia_readdir(vfs_handle_struct *handle,
 }
 
 static int catia_open(vfs_handle_struct *handle,
-		      const char *fname,
+		      struct smb_filename *smb_fname,
 		      files_struct *fsp,
 		      int flags,
 		      mode_t mode)
 {
-	char *name = to_unix(talloc_tos(), fname);
+	char *name;
+	char *tmp_base_name;
+	int ret;
 
+	name = to_unix(talloc_tos(), smb_fname->base_name);
 	if (!name) {
 		errno = ENOMEM;
 		return -1;
 	}
-        return SMB_VFS_NEXT_OPEN(handle, name, fsp, flags, mode);
+
+	tmp_base_name = smb_fname->base_name;
+	smb_fname->base_name = name;
+
+	ret = SMB_VFS_NEXT_OPEN(handle, name, fsp, flags, mode);
+
+	smb_fname->base_name = tmp_base_name;
+	TALLOC_FREE(name);
+
+	return ret;
 }
 
 static int catia_rename(vfs_handle_struct *handle,

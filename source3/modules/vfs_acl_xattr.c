@@ -417,7 +417,7 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 *********************************************************************/
 
 static int open_acl_xattr(vfs_handle_struct *handle,
-					const char *fname,
+					struct smb_filename *smb_fname,
 					files_struct *fsp,
 					int flags,
 					mode_t mode)
@@ -425,7 +425,17 @@ static int open_acl_xattr(vfs_handle_struct *handle,
 	uint32_t access_granted = 0;
 	struct security_descriptor *pdesc = NULL;
 	bool file_existed = true;
-	NTSTATUS status = get_nt_acl_xattr_internal(handle,
+	char *fname = NULL;
+	NTSTATUS status;
+
+	status = get_full_smb_filename(talloc_tos(), smb_fname,
+				       &fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		return -1;
+	}
+
+	status = get_nt_acl_xattr_internal(handle,
 					NULL,
 					fname,
 					(OWNER_SECURITY_INFORMATION |
@@ -441,7 +451,7 @@ static int open_acl_xattr(vfs_handle_struct *handle,
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10,("open_acl_xattr: file %s open "
 				"refused with error %s\n",
-				fname,
+				smb_fname_str_dbg(smb_fname),
 				nt_errstr(status) ));
 			errno = map_errno_from_nt_status(status);
 			return -1;
@@ -452,10 +462,10 @@ static int open_acl_xattr(vfs_handle_struct *handle,
 
 	DEBUG(10,("open_acl_xattr: get_nt_acl_attr_internal for "
 		"file %s returned %s\n",
-		fname,
+		smb_fname_str_dbg(smb_fname),
 		nt_errstr(status) ));
 
-	fsp->fh->fd = SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode);
+	fsp->fh->fd = SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
 
 	if (!file_existed && fsp->fh->fd != -1) {
 		/* File was created. Inherit from parent directory. */
