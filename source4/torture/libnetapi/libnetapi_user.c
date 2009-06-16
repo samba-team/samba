@@ -349,6 +349,7 @@ bool torture_libnetapi_user(struct torture_context *tctx)
 	uint32_t getgr_levels[] = { 0, 1 };
 	int i;
 
+	struct USER_INFO_0 u0;
 	struct USER_INFO_1007 u1007;
 	uint32_t parm_err = 0;
 
@@ -430,11 +431,21 @@ bool torture_libnetapi_user(struct torture_context *tctx)
 		}
 	}
 
+	torture_comment(tctx, "testing NetUserSetInfo level 0\n");
+
+	u0.usri0_name = TORTURE_TEST_USER2;
+
+	status = NetUserSetInfo(hostname, TORTURE_TEST_USER, 0, (uint8_t *)&u0, &parm_err);
+	if (status) {
+		NETAPI_STATUS(tctx, ctx, status, "NetUserSetInfo");
+		goto out;
+	}
+
 	/* delete */
 
 	torture_comment(tctx, "testing NetUserDel\n");
 
-	status = NetUserDel(hostname, TORTURE_TEST_USER);
+	status = NetUserDel(hostname, TORTURE_TEST_USER2);
 	if (status) {
 		NETAPI_STATUS(tctx, ctx, status, "NetUserDel");
 		goto out;
@@ -442,7 +453,7 @@ bool torture_libnetapi_user(struct torture_context *tctx)
 
 	/* should not exist anymore */
 
-	status = NetUserGetInfo(hostname, TORTURE_TEST_USER, 0, &buffer);
+	status = NetUserGetInfo(hostname, TORTURE_TEST_USER2, 0, &buffer);
 	if (status == 0) {
 		NETAPI_STATUS(tctx, ctx, status, "NetUserGetInfo");
 		status = -1;
