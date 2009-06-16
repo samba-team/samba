@@ -1137,7 +1137,9 @@ static int get_server_info(uint32 servertype,
 		if (!next_token(&ptr,stype, NULL, sizeof(stype))) {
 			continue;
 		}
-		if (!next_token(&ptr,s->comment, NULL, sizeof(s->comment))) {
+		if (!next_token(&ptr,s->comment, NULL,
+				MIN(sizeof(s->comment),
+				    MAX_SERVER_STRING_LENGTH))) {
 			continue;
 		}
 		if (!next_token(&ptr,s->domain, NULL, sizeof(s->domain))) {
