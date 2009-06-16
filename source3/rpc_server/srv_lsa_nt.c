@@ -1672,22 +1672,21 @@ NTSTATUS _lsa_EnumPrivsAccount(pipes_struct *p,
 	if (!(info->access & LSA_ACCOUNT_VIEW))
 		return NT_STATUS_ACCESS_DENIED;
 
-	if ( !get_privileges_for_sids( &mask, &info->sid, 1 ) )
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	get_privileges_for_sids(&mask, &info->sid, 1);
 
 	privilege_set_init( &privileges );
+
+	priv_set = TALLOC_ZERO_P(p->mem_ctx, struct lsa_PrivilegeSet);
+	if (!priv_set) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 
 	if ( se_priv_to_privilege_set( &privileges, &mask ) ) {
 
 		DEBUG(10,("_lsa_EnumPrivsAccount: %s has %d privileges\n",
 			  sid_string_dbg(&info->sid),
 			  privileges.count));
-
-		priv_set = TALLOC_ZERO_P(p->mem_ctx, struct lsa_PrivilegeSet);
-		if (!priv_set) {
-			status = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
 
 		luid_attrs = TALLOC_ZERO_ARRAY(p->mem_ctx,
 					       struct lsa_LUIDAttribute,
@@ -1707,10 +1706,13 @@ NTSTATUS _lsa_EnumPrivsAccount(pipes_struct *p,
 		priv_set->unknown = 0;
 		priv_set->set = luid_attrs;
 
-		*r->out.privs = priv_set;
 	} else {
-		status = NT_STATUS_NO_SUCH_PRIVILEGE;
+		priv_set->count = 0;
+		priv_set->unknown = 0;
+		priv_set->set = NULL;
 	}
+
+	*r->out.privs = priv_set;
 
  done:
 	privilege_set_free( &privileges );
@@ -2150,20 +2152,16 @@ NTSTATUS _lsa_EnumAccountRights(pipes_struct *p,
 
 	sid_copy( &sid, r->in.sid );
 
-	if ( !get_privileges_for_sids( &mask, &sid, 1 ) )
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	get_privileges_for_sids(&mask, &sid, 1);
 
 	privilege_set_init( &privileges );
 
-	if ( se_priv_to_privilege_set( &privileges, &mask ) ) {
+	se_priv_to_privilege_set(&privileges, &mask);
 
-		DEBUG(10,("_lsa_EnumAccountRights: %s has %d privileges\n",
-			  sid_string_dbg(&sid), privileges.count));
+	DEBUG(10,("_lsa_EnumAccountRights: %s has %d privileges\n",
+		  sid_string_dbg(&sid), privileges.count));
 
-		status = init_lsa_right_set(p->mem_ctx, r->out.rights, &privileges);
-	} else {
-		status = NT_STATUS_NO_SUCH_PRIVILEGE;
-	}
+	status = init_lsa_right_set(p->mem_ctx, r->out.rights, &privileges);
 
 	privilege_set_free( &privileges );
 
