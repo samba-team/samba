@@ -221,7 +221,7 @@
 		<term>PAM_WINBIND_PROFILEPATH</term>
 		<listitem>
 			<para>
-				This is the profile path set in the profile tab in the user settings. Noramlly
+				This is the profile path set in the profile tab in the user settings. Normally
 				the home directory is synced with this directory on a share.
 			</para>
 		</listitem>
