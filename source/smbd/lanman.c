@@ -1217,6 +1217,7 @@ static int get_server_info(uint32 servertype,
 			continue;
 		}
 		fstrcpy(s->comment, p);
+		string_truncate(s->comment, MAX_SERVER_STRING_LENGTH);
 
 		s->domain[0] = '\0';
 		if (!next_token_talloc(frame,&ptr,&p, NULL)) {
