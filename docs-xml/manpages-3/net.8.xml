@@ -1650,7 +1650,7 @@ This example would connect to a computer named XP as the local administrator usi
 </refsect2>
 
 <refsect2>
->>>>>>> 80d32b8... s3-docs: Fix Bug #6331. Document "net dom join/net dom unjoin".:docs-xml/manpages-3/net.8.xml
+
 <title>HELP [COMMAND]</title>
 
 <para>Gives usage information for the specified command.</para>
