@@ -38,7 +38,13 @@ static PyObject *PyString_FromStringOrNULL(const char *str)
 
 static PyObject *py_creds_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
-	return py_talloc_import(type, cli_credentials_init(NULL));
+	py_talloc_Object *ret = (py_talloc_Object *)PyCredentials.tp_alloc(&PyCredentials, 0);
+	ret->talloc_ctx = talloc_new(NULL);
+	if (ret->talloc_ctx == NULL) {
+		return NULL;
+	}
+	ret->ptr = cli_credentials_init(ret->talloc_ctx);
+	return (PyObject *)ret;
 }
 
 static PyObject *py_creds_get_username(py_talloc_Object *self)
