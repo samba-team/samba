@@ -14,6 +14,7 @@ def filename():
     return os.tempnam()
 
 class NoContextTests(unittest.TestCase):
+
     def test_valid_attr_name(self):
         self.assertTrue(ldb.valid_attr_name("foo"))
         self.assertFalse(ldb.valid_attr_name("24foo"))
@@ -28,6 +29,7 @@ class NoContextTests(unittest.TestCase):
 
 
 class SimpleLdb(unittest.TestCase):
+
     def test_connect(self):
         ldb.Ldb(filename())
 
@@ -273,6 +275,7 @@ class SimpleLdb(unittest.TestCase):
 
 
 class DnTests(unittest.TestCase):
+
     def setUp(self):
         self.ldb = ldb.Ldb(filename())
 
@@ -300,6 +303,10 @@ class DnTests(unittest.TestCase):
     def test_parent(self):
         x = ldb.Dn(self.ldb, "dc=foo,bar=bloe")
         self.assertEquals("bar=bloe", x.parent().__str__())
+
+    def test_parent_nonexistant(self):
+        x = ldb.Dn(self.ldb, "@BLA")
+        self.assertEquals(None, x.parent())
 
     def test_compare(self):
         x = ldb.Dn(self.ldb, "dc=foo,bar=bloe")
@@ -373,6 +380,7 @@ class DnTests(unittest.TestCase):
 
 
 class LdbMsgTests(unittest.TestCase):
+
     def setUp(self):
         self.msg = ldb.Message()
 
@@ -439,6 +447,7 @@ class LdbMsgTests(unittest.TestCase):
 
 
 class MessageElementTests(unittest.TestCase):
+
     def test_cmp_element(self):
         x = ldb.MessageElement(["foo"])
         y = ldb.MessageElement(["foo"])
@@ -479,6 +488,7 @@ class MessageElementTests(unittest.TestCase):
 
 
 class ModuleTests(unittest.TestCase):
+
     def test_register_module(self):
         class ExampleModule:
             name = "example"
@@ -504,6 +514,7 @@ class ModuleTests(unittest.TestCase):
         self.assertEquals([], ops)
         l = ldb.Ldb("usemodule.ldb")
         self.assertEquals(["init"], ops)
+
 
 if __name__ == '__main__':
     import unittest

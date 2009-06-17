@@ -206,7 +206,15 @@ static int py_ldb_dn_compare(PyLdbDnObject *dn1, PyLdbDnObject *dn2)
 static PyObject *py_ldb_dn_get_parent(PyLdbDnObject *self)
 {
 	struct ldb_dn *dn = PyLdbDn_AsDn((PyObject *)self);
-	return PyLdbDn_FromDn(ldb_dn_get_parent(NULL, dn));
+	struct ldb_dn *parent;
+
+	parent = ldb_dn_get_parent(NULL, dn);
+
+	if (parent == NULL) {
+		Py_RETURN_NONE;
+	} else {
+		return PyLdbDn_FromDn(parent);
+	}
 }
 
 #define dn_ldb_ctx(dn) ((struct ldb_context *)dn)
