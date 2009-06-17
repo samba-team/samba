@@ -16,7 +16,7 @@
 #
 
 FILES='../web/swat.c ../web/statuspage.c ../param/loadparm.c'
-LANGS='en ja tr pl fr de it'
+LANGS='en ja tr pl fr de it ru'
 
 XGETTEXT=xgettext
 MSGMERGE=msgmerge
