@@ -825,7 +825,7 @@ static PyObject *py_ldb_search(PyLdbObject *self, PyObject *args, PyObject *kwar
 	if (py_attrs == Py_None) {
 		attrs = NULL;
 	} else {
-		attrs = PyList_AsStringList(ldb_ctx, py_attrs, "attrs");
+		attrs = PyList_AsStringList(NULL, py_attrs, "attrs");
 		if (attrs == NULL)
 			return NULL;
 	}
@@ -833,8 +833,10 @@ static PyObject *py_ldb_search(PyLdbObject *self, PyObject *args, PyObject *kwar
 	if (py_base == Py_None) {
 		base = ldb_get_default_basedn(ldb_ctx);
 	} else {
-		if (!PyObject_AsDn(ldb_ctx, py_base, ldb_ctx, &base))
+		if (!PyObject_AsDn(ldb_ctx, py_base, ldb_ctx, &base)) {
+			talloc_free(attrs);
 			return NULL;
+		}
 	}
 
 	if (py_controls == Py_None) {
@@ -848,6 +850,7 @@ static PyObject *py_ldb_search(PyLdbObject *self, PyObject *args, PyObject *kwar
 	res = talloc_zero(ldb_ctx, struct ldb_result);
 	if (res == NULL) {
 		PyErr_NoMemory();
+		talloc_free(attrs);
 		return NULL;
 	}
 
@@ -860,6 +863,8 @@ static PyObject *py_ldb_search(PyLdbObject *self, PyObject *args, PyObject *kwar
 				   res,
 				   ldb_search_default_callback,
 				   NULL);
+
+	talloc_steal(req, attrs);
 
 	if (ret != LDB_SUCCESS) {
 		talloc_free(res);
@@ -1136,6 +1141,7 @@ static PyObject *py_ldb_module_search(PyLdbModuleObject *self, PyObject *args, P
 	struct ldb_request *req;
 	const char * const kwnames[] = { "base", "scope", "tree", "attrs", NULL };
 	struct ldb_module *mod;
+	const char * const*attrs;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OiOO",
 					 discard_const_p(char *, kwnames),
@@ -1144,9 +1150,20 @@ static PyObject *py_ldb_module_search(PyLdbModuleObject *self, PyObject *args, P
 
 	mod = self->mod;
 
+	if (py_attrs == Py_None) {
+		attrs = NULL;
+	} else {
+		attrs = PyList_AsStringList(NULL, py_attrs, "attrs");
+		if (attrs == NULL)
+			return NULL;
+	}
+
 	ret = ldb_build_search_req(&req, mod->ldb, NULL, PyLdbDn_AsDn(py_base), 
-			     scope, NULL /* expr */, py_attrs == Py_None?NULL:PyList_AsStringList(req, py_attrs, "attrs"),
+			     scope, NULL /* expr */, attrs,
 			     NULL /* controls */, NULL, NULL, NULL);
+
+	talloc_steal(req, attrs);
+
 	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, mod->ldb);
 
 	req->op.search.res = NULL;
