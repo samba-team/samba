@@ -941,6 +941,28 @@ static void call_trans2open(connection_struct *conn,
 		fname, (unsigned int)deny_mode, (unsigned int)open_attr,
 		(unsigned int)open_ofun, open_size));
 
+	status = resolve_dfspath(ctx,
+				conn,
+				req->flags2 & FLAGS2_DFS_PATHNAMES,
+				fname,
+				&fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+			reply_botherror(req,
+				NT_STATUS_PATH_NOT_COVERED,
+				ERRSRV, ERRbadpath);
+			goto out;
+		}
+		reply_nterror(req, status);
+		goto out;
+	}
+
+	status = unix_convert(ctx, conn, fname, &smb_fname, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+		goto out;
+	}
+
 	if (open_ofun == 0) {
 		reply_nterror(req, NT_STATUS_OBJECT_NAME_COLLISION);
 		goto out;
@@ -982,12 +1004,6 @@ static void call_trans2open(connection_struct *conn,
 		}
 	} else if (IVAL(pdata,0) != 4) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		goto out;
-	}
-
-	status = unix_convert(ctx, conn, fname, &smb_fname, 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
 		goto out;
 	}
 
@@ -3987,6 +4003,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 				reply_botherror(req,
 						NT_STATUS_PATH_NOT_COVERED,
 						ERRSRV, ERRbadpath);
+				return;
 			}
 			reply_nterror(req, status);
 			return;

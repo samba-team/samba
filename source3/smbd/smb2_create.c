@@ -309,13 +309,26 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		}
 		info = FILE_WAS_CREATED;
 	} else {
+		char *fname = NULL;
+
 		/* these are ignored for SMB2 */
 		in_create_options &= ~(0x10);/* NTCREATEX_OPTIONS_SYNC_ALERT */
 		in_create_options &= ~(0x20);/* NTCREATEX_OPTIONS_ASYNC_ALERT */
 
-		status = unix_convert(talloc_tos(), smbreq->conn, in_name,
+		status = resolve_dfspath(talloc_tos(),
+					smbreq->conn,
+					smbreq->flags2 & FLAGS2_DFS_PATHNAMES,
+					in_name,
+					&fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			tevent_req_nterror(req, status);
+			goto out;
+		}
+
+		status = unix_convert(talloc_tos(), smbreq->conn, fname,
 				      &smb_fname, 0);
 		if (!NT_STATUS_IS_OK(status)) {
+			tevent_req_nterror(req, status);
 			goto out;
 		}
 

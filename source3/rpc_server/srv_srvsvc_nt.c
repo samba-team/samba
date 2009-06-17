@@ -2042,6 +2042,7 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p,
 	connection_struct *conn = NULL;
 	struct sec_desc_buf *sd_buf = NULL;
 	files_struct *fsp = NULL;
+	char *fname = NULL;
 	int snum;
 	char *oldcwd = NULL;
 
@@ -2066,7 +2067,17 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p,
 		goto error_exit;
 	}
 
-	nt_status = unix_convert(talloc_tos(), conn, r->in.file, &smb_fname,
+	nt_status = resolve_dfspath(talloc_tos(),
+					conn,
+					false,
+					r->in.file,
+					&fname);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		werr = ntstatus_to_werror(nt_status);
+		goto error_exit;
+	}
+
+	nt_status = unix_convert(talloc_tos(), conn, fname, &smb_fname,
 				 0);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		werr = ntstatus_to_werror(nt_status);
@@ -2169,6 +2180,7 @@ WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p,
 	char *oldcwd = NULL;
 	struct security_descriptor *psd = NULL;
 	uint32_t security_info_sent = 0;
+	char *fname = NULL;
 
 	ZERO_STRUCT(st);
 
@@ -2191,7 +2203,16 @@ WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p,
 		goto error_exit;
 	}
 
-	nt_status = unix_convert(talloc_tos(), conn, r->in.file, &smb_fname,
+	nt_status = resolve_dfspath(talloc_tos(),
+					conn,
+					false,
+					r->in.file,
+					&fname);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		werr = ntstatus_to_werror(nt_status);
+		goto error_exit;
+	}
+	nt_status = unix_convert(talloc_tos(), conn, fname, &smb_fname,
 				 0);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		werr = ntstatus_to_werror(nt_status);

@@ -507,6 +507,23 @@ void reply_ntcreate_and_X(struct smb_request *req)
 			? BATCH_OPLOCK : 0;
 	}
 
+	status = resolve_dfspath(ctx,
+				conn,
+				req->flags2 & FLAGS2_DFS_PATHNAMES,
+				fname,
+				&fname);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+			reply_botherror(req,
+				NT_STATUS_PATH_NOT_COVERED,
+				ERRSRV, ERRbadpath);
+			goto out;
+		}
+		reply_nterror(req, status);
+		goto out;
+	}
+
 	status = unix_convert(ctx, conn, fname, &smb_fname, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
@@ -976,16 +993,33 @@ static void call_nt_transact_create(connection_struct *conn,
 		goto out;
 	}
 
-	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
-	if (oplock_request) {
-		oplock_request |= (flags & REQUEST_BATCH_OPLOCK)
-			? BATCH_OPLOCK : 0;
+	status = resolve_dfspath(ctx,
+				conn,
+				req->flags2 & FLAGS2_DFS_PATHNAMES,
+				fname,
+				&fname);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+			reply_botherror(req,
+				NT_STATUS_PATH_NOT_COVERED,
+				ERRSRV, ERRbadpath);
+			goto out;
+		}
+		reply_nterror(req, status);
+		goto out;
 	}
 
 	status = unix_convert(ctx, conn, fname, &smb_fname, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		goto out;
+	}
+
+	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
+	if (oplock_request) {
+		oplock_request |= (flags & REQUEST_BATCH_OPLOCK)
+			? BATCH_OPLOCK : 0;
 	}
 
 	status = SMB_VFS_CREATE_FILE(

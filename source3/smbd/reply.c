@@ -1769,17 +1769,32 @@ void reply_open(struct smb_request *req)
 		goto out;
 	}
 
-	if (!map_open_params_to_ntcreate(
-		    fname, deny_mode, OPENX_FILE_EXISTS_OPEN, &access_mask,
-		    &share_mode, &create_disposition, &create_options)) {
-		reply_nterror(req, NT_STATUS_DOS(ERRDOS, ERRbadaccess));
-		END_PROFILE(SMBopen);
-		return;
+	status = resolve_dfspath(ctx,
+				conn,
+				req->flags2 & FLAGS2_DFS_PATHNAMES,
+				fname,
+				&fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+			reply_botherror(req,
+					NT_STATUS_PATH_NOT_COVERED,
+					ERRSRV, ERRbadpath);
+			goto out;
+		}
+		reply_nterror(req, status);
+		goto out;
 	}
 
 	status = unix_convert(ctx, conn, fname, &smb_fname, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
+		goto out;
+	}
+
+	if (!map_open_params_to_ntcreate(
+		    fname, deny_mode, OPENX_FILE_EXISTS_OPEN, &access_mask,
+		    &share_mode, &create_disposition, &create_options)) {
+		reply_nterror(req, NT_STATUS_DOS(ERRDOS, ERRbadaccess));
 		goto out;
 	}
 
@@ -1915,16 +1930,32 @@ void reply_open_and_X(struct smb_request *req)
 		goto out;
 	}
 
-	if (!map_open_params_to_ntcreate(
-		    fname, deny_mode, smb_ofun, &access_mask,
-		    &share_mode, &create_disposition, &create_options)) {
-		reply_nterror(req, NT_STATUS_DOS(ERRDOS, ERRbadaccess));
+	status = resolve_dfspath(ctx,
+				conn,
+				req->flags2 & FLAGS2_DFS_PATHNAMES,
+				fname,
+				&fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+			reply_botherror(req,
+					NT_STATUS_PATH_NOT_COVERED,
+					ERRSRV, ERRbadpath);
+			goto out;
+		}
+		reply_nterror(req, status);
 		goto out;
 	}
 
 	status = unix_convert(ctx, conn, fname, &smb_fname, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
+		goto out;
+	}
+
+	if (!map_open_params_to_ntcreate(
+		    fname, deny_mode, smb_ofun, &access_mask,
+		    &share_mode, &create_disposition, &create_options)) {
+		reply_nterror(req, NT_STATUS_DOS(ERRDOS, ERRbadaccess));
 		goto out;
 	}
 
@@ -2112,6 +2143,28 @@ void reply_mknew(struct smb_request *req)
 		goto out;
 	}
 
+	status = resolve_dfspath(ctx,
+				conn,
+				req->flags2 & FLAGS2_DFS_PATHNAMES,
+				fname,
+				&fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+			reply_botherror(req,
+					NT_STATUS_PATH_NOT_COVERED,
+					ERRSRV, ERRbadpath);
+			goto out;
+		}
+		reply_nterror(req, status);
+		goto out;
+	}
+
+	status = unix_convert(ctx, conn, fname, &smb_fname, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+		goto out;
+	}
+
 	if (fattr & aVOLID) {
 		DEBUG(0,("Attempt to create file (%s) with volid set - "
 			"please report this\n", fname));
@@ -2123,12 +2176,6 @@ void reply_mknew(struct smb_request *req)
 	} else {
 		/* Create if file doesn't exist, truncate if it does. */
 		create_disposition = FILE_OVERWRITE_IF;
-	}
-
-	status = unix_convert(ctx, conn, fname, &smb_fname, 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
-		goto out;
 	}
 
 	status = SMB_VFS_CREATE_FILE(
