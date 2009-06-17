@@ -575,17 +575,19 @@ static PyObject *py_ldb_new(PyTypeObject *type, PyObject *args, PyObject *kwargs
 {
 	PyLdbObject *ret;
 	struct ldb_context *ldb;
-	ldb = ldb_init(NULL, NULL);
-	if (ldb == NULL) {
-		PyErr_NoMemory();
-		return NULL;
-	}
-
 	ret = (PyLdbObject *)type->tp_alloc(type, 0);
 	if (ret == NULL) {
 		PyErr_NoMemory();
 		return NULL;
 	}
+	ret->mem_ctx = talloc_new(NULL);
+	ldb = ldb_init(ret->mem_ctx, NULL);
+
+	if (ldb == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
 	ret->ldb_ctx = ldb;
 	return (PyObject *)ret;
 }
@@ -646,22 +648,27 @@ static PyObject *py_ldb_add(PyLdbObject *self, PyObject *args)
 	struct ldb_message_element *msgel;
 	struct ldb_message *msg;
 	PyObject *key, *value;
+	TALLOC_CTX *mem_ctx;
 
 	if (!PyArg_ParseTuple(args, "O", &py_msg))
 		return NULL;
 
+	mem_ctx = talloc_new(NULL);
+
 	if (PyDict_Check(py_msg)) {
 		PyObject *dn_value = PyDict_GetItemString(py_msg, "dn");
-		msg = ldb_msg_new(NULL);
+		msg = ldb_msg_new(mem_ctx);
 		msg->elements = talloc_zero_array(msg, struct ldb_message_element, PyDict_Size(py_msg));
 		msg_pos = dict_pos = 0;
 		if (dn_value) {
 		   	if (!PyObject_AsDn(msg, dn_value, PyLdb_AsLdbContext(self), &msg->dn)) {
 		   		PyErr_SetString(PyExc_TypeError, "unable to import dn object");
+				talloc_free(mem_ctx);
 				return NULL;
 			}
 			if (msg->dn == NULL) {
 				PyErr_SetString(PyExc_TypeError, "dn set but not found");
+				talloc_free(mem_ctx);
 				return NULL;
 			}
 		}
@@ -672,6 +679,7 @@ static PyObject *py_ldb_add(PyLdbObject *self, PyObject *args)
 				msgel = PyObject_AsMessageElement(msg->elements, value, 0, key_str);
 				if (msgel == NULL) {
 					PyErr_SetString(PyExc_TypeError, "unable to import element");
+					talloc_free(mem_ctx);
 					return NULL;
 				}
 				memcpy(&msg->elements[msg_pos], msgel, sizeof(*msgel));
@@ -681,6 +689,7 @@ static PyObject *py_ldb_add(PyLdbObject *self, PyObject *args)
 
 		if (msg->dn == NULL) {
 			PyErr_SetString(PyExc_TypeError, "no dn set");
+			talloc_free(mem_ctx);
 			return NULL;
 		}
 
@@ -690,6 +699,7 @@ static PyObject *py_ldb_add(PyLdbObject *self, PyObject *args)
 	}
 
 	ret = ldb_add(PyLdb_AsLdbContext(self), msg);
+	talloc_free(mem_ctx);
 	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, PyLdb_AsLdbContext(self));
 
 	Py_RETURN_NONE;
@@ -721,17 +731,28 @@ static PyObject *py_ldb_rename(PyLdbObject *self, PyObject *args)
 	struct ldb_dn *dn1, *dn2;
 	int ret;
 	struct ldb_context *ldb;
+	TALLOC_CTX *mem_ctx;
 	if (!PyArg_ParseTuple(args, "OO", &py_dn1, &py_dn2))
 		return NULL;
 
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
 	ldb = PyLdb_AsLdbContext(self);
-	if (!PyObject_AsDn(NULL, py_dn1, ldb, &dn1))
+	if (!PyObject_AsDn(mem_ctx, py_dn1, ldb, &dn1)) {
+		talloc_free(mem_ctx);
 		return NULL;
+	}
 
-	if (!PyObject_AsDn(NULL, py_dn2, ldb, &dn2))
+	if (!PyObject_AsDn(mem_ctx, py_dn2, ldb, &dn2)) {
+		talloc_free(mem_ctx);
 		return NULL;
+	}
 
 	ret = ldb_rename(ldb, dn1, dn2);
+	talloc_free(mem_ctx);
 	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, ldb);
 
 	Py_RETURN_NONE;
@@ -1467,13 +1488,20 @@ static PyObject *py_ldb_msg_element_new(PyTypeObject *type, PyObject *args, PyOb
 	char *name = NULL;
 	const char * const kwnames[] = { "elements", "flags", "name", NULL };
 	PyLdbMessageElementObject *ret;
+	TALLOC_CTX *mem_ctx;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|Ois",
 					 discard_const_p(char *, kwnames),
 					 &py_elements, &flags, &name))
 		return NULL;
 
-	el = talloc_zero(NULL, struct ldb_message_element);
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	el = talloc_zero(mem_ctx, struct ldb_message_element);
 
 	if (py_elements != NULL) {
 		int i;
@@ -1493,7 +1521,7 @@ static PyObject *py_ldb_msg_element_new(PyTypeObject *type, PyObject *args, PyOb
 		} else {
 			PyErr_SetString(PyExc_TypeError, 
 					"Expected string or list");
-			talloc_free(el);
+			talloc_free(mem_ctx);
 			return NULL;
 		}
 	}
@@ -1504,12 +1532,12 @@ static PyObject *py_ldb_msg_element_new(PyTypeObject *type, PyObject *args, PyOb
 	ret = (PyLdbMessageElementObject *)PyLdbMessageElement.tp_alloc(&PyLdbMessageElement, 0);
 	if (ret == NULL) {
 		PyErr_NoMemory();
-		talloc_free(el);
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 
-	ret->mem_ctx = talloc_new(NULL);
-	ret->el = talloc_reference(ret->mem_ctx, el);
+	ret->mem_ctx = mem_ctx;
+	ret->el = el;
 	return (PyObject *)ret;
 }
 

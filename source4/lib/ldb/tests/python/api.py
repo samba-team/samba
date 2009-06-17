@@ -372,11 +372,11 @@ class DnTests(unittest.TestCase):
 
     def test_canonical_string(self):
         x = ldb.Dn(self.ldb, "dc=foo25,bar=bloe")
-        self.assertEquals("/bloe/foo", x.canonical_str())
+        self.assertEquals("/bloe/foo25", x.canonical_str())
 
     def test_canonical_ex_string(self):
         x = ldb.Dn(self.ldb, "dc=foo26,bar=bloe")
-        self.assertEquals("/bloe\nfoo", x.canonical_ex_str())
+        self.assertEquals("/bloe\nfoo26", x.canonical_ex_str())
 
 
 class LdbMsgTests(unittest.TestCase):
