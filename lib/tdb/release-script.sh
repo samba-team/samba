@@ -10,6 +10,9 @@ if [ ! -d "lib/tdb" ]; then
     exit 1
 fi
 
+git clean -f -x -d lib/tdb
+git clean -f -x -d lib/replace
+
 curbranch=`git-branch |grep "^*" | tr -d "* "`
 
 version=$1
