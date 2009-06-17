@@ -169,7 +169,7 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 		} else {
 			asprintf(err_str, "SAMR connection to machine %s "
 				 "failed. Error was %s, but LANMAN password "
-				 "changed are disabled\n",
+				 "changes are disabled\n",
 				 nt_errstr(result), remote_machine);
 			result = cli_nt_error(cli);
 			cli_shutdown(cli);
