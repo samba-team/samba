@@ -813,6 +813,7 @@ static PyObject *py_ldb_search(PyLdbObject *self, PyObject *args, PyObject *kwar
 	struct ldb_context *ldb_ctx;
 	struct ldb_control **parsed_controls;
 	struct ldb_dn *base;
+	PyObject *py_ret;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|OizOO",
 					 discard_const_p(char *, kwnames),
@@ -880,7 +881,11 @@ static PyObject *py_ldb_search(PyLdbObject *self, PyObject *args, PyObject *kwar
 		return NULL;
 	}
 
-	return PyLdbResult_FromResult(res);
+	py_ret = PyLdbResult_FromResult(res);
+
+	talloc_free(res);
+
+	return py_ret;
 }
 
 static PyObject *py_ldb_get_opaque(PyLdbObject *self, PyObject *args)
@@ -1126,7 +1131,7 @@ static PyObject *py_ldb_module_del_transaction(PyLdbModuleObject *self)
 
 static PyObject *py_ldb_module_search(PyLdbModuleObject *self, PyObject *args, PyObject *kwargs)
 {
-	PyObject *py_base, *py_tree, *py_attrs;
+	PyObject *py_base, *py_tree, *py_attrs, *py_ret;
 	int ret, scope;
 	struct ldb_request *req;
 	const char * const kwnames[] = { "base", "scope", "tree", "attrs", NULL };
@@ -1144,12 +1149,17 @@ static PyObject *py_ldb_module_search(PyLdbModuleObject *self, PyObject *args, P
 			     NULL /* controls */, NULL, NULL, NULL);
 	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, mod->ldb);
 
+	req->op.search.res = NULL;
+
 	ret = mod->ops->search(mod, req);
-	talloc_free(req);
 
 	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, mod->ldb);
 
-	return PyLdbResult_FromResult(req->op.search.res);
+	py_ret = PyLdbResult_FromResult(req->op.search.res);
+
+	talloc_free(req);
+
+	return py_ret;	
 }
 
 
