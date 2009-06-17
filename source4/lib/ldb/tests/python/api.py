@@ -88,23 +88,23 @@ class SimpleLdb(unittest.TestCase):
 
     def test_search_scope_base(self):
         l = ldb.Ldb(filename())
-        self.assertEquals(len(l.search(ldb.Dn(l, "dc=foo"), 
+        self.assertEquals(len(l.search(ldb.Dn(l, "dc=foo1"), 
                           ldb.SCOPE_ONELEVEL)), 0)
 
     def test_delete(self):
         l = ldb.Ldb(filename())
-        self.assertRaises(ldb.LdbError, lambda: l.delete(ldb.Dn(l, "dc=foo")))
+        self.assertRaises(ldb.LdbError, lambda: l.delete(ldb.Dn(l, "dc=foo2")))
 
     def test_contains(self):
         l = ldb.Ldb(filename())
-        self.assertFalse(ldb.Dn(l, "dc=foo") in l)
+        self.assertFalse(ldb.Dn(l, "dc=foo3") in l)
         l = ldb.Ldb(filename())
         m = ldb.Message()
-        m.dn = ldb.Dn(l, "dc=foo")
+        m.dn = ldb.Dn(l, "dc=foo3")
         m["b"] = ["a"]
         l.add(m)
         try:
-            self.assertTrue(ldb.Dn(l, "dc=foo") in l)
+            self.assertTrue(ldb.Dn(l, "dc=foo3") in l)
         finally:
             l.delete(m.dn)
 
@@ -127,45 +127,45 @@ class SimpleLdb(unittest.TestCase):
     def test_add(self):
         l = ldb.Ldb(filename())
         m = ldb.Message()
-        m.dn = ldb.Dn(l, "dc=foo")
+        m.dn = ldb.Dn(l, "dc=foo4")
         m["bla"] = "bla"
         self.assertEquals(len(l.search()), 1)
         l.add(m)
         try:
             self.assertEquals(len(l.search()), 2)
         finally:
-            l.delete(ldb.Dn(l, "dc=foo"))
+            l.delete(ldb.Dn(l, "dc=foo4"))
 
     def test_add_dict(self):
         l = ldb.Ldb(filename())
-        m = {"dn": ldb.Dn(l, "dc=foo"),
+        m = {"dn": ldb.Dn(l, "dc=foo5"),
              "bla": "bla"}
         self.assertEquals(len(l.search()), 1)
         l.add(m)
         try:
             self.assertEquals(len(l.search()), 2)
         finally:
-            l.delete(ldb.Dn(l, "dc=foo"))
+            l.delete(ldb.Dn(l, "dc=foo5"))
 
     def test_add_dict_string_dn(self):
         l = ldb.Ldb(filename())
-        m = {"dn": "dc=foo", "bla": "bla"}
+        m = {"dn": "dc=foo6", "bla": "bla"}
         self.assertEquals(len(l.search()), 1)
         l.add(m)
         try:
             self.assertEquals(len(l.search()), 2)
         finally:
-            l.delete(ldb.Dn(l, "dc=foo"))
+            l.delete(ldb.Dn(l, "dc=foo6"))
 
     def test_rename(self):
         l = ldb.Ldb(filename())
         m = ldb.Message()
-        m.dn = ldb.Dn(l, "dc=foo")
+        m.dn = ldb.Dn(l, "dc=foo7")
         m["bla"] = "bla"
         self.assertEquals(len(l.search()), 1)
         l.add(m)
         try:
-            l.rename(ldb.Dn(l, "dc=foo"), ldb.Dn(l, "dc=bar"))
+            l.rename(ldb.Dn(l, "dc=foo7"), ldb.Dn(l, "dc=bar"))
             self.assertEquals(len(l.search()), 2)
         finally:
             l.delete(ldb.Dn(l, "dc=bar"))
@@ -173,13 +173,13 @@ class SimpleLdb(unittest.TestCase):
     def test_rename_string_dns(self):
         l = ldb.Ldb(filename())
         m = ldb.Message()
-        m.dn = ldb.Dn(l, "dc=foo")
+        m.dn = ldb.Dn(l, "dc=foo8")
         m["bla"] = "bla"
         self.assertEquals(len(l.search()), 1)
         l.add(m)
         self.assertEquals(len(l.search()), 2)
         try:
-            l.rename("dc=foo", "dc=bar")
+            l.rename("dc=foo8", "dc=bar")
             self.assertEquals(len(l.search()), 2)
         finally:
             l.delete(ldb.Dn(l, "dc=bar"))
@@ -239,7 +239,7 @@ class SimpleLdb(unittest.TestCase):
     def test_transaction_commit(self):
         l = ldb.Ldb(filename())
         l.transaction_start()
-        m = ldb.Message(ldb.Dn(l, "dc=foo"))
+        m = ldb.Message(ldb.Dn(l, "dc=foo9"))
         m["foo"] = ["bar"]
         l.add(m)
         l.transaction_commit()
@@ -248,11 +248,11 @@ class SimpleLdb(unittest.TestCase):
     def test_transaction_cancel(self):
         l = ldb.Ldb(filename())
         l.transaction_start()
-        m = ldb.Message(ldb.Dn(l, "dc=foo"))
+        m = ldb.Message(ldb.Dn(l, "dc=foo10"))
         m["foo"] = ["bar"]
         l.add(m)
         l.transaction_cancel()
-        self.assertEquals(0, len(l.search(ldb.Dn(l, "dc=foo"))))
+        self.assertEquals(0, len(l.search(ldb.Dn(l, "dc=foo10"))))
 
     def test_set_debug(self):
         def my_report_fn(level, text):
@@ -280,28 +280,28 @@ class DnTests(unittest.TestCase):
         self.ldb = ldb.Ldb(filename())
 
     def test_eq(self):
-        x = ldb.Dn(self.ldb, "dc=foo,bar=bloe")
-        y = ldb.Dn(self.ldb, "dc=foo,bar=bloe")
+        x = ldb.Dn(self.ldb, "dc=foo11,bar=bloe")
+        y = ldb.Dn(self.ldb, "dc=foo11,bar=bloe")
         self.assertEquals(x, y)
 
     def test_str(self):
-        x = ldb.Dn(self.ldb, "dc=foo,bar=bloe")
-        self.assertEquals(x.__str__(), "dc=foo,bar=bloe")
+        x = ldb.Dn(self.ldb, "dc=foo12,bar=bloe")
+        self.assertEquals(x.__str__(), "dc=foo12,bar=bloe")
 
     def test_repr(self):
-        x = ldb.Dn(self.ldb, "dc=foo,bla=blie")
-        self.assertEquals(x.__repr__(), "Dn('dc=foo,bla=blie')")
+        x = ldb.Dn(self.ldb, "dc=foo13,bla=blie")
+        self.assertEquals(x.__repr__(), "Dn('dc=foo13,bla=blie')")
 
     def test_get_casefold(self):
-        x = ldb.Dn(self.ldb, "dc=foo,bar=bloe")
-        self.assertEquals(x.get_casefold(), "DC=FOO,BAR=bloe")
+        x = ldb.Dn(self.ldb, "dc=foo14,bar=bloe")
+        self.assertEquals(x.get_casefold(), "DC=FOO14,BAR=bloe")
 
     def test_validate(self):
-        x = ldb.Dn(self.ldb, "dc=foo,bar=bloe")
+        x = ldb.Dn(self.ldb, "dc=foo15,bar=bloe")
         self.assertTrue(x.validate())
 
     def test_parent(self):
-        x = ldb.Dn(self.ldb, "dc=foo,bar=bloe")
+        x = ldb.Dn(self.ldb, "dc=foo16,bar=bloe")
         self.assertEquals("bar=bloe", x.parent().__str__())
 
     def test_parent_nonexistant(self):
@@ -309,14 +309,14 @@ class DnTests(unittest.TestCase):
         self.assertEquals(None, x.parent())
 
     def test_compare(self):
-        x = ldb.Dn(self.ldb, "dc=foo,bar=bloe")
-        y = ldb.Dn(self.ldb, "dc=foo,bar=bloe")
+        x = ldb.Dn(self.ldb, "dc=foo17,bar=bloe")
+        y = ldb.Dn(self.ldb, "dc=foo17,bar=bloe")
         self.assertEquals(x, y)
-        z = ldb.Dn(self.ldb, "dc=foo,bar=blie")
+        z = ldb.Dn(self.ldb, "dc=foo17,bar=blie")
         self.assertNotEquals(z, y)
 
     def test_is_valid(self):
-        x = ldb.Dn(self.ldb, "dc=foo,dc=bloe")
+        x = ldb.Dn(self.ldb, "dc=foo18,dc=bloe")
         self.assertTrue(x.is_valid())
         x = ldb.Dn(self.ldb, "")
         # is_valid()'s return values appears to be a side effect of 
@@ -324,38 +324,38 @@ class DnTests(unittest.TestCase):
         # self.assertFalse(x.is_valid())
 
     def test_is_special(self):
-        x = ldb.Dn(self.ldb, "dc=foo,bar=bloe")
+        x = ldb.Dn(self.ldb, "dc=foo19,bar=bloe")
         self.assertFalse(x.is_special())
         x = ldb.Dn(self.ldb, "@FOOBAR")
         self.assertTrue(x.is_special())
 
     def test_check_special(self):
-        x = ldb.Dn(self.ldb, "dc=foo,bar=bloe")
+        x = ldb.Dn(self.ldb, "dc=foo20,bar=bloe")
         self.assertFalse(x.check_special("FOOBAR"))
         x = ldb.Dn(self.ldb, "@FOOBAR")
         self.assertTrue(x.check_special("@FOOBAR"))
 
     def test_len(self):
-        x = ldb.Dn(self.ldb, "dc=foo,bar=bloe")
+        x = ldb.Dn(self.ldb, "dc=foo21,bar=bloe")
         self.assertEquals(2, len(x))
-        x = ldb.Dn(self.ldb, "dc=foo")
+        x = ldb.Dn(self.ldb, "dc=foo21")
         self.assertEquals(1, len(x))
 
     def test_add_child(self):
-        x = ldb.Dn(self.ldb, "dc=foo,bar=bloe")
+        x = ldb.Dn(self.ldb, "dc=foo22,bar=bloe")
         self.assertTrue(x.add_child(ldb.Dn(self.ldb, "bla=bloe")))
-        self.assertEquals("bla=bloe,dc=foo,bar=bloe", x.__str__())
+        self.assertEquals("bla=bloe,dc=foo22,bar=bloe", x.__str__())
 
     def test_add_base(self):
-        x = ldb.Dn(self.ldb, "dc=foo,bar=bloe")
+        x = ldb.Dn(self.ldb, "dc=foo23,bar=bloe")
         base = ldb.Dn(self.ldb, "bla=bloe")
         self.assertTrue(x.add_base(base))
-        self.assertEquals("dc=foo,bar=bloe,bla=bloe", x.__str__())
+        self.assertEquals("dc=foo23,bar=bloe,bla=bloe", x.__str__())
 
     def test_add(self):
-        x = ldb.Dn(self.ldb, "dc=foo")
+        x = ldb.Dn(self.ldb, "dc=foo24")
         y = ldb.Dn(self.ldb, "bar=bla")
-        self.assertEquals("dc=foo,bar=bla", str(y + x))
+        self.assertEquals("dc=foo24,bar=bla", str(y + x))
 
     def test_parse_ldif(self):
         msgs = self.ldb.parse_ldif("dn: foo=bar\n")
@@ -371,11 +371,11 @@ class DnTests(unittest.TestCase):
         self.assertEquals("bar=bar", str(msg[1].dn))
 
     def test_canonical_string(self):
-        x = ldb.Dn(self.ldb, "dc=foo,bar=bloe")
+        x = ldb.Dn(self.ldb, "dc=foo25,bar=bloe")
         self.assertEquals("/bloe/foo", x.canonical_str())
 
     def test_canonical_ex_string(self):
-        x = ldb.Dn(self.ldb, "dc=foo,bar=bloe")
+        x = ldb.Dn(self.ldb, "dc=foo26,bar=bloe")
         self.assertEquals("/bloe\nfoo", x.canonical_ex_str())
 
 
@@ -385,18 +385,18 @@ class LdbMsgTests(unittest.TestCase):
         self.msg = ldb.Message()
 
     def test_init_dn(self):
-        self.msg = ldb.Message(ldb.Dn(ldb.Ldb(), "dc=foo"))
-        self.assertEquals("dc=foo", str(self.msg.dn))
+        self.msg = ldb.Message(ldb.Dn(ldb.Ldb(), "dc=foo27"))
+        self.assertEquals("dc=foo27", str(self.msg.dn))
 
     def test_iter_items(self):
         self.assertEquals(0, len(self.msg.items()))
-        self.msg.dn = ldb.Dn(ldb.Ldb("foo.tdb"), "dc=foo")
+        self.msg.dn = ldb.Dn(ldb.Ldb("foo.tdb"), "dc=foo28")
         self.assertEquals(1, len(self.msg.items()))
 
     def test_repr(self):
-        self.msg.dn = ldb.Dn(ldb.Ldb("foo.tdb"), "dc=foo")
+        self.msg.dn = ldb.Dn(ldb.Ldb("foo.tdb"), "dc=foo29")
         self.msg["dc"] = "foo"
-        self.assertEquals("Message({'dn': Dn('dc=foo'), 'dc': MessageElement(['foo'])})", repr(self.msg))
+        self.assertEquals("Message({'dn': Dn('dc=foo29'), 'dc': MessageElement(['foo'])})", repr(self.msg))
 
     def test_len(self):
         self.assertEquals(0, len(self.msg))
