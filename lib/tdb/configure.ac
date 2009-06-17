@@ -30,7 +30,7 @@ if test -z "$PYTHON_CONFIG"; then
 fi
 
 AC_ARG_ENABLE(python,
-		[--enable-python Ebables python bindings],
+	AS_HELP_STRING([--enable-python], [Enables python binding]),
 		[ if test "x$enableval" = "xno" ; then
 			PYTHON_BUILD_TARGET=""
 			PYTHON_INSTALL_TARGET=""
