@@ -111,7 +111,14 @@ libgpodir := libgpo
 
 include data.mk
 
-$(foreach SCRIPT,$(wildcard scripting/bin/*),$(eval $(call binary_install_template,$(SCRIPT))))
+INSTALL_SCRIPTS = $(addprefix scripting/bin/, \
+	autoidl \
+	samba3dump \
+	rpcclient \
+	smbstatus \
+	epdump)
+
+$(foreach SCRIPT,$(INSTALL_SCRIPTS),$(eval $(call binary_install_template,$(SCRIPT))))
 
 $(DESTDIR)$(bindir)/%: scripting/bin/% installdirs
 	@mkdir -p $(@D)
