@@ -1,6 +1,6 @@
                    ================================
                    Release Notes for Samba 3.4.0rc1
-			    June 17, 2009
+			    June 19, 2009
                    ================================
 
 
@@ -244,13 +244,25 @@ Changes since 3.4.0pre2
 -----------------------
 
 
+o   Jeremy Allison <jra@samba.org>
+    * BUG 6297: Owner of sticky directory cannot delete files created by
+      others.
+
+
 o   Günther Deschner <gd@samba.org>
     * BUG 5456: Fix "net ads testjoin".
+    * BUG 6305: Correctly prompt for a password when a username was given.
+    * BUG 6451: net/libnetapi user rename using wrong access bits.
     * BUG 6458: Fix uninitialized variable in local_password_change().
+    * BUG 6465: Fix enumeration of empty aliases.
 
 
 o   Volker Lendecke <vl@samba.org>
     * BUG 6449: 'net rap user add' crashes without -C option.
+
+
+o   Andreas Schneider <mail@cynapses.org>
+    * Improve pam_winbind documentation.
 
 
 o   Simo Sorce <idra@samba.org>
