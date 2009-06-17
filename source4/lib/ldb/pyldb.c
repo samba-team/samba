@@ -1677,18 +1677,22 @@ static PyObject *py_ldb_msg_new(PyTypeObject *type, PyObject *args, PyObject *kw
 		return NULL;
 	}
 
-	if (pydn != NULL)
-		if (!PyObject_AsDn(NULL, pydn, NULL, &ret->dn))
+	if (pydn != NULL) {
+		if (!PyObject_AsDn(NULL, pydn, NULL, &ret->dn)) {
+			talloc_free(ret);
 			return NULL;
+		}
+	}
 
 	py_ret = (PyLdbMessageObject *)type->tp_alloc(type, 0);
 	if (py_ret == NULL) {
 		PyErr_NoMemory();
+		talloc_free(ret);
 		return NULL;
 	}
 
 	py_ret->mem_ctx = talloc_new(NULL);
-	py_ret->msg = talloc_reference(py_ret->mem_ctx, ret);
+	py_ret->msg = talloc_steal(py_ret->mem_ctx, ret);
 	return (PyObject *)py_ret;
 }
 
