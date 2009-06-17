@@ -3369,31 +3369,6 @@ NTSTATUS create_file_default(connection_struct *conn,
 		  (unsigned int)root_dir_fid,
 		  ea_list, sd, smb_fname_str_dbg(smb_fname)));
 
-	/* MSDFS pathname processing must be done FIRST.
-	   MSDFS pathnames containing IPv6 addresses can
-	   be confused with NTFS stream names (they contain
-	   ":" characters. JRA. */
-
-	if ((req != NULL) && (req->flags2 & FLAGS2_DFS_PATHNAMES)) {
-		char *resolved_fname;
-
-		status = resolve_dfspath(talloc_tos(), conn, true,
-					 smb_fname->base_name,
-					 &resolved_fname);
-
-		if (!NT_STATUS_IS_OK(status)) {
-			/*
-			 * For PATH_NOT_COVERED we had
-			 * reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
-			 *		   ERRSRV, ERRbadpath);
-			 * Need to fix in callers
-			 */
-			goto fail;
-		}
-		TALLOC_FREE(smb_fname->base_name);
-		smb_fname->base_name = resolved_fname;
-	}
-
 	status = get_full_smb_filename(talloc_tos(), smb_fname, &fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
