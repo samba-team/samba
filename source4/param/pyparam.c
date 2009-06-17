@@ -295,7 +295,18 @@ static PyGetSetDef py_lp_ctx_getset[] = {
 
 static PyObject *py_lp_ctx_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
-	return py_talloc_import(type, loadparm_init(NULL));
+	py_talloc_Object *ret = (py_talloc_Object *)type->tp_alloc(type, 0);
+	if (ret == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+	ret->talloc_ctx = talloc_new(NULL);
+	if (ret->talloc_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+	ret->ptr = loadparm_init(ret->talloc_ctx);
+	return (PyObject *)ret;
 }
 
 static Py_ssize_t py_lp_ctx_len(py_talloc_Object *self)
