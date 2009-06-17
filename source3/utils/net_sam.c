@@ -678,10 +678,11 @@ static int net_sam_rights_grant(struct net_context *c, int argc,
 	enum lsa_SidType type;
 	const char *dom, *name;
 	SE_PRIV mask;
+	int i;
 
-	if (argc != 2 || c->display_usage) {
+	if (argc < 2 || c->display_usage) {
 		d_fprintf(stderr, "usage: net sam rights grant <name> "
-			  "<right>\n");
+			  "<right> ...\n");
 		return -1;
 	}
 
@@ -691,17 +692,20 @@ static int net_sam_rights_grant(struct net_context *c, int argc,
 		return -1;
 	}
 
-	if (!se_priv_from_name(argv[1], &mask)) {
-		d_fprintf(stderr, "%s unknown\n", argv[1]);
-		return -1;
+	for (i=1; i < argc; i++) {
+		if (!se_priv_from_name(argv[i], &mask)) {
+			d_fprintf(stderr, "%s unknown\n", argv[i]);
+			return -1;
+		}
+
+		if (!grant_privilege(&sid, &mask)) {
+			d_fprintf(stderr, "Could not grant privilege\n");
+			return -1;
+		}
+
+		d_printf("Granted %s to %s\\%s\n", argv[i], dom, name);
 	}
 
-	if (!grant_privilege(&sid, &mask)) {
-		d_fprintf(stderr, "Could not grant privilege\n");
-		return -1;
-	}
-
-	d_printf("Granted %s to %s\\%s\n", argv[1], dom, name);
 	return 0;
 }
 
