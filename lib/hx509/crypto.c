@@ -37,10 +37,6 @@ struct hx509_crypto;
 
 struct signature_alg;
 
-enum crypto_op_type {
-    COT_SIGN
-};
-
 struct hx509_generate_private_context {
     const heim_oid *key_oid;
     int isCA;
