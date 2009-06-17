@@ -208,7 +208,6 @@ install: all
 	${INSTALLCMD} -m 755 config/events.d/00.ctdb $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/10.interface $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/11.natgw $(DESTDIR)$(etcdir)/ctdb/events.d
-	${INSTALLCMD} -m 755 config/events.d/11.routing $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/20.multipathd $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 644 config/events.d/31.clamd $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/40.vsftpd $(DESTDIR)$(etcdir)/ctdb/events.d
@@ -218,6 +217,7 @@ install: all
 	${INSTALLCMD} -m 755 config/events.d/61.nfstickle $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/70.iscsi $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/91.lvs $(DESTDIR)$(etcdir)/ctdb/events.d
+	${INSTALLCMD} -m 755 config/events.d/99.routing $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 tools/ctdb_diagnostics $(DESTDIR)$(bindir)
 	${INSTALLCMD} -m 755 tools/onnode $(DESTDIR)$(bindir)
 	if [ -f doc/ctdb.1 ];then ${INSTALLCMD} -d $(DESTDIR)$(mandir)/man1; fi
