@@ -210,11 +210,7 @@ static PyObject *py_ldb_dn_get_parent(PyLdbDnObject *self)
 
 	parent = ldb_dn_get_parent(NULL, dn);
 
-	if (parent == NULL) {
-		Py_RETURN_NONE;
-	} else {
-		return PyLdbDn_FromDn(parent);
-	}
+	return PyLdbDn_FromDn(parent);
 }
 
 #define dn_ldb_ctx(dn) ((struct ldb_context *)dn)
@@ -313,6 +309,7 @@ static PyObject *py_ldb_dn_new(PyTypeObject *type, PyObject *args, PyObject *kwa
 	char *str;
 	PyObject *py_ldb;
 	struct ldb_context *ldb_ctx;
+	TALLOC_CTX *mem_ctx;
 	PyLdbDnObject *py_ret;
 	const char * const kwnames[] = { "ldb", "dn", NULL };
 
@@ -323,21 +320,27 @@ static PyObject *py_ldb_dn_new(PyTypeObject *type, PyObject *args, PyObject *kwa
 
 	ldb_ctx = PyLdb_AsLdbContext(py_ldb);
 
-	ret = ldb_dn_new(ldb_ctx, ldb_ctx, str);
-	/* ldb_dn_new() doesn't accept NULL as memory context, so 
-	   we do it this way... */
-	talloc_steal(NULL, ret);
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	ret = ldb_dn_new(mem_ctx, ldb_ctx, str);
 
 	if (ret == NULL || !ldb_dn_validate(ret)) {
+		talloc_free(mem_ctx);
 		PyErr_SetString(PyExc_ValueError, "unable to parse dn string");
 		return NULL;
 	}
 
 	py_ret = (PyLdbDnObject *)type->tp_alloc(type, 0);
 	if (ret == NULL) {
+		talloc_free(mem_ctx);
 		PyErr_NoMemory();
 		return NULL;
 	}
+	py_ret->mem_ctx = mem_ctx;
 	py_ret->dn = ret;
 	return (PyObject *)py_ret;
 }
@@ -345,6 +348,11 @@ static PyObject *py_ldb_dn_new(PyTypeObject *type, PyObject *args, PyObject *kwa
 PyObject *PyLdbDn_FromDn(struct ldb_dn *dn)
 {
 	PyLdbDnObject *py_ret;
+
+	if (dn == NULL) {
+		Py_RETURN_NONE;
+	}
+
 	py_ret = (PyLdbDnObject *)PyLdbDn.tp_alloc(&PyLdbDn, 0);
 	if (py_ret == NULL) {
 		PyErr_NoMemory();
@@ -1678,10 +1686,12 @@ static PyObject *py_ldb_msg_new(PyTypeObject *type, PyObject *args, PyObject *kw
 	}
 
 	if (pydn != NULL) {
-		if (!PyObject_AsDn(NULL, pydn, NULL, &ret->dn)) {
+		struct ldb_dn *dn;
+		if (!PyObject_AsDn(NULL, pydn, NULL, &dn)) {
 			talloc_free(ret);
 			return NULL;
 		}
+		ret->dn = talloc_reference(ret, dn);
 	}
 
 	py_ret = (PyLdbMessageObject *)type->tp_alloc(type, 0);
@@ -1712,12 +1722,14 @@ PyObject *PyLdbMessage_FromMessage(struct ldb_message *msg)
 
 static PyObject *py_ldb_msg_get_dn(PyLdbMessageObject *self, void *closure)
 {
-	return PyLdbDn_FromDn(PyLdbMessage_AsMessage(self)->dn);
+	struct ldb_message *msg = PyLdbMessage_AsMessage(self);
+	return PyLdbDn_FromDn(msg->dn);
 }
 
 static int py_ldb_msg_set_dn(PyLdbMessageObject *self, PyObject *value, void *closure)
 {
-	PyLdbMessage_AsMessage(self)->dn = PyLdbDn_AsDn(value);
+	struct ldb_message *msg = PyLdbMessage_AsMessage(self);
+	msg->dn = talloc_reference(msg, PyLdbDn_AsDn(value));
 	return 0;
 }
 
