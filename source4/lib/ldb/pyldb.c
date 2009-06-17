@@ -207,10 +207,24 @@ static PyObject *py_ldb_dn_get_parent(PyLdbDnObject *self)
 {
 	struct ldb_dn *dn = PyLdbDn_AsDn((PyObject *)self);
 	struct ldb_dn *parent;
+	PyLdbDnObject *py_ret;
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 
-	parent = ldb_dn_get_parent(NULL, dn);
+	parent = ldb_dn_get_parent(mem_ctx, dn);
+	if (parent == NULL) {
+		talloc_free(mem_ctx);
+		Py_RETURN_NONE;
+	}
 
-	return PyLdbDn_FromDn(parent);
+	py_ret = (PyLdbDnObject *)PyLdbDn.tp_alloc(&PyLdbDn, 0);
+	if (py_ret == NULL) {
+		PyErr_NoMemory();
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+	py_ret->mem_ctx = mem_ctx;
+	py_ret->dn = parent;
+	return (PyObject *)py_ret;
 }
 
 #define dn_ldb_ctx(dn) ((struct ldb_context *)dn)
