@@ -22,7 +22,7 @@
 */
 
 #include "includes.h"
-#include "ldb_private.h"
+#include "lib/ldb/include/ldb_private.h"
 #include "ldb_handlers.h"
 #include "dsdb/samdb/samdb.h"
 #include "librpc/gen_ndr/ndr_security.h"

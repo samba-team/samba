@@ -21,7 +21,7 @@
 */
 
 #include "includes.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 #include "nbt_server/nbt_server.h"
 #include "nbt_server/wins/winsdb.h"
 #include "nbt_server/wins/winsserver.h"
