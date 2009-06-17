@@ -53,14 +53,21 @@ SMB_INCLUDED_LIB_PKGCONFIG(LIBTALLOC, talloc >= TALLOC_MIN_VERSION, [],
 )
 
 SMB_INCLUDED_LIB_PKGCONFIG(LIBTDB, tdb >= TDB_MIN_VERSION,
-	[],
+	[
+		AC_MSG_CHECKING([for Python TDB bindings])
+		if $PYTHON -c "from tdb import open" 2>/dev/null; then
+			AC_MSG_RESULT(yes)
+		else
+			SMB_INCLUDE_MK(../lib/tdb/python.mk) 
+			AC_MSG_RESULT(no)
+		fi
+	 ],
 	[
 		m4_include(../lib/tdb/libtdb.m4)
 		SMB_INCLUDE_MK(../lib/tdb/config.mk)
+		SMB_INCLUDE_MK(../lib/tdb/python.mk) 
 	]
 )
-
-SMB_INCLUDE_MK(../lib/tdb/python.mk) 
 
 SMB_INCLUDED_LIB_PKGCONFIG(LIBTEVENT, tevent = TEVENT_REQUIRED_VERSION,
 	[],[m4_include(../lib/tevent/samba.m4)]
