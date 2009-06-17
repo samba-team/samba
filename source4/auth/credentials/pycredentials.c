@@ -38,9 +38,14 @@ static PyObject *PyString_FromStringOrNULL(const char *str)
 
 static PyObject *py_creds_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
-	py_talloc_Object *ret = (py_talloc_Object *)PyCredentials.tp_alloc(&PyCredentials, 0);
+	py_talloc_Object *ret = (py_talloc_Object *)type->tp_alloc(type, 0);
+	if (ret == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
 	ret->talloc_ctx = talloc_new(NULL);
 	if (ret->talloc_ctx == NULL) {
+		PyErr_NoMemory();
 		return NULL;
 	}
 	ret->ptr = cli_credentials_init(ret->talloc_ctx);
