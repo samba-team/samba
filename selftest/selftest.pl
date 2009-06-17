@@ -217,8 +217,8 @@ sub run_testsuite($$$$$)
 	my ($envname, $name, $cmd, $i, $totalsuites) = @_;
 	my $pcap_file = setup_pcap($name);
 
-	Subunit::report_time(time());
 	Subunit::start_testsuite($name);
+	Subunit::report_time(time());
 
 	open(RESULTS, "$cmd 2>&1|");
 	my $statistics = {
