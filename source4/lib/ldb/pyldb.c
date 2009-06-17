@@ -291,11 +291,20 @@ static PyObject *py_ldb_dn_concat(PyLdbDnObject *self, PyObject *py_other)
 {
 	struct ldb_dn *dn = PyLdbDn_AsDn((PyObject *)self), 
 				  *other;
-	struct ldb_dn *ret = ldb_dn_copy(NULL, dn);
+	PyLdbDnObject *py_ret;
+	
 	if (!PyObject_AsDn(NULL, py_other, NULL, &other))
 		return NULL;
-	ldb_dn_add_child(ret, other);
-	return PyLdbDn_FromDn(ret);
+
+	py_ret = (PyLdbDnObject *)PyLdbDn.tp_alloc(&PyLdbDn, 0);
+	if (py_ret == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+	py_ret->mem_ctx = talloc_new(NULL);
+	py_ret->dn = ldb_dn_copy(py_ret->mem_ctx, dn);
+	ldb_dn_add_child(py_ret->dn, other);
+	return (PyObject *)py_ret;
 }
 
 static PySequenceMethods py_ldb_dn_seq = {
