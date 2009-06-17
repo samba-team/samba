@@ -678,63 +678,73 @@ static int net_sam_rights_grant(struct net_context *c, int argc,
 	enum lsa_SidType type;
 	const char *dom, *name;
 	SE_PRIV mask;
+	int i;
 
-	if (argc != 2 || c->display_usage) {
+	if (argc < 2 || c->display_usage) {
 		d_fprintf(stderr, "usage: net sam rights grant <name> "
-			  "<right>\n");
+			"<rights> ...\n");
 		return -1;
 	}
 
 	if (!lookup_name(talloc_tos(), argv[0], LOOKUP_NAME_LOCAL,
-			 &dom, &name, &sid, &type)) {
+			&dom, &name, &sid, &type)) {
 		d_fprintf(stderr, "Could not find name %s\n", argv[0]);
 		return -1;
 	}
 
-	if (!se_priv_from_name(argv[1], &mask)) {
-		d_fprintf(stderr, "%s unknown\n", argv[1]);
-		return -1;
+	for (i=1; i < argc; i++) {
+		if (!se_priv_from_name(argv[i], &mask)) {
+			d_fprintf(stderr, "%s unknown\n", argv[i]);
+			return -1;
+		}
+
+		if (!grant_privilege(&sid, &mask)) {
+			d_fprintf(stderr, "Could not grant privilege\n");
+			return -1;
+		}
+
+		d_printf("Granted %s to %s\\%s\n", argv[i], dom, name);
 	}
 
-	if (!grant_privilege(&sid, &mask)) {
-		d_fprintf(stderr, "Could not grant privilege\n");
-		return -1;
-	}
-
-	d_printf("Granted %s to %s\\%s\n", argv[1], dom, name);
 	return 0;
 }
 
-static int net_sam_rights_revoke(struct net_context *c, int argc, const char **argv)
+static int net_sam_rights_revoke(struct net_context *c, int argc,
+				const char **argv)
 {
 	DOM_SID sid;
 	enum lsa_SidType type;
 	const char *dom, *name;
 	SE_PRIV mask;
+	int i;
 
-	if (argc != 2 || c->display_usage) {
+	if (argc < 2 || c->display_usage) {
 		d_fprintf(stderr, "usage: net sam rights revoke <name> "
-			  "<right>\n");
+			"<rights>\n");
 		return -1;
 	}
 
 	if (!lookup_name(talloc_tos(), argv[0], LOOKUP_NAME_LOCAL,
-			 &dom, &name, &sid, &type)) {
+			&dom, &name, &sid, &type)) {
 		d_fprintf(stderr, "Could not find name %s\n", argv[0]);
 		return -1;
 	}
 
-	if (!se_priv_from_name(argv[1], &mask)) {
-		d_fprintf(stderr, "%s unknown\n", argv[1]);
-		return -1;
+	for (i=1; i < argc; i++) {
+
+		if (!se_priv_from_name(argv[i], &mask)) {
+			d_fprintf(stderr, "%s unknown\n", argv[i]);
+			return -1;
+		}
+
+		if (!revoke_privilege(&sid, &mask)) {
+			d_fprintf(stderr, "Could not revoke privilege\n");
+			return -1;
+		}
+
+		d_printf("Revoked %s from %s\\%s\n", argv[i], dom, name);
 	}
 
-	if (!revoke_privilege(&sid, &mask)) {
-		d_fprintf(stderr, "Could not revoke privilege\n");
-		return -1;
-	}
-
-	d_printf("Revoked %s from %s\\%s\n", argv[1], dom, name);
 	return 0;
 }
 
@@ -753,17 +763,17 @@ static int net_sam_rights(struct net_context *c, int argc, const char **argv)
 			"grant",
 			net_sam_rights_grant,
 			NET_TRANSPORT_LOCAL,
-			"Grant a right",
+			"Grant right(s)",
 			"net sam rights grant\n"
-			"    Grant a right"
+			"    Grant right(s)"
 		},
 		{
 			"revoke",
 			net_sam_rights_revoke,
 			NET_TRANSPORT_LOCAL,
-			"Revoke a right",
+			"Revoke right(s)",
 			"net sam rights revoke\n"
-			"    Revoke a right"
+			"    Revoke right(s)"
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
