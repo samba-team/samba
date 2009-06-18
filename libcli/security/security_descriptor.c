@@ -373,7 +373,7 @@ static struct security_descriptor *security_descriptor_appendv(struct security_d
 
 	while ((sidstr = va_arg(ap, const char *))) {
 		struct dom_sid *sid;
-		struct security_ace *ace = talloc(sd, struct security_ace);
+		struct security_ace *ace = talloc_zero(sd, struct security_ace);
 		NTSTATUS status;
 
 		if (ace == NULL) {
