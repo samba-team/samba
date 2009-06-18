@@ -82,6 +82,8 @@ static void terminate(void)
 	/* If there was an async dns child - kill it. */
 	kill_async_dns_child();
 
+	pidfile_unlink();
+
 	exit(0);
 }
 

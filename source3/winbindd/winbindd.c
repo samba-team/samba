@@ -173,6 +173,10 @@ static void terminate(bool is_parent)
 	}
 #endif
 
+	if (is_parent) {
+		pidfile_unlink();
+	}
+
 	exit(0);
 }
 
