@@ -34,7 +34,7 @@
  */
 
 #include "includes.h"
-#include "ldb_private.h"
+#include "lib/ldb/include/ldb_private.h"
 #include "dsdb/samdb/samdb.h"
 
 struct partition_private_data {
