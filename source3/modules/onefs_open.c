@@ -2024,34 +2024,13 @@ NTSTATUS onefs_create_file(vfs_handle_struct *handle,
 		}
 	}
 
-	/* Resolve the file name if this was a DFS pathname. */
-	if ((req != NULL) && (req->flags2 & FLAGS2_DFS_PATHNAMES)) {
-		char *resolved_fname;
-
-		status = resolve_dfspath(talloc_tos(), conn, true,
-					 smb_fname->base_name,
-					 &resolved_fname);
-
-		if (!NT_STATUS_IS_OK(status)) {
-			/*
-			 * For PATH_NOT_COVERED we had
-			 * reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
-			 *		   ERRSRV, ERRbadpath);
-			 * Need to fix in callers
-			 */
-			goto fail;
-		}
-		TALLOC_FREE(smb_fname->base_name);
-		smb_fname->base_name = resolved_fname;
-	}
-
 	status = get_full_smb_filename(talloc_tos(), smb_fname, &fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
 
 	/* All file access must go through check_name() */
-	status = check_name(conn, fname);
+	status = check_name(conn, smb_fname->base_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
