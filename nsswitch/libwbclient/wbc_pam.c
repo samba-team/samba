@@ -268,7 +268,8 @@ static wbcErr wbc_create_logon_info(TALLOC_CTX *mem_ctx,
 	wbc_status = wbc_create_auth_info(i, resp, &i->info);
 	BAIL_ON_WBC_ERROR(wbc_status);
 
-	if (resp->data.auth.krb5ccname) {
+	if (resp->data.auth.krb5ccname &&
+	    strlen(resp->data.auth.krb5ccname)) {
 		wbc_status = wbcAddNamedBlob(&i->num_blobs,
 					     &i->blobs,
 					     "krb5ccname",
@@ -278,7 +279,8 @@ static wbcErr wbc_create_logon_info(TALLOC_CTX *mem_ctx,
 		BAIL_ON_WBC_ERROR(wbc_status);
 	}
 
-	if (resp->data.auth.unix_username) {
+	if (resp->data.auth.unix_username &&
+	    strlen(resp->data.auth.unix_username)) {
 		wbc_status = wbcAddNamedBlob(&i->num_blobs,
 					     &i->blobs,
 					     "unix_username",
