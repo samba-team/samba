@@ -2547,38 +2547,23 @@ static bool current_user_in_group(gid_t gid)
 ****************************************************************************/
 
 static bool acl_group_override(connection_struct *conn,
-				gid_t prim_gid,
-				files_struct *fsp)
+				const SMB_STRUCT_STAT *psbuf,
+				const char *fname)
 {
-
 	if ((errno != EPERM) && (errno != EACCES)) {
 		return false;
 	}
 
 	/* file primary group == user primary or supplementary group */
 	if (lp_acl_group_control(SNUM(conn)) &&
-			current_user_in_group(prim_gid)) {
+			current_user_in_group(psbuf->st_ex_gid)) {
 		return true;
 	}
 
 	/* user has writeable permission */
-	if (lp_dos_filemode(SNUM(conn))) {
-		SMB_STRUCT_STAT sbuf;
-		int ret;
-
-		if (fsp->posix_open) {
-			ret = SMB_VFS_LSTAT(conn,fsp->fsp_name,&sbuf);
-		} else {
-			ret = SMB_VFS_STAT(conn,fsp->fsp_name,&sbuf);
-		}
-
-		if (ret == -1) {
-			return false;
-		}
-
-		if (can_write_to_file(conn, fsp->fsp_name, &sbuf)) {
-			return true;
-		}
+	if (lp_dos_filemode(SNUM(conn)) &&
+			can_write_to_file(conn, fname, psbuf)) {
+		return true;
 	}
 
 	return false;
@@ -2588,7 +2573,11 @@ static bool acl_group_override(connection_struct *conn,
  Attempt to apply an ACL to a file or directory.
 ****************************************************************************/
 
-static bool set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, bool default_ace, gid_t prim_gid, bool *pacl_set_support)
+static bool set_canon_ace_list(files_struct *fsp,
+				canon_ace *the_ace,
+				bool default_ace,
+				const SMB_STRUCT_STAT *psbuf,
+				bool *pacl_set_support)
 {
 	connection_struct *conn = fsp->conn;
 	bool ret = False;
@@ -2767,7 +2756,7 @@ static bool set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, bool defau
 				*pacl_set_support = False;
 			}
 
-			if (acl_group_override(conn, prim_gid, fsp)) {
+			if (acl_group_override(conn, psbuf, fsp->fsp_name)) {
 				int sret;
 
 				DEBUG(5,("set_canon_ace_list: acl group control on and current user in file %s primary group.\n",
@@ -2798,7 +2787,7 @@ static bool set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, bool defau
 				*pacl_set_support = False;
 			}
 
-			if (acl_group_override(conn, prim_gid, fsp)) {
+			if (acl_group_override(conn, psbuf, fsp->fsp_name)) {
 				int sret;
 
 				DEBUG(5,("set_canon_ace_list: acl group control on and current user in file %s primary group.\n",
@@ -3802,7 +3791,7 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const SEC_DESC
 		if (set_acl_as_root) {
 			become_root();
 		}
-		ret = set_canon_ace_list(fsp, file_ace_list, False, sbuf.st_ex_gid, &acl_set_support);
+		ret = set_canon_ace_list(fsp, file_ace_list, False, &sbuf, &acl_set_support);
 		if (set_acl_as_root) {
 			unbecome_root();
 		}
@@ -3819,7 +3808,7 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const SEC_DESC
 			if (set_acl_as_root) {
 				become_root();
 			}
-			ret = set_canon_ace_list(fsp, dir_ace_list, True, sbuf.st_ex_gid, &acl_set_support);
+			ret = set_canon_ace_list(fsp, dir_ace_list, True, &sbuf, &acl_set_support);
 			if (set_acl_as_root) {
 				unbecome_root();
 			}
@@ -3844,7 +3833,7 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const SEC_DESC
 				unbecome_root();
 			}
 			if (sret == -1) {
-				if (acl_group_override(conn, sbuf.st_ex_gid, fsp)) {
+				if (acl_group_override(conn, &sbuf, fsp->fsp_name)) {
 					DEBUG(5,("set_nt_acl: acl group control on and "
 						"current user in file %s primary group. Override delete_def_acl\n",
 						fsp->fsp_name ));
@@ -3906,7 +3895,7 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const SEC_DESC
 				unbecome_root();
 			}
 			if(sret == -1) {
-				if (acl_group_override(conn, sbuf.st_ex_gid, fsp)) {
+				if (acl_group_override(conn, &sbuf, fsp->fsp_name)) {
 					DEBUG(5,("set_nt_acl: acl group control on and "
 						"current user in file %s primary group. Override chmod\n",
 						fsp->fsp_name ));
