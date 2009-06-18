@@ -71,9 +71,6 @@ const char *user_attrs[] = {
 	NULL,
 };
 
-const char *domain_ref_attrs[] =  {"nETBIOSName", "nCName", 
-				   "dnsRoot", "objectClass", NULL};
-
 /****************************************************************************
  Check if a user is allowed to logon at this time. Note this is the
  servers local time, as logon hours are just specified as a weekly
