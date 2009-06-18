@@ -1727,7 +1727,8 @@ static WERROR regf_add_key(TALLOC_CTX *ctx, const struct hive_key *parent,
 
 	if (!hbin_get_tdr(regf, regf->header->data_offset, root,
 			  (tdr_pull_fn_t)tdr_pull_nk_block, root)) {
-		DEBUG(0, ("Unable to find HBIN data for offset %d\n", offset));
+		DEBUG(0, ("Unable to find HBIN data for offset %d\n",
+			regf->header->data_offset));
 		return WERR_GENERAL_FAILURE;
 	}
 	nk.sk_offset = root->sk_offset;

@@ -829,17 +829,14 @@ static WERROR dsdb_syntax_UNICODE_ldb_to_drsuapi(struct ldb_context *ldb,
 	W_ERROR_HAVE_NO_MEMORY(blobs);
 
 	for (i=0; i < in->num_values; i++) {
-		ssize_t ret;
-
 		out->value_ctr.values[i].blob	= &blobs[i];
 
-		if (!convert_string_talloc_convenience(blobs, schema->iconv_convenience, CH_UNIX, CH_UTF16,
-					    in->values[i].data,
-					    in->values[i].length,
-					    (void **)&blobs[i].data, NULL, false)) {
-			return WERR_FOOBAR;
+		if (!convert_string_talloc_convenience(blobs,
+			schema->iconv_convenience, CH_UNIX, CH_UTF16,
+			in->values[i].data, in->values[i].length,
+			(void **)&blobs[i].data, &blobs[i].length, false)) {
+				return WERR_FOOBAR;
 		}
-		blobs[i].length = ret;
 	}
 
 	return WERR_OK;
