@@ -106,7 +106,7 @@ WERROR _netr_LogonControl(pipes_struct *p,
 	l.in.function_code	= r->in.function_code;
 	l.in.level		= r->in.level;
 	l.in.data		= NULL;
-	l.out.query		= r->out.info;
+	l.out.query		= r->out.query;
 
 	return _netr_LogonControl2Ex(p, &l);
 }
