@@ -2067,18 +2067,12 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p,
 		goto error_exit;
 	}
 
-	nt_status = resolve_dfspath(talloc_tos(),
+	nt_status = filename_convert(talloc_tos(),
 					conn,
 					false,
 					r->in.file,
+					&smb_fname,
 					&fname);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		werr = ntstatus_to_werror(nt_status);
-		goto error_exit;
-	}
-
-	nt_status = unix_convert(talloc_tos(), conn, fname, &smb_fname,
-				 0);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		werr = ntstatus_to_werror(nt_status);
 		goto error_exit;
@@ -2203,17 +2197,12 @@ WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p,
 		goto error_exit;
 	}
 
-	nt_status = resolve_dfspath(talloc_tos(),
+	nt_status = filename_convert(talloc_tos(),
 					conn,
 					false,
 					r->in.file,
+					&smb_fname,
 					&fname);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		werr = ntstatus_to_werror(nt_status);
-		goto error_exit;
-	}
-	nt_status = unix_convert(talloc_tos(), conn, fname, &smb_fname,
-				 0);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		werr = ntstatus_to_werror(nt_status);
 		goto error_exit;

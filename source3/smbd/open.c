@@ -3401,7 +3401,6 @@ NTSTATUS create_file_default(connection_struct *conn,
 			     uint64_t allocation_size,
 			     struct security_descriptor *sd,
 			     struct ea_list *ea_list,
-
 			     files_struct **result,
 			     int *pinfo)
 {

@@ -6290,9 +6290,9 @@ bool smbd_setup_mdns_registration(struct tevent_context *ev,
 
 mode_t unix_mode(connection_struct *conn, int dosmode, const char *fname,
 		 const char *inherit_from_dir);
-uint32 dos_mode_msdfs(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf);
+uint32 dos_mode_msdfs(connection_struct *conn, const char *path, const SMB_STRUCT_STAT *sbuf);
 int dos_attributes_to_stat_dos_flags(uint32_t dosmode);
-uint32 dos_mode(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf);
+uint32 dos_mode(connection_struct *conn, const char *path, const SMB_STRUCT_STAT *sbuf);
 int file_set_dosmode(connection_struct *conn, const char *fname,
 		     uint32 dosmode, SMB_STRUCT_STAT *st,
 		     const char *parent_dir,
@@ -6339,8 +6339,8 @@ bool can_access_file_acl(struct connection_struct *conn,
 				uint32_t access_mask);
 bool can_delete_file_in_directory(connection_struct *conn,
 				  const struct smb_filename *smb_fname);
-bool can_access_file_data(connection_struct *conn, const char *fname, SMB_STRUCT_STAT *psbuf, uint32 access_mask);
-bool can_write_to_file(connection_struct *conn, const char *fname, SMB_STRUCT_STAT *psbuf);
+bool can_access_file_data(connection_struct *conn, const char *fname, const SMB_STRUCT_STAT *psbuf, uint32 access_mask);
+bool can_write_to_file(connection_struct *conn, const char *fname, const SMB_STRUCT_STAT *psbuf);
 bool directory_has_default_acl(connection_struct *conn, const char *fname);
 
 /* The following definitions come from smbd/fileio.c  */

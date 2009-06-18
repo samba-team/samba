@@ -1205,12 +1205,10 @@ void reply_ntcancel(struct smb_request *req)
 static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 				connection_struct *conn,
 				struct smb_request *req,
-				const char *oldname_in,
-				const char *newname_in,
+				struct smb_filename *smb_fname_src,
+				struct smb_filename *smb_fname_dst,
 				uint32 attrs)
 {
-	struct smb_filename *smb_fname_src = NULL;
-	struct smb_filename *smb_fname_dst = NULL;
 	char *oldname = NULL;
 	char *newname = NULL;
 	files_struct *fsp1,*fsp2;
@@ -1222,16 +1220,6 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 
 	if (!CAN_WRITE(conn)) {
 		status = NT_STATUS_MEDIA_WRITE_PROTECTED;
-		goto out;
-	}
-
-	status = unix_convert(ctx, conn, oldname_in, &smb_fname_src, 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-
-	status = check_name(conn, smb_fname_src->base_name);
-	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
 
@@ -1253,16 +1241,6 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 		goto out;
 	}
 
-	status = unix_convert(ctx, conn, newname_in, &smb_fname_dst, 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-
-	status = check_name(conn, smb_fname_dst->base_name);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-
 	/* Disallow if dst file already exists. */
 	if (VALID_STAT(smb_fname_dst->st)) {
 		status = NT_STATUS_OBJECT_NAME_COLLISION;
@@ -1272,12 +1250,6 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 	/* No links from a directory. */
 	if (S_ISDIR(smb_fname_src->st.st_ex_mode)) {
 		status = NT_STATUS_FILE_IS_A_DIRECTORY;
-		goto out;
-	}
-
-	/* Ensure this is within the share. */
-	status = check_reduced_name(conn, smb_fname_src->base_name);
-	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
 
@@ -1374,8 +1346,6 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 			smb_fname_str_dbg(smb_fname_dst)));
 	}
 
-	TALLOC_FREE(smb_fname_src);
-	TALLOC_FREE(smb_fname_dst);
 	TALLOC_FREE(oldname);
 	TALLOC_FREE(newname);
 
@@ -1501,8 +1471,10 @@ void reply_ntrename(struct smb_request *req)
 				/* No wildcards. */
 				status = NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
 			} else {
-				status = copy_internals(ctx, conn, req, oldname,
-							newname, attrs);
+				status = copy_internals(ctx, conn, req,
+							smb_fname_old,
+							smb_fname_new,
+							attrs);
 			}
 			break;
 		case RENAME_FLAG_MOVE_CLUSTER_INFORMATION:

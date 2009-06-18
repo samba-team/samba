@@ -1323,6 +1323,7 @@ static NTSTATUS split_fname_dir_mask(TALLOC_CTX *ctx, const char *fname_in,
 void reply_search(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
+	char *path = NULL;
 	const char *mask = NULL;
 	char *directory = NULL;
 	char *fname = NULL;
@@ -1335,7 +1336,6 @@ void reply_search(struct smb_request *req)
 	bool finished = False;
 	const char *p;
 	int status_len;
-	char *path = NULL;
 	char status[21];
 	int dptr_num= -1;
 	bool check_descend = False;
@@ -1377,23 +1377,6 @@ void reply_search(struct smb_request *req)
 		return;
 	}
 
-	nt_status = resolve_dfspath_wcard(ctx, conn,
-					  req->flags2 & FLAGS2_DFS_PATHNAMES,
-					  path,
-					  &path,
-					  &mask_contains_wcard);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		if (NT_STATUS_EQUAL(nt_status,NT_STATUS_PATH_NOT_COVERED)) {
-			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
-					ERRSRV, ERRbadpath);
-			END_PROFILE(SMBsearch);
-			return;
-		}
-		reply_nterror(req, nt_status);
-		END_PROFILE(SMBsearch);
-		return;
-	}
-
 	p++;
 	status_len = SVAL(p, 0);
 	p += 2;
@@ -1402,6 +1385,23 @@ void reply_search(struct smb_request *req)
 
 	if (status_len == 0) {
 		struct smb_filename *smb_fname = NULL;
+
+		nt_status = resolve_dfspath_wcard(ctx, conn,
+					  req->flags2 & FLAGS2_DFS_PATHNAMES,
+					  path,
+					  &path,
+					  &mask_contains_wcard);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			if (NT_STATUS_EQUAL(nt_status,NT_STATUS_PATH_NOT_COVERED)) {
+				reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
+						ERRSRV, ERRbadpath);
+				END_PROFILE(SMBsearch);
+				return;
+			}
+			reply_nterror(req, nt_status);
+			END_PROFILE(SMBsearch);
+			return;
+		}
 
 		nt_status = unix_convert(ctx, conn, path, &smb_fname,
 					 UCF_ALLOW_WCARD_LCOMP);

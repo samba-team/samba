@@ -140,7 +140,7 @@ mode_t unix_mode(connection_struct *conn, int dosmode, const char *fname,
  Change a unix mode to a dos mode.
 ****************************************************************************/
 
-static uint32 dos_mode_from_sbuf(connection_struct *conn, const char *path, SMB_STRUCT_STAT *sbuf)
+static uint32 dos_mode_from_sbuf(connection_struct *conn, const char *path, const SMB_STRUCT_STAT *sbuf)
 {
 	int result = 0;
 	enum mapreadonly_options ro_opts = (enum mapreadonly_options)lp_map_readonly(SNUM(conn));
@@ -188,7 +188,7 @@ static uint32 dos_mode_from_sbuf(connection_struct *conn, const char *path, SMB_
  Get DOS attributes from an EA.
 ****************************************************************************/
 
-static bool get_ea_dos_attribute(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf, uint32 *pattr)
+static bool get_ea_dos_attribute(connection_struct *conn, const char *path, const SMB_STRUCT_STAT *sbuf, uint32 *pattr)
 {
 	ssize_t sizeret;
 	fstring attrstr;
@@ -306,13 +306,14 @@ static bool set_ea_dos_attribute(connection_struct *conn, const char *path, SMB_
  Change a unix mode to a dos mode for an ms dfs link.
 ****************************************************************************/
 
-uint32 dos_mode_msdfs(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf)
+uint32 dos_mode_msdfs(connection_struct *conn, const char *path, const SMB_STRUCT_STAT *psbuf)
 {
+	SMB_STRUCT_STAT sbuf = *psbuf;
 	uint32 result = 0;
 
 	DEBUG(8,("dos_mode_msdfs: %s\n", path));
 
-	if (!VALID_STAT(*sbuf)) {
+	if (!VALID_STAT(sbuf)) {
 		return 0;
 	}
 
@@ -333,7 +334,7 @@ uint32 dos_mode_msdfs(connection_struct *conn, const char *path,SMB_STRUCT_STAT 
 		}
 	}
 
-	result |= dos_mode_from_sbuf(conn, path, sbuf);
+	result |= dos_mode_from_sbuf(conn, path, &sbuf);
 
 	/* Optimization : Only call is_hidden_path if it's not already
 	   hidden. */
@@ -466,14 +467,15 @@ static bool set_stat_dos_flags(connection_struct *conn,
  Change a unix mode to a dos mode.
 ****************************************************************************/
 
-uint32 dos_mode(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf)
+uint32 dos_mode(connection_struct *conn, const char *path, const SMB_STRUCT_STAT *psbuf)
 {
+	SMB_STRUCT_STAT sbuf = *psbuf;
 	uint32 result = 0;
 	bool offline, used_stat_dos_flags = false;
 
 	DEBUG(8,("dos_mode: %s\n", path));
 
-	if (!VALID_STAT(*sbuf)) {
+	if (!VALID_STAT(sbuf)) {
 		return 0;
 	}
 
@@ -495,19 +497,19 @@ uint32 dos_mode(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf)
 	}
 
 #ifdef HAVE_STAT_DOS_FLAGS
-	used_stat_dos_flags = get_stat_dos_flags(conn, path, sbuf, &result);
+	used_stat_dos_flags = get_stat_dos_flags(conn, path, &sbuf, &result);
 #endif
 	if (!used_stat_dos_flags) {
 		/* Get the DOS attributes from an EA by preference. */
-		if (get_ea_dos_attribute(conn, path, sbuf, &result)) {
-			result |= set_sparse_flag(sbuf);
+		if (get_ea_dos_attribute(conn, path, &sbuf, &result)) {
+			result |= set_sparse_flag(&sbuf);
 		} else {
-			result |= dos_mode_from_sbuf(conn, path, sbuf);
+			result |= dos_mode_from_sbuf(conn, path, &sbuf);
 		}
 	}
 
-	offline = SMB_VFS_IS_OFFLINE(conn, path, sbuf);
-	if (S_ISREG(sbuf->st_ex_mode) && offline) {
+	offline = SMB_VFS_IS_OFFLINE(conn, path, &sbuf);
+	if (S_ISREG(sbuf.st_ex_mode) && offline) {
 		result |= FILE_ATTRIBUTE_OFFLINE;
 	}
 

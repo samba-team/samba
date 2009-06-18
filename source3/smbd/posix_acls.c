@@ -2548,9 +2548,8 @@ static bool current_user_in_group(gid_t gid)
 
 static bool acl_group_override(connection_struct *conn,
 				gid_t prim_gid,
-				const char *fname)
+				files_struct *fsp)
 {
-	SMB_STRUCT_STAT sbuf;
 
 	if ((errno != EPERM) && (errno != EACCES)) {
 		return false;
@@ -2563,9 +2562,23 @@ static bool acl_group_override(connection_struct *conn,
 	}
 
 	/* user has writeable permission */
-	if (lp_dos_filemode(SNUM(conn)) &&
-			can_write_to_file(conn, fname, &sbuf)) {
-		return true;
+	if (lp_dos_filemode(SNUM(conn))) {
+		SMB_STRUCT_STAT sbuf;
+		int ret;
+
+		if (fsp->posix_open) {
+			ret = SMB_VFS_LSTAT(conn,fsp->fsp_name,&sbuf);
+		} else {
+			ret = SMB_VFS_STAT(conn,fsp->fsp_name,&sbuf);
+		}
+
+		if (ret == -1) {
+			return false;
+		}
+
+		if (can_write_to_file(conn, fsp->fsp_name, &sbuf)) {
+			return true;
+		}
 	}
 
 	return false;
@@ -2754,7 +2767,7 @@ static bool set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, bool defau
 				*pacl_set_support = False;
 			}
 
-			if (acl_group_override(conn, prim_gid, fsp->fsp_name)) {
+			if (acl_group_override(conn, prim_gid, fsp)) {
 				int sret;
 
 				DEBUG(5,("set_canon_ace_list: acl group control on and current user in file %s primary group.\n",
@@ -2785,7 +2798,7 @@ static bool set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, bool defau
 				*pacl_set_support = False;
 			}
 
-			if (acl_group_override(conn, prim_gid, fsp->fsp_name)) {
+			if (acl_group_override(conn, prim_gid, fsp)) {
 				int sret;
 
 				DEBUG(5,("set_canon_ace_list: acl group control on and current user in file %s primary group.\n",
@@ -3831,7 +3844,7 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const SEC_DESC
 				unbecome_root();
 			}
 			if (sret == -1) {
-				if (acl_group_override(conn, sbuf.st_ex_gid, fsp->fsp_name)) {
+				if (acl_group_override(conn, sbuf.st_ex_gid, fsp)) {
 					DEBUG(5,("set_nt_acl: acl group control on and "
 						"current user in file %s primary group. Override delete_def_acl\n",
 						fsp->fsp_name ));
@@ -3893,7 +3906,7 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const SEC_DESC
 				unbecome_root();
 			}
 			if(sret == -1) {
-				if (acl_group_override(conn, sbuf.st_ex_gid, fsp->fsp_name)) {
+				if (acl_group_override(conn, sbuf.st_ex_gid, fsp)) {
 					DEBUG(5,("set_nt_acl: acl group control on and "
 						"current user in file %s primary group. Override chmod\n",
 						fsp->fsp_name ));

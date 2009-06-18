@@ -155,7 +155,7 @@ bool can_delete_file_in_directory(connection_struct *conn,
  Note this doesn't take into account share write permissions.
 ****************************************************************************/
 
-bool can_access_file_data(connection_struct *conn, const char *fname, SMB_STRUCT_STAT *psbuf, uint32 access_mask)
+bool can_access_file_data(connection_struct *conn, const char *fname, const SMB_STRUCT_STAT *psbuf, uint32 access_mask)
 {
 	if (!(access_mask & (FILE_READ_DATA|FILE_WRITE_DATA))) {
 		return False;
@@ -172,12 +172,7 @@ bool can_access_file_data(connection_struct *conn, const char *fname, SMB_STRUCT
 		return True;
 	}
 
-	if (!VALID_STAT(*psbuf)) {
-		/* Get the file permission mask and owners. */
-		if(SMB_VFS_STAT(conn, fname, psbuf) != 0) {
-			return False;
-		}
-	}
+	SMB_ASSERT(psbuf && VALID_STAT(*psbuf));
 
 	/* Check primary owner access. */
 	if (conn->server_info->utok.uid == psbuf->st_ex_uid) {
@@ -208,7 +203,7 @@ bool can_access_file_data(connection_struct *conn, const char *fname, SMB_STRUCT
  Note this doesn't take into account share write permissions.
 ****************************************************************************/
 
-bool can_write_to_file(connection_struct *conn, const char *fname, SMB_STRUCT_STAT *psbuf)
+bool can_write_to_file(connection_struct *conn, const char *fname, const SMB_STRUCT_STAT *psbuf)
 {
 	return can_access_file_data(conn, fname, psbuf, FILE_WRITE_DATA);
 }
