@@ -43,10 +43,30 @@ plantest() {
 	echo $cmdline
 }
 
+skiptestsuite() {
+	name=$1
+	reason=$2
+	shift 2
+	# FIXME: Report this using subunit, but re-adjust the testsuite count somehow
+	echo "skipping $name ($reason)"
+}
+
 normalize_testname() {
 	name=$1
 	shift 1
 	echo $name | tr "A-Z-" "a-z."
+}
+
+planperltest() {
+	name=$1
+	env=$2
+	shift 2
+	cmdline="$*"
+	if $PERL -e 'eval require Test::More;' > /dev/null 2>&1; then
+		plantest "$name" "$env" $PERL $cmdline "|" $TAP2SUBUNIT 
+	else
+		skiptestsuite "$name" "Test::More not available"
+	fi
 }
 
 plansmbtorturetest() {
@@ -109,7 +129,12 @@ done
 # is now pretty well tested by the rest of the quick tests anyway
 LDBDIR=$samba4srcdir/lib/ldb
 export LDBDIR
-plantest "ldb" none TEST_DATA_PREFIX=\$PREFIX $LDBDIR/tests/test-tdb.sh
+# Don't run LDB tests when using system ldb, as we won't have ldbtest installed
+if [ -f $samba4bindir/ldbtest ]; then
+	plantest "ldb" none TEST_DATA_PREFIX=\$PREFIX $LDBDIR/tests/test-tdb.sh
+else
+	skiptestsuite "ldb" "Using system LDB, ldbtest not available"
+fi
 
 # Tests for RPC
 
@@ -284,20 +309,16 @@ tdbtorture4="$samba4bindir/tdbtorture${EXEEXT}"
 if test -f $tdbtorture4
 then
 	plantest "tdb.stress" none $VALGRIND $tdbtorture4
+else
+	skiptestsuite "tdb.stress" "Using system TDB, tdbtorture not available"
 fi
 
 # Pidl tests
 
-if test x"${PIDL_TESTS_SKIP}" = x"yes"; then
-   echo "Skipping pidl tests - PIDL_TESTS_SKIP=yes"
-elif $PERL -e 'eval require Test::More;' > /dev/null 2>&1; then
-  for f in $samba4srcdir/../pidl/tests/*.pl; do
-     plantest "pidl.`basename $f .pl`" none $PERL $f "|" $TAP2SUBUNIT 
-  done
- plantest "selftest.samba4.pl" none $PERL $samba4srcdir/../selftest/test_samba4.pl "|" $TAP2SUBUNIT
-else 
-   echo "Skipping pidl tests - Test::More not installed"
-fi
+for f in $samba4srcdir/../pidl/tests/*.pl; do
+	 planperltest "pidl.`basename $f .pl`" none $f
+done
+planperltest "selftest.samba4.pl" none $samba4srcdir/../selftest/test_samba4.pl
 
 # Blackbox Tests:
 # tests that interact directly with the command-line tools rather than using 
