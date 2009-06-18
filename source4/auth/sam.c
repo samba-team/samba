@@ -147,7 +147,8 @@ _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 				     struct ldb_message *msg,
 				     const char *logon_workstation,
 				     const char *name_for_logs,
-				     bool allow_domain_trust)
+				     bool allow_domain_trust,
+				     bool password_change)
 {
 	uint16_t acct_flags;
 	const char *workstation_list;
@@ -189,15 +190,15 @@ _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_ACCOUNT_EXPIRED;
 	}
 
-	/* check for immediate expiry "must change at next logon" */
-	if (must_change_time == 0) {
+	/* check for immediate expiry "must change at next logon" (but not if this is a password change request) */
+	if ((must_change_time == 0) && !password_change) {
 		DEBUG(1,("sam_account_ok: Account for user '%s' password must change!.\n", 
 			 name_for_logs));
 		return NT_STATUS_PASSWORD_MUST_CHANGE;
 	}
 
-	/* check for expired password */
-	if (must_change_time < now) {
+	/* check for expired password (but not if this is a password change request) */
+	if ((must_change_time < now) && !password_change) {
 		DEBUG(1,("sam_account_ok: Account for user '%s' password expired!.\n", 
 			 name_for_logs));
 		DEBUG(1,("sam_account_ok: Password expired at '%s' unix time.\n", 

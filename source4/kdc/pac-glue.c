@@ -231,28 +231,29 @@ static void samba_kdc_build_edata_reply(TALLOC_CTX *tmp_ctx, krb5_data *e_data,
 
 
 krb5_error_code samba_kdc_check_client_access(void *priv, 
-					      krb5_context context, hdb_entry_ex *entry_ex, 
+					      krb5_context context, 
+					      krb5_kdc_configuration *config,
+					      hdb_entry_ex *client_ex, const char *client_name,
+					      hdb_entry_ex *server_ex, const char *server_name,
 					      KDC_REQ *req,
 					      krb5_data *e_data)
 {
 	krb5_error_code ret;
 	NTSTATUS nt_status;
-	TALLOC_CTX *tmp_ctx = talloc_new(entry_ex->ctx);
-	struct hdb_ldb_private *p = talloc_get_type(entry_ex->ctx, struct hdb_ldb_private);
-	char *name, *workstation = NULL;
+	TALLOC_CTX *tmp_ctx;
+	struct hdb_ldb_private *p;
+	char *workstation = NULL;
 	HostAddresses *addresses = req->req_body.addresses;
 	int i;
+	bool password_change;
+
+	tmp_ctx = talloc_new(client_ex->ctx);
+	p = talloc_get_type(client_ex->ctx, struct hdb_ldb_private);
 
 	if (!tmp_ctx) {
 		return ENOMEM;
 	}
 	
-	ret = krb5_unparse_name(context, entry_ex->entry.principal, &name);
-	if (ret != 0) {
-		talloc_free(tmp_ctx);
-		return ret;
-	}
-
 	if (addresses) {
 		for (i=0; i < addresses->len; i++) {
 			if (addresses->val->addr_type == KRB5_ADDRESS_NETBIOS) {
@@ -272,6 +273,8 @@ krb5_error_code samba_kdc_check_client_access(void *priv,
 		}
 	}
 
+	password_change = (server_ex && server_ex->entry.flags.change_pw);
+
 	/* we allow all kinds of trusts here */
 	nt_status = authsam_account_ok(tmp_ctx, 
 				       p->samdb,
@@ -279,30 +282,34 @@ krb5_error_code samba_kdc_check_client_access(void *priv,
 				       p->realm_dn,
 				       p->msg,
 				       workstation,
-				       name, true);
-	free(name);
+				       client_name, true, password_change);
 
-	if (NT_STATUS_IS_OK(nt_status))
-		return 0;
+	if (NT_STATUS_IS_OK(nt_status)) {
+		/* Now do the standard Heimdal check */
+		ret = kdc_check_flags(context, config,
+				      client_ex, client_name,
+				      server_ex, server_name,
+				      req->msg_type == krb_as_req);
+	} else {
+		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_PASSWORD_MUST_CHANGE))
+			ret = KRB5KDC_ERR_KEY_EXPIRED;
+		else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_PASSWORD_EXPIRED))
+			ret = KRB5KDC_ERR_KEY_EXPIRED;
+		else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCOUNT_EXPIRED))
+			ret = KRB5KDC_ERR_CLIENT_REVOKED;
+		else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCOUNT_DISABLED))
+			ret = KRB5KDC_ERR_CLIENT_REVOKED;
+		else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_INVALID_LOGON_HOURS))
+			ret = KRB5KDC_ERR_CLIENT_REVOKED;
+		else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCOUNT_LOCKED_OUT))
+			ret = KRB5KDC_ERR_CLIENT_REVOKED;
+		else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_INVALID_WORKSTATION))
+			ret = KRB5KDC_ERR_POLICY;
+		else
+			ret = KRB5KDC_ERR_POLICY;
 
-	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_PASSWORD_MUST_CHANGE))
-		ret = KRB5KDC_ERR_KEY_EXPIRED;
-	else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_PASSWORD_EXPIRED))
-		ret = KRB5KDC_ERR_KEY_EXPIRED;
-	else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCOUNT_EXPIRED))
-		ret = KRB5KDC_ERR_CLIENT_REVOKED;
-	else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCOUNT_DISABLED))
-		ret = KRB5KDC_ERR_CLIENT_REVOKED;
-	else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_INVALID_LOGON_HOURS))
-		ret = KRB5KDC_ERR_CLIENT_REVOKED;
-	else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCOUNT_LOCKED_OUT))
-		ret = KRB5KDC_ERR_CLIENT_REVOKED;
-	else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_INVALID_WORKSTATION))
-		ret = KRB5KDC_ERR_POLICY;
-	else
-		ret = KRB5KDC_ERR_POLICY;
-
-	samba_kdc_build_edata_reply(tmp_ctx, e_data, nt_status);
+		samba_kdc_build_edata_reply(tmp_ctx, e_data, nt_status);
+	}
 
 	return ret;
 }

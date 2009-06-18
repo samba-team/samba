@@ -22,8 +22,8 @@
 
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
-#include <kdc.h>
 #include <hdb.h>
+#include <kdc.h>
 #include <krb5/windc_plugin.h>
 #include "kdc/pac_glue.h"
 

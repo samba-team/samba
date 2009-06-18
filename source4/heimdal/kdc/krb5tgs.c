@@ -1860,10 +1860,10 @@ server_lookup:
      * Check flags
      */
 
-    ret = _kdc_check_flags(context, config,
-			   client, cpn,
-			   server, spn,
-			   FALSE);
+    ret = kdc_check_flags(context, config,
+			  client, cpn,
+			  server, spn,
+			  FALSE);
     if(ret)
 	goto out;
 

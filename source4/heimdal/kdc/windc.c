@@ -99,12 +99,22 @@ _kdc_pac_verify(krb5_context context,
 }
 
 krb5_error_code
-_kdc_windc_client_access(krb5_context context,
-			 struct hdb_entry_ex *client,
-			 KDC_REQ *req,
-			 krb5_data *e_data)
+_kdc_check_access(krb5_context context,
+		  krb5_kdc_configuration *config,
+		  hdb_entry_ex *client_ex, const char *client_name,
+		  hdb_entry_ex *server_ex, const char *server_name,
+		  KDC_REQ *req,
+		  krb5_data *e_data)
 {
     if (windcft == NULL)
-	return 0;
-    return (windcft->client_access)(windcctx, context, client, req, e_data);
+	    return kdc_check_flags(context, config,
+				   client_ex, client_name,
+				   server_ex, server_name,
+				   req->msg_type == krb_as_req);
+
+    return (windcft->client_access)(windcctx, 
+				    context, config, 
+				    client_ex, client_name, 
+				    server_ex, server_name, 
+				    req, e_data);
 }

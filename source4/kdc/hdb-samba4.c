@@ -627,7 +627,18 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 
 		entry_ex->entry.flags.invalid = 0;
 		entry_ex->entry.flags.server = 1;
-		entry_ex->entry.flags.change_pw = 1;
+
+		/* Don't mark all requests for the krbtgt/realm as
+		 * 'change password', as otherwise we could get into
+		 * trouble, and not enforce the password expirty.
+		 * Instead, only do it when request is for the kpasswd service */
+		if (ent_type == HDB_SAMBA4_ENT_TYPE_SERVER
+		    && principal->name.name_string.len == 2
+		    && (strcmp(principal->name.name_string.val[0], "kadmin") == 0)
+		    && (strcmp(principal->name.name_string.val[1], "changepw") == 0)
+		    && lp_is_my_domain_or_realm(lp_ctx, principal->realm)) {
+			entry_ex->entry.flags.change_pw = 1;
+		}
 		entry_ex->entry.flags.client = 0;
 		entry_ex->entry.flags.forwardable = 1;
 		entry_ex->entry.flags.ok_as_delegate = 1;

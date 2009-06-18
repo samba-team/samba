@@ -668,11 +668,11 @@ log_as_req(krb5_context context,
  */
 
 krb5_error_code
-_kdc_check_flags(krb5_context context,
-		 krb5_kdc_configuration *config,
-		 hdb_entry_ex *client_ex, const char *client_name,
-		 hdb_entry_ex *server_ex, const char *server_name,
-		 krb5_boolean is_as_req)
+kdc_check_flags(krb5_context context,
+		krb5_kdc_configuration *config,
+		hdb_entry_ex *client_ex, const char *client_name,
+		hdb_entry_ex *server_ex, const char *server_name,
+		krb5_boolean is_as_req)
 {
     if(client_ex != NULL) {
 	hdb_entry *client = &client_ex->entry;
@@ -921,7 +921,6 @@ _kdc_as_rep(krb5_context context,
 		"AS-REQ malformed server name from %s", from);
 	goto out;
     }
-
     if(b->cname == NULL){
 	ret = KRB5KRB_ERR_GENERIC;
 	e_text = "No client in request";
@@ -1345,14 +1344,9 @@ _kdc_as_rep(krb5_context context,
      * with in a preauth mech.
      */
 
-    ret = _kdc_check_flags(context, config,
-			   client, client_name,
-			   server, server_name,
-			   TRUE);
-    if(ret)
-	goto out;
-
-    ret = _kdc_windc_client_access(context, client, req, &e_data);
+    ret = _kdc_check_access(context, config, client, client_name,
+			    server, server_name,
+			    req, &e_data);
     if(ret)
 	goto out;
 

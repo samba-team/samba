@@ -39,7 +39,6 @@
 #define __KDC_LOCL_H__
 
 #include "headers.h"
-#include "kdc.h"
 
 typedef struct pk_client_params pk_client_params;
 struct DigestREQ;

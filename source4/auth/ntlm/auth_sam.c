@@ -175,7 +175,7 @@ static NTSTATUS authsam_authenticate(struct auth_context *auth_context,
 				       msg,
 				       user_info->workstation_name,
 				       user_info->mapped.account_name,
-				       false);
+				       false, false);
 
 	return nt_status;
 }
