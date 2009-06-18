@@ -6384,6 +6384,12 @@ NTSTATUS check_name(connection_struct *conn, const char *name);
 int get_real_filename(connection_struct *conn, const char *path,
 		      const char *name, TALLOC_CTX *mem_ctx,
 		      char **found_name);
+NTSTATUS filename_convert(TALLOC_CTX *mem_ctx,
+			connection_struct *conn,
+			bool dfs_path,
+			const char *name_in,
+			struct smb_filename **pp_smb_fname,
+			char **pp_name);
 
 /* The following definitions come from smbd/files.c  */
 
@@ -7078,8 +7084,8 @@ void send_trans2_replies(connection_struct *conn,
 unsigned char *create_volume_objectid(connection_struct *conn, unsigned char objid[16]);
 NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 		connection_struct *conn,
-		const char *oldname_in,
-		const char *newname_in);
+		const struct smb_filename *smb_fname_old,
+		const struct smb_filename *smb_fname_new);
 NTSTATUS smb_set_file_time(connection_struct *conn,
 			   files_struct *fsp,
 			   const char *fname,

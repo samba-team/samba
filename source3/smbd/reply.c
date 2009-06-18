@@ -987,10 +987,15 @@ void reply_checkpath(struct smb_request *req)
 		return;
 	}
 
-	status = resolve_dfspath(ctx, conn,
-			req->flags2 & FLAGS2_DFS_PATHNAMES,
-			name,
-			&name);
+	DEBUG(3,("reply_checkpath %s mode=%d\n", name, (int)SVAL(req->vwv+0, 0)));
+
+	status = filename_convert(ctx,
+				conn,
+				req->flags2 & FLAGS2_DFS_PATHNAMES,
+				name,
+				&smb_fname,
+				&name);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
@@ -998,24 +1003,6 @@ void reply_checkpath(struct smb_request *req)
 			END_PROFILE(SMBcheckpath);
 			return;
 		}
-		goto path_err;
-	}
-
-	DEBUG(3,("reply_checkpath %s mode=%d\n", name, (int)SVAL(req->vwv+0, 0)));
-
-	status = unix_convert(ctx, conn, name, &smb_fname, 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto path_err;
-	}
-
-	status = get_full_smb_filename(ctx, smb_fname, &name);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto path_err;
-	}
-
-	status = check_name(conn, name);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3,("reply_checkpath: check_name of %s failed (%s)\n",name,nt_errstr(status)));
 		goto path_err;
 	}
 
@@ -1091,20 +1078,6 @@ void reply_getatr(struct smb_request *req)
 		goto out;
 	}
 
-	status = resolve_dfspath(ctx, conn,
-				req->flags2 & FLAGS2_DFS_PATHNAMES,
-				fname,
-				&fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
-			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
-					ERRSRV, ERRbadpath);
-			goto out;
-		}
-		reply_nterror(req, status);
-		goto out;
-	}
-
 	/* dos smetimes asks for a stat of "" - it returns a "hidden directory"
 		under WfWg - weird! */
 	if (*fname == '\0') {
@@ -1115,19 +1088,18 @@ void reply_getatr(struct smb_request *req)
 		size = 0;
 		mtime = 0;
 	} else {
-		status = unix_convert(ctx, conn, fname, &smb_fname, 0);
+		status = filename_convert(ctx,
+				conn,
+				req->flags2 & FLAGS2_DFS_PATHNAMES,
+				fname,
+				&smb_fname,
+				&fname);
 		if (!NT_STATUS_IS_OK(status)) {
-			reply_nterror(req, status);
-			goto out;
-		}
-		status = get_full_smb_filename(ctx, smb_fname, &fname);
-		if (!NT_STATUS_IS_OK(status)) {
-			reply_nterror(req, status);
-			goto out;
-		}
-		status = check_name(conn, fname);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(3,("reply_getatr: check_name of %s failed (%s)\n",fname,nt_errstr(status)));
+			if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+				reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
+						ERRSRV, ERRbadpath);
+				goto out;
+			}
 			reply_nterror(req, status);
 			goto out;
 		}
@@ -1201,9 +1173,11 @@ void reply_setatr(struct smb_request *req)
 		goto out;
 	}
 
-	status = resolve_dfspath(ctx, conn,
+	status = filename_convert(ctx,
+				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
+				&smb_fname,
 				&fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -1211,24 +1185,6 @@ void reply_setatr(struct smb_request *req)
 					ERRSRV, ERRbadpath);
 			goto out;
 		}
-		reply_nterror(req, status);
-		goto out;
-	}
-
-	status = unix_convert(ctx, conn, fname, &smb_fname, 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
-		goto out;
-	}
-
-	status = get_full_smb_filename(ctx, smb_fname, &fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
-		goto out;
-	}
-
-	status = check_name(conn, fname);
-	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		goto out;
 	}
@@ -1769,10 +1725,11 @@ void reply_open(struct smb_request *req)
 		goto out;
 	}
 
-	status = resolve_dfspath(ctx,
+	status = filename_convert(ctx,
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
+				&smb_fname,
 				&fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -1781,12 +1738,6 @@ void reply_open(struct smb_request *req)
 					ERRSRV, ERRbadpath);
 			goto out;
 		}
-		reply_nterror(req, status);
-		goto out;
-	}
-
-	status = unix_convert(ctx, conn, fname, &smb_fname, 0);
-	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		goto out;
 	}
@@ -1930,10 +1881,11 @@ void reply_open_and_X(struct smb_request *req)
 		goto out;
 	}
 
-	status = resolve_dfspath(ctx,
+	status = filename_convert(ctx,
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
+				&smb_fname,
 				&fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -1942,12 +1894,6 @@ void reply_open_and_X(struct smb_request *req)
 					ERRSRV, ERRbadpath);
 			goto out;
 		}
-		reply_nterror(req, status);
-		goto out;
-	}
-
-	status = unix_convert(ctx, conn, fname, &smb_fname, 0);
-	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		goto out;
 	}
@@ -2143,10 +2089,11 @@ void reply_mknew(struct smb_request *req)
 		goto out;
 	}
 
-	status = resolve_dfspath(ctx,
+	status = filename_convert(ctx,
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
+				&smb_fname,
 				&fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -2155,12 +2102,6 @@ void reply_mknew(struct smb_request *req)
 					ERRSRV, ERRbadpath);
 			goto out;
 		}
-		reply_nterror(req, status);
-		goto out;
-	}
-
-	status = unix_convert(ctx, conn, fname, &smb_fname, 0);
-	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		goto out;
 	}
@@ -2281,9 +2222,10 @@ void reply_ctemp(struct smb_request *req)
 		goto out;
 	}
 
-	status = resolve_dfspath(ctx, conn,
+	status = filename_convert(ctx, conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
+				&smb_fname,
 				&fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -2291,18 +2233,6 @@ void reply_ctemp(struct smb_request *req)
 					ERRSRV, ERRbadpath);
 			goto out;
 		}
-		reply_nterror(req, status);
-		goto out;
-	}
-
-	status = unix_convert(ctx, conn, fname, &smb_fname, 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
-		goto out;
-	}
-
-	status = check_name(conn, smb_fname->base_name);
-	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		goto out;
 	}
@@ -5263,9 +5193,10 @@ void reply_mkdir(struct smb_request *req)
 		goto out;
 	}
 
-	status = resolve_dfspath(ctx, conn,
+	status = filename_convert(ctx, conn,
 				 req->flags2 & FLAGS2_DFS_PATHNAMES,
 				 directory,
+				 &smb_dname,
 				 &directory);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -5273,18 +5204,6 @@ void reply_mkdir(struct smb_request *req)
 					ERRSRV, ERRbadpath);
 			goto out;
 		}
-		reply_nterror(req, status);
-		goto out;
-	}
-
-	status = unix_convert(ctx, conn, directory, &smb_dname, 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
-		goto out;
-	}
-
-	status = check_name(conn, smb_dname->base_name);
-	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		goto out;
 	}
@@ -5535,9 +5454,10 @@ void reply_rmdir(struct smb_request *req)
 		goto out;
 	}
 
-	status = resolve_dfspath(ctx, conn,
+	status = filename_convert(ctx, conn,
 				 req->flags2 & FLAGS2_DFS_PATHNAMES,
 				 directory,
+				 &smb_dname,
 				 &directory);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -5545,24 +5465,6 @@ void reply_rmdir(struct smb_request *req)
 					ERRSRV, ERRbadpath);
 			goto out;
 		}
-		reply_nterror(req, status);
-		goto out;
-	}
-
-	status = unix_convert(ctx, conn, directory, &smb_dname, 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
-		goto out;
-	}
-
-	status = get_full_smb_filename(ctx, smb_dname, &directory);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
-		goto out;
-	}
-
-	status = check_name(conn, directory);
-	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		goto out;
 	}

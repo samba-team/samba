@@ -941,10 +941,11 @@ static void call_trans2open(connection_struct *conn,
 		fname, (unsigned int)deny_mode, (unsigned int)open_attr,
 		(unsigned int)open_ofun, open_size));
 
-	status = resolve_dfspath(ctx,
+	status = filename_convert(ctx,
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
+				&smb_fname,
 				&fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -953,12 +954,6 @@ static void call_trans2open(connection_struct *conn,
 				ERRSRV, ERRbadpath);
 			goto out;
 		}
-		reply_nterror(req, status);
-		goto out;
-	}
-
-	status = unix_convert(ctx, conn, fname, &smb_fname, 0);
-	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		goto out;
 	}
@@ -3993,10 +3988,11 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			return;
 		}
 
-		status = resolve_dfspath(ctx,
+		status = filename_convert(ctx,
 					conn,
 					req->flags2 & FLAGS2_DFS_PATHNAMES,
 					fname,
+					&smb_fname,
 					&fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -4009,26 +4005,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			return;
 		}
 
-		status = unix_convert(ctx, conn, fname, &smb_fname, 0);
-		if (!NT_STATUS_IS_OK(status)) {
-			reply_nterror(req, status);
-			return;
-		}
 		sbuf = smb_fname->st;
-
-		status = get_full_smb_filename(ctx, smb_fname, &fname);
-		TALLOC_FREE(smb_fname);
-		if (!NT_STATUS_IS_OK(status)) {
-			reply_nterror(req, status);
-			return;
-		}
-
-		status = check_name(conn, fname);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(3,("call_trans2qfilepathinfo: fileinfo of %s failed (%s)\n",fname,nt_errstr(status)));
-			reply_nterror(req, status);
-			return;
-		}
 
 		if ((conn->fs_capabilities & FILE_NAMED_STREAMS)
 		    && is_ntfs_stream_name(fname)) {
@@ -4855,65 +4832,33 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 		connection_struct *conn,
-		const char *oldname_in,
-		const char *newname_in)
+		const struct smb_filename *smb_fname_old,
+		const struct smb_filename *smb_fname_new)
 {
-	struct smb_filename *smb_fname = NULL;
-	struct smb_filename *smb_fname_new = NULL;
 	char *oldname = NULL;
 	char *newname = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 
-	status = unix_convert(ctx, conn, oldname_in, &smb_fname, 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-
-	status = get_full_smb_filename(ctx, smb_fname, &oldname);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-
-	status = check_name(conn, oldname);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-
 	/* source must already exist. */
-	if (!VALID_STAT(smb_fname->st)) {
-		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-		goto out;
+	if (!VALID_STAT(smb_fname_old->st)) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	status = unix_convert(ctx, conn, newname_in, &smb_fname_new, 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
+	/* Disallow if newname already exists. */
+	if (VALID_STAT(smb_fname_new->st)) {
+		return NT_STATUS_OBJECT_NAME_COLLISION;
+	}
+
+	/* No links from a directory. */
+	if (S_ISDIR(smb_fname_old->st.st_ex_mode)) {
+		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
 
 	status = get_full_smb_filename(ctx, smb_fname_new, &newname);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
-
-	status = check_name(conn, newname);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-
-	/* Disallow if newname already exists. */
-	if (VALID_STAT(smb_fname_new->st)) {
-		status = NT_STATUS_OBJECT_NAME_COLLISION;
-		goto out;
-	}
-
-	/* No links from a directory. */
-	if (S_ISDIR(smb_fname->st.st_ex_mode)) {
-		status = NT_STATUS_FILE_IS_A_DIRECTORY;
-		goto out;
-	}
-
-	/* Ensure this is within the share. */
-	status = check_reduced_name(conn, oldname);
+	status = get_full_smb_filename(ctx, smb_fname_old, &oldname);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
@@ -4926,8 +4871,8 @@ NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 				 nt_errstr(status), newname, oldname));
 	}
  out:
-	TALLOC_FREE(smb_fname);
-	TALLOC_FREE(smb_fname_new);
+	TALLOC_FREE(newname);
+	TALLOC_FREE(oldname);
 	return status;
 }
 
@@ -5389,9 +5334,10 @@ static NTSTATUS smb_set_file_unix_link(connection_struct *conn,
 static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 					struct smb_request *req,
 					const char *pdata, int total_data,
-					const char *fname)
+					const struct smb_filename *smb_fname_new)
 {
 	char *oldname = NULL;
+	struct smb_filename *smb_fname_old = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -5406,18 +5352,20 @@ static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 		return status;
 	}
 
-	status = resolve_dfspath(ctx, conn,
+	DEBUG(10,("smb_set_file_unix_hlink: SMB_SET_FILE_UNIX_LINK doing hard link %s -> %s\n",
+		smb_fname_str_dbg(smb_fname_new), oldname));
+
+	status = filename_convert(ctx,
+				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				oldname,
+				&smb_fname_old,
 				&oldname);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	DEBUG(10,("smb_set_file_unix_hlink: SMB_SET_FILE_UNIX_LINK doing hard link %s -> %s\n",
-		fname, oldname));
-
-	return hardlink_internals(ctx, conn, oldname, fname);
+	return hardlink_internals(ctx, conn, smb_fname_old, smb_fname_new);
 }
 
 /****************************************************************************
@@ -6883,9 +6831,10 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 			return;
 		}
 
-		status = resolve_dfspath(ctx, conn,
+		status = filename_convert(ctx, conn,
 					 req->flags2 & FLAGS2_DFS_PATHNAMES,
 					 fname,
+					 &smb_fname,
 					 &fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -6898,25 +6847,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 			return;
 		}
 
-		status = unix_convert(ctx, conn, fname, &smb_fname, 0);
-		if (!NT_STATUS_IS_OK(status)) {
-			reply_nterror(req, status);
-			return;
-		}
 		sbuf = smb_fname->st;
-
-		status = get_full_smb_filename(ctx, smb_fname, &fname);
-		TALLOC_FREE(smb_fname);
-		if (!NT_STATUS_IS_OK(status)) {
-			reply_nterror(req, status);
-			return;
-		}
-
-		status = check_name(conn, fname);
-		if (!NT_STATUS_IS_OK(status)) {
-			reply_nterror(req, status);
-			return;
-		}
 
 		if (INFO_LEVEL_IS_UNIX(info_level)) {
 			/*
@@ -7103,14 +7034,14 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 
 		case SMB_SET_FILE_UNIX_HLINK:
 		{
-			if (tran_call != TRANSACT2_SETPATHINFO) {
+			if (tran_call != TRANSACT2_SETPATHINFO || smb_fname == NULL) {
 				/* We must have a pathname for this. */
 				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
 				return;
 			}
 			status = smb_set_file_unix_hlink(conn, req,
 							 pdata,	total_data,
-							 fname);
+							 smb_fname);
 			break;
 		}
 
@@ -7251,18 +7182,23 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 
 	DEBUG(3,("call_trans2mkdir : name = %s\n", directory));
 
-	status = unix_convert(ctx, conn, directory, &smb_dname, 0);
+	status = filename_convert(ctx,
+				conn,
+				req->flags2 & FLAGS2_DFS_PATHNAMES,
+				directory,
+				&smb_dname,
+				&directory);
+
 	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+			reply_botherror(req,
+				NT_STATUS_PATH_NOT_COVERED,
+				ERRSRV, ERRbadpath);
+			return;
+		}
 		reply_nterror(req, status);
 		return;
-	}
-
-	status = check_name(conn, smb_dname->base_name);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(5,("call_trans2mkdir error (%s)\n", nt_errstr(status)));
-		reply_nterror(req, status);
-		goto out;
-	}
+        }
 
 	/* Any data in this call is an EA list. */
 	if (total_data && (total_data != 4) && !lp_ea_support(SNUM(conn))) {

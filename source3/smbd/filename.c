@@ -1150,3 +1150,55 @@ static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
 	TALLOC_FREE(streams);
 	return status;
 }
+
+/****************************************************************************
+ Go through all the steps to validate a filename.
+****************************************************************************/
+
+NTSTATUS filename_convert(TALLOC_CTX *ctx,
+				connection_struct *conn,
+				bool dfs_path,
+				const char *name_in,
+				struct smb_filename **pp_smb_fname,
+				char **pp_name)
+{
+	NTSTATUS status;
+
+	*pp_smb_fname = NULL;
+	*pp_name = NULL;
+
+	status = resolve_dfspath(ctx, conn,
+				dfs_path,
+				name_in,
+				pp_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10,("filename_convert: resolve_dfspath failed "
+			"for name %s with %s\n",
+			name_in,
+			nt_errstr(status) ));
+		return status;
+	}
+	status = unix_convert(ctx, conn, *pp_name, pp_smb_fname, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10,("filename_convert: unix_convert failed "
+			"for name %s with %s\n",
+			*pp_name,
+			nt_errstr(status) ));
+		return status;
+	}
+
+	status = get_full_smb_filename(ctx, *pp_smb_fname, pp_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = check_name(conn, *pp_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(3,("filename_convert: check_name failed "
+			"for name %s with %s\n",
+			*pp_name,
+			nt_errstr(status) ));
+		return status;
+	}
+	return status;
+}

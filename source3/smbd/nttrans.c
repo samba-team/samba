@@ -535,10 +535,11 @@ void reply_ntcreate_and_X(struct smb_request *req)
 			? BATCH_OPLOCK : 0;
 	}
 
-	status = resolve_dfspath(ctx,
+	status = filename_convert(ctx,
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
+				&smb_fname,
 				&fname);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -548,12 +549,6 @@ void reply_ntcreate_and_X(struct smb_request *req)
 				ERRSRV, ERRbadpath);
 			goto out;
 		}
-		reply_nterror(req, status);
-		goto out;
-	}
-
-	status = unix_convert(ctx, conn, fname, &smb_fname, 0);
-	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		goto out;
 	}
@@ -1021,10 +1016,11 @@ static void call_nt_transact_create(connection_struct *conn,
 		goto out;
 	}
 
-	status = resolve_dfspath(ctx,
+	status = filename_convert(ctx,
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
+				&smb_fname,
 				&fname);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1034,12 +1030,6 @@ static void call_nt_transact_create(connection_struct *conn,
 				ERRSRV, ERRbadpath);
 			goto out;
 		}
-		reply_nterror(req, status);
-		goto out;
-	}
-
-	status = unix_convert(ctx, conn, fname, &smb_fname, 0);
-	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		goto out;
 	}
@@ -1399,6 +1389,8 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 void reply_ntrename(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
+	struct smb_filename *smb_fname_old = NULL;
+	struct smb_filename *smb_fname_new = NULL;
 	char *oldname = NULL;
 	char *newname = NULL;
 	const char *p;
@@ -1444,9 +1436,10 @@ void reply_ntrename(struct smb_request *req)
 		return;
 	}
 
-	status = resolve_dfspath(ctx, conn,
+	status = filename_convert(ctx, conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				oldname,
+				&smb_fname_old,
 				&oldname);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -1460,9 +1453,10 @@ void reply_ntrename(struct smb_request *req)
 		return;
 	}
 
-	status = resolve_dfspath(ctx, conn,
+	status = filename_convert(ctx, conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				newname,
+				&smb_fname_new,
 				&newname);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -1498,8 +1492,8 @@ void reply_ntrename(struct smb_request *req)
 			} else {
 				status = hardlink_internals(ctx,
 						conn,
-						oldname,
-						newname);
+						smb_fname_old,
+						smb_fname_new);
 			}
 			break;
 		case RENAME_FLAG_COPY:
