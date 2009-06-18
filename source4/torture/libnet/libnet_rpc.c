@@ -42,6 +42,8 @@ static bool test_connect_service(struct libnet_context *ctx,
 {
 	NTSTATUS status;
 	struct libnet_RpcConnect connect_r;
+	ZERO_STRUCT(connect_r);
+
 	connect_r.level            = level;
 	connect_r.in.binding       = binding_string;
 	connect_r.in.name          = hostname;

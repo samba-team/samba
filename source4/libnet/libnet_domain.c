@@ -427,6 +427,8 @@ struct composite_context* libnet_DomainOpenLsa_send(struct libnet_context *ctx,
 	/* check, if there's lsa pipe opened already, before opening a handle */
 	if (ctx->lsa.pipe == NULL) {
 
+		ZERO_STRUCT(s->rpcconn);
+
 		/* attempting to connect a domain controller */
 		s->rpcconn.level           = LIBNET_RPC_CONNECT_DC;
 		s->rpcconn.in.name         = talloc_strdup(c, io->in.domain_name);
@@ -1179,6 +1181,8 @@ struct composite_context* libnet_DomainList_send(struct libnet_context *ctx,
 
 	/* check whether samr pipe has already been opened */
 	if (ctx->samr.pipe == NULL) {
+		ZERO_STRUCT(s->rpcconn);
+
 		/* prepare rpc connect call */
 		s->rpcconn.level           = LIBNET_RPC_CONNECT_SERVER;
 		s->rpcconn.in.name         = s->hostname;

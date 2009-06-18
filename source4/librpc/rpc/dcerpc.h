@@ -142,6 +142,8 @@ struct dcerpc_pipe {
 
 #define DCERPC_SCHANNEL                (1<<9)
 
+#define DCERPC_ANON_FALLBACK           (1<<10)
+
 /* use a 128 bit session key */
 #define DCERPC_SCHANNEL_128            (1<<12)
 

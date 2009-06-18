@@ -77,7 +77,7 @@ NTSTATUS libnet_SamSync_netlogon(struct libnet_context *ctx, TALLOC_CTX *mem_ctx
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
-	c = talloc(samsync_ctx, struct libnet_RpcConnect);
+	c = talloc_zero(samsync_ctx, struct libnet_RpcConnect);
 	if (!c) {
 		r->out.error_string = NULL;
 		talloc_free(samsync_ctx);

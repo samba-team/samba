@@ -33,6 +33,8 @@ static NTSTATUS libnet_RemoteTOD_srvsvc(struct libnet_context *ctx, TALLOC_CTX *
 	struct srvsvc_NetRemoteTODInfo *info = NULL;
 	struct tm tm;
 
+	ZERO_STRUCT(c);
+
 	/* prepare connect to the SRVSVC pipe of a timeserver */
 	c.level             = LIBNET_RPC_CONNECT_SERVER;
 	c.in.name           = r->srvsvc.in.server_name;

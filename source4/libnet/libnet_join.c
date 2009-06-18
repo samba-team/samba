@@ -479,7 +479,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		return NT_STATUS_NO_MEMORY;
 	}
 	
-	connect_with_info = talloc(tmp_ctx, struct libnet_RpcConnect);
+	connect_with_info = talloc_zero(tmp_ctx, struct libnet_RpcConnect);
 	if (!connect_with_info) {
 		r->out.error_string = NULL;
 		talloc_free(tmp_ctx);

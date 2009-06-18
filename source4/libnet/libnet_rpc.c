@@ -106,6 +106,12 @@ static struct composite_context* libnet_RpcConnectSrv_send(struct libnet_context
 		return c;
 	}
 
+	switch (r->level) {
+	case LIBNET_RPC_CONNECT_SERVER:
+	case LIBNET_RPC_CONNECT_SERVER_ADDRESS:
+		b->flags = r->in.dcerpc_flags;
+	}
+
 	if (r->level == LIBNET_RPC_CONNECT_SERVER_ADDRESS) {
 		b->target_hostname = talloc_reference(b, r->in.name);
 		if (composite_nomem(b->target_hostname, c)) {
@@ -323,6 +329,7 @@ static void continue_lookup_dc(struct composite_context *ctx)
 	s->r2.in.name          = talloc_strdup(s, s->connect_name);
 	s->r2.in.address       = talloc_steal(s, s->f.out.dcs[0].address);
 	s->r2.in.dcerpc_iface  = s->r.in.dcerpc_iface;	
+	s->r2.in.dcerpc_flags  = s->r.in.dcerpc_flags;
 
 	/* send rpc connect request to the server */
 	rpc_connect_req = libnet_RpcConnectSrv_send(s->ctx, c, &s->r2, s->monitor_fn);
@@ -478,14 +485,18 @@ static struct composite_context* libnet_RpcConnectDCInfo_send(struct libnet_cont
 	s->r   = *r;
 	ZERO_STRUCT(s->r.out);
 
+
 	/* proceed to pure rpc connection if the binding string is provided,
 	   otherwise try to connect domain controller */
 	if (r->in.binding == NULL) {
-		s->rpc_conn.in.name    = r->in.name;
-		s->rpc_conn.level      = LIBNET_RPC_CONNECT_DC;
+		/* Pass on any binding flags (such as anonymous fallback) that have been set */
+		s->rpc_conn.in.dcerpc_flags = r->in.dcerpc_flags;
+
+		s->rpc_conn.in.name         = r->in.name;
+		s->rpc_conn.level           = LIBNET_RPC_CONNECT_DC;
 	} else {
-		s->rpc_conn.in.binding = r->in.binding;
-		s->rpc_conn.level      = LIBNET_RPC_CONNECT_BINDING;
+		s->rpc_conn.in.binding      = r->in.binding;
+		s->rpc_conn.level           = LIBNET_RPC_CONNECT_BINDING;
 	}
 
 	/* we need to query information on lsarpc interface first */

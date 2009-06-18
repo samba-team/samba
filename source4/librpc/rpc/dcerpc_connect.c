@@ -130,10 +130,10 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CT
 	 * provide proper credentials - user supplied, but allow a
 	 * fallback to anonymous if this is an schannel connection
 	 * (might be NT4 not allowing machine logins at session
-	 * setup).
+	 * setup) or if asked to do so by the caller (perhaps a SAMR password change?)
 	 */
 	s->conn.in.credentials = s->io.creds;
-	if (s->io.binding->flags & DCERPC_SCHANNEL) {
+	if (s->io.binding->flags & (DCERPC_SCHANNEL|DCERPC_ANON_FALLBACK)) {
 		conn->in.fallback_to_anonymous  = true;
 	} else {
 		conn->in.fallback_to_anonymous  = false;
