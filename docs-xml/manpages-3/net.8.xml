@@ -1043,6 +1043,33 @@ the rid and description is also provided for each account.
 </refsect2>
 
 <refsect2>
+<title>SAM RIGHTS LIST</title>
+
+<para>
+List all available privileges.
+</para>
+
+</refsect2>
+
+<refsect2>
+<title>SAM RIGHTS GRANT &lt;NAME&gt; &lt;PRIVILEGE&gt;</title>
+
+<para>
+Grant a certain privilege to a user.
+</para>
+
+</refsect2>
+
+<refsect2>
+<title>SAM RIGHTS REVOKE &lt;NAME&gt; &lt;PRIVILEGE&gt;</title>
+
+<para>
+Revoke a certain privilege from a user.
+</para>
+
+</refsect2>
+
+<refsect2>
 <title>SAM SHOW &lt;NAME&gt;</title>
 
 <para>
