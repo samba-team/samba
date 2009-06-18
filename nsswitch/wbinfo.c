@@ -1178,66 +1178,107 @@ static char *wbinfo_prompt_pass(const char *prefix,
 
 static bool wbinfo_auth_krb5(char *username, const char *cctype, uint32 flags)
 {
-	struct winbindd_request request;
-	struct winbindd_response response;
-	NSS_STATUS result;
-	char *p;
-	char *password;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	char *s = NULL;
+	char *p = NULL;
+	char *password = NULL;
+	char *name = NULL;
+	uid_t uid;
+	struct wbcLogonUserParams params;
+	struct wbcLogonUserInfo *info;
+	struct wbcAuthErrorInfo *error;
+	struct wbcUserPasswordPolicyInfo *policy;
 
-	/* Send off request */
-
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-	p = strchr(username, '%');
-
-	if (p) {
-		*p = 0;
-		fstrcpy(request.data.auth.user, username);
-		fstrcpy(request.data.auth.pass, p + 1);
-		*p = '%';
-	} else {
-		fstrcpy(request.data.auth.user, username);
-		password = wbinfo_prompt_pass(NULL, username);
-		fstrcpy(request.data.auth.pass, password);
-		SAFE_FREE(password);
+	if ((s = SMB_STRDUP(username)) == NULL) {
+		return false;
 	}
 
-	request.flags = flags;
+	if ((p = strchr(s, '%')) != NULL) {
+		*p = 0;
+		p++;
+		password = SMB_STRDUP(p);
+	} else {
+		password = wbinfo_prompt_pass(NULL, username);
+	}
 
-	fstrcpy(request.data.auth.krb5_cc_type, cctype);
+	name = s;
 
-	request.data.auth.uid = geteuid();
+	uid = geteuid();
 
-	result = winbindd_request_response(WINBINDD_PAM_AUTH, &request, &response);
+	params.username = name;
+	params.password = password;
+	params.num_blobs = 0;
+	params.blobs = NULL;
 
-	/* Display response */
+	wbc_status = wbcAddNamedBlob(&params.num_blobs,
+				     &params.blobs,
+				     "flags",
+				     0,
+				     (uint8_t *)&flags,
+				     sizeof(flags));
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		goto done;
+	}
+
+	wbc_status = wbcAddNamedBlob(&params.num_blobs,
+				     &params.blobs,
+				     "user_uid",
+				     0,
+				     (uint8_t *)&uid,
+				     sizeof(uid));
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		goto done;
+	}
+
+	wbc_status = wbcAddNamedBlob(&params.num_blobs,
+				     &params.blobs,
+				     "krb5_cc_type",
+				     0,
+				     (uint8_t *)cctype,
+				     strlen(cctype)+1);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		goto done;
+	}
+
+	wbc_status = wbcLogonUser(&params, &info, &error, &policy);
 
 	d_printf("plaintext kerberos password authentication for [%s] %s (requesting cctype: %s)\n",
-		username, (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed", cctype);
+		 username, WBC_ERROR_IS_OK(wbc_status) ? "succeeded" : "failed", cctype);
 
-	if (response.data.auth.nt_status)
+	if (error) {
 		d_fprintf(stderr, "error code was %s (0x%x)\nerror messsage was: %s\n",
-			 response.data.auth.nt_status_string,
-			 response.data.auth.nt_status,
-			 response.data.auth.error_string);
+			 error->nt_string,
+			 error->nt_status,
+			 error->display_string);
+	}
 
-	if (result == NSS_STATUS_SUCCESS) {
-
-		if (request.flags & WBFLAG_PAM_INFO3_TEXT) {
-			if (response.data.auth.info3.user_flgs & NETLOGON_CACHED_ACCOUNT) {
+	if (WBC_ERROR_IS_OK(wbc_status)) {
+		if (flags & WBFLAG_PAM_INFO3_TEXT) {
+			if (info && info->info && info->info->user_flags & NETLOGON_CACHED_ACCOUNT) {
 				d_printf("user_flgs: NETLOGON_CACHED_ACCOUNT\n");
 			}
 		}
 
-		if (response.data.auth.krb5ccname[0] != '\0') {
-			d_printf("credentials were put in: %s\n", response.data.auth.krb5ccname);
+		if (info) {
+			int i;
+			for (i=0; i < info->num_blobs; i++) {
+				if (strequal(info->blobs[i].name, "krb5ccname")) {
+					d_printf("credentials were put in: %s\n",
+						(const char *)info->blobs[i].blob.data);
+					break;
+				}
+			}
 		} else {
 			d_printf("no credentials cached\n");
 		}
 	}
+ done:
 
-	return result == NSS_STATUS_SUCCESS;
+	SAFE_FREE(s);
+	SAFE_FREE(password);
+	wbcFreeMemory(params.blobs);
+
+	return WBC_ERROR_IS_OK(wbc_status);
 }
 
 /* Authenticate a user with a plaintext password */
