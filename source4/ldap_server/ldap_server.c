@@ -455,6 +455,10 @@ static const struct stream_server_ops ldap_stream_nonpriv_ops = {
 	.send_handler		= ldapsrv_send,
 };
 
+/* The feature removed behind an #ifdef until we can do it properly
+ * with an EXTERNAL bind. */
+
+#ifdef WITH_LDAPI_PRIV_SOCKET
 static void ldapsrv_accept_priv(struct stream_connection *c)
 {
 	struct ldapsrv_service *ldapsrv_service = talloc_get_type_abort(
@@ -479,6 +483,7 @@ static const struct stream_server_ops ldap_stream_priv_ops = {
 	.send_handler		= ldapsrv_send,
 };
 
+#endif
 /*
   add a socket address to the list of events, one event per port
 */
@@ -549,7 +554,10 @@ static NTSTATUS add_socket(struct tevent_context *event_context,
 */
 static void ldapsrv_task_init(struct task_server *task)
 {	
-	char *ldapi_path, *priv_dir;
+	char *ldapi_path;
+#ifdef WITH_LDAPI_PRIV_SOCKET
+	char *priv_dir;
+#endif
 	struct ldapsrv_service *ldap_service;
 	NTSTATUS status;
 	const struct model_ops *model_ops;
@@ -619,6 +627,7 @@ static void ldapsrv_task_init(struct task_server *task)
 			 ldapi_path, nt_errstr(status)));
 	}
 
+#ifdef WITH_LDAPI_PRIV_SOCKET
 	priv_dir = private_path(ldap_service, task->lp_ctx, "ldap_priv");
 	if (priv_dir == NULL) {
 		goto failed;
@@ -649,6 +658,7 @@ static void ldapsrv_task_init(struct task_server *task)
 			 ldapi_path, nt_errstr(status)));
 	}
 
+#endif
 	return;
 
 failed:
