@@ -1043,16 +1043,17 @@ bool is_visible_file(connection_struct *conn, const char *dir_path,
 	if (hide_unreadable || hide_unwriteable || hide_special) {
 		char *entry = NULL;
 
-		if (asprintf(&entry, "%s/%s", dir_path, name) == -1) {
-			return False;
+		entry = talloc_asprintf(talloc_tos(), "%s/%s", dir_path, name);
+		if (!entry)
+			return false;
 		}
 
 		/* If it's a dfs symlink, ignore _hide xxxx_ options */
 		if (lp_host_msdfs() &&
 				lp_msdfs_root(SNUM(conn)) &&
 				is_msdfs_link(conn, entry, NULL)) {
-			SAFE_FREE(entry);
-			return True;
+			TALLOC_FREE(entry);
+			return true;
 		}
 
 		/* If the file name does not exist, there's no point checking
@@ -1061,34 +1062,34 @@ bool is_visible_file(connection_struct *conn, const char *dir_path,
 		 */
 		if (!VALID_STAT(*pst) && (SMB_VFS_STAT(conn, entry, pst) != 0))
 		{
-		        SAFE_FREE(entry);
-		        return True;
+		        TALLOC_FREE(entry);
+		        return true;
 		}
 
 		/* Honour _hide unreadable_ option */
 		if (hide_unreadable && !user_can_read_file(conn, entry)) {
 			DEBUG(10,("is_visible_file: file %s is unreadable.\n",
 				 entry ));
-			SAFE_FREE(entry);
-			return False;
+			TALLOC_FREE(entry);
+			return false;
 		}
 		/* Honour _hide unwriteable_ option */
 		if (hide_unwriteable && !user_can_write_file(conn, entry, pst)) {
 			DEBUG(10,("is_visible_file: file %s is unwritable.\n",
 				 entry ));
-			SAFE_FREE(entry);
-			return False;
+			TALLOC_FREE(entry);
+			return false;
 		}
 		/* Honour _hide_special_ option */
 		if (hide_special && file_is_special(conn, entry, pst)) {
 			DEBUG(10,("is_visible_file: file %s is special.\n",
 				 entry ));
-			SAFE_FREE(entry);
-			return False;
+			TALLOC_FREE(entry);
+			return false;
 		}
-		SAFE_FREE(entry);
+		TALLOC_FREE(entry);
 	}
-	return True;
+	return true;
 }
 
 static int smb_Dir_destructor(struct smb_Dir *dirp)
