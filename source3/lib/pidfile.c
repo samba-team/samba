@@ -25,6 +25,8 @@
 #define O_NONBLOCK
 #endif
 
+static char *pidFile_name = NULL;
+
 /* return the pid in a pidfile. return 0 if the process (or pidfile)
    does not exist */
 pid_t pidfile_pid(const char *name)
@@ -88,7 +90,6 @@ void pidfile_create(const char *program_name)
 	char    buf[20];
 	const char    *short_configfile;
 	char *name;
-	char *pidFile;
 	pid_t pid;
 
 	/* Add a suffix to the program name if this is a process with a
@@ -110,27 +111,28 @@ void pidfile_create(const char *program_name)
 		}
 	}
 
-	if (asprintf(&pidFile, "%s/%s.pid", lp_piddir(), name) == -1) {
+	if (asprintf(&pidFile_name, "%s/%s.pid", lp_piddir(), name) == -1) {
 		smb_panic("asprintf failed");
 	}
 
 	pid = pidfile_pid(name);
 	if (pid != 0) {
 		DEBUG(0,("ERROR: %s is already running. File %s exists and process id %d is running.\n", 
-			 name, pidFile, (int)pid));
+			 name, pidFile_name, (int)pid));
 		exit(1);
 	}
 
-	fd = sys_open(pidFile, O_NONBLOCK | O_CREAT | O_WRONLY | O_EXCL, 0644);
+	fd = sys_open(pidFile_name, O_NONBLOCK | O_CREAT | O_WRONLY | O_EXCL,
+		      0644);
 	if (fd == -1) {
-		DEBUG(0,("ERROR: can't open %s: Error was %s\n", pidFile, 
+		DEBUG(0,("ERROR: can't open %s: Error was %s\n", pidFile_name,
 			 strerror(errno)));
 		exit(1);
 	}
 
 	if (fcntl_lock(fd,SMB_F_SETLK,0,1,F_WRLCK)==False) {
 		DEBUG(0,("ERROR: %s : fcntl lock of file %s failed. Error was %s\n",  
-              name, pidFile, strerror(errno)));
+			 name, pidFile_name, strerror(errno)));
 		exit(1);
 	}
 
@@ -138,10 +140,18 @@ void pidfile_create(const char *program_name)
 	slprintf(buf, sizeof(buf) - 1, "%u\n", (unsigned int) sys_getpid());
 	if (write(fd, buf, strlen(buf)) != (ssize_t)strlen(buf)) {
 		DEBUG(0,("ERROR: can't write to file %s: %s\n", 
-			 pidFile, strerror(errno)));
+			 pidFile_name, strerror(errno)));
 		exit(1);
 	}
 	/* Leave pid file open & locked for the duration... */
 	SAFE_FREE(name);
-	SAFE_FREE(pidFile);
+}
+
+void pidfile_unlink(void)
+{
+	if (pidFile_name == NULL) {
+		return;
+	}
+	unlink(pidFile_name);
+	SAFE_FREE(pidFile_name);
 }

@@ -587,6 +587,7 @@ int nt_status_to_pam(NTSTATUS nt_status);
 
 pid_t pidfile_pid(const char *name);
 void pidfile_create(const char *program_name);
+void pidfile_unlink(void);
 
 /* The following definitions come from lib/popt_common.c  */
 
