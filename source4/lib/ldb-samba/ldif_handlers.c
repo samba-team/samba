@@ -3,6 +3,7 @@
 
    Copyright (C) Andrew Tridgell 2005
    Copyright (C) Andrew Bartlett 2006-2007
+   Copyright (C) Matthias Dieter Wallnöfer 2009
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
@@ -79,7 +80,7 @@ static int ldif_write_objectSid(struct ldb_context *ldb, void *mem_ctx,
 	return 0;
 }
 
-static bool ldb_comparision_objectSid_isString(const struct ldb_val *v)
+static bool ldif_comparision_objectSid_isString(const struct ldb_val *v)
 {
 	if (v->length < 3) {
 		return false;
@@ -93,13 +94,13 @@ static bool ldb_comparision_objectSid_isString(const struct ldb_val *v)
 /*
   compare two objectSids
 */
-static int ldb_comparison_objectSid(struct ldb_context *ldb, void *mem_ctx,
+static int ldif_comparison_objectSid(struct ldb_context *ldb, void *mem_ctx,
 				    const struct ldb_val *v1, const struct ldb_val *v2)
 {
-	if (ldb_comparision_objectSid_isString(v1) && ldb_comparision_objectSid_isString(v2)) {
+	if (ldif_comparision_objectSid_isString(v1) && ldif_comparision_objectSid_isString(v2)) {
 		return ldb_comparison_binary(ldb, mem_ctx, v1, v2);
-	} else if (ldb_comparision_objectSid_isString(v1)
-		   && !ldb_comparision_objectSid_isString(v2)) {
+	} else if (ldif_comparision_objectSid_isString(v1)
+		   && !ldif_comparision_objectSid_isString(v2)) {
 		struct ldb_val v;
 		int ret;
 		if (ldif_read_objectSid(ldb, mem_ctx, v1, &v) != 0) {
@@ -109,8 +110,8 @@ static int ldb_comparison_objectSid(struct ldb_context *ldb, void *mem_ctx,
 		ret = ldb_comparison_binary(ldb, mem_ctx, &v, v2);
 		talloc_free(v.data);
 		return ret;
-	} else if (!ldb_comparision_objectSid_isString(v1)
-		   && ldb_comparision_objectSid_isString(v2)) {
+	} else if (!ldif_comparision_objectSid_isString(v1)
+		   && ldif_comparision_objectSid_isString(v2)) {
 		struct ldb_val v;
 		int ret;
 		if (ldif_read_objectSid(ldb, mem_ctx, v2, &v) != 0) {
@@ -127,10 +128,10 @@ static int ldb_comparison_objectSid(struct ldb_context *ldb, void *mem_ctx,
 /*
   canonicalise a objectSid
 */
-static int ldb_canonicalise_objectSid(struct ldb_context *ldb, void *mem_ctx,
+static int ldif_canonicalise_objectSid(struct ldb_context *ldb, void *mem_ctx,
 				      const struct ldb_val *in, struct ldb_val *out)
 {
-	if (ldb_comparision_objectSid_isString(in)) {
+	if (ldif_comparision_objectSid_isString(in)) {
 		if (ldif_read_objectSid(ldb, mem_ctx, in, out) != 0) {
 			/* Perhaps not a string after all */
 			return ldb_handler_copy(ldb, mem_ctx, in, out);
@@ -145,7 +146,7 @@ static int extended_dn_read_SID(struct ldb_context *ldb, void *mem_ctx,
 {
 	struct dom_sid sid;
 	enum ndr_err_code ndr_err;
-	if (ldb_comparision_objectSid_isString(in)) {
+	if (ldif_comparision_objectSid_isString(in)) {
 		if (ldif_read_objectSid(ldb, mem_ctx, in, out) == 0) {
 			return 0;
 		}
@@ -214,7 +215,7 @@ static int ldif_write_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 	return 0;
 }
 
-static bool ldb_comparision_objectGUID_isString(const struct ldb_val *v)
+static bool ldif_comparision_objectGUID_isString(const struct ldb_val *v)
 {
 	if (v->length != 36 && v->length != 38) return false;
 
@@ -257,13 +258,13 @@ static int extended_dn_read_GUID(struct ldb_context *ldb, void *mem_ctx,
 /*
   compare two objectGUIDs
 */
-static int ldb_comparison_objectGUID(struct ldb_context *ldb, void *mem_ctx,
+static int ldif_comparison_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 				     const struct ldb_val *v1, const struct ldb_val *v2)
 {
-	if (ldb_comparision_objectGUID_isString(v1) && ldb_comparision_objectGUID_isString(v2)) {
+	if (ldif_comparision_objectGUID_isString(v1) && ldif_comparision_objectGUID_isString(v2)) {
 		return ldb_comparison_binary(ldb, mem_ctx, v1, v2);
-	} else if (ldb_comparision_objectGUID_isString(v1)
-		   && !ldb_comparision_objectGUID_isString(v2)) {
+	} else if (ldif_comparision_objectGUID_isString(v1)
+		   && !ldif_comparision_objectGUID_isString(v2)) {
 		struct ldb_val v;
 		int ret;
 		if (ldif_read_objectGUID(ldb, mem_ctx, v1, &v) != 0) {
@@ -273,8 +274,8 @@ static int ldb_comparison_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 		ret = ldb_comparison_binary(ldb, mem_ctx, &v, v2);
 		talloc_free(v.data);
 		return ret;
-	} else if (!ldb_comparision_objectGUID_isString(v1)
-		   && ldb_comparision_objectGUID_isString(v2)) {
+	} else if (!ldif_comparision_objectGUID_isString(v1)
+		   && ldif_comparision_objectGUID_isString(v2)) {
 		struct ldb_val v;
 		int ret;
 		if (ldif_read_objectGUID(ldb, mem_ctx, v2, &v) != 0) {
@@ -291,10 +292,10 @@ static int ldb_comparison_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 /*
   canonicalise a objectGUID
 */
-static int ldb_canonicalise_objectGUID(struct ldb_context *ldb, void *mem_ctx,
+static int ldif_canonicalise_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 				       const struct ldb_val *in, struct ldb_val *out)
 {
-	if (ldb_comparision_objectGUID_isString(in)) {
+	if (ldif_comparision_objectGUID_isString(in)) {
 		if (ldif_read_objectGUID(ldb, mem_ctx, in, out) != 0) {
 			/* Perhaps it wasn't a valid string after all */
 			return ldb_handler_copy(ldb, mem_ctx, in, out);
@@ -626,6 +627,31 @@ static int ldif_comparison_prefixMap(struct ldb_context *ldb, void *mem_ctx,
 	return ret;
 }
 
+/* Canonicalisation of two 32-bit integers */
+static int ldif_canonicalise_int32(struct ldb_context *ldb, void *mem_ctx,
+			const struct ldb_val *in, struct ldb_val *out)
+{
+	char *end;
+	int32_t i = (int32_t) strtol((char *)in->data, &end, 0);
+	if (*end != 0) {
+		return -1;
+	}
+	out->data = (uint8_t *) talloc_asprintf(mem_ctx, "%d", i);
+	if (out->data == NULL) {
+		return -1;
+	}
+	out->length = strlen((char *)out->data);
+	return 0;
+}
+
+/* Comparison of two 32-bit integers */
+static int ldif_comparison_int32(struct ldb_context *ldb, void *mem_ctx,
+			const struct ldb_val *v1, const struct ldb_val *v2)
+{
+	return (int32_t) strtol((char *)v1->data, NULL, 0)
+	 - (int32_t) strtol((char *)v2->data, NULL, 0);
+}
+
 static int extended_dn_write_hex(struct ldb_context *ldb, void *mem_ctx,
 				 const struct ldb_val *in, struct ldb_val *out)
 {
@@ -636,18 +662,13 @@ static int extended_dn_write_hex(struct ldb_context *ldb, void *mem_ctx,
 	return 0;
 }
 
-
-#define LDB_SYNTAX_SAMBA_GUID			"LDB_SYNTAX_SAMBA_GUID"
-#define LDB_SYNTAX_SAMBA_OBJECT_CATEGORY	"LDB_SYNTAX_SAMBA_OBJECT_CATEGORY"
-#define LDB_SYNTAX_SAMBA_PREFIX_MAP	"LDB_SYNTAX_SAMBA_PREFIX_MAP"
-
 static const struct ldb_schema_syntax samba_syntaxes[] = {
 	{
 		.name		  = LDB_SYNTAX_SAMBA_SID,
 		.ldif_read_fn	  = ldif_read_objectSid,
 		.ldif_write_fn	  = ldif_write_objectSid,
-		.canonicalise_fn  = ldb_canonicalise_objectSid,
-		.comparison_fn	  = ldb_comparison_objectSid
+		.canonicalise_fn  = ldif_canonicalise_objectSid,
+		.comparison_fn	  = ldif_comparison_objectSid
 	},{
 		.name		  = LDB_SYNTAX_SAMBA_SECURITY_DESCRIPTOR,
 		.ldif_read_fn	  = ldif_read_ntSecurityDescriptor,
@@ -658,8 +679,8 @@ static const struct ldb_schema_syntax samba_syntaxes[] = {
 		.name		  = LDB_SYNTAX_SAMBA_GUID,
 		.ldif_read_fn	  = ldif_read_objectGUID,
 		.ldif_write_fn	  = ldif_write_objectGUID,
-		.canonicalise_fn  = ldb_canonicalise_objectGUID,
-		.comparison_fn	  = ldb_comparison_objectGUID
+		.canonicalise_fn  = ldif_canonicalise_objectGUID,
+		.comparison_fn	  = ldif_comparison_objectGUID
 	},{
 		.name		  = LDB_SYNTAX_SAMBA_OBJECT_CATEGORY,
 		.ldif_read_fn	  = ldb_handler_copy,
@@ -672,6 +693,12 @@ static const struct ldb_schema_syntax samba_syntaxes[] = {
 		.ldif_write_fn	  = ldif_write_prefixMap,
 		.canonicalise_fn  = ldif_canonicalise_prefixMap,
 		.comparison_fn	  = ldif_comparison_prefixMap
+	},{
+		.name		  = LDB_SYNTAX_SAMBA_INT32,
+		.ldif_read_fn	  = ldb_handler_copy,
+		.ldif_write_fn	  = ldb_handler_copy,
+		.canonicalise_fn  = ldif_canonicalise_int32,
+		.comparison_fn	  = ldif_comparison_int32
 	}
 };
 
@@ -694,6 +721,7 @@ static const struct ldb_dn_extended_syntax samba_dn_syntax[] = {
 	}
 };
 
+/* TODO: Should be dynamic at some point */
 static const struct {
 	const char *name;
 	const char *syntax;

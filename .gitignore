@@ -206,7 +206,6 @@ source4/lib/ldb/examples/ldbreader
 source4/lib/ldb/examples/ldifreader
 source4/lib/ldb/lib
 source4/lib/ldb/man/*.html
-source4/lib/ldb-samba/ldif_handlers.h
 source4/lib/ldb/samba/ldif_handlers_proto.h
 source4/lib/ldb/tests/tmp
 source4/libnet/libnet_proto.h

@@ -1243,6 +1243,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.ldb_to_drsuapi		= dsdb_syntax_INT32_ldb_to_drsuapi,
 		.equality               = "integerMatch",
 		.comment                = "Integer",
+		.ldb_syntax		= LDB_SYNTAX_SAMBA_INT32
 	},{
 		.name			= "String(Octet)",
 		.ldap_oid		= LDB_SYNTAX_OCTET_STRING,
@@ -1279,6 +1280,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.9",
 		.drsuapi_to_ldb		= dsdb_syntax_INT32_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_INT32_ldb_to_drsuapi,
+		.ldb_syntax		= LDB_SYNTAX_SAMBA_INT32
 	},{
 	/* not used in w2k3 forest */
 		.name			= "String(Numeric)",
