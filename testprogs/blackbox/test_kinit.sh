@@ -35,7 +35,7 @@ test_smbclient() {
 	shift
 	shift
 	echo "test: $name"
-	$VALGRIND $smbclient $CONFIGURATION //$SERVER/tmp -c "$cmd" -W "$DOMAIN" -U"$USERNAME%$PASSWORD" $@
+	$VALGRIND $smbclient $CONFIGURATION //$SERVER/tmp -c "$cmd" -W "$DOMAIN" $@
 	status=$?
 	if [ x$status = x0 ]; then
 		echo "success: $name"
