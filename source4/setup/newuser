@@ -36,6 +36,7 @@ credopts = options.CredentialsOptions(parser)
 parser.add_option_group(credopts)
 parser.add_option("--quiet", help="Be quiet", action="store_true")
 parser.add_option("--unixname", help="Unix Username", type=str)
+parser.add_option("--must-change-at-next-login", help="Force password to be changed on next login", action="store_true")
 
 opts, args = parser.parse_args()
 
@@ -57,4 +58,4 @@ creds = credopts.get_credentials(lp)
 
 samdb = sambaopts.get_hostconfig().get_samdb(session_info=system_session(), 
 		                                     credentials=creds)
-samdb.newuser(username, opts.unixname, password)
+samdb.newuser(username, opts.unixname, password, force_password_change_at_next_login=opts.must_change_at_next_login)

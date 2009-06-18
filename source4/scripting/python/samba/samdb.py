@@ -96,6 +96,20 @@ userAccountControl: %u
 """ % (user_dn, userAccountControl)
         self.modify_ldif(mod)
 
+        
+    def force_password_change_at_next_login(self, user_dn):
+        """Force a password change at next login
+        
+        :param user_dn: Dn of the account to force password change on
+        """
+        mod = """
+dn: %s
+changetype: modify
+replace: pwdLastSet
+pwdLastSet: 0
+""" % (user_dn)
+        self.modify_ldif(mod)
+
     def domain_dn(self):
         # find the DNs for the domain and the domain users group
         res = self.search("", scope=ldb.SCOPE_BASE, 
@@ -104,7 +118,7 @@ userAccountControl: %u
         assert(len(res) == 1 and res[0]["defaultNamingContext"] is not None)
         return res[0]["defaultNamingContext"][0]
 
-    def newuser(self, username, unixname, password):
+    def newuser(self, username, unixname, password, force_password_change_at_next_login=False):
         """add a new user record.
         
         :param username: Name of the new user.
@@ -145,6 +159,9 @@ userAccountControl: %u
             except KeyError:
                 pass
 
+            if force_password_change_at_next_login:
+                self.force_password_change_at_next_login(user_dn)
+
             #  modify the userAccountControl to remove the disabled bit
             self.enable_account(user_dn)
         except:
@@ -152,7 +169,7 @@ userAccountControl: %u
             raise
         self.transaction_commit()
 
-    def setpassword(self, filter, password, must_change_at_next_login=False):
+    def setpassword(self, filter, password, force_password_change_at_next_login=False):
         """Set a password on a user record
         
         :param filter: LDAP filter to find the user (eg samccountname=name)
@@ -184,14 +201,8 @@ userPassword:: %s
 
             self.modify_ldif(setpw)
 
-            if must_change_at_next_login:
-                mod = """
-dn: %s
-changetype: modify
-replace: pwdLastSet
-pwdLastSet: 0
-""" % (user_dn)
-                self.modify_ldif(mod)
+            if force_password_change_at_next_login:
+                self.force_password_change_at_next_login(user_dn)
 
             #  modify the userAccountControl to remove the disabled bit
             self.enable_account(user_dn)
