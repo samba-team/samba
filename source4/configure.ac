@@ -78,6 +78,14 @@ SMB_INCLUDED_LIB_PKGCONFIG(LIBLDB, ldb = LDB_REQUIRED_VERSION,
 		SMB_INCLUDE_MK(lib/ldb/ldb_ildap/config.mk)
 		SMB_INCLUDE_MK(lib/ldb/tools/config.mk)
 		define_ldb_modulesdir=no
+		AC_MSG_CHECKING([for Python LDB bindings])
+		if $PYTHON -c "import ldb" 2>/dev/null; then
+			AC_MSG_RESULT(yes)
+		else
+			SMB_INCLUDE_MK(lib/ldb/python.mk) 
+			AC_MSG_RESULT(no)
+		fi
+
 	],
 	[
 		# Here we need to do some tricks
@@ -103,8 +111,8 @@ SMB_INCLUDED_LIB_PKGCONFIG(LIBLDB, ldb = LDB_REQUIRED_VERSION,
 		m4_include(lib/ldb/libldb.m4)
 		SMB_INCLUDE_MK(lib/ldb/config.mk)
 		AC_CONFIG_FILES(lib/ldb/ldb.pc)
+		SMB_INCLUDE_MK(lib/ldb/python.mk) 
 	])
-SMB_INCLUDE_MK(lib/ldb/python.mk) 
 
 m4_include(lib/tls/config.m4)
 m4_include(torture/libnetapi/config.m4)
