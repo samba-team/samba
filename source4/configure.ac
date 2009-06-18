@@ -7,7 +7,7 @@ AC_INIT([samba],[4],[samba-technical@samba.org])
 
 AC_CONFIG_SRCDIR([include/includes.h])
 AC_CONFIG_HEADER(include/config_tmp.h)
-AC_DEFINE(CONFIG_H_IS_FROM_SAMBA,1,[Marker for samba's config.h])
+AC_DEFINE(CONFIG_H_IS_FROM_SAMBA,1,[Marker for samba's config.h.])
 
 # Configuration rules.
 m4_include(build/m4/env.m4)
@@ -103,7 +103,7 @@ SMB_INCLUDED_LIB_PKGCONFIG(LIBLDB, ldb = LDB_REQUIRED_VERSION,
 		m4_include(lib/ldb/libldb.m4)
 		SMB_INCLUDE_MK(lib/ldb/config.mk)
 		AC_CONFIG_FILES(lib/ldb/ldb.pc)
-	], [no])
+	])
 SMB_INCLUDE_MK(lib/ldb/python.mk) 
 
 m4_include(lib/tls/config.m4)
