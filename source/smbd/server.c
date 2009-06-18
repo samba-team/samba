@@ -348,10 +348,6 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 	struct dns_reg_state * dns_reg = NULL;
 	unsigned dns_port = 0;
 
-	if (!is_daemon) {
-		return open_sockets_inetd();
-	}
-
 #ifdef HAVE_ATEXIT
 	{
 		static int atexit_set;
@@ -361,6 +357,17 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 		}
 	}
 #endif
+
+	if (!is_daemon) {
+		/*
+		 * Stop zombies the old way.
+		 * We aren't forking any new
+		 * 'normal' connections when
+		 * run from [x]inetd.
+		 */
+		CatchChild();
+		return open_sockets_inetd();
+	}
 
 	/* Stop zombies */
 	CatchSignal(SIGCLD, sig_cld);
@@ -1198,6 +1205,10 @@ extern void build_options(bool screen);
 	BlockSignals(False, SIGHUP);
 	BlockSignals(False, SIGUSR1);
 	BlockSignals(False, SIGTERM);
+
+        /* Ensure we leave no zombies until we
+	 * correctly set up child handling below. */
+        CatchChild();
 
 	/* we want total control over the permissions on created files,
 	   so set our umask to 0 */
