@@ -842,6 +842,9 @@ static void exit_server_common(enum server_exit_reason how,
 	} else {    
 		DEBUG(3,("Server exit (%s)\n",
 			(reason ? reason : "normal exit")));
+		if (am_parent) {
+			pidfile_unlink();
+		}
 	}
 
 	/* if we had any open SMB connections when we exited then we
