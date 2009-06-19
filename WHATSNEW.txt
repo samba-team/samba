@@ -214,6 +214,8 @@ o   Jeremy Allison <jra@samba.org>
       others.
     * BUG 6476: Fix smbd-zombies in memory when using [x]inetd.
     * BUG 6487: Add missing DFS call in trans2 mkdir call.
+    * BUG 6488: acl_group_override() call in posix acls references an
+      uninitialized variable.
 
 
 o   Günther Deschner <gd@samba.org>
