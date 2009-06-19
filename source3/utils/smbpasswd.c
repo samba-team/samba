@@ -398,6 +398,10 @@ static int process_root(int local_flags)
 
 		if (remote_machine != NULL) {
 			old_passwd = get_pass("Old SMB password:",stdin_passwd_get);
+			if(!old_passwd) {
+				fprintf(stderr, "Unable to get old password.\n");
+				exit(1);
+			}
 		}
 
 		if (!(local_flags & LOCAL_SET_PASSWORD)) {
@@ -478,6 +482,7 @@ static int process_root(int local_flags)
 	}
 
  done:
+	SAFE_FREE(old_passwd);
 	SAFE_FREE(new_passwd);
 	return result;
 }
