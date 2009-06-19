@@ -694,13 +694,13 @@ AC_DEFUN([SMB_CHECK_DMAPI],
     fi
 
     if test x"$samba_dmapi_libs" = x"" ; then
-	AC_CHECK_LIB(xdsm, dm_get_eventlist,
-		[samba_dmapi_libs="-lxdsm"], [])
+        AC_CHECK_LIB(dmapi, dm_get_eventlist,
+                [samba_dmapi_libs="-ldmapi"], [])
     fi
 
     if test x"$samba_dmapi_libs" = x"" ; then
-        AC_CHECK_LIB(dmapi, dm_get_eventlist,
-                [samba_dmapi_libs="-ldmapi"], [])
+	AC_CHECK_LIB(xdsm, dm_get_eventlist,
+		[samba_dmapi_libs="-lxdsm"], [])
     fi
 
 
