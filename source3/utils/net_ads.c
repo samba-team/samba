@@ -904,8 +904,12 @@ static int net_ads_leave(struct net_context *c, int argc, const char **argv)
 	r->in.admin_account	= get_cmdline_auth_info_username(ai);
 	r->in.admin_password	= get_cmdline_auth_info_password(ai);
 	r->in.modify_config	= lp_config_backend_is_registry();
+
+	/* Try to delete it, but if that fails, disable it.  The 
+	   WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE really means "disable */
 	r->in.unjoin_flags	= WKSSVC_JOIN_FLAGS_JOIN_TYPE |
 				  WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE;
+	r->in.delete_machine_account = true;
 
 	werr = libnet_Unjoin(ctx, r);
 	if (!W_ERROR_IS_OK(werr)) {
@@ -915,7 +919,7 @@ static int net_ads_leave(struct net_context *c, int argc, const char **argv)
 		goto done;
 	}
 
-	if (W_ERROR_IS_OK(werr)) {
+	if (r->out.deleted_machine_account) {
 		d_printf("Deleted account for '%s' in realm '%s'\n",
 			r->in.machine_name, r->out.dns_domain_name);
 		goto done;
@@ -929,7 +933,10 @@ static int net_ads_leave(struct net_context *c, int argc, const char **argv)
 		goto done;
 	}
 
-	d_fprintf(stderr, "Failed to disable machine account for '%s' in realm '%s'\n",
+	/* Based on what we requseted, we shouldn't get here, but if
+	   we did, it means the secrets were removed, and therefore
+	   we have left the domain */
+	d_fprintf(stderr, "Machine '%s' Left domain '%s'\n",
 		  r->in.machine_name, r->out.dns_domain_name);
 
  done:

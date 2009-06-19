@@ -53,6 +53,7 @@ interface libnetjoin
 		[in] string admin_password,
 		[in] string machine_password,
 		[in] wkssvc_joinflags unjoin_flags,
+		[in] boolean8 delete_machine_account,
 		[in] boolean8 modify_config,
 		[in] dom_sid *domain_sid,
 		[in] ads_struct *ads,
