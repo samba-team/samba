@@ -64,5 +64,6 @@ struct tldap_message *tldap_rootdse(struct tldap_context *ld);
 bool tldap_entry_has_attrvalue(struct tldap_message *msg,
 			       const char *attribute,
 			       const DATA_BLOB blob);
+bool tldap_supports_control(struct tldap_context *ld, const char *oid);
 
 #endif

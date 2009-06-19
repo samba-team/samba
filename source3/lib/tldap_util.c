@@ -527,3 +527,14 @@ bool tldap_entry_has_attrvalue(struct tldap_message *msg,
 	}
 	return false;
 }
+
+bool tldap_supports_control(struct tldap_context *ld, const char *oid)
+{
+	struct tldap_message *rootdse = tldap_rootdse(ld);
+
+	if (rootdse == NULL) {
+		return false;
+	}
+	return tldap_entry_has_attrvalue(rootdse, "supportedControl",
+					 data_blob_const(oid, strlen(oid)));
+}
