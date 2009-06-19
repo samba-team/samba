@@ -16,14 +16,23 @@ incdir=`dirname $0`
 
 failed=0
 
-testit "talloctort" $VALGRIND $BINDIR/talloctort || \
-    failed=`expr $failed + 1`
+
+if test -x bin/talloctort ; then
+	testit "talloctort" $VALGRIND $BINDIR/talloctort || \
+		failed=`expr $failed + 1`
+else
+	echo "Skipping talloctort"
+fi
 
 testit "replacetort" $VALGRIND $BINDIR/replacetort || \
     failed=`expr $failed + 1`
 
-testit "tdbtorture" $VALGRIND $BINDIR/tdbtorture || \
-    failed=`expr $failed + 1`
+if test -x bin/tdbtorture ; then
+	testit "tdbtorture" $VALGRIND $BINDIR/tdbtorture || \
+		failed=`expr $failed + 1`
+else
+	echo "Skipping tdbtorture"
+fi
 
 testit "smbconftort" $VALGRIND $BINDIR/smbconftort $CONFIGURATION || \
 	failed=`expr $failed + 1`
