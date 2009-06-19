@@ -37,8 +37,8 @@ set -e
 
 onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
-# Restart when done since things are likely to be broken.
-ctdb_test_exit_hook="restart_ctdb"
+# Reset configuration
+ctdb_restart_when_done
 
 try_command_on_node 0 "$CTDB listnodes | wc -l"
 num_nodes="$out"
@@ -100,6 +100,6 @@ else
     exit 1
 fi
 
-echo "OK, that worked... expect a restart..."
+echo "GOOD: That worked..."
 
 ctdb_test_exit

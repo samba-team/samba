@@ -36,6 +36,9 @@ set -e
 
 onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
+# Reset configuration
+ctdb_restart_when_done
+
 test_node=1
 
 echo "Freezing node $test_node"
@@ -44,8 +47,6 @@ try_command_on_node 0 $CTDB freeze -n $test_node
 
 onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status $test_node frozen
 
-echo "That worked!  Restarting cluster to restore configuration..."
-
-restart_ctdb
+echo "GOOD: That worked!"
 
 ctdb_test_exit

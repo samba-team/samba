@@ -31,8 +31,8 @@ set -e
 
 onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
-# Restart when done since things are likely to be broken.
-ctdb_test_exit_hook="restart_ctdb"
+# Reset configuration
+ctdb_restart_when_done
 
 make_temp_db_filename ()
 {
@@ -70,6 +70,6 @@ for i in $(seq 1 5) ; do
     fi
 done
 
-echo "OK, that worked... expect a restart..."
+echo "GOOD: That worked..."
 
 ctdb_test_exit

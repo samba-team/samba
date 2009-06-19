@@ -42,6 +42,9 @@ set -e
 
 onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
+# Reset configuration
+ctdb_restart_when_done
+
 test_node=1
 
 # We need this for later, so we know how long to sleep.
@@ -64,7 +67,7 @@ detected="/tmp/ctdb-test-unhealthy-detected.${test_node}"
 recovered_flag="/tmp/ctdb-test-flag.recovered.${test_node}"
 try_command_on_node $test_node touch "$recovered_flag"
 
-ctdb_test_exit_hook="onnode $test_node rm -vf $trigger; restart_ctdb"
+ctdb_test_exit_hook_add "onnode $test_node rm -vf $trigger"
 
 echo "Creating trigger file on node $test_node to see if it goes unhealthy..."
 try_command_on_node $test_node touch "$trigger"
@@ -96,6 +99,6 @@ onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status $test_node unhealthy $mon
 
 try_command_on_node -v $test_node ls -l "$detected"
 
-echo "OK, that all worked.  Expect a restart..."
+echo "GOOD: That all worked..."
 
 ctdb_test_exit
