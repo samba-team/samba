@@ -531,7 +531,13 @@ static int set_recmode_destructor(struct ctdb_set_recmode_state *state)
 	double l = timeval_elapsed(&state->start_time);
 
 	ctdb_reclock_latency(state->ctdb, "daemon reclock", &state->ctdb->statistics.reclock.ctdbd, l);
-		
+
+	if (state->fd[0] != -1) {
+		state->fd[0] = -1;
+	}
+	if (state->fd[1] != -1) {
+		state->fd[1] = -1;
+	}
 	kill(state->child, SIGKILL);
 	return 0;
 }
@@ -645,6 +651,8 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 	CTDB_NO_MEMORY(ctdb, state);
 
 	state->start_time = timeval_current();
+	state->fd[0] = -1;
+	state->fd[1] = -1;
 
 	if (ctdb->tunable.verify_recovery_lock == 0) {
 		/* dont need to verify the reclock file */
@@ -693,6 +701,7 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 		_exit(0);
 	}
 	close(state->fd[1]);
+	state->fd[1] = -1;
 
 	talloc_set_destructor(state, set_recmode_destructor);
 
