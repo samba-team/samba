@@ -2331,6 +2331,172 @@ static int get_remote_nodemaps(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
+enum reclock_child_status { RECLOCK_CHECKING, RECLOCK_OK, RECLOCK_FAILED, RECLOCK_TIMEOUT};
+struct ctdb_check_reclock_state {
+	struct ctdb_context *ctdb;
+	struct timeval start_time;
+	int fd[2];
+	pid_t child;
+	struct timed_event *te;
+	struct fd_event *fde;
+	enum reclock_child_status status;
+};
+
+/* when we free the reclock state we must kill any child process.
+*/
+static int check_reclock_destructor(struct ctdb_check_reclock_state *state)
+{
+	struct ctdb_context *ctdb = state->ctdb;
+
+	ctdb_ctrl_report_recd_lock_latency(ctdb, CONTROL_TIMEOUT(), timeval_elapsed(&state->start_time));
+
+	if (state->fd[0] != -1) {
+		close(state->fd[0]);
+		state->fd[0] = -1;
+	}
+	if (state->fd[1] != -1) {
+		close(state->fd[1]);
+		state->fd[1] = -1;
+	}
+	kill(state->child, SIGKILL);
+	return 0;
+}
+
+/*
+  called if our check_reclock child times out. this would happen if
+  i/o to the reclock file blocks.
+ */
+static void ctdb_check_reclock_timeout(struct event_context *ev, struct timed_event *te, 
+					 struct timeval t, void *private_data)
+{
+	struct ctdb_check_reclock_state *state = talloc_get_type(private_data, 
+					   struct ctdb_check_reclock_state);
+
+	DEBUG(DEBUG_ERR,(__location__ " check_reclock child process hung/timedout CFS slow to grant locks?\n"));
+	state->status = RECLOCK_TIMEOUT;
+}
+
+/* this is called when the child process has completed checking the reclock
+   file and has written data back to us through the pipe.
+*/
+static void reclock_child_handler(struct event_context *ev, struct fd_event *fde, 
+			     uint16_t flags, void *private_data)
+{
+	struct ctdb_check_reclock_state *state= talloc_get_type(private_data, 
+					     struct ctdb_check_reclock_state);
+	char c = 0;
+	int ret;
+
+	/* we got a response from our child process so we can abort the
+	   timeout.
+	*/
+	talloc_free(state->te);
+	state->te = NULL;
+
+	ret = read(state->fd[0], &c, 1);
+	if (ret != 1 || c != RECLOCK_OK) {
+		DEBUG(DEBUG_ERR,(__location__ " reclock child process returned error %d\n", c));
+		state->status = RECLOCK_FAILED;
+
+		return;
+	}
+
+	state->status = RECLOCK_OK;
+	return;
+}
+
+static int check_recovery_lock(struct ctdb_context *ctdb)
+{
+	int ret;
+	struct ctdb_check_reclock_state *state;
+	pid_t parent = getpid();
+
+	if (ctdb->recovery_lock_fd == -1) {
+		DEBUG(DEBUG_CRIT,("recovery master doesn't have the recovery lock\n"));
+		return -1;
+	}
+
+	state = talloc(ctdb, struct ctdb_check_reclock_state);
+	CTDB_NO_MEMORY(ctdb, state);
+
+	state->ctdb = ctdb;
+	state->start_time = timeval_current();
+	state->status = RECLOCK_CHECKING;
+	state->fd[0] = -1;
+	state->fd[1] = -1;
+
+	ret = pipe(state->fd);
+	if (ret != 0) {
+		talloc_free(state);
+		DEBUG(DEBUG_CRIT,(__location__ " Failed to open pipe for check_reclock child\n"));
+		return -1;
+	}
+
+	state->child = fork();
+	if (state->child == (pid_t)-1) {
+		DEBUG(DEBUG_CRIT,(__location__ " fork() failed in check_reclock child\n"));
+		talloc_free(state);
+		return -1;
+	}
+
+	if (state->child == 0) {
+		char cc = RECLOCK_OK;
+		close(state->fd[0]);
+		state->fd[0] = -1;
+
+		if (pread(ctdb->recovery_lock_fd, &cc, 1, 0) == -1) {
+			DEBUG(DEBUG_CRIT,("failed read from recovery_lock_fd - %s\n", strerror(errno)));
+			cc = RECLOCK_FAILED;
+		}
+
+		write(state->fd[1], &cc, 1);
+		/* make sure we die when our parent dies */
+		while (kill(parent, 0) == 0 || errno != ESRCH) {
+			sleep(5);
+			write(state->fd[1], &cc, 1);
+		}
+		_exit(0);
+	}
+	close(state->fd[1]);
+	state->fd[1] = -1;
+
+	talloc_set_destructor(state, check_reclock_destructor);
+
+	state->te = event_add_timed(ctdb->ev, state, timeval_current_ofs(15, 0),
+				    ctdb_check_reclock_timeout, state);
+	if (state->te == NULL) {
+		DEBUG(DEBUG_CRIT,(__location__ " Failed to create a timed event for reclock child\n"));
+		talloc_free(state);
+		return -1;
+	}
+
+	state->fde = event_add_fd(ctdb->ev, state, state->fd[0],
+				EVENT_FD_READ|EVENT_FD_AUTOCLOSE,
+				reclock_child_handler,
+				(void *)state);
+
+	if (state->fde == NULL) {
+		DEBUG(DEBUG_CRIT,(__location__ " Failed to create an fd event for reclock child\n"));
+		talloc_free(state);
+		return -1;
+	}
+
+	while (state->status == RECLOCK_CHECKING) {
+		event_loop_once(ctdb->ev);
+	}
+
+	if (state->status == RECLOCK_FAILED) {
+		DEBUG(DEBUG_ERR,(__location__ " reclock child failed when checking file\n"));
+		close(ctdb->recovery_lock_fd);
+		ctdb->recovery_lock_fd = -1;
+		talloc_free(state);
+		return -1;
+	}
+
+	talloc_free(state);
+	return 0;
+}
+
 /*
   the main monitoring loop
  */
@@ -2346,7 +2512,6 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	int32_t debug_level;
 	int i, j, ret;
 	struct ctdb_recoverd *rec;
-	char c;
 
 	DEBUG(DEBUG_NOTICE,("monitor_cluster starting\n"));
 
@@ -2663,20 +2828,12 @@ again:
 
 
 	/* we should have the reclock - check its not stale */
-	if (ctdb->recovery_lock_fd == -1) {
-		DEBUG(DEBUG_CRIT,("recovery master doesn't have the recovery lock\n"));
+	ret = check_recovery_lock(ctdb);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed check_recovery_lock. Force a recovery\n"));
 		do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap, ctdb->pnn);
 		goto again;
 	}
-
-	if (pread(ctdb->recovery_lock_fd, &c, 1, 0) == -1) {
-		DEBUG(DEBUG_CRIT,("failed read from recovery_lock_fd - %s\n", strerror(errno)));
-		close(ctdb->recovery_lock_fd);
-		ctdb->recovery_lock_fd = -1;
-		do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap, ctdb->pnn);
-		goto again;
-	}
-
 
 	/* get the nodemap for all active remote nodes
 	 */
