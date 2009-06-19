@@ -38,6 +38,9 @@ set -e
 
 onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
+# Reset configuration
+ctdb_restart_when_done
+
 var="RecoverTimeout"
 
 try_command_on_node -v 0 $CTDB getvar $var
@@ -67,8 +70,7 @@ try_command_on_node -v 0 "$CTDB listvars | grep '^$var'"
 check="${out#*= }"
 
 if [ "$incr" != "$check" ] ; then
-    echo "Nope, that didn't work.  Restarting ctdb to get back into known state..."
-    restart_ctdb
+    echo "Nope, that didn't work..."
     exit 1
 fi
 

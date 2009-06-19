@@ -64,8 +64,6 @@ for i in ip disable enable "ban 0" unban listvars ; do
     fi
 done
 
-echo "That all looks OK.  Restarting cluster..."
-
-restart_ctdb
+echo "OK, that all worked.  Expect a restart..."
 
 ctdb_test_exit

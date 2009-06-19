@@ -57,7 +57,7 @@ detected="/tmp/ctdb-test-unhealthy-detected.${test_node}"
 recovered_flag="/tmp/ctdb-test-flag.recovered.${test_node}"
 try_command_on_node $test_node touch "$recovered_flag"
 
-ctdb_test_exit_hook="onnode $test_node rm -vf $trigger"
+ctdb_test_exit_hook_add "onnode $test_node rm -vf $trigger"
 
 echo "Creating trigger file on node $test_node to make it unhealthy..."
 try_command_on_node $test_node touch "$trigger"

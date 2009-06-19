@@ -591,6 +591,10 @@ setup_ctdb ()
 
 restart_ctdb ()
 {
+    if [ "$1" = "-v" ] ; then
+	echo "Restarting CTDB (scheduled)..."
+    fi
+    
     if [ -n "$CTDB_NODES_SOCKETS" ] ; then
 	daemons_stop
 	daemons_start $CTDB_TEST_NUM_DAEMONS
@@ -614,6 +618,13 @@ restart_ctdb ()
 
     echo "ctdb is ready"
 }
+
+ctdb_restart_when_done ()
+{
+    ctdb_test_exit_hook_add restart_ctdb -v
+}
+
+
 
 #######################################
 
