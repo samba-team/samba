@@ -458,6 +458,10 @@ static const struct stream_server_ops ldap_stream_nonpriv_ops = {
 /* The feature removed behind an #ifdef until we can do it properly
  * with an EXTERNAL bind. */
 
+#ifdef DEVELOPER
+#define WITH_LDAPI_PRIV_SOCKET
+#endif
+
 #ifdef WITH_LDAPI_PRIV_SOCKET
 static void ldapsrv_accept_priv(struct stream_connection *c)
 {
