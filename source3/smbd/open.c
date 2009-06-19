@@ -1463,6 +1463,12 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		DEBUG(10, ("open_file_ntcreate: printer open fname=%s\n",
 			   smb_fname_str_dbg(smb_fname)));
 
+		if (!req) {
+			DEBUG(0,("open_file_ntcreate: printer open without "
+				"an SMB request!\n"));
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+
 		return print_fsp_open(req, conn, fname, req->vuid, fsp,
 				      &smb_fname->st);
 	}
