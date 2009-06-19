@@ -45,6 +45,8 @@ struct tldap_mod {
 	DATA_BLOB *values;
 };
 
+bool tevent_req_is_ldap_error(struct tevent_req *req, int *perr);
+
 struct tldap_context *tldap_context_create(TALLOC_CTX *mem_ctx, int fd);
 bool tldap_context_setattr(struct tldap_context *ld,
 			   const char *name, const void *pptr);

@@ -19,7 +19,7 @@
 
 #include "includes.h"
 
-static bool tevent_req_is_ldap_error(struct tevent_req *req, int *perr)
+bool tevent_req_is_ldap_error(struct tevent_req *req, int *perr)
 {
 	enum tevent_req_state state;
 	uint64_t err;
