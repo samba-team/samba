@@ -708,6 +708,10 @@ static int new_user(const char *username, const char *fullname,
 
 	pwd1 = get_pass( "new password:", stdin_get);
 	pwd2 = get_pass( "retype new password:", stdin_get);
+	if (!pwd1 || !pwd2) {
+		fprintf(stderr, "Failed to read passwords.\n");
+		return -1;
+	}
 	ret = strcmp(pwd1, pwd2);
 	if (ret != 0) {
 		fprintf (stderr, "Passwords do not match!\n");
