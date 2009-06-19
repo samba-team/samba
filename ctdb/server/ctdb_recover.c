@@ -696,13 +696,14 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 
 	talloc_set_destructor(state, set_recmode_destructor);
 
-	state->te = event_add_timed(ctdb->ev, state, timeval_current_ofs(15, 0),
+	state->te = event_add_timed(ctdb->ev, state, timeval_current_ofs(5, 0),
 				    ctdb_set_recmode_timeout, state);
 
 	state->fde = event_add_fd(ctdb->ev, state, state->fd[0],
 				EVENT_FD_READ|EVENT_FD_AUTOCLOSE,
 				set_recmode_handler,
 				(void *)state);
+
 	if (state->fde == NULL) {
 		talloc_free(state);
 		return -1;
