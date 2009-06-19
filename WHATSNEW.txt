@@ -212,10 +212,13 @@ Changes since 3.4.0pre2
 o   Jeremy Allison <jra@samba.org>
     * BUG 6297: Owner of sticky directory cannot delete files created by
       others.
+    * BUG 6476: Fix smbd-zombies in memory when using [x]inetd.
 
 
 o   Günther Deschner <gd@samba.org>
     * BUG 5456: Fix "net ads testjoin".
+    * BUG 6253: Use correct value for password expiry calculation in
+      pam_winbind.
     * BUG 6305: Correctly prompt for a password when a username was given.
     * BUG 6451: net/libnetapi user rename using wrong access bits.
     * BUG 6458: Fix uninitialized variable in local_password_change().
@@ -226,6 +229,11 @@ o   Volker Lendecke <vl@samba.org>
     * BUG 6449: 'net rap user add' crashes without -C option.
 
 
+o   David Markey <admin@dmarkey.com>
+    * BUG 6328: Add support for multiple rights to
+      "net sam rights grant/revoke".
+
+
 o   Andreas Schneider <mail@cynapses.org>
     * Improve pam_winbind documentation.
 
@@ -233,6 +241,10 @@ o   Andreas Schneider <mail@cynapses.org>
 o   Simo Sorce <idra@samba.org>
     * BUG 6081: Make it possible to change machine account sids.
     * BUG 6333: Consolidate create/delete account paths in pdbedit.
+
+
+o   Jelmer Vernooij <jelmer@samba.org>
+    * Remove outdated Debian package sources.
 
 
 Changes since 3.4.0pre1
