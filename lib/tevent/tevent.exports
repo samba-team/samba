@@ -21,6 +21,7 @@
            tevent_queue_length;
            tevent_queue_start;
            tevent_queue_stop;
+           tevent_register_backend;
            _tevent_req_callback_data;
            _tevent_req_create;
            _tevent_req_data;
