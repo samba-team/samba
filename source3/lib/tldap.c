@@ -1195,7 +1195,7 @@ int tldap_search_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	*pmsg = state->result;
+	*pmsg = talloc_move(mem_ctx, &state->result);
 	return TLDAP_SUCCESS;
 }
 
