@@ -780,6 +780,16 @@ bool asn1_blob(const struct asn1_data *asn1, DATA_BLOB *blob)
 }
 
 /*
+  Fill in an asn1 struct without making a copy
+*/
+void asn1_load_nocopy(struct asn1_data *data, uint8_t *buf, size_t len)
+{
+	ZERO_STRUCTP(data);
+	data->data = buf;
+	data->length = len;
+}
+
+/*
   check if a ASN.1 blob is a full tag
 */
 NTSTATUS asn1_full_tag(DATA_BLOB blob, uint8_t tag, size_t *packet_size)

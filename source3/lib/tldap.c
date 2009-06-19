@@ -318,13 +318,6 @@ static ssize_t read_ldap_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	return talloc_get_size(*pbuf);
 }
 
-static void asn1_load_nocopy(struct asn1_data *data, uint8_t *buf, size_t len)
-{
-	ZERO_STRUCTP(data);
-	data->data = buf;
-	data->length = len;
-}
-
 struct tldap_msg_state {
 	struct tldap_context *ld;
 	struct tevent_context *ev;
