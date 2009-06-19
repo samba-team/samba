@@ -3094,7 +3094,9 @@ static void recd_sig_child_handler(struct event_context *ev,
 	while (pid != 0) {
 		pid = waitpid(-1, &status, WNOHANG);
 		if (pid == -1) {
-			DEBUG(DEBUG_ERR, (__location__ " waitpid() returned error. errno:%d\n", errno));
+			if (errno != ECHILD) {
+				DEBUG(DEBUG_ERR, (__location__ " waitpid() returned error. errno:%s(%d)\n", strerror(errno),errno));
+			}
 			return;
 		}
 		if (pid > 0) {
