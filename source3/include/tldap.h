@@ -46,6 +46,9 @@ struct tldap_mod {
 };
 
 struct tldap_context *tldap_context_create(TALLOC_CTX *mem_ctx, int fd);
+bool tldap_context_setattr(struct tldap_context *ld,
+			   const char *name, const void *pptr);
+void *tldap_context_getattr(struct tldap_context *ld, const char *name);
 
 struct tevent_req *tldap_sasl_bind_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,

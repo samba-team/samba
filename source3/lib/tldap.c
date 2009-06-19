@@ -44,6 +44,11 @@ static bool tevent_req_is_ldap_error(struct tevent_req *req, int *perr)
 	return true;
 }
 
+struct tldap_ctx_attribute {
+	char *name;
+	void *ptr;
+};
+
 struct tldap_context {
 	int ld_version;
 	int ld_deref;
@@ -64,6 +69,8 @@ struct tldap_context {
 	void (*log_fn)(void *context, enum tldap_debug_level level,
 		       const char *fmt, va_list ap);
 	void *log_private;
+
+	struct tldap_ctx_attribute *ctx_attrs;
 };
 
 struct tldap_message {
@@ -132,6 +139,77 @@ struct tldap_context *tldap_context_create(TALLOC_CTX *mem_ctx, int fd)
 		return NULL;
 	}
 	return ctx;
+}
+
+static struct tldap_ctx_attribute *tldap_context_findattr(
+	struct tldap_context *ld, const char *name)
+{
+	int i, num_attrs;
+
+	num_attrs = talloc_array_length(ld->ctx_attrs);
+
+	for (i=0; i<num_attrs; i++) {
+		if (strcmp(ld->ctx_attrs[i].name, name) == 0) {
+			return &ld->ctx_attrs[i];
+		}
+	}
+	return NULL;
+}
+
+bool tldap_context_setattr(struct tldap_context *ld,
+			   const char *name, const void *_pptr)
+{
+	struct tldap_ctx_attribute *tmp, *attr;
+	char *tmpname;
+	int num_attrs;
+	void **pptr = (void **)_pptr;
+
+	attr = tldap_context_findattr(ld, name);
+	if (attr != NULL) {
+		/*
+		 * We don't actually delete attrs, we don't expect tons of
+		 * attributes being shuffled around.
+		 */
+		TALLOC_FREE(attr->ptr);
+		if (*pptr != NULL) {
+			attr->ptr = talloc_move(ld->ctx_attrs, pptr);
+			*pptr = NULL;
+		}
+		return true;
+	}
+
+	tmpname = talloc_strdup(ld, name);
+	if (tmpname == NULL) {
+		return false;
+	}
+
+	num_attrs = talloc_array_length(ld->ctx_attrs);
+
+	tmp = talloc_realloc(ld, ld->ctx_attrs, struct tldap_ctx_attribute,
+			     num_attrs+1);
+	if (tmp == NULL) {
+		TALLOC_FREE(tmpname);
+		return false;
+	}
+	tmp[num_attrs].name = talloc_move(tmp, &tmpname);
+	if (*pptr != NULL) {
+		tmp[num_attrs].ptr = talloc_move(tmp, pptr);
+	} else {
+		tmp[num_attrs].ptr = NULL;
+	}
+	*pptr = NULL;
+	ld->ctx_attrs = tmp;
+	return true;
+}
+
+void *tldap_context_getattr(struct tldap_context *ld, const char *name)
+{
+	struct tldap_ctx_attribute *attr = tldap_context_findattr(ld, name);
+
+	if (attr == NULL) {
+		return NULL;
+	}
+	return attr->ptr;
 }
 
 struct read_ldap_state {
