@@ -124,6 +124,23 @@ class BasicTests(unittest.TestCase):
         ldb.delete("cn=parentguidtest,cn=testotherusers," + self.base_dn)
         ldb.delete("cn=testotherusers," + self.base_dn)
 
+    def test_groupType(self):
+        """Test groupType behaviour 
+        (should appear to be casted to a 32 bit signed integer before comparsion)"""
+        print "Testing groupType behaviour\n"
+        
+        res1 = ldb.search(base=self.base_dn, scope=SCOPE_SUBTREE,
+                          attrs=["groupType"], expression="groupType=2147483650");
+
+        res2 = ldb.search(base=self.base_dn, scope=SCOPE_SUBTREE,
+                          attrs=["groupType"], expression="groupType=-2147483646");
+
+        self.assertEquals(len(res1), len(res2))
+
+        self.assertTrue(res1.count > 0)
+
+        self.assertEquals(res1[0]["groupType"][0], "-2147483646")
+
     def test_all(self):
         """Basic tests"""
 
