@@ -6372,7 +6372,7 @@ NTSTATUS create_synthetic_smb_fname_split(TALLOC_CTX *ctx,
 					  const char *fname,
 					  SMB_STRUCT_STAT *psbuf,
 					  struct smb_filename **smb_fname_out);
-char *smb_fname_str_dbg(const struct smb_filename *smb_fname);
+const char *smb_fname_str_dbg(const struct smb_filename *smb_fname);
 NTSTATUS copy_smb_filename(TALLOC_CTX *ctx,
 			   const struct smb_filename *smb_fname_in,
 			   struct smb_filename **smb_fname_out);

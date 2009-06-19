@@ -164,14 +164,17 @@ NTSTATUS create_synthetic_smb_fname_split(TALLOC_CTX *ctx,
 /**
  * Return a string using the debug_ctx()
  */
-char *smb_fname_str_dbg(const struct smb_filename *smb_fname)
+const char *smb_fname_str_dbg(const struct smb_filename *smb_fname)
 {
 	char *fname = NULL;
 	NTSTATUS status;
 
+	if (smb_fname == NULL) {
+		return "";
+	}
 	status = get_full_smb_filename(debug_ctx(), smb_fname, &fname);
 	if (!NT_STATUS_IS_OK(status)) {
-		fname = talloc_strdup(debug_ctx(), "");
+		return "";
 	}
 	return fname;
 }
