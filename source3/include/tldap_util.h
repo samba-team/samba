@@ -61,4 +61,8 @@ int tldap_fetch_rootdse_recv(struct tevent_req *req);
 int tldap_fetch_rootdse(struct tldap_context *ld);
 struct tldap_message *tldap_rootdse(struct tldap_context *ld);
 
+bool tldap_entry_has_attrvalue(struct tldap_message *msg,
+			       const char *attribute,
+			       const DATA_BLOB blob);
+
 #endif

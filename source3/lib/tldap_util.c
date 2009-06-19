@@ -509,3 +509,21 @@ struct tldap_message *tldap_rootdse(struct tldap_context *ld)
 	return talloc_get_type(tldap_context_getattr(ld, "tldap:rootdse"),
 			       struct tldap_message);
 }
+
+bool tldap_entry_has_attrvalue(struct tldap_message *msg,
+			       const char *attribute,
+			       const DATA_BLOB blob)
+{
+	int i, num_values;
+	DATA_BLOB *values;
+
+	if (!tldap_entry_values(msg, attribute, &num_values, &values)) {
+		return false;
+	}
+	for (i=0; i<num_values; i++) {
+		if (data_blob_cmp(&values[i], &blob) == 0) {
+			return true;
+		}
+	}
+	return false;
+}
