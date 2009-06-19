@@ -130,54 +130,6 @@ struct tevent_req {
 	} internal;
 };
 
-struct tevent_ops {
-	/* conntext init */
-	int (*context_init)(struct tevent_context *ev);
-
-	/* fd_event functions */
-	struct tevent_fd *(*add_fd)(struct tevent_context *ev,
-				    TALLOC_CTX *mem_ctx,
-				    int fd, uint16_t flags,
-				    tevent_fd_handler_t handler,
-				    void *private_data,
-				    const char *handler_name,
-				    const char *location);
-	void (*set_fd_close_fn)(struct tevent_fd *fde,
-				tevent_fd_close_fn_t close_fn);
-	uint16_t (*get_fd_flags)(struct tevent_fd *fde);
-	void (*set_fd_flags)(struct tevent_fd *fde, uint16_t flags);
-
-	/* timed_event functions */
-	struct tevent_timer *(*add_timer)(struct tevent_context *ev,
-					  TALLOC_CTX *mem_ctx,
-					  struct timeval next_event,
-					  tevent_timer_handler_t handler,
-					  void *private_data,
-					  const char *handler_name,
-					  const char *location);
-
-	/* immediate event functions */
-	void (*schedule_immediate)(struct tevent_immediate *im,
-				   struct tevent_context *ev,
-				   tevent_immediate_handler_t handler,
-				   void *private_data,
-				   const char *handler_name,
-				   const char *location);
-
-	/* signal functions */
-	struct tevent_signal *(*add_signal)(struct tevent_context *ev,
-					    TALLOC_CTX *mem_ctx,
-					    int signum, int sa_flags,
-					    tevent_signal_handler_t handler,
-					    void *private_data,
-					    const char *handler_name,
-					    const char *location);
-
-	/* loop functions */
-	int (*loop_once)(struct tevent_context *ev, const char *location);
-	int (*loop_wait)(struct tevent_context *ev, const char *location);
-};
-
 struct tevent_fd {
 	struct tevent_fd *prev, *next;
 	struct tevent_context *event_ctx;
@@ -282,8 +234,6 @@ struct tevent_context {
 	} nesting;
 };
 
-
-bool tevent_register_backend(const char *name, const struct tevent_ops *ops);
 
 int tevent_common_context_destructor(struct tevent_context *ev);
 int tevent_common_loop_wait(struct tevent_context *ev,
