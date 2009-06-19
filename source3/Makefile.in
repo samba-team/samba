@@ -83,6 +83,11 @@ LIBLUA_LIBS=@LIBLUA_LIBS@
 LIBSMBCLIENT_LIBS=@LIBSMBCLIENT_LIBS@
 LIBSMBSHAREMODES_LIBS=@LIBSMBSHAREMODES_LIBS@
 
+TDBBACKUP = @TDBBACKUP@
+TDBTOOL = @TDBTOOL@
+TDBDUMP = @TDBDUMP@
+TDBTORTURE = @TDBTORTURE@
+
 INSTALLCMD=@INSTALL@
 INSTALLLIBCMD_SH=@INSTALLLIBCMD_SH@
 INSTALLLIBCMD_A=@INSTALLLIBCMD_A@
@@ -201,9 +206,9 @@ ROOT_SBIN_PROGS = @CIFSMOUNT_PROGS@
 
 BIN_PROGS1 = bin/smbclient@EXEEXT@ bin/net@EXEEXT@ bin/smbspool@EXEEXT@ \
 	bin/testparm@EXEEXT@ bin/smbstatus@EXEEXT@ bin/smbget@EXEEXT@
-BIN_PROGS2 = bin/smbcontrol@EXEEXT@ bin/smbtree@EXEEXT@ bin/tdbbackup@EXEEXT@ \
-	bin/nmblookup@EXEEXT@ bin/pdbedit@EXEEXT@ bin/tdbdump@EXEEXT@ \
-	bin/tdbtool@EXEEXT@
+BIN_PROGS2 = bin/smbcontrol@EXEEXT@ bin/smbtree@EXEEXT@ $(TDBBACKUP) \
+	bin/nmblookup@EXEEXT@ bin/pdbedit@EXEEXT@ $(TDBDUMP) \
+	$(TDBTOOL)
 BIN_PROGS3 = bin/smbpasswd@EXEEXT@ bin/rpcclient@EXEEXT@ bin/smbcacls@EXEEXT@ \
 	bin/profiles@EXEEXT@ bin/ntlm_auth@EXEEXT@ bin/sharesec@EXEEXT@ \
 	bin/smbcquotas@EXEEXT@ bin/eventlogadm@EXEEXT@
@@ -214,7 +219,7 @@ TORTURE_PROGS = bin/smbtorture@EXEEXT@ bin/msgtest@EXEEXT@ \
 	bin/masktest@EXEEXT@ bin/locktest@EXEEXT@ \
 	bin/locktest2@EXEEXT@ bin/nsstest@EXEEXT@ bin/vfstest@EXEEXT@ \
 	bin/pdbtest@EXEEXT@ bin/talloctort@EXEEXT@ bin/replacetort@EXEEXT@ \
-	bin/tdbtorture@EXEEXT@ \
+	$(TDBTORTURE) \
 	bin/smbconftort@EXEEXT@ bin/vlp@EXEEXT@
 
 BIN_PROGS = @EXTRA_BIN_PROGS@ \
