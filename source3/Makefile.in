@@ -83,6 +83,8 @@ LIBLUA_LIBS=@LIBLUA_LIBS@
 LIBSMBCLIENT_LIBS=@LIBSMBCLIENT_LIBS@
 LIBSMBSHAREMODES_LIBS=@LIBSMBSHAREMODES_LIBS@
 
+TALLOCTORT = @TALLOCTORT@
+
 TDBBACKUP = @TDBBACKUP@
 TDBTOOL = @TDBTOOL@
 TDBDUMP = @TDBDUMP@
@@ -218,7 +220,7 @@ BIN_PROGS4 = bin/ldbedit@EXEEXT@ bin/ldbsearch@EXEEXT@ bin/ldbadd@EXEEXT@ \
 TORTURE_PROGS = bin/smbtorture@EXEEXT@ bin/msgtest@EXEEXT@ \
 	bin/masktest@EXEEXT@ bin/locktest@EXEEXT@ \
 	bin/locktest2@EXEEXT@ bin/nsstest@EXEEXT@ bin/vfstest@EXEEXT@ \
-	bin/pdbtest@EXEEXT@ bin/talloctort@EXEEXT@ bin/replacetort@EXEEXT@ \
+	bin/pdbtest@EXEEXT@ $(TALLOCTORT) bin/replacetort@EXEEXT@ \
 	$(TDBTORTURE) \
 	bin/smbconftort@EXEEXT@ bin/vlp@EXEEXT@
 
@@ -226,7 +228,7 @@ BIN_PROGS = @EXTRA_BIN_PROGS@ \
 	$(BIN_PROGS1) $(BIN_PROGS2) $(BIN_PROGS3) $(BIN_PROGS4) 
 
 EVERYTHING_PROGS = bin/debug2html@EXEEXT@ bin/smbfilter@EXEEXT@ \
-	bin/talloctort@EXEEXT@ bin/replacetort@EXEEXT@ \
+	$(TALLOCTORT) bin/replacetort@EXEEXT@ \
 	bin/log2pcap@EXEEXT@ \
 	bin/vlp@EXEEXT@ bin/smbiconv@EXEEXT@ \
 	bin/dbwrap_tool@EXEEXT@
@@ -1292,7 +1294,7 @@ eventlogadm: SHOWFLAGS bin/eventlogadm@EXEEXT@
 
 sharesec: SHOWFLAGS bin/sharesec@EXEEXT@
 
-talloctort : SHOWFLAGS bin/talloctort@EXEEXT@
+talloctort : SHOWFLAGS $(TALLOCTORT)
 
 replacetort : SHOWFLAGS bin/replacetort@EXEEXT@
 
