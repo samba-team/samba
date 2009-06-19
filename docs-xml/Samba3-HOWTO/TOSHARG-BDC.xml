@@ -564,7 +564,7 @@ The creation of a BDC requires some steps to prepare the Samba server before
 	stored in the file <filename>private/MACHINE.SID</filename>.  For all versions of Samba released since 2.2.5
 	the domain SID is stored in the file <filename>private/secrets.tdb</filename>. This file is unique to each
 	server and cannot be copied from a PDC to a BDC; the BDC will generate a new SID at startup. It will overwrite
-	the PDC domain SID with the newly created BDC SID.  There is a procedure that will allow the BDC to aquire the
+	the PDC domain SID with the newly created BDC SID.  There is a procedure that will allow the BDC to acquire the
 	domain SID. This is described here.
 	</para>
 
