@@ -241,13 +241,13 @@ get_nodes ()
 
 fakessh ()
 {
-    CTDB_SOCKET="$1" sh -c "$2"
+    CTDB_SOCKET="$1" sh -c "$2" 3>/dev/null
 }
 
 stdout_filter ()
 {
     if [ -n "$prefix" ] ; then
-	cat >"${prefix}.${n}"
+	cat >"${prefix}.${n//\//_}"
     elif $verbose && $parallel ; then
 	sed -e "s@^@[$n] @"
     else
