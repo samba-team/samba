@@ -93,6 +93,7 @@ bool asn1_read_Integer(struct asn1_data *data, int *i);
 bool asn1_read_enumerated(struct asn1_data *data, int *v);
 bool asn1_check_enumerated(struct asn1_data *data, int v);
 bool asn1_write_enumerated(struct asn1_data *data, uint8_t v);
+bool asn1_blob(const struct asn1_data *asn1, DATA_BLOB *blob);
 NTSTATUS asn1_full_tag(DATA_BLOB blob, uint8_t tag, size_t *packet_size);
 
 #endif /* _ASN_1_H */

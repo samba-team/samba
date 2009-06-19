@@ -318,19 +318,6 @@ static ssize_t read_ldap_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	return talloc_get_size(*pbuf);
 }
 
-static bool asn1_blob(const struct asn1_data *asn1, DATA_BLOB *blob)
-{
-	if (asn1->has_error) {
-		return false;
-	}
-	if (asn1->nesting != NULL) {
-		return false;
-	}
-	blob->data = asn1->data;
-	blob->length = asn1->length;
-	return true;
-}
-
 static void asn1_load_nocopy(struct asn1_data *data, uint8_t *buf, size_t len)
 {
 	ZERO_STRUCTP(data);

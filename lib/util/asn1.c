@@ -764,6 +764,22 @@ bool asn1_write_enumerated(struct asn1_data *data, uint8_t v)
 }
 
 /*
+  Get us the data just written without copying
+*/
+bool asn1_blob(const struct asn1_data *asn1, DATA_BLOB *blob)
+{
+	if (asn1->has_error) {
+		return false;
+	}
+	if (asn1->nesting != NULL) {
+		return false;
+	}
+	blob->data = asn1->data;
+	blob->length = asn1->length;
+	return true;
+}
+
+/*
   check if a ASN.1 blob is a full tag
 */
 NTSTATUS asn1_full_tag(DATA_BLOB blob, uint8_t tag, size_t *packet_size)
