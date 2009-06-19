@@ -5585,6 +5585,41 @@ static bool run_shortname_test(int dummy)
 	return correct;
 }
 
+static bool run_tldap(int dummy)
+{
+	struct tldap_context *ld;
+	int fd, rc;
+	NTSTATUS status;
+	struct sockaddr_storage addr;
+
+	if (!resolve_name(host, &addr, 0)) {
+		d_printf("could not find host %s\n", host);
+		return false;
+	}
+	status = open_socket_out(&addr, 389, 9999, &fd);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("open_socket_out failed: %s\n", nt_errstr(status));
+		return false;
+	}
+
+	ld = tldap_context_create(talloc_tos(), fd);
+	if (ld == NULL) {
+		close(fd);
+		d_printf("tldap_context_create failed\n");
+		return false;
+	}
+
+	rc = tldap_fetch_rootdse(ld);
+	if (rc != TLDAP_SUCCESS) {
+		d_printf("tldap_fetch_rootdse failed: %s\n",
+			 tldap_errstr(talloc_tos(), ld, rc));
+		return false;
+	}
+
+	TALLOC_FREE(ld);
+	return true;
+}
+
 static bool run_local_substitute(int dummy)
 {
 	bool ok = true;
@@ -6250,6 +6285,7 @@ static struct {
 	{ "WINDOWS-WRITE", run_windows_write, 0},
 	{ "CLI_ECHO", run_cli_echo, 0},
 	{ "GETADDRINFO", run_getaddrinfo_send, 0},
+	{ "TLDAP", run_tldap },
 	{ "LOCAL-SUBSTITUTE", run_local_substitute, 0},
 	{ "LOCAL-GENCACHE", run_local_gencache, 0},
 	{ "LOCAL-RBTREE", run_local_rbtree, 0},

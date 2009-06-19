@@ -1005,7 +1005,7 @@ NMBLOOKUP_OBJ = utils/nmblookup.o $(PARAM_OBJ) $(LIBNMB_OBJ) \
 SMBTORTURE_OBJ1 = torture/torture.o torture/nbio.o torture/scanner.o torture/utable.o \
 		torture/denytest.o torture/mangle_test.o
 
-SMBTORTURE_OBJ = $(SMBTORTURE_OBJ1) $(PARAM_OBJ) \
+SMBTORTURE_OBJ = $(SMBTORTURE_OBJ1) $(PARAM_OBJ) $(TLDAP_OBJ) \
 	$(LIBSMB_OBJ) $(LDB_OBJ) $(KRBCLIENT_OBJ) $(LIB_NONSMBD_OBJ) \
 	@LIBWBCLIENT_STATIC@ \
 	$(LIBNDR_GEN_OBJ0)
