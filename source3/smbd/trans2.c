@@ -7159,6 +7159,21 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 
 	DEBUG(3,("call_trans2mkdir : name = %s\n", directory));
 
+	status = resolve_dfspath(ctx,
+				conn,
+				req->flags2 & FLAGS2_DFS_PATHNAMES,
+				directory,
+				&directory);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
+			reply_botherror(req,
+					NT_STATUS_PATH_NOT_COVERED,
+					ERRSRV, ERRbadpath);
+		}
+		reply_nterror(req, status);
+		return;
+	}
+
 	status = unix_convert(ctx, conn, directory, False, &directory, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
