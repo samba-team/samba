@@ -213,6 +213,7 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 6297: Owner of sticky directory cannot delete files created by
       others.
     * BUG 6476: Fix smbd-zombies in memory when using [x]inetd.
+    * BUG 6487: Add missing DFS call in trans2 mkdir call.
 
 
 o   Günther Deschner <gd@samba.org>
@@ -226,6 +227,7 @@ o   Günther Deschner <gd@samba.org>
 
 
 o   Volker Lendecke <vl@samba.org>
+    * BUG 4699: Remove pidfile on clean shutdown.
     * BUG 6449: 'net rap user add' crashes without -C option.
 
 
