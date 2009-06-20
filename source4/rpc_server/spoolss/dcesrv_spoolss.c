@@ -575,11 +575,6 @@ static WERROR dcesrv_spoolss_GetPrinterData(struct dcesrv_call_state *dce_call, 
 	WERROR status;
 	struct smb_iconv_convenience *ic = lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx);
 
-	DCESRV_PULL_HANDLE_WERR(h, r->in.handle, DCESRV_HANDLE_ANY);
-	handle = talloc_get_type(h->data, struct ntptr_GenericHandle);
-	if (!handle)
-		return WERR_BADFID;
-
 	r->out.type = talloc_zero(mem_ctx, enum winreg_Type);
 	W_ERROR_HAVE_NO_MEMORY(r->out.type);
 
@@ -588,6 +583,11 @@ static WERROR dcesrv_spoolss_GetPrinterData(struct dcesrv_call_state *dce_call, 
 
 	r->out.data = talloc_zero(mem_ctx, union spoolss_PrinterData);
 	W_ERROR_HAVE_NO_MEMORY(r->out.data);
+
+	DCESRV_PULL_HANDLE_WERR(h, r->in.handle, DCESRV_HANDLE_ANY);
+	handle = talloc_get_type(h->data, struct ntptr_GenericHandle);
+	if (!handle)
+		return WERR_BADFID;
 
 	switch (handle->type) {
 		case NTPTR_HANDLE_SERVER:
