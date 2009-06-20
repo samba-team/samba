@@ -1666,6 +1666,7 @@ static int do_put(const char *rname, const char *lname, bool reput)
 		if (f && reput) {
 			if (x_tseek(f, start, SEEK_SET) == -1) {
 				d_printf("Error seeking local file\n");
+				x_fclose(f);
 				return 1;
 			}
 		}
@@ -1692,7 +1693,9 @@ static int do_put(const char *rname, const char *lname, bool reput)
 
 	if (!NT_STATUS_IS_OK(cli_close(targetcli, fnum))) {
 		d_printf("%s closing remote file %s\n",cli_errstr(cli),rname);
-		x_fclose(f);
+		if (f != x_stdin) {
+			x_fclose(f);
+		}
 		return 1;
 	}
 
