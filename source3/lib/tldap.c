@@ -1496,7 +1496,6 @@ struct tevent_req *tldap_add_send(TALLOC_CTX *mem_ctx,
 	}
 	tevent_req_set_callback(subreq, tldap_add_done, req);
 	return req;
-
 }
 
 static void tldap_add_done(struct tevent_req *subreq)
@@ -1593,7 +1592,6 @@ struct tevent_req *tldap_modify_send(TALLOC_CTX *mem_ctx,
 	}
 	tevent_req_set_callback(subreq, tldap_modify_done, req);
 	return req;
-
 }
 
 static void tldap_modify_done(struct tevent_req *subreq)
@@ -1667,7 +1665,6 @@ struct tevent_req *tldap_delete_send(TALLOC_CTX *mem_ctx,
 	}
 	tevent_req_set_callback(subreq, tldap_delete_done, req);
 	return req;
-
 }
 
 static void tldap_delete_done(struct tevent_req *subreq)
