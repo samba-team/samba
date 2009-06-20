@@ -1342,14 +1342,12 @@ static int cups_queue_get(const char *sharename,
 	if ((response = cupsDoRequest(http, request, "/")) == NULL) {
 		DEBUG(0,("Unable to get printer status for %s - %s\n", printername,
 			 ippErrorString(cupsLastError())));
-		*q = queue;
 		goto out;
 	}
 
 	if (response->request.status.status_code >= IPP_OK_CONFLICT) {
 		DEBUG(0,("Unable to get printer status for %s - %s\n", printername,
 			 ippErrorString(response->request.status.status_code)));
-		*q = queue;
 		goto out;
 	}
 
@@ -1377,13 +1375,14 @@ static int cups_queue_get(const char *sharename,
 	        fstrcpy(status->message, msg);
 	}
 
+ out:
+
        /*
         * Return the job queue...
 	*/
 
 	*q = queue;
 
- out:
 	if (response)
 		ippDelete(response);
 
