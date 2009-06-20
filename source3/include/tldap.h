@@ -156,16 +156,12 @@ int tldap_delete(struct tldap_context *ld, const char *dn,
 
 int tldap_msg_id(const struct tldap_message *msg);
 int tldap_msg_type(const struct tldap_message *msg);
-const char *tldap_req_matcheddn(struct tevent_req *req);
-const char *tldap_req_diagnosticmessage(struct tevent_req *req);
-const char *tldap_req_referral(struct tevent_req *req);
-void tldap_req_sctrls(struct tevent_req *req, int *num_sctrls,
+const char *tldap_msg_matcheddn(struct tldap_message *msg);
+const char *tldap_msg_diagnosticmessage(struct tldap_message *msg);
+const char *tldap_msg_referral(struct tldap_message *msg);
+void tldap_msg_sctrls(struct tldap_message *msg, int *num_sctrls,
 		      struct tldap_control **sctrls);
-const char *tldap_ctx_matcheddn(struct tldap_context *ctx);
-const char *tldap_ctx_diagnosticmessage(struct tldap_context *ctx);
-const char *tldap_ctx_referral(struct tldap_context *ctx);
-void tldap_ctx_sctrls(struct tldap_context *ctx, int *num_sctrls,
-		      struct tldap_control **sctrls);
+struct tldap_message *tldap_ctx_lastmsg(struct tldap_context *ld);
 const char *tldap_err2string(int rc);
 
 /* DEBUG */
