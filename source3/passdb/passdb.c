@@ -655,9 +655,6 @@ NTSTATUS local_password_change(const char *user_name,
 	*pp_msg_str = NULL;
 
 	tosctx = talloc_tos();
-	if (!tosctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	sam_pass = samu_new(tosctx);
 	if (!sam_pass) {
