@@ -66,4 +66,31 @@ bool tldap_entry_has_attrvalue(struct tldap_message *msg,
 			       const DATA_BLOB blob);
 bool tldap_supports_control(struct tldap_context *ld, const char *oid);
 
+struct tldap_control *tldap_add_control(TALLOC_CTX *mem_ctx,
+					struct tldap_control *ctrls,
+					int num_ctrls,
+					struct tldap_control *ctrl);
+struct tldap_control *tldap_msg_findcontrol(struct tldap_message *msg,
+					    const char *oid);
+
+struct tevent_req *tldap_search_paged_send(TALLOC_CTX *mem_ctx,
+					   struct tevent_context *ev,
+					   struct tldap_context *ld,
+					   const char *base, int scope,
+					   const char *filter,
+					   const char **attrs,
+					   int num_attrs,
+					   int attrsonly,
+					   struct tldap_control *sctrls,
+					   int num_sctrls,
+					   struct tldap_control *cctrls,
+					   int num_cctrls,
+					   int timelimit,
+					   int sizelimit,
+					   int deref,
+					   int page_size);
+int tldap_search_paged_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			    struct tldap_message **pmsg);
+
+
 #endif

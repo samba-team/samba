@@ -5585,12 +5585,39 @@ static bool run_shortname_test(int dummy)
 	return correct;
 }
 
+static void pagedsearch_cb(struct tevent_req *req)
+{
+	int rc;
+	struct tldap_message *msg;
+	char *dn;
+
+	rc = tldap_search_paged_recv(req, talloc_tos(), &msg);
+	if (rc != TLDAP_SUCCESS) {
+		d_printf("tldap_search_paged_recv failed: %s\n",
+			 tldap_err2string(rc));
+		return;
+	}
+	if (tldap_msg_type(msg) != TLDAP_RES_SEARCH_ENTRY) {
+		TALLOC_FREE(msg);
+		return;
+	}
+	if (!tldap_entry_dn(msg, &dn)) {
+		d_printf("tldap_entry_dn failed\n");
+		return;
+	}
+	d_printf("%s\n", dn);
+	TALLOC_FREE(msg);
+}
+
 static bool run_tldap(int dummy)
 {
 	struct tldap_context *ld;
 	int fd, rc;
 	NTSTATUS status;
 	struct sockaddr_storage addr;
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	char *basedn;
 
 	if (!resolve_name(host, &addr, 0)) {
 		d_printf("could not find host %s\n", host);
@@ -5615,6 +5642,34 @@ static bool run_tldap(int dummy)
 			 tldap_errstr(talloc_tos(), ld, rc));
 		return false;
 	}
+
+	basedn = tldap_talloc_single_attribute(
+		tldap_rootdse(ld), "defaultNamingContext", talloc_tos());
+	if (basedn == NULL) {
+		d_printf("no defaultNamingContext\n");
+		return false;
+	}
+	d_printf("defaultNamingContext: %s\n", basedn);
+
+	ev = tevent_context_init(talloc_tos());
+	if (ev == NULL) {
+		d_printf("tevent_context_init failed\n");
+		return false;
+	}
+
+	req = tldap_search_paged_send(talloc_tos(), ev, ld, basedn,
+				      TLDAP_SCOPE_SUB, "(objectclass=*)",
+				      NULL, 0, 0,
+				      NULL, 0, NULL, 0, 0, 0, 0, 5);
+	if (req == NULL) {
+		d_printf("tldap_search_paged_send failed\n");
+		return false;
+	}
+	tevent_req_set_callback(req, pagedsearch_cb, NULL);
+
+	tevent_req_poll(req, ev);
+
+	TALLOC_FREE(req);
 
 	TALLOC_FREE(ld);
 	return true;

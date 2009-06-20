@@ -273,4 +273,6 @@ void tldap_set_debug(struct tldap_context *ld,
 #define TLDAP_SCOPE_ONE (1)
 #define TLDAP_SCOPE_SUB (2)
 
+#define TLDAP_CONTROL_PAGEDRESULTS "1.2.840.113556.1.4.319"
+
 #endif

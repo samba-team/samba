@@ -538,3 +538,264 @@ bool tldap_supports_control(struct tldap_context *ld, const char *oid)
 	return tldap_entry_has_attrvalue(rootdse, "supportedControl",
 					 data_blob_const(oid, strlen(oid)));
 }
+
+struct tldap_control *tldap_add_control(TALLOC_CTX *mem_ctx,
+					struct tldap_control *ctrls,
+					int num_ctrls,
+					struct tldap_control *ctrl)
+{
+	struct tldap_control *result;
+
+	result = talloc_array(mem_ctx, struct tldap_control, num_ctrls+1);
+	if (result == NULL) {
+		return NULL;
+	}
+	memcpy(result, ctrls, sizeof(struct tldap_control) * num_ctrls);
+	result[num_ctrls] = *ctrl;
+	return result;
+}
+
+/*
+ * Find a control returned by the server
+ */
+struct tldap_control *tldap_msg_findcontrol(struct tldap_message *msg,
+					    const char *oid)
+{
+	struct tldap_control *controls;
+	int i, num_controls;
+
+	tldap_msg_sctrls(msg, &num_controls, &controls);
+
+	for (i=0; i<num_controls; i++) {
+		if (strcmp(controls[i].oid, oid) == 0) {
+			return &controls[i];
+		}
+	}
+	return NULL;
+}
+
+struct tldap_search_paged_state {
+	struct tevent_context *ev;
+	struct tldap_context *ld;
+	const char *base;
+	const char *filter;
+	int scope;
+	const char **attrs;
+	int num_attrs;
+	int attrsonly;
+	struct tldap_control *sctrls;
+	int num_sctrls;
+	struct tldap_control *cctrls;
+	int num_cctrls;
+	int timelimit;
+	int sizelimit;
+	int deref;
+
+	int page_size;
+	struct asn1_data *asn1;
+	DATA_BLOB cookie;
+	struct tldap_message *result;
+};
+
+static struct tevent_req *tldap_ship_paged_search(
+	TALLOC_CTX *mem_ctx,
+	struct tldap_search_paged_state *state)
+{
+	struct tldap_control *pgctrl;
+	struct asn1_data *asn1;
+
+	asn1 = asn1_init(state);
+	if (asn1 == NULL) {
+		return NULL;
+	}
+	asn1_push_tag(asn1, ASN1_SEQUENCE(0));
+	asn1_write_Integer(asn1, state->page_size);
+	asn1_write_OctetString(asn1, state->cookie.data, state->cookie.length);
+	asn1_pop_tag(asn1);
+	if (asn1->has_error) {
+		TALLOC_FREE(asn1);
+		return NULL;
+	}
+	state->asn1 = asn1;
+
+	pgctrl = &state->sctrls[state->num_sctrls-1];
+	pgctrl->oid = TLDAP_CONTROL_PAGEDRESULTS;
+	pgctrl->critical = true;
+	if (!asn1_blob(state->asn1, &pgctrl->value)) {
+		TALLOC_FREE(asn1);
+		return NULL;
+	}
+	return tldap_search_send(mem_ctx, state->ev, state->ld, state->base,
+				 state->scope, state->filter, state->attrs,
+				 state->num_attrs, state->attrsonly,
+				 state->sctrls, state->num_sctrls,
+				 state->cctrls, state->num_cctrls,
+				 state->timelimit, state->sizelimit,
+				 state->deref);
+}
+
+static void tldap_search_paged_done(struct tevent_req *subreq);
+
+struct tevent_req *tldap_search_paged_send(TALLOC_CTX *mem_ctx,
+					   struct tevent_context *ev,
+					   struct tldap_context *ld,
+					   const char *base, int scope,
+					   const char *filter,
+					   const char **attrs,
+					   int num_attrs,
+					   int attrsonly,
+					   struct tldap_control *sctrls,
+					   int num_sctrls,
+					   struct tldap_control *cctrls,
+					   int num_cctrls,
+					   int timelimit,
+					   int sizelimit,
+					   int deref,
+					   int page_size)
+{
+	struct tevent_req *req, *subreq;
+	struct tldap_search_paged_state *state;
+	struct tldap_control empty_control;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct tldap_search_paged_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->ld = ld;
+	state->base = base;
+	state->filter = filter;
+	state->scope = scope;
+	state->attrs = attrs;
+	state->num_attrs = num_attrs;
+	state->attrsonly = attrsonly;
+	state->cctrls = cctrls;
+	state->num_cctrls = num_cctrls;
+	state->timelimit = timelimit;
+	state->sizelimit = sizelimit;
+	state->deref = deref;
+
+	state->page_size = page_size;
+	state->asn1 = NULL;
+	state->cookie = data_blob_null;
+
+	ZERO_STRUCT(empty_control);
+
+	state->sctrls = tldap_add_control(state, sctrls, num_sctrls,
+					  &empty_control);
+	if (tevent_req_nomem(state->sctrls, req)) {
+		return tevent_req_post(req, ev);
+	}
+	state->num_sctrls = num_sctrls+1;
+
+	subreq = tldap_ship_paged_search(state, state);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, tldap_search_paged_done, req);
+
+	return req;
+}
+
+static void tldap_search_paged_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct tldap_search_paged_state *state = tevent_req_data(
+		req, struct tldap_search_paged_state);
+	struct asn1_data *asn1;
+	struct tldap_control *pgctrl;
+	int rc, size;
+
+	rc = tldap_search_recv(subreq, state, &state->result);
+	if (rc != TLDAP_SUCCESS) {
+		TALLOC_FREE(subreq);
+		tevent_req_error(req, rc);
+		return;
+	}
+
+	TALLOC_FREE(state->asn1);
+
+	switch (tldap_msg_type(state->result)) {
+	case TLDAP_RES_SEARCH_ENTRY:
+	case TLDAP_RES_SEARCH_REFERENCE:
+		tevent_req_notify_callback(req);
+		return;
+	case TLDAP_RES_SEARCH_RESULT:
+		break;
+	default:
+		TALLOC_FREE(subreq);
+		tevent_req_error(req, TLDAP_PROTOCOL_ERROR);
+		return;
+	}
+
+	TALLOC_FREE(subreq);
+
+	/* We've finished one paged search, fire the next */
+
+	pgctrl = tldap_msg_findcontrol(state->result,
+				       TLDAP_CONTROL_PAGEDRESULTS);
+	if (pgctrl == NULL) {
+		/* RFC2696 requires the server to return the control */
+		tevent_req_error(req, TLDAP_PROTOCOL_ERROR);
+		return;
+	}
+
+	TALLOC_FREE(state->cookie.data);
+
+	asn1 = asn1_init(talloc_tos());
+	if (asn1 == NULL) {
+		tevent_req_error(req, TLDAP_NO_MEMORY);
+		return;
+	}
+
+	asn1_load_nocopy(asn1, pgctrl->value.data, pgctrl->value.length);
+	asn1_start_tag(asn1, ASN1_SEQUENCE(0));
+	asn1_read_Integer(asn1, &size);
+	asn1_read_OctetString(asn1, state, &state->cookie);
+	asn1_end_tag(asn1);
+	if (asn1->has_error) {
+		tevent_req_error(req, TLDAP_DECODING_ERROR);
+		return;
+	}
+	TALLOC_FREE(asn1);
+
+	if (state->cookie.length == 0) {
+		/* We're done, no cookie anymore */
+		tevent_req_done(req);
+		return;
+	}
+
+	TALLOC_FREE(state->result);
+
+	subreq = tldap_ship_paged_search(state, state);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, tldap_search_paged_done, req);
+}
+
+int tldap_search_paged_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			    struct tldap_message **pmsg)
+{
+	struct tldap_search_paged_state *state = tevent_req_data(
+		req, struct tldap_search_paged_state);
+	int err;
+
+	if (!tevent_req_is_in_progress(req)
+	    && tevent_req_is_ldap_error(req, &err)) {
+		return err;
+	}
+	if (tevent_req_is_in_progress(req)) {
+		switch (tldap_msg_type(state->result)) {
+		case TLDAP_RES_SEARCH_ENTRY:
+		case TLDAP_RES_SEARCH_REFERENCE:
+			break;
+		default:
+			return TLDAP_PROTOCOL_ERROR;
+		}
+	}
+	*pmsg = talloc_move(mem_ctx, &state->result);
+	return TLDAP_SUCCESS;
+}
