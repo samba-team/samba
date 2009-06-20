@@ -99,6 +99,7 @@ bool torture_samba3_checkfsp(struct torture_context *torture)
 		io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
 		io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
 		io.ntcreatex.in.create_options = 0;
+		io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
 		io.ntcreatex.in.fname = dirname;
 		status = smb_raw_open(cli->tree, mem_ctx, &io);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -897,6 +898,7 @@ bool torture_samba3_rootdirfid(struct torture_context *tctx)
 		| NTCREATEX_SHARE_ACCESS_READ;
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
 	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
 	io.ntcreatex.in.fname = "\\";
 	status = smb_raw_open(cli->tree, tctx, &io);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -918,6 +920,7 @@ bool torture_samba3_rootdirfid(struct torture_context *tctx)
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
 	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
 	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
 	io.ntcreatex.in.fname = fname;
 
 	status = smb_raw_open(cli->tree, tctx, &io);
@@ -967,6 +970,7 @@ bool torture_samba3_oplock_logoff(struct torture_context *tctx)
 	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
 	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
 	io.ntcreatex.in.fname = "testfile";
 	status = smb_raw_open(cli->tree, tctx, &io);
 	if (!NT_STATUS_IS_OK(status)) {
