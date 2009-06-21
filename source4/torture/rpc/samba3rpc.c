@@ -3252,13 +3252,14 @@ static NTSTATUS get_shareinfo(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
 		d_printf("(%s) srvsvc_NetShareGetInfo failed: %s, %s\n", __location__,
 			 nt_errstr(status), win_errstr(r.out.result));
+		status = NT_STATUS_IS_OK(status) ? werror_to_ntstatus(r.out.result) : status;
 		goto fail;
 	}
 
 	*info502 = talloc_move(mem_ctx, &info.info502);
 	return NT_STATUS_OK;
 
- fail:
+fail:
 	talloc_free(p);
 	return status;
 }
@@ -3319,6 +3320,7 @@ static NTSTATUS get_hklm_handle(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
 		d_printf("(%s) OpenHKLM failed: %s, %s\n", __location__,
 			 nt_errstr(status), win_errstr(r.out.result));
+		status = NT_STATUS_IS_OK(status) ? werror_to_ntstatus(r.out.result) : status;
 		goto fail;
 	}
 
@@ -3373,6 +3375,7 @@ static NTSTATUS torture_samba3_createshare(struct smbcli_state *cli,
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(c.out.result)) {
 		d_printf("(%s) OpenKey failed: %s, %s\n", __location__,
 			 nt_errstr(status), win_errstr(c.out.result));
+		status = NT_STATUS_IS_OK(status) ? werror_to_ntstatus(c.out.result) : status;
 		goto fail;
 	}
 
@@ -3382,11 +3385,12 @@ static NTSTATUS torture_samba3_createshare(struct smbcli_state *cli,
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(cl.out.result)) {
 		d_printf("(%s) OpenKey failed: %s, %s\n", __location__,
 			 nt_errstr(status), win_errstr(cl.out.result));
+		status = NT_STATUS_IS_OK(status) ? werror_to_ntstatus(cl.out.result) : status;
 		goto fail;
 	}
 
 
- fail:
+fail:
 	talloc_free(mem_ctx);
 	return status;
 }
@@ -3423,10 +3427,11 @@ static NTSTATUS torture_samba3_deleteshare(struct torture_context *torture,
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(d.out.result)) {
 		d_printf("(%s) OpenKey failed: %s, %s\n", __location__,
 			 nt_errstr(status), win_errstr(d.out.result));
+		status = NT_STATUS_IS_OK(status) ? werror_to_ntstatus(d.out.result) : status;
 		goto fail;
 	}
 
- fail:
+fail:
 	talloc_free(mem_ctx);
 	return status;
 }
@@ -3467,6 +3472,7 @@ static NTSTATUS torture_samba3_setconfig(struct smbcli_state *cli,
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(o.out.result)) {
 		d_printf("(%s) OpenKey failed: %s, %s\n", __location__,
 			 nt_errstr(status), win_errstr(o.out.result));
+		status = NT_STATUS_IS_OK(status) ? werror_to_ntstatus(o.out.result) : status;
 		goto done;
 	}
 
@@ -3486,10 +3492,11 @@ static NTSTATUS torture_samba3_setconfig(struct smbcli_state *cli,
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(s.out.result)) {
 		d_printf("(%s) SetValue failed: %s, %s\n", __location__,
 			 nt_errstr(status), win_errstr(s.out.result));
+		status = NT_STATUS_IS_OK(status) ? werror_to_ntstatus(s.out.result) : status;
 		goto done;
 	}
 
- done:
+done:
 	talloc_free(hklm);
 	return status;
 }
