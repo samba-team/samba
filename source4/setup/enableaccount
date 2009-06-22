@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-#	add a new user to a Samba4 server
+#	Enables a disabled user account on a Samba4 server
 #	Copyright Andrew Tridgell 2005
 #	Copyright Jelmer Vernooij 2008
 #	Released under the GNU GPL version 3 or later
