@@ -2296,6 +2296,8 @@ static BOOL acl_group_override(connection_struct *conn, gid_t prim_gid, const ch
 {
 	SMB_STRUCT_STAT sbuf;
 
+	ZERO_STRUCT(sbuf);
+
 	if ((errno != EPERM) && (errno != EACCES)) {
 		return False;
 	}
