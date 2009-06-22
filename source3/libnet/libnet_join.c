@@ -264,7 +264,13 @@ static ADS_STATUS libnet_unjoin_remove_machine_acct(TALLOC_CTX *mem_ctx,
 	ADS_STATUS status;
 
 	if (!r->in.ads) {
-		return libnet_unjoin_connect_ads(mem_ctx, r);
+		status = libnet_unjoin_connect_ads(mem_ctx, r);
+		if (!ADS_ERR_OK(status)) {
+			libnet_unjoin_set_error_string(mem_ctx, r,
+				"failed to connect to AD: %s",
+				ads_errstr(status));
+			return status;
+		}
 	}
 
 	status = ads_leave_realm(r->in.ads, r->in.machine_name);
