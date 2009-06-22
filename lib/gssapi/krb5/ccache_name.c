@@ -33,8 +33,6 @@
 
 #include "gsskrb5_locl.h"
 
-RCSID("$Id$");
-
 char *last_out_name;
 
 OM_uint32

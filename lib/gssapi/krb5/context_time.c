@@ -33,8 +33,6 @@
 
 #include "gsskrb5_locl.h"
 
-RCSID("$Id$");
-
 OM_uint32
 _gsskrb5_lifetime_left(OM_uint32 *minor_status,
 		       krb5_context context,

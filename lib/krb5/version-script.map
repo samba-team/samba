@@ -185,6 +185,7 @@ HEIMDAL_KRB5_2.0 {
 		krb5_crypto_prf;
 		krb5_crypto_prf_length;
 		krb5_crypto_length;
+		krb5_crypto_length_iov;
 		krb5_decrypt_iov_ivec;
 		krb5_encrypt_iov_ivec;
 		krb5_data_alloc;
@@ -641,6 +642,7 @@ HEIMDAL_KRB5_2.0 {
 		krb5_verify_ap_req;
 		krb5_verify_authenticator_checksum;
 		krb5_verify_checksum;
+		krb5_verify_checksum_iov;
 		krb5_verify_init_creds;
 		krb5_verify_init_creds_opt_init;
 		krb5_verify_init_creds_opt_set_ap_req_nofail;

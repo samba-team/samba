@@ -33,8 +33,6 @@
 
 #include "gsskrb5_locl.h"
 
-RCSID("$Id$");
-
 /*
  * return the length of the mechanism in token or -1
  * (which implies that the token was bad - GSS_S_DEFECTIVE_TOKEN

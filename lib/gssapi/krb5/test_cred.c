@@ -35,8 +35,6 @@
 #include <err.h>
 #include <getarg.h>
 
-RCSID("$Id$");
-
 static void
 gss_print_errors (int min_stat)
 {

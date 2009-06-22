@@ -33,8 +33,6 @@
 
 #include "gsskrb5_locl.h"
 
-RCSID("$Id$");
-
 HEIMDAL_MUTEX gssapi_keytab_mutex = HEIMDAL_MUTEX_INITIALIZER;
 krb5_keytab _gsskrb5_keytab;
 

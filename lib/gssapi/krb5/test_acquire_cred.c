@@ -34,8 +34,6 @@
 #include "gsskrb5_locl.h"
 #include <err.h>
 
-RCSID("$Id$");
-
 static void
 print_time(OM_uint32 time_rec)
 {

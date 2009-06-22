@@ -33,8 +33,6 @@
 
 #include "gsskrb5_locl.h"
 
-RCSID("$Id$");
-
 OM_uint32
 _gsskrb5_pseudo_random(OM_uint32 *minor_status,
 		       gss_ctx_id_t context_handle,

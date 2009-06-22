@@ -175,30 +175,35 @@ ${context}  --no-dns-canon --name-type=krb5-principal-name host/lucid || \
 
 echo "======test context building"
 for mech in krb5 spnego ; do
+	iov=""
+	if [ "$mech" == "krb5" ] ; then
+	    iov="--iov"
+	fi
+
 	echo "${mech} no-mutual"
 	${context} --mech-type=${mech} \
-	    --wrapunwrap \
+	    --wrapunwrap ${iov} \
 	    --name-type=hostbased-service host@lucid.test.h5l.se || \
 		{ exitcode=1 ; echo "test failed"; }
 
 	echo "${mech} mutual"
 	${context} --mech-type=${mech} \
 	    --mutual \
-	    --wrapunwrap \
+	    --wrapunwrap ${iov} \
 	    --name-type=hostbased-service host@lucid.test.h5l.se || \
 		{ exitcode=1 ; echo "test failed"; }
 
 	echo "${mech} delegate"
 	${context} --mech-type=${mech} \
 	    --delegate \
-	    --wrapunwrap \
+	    --wrapunwrap ${iov} \
 	    --name-type=hostbased-service host@lucid.test.h5l.se || \
 		{ exitcode=1 ; echo "test failed"; }
 
 	echo "${mech} mutual delegate"
 	${context} --mech-type=${mech} \
 	    --mutual --delegate \
-	    --wrapunwrap \
+	    --wrapunwrap ${iov} \
 	    --name-type=hostbased-service host@lucid.test.h5l.se || \
 		{ exitcode=1 ; echo "test failed"; }
 done
@@ -206,13 +211,17 @@ done
 #add spnego !
 echo "======dce-style"
 for mech in krb5 ; do
+	iov=""
+	if [ "$mech" == "krb5" ] ; then
+	    iov="--iov"
+	fi
 
 	echo "${mech}: dce-style"
 	${context} \
 	    --mech-type=${mech} \
 	    --mutual \
 	    --dce-style \
-	    --wrapunwrap \
+	    --wrapunwrap ${iov} \
 	    --name-type=hostbased-service host@lucid.test.h5l.se || \
 	    { exitcode=1 ; echo "test failed"; }
 

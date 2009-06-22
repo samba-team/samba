@@ -33,8 +33,6 @@
 
 #include "gsskrb5_locl.h"
 
-RCSID("$Id$");
-
 static OM_uint32
 verify_mic_des
            (OM_uint32 * minor_status,

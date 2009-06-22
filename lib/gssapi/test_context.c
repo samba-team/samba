@@ -49,6 +49,7 @@ static int dns_canon_flag = -1;
 static int mutual_auth_flag = 0;
 static int dce_style_flag = 0;
 static int wrapunwrap_flag = 0;
+static int iov_flag = 0;
 static int getverifymic_flag = 0;
 static int deleg_flag = 0;
 static int policy_deleg_flag = 0;
@@ -79,7 +80,7 @@ string_to_oid(const char *name)
     for (i = 0; i < sizeof(o2n)/sizeof(o2n[0]); i++)
 	if (strcasecmp(name, o2n[i].name) == 0)
 	    return *o2n[i].oid;
-    errx(1, "name %s not unknown", name);
+    errx(1, "name '%s' not unknown", name);
 }
 
 static const char *
@@ -255,38 +256,60 @@ wrapunwrap(gss_ctx_id_t cctx, gss_ctx_id_t sctx, int flags, gss_OID mechoid)
 #endif
 }
 
+#define USE_CONF		1
+#define USE_HEADER_ONLY		2
+#define USE_SIGN_ONLY		4
+#define FORCE_IOV		8
+
 static void
-wrapunwrap_ext(gss_ctx_id_t cctx, gss_ctx_id_t sctx, int flags, gss_OID mechoid)
+wrapunwrap_iov(gss_ctx_id_t cctx, gss_ctx_id_t sctx, int flags, gss_OID mechoid)
 {
     krb5_data token, header, trailer;
     OM_uint32 min_stat, maj_stat;
     gss_qop_t qop_state;
-    int conf_state;
-    gss_iov_buffer_desc iov[6];
+    int conf_state, conf_state2;
+    gss_iov_buffer_desc iov[5];
     unsigned char *p;
     int iov_len;
+    char header_data[9] = "ABCheader";
+    char trailer_data[10] = "trailerXYZ";
+
+    char token_data[16] = "0123456789abcdef";
 
     memset(&iov, 0, sizeof(iov));
 
-    header.data = "ABCheader";
-    header.length = 9;
-    token.data = "0123456789abcdef";
+    if (flags & USE_SIGN_ONLY) {
+	header.data = header_data;
+	header.length = 9;
+	trailer.data = trailer_data;
+	trailer.length = 10;
+    } else {
+	header.data = NULL;
+	header.length = 0;
+	trailer.data = NULL;
+	trailer.length = 0;
+    }
+
+    token.data = token_data;
     token.length = 16;
-    trailer.data = "trailerXYZ";
-    trailer.length = 10;
 
     iov_len = sizeof(iov)/sizeof(iov[0]);
 
-    if (flags & 2)
-	iov_len -= 2; /* skip trailer and padding, aka dce-style */
+    memset(iov, 0, sizeof(iov));
+
+    if (flags & USE_HEADER_ONLY)
+	iov_len -= 1; /* skip trailer */
 
     iov[0].type = GSS_IOV_BUFFER_TYPE_HEADER | GSS_IOV_BUFFER_TYPE_FLAG_ALLOCATE;
+
     if (header.length != 0) {
 	iov[1].type = GSS_IOV_BUFFER_TYPE_SIGN_ONLY;
 	iov[1].buffer.length = header.length;
 	iov[1].buffer.value = header.data;
     } else {
 	iov[1].type = GSS_IOV_BUFFER_TYPE_EMPTY;
+	iov[1].buffer.length = 0;
+	iov[1].buffer.value = NULL;
     }
     iov[2].type = GSS_IOV_BUFFER_TYPE_DATA;
     iov[2].buffer.length = token.length;
@@ -297,60 +320,68 @@ wrapunwrap_ext(gss_ctx_id_t cctx, gss_ctx_id_t sctx, int flags, gss_OID mechoid)
 	iov[3].buffer.value = trailer.data;
     } else {
 	iov[3].type = GSS_IOV_BUFFER_TYPE_EMPTY;
+	iov[3].buffer.length = 0;
+	iov[3].buffer.value = NULL;
     }
-    iov[4].type = GSS_IOV_BUFFER_TYPE_PADDING | GSS_IOV_BUFFER_TYPE_FLAG_ALLOCATE;
-    iov[5].type = GSS_IOV_BUFFER_TYPE_TRAILER | GSS_IOV_BUFFER_TYPE_FLAG_ALLOCATE;
+    iov[4].type = GSS_IOV_BUFFER_TYPE_TRAILER | GSS_IOV_BUFFER_TYPE_FLAG_ALLOCATE;
+    iov[4].buffer.length = 0;
+    iov[4].buffer.value = 0;
 
-    maj_stat = gss_wrap_iov_length(&min_stat, cctx, flags & 1, 0, &conf_state,
-				   iov, iov_len);
-    if (maj_stat != GSS_S_COMPLETE)
-	errx(1, "gss_wrap_iov_length failed");
-
-    maj_stat = gss_wrap_iov(&min_stat, cctx, flags & 1, 0, &conf_state,
+    maj_stat = gss_wrap_iov(&min_stat, cctx, flags & USE_CONF, 0, &conf_state,
 			    iov, iov_len);
     if (maj_stat != GSS_S_COMPLETE)
 	errx(1, "gss_wrap_iov failed");
 
-    token.length = iov[0].buffer.length + iov[2].buffer.length + iov[4].buffer.length + iov[5].buffer.length;
-    token.data = malloc(token.length);
+    token.length =
+	iov[0].buffer.length + 
+	iov[1].buffer.length +
+	iov[2].buffer.length +
+	iov[3].buffer.length + 
+	iov[4].buffer.length;
+    token.data = emalloc(token.length);
 
     p = token.data;
     memcpy(p, iov[0].buffer.value, iov[0].buffer.length);
     p += iov[0].buffer.length;
+    memcpy(p, iov[1].buffer.value, iov[1].buffer.length);
+    p += iov[1].buffer.length;
     memcpy(p, iov[2].buffer.value, iov[2].buffer.length);
     p += iov[2].buffer.length;
+    memcpy(p, iov[3].buffer.value, iov[3].buffer.length);
+    p += iov[3].buffer.length;
     memcpy(p, iov[4].buffer.value, iov[4].buffer.length);
     p += iov[4].buffer.length;
-    memcpy(p, iov[5].buffer.value, iov[5].buffer.length);
-    p += iov[5].buffer.length;
 
-    iov_len = 3;
+    assert(p - ((unsigned char *)token.data) == token.length);
 
-    if (header.length != 0) {
-	iov[0].type = GSS_IOV_BUFFER_TYPE_SIGN_ONLY;
-	iov[0].buffer.length = header.length;
-	iov[0].buffer.value = header.data;
+    if ((flags & (USE_SIGN_ONLY|FORCE_IOV)) == 0) {
+	gss_buffer_desc input, output;
+
+	input.value = token.data;
+	input.length = token.length;
+
+	maj_stat = gss_unwrap(&min_stat, sctx, &input,
+			      &output, &conf_state2, &qop_state);
+
+	if (maj_stat != GSS_S_COMPLETE)
+	    errx(1, "gss_unwrap failed: %s",
+		 gssapi_err(maj_stat, min_stat, mechoid));
+
+	gss_release_buffer(&min_stat, &output);
     } else {
-	iov[0].type = GSS_IOV_BUFFER_TYPE_EMPTY;
+	maj_stat = gss_unwrap_iov(&min_stat, sctx, &conf_state2, &qop_state,
+				  iov, iov_len);
+	
+	if (maj_stat != GSS_S_COMPLETE)
+	    errx(1, "gss_unwrap_iov failed: %x %s", flags,
+		 gssapi_err(maj_stat, min_stat, mechoid));
+	
     }
-    iov[1].type = GSS_IOV_BUFFER_TYPE_DATA;
-    iov[1].buffer.length = token.length;
-    iov[1].buffer.value = token.data;
+    if (conf_state2 != conf_state)
+	errx(1, "conf state wrong for iov: %x", flags);
 
-    if (trailer.length != 0) {
-	iov[2].type = GSS_IOV_BUFFER_TYPE_SIGN_ONLY;
-	iov[2].buffer.length = trailer.length;
-	iov[2].buffer.value = trailer.data;
-    } else {
-	iov[2].type = GSS_IOV_BUFFER_TYPE_EMPTY;
-    }
 
-    maj_stat = gss_unwrap_iov(&min_stat, sctx, &conf_state, &qop_state,
-			      iov, iov_len);
-
-    if (maj_stat != GSS_S_COMPLETE)
-	errx(1, "gss_unwrap_iov failed: %s",
-	     gssapi_err(maj_stat, min_stat, mechoid));
+    free(token.data);
 }
 
 static void
@@ -405,6 +436,7 @@ static struct getargs args[] = {
     {"mutual-auth",0,	arg_flag,	&mutual_auth_flag,"mutual auth", NULL },
     {"dce-style",0,	arg_flag,	&dce_style_flag, "dce-style", NULL },
     {"wrapunwrap",0,	arg_flag,	&wrapunwrap_flag, "wrap/unwrap", NULL },
+    {"iov", 0, 		arg_flag,	&iov_flag, "wrap/unwrap iov", NULL },
     {"getverifymic",0,	arg_flag,	&getverifymic_flag,
      "get and verify mic", NULL },
     {"delegate",0,	arg_flag,	&deleg_flag, "delegate credential", NULL },
@@ -499,7 +531,7 @@ main(int argc, char **argv)
     /* XXX should be actual_mech */
     if (gss_oid_equal(mechoid, GSS_KRB5_MECHANISM)) {
 	krb5_context context;
-	time_t time, skew;
+	time_t time;
 	gss_buffer_desc authz_data;
 	gss_buffer_desc in, out1, out2;
 	krb5_keyblock *keyblock, *keyblock2;
@@ -549,13 +581,10 @@ main(int argc, char **argv)
 	    errx(1, "gsskrb5_extract_authtime_from_sec_context failed: %s",
 		     gssapi_err(maj_stat, min_stat, actual_mech));
 
-	skew = abs(time - now);
-	if (skew > krb5_get_max_time_skew(context)) {
+	if (time > now)
 	    errx(1, "gsskrb5_extract_authtime_from_sec_context failed: "
-		 "time skew too great %llu > %llu",
-		 (unsigned long long)skew,
-		 (unsigned long long)krb5_get_max_time_skew(context));
-	}
+		 "time authtime is before now: %ld %ld", 
+		 (long)time, (long)now);
 
  	maj_stat = gsskrb5_extract_service_keyblock(&min_stat,
 						    sctx,
@@ -698,14 +727,20 @@ main(int argc, char **argv)
 	wrapunwrap(cctx, sctx, 1, actual_mech);
 	wrapunwrap(sctx, cctx, 0, actual_mech);
 	wrapunwrap(sctx, cctx, 1, actual_mech);
-
-#if 0
-	wrapunwrap_ext(cctx, sctx, 1, actual_mech);
-	wrapunwrap_ext(cctx, sctx, 2, actual_mech);
-	wrapunwrap_ext(cctx, sctx, 3, actual_mech);
-#endif
-
     }
+
+    if (iov_flag) {
+	wrapunwrap_iov(cctx, sctx, 0, actual_mech);
+	wrapunwrap_iov(cctx, sctx, USE_CONF, actual_mech);
+	wrapunwrap_iov(cctx, sctx, USE_CONF|USE_HEADER_ONLY, actual_mech);
+
+	wrapunwrap_iov(cctx, sctx, FORCE_IOV, actual_mech);
+	wrapunwrap_iov(cctx, sctx, USE_CONF|FORCE_IOV, actual_mech);
+	wrapunwrap_iov(cctx, sctx, USE_CONF|USE_HEADER_ONLY|FORCE_IOV, actual_mech);
+
+	wrapunwrap_iov(cctx, sctx, USE_CONF|USE_HEADER_ONLY|USE_SIGN_ONLY, actual_mech);
+    }
+
     if (getverifymic_flag) {
 	getverifymic(cctx, sctx, actual_mech);
 	getverifymic(cctx, sctx, actual_mech);

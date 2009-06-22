@@ -32,8 +32,6 @@
 
 #include "gsskrb5_locl.h"
 
-RCSID("$Id$");
-
 /* 1.2.752.43.13.17 */
 static gss_OID_desc gss_krb5_cred_no_ci_flags_x_oid_desc =
 {6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x11")};

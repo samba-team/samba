@@ -33,8 +33,6 @@
 
 #include "gsskrb5_locl.h"
 
-RCSID("$Id$");
-
 /*
  * copy the addresses from `input_chan_bindings' (if any) to
  * the auth context `ac'
@@ -697,7 +695,7 @@ repl_mutual
     if (actual_mech_type)
 	*actual_mech_type = GSS_KRB5_MECHANISM;
 
-    if (ctx->flags & GSS_C_DCE_STYLE) {
+    if (IS_DCE_STYLE(ctx)) {
 	/* There is no OID wrapping. */
 	indata.length	= input_token->length;
 	indata.data	= input_token->value;

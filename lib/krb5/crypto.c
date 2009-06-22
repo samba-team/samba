@@ -3182,7 +3182,7 @@ krb5_encrypt_iov_ivec(krb5_context context,
     krb5_error_code ret;
     struct key_data *dkey;
     const struct encryption_type *et = crypto->et;
-    krb5_crypto_iov *tiv, *piv, *hiv, *div;
+    krb5_crypto_iov *tiv, *piv, *hiv;
 
     if (num_data < 0) {
         krb5_clear_error_message(context);
@@ -3197,11 +3197,11 @@ krb5_encrypt_iov_ivec(krb5_context context,
     headersz = et->confoundersize;
     trailersz = CHECKSUMSIZE(et->keyed_checksum);
 
-    div = find_iv(data, num_data, KRB5_CRYPTO_TYPE_DATA);
-    if (div == NULL)
-	return KRB5_CRYPTO_INTERNAL;
-    
-    len = div->data.length;
+    for (len = 0, i = 0; i < num_data; i++) {
+	if (data[i].flags != KRB5_CRYPTO_TYPE_DATA)
+	    continue;
+	len += data[i].data.length;
+    }
 
     sz = headersz + len;
     block_sz = (sz + et->padsize - 1) &~ (et->padsize - 1); /* pad */
@@ -3217,7 +3217,6 @@ krb5_encrypt_iov_ivec(krb5_context context,
     krb5_generate_random_block(hiv->data.data, hiv->data.length);
 
     /* padding */
-
     piv = find_iv(data, num_data, KRB5_CRYPTO_TYPE_PADDING);
     /* its ok to have no TYPE_PADDING if there is no padding */
     if (piv == NULL && pad_sz != 0)
@@ -3226,15 +3225,16 @@ krb5_encrypt_iov_ivec(krb5_context context,
 	if (piv->data.length < pad_sz)
 	    return KRB5_BAD_MSIZE;
 	piv->data.length = pad_sz;
+	if (pad_sz)
+	    memset(piv->data.data, pad_sz, pad_sz);
+	else
+	    piv = NULL;
     }
 
-
     /* trailer */
-
     tiv = find_iv(data, num_data, KRB5_CRYPTO_TYPE_TRAILER);
     if (tiv == NULL || tiv->data.length != trailersz)
 	return KRB5_BAD_MSIZE;
-
 
     /*
      * XXX replace with EVP_Sign? at least make create_checksum an iov
@@ -3242,10 +3242,9 @@ krb5_encrypt_iov_ivec(krb5_context context,
      * XXX CTS EVP is broken, can't handle multi buffers :(
      */
 
-    len = hiv->data.length;
+    len = block_sz;
     for (i = 0; i < num_data; i++) {
-	if (data[i].flags != KRB5_CRYPTO_TYPE_DATA &&
-	    data[i].flags != KRB5_CRYPTO_TYPE_SIGN_ONLY)
+	if (data[i].flags != KRB5_CRYPTO_TYPE_SIGN_ONLY)
 	    continue;
 	len += data[i].data.length;
     }
@@ -3260,6 +3259,10 @@ krb5_encrypt_iov_ivec(krb5_context context,
 	    continue;
 	memcpy(q, data[i].data.data, data[i].data.length);
 	q += data[i].data.length;
+    }
+    if (piv) {
+	memset(q, 0, piv->data.length);
+	q += piv->data.length;
     }
 
     ret = create_checksum(context,
@@ -3282,30 +3285,24 @@ krb5_encrypt_iov_ivec(krb5_context context,
     memcpy(tiv->data.data, cksum.checksum.data, cksum.checksum.length);
     free_Checksum (&cksum);
 
-    /* now encrypt data */
-
-    ret = _get_derived_key(context, crypto, ENCRYPTION_USAGE(usage), &dkey);
-    if(ret)
-	return ret;
-    ret = _key_schedule(context, dkey);
-    if(ret)
-	return ret;
-
     /* XXX replace with EVP_Cipher */
-
-    len = hiv->data.length + div->data.length;
-    if (piv)
-	len += piv->data.length;
-
-    p = q = malloc(len);
+    p = q = malloc(block_sz);
     if(p == NULL)
 	return ENOMEM;
 
     memcpy(q, hiv->data.data, hiv->data.length);
     q += hiv->data.length;
-    memcpy(q, div->data.data, div->data.length);
-    q += div->data.length;
-    memset(q, 0, pad_sz);
+
+    for (i = 0; i < num_data; i++) {
+	if (data[i].flags != KRB5_CRYPTO_TYPE_DATA)
+	    continue;
+	memcpy(q, data[i].data.data, data[i].data.length);
+	q += data[i].data.length;
+    }
+    if (piv) {
+	memset(q, 0, piv->data.length);
+	q += piv->data.length;
+    }
 
     ret = _get_derived_key(context, crypto, ENCRYPTION_USAGE(usage), &dkey);
     if(ret) {
@@ -3318,7 +3315,7 @@ krb5_encrypt_iov_ivec(krb5_context context,
 	return ret;
     }
 
-    ret = (*et->encrypt)(context, dkey, p, len, 1, usage, ivec);
+    ret = (*et->encrypt)(context, dkey, p, block_sz, 1, usage, ivec);
     if (ret) {
 	free(p);
 	return ret;
@@ -3330,11 +3327,17 @@ krb5_encrypt_iov_ivec(krb5_context context,
     memcpy(hiv->data.data, q, hiv->data.length);
     q += hiv->data.length;
 
-    memcpy(div->data.data, q, div->data.length);
-    q += div->data.length;
-
-    if (piv)
+    for (i = 0; i < num_data; i++) {
+	if (data[i].flags != KRB5_CRYPTO_TYPE_DATA)
+	    continue;
+	memcpy(data[i].data.data, q, data[i].data.length);
+	q += data[i].data.length;
+    }
+    if (piv) {
 	memcpy(piv->data.data, q, pad_sz);
+	q += pad_sz;
+    }
+
     free(p);
 
     return ret;
@@ -3371,13 +3374,12 @@ krb5_decrypt_iov_ivec(krb5_context context,
 {
     unsigned int i;
     size_t headersz, trailersz, len;
-    size_t sz, block_sz, pad_sz;
     Checksum cksum;
     unsigned char *p, *q;
     krb5_error_code ret;
     struct key_data *dkey;
     struct encryption_type *et = crypto->et;
-    krb5_crypto_iov *tiv, *hiv, *div;
+    krb5_crypto_iov *tiv, *hiv;
 
     if (num_data < 0) {
         krb5_clear_error_message(context);
@@ -3390,48 +3392,33 @@ krb5_decrypt_iov_ivec(krb5_context context,
     }
 
     headersz = et->confoundersize;
-    trailersz = CHECKSUMSIZE(et->keyed_checksum);
-
-    for (len = 0, i = 0; i < num_data; i++) {
-	if (data[i].flags == KRB5_CRYPTO_TYPE_DATA) {
-	    if (len != 0) 
-		return KRB5_CRYPTO_INTERNAL;
-	    len += data[i].data.length;
-	}
-    }
-
-    sz = headersz + len;
-    block_sz = (sz + et->padsize - 1) &~ (et->padsize - 1); /* pad */
-
-    pad_sz = block_sz - sz;
-    trailersz += pad_sz;
-
-    /* header */
 
     hiv = find_iv(data, num_data, KRB5_CRYPTO_TYPE_HEADER);
-    if (hiv == NULL || hiv->data.length < headersz)
+    if (hiv == NULL || hiv->data.length != headersz)
 	return KRB5_BAD_MSIZE;
-    hiv->data.length = headersz;
 
     /* trailer */
+    trailersz = CHECKSUMSIZE(et->keyed_checksum);
 
     tiv = find_iv(data, num_data, KRB5_CRYPTO_TYPE_TRAILER);
-    if (tiv == NULL || tiv->data.length < trailersz)
+    if (tiv->data.length != trailersz)
 	return KRB5_BAD_MSIZE;
-    tiv->data.length = trailersz;
 
-    div = find_iv(data, num_data, KRB5_CRYPTO_TYPE_DATA);
-    if (div == NULL)
-	return KRB5_CRYPTO_INTERNAL;
+    /* Find length of data we will decrypt */
 
-    /* XXX replace with EVP_Cipher */
-
-    for (len = 0, i = 0; i < num_data; i++) {
-	if (data[i].flags != KRB5_CRYPTO_TYPE_HEADER &&
-	    data[i].flags != KRB5_CRYPTO_TYPE_DATA)
+    len = headersz;
+    for (i = 0; i < num_data; i++) {
+	if (data[i].flags != KRB5_CRYPTO_TYPE_DATA)
 	    continue;
 	len += data[i].data.length;
     }
+
+    if ((len % et->padsize) != 0) {
+	krb5_clear_error_message(context);
+	return KRB5_BAD_MSIZE;
+    }
+
+    /* XXX replace with EVP_Cipher */
 
     p = q = malloc(len);
     if (p == NULL)
@@ -3439,7 +3426,13 @@ krb5_decrypt_iov_ivec(krb5_context context,
 
     memcpy(q, hiv->data.data, hiv->data.length);
     q += hiv->data.length;
-    memcpy(q, div->data.data, div->data.length);
+
+    for (i = 0; i < num_data; i++) {
+	if (data[i].flags != KRB5_CRYPTO_TYPE_DATA)
+	    continue;
+	memcpy(q, data[i].data.data, data[i].data.length);
+	q += data[i].data.length;
+    }
 
     ret = _get_derived_key(context, crypto, ENCRYPTION_USAGE(usage), &dkey);
     if(ret) {
@@ -3460,20 +3453,26 @@ krb5_decrypt_iov_ivec(krb5_context context,
 
     /* copy data back to buffers */
     memcpy(hiv->data.data, p, hiv->data.length);
-    memcpy(div->data.data, p + hiv->data.length, len - hiv->data.length);
+    q = p + hiv->data.length;
+    for (i = 0; i < num_data; i++) {
+	if (data[i].flags != KRB5_CRYPTO_TYPE_DATA)
+	    continue;
+	memcpy(data[i].data.data, q, data[i].data.length);
+	q += data[i].data.length;
+    }
+
     free(p);
 
     /* check signature */
-
-    len = hiv->data.length;
     for (i = 0; i < num_data; i++) {
-	if (data[i].flags != KRB5_CRYPTO_TYPE_DATA &&
-	    data[i].flags != KRB5_CRYPTO_TYPE_SIGN_ONLY)
+	if (data[i].flags != KRB5_CRYPTO_TYPE_SIGN_ONLY)
 	    continue;
 	len += data[i].data.length;
     }
 
     p = q = malloc(len);
+    if (p == NULL)
+	return ENOMEM;
 
     memcpy(q, hiv->data.data, hiv->data.length);
     q += hiv->data.length;
@@ -3582,32 +3581,144 @@ krb5_create_checksum_iov(krb5_context context,
     return 0;
 }
 
+/**
+ * Verify a Kerberos message checksum.
+ *
+ * @param context Kerberos context
+ * @param crypto Kerberos crypto context
+ * @param usage Key usage for this buffer
+ * @param data array of buffers to process
+ * @param num_data length of array
+ *
+ * @return Return an error code or 0.
+ * @ingroup krb5_crypto
+ */
 
-size_t KRB5_LIB_FUNCTION
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_verify_checksum_iov(krb5_context context,
+			 krb5_crypto crypto,
+			 unsigned usage,
+			 krb5_crypto_iov *data,
+			 unsigned int num_data,
+			 krb5_cksumtype *type)
+{
+    struct encryption_type *et = crypto->et;
+    Checksum cksum;
+    krb5_crypto_iov *civ;
+    krb5_error_code ret;
+    int i;
+    size_t len;
+    char *p, *q;
+
+    if (num_data < 0) {
+        krb5_clear_error_message(context);
+	return KRB5_CRYPTO_INTERNAL;
+    }
+
+    if(!derived_crypto(context, crypto)) {
+	krb5_clear_error_message(context);
+	return KRB5_CRYPTO_INTERNAL;
+    }
+
+    civ = find_iv(data, num_data, KRB5_CRYPTO_TYPE_CHECKSUM);
+    if (civ == NULL)
+	return KRB5_BAD_MSIZE;
+
+    len = 0;
+    for (i = 0; i < num_data; i++) {
+	if (data[i].flags != KRB5_CRYPTO_TYPE_DATA &&
+	    data[i].flags != KRB5_CRYPTO_TYPE_SIGN_ONLY)
+	    continue;
+	len += data[i].data.length;
+    }
+
+    p = q = malloc(len);
+
+    for (i = 0; i < num_data; i++) {
+	if (data[i].flags != KRB5_CRYPTO_TYPE_DATA &&
+	    data[i].flags != KRB5_CRYPTO_TYPE_SIGN_ONLY)
+	    continue;
+	memcpy(q, data[i].data.data, data[i].data.length);
+	q += data[i].data.length;
+    }
+
+    cksum.cksumtype = CHECKSUMTYPE(et->keyed_checksum);
+    cksum.checksum.length = civ->data.length;
+    cksum.checksum.data = civ->data.data;
+
+    ret = krb5_verify_checksum(context, crypto, usage, p, len, &cksum);
+    free(p);
+
+    if (ret == 0 && type)
+	*type = cksum.cksumtype;
+
+    return ret;
+}
+
+
+krb5_error_code KRB5_LIB_FUNCTION
 krb5_crypto_length(krb5_context context,
 		   krb5_crypto crypto,
-		   int type)
+		   int type,
+		   size_t *len)
 {
-    if (!derived_crypto(context, crypto))
-	return (size_t)-1;
+    if (!derived_crypto(context, crypto)) {
+	krb5_set_error_message(context, EINVAL, "not a derived crypto");
+	return EINVAL;
+    }
+	
     switch(type) {
     case KRB5_CRYPTO_TYPE_EMPTY:
+	*len = 0;
 	return 0;
     case KRB5_CRYPTO_TYPE_HEADER:
-	return crypto->et->blocksize;
+	*len = crypto->et->blocksize;
+	return 0;
+    case KRB5_CRYPTO_TYPE_DATA:
+    case KRB5_CRYPTO_TYPE_SIGN_ONLY:
+	/* len must already been filled in */
+	return 0;
     case KRB5_CRYPTO_TYPE_PADDING:
 	if (crypto->et->padsize > 1)
-	    return crypto->et->padsize;
+	    *len = crypto->et->padsize;
+	else
+	    *len = 0;
 	return 0;
     case KRB5_CRYPTO_TYPE_TRAILER:
-	return CHECKSUMSIZE(crypto->et->keyed_checksum);
+	*len = CHECKSUMSIZE(crypto->et->keyed_checksum);
+	return 0;
     case KRB5_CRYPTO_TYPE_CHECKSUM:
 	if (crypto->et->keyed_checksum)
-	    return CHECKSUMSIZE(crypto->et->keyed_checksum);
-	return CHECKSUMSIZE(crypto->et->checksum);
+	    *len = CHECKSUMSIZE(crypto->et->keyed_checksum);
+	else
+	    *len = CHECKSUMSIZE(crypto->et->checksum);
+	return 0;
     }
-    return (size_t)-1;
+    krb5_set_error_message(context, EINVAL,
+			   "%d not a supported type", type);
+    return EINVAL;
 }
+
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_crypto_length_iov(krb5_context context,
+		       krb5_crypto crypto,
+		       krb5_crypto_iov *data,
+		       unsigned int num_data)
+{
+    krb5_error_code ret;
+    int i;
+
+    for (i = 0; i < num_data; i++) {
+	ret = krb5_crypto_length(context, crypto,
+				 data[i].flags,
+				 &data[i].data.length);
+	if (ret)
+	    return ret;
+    }
+    return 0;
+}
+
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_encrypt_ivec(krb5_context context,

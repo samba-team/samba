@@ -2,7 +2,7 @@
 
 SUFFIXES = .et .h
 
-DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir)/include
+DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir)/include -I$(top_srcdir)/include
 
 AM_CPPFLAGS = $(INCLUDES_roken)
 

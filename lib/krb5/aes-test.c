@@ -33,6 +33,7 @@
 #include "krb5_locl.h"
 #include <hex.h>
 #include <err.h>
+#include <assert.h>
 
 #ifdef HAVE_OPENSSL
 #include <openssl/evp.h>
@@ -324,30 +325,31 @@ krb_enc_iov2(krb5_context context,
 	     krb5_data *clear)
 {
     krb5_crypto_iov iov[4];
+    krb5_data decrypt;
     int ret;
-    char *p;
+    char *p, *q;
     size_t len, i;
 
     p = clear->data;
     len = clear->length;
 
     iov[0].flags = KRB5_CRYPTO_TYPE_HEADER;
-    iov[0].data.length = krb5_crypto_length(context, crypto, iov[0].flags);
+    krb5_crypto_length(context, crypto, iov[0].flags, &iov[0].data.length);
     iov[0].data.data = emalloc(iov[0].data.length);
 
-    iov[1].flags = KRB5_CRYPTO_TYPE_TRAILER;
-    iov[1].data.length = krb5_crypto_length(context, crypto, iov[1].flags);
+    iov[1].flags = KRB5_CRYPTO_TYPE_DATA;
+    iov[1].data.length = len;
     iov[1].data.data = emalloc(iov[1].data.length);
-
-    iov[2].flags = KRB5_CRYPTO_TYPE_DATA;
-    iov[2].data.length = len;
-    iov[2].data.data = emalloc(iov[2].data.length);
-    memcpy(iov[2].data.data, p, iov[2].data.length);
+    memcpy(iov[1].data.data, p, iov[1].data.length);
 
     /* padding buffer */
-    iov[3].flags = KRB5_CRYPTO_TYPE_PADDING;
-    iov[3].data.length = krb5_crypto_length(context, crypto, KRB5_CRYPTO_TYPE_PADDING);
-    iov[3].data.data = emalloc(iov[4].data.length);
+    iov[2].flags = KRB5_CRYPTO_TYPE_PADDING;
+    krb5_crypto_length(context, crypto, KRB5_CRYPTO_TYPE_PADDING, &iov[2].data.length);
+    iov[2].data.data = emalloc(iov[2].data.length);
+
+    iov[3].flags = KRB5_CRYPTO_TYPE_TRAILER;
+    krb5_crypto_length(context, crypto, iov[3].flags, &iov[3].data.length);
+    iov[3].data.data = emalloc(iov[3].data.length);
 
     ret = krb5_encrypt_iov_ivec(context, crypto, usage,
 				iov, sizeof(iov)/sizeof(iov[0]), NULL);
@@ -360,33 +362,54 @@ krb_enc_iov2(krb5_context context,
     if (len != cipher_len)
 	errx(1, "cipher len wrong");
 
-    /* now decrypt */
+    /*
+     * Plain decrypt
+     */
+
+    p = q = emalloc(len);
+    for (i = 0; i < sizeof(iov)/sizeof(iov[0]); i++) {
+	memcpy(q, iov[i].data.data, iov[i].data.length);
+	q += iov[i].data.length;
+    }
+
+    ret = krb5_decrypt(context, crypto, usage, p, len, &decrypt);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_decrypt");
+    else
+	krb5_data_free(&decrypt);
+
+    free(p);
+
+    /* 
+     * Now decrypt use iov
+     */
 
     /* padding turn into data */
-    p = emalloc(iov[2].data.length + iov[3].data.length);
+    p = emalloc(iov[1].data.length + iov[2].data.length);
 
-    memcpy(p,                      iov[2].data.data, iov[2].data.length);
-    memcpy(p + iov[2].data.length, iov[3].data.data, iov[3].data.length);
+    memcpy(p,                      iov[1].data.data, iov[1].data.length);
+    memcpy(p + iov[1].data.length, iov[2].data.data, iov[2].data.length);
     
+    free(iov[1].data.data);
     free(iov[2].data.data);
-    free(iov[3].data.data);
     
-    iov[2].data.data = p;
-    iov[2].data.length += iov[3].data.length;
+    iov[1].data.data = p;
+    iov[1].data.length += iov[2].data.length;
 
-    iov[3].flags = KRB5_CRYPTO_TYPE_EMPTY;
+    iov[2].flags = KRB5_CRYPTO_TYPE_EMPTY;
+    iov[2].data.length = 0;
 
     ret = krb5_decrypt_iov_ivec(context, crypto, usage,
 				iov, sizeof(iov)/sizeof(iov[0]), NULL);
     if (ret)
-	errx(1, "decrypt iov failed: %d", ret);
+	krb5_err(context, 1, ret, "decrypt iov failed: %d", ret);
 
-    if (clear->length != iov[2].data.length)
+    if (clear->length != iov[1].data.length)
 	errx(1, "length incorrect");
 
     p = clear->data;
-    if (memcmp(iov[2].data.data, p, iov[2].data.length) != 0)
-	errx(1, "iov[2] incorrect");
+    if (memcmp(iov[1].data.data, p, iov[1].data.length) != 0)
+	errx(1, "iov[1] incorrect");
 
     return 0;
 }
@@ -408,14 +431,14 @@ krb_enc_iov(krb5_context context,
     len = cipher->length;
 
     iov[0].flags = KRB5_CRYPTO_TYPE_HEADER;
-    iov[0].data.length = krb5_crypto_length(context, crypto, iov[0].flags);
+    krb5_crypto_length(context, crypto, iov[0].flags, &iov[0].data.length);
     iov[0].data.data = emalloc(iov[0].data.length);
     memcpy(iov[0].data.data, p, iov[0].data.length);
     p += iov[0].data.length;
     len -= iov[0].data.length;
 
     iov[1].flags = KRB5_CRYPTO_TYPE_TRAILER;
-    iov[1].data.length = krb5_crypto_length(context, crypto, iov[1].flags);
+    krb5_crypto_length(context, crypto, iov[1].flags, &iov[1].data.length);
     iov[1].data.data = emalloc(iov[1].data.length);
     memcpy(iov[1].data.data, p + len - iov[1].data.length, iov[1].data.length);
     len -= iov[1].data.length;
@@ -428,7 +451,7 @@ krb_enc_iov(krb5_context context,
     ret = krb5_decrypt_iov_ivec(context, crypto, usage,
 				iov, sizeof(iov)/sizeof(iov[0]), NULL);
     if (ret)
-	errx(1, "krb_enc_iov decrypt iov failed: %d", ret);
+	krb5_err(context, 1, ret, "krb_enc_iov decrypt iov failed: %d", ret);
 
     if (clear->length != iov[2].data.length)
 	errx(1, "length incorrect");
@@ -440,6 +463,43 @@ krb_enc_iov(krb5_context context,
     return 0;
 }
 
+static int
+krb_checksum_iov(krb5_context context,
+		 krb5_crypto crypto,
+		 unsigned usage,
+		 krb5_data *plain)
+{
+    krb5_crypto_iov iov[4];
+    int ret;
+    char *p;
+    size_t len;
+
+    p = plain->data;
+    len = plain->length;
+
+    iov[0].flags = KRB5_CRYPTO_TYPE_CHECKSUM;
+    krb5_crypto_length(context, crypto, iov[0].flags, &iov[0].data.length);
+    iov[0].data.data = emalloc(iov[0].data.length);
+
+    iov[1].flags = KRB5_CRYPTO_TYPE_DATA;
+    iov[1].data.length = len;
+    iov[1].data.data = p;
+
+    iov[2].flags = KRB5_CRYPTO_TYPE_TRAILER;
+    krb5_crypto_length(context, crypto, iov[0].flags, &iov[2].data.length);
+    iov[2].data.data = malloc(iov[2].data.length);
+
+    ret = krb5_create_checksum_iov(context, crypto, usage,
+				   iov, sizeof(iov)/sizeof(iov[0]), NULL);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_create_checksum_iov failed");
+
+    ret = krb5_verify_checksum_iov(context, crypto, usage, iov, sizeof(iov)/sizeof(iov[0]), NULL);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_verify_checksum_iov");
+
+    return 0;
+}
 
 
 static int
@@ -548,6 +608,10 @@ krb_enc_test(krb5_context context)
 	if (ret)
 	    errx(1, "krb_enc_iov2 failed with %d for test %d", ret, i);
 
+	ret = krb_checksum_iov(context, crypto, krbencs[i].usage, &plain);
+	if (ret)
+	    errx(1, "krb_checksum_iov failed with %d for test %d", ret, i);
+
 	krb5_crypto_destroy(context, crypto);
 
 	ret = krb_enc_mit(context, krbencs[i].enctype, &kb,
@@ -558,6 +622,184 @@ krb_enc_test(krb5_context context)
 
     return 0;
 }
+
+static int
+iov_test(krb5_context context)
+{
+    krb5_enctype enctype = ENCTYPE_AES256_CTS_HMAC_SHA1_96;
+    krb5_error_code ret;
+    krb5_crypto crypto;
+    krb5_keyblock key;
+    krb5_data signonly, in, in2;
+    krb5_crypto_iov iov[6];
+    size_t len, i;
+    unsigned char *base, *p;
+
+    ret = krb5_generate_random_keyblock(context, enctype, &key);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_generate_random_keyblock");
+
+    ret = krb5_crypto_init(context, &key, 0, &crypto);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_crypto_init");
+
+
+    ret = krb5_crypto_length(context, crypto, KRB5_CRYPTO_TYPE_HEADER, &len);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_crypto_length");
+    
+    signonly.data = "This should be signed";
+    signonly.length = strlen(signonly.data);
+    in.data = "inputdata";
+    in.length = strlen(in.data);
+
+    in2.data = "INPUTDATA";
+    in2.length = strlen(in2.data);
+
+
+    memset(iov, 0, sizeof(iov));
+
+    iov[0].flags = KRB5_CRYPTO_TYPE_HEADER;
+    iov[1].flags = KRB5_CRYPTO_TYPE_DATA;
+    iov[1].data = in;
+    iov[2].flags = KRB5_CRYPTO_TYPE_SIGN_ONLY;
+    iov[2].data = signonly;
+    iov[3].flags = KRB5_CRYPTO_TYPE_EMPTY;
+    iov[4].flags = KRB5_CRYPTO_TYPE_PADDING;
+    iov[5].flags = KRB5_CRYPTO_TYPE_TRAILER;
+
+    ret = krb5_crypto_length_iov(context, crypto, iov, 
+				 sizeof(iov)/sizeof(iov[0]));
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_crypto_length_iov");
+
+    for (len = 0, i = 0; i < sizeof(iov)/sizeof(iov[0]); i++) {
+	if (iov[i].flags == KRB5_CRYPTO_TYPE_SIGN_ONLY)
+	    continue;
+	len += iov[i].data.length;
+    }
+
+    base = emalloc(len);
+
+    /*
+     * Allocate data for the fields
+     */
+
+    for (p = base, i = 0; i < sizeof(iov)/sizeof(iov[0]); i++) {
+	if (iov[i].flags == KRB5_CRYPTO_TYPE_SIGN_ONLY)
+	    continue;;
+	iov[i].data.data = p;
+	p += iov[i].data.length;
+    }
+    assert(iov[1].data.length == in.length);
+    memcpy(iov[1].data.data, in.data, iov[1].data.length);
+
+    /*
+     * Encrypt
+     */
+
+    ret = krb5_encrypt_iov_ivec(context, crypto, 7, iov, 
+				sizeof(iov)/sizeof(iov[0]), NULL);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_encrypt_iov_ivec");
+    
+    /*
+     * Decrypt
+     */
+
+    ret = krb5_decrypt_iov_ivec(context, crypto, 7,
+				iov, sizeof(iov)/sizeof(iov[0]), NULL);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_decrypt_iov_ivec");
+
+    /*
+     * Verify data
+     */
+
+    if (krb5_data_cmp(&iov[1].data, &in) != 0)
+	krb5_errx(context, 1, "decrypted data not same");
+
+    /*
+     * Free memory
+     */
+
+    free(base);
+
+    /* Set up for second try */
+
+    iov[3].flags = KRB5_CRYPTO_TYPE_DATA;
+    iov[3].data = in;
+
+    ret = krb5_crypto_length_iov(context, crypto,
+				 iov, sizeof(iov)/sizeof(iov[0]));
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_crypto_length_iov");
+
+    for (len = 0, i = 0; i < sizeof(iov)/sizeof(iov[0]); i++) {
+	if (iov[i].flags == KRB5_CRYPTO_TYPE_SIGN_ONLY)
+	    continue;
+	len += iov[i].data.length;
+    }
+
+    base = emalloc(len);
+
+    /*
+     * Allocate data for the fields
+     */
+
+    for (p = base, i = 0; i < sizeof(iov)/sizeof(iov[0]); i++) {
+	if (iov[i].flags == KRB5_CRYPTO_TYPE_SIGN_ONLY)
+	    continue;;
+	iov[i].data.data = p;
+	p += iov[i].data.length;
+    }
+    assert(iov[1].data.length == in.length);
+    memcpy(iov[1].data.data, in.data, iov[1].data.length);
+
+    assert(iov[3].data.length == in2.length);
+    memcpy(iov[3].data.data, in2.data, iov[3].data.length);
+
+
+
+    /*
+     * Encrypt
+     */
+
+    ret = krb5_encrypt_iov_ivec(context, crypto, 7, 
+				iov, sizeof(iov)/sizeof(iov[0]), NULL);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_encrypt_iov_ivec");
+    
+    /*
+     * Decrypt
+     */
+
+    ret = krb5_decrypt_iov_ivec(context, crypto, 7,
+				iov, sizeof(iov)/sizeof(iov[0]), NULL);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_decrypt_iov_ivec");
+
+    /*
+     * Verify data
+     */
+
+    if (krb5_data_cmp(&iov[1].data, &in) != 0)
+	krb5_errx(context, 1, "decrypted data 2.1 not same");
+
+    if (krb5_data_cmp(&iov[3].data, &in2) != 0)
+	krb5_errx(context, 1, "decrypted data 2.2 not same");
+
+    /*
+     * Free memory
+     */
+
+    free(base);
+
+    krb5_crypto_destroy(context, crypto);
+
+    return 0;
+}
+
 
 
 static int
@@ -592,7 +834,6 @@ random_to_key(krb5_context context)
     return 0;
 }
 
-
 int
 main(int argc, char **argv)
 {
@@ -608,6 +849,7 @@ main(int argc, char **argv)
 
     val |= krb_enc_test(context);
     val |= random_to_key(context);
+    val |= iov_test(context);
 
     if (verbose && val == 0)
 	printf("all ok\n");

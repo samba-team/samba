@@ -33,8 +33,6 @@
 
 #include "gsskrb5_locl.h"
 
-RCSID("$Id$");
-
 OM_uint32
 _gsskrb5_get_tkt_flags(OM_uint32 *minor_status,
 		       gsskrb5_ctx ctx,
