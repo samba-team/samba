@@ -4,13 +4,18 @@
                    ==============================
 
 
-This is a security release in order to address CVE-2009-1886.
+This is a security release in order to address CVE-2009-1886 and CVE-2009-1888.
 
-   o CVE-2009-1886.
+   o CVE-2009-1886:
      In Samba 3.2.0 to 3.2.12 (inclusive), the smbclient commands dealing
      with file names treat user input as a format string to asprintf.
      With a maliciously crafted file name smbclient can be made
      to execute code triggered by the server.
+
+   o CVE-2009-1888:
+     In Samba 3.0.31 to 3.3.5 (inclusive), an uninitialized read of a data
+     value can potentially affect access control when "dos filemode"
+     is set to "yes".
 
 
 ######################################################################
@@ -21,8 +26,9 @@ Changes since 3.2.12
 --------------------
 
 
-o   Volker Lendecke <vl@samba.org>
+o   Jeremy Allison <jra@samba.org>
     * Fix for CVE-2009-1886.
+    * Fix for CVE-2009-1888.
 
 
 ######################################################################
