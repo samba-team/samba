@@ -45,7 +45,9 @@ AC_CACHE_CHECK([that the C compiler understands negative enum values],samba_cv_C
 		return 0;
 	}
 ],
-	samba_cv_CC_NEGATIVE_ENUM_VALUES=yes,samba_cv_CC_NEGATIVE_ENUM_VALUES=no)])
+	samba_cv_CC_NEGATIVE_ENUM_VALUES=yes,
+	samba_cv_CC_NEGATIVE_ENUM_VALUES=no,
+	samba_cv_CC_NEGATIVE_ENUM_VALUES=yes)])
 if test x"$samba_cv_CC_NEGATIVE_ENUM_VALUES" != x"yes"; then
 	AC_DEFINE(USE_UINT_ENUMS, 1, [Whether the compiler has uint enum support])
 fi
