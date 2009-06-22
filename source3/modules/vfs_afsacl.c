@@ -662,7 +662,7 @@ static size_t afs_to_nt_acl(struct afs_acl *afs_acl,
 	SMB_STRUCT_STAT sbuf;
 
 	/* Get the stat struct for the owner info. */
-	if(SMB_VFS_STAT(conn, name, &sbuf) != 0) {
+	if(vfs_stat_smb_fname(conn, name, &sbuf) != 0) {
 		return 0;
 	}
 

@@ -196,9 +196,9 @@ static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 		ret = SMB_VFS_FSTAT(fsp, &sbuf);
 	} else {
 		if (fsp && fsp->posix_open) {
-			ret = SMB_VFS_LSTAT(handle->conn, name, &sbuf);
+			ret = vfs_lstat_smb_fname(handle->conn, name, &sbuf);
 		} else {
-			ret = SMB_VFS_STAT(handle->conn, name, &sbuf);
+			ret = vfs_stat_smb_fname(handle->conn, name, &sbuf);
 		}
 	}
 
@@ -288,9 +288,11 @@ static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
 		ret = SMB_VFS_FSTAT(fsp, &sbuf);
 	} else {
 		if (fsp->posix_open) {
-			ret = SMB_VFS_LSTAT(handle->conn, fsp->fsp_name, &sbuf);
+			ret = vfs_lstat_smb_fname(handle->conn, fsp->fsp_name,
+						  &sbuf);
 		} else {
-			ret = SMB_VFS_STAT(handle->conn, fsp->fsp_name, &sbuf);
+			ret = vfs_stat_smb_fname(handle->conn, fsp->fsp_name,
+						 &sbuf);
 		}
 	}
 
@@ -338,9 +340,9 @@ static NTSTATUS store_acl_blob_pathname(vfs_handle_struct *handle,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION);
 
 	if (lp_posix_pathnames()) {
-		ret = SMB_VFS_LSTAT(handle->conn, fname, &sbuf);
+		ret = vfs_lstat_smb_fname(handle->conn, fname, &sbuf);
 	} else {
-		ret = SMB_VFS_STAT(handle->conn, fname, &sbuf);
+		ret = vfs_stat_smb_fname(handle->conn, fname, &sbuf);
 	}
 
 	if (ret == -1) {
@@ -514,9 +516,11 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 			ret = SMB_VFS_FSTAT(fsp, &sbuf);
 		} else {
 			if (fsp && fsp->posix_open) {
-				ret = SMB_VFS_LSTAT(handle->conn,fname, &sbuf);
+				ret = vfs_lstat_smb_fname(handle->conn,fname,
+							  &sbuf);
 			} else {
-				ret = SMB_VFS_STAT(handle->conn,fname, &sbuf);
+				ret = vfs_stat_smb_fname(handle->conn,fname,
+							 &sbuf);
 			}
 		}
 		if (ret == -1) {
@@ -621,9 +625,9 @@ static int unlink_acl_tdb(vfs_handle_struct *handle, const char *path)
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
 
 	if (lp_posix_pathnames()) {
-		ret = SMB_VFS_LSTAT(handle->conn, path, &sbuf);
+		ret = vfs_lstat_smb_fname(handle->conn, path, &sbuf);
 	} else {
-		ret = SMB_VFS_STAT(handle->conn, path, &sbuf);
+		ret = vfs_stat_smb_fname(handle->conn, path, &sbuf);
 	}
 
 	if (ret == -1) {
@@ -670,9 +674,9 @@ static int rmdir_acl_tdb(vfs_handle_struct *handle, const char *path)
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
 
 	if (lp_posix_pathnames()) {
-		ret = SMB_VFS_LSTAT(handle->conn, path, &sbuf);
+		ret = vfs_lstat_smb_fname(handle->conn, path, &sbuf);
 	} else {
-		ret = SMB_VFS_STAT(handle->conn, path, &sbuf);
+		ret = vfs_stat_smb_fname(handle->conn, path, &sbuf);
 	}
 
 	if (ret == -1) {
@@ -774,9 +778,13 @@ static NTSTATUS fset_nt_acl_tdb(vfs_handle_struct *handle, files_struct *fsp,
 		}
 		if (fsp->is_directory || fsp->fh->fd == -1) {
 			if (fsp->posix_open) {
-				ret = SMB_VFS_LSTAT(fsp->conn,fsp->fsp_name, &sbuf);
+				ret = vfs_lstat_smb_fname(fsp->conn,
+							  fsp->fsp_name,
+							  &sbuf);
 			} else {
-				ret = SMB_VFS_STAT(fsp->conn,fsp->fsp_name, &sbuf);
+				ret = vfs_stat_smb_fname(fsp->conn,
+							 fsp->fsp_name,
+							 &sbuf);
 			}
 		} else {
 			ret = SMB_VFS_FSTAT(fsp, &sbuf);
@@ -867,9 +875,9 @@ static int sys_acl_set_file_tdb(vfs_handle_struct *handle,
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
 
 	if (lp_posix_pathnames()) {
-		ret = SMB_VFS_LSTAT(handle->conn, path, &sbuf);
+		ret = vfs_lstat_smb_fname(handle->conn, path, &sbuf);
 	} else {
-		ret = SMB_VFS_STAT(handle->conn, path, &sbuf);
+		ret = vfs_stat_smb_fname(handle->conn, path, &sbuf);
 	}
 
 	if (ret == -1) {
@@ -904,9 +912,11 @@ static int sys_acl_set_fd_tdb(vfs_handle_struct *handle,
 
 	if (fsp->is_directory || fsp->fh->fd == -1) {
 		if (fsp->posix_open) {
-			ret = SMB_VFS_LSTAT(fsp->conn,fsp->fsp_name, &sbuf);
+			ret = vfs_lstat_smb_fname(fsp->conn,fsp->fsp_name,
+						  &sbuf);
 		} else {
-			ret = SMB_VFS_STAT(fsp->conn,fsp->fsp_name, &sbuf);
+			ret = vfs_stat_smb_fname(fsp->conn,fsp->fsp_name,
+						 &sbuf);
 		}
 	} else {
 		ret = SMB_VFS_FSTAT(fsp, &sbuf);

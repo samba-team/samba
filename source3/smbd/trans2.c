@@ -1395,14 +1395,17 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			}
 
 			if (INFO_LEVEL_IS_UNIX(info_level)) {
-				if (SMB_VFS_LSTAT(conn,pathreal,&sbuf) != 0) {
+				if (vfs_lstat_smb_fname(conn, pathreal,
+							&sbuf) != 0) {
 					DEBUG(5,("get_lanman2_dir_entry:Couldn't lstat [%s] (%s)\n",
 						pathreal,strerror(errno)));
 					TALLOC_FREE(pathreal);
 					TALLOC_FREE(fname);
 					continue;
 				}
-			} else if (!VALID_STAT(sbuf) && SMB_VFS_STAT(conn,pathreal,&sbuf) != 0) {
+			} else if (!VALID_STAT(sbuf) &&
+				   vfs_stat_smb_fname(conn, pathreal,
+						      &sbuf) != 0) {
 				/* Needed to show the msdfs symlinks as
 				 * directories */
 
@@ -2626,7 +2629,7 @@ static void call_trans2qfsinfo(connection_struct *conn,
 
 	DEBUG(3,("call_trans2qfsinfo: level = %d\n", info_level));
 
-	if(SMB_VFS_STAT(conn,".",&st)!=0) {
+	if(vfs_stat_smb_fname(conn,".",&st)!=0) {
 		DEBUG(2,("call_trans2qfsinfo: stat of . failed (%s)\n", strerror(errno)));
 		reply_doserror(req, ERRSRV, ERRinvdevice);
 		return;
@@ -3871,13 +3874,13 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 	char *lock_data = NULL;
 	bool ms_dfs_link = false;
 	TALLOC_CTX *ctx = talloc_tos();
+	NTSTATUS status = NT_STATUS_OK;
 
 	if (!params) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 
-	ZERO_STRUCT(sbuf);
 	ZERO_STRUCT(write_time_ts);
 
 	if (tran_call == TRANSACT2_QFILEINFO) {
@@ -3915,6 +3918,13 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			return;
 		}
 
+		status = create_synthetic_smb_fname_split(talloc_tos(), fname,
+							  NULL, &smb_fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			reply_nterror(req, status);
+			return;
+		}
+
 		if(fsp->fake_file_handle) {
 			/*
 			 * This is actually for the QUOTA_FAKE_FILE --metze
@@ -3931,18 +3941,25 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 
 			if (INFO_LEVEL_IS_UNIX(info_level)) {
 				/* Always do lstat for UNIX calls. */
-				if (SMB_VFS_LSTAT(conn,fname,&sbuf)) {
-					DEBUG(3,("call_trans2qfilepathinfo: SMB_VFS_LSTAT of %s failed (%s)\n",fname,strerror(errno)));
+				if (SMB_VFS_LSTAT(conn, smb_fname)) {
+					DEBUG(3,("call_trans2qfilepathinfo: "
+						 "SMB_VFS_LSTAT of %s failed "
+						 "(%s)\n",
+						 smb_fname_str_dbg(smb_fname),
+						 strerror(errno)));
 					reply_unixerror(req,ERRDOS,ERRbadpath);
 					return;
 				}
-			} else if (SMB_VFS_STAT(conn,fname,&sbuf)) {
-				DEBUG(3,("call_trans2qfilepathinfo: SMB_VFS_STAT of %s failed (%s)\n",fname,strerror(errno)));
+			} else if (SMB_VFS_STAT(conn, smb_fname)) {
+				DEBUG(3,("call_trans2qfilepathinfo: "
+					 "SMB_VFS_STAT of %s failed (%s)\n",
+					 smb_fname_str_dbg(smb_fname),
+					 strerror(errno)));
 				reply_unixerror(req, ERRDOS, ERRbadpath);
 				return;
 			}
 
-			fileid = vfs_file_id_from_sbuf(conn, &sbuf);
+			fileid = vfs_file_id_from_sbuf(conn, &smb_fname->st);
 			get_file_infos(fileid, &delete_pending, &write_time_ts);
 		} else {
 			/*
@@ -3952,19 +3969,18 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 				return;
 			}
 
-			if (SMB_VFS_FSTAT(fsp, &sbuf) != 0) {
-				DEBUG(3,("fstat of fnum %d failed (%s)\n", fsp->fnum, strerror(errno)));
+			if (SMB_VFS_FSTAT(fsp, &smb_fname->st) != 0) {
+				DEBUG(3, ("fstat of fnum %d failed (%s)\n",
+					  fsp->fnum, strerror(errno)));
 				reply_unixerror(req, ERRDOS, ERRbadfid);
 				return;
 			}
 			pos = fsp->fh->position_information;
-			fileid = vfs_file_id_from_sbuf(conn, &sbuf);
+			fileid = vfs_file_id_from_sbuf(conn, &smb_fname->st);
 			get_file_infos(fileid, &delete_pending, &write_time_ts);
 		}
 
 	} else {
-		NTSTATUS status = NT_STATUS_OK;
-
 		/* qpathinfo */
 		if (total_params < 7) {
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -4005,41 +4021,50 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			return;
 		}
 
-		sbuf = smb_fname->st;
-
+		/* If this is a stream, check if there is a delete_pending. */
 		if ((conn->fs_capabilities & FILE_NAMED_STREAMS)
-		    && is_ntfs_stream_name(fname)) {
-			char *base;
-			SMB_STRUCT_STAT bsbuf;
+		    && is_ntfs_stream_smb_fname(smb_fname)) {
+			struct smb_filename *smb_fname_base = NULL;
 
-			status = split_ntfs_stream_name(talloc_tos(), fname,
-							&base, NULL);
+			/* Create an smb_filename with stream_name == NULL. */
+			status =
+			    create_synthetic_smb_fname(talloc_tos(),
+						       smb_fname->base_name,
+						       NULL, NULL,
+						       &smb_fname_base);
 			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(10, ("create_file_unixpath: "
-					"split_ntfs_stream_name failed: %s\n",
-					nt_errstr(status)));
 				reply_nterror(req, status);
 				return;
 			}
 
-			SMB_ASSERT(!is_ntfs_stream_name(base));	/* paranoia.. */
-
 			if (INFO_LEVEL_IS_UNIX(info_level)) {
 				/* Always do lstat for UNIX calls. */
-				if (SMB_VFS_LSTAT(conn,base,&bsbuf)) {
-					DEBUG(3,("call_trans2qfilepathinfo: SMB_VFS_LSTAT of %s failed (%s)\n",base,strerror(errno)));
+				if (SMB_VFS_LSTAT(conn, smb_fname_base) != 0) {
+					DEBUG(3,("call_trans2qfilepathinfo: "
+						 "SMB_VFS_LSTAT of %s failed "
+						 "(%s)\n",
+						 smb_fname_str_dbg(smb_fname_base),
+						 strerror(errno)));
+					TALLOC_FREE(smb_fname_base);
 					reply_unixerror(req,ERRDOS,ERRbadpath);
 					return;
 				}
 			} else {
-				if (SMB_VFS_STAT(conn,base,&bsbuf) != 0) {
-					DEBUG(3,("call_trans2qfilepathinfo: fileinfo of %s failed (%s)\n",base,strerror(errno)));
+				if (SMB_VFS_STAT(conn, smb_fname_base) != 0) {
+					DEBUG(3,("call_trans2qfilepathinfo: "
+						 "fileinfo of %s failed "
+						 "(%s)\n",
+						 smb_fname_str_dbg(smb_fname_base),
+						 strerror(errno)));
+					TALLOC_FREE(smb_fname_base);
 					reply_unixerror(req,ERRDOS,ERRbadpath);
 					return;
 				}
 			}
 
-			fileid = vfs_file_id_from_sbuf(conn, &bsbuf);
+			fileid = vfs_file_id_from_sbuf(conn,
+						       &smb_fname_base->st);
+			TALLOC_FREE(smb_fname_base);
 			get_file_infos(fileid, &delete_pending, NULL);
 			if (delete_pending) {
 				reply_nterror(req, NT_STATUS_DELETE_PENDING);
@@ -4049,29 +4074,41 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 
 		if (INFO_LEVEL_IS_UNIX(info_level)) {
 			/* Always do lstat for UNIX calls. */
-			if (SMB_VFS_LSTAT(conn,fname,&sbuf)) {
-				DEBUG(3,("call_trans2qfilepathinfo: SMB_VFS_LSTAT of %s failed (%s)\n",fname,strerror(errno)));
+			if (SMB_VFS_LSTAT(conn, smb_fname)) {
+				DEBUG(3,("call_trans2qfilepathinfo: "
+					 "SMB_VFS_LSTAT of %s failed (%s)\n",
+					 smb_fname_str_dbg(smb_fname),
+					 strerror(errno)));
 				reply_unixerror(req, ERRDOS, ERRbadpath);
 				return;
 			}
 
-		} else if (!VALID_STAT(sbuf) && SMB_VFS_STAT(conn,fname,&sbuf) && (info_level != SMB_INFO_IS_NAME_VALID)) {
-			ms_dfs_link = check_msdfs_link(conn,fname,&sbuf);
+		} else if (!VALID_STAT(smb_fname->st) &&
+			   SMB_VFS_STAT(conn, smb_fname) &&
+			   (info_level != SMB_INFO_IS_NAME_VALID)) {
+			ms_dfs_link = check_msdfs_link(conn, fname,
+						       &smb_fname->st);
 
 			if (!ms_dfs_link) {
-				DEBUG(3,("call_trans2qfilepathinfo: SMB_VFS_STAT of %s failed (%s)\n",fname,strerror(errno)));
+				DEBUG(3,("call_trans2qfilepathinfo: "
+					 "SMB_VFS_STAT of %s failed (%s)\n",
+					 smb_fname_str_dbg(smb_fname),
+					 strerror(errno)));
 				reply_unixerror(req, ERRDOS, ERRbadpath);
 				return;
 			}
 		}
 
-		fileid = vfs_file_id_from_sbuf(conn, &sbuf);
+		fileid = vfs_file_id_from_sbuf(conn, &smb_fname->st);
 		get_file_infos(fileid, &delete_pending, &write_time_ts);
 		if (delete_pending) {
 			reply_nterror(req, NT_STATUS_DELETE_PENDING);
 			return;
 		}
 	}
+
+	/* Set sbuf for use below. */
+	sbuf = smb_fname->st;
 
 	if (INFO_LEVEL_IS_UNIX(info_level) && !lp_unix_extensions()) {
 		reply_nterror(req, NT_STATUS_INVALID_LEVEL);
@@ -4511,7 +4548,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		case SMB_FILE_STREAM_INFORMATION: {
 			unsigned int num_streams;
 			struct stream_struct *streams;
-			NTSTATUS status;
 
 			DEBUG(10,("call_trans2qfilepathinfo: "
 				  "SMB_FILE_STREAM_INFORMATION\n"));
@@ -4738,7 +4774,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 		case SMB_QUERY_POSIX_LOCK:
 		{
-			NTSTATUS status = NT_STATUS_INVALID_LEVEL;
 			uint64_t count;
 			uint64_t offset;
 			uint32 lock_pid;
@@ -6024,7 +6059,7 @@ static NTSTATUS smb_unix_mknod(connection_struct *conn,
 		TALLOC_FREE(parent);
 	}
 
-	if (SMB_VFS_STAT(conn, fname, psbuf) != 0) {
+	if (vfs_stat_smb_fname(conn, fname, psbuf) != 0) {
 		status = map_nt_error_from_unix(errno);
 		SMB_VFS_UNLINK(conn,fname);
 		return status;
@@ -6742,8 +6777,6 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 		return;
 	}
 
-	ZERO_STRUCT(sbuf);
-
 	if (tran_call == TRANSACT2_SETFILEINFO) {
 		if (total_params < 4) {
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -6763,6 +6796,13 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 			return;
 		}
 
+		status = create_synthetic_smb_fname_split(talloc_tos(), fname,
+							  NULL, &smb_fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			reply_nterror(req, status);
+			return;
+		}
+
 		if(fsp->is_directory || fsp->fh->fd == -1) {
 			/*
 			 * This is actually a SETFILEINFO on a directory
@@ -6771,14 +6811,21 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 			 */
 			if (INFO_LEVEL_IS_UNIX(info_level)) {
 				/* Always do lstat for UNIX calls. */
-				if (SMB_VFS_LSTAT(conn,fname,&sbuf)) {
-					DEBUG(3,("call_trans2setfilepathinfo: SMB_VFS_LSTAT of %s failed (%s)\n",fname,strerror(errno)));
+				if (SMB_VFS_LSTAT(conn, smb_fname)) {
+					DEBUG(3,("call_trans2setfilepathinfo: "
+						 "SMB_VFS_LSTAT of %s failed "
+						 "(%s)\n",
+						 smb_fname_str_dbg(smb_fname),
+						 strerror(errno)));
 					reply_unixerror(req,ERRDOS,ERRbadpath);
 					return;
 				}
 			} else {
-				if (SMB_VFS_STAT(conn,fname,&sbuf) != 0) {
-					DEBUG(3,("call_trans2setfilepathinfo: fileinfo of %s failed (%s)\n",fname,strerror(errno)));
+				if (SMB_VFS_STAT(conn, smb_fname) != 0) {
+					DEBUG(3,("call_trans2setfilepathinfo: "
+						 "fileinfo of %s failed (%s)\n",
+						 smb_fname_str_dbg(smb_fname),
+						 strerror(errno)));
 					reply_unixerror(req,ERRDOS,ERRbadpath);
 					return;
 				}
@@ -6809,8 +6856,10 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 				return;
 			}
 
-			if (SMB_VFS_FSTAT(fsp, &sbuf) != 0) {
-				DEBUG(3,("call_trans2setfilepathinfo: fstat of fnum %d failed (%s)\n",fsp->fnum, strerror(errno)));
+			if (SMB_VFS_FSTAT(fsp, &smb_fname->st) != 0) {
+				DEBUG(3,("call_trans2setfilepathinfo: fstat "
+					 "of fnum %d failed (%s)\n", fsp->fnum,
+					 strerror(errno)));
 				reply_unixerror(req, ERRDOS, ERRbadfid);
 				return;
 			}
@@ -6847,22 +6896,27 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 			return;
 		}
 
-		sbuf = smb_fname->st;
-
 		if (INFO_LEVEL_IS_UNIX(info_level)) {
 			/*
 			 * For CIFS UNIX extensions the target name may not exist.
 			 */
 
 			/* Always do lstat for UNIX calls. */
-			SMB_VFS_LSTAT(conn,fname,&sbuf);
+			SMB_VFS_LSTAT(conn, smb_fname);
 
-		} else if (!VALID_STAT(sbuf) && SMB_VFS_STAT(conn,fname,&sbuf)) {
-			DEBUG(3,("call_trans2setfilepathinfo: SMB_VFS_STAT of %s failed (%s)\n",fname,strerror(errno)));
+		} else if (!VALID_STAT(smb_fname->st) &&
+			   SMB_VFS_STAT(conn, smb_fname)) {
+			DEBUG(3,("call_trans2setfilepathinfo: SMB_VFS_STAT of "
+				 "%s failed (%s)\n",
+				 smb_fname_str_dbg(smb_fname),
+				 strerror(errno)));
 			reply_unixerror(req, ERRDOS, ERRbadpath);
 			return;
 		}
 	}
+
+	/* Set sbuf for use below. */
+	sbuf = smb_fname->st;
 
 	if (INFO_LEVEL_IS_UNIX(info_level) && !lp_unix_extensions()) {
 		reply_nterror(req, NT_STATUS_INVALID_LEVEL);

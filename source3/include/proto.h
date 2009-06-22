@@ -3508,7 +3508,6 @@ bool release_posix_lock_posix_flavour(files_struct *fsp,
 
 /* The following definitions come from modules/vfs_default.c  */
 
-int vfswrap_lstat(vfs_handle_struct *handle,  const char *path, SMB_STRUCT_STAT *sbuf);
 ssize_t vfswrap_llistxattr(struct vfs_handle_struct *handle, const char *path, char *list, size_t size);
 ssize_t vfswrap_flistxattr(struct vfs_handle_struct *handle, struct files_struct *fsp, char *list, size_t size);
 NTSTATUS vfs_default_init(void);
@@ -6336,11 +6335,13 @@ NTSTATUS close_fake_file(struct smb_request *req, files_struct *fsp);
 /* The following definitions come from smbd/file_access.c  */
 
 bool can_access_file_acl(struct connection_struct *conn,
-				const char * fname,
-				uint32_t access_mask);
+			 const struct smb_filename *smb_fname,
+			 uint32_t access_mask);
 bool can_delete_file_in_directory(connection_struct *conn,
-				  const struct smb_filename *smb_fname);
-bool can_access_file_data(connection_struct *conn, const char *fname, const SMB_STRUCT_STAT *psbuf, uint32 access_mask);
+				  struct smb_filename *smb_fname);
+bool can_access_file_data(connection_struct *conn,
+			  const struct smb_filename *smb_fname,
+			  uint32 access_mask);
 bool can_write_to_file(connection_struct *conn, const char *fname, const SMB_STRUCT_STAT *psbuf);
 bool directory_has_default_acl(connection_struct *conn, const char *fname);
 
@@ -6366,12 +6367,16 @@ NTSTATUS get_full_smb_filename(TALLOC_CTX *ctx, const struct smb_filename *smb_f
 			      char **full_name);
 NTSTATUS create_synthetic_smb_fname(TALLOC_CTX *ctx, const char *base_name,
 				    const char *stream_name,
-				    SMB_STRUCT_STAT *psbuf,
+				    const SMB_STRUCT_STAT *psbuf,
 				    struct smb_filename **smb_fname_out);
 NTSTATUS create_synthetic_smb_fname_split(TALLOC_CTX *ctx,
 					  const char *fname,
-					  SMB_STRUCT_STAT *psbuf,
+					  const SMB_STRUCT_STAT *psbuf,
 					  struct smb_filename **smb_fname_out);
+int vfs_stat_smb_fname(struct connection_struct *conn, const char *fname,
+		       SMB_STRUCT_STAT *psbuf);
+int vfs_lstat_smb_fname(struct connection_struct *conn, const char *fname,
+			SMB_STRUCT_STAT *psbuf);
 const char *smb_fname_str_dbg(const struct smb_filename *smb_fname);
 NTSTATUS copy_smb_filename(TALLOC_CTX *ctx,
 			   const struct smb_filename *smb_fname_in,
@@ -7137,8 +7142,6 @@ void vfs_remove_fsp_extension(vfs_handle_struct *handle, files_struct *fsp);
 void *vfs_memctx_fsp_extension(vfs_handle_struct *handle, files_struct *fsp);
 void *vfs_fetch_fsp_extension(vfs_handle_struct *handle, files_struct *fsp);
 bool smbd_vfs_init(connection_struct *conn);
-bool vfs_directory_exist(connection_struct *conn, const char *dname, SMB_STRUCT_STAT *st);
-bool vfs_object_exist(connection_struct *conn,const char *fname,SMB_STRUCT_STAT *sbuf);
 NTSTATUS vfs_file_exist(connection_struct *conn, struct smb_filename *smb_fname);
 ssize_t vfs_read_data(files_struct *fsp, char *buf, size_t byte_count);
 ssize_t vfs_pread_data(files_struct *fsp, char *buf,

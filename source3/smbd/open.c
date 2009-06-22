@@ -193,31 +193,41 @@ void change_file_owner_to_parent(connection_struct *conn,
 					const char *inherit_from_dir,
 					files_struct *fsp)
 {
-	SMB_STRUCT_STAT parent_st;
+	struct smb_filename *smb_fname_parent = NULL;
+	NTSTATUS status;
 	int ret;
 
-	ret = SMB_VFS_STAT(conn, inherit_from_dir, &parent_st);
+	status = create_synthetic_smb_fname(talloc_tos(), inherit_from_dir,
+					    NULL, NULL, &smb_fname_parent);
+	if (!NT_STATUS_IS_OK(status)) {
+		return;
+	}
+
+	ret = SMB_VFS_STAT(conn, smb_fname_parent);
 	if (ret == -1) {
 		DEBUG(0,("change_file_owner_to_parent: failed to stat parent "
 			 "directory %s. Error was %s\n",
-			 inherit_from_dir, strerror(errno) ));
+			 smb_fname_str_dbg(smb_fname_parent),
+			 strerror(errno)));
 		return;
 	}
 
 	become_root();
-	ret = SMB_VFS_FCHOWN(fsp, parent_st.st_ex_uid, (gid_t)-1);
+	ret = SMB_VFS_FCHOWN(fsp, smb_fname_parent->st.st_ex_uid, (gid_t)-1);
 	unbecome_root();
 	if (ret == -1) {
 		DEBUG(0,("change_file_owner_to_parent: failed to fchown "
 			 "file %s to parent directory uid %u. Error "
 			 "was %s\n", fsp->fsp_name,
-			 (unsigned int)parent_st.st_ex_uid,
+			 (unsigned int)smb_fname_parent->st.st_ex_uid,
 			 strerror(errno) ));
 	}
 
 	DEBUG(10,("change_file_owner_to_parent: changed new file %s to "
 		  "parent directory uid %u.\n",	fsp->fsp_name,
-		  (unsigned int)parent_st.st_ex_uid ));
+		  (unsigned int)smb_fname_parent->st.st_ex_uid));
+
+	TALLOC_FREE(smb_fname_parent);
 }
 
 NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
@@ -225,20 +235,27 @@ NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 				       const char *fname,
 				       SMB_STRUCT_STAT *psbuf)
 {
+	struct smb_filename *smb_fname_parent = NULL;
+	struct smb_filename *smb_fname_cwd = NULL;
 	char *saved_dir = NULL;
-	SMB_STRUCT_STAT sbuf;
-	SMB_STRUCT_STAT parent_st;
 	TALLOC_CTX *ctx = talloc_tos();
 	NTSTATUS status = NT_STATUS_OK;
 	int ret;
 
-	ret = SMB_VFS_STAT(conn, inherit_from_dir, &parent_st);
+	status = create_synthetic_smb_fname(ctx, inherit_from_dir, NULL, NULL,
+					    &smb_fname_parent);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	ret = SMB_VFS_STAT(conn, smb_fname_parent);
 	if (ret == -1) {
 		status = map_nt_error_from_unix(errno);
 		DEBUG(0,("change_dir_owner_to_parent: failed to stat parent "
 			 "directory %s. Error was %s\n",
-			 inherit_from_dir, strerror(errno) ));
-		return status;
+			 smb_fname_str_dbg(smb_fname_parent),
+			 strerror(errno)));
+		goto out;
 	}
 
 	/* We've already done an lstat into psbuf, and we know it's a
@@ -254,7 +271,7 @@ NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 		DEBUG(0,("change_dir_owner_to_parent: failed to get "
 			 "current working directory. Error was %s\n",
 			 strerror(errno)));
-		return status;
+		goto out;
 	}
 
 	/* Chdir into the new path. */
@@ -263,47 +280,58 @@ NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 		DEBUG(0,("change_dir_owner_to_parent: failed to change "
 			 "current working directory to %s. Error "
 			 "was %s\n", fname, strerror(errno) ));
-		goto out;
+		goto chdir;
 	}
 
-	if (SMB_VFS_STAT(conn,".",&sbuf) == -1) {
+	status = create_synthetic_smb_fname(ctx, ".", NULL, NULL,
+					    &smb_fname_cwd);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	ret = SMB_VFS_STAT(conn, smb_fname_cwd);
+	if (ret == -1) {
 		status = map_nt_error_from_unix(errno);
 		DEBUG(0,("change_dir_owner_to_parent: failed to stat "
 			 "directory '.' (%s) Error was %s\n",
 			 fname, strerror(errno)));
-		goto out;
+		goto chdir;
 	}
 
 	/* Ensure we're pointing at the same place. */
-	if (sbuf.st_ex_dev != psbuf->st_ex_dev ||
-	    sbuf.st_ex_ino != psbuf->st_ex_ino ||
-	    sbuf.st_ex_mode != psbuf->st_ex_mode ) {
+	if (smb_fname_cwd->st.st_ex_dev != psbuf->st_ex_dev ||
+	    smb_fname_cwd->st.st_ex_ino != psbuf->st_ex_ino ||
+	    smb_fname_cwd->st.st_ex_mode != psbuf->st_ex_mode ) {
 		DEBUG(0,("change_dir_owner_to_parent: "
 			 "device/inode/mode on directory %s changed. "
 			 "Refusing to chown !\n", fname ));
 		status = NT_STATUS_ACCESS_DENIED;
-		goto out;
+		goto chdir;
 	}
 
 	become_root();
-	ret = SMB_VFS_CHOWN(conn, ".", parent_st.st_ex_uid, (gid_t)-1);
+	ret = SMB_VFS_CHOWN(conn, ".", smb_fname_parent->st.st_ex_uid,
+			    (gid_t)-1);
 	unbecome_root();
 	if (ret == -1) {
 		status = map_nt_error_from_unix(errno);
 		DEBUG(10,("change_dir_owner_to_parent: failed to chown "
 			  "directory %s to parent directory uid %u. "
 			  "Error was %s\n", fname,
-			  (unsigned int)parent_st.st_ex_uid, strerror(errno) ));
-		goto out;
+			  (unsigned int)smb_fname_parent->st.st_ex_uid,
+			  strerror(errno) ));
+		goto chdir;
 	}
 
 	DEBUG(10,("change_dir_owner_to_parent: changed ownership of new "
 		  "directory %s to parent directory uid %u.\n",
-		  fname, (unsigned int)parent_st.st_ex_uid ));
+		  fname, (unsigned int)smb_fname_parent->st.st_ex_uid ));
 
- out:
-
+ chdir:
 	vfs_ChDir(conn,saved_dir);
+ out:
+	TALLOC_FREE(smb_fname_parent);
+	TALLOC_FREE(smb_fname_cwd);
 	return status;
 }
 
@@ -537,7 +565,7 @@ static NTSTATUS open_file(files_struct *fsp,
 		int ret;
 
 		if (fsp->fh->fd == -1) {
-			ret = SMB_VFS_STAT(conn, path, &smb_fname->st);
+			ret = SMB_VFS_STAT(conn, smb_fname);
 		} else {
 			ret = SMB_VFS_FSTAT(fsp, &smb_fname->st);
 			/* If we have an fd, this stat should succeed. */
@@ -1857,8 +1885,10 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 				can_access_mask = FILE_READ_DATA;
 			}
 
-			if (((can_access_mask & FILE_WRITE_DATA) && !CAN_WRITE(conn)) ||
-			    !can_access_file_data(conn, fname, &smb_fname->st, can_access_mask)) {
+			if (((can_access_mask & FILE_WRITE_DATA) &&
+				!CAN_WRITE(conn)) ||
+			    !can_access_file_data(conn, smb_fname,
+						  can_access_mask)) {
 				can_access = False;
 			}
 
@@ -2347,7 +2377,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	/* Ensure we're checking for a symlink here.... */
 	/* We don't want to get caught by a symlink racer. */
 
-	if (SMB_VFS_LSTAT(conn, name, psbuf) == -1) {
+	if (vfs_lstat_smb_fname(conn, name, psbuf) == -1) {
 		DEBUG(2, ("Could not stat directory '%s' just created: %s\n",
 			  name, strerror(errno)));
 		return map_nt_error_from_unix(errno);
@@ -2471,7 +2501,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 			 * We want to follow symlinks here.
 			 */
 
-			if (SMB_VFS_STAT(conn, fname, &smb_dname->st) != 0) {
+			if (SMB_VFS_STAT(conn, smb_dname) != 0) {
 				return map_nt_error_from_unix(errno);
 			}
 				
@@ -2836,32 +2866,22 @@ NTSTATUS open_streams_for_delete(connection_struct *conn,
 
 	for (i=0; i<num_streams; i++) {
 		struct smb_filename *smb_fname = NULL;
-		char *streamname = NULL;
-		SMB_STRUCT_STAT sbuf;
 
 		if (strequal(stream_info[i].name, "::$DATA")) {
 			streams[i] = NULL;
 			continue;
 		}
 
-		streamname = talloc_asprintf(talloc_tos(), "%s%s", fname,
-					     stream_info[i].name);
-		if (streamname == NULL) {
-			DEBUG(0, ("talloc_aprintf failed\n"));
-			status = NT_STATUS_NO_MEMORY;
-		}
-
-		if (SMB_VFS_STAT(conn, streamname, &sbuf) == -1) {
-			SET_STAT_INVALID(sbuf);
-		}
-
-		TALLOC_FREE(streamname);
-
 		status = create_synthetic_smb_fname(talloc_tos(), fname,
 						    stream_info[i].name,
-						    &sbuf, &smb_fname);
+						    NULL, &smb_fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto fail;
+		}
+
+		if (SMB_VFS_STAT(conn, smb_fname) == -1) {
+			DEBUG(10, ("Unable to stat stream: %s\n",
+				   smb_fname_str_dbg(smb_fname)));
 		}
 
 		status = SMB_VFS_CREATE_FILE(
@@ -2999,7 +3019,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	    && (share_access & FILE_SHARE_DELETE)
 	    && (access_mask & DELETE_ACCESS)
 	    && (!(can_delete_file_in_directory(conn, smb_fname) ||
-		 can_access_file_acl(conn, fname, DELETE_ACCESS)))) {
+		 can_access_file_acl(conn, smb_fname, DELETE_ACCESS)))) {
 		status = NT_STATUS_ACCESS_DENIED;
 		DEBUG(10,("create_file_unixpath: open file %s "
 			  "for delete ACCESS_DENIED\n",
@@ -3036,7 +3056,6 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	    && (!(create_options & NTCREATEX_OPTIONS_PRIVATE_STREAM_DELETE))) {
 		uint32 base_create_disposition;
 		struct smb_filename *smb_fname_base = NULL;
-		SMB_STRUCT_STAT sbuf;
 
 		if (create_options & FILE_DIRECTORY_FILE) {
 			status = NT_STATUS_NOT_A_DIRECTORY;
@@ -3052,17 +3071,18 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 			break;
 		}
 
-		if (SMB_VFS_STAT(conn, smb_fname->base_name, &sbuf) == -1) {
-			SET_STAT_INVALID(sbuf);
-		}
-
 		/* Create an smb_filename with stream_name == NULL. */
 		status = create_synthetic_smb_fname(talloc_tos(),
 						    smb_fname->base_name,
-						    NULL, &sbuf,
+						    NULL, NULL,
 						    &smb_fname_base);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto fail;
+		}
+
+		if (SMB_VFS_STAT(conn, smb_fname_base) == -1) {
+			DEBUG(10, ("Unable to stat stream: %s\n",
+				   smb_fname_str_dbg(smb_fname_base)));
 		}
 
 		/* Open the base file. */

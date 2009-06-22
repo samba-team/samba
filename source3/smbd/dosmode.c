@@ -81,7 +81,7 @@ mode_t unix_mode(connection_struct *conn, int dosmode, const char *fname,
 
 		DEBUG(2, ("unix_mode(%s) inheriting from %s\n", fname,
 			  inherit_from_dir));
-		if (SMB_VFS_STAT(conn, inherit_from_dir, &sbuf) != 0) {
+		if (vfs_stat_smb_fname(conn, inherit_from_dir, &sbuf) != 0) {
 			DEBUG(4,("unix_mode(%s) failed, [dir %s]: %s\n", fname,
 				 inherit_from_dir, strerror(errno)));
 			return(0);      /* *** shouldn't happen! *** */
@@ -560,7 +560,7 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 	}
 
 	if (!VALID_STAT(*st)) {
-		if (SMB_VFS_STAT(conn,fname,st))
+		if (vfs_stat_smb_fname(conn,fname,st))
 			return(-1);
 	}
 

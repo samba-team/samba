@@ -26,19 +26,20 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
 
-static int fake_perms_stat(vfs_handle_struct *handle, const char *fname, SMB_STRUCT_STAT *sbuf)
+static int fake_perms_stat(vfs_handle_struct *handle,
+			   struct smb_filename *smb_fname)
 {
 	int ret = -1;
 
-	ret = SMB_VFS_NEXT_STAT(handle, fname, sbuf);
+	ret = SMB_VFS_NEXT_STAT(handle, smb_fname);
 	if (ret == 0) {
-		if (S_ISDIR(sbuf->st_ex_mode)) {
-			sbuf->st_ex_mode = S_IFDIR | S_IRWXU;
+		if (S_ISDIR(smb_fname->st.st_ex_mode)) {
+			smb_fname->st.st_ex_mode = S_IFDIR | S_IRWXU;
 		} else {
-			sbuf->st_ex_mode = S_IRWXU;
+			smb_fname->st.st_ex_mode = S_IRWXU;
 		}
-		sbuf->st_ex_uid = handle->conn->server_info->utok.uid;
-		sbuf->st_ex_gid = handle->conn->server_info->utok.gid;
+		smb_fname->st.st_ex_uid = handle->conn->server_info->utok.uid;
+		smb_fname->st.st_ex_gid = handle->conn->server_info->utok.gid;
 	}
 
 	return ret;

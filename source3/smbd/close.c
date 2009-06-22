@@ -377,9 +377,9 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	   hasn't been renamed. */
 
 	if (fsp->posix_open) {
-		ret = SMB_VFS_LSTAT(conn,fsp->fsp_name,&sbuf);
+		ret = vfs_lstat_smb_fname(conn,fsp->fsp_name,&sbuf);
 	} else {
-		ret = SMB_VFS_STAT(conn,fsp->fsp_name,&sbuf);
+		ret = vfs_stat_smb_fname(conn,fsp->fsp_name,&sbuf);
 	}
 
 	if (ret != 0) {
@@ -502,9 +502,11 @@ static NTSTATUS update_write_time_on_close(struct files_struct *fsp)
 		ret = SMB_VFS_FSTAT(fsp, &sbuf);
 	} else {
 		if (fsp->posix_open) {
-			ret = SMB_VFS_LSTAT(fsp->conn,fsp->fsp_name,&sbuf);
+			ret = vfs_lstat_smb_fname(fsp->conn, fsp->fsp_name,
+						 &sbuf);
 		} else {
-			ret = SMB_VFS_STAT(fsp->conn,fsp->fsp_name,&sbuf);
+			ret = vfs_stat_smb_fname(fsp->conn, fsp->fsp_name,
+						 &sbuf);
 		}
 	}
 

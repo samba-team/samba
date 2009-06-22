@@ -1007,8 +1007,9 @@ void reply_checkpath(struct smb_request *req)
 	}
 
 	if (!VALID_STAT(smb_fname->st) &&
-	    (SMB_VFS_STAT(conn, name, &smb_fname->st) != 0)) {
-		DEBUG(3,("reply_checkpath: stat of %s failed (%s)\n",name,strerror(errno)));
+	    (SMB_VFS_STAT(conn, smb_fname) != 0)) {
+		DEBUG(3,("reply_checkpath: stat of %s failed (%s)\n",
+			smb_fname_str_dbg(smb_fname), strerror(errno)));
 		status = map_nt_error_from_unix(errno);
 		goto path_err;
 	}
@@ -1020,17 +1021,8 @@ void reply_checkpath(struct smb_request *req)
 	}
 
 	reply_outbuf(req, 0, 0);
- out:
-	TALLOC_FREE(smb_fname);
-	END_PROFILE(SMBcheckpath);
-	return;
 
  path_err:
-
-	TALLOC_FREE(smb_fname);
-
-	END_PROFILE(SMBcheckpath);
-
 	/* We special case this - as when a Windows machine
 		is parsing a path is steps through the components
 		one at a time - if a component fails it expects
@@ -1047,10 +1039,15 @@ void reply_checkpath(struct smb_request *req)
 		 */
 		reply_botherror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND,
 				ERRDOS, ERRbadpath);
-		return;
+		goto out;
 	}
 
 	reply_nterror(req, status);
+
+ out:
+	TALLOC_FREE(smb_fname);
+	END_PROFILE(SMBcheckpath);
+	return;
 }
 
 /****************************************************************************
@@ -1104,8 +1101,10 @@ void reply_getatr(struct smb_request *req)
 			goto out;
 		}
 		if (!VALID_STAT(smb_fname->st) &&
-		    (SMB_VFS_STAT(conn, fname, &smb_fname->st) != 0)) {
-			DEBUG(3,("reply_getatr: stat of %s failed (%s)\n",fname,strerror(errno)));
+		    (SMB_VFS_STAT(conn, smb_fname) != 0)) {
+			DEBUG(3,("reply_getatr: stat of %s failed (%s)\n",
+				 smb_fname_str_dbg(smb_fname),
+				 strerror(errno)));
 			reply_unixerror(req, ERRDOS,ERRbadfile);
 			goto out;
 		}
@@ -1133,10 +1132,12 @@ void reply_getatr(struct smb_request *req)
 		      SVAL(req->outbuf, smb_flg2) | FLAGS2_IS_LONG_NAME);
 	}
 
-	DEBUG(3,("reply_getatr: name=%s mode=%d size=%u\n", fname, mode, (unsigned int)size ) );
+	DEBUG(3,("reply_getatr: name=%s mode=%d size=%u\n",
+		 smb_fname_str_dbg(smb_fname), mode, (unsigned int)size));
 
  out:
 	TALLOC_FREE(smb_fname);
+	TALLOC_FREE(fname);
 	END_PROFILE(SMBgetatr);
 	return;
 }
@@ -2243,8 +2244,7 @@ void reply_ctemp(struct smb_request *req)
 		goto out;
 	}
 
-	SET_STAT_INVALID(smb_fname->st);
-	SMB_VFS_STAT(conn, smb_fname->base_name, &smb_fname->st);
+	SMB_VFS_STAT(conn, smb_fname);
 
 	/* We should fail if file does not exist. */
 	status = SMB_VFS_CREATE_FILE(
@@ -2377,16 +2377,16 @@ static NTSTATUS do_unlink(connection_struct *conn,
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
 	}
 
+	if (SMB_VFS_LSTAT(conn, smb_fname) != 0) {
+		return map_nt_error_from_unix(errno);
+	}
+
 	status = get_full_smb_filename(smb_fname, smb_fname, &fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-
-	if (SMB_VFS_LSTAT(conn, fname, &smb_fname->st) != 0) {
-		return map_nt_error_from_unix(errno);
-	}
-
 	fattr = dos_mode(conn, fname, &smb_fname->st);
+	TALLOC_FREE(fname);
 
 	if (dirtype & FILE_ATTRIBUTE_NORMAL) {
 		dirtype = aDIR|aARCH|aRONLY;
@@ -5259,6 +5259,8 @@ static bool recursive_rmdir(TALLOC_CTX *ctx,
 
 	while((dname = ReadDirName(dir_hnd, &offset, &st))) {
 		char *fullname = NULL;
+		struct smb_filename *smb_fname = NULL;
+		NTSTATUS status;
 
 		if (ISDOT(dname) || ISDOTDOT(dname)) {
 			continue;
@@ -5275,29 +5277,37 @@ static bool recursive_rmdir(TALLOC_CTX *ctx,
 				dname);
 		if (!fullname) {
 			errno = ENOMEM;
-			ret = False;
-			break;
+			goto err_break;
 		}
 
-		if(SMB_VFS_LSTAT(conn,fullname, &st) != 0) {
-			ret = False;
-			break;
+		status = create_synthetic_smb_fname(talloc_tos(), fullname,
+						    NULL, NULL, &smb_fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto err_break;
 		}
 
-		if(st.st_ex_mode & S_IFDIR) {
+		if(SMB_VFS_LSTAT(conn, smb_fname) != 0) {
+			goto err_break;
+		}
+
+		if(smb_fname->st.st_ex_mode & S_IFDIR) {
 			if(!recursive_rmdir(ctx, conn, fullname)) {
-				ret = False;
-				break;
+				goto err_break;
 			}
 			if(SMB_VFS_RMDIR(conn,fullname) != 0) {
-				ret = False;
-				break;
+				goto err_break;
 			}
 		} else if(SMB_VFS_UNLINK(conn,fullname) != 0) {
-			ret = False;
-			break;
+			goto err_break;
 		}
+		TALLOC_FREE(smb_fname);
 		TALLOC_FREE(fullname);
+		continue;
+	 err_break:
+		TALLOC_FREE(smb_fname);
+		TALLOC_FREE(fullname);
+		ret = false;
+		break;
 	}
 	TALLOC_FREE(dir_hnd);
 	return ret;
@@ -5315,13 +5325,13 @@ NTSTATUS rmdir_internals(TALLOC_CTX *ctx,
 	SMB_STRUCT_STAT st;
 
 	/* Might be a symlink. */
-	if(SMB_VFS_LSTAT(conn, directory, &st) != 0) {
+	if(vfs_lstat_smb_fname(conn, directory, &st) != 0) {
 		return map_nt_error_from_unix(errno);
 	}
 
 	if (S_ISLNK(st.st_ex_mode)) {
 		/* Is what it points to a directory ? */
-		if(SMB_VFS_STAT(conn, directory, &st) != 0) {
+		if(vfs_stat_smb_fname(conn, directory, &st) != 0) {
 			return map_nt_error_from_unix(errno);
 		}
 		if (!(S_ISDIR(st.st_ex_mode))) {
@@ -5398,7 +5408,7 @@ NTSTATUS rmdir_internals(TALLOC_CTX *ctx,
 				break;
 			}
 
-			if(SMB_VFS_LSTAT(conn,fullname, &st) != 0) {
+			if(vfs_lstat_smb_fname(conn,fullname, &st) != 0) {
 				break;
 			}
 			if(st.st_ex_mode & S_IFDIR) {
@@ -5817,10 +5827,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	/*
-	 * Have vfs_object_exist also fill sbuf1
-	 */
-	dst_exists = vfs_object_exist(conn, newname, &sbuf1);
+	dst_exists = vfs_stat_smb_fname(conn, newname, &sbuf1) == 0;
 
 	if(!replace_if_exists && dst_exists) {
 		DEBUG(3,("rename_internals_fsp: dest exists doing rename %s -> %s\n",
@@ -5846,9 +5853,10 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	} else {
 		int ret = -1;
 		if (fsp->posix_open) {
-			ret = SMB_VFS_LSTAT(conn,fsp->fsp_name,&sbuf);
+			ret = vfs_lstat_smb_fname(conn,fsp->fsp_name,&sbuf);
 		} else {
-			ret = SMB_VFS_STAT(conn,fsp->fsp_name,&sbuf);
+
+			ret = vfs_stat_smb_fname(conn,fsp->fsp_name,&sbuf);
 		}
 		if (ret == -1) {
 			return map_nt_error_from_unix(errno);
@@ -6005,7 +6013,6 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 
 	if (!src_has_wild) {
 		files_struct *fsp;
-		char *fname_src = NULL;
 		char *fname_dst = NULL;
 
 		/*
@@ -6063,23 +6070,16 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			smb_fname_dst->base_name = fname_dst_mod;
 		}
 
-		status = get_full_smb_filename(ctx, smb_fname_src, &fname_src);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto out;
-		}
-
 		ZERO_STRUCT(smb_fname_src->st);
 		if (posix_pathnames) {
-			SMB_VFS_LSTAT(conn, fname_src, &smb_fname_src->st);
+			SMB_VFS_LSTAT(conn, smb_fname_src);
 		} else {
-			SMB_VFS_STAT(conn, fname_src, &smb_fname_src->st);
+			SMB_VFS_STAT(conn, smb_fname_src);
 		}
 
 		if (S_ISDIR(smb_fname_src->st.st_ex_mode)) {
 			create_options |= FILE_DIRECTORY_FILE;
 		}
-
-		TALLOC_FREE(fname_src);
 
 		status = SMB_VFS_CREATE_FILE(
 			conn,				/* conn */
@@ -6108,7 +6108,6 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 
 		status = get_full_smb_filename(ctx, smb_fname_dst, &fname_dst);
 		if (!NT_STATUS_IS_OK(status)) {
-			TALLOC_FREE(fname_src);
 			goto out;
 		}
 
@@ -6159,7 +6158,6 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 
 	while ((dname = ReadDirName(dir_hnd, &offset, &smb_fname_src->st))) {
 		files_struct *fsp = NULL;
-		char *fname_src = NULL;
 		char *fname_dst = NULL;
 		char *destname = NULL;
 		bool sysdir_entry = False;
@@ -6212,19 +6210,12 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		TALLOC_FREE(smb_fname_dst->base_name);
 		smb_fname_dst->base_name = destname;
 
-		status = get_full_smb_filename(ctx, smb_fname_src, &fname_src);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto out;
-		}
-
 		ZERO_STRUCT(smb_fname_src->st);
 		if (posix_pathnames) {
-			SMB_VFS_LSTAT(conn, fname_src, &smb_fname_src->st);
+			SMB_VFS_LSTAT(conn, smb_fname_src);
 		} else {
-			SMB_VFS_STAT(conn, fname_src, &smb_fname_src->st);
+			SMB_VFS_STAT(conn, smb_fname_src);
 		}
-
-		TALLOC_FREE(fname_src);
 
 		create_options = 0;
 
@@ -6416,7 +6407,6 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 {
 	struct smb_filename *smb_fname_dst_tmp = NULL;
 	char *fname_src = NULL;
-	char *fname_dst = NULL;
 	SMB_OFF_T ret=-1;
 	files_struct *fsp1,*fsp2;
  	uint32 dosattrs;
@@ -6502,16 +6492,9 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 
 	TALLOC_FREE(fname_src);
 
-	status = get_full_smb_filename(talloc_tos(), smb_fname_dst_tmp, &fname_dst);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-
-	if (SMB_VFS_STAT(conn, fname_dst, &smb_fname_dst_tmp->st) == -1) {
+	if (SMB_VFS_STAT(conn, smb_fname_dst_tmp) == -1) {
 		ZERO_STRUCTP(&smb_fname_dst_tmp->st);
 	}
-
-	TALLOC_FREE(fname_dst);
 
 	/* Open the dst file for writing. */
 	status = SMB_VFS_CREATE_FILE(
@@ -7509,9 +7492,9 @@ void reply_setattrE(struct smb_request *req)
 		int ret = -1;
 
 		if (fsp->posix_open) {
-			ret = SMB_VFS_LSTAT(conn, fsp->fsp_name, &sbuf);
+			ret = vfs_lstat_smb_fname(conn, fsp->fsp_name, &sbuf);
 		} else {
-			ret = SMB_VFS_STAT(conn, fsp->fsp_name, &sbuf);
+			ret = vfs_stat_smb_fname(conn, fsp->fsp_name, &sbuf);
 		}
 		if (ret == -1) {
 			status = map_nt_error_from_unix(errno);

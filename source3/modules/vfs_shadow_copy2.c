@@ -376,15 +376,19 @@ static SMB_STRUCT_DIR *shadow_copy2_opendir(vfs_handle_struct *handle,
 }
 
 static int shadow_copy2_stat(vfs_handle_struct *handle,
-		      const char *fname, SMB_STRUCT_STAT *sbuf)
+			     struct smb_filename *smb_fname)
 {
-        _SHADOW2_NEXT(STAT, (handle, name, sbuf), int, -1, convert_sbuf(handle, fname, sbuf));
+        _SHADOW2_NEXT_SMB_FNAME(STAT, (handle, smb_fname), int, -1,
+				convert_sbuf(handle, smb_fname->base_name,
+					     &smb_fname->st));
 }
 
 static int shadow_copy2_lstat(vfs_handle_struct *handle,
-		       const char *fname, SMB_STRUCT_STAT *sbuf)
+			      struct smb_filename *smb_fname)
 {
-        _SHADOW2_NEXT(LSTAT, (handle, name, sbuf), int, -1, convert_sbuf(handle, fname, sbuf));
+        _SHADOW2_NEXT_SMB_FNAME(LSTAT, (handle, smb_fname), int, -1,
+				convert_sbuf(handle, smb_fname->base_name,
+					     &smb_fname->st));
 }
 
 static int shadow_copy2_fstat(vfs_handle_struct *handle, files_struct *fsp, SMB_STRUCT_STAT *sbuf)

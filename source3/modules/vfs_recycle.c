@@ -214,7 +214,7 @@ static bool recycle_directory_exist(vfs_handle_struct *handle, const char *dname
 {
 	SMB_STRUCT_STAT st;
 
-	if (SMB_VFS_NEXT_STAT(handle, dname, &st) == 0) {
+	if (vfs_stat_smb_fname(handle->conn, dname, &st) == 0) {
 		if (S_ISDIR(st.st_ex_mode)) {
 			return True;
 		}
@@ -227,7 +227,7 @@ static bool recycle_file_exist(vfs_handle_struct *handle, const char *fname)
 {
 	SMB_STRUCT_STAT st;
 
-	if (SMB_VFS_NEXT_STAT(handle, fname, &st) == 0) {
+	if (vfs_stat_smb_fname(handle->conn, fname, &st) == 0) {
 		if (S_ISREG(st.st_ex_mode)) {
 			return True;
 		}
@@ -246,7 +246,7 @@ static SMB_OFF_T recycle_get_file_size(vfs_handle_struct *handle, const char *fn
 {
 	SMB_STRUCT_STAT st;
 
-	if (SMB_VFS_NEXT_STAT(handle, fname, &st) != 0) {
+	if (vfs_stat_smb_fname(handle->conn, fname, &st) != 0) {
 		DEBUG(0,("recycle: stat for %s returned %s\n", fname, strerror(errno)));
 		return (SMB_OFF_T)0;
 	}
@@ -396,7 +396,7 @@ static void recycle_do_touch(vfs_handle_struct *handle, const char *fname,
 
 	ZERO_STRUCT(ft);
 
-	if (SMB_VFS_NEXT_STAT(handle, fname, &st) != 0) {
+	if (vfs_stat_smb_fname(handle->conn, fname, &st) != 0) {
 		DEBUG(0,("recycle: stat for %s returned %s\n",
 			 fname, strerror(errno)));
 		return;

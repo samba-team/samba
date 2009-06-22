@@ -179,9 +179,9 @@ static int skel_fsync(vfs_handle_struct *handle, files_struct *fsp)
 	return vfswrap_fsync(NULL, fsp);
 }
 
-static int skel_stat(vfs_handle_struct *handle,  const char *fname, SMB_STRUCT_STAT *sbuf)
+static int skel_stat(vfs_handle_struct *handle, struct smb_filename *smb_fname)
 {
-	return vfswrap_stat(NULL,  fname, sbuf);
+	return vfswrap_stat(NULL, smb_fname);
 }
 
 static int skel_fstat(vfs_handle_struct *handle, files_struct *fsp, SMB_STRUCT_STAT *sbuf)
@@ -189,9 +189,9 @@ static int skel_fstat(vfs_handle_struct *handle, files_struct *fsp, SMB_STRUCT_S
 	return vfswrap_fstat(NULL, fsp, sbuf);
 }
 
-static int skel_lstat(vfs_handle_struct *handle,  const char *path, SMB_STRUCT_STAT *sbuf)
+static int skel_lstat(vfs_handle_struct *handle, struct smb_filename *smb_fname)
 {
-	return vfswrap_lstat(NULL,  path, sbuf);
+	return vfswrap_lstat(NULL, smb_fname);
 }
 
 static int skel_unlink(vfs_handle_struct *handle,  const char *path)

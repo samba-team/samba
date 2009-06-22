@@ -110,7 +110,7 @@ NTSTATUS get_full_smb_filename(TALLOC_CTX *ctx, const struct smb_filename *smb_f
  */
 NTSTATUS create_synthetic_smb_fname(TALLOC_CTX *ctx, const char *base_name,
 				    const char *stream_name,
-				    SMB_STRUCT_STAT *psbuf,
+				    const SMB_STRUCT_STAT *psbuf,
 				    struct smb_filename **smb_fname_out)
 {
 	struct smb_filename smb_fname_loc;
@@ -135,15 +135,18 @@ NTSTATUS create_synthetic_smb_fname(TALLOC_CTX *ctx, const char *base_name,
  */
 NTSTATUS create_synthetic_smb_fname_split(TALLOC_CTX *ctx,
 					  const char *fname,
-					  SMB_STRUCT_STAT *psbuf,
+					  const SMB_STRUCT_STAT *psbuf,
 					  struct smb_filename **smb_fname_out)
 {
 	NTSTATUS status;
 	const char *stream_name = NULL;
 	char *base_name = NULL;
 
+	if (!lp_posix_pathnames()) {
+		stream_name = strchr_m(fname, ':');
+	}
+
 	/* Setup the base_name/stream_name. */
-	stream_name = strchr_m(fname, ':');
 	if (stream_name) {
 		base_name = talloc_strndup(ctx, fname,
 					   PTR_DIFF(stream_name, fname));
@@ -159,6 +162,60 @@ NTSTATUS create_synthetic_smb_fname_split(TALLOC_CTX *ctx,
 					    smb_fname_out);
 	TALLOC_FREE(base_name);
 	return status;
+}
+
+/**
+ * XXX: This is temporary and there should be no callers of this once
+ * smb_filename is plumbed through all path based operations.
+ */
+int vfs_stat_smb_fname(struct connection_struct *conn, const char *fname,
+		       SMB_STRUCT_STAT *psbuf)
+{
+	struct smb_filename *smb_fname = NULL;
+	NTSTATUS status;
+	int ret;
+
+	status = create_synthetic_smb_fname_split(talloc_tos(), fname, NULL,
+						  &smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		return -1;
+	}
+
+	ret = SMB_VFS_STAT(conn, smb_fname);
+	if (ret != -1) {
+		*psbuf = smb_fname->st;
+	}
+
+	TALLOC_FREE(smb_fname);
+	return ret;
+}
+
+/**
+ * XXX: This is temporary and there should be no callers of this once
+ * smb_filename is plumbed through all path based operations.
+ */
+int vfs_lstat_smb_fname(struct connection_struct *conn, const char *fname,
+			SMB_STRUCT_STAT *psbuf)
+{
+	struct smb_filename *smb_fname = NULL;
+	NTSTATUS status;
+	int ret;
+
+	status = create_synthetic_smb_fname_split(talloc_tos(), fname, NULL,
+						  &smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		return -1;
+	}
+
+	ret = SMB_VFS_LSTAT(conn, smb_fname);
+	if (ret != -1) {
+		*psbuf = smb_fname->st;
+	}
+
+	TALLOC_FREE(smb_fname);
+	return ret;
 }
 
 /**
@@ -315,7 +372,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		if (!(name = talloc_strdup(ctx,"."))) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		if (SMB_VFS_STAT(conn,name,&st) == 0) {
+		if (vfs_stat_smb_fname(conn,name,&st) == 0) {
 			smb_fname->st = st;
 		} else {
 			return map_nt_error_from_unix(errno);
@@ -417,9 +474,9 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	 */
 
 	if (posix_pathnames) {
-		ret = SMB_VFS_LSTAT(conn,name,&st);
+		ret = vfs_lstat_smb_fname(conn,name,&st);
 	} else {
-		ret = SMB_VFS_STAT(conn,name,&st);
+		ret = vfs_stat_smb_fname(conn,name,&st);
 	}
 
 	if (ret == 0) {
@@ -535,9 +592,9 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		 */
 
 		if (posix_pathnames) {
-			ret = SMB_VFS_LSTAT(conn,name, &st);
+			ret = vfs_lstat_smb_fname(conn,name, &st);
 		} else {
-			ret = SMB_VFS_STAT(conn,name, &st);
+			ret = vfs_stat_smb_fname(conn,name, &st);
 		}
 
 		if (ret == 0) {
@@ -764,9 +821,11 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 				 */
 
 				if (posix_pathnames) {
-					ret = SMB_VFS_LSTAT(conn,name, &st);
+					ret = vfs_lstat_smb_fname(conn,name,
+								  &st);
 				} else {
-					ret = SMB_VFS_STAT(conn,name, &st);
+					ret = vfs_stat_smb_fname(conn,name,
+								 &st);
 				}
 
 				if (ret == 0) {
@@ -1073,17 +1132,11 @@ static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
 				  const char *orig_path,
 				  struct smb_filename *smb_fname)
 {
-	char *result = NULL;
 	NTSTATUS status;
 	unsigned int i, num_streams;
 	struct stream_struct *streams = NULL;
 
-	status = get_full_smb_filename(mem_ctx, smb_fname, &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (SMB_VFS_STAT(conn, result, &smb_fname->st) == 0) {
+	if (SMB_VFS_STAT(conn, smb_fname) == 0) {
 		return NT_STATUS_OK;
 	}
 
@@ -1132,24 +1185,22 @@ static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
 	TALLOC_FREE(smb_fname->stream_name);
 	smb_fname->stream_name = talloc_strdup(mem_ctx, streams[i].name);
 
-	TALLOC_FREE(result);
-	status = get_full_smb_filename(mem_ctx, smb_fname, &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
-	}
-
 	SET_STAT_INVALID(smb_fname->st);
 
-	if (SMB_VFS_STAT(conn, result, &smb_fname->st) == 0) {
+	if (SMB_VFS_STAT(conn, smb_fname) == 0) {
+		char *result = NULL;
+
+		status = get_full_smb_filename(mem_ctx, smb_fname, &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+
 		stat_cache_add(orig_path, result, conn->case_sensitive);
+		TALLOC_FREE(result);
 	}
-
-	TALLOC_FREE(streams);
-	return NT_STATUS_OK;
-
+	status = NT_STATUS_OK;
  fail:
-	TALLOC_FREE(result);
 	TALLOC_FREE(streams);
 	return status;
 }

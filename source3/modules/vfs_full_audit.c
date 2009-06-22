@@ -151,11 +151,11 @@ static int smb_full_audit_rename(vfs_handle_struct *handle,
 			const char *oldname, const char *newname);
 static int smb_full_audit_fsync(vfs_handle_struct *handle, files_struct *fsp);
 static int smb_full_audit_stat(vfs_handle_struct *handle,
-		      const char *fname, SMB_STRUCT_STAT *sbuf);
+			       struct smb_filename *smb_fname);
 static int smb_full_audit_fstat(vfs_handle_struct *handle, files_struct *fsp,
 		       SMB_STRUCT_STAT *sbuf);
 static int smb_full_audit_lstat(vfs_handle_struct *handle,
-		       const char *path, SMB_STRUCT_STAT *sbuf);
+				struct smb_filename *smb_fname);
 static int smb_full_audit_get_alloc_size(vfs_handle_struct *handle,
 		       files_struct *fsp, const SMB_STRUCT_STAT *sbuf);
 static int smb_full_audit_unlink(vfs_handle_struct *handle,
@@ -1361,13 +1361,14 @@ static int smb_full_audit_fsync(vfs_handle_struct *handle, files_struct *fsp)
 }
 
 static int smb_full_audit_stat(vfs_handle_struct *handle,
-		      const char *fname, SMB_STRUCT_STAT *sbuf)
+			       struct smb_filename *smb_fname)
 {
 	int result;
 	
-	result = SMB_VFS_NEXT_STAT(handle, fname, sbuf);
+	result = SMB_VFS_NEXT_STAT(handle, smb_fname);
 
-	do_log(SMB_VFS_OP_STAT, (result >= 0), handle, "%s", fname);
+	do_log(SMB_VFS_OP_STAT, (result >= 0), handle, "%s",
+	       smb_fname_str_dbg(smb_fname));
 
 	return result;    
 }
@@ -1385,13 +1386,14 @@ static int smb_full_audit_fstat(vfs_handle_struct *handle, files_struct *fsp,
 }
 
 static int smb_full_audit_lstat(vfs_handle_struct *handle,
-		       const char *path, SMB_STRUCT_STAT *sbuf)
+				struct smb_filename *smb_fname)
 {
 	int result;
 	
-	result = SMB_VFS_NEXT_LSTAT(handle, path, sbuf);
+	result = SMB_VFS_NEXT_LSTAT(handle, smb_fname);
 
-	do_log(SMB_VFS_OP_LSTAT, (result >= 0), handle, "%s", path);
+	do_log(SMB_VFS_OP_LSTAT, (result >= 0), handle, "%s",
+	       smb_fname_str_dbg(smb_fname));
 
 	return result;    
 }

@@ -339,71 +339,18 @@ bool smbd_vfs_init(connection_struct *conn)
 }
 
 /*******************************************************************
- Check if directory exists.
-********************************************************************/
-
-bool vfs_directory_exist(connection_struct *conn, const char *dname, SMB_STRUCT_STAT *st)
-{
-	SMB_STRUCT_STAT st2;
-	bool ret;
-
-	if (!st)
-		st = &st2;
-
-	if (SMB_VFS_STAT(conn,dname,st) != 0)
-		return(False);
-
-	ret = S_ISDIR(st->st_ex_mode);
-	if(!ret)
-		errno = ENOTDIR;
-
-	return ret;
-}
-
-/*******************************************************************
- Check if an object exists in the vfs.
-********************************************************************/
-
-bool vfs_object_exist(connection_struct *conn,const char *fname,SMB_STRUCT_STAT *sbuf)
-{
-	SMB_STRUCT_STAT st;
-
-	if (!sbuf)
-		sbuf = &st;
-
-	ZERO_STRUCTP(sbuf);
-
-	if (SMB_VFS_STAT(conn,fname,sbuf) == -1)
-		return(False);
-	return True;
-}
-
-/*******************************************************************
  Check if a file exists in the vfs.
 ********************************************************************/
 
 NTSTATUS vfs_file_exist(connection_struct *conn, struct smb_filename *smb_fname)
 {
-	char *fname = NULL;
-	NTSTATUS status;
-
-	status = get_full_smb_filename(talloc_tos(), smb_fname, &fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-
-	status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	if (SMB_VFS_STAT(conn, fname, &smb_fname->st) == -1) {
-		goto out;
-	}
-
 	/* Only return OK if stat was successful and S_ISREG */
-	if (S_ISREG(smb_fname->st.st_ex_mode)) {
-		status = NT_STATUS_OK;
+	if ((SMB_VFS_STAT(conn, smb_fname) != -1) &&
+	    S_ISREG(smb_fname->st.st_ex_mode)) {
+		return NT_STATUS_OK;
 	}
- out:
-	TALLOC_FREE(fname);
-	return status;
+
+	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 }
 
 /****************************************************************************
@@ -791,10 +738,12 @@ int vfs_ChDir(connection_struct *conn, const char *path)
 char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 {
         char s[PATH_MAX+1];
-	SMB_STRUCT_STAT st, st2;
-	char *result;
+	char *result = NULL;
 	DATA_BLOB cache_value;
 	struct file_id key;
+	struct smb_filename *smb_fname_dot = NULL;
+	struct smb_filename *smb_fname_full = NULL;
+	NTSTATUS status;
 
 	*s = 0;
 
@@ -802,9 +751,14 @@ char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 		goto nocache;
 	}
 
-	SET_STAT_INVALID(st);
+	status = create_synthetic_smb_fname(ctx, ".", NULL, NULL,
+					    &smb_fname_dot);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		goto out;
+	}
 
-	if (SMB_VFS_STAT(conn, ".",&st) == -1) {
+	if (SMB_VFS_STAT(conn, smb_fname_dot) == -1) {
 		/*
 		 * Known to fail for root: the directory may be NFS-mounted
 		 * and exported with root_squash (so has no root access).
@@ -814,7 +768,7 @@ char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 		goto nocache;
 	}
 
-	key = vfs_file_id_from_sbuf(conn, &st);
+	key = vfs_file_id_from_sbuf(conn, &smb_fname_dot->st);
 
 	if (!memcache_lookup(smbd_memcache(), GETWD_CACHE,
 			     data_blob_const(&key, sizeof(key)),
@@ -825,17 +779,25 @@ char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 	SMB_ASSERT((cache_value.length > 0)
 		   && (cache_value.data[cache_value.length-1] == '\0'));
 
-	if ((SMB_VFS_STAT(conn, (char *)cache_value.data, &st2) == 0)
-	    && (st.st_ex_dev == st2.st_ex_dev) && (st.st_ex_ino == st2.st_ex_ino)
-	    && (S_ISDIR(st.st_ex_mode))) {
+	status = create_synthetic_smb_fname(ctx, (char *)cache_value.data,
+					    NULL, NULL, &smb_fname_full);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		goto out;
+	}
+
+	if ((SMB_VFS_STAT(conn, smb_fname_full) == 0) &&
+	    (smb_fname_dot->st.st_ex_dev == smb_fname_full->st.st_ex_dev) &&
+	    (smb_fname_dot->st.st_ex_ino == smb_fname_full->st.st_ex_ino) &&
+	    (S_ISDIR(smb_fname_dot->st.st_ex_mode))) {
 		/*
 		 * Ok, we're done
 		 */
-		result = talloc_strdup(ctx, (char *)cache_value.data);
+		result = talloc_strdup(ctx, smb_fname_full->base_name);
 		if (result == NULL) {
 			errno = ENOMEM;
 		}
-		return result;
+		goto out;
 	}
 
  nocache:
@@ -849,11 +811,11 @@ char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 	if (!SMB_VFS_GETWD(conn,s)) {
 		DEBUG(0, ("vfs_GetWd: SMB_VFS_GETWD call failed: %s\n",
 			  strerror(errno)));
-		return NULL;
+		goto out;
 	}
 
-	if (lp_getwd_cache() && VALID_STAT(st)) {
-		key = vfs_file_id_from_sbuf(conn, &st);
+	if (lp_getwd_cache() && VALID_STAT(smb_fname_dot->st)) {
+		key = vfs_file_id_from_sbuf(conn, &smb_fname_dot->st);
 
 		memcache_add(smbd_memcache(), GETWD_CACHE,
 			     data_blob_const(&key, sizeof(key)),
@@ -864,6 +826,10 @@ char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 	if (result == NULL) {
 		errno = ENOMEM;
 	}
+
+ out:
+	TALLOC_FREE(smb_fname_dot);
+	TALLOC_FREE(smb_fname_full);
 	return result;
 }
 
@@ -997,7 +963,7 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 #ifdef S_ISLNK
         if (!lp_symlinks(SNUM(conn))) {
                 SMB_STRUCT_STAT statbuf;
-                if ( (SMB_VFS_LSTAT(conn,fname,&statbuf) != -1) &&
+                if ( (vfs_lstat_smb_fname(conn,fname,&statbuf) != -1) &&
                                 (S_ISLNK(statbuf.st_ex_mode)) ) {
 			if (free_resolved_name) {
 				SAFE_FREE(resolved_name);

@@ -549,12 +549,26 @@ static int vfswrap_fsync(vfs_handle_struct *handle, files_struct *fsp)
 #endif
 }
 
-static int vfswrap_stat(vfs_handle_struct *handle,  const char *fname, SMB_STRUCT_STAT *sbuf)
+static int vfswrap_stat(vfs_handle_struct *handle,
+			struct smb_filename *smb_fname)
 {
 	int result;
+	NTSTATUS status;
+	char *fname = NULL;
 
 	START_PROFILE(syscall_stat);
-	result = sys_stat(fname, sbuf);
+
+	status = get_full_smb_filename(talloc_tos(), smb_fname,
+				       &fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		return -1;
+	}
+
+	result = sys_stat(fname, &smb_fname->st);
+
+	TALLOC_FREE(fname);
+
 	END_PROFILE(syscall_stat);
 	return result;
 }
@@ -569,12 +583,26 @@ static int vfswrap_fstat(vfs_handle_struct *handle, files_struct *fsp, SMB_STRUC
 	return result;
 }
 
-int vfswrap_lstat(vfs_handle_struct *handle,  const char *path, SMB_STRUCT_STAT *sbuf)
+static int vfswrap_lstat(vfs_handle_struct *handle,
+			 struct smb_filename *smb_fname)
 {
 	int result;
+	NTSTATUS status;
+	char *fname = NULL;
 
 	START_PROFILE(syscall_lstat);
-	result = sys_lstat(path, sbuf);
+
+	status = get_full_smb_filename(talloc_tos(), smb_fname,
+				       &fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		return -1;
+	}
+
+	result = sys_lstat(fname, &smb_fname->st);
+
+	TALLOC_FREE(fname);
+
 	END_PROFILE(syscall_lstat);
 	return result;
 }
@@ -1097,7 +1125,7 @@ static NTSTATUS vfswrap_streaminfo(vfs_handle_struct *handle,
 		ret = SMB_VFS_FSTAT(fsp, &sbuf);
 	}
 	else {
-		ret = SMB_VFS_STAT(handle->conn, fname, &sbuf);
+		ret = vfs_stat_smb_fname(handle->conn, fname, &sbuf);
 	}
 
 	if (ret == -1) {

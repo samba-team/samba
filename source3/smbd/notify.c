@@ -341,25 +341,35 @@ void notify_fname(connection_struct *conn, uint32 action, uint32 filter,
 	char *fullpath;
 	char *parent;
 	const char *name;
-	SMB_STRUCT_STAT sbuf;
 
 	if (path[0] == '.' && path[1] == '/') {
 		path += 2;
 	}
-	if (asprintf(&fullpath, "%s/%s", conn->connectpath, path) == -1) {
+	if (parent_dirname(talloc_tos(), path, &parent, &name)) {
+		struct smb_filename *smb_fname_parent = NULL;
+		NTSTATUS status;
+
+		status = create_synthetic_smb_fname(talloc_tos(), parent, NULL,
+						    NULL, &smb_fname_parent);
+		if (!NT_STATUS_IS_OK(status)) {
+			return;
+		}
+		if (SMB_VFS_STAT(conn, smb_fname_parent) != -1) {
+			notify_onelevel(conn->notify_ctx, action, filter,
+			    SMB_VFS_FILE_ID_CREATE(conn, &smb_fname_parent->st),
+			    name);
+		}
+		TALLOC_FREE(smb_fname_parent);
+	}
+
+	fullpath = talloc_asprintf(talloc_tos(), "%s/%s", conn->connectpath,
+				   path);
+	if (fullpath == NULL) {
 		DEBUG(0, ("asprintf failed\n"));
 		return;
 	}
-
-	if (parent_dirname(talloc_tos(), path, &parent, &name)
-	    && (SMB_VFS_STAT(conn, parent, &sbuf) != -1)) {
-		notify_onelevel(conn->notify_ctx, action, filter,
-				SMB_VFS_FILE_ID_CREATE(conn, &sbuf),
-				name);
-	}
-
 	notify_trigger(conn->notify_ctx, action, filter, fullpath);
-	SAFE_FREE(fullpath);
+	TALLOC_FREE(fullpath);
 }
 
 static void notify_fsp(files_struct *fsp, uint32 action, const char *name)

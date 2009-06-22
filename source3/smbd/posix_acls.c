@@ -3351,7 +3351,7 @@ NTSTATUS posix_get_nt_acl(struct connection_struct *conn, const char *name,
 	DEBUG(10,("posix_get_nt_acl: called for file %s\n", name ));
 
 	/* Get the stat struct for the owner info. */
-	if(SMB_VFS_STAT(conn, name, &sbuf) != 0) {
+	if(vfs_stat_smb_fname(conn, name, &sbuf) != 0) {
 		return map_nt_error_from_unix(errno);
 	}
 
@@ -3432,7 +3432,7 @@ int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_t gid)
 		return -1;
 	}
 
-	if (SMB_VFS_STAT(conn,fname,&st)) {
+	if (vfs_stat_smb_fname(conn,fname,&st)) {
 		return -1;
 	}
 
@@ -3685,7 +3685,7 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const SEC_DESC
 	 */
 
 	if(fsp->is_directory || fsp->fh->fd == -1) {
-		if(SMB_VFS_STAT(fsp->conn,fsp->fsp_name, &sbuf) != 0)
+		if(vfs_stat_smb_fname(fsp->conn,fsp->fsp_name, &sbuf) != 0)
 			return map_nt_error_from_unix(errno);
 	} else {
 		if(SMB_VFS_FSTAT(fsp, &sbuf) != 0)
@@ -3730,7 +3730,8 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const SEC_DESC
 		 */
 
 		if(fsp->is_directory) {
-			if(SMB_VFS_STAT(fsp->conn, fsp->fsp_name, &sbuf) != 0) {
+			if(vfs_stat_smb_fname(fsp->conn, fsp->fsp_name,
+					      &sbuf) != 0) {
 				return map_nt_error_from_unix(errno);
 			}
 		} else {
@@ -3738,7 +3739,9 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const SEC_DESC
 			int sret;
 
 			if(fsp->fh->fd == -1)
-				sret = SMB_VFS_STAT(fsp->conn, fsp->fsp_name, &sbuf);
+				sret = vfs_stat_smb_fname(fsp->conn,
+							  fsp->fsp_name,
+							  &sbuf);
 			else
 				sret = SMB_VFS_FSTAT(fsp, &sbuf);
 

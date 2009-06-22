@@ -643,7 +643,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 					NTSTATUS *pstatus)
 {
 	connection_struct *conn;
-	SMB_STRUCT_STAT st;
+	struct smb_filename *smb_fname_cpath = NULL;
 	fstring dev;
 	int ret;
 	char addr[INET6_ADDRSTRLEN];
@@ -651,7 +651,6 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	NTSTATUS status;
 
 	fstrcpy(dev, pdev);
-	SET_STAT_INVALID(st);
 
 	if (NT_STATUS_IS_ERR(*pstatus = share_sanity_checks(snum, dev))) {
 		return NULL;
@@ -990,14 +989,21 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	/* Any error exit after here needs to call the disconnect hook. */
 	on_err_call_dis_hook = true;
 
+	status = create_synthetic_smb_fname(talloc_tos(), conn->connectpath,
+					    NULL, NULL, &smb_fname_cpath);
+	if (!NT_STATUS_IS_OK(status)) {
+		*pstatus = status;
+		goto err_root_exit;
+	}
+
 	/* win2000 does not check the permissions on the directory
 	   during the tree connect, instead relying on permission
 	   check during individual operations. To match this behaviour
 	   I have disabled this chdir check (tridge) */
 	/* the alternative is just to check the directory exists */
-	if ((ret = SMB_VFS_STAT(conn, conn->connectpath, &st)) != 0 ||
-	    !S_ISDIR(st.st_ex_mode)) {
-		if (ret == 0 && !S_ISDIR(st.st_ex_mode)) {
+	if ((ret = SMB_VFS_STAT(conn, smb_fname_cpath)) != 0 ||
+	    !S_ISDIR(smb_fname_cpath->st.st_ex_mode)) {
+		if (ret == 0 && !S_ISDIR(smb_fname_cpath->st.st_ex_mode)) {
 			DEBUG(0,("'%s' is not a directory, when connecting to "
 				 "[%s]\n", conn->connectpath,
 				 lp_servicename(snum)));
@@ -1059,7 +1065,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	return(conn);
 
   err_root_exit:
-
+	TALLOC_FREE(smb_fname_cpath);
 	change_to_root_user();
 	if (on_err_call_dis_hook) {
 		/* Call VFS disconnect hook */

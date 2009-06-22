@@ -554,19 +554,30 @@ static NTSTATUS cmd_stat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	const char *group;
 	struct passwd *pwd = NULL;
 	struct group *grp = NULL;
+	struct smb_filename *smb_fname = NULL;
 	SMB_STRUCT_STAT st;
 	time_t tmp_time;
+	NTSTATUS status;
 
 	if (argc != 2) {
 		printf("Usage: stat <fname>\n");
 		return NT_STATUS_OK;
 	}
 
-	ret = SMB_VFS_STAT(vfs->conn, argv[1], &st);
+	status = create_synthetic_smb_fname_split(mem_ctx, argv[1], NULL,
+						  &smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	ret = SMB_VFS_STAT(vfs->conn, smb_fname);
 	if (ret == -1) {
 		printf("stat: error=%d (%s)\n", errno, strerror(errno));
+		TALLOC_FREE(smb_fname);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
+	st = smb_fname->st;
+	TALLOC_FREE(smb_fname);
 
 	pwd = sys_getpwuid(st.st_ex_uid);
 	if (pwd != NULL) user = pwd->pw_name;
@@ -684,18 +695,29 @@ static NTSTATUS cmd_lstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	const char *group;
 	struct passwd *pwd = NULL;
 	struct group *grp = NULL;
+	struct smb_filename *smb_fname = NULL;
 	SMB_STRUCT_STAT st;
 	time_t tmp_time;
+	NTSTATUS status;
 
 	if (argc != 2) {
 		printf("Usage: lstat <path>\n");
 		return NT_STATUS_OK;
 	}
 
-	if (SMB_VFS_LSTAT(vfs->conn, argv[1], &st) == -1) {
+	status = create_synthetic_smb_fname_split(mem_ctx, argv[1], NULL,
+						  &smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (SMB_VFS_LSTAT(vfs->conn, smb_fname) == -1) {
 		printf("lstat: error=%d (%s)\n", errno, strerror(errno));
+		TALLOC_FREE(smb_fname);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
+	st = smb_fname->st;
+	TALLOC_FREE(smb_fname);
 
 	pwd = sys_getpwuid(st.st_ex_uid);
 	if (pwd != NULL) user = pwd->pw_name;

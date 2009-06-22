@@ -437,7 +437,7 @@ static bool is_msdfs_link_internal(TALLOC_CTX *ctx,
 		sbufp = &st;
 	}
 
-	if (SMB_VFS_LSTAT(conn, path, sbufp) != 0) {
+	if (vfs_lstat_smb_fname(conn, path, sbufp) != 0) {
 		DEBUG(5,("is_msdfs_link_read_target: %s does not exist.\n",
 			path));
 		goto err;

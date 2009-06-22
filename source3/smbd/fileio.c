@@ -949,7 +949,7 @@ NTSTATUS sync_file(connection_struct *conn, files_struct *fsp, bool write_throug
 int fsp_stat(files_struct *fsp, SMB_STRUCT_STAT *pst)
 {
 	if (fsp->fh->fd == -1) {
-		return SMB_VFS_STAT(fsp->conn, fsp->fsp_name, pst);
+		return vfs_stat_smb_fname(fsp->conn, fsp->fsp_name, pst);
 	} else {
 		return SMB_VFS_FSTAT(fsp, pst);
 	}

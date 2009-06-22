@@ -574,11 +574,13 @@ char *dptr_ReadDirName(TALLOC_CTX *ctx,
 			long *poffset,
 			SMB_STRUCT_STAT *pst)
 {
+	struct smb_filename *smb_fname_base = NULL;
 	char *name = NULL;
 	char *pathreal = NULL;
 	char *found_name = NULL;
 	int ret;
 	const char *name_temp = NULL;
+	NTSTATUS status;
 
 	SET_STAT_INVALID(*pst);
 
@@ -624,10 +626,20 @@ char *dptr_ReadDirName(TALLOC_CTX *ctx,
 	if (!pathreal)
 		return NULL;
 
-	if (SMB_VFS_STAT(dptr->conn, pathreal, pst) == 0) {
+	/* Create an smb_filename with stream_name == NULL. */
+	status = create_synthetic_smb_fname(ctx, pathreal, NULL, NULL,
+					    &smb_fname_base);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NULL;
+	}
+
+	if (SMB_VFS_STAT(dptr->conn, smb_fname_base) == 0) {
+		*pst = smb_fname_base->st;
+		TALLOC_FREE(smb_fname_base);
 		name = talloc_strdup(ctx, dptr->wcard);
 		goto clean;
 	} else {
+		TALLOC_FREE(smb_fname_base);
 		/* If we get any other error than ENOENT or ENOTDIR
 		   then the file exists we just can't stat it. */
 		if (errno != ENOENT && errno != ENOTDIR) {
@@ -893,12 +905,32 @@ bool get_dir_entry(TALLOC_CTX *ctx,
 				return False;
 			}
 
-			if (!VALID_STAT(sbuf) && (SMB_VFS_STAT(conn, pathreal, &sbuf)) != 0) {
-				DEBUG(5,("Couldn't stat 1 [%s]. Error = %s\n",
-					pathreal, strerror(errno) ));
-				TALLOC_FREE(pathreal);
-				TALLOC_FREE(filename);
-				continue;
+			if (!VALID_STAT(sbuf)) {
+				struct smb_filename *smb_fname = NULL;
+				NTSTATUS status;
+
+				/* Create smb_fname with NULL stream_name. */
+				status =
+				    create_synthetic_smb_fname(ctx, pathreal,
+							       NULL, NULL,
+							       &smb_fname);
+				if (!NT_STATUS_IS_OK(status)) {
+					TALLOC_FREE(pathreal);
+					TALLOC_FREE(filename);
+					return NULL;
+				}
+
+				if ((SMB_VFS_STAT(conn, smb_fname)) != 0) {
+					DEBUG(5,("Couldn't stat 1 [%s]. Error "
+						 "= %s\n", pathreal,
+						 strerror(errno)));
+					TALLOC_FREE(smb_fname);
+					TALLOC_FREE(pathreal);
+					TALLOC_FREE(filename);
+					continue;
+				}
+				sbuf = smb_fname->st;
+				TALLOC_FREE(smb_fname);
 			}
 
 			*mode = dos_mode(conn,pathreal,&sbuf);
@@ -953,7 +985,8 @@ bool get_dir_entry(TALLOC_CTX *ctx,
  use it for anything security sensitive.
 ********************************************************************/
 
-static bool user_can_read_file(connection_struct *conn, char *name)
+static bool user_can_read_file(connection_struct *conn,
+			       struct smb_filename *smb_fname)
 {
 	/*
 	 * If user is a member of the Admin group
@@ -964,7 +997,7 @@ static bool user_can_read_file(connection_struct *conn, char *name)
 		return True;
 	}
 
-	return can_access_file_acl(conn, name, FILE_READ_DATA);
+	return can_access_file_acl(conn, smb_fname, FILE_READ_DATA);
 }
 
 /*******************************************************************
@@ -1029,6 +1062,10 @@ bool is_visible_file(connection_struct *conn, const char *dir_path,
 	bool hide_unreadable = lp_hideunreadable(SNUM(conn));
 	bool hide_unwriteable = lp_hideunwriteable_files(SNUM(conn));
 	bool hide_special = lp_hide_special_files(SNUM(conn));
+	char *entry = NULL;
+	struct smb_filename *smb_fname_base = NULL;
+	NTSTATUS status;
+	bool ret = false;
 
 	if ((strcmp(".",name) == 0) || (strcmp("..",name) == 0)) {
 		return True; /* . and .. are always visible. */
@@ -1041,55 +1078,70 @@ bool is_visible_file(connection_struct *conn, const char *dir_path,
 	}
 
 	if (hide_unreadable || hide_unwriteable || hide_special) {
-		char *entry = NULL;
-
 		entry = talloc_asprintf(talloc_tos(), "%s/%s", dir_path, name);
-		if (!entry)
-			return false;
+		if (!entry) {
+			ret = false;
+			goto out;
 		}
 
 		/* If it's a dfs symlink, ignore _hide xxxx_ options */
 		if (lp_host_msdfs() &&
 				lp_msdfs_root(SNUM(conn)) &&
 				is_msdfs_link(conn, entry, NULL)) {
-			TALLOC_FREE(entry);
-			return true;
+			ret = true;
+			goto out;
+		}
+
+		/* Create an smb_filename with stream_name == NULL. */
+		status = create_synthetic_smb_fname(talloc_tos(), entry, NULL,
+						    NULL, &smb_fname_base);
+		if (!NT_STATUS_IS_OK(status)) {
+			ret = false;
+			goto out;
 		}
 
 		/* If the file name does not exist, there's no point checking
 		 * the configuration options. We succeed, on the basis that the
 		 * checks *might* have passed if the file was present.
 		 */
-		if (!VALID_STAT(*pst) && (SMB_VFS_STAT(conn, entry, pst) != 0))
+		if (!VALID_STAT(*pst) &&
+		    (SMB_VFS_STAT(conn, smb_fname_base) != 0))
 		{
-		        TALLOC_FREE(entry);
-		        return true;
+		        ret = true;
+			goto out;
 		}
 
+		*pst = smb_fname_base->st;
+
 		/* Honour _hide unreadable_ option */
-		if (hide_unreadable && !user_can_read_file(conn, entry)) {
+		if (hide_unreadable &&
+		    !user_can_read_file(conn, smb_fname_base)) {
 			DEBUG(10,("is_visible_file: file %s is unreadable.\n",
 				 entry ));
-			TALLOC_FREE(entry);
-			return false;
+			ret = false;
+			goto out;
 		}
 		/* Honour _hide unwriteable_ option */
 		if (hide_unwriteable && !user_can_write_file(conn, entry, pst)) {
 			DEBUG(10,("is_visible_file: file %s is unwritable.\n",
 				 entry ));
-			TALLOC_FREE(entry);
-			return false;
+			ret = false;
+			goto out;
 		}
 		/* Honour _hide_special_ option */
 		if (hide_special && file_is_special(conn, entry, pst)) {
 			DEBUG(10,("is_visible_file: file %s is special.\n",
 				 entry ));
-			TALLOC_FREE(entry);
-			return false;
+			ret = false;
+			goto out;
 		}
-		TALLOC_FREE(entry);
 	}
-	return true;
+
+	ret = true;
+ out:
+	TALLOC_FREE(smb_fname_base);
+	TALLOC_FREE(entry);
+	return ret;
 }
 
 static int smb_Dir_destructor(struct smb_Dir *dirp)

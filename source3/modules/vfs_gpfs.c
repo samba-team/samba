@@ -966,20 +966,28 @@ static size_t gpfs_get_xattr(struct vfs_handle_struct *handle,  const char *path
         return size;
 }
 
-static int vfs_gpfs_stat(struct vfs_handle_struct *handle, const char *fname,
-			 SMB_STRUCT_STAT *sbuf)
+static int vfs_gpfs_stat(struct vfs_handle_struct *handle,
+			 struct smb_filename *smb_fname)
 {
 	struct gpfs_winattr attrs;
+	char *fname = NULL;
+	NTSTATUS status;
 	int ret;
 
-	ret = SMB_VFS_NEXT_STAT(handle, fname, sbuf);
+	ret = SMB_VFS_NEXT_STAT(handle, smb_fname);
 	if (ret == -1) {
 		return -1;
 	}
+	status = get_full_smb_filename(talloc_tos(), smb_fname, &fname);
+	if (!NT_STATUS_IS_OK) {
+		errno = map_errno_from_nt_status(status);
+		return -1;
+	}
 	ret = get_gpfs_winattrs(CONST_DISCARD(char *, fname), &attrs);
+	TALLOC_FREE(fname);
 	if (ret == 0) {
-		sbuf->st_ex_btime.tv_sec = attrs.creationTime.tv_sec;
-		sbuf->st_ex_btime.tv_nsec = attrs.creationTime.tv_nsec;
+		smb_fname->st.st_ex_btime.tv_sec = attrs.creationTime.tv_sec;
+		smb_fname->st.st_ex_btime.tv_nsec = attrs.creationTime.tv_nsec;
 	}
 	return 0;
 }
@@ -1005,20 +1013,28 @@ static int vfs_gpfs_fstat(struct vfs_handle_struct *handle,
 	return 0;
 }
 
-static int vfs_gpfs_lstat(struct vfs_handle_struct *handle, const char *path,
-			  SMB_STRUCT_STAT *sbuf)
+static int vfs_gpfs_lstat(struct vfs_handle_struct *handle,
+			  struct smb_filename *smb_fname)
 {
 	struct gpfs_winattr attrs;
+	char *path = NULL;
+	NTSTATUS status;
 	int ret;
 
-	ret = SMB_VFS_NEXT_LSTAT(handle, path, sbuf);
+	ret = SMB_VFS_NEXT_LSTAT(handle, smb_fname);
 	if (ret == -1) {
 		return -1;
 	}
+	status = get_full_smb_filename(talloc_tos(), smb_fname, &path);
+	if (!NT_STATUS_IS_OK) {
+		errno = map_errno_from_nt_status(status);
+		return -1;
+	}
 	ret = get_gpfs_winattrs(CONST_DISCARD(char *, path), &attrs);
+	TALLOC_FREE(path);
 	if (ret == 0) {
-		sbuf->st_ex_btime.tv_sec = attrs.creationTime.tv_sec;
-		sbuf->st_ex_btime.tv_nsec = attrs.creationTime.tv_nsec;
+		smb_fname->st.st_ex_btime.tv_sec = attrs.creationTime.tv_sec;
+		smb_fname->st.st_ex_btime.tv_nsec = attrs.creationTime.tv_nsec;
 	}
 	return 0;
 }

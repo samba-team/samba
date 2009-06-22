@@ -274,7 +274,7 @@ bool stat_cache_lookup(connection_struct *conn,
 		  "-> [%s]\n", chk_name, translated_path ));
 	DO_PROFILE_INC(statcache_hits);
 
-	if (SMB_VFS_STAT(conn, translated_path, pst) != 0) {
+	if (vfs_stat_smb_fname(conn, translated_path, pst) != 0) {
 		/* Discard this entry - it doesn't exist in the filesystem. */
 		memcache_delete(smbd_memcache(), STAT_CACHE,
 				data_blob_const(chk_name, strlen(chk_name)));

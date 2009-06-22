@@ -118,7 +118,7 @@
 /* Leave at 25 - not yet released. Add locking calls. -- zkirsch. */
 /* Leave at 25 - not yet released. Add strict locking calls. -- drichards. */
 /* Changed to version 26 - Plumb struct smb_filename to SMB_VFS_CREATE_FILE,
-			   SMB_VFS_OPEN. */
+			   SMB_VFS_OPEN, SMB_VFS_STAT, SMB_VFS_LSTAT. */
 
 #define SMB_VFS_INTERFACE_VERSION 26
 
@@ -359,9 +359,9 @@ struct vfs_ops {
 		ssize_t (*recvfile)(struct vfs_handle_struct *handle, int fromfd, files_struct *tofsp, SMB_OFF_T offset, size_t count);
 		int (*rename)(struct vfs_handle_struct *handle, const char *oldname, const char *newname);
 		int (*fsync)(struct vfs_handle_struct *handle, struct files_struct *fsp);
-		int (*stat)(struct vfs_handle_struct *handle, const char *fname, SMB_STRUCT_STAT *sbuf);
+		int (*stat)(struct vfs_handle_struct *handle, struct smb_filename *smb_fname);
 		int (*fstat)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_STAT *sbuf);
-		int (*lstat)(struct vfs_handle_struct *handle, const char *path, SMB_STRUCT_STAT *sbuf);
+		int (*lstat)(struct vfs_handle_struct *handle, struct smb_filename *smb_filename);
 		uint64_t (*get_alloc_size)(struct vfs_handle_struct *handle, struct files_struct *fsp, const SMB_STRUCT_STAT *sbuf);
 		int (*unlink)(struct vfs_handle_struct *handle, const char *path);
 		int (*chmod)(struct vfs_handle_struct *handle, const char *path, mode_t mode);

@@ -169,9 +169,32 @@ static bool streams_xattr_recheck(struct stream_io *sio)
 	return true;
 }
 
+/**
+ * Helper to stat/lstat the base file of an smb_fname.
+ */
+static int streams_xattr_stat_base(vfs_handle_struct *handle,
+				   struct smb_filename *smb_fname,
+				   bool follow_links)
+{
+	char *tmp_stream_name;
+	int result;
+
+	tmp_stream_name = smb_fname->stream_name;
+	smb_fname->stream_name = NULL;
+	if (follow_links) {
+		result = SMB_VFS_NEXT_STAT(handle, smb_fname);
+	} else {
+		result = SMB_VFS_NEXT_LSTAT(handle, smb_fname);
+	}
+	smb_fname->stream_name = tmp_stream_name;
+	return result;
+}
+
 static int streams_xattr_fstat(vfs_handle_struct *handle, files_struct *fsp,
 			       SMB_STRUCT_STAT *sbuf)
 {
+	struct smb_filename *smb_fname_base = NULL;
+	NTSTATUS status;
 	int ret = -1;
 	struct stream_io *io = (struct stream_io *)
 		VFS_FETCH_FSP_EXTENSION(handle, fsp);
@@ -186,11 +209,23 @@ static int streams_xattr_fstat(vfs_handle_struct *handle, files_struct *fsp,
 		return -1;
 	}
 
-	if (lp_posix_pathnames()) {
-		ret = SMB_VFS_LSTAT(handle->conn, io->base, sbuf);
-	} else {
-		ret = SMB_VFS_STAT(handle->conn, io->base, sbuf);
+	/* Create an smb_filename with stream_name == NULL. */
+	status = create_synthetic_smb_fname(talloc_tos(),
+					    io->base,
+					    NULL, NULL,
+					    &smb_fname_base);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		return -1;
 	}
+
+	if (lp_posix_pathnames()) {
+		ret = SMB_VFS_LSTAT(handle->conn, smb_fname_base);
+	} else {
+		ret = SMB_VFS_STAT(handle->conn, smb_fname_base);
+	}
+	*sbuf = smb_fname_base->st;
+	TALLOC_FREE(smb_fname_base);
 
 	if (ret == -1) {
 		return -1;
@@ -212,105 +247,106 @@ static int streams_xattr_fstat(vfs_handle_struct *handle, files_struct *fsp,
 	return 0;
 }
 
-static int streams_xattr_stat(vfs_handle_struct *handle, const char *fname,
-			      SMB_STRUCT_STAT *sbuf)
+static int streams_xattr_stat(vfs_handle_struct *handle,
+			      struct smb_filename *smb_fname)
 {
 	NTSTATUS status;
-	char *base = NULL, *sname = NULL;
 	int result = -1;
-	char *xattr_name;
+	char *xattr_name = NULL;
 
-	if (!is_ntfs_stream_name(fname)) {
-		return SMB_VFS_NEXT_STAT(handle, fname, sbuf);
+	if (!is_ntfs_stream_smb_fname(smb_fname)) {
+		return SMB_VFS_NEXT_STAT(handle, smb_fname);
 	}
 
-	status = split_ntfs_stream_name(talloc_tos(), fname, &base, &sname);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = EINVAL;
+	/* If the default stream is requested, just stat the base file. */
+	if (is_ntfs_default_stream_smb_fname(smb_fname)) {
+		return streams_xattr_stat_base(handle, smb_fname, true);
+	}
+
+	/* Populate the stat struct with info from the base file. */
+	if (streams_xattr_stat_base(handle, smb_fname, true) == -1) {
 		return -1;
 	}
 
-	if (sname == NULL){
-		return SMB_VFS_NEXT_STAT(handle, base, sbuf);
+	/* Derive the xattr name to lookup. */
+	status = streams_xattr_get_name(talloc_tos(), smb_fname->stream_name,
+					&xattr_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		return -1;
 	}
 
-	if (SMB_VFS_STAT(handle->conn, base, sbuf) == -1) {
-		goto fail;
-	}
-
-	xattr_name = talloc_asprintf(talloc_tos(), "%s%s",
-				     SAMBA_XATTR_DOSSTREAM_PREFIX, sname);
-	if (xattr_name == NULL) {
-		errno = ENOMEM;
-		goto fail;
-	}
-
-	sbuf->st_ex_size = get_xattr_size(handle->conn, NULL, base, xattr_name);
-	if (sbuf->st_ex_size == -1) {
+	/* Augment the base file's stat information before returning. */
+	smb_fname->st.st_ex_size = get_xattr_size(handle->conn, NULL,
+						  smb_fname->base_name,
+						  xattr_name);
+	if (smb_fname->st.st_ex_size == -1) {
 		errno = ENOENT;
+		result = -1;
 		goto fail;
 	}
 
-	sbuf->st_ex_ino = stream_inode(sbuf, xattr_name);
-	sbuf->st_ex_mode &= ~S_IFMT;
-        sbuf->st_ex_mode |= S_IFREG;
-        sbuf->st_ex_blocks = sbuf->st_ex_size % STAT_ST_BLOCKSIZE + 1;
+	smb_fname->st.st_ex_ino = stream_inode(&smb_fname->st, xattr_name);
+	smb_fname->st.st_ex_mode &= ~S_IFMT;
+        smb_fname->st.st_ex_mode |= S_IFREG;
+        smb_fname->st.st_ex_blocks =
+	    smb_fname->st.st_ex_size % STAT_ST_BLOCKSIZE + 1;
 
 	result = 0;
  fail:
-	TALLOC_FREE(base);
-	TALLOC_FREE(sname);
+	TALLOC_FREE(xattr_name);
 	return result;
 }
 
-static int streams_xattr_lstat(vfs_handle_struct *handle, const char *fname,
-			       SMB_STRUCT_STAT *sbuf)
+static int streams_xattr_lstat(vfs_handle_struct *handle,
+			       struct smb_filename *smb_fname)
 {
 	NTSTATUS status;
-	char *base, *sname;
 	int result = -1;
-	char *xattr_name;
+	char *xattr_name = NULL;
 
-	if (!is_ntfs_stream_name(fname)) {
-		return SMB_VFS_NEXT_LSTAT(handle, fname, sbuf);
+	if (!is_ntfs_stream_smb_fname(smb_fname)) {
+		return SMB_VFS_NEXT_LSTAT(handle, smb_fname);
 	}
 
-	status = split_ntfs_stream_name(talloc_tos(), fname, &base, &sname);
+		/* If the default stream is requested, just stat the base file. */
+	if (is_ntfs_default_stream_smb_fname(smb_fname)) {
+		return streams_xattr_stat_base(handle, smb_fname, false);
+	}
+
+	/* Populate the stat struct with info from the base file. */
+	if (streams_xattr_stat_base(handle, smb_fname, false) == -1) {
+		return -1;
+	}
+
+	/* Derive the xattr name to lookup. */
+	status = streams_xattr_get_name(talloc_tos(), smb_fname->stream_name,
+					&xattr_name);
 	if (!NT_STATUS_IS_OK(status)) {
-		errno = EINVAL;
-		goto fail;
+		errno = map_errno_from_nt_status(status);
+		return -1;
 	}
 
-	if (sname == NULL){
-		return SMB_VFS_NEXT_LSTAT(handle, base, sbuf);
-	}
-
-	if (SMB_VFS_LSTAT(handle->conn, base, sbuf) == -1) {
-		goto fail;
-	}
-
-	xattr_name = talloc_asprintf(talloc_tos(), "%s%s",
-				     SAMBA_XATTR_DOSSTREAM_PREFIX, sname);
-	if (xattr_name == NULL) {
-		errno = ENOMEM;
-		goto fail;
-	}
-
-	sbuf->st_ex_size = get_xattr_size(handle->conn, NULL, base, xattr_name);
-	if (sbuf->st_ex_size == -1) {
+	/* Augment the base file's stat information before returning. */
+	smb_fname->st.st_ex_size = get_xattr_size(handle->conn, NULL,
+						  smb_fname->base_name,
+						  xattr_name);
+	if (smb_fname->st.st_ex_size == -1) {
 		errno = ENOENT;
+		result = -1;
 		goto fail;
 	}
 
-	sbuf->st_ex_ino = stream_inode(sbuf, xattr_name);
-	sbuf->st_ex_mode &= ~S_IFMT;
-        sbuf->st_ex_mode |= S_IFREG;
-        sbuf->st_ex_blocks = sbuf->st_ex_size % STAT_ST_BLOCKSIZE + 1;
+	smb_fname->st.st_ex_ino = stream_inode(&smb_fname->st, xattr_name);
+	smb_fname->st.st_ex_mode &= ~S_IFMT;
+        smb_fname->st.st_ex_mode |= S_IFREG;
+        smb_fname->st.st_ex_blocks =
+	    smb_fname->st.st_ex_size % STAT_ST_BLOCKSIZE + 1;
 
 	result = 0;
+
  fail:
-	TALLOC_FREE(base);
-	TALLOC_FREE(sname);
+	TALLOC_FREE(xattr_name);
 	return result;
 }
 
@@ -776,9 +812,9 @@ static NTSTATUS streams_xattr_streaminfo(vfs_handle_struct *handle,
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		if (lp_posix_pathnames()) {
-			ret = SMB_VFS_LSTAT(handle->conn, fname, &sbuf);
+			ret = vfs_lstat_smb_fname(handle->conn, fname, &sbuf);
 		} else {
-			ret = SMB_VFS_STAT(handle->conn, fname, &sbuf);
+			ret = vfs_stat_smb_fname(handle->conn, fname, &sbuf);
 		}
 	}
 

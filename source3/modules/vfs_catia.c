@@ -177,27 +177,51 @@ static int catia_rename(vfs_handle_struct *handle,
 }
 
 static int catia_stat(vfs_handle_struct *handle,
-		      const char *fname, SMB_STRUCT_STAT *sbuf)
+		      struct smb_filename *smb_fname)
 {
-	char *name = to_unix(talloc_tos(), fname);
+	char *name;
+	char *tmp_base_name;
+	int ret;
 
+	name = to_unix(talloc_tos(), smb_fname->base_name);
 	if (!name) {
 		errno = ENOMEM;
 		return -1;
 	}
-        return SMB_VFS_NEXT_STAT(handle, name, sbuf);
+
+	tmp_base_name = smb_fname->base_name;
+	smb_fname->base_name = name;
+
+	ret = SMB_VFS_NEXT_STAT(handle, smb_fname);
+
+	smb_fname->base_name = tmp_base_name;
+	TALLOC_FREE(name);
+
+	return ret;
 }
 
 static int catia_lstat(vfs_handle_struct *handle,
-		       const char *path, SMB_STRUCT_STAT *sbuf)
+		       struct smb_filename *smb_fname)
 {
-	char *name = to_unix(talloc_tos(), path);
+	char *name;
+	char *tmp_base_name;
+	int ret;
 
+	name = to_unix(talloc_tos(), smb_fname->base_name);
 	if (!name) {
 		errno = ENOMEM;
 		return -1;
 	}
-        return SMB_VFS_NEXT_LSTAT(handle, name, sbuf);
+
+	tmp_base_name = smb_fname->base_name;
+	smb_fname->base_name = name;
+
+	ret = SMB_VFS_NEXT_LSTAT(handle, smb_fname);
+
+	smb_fname->base_name = tmp_base_name;
+	TALLOC_FREE(name);
+
+	return ret;
 }
 
 static int catia_unlink(vfs_handle_struct *handle, const char *path)
