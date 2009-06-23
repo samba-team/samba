@@ -1,4 +1,55 @@
                    =============================
+                   Release Notes for Samba 3.3.6
+			  June, 23  2009
+                   =============================
+
+
+This is a security release in order to address CVE-2009-1888.
+
+   o CVE-2009-1888:
+     In Samba 3.0.31 to 3.3.5 (inclusive), an uninitialized read of a
+     data value can potentially affect access control when "dos filemode"
+     is set to "yes".
+
+
+######################################################################
+Changes
+#######
+
+
+Changes since 3.3.5:
+--------------------
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 6488: Fix for CVE-2009-1888.
+
+
+######################################################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 3.3 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+
+                   =============================
                    Release Notes for Samba 3.3.5
 			  June, 16  2009
                    =============================
@@ -117,8 +168,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
 
 
                    =============================
