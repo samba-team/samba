@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.84
+Version: 1.0.85
 Release: 1
 Epoch: 0
 License: GNU GPL version 3
@@ -131,6 +131,23 @@ fi
 %{_libdir}/pkgconfig/ctdb.pc
 
 %changelog
+* Tue Jun 23 2009 : Version 1.0.85
+ - From William Jojo : Dont use getopt on AIX
+ - Make it possible to use "ctdb listnodes" also when the daemon is not running
+ - Provide machinereadable output to "ctdb listnodes"
+ - Dont list DELETED nodes in the ctdb listnodes output
+ - Try to avoid causing a recovery for the average case when adding/deleting/moving an ip
+ - When banning a node, drop the IPs on that node only and not all nodes.
+ - Add tests for NFS and CIFS tickles
+ - Rename 99.routing to 11.routing so it executes before NFS and LVS scripts
+ - Increase the default timeout before we deem an unresponsive recovery daemon hung and shutdown
+ - Reduce the reclock timout to 5 seconds
+ - Spawn a child process in the recovery daemon ot check the reclock file to
+   avoid blocking the process if the underlying filesystem is unresponsive
+ - fix for filedescriptor leak when a child process timesout
+ - Dont log errors if waitpid() returns -1
+ - Onnode updates by Martins
+ - Test and initscript cleanups from Martin S
 * Tue Jun 2 2009 : Version 1.0.84
  - Fix a bug in onnode that could not handle dead nodes
 * Tue Jun 2 2009 : Version 1.0.83
