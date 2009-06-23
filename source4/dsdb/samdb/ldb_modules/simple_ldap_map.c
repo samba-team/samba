@@ -372,6 +372,17 @@ static const struct ldb_map_attribute entryuuid_attributes[] =
 		}
 	},
 	{
+		.local_name = "systemFlags",
+		.type = MAP_CONVERT,
+		.u = {
+			.convert = {
+				 .remote_name = "systemFlags",
+				 .convert_local = normalise_to_signed32,
+				 .convert_remote = val_copy,
+			 },
+		}
+	},
+	{
 		.local_name = "usnChanged",
 		.type = MAP_CONVERT,
 		.u = {
@@ -518,6 +529,17 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 		.u = {
 			.convert = {
 				 .remote_name = "sAMAccountType",
+				 .convert_local = normalise_to_signed32,
+				 .convert_remote = val_copy,
+			 },
+		}
+	},
+	{
+		.local_name = "systemFlags",
+		.type = MAP_CONVERT,
+		.u = {
+			.convert = {
+				 .remote_name = "systemFlags",
 				 .convert_local = normalise_to_signed32,
 				 .convert_remote = val_copy,
 			 },
