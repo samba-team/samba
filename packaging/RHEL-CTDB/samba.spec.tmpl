@@ -129,7 +129,7 @@ utilized by SWAT as well as the HTML and PDF version of "Using Samba",
 
 /bin/cp setup/filter-requires-samba.sh %{SOURCE998}
 
-cd source
+cd source3
 # RPM_OPT_FLAGS="$RPM_OPT_FLAGS -D_FILE_OFFSET_BITS=64"
 
 ## check for ccache
@@ -296,20 +296,20 @@ mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/xinetd.d
 mkdir -p $RPM_BUILD_ROOT/var/lib/samba/winbindd_privileged
 mkdir -p $RPM_BUILD_ROOT/var/{log,run/winbindd,spool}/samba
 
-cd source
+cd source3
 make DESTDIR=$RPM_BUILD_ROOT \
         install
 cd ..
 
 # NSS winbind support
-install -m 755 source/nsswitch/libnss_winbind.so $RPM_BUILD_ROOT/%{_libarch}/libnss_winbind.so.2
+install -m 755 source3/nsswitch/libnss_winbind.so $RPM_BUILD_ROOT/%{_libarch}/libnss_winbind.so.2
 ( cd $RPM_BUILD_ROOT/%{_libarch};
   ln -sf libnss_winbind.so.2  libnss_winbind.so )
 #
 # do not install libnss_wins.so in order to reduce dependencies
 # (we do not need it for the samba-ctdb scenario)
 #
-#install -m 755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/%{_libarch}/libnss_wins.so
+#install -m 755 source3/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/%{_libarch}/libnss_wins.so
 # ( cd $RPM_BUILD_ROOT/%{_libarch}; ln -sf libnss_wins.so  libnss_wins.so.2 )
 
 
@@ -342,9 +342,9 @@ install -m644 setup/samba.pamd $RPM_BUILD_ROOT%{_sysconfdir}/pam.d/samba
 install -m755 setup/smbprint $RPM_BUILD_ROOT%{_bindir}
 install -m644 setup/smbusers $RPM_BUILD_ROOT%{_sysconfdir}/samba/smbusers
 install -m644 setup/smb.conf $RPM_BUILD_ROOT%{_sysconfdir}/samba/smb.conf
-install -m755 source/bin/mount.cifs $RPM_BUILD_ROOT/sbin/mount.cifs
-install -m755 source/bin/umount.cifs $RPM_BUILD_ROOT/sbin/umount.cifs
-install -m755 source/script/mksmbpasswd.sh $RPM_BUILD_ROOT%{_bindir}
+install -m755 source3/bin/mount.cifs $RPM_BUILD_ROOT/sbin/mount.cifs
+install -m755 source3/bin/umount.cifs $RPM_BUILD_ROOT/sbin/umount.cifs
+install -m755 source3/script/mksmbpasswd.sh $RPM_BUILD_ROOT%{_bindir}
 
 /bin/rm $RPM_BUILD_ROOT%{_sbindir}/*mount.cifs
 
