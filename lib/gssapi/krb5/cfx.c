@@ -197,9 +197,8 @@ rrc_rotate(void *data, size_t len, uint16_t rrc, krb5_boolean unrotate)
     return 0;
 }
 
-
-static gss_iov_buffer_desc *
-find_buffer(gss_iov_buffer_desc *iov, int iov_count, OM_uint32 type)
+gss_iov_buffer_desc *
+_gk_find_buffer(gss_iov_buffer_desc *iov, int iov_count, OM_uint32 type)
 {
     int i;
 
@@ -252,7 +251,7 @@ _gssapi_wrap_cfx_iov(OM_uint32 *minor_status,
     krb5_crypto_iov *data = NULL;
     int paddingoffset = 0;
 	
-    header = find_buffer(iov, iov_count, GSS_IOV_BUFFER_TYPE_HEADER);
+    header = _gk_find_buffer(iov, iov_count, GSS_IOV_BUFFER_TYPE_HEADER);
     if (header == NULL) {
 	*minor_status = EINVAL;
 	return GSS_S_FAILURE;
@@ -260,13 +259,13 @@ _gssapi_wrap_cfx_iov(OM_uint32 *minor_status,
 
     krb5_crypto_length(context, ctx->crypto, KRB5_CRYPTO_TYPE_PADDING, &padlength);
 
-    padding = find_buffer(iov, iov_count, GSS_IOV_BUFFER_TYPE_PADDING);
+    padding = _gk_find_buffer(iov, iov_count, GSS_IOV_BUFFER_TYPE_PADDING);
     if (padlength != 0 && padding == NULL) {
 	*minor_status = EINVAL;
 	return GSS_S_FAILURE;
     }
 
-    trailer = find_buffer(iov, iov_count, GSS_IOV_BUFFER_TYPE_TRAILER);
+    trailer = _gk_find_buffer(iov, iov_count, GSS_IOV_BUFFER_TYPE_TRAILER);
 
     if (conf_req_flag) {
 	ec = padlength;
@@ -634,7 +633,7 @@ _gssapi_unwrap_cfx_iov(OM_uint32 *minor_status,
 
     *minor_status = 0;
 
-    header = find_buffer(iov, iov_count, GSS_IOV_BUFFER_TYPE_HEADER);
+    header = _gk_find_buffer(iov, iov_count, GSS_IOV_BUFFER_TYPE_HEADER);
     if (header == NULL) {
 	*minor_status = EINVAL;
 	return GSS_S_FAILURE;
@@ -643,7 +642,7 @@ _gssapi_unwrap_cfx_iov(OM_uint32 *minor_status,
     if (header->buffer.length < sizeof(*token)) /* we check exact below */
 	return GSS_S_DEFECTIVE_TOKEN;
 
-    trailer = find_buffer(iov, iov_count, GSS_IOV_BUFFER_TYPE_TRAILER);
+    trailer = _gk_find_buffer(iov, iov_count, GSS_IOV_BUFFER_TYPE_TRAILER);
 
     token = (gss_cfx_wrap_token)header->buffer.value;
 
