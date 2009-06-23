@@ -339,13 +339,10 @@ static bool test_SetUserInfo(struct dcerpc_pipe *p, struct torture_context *tctx
 	q0.in.level = 12;
 	do { TESTCALL(QueryUserInfo, q0) } while (0);
 
-	/* Samba 3 cannot store comment fields atm. - gd */
-	if (!torture_setting_bool(tctx, "samba3", false)) {
-		TEST_USERINFO_STRING(2, comment,  1, comment, "xx2-1 comment", 0);
-		TEST_USERINFO_STRING(2, comment, 21, comment, "xx2-21 comment", 0);
-		TEST_USERINFO_STRING(21, comment, 21, comment, "xx21-21 comment",
-				   SAMR_FIELD_COMMENT);
-	}
+	TEST_USERINFO_STRING(2, comment,  1, comment, "xx2-1 comment", 0);
+	TEST_USERINFO_STRING(2, comment, 21, comment, "xx2-21 comment", 0);
+	TEST_USERINFO_STRING(21, comment, 21, comment, "xx21-21 comment",
+			   SAMR_FIELD_COMMENT);
 
 	test_account_name = talloc_asprintf(tctx, "%sxx7-1", base_account_name);
 	TEST_USERINFO_STRING(7, account_name,  1, account_name, base_account_name, 0);
