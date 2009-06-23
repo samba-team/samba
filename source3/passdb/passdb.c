@@ -1519,7 +1519,7 @@ static bool init_samu_from_buffer_v3(struct samu *sampass, uint8 *buf, uint32 bu
 	char *domain = NULL;
 	char *nt_username = NULL;
 	char *dir_drive = NULL;
-	char *unknown_str = NULL;
+	char *comment = NULL;
 	char *munged_dial = NULL;
 	char *fullname = NULL;
 	char *homedir = NULL;
@@ -1528,7 +1528,7 @@ static bool init_samu_from_buffer_v3(struct samu *sampass, uint8 *buf, uint32 bu
 	char *acct_desc = NULL;
 	char *workstations = NULL;
 	uint32	username_len, domain_len, nt_username_len,
-		dir_drive_len, unknown_str_len, munged_dial_len,
+		dir_drive_len, comment_len, munged_dial_len,
 		fullname_len, homedir_len, logon_script_len,
 		profile_path_len, acct_desc_len, workstations_len;
 
@@ -1570,7 +1570,7 @@ static bool init_samu_from_buffer_v3(struct samu *sampass, uint8 *buf, uint32 bu
 		&profile_path_len, &profile_path,			/* B */
 		&acct_desc_len, &acct_desc,				/* B */
 		&workstations_len, &workstations,			/* B */
-		&unknown_str_len, &unknown_str,				/* B */
+		&comment_len, &comment,					/* B */
 		&munged_dial_len, &munged_dial,				/* B */
 		&user_rid,						/* d */
 		&group_rid,						/* d */
@@ -1656,6 +1656,7 @@ static bool init_samu_from_buffer_v3(struct samu *sampass, uint8 *buf, uint32 bu
 	}
 
 	pdb_set_acct_desc(sampass, acct_desc, PDB_SET);
+	pdb_set_comment(sampass, comment, PDB_SET);
 	pdb_set_workstations(sampass, workstations, PDB_SET);
 	pdb_set_munged_dial(sampass, munged_dial, PDB_SET);
 
@@ -1724,7 +1725,7 @@ done:
 	SAFE_FREE(acct_desc);
 	SAFE_FREE(workstations);
 	SAFE_FREE(munged_dial);
-	SAFE_FREE(unknown_str);
+	SAFE_FREE(comment);
 	SAFE_FREE(lm_pw_ptr);
 	SAFE_FREE(nt_pw_ptr);
 	SAFE_FREE(nt_pw_hist_ptr);
@@ -1757,7 +1758,7 @@ static uint32 init_buffer_from_samu_v3 (uint8 **buf, struct samu *sampass, bool 
 	const char *domain;
 	const char *nt_username;
 	const char *dir_drive;
-	const char *unknown_str;
+	const char *comment;
 	const char *munged_dial;
 	const char *fullname;
 	const char *homedir;
@@ -1766,7 +1767,7 @@ static uint32 init_buffer_from_samu_v3 (uint8 **buf, struct samu *sampass, bool 
 	const char *acct_desc;
 	const char *workstations;
 	uint32	username_len, domain_len, nt_username_len,
-		dir_drive_len, unknown_str_len, munged_dial_len,
+		dir_drive_len, comment_len, munged_dial_len,
 		fullname_len, homedir_len, logon_script_len,
 		profile_path_len, acct_desc_len, workstations_len;
 
@@ -1900,8 +1901,12 @@ static uint32 init_buffer_from_samu_v3 (uint8 **buf, struct samu *sampass, bool 
 		workstations_len = 0;
 	}
 
-	unknown_str = NULL;
-	unknown_str_len = 0;
+	comment = pdb_get_comment(sampass);
+	if (comment) {
+		comment_len = strlen(comment) +1;
+	} else {
+		comment_len = 0;
+	}
 
 	munged_dial = pdb_get_munged_dial(sampass);
 	if (munged_dial) {
@@ -1931,7 +1936,7 @@ static uint32 init_buffer_from_samu_v3 (uint8 **buf, struct samu *sampass, bool 
 		profile_path_len, profile_path,		/* B */
 		acct_desc_len, acct_desc,		/* B */
 		workstations_len, workstations,		/* B */
-		unknown_str_len, unknown_str,		/* B */
+		comment_len, comment,			/* B */
 		munged_dial_len, munged_dial,		/* B */
 		user_rid,				/* d */
 		group_rid,				/* d */
@@ -1975,7 +1980,7 @@ static uint32 init_buffer_from_samu_v3 (uint8 **buf, struct samu *sampass, bool 
 		profile_path_len, profile_path,		/* B */
 		acct_desc_len, acct_desc,		/* B */
 		workstations_len, workstations,		/* B */
-		unknown_str_len, unknown_str,		/* B */
+		comment_len, comment,			/* B */
 		munged_dial_len, munged_dial,		/* B */
 		user_rid,				/* d */
 		group_rid,				/* d */
