@@ -2152,9 +2152,18 @@ NTSTATUS _lsa_EnumAccountRights(pipes_struct *p,
 
 	sid_copy( &sid, r->in.sid );
 
-	get_privileges_for_sids(&mask, &sid, 1);
+	/* according to MS-LSAD 3.1.4.5.10 it is required to return
+	 * NT_STATUS_OBJECT_NAME_NOT_FOUND if the account sid was not found in
+	 * the lsa database */
 
-	privilege_set_init( &privileges );
+	if (!get_privileges_for_sids(&mask, &sid, 1)) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	status = privilege_set_init(&privileges);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	se_priv_to_privilege_set(&privileges, &mask);
 
