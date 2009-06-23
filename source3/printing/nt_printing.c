@@ -2532,7 +2532,7 @@ uint32 del_a_printer(const char *sharename)
 
 	close_all_print_db();
 
-	if (geteuid() == 0) {
+	if (geteuid() == sec_initial_uid()) {
 		if (asprintf(&printdb_path, "%s%s.tdb",
 				cache_path("printing/"),
 				sharename) < 0) {
