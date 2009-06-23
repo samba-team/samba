@@ -319,6 +319,23 @@ import "misc.idl", "lsa.idl", "security.idl";
 
 	/************************/
 	/* Function    0x08     */
+
+	typedef enum {
+		DomainPasswordInformation	= 1,
+		DomainGeneralInformation	= 2,
+		DomainLogoffInformation		= 3,
+		DomainOemInformation		= 4,
+		DomainNameInformation		= 5,
+		DomainReplicationInformation	= 6,
+		DomainServerRoleInformation	= 7,
+		DomainModifiedInformation	= 8,
+		DomainStateInformation		= 9,
+		DomainUasInformation		= 10,
+		DomainGeneralInformation2	= 11,
+		DomainLockoutInformation	= 12,
+		DomainModifiedInformation2	= 13
+	} samr_DomainInfoClass;
+
 	/* server roles */
 	typedef [v1_enum] enum {
 		SAMR_ROLE_STANDALONE    = 0,
@@ -430,7 +447,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 
 	NTSTATUS samr_QueryDomainInfo(
 		[in,ref]      policy_handle *domain_handle,
-		[in]          uint16 level,
+		[in]          samr_DomainInfoClass level,
 		[out,ref,switch_is(level)] samr_DomainInfo **info
 		);
 
@@ -442,7 +459,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	*/
 	NTSTATUS samr_SetDomainInfo(
 		[in,ref]      policy_handle *domain_handle,
-		[in]          uint16 level,
+		[in]          samr_DomainInfoClass level,
 		[in,switch_is(level),ref] samr_DomainInfo *info
 		);
 
@@ -761,6 +778,33 @@ import "misc.idl", "lsa.idl", "security.idl";
 
 	/************************/
 	/* Function    0x24     */
+
+	typedef enum {
+		UserGeneralInformation		= 1,
+		UserPreferencesInformation	= 2,
+		UserLogonInformation		= 3,
+		UserLogonHoursInformation	= 4,
+		UserAccountInformation		= 5,
+		UserNameInformation		= 6,
+		UserAccountNameInformation	= 7,
+		UserFullNameInformation		= 8,
+		UserPrimaryGroupInformation	= 9,
+		UserHomeInformation		= 10,
+		UserScriptInformation		= 11,
+		UserProfileInformation		= 12,
+		UserAdminCommentInformation	= 13,
+		UserWorkStationsInformation	= 14,
+		UserControlInformation		= 16,
+		UserExpiresInformation		= 17,
+		UserInternal1Information	= 18,
+		UserParametersInformation	= 20,
+		UserAllInformation		= 21,
+		UserInternal4Information	= 23,
+		UserInternal5Information	= 24,
+		UserInternal4InformationNew	= 25,
+		UserInternal5InformationNew	= 26
+	} samr_UserInfoLevel;
+
 	typedef struct {
 		lsa_String account_name;
 		lsa_String full_name;
@@ -1021,7 +1065,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 
 	[public] NTSTATUS samr_QueryUserInfo(
 		[in,ref]                  policy_handle *user_handle,
-		[in]                      uint16 level,
+		[in]                      samr_UserInfoLevel level,
 		[out,ref,switch_is(level)] samr_UserInfo **info
 		);
 
@@ -1030,7 +1074,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	/* Function    0x25     */
 	[public] NTSTATUS samr_SetUserInfo(
 		[in,ref]                   policy_handle *user_handle,
-		[in]                       uint16 level,
+		[in]                       samr_UserInfoLevel level,
 		[in,ref,switch_is(level)]  samr_UserInfo *info
 		);
 
@@ -1216,7 +1260,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	*/
 	NTSTATUS samr_QueryDomainInfo2(
 		[in,ref]      policy_handle *domain_handle,
-		[in]          uint16 level,
+		[in]          samr_DomainInfoClass level,
 		[out,ref,switch_is(level)] samr_DomainInfo **info
 		);
 
@@ -1228,7 +1272,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	*/
 	NTSTATUS samr_QueryUserInfo2(
 		[in,ref]                  policy_handle *user_handle,
-		[in]                      uint16 level,
+		[in]                      samr_UserInfoLevel level,
 		[out,ref,switch_is(level)]    samr_UserInfo **info
 		);
 
@@ -1351,7 +1395,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	*/
 	[public] NTSTATUS samr_SetUserInfo2(
 		[in,ref]                   policy_handle *user_handle,
-		[in]                       uint16 level,
+		[in]                       samr_UserInfoLevel level,
 		[in,ref,switch_is(level)]  samr_UserInfo *info
 		);
 
