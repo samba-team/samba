@@ -1995,31 +1995,6 @@ static bool convert_printer_driver_info(const struct spoolss_AddDriverInfoCtr *r
 	return true;
 }
 
-/********************************************************************
- * _spoolss_enddocprinter_internal.
- ********************************************************************/
-
-static WERROR _spoolss_enddocprinter_internal(pipes_struct *p,
-					      struct policy_handle *handle)
-{
-	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
-	int snum;
-
-	if (!Printer) {
-		DEBUG(2,("_spoolss_enddocprinter_internal: Invalid handle (%s:%u:%u)\n", OUR_HANDLE(handle)));
-		return WERR_BADFID;
-	}
-
-	if (!get_printer_snum(p, handle, &snum, NULL))
-		return WERR_BADFID;
-
-	Printer->document_started = false;
-	print_job_end(snum, Printer->jobid,NORMAL_CLOSE);
-	/* error codes unhandled so far ... */
-
-	return WERR_OK;
-}
-
 /****************************************************************
  _spoolss_ClosePrinter
 ****************************************************************/
@@ -2029,8 +2004,13 @@ WERROR _spoolss_ClosePrinter(pipes_struct *p,
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
 
-	if (Printer && Printer->document_started)
-		_spoolss_enddocprinter_internal(p, r->in.handle);          /* print job was not closed */
+	if (Printer && Printer->document_started) {
+		struct spoolss_EndDocPrinter e;
+
+		e.in.handle = r->in.handle;
+
+		_spoolss_EndDocPrinter(p, &e);
+	}
 
 	if (!close_printer_handle(p, r->in.handle))
 		return WERR_BADFID;
@@ -2055,8 +2035,13 @@ WERROR _spoolss_DeletePrinter(pipes_struct *p,
 	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
 	WERROR result;
 
-	if (Printer && Printer->document_started)
-		_spoolss_enddocprinter_internal(p, r->in.handle);  /* print job was not closed */
+	if (Printer && Printer->document_started) {
+		struct spoolss_EndDocPrinter e;
+
+		e.in.handle = r->in.handle;
+
+		_spoolss_EndDocPrinter(p, &e);
+	}
 
 	result = delete_printer_handle(p, r->in.handle);
 
@@ -5659,7 +5644,24 @@ WERROR _spoolss_StartDocPrinter(pipes_struct *p,
 WERROR _spoolss_EndDocPrinter(pipes_struct *p,
 			      struct spoolss_EndDocPrinter *r)
 {
-	return _spoolss_enddocprinter_internal(p, r->in.handle);
+	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
+	int snum;
+
+	if (!Printer) {
+		DEBUG(2,("_spoolss_EndDocPrinter: Invalid handle (%s:%u:%u)\n",
+			OUR_HANDLE(r->in.handle)));
+		return WERR_BADFID;
+	}
+
+	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
+		return WERR_BADFID;
+	}
+
+	Printer->document_started = false;
+	print_job_end(snum, Printer->jobid, NORMAL_CLOSE);
+	/* error codes unhandled so far ... */
+
+	return WERR_OK;
 }
 
 /****************************************************************
