@@ -164,6 +164,7 @@ void ndr_print_samr_GroupAccessMask(struct ndr_print *ndr, const char *name, uin
 void ndr_print_samr_AliasAccessMask(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_samr_SamEntry(struct ndr_print *ndr, const char *name, const struct samr_SamEntry *r);
 void ndr_print_samr_SamArray(struct ndr_print *ndr, const char *name, const struct samr_SamArray *r);
+void ndr_print_samr_DomainInfoClass(struct ndr_print *ndr, const char *name, enum samr_DomainInfoClass r);
 void ndr_print_samr_Role(struct ndr_print *ndr, const char *name, enum samr_Role r);
 enum ndr_err_code ndr_push_samr_PasswordProperties(struct ndr_push *ndr, int ndr_flags, uint32_t r);
 enum ndr_err_code ndr_pull_samr_PasswordProperties(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
@@ -194,6 +195,7 @@ void ndr_print_samr_RidTypeArray(struct ndr_print *ndr, const char *name, const 
 void ndr_print_samr_AliasInfoAll(struct ndr_print *ndr, const char *name, const struct samr_AliasInfoAll *r);
 void ndr_print_samr_AliasInfoEnum(struct ndr_print *ndr, const char *name, enum samr_AliasInfoEnum r);
 void ndr_print_samr_AliasInfo(struct ndr_print *ndr, const char *name, const union samr_AliasInfo *r);
+void ndr_print_samr_UserInfoLevel(struct ndr_print *ndr, const char *name, enum samr_UserInfoLevel r);
 void ndr_print_samr_UserInfo1(struct ndr_print *ndr, const char *name, const struct samr_UserInfo1 *r);
 void ndr_print_samr_UserInfo2(struct ndr_print *ndr, const char *name, const struct samr_UserInfo2 *r);
 enum ndr_err_code ndr_push_samr_LogonHours(struct ndr_push *ndr, int ndr_flags, const struct samr_LogonHours *r);

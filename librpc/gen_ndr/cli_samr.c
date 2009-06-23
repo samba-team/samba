@@ -345,7 +345,7 @@ NTSTATUS rpccli_samr_OpenDomain(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_samr_QueryDomainInfo(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
 				     struct policy_handle *domain_handle /* [in] [ref] */,
-				     uint16_t level /* [in]  */,
+				     enum samr_DomainInfoClass level /* [in]  */,
 				     union samr_DomainInfo **info /* [out] [ref,switch_is(level)] */)
 {
 	struct samr_QueryDomainInfo r;
@@ -387,7 +387,7 @@ NTSTATUS rpccli_samr_QueryDomainInfo(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_samr_SetDomainInfo(struct rpc_pipe_client *cli,
 				   TALLOC_CTX *mem_ctx,
 				   struct policy_handle *domain_handle /* [in] [ref] */,
-				   uint16_t level /* [in]  */,
+				   enum samr_DomainInfoClass level /* [in]  */,
 				   union samr_DomainInfo *info /* [in] [ref,switch_is(level)] */)
 {
 	struct samr_SetDomainInfo r;
@@ -1545,7 +1545,7 @@ NTSTATUS rpccli_samr_DeleteUser(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_samr_QueryUserInfo(struct rpc_pipe_client *cli,
 				   TALLOC_CTX *mem_ctx,
 				   struct policy_handle *user_handle /* [in] [ref] */,
-				   uint16_t level /* [in]  */,
+				   enum samr_UserInfoLevel level /* [in]  */,
 				   union samr_UserInfo **info /* [out] [ref,switch_is(level)] */)
 {
 	struct samr_QueryUserInfo r;
@@ -1587,7 +1587,7 @@ NTSTATUS rpccli_samr_QueryUserInfo(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_samr_SetUserInfo(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
 				 struct policy_handle *user_handle /* [in] [ref] */,
-				 uint16_t level /* [in]  */,
+				 enum samr_UserInfoLevel level /* [in]  */,
 				 union samr_UserInfo *info /* [in] [ref,switch_is(level)] */)
 {
 	struct samr_SetUserInfo r;
@@ -1979,7 +1979,7 @@ NTSTATUS rpccli_samr_RemoveMemberFromForeignDomain(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_samr_QueryDomainInfo2(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
 				      struct policy_handle *domain_handle /* [in] [ref] */,
-				      uint16_t level /* [in]  */,
+				      enum samr_DomainInfoClass level /* [in]  */,
 				      union samr_DomainInfo **info /* [out] [ref,switch_is(level)] */)
 {
 	struct samr_QueryDomainInfo2 r;
@@ -2021,7 +2021,7 @@ NTSTATUS rpccli_samr_QueryDomainInfo2(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_samr_QueryUserInfo2(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
 				    struct policy_handle *user_handle /* [in] [ref] */,
-				    uint16_t level /* [in]  */,
+				    enum samr_UserInfoLevel level /* [in]  */,
 				    union samr_UserInfo **info /* [out] [ref,switch_is(level)] */)
 {
 	struct samr_QueryUserInfo2 r;
@@ -2517,7 +2517,7 @@ NTSTATUS rpccli_samr_Connect2(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_samr_SetUserInfo2(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
 				  struct policy_handle *user_handle /* [in] [ref] */,
-				  uint16_t level /* [in]  */,
+				  enum samr_UserInfoLevel level /* [in]  */,
 				  union samr_UserInfo *info /* [in] [ref,switch_is(level)] */)
 {
 	struct samr_SetUserInfo2 r;

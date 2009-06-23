@@ -149,6 +149,41 @@ struct samr_SamArray {
 	struct samr_SamEntry *entries;/* [unique,size_is(count)] */
 };
 
+enum samr_DomainInfoClass
+#ifndef USE_UINT_ENUMS
+ {
+	DomainPasswordInformation=1,
+	DomainGeneralInformation=2,
+	DomainLogoffInformation=3,
+	DomainOemInformation=4,
+	DomainNameInformation=5,
+	DomainReplicationInformation=6,
+	DomainServerRoleInformation=7,
+	DomainModifiedInformation=8,
+	DomainStateInformation=9,
+	DomainUasInformation=10,
+	DomainGeneralInformation2=11,
+	DomainLockoutInformation=12,
+	DomainModifiedInformation2=13
+}
+#else
+ { __donnot_use_enum_samr_DomainInfoClass=0x7FFFFFFF}
+#define DomainPasswordInformation ( 1 )
+#define DomainGeneralInformation ( 2 )
+#define DomainLogoffInformation ( 3 )
+#define DomainOemInformation ( 4 )
+#define DomainNameInformation ( 5 )
+#define DomainReplicationInformation ( 6 )
+#define DomainServerRoleInformation ( 7 )
+#define DomainModifiedInformation ( 8 )
+#define DomainStateInformation ( 9 )
+#define DomainUasInformation ( 10 )
+#define DomainGeneralInformation2 ( 11 )
+#define DomainLockoutInformation ( 12 )
+#define DomainModifiedInformation2 ( 13 )
+#endif
+;
+
 enum samr_Role
 #ifndef USE_UINT_ENUMS
  {
@@ -360,6 +395,61 @@ union samr_AliasInfo {
 	struct lsa_String name;/* [case(ALIASINFONAME)] */
 	struct lsa_String description;/* [case(ALIASINFODESCRIPTION)] */
 }/* [switch_type(samr_AliasInfoEnum)] */;
+
+enum samr_UserInfoLevel
+#ifndef USE_UINT_ENUMS
+ {
+	UserGeneralInformation=1,
+	UserPreferencesInformation=2,
+	UserLogonInformation=3,
+	UserLogonHoursInformation=4,
+	UserAccountInformation=5,
+	UserNameInformation=6,
+	UserAccountNameInformation=7,
+	UserFullNameInformation=8,
+	UserPrimaryGroupInformation=9,
+	UserHomeInformation=10,
+	UserScriptInformation=11,
+	UserProfileInformation=12,
+	UserAdminCommentInformation=13,
+	UserWorkStationsInformation=14,
+	UserControlInformation=16,
+	UserExpiresInformation=17,
+	UserInternal1Information=18,
+	UserParametersInformation=20,
+	UserAllInformation=21,
+	UserInternal4Information=23,
+	UserInternal5Information=24,
+	UserInternal4InformationNew=25,
+	UserInternal5InformationNew=26
+}
+#else
+ { __donnot_use_enum_samr_UserInfoLevel=0x7FFFFFFF}
+#define UserGeneralInformation ( 1 )
+#define UserPreferencesInformation ( 2 )
+#define UserLogonInformation ( 3 )
+#define UserLogonHoursInformation ( 4 )
+#define UserAccountInformation ( 5 )
+#define UserNameInformation ( 6 )
+#define UserAccountNameInformation ( 7 )
+#define UserFullNameInformation ( 8 )
+#define UserPrimaryGroupInformation ( 9 )
+#define UserHomeInformation ( 10 )
+#define UserScriptInformation ( 11 )
+#define UserProfileInformation ( 12 )
+#define UserAdminCommentInformation ( 13 )
+#define UserWorkStationsInformation ( 14 )
+#define UserControlInformation ( 16 )
+#define UserExpiresInformation ( 17 )
+#define UserInternal1Information ( 18 )
+#define UserParametersInformation ( 20 )
+#define UserAllInformation ( 21 )
+#define UserInternal4Information ( 23 )
+#define UserInternal5Information ( 24 )
+#define UserInternal4InformationNew ( 25 )
+#define UserInternal5InformationNew ( 26 )
+#endif
+;
 
 struct samr_UserInfo1 {
 	struct lsa_String account_name;
@@ -936,7 +1026,7 @@ struct samr_OpenDomain {
 struct samr_QueryDomainInfo {
 	struct {
 		struct policy_handle *domain_handle;/* [ref] */
-		uint16_t level;
+		enum samr_DomainInfoClass level;
 	} in;
 
 	struct {
@@ -950,7 +1040,7 @@ struct samr_QueryDomainInfo {
 struct samr_SetDomainInfo {
 	struct {
 		struct policy_handle *domain_handle;/* [ref] */
-		uint16_t level;
+		enum samr_DomainInfoClass level;
 		union samr_DomainInfo *info;/* [ref,switch_is(level)] */
 	} in;
 
@@ -1343,7 +1433,7 @@ struct samr_DeleteUser {
 struct samr_QueryUserInfo {
 	struct {
 		struct policy_handle *user_handle;/* [ref] */
-		uint16_t level;
+		enum samr_UserInfoLevel level;
 	} in;
 
 	struct {
@@ -1357,7 +1447,7 @@ struct samr_QueryUserInfo {
 struct samr_SetUserInfo {
 	struct {
 		struct policy_handle *user_handle;/* [ref] */
-		uint16_t level;
+		enum samr_UserInfoLevel level;
 		union samr_UserInfo *info;/* [ref,switch_is(level)] */
 	} in;
 
@@ -1490,7 +1580,7 @@ struct samr_RemoveMemberFromForeignDomain {
 struct samr_QueryDomainInfo2 {
 	struct {
 		struct policy_handle *domain_handle;/* [ref] */
-		uint16_t level;
+		enum samr_DomainInfoClass level;
 	} in;
 
 	struct {
@@ -1504,7 +1594,7 @@ struct samr_QueryDomainInfo2 {
 struct samr_QueryUserInfo2 {
 	struct {
 		struct policy_handle *user_handle;/* [ref] */
-		uint16_t level;
+		enum samr_UserInfoLevel level;
 	} in;
 
 	struct {
@@ -1675,7 +1765,7 @@ struct samr_Connect2 {
 struct samr_SetUserInfo2 {
 	struct {
 		struct policy_handle *user_handle;/* [ref] */
-		uint16_t level;
+		enum samr_UserInfoLevel level;
 		union samr_UserInfo *info;/* [ref,switch_is(level)] */
 	} in;
 

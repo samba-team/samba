@@ -363,6 +363,42 @@ _PUBLIC_ void ndr_print_samr_SamArray(struct ndr_print *ndr, const char *name, c
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_samr_DomainInfoClass(struct ndr_push *ndr, int ndr_flags, enum samr_DomainInfoClass r)
+{
+	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_samr_DomainInfoClass(struct ndr_pull *ndr, int ndr_flags, enum samr_DomainInfoClass *r)
+{
+	uint16_t v;
+	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_samr_DomainInfoClass(struct ndr_print *ndr, const char *name, enum samr_DomainInfoClass r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case DomainPasswordInformation: val = "DomainPasswordInformation"; break;
+		case DomainGeneralInformation: val = "DomainGeneralInformation"; break;
+		case DomainLogoffInformation: val = "DomainLogoffInformation"; break;
+		case DomainOemInformation: val = "DomainOemInformation"; break;
+		case DomainNameInformation: val = "DomainNameInformation"; break;
+		case DomainReplicationInformation: val = "DomainReplicationInformation"; break;
+		case DomainServerRoleInformation: val = "DomainServerRoleInformation"; break;
+		case DomainModifiedInformation: val = "DomainModifiedInformation"; break;
+		case DomainStateInformation: val = "DomainStateInformation"; break;
+		case DomainUasInformation: val = "DomainUasInformation"; break;
+		case DomainGeneralInformation2: val = "DomainGeneralInformation2"; break;
+		case DomainLockoutInformation: val = "DomainLockoutInformation"; break;
+		case DomainModifiedInformation2: val = "DomainModifiedInformation2"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
 static enum ndr_err_code ndr_push_samr_Role(struct ndr_push *ndr, int ndr_flags, enum samr_Role r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
@@ -1837,6 +1873,52 @@ _PUBLIC_ void ndr_print_samr_AliasInfo(struct ndr_print *ndr, const char *name, 
 		default:
 			ndr_print_bad_level(ndr, name, level);
 	}
+}
+
+static enum ndr_err_code ndr_push_samr_UserInfoLevel(struct ndr_push *ndr, int ndr_flags, enum samr_UserInfoLevel r)
+{
+	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_samr_UserInfoLevel(struct ndr_pull *ndr, int ndr_flags, enum samr_UserInfoLevel *r)
+{
+	uint16_t v;
+	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_samr_UserInfoLevel(struct ndr_print *ndr, const char *name, enum samr_UserInfoLevel r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case UserGeneralInformation: val = "UserGeneralInformation"; break;
+		case UserPreferencesInformation: val = "UserPreferencesInformation"; break;
+		case UserLogonInformation: val = "UserLogonInformation"; break;
+		case UserLogonHoursInformation: val = "UserLogonHoursInformation"; break;
+		case UserAccountInformation: val = "UserAccountInformation"; break;
+		case UserNameInformation: val = "UserNameInformation"; break;
+		case UserAccountNameInformation: val = "UserAccountNameInformation"; break;
+		case UserFullNameInformation: val = "UserFullNameInformation"; break;
+		case UserPrimaryGroupInformation: val = "UserPrimaryGroupInformation"; break;
+		case UserHomeInformation: val = "UserHomeInformation"; break;
+		case UserScriptInformation: val = "UserScriptInformation"; break;
+		case UserProfileInformation: val = "UserProfileInformation"; break;
+		case UserAdminCommentInformation: val = "UserAdminCommentInformation"; break;
+		case UserWorkStationsInformation: val = "UserWorkStationsInformation"; break;
+		case UserControlInformation: val = "UserControlInformation"; break;
+		case UserExpiresInformation: val = "UserExpiresInformation"; break;
+		case UserInternal1Information: val = "UserInternal1Information"; break;
+		case UserParametersInformation: val = "UserParametersInformation"; break;
+		case UserAllInformation: val = "UserAllInformation"; break;
+		case UserInternal4Information: val = "UserInternal4Information"; break;
+		case UserInternal5Information: val = "UserInternal5Information"; break;
+		case UserInternal4InformationNew: val = "UserInternal4InformationNew"; break;
+		case UserInternal5InformationNew: val = "UserInternal5InformationNew"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
 
 static enum ndr_err_code ndr_push_samr_UserInfo1(struct ndr_push *ndr, int ndr_flags, const struct samr_UserInfo1 *r)
@@ -6090,7 +6172,7 @@ static enum ndr_err_code ndr_push_samr_QueryDomainInfo(struct ndr_push *ndr, int
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.domain_handle));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.level));
+		NDR_CHECK(ndr_push_samr_DomainInfoClass(ndr, NDR_SCALARS, r->in.level));
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.info == NULL) {
@@ -6122,7 +6204,7 @@ static enum ndr_err_code ndr_pull_samr_QueryDomainInfo(struct ndr_pull *ndr, int
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.domain_handle, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.domain_handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domain_handle_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.level));
+		NDR_CHECK(ndr_pull_samr_DomainInfoClass(ndr, NDR_SCALARS, &r->in.level));
 		NDR_PULL_ALLOC(ndr, r->out.info);
 		ZERO_STRUCTP(r->out.info);
 	}
@@ -6165,7 +6247,7 @@ _PUBLIC_ void ndr_print_samr_QueryDomainInfo(struct ndr_print *ndr, const char *
 		ndr->depth++;
 		ndr_print_policy_handle(ndr, "domain_handle", r->in.domain_handle);
 		ndr->depth--;
-		ndr_print_uint16(ndr, "level", r->in.level);
+		ndr_print_samr_DomainInfoClass(ndr, "level", r->in.level);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
@@ -6194,7 +6276,7 @@ static enum ndr_err_code ndr_push_samr_SetDomainInfo(struct ndr_push *ndr, int f
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.domain_handle));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.level));
+		NDR_CHECK(ndr_push_samr_DomainInfoClass(ndr, NDR_SCALARS, r->in.level));
 		if (r->in.info == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -6219,7 +6301,7 @@ static enum ndr_err_code ndr_pull_samr_SetDomainInfo(struct ndr_pull *ndr, int f
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.domain_handle, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.domain_handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domain_handle_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.level));
+		NDR_CHECK(ndr_pull_samr_DomainInfoClass(ndr, NDR_SCALARS, &r->in.level));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.info);
 		}
@@ -6249,7 +6331,7 @@ _PUBLIC_ void ndr_print_samr_SetDomainInfo(struct ndr_print *ndr, const char *na
 		ndr->depth++;
 		ndr_print_policy_handle(ndr, "domain_handle", r->in.domain_handle);
 		ndr->depth--;
-		ndr_print_uint16(ndr, "level", r->in.level);
+		ndr_print_samr_DomainInfoClass(ndr, "level", r->in.level);
 		ndr_print_ptr(ndr, "info", r->in.info);
 		ndr->depth++;
 		ndr_print_set_switch_value(ndr, r->in.info, r->in.level);
@@ -8801,7 +8883,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_samr_QueryUserInfo(struct ndr_push *ndr, int
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.user_handle));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.level));
+		NDR_CHECK(ndr_push_samr_UserInfoLevel(ndr, NDR_SCALARS, r->in.level));
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.info == NULL) {
@@ -8833,7 +8915,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_samr_QueryUserInfo(struct ndr_pull *ndr, int
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.user_handle, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.user_handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_user_handle_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.level));
+		NDR_CHECK(ndr_pull_samr_UserInfoLevel(ndr, NDR_SCALARS, &r->in.level));
 		NDR_PULL_ALLOC(ndr, r->out.info);
 		ZERO_STRUCTP(r->out.info);
 	}
@@ -8876,7 +8958,7 @@ _PUBLIC_ void ndr_print_samr_QueryUserInfo(struct ndr_print *ndr, const char *na
 		ndr->depth++;
 		ndr_print_policy_handle(ndr, "user_handle", r->in.user_handle);
 		ndr->depth--;
-		ndr_print_uint16(ndr, "level", r->in.level);
+		ndr_print_samr_UserInfoLevel(ndr, "level", r->in.level);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
@@ -8905,7 +8987,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_samr_SetUserInfo(struct ndr_push *ndr, int f
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.user_handle));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.level));
+		NDR_CHECK(ndr_push_samr_UserInfoLevel(ndr, NDR_SCALARS, r->in.level));
 		if (r->in.info == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -8930,7 +9012,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_samr_SetUserInfo(struct ndr_pull *ndr, int f
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.user_handle, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.user_handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_user_handle_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.level));
+		NDR_CHECK(ndr_pull_samr_UserInfoLevel(ndr, NDR_SCALARS, &r->in.level));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.info);
 		}
@@ -8960,7 +9042,7 @@ _PUBLIC_ void ndr_print_samr_SetUserInfo(struct ndr_print *ndr, const char *name
 		ndr->depth++;
 		ndr_print_policy_handle(ndr, "user_handle", r->in.user_handle);
 		ndr->depth--;
-		ndr_print_uint16(ndr, "level", r->in.level);
+		ndr_print_samr_UserInfoLevel(ndr, "level", r->in.level);
 		ndr_print_ptr(ndr, "info", r->in.info);
 		ndr->depth++;
 		ndr_print_set_switch_value(ndr, r->in.info, r->in.level);
@@ -9783,7 +9865,7 @@ static enum ndr_err_code ndr_push_samr_QueryDomainInfo2(struct ndr_push *ndr, in
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.domain_handle));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.level));
+		NDR_CHECK(ndr_push_samr_DomainInfoClass(ndr, NDR_SCALARS, r->in.level));
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.info == NULL) {
@@ -9815,7 +9897,7 @@ static enum ndr_err_code ndr_pull_samr_QueryDomainInfo2(struct ndr_pull *ndr, in
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.domain_handle, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.domain_handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domain_handle_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.level));
+		NDR_CHECK(ndr_pull_samr_DomainInfoClass(ndr, NDR_SCALARS, &r->in.level));
 		NDR_PULL_ALLOC(ndr, r->out.info);
 		ZERO_STRUCTP(r->out.info);
 	}
@@ -9858,7 +9940,7 @@ _PUBLIC_ void ndr_print_samr_QueryDomainInfo2(struct ndr_print *ndr, const char 
 		ndr->depth++;
 		ndr_print_policy_handle(ndr, "domain_handle", r->in.domain_handle);
 		ndr->depth--;
-		ndr_print_uint16(ndr, "level", r->in.level);
+		ndr_print_samr_DomainInfoClass(ndr, "level", r->in.level);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
@@ -9887,7 +9969,7 @@ static enum ndr_err_code ndr_push_samr_QueryUserInfo2(struct ndr_push *ndr, int 
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.user_handle));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.level));
+		NDR_CHECK(ndr_push_samr_UserInfoLevel(ndr, NDR_SCALARS, r->in.level));
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.info == NULL) {
@@ -9919,7 +10001,7 @@ static enum ndr_err_code ndr_pull_samr_QueryUserInfo2(struct ndr_pull *ndr, int 
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.user_handle, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.user_handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_user_handle_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.level));
+		NDR_CHECK(ndr_pull_samr_UserInfoLevel(ndr, NDR_SCALARS, &r->in.level));
 		NDR_PULL_ALLOC(ndr, r->out.info);
 		ZERO_STRUCTP(r->out.info);
 	}
@@ -9962,7 +10044,7 @@ _PUBLIC_ void ndr_print_samr_QueryUserInfo2(struct ndr_print *ndr, const char *n
 		ndr->depth++;
 		ndr_print_policy_handle(ndr, "user_handle", r->in.user_handle);
 		ndr->depth--;
-		ndr_print_uint16(ndr, "level", r->in.level);
+		ndr_print_samr_UserInfoLevel(ndr, "level", r->in.level);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
@@ -11115,7 +11197,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_samr_SetUserInfo2(struct ndr_push *ndr, int 
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.user_handle));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.level));
+		NDR_CHECK(ndr_push_samr_UserInfoLevel(ndr, NDR_SCALARS, r->in.level));
 		if (r->in.info == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -11140,7 +11222,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_samr_SetUserInfo2(struct ndr_pull *ndr, int 
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.user_handle, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.user_handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_user_handle_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.level));
+		NDR_CHECK(ndr_pull_samr_UserInfoLevel(ndr, NDR_SCALARS, &r->in.level));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.info);
 		}
@@ -11170,7 +11252,7 @@ _PUBLIC_ void ndr_print_samr_SetUserInfo2(struct ndr_print *ndr, const char *nam
 		ndr->depth++;
 		ndr_print_policy_handle(ndr, "user_handle", r->in.user_handle);
 		ndr->depth--;
-		ndr_print_uint16(ndr, "level", r->in.level);
+		ndr_print_samr_UserInfoLevel(ndr, "level", r->in.level);
 		ndr_print_ptr(ndr, "info", r->in.info);
 		ndr->depth++;
 		ndr_print_set_switch_value(ndr, r->in.info, r->in.level);
