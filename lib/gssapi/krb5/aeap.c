@@ -57,6 +57,15 @@ _gk_wrap_iov(OM_uint32 * minor_status,
     return GSS_S_FAILURE;
 }
 
+OM_uint32
+unpack_stream(OM_uint32 *minor_status, gss_iov_buffer_desc *stream,
+	      gss_iov_buffer_desc *iov, int iov_count)
+{
+    return GSS_S_FAILURE;
+}
+
+
+
 OM_uint32 GSSAPI_LIB_FUNCTION
 _gk_unwrap_iov(OM_uint32 *minor_status,
 	       gss_ctx_id_t context_handle,
@@ -65,15 +74,25 @@ _gk_unwrap_iov(OM_uint32 *minor_status,
 	       gss_iov_buffer_desc *iov,
 	       int iov_count)
 {
-  const gsskrb5_ctx ctx = (const gsskrb5_ctx) context_handle;
-  krb5_context context;
+    const gsskrb5_ctx ctx = (const gsskrb5_ctx) context_handle;
+    krb5_context context;
+    gss_iov_buffer_desc *stream;    
 
-  GSSAPI_KRB5_INIT (&context);
+    GSSAPI_KRB5_INIT (&context);
+    
+    stream = _gk_find_buffer(iov, iov_count, GSS_IOV_BUFFER_TYPE_STREAM);
+    if (stream) {
+	OM_uint32 major_status;
 
-  if (ctx->more_flags & IS_CFX)
-      return _gssapi_unwrap_cfx_iov(minor_status, ctx, context,
-				    conf_state, qop_state, iov, iov_count);
-
+	major_status = unpack_stream(minor_status, stream, iov, iov_count);
+	if (major_status)
+	    return major_status;
+    }
+    
+    if (ctx->more_flags & IS_CFX)
+	return _gssapi_unwrap_cfx_iov(minor_status, ctx, context,
+				      conf_state, qop_state, iov, iov_count);
+    
     return GSS_S_FAILURE;
 }
 
