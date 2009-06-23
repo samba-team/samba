@@ -5909,6 +5909,8 @@ static bool test_AddGroupMember(struct dcerpc_pipe *p, struct torture_context *t
 	struct samr_RidTypeArray *rids = NULL;
 	struct samr_SetMemberAttributesOfGroup s;
 	uint32_t rid;
+	bool found_member = false;
+	int i;
 
 	status = test_LookupName(p, tctx, domain_handle, TEST_ACCOUNT_NAME, &rid);
 	torture_assert_ntstatus_ok(tctx, status, "test_AddGroupMember looking up name " TEST_ACCOUNT_NAME);
@@ -5917,7 +5919,7 @@ static bool test_AddGroupMember(struct dcerpc_pipe *p, struct torture_context *t
 	r.in.rid = rid;
 	r.in.flags = 0; /* ??? */
 
-	torture_comment(tctx, "Testing AddGroupMember and DeleteGroupMember\n");
+	torture_comment(tctx, "Testing AddGroupMember, QueryGroupMember and DeleteGroupMember\n");
 
 	d.in.group_handle = group_handle;
 	d.in.rid = rid;
@@ -5951,9 +5953,33 @@ static bool test_AddGroupMember(struct dcerpc_pipe *p, struct torture_context *t
 
 	status = dcerpc_samr_QueryGroupMember(p, tctx, &q);
 	torture_assert_ntstatus_ok(tctx, status, "QueryGroupMember");
+	torture_assert(tctx, rids, "QueryGroupMember did not fill in rids structure");
+
+	for (i=0; i < rids->count; i++) {
+		if (rids->rids[i] == rid) {
+			found_member = true;
+		}
+	}
+
+	torture_assert(tctx, found_member, "QueryGroupMember did not list newly added member");
 
 	status = dcerpc_samr_DeleteGroupMember(p, tctx, &d);
 	torture_assert_ntstatus_ok(tctx, status, "DeleteGroupMember");
+
+	rids = NULL;
+	found_member = false;
+
+	status = dcerpc_samr_QueryGroupMember(p, tctx, &q);
+	torture_assert_ntstatus_ok(tctx, status, "QueryGroupMember");
+	torture_assert(tctx, rids, "QueryGroupMember did not fill in rids structure");
+
+	for (i=0; i < rids->count; i++) {
+		if (rids->rids[i] == rid) {
+			found_member = true;
+		}
+	}
+
+	torture_assert(tctx, !found_member, "QueryGroupMember does still list removed member");
 
 	status = dcerpc_samr_AddGroupMember(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "AddGroupMember");
