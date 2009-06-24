@@ -3275,6 +3275,318 @@ NTSTATUS _samr_GetGroupsForUser(pipes_struct *p,
 }
 
 /*******************************************************************
+ ********************************************************************/
+
+static uint32_t samr_get_server_role(void)
+{
+	uint32_t role = ROLE_DOMAIN_PDC;
+
+	if (lp_server_role() == ROLE_DOMAIN_BDC) {
+		role = ROLE_DOMAIN_BDC;
+	}
+
+	return role;
+}
+
+/*******************************************************************
+ ********************************************************************/
+
+static NTSTATUS query_dom_info_1(TALLOC_CTX *mem_ctx,
+				 struct samr_DomInfo1 *r)
+{
+	uint32_t account_policy_temp;
+	time_t u_expire, u_min_age;
+
+	become_root();
+
+	/* AS ROOT !!! */
+
+	pdb_get_account_policy(AP_MIN_PASSWORD_LEN, &account_policy_temp);
+	r->min_password_length = account_policy_temp;
+
+	pdb_get_account_policy(AP_PASSWORD_HISTORY, &account_policy_temp);
+	r->password_history_length = account_policy_temp;
+
+	pdb_get_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS,
+			       &r->password_properties);
+
+	pdb_get_account_policy(AP_MAX_PASSWORD_AGE, &account_policy_temp);
+	u_expire = account_policy_temp;
+
+	pdb_get_account_policy(AP_MIN_PASSWORD_AGE, &account_policy_temp);
+	u_min_age = account_policy_temp;
+
+	/* !AS ROOT */
+
+	unbecome_root();
+
+	unix_to_nt_time_abs((NTTIME *)&r->max_password_age, u_expire);
+	unix_to_nt_time_abs((NTTIME *)&r->min_password_age, u_min_age);
+
+	if (lp_check_password_script() && *lp_check_password_script()) {
+		r->password_properties |= DOMAIN_PASSWORD_COMPLEX;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
+ ********************************************************************/
+
+static NTSTATUS query_dom_info_2(TALLOC_CTX *mem_ctx,
+				 struct samr_DomGeneralInformation *r,
+				 struct samr_domain_info *dinfo)
+{
+	uint32_t u_logout;
+	time_t seq_num;
+
+	become_root();
+
+	/* AS ROOT !!! */
+
+	r->num_users	= count_sam_users(dinfo->disp_info, ACB_NORMAL);
+	r->num_groups	= count_sam_groups(dinfo->disp_info);
+	r->num_aliases	= count_sam_aliases(dinfo->disp_info);
+
+	pdb_get_account_policy(AP_TIME_TO_LOGOUT, &u_logout);
+
+	unix_to_nt_time_abs(&r->force_logoff_time, u_logout);
+
+	if (!pdb_get_seq_num(&seq_num)) {
+		seq_num = time(NULL);
+	}
+
+	/* !AS ROOT */
+
+	unbecome_root();
+
+	r->oem_information.string	= lp_serverstring();
+	r->domain_name.string		= lp_workgroup();
+	r->primary.string		= global_myname();
+	r->sequence_num			= seq_num;
+	r->domain_server_state		= DOMAIN_SERVER_ENABLED;
+	r->role				= samr_get_server_role();
+	r->unknown3			= 1;
+
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
+ ********************************************************************/
+
+static NTSTATUS query_dom_info_3(TALLOC_CTX *mem_ctx,
+				 struct samr_DomInfo3 *r)
+{
+	uint32_t u_logout;
+
+	become_root();
+
+	/* AS ROOT !!! */
+
+	{
+		uint32_t ul;
+		pdb_get_account_policy(AP_TIME_TO_LOGOUT, &ul);
+		u_logout = (time_t)ul;
+	}
+
+	/* !AS ROOT */
+
+	unbecome_root();
+
+	unix_to_nt_time_abs(&r->force_logoff_time, u_logout);
+
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
+ ********************************************************************/
+
+static NTSTATUS query_dom_info_4(TALLOC_CTX *mem_ctx,
+				 struct samr_DomOEMInformation *r)
+{
+	r->oem_information.string = lp_serverstring();
+
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
+ ********************************************************************/
+
+static NTSTATUS query_dom_info_5(TALLOC_CTX *mem_ctx,
+				 struct samr_DomInfo5 *r)
+{
+	r->domain_name.string = get_global_sam_name();
+
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
+ ********************************************************************/
+
+static NTSTATUS query_dom_info_6(TALLOC_CTX *mem_ctx,
+				 struct samr_DomInfo6 *r)
+{
+	/* NT returns its own name when a PDC. win2k and later
+	 * only the name of the PDC if itself is a BDC (samba4
+	 * idl) */
+	r->primary.string = global_myname();
+
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
+ ********************************************************************/
+
+static NTSTATUS query_dom_info_7(TALLOC_CTX *mem_ctx,
+				 struct samr_DomInfo7 *r)
+{
+	r->role = samr_get_server_role();
+
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
+ ********************************************************************/
+
+static NTSTATUS query_dom_info_8(TALLOC_CTX *mem_ctx,
+				 struct samr_DomInfo8 *r)
+{
+	time_t seq_num;
+
+	become_root();
+
+	/* AS ROOT !!! */
+
+	if (!pdb_get_seq_num(&seq_num)) {
+		seq_num = time(NULL);
+	}
+
+	/* !AS ROOT */
+
+	unbecome_root();
+
+	r->sequence_num = seq_num;
+	r->domain_create_time = 0;
+
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
+ ********************************************************************/
+
+static NTSTATUS query_dom_info_9(TALLOC_CTX *mem_ctx,
+				 struct samr_DomInfo9 *r)
+{
+	r->domain_server_state = DOMAIN_SERVER_ENABLED;
+
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
+ ********************************************************************/
+
+static NTSTATUS query_dom_info_11(TALLOC_CTX *mem_ctx,
+				  struct samr_DomGeneralInformation2 *r,
+				  struct samr_domain_info *dinfo)
+{
+	NTSTATUS status;
+	uint32_t account_policy_temp;
+	time_t u_lock_duration, u_reset_time;
+
+	status = query_dom_info_2(mem_ctx, &r->general, dinfo);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* AS ROOT !!! */
+
+	become_root();
+
+	pdb_get_account_policy(AP_LOCK_ACCOUNT_DURATION, &account_policy_temp);
+	u_lock_duration = account_policy_temp;
+	if (u_lock_duration != -1) {
+		u_lock_duration *= 60;
+	}
+
+	pdb_get_account_policy(AP_RESET_COUNT_TIME, &account_policy_temp);
+	u_reset_time = account_policy_temp * 60;
+
+	pdb_get_account_policy(AP_BAD_ATTEMPT_LOCKOUT, &account_policy_temp);
+	r->lockout_threshold = account_policy_temp;
+
+	/* !AS ROOT */
+
+	unbecome_root();
+
+	unix_to_nt_time_abs(&r->lockout_duration, u_lock_duration);
+	unix_to_nt_time_abs(&r->lockout_window, u_reset_time);
+
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
+ ********************************************************************/
+
+static NTSTATUS query_dom_info_12(TALLOC_CTX *mem_ctx,
+				  struct samr_DomInfo12 *r)
+{
+	uint32_t account_policy_temp;
+	time_t u_lock_duration, u_reset_time;
+
+	become_root();
+
+	/* AS ROOT !!! */
+
+	pdb_get_account_policy(AP_LOCK_ACCOUNT_DURATION, &account_policy_temp);
+	u_lock_duration = account_policy_temp;
+	if (u_lock_duration != -1) {
+		u_lock_duration *= 60;
+	}
+
+	pdb_get_account_policy(AP_RESET_COUNT_TIME, &account_policy_temp);
+	u_reset_time = account_policy_temp * 60;
+
+	pdb_get_account_policy(AP_BAD_ATTEMPT_LOCKOUT, &account_policy_temp);
+	r->lockout_threshold = account_policy_temp;
+
+	/* !AS ROOT */
+
+	unbecome_root();
+
+	unix_to_nt_time_abs(&r->lockout_duration, u_lock_duration);
+	unix_to_nt_time_abs(&r->lockout_window, u_reset_time);
+
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
+ ********************************************************************/
+
+static NTSTATUS query_dom_info_13(TALLOC_CTX *mem_ctx,
+				  struct samr_DomInfo13 *r)
+{
+	time_t seq_num;
+
+	become_root();
+
+	/* AS ROOT !!! */
+
+	if (!pdb_get_seq_num(&seq_num)) {
+		seq_num = time(NULL);
+	}
+
+	/* !AS ROOT */
+
+	unbecome_root();
+
+	r->sequence_num = seq_num;
+	r->domain_create_time = 0;
+	r->modified_count_at_last_promotion = 0;
+
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
  _samr_QueryDomainInfo
  ********************************************************************/
 
@@ -3284,15 +3596,7 @@ NTSTATUS _samr_QueryDomainInfo(pipes_struct *p,
 	NTSTATUS status = NT_STATUS_OK;
 	struct samr_domain_info *dinfo;
 	union samr_DomainInfo *dom_info;
-	time_t u_expire, u_min_age;
 
-	time_t u_lock_duration, u_reset_time;
-	uint32_t u_logout;
-
-	uint32 account_policy_temp;
-
-	time_t seq_num;
-	uint32 server_role;
 	uint32_t acc_required;
 
 	DEBUG(5,("_samr_QueryDomainInfo: %d\n", __LINE__));
@@ -3340,242 +3644,47 @@ NTSTATUS _samr_QueryDomainInfo(pipes_struct *p,
 
 	switch (r->in.level) {
 		case 1:
-
-			become_root();
-
-			/* AS ROOT !!! */
-
-			pdb_get_account_policy(AP_MIN_PASSWORD_LEN,
-					       &account_policy_temp);
-			dom_info->info1.min_password_length = account_policy_temp;
-
-			pdb_get_account_policy(AP_PASSWORD_HISTORY, &account_policy_temp);
-			dom_info->info1.password_history_length = account_policy_temp;
-
-			pdb_get_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS,
-				&dom_info->info1.password_properties);
-
-			pdb_get_account_policy(AP_MAX_PASSWORD_AGE, &account_policy_temp);
-			u_expire = account_policy_temp;
-
-			pdb_get_account_policy(AP_MIN_PASSWORD_AGE, &account_policy_temp);
-			u_min_age = account_policy_temp;
-
-			/* !AS ROOT */
-
-			unbecome_root();
-
-			unix_to_nt_time_abs((NTTIME *)&dom_info->info1.max_password_age, u_expire);
-			unix_to_nt_time_abs((NTTIME *)&dom_info->info1.min_password_age, u_min_age);
-
-			if (lp_check_password_script() && *lp_check_password_script()) {
-				dom_info->info1.password_properties |= DOMAIN_PASSWORD_COMPLEX;
-			}
-
+			status = query_dom_info_1(p->mem_ctx, &dom_info->info1);
 			break;
 		case 2:
-
-			become_root();
-
-			/* AS ROOT !!! */
-
-			dom_info->general.num_users	= count_sam_users(
-				dinfo->disp_info, ACB_NORMAL);
-			dom_info->general.num_groups	= count_sam_groups(
-				dinfo->disp_info);
-			dom_info->general.num_aliases	= count_sam_aliases(
-				dinfo->disp_info);
-
-			pdb_get_account_policy(AP_TIME_TO_LOGOUT, &u_logout);
-
-			unix_to_nt_time_abs(&dom_info->general.force_logoff_time, u_logout);
-
-			if (!pdb_get_seq_num(&seq_num))
-				seq_num = time(NULL);
-
-			/* !AS ROOT */
-
-			unbecome_root();
-
-			server_role = ROLE_DOMAIN_PDC;
-			if (lp_server_role() == ROLE_DOMAIN_BDC)
-				server_role = ROLE_DOMAIN_BDC;
-
-			dom_info->general.oem_information.string	= lp_serverstring();
-			dom_info->general.domain_name.string		= lp_workgroup();
-			dom_info->general.primary.string		= global_myname();
-			dom_info->general.sequence_num			= seq_num;
-			dom_info->general.domain_server_state		= DOMAIN_SERVER_ENABLED;
-			dom_info->general.role				= server_role;
-			dom_info->general.unknown3			= 1;
-
+			status = query_dom_info_2(p->mem_ctx, &dom_info->general, dinfo);
 			break;
 		case 3:
-
-			become_root();
-
-			/* AS ROOT !!! */
-
-			{
-				uint32 ul;
-				pdb_get_account_policy(AP_TIME_TO_LOGOUT, &ul);
-				u_logout = (time_t)ul;
-			}
-
-			/* !AS ROOT */
-
-			unbecome_root();
-
-			unix_to_nt_time_abs(&dom_info->info3.force_logoff_time, u_logout);
-
+			status = query_dom_info_3(p->mem_ctx, &dom_info->info3);
 			break;
 		case 4:
-			dom_info->oem.oem_information.string = lp_serverstring();
+			status = query_dom_info_4(p->mem_ctx, &dom_info->oem);
 			break;
 		case 5:
-			dom_info->info5.domain_name.string = get_global_sam_name();
+			status = query_dom_info_5(p->mem_ctx, &dom_info->info5);
 			break;
 		case 6:
-			/* NT returns its own name when a PDC. win2k and later
-			 * only the name of the PDC if itself is a BDC (samba4
-			 * idl) */
-			dom_info->info6.primary.string = global_myname();
+			status = query_dom_info_6(p->mem_ctx, &dom_info->info6);
 			break;
 		case 7:
-			server_role = ROLE_DOMAIN_PDC;
-			if (lp_server_role() == ROLE_DOMAIN_BDC)
-				server_role = ROLE_DOMAIN_BDC;
-
-			dom_info->info7.role = server_role;
+			status = query_dom_info_7(p->mem_ctx, &dom_info->info7);
 			break;
 		case 8:
-
-			become_root();
-
-			/* AS ROOT !!! */
-
-			if (!pdb_get_seq_num(&seq_num)) {
-				seq_num = time(NULL);
-			}
-
-			/* !AS ROOT */
-
-			unbecome_root();
-
-			dom_info->info8.sequence_num = seq_num;
-			dom_info->info8.domain_create_time = 0;
-
+			status = query_dom_info_8(p->mem_ctx, &dom_info->info8);
 			break;
 		case 9:
-
-			dom_info->info9.domain_server_state		= DOMAIN_SERVER_ENABLED;
-
+			status = query_dom_info_9(p->mem_ctx, &dom_info->info9);
 			break;
 		case 11:
-
-			/* AS ROOT !!! */
-
-			become_root();
-
-			dom_info->general2.general.num_users	= count_sam_users(
-				dinfo->disp_info, ACB_NORMAL);
-			dom_info->general2.general.num_groups	= count_sam_groups(
-				dinfo->disp_info);
-			dom_info->general2.general.num_aliases	= count_sam_aliases(
-				dinfo->disp_info);
-
-			pdb_get_account_policy(AP_TIME_TO_LOGOUT, &u_logout);
-
-			unix_to_nt_time_abs(&dom_info->general2.general.force_logoff_time, u_logout);
-
-			if (!pdb_get_seq_num(&seq_num))
-				seq_num = time(NULL);
-
-			pdb_get_account_policy(AP_LOCK_ACCOUNT_DURATION, &account_policy_temp);
-			u_lock_duration = account_policy_temp;
-			if (u_lock_duration != -1) {
-				u_lock_duration *= 60;
-			}
-
-			pdb_get_account_policy(AP_RESET_COUNT_TIME, &account_policy_temp);
-			u_reset_time = account_policy_temp * 60;
-
-			pdb_get_account_policy(AP_BAD_ATTEMPT_LOCKOUT,
-					       &account_policy_temp);
-			dom_info->general2.lockout_threshold = account_policy_temp;
-
-			/* !AS ROOT */
-
-			unbecome_root();
-
-			server_role = ROLE_DOMAIN_PDC;
-			if (lp_server_role() == ROLE_DOMAIN_BDC)
-				server_role = ROLE_DOMAIN_BDC;
-
-			dom_info->general2.general.oem_information.string	= lp_serverstring();
-			dom_info->general2.general.domain_name.string		= lp_workgroup();
-			dom_info->general2.general.primary.string		= global_myname();
-			dom_info->general2.general.sequence_num			= seq_num;
-			dom_info->general2.general.domain_server_state		= DOMAIN_SERVER_ENABLED;
-			dom_info->general2.general.role				= server_role;
-			dom_info->general2.general.unknown3			= 1;
-
-			unix_to_nt_time_abs(&dom_info->general2.lockout_duration,
-					    u_lock_duration);
-			unix_to_nt_time_abs(&dom_info->general2.lockout_window,
-					    u_reset_time);
-
+			status = query_dom_info_11(p->mem_ctx, &dom_info->general2, dinfo);
 			break;
 		case 12:
-
-			become_root();
-
-			/* AS ROOT !!! */
-
-			pdb_get_account_policy(AP_LOCK_ACCOUNT_DURATION, &account_policy_temp);
-			u_lock_duration = account_policy_temp;
-			if (u_lock_duration != -1) {
-				u_lock_duration *= 60;
-			}
-
-			pdb_get_account_policy(AP_RESET_COUNT_TIME, &account_policy_temp);
-			u_reset_time = account_policy_temp * 60;
-
-			pdb_get_account_policy(AP_BAD_ATTEMPT_LOCKOUT,
-					       &account_policy_temp);
-			dom_info->info12.lockout_threshold = account_policy_temp;
-
-			/* !AS ROOT */
-
-			unbecome_root();
-
-			unix_to_nt_time_abs(&dom_info->info12.lockout_duration,
-					    u_lock_duration);
-			unix_to_nt_time_abs(&dom_info->info12.lockout_window,
-					    u_reset_time);
-
+			status = query_dom_info_12(p->mem_ctx, &dom_info->info12);
 			break;
 		case 13:
-
-			become_root();
-
-			/* AS ROOT !!! */
-
-			if (!pdb_get_seq_num(&seq_num)) {
-				seq_num = time(NULL);
-			}
-
-			/* !AS ROOT */
-
-			unbecome_root();
-
-			dom_info->info13.sequence_num = seq_num;
-			dom_info->info13.domain_create_time = 0;
-			dom_info->info13.modified_count_at_last_promotion = 0;
-
+			status = query_dom_info_13(p->mem_ctx, &dom_info->info13);
 			break;
         	default:
             		return NT_STATUS_INVALID_INFO_CLASS;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	*r->out.info = dom_info;
