@@ -267,12 +267,16 @@ static bool pdb_ads_init_ads_from_sam(struct pdb_ads_state *state,
 		"%s", pdb_get_fullname(sam));
 
 	blob = data_blob_const(pdb_get_nt_passwd(sam), NT_HASH_LEN);
-	ret &= tldap_add_mod_blobs(mem_ctx, pmods, TLDAP_MOD_REPLACE,
-				   "unicodePwd", 1, &blob);
+	if (blob.data != NULL) {
+		ret &= tldap_add_mod_blobs(mem_ctx, pmods, TLDAP_MOD_REPLACE,
+					   "unicodePwd", 1, &blob);
+	}
 
 	blob = data_blob_const(pdb_get_lanman_passwd(sam), NT_HASH_LEN);
-	ret &= tldap_add_mod_blobs(mem_ctx, pmods, TLDAP_MOD_REPLACE,
-				   "dBCSPwd", 1, &blob);
+	if (blob.data != NULL) {
+		ret &= tldap_add_mod_blobs(mem_ctx, pmods, TLDAP_MOD_REPLACE,
+					   "dBCSPwd", 1, &blob);
+	}
 
 	ret &= tldap_make_mod_fmt(
 		existing, mem_ctx, pnum_mods, pmods, "userAccountControl",
