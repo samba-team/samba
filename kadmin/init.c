@@ -86,7 +86,7 @@ create_random_entry(krb5_principal princ,
     /* Replace the string2key based keys with real random bytes */
     ret = kadm5_randkey_principal(kadm_handle, princ, &keys, &n_keys);
     if(ret) {
-	krb5_warn(context, ret, "create_random_entry*%s): randkey failed",
+	krb5_warn(context, ret, "create_random_entry(%s): randkey failed",
 		  name);
 	goto out;
     }
