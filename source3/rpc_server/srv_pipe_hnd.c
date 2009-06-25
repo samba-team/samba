@@ -1635,31 +1635,31 @@ static NTSTATUS serverinfo_to_SamInfo_base(TALLOC_CTX *mem_ctx,
 	unix_to_nt_time(&allow_password_change, pdb_get_pass_can_change_time(sampw));
 	unix_to_nt_time(&force_password_change, pdb_get_pass_must_change_time(sampw));
 
-	init_netr_SamBaseInfo(base,
-			      last_logon,
-			      last_logoff,
-			      acct_expiry,
-			      last_password_change,
-			      allow_password_change,
-			      force_password_change,
-			      talloc_strdup(mem_ctx, pdb_get_username(sampw)),
-			      talloc_strdup(mem_ctx, pdb_get_fullname(sampw)),
-			      talloc_strdup(mem_ctx, pdb_get_logon_script(sampw)),
-			      talloc_strdup(mem_ctx, pdb_get_profile_path(sampw)),
-			      talloc_strdup(mem_ctx, pdb_get_homedir(sampw)),
-			      talloc_strdup(mem_ctx, pdb_get_dir_drive(sampw)),
-			      0, /* logon_count */
-			      0, /* bad_password_count */
-			      user_rid,
-			      group_rid,
-			      groups,
-			      NETLOGON_EXTRA_SIDS,
-			      user_session_key,
-			      my_name,
-			      talloc_strdup(mem_ctx, pdb_get_domain(sampw)),
-			      sid,
-			      lm_session_key,
-			      pdb_get_acct_ctrl(sampw));
+	base->last_logon		= last_logon;
+	base->last_logoff		= last_logoff;
+	base->acct_expiry		= acct_expiry;
+	base->last_password_change	= last_password_change;
+	base->allow_password_change	= allow_password_change;
+	base->force_password_change	= force_password_change;
+	base->account_name.string	= talloc_strdup(mem_ctx, pdb_get_username(sampw));
+	base->full_name.string		= talloc_strdup(mem_ctx, pdb_get_fullname(sampw));
+	base->logon_script.string	= talloc_strdup(mem_ctx, pdb_get_logon_script(sampw));
+	base->profile_path.string	= talloc_strdup(mem_ctx, pdb_get_profile_path(sampw));
+	base->home_directory.string	= talloc_strdup(mem_ctx, pdb_get_homedir(sampw));
+	base->home_drive.string		= talloc_strdup(mem_ctx, pdb_get_dir_drive(sampw));
+	base->logon_count		= 0; /* ?? */
+	base->bad_password_count	= 0; /* ?? */
+	base->rid			= user_rid;
+	base->primary_gid		= group_rid;
+	base->groups			= groups;
+	base->user_flags		= NETLOGON_EXTRA_SIDS;
+	base->key			= user_session_key;
+	base->logon_server.string	= my_name;
+	base->domain.string		= talloc_strdup(mem_ctx, pdb_get_domain(sampw));
+	base->domain_sid		= sid;
+	base->LMSessKey			= lm_session_key;
+	base->acct_flags		= pdb_get_acct_ctrl(sampw);
+
 	ZERO_STRUCT(user_session_key);
 	ZERO_STRUCT(lm_session_key);
 
