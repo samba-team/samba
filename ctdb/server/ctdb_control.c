@@ -453,6 +453,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		}
 		return 0;
 	case CTDB_CONTROL_SET_RECLOCK_FILE:
+		ctdb->tunable.verify_recovery_lock = 0;
 		if (ctdb->recovery_lock_file != NULL) {
 			talloc_free(ctdb->recovery_lock_file);
 			ctdb->recovery_lock_file = NULL;
