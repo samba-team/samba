@@ -851,7 +851,6 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 			     struct netr_LogonSamLogon *r)
 {
 	NTSTATUS status = NT_STATUS_OK;
-	struct netr_SamInfo3 *sam3 = NULL;
 	union netr_LogonLevel *logon = r->in.logon;
 	fstring nt_username, nt_domain, nt_workstation;
 	auth_usersupplied_info *user_info = NULL;
@@ -883,19 +882,25 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 	}
 
 	*r->out.authoritative = true; /* authoritative response */
-	if (r->in.validation_level != 2 && r->in.validation_level != 3) {
+
+	switch (r->in.validation_level) {
+	case 2:
+		r->out.validation->sam2 = TALLOC_ZERO_P(p->mem_ctx, struct netr_SamInfo2);
+		if (!r->out.validation->sam2) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		break;
+	case 3:
+		r->out.validation->sam3 = TALLOC_ZERO_P(p->mem_ctx, struct netr_SamInfo3);
+		if (!r->out.validation->sam3) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		break;
+	default:
 		DEBUG(0,("%s: bad validation_level value %d.\n",
 			fn, (int)r->in.validation_level));
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
-
-	sam3 = TALLOC_ZERO_P(p->mem_ctx, struct netr_SamInfo3);
-	if (!sam3) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
- 	/* store the user information, if there is any. */
-	r->out.validation->sam3 = sam3;
 
 	if (process_creds) {
 
@@ -1082,8 +1087,19 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 		memcpy(pipe_session_key, p->auth.a_u.schannel_auth->sess_key, 16);
 	}
 
-	status = serverinfo_to_SamInfo3(server_info, pipe_session_key, 16, sam3);
+	switch (r->in.validation_level) {
+	case 2:
+		status = serverinfo_to_SamInfo2(server_info, pipe_session_key, 16,
+						r->out.validation->sam2);
+		break;
+	case 3:
+		status = serverinfo_to_SamInfo3(server_info, pipe_session_key, 16,
+						r->out.validation->sam3);
+		break;
+	}
+
 	TALLOC_FREE(server_info);
+
 	return status;
 }
 

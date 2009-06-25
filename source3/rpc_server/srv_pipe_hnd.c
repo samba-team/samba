@@ -1514,14 +1514,14 @@ static NTSTATUS nt_token_to_group_list(TALLOC_CTX *mem_ctx,
 }
 
 /****************************************************************************
- inits a netr_SamInfo3 structure from an auth_serversupplied_info. sam3 must
- already be initialized and is used as the talloc parent for its members.
+ inits a netr_SamBaseInfo structure from an auth_serversupplied_info.
 *****************************************************************************/
 
-NTSTATUS serverinfo_to_SamInfo3(struct auth_serversupplied_info *server_info,
-				uint8_t *pipe_session_key,
-				size_t pipe_session_key_len,
-				struct netr_SamInfo3 *sam3)
+static NTSTATUS serverinfo_to_SamInfo_base(TALLOC_CTX *mem_ctx,
+					   struct auth_serversupplied_info *server_info,
+					   uint8_t *pipe_session_key,
+					   size_t pipe_session_key_len,
+					   struct netr_SamBaseInfo *base)
 {
 	struct samu *sampw;
 	struct samr_RidWithAttribute *gids = NULL;
@@ -1566,7 +1566,7 @@ NTSTATUS serverinfo_to_SamInfo3(struct auth_serversupplied_info *server_info,
 	sid_copy(&domain_sid, user_sid);
 	sid_split_rid(&domain_sid, &user_rid);
 
-	sid = sid_dup_talloc(sam3, &domain_sid);
+	sid = sid_dup_talloc(mem_ctx, &domain_sid);
 	if (!sid) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1589,7 +1589,7 @@ NTSTATUS serverinfo_to_SamInfo3(struct auth_serversupplied_info *server_info,
 		my_name = global_myname();
 	}
 
-	status = nt_token_to_group_list(sam3, &domain_sid,
+	status = nt_token_to_group_list(mem_ctx, &domain_sid,
 					server_info->num_sids,
 					server_info->sids,
 					&num_gids, &gids);
@@ -1618,7 +1618,7 @@ NTSTATUS serverinfo_to_SamInfo3(struct auth_serversupplied_info *server_info,
 	}
 
 	groups.count = num_gids;
-	groups.rids = TALLOC_ARRAY(sam3, struct samr_RidWithAttribute, groups.count);
+	groups.rids = TALLOC_ARRAY(mem_ctx, struct samr_RidWithAttribute, groups.count);
 	if (!groups.rids) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1635,35 +1635,84 @@ NTSTATUS serverinfo_to_SamInfo3(struct auth_serversupplied_info *server_info,
 	unix_to_nt_time(&allow_password_change, pdb_get_pass_can_change_time(sampw));
 	unix_to_nt_time(&force_password_change, pdb_get_pass_must_change_time(sampw));
 
-	init_netr_SamInfo3(sam3,
-			   last_logon,
-			   last_logoff,
-			   acct_expiry,
-			   last_password_change,
-			   allow_password_change,
-			   force_password_change,
-			   talloc_strdup(sam3, pdb_get_username(sampw)),
-			   talloc_strdup(sam3, pdb_get_fullname(sampw)),
-			   talloc_strdup(sam3, pdb_get_logon_script(sampw)),
-			   talloc_strdup(sam3, pdb_get_profile_path(sampw)),
-			   talloc_strdup(sam3, pdb_get_homedir(sampw)),
-			   talloc_strdup(sam3, pdb_get_dir_drive(sampw)),
-			   0, /* logon_count */
-			   0, /* bad_password_count */
-			   user_rid,
-			   group_rid,
-			   groups,
-			   NETLOGON_EXTRA_SIDS,
-			   user_session_key,
-			   my_name,
-			   talloc_strdup(sam3, pdb_get_domain(sampw)),
-			   sid,
-			   lm_session_key,
-			   pdb_get_acct_ctrl(sampw),
-			   0, /* sidcount */
-			   NULL); /* struct netr_SidAttr *sids */
+	init_netr_SamBaseInfo(base,
+			      last_logon,
+			      last_logoff,
+			      acct_expiry,
+			      last_password_change,
+			      allow_password_change,
+			      force_password_change,
+			      talloc_strdup(mem_ctx, pdb_get_username(sampw)),
+			      talloc_strdup(mem_ctx, pdb_get_fullname(sampw)),
+			      talloc_strdup(mem_ctx, pdb_get_logon_script(sampw)),
+			      talloc_strdup(mem_ctx, pdb_get_profile_path(sampw)),
+			      talloc_strdup(mem_ctx, pdb_get_homedir(sampw)),
+			      talloc_strdup(mem_ctx, pdb_get_dir_drive(sampw)),
+			      0, /* logon_count */
+			      0, /* bad_password_count */
+			      user_rid,
+			      group_rid,
+			      groups,
+			      NETLOGON_EXTRA_SIDS,
+			      user_session_key,
+			      my_name,
+			      talloc_strdup(mem_ctx, pdb_get_domain(sampw)),
+			      sid,
+			      lm_session_key,
+			      pdb_get_acct_ctrl(sampw));
 	ZERO_STRUCT(user_session_key);
 	ZERO_STRUCT(lm_session_key);
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
+ inits a netr_SamInfo2 structure from an auth_serversupplied_info. sam2 must
+ already be initialized and is used as the talloc parent for its members.
+*****************************************************************************/
+
+NTSTATUS serverinfo_to_SamInfo2(struct auth_serversupplied_info *server_info,
+				uint8_t *pipe_session_key,
+				size_t pipe_session_key_len,
+				struct netr_SamInfo2 *sam2)
+{
+	NTSTATUS status;
+
+	status = serverinfo_to_SamInfo_base(sam2,
+					    server_info,
+					    pipe_session_key,
+					    pipe_session_key_len,
+					    &sam2->base);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
+ inits a netr_SamInfo3 structure from an auth_serversupplied_info. sam3 must
+ already be initialized and is used as the talloc parent for its members.
+*****************************************************************************/
+
+NTSTATUS serverinfo_to_SamInfo3(struct auth_serversupplied_info *server_info,
+				uint8_t *pipe_session_key,
+				size_t pipe_session_key_len,
+				struct netr_SamInfo3 *sam3)
+{
+	NTSTATUS status;
+
+	status = serverinfo_to_SamInfo_base(sam3,
+					    server_info,
+					    pipe_session_key,
+					    pipe_session_key_len,
+					    &sam3->base);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	sam3->sidcount		= 0;
+	sam3->sids		= NULL;
 
 	return NT_STATUS_OK;
 }
