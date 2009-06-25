@@ -71,69 +71,22 @@ static NTSTATUS get_info3_from_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
 	info3->base.allow_password_change = info->pass_can_change_time;
 	info3->base.force_password_change = info->pass_must_change_time;
 
-	if (info->account_name != NULL) {
-		convert_string_talloc_convenience(mem_ctx, ic,
-				CH_UNIX, CH_UTF16, info->account_name,
-				strlen(info->account_name),
-				discard_const(&info3->base.account_name.string),
-				NULL, false);
-	}
-
-	if (info->full_name != NULL) {
-		convert_string_talloc_convenience(mem_ctx, ic,
-				CH_UNIX, CH_UTF16, info->full_name,
-				strlen(info->full_name),
-				discard_const(&info3->base.full_name.string),
-				NULL, false);
-	}
-
-	if (info->logon_script != NULL) {
-		convert_string_talloc_convenience(mem_ctx, ic,
-				CH_UNIX, CH_UTF16, info->logon_script,
-				strlen(info->logon_script),
-				discard_const(&info3->base.logon_script.string),
-				NULL, false);
-	}
-
-	if (info->profile_path != NULL) {
-		convert_string_talloc_convenience(mem_ctx, ic,
-				CH_UNIX, CH_UTF16, info->profile_path,
-				strlen(info->profile_path),
-				discard_const(&info3->base.profile_path.string),
-				NULL, false);
-	}
-
-	if (info->home_directory != NULL) {
-		convert_string_talloc_convenience(mem_ctx, ic,
-				CH_UNIX, CH_UTF16, info->home_directory,
-				strlen(info->home_directory),
-				discard_const(&info3->base.home_directory.string),
-				NULL, false);
-	}
-
-	if (info->home_drive != NULL) {
-		convert_string_talloc_convenience(mem_ctx, ic,
-				CH_UNIX, CH_UTF16, info->home_drive,
-				strlen(info->home_drive),
-				discard_const(&info3->base.home_drive.string),
-				NULL, false);
-	}
-
-	if (info->logon_server != NULL) {
-		convert_string_talloc_convenience(mem_ctx, ic,
-				CH_UNIX, CH_UTF16, info->logon_server,
-				strlen(info->logon_server),
-				discard_const(&info3->base.logon_server.string),
-				NULL, false);
-	}
-
-	if (info->domain_name != NULL) {
-		convert_string_talloc_convenience(mem_ctx, ic,
-				CH_UNIX, CH_UTF16, info->domain_name,
-				strlen(info->domain_name),
-				discard_const(&info3->base.domain.string),
-				NULL, false);
-	}
+	info3->base.account_name.string = talloc_strdup(mem_ctx,
+							info->account_name);
+	info3->base.full_name.string = talloc_strdup(mem_ctx,
+						     info->full_name);
+	info3->base.logon_script.string = talloc_strdup(mem_ctx,
+							info->logon_script);
+	info3->base.profile_path.string = talloc_strdup(mem_ctx,
+							info->profile_path);
+	info3->base.home_directory.string = talloc_strdup(mem_ctx,
+							  info->home_directory);
+	info3->base.home_drive.string = talloc_strdup(mem_ctx,
+						      info->home_drive);
+	info3->base.logon_server.string = talloc_strdup(mem_ctx,
+							info->logon_server);
+	info3->base.domain.string = talloc_strdup(mem_ctx,
+						  info->domain_name);
 
 	info3->base.logon_count = info->logon_count;
 	info3->base.bad_password_count = info->bad_password_count;
