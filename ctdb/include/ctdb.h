@@ -569,6 +569,9 @@ int ctdb_ctrl_end_recovery(struct ctdb_context *ctdb, struct timeval timeout, ui
 int ctdb_ctrl_getreclock(struct ctdb_context *ctdb, 
 	struct timeval timeout, uint32_t destnode, 
 	TALLOC_CTX *mem_ctx, const char **reclock);
+int ctdb_ctrl_setreclock(struct ctdb_context *ctdb, 
+	struct timeval timeout, uint32_t destnode, 
+	const char *reclock);
 
 
 uint32_t *list_of_connected_nodes(struct ctdb_context *ctdb,

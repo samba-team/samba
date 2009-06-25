@@ -452,6 +452,15 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 			outdata->dsize = strlen(ctdb->recovery_lock_file) + 1;
 		}
 		return 0;
+	case CTDB_CONTROL_SET_RECLOCK_FILE:
+		if (ctdb->recovery_lock_file != NULL) {
+			talloc_free(ctdb->recovery_lock_file);
+			ctdb->recovery_lock_file = NULL;
+		}
+		if (indata.dsize > 0) {
+			ctdb->recovery_lock_file = talloc_strdup(ctdb, discard_const(indata.dptr));
+		}
+		return 0;
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;

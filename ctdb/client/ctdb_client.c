@@ -3673,9 +3673,37 @@ int ctdb_ctrl_getreclock(struct ctdb_context *ctdb, struct timeval timeout,
 	if (data.dsize == 0) {
 		*name = NULL;
 	} else {
-		*name = talloc_strdup(mem_ctx, data.dptr);
+		*name = talloc_strdup(mem_ctx, discard_const(data.dptr));
 	}
 	talloc_free(data.dptr);
+
+	return 0;
+}
+
+/*
+  set the reclock filename for a node
+ */
+int ctdb_ctrl_setreclock(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, const char *reclock)
+{
+	int ret;
+	TDB_DATA data;
+	int32_t res;
+
+	if (reclock == NULL) {
+	        data.dsize = 0;
+		data.dptr  = NULL;
+	} else {
+	        data.dsize = strlen(reclock) + 1;
+		data.dptr  = discard_const(reclock);
+	}
+
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_SET_RECLOCK_FILE, 0, data, 
+			   NULL, NULL, &res, &timeout, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for setreclock failed\n"));
+		return -1;
+	}
 
 	return 0;
 }
