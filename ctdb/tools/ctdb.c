@@ -2248,6 +2248,27 @@ static int control_getdebug(struct ctdb_context *ctdb, int argc, const char **ar
 	return 0;
 }
 
+/*
+  display reclock file of a node
+ */
+static int control_getreclock(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+	const char *reclock;
+
+	ret = ctdb_ctrl_getreclock(ctdb, TIMELIMIT(), options.pnn, ctdb, &reclock);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get reclock file from node %u\n", options.pnn));
+		return ret;
+	} else {
+		if (reclock == NULL) {
+			printf("No reclock file used.\n");
+		} else {
+			printf("Reclock file:%s\n", reclock);
+		}
+	}
+	return 0;
+}
 
 /*
   set debug level on a node or all nodes
@@ -2991,6 +3012,7 @@ static const struct {
 	{ "scriptstatus",        control_scriptstatus,  false,	false, "show the status of the monitoring scripts"},
 	{ "natgwlist",        control_natgwlist,        false,	false, "show the nodes belonging to this natgw configuration"},
 	{ "xpnn",             control_xpnn,             true,	true,  "find the pnn of the local node without talking to the daemon (unreliable)" },
+	{ "getreclock",       control_getreclock,	false,	false, "Show the reclock file of a node"},
 };
 
 /*

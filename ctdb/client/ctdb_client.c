@@ -3651,3 +3651,26 @@ int ctdb_ctrl_report_recd_lock_latency(struct ctdb_context *ctdb, struct timeval
 
 	return 0;
 }
+
+/*
+  get the name of the reclock file
+ */
+int ctdb_ctrl_getreclock(struct ctdb_context *ctdb, struct timeval timeout,
+			 uint32_t destnode, TALLOC_CTX *mem_ctx,
+			 const char **name)
+{
+	int ret;
+	int32_t res;
+	TDB_DATA data;
+
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_GET_RECLOCK_FILE, 0, tdb_null, 
+			   mem_ctx, &data, &res, &timeout, NULL);
+	if (ret != 0 || res != 0) {
+		return -1;
+	}
+
+	*name = discard_const(data.dptr);
+
+	return 0;
+}
