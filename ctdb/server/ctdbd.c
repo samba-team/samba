@@ -160,11 +160,6 @@ int main(int argc, const char *argv[])
 		while (extra_argv[extra_argc]) extra_argc++;
 	}
 
-	if (!options.recovery_lock_file) {
-		DEBUG(DEBUG_ALERT,("You must specifiy the location of a recovery lock file with --reclock\n"));
-		exit(1);
-	}
-
 	talloc_enable_null_tracking();
 
 	ctdb_block_signal(SIGPIPE);
@@ -195,6 +190,7 @@ int main(int argc, const char *argv[])
 	ctdb->recovery_lock_fd = -1;
 
 	ctdb_tunables_set_defaults(ctdb);
+
 
 	ret = ctdb_set_recovery_lock_file(ctdb, options.recovery_lock_file);
 	if (ret == -1) {

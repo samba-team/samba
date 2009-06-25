@@ -47,12 +47,11 @@ loadconfig ctdb
 [ "${NETWORKING}" = "no" ] && exit 0
 
 [ -z "$CTDB_RECOVERY_LOCK" ] && {
-    echo "You must configure the location of the CTDB_RECOVERY_LOCK"
-    exit 1
+    echo "No recovery lock specified. Starting CTDB without split brain prevention"
 }
-CTDB_OPTIONS="$CTDB_OPTIONS --reclock=$CTDB_RECOVERY_LOCK"
 
 # build up CTDB_OPTIONS variable from optional parameters
+[ -z "$CTDB_RECOVERY_LOCK" ]    || CTDB_OPTIONS="$CTDB_OPTIONS --reclock=$CTDB_RECOVERY_LOCK"
 [ -z "$CTDB_LOGFILE" ]          || CTDB_OPTIONS="$CTDB_OPTIONS --logfile=$CTDB_LOGFILE"
 [ -z "$CTDB_NODES" ]            || CTDB_OPTIONS="$CTDB_OPTIONS --nlist=$CTDB_NODES"
 [ -z "$CTDB_SOCKET" ]           || CTDB_OPTIONS="$CTDB_OPTIONS --socket=$CTDB_SOCKET"

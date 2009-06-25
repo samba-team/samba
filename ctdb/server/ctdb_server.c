@@ -61,6 +61,17 @@ int ctdb_ip_to_nodeid(struct ctdb_context *ctdb, const char *nodeip)
 */
 int ctdb_set_recovery_lock_file(struct ctdb_context *ctdb, const char *file)
 {
+	if (ctdb->recovery_lock_file != NULL) {
+		talloc_free(ctdb->recovery_lock_file);
+		ctdb->recovery_lock_file = NULL;
+	}
+
+	if (file == NULL) {
+		DEBUG(DEBUG_ALERT,("Recovery lock file set to \"\". Disabling recovery lock checking\n"));
+		ctdb->tunable.verify_recovery_lock = 0;
+		return 0;
+	}
+
 	ctdb->recovery_lock_file = talloc_strdup(ctdb, file);
 	CTDB_NO_MEMORY(ctdb, ctdb->recovery_lock_file);
 
