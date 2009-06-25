@@ -30,6 +30,8 @@
 #include "librpc/gen_ndr/ndr_winbind.h"
 #include "lib/messaging/irpc.h"
 #include "param/param.h"
+#include "nsswitch/libwbclient/wbclient.h"
+#include "libcli/security/dom_sid.h"
 
 static NTSTATUS get_info3_from_ndr(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience, struct winbindd_response *response, struct netr_SamInfo3 *info3)
 {
@@ -53,6 +55,124 @@ static NTSTATUS get_info3_from_ndr(TALLOC_CTX *mem_ctx, struct smb_iconv_conveni
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 }
+
+static NTSTATUS get_info3_from_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
+					       struct smb_iconv_convenience *ic,
+					       struct wbcAuthUserInfo *info,
+					       struct netr_SamInfo3 *info3)
+{
+	int i, j;
+	struct samr_RidWithAttribute *rids = NULL;
+
+	info3->base.last_logon = info->logon_time;
+	info3->base.last_logoff = info->logoff_time;
+	info3->base.acct_expiry = info->kickoff_time;
+	info3->base.last_password_change = info->pass_last_set_time;
+	info3->base.allow_password_change = info->pass_can_change_time;
+	info3->base.force_password_change = info->pass_must_change_time;
+
+	if (info->account_name != NULL) {
+		convert_string_talloc_convenience(mem_ctx, ic,
+				CH_UNIX, CH_UTF16, info->account_name,
+				strlen(info->account_name),
+				discard_const(&info3->base.account_name.string),
+				NULL, false);
+	}
+
+	if (info->full_name != NULL) {
+		convert_string_talloc_convenience(mem_ctx, ic,
+				CH_UNIX, CH_UTF16, info->full_name,
+				strlen(info->full_name),
+				discard_const(&info3->base.full_name.string),
+				NULL, false);
+	}
+
+	if (info->logon_script != NULL) {
+		convert_string_talloc_convenience(mem_ctx, ic,
+				CH_UNIX, CH_UTF16, info->logon_script,
+				strlen(info->logon_script),
+				discard_const(&info3->base.logon_script.string),
+				NULL, false);
+	}
+
+	if (info->profile_path != NULL) {
+		convert_string_talloc_convenience(mem_ctx, ic,
+				CH_UNIX, CH_UTF16, info->profile_path,
+				strlen(info->profile_path),
+				discard_const(&info3->base.profile_path.string),
+				NULL, false);
+	}
+
+	if (info->home_directory != NULL) {
+		convert_string_talloc_convenience(mem_ctx, ic,
+				CH_UNIX, CH_UTF16, info->home_directory,
+				strlen(info->home_directory),
+				discard_const(&info3->base.home_directory.string),
+				NULL, false);
+	}
+
+	if (info->home_drive != NULL) {
+		convert_string_talloc_convenience(mem_ctx, ic,
+				CH_UNIX, CH_UTF16, info->home_drive,
+				strlen(info->home_drive),
+				discard_const(&info3->base.home_drive.string),
+				NULL, false);
+	}
+
+	if (info->logon_server != NULL) {
+		convert_string_talloc_convenience(mem_ctx, ic,
+				CH_UNIX, CH_UTF16, info->logon_server,
+				strlen(info->logon_server),
+				discard_const(&info3->base.logon_server.string),
+				NULL, false);
+	}
+
+	if (info->domain_name != NULL) {
+		convert_string_talloc_convenience(mem_ctx, ic,
+				CH_UNIX, CH_UTF16, info->domain_name,
+				strlen(info->domain_name),
+				discard_const(&info3->base.domain.string),
+				NULL, false);
+	}
+
+	info3->base.logon_count = info->logon_count;
+	info3->base.bad_password_count = info->bad_password_count;
+	info3->base.user_flags = info->user_flags;
+	memcpy(info3->base.key.key, info->user_session_key,
+	       sizeof(info3->base.key.key));
+	memcpy(info3->base.LMSessKey.key, info->lm_session_key,
+	       sizeof(info3->base.LMSessKey.key));
+	info3->base.acct_flags = info->acct_flags;
+	memset(info3->base.unknown, 0, sizeof(info3->base.unknown));
+
+	if (info->num_sids < 2) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	dom_sid_split_rid(mem_ctx, (struct dom_sid2 *) &info->sids[0].sid,
+			  &info3->base.domain_sid,
+			  &info3->base.rid);
+	dom_sid_split_rid(mem_ctx, (struct dom_sid2 *) &info->sids[1].sid, NULL,
+			  &info3->base.primary_gid);
+
+	/* We already handled the first two, now take care of the rest */
+	info3->base.groups.count = info->num_sids - 2;
+	for (i = 2, j = 0; i < info->num_sids; ++i, ++j) {
+
+		rids = talloc_array(mem_ctx, struct samr_RidWithAttribute,
+				    info3->base.groups.count);
+		NT_STATUS_HAVE_NO_MEMORY(rids);
+
+		rids[j].attributes = info->sids[i].attributes;
+		dom_sid_split_rid(mem_ctx,
+				  (struct dom_sid2 *) &info->sids[i].sid,
+				  NULL, &rids[j].rid);
+	}
+	info3->base.groups.rids = rids;
+
+	return NT_STATUS_OK;
+}
+
 
 static NTSTATUS winbind_want_check(struct auth_method_context *ctx,
 				   TALLOC_CTX *mem_ctx,
@@ -248,6 +368,88 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 	return NT_STATUS_OK;
 }
 
+/*
+ Authenticate a user with a challenge/response
+ using the samba3 winbind protocol via libwbclient
+*/
+static NTSTATUS winbind_check_password_wbclient(struct auth_method_context *ctx,
+						TALLOC_CTX *mem_ctx,
+						const struct auth_usersupplied_info *user_info,
+						struct auth_serversupplied_info **server_info)
+{
+	struct wbcAuthUserParams params;
+	struct wbcAuthUserInfo *info = NULL;
+	struct wbcAuthErrorInfo *err = NULL;
+	wbcErr wbc_status;
+	NTSTATUS nt_status;
+	struct netr_SamInfo3 info3;
+	union netr_Validation validation;
+
+
+	/* Send off request */
+	const struct auth_usersupplied_info *user_info_temp;
+	nt_status = encrypt_user_info(mem_ctx, ctx->auth_ctx,
+				      AUTH_PASSWORD_RESPONSE,
+				      user_info, &user_info_temp);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+	user_info = user_info_temp;
+
+	ZERO_STRUCT(params);
+	ZERO_STRUCT(info3);
+	/*params.flags = WBFLAG_PAM_INFO3_NDR;*/
+
+	params.parameter_control = user_info->logon_parameters;
+	params.parameter_control |= WBC_MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT |
+				    WBC_MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT;
+	params.level = WBC_AUTH_USER_LEVEL_RESPONSE;
+
+	params.account_name     = user_info->client.account_name;
+	params.domain_name      = user_info->client.domain_name;
+	params.workstation_name = user_info->workstation_name;
+
+	d_fprintf(stderr, "looking up %s@%s logging in from %s\n",
+		  params.account_name, params.domain_name,
+		  params.workstation_name);
+
+	memcpy(params.password.response.challenge,
+	       ctx->auth_ctx->challenge.data.data,
+	       sizeof(params.password.response.challenge));
+
+	params.password.response.lm_length =
+		user_info->password.response.lanman.length;
+	params.password.response.nt_length =
+		user_info->password.response.nt.length;
+
+	params.password.response.lm_data =
+		user_info->password.response.lanman.data;
+	params.password.response.nt_data =
+		user_info->password.response.nt.data;
+
+	wbc_status = wbcAuthenticateUserEx(&params, &info, &err);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		DEBUG(1, ("error was %s (0x%08x)\nerror message was '%s'\n",
+		      err->nt_string, err->nt_status, err->display_string));
+
+		nt_status = NT_STATUS(err->nt_status);
+		wbcFreeMemory(err);
+		NT_STATUS_NOT_OK_RETURN(nt_status);
+	}
+	nt_status = get_info3_from_wbcAuthUserInfo(mem_ctx,
+				lp_iconv_convenience(ctx->auth_ctx->lp_ctx),
+				info, &info3);
+	wbcFreeMemory(info);
+	NT_STATUS_NOT_OK_RETURN(nt_status);
+
+	validation.sam3 = &info3;
+	nt_status = make_server_info_netlogon_validation(mem_ctx,
+					user_info->client.account_name,
+					3, &validation, server_info);
+	return nt_status;
+
+}
+
 static const struct auth_operations winbind_samba3_ops = {
 	.name		= "winbind_samba3",
 	.get_challenge	= auth_get_challenge_not_implemented,
@@ -260,6 +462,13 @@ static const struct auth_operations winbind_ops = {
 	.get_challenge	= auth_get_challenge_not_implemented,
 	.want_check	= winbind_want_check,
 	.check_password	= winbind_check_password
+};
+
+static const struct auth_operations winbind_wbclient_ops = {
+	.name		= "winbind_wbclient",
+	.get_challenge	= auth_get_challenge_not_implemented,
+	.want_check	= winbind_want_check,
+	.check_password	= winbind_check_password_wbclient
 };
 
 _PUBLIC_ NTSTATUS auth_winbind_init(void)
@@ -275,6 +484,12 @@ _PUBLIC_ NTSTATUS auth_winbind_init(void)
 	ret = auth_register(&winbind_ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register 'winbind' auth backend!\n"));
+		return ret;
+	}
+
+	ret = auth_register(&winbind_wbclient_ops);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0,("Failed to register 'winbind_wbclient' auth backend!\n"));
 		return ret;
 	}
 

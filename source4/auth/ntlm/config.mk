@@ -38,7 +38,7 @@ auth_server_OBJ_FILES = $(addprefix $(authsrcdir)/ntlm/, auth_server.o)
 [MODULE::auth_winbind]
 INIT_FUNCTION = auth_winbind_init
 SUBSYSTEM = auth
-PRIVATE_DEPENDENCIES = NDR_WINBIND MESSAGING LIBWINBIND-CLIENT
+PRIVATE_DEPENDENCIES = NDR_WINBIND MESSAGING LIBWINBIND-CLIENT LIBWBCLIENT
 # End MODULE auth_winbind
 #######################
 
