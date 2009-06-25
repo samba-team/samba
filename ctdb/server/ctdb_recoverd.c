@@ -2506,6 +2506,60 @@ static int check_recovery_lock(struct ctdb_context *ctdb)
 	return 0;
 }
 
+static int update_recovery_lock_file(struct ctdb_context *ctdb)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+	const char *reclockfile;
+
+	if (ctdb_ctrl_getreclock(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, tmp_ctx, &reclockfile) != 0) {
+		DEBUG(DEBUG_ERR,("Failed to read reclock file from daemon\n"));
+		talloc_free(tmp_ctx);
+		return -1;	
+	}
+
+	if (reclockfile == NULL) {
+		if (ctdb->recovery_lock_file != NULL) {
+			DEBUG(DEBUG_ERR,("Reclock file disabled\n"));
+			talloc_free(ctdb->recovery_lock_file);
+			ctdb->recovery_lock_file = NULL;
+			if (ctdb->recovery_lock_fd != -1) {
+				close(ctdb->recovery_lock_fd);
+				ctdb->recovery_lock_fd = -1;
+			}
+		}
+		ctdb->tunable.verify_recovery_lock = 0;
+		talloc_free(tmp_ctx);
+		return 0;
+	}
+
+	if (ctdb->recovery_lock_file == NULL) {
+		ctdb->recovery_lock_file = talloc_strdup(ctdb, reclockfile);
+		if (ctdb->recovery_lock_fd != -1) {
+			close(ctdb->recovery_lock_fd);
+			ctdb->recovery_lock_fd = -1;
+		}
+		talloc_free(tmp_ctx);
+		return 0;
+	}
+
+
+	if (!strcmp(reclockfile, ctdb->recovery_lock_file)) {
+		talloc_free(tmp_ctx);
+		return 0;
+	}
+
+	talloc_free(ctdb->recovery_lock_file);
+	ctdb->recovery_lock_file = talloc_strdup(ctdb, reclockfile);
+	ctdb->tunable.verify_recovery_lock = 0;
+	if (ctdb->recovery_lock_fd != -1) {
+		close(ctdb->recovery_lock_fd);
+		ctdb->recovery_lock_fd = -1;
+	}
+
+	talloc_free(tmp_ctx);
+	return 0;
+}
+		
 /*
   the main monitoring loop
  */
@@ -2612,7 +2666,13 @@ again:
 		goto again;
 	}
 
-	/* Make sure that if recovery lock verification becomes disabled that
+	/* get the current recovery lock file from the server */
+	if (update_recovery_lock_file(ctdb) != 0) {
+		DEBUG(DEBUG_ERR,("Failed to update the recovery lock file\n"));
+		goto again;
+	}
+
+	/* Make sure that if recovery lock verification becomes disabled when
 	   we close the file
 	*/
         if (ctdb->tunable.verify_recovery_lock == 0) {
