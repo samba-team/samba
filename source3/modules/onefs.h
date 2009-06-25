@@ -64,14 +64,12 @@ int onefs_close(vfs_handle_struct *handle, struct files_struct *fsp);
 int onefs_rename(vfs_handle_struct *handle, const char *oldname,
 		 const char *newname);
 
-int onefs_stat(vfs_handle_struct *handle, const char *fname,
-	       SMB_STRUCT_STAT *sbuf);
+int onefs_stat(vfs_handle_struct *handle, struct smb_filename *smb_fname);
 
 int onefs_fstat(vfs_handle_struct *handle, struct files_struct *fsp,
 		SMB_STRUCT_STAT *sbuf);
 
-int onefs_lstat(vfs_handle_struct *handle, const char *path,
-		SMB_STRUCT_STAT *sbuf);
+int onefs_lstat(vfs_handle_struct *handle, struct smb_filename *smb_fname);
 
 int onefs_unlink(vfs_handle_struct *handle, const char *path);
 
@@ -140,6 +138,10 @@ NTSTATUS onefs_samba_sd_to_sd(uint32_t security_info_sent, SEC_DESC *psd,
 
 NTSTATUS onefs_split_ntfs_stream_name(TALLOC_CTX *mem_ctx, const char *fname,
 				      char **pbase, char **pstream);
+
+NTSTATUS onefs_stream_prep_smb_fname(TALLOC_CTX *ctx,
+				     const struct smb_filename *smb_fname_in,
+				     struct smb_filename **smb_fname_out);
 
 int onefs_rdp_add_dir_state(connection_struct *conn, SMB_STRUCT_DIR *dirp);
 

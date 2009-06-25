@@ -54,6 +54,52 @@ NTSTATUS onefs_split_ntfs_stream_name(TALLOC_CTX *mem_ctx, const char *fname,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS onefs_stream_prep_smb_fname(TALLOC_CTX *ctx,
+				     const struct smb_filename *smb_fname_in,
+				     struct smb_filename **smb_fname_out)
+{
+	char *stream_name = NULL;
+	NTSTATUS status;
+
+	/*
+	 * Only attempt to strip off the trailing :$DATA if there is an actual
+	 * stream there.  If it is the default stream, the smb_fname_out will
+	 * just have a NULL stream so the base file is opened.
+	 */
+	if (smb_fname_in->stream_name &&
+	    !is_ntfs_default_stream_smb_fname(smb_fname_in)) {
+		char *str_tmp = smb_fname_in->stream_name;
+
+		/* First strip off the leading ':' */
+		if (str_tmp[0] == ':') {
+			str_tmp++;
+		}
+
+		/* Create a new copy of the stream_name. */
+		stream_name = talloc_strdup(ctx, str_tmp);
+		if (stream_name == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		/* Strip off the :$DATA if one exists. */
+		str_tmp = strrchr_m(stream_name, ':');
+		if (str_tmp) {
+			str_tmp[0] = '\0';
+		}
+	}
+
+	/*
+	 * If there was a stream that wasn't the default stream the leading
+	 * colon and trailing :$DATA has now been stripped off.  Create a new
+	 * smb_filename to pass back.
+	 */
+	status = create_synthetic_smb_fname(ctx, smb_fname_in->base_name,
+					    stream_name, &smb_fname_in->st,
+					    smb_fname_out);
+	TALLOC_FREE(stream_name);
+	return status;
+}
+
 int onefs_is_stream(const char *path, char **pbase, char **pstream,
 		    bool *is_stream)
 {
@@ -312,28 +358,37 @@ static int stat_stream(struct connection_struct *conn, const char *base,
 	return ret;
 }
 
-int onefs_stat(vfs_handle_struct *handle, const char *path,
-	       SMB_STRUCT_STAT *sbuf)
+int onefs_stat(vfs_handle_struct *handle, struct smb_filename *smb_fname)
 {
+	struct smb_filename *smb_fname_onefs = NULL;
+	NTSTATUS status;
 	int ret;
-	bool is_stream;
-	char *base = NULL;
-	char *stream = NULL;
 
-	ret = onefs_is_stream(path, &base, &stream, &is_stream);
-	if (ret)
-		return ret;
-
-	if (!is_stream) {
-		ret = onefs_sys_stat(path, sbuf);
-	} else if (!stream) {
-		/* If it's the ::$DATA stream just stat the base file name. */
-		ret = onefs_sys_stat(base, sbuf);
-	} else {
-		ret = stat_stream(handle->conn, base, stream, sbuf, 0);
+	status = onefs_stream_prep_smb_fname(talloc_tos(), smb_fname,
+					     &smb_fname_onefs);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		return -1;
 	}
 
-	onefs_adjust_stat_time(handle->conn, path, sbuf);
+	/*
+	 * If the smb_fname has no stream or is :$DATA, then just stat the
+	 * base stream. Otherwise stat the stream.
+	 */
+	if (!is_ntfs_stream_smb_fname(smb_fname_onefs)) {
+		ret = onefs_sys_stat(smb_fname_onefs->base_name,
+				     &smb_fname->st);
+	} else {
+		ret = stat_stream(handle->conn, smb_fname_onefs->base_name,
+				  smb_fname_onefs->stream_name, &smb_fname->st,
+				  0);
+	}
+
+	onefs_adjust_stat_time(handle->conn, smb_fname->base_name,
+			       &smb_fname->st);
+
+	TALLOC_FREE(smb_fname_onefs);
+
 	return ret;
 }
 
@@ -361,29 +416,37 @@ int onefs_fstat(vfs_handle_struct *handle, struct files_struct *fsp,
 	return ret;
 }
 
-int onefs_lstat(vfs_handle_struct *handle, const char *path,
-		SMB_STRUCT_STAT *sbuf)
+int onefs_lstat(vfs_handle_struct *handle, struct smb_filename *smb_fname)
 {
+	struct smb_filename *smb_fname_onefs = NULL;
+	NTSTATUS status;
 	int ret;
-	bool is_stream;
-	char *base = NULL;
-	char *stream = NULL;
 
-	ret = onefs_is_stream(path, &base, &stream, &is_stream);
-	if (ret)
-		return ret;
+	status = onefs_stream_prep_smb_fname(talloc_tos(), smb_fname,
+					     &smb_fname_onefs);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		return -1;
+	}
 
-	if (!is_stream) {
-		ret = onefs_sys_lstat(path, sbuf);
-	} else if (!stream) {
-		/* If it's the ::$DATA stream just stat the base file name. */
-		ret = onefs_sys_lstat(base, sbuf);
+	/*
+	 * If the smb_fname has no stream or is :$DATA, then just stat the
+	 * base stream. Otherwise stat the stream.
+	 */
+	if (!is_ntfs_stream_smb_fname(smb_fname_onefs)) {
+		ret = onefs_sys_lstat(smb_fname_onefs->base_name,
+				      &smb_fname->st);
 	} else {
-		ret = stat_stream(handle->conn, base, stream, sbuf,
+		ret = stat_stream(handle->conn, smb_fname_onefs->base_name,
+				  smb_fname_onefs->stream_name, &smb_fname->st,
 				  AT_SYMLINK_NOFOLLOW);
 	}
 
-	onefs_adjust_stat_time(handle->conn, path, sbuf);
+	onefs_adjust_stat_time(handle->conn, smb_fname->base_name,
+			       &smb_fname->st);
+
+	TALLOC_FREE(smb_fname_onefs);
+
 	return ret;
 }
 
@@ -661,10 +724,22 @@ NTSTATUS onefs_streaminfo(vfs_handle_struct *handle,
 		}
 		ret = SMB_VFS_FSTAT(fsp, &sbuf);
 	} else {
+		struct smb_filename *smb_fname = NULL;
+
 		if (is_ntfs_stream_name(fname)) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
-		ret = SMB_VFS_STAT(handle->conn, fname, &sbuf);
+
+		status = create_synthetic_smb_fname(talloc_tos(), fname, NULL,
+						    NULL, &smb_fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		ret = SMB_VFS_STAT(handle->conn, smb_fname);
+
+		sbuf = smb_fname->st;
+
+		TALLOC_FREE(smb_fname);
 	}
 
 	if (ret == -1) {

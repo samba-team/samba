@@ -278,21 +278,21 @@ onefs_shadow_copy_rename(vfs_handle_struct *handle, const char *old_name,
 }
 
 static int
-onefs_shadow_copy_stat(vfs_handle_struct *handle, const char *path,
-		       SMB_STRUCT_STAT *sbuf)
+onefs_shadow_copy_stat(vfs_handle_struct *handle,
+		       struct smb_filename *smb_fname)
 {
-	SHADOW_NEXT(STAT,
-		    (handle, cpath ?: path, sbuf),
-		    int);
+	SHADOW_NEXT_SMB_FNAME(STAT,
+			      (handle, smb_fname),
+			      int);
 }
 
 static int
-onefs_shadow_copy_lstat(vfs_handle_struct *handle, const char *path,
-			SMB_STRUCT_STAT *sbuf)
+onefs_shadow_copy_lstat(vfs_handle_struct *handle,
+			struct smb_filename *smb_fname)
 {
-	SHADOW_NEXT(LSTAT,
-		    (handle, cpath ?: path, sbuf),
-		    int);
+	SHADOW_NEXT_SMB_FNAME(LSTAT,
+			      (handle, smb_fname),
+			      int);
 }
 
 static int
