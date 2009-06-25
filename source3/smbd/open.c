@@ -2444,7 +2444,6 @@ static NTSTATUS open_directory(connection_struct *conn,
 	files_struct *fsp = NULL;
 	bool dir_existed = VALID_STAT(smb_dname->st) ? True : False;
 	struct share_mode_lock *lck = NULL;
-	char *fname = NULL;
 	NTSTATUS status;
 	struct timespec mtimespec;
 	int info = 0;
@@ -2459,12 +2458,6 @@ static NTSTATUS open_directory(connection_struct *conn,
 		 (unsigned int)create_disposition,
 		 (unsigned int)file_attributes));
 
-	status = get_full_smb_filename(talloc_tos(), smb_dname,
-				       &fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
 	if (!(file_attributes & FILE_FLAG_POSIX_SEMANTICS) &&
 			(conn->fs_capabilities & FILE_NAMED_STREAMS) &&
 			is_ntfs_stream_smb_fname(smb_dname)) {
@@ -2473,9 +2466,8 @@ static NTSTATUS open_directory(connection_struct *conn,
 		return NT_STATUS_NOT_A_DIRECTORY;
 	}
 
-	status = calculate_access_mask(conn, fname, dir_existed,
-					access_mask,
-					&access_mask); 
+	status = calculate_access_mask(conn, smb_dname->base_name, dir_existed,
+				       access_mask, &access_mask);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("open_directory: calculate_access_mask "
 			"on file %s returned %s\n",
@@ -2513,7 +2505,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 			 * exist create. */
 
 			status = mkdir_internal(conn,
-						fname,
+						smb_dname->base_name,
 						file_attributes,
 						&smb_dname->st);
 
@@ -2535,7 +2527,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 			 */
 
 			status = mkdir_internal(conn,
-						fname,
+						smb_dname->base_name,
 						file_attributes,
 						&smb_dname->st);
 
@@ -2570,10 +2562,8 @@ static NTSTATUS open_directory(connection_struct *conn,
 
 	if (info == FILE_WAS_OPENED) {
 		uint32_t access_granted = 0;
-		status = check_open_rights(conn,
-					fname,
-					access_mask,
-					&access_granted);
+		status = check_open_rights(conn, smb_dname->base_name,
+					   access_mask, &access_granted);
 
 		/* Were we trying to do a directory open
 		 * for delete and didn't get DELETE
@@ -2632,13 +2622,13 @@ static NTSTATUS open_directory(connection_struct *conn,
 	fsp->is_directory = True;
 	fsp->posix_open = (file_attributes & FILE_FLAG_POSIX_SEMANTICS) ? True : False;
 
-	string_set(&fsp->fsp_name,fname);
+	string_set(&fsp->fsp_name, smb_dname->base_name);
 
 	mtimespec = smb_dname->st.st_ex_mtime;
 
 	lck = get_share_mode_lock(talloc_tos(), fsp->file_id,
-				  conn->connectpath,
-				  fname, &mtimespec);
+				  conn->connectpath, smb_dname->base_name,
+				  &mtimespec);
 
 	if (lck == NULL) {
 		DEBUG(0, ("open_directory: Could not get share mode lock for "
