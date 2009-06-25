@@ -1562,6 +1562,14 @@ mount_retry:
 		}
 	}
 
+	if (addr->ai_addr->sa_family == AF_INET6 && addr6->sin6_scope_id) {
+		strlcat(options, "%", options_size);
+		current_len = strnlen(options, options_size);
+		optionstail = options + current_len;
+		snprintf(optionstail, options_size - current_len, "%u",
+			 addr6->sin6_scope_id);
+	}
+
 	if (!fakemnt && mount(dev_name, mountpoint, "cifs", flags, options)) {
 		switch (errno) {
 		case ECONNREFUSED:
