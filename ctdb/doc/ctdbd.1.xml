@@ -248,8 +248,14 @@
       <varlistentry><term>--reclock=&lt;filename&gt;</term>
         <listitem>
           <para>
-            This is the name of the lock file stored of the shared cluster filesystem that ctdbd uses to arbitrate which node has the role of recovery-master.
+            This is the name of the lock file stored of the shared cluster filesystem that ctdbd uses to prevent split brains from occuring.
             This file must be stored on shared storage.
+          </para>
+          <para>
+	    It is possible to run CTDB without a reclock file, but then there 
+	    will be no protection against split brain if the network becomes
+	    partitioned. Using CTDB without a reclock file is strongly
+	    discouraged.
           </para>
         </listitem>
       </varlistentry>
