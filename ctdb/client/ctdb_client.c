@@ -3670,7 +3670,12 @@ int ctdb_ctrl_getreclock(struct ctdb_context *ctdb, struct timeval timeout,
 		return -1;
 	}
 
-	*name = discard_const(data.dptr);
+	if (data.dsize == 0) {
+		*name = NULL;
+	} else {
+		*name = talloc_strdup(mem_ctx, data.dptr);
+	}
+	talloc_free(data.dptr);
 
 	return 0;
 }
