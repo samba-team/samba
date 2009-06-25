@@ -20,6 +20,13 @@
 
 #include "includes.h"
 
+#ifdef malloc
+#undef malloc
+#endif
+#ifdef realloc
+#undef realloc
+#endif
+
 static const char *so_path = "/lib/libnss_winbind.so";
 static const char *nss_name = "winbind";
 static int nss_errno;
@@ -180,13 +187,13 @@ static struct group *nss_getgrent(void)
 		return NULL;
 
 	if (!buf) 
-		buf = SMB_MALLOC_ARRAY(char, buflen);
+		buf = (char *)malloc(buflen);
 
 again:	
 	status = _nss_getgrent_r(&grp, buf, buflen, &nss_errno);
 	if (status == NSS_STATUS_TRYAGAIN) {
 		buflen *= 2;
-		buf = SMB_REALLOC_ARRAY(buf, char, buflen);
+		buf = (char *)realloc(buf, buflen);
 		if (!buf) {
 			return NULL;
 		}
@@ -219,12 +226,12 @@ static struct group *nss_getgrnam(const char *name)
 		return NULL;
 
 	if (!buf) 
-		buf = SMB_MALLOC_ARRAY(char, buflen);
+		buf = (char *)malloc(buflen);
 again:	
 	status = _nss_getgrnam_r(name, &grp, buf, buflen, &nss_errno);
 	if (status == NSS_STATUS_TRYAGAIN) {
 		buflen *= 2;
-		buf = SMB_REALLOC_ARRAY(buf, char, buflen);
+		buf = (char *)realloc(buf, buflen);
 		if (!buf) {
 			return NULL;
 		}
@@ -257,13 +264,13 @@ static struct group *nss_getgrgid(gid_t gid)
 		return NULL;
 
 	if (!buf) 
-		buf = SMB_MALLOC_ARRAY(char, buflen);
+		buf = (char *)malloc(buflen);
 
 again:	
 	status = _nss_getgrgid_r(gid, &grp, buf, buflen, &nss_errno);
 	if (status == NSS_STATUS_TRYAGAIN) {
 		buflen *= 2;
-		buf = SMB_REALLOC_ARRAY(buf, char, buflen);
+		buf = (char *)realloc(buf, buflen);
 		if (!buf) {
 			return NULL;
 		}
@@ -369,7 +376,7 @@ static void nss_test_initgroups(char *name, gid_t gid)
 	int i;
 	NSS_STATUS status;
 
-	groups = SMB_MALLOC_ARRAY(gid_t, size);
+	groups = (gid_t *)malloc(size);
 	groups[0] = gid;
 
 	status = nss_initgroups(name, gid, &groups, &start, &size);
