@@ -2955,7 +2955,6 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	int info = FILE_WAS_OPENED;
 	files_struct *base_fsp = NULL;
 	files_struct *fsp = NULL;
-	char *fname = NULL;
 	NTSTATUS status;
 
 	DEBUG(10,("create_file_unixpath: access_mask = 0x%x "
@@ -2970,12 +2969,6 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		  (unsigned int)create_options,
 		  (unsigned int)oplock_request,
 		  ea_list, sd, smb_fname_str_dbg(smb_fname)));
-
-	status = get_full_smb_filename(talloc_tos(), smb_fname,
-				       &fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
-	}
 
 	if (create_options & FILE_OPEN_BY_FILE_ID) {
 		status = NT_STATUS_NOT_SUPPORTED;
@@ -3244,8 +3237,8 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	}
 
 	if ((ea_list != NULL) &&
-			((info == FILE_WAS_CREATED) || (info == FILE_WAS_OVERWRITTEN))) {
-		status = set_ea(conn, fsp, fname, ea_list);
+	    ((info == FILE_WAS_CREATED) || (info == FILE_WAS_OVERWRITTEN))) {
+		status = set_ea(conn, fsp, smb_fname, ea_list);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto fail;
 		}

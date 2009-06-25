@@ -404,10 +404,20 @@ static void canonicalize_ea_name(connection_struct *conn, files_struct *fsp, con
  Set or delete an extended attribute.
 ****************************************************************************/
 
-NTSTATUS set_ea(connection_struct *conn, files_struct *fsp, const char *fname, struct ea_list *ea_list)
+NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
+		const struct smb_filename *smb_fname, struct ea_list *ea_list)
 {
+	char *fname = NULL;
+	NTSTATUS status;
+
 	if (!lp_ea_support(SNUM(conn))) {
 		return NT_STATUS_EAS_NOT_SUPPORTED;
+	}
+
+	status = get_full_smb_filename(talloc_tos(), smb_fname,
+				       &fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	for (;ea_list; ea_list = ea_list->next) {
@@ -5146,7 +5156,7 @@ static NTSTATUS smb_info_set_ea(connection_struct *conn,
 				const char *pdata,
 				int total_data,
 				files_struct *fsp,
-				const char *fname)
+				const struct smb_filename *smb_fname)
 {
 	struct ea_list *ea_list = NULL;
 	TALLOC_CTX *ctx = NULL;
@@ -5176,7 +5186,7 @@ static NTSTATUS smb_info_set_ea(connection_struct *conn,
 	if (!ea_list) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	status = set_ea(conn, fsp, fname, ea_list);
+	status = set_ea(conn, fsp, smb_fname, ea_list);
 
 	return status;
 }
@@ -6964,7 +6974,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 						pdata,
 						total_data,
 						fsp,
-						fname);
+						smb_fname);
 			break;
 		}
 
@@ -7300,7 +7310,7 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 
 	/* Try and set any given EA. */
 	if (ea_list) {
-		status = set_ea(conn, NULL, smb_dname->base_name, ea_list);
+		status = set_ea(conn, NULL, smb_dname, ea_list);
 		if (!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);
 			goto out;
