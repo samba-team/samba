@@ -135,12 +135,19 @@ int32_t ctdb_control_set_tunable(struct ctdb_context *ctdb, TDB_DATA indata)
 		if (strcasecmp(name, tunable_map[i].name) == 0) break;
 	}
 
+	if (!strcmp(name, "VerifyRecoveryLock") && t->value != 0
+	&& ctdb->recovery_lock_file == NULL) {
+		DEBUG(DEBUG_ERR,("Can not activate tunable \"VerifyRecoveryLock\" since there is no recovery lock file set.\n"));
+		talloc_free(name);
+		return -1;
+	}
+
 	talloc_free(name);
 	
 	if (i == ARRAY_SIZE(tunable_map)) {
 		return -1;
 	}
-	
+
 	*(uint32_t *)(tunable_map[i].offset + (uint8_t*)&ctdb->tunable) = t->value;
 
 	return 0;
