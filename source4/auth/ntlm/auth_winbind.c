@@ -157,12 +157,12 @@ static NTSTATUS get_info3_from_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
 
 	/* We already handled the first two, now take care of the rest */
 	info3->base.groups.count = info->num_sids - 2;
+
+	rids = talloc_array(mem_ctx, struct samr_RidWithAttribute,
+			    info3->base.groups.count);
+	NT_STATUS_HAVE_NO_MEMORY(rids);
+
 	for (i = 2, j = 0; i < info->num_sids; ++i, ++j) {
-
-		rids = talloc_array(mem_ctx, struct samr_RidWithAttribute,
-				    info3->base.groups.count);
-		NT_STATUS_HAVE_NO_MEMORY(rids);
-
 		rids[j].attributes = info->sids[i].attributes;
 		dom_sid_split_rid(mem_ctx,
 				  (struct dom_sid2 *) &info->sids[i].sid,
