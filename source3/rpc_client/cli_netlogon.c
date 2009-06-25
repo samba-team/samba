@@ -196,15 +196,15 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
 			netlogon_creds_des_encrypt(cli->dc, &ntpassword);
 		}
 
-		init_netr_PasswordInfo(password_info,
-				       domain,
-				       logon_parameters,
-				       0xdead,
-				       0xbeef,
-				       username,
-				       clnt_name_slash,
-				       lmpassword,
-				       ntpassword);
+		password_info->identity_info.domain_name.string		= domain;
+		password_info->identity_info.parameter_control		= logon_parameters;
+		password_info->identity_info.logon_id_low		= 0xdead;
+		password_info->identity_info.logon_id_high		= 0xbeef;
+		password_info->identity_info.account_name.string	= username;
+		password_info->identity_info.workstation.string		= clnt_name_slash;
+
+		password_info->lmpassword = lmpassword;
+		password_info->ntpassword = ntpassword;
 
 		logon->password = password_info;
 
@@ -237,16 +237,16 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
 		nt.length = 24;
 		nt.data = local_nt_response;
 
-		init_netr_NetworkInfo(network_info,
-				      domain,
-				      logon_parameters,
-				      0xdead,
-				      0xbeef,
-				      username,
-				      clnt_name_slash,
-				      chal,
-				      nt,
-				      lm);
+		network_info->identity_info.domain_name.string		= domain;
+		network_info->identity_info.parameter_control		= logon_parameters;
+		network_info->identity_info.logon_id_low		= 0xdead;
+		network_info->identity_info.logon_id_high		= 0xbeef;
+		network_info->identity_info.account_name.string		= username;
+		network_info->identity_info.workstation.string		= clnt_name_slash;
+
+		memcpy(network_info->challenge, chal, 8);
+		network_info->nt = nt;
+		network_info->lm = lm;
 
 		logon->network = network_info;
 
@@ -355,16 +355,16 @@ NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
 	nt.data = nt_response.data;
 	nt.length = nt_response.length;
 
-	init_netr_NetworkInfo(network_info,
-			      domain,
-			      logon_parameters,
-			      0xdead,
-			      0xbeef,
-			      username,
-			      workstation_name_slash,
-			      (uint8_t *) chal,
-			      nt,
-			      lm);
+	network_info->identity_info.domain_name.string		= domain;
+	network_info->identity_info.parameter_control		= logon_parameters;
+	network_info->identity_info.logon_id_low		= 0xdead;
+	network_info->identity_info.logon_id_high		= 0xbeef;
+	network_info->identity_info.account_name.string		= username;
+	network_info->identity_info.workstation.string		= workstation_name_slash;
+
+	memcpy(network_info->challenge, chal, 8);
+	network_info->nt = nt;
+	network_info->lm = lm;
 
 	logon->network = network_info;
 
@@ -463,16 +463,16 @@ NTSTATUS rpccli_netlogon_sam_network_logon_ex(struct rpc_pipe_client *cli,
 	nt.data = nt_response.data;
 	nt.length = nt_response.length;
 
-	init_netr_NetworkInfo(network_info,
-			      domain,
-			      logon_parameters,
-			      0xdead,
-			      0xbeef,
-			      username,
-			      workstation_name_slash,
-			      (uint8_t *) chal,
-			      nt,
-			      lm);
+	network_info->identity_info.domain_name.string		= domain;
+	network_info->identity_info.parameter_control		= logon_parameters;
+	network_info->identity_info.logon_id_low		= 0xdead;
+	network_info->identity_info.logon_id_high		= 0xbeef;
+	network_info->identity_info.account_name.string		= username;
+	network_info->identity_info.workstation.string		= workstation_name_slash;
+
+	memcpy(network_info->challenge, chal, 8);
+	network_info->nt = nt;
+	network_info->lm = lm;
 
 	logon->network = network_info;
 
