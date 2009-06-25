@@ -741,7 +741,9 @@ bool ctdb_recovery_lock(struct ctdb_context *ctdb, bool keep)
 	}
 	if (ctdb->recovery_lock_fd != -1) {
 		close(ctdb->recovery_lock_fd);
+		ctdb->recovery_lock_fd = -1;
 	}
+
 	ctdb->recovery_lock_fd = open(ctdb->recovery_lock_file, O_RDWR|O_CREAT, 0600);
 	if (ctdb->recovery_lock_fd == -1) {
 		DEBUG(DEBUG_ERR,("ctdb_recovery_lock: Unable to open %s - (%s)\n", 

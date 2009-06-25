@@ -1346,15 +1346,18 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		ctdb_ban_node(rec, rec->last_culprit, ctdb->tunable.recovery_ban_period);
 	}
 
-	DEBUG(DEBUG_ERR,("Taking out recovery lock from recovery daemon\n"));
-	start_time = timeval_current();
-	if (!ctdb_recovery_lock(ctdb, true)) {
-		ctdb_set_culprit(rec, pnn);
-		DEBUG(DEBUG_ERR,("Unable to get recovery lock - aborting recovery\n"));
-		return -1;
+
+        if (ctdb->tunable.verify_recovery_lock != 0) {
+		DEBUG(DEBUG_ERR,("Taking out recovery lock from recovery daemon\n"));
+		start_time = timeval_current();
+		if (!ctdb_recovery_lock(ctdb, true)) {
+			ctdb_set_culprit(rec, pnn);
+			DEBUG(DEBUG_ERR,("Unable to get recovery lock - aborting recovery\n"));
+			return -1;
+		}
+		ctdb_ctrl_report_recd_lock_latency(ctdb, CONTROL_TIMEOUT(), timeval_elapsed(&start_time));
+		DEBUG(DEBUG_ERR,("Recovery lock taken successfully by recovery daemon\n"));
 	}
-	ctdb_ctrl_report_recd_lock_latency(ctdb, CONTROL_TIMEOUT(), timeval_elapsed(&start_time));
-	DEBUG(DEBUG_ERR,("Recovery lock taken successfully by recovery daemon\n"));
 
 	DEBUG(DEBUG_NOTICE, (__location__ " Recovery initiated due to problem with node %u\n", culprit));
 
@@ -1850,12 +1853,14 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	talloc_free(rec->send_election_te);
 	rec->send_election_te = NULL;
 
-	/* release the recmaster lock */
-	if (em->pnn != ctdb->pnn &&
-	    ctdb->recovery_lock_fd != -1) {
-		close(ctdb->recovery_lock_fd);
-		ctdb->recovery_lock_fd = -1;
-		unban_all_nodes(ctdb);
+        if (ctdb->tunable.verify_recovery_lock != 0) {
+		/* release the recmaster lock */
+		if (em->pnn != ctdb->pnn &&
+		    ctdb->recovery_lock_fd != -1) {
+			close(ctdb->recovery_lock_fd);
+			ctdb->recovery_lock_fd = -1;
+			unban_all_nodes(ctdb);
+		}
 	}
 
 	/* ok, let that guy become recmaster then */
@@ -2607,6 +2612,16 @@ again:
 		goto again;
 	}
 
+	/* Make sure that if recovery lock verification becomes disabled that
+	   we close the file
+	*/
+        if (ctdb->tunable.verify_recovery_lock == 0) {
+		if (ctdb->recovery_lock_fd != -1) {
+			close(ctdb->recovery_lock_fd);
+			ctdb->recovery_lock_fd = -1;
+		}
+	}
+
 	pnn = ctdb_ctrl_getpnn(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE);
 	if (pnn == (uint32_t)-1) {
 		DEBUG(DEBUG_ERR,("Failed to get local pnn - retrying\n"));
@@ -2831,12 +2846,14 @@ again:
 	}
 
 
-	/* we should have the reclock - check its not stale */
-	ret = check_recovery_lock(ctdb);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,("Failed check_recovery_lock. Force a recovery\n"));
-		do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap, ctdb->pnn);
-		goto again;
+        if (ctdb->tunable.verify_recovery_lock != 0) {
+		/* we should have the reclock - check its not stale */
+		ret = check_recovery_lock(ctdb);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,("Failed check_recovery_lock. Force a recovery\n"));
+			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap, ctdb->pnn);
+			goto again;
+		}
 	}
 
 	/* get the nodemap for all active remote nodes
