@@ -21,6 +21,10 @@
 
 #include "includes.h"
 
+#ifdef malloc
+#undef malloc
+#endif
+
 #define PRINT_FIRSTJOB "100"
 
 static TDB_CONTEXT *tdb;
@@ -215,7 +219,6 @@ static int print_command(int argc, char **argv)
 	struct passwd *pw;
 	TDB_DATA value, queue;
 	struct vlp_job job;
-	int i;
 
 	if (argc < 3) {
 		printf("Usage: print <printername> <jobname>\n");
@@ -228,18 +231,13 @@ static int print_command(int argc, char **argv)
 
 	/* Create a job record */
 
-	for (i = 2; i < argc; i++) {
-		fstrcat(job.jobname, argv[i]);
-		if (i < argc - 1) {
-			fstrcat(job.jobname, " ");
-		}
-	}
+	slprintf(job.jobname, sizeof(job.jobname) - 1, "%s", argv[2]);
 
 	if (!(pw = getpwuid(getuid()))) {
 		return 1;
 	}
 
-	fstrcpy(job.owner, pw->pw_name);
+	slprintf(job.owner, sizeof(job.owner) - 1, "%s", pw->pw_name);
 
 	job.jobid = next_jobnum(printer);
 	job.size = 666;
@@ -255,8 +253,7 @@ static int print_command(int argc, char **argv)
 
 		/* Add job to end of queue */
 
-		queue.dptr = (unsigned char *)SMB_MALLOC(value.dsize +
-							sizeof(struct vlp_job));
+		queue.dptr = (unsigned char *)malloc(value.dsize + sizeof(struct vlp_job));
 		if (!queue.dptr) return 1;
 
 		memcpy(queue.dptr, value.dptr, value.dsize);
@@ -382,7 +379,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	if (!strnequal(argv[1], "tdbfile", strlen("tdbfile"))) {
+	if (strncmp(argv[1], "tdbfile", strlen("tdbfile")) != 0) {
 		usage();
 		return 1;
 	}
