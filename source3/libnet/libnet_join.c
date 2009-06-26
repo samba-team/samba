@@ -2033,17 +2033,21 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 	   
 	if (r->in.delete_machine_account) {
 		ADS_STATUS ads_status;
-		libnet_unjoin_connect_ads(mem_ctx, r);
-		ads_status = libnet_unjoin_remove_machine_acct(mem_ctx, r);
+		ads_status = libnet_unjoin_connect_ads(mem_ctx, r);
+		if (ADS_ERR_OK(ads_status)) {
+			/* dirty hack */
+			r->out.dns_domain_name = 
+				talloc_strdup(mem_ctx,
+					      r->in.ads->server.realm);
+			ads_status = 
+				libnet_unjoin_remove_machine_acct(mem_ctx, r);
+		}
 		if (!ADS_ERR_OK(ads_status)) {
 			libnet_unjoin_set_error_string(mem_ctx, r,
 				"failed to remove machine account from AD: %s",
 				ads_errstr(ads_status));
 		} else {
 			r->out.deleted_machine_account = true;
-			/* dirty hack */
-			r->out.dns_domain_name = talloc_strdup(mem_ctx,
-							       r->in.ads->server.realm);
 			W_ERROR_HAVE_NO_MEMORY(r->out.dns_domain_name);
 			libnet_join_unjoindomain_remove_secrets(mem_ctx, r);
 			return WERR_OK;
@@ -2066,8 +2070,6 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 		}
 		
 		r->out.disabled_machine_account = true;
-		r->out.dns_domain_name = talloc_strdup(mem_ctx,
-						       r->in.ads->server.realm);
 	}
 
 	/* If disable succeeded or was not requested at all, we 
