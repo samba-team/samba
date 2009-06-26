@@ -77,7 +77,7 @@ WERROR NetServerGetInfo_l(struct libnetapi_ctx *ctx,
 		case 1005:
 			return NetServerGetInfo_l_1005(ctx, r->out.buffer);
 		default:
-			return WERR_UNKNOWN_LEVEL;
+			break;
 	}
 
 	return WERR_UNKNOWN_LEVEL;
@@ -580,7 +580,7 @@ WERROR NetServerSetInfo_l(struct libnetapi_ctx *ctx,
 		case 1005:
 			return NetServerSetInfo_l_1005(ctx, r);
 		default:
-			return WERR_UNKNOWN_LEVEL;
+			break;
 	}
 
 	return WERR_UNKNOWN_LEVEL;

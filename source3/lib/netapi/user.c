@@ -1474,10 +1474,10 @@ static WERROR convert_samr_dispinfo_to_NET_DISPLAY(TALLOC_CTX *mem_ctx,
 									  entries_read,
 									  buffer);
 		default:
-			return WERR_UNKNOWN_LEVEL;
+			break;
 	}
 
-	return WERR_OK;
+	return WERR_UNKNOWN_LEVEL;
 }
 
 /****************************************************************
