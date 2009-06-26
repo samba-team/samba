@@ -6867,7 +6867,7 @@ struct torture_suite *torture_rpc_samr_passwords_pwdlastset(TALLOC_CTX *mem_ctx)
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "SAMR-PASSWORDS-PWDLASTSET");
 	struct torture_rpc_tcase *tcase;
 
-	tcase = torture_suite_add_machine_rpc_iface_tcase(suite, "samr",
+	tcase = torture_suite_add_machine_bdc_rpc_iface_tcase(suite, "samr",
 							  &ndr_table_samr,
 							  TEST_ACCOUNT_NAME_PWD);
 
@@ -6907,7 +6907,7 @@ struct torture_suite *torture_rpc_samr_user_privileges(TALLOC_CTX *mem_ctx)
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "SAMR-USERS-PRIVILEGES");
 	struct torture_rpc_tcase *tcase;
 
-	tcase = torture_suite_add_machine_rpc_iface_tcase(suite, "samr",
+	tcase = torture_suite_add_machine_bdc_rpc_iface_tcase(suite, "samr",
 							  &ndr_table_samr,
 							  TEST_ACCOUNT_NAME_PWD);
 
@@ -6997,7 +6997,7 @@ struct torture_suite *torture_rpc_samr_large_dc(TALLOC_CTX *mem_ctx)
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "SAMR-LARGE-DC");
 	struct torture_rpc_tcase *tcase;
 
-	tcase = torture_suite_add_machine_rpc_iface_tcase(suite, "samr",
+	tcase = torture_suite_add_machine_bdc_rpc_iface_tcase(suite, "samr",
 							  &ndr_table_samr,
 							  TEST_ACCOUNT_NAME);
 

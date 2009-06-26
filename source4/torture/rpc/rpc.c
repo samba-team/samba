@@ -124,8 +124,40 @@ NTSTATUS torture_rpc_connection_transport(struct torture_context *tctx,
         return status;
 }
 
-static bool torture_rpc_setup_machine(struct torture_context *tctx,
-				      void **data)
+static bool torture_rpc_setup_machine_workstation(struct torture_context *tctx,
+						  void **data)
+{
+	NTSTATUS status;
+	struct dcerpc_binding *binding;
+	struct torture_rpc_tcase *tcase = talloc_get_type(tctx->active_tcase,
+						struct torture_rpc_tcase);
+	struct torture_rpc_tcase_data *tcase_data;
+
+	status = torture_rpc_binding(tctx, &binding);
+	if (NT_STATUS_IS_ERR(status))
+		return false;
+
+	*data = tcase_data = talloc_zero(tctx, struct torture_rpc_tcase_data);
+	tcase_data->credentials = cmdline_credentials;
+	tcase_data->join_ctx = torture_join_domain(tctx, tcase->machine_name,
+						   ACB_WSTRUST,
+						   &tcase_data->credentials);
+	if (tcase_data->join_ctx == NULL)
+	    torture_fail(tctx, "Failed to join as WORKSTATION");
+
+	status = dcerpc_pipe_connect_b(tctx,
+				&(tcase_data->pipe),
+				binding,
+				tcase->table,
+				tcase_data->credentials, tctx->ev, tctx->lp_ctx);
+
+	torture_assert_ntstatus_ok(tctx, status, "Error connecting to server");
+
+	return true;
+}
+
+static bool torture_rpc_setup_machine_bdc(struct torture_context *tctx,
+					  void **data)
 {
 	NTSTATUS status;
 	struct dcerpc_binding *binding;
@@ -156,7 +188,25 @@ static bool torture_rpc_setup_machine(struct torture_context *tctx,
 	return true;
 }
 
-_PUBLIC_ struct torture_rpc_tcase *torture_suite_add_machine_rpc_iface_tcase(
+_PUBLIC_ struct torture_rpc_tcase *torture_suite_add_machine_workstation_rpc_iface_tcase(
+				struct torture_suite *suite,
+				const char *name,
+				const struct ndr_interface_table *table,
+				const char *machine_name)
+{
+	struct torture_rpc_tcase *tcase = talloc(suite,
+						 struct torture_rpc_tcase);
+
+	torture_suite_init_rpc_tcase(suite, tcase, name, table);
+
+	tcase->machine_name = talloc_strdup(tcase, machine_name);
+	tcase->tcase.setup = torture_rpc_setup_machine_workstation;
+	tcase->tcase.teardown = torture_rpc_teardown;
+
+	return tcase;
+}
+
+_PUBLIC_ struct torture_rpc_tcase *torture_suite_add_machine_bdc_rpc_iface_tcase(
 				struct torture_suite *suite, 
 				const char *name,
 				const struct ndr_interface_table *table,
@@ -168,7 +218,7 @@ _PUBLIC_ struct torture_rpc_tcase *torture_suite_add_machine_rpc_iface_tcase(
 	torture_suite_init_rpc_tcase(suite, tcase, name, table);
 
 	tcase->machine_name = talloc_strdup(tcase, machine_name);
-	tcase->tcase.setup = torture_rpc_setup_machine;
+	tcase->tcase.setup = torture_rpc_setup_machine_bdc;
 	tcase->tcase.teardown = torture_rpc_teardown;
 
 	return tcase;

@@ -2337,7 +2337,7 @@ struct torture_suite *torture_rpc_netlogon(TALLOC_CTX *mem_ctx)
 	struct torture_rpc_tcase *tcase;
 	struct torture_test *test;
 
-	tcase = torture_suite_add_machine_rpc_iface_tcase(suite, "netlogon", 
+	tcase = torture_suite_add_machine_bdc_rpc_iface_tcase(suite, "netlogon",
 						  &ndr_table_netlogon, TEST_MACHINE_NAME);
 
 	torture_rpc_tcase_add_test(tcase, "LogonUasLogon", test_LogonUasLogon);

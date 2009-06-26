@@ -69,7 +69,12 @@ struct torture_test *torture_rpc_tcase_add_test_ex(
 					bool (*fn) (struct torture_context *, struct dcerpc_pipe *,
 								void *),
 					void *userdata);
-struct torture_rpc_tcase *torture_suite_add_machine_rpc_iface_tcase(
+struct torture_rpc_tcase *torture_suite_add_machine_bdc_rpc_iface_tcase(
+				struct torture_suite *suite,
+				const char *name,
+				const struct ndr_interface_table *table,
+				const char *machine_name);
+struct torture_rpc_tcase *torture_suite_add_machine_workstation_rpc_iface_tcase(
 				struct torture_suite *suite, 
 				const char *name,
 				const struct ndr_interface_table *table,

@@ -330,7 +330,7 @@ struct torture_suite *torture_rpc_remote_pac(TALLOC_CTX *mem_ctx)
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "PAC");
 	struct torture_rpc_tcase *tcase;
 
-	tcase = torture_suite_add_machine_rpc_iface_tcase(suite, "netlogon", 
+	tcase = torture_suite_add_machine_bdc_rpc_iface_tcase(suite, "netlogon",
 						  &ndr_table_netlogon, TEST_MACHINE_NAME);
 	torture_rpc_tcase_add_test_creds(tcase, "verify", test_PACVerify);
 
