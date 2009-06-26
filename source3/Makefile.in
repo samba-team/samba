@@ -37,7 +37,7 @@ SHLD_DSO = $(SHLD) $(LDSHFLAGS) $(DSO_EXPORTS) -o $@
 MODULE_EXPORTS=@MODULE_EXPORTS@
 
 # Add $(DEVELOPER_CFLAGS) to $(CFLAGS) to enable extra compiler
-# (GCC) warnings. This is done automtically for --enable-developer,
+# (GCC) warnings. This is done automatically for --enable-developer,
 # --enable-picky-developer and --enable-krb5developer.
 DEVELOPER_CFLAGS=@DEVELOPER_CFLAGS@
 CFLAGS=@CFLAGS@
