@@ -3,6 +3,7 @@
    test suite for accessmasks on the SAMR pipe
 
    Copyright (C) Ronnie Sahlberg 2007
+   Copyright (C) Guenther Deschner 2009
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -29,7 +30,7 @@
 
 /* test user created to test the ACLs associated to SAMR objects */
 #define TEST_USER_NAME "samr_testuser"
-
+#define TEST_MACHINENAME "samrtestmach"
 
 static NTSTATUS torture_samr_Close(struct torture_context *tctx,
 				   struct dcerpc_pipe *p,
@@ -664,6 +665,489 @@ struct torture_suite *torture_rpc_samr_accessmask(TALLOC_CTX *mem_ctx)
 	   will allow us to connect to the server */
 	torture_rpc_tcase_add_test(tcase, "Connect5",
 				   test_samr_accessmask_Connect5);
+
+	return suite;
+}
+
+static bool test_LookupRids(struct torture_context *tctx,
+			    struct dcerpc_pipe *p,
+			    struct policy_handle *domain_handle,
+			    uint32_t rid)
+{
+	struct samr_LookupRids r;
+	struct lsa_Strings names;
+	struct samr_Ids types;
+
+	torture_comment(tctx, "testing LookupRids %d\n", rid);
+
+	r.in.domain_handle = domain_handle;
+	r.in.num_rids = 1;
+	r.in.rids = &rid;
+	r.out.names = &names;
+	r.out.types = &types;
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_samr_LookupRids(p, tctx, &r),
+		"failed to call samr_LookupRids");
+
+	return true;
+}
+
+
+static bool test_user(struct torture_context *tctx,
+		      struct dcerpc_pipe *p,
+		      struct policy_handle *domain_handle,
+		      uint32_t access_mask,
+		      struct samr_DispEntryGeneral *u)
+{
+	struct policy_handle user_handle;
+
+	torture_comment(tctx, "testing user %s (%d)\n", u->account_name.string, u->rid);
+
+	torture_assert(tctx, test_LookupRids(tctx, p, domain_handle, u->rid),
+		"failed to call lookuprids");
+
+	{
+		struct samr_OpenUser r;
+
+		r.in.domain_handle = domain_handle;
+		r.in.access_mask = access_mask;
+		r.in.rid = u->rid;
+		r.out.user_handle = &user_handle;
+
+		torture_assert_ntstatus_ok(tctx, dcerpc_samr_OpenUser(p, tctx, &r),
+			"failed to open user");
+	}
+	{
+		struct samr_QueryUserInfo r;
+		union samr_UserInfo *info;
+		uint32_t levels[] = { 16, 21 };
+		int i;
+
+		r.in.user_handle = &user_handle;
+		r.out.info = &info;
+
+		for (i=0; i < ARRAY_SIZE(levels); i++) {
+
+			r.in.level = levels[i];
+
+			torture_comment(tctx, "testing QueryUserInfo rid: %d level: %d\n",
+				u->rid, r.in.level);
+
+			torture_assert_ntstatus_ok(tctx, dcerpc_samr_QueryUserInfo(p, tctx, &r),
+				talloc_asprintf(tctx, "failed to query user info level %d", r.in.level));
+		}
+	}
+	{
+		struct samr_GetGroupsForUser r;
+		struct samr_RidWithAttributeArray *rids;
+
+		r.in.user_handle = &user_handle;
+		r.out.rids = &rids;
+
+		torture_assert_ntstatus_ok(tctx, dcerpc_samr_GetGroupsForUser(p, tctx, &r),
+			"failed to query groups for user");
+	}
+
+	torture_assert_ntstatus_ok(tctx,
+		torture_samr_Close(tctx, p, &user_handle),
+		"failed to close user handle");
+
+	return true;
+}
+
+static bool test_samr_group(struct torture_context *tctx,
+			    struct dcerpc_pipe *p,
+			    struct policy_handle *domain_handle,
+			    uint32_t access_mask,
+			    struct samr_SamEntry *g)
+{
+	struct policy_handle group_handle;
+
+	torture_comment(tctx, "testing group %s (%d)\n", g->name.string, g->idx);
+
+	torture_assert(tctx, test_LookupRids(tctx, p, domain_handle, g->idx),
+		"failed to call lookuprids");
+	{
+		struct samr_OpenGroup r;
+
+		r.in.domain_handle = domain_handle;
+		r.in.access_mask = access_mask;
+		r.in.rid = g->idx;
+		r.out.group_handle = &group_handle;
+
+		torture_assert_ntstatus_ok(tctx, dcerpc_samr_OpenGroup(p, tctx, &r),
+			"failed to open group");
+	}
+	{
+		struct samr_QueryGroupMember r;
+		struct samr_RidTypeArray *rids;
+
+		r.in.group_handle = &group_handle;
+		r.out.rids = &rids;
+
+		torture_assert_ntstatus_ok(tctx, dcerpc_samr_QueryGroupMember(p, tctx, &r),
+			"failed to query group member");
+	}
+
+	torture_assert_ntstatus_ok(tctx,
+		torture_samr_Close(tctx, p, &group_handle),
+		"failed to close group handle");
+
+	return true;
+}
+
+static bool test_samr_alias(struct torture_context *tctx,
+			    struct dcerpc_pipe *p,
+			    struct policy_handle *domain_handle,
+			    struct samr_SamEntry *a)
+{
+	torture_comment(tctx, "testing alias %s (%d)\n", a->name.string, a->idx);
+
+	torture_assert(tctx, test_LookupRids(tctx, p, domain_handle, a->idx),
+		"failed to call lookuprids");
+
+	{
+		struct samr_GetAliasMembership r;
+		struct lsa_SidArray sids;
+		struct samr_Ids rids;
+
+		ZERO_STRUCT(sids);
+
+		r.in.domain_handle = domain_handle;
+		r.in.sids = &sids;
+		r.out.rids = &rids;
+
+		torture_assert_ntstatus_ok(tctx, dcerpc_samr_GetAliasMembership(p, tctx, &r),
+			"failed to get alias membership");
+	}
+
+
+	return true;
+}
+
+static bool test_samr_domain(struct torture_context *tctx,
+			     struct dcerpc_pipe *p,
+			     uint32_t access_mask,
+			     const char *domain_name,
+			     struct policy_handle *connect_handle,
+			     struct policy_handle *domain_handle_p)
+{
+	struct policy_handle domain_handle;
+	struct dom_sid *domain_sid;
+
+	if (!domain_name) {
+		struct samr_EnumDomains r;
+		uint32_t resume_handle;
+		struct samr_SamArray *sam;
+		uint32_t num_entries;
+		int i;
+
+		r.in.connect_handle = connect_handle;
+		r.in.buf_size = 0xffff;
+		r.in.resume_handle = &resume_handle;
+		r.out.sam = &sam;
+		r.out.num_entries = &num_entries;
+		r.out.resume_handle = &resume_handle;
+
+		torture_assert_ntstatus_ok(tctx, dcerpc_samr_EnumDomains(p, tctx, &r),
+			"failed to enum domains");
+
+		torture_assert_int_equal(tctx, num_entries, 2,
+			"unexpected number of domains");
+
+		torture_assert(tctx, sam,
+			"no domain pointer returned");
+
+		for (i=0; i < sam->count; i++) {
+			if (!strequal(sam->entries[i].name.string, "builtin")) {
+				domain_name = sam->entries[i].name.string;
+				break;
+			}
+		}
+
+		torture_assert(tctx, domain_name,
+			"no domain found other than builtin found");
+	}
+
+	{
+		struct samr_LookupDomain r;
+		struct dom_sid2 *sid;
+		struct lsa_String name;
+
+		name.string = talloc_strdup(tctx, domain_name);
+
+		r.in.connect_handle = connect_handle;
+		r.in.domain_name = &name;
+		r.out.sid = &sid;
+
+		torture_assert_ntstatus_ok(tctx, dcerpc_samr_LookupDomain(p, tctx, &r),
+			"failed to lookup domain");
+
+		domain_sid = dom_sid_dup(tctx, sid);
+	}
+
+	{
+		struct samr_OpenDomain r;
+
+		r.in.connect_handle = connect_handle;
+		r.in.access_mask = access_mask;
+		r.in.sid = domain_sid;
+		r.out.domain_handle = &domain_handle;
+
+		torture_assert_ntstatus_ok(tctx, dcerpc_samr_OpenDomain(p, tctx, &r),
+			"failed to open domain");
+	}
+
+	{
+		struct samr_QueryDomainInfo r;
+		union samr_DomainInfo *info;
+		uint32_t levels[] = { 1, 2, 8, 12 };
+		int i;
+
+		r.in.domain_handle = &domain_handle;
+		r.out.info = &info;
+
+		for (i=0; i < ARRAY_SIZE(levels); i++) {
+
+			r.in.level = levels[i];
+
+			torture_assert_ntstatus_ok(tctx, dcerpc_samr_QueryDomainInfo(p, tctx, &r),
+				talloc_asprintf(tctx, "failed to query domain info level %d", r.in.level));
+		}
+
+	}
+
+	*domain_handle_p = domain_handle;
+
+	return true;
+}
+
+static void get_query_dispinfo_params(int loop_count,
+				      uint32_t *max_entries,
+				      uint32_t *buf_size)
+{
+	switch(loop_count) {
+	case 0:
+		*max_entries = 512;
+		*buf_size = 16383;
+		break;
+	case 1:
+		*max_entries = 1024;
+		*buf_size = 32766;
+		break;
+	case 2:
+		*max_entries = 2048;
+		*buf_size = 65532;
+		break;
+	case 3:
+		*max_entries = 4096;
+		*buf_size = 131064;
+		break;
+	default:              /* loop_count >= 4 */
+		*max_entries = 4096;
+		*buf_size = 131071;
+		break;
+	}
+}
+
+
+static bool test_samr_users(struct torture_context *tctx,
+			    struct dcerpc_pipe *p,
+			    uint32_t access_mask,
+			    struct policy_handle *domain_handle)
+{
+	NTSTATUS status;
+
+	{
+		struct samr_QueryDisplayInfo r;
+		uint32_t total_size;
+		uint32_t returned_size;
+		union samr_DispInfo info;
+		int loop_count = 0;
+
+		r.in.domain_handle = domain_handle;
+		r.in.level = 1;
+		r.in.start_idx = 0;
+
+		r.out.total_size = &total_size;
+		r.out.returned_size = &returned_size;
+		r.out.info = &info;
+
+		do {
+			int i;
+
+			r.in.max_entries = 0xffff;
+			r.in.buf_size = 0xffff;
+
+			get_query_dispinfo_params(loop_count,
+						  &r.in.max_entries,
+						  &r.in.buf_size);
+
+			status = dcerpc_samr_QueryDisplayInfo(p, tctx, &r);
+			if (NT_STATUS_IS_ERR(status)) {
+				torture_assert_ntstatus_ok(tctx, status,
+					"failed to call QueryDisplayInfo");
+			}
+
+			for (i=0; i < info.info1.count; i++) {
+				torture_assert(tctx,
+					test_user(tctx, p, domain_handle, access_mask, &info.info1.entries[i]),
+						"failed to test user");
+			}
+			loop_count++;
+			r.in.start_idx += info.info1.count;
+
+		} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
+	}
+
+	return true;
+}
+
+static bool test_samr_groups(struct torture_context *tctx,
+			     struct dcerpc_pipe *p,
+			     uint32_t access_mask,
+			     struct policy_handle *domain_handle)
+{
+	NTSTATUS status;
+
+	{
+		struct samr_EnumDomainGroups r;
+		uint32_t resume_handle = 0;
+		struct samr_SamArray *sam;
+		uint32_t num_entries;
+
+		r.in.domain_handle = domain_handle;
+		r.in.resume_handle = &resume_handle;
+		r.in.max_size = 0xFFFF;
+
+		r.out.sam = &sam;
+		r.out.num_entries = &num_entries;
+		r.out.resume_handle = &resume_handle;
+
+		do {
+			int i;
+
+			status = dcerpc_samr_EnumDomainGroups(p, tctx, &r);
+			if (NT_STATUS_IS_ERR(status)) {
+				torture_assert_ntstatus_ok(tctx, status,
+					"failed to call EnumDomainGroups");
+			}
+
+			for (i=0; i < num_entries; i++) {
+				torture_assert(tctx,
+					test_samr_group(tctx, p, domain_handle, access_mask, &sam->entries[i]),
+						"failed to test group");
+			}
+
+		} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
+	}
+
+	return true;
+}
+
+static bool test_samr_aliases(struct torture_context *tctx,
+			      struct dcerpc_pipe *p,
+			      uint32_t access_mask,
+			      struct policy_handle *domain_handle)
+{
+	NTSTATUS status;
+
+	{
+		struct samr_EnumDomainAliases r;
+		uint32_t resume_handle = 0;
+		struct samr_SamArray *sam;
+		uint32_t num_entries;
+
+		r.in.domain_handle = domain_handle;
+		r.in.resume_handle = &resume_handle;
+		r.in.max_size = 0xFFFF;
+
+		r.out.sam = &sam;
+		r.out.num_entries = &num_entries;
+		r.out.resume_handle = &resume_handle;
+
+		do {
+			int i;
+
+			status = dcerpc_samr_EnumDomainAliases(p, tctx, &r);
+			if (NT_STATUS_IS_ERR(status)) {
+				torture_assert_ntstatus_ok(tctx, status,
+					"failed to call EnumDomainAliases");
+			}
+
+			for (i=0; i < num_entries; i++) {
+				torture_assert(tctx,
+					test_samr_alias(tctx, p, domain_handle, &sam->entries[i]),
+						"failed to test alias");
+			}
+
+		} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
+	}
+
+	return true;
+}
+
+static bool torture_rpc_samr_workstation_query(struct torture_context *tctx,
+					       struct dcerpc_pipe *p,
+					       struct cli_credentials *machine_credentials)
+{
+	struct policy_handle connect_handle;
+	struct policy_handle domain_handle;
+
+	torture_assert_ntstatus_ok(tctx,
+		torture_samr_Connect5(tctx, p, SEC_FLAG_MAXIMUM_ALLOWED,
+				      &connect_handle),
+		"failed to connect to samr server");
+
+	torture_assert(tctx,
+		test_samr_domain(tctx, p, SEC_FLAG_MAXIMUM_ALLOWED,
+				 lp_workgroup(tctx->lp_ctx),
+				 &connect_handle, &domain_handle),
+		"failed to test domain");
+
+	torture_assert(tctx,
+		test_samr_users(tctx, p, SEC_FLAG_MAXIMUM_ALLOWED,
+				&domain_handle),
+		"failed to test users");
+
+	torture_assert(tctx,
+		test_samr_groups(tctx, p, SEC_FLAG_MAXIMUM_ALLOWED,
+				 &domain_handle),
+		"failed to test groups");
+
+	torture_assert(tctx,
+		test_samr_aliases(tctx, p, SEC_FLAG_MAXIMUM_ALLOWED,
+				  &domain_handle),
+		"failed to test aliases");
+
+	torture_assert_ntstatus_ok(tctx,
+		torture_samr_Close(tctx, p, &domain_handle),
+		"failed to close domain handle");
+
+	torture_assert_ntstatus_ok(tctx,
+		torture_samr_Close(tctx, p, &connect_handle),
+		"failed to close connect handle");
+
+	return true;
+}
+
+/* The purpose of this test is to verify that an account authenticated as a
+ * domain member workstation can query a DC for various remote read calls all
+ * opening objects while requesting SEC_FLAG_MAXIMUM_ALLOWED access rights on
+ * the object open calls. This is the behavior of winbind (and most of samba's
+ * client code) - gd */
+
+struct torture_suite *torture_rpc_samr_workstation_auth(TALLOC_CTX *mem_ctx)
+{
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "SAMR-MACHINE-AUTH");
+	struct torture_rpc_tcase *tcase;
+
+	tcase = torture_suite_add_machine_workstation_rpc_iface_tcase(suite, "samr",
+								      &ndr_table_samr,
+								      TEST_MACHINENAME);
+
+	torture_rpc_tcase_add_test_creds(tcase, "workstation_query",
+					 torture_rpc_samr_workstation_query);
 
 	return suite;
 }
