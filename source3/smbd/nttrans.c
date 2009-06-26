@@ -322,11 +322,7 @@ bool is_ntfs_stream_smb_fname(const struct smb_filename *smb_fname)
  ***************************************************************************/
 bool is_ntfs_default_stream_smb_fname(const struct smb_filename *smb_fname)
 {
-	if (lp_posix_pathnames()) {
-		return false;
-	}
-
-	if (!smb_fname->stream_name) {
+	if (!is_ntfs_stream_smb_fname(smb_fname)) {
 		return false;
 	}
 
