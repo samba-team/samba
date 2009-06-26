@@ -2550,6 +2550,9 @@ static bool acl_group_override(connection_struct *conn,
 				const SMB_STRUCT_STAT *psbuf,
 				const char *fname)
 {
+	struct smb_filename *smb_fname = NULL;
+	NTSTATUS status;
+
 	if ((errno != EPERM) && (errno != EACCES)) {
 		return false;
 	}
@@ -2560,11 +2563,20 @@ static bool acl_group_override(connection_struct *conn,
 		return true;
 	}
 
+	status = create_synthetic_smb_fname_split(talloc_tos(), fname, psbuf,
+						  &smb_fname);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
 	/* user has writeable permission */
 	if (lp_dos_filemode(SNUM(conn)) &&
-			can_write_to_file(conn, fname, psbuf)) {
+	    can_write_to_file(conn, smb_fname)) {
+		TALLOC_FREE(smb_fname);
 		return true;
 	}
+	TALLOC_FREE(smb_fname);
 
 	return false;
 }

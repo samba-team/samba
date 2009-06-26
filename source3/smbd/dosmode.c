@@ -151,10 +151,18 @@ static uint32 dos_mode_from_sbuf(connection_struct *conn, const char *path, cons
 			result |= aRONLY;
 		}
 	} else if (ro_opts == MAP_READONLY_PERMISSIONS) {
-		/* Check actual permissions for read-only. */
-		if (!can_write_to_file(conn, path, sbuf)) {
-			result |= aRONLY;
+		struct smb_filename *smb_fname = NULL;
+		NTSTATUS status;
+
+		status = create_synthetic_smb_fname_split(talloc_tos(), path,
+							  sbuf, &smb_fname);
+		if (NT_STATUS_IS_OK(status)) {
+			/* Check actual permissions for read-only. */
+			if (!can_write_to_file(conn, smb_fname)) {
+				result |= aRONLY;
+			}
 		}
+		TALLOC_FREE(smb_fname);
 	} /* Else never set the readonly bit. */
 
 	if (MAP_ARCHIVE(conn) && ((sbuf->st_ex_mode & S_IXUSR) != 0))
@@ -712,11 +720,11 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 int file_ntimes(connection_struct *conn, const char *fname,
 		struct smb_file_time *ft)
 {
-	SMB_STRUCT_STAT sbuf;
+	struct smb_filename *smb_fname = NULL;
+	NTSTATUS status;
 	int ret = -1;
 
 	errno = 0;
-	ZERO_STRUCT(sbuf);
 
 	DEBUG(6, ("file_ntime: actime: %s",
 		  time_to_asc(convert_timespec_to_time_t(ft->atime))));
@@ -754,13 +762,21 @@ int file_ntimes(connection_struct *conn, const char *fname,
 	   (as DOS does).
 	 */
 
+	status = create_synthetic_smb_fname_split(talloc_tos(), fname, NULL,
+						  &smb_fname);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return -1;
+	}
+
 	/* Check if we have write access. */
-	if (can_write_to_file(conn, fname, &sbuf)) {
+	if (can_write_to_file(conn, smb_fname)) {
 		/* We are allowed to become root and change the filetime. */
 		become_root();
 		ret = SMB_VFS_NTIMES(conn, fname, ft);
 		unbecome_root();
 	}
+	TALLOC_FREE(smb_fname);
 
 	return ret;
 }

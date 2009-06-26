@@ -232,23 +232,10 @@ bool can_access_file_data(connection_struct *conn,
  Note this doesn't take into account share write permissions.
 ****************************************************************************/
 
-bool can_write_to_file(connection_struct *conn, const char *fname, const SMB_STRUCT_STAT *psbuf)
+bool can_write_to_file(connection_struct *conn,
+		       const struct smb_filename *smb_fname)
 {
-	struct smb_filename *smb_fname;
-	NTSTATUS status;
-	bool ret;
-
-	status = create_synthetic_smb_fname_split(talloc_tos(), fname, psbuf,
-						  &smb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		return false;
-	}
-
-	ret = can_access_file_data(conn, smb_fname, FILE_WRITE_DATA);
-
-	TALLOC_FREE(smb_fname);
-
-	return ret;
+	return can_access_file_data(conn, smb_fname, FILE_WRITE_DATA);
 }
 
 /****************************************************************************

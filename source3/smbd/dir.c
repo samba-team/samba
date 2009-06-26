@@ -1007,7 +1007,8 @@ static bool user_can_read_file(connection_struct *conn,
  use it for anything security sensitive.
 ********************************************************************/
 
-static bool user_can_write_file(connection_struct *conn, char *name, SMB_STRUCT_STAT *pst)
+static bool user_can_write_file(connection_struct *conn,
+				const struct smb_filename *smb_fname)
 {
 	/*
 	 * If user is a member of the Admin group
@@ -1018,22 +1019,23 @@ static bool user_can_write_file(connection_struct *conn, char *name, SMB_STRUCT_
 		return True;
 	}
 
-	SMB_ASSERT(VALID_STAT(*pst));
+	SMB_ASSERT(VALID_STAT(smb_fname->st));
 
 	/* Pseudo-open the file */
 
-	if(S_ISDIR(pst->st_ex_mode)) {
+	if(S_ISDIR(smb_fname->st.st_ex_mode)) {
 		return True;
 	}
 
-	return can_write_to_file(conn, name, pst);
+	return can_write_to_file(conn, smb_fname);
 }
 
 /*******************************************************************
   Is a file a "special" type ?
 ********************************************************************/
 
-static bool file_is_special(connection_struct *conn, char *name, SMB_STRUCT_STAT *pst)
+static bool file_is_special(connection_struct *conn,
+			    const struct smb_filename *smb_fname)
 {
 	/*
 	 * If user is a member of the Admin group
@@ -1043,9 +1045,11 @@ static bool file_is_special(connection_struct *conn, char *name, SMB_STRUCT_STAT
 	if (conn->admin_user)
 		return False;
 
-	SMB_ASSERT(VALID_STAT(*pst));
+	SMB_ASSERT(VALID_STAT(smb_fname->st));
 
-	if (S_ISREG(pst->st_ex_mode) || S_ISDIR(pst->st_ex_mode) || S_ISLNK(pst->st_ex_mode))
+	if (S_ISREG(smb_fname->st.st_ex_mode) ||
+	    S_ISDIR(smb_fname->st.st_ex_mode) ||
+	    S_ISLNK(smb_fname->st.st_ex_mode))
 		return False;
 
 	return True;
@@ -1094,7 +1098,7 @@ bool is_visible_file(connection_struct *conn, const char *dir_path,
 
 		/* Create an smb_filename with stream_name == NULL. */
 		status = create_synthetic_smb_fname(talloc_tos(), entry, NULL,
-						    NULL, &smb_fname_base);
+						    pst, &smb_fname_base);
 		if (!NT_STATUS_IS_OK(status)) {
 			ret = false;
 			goto out;
@@ -1104,14 +1108,14 @@ bool is_visible_file(connection_struct *conn, const char *dir_path,
 		 * the configuration options. We succeed, on the basis that the
 		 * checks *might* have passed if the file was present.
 		 */
-		if (!VALID_STAT(*pst) &&
-		    (SMB_VFS_STAT(conn, smb_fname_base) != 0))
-		{
-		        ret = true;
-			goto out;
+		if (!VALID_STAT(*pst)) {
+			if (SMB_VFS_STAT(conn, smb_fname_base) != 0) {
+				ret = true;
+				goto out;
+			} else {
+				*pst = smb_fname_base->st;
+			}
 		}
-
-		*pst = smb_fname_base->st;
 
 		/* Honour _hide unreadable_ option */
 		if (hide_unreadable &&
@@ -1122,14 +1126,15 @@ bool is_visible_file(connection_struct *conn, const char *dir_path,
 			goto out;
 		}
 		/* Honour _hide unwriteable_ option */
-		if (hide_unwriteable && !user_can_write_file(conn, entry, pst)) {
+		if (hide_unwriteable && !user_can_write_file(conn,
+							     smb_fname_base)) {
 			DEBUG(10,("is_visible_file: file %s is unwritable.\n",
 				 entry ));
 			ret = false;
 			goto out;
 		}
 		/* Honour _hide_special_ option */
-		if (hide_special && file_is_special(conn, entry, pst)) {
+		if (hide_special && file_is_special(conn, smb_fname_base)) {
 			DEBUG(10,("is_visible_file: file %s is special.\n",
 				 entry ));
 			ret = false;

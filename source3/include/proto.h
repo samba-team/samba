@@ -6268,7 +6268,8 @@ bool can_delete_file_in_directory(connection_struct *conn,
 bool can_access_file_data(connection_struct *conn,
 			  const struct smb_filename *smb_fname,
 			  uint32 access_mask);
-bool can_write_to_file(connection_struct *conn, const char *fname, const SMB_STRUCT_STAT *psbuf);
+bool can_write_to_file(connection_struct *conn,
+		       const struct smb_filename *smb_fname);
 bool directory_has_default_acl(connection_struct *conn, const char *fname);
 
 /* The following definitions come from smbd/fileio.c  */
