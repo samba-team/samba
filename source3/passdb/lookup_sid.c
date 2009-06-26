@@ -1085,7 +1085,7 @@ static bool fetch_gid_from_cache(gid_t *pgid, const DOM_SID *psid)
 {
 	DATA_BLOB cache_value;
 
-	if (!memcache_lookup(NULL, SID_UID_CACHE,
+	if (!memcache_lookup(NULL, SID_GID_CACHE,
 			     data_blob_const(psid, ndr_size_dom_sid(psid, NULL, 0)),
 			     &cache_value)) {
 		return false;
