@@ -6224,7 +6224,7 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 		     const char *parent_dir,
 		     bool newfile);
 int file_ntimes(connection_struct *conn, const char *fname,
-		struct smb_file_time *ft);
+		struct smb_file_time *ft, const SMB_STRUCT_STAT *psbuf);
 bool set_sticky_write_time_path(connection_struct *conn, const char *fname,
 			 struct file_id fileid, const struct timespec mtime);
 bool set_sticky_write_time_fsp(struct files_struct *fsp, const struct timespec mtime);

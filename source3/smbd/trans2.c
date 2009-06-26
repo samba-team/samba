@@ -5013,7 +5013,7 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 		fname = fsp->base_fsp->fsp_name;
 	}
 
-	if(file_ntimes(conn, fname, ft)!=0) {
+	if(file_ntimes(conn, fname, ft, psbuf)!=0) {
 		return map_nt_error_from_unix(errno);
 	}
 	notify_fname(conn, NOTIFY_ACTION_MODIFIED, action, fname);

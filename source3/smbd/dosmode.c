@@ -718,7 +718,7 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 *******************************************************************/
 
 int file_ntimes(connection_struct *conn, const char *fname,
-		struct smb_file_time *ft)
+		struct smb_file_time *ft, const SMB_STRUCT_STAT *psbuf)
 {
 	struct smb_filename *smb_fname = NULL;
 	NTSTATUS status;
@@ -762,7 +762,7 @@ int file_ntimes(connection_struct *conn, const char *fname,
 	   (as DOS does).
 	 */
 
-	status = create_synthetic_smb_fname_split(talloc_tos(), fname, NULL,
+	status = create_synthetic_smb_fname_split(talloc_tos(), fname, psbuf,
 						  &smb_fname);
 
 	if (!NT_STATUS_IS_OK(status)) {
