@@ -1,13 +1,10 @@
-                   ================================
-                   Release Notes for Samba 3.4.0rc1
-			    June 19, 2009
-                   ================================
+                   =============================
+                   Release Notes for Samba 3.4.0
+			   July 1, 2009
+                   =============================
 
 
-This is the first release candidate of Samba 3.4.  This is *not*
-intended for production environments and is designed for testing
-purposes only.  Please report any defects via the Samba bug reporting
-system at https://bugzilla.samba.org/.
+This is the first stable release of Samba 3.4.
 
 
 Major enhancements in Samba 3.4.0 include:
@@ -203,6 +200,22 @@ o   Danny Tylman <danny.tylman@insightix.com>
 o   Jelmer Vernooij <jelmer@samba.org>
     * Make merged build possible.
     * Move common libraries to the shared lib/ directory.
+
+
+Changes since 3.4.0rc1
+----------------------
+
+
+o    Michael Adam <obnox@samba.org>
+     * BUG 6509: Use gid (not uid) cache in fetch_gid_from_cache().
+
+
+o    Björn Jacke <bj@sernet.de>
+     * BUG 6497: Fix calling of 'test' in configure.
+
+
+o    Volker Lendecke <vl@samba.org>
+     * BUG 6498: Add workaround for MS KB932762.
 
 
 Changes since 3.4.0pre2
