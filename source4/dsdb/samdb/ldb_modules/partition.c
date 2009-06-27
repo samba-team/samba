@@ -143,7 +143,7 @@ static struct dsdb_control_current_partition *find_partition(struct partition_pr
 
 	/* Look at base DN */
 	/* Figure out which partition it is under */
-	/* Skip the lot if 'data' isn't here yet (initialistion) */
+	/* Skip the lot if 'data' isn't here yet (initialisation) */
 	for (i=0; data && data->partitions && data->partitions[i]; i++) {
 		if (ldb_dn_compare_base(data->partitions[i]->dn, dn) == 0) {
 			return data->partitions[i];
@@ -594,7 +594,7 @@ static int partition_rename(struct ldb_module *module, struct ldb_request *req)
 	struct partition_private_data *data = talloc_get_type(module->private_data, 
 							      struct partition_private_data);
 
-	/* Skip the lot if 'data' isn't here yet (initialization) */
+	/* Skip the lot if 'data' isn't here yet (initialisation) */
 	if (!data) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -702,7 +702,7 @@ static int partition_end_trans(struct ldb_module *module)
 
 	/* Look at base DN */
 	/* Figure out which partition it is under */
-	/* Skip the lot if 'data' isn't here yet (initialistion) */
+	/* Skip the lot if 'data' isn't here yet (initialisation) */
 	final_ret = LDB_SUCCESS;
 
 	for (i=0; data && data->partitions && data->partitions[i]; i++) {
@@ -805,7 +805,7 @@ static int partition_sequence_number(struct ldb_module *module, struct ldb_reque
 		}
 		talloc_free(res);
 
-		/* Skip the lot if 'data' isn't here yet (initialistion) */
+		/* Skip the lot if 'data' isn't here yet (initialisation) */
 		for (i=0; data && data->partitions && data->partitions[i]; i++) {
 
 			res = talloc_zero(req, struct ldb_result);
@@ -903,7 +903,7 @@ static int partition_sequence_number(struct ldb_module *module, struct ldb_reque
 
 		talloc_free(res);
 
-		/* Skip the lot if 'data' isn't here yet (initialistion) */
+		/* Skip the lot if 'data' isn't here yet (initialisation) */
 		for (i=0; data && data->partitions && data->partitions[i]; i++) {
 
 			res = talloc_zero(req, struct ldb_result);
