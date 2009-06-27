@@ -2,17 +2,17 @@
    Unix SMB/CIFS implementation.
 
    Copyright (C) Andrew Tridgell 2006
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -142,12 +142,12 @@ static bool filter_match(struct inotify_watch_context *w,
 
 	return True;
 }
-	
+
 
 
 /*
   dispatch one inotify event
-  
+
   the cookies are used to correctly handle renames
 */
 static void inotify_dispatch(struct inotify_private *in, 
@@ -211,7 +211,7 @@ static void inotify_dispatch(struct inotify_private *in,
 
 	ne.action = NOTIFY_ACTION_MODIFIED;
 	e->mask = IN_ATTRIB;
-	
+
 	for (w=in->watches;w;w=next) {
 		next = w->next;
 		if (w->wd == e->wd && filter_match(w, e) &&
@@ -296,7 +296,7 @@ static NTSTATUS inotify_setup(struct sys_notify_context *ctx)
 
 	/* add a event waiting for the inotify fd to be readable */
 	event_add_fd(ctx->ev, in, in->fd, EVENT_FD_READ, inotify_handler, in);
-	
+
 	return NT_STATUS_OK;
 }
 
@@ -350,7 +350,7 @@ static int watch_destructor(struct inotify_watch_context *w)
 			DEBUG(1, ("inotify_rm_watch returned %s\n",
 				  strerror(errno)));
 		}
-		
+
 	}
 	return 0;
 }
@@ -431,7 +431,7 @@ NTSTATUS inotify_watch(struct sys_notify_context *ctx,
 
 	/* the caller frees the handle to stop watching */
 	talloc_set_destructor(w, watch_destructor);
-	
+
 	return NT_STATUS_OK;
 }
 
