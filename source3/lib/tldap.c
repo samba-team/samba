@@ -54,7 +54,7 @@ struct tldap_context {
 	int ld_deref;
 	int ld_sizelimit;
 	int ld_timelimit;
-	int fd;
+	struct tstream_context *conn;
 	int msgid;
 	struct tevent_queue *outgoing;
 	struct tevent_req **pending;
@@ -132,12 +132,17 @@ static int tldap_next_msgid(struct tldap_context *ld)
 struct tldap_context *tldap_context_create(TALLOC_CTX *mem_ctx, int fd)
 {
 	struct tldap_context *ctx;
+	int ret;
 
 	ctx = talloc_zero(mem_ctx, struct tldap_context);
 	if (ctx == NULL) {
 		return NULL;
 	}
-	ctx->fd = fd;
+	ret = tstream_bsd_existing_socket(ctx, fd, &ctx->conn);
+	if (ret == -1) {
+		TALLOC_FREE(ctx);
+		return NULL;
+	}
 	ctx->msgid = 1;
 	ctx->ld_version = 3;
 	ctx->outgoing = tevent_queue_create(ctx, "tldap_outgoing");
@@ -274,7 +279,7 @@ static void read_ldap_done(struct tevent_req *subreq);
 
 static struct tevent_req *read_ldap_send(TALLOC_CTX *mem_ctx,
 					 struct tevent_context *ev,
-					 int fd)
+					 struct tstream_context *conn)
 {
 	struct tevent_req *req, *subreq;
 	struct read_ldap_state *state;
@@ -285,7 +290,8 @@ static struct tevent_req *read_ldap_send(TALLOC_CTX *mem_ctx,
 	}
 	state->done = false;
 
-	subreq = read_packet_send(state, ev, fd, 2, read_ldap_more, state);
+	subreq = tstream_read_packet_send(state, ev, conn, 2, read_ldap_more,
+					  state);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -302,7 +308,7 @@ static void read_ldap_done(struct tevent_req *subreq)
 	ssize_t nread;
 	int err;
 
-	nread = read_packet_recv(subreq, state, &state->buf, &err);
+	nread = tstream_read_packet_recv(subreq, state, &state->buf, &err);
 	TALLOC_FREE(subreq);
 	if (nread == -1) {
 		tevent_req_error(req, err);
@@ -400,8 +406,8 @@ static struct tevent_req *tldap_msg_send(TALLOC_CTX *mem_ctx,
 	state->iov.iov_base = blob.data;
 	state->iov.iov_len = blob.length;
 
-	subreq = writev_send(state, ev, ld->outgoing, ld->fd, false,
-			     &state->iov, 1);
+	subreq = tstream_writev_queue_send(state, ev, ld->conn, ld->outgoing,
+					   &state->iov, 1);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -487,7 +493,7 @@ static bool tldap_msg_set_pending(struct tevent_req *req)
 	 * We're the first ones, add the read_ldap request that waits for the
 	 * answer from the server
 	 */
-	subreq = read_ldap_send(ld->pending, state->ev, ld->fd);
+	subreq = read_ldap_send(ld->pending, state->ev, ld->conn);
 	if (subreq == NULL) {
 		tldap_msg_unset_pending(req);
 		return false;
@@ -503,7 +509,7 @@ static void tldap_msg_sent(struct tevent_req *subreq)
 	ssize_t nwritten;
 	int err;
 
-	nwritten = writev_recv(subreq, &err);
+	nwritten = tstream_writev_queue_recv(subreq, &err);
 	TALLOC_FREE(subreq);
 	if (nwritten == -1) {
 		tevent_req_error(req, TLDAP_SERVER_DOWN);
@@ -610,8 +616,8 @@ static void tldap_msg_received(struct tevent_req *subreq)
 		return;
 	}
 
-	state = tevent_req_data(ld->pending[0], struct tldap_msg_state);
-	subreq = read_ldap_send(ld->pending, state->ev, ld->fd);
+	state = tevent_req_data(ld->pending[0],	struct tldap_msg_state);
+	subreq = read_ldap_send(ld->pending, state->ev, ld->conn);
 	if (subreq == NULL) {
 		status = TLDAP_NO_MEMORY;
 		goto fail;
