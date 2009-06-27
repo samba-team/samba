@@ -591,20 +591,32 @@ static void tldap_msg_received(struct tevent_req *subreq)
 	ev = state->ev;
 
 	talloc_set_destructor(req, NULL);
-	tldap_msg_destructor(req);
+	tldap_msg_unset_pending(req);
+	num_pending = talloc_array_length(ld->pending);
+
 	tevent_req_done(req);
 
  done:
-	if (talloc_array_length(ld->pending) > 0) {
-		state = tevent_req_data(ld->pending[0],
-					struct tldap_msg_state);
-		subreq = read_ldap_send(ld->pending, state->ev, ld->fd);
-		if (subreq == NULL) {
-			status = TLDAP_NO_MEMORY;
-			goto fail;
-		}
-		tevent_req_set_callback(subreq, tldap_msg_received, ld);
+	if (num_pending == 0) {
+		return;
 	}
+	if (talloc_array_length(ld->pending) > num_pending) {
+		/*
+		 * The callback functions called from tevent_req_done() above
+		 * have put something on the pending queue. We don't have to
+		 * trigger the read_ldap_send(), tldap_msg_set_pending() has
+		 * done it for us already.
+		 */
+		return;
+	}
+
+	state = tevent_req_data(ld->pending[0], struct tldap_msg_state);
+	subreq = read_ldap_send(ld->pending, state->ev, ld->fd);
+	if (subreq == NULL) {
+		status = TLDAP_NO_MEMORY;
+		goto fail;
+	}
+	tevent_req_set_callback(subreq, tldap_msg_received, ld);
 	return;
 
  fail:
