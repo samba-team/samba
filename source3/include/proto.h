@@ -1418,6 +1418,16 @@ struct tevent_req *getaddrinfo_send(TALLOC_CTX *mem_ctx,
 				    const char *service,
 				    const struct addrinfo *hints);
 int getaddrinfo_recv(struct tevent_req *req, struct addrinfo **res);
+struct tevent_req *tstream_read_packet_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct tstream_context *stream,
+					    size_t initial,
+					    ssize_t (*more)(uint8_t *buf,
+							    size_t buflen,
+							    void *private_data),
+					    void *private_data);
+ssize_t tstream_read_packet_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+				 uint8_t **pbuf, int *perrno);
 
 /* The following definitions come from lib/util_str.c  */
 
