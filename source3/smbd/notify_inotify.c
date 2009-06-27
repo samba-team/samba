@@ -241,6 +241,7 @@ static void inotify_handler(struct event_context *ev, struct fd_event *fde,
 	if (ioctl(in->fd, FIONREAD, &bufsize) != 0 || 
 	    bufsize == 0) {
 		DEBUG(0,("No data on inotify fd?!\n"));
+		TALLOC_FREE(fde);
 		return;
 	}
 
