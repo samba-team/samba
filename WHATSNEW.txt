@@ -218,6 +218,10 @@ o    Volker Lendecke <vl@samba.org>
      * BUG 6498: Add workaround for MS KB932762.
 
 
+o    Bo Yang <boyang@samba.org>
+     * BUG 6499: Fix building of pam_smbpass.
+
+
 Changes since 3.4.0pre2
 -----------------------
 
@@ -335,8 +339,11 @@ o   Ole Hansen <ole@redvw.com>
 
 
 o   Björn Jacke <bj@sernet.de>
-    * BUG 4831: Don't call openlog() or closelog() from pam_smbpass.
     * Also handle DirX return codes.
+
+
+o   Steve Langasek <vorlon@debian.org>
+    * BUG 4831: Don't call openlog() or closelog() from pam_smbpass.
 
 
 o   Volker Lendecke <vl@samba.org>
