@@ -197,7 +197,6 @@ int samdb_copy_template(struct ldb_context *ldb,
 		    ldb_attr_cmp(el->name, "name") == 0 ||
 		    ldb_attr_cmp(el->name, "objectClass") == 0 ||
 		    ldb_attr_cmp(el->name, "sAMAccountName") == 0 ||
-		    ldb_attr_cmp(el->name, "sAMAccountName") == 0 ||
 		    ldb_attr_cmp(el->name, "distinguishedName") == 0 ||
 		    ldb_attr_cmp(el->name, "objectGUID") == 0) {
 			continue;
