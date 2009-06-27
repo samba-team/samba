@@ -229,6 +229,31 @@ struct read_ldap_state {
 	bool done;
 };
 
+static ssize_t read_ldap_more(uint8_t *buf, size_t buflen, void *private_data);
+static void read_ldap_done(struct tevent_req *subreq);
+
+static struct tevent_req *read_ldap_send(TALLOC_CTX *mem_ctx,
+					 struct tevent_context *ev,
+					 struct tstream_context *conn)
+{
+	struct tevent_req *req, *subreq;
+	struct read_ldap_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct read_ldap_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->done = false;
+
+	subreq = tstream_read_packet_send(state, ev, conn, 2, read_ldap_more,
+					  state);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, read_ldap_done, req);
+	return req;
+}
+
 static ssize_t read_ldap_more(uint8_t *buf, size_t buflen, void *private_data)
 {
 	struct read_ldap_state *state = talloc_get_type_abort(
@@ -273,30 +298,6 @@ static ssize_t read_ldap_more(uint8_t *buf, size_t buflen, void *private_data)
 		len = (len << 8) | buf[2+i];
 	}
 	return len;
-}
-
-static void read_ldap_done(struct tevent_req *subreq);
-
-static struct tevent_req *read_ldap_send(TALLOC_CTX *mem_ctx,
-					 struct tevent_context *ev,
-					 struct tstream_context *conn)
-{
-	struct tevent_req *req, *subreq;
-	struct read_ldap_state *state;
-
-	req = tevent_req_create(mem_ctx, &state, struct read_ldap_state);
-	if (req == NULL) {
-		return NULL;
-	}
-	state->done = false;
-
-	subreq = tstream_read_packet_send(state, ev, conn, 2, read_ldap_more,
-					  state);
-	if (tevent_req_nomem(subreq, req)) {
-		return tevent_req_post(req, ev);
-	}
-	tevent_req_set_callback(subreq, read_ldap_done, req);
-	return req;
 }
 
 static void read_ldap_done(struct tevent_req *subreq)

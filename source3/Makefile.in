@@ -486,7 +486,7 @@ CLDAP_OBJ = libads/cldap.o \
 	../lib/util/idtree.o \
 	$(LIBCLI_LDAP_MESSAGE_OBJ) $(LIBCLI_LDAP_NDR_OBJ) $(LIBTSOCKET_OBJ)
 
-TLDAP_OBJ = lib/tldap.o lib/tldap_util.o
+TLDAP_OBJ = lib/tldap.o lib/tldap_util.o lib/util_tsock.o
 
 LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/clikrb5.o libsmb/clispnego.o ../lib/util/asn1.o \
@@ -1219,7 +1219,7 @@ NTLM_AUTH_OBJ1 = utils/ntlm_auth.o utils/ntlm_auth_diagnostics.o
 NTLM_AUTH_OBJ = ${NTLM_AUTH_OBJ1} $(LIBSAMBA_OBJ) $(POPT_LIB_OBJ) \
 		../lib/util/asn1.o libsmb/spnego.o libsmb/clikrb5.o libads/kerberos.o \
 		$(LIBADS_SERVER_OBJ) \
-		$(PASSDB_OBJ) $(GROUPDB_OBJ) \
+		$(PASSDB_OBJ) $(LIBTSOCKET_OBJ) $(GROUPDB_OBJ) \
 		$(SMBLDAP_OBJ) $(LIBNMB_OBJ) \
 		$(LDB_OBJ) $(WBCOMMON_OBJ) \
 		$(LIBNDR_GEN_OBJ0) $(LIBNDR_GEN_OBJ1) @BUILD_INIPARSER@
