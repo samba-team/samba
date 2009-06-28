@@ -20,6 +20,7 @@
 #include "includes.h"
 
 struct pdb_ads_state {
+	struct sockaddr_un socket_address;
 	struct tldap_context *ld;
 	struct dom_sid domainsid;
 	char *domaindn;
@@ -32,11 +33,17 @@ static NTSTATUS pdb_ads_getsampwsid(struct pdb_methods *m,
 				    const DOM_SID *sid);
 static bool pdb_ads_gid_to_sid(struct pdb_methods *m, gid_t gid,
 			       DOM_SID *sid);
-static bool pdb_ads_dnblob2sid(struct tldap_context *ld, DATA_BLOB *dnblob,
+static bool pdb_ads_dnblob2sid(struct pdb_ads_state *state, DATA_BLOB *dnblob,
 			       struct dom_sid *psid);
 static NTSTATUS pdb_ads_sid2dn(struct pdb_ads_state *state,
 			       const struct dom_sid *sid,
 			       TALLOC_CTX *mem_ctx, char **pdn);
+static struct tldap_context *pdb_ads_ld(struct pdb_ads_state *state);
+static int pdb_ads_search_fmt(struct pdb_ads_state *state, const char *base,
+			      int scope, const char *attrs[], int num_attrs,
+			      int attrsonly,
+			      TALLOC_CTX *mem_ctx, struct tldap_message ***res,
+			      const char *fmt, ...);
 
 static bool pdb_ads_pull_time(struct tldap_message *msg, const char *attr,
 			      time_t *ptime)
@@ -317,9 +324,9 @@ static NTSTATUS pdb_ads_getsampwfilter(struct pdb_methods *m,
 	struct tldap_message **users;
 	int rc, count;
 
-	rc = tldap_search_fmt(state->ld, state->domaindn, TLDAP_SCOPE_SUB,
-			      attrs, ARRAY_SIZE(attrs), 0, talloc_tos(),
-			      &users, "%s", filter);
+	rc = pdb_ads_search_fmt(state, state->domaindn, TLDAP_SCOPE_SUB,
+				attrs, ARRAY_SIZE(attrs), 0, talloc_tos(),
+				&users, "%s", filter);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_search failed %s\n",
 			   tldap_errstr(debug_ctx(), state->ld, rc)));
@@ -377,6 +384,7 @@ static NTSTATUS pdb_ads_create_user(struct pdb_methods *m,
 {
 	struct pdb_ads_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_ads_state);
+	struct tldap_context *ld;
 	const char *attrs[1] = { "objectSid" };
 	struct tldap_mod *mods = NULL;
 	int num_mods = 0;
@@ -392,6 +400,11 @@ static NTSTATUS pdb_ads_create_user(struct pdb_methods *m,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	ld = pdb_ads_ld(state);
+	if (ld == NULL) {
+		return NT_STATUS_LDAP(TLDAP_SERVER_DOWN);
+	}
+
 	/* TODO: Create machines etc */
 
 	ok = true;
@@ -404,18 +417,20 @@ static NTSTATUS pdb_ads_create_user(struct pdb_methods *m,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	rc = tldap_add(state->ld, dn, num_mods, mods, NULL, 0, NULL, 0);
+
+	rc = tldap_add(ld, dn, num_mods, mods, NULL, 0, NULL, 0);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_add failed %s\n",
-			   tldap_errstr(debug_ctx(), state->ld, rc)));
+			   tldap_errstr(debug_ctx(), ld, rc)));
 		TALLOC_FREE(dn);
 		return NT_STATUS_LDAP(rc);
 	}
 
-	rc = tldap_search_fmt(state->ld, state->domaindn, TLDAP_SCOPE_SUB,
-			      attrs, ARRAY_SIZE(attrs), 0, talloc_tos(), &user,
-			     "(&(objectclass=user)(samaccountname=%s))",
-			     name);
+	rc = pdb_ads_search_fmt(state, state->domaindn, TLDAP_SCOPE_SUB,
+				attrs, ARRAY_SIZE(attrs), 0, talloc_tos(),
+				&user,
+				"(&(objectclass=user)(samaccountname=%s))",
+				name);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("Could not find just created user %s: %s\n",
 			   name, tldap_errstr(debug_ctx(), state->ld, rc)));
@@ -449,8 +464,14 @@ static NTSTATUS pdb_ads_delete_user(struct pdb_methods *m,
 	struct pdb_ads_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_ads_state);
 	NTSTATUS status;
+	struct tldap_context *ld;
 	char *dn;
 	int rc;
+
+	ld = pdb_ads_ld(state);
+	if (ld == NULL) {
+		return NT_STATUS_LDAP(TLDAP_SERVER_DOWN);
+	}
 
 	status = pdb_ads_sid2dn(state, pdb_get_user_sid(sam), talloc_tos(),
 				&dn);
@@ -458,11 +479,11 @@ static NTSTATUS pdb_ads_delete_user(struct pdb_methods *m,
 		return status;
 	}
 
-	rc = tldap_delete(state->ld, dn, NULL, 0, NULL, 0);
+	rc = tldap_delete(ld, dn, NULL, 0, NULL, 0);
 	TALLOC_FREE(dn);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_delete for %s failed: %s\n", dn,
-			   tldap_errstr(debug_ctx(), state->ld, rc)));
+			   tldap_errstr(debug_ctx(), ld, rc)));
 		return NT_STATUS_LDAP(rc);
 	}
 	return NT_STATUS_OK;
@@ -480,8 +501,14 @@ static NTSTATUS pdb_ads_update_sam_account(struct pdb_methods *m,
 	struct pdb_ads_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_ads_state);
 	struct pdb_ads_samu_private *priv = pdb_ads_get_samu_private(m, sam);
+	struct tldap_context *ld;
 	struct tldap_mod *mods = NULL;
 	int rc, num_mods = 0;
+
+	ld = pdb_ads_ld(state);
+	if (ld == NULL) {
+		return NT_STATUS_LDAP(TLDAP_SERVER_DOWN);
+	}
 
 	if (!pdb_ads_init_ads_from_sam(state, priv->ldapmsg, talloc_tos(),
 				       &num_mods, &mods, sam)) {
@@ -493,15 +520,14 @@ static NTSTATUS pdb_ads_update_sam_account(struct pdb_methods *m,
 		return NT_STATUS_OK;
 	}
 
-	rc = tldap_modify(state->ld, priv->dn, num_mods, mods, NULL, 0,
+	rc = tldap_modify(ld, priv->dn, num_mods, mods, NULL, 0,
 			  NULL, 0);
+	TALLOC_FREE(mods);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_modify for %s failed: %s\n", priv->dn,
-			   tldap_errstr(debug_ctx(), state->ld, rc)));
+			   tldap_errstr(debug_ctx(), ld, rc)));
 		return NT_STATUS_LDAP(rc);
 	}
-
-	TALLOC_FREE(mods);
 
 	return NT_STATUS_OK;
 }
@@ -538,9 +564,9 @@ static NTSTATUS pdb_ads_getgrfilter(struct pdb_methods *m, GROUP_MAP *map,
 	uint32_t grouptype;
 	int rc;
 
-	rc = tldap_search_fmt(state->ld, state->domaindn, TLDAP_SCOPE_SUB,
-			      attrs, ARRAY_SIZE(attrs), 0, talloc_tos(),
-			      &group, "%s", filter);
+	rc = pdb_ads_search_fmt(state, state->domaindn, TLDAP_SCOPE_SUB,
+				attrs, ARRAY_SIZE(attrs), 0, talloc_tos(),
+				&group, "%s", filter);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_search failed %s\n",
 			   tldap_errstr(debug_ctx(), state->ld, rc)));
@@ -644,6 +670,7 @@ static NTSTATUS pdb_ads_create_dom_group(struct pdb_methods *m,
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct pdb_ads_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_ads_state);
+	struct tldap_context *ld;
 	const char *attrs[1] = { "objectSid" };
 	int num_mods = 0;
 	struct tldap_mod *mods = NULL;
@@ -652,6 +679,11 @@ static NTSTATUS pdb_ads_create_dom_group(struct pdb_methods *m,
 	char *dn;
 	int rc;
 	bool ok = true;
+
+	ld = pdb_ads_ld(state);
+	if (ld == NULL) {
+		return NT_STATUS_LDAP(TLDAP_SERVER_DOWN);
+	}
 
 	dn = talloc_asprintf(talloc_tos(), "cn=%s,cn=users,%s", name,
 			     state->domaindn);
@@ -674,7 +706,7 @@ static NTSTATUS pdb_ads_create_dom_group(struct pdb_methods *m,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	rc = tldap_add(state->ld, dn, num_mods, mods, NULL, 0, NULL, 0);
+	rc = tldap_add(ld, dn, num_mods, mods, NULL, 0, NULL, 0);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_add failed %s\n",
 			   tldap_errstr(debug_ctx(), state->ld, rc)));
@@ -682,8 +714,8 @@ static NTSTATUS pdb_ads_create_dom_group(struct pdb_methods *m,
 		return NT_STATUS_LDAP(rc);
 	}
 
-	rc = tldap_search_fmt(
-		state->ld, state->domaindn, TLDAP_SCOPE_SUB,
+	rc = pdb_ads_search_fmt(
+		state, state->domaindn, TLDAP_SCOPE_SUB,
 		attrs, ARRAY_SIZE(attrs), 0, talloc_tos(), &alias,
 		"(&(objectclass=group)(samaccountname=%s))", name);
 	if (rc != TLDAP_SUCCESS) {
@@ -717,6 +749,7 @@ static NTSTATUS pdb_ads_delete_dom_group(struct pdb_methods *m,
 {
 	struct pdb_ads_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_ads_state);
+	struct tldap_context *ld;
 	struct dom_sid sid;
 	char *sidstr;
 	struct tldap_message **msg;
@@ -728,10 +761,10 @@ static NTSTATUS pdb_ads_delete_dom_group(struct pdb_methods *m,
 	sidstr = sid_binstring(talloc_tos(), &sid);
 	NT_STATUS_HAVE_NO_MEMORY(sidstr);
 
-	rc = tldap_search_fmt(state->ld, state->domaindn, TLDAP_SCOPE_SUB,
-			      NULL, 0, 0, talloc_tos(), &msg,
-			      ("(&(objectSid=%s)(objectClass=group))"),
-			      sidstr);
+	rc = pdb_ads_search_fmt(state, state->domaindn, TLDAP_SCOPE_SUB,
+				NULL, 0, 0, talloc_tos(), &msg,
+				("(&(objectSid=%s)(objectClass=group))"),
+				sidstr);
 	TALLOC_FREE(sidstr);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_search failed %s\n",
@@ -749,18 +782,24 @@ static NTSTATUS pdb_ads_delete_dom_group(struct pdb_methods *m,
 	}
 
 	if (!tldap_entry_dn(msg[0], &dn)) {
+		TALLOC_FREE(msg);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	rc = tldap_delete(state->ld, dn, NULL, 0, NULL, 0);
+	ld = pdb_ads_ld(state);
+	if (ld == NULL) {
+		TALLOC_FREE(msg);
+		return NT_STATUS_LDAP(TLDAP_SERVER_DOWN);
+	}
+
+	rc = tldap_delete(ld, dn, NULL, 0, NULL, 0);
+	TALLOC_FREE(msg);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_delete failed: %s\n",
 			   tldap_errstr(debug_ctx(), state->ld, rc)));
-		TALLOC_FREE(dn);
 		return NT_STATUS_LDAP(rc);
 	}
 
-	TALLOC_FREE(msg);
 	return NT_STATUS_OK;
 }
 
@@ -810,9 +849,9 @@ static NTSTATUS pdb_ads_enum_group_members(struct pdb_methods *m,
 	sidstr = sid_binstring(talloc_tos(), group);
 	NT_STATUS_HAVE_NO_MEMORY(sidstr);
 
-	rc = tldap_search_fmt(state->ld, state->domaindn, TLDAP_SCOPE_SUB,
-			      attrs, ARRAY_SIZE(attrs), 0, talloc_tos(), &msg,
-			      "(objectsid=%s)", sidstr);
+	rc = pdb_ads_search_fmt(state, state->domaindn, TLDAP_SCOPE_SUB,
+				attrs, ARRAY_SIZE(attrs), 0, talloc_tos(),
+				&msg, "(objectsid=%s)", sidstr);
 	TALLOC_FREE(sidstr);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_search failed %s\n",
@@ -841,7 +880,7 @@ static NTSTATUS pdb_ads_enum_group_members(struct pdb_methods *m,
 
 	for (i=0; i<num_members; i++) {
 		struct dom_sid sid;
-		if (!pdb_ads_dnblob2sid(state->ld, &blobs[i], &sid)
+		if (!pdb_ads_dnblob2sid(state, &blobs[i], &sid)
 		    || !sid_peek_rid(&sid, &members[i])) {
 			TALLOC_FREE(members);
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -871,8 +910,8 @@ static NTSTATUS pdb_ads_enum_group_memberships(struct pdb_methods *m,
 	struct dom_sid *group_sids;
 	gid_t *gids;
 
-	rc = tldap_search_fmt(
-		state->ld, state->domaindn, TLDAP_SCOPE_SUB,
+	rc = pdb_ads_search_fmt(
+		state, state->domaindn, TLDAP_SCOPE_SUB,
 		attrs, ARRAY_SIZE(attrs), 0, talloc_tos(), &groups,
 		"(&(member=%s)(grouptype=%d)(objectclass=group))",
 		priv->dn, GTYPE_SECURITY_GLOBAL_GROUP);
@@ -929,11 +968,17 @@ static NTSTATUS pdb_ads_mod_groupmem(struct pdb_methods *m,
 	struct pdb_ads_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_ads_state);
 	TALLOC_CTX *frame = talloc_stackframe();
+	struct tldap_context *ld;
 	struct dom_sid groupsid, membersid;
 	char *groupdn, *memberdn;
 	struct tldap_mod *mods;
 	int rc;
 	NTSTATUS status;
+
+	ld = pdb_ads_ld(state);
+	if (ld == NULL) {
+		return NT_STATUS_LDAP(TLDAP_SERVER_DOWN);
+	}
 
 	sid_compose(&groupsid, &state->domainsid, grouprid);
 	sid_compose(&membersid, &state->domainsid, memberrid);
@@ -957,7 +1002,7 @@ static NTSTATUS pdb_ads_mod_groupmem(struct pdb_methods *m,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	rc = tldap_modify(state->ld, groupdn, 1, mods, NULL, 0, NULL, 0);
+	rc = tldap_modify(ld, groupdn, 1, mods, NULL, 0, NULL, 0);
 	TALLOC_FREE(frame);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_modify failed: %s\n",
@@ -996,6 +1041,7 @@ static NTSTATUS pdb_ads_create_alias(struct pdb_methods *m,
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct pdb_ads_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_ads_state);
+	struct tldap_context *ld;
 	const char *attrs[1] = { "objectSid" };
 	int num_mods = 0;
 	struct tldap_mod *mods = NULL;
@@ -1004,6 +1050,11 @@ static NTSTATUS pdb_ads_create_alias(struct pdb_methods *m,
 	char *dn;
 	int rc;
 	bool ok = true;
+
+	ld = pdb_ads_ld(state);
+	if (ld == NULL) {
+		return NT_STATUS_LDAP(TLDAP_SERVER_DOWN);
+	}
 
 	dn = talloc_asprintf(talloc_tos(), "cn=%s,cn=users,%s", name,
 			     state->domaindn);
@@ -1026,7 +1077,7 @@ static NTSTATUS pdb_ads_create_alias(struct pdb_methods *m,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	rc = tldap_add(state->ld, dn, num_mods, mods, NULL, 0, NULL, 0);
+	rc = tldap_add(ld, dn, num_mods, mods, NULL, 0, NULL, 0);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_add failed %s\n",
 			   tldap_errstr(debug_ctx(), state->ld, rc)));
@@ -1034,8 +1085,8 @@ static NTSTATUS pdb_ads_create_alias(struct pdb_methods *m,
 		return NT_STATUS_LDAP(rc);
 	}
 
-	rc = tldap_search_fmt(
-		state->ld, state->domaindn, TLDAP_SCOPE_SUB,
+	rc = pdb_ads_search_fmt(
+		state, state->domaindn, TLDAP_SCOPE_SUB,
 		attrs, ARRAY_SIZE(attrs), 0, talloc_tos(), &alias,
 		"(&(objectclass=group)(samaccountname=%s))", name);
 	if (rc != TLDAP_SUCCESS) {
@@ -1069,21 +1120,27 @@ static NTSTATUS pdb_ads_delete_alias(struct pdb_methods *m,
 {
 	struct pdb_ads_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_ads_state);
+	struct tldap_context *ld;
 	struct tldap_message **alias;
 	char *sidstr, *dn;
 	int rc;
+
+	ld = pdb_ads_ld(state);
+	if (ld == NULL) {
+		return NT_STATUS_LDAP(TLDAP_SERVER_DOWN);
+	}
 
 	sidstr = sid_binstring(talloc_tos(), sid);
 	if (sidstr == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	rc = tldap_search_fmt(state->ld, state->domaindn, TLDAP_SCOPE_SUB,
-			      NULL, 0, 0, talloc_tos(), &alias,
-			      "(&(objectSid=%s)(objectclass=group)"
-			      "(|(grouptype=%d)(grouptype=%d)))",
-			      sidstr, GTYPE_SECURITY_BUILTIN_LOCAL_GROUP,
-			      GTYPE_SECURITY_DOMAIN_LOCAL_GROUP);
+	rc = pdb_ads_search_fmt(state, state->domaindn, TLDAP_SCOPE_SUB,
+				NULL, 0, 0, talloc_tos(), &alias,
+				"(&(objectSid=%s)(objectclass=group)"
+				"(|(grouptype=%d)(grouptype=%d)))",
+				sidstr, GTYPE_SECURITY_BUILTIN_LOCAL_GROUP,
+				GTYPE_SECURITY_DOMAIN_LOCAL_GROUP);
 	TALLOC_FREE(sidstr);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_search failed: %s\n",
@@ -1102,7 +1159,7 @@ static NTSTATUS pdb_ads_delete_alias(struct pdb_methods *m,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	rc = tldap_delete(state->ld, dn, NULL, 0, NULL, 0);
+	rc = tldap_delete(ld, dn, NULL, 0, NULL, 0);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_delete failed: %s\n",
 			   tldap_errstr(debug_ctx(), state->ld, rc)));
@@ -1119,6 +1176,7 @@ static NTSTATUS pdb_ads_set_aliasinfo(struct pdb_methods *m,
 {
 	struct pdb_ads_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_ads_state);
+	struct tldap_context *ld;
 	const char *attrs[3] = { "objectSid", "description",
 				 "samAccountName" };
 	struct tldap_message **msg;
@@ -1128,15 +1186,20 @@ static NTSTATUS pdb_ads_set_aliasinfo(struct pdb_methods *m,
 	int num_mods;
 	bool ok;
 
+	ld = pdb_ads_ld(state);
+	if (ld == NULL) {
+		return NT_STATUS_LDAP(TLDAP_SERVER_DOWN);
+	}
+
 	sidstr = sid_binstring(talloc_tos(), sid);
 	NT_STATUS_HAVE_NO_MEMORY(sidstr);
 
-	rc = tldap_search_fmt(state->ld, state->domaindn, TLDAP_SCOPE_SUB,
-			      attrs, ARRAY_SIZE(attrs), 0, talloc_tos(),
-			      &msg, "(&(objectSid=%s)(objectclass=group)"
-			      "(|(grouptype=%d)(grouptype=%d)))",
-			      sidstr, GTYPE_SECURITY_BUILTIN_LOCAL_GROUP,
-			      GTYPE_SECURITY_DOMAIN_LOCAL_GROUP);
+	rc = pdb_ads_search_fmt(state, state->domaindn, TLDAP_SCOPE_SUB,
+				attrs, ARRAY_SIZE(attrs), 0, talloc_tos(),
+				&msg, "(&(objectSid=%s)(objectclass=group)"
+				"(|(grouptype=%d)(grouptype=%d)))",
+				sidstr, GTYPE_SECURITY_BUILTIN_LOCAL_GROUP,
+				GTYPE_SECURITY_DOMAIN_LOCAL_GROUP);
 	TALLOC_FREE(sidstr);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_search failed %s\n",
@@ -1177,7 +1240,7 @@ static NTSTATUS pdb_ads_set_aliasinfo(struct pdb_methods *m,
 		return NT_STATUS_OK;
 	}
 
-	rc = tldap_modify(state->ld, dn, num_mods, mods, NULL, 0, NULL, 0);
+	rc = tldap_modify(ld, dn, num_mods, mods, NULL, 0, NULL, 0);
 	TALLOC_FREE(msg);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_modify failed: %s\n",
@@ -1198,9 +1261,9 @@ static NTSTATUS pdb_ads_sid2dn(struct pdb_ads_state *state,
 	sidstr = sid_binstring(talloc_tos(), sid);
 	NT_STATUS_HAVE_NO_MEMORY(sidstr);
 
-	rc = tldap_search_fmt(state->ld, state->domaindn, TLDAP_SCOPE_SUB,
-			      NULL, 0, 0, talloc_tos(), &msg,
-			      "(objectsid=%s)", sidstr);
+	rc = pdb_ads_search_fmt(state, state->domaindn, TLDAP_SCOPE_SUB,
+				NULL, 0, 0, talloc_tos(), &msg,
+				"(objectsid=%s)", sidstr);
 	TALLOC_FREE(sidstr);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_search failed %s\n",
@@ -1238,11 +1301,17 @@ static NTSTATUS pdb_ads_mod_aliasmem(struct pdb_methods *m,
 {
 	struct pdb_ads_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_ads_state);
+	struct tldap_context *ld;
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tldap_mod *mods;
 	int rc;
 	char *aliasdn, *memberdn;
 	NTSTATUS status;
+
+	ld = pdb_ads_ld(state);
+	if (ld == NULL) {
+		return NT_STATUS_LDAP(TLDAP_SERVER_DOWN);
+	}
 
 	status = pdb_ads_sid2dn(state, alias, talloc_tos(), &aliasdn);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1267,7 +1336,7 @@ static NTSTATUS pdb_ads_mod_aliasmem(struct pdb_methods *m,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	rc = tldap_modify(state->ld, aliasdn, 1, mods, NULL, 0, NULL, 0);
+	rc = tldap_modify(ld, aliasdn, 1, mods, NULL, 0, NULL, 0);
 	TALLOC_FREE(frame);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_modify failed: %s\n",
@@ -1298,7 +1367,7 @@ static NTSTATUS pdb_ads_del_aliasmem(struct pdb_methods *m,
 	return pdb_ads_mod_aliasmem(m, alias, member, TLDAP_MOD_DELETE);
 }
 
-static bool pdb_ads_dnblob2sid(struct tldap_context *ld, DATA_BLOB *dnblob,
+static bool pdb_ads_dnblob2sid(struct pdb_ads_state *state, DATA_BLOB *dnblob,
 			       struct dom_sid *psid)
 {
 	const char *attrs[1] = { "objectSid" };
@@ -1313,9 +1382,9 @@ static bool pdb_ads_dnblob2sid(struct tldap_context *ld, DATA_BLOB *dnblob,
 				   false)) {
 		return false;
 	}
-	rc = tldap_search_fmt(ld, dn, TLDAP_SCOPE_BASE,
-			      attrs, ARRAY_SIZE(attrs), 0, talloc_tos(),
-			      &msg, "(objectclass=*)");
+	rc = pdb_ads_search_fmt(state, dn, TLDAP_SCOPE_BASE,
+				attrs, ARRAY_SIZE(attrs), 0, talloc_tos(),
+				&msg, "(objectclass=*)");
 	TALLOC_FREE(dn);
 	if (talloc_array_length(msg) != 1) {
 		DEBUG(10, ("Got %d objects, expected one\n",
@@ -1347,9 +1416,9 @@ static NTSTATUS pdb_ads_enum_aliasmem(struct pdb_methods *m,
 	sidstr = sid_binstring(talloc_tos(), alias);
 	NT_STATUS_HAVE_NO_MEMORY(sidstr);
 
-	rc = tldap_search_fmt(state->ld, state->domaindn, TLDAP_SCOPE_SUB,
-			      attrs, ARRAY_SIZE(attrs), 0, talloc_tos(), &msg,
-			      "(objectsid=%s)", sidstr);
+	rc = pdb_ads_search_fmt(state, state->domaindn, TLDAP_SCOPE_SUB,
+				attrs, ARRAY_SIZE(attrs), 0, talloc_tos(),
+				&msg, "(objectsid=%s)", sidstr);
 	TALLOC_FREE(sidstr);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_search failed %s\n",
@@ -1377,7 +1446,7 @@ static NTSTATUS pdb_ads_enum_aliasmem(struct pdb_methods *m,
 	}
 
 	for (i=0; i<num_members; i++) {
-		if (!pdb_ads_dnblob2sid(state->ld, &blobs[i], &members[i])) {
+		if (!pdb_ads_dnblob2sid(state, &blobs[i], &members[i])) {
 			TALLOC_FREE(members);
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
@@ -1444,9 +1513,9 @@ static NTSTATUS pdb_ads_enum_alias_memberships(struct pdb_methods *m,
 		goto done;
 	}
 
-	rc = tldap_search_fmt(state->ld, state->domaindn, TLDAP_SCOPE_SUB,
-			      attrs, ARRAY_SIZE(attrs), 0, talloc_tos(),
-			      &msg, "%s))", filter);
+	rc = pdb_ads_search_fmt(state, state->domaindn, TLDAP_SCOPE_SUB,
+				attrs, ARRAY_SIZE(attrs), 0, talloc_tos(),
+				&msg, "%s))", filter);
 	TALLOC_FREE(filter);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("tldap_search failed %s\n",
@@ -1516,10 +1585,10 @@ static NTSTATUS pdb_ads_lookup_rids(struct pdb_methods *m,
 		sidstr = sid_binstring(talloc_tos(), &sid);
 		NT_STATUS_HAVE_NO_MEMORY(sidstr);
 
-		rc = tldap_search_fmt(state->ld, state->domaindn,
-				      TLDAP_SCOPE_SUB, attrs,
-				      ARRAY_SIZE(attrs), 0, talloc_tos(),
-				      &msg, "(objectsid=%s)", sidstr);
+		rc = pdb_ads_search_fmt(state, state->domaindn,
+					TLDAP_SCOPE_SUB, attrs,
+					ARRAY_SIZE(attrs), 0, talloc_tos(),
+					&msg, "(objectsid=%s)", sidstr);
 		TALLOC_FREE(sidstr);
 		if (rc != TLDAP_SUCCESS) {
 			DEBUG(10, ("ldap_search failed %s\n",
@@ -1654,8 +1723,8 @@ static bool pdb_ads_search_filter(struct pdb_methods *m,
 		return false;
 	}
 
-	rc = tldap_search_fmt(
-		state->ld, state->domaindn, TLDAP_SCOPE_SUB,
+	rc = pdb_ads_search_fmt(
+		state, state->domaindn, TLDAP_SCOPE_SUB,
 		attrs, ARRAY_SIZE(attrs), 0, talloc_tos(), &users,
 		"%s", filter);
 	if (rc != TLDAP_SUCCESS) {
@@ -1825,8 +1894,8 @@ static bool pdb_ads_sid_to_id(struct pdb_methods *m, const DOM_SID *sid,
 		return false;
 	}
 
-	rc = tldap_search_fmt(
-		state->ld, state->domaindn, TLDAP_SCOPE_SUB,
+	rc = pdb_ads_search_fmt(
+		state, state->domaindn, TLDAP_SCOPE_SUB,
 		NULL, 0, 0, talloc_tos(), &msg,
 		"(&(objectsid=%s)(objectclass=user))", sidstr);
 	if ((rc == TLDAP_SUCCESS) && (talloc_array_length(msg) > 0)) {
@@ -1836,8 +1905,8 @@ static bool pdb_ads_sid_to_id(struct pdb_methods *m, const DOM_SID *sid,
 		return true;
 	}
 
-	rc = tldap_search_fmt(
-		state->ld, state->domaindn, TLDAP_SCOPE_SUB,
+	rc = pdb_ads_search_fmt(
+		state, state->domaindn, TLDAP_SCOPE_SUB,
 		NULL, 0, 0, talloc_tos(), &msg,
 		"(&(objectsid=%s)(objectclass=group))", sidstr);
 	if ((rc == TLDAP_SUCCESS) && (talloc_array_length(msg) > 0)) {
@@ -1986,6 +2055,72 @@ static void s3_tldap_debug(void *context, enum tldap_debug_level level,
 	free(s);
 }
 
+static struct tldap_context *pdb_ads_ld(struct pdb_ads_state *state)
+{
+	NTSTATUS status;
+	int fd;
+
+	if (tldap_connection_ok(state->ld)) {
+		return state->ld;
+	}
+	TALLOC_FREE(state->ld);
+
+	status = open_socket_out(
+		(struct sockaddr_storage *)(void *)&state->socket_address,
+		0, 0, &fd);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("Could not connect to %s: %s\n",
+			   state->socket_address.sun_path, nt_errstr(status)));
+		return NULL;
+	}
+
+	state->ld = tldap_context_create(state, fd);
+	if (state->ld == NULL) {
+		close(fd);
+		return NULL;
+	}
+	tldap_set_debug(state->ld, s3_tldap_debug, NULL);
+
+	return state->ld;
+}
+
+int pdb_ads_search_fmt(struct pdb_ads_state *state, const char *base,
+		       int scope, const char *attrs[], int num_attrs,
+		       int attrsonly,
+		       TALLOC_CTX *mem_ctx, struct tldap_message ***res,
+		       const char *fmt, ...)
+{
+	struct tldap_context *ld;
+	va_list ap;
+	int ret;
+
+	ld = pdb_ads_ld(state);
+	if (ld == NULL) {
+		return TLDAP_SERVER_DOWN;
+	}
+
+	va_start(ap, fmt);
+	ret = tldap_search_va(ld, base, scope, attrs, num_attrs, attrsonly,
+			      mem_ctx, res, fmt, ap);
+	va_end(ap);
+
+	if (ret != TLDAP_SERVER_DOWN) {
+		return ret;
+	}
+
+	/* retry once */
+	ld = pdb_ads_ld(state);
+	if (ld == NULL) {
+		return TLDAP_SERVER_DOWN;
+	}
+
+	va_start(ap, fmt);
+	ret = tldap_search_va(ld, base, scope, attrs, num_attrs, attrsonly,
+			      mem_ctx, res, fmt, ap);
+	va_end(ap);
+	return ret;
+}
+
 static NTSTATUS pdb_ads_connect(struct pdb_ads_state *state,
 				const char *location)
 {
@@ -1995,33 +2130,17 @@ static NTSTATUS pdb_ads_connect(struct pdb_ads_state *state,
 	const char *ncname_attrs[1] = { "netbiosname" };
 	struct tldap_message **rootdse, **domain, **ncname;
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct sockaddr_un sunaddr;
 	NTSTATUS status;
 	int num_domains;
-	int fd, rc;
+	int rc;
 
-	ZERO_STRUCT(sunaddr);
-	sunaddr.sun_family = AF_UNIX;
-	strncpy(sunaddr.sun_path, location, sizeof(sunaddr.sun_path) - 1);
+	ZERO_STRUCT(state->socket_address);
+	state->socket_address.sun_family = AF_UNIX;
+	strncpy(state->socket_address.sun_path, location,
+		sizeof(state->socket_address.sun_path) - 1);
 
-	status = open_socket_out((struct sockaddr_storage *)(void *)&sunaddr,
-				 0, 0, &fd);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("Could not connect to %s: %s\n", location,
-			   nt_errstr(status)));
-		goto done;
-	}
-
-	state->ld = tldap_context_create(state, fd);
-	if (state->ld == NULL) {
-		close(fd);
-		status = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-	tldap_set_debug(state->ld, s3_tldap_debug, NULL);
-
-	rc = tldap_search_fmt(
-		state->ld, "", TLDAP_SCOPE_BASE,
+	rc = pdb_ads_search_fmt(
+		state, "", TLDAP_SCOPE_BASE,
 		rootdse_attrs, ARRAY_SIZE(rootdse_attrs), 0,
 		talloc_tos(), &rootdse, "(objectclass=*)");
 	if (rc != TLDAP_SUCCESS) {
@@ -2056,8 +2175,8 @@ static NTSTATUS pdb_ads_connect(struct pdb_ads_state *state,
 	/*
 	 * Figure out our domain's SID
 	 */
-	rc = tldap_search_fmt(
-		state->ld, state->domaindn, TLDAP_SCOPE_BASE,
+	rc = pdb_ads_search_fmt(
+		state, state->domaindn, TLDAP_SCOPE_BASE,
 		domain_attrs, ARRAY_SIZE(domain_attrs), 0,
 		talloc_tos(), &domain, "(objectclass=*)");
 	if (rc != TLDAP_SUCCESS) {
@@ -2083,8 +2202,8 @@ static NTSTATUS pdb_ads_connect(struct pdb_ads_state *state,
 	/*
 	 * Figure out our domain's short name
 	 */
-	rc = tldap_search_fmt(
-		state->ld, state->configdn, TLDAP_SCOPE_SUB,
+	rc = pdb_ads_search_fmt(
+		state, state->configdn, TLDAP_SCOPE_SUB,
 		ncname_attrs, ARRAY_SIZE(ncname_attrs), 0,
 		talloc_tos(), &ncname, "(ncname=%s)", state->domaindn);
 	if (rc != TLDAP_SUCCESS) {
@@ -2134,7 +2253,7 @@ static NTSTATUS pdb_init_ads(struct pdb_methods **pdb_method,
 	if (m == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	state = talloc(m, struct pdb_ads_state);
+	state = talloc_zero(m, struct pdb_ads_state);
 	if (state == NULL) {
 		goto nomem;
 	}
