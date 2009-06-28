@@ -45,6 +45,10 @@ bool tldap_make_mod_fmt(struct tldap_message *existing, TALLOC_CTX *mem_ctx,
 
 const char *tldap_errstr(TALLOC_CTX *mem_ctx, struct tldap_context *ld,
 			 int rc);
+int tldap_search_va(struct tldap_context *ld, const char *base, int scope,
+		    const char *attrs[], int num_attrs, int attrsonly,
+		    TALLOC_CTX *mem_ctx, struct tldap_message ***res,
+		    const char *fmt, va_list ap);
 int tldap_search_fmt(struct tldap_context *ld, const char *base, int scope,
 		     const char *attrs[], int num_attrs, int attrsonly,
 		     TALLOC_CTX *mem_ctx, struct tldap_message ***res,

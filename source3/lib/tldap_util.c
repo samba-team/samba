@@ -325,28 +325,40 @@ const char *tldap_errstr(TALLOC_CTX *mem_ctx, struct tldap_context *ld, int rc)
 	return res;
 }
 
-int tldap_search_fmt(struct tldap_context *ld, const char *base, int scope,
-		     const char *attrs[], int num_attrs, int attrsonly,
-		     TALLOC_CTX *mem_ctx, struct tldap_message ***res,
-		     const char *fmt, ...)
+int tldap_search_va(struct tldap_context *ld, const char *base, int scope,
+		    const char *attrs[], int num_attrs, int attrsonly,
+		    TALLOC_CTX *mem_ctx, struct tldap_message ***res,
+		    const char *fmt, va_list ap)
 {
-	va_list ap;
 	char *filter;
 	int ret;
 
-	va_start(ap, fmt);
 	filter = talloc_vasprintf(talloc_tos(), fmt, ap);
-	va_end(ap);
-
 	if (filter == NULL) {
 		return TLDAP_NO_MEMORY;
 	}
+
 	ret = tldap_search(ld, base, scope, filter,
 			   attrs, num_attrs, attrsonly,
 			   NULL /*sctrls*/, 0, NULL /*cctrls*/, 0,
 			   0 /*timelimit*/, 0 /*sizelimit*/, 0 /*deref*/,
 			   mem_ctx, res, NULL);
 	TALLOC_FREE(filter);
+	return ret;
+}
+
+int tldap_search_fmt(struct tldap_context *ld, const char *base, int scope,
+		     const char *attrs[], int num_attrs, int attrsonly,
+		     TALLOC_CTX *mem_ctx, struct tldap_message ***res,
+		     const char *fmt, ...)
+{
+	va_list ap;
+	int ret;
+
+	va_start(ap, fmt);
+	ret = tldap_search_va(ld, base, scope, attrs, num_attrs, attrsonly,
+			      mem_ctx, res, fmt, ap);
+	va_end(ap);
 	return ret;
 }
 
