@@ -276,12 +276,12 @@ static int net_groupmap_add(struct net_context *c, int argc, const char **argv)
 
 	if ( (rid == 0) && (string_sid[0] == '\0') ) {
 		d_printf("No rid or sid specified, choosing a RID\n");
-		if (pdb_rid_algorithm()) {
-			rid = algorithmic_pdb_gid_to_group_rid(gid);
-		} else {
+		if (pdb_capabilities() & PDB_CAP_STORE_RIDS) {
 			if (!pdb_new_rid(&rid)) {
 				d_printf("Could not get new RID\n");
 			}
+		} else {
+			rid = algorithmic_pdb_gid_to_group_rid(gid);
 		}
 		d_printf("Got RID %d\n", rid);
 	}
@@ -577,13 +577,13 @@ static int net_groupmap_set(struct net_context *c, int argc, const char **argv)
 		map.gid = grp->gr_gid;
 
 		if (c->opt_rid == 0) {
-			if ( pdb_rid_algorithm() )
-				c->opt_rid = algorithmic_pdb_gid_to_group_rid(map.gid);
-			else {
+			if ( pdb_capabilities() & PDB_CAP_STORE_RIDS ) {
 				if ( !pdb_new_rid((uint32*)&c->opt_rid) ) {
 					d_fprintf( stderr, "Could not allocate new RID\n");
 					return -1;
 				}
+			} else {
+				c->opt_rid = algorithmic_pdb_gid_to_group_rid(map.gid);
 			}
 		}
 

@@ -574,12 +574,12 @@ static NTSTATUS pdb_default_create_dom_group(struct pdb_methods *methods,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (pdb_rid_algorithm()) {
-		*rid = algorithmic_pdb_gid_to_group_rid( grp->gr_gid );
-	} else {
+	if (pdb_capabilities() & PDB_CAP_STORE_RIDS) {
 		if (!pdb_new_rid(rid)) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
+	} else {
+		*rid = algorithmic_pdb_gid_to_group_rid( grp->gr_gid );
 	}
 
 	sid_compose(&group_sid, get_global_sam_sid(), *rid);
@@ -1043,10 +1043,10 @@ bool pdb_sid_to_id(const DOM_SID *sid, union unid_t *id,
 	return pdb->sid_to_id(pdb, sid, id, type);
 }
 
-bool pdb_rid_algorithm(void)
+uint32_t pdb_capabilities(void)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
-	return pdb->rid_algorithm(pdb);
+	return pdb->capabilities(pdb);
 }
 
 /********************************************************************
@@ -1065,7 +1065,7 @@ bool pdb_new_rid(uint32 *rid)
 	int i;
 	TALLOC_CTX *ctx;
 
-	if (pdb_rid_algorithm()) {
+	if ((pdb_capabilities() & PDB_CAP_STORE_RIDS) == 0) {
 		DEBUG(0, ("Trying to allocate a RID when algorithmic RIDs "
 			  "are active\n"));
 		return False;

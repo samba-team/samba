@@ -207,7 +207,7 @@ static NTSTATUS samu_set_unix_internal(struct samu *user, const struct passwd *p
 	   initialized and will fill in these fields later (such as from a 
 	   netr_SamInfo3 structure) */
 
-	if ( create && !pdb_rid_algorithm() ) {
+	if ( create && (pdb_capabilities() & PDB_CAP_STORE_RIDS)) {
 		uint32 user_rid;
 		DOM_SID user_sid;
 

@@ -4728,9 +4728,9 @@ static bool ldapsam_search_aliases(struct pdb_methods *methods,
 	return ldapsam_search_grouptype(methods, search, sid, SID_NAME_ALIAS);
 }
 
-static bool ldapsam_rid_algorithm(struct pdb_methods *methods)
+static uint32_t ldapsam_capabilities(struct pdb_methods *methods)
 {
-	return False;
+	return PDB_CAP_STORE_RIDS;
 }
 
 static NTSTATUS ldapsam_get_new_rid(struct ldapsam_privates *priv,
@@ -6154,7 +6154,7 @@ static NTSTATUS pdb_init_ldapsam_common(struct pdb_methods **pdb_method, const c
 
 	(*pdb_method)->get_seq_num = ldapsam_get_seq_num;
 
-	(*pdb_method)->rid_algorithm = ldapsam_rid_algorithm;
+	(*pdb_method)->capabilities = ldapsam_capabilities;
 	(*pdb_method)->new_rid = ldapsam_new_rid;
 
 	(*pdb_method)->get_trusteddom_pw = ldapsam_get_trusteddom_pw;

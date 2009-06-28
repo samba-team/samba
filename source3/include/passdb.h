@@ -197,6 +197,8 @@ struct pdb_search {
 	void (*search_end)(struct pdb_search *search);
 };
 
+#define PDB_CAP_STORE_RIDS	0x0001
+
 /*****************************************************************
  Functions to be implemented by the new (v2) passdb API 
 ****************************************************************/
@@ -212,6 +214,7 @@ struct pdb_search {
  * enum lsa_SidType rather than uint32.
  * Changed to 16 for access to the trusted domain passwords (obnox).
  * Changed to 17, the sampwent interface is gone.
+ * Changed to 18, pdb_rid_algorithm -> pdb_capabilities
  */
 
 #define PASSDB_INTERFACE_VERSION 17
@@ -361,7 +364,7 @@ struct pdb_methods
 	bool (*sid_to_id)(struct pdb_methods *methods, const DOM_SID *sid,
 			  union unid_t *id, enum lsa_SidType *type);
 
-	bool (*rid_algorithm)(struct pdb_methods *methods);
+	uint32_t (*capabilities)(struct pdb_methods *methods);
 	bool (*new_rid)(struct pdb_methods *methods, uint32 *rid);
 
 

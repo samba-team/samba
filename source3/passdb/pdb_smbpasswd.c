@@ -1520,9 +1520,9 @@ done:
 	return (ret);	
 }
 
-static bool smbpasswd_rid_algorithm(struct pdb_methods *methods)
+static uint32_t smbpasswd_capabilities(struct pdb_methods *methods)
 {
-	return True;
+	return 0;
 }
 
 static void free_private_data(void **vp) 
@@ -1682,7 +1682,7 @@ static NTSTATUS pdb_init_smbpasswd( struct pdb_methods **pdb_method, const char 
 	(*pdb_method)->rename_sam_account = smbpasswd_rename_sam_account;
 	(*pdb_method)->search_users = smbpasswd_search_users;
 
-	(*pdb_method)->rid_algorithm = smbpasswd_rid_algorithm;
+	(*pdb_method)->capabilities = smbpasswd_capabilities;
 
 	/* Setup private data and free function */
 

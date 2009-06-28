@@ -4595,7 +4595,7 @@ bool pdb_uid_to_sid(uid_t uid, DOM_SID *sid);
 bool pdb_gid_to_sid(gid_t gid, DOM_SID *sid);
 bool pdb_sid_to_id(const DOM_SID *sid, union unid_t *id,
 		   enum lsa_SidType *type);
-bool pdb_rid_algorithm(void);
+uint32_t pdb_capabilities(void);
 bool pdb_new_rid(uint32 *rid);
 bool initialize_password_db(bool reload, struct event_context *event_ctx);
 struct pdb_search *pdb_search_init(TALLOC_CTX *mem_ctx,

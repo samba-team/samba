@@ -1920,9 +1920,9 @@ static bool pdb_ads_sid_to_id(struct pdb_methods *m, const DOM_SID *sid,
 	return false;
 }
 
-static bool pdb_ads_rid_algorithm(struct pdb_methods *m)
+static uint32_t pdb_ads_capabilities(struct pdb_methods *m)
 {
-	return false;
+	return PDB_CAP_STORE_RIDS;
 }
 
 static bool pdb_ads_new_rid(struct pdb_methods *m, uint32 *rid)
@@ -2005,7 +2005,7 @@ static void pdb_ads_init_methods(struct pdb_methods *m)
 	m->uid_to_sid = pdb_ads_uid_to_sid;
 	m->gid_to_sid = pdb_ads_gid_to_sid;
 	m->sid_to_id = pdb_ads_sid_to_id;
-	m->rid_algorithm = pdb_ads_rid_algorithm;
+	m->capabilities = pdb_ads_capabilities;
 	m->new_rid = pdb_ads_new_rid;
 	m->get_trusteddom_pw = pdb_ads_get_trusteddom_pw;
 	m->set_trusteddom_pw = pdb_ads_set_trusteddom_pw;

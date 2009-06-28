@@ -1066,9 +1066,9 @@ static NTSTATUS tdbsam_rename_sam_account(struct pdb_methods *my_methods,
 	return NT_STATUS_ACCESS_DENIED;	
 }
 
-static bool tdbsam_rid_algorithm(struct pdb_methods *methods)
+static uint32_t tdbsam_capabilities(struct pdb_methods *methods)
 {
-	return False;
+	return PDB_CAP_STORE_RIDS;
 }
 
 static bool tdbsam_new_rid(struct pdb_methods *methods, uint32 *prid)
@@ -1246,7 +1246,7 @@ static NTSTATUS pdb_init_tdbsam(struct pdb_methods **pdb_method, const char *loc
 	(*pdb_method)->rename_sam_account = tdbsam_rename_sam_account;
 	(*pdb_method)->search_users = tdbsam_search_users;
 
-	(*pdb_method)->rid_algorithm = tdbsam_rid_algorithm;
+	(*pdb_method)->capabilities = tdbsam_capabilities;
 	(*pdb_method)->new_rid = tdbsam_new_rid;
 
 	/* save the path for later */
