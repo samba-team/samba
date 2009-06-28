@@ -517,7 +517,7 @@ NTSTATUS _lsa_QueryInfoPolicy(pipes_struct *p,
 	}
 
 	switch (r->in.level) {
-	case 0x02:
+	case LSA_POLICY_INFO_AUDIT_EVENTS:
 		{
 
 		uint32 policy_def = LSA_AUDIT_POLICY_ALL;
@@ -549,7 +549,7 @@ NTSTATUS _lsa_QueryInfoPolicy(pipes_struct *p,
 
 		break;
 		}
-	case 0x03:
+	case LSA_POLICY_INFO_DOMAIN:
 		/* check if the user has enough rights */
 		if (!(handle->access & LSA_POLICY_VIEW_LOCAL_INFORMATION))
 			return NT_STATUS_ACCESS_DENIED;
@@ -585,7 +585,7 @@ NTSTATUS _lsa_QueryInfoPolicy(pipes_struct *p,
 		}
 		init_dom_query_3(&info->domain, name, sid);
 		break;
-	case 0x05:
+	case LSA_POLICY_INFO_ACCOUNT_DOMAIN:
 		/* check if the user has enough rights */
 		if (!(handle->access & LSA_POLICY_VIEW_LOCAL_INFORMATION))
 			return NT_STATUS_ACCESS_DENIED;
@@ -596,7 +596,7 @@ NTSTATUS _lsa_QueryInfoPolicy(pipes_struct *p,
 
 		init_dom_query_5(&info->account_domain, name, sid);
 		break;
-	case 0x06:
+	case LSA_POLICY_INFO_ROLE:
 		/* check if the user has enough rights */
 		if (!(handle->access & LSA_POLICY_VIEW_LOCAL_INFORMATION))
 			return NT_STATUS_ACCESS_DENIED;
