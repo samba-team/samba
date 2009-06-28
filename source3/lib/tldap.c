@@ -55,6 +55,7 @@ struct tldap_context {
 	int ld_sizelimit;
 	int ld_timelimit;
 	struct tstream_context *conn;
+	bool server_down;
 	int msgid;
 	struct tevent_queue *outgoing;
 	struct tevent_req **pending;
@@ -151,6 +152,14 @@ struct tldap_context *tldap_context_create(TALLOC_CTX *mem_ctx, int fd)
 		return NULL;
 	}
 	return ctx;
+}
+
+bool tldap_connection_ok(struct tldap_context *ld)
+{
+	if (ld == NULL) {
+		return false;
+	}
+	return !ld->server_down;
 }
 
 static struct tldap_ctx_attribute *tldap_context_findattr(
@@ -395,6 +404,11 @@ static struct tevent_req *tldap_msg_send(TALLOC_CTX *mem_ctx,
 	state->ev = ev;
 	state->id = id;
 
+	if (state->ld->server_down) {
+		tevent_req_error(req, TLDAP_SERVER_DOWN);
+		return tevent_req_post(req, ev);
+	}
+
 	tldap_push_controls(data, sctrls, num_sctrls);
 
 	asn1_pop_tag(data);
@@ -507,12 +521,15 @@ static void tldap_msg_sent(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
+	struct tldap_msg_state *state = tevent_req_data(
+		req, struct tldap_msg_state);
 	ssize_t nwritten;
 	int err;
 
 	nwritten = tstream_writev_queue_recv(subreq, &err);
 	TALLOC_FREE(subreq);
 	if (nwritten == -1) {
+		state->ld->server_down = true;
 		tevent_req_error(req, TLDAP_SERVER_DOWN);
 		return;
 	}

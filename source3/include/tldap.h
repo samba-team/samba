@@ -48,6 +48,7 @@ struct tldap_mod {
 bool tevent_req_is_ldap_error(struct tevent_req *req, int *perr);
 
 struct tldap_context *tldap_context_create(TALLOC_CTX *mem_ctx, int fd);
+bool tldap_connection_ok(struct tldap_context *ld);
 bool tldap_context_setattr(struct tldap_context *ld,
 			   const char *name, const void *pptr);
 void *tldap_context_getattr(struct tldap_context *ld, const char *name);
