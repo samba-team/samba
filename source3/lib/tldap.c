@@ -585,6 +585,7 @@ static void tldap_msg_received(struct tevent_req *subreq)
 		/* Dump unexpected reply */
 		tldap_debug(ld, TLDAP_DEBUG_WARNING, "tldap_msg_received: "
 			    "No request pending for msg %d\n", id);
+		TALLOC_FREE(data);
 		TALLOC_FREE(inbuf);
 		goto done;
 	}
