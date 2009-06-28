@@ -618,6 +618,32 @@ NTSTATUS _lsa_QueryInfoPolicy(pipes_struct *p,
 				break;
 		}
 		break;
+	case LSA_POLICY_INFO_DNS: {
+		struct pdb_domain_info *dominfo;
+
+		if ((pdb_capabilities() & PDB_CAP_ADS) == 0) {
+			DEBUG(10, ("Not replying to LSA_POLICY_INFO_DNS "
+				   "without ADS passdb backend\n"));
+			status = NT_STATUS_INVALID_INFO_CLASS;
+			break;
+		}
+
+		dominfo = pdb_get_domain_info(info);
+		if (dominfo == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			break;
+		}
+
+		init_lsa_StringLarge(&info->dns.name,
+				     dominfo->name);
+		init_lsa_StringLarge(&info->dns.dns_domain,
+				     dominfo->dns_domain);
+		init_lsa_StringLarge(&info->dns.dns_forest,
+				     dominfo->dns_forest);
+		info->dns.domain_guid = dominfo->guid;
+		info->dns.sid = &dominfo->sid;
+		break;
+	}
 	default:
 		DEBUG(0,("_lsa_QueryInfoPolicy: unknown info level in Lsa Query: %d\n",
 			r->in.level));
