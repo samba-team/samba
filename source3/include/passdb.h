@@ -198,6 +198,7 @@ struct pdb_search {
 };
 
 #define PDB_CAP_STORE_RIDS	0x0001
+#define PDB_CAP_ADS		0x0002
 
 /*****************************************************************
  Functions to be implemented by the new (v2) passdb API 

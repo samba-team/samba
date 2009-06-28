@@ -1922,7 +1922,7 @@ static bool pdb_ads_sid_to_id(struct pdb_methods *m, const DOM_SID *sid,
 
 static uint32_t pdb_ads_capabilities(struct pdb_methods *m)
 {
-	return PDB_CAP_STORE_RIDS;
+	return PDB_CAP_STORE_RIDS | PDB_CAP_ADS;
 }
 
 static bool pdb_ads_new_rid(struct pdb_methods *m, uint32 *rid)
