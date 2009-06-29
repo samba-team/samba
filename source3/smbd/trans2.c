@@ -712,6 +712,14 @@ void send_trans2_replies(connection_struct *conn,
 	if(params_to_send == 0 && data_to_send == 0) {
 		reply_outbuf(req, 10, 0);
 		show_msg((char *)req->outbuf);
+		if (!srv_send_smb(smbd_server_fd(),
+				(char *)req->outbuf,
+				true, req->seqnum+1,
+				IS_CONN_ENCRYPTED(conn),
+				&req->pcd)) {
+			exit_server_cleanly("send_trans2_replies: srv_send_smb failed.");
+		}
+		TALLOC_FREE(req->outbuf);
 		return;
 	}
 

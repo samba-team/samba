@@ -74,6 +74,14 @@ void send_nt_replies(connection_struct *conn,
 					 __LINE__,__FILE__);
 		}
 		show_msg((char *)req->outbuf);
+		if (!srv_send_smb(smbd_server_fd(),
+				(char *)req->outbuf,
+				true, req->seqnum+1,
+				IS_CONN_ENCRYPTED(conn),
+				&req->pcd)) {
+			exit_server_cleanly("send_nt_replies: srv_send_smb failed.");
+		}
+		TALLOC_FREE(req->outbuf);
 		return;
 	}
 
