@@ -179,7 +179,7 @@ static void ndrdump_data(uint8_t *d, uint32_t l, bool force)
 
 	dbf = x_stderr;
 
-	setup_logging(argv[0], true);
+	setup_logging_stdout();
 
 	pc = poptGetContext("ndrdump", argc, argv, long_options, 0);
 	

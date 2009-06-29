@@ -198,6 +198,14 @@ _PUBLIC_ void setup_logging(const char *prog_name, enum debug_logtype new_logtyp
 }
 
 /**
+   Just run logging to stdout for this program 
+*/
+_PUBLIC_ void setup_logging_stdout(void)
+{
+	setup_logging(NULL, DEBUG_STDOUT);
+}
+
+/**
   return a string constant containing n tabs
   no more than 10 tabs are returned
 */

@@ -605,6 +605,15 @@ void setup_logging(const char *pname, bool interactive)
 #endif
 }
 
+/**
+   Just run logging to stdout for this program 
+*/
+_PUBLIC_ void setup_logging_stdout(void)
+{
+	setup_logging(NULL, True);
+}
+
+
 /***************************************************************************
  Set the logfile name.
 **************************************************************************/

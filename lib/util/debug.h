@@ -74,7 +74,11 @@ extern int DEBUGLEVEL;
  */
 #define DEBUGTAB(n) do_debug_tab(n)
 
-/** Possible destinations for the debug log */
+/** Possible destinations for the debug log (in order of precedence -
+ * once set to DEBUG_FILE, it is not possible to reset to DEBUG_STDOUT
+ * for example.  This makes it easy to override for debug to stderr on
+ * the command line, as the smb.conf cannot reset it back to
+ * file-based logging */
 enum debug_logtype {DEBUG_STDOUT = 0, DEBUG_FILE = 1, DEBUG_STDERR = 2};
 
 /**
@@ -100,6 +104,11 @@ _PUBLIC_ void debug_schedule_reopen_logs(void);
   or a file
 */
 _PUBLIC_ void setup_logging(const char *prog_name, enum debug_logtype new_logtype);
+
+/**
+   Just run logging to stdout for this program 
+*/
+_PUBLIC_ void setup_logging_stdout(void);
 
 /**
   return a string constant containing n tabs

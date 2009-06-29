@@ -466,6 +466,7 @@ void debug_message(struct messaging_context *msg_ctx, void *private_data, uint32
 void debug_init(void);
 void debug_register_msgs(struct messaging_context *msg_ctx);
 void setup_logging(const char *pname, bool interactive);
+void setup_logging_stdout( void );
 void debug_set_logfile(const char *name);
 bool reopen_logs( void );
 void force_check_log_size( void );
