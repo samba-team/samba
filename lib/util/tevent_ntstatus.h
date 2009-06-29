@@ -22,7 +22,6 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "config.h"
 #include "../libcli/util/ntstatus.h"
 #include "../tevent/tevent.h"
 
