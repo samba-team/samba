@@ -199,7 +199,7 @@ if [ ${CC_MAJOR} -ge 3 ]; then
         fi
 fi
 
-make CFLAGS="$RPM_OPT_FLAGS -D_GNU_SOURCE -m32" %{?_smp_mflags} \
+make %{?_smp_mflags} \
 	nss_modules pam_modules
 
 rm -rf %{_32bit_tmp_dir}
@@ -263,7 +263,7 @@ if [ ${CC_MAJOR} -ge 3 ]; then
 fi
 
 
-make CFLAGS="$RPM_OPT_FLAGS -D_GNU_SOURCE" %{?_smp_mflags} \
+make %{?_smp_mflags} \
 	all modules pam_smbpass
 
 # Remove some permission bits to avoid to many dependencies
