@@ -2074,6 +2074,8 @@ static struct tldap_context *pdb_ads_ld(struct pdb_ads_state *state)
 		return NULL;
 	}
 
+	set_blocking(fd, false);
+
 	state->ld = tldap_context_create(state, fd);
 	if (state->ld == NULL) {
 		close(fd);
