@@ -612,7 +612,9 @@ static int tdgram_bsd_set_readable_handler(struct tdgram_bsd *bsds,
 		TALLOC_FREE(bsds->fde);
 	}
 
-	if (bsds->fde == NULL) {
+	if (tevent_fd_get_flags(bsds->fde) == 0) {
+		TALLOC_FREE(bsds->fde);
+
 		bsds->fde = tevent_add_fd(ev, bsds,
 					  bsds->fd, TEVENT_FD_READ,
 					  tdgram_bsd_fde_handler,
@@ -664,7 +666,9 @@ static int tdgram_bsd_set_writeable_handler(struct tdgram_bsd *bsds,
 		TALLOC_FREE(bsds->fde);
 	}
 
-	if (bsds->fde == NULL) {
+	if (tevent_fd_get_flags(bsds->fde) == 0) {
+		TALLOC_FREE(bsds->fde);
+
 		bsds->fde = tevent_add_fd(ev, bsds,
 					  bsds->fd, TEVENT_FD_WRITE,
 					  tdgram_bsd_fde_handler,
@@ -1325,7 +1329,9 @@ static int tstream_bsd_set_readable_handler(struct tstream_bsd *bsds,
 		TALLOC_FREE(bsds->fde);
 	}
 
-	if (bsds->fde == NULL) {
+	if (tevent_fd_get_flags(bsds->fde) == 0) {
+		TALLOC_FREE(bsds->fde);
+
 		bsds->fde = tevent_add_fd(ev, bsds,
 					  bsds->fd, TEVENT_FD_READ,
 					  tstream_bsd_fde_handler,
@@ -1377,7 +1383,9 @@ static int tstream_bsd_set_writeable_handler(struct tstream_bsd *bsds,
 		TALLOC_FREE(bsds->fde);
 	}
 
-	if (bsds->fde == NULL) {
+	if (tevent_fd_get_flags(bsds->fde) == 0) {
+		TALLOC_FREE(bsds->fde);
+
 		bsds->fde = tevent_add_fd(ev, bsds,
 					  bsds->fd, TEVENT_FD_WRITE,
 					  tstream_bsd_fde_handler,
