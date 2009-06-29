@@ -91,6 +91,17 @@ bool tldap_pull_binsid(struct tldap_message *msg, const char *attribute,
 	return sid_parse((char *)val.data, val.length, sid);
 }
 
+bool tldap_pull_guid(struct tldap_message *msg, const char *attribute,
+		     struct GUID *guid)
+{
+	DATA_BLOB val;
+
+	if (!tldap_get_single_valueblob(msg, attribute, &val)) {
+		return false;
+	}
+	return NT_STATUS_IS_OK(GUID_from_data_blob(&val, guid));
+}
+
 static bool tldap_add_blob_vals(TALLOC_CTX *mem_ctx, struct tldap_mod *mod,
 				int num_newvals, DATA_BLOB *newvals)
 {
