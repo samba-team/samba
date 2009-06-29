@@ -1592,7 +1592,9 @@ static void call_nt_transact_notify_change(connection_struct *conn,
 		 * here.
 		 */
 
-		change_notify_reply(fsp->conn, req, max_param_count,
+		change_notify_reply(fsp->conn, req,
+				    NT_STATUS_OK,
+				    max_param_count,
 				    fsp->notify);
 
 		/*

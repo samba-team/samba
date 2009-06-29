@@ -64,6 +64,10 @@ static bool notify_marshall_changes(int num_changes,
 	int i;
 	UNISTR uni_name;
 
+	if (num_changes == -1) {
+		return false;
+	}
+
 	uni_name.buffer = NULL;
 
 	for (i=0; i<num_changes; i++) {
@@ -131,37 +135,23 @@ static bool notify_marshall_changes(int num_changes,
  Setup the common parts of the return packet and send it.
 *****************************************************************************/
 
-static void change_notify_reply_packet(connection_struct *conn,
-				       struct smb_request *req,
-				       NTSTATUS error_code)
-{
-	reply_outbuf(req, 18, 0);
-
-	if (!NT_STATUS_IS_OK(error_code)) {
-		error_packet_set((char *)req->outbuf, 0, 0, error_code,
-				 __LINE__,__FILE__);
-	}
-
-	show_msg((char *)req->outbuf);
-	if (!srv_send_smb(smbd_server_fd(),
-			  (char *)req->outbuf,
-			  true, req->seqnum+1,
-			  req->encrypted, &req->pcd)) {
-		exit_server_cleanly("change_notify_reply_packet: srv_send_smb "
-				    "failed.");
-	}
-	TALLOC_FREE(req->outbuf);
-}
-
 void change_notify_reply(connection_struct *conn,
-			 struct smb_request *req, uint32 max_param,
+			 struct smb_request *req,
+			 NTSTATUS error_code,
+			 uint32_t max_param,
 			 struct notify_change_buf *notify_buf)
 {
 	prs_struct ps;
 
-	if (notify_buf->num_changes == -1) {
-		change_notify_reply_packet(conn, req, NT_STATUS_OK);
-		notify_buf->num_changes = 0;
+	if (!NT_STATUS_IS_OK(error_code)) {
+		send_nt_replies(conn, req, error_code,
+				NULL, 0, NULL, 0);
+		return;
+	}
+
+	if (max_param == 0 || notify_buf == NULL) {
+		send_nt_replies(conn, req, NT_STATUS_OK,
+				NULL, 0, NULL, 0);
 		return;
 	}
 
@@ -173,14 +163,13 @@ void change_notify_reply(connection_struct *conn,
 		 * We exceed what the client is willing to accept. Send
 		 * nothing.
 		 */
-		change_notify_reply_packet(conn, req, NT_STATUS_OK);
-		goto done;
+		prs_mem_free(&ps);
+		prs_init_empty(&ps, NULL, MARSHALL);
 	}
 
 	send_nt_replies(conn, req, NT_STATUS_OK, prs_data_p(&ps),
 			prs_offset(&ps), NULL, 0);
 
- done:
 	prs_mem_free(&ps);
 
 	TALLOC_FREE(notify_buf->changes);
@@ -315,8 +304,8 @@ void remove_pending_change_notify_requests_by_mid(uint16 mid)
 		return;
 	}
 
-	change_notify_reply_packet(map->req->fsp->conn, map->req->req,
-				   NT_STATUS_CANCELLED);
+	change_notify_reply(map->req->fsp->conn, map->req->req,
+			    NT_STATUS_CANCELLED, 0, NULL);
 	change_notify_remove_request(map->req);
 }
 
@@ -332,8 +321,8 @@ void remove_pending_change_notify_requests_by_fid(files_struct *fsp,
 	}
 
 	while (fsp->notify->requests != NULL) {
-		change_notify_reply_packet(
-			fsp->conn, fsp->notify->requests->req, status);
+		change_notify_reply(fsp->conn, fsp->notify->requests->req,
+				    status, 0, NULL);
 		change_notify_remove_request(fsp->notify->requests);
 	}
 }
@@ -405,6 +394,7 @@ static void notify_fsp(files_struct *fsp, uint32 action, const char *name)
 		if (fsp->notify->requests != NULL) {
 			change_notify_reply(fsp->conn,
 					    fsp->notify->requests->req,
+					    NT_STATUS_OK,
 					    fsp->notify->requests->max_param,
 					    fsp->notify);
 			change_notify_remove_request(fsp->notify->requests);
@@ -464,6 +454,7 @@ static void notify_fsp(files_struct *fsp, uint32 action, const char *name)
 
 	change_notify_reply(fsp->conn,
 			    fsp->notify->requests->req,
+			    NT_STATUS_OK,
 			    fsp->notify->requests->max_param,
 			    fsp->notify);
 
