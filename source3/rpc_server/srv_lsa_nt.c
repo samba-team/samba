@@ -349,7 +349,9 @@ NTSTATUS _lsa_OpenPolicy2(pipes_struct *p,
 	NTSTATUS status;
 
 	/* Work out max allowed. */
-	map_max_allowed_access(p->server_info->ptok, &des_access);
+	map_max_allowed_access(p->server_info->ptok,
+			       &p->server_info->utok,
+			       &des_access);
 
 	/* map the generic bits to the lsa policy ones */
 	se_map_generic(&des_access, &lsa_policy_mapping);
@@ -1628,7 +1630,9 @@ NTSTATUS _lsa_OpenAccount(pipes_struct *p,
  	 * handle - so don't check against policy handle. */
 
 	/* Work out max allowed. */
-	map_max_allowed_access(p->server_info->ptok, &des_access);
+	map_max_allowed_access(p->server_info->ptok,
+			       &p->server_info->utok,
+			       &des_access);
 
 	/* map the generic bits to the lsa account ones */
 	se_map_generic(&des_access, &lsa_account_mapping);

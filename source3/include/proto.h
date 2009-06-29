@@ -7253,8 +7253,9 @@ NTSTATUS access_check_object( SEC_DESC *psd, NT_USER_TOKEN *token,
 				SE_PRIV *rights, uint32 rights_mask,
 				uint32 des_access, uint32 *acc_granted,
 				const char *debug);
-void map_max_allowed_access(const NT_USER_TOKEN *token,
-				uint32_t *pacc_requested);
+void map_max_allowed_access(const NT_USER_TOKEN *nt_token,
+			    const struct unix_user_token *unix_token,
+			    uint32_t *pacc_requested);
 
 /* The following definitions come from ../libds/common/flag_mapping.c  */
 
