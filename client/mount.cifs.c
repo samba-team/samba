@@ -771,8 +771,10 @@ static int parse_options(char ** optionsp, unsigned long * filesys_flags)
 			got_password = 1;
 		} else if (strncmp(data, "ro", 2) == 0) {
 			*filesys_flags |= MS_RDONLY;
+			goto nocopy;
 		} else if (strncmp(data, "rw", 2) == 0) {
 			*filesys_flags &= ~MS_RDONLY;
+			goto nocopy;
                 } else if (strncmp(data, "remount", 7) == 0) {
                         *filesys_flags |= MS_REMOUNT;
 		} /* else if (strnicmp(data, "port", 4) == 0) {
