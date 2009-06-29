@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.85
+Version: 1.0.86
 Release: 1
 Epoch: 0
 License: GNU GPL version 3
@@ -131,6 +131,15 @@ fi
 %{_libdir}/pkgconfig/ctdb.pc
 
 %changelog
+* Tue Jun 30 2009 : Version 1.0.86
+ - Do not access the reclock at all if VerifyRecoveryLock is zero, not even try to probe it.
+ - Allow setting the reclock file as "", which means that no reclock file at all should be used.
+ - Document that a reclock file is no longer required, but that it is dangerous.
+ - Add a control that can be used to set/clear/change the reclock file in the daemon during runtime.
+ - Update the recovery daemon to poll whether a reclock file should be sued and if so which file at runtime in each monitoring cycle.
+ - Automatically disable VerifyRecoveryLock everytime a user changes the location of the reclock file.
+ - do not allow the VerifyRecoveryLock to be set using ctdb setvar if there is no recovery lock file specified.
+ - Add two commands "ctdb getreclock" and "ctdb setreclock" to modify the reclock file.
 * Tue Jun 23 2009 : Version 1.0.85
  - From William Jojo : Dont use getopt on AIX
  - Make it possible to use "ctdb listnodes" also when the daemon is not running
