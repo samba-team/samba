@@ -218,6 +218,10 @@ o    Volker Lendecke <vl@samba.org>
      * BUG 6498: Add workaround for MS KB932762.
 
 
+o    David Markey <admin@dmarkey.com>
+     * BUG 6514: Improve error message in 'net' when smb.conf is not available.
+
+
 o    Bo Yang <boyang@samba.org>
      * BUG 6499: Fix building of pam_smbpass.
 
