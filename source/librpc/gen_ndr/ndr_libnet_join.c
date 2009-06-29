@@ -89,6 +89,7 @@ _PUBLIC_ void ndr_print_libnet_UnjoinCtx(struct ndr_print *ndr, const char *name
 		ndr_print_ptr(ndr, "machine_password", r->in.machine_password);
 #endif
 		ndr_print_wkssvc_joinflags(ndr, "unjoin_flags", r->in.unjoin_flags);
+		ndr_print_uint8(ndr, "delete_machine_account", r->in.delete_machine_account);
 		ndr_print_uint8(ndr, "modify_config", r->in.modify_config);
 		ndr_print_ptr(ndr, "domain_sid", r->in.domain_sid);
 		ndr->depth++;
