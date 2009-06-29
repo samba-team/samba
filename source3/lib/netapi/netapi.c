@@ -89,7 +89,7 @@ NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 
 	if (!lp_load(get_dyn_CONFIGFILE(), true, false, false, false)) {
 		TALLOC_FREE(frame);
-		fprintf(stderr, "lp_load failed\n");
+		fprintf(stderr, "error loading %s\n", get_dyn_CONFIGFILE() );
 		return W_ERROR_V(WERR_GENERAL_FAILURE);
 	}
 
