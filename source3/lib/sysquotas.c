@@ -63,7 +63,7 @@ static int sys_path_to_bdev(const char *path, char **mntpath, char **bdev, char 
 	if ( sys_stat(path, &S) == -1 )
 		return (-1);
 
-	devno = S.st_dev ;
+	devno = S.st_ex_dev ;
 
 	fp = setmntent(MOUNTED,"r");
 	if (fp == NULL) {
@@ -74,7 +74,7 @@ static int sys_path_to_bdev(const char *path, char **mntpath, char **bdev, char 
 		if ( sys_stat(mnt->mnt_dir,&S) == -1 )
 			continue ;
 
-		if (S.st_dev == devno) {
+		if (S.st_ex_dev == devno) {
 			(*mntpath) = SMB_STRDUP(mnt->mnt_dir);
 			(*bdev) = SMB_STRDUP(mnt->mnt_fsname);
 			(*fs)   = SMB_STRDUP(mnt->mnt_type);
@@ -118,7 +118,7 @@ static int sys_path_to_bdev(const char *path, char **mntpath, char **bdev, char 
 		return ret;
 	}
 	
-	if ((ret=devnm(S_IFBLK, S.st_dev, dev_disk, 256, 1))!=0) {
+	if ((ret=devnm(S_IFBLK, S.st_ex_dev, dev_disk, 256, 1))!=0) {
 		return ret;	
 	}
 
