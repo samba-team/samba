@@ -23,6 +23,7 @@ struct pdb_ads_state {
 	struct sockaddr_un socket_address;
 	struct tldap_context *ld;
 	struct dom_sid domainsid;
+	struct GUID domainguid;
 	char *domaindn;
 	char *configdn;
 	char *netbiosname;
@@ -2135,7 +2136,7 @@ static NTSTATUS pdb_ads_connect(struct pdb_ads_state *state,
 {
 	const char *rootdse_attrs[2] = {
 		"defaultNamingContext", "configurationNamingContext" };
-	const char *domain_attrs[1] = { "objectSid" };
+	const char *domain_attrs[2] = { "objectSid", "objectGUID" };
 	const char *ncname_attrs[1] = { "netbiosname" };
 	struct tldap_message **rootdse, **domain, **ncname;
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -2203,6 +2204,11 @@ static NTSTATUS pdb_ads_connect(struct pdb_ads_state *state,
 	}
 	if (!tldap_pull_binsid(domain[0], "objectSid", &state->domainsid)) {
 		DEBUG(10, ("Could not retrieve domain SID\n"));
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto done;
+	}
+	if (!tldap_pull_guid(domain[0], "objectGUID", &state->domainguid)) {
+		DEBUG(10, ("Could not retrieve domain GUID\n"));
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		goto done;
 	}
