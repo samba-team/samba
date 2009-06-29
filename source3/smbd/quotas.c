@@ -227,7 +227,7 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
 	if ( sys_stat(path, &S) == -1 )
 		return(False) ;
 
-	devno = S.st_dev ;
+	devno = S.st_ex_dev ;
 
 	if ((fp = setmntent(MOUNTED,"r")) == NULL)
 		return(False) ;
@@ -238,7 +238,7 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
 		if ( sys_stat(mnt->mnt_dir,&S) == -1 )
 			continue ;
 
-		if (S.st_dev == devno) {
+		if (S.st_ex_dev == devno) {
 			found = True ;
 			break;
 		}
@@ -321,7 +321,7 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
 		return false;
 	}
 
-	devno = sbuf.st_dev ;
+	devno = sbuf.st_ex_dev ;
 
 	if ((fd = setmntent(KMTAB)) == NULL) {
 		return false;
@@ -331,7 +331,7 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
 		if (sys_stat(mnt->mnt_dir,&sbuf) == -1) {
 			continue;
 		}
-		if (sbuf.st_dev == devno) {
+		if (sbuf.st_ex_dev == devno) {
 			found = frue ;
 			break;
 		}
@@ -603,7 +603,7 @@ bool disk_quotas(const char *path,
 		return false;
 	}
 
-	devno = sbuf.st_dev ;
+	devno = sbuf.st_ex_dev ;
 	DEBUG(5,("disk_quotas: looking for path \"%s\" devno=%x\n",
 		path, (unsigned int)devno));
 #if defined(SUNOS5)
@@ -620,7 +620,7 @@ bool disk_quotas(const char *path,
 			mnt.mnt_mountp, (unsigned int)devno));
 
 		/* quotas are only on vxfs, UFS or NFS */
-		if ((sbuf.st_dev == devno) && (
+		if ((sbuf.st_ex_dev == devno) && (
 			strcmp( mnt.mnt_fstype, MNTTYPE_UFS ) == 0 ||
 			strcmp( mnt.mnt_fstype, "nfs" ) == 0    ||
 			strcmp( mnt.mnt_fstype, "vxfs" ) == 0 )) {
@@ -644,8 +644,8 @@ bool disk_quotas(const char *path,
 		}
 		DEBUG(5,("disk_quotas: testing \"%s\" devno=%x\n",
 					mnt->mnt_dir,
-					(unsigned int)sbuf.st_dev));
-		if (sbuf.st_dev == devno) {
+					(unsigned int)sbuf.st_ex_dev));
+		if (sbuf.st_ex_dev == devno) {
 			found = true;
 			name = talloc_strdup(talloc_tos(),
 					mnt->mnt_fsname);
@@ -836,7 +836,7 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
     return(False) ;
   }
 
-  devno = S.st_dev ;
+  devno = S.st_ex_dev ;
   
   fp = setmntent(MOUNTED,"r");
   found = False ;
@@ -844,7 +844,7 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
   while ((mnt = getmntent(fp))) {
     if ( sys_stat(mnt->mnt_dir,&S) == -1 )
       continue ;
-    if (S.st_dev == devno) {
+    if (S.st_ex_dev == devno) {
       found = True ;
       break ;
     }
@@ -1154,9 +1154,9 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
    * to have a significant performance boost when
    * lstat calls on /dev access this function.
    */
-  if ((sys_stat(path, &S)<0) || (devnm(S_IFBLK, S.st_dev, dev_disk, 256, 1)<0))
+  if ((sys_stat(path, &S)<0) || (devnm(S_IFBLK, S.st_ex_dev, dev_disk, 256, 1)<0))
 #else
-  if ((sys_stat(path, &S)<0) || (devnm(S_IFBLK, S.st_dev, dev_disk, 256, 0)<0)) 
+  if ((sys_stat(path, &S)<0) || (devnm(S_IFBLK, S.st_ex_dev, dev_disk, 256, 0)<0))
 	return (False);
 #endif /* ifdef HPUX */
 
@@ -1185,7 +1185,7 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
     
     if (sys_stat(path,&st) < 0)
         return False;
-    devno = st.st_dev;
+    devno = st.st_ex_dev;
 
     mntsize = getmntinfo(&mnts,MNT_NOWAIT);
     if (mntsize <= 0)
@@ -1194,7 +1194,7 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
     for (i = 0; i < mntsize; i++) {
         if (sys_stat(mnts[i].f_mntonname,&st) < 0)
             return False;
-        if (st.st_dev == devno)
+        if (st.st_ex_dev == devno)
             break;
     }
     if (i == mntsize)
