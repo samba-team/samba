@@ -1835,6 +1835,12 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 		W_ERROR_HAVE_NO_MEMORY(r->in.domain_sid);
 	}
 
+	if (!(r->in.unjoin_flags & WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE) &&
+	    !r->in.delete_machine_account) {
+		libnet_join_unjoindomain_remove_secrets(mem_ctx, r);
+		return WERR_OK;
+	}
+
 	if (!r->in.dc_name) {
 		struct netr_DsRGetDCNameInfo *info;
 		const char *dc;
@@ -1860,37 +1866,54 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 		W_ERROR_HAVE_NO_MEMORY(r->in.dc_name);
 	}
 
-	status = libnet_join_unjoindomain_rpc(mem_ctx, r);
-	if (!NT_STATUS_IS_OK(status)) {
-		libnet_unjoin_set_error_string(mem_ctx, r,
-			"failed to disable machine account via rpc: %s",
-			get_friendly_nt_error_msg(status));
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
-			return WERR_SETUP_NOT_JOINED;
-		}
-		return ntstatus_to_werror(status);
-	}
-
-	r->out.disabled_machine_account = true;
-
 #ifdef WITH_ADS
-	if (r->in.unjoin_flags & WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE) {
+	/* for net ads leave, try to delete the account.  If it works,
+	   no sense in disabling.  If it fails, we can still try to
+	   disable it. jmcd */
+
+	if (r->in.delete_machine_account) {
 		ADS_STATUS ads_status;
-		libnet_unjoin_connect_ads(mem_ctx, r);
-		ads_status = libnet_unjoin_remove_machine_acct(mem_ctx, r);
+		ads_status = libnet_unjoin_connect_ads(mem_ctx, r);
+		if (ADS_ERR_OK(ads_status)) {
+			/* dirty hack */
+			r->out.dns_domain_name =
+				talloc_strdup(mem_ctx,
+					      r->in.ads->server.realm);
+			ads_status =
+				libnet_unjoin_remove_machine_acct(mem_ctx, r);
+		}
 		if (!ADS_ERR_OK(ads_status)) {
 			libnet_unjoin_set_error_string(mem_ctx, r,
 				"failed to remove machine account from AD: %s",
 				ads_errstr(ads_status));
 		} else {
 			r->out.deleted_machine_account = true;
-			/* dirty hack */
-			r->out.dns_domain_name = talloc_strdup(mem_ctx,
-							       r->in.ads->server.realm);
 			W_ERROR_HAVE_NO_MEMORY(r->out.dns_domain_name);
+			libnet_join_unjoindomain_remove_secrets(mem_ctx, r);
+			return WERR_OK;
 		}
 	}
 #endif /* WITH_ADS */
+
+	/* The WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE flag really means
+	   "disable".  */
+	if (r->in.unjoin_flags & WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE) {
+		status = libnet_join_unjoindomain_rpc(mem_ctx, r);
+		if (!NT_STATUS_IS_OK(status)) {
+			libnet_unjoin_set_error_string(mem_ctx, r,
+				"failed to disable machine account via rpc: %s",
+				get_friendly_nt_error_msg(status));
+			if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
+				return WERR_SETUP_NOT_JOINED;
+			}
+			return ntstatus_to_werror(status);
+		}
+
+		r->out.disabled_machine_account = true;
+	}
+
+	/* If disable succeeded or was not requested at all, we
+	   should be getting rid of our end of things */
 
 	libnet_join_unjoindomain_remove_secrets(mem_ctx, r);
 

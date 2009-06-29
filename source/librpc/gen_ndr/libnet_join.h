@@ -56,6 +56,7 @@ struct libnet_UnjoinCtx {
 		const char * admin_password;
 		const char * machine_password;
 		uint32_t unjoin_flags;
+		uint8_t delete_machine_account;
 		uint8_t modify_config;
 		struct dom_sid *domain_sid;/* [ref] */
 		struct ads_struct *ads;/* [ref] */
