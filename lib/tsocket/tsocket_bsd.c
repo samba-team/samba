@@ -1292,6 +1292,10 @@ static void tstream_bsd_fde_handler(struct tevent_context *ev,
 	}
 	if (flags & TEVENT_FD_READ) {
 		if (!bsds->readable_handler) {
+			if (bsds->writeable_handler) {
+				bsds->writeable_handler(bsds->writeable_private);
+				return;
+			}
 			TEVENT_FD_NOT_READABLE(bsds->fde);
 			return;
 		}
@@ -1387,7 +1391,8 @@ static int tstream_bsd_set_writeable_handler(struct tstream_bsd *bsds,
 		TALLOC_FREE(bsds->fde);
 
 		bsds->fde = tevent_add_fd(ev, bsds,
-					  bsds->fd, TEVENT_FD_WRITE,
+					  bsds->fd,
+					  TEVENT_FD_READ | TEVENT_FD_WRITE,
 					  tstream_bsd_fde_handler,
 					  bsds);
 		if (!bsds->fde) {
@@ -1398,7 +1403,9 @@ static int tstream_bsd_set_writeable_handler(struct tstream_bsd *bsds,
 		/* cache the event context we're running on */
 		bsds->event_ptr = ev;
 	} else if (!bsds->writeable_handler) {
-		TEVENT_FD_WRITEABLE(bsds->fde);
+		uint16_t flags = tevent_fd_get_flags(bsds->fde);
+		flags |= TEVENT_FD_READ | TEVENT_FD_WRITE;
+		tevent_fd_set_flags(bsds->fde, flags);
 	}
 
 	bsds->writeable_handler = handler;
