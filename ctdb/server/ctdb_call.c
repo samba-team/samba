@@ -196,6 +196,11 @@ static void ctdb_call_send_dmaster(struct ctdb_db_context *ctdb_db,
 	int len;
 	uint32_t lmaster = ctdb_lmaster(ctdb, key);
 
+	if (ctdb->methods == NULL) {
+		ctdb_fatal(ctdb, "Failed ctdb_call_send_dmaster since transport is down");
+		return;
+	}
+
 	if (lmaster == ctdb->pnn) {
 		ctdb_send_dmaster_reply(ctdb_db, header, *key, *data, 
 					c->hdr.srcnode, c->hdr.reqid);
