@@ -2279,7 +2279,10 @@ static int control_setdebug(struct ctdb_context *ctdb, int argc, const char **ar
 		}
 	}
 	if (debug_levels[i].description == NULL) {
-		printf("Invalid debug level\n");
+		printf("Invalid debug level, must be one of\n");
+		for (i=0; debug_levels[i].description != NULL; i++) {
+			printf("%s (%d)\n", debug_levels[i].description, debug_levels[i].level);
+		}
 		return -1;
 	}
 
