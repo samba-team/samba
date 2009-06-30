@@ -382,6 +382,12 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	struct ctdb_call *call;
 	struct ctdb_db_context *ctdb_db;
 
+	if (ctdb->methods == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed ctdb_request_call. Transport is DOWN\n"));
+		return;
+	}
+
+
 	ctdb_db = find_ctdb_db(ctdb, c->db_id);
 	if (!ctdb_db) {
 		ctdb_send_error(ctdb, hdr, -1,
