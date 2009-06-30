@@ -925,28 +925,12 @@ _kdc_as_rep(krb5_context context,
 	ret = KRB5KRB_ERR_GENERIC;
 	e_text = "No client in request";
     } else {
-
-	if (b->cname->name_type == KRB5_NT_ENTERPRISE_PRINCIPAL) {
-	    if (b->cname->name_string.len != 1) {
-		kdc_log(context, config, 0,
-			"AS-REQ malformed canon request from %s, "
-			"enterprise name with %d name components",
-			from, b->cname->name_string.len);
-		ret = KRB5_PARSE_MALFORMED;
-		goto out;
-	    }
-	    ret = krb5_parse_name(context, b->cname->name_string.val[0],
-				  &client_princ);
-	    if (ret)
-		goto out;
-	} else {
-	    ret = _krb5_principalname2krb5_principal (context,
-						      &client_princ,
-						      *(b->cname),
-						      b->realm);
-	    if (ret)
-		goto out;
-	}
+	ret = _krb5_principalname2krb5_principal (context,
+						  &client_princ,
+						  *(b->cname),
+						  b->realm);
+	if (ret)
+	    goto out;
 
 	ret = krb5_unparse_name(context, client_princ, &client_name);
     }

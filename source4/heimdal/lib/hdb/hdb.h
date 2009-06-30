@@ -54,6 +54,8 @@ enum hdb_lockop{ HDB_RLOCK, HDB_WLOCK };
 #define HDB_F_GET_ANY		28	/* fetch any of client,server,krbtgt */
 #define HDB_F_CANON		32	/* want canonicalition */
 
+#define HDB_CAP_F_HANDLE_ENTERPRISE_PRINCIPAL 1
+
 /* key usage for master key */
 #define HDB_KU_MKEY	0x484442
 
@@ -80,7 +82,7 @@ typedef struct HDB{
     int hdb_master_key_set;
     hdb_master_key hdb_master_key;
     int hdb_openp;
-
+    int hdb_capability_flags;
     /**
      * Open (or create) the a Kerberos database.
      *
@@ -184,7 +186,7 @@ typedef struct HDB{
     krb5_error_code (*hdb_destroy)(krb5_context, struct HDB*);
 }HDB;
 
-#define HDB_INTERFACE_VERSION	4
+#define HDB_INTERFACE_VERSION	5
 
 struct hdb_so_method {
     int version;

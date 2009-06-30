@@ -51,6 +51,8 @@ export KRB5CCNAME
 echo $PASSWORD > ./tmppassfile
 #testit "kinit with keytab" $samba4kinit --keytab=$PREFIX/dc/private/secrets.keytab $SERVER\$@$REALM   || failed=`expr $failed + 1`
 testit "kinit with password" $samba4kinit --password-file=./tmppassfile --request-pac $USERNAME@$REALM   || failed=`expr $failed + 1`
+testit "kinit with password (enterprise style)" $samba4kinit --enterprise --password-file=./tmppassfile --request-pac $USERNAME@$REALM   || failed=`expr $failed + 1`
+testit "kinit with password (windows style)" $samba4kinit --windows --password-file=./tmppassfile --request-pac $USERNAME@$REALM   || failed=`expr $failed + 1`
 testit "kinit with pkinit" $samba4kinit --request-pac --renewable --pk-user=FILE:$PREFIX/dc/private/tls/admincert.pem,$PREFIX/dc/private/tls/adminkey.pem $USERNAME@$REALM || failed=`expr $failed + 1`
 testit "kinit renew ticket" $samba4kinit --request-pac -R
 
