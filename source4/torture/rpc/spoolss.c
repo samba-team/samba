@@ -1,21 +1,21 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    test suite for spoolss rpc operations
 
    Copyright (C) Tim Potter 2003
    Copyright (C) Stefan Metzmacher 2005
    Copyright (C) Jelmer Vernooij 2007
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -89,13 +89,13 @@ static bool test_OpenPrinter_server(struct torture_context *tctx, struct dcerpc_
 
 	status = dcerpc_spoolss_OpenPrinter(p, ctx, &op);
 	torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_OpenPrinter failed");
-	torture_assert_werr_ok(tctx, op.out.result, "dcerpc_spoolss_OpenPrinter failed"); 
+	torture_assert_werr_ok(tctx, op.out.result, "dcerpc_spoolss_OpenPrinter failed");
 
 	return true;
 }
 
-static bool test_EnumPorts(struct torture_context *tctx, 
-			   struct dcerpc_pipe *p, 
+static bool test_EnumPorts(struct torture_context *tctx,
+			   struct dcerpc_pipe *p,
 			   struct test_spoolss_context *ctx)
 {
 	NTSTATUS status;
@@ -126,7 +126,7 @@ static bool test_EnumPorts(struct torture_context *tctx,
 			/* TODO: do some more checks here */
 			continue;
 		}
-		torture_assert_werr_equal(tctx, r.out.result, WERR_INSUFFICIENT_BUFFER, 
+		torture_assert_werr_equal(tctx, r.out.result, WERR_INSUFFICIENT_BUFFER,
 			"EnumPorts unexpected return code");
 
 		blob = data_blob_talloc(ctx, NULL, needed);
@@ -148,7 +148,7 @@ static bool test_EnumPorts(struct torture_context *tctx,
 	for (i=1;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i];
 		int old_level = levels[i-1];
-		torture_assert_int_equal(tctx, ctx->port_count[level], ctx->port_count[old_level], 
+		torture_assert_int_equal(tctx, ctx->port_count[level], ctx->port_count[old_level],
 			"EnumPorts invalid value");
 	}
 	/* if the array sizes are not the same we would maybe segfault in the following code */
@@ -235,8 +235,8 @@ static bool test_GetPrintProcessorDirectory(struct torture_context *tctx,
 }
 
 
-static bool test_GetPrinterDriverDirectory(struct torture_context *tctx, 
-					   struct dcerpc_pipe *p, 
+static bool test_GetPrinterDriverDirectory(struct torture_context *tctx,
+					   struct dcerpc_pipe *p,
 					   struct test_spoolss_context *ctx)
 {
 	NTSTATUS status;
@@ -278,9 +278,9 @@ static bool test_GetPrinterDriverDirectory(struct torture_context *tctx,
 		torture_comment(tctx, "Testing GetPrinterDriverDirectory level %u\n", r.in.level);
 
 		status = dcerpc_spoolss_GetPrinterDriverDirectory(p, ctx, &r);
-		torture_assert_ntstatus_ok(tctx, status, 
+		torture_assert_ntstatus_ok(tctx, status,
 			"dcerpc_spoolss_GetPrinterDriverDirectory failed");
-		torture_assert_werr_equal(tctx, r.out.result, WERR_INSUFFICIENT_BUFFER, 
+		torture_assert_werr_equal(tctx, r.out.result, WERR_INSUFFICIENT_BUFFER,
 			"GetPrinterDriverDirectory unexpected return code");
 
 		blob = data_blob_talloc(ctx, NULL, needed);
@@ -297,7 +297,7 @@ static bool test_GetPrinterDriverDirectory(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_EnumPrinterDrivers(struct torture_context *tctx, 
+static bool test_EnumPrinterDrivers(struct torture_context *tctx,
 				    struct dcerpc_pipe *p,
 				    struct test_spoolss_context *ctx)
 {
@@ -334,7 +334,7 @@ static bool test_EnumPrinterDrivers(struct torture_context *tctx,
 		torture_comment(tctx, "Testing EnumPrinterDrivers level %u (%s)\n", r.in.level, r.in.environment);
 
 		status = dcerpc_spoolss_EnumPrinterDrivers(p, ctx, &r);
-		torture_assert_ntstatus_ok(tctx, status, 
+		torture_assert_ntstatus_ok(tctx, status,
 					   "dcerpc_spoolss_EnumPrinterDrivers failed");
 		if (W_ERROR_IS_OK(r.out.result)) {
 			/* TODO: do some more checks here */
@@ -444,8 +444,8 @@ static bool test_EnumPrinterDrivers(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_EnumMonitors(struct torture_context *tctx, 
-			      struct dcerpc_pipe *p, 
+static bool test_EnumMonitors(struct torture_context *tctx,
+			      struct dcerpc_pipe *p,
 			      struct test_spoolss_context *ctx)
 {
 	NTSTATUS status;
@@ -476,7 +476,7 @@ static bool test_EnumMonitors(struct torture_context *tctx,
 			/* TODO: do some more checks here */
 			continue;
 		}
-		torture_assert_werr_equal(tctx, r.out.result, WERR_INSUFFICIENT_BUFFER, 
+		torture_assert_werr_equal(tctx, r.out.result, WERR_INSUFFICIENT_BUFFER,
 			"EnumMonitors failed");
 
 		blob = data_blob_talloc(ctx, NULL, needed);
@@ -496,7 +496,7 @@ static bool test_EnumMonitors(struct torture_context *tctx,
 	for (i=1;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i];
 		int old_level = levels[i-1];
-		torture_assert_int_equal(tctx, ctx->monitor_count[level], ctx->monitor_count[old_level], 
+		torture_assert_int_equal(tctx, ctx->monitor_count[level], ctx->monitor_count[old_level],
 					 "EnumMonitors invalid value");
 	}
 
@@ -519,7 +519,7 @@ static bool test_EnumMonitors(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_EnumPrintProcessors(struct torture_context *tctx, 
+static bool test_EnumPrintProcessors(struct torture_context *tctx,
 				     struct dcerpc_pipe *p,
 				     struct test_spoolss_context *ctx)
 {
@@ -552,7 +552,7 @@ static bool test_EnumPrintProcessors(struct torture_context *tctx,
 			/* TODO: do some more checks here */
 			continue;
 		}
-		torture_assert_werr_equal(tctx, r.out.result, WERR_INSUFFICIENT_BUFFER, 
+		torture_assert_werr_equal(tctx, r.out.result, WERR_INSUFFICIENT_BUFFER,
 			"EnumPrintProcessors unexpected return code");
 
 		blob = data_blob_talloc(ctx, NULL, needed);
@@ -645,7 +645,7 @@ static bool test_EnumPrintProcDataTypes(struct torture_context *tctx,
 }
 
 
-static bool test_EnumPrinters(struct torture_context *tctx, 
+static bool test_EnumPrinters(struct torture_context *tctx,
 			      struct dcerpc_pipe *p,
 			      struct test_spoolss_context *ctx)
 {
@@ -678,7 +678,7 @@ static bool test_EnumPrinters(struct torture_context *tctx,
 			/* TODO: do some more checks here */
 			continue;
 		}
-		torture_assert_werr_equal(tctx, r.out.result, WERR_INSUFFICIENT_BUFFER, 
+		torture_assert_werr_equal(tctx, r.out.result, WERR_INSUFFICIENT_BUFFER,
 			"EnumPrinters unexpected return code");
 
 		blob = data_blob_talloc(ctx, NULL, needed);
@@ -714,7 +714,7 @@ static bool test_EnumPrinters(struct torture_context *tctx,
 				COMPARE_UINT32(tctx, cur->info0, ref->info2, cjobs);
 				/*COMPARE_UINT32(tctx, cur->info0, ref->info2, total_jobs);
 				COMPARE_UINT32(tctx, cur->info0, ref->info2, total_bytes);
-				COMPARE_SPOOLSS_TIME(cur->info0, ref->info2, spoolss_Time time);		
+				COMPARE_SPOOLSS_TIME(cur->info0, ref->info2, spoolss_Time time);
 				COMPARE_UINT32(tctx, cur->info0, ref->info2, global_counter);
 				COMPARE_UINT32(tctx, cur->info0, ref->info2, total_pages);
 				COMPARE_UINT32(tctx, cur->info0, ref->info2, version);
@@ -771,8 +771,8 @@ static bool test_EnumPrinters(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_GetPrinter(struct torture_context *tctx, 
-			    struct dcerpc_pipe *p, 
+static bool test_GetPrinter(struct torture_context *tctx,
+			    struct dcerpc_pipe *p,
 		     struct policy_handle *handle)
 {
 	NTSTATUS status;
@@ -780,7 +780,7 @@ static bool test_GetPrinter(struct torture_context *tctx,
 	uint16_t levels[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
 	int i;
 	uint32_t needed;
-	
+
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		r.in.handle = handle;
 		r.in.level = levels[i];
@@ -792,7 +792,7 @@ static bool test_GetPrinter(struct torture_context *tctx,
 
 		status = dcerpc_spoolss_GetPrinter(p, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "GetPrinter failed");
-		
+
 		if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
 			DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
 			data_blob_clear(&blob);
@@ -800,7 +800,7 @@ static bool test_GetPrinter(struct torture_context *tctx,
 			r.in.offered = needed;
 			status = dcerpc_spoolss_GetPrinter(p, tctx, &r);
 		}
-		
+
 		torture_assert_ntstatus_ok(tctx, status, "GetPrinter failed");
 
 		torture_assert_werr_ok(tctx, r.out.result, "GetPrinter failed");
@@ -810,8 +810,8 @@ static bool test_GetPrinter(struct torture_context *tctx,
 }
 
 
-static bool test_ClosePrinter(struct torture_context *tctx, 
-			      struct dcerpc_pipe *p, 
+static bool test_ClosePrinter(struct torture_context *tctx,
+			      struct dcerpc_pipe *p,
 			      struct policy_handle *handle)
 {
 	NTSTATUS status;
@@ -828,9 +828,9 @@ static bool test_ClosePrinter(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_GetForm(struct torture_context *tctx, 
-			 struct dcerpc_pipe *p, 
-			 struct policy_handle *handle, 
+static bool test_GetForm(struct torture_context *tctx,
+			 struct dcerpc_pipe *p,
+			 struct policy_handle *handle,
 			 const char *form_name,
 			 uint32_t level)
 {
@@ -868,8 +868,8 @@ static bool test_GetForm(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_EnumForms(struct torture_context *tctx, 
-			   struct dcerpc_pipe *p, 
+static bool test_EnumForms(struct torture_context *tctx,
+			   struct dcerpc_pipe *p,
 			   struct policy_handle *handle, bool print_server)
 {
 	NTSTATUS status;
@@ -929,9 +929,9 @@ static bool test_EnumForms(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_DeleteForm(struct torture_context *tctx, 
-			    struct dcerpc_pipe *p, 
-			    struct policy_handle *handle, 
+static bool test_DeleteForm(struct torture_context *tctx,
+			    struct dcerpc_pipe *p,
+			    struct policy_handle *handle,
 			    const char *form_name)
 {
 	NTSTATUS status;
@@ -949,8 +949,8 @@ static bool test_DeleteForm(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_AddForm(struct torture_context *tctx, 
-			 struct dcerpc_pipe *p, 
+static bool test_AddForm(struct torture_context *tctx,
+			 struct dcerpc_pipe *p,
 			 struct policy_handle *handle, bool print_server)
 {
 	struct spoolss_AddForm r;
@@ -1010,7 +1010,7 @@ static bool test_AddForm(struct torture_context *tctx,
 	return ret;
 }
 
-static bool test_EnumPorts_old(struct torture_context *tctx, 
+static bool test_EnumPorts_old(struct torture_context *tctx,
 			       struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
@@ -1019,7 +1019,7 @@ static bool test_EnumPorts_old(struct torture_context *tctx,
 	uint32_t count;
 	union spoolss_PortInfo *info;
 
-	r.in.servername = talloc_asprintf(tctx, "\\\\%s", 
+	r.in.servername = talloc_asprintf(tctx, "\\\\%s",
 					  dcerpc_server_name(p));
 	r.in.level = 2;
 	r.in.buffer = NULL;
@@ -1049,13 +1049,13 @@ static bool test_EnumPorts_old(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_AddPort(struct torture_context *tctx, 
+static bool test_AddPort(struct torture_context *tctx,
 			 struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct spoolss_AddPort r;
 
-	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", 
+	r.in.server_name = talloc_asprintf(tctx, "\\\\%s",
 					   dcerpc_server_name(p));
 	r.in.unknown = 0;
 	r.in.monitor_name = "foo";
@@ -1080,8 +1080,8 @@ static bool test_AddPort(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_GetJob(struct torture_context *tctx, 
-			struct dcerpc_pipe *p, 
+static bool test_GetJob(struct torture_context *tctx,
+			struct dcerpc_pipe *p,
 			struct policy_handle *handle, uint32_t job_id)
 {
 	NTSTATUS status;
@@ -1129,9 +1129,9 @@ static bool test_GetJob(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_SetJob(struct torture_context *tctx, 
-			struct dcerpc_pipe *p, 
-			struct policy_handle *handle, uint32_t job_id, 
+static bool test_SetJob(struct torture_context *tctx,
+			struct dcerpc_pipe *p,
+			struct policy_handle *handle, uint32_t job_id,
 			enum spoolss_JobControl command)
 {
 	NTSTATUS status;
@@ -1210,8 +1210,8 @@ static bool test_AddJob(struct torture_context *tctx,
 }
 
 
-static bool test_EnumJobs(struct torture_context *tctx, 
-			  struct dcerpc_pipe *p, 
+static bool test_EnumJobs(struct torture_context *tctx,
+			  struct dcerpc_pipe *p,
 			  struct policy_handle *handle)
 {
 	NTSTATUS status;
@@ -1265,8 +1265,8 @@ static bool test_EnumJobs(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_DoPrintTest(struct torture_context *tctx, 
-			     struct dcerpc_pipe *p, 
+static bool test_DoPrintTest(struct torture_context *tctx,
+			     struct dcerpc_pipe *p,
 			     struct policy_handle *handle)
 {
 	bool ret = true;
@@ -1301,7 +1301,7 @@ static bool test_DoPrintTest(struct torture_context *tctx,
 		sp.in.handle		= handle;
 
 		status = dcerpc_spoolss_StartPagePrinter(p, tctx, &sp);
-		torture_assert_ntstatus_ok(tctx, status, 
+		torture_assert_ntstatus_ok(tctx, status,
 					   "dcerpc_spoolss_StartPagePrinter failed");
 		torture_assert_werr_ok(tctx, sp.out.result, "StartPagePrinter failed");
 
@@ -1340,8 +1340,8 @@ static bool test_DoPrintTest(struct torture_context *tctx,
 	return ret;
 }
 
-static bool test_PausePrinter(struct torture_context *tctx, 
-			      struct dcerpc_pipe *p, 
+static bool test_PausePrinter(struct torture_context *tctx,
+			      struct dcerpc_pipe *p,
 			      struct policy_handle *handle)
 {
 	NTSTATUS status;
@@ -1373,8 +1373,8 @@ static bool test_PausePrinter(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_ResumePrinter(struct torture_context *tctx, 
-			       struct dcerpc_pipe *p, 
+static bool test_ResumePrinter(struct torture_context *tctx,
+			       struct dcerpc_pipe *p,
 			       struct policy_handle *handle)
 {
 	NTSTATUS status;
@@ -1406,9 +1406,9 @@ static bool test_ResumePrinter(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_GetPrinterData(struct torture_context *tctx, 
-				struct dcerpc_pipe *p, 
-				struct policy_handle *handle, 
+static bool test_GetPrinterData(struct torture_context *tctx,
+				struct dcerpc_pipe *p,
+				struct policy_handle *handle,
 				const char *value_name)
 {
 	NTSTATUS status;
@@ -1441,9 +1441,9 @@ static bool test_GetPrinterData(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_GetPrinterDataEx(struct torture_context *tctx, 
-				  struct dcerpc_pipe *p, 
-				  struct policy_handle *handle, 
+static bool test_GetPrinterDataEx(struct torture_context *tctx,
+				  struct dcerpc_pipe *p,
+				  struct policy_handle *handle,
 				  const char *key_name,
 				  const char *value_name)
 {
@@ -1484,7 +1484,7 @@ static bool test_GetPrinterDataEx(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_EnumPrinterData(struct torture_context *tctx, struct dcerpc_pipe *p, 
+static bool test_EnumPrinterData(struct torture_context *tctx, struct dcerpc_pipe *p,
 				 struct policy_handle *handle)
 {
 	NTSTATUS status;
@@ -1521,11 +1521,11 @@ static bool test_EnumPrinterData(struct torture_context *tctx, struct dcerpc_pip
 		status = dcerpc_spoolss_EnumPrinterData(p, tctx, &r);
 
 		torture_assert_ntstatus_ok(tctx, status, "EnumPrinterData failed");
-		
+
 		test_GetPrinterData(tctx, p, handle, r.out.value_name);
 
-		test_GetPrinterDataEx(tctx, 
-			p, handle, "PrinterDriverData", 
+		test_GetPrinterDataEx(tctx,
+			p, handle, "PrinterDriverData",
 			r.out.value_name);
 
 		r.in.enum_index++;
@@ -1535,8 +1535,8 @@ static bool test_EnumPrinterData(struct torture_context *tctx, struct dcerpc_pip
 	return true;
 }
 
-static bool test_EnumPrinterDataEx(struct torture_context *tctx, 
-				   struct dcerpc_pipe *p, 
+static bool test_EnumPrinterDataEx(struct torture_context *tctx,
+				   struct dcerpc_pipe *p,
 				   struct policy_handle *handle)
 {
 	NTSTATUS status;
@@ -1567,9 +1567,9 @@ static bool test_EnumPrinterDataEx(struct torture_context *tctx,
 }
 
 
-static bool test_DeletePrinterData(struct torture_context *tctx, 
-				   struct dcerpc_pipe *p, 
-				   struct policy_handle *handle, 
+static bool test_DeletePrinterData(struct torture_context *tctx,
+				   struct dcerpc_pipe *p,
+				   struct policy_handle *handle,
 				   const char *value_name)
 {
 	NTSTATUS status;
@@ -1587,14 +1587,14 @@ static bool test_DeletePrinterData(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_SetPrinterData(struct torture_context *tctx, 
-				struct dcerpc_pipe *p, 
+static bool test_SetPrinterData(struct torture_context *tctx,
+				struct dcerpc_pipe *p,
 				struct policy_handle *handle)
 {
 	NTSTATUS status;
 	struct spoolss_SetPrinterData r;
 	const char *value_name = "spottyfoot";
-	
+
 	r.in.handle = handle;
 	r.in.value_name = value_name;
 	r.in.type = REG_SZ;
@@ -1617,8 +1617,8 @@ static bool test_SetPrinterData(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_SecondaryClosePrinter(struct torture_context *tctx, 
-				       struct dcerpc_pipe *p, 
+static bool test_SecondaryClosePrinter(struct torture_context *tctx,
+				       struct dcerpc_pipe *p,
 				       struct policy_handle *handle)
 {
 	NTSTATUS status;
@@ -1649,7 +1649,7 @@ static bool test_SecondaryClosePrinter(struct torture_context *tctx,
 	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_NET_WRITE_FAULT,
 			"ERROR: Allowed close on secondary connection");
 
-	torture_assert_int_equal(tctx, p2->last_fault_code, DCERPC_FAULT_CONTEXT_MISMATCH, 
+	torture_assert_int_equal(tctx, p2->last_fault_code, DCERPC_FAULT_CONTEXT_MISMATCH,
 				 "Unexpected fault code");
 
 	talloc_free(p2);
@@ -1657,7 +1657,7 @@ static bool test_SecondaryClosePrinter(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_OpenPrinter_badname(struct torture_context *tctx, 
+static bool test_OpenPrinter_badname(struct torture_context *tctx,
 				     struct dcerpc_pipe *p, const char *name)
 {
 	NTSTATUS status;
@@ -1709,8 +1709,8 @@ static bool test_OpenPrinter_badname(struct torture_context *tctx,
 	return ret;
 }
 
-static bool test_OpenPrinter(struct torture_context *tctx, 
-			     struct dcerpc_pipe *p, 
+static bool test_OpenPrinter(struct torture_context *tctx,
+			     struct dcerpc_pipe *p,
 			     const char *name)
 {
 	NTSTATUS status;
@@ -1749,8 +1749,8 @@ static bool test_OpenPrinter(struct torture_context *tctx,
 	return ret;
 }
 
-static bool call_OpenPrinterEx(struct torture_context *tctx, 
-			       struct dcerpc_pipe *p, 
+static bool call_OpenPrinterEx(struct torture_context *tctx,
+			       struct dcerpc_pipe *p,
 			       const char *name, struct policy_handle *handle)
 {
 	struct spoolss_OpenPrinterEx r;
@@ -1758,10 +1758,10 @@ static bool call_OpenPrinterEx(struct torture_context *tctx,
 	NTSTATUS status;
 
 	if (name && name[0]) {
-		r.in.printername = talloc_asprintf(tctx, "\\\\%s\\%s", 
+		r.in.printername = talloc_asprintf(tctx, "\\\\%s\\%s",
 						   dcerpc_server_name(p), name);
 	} else {
-		r.in.printername = talloc_asprintf(tctx, "\\\\%s", 
+		r.in.printername = talloc_asprintf(tctx, "\\\\%s",
 						   dcerpc_server_name(p));
 	}
 
@@ -1785,14 +1785,14 @@ static bool call_OpenPrinterEx(struct torture_context *tctx,
 	status = dcerpc_spoolss_OpenPrinterEx(p, tctx, &r);
 
 	torture_assert_ntstatus_ok(tctx, status, "OpenPrinterEx failed");
-	
+
 	torture_assert_werr_ok(tctx, r.out.result, "OpenPrinterEx failed");
 
 	return true;
 }
 
-static bool test_OpenPrinterEx(struct torture_context *tctx, 
-			       struct dcerpc_pipe *p, 
+static bool test_OpenPrinterEx(struct torture_context *tctx,
+			       struct dcerpc_pipe *p,
 			       const char *name)
 {
 	struct policy_handle handle;
@@ -1847,7 +1847,7 @@ static bool test_OpenPrinterEx(struct torture_context *tctx,
 	if (!test_ClosePrinter(tctx, p, &handle)) {
 		ret = false;
 	}
-	
+
 	return ret;
 }
 
@@ -1923,8 +1923,8 @@ static bool test_EnumPrinters_old(struct torture_context *tctx, struct dcerpc_pi
 }
 
 #if 0
-static bool test_GetPrinterDriver2(struct dcerpc_pipe *p, 
-				   struct policy_handle *handle, 
+static bool test_GetPrinterDriver2(struct dcerpc_pipe *p,
+				   struct policy_handle *handle,
 				   const char *driver_name)
 {
 	NTSTATUS status;
@@ -1956,15 +1956,15 @@ static bool test_GetPrinterDriver2(struct dcerpc_pipe *p,
 		r.in.offered = needed;
 		status = dcerpc_spoolss_GetPrinterDriver2(p, tctx, &r);
 	}
-		
+
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("GetPrinterDriver2 failed - %s\n", 
+		printf("GetPrinterDriver2 failed - %s\n",
 		       nt_errstr(status));
 		return false;
 	}
 
 	if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("GetPrinterDriver2 failed - %s\n", 
+		printf("GetPrinterDriver2 failed - %s\n",
 		       win_errstr(r.out.result));
 		return false;
 	}
@@ -1973,7 +1973,7 @@ static bool test_GetPrinterDriver2(struct dcerpc_pipe *p,
 }
 #endif
 
-static bool test_EnumPrinterDrivers_old(struct torture_context *tctx, 
+static bool test_EnumPrinterDrivers_old(struct torture_context *tctx,
 					struct dcerpc_pipe *p)
 {
 	struct spoolss_EnumPrinterDrivers r;
@@ -2068,7 +2068,7 @@ bool torture_rpc_spoolss(struct torture_context *torture)
 	ret &= test_OpenPrinter_badname(torture, p, "\\\\\\");
 	ret &= test_OpenPrinter_badname(torture, p, "\\\\\\__INVALID_PRINTER__");
 	ret &= test_OpenPrinter_badname(torture, p, talloc_asprintf(torture, "\\\\%s\\", dcerpc_server_name(p)));
-	ret &= test_OpenPrinter_badname(torture, p, 
+	ret &= test_OpenPrinter_badname(torture, p,
 					talloc_asprintf(torture, "\\\\%s\\__INVALID_PRINTER__", dcerpc_server_name(p)));
 
 
