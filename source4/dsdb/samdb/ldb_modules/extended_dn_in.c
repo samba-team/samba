@@ -32,7 +32,7 @@
 #include "includes.h"
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_errors.h"
-#include "ldb/include/ldb_private.h"
+#include "ldb/include/ldb_module.h"
 
 /* search */
 struct extended_search_context {
@@ -116,7 +116,7 @@ static int extended_base_callback(struct ldb_request *req, struct ldb_reply *are
 						(const char *)el->values[i].data,
 						el->values[i].length);
 			if (!valstr) {
-				ldb_oom(ac->module->ldb);
+				ldb_oom(ldb_module_get_ctx(ac->module));
 				return ldb_module_done(ac->req, NULL, NULL,
 						       LDB_ERR_OPERATIONS_ERROR);
 			}
@@ -134,10 +134,10 @@ static int extended_base_callback(struct ldb_request *req, struct ldb_reply *are
 			break;
 		}
 
-		ac->basedn = ldb_dn_new(ac, ac->module->ldb, found);
+		ac->basedn = ldb_dn_new(ac, ldb_module_get_ctx(ac->module), found);
 		talloc_free(valstr);
 		if (!ac->basedn) {
-			ldb_oom(ac->module->ldb);
+			ldb_oom(ldb_module_get_ctx(ac->module));
 			return ldb_module_done(ac->req, NULL, NULL,
 					       LDB_ERR_OPERATIONS_ERROR);
 		}
@@ -152,7 +152,7 @@ static int extended_base_callback(struct ldb_request *req, struct ldb_reply *are
 		if (!ac->basedn) {
 			const char *str = talloc_asprintf(req, "Base-DN '%s' not found",
 							  ldb_dn_get_linearized(ac->req->op.search.base));
-			ldb_set_errstring(ac->module->ldb, str);
+			ldb_set_errstring(ldb_module_get_ctx(ac->module), str);
 			return ldb_module_done(ac->req, NULL, NULL,
 					       LDB_ERR_NO_SUCH_OBJECT);
 		}
@@ -160,7 +160,7 @@ static int extended_base_callback(struct ldb_request *req, struct ldb_reply *are
 		switch (ac->req->operation) {
 		case LDB_SEARCH:
 			ret = ldb_build_search_req_ex(&down_req,
-						      ac->module->ldb, ac->req,
+						      ldb_module_get_ctx(ac->module), ac->req,
 						      ac->basedn,
 						      ac->req->op.search.scope,
 						      ac->req->op.search.tree,
@@ -173,7 +173,7 @@ static int extended_base_callback(struct ldb_request *req, struct ldb_reply *are
 		{
 			struct ldb_message *add_msg = ldb_msg_copy_shallow(ac, ac->req->op.add.message);
 			if (!add_msg) {
-				ldb_oom(ac->module->ldb);
+				ldb_oom(ldb_module_get_ctx(ac->module));
 				return ldb_module_done(ac->req, NULL, NULL,
 						       LDB_ERR_OPERATIONS_ERROR);
 			}
@@ -181,7 +181,7 @@ static int extended_base_callback(struct ldb_request *req, struct ldb_reply *are
 			add_msg->dn = ac->basedn;
 
 			ret = ldb_build_add_req(&down_req,
-						ac->module->ldb, ac->req,
+						ldb_module_get_ctx(ac->module), ac->req,
 						add_msg, 
 						ac->req->controls,
 						ac, extended_final_callback, 
@@ -192,7 +192,7 @@ static int extended_base_callback(struct ldb_request *req, struct ldb_reply *are
 		{
 			struct ldb_message *mod_msg = ldb_msg_copy_shallow(ac, ac->req->op.mod.message);
 			if (!mod_msg) {
-				ldb_oom(ac->module->ldb);
+				ldb_oom(ldb_module_get_ctx(ac->module));
 				return ldb_module_done(ac->req, NULL, NULL,
 						       LDB_ERR_OPERATIONS_ERROR);
 			}
@@ -200,7 +200,7 @@ static int extended_base_callback(struct ldb_request *req, struct ldb_reply *are
 			mod_msg->dn = ac->basedn;
 
 			ret = ldb_build_mod_req(&down_req,
-						ac->module->ldb, ac->req,
+						ldb_module_get_ctx(ac->module), ac->req,
 						mod_msg, 
 						ac->req->controls,
 						ac, extended_final_callback, 
@@ -209,7 +209,7 @@ static int extended_base_callback(struct ldb_request *req, struct ldb_reply *are
 		}
 		case LDB_DELETE:
 			ret = ldb_build_del_req(&down_req,
-						ac->module->ldb, ac->req,
+						ldb_module_get_ctx(ac->module), ac->req,
 						ac->basedn, 
 						ac->req->controls,
 						ac, extended_final_callback, 
@@ -217,7 +217,7 @@ static int extended_base_callback(struct ldb_request *req, struct ldb_reply *are
 			break;
 		case LDB_RENAME:
 			ret = ldb_build_rename_req(&down_req,
-						   ac->module->ldb, ac->req,
+						   ldb_module_get_ctx(ac->module), ac->req,
 						   ac->basedn, 
 						   ac->req->op.rename.newdn,
 						   ac->req->controls,
@@ -269,11 +269,11 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 
 		if (sid_val) {
 			/* TODO: do a search over all partitions */
-			base_dn = ldb_get_default_basedn(module->ldb);
+			base_dn = ldb_get_default_basedn(ldb_module_get_ctx(module));
 			base_dn_filter = talloc_asprintf(req, "(objectSid=%s)", 
 							 ldb_binary_encode(req, *sid_val));
 			if (!base_dn_filter) {
-				ldb_oom(module->ldb);
+				ldb_oom(ldb_module_get_ctx(module));
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
 			base_dn_scope = LDB_SCOPE_SUBTREE;
@@ -282,11 +282,11 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 		} else if (guid_val) {
 
 			/* TODO: do a search over all partitions */
-			base_dn = ldb_get_default_basedn(module->ldb);
+			base_dn = ldb_get_default_basedn(ldb_module_get_ctx(module));
 			base_dn_filter = talloc_asprintf(req, "(objectGUID=%s)", 
 							 ldb_binary_encode(req, *guid_val));
 			if (!base_dn_filter) {
-				ldb_oom(module->ldb);
+				ldb_oom(ldb_module_get_ctx(module));
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
 			base_dn_scope = LDB_SCOPE_SUBTREE;
@@ -310,21 +310,21 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 
 			wellknown_object = talloc_asprintf(req, "B:32:%s:", wkguid_dup);
 			if (!wellknown_object) {
-				ldb_oom(module->ldb);
+				ldb_oom(ldb_module_get_ctx(module));
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
 
 			tail_str = p;
 
-			base_dn = ldb_dn_new(req, module->ldb, tail_str);
+			base_dn = ldb_dn_new(req, ldb_module_get_ctx(module), tail_str);
 			talloc_free(wkguid_dup);
 			if (!base_dn) {
-				ldb_oom(module->ldb);
+				ldb_oom(ldb_module_get_ctx(module));
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
 			base_dn_filter = talloc_strdup(req, "(objectClass=*)");
 			if (!base_dn_filter) {
-				ldb_oom(module->ldb);
+				ldb_oom(ldb_module_get_ctx(module));
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
 			base_dn_scope = LDB_SCOPE_BASE;
@@ -335,7 +335,7 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 
 		ac = talloc_zero(req, struct extended_search_context);
 		if (ac == NULL) {
-			ldb_oom(module->ldb);
+			ldb_oom(ldb_module_get_ctx(module));
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		
@@ -348,7 +348,7 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 		 * GUID) then search for that, so we can proceed with the original operation */
 
 		ret = ldb_build_search_req(&down_req,
-					   module->ldb, ac,
+					   ldb_module_get_ctx(module), ac,
 					   base_dn,
 					   base_dn_scope,
 					   base_dn_filter,

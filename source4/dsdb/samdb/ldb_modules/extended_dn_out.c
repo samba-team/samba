@@ -34,7 +34,7 @@
 #include "includes.h"
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_errors.h"
-#include "ldb/include/ldb_private.h"
+#include "ldb/include/ldb_module.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/ndr/libndr.h"
 #include "dsdb/samdb/samdb.h"
@@ -249,7 +249,7 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares)
 	struct extended_dn_out_private *p;
 
 	ac = talloc_get_type(req->context, struct extended_search_context);
-	p = talloc_get_type(ac->module->private_data, struct extended_dn_out_private);
+	p = talloc_get_type(ldb_module_get_private(ac->module), struct extended_dn_out_private);
 
 	if (!ares) {
 		return ldb_module_done(ac->req, NULL, NULL,
@@ -281,7 +281,7 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares)
 	if (ac->inject) {
 		/* for each record returned post-process to add any derived
 		   attributes that have been asked for */
-		ret = inject_extended_dn_out(ares, ac->module->ldb,
+		ret = inject_extended_dn_out(ares, ldb_module_get_ctx(ac->module),
 					     ac->extended_type, ac->remove_guid,
 					     ac->remove_sid);
 		if (ret != LDB_SUCCESS) {
@@ -301,7 +301,7 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares)
 							 ldb_dn_get_linearized(ares->message->dn));
 			}
 			if (ret != LDB_SUCCESS) {
-				ldb_oom(ac->module->ldb);
+				ldb_oom(ldb_module_get_ctx(ac->module));
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
 		}
@@ -329,7 +329,7 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares)
 			 * correct case */
 			msg->elements[i].name = talloc_strdup(msg->elements, attribute->lDAPDisplayName);
 			if (!msg->elements[i].name) {
-				ldb_oom(ac->module->ldb);
+				ldb_oom(ldb_module_get_ctx(ac->module));
 				return ldb_module_done(ac->req, NULL, NULL, LDB_ERR_OPERATIONS_ERROR);
 			}
 		}
@@ -346,7 +346,7 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares)
 
 		for (j = 0; j < msg->elements[i].num_values; j++) {
 			const char *dn_str;
-			struct ldb_dn *dn = ldb_dn_from_ldb_val(ac, ac->module->ldb, &msg->elements[i].values[j]);
+			struct ldb_dn *dn = ldb_dn_from_ldb_val(ac, ldb_module_get_ctx(ac->module), &msg->elements[i].values[j]);
 			if (!dn || !ldb_dn_validate(dn)) {
 				return ldb_module_done(ac->req, NULL, NULL, LDB_ERR_INVALID_DN_SYNTAX);
 			}
@@ -385,7 +385,7 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares)
 										     dn, ac->extended_type));
 			}
 			if (!dn_str) {
-				ldb_oom(ac->module->ldb);
+				ldb_oom(ldb_module_get_ctx(ac->module));
 				return ldb_module_done(ac->req, NULL, NULL, LDB_ERR_OPERATIONS_ERROR);
 			}
 			msg->elements[i].values[j] = data_blob_string_const(dn_str);
@@ -408,7 +408,7 @@ static int extended_dn_out_search(struct ldb_module *module, struct ldb_request 
 	const char * const *const_attrs;
 	int ret;
 
-	struct extended_dn_out_private *p = talloc_get_type(module->private_data, struct extended_dn_out_private);
+	struct extended_dn_out_private *p = talloc_get_type(ldb_module_get_private(module), struct extended_dn_out_private);
 
 	/* check if there's an extended dn control */
 	control = ldb_request_get_control(req, LDB_CONTROL_EXTENDED_DN_OID);
@@ -426,19 +426,19 @@ static int extended_dn_out_search(struct ldb_module *module, struct ldb_request 
 	if (!control && storage_format_control && storage_format_control->data) {
 		extended_ctrl = talloc_get_type(storage_format_control->data, struct ldb_extended_dn_control);
 		if (!extended_ctrl) {
-			ldb_set_errstring(module->ldb, "extended_dn_out: extended_ctrl was of the wrong data type");
+			ldb_set_errstring(ldb_module_get_ctx(module), "extended_dn_out: extended_ctrl was of the wrong data type");
 			return LDB_ERR_PROTOCOL_ERROR;
 		}
 	}
 
 	ac = talloc_zero(req, struct extended_search_context);
 	if (ac == NULL) {
-		ldb_oom(module->ldb);
+		ldb_oom(ldb_module_get_ctx(module));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	ac->module = module;
-	ac->schema = dsdb_get_schema(module->ldb);
+	ac->schema = dsdb_get_schema(ldb_module_get_ctx(module));
 	ac->req = req;
 	ac->inject = false;
 	ac->remove_guid = false;
@@ -469,7 +469,7 @@ static int extended_dn_out_search(struct ldb_module *module, struct ldb_request 
 			if (ac->remove_guid || ac->remove_sid) {
 				new_attrs = copy_attrs(ac, req->op.search.attrs);
 				if (new_attrs == NULL) {
-					ldb_oom(module->ldb);
+					ldb_oom(ldb_module_get_ctx(module));
 					return LDB_ERR_OPERATIONS_ERROR;
 				}
 
@@ -487,7 +487,7 @@ static int extended_dn_out_search(struct ldb_module *module, struct ldb_request 
 	}
 
 	ret = ldb_build_search_req_ex(&down_req,
-				      module->ldb, ac,
+				      ldb_module_get_ctx(module), ac,
 				      req->op.search.base,
 				      req->op.search.scope,
 				      req->op.search.tree,
@@ -541,10 +541,10 @@ static int extended_dn_out_ldb_init(struct ldb_module *module)
 
 	struct extended_dn_out_private *p = talloc(module, struct extended_dn_out_private);
 
-	module->private_data = p;
+	ldb_module_set_private(module, p);
 
 	if (!p) {
-		ldb_oom(module->ldb);
+		ldb_oom(ldb_module_get_ctx(module));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -553,7 +553,7 @@ static int extended_dn_out_ldb_init(struct ldb_module *module)
 
 	ret = ldb_mod_register_control(module, LDB_CONTROL_EXTENDED_DN_OID);
 	if (ret != LDB_SUCCESS) {
-		ldb_debug(module->ldb, LDB_DEBUG_ERROR,
+		ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_ERROR,
 			"extended_dn_out: Unable to register control with rootdse!\n");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -564,16 +564,16 @@ static int extended_dn_out_ldb_init(struct ldb_module *module)
 static int extended_dn_out_dereference_init(struct ldb_module *module)
 {
 	int ret, i = 0;
-	struct extended_dn_out_private *p;
+	struct extended_dn_out_private *p = talloc_zero(module, struct extended_dn_out_private);
 	struct dsdb_openldap_dereference_control *dereference_control;
 	struct dsdb_attribute *cur;
 
 	struct dsdb_schema *schema;
 
-	module->private_data = p = talloc_zero(module, struct extended_dn_out_private);
+	ldb_module_set_private(module, p);
 
 	if (!p) {
-		ldb_oom(module->ldb);
+		ldb_oom(ldb_module_get_ctx(module));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -585,7 +585,7 @@ static int extended_dn_out_dereference_init(struct ldb_module *module)
 
 	ret = ldb_mod_register_control(module, LDB_CONTROL_EXTENDED_DN_OID);
 	if (ret != LDB_SUCCESS) {
-		ldb_debug(module->ldb, LDB_DEBUG_ERROR,
+		ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_ERROR,
 			"extended_dn_out: Unable to register control with rootdse!\n");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -596,7 +596,7 @@ static int extended_dn_out_dereference_init(struct ldb_module *module)
 		return ret;
 	}
 
-	schema = dsdb_get_schema(module->ldb);
+	schema = dsdb_get_schema(ldb_module_get_ctx(module));
 	if (!schema) {
 		/* No schema on this DB (yet) */
 		return LDB_SUCCESS;
@@ -606,7 +606,7 @@ static int extended_dn_out_dereference_init(struct ldb_module *module)
 		= talloc_zero(p, struct dsdb_openldap_dereference_control);
 
 	if (!p->dereference_control) {
-		ldb_oom(module->ldb);
+		ldb_oom(ldb_module_get_ctx(module));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	
@@ -624,13 +624,13 @@ static int extended_dn_out_dereference_init(struct ldb_module *module)
 			= talloc_realloc(p, dereference_control->dereference,
 					 struct dsdb_openldap_dereference *, i + 2);
 		if (!dereference_control) {
-			ldb_oom(module->ldb);
+			ldb_oom(ldb_module_get_ctx(module));
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		dereference_control->dereference[i] = talloc(dereference_control->dereference,  
 					 struct dsdb_openldap_dereference);
 		if (!dereference_control->dereference[i]) {
-			ldb_oom(module->ldb);
+			ldb_oom(ldb_module_get_ctx(module));
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		dereference_control->dereference[i]->source_attribute = cur->lDAPDisplayName;

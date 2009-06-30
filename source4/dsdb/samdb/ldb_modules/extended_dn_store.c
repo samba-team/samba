@@ -38,7 +38,7 @@
 #include "includes.h"
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_errors.h"
-#include "ldb/include/ldb_private.h"
+#include "ldb/include/ldb_module.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "dsdb/samdb/samdb.h"
 #include "libcli/security/security.h"
@@ -73,11 +73,11 @@ static struct extended_dn_context *extended_dn_context_init(struct ldb_module *m
 
 	ac = talloc_zero(req, struct extended_dn_context);
 	if (ac == NULL) {
-		ldb_oom(module->ldb);
+		ldb_oom(ldb_module_get_ctx(module));
 		return NULL;
 	}
 
-	ac->schema = dsdb_get_schema(module->ldb);
+	ac->schema = dsdb_get_schema(ldb_module_get_ctx(module));
 	ac->module = module;
 	ac->req = req;
 
@@ -127,7 +127,7 @@ static int extended_replace_dn(struct ldb_request *req, struct ldb_reply *ares)
 	if (ares->error == LDB_ERR_NO_SUCH_OBJECT) {
 		/* Don't worry too much about dangling references */
 
-		ldb_reset_err_string(os->ac->module->ldb);
+		ldb_reset_err_string(ldb_module_get_ctx(os->ac->module));
 		if (os->next) {
 			struct extended_dn_replace_list *next;
 
@@ -228,10 +228,10 @@ static int extended_store_replace(struct extended_dn_context *ac,
 	
 	os->mem_ctx = callback_mem_ctx;
 
-	os->dn = ldb_dn_from_ldb_val(os, ac->module->ldb, plain_dn);
+	os->dn = ldb_dn_from_ldb_val(os, ldb_module_get_ctx(ac->module), plain_dn);
 	if (!os->dn || !ldb_dn_validate(os->dn)) {
 		talloc_free(os);
-		ldb_asprintf_errstring(ac->module->ldb, 
+		ldb_asprintf_errstring(ldb_module_get_ctx(ac->module), 
 				       "could not parse %.*s as a DN", (int)plain_dn->length, plain_dn->data);
 		return LDB_ERR_INVALID_DN_SYNTAX;
 	}
@@ -243,7 +243,7 @@ static int extended_store_replace(struct extended_dn_context *ac,
 	 * module in the stack will convert this into a normal DN for
 	 * processing */
 	ret = ldb_build_search_req(&os->search_req,
-				   ac->module->ldb, os, os->dn, LDB_SCOPE_BASE, NULL, 
+				   ldb_module_get_ctx(ac->module), os, os->dn, LDB_SCOPE_BASE, NULL, 
 				   attrs, NULL, os, extended_replace_dn,
 				   ac->req);
 
@@ -311,11 +311,11 @@ static int extended_dn_add(struct ldb_module *module, struct ldb_request *req)
 		if (!ac->new_req) {
 			struct ldb_message *msg = ldb_msg_copy(ac, req->op.add.message);
 			if (!msg) {
-				ldb_oom(module->ldb);
+				ldb_oom(ldb_module_get_ctx(module));
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
 		   
-			ret = ldb_build_add_req(&ac->new_req, module->ldb, ac, msg, req->controls, ac, extended_final_callback, req);
+			ret = ldb_build_add_req(&ac->new_req, ldb_module_get_ctx(module), ac, msg, req->controls, ac, extended_final_callback, req);
 			if (ret != LDB_SUCCESS) {
 				return ret;
 			}
@@ -384,11 +384,11 @@ static int extended_dn_modify(struct ldb_module *module, struct ldb_request *req
 		if (!ac->new_req) {
 			struct ldb_message *msg = ldb_msg_copy(ac, req->op.mod.message);
 			if (!msg) {
-				ldb_oom(module->ldb);
+				ldb_oom(ldb_module_get_ctx(module));
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
 		   
-			ret = ldb_build_mod_req(&ac->new_req, module->ldb, ac, msg, req->controls, ac, extended_final_callback, req);
+			ret = ldb_build_mod_req(&ac->new_req, ldb_module_get_ctx(module), ac, msg, req->controls, ac, extended_final_callback, req);
 			if (ret != LDB_SUCCESS) {
 				return ret;
 			}
@@ -397,9 +397,9 @@ static int extended_dn_modify(struct ldb_module *module, struct ldb_request *req
 		el = &ac->new_req->op.mod.message->elements[i];
 		/* For each value being added, we need to setup the lookups to fill in the extended DN */
 		for (j = 0; j < el->num_values; j++) {
-			struct ldb_dn *dn = ldb_dn_from_ldb_val(ac, module->ldb, &el->values[j]);
+			struct ldb_dn *dn = ldb_dn_from_ldb_val(ac, ldb_module_get_ctx(module), &el->values[j]);
 			if (!dn || !ldb_dn_validate(dn)) {
-				ldb_asprintf_errstring(module->ldb, 
+				ldb_asprintf_errstring(ldb_module_get_ctx(module), 
 						       "could not parse attribute %s as a DN", el->name);
 				return LDB_ERR_INVALID_DN_SYNTAX;
 			}

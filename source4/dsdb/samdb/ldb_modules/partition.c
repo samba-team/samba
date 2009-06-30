@@ -34,6 +34,9 @@
  */
 
 #include "includes.h"
+#include "lib/ldb/include/ldb.h"
+#include "lib/ldb/include/ldb_errors.h"
+#include "lib/ldb/include/ldb_module.h"
 #include "lib/ldb/include/ldb_private.h"
 #include "dsdb/samdb/samdb.h"
 
@@ -63,7 +66,7 @@ static struct partition_context *partition_init_ctx(struct ldb_module *module, s
 
 	ac = talloc_zero(req, struct partition_context);
 	if (ac == NULL) {
-		ldb_set_errstring(module->ldb, "Out of Memory");
+		ldb_set_errstring(ldb_module_get_ctx(module), "Out of Memory");
 		return NULL;
 	}
 
@@ -80,7 +83,7 @@ static struct partition_context *partition_init_ctx(struct ldb_module *module, s
 #define PARTITION_FIND_OP(module, op) do { \
 	PARTITION_FIND_OP_NOERROR(module, op); \
         if (module == NULL) { \
-                ldb_asprintf_errstring(module->ldb, \
+                ldb_asprintf_errstring(ldb_module_get_ctx(module), \
 			"Unable to find backend operation for " #op ); \
                 return LDB_ERR_OPERATIONS_ERROR; \
         } \
@@ -126,9 +129,9 @@ static int partition_request(struct ldb_module *module, struct ldb_request *requ
 	if (ret == LDB_SUCCESS) {
 		return ret;
 	}
-	if (!ldb_errstring(module->ldb)) {
+	if (!ldb_errstring(ldb_module_get_ctx(module))) {
 		/* Set a default error string, to place the blame somewhere */
-		ldb_asprintf_errstring(module->ldb,
+		ldb_asprintf_errstring(ldb_module_get_ctx(module),
 					"error in module %s: %s (%d)",
 					module->ops->name,
 					ldb_strerror(ret), ret);
@@ -183,7 +186,7 @@ static int partition_req_callback(struct ldb_request *req,
 
 	case LDB_REPLY_ENTRY:
 		if (ac->req->operation != LDB_SEARCH) {
-			ldb_set_errstring(ac->module->ldb,
+			ldb_set_errstring(ldb_module_get_ctx(ac->module),
 				"partition_req_callback:"
 				" Unsupported reply type for this request");
 			return ldb_module_done(ac->req, NULL, NULL,
@@ -199,7 +202,7 @@ static int partition_req_callback(struct ldb_request *req,
 			/* FIXME: check for ares->response, replmd does not fill it ! */
 			if (ares->response) {
 				if (strcmp(ares->response->oid, LDB_EXTENDED_START_TLS_OID) != 0) {
-					ldb_set_errstring(ac->module->ldb,
+					ldb_set_errstring(ldb_module_get_ctx(ac->module),
 							  "partition_req_callback:"
 							  " Unknown extended reply, "
 							  "only supports START_TLS");
@@ -245,13 +248,13 @@ static int partition_prep_request(struct partition_context *ac,
 					struct part_request,
 					ac->num_requests + 1);
 	if (ac->part_req == NULL) {
-		ldb_oom(ac->module->ldb);
+		ldb_oom(ldb_module_get_ctx(ac->module));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	switch (ac->req->operation) {
 	case LDB_SEARCH:
-		ret = ldb_build_search_req_ex(&req, ac->module->ldb,
+		ret = ldb_build_search_req_ex(&req, ldb_module_get_ctx(ac->module),
 					ac->part_req,
 					ac->req->op.search.base,
 					ac->req->op.search.scope,
@@ -262,28 +265,28 @@ static int partition_prep_request(struct partition_context *ac,
 					ac->req);
 		break;
 	case LDB_ADD:
-		ret = ldb_build_add_req(&req, ac->module->ldb, ac->part_req,
+		ret = ldb_build_add_req(&req, ldb_module_get_ctx(ac->module), ac->part_req,
 					ac->req->op.add.message,
 					ac->req->controls,
 					ac, partition_req_callback,
 					ac->req);
 		break;
 	case LDB_MODIFY:
-		ret = ldb_build_mod_req(&req, ac->module->ldb, ac->part_req,
+		ret = ldb_build_mod_req(&req, ldb_module_get_ctx(ac->module), ac->part_req,
 					ac->req->op.mod.message,
 					ac->req->controls,
 					ac, partition_req_callback,
 					ac->req);
 		break;
 	case LDB_DELETE:
-		ret = ldb_build_del_req(&req, ac->module->ldb, ac->part_req,
+		ret = ldb_build_del_req(&req, ldb_module_get_ctx(ac->module), ac->part_req,
 					ac->req->op.del.dn,
 					ac->req->controls,
 					ac, partition_req_callback,
 					ac->req);
 		break;
 	case LDB_RENAME:
-		ret = ldb_build_rename_req(&req, ac->module->ldb, ac->part_req,
+		ret = ldb_build_rename_req(&req, ldb_module_get_ctx(ac->module), ac->part_req,
 					ac->req->op.rename.olddn,
 					ac->req->op.rename.newdn,
 					ac->req->controls,
@@ -291,7 +294,7 @@ static int partition_prep_request(struct partition_context *ac,
 					ac->req);
 		break;
 	case LDB_EXTENDED:
-		ret = ldb_build_extended_req(&req, ac->module->ldb,
+		ret = ldb_build_extended_req(&req, ldb_module_get_ctx(ac->module),
 					ac->part_req,
 					ac->req->op.extended.oid,
 					ac->req->op.extended.data,
@@ -300,7 +303,7 @@ static int partition_prep_request(struct partition_context *ac,
 					ac->req);
 		break;
 	default:
-		ldb_set_errstring(ac->module->ldb,
+		ldb_set_errstring(ldb_module_get_ctx(ac->module),
 				  "Unsupported request type!");
 		ret = LDB_ERR_UNWILLING_TO_PERFORM;
 	}
@@ -315,7 +318,7 @@ static int partition_prep_request(struct partition_context *ac,
 		req->controls = talloc_memdup(req, ac->req->controls,
 					talloc_get_size(ac->req->controls));
 		if (req->controls == NULL) {
-			ldb_oom(ac->module->ldb);
+			ldb_oom(ldb_module_get_ctx(ac->module));
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	}
@@ -467,7 +470,7 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 
 	/* Remove the domain_scope control, so we don't confuse a backend server */
 	if (domain_scope_control && !save_controls(domain_scope_control, req, &saved_controls)) {
-		ldb_oom(module->ldb);
+		ldb_oom(ldb_module_get_ctx(module));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -491,7 +494,7 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 
 			/* Remove search control, so we don't confuse a backend server */
 			if (search_control && !save_controls(search_control, req, &saved_controls)) {
-				ldb_oom(module->ldb);
+				ldb_oom(ldb_module_get_ctx(module));
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
 		}
@@ -558,7 +561,7 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 
 			/* Remove search control, so we don't confuse a backend server */
 			if (search_control && !save_controls(search_control, req, &saved_controls)) {
-				ldb_oom(module->ldb);
+				ldb_oom(ldb_module_get_ctx(module));
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
 		}
@@ -607,7 +610,7 @@ static int partition_rename(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	if (backend != backend2) {
-		ldb_asprintf_errstring(module->ldb, 
+		ldb_asprintf_errstring(ldb_module_get_ctx(module), 
 				       "Cannot rename from %s in %s to %s in %s: %s",
 				       ldb_dn_get_linearized(req->op.rename.olddn),
 				       ldb_dn_get_linearized(backend->dn),
@@ -681,7 +684,7 @@ static int partition_end_trans(struct ldb_module *module)
 		PARTITION_FIND_OP(next_del, del_transaction);
 
 		if (next_end != next_prepare || next_del != next_end) {
-			ldb_asprintf_errstring(module->ldb, "ERROR: Mismatch between prepare and commit ops in ldb module");
+			ldb_asprintf_errstring(ldb_module_get_ctx(module), "ERROR: Mismatch between prepare and commit ops in ldb module");
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		
@@ -713,7 +716,7 @@ static int partition_end_trans(struct ldb_module *module)
 		if (ret != LDB_SUCCESS) {
 			/* this should only be happening if we had a serious 
 			   OS or hardware error */
-			ldb_asprintf_errstring(module->ldb, "ERROR: partition commit error");
+			ldb_asprintf_errstring(ldb_module_get_ctx(module), "ERROR: partition commit error");
 			final_ret = ret;
 		}
 	}
@@ -781,7 +784,7 @@ static int partition_sequence_number(struct ldb_module *module, struct ldb_reque
 		}
 		tseq->type = seq->type;
 
-		ret = ldb_build_extended_req(&treq, module->ldb, res,
+		ret = ldb_build_extended_req(&treq, ldb_module_get_ctx(module), res,
 					     LDB_EXTENDED_SEQUENCE_NUMBER,
 					     tseq,
 					     NULL,
@@ -819,7 +822,7 @@ static int partition_sequence_number(struct ldb_module *module, struct ldb_reque
 			}
 			tseq->type = seq->type;
 
-			ret = ldb_build_extended_req(&treq, module->ldb, res,
+			ret = ldb_build_extended_req(&treq, ldb_module_get_ctx(module), res,
 						     LDB_EXTENDED_SEQUENCE_NUMBER,
 						     tseq,
 						     NULL,
@@ -874,7 +877,7 @@ static int partition_sequence_number(struct ldb_module *module, struct ldb_reque
 		}
 		tseq->type = LDB_SEQ_HIGHEST_TIMESTAMP;
 
-		ret = ldb_build_extended_req(&treq, module->ldb, res,
+		ret = ldb_build_extended_req(&treq, ldb_module_get_ctx(module), res,
 					     LDB_EXTENDED_SEQUENCE_NUMBER,
 					     tseq,
 					     NULL,
@@ -918,7 +921,7 @@ static int partition_sequence_number(struct ldb_module *module, struct ldb_reque
 			}
 			tseq->type = LDB_SEQ_HIGHEST_TIMESTAMP;
 
-			ret = ldb_build_extended_req(&treq, module->ldb, res,
+			ret = ldb_build_extended_req(&treq, ldb_module_get_ctx(module), res,
 						     LDB_EXTENDED_SEQUENCE_NUMBER,
 						     tseq,
 						     NULL,
@@ -1008,12 +1011,12 @@ static int partition_extended_replicated_objects(struct ldb_module *module, stru
 
 	ext = talloc_get_type(req->op.extended.data, struct dsdb_extended_replicated_objects);
 	if (!ext) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "partition_extended_replicated_objects: invalid extended data\n");
+		ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_FATAL, "partition_extended_replicated_objects: invalid extended data\n");
 		return LDB_ERR_PROTOCOL_ERROR;
 	}
 
 	if (ext->version != DSDB_EXTENDED_REPLICATED_OBJECTS_VERSION) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "partition_extended_replicated_objects: extended data invalid version [%u != %u]\n",
+		ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_FATAL, "partition_extended_replicated_objects: extended data invalid version [%u != %u]\n",
 			  ext->version, DSDB_EXTENDED_REPLICATED_OBJECTS_VERSION);
 		return LDB_ERR_PROTOCOL_ERROR;
 	}
@@ -1031,7 +1034,7 @@ static int partition_extended_schema_update_now(struct ldb_module *module, struc
 
 	schema_dn = talloc_get_type(req->op.extended.data, struct ldb_dn);
 	if (!schema_dn) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "partition_extended: invalid extended data\n");
+		ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_FATAL, "partition_extended: invalid extended data\n");
 		return LDB_ERR_PROTOCOL_ERROR;
 	}
 
@@ -1131,8 +1134,8 @@ static int partition_init(struct ldb_module *module)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ldb_search(module->ldb, mem_ctx, &res,
-			 ldb_dn_new(mem_ctx, module->ldb, "@PARTITION"),
+	ret = ldb_search(ldb_module_get_ctx(module), mem_ctx, &res,
+			 ldb_dn_new(mem_ctx, ldb_module_get_ctx(module), "@PARTITION"),
 			 LDB_SCOPE_BASE, attrs, NULL);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(mem_ctx);
@@ -1152,7 +1155,7 @@ static int partition_init(struct ldb_module *module)
 
 	partition_attributes = ldb_msg_find_element(msg, "partition");
 	if (!partition_attributes) {
-		ldb_set_errstring(module->ldb, "partition_init: no partitions specified");
+		ldb_set_errstring(ldb_module_get_ctx(module), "partition_init: no partitions specified");
 		talloc_free(mem_ctx);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
@@ -1165,7 +1168,7 @@ static int partition_init(struct ldb_module *module)
 		char *base = talloc_strdup(data->partitions, (char *)partition_attributes->values[i].data);
 		char *p = strchr(base, ':');
 		if (!p) {
-			ldb_asprintf_errstring(module->ldb, 
+			ldb_asprintf_errstring(ldb_module_get_ctx(module), 
 						"partition_init: "
 						"invalid form for partition record (missing ':'): %s", base);
 			talloc_free(mem_ctx);
@@ -1174,7 +1177,7 @@ static int partition_init(struct ldb_module *module)
 		p[0] = '\0';
 		p++;
 		if (!p[0]) {
-			ldb_asprintf_errstring(module->ldb, 
+			ldb_asprintf_errstring(ldb_module_get_ctx(module), 
 						"partition_init: "
 						"invalid form for partition record (missing backend database): %s", base);
 			talloc_free(mem_ctx);
@@ -1187,23 +1190,23 @@ static int partition_init(struct ldb_module *module)
 		}
 		data->partitions[i]->version = DSDB_CONTROL_CURRENT_PARTITION_VERSION;
 
-		data->partitions[i]->dn = ldb_dn_new(data->partitions[i], module->ldb, base);
+		data->partitions[i]->dn = ldb_dn_new(data->partitions[i], ldb_module_get_ctx(module), base);
 		if (!data->partitions[i]->dn) {
-			ldb_asprintf_errstring(module->ldb, 
+			ldb_asprintf_errstring(ldb_module_get_ctx(module), 
 						"partition_init: invalid DN in partition record: %s", base);
 			talloc_free(mem_ctx);
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 
-		data->partitions[i]->backend = samdb_relative_path(module->ldb, 
+		data->partitions[i]->backend = samdb_relative_path(ldb_module_get_ctx(module), 
 								   data->partitions[i], 
 								   p);
 		if (!data->partitions[i]->backend) {
-			ldb_asprintf_errstring(module->ldb, 
+			ldb_asprintf_errstring(ldb_module_get_ctx(module), 
 						"partition_init: unable to determine an relative path for partition: %s", base);
 			talloc_free(mem_ctx);			
 		}
-		ret = ldb_connect_backend(module->ldb, data->partitions[i]->backend, NULL, &data->partitions[i]->module);
+		ret = ldb_connect_backend(ldb_module_get_ctx(module), data->partitions[i]->backend, NULL, &data->partitions[i]->module);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(mem_ctx);
 			return ret;
@@ -1219,7 +1222,7 @@ static int partition_init(struct ldb_module *module)
 		struct ldb_request *req;
 		req = talloc_zero(mem_ctx, struct ldb_request);
 		if (req == NULL) {
-			ldb_debug(module->ldb, LDB_DEBUG_ERROR, "partition: Out of memory!\n");
+			ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_ERROR, "partition: Out of memory!\n");
 			talloc_free(mem_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
@@ -1228,19 +1231,19 @@ static int partition_init(struct ldb_module *module)
 		req->op.reg_partition.dn = data->partitions[i]->dn;
 		req->callback = ldb_op_default_callback;
 
-		ldb_set_timeout(module->ldb, req, 0);
+		ldb_set_timeout(ldb_module_get_ctx(module), req, 0);
 
-		req->handle = ldb_handle_new(req, module->ldb);
+		req->handle = ldb_handle_new(req, ldb_module_get_ctx(module));
 		if (req->handle == NULL) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		
-		ret = ldb_request(module->ldb, req);
+		ret = ldb_request(ldb_module_get_ctx(module), req);
 		if (ret == LDB_SUCCESS) {
 			ret = ldb_wait(req->handle, LDB_WAIT_ALL);
 		}
 		if (ret != LDB_SUCCESS) {
-			ldb_debug(module->ldb, LDB_DEBUG_ERROR, "partition: Unable to register partition with rootdse!\n");
+			ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_ERROR, "partition: Unable to register partition with rootdse!\n");
 			talloc_free(mem_ctx);
 			return LDB_ERR_OTHER;
 		}
@@ -1258,9 +1261,9 @@ static int partition_init(struct ldb_module *module)
 		}
 
 		for (i=0; i < replicate_attributes->num_values; i++) {
-			data->replicate[i] = ldb_dn_from_ldb_val(data->replicate, module->ldb, &replicate_attributes->values[i]);
+			data->replicate[i] = ldb_dn_from_ldb_val(data->replicate, ldb_module_get_ctx(module), &replicate_attributes->values[i]);
 			if (!ldb_dn_validate(data->replicate[i])) {
-				ldb_asprintf_errstring(module->ldb, 
+				ldb_asprintf_errstring(ldb_module_get_ctx(module), 
 							"partition_init: "
 							"invalid DN in partition replicate record: %s", 
 							replicate_attributes->values[i].data);
@@ -1286,7 +1289,7 @@ static int partition_init(struct ldb_module *module)
 			char *base = talloc_strdup(data->partitions, (char *)modules_attributes->values[i].data);
 			char *p = strchr(base, ':');
 			if (!p) {
-				ldb_asprintf_errstring(module->ldb, 
+				ldb_asprintf_errstring(ldb_module_get_ctx(module), 
 							"partition_init: "
 							"invalid form for partition module record (missing ':'): %s", base);
 				talloc_free(mem_ctx);
@@ -1295,17 +1298,17 @@ static int partition_init(struct ldb_module *module)
 			p[0] = '\0';
 			p++;
 			if (!p[0]) {
-				ldb_asprintf_errstring(module->ldb, 
+				ldb_asprintf_errstring(ldb_module_get_ctx(module), 
 							"partition_init: "
 							"invalid form for partition module record (missing backend database): %s", base);
 				talloc_free(mem_ctx);
 				return LDB_ERR_CONSTRAINT_VIOLATION;
 			}
 
-			modules = ldb_modules_list_from_string(module->ldb, mem_ctx,
+			modules = ldb_modules_list_from_string(ldb_module_get_ctx(module), mem_ctx,
 							       p);
 			
-			base_dn = ldb_dn_new(mem_ctx, module->ldb, base);
+			base_dn = ldb_dn_new(mem_ctx, ldb_module_get_ctx(module), base);
 			if (!ldb_dn_validate(base_dn)) {
 				talloc_free(mem_ctx);
 				return LDB_ERR_OPERATIONS_ERROR;
@@ -1319,28 +1322,28 @@ static int partition_init(struct ldb_module *module)
 			}
 			
 			if (!partition) {
-				ldb_asprintf_errstring(module->ldb, 
+				ldb_asprintf_errstring(ldb_module_get_ctx(module), 
 							"partition_init: "
 							"invalid form for partition module record (no such partition): %s", base);
 				talloc_free(mem_ctx);
 				return LDB_ERR_CONSTRAINT_VIOLATION;
 			}
 			
-			ret = ldb_load_modules_list(module->ldb, modules, partition->module, &partition->module);
+			ret = ldb_load_modules_list(ldb_module_get_ctx(module), modules, partition->module, &partition->module);
 			if (ret != LDB_SUCCESS) {
-				ldb_asprintf_errstring(module->ldb, 
+				ldb_asprintf_errstring(ldb_module_get_ctx(module), 
 						       "partition_init: "
 						       "loading backend for %s failed: %s", 
-						       base, ldb_errstring(module->ldb));
+						       base, ldb_errstring(ldb_module_get_ctx(module)));
 				talloc_free(mem_ctx);
 				return ret;
 			}
-			ret = ldb_init_module_chain(module->ldb, partition->module);
+			ret = ldb_init_module_chain(ldb_module_get_ctx(module), partition->module);
 			if (ret != LDB_SUCCESS) {
-				ldb_asprintf_errstring(module->ldb, 
+				ldb_asprintf_errstring(ldb_module_get_ctx(module), 
 						       "partition_init: "
 						       "initialising backend for %s failed: %s", 
-						       base, ldb_errstring(module->ldb));
+						       base, ldb_errstring(ldb_module_get_ctx(module)));
 				talloc_free(mem_ctx);
 				return ret;
 			}
@@ -1349,14 +1352,14 @@ static int partition_init(struct ldb_module *module)
 
 	ret = ldb_mod_register_control(module, LDB_CONTROL_DOMAIN_SCOPE_OID);
 	if (ret != LDB_SUCCESS) {
-		ldb_debug(module->ldb, LDB_DEBUG_ERROR,
+		ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_ERROR,
 			"partition: Unable to register control with rootdse!\n");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	ret = ldb_mod_register_control(module, LDB_CONTROL_SEARCH_OPTIONS_OID);
 	if (ret != LDB_SUCCESS) {
-		ldb_debug(module->ldb, LDB_DEBUG_ERROR,
+		ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_ERROR,
 			"partition: Unable to register control with rootdse!\n");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
