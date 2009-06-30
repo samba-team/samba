@@ -222,6 +222,11 @@ o    David Markey <admin@dmarkey.com>
      * BUG 6514: Improve error message in 'net' when smb.conf is not available.
 
 
+o    Jim McDonough <jmcd@samba.org>
+     * BUG 6481: 'net ads leave' needs to try account deletion, NetUnjoinDomain
+       not.
+
+
 o    Bo Yang <boyang@samba.org>
      * BUG 6499: Fix building of pam_smbpass.
 
