@@ -69,6 +69,11 @@ static void ctdb_send_error(struct ctdb_context *ctdb,
 	char *msg;
 	int msglen, len;
 
+	if (ctdb->methods == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to send error. Transport is DOWN\n"));
+		return -1;
+	}
+
 	va_start(ap, fmt);
 	msg = talloc_vasprintf(ctdb, fmt, ap);
 	if (msg == NULL) {
