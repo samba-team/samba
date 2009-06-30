@@ -1,6 +1,8 @@
 dn: CN=DisplaySpecifiers,${CONFIGDN}
 objectClass: top
 objectClass: container
+objectVersion: 1
+systemFlags: -2147483648
 
 dn: CN=409,CN=DisplaySpecifiers,${CONFIGDN}
 objectClass: top
