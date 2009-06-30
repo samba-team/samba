@@ -607,6 +607,11 @@ int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
 	struct ctdb_control_state *state;
 	size_t len;
 
+	if (ctdb->methods == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to send control. Transport is DOWN\n"));
+		return -1;
+	}
+
 	if (((destnode == CTDB_BROADCAST_VNNMAP) || 
 	     (destnode == CTDB_BROADCAST_ALL) ||
 	     (destnode == CTDB_BROADCAST_CONNECTED)) && 
