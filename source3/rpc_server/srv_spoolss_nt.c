@@ -7024,7 +7024,7 @@ static WERROR spoolss_enumforms_level1(TALLOC_CTX *mem_ctx,
 
 	/* construct the list of form structures */
 	for (i=0; i<num_builtin_forms; i++) {
-		DEBUGADD(6,("Filling form number [%d]\n",i));
+		DEBUGADD(6,("Filling builtin form number [%d]\n",i));
 		result = fill_form_info_1(info, &info[i].info1,
 					  &builtin_forms[i]);
 		if (!W_ERROR_IS_OK(result)) {
@@ -7032,10 +7032,10 @@ static WERROR spoolss_enumforms_level1(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	for (; i<num_user_forms; i++) {
-		DEBUGADD(6,("Filling form number [%d]\n",i));
-		result = fill_form_info_1(info, &info[i].info1,
-					  &user_forms[i-num_builtin_forms]);
+	for (i=0; i<num_user_forms; i++) {
+		DEBUGADD(6,("Filling user form number [%d]\n",i));
+		result = fill_form_info_1(info, &info[i+num_builtin_forms].info1,
+					  &user_forms[i]);
 		if (!W_ERROR_IS_OK(result)) {
 			goto out;
 		}
