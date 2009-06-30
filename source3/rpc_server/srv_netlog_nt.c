@@ -661,7 +661,6 @@ NTSTATUS _netr_ServerPasswordSet(pipes_struct *p,
 				 struct netr_ServerPasswordSet *r)
 {
 	NTSTATUS status = NT_STATUS_OK;
-	fstring remote_machine;
 	struct samu *sampass=NULL;
 	bool ret = False;
 	unsigned char pwd[16];
@@ -672,22 +671,19 @@ NTSTATUS _netr_ServerPasswordSet(pipes_struct *p,
 
 	DEBUG(5,("_netr_ServerPasswordSet: %d\n", __LINE__));
 
-	/* We need the remote machine name for the creds lookup. */
-	fstrcpy(remote_machine, r->in.computer_name);
-
 	if ( (lp_server_schannel() == True) && (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) ) {
 		/* 'server schannel = yes' should enforce use of
 		   schannel, the client did offer it in auth2, but
 		   obviously did not use it. */
 		DEBUG(0,("_netr_ServerPasswordSet: client %s not using schannel for netlogon\n",
-			remote_machine ));
+			r->in.computer_name));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	if (!p->dc) {
 		/* Restore the saved state of the netlogon creds. */
 		become_root();
-		ret = secrets_restore_schannel_session_info(p, remote_machine,
+		ret = secrets_restore_schannel_session_info(p, r->in.computer_name,
 							    &p->dc);
 		unbecome_root();
 		if (!ret) {
@@ -700,13 +696,13 @@ NTSTATUS _netr_ServerPasswordSet(pipes_struct *p,
 	}
 
 	DEBUG(3,("_netr_ServerPasswordSet: Server Password Set by remote machine:[%s] on account [%s]\n",
-			remote_machine, p->dc->mach_acct));
+			r->in.computer_name, p->dc->mach_acct));
 
 	/* Step the creds chain forward. */
 	if (!netlogon_creds_server_step(p->dc, r->in.credential, &cred_out)) {
 		DEBUG(2,("_netr_ServerPasswordSet: netlogon_creds_server_step failed. Rejecting auth "
 			"request from client %s machine account %s\n",
-			remote_machine, p->dc->mach_acct ));
+			r->in.computer_name, p->dc->mach_acct ));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -717,7 +713,7 @@ NTSTATUS _netr_ServerPasswordSet(pipes_struct *p,
 	}
 
 	become_root();
-	secrets_store_schannel_session_info(p, remote_machine, p->dc);
+	secrets_store_schannel_session_info(p, r->in.computer_name, p->dc);
 	ret = pdb_getsampwnam(sampass, p->dc->mach_acct);
 	unbecome_root();
 
@@ -852,7 +848,7 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 {
 	NTSTATUS status = NT_STATUS_OK;
 	union netr_LogonLevel *logon = r->in.logon;
-	fstring nt_username, nt_domain, nt_workstation;
+	const char *nt_username, *nt_domain, *nt_workstation;
 	auth_usersupplied_info *user_info = NULL;
 	auth_serversupplied_info *server_info = NULL;
 	struct auth_context *auth_context = NULL;
@@ -942,22 +938,16 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 
 	switch (r->in.logon_level) {
 	case NetlogonInteractiveInformation:
-		fstrcpy(nt_username,
-			logon->password->identity_info.account_name.string);
-		fstrcpy(nt_domain,
-			logon->password->identity_info.domain_name.string);
-		fstrcpy(nt_workstation,
-			logon->password->identity_info.workstation.string);
+		nt_username	= logon->password->identity_info.account_name.string;
+		nt_domain	= logon->password->identity_info.domain_name.string;
+		nt_workstation	= logon->password->identity_info.workstation.string;
 
 		DEBUG(3,("SAM Logon (Interactive). Domain:[%s].  ", lp_workgroup()));
 		break;
 	case NetlogonNetworkInformation:
-		fstrcpy(nt_username,
-			logon->network->identity_info.account_name.string);
-		fstrcpy(nt_domain,
-			logon->network->identity_info.domain_name.string);
-		fstrcpy(nt_workstation,
-			logon->network->identity_info.workstation.string);
+		nt_username	= logon->network->identity_info.account_name.string;
+		nt_domain	= logon->network->identity_info.domain_name.string;
+		nt_workstation	= logon->network->identity_info.workstation.string;
 
 		DEBUG(3,("SAM Logon (Network). Domain:[%s].  ", lp_workgroup()));
 		break;
