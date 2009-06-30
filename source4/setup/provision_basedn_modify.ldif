@@ -5,7 +5,7 @@ dn: ${DOMAINDN}
 changetype: modify
 -
 replace: forceLogoff
-forceLogoff: 9223372036854775808
+forceLogoff: -9223372036854775808
 -
 replace: lockoutDuration
 lockoutDuration: -18000000000
@@ -64,12 +64,14 @@ modifiedCount: 1
 replace: fSMORoleOwner
 fSMORoleOwner: CN=NTDS Settings,${SERVERDN}
 -
+replace: systemFlags
+systemFlags: -1946157056
+-
 replace: isCriticalSystemObject
 isCriticalSystemObject: TRUE
 -
 replace: subRefs
 subRefs: ${CONFIGDN}
-subRefs: ${SCHEMADN}
 -
 replace: gPLink
 gPLink: [LDAP://CN={${POLICYGUID}},CN=Policies,CN=System,${DOMAINDN};0]
