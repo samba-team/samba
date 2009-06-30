@@ -768,6 +768,11 @@ void ctdb_send_keepalive(struct ctdb_context *ctdb, uint32_t destnode)
 {
 	struct ctdb_req_keepalive *r;
 	
+	if (ctdb->methods == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to send keepalive. Transport is DOWN\n"));
+		return;
+	}
+
 	r = ctdb_transport_allocate(ctdb, ctdb, CTDB_REQ_KEEPALIVE,
 				    sizeof(struct ctdb_req_keepalive), 
 				    struct ctdb_req_keepalive);
