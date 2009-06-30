@@ -7,6 +7,7 @@ rootDomainNamingContext: ${ROOTDN}
 configurationNamingContext: ${CONFIGDN}
 schemaNamingContext: ${SCHEMADN}
 supportedLDAPVersion: 3
+supportedLDAPVersion: 2
 dnsHostName: ${DNSNAME}
 ldapServiceName: ${DNSDOMAIN}:${NETBIOSNAME}$@${REALM}
 serverName: ${SERVERDN}

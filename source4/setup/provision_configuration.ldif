@@ -5,7 +5,7 @@ dn: CN=Partitions,${CONFIGDN}
 objectClass: top
 objectClass: crossRefContainer
 cn: Partitions
-systemFlags: 2147483648
+systemFlags: -2147483648
 msDS-Behavior-Version: 0
 fSMORoleOwner: CN=NTDS Settings,${SERVERDN}
 
@@ -38,25 +38,25 @@ dn: CN=Sites,${CONFIGDN}
 objectClass: top
 objectClass: sitesContainer
 cn: Sites
-systemFlags: 2181038080
+systemFlags: -2113929216
 
 dn: CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
 objectClass: top
 objectClass: site
 cn: ${DEFAULTSITE}
-systemFlags: 2181038080
+systemFlags: 1107296256
 
 dn: CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
 objectClass: top
 objectClass: serversContainer
 cn: Servers
-systemFlags: 2181038080
+systemFlags: 33554432
 
 dn: CN=Services,${CONFIGDN}
 objectClass: top
 objectClass: container
 cn: Services
-systemFlags: 2147483648
+systemFlags: -2147483648
 
 dn: CN=Windows NT,CN=Services,${CONFIGDN}
 objectClass: top

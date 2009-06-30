@@ -208,7 +208,7 @@ member: CN=Administrator,CN=Users,${DOMAINDN}
 objectSid: S-1-5-32-544
 adminCount: 1
 sAMAccountName: Administrators
-systemFlags: 2348810240
+systemFlags: -1946157056
 groupType: -2147483643
 isCriticalSystemObject: TRUE
 privilege: SeSecurityPrivilege
@@ -244,7 +244,7 @@ description: Users are prevented from making accidental or intentional system-wi
 member: CN=Domain Users,CN=Users,${DOMAINDN}
 objectSid: S-1-5-32-545
 sAMAccountName: Users
-systemFlags: 2348810240
+systemFlags: -1946157056
 groupType: -2147483643
 isCriticalSystemObject: TRUE
 
@@ -257,7 +257,7 @@ member: CN=Domain Guests,CN=Users,${DOMAINDN}
 member: CN=Guest,CN=Users,${DOMAINDN}
 objectSid: S-1-5-32-546
 sAMAccountName: Guests
-systemFlags: 2348810240
+systemFlags: -1946157056
 groupType: -2147483643
 isCriticalSystemObject: TRUE
 
@@ -269,7 +269,7 @@ description: Members can administer domain printers
 objectSid: S-1-5-32-550
 adminCount: 1
 sAMAccountName: Print Operators
-systemFlags: 2348810240
+systemFlags: -1946157056
 groupType: -2147483643
 isCriticalSystemObject: TRUE
 privilege: SeLoadDriverPrivilege
@@ -284,7 +284,7 @@ description: Backup Operators can override security restrictions for the sole pu
 objectSid: S-1-5-32-551
 adminCount: 1
 sAMAccountName: Backup Operators
-systemFlags: 2348810240
+systemFlags: -1946157056
 groupType: -2147483643
 isCriticalSystemObject: TRUE
 privilege: SeBackupPrivilege
@@ -300,7 +300,7 @@ description: Supports file replication in a domain
 objectSid: S-1-5-32-552
 adminCount: 1
 sAMAccountName: Replicator
-systemFlags: 2348810240
+systemFlags: -1946157056
 groupType: -2147483643
 isCriticalSystemObject: TRUE
 
@@ -311,7 +311,7 @@ cn: Remote Desktop Users
 description: Members in this group are granted the right to logon remotely
 objectSid: S-1-5-32-555
 sAMAccountName: Remote Desktop Users
-systemFlags: 2348810240
+systemFlags: -1946157056
 groupType: -2147483643
 isCriticalSystemObject: TRUE
 
@@ -322,7 +322,7 @@ cn: Network Configuration Operators
 description: Members in this group can have some administrative privileges to manage configuration of networking features
 objectSid: S-1-5-32-556
 sAMAccountName: Network Configuration Operators
-systemFlags: 2348810240
+systemFlags: -1946157056
 groupType: -2147483643
 isCriticalSystemObject: TRUE
 
@@ -333,7 +333,7 @@ cn: Performance Monitor Users
 description: Members of this group have remote access to monitor this computer
 objectSid: S-1-5-32-558
 sAMAccountName: Performance Monitor Users
-systemFlags: 2348810240
+systemFlags: -1946157056
 groupType: -2147483643
 isCriticalSystemObject: TRUE
 
@@ -344,7 +344,7 @@ cn: Performance Log Users
 description: Members of this group have remote access to schedule logging of performance counters on this computer
 objectSid: S-1-5-32-559
 sAMAccountName: Performance Log Users
-systemFlags: 2348810240
+systemFlags: -1946157056
 groupType: -2147483643
 isCriticalSystemObject: TRUE
 
@@ -356,7 +356,7 @@ description: Members can administer domain servers
 objectSid: S-1-5-32-549
 adminCount: 1
 sAMAccountName: Server Operators
-systemFlags: 2348810240
+systemFlags: -1946157056
 groupType: -2147483643
 isCriticalSystemObject: TRUE
 privilege: SeBackupPrivilege
@@ -374,7 +374,7 @@ description: Members can administer domain user and group accounts
 objectSid: S-1-5-32-548
 adminCount: 1
 sAMAccountName: Account Operators
-systemFlags: 2348810240
+systemFlags: -1946157056
 groupType: -2147483643
 isCriticalSystemObject: TRUE
 privilege: SeInteractiveLogonRight
@@ -386,7 +386,7 @@ cn: Pre-Windows 2000 Compatible Access
 description: A backward compatibility group which allows read access on all users and groups in the domain
 objectSid: S-1-5-32-554
 sAMAccountName: Pre-Windows 2000 Compatible Access
-systemFlags: 2348810240
+systemFlags: -1946157056
 groupType: -2147483643
 isCriticalSystemObject: TRUE
 privilege: SeRemoteInteractiveLogonRight
@@ -399,7 +399,7 @@ cn: Incoming Forest Trust Builders
 description: Members of this group can create incoming, one-way trusts to this forest
 objectSid: S-1-5-32-557
 sAMAccountName: Incoming Forest Trust Builders
-systemFlags: 2348810240
+systemFlags: -1946157056
 groupType: -2147483643
 isCriticalSystemObject: TRUE
 
@@ -410,7 +410,7 @@ cn: Windows Authorization Access Group
 description: Members of this group have access to the computed tokenGroupsGlobalAndUniversal attribute on User objects
 objectSid: S-1-5-32-560
 sAMAccountName: Windows Authorization Access Group
-systemFlags: 2348810240
+systemFlags: -1946157056
 groupType: -2147483643
 isCriticalSystemObject: TRUE
 
@@ -421,7 +421,7 @@ cn: Terminal Server License Servers
 description: Terminal Server License Servers
 objectSid: S-1-5-32-561
 sAMAccountName: Terminal Server License Servers
-systemFlags: 2348810240
+systemFlags: -1946157056
 groupType: -2147483643
 isCriticalSystemObject: TRUE
 
@@ -432,7 +432,7 @@ cn: Distributed COM Users
 description: Members are allowed to launch, activate and use Distributed COM objects on this machine.
 objectSid: S-1-5-32-562
 sAMAccountName: Distributed COM Users
-systemFlags: 2348810240
+systemFlags: -1946157056
 groupType: -2147483643
 isCriticalSystemObject: TRUE
 
@@ -440,7 +440,7 @@ dn: CN=WellKnown Security Principals,${CONFIGDN}
 objectClass: top
 objectClass: container
 cn: WellKnown Security Principals
-systemFlags: 2147483648
+systemFlags: -2147483648
 
 dn: CN=Anonymous Logon,CN=WellKnown Security Principals,${CONFIGDN}
 objectClass: top
