@@ -2669,7 +2669,7 @@ bool parent_dirname_talloc(TALLOC_CTX *mem_ctx, const char *dir,
 			return False;
 		}
 		if (name) {
-			*name = "";
+			*name = dir;
 		}
 		return True;
 	}
