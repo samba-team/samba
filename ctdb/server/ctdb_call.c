@@ -663,6 +663,11 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 	struct ctdb_call_state *state;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
 
+	if (ctdb->methods == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed send packet. Transport is down\n"));
+		return NULL;
+	}
+
 	state = talloc_zero(ctdb_db, struct ctdb_call_state);
 	CTDB_NO_MEMORY_NULL(ctdb, state);
 	state->call = talloc(state, struct ctdb_call);
