@@ -24,16 +24,19 @@
 #include "../include/ctdb.h"
 #include "../include/ctdb_private.h"
 #include "../common/rb_tree.h"
+#include <ctype.h>
 
 /* Handle common command line options for ctdb test progs
  */
 
 static struct {
 	const char *socketname;
+	const char *debuglevel;
 	int torture;
 	const char *events;
 } ctdb_cmdline = {
 	.torture = 0,
+	.debuglevel = "ERR",
 };
 
 enum {OPT_EVENTSYSTEM=1};
@@ -54,7 +57,7 @@ static void ctdb_cmdline_callback(poptContext con,
 struct poptOption popt_ctdb_cmdline[] = {
 	{ NULL, 0, POPT_ARG_CALLBACK, (void *)ctdb_cmdline_callback },	
 	{ "socket", 0, POPT_ARG_STRING, &ctdb_cmdline.socketname, 0, "local socket name", "filename" },
-	{ "debug", 'd', POPT_ARG_INT, &LogLevel, 0, "debug level"},
+	{ "debug", 'd', POPT_ARG_STRING, &ctdb_cmdline.debuglevel, 0, "debug level"},
 	{ "torture", 0, POPT_ARG_NONE, &ctdb_cmdline.torture, 0, "enable nastiness in library", NULL },
 	{ "events", 0, POPT_ARG_STRING, NULL, OPT_EVENTSYSTEM, "event system", NULL },
 	{ NULL }
@@ -89,6 +92,13 @@ struct ctdb_context *ctdb_cmdline_init(struct event_context *ev)
 						    ctdb_errstr(ctdb));
 			exit(1);
 		}
+	}
+
+	/* Set the debug level */
+	if (isalpha(ctdb_cmdline.debuglevel[0]) || ctdb_cmdline.debuglevel[0] == '-') { 
+		LogLevel = get_debug_by_desc(ctdb_cmdline.debuglevel);
+	} else {
+		LogLevel = strtol(ctdb_cmdline.debuglevel, NULL, 0);
 	}
 
 	/* set up the tree to store server ids */

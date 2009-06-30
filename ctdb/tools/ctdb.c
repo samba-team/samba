@@ -2181,50 +2181,6 @@ static int control_listvars(struct ctdb_context *ctdb, int argc, const char **ar
 	return 0;
 }
 
-static struct {
-	int32_t	level;
-	const char *description;
-} debug_levels[] = {
-	{DEBUG_EMERG,	"EMERG"},
-	{DEBUG_ALERT,	"ALERT"},
-	{DEBUG_CRIT,	"CRIT"},
-	{DEBUG_ERR,	"ERR"},
-	{DEBUG_WARNING,	"WARNING"},
-	{DEBUG_NOTICE,	"NOTICE"},
-	{DEBUG_INFO,	"INFO"},
-	{DEBUG_DEBUG,	"DEBUG"}
-};
-
-static const char *get_debug_by_level(int32_t level)
-{
-	int i;
-
-	for (i=0;i<ARRAY_SIZE(debug_levels);i++) {
-		if (debug_levels[i].level == level) {
-			return debug_levels[i].description;
-		}
-	}
-	return "Unknown";
-}
-
-static int32_t get_debug_by_desc(const char *desc)
-{
-	int i;
-
-	for (i=0;i<ARRAY_SIZE(debug_levels);i++) {
-		if (!strcmp(debug_levels[i].description, desc)) {
-			return debug_levels[i].level;
-		}
-	}
-
-	fprintf(stderr, "Invalid debug level '%s'\nMust be one of\n", desc);
-	for (i=0;i<ARRAY_SIZE(debug_levels);i++) {
-		fprintf(stderr, "    %s\n", debug_levels[i].description);
-	}
-
-	exit(10);
-}
-
 /*
   display debug level on a node
  */
@@ -2304,7 +2260,7 @@ static int control_setdebug(struct ctdb_context *ctdb, int argc, const char **ar
 
 	if (argc == 0) {
 		printf("You must specify the debug level. Valid levels are:\n");
-		for (i=0;i<ARRAY_SIZE(debug_levels);i++) {
+		for (i=0; debug_levels[i].description != NULL; i++) {
 			printf("%s (%d)\n", debug_levels[i].description, debug_levels[i].level);
 		}
 
@@ -2317,12 +2273,12 @@ static int control_setdebug(struct ctdb_context *ctdb, int argc, const char **ar
 		level = strtol(argv[0], NULL, 0);
 	}
 
-	for (i=0;i<ARRAY_SIZE(debug_levels);i++) {
+	for (i=0; debug_levels[i].description != NULL; i++) {
 		if (level == debug_levels[i].level) {
 			break;
 		}
 	}
-	if (i == ARRAY_SIZE(debug_levels)) {
+	if (debug_levels[i].description == NULL) {
 		printf("Invalid debug level\n");
 		return -1;
 	}

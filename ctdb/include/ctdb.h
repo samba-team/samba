@@ -644,4 +644,14 @@ int ctdb_ctrl_getscriptstatus(struct ctdb_context *ctdb,
 		    TALLOC_CTX *mem_ctx, struct ctdb_monitoring_wire **script_status);
 
 
+struct debug_levels {
+	int32_t	level;
+	const char *description;
+};
+extern struct debug_levels debug_levels[];
+
+const char *get_debug_by_level(int32_t level);
+int32_t get_debug_by_desc(const char *desc);
+
+
 #endif
