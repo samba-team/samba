@@ -909,73 +909,6 @@ out:
 
 }
 
-static krb5_error_code LDB_lookup_principal(krb5_context context, struct ldb_context *ldb_ctx, 					
-					    TALLOC_CTX *mem_ctx,
-					    krb5_const_principal principal,
-					    enum hdb_ldb_ent_type ent_type,
-					    struct ldb_dn *realm_dn,
-					    struct ldb_message **pmsg)
-{
-	krb5_error_code ret;
-	int lret;
-	char *filter = NULL;
-	const char * const *princ_attrs = user_attrs;
-	char *short_princ;
-	char *short_princ_talloc;
-
-	ret = krb5_unparse_name_flags(context, principal,  KRB5_PRINCIPAL_UNPARSE_NO_REALM, &short_princ);
-
-	if (ret != 0) {
-		krb5_set_error_message(context, ret, "LDB_lookup_principal: could not parse principal");
-		krb5_warnx(context, "LDB_lookup_principal: could not parse principal");
-		return ret;
-	}
-
-	short_princ_talloc = talloc_strdup(mem_ctx, short_princ);
-	free(short_princ);
-	if (!short_princ_talloc) {
-		ret = ENOMEM;
-		krb5_set_error_message(context, ret, "LDB_lookup_principal: talloc_strdup() failed!");
-		return ret;
-	}
-
-	switch (ent_type) {
-	case HDB_SAMBA4_ENT_TYPE_CLIENT:
-	case HDB_SAMBA4_ENT_TYPE_TRUST:
-	case HDB_SAMBA4_ENT_TYPE_ANY:
-		/* Can't happen */
-		return EINVAL;
-	case HDB_SAMBA4_ENT_TYPE_KRBTGT:
-		filter = talloc_asprintf(mem_ctx, "(&(objectClass=user)(samAccountName=%s))", 
-					 KRB5_TGS_NAME);
-		break;
-	case HDB_SAMBA4_ENT_TYPE_SERVER:
-		filter = talloc_asprintf(mem_ctx, "(&(objectClass=user)(samAccountName=%s))", 
-					 short_princ_talloc);
-		break;
-	}
-
-	if (!filter) {
-		ret = ENOMEM;
-		krb5_set_error_message(context, ret, "talloc_asprintf: out of memory");
-		return ret;
-	}
-
-	lret = gendb_search_single_extended_dn(ldb_ctx, mem_ctx, 
-					       realm_dn, LDB_SCOPE_SUBTREE,
-					       pmsg, princ_attrs, "%s", filter);
-	if (lret == LDB_ERR_NO_SUCH_OBJECT) {
-		DEBUG(3, ("Failed find a entry for %s\n", filter));
-		return HDB_ERR_NOENTRY;
-	}
-	if (lret != LDB_SUCCESS) {
-		DEBUG(3, ("Failed single search for for %s - %s\n", 
-			  filter, ldb_errstring(ldb_ctx)));
-		return HDB_ERR_NOENTRY;
-	}
-	return 0;
-}
-
 static krb5_error_code LDB_lookup_trust(krb5_context context, struct ldb_context *ldb_ctx, 					
 					TALLOC_CTX *mem_ctx,
 					const char *realm,
@@ -1107,8 +1040,26 @@ static krb5_error_code LDB_fetch_krbtgt(krb5_context context, HDB *db,
  		/* Cludge, cludge cludge.  If the realm part of krbtgt/realm,
  		 * is in our db, then direct the caller at our primary
  		 * krbtgt */
+
+		int lret;
+		char *realm_fixed;
+		const char * const *princ_attrs = user_attrs;
  		
- 		char *realm_fixed = strupper_talloc(mem_ctx, lp_realm(lp_ctx));
+		lret = gendb_search_single_extended_dn(db->hdb_db, mem_ctx, 
+						       realm_dn, LDB_SCOPE_SUBTREE,
+						       &msg, princ_attrs, 
+						       "(&(objectClass=user)(samAccountName=krbtgt))"); 
+		if (lret == LDB_ERR_NO_SUCH_OBJECT) {
+			krb5_warnx(context, "LDB_fetch: could not find own KRBTGT in DB!");
+			krb5_set_error_message(context, HDB_ERR_NOENTRY, "LDB_fetch: could not find own KRBTGT in DB!");
+			return HDB_ERR_NOENTRY;
+		} else if (lret != LDB_SUCCESS) {
+			krb5_warnx(context, "LDB_fetch: could not find own KRBTGT in DB: %s", ldb_errstring(db->hdb_db));
+			krb5_set_error_message(context, HDB_ERR_NOENTRY, "LDB_fetch: could not find own KRBTGT in DB: %s", ldb_errstring(db->hdb_db));
+			return HDB_ERR_NOENTRY;
+		}
+		
+ 		realm_fixed = strupper_talloc(mem_ctx, lp_realm(lp_ctx));
  		if (!realm_fixed) {
 			ret = ENOMEM;
  			krb5_set_error_message(context, ret, "strupper_talloc: out of memory");
@@ -1130,16 +1081,6 @@ static krb5_error_code LDB_fetch_krbtgt(krb5_context context, HDB *db,
  		}
  		principal = alloc_principal;
 
-		ret = LDB_lookup_principal(context, (struct ldb_context *)db->hdb_db, 
-					   mem_ctx, 
-					   principal, HDB_SAMBA4_ENT_TYPE_KRBTGT, realm_dn, &msg);
-		
-		if (ret != 0) {
-			krb5_warnx(context, "LDB_fetch: could not find principal in DB");
-			krb5_set_error_message(context, ret, "LDB_fetch: could not find principal in DB");
-			return ret;
-		}
-		
 		ret = LDB_message2entry(context, db, mem_ctx, 
 					principal, HDB_SAMBA4_ENT_TYPE_KRBTGT, 
 					realm_dn, msg, entry_ex);
@@ -1238,18 +1179,37 @@ static krb5_error_code LDB_fetch_server(krb5_context context, HDB *db,
 		}
 		
 	} else {
+		int lret;
+		char *filter = NULL;
+		const char * const *princ_attrs = user_attrs;
+		char *short_princ;
 		/* server as client principal case, but we must not lookup userPrincipalNames */
-		realm_dn = ldb_get_default_basedn((struct ldb_context *)db->hdb_db);
+		realm_dn = ldb_get_default_basedn(db->hdb_db);
 		realm = krb5_principal_get_realm(context, principal);
 		
-		/* Check if it is our realm, otherwise give referall */
-
-		ret = LDB_lookup_principal(context, (struct ldb_context *)db->hdb_db, 
-					   mem_ctx, 
-					   principal, HDB_SAMBA4_ENT_TYPE_SERVER, realm_dn, &msg);
+		/* TODO: Check if it is our realm, otherwise give referall */
+		
+		ret = krb5_unparse_name_flags(context, principal,  KRB5_PRINCIPAL_UNPARSE_NO_REALM, &short_princ);
 		
 		if (ret != 0) {
+			krb5_set_error_message(context, ret, "LDB_lookup_principal: could not parse principal");
+			krb5_warnx(context, "LDB_lookup_principal: could not parse principal");
 			return ret;
+		}
+		
+		lret = gendb_search_single_extended_dn(db->hdb_db, mem_ctx, 
+						       realm_dn, LDB_SCOPE_SUBTREE,
+						       &msg, princ_attrs, "(&(objectClass=user)(samAccountName=%s))", 
+						       ldb_binary_encode_string(mem_ctx, short_princ));
+		free(short_princ);
+		if (lret == LDB_ERR_NO_SUCH_OBJECT) {
+			DEBUG(3, ("Failed find a entry for %s\n", filter));
+			return HDB_ERR_NOENTRY;
+		}
+		if (lret != LDB_SUCCESS) {
+			DEBUG(3, ("Failed single search for for %s - %s\n", 
+				  filter, ldb_errstring(db->hdb_db)));
+			return HDB_ERR_NOENTRY;
 		}
 	}
 
