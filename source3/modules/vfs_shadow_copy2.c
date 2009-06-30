@@ -476,6 +476,9 @@ static int shadow_copy2_mknod(vfs_handle_struct *handle,
 static char *shadow_copy2_realpath(vfs_handle_struct *handle,
 			    const char *fname, char *resolved_path)
 {
+	if (shadow_copy2_match_name(fname) && (fname[GMT_NAME_LEN] == '\0')) {
+		return SMB_VFS_NEXT_REALPATH(handle, ".", resolved_path);
+	}
         SHADOW2_NEXT(REALPATH, (handle, name, resolved_path), char *, NULL);
 }
 
