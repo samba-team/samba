@@ -238,6 +238,7 @@ NTSTATUS change_notify_add_request(struct smb_request *req,
 {
 	struct notify_change_request *request = NULL;
 	struct notify_mid_map *map = NULL;
+	struct smbd_server_connection *sconn = smbd_server_conn;
 
 	DEBUG(10, ("change_notify_add_request: Adding request for %s: "
 		   "max_param = %d\n", fsp->fsp_name, (int)max_param));
@@ -261,7 +262,7 @@ NTSTATUS change_notify_add_request(struct smb_request *req,
 		      struct notify_change_request *);
 
 	map->mid = request->req->mid;
-	DLIST_ADD(notify_changes_by_mid, map);
+	DLIST_ADD(sconn->smb1.notify_mid_maps, map);
 
 	return NT_STATUS_OK;
 }
@@ -270,6 +271,7 @@ static void change_notify_remove_request(struct notify_change_request *remove_re
 {
 	files_struct *fsp;
 	struct notify_change_request *req;
+	struct smbd_server_connection *sconn = smbd_server_conn;
 
 	/*
 	 * Paranoia checks, the fsp referenced must must have the request in
@@ -290,7 +292,7 @@ static void change_notify_remove_request(struct notify_change_request *remove_re
 	}
 
 	DLIST_REMOVE(fsp->notify->requests, req);
-	DLIST_REMOVE(notify_changes_by_mid, req->mid_map);
+	DLIST_REMOVE(sconn->smb1.notify_mid_maps, req->mid_map);
 	TALLOC_FREE(req);
 }
 
@@ -301,8 +303,9 @@ static void change_notify_remove_request(struct notify_change_request *remove_re
 void remove_pending_change_notify_requests_by_mid(uint16 mid)
 {
 	struct notify_mid_map *map;
+	struct smbd_server_connection *sconn = smbd_server_conn;
 
-	for (map = notify_changes_by_mid; map; map = map->next) {
+	for (map = sconn->smb1.notify_mid_maps; map; map = map->next) {
 		if (map->mid == mid) {
 			break;
 		}

@@ -144,8 +144,6 @@ extern int32_t level_II_oplocks_open;
 extern bool global_client_failed_oplock_break;
 extern struct kernel_oplocks *koplocks;
 
-extern struct notify_mid_map *notify_changes_by_mid;
-
 extern int am_parent;
 extern int server_fd;
 extern struct event_context *smbd_event_ctx;
@@ -376,6 +374,8 @@ struct smbd_server_connection {
 		struct smb_signing_state *signing_state;
 		/* List to store partial SPNEGO auth fragments. */
 		struct pending_auth_data *pd_list;
+
+		struct notify_mid_map *notify_mid_maps;
 	} smb1;
 	struct {
 		struct tevent_context *event_ctx;

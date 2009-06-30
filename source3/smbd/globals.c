@@ -134,8 +134,6 @@ int32_t level_II_oplocks_open = 0;
 bool global_client_failed_oplock_break = false;
 struct kernel_oplocks *koplocks = NULL;
 
-struct notify_mid_map *notify_changes_by_mid = NULL;
-
 int am_parent = 1;
 int server_fd = -1;
 struct event_context *smbd_event_ctx = NULL;
