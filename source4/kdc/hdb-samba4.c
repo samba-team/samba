@@ -485,6 +485,7 @@ out:
  * Construct an hdb_entry from a directory entry.
  */
 static krb5_error_code LDB_message2entry(krb5_context context, HDB *db, 
+					 struct loadparm_context *lp_ctx, 
 					 TALLOC_CTX *mem_ctx, krb5_const_principal principal,
 					 enum hdb_ldb_ent_type ent_type,
 					 struct ldb_dn *realm_dn,
@@ -495,7 +496,6 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 	int i;
 	krb5_error_code ret = 0;
 	krb5_boolean is_computer = FALSE;
-	struct loadparm_context *lp_ctx = ldb_get_opaque((struct ldb_context *)db->hdb_db, "loadparm");
 	char *realm = strupper_talloc(mem_ctx, lp_realm(lp_ctx));
 
 	struct hdb_ldb_private *p;
@@ -979,6 +979,7 @@ static krb5_error_code LDB_rename(krb5_context context, HDB *db, const char *new
 }
 
 static krb5_error_code LDB_fetch_client(krb5_context context, HDB *db, 
+					struct loadparm_context *lp_ctx, 
 					TALLOC_CTX *mem_ctx, 
 					krb5_const_principal principal,
 					unsigned flags,
@@ -1007,13 +1008,14 @@ static krb5_error_code LDB_fetch_client(krb5_context context, HDB *db,
 		return EINVAL;
 	}
 	
-	ret = LDB_message2entry(context, db, mem_ctx, 
+	ret = LDB_message2entry(context, db, lp_ctx, mem_ctx, 
 				principal, HDB_SAMBA4_ENT_TYPE_CLIENT,
 				realm_dn, msg, entry_ex);
 	return ret;
 }
 
 static krb5_error_code LDB_fetch_krbtgt(krb5_context context, HDB *db, 
+					struct loadparm_context *lp_ctx, 
 					TALLOC_CTX *mem_ctx, 
 					krb5_const_principal principal,
 					unsigned flags,
@@ -1023,7 +1025,6 @@ static krb5_error_code LDB_fetch_krbtgt(krb5_context context, HDB *db,
 	struct ldb_message *msg = NULL;
 	struct ldb_dn *realm_dn = ldb_get_default_basedn(db->hdb_db);
 	const char *realm;
-	struct loadparm_context *lp_ctx = talloc_get_type(ldb_get_opaque(db->hdb_db, "loadparm"), struct loadparm_context);
 
 	krb5_principal alloc_principal = NULL;
 	if (principal->name.name_string.len != 2
@@ -1081,7 +1082,7 @@ static krb5_error_code LDB_fetch_krbtgt(krb5_context context, HDB *db,
  		}
  		principal = alloc_principal;
 
-		ret = LDB_message2entry(context, db, mem_ctx, 
+		ret = LDB_message2entry(context, db, lp_ctx, mem_ctx, 
 					principal, HDB_SAMBA4_ENT_TYPE_KRBTGT, 
 					realm_dn, msg, entry_ex);
 		if (ret != 0) {
@@ -1134,6 +1135,7 @@ static krb5_error_code LDB_fetch_krbtgt(krb5_context context, HDB *db,
 }
 
 static krb5_error_code LDB_fetch_server(krb5_context context, HDB *db, 
+					struct loadparm_context *lp_ctx,
 					TALLOC_CTX *mem_ctx, 
 					krb5_const_principal principal,
 					unsigned flags,
@@ -1213,7 +1215,7 @@ static krb5_error_code LDB_fetch_server(krb5_context context, HDB *db,
 		}
 	}
 
-	ret = LDB_message2entry(context, db, mem_ctx, 
+	ret = LDB_message2entry(context, db, lp_ctx, mem_ctx, 
 				principal, HDB_SAMBA4_ENT_TYPE_SERVER,
 				realm_dn, msg, entry_ex);
 	if (ret != 0) {
@@ -1229,8 +1231,8 @@ static krb5_error_code LDB_fetch(krb5_context context, HDB *db,
 				 hdb_entry_ex *entry_ex)
 {
 	krb5_error_code ret = HDB_ERR_NOENTRY;
-
 	TALLOC_CTX *mem_ctx = talloc_named(db, 0, "LDB_fetch context");
+	struct loadparm_context *lp_ctx = talloc_get_type(ldb_get_opaque(db->hdb_db, "loadparm"), struct loadparm_context);
 
 	if (!mem_ctx) {
 		ret = ENOMEM;
@@ -1239,20 +1241,20 @@ static krb5_error_code LDB_fetch(krb5_context context, HDB *db,
 	}
 
 	if (flags & HDB_F_GET_CLIENT) {
-		ret = LDB_fetch_client(context, db, mem_ctx, principal, flags, entry_ex);
+		ret = LDB_fetch_client(context, db, lp_ctx, mem_ctx, principal, flags, entry_ex);
 		if (ret != HDB_ERR_NOENTRY) goto done;
 	}
 	if (flags & HDB_F_GET_SERVER) {
 		/* krbtgt fits into this situation for trusted realms, and for resolving different versions of our own realm name */
-		ret = LDB_fetch_krbtgt(context, db, mem_ctx, principal, flags, entry_ex);
+		ret = LDB_fetch_krbtgt(context, db, lp_ctx, mem_ctx, principal, flags, entry_ex);
 		if (ret != HDB_ERR_NOENTRY) goto done;
 
 		/* We return 'no entry' if it does not start with krbtgt/, so move to the common case quickly */
-		ret = LDB_fetch_server(context, db, mem_ctx, principal, flags, entry_ex);
+		ret = LDB_fetch_server(context, db, lp_ctx, mem_ctx, principal, flags, entry_ex);
 		if (ret != HDB_ERR_NOENTRY) goto done;
 	}
 	if (flags & HDB_F_GET_KRBTGT) {
-		ret = LDB_fetch_krbtgt(context, db, mem_ctx, principal, flags, entry_ex);
+		ret = LDB_fetch_krbtgt(context, db, lp_ctx, mem_ctx, principal, flags, entry_ex);
 		if (ret != HDB_ERR_NOENTRY) goto done;
 	}
 
@@ -1273,6 +1275,7 @@ static krb5_error_code LDB_remove(krb5_context context, HDB *db, krb5_const_prin
 
 struct hdb_ldb_seq {
 	struct ldb_context *ctx;
+	struct loadparm_context *lp_ctx;
 	int index;
 	int count;
 	struct ldb_message **msgs;
@@ -1300,7 +1303,8 @@ static krb5_error_code LDB_seq(krb5_context context, HDB *db, unsigned flags, hd
 	}
 
 	if (priv->index < priv->count) {
-		ret = LDB_message2entry(context, db, mem_ctx, 
+		ret = LDB_message2entry(context, db, priv->lp_ctx, 
+					mem_ctx, 
 					NULL, HDB_SAMBA4_ENT_TYPE_ANY, 
 					priv->realm_dn, priv->msgs[priv->index++], entry);
 	} else {
@@ -1321,6 +1325,8 @@ static krb5_error_code LDB_firstkey(krb5_context context, HDB *db, unsigned flag
 					hdb_entry_ex *entry)
 {
 	struct ldb_context *ldb_ctx = (struct ldb_context *)db->hdb_db;
+	struct loadparm_context *lp_ctx = talloc_get_type(ldb_get_opaque(ldb_ctx, "loadparm"), 
+							  struct loadparm_context);
 	struct hdb_ldb_seq *priv = (struct hdb_ldb_seq *)db->hdb_dbc;
 	char *realm;
 	struct ldb_result *res = NULL;
@@ -1341,6 +1347,7 @@ static krb5_error_code LDB_firstkey(krb5_context context, HDB *db, unsigned flag
 	}
 
 	priv->ctx = ldb_ctx;
+	priv->lp_ctx = lp_ctx;
 	priv->index = 0;
 	priv->msgs = NULL;
 	priv->realm_dn = ldb_get_default_basedn(ldb_ctx);
