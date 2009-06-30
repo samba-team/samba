@@ -96,6 +96,9 @@ AC_SUBST(EXTRA_BIN_PROGS)
 AC_SUBST(CIFSMOUNT_PROGS)
 AC_SUBST(INSTALL_CIFSMOUNT)
 AC_SUBST(UNINSTALL_CIFSMOUNT)
+AC_SUBST(CIFSUMOUNT_PROGS)
+AC_SUBST(INSTALL_CIFSUMOUNT)
+AC_SUBST(UNINSTALL_CIFSUMOUNT)
 AC_SUBST(CIFSUPCALL_PROGS)
 AC_SUBST(INSTALL_CIFSUPCALL)
 AC_SUBST(UNINSTALL_CIFSUPCALL)
@@ -3985,9 +3988,9 @@ AC_ARG_WITH(automount,
 CIFSMOUNT_PROGS=""
 INSTALL_CIFSMOUNT=""
 UNINSTALL_CIFSMOUNT=""
-AC_MSG_CHECKING(whether to build mount.cifs and umount.cifs)
+AC_MSG_CHECKING(whether to build mount.cifs)
 AC_ARG_WITH(cifsmount,
-[AS_HELP_STRING([--with-cifsmount], [Include mount.cifs and umount.cifs (Linux only) support (default=yes)])],
+[AS_HELP_STRING([--with-cifsmount], [Include mount.cifs (Linux only) support (default=yes)])],
 [ case "$withval" in
   no)
 	AC_MSG_RESULT(no)
@@ -3996,8 +3999,8 @@ AC_ARG_WITH(cifsmount,
 	case "$host_os" in
 	*linux*)
 		AC_MSG_RESULT(yes)
-		AC_DEFINE(WITH_CIFSMOUNT,1,[Whether to build mount.cifs and umount.cifs])
-		CIFSMOUNT_PROGS="bin/mount.cifs bin/umount.cifs"
+		AC_DEFINE(WITH_CIFSMOUNT,1,[Whether to build mount.cifs])
+		CIFSMOUNT_PROGS="bin/mount.cifs"
 		INSTALL_CIFSMOUNT="installcifsmount"
 		UNINSTALL_CIFSMOUNT="uninstallcifsmount"
 		;;
@@ -4010,8 +4013,8 @@ AC_ARG_WITH(cifsmount,
 [ case "$host_os" in
   *linux*)
 	AC_MSG_RESULT(yes)
-	AC_DEFINE(WITH_CIFSMOUNT,1,[Whether to build mount.cifs and umount.cifs])
-	CIFSMOUNT_PROGS="bin/mount.cifs bin/umount.cifs"
+	AC_DEFINE(WITH_CIFSMOUNT,1,[Whether to build mount.cifs])
+	CIFSMOUNT_PROGS="bin/mount.cifs"
 	INSTALL_CIFSMOUNT="installcifsmount"
 	UNINSTALL_CIFSMOUNT="uninstallcifsmount"
 	;;
@@ -4019,6 +4022,34 @@ AC_ARG_WITH(cifsmount,
 	AC_MSG_RESULT(no)
 	;;
   esac ]
+)
+
+CIFSUMOUNT_PROGS=""
+INSTALL_CIFSUMOUNT=""
+UNINSTALL_CIFSUMOUNT=""
+AC_MSG_CHECKING(whether to build umount.cifs)
+AC_ARG_WITH(cifsumount,
+[AS_HELP_STRING([--with-cifsumount], [Include umount.cifs (Linux only) support (default=no)])],
+[ case "$withval" in
+  yes)
+	case "$host_os" in
+	*linux*)
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(WITH_CIFSUMOUNT,1,[Whether to build umount.cifs])
+		CIFSUMOUNT_PROGS="bin/umount.cifs"
+		INSTALL_CIFSUMOUNT="installcifsumount"
+		UNINSTALL_CIFSUMOUNT="uninstallcifsumount"
+		;;
+	*)
+		AC_MSG_ERROR(not on a linux system!)
+		;;
+	esac
+	;;
+  *)
+	AC_MSG_RESULT(no)
+	;;
+  esac ],
+  AC_MSG_RESULT(no)
 )
 
 #################################################
