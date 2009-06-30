@@ -2336,7 +2336,7 @@ bool parent_dirname(TALLOC_CTX *mem_ctx, const char *dir, char **parent,
 			return False;
 		}
 		if (name) {
-			*name = "";
+			*name = dir;
 		}
 		return True;
 	}
