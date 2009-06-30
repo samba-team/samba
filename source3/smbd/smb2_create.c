@@ -88,7 +88,9 @@ NTSTATUS smbd_smb2_request_process_create(struct smbd_smb2_request *req)
 	in_name_offset		= SVAL(inbody, 0x2C);
 	in_name_length		= SVAL(inbody, 0x2E);
 
-	if (in_name_offset != (SMB2_HDR_BODY + (body_size & 0xFFFFFFFE))) {
+	if (in_name_offset == 0 && in_name_length == 0) {
+		/* This is ok */
+	} else if (in_name_offset != (SMB2_HDR_BODY + (body_size & 0xFFFFFFFE))) {
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 
