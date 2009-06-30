@@ -2299,17 +2299,32 @@ static int control_setreclock(struct ctdb_context *ctdb, int argc, const char **
  */
 static int control_setdebug(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int ret;
+	int i, ret;
 	int32_t level;
 
-	if (argc < 1) {
-		usage();
+	if (argc == 0) {
+		printf("You must specify the debug level. Valid levels are:\n");
+		for (i=0;i<ARRAY_SIZE(debug_levels);i++) {
+			printf("%s (%d)\n", debug_levels[i].description, debug_levels[i].level);
+		}
+
+		return 0;
 	}
 
-	if (isalpha(argv[0][0])) { 
+	if (isalpha(argv[0][0]) || argv[0][0] == '-') { 
 		level = get_debug_by_desc(argv[0]);
 	} else {
 		level = strtol(argv[0], NULL, 0);
+	}
+
+	for (i=0;i<ARRAY_SIZE(debug_levels);i++) {
+		if (level == debug_levels[i].level) {
+			break;
+		}
+	}
+	if (i == ARRAY_SIZE(debug_levels)) {
+		printf("Invalid debug level\n");
+		return -1;
 	}
 
 	ret = ctdb_ctrl_set_debuglevel(ctdb, options.pnn, level);
