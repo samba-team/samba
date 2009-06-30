@@ -184,8 +184,8 @@ CTDB_RECOVERY_LOCK="/some/place/on/shared/storage"
 # CTDB_LOGFILE=/var/log/log.ctdb
 
 # what debug level to run at. Higher means more verbose
-# the default is 2
-CTDB_DEBUGLEVEL=2
+# the default is ERR
+CTDB_DEBUGLEVEL=ERR
 
 # set any default tuning options for ctdb
 # use CTDB_SET_XXXX=value where XXXX is the name of the tuning
