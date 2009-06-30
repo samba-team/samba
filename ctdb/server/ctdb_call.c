@@ -71,7 +71,7 @@ static void ctdb_send_error(struct ctdb_context *ctdb,
 
 	if (ctdb->methods == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to send error. Transport is DOWN\n"));
-		return -1;
+		return;
 	}
 
 	va_start(ap, fmt);
@@ -146,7 +146,12 @@ static void ctdb_send_dmaster_reply(struct ctdb_db_context *ctdb_db,
 	header->dmaster = new_dmaster;
 	ret = ctdb_ltdb_store(ctdb_db, key, header, data);
 	if (ret != 0) {
-		ctdb_fatal(ctdb, "ctdb_req_dmaster unable to update dmaster");
+		ctdb_fatal(ctdb, "ctdb_send_dmaster_reply unable to update dmaster");
+		return;
+	}
+
+	if (ctdb->methods == NULL) {
+		ctdb_fatal(ctdb, "ctdb_send_dmaster_reply cant update dmaster sicne transport is down");
 		return;
 	}
 
