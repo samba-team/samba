@@ -404,13 +404,13 @@ onefs_shadow_copy_symlink(vfs_handle_struct *handle,
 	return ret;
 }
 
-static bool
+static int
 onefs_shadow_copy_readlink(vfs_handle_struct *handle, const char *path,
 			   char *buf, size_t bufsiz)
 {
 	SHADOW_NEXT(READLINK,
 		    (handle, cpath ?: path, buf, bufsiz),
-		    bool);
+		    int);
 }
 
 /**
