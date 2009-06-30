@@ -2134,11 +2134,10 @@ int pdb_ads_search_fmt(struct pdb_ads_state *state, const char *base,
 static NTSTATUS pdb_ads_connect(struct pdb_ads_state *state,
 				const char *location)
 {
-	const char *rootdse_attrs[2] = {
-		"defaultNamingContext", "configurationNamingContext" };
 	const char *domain_attrs[2] = { "objectSid", "objectGUID" };
 	const char *ncname_attrs[1] = { "netbiosname" };
-	struct tldap_message **rootdse, **domain, **ncname;
+	struct tldap_context *ld;
+	struct tldap_message *rootdse, **domain, **ncname;
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
 	int num_domains;
@@ -2149,23 +2148,23 @@ static NTSTATUS pdb_ads_connect(struct pdb_ads_state *state,
 	strncpy(state->socket_address.sun_path, location,
 		sizeof(state->socket_address.sun_path) - 1);
 
-	rc = pdb_ads_search_fmt(
-		state, "", TLDAP_SCOPE_BASE,
-		rootdse_attrs, ARRAY_SIZE(rootdse_attrs), 0,
-		talloc_tos(), &rootdse, "(objectclass=*)");
+	ld = pdb_ads_ld(state);
+	if (ld == NULL) {
+		status = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		goto done;
+	}
+
+	rc = tldap_fetch_rootdse(ld);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("Could not retrieve rootdse: %s\n",
 			   tldap_errstr(debug_ctx(), state->ld, rc)));
 		status = NT_STATUS_LDAP(rc);
 		goto done;
 	}
-	if (talloc_array_length(rootdse) != 1) {
-		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
-		goto done;
-	}
+	rootdse = tldap_rootdse(state->ld);
 
 	state->domaindn = tldap_talloc_single_attribute(
-		rootdse[0], "defaultNamingContext", state);
+		rootdse, "defaultNamingContext", state);
 	if (state->domaindn == NULL) {
 		DEBUG(10, ("Could not get defaultNamingContext\n"));
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -2174,7 +2173,7 @@ static NTSTATUS pdb_ads_connect(struct pdb_ads_state *state,
 	DEBUG(10, ("defaultNamingContext = %s\n", state->domaindn));
 
 	state->configdn = tldap_talloc_single_attribute(
-		rootdse[0], "configurationNamingContext", state);
+		rootdse, "configurationNamingContext", state);
 	if (state->domaindn == NULL) {
 		DEBUG(10, ("Could not get configurationNamingContext\n"));
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
