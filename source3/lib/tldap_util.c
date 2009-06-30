@@ -457,7 +457,6 @@ static void tldap_fetch_rootdse_done(struct tevent_req *subreq)
 	default:
 		goto protocol_error;
 	}
-	tevent_req_done(req);
 	return;
 
 protocol_error:
