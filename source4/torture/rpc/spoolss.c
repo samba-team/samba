@@ -5,6 +5,7 @@
    Copyright (C) Tim Potter 2003
    Copyright (C) Stefan Metzmacher 2005
    Copyright (C) Jelmer Vernooij 2007
+   Copyright (C) Guenther Deschner 2009
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -1002,6 +1003,50 @@ static bool test_AddForm(struct torture_context *tctx,
 	}
 
 	if (!print_server) ret &= test_GetForm(tctx, p, handle, form_name, 1);
+
+	{
+		struct spoolss_EnumForms e;
+		union spoolss_FormInfo *info;
+		uint32_t needed;
+		uint32_t count;
+		bool found = false;
+
+		e.in.handle = handle;
+		e.in.level = 1;
+		e.in.buffer = NULL;
+		e.in.offered = 0;
+		e.out.needed = &needed;
+		e.out.count = &count;
+		e.out.info = &info;
+
+		torture_comment(tctx, "Testing EnumForms level 1\n");
+
+		status = dcerpc_spoolss_EnumForms(p, tctx, &e);
+		torture_assert_ntstatus_ok(tctx, status, "EnumForms failed");
+
+		if (print_server && W_ERROR_EQUAL(e.out.result, WERR_BADFID))
+			torture_fail(tctx, "EnumForms on the PrintServer isn't supported by test server (NT4)");
+
+		if (W_ERROR_EQUAL(e.out.result, WERR_INSUFFICIENT_BUFFER)) {
+			int j;
+			DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
+			data_blob_clear(&blob);
+			e.in.buffer = &blob;
+			e.in.offered = needed;
+
+			status = dcerpc_spoolss_EnumForms(p, tctx, &e);
+
+			torture_assert(tctx, info, "No forms returned");
+
+			for (j = 0; j < count; j++) {
+				if (strequal(form_name, info[j].info1.form_name)) {
+					found = true;
+					break;
+				}
+			}
+		}
+		torture_assert(tctx, found, "Newly added form not found in enum call");
+	}
 
 	if (!test_DeleteForm(tctx, p, handle, form_name)) {
 		ret = false;
