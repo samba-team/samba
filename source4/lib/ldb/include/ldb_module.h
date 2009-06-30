@@ -166,4 +166,6 @@ int ldb_module_done(struct ldb_request *req,
 
 int ldb_mod_register_control(struct ldb_module *module, const char *oid);
 
+void ldb_set_default_dns(struct ldb_context *ldb);
+
 #endif

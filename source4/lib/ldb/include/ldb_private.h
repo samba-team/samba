@@ -117,7 +117,6 @@ struct ldb_context {
 
 int ldb_connect_backend(struct ldb_context *ldb, const char *url, const char *options[],
 			struct ldb_module **backend_module);
-void ldb_set_default_dns(struct ldb_context *ldb);
 
 
 extern const struct ldb_module_ops ldb_objectclass_module_ops;

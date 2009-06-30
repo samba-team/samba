@@ -21,7 +21,8 @@
 */
 
 #include "includes.h"
-#include "lib/ldb/include/ldb_private.h"
+#include "lib/ldb/include/ldb.h"
+#include "lib/ldb/include/ldb_module.h"
 #include "system/time.h"
 #include "dsdb/samdb/samdb.h"
 #include "version.h"
