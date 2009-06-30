@@ -560,6 +560,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 			return WERR_NOMEM;
 		}
 
+		/* Ensure we reject compleate junk first */
 		ret = krb5_parse_name(smb_krb5_context->krb5_context, name, &principal);
 		if (ret) {
 			info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
@@ -568,6 +569,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		
 		domain_filter = NULL;
 		
+		/* By getting the unparsed name here, we ensure the escaping is correct (and trust the client less) */
 		ret = krb5_unparse_name(smb_krb5_context->krb5_context, principal, &unparsed_name);
 		if (ret) {
 			krb5_free_principal(smb_krb5_context->krb5_context, principal);
@@ -575,6 +577,8 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		}
 
 		krb5_free_principal(smb_krb5_context->krb5_context, principal);
+
+		/* The ldb_binary_encode_string() here avoid LDAP filter injection attacks */
 		result_filter = talloc_asprintf(mem_ctx, "(&(objectClass=user)(userPrincipalName=%s))", 
 						ldb_binary_encode_string(mem_ctx, unparsed_name));
 		
