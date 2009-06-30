@@ -28,6 +28,9 @@ struct notify_change_request {
 	struct smb_request *req;
 	uint32 filter;
 	uint32 max_param;
+	void (*reply_fn)(struct smb_request *req,
+			 NTSTATUS error_code,
+			 uint8_t *buf, size_t len);
 	struct notify_mid_map *mid_map;
 	void *backend_data;
 };
@@ -139,19 +142,20 @@ void change_notify_reply(connection_struct *conn,
 			 struct smb_request *req,
 			 NTSTATUS error_code,
 			 uint32_t max_param,
-			 struct notify_change_buf *notify_buf)
+			 struct notify_change_buf *notify_buf,
+			 void (*reply_fn)(struct smb_request *req,
+				NTSTATUS error_code,
+				uint8_t *buf, size_t len))
 {
 	prs_struct ps;
 
 	if (!NT_STATUS_IS_OK(error_code)) {
-		send_nt_replies(conn, req, error_code,
-				NULL, 0, NULL, 0);
+		reply_fn(req, error_code, NULL, 0);
 		return;
 	}
 
 	if (max_param == 0 || notify_buf == NULL) {
-		send_nt_replies(conn, req, NT_STATUS_OK,
-				NULL, 0, NULL, 0);
+		reply_fn(req, NT_STATUS_OK, NULL, 0);
 		return;
 	}
 
@@ -167,8 +171,7 @@ void change_notify_reply(connection_struct *conn,
 		prs_init_empty(&ps, NULL, MARSHALL);
 	}
 
-	send_nt_replies(conn, req, NT_STATUS_OK, prs_data_p(&ps),
-			prs_offset(&ps), NULL, 0);
+	reply_fn(req, NT_STATUS_OK, (uint8_t *)prs_data_p(&ps), prs_offset(&ps));
 
 	prs_mem_free(&ps);
 
@@ -223,7 +226,10 @@ NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
 NTSTATUS change_notify_add_request(struct smb_request *req,
 				uint32 max_param,
 				uint32 filter, bool recursive,
-				struct files_struct *fsp)
+				struct files_struct *fsp,
+				void (*reply_fn)(struct smb_request *req,
+					NTSTATUS error_code,
+					uint8_t *buf, size_t len))
 {
 	struct notify_change_request *request = NULL;
 	struct notify_mid_map *map = NULL;
@@ -245,6 +251,7 @@ NTSTATUS change_notify_add_request(struct smb_request *req,
 	request->max_param = max_param;
 	request->filter = filter;
 	request->fsp = fsp;
+	request->reply_fn = reply_fn;
 	request->backend_data = NULL;
 
 	DLIST_ADD_END(fsp->notify->requests, request,
@@ -305,7 +312,7 @@ void remove_pending_change_notify_requests_by_mid(uint16 mid)
 	}
 
 	change_notify_reply(map->req->fsp->conn, map->req->req,
-			    NT_STATUS_CANCELLED, 0, NULL);
+			    NT_STATUS_CANCELLED, 0, NULL, map->req->reply_fn);
 	change_notify_remove_request(map->req);
 }
 
@@ -322,7 +329,8 @@ void remove_pending_change_notify_requests_by_fid(files_struct *fsp,
 
 	while (fsp->notify->requests != NULL) {
 		change_notify_reply(fsp->conn, fsp->notify->requests->req,
-				    status, 0, NULL);
+				    status, 0, NULL,
+				    fsp->notify->requests->reply_fn);
 		change_notify_remove_request(fsp->notify->requests);
 	}
 }
@@ -396,7 +404,8 @@ static void notify_fsp(files_struct *fsp, uint32 action, const char *name)
 					    fsp->notify->requests->req,
 					    NT_STATUS_OK,
 					    fsp->notify->requests->max_param,
-					    fsp->notify);
+					    fsp->notify,
+					    fsp->notify->requests->reply_fn);
 			change_notify_remove_request(fsp->notify->requests);
 		}
 		return;
@@ -456,7 +465,8 @@ static void notify_fsp(files_struct *fsp, uint32 action, const char *name)
 			    fsp->notify->requests->req,
 			    NT_STATUS_OK,
 			    fsp->notify->requests->max_param,
-			    fsp->notify);
+			    fsp->notify,
+			    fsp->notify->requests->reply_fn);
 
 	change_notify_remove_request(fsp->notify->requests);
 }

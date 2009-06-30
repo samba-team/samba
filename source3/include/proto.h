@@ -6467,15 +6467,21 @@ void reply_negprot(struct smb_request *req);
 
 void change_notify_reply(connection_struct *conn,
 			 struct smb_request *req,
-			 NTSTATUS status,
+			 NTSTATUS error_code,
 			 uint32_t max_param,
-			 struct notify_change_buf *notify_buf);
+			 struct notify_change_buf *notify_buf,
+			 void (*reply_fn)(struct smb_request *req,
+				NTSTATUS error_code,
+				uint8_t *buf, size_t len));
 NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
 			      bool recursive);
 NTSTATUS change_notify_add_request(struct smb_request *req,
 				uint32 max_param,
 				uint32 filter, bool recursive,
-				struct files_struct *fsp);
+				struct files_struct *fsp,
+				void (*reply_fn)(struct smb_request *req,
+					NTSTATUS error_code,
+					uint8_t *buf, size_t len));
 void remove_pending_change_notify_requests_by_mid(uint16 mid);
 void remove_pending_change_notify_requests_by_fid(files_struct *fsp,
 						  NTSTATUS status);

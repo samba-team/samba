@@ -1517,6 +1517,13 @@ void reply_ntrename(struct smb_request *req)
  don't allow a directory to be opened.
 ****************************************************************************/
 
+static void smbd_smb1_notify_reply(struct smb_request *req,
+				   NTSTATUS error_code,
+				   uint8_t *buf, size_t len)
+{
+	send_nt_replies(req->conn, req, error_code, (char *)buf, len, NULL, 0);
+}
+
 static void call_nt_transact_notify_change(connection_struct *conn,
 					   struct smb_request *req,
 					   uint16 **ppsetup,
@@ -1595,7 +1602,8 @@ static void call_nt_transact_notify_change(connection_struct *conn,
 		change_notify_reply(fsp->conn, req,
 				    NT_STATUS_OK,
 				    max_param_count,
-				    fsp->notify);
+				    fsp->notify,
+				    smbd_smb1_notify_reply);
 
 		/*
 		 * change_notify_reply() above has independently sent its
@@ -1611,7 +1619,8 @@ static void call_nt_transact_notify_change(connection_struct *conn,
 	status = change_notify_add_request(req,
 			max_param_count,
 			filter,
-			recursive, fsp);
+			recursive, fsp,
+			smbd_smb1_notify_reply);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 	}
