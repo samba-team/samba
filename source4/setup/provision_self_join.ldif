@@ -1,6 +1,10 @@
 #Join the DC to itself by default
 
 dn: CN=${NETBIOSNAME},OU=Domain Controllers,${DOMAINDN}
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: user
 objectClass: computer
 cn: ${NETBIOSNAME}
 userAccountControl: 532480
