@@ -61,8 +61,6 @@ NTSTATUS samba_server_gensec_start(TALLOC_CTX *mem_ctx,
 		return nt_status;
 	}
 	
-	talloc_steal(gensec_ctx, auth_context);
-
 	gensec_set_credentials(gensec_ctx, server_credentials);
 
 	if (target_service) {
