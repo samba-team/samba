@@ -17,8 +17,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "tevent_ntstatus.h"
 #include "../replace/replace.h"
+#include "tevent_ntstatus.h"
 
 bool tevent_req_nterror(struct tevent_req *req,	NTSTATUS status)
 {
