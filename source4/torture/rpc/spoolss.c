@@ -1131,6 +1131,7 @@ static bool test_GetJob(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct spoolss_GetJob r;
+	union spoolss_JobInfo info;
 	uint32_t needed;
 	uint32_t levels[] = {1, 2 /* 3, 4 */};
 	uint32_t i;
@@ -1141,6 +1142,7 @@ static bool test_GetJob(struct torture_context *tctx,
 	r.in.buffer = NULL;
 	r.in.offered = 0;
 	r.out.needed = &needed;
+	r.out.info = &info;
 
 	torture_comment(tctx, "Testing GetJob level %d\n", r.in.level);
 
@@ -1151,8 +1153,11 @@ static bool test_GetJob(struct torture_context *tctx,
 
 		torture_comment(tctx, "Testing GetJob level %d\n", r.in.level);
 
+		needed = 0;
+
 		r.in.level = levels[i];
 		r.in.offered = 0;
+		r.in.buffer = NULL;
 
 		status = dcerpc_spoolss_GetJob(p, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "GetJob failed");
