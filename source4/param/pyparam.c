@@ -43,7 +43,7 @@ PyAPI_DATA(PyTypeObject) PyLoadparmService;
 
 PyObject *PyLoadparmService_FromService(struct loadparm_service *service)
 {
-	return py_talloc_import(&PyLoadparmService, service);
+	return py_talloc_reference(&PyLoadparmService, service);
 }
 
 static PyObject *py_lp_ctx_get_helper(struct loadparm_context *lp_ctx, const char *service_name, const char *param_name)
