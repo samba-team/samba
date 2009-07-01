@@ -3073,7 +3073,7 @@ TOPFILES=dynconfig.o localedir.o
 
 cleanlibs::
 	-rm -f ../lib/*/*.o ../lib/*/*/*.o \
-		../libcli/*.o ../libcli/*/*.o \
+		../libcli/*.o ../libcli/*/*.o ../libcli/*/*/*.o \
 		../librpc/*/*.o
 
 clean:: cleanlibs
