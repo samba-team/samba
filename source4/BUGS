@@ -21,4 +21,4 @@ backup all configuration and data.
 
 We welcome your testing, please file bug reports at
 https://bugzilla.samba.org/, product: Samba4.  Please include as much
-information as possible, such as GIT revision number and backtraces.
+information as possible, such as GIT revision SHA and backtraces.
