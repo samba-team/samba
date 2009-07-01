@@ -2344,7 +2344,6 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 {
 	mode_t mode;
 	char *parent_dir;
-	const char *dirname;
 	NTSTATUS status;
 	bool posix_open = false;
 
@@ -2359,7 +2358,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		return status;
 	}
 
-	if (!parent_dirname(talloc_tos(), name, &parent_dir, &dirname)) {
+	if (!parent_dirname(talloc_tos(), name, &parent_dir, NULL)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
