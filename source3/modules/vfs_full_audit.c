@@ -69,544 +69,6 @@ struct vfs_full_audit_private_data {
 #undef DBGC_CLASS
 #define DBGC_CLASS vfs_full_audit_debug_level
 
-/* Function prototypes */
-
-static int smb_full_audit_connect(vfs_handle_struct *handle,
-			 const char *svc, const char *user);
-static void smb_full_audit_disconnect(vfs_handle_struct *handle);
-static uint64_t smb_full_audit_disk_free(vfs_handle_struct *handle,
-				    const char *path,
-				    bool small_query, uint64_t *bsize, 
-				    uint64_t *dfree, uint64_t *dsize);
-static int smb_full_audit_get_quota(struct vfs_handle_struct *handle,
-			   enum SMB_QUOTA_TYPE qtype, unid_t id,
-			   SMB_DISK_QUOTA *qt);
-static int smb_full_audit_set_quota(struct vfs_handle_struct *handle,
-			   enum SMB_QUOTA_TYPE qtype, unid_t id,
-			   SMB_DISK_QUOTA *qt);
-static int smb_full_audit_get_shadow_copy_data(struct vfs_handle_struct *handle,
-                                struct files_struct *fsp,
-                                SHADOW_COPY_DATA *shadow_copy_data, bool labels);
-static int smb_full_audit_statvfs(struct vfs_handle_struct *handle,
-				const char *path,
-				struct vfs_statvfs_struct *statbuf);
-static int smb_full_audit_fs_capabilities(struct vfs_handle_struct *handle);
-static SMB_STRUCT_DIR *smb_full_audit_opendir(vfs_handle_struct *handle,
-			  const char *fname, const char *mask, uint32 attr);
-static SMB_STRUCT_DIRENT *smb_full_audit_readdir(vfs_handle_struct *handle,
-				    SMB_STRUCT_DIR *dirp,
-				    SMB_STRUCT_STAT *sbuf);
-static void smb_full_audit_seekdir(vfs_handle_struct *handle,
-			SMB_STRUCT_DIR *dirp, long offset);
-static long smb_full_audit_telldir(vfs_handle_struct *handle,
-			SMB_STRUCT_DIR *dirp);
-static void smb_full_audit_rewinddir(vfs_handle_struct *handle,
-			SMB_STRUCT_DIR *dirp);
-static int smb_full_audit_mkdir(vfs_handle_struct *handle,
-		       const char *path, mode_t mode);
-static int smb_full_audit_rmdir(vfs_handle_struct *handle,
-		       const char *path);
-static int smb_full_audit_closedir(vfs_handle_struct *handle,
-			  SMB_STRUCT_DIR *dirp);
-static void smb_full_audit_init_search_op(vfs_handle_struct *handle,
-			SMB_STRUCT_DIR *dirp);
-static int smb_full_audit_open(vfs_handle_struct *handle,
-		      struct smb_filename *smb_fnmae, files_struct *fsp, int flags, mode_t mode);
-static NTSTATUS smb_full_audit_create_file(vfs_handle_struct *handle,
-				      struct smb_request *req,
-				      uint16_t root_dir_fid,
-				      struct smb_filename *smb_fname,
-				      uint32_t access_mask,
-				      uint32_t share_access,
-				      uint32_t create_disposition,
-				      uint32_t create_options,
-				      uint32_t file_attributes,
-				      uint32_t oplock_request,
-				      uint64_t allocation_size,
-				      struct security_descriptor *sd,
-				      struct ea_list *ea_list,
-				      files_struct **result,
-				      int *pinfo);
-static int smb_full_audit_close(vfs_handle_struct *handle, files_struct *fsp);
-static ssize_t smb_full_audit_read(vfs_handle_struct *handle, files_struct *fsp,
-			  void *data, size_t n);
-static ssize_t smb_full_audit_pread(vfs_handle_struct *handle, files_struct *fsp,
-			   void *data, size_t n, SMB_OFF_T offset);
-static ssize_t smb_full_audit_write(vfs_handle_struct *handle, files_struct *fsp,
-			   const void *data, size_t n);
-static ssize_t smb_full_audit_pwrite(vfs_handle_struct *handle, files_struct *fsp,
-			    const void *data, size_t n,
-			    SMB_OFF_T offset);
-static SMB_OFF_T smb_full_audit_lseek(vfs_handle_struct *handle, files_struct *fsp,
-			     SMB_OFF_T offset, int whence);
-static ssize_t smb_full_audit_sendfile(vfs_handle_struct *handle, int tofd,
-			      files_struct *fromfsp,
-			      const DATA_BLOB *hdr, SMB_OFF_T offset,
-			      size_t n);
-static ssize_t smb_full_audit_recvfile(vfs_handle_struct *handle, int fromfd,
-			      files_struct *tofsp,
-			      SMB_OFF_T offset,
-			      size_t n);
-static int smb_full_audit_rename(vfs_handle_struct *handle,
-				 const struct smb_filename *smb_fname_src,
-				 const struct smb_filename *smb_fname_dst);
-static int smb_full_audit_fsync(vfs_handle_struct *handle, files_struct *fsp);
-static int smb_full_audit_stat(vfs_handle_struct *handle,
-			       struct smb_filename *smb_fname);
-static int smb_full_audit_fstat(vfs_handle_struct *handle, files_struct *fsp,
-		       SMB_STRUCT_STAT *sbuf);
-static int smb_full_audit_lstat(vfs_handle_struct *handle,
-				struct smb_filename *smb_fname);
-static int smb_full_audit_get_alloc_size(vfs_handle_struct *handle,
-		       files_struct *fsp, const SMB_STRUCT_STAT *sbuf);
-static int smb_full_audit_unlink(vfs_handle_struct *handle,
-			const char *path);
-static int smb_full_audit_chmod(vfs_handle_struct *handle,
-		       const char *path, mode_t mode);
-static int smb_full_audit_fchmod(vfs_handle_struct *handle, files_struct *fsp,
-			mode_t mode);
-static int smb_full_audit_chown(vfs_handle_struct *handle,
-		       const char *path, uid_t uid, gid_t gid);
-static int smb_full_audit_fchown(vfs_handle_struct *handle, files_struct *fsp,
-			uid_t uid, gid_t gid);
-static int smb_full_audit_lchown(vfs_handle_struct *handle,
-		       const char *path, uid_t uid, gid_t gid);
-static int smb_full_audit_chdir(vfs_handle_struct *handle,
-		       const char *path);
-static char *smb_full_audit_getwd(vfs_handle_struct *handle,
-			 char *path);
-static int smb_full_audit_ntimes(vfs_handle_struct *handle,
-		       const char *path, struct smb_file_time *ft);
-static int smb_full_audit_ftruncate(vfs_handle_struct *handle, files_struct *fsp,
-			   SMB_OFF_T len);
-static bool smb_full_audit_lock(vfs_handle_struct *handle, files_struct *fsp,
-		       int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
-static int smb_full_audit_kernel_flock(struct vfs_handle_struct *handle,
-				       struct files_struct *fsp,
-				       uint32 share_mode);
-static int smb_full_audit_linux_setlease(vfs_handle_struct *handle, files_struct *fsp,
-					int leasetype);
-static bool smb_full_audit_getlock(vfs_handle_struct *handle, files_struct *fsp,
-		       SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid);
-static int smb_full_audit_symlink(vfs_handle_struct *handle,
-			 const char *oldpath, const char *newpath);
-static int smb_full_audit_readlink(vfs_handle_struct *handle,
-			  const char *path, char *buf, size_t bufsiz);
-static int smb_full_audit_link(vfs_handle_struct *handle,
-		      const char *oldpath, const char *newpath);
-static int smb_full_audit_mknod(vfs_handle_struct *handle,
-		       const char *pathname, mode_t mode, SMB_DEV_T dev);
-static char *smb_full_audit_realpath(vfs_handle_struct *handle,
-			    const char *path, char *resolved_path);
-static NTSTATUS smb_full_audit_notify_watch(struct vfs_handle_struct *handle,
-			struct sys_notify_context *ctx,
-			struct notify_entry *e,
-			void (*callback)(struct sys_notify_context *ctx,
-					void *private_data,
-					struct notify_event *ev),
-			void *private_data, void *handle_p);
-static int smb_full_audit_chflags(vfs_handle_struct *handle,
-			    const char *path, unsigned int flags);
-static struct file_id smb_full_audit_file_id_create(struct vfs_handle_struct *handle,
-						    const SMB_STRUCT_STAT *sbuf);
-static NTSTATUS smb_full_audit_streaminfo(vfs_handle_struct *handle,
-					  struct files_struct *fsp,
-					  const char *fname,
-					  TALLOC_CTX *mem_ctx,
-					  unsigned int *pnum_streams,
-					  struct stream_struct **pstreams);
-static int smb_full_audit_get_real_filename(struct vfs_handle_struct *handle,
-					    const char *path,
-					    const char *name,
-					    TALLOC_CTX *mem_ctx,
-					    char **found_name);
-static const char *smb_full_audit_connectpath(vfs_handle_struct *handle,
-					      const char *fname);
-static NTSTATUS smb_full_audit_brl_lock_windows(struct vfs_handle_struct *handle,
-					        struct byte_range_lock *br_lck,
-					        struct lock_struct *plock,
-					        bool blocking_lock,
-						struct blocking_lock_record *blr);
-static bool smb_full_audit_brl_unlock_windows(struct vfs_handle_struct *handle,
-					      struct messaging_context *msg_ctx,
-				              struct byte_range_lock *br_lck,
-				              const struct lock_struct *plock);
-static bool smb_full_audit_brl_cancel_windows(struct vfs_handle_struct *handle,
-				              struct byte_range_lock *br_lck,
-					      struct lock_struct *plock,
-					      struct blocking_lock_record *blr);
-static bool smb_full_audit_strict_lock(struct vfs_handle_struct *handle,
-				       struct files_struct *fsp,
-				       struct lock_struct *plock);
-static void smb_full_audit_strict_unlock(struct vfs_handle_struct *handle,
-				         struct files_struct *fsp,
-				         struct lock_struct *plock);
-static NTSTATUS smb_full_audit_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-				uint32 security_info,
-				SEC_DESC **ppdesc);
-static NTSTATUS smb_full_audit_get_nt_acl(vfs_handle_struct *handle,
-			       const char *name, uint32 security_info,
-			       SEC_DESC **ppdesc);
-static NTSTATUS smb_full_audit_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-			      uint32 security_info_sent,
-			      const SEC_DESC *psd);
-static int smb_full_audit_chmod_acl(vfs_handle_struct *handle,
-			   const char *path, mode_t mode);
-static int smb_full_audit_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp,
-				     mode_t mode);
-static int smb_full_audit_sys_acl_get_entry(vfs_handle_struct *handle,
-				   SMB_ACL_T theacl, int entry_id,
-				   SMB_ACL_ENTRY_T *entry_p);
-static int smb_full_audit_sys_acl_get_tag_type(vfs_handle_struct *handle,
-				      SMB_ACL_ENTRY_T entry_d,
-				      SMB_ACL_TAG_T *tag_type_p);
-static int smb_full_audit_sys_acl_get_permset(vfs_handle_struct *handle,
-				     SMB_ACL_ENTRY_T entry_d,
-				     SMB_ACL_PERMSET_T *permset_p);
-static void * smb_full_audit_sys_acl_get_qualifier(vfs_handle_struct *handle,
-					  SMB_ACL_ENTRY_T entry_d);
-static SMB_ACL_T smb_full_audit_sys_acl_get_file(vfs_handle_struct *handle,
-					const char *path_p,
-					SMB_ACL_TYPE_T type);
-static SMB_ACL_T smb_full_audit_sys_acl_get_fd(vfs_handle_struct *handle,
-				      files_struct *fsp);
-static int smb_full_audit_sys_acl_clear_perms(vfs_handle_struct *handle,
-				     SMB_ACL_PERMSET_T permset);
-static int smb_full_audit_sys_acl_add_perm(vfs_handle_struct *handle,
-				  SMB_ACL_PERMSET_T permset,
-				  SMB_ACL_PERM_T perm);
-static char * smb_full_audit_sys_acl_to_text(vfs_handle_struct *handle,
-				    SMB_ACL_T theacl,
-				    ssize_t *plen);
-static SMB_ACL_T smb_full_audit_sys_acl_init(vfs_handle_struct *handle,
-				    int count);
-static int smb_full_audit_sys_acl_create_entry(vfs_handle_struct *handle,
-				      SMB_ACL_T *pacl,
-				      SMB_ACL_ENTRY_T *pentry);
-static int smb_full_audit_sys_acl_set_tag_type(vfs_handle_struct *handle,
-				      SMB_ACL_ENTRY_T entry,
-				      SMB_ACL_TAG_T tagtype);
-static int smb_full_audit_sys_acl_set_qualifier(vfs_handle_struct *handle,
-				       SMB_ACL_ENTRY_T entry,
-				       void *qual);
-static int smb_full_audit_sys_acl_set_permset(vfs_handle_struct *handle,
-				     SMB_ACL_ENTRY_T entry,
-				     SMB_ACL_PERMSET_T permset);
-static int smb_full_audit_sys_acl_valid(vfs_handle_struct *handle,
-			       SMB_ACL_T theacl );
-static int smb_full_audit_sys_acl_set_file(vfs_handle_struct *handle,
-				  const char *name, SMB_ACL_TYPE_T acltype,
-				  SMB_ACL_T theacl);
-static int smb_full_audit_sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
-				SMB_ACL_T theacl);
-static int smb_full_audit_sys_acl_delete_def_file(vfs_handle_struct *handle,
-					 const char *path);
-static int smb_full_audit_sys_acl_get_perm(vfs_handle_struct *handle,
-				  SMB_ACL_PERMSET_T permset,
-				  SMB_ACL_PERM_T perm);
-static int smb_full_audit_sys_acl_free_text(vfs_handle_struct *handle,
-				   char *text);
-static int smb_full_audit_sys_acl_free_acl(vfs_handle_struct *handle,
-				  SMB_ACL_T posix_acl);
-static int smb_full_audit_sys_acl_free_qualifier(vfs_handle_struct *handle,
-					void *qualifier,
-					SMB_ACL_TAG_T tagtype);
-static ssize_t smb_full_audit_getxattr(struct vfs_handle_struct *handle,
-			      const char *path,
-			      const char *name, void *value, size_t size);
-static ssize_t smb_full_audit_lgetxattr(struct vfs_handle_struct *handle,
-			       const char *path, const char *name,
-			       void *value, size_t size);
-static ssize_t smb_full_audit_fgetxattr(struct vfs_handle_struct *handle,
-			       struct files_struct *fsp,
-			       const char *name, void *value, size_t size);
-static ssize_t smb_full_audit_listxattr(struct vfs_handle_struct *handle,
-			       const char *path, char *list, size_t size);
-static ssize_t smb_full_audit_llistxattr(struct vfs_handle_struct *handle,
-				const char *path, char *list, size_t size);
-static ssize_t smb_full_audit_flistxattr(struct vfs_handle_struct *handle,
-				struct files_struct *fsp, char *list,
-				size_t size);
-static int smb_full_audit_removexattr(struct vfs_handle_struct *handle,
-			     const char *path,
-			     const char *name);
-static int smb_full_audit_lremovexattr(struct vfs_handle_struct *handle,
-			      const char *path,
-			      const char *name);
-static int smb_full_audit_fremovexattr(struct vfs_handle_struct *handle,
-			      struct files_struct *fsp,
-			      const char *name);
-static int smb_full_audit_setxattr(struct vfs_handle_struct *handle,
-			  const char *path,
-			  const char *name, const void *value, size_t size,
-			  int flags);
-static int smb_full_audit_lsetxattr(struct vfs_handle_struct *handle,
-			   const char *path,
-			   const char *name, const void *value, size_t size,
-			   int flags);
-static int smb_full_audit_fsetxattr(struct vfs_handle_struct *handle,
-			   struct files_struct *fsp, const char *name,
-			   const void *value, size_t size, int flags);
-
-static int smb_full_audit_aio_read(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
-static int smb_full_audit_aio_write(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
-static ssize_t smb_full_audit_aio_return(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
-static int smb_full_audit_aio_cancel(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
-static int smb_full_audit_aio_error(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
-static int smb_full_audit_aio_fsync(struct vfs_handle_struct *handle, struct files_struct *fsp, int op, SMB_STRUCT_AIOCB *aiocb);
-static int smb_full_audit_aio_suspend(struct vfs_handle_struct *handle, struct files_struct *fsp, const SMB_STRUCT_AIOCB * const aiocb[], int n, const struct timespec *ts);
-static bool smb_full_audit_aio_force(struct vfs_handle_struct *handle,
-				     struct files_struct *fsp);
-
-/* VFS operations */
-
-static vfs_op_tuple audit_op_tuples[] = {
-
-	/* Disk operations */
-
-	{SMB_VFS_OP(smb_full_audit_connect),	SMB_VFS_OP_CONNECT,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_disconnect),	SMB_VFS_OP_DISCONNECT,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_disk_free),	SMB_VFS_OP_DISK_FREE,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_get_quota),	SMB_VFS_OP_GET_QUOTA,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_set_quota),	SMB_VFS_OP_SET_QUOTA,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_get_shadow_copy_data), SMB_VFS_OP_GET_SHADOW_COPY_DATA,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_statvfs),	SMB_VFS_OP_STATVFS,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_fs_capabilities), SMB_VFS_OP_FS_CAPABILITIES,
-	 SMB_VFS_LAYER_LOGGER},
-
-	/* Directory operations */
-
-	{SMB_VFS_OP(smb_full_audit_opendir),	SMB_VFS_OP_OPENDIR,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_readdir),	SMB_VFS_OP_READDIR,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_seekdir),	SMB_VFS_OP_SEEKDIR,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_telldir),	SMB_VFS_OP_TELLDIR,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_rewinddir),	SMB_VFS_OP_REWINDDIR,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_mkdir),	SMB_VFS_OP_MKDIR,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_rmdir),	SMB_VFS_OP_RMDIR,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_closedir),	SMB_VFS_OP_CLOSEDIR,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_init_search_op), SMB_VFS_OP_INIT_SEARCH_OP,
-	 SMB_VFS_LAYER_LOGGER},
-
-	/* File operations */
-
-	{SMB_VFS_OP(smb_full_audit_open),	SMB_VFS_OP_OPEN,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_create_file),SMB_VFS_OP_CREATE_FILE,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_close),	SMB_VFS_OP_CLOSE,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_read),	SMB_VFS_OP_READ,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_pread),	SMB_VFS_OP_PREAD,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_write),	SMB_VFS_OP_WRITE,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_pwrite),	SMB_VFS_OP_PWRITE,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_lseek),	SMB_VFS_OP_LSEEK,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_sendfile),	SMB_VFS_OP_SENDFILE,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_recvfile),	SMB_VFS_OP_RECVFILE,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_rename),	SMB_VFS_OP_RENAME,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_fsync),	SMB_VFS_OP_FSYNC,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_stat),	SMB_VFS_OP_STAT,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_fstat),	SMB_VFS_OP_FSTAT,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_lstat),	SMB_VFS_OP_LSTAT,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_get_alloc_size),	SMB_VFS_OP_GET_ALLOC_SIZE,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_unlink),	SMB_VFS_OP_UNLINK,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_chmod),	SMB_VFS_OP_CHMOD,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_fchmod),	SMB_VFS_OP_FCHMOD,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_chown),	SMB_VFS_OP_CHOWN,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_fchown),	SMB_VFS_OP_FCHOWN,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_lchown),	SMB_VFS_OP_LCHOWN,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_chdir),	SMB_VFS_OP_CHDIR,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_getwd),	SMB_VFS_OP_GETWD,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_ntimes),	SMB_VFS_OP_NTIMES,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_ftruncate),	SMB_VFS_OP_FTRUNCATE,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_lock),	SMB_VFS_OP_LOCK,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_kernel_flock),	SMB_VFS_OP_KERNEL_FLOCK,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_linux_setlease),       SMB_VFS_OP_LINUX_SETLEASE,
-         SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_getlock),	SMB_VFS_OP_GETLOCK,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_symlink),	SMB_VFS_OP_SYMLINK,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_readlink),	SMB_VFS_OP_READLINK,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_link),	SMB_VFS_OP_LINK,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_mknod),	SMB_VFS_OP_MKNOD,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_realpath),	SMB_VFS_OP_REALPATH,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_notify_watch),SMB_VFS_OP_NOTIFY_WATCH,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_chflags),	SMB_VFS_OP_CHFLAGS,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_file_id_create),	SMB_VFS_OP_FILE_ID_CREATE,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_streaminfo),	SMB_VFS_OP_STREAMINFO,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_get_real_filename), SMB_VFS_OP_GET_REAL_FILENAME,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_connectpath), SMB_VFS_OP_CONNECTPATH,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_brl_lock_windows), SMB_VFS_OP_BRL_LOCK_WINDOWS,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_brl_unlock_windows), SMB_VFS_OP_BRL_UNLOCK_WINDOWS,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_brl_cancel_windows), SMB_VFS_OP_BRL_CANCEL_WINDOWS,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_strict_lock), SMB_VFS_OP_STRICT_LOCK,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_strict_unlock), SMB_VFS_OP_STRICT_UNLOCK,
-	 SMB_VFS_LAYER_LOGGER},
-
-	/* NT ACL operations. */
-
-	{SMB_VFS_OP(smb_full_audit_fget_nt_acl),	SMB_VFS_OP_FGET_NT_ACL,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_get_nt_acl),	SMB_VFS_OP_GET_NT_ACL,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_fset_nt_acl),	SMB_VFS_OP_FSET_NT_ACL,
-	 SMB_VFS_LAYER_LOGGER},
-
-	/* POSIX ACL operations. */
-
-	{SMB_VFS_OP(smb_full_audit_chmod_acl),	SMB_VFS_OP_CHMOD_ACL,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_fchmod_acl),	SMB_VFS_OP_FCHMOD_ACL,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_sys_acl_get_entry),	SMB_VFS_OP_SYS_ACL_GET_ENTRY,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_sys_acl_get_tag_type),	SMB_VFS_OP_SYS_ACL_GET_TAG_TYPE,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_sys_acl_get_permset),	SMB_VFS_OP_SYS_ACL_GET_PERMSET,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_sys_acl_get_qualifier),	SMB_VFS_OP_SYS_ACL_GET_QUALIFIER,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_sys_acl_get_file),	SMB_VFS_OP_SYS_ACL_GET_FILE,
-	 SMB_VFS_LAYER_LOGGER},
-{SMB_VFS_OP(smb_full_audit_sys_acl_get_fd),	SMB_VFS_OP_SYS_ACL_GET_FD,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_sys_acl_clear_perms),	SMB_VFS_OP_SYS_ACL_CLEAR_PERMS,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_sys_acl_add_perm),	SMB_VFS_OP_SYS_ACL_ADD_PERM,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_sys_acl_to_text),	SMB_VFS_OP_SYS_ACL_TO_TEXT,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_sys_acl_init),	SMB_VFS_OP_SYS_ACL_INIT,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_sys_acl_create_entry),	SMB_VFS_OP_SYS_ACL_CREATE_ENTRY,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_sys_acl_set_tag_type),	SMB_VFS_OP_SYS_ACL_SET_TAG_TYPE,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_sys_acl_set_qualifier),	SMB_VFS_OP_SYS_ACL_SET_QUALIFIER,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_sys_acl_set_permset),	SMB_VFS_OP_SYS_ACL_SET_PERMSET,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_sys_acl_valid),	SMB_VFS_OP_SYS_ACL_VALID,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_sys_acl_set_file),	SMB_VFS_OP_SYS_ACL_SET_FILE,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_sys_acl_set_fd),	SMB_VFS_OP_SYS_ACL_SET_FD,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_sys_acl_delete_def_file),	SMB_VFS_OP_SYS_ACL_DELETE_DEF_FILE,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_sys_acl_get_perm),	SMB_VFS_OP_SYS_ACL_GET_PERM,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_sys_acl_free_text),	SMB_VFS_OP_SYS_ACL_FREE_TEXT,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_sys_acl_free_acl),	SMB_VFS_OP_SYS_ACL_FREE_ACL,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_sys_acl_free_qualifier),	SMB_VFS_OP_SYS_ACL_FREE_QUALIFIER,
-	 SMB_VFS_LAYER_LOGGER},
-
-	/* EA operations. */
-
-	{SMB_VFS_OP(smb_full_audit_getxattr),	SMB_VFS_OP_GETXATTR,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_lgetxattr),	SMB_VFS_OP_LGETXATTR,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_fgetxattr),	SMB_VFS_OP_FGETXATTR,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_listxattr),	SMB_VFS_OP_LISTXATTR,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_llistxattr),	SMB_VFS_OP_LLISTXATTR,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_flistxattr),	SMB_VFS_OP_FLISTXATTR,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_removexattr),	SMB_VFS_OP_REMOVEXATTR,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_lremovexattr),	SMB_VFS_OP_LREMOVEXATTR,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_fremovexattr),	SMB_VFS_OP_FREMOVEXATTR,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_setxattr),	SMB_VFS_OP_SETXATTR,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_lsetxattr),	SMB_VFS_OP_LSETXATTR,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_fsetxattr),	SMB_VFS_OP_FSETXATTR,
-	 SMB_VFS_LAYER_LOGGER},
-
-	{SMB_VFS_OP(smb_full_audit_aio_read),	SMB_VFS_OP_AIO_READ,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_aio_write),	SMB_VFS_OP_AIO_WRITE,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_aio_return),	SMB_VFS_OP_AIO_RETURN,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_aio_cancel), SMB_VFS_OP_AIO_CANCEL,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_aio_error),	SMB_VFS_OP_AIO_ERROR,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_aio_fsync),	SMB_VFS_OP_AIO_FSYNC,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_aio_suspend),SMB_VFS_OP_AIO_SUSPEND,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_aio_force),SMB_VFS_OP_AIO_FORCE,
-	 SMB_VFS_LAYER_LOGGER},
-
-	/* Finish VFS operations definition */
-
-	{SMB_VFS_OP(NULL),		SMB_VFS_OP_NOOP,
-	 SMB_VFS_LAYER_NOOP}
-};
-
 /* The following array *must* be in the same order as defined in vfs.h */
 
 static struct {
@@ -2471,7 +1933,254 @@ static bool smb_full_audit_aio_force(struct vfs_handle_struct *handle,
 	return result;
 }
 
-NTSTATUS vfs_full_audit_init(void);
+/* VFS operations */
+static vfs_op_tuple audit_op_tuples[] = {
+
+	/* Disk operations */
+
+	{SMB_VFS_OP(smb_full_audit_connect),	SMB_VFS_OP_CONNECT,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_disconnect),	SMB_VFS_OP_DISCONNECT,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_disk_free),	SMB_VFS_OP_DISK_FREE,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_get_quota),	SMB_VFS_OP_GET_QUOTA,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_set_quota),	SMB_VFS_OP_SET_QUOTA,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_get_shadow_copy_data), SMB_VFS_OP_GET_SHADOW_COPY_DATA,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_statvfs),	SMB_VFS_OP_STATVFS,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_fs_capabilities), SMB_VFS_OP_FS_CAPABILITIES,
+	 SMB_VFS_LAYER_LOGGER},
+
+	/* Directory operations */
+
+	{SMB_VFS_OP(smb_full_audit_opendir),	SMB_VFS_OP_OPENDIR,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_readdir),	SMB_VFS_OP_READDIR,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_seekdir),	SMB_VFS_OP_SEEKDIR,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_telldir),	SMB_VFS_OP_TELLDIR,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_rewinddir),	SMB_VFS_OP_REWINDDIR,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_mkdir),	SMB_VFS_OP_MKDIR,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_rmdir),	SMB_VFS_OP_RMDIR,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_closedir),	SMB_VFS_OP_CLOSEDIR,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_init_search_op), SMB_VFS_OP_INIT_SEARCH_OP,
+	 SMB_VFS_LAYER_LOGGER},
+
+	/* File operations */
+
+	{SMB_VFS_OP(smb_full_audit_open),	SMB_VFS_OP_OPEN,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_create_file),SMB_VFS_OP_CREATE_FILE,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_close),	SMB_VFS_OP_CLOSE,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_read),	SMB_VFS_OP_READ,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_pread),	SMB_VFS_OP_PREAD,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_write),	SMB_VFS_OP_WRITE,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_pwrite),	SMB_VFS_OP_PWRITE,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_lseek),	SMB_VFS_OP_LSEEK,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_sendfile),	SMB_VFS_OP_SENDFILE,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_recvfile),	SMB_VFS_OP_RECVFILE,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_rename),	SMB_VFS_OP_RENAME,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_fsync),	SMB_VFS_OP_FSYNC,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_stat),	SMB_VFS_OP_STAT,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_fstat),	SMB_VFS_OP_FSTAT,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_lstat),	SMB_VFS_OP_LSTAT,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_get_alloc_size),	SMB_VFS_OP_GET_ALLOC_SIZE,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_unlink),	SMB_VFS_OP_UNLINK,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_chmod),	SMB_VFS_OP_CHMOD,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_fchmod),	SMB_VFS_OP_FCHMOD,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_chown),	SMB_VFS_OP_CHOWN,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_fchown),	SMB_VFS_OP_FCHOWN,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_lchown),	SMB_VFS_OP_LCHOWN,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_chdir),	SMB_VFS_OP_CHDIR,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_getwd),	SMB_VFS_OP_GETWD,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_ntimes),	SMB_VFS_OP_NTIMES,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_ftruncate),	SMB_VFS_OP_FTRUNCATE,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_lock),	SMB_VFS_OP_LOCK,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_kernel_flock),	SMB_VFS_OP_KERNEL_FLOCK,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_linux_setlease),       SMB_VFS_OP_LINUX_SETLEASE,
+         SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_getlock),	SMB_VFS_OP_GETLOCK,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_symlink),	SMB_VFS_OP_SYMLINK,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_readlink),	SMB_VFS_OP_READLINK,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_link),	SMB_VFS_OP_LINK,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_mknod),	SMB_VFS_OP_MKNOD,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_realpath),	SMB_VFS_OP_REALPATH,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_notify_watch),SMB_VFS_OP_NOTIFY_WATCH,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_chflags),	SMB_VFS_OP_CHFLAGS,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_file_id_create),	SMB_VFS_OP_FILE_ID_CREATE,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_streaminfo),	SMB_VFS_OP_STREAMINFO,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_get_real_filename), SMB_VFS_OP_GET_REAL_FILENAME,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_connectpath), SMB_VFS_OP_CONNECTPATH,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_brl_lock_windows), SMB_VFS_OP_BRL_LOCK_WINDOWS,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_brl_unlock_windows), SMB_VFS_OP_BRL_UNLOCK_WINDOWS,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_brl_cancel_windows), SMB_VFS_OP_BRL_CANCEL_WINDOWS,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_strict_lock), SMB_VFS_OP_STRICT_LOCK,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_strict_unlock), SMB_VFS_OP_STRICT_UNLOCK,
+	 SMB_VFS_LAYER_LOGGER},
+
+	/* NT ACL operations. */
+
+	{SMB_VFS_OP(smb_full_audit_fget_nt_acl),	SMB_VFS_OP_FGET_NT_ACL,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_get_nt_acl),	SMB_VFS_OP_GET_NT_ACL,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_fset_nt_acl),	SMB_VFS_OP_FSET_NT_ACL,
+	 SMB_VFS_LAYER_LOGGER},
+
+	/* POSIX ACL operations. */
+
+	{SMB_VFS_OP(smb_full_audit_chmod_acl),	SMB_VFS_OP_CHMOD_ACL,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_fchmod_acl),	SMB_VFS_OP_FCHMOD_ACL,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_sys_acl_get_entry),	SMB_VFS_OP_SYS_ACL_GET_ENTRY,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_sys_acl_get_tag_type),	SMB_VFS_OP_SYS_ACL_GET_TAG_TYPE,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_sys_acl_get_permset),	SMB_VFS_OP_SYS_ACL_GET_PERMSET,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_sys_acl_get_qualifier),	SMB_VFS_OP_SYS_ACL_GET_QUALIFIER,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_sys_acl_get_file),	SMB_VFS_OP_SYS_ACL_GET_FILE,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_sys_acl_get_fd),	SMB_VFS_OP_SYS_ACL_GET_FD,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_sys_acl_clear_perms),	SMB_VFS_OP_SYS_ACL_CLEAR_PERMS,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_sys_acl_add_perm),	SMB_VFS_OP_SYS_ACL_ADD_PERM,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_sys_acl_to_text),	SMB_VFS_OP_SYS_ACL_TO_TEXT,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_sys_acl_init),	SMB_VFS_OP_SYS_ACL_INIT,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_sys_acl_create_entry),	SMB_VFS_OP_SYS_ACL_CREATE_ENTRY,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_sys_acl_set_tag_type),	SMB_VFS_OP_SYS_ACL_SET_TAG_TYPE,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_sys_acl_set_qualifier),	SMB_VFS_OP_SYS_ACL_SET_QUALIFIER,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_sys_acl_set_permset),	SMB_VFS_OP_SYS_ACL_SET_PERMSET,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_sys_acl_valid),	SMB_VFS_OP_SYS_ACL_VALID,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_sys_acl_set_file),	SMB_VFS_OP_SYS_ACL_SET_FILE,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_sys_acl_set_fd),	SMB_VFS_OP_SYS_ACL_SET_FD,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_sys_acl_delete_def_file),	SMB_VFS_OP_SYS_ACL_DELETE_DEF_FILE,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_sys_acl_get_perm),	SMB_VFS_OP_SYS_ACL_GET_PERM,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_sys_acl_free_text),	SMB_VFS_OP_SYS_ACL_FREE_TEXT,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_sys_acl_free_acl),	SMB_VFS_OP_SYS_ACL_FREE_ACL,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_sys_acl_free_qualifier),	SMB_VFS_OP_SYS_ACL_FREE_QUALIFIER,
+	 SMB_VFS_LAYER_LOGGER},
+
+	/* EA operations. */
+
+	{SMB_VFS_OP(smb_full_audit_getxattr),	SMB_VFS_OP_GETXATTR,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_lgetxattr),	SMB_VFS_OP_LGETXATTR,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_fgetxattr),	SMB_VFS_OP_FGETXATTR,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_listxattr),	SMB_VFS_OP_LISTXATTR,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_llistxattr),	SMB_VFS_OP_LLISTXATTR,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_flistxattr),	SMB_VFS_OP_FLISTXATTR,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_removexattr),	SMB_VFS_OP_REMOVEXATTR,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_lremovexattr),	SMB_VFS_OP_LREMOVEXATTR,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_fremovexattr),	SMB_VFS_OP_FREMOVEXATTR,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_setxattr),	SMB_VFS_OP_SETXATTR,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_lsetxattr),	SMB_VFS_OP_LSETXATTR,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_fsetxattr),	SMB_VFS_OP_FSETXATTR,
+	 SMB_VFS_LAYER_LOGGER},
+
+	{SMB_VFS_OP(smb_full_audit_aio_read),	SMB_VFS_OP_AIO_READ,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_aio_write),	SMB_VFS_OP_AIO_WRITE,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_aio_return),	SMB_VFS_OP_AIO_RETURN,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_aio_cancel), SMB_VFS_OP_AIO_CANCEL,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_aio_error),	SMB_VFS_OP_AIO_ERROR,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_aio_fsync),	SMB_VFS_OP_AIO_FSYNC,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_aio_suspend),SMB_VFS_OP_AIO_SUSPEND,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_aio_force),SMB_VFS_OP_AIO_FORCE,
+	 SMB_VFS_LAYER_LOGGER},
+
+	/* Finish VFS operations definition */
+
+	{SMB_VFS_OP(NULL),		SMB_VFS_OP_NOOP,
+	 SMB_VFS_LAYER_NOOP}
+};
+
 NTSTATUS vfs_full_audit_init(void)
 {
 	NTSTATUS ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION,

@@ -29,56 +29,6 @@ static int vfs_extd_audit_debug_level = DBGC_VFS;
 #undef DBGC_CLASS
 #define DBGC_CLASS vfs_extd_audit_debug_level
 
-/* Function prototypes */
-
-static int audit_connect(vfs_handle_struct *handle, const char *svc, const char *user);
-static void audit_disconnect(vfs_handle_struct *handle);
-static SMB_STRUCT_DIR *audit_opendir(vfs_handle_struct *handle, const char *fname, const char *mask, uint32 attr);
-static int audit_mkdir(vfs_handle_struct *handle, const char *path, mode_t mode);
-static int audit_rmdir(vfs_handle_struct *handle, const char *path);
-static int audit_open(vfs_handle_struct *handle, struct smb_filename *smb_fname, files_struct *fsp, int flags, mode_t mode);
-static int audit_close(vfs_handle_struct *handle, files_struct *fsp);
-static int audit_rename(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname_src,
-			const struct smb_filename *smb_fname_dst);
-static int audit_unlink(vfs_handle_struct *handle, const char *path);
-static int audit_chmod(vfs_handle_struct *handle, const char *path, mode_t mode);
-static int audit_chmod_acl(vfs_handle_struct *handle, const char *name, mode_t mode);
-static int audit_fchmod(vfs_handle_struct *handle, files_struct *fsp, mode_t mode);
-static int audit_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp, mode_t mode);
-
-/* VFS operations */
-
-static vfs_op_tuple audit_op_tuples[] = {
-    
-	/* Disk operations */
-
-	{SMB_VFS_OP(audit_connect), 	SMB_VFS_OP_CONNECT, 	SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(audit_disconnect), 	SMB_VFS_OP_DISCONNECT, 	SMB_VFS_LAYER_LOGGER},
-
-	/* Directory operations */
-
-	{SMB_VFS_OP(audit_opendir), 	SMB_VFS_OP_OPENDIR, 	SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(audit_mkdir), 		SMB_VFS_OP_MKDIR, 	SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(audit_rmdir), 		SMB_VFS_OP_RMDIR, 	SMB_VFS_LAYER_LOGGER},
-
-	/* File operations */
-
-	{SMB_VFS_OP(audit_open), 		SMB_VFS_OP_OPEN, 	SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(audit_close), 		SMB_VFS_OP_CLOSE, 	SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(audit_rename), 		SMB_VFS_OP_RENAME, 	SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(audit_unlink), 		SMB_VFS_OP_UNLINK, 	SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(audit_chmod), 		SMB_VFS_OP_CHMOD, 	SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(audit_fchmod), 		SMB_VFS_OP_FCHMOD, 	SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(audit_chmod_acl), 	SMB_VFS_OP_CHMOD_ACL, 	SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(audit_fchmod_acl), 	SMB_VFS_OP_FCHMOD_ACL, 	SMB_VFS_LAYER_LOGGER},
-	
-	/* Finish VFS operations definition */
-	
-	{SMB_VFS_OP(NULL), 			SMB_VFS_OP_NOOP, 	SMB_VFS_LAYER_NOOP}
-};
-
-
 static int audit_syslog_facility(vfs_handle_struct *handle)
 {
 	static const struct enum_list enum_log_facilities[] = {
@@ -385,7 +335,36 @@ static int audit_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp, mode_t
 	return result;
 }
 
-NTSTATUS vfs_extd_audit_init(void);
+/* VFS operations */
+static vfs_op_tuple audit_op_tuples[] = {
+
+	/* Disk operations */
+
+	{SMB_VFS_OP(audit_connect), 	SMB_VFS_OP_CONNECT, 	SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(audit_disconnect), 	SMB_VFS_OP_DISCONNECT, 	SMB_VFS_LAYER_LOGGER},
+
+	/* Directory operations */
+
+	{SMB_VFS_OP(audit_opendir), 	SMB_VFS_OP_OPENDIR, 	SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(audit_mkdir), 		SMB_VFS_OP_MKDIR, 	SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(audit_rmdir), 		SMB_VFS_OP_RMDIR, 	SMB_VFS_LAYER_LOGGER},
+
+	/* File operations */
+
+	{SMB_VFS_OP(audit_open), 		SMB_VFS_OP_OPEN, 	SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(audit_close), 		SMB_VFS_OP_CLOSE, 	SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(audit_rename), 		SMB_VFS_OP_RENAME, 	SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(audit_unlink), 		SMB_VFS_OP_UNLINK, 	SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(audit_chmod), 		SMB_VFS_OP_CHMOD, 	SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(audit_fchmod), 		SMB_VFS_OP_FCHMOD, 	SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(audit_chmod_acl), 	SMB_VFS_OP_CHMOD_ACL, 	SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(audit_fchmod_acl), 	SMB_VFS_OP_FCHMOD_ACL, 	SMB_VFS_LAYER_LOGGER},
+
+	/* Finish VFS operations definition */
+
+	{SMB_VFS_OP(NULL), 			SMB_VFS_OP_NOOP, 	SMB_VFS_LAYER_NOOP}
+};
+
 NTSTATUS vfs_extd_audit_init(void)
 {
 	NTSTATUS ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "extd_audit", audit_op_tuples);
