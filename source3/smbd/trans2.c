@@ -5413,7 +5413,7 @@ static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				oldname,
 				&smb_fname_old,
-				&oldname);
+				NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -7347,7 +7347,7 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				directory,
 				&smb_dname,
-				&directory);
+				NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {

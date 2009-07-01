@@ -549,7 +549,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
 				&smb_fname,
-				&fname);
+				NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -1030,7 +1030,7 @@ static void call_nt_transact_create(connection_struct *conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
 				&smb_fname,
-				&fname);
+				NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {

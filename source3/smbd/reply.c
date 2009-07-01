@@ -994,7 +994,7 @@ void reply_checkpath(struct smb_request *req)
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				name,
 				&smb_fname,
-				&name);
+				NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -2095,7 +2095,7 @@ void reply_mknew(struct smb_request *req)
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
 				&smb_fname,
-				&fname);
+				NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req,
@@ -2109,7 +2109,8 @@ void reply_mknew(struct smb_request *req)
 
 	if (fattr & aVOLID) {
 		DEBUG(0,("Attempt to create file (%s) with volid set - "
-			"please report this\n", fname));
+			 "please report this\n",
+			 smb_fname_str_dbg(smb_fname)));
 	}
 
 	if(req->cmd == SMBmknew) {
@@ -2227,7 +2228,7 @@ void reply_ctemp(struct smb_request *req)
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
 				&smb_fname,
-				&fname);
+				NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
@@ -5197,7 +5198,7 @@ void reply_mkdir(struct smb_request *req)
 				 req->flags2 & FLAGS2_DFS_PATHNAMES,
 				 directory,
 				 &smb_dname,
-				 &directory);
+				 NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
