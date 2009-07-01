@@ -32,7 +32,7 @@ PyTypeObject PyAuthSession = {
 
 PyObject *PyAuthSession_FromSession(struct auth_session_info *session)
 {
-	return py_talloc_import(&PyAuthSession, session);
+	return py_talloc_reference(&PyAuthSession, session);
 }
 
 static PyObject *py_system_session(PyObject *module, PyObject *args)
