@@ -379,7 +379,6 @@ static PyObject *py_random_sid(PyObject *self)
         sid = dom_sid_parse_talloc(NULL, str);
 	talloc_free(str);
 	ret = py_talloc_import(&dom_sid_Type, sid);
-	talloc_free(sid);
 	return ret;
 }
 
