@@ -1067,7 +1067,7 @@ void *_talloc_realloc(const void *context, void *ptr, size_t size, const char *n
 
 	/* size zero is equivalent to free() */
 	if (unlikely(size == 0)) {
-		talloc_free(ptr);
+		talloc_unlink(context, ptr);
 		return NULL;
 	}
 
