@@ -384,7 +384,7 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 			smbsrv_terminate_connection(req->smb_conn, "reply_nt1: is this a secondary negprot?  auth_context is non-NULL!\n");
 			return;
 		}
-		req->smb_conn->negotiate.server_credentials = talloc_steal(req->smb_conn, server_credentials);
+		req->smb_conn->negotiate.server_credentials = talloc_reparent(req, req->smb_conn, server_credentials);
 
 		gensec_set_target_service(gensec_security, "cifs");
 
