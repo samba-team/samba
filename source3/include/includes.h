@@ -313,8 +313,10 @@ typedef sig_atomic_t volatile SIG_ATOMIC_T;
 
 #if !defined(int32) && !defined(HAVE_INT32_FROM_RPC_RPC_H)
 #  define int32 int32_t
-   /* needed to work around compile issue on HP-UX 11.x */
-#  define _INT32	1
+#  ifndef _INT32
+     /* needed to work around compile issue on HP-UX 11.x */
+#    define _INT32	1
+#  endif
 #endif
 
 /*
