@@ -3074,7 +3074,8 @@ TOPFILES=dynconfig.o localedir.o
 cleanlibs::
 	-rm -f ../lib/*/*.o ../lib/*/*/*.o \
 		../libcli/*.o ../libcli/*/*.o ../libcli/*/*/*.o \
-		../librpc/*/*.o
+		../librpc/*/*.o \
+		../libgpo/*.o ../libgpo/*/*.o
 
 clean:: cleanlibs
 	-rm -f include/build_env.h
