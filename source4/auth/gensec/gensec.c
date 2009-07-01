@@ -504,6 +504,8 @@ const char **gensec_security_oids(struct gensec_security *gensec_security,
   @param mem_ctx The parent TALLOC memory context.
   @param gensec_security Returned GENSEC context pointer.
   @note  The mem_ctx is only a parent and may be NULL.
+  @note, the auth context is moved to be a child of the
+  @ gensec_security return 
 */
 static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx, 
 			     struct tevent_context *ev,
@@ -532,7 +534,7 @@ static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx,
 	(*gensec_security)->event_ctx = ev;
 	SMB_ASSERT(settings->lp_ctx != NULL);
 	(*gensec_security)->settings = talloc_reference(*gensec_security, settings);
-	(*gensec_security)->auth_context = talloc_reference(*gensec_security, auth_context);
+	(*gensec_security)->auth_context = talloc_steal(*gensec_security, auth_context);
 
 	return NT_STATUS_OK;
 }
