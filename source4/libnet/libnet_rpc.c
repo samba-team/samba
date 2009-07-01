@@ -400,8 +400,17 @@ static NTSTATUS libnet_RpcConnectDC_recv(struct composite_context *c,
 
 	status = composite_wait(c);
 	if (NT_STATUS_IS_OK(status)) {
-		/* move connected rpc pipe between memory contexts */
-		r->out.dcerpc_pipe = talloc_steal(mem_ctx, s->r.out.dcerpc_pipe);
+		/* move connected rpc pipe between memory contexts 
+		   
+		   The use of talloc_reparent(talloc_parent(), ...) is
+		   bizarre, but it is needed because of the absolutely
+		   atrocious use of talloc in this code. We need to
+		   force the original parent to change, but finding
+		   the original parent is well nigh impossible at this
+		   point in the code (yes, I tried).
+		 */
+		r->out.dcerpc_pipe = talloc_reparent(talloc_parent(s->r.out.dcerpc_pipe), 
+						     mem_ctx, s->r.out.dcerpc_pipe);
 
 		/* reference created pipe structure to long-term libnet_context
 		   so that it can be used by other api functions even after short-term
