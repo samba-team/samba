@@ -185,7 +185,8 @@ CFLAGS="$RPM_OPT_FLAGS -D_GNU_SOURCE -m32" ./configure \
 	--with-ctdb=/usr/include \
 	--without-ldb \
 	--without-dnsupdate \
-	--with-aio-support
+	--with-aio-support \
+	--disable-merged-build
 
 make showlayout
 
@@ -249,7 +250,8 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./configure \
 	--with-ctdb=/usr/include \
 	--without-ldb \
 	--without-dnsupdate \
-	--with-aio-support
+	--with-aio-support\
+	--disable-merged-build
 
 make showlayout
 
