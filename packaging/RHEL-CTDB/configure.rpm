@@ -58,6 +58,7 @@ CC="$CC" CFLAGS="-Wall -g -D_GNU_SOURCE" ./configure -C \
 	--without-ldb \
 	--without-dnsupdate \
 	--with-aio-support \
+	--disable-merged-build
 	$*
 
 make showlayout
