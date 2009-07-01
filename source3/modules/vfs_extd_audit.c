@@ -178,7 +178,7 @@ static int audit_open(vfs_handle_struct *handle,
 
 	if (lp_syslog() > 0) {
 		syslog(audit_syslog_priority(handle), "open %s (fd %d) %s%s%s\n",
-		       smb_fname_str_dbg(smb_fname), result,
+		       smb_fname->base_name, result,
 		       ((flags & O_WRONLY) || (flags & O_RDWR)) ? "for writing " : "",
 		       (result < 0) ? "failed: " : "",
 		       (result < 0) ? strerror(errno) : "");
@@ -221,8 +221,8 @@ static int audit_rename(vfs_handle_struct *handle,
 
 	if (lp_syslog() > 0) {
 		syslog(audit_syslog_priority(handle), "rename %s -> %s %s%s\n",
-		       smb_fname_str_dbg(smb_fname_src),
-		       smb_fname_str_dbg(smb_fname_dst),
+		       smb_fname_src->base_name,
+		       smb_fname_dst->base_name,
 		       (result < 0) ? "failed: " : "",
 		       (result < 0) ? strerror(errno) : "");
 	}

@@ -349,6 +349,18 @@ static const char *audit_opname(vfs_op_type op)
 	return vfs_op_names[op].name;
 }
 
+static TALLOC_CTX *tmp_do_log_ctx;
+/*
+ * Get us a temporary talloc context usable just for DEBUG arguments
+ */
+static TALLOC_CTX *do_log_ctx(void)
+{
+        if (tmp_do_log_ctx == NULL) {
+                tmp_do_log_ctx = talloc_named_const(NULL, 0, "do_log_ctx");
+        }
+        return tmp_do_log_ctx;
+}
+
 static void do_log(vfs_op_type op, bool success, vfs_handle_struct *handle,
 		   const char *format, ...)
 {
@@ -358,10 +370,10 @@ static void do_log(vfs_op_type op, bool success, vfs_handle_struct *handle,
 	char *op_msg = NULL;
 
 	if (success && (!log_success(handle, op)))
-		return;
+		goto out;
 
 	if (!success && (!log_failure(handle, op)))
-		return;
+		goto out;
 
 	if (success)
 		fstrcpy(err_msg, "ok");
@@ -373,7 +385,7 @@ static void do_log(vfs_op_type op, bool success, vfs_handle_struct *handle,
 	va_end(ap);
 
 	if (!op_msg) {
-		return;
+		goto out;
 	}
 
 	audit_pre = audit_prefix(talloc_tos(), handle->conn);
@@ -381,11 +393,32 @@ static void do_log(vfs_op_type op, bool success, vfs_handle_struct *handle,
 		audit_pre ? audit_pre : "",
 		audit_opname(op), err_msg, op_msg);
 
+ out:
 	TALLOC_FREE(audit_pre);
 	TALLOC_FREE(op_msg);
+	TALLOC_FREE(tmp_do_log_ctx);
 
 	return;
 }
+
+/**
+ * Return a string using the do_log_ctx()
+ */
+static const char *smb_fname_str_do_log(const struct smb_filename *smb_fname)
+{
+	char *fname = NULL;
+	NTSTATUS status;
+
+	if (smb_fname == NULL) {
+		return "";
+	}
+	status = get_full_smb_filename(do_log_ctx(), smb_fname, &fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return "";
+	}
+	return fname;
+}
+
 
 /* Free function for the private data. */
 
@@ -651,7 +684,7 @@ static int smb_full_audit_open(vfs_handle_struct *handle,
 
 	do_log(SMB_VFS_OP_OPEN, (result >= 0), handle, "%s|%s",
 	       ((flags & O_WRONLY) || (flags & O_RDWR))?"w":"r",
-	       smb_fname_str_dbg(smb_fname));
+	       smb_fname_str_do_log(smb_fname));
 
 	return result;
 }
@@ -692,7 +725,7 @@ static NTSTATUS smb_full_audit_create_file(vfs_handle_struct *handle,
 		pinfo);					/* pinfo */
 
 	do_log(SMB_VFS_OP_CREATE_FILE, (NT_STATUS_IS_OK(result)), handle, "0x%x|%s",
-	       access_mask, smb_fname_str_dbg(smb_fname));
+	       access_mask, smb_fname_str_do_log(smb_fname));
 
 	return result;
 }
@@ -809,8 +842,8 @@ static int smb_full_audit_rename(vfs_handle_struct *handle,
 	result = SMB_VFS_NEXT_RENAME(handle, smb_fname_src, smb_fname_dst);
 
 	do_log(SMB_VFS_OP_RENAME, (result >= 0), handle, "%s|%s",
-	       smb_fname_str_dbg(smb_fname_src),
-	       smb_fname_str_dbg(smb_fname_dst));
+	       smb_fname_str_do_log(smb_fname_src),
+	       smb_fname_str_do_log(smb_fname_dst));
 
 	return result;    
 }
@@ -834,7 +867,7 @@ static int smb_full_audit_stat(vfs_handle_struct *handle,
 	result = SMB_VFS_NEXT_STAT(handle, smb_fname);
 
 	do_log(SMB_VFS_OP_STAT, (result >= 0), handle, "%s",
-	       smb_fname_str_dbg(smb_fname));
+	       smb_fname_str_do_log(smb_fname));
 
 	return result;    
 }
@@ -859,7 +892,7 @@ static int smb_full_audit_lstat(vfs_handle_struct *handle,
 	result = SMB_VFS_NEXT_LSTAT(handle, smb_fname);
 
 	do_log(SMB_VFS_OP_LSTAT, (result >= 0), handle, "%s",
-	       smb_fname_str_dbg(smb_fname));
+	       smb_fname_str_do_log(smb_fname));
 
 	return result;    
 }
