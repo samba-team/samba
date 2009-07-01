@@ -5484,11 +5484,32 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		if (newname[0] != ':') {
 			return NT_STATUS_NOT_SUPPORTED;
 		}
+
+		/* Create an smb_fname to call rename_internals_fsp() with. */
+		status = create_synthetic_smb_fname(talloc_tos(),
+						    fsp->base_fsp->fsp_name,
+						    newname, NULL, &smb_fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto out;
+		}
+
+		/*
+		 * Set the original last component, since
+		 * rename_internals_fsp() requires it.
+		 */
+		smb_fname->original_lcomp = talloc_strdup(smb_fname, newname);
+		if (smb_fname->original_lcomp == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+
+		/* Create a char * to call rename_internals() with. */
 		base_name = talloc_asprintf(ctx, "%s%s",
 					   fsp->base_fsp->fsp_name,
 					   newname);
 		if (!base_name) {
-			return NT_STATUS_NO_MEMORY;
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
 		}
 	} else {
 		/* newname must *not* be a stream name. */
@@ -5518,26 +5539,33 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		status = unix_convert(ctx, conn, newname, &smb_fname,
+		status = unix_convert(ctx, conn, base_name, &smb_fname,
 				      UCF_SAVE_LCOMP);
 
 		/* If an error we expect this to be
 		 * NT_STATUS_OBJECT_PATH_NOT_FOUND */
 
-		if (!NT_STATUS_IS_OK(status)
-		    && !NT_STATUS_EQUAL(NT_STATUS_OBJECT_PATH_NOT_FOUND,
-					status)) {
-			goto out;
+		if (!NT_STATUS_IS_OK(status)) {
+			if(!NT_STATUS_EQUAL(NT_STATUS_OBJECT_PATH_NOT_FOUND,
+					    status)) {
+				goto out;
+			}
+			/* Create an smb_fname to call rename_internals_fsp() */
+			status = create_synthetic_smb_fname(talloc_tos(),
+							    base_name, NULL,
+							    NULL, &smb_fname);
+			if (!NT_STATUS_IS_OK(status)) {
+				goto out;
+			}
 		}
+
 	}
 
 	if (fsp) {
 		DEBUG(10,("smb_file_rename_information: SMB_FILE_RENAME_INFORMATION (fnum %d) %s -> %s\n",
 			fsp->fnum, fsp->fsp_name, base_name ));
-		status = rename_internals_fsp(conn, fsp, base_name,
-					      smb_fname ?
-					      smb_fname->original_lcomp : NULL,
-					      0, overwrite);
+		status = rename_internals_fsp(conn, fsp, smb_fname, 0,
+					      overwrite);
 	} else {
 		DEBUG(10,("smb_file_rename_information: SMB_FILE_RENAME_INFORMATION %s -> %s\n",
 			fname, base_name ));

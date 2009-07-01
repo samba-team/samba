@@ -176,6 +176,16 @@ static inline bool shadow_copy2_match_name(const char *name)
 	} \
 } while (0)
 
+#define SHADOW2_NEXT2_SMB_FNAME(op, args) do { \
+	if (shadow_copy2_match_name(smb_fname_src->base_name) || \
+	    shadow_copy2_match_name(smb_fname_dst->base_name)) { \
+		errno = EROFS; \
+		return -1; \
+	} else { \
+		return SMB_VFS_NEXT_ ## op args; \
+	} \
+} while (0)
+
 
 /*
   find the mount point of a filesystem
@@ -343,9 +353,11 @@ static void convert_sbuf(vfs_handle_struct *handle, const char *fname, SMB_STRUC
 }
 
 static int shadow_copy2_rename(vfs_handle_struct *handle,
-			const char *oldname, const char *newname)
+			       const struct smb_filename *smb_fname_src,
+			       const struct smb_filename *smb_fname_dst)
 {
-	SHADOW2_NEXT2(RENAME, (handle, oldname, newname));
+	SHADOW2_NEXT2_SMB_FNAME(RENAME,
+				(handle, smb_fname_src, smb_fname_dst));
 }
 
 static int shadow_copy2_symlink(vfs_handle_struct *handle,

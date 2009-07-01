@@ -5629,10 +5629,18 @@ static bool resolve_wildcards(TALLOC_CTX *ctx,
 
 static void rename_open_files(connection_struct *conn,
 			      struct share_mode_lock *lck,
-			      const char *newname)
+			      const struct smb_filename *smb_fname_dst)
 {
 	files_struct *fsp;
 	bool did_rename = False;
+	char *fname_dst = NULL;
+	NTSTATUS status;
+
+	status = get_full_smb_filename(talloc_tos(), smb_fname_dst,
+				       &fname_dst);
+	if (!NT_STATUS_IS_OK(status)) {
+		return;
+	}
 
 	for(fsp = file_find_di_first(lck->id); fsp;
 	    fsp = file_find_di_next(fsp)) {
@@ -5643,21 +5651,24 @@ static void rename_open_files(connection_struct *conn,
 		if (!strequal(fsp->conn->connectpath, conn->connectpath)) {
 			continue;
 		}
-		DEBUG(10,("rename_open_files: renaming file fnum %d (file_id %s) from %s -> %s\n",
-			  fsp->fnum, file_id_string_tos(&fsp->file_id),
-			fsp->fsp_name, newname ));
-		string_set(&fsp->fsp_name, newname);
+		DEBUG(10, ("rename_open_files: renaming file fnum %d "
+			   "(file_id %s) from %s -> %s\n", fsp->fnum,
+			   file_id_string_tos(&fsp->file_id), fsp->fsp_name,
+			   smb_fname_str_dbg(smb_fname_dst)));
+		string_set(&fsp->fsp_name, fname_dst);
 		did_rename = True;
 	}
 
 	if (!did_rename) {
-		DEBUG(10,("rename_open_files: no open files on file_id %s for %s\n",
-			  file_id_string_tos(&lck->id), newname ));
+		DEBUG(10, ("rename_open_files: no open files on file_id %s "
+			   "for %s\n", file_id_string_tos(&lck->id),
+			   smb_fname_str_dbg(smb_fname_dst)));
 	}
 
 	/* Send messages to all smbd's (not ourself) that the name has changed. */
 	rename_share_filename(smbd_messaging_context(), lck, conn->connectpath,
-			      newname);
+			      fname_dst);
+	TALLOC_FREE(fname_dst);
 }
 
 /****************************************************************************
@@ -5671,10 +5682,11 @@ static void rename_open_files(connection_struct *conn,
  report from <AndyLiebman@aol.com>.
 ****************************************************************************/
 
-static bool rename_path_prefix_equal(const char *src, const char *dest)
+static bool rename_path_prefix_equal(const struct smb_filename *smb_fname_src,
+				     const struct smb_filename *smb_fname_dst)
 {
-	const char *psrc = src;
-	const char *pdst = dest;
+	const char *psrc = smb_fname_src->base_name;
+	const char *pdst = smb_fname_dst->base_name;
 	size_t slen;
 
 	if (psrc[0] == '.' && psrc[1] == '/') {
@@ -5694,30 +5706,45 @@ static bool rename_path_prefix_equal(const char *src, const char *dest)
  */
 
 static void notify_rename(connection_struct *conn, bool is_dir,
-			  const char *oldpath, const char *newpath)
+			  const struct smb_filename *smb_fname_src,
+			  const struct smb_filename *smb_fname_dst)
 {
-	char *olddir, *newdir;
+	char *parent_dir_src = NULL;
+	char *parent_dir_dst = NULL;
+	char *fname_src = NULL;
+	char *fname_dst = NULL;
+	NTSTATUS status;
 	uint32 mask;
 
 	mask = is_dir ? FILE_NOTIFY_CHANGE_DIR_NAME
 		: FILE_NOTIFY_CHANGE_FILE_NAME;
 
-	if (!parent_dirname(talloc_tos(), oldpath, &olddir, NULL)
-	    || !parent_dirname(talloc_tos(), newpath, &newdir, NULL)) {
-		TALLOC_FREE(olddir);
-		return;
+	if (!parent_dirname(talloc_tos(), smb_fname_src->base_name,
+			    &parent_dir_src, NULL) ||
+	    !parent_dirname(talloc_tos(), smb_fname_dst->base_name,
+			    &parent_dir_dst, NULL)) {
+		goto out;
 	}
 
-	if (strcmp(olddir, newdir) == 0) {
-		notify_fname(conn, NOTIFY_ACTION_OLD_NAME, mask, oldpath);
-		notify_fname(conn, NOTIFY_ACTION_NEW_NAME, mask, newpath);
+	status = get_full_smb_filename(talloc_tos(), smb_fname_src,
+				       &fname_src);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+	status = get_full_smb_filename(talloc_tos(), smb_fname_dst,
+				       &fname_dst);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	if (strcmp(parent_dir_src, parent_dir_dst) == 0) {
+		notify_fname(conn, NOTIFY_ACTION_OLD_NAME, mask, fname_src);
+		notify_fname(conn, NOTIFY_ACTION_NEW_NAME, mask, fname_dst);
 	}
 	else {
-		notify_fname(conn, NOTIFY_ACTION_REMOVED, mask, oldpath);
-		notify_fname(conn, NOTIFY_ACTION_ADDED, mask, newpath);
+		notify_fname(conn, NOTIFY_ACTION_REMOVED, mask, fname_src);
+		notify_fname(conn, NOTIFY_ACTION_ADDED, mask, fname_dst);
 	}
-	TALLOC_FREE(olddir);
-	TALLOC_FREE(newdir);
 
 	/* this is a strange one. w2k3 gives an additional event for
 	   CHANGE_ATTRIBUTES and CHANGE_CREATION on the new file when renaming
@@ -5726,8 +5753,13 @@ static void notify_rename(connection_struct *conn, bool is_dir,
 		notify_fname(conn, NOTIFY_ACTION_MODIFIED,
 			     FILE_NOTIFY_CHANGE_ATTRIBUTES
 			     |FILE_NOTIFY_CHANGE_CREATION,
-			     newpath);
+			     fname_dst);
 	}
+ out:
+	TALLOC_FREE(parent_dir_src);
+	TALLOC_FREE(parent_dir_dst);
+	TALLOC_FREE(fname_src);
+	TALLOC_FREE(fname_dst);
 }
 
 /****************************************************************************
@@ -5736,32 +5768,52 @@ static void notify_rename(connection_struct *conn, bool is_dir,
 
 NTSTATUS rename_internals_fsp(connection_struct *conn,
 			files_struct *fsp,
-			char *newname,
-			const char *newname_last_component,
+			const struct smb_filename *smb_fname_dst_in,
 			uint32 attrs,
 			bool replace_if_exists)
 {
 	TALLOC_CTX *ctx = talloc_tos();
-	SMB_STRUCT_STAT sbuf, sbuf1;
+	struct smb_filename *smb_fname_src = NULL;
+	struct smb_filename *smb_fname_dst = NULL;
+	SMB_STRUCT_STAT sbuf;
 	NTSTATUS status = NT_STATUS_OK;
 	struct share_mode_lock *lck = NULL;
 	bool dst_exists, old_is_stream, new_is_stream;
 
 	ZERO_STRUCT(sbuf);
 
-	status = check_name(conn, newname);
+	status = check_name(conn, smb_fname_dst_in->base_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	/* Ensure newname contains a '/' */
-	if(strrchr_m(newname,'/') == 0) {
-		newname = talloc_asprintf(ctx,
-					"./%s",
-					newname);
-		if (!newname) {
-			return NT_STATUS_NO_MEMORY;
+	/* Make a copy of the src and dst smb_fname structs */
+	status = copy_smb_filename(ctx, smb_fname_dst_in, &smb_fname_dst);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	/*
+	 * This will be replaced with copy_smb_filename() when fsp->fsp_name
+	 * is converted to store an smb_filename struct.
+	 */
+	status = create_synthetic_smb_fname_split(ctx, fsp->fsp_name, NULL,
+						  &smb_fname_src);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	/* Ensure the dst smb_fname contains a '/' */
+	if(strrchr_m(smb_fname_dst->base_name,'/') == 0) {
+		char * tmp;
+		tmp = talloc_asprintf(smb_fname_dst, "./%s",
+				      smb_fname_dst->base_name);
+		if (!tmp) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
 		}
+		TALLOC_FREE(smb_fname_dst->base_name);
+		smb_fname_dst->base_name = tmp;
 	}
 
 	/*
@@ -5771,36 +5823,78 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	 * the rename (user is trying to change the case of the
 	 * filename).
 	 */
-
 	if((conn->case_sensitive == False) && (conn->case_preserve == True) &&
-			strequal(newname, fsp->fsp_name)) {
-		char *p;
-		char *newname_modified_last_component = NULL;
+	    strequal(smb_fname_src->base_name, smb_fname_dst->base_name) &&
+	    strequal(smb_fname_src->stream_name, smb_fname_dst->stream_name)) {
+		char *last_slash;
+		char *fname_dst_lcomp_base_mod = NULL;
+		struct smb_filename *smb_fname_orig_lcomp = NULL;
 
 		/*
-		 * Get the last component of the modified name.
-		 * Note that we guarantee that newname contains a '/'
-		 * character above.
+		 * Get the last component of the destination name.  Note that
+		 * we guarantee that destination name contains a '/' character
+		 * above.
 		 */
-		p = strrchr_m(newname,'/');
-		newname_modified_last_component = talloc_strdup(ctx,
-						p+1);
-		if (!newname_modified_last_component) {
-			return NT_STATUS_NO_MEMORY;
+		last_slash = strrchr_m(smb_fname_dst->base_name, '/');
+		fname_dst_lcomp_base_mod = talloc_strdup(ctx, last_slash + 1);
+		if (!fname_dst_lcomp_base_mod) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
 		}
 
-		if(strcsequal(newname_modified_last_component,
-			      newname_last_component) == False) {
-			/*
-			 * Replace the modified last component with
-			 * the original.
-			 */
-			*p = '\0'; /* Truncate at the '/' */
-			newname = talloc_asprintf(ctx,
-					"%s/%s",
-					newname,
-					newname_last_component);
+		/*
+		 * Create an smb_filename struct using the original last
+		 * component of the destination.
+		 */
+		status = create_synthetic_smb_fname_split(ctx,
+		    smb_fname_dst->original_lcomp, NULL,
+		    &smb_fname_orig_lcomp);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(fname_dst_lcomp_base_mod);
+			goto out;
 		}
+
+		/* If the base names only differ by case, use original. */
+		if(!strcsequal(fname_dst_lcomp_base_mod,
+			       smb_fname_orig_lcomp->base_name)) {
+			char *tmp;
+			/*
+			 * Replace the modified last component with the
+			 * original.
+			 */
+			*last_slash = '\0'; /* Truncate at the '/' */
+			tmp = talloc_asprintf(smb_fname_dst,
+					"%s/%s",
+					smb_fname_dst->base_name,
+					smb_fname_orig_lcomp->base_name);
+			if (tmp == NULL) {
+				status = NT_STATUS_NO_MEMORY;
+				TALLOC_FREE(fname_dst_lcomp_base_mod);
+				TALLOC_FREE(smb_fname_orig_lcomp);
+				goto out;
+			}
+			TALLOC_FREE(smb_fname_dst->base_name);
+			smb_fname_dst->base_name = tmp;
+		}
+
+		/* If the stream_names only differ by case, use original. */
+		if(!strcsequal(smb_fname_dst->stream_name,
+			       smb_fname_orig_lcomp->stream_name)) {
+			char *tmp = NULL;
+			/* Use the original stream. */
+			tmp = talloc_strdup(smb_fname_dst,
+					    smb_fname_orig_lcomp->stream_name);
+			if (tmp == NULL) {
+				status = NT_STATUS_NO_MEMORY;
+				TALLOC_FREE(fname_dst_lcomp_base_mod);
+				TALLOC_FREE(smb_fname_orig_lcomp);
+				goto out;
+			}
+			TALLOC_FREE(smb_fname_dst->stream_name);
+			smb_fname_dst->stream_name = tmp;
+		}
+		TALLOC_FREE(fname_dst_lcomp_base_mod);
+		TALLOC_FREE(smb_fname_orig_lcomp);
 	}
 
 	/*
@@ -5808,72 +5902,86 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	 * don't do the rename, just return success.
 	 */
 
-	if (strcsequal(fsp->fsp_name, newname)) {
-		DEBUG(3,("rename_internals_fsp: identical names in rename %s - returning success\n",
-			newname));
-		return NT_STATUS_OK;
+	if (strcsequal(smb_fname_src->base_name, smb_fname_dst->base_name) &&
+	    strcsequal(smb_fname_src->stream_name,
+		       smb_fname_dst->stream_name)) {
+		DEBUG(3, ("rename_internals_fsp: identical names in rename %s "
+			  "- returning success\n",
+			  smb_fname_str_dbg(smb_fname_dst)));
+		status = NT_STATUS_OK;
+		goto out;
 	}
 
-	old_is_stream = is_ntfs_stream_name(fsp->fsp_name);
-	new_is_stream = is_ntfs_stream_name(newname);
+	old_is_stream = is_ntfs_stream_smb_fname(smb_fname_src);
+	new_is_stream = is_ntfs_stream_smb_fname(smb_fname_dst);
 
 	/* Return the correct error code if both names aren't streams. */
 	if (!old_is_stream && new_is_stream) {
-		return NT_STATUS_OBJECT_NAME_INVALID;
+		status = NT_STATUS_OBJECT_NAME_INVALID;
+		goto out;
 	}
 
 	if (old_is_stream && !new_is_stream) {
-		return NT_STATUS_INVALID_PARAMETER;
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto out;
 	}
 
-	dst_exists = vfs_stat_smb_fname(conn, newname, &sbuf1) == 0;
+	dst_exists = SMB_VFS_STAT(conn, smb_fname_dst) == 0;
 
 	if(!replace_if_exists && dst_exists) {
-		DEBUG(3,("rename_internals_fsp: dest exists doing rename %s -> %s\n",
-			fsp->fsp_name,newname));
-		return NT_STATUS_OBJECT_NAME_COLLISION;
+		DEBUG(3, ("rename_internals_fsp: dest exists doing rename "
+			  "%s -> %s\n", smb_fname_str_dbg(smb_fname_src),
+			  smb_fname_str_dbg(smb_fname_dst)));
+		status = NT_STATUS_OBJECT_NAME_COLLISION;
+		goto out;
 	}
 
 	if (dst_exists) {
-		struct file_id fileid = vfs_file_id_from_sbuf(conn, &sbuf1);
+		struct file_id fileid = vfs_file_id_from_sbuf(conn,
+		    &smb_fname_dst->st);
 		files_struct *dst_fsp = file_find_di_first(fileid);
 		/* The file can be open when renaming a stream */
 		if (dst_fsp && !new_is_stream) {
 			DEBUG(3, ("rename_internals_fsp: Target file open\n"));
-			return NT_STATUS_ACCESS_DENIED;
+			status = NT_STATUS_ACCESS_DENIED;
+			goto out;
 		}
 	}
 
 	/* Ensure we have a valid stat struct for the source. */
 	if (fsp->fh->fd != -1) {
 		if (SMB_VFS_FSTAT(fsp, &sbuf) == -1) {
-			return map_nt_error_from_unix(errno);
+			status = map_nt_error_from_unix(errno);
+			goto out;
 		}
 	} else {
 		int ret = -1;
 		if (fsp->posix_open) {
-			ret = vfs_lstat_smb_fname(conn,fsp->fsp_name,&sbuf);
+			ret = SMB_VFS_LSTAT(conn, smb_fname_src);
 		} else {
 
-			ret = vfs_stat_smb_fname(conn,fsp->fsp_name,&sbuf);
+			ret = SMB_VFS_STAT(conn, smb_fname_src);
 		}
 		if (ret == -1) {
-			return map_nt_error_from_unix(errno);
+			status = map_nt_error_from_unix(errno);
+			goto out;
 		}
+		sbuf = smb_fname_src->st;
 	}
 
 	status = can_rename(conn, fsp, attrs, &sbuf);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3,("rename_internals_fsp: Error %s rename %s -> %s\n",
-			nt_errstr(status), fsp->fsp_name,newname));
+		DEBUG(3, ("rename_internals_fsp: Error %s rename %s -> %s\n",
+			  nt_errstr(status), smb_fname_str_dbg(smb_fname_src),
+			  smb_fname_str_dbg(smb_fname_dst)));
 		if (NT_STATUS_EQUAL(status,NT_STATUS_SHARING_VIOLATION))
 			status = NT_STATUS_ACCESS_DENIED;
-		return status;
+		goto out;
 	}
 
-	if (rename_path_prefix_equal(fsp->fsp_name, newname)) {
-		return NT_STATUS_ACCESS_DENIED;
+	if (rename_path_prefix_equal(smb_fname_src, smb_fname_dst)) {
+		status = NT_STATUS_ACCESS_DENIED;
 	}
 
 	lck = get_share_mode_lock(talloc_tos(), fsp->file_id, NULL, NULL,
@@ -5886,15 +5994,17 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 
 	SMB_ASSERT(lck != NULL);
 
-	if(SMB_VFS_RENAME(conn,fsp->fsp_name, newname) == 0) {
+	if(SMB_VFS_RENAME(conn, smb_fname_src, smb_fname_dst) == 0) {
 		uint32 create_options = fsp->fh->private_options;
 
-		DEBUG(3,("rename_internals_fsp: succeeded doing rename on %s -> %s\n",
-			fsp->fsp_name,newname));
+		DEBUG(3, ("rename_internals_fsp: succeeded doing rename on "
+			  "%s -> %s\n", smb_fname_str_dbg(smb_fname_src),
+			  smb_fname_str_dbg(smb_fname_dst)));
 
-		notify_rename(conn, fsp->is_directory, fsp->fsp_name, newname);
+		notify_rename(conn, fsp->is_directory, smb_fname_src,
+			      smb_fname_dst);
 
-		rename_open_files(conn, lck, newname);
+		rename_open_files(conn, lck, smb_fname_dst);
 
 		/*
 		 * A rename acts as a new file create w.r.t. allowing an initial delete
@@ -5915,7 +6025,8 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 			}
 		}
 		TALLOC_FREE(lck);
-		return NT_STATUS_OK;
+		status = NT_STATUS_OK;
+		goto out;
 	}
 
 	TALLOC_FREE(lck);
@@ -5926,8 +6037,13 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		status = map_nt_error_from_unix(errno);
 	}
 
-	DEBUG(3,("rename_internals_fsp: Error %s rename %s -> %s\n",
-		nt_errstr(status), fsp->fsp_name,newname));
+	DEBUG(3, ("rename_internals_fsp: Error %s rename %s -> %s\n",
+		  nt_errstr(status), smb_fname_str_dbg(smb_fname_src),
+		  smb_fname_str_dbg(smb_fname_dst)));
+
+ out:
+	TALLOC_FREE(smb_fname_src);
+	TALLOC_FREE(smb_fname_dst);
 
 	return status;
 }
@@ -6012,10 +6128,9 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 
 	if (!src_has_wild) {
 		files_struct *fsp;
-		char *fname_dst = NULL;
 
 		/*
-		 * Only one file needs to be renamied. Append the mask back
+		 * Only one file needs to be renamed. Append the mask back
 		 * onto the directory.
 		 */
 		TALLOC_FREE(smb_fname_src->base_name);
@@ -6105,16 +6220,8 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			goto out;
 		}
 
-		status = get_full_smb_filename(ctx, smb_fname_dst, &fname_dst);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto out;
-		}
-
-		status = rename_internals_fsp(conn, fsp, fname_dst,
-					      smb_fname_dst->original_lcomp,
+		status = rename_internals_fsp(conn, fsp, smb_fname_dst,
 					      attrs, replace_if_exists);
-
-		TALLOC_FREE(fname_dst);
 
 		close_file(req, fsp, NORMAL_CLOSE);
 
@@ -6157,7 +6264,6 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 
 	while ((dname = ReadDirName(dir_hnd, &offset, &smb_fname_src->st))) {
 		files_struct *fsp = NULL;
-		char *fname_dst = NULL;
 		char *destname = NULL;
 		bool sysdir_entry = False;
 
@@ -6249,15 +6355,15 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			break;
 		}
 
-		status = get_full_smb_filename(ctx, smb_fname_dst, &fname_dst);
-		if (!NT_STATUS_IS_OK(status)) {
+		smb_fname_dst->original_lcomp = talloc_strdup(smb_fname_dst,
+							      dname);
+		if (!smb_fname_dst->original_lcomp) {
+			status = NT_STATUS_NO_MEMORY;
 			goto out;
 		}
 
-		status = rename_internals_fsp(conn, fsp, fname_dst, dname,
+		status = rename_internals_fsp(conn, fsp, smb_fname_dst,
 					      attrs, replace_if_exists);
-
-		TALLOC_FREE(fname_dst);
 
 		close_file(req, fsp, NORMAL_CLOSE);
 

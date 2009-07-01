@@ -6876,8 +6876,7 @@ NTSTATUS rmdir_internals(TALLOC_CTX *ctx,
 void reply_rmdir(struct smb_request *req);
 NTSTATUS rename_internals_fsp(connection_struct *conn,
 			files_struct *fsp,
-			char *newname,
-			const char *newname_last_component,
+			const struct smb_filename *smb_fname_dst_in,
 			uint32 attrs,
 			bool replace_if_exists);
 NTSTATUS rename_internals(TALLOC_CTX *ctx,

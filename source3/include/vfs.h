@@ -118,7 +118,8 @@
 /* Leave at 25 - not yet released. Add locking calls. -- zkirsch. */
 /* Leave at 25 - not yet released. Add strict locking calls. -- drichards. */
 /* Changed to version 26 - Plumb struct smb_filename to SMB_VFS_CREATE_FILE,
-			   SMB_VFS_OPEN, SMB_VFS_STAT, SMB_VFS_LSTAT. */
+			   SMB_VFS_OPEN, SMB_VFS_STAT, SMB_VFS_LSTAT,
+			   SMB_VFS_RENAME.  */
 
 #define SMB_VFS_INTERFACE_VERSION 26
 
@@ -357,7 +358,9 @@ struct vfs_ops {
 		SMB_OFF_T (*lseek)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_OFF_T offset, int whence);
 		ssize_t (*sendfile)(struct vfs_handle_struct *handle, int tofd, files_struct *fromfsp, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
 		ssize_t (*recvfile)(struct vfs_handle_struct *handle, int fromfd, files_struct *tofsp, SMB_OFF_T offset, size_t count);
-		int (*rename)(struct vfs_handle_struct *handle, const char *oldname, const char *newname);
+		int (*rename)(struct vfs_handle_struct *handle,
+			      const struct smb_filename *smb_fname_src,
+			      const struct smb_filename *smb_fname_dst);
 		int (*fsync)(struct vfs_handle_struct *handle, struct files_struct *fsp);
 		int (*stat)(struct vfs_handle_struct *handle, struct smb_filename *smb_fname);
 		int (*fstat)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_STAT *sbuf);

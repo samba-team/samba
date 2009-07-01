@@ -160,20 +160,54 @@ static int catia_open(vfs_handle_struct *handle,
 }
 
 static int catia_rename(vfs_handle_struct *handle,
-			const char *oldname, const char *newname)
+			const struct smb_filename *smb_fname_src,
+			const struct smb_filename *smb_fname_dst)
 {
 	TALLOC_CTX *ctx = talloc_tos();
-	char *oname = to_unix(ctx, oldname);
-	char *nname = to_unix(ctx, newname);
+	char *oname = NULL;
+	char *nname = NULL;
+	struct smb_filename *smb_fname_src_tmp = NULL;
+	struct smb_filename *smb_fname_dst_tmp = NULL;
+	NTSTATUS status;
+	int ret = -1;
 
+	oname = to_unix(ctx, smb_fname_src->base_name);
+	nname = to_unix(ctx, smb_fname_dst->base_name);
 	if (!oname || !nname) {
 		errno = ENOMEM;
-		return -1;
+		goto out;
 	}
-	DEBUG(10, ("converted old name: %s\n", oname));
-	DEBUG(10, ("converted new name: %s\n", nname));
 
-        return SMB_VFS_NEXT_RENAME(handle, oname, nname);
+	/* Setup temporary smb_filename structs. */
+	status = copy_smb_filename(talloc_tos(), smb_fname_src,
+				   &smb_fname_src_tmp);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		goto out;
+	}
+	status = copy_smb_filename(talloc_tos(), smb_fname_dst,
+				   &smb_fname_dst_tmp);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		goto out;
+	}
+
+	smb_fname_src_tmp->base_name = oname;
+	smb_fname_dst_tmp->base_name = nname;
+
+	DEBUG(10, ("converted old name: %s\n",
+		   smb_fname_str_dbg(smb_fname_src_tmp)));
+	DEBUG(10, ("converted new name: %s\n",
+		   smb_fname_str_dbg(smb_fname_dst_tmp)));
+
+        ret = SMB_VFS_NEXT_RENAME(handle, smb_fname_src_tmp,
+				  smb_fname_dst_tmp);
+ out:
+	TALLOC_FREE(oname);
+	TALLOC_FREE(newname);
+	TALLOC_FREE(smb_fname_src_tmp);
+	TALLOC_FREE(smb_fname_dst_tmp);
+	return ret;
 }
 
 static int catia_stat(vfs_handle_struct *handle,

@@ -122,11 +122,13 @@ static void syncops_smb_fname(struct smb_filename *smb_fname)
   rename needs special handling, as we may need to fsync two directories
  */
 static int syncops_rename(vfs_handle_struct *handle,
-			  const char *oldname, const char *newname)
+			  const struct smb_filename *smb_fname_src,
+			  const struct smb_filename *smb_fname_dst)
 {
-	int ret = SMB_VFS_NEXT_RENAME(handle, oldname, newname);
+	int ret = SMB_VFS_NEXT_RENAME(handle, smb_fname_src, smb_fname_dst);
 	if (ret == 0) {
-		syncops_two_names(oldname, newname);
+		syncops_two_names(smb_fname_src->base_name,
+				  smb_fname_dst->base_name);
 	}
 	return ret;
 }

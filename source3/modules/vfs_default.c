@@ -520,17 +520,28 @@ static int copy_reg(const char *source, const char *dest)
 	return -1;
 }
 
-static int vfswrap_rename(vfs_handle_struct *handle,  const char *oldname, const char *newname)
+static int vfswrap_rename(vfs_handle_struct *handle,
+			  const struct smb_filename *smb_fname_src,
+			  const struct smb_filename *smb_fname_dst)
 {
 	int result;
 
 	START_PROFILE(syscall_rename);
-	result = rename(oldname, newname);
-	if ((result == -1) && (errno == EXDEV)) {
-		/* Rename across filesystems needed. */
-		result = copy_reg(oldname, newname);
+
+	if (smb_fname_src->stream_name || smb_fname_dst->stream_name) {
+		errno = ENOENT;
+		result = -1;
+		goto out;
 	}
 
+	result = rename(smb_fname_src->base_name, smb_fname_dst->base_name);
+	if ((result == -1) && (errno == EXDEV)) {
+		/* Rename across filesystems needed. */
+		result = copy_reg(smb_fname_src->base_name,
+				  smb_fname_dst->base_name);
+	}
+
+ out:
 	END_PROFILE(syscall_rename);
 	return result;
 }

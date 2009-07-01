@@ -511,12 +511,31 @@ static NTSTATUS cmd_lseek(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 static NTSTATUS cmd_rename(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	int ret;
+	struct smb_filename *smb_fname_src = NULL;
+	struct smb_filename *smb_fname_dst = NULL;
+	NTSTATUS status;
+
 	if (argc != 3) {
 		printf("Usage: rename <old> <new>\n");
 		return NT_STATUS_OK;
 	}
 
-	ret = SMB_VFS_RENAME(vfs->conn, argv[1], argv[2]);
+	status = create_synthetic_smb_fname_split(mem_ctx, argv[1], NULL,
+						  &smb_fname_src);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = create_synthetic_smb_fname_split(mem_ctx, argv[2], NULL,
+						  &smb_fname_dst);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(smb_fname_src);
+		return status;
+	}
+
+	ret = SMB_VFS_RENAME(vfs->conn, smb_fname_src, smb_fname_dst);
+	TALLOC_FREE(smb_fname_src);
+	TALLOC_FREE(smb_fname_dst);
 	if (ret == -1) {
 		printf("rename: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;

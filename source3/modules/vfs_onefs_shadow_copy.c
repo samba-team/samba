@@ -253,26 +253,54 @@ onefs_shadow_copy_create_file(vfs_handle_struct *handle,
  * XXX: macro-ize
  */
 static int
-onefs_shadow_copy_rename(vfs_handle_struct *handle, const char *old_name,
-			 const char *new_name)
+onefs_shadow_copy_rename(vfs_handle_struct *handle,
+			 const struct smb_filename *smb_fname_src,
+			 const struct smb_filename *smb_fname_dst)
 {
 	char *old_cpath = NULL;
 	char *old_snap_component = NULL;
 	char *new_cpath = NULL;
 	char *new_snap_component = NULL;
-	int ret;
+	struct smb_filename *smb_fname_src_tmp = NULL;
+	struct smb_filename *smb_fname_dst_tmp = NULL;
+	NTSTATUS status;
+	int ret = -1;
 
-	if (shadow_copy_match_name(old_name, &old_snap_component))
-		old_cpath = osc_canonicalize_path(old_name, old_snap_component);
+	status = copy_smb_filename(talloc_tos(), smb_fname_src,
+				   &smb_fname_src_tmp);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		goto out;
+	}
+	status = copy_smb_filename(talloc_tos(), smb_fname_dst,
+				   &smb_fname_dst_tmp);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		goto out;
+	}
 
-	if (shadow_copy_match_name(new_name, &new_snap_component))
-		new_cpath = osc_canonicalize_path(new_name, new_snap_component);
+	if (shadow_copy_match_name(smb_fname_src_tmp->base_name,
+				   &old_snap_component)) {
+		old_cpath = osc_canonicalize_path(smb_fname_src_tmp->base_name,
+					  old_snap_component);
+		smb_fname_src_tmp->base_name = old_cpath;
+	}
 
-        ret = SMB_VFS_NEXT_RENAME(handle, old_cpath ?: old_name,
-	    new_cpath ?: new_name);
+	if (shadow_copy_match_name(smb_fname_dst_tmp->base_name,
+				   &new_snap_component)) {
+		new_cpath = osc_canonicalize_path(smb_fname_dst_tmp->base_name,
+					  new_snap_component);
+		smb_fname_dst_tmp->base_name = new_cpath;
+	}
 
+	ret = SMB_VFS_NEXT_RENAME(handle, smb_fname_src_tmp,
+				  smb_fname_dst_tmp);
+
+ out:
 	SAFE_FREE(old_cpath);
 	SAFE_FREE(new_cpath);
+	TALLOC_FREE(smb_fname_src_tmp);
+	TALLOC_FREE(smb_fname_dst_tmp);
 
 	return ret;
 }

@@ -61,8 +61,9 @@ NTSTATUS onefs_create_file(vfs_handle_struct *handle,
 
 int onefs_close(vfs_handle_struct *handle, struct files_struct *fsp);
 
-int onefs_rename(vfs_handle_struct *handle, const char *oldname,
-		 const char *newname);
+int onefs_rename(vfs_handle_struct *handle,
+		 const struct smb_filename *smb_fname_src,
+		 const struct smb_filename *smb_fname_dst);
 
 int onefs_stat(vfs_handle_struct *handle, struct smb_filename *smb_fname);
 

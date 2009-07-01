@@ -222,24 +222,28 @@ exit_rmdir:
 
 /* File operations */
 
-static int atalk_rename(struct vfs_handle_struct *handle, const char *oldname, const char *newname)
+static int atalk_rename(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname_src,
+			const struct smb_filename *smb_fname_dst)
 {
 	int ret = 0;
-	char *adbl_path = 0;
-	char *orig_path = 0;
+	char *oldname = NULL;
+	char *adbl_path = NULL;
+	char *orig_path = NULL;
 	SMB_STRUCT_STAT adbl_info;
 	SMB_STRUCT_STAT orig_info;
-	TALLOC_CTX *ctx;
+	NTSTATUS status;
 
-	ret = SMB_VFS_NEXT_RENAME(handle, oldname, newname);
+	ret = SMB_VFS_NEXT_RENAME(handle, smb_fname_src, smb_fname_dst);
 
-	if (!oldname) return ret;
-
-	if (!(ctx = talloc_init("rename_file")))
+	status = get_full_smb_filename(talloc_tos(), smb_fname_src, &oldname);
+	if (!NT_STATUS_IS_OK(status)) {
 		return ret;
+	}
 
-	if (atalk_build_paths(ctx, handle->conn->origpath, oldname, &adbl_path, &orig_path,
-	  &adbl_info, &orig_info) != 0)
+	if (atalk_build_paths(talloc_tos(), handle->conn->origpath, oldname,
+			      &adbl_path, &orig_path, &adbl_info,
+			      &orig_info) != 0)
 		goto exit_rename;
 
 	if (S_ISDIR(orig_info.st_ex_mode) || S_ISREG(orig_info.st_ex_mode)) {
@@ -250,7 +254,9 @@ static int atalk_rename(struct vfs_handle_struct *handle, const char *oldname, c
 	atalk_unlink_file(adbl_path);
 
 exit_rename:
-	talloc_destroy(ctx);
+	TALLOC_FREE(adbl_path);
+	TALLOC_FREE(orig_path);
+	TALLOC_FREE(orig_path);
 	return ret;
 }
 

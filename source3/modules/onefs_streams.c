@@ -195,68 +195,80 @@ static int get_stream_dir_fd(connection_struct *conn, const char *base,
 	return dir_fd;
 }
 
-int onefs_rename(vfs_handle_struct *handle, const char *oldname,
-		 const char *newname)
+int onefs_rename(vfs_handle_struct *handle,
+		 const struct smb_filename *smb_fname_src,
+		 const struct smb_filename *smb_fname_dst)
 {
-	TALLOC_CTX *frame = NULL;
-	int ret = -1;
-	int dir_fd = -1;
+	struct smb_filename *smb_fname_src_onefs = NULL;
+	struct smb_filename *smb_fname_dst_onefs = NULL;
+	NTSTATUS status;
 	int saved_errno;
-	bool old_is_stream;
-	bool new_is_stream;
-	char *obase = NULL;
-	char *osname = NULL;
-	char *nbase = NULL;
-	char *nsname = NULL;
+	int dir_fd = -1;
+	int ret = -1;
 
 	START_PROFILE(syscall_rename_at);
 
-	frame = talloc_stackframe();
-
-	ret = onefs_is_stream(oldname, &obase, &osname, &old_is_stream);
-	if (ret) {
-		END_PROFILE(syscall_rename_at);
-		return ret;
+	if (!is_ntfs_stream_smb_fname(smb_fname_src) &&
+	    !is_ntfs_stream_smb_fname(smb_fname_dst)) {
+		ret = SMB_VFS_NEXT_RENAME(handle, smb_fname_src,
+					  smb_fname_dst);
+		goto done;
 	}
 
-	ret = onefs_is_stream(newname, &nbase, &nsname, &new_is_stream);
-	if (ret) {
-		END_PROFILE(syscall_rename_at);
-		return ret;
+	/* For now don't allow renames from or to the default stream. */
+	if (is_ntfs_default_stream_smb_fname(smb_fname_src) ||
+	    is_ntfs_default_stream_smb_fname(smb_fname_dst)) {
+		errno = ENOSYS;
+		goto done;
 	}
 
-	if (!old_is_stream && !new_is_stream) {
-		ret = SMB_VFS_NEXT_RENAME(handle, oldname, newname);
-		END_PROFILE(syscall_rename_at);
-		return ret;
+	/* prep stream smb_filename structs. */
+	status = onefs_stream_prep_smb_fname(talloc_tos(), smb_fname_src,
+					     &smb_fname_src_onefs);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		goto done;
+	}
+	status = onefs_stream_prep_smb_fname(talloc_tos(), smb_fname_dst,
+					     &smb_fname_dst_onefs);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		goto done;
 	}
 
-	dir_fd = get_stream_dir_fd(handle->conn, obase, NULL);
+	dir_fd = get_stream_dir_fd(handle->conn, smb_fname_src->base_name,
+				   NULL);
 	if (dir_fd < -1) {
 		goto done;
 	}
 
-	DEBUG(8,("onefs_rename called for %s : %s  => %s : %s\n",
-		obase, osname,  nbase, nsname));
+	DEBUG(8, ("onefs_rename called for %s => %s\n",
+		  smb_fname_str_dbg(smb_fname_src_onefs),
+		  smb_fname_str_dbg(smb_fname_dst_onefs)));
 
 	/* Handle rename of stream to default stream specially. */
-	if (nsname == NULL) {
-		ret = enc_renameat(dir_fd, osname, ENC_DEFAULT, AT_FDCWD,
-				   nbase, ENC_DEFAULT);
+	if (smb_fname_dst_onefs->stream_name == NULL) {
+		ret = enc_renameat(dir_fd, smb_fname_src_onefs->stream_name,
+				   ENC_DEFAULT, AT_FDCWD,
+				   smb_fname_dst_onefs->base_name,
+				   ENC_DEFAULT);
 	} else {
-		ret = enc_renameat(dir_fd, osname, ENC_DEFAULT, dir_fd, nsname,
+		ret = enc_renameat(dir_fd, smb_fname_src_onefs->stream_name,
+				   ENC_DEFAULT, dir_fd,
+				   smb_fname_dst_onefs->stream_name,
 				   ENC_DEFAULT);
 	}
 
  done:
 	END_PROFILE(syscall_rename_at);
+	TALLOC_FREE(smb_fname_src_onefs);
+	TALLOC_FREE(smb_fname_dst_onefs);
 
 	saved_errno = errno;
 	if (dir_fd >= 0) {
 		close(dir_fd);
 	}
 	errno = saved_errno;
-	TALLOC_FREE(frame);
 	return ret;
 }
 

@@ -423,12 +423,15 @@ static int recycle_unlink(vfs_handle_struct *handle, const char *file_name)
 	char *path_name = NULL;
        	char *temp_name = NULL;
 	char *final_name = NULL;
+	struct smb_filename *smb_fname_file = NULL;
+	struct smb_filename *smb_fname_final = NULL;
 	const char *base;
 	char *repository = NULL;
 	int i = 1;
 	SMB_OFF_T maxsize, minsize;
 	SMB_OFF_T file_size; /* space_avail;	*/
 	bool exist;
+	NTSTATUS status;
 	int rc = -1;
 
 	repository = talloc_sub_advanced(NULL, lp_servicename(SNUM(conn)),
@@ -571,8 +574,21 @@ static int recycle_unlink(vfs_handle_struct *handle, const char *file_name)
 		}
 	}
 
+	status = create_synthetic_smb_fname_split(talloc_tos(), file_name,
+						  NULL, &smb_fname_file);
+	if (!NT_STATUS_IS_OK(status)) {
+		rc = SMB_VFS_NEXT_UNLINK(handle, file_name);
+		goto done;
+	}
+	status = create_synthetic_smb_fname_split(talloc_tos(), final_name,
+						  NULL, &smb_fname_final);
+	if (!NT_STATUS_IS_OK(status)) {
+		rc = SMB_VFS_NEXT_UNLINK(handle, file_name);
+		goto done;
+	}
+
 	DEBUG(10, ("recycle: Moving %s to %s\n", file_name, final_name));
-	rc = SMB_VFS_NEXT_RENAME(handle, file_name, final_name);
+	rc = SMB_VFS_NEXT_RENAME(handle, smb_fname_file, smb_fname_final);
 	if (rc != 0) {
 		DEBUG(3, ("recycle: Move error %d (%s), purging file %s (%s)\n", errno, strerror(errno), file_name, final_name));
 		rc = SMB_VFS_NEXT_UNLINK(handle, file_name);
@@ -587,6 +603,8 @@ done:
 	SAFE_FREE(path_name);
 	SAFE_FREE(temp_name);
 	SAFE_FREE(final_name);
+	TALLOC_FREE(smb_fname_file);
+	TALLOC_FREE(smb_fname_final);
 	TALLOC_FREE(repository);
 	return rc;
 }

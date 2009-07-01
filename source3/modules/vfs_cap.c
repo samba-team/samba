@@ -132,16 +132,50 @@ static int cap_open(vfs_handle_struct *handle, struct smb_filename *smb_fname,
 	return ret;
 }
 
-static int cap_rename(vfs_handle_struct *handle, const char *oldname, const char *newname)
+static int cap_rename(vfs_handle_struct *handle,
+		      const struct smb_filename *smb_fname_src,
+		      const struct smb_filename *smb_fname_dst)
 {
-	char *capold = capencode(talloc_tos(), oldname);
-	char *capnew = capencode(talloc_tos(), newname);
+	char *capold = NULL;
+	char *capnew = NULL;
+	struct smb_filename *smb_fname_src_tmp = NULL;
+	struct smb_filename *smb_fname_dst_tmp = NULL;
+	NTSTATUS status;
+	int ret = -1;
 
+	capold = capencode(talloc_tos(), smb_fname_src->base_name);
+	capnew = capencode(talloc_tos(), smb_fname_dst->base_name);
 	if (!capold || !capnew) {
 		errno = ENOMEM;
-		return -1;
+		goto out;
 	}
-	return SMB_VFS_NEXT_RENAME(handle, capold, capnew);
+
+	/* Setup temporary smb_filename structs. */
+	status = copy_smb_filename(talloc_tos(), smb_fname_src,
+				   &smb_fname_src_tmp);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		goto out;
+	}
+	status = copy_smb_filename(talloc_tos(), smb_fname_dst,
+				   &smb_fname_dst_tmp);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		goto out;
+	}
+
+	smb_fname_src_tmp->base_name = capold;
+	smb_fname_dst_tmp->base_name = capnew;
+
+	ret = SMB_VFS_NEXT_RENAME(handle, smb_fname_src_tmp,
+				  smb_fname_dst_tmp);
+ out:
+	TALLOC_FREE(capold);
+	TALLOC_FREE(capnew);
+	TALLOC_FREE(smb_fname_src_tmp);
+	TALLOC_FREE(smb_fname_dst_tmp);
+
+	return ret;
 }
 
 static int cap_stat(vfs_handle_struct *handle, struct smb_filename *smb_fname)

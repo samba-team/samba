@@ -162,9 +162,11 @@ static ssize_t skel_recvfile(vfs_handle_struct *handle, int fromfd, files_struct
 	return SMB_VFS_NEXT_RECVFILE(handle, fromfd, tofsp, offset, n);
 }
 
-static int skel_rename(vfs_handle_struct *handle,  const char *oldname, const char *newname)
+static int skel_rename(vfs_handle_struct *handle,
+		       const smb_filename *smb_fname_src,
+		       const smb_filename *smb_fname_dst)
 {
-	return SMB_VFS_NEXT_RENAME(handle, oldname, newname);
+	return SMB_VFS_NEXT_RENAME(handle, smb_fname_src, smb_fname_dst);
 }
 
 static int skel_fsync(vfs_handle_struct *handle, files_struct *fsp)
