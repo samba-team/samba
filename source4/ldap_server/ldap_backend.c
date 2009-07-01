@@ -89,7 +89,7 @@ NTSTATUS ldapsrv_backend_Init(struct ldapsrv_connection *conn)
 				j++;
 			}
 		}
-		talloc_free(ops);
+		talloc_unlink(conn, ops);
 		ldb_set_opaque(conn->ldb, "supportedSASLMechanims", sasl_mechs);
 	}
 
