@@ -68,6 +68,11 @@ void send_nt_replies(connection_struct *conn,
 
 	if(params_to_send == 0 && data_to_send == 0) {
 		reply_outbuf(req, 18, 0);
+		if (NT_STATUS_V(nt_error)) {
+			error_packet_set((char *)req->outbuf,
+					 0, 0, nt_error,
+					 __LINE__,__FILE__);
+		}
 		show_msg((char *)req->outbuf);
 		return;
 	}
