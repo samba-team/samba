@@ -1217,14 +1217,14 @@ NTSTATUS filename_convert(TALLOC_CTX *ctx,
 				char **pp_name)
 {
 	NTSTATUS status;
+	char *fname = NULL;
 
 	*pp_smb_fname = NULL;
-	*pp_name = NULL;
 
 	status = resolve_dfspath(ctx, conn,
 				dfs_path,
 				name_in,
-				pp_name);
+				&fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("filename_convert: resolve_dfspath failed "
 			"for name %s with %s\n",
@@ -1232,27 +1232,31 @@ NTSTATUS filename_convert(TALLOC_CTX *ctx,
 			nt_errstr(status) ));
 		return status;
 	}
-	status = unix_convert(ctx, conn, *pp_name, pp_smb_fname, 0);
+	status = unix_convert(ctx, conn, fname, pp_smb_fname, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("filename_convert: unix_convert failed "
 			"for name %s with %s\n",
-			*pp_name,
+			fname,
 			nt_errstr(status) ));
 		return status;
 	}
 
-	status = get_full_smb_filename(ctx, *pp_smb_fname, pp_name);
+	status = get_full_smb_filename(ctx, *pp_smb_fname, &fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	status = check_name(conn, *pp_name);
+	status = check_name(conn, fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3,("filename_convert: check_name failed "
 			"for name %s with %s\n",
-			*pp_name,
+			fname,
 			nt_errstr(status) ));
 		return status;
+	}
+
+	if (pp_name != NULL) {
+		*pp_name = fname;
 	}
 	return status;
 }
