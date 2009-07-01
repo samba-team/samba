@@ -107,6 +107,7 @@ static void *autofree_context;
 struct talloc_reference_handle {
 	struct talloc_reference_handle *next, *prev;
 	void *ptr;
+	const char *location;
 };
 
 typedef int (*talloc_destructor_t)(void *);
@@ -465,7 +466,7 @@ static inline void *_talloc_named_const(const void *context, size_t size, const 
   same underlying data, and you want to be able to free the two instances separately,
   and in either order
 */
-void *_talloc_reference(const void *context, const void *ptr)
+void *_talloc_reference(const void *context, const void *ptr, const char *location)
 {
 	struct talloc_chunk *tc;
 	struct talloc_reference_handle *handle;
@@ -482,6 +483,7 @@ void *_talloc_reference(const void *context, const void *ptr)
 	   own destructor on the context if they want to */
 	talloc_set_destructor(handle, talloc_reference_destructor);
 	handle->ptr = discard_const_p(void, ptr);
+	handle->location = location;
 	_TLIST_ADD(tc->refs, handle);
 	return handle->ptr;
 }
@@ -490,7 +492,7 @@ void *_talloc_reference(const void *context, const void *ptr)
 /* 
    internal talloc_free call
 */
-static inline int _talloc_free(void *ptr)
+static inline int _talloc_free_internal(void *ptr)
 {
 	struct talloc_chunk *tc;
 
@@ -510,9 +512,9 @@ static inline int _talloc_free(void *ptr)
 		 * pointer.
 		 */
 		is_child = talloc_is_parent(tc->refs, ptr);
-		_talloc_free(tc->refs);
+		_talloc_free_internal(tc->refs);
 		if (is_child) {
-			return _talloc_free(ptr);
+			return _talloc_free_internal(ptr);
 		}
 		return -1;
 	}
@@ -559,12 +561,12 @@ static inline int _talloc_free(void *ptr)
 			struct talloc_chunk *p = talloc_parent_chunk(tc->child->refs);
 			if (p) new_parent = TC_PTR_FROM_CHUNK(p);
 		}
-		if (unlikely(_talloc_free(child) == -1)) {
+		if (unlikely(_talloc_free_internal(child) == -1)) {
 			if (new_parent == null_context) {
 				struct talloc_chunk *p = talloc_parent_chunk(ptr);
 				if (p) new_parent = TC_PTR_FROM_CHUNK(p);
 			}
-			talloc_steal(new_parent, child);
+			_talloc_steal_internal(new_parent, child);
 		}
 	}
 
@@ -600,7 +602,7 @@ static inline int _talloc_free(void *ptr)
    ptr on success, or NULL if it could not be transferred.
    passing NULL as ptr will always return NULL with no side effects.
 */
-void *_talloc_steal(const void *new_ctx, const void *ptr)
+void *_talloc_steal_internal(const void *new_ctx, const void *ptr)
 {
 	struct talloc_chunk *tc, *new_tc;
 
@@ -653,6 +655,66 @@ void *_talloc_steal(const void *new_ctx, const void *ptr)
 }
 
 
+/* 
+   move a lump of memory from one talloc context to another return the
+   ptr on success, or NULL if it could not be transferred.
+   passing NULL as ptr will always return NULL with no side effects.
+*/
+void *_talloc_steal(const void *new_ctx, const void *ptr, const char *location)
+{
+	struct talloc_chunk *tc;
+
+	if (unlikely(ptr == NULL)) {
+		return NULL;
+	}
+	
+	tc = talloc_chunk_from_ptr(ptr);
+	
+	if (unlikely(tc->refs != NULL) && talloc_parent(ptr) != new_ctx) {
+		struct talloc_reference_handle *h;
+		fprintf(stderr, "ERROR: talloc_steal with references at %s\n", location);
+		for (h=tc->refs; h; h=h->next) {
+			fprintf(stderr, "\treference at %s\n", h->location);
+		}
+		return NULL;
+	}
+	
+	return _talloc_steal_internal(new_ctx, ptr);
+}
+
+/* 
+   this is like a talloc_steal(), but you must supply the old
+   parent. This resolves the ambiguity in a talloc_steal() which is
+   called on a context that has more than one parent (via references)
+
+   The old parent can be either a reference or a parent
+*/
+void *talloc_reparent(const void *old_parent, const void *new_parent, const void *ptr)
+{
+	struct talloc_chunk *tc;
+	struct talloc_reference_handle *h;
+
+	if (unlikely(ptr == NULL)) {
+		return NULL;
+	}
+
+	if (old_parent == talloc_parent(ptr)) {
+		return _talloc_steal_internal(new_parent, ptr);
+	}
+
+	tc = talloc_chunk_from_ptr(ptr);
+	for (h=tc->refs;h;h=h->next) {
+		if (talloc_parent(h) == old_parent) {
+			if (_talloc_steal_internal(new_parent, h) != h) {
+				return NULL;
+			}
+			return ptr;
+		}
+	}	
+
+	/* it wasn't a parent */
+	return NULL;
+}
 
 /*
   remove a secondary reference to a pointer. This undo's what
@@ -680,7 +742,7 @@ static inline int talloc_unreference(const void *context, const void *ptr)
 		return -1;
 	}
 
-	return _talloc_free(h);
+	return _talloc_free_internal(h);
 }
 
 /*
@@ -717,7 +779,7 @@ int talloc_unlink(const void *context, void *ptr)
 	tc_p = talloc_chunk_from_ptr(ptr);
 
 	if (tc_p->refs == NULL) {
-		return _talloc_free(ptr);
+		return _talloc_free_internal(ptr);
 	}
 
 	new_p = talloc_parent_chunk(tc_p->refs);
@@ -731,7 +793,7 @@ int talloc_unlink(const void *context, void *ptr)
 		return -1;
 	}
 
-	talloc_steal(new_parent, ptr);
+	_talloc_steal_internal(new_parent, ptr);
 
 	return 0;
 }
@@ -784,7 +846,7 @@ void *talloc_named(const void *context, size_t size, const char *fmt, ...)
 	va_end(ap);
 
 	if (unlikely(name == NULL)) {
-		_talloc_free(ptr);
+		_talloc_free_internal(ptr);
 		return NULL;
 	}
 
@@ -882,7 +944,7 @@ void *talloc_init(const char *fmt, ...)
 	va_end(ap);
 
 	if (unlikely(name == NULL)) {
-		_talloc_free(ptr);
+		_talloc_free_internal(ptr);
 		return NULL;
 	}
 
@@ -916,12 +978,12 @@ void talloc_free_children(void *ptr)
 			struct talloc_chunk *p = talloc_parent_chunk(tc->child->refs);
 			if (p) new_parent = TC_PTR_FROM_CHUNK(p);
 		}
-		if (unlikely(_talloc_free(child) == -1)) {
+		if (unlikely(talloc_free(child) == -1)) {
 			if (new_parent == null_context) {
 				struct talloc_chunk *p = talloc_parent_chunk(ptr);
 				if (p) new_parent = TC_PTR_FROM_CHUNK(p);
 			}
-			talloc_steal(new_parent, child);
+			_talloc_steal_internal(new_parent, child);
 		}
 	}
 
@@ -969,9 +1031,26 @@ void *talloc_named_const(const void *context, size_t size, const char *name)
    will not be freed if the ref_count is > 1 or the destructor (if
    any) returns non-zero
 */
-int talloc_free(void *ptr)
+int _talloc_free(void *ptr, const char *location)
 {
-	return _talloc_free(ptr);
+	struct talloc_chunk *tc;
+
+	if (unlikely(ptr == NULL)) {
+		return -1;
+	}
+	
+	tc = talloc_chunk_from_ptr(ptr);
+	
+	if (unlikely(tc->refs != NULL)) {
+		struct talloc_reference_handle *h;
+		fprintf(stderr, "ERROR: talloc_free with references at %s\n", location);
+		for (h=tc->refs; h; h=h->next) {
+			fprintf(stderr, "\treference at %s\n", h->location);
+		}
+		return -1;
+	}
+	
+	return _talloc_free_internal(ptr);
 }
 
 
@@ -988,7 +1067,7 @@ void *_talloc_realloc(const void *context, void *ptr, size_t size, const char *n
 
 	/* size zero is equivalent to free() */
 	if (unlikely(size == 0)) {
-		_talloc_free(ptr);
+		talloc_free(ptr);
 		return NULL;
 	}
 
@@ -1085,7 +1164,7 @@ void *_talloc_realloc(const void *context, void *ptr, size_t size, const char *n
 void *_talloc_move(const void *new_ctx, const void *_pptr)
 {
 	const void **pptr = discard_const_p(const void *,_pptr);
-	void *ret = _talloc_steal(new_ctx, *pptr);
+	void *ret = talloc_steal(new_ctx, *pptr);
 	(*pptr) = NULL;
 	return ret;
 }
@@ -1306,7 +1385,7 @@ void talloc_enable_null_tracking(void)
 */
 void talloc_disable_null_tracking(void)
 {
-	_talloc_free(null_context);
+	talloc_free(null_context);
 	null_context = NULL;
 }
 
@@ -1688,7 +1767,7 @@ static int talloc_autofree_destructor(void *ptr)
 
 static void talloc_autofree(void)
 {
-	_talloc_free(autofree_context);
+	talloc_free(autofree_context);
 }
 
 /*
