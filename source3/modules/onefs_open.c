@@ -1370,7 +1370,6 @@ static NTSTATUS onefs_open_directory(connection_struct *conn,
 	struct timespec mtimespec;
 	int info = 0;
 	char *parent_dir;
-	const char *dirname;
 	bool posix_open = false;
 	uint32 create_flags = 0;
 	uint32 mode = lp_dir_mask(SNUM(conn));
@@ -1436,7 +1435,7 @@ static NTSTATUS onefs_open_directory(connection_struct *conn,
 
 	/* Get parent dirname */
 	if (!parent_dirname(talloc_tos(), smb_dname->base_name, &parent_dir,
-			    &dirname)) {
+			    NULL)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
