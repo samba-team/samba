@@ -25,6 +25,7 @@
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
 #include "libcli/smb_composite/smb_composite.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 /*
   simple close wrapper with SMB2
