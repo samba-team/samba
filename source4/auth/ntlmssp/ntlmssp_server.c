@@ -458,6 +458,7 @@ static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
 
 	} else if (user_session_key && user_session_key->data) {
 		session_key = *user_session_key;
+		talloc_steal(gensec_ntlmssp_state, session_key.data);
 		DEBUG(10,("ntlmssp_server_auth: Using unmodified nt session key.\n"));
 		dump_data_pw("unmodified session key:\n", session_key.data, session_key.length);
 
@@ -467,6 +468,7 @@ static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
 	} else if (lm_session_key && lm_session_key->data) {
 		/* Very weird to have LM key, but no user session key, but anyway.. */
 		session_key = *lm_session_key;
+		talloc_steal(gensec_ntlmssp_state, session_key.data);
 		DEBUG(10,("ntlmssp_server_auth: Using unmodified lm session key.\n"));
 		dump_data_pw("unmodified session key:\n", session_key.data, session_key.length);
 
@@ -510,9 +512,6 @@ static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
 	} else {
 		gensec_ntlmssp_state->session_key = session_key;
 	}
-
-	/* keep the session key around on the new context */
-	talloc_steal(gensec_ntlmssp_state, session_key.data);
 
 	if ((gensec_security->want_features & GENSEC_FEATURE_SIGN)
 	    || (gensec_security->want_features & GENSEC_FEATURE_SEAL)) {
