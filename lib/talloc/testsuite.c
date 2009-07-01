@@ -125,7 +125,7 @@ static bool test_ref1(void)
 	CHECK_BLOCKS("ref1", r1, 2);
 
 	fprintf(stderr, "Freeing p2\n");
-	talloc_free(p2);
+	talloc_unlink(r1, p2);
 	talloc_report_full(root, stderr);
 
 	CHECK_BLOCKS("ref1", p1, 5);
@@ -180,7 +180,7 @@ static bool test_ref2(void)
 	CHECK_BLOCKS("ref2", r1, 2);
 
 	fprintf(stderr, "Freeing ref\n");
-	talloc_free(ref);
+	talloc_unlink(r1, ref);
 	talloc_report_full(root, stderr);
 
 	CHECK_BLOCKS("ref2", p1, 5);
@@ -372,7 +372,7 @@ static bool test_misc(void)
 	talloc_increase_ref_count(p1);
 	CHECK_BLOCKS("misc", p1, 1);
 	CHECK_BLOCKS("misc", root, 2);
-	talloc_free(p1);
+	talloc_unlink(NULL, p1);
 	CHECK_BLOCKS("misc", p1, 1);
 	CHECK_BLOCKS("misc", root, 2);
 	talloc_unlink(NULL, p1);
@@ -383,7 +383,7 @@ static bool test_misc(void)
 				   "failed: talloc_unlink() of non-reference context should return -1\n");
 	torture_assert("misc", talloc_unlink(p1, p2) == 0,
 		"failed: talloc_unlink() of parent should succeed\n");
-	talloc_free(p1);
+	talloc_unlink(NULL, p1);
 	CHECK_BLOCKS("misc", p1, 1);
 	CHECK_BLOCKS("misc", root, 2);
 
@@ -542,14 +542,18 @@ static bool test_realloc(void)
 
 	talloc_realloc_size(NULL, p2, 0);
 	talloc_realloc_size(NULL, p2, 0);
+	CHECK_BLOCKS("realloc", p1, 4);
+	talloc_realloc_size(p1, p2, 0);
 	CHECK_BLOCKS("realloc", p1, 3);
 
 	torture_assert("realloc", talloc_realloc_size(NULL, p1, 0x7fffffff) == NULL,
 		"failed: oversize talloc should fail\n");
 
 	talloc_realloc_size(NULL, p1, 0);
-
+	CHECK_BLOCKS("realloc", root, 4);
+	talloc_realloc_size(root, p1, 0);
 	CHECK_BLOCKS("realloc", root, 1);
+
 	CHECK_SIZE("realloc", root, 0);
 
 	talloc_free(root);
@@ -868,7 +872,7 @@ static bool test_lifeless(void)
 	(void)talloc_reference(child_owner, child); 
 	talloc_report_full(top, stderr);
 	talloc_unlink(top, parent);
-	talloc_free(child);
+	talloc_unlink(top, child);
 	talloc_report_full(top, stderr);
 	talloc_free(top);
 	talloc_free(child_owner);
