@@ -1144,7 +1144,7 @@ NTSTATUS dcerpc_request_recv(struct rpc_request *req,
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 		req->p->last_fault_code = req->fault_code;
 	}
-	talloc_free(req);
+	talloc_unlink(talloc_parent(req), req);
 	return status;
 }
 
