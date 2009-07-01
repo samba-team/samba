@@ -622,6 +622,10 @@ exit(1);
         fi
       AC_MSG_RESULT([$GLIBC_LFS_SUPPORT])
     ;;
+    *qnx*)
+        CPPFLAGS="-D_LARGEFILE64_SOURCE $CPPFLAGS"
+        AC_DEFINE(_LARGEFILE64_SOURCE, 1, [Whether to enable large file support])
+        ;;
 
 esac
 
