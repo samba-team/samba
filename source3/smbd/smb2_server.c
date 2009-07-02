@@ -782,7 +782,7 @@ static NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		if (!NT_STATUS_IS_OK(status)) {
 			return smbd_smb2_request_error(req, status);
 		}
-		return smbd_smb2_request_error(req, NT_STATUS_NOT_IMPLEMENTED);
+		return smbd_smb2_request_process_break(req);
 	}
 
 	return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
