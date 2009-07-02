@@ -772,6 +772,7 @@ SMBD_OBJ_SRV = smbd/files.o smbd/chgpasswd.o smbd/connection.o \
 	       smbd/smb2_flush.o \
 	       smbd/smb2_read.o \
 	       smbd/smb2_write.o \
+	       smbd/smb2_lock.o \
 	       smbd/smb2_ioctl.o \
 	       smbd/smb2_keepalive.o \
 	       smbd/smb2_find.o \
