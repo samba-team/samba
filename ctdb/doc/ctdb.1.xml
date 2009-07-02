@@ -691,6 +691,12 @@ Reclock file:/gpfs/.ctdb/shared
       </para>
     </refsect2>
 
+    <refsect2><title>ipreallocate</title>
+      <para>
+        This command will force the recovery master to perform a full ip reallocation process and redistribute all ip addresses. This is useful to "reset" the allocations back to its default state if they have been changed using the "moveip" command. While a "recover" will also perform this reallocation, a recovery is much more hevyweight since it will also rebuild all the databases.
+      </para>
+    </refsect2>
+
     <refsect2><title>killtcp &lt;srcip:port&gt; &lt;dstip:port&gt;</title>
       <para>
         This command will kill the specified TCP connection by issuing a

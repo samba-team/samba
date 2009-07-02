@@ -1,11 +1,11 @@
 .\"     Title: ctdb
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
-.\"      Date: 06/25/2009
+.\"      Date: 07/02/2009
 .\"    Manual: 
 .\"    Source: 
 .\"
-.TH "CTDB" "1" "06/25/2009" "" ""
+.TH "CTDB" "1" "07/02/2009" "" ""
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -480,6 +480,9 @@ This command will shutdown a specific CTDB daemon\.
 .SS "recover"
 .PP
 This command will trigger the recovery daemon to do a cluster recovery\.
+.SS "ipreallocate"
+.PP
+This command will force the recovery master to perform a full ip reallocation process and redistribute all ip addresses\. This is useful to "reset" the allocations back to its default state if they have been changed using the "moveip" command\. While a "recover" will also perform this reallocation, a recovery is much more hevyweight since it will also rebuild all the databases\.
 .SS "killtcp <srcip:port> <dstip:port>"
 .PP
 This command will kill the specified TCP connection by issuing a TCP RST to the srcip:port endpoint\. This is a command used by the ctdb eventscripts\.
