@@ -81,6 +81,7 @@ static NTSTATUS vampire_prepare_db(void *private_data,
 	struct provision_result result;
 	NTSTATUS status;
 
+	ZERO_STRUCT(settings);
 	settings.site_name = p->dest_dsa->site_name;
 	settings.root_dn_str = p->forest->root_dn_str;
 	settings.domain_dn_str = p->domain->dn_str;
