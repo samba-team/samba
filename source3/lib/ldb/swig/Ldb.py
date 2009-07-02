@@ -71,7 +71,7 @@ class LdbMessage:
         if attr == 'dn':
             self.msg.dn = ldb_dn_explode(self.msg, value)
             if self.msg.dn == None:
-                err = LDB_ERR_INVALID_DN_SYNTAX
+                err = ldb.ERR_INVALID_DN_SYNTAX
                 raise LdbError(err, ldb_strerror(err))
             return
         self.__dict__[attr] = value
