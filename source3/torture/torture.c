@@ -5675,6 +5675,59 @@ static bool run_tldap(int dummy)
 	return true;
 }
 
+static bool run_streamerror(int dummy)
+{
+	struct cli_state *cli;
+	const char *dname = "\\testdir";
+	const char *streamname =
+		"testdir:{4c8cc155-6c1e-11d1-8e41-00c04fb9386d}:$DATA";
+	NTSTATUS status;
+	time_t change_time, access_time, write_time;
+	SMB_OFF_T size;
+	uint16_t mode, fnum;
+	bool ret = true;
+
+	if (!torture_open_connection(&cli, 0)) {
+		return false;
+	}
+
+	cli_rmdir(cli, dname);
+
+	status = cli_mkdir(cli, dname);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("mkdir failed: %s\n", nt_errstr(status));
+		return false;
+	}
+
+	cli_qpathinfo(cli, streamname, &change_time, &access_time, &write_time,
+		      &size, &mode);
+	status = cli_nt_error(cli);
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		printf("pathinfo returned %s, expected "
+		       "NT_STATUS_OBJECT_NAME_NOT_FOUND\n",
+		       nt_errstr(status));
+		ret = false;
+	}
+
+	status = cli_ntcreate(cli, streamname, 0x16,
+			      FILE_READ_DATA|FILE_READ_EA|
+			      FILE_READ_ATTRIBUTES|READ_CONTROL_ACCESS,
+			      FILE_ATTRIBUTE_NORMAL, FILE_SHARE_READ,
+			      FILE_OPEN, 0, 0, &fnum);
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		printf("ntcreate returned %s, expected "
+		       "NT_STATUS_OBJECT_NAME_NOT_FOUND\n",
+		       nt_errstr(status));
+		ret = false;
+	}
+
+
+	cli_rmdir(cli, dname);
+	return ret;
+}
+
 static bool run_local_substitute(int dummy)
 {
 	bool ok = true;
@@ -6341,6 +6394,7 @@ static struct {
 	{ "CLI_ECHO", run_cli_echo, 0},
 	{ "GETADDRINFO", run_getaddrinfo_send, 0},
 	{ "TLDAP", run_tldap },
+	{ "STREAMERROR", run_streamerror },
 	{ "LOCAL-SUBSTITUTE", run_local_substitute, 0},
 	{ "LOCAL-GENCACHE", run_local_gencache, 0},
 	{ "LOCAL-RBTREE", run_local_rbtree, 0},
