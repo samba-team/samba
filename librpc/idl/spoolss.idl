@@ -248,13 +248,6 @@ import "misc.idl", "security.idl", "winreg.idl";
 					   PRINTER_ENUM_ICON7 |
 					   PRINTER_ENUM_ICON8); /* 0x00ff0000 */
 
-	typedef [public,gensize] struct {
-		spoolss_EnumPrinterFlags flags;
-		[relative] nstring *description;
-		[relative] nstring *name;
-		[relative] nstring *comment;
-	} spoolss_PrinterInfo1;
-
 	typedef bitmap {
 		PRINTER_ATTRIBUTE_QUEUED		= 0x00000001,
 		PRINTER_ATTRIBUTE_DIRECT		= 0x00000002,
@@ -273,6 +266,13 @@ import "misc.idl", "security.idl", "winreg.idl";
 		PRINTER_ATTRIBUTE_FAX			= 0x00004000,
 		PRINTER_ATTRIBUTE_TS			= 0x00008000
 	} spoolss_PrinterAttributes;
+
+	typedef [public,gensize] struct {
+		spoolss_PrinterAttributes flags;
+		[relative] nstring *description;
+		[relative] nstring *name;
+		[relative] nstring *comment;
+	} spoolss_PrinterInfo1;
 
 	typedef [public,gensize] struct {
 		[relative] nstring *servername;

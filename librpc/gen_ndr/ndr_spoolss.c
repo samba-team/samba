@@ -763,11 +763,48 @@ _PUBLIC_ void ndr_print_spoolss_EnumPrinterFlags(struct ndr_print *ndr, const ch
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_spoolss_PrinterAttributes(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_PrinterAttributes(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_PrinterAttributes(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ATTRIBUTE_QUEUED", PRINTER_ATTRIBUTE_QUEUED, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ATTRIBUTE_DIRECT", PRINTER_ATTRIBUTE_DIRECT, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ATTRIBUTE_DEFAULT", PRINTER_ATTRIBUTE_DEFAULT, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ATTRIBUTE_SHARED", PRINTER_ATTRIBUTE_SHARED, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ATTRIBUTE_NETWORK", PRINTER_ATTRIBUTE_NETWORK, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ATTRIBUTE_HIDDEN", PRINTER_ATTRIBUTE_HIDDEN, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ATTRIBUTE_LOCAL", PRINTER_ATTRIBUTE_LOCAL, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ATTRIBUTE_ENABLE_DEVQ", PRINTER_ATTRIBUTE_ENABLE_DEVQ, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ATTRIBUTE_KEEPPRINTEDJOBS", PRINTER_ATTRIBUTE_KEEPPRINTEDJOBS, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ATTRIBUTE_DO_COMPLETE_FIRST", PRINTER_ATTRIBUTE_DO_COMPLETE_FIRST, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ATTRIBUTE_WORK_OFFLINE", PRINTER_ATTRIBUTE_WORK_OFFLINE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ATTRIBUTE_ENABLE_BIDI", PRINTER_ATTRIBUTE_ENABLE_BIDI, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ATTRIBUTE_RAW_ONLY", PRINTER_ATTRIBUTE_RAW_ONLY, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ATTRIBUTE_PUBLISHED", PRINTER_ATTRIBUTE_PUBLISHED, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ATTRIBUTE_FAX", PRINTER_ATTRIBUTE_FAX, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ATTRIBUTE_TS", PRINTER_ATTRIBUTE_TS, r);
+	ndr->depth--;
+}
+
 _PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrinterInfo1(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PrinterInfo1 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_spoolss_EnumPrinterFlags(ndr, NDR_SCALARS, r->flags));
+		NDR_CHECK(ndr_push_spoolss_PrinterAttributes(ndr, NDR_SCALARS, r->flags));
 		{
 			uint32_t _flags_save_string = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
@@ -829,7 +866,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PrinterInfo1(struct ndr_pull *ndr, i
 	TALLOC_CTX *_mem_save_comment_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_spoolss_EnumPrinterFlags(ndr, NDR_SCALARS, &r->flags));
+		NDR_CHECK(ndr_pull_spoolss_PrinterAttributes(ndr, NDR_SCALARS, &r->flags));
 		{
 			uint32_t _flags_save_string = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
@@ -921,7 +958,7 @@ _PUBLIC_ void ndr_print_spoolss_PrinterInfo1(struct ndr_print *ndr, const char *
 {
 	ndr_print_struct(ndr, name, "spoolss_PrinterInfo1");
 	ndr->depth++;
-	ndr_print_spoolss_EnumPrinterFlags(ndr, "flags", r->flags);
+	ndr_print_spoolss_PrinterAttributes(ndr, "flags", r->flags);
 	ndr_print_ptr(ndr, "description", r->description);
 	ndr->depth++;
 	if (r->description) {
@@ -946,43 +983,6 @@ _PUBLIC_ void ndr_print_spoolss_PrinterInfo1(struct ndr_print *ndr, const char *
 _PUBLIC_ size_t ndr_size_spoolss_PrinterInfo1(const struct spoolss_PrinterInfo1 *r, struct smb_iconv_convenience *ic, int flags)
 {
 	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_spoolss_PrinterInfo1, ic);
-}
-
-static enum ndr_err_code ndr_push_spoolss_PrinterAttributes(struct ndr_push *ndr, int ndr_flags, uint32_t r)
-{
-	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
-	return NDR_ERR_SUCCESS;
-}
-
-static enum ndr_err_code ndr_pull_spoolss_PrinterAttributes(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
-{
-	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
-	*r = v;
-	return NDR_ERR_SUCCESS;
-}
-
-_PUBLIC_ void ndr_print_spoolss_PrinterAttributes(struct ndr_print *ndr, const char *name, uint32_t r)
-{
-	ndr_print_uint32(ndr, name, r);
-	ndr->depth++;
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ATTRIBUTE_QUEUED", PRINTER_ATTRIBUTE_QUEUED, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ATTRIBUTE_DIRECT", PRINTER_ATTRIBUTE_DIRECT, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ATTRIBUTE_DEFAULT", PRINTER_ATTRIBUTE_DEFAULT, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ATTRIBUTE_SHARED", PRINTER_ATTRIBUTE_SHARED, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ATTRIBUTE_NETWORK", PRINTER_ATTRIBUTE_NETWORK, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ATTRIBUTE_HIDDEN", PRINTER_ATTRIBUTE_HIDDEN, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ATTRIBUTE_LOCAL", PRINTER_ATTRIBUTE_LOCAL, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ATTRIBUTE_ENABLE_DEVQ", PRINTER_ATTRIBUTE_ENABLE_DEVQ, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ATTRIBUTE_KEEPPRINTEDJOBS", PRINTER_ATTRIBUTE_KEEPPRINTEDJOBS, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ATTRIBUTE_DO_COMPLETE_FIRST", PRINTER_ATTRIBUTE_DO_COMPLETE_FIRST, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ATTRIBUTE_WORK_OFFLINE", PRINTER_ATTRIBUTE_WORK_OFFLINE, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ATTRIBUTE_ENABLE_BIDI", PRINTER_ATTRIBUTE_ENABLE_BIDI, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ATTRIBUTE_RAW_ONLY", PRINTER_ATTRIBUTE_RAW_ONLY, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ATTRIBUTE_PUBLISHED", PRINTER_ATTRIBUTE_PUBLISHED, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ATTRIBUTE_FAX", PRINTER_ATTRIBUTE_FAX, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ATTRIBUTE_TS", PRINTER_ATTRIBUTE_TS, r);
-	ndr->depth--;
 }
 
 _PUBLIC_ enum ndr_err_code ndr_push_spoolss_PrinterInfo2(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PrinterInfo2 *r)

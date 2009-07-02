@@ -296,13 +296,6 @@ struct spoolss_DeviceMode {
 #define PRINTER_ENUM_ICON8 ( 0x00800000 )
 #define PRINTER_ENUM_HIDE ( 0x01000000 )
 
-struct spoolss_PrinterInfo1 {
-	uint32_t flags;
-	const char * description;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	const char * name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	const char * comment;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
-}/* [gensize,public] */;
-
 /* bitmap spoolss_PrinterAttributes */
 #define PRINTER_ATTRIBUTE_QUEUED ( 0x00000001 )
 #define PRINTER_ATTRIBUTE_DIRECT ( 0x00000002 )
@@ -320,6 +313,13 @@ struct spoolss_PrinterInfo1 {
 #define PRINTER_ATTRIBUTE_PUBLISHED ( 0x00002000 )
 #define PRINTER_ATTRIBUTE_FAX ( 0x00004000 )
 #define PRINTER_ATTRIBUTE_TS ( 0x00008000 )
+
+struct spoolss_PrinterInfo1 {
+	uint32_t flags;
+	const char * description;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * comment;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+}/* [gensize,public] */;
 
 struct spoolss_PrinterInfo2 {
 	const char * servername;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
