@@ -1191,32 +1191,20 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb
 	} \
 } while (0)
 
-#define GET_STRING_LIST_DS(s, r, attr, mem_ctx, p, elem, strict) do { \
-	int get_string_list_counter;					\
+#define GET_UINT32_LIST_DS(s, r, attr, mem_ctx, p, elem) do { \
+	int list_counter;					\
 	struct drsuapi_DsReplicaAttribute *_a; \
 	_a = dsdb_find_object_attr_name(s, r, attr, NULL); \
-	if (strict && !_a) { \
-		d_printf("%s: %s == NULL\n", __location__, attr); \
-		return WERR_INVALID_PARAM; \
-	} \
-	(p)->elem = _a ? talloc_array(mem_ctx, const char *, _a->value_ctr.num_values + 1) : NULL; \
-        for (get_string_list_counter=0;					\
-	     _a && get_string_list_counter < _a->value_ctr.num_values;	\
-	     get_string_list_counter++) {				\
-		size_t _ret;						\
-		if (!convert_string_talloc_convenience(mem_ctx, s->iconv_convenience, CH_UTF16, CH_UNIX, \
-					     _a->value_ctr.values[get_string_list_counter].blob->data, \
-					     _a->value_ctr.values[get_string_list_counter].blob->length, \
-						       (void **)discard_const(&(p)->elem[get_string_list_counter]), &_ret, false)) { \
-			DEBUG(0,("%s: invalid data!\n", attr)); \
-			dump_data(0, \
-				     _a->value_ctr.values[get_string_list_counter].blob->data, \
-				     _a->value_ctr.values[get_string_list_counter].blob->length); \
-			return WERR_FOOBAR; \
-		} \
-		(p)->elem[get_string_list_counter+1] = NULL;		\
+	(p)->elem = _a ? talloc_array(mem_ctx, uint32_t, _a->value_ctr.num_values + 1) : NULL; \
+        for (list_counter=0;					\
+	     _a && list_counter < _a->value_ctr.num_values;	\
+	     list_counter++) {				\
+		if (_a->value_ctr.values[list_counter].blob->length != 4) { \
+			return WERR_INVALID_PARAM;			\
+		}							\
+		(p)->elem[list_counter] = IVAL(_a->value_ctr.values[list_counter].blob->data, 0); \
 	}								\
-	talloc_steal(mem_ctx, (p)->elem);				\
+	if (_a) (p)->elem[list_counter] = 0;				\
 } while (0)
 
 #define GET_DN_DS(s, r, attr, mem_ctx, p, elem, strict) do { \
@@ -1432,19 +1420,18 @@ WERROR dsdb_class_from_drsuapi(struct dsdb_schema *schema,
 	GET_STRING_DS(schema, r, "rDNAttID", mem_ctx, obj, rDNAttID, false);
 	GET_DN_DS(schema, r, "defaultObjectCategory", mem_ctx, obj, defaultObjectCategory, true);
 
-	GET_STRING_DS(schema, r, "subClassOf", mem_ctx, obj, subClassOf, true);
+	GET_UINT32_DS(schema, r, "subClassOf", obj, subClassOf_id);
 
+	GET_UINT32_LIST_DS(schema, r, "systemAuxiliaryClass", mem_ctx, obj, systemAuxiliaryClass_ids);
+	GET_UINT32_LIST_DS(schema, r, "auxiliaryClass", mem_ctx, obj, auxiliaryClass_ids);
 
-	GET_STRING_LIST_DS(schema, r, "systemAuxiliaryClass", mem_ctx, obj, systemAuxiliaryClass, false);
-	GET_STRING_LIST_DS(schema, r, "auxiliaryClass", mem_ctx, obj, auxiliaryClass, false);
+	GET_UINT32_LIST_DS(schema, r, "systemMustContain", mem_ctx, obj, systemMustContain_ids);
+	GET_UINT32_LIST_DS(schema, r, "systemMayContain", mem_ctx, obj, systemMayContain_ids);
+	GET_UINT32_LIST_DS(schema, r, "mustContain", mem_ctx, obj, mustContain_ids);
+	GET_UINT32_LIST_DS(schema, r, "mayContain", mem_ctx, obj, mayContain_ids);
 
-	GET_STRING_LIST_DS(schema, r, "systemMustContain", mem_ctx, obj, systemMustContain, false);
-	GET_STRING_LIST_DS(schema, r, "systemMayContain", mem_ctx, obj, systemMayContain, false);
-	GET_STRING_LIST_DS(schema, r, "mustContain", mem_ctx, obj, mustContain, false);
-	GET_STRING_LIST_DS(schema, r, "mayContain", mem_ctx, obj, mayContain, false);
-
-	GET_STRING_LIST_DS(schema, r, "systemPossSuperiors", mem_ctx, obj, systemPossSuperiors, false);
-	GET_STRING_LIST_DS(schema, r, "possSuperiors", mem_ctx, obj, possSuperiors, false);
+	GET_UINT32_LIST_DS(schema, r, "systemPossSuperiors", mem_ctx, obj, systemPossSuperiors_ids);
+	GET_UINT32_LIST_DS(schema, r, "possSuperiors", mem_ctx, obj, possSuperiors_ids);
 
 	GET_STRING_DS(schema, r, "defaultSecurityDescriptor", mem_ctx, obj, defaultSecurityDescriptor, false);
 

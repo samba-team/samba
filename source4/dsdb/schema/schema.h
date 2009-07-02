@@ -137,6 +137,15 @@ struct dsdb_class {
 	char **subclasses;
 	char **subclasses_direct;
 	char **posssuperiors;
+	uint32_t subClassOf_id;
+	uint32_t *systemAuxiliaryClass_ids;
+	uint32_t *auxiliaryClass_ids;
+	uint32_t *systemMayContain_ids;
+	uint32_t *systemMustContain_ids;
+	uint32_t *possSuperiors_ids;
+	uint32_t *mustContain_ids;
+	uint32_t *mayContain_ids;
+	uint32_t *systemPossSuperiors_ids;
 };
 
 struct dsdb_schema_oid_prefix {
