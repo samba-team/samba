@@ -611,27 +611,35 @@ static bool xattr_tdb_init(int snum, struct db_context **p_db)
 /*
  * On unlink we need to delete the tdb record
  */
-static int xattr_tdb_unlink(vfs_handle_struct *handle, const char *path)
+static int xattr_tdb_unlink(vfs_handle_struct *handle,
+			    const struct smb_filename *smb_fname)
 {
-	SMB_STRUCT_STAT sbuf;
+	struct smb_filename *smb_fname_tmp = NULL;
 	struct file_id id;
 	struct db_context *db;
 	struct db_record *rec;
-	int ret;
+	NTSTATUS status;
+	int ret = -1;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
 
-	if (vfs_stat_smb_fname(handle->conn, path, &sbuf) == -1) {
+	status = copy_smb_filename(talloc_tos(), smb_fname, &smb_fname_tmp);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
 		return -1;
 	}
 
-	ret = SMB_VFS_NEXT_UNLINK(handle, path);
+	if (SMB_VFS_STAT(handle->conn, smb_fname_tmp) == -1) {
+		goto out;
+	}
+
+	ret = SMB_VFS_NEXT_UNLINK(handle, smb_fname_tmp);
 
 	if (ret == -1) {
-		return -1;
+		goto out;
 	}
 
-	id = SMB_VFS_FILE_ID_CREATE(handle->conn, &sbuf);
+	id = SMB_VFS_FILE_ID_CREATE(handle->conn, &smb_fname_tmp->st);
 
 	rec = xattr_tdb_lock_attrs(talloc_tos(), db, &id);
 
@@ -644,7 +652,9 @@ static int xattr_tdb_unlink(vfs_handle_struct *handle, const char *path)
 		TALLOC_FREE(rec);
 	}
 
-	return 0;
+ out:
+	TALLOC_FREE(smb_fname_tmp);
+	return ret;
 }
 
 /*

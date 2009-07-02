@@ -910,13 +910,14 @@ static int smb_full_audit_get_alloc_size(vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_unlink(vfs_handle_struct *handle,
-			const char *path)
+				 const struct smb_filename *smb_fname)
 {
 	int result;
 	
-	result = SMB_VFS_NEXT_UNLINK(handle, path);
+	result = SMB_VFS_NEXT_UNLINK(handle, smb_fname);
 
-	do_log(SMB_VFS_OP_UNLINK, (result >= 0), handle, "%s", path);
+	do_log(SMB_VFS_OP_UNLINK, (result >= 0), handle, "%s",
+	       smb_fname_str_do_log(smb_fname));
 
 	return result;
 }

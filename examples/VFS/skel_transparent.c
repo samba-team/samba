@@ -189,9 +189,10 @@ static int skel_lstat(vfs_handle_struct *handle, struct smb_filename *smb_fname)
 	return SMB_VFS_NEXT_LSTAT(handle, smb_fname);
 }
 
-static int skel_unlink(vfs_handle_struct *handle,  const char *path)
+static int skel_unlink(vfs_handle_struct *handle,
+		       const struct smb_filename *smb_fname)
 {
-	return SMB_VFS_NEXT_UNLINK(handle, path);
+	return SMB_VFS_NEXT_UNLINK(handle, smb_fname);
 }
 
 static int skel_chmod(vfs_handle_struct *handle,  const char *path, mode_t mode)

@@ -366,7 +366,17 @@ static NTSTATUS cmd_pathfunc(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int arg
 	if (strcmp("rmdir", argv[0]) == 0 ) {
 		ret = SMB_VFS_RMDIR(vfs->conn, argv[1]);
 	} else if (strcmp("unlink", argv[0]) == 0 ) {
-		ret = SMB_VFS_UNLINK(vfs->conn, argv[1]);
+		struct smb_filename *smb_fname = NULL;
+		NTSTATUS status;
+
+		status = create_synthetic_smb_fname_split(mem_ctx, argv[1],
+							  NULL, &smb_fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		ret = SMB_VFS_UNLINK(vfs->conn, smb_fname);
+		TALLOC_FREE(smb_fname);
 	} else if (strcmp("chdir", argv[0]) == 0 ) {
 		ret = SMB_VFS_CHDIR(vfs->conn, argv[1]);
 	} else {

@@ -412,9 +412,19 @@ static int shadow_copy2_fstat(vfs_handle_struct *handle, files_struct *fsp, SMB_
 	return ret;
 }
 
-static int shadow_copy2_unlink(vfs_handle_struct *handle, const char *fname)
+static int shadow_copy2_unlink(vfs_handle_struct *handle,
+			       const struct smb_filename *smb_fname_in)
 {
-        SHADOW2_NEXT(UNLINK, (handle, name), int, -1);
+	struct smb_filename *smb_fname = NULL;
+	NTSTATUS status;
+
+	status = copy_smb_filename(talloc_tos(), smb_fname_in, &smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		return -1;
+	}
+
+        SHADOW2_NEXT_SMB_FNAME(UNLINK, (handle, smb_fname), int, -1);
 }
 
 static int shadow_copy2_chmod(vfs_handle_struct *handle,

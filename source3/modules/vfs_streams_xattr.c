@@ -533,36 +533,42 @@ static int streams_xattr_open(vfs_handle_struct *handle,
 	return -1;
 }
 
-static int streams_xattr_unlink(vfs_handle_struct *handle,  const char *fname)
+static int streams_xattr_unlink(vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname)
 {
 	NTSTATUS status;
-	char *base = NULL;
-	char *sname = NULL;
 	int ret = -1;
 	char *xattr_name;
 
-	if (!is_ntfs_stream_name(fname)) {
-		return SMB_VFS_NEXT_UNLINK(handle, fname);
+	if (!is_ntfs_stream_smb_fname(smb_fname)) {
+		return SMB_VFS_NEXT_UNLINK(handle, smb_fname);
 	}
 
-	status = split_ntfs_stream_name(talloc_tos(), fname, &base, &sname);
+	/* If the default stream is requested, just open the base file. */
+	if (is_ntfs_default_stream_smb_fname(smb_fname)) {
+		struct smb_filename *smb_fname_base = NULL;
+
+		status = copy_smb_filename(talloc_tos(), smb_fname,
+					    &smb_fname_base);
+		if (!NT_STATUS_IS_OK(status)) {
+			errno = map_errno_from_nt_status(status);
+			return -1;
+		}
+
+		ret = SMB_VFS_NEXT_UNLINK(handle, smb_fname_base);
+
+		TALLOC_FREE(smb_fname_base);
+		return ret;
+	}
+
+	status = streams_xattr_get_name(talloc_tos(), smb_fname->stream_name,
+					&xattr_name);
 	if (!NT_STATUS_IS_OK(status)) {
-		errno = EINVAL;
+		errno = map_errno_from_nt_status(status);
 		goto fail;
 	}
 
-	if (sname == NULL){
-		return SMB_VFS_NEXT_UNLINK(handle, base);
-	}
-
-	xattr_name = talloc_asprintf(talloc_tos(), "%s%s",
-				     SAMBA_XATTR_DOSSTREAM_PREFIX, sname);
-	if (xattr_name == NULL) {
-		errno = ENOMEM;
-		goto fail;
-	}
-
-	ret = SMB_VFS_REMOVEXATTR(handle->conn, base, xattr_name);
+	ret = SMB_VFS_REMOVEXATTR(handle->conn, smb_fname->base_name, xattr_name);
 
 	if ((ret == -1) && (errno == ENOATTR)) {
 		errno = ENOENT;
@@ -572,8 +578,7 @@ static int streams_xattr_unlink(vfs_handle_struct *handle,  const char *fname)
 	ret = 0;
 
  fail:
-	TALLOC_FREE(base);
-	TALLOC_FREE(sname);
+	TALLOC_FREE(xattr_name);
 	return ret;
 }
 

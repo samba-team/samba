@@ -1415,9 +1415,22 @@ bool create_msdfs_link(const struct junction_map *jucn)
 
 	if(SMB_VFS_SYMLINK(conn, msdfs_link, path) < 0) {
 		if (errno == EEXIST) {
-			if(SMB_VFS_UNLINK(conn,path)!=0) {
+			struct smb_filename *smb_fname = NULL;
+			NTSTATUS status;
+
+			status = create_synthetic_smb_fname(talloc_tos(), path,
+							    NULL, NULL,
+							    &smb_fname);
+			if (!NT_STATUS_IS_OK(status)) {
+				errno = map_errno_from_nt_status(status);
 				goto out;
 			}
+
+			if(SMB_VFS_UNLINK(conn, smb_fname)!=0) {
+				TALLOC_FREE(smb_fname);
+				goto out;
+			}
+			TALLOC_FREE(smb_fname);
 		}
 		if (SMB_VFS_SYMLINK(conn, msdfs_link, path) < 0) {
 			DEBUG(1,("create_msdfs_link: symlink failed "
@@ -1441,15 +1454,26 @@ bool remove_msdfs_link(const struct junction_map *jucn)
 	char *cwd;
 	connection_struct *conn;
 	bool ret = False;
+	struct smb_filename *smb_fname = NULL;
+	NTSTATUS status;
 
 	if (!junction_to_local_path(jucn, &path, &conn, &cwd)) {
 		return false;
 	}
 
-	if( SMB_VFS_UNLINK(conn, path) == 0 ) {
+	status = create_synthetic_smb_fname(talloc_tos(), path,
+					    NULL, NULL,
+					    &smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		return false;
+	}
+
+	if( SMB_VFS_UNLINK(conn, smb_fname) == 0 ) {
 		ret = True;
 	}
 
+	TALLOC_FREE(smb_fname);
 	vfs_ChDir(conn, cwd);
 	conn_free_internal(conn);
 	return ret;

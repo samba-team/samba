@@ -524,13 +524,12 @@ static int vfswrap_rename(vfs_handle_struct *handle,
 			  const struct smb_filename *smb_fname_src,
 			  const struct smb_filename *smb_fname_dst)
 {
-	int result;
+	int result = -1;
 
 	START_PROFILE(syscall_rename);
 
 	if (smb_fname_src->stream_name || smb_fname_dst->stream_name) {
 		errno = ENOENT;
-		result = -1;
 		goto out;
 	}
 
@@ -651,12 +650,20 @@ static uint64_t vfswrap_get_alloc_size(vfs_handle_struct *handle,
 	return result;
 }
 
-static int vfswrap_unlink(vfs_handle_struct *handle,  const char *path)
+static int vfswrap_unlink(vfs_handle_struct *handle,
+			  const struct smb_filename *smb_fname)
 {
-	int result;
+	int result = -1;
 
 	START_PROFILE(syscall_unlink);
-	result = unlink(path);
+
+	if (smb_fname->stream_name) {
+		errno = ENOENT;
+		goto out;
+	}
+	result = unlink(smb_fname->base_name);
+
+ out:
 	END_PROFILE(syscall_unlink);
 	return result;
 }

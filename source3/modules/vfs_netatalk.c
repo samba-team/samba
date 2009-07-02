@@ -254,24 +254,29 @@ static int atalk_rename(struct vfs_handle_struct *handle,
 	atalk_unlink_file(adbl_path);
 
 exit_rename:
+	TALLOC_FREE(oldname);
 	TALLOC_FREE(adbl_path);
-	TALLOC_FREE(orig_path);
 	TALLOC_FREE(orig_path);
 	return ret;
 }
 
-static int atalk_unlink(struct vfs_handle_struct *handle, const char *path)
+static int atalk_unlink(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname)
 {
 	int ret = 0, i;
-	char *adbl_path = 0;
-	char *orig_path = 0;
+	char *path = NULL;
+	char *adbl_path = NULL;
+	char *orig_path = NULL;
 	SMB_STRUCT_STAT adbl_info;
 	SMB_STRUCT_STAT orig_info;
-	TALLOC_CTX *ctx;
+	NTSTATUS status;
 
-	ret = SMB_VFS_NEXT_UNLINK(handle, path);
+	ret = SMB_VFS_NEXT_UNLINK(handle, smb_fname);
 
-	if (!path) return ret;
+	status = get_full_smb_filename(talloc_tos(), smb_fname, &path);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ret;
+	}
 
 	/* no .AppleDouble sync if veto or hide list is empty,
 	 * otherwise "Cannot find the specified file" error will be caused
@@ -292,15 +297,13 @@ static int atalk_unlink(struct vfs_handle_struct *handle, const char *path)
 			else {
 				DEBUG(3, ("ATALK: %s is not hidden, skipped..\n",
 				  APPLEDOUBLE));		
-				return ret;
+				goto exit_unlink;
 			}
 		}
 	}
 
-	if (!(ctx = talloc_init("unlink_file")))
-		return ret;
-
-	if (atalk_build_paths(ctx, handle->conn->origpath, path, &adbl_path, &orig_path,
+	if (atalk_build_paths(talloc_tos(), handle->conn->origpath, path,
+			      &adbl_path, &orig_path,
 	  &adbl_info, &orig_info) != 0)
 		goto exit_unlink;
 
@@ -311,8 +314,10 @@ static int atalk_unlink(struct vfs_handle_struct *handle, const char *path)
 
 	atalk_unlink_file(adbl_path);
 
-exit_unlink:	
-	talloc_destroy(ctx);
+exit_unlink:
+	TALLOC_FREE(path);
+	TALLOC_FREE(adbl_path);
+	TALLOC_FREE(orig_path);
 	return ret;
 }
 

@@ -107,7 +107,7 @@ static void syncops_name(const char *name)
 /*
   sync two meta data changes for 1 names
  */
-static void syncops_smb_fname(struct smb_filename *smb_fname)
+static void syncops_smb_fname(const struct smb_filename *smb_fname)
 {
 	char *parent;
 	parent = parent_dir(NULL, smb_fname->base_name);
@@ -166,9 +166,10 @@ static int syncops_open(vfs_handle_struct *handle,
 			       (handle, smb_fname, fsp, flags, mode));
 }
 
-static int syncops_unlink(vfs_handle_struct *handle, const char *fname)
+static int syncops_unlink(vfs_handle_struct *handle,
+			  const struct smb_filename *smb_fname)
 {
-        SYNCOPS_NEXT(UNLINK, fname, (handle, fname));
+        SYNCOPS_NEXT_SMB_FNAME(UNLINK, smb_fname, (handle, smb_fname));
 }
 
 static int syncops_mknod(vfs_handle_struct *handle,

@@ -1160,7 +1160,7 @@ static uint32 unix_filetype(mode_t mode)
 enum perm_type { PERM_NEW_FILE, PERM_NEW_DIR, PERM_EXISTING_FILE, PERM_EXISTING_DIR};
 
 static NTSTATUS unix_perms_from_wire( connection_struct *conn,
-				SMB_STRUCT_STAT *psbuf,
+				const SMB_STRUCT_STAT *psbuf,
 				uint32 perms,
 				enum perm_type ptype,
 				mode_t *ret_perms)
@@ -5082,13 +5082,13 @@ static NTSTATUS smb_set_file_dosmode(connection_struct *conn,
 
 static NTSTATUS smb_set_file_size(connection_struct *conn,
 				  struct smb_request *req,
-				files_struct *fsp,
-				const char *fname,
-				SMB_STRUCT_STAT *psbuf,
-				SMB_OFF_T size)
+				  files_struct *fsp,
+				  const struct smb_filename *smb_fname,
+				  const SMB_STRUCT_STAT *psbuf,
+				  SMB_OFF_T size)
 {
-	struct smb_filename *smb_fname = NULL;
 	NTSTATUS status = NT_STATUS_OK;
+	struct smb_filename *smb_fname_tmp = NULL;
 	files_struct *new_fsp = NULL;
 
 	if (!VALID_STAT(*psbuf)) {
@@ -5102,7 +5102,7 @@ static NTSTATUS smb_set_file_size(connection_struct *conn,
 	}
 
 	DEBUG(10,("smb_set_file_size: file %s : setting new size to %.0f\n",
-		fname, (double)size ));
+		  smb_fname_str_dbg(smb_fname), (double)size));
 
 	if (fsp && fsp->fh->fd != -1) {
 		/* Handle based call. */
@@ -5113,17 +5113,18 @@ static NTSTATUS smb_set_file_size(connection_struct *conn,
 		return NT_STATUS_OK;
 	}
 
-	status = create_synthetic_smb_fname_split(talloc_tos(), fname, psbuf,
-						  &smb_fname);
+	status = copy_smb_filename(talloc_tos(), smb_fname, &smb_fname_tmp);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
+
+	smb_fname_tmp->st = *psbuf;
 
         status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
 		0,					/* root_dir_fid */
-		smb_fname,				/* fname */
+		smb_fname_tmp,				/* fname */
 		FILE_WRITE_ATTRIBUTES,			/* access_mask */
 		(FILE_SHARE_READ | FILE_SHARE_WRITE |	/* share_access */
 		    FILE_SHARE_DELETE),
@@ -5137,8 +5138,7 @@ static NTSTATUS smb_set_file_size(connection_struct *conn,
 		&new_fsp,				/* result */
 		NULL);					/* pinfo */
 
-	*psbuf = smb_fname->st;
-	TALLOC_FREE(smb_fname);
+	TALLOC_FREE(smb_fname_tmp);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		/* NB. We check for open_was_deferred in the caller. */
@@ -5998,8 +5998,7 @@ static NTSTATUS smb_set_file_end_of_file_info(connection_struct *conn,
 					const char *pdata,
 					int total_data,
 					files_struct *fsp,
-					const char *fname,
-					SMB_STRUCT_STAT *psbuf)
+					const struct smb_filename *smb_fname)
 {
 	SMB_OFF_T size;
 
@@ -6017,12 +6016,13 @@ static NTSTATUS smb_set_file_end_of_file_info(connection_struct *conn,
 	}
 #endif /* LARGE_SMB_OFF_T */
 	DEBUG(10,("smb_set_file_end_of_file_info: Set end of file info for "
-		"file %s to %.0f\n", fname, (double)size ));
+		  "file %s to %.0f\n", smb_fname_str_dbg(smb_fname),
+		  (double)size));
 
 	return smb_set_file_size(conn, req,
 				fsp,
-				fname,
-				psbuf,
+				smb_fname,
+				&smb_fname->st,
 				size);
 }
 
@@ -6033,8 +6033,7 @@ static NTSTATUS smb_set_file_end_of_file_info(connection_struct *conn,
 static NTSTATUS smb_unix_mknod(connection_struct *conn,
 					const char *pdata,
 					int total_data,
-					const char *fname,
-					SMB_STRUCT_STAT *psbuf)
+					const struct smb_filename *smb_fname)
 {
 	uint32 file_type = IVAL(pdata,56);
 #if defined(HAVE_MAKEDEV)
@@ -6050,7 +6049,8 @@ static NTSTATUS smb_unix_mknod(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = unix_perms_from_wire(conn, psbuf, raw_unixmode, PERM_NEW_FILE, &unixmode);
+	status = unix_perms_from_wire(conn, &smb_fname->st, raw_unixmode,
+				      PERM_NEW_FILE, &unixmode);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -6084,11 +6084,12 @@ static NTSTATUS smb_unix_mknod(connection_struct *conn,
 			return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	DEBUG(10,("smb_unix_mknod: SMB_SET_FILE_UNIX_BASIC doing mknod dev %.0f mode \
-0%o for file %s\n", (double)dev, (unsigned int)unixmode, fname ));
+	DEBUG(10,("smb_unix_mknod: SMB_SET_FILE_UNIX_BASIC doing mknod dev "
+		  "%.0f mode 0%o for file %s\n", (double)dev,
+		  (unsigned int)unixmode, smb_fname_str_dbg(smb_fname)));
 
 	/* Ok - do the mknod. */
-	if (SMB_VFS_MKNOD(conn, fname, unixmode, dev) != 0) {
+	if (SMB_VFS_MKNOD(conn, smb_fname->base_name, unixmode, dev) != 0) {
 		return map_nt_error_from_unix(errno);
 	}
 
@@ -6098,18 +6099,15 @@ static NTSTATUS smb_unix_mknod(connection_struct *conn,
 
 	if (lp_inherit_perms(SNUM(conn))) {
 		char *parent;
-		if (!parent_dirname(talloc_tos(), fname, &parent, NULL)) {
+		if (!parent_dirname(talloc_tos(), smb_fname->base_name,
+				    &parent, NULL)) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		inherit_access_posix_acl(conn, parent, fname, unixmode);
+		inherit_access_posix_acl(conn, parent, smb_fname->base_name,
+					 unixmode);
 		TALLOC_FREE(parent);
 	}
 
-	if (vfs_stat_smb_fname(conn, fname, psbuf) != 0) {
-		status = map_nt_error_from_unix(errno);
-		SMB_VFS_UNLINK(conn,fname);
-		return status;
-	}
 	return NT_STATUS_OK;
 }
 
@@ -6122,8 +6120,7 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 					const char *pdata,
 					int total_data,
 					files_struct *fsp,
-					const char *fname,
-					SMB_STRUCT_STAT *psbuf)
+					const struct smb_filename *smb_fname)
 {
 	struct smb_file_time ft;
 	uint32 raw_unixmode;
@@ -6137,6 +6134,7 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 	files_struct *all_fsps = NULL;
 	bool modify_mtime = true;
 	struct file_id id;
+	SMB_STRUCT_STAT sbuf;
 
 	ZERO_STRUCT(ft);
 
@@ -6163,8 +6161,8 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 	set_grp = (gid_t)IVAL(pdata,48);
 	raw_unixmode = IVAL(pdata,84);
 
-	if (VALID_STAT(*psbuf)) {
-		if (S_ISDIR(psbuf->st_ex_mode)) {
+	if (VALID_STAT(smb_fname->st)) {
+		if (S_ISDIR(smb_fname->st.st_ex_mode)) {
 			ptype = PERM_EXISTING_DIR;
 		} else {
 			ptype = PERM_EXISTING_FILE;
@@ -6173,16 +6171,22 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 		ptype = PERM_NEW_FILE;
 	}
 
-	status = unix_perms_from_wire(conn, psbuf, raw_unixmode, ptype, &unixmode);
+	status = unix_perms_from_wire(conn, &smb_fname->st, raw_unixmode,
+				      ptype, &unixmode);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	DEBUG(10,("smb_set_file_unix_basic: SMB_SET_FILE_UNIX_BASIC: name = %s \
-size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
-		fname, (double)size, (unsigned int)set_owner, (unsigned int)set_grp, (int)raw_unixmode));
+	DEBUG(10,("smb_set_file_unix_basic: SMB_SET_FILE_UNIX_BASIC: name = "
+		  "%s size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
+		  smb_fname_str_dbg(smb_fname), (double)size,
+		  (unsigned int)set_owner, (unsigned int)set_grp,
+		  (int)raw_unixmode));
 
-	if (!VALID_STAT(*psbuf)) {
+	sbuf = smb_fname->st;
+
+	if (!VALID_STAT(sbuf)) {
+		struct smb_filename *smb_fname_tmp = NULL;
 		/*
 		 * The only valid use of this is to create character and block
 		 * devices, and named pipes. This is deprecated (IMHO) and 
@@ -6192,17 +6196,32 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 		status = smb_unix_mknod(conn,
 					pdata,
 					total_data,
-					fname,
-					psbuf);
+					smb_fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
 
+		status = copy_smb_filename(talloc_tos(), smb_fname,
+					   &smb_fname_tmp);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		if (SMB_VFS_STAT(conn, smb_fname_tmp) != 0) {
+			status = map_nt_error_from_unix(errno);
+			TALLOC_FREE(smb_fname_tmp);
+			SMB_VFS_UNLINK(conn, smb_fname);
+			return status;
+		}
+
+		sbuf = smb_fname_tmp->st;
+		TALLOC_FREE(smb_fname_tmp);
+
 		/* Ensure we don't try and change anything else. */
 		raw_unixmode = SMB_MODE_NO_CHANGE;
-		size = get_file_size_stat(psbuf);
-		ft.atime = psbuf->st_ex_atime;
-		ft.mtime = psbuf->st_ex_mtime;
+		size = get_file_size_stat(&sbuf);
+		ft.atime = sbuf.st_ex_atime;
+		ft.mtime = sbuf.st_ex_mtime;
 		/* 
 		 * We continue here as we might want to change the 
 		 * owner uid/gid.
@@ -6216,7 +6235,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 	 * */
 
 	if (!size) {
-		size = get_file_size_stat(psbuf);
+		size = get_file_size_stat(&sbuf);
 	}
 #endif
 
@@ -6225,9 +6244,11 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 	 */
 
 	if (raw_unixmode != SMB_MODE_NO_CHANGE) {
-		DEBUG(10,("smb_set_file_unix_basic: SMB_SET_FILE_UNIX_BASIC setting mode 0%o for file %s\n",
-			(unsigned int)unixmode, fname ));
-		if (SMB_VFS_CHMOD(conn, fname, unixmode) != 0) {
+		DEBUG(10,("smb_set_file_unix_basic: SMB_SET_FILE_UNIX_BASIC "
+			  "setting mode 0%o for file %s\n",
+			  (unsigned int)unixmode,
+			  smb_fname_str_dbg(smb_fname)));
+		if (SMB_VFS_CHMOD(conn, smb_fname->base_name, unixmode) != 0) {
 			return map_nt_error_from_unix(errno);
 		}
 	}
@@ -6236,22 +6257,27 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 	 * Deal with the UNIX specific uid set.
 	 */
 
-	if ((set_owner != (uid_t)SMB_UID_NO_CHANGE) && (psbuf->st_ex_uid != set_owner)) {
+	if ((set_owner != (uid_t)SMB_UID_NO_CHANGE) &&
+	    (sbuf.st_ex_uid != set_owner)) {
 		int ret;
 
-		DEBUG(10,("smb_set_file_unix_basic: SMB_SET_FILE_UNIX_BASIC changing owner %u for path %s\n",
-			(unsigned int)set_owner, fname ));
+		DEBUG(10,("smb_set_file_unix_basic: SMB_SET_FILE_UNIX_BASIC "
+			  "changing owner %u for path %s\n",
+			  (unsigned int)set_owner,
+			  smb_fname_str_dbg(smb_fname)));
 
-		if (S_ISLNK(psbuf->st_ex_mode)) {
-			ret = SMB_VFS_LCHOWN(conn, fname, set_owner, (gid_t)-1);
+		if (S_ISLNK(sbuf.st_ex_mode)) {
+			ret = SMB_VFS_LCHOWN(conn, smb_fname->base_name,
+					     set_owner, (gid_t)-1);
 		} else {
-			ret = SMB_VFS_CHOWN(conn, fname, set_owner, (gid_t)-1);
+			ret = SMB_VFS_CHOWN(conn, smb_fname->base_name,
+					    set_owner, (gid_t)-1);
 		}
 
 		if (ret != 0) {
 			status = map_nt_error_from_unix(errno);
 			if (delete_on_fail) {
-				SMB_VFS_UNLINK(conn,fname);
+				SMB_VFS_UNLINK(conn, smb_fname);
 			}
 			return status;
 		}
@@ -6261,13 +6287,17 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 	 * Deal with the UNIX specific gid set.
 	 */
 
-	if ((set_grp != (uid_t)SMB_GID_NO_CHANGE) && (psbuf->st_ex_gid != set_grp)) {
-		DEBUG(10,("smb_set_file_unix_basic: SMB_SET_FILE_UNIX_BASIC changing group %u for file %s\n",
-			(unsigned int)set_owner, fname ));
-		if (SMB_VFS_CHOWN(conn, fname, (uid_t)-1, set_grp) != 0) {
+	if ((set_grp != (uid_t)SMB_GID_NO_CHANGE) &&
+	    (sbuf.st_ex_gid != set_grp)) {
+		DEBUG(10,("smb_set_file_unix_basic: SMB_SET_FILE_UNIX_BASIC "
+			  "changing group %u for file %s\n",
+			  (unsigned int)set_owner,
+			  smb_fname_str_dbg(smb_fname)));
+		if (SMB_VFS_CHOWN(conn, smb_fname->base_name, (uid_t)-1,
+				  set_grp) != 0) {
 			status = map_nt_error_from_unix(errno);
 			if (delete_on_fail) {
-				SMB_VFS_UNLINK(conn,fname);
+				SMB_VFS_UNLINK(conn, smb_fname);
 			}
 			return status;
 		}
@@ -6276,10 +6306,10 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 	/* Deal with any size changes. */
 
 	status = smb_set_file_size(conn, req,
-				fsp,
-				fname,
-				psbuf,
-				size);
+				   fsp,
+				   smb_fname,
+				   &sbuf,
+				   size);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -6313,8 +6343,8 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 
 	status = smb_set_file_time(conn,
 				fsp,
-				fname,
-				psbuf,
+				smb_fname->base_name,
+				&sbuf,
 				&ft,
 				false);
 	if (modify_mtime) {
@@ -6333,8 +6363,7 @@ static NTSTATUS smb_set_file_unix_info2(connection_struct *conn,
 					const char *pdata,
 					int total_data,
 					files_struct *fsp,
-					const char *fname,
-					SMB_STRUCT_STAT *psbuf)
+					const struct smb_filename *smb_fname)
 {
 	NTSTATUS status;
 	uint32 smb_fflags;
@@ -6348,7 +6377,7 @@ static NTSTATUS smb_set_file_unix_info2(connection_struct *conn,
 	 * and UNIX_INFO2.
 	 */
 	status = smb_set_file_unix_basic(conn, req, pdata, total_data,
-				fsp, fname, psbuf);
+					 fsp, smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -6362,8 +6391,8 @@ static NTSTATUS smb_set_file_unix_info2(connection_struct *conn,
 	if (smb_fmask != 0) {
 		int stat_fflags = 0;
 
-		if (!map_info2_flags_to_sbuf(psbuf, smb_fflags, smb_fmask,
-			    &stat_fflags)) {
+		if (!map_info2_flags_to_sbuf(&smb_fname->st, smb_fflags,
+					     smb_fmask, &stat_fflags)) {
 			/* Client asked to alter a flag we don't understand. */
 			return NT_STATUS_INVALID_PARAMETER;
 		}
@@ -6372,7 +6401,8 @@ static NTSTATUS smb_set_file_unix_info2(connection_struct *conn,
 			/* XXX: we should be  using SMB_VFS_FCHFLAGS here. */
 			return NT_STATUS_NOT_SUPPORTED;
 		} else {
-			if (SMB_VFS_CHFLAGS(conn, fname, stat_fflags) != 0) {
+			if (SMB_VFS_CHFLAGS(conn, smb_fname->base_name,
+					    stat_fflags) != 0) {
 				return map_nt_error_from_unix(errno);
 			}
 		}
@@ -7078,8 +7108,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 								pdata,
 								total_data,
 								fsp,
-								fname,
-								&sbuf);
+								smb_fname);
 			break;
 		}
 
@@ -7137,8 +7166,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 							pdata,
 							total_data,
 							fsp,
-							fname,
-							&sbuf);
+							smb_fname);
 			break;
 		}
 
@@ -7148,8 +7176,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 							pdata,
 							total_data,
 							fsp,
-							fname,
-							&sbuf);
+							smb_fname);
 			break;
 		}
 

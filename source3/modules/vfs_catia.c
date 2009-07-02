@@ -258,15 +258,34 @@ static int catia_lstat(vfs_handle_struct *handle,
 	return ret;
 }
 
-static int catia_unlink(vfs_handle_struct *handle, const char *path)
+static int catia_unlink(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname)
 {
-	char *name = to_unix(talloc_tos(), path);
+	struct smb_filename *smb_fname_tmp = NULL;
+	char *name = NULL;
+	NTSTATUS status;
+	int ret;
 
+	name = to_unix(talloc_tos(), smb_fname->base_name);
 	if (!name) {
 		errno = ENOMEM;
 		return -1;
 	}
-        return SMB_VFS_NEXT_UNLINK(handle, name);
+
+	/* Setup temporary smb_filename structs. */
+	status = copy_smb_filename(talloc_tos(), smb_fname,
+				   &smb_fname_tmp);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		return -1;
+	}
+
+	smb_fname_tmp->base_name = name;
+
+        ret = SMB_VFS_NEXT_UNLINK(handle, smb_fname_tmp);
+
+	TALLOC_FREE(smb_fname_tmp);
+	return ret;
 }
 
 static int catia_chmod(vfs_handle_struct *handle,

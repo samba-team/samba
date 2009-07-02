@@ -616,32 +616,41 @@ static int open_acl_tdb(vfs_handle_struct *handle,
  On unlink we need to delete the tdb record (if using tdb).
 *********************************************************************/
 
-static int unlink_acl_tdb(vfs_handle_struct *handle, const char *path)
+static int unlink_acl_tdb(vfs_handle_struct *handle,
+			  const struct smb_filename *smb_fname)
 {
-	SMB_STRUCT_STAT sbuf;
+	struct smb_filename *smb_fname_tmp = NULL;
 	struct db_context *db;
+	NTSTATUS status;
 	int ret = -1;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
 
+	status = copy_smb_filename(talloc_tos(), smb_fname, &smb_fname_tmp);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		goto out;
+	}
+
 	if (lp_posix_pathnames()) {
-		ret = vfs_lstat_smb_fname(handle->conn, path, &sbuf);
+		ret = SMB_VFS_LSTAT(handle->conn, smb_fname_tmp);
 	} else {
-		ret = vfs_stat_smb_fname(handle->conn, path, &sbuf);
+		ret = SMB_VFS_STAT(handle->conn, smb_fname_tmp);
 	}
 
 	if (ret == -1) {
-		return -1;
+		goto out;
 	}
 
-	ret = SMB_VFS_NEXT_UNLINK(handle, path);
+	ret = SMB_VFS_NEXT_UNLINK(handle, smb_fname_tmp);
 
 	if (ret == -1) {
-		return -1;
+		goto out;
 	}
 
-	acl_tdb_delete(handle, db, &sbuf);
-	return 0;
+	acl_tdb_delete(handle, db, &smb_fname_tmp->st);
+ out:
+	return ret;
 }
 
 /*********************************************************************

@@ -235,20 +235,21 @@ static int audit_rename(vfs_handle_struct *handle,
 	return result;
 }
 
-static int audit_unlink(vfs_handle_struct *handle, const char *path)
+static int audit_unlink(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_UNLINK(handle, path);
+	result = SMB_VFS_NEXT_UNLINK(handle, smb_fname);
 
 	if (lp_syslog() > 0) {
 		syslog(audit_syslog_priority(handle), "unlink %s %s%s\n",
-		       path,
+		       smb_fname->base_name,
 		       (result < 0) ? "failed: " : "",
 		       (result < 0) ? strerror(errno) : "");
 	}
 	DEBUG(0, ("vfs_extd_audit: unlink %s %s %s\n",
-	       path,
+	       smb_fname_str_dbg(smb_fname),
 	       (result < 0) ? "failed: " : "",
 	       (result < 0) ? strerror(errno) : ""));
 

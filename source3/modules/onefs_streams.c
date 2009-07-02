@@ -462,38 +462,49 @@ int onefs_lstat(vfs_handle_struct *handle, struct smb_filename *smb_fname)
 	return ret;
 }
 
-int onefs_unlink(vfs_handle_struct *handle, const char *path)
+int onefs_unlink(vfs_handle_struct *handle,
+		  const struct smb_filename *smb_fname)
 {
+	struct smb_filename *smb_fname_onefs = NULL;
 	int ret;
 	bool is_stream;
 	char *base = NULL;
 	char *stream = NULL;
 	int dir_fd, saved_errno;
 
-	ret = onefs_is_stream(path, &base, &stream, &is_stream);
-	if (ret) {
-		return ret;
+	/* Not a stream. */
+	if (!is_ntfs_stream_smb_fname(smb_fname)) {
+		return SMB_VFS_NEXT_UNLINK(handle, smb_fname);
 	}
 
-	if (!is_stream)	{
-		return SMB_VFS_NEXT_UNLINK(handle, path);
-	}
-
-	/* If it's the ::$DATA stream just unlink the base file name. */
-	if (!stream) {
-		return SMB_VFS_NEXT_UNLINK(handle, base);
-	}
-
-	dir_fd = get_stream_dir_fd(handle->conn, base, NULL);
-	if (dir_fd < 0) {
+	status = onefs_stream_prep_smb_fname(talloc_tos(), smb_fname,
+					     &smb_fname_onefs);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
 		return -1;
 	}
 
-	ret = enc_unlinkat(dir_fd, stream, ENC_DEFAULT, 0);
+	/* Default stream (the ::$DATA was just stripped off). */
+	if (!is_ntfs_stream_smb_fname(smb_fname_onefs)) {
+		ret = SMB_VFS_NEXT_UNLINK(handle, smb_fname_onefs);
+		goto out;
+	}
+
+	dir_fd = get_stream_dir_fd(handle->conn, smb_fname_onefs->base_name,
+				   NULL);
+	if (dir_fd < 0) {
+		ret = -1;
+		goto out;
+	}
+
+	ret = enc_unlinkat(dir_fd, smb_fname_onefs->stream_name, ENC_DEFAULT,
+			   0);
 
 	saved_errno = errno;
 	close(dir_fd);
 	errno = saved_errno;
+ out:
+	TALLOC_FREE(smb_fname_onefs);
 	return ret;
 }
 

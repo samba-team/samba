@@ -5245,35 +5245,39 @@ void reply_mkdir(struct smb_request *req)
 
 static bool recursive_rmdir(TALLOC_CTX *ctx,
 			connection_struct *conn,
-			char *directory)
+			struct smb_filename *smb_dname)
 {
 	const char *dname = NULL;
 	bool ret = True;
 	long offset = 0;
 	SMB_STRUCT_STAT st;
-	struct smb_Dir *dir_hnd = OpenDir(talloc_tos(), conn, directory,
-					  NULL, 0);
+	struct smb_Dir *dir_hnd;
 
+	SMB_ASSERT(!is_ntfs_stream_smb_fname(smb_dname));
+
+	dir_hnd = OpenDir(talloc_tos(), conn, smb_dname->base_name, NULL, 0);
 	if(dir_hnd == NULL)
 		return False;
 
 	while((dname = ReadDirName(dir_hnd, &offset, &st))) {
+		struct smb_filename *smb_dname_full = NULL;
 		char *fullname = NULL;
-		struct smb_filename *smb_fname = NULL;
+		bool do_break = true;
 		NTSTATUS status;
 
 		if (ISDOT(dname) || ISDOTDOT(dname)) {
 			continue;
 		}
 
-		if (!is_visible_file(conn, directory, dname, &st, False)) {
+		if (!is_visible_file(conn, smb_dname->base_name, dname, &st,
+				     false)) {
 			continue;
 		}
 
 		/* Construct the full name. */
 		fullname = talloc_asprintf(ctx,
 				"%s/%s",
-				directory,
+				smb_dname->base_name,
 				dname);
 		if (!fullname) {
 			errno = ENOMEM;
@@ -5281,33 +5285,38 @@ static bool recursive_rmdir(TALLOC_CTX *ctx,
 		}
 
 		status = create_synthetic_smb_fname(talloc_tos(), fullname,
-						    NULL, NULL, &smb_fname);
+						    NULL, NULL,
+						    &smb_dname_full);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto err_break;
 		}
 
-		if(SMB_VFS_LSTAT(conn, smb_fname) != 0) {
+		if(SMB_VFS_LSTAT(conn, smb_dname_full) != 0) {
 			goto err_break;
 		}
 
-		if(smb_fname->st.st_ex_mode & S_IFDIR) {
-			if(!recursive_rmdir(ctx, conn, fullname)) {
+		if(smb_dname_full->st.st_ex_mode & S_IFDIR) {
+			if(!recursive_rmdir(ctx, conn, smb_dname_full)) {
 				goto err_break;
 			}
-			if(SMB_VFS_RMDIR(conn,fullname) != 0) {
+			if(SMB_VFS_RMDIR(conn,
+					 smb_dname_full->base_name) != 0) {
 				goto err_break;
 			}
-		} else if(SMB_VFS_UNLINK(conn,fullname) != 0) {
+		} else if(SMB_VFS_UNLINK(conn, smb_dname_full) != 0) {
 			goto err_break;
 		}
-		TALLOC_FREE(smb_fname);
-		TALLOC_FREE(fullname);
-		continue;
+
+		/* Successful iteration. */
+		do_break = false;
+
 	 err_break:
-		TALLOC_FREE(smb_fname);
+		TALLOC_FREE(smb_dname_full);
 		TALLOC_FREE(fullname);
-		ret = false;
-		break;
+		if (do_break) {
+			ret = false;
+			break;
+		}
 	}
 	TALLOC_FREE(dir_hnd);
 	return ret;
@@ -5318,33 +5327,35 @@ static bool recursive_rmdir(TALLOC_CTX *ctx,
 ****************************************************************************/
 
 NTSTATUS rmdir_internals(TALLOC_CTX *ctx,
-			connection_struct *conn,
-			const char *directory)
+			 connection_struct *conn,
+			 struct smb_filename *smb_dname)
 {
 	int ret;
 	SMB_STRUCT_STAT st;
 
+	SMB_ASSERT(!is_ntfs_stream_smb_fname(smb_dname));
+
 	/* Might be a symlink. */
-	if(vfs_lstat_smb_fname(conn, directory, &st) != 0) {
+	if(SMB_VFS_LSTAT(conn, smb_dname) != 0) {
 		return map_nt_error_from_unix(errno);
 	}
 
-	if (S_ISLNK(st.st_ex_mode)) {
+	if (S_ISLNK(smb_dname->st.st_ex_mode)) {
 		/* Is what it points to a directory ? */
-		if(vfs_stat_smb_fname(conn, directory, &st) != 0) {
+		if(SMB_VFS_STAT(conn, smb_dname) != 0) {
 			return map_nt_error_from_unix(errno);
 		}
-		if (!(S_ISDIR(st.st_ex_mode))) {
+		if (!(S_ISDIR(smb_dname->st.st_ex_mode))) {
 			return NT_STATUS_NOT_A_DIRECTORY;
 		}
-		ret = SMB_VFS_UNLINK(conn,directory);
+		ret = SMB_VFS_UNLINK(conn, smb_dname);
 	} else {
-		ret = SMB_VFS_RMDIR(conn,directory);
+		ret = SMB_VFS_RMDIR(conn, smb_dname->base_name);
 	}
 	if (ret == 0) {
 		notify_fname(conn, NOTIFY_ACTION_REMOVED,
 			     FILE_NOTIFY_CHANGE_DIR_NAME,
-			     directory);
+			     smb_dname->base_name);
 		return NT_STATUS_OK;
 	}
 
@@ -5358,7 +5369,8 @@ NTSTATUS rmdir_internals(TALLOC_CTX *ctx,
 		const char *dname;
 		long dirpos = 0;
 		struct smb_Dir *dir_hnd = OpenDir(talloc_tos(), conn,
-						  directory, NULL, 0);
+						  smb_dname->base_name, NULL,
+						  0);
 
 		if(dir_hnd == NULL) {
 			errno = ENOTEMPTY;
@@ -5368,7 +5380,8 @@ NTSTATUS rmdir_internals(TALLOC_CTX *ctx,
 		while ((dname = ReadDirName(dir_hnd, &dirpos, &st))) {
 			if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0))
 				continue;
-			if (!is_visible_file(conn, directory, dname, &st, False))
+			if (!is_visible_file(conn, smb_dname->base_name, dname,
+					     &st, false))
 				continue;
 			if(!IS_VETO_PATH(conn, dname)) {
 				TALLOC_FREE(dir_hnd);
@@ -5389,56 +5402,80 @@ NTSTATUS rmdir_internals(TALLOC_CTX *ctx,
 		/* Do a recursive delete. */
 		RewindDir(dir_hnd,&dirpos);
 		while ((dname = ReadDirName(dir_hnd, &dirpos, &st))) {
+			struct smb_filename *smb_dname_full = NULL;
 			char *fullname = NULL;
+			bool do_break = true;
+			NTSTATUS status;
 
 			if (ISDOT(dname) || ISDOTDOT(dname)) {
 				continue;
 			}
-			if (!is_visible_file(conn, directory, dname, &st, False)) {
+			if (!is_visible_file(conn, smb_dname->base_name, dname,
+					     &st, false)) {
 				continue;
 			}
 
 			fullname = talloc_asprintf(ctx,
 					"%s/%s",
-					directory,
+					smb_dname->base_name,
 					dname);
 
 			if(!fullname) {
 				errno = ENOMEM;
-				break;
+				goto err_break;
 			}
 
-			if(vfs_lstat_smb_fname(conn,fullname, &st) != 0) {
-				break;
+			status = create_synthetic_smb_fname(talloc_tos(),
+							    fullname, NULL,
+							    NULL,
+							    &smb_dname_full);
+			if (!NT_STATUS_IS_OK(status)) {
+				errno = map_errno_from_nt_status(status);
+				goto err_break;
 			}
-			if(st.st_ex_mode & S_IFDIR) {
-				if(!recursive_rmdir(ctx, conn, fullname)) {
-					break;
-				}
-				if(SMB_VFS_RMDIR(conn,fullname) != 0) {
-					break;
-				}
-			} else if(SMB_VFS_UNLINK(conn,fullname) != 0) {
-				break;
+
+			if(SMB_VFS_LSTAT(conn, smb_dname_full) != 0) {
+				goto err_break;
 			}
+			if(smb_dname_full->st.st_ex_mode & S_IFDIR) {
+				if(!recursive_rmdir(ctx, conn,
+						    smb_dname_full)) {
+					goto err_break;
+				}
+				if(SMB_VFS_RMDIR(conn,
+					smb_dname_full->base_name) != 0) {
+					goto err_break;
+				}
+			} else if(SMB_VFS_UNLINK(conn, smb_dname_full) != 0) {
+				goto err_break;
+			}
+
+			/* Successful iteration. */
+			do_break = false;
+
+		 err_break:
 			TALLOC_FREE(fullname);
+			TALLOC_FREE(smb_dname_full);
+			if (do_break)
+				break;
 		}
 		TALLOC_FREE(dir_hnd);
 		/* Retry the rmdir */
-		ret = SMB_VFS_RMDIR(conn,directory);
+		ret = SMB_VFS_RMDIR(conn, smb_dname->base_name);
 	}
 
   err:
 
 	if (ret != 0) {
 		DEBUG(3,("rmdir_internals: couldn't remove directory %s : "
-			 "%s\n", directory,strerror(errno)));
+			 "%s\n", smb_fname_str_dbg(smb_dname),
+			 strerror(errno)));
 		return map_nt_error_from_unix(errno);
 	}
 
 	notify_fname(conn, NOTIFY_ACTION_REMOVED,
 		     FILE_NOTIFY_CHANGE_DIR_NAME,
-		     directory);
+		     smb_dname->base_name);
 
 	return NT_STATUS_OK;
 }
@@ -5480,7 +5517,7 @@ void reply_rmdir(struct smb_request *req)
 	}
 
 	dptr_closepath(directory, req->smbpid);
-	status = rmdir_internals(ctx, conn, directory);
+	status = rmdir_internals(ctx, conn, smb_dname);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		goto out;

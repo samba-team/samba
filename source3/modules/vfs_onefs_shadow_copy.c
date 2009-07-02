@@ -143,9 +143,6 @@ onefs_shadow_copy_get_shadow_copy_data(vfs_handle_struct *handle,
 	return ret;						      \
 	} while (0)						      \
 
-/*
- * XXX: Convert osc_canonicalize_path to use talloc instead of malloc.
- */
 #define SHADOW_NEXT_SMB_FNAME(op, args, rtype) do {		      \
 		char *smb_base_name_tmp = NULL;			      \
 		char *cpath = NULL;				      \
@@ -160,6 +157,35 @@ onefs_shadow_copy_get_shadow_copy_data(vfs_handle_struct *handle,
 		}							\
 		ret = SMB_VFS_NEXT_ ## op args;				\
 		smb_fname->base_name = smb_base_name_tmp;		\
+		SAFE_FREE(cpath);					\
+		return ret;						\
+	} while (0)							\
+
+
+/*
+ * XXX: Convert osc_canonicalize_path to use talloc instead of malloc.
+ */
+#define SHADOW_NEXT_SMB_FNAME_CONST(op, args, rtype) do {	      \
+		struct smb_filename *smb_fname_tmp  = NULL;	      \
+		char *cpath = NULL;				      \
+		char *snap_component = NULL;			      \
+		rtype ret;					      \
+		if (shadow_copy_match_name(smb_fname->base_name,      \
+			&snap_component)) {				\
+			cpath = osc_canonicalize_path(smb_fname->base_name, \
+			    snap_component);				\
+			smb_fname->base_name = cpath;			\
+		}							\
+		status = create_synthetic_smb_fname(talloc_tos(),	\
+		    cpath ?: smb_fname->base_name,			\
+		    smb_fname->stream_name, &smb_fname->st,		\
+		    &smb_fname_tmp);					\
+		if (!NT_STATUS_IS_OK(status)) {				\
+			errno = map_errno_from_nt_status(status);	\
+			return 	ret;					\
+		}							\
+		ret = SMB_VFS_NEXT_ ## op args;				\
+		TALLOC_FREE(smb_fname_tmp)				\
 		SAFE_FREE(cpath);					\
 		return ret;						\
 	} while (0)							\
@@ -324,11 +350,12 @@ onefs_shadow_copy_lstat(vfs_handle_struct *handle,
 }
 
 static int
-onefs_shadow_copy_unlink(vfs_handle_struct *handle, const char *path)
+onefs_shadow_copy_unlink(vfs_handle_struct *handle,
+			 const struct smb_filename *smb_fname)
 {
-	SHADOW_NEXT(UNLINK,
-		    (handle, cpath ?: path),
-		    int);
+	SHADOW_NEXT_SMB_FNAME_CONST(UNLINK,
+				    (handle, smb_fname_tmp),
+				    int);
 }
 
 static int
