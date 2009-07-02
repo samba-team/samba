@@ -125,7 +125,7 @@ class Ldb(ldb.Ldb):
                      "@OPTIONS", "@PARTITION", "@KLUDGEACL"]:
             try:
                 self.delete(attr)
-            except ldb.LdbError, (LDB_ERR_NO_SUCH_OBJECT, _):
+            except ldb.LdbError, (ldb.ERR_NO_SUCH_OBJECT, _):
                 # Ignore missing dn errors
                 pass
 
@@ -136,7 +136,7 @@ class Ldb(ldb.Ldb):
                 ["distinguishedName"]):
             try:
                 self.delete(msg.dn)
-            except ldb.LdbError, (LDB_ERR_NO_SUCH_OBJECT, _):
+            except ldb.LdbError, (ldb.ERR_NO_SUCH_OBJECT, _):
                 # Ignore no such object errors
                 pass
 
@@ -159,7 +159,7 @@ class Ldb(ldb.Ldb):
                 # and the rest
                 try:
                     res2 = self.search(basedn, ldb.SCOPE_SUBTREE, "(|(objectclass=*)(distinguishedName=*))", ["distinguishedName"])
-                except ldb.LdbError, (LDB_ERR_NO_SUCH_OBJECT, _):
+                except ldb.LdbError, (ldb.ERR_NO_SUCH_OBJECT, _):
                     # Ignore missing dn errors
                     return
 
@@ -169,10 +169,10 @@ class Ldb(ldb.Ldb):
                     try:
                         self.delete(msg.dn)
                     # Ignore no such object errors
-                    except ldb.LdbError, (LDB_ERR_NO_SUCH_OBJECT, _):
+                    except ldb.LdbError, (ldb.ERR_NO_SUCH_OBJECT, _):
                         pass
                     # Ignore not allowed on non leaf errors
-                    except ldb.LdbError, (LDB_ERR_NOT_ALLOWED_ON_NON_LEAF, _):
+                    except ldb.LdbError, (ldb.ERR_NOT_ALLOWED_ON_NON_LEAF, _):
                         pass
 
     def load_ldif_file_add(self, ldif_path):
