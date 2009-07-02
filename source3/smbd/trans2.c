@@ -5009,9 +5009,8 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 				set_sticky_write_time_fsp(fsp, ft->mtime);
 			}
 		} else {
-			set_sticky_write_time_path(conn, fname,
-					    vfs_file_id_from_sbuf(conn, psbuf),
-					    ft->mtime);
+			set_sticky_write_time_path(
+				vfs_file_id_from_sbuf(conn, psbuf), ft->mtime);
 		}
 	}
 
