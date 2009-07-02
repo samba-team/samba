@@ -6241,8 +6241,8 @@ int dos_attributes_to_stat_dos_flags(uint32_t dosmode);
 uint32 dos_mode(connection_struct *conn, const char *path, const SMB_STRUCT_STAT *sbuf);
 int file_set_dosmode(connection_struct *conn, struct smb_filename *smb_fname,
 		     uint32 dosmode, const char *parent_dir, bool newfile);
-int file_ntimes(connection_struct *conn, const char *fname,
-		struct smb_file_time *ft, const SMB_STRUCT_STAT *psbuf);
+int file_ntimes(connection_struct *conn, const struct smb_filename *smb_fname,
+		struct smb_file_time *ft);
 bool set_sticky_write_time_path(struct file_id fileid,
 				const struct timespec mtime);
 bool set_sticky_write_time_fsp(struct files_struct *fsp, const struct timespec mtime);
@@ -7047,8 +7047,7 @@ NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 		const struct smb_filename *smb_fname_new);
 NTSTATUS smb_set_file_time(connection_struct *conn,
 			   files_struct *fsp,
-			   const char *fname,
-			   const SMB_STRUCT_STAT *psbuf,
+			   const struct smb_filename *smb_fname,
 			   struct smb_file_time *ft,
 			   bool setting_write_time);
 void reply_findclose(struct smb_request *req);

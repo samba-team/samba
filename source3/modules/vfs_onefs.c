@@ -200,7 +200,8 @@ done:
 	return result;
 }
 
-static int onefs_ntimes(vfs_handle_struct *handle, const char *fname,
+static int onefs_ntimes(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
 			struct smb_file_time *ft)
 {
 	int flags = 0;
@@ -230,7 +231,7 @@ static int onefs_ntimes(vfs_handle_struct *handle, const char *fname,
 		   ft->create_time.tv_nsec));
 	}
 
-	return onefs_vtimes_streams(handle, fname, flags, times);
+	return onefs_vtimes_streams(handle, smb_fname, flags, times);
 }
 
 static uint32_t onefs_fs_capabilities(struct vfs_handle_struct *handle)

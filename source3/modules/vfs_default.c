@@ -789,34 +789,42 @@ static char *vfswrap_getwd(vfs_handle_struct *handle,  char *path)
  system will support.
 **********************************************************************/
 
-static int vfswrap_ntimes(vfs_handle_struct *handle, const char *path,
+static int vfswrap_ntimes(vfs_handle_struct *handle,
+			  const struct smb_filename *smb_fname,
 			  struct smb_file_time *ft)
 {
-	int result;
+	int result = -1;
 
 	START_PROFILE(syscall_ntimes);
+
+	if (smb_fname->stream_name) {
+		errno = ENOENT;
+		goto out;
+	}
+
 #if defined(HAVE_UTIMES)
 	if (ft != NULL) {
 		struct timeval tv[2];
 		tv[0] = convert_timespec_to_timeval(ft->atime);
 		tv[1] = convert_timespec_to_timeval(ft->mtime);
-		result = utimes(path, tv);
+		result = utimes(smb_fname->base_name, tv);
 	} else {
-		result = utimes(path, NULL);
+		result = utimes(smb_fname->base_name, NULL);
 	}
 #elif defined(HAVE_UTIME)
 	if (ft != NULL) {
 		struct utimbuf times;
 		times.actime = convert_timespec_to_time_t(ft->atime);
 		times.modtime = convert_timespec_to_time_t(ft->mtime);
-		result = utime(path, &times);
+		result = utime(smb_fname->base_name, &times);
 	} else {
-		result = utime(path, NULL);
+		result = utime(smb_fname->base_name, NULL);
 	}
 #else
 	errno = ENOSYS;
 	result = -1;
 #endif
+ out:
 	END_PROFILE(syscall_ntimes);
 	return result;
 }

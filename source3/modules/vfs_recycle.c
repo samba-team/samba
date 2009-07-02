@@ -417,7 +417,6 @@ static void recycle_do_touch(vfs_handle_struct *handle,
 {
 	struct smb_filename *smb_fname_tmp = NULL;
 	struct smb_file_time ft;
-	char *fname = NULL;
 	NTSTATUS status;
 	int ret, err;
 
@@ -438,22 +437,16 @@ static void recycle_do_touch(vfs_handle_struct *handle,
 	/* mtime */
 	ft.mtime = touch_mtime ? ft.atime : smb_fname_tmp->st.st_ex_mtime;
 
-	status = get_full_smb_filename(talloc_tos(), smb_fname_tmp, &fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-
 	become_root();
-	ret = SMB_VFS_NEXT_NTIMES(handle, fname, &ft);
+	ret = SMB_VFS_NEXT_NTIMES(handle, smb_fname_tmp, &ft);
 	err = errno;
 	unbecome_root();
 	if (ret == -1 ) {
 		DEBUG(0, ("recycle: touching %s failed, reason = %s\n",
 			  smb_fname_str_dbg(smb_fname_tmp), strerror(err)));
 	}
-
  out:
-	TALLOC_FREE(fname);
+	TALLOC_FREE(smb_fname_tmp);
 }
 
 /**

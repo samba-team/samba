@@ -903,6 +903,9 @@ static NTSTATUS cmd_getwd(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 static NTSTATUS cmd_utime(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	struct smb_file_time ft;
+	struct smb_filename *smb_fname = NULL;
+	NTSTATUS status;
+
 	if (argc != 4) {
 		printf("Usage: utime <path> <access> <modify>\n");
 		return NT_STATUS_OK;
@@ -912,11 +915,20 @@ static NTSTATUS cmd_utime(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 
 	ft.atime = convert_time_t_to_timespec(atoi(argv[2]));
 	ft.mtime = convert_time_t_to_timespec(atoi(argv[3]));
-	if (SMB_VFS_NTIMES(vfs->conn, argv[1], &ft) != 0) {
+
+	status = create_synthetic_smb_fname_split(mem_ctx, argv[1],
+						  NULL, &smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (SMB_VFS_NTIMES(vfs->conn, smb_fname, &ft) != 0) {
 		printf("utime: error=%d (%s)\n", errno, strerror(errno));
+		TALLOC_FREE(smb_fname);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
+	TALLOC_FREE(smb_fname);
 	printf("utime: ok\n");
 	return NT_STATUS_OK;
 }

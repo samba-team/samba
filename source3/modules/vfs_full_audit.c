@@ -1011,13 +1011,15 @@ static char *smb_full_audit_getwd(vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_ntimes(vfs_handle_struct *handle,
-		       const char *path, struct smb_file_time *ft)
+				 const struct smb_filename *smb_fname,
+				 struct smb_file_time *ft)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_NTIMES(handle, path, ft);
+	result = SMB_VFS_NEXT_NTIMES(handle, smb_fname, ft);
 
-	do_log(SMB_VFS_OP_NTIMES, (result >= 0), handle, "%s", path);
+	do_log(SMB_VFS_OP_NTIMES, (result >= 0), handle, "%s",
+	       smb_fname_str_do_log(smb_fname));
 
 	return result;
 }

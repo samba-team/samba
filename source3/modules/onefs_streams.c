@@ -508,15 +508,15 @@ int onefs_unlink(vfs_handle_struct *handle,
 	return ret;
 }
 
-int onefs_vtimes_streams(vfs_handle_struct *handle, const char *fname,
+int onefs_vtimes_streams(vfs_handle_struct *handle,
+			 const struct smb_filename *smb_fname,
 			 int flags, struct timespec times[3])
 {
+	struct smb_filename *smb_fname_onefs = NULL;
 	int ret;
-	bool is_stream;
-	char *base;
-	char *stream;
 	int dirfd;
 	int saved_errno;
+	NTSTATUS status;
 
 	START_PROFILE(syscall_ntimes);
 
@@ -524,23 +524,40 @@ int onefs_vtimes_streams(vfs_handle_struct *handle, const char *fname,
 	if (ret)
 		return ret;
 
-	if (!is_stream) {
-		ret = vtimes(fname, times, flags);
+	if (!is_ntfs_stream_smb_fname(smb_fname)) {
+		ret = vtimes(smb_fname->base_name, times, flags);
 		return ret;
 	}
 
-	dirfd = get_stream_dir_fd(handle->conn, base, NULL);
-	if (dirfd < -1) {
+	status = onefs_stream_prep_smb_fname(talloc_tos(), smb_fname,
+					     &smb_fname_onefs);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
 		return -1;
 	}
 
-	ret = enc_vtimesat(dirfd, stream, ENC_DEFAULT, times, flags);
+	/* Default stream (the ::$DATA was just stripped off). */
+	if (!is_ntfs_stream_smb_fname(smb_fname_onefs)) {
+		ret = vtimes(smb_fname_onefs->base_name, times, flags);
+		goto out;
+	}
 
-	END_PROFILE(syscall_ntimes);
+	dirfd = get_stream_dir_fd(handle->conn, smb_fname->base_name, NULL);
+	if (dirfd < -1) {
+		ret = -1;
+		goto out;
+	}
+
+	ret = enc_vtimesat(dirfd, smb_fname_onefs->stream_name, ENC_DEFAULT,
+			   times, flags);
 
 	saved_errno = errno;
 	close(dirfd);
 	errno = saved_errno;
+
+ out:
+	END_PROFILE(syscall_ntimes);
+	TALLOC_FREE(smb_fname_onefs);
 	return ret;
 }
 

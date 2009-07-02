@@ -1179,7 +1179,7 @@ void reply_setatr(struct smb_request *req)
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
 				&smb_fname,
-				&fname);
+				NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
@@ -1190,7 +1190,8 @@ void reply_setatr(struct smb_request *req)
 		goto out;
 	}
 
-	if (fname[0] == '.' && fname[1] == '\0') {
+	if (smb_fname->base_name[0] == '.' &&
+	    smb_fname->base_name[1] == '\0') {
 		/*
 		 * Not sure here is the right place to catch this
 		 * condition. Might be moved to somewhere else later -- vl
@@ -1203,8 +1204,7 @@ void reply_setatr(struct smb_request *req)
 	mtime = srv_make_unix_date3(req->vwv+1);
 
 	ft.mtime = convert_time_t_to_timespec(mtime);
-	status = smb_set_file_time(conn, NULL, fname,
-				   &smb_fname->st, &ft, true);
+	status = smb_set_file_time(conn, NULL, smb_fname, &ft, true);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_unixerror(req, ERRDOS, ERRnoaccess);
 		goto out;
@@ -1225,7 +1225,8 @@ void reply_setatr(struct smb_request *req)
 
 	reply_outbuf(req, 0, 0);
 
-	DEBUG( 3, ( "setatr name=%s mode=%d\n", fname, mode ) );
+	DEBUG(3, ("setatr name=%s mode=%d\n", smb_fname_str_dbg(smb_fname),
+		 mode));
  out:
 	TALLOC_FREE(smb_fname);
 	END_PROFILE(SMBsetatr);
@@ -2148,8 +2149,7 @@ void reply_mknew(struct smb_request *req)
 	}
 
 	ft.atime = smb_fname->st.st_ex_atime; /* atime. */
-	status = smb_set_file_time(conn, fsp, fsp->fsp_name, &smb_fname->st,
-				   &ft, true);
+	status = smb_set_file_time(conn, fsp, smb_fname, &ft, true);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBcreate);
 		goto out;
@@ -2168,9 +2168,10 @@ void reply_mknew(struct smb_request *req)
 				CVAL(req->outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
 	}
 
-	DEBUG( 2, ( "reply_mknew: file %s\n", fsp->fsp_name ) );
-	DEBUG( 3, ( "reply_mknew %s fd=%d dmode=0x%x\n",
-		    fsp->fsp_name, fsp->fh->fd, (unsigned int)fattr ) );
+	DEBUG(2, ("reply_mknew: file %s\n", smb_fname_str_dbg(smb_fname)));
+	DEBUG(3, ("reply_mknew %s fd=%d dmode=0x%x\n",
+		  smb_fname_str_dbg(smb_fname), fsp->fh->fd,
+		  (unsigned int)fattr));
 
  out:
 	TALLOC_FREE(smb_fname);
@@ -7582,9 +7583,9 @@ void reply_readbs(struct smb_request *req)
 void reply_setattrE(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
+	struct smb_filename *smb_fname = NULL;
 	struct smb_file_time ft;
 	files_struct *fsp;
-	SMB_STRUCT_STAT sbuf;
 	NTSTATUS status;
 
 	START_PROFILE(SMBsetattrE);
@@ -7592,18 +7593,23 @@ void reply_setattrE(struct smb_request *req)
 
 	if (req->wct < 7) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		END_PROFILE(SMBsetattrE);
-		return;
+		goto out;
 	}
 
 	fsp = file_fsp(req, SVAL(req->vwv+0, 0));
 
 	if(!fsp || (fsp->conn != conn)) {
 		reply_doserror(req, ERRDOS, ERRbadfid);
-		END_PROFILE(SMBsetattrE);
-		return;
+		goto out;
 	}
 
+	/* XXX: Remove when fsp->fsp_name is converted to smb_filename. */
+	status = create_synthetic_smb_fname_split(talloc_tos(), fsp->fsp_name,
+						  NULL, &smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+		goto out;
+	}
 
 	/*
 	 * Convert the DOS times into unix times.
@@ -7625,34 +7631,30 @@ void reply_setattrE(struct smb_request *req)
 
 	/* Ensure we have a valid stat struct for the source. */
 	if (fsp->fh->fd != -1) {
-		if (SMB_VFS_FSTAT(fsp, &sbuf) == -1) {
+		if (SMB_VFS_FSTAT(fsp, &smb_fname->st) == -1) {
 			status = map_nt_error_from_unix(errno);
 			reply_nterror(req, status);
-			END_PROFILE(SMBsetattrE);
-			return;
+			goto out;
 		}
 	} else {
 		int ret = -1;
 
 		if (fsp->posix_open) {
-			ret = vfs_lstat_smb_fname(conn, fsp->fsp_name, &sbuf);
+			ret = SMB_VFS_LSTAT(conn, smb_fname);
 		} else {
-			ret = vfs_stat_smb_fname(conn, fsp->fsp_name, &sbuf);
+			ret = SMB_VFS_STAT(conn, smb_fname);
 		}
 		if (ret == -1) {
 			status = map_nt_error_from_unix(errno);
 			reply_nterror(req, status);
-			END_PROFILE(SMBsetattrE);
-			return;
+			goto out;
 		}
 	}
 
-	status = smb_set_file_time(conn, fsp, fsp->fsp_name,
-				   &sbuf, &ft, true);
+	status = smb_set_file_time(conn, fsp, smb_fname, &ft, true);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_doserror(req, ERRDOS, ERRnoaccess);
-		END_PROFILE(SMBsetattrE);
-		return;
+		goto out;
 	}
 
 	DEBUG( 3, ( "reply_setattrE fnum=%d actime=%u modtime=%u "
@@ -7662,7 +7664,7 @@ void reply_setattrE(struct smb_request *req)
 		(unsigned int)ft.mtime.tv_sec,
 		(unsigned int)ft.create_time.tv_sec
 		));
-
+ out:
 	END_PROFILE(SMBsetattrE);
 	return;
 }

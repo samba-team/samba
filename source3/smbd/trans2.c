@@ -4935,27 +4935,28 @@ NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 
 NTSTATUS smb_set_file_time(connection_struct *conn,
 			   files_struct *fsp,
-			   const char *fname,
-			   const SMB_STRUCT_STAT *psbuf,
+			   const struct smb_filename *smb_fname,
 			   struct smb_file_time *ft,
 			   bool setting_write_time)
 {
+	struct smb_filename *smb_fname_base = NULL;
 	uint32 action =
 		FILE_NOTIFY_CHANGE_LAST_ACCESS
 		|FILE_NOTIFY_CHANGE_LAST_WRITE;
+	NTSTATUS status;
 
-	if (!VALID_STAT(*psbuf)) {
+	if (!VALID_STAT(smb_fname->st)) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
 	/* get some defaults (no modifications) if any info is zero or -1. */
 	if (null_timespec(ft->atime)) {
-		ft->atime= psbuf->st_ex_atime;
+		ft->atime= smb_fname->st.st_ex_atime;
 		action &= ~FILE_NOTIFY_CHANGE_LAST_ACCESS;
 	}
 
 	if (null_timespec(ft->mtime)) {
-		ft->mtime = psbuf->st_ex_mtime;
+		ft->mtime = smb_fname->st.st_ex_mtime;
 		action &= ~FILE_NOTIFY_CHANGE_LAST_WRITE;
 	}
 
@@ -4979,8 +4980,8 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 	 */
 
 	{
-		struct timespec mts = psbuf->st_ex_mtime;
-		struct timespec ats = psbuf->st_ex_atime;
+		struct timespec mts = smb_fname->st.st_ex_mtime;
+		struct timespec ats = smb_fname->st.st_ex_atime;
 		if ((timespec_compare(&ft->atime, &ats) == 0) &&
 		    (timespec_compare(&ft->mtime, &mts) == 0)) {
 			return NT_STATUS_OK;
@@ -5010,21 +5011,29 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 			}
 		} else {
 			set_sticky_write_time_path(
-				vfs_file_id_from_sbuf(conn, psbuf), ft->mtime);
+				vfs_file_id_from_sbuf(conn, &smb_fname->st),
+				ft->mtime);
 		}
 	}
 
 	DEBUG(10,("smb_set_file_time: setting utimes to modified values.\n"));
 
-	if (fsp && fsp->base_fsp) {
-		fname = fsp->base_fsp->fsp_name;
+	/* Always call ntimes on the base, even if a stream was passed in. */
+	status = create_synthetic_smb_fname(talloc_tos(), smb_fname->base_name,
+					    NULL, &smb_fname->st,
+					    &smb_fname_base);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	if(file_ntimes(conn, fname, ft, psbuf)!=0) {
+	if(file_ntimes(conn, smb_fname_base, ft)!=0) {
+		TALLOC_FREE(smb_fname_base);
 		return map_nt_error_from_unix(errno);
 	}
-	notify_fname(conn, NOTIFY_ACTION_MODIFIED, action, fname);
+	TALLOC_FREE(smb_fname_base);
 
+	notify_fname(conn, NOTIFY_ACTION_MODIFIED, action,
+		     smb_fname->base_name);
 	return NT_STATUS_OK;
 }
 
@@ -5033,25 +5042,26 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 ****************************************************************************/
 
 static NTSTATUS smb_set_file_dosmode(connection_struct *conn,
-				files_struct *fsp,
-				const char *fname,
-				SMB_STRUCT_STAT *psbuf,
-				uint32 dosmode)
+				     const struct smb_filename *smb_fname,
+				     uint32 dosmode)
 {
-	if (!VALID_STAT(*psbuf)) {
+	struct smb_filename *smb_fname_base = NULL;
+	NTSTATUS status;
+
+	if (!VALID_STAT(smb_fname->st)) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	if (fsp) {
-		if (fsp->base_fsp) {
-			fname = fsp->base_fsp->fsp_name;
-		} else {
-			fname = fsp->fsp_name;
-		}
+	/* Always operate on the base_name, even if a stream was passed in. */
+	status = create_synthetic_smb_fname(talloc_tos(), smb_fname->base_name,
+					    NULL, &smb_fname->st,
+					    &smb_fname_base);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	if (dosmode) {
-		if (S_ISDIR(psbuf->st_ex_mode)) {
+		if (S_ISDIR(smb_fname_base->st.st_ex_mode)) {
 			dosmode |= aDIR;
 		} else {
 			dosmode &= ~aDIR;
@@ -5061,29 +5071,27 @@ static NTSTATUS smb_set_file_dosmode(connection_struct *conn,
 	DEBUG(6,("smb_set_file_dosmode: dosmode: 0x%x\n", (unsigned int)dosmode));
 
 	/* check the mode isn't different, before changing it */
-	if ((dosmode != 0) && (dosmode != dos_mode(conn, fname, psbuf))) {
-		struct smb_filename *smb_fname = NULL;
-		NTSTATUS status;
+	if ((dosmode != 0) && (dosmode != dos_mode(conn,
+						   smb_fname_base->base_name,
+						   &smb_fname_base->st))) {
+		DEBUG(10,("smb_set_file_dosmode: file %s : setting dos mode "
+			  "0x%x\n", smb_fname_str_dbg(smb_fname_base),
+			  (unsigned int)dosmode));
 
-		status = create_synthetic_smb_fname_split(talloc_tos(), fname,
-							  psbuf, &smb_fname);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+		if(file_set_dosmode(conn, smb_fname_base, dosmode, NULL,
+				    false)) {
+			DEBUG(2,("smb_set_file_dosmode: file_set_dosmode of "
+				 "%s failed (%s)\n",
+				 smb_fname_str_dbg(smb_fname_base),
+				 strerror(errno)));
+			status = map_nt_error_from_unix(errno);
+			goto out;
 		}
-
-		DEBUG(10,("smb_set_file_dosmode: file %s : setting dos mode 0x%x\n",
-					fname, (unsigned int)dosmode ));
-
-		if(file_set_dosmode(conn, smb_fname, dosmode, NULL, false)) {
-			DEBUG(2,("smb_set_file_dosmode: file_set_dosmode of %s failed (%s)\n",
-						fname, strerror(errno)));
-			TALLOC_FREE(smb_fname);
-			return map_nt_error_from_unix(errno);
-		}
-		*psbuf = smb_fname->st;
-		TALLOC_FREE(smb_fname);
 	}
-	return NT_STATUS_OK;
+	status = NT_STATUS_OK;
+ out:
+	TALLOC_FREE(smb_fname_base);
+	return status;
 }
 
 /****************************************************************************
@@ -5783,8 +5791,7 @@ static NTSTATUS smb_set_info_standard(connection_struct *conn,
 					const char *pdata,
 					int total_data,
 					files_struct *fsp,
-					const char *fname,
-					const SMB_STRUCT_STAT *psbuf)
+					const struct smb_filename *smb_fname)
 {
 	struct smb_file_time ft;
 	ZERO_STRUCT(ft);
@@ -5803,14 +5810,9 @@ static NTSTATUS smb_set_info_standard(connection_struct *conn,
 	ft.mtime = interpret_long_date(pdata + 16);
 
 	DEBUG(10,("smb_set_info_standard: file %s\n",
-		fname ? fname : fsp->fsp_name ));
+		  smb_fname_str_dbg(smb_fname)));
 
-	return smb_set_file_time(conn,
-				fsp,
-				fname,
-				psbuf,
-				&ft,
-				true);
+	return smb_set_file_time(conn, fsp, smb_fname, &ft, true);
 }
 
 /****************************************************************************
@@ -5821,8 +5823,7 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 					const char *pdata,
 					int total_data,
 					files_struct *fsp,
-					const char *fname,
-					SMB_STRUCT_STAT *psbuf)
+					const struct smb_filename *smb_fname)
 {
 	/* Patch to do this correctly from Paul Eggert <eggert@twinsun.com>. */
 	struct timespec write_time;
@@ -5840,7 +5841,7 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 
 	/* Set the attributes */
 	dosmode = IVAL(pdata,32);
-	status = smb_set_file_dosmode(conn, fsp, fname, psbuf, dosmode);
+	status = smb_set_file_dosmode(conn, smb_fname, dosmode);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -5872,15 +5873,11 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 		}
 	}
 
-	DEBUG(10,("smb_set_file_basic_info: file %s\n",
-		fname ? fname : fsp->fsp_name ));
+	DEBUG(10, ("smb_set_file_basic_info: file %s\n",
+		   smb_fname_str_dbg(smb_fname)));
 
-	return smb_set_file_time(conn,
-				fsp,
-				fname,
-				psbuf,
-				&ft,
-				setting_write_time);
+	return smb_set_file_time(conn, fsp, smb_fname, &ft,
+				 setting_write_time);
 }
 
 /****************************************************************************
@@ -6353,8 +6350,7 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 
 	status = smb_set_file_time(conn,
 				fsp,
-				smb_fname->base_name,
-				&sbuf,
+				smb_fname,
 				&ft,
 				false);
 	if (modify_mtime) {
@@ -7072,8 +7068,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 					pdata,
 					total_data,
 					fsp,
-					fname,
-					&sbuf);
+					smb_fname);
 			break;
 		}
 
@@ -7094,8 +7089,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 							pdata,
 							total_data,
 							fsp,
-							fname,
-							&sbuf);
+							smb_fname);
 			break;
 		}
 

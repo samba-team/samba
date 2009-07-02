@@ -446,9 +446,19 @@ static int shadow_copy2_chdir(vfs_handle_struct *handle,
 }
 
 static int shadow_copy2_ntimes(vfs_handle_struct *handle,
-		       const char *fname, struct smb_file_time *ft)
+			       const struct smb_filename *smb_fname_in,
+			       struct smb_file_time *ft)
 {
-        SHADOW2_NEXT(NTIMES, (handle, name, ft), int, -1);
+	struct smb_filename *smb_fname = NULL;
+	NTSTATUS status;
+
+	status = copy_smb_filename(talloc_tos(), smb_fname_in, &smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		return -1;
+	}
+
+        SHADOW2_NEXT_SMB_FNAME(NTIMES, (handle, smb_fname, ft), int, -1);
 }
 
 static int shadow_copy2_readlink(vfs_handle_struct *handle,

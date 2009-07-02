@@ -237,9 +237,11 @@ static char *skel_getwd(vfs_handle_struct *handle,  char *buf)
 	return vfswrap_getwd(NULL,  buf);
 }
 
-static int skel_ntimes(vfs_handle_struct *handle,  const char *path, struct smb_file_time *ft)
+static int skel_ntimes(vfs_handle_struct *handle,
+		       const struct smb_filename *smb_fname,
+		       struct smb_file_time *ft)
 {
-	return vfswrap_ntimes(NULL,  path, ft);
+	return vfswrap_ntimes(NULL, smb_fname, ft);
 }
 
 static int skel_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_OFF_T offset)

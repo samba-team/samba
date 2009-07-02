@@ -119,7 +119,7 @@
 /* Leave at 25 - not yet released. Add strict locking calls. -- drichards. */
 /* Changed to version 26 - Plumb struct smb_filename to SMB_VFS_CREATE_FILE,
 			   SMB_VFS_OPEN, SMB_VFS_STAT, SMB_VFS_LSTAT,
-			   SMB_VFS_RENAME, SMB_VFS_UNLINK.  */
+			   SMB_VFS_RENAME, SMB_VFS_UNLINK, SMB_VFS_NTIMES.  */
 
 #define SMB_VFS_INTERFACE_VERSION 26
 
@@ -375,7 +375,9 @@ struct vfs_ops {
 		int (*lchown)(struct vfs_handle_struct *handle, const char *path, uid_t uid, gid_t gid);
 		int (*chdir)(struct vfs_handle_struct *handle, const char *path);
 		char *(*getwd)(struct vfs_handle_struct *handle, char *buf);
-		int (*ntimes)(struct vfs_handle_struct *handle, const char *path, struct smb_file_time *ft);
+		int (*ntimes)(struct vfs_handle_struct *handle,
+			      const struct smb_filename *smb_fname,
+			      struct smb_file_time *ft);
 		int (*ftruncate)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_OFF_T offset);
 		bool (*lock)(struct vfs_handle_struct *handle, struct files_struct *fsp, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
 		int (*kernel_flock)(struct vfs_handle_struct *handle, struct files_struct *fsp, uint32 share_mode);

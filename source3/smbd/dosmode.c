@@ -722,11 +722,9 @@ int file_set_dosmode(connection_struct *conn, struct smb_filename *smb_fname,
  than POSIX.
 *******************************************************************/
 
-int file_ntimes(connection_struct *conn, const char *fname,
-		struct smb_file_time *ft, const SMB_STRUCT_STAT *psbuf)
+int file_ntimes(connection_struct *conn, const struct smb_filename *smb_fname,
+		struct smb_file_time *ft)
 {
-	struct smb_filename *smb_fname = NULL;
-	NTSTATUS status;
 	int ret = -1;
 
 	errno = 0;
@@ -749,7 +747,7 @@ int file_ntimes(connection_struct *conn, const char *fname,
 		return 0;
 	}
 
-	if(SMB_VFS_NTIMES(conn, fname, ft) == 0) {
+	if(SMB_VFS_NTIMES(conn, smb_fname, ft) == 0) {
 		return 0;
 	}
 
@@ -767,21 +765,13 @@ int file_ntimes(connection_struct *conn, const char *fname,
 	   (as DOS does).
 	 */
 
-	status = create_synthetic_smb_fname_split(talloc_tos(), fname, psbuf,
-						  &smb_fname);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		return -1;
-	}
-
 	/* Check if we have write access. */
 	if (can_write_to_file(conn, smb_fname)) {
 		/* We are allowed to become root and change the filetime. */
 		become_root();
-		ret = SMB_VFS_NTIMES(conn, fname, ft);
+		ret = SMB_VFS_NTIMES(conn, smb_fname, ft);
 		unbecome_root();
 	}
-	TALLOC_FREE(smb_fname);
 
 	return ret;
 }

@@ -394,12 +394,13 @@ onefs_shadow_copy_chdir(vfs_handle_struct *handle, const char *path)
 }
 
 static int
-onefs_shadow_copy_ntimes(vfs_handle_struct *handle, const char *path,
+onefs_shadow_copy_ntimes(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
 			struct smb_file_time *ft)
 {
-	SHADOW_NEXT(NTIMES,
-		    (handle, cpath ?: path, ft),
-		    int);
+	SHADOW_NEXT_SMB_FNAME_CONST(NTIMES,
+				    (handle, smb_fname_tmp, ft),
+				    int);
 
 }
 

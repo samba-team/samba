@@ -499,12 +499,11 @@ void set_close_write_time(struct files_struct *fsp, struct timespec ts)
 
 static NTSTATUS update_write_time_on_close(struct files_struct *fsp)
 {
-	SMB_STRUCT_STAT sbuf;
+	struct smb_filename *smb_fname = NULL;
 	struct smb_file_time ft;
 	NTSTATUS status;
 	int ret = -1;
 
-	ZERO_STRUCT(sbuf);
 	ZERO_STRUCT(ft);
 
 	if (!fsp->update_write_time_on_close) {
@@ -515,36 +514,44 @@ static NTSTATUS update_write_time_on_close(struct files_struct *fsp)
 		fsp->close_write_time = timespec_current();
 	}
 
+	/* XXX: Remove when fsp->fsp_name is converted to smb_filename. */
+	status = create_synthetic_smb_fname_split(talloc_tos(), fsp->fsp_name,
+						  NULL, &smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
 	/* Ensure we have a valid stat struct for the source. */
 	if (fsp->fh->fd != -1) {
-		ret = SMB_VFS_FSTAT(fsp, &sbuf);
+		ret = SMB_VFS_FSTAT(fsp, &smb_fname->st);
 	} else {
 		if (fsp->posix_open) {
-			ret = vfs_lstat_smb_fname(fsp->conn, fsp->fsp_name,
-						 &sbuf);
+			ret = SMB_VFS_LSTAT(fsp->conn, smb_fname);
 		} else {
-			ret = vfs_stat_smb_fname(fsp->conn, fsp->fsp_name,
-						 &sbuf);
+			ret = SMB_VFS_STAT(fsp->conn, smb_fname);
 		}
 	}
 
 	if (ret == -1) {
-		return map_nt_error_from_unix(errno);
+		status = map_nt_error_from_unix(errno);
+		goto out;
 	}
 
-	if (!VALID_STAT(sbuf)) {
+	if (!VALID_STAT(smb_fname->st)) {
 		/* if it doesn't seem to be a real file */
-		return NT_STATUS_OK;
+		status = NT_STATUS_OK;
+		goto out;
 	}
 
 	ft.mtime = fsp->close_write_time;
-	status = smb_set_file_time(fsp->conn, fsp, fsp->fsp_name,
-				   &sbuf, &ft, true);
+	status = smb_set_file_time(fsp->conn, fsp, smb_fname, &ft, true);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto out;
 	}
 
-	return NT_STATUS_OK;
+ out:
+	TALLOC_FREE(smb_fname);
+	return status;
 }
 
 static NTSTATUS ntstatus_keeperror(NTSTATUS s1, NTSTATUS s2)
