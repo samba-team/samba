@@ -4908,7 +4908,7 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 
 	if (setting_write_time) {
 		/*
-		 * This was a setfileinfo on an open file.
+		 * This was a Windows setfileinfo on an open file.
 		 * NT does this a lot. We also need to 
 		 * set the time here, as it can be read by 
 		 * FindFirst/FindNext and with the patch for bug #2045
@@ -5977,6 +5977,9 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 	NTSTATUS status = NT_STATUS_OK;
 	bool delete_on_fail = False;
 	enum perm_type ptype;
+	files_struct *all_fsps = NULL;
+	bool modify_mtime = true;
+	struct file_id id;
 
 	if (total_data < 100) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -6123,13 +6126,39 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 	}
 
 	/* Deal with any time changes. */
+	id = vfs_file_id_from_sbuf(conn, psbuf);
+	for(all_fsps = file_find_di_first(id); all_fsps;
+			all_fsps = file_find_di_next(all_fsps)) {
+		/*
+		 * We're setting the time explicitly for UNIX.
+		 * Cancel any pending changes over all handles.
+		 */
+		all_fsps->update_write_time_on_close = false;
+		TALLOC_FREE(all_fsps->update_write_time_event);
+	}
 
-	return smb_set_file_time(conn,
+	/*
+	 * Override the "setting_write_time"
+	 * parameter here as it almost does what
+	 * we need. Just remember if we modified
+	 * mtime and send the notify ourselves.
+	 */
+	if (null_timespec(ts[1])) {
+		modify_mtime = false;
+	}
+
+	status = smb_set_file_time(conn,
 				fsp,
 				fname,
 				psbuf,
 				ts,
-				true);
+				false);
+
+	if (modify_mtime) {
+		notify_fname(conn, NOTIFY_ACTION_MODIFIED,
+			FILE_NOTIFY_CHANGE_LAST_WRITE, fname);
+	}
+	return status;
 }
 
 /****************************************************************************
