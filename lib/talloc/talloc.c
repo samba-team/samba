@@ -477,7 +477,7 @@ static inline void *_talloc_named_const(const void *context, size_t size, const 
   same underlying data, and you want to be able to free the two instances separately,
   and in either order
 */
-void *_talloc_reference(const void *context, const void *ptr, const char *location)
+void *_talloc_reference_loc(const void *context, const void *ptr, const char *location)
 {
 	struct talloc_chunk *tc;
 	struct talloc_reference_handle *handle;
@@ -499,6 +499,7 @@ void *_talloc_reference(const void *context, const void *ptr, const char *locati
 	return handle->ptr;
 }
 
+static void *_talloc_steal_internal(const void *new_ctx, const void *ptr);
 
 /* 
    internal talloc_free call
@@ -613,7 +614,7 @@ static inline int _talloc_free_internal(void *ptr)
    ptr on success, or NULL if it could not be transferred.
    passing NULL as ptr will always return NULL with no side effects.
 */
-void *_talloc_steal_internal(const void *new_ctx, const void *ptr)
+static void *_talloc_steal_internal(const void *new_ctx, const void *ptr)
 {
 	struct talloc_chunk *tc, *new_tc;
 
@@ -665,13 +666,12 @@ void *_talloc_steal_internal(const void *new_ctx, const void *ptr)
 	return discard_const_p(void, ptr);
 }
 
-
 /* 
    move a lump of memory from one talloc context to another return the
    ptr on success, or NULL if it could not be transferred.
    passing NULL as ptr will always return NULL with no side effects.
 */
-void *_talloc_steal(const void *new_ctx, const void *ptr, const char *location)
+void *_talloc_steal_loc(const void *new_ctx, const void *ptr, const char *location)
 {
 	struct talloc_chunk *tc;
 
@@ -683,9 +683,13 @@ void *_talloc_steal(const void *new_ctx, const void *ptr, const char *location)
 	
 	if (unlikely(tc->refs != NULL) && talloc_parent(ptr) != new_ctx) {
 		struct talloc_reference_handle *h;
+#if DEVELOPER
 		fprintf(stderr, "ERROR: talloc_steal with references at %s\n", location);
+#endif
 		for (h=tc->refs; h; h=h->next) {
+#if DEVELOPER
 			fprintf(stderr, "\treference at %s\n", h->location);
+#endif
 		}
 		return NULL;
 	}
@@ -1054,9 +1058,13 @@ int _talloc_free(void *ptr, const char *location)
 	
 	if (unlikely(tc->refs != NULL)) {
 		struct talloc_reference_handle *h;
+#if DEVELOPER
 		fprintf(stderr, "ERROR: talloc_free with references at %s\n", location);
+#endif
 		for (h=tc->refs; h; h=h->next) {
+#if DEVELOPER
 			fprintf(stderr, "\treference at %s\n", h->location);
+#endif
 		}
 		return -1;
 	}
@@ -1876,3 +1884,30 @@ int talloc_is_parent(const void *context, const void *ptr)
 	}
 	return 0;
 }
+
+
+
+
+/* ABI compat functions (do NOT append anything beyond thess functions,
+ * keep them as the last ones in the file) */
+
+static const char *talloc_ABI_compat_location = "Called from compatibility function";
+
+/* ABI compat function (don't use) */
+void *_talloc_reference(const void *context, const void *ptr) {
+	return _talloc_reference_loc(context, ptr, talloc_ABI_compat_location);
+}
+
+/* ABI compat function (don't use) */
+void *_talloc_steal(const void *new_ctx, const void *ptr)
+{
+	return _talloc_steal_internal(new_ctx, ptr);
+}
+
+#undef talloc_free
+int talloc_free(void *ptr)
+{
+	return _talloc_free_internal(ptr);
+}
+
+/* DO NOT APPEND ANYTHING BEYOND THIS POINT */

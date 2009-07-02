@@ -12,7 +12,7 @@
            talloc_enable_leak_report_full;
            talloc_enable_null_tracking;
            talloc_find_parent_byname;
-           talloc_free;
+           _talloc_free;
            talloc_free_children;
            talloc_get_name;
            talloc_get_size;
@@ -32,6 +32,8 @@
            talloc_realloc_fn;
            _talloc_reference;
            talloc_reference_count;
+           _talloc_reference_loc;
+           talloc_reparent;
            talloc_report;
            talloc_report_depth_cb;
            talloc_report_depth_file;
@@ -42,6 +44,7 @@
            talloc_set_name_const;
            talloc_show_parents;
            _talloc_steal;
+           _talloc_steal_loc;
            talloc_strdup;
            talloc_strdup_append;
            talloc_strdup_append_buffer;
@@ -56,6 +59,7 @@
            talloc_vasprintf_append_buffer;
            _talloc_zero;
            _talloc_zero_array;
+           talloc_free;
 
     local: *;
 };
