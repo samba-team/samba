@@ -57,7 +57,9 @@
 
 
 #define MAX_TALLOC_SIZE 0x10000000
-#define TALLOC_MAGIC 0xe814ec70
+#define TALLOC_MAGIC_V1 0xe814ec70
+#define TALLOC_MAGIC_V2 0xe814ec80
+#define TALLOC_MAGIC    TALLOC_MAGIC_V2
 #define TALLOC_FLAG_FREE 0x01
 #define TALLOC_FLAG_LOOP 0x02
 #define TALLOC_FLAG_POOL 0x04		/* This is a talloc pool */
@@ -155,6 +157,11 @@ static void talloc_abort(const char *reason)
 	talloc_abort_fn(reason);
 }
 
+static void talloc_abort_magic_v1(void)
+{
+	talloc_abort("Bad talloc magic value - old magic v1 used");
+}
+
 static void talloc_abort_double_free(void)
 {
 	talloc_abort("Bad talloc magic value - double free");
@@ -171,6 +178,10 @@ static inline struct talloc_chunk *talloc_chunk_from_ptr(const void *ptr)
 	const char *pp = (const char *)ptr;
 	struct talloc_chunk *tc = discard_const_p(struct talloc_chunk, pp - TC_HDR_SIZE);
 	if (unlikely((tc->flags & (TALLOC_FLAG_FREE | ~0xF)) != TALLOC_MAGIC)) { 
+		if ((tc->flags & (~0xF)) == TALLOC_MAGIC_V1) {
+			talloc_abort_magic_v1();
+		}
+
 		if (tc->flags & TALLOC_FLAG_FREE) {
 			talloc_abort_double_free();
 		} else {
