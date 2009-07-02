@@ -467,19 +467,86 @@ static int samldb_generate_samAccountName(struct ldb_message *msg)
 }
 
 
-static int samldb_check_samAccountName(struct samldb_ctx *ac)
+static int samldb_check_samAccountName_callback(struct ldb_request *req,
+						struct ldb_reply *ares)
 {
+	struct samldb_ctx *ac;
 	int ret;
-
-	if (ldb_msg_find_element(ac->msg, "samAccountName") == NULL) {
-		ret = samldb_generate_samAccountName(ac->msg);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
+	
+	ac = talloc_get_type(req->context, struct samldb_ctx);
+	
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, ares->controls,
+                                       ares->response, ares->error);
 	}
 	
-	return samldb_next_step(ac);
+	switch (ares->type) {
+	case LDB_REPLY_ENTRY:		
+		/* if we get an entry it means this samAccountName
+		 * already exists */
+		return ldb_module_done(ac->req, NULL, NULL,
+                                       LDB_ERR_ENTRY_ALREADY_EXISTS);
+		
+	case LDB_REPLY_REFERRAL:
+		/* this should not happen */
+		return ldb_module_done(ac->req, NULL, NULL,
+                                       LDB_ERR_OPERATIONS_ERROR);
+		
+	case LDB_REPLY_DONE:
+		/* not found, go on */
+		talloc_free(ares);
+		ret = samldb_next_step(ac);
+		break;
+	}
+	
+	if (ret != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, NULL, NULL, ret);
+	}
+	
+	return LDB_SUCCESS;
 }
+
+
+static int samldb_check_samAccountName(struct samldb_ctx *ac)
+{
+	struct ldb_context *ldb;
+	struct ldb_request *req;
+	const char *name;
+	char *filter;
+        int ret;
+	
+	ldb = ldb_module_get_ctx(ac->module);
+	
+        if (ldb_msg_find_element(ac->msg, "samAccountName") == NULL) {
+                ret = samldb_generate_samAccountName(ac->msg);
+                if (ret != LDB_SUCCESS) {
+                        return ret;
+                }
+        }
+	
+	name = ldb_msg_find_attr_as_string(ac->msg, "samAccountName", NULL);
+	if (name == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	filter = talloc_asprintf(ac, "samAccountName=%s", ldb_binary_encode_string(ac, name));
+	if (filter == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	
+	ret = ldb_build_search_req(&req, ldb, ac,
+				   ac->domain_dn, LDB_SCOPE_SUBTREE,
+				   filter, NULL,
+				   NULL,
+				   ac, samldb_check_samAccountName_callback,
+				   ac->req);
+	talloc_free(filter);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	ac->ares = NULL;
+	return ldb_next_request(ac->module, req);
+}
+
 
 static int samldb_check_samAccountType(struct samldb_ctx *ac)
 {
