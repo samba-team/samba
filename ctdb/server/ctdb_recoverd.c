@@ -36,6 +36,14 @@ struct ban_state {
 	uint32_t banned_node;
 };
 
+/* list of "ctdb ipreallocate" processes to call back when we have
+   finished the takeover run.
+*/
+struct ip_reallocate_list {
+	struct ip_reallocate_list *next;
+	struct rd_memdump_reply *rd;
+};
+
 /*
   private state of recovery daemon
  */
@@ -56,6 +64,8 @@ struct ctdb_recoverd {
 	struct timed_event *send_election_te;
 	struct timed_event *election_timeout;
 	struct vacuum_info *vacuum_info;
+	TALLOC_CTX *ip_reallocate_ctx;
+	struct ip_reallocate_list *reallocate_callers;
 };
 
 #define CONTROL_TIMEOUT() timeval_current_ofs(ctdb->tunable.recover_timeout, 0)
@@ -1813,6 +1823,63 @@ static void reload_nodes_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	reload_nodes_file(rec->ctdb);
 }
 
+/*
+  handler for ip reallocate, just add it to the list of callers and 
+  handle this later in the monitor_cluster loop so we do not recurse
+  with other callers to takeover_run()
+*/
+static void ip_reallocate_handler(struct ctdb_context *ctdb, uint64_t srvid, 
+			     TDB_DATA data, void *private_data)
+{
+	struct ctdb_recoverd *rec = talloc_get_type(private_data, struct ctdb_recoverd);
+	struct ip_reallocate_list *caller;
+
+	if (data.dsize != sizeof(struct rd_memdump_reply)) {
+		DEBUG(DEBUG_ERR, (__location__ " Wrong size of return address.\n"));
+		return;
+	}
+
+	if (rec->ip_reallocate_ctx == NULL) {
+		rec->ip_reallocate_ctx = talloc_new(rec);
+		CTDB_NO_MEMORY_FATAL(ctdb, caller);
+	}
+
+	caller = talloc(rec->ip_reallocate_ctx, struct ip_reallocate_list);
+	CTDB_NO_MEMORY_FATAL(ctdb, caller);
+
+	caller->rd   = (struct rd_memdump_reply *)talloc_steal(caller, data.dptr);
+	caller->next = rec->reallocate_callers;
+	rec->reallocate_callers = caller;
+
+	return;
+}
+
+static void process_ipreallocate_requests(struct ctdb_context *ctdb, struct ctdb_recoverd *rec)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	TDB_DATA result;
+	int32_t ret;
+	struct ip_reallocate_list *callers;
+
+	DEBUG(DEBUG_INFO, ("recovery master forced ip reallocation\n"));
+	ret = ctdb_takeover_run(ctdb, rec->nodemap);
+	result.dsize = sizeof(int32_t);
+	result.dptr  = (uint8_t *)&ret;
+
+	for (callers=rec->reallocate_callers; callers; callers=callers->next) {
+		DEBUG(DEBUG_INFO,("Sending ip reallocate reply message to %u:%lu\n", callers->rd->pnn, callers->rd->srvid));
+		ret = ctdb_send_message(ctdb, callers->rd->pnn, callers->rd->srvid, result);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,("Failed to send ip reallocate reply message to %u:%lu\n", callers->rd->pnn, callers->rd->srvid));
+		}
+	}
+
+	talloc_free(tmp_ctx);
+	talloc_free(rec->ip_reallocate_ctx);
+	rec->ip_reallocate_ctx = NULL;
+	rec->reallocate_callers = NULL;
+	
+}
 
 
 /*
@@ -2611,6 +2678,9 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	/* register a message port for reloadnodes  */
 	ctdb_set_message_handler(ctdb, CTDB_SRVID_RELOAD_NODES, reload_nodes_handler, rec);
 
+	/* register a message port for performing a takeover run */
+	ctdb_set_message_handler(ctdb, CTDB_SRVID_TAKEOVER_RUN, ip_reallocate_handler, rec);
+
 again:
 	if (mem_ctx) {
 		talloc_free(mem_ctx);
@@ -2714,6 +2784,19 @@ again:
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to get recmaster from node %u\n", pnn));
 		goto again;
+	}
+
+	/* if we are not the recmaster we can safely ignore any ip reallocate requests */
+	if (rec->recmaster != pnn) {
+		if (rec->ip_reallocate_ctx != NULL) {
+			talloc_free(rec->ip_reallocate_ctx);
+			rec->ip_reallocate_ctx = NULL;
+			rec->reallocate_callers = NULL;
+		}
+	}
+	/* if there are takeovers requested, perform it and notify the waiters */
+	if (rec->reallocate_callers) {
+		process_ipreallocate_requests(ctdb, rec);
 	}
 
 	if (rec->recmaster == (uint32_t)-1) {

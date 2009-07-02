@@ -2859,6 +2859,61 @@ static int control_rddumpmemory(struct ctdb_context *ctdb, int argc, const char 
 }
 
 /*
+  handler for receiving the response to ipreallocate
+*/
+static void ip_reallocate_handler(struct ctdb_context *ctdb, uint64_t srvid, 
+			     TDB_DATA data, void *private_data)
+{
+	printf("IP Reallocation completed\n");
+	exit(0);
+}
+
+/*
+  ask the recovery daemon on the recovery master to perform a ip reallocation
+ */
+static int control_ipreallocate(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+	TDB_DATA data;
+	struct rd_memdump_reply rd;
+	uint32_t recmaster;
+
+	rd.pnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE);
+	if (rd.pnn == -1) {
+		DEBUG(DEBUG_ERR, ("Failed to get pnn of local node\n"));
+		return -1;
+	}
+	rd.srvid = getpid();
+
+	/* register a message port for receiveing the reply so that we
+	   can receive the reply
+	*/
+	ctdb_set_message_handler(ctdb, rd.srvid, ip_reallocate_handler, NULL);
+
+	data.dptr = (uint8_t *)&rd;
+	data.dsize = sizeof(rd);
+
+	ret = ctdb_ctrl_getrecmaster(ctdb, ctdb, TIMELIMIT(), options.pnn, &recmaster);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get recmaster from node %u\n", options.pnn));
+		return ret;
+	}
+
+	ret = ctdb_send_message(ctdb, recmaster, CTDB_SRVID_TAKEOVER_RUN, data);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to send ip takeover run request message to %u\n", options.pnn));
+		return -1;
+	}
+
+	/* this loop will terminate when we have received the reply */
+	while (1) {	
+		event_loop_once(ctdb->ev);
+	}
+
+	return 0;
+}
+
+/*
   list all nodes in the cluster
   if the daemon is running, we read the data from the daemon.
   if the daemon is not running we parse the nodes file directly
@@ -3008,6 +3063,7 @@ static const struct {
 	{ "unban",           control_unban,             true,	false,  "unban a node from the cluster" },
 	{ "shutdown",        control_shutdown,          true,	false,  "shutdown ctdbd" },
 	{ "recover",         control_recover,           true,	false,  "force recovery" },
+	{ "ipreallocate",    control_ipreallocate,      true,	false,  "force the recovery daemon to perform a ip reallocation procedure" },
 	{ "freeze",          control_freeze,            true,	false,  "freeze all databases" },
 	{ "thaw",            control_thaw,              true,	false,  "thaw all databases" },
 	{ "isnotrecmaster",  control_isnotrecmaster,    false,	false,  "check if the local node is recmaster or not" },

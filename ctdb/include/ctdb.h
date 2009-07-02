@@ -106,6 +106,11 @@ struct ctdb_call_info {
  */
 #define CTDB_SRVID_RELOAD_NODES 0xFA00000000000000LL
 
+/* 
+   a message ID to get the recovery daemon to perform a takeover run
+ */
+#define CTDB_SRVID_TAKEOVER_RUN 0xFB00000000000000LL
+
 
 
 /* used on the domain socket, send a pdu to the local daemon */
