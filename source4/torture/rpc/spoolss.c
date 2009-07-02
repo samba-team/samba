@@ -812,6 +812,564 @@ static bool test_GetPrinter(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_SetPrinter_errors(struct torture_context *tctx,
+				   struct dcerpc_pipe *p,
+				   struct policy_handle *handle)
+{
+	struct spoolss_SetPrinter r;
+	uint16_t levels[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+	int i;
+
+	struct spoolss_SetPrinterInfoCtr info_ctr;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	struct sec_desc_buf secdesc_ctr;
+
+	info_ctr.level = 0;
+	info_ctr.info.info0 = NULL;
+
+	ZERO_STRUCT(devmode_ctr);
+	ZERO_STRUCT(secdesc_ctr);
+
+	r.in.handle = handle;
+	r.in.info_ctr = &info_ctr;
+	r.in.devmode_ctr = &devmode_ctr;
+	r.in.secdesc_ctr = &secdesc_ctr;
+	r.in.command = 0;
+
+	torture_comment(tctx, "Testing SetPrinter all zero\n");
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_SetPrinter(p, tctx, &r),
+		"failed to call SetPrinter");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAM,
+		"failed to call SetPrinter");
+
+ again:
+	for (i=0; i < ARRAY_SIZE(levels); i++) {
+
+		struct spoolss_SetPrinterInfo0 info0;
+		struct spoolss_SetPrinterInfo1 info1;
+		struct spoolss_SetPrinterInfo2 info2;
+		struct spoolss_SetPrinterInfo3 info3;
+		struct spoolss_SetPrinterInfo4 info4;
+		struct spoolss_SetPrinterInfo5 info5;
+		struct spoolss_SetPrinterInfo6 info6;
+		struct spoolss_SetPrinterInfo7 info7;
+		struct spoolss_DeviceModeInfo info8;
+		struct spoolss_DeviceModeInfo info9;
+
+
+		info_ctr.level = levels[i];
+		switch (levels[i]) {
+		case 0:
+			ZERO_STRUCT(info0);
+			info_ctr.info.info0 = &info0;
+			break;
+		case 1:
+			ZERO_STRUCT(info1);
+			info_ctr.info.info1 = &info1;
+			break;
+		case 2:
+			ZERO_STRUCT(info2);
+			info_ctr.info.info2 = &info2;
+			break;
+		case 3:
+			ZERO_STRUCT(info3);
+			info_ctr.info.info3 = &info3;
+			break;
+		case 4:
+			ZERO_STRUCT(info4);
+			info_ctr.info.info4 = &info4;
+			break;
+		case 5:
+			ZERO_STRUCT(info5);
+			info_ctr.info.info5 = &info5;
+			break;
+		case 6:
+			ZERO_STRUCT(info6);
+			info_ctr.info.info6 = &info6;
+			break;
+		case 7:
+			ZERO_STRUCT(info7);
+			info_ctr.info.info7 = &info7;
+			break;
+		case 8:
+			ZERO_STRUCT(info8);
+			info_ctr.info.info8 = &info8;
+			break;
+		case 9:
+			ZERO_STRUCT(info9);
+			info_ctr.info.info9 = &info9;
+			break;
+		}
+
+		torture_comment(tctx, "Testing SetPrinter level %d, command %d\n",
+			info_ctr.level, r.in.command);
+
+		torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_SetPrinter(p, tctx, &r),
+			"failed to call SetPrinter");
+
+		switch (r.in.command) {
+		case SPOOLSS_PRINTER_CONTROL_UNPAUSE: /* 0 */
+			/* is ignored for all levels other then 0 */
+			if (info_ctr.level > 0) {
+				/* ignored then */
+				break;
+			}
+		case SPOOLSS_PRINTER_CONTROL_PAUSE: /* 1 */
+		case SPOOLSS_PRINTER_CONTROL_RESUME: /* 2 */
+		case SPOOLSS_PRINTER_CONTROL_PURGE: /* 3 */
+			if (info_ctr.level > 0) {
+				/* is invalid for all levels other then 0 */
+				torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PRINTER_COMMAND,
+					"unexpected error code returned");
+				continue;
+			} else {
+				torture_assert_werr_ok(tctx, r.out.result,
+					"failed to call SetPrinter with non 0 command");
+				continue;
+			}
+			break;
+
+		case SPOOLSS_PRINTER_CONTROL_SET_STATUS: /* 4 */
+			/* FIXME: gd needs further investigation */
+		default:
+			torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PRINTER_COMMAND,
+				"unexpected error code returned");
+			continue;
+		}
+
+		switch (info_ctr.level) {
+		case 1:
+			torture_assert_werr_equal(tctx, r.out.result, WERR_UNKNOWN_LEVEL,
+				"unexpected error code returned");
+			break;
+		case 2:
+			torture_assert_werr_equal(tctx, r.out.result, WERR_UNKNOWN_PRINTER_DRIVER,
+				"unexpected error code returned");
+			break;
+		case 3:
+		case 4:
+		case 5:
+		case 7:
+			torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAM,
+				"unexpected error code returned");
+			break;
+		case 9:
+			torture_assert_werr_equal(tctx, r.out.result, WERR_NOT_SUPPORTED,
+				"unexpected error code returned");
+			break;
+		default:
+			torture_assert_werr_ok(tctx, r.out.result,
+				"failed to call SetPrinter");
+			break;
+		}
+	}
+
+	if (r.in.command < 5) {
+		r.in.command++;
+		goto again;
+	}
+
+	return true;
+}
+
+static void clear_info2(struct spoolss_SetPrinterInfoCtr *r)
+{
+	if ((r->level == 2) && (r->info.info2)) {
+		r->info.info2->secdesc = NULL;
+		r->info.info2->devmode = NULL;
+	}
+}
+
+static bool test_PrinterInfo(struct torture_context *tctx,
+			     struct dcerpc_pipe *p,
+			     struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct spoolss_SetPrinter s;
+	struct spoolss_GetPrinter q;
+	struct spoolss_GetPrinter q0;
+	struct spoolss_SetPrinterInfoCtr info_ctr;
+	union spoolss_PrinterInfo info;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	struct sec_desc_buf secdesc_ctr;
+	uint32_t needed;
+	bool ret = true;
+	int i;
+
+	uint32_t status_list[] = {
+		/* these do not stick
+		PRINTER_STATUS_PAUSED,
+		PRINTER_STATUS_ERROR,
+		PRINTER_STATUS_PENDING_DELETION, */
+		PRINTER_STATUS_PAPER_JAM,
+		PRINTER_STATUS_PAPER_OUT,
+		PRINTER_STATUS_MANUAL_FEED,
+		PRINTER_STATUS_PAPER_PROBLEM,
+		PRINTER_STATUS_OFFLINE,
+		PRINTER_STATUS_IO_ACTIVE,
+		PRINTER_STATUS_BUSY,
+		PRINTER_STATUS_PRINTING,
+		PRINTER_STATUS_OUTPUT_BIN_FULL,
+		PRINTER_STATUS_NOT_AVAILABLE,
+		PRINTER_STATUS_WAITING,
+		PRINTER_STATUS_PROCESSING,
+		PRINTER_STATUS_INITIALIZING,
+		PRINTER_STATUS_WARMING_UP,
+		PRINTER_STATUS_TONER_LOW,
+		PRINTER_STATUS_NO_TONER,
+		PRINTER_STATUS_PAGE_PUNT,
+		PRINTER_STATUS_USER_INTERVENTION,
+		PRINTER_STATUS_OUT_OF_MEMORY,
+		PRINTER_STATUS_DOOR_OPEN,
+		PRINTER_STATUS_SERVER_UNKNOWN,
+		PRINTER_STATUS_POWER_SAVE,
+		/* these do not stick
+		0x02000000,
+		0x04000000,
+		0x08000000,
+		0x10000000,
+		0x20000000,
+		0x40000000,
+		0x80000000 */
+	};
+	uint32_t default_attribute = PRINTER_ATTRIBUTE_LOCAL;
+	uint32_t attribute_list[] = {
+		PRINTER_ATTRIBUTE_QUEUED,
+		/* fails with WERR_INVALID_DATATYPE:
+		PRINTER_ATTRIBUTE_DIRECT, */
+		/* does not stick
+		PRINTER_ATTRIBUTE_DEFAULT, */
+		PRINTER_ATTRIBUTE_SHARED,
+		/* does not stick
+		PRINTER_ATTRIBUTE_NETWORK, */
+		PRINTER_ATTRIBUTE_HIDDEN,
+		PRINTER_ATTRIBUTE_LOCAL,
+		PRINTER_ATTRIBUTE_ENABLE_DEVQ,
+		PRINTER_ATTRIBUTE_KEEPPRINTEDJOBS,
+		PRINTER_ATTRIBUTE_DO_COMPLETE_FIRST,
+		PRINTER_ATTRIBUTE_WORK_OFFLINE,
+		/* does not stick
+		PRINTER_ATTRIBUTE_ENABLE_BIDI, */
+		/* fails with WERR_INVALID_DATATYPE:
+		PRINTER_ATTRIBUTE_RAW_ONLY, */
+		/* these do not stick
+		PRINTER_ATTRIBUTE_PUBLISHED,
+		PRINTER_ATTRIBUTE_FAX,
+		PRINTER_ATTRIBUTE_TS,
+		0x00010000,
+		0x00020000,
+		0x00040000,
+		0x00080000,
+		0x00100000,
+		0x00200000,
+		0x00400000,
+		0x00800000,
+		0x01000000,
+		0x02000000,
+		0x04000000,
+		0x08000000,
+		0x10000000,
+		0x20000000,
+		0x40000000,
+		0x80000000 */
+	};
+
+	ZERO_STRUCT(devmode_ctr);
+	ZERO_STRUCT(secdesc_ctr);
+
+	s.in.handle = handle;
+	s.in.command = 0;
+	s.in.info_ctr = &info_ctr;
+	s.in.devmode_ctr = &devmode_ctr;
+	s.in.secdesc_ctr = &secdesc_ctr;
+
+	q.in.handle = handle;
+	q.out.info = &info;
+	q0 = q;
+
+#define TESTGETCALL(call, r) \
+		r.in.buffer = NULL; \
+		r.in.offered = 0;\
+		r.out.needed = &needed; \
+		status = dcerpc_spoolss_ ##call(p, tctx, &r); \
+		if (!NT_STATUS_IS_OK(status)) { \
+			torture_comment(tctx, #call " level %u failed - %s (%s)\n", \
+			       r.in.level, nt_errstr(status), __location__); \
+			ret = false; \
+			break; \
+		}\
+		if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {\
+			DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed); \
+			data_blob_clear(&blob); \
+			r.in.buffer = &blob; \
+			r.in.offered = needed; \
+		}\
+		status = dcerpc_spoolss_ ##call(p, tctx, &r); \
+		if (!NT_STATUS_IS_OK(status)) { \
+			torture_comment(tctx, #call " level %u failed - %s (%s)\n", \
+			       r.in.level, nt_errstr(status), __location__); \
+			ret = false; \
+			break; \
+		} \
+		if (!W_ERROR_IS_OK(r.out.result)) { \
+			torture_comment(tctx, #call " level %u failed - %s (%s)\n", \
+			       r.in.level, win_errstr(r.out.result), __location__); \
+			ret = false; \
+			break; \
+		}
+
+
+#define TESTSETCALL_EXP(call, r, err) \
+		clear_info2(&info_ctr);\
+		status = dcerpc_spoolss_ ##call(p, tctx, &r); \
+		if (!NT_STATUS_IS_OK(status)) { \
+			torture_comment(tctx, #call " level %u failed - %s (%s)\n", \
+			       r.in.info_ctr->level, nt_errstr(status), __location__); \
+			ret = false; \
+			break; \
+		} \
+		if (!W_ERROR_IS_OK(err)) { \
+			if (!W_ERROR_EQUAL(err, r.out.result)) { \
+				torture_comment(tctx, #call " level %u failed - %s, expected %s (%s)\n", \
+				       r.in.info_ctr->level, win_errstr(r.out.result), win_errstr(err), __location__); \
+				ret = false; \
+			} \
+			break; \
+		} \
+		if (!W_ERROR_IS_OK(r.out.result)) { \
+			torture_comment(tctx, #call " level %u failed - %s (%s)\n", \
+			       r.in.info_ctr->level, win_errstr(r.out.result), __location__); \
+			ret = false; \
+			break; \
+		}
+
+#define TESTSETCALL(call, r) \
+	TESTSETCALL_EXP(call, r, WERR_OK)
+
+#define STRING_EQUAL(s1, s2, field) \
+		if ((s1 && !s2) || (s2 && !s1) || strcmp(s1, s2)) { \
+			torture_comment(tctx, "Failed to set %s to '%s' (%s)\n", \
+			       #field, s2, __location__); \
+			ret = false; \
+			break; \
+		}
+
+#define MEM_EQUAL(s1, s2, length, field) \
+		if ((s1 && !s2) || (s2 && !s1) || memcmp(s1, s2, length)) { \
+			torture_comment(tctx, "Failed to set %s to '%s' (%s)\n", \
+			       #field, (const char *)s2, __location__); \
+			ret = false; \
+			break; \
+		}
+
+#define INT_EQUAL(i1, i2, field) \
+		if (i1 != i2) { \
+			torture_comment(tctx, "Failed to set %s to 0x%llx - got 0x%llx (%s)\n", \
+			       #field, (unsigned long long)i2, (unsigned long long)i1, __location__); \
+			ret = false; \
+			break; \
+		}
+
+#define TEST_PRINTERINFO_STRING_EXP_ERR(lvl1, field1, lvl2, field2, value, err) do { \
+		torture_comment(tctx, "field test %d/%s vs %d/%s\n", lvl1, #field1, lvl2, #field2); \
+		q.in.level = lvl1; \
+		TESTGETCALL(GetPrinter, q) \
+		info_ctr.level = lvl1; \
+		info_ctr.info.info ## lvl1 = (struct spoolss_SetPrinterInfo ## lvl1 *)&q.out.info->info ## lvl1; \
+		info_ctr.info.info ## lvl1->field1 = value;\
+		TESTSETCALL_EXP(SetPrinter, s, err) \
+		info_ctr.info.info ## lvl1->field1 = ""; \
+		TESTGETCALL(GetPrinter, q) \
+		info_ctr.info.info ## lvl1->field1 = value; \
+		STRING_EQUAL(info_ctr.info.info ## lvl1->field1, value, field1); \
+		q.in.level = lvl2; \
+		TESTGETCALL(GetPrinter, q) \
+		info_ctr.info.info ## lvl2 = (struct spoolss_SetPrinterInfo ## lvl2 *)&q.out.info->info ## lvl2; \
+		STRING_EQUAL(info_ctr.info.info ## lvl2->field2, value, field2); \
+	} while (0)
+
+#define TEST_PRINTERINFO_STRING(lvl1, field1, lvl2, field2, value) do { \
+	TEST_PRINTERINFO_STRING_EXP_ERR(lvl1, field1, lvl2, field2, value, WERR_OK); \
+	} while (0);
+
+#define TEST_PRINTERINFO_INT_EXP(lvl1, field1, lvl2, field2, value, exp_value) do { \
+		torture_comment(tctx, "field test %d/%s vs %d/%s\n", lvl1, #field1, lvl2, #field2); \
+		q.in.level = lvl1; \
+		TESTGETCALL(GetPrinter, q) \
+		info_ctr.level = lvl1; \
+		info_ctr.info.info ## lvl1 = (struct spoolss_SetPrinterInfo ## lvl1 *)&q.out.info->info ## lvl1; \
+		info_ctr.info.info ## lvl1->field1 = value; \
+		TESTSETCALL(SetPrinter, s) \
+		info_ctr.info.info ## lvl1->field1 = 0; \
+		TESTGETCALL(GetPrinter, q) \
+		info_ctr.info.info ## lvl1 = (struct spoolss_SetPrinterInfo ## lvl1 *)&q.out.info->info ## lvl1; \
+		INT_EQUAL(info_ctr.info.info ## lvl1->field1, exp_value, field1); \
+		q.in.level = lvl2; \
+		TESTGETCALL(GetPrinter, q) \
+		info_ctr.info.info ## lvl2 = (struct spoolss_SetPrinterInfo ## lvl2 *)&q.out.info->info ## lvl2; \
+		INT_EQUAL(info_ctr.info.info ## lvl2->field2, exp_value, field1); \
+	} while (0)
+
+#define TEST_PRINTERINFO_INT(lvl1, field1, lvl2, field2, value) do { \
+        TEST_PRINTERINFO_INT_EXP(lvl1, field1, lvl2, field2, value, value); \
+        } while (0)
+
+	q0.in.level = 0;
+	do { TESTGETCALL(GetPrinter, q0) } while (0);
+
+	TEST_PRINTERINFO_STRING(2, comment,  1, comment, "xx2-1 comment");
+	TEST_PRINTERINFO_STRING(2, comment,  2, comment, "xx2-2 comment");
+
+	/* level 0 printername does not stick */
+/*	TEST_PRINTERINFO_STRING(2, printername,  0, printername, "xx2-0 printer"); */
+	TEST_PRINTERINFO_STRING(2, printername,  1, name,	 "xx2-1 printer");
+	TEST_PRINTERINFO_STRING(2, printername,  2, printername, "xx2-2 printer");
+	TEST_PRINTERINFO_STRING(2, printername,  4, printername, "xx2-4 printer");
+	TEST_PRINTERINFO_STRING(2, printername,  5, printername, "xx2-5 printer");
+/*	TEST_PRINTERINFO_STRING(4, printername,  0, printername, "xx4-0 printer"); */
+	TEST_PRINTERINFO_STRING(4, printername,  1, name,	 "xx4-1 printer");
+	TEST_PRINTERINFO_STRING(4, printername,  2, printername, "xx4-2 printer");
+	TEST_PRINTERINFO_STRING(4, printername,  4, printername, "xx4-4 printer");
+	TEST_PRINTERINFO_STRING(4, printername,  5, printername, "xx4-5 printer");
+/*	TEST_PRINTERINFO_STRING(5, printername,  0, printername, "xx5-0 printer"); */
+	TEST_PRINTERINFO_STRING(5, printername,  1, name,	 "xx5-1 printer");
+	TEST_PRINTERINFO_STRING(5, printername,  2, printername, "xx5-2 printer");
+	TEST_PRINTERINFO_STRING(5, printername,  4, printername, "xx5-4 printer");
+	TEST_PRINTERINFO_STRING(5, printername,  5, printername, "xx5-5 printer");
+
+	/* servername can be set but does not stick
+	TEST_PRINTERINFO_STRING(2, servername,  0, servername, "xx2-0 servername");
+	TEST_PRINTERINFO_STRING(2, servername,  2, servername, "xx2-2 servername");
+	TEST_PRINTERINFO_STRING(2, servername,  4, servername, "xx2-4 servername");
+	*/
+
+	/* passing an invalid port will result in WERR_UNKNOWN_PORT */
+	TEST_PRINTERINFO_STRING_EXP_ERR(2, portname,  2, portname, "xx2-2 portname", WERR_UNKNOWN_PORT);
+	TEST_PRINTERINFO_STRING_EXP_ERR(2, portname,  5, portname, "xx2-5 portname", WERR_UNKNOWN_PORT);
+	TEST_PRINTERINFO_STRING_EXP_ERR(5, portname,  2, portname, "xx5-2 portname", WERR_UNKNOWN_PORT);
+	TEST_PRINTERINFO_STRING_EXP_ERR(5, portname,  5, portname, "xx5-5 portname", WERR_UNKNOWN_PORT);
+
+	TEST_PRINTERINFO_STRING(2, sharename,	2, sharename,	"xx2-2 sharename");
+	/* passing an invalid driver will result in WERR_UNKNOWN_PRINTER_DRIVER */
+	TEST_PRINTERINFO_STRING_EXP_ERR(2, drivername,	2, drivername,	"xx2-2 drivername", WERR_UNKNOWN_PRINTER_DRIVER);
+	TEST_PRINTERINFO_STRING(2, location,	2, location,	"xx2-2 location");
+	/* passing an invalid sepfile will result in WERR_INVALID_SEPARATOR_FILE */
+	TEST_PRINTERINFO_STRING_EXP_ERR(2, sepfile,	2, sepfile,	"xx2-2 sepfile", WERR_INVALID_SEPARATOR_FILE);
+	/* passing an invalid printprocessor will result in WERR_UNKNOWN_PRINTPROCESSOR */
+	TEST_PRINTERINFO_STRING_EXP_ERR(2, printprocessor, 2, printprocessor, "xx2-2 printprocessor", WERR_UNKNOWN_PRINTPROCESSOR);
+	TEST_PRINTERINFO_STRING(2, datatype,	2, datatype,	"xx2-2 datatype");
+	TEST_PRINTERINFO_STRING(2, parameters,	2, parameters,	"xx2-2 parameters");
+
+	for (i=0; i < ARRAY_SIZE(attribute_list); i++) {
+/*		TEST_PRINTERINFO_INT_EXP(2, attributes, 1, flags,
+			attribute_list[i],
+			(attribute_list[i] | default_attribute)
+			); */
+		TEST_PRINTERINFO_INT_EXP(2, attributes, 2, attributes,
+			attribute_list[i],
+			(attribute_list[i] | default_attribute)
+			);
+		TEST_PRINTERINFO_INT_EXP(2, attributes, 4, attributes,
+			attribute_list[i],
+			(attribute_list[i] | default_attribute)
+			);
+		TEST_PRINTERINFO_INT_EXP(2, attributes, 5, attributes,
+			attribute_list[i],
+			(attribute_list[i] | default_attribute)
+			);
+/*		TEST_PRINTERINFO_INT_EXP(4, attributes, 1, flags,
+			attribute_list[i],
+			(attribute_list[i] | default_attribute)
+			); */
+		TEST_PRINTERINFO_INT_EXP(4, attributes, 2, attributes,
+			attribute_list[i],
+			(attribute_list[i] | default_attribute)
+			);
+		TEST_PRINTERINFO_INT_EXP(4, attributes, 4, attributes,
+			attribute_list[i],
+			(attribute_list[i] | default_attribute)
+			);
+		TEST_PRINTERINFO_INT_EXP(4, attributes, 5, attributes,
+			attribute_list[i],
+			(attribute_list[i] | default_attribute)
+			);
+/*		TEST_PRINTERINFO_INT_EXP(5, attributes, 1, flags,
+			attribute_list[i],
+			(attribute_list[i] | default_attribute)
+			); */
+		TEST_PRINTERINFO_INT_EXP(5, attributes, 2, attributes,
+			attribute_list[i],
+			(attribute_list[i] | default_attribute)
+			);
+		TEST_PRINTERINFO_INT_EXP(5, attributes, 4, attributes,
+			attribute_list[i],
+			(attribute_list[i] | default_attribute)
+			);
+		TEST_PRINTERINFO_INT_EXP(5, attributes, 5, attributes,
+			attribute_list[i],
+			(attribute_list[i] | default_attribute)
+			);
+	}
+
+	for (i=0; i < ARRAY_SIZE(status_list); i++) {
+		/* level 2 sets do not stick
+		TEST_PRINTERINFO_INT(2, status,	0, status, status_list[i]);
+		TEST_PRINTERINFO_INT(2, status,	2, status, status_list[i]);
+		TEST_PRINTERINFO_INT(2, status,	6, status, status_list[i]); */
+		TEST_PRINTERINFO_INT(6, status,	0, status, status_list[i]);
+		TEST_PRINTERINFO_INT(6, status,	2, status, status_list[i]);
+		TEST_PRINTERINFO_INT(6, status,	6, status, status_list[i]);
+	}
+
+	/* priorities need to be between 0 and 99
+	   passing an invalid priority will result in WERR_INVALID_PRIORITY */
+	TEST_PRINTERINFO_INT(2, priority,	2, priority, 0);
+	TEST_PRINTERINFO_INT(2, priority,	2, priority, 1);
+	TEST_PRINTERINFO_INT(2, priority,	2, priority, 99);
+	/* TEST_PRINTERINFO_INT(2, priority,	2, priority, 100); */
+	TEST_PRINTERINFO_INT(2, defaultpriority,2, defaultpriority, 0);
+	TEST_PRINTERINFO_INT(2, defaultpriority,2, defaultpriority, 1);
+	TEST_PRINTERINFO_INT(2, defaultpriority,2, defaultpriority, 99);
+	/* TEST_PRINTERINFO_INT(2, defaultpriority,2, defaultpriority, 100); */
+
+	TEST_PRINTERINFO_INT(2, starttime,	2, starttime, __LINE__);
+	TEST_PRINTERINFO_INT(2, untiltime,	2, untiltime, __LINE__);
+
+	/* does not stick
+	TEST_PRINTERINFO_INT(2, cjobs,		2, cjobs, __LINE__);
+	TEST_PRINTERINFO_INT(2, averageppm,	2, averageppm, __LINE__); */
+
+	/* does not stick
+	TEST_PRINTERINFO_INT(5, device_not_selected_timeout, 5, device_not_selected_timeout, __LINE__);
+	TEST_PRINTERINFO_INT(5, transmission_retry_timeout, 5, transmission_retry_timeout, __LINE__); */
+
+	/* FIXME: gd also test devmode and secdesc behavior */
+
+	{
+		/* verify composition of level 1 description field */
+		const char *description;
+		const char *tmp;
+
+		q0.in.level = 1;
+		do { TESTGETCALL(GetPrinter, q0) } while (0);
+
+		description = talloc_strdup(tctx, q0.out.info->info1.description);
+
+		q0.in.level = 2;
+		do { TESTGETCALL(GetPrinter, q0) } while (0);
+
+		tmp = talloc_asprintf(tctx, "%s,%s,%s",
+			q0.out.info->info2.printername,
+			q0.out.info->info2.drivername,
+			q0.out.info->info2.location);
+
+		do { STRING_EQUAL(description, tmp, "description")} while (0);
+	}
+
+	return ret;
+}
+
 
 static bool test_ClosePrinter(struct torture_context *tctx,
 			      struct dcerpc_pipe *p,
