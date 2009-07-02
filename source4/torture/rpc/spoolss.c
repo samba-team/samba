@@ -37,6 +37,8 @@
 #define TORTURE_PRINTER			"torture_printer"
 #define TORTURE_WELLKNOWN_PRINTER_EX	"torture_wkn_printer_ex"
 #define TORTURE_PRINTER_EX		"torture_printer_ex"
+#define TORTURE_DRIVER			"torture_driver"
+#define TORTURE_DRIVER_EX		"torture_driver_ex"
 
 #define TOP_LEVEL_PRINT_KEY "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print"
 #define TOP_LEVEL_PRINT_PRINTERS_KEY TOP_LEVEL_PRINT_KEY "\\Printers"
@@ -68,6 +70,18 @@ struct test_spoolss_context {
 	/* for EnumPrinters */
 	uint32_t printer_count[6];
 	union spoolss_PrinterInfo *printers[6];
+};
+
+struct torture_driver_context {
+	struct {
+		const char *driver_directory;
+		const char *environment;
+	} local;
+	struct {
+		const char *driver_directory;
+		const char *environment;
+	} remote;
+	struct spoolss_AddDriverInfo8 info8;
 };
 
 #define COMPARE_STRING(tctx, c,r,e) \
@@ -6427,6 +6441,743 @@ struct torture_suite *torture_rpc_spoolss_printer(TALLOC_CTX *mem_ctx)
 							"printer", &ndr_table_spoolss);
 
 	torture_rpc_tcase_add_test(tcase, "printer", test_printer);
+
+	return suite;
+}
+
+static bool test_GetPrinterDriverDirectory_getdir(struct torture_context *tctx,
+						  struct dcerpc_binding_handle *b,
+						  const char *server,
+						  const char *environment,
+						  const char **dir_p)
+{
+	struct spoolss_GetPrinterDriverDirectory r;
+	uint32_t needed;
+
+	r.in.server		= server;
+	r.in.environment	= environment;
+	r.in.level		= 1;
+	r.in.buffer		= NULL;
+	r.in.offered		= 0;
+	r.out.needed		= &needed;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_spoolss_GetPrinterDriverDirectory_r(b, tctx, &r),
+		"failed to query driver directory");
+
+	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+		DATA_BLOB blob = data_blob_talloc_zero(tctx, needed);
+		r.in.buffer = &blob;
+		r.in.offered = needed;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_spoolss_GetPrinterDriverDirectory_r(b, tctx, &r),
+			"failed to query driver directory");
+	}
+
+	torture_assert_werr_ok(tctx, r.out.result,
+		"failed to query driver directory");
+
+	if (dir_p) {
+		*dir_p = r.out.info->info1.directory_name;
+	}
+
+	return true;
+}
+
+static const char *get_driver_from_info(struct spoolss_AddDriverInfoCtr *info_ctr)
+{
+	if (info_ctr == NULL) {
+		return NULL;
+	}
+
+	switch (info_ctr->level) {
+	case 1:
+		return info_ctr->info.info1->driver_name;
+	case 2:
+		return info_ctr->info.info2->driver_name;
+	case 3:
+		return info_ctr->info.info3->driver_name;
+	case 4:
+		return info_ctr->info.info4->driver_name;
+	case 6:
+		return info_ctr->info.info6->driver_name;
+	case 8:
+		return info_ctr->info.info8->driver_name;
+	default:
+		return NULL;
+	}
+}
+
+static bool test_AddPrinterDriver_exp(struct torture_context *tctx,
+				      struct dcerpc_binding_handle *b,
+				      const char *servername,
+				      struct spoolss_AddDriverInfoCtr *info_ctr,
+				      WERROR expected_result)
+{
+	struct spoolss_AddPrinterDriver r;
+	const char *drivername = get_driver_from_info(info_ctr);
+
+	r.in.servername = servername;
+	r.in.info_ctr = info_ctr;
+
+	torture_comment(tctx, "Testing AddPrinterDriver(%s) level %d\n",
+		drivername, info_ctr->level);
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_spoolss_AddPrinterDriver_r(b, tctx, &r),
+		"spoolss_AddPrinterDriver failed");
+	torture_assert_werr_equal(tctx, r.out.result, expected_result,
+		"spoolss_AddPrinterDriver failed with unexpected result");
+
+	return true;
+
+}
+
+static bool test_AddPrinterDriverEx_exp(struct torture_context *tctx,
+				        struct dcerpc_binding_handle *b,
+					const char *servername,
+				        struct spoolss_AddDriverInfoCtr *info_ctr,
+				        uint32_t flags,
+					WERROR expected_result)
+{
+	struct spoolss_AddPrinterDriverEx r;
+	const char *drivername = get_driver_from_info(info_ctr);
+
+	r.in.servername = servername;
+	r.in.info_ctr = info_ctr;
+	r.in.flags = flags;
+
+	torture_comment(tctx, "Testing AddPrinterDriverEx(%s) level %d\n",
+		drivername, info_ctr->level);
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_spoolss_AddPrinterDriverEx_r(b, tctx, &r),
+		"AddPrinterDriverEx failed");
+	torture_assert_werr_equal(tctx, r.out.result, expected_result,
+		"AddPrinterDriverEx failed with unexpected result");
+
+	return true;
+}
+
+static bool test_AddPrinterDriver_args_level_1(struct torture_context *tctx,
+					       struct dcerpc_binding_handle *b,
+					       const char *server_name,
+					       struct spoolss_AddDriverInfo8 *r,
+					       uint32_t flags,
+					       bool ex)
+{
+	struct spoolss_AddDriverInfoCtr info_ctr;
+	struct spoolss_AddDriverInfo1 info1;
+
+	ZERO_STRUCT(info1);
+
+	info_ctr.level = 1;
+	info_ctr.info.info1 = &info1;
+
+	if (ex) {
+		torture_assert(tctx,
+			test_AddPrinterDriverEx_exp(tctx, b, server_name, &info_ctr, flags, WERR_UNKNOWN_LEVEL),
+			"failed to test AddPrinterDriverEx level 1");
+	} else {
+		torture_assert(tctx,
+			test_AddPrinterDriver_exp(tctx, b, server_name, &info_ctr, WERR_UNKNOWN_LEVEL),
+			"failed to test AddPrinterDriver level 1");
+	}
+
+	info1.driver_name = r->driver_name;
+
+	if (ex) {
+		torture_assert(tctx,
+			test_AddPrinterDriverEx_exp(tctx, b, server_name, &info_ctr, flags, WERR_UNKNOWN_LEVEL),
+			"failed to test AddPrinterDriverEx level 1");
+	} else {
+		torture_assert(tctx,
+			test_AddPrinterDriver_exp(tctx, b, server_name, &info_ctr, WERR_UNKNOWN_LEVEL),
+			"failed to test AddPrinterDriver level 1");
+	}
+
+	return true;
+}
+
+static bool test_AddPrinterDriver_args_level_2(struct torture_context *tctx,
+					       struct dcerpc_binding_handle *b,
+					       const char *server_name,
+					       struct spoolss_AddDriverInfo8 *r,
+					       uint32_t flags,
+					       bool ex)
+{
+	struct spoolss_AddDriverInfoCtr info_ctr;
+	struct spoolss_AddDriverInfo2 info2;
+
+	ZERO_STRUCT(info2);
+
+	info_ctr.level = 2;
+	info_ctr.info.info2 = &info2;
+
+	if (ex) {
+		torture_assert(tctx,
+			test_AddPrinterDriverEx_exp(tctx, b, server_name, &info_ctr, flags, WERR_INVALID_PARAM),
+			"failed to test AddPrinterDriverEx level 2");
+	} else {
+		torture_assert(tctx,
+			test_AddPrinterDriver_exp(tctx, b, server_name, &info_ctr, WERR_INVALID_PARAM),
+			"failed to test AddPrinterDriver level 2");
+	}
+
+	info2.driver_name = r->driver_name;
+
+	if (ex) {
+		torture_assert(tctx,
+			test_AddPrinterDriverEx_exp(tctx, b, server_name, &info_ctr, flags, WERR_INVALID_PARAM),
+			"failed to test AddPrinterDriverEx level 2");
+	} else {
+		torture_assert(tctx,
+			test_AddPrinterDriver_exp(tctx, b, server_name, &info_ctr, WERR_INVALID_PARAM),
+			"failed to test AddPrinterDriver level 2");
+	}
+
+	info2.version = r->version;
+
+	if (ex) {
+		torture_assert(tctx,
+			test_AddPrinterDriverEx_exp(tctx, b, server_name, &info_ctr, flags, WERR_INVALID_PARAM),
+			"failed to test AddPrinterDriverEx level 2");
+	} else {
+		torture_assert(tctx,
+			test_AddPrinterDriver_exp(tctx, b, server_name, &info_ctr, WERR_INVALID_PARAM),
+			"failed to test AddPrinterDriver level 2");
+	}
+
+	info2.architecture = r->architecture;
+
+	if (ex) {
+		torture_assert(tctx,
+			test_AddPrinterDriverEx_exp(tctx, b, server_name, &info_ctr, flags, WERR_INVALID_PARAM),
+			"failed to test AddPrinterDriverEx level 2");
+	} else {
+		torture_assert(tctx,
+			test_AddPrinterDriver_exp(tctx, b, server_name, &info_ctr, WERR_INVALID_PARAM),
+			"failed to test AddPrinterDriver level 2");
+	}
+
+	info2.driver_path = r->driver_path;
+
+	if (ex) {
+		torture_assert(tctx,
+			test_AddPrinterDriverEx_exp(tctx, b, server_name, &info_ctr, flags, WERR_INVALID_PARAM),
+			"failed to test AddPrinterDriverEx level 2");
+	} else {
+		torture_assert(tctx,
+			test_AddPrinterDriver_exp(tctx, b, server_name, &info_ctr, WERR_INVALID_PARAM),
+			"failed to test AddPrinterDriver level 2");
+	}
+
+	info2.data_file = r->data_file;
+
+	if (ex) {
+		torture_assert(tctx,
+			test_AddPrinterDriverEx_exp(tctx, b, server_name, &info_ctr, flags, WERR_INVALID_PARAM),
+			"failed to test AddPrinterDriverEx level 2");
+	} else {
+		torture_assert(tctx,
+			test_AddPrinterDriver_exp(tctx, b, server_name, &info_ctr, WERR_INVALID_PARAM),
+			"failed to test AddPrinterDriver level 2");
+	}
+
+	info2.config_file = r->config_file;
+
+	if (ex) {
+		torture_assert(tctx,
+			test_AddPrinterDriverEx_exp(tctx, b, server_name, &info_ctr, 0, WERR_INVALID_PARAM),
+			"failed to test AddPrinterDriverEx");
+	}
+
+	if (ex) {
+		torture_assert(tctx,
+			test_AddPrinterDriverEx_exp(tctx, b, server_name, &info_ctr, flags, WERR_OK),
+			"failed to test AddPrinterDriverEx level 2");
+	} else {
+		torture_assert(tctx,
+			test_AddPrinterDriver_exp(tctx, b, server_name, &info_ctr, WERR_OK),
+			"failed to test AddPrinterDriver level 2");
+	}
+
+	torture_assert(tctx,
+		test_EnumPrinterDrivers_findone(tctx, b, server_name, r->architecture, 2, r->driver_name),
+		"failed to find added printer driver");
+
+	return true;
+}
+
+static bool test_AddPrinterDriver_args_level_3(struct torture_context *tctx,
+					       struct dcerpc_binding_handle *b,
+					       const char *server_name,
+					       struct spoolss_AddDriverInfo8 *r,
+					       uint32_t flags,
+					       bool ex)
+{
+	struct spoolss_AddDriverInfoCtr info_ctr;
+	struct spoolss_AddDriverInfo3 info3;
+
+	ZERO_STRUCT(info3);
+
+	info3.driver_name	= r->driver_name;
+	info3.version		= r->version;
+	info3.architecture	= r->architecture;
+	info3.driver_path	= r->driver_path;
+	info3.data_file		= r->data_file;
+	info3.config_file	= r->config_file;
+
+	info_ctr.level = 3;
+	info_ctr.info.info3 = &info3;
+
+	if (ex) {
+		torture_assert(tctx,
+			test_AddPrinterDriverEx_exp(tctx, b, server_name, &info_ctr, flags, WERR_OK),
+			"failed to test AddPrinterDriverEx level 3");
+	} else {
+		torture_assert(tctx,
+			test_AddPrinterDriver_exp(tctx, b, server_name, &info_ctr, WERR_OK),
+			"failed to test AddPrinterDriver level 3");
+	}
+
+	torture_assert(tctx,
+		test_EnumPrinterDrivers_findone(tctx, b, server_name, r->architecture, 3, r->driver_name),
+		"failed to find added printer driver");
+
+	return true;
+}
+
+static bool test_AddPrinterDriver_args_level_4(struct torture_context *tctx,
+					       struct dcerpc_binding_handle *b,
+					       const char *server_name,
+					       struct spoolss_AddDriverInfo8 *r,
+					       uint32_t flags,
+					       bool ex)
+{
+	struct spoolss_AddDriverInfoCtr info_ctr;
+	struct spoolss_AddDriverInfo4 info4;
+
+	ZERO_STRUCT(info4);
+
+	info4.driver_name	= r->driver_name;
+	info4.version		= r->version;
+	info4.architecture	= r->architecture;
+	info4.driver_path	= r->driver_path;
+	info4.data_file		= r->data_file;
+	info4.config_file	= r->config_file;
+
+	info_ctr.level = 4;
+	info_ctr.info.info4 = &info4;
+
+	if (ex) {
+		torture_assert(tctx,
+			test_AddPrinterDriverEx_exp(tctx, b, server_name, &info_ctr, flags, WERR_OK),
+			"failed to test AddPrinterDriverEx level 4");
+	} else {
+		torture_assert(tctx,
+			test_AddPrinterDriver_exp(tctx, b, server_name, &info_ctr, WERR_OK),
+			"failed to test AddPrinterDriver level 4");
+	}
+
+	torture_assert(tctx,
+		test_EnumPrinterDrivers_findone(tctx, b, server_name, r->architecture, 4, r->driver_name),
+		"failed to find added printer driver");
+
+	return true;
+}
+
+static bool test_AddPrinterDriver_args_level_6(struct torture_context *tctx,
+					       struct dcerpc_binding_handle *b,
+					       const char *server_name,
+					       struct spoolss_AddDriverInfo8 *r,
+					       uint32_t flags,
+					       bool ex)
+{
+	struct spoolss_AddDriverInfoCtr info_ctr;
+	struct spoolss_AddDriverInfo6 info6;
+
+	ZERO_STRUCT(info6);
+
+	info6.driver_name	= r->driver_name;
+	info6.version		= r->version;
+	info6.architecture	= r->architecture;
+	info6.driver_path	= r->driver_path;
+	info6.data_file		= r->data_file;
+	info6.config_file	= r->config_file;
+
+	info_ctr.level = 6;
+	info_ctr.info.info6 = &info6;
+
+	if (ex) {
+		torture_assert(tctx,
+			test_AddPrinterDriverEx_exp(tctx, b, server_name, &info_ctr, flags, WERR_OK),
+			"failed to test AddPrinterDriverEx level 6");
+	} else {
+		torture_assert(tctx,
+			test_AddPrinterDriver_exp(tctx, b, server_name, &info_ctr, WERR_UNKNOWN_LEVEL),
+			"failed to test AddPrinterDriver level 6");
+	}
+
+	/* spoolss_AddPrinterDriver does not deal with level 6 or 8 - gd */
+
+	if (!ex) {
+		return true;
+	}
+
+	torture_assert(tctx,
+		test_EnumPrinterDrivers_findone(tctx, b, server_name, r->architecture, 6, r->driver_name),
+		"failed to find added printer driver");
+
+	return true;
+}
+
+static bool test_AddPrinterDriver_args_level_8(struct torture_context *tctx,
+					       struct dcerpc_binding_handle *b,
+					       const char *server_name,
+					       struct spoolss_AddDriverInfo8 *r,
+					       uint32_t flags,
+					       bool ex)
+{
+	struct spoolss_AddDriverInfoCtr info_ctr;
+	struct spoolss_AddDriverInfo8 info8;
+
+	ZERO_STRUCT(info8);
+
+	info8.driver_name	= r->driver_name;
+	info8.version		= r->version;
+	info8.architecture	= r->architecture;
+	info8.driver_path	= r->driver_path;
+	info8.data_file		= r->data_file;
+	info8.config_file	= r->config_file;
+
+	info_ctr.level = 8;
+	info_ctr.info.info8 = &info8;
+
+	if (ex) {
+		torture_assert(tctx,
+			test_AddPrinterDriverEx_exp(tctx, b, server_name, &info_ctr, flags, WERR_OK),
+			"failed to test AddPrinterDriverEx level 8");
+	} else {
+		torture_assert(tctx,
+			test_AddPrinterDriver_exp(tctx, b, server_name, &info_ctr, WERR_UNKNOWN_LEVEL),
+			"failed to test AddPrinterDriver level 8");
+	}
+
+	/* spoolss_AddPrinterDriver does not deal with level 6 or 8 - gd */
+
+	if (!ex) {
+		return true;
+	}
+
+	torture_assert(tctx,
+		test_EnumPrinterDrivers_findone(tctx, b, server_name, r->architecture, 8, r->driver_name),
+		"failed to find added printer driver");
+
+	return true;
+}
+
+static bool test_DeletePrinterDriver_exp(struct torture_context *tctx,
+					 struct dcerpc_binding_handle *b,
+					 const char *driver,
+					 const char *environment,
+					 WERROR expected_result)
+{
+	struct spoolss_DeletePrinterDriver r;
+
+	r.in.server = NULL;
+	r.in.architecture = environment;
+	r.in.driver = driver;
+
+	torture_comment(tctx, "Testing DeletePrinterDriver(%s)\n", driver);
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_spoolss_DeletePrinterDriver_r(b, tctx, &r),
+		"DeletePrinterDriver failed");
+	torture_assert_werr_equal(tctx, r.out.result, expected_result,
+		"DeletePrinterDriver failed with unexpected result");
+
+	return true;
+}
+
+static bool test_DeletePrinterDriverEx_exp(struct torture_context *tctx,
+					   struct dcerpc_binding_handle *b,
+					   const char *driver,
+					   const char *environment,
+					   uint32_t delete_flags,
+					   uint32_t version,
+					   WERROR expected_result)
+{
+	struct spoolss_DeletePrinterDriverEx r;
+
+	r.in.server = NULL;
+	r.in.architecture = environment;
+	r.in.driver = driver;
+	r.in.delete_flags = delete_flags;
+	r.in.version = version;
+
+	torture_comment(tctx, "Testing DeletePrinterDriverEx(%s)\n", driver);
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_spoolss_DeletePrinterDriverEx_r(b, tctx, &r),
+		"DeletePrinterDriverEx failed");
+	torture_assert_werr_equal(tctx, r.out.result, expected_result,
+		"DeletePrinterDriverEx failed with unexpected result");
+
+	return true;
+}
+
+static bool test_DeletePrinterDriver(struct torture_context *tctx,
+				     struct dcerpc_binding_handle *b,
+				     const char *driver,
+				     const char *environment)
+{
+	torture_assert(tctx,
+		test_DeletePrinterDriver_exp(tctx, b, driver, "FOOBAR", WERR_INVALID_ENVIRONMENT),
+		"failed to delete driver");
+
+	torture_assert(tctx,
+		test_DeletePrinterDriver_exp(tctx, b, driver, environment, WERR_OK),
+		"failed to delete driver");
+
+	if (test_EnumPrinterDrivers_findone(tctx, b, NULL, environment, 1, driver)) {
+		torture_fail(tctx, "deleted driver still enumerated");
+	}
+
+	torture_assert(tctx,
+		test_DeletePrinterDriver_exp(tctx, b, driver, environment, WERR_UNKNOWN_PRINTER_DRIVER),
+		"2nd delete failed");
+
+	return true;
+}
+
+static bool test_DeletePrinterDriverEx(struct torture_context *tctx,
+				       struct dcerpc_binding_handle *b,
+				       const char *driver,
+				       const char *environment,
+				       uint32_t delete_flags,
+				       uint32_t version)
+{
+	torture_assert(tctx,
+		test_DeletePrinterDriverEx_exp(tctx, b, driver, "FOOBAR", delete_flags, version, WERR_INVALID_ENVIRONMENT),
+		"failed to delete driver");
+
+	torture_assert(tctx,
+		test_DeletePrinterDriverEx_exp(tctx, b, driver, environment, delete_flags, version, WERR_OK),
+		"failed to delete driver");
+
+	if (test_EnumPrinterDrivers_findone(tctx, b, NULL, environment, 1, driver)) {
+		torture_fail(tctx, "deleted driver still enumerated");
+	}
+
+	torture_assert(tctx,
+		test_DeletePrinterDriverEx_exp(tctx, b, driver, environment, delete_flags, version, WERR_UNKNOWN_PRINTER_DRIVER),
+		"2nd delete failed");
+
+	return true;
+}
+
+static bool test_PrinterDriver_args(struct torture_context *tctx,
+				    struct dcerpc_binding_handle *b,
+				    const char *server_name,
+				    uint32_t level,
+				    struct spoolss_AddDriverInfo8 *r,
+				    uint32_t add_flags,
+				    uint32_t delete_flags,
+				    uint32_t delete_version,
+				    bool ex)
+{
+	bool ret = true;
+
+	switch (level) {
+	case 1:
+		ret = test_AddPrinterDriver_args_level_1(tctx, b, server_name, r, add_flags, ex);
+		break;
+	case 2:
+		ret = test_AddPrinterDriver_args_level_2(tctx, b, server_name, r, add_flags, ex);
+		break;
+	case 3:
+		ret = test_AddPrinterDriver_args_level_3(tctx, b, server_name, r, add_flags, ex);
+		break;
+	case 4:
+		ret = test_AddPrinterDriver_args_level_4(tctx, b, server_name, r, add_flags, ex);
+		break;
+	case 6:
+		ret = test_AddPrinterDriver_args_level_6(tctx, b, server_name, r, add_flags, ex);
+		break;
+	case 8:
+		ret = test_AddPrinterDriver_args_level_8(tctx, b, server_name, r, add_flags, ex);
+		break;
+	default:
+		return false;
+	}
+
+	if (ret == false) {
+		return ret;
+	}
+
+	if (level == 1) {
+		return ret;
+	}
+
+	/* spoolss_AddPrinterDriver does not deal with level 6 or 8 - gd */
+
+	if (!ex && (level == 6 || level == 8)) {
+		return ret;
+	}
+
+	if (ex) {
+		return test_DeletePrinterDriverEx(tctx, b, r->driver_name, r->architecture, delete_flags, r->version);
+	} else {
+		return test_DeletePrinterDriver(tctx, b, r->driver_name, r->architecture);
+	}
+}
+
+static bool fillup_printserver_info(struct torture_context *tctx,
+				    struct dcerpc_pipe *p,
+				    struct torture_driver_context *d)
+{
+	struct policy_handle server_handle;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	const char *server_name_slash = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+
+	torture_assert(tctx,
+		test_OpenPrinter_server(tctx, p, &server_handle),
+		"failed to open printserver");
+	torture_assert(tctx,
+		test_get_environment(tctx, b, &server_handle, &d->remote.environment),
+		"failed to get environment");
+	torture_assert(tctx,
+		test_ClosePrinter(tctx, b, &server_handle),
+		"failed to close printserver");
+
+	torture_assert(tctx,
+		test_GetPrinterDriverDirectory_getdir(tctx, b, server_name_slash, d->remote.environment, &d->remote.driver_directory),
+		"failed to get driver directory");
+
+	return true;
+}
+
+static bool test_add_driver(struct torture_context *tctx,
+			    struct dcerpc_pipe *p,
+			    void *private_data)
+{
+	struct torture_driver_context *d =
+		(struct torture_driver_context *)talloc_get_type_abort(private_data, struct torture_driver_context);
+	bool ret = true;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	const char *server_name_slash = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	uint32_t levels[] = { 1, 2, 3, 4, 6, 8 };
+	int i;
+	struct spoolss_AddDriverInfo8 info8;
+
+	torture_assert(tctx,
+		fillup_printserver_info(tctx, p, d),
+		"failed to fillup printserver info");
+
+	info8.version		= d->info8.version;
+	info8.driver_name	= TORTURE_DRIVER;
+	info8.architecture	= d->remote.environment;
+	info8.driver_path	= d->info8.driver_path;
+	info8.data_file		= d->info8.data_file;
+	info8.config_file	= d->info8.config_file;
+
+	for (i=0; i < ARRAY_SIZE(levels); i++) {
+
+		torture_comment(tctx,
+			"Testing PrinterDriver '%s' add & delete level %d\n",
+				info8.driver_name, levels[i]);
+
+		ret &= test_PrinterDriver_args(tctx, b, server_name_slash, levels[i], &info8, 0, 0, 0, false);
+	}
+
+	info8.driver_path	= talloc_asprintf(tctx, "%s\\%s", d->remote.driver_directory, d->info8.driver_path);
+	info8.data_file		= talloc_asprintf(tctx, "%s\\%s", d->remote.driver_directory, d->info8.data_file);
+	info8.config_file	= talloc_asprintf(tctx, "%s\\%s", d->remote.driver_directory, d->info8.config_file);
+
+	for (i=0; i < ARRAY_SIZE(levels); i++) {
+
+		torture_comment(tctx,
+			"Testing PrinterDriver '%s' add & delete level %d (full unc paths)\n",
+				info8.driver_name, levels[i]);
+
+		ret &= test_PrinterDriver_args(tctx, b, server_name_slash, levels[i], &info8, 0, 0, 0, false);
+	}
+
+	return ret;
+}
+
+static bool test_add_driver_ex(struct torture_context *tctx,
+			       struct dcerpc_pipe *p,
+			       void *private_data)
+{
+	struct torture_driver_context *d =
+		(struct torture_driver_context *)talloc_get_type_abort(private_data, struct torture_driver_context);
+	bool ret = true;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	const char *server_name_slash = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	uint32_t levels[] = { 1, 2, 3, 4, 6, 8 };
+	int i;
+	struct spoolss_AddDriverInfo8 info8;
+	uint32_t add_flags = APD_COPY_NEW_FILES;
+	uint32_t delete_flags = 0;
+
+	torture_assert(tctx,
+		fillup_printserver_info(tctx, p, d),
+		"failed to fillup printserver info");
+
+	info8.version		= d->info8.version;
+	info8.driver_name	= TORTURE_DRIVER_EX;
+	info8.architecture	= d->remote.environment;
+	info8.driver_path	= d->info8.driver_path;
+	info8.data_file		= d->info8.data_file;
+	info8.config_file	= d->info8.config_file;
+
+	for (i=0; i < ARRAY_SIZE(levels); i++) {
+
+		torture_comment(tctx,
+			"Testing PrinterDriverEx '%s' add & delete level %d\n",
+				info8.driver_name, levels[i]);
+
+		ret &= test_PrinterDriver_args(tctx, b, server_name_slash, levels[i], &info8, add_flags, delete_flags, d->info8.version, true);
+	}
+
+	info8.driver_path	= talloc_asprintf(tctx, "%s\\%s", d->remote.driver_directory, d->info8.driver_path);
+	info8.data_file		= talloc_asprintf(tctx, "%s\\%s", d->remote.driver_directory, d->info8.data_file);
+	info8.config_file	= talloc_asprintf(tctx, "%s\\%s", d->remote.driver_directory, d->info8.config_file);
+
+	for (i=0; i < ARRAY_SIZE(levels); i++) {
+
+		torture_comment(tctx,
+			"Testing PrinterDriverEx '%s' add & delete level %d (full unc paths)\n",
+				info8.driver_name, levels[i]);
+
+		ret &= test_PrinterDriver_args(tctx, b, server_name_slash, levels[i], &info8, add_flags, delete_flags, d->info8.version, true);
+	}
+
+	return ret;
+}
+
+struct torture_suite *torture_rpc_spoolss_driver(TALLOC_CTX *mem_ctx)
+{
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "SPOOLSS-DRIVER");
+
+	struct torture_rpc_tcase *tcase = torture_suite_add_rpc_iface_tcase(suite,
+							"driver", &ndr_table_spoolss);
+	struct torture_driver_context *t;
+
+	t = talloc_zero(mem_ctx, struct torture_driver_context);
+
+	t->info8.version	= SPOOLSS_DRIVER_VERSION_200X;
+	t->info8.driver_name	= NULL;
+	t->info8.architecture	= NULL;
+	t->info8.driver_path	= talloc_strdup(t, "pscript5.dll");
+	t->info8.data_file	= talloc_strdup(t, "cups6.ppd");
+	t->info8.config_file	= talloc_strdup(t, "cupsui6.dll");
+
+	torture_rpc_tcase_add_test_ex(tcase, "add_driver", test_add_driver, t);
+	torture_rpc_tcase_add_test_ex(tcase, "add_driver_ex", test_add_driver_ex, t);
 
 	return suite;
 }
