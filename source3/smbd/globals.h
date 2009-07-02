@@ -219,6 +219,7 @@ NTSTATUS smbd_smb2_request_process_ioctl(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_process_keepalive(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_process_notify(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_process_getinfo(struct smbd_smb2_request *req);
+NTSTATUS smbd_smb2_request_process_setinfo(struct smbd_smb2_request *req);
 
 struct smbd_smb2_request {
 	struct smbd_smb2_request *prev, *next;
