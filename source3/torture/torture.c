@@ -705,7 +705,7 @@ static bool rw_torture2(struct cli_state *c1, struct cli_state *c2)
 
 static bool run_readwritetest(int dummy)
 {
-	static struct cli_state *cli1, *cli2;
+	struct cli_state *cli1, *cli2;
 	bool test1, test2 = False;
 
 	if (!torture_open_connection(&cli1, 0) || !torture_open_connection(&cli2, 1)) {
