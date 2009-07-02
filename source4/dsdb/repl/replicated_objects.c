@@ -117,14 +117,17 @@ static WERROR dsdb_convert_object(struct ldb_context *ldb,
 		struct drsuapi_DsReplicaMetaData *d;
 		struct replPropertyMetaData1 *m;
 		struct ldb_message_element *e;
+		int j;
 
 		a = &in->object.attribute_ctr.attributes[i];
 		d = &in->meta_data_ctr->meta_data[i];
 		m = &md->ctr.ctr1.array[i];
 		e = &msg->elements[i];
 
-		status = drsuapi_decrypt_attribute(a->value_ctr.values[0].blob, gensec_skey, rid, a);
-		W_ERROR_NOT_OK_RETURN(status);
+		for (j=0; j<a->value_ctr.num_values; j++) {
+			status = drsuapi_decrypt_attribute(a->value_ctr.values[j].blob, gensec_skey, rid, a);
+			W_ERROR_NOT_OK_RETURN(status);
+		}
 
 		status = dsdb_attribute_drsuapi_to_ldb(ldb, schema, a, msg->elements, e);
 		W_ERROR_NOT_OK_RETURN(status);
