@@ -139,7 +139,12 @@ def write_ldif_one(o, attrs):
             continue
         # special case for oMObjectClass, which is a binary object
         v = o[a]
+        list = []
         for j in v:
+            value = fix_dn(j)
+            list.append(value)
+        list.sort()
+        for j in list:
             value = fix_dn(j)
             if a != "cn":
                 if a == "oMObjectClass":
