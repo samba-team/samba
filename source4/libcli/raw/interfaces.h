@@ -1988,13 +1988,6 @@ union smb_lock {
 			struct smb2_lock_element {
 				uint64_t offset;
 				uint64_t length;
-/* these flags are the same as the SMB2 lock flags */
-#define SMB2_LOCK_FLAG_NONE		0x00000000
-#define SMB2_LOCK_FLAG_SHARED		0x00000001
-#define SMB2_LOCK_FLAG_EXCLUSIVE	0x00000002
-#define SMB2_LOCK_FLAG_UNLOCK		0x00000004
-#define SMB2_LOCK_FLAG_FAIL_IMMEDIATELY	0x00000010
-#define SMB2_LOCK_FLAG_ALL_MASK		0x00000017
 				uint32_t flags;
 				uint32_t reserved;
 			} *locks;

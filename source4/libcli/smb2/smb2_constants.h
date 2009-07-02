@@ -105,6 +105,14 @@
 #define SMB2_SECURITY_DYNAMIC_TRACKING                   0x01
 #define SMB2_SECURITY_EFFECTIVE_ONLY                     0x02
 
+/* SMB2 lock flags */
+#define SMB2_LOCK_FLAG_NONE		0x00000000
+#define SMB2_LOCK_FLAG_SHARED		0x00000001
+#define SMB2_LOCK_FLAG_EXCLUSIVE	0x00000002
+#define SMB2_LOCK_FLAG_UNLOCK		0x00000004
+#define SMB2_LOCK_FLAG_FAIL_IMMEDIATELY	0x00000010
+#define SMB2_LOCK_FLAG_ALL_MASK		0x00000017
+
 /* SMB2 requested oplock levels */
 #define SMB2_OPLOCK_LEVEL_NONE                           0x00
 #define SMB2_OPLOCK_LEVEL_II                             0x01
