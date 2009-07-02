@@ -6249,6 +6249,11 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 	}
 
 	/* Deal with any time changes. */
+	if (null_timespec(ft.mtime) && null_timespec(ft.atime)) {
+		/* No change, don't cancel anything. */
+		return status;
+	}
+
 	id = vfs_file_id_from_sbuf(conn, psbuf);
 	for(all_fsps = file_find_di_first(id); all_fsps;
 			all_fsps = file_find_di_next(all_fsps)) {
