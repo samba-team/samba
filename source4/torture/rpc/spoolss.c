@@ -26,6 +26,11 @@
 #include "torture/rpc/rpc.h"
 #include "librpc/gen_ndr/ndr_spoolss_c.h"
 
+#define TORTURE_WELLKNOWN_PRINTER	"torture_wkn_printer"
+#define TORTURE_PRINTER			"torture_printer"
+#define TORTURE_WELLKNOWN_PRINTER_EX	"torture_wkn_printer_ex"
+#define TORTURE_PRINTER_EX		"torture_printer_ex"
+
 struct test_spoolss_context {
 	/* print server handle */
 	struct policy_handle server_handle;
@@ -2633,6 +2638,432 @@ static bool test_EnumPrinterDrivers_old(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_DeletePrinter(struct torture_context *tctx,
+			       struct dcerpc_pipe *p,
+			       struct policy_handle *handle)
+{
+	struct spoolss_DeletePrinter r;
+
+	torture_comment(tctx, "Testing DeletePrinter\n");
+
+	r.in.handle = handle;
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_DeletePrinter(p, tctx, &r),
+		"failed to delete printer");
+	torture_assert_werr_ok(tctx, r.out.result,
+		"failed to delete printer");
+
+	return true;
+}
+
+static bool test_EnumPrinters_findname(struct torture_context *tctx,
+				       struct dcerpc_pipe *p,
+				       uint32_t flags,
+				       uint32_t level,
+				       const char *name,
+				       bool *found)
+{
+	struct spoolss_EnumPrinters e;
+	uint32_t count;
+	union spoolss_PrinterInfo *info;
+	uint32_t needed;
+	int i;
+
+	*found = false;
+
+	e.in.flags = flags;
+	e.in.server = NULL;
+	e.in.level = level;
+	e.in.buffer = NULL;
+	e.in.offered = 0;
+	e.out.count = &count;
+	e.out.info = &info;
+	e.out.needed = &needed;
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_EnumPrinters(p, tctx, &e),
+		"failed to enum printers");
+
+	if (W_ERROR_EQUAL(e.out.result, WERR_INSUFFICIENT_BUFFER)) {
+		DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
+		data_blob_clear(&blob);
+		e.in.buffer = &blob;
+		e.in.offered = needed;
+
+		torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_EnumPrinters(p, tctx, &e),
+			"failed to enum printers");
+	}
+
+	torture_assert_werr_ok(tctx, e.out.result,
+		"failed to enum printers");
+
+	for (i=0; i < count; i++) {
+
+		const char *current = NULL;
+
+		switch (level) {
+		case 1:
+			current = info[i].info1.name;
+			break;
+		}
+
+		if (strequal(current, name)) {
+			*found = true;
+			break;
+		}
+	}
+
+	return true;
+}
+
+static bool test_AddPrinter_wellknown(struct torture_context *tctx,
+				      struct dcerpc_pipe *p,
+				      const char *printername,
+				      bool ex)
+{
+	WERROR result;
+	struct spoolss_AddPrinter r;
+	struct spoolss_AddPrinterEx rex;
+	struct spoolss_SetPrinterInfoCtr info_ctr;
+	struct spoolss_SetPrinterInfo1 info1;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	struct sec_desc_buf secdesc_ctr;
+	struct spoolss_UserLevelCtr userlevel_ctr;
+	struct policy_handle handle;
+	bool found = false;
+
+	ZERO_STRUCT(devmode_ctr);
+	ZERO_STRUCT(secdesc_ctr);
+	ZERO_STRUCT(userlevel_ctr);
+	ZERO_STRUCT(info1);
+
+	torture_comment(tctx, "Testing AddPrinter%s level 1\n", ex ? "Ex":"");
+
+	/* try to add printer to wellknown printer list (level 1) */
+
+	userlevel_ctr.level = 1;
+
+	info_ctr.info.info1 = &info1;
+	info_ctr.level = 1;
+
+	rex.in.server = NULL;
+	rex.in.info_ctr = &info_ctr;
+	rex.in.devmode_ctr = &devmode_ctr;
+	rex.in.secdesc_ctr = &secdesc_ctr;
+	rex.in.userlevel_ctr = &userlevel_ctr;
+	rex.out.handle = &handle;
+
+	r.in.server = NULL;
+	r.in.info_ctr = &info_ctr;
+	r.in.devmode_ctr = &devmode_ctr;
+	r.in.secdesc_ctr = &secdesc_ctr;
+	r.out.handle = &handle;
+
+	torture_assert_ntstatus_ok(tctx, ex ? dcerpc_spoolss_AddPrinterEx(p, tctx, &rex) :
+					      dcerpc_spoolss_AddPrinter(p, tctx, &r),
+		"failed to add printer");
+	result = ex ? rex.out.result : r.out.result;
+	torture_assert_werr_equal(tctx, result, WERR_INVALID_PRINTER_NAME,
+		"unexpected result code");
+
+	info1.name = printername;
+	info1.flags = PRINTER_ATTRIBUTE_SHARED;
+
+	torture_assert_ntstatus_ok(tctx, ex ? dcerpc_spoolss_AddPrinterEx(p, tctx, &rex) :
+					      dcerpc_spoolss_AddPrinter(p, tctx, &r),
+		"failed to add printer");
+	result = ex ? rex.out.result : r.out.result;
+	torture_assert_werr_equal(tctx, result, WERR_PRINTER_ALREADY_EXISTS,
+		"unexpected result code");
+
+	/* bizarre protocol, WERR_PRINTER_ALREADY_EXISTS means success here,
+	   better do a real check to see the printer is really there */
+
+	torture_assert(tctx, test_EnumPrinters_findname(tctx, p,
+							PRINTER_ENUM_NETWORK, 1,
+							printername,
+							&found),
+			"failed to enum printers");
+
+	torture_assert(tctx, found, "failed to find newly added printer");
+
+	info1.flags = 0;
+
+	torture_assert_ntstatus_ok(tctx, ex ? dcerpc_spoolss_AddPrinterEx(p, tctx, &rex) :
+					      dcerpc_spoolss_AddPrinter(p, tctx, &r),
+		"failed to add printer");
+	result = ex ? rex.out.result : r.out.result;
+	torture_assert_werr_equal(tctx, result, WERR_PRINTER_ALREADY_EXISTS,
+		"unexpected result code");
+
+	/* bizarre protocol, WERR_PRINTER_ALREADY_EXISTS means success here,
+	   better do a real check to see the printer has really been removed
+	   from the well known printer list */
+
+	found = false;
+
+	torture_assert(tctx, test_EnumPrinters_findname(tctx, p,
+							PRINTER_ENUM_NETWORK, 1,
+							printername,
+							&found),
+			"failed to enum printers");
+#if 0
+	torture_assert(tctx, !found, "printer still in well known printer list");
+#endif
+	return true;
+}
+
+static bool test_AddPrinter_normal(struct torture_context *tctx,
+				   struct dcerpc_pipe *p,
+				   struct policy_handle *handle_p,
+				   const char *printername,
+				   const char *drivername,
+				   const char *portname,
+				   bool ex)
+{
+	WERROR result;
+	struct spoolss_AddPrinter r;
+	struct spoolss_AddPrinterEx rex;
+	struct spoolss_SetPrinterInfoCtr info_ctr;
+	struct spoolss_SetPrinterInfo2 info2;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	struct sec_desc_buf secdesc_ctr;
+	struct spoolss_UserLevelCtr userlevel_ctr;
+	struct policy_handle handle;
+	bool found = false;
+
+	ZERO_STRUCT(devmode_ctr);
+	ZERO_STRUCT(secdesc_ctr);
+	ZERO_STRUCT(userlevel_ctr);
+
+	torture_comment(tctx, "Testing AddPrinter%s level 2\n", ex ? "Ex":"");
+
+	userlevel_ctr.level = 1;
+
+	rex.in.server = NULL;
+	rex.in.info_ctr = &info_ctr;
+	rex.in.devmode_ctr = &devmode_ctr;
+	rex.in.secdesc_ctr = &secdesc_ctr;
+	rex.in.userlevel_ctr = &userlevel_ctr;
+	rex.out.handle = &handle;
+
+	r.in.server = NULL;
+	r.in.info_ctr = &info_ctr;
+	r.in.devmode_ctr = &devmode_ctr;
+	r.in.secdesc_ctr = &secdesc_ctr;
+	r.out.handle = &handle;
+
+ again:
+
+	/* try to add printer to printer list (level 2) */
+
+	ZERO_STRUCT(info2);
+
+	info_ctr.info.info2 = &info2;
+	info_ctr.level = 2;
+
+	torture_assert_ntstatus_ok(tctx, ex ? dcerpc_spoolss_AddPrinterEx(p, tctx, &rex) :
+					      dcerpc_spoolss_AddPrinter(p, tctx, &r),
+		"failed to add printer");
+	result = ex ? rex.out.result : r.out.result;
+	torture_assert_werr_equal(tctx, result, WERR_INVALID_PRINTER_NAME,
+		"unexpected result code");
+
+	info2.printername = printername;
+
+	torture_assert_ntstatus_ok(tctx, ex ? dcerpc_spoolss_AddPrinterEx(p, tctx, &rex) :
+					      dcerpc_spoolss_AddPrinter(p, tctx, &r),
+		"failed to add printer");
+	result = ex ? rex.out.result : r.out.result;
+
+	if (W_ERROR_EQUAL(result, WERR_PRINTER_ALREADY_EXISTS)) {
+		struct policy_handle printer_handle;
+
+		torture_assert(tctx, call_OpenPrinterEx(tctx, p, printername, &printer_handle),
+			"failed to open printer handle");
+
+		torture_assert(tctx, test_DeletePrinter(tctx, p, &printer_handle),
+			"failed to delete printer");
+
+		torture_assert(tctx, test_ClosePrinter(tctx, p, &printer_handle),
+			"failed to close server handle");
+
+		goto again;
+	}
+
+	torture_assert_werr_equal(tctx, result, WERR_UNKNOWN_PORT,
+		"unexpected result code");
+
+	info2.portname = portname;
+
+	torture_assert_ntstatus_ok(tctx, ex ? dcerpc_spoolss_AddPrinterEx(p, tctx, &rex) :
+					      dcerpc_spoolss_AddPrinter(p, tctx, &r),
+		"failed to add printer");
+	result = ex ? rex.out.result : r.out.result;
+	torture_assert_werr_equal(tctx, result, WERR_UNKNOWN_PRINTER_DRIVER,
+		"unexpected result code");
+
+	info2.drivername = drivername;
+
+	torture_assert_ntstatus_ok(tctx, ex ? dcerpc_spoolss_AddPrinterEx(p, tctx, &rex) :
+					      dcerpc_spoolss_AddPrinter(p, tctx, &r),
+		"failed to add printer");
+	result = ex ? rex.out.result : r.out.result;
+	torture_assert_werr_equal(tctx, result, WERR_UNKNOWN_PRINTPROCESSOR,
+		"unexpected result code");
+
+	info2.printprocessor = "winprint";
+
+	torture_assert_ntstatus_ok(tctx, ex ? dcerpc_spoolss_AddPrinterEx(p, tctx, &rex) :
+					      dcerpc_spoolss_AddPrinter(p, tctx, &r),
+		"failed to add printer");
+	result = ex ? rex.out.result : r.out.result;
+	torture_assert_werr_ok(tctx, result,
+		"failed to add printer");
+
+	*handle_p = handle;
+
+	/* we are paranoid, really check if the printer is there now */
+
+	torture_assert(tctx, test_EnumPrinters_findname(tctx, p,
+							PRINTER_ENUM_LOCAL, 1,
+							printername,
+							&found),
+			"failed to enum printers");
+	torture_assert(tctx, found, "failed to find newly added printer");
+
+	torture_assert_ntstatus_ok(tctx, ex ? dcerpc_spoolss_AddPrinterEx(p, tctx, &rex) :
+					      dcerpc_spoolss_AddPrinter(p, tctx, &r),
+		"failed to add printer");
+	result = ex ? rex.out.result : r.out.result;
+	torture_assert_werr_equal(tctx, result, WERR_PRINTER_ALREADY_EXISTS,
+		"unexpected result code");
+
+	return true;
+}
+
+static bool test_AddPrinterEx(struct torture_context *tctx,
+			      struct dcerpc_pipe *p,
+			      struct policy_handle *handle_p,
+			      const char *printername,
+			      const char *drivername,
+			      const char *portname)
+{
+	bool ret = true;
+
+	if (!torture_setting_bool(tctx, "samba3", false)) {
+		if (!test_AddPrinter_wellknown(tctx, p, TORTURE_WELLKNOWN_PRINTER_EX, true)) {
+			torture_comment(tctx, "failed to add printer to well known list\n");
+			ret = false;
+		}
+	}
+
+	if (!test_AddPrinter_normal(tctx, p, handle_p,
+				    printername, drivername, portname,
+				    true)) {
+		torture_comment(tctx, "failed to add printer to printer list\n");
+		ret = false;
+	}
+
+	return ret;
+}
+
+static bool test_AddPrinter(struct torture_context *tctx,
+			    struct dcerpc_pipe *p,
+			    struct policy_handle *handle_p,
+			    const char *printername,
+			    const char *drivername,
+			    const char *portname)
+{
+	bool ret = true;
+
+	if (!torture_setting_bool(tctx, "samba3", false)) {
+		if (!test_AddPrinter_wellknown(tctx, p, TORTURE_WELLKNOWN_PRINTER, false)) {
+			torture_comment(tctx, "failed to add printer to well known list\n");
+			ret = false;
+		}
+	}
+
+	if (!test_AddPrinter_normal(tctx, p, handle_p,
+				    printername, drivername, portname,
+				    false)) {
+		torture_comment(tctx, "failed to add printer to printer list\n");
+		ret = false;
+	}
+
+	return ret;
+}
+
+static bool test_printer_info(struct torture_context *tctx,
+			      struct dcerpc_pipe *p,
+			      struct policy_handle *handle)
+{
+	bool ret = true;
+
+	if (!test_PrinterInfo(tctx, p, handle)) {
+		ret = false;
+	}
+
+	if (!test_SetPrinter_errors(tctx, p, handle)) {
+		ret = false;
+	}
+
+	return ret;
+}
+
+static bool test_printer(struct torture_context *tctx,
+			 struct dcerpc_pipe *p)
+{
+	bool ret = true;
+	struct policy_handle handle[2];
+	bool found = false;
+	const char *drivername = "Microsoft XPS Document Writer";
+	const char *portname = "LPT1:";
+
+	/* test printer created via AddPrinter */
+
+	if (!test_AddPrinter(tctx, p, &handle[0], TORTURE_PRINTER, drivername, portname)) {
+		return false;
+	}
+
+	if (!test_printer_info(tctx, p, &handle[0])) {
+		ret = false;
+	}
+
+	if (!test_DeletePrinter(tctx, p, &handle[0])) {
+		ret = false;
+	}
+
+	if (!test_EnumPrinters_findname(tctx, p, PRINTER_ENUM_LOCAL, 1,
+					TORTURE_PRINTER, &found)) {
+		ret = false;
+	}
+
+	torture_assert(tctx, !found, "deleted printer still there");
+
+	/* test printer created via AddPrinterEx */
+
+	if (!test_AddPrinterEx(tctx, p, &handle[1], TORTURE_PRINTER_EX, drivername, portname)) {
+		return false;
+	}
+
+	if (!test_printer_info(tctx, p, &handle[1])) {
+		ret = false;
+	}
+
+	if (!test_DeletePrinter(tctx, p, &handle[1])) {
+		ret = false;
+	}
+
+	if (!test_EnumPrinters_findname(tctx, p, PRINTER_ENUM_LOCAL, 1,
+					TORTURE_PRINTER_EX, &found)) {
+		ret = false;
+	}
+
+	torture_assert(tctx, !found, "deleted printer still there");
+
+	return ret;
+}
+
 bool torture_rpc_spoolss(struct torture_context *torture)
 {
 	NTSTATUS status;
@@ -2688,4 +3119,16 @@ bool torture_rpc_spoolss(struct torture_context *torture)
 	ret &= test_EnumPrinterDrivers_old(torture, p);
 
 	return ret;
+}
+
+struct torture_suite *torture_rpc_spoolss_printer(TALLOC_CTX *mem_ctx)
+{
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "SPOOLSS-PRINTER");
+
+	struct torture_rpc_tcase *tcase = torture_suite_add_rpc_iface_tcase(suite,
+							"printer", &ndr_table_spoolss);
+
+	torture_rpc_tcase_add_test(tcase, "printer", test_printer);
+
+	return suite;
 }
