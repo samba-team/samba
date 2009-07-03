@@ -104,6 +104,7 @@
 #ifndef NO_NTLM
 #include <heimntlm.h>
 #endif
+#include <kdc.h>
 #include <windc_plugin.h>
 
 #undef ALLOC
