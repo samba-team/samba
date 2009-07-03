@@ -1786,6 +1786,14 @@ struct spoolss_EnumJobs {
 
 struct spoolss_AddPrinter {
 	struct {
+		const char *server;/* [unique,charset(UTF16)] */
+		struct spoolss_SetPrinterInfoCtr *info_ctr;/* [ref] */
+		struct spoolss_DevmodeContainer *devmode_ctr;/* [ref] */
+		struct sec_desc_buf *secdesc_ctr;/* [ref] */
+	} in;
+
+	struct {
+		struct policy_handle *handle;/* [ref] */
 		WERROR result;
 	} out;
 

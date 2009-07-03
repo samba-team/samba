@@ -281,12 +281,21 @@ NTSTATUS rpccli_spoolss_EnumJobs(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_spoolss_AddPrinter(struct rpc_pipe_client *cli,
 				   TALLOC_CTX *mem_ctx,
+				   const char *server /* [in] [unique,charset(UTF16)] */,
+				   struct spoolss_SetPrinterInfoCtr *info_ctr /* [in] [ref] */,
+				   struct spoolss_DevmodeContainer *devmode_ctr /* [in] [ref] */,
+				   struct sec_desc_buf *secdesc_ctr /* [in] [ref] */,
+				   struct policy_handle *handle /* [out] [ref] */,
 				   WERROR *werror)
 {
 	struct spoolss_AddPrinter r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.server = server;
+	r.in.info_ctr = info_ctr;
+	r.in.devmode_ctr = devmode_ctr;
+	r.in.secdesc_ctr = secdesc_ctr;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(spoolss_AddPrinter, &r);
@@ -311,6 +320,7 @@ NTSTATUS rpccli_spoolss_AddPrinter(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*handle = *r.out.handle;
 
 	/* Return result */
 	if (werror) {

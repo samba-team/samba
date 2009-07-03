@@ -51,6 +51,11 @@ NTSTATUS rpccli_spoolss_EnumJobs(struct rpc_pipe_client *cli,
 				 WERROR *werror);
 NTSTATUS rpccli_spoolss_AddPrinter(struct rpc_pipe_client *cli,
 				   TALLOC_CTX *mem_ctx,
+				   const char *server /* [in] [unique,charset(UTF16)] */,
+				   struct spoolss_SetPrinterInfoCtr *info_ctr /* [in] [ref] */,
+				   struct spoolss_DevmodeContainer *devmode_ctr /* [in] [ref] */,
+				   struct sec_desc_buf *secdesc_ctr /* [in] [ref] */,
+				   struct policy_handle *handle /* [out] [ref] */,
 				   WERROR *werror);
 NTSTATUS rpccli_spoolss_DeletePrinter(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,

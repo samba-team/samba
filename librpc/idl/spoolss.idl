@@ -629,9 +629,12 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x05 */
-	[todo] WERROR spoolss_AddPrinter(
- 		/* This function is not implemented in Samba 3 as no
- 		   clients have been observed using it. */
+	WERROR spoolss_AddPrinter(
+		[in,unique] [string,charset(UTF16)] uint16 *server,
+		[in,ref] spoolss_SetPrinterInfoCtr *info_ctr,
+		[in,ref] spoolss_DevmodeContainer *devmode_ctr,
+		[in,ref] sec_desc_buf *secdesc_ctr,
+		[out,ref] policy_handle *handle
 	);
 
 	/******************/
