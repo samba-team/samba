@@ -678,6 +678,12 @@ kdc_check_flags(krb5_context context,
 	hdb_entry *client = &client_ex->entry;
 
 	/* check client */
+	if (client->flags.locked_out) {
+	    kdc_log(context, config, 0,
+		    "Client (%s) is locked out", client_name);
+	    return KRB5KDC_ERR_POLICY;
+	}
+
 	if (client->flags.invalid) {
 	    kdc_log(context, config, 0,
 		    "Client (%s) has invalid bit set", client_name);
@@ -727,6 +733,11 @@ kdc_check_flags(krb5_context context,
     if (server_ex != NULL) {
 	hdb_entry *server = &server_ex->entry;
 
+	if (server->flags.locked_out) {
+	    kdc_log(context, config, 0,
+		    "Client server locked out -- %s", server_name);
+	    return KRB5KDC_ERR_POLICY;
+	}
 	if (server->flags.invalid) {
 	    kdc_log(context, config, 0,
 		    "Server has invalid flag set -- %s", server_name);
