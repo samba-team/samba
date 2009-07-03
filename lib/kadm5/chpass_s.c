@@ -52,43 +52,55 @@ change(void *server_handle,
     ret = context->db->hdb_open(context->context, context->db, O_RDWR, 0);
     if(ret)
 	return ret;
+
     ret = context->db->hdb_fetch(context->context, context->db, princ,
 				 HDB_F_DECRYPT|HDB_F_GET_ANY, &ent);
-    if(ret == HDB_ERR_NOENTRY)
+    if(ret)
 	goto out;
 
-    num_keys = ent.entry.keys.len;
-    keys     = ent.entry.keys.val;
+    if (context->db->hdb_capability_flags & HDB_CAP_F_HANDLE_PASSWORDS) {
+	ret = context->db->hdb_password(context->context, context->db,
+					&ent, password, cond);
+	if (ret)
+	    goto out2;
+    } else {
 
-    ent.entry.keys.len = 0;
-    ent.entry.keys.val = NULL;
-
-    ret = _kadm5_set_keys(context, &ent.entry, password);
-    if(ret) {
+	num_keys = ent.entry.keys.len;
+	keys     = ent.entry.keys.val;
+	
+	ent.entry.keys.len = 0;
+	ent.entry.keys.val = NULL;
+	
+	ret = _kadm5_set_keys(context, &ent.entry, password);
+	if(ret) {
+	    _kadm5_free_keys (context->context, num_keys, keys);
+	    goto out2;
+	}
+	
+	if (cond)
+	    existsp = _kadm5_exists_keys (ent.entry.keys.val,
+					  ent.entry.keys.len,
+					  keys, num_keys);
 	_kadm5_free_keys (context->context, num_keys, keys);
-	goto out2;
+	
+	if (existsp) {
+	    ret = KADM5_PASS_REUSE;
+	    krb5_set_error_message(context->context, ret,
+				   "Password reuse forbidden");
+	    goto out2;
+	}
+
+	ret = hdb_seal_keys(context->context, context->db, &ent.entry);
+	if (ret)
+	    goto out2;
     }
     ent.entry.kvno++;
-    if (cond)
-	existsp = _kadm5_exists_keys (ent.entry.keys.val, ent.entry.keys.len,
-				      keys, num_keys);
-    _kadm5_free_keys (context->context, num_keys, keys);
-
-    if (existsp) {
-	ret = KADM5_PASS_REUSE;
-	krb5_set_error_message(context->context, ret, "Password reuse forbidden");
-	goto out2;
-    }
 
     ret = _kadm5_set_modifier(context, &ent.entry);
     if(ret)
 	goto out2;
 
     ret = _kadm5_bump_pw_expire(context, &ent.entry);
-    if (ret)
-	goto out2;
-
-    ret = hdb_seal_keys(context->context, context->db, &ent.entry);
     if (ret)
 	goto out2;
 
