@@ -63,7 +63,3 @@ for i in ip disable enable "ban 0" unban listvars ; do
 	exit 1
     fi
 done
-
-echo "OK, that all worked.  Expect a restart..."
-
-ctdb_test_exit

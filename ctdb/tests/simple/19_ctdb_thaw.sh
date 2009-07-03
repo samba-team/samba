@@ -53,5 +53,3 @@ echo "That worked!  Now thawing node $test_node"
 try_command_on_node 0 $CTDB thaw -n $test_node
 
 onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status $test_node unfrozen
-
-ctdb_test_exit

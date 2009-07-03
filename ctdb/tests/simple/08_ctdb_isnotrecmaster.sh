@@ -54,5 +54,3 @@ else
     echo "BAD, there are only ${num_not_rm_lines} nodes claiming not to be the recmaster"
     testfailures=1
 fi
-
-ctdb_test_exit

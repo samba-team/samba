@@ -99,7 +99,3 @@ else
     echo "BAD: IP didn't move to ${to_node}."
     exit 1
 fi
-
-echo "GOOD: That worked..."
-
-ctdb_test_exit

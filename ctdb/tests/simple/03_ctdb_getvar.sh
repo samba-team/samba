@@ -49,7 +49,3 @@ while read var x val ; do
 	exit 1
     fi
 done
-
-testfailures=$?
-
-ctdb_test_exit

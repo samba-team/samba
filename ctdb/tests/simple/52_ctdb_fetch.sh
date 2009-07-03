@@ -89,5 +89,3 @@ else
     echo "BAD: percentage difference between +ive and -ive ($perc_diff%) > 1%"
     exit 1
 fi
-
-ctdb_test_exit

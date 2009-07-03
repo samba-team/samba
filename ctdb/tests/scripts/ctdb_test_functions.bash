@@ -60,12 +60,20 @@ ctdb_test_exit ()
     trap - 0
 
     [ $(($testfailures+0)) -eq 0 -a $status -ne 0 ] && testfailures=$status
+    status=$(($testfailures+0))
+
+    # Avoid making a test fail from this point onwards.  The test is
+    # now complete.
+    set +e
+
+    echo "*** TEST COMPLETE (RC=$status), CLEANING UP..."
 
     eval "$ctdb_test_exit_hook" || true
     unset ctdb_test_exit_hook
 
-    if ! onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy ; then
-	echo "Restarting ctdb on all nodes to get back into known state..."
+    if $ctdb_test_restart_scheduled || \
+	! onnode 0 CTDB_TEST_CLEANING_UP=1 $CTDB_TEST_WRAPPER cluster_is_healthy ; then
+
 	restart_ctdb
     else
 	# This could be made unconditional but then we might get
@@ -76,7 +84,7 @@ ctdb_test_exit ()
 	onnode 0 ctdb recover
     fi
 
-    test_exit
+    exit $status
 }
 
 ctdb_test_exit_hook_add ()
@@ -149,6 +157,7 @@ ctdb_test_init ()
 {
     scriptname=$(basename "$0")
     testfailures=0
+    ctdb_test_restart_scheduled=false
 
     ctdb_test_cmd_options $@
 
@@ -309,6 +318,14 @@ cluster_is_healthy ()
 	exit 0
     else
 	echo "Cluster is UNHEALTHY"
+	if [ -z "$CTDB_TEST_CLEANING_UP" ] ; then
+	    echo "DEBUG:"
+	    local i
+	    for i in "ctdb status" "onnode -q 0 onnode all ctdb scriptstatus" ; do
+		echo "$i"
+		$i || true
+	    done
+	fi
 	exit 1
     fi
 }
@@ -591,9 +608,11 @@ setup_ctdb ()
 
 restart_ctdb ()
 {
-    if [ "$1" = "-v" ] ; then
-	echo "Restarting CTDB (scheduled)..."
+    echo -n "Restarting CTDB"
+    if $ctdb_test_restart_scheduled ; then
+	echo -n " (scheduled)"
     fi
+    echo "..."
     
     if [ -n "$CTDB_NODES_SOCKETS" ] ; then
 	daemons_stop
@@ -621,10 +640,8 @@ restart_ctdb ()
 
 ctdb_restart_when_done ()
 {
-    ctdb_test_exit_hook_add restart_ctdb -v
+    ctdb_test_restart_scheduled=true
 }
-
-
 
 #######################################
 

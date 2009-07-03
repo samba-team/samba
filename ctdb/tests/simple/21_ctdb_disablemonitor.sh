@@ -95,7 +95,3 @@ try_command_on_node -v $test_node rm -v "$trigger"
 sleep_for $monitor_interval
 
 onnode 0 $CTDB_TEST_WRAPPER node_has_status $test_node unhealthy
-
-echo "OK, that all worked.  Expect a restart..."
-
-ctdb_test_exit

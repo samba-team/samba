@@ -66,7 +66,3 @@ else
     echo "Some IPs didn't move."
     testfailures=1
 fi
-
-echo "Expect a restart..."
-
-ctdb_test_exit

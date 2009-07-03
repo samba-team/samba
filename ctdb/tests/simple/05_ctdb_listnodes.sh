@@ -57,5 +57,3 @@ while [ $n -lt $num_nodes ] ; do
     fi
     n=$(($n + 1))
 done
-
-ctdb_test_exit
