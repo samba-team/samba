@@ -5433,6 +5433,13 @@ WERROR rpccli_spoolss_openprinter_ex(struct rpc_pipe_client *cli,
 				     const char *printername,
 				     uint32_t access_desired,
 				     struct policy_handle *handle);
+WERROR rpccli_spoolss_getprinterdriver(struct rpc_pipe_client *cli,
+				       TALLOC_CTX *mem_ctx,
+				       struct policy_handle *handle,
+				       const char *architecture,
+				       uint32_t level,
+				       uint32_t offered,
+				       union spoolss_DriverInfo *info);
 WERROR rpccli_spoolss_getprinterdriver2(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx,
 					struct policy_handle *handle,
