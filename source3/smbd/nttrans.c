@@ -58,7 +58,7 @@ void send_nt_replies(connection_struct *conn,
 	char *pp = params;
 	char *pd = pdata;
 	int params_sent_thistime, data_sent_thistime, total_sent_thistime;
-	int alignment_offset = 3;
+	int alignment_offset = 1;
 	int data_alignment_offset = 0;
 	struct smbd_server_connection *sconn = req->sconn;
 	int max_send = sconn->smb1.sessions.max_send;
