@@ -1792,7 +1792,7 @@ server_lookup:
 	if (ret) {
 	    kdc_log(context, config, 0,
 		    "failed to decrypt ticket for "
-		    "constrained delegation from %s to %s ", spn, cpn);
+		    "constrained delegation from %s to %s ", cpn, spn);
 	    goto out;
 	}
 
@@ -1800,7 +1800,7 @@ server_lookup:
 	if (adtkt.flags.forwardable == 0) {
 	    kdc_log(context, config, 0,
 		    "Missing forwardable flag on ticket for "
-		    "constrained delegation from %s to %s ", spn, cpn);
+		    "constrained delegation from %s to %s ", cpn, spn);
 	    ret = KRB5KDC_ERR_BADOPTION;
 	    goto out;
 	}
@@ -1809,7 +1809,7 @@ server_lookup:
 	if (ret) {
 	    kdc_log(context, config, 0,
 		    "constrained delegation from %s to %s not allowed",
-		    spn, cpn);
+		    cpn, spn);
 	    goto out;
 	}
 
