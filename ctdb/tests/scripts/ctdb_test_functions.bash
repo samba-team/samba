@@ -631,9 +631,9 @@ restart_ctdb ()
     # cluster to stabilise before a subsequent test.
     echo "Forcing a recovery..."
     onnode -q 0 ctdb recover
-
-    #echo "Sleeping to allow ctdb to settle..."
-    #sleep_for 10
+    sleep_for 1
+    echo "Forcing a recovery..."
+    onnode -q 0 ctdb recover
 
     echo "ctdb is ready"
 }
