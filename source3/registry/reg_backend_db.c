@@ -1027,7 +1027,8 @@ done:
 	return werr;
 }
 
-static TDB_DATA regdb_fetch_key_internal(TALLOC_CTX *mem_ctx, const char *key)
+static TDB_DATA regdb_fetch_key_internal(struct db_context *db,
+					 TALLOC_CTX *mem_ctx, const char *key)
 {
 	char *path = NULL;
 	TDB_DATA data;
@@ -1037,7 +1038,7 @@ static TDB_DATA regdb_fetch_key_internal(TALLOC_CTX *mem_ctx, const char *key)
 		return make_tdb_data(NULL, 0);
 	}
 
-	data = dbwrap_fetch_bystring(regdb, mem_ctx, path);
+	data = dbwrap_fetch_bystring(db, mem_ctx, path);
 
 	TALLOC_FREE(path);
 	return data;
@@ -1325,7 +1326,7 @@ static bool regdb_key_exists(const char *key)
 	p = strrchr(path, '/');
 	if (p == NULL) {
 		/* this is a base key */
-		value = regdb_fetch_key_internal(mem_ctx, path);
+		value = regdb_fetch_key_internal(regdb, mem_ctx, path);
 		ret = (value.dptr != NULL);
 	} else {
 		*p = '\0';
@@ -1366,7 +1367,7 @@ int regdb_fetch_keys(const char *key, struct regsubkey_ctr *ctr)
 		goto done;
 	}
 
-	value = regdb_fetch_key_internal(frame, key);
+	value = regdb_fetch_key_internal(regdb, frame, key);
 
 	if (value.dptr == NULL) {
 		DEBUG(10, ("regdb_fetch_keys: no subkeys found for key [%s]\n",
@@ -1501,7 +1502,7 @@ int regdb_fetch_values(const char* key, struct regval_ctr *values)
 
 	values->seqnum = regdb_get_seqnum();
 
-	value = regdb_fetch_key_internal(ctx, keystr);
+	value = regdb_fetch_key_internal(regdb, ctx, keystr);
 
 	if (!value.dptr) {
 		/* all keys have zero values by default */
