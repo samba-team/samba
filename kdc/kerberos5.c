@@ -894,6 +894,7 @@ _kdc_as_rep(krb5_context context,
     AS_REP rep;
     KDCOptions f = b->kdc_options;
     hdb_entry_ex *client = NULL, *server = NULL;
+    HDB *clientdb;
     krb5_enctype cetype, setype, sessionetype;
     krb5_data e_data;
     EncTicketPart et;
@@ -977,7 +978,7 @@ _kdc_as_rep(krb5_context context,
      */
 
     ret = _kdc_db_fetch(context, config, client_princ,
-			HDB_F_GET_CLIENT | flags, NULL, &client);
+			HDB_F_GET_CLIENT | flags, &clientdb, &client);
     if(ret){
 	kdc_log(context, config, 0, "UNKNOWN -- %s: %s", client_name,
 		krb5_get_err_text(context, ret));
@@ -1125,8 +1126,8 @@ _kdc_as_rep(krb5_context context,
 			    "No client key matching pa-data (%s) -- %s",
 			    estr, client_name);
 		free(estr);
-		
 		free_EncryptedData(&enc_data);
+
 		continue;
 	    }
 
@@ -1170,6 +1171,10 @@ _kdc_as_rep(krb5_context context,
 		e_text = "Failed to decrypt PA-DATA";
 
 		free_EncryptedData(&enc_data);
+
+		if (clientdb->hdb_auth_status)
+		    (clientdb->hdb_auth_status)(context, clientdb, client, HDB_AUTH_WRONG_PASSWORD);
+
 		ret = KRB5KDC_ERR_PREAUTH_FAILED;
 		continue;
 	    }
@@ -1222,6 +1227,9 @@ _kdc_as_rep(krb5_context context,
 	    ret = krb5_enctype_to_string(context,pa_key->key.keytype, &str);
 	    if (ret)
 		str = NULL;
+
+	    if (clientdb->hdb_auth_status)
+		(clientdb->hdb_auth_status)(context, clientdb, client, HDB_AUTH_SUCCESS);
 
 	    kdc_log(context, config, 2,
 		    "ENC-TS Pre-authentication succeeded -- %s using %s",
