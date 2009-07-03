@@ -556,9 +556,9 @@ static WERROR regdb_delete_values(struct db_context *db, const char *keyname)
 	return regdb_delete_key_with_prefix(db, keyname, REG_VALUE_PREFIX);
 }
 
-static WERROR regdb_delete_secdesc(const char *keyname)
+static WERROR regdb_delete_secdesc(struct db_context *db, const char *keyname)
 {
-	return regdb_delete_key_with_prefix(regdb, keyname, REG_SECDESC_PREFIX);
+	return regdb_delete_key_with_prefix(db, keyname, REG_SECDESC_PREFIX);
 }
 
 static WERROR regdb_delete_subkeylist(const char *keyname)
@@ -577,7 +577,7 @@ static WERROR regdb_delete_key_lists(const char *keyname)
 		goto done;
 	}
 
-	werr = regdb_delete_secdesc(keyname);
+	werr = regdb_delete_secdesc(regdb, keyname);
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(1, (__location__ " Deleting %s/%s failed: %s\n",
 			  REG_SECDESC_PREFIX, keyname, win_errstr(werr)));
