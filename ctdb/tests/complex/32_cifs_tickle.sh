@@ -95,18 +95,10 @@ else
     testfailures=1
 fi
 
-filter="src host $test_ip and tcp src port $test_port and dst host ${src_socket%:*} and tcp dst port ${src_socket##*:} and tcp[tcpflags] & tcp-rst != 0"
-tcpdump_start "$filter"
+tcptickle_sniff_start $src_socket "${test_ip}:${test_port}"
 
 echo "Disabling node $test_node"
 try_command_on_node 1 $CTDB disable -n $test_node
 onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status $test_node disabled
 
-tcpdump_wait
-
-echo "GOOD: here's the tickle reset:"
-tcpdump -n -r $tcpdump_filename 2>/dev/null
-
-echo "Expect a restart..."
-
-ctdb_test_exit
+tcptickle_sniff_wait_show
