@@ -115,8 +115,7 @@ INSTALL_SCRIPTS = $(addprefix scripting/bin/, \
 	autoidl \
 	samba3dump \
 	rpcclient \
-	smbstatus \
-	epdump)
+	smbstatus)
 
 $(foreach SCRIPT,$(INSTALL_SCRIPTS),$(eval $(call binary_install_template,$(SCRIPT))))
 
