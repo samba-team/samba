@@ -7,7 +7,7 @@ mkdir -p abi/tools
 ABI_CHECKS="-aux-info abi/\$@.X"
 make ABI_CHECK="$ABI_CHECKS" CC="/usr/bin/gcc"
 
-for i in abi/*/*.X; do cat $i | grep 'tdb\.h'; done | sort | uniq | awk -F "extern " '{ print $2 }' > abi/signatures
+for i in abi/*/*.X; do cat $i | grep 'tdb\.h'; done | sort | uniq | awk -F "extern " '{ print $2 }' | sort > abi/signatures
 grep '^extern' include/tdb.h | grep -v '"C"' | sort | uniq | awk -F "extern " '{ print $2 }' >> abi/signatures
 
 cat > abi/exports << EOF
