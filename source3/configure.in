@@ -6064,7 +6064,7 @@ if test x"$enable_avahi" != x"no"; then
     LIBS="$save_LIBS"
 
     if test x"$ac_cv_lib_ext_avahi_client_avahi_client_new" != x"yes" -o \
-       test x"$ac_cv_lib_ext_avahi_common_avahi_strerror" != x"yes" ; then
+       x"$ac_cv_lib_ext_avahi_common_avahi_strerror" != x"yes" ; then
 	have_avahi_support=no
     fi
 
