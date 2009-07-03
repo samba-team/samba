@@ -944,6 +944,19 @@ static bool api_spoolss_GetPrinterDriver(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(spoolss_GetPrinterDriver, r);
 	}
 
+	ZERO_STRUCT(r->out);
+	r->out.info = talloc_zero(r, union spoolss_DriverInfo);
+	if (r->out.info == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	r->out.needed = talloc_zero(r, uint32_t);
+	if (r->out.needed == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
 	r->out.result = _spoolss_GetPrinterDriver(p, r);
 
 	if (p->rng_fault_state) {
@@ -7725,6 +7738,17 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 
 		case NDR_SPOOLSS_GETPRINTERDRIVER: {
 			struct spoolss_GetPrinterDriver *r = (struct spoolss_GetPrinterDriver *)_r;
+			ZERO_STRUCT(r->out);
+			r->out.info = talloc_zero(mem_ctx, union spoolss_DriverInfo);
+			if (r->out.info == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.needed = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.needed == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
 			r->out.result = _spoolss_GetPrinterDriver(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}

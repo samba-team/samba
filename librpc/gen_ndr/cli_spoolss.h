@@ -96,6 +96,13 @@ NTSTATUS rpccli_spoolss_EnumPrinterDrivers(struct rpc_pipe_client *cli,
 					   WERROR *werror);
 NTSTATUS rpccli_spoolss_GetPrinterDriver(struct rpc_pipe_client *cli,
 					 TALLOC_CTX *mem_ctx,
+					 struct policy_handle *handle /* [in] [ref] */,
+					 const char *architecture /* [in] [unique,charset(UTF16)] */,
+					 uint32_t level /* [in]  */,
+					 DATA_BLOB *buffer /* [in] [unique] */,
+					 uint32_t offered /* [in]  */,
+					 union spoolss_DriverInfo *info /* [out] [unique,subcontext_size(offered),subcontext(4),switch_is(level)] */,
+					 uint32_t *needed /* [out] [ref] */,
 					 WERROR *werror);
 NTSTATUS rpccli_spoolss_GetPrinterDriverDirectory(struct rpc_pipe_client *cli,
 						  TALLOC_CTX *mem_ctx,

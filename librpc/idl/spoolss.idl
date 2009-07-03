@@ -1101,7 +1101,14 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x0b */
-	[todo] WERROR spoolss_GetPrinterDriver(
+	WERROR spoolss_GetPrinterDriver(
+		[in,ref] policy_handle *handle,
+		[in,unique] [string,charset(UTF16)] uint16 *architecture,
+		[in] 	 uint32 level,
+		[in,unique] DATA_BLOB *buffer,
+		[in] 	 uint32 offered,
+		[out,unique,subcontext(4),subcontext_size(offered),switch_is(level)] spoolss_DriverInfo *info,
+		[out,ref] uint32 *needed
 	);
 
 	/******************/

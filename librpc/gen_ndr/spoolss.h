@@ -1911,6 +1911,16 @@ struct spoolss_EnumPrinterDrivers {
 
 struct spoolss_GetPrinterDriver {
 	struct {
+		struct policy_handle *handle;/* [ref] */
+		const char *architecture;/* [unique,charset(UTF16)] */
+		uint32_t level;
+		DATA_BLOB *buffer;/* [unique] */
+		uint32_t offered;
+	} in;
+
+	struct {
+		union spoolss_DriverInfo *info;/* [unique,subcontext_size(offered),subcontext(4),switch_is(level)] */
+		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
 
