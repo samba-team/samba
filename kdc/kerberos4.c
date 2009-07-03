@@ -214,10 +214,10 @@ _kdc_do_version4(krb5_context context,
 	    goto out1;
 	}
 
-	ret = _kdc_check_flags (context, config,
-				client, client_name,
-				server, server_name,
-				TRUE);
+	ret = kdc_check_flags (context, config,
+			       client, client_name,
+			       server, server_name,
+			       TRUE);
 	if (ret) {
 	    /* good error code? */
 	    make_err_reply(context, reply, KRB4ET_KDC_NAME_EXP,
@@ -499,10 +499,10 @@ _kdc_do_version4(krb5_context context,
 	    goto out2;
 	}
 
-	ret = _kdc_check_flags (context, config,
-				client, client_name,
-				server, server_name,
-				FALSE);
+	ret = kdc_check_flags (context, config,
+			       client, client_name,
+			       server, server_name,
+			       FALSE);
 	if (ret) {
 	    make_err_reply(context, reply, KRB4ET_KDC_NAME_EXP,
 			   "operation not allowed");
