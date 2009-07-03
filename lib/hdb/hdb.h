@@ -216,6 +216,10 @@ typedef struct HDB{
      * hdb_entry.flags.locked-out flag.
      */
     krb5_error_code (*hdb_auth_status)(krb5_context, struct HDB *, hdb_entry_ex *, int);
+    /**
+     * Check is delegation is allowed.
+     */
+    krb5_error_code (*hdb_check_constrained_delegation)(krb5_context, struct HDB *, hdb_entry_ex *, krb5_const_principal);
 }HDB;
 
 #define HDB_INTERFACE_VERSION	5
