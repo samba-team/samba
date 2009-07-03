@@ -63,16 +63,4 @@ try_command_on_node $test_node 'echo $$'
 pid="$out"
 
 echo "Checking for PID $pid on node $test_node"
-# set -e is good, but avoid it here
-status=0
-onnode 0 "$CTDB process-exists ${test_node}:${pid}" || status=$?
-echo "$out"
-
-if [ $status -ne 0 ] ; then
-    echo "OK"
-else
-    echo "BAD"
-    testfailures=1
-fi
-
-ctdb_test_exit
+try_command_on_node -v 0 "! $CTDB process-exists ${test_node}:${pid}"

@@ -93,5 +93,3 @@ else
     echo "Some IPs didn't move."
     testfailures=1
 fi
-
-ctdb_test_exit

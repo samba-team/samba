@@ -50,5 +50,3 @@ else
     echo "BAD: there not look to be output for all $num_nodes nodes"
     exit 1
 fi    
-
-ctdb_test_exit

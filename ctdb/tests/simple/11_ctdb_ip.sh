@@ -59,5 +59,3 @@ else
     echo "$out"
     testfailures=1
 fi
-
-ctdb_test_exit

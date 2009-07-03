@@ -64,7 +64,3 @@ fi
 try_command_on_node -v 0 $CTDB disablemonitor -n $test_node
 
 onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status $test_node monoff
-
-echo "GOOD: That worked!"
-
-ctdb_test_exit

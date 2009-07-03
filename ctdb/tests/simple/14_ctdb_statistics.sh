@@ -42,5 +42,3 @@ sanity_check_output 40 "$pattern" "$out"
 try_command_on_node -v 1 "$CTDB statistics -n all"
 
 sanity_check_output 40 "$pattern" "$out"
-
-ctdb_test_exit

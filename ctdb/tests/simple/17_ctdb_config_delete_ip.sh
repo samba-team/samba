@@ -73,5 +73,3 @@ else
     echo "BAD: The remove IP address is still there!"
     testfailures=1
 fi
-
-ctdb_test_exit

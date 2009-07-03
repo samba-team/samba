@@ -69,7 +69,3 @@ for i in $(seq 1 5) ; do
 	exit 1
     fi
 done
-
-echo "GOOD: That worked..."
-
-ctdb_test_exit

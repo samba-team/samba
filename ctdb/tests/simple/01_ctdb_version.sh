@@ -48,5 +48,3 @@ else
     echo "BAD: CTDB version != RPM version"
     testfailures=1
 fi
-
-ctdb_test_exit

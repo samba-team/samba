@@ -39,5 +39,3 @@ sanity_check_output \
     5 \
     '^[[:alpha:]]+[[:space:]]*=[[:space:]]*[[:digit:]]+$' \
     "$out"
-
-ctdb_test_exit

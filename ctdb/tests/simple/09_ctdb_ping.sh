@@ -52,7 +52,3 @@ sanity_check_output \
     1 \
     "(: ctdb_control error: 'ctdb_control to disconnected node'|Unable to get ping response from node 1|Node 1 is DISCONNECTED)" \
     "$out"
-
-echo "Expect a restart..."
-
-ctdb_test_exit

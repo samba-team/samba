@@ -77,7 +77,3 @@ fi
 echo "Look's good!  Putting the old value back..."
 cmd="$CTDB setvar $var $val"
 try_command_on_node 0 $cmd
-
-echo "All done..."
-
-ctdb_test_exit

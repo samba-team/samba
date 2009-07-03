@@ -47,7 +47,7 @@ get_debug ()
     
     try_command_on_node -v $node "$CTDB getdebug"
     check_debug=$(echo "$out" |
-	sed -r -e 's@Node [[:digit:]] is at debug level ([[:alpha:]]+) \(-?[[:digit:]]\)$@\1@')
+	sed -r -e 's@Node [[:digit:]]+ is at debug level ([[:alpha:]]+) \(-?[[:digit:]]+\)$@\1@')
 }
 
 set_and_check_debug ()
@@ -81,5 +81,3 @@ if [ "$testfailures" != 1 ] ; then
     echo "Returning the debug level to its initial value..."
     set_and_check_debug 1 "$initial_debug"
 fi
-
-ctdb_test_exit

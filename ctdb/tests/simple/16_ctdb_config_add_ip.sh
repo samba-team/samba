@@ -114,5 +114,3 @@ else
     echo "BAD: Unable to find IP address to add."
     testfailures=1
 fi
-
-ctdb_test_exit

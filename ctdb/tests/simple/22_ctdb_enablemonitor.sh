@@ -98,7 +98,3 @@ echo "OK: flag file was created so monitoring must be enabled."
 onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status $test_node unhealthy $monitor_interval
 
 try_command_on_node -v $test_node ls -l "$detected"
-
-echo "GOOD: That all worked..."
-
-ctdb_test_exit
