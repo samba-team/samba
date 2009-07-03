@@ -7671,6 +7671,30 @@ WERROR _spoolss_AddPrinterEx(pipes_struct *p,
 }
 
 /****************************************************************
+ _spoolss_AddPrinter
+****************************************************************/
+
+WERROR _spoolss_AddPrinter(pipes_struct *p,
+			   struct spoolss_AddPrinter *r)
+{
+	struct _spoolss_AddPrinterEx a;
+	struct spoolss_UserLevelCtr userlevel_ctr;
+
+	ZERO_STRUCT(userlevel_ctr);
+
+	user_level_ctr.level = 1;
+
+	a.in.server		= r->in.server;
+	a.in.info_ctr		= r->in.info_ctr;
+	a.in.devmode_ctr	= r->in.devmode_ctr;
+	a.in.secdesc_ctr	= r->in.secdesc_ctr;
+	a.in.userlevel_ctr	= &userlevel_ctr;
+	a.out.handle		= r->out.handle;
+
+	return _spoolss_AddPrinterEx(p, &a);
+}
+
+/****************************************************************
  _spoolss_AddPrinterDriver
 ****************************************************************/
 
@@ -10012,17 +10036,6 @@ WERROR _spoolss_AddPort(pipes_struct *p,
 {
 	/* do what w2k3 does */
 
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_AddPrinter
-****************************************************************/
-
-WERROR _spoolss_AddPrinter(pipes_struct *p,
-			   struct spoolss_AddPrinter *r)
-{
-	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
 }
 
