@@ -566,25 +566,25 @@ static WERROR regdb_delete_subkeylist(struct db_context *db, const char *keyname
 	return regdb_delete_key_with_prefix(db, keyname, NULL);
 }
 
-static WERROR regdb_delete_key_lists(const char *keyname)
+static WERROR regdb_delete_key_lists(struct db_context *db, const char *keyname)
 {
 	WERROR werr;
 
-	werr = regdb_delete_values(regdb, keyname);
+	werr = regdb_delete_values(db, keyname);
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(1, (__location__ " Deleting %s/%s failed: %s\n",
 			  REG_VALUE_PREFIX, keyname, win_errstr(werr)));
 		goto done;
 	}
 
-	werr = regdb_delete_secdesc(regdb, keyname);
+	werr = regdb_delete_secdesc(db, keyname);
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(1, (__location__ " Deleting %s/%s failed: %s\n",
 			  REG_SECDESC_PREFIX, keyname, win_errstr(werr)));
 		goto done;
 	}
 
-	werr = regdb_delete_subkeylist(regdb, keyname);
+	werr = regdb_delete_subkeylist(db, keyname);
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(1, (__location__ " Deleting %s failed: %s\n",
 			  keyname, win_errstr(werr)));
@@ -810,7 +810,7 @@ bool regdb_store_keys(const char *key, struct regsubkey_ctr *ctr)
 			goto cancel;
 		}
 
-		werr = regdb_delete_key_lists(path);
+		werr = regdb_delete_key_lists(regdb, path);
 		W_ERROR_NOT_OK_GOTO(werr, cancel);
 
 		TALLOC_FREE(path);
@@ -984,7 +984,7 @@ static WERROR regdb_delete_subkey(const char *key, const char *subkey)
 	werr = regdb_transaction_start();
 	W_ERROR_NOT_OK_GOTO_DONE(werr);
 
-	werr = regdb_delete_key_lists(path);
+	werr = regdb_delete_key_lists(regdb, path);
 	W_ERROR_NOT_OK_GOTO(werr, cancel);
 
 	werr = regsubkey_ctr_init(mem_ctx, &subkeys);
