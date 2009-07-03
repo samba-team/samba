@@ -237,6 +237,10 @@ o    Jim McDonough <jmcd@samba.org>
        not.
 
 
+o    Stefan Metzmacher <metze@samba.org>
+     * BUG 6526: Fix notifies in the share root directory.
+
+
 o    Bo Yang <boyang@samba.org>
      * BUG 6499: Fix building of pam_smbpass.
 
