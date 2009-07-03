@@ -45,7 +45,9 @@ HDBFlags ::= BIT STRING {
 	immutable(13),			-- may not be deleted
 	trusted-for-delegation(14),	-- Trusted to print forwardabled tickets
 	allow-kerberos4(15),		-- Allow Kerberos 4 requests
-	allow-digest(16)		-- Allow digest requests
+	allow-digest(16),		-- Allow digest requests
+	locked-out(17)			-- Account is locked out,
+					-- authentication will be denied
 }
 
 GENERATION ::= SEQUENCE {
