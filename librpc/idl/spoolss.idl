@@ -686,7 +686,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 	} spoolss_SetPrinterInfo0;
 
 	typedef struct {
-		spoolss_EnumPrinterFlags flags;
+		spoolss_PrinterAttributes flags;
 		[string,charset(UTF16)] uint16 *description;
 		[string,charset(UTF16)] uint16 *name;
 		[string,charset(UTF16)] uint16 *comment;

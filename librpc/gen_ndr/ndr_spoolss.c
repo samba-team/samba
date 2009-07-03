@@ -5959,7 +5959,7 @@ static enum ndr_err_code ndr_push_spoolss_SetPrinterInfo1(struct ndr_push *ndr, 
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_spoolss_EnumPrinterFlags(ndr, NDR_SCALARS, r->flags));
+		NDR_CHECK(ndr_push_spoolss_PrinterAttributes(ndr, NDR_SCALARS, r->flags));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->description));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->name));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->comment));
@@ -5997,7 +5997,7 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo1(struct ndr_pull *ndr, 
 	TALLOC_CTX *_mem_save_comment_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_spoolss_EnumPrinterFlags(ndr, NDR_SCALARS, &r->flags));
+		NDR_CHECK(ndr_pull_spoolss_PrinterAttributes(ndr, NDR_SCALARS, &r->flags));
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_description));
 		if (_ptr_description) {
 			NDR_PULL_ALLOC(ndr, r->description);
@@ -6062,7 +6062,7 @@ _PUBLIC_ void ndr_print_spoolss_SetPrinterInfo1(struct ndr_print *ndr, const cha
 {
 	ndr_print_struct(ndr, name, "spoolss_SetPrinterInfo1");
 	ndr->depth++;
-	ndr_print_spoolss_EnumPrinterFlags(ndr, "flags", r->flags);
+	ndr_print_spoolss_PrinterAttributes(ndr, "flags", r->flags);
 	ndr_print_ptr(ndr, "description", r->description);
 	ndr->depth++;
 	if (r->description) {
