@@ -7677,12 +7677,12 @@ WERROR _spoolss_AddPrinterEx(pipes_struct *p,
 WERROR _spoolss_AddPrinter(pipes_struct *p,
 			   struct spoolss_AddPrinter *r)
 {
-	struct _spoolss_AddPrinterEx a;
+	struct spoolss_AddPrinterEx a;
 	struct spoolss_UserLevelCtr userlevel_ctr;
 
 	ZERO_STRUCT(userlevel_ctr);
 
-	user_level_ctr.level = 1;
+	userlevel_ctr.level = 1;
 
 	a.in.server		= r->in.server;
 	a.in.info_ctr		= r->in.info_ctr;
