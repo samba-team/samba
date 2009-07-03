@@ -44,11 +44,11 @@ class BasicTests(unittest.TestCase):
     def delete_force(self, ldb, dn):
         try:
             ldb.delete(dn)
-        except LdbError, (num, _): 
+        except LdbError, (num, _):
             self.assertEquals(num, ERR_NO_SUCH_OBJECT)
 
     def find_basedn(self, ldb):
-        res = ldb.search(base="", expression="", scope=SCOPE_BASE, 
+        res = ldb.search(base="", expression="", scope=SCOPE_BASE,
                          attrs=["defaultNamingContext"])
         self.assertEquals(len(res), 1)
         return res[0]["defaultNamingContext"][0]
@@ -81,7 +81,7 @@ class BasicTests(unittest.TestCase):
         self.delete_force(self.ldb, "cn=parentguidtest,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=parentguidtest,cn=testotherusers," + self.base_dn)
         self.delete_force(self.ldb, "cn=testotherusers," + self.base_dn)
-      
+
     def test_group_add_invalid_member(self):
         """Testing group add with invalid member"""
         try:
@@ -90,7 +90,7 @@ class BasicTests(unittest.TestCase):
                 "objectclass": "group",
                 "member": "cn=ldaptestuser,cn=useRs," + self.base_dn})
             self.fail()
-        except LdbError, (num, _): 
+        except LdbError, (num, _):
             self.assertEquals(num, ERR_NO_SUCH_OBJECT)
 
     def test_parentGUID(self):
@@ -179,9 +179,9 @@ class BasicTests(unittest.TestCase):
                      "cn": "LDAPtest2COMPUTER"
                      })
             self.fail()
-        except LdbError, (num, _): 
+        except LdbError, (num, _):
             self.assertEquals(num, ERR_INVALID_DN_SYNTAX)
-            
+
         self.delete_force(self.ldb, "cn=ldaptestcomputer3,cn=computers," + self.base_dn)
         try:
             ldb.add({"dn": "cn=ldaptestcomputer3,cn=computers," + self.base_dn,
@@ -190,9 +190,9 @@ class BasicTests(unittest.TestCase):
                      "sAMAccountType": "805306368"
                 })
             self.fail()
-        except LdbError, (num, _): 
+        except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
-            
+
         self.delete_force(self.ldb, "cn=ldaptestcomputer3,cn=computers," + self.base_dn)
         try:
             ldb.add({"dn": "cn=ldaptestcomputer3,cn=computers," + self.base_dn,
@@ -201,9 +201,9 @@ class BasicTests(unittest.TestCase):
                      "userAccountControl": "0"
                 })
             self.fail()
-        except LdbError, (num, _): 
+        except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
-            
+
         self.delete_force(self.ldb, "cn=ldaptestuser7,cn=users," + self.base_dn)
         try:
             ldb.add({"dn": "cn=ldaptestuser7,cn=users," + self.base_dn,
@@ -212,9 +212,9 @@ class BasicTests(unittest.TestCase):
                      "userAccountControl": "0"
                 })
             self.fail()
-        except LdbError, (num, _): 
+        except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
-            
+
         self.delete_force(self.ldb, "cn=ldaptestuser7,cn=users," + self.base_dn)
 
         ldb.add({"dn": "cn=ldaptestuser7,cn=users," + self.base_dn,
@@ -222,7 +222,7 @@ class BasicTests(unittest.TestCase):
                  "cn": "LDAPtestuser7",
                  "userAccountControl": "2"
                  })
-            
+
         self.delete_force(self.ldb, "cn=ldaptestuser7,cn=users," + self.base_dn)
 
         self.delete_force(self.ldb, "cn=ldaptestcomputer3,cn=computers," + self.base_dn)
@@ -230,7 +230,7 @@ class BasicTests(unittest.TestCase):
                  "objectClass": "computer",
                  "cn": "LDAPtestCOMPUTER3"
                  })
-            
+
 	print "Testing ldb.search for (&(cn=ldaptestcomputer3)(objectClass=user))";
         res = ldb.search(self.base_dn, expression="(&(cn=ldaptestcomputer3)(objectClass=user))");
         self.assertEquals(len(res), 1, "Found only %d for (&(cn=ldaptestcomputer3)(objectClass=user))" % len(res))
@@ -290,7 +290,7 @@ dn: cn=ldaptest2computer,cn=computers,""" + self.base_dn + """
 changetype: modify
 replace: servicePrincipalName
 """)
-            
+
         ldb.modify_ldif("""
 dn: cn=ldaptest2computer,cn=computers,""" + self.base_dn + """
 changetype: modify
@@ -327,7 +327,7 @@ servicePrincipalName: host/ldaptest2computer28
 servicePrincipalName: host/ldaptest2computer29
 """)
 
-        res = ldb.search(self.base_dn, expression="(cn=ldaptest2computer))", scope=SCOPE_SUBTREE, 
+        res = ldb.search(self.base_dn, expression="(cn=ldaptest2computer))", scope=SCOPE_SUBTREE,
                          attrs=["servicePrincipalName;range=0-*"])
         self.assertEquals(len(res), 1, "Could not find (cn=ldaptest2computer)")
         #print len(res[0]["servicePrincipalName;range=0-*"])
@@ -338,7 +338,7 @@ servicePrincipalName: host/ldaptest2computer29
             # print res[0]["servicePrincipalName;range=0-19"].length
         self.assertEquals(len(res[0]["servicePrincipalName;range=0-19"]), 20)
 
-            
+
         res = ldb.search(self.base_dn, expression="(cn=ldaptest2computer))", scope=SCOPE_SUBTREE, attrs=["servicePrincipalName;range=0-30"])
         self.assertEquals(len(res), 1, "Could not find (cn=ldaptest2computer)")
         self.assertEquals(len(res[0]["servicePrincipalName;range=0-*"]), 30)
@@ -351,7 +351,7 @@ servicePrincipalName: host/ldaptest2computer29
         self.assertEquals(len(res), 1, "Could not find (cn=ldaptest2computer)")
         self.assertEquals(len(res[0]["servicePrincipalName;range=30-*"]), 0)
 
-            
+
         res = ldb.search(self.base_dn, expression="(cn=ldaptest2computer))", scope=SCOPE_SUBTREE, attrs=["servicePrincipalName;range=10-40"])
         self.assertEquals(len(res), 1, "Could not find (cn=ldaptest2computer)")
         self.assertEquals(len(res[0]["servicePrincipalName;range=10-*"]), 20)
@@ -496,7 +496,7 @@ member: cn=ldaptestuser3,cn=users,""" + self.base_dn + """
         res_user = ldb.search(self.base_dn, expression="(&(cn=ldaptestUSer2)(objectClass=user))", scope=SCOPE_SUBTREE, attrs=attrs)
         self.assertEquals(len(res_user), 1, "Could not find (&(cn=ldaptestUSer2)(objectClass=user))")
 
-        #Check rename works with extended/alternate DN forms 
+        #Check rename works with extended/alternate DN forms
         ldb.rename("<SID=" + ldb.schema_format_value("objectSID", res_user[0]["objectSID"][0]) + ">" , "cn=ldaptestuser3,cn=users," + self.base_dn)
 
         ldb.rename("cn=ldaptestuser3,cn=users," + self.base_dn, "cn=ldaptestuser3,cn=users," + self.base_dn)
@@ -563,17 +563,17 @@ member: cn=ldaptestuser3,cn=users,""" + self.base_dn + """
 
         # ensure we cannnot rename it twice
         try:
-            ldb.rename("cn=ldaptestuser3,cn=users," + self.base_dn, 
+            ldb.rename("cn=ldaptestuser3,cn=users," + self.base_dn,
                        "cn=ldaptestuser2,cn=users," + self.base_dn)
             self.fail()
-        except LdbError, (num, _): 
+        except LdbError, (num, _):
             self.assertEquals(num, ERR_NO_SUCH_OBJECT)
 
         # ensure can now use that name
         ldb.add({"dn": "cn=ldaptestuser3,cn=users," + self.base_dn,
                       "objectClass": ["person", "user"],
                       "cn": "LDAPtestUSER3"})
-        
+
         # ensure we now cannnot rename
         try:
             ldb.rename("cn=ldaptestuser2,cn=users," + self.base_dn, "cn=ldaptestuser3,cn=users," + self.base_dn)
@@ -596,11 +596,11 @@ member: cn=ldaptestuser3,cn=users,""" + self.base_dn + """
 
         print "Testing subtree Renames"
 
-        ldb.add({"dn": "cn=ldaptestcontainer," + self.base_dn, 
+        ldb.add({"dn": "cn=ldaptestcontainer," + self.base_dn,
                  "objectClass": "container"})
-        
+
         self.delete_force(self.ldb, "cn=ldaptestuser4,cn=ldaptestcontainer," + self.base_dn)
-        ldb.add({"dn": "CN=ldaptestuser4,CN=ldaptestcontainer," + self.base_dn, 
+        ldb.add({"dn": "CN=ldaptestuser4,CN=ldaptestcontainer," + self.base_dn,
                  "objectClass": ["person", "user"],
                  "cn": "LDAPtestUSER4"})
 
@@ -610,7 +610,7 @@ changetype: modify
 add: member
 member: cn=ldaptestuser4,cn=ldaptestcontainer,""" + self.base_dn + """
 """)
-        
+
         print "Testing ldb.rename of cn=ldaptestcontainer," + self.base_dn + " to cn=ldaptestcontainer2," + self.base_dn
         ldb.rename("CN=ldaptestcontainer," + self.base_dn, "CN=ldaptestcontainer2," + self.base_dn)
 
@@ -620,8 +620,8 @@ member: cn=ldaptestuser4,cn=ldaptestcontainer,""" + self.base_dn + """
 
         print "Testing subtree ldb.search for (&(cn=ldaptestuser4)(objectClass=user)) in (just renamed from) cn=ldaptestcontainer," + self.base_dn
         try:
-            res = ldb.search("cn=ldaptestcontainer," + self.base_dn, 
-                    expression="(&(cn=ldaptestuser4)(objectClass=user))", 
+            res = ldb.search("cn=ldaptestcontainer," + self.base_dn,
+                    expression="(&(cn=ldaptestuser4)(objectClass=user))",
                     scope=SCOPE_SUBTREE)
             self.fail(res)
         except LdbError, (num, _):
@@ -629,7 +629,7 @@ member: cn=ldaptestuser4,cn=ldaptestcontainer,""" + self.base_dn + """
 
         print "Testing one-level ldb.search for (&(cn=ldaptestuser4)(objectClass=user)) in (just renamed from) cn=ldaptestcontainer," + self.base_dn
         try:
-            res = ldb.search("cn=ldaptestcontainer," + self.base_dn, 
+            res = ldb.search("cn=ldaptestcontainer," + self.base_dn,
                     expression="(&(cn=ldaptestuser4)(objectClass=user))", scope=SCOPE_ONELEVEL)
             self.fail()
         except LdbError, (num, _):
@@ -687,7 +687,7 @@ member: cn=ldaptestuser4,cn=ldaptestcontainer,""" + self.base_dn + """
         ldb.delete(("CN=ldaptestuser4,CN=ldaptestcontainer2," + self.base_dn))
         print "Testing delete of renamed cn=ldaptestcontainer2," + self.base_dn
         ldb.delete("cn=ldaptestcontainer2," + self.base_dn)
-        
+
         self.delete_force(self.ldb, "cn=ldaptestutf8user èùéìòà ,cn=users," + self.base_dn)
         ldb.add({"dn": "cn=ldaptestutf8user èùéìòà ,cn=users," + self.base_dn, "objectClass": "user"})
 
@@ -709,7 +709,7 @@ member: cn=ldaptestuser4,cn=ldaptestcontainer,""" + self.base_dn + """
         self.assertEquals(int(res[0]["userAccountControl"][0]), 546)
         self.assertEquals(res[0]["memberOf"][0].upper(), ("CN=ldaptestgroup2,CN=Users," + self.base_dn).upper())
         self.assertEquals(len(res[0]["memberOf"]), 1)
-     
+
         print "Testing ldb.search for (&(cn=ldaptestuser)(objectCategory=cn=person,cn=schema,cn=configuration," + self.base_dn + "))"
         res2 = ldb.search(expression="(&(cn=ldaptestuser)(objectCategory=cn=person,cn=schema,cn=configuration," + self.base_dn + "))")
         self.assertEquals(len(res2), 1, "Could not find (&(cn=ldaptestuser)(objectCategory=cn=person,cn=schema,cn=configuration," + self.base_dn + "))")
@@ -726,14 +726,14 @@ member: cn=ldaptestuser4,cn=ldaptestcontainer,""" + self.base_dn + """
             print "Testing ldb.search for (&(cn=ldaptestuser)(objectCategory=PerSon)) in Global Catalog"
             res3gc = gc_ldb.search(expression="(&(cn=ldaptestuser)(objectCategory=PerSon))")
             self.assertEquals(len(res3gc), 1)
-        
+
             self.assertEquals(res[0].dn, res3gc[0].dn)
 
         print "Testing ldb.search for (&(cn=ldaptestuser)(objectCategory=PerSon)) in with 'phantom root' control"
-        
+
         res3control = gc_ldb.search(self.base_dn, expression="(&(cn=ldaptestuser)(objectCategory=PerSon))", scope=SCOPE_SUBTREE, attrs=["cn"], controls=["search_options:1:2"])
         self.assertEquals(len(res3control), 1, "Could not find (&(cn=ldaptestuser)(objectCategory=PerSon)) in Global Catalog")
-        
+
         self.assertEquals(res[0].dn, res3control[0].dn)
 
         ldb.delete(res[0].dn)
@@ -798,7 +798,7 @@ member: cn=ldaptestuser4,cn=ldaptestcontainer,""" + self.base_dn + """
         self.assertEquals(len(res6), 1, "Could not find (&(cn=*daptestcomputer)(objectCategory=compuTER))")
 
         self.assertEquals(res[0].dn, res6[0].dn)
-        
+
         ldb.delete("<GUID=" + ldb.schema_format_value("objectGUID", res[0]["objectGUID"][0]) + ">")
 
         print "Testing ldb.search for (&(cn=ldaptest2computer)(objectClass=user))"
@@ -876,14 +876,14 @@ replace: member
 member: CN=ldaptestuser2,CN=Users,""" + self.base_dn + """
 member: CN=ldaptestutf8user èùéìòà,CN=Users,""" + self.base_dn + """
 """)
-        
+
         ldb.modify_ldif("""
 dn: <GUID=""" + ldb.schema_format_value("objectGUID", res[0]["objectGUID"][0]) + """>
 changetype: modify
 replace: member
 member: CN=ldaptestutf8user èùéìòà,CN=Users,""" + self.base_dn + """
 """)
-        
+
         ldb.modify_ldif("""
 dn: <SID=""" + ldb.schema_format_value("objectSid", res[0]["objectSid"][0]) + """>
 changetype: modify
@@ -897,13 +897,13 @@ add: member
 member: <GUID=""" + ldb.schema_format_value("objectGUID", res[0]["objectGUID"][0]) + """>
 member: CN=ldaptestutf8user èùéìòà,CN=Users,""" + self.base_dn + """
 """)
-        
+
         ldb.modify_ldif("""
 dn: cn=ldaptestgroup2,cn=users,""" + self.base_dn + """
 changetype: modify
 replace: member
 """)
-        
+
         ldb.modify_ldif("""
 dn: cn=ldaptestgroup2,cn=users,""" + self.base_dn + """
 changetype: modify
@@ -911,14 +911,14 @@ add: member
 member: <SID=""" + ldb.schema_format_value("objectSid", res_user[0]["objectSid"][0]) + """>
 member: CN=ldaptestutf8user èùéìòà,CN=Users,""" + self.base_dn + """
 """)
-        
+
         ldb.modify_ldif("""
 dn: cn=ldaptestgroup2,cn=users,""" + self.base_dn + """
 changetype: modify
 delete: member
 member: CN=ldaptestutf8user èùéìòà,CN=Users,""" + self.base_dn + """
 """)
-        
+
         res = ldb.search(self.base_dn, expression="(&(cn=ldaptestgroup2)(objectClass=group))", scope=SCOPE_SUBTREE, attrs=attrs)
         self.assertEquals(len(res), 1, "Could not find (&(cn=ldaptestgroup2)(objectClass=group))")
 
@@ -974,14 +974,14 @@ member: CN=ldaptestutf8user èùéìòà,CN=Users,""" + self.base_dn + """
 
         if gc_ldb is not None:
             print "Testing that we can get at the configuration DN from the main search base on the GC port with the search_options control == 0"
-            
+
             res = gc_ldb.search(self.base_dn, expression="objectClass=crossRef", scope=SCOPE_SUBTREE, attrs=["cn"], controls=["search_options:1:0"])
             self.assertTrue(len(res) > 0)
 
             print "Testing that we do find configuration elements in the global catlog"
             res = gc_ldb.search(self.base_dn, expression="objectClass=crossRef", scope=SCOPE_SUBTREE, attrs=["cn"])
             self.assertTrue(len(res) > 0)
-        
+
             print "Testing that we do find configuration elements and user elements at the same time"
             res = gc_ldb.search(self.base_dn, expression="(|(objectClass=crossRef)(objectClass=person))", scope=SCOPE_SUBTREE, attrs=["cn"])
             self.assertTrue(len(res) > 0)
@@ -998,13 +998,13 @@ member: CN=ldaptestutf8user èùéìòà,CN=Users,""" + self.base_dn + """
         res = ldb.search(self.configuration_dn, expression="objectCategory=ntDsDSA", scope=SCOPE_SUBTREE, attrs=["cn"])
         self.assertTrue(len(res) > 0, "Didn't find any records with objectCategory=ntDsDSA")
         self.assertTrue(len(res) != 0)
-        
+
         res = ldb.search(self.configuration_dn, expression="objectCategory=CN=ntDs-DSA," + self.schema_dn, scope=SCOPE_SUBTREE, attrs=["cn"])
         self.assertTrue(len(res) > 0, "Didn't find any records with objectCategory=CN=ntDs-DSA," + self.schema_dn)
         self.assertTrue(len(res) != 0)
-        
+
         print "Testing objectClass attribute order on "+ self.base_dn
-        res = ldb.search(expression="objectClass=domain", base=self.base_dn, 
+        res = ldb.search(expression="objectClass=domain", base=self.base_dn,
                          scope=SCOPE_BASE, attrs=["objectClass"])
         self.assertEquals(len(res), 1)
 
@@ -1019,15 +1019,15 @@ member: CN=ldaptestutf8user èùéìòà,CN=Users,""" + self.base_dn + """
         print "Testing ldb.search for objectCategory=person with domain scope control"
         res = ldb.search(self.base_dn, expression="objectCategory=person", scope=SCOPE_SUBTREE, attrs=["cn"], controls=["domain_scope:1"])
         self.assertTrue(len(res) > 0)
-     
+
         print "Testing ldb.search for objectCategory=user"
         res = ldb.search(self.base_dn, expression="objectCategory=user", scope=SCOPE_SUBTREE, attrs=["cn"])
         self.assertTrue(len(res) > 0)
-        
+
         print "Testing ldb.search for objectCategory=user with domain scope control"
         res = ldb.search(self.base_dn, expression="objectCategory=user", scope=SCOPE_SUBTREE, attrs=["cn"], controls=["domain_scope:1"])
         self.assertTrue(len(res) > 0)
-        
+
         print "Testing ldb.search for objectCategory=group"
         res = ldb.search(self.base_dn, expression="objectCategory=group", scope=SCOPE_SUBTREE, attrs=["cn"])
         self.assertTrue(len(res) > 0)
@@ -1059,23 +1059,36 @@ class BaseDnTests(unittest.TestCase):
 
     def test_netlogon_highestcommitted_usn(self):
         """Testing for netlogon and highestCommittedUSN via LDAP"""
-        res = self.ldb.search("", scope=SCOPE_BASE, 
+        res = self.ldb.search("", scope=SCOPE_BASE,
                 attrs=["netlogon", "highestCommittedUSN"])
         self.assertEquals(len(res), 0)
 
 class SchemaTests(unittest.TestCase):
+    def delete_force(self, ldb, dn):
+        try:
+            ldb.delete(dn)
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_NO_SUCH_OBJECT)
+
     def find_schemadn(self, ldb):
         res = ldb.search(base="", expression="", scope=SCOPE_BASE, attrs=["schemaNamingContext"])
         self.assertEquals(len(res), 1)
         return res[0]["schemaNamingContext"][0]
 
+    def find_basedn(self, ldb):
+        res = ldb.search(base="", expression="", scope=SCOPE_BASE,
+                         attrs=["defaultNamingContext"])
+        self.assertEquals(len(res), 1)
+        return res[0]["defaultNamingContext"][0]
+
     def setUp(self):
         self.ldb = ldb
         self.schema_dn = self.find_schemadn(ldb)
+        self.base_dn = self.find_basedn(ldb)
 
     def test_generated_schema(self):
         """Testing we can read the generated schema via LDAP"""
-        res = self.ldb.search("cn=aggregate,"+self.schema_dn, scope=SCOPE_BASE, 
+        res = self.ldb.search("cn=aggregate,"+self.schema_dn, scope=SCOPE_BASE,
                 attrs=["objectClasses", "attributeTypes", "dITContentRules"])
         self.assertEquals(len(res), 1)
         self.assertTrue("dITContentRules" in res[0])
@@ -1084,18 +1097,77 @@ class SchemaTests(unittest.TestCase):
 
     def test_generated_schema_is_operational(self):
         """Testing we don't get the generated schema via LDAP by default"""
-        res = self.ldb.search("cn=aggregate,"+self.schema_dn, scope=SCOPE_BASE, 
+        res = self.ldb.search("cn=aggregate,"+self.schema_dn, scope=SCOPE_BASE,
                 attrs=["*"])
         self.assertEquals(len(res), 1)
         self.assertFalse("dITContentRules" in res[0])
         self.assertFalse("objectClasses" in res[0])
         self.assertFalse("attributeTypes" in res[0])
- 
+
+    def test_schemaUpdateNow(self):
+        """Testing schemaUpdateNow"""
+        class_name = "test-class" + time.strftime("%s", time.gmtime())
+        class_ldap_display_name = class_name.replace("-", "")
+        object_name = "obj" + time.strftime("%s", time.gmtime())
+
+        ldif = """
+dn: CN=%s,%s""" % (class_name, self.schema_dn) + """
+lDAPDisplayName: """ + class_ldap_display_name + """
+objectClass: top
+objectClass: classSchema
+adminDescription: """ + class_name + """
+adminDisplayName: """ + class_name + """
+cn: """ + class_name + """
+objectCategory: CN=Class-Schema,""" + self.schema_dn + """
+defaultObjectCategory: CN=%s,%s""" % (class_name, self.schema_dn) + """
+distinguishedName: CN=%s,%s""" % (class_name, self.schema_dn) + """
+governsID: 1.2.840.""" + time.strftime("%s", time.gmtime())[3:] + """.1.5.9939
+instanceType: 4
+name: """ + class_name + """
+objectClassCategory: 1
+subClassOf: organizationalPerson
+systemFlags: 16
+rDNAttID: cn
+systemMustContain: cn
+systemOnly: FALSE
+"""
+        self.ldb.add_ldif(ldif)
+        ldif = """
+dn:
+changetype: modify
+add: schemaUpdateNow
+schemaUpdateNow: 1
+"""
+        self.ldb.modify_ldif(ldif)
+        ldif = """
+dn: CN=%s,CN=Users,%s"""% (object_name, self.base_dn) + """
+objectClass: organizationalPerson
+objectClass: person
+objectClass: """ + class_ldap_display_name + """
+objectClass: top
+cn: """ + object_name + """
+instanceType: 4
+objectCategory: CN=%s,%s"""% (class_name, self.schema_dn) + """
+distinguishedName: CN=%s,CN=Users,%s"""% (object_name, self.base_dn) + """
+name: """ + object_name + """
+"""
+        self.ldb.add_ldif(ldif)
+        # Search for created objectClass
+        res = []
+        res = self.ldb.search("cn=%s,%s" % (class_name, self.schema_dn), scope=SCOPE_BASE, attrs=["*"])
+        self.assertNotEqual(res, [])
+
+        res = []
+        res = self.ldb.search("cn=%s,cn=Users,%s" % (object_name, self.base_dn), scope=SCOPE_BASE, attrs=["*"])
+        self.assertNotEqual(res, [])
+        # Delete the object
+        self.delete_force(self.ldb, "cn=%s,cn=Users,%s" % (object_name, self.base_dn))
+
 if not "://" in host:
     host = "ldap://%s" % host
 
 ldb = Ldb(host, credentials=creds, session_info=system_session(), lp=lp)
-gc_ldb = Ldb("%s:3268" % host, credentials=creds, 
+gc_ldb = Ldb("%s:3268" % host, credentials=creds,
              session_info=system_session(), lp=lp)
 
 runner = SubunitTestRunner()
