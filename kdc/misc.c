@@ -56,17 +56,39 @@ _kdc_db_fetch(krb5_context context,
     }
 
     for(i = 0; i < config->num_db; i++) {
+	krb5_principal enterprise_principal = NULL;
+	if (!(config->db[i]->hdb_capability_flags & HDB_CAP_F_HANDLE_ENTERPRISE_PRINCIPAL) 
+	    && principal->name.name_type == KRB5_NT_ENTERPRISE_PRINCIPAL) {
+	    if (principal->name.name_string.len != 1) {
+		ret = KRB5_PARSE_MALFORMED;
+		krb5_set_error_message(context, ret,
+				       "malformed request: "
+				       "enterprise name with %d name components",
+				       principal->name.name_string.len);
+		return ret;
+	    }
+	    ret = krb5_parse_name(context, principal->name.name_string.val[0],
+				  &enterprise_principal);
+	    if (ret)
+		return ret;
+
+	    principal = enterprise_principal;
+	}
+
 	ret = config->db[i]->hdb_open(context, config->db[i], O_RDONLY, 0);
 	if (ret) {
 	    kdc_log(context, config, 0, "Failed to open database: %s",
 		    krb5_get_err_text(context, ret));
 	    continue;
 	}
+
 	ret = config->db[i]->hdb_fetch(context,
 				       config->db[i],
 				       principal,
 				       flags | HDB_F_DECRYPT,
 				       ent);
+	krb5_free_principal(context, enterprise_principal);
+
 	config->db[i]->hdb_close(context, config->db[i]);
 	if(ret == 0) {
 	    if (db)
