@@ -511,7 +511,8 @@ int regdb_get_seqnum(void)
 }
 
 
-static WERROR regdb_delete_key_with_prefix(const char *keyname,
+static WERROR regdb_delete_key_with_prefix(struct db_context *db,
+					   const char *keyname,
 					   const char *prefix)
 {
 	char *path;
@@ -537,7 +538,7 @@ static WERROR regdb_delete_key_with_prefix(const char *keyname,
 		goto done;
 	}
 
-	werr = ntstatus_to_werror(dbwrap_delete_bystring(regdb, path));
+	werr = ntstatus_to_werror(dbwrap_delete_bystring(db, path));
 
 	/* treat "not" found" as ok */
 	if (W_ERROR_EQUAL(werr, WERR_NOT_FOUND)) {
@@ -552,17 +553,17 @@ done:
 
 static WERROR regdb_delete_values(const char *keyname)
 {
-	return regdb_delete_key_with_prefix(keyname, REG_VALUE_PREFIX);
+	return regdb_delete_key_with_prefix(regdb, keyname, REG_VALUE_PREFIX);
 }
 
 static WERROR regdb_delete_secdesc(const char *keyname)
 {
-	return regdb_delete_key_with_prefix(keyname, REG_SECDESC_PREFIX);
+	return regdb_delete_key_with_prefix(regdb, keyname, REG_SECDESC_PREFIX);
 }
 
 static WERROR regdb_delete_subkeylist(const char *keyname)
 {
-	return regdb_delete_key_with_prefix(keyname, NULL);
+	return regdb_delete_key_with_prefix(regdb, keyname, NULL);
 }
 
 static WERROR regdb_delete_key_lists(const char *keyname)
