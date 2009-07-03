@@ -1,6 +1,6 @@
                    =============================
                    Release Notes for Samba 3.4.0
-			   July 1, 2009
+			   July 3, 2009
                    =============================
 
 
@@ -221,6 +221,7 @@ o    Guenther Deschner <gd@samba.org>
 
 o    Bjoern Jacke <bj@sernet.de>
      * BUG 6497: Fix calling of 'test' in configure.
+     * BUG 6459: Fix build of pam_smbpass on some distributions.
 
 
 o    Volker Lendecke <vl@samba.org>
