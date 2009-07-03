@@ -172,7 +172,7 @@ everything:: $(patsubst %,%4,$(BINARIES))
 setup:
 	@ln -sf ../source4/setup setup
 
-S4_LD_LIBPATH_OVERRIDE = $(LIB_PATH_VAR)="$(builddir)/bin/shared"
+S4_LD_LIBPATH_OVERRIDE = $(LIB_PATH_VAR)="$(builddir)/bin/shared:$$$(LIB_PATH_VAR)"
 
 SELFTEST4 = $(S4_LD_LIBPATH_OVERRIDE) EXEEXT="4" PYTHON="$(PYTHON)" PERL="$(PERL)" \
     $(PERL) $(selftestdir)/selftest.pl --prefix=st4 \

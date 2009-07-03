@@ -163,7 +163,7 @@ manpages:: $(MANPAGES)
 all:: showflags $(ALL_PREDEP) binaries modules pythonmods libraries headers
 everything:: all
 
-LD_LIBPATH_OVERRIDE = $(LIB_PATH_VAR)=$(shliboutputdir)
+LD_LIBPATH_OVERRIDE = $(LIB_PATH_VAR)=$(shliboutputdir):$$$(LIB_PATH_VAR)
 
 # 'make testsuite' creates all binaries which are
 # needed by samba3's 'make test' and the build-farm
