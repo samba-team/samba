@@ -1245,7 +1245,8 @@ static int parent_subkey_scanner(TDB_DATA key, TDB_DATA data,
 	return 0;
 }
 
-static bool scan_parent_subkeys(const char *parent, const char *name)
+static bool scan_parent_subkeys(struct db_context *db, const char *parent,
+				const char *name)
 {
 	char *path = NULL;
 	char *key = NULL;
@@ -1272,8 +1273,8 @@ static bool scan_parent_subkeys(const char *parent, const char *name)
 	}
 	state.scanned = false;
 
-	res = regdb->parse_record(regdb, string_term_tdb_data(key),
-				  parent_subkey_scanner, &state);
+	res = db->parse_record(db, string_term_tdb_data(key),
+			       parent_subkey_scanner, &state);
 
 	if (state.scanned) {
 		result = state.found;
@@ -1281,8 +1282,8 @@ static bool scan_parent_subkeys(const char *parent, const char *name)
 		if (!create_sorted_subkeys(path, key)) {
 			goto fail;
 		}
-		res = regdb->parse_record(regdb, string_term_tdb_data(key),
-					  parent_subkey_scanner, &state);
+		res = db->parse_record(db, string_term_tdb_data(key),
+				       parent_subkey_scanner, &state);
 		if ((res == 0) && (state.scanned)) {
 			result = state.found;
 		}
@@ -1330,7 +1331,7 @@ static bool regdb_key_exists(const char *key)
 		ret = (value.dptr != NULL);
 	} else {
 		*p = '\0';
-		ret = scan_parent_subkeys(path, p+1);
+		ret = scan_parent_subkeys(regdb, path, p+1);
 	}
 
 done:
