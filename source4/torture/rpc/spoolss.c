@@ -2537,12 +2537,45 @@ static bool test_EnumPrinters_old(struct torture_context *tctx, struct dcerpc_pi
 	return ret;
 }
 
-#if 0
-static bool test_GetPrinterDriver2(struct dcerpc_pipe *p,
+static bool test_GetPrinterDriver(struct torture_context *tctx,
+				  struct dcerpc_pipe *p,
+				  struct policy_handle *handle,
+				  const char *driver_name)
+{
+	struct spoolss_GetPrinterDriver r;
+	uint32_t needed;
+
+	r.in.handle = handle;
+	r.in.architecture = "W32X86";
+	r.in.level = 1;
+	r.in.buffer = NULL;
+	r.in.offered = 0;
+	r.out.needed = &needed;
+
+	torture_comment(tctx, "Testing GetPrinterDriver level %d\n", r.in.level);
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_GetPrinterDriver(p, tctx, &r),
+		"failed to call GetPrinterDriver");
+	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+		DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
+		data_blob_clear(&blob);
+		r.in.buffer = &blob;
+		r.in.offered = needed;
+		torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_GetPrinterDriver(p, tctx, &r),
+			"failed to call GetPrinterDriver");
+	}
+
+	torture_assert_werr_ok(tctx, r.out.result,
+		"failed to call GetPrinterDriver");
+
+	return true;
+}
+
+static bool test_GetPrinterDriver2(struct torture_context *tctx,
+				   struct dcerpc_pipe *p,
 				   struct policy_handle *handle,
 				   const char *driver_name)
 {
-	NTSTATUS status;
 	struct spoolss_GetPrinterDriver2 r;
 	uint32_t needed;
 	uint32_t server_major_version;
@@ -2559,34 +2592,24 @@ static bool test_GetPrinterDriver2(struct dcerpc_pipe *p,
 	r.out.server_major_version = &server_major_version;
 	r.out.server_minor_version = &server_minor_version;
 
-	printf("Testing GetPrinterDriver2\n");
+	torture_comment(tctx, "Testing GetPrinterDriver2 level %d\n", r.in.level);
 
-	status = dcerpc_spoolss_GetPrinterDriver2(p, tctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("GetPrinterDriver2 failed - %s\n", nt_errstr(status));
-		return false;
-	}
-
+	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_GetPrinterDriver2(p, tctx, &r),
+		"failed to call GetPrinterDriver2");
 	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+		DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
+		data_blob_clear(&blob);
+		r.in.buffer = &blob;
 		r.in.offered = needed;
-		status = dcerpc_spoolss_GetPrinterDriver2(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_GetPrinterDriver2(p, tctx, &r),
+			"failed to call GetPrinterDriver2");
 	}
 
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("GetPrinterDriver2 failed - %s\n",
-		       nt_errstr(status));
-		return false;
-	}
-
-	if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("GetPrinterDriver2 failed - %s\n",
-		       win_errstr(r.out.result));
-		return false;
-	}
+	torture_assert_werr_ok(tctx, r.out.result,
+		"failed to call GetPrinterDriver2");
 
 	return true;
 }
-#endif
 
 static bool test_EnumPrinterDrivers_old(struct torture_context *tctx,
 					struct dcerpc_pipe *p)
