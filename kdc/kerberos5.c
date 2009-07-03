@@ -1228,9 +1228,6 @@ _kdc_as_rep(krb5_context context,
 	    if (ret)
 		str = NULL;
 
-	    if (clientdb->hdb_auth_status)
-		(clientdb->hdb_auth_status)(context, clientdb, client, HDB_AUTH_SUCCESS);
-
 	    kdc_log(context, config, 2,
 		    "ENC-TS Pre-authentication succeeded -- %s using %s",
 		    client_name, str ? str : "unknown enctype");
@@ -1341,6 +1338,10 @@ _kdc_as_rep(krb5_context context,
 		client_name);
 	goto out;
     }
+
+    if (clientdb->hdb_auth_status)
+	(clientdb->hdb_auth_status)(context, clientdb, client, 
+				    HDB_AUTH_SUCCESS);
 
     /*
      * Verify flags after the user been required to prove its identity
