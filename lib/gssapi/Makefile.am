@@ -178,7 +178,7 @@ ntlmsrc = \
 	ntlm/process_context_token.c \
 	ntlm/release_cred.c \
 	ntlm/release_name.c \
-	ntlm/digest.c
+	ntlm/kdc.c
 
 $(srcdir)/ntlm/ntlm-private.h:
 	cd $(srcdir) && perl ../../cf/make-proto.pl -q -P comment -p ntlm/ntlm-private.h $(ntlmsrc) || rm -f ntlm/ntlm-private.h
