@@ -1,9 +1,9 @@
 dnl find the tdb sources. This is meant to work both for 
 dnl tdb standalone builds, and builds of packages using tdb
 tdbdir=""
-tdbpaths="$srcdir $srcdir/lib/tdb $srcdir/tdb $srcdir/../tdb $srcdir/../lib/tdb"
+tdbpaths=". lib/tdb tdb ../tdb ../lib/tdb"
 for d in $tdbpaths; do
-	if test -f "$d/common/tdb.c"; then
+	if test -f "$srcdir/$d/common/tdb.c"; then
 		tdbdir="$d"		
 		AC_SUBST(tdbdir)
 		break;
