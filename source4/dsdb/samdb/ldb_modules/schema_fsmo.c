@@ -297,6 +297,8 @@ static int schema_fsmo_extended(struct ldb_module *module, struct ldb_request *r
 		return ret;
 	}
 
+	dsdb_make_schema_global(ldb);
+
 	talloc_free(mem_ctx);
 	return LDB_SUCCESS;
 }

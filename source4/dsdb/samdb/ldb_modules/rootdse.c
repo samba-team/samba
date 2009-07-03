@@ -455,7 +455,7 @@ static int rootdse_modify(struct ldb_module *module, struct ldb_request *req)
 	}
 	
 	talloc_free(ext_res);
-	return ret;
+	return ldb_request_done(req, ret);
 }
 
 _PUBLIC_ const struct ldb_module_ops ldb_rootdse_module_ops = {

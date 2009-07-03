@@ -1060,7 +1060,13 @@ static int partition_extended_schema_update_now(struct ldb_module *module, struc
 	}
 
 	/* fire the first one */
-	return partition_call_first(ac);
+	ret =  partition_call_first(ac);
+
+	if (ret != LDB_SUCCESS){
+		return ret;
+	}
+
+	return ldb_request_done(req, ret);
 }
 
 

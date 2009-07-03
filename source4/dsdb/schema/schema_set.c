@@ -135,7 +135,7 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 		
 		mod_msg = ldb_msg_diff(ldb, res->msgs[0], msg);
 		if (mod_msg->num_elements > 0) {
-			ret = ldb_modify(ldb, mod_msg);
+			ret = samdb_replace(ldb, mem_ctx, mod_msg);
 		}
 	}
 
@@ -154,7 +154,7 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		ret = ldb_add(ldb, msg_idx);
 	} else if (ret != LDB_SUCCESS) {
-	} else if (res->count != 1) {
+	} else if (res_idx->count != 1) {
 		ret = ldb_add(ldb, msg_idx);
 	} else {
 		ret = LDB_SUCCESS;
@@ -163,7 +163,7 @@ static int dsdb_schema_set_attributes(struct ldb_context *ldb, struct dsdb_schem
 
 		mod_msg = ldb_msg_diff(ldb, res_idx->msgs[0], msg_idx);
 		if (mod_msg->num_elements > 0) {
-			ret = ldb_modify(ldb, mod_msg);
+			ret = samdb_replace(ldb, mem_ctx, mod_msg);
 		}
 	}
 	if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {

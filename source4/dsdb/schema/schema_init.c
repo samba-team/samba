@@ -576,7 +576,7 @@ WERROR dsdb_read_prefixes_from_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 		(*prefixes)[i].id = blob->ctr.dsdb.mappings[i].id_prefix<<16;
 		oid = talloc_strdup(mem_ctx, blob->ctr.dsdb.mappings[i].oid.oid);
 		(*prefixes)[i].oid = talloc_asprintf_append(oid, "."); 
-		(*prefixes)[i].oid_len = strlen(blob->ctr.dsdb.mappings[i].oid.oid);
+		(*prefixes)[i].oid_len = strlen((*prefixes)[i].oid);
 	}
 
 	talloc_free(blob);
