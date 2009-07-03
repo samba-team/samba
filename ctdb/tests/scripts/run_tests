@@ -40,7 +40,7 @@ tests_total=0
 tests_passed=0
 summary=""
 
-rows=$(if tty -s ; then stty size ; else echo x 80 ; fi | sed -e 's@.* @@')
+rows=$(if tty -s ; then stty size ; else echo x 80 ; fi | sed -e 's@.* @@' -e 's@^0$@80@')
 ww=$((rows - 7))
 
 for f; do
