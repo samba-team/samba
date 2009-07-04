@@ -723,7 +723,7 @@ void *talloc_reparent(const void *old_parent, const void *new_parent, const void
 			if (_talloc_steal_internal(new_parent, h) != h) {
 				return NULL;
 			}
-			return ptr;
+			return (void *)ptr;
 		}
 	}	
 
@@ -1183,7 +1183,7 @@ void *_talloc_realloc(const void *context, void *ptr, size_t size, const char *n
 void *_talloc_move(const void *new_ctx, const void *_pptr)
 {
 	const void **pptr = discard_const_p(const void *,_pptr);
-	void *ret = talloc_steal(new_ctx, *pptr);
+	void *ret = talloc_steal(new_ctx, (void *)*pptr);
 	(*pptr) = NULL;
 	return ret;
 }
@@ -1905,6 +1905,7 @@ void *_talloc_steal(const void *new_ctx, const void *ptr)
 }
 
 #undef talloc_free
+int talloc_free(void *ptr);
 int talloc_free(void *ptr)
 {
 	return _talloc_free_internal(ptr);
