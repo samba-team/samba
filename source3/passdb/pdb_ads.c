@@ -70,9 +70,62 @@ struct pdb_ads_samu_private {
 	struct tldap_message *ldapmsg;
 };
 
+static char *pdb_ads_domaindn2dns(TALLOC_CTX *mem_ctx, char *dn)
+{
+	char *result, *p;
+
+	result = talloc_string_sub2(mem_ctx, dn, "DC=", "", false, false,
+				    true);
+	if (result == NULL) {
+		return NULL;
+	}
+
+	while ((p = strchr_m(result, ',')) != NULL) {
+		*p = '.';
+	}
+
+	return result;
+}
+
 static struct pdb_domain_info *pdb_ads_get_domain_info(
 	struct pdb_methods *m, TALLOC_CTX *mem_ctx)
 {
+	struct pdb_ads_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_ads_state);
+	struct pdb_domain_info *info;
+	struct tldap_message *rootdse;
+	char *tmp;
+
+	info = talloc(mem_ctx, struct pdb_domain_info);
+	if (info == NULL) {
+		return NULL;
+	}
+	info->name = talloc_strdup(info, state->netbiosname);
+	if (info->name == NULL) {
+		goto fail;
+	}
+	info->dns_domain = pdb_ads_domaindn2dns(info, state->domaindn);
+	if (info->dns_domain == NULL) {
+		goto fail;
+	}
+
+	rootdse = tldap_rootdse(state->ld);
+	tmp = tldap_talloc_single_attribute(rootdse, "rootDomainNamingContext",
+					    talloc_tos());
+	if (tmp == NULL) {
+		goto fail;
+	}
+	info->dns_forest = pdb_ads_domaindn2dns(info, tmp);
+	TALLOC_FREE(tmp);
+	if (info->dns_forest == NULL) {
+		goto fail;
+	}
+	info->sid = state->domainsid;
+	info->guid = state->domainguid;
+	return info;
+
+fail:
+	TALLOC_FREE(info);
 	return NULL;
 }
 
