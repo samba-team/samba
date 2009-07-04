@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "libcli/security/security_descriptor.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
 #include "lib/cmdline/popt_common.h"
@@ -444,29 +445,27 @@ bool smb2_util_verify_sd(TALLOC_CTX *tctx, struct smb2_tree *tree,
 {
 	NTSTATUS status;
 	bool ret = true;
-	union smb_fileinfo q = {}, q2 = {};
+	union smb_fileinfo q = {};
 
-	if (sd) {
-		q.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
-		q.query_secdesc.in.file.handle = handle;
-		q.query_secdesc.in.secinfo_flags =
-		    SECINFO_OWNER |
-		    SECINFO_GROUP |
-		    SECINFO_DACL;
-		status = smb2_getinfo_file(tree, tctx, &q);
-		CHECK_STATUS(status, NT_STATUS_OK);
+	q.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
+	q.query_secdesc.in.file.handle = handle;
+	q.query_secdesc.in.secinfo_flags =
+	    SECINFO_OWNER |
+	    SECINFO_GROUP |
+	    SECINFO_DACL;
+	status = smb2_getinfo_file(tree, tctx, &q);
+	CHECK_STATUS(status, NT_STATUS_OK);
 
-		if (!security_acl_equal(
-		    q.query_secdesc.out.sd->dacl, sd->dacl)) {
-			torture_warning(tctx, "%s: security descriptors don't match!\n",
-			    __location__);
-			torture_warning(tctx, "got:\n");
-			NDR_PRINT_DEBUG(security_descriptor,
-			    q.query_secdesc.out.sd);
-			torture_warning(tctx, "expected:\n");
-			NDR_PRINT_DEBUG(security_descriptor, sd);
-			ret = false;
-		}
+	if (!security_acl_equal(
+	    q.query_secdesc.out.sd->dacl, sd->dacl)) {
+		torture_warning(tctx, "%s: security descriptors don't match!\n",
+		    __location__);
+		torture_warning(tctx, "got:\n");
+		NDR_PRINT_DEBUG(security_descriptor,
+		    q.query_secdesc.out.sd);
+		torture_warning(tctx, "expected:\n");
+		NDR_PRINT_DEBUG(security_descriptor, sd);
+		ret = false;
 	}
 
  done:
@@ -482,23 +481,21 @@ bool smb2_util_verify_attrib(TALLOC_CTX *tctx, struct smb2_tree *tree,
 {
 	NTSTATUS status;
 	bool ret = true;
-	union smb_fileinfo q = {}, q2 = {};
+	union smb_fileinfo q = {};
 
-	if (attrib) {
-		q2.standard.level = RAW_FILEINFO_STANDARD;
-		q2.standard.in.file.handle = handle;
-		status = smb2_getinfo_file(tree, tctx, &q2);
-		CHECK_STATUS(status, NT_STATUS_OK);
+	q.standard.level = RAW_FILEINFO_SMB2_ALL_INFORMATION;
+	q.standard.in.file.handle = handle;
+	status = smb2_getinfo_file(tree, tctx, &q);
+	CHECK_STATUS(status, NT_STATUS_OK);
 
-		q2.standard.out.attrib &= ~FILE_ATTRIBUTE_ARCHIVE;
+	q.all_info2.out.attrib &= ~FILE_ATTRIBUTE_ARCHIVE;
 
-		if (q2.standard.out.attrib != attrib) {
-			torture_warning(tctx, "%s: attributes don't match! "
-			    "got %x, expected %x\n", __location__,
-			    (uint32_t)q2.standard.out.attrib,
-			    (uint32_t)attrib);
-			ret = false;
-		}
+	if (q.all_info2.out.attrib != attrib) {
+		torture_warning(tctx, "%s: attributes don't match! "
+		    "got %x, expected %x\n", __location__,
+		    (uint32_t)q.standard.out.attrib,
+		    (uint32_t)attrib);
+		ret = false;
 	}
 
  done:

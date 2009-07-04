@@ -24,6 +24,7 @@ TORTURE_SMB2_OBJ_FILES = $(addprefix $(torturesrcdir)/smb2/, \
 		dir.o \
 		lease.o \
 		create.o \
+		acls.o \
 		read.o \
 		compound.o \
 		streams.o)
