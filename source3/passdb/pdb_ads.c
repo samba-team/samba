@@ -29,6 +29,11 @@ struct pdb_ads_state {
 	char *netbiosname;
 };
 
+struct pdb_ads_samu_private {
+	char *dn;
+	struct tldap_message *ldapmsg;
+};
+
 static NTSTATUS pdb_ads_getsampwsid(struct pdb_methods *m,
 				    struct samu *sam_acct,
 				    const DOM_SID *sid);
@@ -45,6 +50,10 @@ static int pdb_ads_search_fmt(struct pdb_ads_state *state, const char *base,
 			      int attrsonly,
 			      TALLOC_CTX *mem_ctx, struct tldap_message ***res,
 			      const char *fmt, ...);
+static NTSTATUS pdb_ads_getsamupriv(struct pdb_ads_state *state,
+				    const char *filter,
+				    TALLOC_CTX *mem_ctx,
+				    struct pdb_ads_samu_private **presult);
 
 static bool pdb_ads_pull_time(struct tldap_message *msg, const char *attr,
 			      time_t *ptime)
@@ -64,11 +73,6 @@ static gid_t pdb_ads_sid2gid(const struct dom_sid *sid)
 	sid_peek_rid(sid, &rid);
 	return rid;
 }
-
-struct pdb_ads_samu_private {
-	char *dn;
-	struct tldap_message *ldapmsg;
-};
 
 static char *pdb_ads_domaindn2dns(TALLOC_CTX *mem_ctx, char *dn)
 {
@@ -129,37 +133,14 @@ fail:
 	return NULL;
 }
 
-static struct samu *pdb_ads_init_guest(TALLOC_CTX *mem_ctx,
-				       struct pdb_methods *m)
-{
-	struct pdb_ads_state *state = talloc_get_type_abort(
-		m->private_data, struct pdb_ads_state);
-	struct dom_sid guest_sid;
-	struct samu *guest;
-	NTSTATUS status;
-
-	sid_compose(&guest_sid, &state->domainsid, DOMAIN_USER_RID_GUEST);
-
-	guest = samu_new(mem_ctx);
-	if (guest == NULL) {
-		return NULL;
-	}
-
-	status = pdb_ads_getsampwsid(m, guest, &guest_sid);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("Could not init guest account: %s\n",
-			   nt_errstr(status)));
-		TALLOC_FREE(guest);
-		return NULL;
-	}
-	return guest;
-}
-
 static struct pdb_ads_samu_private *pdb_ads_get_samu_private(
 	struct pdb_methods *m, struct samu *sam)
 {
+	struct pdb_ads_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_ads_state);
 	struct pdb_ads_samu_private *result;
-	uint32_t rid;
+	char *sidstr, *filter;
+	NTSTATUS status;
 
 	result = (struct pdb_ads_samu_private *)
 		pdb_get_backend_private_data(sam, m);
@@ -169,55 +150,41 @@ static struct pdb_ads_samu_private *pdb_ads_get_samu_private(
 			result, struct pdb_ads_samu_private);
 	}
 
-	/*
-	 * This is now a weirdness of the passdb API. For the guest user we
-	 * are not asked first.
-	 */
-	sid_peek_rid(pdb_get_user_sid(sam), &rid);
-
-	if (rid == DOMAIN_USER_RID_GUEST) {
-		struct samu *guest = pdb_ads_init_guest(talloc_tos(), m);
-
-		if (guest == NULL) {
-			return NULL;
-		}
-		result = talloc_get_type_abort(
-			pdb_get_backend_private_data(guest, m),
-			struct pdb_ads_samu_private);
-		pdb_set_backend_private_data(
-			sam, talloc_move(sam, &result), NULL, m, PDB_SET);
-		TALLOC_FREE(guest);
-		return talloc_get_type_abort(
-			pdb_get_backend_private_data(sam, m),
-			struct pdb_ads_samu_private);
+	sidstr = sid_binstring(talloc_tos(), pdb_get_user_sid(sam));
+	if (sidstr == NULL) {
+		return NULL;
 	}
 
-	return NULL;
+	filter = talloc_asprintf(
+		talloc_tos(), "(&(objectsid=%s)(objectclass=user))", sidstr);
+	TALLOC_FREE(sidstr);
+	if (filter == NULL) {
+		return NULL;
+	}
+
+	status = pdb_ads_getsamupriv(state, filter, sam, &result);
+	TALLOC_FREE(filter);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NULL;
+	}
+
+	return result;
 }
 
-static NTSTATUS pdb_ads_init_sam_from_ads(struct pdb_methods *m,
-					  struct samu *sam,
-					  struct tldap_message *entry)
+static NTSTATUS pdb_ads_init_sam_from_priv(struct pdb_methods *m,
+					   struct samu *sam,
+					   struct pdb_ads_samu_private *priv)
 {
 	struct pdb_ads_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_ads_state);
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct pdb_ads_samu_private *priv;
 	NTSTATUS status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+	struct tldap_message *entry = priv->ldapmsg;
 	char *str;
 	time_t tmp_time;
 	struct dom_sid sid;
 	uint64_t n;
 	DATA_BLOB blob;
-
-	priv = talloc(sam, struct pdb_ads_samu_private);
-	if (priv == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	if (!tldap_entry_dn(entry, &priv->dn)) {
-		TALLOC_FREE(priv);
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
 
 	str = tldap_talloc_single_attribute(entry, "samAccountName", sam);
 	if (str == NULL) {
@@ -308,10 +275,6 @@ static NTSTATUS pdb_ads_init_sam_from_ads(struct pdb_methods *m,
 		pdb_set_group_sid(sam, &sid, PDB_SET);
 
 	}
-
-	priv->ldapmsg = talloc_move(priv, &entry);
-	pdb_set_backend_private_data(sam, priv, NULL, m, PDB_SET);
-
 	status = NT_STATUS_OK;
 fail:
 	TALLOC_FREE(frame);
@@ -368,10 +331,10 @@ static bool pdb_ads_init_ads_from_sam(struct pdb_ads_state *state,
 	return ret;
 }
 
-static NTSTATUS pdb_ads_getsampwfilter(struct pdb_methods *m,
-				       struct pdb_ads_state *state,
-				       struct samu *sam_acct,
-				       const char *filter)
+static NTSTATUS pdb_ads_getsamupriv(struct pdb_ads_state *state,
+				    const char *filter,
+				    TALLOC_CTX *mem_ctx,
+				    struct pdb_ads_samu_private **presult)
 {
 	const char * attrs[] = {
 		"lastLogon", "lastLogoff", "pwdLastSet", "accountExpires",
@@ -383,23 +346,66 @@ static NTSTATUS pdb_ads_getsampwfilter(struct pdb_methods *m,
 		"unicodePwd", "dBCSPwd" };
 	struct tldap_message **users;
 	int rc, count;
+	struct pdb_ads_samu_private *result;
+
+	result = talloc(mem_ctx, struct pdb_ads_samu_private);
+	if (result == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	rc = pdb_ads_search_fmt(state, state->domaindn, TLDAP_SCOPE_SUB,
-				attrs, ARRAY_SIZE(attrs), 0, talloc_tos(),
+				attrs, ARRAY_SIZE(attrs), 0, result,
 				&users, "%s", filter);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_search failed %s\n",
 			   tldap_errstr(debug_ctx(), state->ld, rc)));
+		TALLOC_FREE(result);
 		return NT_STATUS_LDAP(rc);
 	}
 
 	count = talloc_array_length(users);
 	if (count != 1) {
 		DEBUG(10, ("Expected 1 user, got %d\n", count));
+		TALLOC_FREE(result);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	return pdb_ads_init_sam_from_ads(m, sam_acct, users[0]);
+	result->ldapmsg = users[0];
+	if (!tldap_entry_dn(result->ldapmsg, &result->dn)) {
+		DEBUG(10, ("Could not extract dn\n"));
+		TALLOC_FREE(result);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	*presult = result;
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS pdb_ads_getsampwfilter(struct pdb_methods *m,
+				       struct pdb_ads_state *state,
+				       struct samu *sam_acct,
+				       const char *filter)
+{
+	struct pdb_ads_samu_private *priv;
+	NTSTATUS status;
+
+	status = pdb_ads_getsamupriv(state, filter, sam_acct, &priv);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("pdb_ads_getsamupriv failed: %s\n",
+			   nt_errstr(status)));
+		return status;
+	}
+
+	status = pdb_ads_init_sam_from_priv(m, sam_acct, priv);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("pdb_ads_init_sam_from_priv failed: %s\n",
+			   nt_errstr(status)));
+		TALLOC_FREE(priv);
+		return status;
+	}
+
+	pdb_set_backend_private_data(sam_acct, priv, NULL, m, PDB_SET);
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS pdb_ads_getsampwnam(struct pdb_methods *m,
