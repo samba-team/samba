@@ -197,6 +197,14 @@ struct pdb_search {
 	void (*search_end)(struct pdb_search *search);
 };
 
+struct pdb_domain_info {
+	char *name;
+	char *dns_domain;
+	char *dns_forest;
+	struct dom_sid sid;
+	struct GUID guid;
+};
+
 #define PDB_CAP_STORE_RIDS	0x0001
 #define PDB_CAP_ADS		0x0002
 
@@ -223,6 +231,9 @@ struct pdb_search {
 struct pdb_methods 
 {
 	const char *name; /* What name got this module */
+
+	struct pdb_domain_info *(*get_domain_info)(struct pdb_methods *,
+						   TALLOC_CTX *mem_ctx);
 
 	NTSTATUS (*getsampwnam)(struct pdb_methods *, struct samu *sam_acct, const char *username);
 

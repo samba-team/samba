@@ -210,6 +210,12 @@ static struct pdb_methods *pdb_get_methods(void)
 	return pdb_get_methods_reload(False);
 }
 
+struct pdb_domain_info *pdb_get_domain_info(TALLOC_CTX *mem_ctx)
+{
+	struct pdb_methods *pdb = pdb_get_methods();
+	return pdb->get_domain_info(pdb, mem_ctx);
+}
+
 bool pdb_getsampwnam(struct samu *sam_acct, const char *username) 
 {
 	struct pdb_methods *pdb = pdb_get_methods();
@@ -1992,6 +1998,12 @@ static NTSTATUS pdb_default_enum_trusteddoms(struct pdb_methods *methods,
 	return secrets_trusted_domains(mem_ctx, num_domains, domains);
 }
 
+static struct pdb_domain_info *pdb_default_get_domain_info(
+	struct pdb_methods *m, TALLOC_CTX *mem_ctx)
+{
+	return NULL;
+}
+
 /*******************************************************************
  Create a pdb_methods structure and initialize it with the default
  operations.  In this way a passdb module can simply implement
@@ -2008,6 +2020,7 @@ NTSTATUS make_pdb_method( struct pdb_methods **methods )
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	(*methods)->get_domain_info = pdb_default_get_domain_info;
 	(*methods)->getsampwnam = pdb_default_getsampwnam;
 	(*methods)->getsampwsid = pdb_default_getsampwsid;
 	(*methods)->create_user = pdb_default_create_user;

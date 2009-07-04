@@ -69,6 +69,12 @@ struct pdb_ads_samu_private {
 	struct tldap_message *ldapmsg;
 };
 
+static struct pdb_domain_info *pdb_ads_get_domain_info(
+	struct pdb_methods *m, TALLOC_CTX *mem_ctx)
+{
+	return NULL;
+}
+
 static struct samu *pdb_ads_init_guest(TALLOC_CTX *mem_ctx,
 				       struct pdb_methods *m)
 {
@@ -1962,6 +1968,7 @@ static NTSTATUS pdb_ads_enum_trusteddoms(struct pdb_methods *m,
 static void pdb_ads_init_methods(struct pdb_methods *m)
 {
 	m->name = "ads";
+	m->get_domain_info = pdb_ads_get_domain_info;
 	m->getsampwnam = pdb_ads_getsampwnam;
 	m->getsampwsid = pdb_ads_getsampwsid;
 	m->create_user = pdb_ads_create_user;
