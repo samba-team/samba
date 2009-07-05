@@ -104,10 +104,28 @@ krb5_error_code
 _hdb_fetch(krb5_context context, HDB *db, krb5_const_principal principal,
 	   unsigned flags, hdb_entry_ex *entry)
 {
+    krb5_principal enterprise_principal = NULL;
     krb5_data key, value;
     int code;
 
+    if (principal->name.name_type == KRB5_NT_ENTERPRISE_PRINCIPAL) {
+	if (principal->name.name_string.len != 1) {
+	    ret = KRB5_PARSE_MALFORMED;
+	    krb5_set_error_message(context, ret, "malformed principal: "
+				   "enterprise name with %d name components",
+				   principal->name.name_string.len);
+	    return ret;
+	}
+	ret = krb5_parse_name(context, principal->name.name_string.val[0],
+			      &enterprise_principal);
+	if (ret)
+	    return ret;
+	principal = enterprise_principal;
+    }
+
     hdb_principal2key(context, principal, &key);
+    if (enterprise_principal)
+	krb5_free_principal(context, principal);
     code = db->hdb__get(context, db, key, &value);
     krb5_data_free(&key);
     if(code)
