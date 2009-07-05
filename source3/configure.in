@@ -137,7 +137,7 @@ if test x"$ac_cv_prog_gcc" = x"yes" ; then
 	    int main(void)
 	    {
 	    	return 0;
-	    }],[-Wdeclaration-after-statement],[$CPPFLAGS],[$LDFLAGS],
+	    }],[$CFLAGS -Wdeclaration-after-statement],[$CPPFLAGS],[$LDFLAGS],
 	    samba_cv_HAVE_Wdeclaration_after_statement=yes,
 	    samba_cv_HAVE_Wdeclaration_after_statement=no,
 	    samba_cv_HAVE_Wdeclaration_after_statement=cross)
@@ -155,7 +155,7 @@ if test x"$ac_cv_prog_gcc" = x"yes" ; then
 	    int main(void)
 	    {
 	    	return 0;
-	    }],[-Werror-implicit-function-declaration],[$CPPFLAGS],[$LDFLAGS],
+	    }],[$CFLAGS -Werror-implicit-function-declaration],[$CPPFLAGS],[$LDFLAGS],
 	    samba_cv_HAVE_Werror_implicit_function_declaration=yes,
 	    samba_cv_HAVE_Werror_implicit_function_declaration=no,
 	    samba_cv_HAVE_Werror_implicit_function_declaration=cross)
@@ -269,7 +269,7 @@ AC_CACHE_CHECK([that the C compiler understands -Werror],samba_cv_HAVE_Werror, [
   int main(void)
   {
   	return 0;
-  }],[-Werror],[$CPPFLAGS],[$LDFLAGS],
+  }],[$CFLAGS -Werror],[$CPPFLAGS],[$LDFLAGS],
   samba_cv_HAVE_Werror=yes,samba_cv_HAVE_Werror=no,samba_cv_HAVE_Werror=cross)])
 if test x"$samba_cv_HAVE_Werror" = x"yes"; then
    Werror_FLAGS="-Werror"
@@ -280,7 +280,7 @@ AC_CACHE_CHECK([that the C compiler understands -w2],samba_cv_HAVE_w2, [
   int main(void)
   {
   	return 0;
-  }],[-w2],[$CPPFLAGS],[$LDFLAGS],
+  }],[$CFLAGS -w2],[$CPPFLAGS],[$LDFLAGS],
   samba_cv_HAVE_w2=yes,samba_cv_HAVE_w2=no,samba_cv_HAVE_w2=cross)])
 if test x"$samba_cv_HAVE_w2" = x"yes"; then
    Werror_FLAGS="-w2"
@@ -291,7 +291,7 @@ AC_CACHE_CHECK([that the C compiler understands -errwarn],samba_cv_HAVE_errwarn,
    int main(void)
    {
 	return 0;
-   }],[-errwarn=%all],[$CPPFLAGS],[$LDFLAGS],
+   }],[$CFLAGS -errwarn=%all],[$CPPFLAGS],[$LDFLAGS],
    samba_cv_HAVE_errwarn=yes,samba_cv_HAVE_errwarn=no,samba_cv_HAVE_errwarn=cross)])
 if test x"$samba_cv_HAVE_errwarn" = x"yes"; then
    Werror_FLAGS="-errwarn=%all"
@@ -3757,7 +3757,7 @@ if test x"$with_ads_support" != x"no"; then
 			if (str) free (str); 
 			return 0;
 		}
-		],[$Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
+		],[$CFLAGS $Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
 		smb_krb5_cv_enctype_to_string_takes_krb5_context_arg=yes,
 		smb_krb5_cv_enctype_to_string_takes_krb5_context_arg=no)])
 
@@ -3775,7 +3775,7 @@ if test x"$with_ads_support" != x"no"; then
 			krb5_enctype_to_string(1, buf, 256);
 			return 0;
 		}
-		],[$Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
+		],[$CFLAGS $Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
 		smb_krb5_cv_enctype_to_string_takes_size_t_arg=yes,
 		smb_krb5_cv_enctype_to_string_takes_size_t_arg=no)])
 
@@ -4467,7 +4467,7 @@ AC_TRY_RUN_STRICT([
 #define HAVE_QUOTACTL_4A 1
 #define AUTOCONF_TEST 1
 #include "confdefs.h"
-#include "${srcdir-.}/../tests/sysquotas.c"],[$Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
+#include "${srcdir-.}/../tests/sysquotas.c"],[$CFLAGS $Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
            samba_cv_HAVE_QUOTACTL_4A=yes,samba_cv_HAVE_QUOTACTL_4A=no,samba_cv_HAVE_QUOTACTL_4A=cross)])
 if test x"$samba_cv_HAVE_QUOTACTL_4A" = x"yes"; then
     samba_cv_SYSQUOTA_FOUND=yes;
@@ -4482,7 +4482,7 @@ AC_TRY_RUN_STRICT([
 #define HAVE_QUOTACTL_4B 1
 #define AUTOCONF_TEST 1
 #include "confdefs.h"
-#include "${srcdir-.}/../tests/sysquotas.c"],[$Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
+#include "${srcdir-.}/../tests/sysquotas.c"],[$CFLAGS $Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
            samba_cv_HAVE_QUOTACTL_4B=yes,samba_cv_HAVE_QUOTACTL_4B=no,samba_cv_HAVE_QUOTACTL_4B=cross)])
 if test x"$samba_cv_HAVE_QUOTACTL_4B" = x"yes"; then
     echo "int quotactl(const char *path, int cmd, int id, char *addr) is not reworked for the new sys_quota api"
@@ -4498,7 +4498,7 @@ AC_TRY_RUN_STRICT([
 #define HAVE_QUOTACTL_3 1
 #define AUTOCONF_TEST 1
 #include "confdefs.h"
-#include "${srcdir-.}/../tests/sysquotas.c"],[$Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
+#include "${srcdir-.}/../tests/sysquotas.c"],[$CFLAGS $Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
            samba_cv_HAVE_QUOTACTL_3=yes,samba_cv_HAVE_QUOTACTL_3=no,samba_cv_HAVE_QUOTACTL_3=cross)])
 if test x"$samba_cv_HAVE_QUOTACTL_3" = x"yes"; then
     echo "CRAY int quotactl (char *spec, int request, char *arg) is NOT reworked for the sys_quota api"
