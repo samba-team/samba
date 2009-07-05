@@ -226,7 +226,7 @@ struct pdb_domain_info {
  * Changed to 18, pdb_rid_algorithm -> pdb_capabilities
  */
 
-#define PASSDB_INTERFACE_VERSION 17
+#define PASSDB_INTERFACE_VERSION 18
 
 struct pdb_methods 
 {
