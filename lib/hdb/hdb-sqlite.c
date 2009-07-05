@@ -737,7 +737,10 @@ static krb5_error_code
 hdb_sqlite_firstkey(krb5_context context, HDB *db, unsigned flags,
                     hdb_entry_ex *entry)
 {
+    hdb_sqlite_db *hsdb = (hdb_sqlite_db *) db->hdb_db;
     krb5_error_code ret;
+
+    sqlite3_reset(hsdb->get_all_entries);
 
     ret = hdb_sqlite_nextkey(context, db, flags, entry);
     if(ret)
