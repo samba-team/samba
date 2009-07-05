@@ -2111,7 +2111,7 @@ static void s3_tldap_debug(void *context, enum tldap_debug_level level,
 		samba_level = 2;
 		break;
 	case TLDAP_DEBUG_TRACE:
-		samba_level = 10;
+		samba_level = 11;
 		break;
 
 	};
