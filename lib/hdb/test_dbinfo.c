@@ -34,8 +34,6 @@
 #include "hdb_locl.h"
 #include <getarg.h>
 
-RCSID("$Id$");
-
 static int help_flag;
 static int version_flag;
 

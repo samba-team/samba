@@ -33,8 +33,6 @@
 
 #include "hdb_locl.h"
 
-RCSID("$Id$");
-
 #if HAVE_NDBM
 
 #if defined(HAVE_GDBM_NDBM_H)

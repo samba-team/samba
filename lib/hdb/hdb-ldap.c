@@ -34,8 +34,6 @@
 
 #include "hdb_locl.h"
 
-RCSID("$Id$");
-
 #ifdef OPENLDAP
 
 #include <lber.h>

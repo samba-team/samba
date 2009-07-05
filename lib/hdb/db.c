@@ -33,8 +33,6 @@
 
 #include "hdb_locl.h"
 
-RCSID("$Id$");
-
 #if HAVE_DB1
 
 #if defined(HAVE_DB_185_H)

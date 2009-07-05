@@ -35,8 +35,6 @@
 
 /* keytab backend for HDB databases */
 
-RCSID("$Id$");
-
 struct hdb_data {
     char *dbname;
     char *mkey;

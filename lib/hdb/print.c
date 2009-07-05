@@ -34,8 +34,6 @@
 #include <hex.h>
 #include <ctype.h>
 
-RCSID("$Id$");
-
 /*
    This is the present contents of a dump line. This might change at
    any time. Fields are separated by white space.
