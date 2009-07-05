@@ -1720,13 +1720,11 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	                0x1, 0x0, 0x0,
 	                &hdr_rb.rpc_context[0].transfer[0]);
 	} else {
-		struct ndr_syntax_id null_interface;
-		ZERO_STRUCT(null_interface);
 		/* Rejection reason: abstract syntax not supported */
 		init_rpc_hdr_ba(&hdr_ba, RPC_MAX_PDU_FRAG_LEN,
 					RPC_MAX_PDU_FRAG_LEN, assoc_gid,
 					ack_pipe_name, 0x1, 0x2, 0x1,
-					&null_interface);
+					&null_ndr_syntax_id);
 		p->pipe_bound = False;
 	}
 
@@ -1910,13 +1908,11 @@ bool api_pipe_alter_context(pipes_struct *p, prs_struct *rpc_in_p)
 	                0x1, 0x0, 0x0,
 	                &hdr_rb.rpc_context[0].transfer[0]);
 	} else {
-		struct ndr_syntax_id null_interface;
-		ZERO_STRUCT(null_interface);
 		/* Rejection reason: abstract syntax not supported */
 		init_rpc_hdr_ba(&hdr_ba, RPC_MAX_PDU_FRAG_LEN,
 					RPC_MAX_PDU_FRAG_LEN, assoc_gid,
 					ack_pipe_name, 0x1, 0x2, 0x1,
-					&null_interface);
+					&null_ndr_syntax_id);
 		p->pipe_bound = False;
 	}
 
