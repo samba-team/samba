@@ -210,3 +210,6 @@ struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx)
 {
 	return NULL;
 }
+
+const struct ndr_syntax_id null_ndr_syntax_id =
+{ { 0, 0, 0, { 0, 0 }, { 0, 0, 0, 0, 0, 0 } }, 0 };

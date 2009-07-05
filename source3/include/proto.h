@@ -2126,6 +2126,7 @@ void ndr_print_file_id(struct ndr_print *ndr, const char *name, const struct fil
 _PUBLIC_ void ndr_print_bool(struct ndr_print *ndr, const char *name, const bool b);
 _PUBLIC_ void ndr_print_sockaddr_storage(struct ndr_print *ndr, const char *name, const struct sockaddr_storage *ss);
 const char *ndr_errstr(enum ndr_err_code err);
+extern const struct ndr_syntax_id null_ndr_syntax_id;
 
 /* The following definitions come from librpc/ndr/sid.c  */
 
