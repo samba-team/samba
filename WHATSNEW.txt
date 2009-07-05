@@ -14,9 +14,6 @@ Authentication Changes:
 o Changed the way smbd handles untrusted domain names given during user
   authentication
 
-net Command Changes:
-o parameter syntax made more consistent
-
 Authentication Changes
 ======================
 
@@ -34,38 +31,6 @@ While this behavior matches Windows, it may break some workflows which depended
 on smbd to always pass through bogus names to the DC for verification.  A new
 parameter "map untrusted to domain" can be enabled to revert to the legacy
 behavior.
-
-net Command Changes
-===================
-
-The net command now accepts the common command line parameters most other Samba
-command line utilities use, with a couple of remaining differences:
-
--l still gives long output for net commands supporting the --long flag. This was
-more useful than the common --log-base parameter.
-
--i still tells net to read data from stdin (like --stdin) instead of toggling
-the common --scope flag.
-
--S still tells net the server to connect to (like --server) instead of
-negotiating the common --signing flag. As -S is probably used by most scripts
-doing net rpc commands, this would have been a high-impact change for little
-gain.
-
-This change was mainly done to unify the authentification options. Here, one
-flag changed it's meaning and one useful flag was added.
-
--N used to be the short version of --ntname. It now matches the Samba default of
---no-pass. Use this to stop net from prompting for a password if you want
-anonymous authentication.
-
--A --authentication-file now takes an authentication file with the username and
-password you want net to use, avoiding a password prompt as with plain -U user
-or having to give a password on the command line as in -U user%pass.
-
-Last but not least net now always falls back to your local unix username if no
--U is specified and a username is needed. net rpc commands will now prompt for a
-password unless one is specified using either -U user%pass or -A auth_file.
 
 ######################################################################
 Reporting bugs & Development Discussion
