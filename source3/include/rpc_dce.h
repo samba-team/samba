@@ -101,9 +101,6 @@ enum schannel_direction {
 /* #define MAX_PDU_FRAG_LEN 0x1630		this is what wnt sets */
 #define RPC_MAX_PDU_FRAG_LEN 0x10b8			/* this is what w2k sets */
 
-/* RPC_IFACE */
-typedef struct ndr_syntax_id RPC_IFACE;
-
 #define RPC_IFACE_LEN (UUID_SIZE + 4)
 
 /* RPC_HDR - dce rpc header */
@@ -202,8 +199,8 @@ typedef struct rpc_auth_schannel_chk_info {
 typedef struct rpc_context {
 	uint16 context_id;		/* presentation context identifier. */
 	uint8 num_transfer_syntaxes;	/* the number of syntaxes */
-	RPC_IFACE abstract;		/* num and vers. of interface client is using */
-	RPC_IFACE *transfer;		/* Array of transfer interfaces. */
+	struct ndr_syntax_id abstract;	/* num and vers. of interface client is using */
+	struct ndr_syntax_id *transfer;	/* Array of transfer interfaces. */
 } RPC_CONTEXT;
 
 /* RPC_BIND_REQ - ms req bind */
@@ -241,7 +238,7 @@ typedef struct rpc_hdr_ba_info {
 
 	RPC_ADDR_STR addr    ;  /* the secondary address string, as described earlier */
 	RPC_RESULTS  res     ; /* results and reasons */
-	RPC_IFACE    transfer; /* the transfer syntax from the request */
+	struct ndr_syntax_id transfer; /* the transfer syntax from the request */
 } RPC_HDR_BA;
 
 /* RPC_AUTH_VERIFIER */

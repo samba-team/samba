@@ -56,7 +56,7 @@ static const struct pipe_id_info {
 	/* the names appear not to matter: the syntaxes _do_ matter */
 
 	const char *client_pipe;
-	const RPC_IFACE *abstr_syntax; /* this one is the abstract syntax id */
+	const struct ndr_syntax_id *abstr_syntax; /* this one is the abstract syntax id */
 } pipe_names [] =
 {
 	{ PIPE_LSARPC,		&ndr_table_lsarpc.syntax_id },
@@ -1649,8 +1649,8 @@ static NTSTATUS create_schannel_auth_rpc_bind_req( struct rpc_pipe_client *cli,
 static NTSTATUS create_bind_or_alt_ctx_internal(enum RPC_PKT_TYPE pkt_type,
 						prs_struct *rpc_out, 
 						uint32 rpc_call_id,
-						const RPC_IFACE *abstract,
-						const RPC_IFACE *transfer,
+						const struct ndr_syntax_id *abstract,
+						const struct ndr_syntax_id *transfer,
 						RPC_HDR_AUTH *phdr_auth,
 						prs_struct *pauth_info)
 {
@@ -1731,8 +1731,8 @@ static NTSTATUS create_bind_or_alt_ctx_internal(enum RPC_PKT_TYPE pkt_type,
 static NTSTATUS create_rpc_bind_req(struct rpc_pipe_client *cli,
 				prs_struct *rpc_out, 
 				uint32 rpc_call_id,
-				const RPC_IFACE *abstract,
-				const RPC_IFACE *transfer,
+				const struct ndr_syntax_id *abstract,
+				const struct ndr_syntax_id *transfer,
 				enum pipe_auth_type auth_type,
 				enum pipe_auth_level auth_level)
 {
@@ -2368,7 +2368,8 @@ static bool rpc_pipe_set_hnd_state(struct rpc_pipe_client *cli,
  Check the rpc bind acknowledge response.
 ****************************************************************************/
 
-static bool check_bind_response(RPC_HDR_BA *hdr_ba, const RPC_IFACE *transfer)
+static bool check_bind_response(RPC_HDR_BA *hdr_ba,
+				const struct ndr_syntax_id *transfer)
 {
 	if ( hdr_ba->addr.len == 0) {
 		DEBUG(4,("Ignoring length check -- ASU bug (server didn't fill in the pipe name correctly)"));
@@ -2458,8 +2459,8 @@ static NTSTATUS create_rpc_bind_auth3(struct rpc_pipe_client *cli,
  ********************************************************************/
 
 static NTSTATUS create_rpc_alter_context(uint32 rpc_call_id,
-					const RPC_IFACE *abstract,
-					const RPC_IFACE *transfer,
+					const struct ndr_syntax_id *abstract,
+					const struct ndr_syntax_id *transfer,
 					enum pipe_auth_level auth_level,
 					const DATA_BLOB *pauth_blob, /* spnego auth blob already created. */
 					prs_struct *rpc_out)

@@ -100,10 +100,11 @@ bool smb_io_rpc_hdr(const char *desc,  RPC_HDR *rpc, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
- Reads or writes an RPC_IFACE structure.
+ Reads or writes an struct ndr_syntax_id structure.
 ********************************************************************/
 
-static bool smb_io_rpc_iface(const char *desc, RPC_IFACE *ifc, prs_struct *ps, int depth)
+static bool smb_io_rpc_iface(const char *desc, struct ndr_syntax_id *ifc,
+			     prs_struct *ps, int depth)
 {
 	if (ifc == NULL)
 		return False;
@@ -192,7 +193,8 @@ static bool smb_io_rpc_hdr_bba(const char *desc,  RPC_HDR_BBA *rpc, prs_struct *
 ********************************************************************/
 
 void init_rpc_context(RPC_CONTEXT *rpc_ctx, uint16 context_id,
-		      const RPC_IFACE *abstract, const RPC_IFACE *transfer)
+		      const struct ndr_syntax_id *abstract,
+		      const struct ndr_syntax_id *transfer)
 {
 	rpc_ctx->context_id   = context_id   ; /* presentation context identifier (0x0) */
 	rpc_ctx->num_transfer_syntaxes = 1 ; /* the number of syntaxes (has always been 1?)(0x1) */
@@ -201,7 +203,7 @@ void init_rpc_context(RPC_CONTEXT *rpc_ctx, uint16 context_id,
 	rpc_ctx->abstract = *abstract;
 
 	/* vers. of interface to use for replies */
-	rpc_ctx->transfer = CONST_DISCARD(RPC_IFACE *, transfer);
+	rpc_ctx->transfer = CONST_DISCARD(struct ndr_syntax_id *, transfer);
 }
 
 /*******************************************************************
@@ -245,7 +247,7 @@ bool smb_io_rpc_context(const char *desc, RPC_CONTEXT *rpc_ctx, prs_struct *ps, 
 		return False;
 
 	if (UNMARSHALLING(ps)) {
-		if (!(rpc_ctx->transfer = PRS_ALLOC_MEM(ps, RPC_IFACE, rpc_ctx->num_transfer_syntaxes))) {
+		if (!(rpc_ctx->transfer = PRS_ALLOC_MEM(ps, struct ndr_syntax_id, rpc_ctx->num_transfer_syntaxes))) {
 			return False;
 		}
 	}
@@ -352,7 +354,7 @@ void init_rpc_hdr_ba(RPC_HDR_BA *rpc,
 				uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
 				const char *pipe_addr,
 				uint8 num_results, uint16 result, uint16 reason,
-				RPC_IFACE *transfer)
+				struct ndr_syntax_id *transfer)
 {
 	init_rpc_hdr_bba (&rpc->bba, max_tsize, max_rsize, assoc_gid);
 	init_rpc_addr_str(&rpc->addr, pipe_addr);

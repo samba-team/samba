@@ -950,8 +950,10 @@ bool setup_cancel_ack_reply(pipes_struct *p, prs_struct *rpc_in_p)
  Used to reject unknown binds from Win2k.
 *******************************************************************/
 
-static bool check_bind_req(struct pipes_struct *p, RPC_IFACE* abstract,
-			   RPC_IFACE* transfer, uint32 context_id)
+static bool check_bind_req(struct pipes_struct *p,
+			   struct ndr_syntax_id* abstract,
+			   struct ndr_syntax_id* transfer,
+			   uint32 context_id)
 {
 	int i=0;
 	struct pipe_rpc_fns *context_fns;
@@ -1718,7 +1720,7 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	                0x1, 0x0, 0x0,
 	                &hdr_rb.rpc_context[0].transfer[0]);
 	} else {
-		RPC_IFACE null_interface;
+		struct ndr_syntax_id null_interface;
 		ZERO_STRUCT(null_interface);
 		/* Rejection reason: abstract syntax not supported */
 		init_rpc_hdr_ba(&hdr_ba, RPC_MAX_PDU_FRAG_LEN,
@@ -1908,7 +1910,7 @@ bool api_pipe_alter_context(pipes_struct *p, prs_struct *rpc_in_p)
 	                0x1, 0x0, 0x0,
 	                &hdr_rb.rpc_context[0].transfer[0]);
 	} else {
-		RPC_IFACE null_interface;
+		struct ndr_syntax_id null_interface;
 		ZERO_STRUCT(null_interface);
 		/* Rejection reason: abstract syntax not supported */
 		init_rpc_hdr_ba(&hdr_ba, RPC_MAX_PDU_FRAG_LEN,
