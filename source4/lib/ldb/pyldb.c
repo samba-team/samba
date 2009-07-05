@@ -790,7 +790,6 @@ static PyObject *ldb_ldif_to_pyobject(struct ldb_ldif *ldif)
 		Py_RETURN_NONE;
 	} else {
 	/* We don't want this attached to the 'ldb' any more */
-		talloc_steal(NULL, ldif);
 		return Py_BuildValue(discard_const_p(char, "(iO)"),
 				     ldif->changetype,
 				     PyLdbMessage_FromMessage(ldif->msg));
@@ -804,13 +803,29 @@ static PyObject *py_ldb_parse_ldif(PyLdbObject *self, PyObject *args)
 	struct ldb_ldif *ldif;
 	const char *s;
 
+	TALLOC_CTX *mem_ctx;
+
 	if (!PyArg_ParseTuple(args, "s", &s))
 		return NULL;
 
-	list = PyList_New(0);
-	while ((ldif = ldb_ldif_read_string(self->ldb_ctx, &s)) != NULL) {
-		PyList_Append(list, ldb_ldif_to_pyobject(ldif));
+	mem_ctx = talloc_new(NULL);
+	if (!mem_ctx) {
+		Py_RETURN_NONE;
 	}
+
+	list = PyList_New(0);
+	while (s && *s != '\0') {
+		ldif = ldb_ldif_read_string(self->ldb_ctx, &s);
+		talloc_steal(mem_ctx, ldif);
+		if (ldif) {
+			PyList_Append(list, ldb_ldif_to_pyobject(ldif));
+		} else {
+			PyErr_SetString(PyExc_ValueError, "unable to parse ldif string");
+			talloc_free(mem_ctx);
+			return NULL;
+		}
+	}
+	talloc_free(mem_ctx); /* The pyobject already has a reference to the things it needs */
 	return PyObject_GetIter(list);
 }
 
