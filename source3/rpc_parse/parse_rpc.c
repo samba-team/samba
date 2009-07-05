@@ -354,7 +354,7 @@ void init_rpc_hdr_ba(RPC_HDR_BA *rpc,
 				uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
 				const char *pipe_addr,
 				uint8 num_results, uint16 result, uint16 reason,
-				struct ndr_syntax_id *transfer)
+				const struct ndr_syntax_id *transfer)
 {
 	init_rpc_hdr_bba (&rpc->bba, max_tsize, max_rsize, assoc_gid);
 	init_rpc_addr_str(&rpc->addr, pipe_addr);

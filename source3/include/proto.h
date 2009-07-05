@@ -5704,7 +5704,7 @@ void init_rpc_hdr_ba(RPC_HDR_BA *rpc,
 				uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
 				const char *pipe_addr,
 				uint8 num_results, uint16 result, uint16 reason,
-				struct ndr_syntax_id *transfer);
+				const struct ndr_syntax_id *transfer);
 bool smb_io_rpc_hdr_ba(const char *desc, RPC_HDR_BA *rpc, prs_struct *ps, int depth);
 void init_rpc_hdr_req(RPC_HDR_REQ *hdr, uint32 alloc_hint, uint16 opnum);
 bool smb_io_rpc_hdr_req(const char *desc, RPC_HDR_REQ *rpc, prs_struct *ps, int depth);
