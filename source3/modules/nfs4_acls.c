@@ -433,8 +433,15 @@ static SMB_ACE4PROP_T *smbacl4_find_equal_special(
 	for(aceint = aclint->first; aceint!=NULL; aceint=(SMB_ACE4_INT_T *)aceint->next) {
 		SMB_ACE4PROP_T *ace = &aceint->prop;
 
+                DEBUG(10,("ace type:0x%x flags:0x%x aceFlags:0x%x "
+			  "new type:0x%x flags:0x%x aceFlags:0x%x\n",
+			  ace->aceType, ace->flags, ace->aceFlags,
+			  aceNew->aceType, aceNew->flags,aceNew->aceFlags));
+
 		if (ace->flags == aceNew->flags &&
 			ace->aceType==aceNew->aceType &&
+			((ace->aceFlags&SMB_ACE4_INHERIT_ONLY_ACE)==
+			 (aceNew->aceFlags&SMB_ACE4_INHERIT_ONLY_ACE)) &&
 			(ace->aceFlags&SMB_ACE4_IDENTIFIER_GROUP)==
 			(aceNew->aceFlags&SMB_ACE4_IDENTIFIER_GROUP)
 		) {
