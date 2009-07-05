@@ -339,7 +339,7 @@ hdb_db_create(krb5_context context, HDB **db,
     }
     (*db)->hdb_master_key_set = 0;
     (*db)->hdb_openp = 0;
-    (*db)->hdb_capability_flags = 0;
+    (*db)->hdb_capability_flags = HDB_CAP_F_HANDLE_ENTERPRISE_PRINCIPAL;
     (*db)->hdb_open  = DB_open;
     (*db)->hdb_close = DB_close;
     (*db)->hdb_fetch = _hdb_fetch;
