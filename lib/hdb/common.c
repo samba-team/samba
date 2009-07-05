@@ -104,6 +104,7 @@ _hdb_fetch(krb5_context context, HDB *db, krb5_const_principal principal,
 {
     krb5_principal enterprise_principal = NULL;
     krb5_data key, value;
+    krb5_error_code ret;
     int code;
 
     if (principal->name.name_type == KRB5_NT_ENTERPRISE_PRINCIPAL) {
@@ -123,7 +124,7 @@ _hdb_fetch(krb5_context context, HDB *db, krb5_const_principal principal,
 
     hdb_principal2key(context, principal, &key);
     if (enterprise_principal)
-	krb5_free_principal(context, principal);
+	krb5_free_principal(context, enterprise_principal);
     code = db->hdb__get(context, db, key, &value);
     krb5_data_free(&key);
     if(code)
