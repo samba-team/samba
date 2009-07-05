@@ -1,5 +1,6 @@
 #include <krb5.h>
 #include <hdb.h>
+#include <kdc.h>
 #include <windc_plugin.h>
 
 static krb5_error_code
@@ -62,9 +63,11 @@ pac_verify(void *ctx, krb5_context context,
 static krb5_error_code
 client_access(void *ctx,
 	      krb5_context context,
-	      struct hdb_entry_ex *client,
+	      krb5_kdc_configuration *config,
+	      hdb_entry_ex *client, const char *client_name, 
+	      hdb_entry_ex *server, const char *server_name, 
 	      KDC_REQ *req,
-	      krb5_data *data)
+	      krb5_data *e_data)
 {
     krb5_warnx(context, "client_access");
     return 0;
