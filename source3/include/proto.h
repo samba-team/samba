@@ -5799,8 +5799,6 @@ bool create_next_pdu(pipes_struct *p);
 bool api_pipe_bind_auth3(pipes_struct *p, prs_struct *rpc_in_p);
 bool setup_fault_pdu(pipes_struct *p, NTSTATUS status);
 bool setup_cancel_ack_reply(pipes_struct *p, prs_struct *rpc_in_p);
-bool check_bind_req(struct pipes_struct *p, RPC_IFACE* abstract,
-                    RPC_IFACE* transfer, uint32 context_id);
 NTSTATUS rpc_pipe_register_commands(int version, const char *clnt,
 				    const char *srv,
 				    const struct ndr_syntax_id *interface,

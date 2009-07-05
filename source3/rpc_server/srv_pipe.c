@@ -950,8 +950,8 @@ bool setup_cancel_ack_reply(pipes_struct *p, prs_struct *rpc_in_p)
  Used to reject unknown binds from Win2k.
 *******************************************************************/
 
-bool check_bind_req(struct pipes_struct *p, RPC_IFACE* abstract,
-                    RPC_IFACE* transfer, uint32 context_id)
+static bool check_bind_req(struct pipes_struct *p, RPC_IFACE* abstract,
+			   RPC_IFACE* transfer, uint32 context_id)
 {
 	int i=0;
 	struct pipe_rpc_fns *context_fns;
