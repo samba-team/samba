@@ -632,7 +632,7 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 			if (!el->values) {
 				goto failed;
 			}
-			ret = a->syntax->ldif_read_fn(ldb, ldif, &value, &el->values[el->num_values]);
+			ret = a->syntax->ldif_read_fn(ldb, el->values, &value, &el->values[el->num_values]);
 			if (ret != 0) {
 				goto failed;
 			}
@@ -647,7 +647,7 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 			el->num_values++;
 		} else {
 			/* its a new attribute */
-			msg->elements = talloc_realloc(ldif, msg->elements, 
+			msg->elements = talloc_realloc(msg, msg->elements, 
 							 struct ldb_message_element, 
 							 msg->num_elements+1);
 			if (!msg->elements) {
@@ -661,7 +661,7 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 				goto failed;
 			}
 			el->num_values = 1;
-			ret = a->syntax->ldif_read_fn(ldb, ldif, &value, &el->values[0]);
+			ret = a->syntax->ldif_read_fn(ldb, el->values, &value, &el->values[0]);
 			if (ret != 0) {
 				goto failed;
 			}
