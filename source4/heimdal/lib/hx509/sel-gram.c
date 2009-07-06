@@ -101,7 +101,6 @@
 #include <stdlib.h>
 #include <hx_locl.h>
 
-RCSID("$Id$");
 
 
 
@@ -125,13 +124,13 @@ RCSID("$Id$");
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 46 "heimdal/lib/hx509/sel-gram.y"
+#line 45 "heimdal/lib/hx509/sel-gram.y"
 {
     char *string;
     struct hx_expr *expr;
 }
 /* Line 187 of yacc.c.  */
-#line 135 "heimdal/lib/hx509/sel-gram.y"
+#line 134 "heimdal/lib/hx509/sel-gram.y"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
@@ -144,7 +143,7 @@ typedef union YYSTYPE
 
 
 /* Line 216 of yacc.c.  */
-#line 148 "heimdal/lib/hx509/sel-gram.y"
+#line 147 "heimdal/lib/hx509/sel-gram.y"
 
 #ifdef short
 # undef short
@@ -436,9 +435,9 @@ static const yytype_int8 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    74,    74,    76,    77,    78,    79,    80,    81,    82,
-      85,    86,    89,    90,    91,    92,    93,    96,    97,    98,
-      99,   102,   103,   105,   108,   111,   113
+       0,    73,    73,    75,    76,    77,    78,    79,    80,    81,
+      84,    85,    88,    89,    90,    91,    92,    95,    96,    97,
+      98,   101,   102,   104,   107,   110,   112
 };
 #endif
 
@@ -1368,136 +1367,136 @@ yyreduce:
   switch (yyn)
     {
         case 2:
-#line 74 "heimdal/lib/hx509/sel-gram.y"
+#line 73 "heimdal/lib/hx509/sel-gram.y"
     { _hx509_expr_input.expr = (yyvsp[(1) - (1)].expr); }
     break;
 
   case 3:
-#line 76 "heimdal/lib/hx509/sel-gram.y"
+#line 75 "heimdal/lib/hx509/sel-gram.y"
     { (yyval.expr) = _hx509_make_expr(op_TRUE, NULL, NULL); }
     break;
 
   case 4:
-#line 77 "heimdal/lib/hx509/sel-gram.y"
+#line 76 "heimdal/lib/hx509/sel-gram.y"
     { (yyval.expr) = _hx509_make_expr(op_FALSE, NULL, NULL); }
     break;
 
   case 5:
-#line 78 "heimdal/lib/hx509/sel-gram.y"
+#line 77 "heimdal/lib/hx509/sel-gram.y"
     { (yyval.expr) = _hx509_make_expr(op_NOT, (yyvsp[(2) - (2)].expr), NULL); }
     break;
 
   case 6:
-#line 79 "heimdal/lib/hx509/sel-gram.y"
+#line 78 "heimdal/lib/hx509/sel-gram.y"
     { (yyval.expr) = _hx509_make_expr(op_AND, (yyvsp[(1) - (3)].expr), (yyvsp[(3) - (3)].expr)); }
     break;
 
   case 7:
-#line 80 "heimdal/lib/hx509/sel-gram.y"
+#line 79 "heimdal/lib/hx509/sel-gram.y"
     { (yyval.expr) = _hx509_make_expr(op_OR, (yyvsp[(1) - (3)].expr), (yyvsp[(3) - (3)].expr)); }
     break;
 
   case 8:
-#line 81 "heimdal/lib/hx509/sel-gram.y"
+#line 80 "heimdal/lib/hx509/sel-gram.y"
     { (yyval.expr) = (yyvsp[(2) - (3)].expr); }
     break;
 
   case 9:
-#line 82 "heimdal/lib/hx509/sel-gram.y"
+#line 81 "heimdal/lib/hx509/sel-gram.y"
     { (yyval.expr) = _hx509_make_expr(op_COMP, (yyvsp[(1) - (1)].expr), NULL); }
     break;
 
   case 10:
-#line 85 "heimdal/lib/hx509/sel-gram.y"
+#line 84 "heimdal/lib/hx509/sel-gram.y"
     { (yyval.expr) = _hx509_make_expr(expr_WORDS, (yyvsp[(1) - (1)].expr), NULL); }
     break;
 
   case 11:
-#line 86 "heimdal/lib/hx509/sel-gram.y"
+#line 85 "heimdal/lib/hx509/sel-gram.y"
     { (yyval.expr) = _hx509_make_expr(expr_WORDS, (yyvsp[(1) - (3)].expr), (yyvsp[(3) - (3)].expr)); }
     break;
 
   case 12:
-#line 89 "heimdal/lib/hx509/sel-gram.y"
+#line 88 "heimdal/lib/hx509/sel-gram.y"
     { (yyval.expr) = _hx509_make_expr(comp_EQ, (yyvsp[(1) - (4)].expr), (yyvsp[(4) - (4)].expr)); }
     break;
 
   case 13:
-#line 90 "heimdal/lib/hx509/sel-gram.y"
+#line 89 "heimdal/lib/hx509/sel-gram.y"
     { (yyval.expr) = _hx509_make_expr(comp_NE, (yyvsp[(1) - (4)].expr), (yyvsp[(4) - (4)].expr)); }
     break;
 
   case 14:
-#line 91 "heimdal/lib/hx509/sel-gram.y"
+#line 90 "heimdal/lib/hx509/sel-gram.y"
     { (yyval.expr) = _hx509_make_expr(comp_TAILEQ, (yyvsp[(1) - (3)].expr), (yyvsp[(3) - (3)].expr)); }
     break;
 
   case 15:
-#line 92 "heimdal/lib/hx509/sel-gram.y"
+#line 91 "heimdal/lib/hx509/sel-gram.y"
     { (yyval.expr) = _hx509_make_expr(comp_IN, (yyvsp[(1) - (5)].expr), (yyvsp[(4) - (5)].expr)); }
     break;
 
   case 16:
-#line 93 "heimdal/lib/hx509/sel-gram.y"
+#line 92 "heimdal/lib/hx509/sel-gram.y"
     { (yyval.expr) = _hx509_make_expr(comp_IN, (yyvsp[(1) - (3)].expr), (yyvsp[(3) - (3)].expr)); }
     break;
 
   case 17:
-#line 96 "heimdal/lib/hx509/sel-gram.y"
+#line 95 "heimdal/lib/hx509/sel-gram.y"
     { (yyval.expr) = (yyvsp[(1) - (1)].expr); }
     break;
 
   case 18:
-#line 97 "heimdal/lib/hx509/sel-gram.y"
+#line 96 "heimdal/lib/hx509/sel-gram.y"
     { (yyval.expr) = (yyvsp[(1) - (1)].expr); }
     break;
 
   case 19:
-#line 98 "heimdal/lib/hx509/sel-gram.y"
+#line 97 "heimdal/lib/hx509/sel-gram.y"
     { (yyval.expr) = (yyvsp[(1) - (1)].expr); }
     break;
 
   case 20:
-#line 99 "heimdal/lib/hx509/sel-gram.y"
+#line 98 "heimdal/lib/hx509/sel-gram.y"
     { (yyval.expr) = (yyvsp[(1) - (1)].expr); }
     break;
 
   case 21:
-#line 102 "heimdal/lib/hx509/sel-gram.y"
+#line 101 "heimdal/lib/hx509/sel-gram.y"
     { (yyval.expr) = _hx509_make_expr(expr_NUMBER, (yyvsp[(1) - (1)].string), NULL); }
     break;
 
   case 22:
-#line 103 "heimdal/lib/hx509/sel-gram.y"
+#line 102 "heimdal/lib/hx509/sel-gram.y"
     { (yyval.expr) = _hx509_make_expr(expr_STRING, (yyvsp[(1) - (1)].string), NULL); }
     break;
 
   case 23:
-#line 105 "heimdal/lib/hx509/sel-gram.y"
+#line 104 "heimdal/lib/hx509/sel-gram.y"
     {
 			(yyval.expr) = _hx509_make_expr(expr_FUNCTION, (yyvsp[(1) - (4)].string), (yyvsp[(3) - (4)].expr)); }
     break;
 
   case 24:
-#line 108 "heimdal/lib/hx509/sel-gram.y"
+#line 107 "heimdal/lib/hx509/sel-gram.y"
     { (yyval.expr) = (yyvsp[(3) - (4)].expr); }
     break;
 
   case 25:
-#line 111 "heimdal/lib/hx509/sel-gram.y"
+#line 110 "heimdal/lib/hx509/sel-gram.y"
     {
 			(yyval.expr) = _hx509_make_expr(expr_VAR, (yyvsp[(1) - (3)].string), (yyvsp[(3) - (3)].expr)); }
     break;
 
   case 26:
-#line 113 "heimdal/lib/hx509/sel-gram.y"
+#line 112 "heimdal/lib/hx509/sel-gram.y"
     {
 			(yyval.expr) = _hx509_make_expr(expr_VAR, (yyvsp[(1) - (1)].string), NULL); }
     break;
 
 
 /* Line 1267 of yacc.c.  */
-#line 1501 "heimdal/lib/hx509/sel-gram.y"
+#line 1500 "heimdal/lib/hx509/sel-gram.y"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);

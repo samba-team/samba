@@ -64,7 +64,7 @@
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 53 "heimdal/lib/com_err/parse.y"
+#line 51 "heimdal/lib/com_err/parse.y"
 {
   char *string;
   int number;

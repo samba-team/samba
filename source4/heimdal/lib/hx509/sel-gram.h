@@ -66,7 +66,7 @@
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 46 "heimdal/lib/hx509/sel-gram.y"
+#line 45 "heimdal/lib/hx509/sel-gram.y"
 {
     char *string;
     struct hx_expr *expr;

@@ -689,10 +689,10 @@ asn1_compile_ASN1_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/asn1/gen_seq.ho \
 	$(heimdalsrcdir)/lib/asn1/hash.ho \
 	$(heimdalsrcdir)/lib/asn1/symbol.ho \
-	$(heimdalsrcdir)/lib/asn1/parse.ho \
+	$(heimdalsrcdir)/lib/asn1/asn1parse.ho \
 	$(heimdalsrcdir)/lib/asn1/lex.ho
 
-$(heimdalsrcdir)/lib/asn1/lex.c:: $(heimdalsrcdir)/lib/asn1/parse.c
+$(heimdalsrcdir)/lib/asn1/lex.c:: $(heimdalsrcdir)/lib/asn1/asn1parse.c
 dist:: $(heimdalsrcdir)/lib/asn1/lex.c
 
 asn1_compile_OBJ_FILES = \

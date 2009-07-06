@@ -844,7 +844,7 @@ char *yytext;
 #endif
 #undef ECHO
 #include "symbol.h"
-#include "parse.h"
+#include "asn1parse.h"
 #include "lex.h"
 #include "gen_locl.h"
 
@@ -1590,7 +1590,7 @@ YY_RULE_SETUP
 			    char *p = buf;
 			    int f = 0;
 			    int skip_ws = 0;
-			
+		
 			    while((c = input()) != EOF) {
 				if(isspace(c) && skip_ws) {
 				    if(c == '\n')
@@ -1598,7 +1598,7 @@ YY_RULE_SETUP
 				    continue;
 				}
 				skip_ws = 0;
-				
+			
 				if(c == '"') {
 				    if(f) {
 					*p++ = '"';
