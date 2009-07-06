@@ -1326,7 +1326,7 @@ struct double_lock_test {
 /**
  * Tests zero byte locks.
  */
-struct double_lock_test zero_byte_tests[] = {
+static const struct double_lock_test zero_byte_tests[] = {
 	/* {pid, offset, count}, {pid, offset, count}, status */
 
 	/** First, takes a zero byte lock at offset 10. Then:
@@ -1360,7 +1360,6 @@ struct double_lock_test zero_byte_tests[] = {
 static bool test_zerobytelocks(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	union smb_lock io;
-	struct smb_lock_entry zerozero;
 	NTSTATUS status;
 	bool ret = true;
 	int fnum, i;
@@ -1389,7 +1388,7 @@ static bool test_zerobytelocks(struct torture_context *tctx, struct smbcli_state
 	 * assumed to succeed. The second lock may contend, depending on the
 	 * expected status. */
 	for (i = 0;
-	     i < sizeof(zero_byte_tests) / sizeof(struct double_lock_test);
+	     i < ARRAY_SIZE(zero_byte_tests);
 	     i++) {
 		torture_comment(tctx, "  ... {%d, %llu, %llu} + {%d, %llu, %llu} = %s\n",
 		    zero_byte_tests[i].lock1.pid,
