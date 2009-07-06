@@ -463,14 +463,12 @@ int onefs_lstat(vfs_handle_struct *handle, struct smb_filename *smb_fname)
 }
 
 int onefs_unlink(vfs_handle_struct *handle,
-		  const struct smb_filename *smb_fname)
+		 const struct smb_filename *smb_fname)
 {
 	struct smb_filename *smb_fname_onefs = NULL;
 	int ret;
-	bool is_stream;
-	char *base = NULL;
-	char *stream = NULL;
 	int dir_fd, saved_errno;
+	NTSTATUS status;
 
 	/* Not a stream. */
 	if (!is_ntfs_stream_smb_fname(smb_fname)) {
@@ -519,10 +517,6 @@ int onefs_vtimes_streams(vfs_handle_struct *handle,
 	NTSTATUS status;
 
 	START_PROFILE(syscall_ntimes);
-
-	ret = onefs_is_stream(fname, &base, &stream, &is_stream);
-	if (ret)
-		return ret;
 
 	if (!is_ntfs_stream_smb_fname(smb_fname)) {
 		ret = vtimes(smb_fname->base_name, times, flags);

@@ -143,6 +143,9 @@ onefs_shadow_copy_get_shadow_copy_data(vfs_handle_struct *handle,
 	return ret;						      \
 	} while (0)						      \
 
+/*
+ * XXX: Convert osc_canonicalize_path to use talloc instead of malloc.
+ */
 #define SHADOW_NEXT_SMB_FNAME(op, args, rtype) do {		      \
 		char *smb_base_name_tmp = NULL;			      \
 		char *cpath = NULL;				      \
@@ -160,37 +163,6 @@ onefs_shadow_copy_get_shadow_copy_data(vfs_handle_struct *handle,
 		SAFE_FREE(cpath);					\
 		return ret;						\
 	} while (0)							\
-
-
-/*
- * XXX: Convert osc_canonicalize_path to use talloc instead of malloc.
- */
-#define SHADOW_NEXT_SMB_FNAME_CONST(op, args, rtype) do {	      \
-		struct smb_filename *smb_fname_tmp  = NULL;	      \
-		char *cpath = NULL;				      \
-		char *snap_component = NULL;			      \
-		rtype ret;					      \
-		if (shadow_copy_match_name(smb_fname->base_name,      \
-			&snap_component)) {				\
-			cpath = osc_canonicalize_path(smb_fname->base_name, \
-			    snap_component);				\
-			smb_fname->base_name = cpath;			\
-		}							\
-		status = create_synthetic_smb_fname(talloc_tos(),	\
-		    cpath ?: smb_fname->base_name,			\
-		    smb_fname->stream_name, &smb_fname->st,		\
-		    &smb_fname_tmp);					\
-		if (!NT_STATUS_IS_OK(status)) {				\
-			errno = map_errno_from_nt_status(status);	\
-			return 	ret;					\
-		}							\
-		ret = SMB_VFS_NEXT_ ## op args;				\
-		TALLOC_FREE(smb_fname_tmp)				\
-		SAFE_FREE(cpath);					\
-		return ret;						\
-	} while (0)							\
-
-
 
 static uint64_t
 onefs_shadow_copy_disk_free(vfs_handle_struct *handle, const char *path,
@@ -351,11 +323,20 @@ onefs_shadow_copy_lstat(vfs_handle_struct *handle,
 
 static int
 onefs_shadow_copy_unlink(vfs_handle_struct *handle,
-			 const struct smb_filename *smb_fname)
+			 const struct smb_filename *smb_fname_in)
 {
-	SHADOW_NEXT_SMB_FNAME_CONST(UNLINK,
-				    (handle, smb_fname_tmp),
-				    int);
+	struct smb_filename *smb_fname = NULL;
+	NTSTATUS status;
+
+	status = copy_smb_filename(talloc_tos(), smb_fname_in, &smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		return -1;
+	}
+
+	SHADOW_NEXT_SMB_FNAME(UNLINK,
+			      (handle, smb_fname),
+			      int);
 }
 
 static int
@@ -395,12 +376,21 @@ onefs_shadow_copy_chdir(vfs_handle_struct *handle, const char *path)
 
 static int
 onefs_shadow_copy_ntimes(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
+			const struct smb_filename *smb_fname_in,
 			struct smb_file_time *ft)
 {
-	SHADOW_NEXT_SMB_FNAME_CONST(NTIMES,
-				    (handle, smb_fname_tmp, ft),
-				    int);
+	struct smb_filename *smb_fname = NULL;
+	NTSTATUS status;
+
+	status = copy_smb_filename(talloc_tos(), smb_fname_in, &smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		return -1;
+	}
+
+	SHADOW_NEXT_SMB_FNAME(NTIMES,
+			      (handle, smb_fname, ft),
+			      int);
 
 }
 

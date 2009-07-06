@@ -72,7 +72,8 @@ int onefs_fstat(vfs_handle_struct *handle, struct files_struct *fsp,
 
 int onefs_lstat(vfs_handle_struct *handle, struct smb_filename *smb_fname);
 
-int onefs_unlink(vfs_handle_struct *handle, const char *path);
+int onefs_unlink(vfs_handle_struct *handle,
+		 const struct smb_filename *smb_fname);
 
 NTSTATUS onefs_streaminfo(vfs_handle_struct *handle,
 			  struct files_struct *fsp,
@@ -81,7 +82,8 @@ NTSTATUS onefs_streaminfo(vfs_handle_struct *handle,
 			  unsigned int *num_streams,
 			  struct stream_struct **streams);
 
-int onefs_vtimes_streams(vfs_handle_struct *handle, const char *fname,
+int onefs_vtimes_streams(vfs_handle_struct *handle,
+			 const struct smb_filename *smb_fname,
 			 int flags, struct timespec times[3]);
 
 NTSTATUS onefs_brl_lock_windows(vfs_handle_struct *handle,
