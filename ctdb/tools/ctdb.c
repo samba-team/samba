@@ -1529,6 +1529,62 @@ static int control_getpid(struct ctdb_context *ctdb, int argc, const char **argv
 }
 
 /*
+  handler for receiving the response to ipreallocate
+*/
+static void ip_reallocate_handler(struct ctdb_context *ctdb, uint64_t srvid, 
+			     TDB_DATA data, void *private_data)
+{
+	printf("IP Reallocation completed\n");
+	exit(0);
+}
+
+/*
+  ask the recovery daemon on the recovery master to perform a ip reallocation
+ */
+static int control_ipreallocate(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+	TDB_DATA data;
+	struct rd_memdump_reply rd;
+	uint32_t recmaster;
+
+	rd.pnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE);
+	if (rd.pnn == -1) {
+		DEBUG(DEBUG_ERR, ("Failed to get pnn of local node\n"));
+		return -1;
+	}
+	rd.srvid = getpid();
+
+	/* register a message port for receiveing the reply so that we
+	   can receive the reply
+	*/
+	ctdb_set_message_handler(ctdb, rd.srvid, ip_reallocate_handler, NULL);
+
+	data.dptr = (uint8_t *)&rd;
+	data.dsize = sizeof(rd);
+
+	ret = ctdb_ctrl_getrecmaster(ctdb, ctdb, TIMELIMIT(), options.pnn, &recmaster);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get recmaster from node %u\n", options.pnn));
+		return ret;
+	}
+
+	ret = ctdb_send_message(ctdb, recmaster, CTDB_SRVID_TAKEOVER_RUN, data);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to send ip takeover run request message to %u\n", options.pnn));
+		return -1;
+	}
+
+	/* this loop will terminate when we have received the reply */
+	while (1) {	
+		event_loop_once(ctdb->ev);
+	}
+
+	return 0;
+}
+
+
+/*
   disable a remote node
  */
 static int control_disable(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -1552,6 +1608,11 @@ static int control_disable(struct ctdb_context *ctdb, int argc, const char **arg
 		}
 
 	} while (!(nodemap->nodes[options.pnn].flags & NODE_FLAGS_PERMANENTLY_DISABLED));
+	ret = control_ipreallocate(ctdb, argc, argv);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("IP Reallocate failed on node %u\n", options.pnn));
+		return ret;
+	}
 
 	return 0;
 }
@@ -1581,6 +1642,11 @@ static int control_enable(struct ctdb_context *ctdb, int argc, const char **argv
 		}
 
 	} while (nodemap->nodes[options.pnn].flags & NODE_FLAGS_PERMANENTLY_DISABLED);
+	ret = control_ipreallocate(ctdb, argc, argv);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("IP Reallocate failed on node %u\n", options.pnn));
+		return ret;
+	}
 
 	return 0;
 }
@@ -2847,61 +2913,6 @@ static int control_rddumpmemory(struct ctdb_context *ctdb, int argc, const char 
 	ret = ctdb_send_message(ctdb, options.pnn, CTDB_SRVID_MEM_DUMP, data);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,("Failed to send memdump request message to %u\n", options.pnn));
-		return -1;
-	}
-
-	/* this loop will terminate when we have received the reply */
-	while (1) {	
-		event_loop_once(ctdb->ev);
-	}
-
-	return 0;
-}
-
-/*
-  handler for receiving the response to ipreallocate
-*/
-static void ip_reallocate_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-			     TDB_DATA data, void *private_data)
-{
-	printf("IP Reallocation completed\n");
-	exit(0);
-}
-
-/*
-  ask the recovery daemon on the recovery master to perform a ip reallocation
- */
-static int control_ipreallocate(struct ctdb_context *ctdb, int argc, const char **argv)
-{
-	int ret;
-	TDB_DATA data;
-	struct rd_memdump_reply rd;
-	uint32_t recmaster;
-
-	rd.pnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE);
-	if (rd.pnn == -1) {
-		DEBUG(DEBUG_ERR, ("Failed to get pnn of local node\n"));
-		return -1;
-	}
-	rd.srvid = getpid();
-
-	/* register a message port for receiveing the reply so that we
-	   can receive the reply
-	*/
-	ctdb_set_message_handler(ctdb, rd.srvid, ip_reallocate_handler, NULL);
-
-	data.dptr = (uint8_t *)&rd;
-	data.dsize = sizeof(rd);
-
-	ret = ctdb_ctrl_getrecmaster(ctdb, ctdb, TIMELIMIT(), options.pnn, &recmaster);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get recmaster from node %u\n", options.pnn));
-		return ret;
-	}
-
-	ret = ctdb_send_message(ctdb, recmaster, CTDB_SRVID_TAKEOVER_RUN, data);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,("Failed to send ip takeover run request message to %u\n", options.pnn));
 		return -1;
 	}
 
