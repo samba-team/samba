@@ -242,7 +242,6 @@ trust account creation. This is a matter of the administrator's choice.
 
 <para>
 <indexterm><primary>/etc/passwd</primary></indexterm>
-<indexterm><primary></primary></indexterm>
 <indexterm><primary>useradd</primary></indexterm>
 <indexterm><primary>vipw</primary></indexterm>
 The first step in manually creating a Machine Trust Account is to manually
@@ -540,7 +539,6 @@ with the version of Windows.
 	<title>Samba Client</title>
 
 	<para>
-<indexterm><primary></primary></indexterm>
 	Joining a Samba client to a domain is documented in <link linkend="domain-member-server">the next section</link>.
 	</para>
 </sect3>
@@ -628,7 +626,6 @@ and be fully trusted by it.
 </table>
 
 <para>
-<indexterm><primary></primary></indexterm>
 First, you must edit your &smb.conf; file to tell Samba it should now use domain security.
 </para>
 
@@ -930,7 +927,7 @@ and it may be detrimental.
 <para>
 <indexterm><primary>ADS</primary></indexterm>
 <indexterm><primary>SRV records</primary></indexterm>
-<indexterm><primary>DNS zon</primary></indexterm>
+<indexterm><primary>DNS zone</primary></indexterm>
 <indexterm><primary>KDC</primary></indexterm>
 <indexterm><primary>_kerberos.REALM.NAME</primary></indexterm>
 Microsoft ADS automatically create SRV records in the DNS zone 
@@ -1073,7 +1070,6 @@ error</errorname> when you try to join the realm.
 <indexterm><primary>Kerberos</primary></indexterm>
 <indexterm><primary>Create the Computer Account</primary></indexterm>
 <indexterm><primary>Testing Server Setup</primary></indexterm>
-<indexterm><primary></primary></indexterm>
 If all you want is Kerberos support in &smbclient;, then you can skip directly to <link
 linkend="ads-test-smbclient">Testing with &smbclient;</link> now.  <link
 linkend="ads-create-machine-account">Create the Computer Account</link> and <link
