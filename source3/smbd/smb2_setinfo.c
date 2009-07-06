@@ -115,7 +115,6 @@ static void smbd_smb2_request_setinfo_done(struct tevent_req *subreq)
 {
 	struct smbd_smb2_request *req = tevent_req_callback_data(subreq,
 					struct smbd_smb2_request);
-	int i = req->current_idx;
 	DATA_BLOB outbody;
 	NTSTATUS status;
 	NTSTATUS error; /* transport error */
