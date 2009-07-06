@@ -672,12 +672,18 @@ restart_ctdb ()
     fi
     echo "..."
     
-    if [ -n "$CTDB_NODES_SOCKETS" ] ; then
-	daemons_stop
-	daemons_start $CTDB_TEST_NUM_DAEMONS
-    else
-	onnode -pq all $CTDB_TEST_WRAPPER _restart_ctdb 
-    fi || return 1
+    local i
+    for i in $(seq 1 5) ; do
+	if [ -n "$CTDB_NODES_SOCKETS" ] ; then
+	    daemons_stop
+	    daemons_start $CTDB_TEST_NUM_DAEMONS
+	else
+	    onnode -p all $CTDB_TEST_WRAPPER _restart_ctdb 
+	fi && break
+
+	echo "That didn't seem to work - sleeping a while and trying again..."
+	sleep_for 5
+    done
 	
     onnode -q 1  $CTDB_TEST_WRAPPER wait_until_healthy || return 1
 
