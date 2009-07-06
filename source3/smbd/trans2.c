@@ -5063,15 +5063,26 @@ static NTSTATUS smb_set_file_dosmode(connection_struct *conn,
 
 	/* check the mode isn't different, before changing it */
 	if ((dosmode != 0) && (dosmode != dos_mode(conn, fname, psbuf))) {
+		struct smb_filename *smb_fname = NULL;
+		NTSTATUS status;
+
+		status = create_synthetic_smb_fname_split(talloc_tos(), fname,
+							  psbuf, &smb_fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 
 		DEBUG(10,("smb_set_file_dosmode: file %s : setting dos mode 0x%x\n",
 					fname, (unsigned int)dosmode ));
 
-		if(file_set_dosmode(conn, fname, dosmode, psbuf, NULL, false)) {
+		if(file_set_dosmode(conn, smb_fname, dosmode, NULL, false)) {
 			DEBUG(2,("smb_set_file_dosmode: file_set_dosmode of %s failed (%s)\n",
 						fname, strerror(errno)));
+			TALLOC_FREE(smb_fname);
 			return map_nt_error_from_unix(errno);
 		}
+		*psbuf = smb_fname->st;
+		TALLOC_FREE(smb_fname);
 	}
 	return NT_STATUS_OK;
 }
@@ -6320,7 +6331,7 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 		return status;
 	}
 
-	id = vfs_file_id_from_sbuf(conn, psbuf);
+	id = vfs_file_id_from_sbuf(conn, &sbuf);
 	for(all_fsps = file_find_di_first(id); all_fsps;
 			all_fsps = file_find_di_next(all_fsps)) {
 		/*
@@ -6349,7 +6360,7 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 				false);
 	if (modify_mtime) {
 		notify_fname(conn, NOTIFY_ACTION_MODIFIED,
-			FILE_NOTIFY_CHANGE_LAST_WRITE, fname);
+			FILE_NOTIFY_CHANGE_LAST_WRITE, smb_fname->base_name);
 	}
 	return status;
 }

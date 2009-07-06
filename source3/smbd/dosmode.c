@@ -429,15 +429,14 @@ static bool get_stat_dos_flags(connection_struct *conn,
 ****************************************************************************/
 
 static bool set_stat_dos_flags(connection_struct *conn,
-				const char *fname,
-				SMB_STRUCT_STAT *sbuf,
-				uint32_t dosmode,
-				bool *attributes_changed)
+			       const struct smb_filename *smb_fname,
+			       uint32_t dosmode,
+			       bool *attributes_changed)
 {
 	uint32_t new_flags = 0;
 	int error = 0;
 
-	SMB_ASSERT(sbuf && VALID_STAT(*sbuf));
+	SMB_ASSERT(VALID_STAT(smb_fname->st));
 	SMB_ASSERT(attributes_changed);
 
 	*attributes_changed = false;
@@ -446,23 +445,25 @@ static bool set_stat_dos_flags(connection_struct *conn,
 		return false;
 	}
 
-	DEBUG(5, ("Setting stat dos attributes for %s.\n", fname));
+	DEBUG(5, ("Setting stat dos attributes for %s.\n",
+		  smb_fname_str_dbg(smb_fname)));
 
-	new_flags = (sbuf->st_ex_flags & ~UF_DOS_FLAGS) |
+	new_flags = (smb_fname->st.st_ex_flags & ~UF_DOS_FLAGS) |
 		     dos_attributes_to_stat_dos_flags(dosmode);
 
 	/* Return early if no flags changed. */
-	if (new_flags == sbuf->st_ex_flags)
+	if (new_flags == smb_fname->st.st_ex_flags)
 		return true;
 
 	DEBUG(5, ("Setting stat dos attributes=0x%x, prev=0x%x\n", new_flags,
-		  sbuf->st_ex_flags));
+		  smb_fname->st.st_ex_flags));
 
 	/* Set new flags with chflags. */
-	error = SMB_VFS_CHFLAGS(conn, fname, new_flags);
+	error = SMB_VFS_CHFLAGS(conn, smb_fname->base_name, new_flags);
 	if (error) {
 		DEBUG(0, ("Failed setting new stat dos attributes (0x%x) on "
-			  "file %s! errno=%d\n", new_flags, fname, errno));
+			  "file %s! errno=%d\n", new_flags,
+			  smb_fname_str_dbg(smb_fname), errno));
 		return false;
 	}
 
@@ -545,52 +546,56 @@ uint32 dos_mode(connection_struct *conn, const char *path, const SMB_STRUCT_STAT
  chmod a file - but preserve some bits.
 ********************************************************************/
 
-int file_set_dosmode(connection_struct *conn, const char *fname,
-		     uint32 dosmode, SMB_STRUCT_STAT *st,
-		     const char *parent_dir,
-		     bool newfile)
+int file_set_dosmode(connection_struct *conn, struct smb_filename *smb_fname,
+		     uint32 dosmode, const char *parent_dir, bool newfile)
 {
-	SMB_STRUCT_STAT st1;
 	int mask=0;
 	mode_t tmp;
 	mode_t unixmode;
 	int ret = -1, lret = -1;
 	uint32_t old_mode;
+	char *fname = NULL;
+	NTSTATUS status;
 
 	/* We only allow READONLY|HIDDEN|SYSTEM|DIRECTORY|ARCHIVE here. */
 	dosmode &= (SAMBA_ATTRIBUTES_MASK | FILE_ATTRIBUTE_OFFLINE);
 
-	DEBUG(10,("file_set_dosmode: setting dos mode 0x%x on file %s\n", dosmode, fname));
+	DEBUG(10,("file_set_dosmode: setting dos mode 0x%x on file %s\n",
+		  dosmode, smb_fname_str_dbg(smb_fname)));
 
-	if (st == NULL) {
-		SET_STAT_INVALID(st1);
-		st = &st1;
-	}
-
-	if (!VALID_STAT(*st)) {
-		if (vfs_stat_smb_fname(conn,fname,st))
+	if (!VALID_STAT(smb_fname->st)) {
+		if (SMB_VFS_STAT(conn, smb_fname))
 			return(-1);
 	}
 
-	unixmode = st->st_ex_mode;
+	unixmode = smb_fname->st.st_ex_mode;
 
-	get_acl_group_bits(conn, fname, &st->st_ex_mode);
+	get_acl_group_bits(conn, smb_fname->base_name,
+			   &smb_fname->st.st_ex_mode);
 
-	if (S_ISDIR(st->st_ex_mode))
+	if (S_ISDIR(smb_fname->st.st_ex_mode))
 		dosmode |= aDIR;
 	else
 		dosmode &= ~aDIR;
 
-	old_mode = dos_mode(conn,fname,st);
+	status = get_full_smb_filename(talloc_tos(), smb_fname, &fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		return -1;
+	}
+
+	old_mode = dos_mode(conn, fname, &smb_fname->st);
 
 	if (dosmode & FILE_ATTRIBUTE_OFFLINE) {
 		if (!(old_mode & FILE_ATTRIBUTE_OFFLINE)) {
 			lret = SMB_VFS_SET_OFFLINE(conn, fname);
 			if (lret == -1) {
-				DEBUG(0, ("set_dos_mode: client has asked to set "
-					  "FILE_ATTRIBUTE_OFFLINE to %s/%s but there was "
-					  "an error while setting it or it is not supported.\n",
-					  parent_dir, fname));
+				DEBUG(0, ("set_dos_mode: client has asked to "
+					  "set FILE_ATTRIBUTE_OFFLINE to "
+					  "%s/%s but there was an error while "
+					  "setting it or it is not "
+					  "supported.\n", parent_dir,
+					  smb_fname_str_dbg(smb_fname)));
 			}
 		}
 	}
@@ -599,7 +604,7 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 	old_mode &= ~FILE_ATTRIBUTE_OFFLINE;
 
 	if (old_mode == dosmode) {
-		st->st_ex_mode = unixmode;
+		smb_fname->st.st_ex_mode = unixmode;
 		return(0);
 	}
 
@@ -607,26 +612,26 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 	{
 		bool attributes_changed;
 
-		if (set_stat_dos_flags(conn, fname, st, dosmode,
+		if (set_stat_dos_flags(conn, smb_fname, dosmode,
 				       &attributes_changed))
 		{
 			if (!newfile && attributes_changed) {
 				notify_fname(conn, NOTIFY_ACTION_MODIFIED,
 				    FILE_NOTIFY_CHANGE_ATTRIBUTES, fname);
 			}
-			st->st_ex_mode = unixmode;
+			smb_fname->st.st_ex_mode = unixmode;
 			return 0;
 		}
 	}
 #endif
 
 	/* Store the DOS attributes in an EA by preference. */
-	if (set_ea_dos_attribute(conn, fname, st, dosmode)) {
+	if (set_ea_dos_attribute(conn, fname, &smb_fname->st, dosmode)) {
 		if (!newfile) {
 			notify_fname(conn, NOTIFY_ACTION_MODIFIED,
 				FILE_NOTIFY_CHANGE_ATTRIBUTES, fname);
 		}
-		st->st_ex_mode = unixmode;
+		smb_fname->st.st_ex_mode = unixmode;
 		return 0;
 	}
 
@@ -648,10 +653,10 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 	if (!MAP_HIDDEN(conn))
 		mask |= S_IXOTH;
 
-	unixmode |= (st->st_ex_mode & mask);
+	unixmode |= (smb_fname->st.st_ex_mode & mask);
 
 	/* if we previously had any r bits set then leave them alone */
-	if ((tmp = st->st_ex_mode & (S_IRUSR|S_IRGRP|S_IROTH))) {
+	if ((tmp = smb_fname->st.st_ex_mode & (S_IRUSR|S_IRGRP|S_IROTH))) {
 		unixmode &= ~(S_IRUSR|S_IRGRP|S_IROTH);
 		unixmode |= tmp;
 	}
@@ -659,7 +664,7 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 	/* if we previously had any w bits set then leave them alone 
 		whilst adding in the new w bits, if the new mode is not rdonly */
 	if (!IS_DOS_READONLY(dosmode)) {
-		unixmode |= (st->st_ex_mode & (S_IWUSR|S_IWGRP|S_IWOTH));
+		unixmode |= (smb_fname->st.st_ex_mode & (S_IWUSR|S_IWGRP|S_IWOTH));
 	}
 
 	ret = SMB_VFS_CHMOD(conn, fname, unixmode);
@@ -668,7 +673,7 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 			notify_fname(conn, NOTIFY_ACTION_MODIFIED,
 				     FILE_NOTIFY_CHANGE_ATTRIBUTES, fname);
 		}
-		st->st_ex_mode = unixmode;
+		smb_fname->st.st_ex_mode = unixmode;
 		return 0;
 	}
 
@@ -693,8 +698,8 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 		 * break batch oplocks open by others. JRA.
 		 */
 		files_struct *fsp;
-		if (!NT_STATUS_IS_OK(open_file_fchmod(NULL, conn, fname, st,
-						      &fsp)))
+		if (!NT_STATUS_IS_OK(open_file_fchmod(NULL, conn, fname,
+				     &smb_fname->st, &fsp)))
 			return -1;
 		become_root();
 		ret = SMB_VFS_FCHMOD(fsp, unixmode);
@@ -705,7 +710,7 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 				FILE_NOTIFY_CHANGE_ATTRIBUTES, fname);
 		}
 		if (ret == 0) {
-			st->st_ex_mode = unixmode;
+			smb_fname->st.st_ex_mode = unixmode;
 		}
 	}
 

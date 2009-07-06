@@ -544,26 +544,6 @@ int onefs_vtimes_streams(vfs_handle_struct *handle, const char *fname,
 	return ret;
 }
 
-int onefs_chflags(vfs_handle_struct *handle, const char *path,
-		  unsigned int flags)
-{
-	char *base = NULL;
-	char *stream = NULL;
-
-	if (!NT_STATUS_IS_OK(onefs_split_ntfs_stream_name(talloc_tos(), path,
-							  &base, &stream))) {
-		DEBUG(10, ("onefs_split_ntfs_stream_name failed\n"));
-		errno = ENOMEM;
-		return -1;
-	}
-
-	/*
-	 * Only set the attributes on the base file.  ifs_createfile handles
-	 * file creation attribute semantics.
-	 */
-	return SMB_VFS_NEXT_CHFLAGS(handle, base, flags);
-}
-
 /*
  * Streaminfo enumeration functionality
  */

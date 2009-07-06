@@ -294,10 +294,22 @@ ssize_t write_file(struct smb_request *req,
 			if ((lp_store_dos_attributes(SNUM(fsp->conn)) ||
 					MAP_ARCHIVE(fsp->conn)) &&
 					!IS_DOS_ARCHIVE(dosmode)) {
-				file_set_dosmode(fsp->conn,fsp->fsp_name,
-						dosmode | aARCH,&st,
-						NULL,
-						false);
+				struct smb_filename *smb_fname = NULL;
+				NTSTATUS status;
+
+				status = create_synthetic_smb_fname_split(
+					    talloc_tos(), fsp->fsp_name, &st,
+					    &smb_fname);
+				if (!NT_STATUS_IS_OK(status)) {
+					errno =
+					    map_errno_from_nt_status(status);
+					return -1;
+				}
+
+				file_set_dosmode(fsp->conn, smb_fname,
+						dosmode | aARCH, NULL, false);
+				st = smb_fname->st;
+				TALLOC_FREE(smb_fname);
 			}
 
 			/*

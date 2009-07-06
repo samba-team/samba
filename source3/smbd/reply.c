@@ -1216,7 +1216,7 @@ void reply_setatr(struct smb_request *req)
 		else
 			mode &= ~aDIR;
 
-		if (file_set_dosmode(conn, fname, mode, &smb_fname->st, NULL,
+		if (file_set_dosmode(conn, smb_fname, mode, NULL,
 				     false) != 0) {
 			reply_unixerror(req, ERRDOS, ERRnoaccess);
 			goto out;

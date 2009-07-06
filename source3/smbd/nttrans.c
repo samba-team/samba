@@ -1219,7 +1219,6 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 				uint32 attrs)
 {
 	char *oldname = NULL;
-	char *newname = NULL;
 	files_struct *fsp1,*fsp2;
 	uint32 fattr;
 	int info;
@@ -1328,20 +1327,15 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 
 	status = close_file(NULL, fsp2, NORMAL_CLOSE);
 
-	status = get_full_smb_filename(ctx, smb_fname_dst, &newname);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-
 	/* Grrr. We have to do this as open_file_ntcreate adds aARCH when it
 	   creates the file. This isn't the correct thing to do in the copy
 	   case. JRA */
-	if (!parent_dirname(talloc_tos(), newname, &parent, NULL)) {
+	if (!parent_dirname(talloc_tos(), smb_fname_dst->base_name, &parent,
+			    NULL)) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
-	file_set_dosmode(conn, newname, fattr, &smb_fname_dst->st, parent,
-			 false);
+	file_set_dosmode(conn, smb_fname_dst, fattr, parent, false);
 	TALLOC_FREE(parent);
 
 	if (ret < (SMB_OFF_T)smb_fname_src->st.st_ex_size) {
@@ -1356,8 +1350,6 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 	}
 
 	TALLOC_FREE(oldname);
-	TALLOC_FREE(newname);
-
 	return status;
 }
 

@@ -6238,10 +6238,8 @@ mode_t unix_mode(connection_struct *conn, int dosmode, const char *fname,
 uint32 dos_mode_msdfs(connection_struct *conn, const char *path, const SMB_STRUCT_STAT *sbuf);
 int dos_attributes_to_stat_dos_flags(uint32_t dosmode);
 uint32 dos_mode(connection_struct *conn, const char *path, const SMB_STRUCT_STAT *sbuf);
-int file_set_dosmode(connection_struct *conn, const char *fname,
-		     uint32 dosmode, SMB_STRUCT_STAT *st,
-		     const char *parent_dir,
-		     bool newfile);
+int file_set_dosmode(connection_struct *conn, struct smb_filename *smb_fname,
+		     uint32 dosmode, const char *parent_dir, bool newfile);
 int file_ntimes(connection_struct *conn, const char *fname,
 		struct smb_file_time *ft, const SMB_STRUCT_STAT *psbuf);
 bool set_sticky_write_time_path(connection_struct *conn, const char *fname,

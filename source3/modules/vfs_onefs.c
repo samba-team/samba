@@ -290,8 +290,6 @@ static vfs_op_tuple onefs_ops[] = {
 	 SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(onefs_ntimes), SMB_VFS_OP_NTIMES,
 	 SMB_VFS_LAYER_OPAQUE},
-	{SMB_VFS_OP(onefs_chflags), SMB_VFS_OP_CHFLAGS,
-	 SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(onefs_file_id_create), SMB_VFS_OP_FILE_ID_CREATE,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(onefs_streaminfo), SMB_VFS_OP_STREAMINFO,

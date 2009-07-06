@@ -2195,14 +2195,10 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		if (lp_map_archive(SNUM(conn)) ||
 		    lp_store_dos_attributes(SNUM(conn))) {
 			if (!posix_open) {
-				SMB_STRUCT_STAT tmp_sbuf;
-				SET_STAT_INVALID(tmp_sbuf);
-				if (file_set_dosmode(
-					    conn, fname,
+				if (file_set_dosmode(conn, smb_fname,
 					    new_dos_attributes | aARCH,
-					    &tmp_sbuf, parent_dir,
-					    true) == 0) {
-					unx_mode = tmp_sbuf.st_ex_mode;
+					    parent_dir, true) == 0) {
+					unx_mode = smb_fname->st.st_ex_mode;
 				}
 			}
 		}
@@ -2338,9 +2334,8 @@ NTSTATUS close_file_fchmod(struct smb_request *req, files_struct *fsp)
 }
 
 static NTSTATUS mkdir_internal(connection_struct *conn,
-				const char *name,
-				uint32 file_attributes,
-				SMB_STRUCT_STAT *psbuf)
+			       struct smb_filename *smb_dname,
+			       uint32 file_attributes)
 {
 	mode_t mode;
 	char *parent_dir;
@@ -2353,12 +2348,13 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	status = check_name(conn, name);
+	status = check_name(conn, smb_dname->base_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (!parent_dirname(talloc_tos(), name, &parent_dir, NULL)) {
+	if (!parent_dirname(talloc_tos(), smb_dname->base_name, &parent_dir,
+			    NULL)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -2366,39 +2362,39 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		posix_open = true;
 		mode = (mode_t)(file_attributes & ~FILE_FLAG_POSIX_SEMANTICS);
 	} else {
-		mode = unix_mode(conn, aDIR, name, parent_dir);
+		mode = unix_mode(conn, aDIR, smb_dname->base_name, parent_dir);
 	}
 
-	if (SMB_VFS_MKDIR(conn, name, mode) != 0) {
+	if (SMB_VFS_MKDIR(conn, smb_dname->base_name, mode) != 0) {
 		return map_nt_error_from_unix(errno);
 	}
 
 	/* Ensure we're checking for a symlink here.... */
 	/* We don't want to get caught by a symlink racer. */
 
-	if (vfs_lstat_smb_fname(conn, name, psbuf) == -1) {
+	if (SMB_VFS_LSTAT(conn, smb_dname) == -1) {
 		DEBUG(2, ("Could not stat directory '%s' just created: %s\n",
-			  name, strerror(errno)));
+			  smb_fname_str_dbg(smb_dname), strerror(errno)));
 		return map_nt_error_from_unix(errno);
 	}
 
-	if (!S_ISDIR(psbuf->st_ex_mode)) {
+	if (!S_ISDIR(smb_dname->st.st_ex_mode)) {
 		DEBUG(0, ("Directory just '%s' created is not a directory\n",
-			  name));
+			  smb_fname_str_dbg(smb_dname)));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	if (lp_store_dos_attributes(SNUM(conn))) {
 		if (!posix_open) {
-			file_set_dosmode(conn, name,
-				 file_attributes | aDIR, NULL,
-				 parent_dir,
-				 true);
+			file_set_dosmode(conn, smb_dname,
+					 file_attributes | aDIR,
+					 parent_dir, true);
 		}
 	}
 
 	if (lp_inherit_perms(SNUM(conn))) {
-		inherit_access_posix_acl(conn, parent_dir, name, mode);
+		inherit_access_posix_acl(conn, parent_dir,
+					 smb_dname->base_name, mode);
 	}
 
 	if (!(file_attributes & FILE_FLAG_POSIX_SEMANTICS)) {
@@ -2408,19 +2404,23 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		 * Consider bits automagically set by UNIX, i.e. SGID bit from parent
 		 * dir.
 		 */
-		if (mode & ~(S_IRWXU|S_IRWXG|S_IRWXO) && (mode & ~psbuf->st_ex_mode)) {
-			SMB_VFS_CHMOD(conn, name,
-				      psbuf->st_ex_mode | (mode & ~psbuf->st_ex_mode));
+		if ((mode & ~(S_IRWXU|S_IRWXG|S_IRWXO)) &&
+		    (mode & ~smb_dname->st.st_ex_mode)) {
+			SMB_VFS_CHMOD(conn, smb_dname->base_name,
+				      (smb_dname->st.st_ex_mode |
+					  (mode & ~smb_dname->st.st_ex_mode)));
 		}
 	}
 
 	/* Change the owner if required. */
 	if (lp_inherit_owner(SNUM(conn))) {
-		change_dir_owner_to_parent(conn, parent_dir, name, psbuf);
+		change_dir_owner_to_parent(conn, parent_dir,
+					   smb_dname->base_name,
+					   &smb_dname->st);
 	}
 
 	notify_fname(conn, NOTIFY_ACTION_ADDED, FILE_NOTIFY_CHANGE_DIR_NAME,
-		     name);
+		     smb_dname->base_name);
 
 	return NT_STATUS_OK;
 }
@@ -2503,10 +2503,8 @@ static NTSTATUS open_directory(connection_struct *conn,
 			/* If directory exists error. If directory doesn't
 			 * exist create. */
 
-			status = mkdir_internal(conn,
-						smb_dname->base_name,
-						file_attributes,
-						&smb_dname->st);
+			status = mkdir_internal(conn, smb_dname,
+						file_attributes);
 
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(2, ("open_directory: unable to create "
@@ -2525,10 +2523,8 @@ static NTSTATUS open_directory(connection_struct *conn,
 			 * exist create.
 			 */
 
-			status = mkdir_internal(conn,
-						smb_dname->base_name,
-						file_attributes,
-						&smb_dname->st);
+			status = mkdir_internal(conn, smb_dname,
+						file_attributes);
 
 			if (NT_STATUS_IS_OK(status)) {
 				info = FILE_WAS_CREATED;

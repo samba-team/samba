@@ -74,9 +74,6 @@ int onefs_lstat(vfs_handle_struct *handle, struct smb_filename *smb_fname);
 
 int onefs_unlink(vfs_handle_struct *handle, const char *path);
 
-int onefs_chflags(vfs_handle_struct *handle, const char *path,
-		  unsigned int flags);
-
 NTSTATUS onefs_streaminfo(vfs_handle_struct *handle,
 			  struct files_struct *fsp,
 			  const char *fname,
