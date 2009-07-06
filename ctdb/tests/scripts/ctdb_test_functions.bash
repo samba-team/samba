@@ -71,8 +71,7 @@ ctdb_test_exit ()
     eval "$ctdb_test_exit_hook" || true
     unset ctdb_test_exit_hook
 
-    if $ctdb_test_restart_scheduled || \
-	! onnode 0 CTDB_TEST_CLEANING_UP=1 $CTDB_TEST_WRAPPER cluster_is_healthy ; then
+    if $ctdb_test_restart_scheduled || ! cluster_is_healthy ; then
 
 	restart_ctdb
     else
@@ -314,12 +313,12 @@ _cluster_is_healthy ()
 
 cluster_is_healthy ()
 {
-    if _cluster_is_healthy ; then
+    if onnode 0 $CTDB_TEST_WRAPPER _cluster_is_healthy ; then
 	echo "Cluster is HEALTHY"
-	exit 0
+	return 0
     else
 	echo "Cluster is UNHEALTHY"
-	if [ -z "$CTDB_TEST_CLEANING_UP" ] ; then
+	if ! ${ctdb_test_restart_scheduled:-false} ; then
 	    echo "DEBUG:"
 	    local i
 	    for i in "ctdb status" "onnode -q 0 onnode all ctdb scriptstatus" ; do
@@ -327,7 +326,7 @@ cluster_is_healthy ()
 		$i || true
 	    done
 	fi
-	exit 1
+	return 1
     fi
 }
 

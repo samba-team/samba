@@ -31,7 +31,7 @@ ctdb_test_init "$@"
 
 set -e
 
-onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
+cluster_is_healthy
 
 pattern='^(CTDB version 1|Gathered statistics for [[:digit:]]+ nodes|[[:space:]]+[[:alpha:]_]+[[:space:]]+[[:digit:]]+|[[:space:]]+(node|client|timeouts)|[[:space:]]+([[:alpha:]_]+_latency|max_reclock_[[:alpha:]]+)[[:space:]]+[[:digit:]-]+\.[[:digit:]]+[[:space:]]sec)$'
 

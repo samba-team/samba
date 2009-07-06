@@ -39,7 +39,7 @@ ctdb_test_init "$@"
 
 set -e
 
-onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
+cluster_is_healthy
 
 echo "Finding out which node is the recovery master..."
 try_command_on_node -v 0 "$CTDB recmaster"
