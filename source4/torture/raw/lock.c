@@ -69,8 +69,9 @@
 	}} while (0)
 #define BASEDIR "\\testlock"
 
+#define TARGET_IS_W2K8(_tctx) (torture_setting_bool(_tctx, "w2k8", false))
 #define TARGET_IS_WIN7(_tctx) (torture_setting_bool(_tctx, "win7", false))
-#define TARGET_IS_SAMBA4(_tctx) (torture_setting_bool(_tctx, "samba4", false))
+#define TARGET_IS_SAMBA3(_tctx) (torture_setting_bool(_tctx, "samba3", false))
 
 /*
   test SMBlock and SMBunlock ops
@@ -374,15 +375,9 @@ static bool test_lockx(struct torture_context *tctx, struct smbcli_state *cli)
 	lock[0].count = 1;
 	status = smb_raw_lock(cli->tree, &io);
 
-	/* XXX This is very strange - Win7 gives us an invalid range when we
-	 * unlock the range even though the range is locked! Win7 bug? */
-	if (TARGET_IS_WIN7(tctx))
-		CHECK_STATUS(status, NT_STATUS_INVALID_LOCK_RANGE);
-	else {
-		CHECK_STATUS(status, NT_STATUS_OK);
-		status = smb_raw_lock(cli->tree, &io);
-		CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
-	}
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
 
 done:
 	smbcli_close(cli->tree, fnum);
@@ -788,6 +783,7 @@ static bool test_errorcode(struct torture_context *tctx,
 	struct smbcli_request *req;
 	time_t start;
 	int t;
+	int delay;
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
@@ -1091,11 +1087,16 @@ next_run:
 	/* end of the loop */
 	if (t == 0) {
 		smb_raw_exit(cli->session);
-		torture_comment(tctx, "testing with timeout > 0 (=1)\n");
-		fname = BASEDIR "\\test1.txt";
 		t = 1;
+		torture_comment(tctx, "testing with timeout > 0 (=%d)\n",
+				t);
+		fname = BASEDIR "\\test1.txt";
 		goto next_run;
 	}
+
+	t = 4000;
+	torture_comment(tctx, "testing special cases with timeout > 0 (=%d)\n",
+			t);
 
 	/*
 	 * the following 3 test sections demonstrate that
@@ -1124,7 +1125,7 @@ next_run:
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	start = time(NULL);
-	io.lockx.in.timeout = 1000;
+	io.lockx.in.timeout = t;
 	req = smb_raw_lock_send(cli->tree, &io);
 	torture_assert(tctx,(req != NULL), talloc_asprintf(tctx,
 		       "Failed to setup timed lock (%s)\n", __location__));
@@ -1138,11 +1139,17 @@ next_run:
 	status = smbcli_request_simple_recv(req);
 	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
 
+	delay = t / 1000;
+	if (TARGET_IS_W2K8(tctx) || TARGET_IS_WIN7(tctx)) {
+		delay /= 2;
+	}
+
+	torture_assert(tctx,!(time(NULL) < start+delay), talloc_asprintf(tctx,
+		       "lock comes back to early timeout[%d] delay[%d]"
+		       "(%s)\n", t, delay, __location__));
+
 	status = smb_raw_lock(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
-
-	torture_assert(tctx,!(time(NULL) < start+1), talloc_asprintf(tctx,
-		       "lock comes back to early (%s)\n", __location__));
 
 	smbcli_close(cli->tree, fnum);
 	fname = BASEDIR "\\test3.txt";
@@ -1165,7 +1172,7 @@ next_run:
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	start = time(NULL);
-	io.lockx.in.timeout = 1000;
+	io.lockx.in.timeout = t;
 	req = smb_raw_lock_send(cli->tree, &io);
 	torture_assert(tctx,(req != NULL), talloc_asprintf(tctx,
 		       "Failed to setup timed lock (%s)\n", __location__));
@@ -1179,13 +1186,19 @@ next_run:
 	status = smbcli_request_simple_recv(req);
 	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
 
+	delay = t / 1000;
+	if (TARGET_IS_W2K8(tctx) || TARGET_IS_WIN7(tctx)) {
+		delay /= 2;
+	}
+
+	torture_assert(tctx,!(time(NULL) < start+delay), talloc_asprintf(tctx,
+		       "lock comes back to early timeout[%d] delay[%d]"
+		       "(%s)\n", t, delay, __location__));
+
 	lock[0].offset = 100;
 	lock[0].count = 10;
 	status = smb_raw_lock(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
-
-	torture_assert(tctx,!(time(NULL) < start+1), talloc_asprintf(tctx,
-		       "lock comes back to early (%s)\n", __location__));
 
 	smbcli_close(cli->tree, fnum);
 	fname = BASEDIR "\\test4.txt";
@@ -1208,7 +1221,7 @@ next_run:
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	start = time(NULL);
-	io.lockx.in.timeout = 1000;
+	io.lockx.in.timeout = t;
 	req = smb_raw_lock_send(cli->tree, &io);
 	torture_assert(tctx,(req != NULL), talloc_asprintf(tctx,
 		       "Failed to setup timed lock (%s)\n", __location__));
@@ -1220,11 +1233,17 @@ next_run:
 	status = smbcli_request_simple_recv(req);
 	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
 
+	delay = t / 1000;
+	if (TARGET_IS_W2K8(tctx) || TARGET_IS_WIN7(tctx)) {
+		delay /= 2;
+	}
+
+	torture_assert(tctx,!(time(NULL) < start+delay), talloc_asprintf(tctx,
+		       "lock comes back to early timeout[%d] delay[%d]"
+		       "(%s)\n", t, delay, __location__));
+
 	status = smb_raw_lock(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
-
-	torture_assert(tctx,!(time(NULL) < start+1), talloc_asprintf(tctx,
-		       "lock comes back to early (%s)\n", __location__));
 
 done:
 	smb_raw_exit(cli->session);
@@ -1572,18 +1591,16 @@ static bool test_unlock(struct torture_context *tctx, struct smbcli_state *cli)
 	io.lockx.in.locks = &lock2;
 	status = smb_raw_lock(cli->tree, &io);
 
-	/* XXX Samba will fail this test. This is temporary(because this isn't
+	/* XXX Samba 3 will fail this test. This is temporary(because this isn't
 	 * new to Win7, it succeeds in WinXP too), until I can come to a
 	 * resolution as to whether Samba should support this or not. There is
 	 * code to preference unlocking exclusive locks before shared locks,
 	 * but its wrapped with "#ifdef ZERO_ZERO". -zkirsch */
-	if (TARGET_IS_WIN7(tctx)) {
-		CHECK_STATUS(status, NT_STATUS_OK);
-	} else if (TARGET_IS_SAMBA4(tctx)) {
-		CHECK_STATUS(status, NT_STATUS_OK);
-	} else {
+	if (TARGET_IS_SAMBA3(tctx)) {
 		CHECK_STATUS_OR(status, NT_STATUS_LOCK_NOT_GRANTED,
 		    NT_STATUS_FILE_LOCK_CONFLICT);
+	} else {
+		CHECK_STATUS(status, NT_STATUS_OK);
 	}
 
 	/* cleanup */
@@ -1592,12 +1609,10 @@ static bool test_unlock(struct torture_context *tctx, struct smbcli_state *cli)
 	status = smb_raw_lock(cli->tree, &io);
 
 	/* XXX Same as above. */
-	if (TARGET_IS_WIN7(tctx)) {
-		CHECK_STATUS(status, NT_STATUS_OK);
-	} else if (TARGET_IS_SAMBA4(tctx)) {
-		CHECK_STATUS(status, NT_STATUS_OK);
-	} else {
+	if (TARGET_IS_SAMBA3(tctx)) {
 		CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
+	} else {
+		CHECK_STATUS(status, NT_STATUS_OK);
 	}
 
 	io.lockx.in.file.fnum = fnum1;
