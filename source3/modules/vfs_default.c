@@ -1151,7 +1151,17 @@ static NTSTATUS vfswrap_streaminfo(vfs_handle_struct *handle,
 		ret = SMB_VFS_FSTAT(fsp, &sbuf);
 	}
 	else {
-		ret = vfs_stat_smb_fname(handle->conn, fname, &sbuf);
+		struct smb_filename *smb_fname = NULL;
+		NTSTATUS status;
+
+		status = create_synthetic_smb_fname(talloc_tos(), fname, NULL,
+						    NULL, &smb_fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		ret = SMB_VFS_STAT(handle->conn, smb_fname);
+		sbuf = smb_fname->st;
+		TALLOC_FREE(smb_fname);
 	}
 
 	if (ret == -1) {

@@ -819,15 +819,9 @@ static NTSTATUS streams_depot_streaminfo(vfs_handle_struct *handle,
 	}
 
 	if ((fsp != NULL) && (fsp->fh->fd != -1)) {
-		if (is_ntfs_stream_name(fsp->fsp_name)) {
-			return NT_STATUS_INVALID_PARAMETER;
-		}
 		ret = SMB_VFS_NEXT_FSTAT(handle, fsp, &smb_fname_base->st);
 	}
 	else {
-		if (is_ntfs_stream_name(fname)) {
-			return NT_STATUS_INVALID_PARAMETER;
-		}
 		if (lp_posix_pathnames()) {
 			ret = SMB_VFS_NEXT_LSTAT(handle, smb_fname_base);
 		} else {

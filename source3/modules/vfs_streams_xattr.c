@@ -785,20 +785,22 @@ static NTSTATUS streams_xattr_streaminfo(vfs_handle_struct *handle,
 	struct streaminfo_state state;
 
 	if ((fsp != NULL) && (fsp->fh->fd != -1)) {
-		if (is_ntfs_stream_name(fsp->fsp_name)) {
-			return NT_STATUS_INVALID_PARAMETER;
-		}
 		ret = SMB_VFS_FSTAT(fsp, &sbuf);
 	}
 	else {
-		if (is_ntfs_stream_name(fname)) {
-			return NT_STATUS_INVALID_PARAMETER;
+		struct smb_filename *smb_fname = NULL;
+		status = create_synthetic_smb_fname(talloc_tos(), fname, NULL,
+						    NULL, &smb_fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
 		if (lp_posix_pathnames()) {
-			ret = vfs_lstat_smb_fname(handle->conn, fname, &sbuf);
+			ret = SMB_VFS_LSTAT(handle->conn, smb_fname);
 		} else {
-			ret = vfs_stat_smb_fname(handle->conn, fname, &sbuf);
+			ret = SMB_VFS_STAT(handle->conn, smb_fname);
 		}
+		sbuf = smb_fname->st;
+		TALLOC_FREE(smb_fname);
 	}
 
 	if (ret == -1) {

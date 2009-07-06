@@ -739,16 +739,9 @@ NTSTATUS onefs_streaminfo(vfs_handle_struct *handle,
 
 	/* Get a valid stat. */
 	if ((fsp != NULL) && (fsp->fh->fd != -1)) {
-		if (is_ntfs_stream_name(fsp->fsp_name)) {
-			return NT_STATUS_INVALID_PARAMETER;
-		}
 		ret = SMB_VFS_FSTAT(fsp, &sbuf);
 	} else {
 		struct smb_filename *smb_fname = NULL;
-
-		if (is_ntfs_stream_name(fname)) {
-			return NT_STATUS_INVALID_PARAMETER;
-		}
 
 		status = create_synthetic_smb_fname(talloc_tos(), fname, NULL,
 						    NULL, &smb_fname);
