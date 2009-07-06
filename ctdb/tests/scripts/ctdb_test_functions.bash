@@ -268,14 +268,15 @@ wait_until ()
     local timeout="$1" ; shift # "$@" is the command...
 
     echo -n "<${timeout}|"
-    while [ $timeout -gt 0 ] ; do
+    local t=$timeout
+    while [ $t -gt 0 ] ; do
 	if "$@" ; then
-	    echo '|'
+	    echo "|$(($timeout - $t))|"
 	    echo "OK"
 	    return 0
 	fi
 	echo -n .
-	timeout=$(($timeout - 1))
+	t=$(($t - 1))
 	sleep 1
     done
     
