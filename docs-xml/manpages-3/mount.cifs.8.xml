@@ -589,6 +589,14 @@ read and used as the password.
 	<title>NOTES</title>
 	
 	<para>This command may be used only by root, unless installed setuid, in which case the noeexec and nosuid mount flags are enabled. When installed as a setuid program, the program follows the conventions set forth by the mount program for user mounts.</para>
+
+	<para>
+	Some samba client tools like smbclient(8) honour client-side
+	configuration parameters present in smb.conf. Unlike those
+	client tools, <emphasis>mount.cifs</emphasis> ignores smb.conf
+	completely.
+	</para>
+
 </refsect1>
 
 <refsect1>
