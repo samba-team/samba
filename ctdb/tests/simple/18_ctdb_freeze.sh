@@ -34,7 +34,7 @@ ctdb_test_init "$@"
 
 set -e
 
-onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
+cluster_is_healthy
 
 # Reset configuration
 ctdb_restart_when_done

@@ -32,7 +32,7 @@ ctdb_test_init "$@"
 
 set -e
 
-onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
+cluster_is_healthy
 
 try_command_on_node 0 "$CTDB listnodes"
 num_nodes=$(echo "$out" | wc -l)

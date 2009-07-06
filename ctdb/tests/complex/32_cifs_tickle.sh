@@ -46,7 +46,10 @@ ctdb_test_init "$@"
 
 ctdb_test_check_real_cluster
 
-onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
+cluster_is_healthy
+
+# Reset configuration
+ctdb_restart_when_done
 
 # We need this for later, so we know how long to sleep.
 try_command_on_node 0 $CTDB getvar MonitorInterval

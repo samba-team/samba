@@ -30,7 +30,7 @@ ctdb_test_init "$@"
 
 set -e
 
-onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
+cluster_is_healthy
 
 # This is an attempt at being independent of the number of nodes
 # reported by "ctdb getpid -n all".
