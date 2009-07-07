@@ -198,6 +198,20 @@ fail:
 	return werr;
 }
 
+struct init_registry_key_context {
+	const char *add_path;
+};
+
+static NTSTATUS init_registry_key_action(struct db_context *db,
+					 void *private_data)
+{
+	struct init_registry_key_context *init_ctx =
+		(struct init_registry_key_context *)private_data;
+
+	return werror_to_ntstatus(init_registry_key_internal(
+					db, init_ctx->add_path));
+}
+
 /**
  * Initialize a key in the registry:
  * create each component key of the specified path,
@@ -205,35 +219,17 @@ fail:
  */
 WERROR init_registry_key(const char *add_path)
 {
-	WERROR werr;
+	struct init_registry_key_context init_ctx;
 
 	if (regdb_key_exists(regdb, add_path)) {
 		return WERR_OK;
 	}
 
-	if (regdb->transaction_start(regdb) != 0) {
-		DEBUG(0, ("init_registry_key: transaction_start failed\n"));
-		return WERR_REG_IO_FAILURE;
-	}
+	init_ctx.add_path = add_path;
 
-	werr = init_registry_key_internal(regdb, add_path);
-	if (!W_ERROR_IS_OK(werr)) {
-		goto fail;
-	}
-
-	if (regdb->transaction_commit(regdb) != 0) {
-		DEBUG(0, ("init_registry_key: Could not commit transaction\n"));
-		return WERR_REG_IO_FAILURE;
-	}
-
-	return WERR_OK;
-
-fail:
-	if (regdb->transaction_cancel(regdb) != 0) {
-		smb_panic("init_registry_key: transaction_cancel failed\n");
-	}
-
-	return werr;
+	return ntstatus_to_werror(dbwrap_trans_do(regdb,
+						  init_registry_key_action,
+						  &init_ctx));
 }
 
 /***********************************************************************
