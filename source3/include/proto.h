@@ -2732,14 +2732,14 @@ bool cli_ns_check_server_type(struct cli_state *cli, char *workgroup, uint32 sty
 bool cli_NetWkstaUserLogoff(struct cli_state *cli, const char *user, const char *workstation);
 int cli_NetPrintQEnum(struct cli_state *cli,
 		void (*qfn)(const char*,uint16,uint16,uint16,const char*,const char*,const char*,const char*,const char*,uint16,uint16),
-		void (*jfn)(uint16,const char*,const char*,const char*,const char*,uint16,uint16,const char*,uint,uint,const char*));
+		void (*jfn)(uint16,const char*,const char*,const char*,const char*,uint16,uint16,const char*,uint_t,uint_t,const char*));
 int cli_NetPrintQGetInfo(struct cli_state *cli, const char *printer,
 	void (*qfn)(const char*,uint16,uint16,uint16,const char*,const char*,const char*,const char*,const char*,uint16,uint16),
-	void (*jfn)(uint16,const char*,const char*,const char*,const char*,uint16,uint16,const char*,uint,uint,const char*));
+	void (*jfn)(uint16,const char*,const char*,const char*,const char*,uint16,uint16,const char*,uint_t,uint_t,const char*));
 int cli_RNetServiceEnum(struct cli_state *cli, void (*fn)(const char *, const char *, void *), void *state);
-int cli_NetSessionEnum(struct cli_state *cli, void (*fn)(char *, char *, uint16, uint16, uint16, uint, uint, uint, char *));
+int cli_NetSessionEnum(struct cli_state *cli, void (*fn)(char *, char *, uint16, uint16, uint16, uint_t, uint_t, uint_t, char *));
 int cli_NetSessionGetInfo(struct cli_state *cli, const char *workstation,
-		void (*fn)(const char *, const char *, uint16, uint16, uint16, uint, uint, uint, const char *));
+		void (*fn)(const char *, const char *, uint16, uint16, uint16, uint_t, uint_t, uint_t, const char *));
 int cli_NetSessionDel(struct cli_state *cli, const char *workstation);
 int cli_NetConnectionEnum(struct cli_state *cli, const char *qualifier,
 			void (*fn)(uint16_t conid, uint16_t contype,
