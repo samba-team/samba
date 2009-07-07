@@ -1203,7 +1203,7 @@ static bool create_sorted_subkeys(const char *key, const char *sorted_keyname)
 	if (regdb->transaction_commit(regdb) == -1) {
 		DEBUG(0, ("create_sorted_subkeys: transaction_start "
 			  "failed\n"));
-		goto fail;
+		result = false;
 	}
 
 	TALLOC_FREE(ctr);
