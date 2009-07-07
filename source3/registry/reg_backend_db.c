@@ -1027,8 +1027,7 @@ static WERROR regdb_delete_subkey(const char *key, const char *subkey)
 cancel:
 	werr2 = regdb_transaction_cancel();
 	if (!W_ERROR_IS_OK(werr2)) {
-		DEBUG(0, (__location__ " failed to cancel transaction: %s\n",
-			 win_errstr(werr2)));
+		smb_panic("regdb_delete_subkey: transaction_cancel failed\n");
 	}
 
 done:
