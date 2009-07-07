@@ -151,7 +151,7 @@ static int catia_open(vfs_handle_struct *handle,
 	tmp_base_name = smb_fname->base_name;
 	smb_fname->base_name = name;
 
-	ret = SMB_VFS_NEXT_OPEN(handle, name, fsp, flags, mode);
+	ret = SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
 
 	smb_fname->base_name = tmp_base_name;
 	TALLOC_FREE(name);
@@ -204,7 +204,7 @@ static int catia_rename(vfs_handle_struct *handle,
 				  smb_fname_dst_tmp);
  out:
 	TALLOC_FREE(oname);
-	TALLOC_FREE(newname);
+	TALLOC_FREE(nname);
 	TALLOC_FREE(smb_fname_src_tmp);
 	TALLOC_FREE(smb_fname_dst_tmp);
 	return ret;
