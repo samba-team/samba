@@ -168,6 +168,23 @@ NTSTATUS smb2_signing_check_pdu(DATA_BLOB session_key,
 				const struct iovec *vector,
 				int count);
 
+struct smbd_lock_element {
+	uint32_t smbpid;
+	enum brl_type brltype;
+	uint64_t offset;
+	uint64_t count;
+};
+
+NTSTATUS smbd_do_locking(struct smb_request *req,
+			 files_struct *fsp,
+			 uint8_t type,
+			 int32_t timeout,
+			 uint16_t num_ulocks,
+			 struct smbd_lock_element *ulocks,
+			 uint16_t num_locks,
+			 struct smbd_lock_element *locks,
+			 bool *async);
+
 void smbd_server_connection_terminate_ex(struct smbd_server_connection *sconn,
 					 const char *reason,
 					 const char *location);

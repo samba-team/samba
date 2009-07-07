@@ -7223,22 +7223,15 @@ uint64_t get_lock_offset(const uint8_t *data, int data_offset,
 	return offset;
 }
 
-struct smbd_lock_element {
-	uint32_t smbpid;
-	enum brl_type brltype;
-	uint64_t offset;
-	uint64_t count;
-};
-
-static NTSTATUS smbd_do_locking(struct smb_request *req,
-				files_struct *fsp,
-				uint8_t type,
-				int32_t timeout,
-				uint16_t num_ulocks,
-				struct smbd_lock_element *ulocks,
-				uint16_t num_locks,
-				struct smbd_lock_element *locks,
-				bool *async)
+NTSTATUS smbd_do_locking(struct smb_request *req,
+			 files_struct *fsp,
+			 uint8_t type,
+			 int32_t timeout,
+			 uint16_t num_ulocks,
+			 struct smbd_lock_element *ulocks,
+			 uint16_t num_locks,
+			 struct smbd_lock_element *locks,
+			 bool *async)
 {
 	connection_struct *conn = req->conn;
 	int i;
