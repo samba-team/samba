@@ -457,8 +457,7 @@ static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
 		}
 
 	} else if (user_session_key && user_session_key->data) {
-		session_key = *user_session_key;
-		talloc_steal(gensec_ntlmssp_state, session_key.data);
+		session_key = data_blob_talloc(gensec_ntlmssp_state, user_session_key->data, user_session_key->length);
 		DEBUG(10,("ntlmssp_server_auth: Using unmodified nt session key.\n"));
 		dump_data_pw("unmodified session key:\n", session_key.data, session_key.length);
 
@@ -467,8 +466,7 @@ static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
 
 	} else if (lm_session_key && lm_session_key->data) {
 		/* Very weird to have LM key, but no user session key, but anyway.. */
-		session_key = *lm_session_key;
-		talloc_steal(gensec_ntlmssp_state, session_key.data);
+		session_key = data_blob_talloc(gensec_ntlmssp_state, lm_session_key->data, lm_session_key->length);
 		DEBUG(10,("ntlmssp_server_auth: Using unmodified lm session key.\n"));
 		dump_data_pw("unmodified session key:\n", session_key.data, session_key.length);
 
@@ -508,6 +506,7 @@ static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
 								      gensec_ntlmssp_state->encrypted_session_key.length);
 			dump_data_pw("KEY_EXCH session key:\n", gensec_ntlmssp_state->encrypted_session_key.data, 
 				     gensec_ntlmssp_state->encrypted_session_key.length);
+			talloc_free(session_key.data);
 		}
 	} else {
 		gensec_ntlmssp_state->session_key = session_key;
