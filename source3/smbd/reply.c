@@ -7223,6 +7223,212 @@ uint64_t get_lock_offset(const uint8_t *data, int data_offset,
 	return offset;
 }
 
+struct smbd_lock_element {
+	uint32_t smbpid;
+	enum brl_type brltype;
+	uint64_t offset;
+	uint64_t count;
+};
+
+static NTSTATUS smbd_do_locking(struct smb_request *req,
+				files_struct *fsp,
+				uint8_t type,
+				int32_t timeout,
+				uint16_t num_ulocks,
+				struct smbd_lock_element *ulocks,
+				uint16_t num_locks,
+				struct smbd_lock_element *locks,
+				bool *async)
+{
+	connection_struct *conn = req->conn;
+	int i;
+	NTSTATUS status = NT_STATUS_OK;
+
+	*async = false;
+
+	/* Data now points at the beginning of the list
+	   of smb_unlkrng structs */
+	for(i = 0; i < (int)num_ulocks; i++) {
+		struct smbd_lock_element *e = &ulocks[i];
+
+		DEBUG(10,("smbd_do_locking: unlock start=%.0f, len=%.0f for "
+			  "pid %u, file %s\n",
+			  (double)e->offset,
+			  (double)e->count,
+			  (unsigned int)e->smbpid,
+			  fsp->fsp_name));
+
+		if (e->brltype != UNLOCK_LOCK) {
+			/* this can only happen with SMB2 */
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		status = do_unlock(smbd_messaging_context(),
+				fsp,
+				e->smbpid,
+				e->count,
+				e->offset,
+				WINDOWS_LOCK);
+
+		DEBUG(10, ("smbd_do_locking: unlock returned %s\n",
+		    nt_errstr(status)));
+
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
+	/* Setup the timeout in seconds. */
+
+	if (!lp_blocking_locks(SNUM(conn))) {
+		timeout = 0;
+	}
+
+	/* Data now points at the beginning of the list
+	   of smb_lkrng structs */
+
+	for(i = 0; i < (int)num_locks; i++) {
+		struct smbd_lock_element *e = &locks[i];
+
+		DEBUG(10,("smbd_do_locking: lock start=%.0f, len=%.0f for pid "
+			  "%u, file %s timeout = %d\n",
+			  (double)e->offset,
+			  (double)e->count,
+			  (unsigned int)e->smbpid,
+			  fsp->fsp_name,
+			  (int)timeout));
+
+		if (type & LOCKING_ANDX_CANCEL_LOCK) {
+			struct blocking_lock_record *blr = NULL;
+
+			if (lp_blocking_locks(SNUM(conn))) {
+
+				/* Schedule a message to ourselves to
+				   remove the blocking lock record and
+				   return the right error. */
+
+				blr = blocking_lock_cancel(fsp,
+						e->smbpid,
+						e->offset,
+						e->count,
+						WINDOWS_LOCK,
+						type,
+						NT_STATUS_FILE_LOCK_CONFLICT);
+				if (blr == NULL) {
+					return NT_STATUS_DOS(
+							ERRDOS,
+							ERRcancelviolation);
+				}
+			}
+			/* Remove a matching pending lock. */
+			status = do_lock_cancel(fsp,
+						e->smbpid,
+						e->count,
+						e->offset,
+						WINDOWS_LOCK,
+						blr);
+		} else {
+			bool blocking_lock = timeout ? true : false;
+			bool defer_lock = false;
+			struct byte_range_lock *br_lck;
+			uint32_t block_smbpid;
+
+			br_lck = do_lock(smbd_messaging_context(),
+					fsp,
+					e->smbpid,
+					e->count,
+					e->offset, 
+					e->brltype,
+					WINDOWS_LOCK,
+					blocking_lock,
+					&status,
+					&block_smbpid,
+					NULL);
+
+			if (br_lck && blocking_lock && ERROR_WAS_LOCK_DENIED(status)) {
+				/* Windows internal resolution for blocking locks seems
+				   to be about 200ms... Don't wait for less than that. JRA. */
+				if (timeout != -1 && timeout < lp_lock_spin_time()) {
+					timeout = lp_lock_spin_time();
+				}
+				defer_lock = true;
+			}
+
+			/* This heuristic seems to match W2K3 very well. If a
+			   lock sent with timeout of zero would fail with NT_STATUS_FILE_LOCK_CONFLICT
+			   it pretends we asked for a timeout of between 150 - 300 milliseconds as
+			   far as I can tell. Replacement for do_lock_spin(). JRA. */
+
+			if (br_lck && lp_blocking_locks(SNUM(conn)) && !blocking_lock &&
+					NT_STATUS_EQUAL((status), NT_STATUS_FILE_LOCK_CONFLICT)) {
+				defer_lock = true;
+				timeout = lp_lock_spin_time();
+			}
+
+			if (br_lck && defer_lock) {
+				/*
+				 * A blocking lock was requested. Package up
+				 * this smb into a queued request and push it
+				 * onto the blocking lock queue.
+				 */
+				if(push_blocking_lock_request(br_lck,
+							req,
+							fsp,
+							timeout,
+							i,
+							e->smbpid,
+							e->brltype,
+							WINDOWS_LOCK,
+							e->offset,
+							e->count,
+							block_smbpid)) {
+					TALLOC_FREE(br_lck);
+					*async = true;
+					return NT_STATUS_OK;
+				}
+			}
+
+			TALLOC_FREE(br_lck);
+		}
+
+		if (!NT_STATUS_IS_OK(status)) {
+			break;
+		}
+	}
+
+	/* If any of the above locks failed, then we must unlock
+	   all of the previous locks (X/Open spec). */
+
+	if (num_locks != 0 && !NT_STATUS_IS_OK(status)) {
+
+		if (type & LOCKING_ANDX_CANCEL_LOCK) {
+			i = -1; /* we want to skip the for loop */
+		}
+
+		/*
+		 * Ensure we don't do a remove on the lock that just failed,
+		 * as under POSIX rules, if we have a lock already there, we
+		 * will delete it (and we shouldn't) .....
+		 */
+		for(i--; i >= 0; i--) {
+			struct smbd_lock_element *e = &locks[i];
+
+			do_unlock(smbd_messaging_context(),
+				fsp,
+				e->smbpid,
+				e->count,
+				e->offset,
+				WINDOWS_LOCK);
+		}
+		return status;
+	}
+
+	DEBUG(3, ("smbd_do_locking: fnum=%d type=%d num_locks=%d num_ulocks=%d\n",
+		  fsp->fnum, (unsigned int)type, num_locks, num_ulocks));
+
+	return NT_STATUS_OK;
+}
+
 /****************************************************************************
  Reply to a lockingX request.
 ****************************************************************************/
@@ -7235,14 +7441,15 @@ void reply_lockingX(struct smb_request *req)
 	unsigned char oplocklevel;
 	uint16 num_ulocks;
 	uint16 num_locks;
-	uint64_t count = 0, offset = 0;
-	uint32 lock_pid;
 	int32 lock_timeout;
 	int i;
 	const uint8_t *data;
 	bool large_file_format;
 	bool err;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	struct smbd_lock_element *ulocks;
+	struct smbd_lock_element *locks;
+	bool async = false;
 
 	START_PROFILE(SMBlockingX);
 
@@ -7355,12 +7562,27 @@ void reply_lockingX(struct smb_request *req)
 		return;
 	}
 
+	ulocks = talloc_array(req, struct smbd_lock_element, num_ulocks);
+	if (ulocks == NULL) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		END_PROFILE(SMBlockingX);
+		return;
+	}
+
+	locks = talloc_array(req, struct smbd_lock_element, num_locks);
+	if (locks == NULL) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		END_PROFILE(SMBlockingX);
+		return;
+	}
+
 	/* Data now points at the beginning of the list
 	   of smb_unlkrng structs */
 	for(i = 0; i < (int)num_ulocks; i++) {
-		lock_pid = get_lock_pid( data, i, large_file_format);
-		count = get_lock_count( data, i, large_file_format);
-		offset = get_lock_offset( data, i, large_file_format, &err);
+		ulocks[i].smbpid = get_lock_pid(data, i, large_file_format);
+		ulocks[i].count = get_lock_count(data, i, large_file_format);
+		ulocks[i].offset = get_lock_offset(data, i, large_file_format, &err);
+		ulocks[i].brltype = UNLOCK_LOCK;
 
 		/*
 		 * There is no error code marked "stupid client bug".... :-).
@@ -7370,32 +7592,6 @@ void reply_lockingX(struct smb_request *req)
 			reply_doserror(req, ERRDOS, ERRnoaccess);
 			return;
 		}
-
-		DEBUG(10,("reply_lockingX: unlock start=%.0f, len=%.0f for "
-			  "pid %u, file %s\n", (double)offset, (double)count,
-			  (unsigned int)lock_pid, fsp->fsp_name ));
-
-		status = do_unlock(smbd_messaging_context(),
-				fsp,
-				lock_pid,
-				count,
-				offset,
-				WINDOWS_LOCK);
-
-		DEBUG(10, ("reply_lockingX: unlock returned %s\n",
-		    nt_errstr(status)));
-
-		if (NT_STATUS_V(status)) {
-			END_PROFILE(SMBlockingX);
-			reply_nterror(req, status);
-			return;
-		}
-	}
-
-	/* Setup the timeout in seconds. */
-
-	if (!lp_blocking_locks(SNUM(conn))) {
-		lock_timeout = 0;
 	}
 
 	/* Now do any requested locks */
@@ -7405,11 +7601,23 @@ void reply_lockingX(struct smb_request *req)
 	   of smb_lkrng structs */
 
 	for(i = 0; i < (int)num_locks; i++) {
-		enum brl_type lock_type = ((locktype & LOCKING_ANDX_SHARED_LOCK) ?
-				READ_LOCK:WRITE_LOCK);
-		lock_pid = get_lock_pid( data, i, large_file_format);
-		count = get_lock_count( data, i, large_file_format);
-		offset = get_lock_offset( data, i, large_file_format, &err);
+		locks[i].smbpid = get_lock_pid(data, i, large_file_format);
+		locks[i].count = get_lock_count(data, i, large_file_format);
+		locks[i].offset = get_lock_offset(data, i, large_file_format, &err);
+
+		if (locktype & LOCKING_ANDX_SHARED_LOCK) {
+			if (locktype & LOCKING_ANDX_CANCEL_LOCK) {
+				locks[i].brltype = PENDING_READ_LOCK;
+			} else {
+				locks[i].brltype = READ_LOCK;
+			}
+		} else {
+			if (locktype & LOCKING_ANDX_CANCEL_LOCK) {
+				locks[i].brltype = PENDING_WRITE_LOCK;
+			} else {
+				locks[i].brltype = WRITE_LOCK;
+			}
+		}
 
 		/*
 		 * There is no error code marked "stupid client bug".... :-).
@@ -7419,152 +7627,20 @@ void reply_lockingX(struct smb_request *req)
 			reply_doserror(req, ERRDOS, ERRnoaccess);
 			return;
 		}
-
-		DEBUG(10,("reply_lockingX: lock start=%.0f, len=%.0f for pid "
-			  "%u, file %s timeout = %d\n", (double)offset,
-			  (double)count, (unsigned int)lock_pid,
-			  fsp->fsp_name, (int)lock_timeout ));
-
-		if (locktype & LOCKING_ANDX_CANCEL_LOCK) {
-			struct blocking_lock_record *blr = NULL;
-
-			if (lp_blocking_locks(SNUM(conn))) {
-
-				/* Schedule a message to ourselves to
-				   remove the blocking lock record and
-				   return the right error. */
-
-				blr = blocking_lock_cancel(fsp,
-						lock_pid,
-						offset,
-						count,
-						WINDOWS_LOCK,
-						locktype,
-						NT_STATUS_FILE_LOCK_CONFLICT);
-				if (blr == NULL) {
-					END_PROFILE(SMBlockingX);
-					reply_nterror(
-						req,
-						NT_STATUS_DOS(
-							ERRDOS,
-							ERRcancelviolation));
-					return;
-				}
-			}
-			/* Remove a matching pending lock. */
-			status = do_lock_cancel(fsp,
-						lock_pid,
-						count,
-						offset,
-						WINDOWS_LOCK,
-						blr);
-		} else {
-			bool blocking_lock = lock_timeout ? True : False;
-			bool defer_lock = False;
-			struct byte_range_lock *br_lck;
-			uint32 block_smbpid;
-
-			br_lck = do_lock(smbd_messaging_context(),
-					fsp,
-					lock_pid,
-					count,
-					offset, 
-					lock_type,
-					WINDOWS_LOCK,
-					blocking_lock,
-					&status,
-					&block_smbpid,
-					NULL);
-
-			if (br_lck && blocking_lock && ERROR_WAS_LOCK_DENIED(status)) {
-				/* Windows internal resolution for blocking locks seems
-				   to be about 200ms... Don't wait for less than that. JRA. */
-				if (lock_timeout != -1 && lock_timeout < lp_lock_spin_time()) {
-					lock_timeout = lp_lock_spin_time();
-				}
-				defer_lock = True;
-			}
-
-			/* This heuristic seems to match W2K3 very well. If a
-			   lock sent with timeout of zero would fail with NT_STATUS_FILE_LOCK_CONFLICT
-			   it pretends we asked for a timeout of between 150 - 300 milliseconds as
-			   far as I can tell. Replacement for do_lock_spin(). JRA. */
-
-			if (br_lck && lp_blocking_locks(SNUM(conn)) && !blocking_lock &&
-					NT_STATUS_EQUAL((status), NT_STATUS_FILE_LOCK_CONFLICT)) {
-				defer_lock = True;
-				lock_timeout = lp_lock_spin_time();
-			}
-
-			if (br_lck && defer_lock) {
-				/*
-				 * A blocking lock was requested. Package up
-				 * this smb into a queued request and push it
-				 * onto the blocking lock queue.
-				 */
-				if(push_blocking_lock_request(br_lck,
-							req,
-							fsp,
-							lock_timeout,
-							i,
-							lock_pid,
-							lock_type,
-							WINDOWS_LOCK,
-							offset,
-							count,
-							block_smbpid)) {
-					TALLOC_FREE(br_lck);
-					END_PROFILE(SMBlockingX);
-					return;
-				}
-			}
-
-			TALLOC_FREE(br_lck);
-		}
-
-		if (NT_STATUS_V(status)) {
-			break;
-		}
 	}
 
-	/* If any of the above locks failed, then we must unlock
-	   all of the previous locks (X/Open spec). */
-	if (num_locks != 0 && !NT_STATUS_IS_OK(status)) {
-
-		if (locktype & LOCKING_ANDX_CANCEL_LOCK) {
-			i = -1; /* we want to skip the for loop */
-		}
-
-		/*
-		 * Ensure we don't do a remove on the lock that just failed,
-		 * as under POSIX rules, if we have a lock already there, we
-		 * will delete it (and we shouldn't) .....
-		 */
-		for(i--; i >= 0; i--) {
-			lock_pid = get_lock_pid( data, i, large_file_format);
-			count = get_lock_count( data, i, large_file_format);
-			offset = get_lock_offset( data, i, large_file_format,
-						  &err);
-
-			/*
-			 * There is no error code marked "stupid client
-			 * bug".... :-).
-			 */
-			if(err) {
-				END_PROFILE(SMBlockingX);
-				reply_doserror(req, ERRDOS, ERRnoaccess);
-				return;
-			}
-
-			do_unlock(smbd_messaging_context(),
-				fsp,
-				lock_pid,
-				count,
-				offset,
-				WINDOWS_LOCK);
-		}
+	status = smbd_do_locking(req, fsp,
+				 locktype, lock_timeout,
+				 num_ulocks, ulocks,
+				 num_locks, locks,
+				 &async);
+	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBlockingX);
 		reply_nterror(req, status);
+		return;
+	}
+	if (async) {
+		END_PROFILE(SMBlockingX);
 		return;
 	}
 
