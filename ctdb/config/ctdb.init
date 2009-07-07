@@ -21,9 +21,9 @@
 
 # Source function library.
 if [ -f /etc/init.d/functions ] ; then
-  . /etc/init.d/functions
+    . /etc/init.d/functions
 elif [ -f /etc/rc.d/init.d/functions ] ; then
-  . /etc/rc.d/init.d/functions
+    . /etc/rc.d/init.d/functions
 fi
 
 [ -f /etc/rc.status ] && {
@@ -43,205 +43,231 @@ unset TMPDIR
 loadconfig network
 loadconfig ctdb
 
-# check networking is up (for redhat)
-[ "${NETWORKING}" = "no" ] && exit 0
-
 [ -z "$CTDB_RECOVERY_LOCK" ] && {
     echo "No recovery lock specified. Starting CTDB without split brain prevention"
 }
 
-# build up CTDB_OPTIONS variable from optional parameters
-[ -z "$CTDB_RECOVERY_LOCK" ]    || CTDB_OPTIONS="$CTDB_OPTIONS --reclock=$CTDB_RECOVERY_LOCK"
-[ -z "$CTDB_LOGFILE" ]          || CTDB_OPTIONS="$CTDB_OPTIONS --logfile=$CTDB_LOGFILE"
-[ -z "$CTDB_NODES" ]            || CTDB_OPTIONS="$CTDB_OPTIONS --nlist=$CTDB_NODES"
-[ -z "$CTDB_SOCKET" ]           || CTDB_OPTIONS="$CTDB_OPTIONS --socket=$CTDB_SOCKET"
-[ -z "$CTDB_PUBLIC_ADDRESSES" ] || CTDB_OPTIONS="$CTDB_OPTIONS --public-addresses=$CTDB_PUBLIC_ADDRESSES"
-[ -z "$CTDB_PUBLIC_INTERFACE" ] || CTDB_OPTIONS="$CTDB_OPTIONS --public-interface=$CTDB_PUBLIC_INTERFACE"
-[ -z "$CTDB_DBDIR" ]            || CTDB_OPTIONS="$CTDB_OPTIONS --dbdir=$CTDB_DBDIR"
-[ -z "$CTDB_DBDIR_PERSISTENT" ] || CTDB_OPTIONS="$CTDB_OPTIONS --dbdir-persistent=$CTDB_DBDIR_PERSISTENT"
-[ -z "$CTDB_EVENT_SCRIPT_DIR" ] || CTDB_OPTIONS="$CTDB_OPTIONS --event-script-dir $CTDB_EVENT_SCRIPT_DIR"
-[ -z "$CTDB_TRANSPORT" ]        || CTDB_OPTIONS="$CTDB_OPTIONS --transport $CTDB_TRANSPORT"
-[ -z "$CTDB_DEBUGLEVEL" ]       || CTDB_OPTIONS="$CTDB_OPTIONS -d $CTDB_DEBUGLEVEL"
-[ -z "$CTDB_NOTIFY_SCRIPT" ]       || CTDB_OPTIONS="$CTDB_OPTIONS --notification-script=$CTDB_NOTIFY_SCRIPT"
-[ -z "$CTDB_START_AS_DISABLED" ] || [ "$CTDB_START_AS_DISABLED" != "yes" ] || {
-	CTDB_OPTIONS="$CTDB_OPTIONS --start-as-disabled"
-}
-[ -z "$CTDB_CAPABILITY_RECMASTER" ] || [ "$CTDB_CAPABILITY_RECMASTER" != "no" ] || {
-	CTDB_OPTIONS="$CTDB_OPTIONS --no-recmaster"
-}
-[ -z "$CTDB_CAPABILITY_LMASTER" ] || [ "$CTDB_CAPABILITY_LMASTER" != "no" ] || {
-	CTDB_OPTIONS="$CTDB_OPTIONS --no-lmaster"
-}
-[ -z "$CTDB_LVS_PUBLIC_IP" ] || {
-	CTDB_OPTIONS="$CTDB_OPTIONS --lvs --single-public-ip=$CTDB_LVS_PUBLIC_IP"
-}
-[ -z "$CTDB_SCRIPT_LOG_LEVEL" ] || {
-	CTDB_OPTIONS="$CTDB_OPTIONS --script-log-level=$CTDB_SCRIPT_LOG_LEVEL"
-}
+# check networking is up (for redhat)
+[ "$NETWORKING" = "no" ] && exit 0
 
 detect_init_style
 export CTDB_INIT_STYLE
 
-if [ "x$CTDB_VALGRIND" = "xyes" ]; then
-	init_style="valgrind"
+ctdbd=${CTDBD:-/usr/sbin/ctdbd}
+
+if [ "$CTDB_VALGRIND" = "yes" ]; then
+    init_style="valgrind"
 else
-	init_style="$CTDB_INIT_STYLE"
+    init_style="$CTDB_INIT_STYLE"
 fi
 
+build_ctdb_options () {
+    [ -z "$CTDB_RECOVERY_LOCK" ] && {
+	echo "You must configure the location of the CTDB_RECOVERY_LOCK"
+	exit 1
+    }
+
+    maybe_set () {
+	# If the 2nd arg is null then return - don't set anything.
+	# Else if the 3rd arg is set and it doesn't match the 2nd arg
+	# then return
+	[ -z "$2" -o \( -n "$3" -a "$3" != "$2" \) ] && return
+
+	val="$2"
+	case "$1" in
+	    --*) sep="=" ;;
+	    -*)  sep=" " ;;
+	esac
+	# For these options we're only passing a value-less flag.
+	[ -n "$3" ] && {
+	    val=""
+	    sep=""
+	}
+
+	CTDB_OPTIONS="${CTDB_OPTIONS}${CTDB_OPTIONS:+ }${1}${sep}${val}"
+    }
+
+    maybe_set "--reclock"                "$CTDB_RECOVERY_LOCK"
+
+    # build up CTDB_OPTIONS variable from optional parameters
+    maybe_set "--logfile"                "$CTDB_LOGFILE"
+    maybe_set "--nlist"                  "$CTDB_NODES"
+    maybe_set "--socket"                 "$CTDB_SOCKET"
+    maybe_set "--public-addresses"       "$CTDB_PUBLIC_ADDRESSES"
+    maybe_set "--public-interface"       "$CTDB_PUBLIC_INTERFACE"
+    maybe_set "--dbdir"                  "$CTDB_DBDIR"
+    maybe_set "--dbdir-persistent"       "$CTDB_DBDIR_PERSISTENT"
+    maybe_set "--event-script-dir"       "$CTDB_EVENT_SCRIPT_DIR"
+    maybe_set "--transport"              "$CTDB_TRANSPORT"
+    maybe_set "-d"                       "$CTDB_DEBUGLEVEL"
+    maybe_set "--notification-script"    "$CTDB_NOTIFY_SCRIPT"
+    maybe_set "--start-as-disabled"      "$CTDB_START_AS_DISABLED"    "yes"
+    maybe_set "--no-recmaster"           "$CTDB_CAPABILITY_RECMASTER" "no"
+    maybe_set "--no-lmaster"             "$CTDB_CAPABILITY_LMASTER"   "no"
+    maybe_set "--lvs --single-public-ip" "$CTDB_LVS_PUBLIC_IP"
+    maybe_set "--script-log-level"       "$CTDB_SCRIPT_LOG_LEVEL"
+}
+
+check_persistent_databases () {
+    PERSISTENT_DB_DIR="${CTDB_DBDIR:-/var/ctdb}/persistent"
+    mkdir -p $PERSISTENT_DB_DIR 2>/dev/null
+    for PDBASE in `ls $PERSISTENT_DB_DIR/*.tdb.[0-9] 2>/dev/null`; do
+	/usr/bin/tdbdump $PDBASE >/dev/null 2>/dev/null || {
+	    echo "Persistent database $PDBASE is corrupted! CTDB will not start."
+	    return 1
+	}
+    done
+}
+
+set_ctdb_variables () {
+    # set any tunables from the config file
+    set | grep ^CTDB_SET_ | cut -d_ -f3- | 
+    while read v; do
+	varname=`echo $v | cut -d= -f1`
+	value=`echo $v | cut -d= -f2`
+	ctdb setvar $varname $value || RETVAL=1
+    done || exit 1
+}
+
 set_retval() {
-	return $1
+    return $1
 }
 
 ctdbd=${CTDBD:-/usr/sbin/ctdbd}
 
 start() {
-	echo -n $"Starting ctdbd service: "
+    echo -n $"Starting ctdbd service: "
 
-	ctdb ping >& /dev/null
-	if [ $? == "0" ] ; then
-		echo $"CTDB is already running"
-		RETVAL=1
-		return $RETVAL
-        fi
+    ctdb ping >/dev/null 2>&1 && {
+	echo $"CTDB is already running"
+	return 1
+    }
 
-	# check all persistent databases that they look ok
-	PERSISTENT_DB_DIR="/var/ctdb/persistent"
-	[ -z "$CTDB_DBDIR" ] || {
-		PERSISTENT_DB_DIR="$CTDB_DBDIR/persistent"
-	}
-	mkdir -p $PERSISTENT_DB_DIR 2>/dev/null
-	for PDBASE in `ls $PERSISTENT_DB_DIR/*.tdb.[0-9] 2>/dev/null`; do
-		/usr/bin/tdbdump $PDBASE >/dev/null 2>/dev/null || {
-			echo "Persistent database $PDBASE is corrupted! CTDB will not start."
-			return 1
-		}
-	done
+    build_ctdb_options
 
-	case $init_style in
-	    valgrind)
-		valgrind -q --log-file=/var/log/ctdb_valgrind \
-		    $ctdbd --nosetsched $CTDB_OPTIONS 
-		RETVAL=0
-		;;
-	    suse)
-		startproc $ctdbd $CTDB_OPTIONS
-		rc_status -v
-		RETVAL=$?
-		;;
-	    redhat)
-		daemon $ctdbd $CTDB_OPTIONS
-		RETVAL=$?
-		echo
-		[ $RETVAL -eq 0 ] && touch /var/lock/subsys/ctdb || RETVAL=1
-		;;
-	    ubuntu)
-		start-stop-daemon --start --quiet --background \
-		    --exec $ctdbd -- $CTDB_OPTIONS
-		RETVAL=$?
-		;;
-	esac
+    check_persistent_databases || return $?
 
-	sleep 1
-	# set any tunables from the config file
-	set | grep ^CTDB_SET_ | cut -d_ -f3- | 
-	while read v; do
-	    varname=`echo $v | cut -d= -f1`
-	    value=`echo $v | cut -d= -f2`
-	    ctdb setvar $varname $value || RETVAL=1
-	done || exit 1
+    case $init_style in
+	valgrind)
+	    valgrind -q --log-file=/var/log/ctdb_valgrind \
+		$ctdbd --nosetsched $CTDB_OPTIONS 
+	    RETVAL=$?
+	    echo
+	    ;;
+	suse)
+	    startproc $ctdbd $CTDB_OPTIONS
+	    rc_status -v
+	    RETVAL=$?
+	    ;;
+	redhat)
+	    daemon $ctdbd $CTDB_OPTIONS
+	    RETVAL=$?
+	    echo
+	    [ $RETVAL -eq 0 ] && touch /var/lock/subsys/ctdb || RETVAL=1
+	    ;;
+	ubuntu)
+	    start-stop-daemon --start --quiet --background \
+		--exec $ctdbd -- $CTDB_OPTIONS
+	    RETVAL=$?
+	    ;;
+    esac
 
-	return $RETVAL
+    sleep 1
+
+    set_ctdb_variables
+
+    return $RETVAL
 }	
 
 stop() {
-	echo -n $"Shutting down ctdbd service: "
-	pkill -0 -f $ctdbd || {
-	    echo -n "  Warning: ctdbd not running ! "
-	    case $init_style in
-		suse)
-		    rc_status -v
-		    ;;
-		redhat)
-		    echo ""
-		    ;;
-	    esac
-	    return 0
-	}
-	ctdb shutdown >/dev/null 2>&1
-	RETVAL=$?
-	count=0
-	while pkill -0 -f $ctdbd ; do
-	    sleep 1
-	    count=$(($count + 1))
-	    [ $count -gt 10 ] && {
-		echo -n $"killing ctdbd "
-		pkill -9 -f $ctdbd
-		pkill -9 -f $CTDB_BASE/events.d/
-	    }
-	done
+    echo -n $"Shutting down ctdbd service: "
+    pkill -0 -f $ctdbd || {
+	echo -n "  Warning: ctdbd not running ! "
 	case $init_style in
 	    suse)
-		# re-set the return code to the recorded RETVAL
-		# in order to print the correct status message
+		rc_status -v
+		;;
+	    redhat)
+		echo ""
+		;;
+	esac
+	return 0
+    }
+    ctdb shutdown >/dev/null 2>&1
+    RETVAL=$?
+    count=0
+    while pkill -0 -f $ctdbd ; do
+	sleep 1
+	count=$(($count + 1))
+	[ $count -gt 10 ] && {
+	    echo -n $"killing ctdbd "
+	    pkill -9 -f $ctdbd
+	    pkill -9 -f $CTDB_BASE/events.d/
+	}
+    done
+    case $init_style in
+	suse)
+	    # re-set the return code to the recorded RETVAL in order
+	    # to print the correct status message
+	    set_retval $RETVAL
+	    rc_status -v
+	    ;;
+	redhat)
+	    echo
+	    [ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/ctdb
+	    echo ""
+	    ;;
+    esac
+    return $RETVAL
+}
+
+restart() {
+    stop
+    start
+}	
+
+status() {
+    echo -n $"Checking for ctdbd service: "
+    ctdb ping >/dev/null 2>&1 || {
+	RETVAL=$?
+	echo -n "  ctdbd not running. "
+	case $init_style in
+	    suse)
 		set_retval $RETVAL
 		rc_status -v
 		;;
 	    redhat)
-		echo
-		[ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/ctdb
 		echo ""
 		;;
 	esac
 	return $RETVAL
-}	
-
-restart() {
-	stop
-	start
-}	
-
-status() {
-	echo -n $"Checking for ctdbd service: "
-	ctdb ping >& /dev/null || {
-	    RETVAL=$?
-	    echo -n "  ctdbd not running. "
-	    case $init_style in
-		suse)
-		    set_retval $RETVAL
-		    rc_status -v
-		    ;;
-		redhat)
-		    echo ""
-		    ;;
-	    esac
-	    return $RETVAL
-	}
-	echo ""
-	ctdb status
-}	
+    }
+    echo ""
+    ctdb status
+}
 
 
 case "$1" in
-  start)
+    start)
   	start
 	;;
-  stop)
+    stop)
   	stop
 	;;
-  restart|reload)
+    restart|reload)
   	restart
 	;;
-  status)
+    status)
   	status
 	;;
-  condrestart)
+    condrestart)
   	ctdb status > /dev/null && restart || :
 	;;
-  cron)
+    cron)
 	# used from cron to auto-restart ctdb
   	ctdb status > /dev/null || restart
 	;;
-  *)
+    *)
 	echo $"Usage: $0 {start|stop|restart|status|cron|condrestart}"
 	exit 1
 esac
