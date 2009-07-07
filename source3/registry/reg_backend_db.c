@@ -1201,7 +1201,7 @@ static bool create_sorted_subkeys(const char *key, const char *sorted_keyname)
 	 * a transaction_commit for transactions that we might be wrapped in.
 	 */
 	if (regdb->transaction_commit(regdb) == -1) {
-		DEBUG(0, ("create_sorted_subkeys: transaction_start "
+		DEBUG(0, ("create_sorted_subkeys: transaction_commit "
 			  "failed\n"));
 		result = false;
 	}
