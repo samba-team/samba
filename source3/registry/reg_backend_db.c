@@ -603,9 +603,9 @@ done:
  fstrings
  ***********************************************************************/
 
-static bool regdb_store_keys_internal(struct db_context *db,
-				      const char *key,
-				      struct regsubkey_ctr *ctr)
+static bool regdb_store_keys_internal2(struct db_context *db,
+				       const char *key,
+				       struct regsubkey_ctr *ctr)
 {
 	TDB_DATA dbuf;
 	uint8 *buffer = NULL;
@@ -824,7 +824,7 @@ bool regdb_store_keys(const char *key, struct regsubkey_ctr *ctr)
 
 	/* (2) store the subkey list for the parent */
 
-	if (!regdb_store_keys_internal(regdb, key, ctr)) {
+	if (!regdb_store_keys_internal2(regdb, key, ctr)) {
 		DEBUG(0,("regdb_store_keys: Failed to store new subkey list "
 			 "for parent [%s]\n", key));
 		goto cancel;
@@ -841,7 +841,7 @@ bool regdb_store_keys(const char *key, struct regsubkey_ctr *ctr)
 			goto cancel;
 		}
 
-		if (!regdb_store_keys_internal(regdb, key, subkeys)) {
+		if (!regdb_store_keys_internal2(regdb, key, subkeys)) {
 			DEBUG(0,("regdb_store_keys: Failed to store "
 				 "new record for key [%s]\n", key));
 			goto cancel;
@@ -865,7 +865,7 @@ bool regdb_store_keys(const char *key, struct regsubkey_ctr *ctr)
 
 		if (regdb_fetch_keys_internal(regdb, path, subkeys) == -1) {
 			/* create a record with 0 subkeys */
-			if (!regdb_store_keys_internal(regdb, path, subkeys)) {
+			if (!regdb_store_keys_internal2(regdb, path, subkeys)) {
 				DEBUG(0,("regdb_store_keys: Failed to store "
 					 "new record for key [%s]\n", path));
 				goto cancel;
@@ -935,7 +935,7 @@ static WERROR regdb_create_subkey(const char *key, const char *subkey)
 	werr = regsubkey_ctr_addkey(subkeys, subkey);
 	W_ERROR_NOT_OK_GOTO(werr, cancel);
 
-	if (!regdb_store_keys_internal(regdb, key, subkeys)) {
+	if (!regdb_store_keys_internal2(regdb, key, subkeys)) {
 		DEBUG(0, (__location__ " failed to store new subkey list for "
 			 "parent key %s\n", key));
 		werr = WERR_REG_IO_FAILURE;
@@ -1002,7 +1002,7 @@ static WERROR regdb_delete_subkey(const char *key, const char *subkey)
 	werr = regsubkey_ctr_delkey(subkeys, subkey);
 	W_ERROR_NOT_OK_GOTO(werr, cancel);
 
-	if (!regdb_store_keys_internal(regdb, key, subkeys)) {
+	if (!regdb_store_keys_internal2(regdb, key, subkeys)) {
 		DEBUG(0, (__location__ " failed to store new subkey_list for "
 			 "parent key %s\n", key));
 		werr = WERR_REG_IO_FAILURE;
@@ -1097,7 +1097,7 @@ done:
  * parent_subkey_scanner. The code uses parse_record() to avoid a memcpy of
  * the potentially large subkey record.
  *
- * The sorted subkey record is deleted in regdb_store_keys_internal and
+ * The sorted subkey record is deleted in regdb_store_keys_internal2 and
  * recreated on demand.
  */
 
