@@ -1468,6 +1468,9 @@ NTSTATUS kdc_hdb_samba4_create(TALLOC_CTX *mem_ctx,
 	(*db)->hdb__del = NULL;
 	(*db)->hdb_destroy = LDB_destroy;
 
+	(*db)->hdb_auth_status = NULL;
+	(*db)->hdb_check_constrained_delegation = NULL;
+
 	return NT_STATUS_OK;
 }
 
