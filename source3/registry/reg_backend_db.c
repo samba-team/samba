@@ -98,7 +98,8 @@ static struct builtin_regkey_value builtin_registry_values[] = {
  * Initialize a key in the registry:
  * create each component key of the specified path.
  */
-static WERROR init_registry_key_internal(const char *add_path)
+static WERROR init_registry_key_internal(struct db_context *db,
+					 const char *add_path)
 {
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -177,14 +178,14 @@ static WERROR init_registry_key_internal(const char *add_path)
 			goto fail;
 		}
 
-		regdb_fetch_keys_internal(regdb, base, subkeys);
+		regdb_fetch_keys_internal(db, base, subkeys);
 		if (*subkeyname) {
 			werr = regsubkey_ctr_addkey(subkeys, subkeyname);
 			if (!W_ERROR_IS_OK(werr)) {
 				goto fail;
 			}
 		}
-		if (!regdb_store_keys_internal(regdb, base, subkeys)) {
+		if (!regdb_store_keys_internal(db, base, subkeys)) {
 			werr = WERR_CAN_NOT_COMPLETE;
 			goto fail;
 		}
@@ -215,7 +216,7 @@ WERROR init_registry_key(const char *add_path)
 		return WERR_REG_IO_FAILURE;
 	}
 
-	werr = init_registry_key_internal(add_path);
+	werr = init_registry_key_internal(regdb, add_path);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto fail;
 	}
@@ -301,7 +302,8 @@ do_init:
 		if (regdb_key_exists(regdb, builtin_registry_paths[i])) {
 			continue;
 		}
-		werr = init_registry_key_internal(builtin_registry_paths[i]);
+		werr = init_registry_key_internal(regdb,
+						  builtin_registry_paths[i]);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto fail;
 		}
