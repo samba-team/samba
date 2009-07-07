@@ -1184,8 +1184,8 @@ static bool create_sorted_subkeys(const char *key, const char *sorted_keyname)
 		 * transaction. See below for an explanation.
 		 */
 		if (regdb->transaction_cancel(regdb) == -1) {
-			DEBUG(0, ("create_sorted_subkeys: transaction_cancel "
-				  "failed\n"));
+			smb_panic("create_sorted_subkeys: transaction_cancel "
+				  "failed\n");
 		}
 		TALLOC_FREE(ctr);
 		return false;
