@@ -929,8 +929,10 @@ static WERROR regdb_create_subkey(const char *key, const char *subkey)
 
 	talloc_free(subkeys);
 
-	werr = regdb_transaction_start();
-	W_ERROR_NOT_OK_GOTO_DONE(werr);
+	if (regdb->transaction_start(regdb) != 0) {
+		werr = WERR_REG_IO_FAILURE;
+		goto done;
+	}
 
 	werr = regsubkey_ctr_init(mem_ctx, &subkeys);
 	W_ERROR_NOT_OK_GOTO(werr, cancel);
@@ -950,19 +952,17 @@ static WERROR regdb_create_subkey(const char *key, const char *subkey)
 		goto cancel;
 	}
 
-	werr = regdb_transaction_commit();
-	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(0, (__location__ " failed to commit transaction: %s\n",
-			 win_errstr(werr)));
+	if (regdb->transaction_commit(regdb) != 0) {
+		werr = WERR_REG_IO_FAILURE;
+		DEBUG(0, (__location__ " failed to commit transaction\n"));
 	}
 
 	goto done;
 
 cancel:
-	werr = regdb_transaction_cancel();
-	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(0, (__location__ " failed to cancel transaction: %s\n",
-			 win_errstr(werr)));
+	if (regdb->transaction_cancel(regdb) != 0) {
+		werr = WERR_REG_IO_FAILURE;
+		DEBUG(0, (__location__ " failed to cancel transaction\n"));
 	}
 
 done:
