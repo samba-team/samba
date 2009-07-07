@@ -1899,7 +1899,7 @@ bool cli_NetWkstaUserLogoff(struct cli_state *cli, const char *user, const char 
 
 int cli_NetPrintQEnum(struct cli_state *cli,
 		void (*qfn)(const char*,uint16,uint16,uint16,const char*,const char*,const char*,const char*,const char*,uint16,uint16),
-		void (*jfn)(uint16,const char*,const char*,const char*,const char*,uint16,uint16,const char*,uint,uint,const char*))
+		void (*jfn)(uint16,const char*,const char*,const char*,const char*,uint16,uint16,const char*,uint_t,uint_t,const char*))
 {
 	char param[WORDSIZE                         /* api number    */
 		+sizeof(RAP_NetPrintQEnum_REQ)    /* req string    */
@@ -2075,7 +2075,7 @@ int cli_NetPrintQEnum(struct cli_state *cli,
 
 int cli_NetPrintQGetInfo(struct cli_state *cli, const char *printer,
 	void (*qfn)(const char*,uint16,uint16,uint16,const char*,const char*,const char*,const char*,const char*,uint16,uint16),
-	void (*jfn)(uint16,const char*,const char*,const char*,const char*,uint16,uint16,const char*,uint,uint,const char*))
+	void (*jfn)(uint16,const char*,const char*,const char*,const char*,uint16,uint16,const char*,uint_t,uint_t,const char*))
 {
 	char param[WORDSIZE                         /* api number    */
 		+sizeof(RAP_NetPrintQGetInfo_REQ) /* req string    */
@@ -2335,7 +2335,7 @@ int cli_RNetServiceEnum(struct cli_state *cli, void (*fn)(const char *, const ch
  Call a NetSessionEnum - list workstations with sessions to an SMB server.
 ****************************************************************************/
 
-int cli_NetSessionEnum(struct cli_state *cli, void (*fn)(char *, char *, uint16, uint16, uint16, uint, uint, uint, char *))
+int cli_NetSessionEnum(struct cli_state *cli, void (*fn)(char *, char *, uint16, uint16, uint16, uint_t, uint_t, uint_t, char *))
 {
 	char param[WORDSIZE                       /* api number    */
 		+sizeof(RAP_NetSessionEnum_REQ) /* parm string   */
@@ -2435,7 +2435,7 @@ int cli_NetSessionEnum(struct cli_state *cli, void (*fn)(char *, char *, uint16,
 ****************************************************************************/
 
 int cli_NetSessionGetInfo(struct cli_state *cli, const char *workstation,
-		void (*fn)(const char *, const char *, uint16, uint16, uint16, uint, uint, uint, const char *))
+		void (*fn)(const char *, const char *, uint16, uint16, uint16, uint_t, uint_t, uint_t, const char *))
 {
 	char param[WORDSIZE                          /* api number    */
 		+sizeof(RAP_NetSessionGetInfo_REQ) /* req string    */
