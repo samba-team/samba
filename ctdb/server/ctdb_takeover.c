@@ -106,7 +106,7 @@ static void ctdb_control_send_arp(struct event_context *ev, struct timed_event *
 	}
 
 	event_add_timed(arp->ctdb->ev, arp->vnn->takeover_ctx, 
-			timeval_current_ofs(CTDB_ARP_INTERVAL, 0), 
+			timeval_current_ofs(CTDB_ARP_INTERVAL, 100000), 
 			ctdb_control_send_arp, arp);
 }
 
