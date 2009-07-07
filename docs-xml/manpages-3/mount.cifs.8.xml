@@ -344,7 +344,9 @@ permissions in memory that can't be stored on the server. This information can d
                 (which also forbids creating and opening files
                 whose names contain any of these seven characters).
                 This has no effect if the server does not support
-                Unicode on the wire.</para></listitem>
+                Unicode on the wire. Please note that the files created
+		with mapchars mount option may not be accessible
+		if the share is mounted without that option.</para></listitem>
         </varlistentry>
 
         <varlistentry>
