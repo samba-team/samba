@@ -961,8 +961,7 @@ static WERROR regdb_create_subkey(const char *key, const char *subkey)
 
 cancel:
 	if (regdb->transaction_cancel(regdb) != 0) {
-		werr = WERR_REG_IO_FAILURE;
-		DEBUG(0, (__location__ " failed to cancel transaction\n"));
+		smb_panic("regdb_create_subkey: transaction_cancel failed\n");
 	}
 
 done:
