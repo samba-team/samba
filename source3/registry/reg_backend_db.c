@@ -971,7 +971,7 @@ done:
 
 static WERROR regdb_delete_subkey(const char *key, const char *subkey)
 {
-	WERROR werr, werr2;
+	WERROR werr;
 	struct regsubkey_ctr *subkeys;
 	char *path;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
@@ -992,8 +992,10 @@ static WERROR regdb_delete_subkey(const char *key, const char *subkey)
 		goto done;
 	}
 
-	werr = regdb_transaction_start();
-	W_ERROR_NOT_OK_GOTO_DONE(werr);
+	if (regdb->transaction_start(regdb) != 0) {
+		werr = WERR_REG_IO_FAILURE;
+		goto done;
+	}
 
 	werr = regdb_delete_key_lists(regdb, path);
 	W_ERROR_NOT_OK_GOTO(werr, cancel);
@@ -1016,17 +1018,15 @@ static WERROR regdb_delete_subkey(const char *key, const char *subkey)
 		goto cancel;
 	}
 
-	werr = regdb_transaction_commit();
-	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(0, (__location__ " failed to commit transaction: %s\n",
-			 win_errstr(werr)));
+	if (regdb->transaction_commit(regdb) != 0) {
+		DEBUG(0, (__location__ " failed to commit transaction\n"));
+		werr = WERR_REG_IO_FAILURE;
 	}
 
 	goto done;
 
 cancel:
-	werr2 = regdb_transaction_cancel();
-	if (!W_ERROR_IS_OK(werr2)) {
+	if (regdb->transaction_cancel(regdb) != 0) {
 		smb_panic("regdb_delete_subkey: transaction_cancel failed\n");
 	}
 
