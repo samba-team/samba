@@ -356,3 +356,20 @@ NTSTATUS dbwrap_delete_bystring_upper(struct db_context *db, const char *key)
 	talloc_free(key_upper);
 	return status;
 }
+
+NTSTATUS dbwrap_store_bystring_upper(struct db_context *db, const char *key,
+				     TDB_DATA data, int flags)
+{
+	char *key_upper;
+	NTSTATUS status;
+
+	key_upper = talloc_strdup_upper(talloc_tos(), key);
+	if (key_upper == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = dbwrap_store_bystring(db, key_upper, data, flags);
+
+	talloc_free(key_upper);
+	return status;
+}
