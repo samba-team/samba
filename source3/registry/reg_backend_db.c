@@ -240,6 +240,31 @@ WERROR init_registry_key(const char *add_path)
  Open the registry data in the tdb
  ***********************************************************************/
 
+static void regdb_ctr_add_value(struct regval_ctr *ctr,
+				struct builtin_regkey_value *value)
+{
+	UNISTR2 data;
+
+	switch(value->type) {
+	case REG_DWORD:
+		regval_ctr_addvalue(ctr, value->valuename, REG_DWORD,
+				    (char*)&value->data.dw_value,
+				    sizeof(uint32));
+		break;
+
+	case REG_SZ:
+		init_unistr2(&data, value->data.string, UNI_STR_TERMINATE);
+		regval_ctr_addvalue(ctr, value->valuename, REG_SZ,
+				    (char*)data.buffer,
+				    data.uni_str_len*sizeof(uint16));
+		break;
+
+	default:
+		DEBUG(0, ("regdb_ctr_add_value: invalid value type in "
+			  "registry values [%d]\n", value->type));
+	}
+}
+
 static NTSTATUS init_registry_data_action(struct db_context *db,
 					  void *private_data)
 {
@@ -247,7 +272,6 @@ static NTSTATUS init_registry_data_action(struct db_context *db,
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct regval_ctr *values;
 	int i;
-	UNISTR2 data;
 
 	/* loop over all of the predefined paths and add each component */
 
@@ -281,32 +305,8 @@ static NTSTATUS init_registry_data_action(struct db_context *db,
 		if (!regval_ctr_key_exists(values,
 					builtin_registry_values[i].valuename))
 		{
-			switch(builtin_registry_values[i].type) {
-			case REG_DWORD:
-				regval_ctr_addvalue(values,
-					builtin_registry_values[i].valuename,
-					REG_DWORD,
-					(char*)&builtin_registry_values[i].data.dw_value,
-					sizeof(uint32));
-				break;
-
-			case REG_SZ:
-				init_unistr2(&data,
-					builtin_registry_values[i].data.string,
-					UNI_STR_TERMINATE);
-				regval_ctr_addvalue(values,
-					builtin_registry_values[i].valuename,
-					REG_SZ,
-					(char*)data.buffer,
-					data.uni_str_len*sizeof(uint16));
-				break;
-
-			default:
-				DEBUG(0, ("init_registry_data: invalid value "
-					  "type in builtin_registry_values "
-					  "[%d]\n",
-					  builtin_registry_values[i].type));
-			}
+			regdb_ctr_add_value(values,
+					    &builtin_registry_values[i]);
 			regdb_store_values_internal(db,
 					builtin_registry_values[i].path,
 					values);
