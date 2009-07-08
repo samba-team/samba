@@ -35,6 +35,8 @@ static bool regdb_store_keys_internal(struct db_context *db, const char *key,
 				      struct regsubkey_ctr *ctr);
 static int regdb_fetch_values_internal(struct db_context *db, const char* key,
 				       struct regval_ctr *values);
+static bool regdb_store_values_internal(struct db_context *db, const char *key,
+					struct regval_ctr *values);
 
 /* List the deepest path into the registry.  All part components will be created.*/
 
@@ -354,8 +356,9 @@ do_init:
 					  "[%d]\n",
 					  builtin_registry_values[i].type));
 			}
-			regdb_store_values(builtin_registry_values[i].path,
-					   values);
+			regdb_store_values_internal(regdb,
+					builtin_registry_values[i].path,
+					values);
 		}
 		TALLOC_FREE(values);
 	}
@@ -1542,7 +1545,8 @@ int regdb_fetch_values(const char* key, struct regval_ctr *values)
 	return regdb_fetch_values_internal(regdb, key, values);
 }
 
-bool regdb_store_values(const char *key, struct regval_ctr *values)
+static bool regdb_store_values_internal(struct db_context *db, const char *key,
+					struct regval_ctr *values)
 {
 	TDB_DATA old_data, data;
 	char *keystr = NULL;
@@ -1553,7 +1557,7 @@ bool regdb_store_values(const char *key, struct regval_ctr *values)
 
 	DEBUG(10,("regdb_store_values: Looking for value of key [%s] \n", key));
 
-	if (!regdb_key_exists(regdb, key)) {
+	if (!regdb_key_exists(db, key)) {
 		goto done;
 	}
 
@@ -1581,7 +1585,7 @@ bool regdb_store_values(const char *key, struct regval_ctr *values)
 		goto done;
 	}
 
-	old_data = dbwrap_fetch_bystring(regdb, ctx, keystr);
+	old_data = dbwrap_fetch_bystring(db, ctx, keystr);
 
 	if ((old_data.dptr != NULL)
 	    && (old_data.dsize == data.dsize)
@@ -1591,13 +1595,18 @@ bool regdb_store_values(const char *key, struct regval_ctr *values)
 		goto done;
 	}
 
-	status = dbwrap_trans_store_bystring(regdb, keystr, data, TDB_REPLACE);
+	status = dbwrap_trans_store_bystring(db, keystr, data, TDB_REPLACE);
 
 	result = NT_STATUS_IS_OK(status);
 
 done:
 	TALLOC_FREE(ctx);
 	return result;
+}
+
+bool regdb_store_values(const char *key, struct regval_ctr *values)
+{
+	return regdb_store_values_internal(regdb, key, values);
 }
 
 static WERROR regdb_get_secdesc(TALLOC_CTX *mem_ctx, const char *key,
