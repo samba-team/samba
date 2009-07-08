@@ -609,27 +609,26 @@ done:
  fstrings
  ***********************************************************************/
 
-static bool regdb_store_keys_internal2(struct db_context *db,
-				       const char *key,
-				       struct regsubkey_ctr *ctr)
+static WERROR regdb_store_keys_internal2(struct db_context *db,
+					 const char *key,
+					 struct regsubkey_ctr *ctr)
 {
 	TDB_DATA dbuf;
 	uint8 *buffer = NULL;
 	int i = 0;
 	uint32 len, buflen;
-	bool ret = true;
 	uint32 num_subkeys = regsubkey_ctr_numkeys(ctr);
 	char *keyname = NULL;
 	TALLOC_CTX *ctx = talloc_stackframe();
-	NTSTATUS status;
+	WERROR werr;
 
 	if (!key) {
-		return false;
+		return WERR_INVALID_PARAM;
 	}
 
 	keyname = talloc_strdup(ctx, key);
 	if (!keyname) {
-		return false;
+		return WERR_NOMEM;
 	}
 	keyname = normalize_reg_path(ctx, keyname);
 
@@ -637,7 +636,8 @@ static bool regdb_store_keys_internal2(struct db_context *db,
 
 	buffer = (uint8 *)SMB_MALLOC(1024);
 	if (buffer == NULL) {
-		return false;
+		werr = WERR_NOMEM;
+		goto done;
 	}
 	buflen = 1024;
 	len = 0;
@@ -665,7 +665,7 @@ static bool regdb_store_keys_internal2(struct db_context *db,
 				DEBUG(0, ("regdb_store_keys: Failed to realloc "
 					  "memory of size [%u]\n",
 					  (unsigned int)(len+thistime)*2));
-				ret = false;
+				werr = WERR_NOMEM;
 				goto done;
 			}
 			buflen = (len+thistime)*2;
@@ -674,7 +674,7 @@ static bool regdb_store_keys_internal2(struct db_context *db,
 				regsubkey_ctr_specific_key(ctr, i));
 			if (thistime2 != thistime) {
 				DEBUG(0, ("tdb_pack failed\n"));
-				ret = false;
+				werr = WERR_CAN_NOT_COMPLETE;
 				goto done;
 			}
 		}
@@ -685,11 +685,9 @@ static bool regdb_store_keys_internal2(struct db_context *db,
 
 	dbuf.dptr = buffer;
 	dbuf.dsize = len;
-	status = dbwrap_store_bystring(db, keyname, dbuf, TDB_REPLACE);
-	if (!NT_STATUS_IS_OK(status)) {
-		ret = false;
-		goto done;
-	}
+	werr = ntstatus_to_werror(dbwrap_store_bystring(db, keyname, dbuf,
+							TDB_REPLACE));
+	W_ERROR_NOT_OK_GOTO_DONE(werr);
 
 	/*
 	 * Delete a sorted subkey cache for regdb_key_exists, will be
@@ -697,14 +695,22 @@ static bool regdb_store_keys_internal2(struct db_context *db,
 	 */
 	keyname = talloc_asprintf(ctx, "%s/%s", REG_SORTED_SUBKEYS_PREFIX,
 				  keyname);
-	if (keyname != NULL) {
-		dbwrap_delete_bystring(db, keyname);
+	if (keyname == NULL) {
+		werr = WERR_NOMEM;
+		goto done;
+	}
+
+	werr = ntstatus_to_werror(dbwrap_delete_bystring(db, keyname));
+
+	/* don't treat WERR_NOT_FOUND as an error here */
+	if (W_ERROR_EQUAL(werr, WERR_NOT_FOUND)) {
+		werr = WERR_OK;
 	}
 
 done:
 	TALLOC_FREE(ctx);
 	SAFE_FREE(buffer);
-	return ret;
+	return werr;
 }
 
 /***********************************************************************
@@ -831,9 +837,10 @@ static bool regdb_store_keys_internal(struct db_context *db, const char *key,
 
 	/* (2) store the subkey list for the parent */
 
-	if (!regdb_store_keys_internal2(db, key, ctr)) {
+	werr = regdb_store_keys_internal2(db, key, ctr);
+	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(0,("regdb_store_keys: Failed to store new subkey list "
-			 "for parent [%s]\n", key));
+			 "for parent [%s]: %s\n", key, win_errstr(werr)));
 		goto cancel;
 	}
 
@@ -848,9 +855,11 @@ static bool regdb_store_keys_internal(struct db_context *db, const char *key,
 			goto cancel;
 		}
 
-		if (!regdb_store_keys_internal2(db, key, subkeys)) {
+		werr = regdb_store_keys_internal2(db, key, subkeys);
+		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG(0,("regdb_store_keys: Failed to store "
-				 "new record for key [%s]\n", key));
+				 "new record for key [%s]: %s\n", key,
+				 win_errstr(werr)));
 			goto cancel;
 		}
 		TALLOC_FREE(subkeys);
@@ -872,9 +881,11 @@ static bool regdb_store_keys_internal(struct db_context *db, const char *key,
 
 		if (regdb_fetch_keys_internal(db, path, subkeys) == -1) {
 			/* create a record with 0 subkeys */
-			if (!regdb_store_keys_internal2(db, path, subkeys)) {
+			werr = regdb_store_keys_internal2(db, path, subkeys);
+			if (!W_ERROR_IS_OK(werr)) {
 				DEBUG(0,("regdb_store_keys: Failed to store "
-					 "new record for key [%s]\n", path));
+					 "new record for key [%s]: %s\n", path,
+					 win_errstr(werr)));
 				goto cancel;
 			}
 		}
@@ -949,10 +960,10 @@ static WERROR regdb_create_subkey(const char *key, const char *subkey)
 	werr = regsubkey_ctr_addkey(subkeys, subkey);
 	W_ERROR_NOT_OK_GOTO(werr, cancel);
 
-	if (!regdb_store_keys_internal2(regdb, key, subkeys)) {
+	werr = regdb_store_keys_internal2(regdb, key, subkeys);
+	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(0, (__location__ " failed to store new subkey list for "
-			 "parent key %s\n", key));
-		werr = WERR_REG_IO_FAILURE;
+			 "parent key %s: %s\n", key, win_errstr(werr)));
 		goto cancel;
 	}
 
@@ -1015,10 +1026,10 @@ static WERROR regdb_delete_subkey(const char *key, const char *subkey)
 	werr = regsubkey_ctr_delkey(subkeys, subkey);
 	W_ERROR_NOT_OK_GOTO(werr, cancel);
 
-	if (!regdb_store_keys_internal2(regdb, key, subkeys)) {
+	werr = regdb_store_keys_internal2(regdb, key, subkeys);
+	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(0, (__location__ " failed to store new subkey_list for "
-			 "parent key %s\n", key));
-		werr = WERR_REG_IO_FAILURE;
+			 "parent key %s: %s\n", key, win_errstr(werr)));
 		goto cancel;
 	}
 
