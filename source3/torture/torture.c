@@ -5939,6 +5939,96 @@ static bool run_local_rbtree(int dummy)
 	return ret;
 }
 
+/* Split a path name into filename and stream name components. Canonicalise
+ * such that an implicit $DATA token is always explicit.
+ *
+ * The "specification" of this function can be found in the
+ * run_local_stream_name() function in torture.c, I've tried those
+ * combinations against a W2k3 server.
+ */
+
+static NTSTATUS split_ntfs_stream_name(TALLOC_CTX *mem_ctx, const char *fname,
+				       char **pbase, char **pstream)
+{
+	char *base = NULL;
+	char *stream = NULL;
+	char *sname; /* stream name */
+	const char *stype; /* stream type */
+
+	DEBUG(10, ("split_ntfs_stream_name called for [%s]\n", fname));
+
+	sname = strchr_m(fname, ':');
+
+	if (lp_posix_pathnames() || (sname == NULL)) {
+		if (pbase != NULL) {
+			base = talloc_strdup(mem_ctx, fname);
+			NT_STATUS_HAVE_NO_MEMORY(base);
+		}
+		goto done;
+	}
+
+	if (pbase != NULL) {
+		base = talloc_strndup(mem_ctx, fname, PTR_DIFF(sname, fname));
+		NT_STATUS_HAVE_NO_MEMORY(base);
+	}
+
+	sname += 1;
+
+	stype = strchr_m(sname, ':');
+
+	if (stype == NULL) {
+		sname = talloc_strdup(mem_ctx, sname);
+		stype = "$DATA";
+	}
+	else {
+		if (StrCaseCmp(stype, ":$DATA") != 0) {
+			/*
+			 * If there is an explicit stream type, so far we only
+			 * allow $DATA. Is there anything else allowed? -- vl
+			 */
+			DEBUG(10, ("[%s] is an invalid stream type\n", stype));
+			TALLOC_FREE(base);
+			return NT_STATUS_OBJECT_NAME_INVALID;
+		}
+		sname = talloc_strndup(mem_ctx, sname, PTR_DIFF(stype, sname));
+		stype += 1;
+	}
+
+	if (sname == NULL) {
+		TALLOC_FREE(base);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (sname[0] == '\0') {
+		/*
+		 * no stream name, so no stream
+		 */
+		goto done;
+	}
+
+	if (pstream != NULL) {
+		stream = talloc_asprintf(mem_ctx, "%s:%s", sname, stype);
+		if (stream == NULL) {
+			TALLOC_FREE(sname);
+			TALLOC_FREE(base);
+			return NT_STATUS_NO_MEMORY;
+		}
+		/*
+		 * upper-case the type field
+		 */
+		strupper_m(strchr_m(stream, ':')+1);
+	}
+
+ done:
+	if (pbase != NULL) {
+		*pbase = base;
+	}
+	if (pstream != NULL) {
+		*pstream = stream;
+	}
+	return NT_STATUS_OK;
+}
+
 static bool test_stream_name(const char *fname, const char *expected_base,
 			     const char *expected_stream,
 			     NTSTATUS expected_status)

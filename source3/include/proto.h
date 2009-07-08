@@ -1202,8 +1202,6 @@ void *_talloc_memdup_zeronull(const void *t, const void *p, size_t size, const c
 void *_talloc_array_zeronull(const void *ctx, size_t el_size, unsigned count, const char *name);
 void *_talloc_zero_array_zeronull(const void *ctx, size_t el_size, unsigned count, const char *name);
 void *talloc_zeronull(const void *context, size_t size, const char *name);
-NTSTATUS split_ntfs_stream_name(TALLOC_CTX *mem_ctx, const char *fname,
-				char **pbase, char **pstream);
 bool is_valid_policy_hnd(const struct policy_handle *hnd);
 bool policy_hnd_equal(const struct policy_handle *hnd1,
 		      const struct policy_handle *hnd2);
@@ -6548,7 +6546,6 @@ void send_nt_replies(connection_struct *conn,
 			struct smb_request *req, NTSTATUS nt_error,
 		     char *params, int paramsize,
 		     char *pdata, int datasize);
-bool is_ntfs_stream_name(const char *fname);
 bool is_ntfs_stream_smb_fname(const struct smb_filename *smb_fname);
 bool is_ntfs_default_stream_smb_fname(const struct smb_filename *smb_fname);
 void reply_ntcreate_and_X(struct smb_request *req);

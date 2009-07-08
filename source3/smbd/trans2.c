@@ -1421,6 +1421,7 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 							    &smb_fname);
 			if (!NT_STATUS_IS_OK(status)) {
 				TALLOC_FREE(fname);
+				return false;
 			}
 
 			if (INFO_LEVEL_IS_UNIX(info_level)) {
@@ -5554,7 +5555,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		}
 	} else {
 		/* newname must *not* be a stream name. */
-		if (is_ntfs_stream_name(newname)) {
+		if (newname[0] == ':') {
 			return NT_STATUS_NOT_SUPPORTED;
 		}
 

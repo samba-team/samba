@@ -25,35 +25,6 @@
 
 #include <sys/isi_enc.h>
 
-/*
- * OneFS stores streams without the explicit :$DATA at the end, so this strips
- * it off.  All onefs_stream functions must call through this instead of
- * split_ntfs_stream_name directly.
- */
-NTSTATUS onefs_split_ntfs_stream_name(TALLOC_CTX *mem_ctx, const char *fname,
-				      char **pbase, char **pstream)
-{
-	NTSTATUS status;
-	char *stream;
-
-	status = split_ntfs_stream_name(mem_ctx, fname, pbase, pstream);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	/* Default $DATA stream.  */
-	if (pstream == NULL || *pstream == NULL) {
-		return NT_STATUS_OK;
-	}
-
-	/* Strip off the $DATA. */
-	stream = strrchr_m(*pstream, ':');
-	SMB_ASSERT(stream);
-	stream[0] = '\0';
-
-	return NT_STATUS_OK;
-}
-
 NTSTATUS onefs_stream_prep_smb_fname(TALLOC_CTX *ctx,
 				     const struct smb_filename *smb_fname_in,
 				     struct smb_filename **smb_fname_out)
@@ -98,25 +69,6 @@ NTSTATUS onefs_stream_prep_smb_fname(TALLOC_CTX *ctx,
 					    smb_fname_out);
 	TALLOC_FREE(stream_name);
 	return status;
-}
-
-int onefs_is_stream(const char *path, char **pbase, char **pstream,
-		    bool *is_stream)
-{
-	(*is_stream) = is_ntfs_stream_name(path);
-
-	if (!(*is_stream)) {
-		return 0;
-	}
-
-	if (!NT_STATUS_IS_OK(onefs_split_ntfs_stream_name(talloc_tos(), path,
-							  pbase, pstream))) {
-		DEBUG(10, ("onefs_split_ntfs_stream_name failed\n"));
-		errno = ENOMEM;
-		return -1;
-	}
-
-	return 0;
 }
 
 int onefs_close(vfs_handle_struct *handle, struct files_struct *fsp)
