@@ -774,7 +774,8 @@ Offset  Data			length.
 
 struct share_mode_lock {
 	const char *servicepath; /* canonicalized. */
-	const char *filename;
+	const char *base_name;
+	const char *stream_name;
 	struct file_id id;
 	int num_share_modes;
 	struct share_mode_entry *share_modes;

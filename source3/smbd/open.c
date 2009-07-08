@@ -1139,7 +1139,7 @@ bool open_match_attributes(connection_struct *conn,
 NTSTATUS fcb_or_dos_open(struct smb_request *req,
 				     connection_struct *conn,
 				     files_struct *fsp_to_dup_into,
-				     const char *fname,
+				     const struct smb_filename *smb_fname,
 				     struct file_id id,
 				     uint16 file_pid,
 				     uint16 vuid,
@@ -1148,9 +1148,16 @@ NTSTATUS fcb_or_dos_open(struct smb_request *req,
 				     uint32 create_options)
 {
 	files_struct *fsp;
+	char *fname = NULL;
+	NTSTATUS status;
+
+	status = get_full_smb_filename(talloc_tos(), smb_fname, &fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	DEBUG(5,("fcb_or_dos_open: attempting old open semantics for "
-		 "file %s.\n", fname ));
+		 "file %s.\n", smb_fname_str_dbg(smb_fname)));
 
 	for(fsp = file_find_di_first(id); fsp;
 	    fsp = file_find_di_next(fsp)) {
@@ -1180,7 +1187,7 @@ NTSTATUS fcb_or_dos_open(struct smb_request *req,
 	}
 
 	/* quite an insane set of semantics ... */
-	if (is_executable(fname) &&
+	if (is_executable(smb_fname->base_name) &&
 	    (fsp->fh->private_options & NTCREATEX_OPTIONS_PRIVATE_DENY_DOS)) {
 		DEBUG(10,("fcb_or_dos_open: file fail due to is_executable.\n"));
 		return NT_STATUS_INVALID_PARAMETER;
@@ -1467,16 +1474,9 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	uint32 open_access_mask = access_mask;
 	NTSTATUS status;
 	int ret_flock;
-	char *fname = NULL;
 	char *parent_dir;
 
 	ZERO_STRUCT(id);
-
-	status = get_full_smb_filename(talloc_tos(), smb_fname,
-				       &fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
 
 	if (conn->printer) {
 		/*
@@ -1497,8 +1497,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			return NT_STATUS_INTERNAL_ERROR;
 		}
 
-		return print_fsp_open(req, conn, fname, req->vuid, fsp,
-				      &smb_fname->st);
+		return print_fsp_open(req, conn, smb_fname->base_name,
+				      req->vuid, fsp, &smb_fname->st);
 	}
 
 	if (!parent_dirname(talloc_tos(), smb_fname->base_name, &parent_dir,
@@ -1785,7 +1785,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 		lck = get_share_mode_lock(talloc_tos(), id,
 					  conn->connectpath,
-					  fname, &old_write_time);
+					  smb_fname, &old_write_time);
 
 		if (lck == NULL) {
 			DEBUG(0, ("Could not get share mode lock\n"));
@@ -1849,7 +1849,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 				status = fcb_or_dos_open(req,
 							conn,
 							fsp,
-							fname,
+							smb_fname,
 							id,
 							req->smbpid,
 							req->vuid,
@@ -2005,7 +2005,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 		lck = get_share_mode_lock(talloc_tos(), id,
 					  conn->connectpath,
-					  fname, &old_write_time);
+					  smb_fname, &old_write_time);
 
 		if (lck == NULL) {
 			DEBUG(0, ("open_file_ntcreate: Could not get share "
@@ -2613,8 +2613,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 	mtimespec = smb_dname->st.st_ex_mtime;
 
 	lck = get_share_mode_lock(talloc_tos(), fsp->file_id,
-				  conn->connectpath, smb_dname->base_name,
-				  &mtimespec);
+				  conn->connectpath, smb_dname, &mtimespec);
 
 	if (lck == NULL) {
 		DEBUG(0, ("open_directory: Could not get share mode lock for "
@@ -2706,8 +2705,11 @@ void msg_file_was_renamed(struct messaging_context *msg,
 	char *frm = (char *)data->data;
 	struct file_id id;
 	const char *sharepath;
-	const char *newname;
-	size_t sp_len;
+	const char *base_name;
+	const char *stream_name;
+	struct smb_filename *smb_fname = NULL;
+	size_t sp_len, bn_len;
+	NTSTATUS status;
 
 	if (data->data == NULL
 	    || data->length < MSG_FILE_RENAMED_MIN_SIZE + 2) {
@@ -2719,18 +2721,36 @@ void msg_file_was_renamed(struct messaging_context *msg,
 	/* Unpack the message. */
 	pull_file_id_24(frm, &id);
 	sharepath = &frm[24];
-	newname = sharepath + strlen(sharepath) + 1;
 	sp_len = strlen(sharepath);
+	base_name = sharepath + sp_len + 1;
+	bn_len = strlen(base_name);
+	stream_name = sharepath + sp_len + 1 + bn_len + 1;
+
+	status = create_synthetic_smb_fname(talloc_tos(), base_name,
+					    stream_name, NULL, &smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return;
+	}
 
 	DEBUG(10,("msg_file_was_renamed: Got rename message for sharepath %s, new name %s, "
 		"file_id %s\n",
-		  sharepath, newname, file_id_string_tos(&id)));
+		sharepath, smb_fname_str_dbg(smb_fname),
+		file_id_string_tos(&id)));
 
 	for(fsp = file_find_di_first(id); fsp; fsp = file_find_di_next(fsp)) {
 		if (memcmp(fsp->conn->connectpath, sharepath, sp_len) == 0) {
-	                DEBUG(10,("msg_file_was_renamed: renaming file fnum %d from %s -> %s\n",
-				fsp->fnum, fsp->fsp_name, newname ));
+	                char *newname = NULL;
+
+			DEBUG(10,("msg_file_was_renamed: renaming file fnum %d from %s -> %s\n",
+				fsp->fnum, fsp->fsp_name,
+				smb_fname_str_dbg(smb_fname)));
+			status = get_full_smb_filename(talloc_tos(),
+						       smb_fname, &newname);
+			if (!NT_STATUS_IS_OK(status)) {
+				goto out;
+			}
 			string_set(&fsp->fsp_name, newname);
+			TALLOC_FREE(newname);
 		} else {
 			/* TODO. JRA. */
 			/* Now we have the complete path we can work out if this is
@@ -2742,9 +2762,12 @@ void msg_file_was_renamed(struct messaging_context *msg,
 				sharepath,
 				fsp->fnum,
 				fsp->fsp_name,
-				newname ));
+				smb_fname_str_dbg(smb_fname)));
 		}
         }
+ out:
+	TALLOC_FREE(smb_fname);
+	return;
 }
 
 struct case_semantics_state {

@@ -5709,12 +5709,6 @@ static void rename_open_files(connection_struct *conn,
 	char *fname_dst = NULL;
 	NTSTATUS status;
 
-	status = get_full_smb_filename(talloc_tos(), smb_fname_dst,
-				       &fname_dst);
-	if (!NT_STATUS_IS_OK(status)) {
-		return;
-	}
-
 	for(fsp = file_find_di_first(lck->id); fsp;
 	    fsp = file_find_di_next(fsp)) {
 		/* fsp_name is a relative path under the fsp. To change this for other
@@ -5728,8 +5722,15 @@ static void rename_open_files(connection_struct *conn,
 			   "(file_id %s) from %s -> %s\n", fsp->fnum,
 			   file_id_string_tos(&fsp->file_id), fsp->fsp_name,
 			   smb_fname_str_dbg(smb_fname_dst)));
+
+		status = get_full_smb_filename(talloc_tos(), smb_fname_dst,
+					       &fname_dst);
+		if (!NT_STATUS_IS_OK(status)) {
+			return;
+		}
 		string_set(&fsp->fsp_name, fname_dst);
 		did_rename = True;
+		TALLOC_FREE(fname_dst);
 	}
 
 	if (!did_rename) {
@@ -5740,8 +5741,8 @@ static void rename_open_files(connection_struct *conn,
 
 	/* Send messages to all smbd's (not ourself) that the name has changed. */
 	rename_share_filename(smbd_messaging_context(), lck, conn->connectpath,
-			      fname_dst);
-	TALLOC_FREE(fname_dst);
+			      smb_fname_dst);
+
 }
 
 /****************************************************************************

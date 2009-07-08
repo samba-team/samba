@@ -3443,16 +3443,14 @@ char *share_mode_str(TALLOC_CTX *ctx, int num, const struct share_mode_entry *e)
 struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 					    const struct file_id id,
 					    const char *servicepath,
-					    const char *fname,
+					    const struct smb_filename *smb_fname,
 					    const struct timespec *old_write_time);
 struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
-						  const struct file_id id,
-						  const char *servicepath,
-						  const char *fname);
+						  const struct file_id id);
 bool rename_share_filename(struct messaging_context *msg_ctx,
 			struct share_mode_lock *lck,
 			const char *servicepath,
-			const char *newname);
+			const struct smb_filename *smb_fname);
 void get_file_infos(struct file_id id,
 		    bool *delete_on_close,
 		    struct timespec *write_time);
@@ -6581,7 +6579,7 @@ bool open_match_attributes(connection_struct *conn,
 NTSTATUS fcb_or_dos_open(struct smb_request *req,
 			 connection_struct *conn,
 			 files_struct *fsp_to_dup_into,
-			 const char *fname,
+			 const struct smb_filename *smb_fname,
 			 struct file_id id,
 			 uint16 file_pid,
 			 uint16 vuid,

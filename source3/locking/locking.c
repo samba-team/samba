@@ -630,10 +630,16 @@ static bool parse_share_modes(const TDB_DATA dbuf, struct share_mode_lock *lck)
 		(lck->num_share_modes *	sizeof(struct share_mode_entry)) +
 		data.u.s.delete_token_size;
 
-	lck->filename = (const char *)dbuf.dptr + sizeof(struct locking_data) +
+	lck->base_name = (const char *)dbuf.dptr + sizeof(struct locking_data) +
 		(lck->num_share_modes *	sizeof(struct share_mode_entry)) +
 		data.u.s.delete_token_size +
 		strlen(lck->servicepath) + 1;
+
+	lck->stream_name = (const char *)dbuf.dptr + sizeof(struct locking_data) +
+		(lck->num_share_modes *	sizeof(struct share_mode_entry)) +
+		data.u.s.delete_token_size +
+		strlen(lck->servicepath) + 1 +
+		strlen(lck->base_name) + 1;
 
 	/*
 	 * Ensure that each entry has a real process attached.
@@ -666,7 +672,7 @@ static TDB_DATA unparse_share_modes(const struct share_mode_lock *lck)
 	int i;
 	struct locking_data *data;
 	ssize_t offset;
-	ssize_t sp_len;
+	ssize_t sp_len, bn_len, sn_len;
 	uint32 delete_token_size;
 
 	result.dptr = NULL;
@@ -683,6 +689,9 @@ static TDB_DATA unparse_share_modes(const struct share_mode_lock *lck)
 	}
 
 	sp_len = strlen(lck->servicepath);
+	bn_len = strlen(lck->base_name);
+	sn_len = lck->stream_name != NULL ? strlen(lck->stream_name) : 0;
+
 	delete_token_size = (lck->delete_token ?
 			(sizeof(uid_t) + sizeof(gid_t) + (lck->delete_token->ngroups*sizeof(gid_t))) : 0);
 
@@ -690,7 +699,8 @@ static TDB_DATA unparse_share_modes(const struct share_mode_lock *lck)
 		lck->num_share_modes * sizeof(struct share_mode_entry) +
 		delete_token_size +
 		sp_len + 1 +
-		strlen(lck->filename) + 1;
+		bn_len + 1 +
+		sn_len + 1;
 	result.dptr = TALLOC_ARRAY(lck, uint8, result.dsize);
 
 	if (result.dptr == NULL) {
@@ -740,7 +750,10 @@ static TDB_DATA unparse_share_modes(const struct share_mode_lock *lck)
 	safe_strcpy((char *)result.dptr + offset, lck->servicepath,
 		    result.dsize - offset - 1);
 	offset += sp_len + 1;
-	safe_strcpy((char *)result.dptr + offset, lck->filename,
+	safe_strcpy((char *)result.dptr + offset, lck->base_name,
+		    result.dsize - offset - 1);
+	offset += bn_len + 1;
+	safe_strcpy((char *)result.dptr + offset, lck->stream_name,
 		    result.dsize - offset - 1);
 
 	if (DEBUGLEVEL >= 10) {
@@ -789,7 +802,7 @@ static int share_mode_lock_destructor(struct share_mode_lock *lck)
 static bool fill_share_mode_lock(struct share_mode_lock *lck,
 				 struct file_id id,
 				 const char *servicepath,
-				 const char *fname,
+				 const struct smb_filename *smb_fname,
 				 TDB_DATA share_mode_data,
 				 const struct timespec *old_write_time)
 {
@@ -797,7 +810,8 @@ static bool fill_share_mode_lock(struct share_mode_lock *lck,
 	   valid even if parse_share_modes fails. */
 
 	lck->servicepath = NULL;
-	lck->filename = NULL;
+	lck->base_name = NULL;
+	lck->stream_name = NULL;
 	lck->id = id;
 	lck->num_share_modes = 0;
 	lck->share_modes = NULL;
@@ -811,13 +825,20 @@ static bool fill_share_mode_lock(struct share_mode_lock *lck,
 	lck->fresh = (share_mode_data.dptr == NULL);
 
 	if (lck->fresh) {
-		if (fname == NULL || servicepath == NULL
+		bool has_stream;
+		if (smb_fname == NULL || servicepath == NULL
 		    || old_write_time == NULL) {
 			return False;
 		}
-		lck->filename = talloc_strdup(lck, fname);
+
+		has_stream = smb_fname->stream_name != NULL;
+
+		lck->base_name = talloc_strdup(lck, smb_fname->base_name);
+		lck->stream_name = talloc_strdup(lck, smb_fname->stream_name);
 		lck->servicepath = talloc_strdup(lck, servicepath);
-		if (lck->filename == NULL || lck->servicepath == NULL) {
+		if (lck->base_name == NULL ||
+		    (has_stream && lck->stream_name == NULL) ||
+		    lck->servicepath == NULL) {
 			DEBUG(0, ("talloc failed\n"));
 			return False;
 		}
@@ -835,7 +856,7 @@ static bool fill_share_mode_lock(struct share_mode_lock *lck,
 struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 					    const struct file_id id,
 					    const char *servicepath,
-					    const char *fname,
+					    const struct smb_filename *smb_fname,
 					    const struct timespec *old_write_time)
 {
 	struct share_mode_lock *lck;
@@ -853,7 +874,7 @@ struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	if (!fill_share_mode_lock(lck, id, servicepath, fname,
+	if (!fill_share_mode_lock(lck, id, servicepath, smb_fname,
 				  lck->record->value, old_write_time)) {
 		DEBUG(3, ("fill_share_mode_lock failed\n"));
 		TALLOC_FREE(lck);
@@ -866,9 +887,7 @@ struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 }
 
 struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
-						  const struct file_id id,
-						  const char *servicepath,
-						  const char *fname)
+						  const struct file_id id)
 {
 	struct share_mode_lock *lck;
 	struct file_id tmp;
@@ -886,7 +905,7 @@ struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	if (!fill_share_mode_lock(lck, id, servicepath, fname, data, NULL)) {
+	if (!fill_share_mode_lock(lck, id, NULL, NULL, data, NULL)) {
 		DEBUG(10, ("fetch_share_mode_unlocked: no share_mode record "
 			   "around (file not open)\n"));
 		TALLOC_FREE(lck);
@@ -906,37 +925,49 @@ struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
 bool rename_share_filename(struct messaging_context *msg_ctx,
 			struct share_mode_lock *lck,
 			const char *servicepath,
-			const char *newname)
+			const struct smb_filename *smb_fname_dst)
 {
 	size_t sp_len;
-	size_t fn_len;
+	size_t bn_len;
+	size_t sn_len;
 	size_t msg_len;
 	char *frm = NULL;
 	int i;
+	bool strip_two_chars = false;
+	bool has_stream = smb_fname_dst->stream_name != NULL;
 
 	DEBUG(10, ("rename_share_filename: servicepath %s newname %s\n",
-		servicepath, newname));
+		   servicepath, smb_fname_dst->base_name));
 
 	/*
 	 * rename_internal_fsp() and rename_internals() add './' to
 	 * head of newname if newname does not contain a '/'.
 	 */
-	while (newname[0] && newname[1] && newname[0] == '.' && newname[1] == '/') {
-		newname += 2;
+	if (smb_fname_dst->base_name[0] &&
+	    smb_fname_dst->base_name[1] &&
+	    smb_fname_dst->base_name[0] == '.' &&
+	    smb_fname_dst->base_name[1] == '/') {
+		strip_two_chars = true;
 	}
 
 	lck->servicepath = talloc_strdup(lck, servicepath);
-	lck->filename = talloc_strdup(lck, newname);
-	if (lck->filename == NULL || lck->servicepath == NULL) {
+	lck->base_name = talloc_strdup(lck, smb_fname_dst->base_name +
+				       (strip_two_chars ? 2 : 0));
+	lck->stream_name = talloc_strdup(lck, smb_fname_dst->stream_name);
+	if (lck->base_name == NULL ||
+	    (has_stream && lck->stream_name == NULL) ||
+	    lck->servicepath == NULL) {
 		DEBUG(0, ("rename_share_filename: talloc failed\n"));
 		return False;
 	}
 	lck->modified = True;
 
 	sp_len = strlen(lck->servicepath);
-	fn_len = strlen(lck->filename);
+	bn_len = strlen(lck->base_name);
+	sn_len = has_stream ? strlen(lck->stream_name) : 0;
 
-	msg_len = MSG_FILE_RENAMED_MIN_SIZE + sp_len + 1 + fn_len + 1;
+	msg_len = MSG_FILE_RENAMED_MIN_SIZE + sp_len + 1 + bn_len + 1 +
+	    sn_len + 1;
 
 	/* Set up the name changed message. */
 	frm = TALLOC_ARRAY(lck, char, msg_len);
@@ -949,7 +980,9 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 	DEBUG(10,("rename_share_filename: msg_len = %u\n", (unsigned int)msg_len ));
 
 	safe_strcpy(&frm[24], lck->servicepath, sp_len);
-	safe_strcpy(&frm[24 + sp_len + 1], lck->filename, fn_len);
+	safe_strcpy(&frm[24 + sp_len + 1], lck->base_name, bn_len);
+	safe_strcpy(&frm[24 + sp_len + 1 + bn_len + 1], lck->stream_name,
+		    sn_len);
 
 	/* Send the messages. */
 	for (i=0; i<lck->num_share_modes; i++) {
@@ -962,11 +995,13 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 			continue;
 		}
 
-		DEBUG(10,("rename_share_filename: sending rename message to pid %s "
-			  "file_id %s sharepath %s newname %s\n",
+		DEBUG(10,("rename_share_filename: sending rename message to "
+			  "pid %s file_id %s sharepath %s base_name %s "
+			  "stream_name %s\n",
 			  procid_str_static(&se->pid),
 			  file_id_string_tos(&lck->id),
-			  lck->servicepath, lck->filename ));
+			  lck->servicepath, lck->base_name,
+			has_stream ? lck->stream_name : ""));
 
 		messaging_send_buf(msg_ctx, se->pid, MSG_SMB_FILE_RENAME,
 				   (uint8 *)frm, msg_len);
@@ -989,7 +1024,7 @@ void get_file_infos(struct file_id id,
 		ZERO_STRUCTP(write_time);
 	}
 
-	if (!(lck = fetch_share_mode_unlocked(talloc_tos(), id, NULL, NULL))) {
+	if (!(lck = fetch_share_mode_unlocked(talloc_tos(), id))) {
 		return;
 	}
 

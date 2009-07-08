@@ -191,7 +191,7 @@ static void print_brl(struct file_id id,
 	};
 	const char *desc="X";
 	const char *sharepath = "";
-	const char *fname = "";
+	char *fname = NULL;
 	struct share_mode_lock *share_mode;
 
 	if (count==0) {
@@ -201,10 +201,19 @@ static void print_brl(struct file_id id,
 	}
 	count++;
 
-	share_mode = fetch_share_mode_unlocked(NULL, id, "__unspecified__", "__unspecified__");
+	share_mode = fetch_share_mode_unlocked(NULL, id);
 	if (share_mode) {
-		sharepath = share_mode->servicepath;
-		fname = share_mode->filename;
+		bool has_stream = share_mode->stream_name != NULL;
+
+		fname = talloc_asprintf(NULL, "%s%s%s", share_mode->base_name,
+					has_stream ? ":" : "",
+					has_stream ? share_mode->stream_name :
+					"");
+	} else {
+		fname = talloc_strdup(NULL, "");
+		if (fname == NULL) {
+			return;
+		}
 	}
 
 	for (i=0;i<ARRAY_SIZE(lock_types);i++) {
@@ -219,6 +228,7 @@ static void print_brl(struct file_id id,
 		 (double)start, (double)size,
 		 sharepath, fname);
 
+	TALLOC_FREE(fname);
 	TALLOC_FREE(share_mode);
 }
 

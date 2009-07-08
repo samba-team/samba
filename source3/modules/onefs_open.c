@@ -465,15 +465,8 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 	int granted_oplock;
 	uint64_t oplock_callback_id = 0;
 	uint32 createfile_attributes = 0;
-	char *fname = NULL;
 
 	ZERO_STRUCT(id);
-
-	status = get_full_smb_filename(talloc_tos(), smb_fname,
-				       &fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
 
 	if (conn->printer) {
 		/*
@@ -488,8 +481,8 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 		DEBUG(10, ("onefs_open_file_ntcreate: printer open fname=%s\n",
 			   smb_fname_str_dbg(smb_fname)));
 
-		return print_fsp_open(req, conn, fname, req->vuid, fsp,
-				      &smb_fname->st);
+		return print_fsp_open(req, conn, smb_fname->base_name,
+				      req->vuid, fsp, &smb_fname->st);
 	}
 
 	if (!parent_dirname(talloc_tos(), smb_fname->base_name, &parent_dir,
@@ -845,7 +838,7 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 
 		lck = get_share_mode_lock(talloc_tos(), id,
 					  conn->connectpath,
-					  fname, &old_write_time);
+					  smb_fname, &old_write_time);
 
 		if (lck == NULL) {
 			DEBUG(0, ("Could not get share mode lock\n"));
@@ -936,7 +929,7 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 				id = vfs_file_id_from_sbuf(conn,
 							   &smb_fname->st);
 				if (!(lck = get_share_mode_lock(talloc_tos(),
-					  id, conn->connectpath, fname,
+					  id, conn->connectpath, smb_fname,
 					  &old_write_time))) {
 					/*
 					 * Emergency exit
@@ -993,7 +986,7 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 				status = fcb_or_dos_open(req,
 							conn,
 							fsp,
-							fname,
+							smb_fname,
 							id,
 							req->smbpid,
 							req->vuid,
@@ -1136,7 +1129,7 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 
 		lck = get_share_mode_lock(talloc_tos(), id,
 					  conn->connectpath,
-					  fname, &old_write_time);
+					  smb_fname, &old_write_time);
 
 		if (lck == NULL) {
 			DEBUG(0, ("onefs_open_file_ntcreate: Could not get "
@@ -1605,8 +1598,7 @@ static NTSTATUS onefs_open_directory(connection_struct *conn,
 	 * semantics and to make smbstatus more useful.
 	 */
 	lck = get_share_mode_lock(talloc_tos(), fsp->file_id,
-				  conn->connectpath, smb_dname->base_name,
-				  &mtimespec);
+				  conn->connectpath, smb_dname, &mtimespec);
 
 	if (lck == NULL) {
 		DEBUG(0, ("onefs_open_directory: Could not get share mode "
