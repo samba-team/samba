@@ -240,13 +240,94 @@ WERROR init_registry_key(const char *add_path)
  Open the registry data in the tdb
  ***********************************************************************/
 
+static NTSTATUS init_registry_data_action(struct db_context *db,
+					  void *private_data)
+{
+	NTSTATUS status;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct regval_ctr *values;
+	int i;
+	UNISTR2 data;
+
+	/* loop over all of the predefined paths and add each component */
+
+	for (i=0; builtin_registry_paths[i] != NULL; i++) {
+		if (regdb_key_exists(db, builtin_registry_paths[i])) {
+			continue;
+		}
+		status = werror_to_ntstatus(init_registry_key_internal(db,
+						  builtin_registry_paths[i]));
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+	}
+
+	/* loop over all of the predefined values and add each component */
+
+	for (i=0; builtin_registry_values[i].path != NULL; i++) {
+
+		values = TALLOC_ZERO_P(frame, struct regval_ctr);
+		if (values == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		regdb_fetch_values_internal(db,
+					    builtin_registry_values[i].path,
+					    values);
+
+		/* preserve existing values across restarts. Only add new ones */
+
+		if (!regval_ctr_key_exists(values,
+					builtin_registry_values[i].valuename))
+		{
+			switch(builtin_registry_values[i].type) {
+			case REG_DWORD:
+				regval_ctr_addvalue(values,
+					builtin_registry_values[i].valuename,
+					REG_DWORD,
+					(char*)&builtin_registry_values[i].data.dw_value,
+					sizeof(uint32));
+				break;
+
+			case REG_SZ:
+				init_unistr2(&data,
+					builtin_registry_values[i].data.string,
+					UNI_STR_TERMINATE);
+				regval_ctr_addvalue(values,
+					builtin_registry_values[i].valuename,
+					REG_SZ,
+					(char*)data.buffer,
+					data.uni_str_len*sizeof(uint16));
+				break;
+
+			default:
+				DEBUG(0, ("init_registry_data: invalid value "
+					  "type in builtin_registry_values "
+					  "[%d]\n",
+					  builtin_registry_values[i].type));
+			}
+			regdb_store_values_internal(db,
+					builtin_registry_values[i].path,
+					values);
+		}
+		TALLOC_FREE(values);
+	}
+
+	status = NT_STATUS_OK;
+
+done:
+
+	TALLOC_FREE(frame);
+	return status;
+}
+
 WERROR init_registry_data(void)
 {
 	WERROR werr;
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct regval_ctr *values;
 	int i;
-	UNISTR2 data;
 
 	/*
 	 * First, check for the existence of the needed keys and values.
@@ -291,93 +372,9 @@ do_init:
 	 * transaction behaviour.
 	 */
 
-	if (regdb->transaction_start(regdb) != 0) {
-		DEBUG(0, ("init_registry_data: tdb_transaction_start "
-			  "failed\n"));
-		werr = WERR_REG_IO_FAILURE;
-		goto done;
-	}
-
-	/* loop over all of the predefined paths and add each component */
-
-	for (i=0; builtin_registry_paths[i] != NULL; i++) {
-		if (regdb_key_exists(regdb, builtin_registry_paths[i])) {
-			continue;
-		}
-		werr = init_registry_key_internal(regdb,
-						  builtin_registry_paths[i]);
-		if (!W_ERROR_IS_OK(werr)) {
-			goto fail;
-		}
-	}
-
-	/* loop over all of the predefined values and add each component */
-
-	for (i=0; builtin_registry_values[i].path != NULL; i++) {
-
-		values = TALLOC_ZERO_P(frame, struct regval_ctr);
-		if (values == NULL) {
-			werr = WERR_NOMEM;
-			goto fail;
-		}
-
-		regdb_fetch_values_internal(regdb,
-					    builtin_registry_values[i].path,
-					    values);
-
-		/* preserve existing values across restarts. Only add new ones */
-
-		if (!regval_ctr_key_exists(values,
-					builtin_registry_values[i].valuename))
-		{
-			switch(builtin_registry_values[i].type) {
-			case REG_DWORD:
-				regval_ctr_addvalue(values,
-					builtin_registry_values[i].valuename,
-					REG_DWORD,
-					(char*)&builtin_registry_values[i].data.dw_value,
-					sizeof(uint32));
-				break;
-
-			case REG_SZ:
-				init_unistr2(&data,
-					builtin_registry_values[i].data.string,
-					UNI_STR_TERMINATE);
-				regval_ctr_addvalue(values,
-					builtin_registry_values[i].valuename,
-					REG_SZ,
-					(char*)data.buffer,
-					data.uni_str_len*sizeof(uint16));
-				break;
-
-			default:
-				DEBUG(0, ("init_registry_data: invalid value "
-					  "type in builtin_registry_values "
-					  "[%d]\n",
-					  builtin_registry_values[i].type));
-			}
-			regdb_store_values_internal(regdb,
-					builtin_registry_values[i].path,
-					values);
-		}
-		TALLOC_FREE(values);
-	}
-
-	if (regdb->transaction_commit(regdb) != 0) {
-		DEBUG(0, ("init_registry_data: Could not commit "
-			  "transaction\n"));
-		werr = WERR_REG_IO_FAILURE;
-	} else {
-		werr = WERR_OK;
-	}
-
-	goto done;
-
-fail:
-	if (regdb->transaction_cancel(regdb) != 0) {
-		smb_panic("init_registry_data: tdb_transaction_cancel "
-			  "failed\n");
-	}
+	werr = ntstatus_to_werror(dbwrap_trans_do(regdb,
+						  init_registry_data_action,
+						  NULL));
 
 done:
 	TALLOC_FREE(frame);
