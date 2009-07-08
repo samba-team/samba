@@ -727,9 +727,10 @@ static bool regdb_store_keys_internal(struct db_context *db, const char *key,
 	char *oldkeyname = NULL;
 	TALLOC_CTX *ctx = talloc_stackframe();
 	WERROR werr;
+	bool ret = false;
 
 	if (!regdb_key_is_base_key(key) && !regdb_key_exists(db, key)) {
-		goto fail;
+		goto done;
 	}
 
 	/*
@@ -740,7 +741,7 @@ static bool regdb_store_keys_internal(struct db_context *db, const char *key,
 	werr = regsubkey_ctr_init(ctx, &old_subkeys);
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(0,("regdb_store_keys: talloc() failure!\n"));
-		return false;
+		goto done;
 	}
 
 	regdb_fetch_keys_internal(db, key, old_subkeys);
@@ -763,8 +764,9 @@ static bool regdb_store_keys_internal(struct db_context *db, const char *key,
 			 * Nothing changed, no point to even start a tdb
 			 * transaction
 			 */
-			TALLOC_FREE(old_subkeys);
-			return true;
+
+			ret = true;
+			goto done;
 		}
 	}
 
@@ -772,7 +774,7 @@ static bool regdb_store_keys_internal(struct db_context *db, const char *key,
 
 	if (db->transaction_start(db) != 0) {
 		DEBUG(0, ("regdb_store_keys: transaction_start failed\n"));
-		goto fail;
+		goto done;
 	}
 
 	/*
@@ -896,21 +898,22 @@ static bool regdb_store_keys_internal(struct db_context *db, const char *key,
 
 	if (db->transaction_commit(db) != 0) {
 		DEBUG(0, ("regdb_store_keys: Could not commit transaction\n"));
-		goto fail;
+		goto done;
 	}
 
-	TALLOC_FREE(ctx);
-	return true;
+	ret = true;
+	goto done;
 
 cancel:
+	ret = false;
 	if (db->transaction_cancel(db) != 0) {
 		smb_panic("regdb_store_keys: transaction_cancel failed\n");
 	}
 
-fail:
+done:
 	TALLOC_FREE(ctx);
 
-	return false;
+	return ret;
 }
 
 bool regdb_store_keys(const char *key, struct regsubkey_ctr *ctr)
