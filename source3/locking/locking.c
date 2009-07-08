@@ -524,7 +524,7 @@ static void print_share_mode_table(struct locking_data *data)
  Get all share mode entries for a dev/inode pair.
 ********************************************************************/
 
-static bool parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
+static bool parse_share_modes(const TDB_DATA dbuf, struct share_mode_lock *lck)
 {
 	struct locking_data data;
 	int i;
@@ -659,7 +659,7 @@ static bool parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 	return True;
 }
 
-static TDB_DATA unparse_share_modes(struct share_mode_lock *lck)
+static TDB_DATA unparse_share_modes(const struct share_mode_lock *lck)
 {
 	TDB_DATA result;
 	int num_valid = 0;
