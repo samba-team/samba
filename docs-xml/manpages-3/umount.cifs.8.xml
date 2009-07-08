@@ -54,14 +54,56 @@ can rely on specifying explicit entries in /etc/fstab See</para>
 <refsect1>
 	<title>OPTIONS</title>
 	<variablelist>
-        <varlistentry>
-                <term>--verbose</term>
-                <listitem><para>print additional debugging information</para></listitem>
-        </varlistentry>
-        <varlistentry>
-                <term>--no-mtab</term>
+		<varlistentry>
+                <term>-V</term>
+                <listitem><para>Print version and exit.</para></listitem>
+		</varlistentry>
+		<varlistentry>
+                <term>-h</term>
+                <listitem><para>Print help message and exit.</para></listitem>
+		</varlistentry>
+		<varlistentry>
+                <term>-r</term>
+                <listitem><para>In case unmounting fails, try to remount
+				read-only.</para></listitem>
+		</varlistentry>
+		<varlistentry>
+                <term>-d</term>
+                <listitem><para>In case the unmounted device was a loop device,
+				 also free this loop device.</para></listitem>
+		</varlistentry>
+		<varlistentry>
+                <term>-f</term>
+                <listitem><para>Force unmount (in case of an unreachable
+				server).</para></listitem>
+		</varlistentry>
+		<varlistentry>
+                <term>-l</term>
+                <listitem><para>Lazy unmount. Detach the filesystem from
+				the filesysetm hierarchy now, and
+				cleanup all references to the filesystem
+				as soon as it is not busy anymore.</para></listitem>
+		</varlistentry>
+		<varlistentry>
+                <term>-e</term>
+                <listitem><para>Mark the mount point as expired.  If a mount
+				point is not currently in use, then an initial
+				call to unmount with this flag fails with the
+              			error EAGAIN, but marks the mount point as
+				expired.  The mount point remains expired as
+				long as it isn't accessed by any process.
+				A second unmount call specifying -e unmounts
+				an expired mount point.  This flag cannot be
+				specified with either -f or -l</para></listitem>
+		</varlistentry>
+		<varlistentry>
+                <term>-v|--verbose</term>
+                <listitem><para>Verbose Mode. Print additional debugging information</para></listitem>
+		</varlistentry>
+		<varlistentry>
+                <term>-n|--no-mtab</term>
                 <listitem><para>Do not update the mtab even if unmount completes successfully (/proc/mounts will still display the correct information)</para></listitem>
-        </varlistentry>
+        	</varlistentry>
 
 	</variablelist>
 </refsect1>
