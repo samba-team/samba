@@ -65,7 +65,7 @@ NTSTATUS smb1_file_se_access_check(const struct security_descriptor *sd,
 ****************************************************************************/
 
 static NTSTATUS check_open_rights(struct connection_struct *conn,
-				const char *fname,
+				const struct smb_filename *smb_fname,
 				uint32_t access_mask,
 				uint32_t *access_granted)
 {
@@ -84,7 +84,7 @@ static NTSTATUS check_open_rights(struct connection_struct *conn,
 		return NT_STATUS_OK;
 	}
 
-	status = SMB_VFS_GET_NT_ACL(conn, fname,
+	status = SMB_VFS_GET_NT_ACL(conn, smb_fname->base_name,
 			(OWNER_SECURITY_INFORMATION |
 			GROUP_SECURITY_INFORMATION |
 			DACL_SECURITY_INFORMATION),&sd);
@@ -92,7 +92,7 @@ static NTSTATUS check_open_rights(struct connection_struct *conn,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("check_open_rights: Could not get acl "
 			"on %s: %s\n",
-			fname,
+			smb_fname_str_dbg(smb_fname),
 			nt_errstr(status)));
 		return status;
 	}
@@ -106,7 +106,7 @@ static NTSTATUS check_open_rights(struct connection_struct *conn,
 
 	DEBUG(10,("check_open_rights: file %s requesting "
 		"0x%x returning 0x%x (%s)\n",
-		fname,
+		smb_fname_str_dbg(smb_fname),
 		(unsigned int)access_mask,
 		(unsigned int)*access_granted,
 		nt_errstr(status) ));
@@ -482,7 +482,7 @@ static NTSTATUS open_file(files_struct *fsp,
 			uint32_t access_granted = 0;
 
 			status = check_open_rights(conn,
-					path,
+					smb_fname,
 					access_mask,
 					&access_granted);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -1374,7 +1374,7 @@ static void schedule_defer_open(struct share_mode_lock *lck,
 ****************************************************************************/
 
 static NTSTATUS calculate_access_mask(connection_struct *conn,
-					const char *fname,
+					const struct smb_filename *smb_fname,
 					bool file_existed,
 					uint32_t access_mask,
 					uint32_t *access_mask_out)
@@ -1394,7 +1394,7 @@ static NTSTATUS calculate_access_mask(connection_struct *conn,
 			struct security_descriptor *sd;
 			uint32_t access_granted = 0;
 
-			status = SMB_VFS_GET_NT_ACL(conn, fname,
+			status = SMB_VFS_GET_NT_ACL(conn, smb_fname->base_name,
 					(OWNER_SECURITY_INFORMATION |
 					GROUP_SECURITY_INFORMATION |
 					DACL_SECURITY_INFORMATION),&sd);
@@ -1402,7 +1402,7 @@ static NTSTATUS calculate_access_mask(connection_struct *conn,
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(10, ("calculate_access_mask: Could not get acl "
 					"on file %s: %s\n",
-					fname,
+					smb_fname_str_dbg(smb_fname),
 					nt_errstr(status)));
 				return NT_STATUS_ACCESS_DENIED;
 			}
@@ -1417,7 +1417,7 @@ static NTSTATUS calculate_access_mask(connection_struct *conn,
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(10, ("calculate_access_mask: Access denied on "
 					"file %s: when calculating maximum access\n",
-					fname));
+					smb_fname_str_dbg(smb_fname)));
 				return NT_STATUS_ACCESS_DENIED;
 			}
 
@@ -1688,7 +1688,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		}
 	}
 
-	status = calculate_access_mask(conn, fname, file_existed,
+	status = calculate_access_mask(conn, smb_fname, file_existed,
 					access_mask,
 					&access_mask); 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2447,6 +2447,8 @@ static NTSTATUS open_directory(connection_struct *conn,
 	struct timespec mtimespec;
 	int info = 0;
 
+	SMB_ASSERT(!is_ntfs_stream_smb_fname(smb_dname));
+
 	DEBUG(5,("open_directory: opening directory %s, access_mask = 0x%x, "
 		 "share_access = 0x%x create_options = 0x%x, "
 		 "create_disposition = 0x%x, file_attributes = 0x%x\n",
@@ -2465,7 +2467,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 		return NT_STATUS_NOT_A_DIRECTORY;
 	}
 
-	status = calculate_access_mask(conn, smb_dname->base_name, dir_existed,
+	status = calculate_access_mask(conn, smb_dname, dir_existed,
 				       access_mask, &access_mask);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("open_directory: calculate_access_mask "
@@ -2557,8 +2559,8 @@ static NTSTATUS open_directory(connection_struct *conn,
 
 	if (info == FILE_WAS_OPENED) {
 		uint32_t access_granted = 0;
-		status = check_open_rights(conn, smb_dname->base_name,
-					   access_mask, &access_granted);
+		status = check_open_rights(conn, smb_dname, access_mask,
+					   &access_granted);
 
 		/* Were we trying to do a directory open
 		 * for delete and didn't get DELETE
