@@ -340,3 +340,19 @@ NTSTATUS dbwrap_trans_do(struct db_context *db,
 	DEBUG(2, ("transaction_commit failed\n"));
 	return NT_STATUS_INTERNAL_DB_CORRUPTION;
 }
+
+NTSTATUS dbwrap_delete_bystring_upper(struct db_context *db, const char *key)
+{
+	char *key_upper;
+	NTSTATUS status;
+
+	key_upper = talloc_strdup_upper(talloc_tos(), key);
+	if (key_upper == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = dbwrap_delete_bystring(db, key_upper);
+
+	talloc_free(key_upper);
+	return status;
+}
