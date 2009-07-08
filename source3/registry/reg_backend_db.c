@@ -33,6 +33,8 @@ static int regdb_fetch_keys_internal(struct db_context *db, const char *key,
 				     struct regsubkey_ctr *ctr);
 static bool regdb_store_keys_internal(struct db_context *db, const char *key,
 				      struct regsubkey_ctr *ctr);
+static int regdb_fetch_values_internal(struct db_context *db, const char* key,
+				       struct regval_ctr *values);
 
 /* List the deepest path into the registry.  All part components will be created.*/
 
@@ -261,7 +263,9 @@ WERROR init_registry_data(void)
 			goto done;
 		}
 
-		regdb_fetch_values(builtin_registry_values[i].path, values);
+		regdb_fetch_values_internal(regdb,
+					    builtin_registry_values[i].path,
+					    values);
 		if (!regval_ctr_key_exists(values,
 					builtin_registry_values[i].valuename))
 		{
@@ -315,7 +319,9 @@ do_init:
 			goto fail;
 		}
 
-		regdb_fetch_values(builtin_registry_values[i].path, values);
+		regdb_fetch_values_internal(regdb,
+					    builtin_registry_values[i].path,
+					    values);
 
 		/* preserve existing values across restarts. Only add new ones */
 
@@ -1495,7 +1501,8 @@ static int regdb_pack_values(struct regval_ctr *values, uint8 *buf, int buflen)
  released by the caller.
  ***********************************************************************/
 
-int regdb_fetch_values(const char* key, struct regval_ctr *values)
+static int regdb_fetch_values_internal(struct db_context *db, const char* key,
+				       struct regval_ctr *values)
 {
 	char *keystr = NULL;
 	TALLOC_CTX *ctx = talloc_stackframe();
@@ -1504,7 +1511,7 @@ int regdb_fetch_values(const char* key, struct regval_ctr *values)
 
 	DEBUG(10,("regdb_fetch_values: Looking for value of key [%s] \n", key));
 
-	if (!regdb_key_exists(regdb, key)) {
+	if (!regdb_key_exists(db, key)) {
 		goto done;
 	}
 
@@ -1513,9 +1520,9 @@ int regdb_fetch_values(const char* key, struct regval_ctr *values)
 		goto done;
 	}
 
-	values->seqnum = regdb_get_seqnum();
+	values->seqnum = db->get_seqnum(db);
 
-	value = regdb_fetch_key_internal(regdb, ctx, keystr);
+	value = regdb_fetch_key_internal(db, ctx, keystr);
 
 	if (!value.dptr) {
 		/* all keys have zero values by default */
@@ -1528,6 +1535,11 @@ int regdb_fetch_values(const char* key, struct regval_ctr *values)
 done:
 	TALLOC_FREE(ctx);
 	return ret;
+}
+
+int regdb_fetch_values(const char* key, struct regval_ctr *values)
+{
+	return regdb_fetch_values_internal(regdb, key, values);
 }
 
 bool regdb_store_values(const char *key, struct regval_ctr *values)
