@@ -373,3 +373,20 @@ NTSTATUS dbwrap_store_bystring_upper(struct db_context *db, const char *key,
 	talloc_free(key_upper);
 	return status;
 }
+
+TDB_DATA dbwrap_fetch_bystring_upper(struct db_context *db, TALLOC_CTX *mem_ctx,
+				     const char *key)
+{
+	char *key_upper;
+	TDB_DATA result;
+
+	key_upper = talloc_strdup_upper(talloc_tos(), key);
+	if (key_upper == NULL) {
+		return make_tdb_data(NULL, 0);
+	}
+
+	result = dbwrap_fetch_bystring(db, mem_ctx, key_upper);
+
+	talloc_free(key_upper);
+	return result;
+}

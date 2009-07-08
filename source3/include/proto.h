@@ -460,6 +460,8 @@ NTSTATUS dbwrap_trans_do(struct db_context *db,
 NTSTATUS dbwrap_delete_bystring_upper(struct db_context *db, const char *key);
 NTSTATUS dbwrap_store_bystring_upper(struct db_context *db, const char *key,
 				     TDB_DATA data, int flags);
+TDB_DATA dbwrap_fetch_bystring_upper(struct db_context *db, TALLOC_CTX *mem_ctx,
+				     const char *key);
 
 /* The following definitions come from lib/debug.c  */
 
