@@ -523,18 +523,69 @@ NTSTATUS gensec_ntlmssp_unwrap(struct gensec_security *gensec_security,
 						    &sig);
 						  
 	} else if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
+		struct gensec_ntlmssp_state *gensec_ntlmssp_state =
+		(struct gensec_ntlmssp_state *)gensec_security->private_data;
+		NTSTATUS status;
+		uint32_t ntlm_seqnum;
+		struct arcfour_state ntlm_state;
+		uint32_t ntlm2_seqnum_r;
+		uint8_t ntlm2_key_r[16];
+		struct arcfour_state ntlm2_state_r;
+
 		if (in->length < NTLMSSP_SIG_SIZE) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		sig.data = in->data;
 		sig.length = NTLMSSP_SIG_SIZE;
-
 		*out = data_blob_talloc(sig_mem_ctx, in->data + NTLMSSP_SIG_SIZE, in->length - NTLMSSP_SIG_SIZE);
-		
-	        return gensec_ntlmssp_check_packet(gensec_security, sig_mem_ctx, 
-						   out->data, out->length, 
-						   out->data, out->length, 
-						   &sig);
+
+		if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
+			ntlm2_seqnum_r = gensec_ntlmssp_state->crypt.ntlm2.recv_seq_num;
+			ntlm2_state_r = *gensec_ntlmssp_state->crypt.ntlm2.recv_seal_arcfour_state;
+			memcpy(ntlm2_key_r,
+			       gensec_ntlmssp_state->crypt.ntlm2.recv_sign_key.data,
+			       16);
+		} else {
+			ntlm_seqnum = gensec_ntlmssp_state->crypt.ntlm.seq_num;
+			ntlm_state = *gensec_ntlmssp_state->crypt.ntlm.arcfour_state;
+		}
+
+		status = gensec_ntlmssp_check_packet(gensec_security, sig_mem_ctx,
+						     out->data, out->length,
+						     out->data, out->length,
+						     &sig);
+		if (!NT_STATUS_IS_OK(status)) {
+			NTSTATUS check_status = status;
+			/*
+			 * The Windows LDAP libraries seems to have a bug
+			 * and always use sealing even if only signing was
+			 * negotiated. So we need to fallback.
+			 */
+
+			if (gensec_ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
+				gensec_ntlmssp_state->crypt.ntlm2.recv_seq_num = ntlm2_seqnum_r;
+				*gensec_ntlmssp_state->crypt.ntlm2.recv_seal_arcfour_state = ntlm2_state_r;
+				memcpy(gensec_ntlmssp_state->crypt.ntlm2.recv_sign_key.data,
+				       ntlm2_key_r, 16);
+			} else {
+				gensec_ntlmssp_state->crypt.ntlm.seq_num = ntlm_seqnum;
+				*gensec_ntlmssp_state->crypt.ntlm.arcfour_state = ntlm_state;
+			}
+
+			status = gensec_ntlmssp_unseal_packet(gensec_security,
+							      sig_mem_ctx,
+							      out->data,
+							      out->length,
+							      out->data,
+							      out->length,
+							      &sig);
+			if (NT_STATUS_IS_OK(status)) {
+				gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
+			} else {
+				status = check_status;
+			}
+		}
+		return status;
 	} else {
 		*out = *in;
 		return NT_STATUS_OK;
