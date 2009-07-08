@@ -623,14 +623,21 @@ static WERROR regdb_store_keys_internal2(struct db_context *db,
 	WERROR werr;
 
 	if (!key) {
-		return WERR_INVALID_PARAM;
+		werr = WERR_INVALID_PARAM;
+		goto done;
 	}
 
 	keyname = talloc_strdup(ctx, key);
 	if (!keyname) {
-		return WERR_NOMEM;
+		werr = WERR_NOMEM;
+		goto done;
 	}
+
 	keyname = normalize_reg_path(ctx, keyname);
+	if (!keyname) {
+		werr = WERR_NOMEM;
+		goto done;
+	}
 
 	/* allocate some initial memory */
 
