@@ -358,12 +358,6 @@ static NTSTATUS open_file(files_struct *fsp,
 	fsp->fh->fd = -1;
 	errno = EPERM;
 
-	status = get_full_smb_filename(talloc_tos(), smb_fname,
-				       &path);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
 	/* Check permissions */
 
 	/*
@@ -442,7 +436,7 @@ static NTSTATUS open_file(files_struct *fsp,
 			 */
 			wild = fsp->base_fsp->fsp_name;
 		} else {
-			wild = path;
+			wild = smb_fname->base_name;
 		}
 		if ((local_flags & O_CREAT) && !file_existed &&
 		    ms_has_wild(wild))  {
@@ -462,8 +456,9 @@ static NTSTATUS open_file(files_struct *fsp,
 
 			/* Inherit the ACL if required */
 			if (lp_inherit_perms(SNUM(conn))) {
-				inherit_access_posix_acl(conn, parent_dir, path,
-						   unx_mode);
+				inherit_access_posix_acl(conn, parent_dir,
+							 smb_fname->base_name,
+							 unx_mode);
 			}
 
 			/* Change the owner if required. */
@@ -473,7 +468,8 @@ static NTSTATUS open_file(files_struct *fsp,
 			}
 
 			notify_fname(conn, NOTIFY_ACTION_ADDED,
-				     FILE_NOTIFY_CHANGE_FILE_NAME, path);
+				     FILE_NOTIFY_CHANGE_FILE_NAME,
+				     smb_fname->base_name);
 		}
 
 	} else {
@@ -619,12 +615,20 @@ static NTSTATUS open_file(files_struct *fsp,
 		fsp->aio_write_behind = True;
 	}
 
+	status = get_full_smb_filename(talloc_tos(), smb_fname,
+				       &path);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	string_set(&fsp->fsp_name, path);
+	TALLOC_FREE(path);
+
 	fsp->wcp = NULL; /* Write cache pointer. */
 
 	DEBUG(2,("%s opened file %s read=%s write=%s (numopen=%d)\n",
 		 conn->server_info->unix_name,
-		 fsp->fsp_name,
+		 smb_fname_str_dbg(smb_fname),
 		 BOOLSTR(fsp->can_read), BOOLSTR(fsp->can_write),
 		 conn->num_files_open));
 
