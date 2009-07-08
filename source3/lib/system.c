@@ -291,67 +291,6 @@ int sys_fcntl_long(int fd, int cmd, long arg)
 }
 
 /****************************************************************************
- Return the best approximation to a 'create time' under UNIX from a stat
- structure.
-****************************************************************************/
-
-static time_t calc_create_time(const struct stat *st)
-{
-	time_t ret, ret1;
-
-	ret = MIN(st->st_ctime, st->st_mtime);
-	ret1 = MIN(ret, st->st_atime);
-
-	if(ret1 != (time_t)0) {
-		return ret1;
-	}
-
-	/*
-	 * One of ctime, mtime or atime was zero (probably atime).
-	 * Just return MIN(ctime, mtime).
-	 */
-	return ret;
-}
-
-/****************************************************************************
- Return the 'create time' from a stat struct if it exists (birthtime) or else
- use the best approximation.
-****************************************************************************/
-
-static struct timespec get_create_timespec(const struct stat *pst)
-{
-	struct timespec ret;
-
-	if (S_ISDIR(pst->st_mode) && lp_fake_dir_create_times()) {
-		ret.tv_sec = 315493200L;          /* 1/1/1980 */
-		ret.tv_nsec = 0;
-		return ret;
-	}
-
-#if defined(HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC_TV_NSEC)
-	ret = pst->st_birthtimespec;
-#elif defined(HAVE_STRUCT_STAT_ST_BIRTHTIMENSEC)
-	ret.tv_sec = pst->st_birthtime;
-	ret.tv_nsec = pst->st_birthtimenspec;
-#elif defined(HAVE_STRUCT_STAT_ST_BIRTHTIME)
-	ret.tv_sec = pst->st_birthtime;
-	ret.tv_nsec = 0;
-#else
-	ret.tv_sec = calc_create_time(pst);
-	ret.tv_nsec = 0;
-#endif
-
-	/* Deal with systems that don't initialize birthtime correctly.
-	 * Pointed out by SATOH Fumiyasu <fumiyas@osstech.jp>.
-	 */
-	if (null_timespec(ret)) {
-		ret.tv_sec = calc_create_time(pst);
-		ret.tv_nsec = 0;
-	}
-	return ret;
-}
-
-/****************************************************************************
  Get/Set all the possible time fields from a stat struct as a timespec.
 ****************************************************************************/
 
@@ -459,6 +398,69 @@ static struct timespec get_ctimespec(const struct stat *pst)
 #endif
 #endif
 }
+
+/****************************************************************************
+ Return the best approximation to a 'create time' under UNIX from a stat
+ structure.
+****************************************************************************/
+
+static struct timespec calc_create_time(const struct stat *st)
+{
+	struct timespec ret, ret1;
+	struct timespec c_time = get_ctimespec(st);
+	struct timespec m_time = get_mtimespec(st);
+	struct timespec a_time = get_atimespec(st);
+
+	ret = timespec_compare(&c_time, &m_time) < 0 ? c_time : m_time;
+	ret1 = timespec_compare(&ret, &a_time) < 0 ? ret : a_time;
+
+	if(!null_timespec(ret1)) {
+		return ret1;
+	}
+
+	/*
+	 * One of ctime, mtime or atime was zero (probably atime).
+	 * Just return MIN(ctime, mtime).
+	 */
+	return ret;
+}
+
+/****************************************************************************
+ Return the 'create time' from a stat struct if it exists (birthtime) or else
+ use the best approximation.
+****************************************************************************/
+
+static struct timespec get_create_timespec(const struct stat *pst)
+{
+	struct timespec ret;
+
+	if (S_ISDIR(pst->st_mode) && lp_fake_dir_create_times()) {
+		ret.tv_sec = 315493200L;          /* 1/1/1980 */
+		ret.tv_nsec = 0;
+		return ret;
+	}
+
+#if defined(HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC_TV_NSEC)
+	ret = pst->st_birthtimespec;
+#elif defined(HAVE_STRUCT_STAT_ST_BIRTHTIMENSEC)
+	ret.tv_sec = pst->st_birthtime;
+	ret.tv_nsec = pst->st_birthtimenspec;
+#elif defined(HAVE_STRUCT_STAT_ST_BIRTHTIME)
+	ret.tv_sec = pst->st_birthtime;
+	ret.tv_nsec = 0;
+#else
+	ret = calc_create_time(pst);
+#endif
+
+	/* Deal with systems that don't initialize birthtime correctly.
+	 * Pointed out by SATOH Fumiyasu <fumiyas@osstech.jp>.
+	 */
+	if (null_timespec(ret)) {
+		ret = calc_create_time(pst);
+	}
+	return ret;
+}
+
 
 static void init_stat_ex_from_stat (struct stat_ex *dst,
 				    const struct stat *src)
