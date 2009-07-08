@@ -542,14 +542,25 @@ static bool add_sfs_aces(files_struct *fsp, struct ifs_security_descriptor *sd)
 	/* Only continue if this is a synthetic ACL and a directory. */
 	if (S_ISDIR(sbuf.st_ex_mode) &&
 	    (sbuf.st_ex_flags & SF_HASNTFSACL) == 0) {
+		struct smb_filename *smb_fname = NULL;
 		struct ifs_ace new_aces[6];
 		struct ifs_ace *old_aces;
 		int i, num_aces_to_add = 0;
 		mode_t file_mode = 0, dir_mode = 0;
+		NTSTATUS status;
+
+		status = create_synthetic_smb_fname_split(talloc_tos(),
+							  fsp->fsp_name, NULL,
+							  &smb_fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			return false;
+		}
 
 		/* Use existing samba logic to derive the mode bits. */
-		file_mode = unix_mode(fsp->conn, 0, fsp->fsp_name, false);
-		dir_mode = unix_mode(fsp->conn, aDIR, fsp->fsp_name, false);
+		file_mode = unix_mode(fsp->conn, 0, smb_fname, NULL);
+		dir_mode = unix_mode(fsp->conn, aDIR, smb_fname, NULL);
+
+		TALLOC_FREE(smb_fname);
 
 		/* Initialize ACEs. */
 		new_aces[0] = onefs_init_ace(fsp->conn, file_mode, false, USR);

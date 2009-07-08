@@ -64,7 +64,8 @@ static int set_link_read_only_flag(const SMB_STRUCT_STAT *const sbuf)
          }
 ****************************************************************************/
 
-mode_t unix_mode(connection_struct *conn, int dosmode, const char *fname,
+mode_t unix_mode(connection_struct *conn, int dosmode,
+		 const struct smb_filename *smb_fname,
 		 const char *inherit_from_dir)
 {
 	mode_t result = (S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR | S_IWGRP | S_IWOTH);
@@ -75,23 +76,39 @@ mode_t unix_mode(connection_struct *conn, int dosmode, const char *fname,
 		result &= ~(S_IWUSR | S_IWGRP | S_IWOTH);
 	}
 
-	if (fname && (inherit_from_dir != NULL)
-	    && lp_inherit_perms(SNUM(conn))) {
-		SMB_STRUCT_STAT sbuf;
+	if ((inherit_from_dir != NULL) && lp_inherit_perms(SNUM(conn))) {
+		struct smb_filename *smb_fname_parent = NULL;
+		NTSTATUS status;
 
-		DEBUG(2, ("unix_mode(%s) inheriting from %s\n", fname,
+		DEBUG(2, ("unix_mode(%s) inheriting from %s\n",
+			  smb_fname_str_dbg(smb_fname),
 			  inherit_from_dir));
-		if (vfs_stat_smb_fname(conn, inherit_from_dir, &sbuf) != 0) {
-			DEBUG(4,("unix_mode(%s) failed, [dir %s]: %s\n", fname,
+
+		status = create_synthetic_smb_fname(talloc_tos(),
+						    inherit_from_dir, NULL,
+						    NULL, &smb_fname_parent);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1,("unix_mode(%s) failed, [dir %s]: %s\n",
+				 smb_fname_str_dbg(smb_fname),
+				 inherit_from_dir, nt_errstr(status)));
+			return(0);
+		}
+
+		if (SMB_VFS_STAT(conn, smb_fname_parent) != 0) {
+			DEBUG(4,("unix_mode(%s) failed, [dir %s]: %s\n",
+				 smb_fname_str_dbg(smb_fname),
 				 inherit_from_dir, strerror(errno)));
+			TALLOC_FREE(smb_fname_parent);
 			return(0);      /* *** shouldn't happen! *** */
 		}
 
 		/* Save for later - but explicitly remove setuid bit for safety. */
-		dir_mode = sbuf.st_ex_mode & ~S_ISUID;
-		DEBUG(2,("unix_mode(%s) inherit mode %o\n",fname,(int)dir_mode));
+		dir_mode = smb_fname_parent->st.st_ex_mode & ~S_ISUID;
+		DEBUG(2,("unix_mode(%s) inherit mode %o\n",
+			 smb_fname_str_dbg(smb_fname), (int)dir_mode));
 		/* Clear "result" */
 		result = 0;
+		TALLOC_FREE(smb_fname_parent);
 	} 
 
 	if (IS_DOS_DIR(dosmode)) {
@@ -132,7 +149,8 @@ mode_t unix_mode(connection_struct *conn, int dosmode, const char *fname,
 		}
 	}
 
-	DEBUG(3,("unix_mode(%s) returning 0%o\n",fname,(int)result ));
+	DEBUG(3,("unix_mode(%s) returning 0%o\n", smb_fname_str_dbg(smb_fname),
+		 (int)result));
 	return(result);
 }
 
@@ -635,7 +653,7 @@ int file_set_dosmode(connection_struct *conn, struct smb_filename *smb_fname,
 		return 0;
 	}
 
-	unixmode = unix_mode(conn,dosmode,fname, parent_dir);
+	unixmode = unix_mode(conn, dosmode, smb_fname, parent_dir);
 
 	/* preserve the s bits */
 	mask |= (S_ISUID | S_ISGID);

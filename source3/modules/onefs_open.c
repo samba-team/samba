@@ -504,8 +504,8 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 	} else {
 		/* We add aARCH to this as this mode is only used if the file is
 		 * created new. */
-		unx_mode = unix_mode(conn, new_dos_attributes | aARCH, fname,
-				     parent_dir);
+		unx_mode = unix_mode(conn, new_dos_attributes | aARCH,
+				     smb_fname, parent_dir);
 	}
 
 	DEBUG(10,("onefs_open_file_ntcreate: fname=%s, dos_attrs=0x%x "
@@ -1444,7 +1444,7 @@ static NTSTATUS onefs_open_directory(connection_struct *conn,
 		mode = (mode_t)(file_attributes & ~FILE_FLAG_POSIX_SEMANTICS);
 		file_attributes = 0;
 	} else {
-		mode = unix_mode(conn, aDIR, smb_dname->base_name, parent_dir);
+		mode = unix_mode(conn, aDIR, smb_dname, parent_dir);
 	}
 
 	/*

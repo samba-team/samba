@@ -2166,10 +2166,23 @@ static mode_t create_default_mode(files_struct *fsp, bool interitable_mode)
 	int snum = SNUM(fsp->conn);
 	mode_t and_bits = (mode_t)0;
 	mode_t or_bits = (mode_t)0;
-	mode_t mode = interitable_mode
-		? unix_mode( fsp->conn, FILE_ATTRIBUTE_ARCHIVE, fsp->fsp_name,
-			     NULL )
-		: S_IRUSR;
+	mode_t mode;
+
+	if (interitable_mode) {
+		struct smb_filename *smb_fname = NULL;
+		NTSTATUS status;
+
+		status = create_synthetic_smb_fname_split(talloc_tos(),
+							  fsp->fsp_name, NULL,
+							  &smb_fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			return 0;
+		}
+		mode = unix_mode(fsp->conn, FILE_ATTRIBUTE_ARCHIVE, smb_fname,
+				 NULL);
+	} else {
+		mode = S_IRUSR;
+	}
 
 	if (fsp->is_directory)
 		mode |= (S_IWUSR|S_IXUSR);

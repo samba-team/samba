@@ -6234,7 +6234,8 @@ bool smbd_setup_mdns_registration(struct tevent_context *ev,
 
 /* The following definitions come from smbd/dosmode.c  */
 
-mode_t unix_mode(connection_struct *conn, int dosmode, const char *fname,
+mode_t unix_mode(connection_struct *conn, int dosmode,
+		 const struct smb_filename *smb_fname,
 		 const char *inherit_from_dir);
 uint32 dos_mode_msdfs(connection_struct *conn, const char *path, const SMB_STRUCT_STAT *sbuf);
 int dos_attributes_to_stat_dos_flags(uint32_t dosmode);
