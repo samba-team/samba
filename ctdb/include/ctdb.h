@@ -106,6 +106,11 @@ struct ctdb_call_info {
  */
 #define CTDB_SRVID_RELOAD_NODES 0xFA00000000000000LL
 
+/* 
+   a message ID to get the recovery daemon to perform a takeover run
+ */
+#define CTDB_SRVID_TAKEOVER_RUN 0xFB00000000000000LL
+
 
 
 /* used on the domain socket, send a pdu to the local daemon */
@@ -569,6 +574,9 @@ int ctdb_ctrl_end_recovery(struct ctdb_context *ctdb, struct timeval timeout, ui
 int ctdb_ctrl_getreclock(struct ctdb_context *ctdb, 
 	struct timeval timeout, uint32_t destnode, 
 	TALLOC_CTX *mem_ctx, const char **reclock);
+int ctdb_ctrl_setreclock(struct ctdb_context *ctdb, 
+	struct timeval timeout, uint32_t destnode, 
+	const char *reclock);
 
 
 uint32_t *list_of_connected_nodes(struct ctdb_context *ctdb,
@@ -639,6 +647,16 @@ struct ctdb_monitoring_wire {
 int ctdb_ctrl_getscriptstatus(struct ctdb_context *ctdb, 
 		    struct timeval timeout, uint32_t destnode, 
 		    TALLOC_CTX *mem_ctx, struct ctdb_monitoring_wire **script_status);
+
+
+struct debug_levels {
+	int32_t	level;
+	const char *description;
+};
+extern struct debug_levels debug_levels[];
+
+const char *get_debug_by_level(int32_t level);
+int32_t get_debug_by_desc(const char *desc);
 
 
 #endif

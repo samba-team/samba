@@ -43,6 +43,10 @@ unset TMPDIR
 loadconfig network
 loadconfig ctdb
 
+[ -z "$CTDB_RECOVERY_LOCK" ] && {
+    echo "No recovery lock specified. Starting CTDB without split brain prevention"
+}
+
 # check networking is up (for redhat)
 [ "$NETWORKING" = "no" ] && exit 0
 
@@ -128,6 +132,8 @@ set_ctdb_variables () {
 set_retval() {
     return $1
 }
+
+ctdbd=${CTDBD:-/usr/sbin/ctdbd}
 
 start() {
     echo -n $"Starting ctdbd service: "
@@ -218,7 +224,7 @@ stop() {
 restart() {
     stop
     start
-}
+}	
 
 status() {
     echo -n $"Checking for ctdbd service: "

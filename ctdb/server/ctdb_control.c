@@ -445,6 +445,23 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(sizeof(double));
 		ctdb_reclock_latency(ctdb, "recd reclock", &ctdb->statistics.reclock.recd, *((double *)indata.dptr));
 		return 0;
+	case CTDB_CONTROL_GET_RECLOCK_FILE:
+		CHECK_CONTROL_DATA_SIZE(0);
+		if (ctdb->recovery_lock_file != NULL) {
+			outdata->dptr  = discard_const(ctdb->recovery_lock_file);
+			outdata->dsize = strlen(ctdb->recovery_lock_file) + 1;
+		}
+		return 0;
+	case CTDB_CONTROL_SET_RECLOCK_FILE:
+		ctdb->tunable.verify_recovery_lock = 0;
+		if (ctdb->recovery_lock_file != NULL) {
+			talloc_free(ctdb->recovery_lock_file);
+			ctdb->recovery_lock_file = NULL;
+		}
+		if (indata.dsize > 0) {
+			ctdb->recovery_lock_file = talloc_strdup(ctdb, discard_const(indata.dptr));
+		}
+		return 0;
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;
@@ -589,6 +606,11 @@ int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
 	struct ctdb_req_control *c;
 	struct ctdb_control_state *state;
 	size_t len;
+
+	if (ctdb->methods == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to send control. Transport is DOWN\n"));
+		return -1;
+	}
 
 	if (((destnode == CTDB_BROADCAST_VNNMAP) || 
 	     (destnode == CTDB_BROADCAST_ALL) ||

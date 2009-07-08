@@ -50,8 +50,8 @@ static const struct {
 	{ "ReclockPingPeriod",   60,  offsetof(struct ctdb_tunable,  reclock_ping_period) },
 	{ "NoIPFailback",         0,  offsetof(struct ctdb_tunable, no_ip_failback) },
 	{ "VerboseMemoryNames",   0,  offsetof(struct ctdb_tunable, verbose_memory_names) },
-	{ "RecdPingTimeout",	 20,  offsetof(struct ctdb_tunable, recd_ping_timeout) },
-	{ "RecdFailCount",	  3,  offsetof(struct ctdb_tunable, recd_ping_failcount) },
+	{ "RecdPingTimeout",	 60,  offsetof(struct ctdb_tunable, recd_ping_timeout) },
+	{ "RecdFailCount",	 10,  offsetof(struct ctdb_tunable, recd_ping_failcount) },
 	{ "LogLatencyMs",         0,  offsetof(struct ctdb_tunable, log_latency_ms) },
 	{ "RecLockLatencyMs",  1000,  offsetof(struct ctdb_tunable, reclock_latency_ms) },
 	{ "RecoveryDropAllIPs",  60,  offsetof(struct ctdb_tunable, recovery_drop_all_ips) },
@@ -135,12 +135,19 @@ int32_t ctdb_control_set_tunable(struct ctdb_context *ctdb, TDB_DATA indata)
 		if (strcasecmp(name, tunable_map[i].name) == 0) break;
 	}
 
+	if (!strcmp(name, "VerifyRecoveryLock") && t->value != 0
+	&& ctdb->recovery_lock_file == NULL) {
+		DEBUG(DEBUG_ERR,("Can not activate tunable \"VerifyRecoveryLock\" since there is no recovery lock file set.\n"));
+		talloc_free(name);
+		return -1;
+	}
+
 	talloc_free(name);
 	
 	if (i == ARRAY_SIZE(tunable_map)) {
 		return -1;
 	}
-	
+
 	*(uint32_t *)(tunable_map[i].offset + (uint8_t*)&ctdb->tunable) = t->value;
 
 	return 0;

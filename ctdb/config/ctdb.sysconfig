@@ -1,9 +1,12 @@
 # Options to ctdbd. This is read by /etc/init.d/ctdb
 
-# you must specify the location of a shared lock file across all the
-# nodes. This must be on shared storage
-# there is no default
-# CTDB_RECOVERY_LOCK="/some/place/on/shared/storage"
+# You must specify the location of a shared lock file across all the
+# nodes for split brain prevention to work.
+# This must be on shared storage.
+# CTDB can operate without a reclock file, but this means that there is no
+# protection against a split brain.
+# It is strongly suggested to NOT run ctdb without a reclock file.
+CTDB_RECOVERY_LOCK="/some/place/on/shared/storage"
 
 # when doing IP takeover you also may specify what network interface
 # to use by default for the public addresses. Otherwise you must
@@ -181,8 +184,8 @@
 # CTDB_LOGFILE=/var/log/log.ctdb
 
 # what debug level to run at. Higher means more verbose
-# the default is 2
-CTDB_DEBUGLEVEL=2
+# the default is ERR
+CTDB_DEBUGLEVEL=ERR
 
 # set any default tuning options for ctdb
 # use CTDB_SET_XXXX=value where XXXX is the name of the tuning

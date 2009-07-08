@@ -539,6 +539,36 @@ CTDB version 1
       </para>
     </refsect2>
 
+    <refsect2><title>getreclock</title>
+      <para>
+	This command is used to show the filename of the reclock file that is used.
+      </para>
+
+      <para>
+	Example output:
+      </para>
+      <screen format="linespecific">
+Reclock file:/gpfs/.ctdb/shared
+      </screen>
+
+    </refsect2>
+
+    <refsect2><title>setreclock [filename]</title>
+      <para>
+	This command is used to modify, or clear, the file that is used as the reclock file at runtime. When this command is used, the reclock file checks are disabled. To re-enable the checks the administrator needs to activate the "VerifyRecoveryLock" tunable using "ctdb setvar".
+      </para>
+
+      <para>
+	If run with no parameter this will remove the reclock file completely. If run with a parameter the parameter specifies the new filename to use for the recovery lock.
+      </para>
+
+      <para>
+	This command only affects the runtime settings of a ctdb node and will be lost when ctdb is restarted. For persistent changes to the reclock file setting you must edit /etc/sysconfig/ctdb.
+      </para>
+    </refsect2>
+
+
+
     <refsect2><title>getdebug</title>
       <para>
         Get the current debug level for the node. the debug level controls what information is written to the log file.
@@ -658,6 +688,12 @@ CTDB version 1
       <para>
         This command will trigger the recovery daemon to do a cluster
         recovery.
+      </para>
+    </refsect2>
+
+    <refsect2><title>ipreallocate</title>
+      <para>
+        This command will force the recovery master to perform a full ip reallocation process and redistribute all ip addresses. This is useful to "reset" the allocations back to its default state if they have been changed using the "moveip" command. While a "recover" will also perform this reallocation, a recovery is much more hevyweight since it will also rebuild all the databases.
       </para>
     </refsect2>
 

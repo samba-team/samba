@@ -1529,15 +1529,88 @@ static int control_getpid(struct ctdb_context *ctdb, int argc, const char **argv
 }
 
 /*
+  handler for receiving the response to ipreallocate
+*/
+static void ip_reallocate_handler(struct ctdb_context *ctdb, uint64_t srvid, 
+			     TDB_DATA data, void *private_data)
+{
+	printf("IP Reallocation completed\n");
+	exit(0);
+}
+
+/*
+  ask the recovery daemon on the recovery master to perform a ip reallocation
+ */
+static int control_ipreallocate(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+	TDB_DATA data;
+	struct rd_memdump_reply rd;
+	uint32_t recmaster;
+
+	rd.pnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE);
+	if (rd.pnn == -1) {
+		DEBUG(DEBUG_ERR, ("Failed to get pnn of local node\n"));
+		return -1;
+	}
+	rd.srvid = getpid();
+
+	/* register a message port for receiveing the reply so that we
+	   can receive the reply
+	*/
+	ctdb_set_message_handler(ctdb, rd.srvid, ip_reallocate_handler, NULL);
+
+	data.dptr = (uint8_t *)&rd;
+	data.dsize = sizeof(rd);
+
+	ret = ctdb_ctrl_getrecmaster(ctdb, ctdb, TIMELIMIT(), options.pnn, &recmaster);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get recmaster from node %u\n", options.pnn));
+		return ret;
+	}
+
+	ret = ctdb_send_message(ctdb, recmaster, CTDB_SRVID_TAKEOVER_RUN, data);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to send ip takeover run request message to %u\n", options.pnn));
+		return -1;
+	}
+
+	/* this loop will terminate when we have received the reply */
+	while (1) {	
+		event_loop_once(ctdb->ev);
+	}
+
+	return 0;
+}
+
+
+/*
   disable a remote node
  */
 static int control_disable(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret;
+	struct ctdb_node_map *nodemap=NULL;
 
-	ret = ctdb_ctrl_modflags(ctdb, TIMELIMIT(), options.pnn, NODE_FLAGS_PERMANENTLY_DISABLED, 0);
+	do {
+		ret = ctdb_ctrl_modflags(ctdb, TIMELIMIT(), options.pnn, NODE_FLAGS_PERMANENTLY_DISABLED, 0);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, ("Unable to disable node %u\n", options.pnn));
+			return ret;
+		}
+
+		sleep(1);
+
+		/* read the nodemap and verify the change took effect */
+		if (ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap) != 0) {
+			DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
+			exit(10);
+		}
+
+	} while (!(nodemap->nodes[options.pnn].flags & NODE_FLAGS_PERMANENTLY_DISABLED));
+	ret = control_ipreallocate(ctdb, argc, argv);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to disable node %u\n", options.pnn));
+		DEBUG(DEBUG_ERR, ("IP Reallocate failed on node %u\n", options.pnn));
 		return ret;
 	}
 
@@ -1551,9 +1624,27 @@ static int control_enable(struct ctdb_context *ctdb, int argc, const char **argv
 {
 	int ret;
 
-	ret = ctdb_ctrl_modflags(ctdb, TIMELIMIT(), options.pnn, 0, NODE_FLAGS_PERMANENTLY_DISABLED);
+	struct ctdb_node_map *nodemap=NULL;
+
+	do {
+		ret = ctdb_ctrl_modflags(ctdb, TIMELIMIT(), options.pnn, 0, NODE_FLAGS_PERMANENTLY_DISABLED);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, ("Unable to enable node %u\n", options.pnn));
+			return ret;
+		}
+
+		sleep(1);
+
+		/* read the nodemap and verify the change took effect */
+		if (ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap) != 0) {
+			DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
+			exit(10);
+		}
+
+	} while (nodemap->nodes[options.pnn].flags & NODE_FLAGS_PERMANENTLY_DISABLED);
+	ret = control_ipreallocate(ctdb, argc, argv);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to enable node %u\n", options.pnn));
+		DEBUG(DEBUG_ERR, ("IP Reallocate failed on node %u\n", options.pnn));
 		return ret;
 	}
 
@@ -2181,50 +2272,6 @@ static int control_listvars(struct ctdb_context *ctdb, int argc, const char **ar
 	return 0;
 }
 
-static struct {
-	int32_t	level;
-	const char *description;
-} debug_levels[] = {
-	{DEBUG_EMERG,	"EMERG"},
-	{DEBUG_ALERT,	"ALERT"},
-	{DEBUG_CRIT,	"CRIT"},
-	{DEBUG_ERR,	"ERR"},
-	{DEBUG_WARNING,	"WARNING"},
-	{DEBUG_NOTICE,	"NOTICE"},
-	{DEBUG_INFO,	"INFO"},
-	{DEBUG_DEBUG,	"DEBUG"}
-};
-
-static const char *get_debug_by_level(int32_t level)
-{
-	int i;
-
-	for (i=0;i<ARRAY_SIZE(debug_levels);i++) {
-		if (debug_levels[i].level == level) {
-			return debug_levels[i].description;
-		}
-	}
-	return "Unknown";
-}
-
-static int32_t get_debug_by_desc(const char *desc)
-{
-	int i;
-
-	for (i=0;i<ARRAY_SIZE(debug_levels);i++) {
-		if (!strcmp(debug_levels[i].description, desc)) {
-			return debug_levels[i].level;
-		}
-	}
-
-	fprintf(stderr, "Invalid debug level '%s'\nMust be one of\n", desc);
-	for (i=0;i<ARRAY_SIZE(debug_levels);i++) {
-		fprintf(stderr, "    %s\n", debug_levels[i].description);
-	}
-
-	exit(10);
-}
-
 /*
   display debug level on a node
  */
@@ -2248,23 +2295,86 @@ static int control_getdebug(struct ctdb_context *ctdb, int argc, const char **ar
 	return 0;
 }
 
+/*
+  display reclock file of a node
+ */
+static int control_getreclock(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+	const char *reclock;
+
+	ret = ctdb_ctrl_getreclock(ctdb, TIMELIMIT(), options.pnn, ctdb, &reclock);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get reclock file from node %u\n", options.pnn));
+		return ret;
+	} else {
+		if (reclock == NULL) {
+			printf("No reclock file used.\n");
+		} else {
+			printf("Reclock file:%s\n", reclock);
+		}
+	}
+	return 0;
+}
+
+/*
+  set the reclock file of a node
+ */
+static int control_setreclock(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+	const char *reclock;
+
+	if (argc == 0) {
+		reclock = NULL;
+	} else if (argc == 1) {
+		reclock = argv[0];
+	} else {
+		usage();
+	}
+
+	ret = ctdb_ctrl_setreclock(ctdb, TIMELIMIT(), options.pnn, reclock);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get reclock file from node %u\n", options.pnn));
+		return ret;
+	}
+	return 0;
+}
 
 /*
   set debug level on a node or all nodes
  */
 static int control_setdebug(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int ret;
+	int i, ret;
 	int32_t level;
 
-	if (argc < 1) {
-		usage();
+	if (argc == 0) {
+		printf("You must specify the debug level. Valid levels are:\n");
+		for (i=0; debug_levels[i].description != NULL; i++) {
+			printf("%s (%d)\n", debug_levels[i].description, debug_levels[i].level);
+		}
+
+		return 0;
 	}
 
-	if (isalpha(argv[0][0])) { 
+	if (isalpha(argv[0][0]) || argv[0][0] == '-') { 
 		level = get_debug_by_desc(argv[0]);
 	} else {
 		level = strtol(argv[0], NULL, 0);
+	}
+
+	for (i=0; debug_levels[i].description != NULL; i++) {
+		if (level == debug_levels[i].level) {
+			break;
+		}
+	}
+	if (debug_levels[i].description == NULL) {
+		printf("Invalid debug level, must be one of\n");
+		for (i=0; debug_levels[i].description != NULL; i++) {
+			printf("%s (%d)\n", debug_levels[i].description, debug_levels[i].level);
+		}
+		return -1;
 	}
 
 	ret = ctdb_ctrl_set_debuglevel(ctdb, options.pnn, level);
@@ -2964,6 +3074,7 @@ static const struct {
 	{ "unban",           control_unban,             true,	false,  "unban a node from the cluster" },
 	{ "shutdown",        control_shutdown,          true,	false,  "shutdown ctdbd" },
 	{ "recover",         control_recover,           true,	false,  "force recovery" },
+	{ "ipreallocate",    control_ipreallocate,      true,	false,  "force the recovery daemon to perform a ip reallocation procedure" },
 	{ "freeze",          control_freeze,            true,	false,  "freeze all databases" },
 	{ "thaw",            control_thaw,              true,	false,  "thaw all databases" },
 	{ "isnotrecmaster",  control_isnotrecmaster,    false,	false,  "check if the local node is recmaster or not" },
@@ -2991,6 +3102,8 @@ static const struct {
 	{ "scriptstatus",        control_scriptstatus,  false,	false, "show the status of the monitoring scripts"},
 	{ "natgwlist",        control_natgwlist,        false,	false, "show the nodes belonging to this natgw configuration"},
 	{ "xpnn",             control_xpnn,             true,	true,  "find the pnn of the local node without talking to the daemon (unreliable)" },
+	{ "getreclock",       control_getreclock,	false,	false, "Show the reclock file of a node"},
+	{ "setreclock",       control_setreclock,	false,	false, "Set/clear the reclock file of a node", "[filename]"},
 };
 
 /*
