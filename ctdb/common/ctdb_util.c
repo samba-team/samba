@@ -624,3 +624,41 @@ void ctdb_unblock_signal(int signum)
 	sigaddset(&set,signum);
 	sigprocmask(SIG_UNBLOCK,&set,NULL);
 }
+
+struct debug_levels debug_levels[] = {
+	{DEBUG_EMERG,	"EMERG"},
+	{DEBUG_ALERT,	"ALERT"},
+	{DEBUG_CRIT,	"CRIT"},
+	{DEBUG_ERR,	"ERR"},
+	{DEBUG_WARNING,	"WARNING"},
+	{DEBUG_NOTICE,	"NOTICE"},
+	{DEBUG_INFO,	"INFO"},
+	{DEBUG_DEBUG,	"DEBUG"},
+	{0, NULL}
+};
+
+const char *get_debug_by_level(int32_t level)
+{
+	int i;
+
+	for (i=0; debug_levels[i].description != NULL; i++) {
+		if (debug_levels[i].level == level) {
+			return debug_levels[i].description;
+		}
+	}
+	return "Unknown";
+}
+
+int32_t get_debug_by_desc(const char *desc)
+{
+	int i;
+
+	for (i=0; debug_levels[i].description != NULL; i++) {
+		if (!strcmp(debug_levels[i].description, desc)) {
+			return debug_levels[i].level;
+		}
+	}
+
+	return DEBUG_ERR;
+}
+

@@ -36,6 +36,14 @@ struct ban_state {
 	uint32_t banned_node;
 };
 
+/* list of "ctdb ipreallocate" processes to call back when we have
+   finished the takeover run.
+*/
+struct ip_reallocate_list {
+	struct ip_reallocate_list *next;
+	struct rd_memdump_reply *rd;
+};
+
 /*
   private state of recovery daemon
  */
@@ -56,6 +64,8 @@ struct ctdb_recoverd {
 	struct timed_event *send_election_te;
 	struct timed_event *election_timeout;
 	struct vacuum_info *vacuum_info;
+	TALLOC_CTX *ip_reallocate_ctx;
+	struct ip_reallocate_list *reallocate_callers;
 };
 
 #define CONTROL_TIMEOUT() timeval_current_ofs(ctdb->tunable.recover_timeout, 0)
@@ -1346,15 +1356,18 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		ctdb_ban_node(rec, rec->last_culprit, ctdb->tunable.recovery_ban_period);
 	}
 
-	DEBUG(DEBUG_ERR,("Taking out recovery lock from recovery daemon\n"));
-	start_time = timeval_current();
-	if (!ctdb_recovery_lock(ctdb, true)) {
-		ctdb_set_culprit(rec, pnn);
-		DEBUG(DEBUG_ERR,("Unable to get recovery lock - aborting recovery\n"));
-		return -1;
+
+        if (ctdb->tunable.verify_recovery_lock != 0) {
+		DEBUG(DEBUG_ERR,("Taking out recovery lock from recovery daemon\n"));
+		start_time = timeval_current();
+		if (!ctdb_recovery_lock(ctdb, true)) {
+			ctdb_set_culprit(rec, pnn);
+			DEBUG(DEBUG_ERR,("Unable to get recovery lock - aborting recovery\n"));
+			return -1;
+		}
+		ctdb_ctrl_report_recd_lock_latency(ctdb, CONTROL_TIMEOUT(), timeval_elapsed(&start_time));
+		DEBUG(DEBUG_ERR,("Recovery lock taken successfully by recovery daemon\n"));
 	}
-	ctdb_ctrl_report_recd_lock_latency(ctdb, CONTROL_TIMEOUT(), timeval_elapsed(&start_time));
-	DEBUG(DEBUG_ERR,("Recovery lock taken successfully by recovery daemon\n"));
 
 	DEBUG(DEBUG_NOTICE, (__location__ " Recovery initiated due to problem with node %u\n", culprit));
 
@@ -1810,6 +1823,63 @@ static void reload_nodes_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	reload_nodes_file(rec->ctdb);
 }
 
+/*
+  handler for ip reallocate, just add it to the list of callers and 
+  handle this later in the monitor_cluster loop so we do not recurse
+  with other callers to takeover_run()
+*/
+static void ip_reallocate_handler(struct ctdb_context *ctdb, uint64_t srvid, 
+			     TDB_DATA data, void *private_data)
+{
+	struct ctdb_recoverd *rec = talloc_get_type(private_data, struct ctdb_recoverd);
+	struct ip_reallocate_list *caller;
+
+	if (data.dsize != sizeof(struct rd_memdump_reply)) {
+		DEBUG(DEBUG_ERR, (__location__ " Wrong size of return address.\n"));
+		return;
+	}
+
+	if (rec->ip_reallocate_ctx == NULL) {
+		rec->ip_reallocate_ctx = talloc_new(rec);
+		CTDB_NO_MEMORY_FATAL(ctdb, caller);
+	}
+
+	caller = talloc(rec->ip_reallocate_ctx, struct ip_reallocate_list);
+	CTDB_NO_MEMORY_FATAL(ctdb, caller);
+
+	caller->rd   = (struct rd_memdump_reply *)talloc_steal(caller, data.dptr);
+	caller->next = rec->reallocate_callers;
+	rec->reallocate_callers = caller;
+
+	return;
+}
+
+static void process_ipreallocate_requests(struct ctdb_context *ctdb, struct ctdb_recoverd *rec)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	TDB_DATA result;
+	int32_t ret;
+	struct ip_reallocate_list *callers;
+
+	DEBUG(DEBUG_INFO, ("recovery master forced ip reallocation\n"));
+	ret = ctdb_takeover_run(ctdb, rec->nodemap);
+	result.dsize = sizeof(int32_t);
+	result.dptr  = (uint8_t *)&ret;
+
+	for (callers=rec->reallocate_callers; callers; callers=callers->next) {
+		DEBUG(DEBUG_INFO,("Sending ip reallocate reply message to %u:%lu\n", callers->rd->pnn, callers->rd->srvid));
+		ret = ctdb_send_message(ctdb, callers->rd->pnn, callers->rd->srvid, result);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,("Failed to send ip reallocate reply message to %u:%lu\n", callers->rd->pnn, callers->rd->srvid));
+		}
+	}
+
+	talloc_free(tmp_ctx);
+	talloc_free(rec->ip_reallocate_ctx);
+	rec->ip_reallocate_ctx = NULL;
+	rec->reallocate_callers = NULL;
+	
+}
 
 
 /*
@@ -1850,12 +1920,14 @@ static void election_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	talloc_free(rec->send_election_te);
 	rec->send_election_te = NULL;
 
-	/* release the recmaster lock */
-	if (em->pnn != ctdb->pnn &&
-	    ctdb->recovery_lock_fd != -1) {
-		close(ctdb->recovery_lock_fd);
-		ctdb->recovery_lock_fd = -1;
-		unban_all_nodes(ctdb);
+        if (ctdb->tunable.verify_recovery_lock != 0) {
+		/* release the recmaster lock */
+		if (em->pnn != ctdb->pnn &&
+		    ctdb->recovery_lock_fd != -1) {
+			close(ctdb->recovery_lock_fd);
+			ctdb->recovery_lock_fd = -1;
+			unban_all_nodes(ctdb);
+		}
 	}
 
 	/* ok, let that guy become recmaster then */
@@ -2331,6 +2403,230 @@ static int get_remote_nodemaps(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
+enum reclock_child_status { RECLOCK_CHECKING, RECLOCK_OK, RECLOCK_FAILED, RECLOCK_TIMEOUT};
+struct ctdb_check_reclock_state {
+	struct ctdb_context *ctdb;
+	struct timeval start_time;
+	int fd[2];
+	pid_t child;
+	struct timed_event *te;
+	struct fd_event *fde;
+	enum reclock_child_status status;
+};
+
+/* when we free the reclock state we must kill any child process.
+*/
+static int check_reclock_destructor(struct ctdb_check_reclock_state *state)
+{
+	struct ctdb_context *ctdb = state->ctdb;
+
+	ctdb_ctrl_report_recd_lock_latency(ctdb, CONTROL_TIMEOUT(), timeval_elapsed(&state->start_time));
+
+	if (state->fd[0] != -1) {
+		close(state->fd[0]);
+		state->fd[0] = -1;
+	}
+	if (state->fd[1] != -1) {
+		close(state->fd[1]);
+		state->fd[1] = -1;
+	}
+	kill(state->child, SIGKILL);
+	return 0;
+}
+
+/*
+  called if our check_reclock child times out. this would happen if
+  i/o to the reclock file blocks.
+ */
+static void ctdb_check_reclock_timeout(struct event_context *ev, struct timed_event *te, 
+					 struct timeval t, void *private_data)
+{
+	struct ctdb_check_reclock_state *state = talloc_get_type(private_data, 
+					   struct ctdb_check_reclock_state);
+
+	DEBUG(DEBUG_ERR,(__location__ " check_reclock child process hung/timedout CFS slow to grant locks?\n"));
+	state->status = RECLOCK_TIMEOUT;
+}
+
+/* this is called when the child process has completed checking the reclock
+   file and has written data back to us through the pipe.
+*/
+static void reclock_child_handler(struct event_context *ev, struct fd_event *fde, 
+			     uint16_t flags, void *private_data)
+{
+	struct ctdb_check_reclock_state *state= talloc_get_type(private_data, 
+					     struct ctdb_check_reclock_state);
+	char c = 0;
+	int ret;
+
+	/* we got a response from our child process so we can abort the
+	   timeout.
+	*/
+	talloc_free(state->te);
+	state->te = NULL;
+
+	ret = read(state->fd[0], &c, 1);
+	if (ret != 1 || c != RECLOCK_OK) {
+		DEBUG(DEBUG_ERR,(__location__ " reclock child process returned error %d\n", c));
+		state->status = RECLOCK_FAILED;
+
+		return;
+	}
+
+	state->status = RECLOCK_OK;
+	return;
+}
+
+static int check_recovery_lock(struct ctdb_context *ctdb)
+{
+	int ret;
+	struct ctdb_check_reclock_state *state;
+	pid_t parent = getpid();
+
+	if (ctdb->recovery_lock_fd == -1) {
+		DEBUG(DEBUG_CRIT,("recovery master doesn't have the recovery lock\n"));
+		return -1;
+	}
+
+	state = talloc(ctdb, struct ctdb_check_reclock_state);
+	CTDB_NO_MEMORY(ctdb, state);
+
+	state->ctdb = ctdb;
+	state->start_time = timeval_current();
+	state->status = RECLOCK_CHECKING;
+	state->fd[0] = -1;
+	state->fd[1] = -1;
+
+	ret = pipe(state->fd);
+	if (ret != 0) {
+		talloc_free(state);
+		DEBUG(DEBUG_CRIT,(__location__ " Failed to open pipe for check_reclock child\n"));
+		return -1;
+	}
+
+	state->child = fork();
+	if (state->child == (pid_t)-1) {
+		DEBUG(DEBUG_CRIT,(__location__ " fork() failed in check_reclock child\n"));
+		close(state->fd[0]);
+		state->fd[0] = -1;
+		close(state->fd[1]);
+		state->fd[1] = -1;
+		talloc_free(state);
+		return -1;
+	}
+
+	if (state->child == 0) {
+		char cc = RECLOCK_OK;
+		close(state->fd[0]);
+		state->fd[0] = -1;
+
+		if (pread(ctdb->recovery_lock_fd, &cc, 1, 0) == -1) {
+			DEBUG(DEBUG_CRIT,("failed read from recovery_lock_fd - %s\n", strerror(errno)));
+			cc = RECLOCK_FAILED;
+		}
+
+		write(state->fd[1], &cc, 1);
+		/* make sure we die when our parent dies */
+		while (kill(parent, 0) == 0 || errno != ESRCH) {
+			sleep(5);
+			write(state->fd[1], &cc, 1);
+		}
+		_exit(0);
+	}
+	close(state->fd[1]);
+	state->fd[1] = -1;
+
+	talloc_set_destructor(state, check_reclock_destructor);
+
+	state->te = event_add_timed(ctdb->ev, state, timeval_current_ofs(15, 0),
+				    ctdb_check_reclock_timeout, state);
+	if (state->te == NULL) {
+		DEBUG(DEBUG_CRIT,(__location__ " Failed to create a timed event for reclock child\n"));
+		talloc_free(state);
+		return -1;
+	}
+
+	state->fde = event_add_fd(ctdb->ev, state, state->fd[0],
+				EVENT_FD_READ|EVENT_FD_AUTOCLOSE,
+				reclock_child_handler,
+				(void *)state);
+
+	if (state->fde == NULL) {
+		DEBUG(DEBUG_CRIT,(__location__ " Failed to create an fd event for reclock child\n"));
+		talloc_free(state);
+		return -1;
+	}
+
+	while (state->status == RECLOCK_CHECKING) {
+		event_loop_once(ctdb->ev);
+	}
+
+	if (state->status == RECLOCK_FAILED) {
+		DEBUG(DEBUG_ERR,(__location__ " reclock child failed when checking file\n"));
+		close(ctdb->recovery_lock_fd);
+		ctdb->recovery_lock_fd = -1;
+		talloc_free(state);
+		return -1;
+	}
+
+	talloc_free(state);
+	return 0;
+}
+
+static int update_recovery_lock_file(struct ctdb_context *ctdb)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+	const char *reclockfile;
+
+	if (ctdb_ctrl_getreclock(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, tmp_ctx, &reclockfile) != 0) {
+		DEBUG(DEBUG_ERR,("Failed to read reclock file from daemon\n"));
+		talloc_free(tmp_ctx);
+		return -1;	
+	}
+
+	if (reclockfile == NULL) {
+		if (ctdb->recovery_lock_file != NULL) {
+			DEBUG(DEBUG_ERR,("Reclock file disabled\n"));
+			talloc_free(ctdb->recovery_lock_file);
+			ctdb->recovery_lock_file = NULL;
+			if (ctdb->recovery_lock_fd != -1) {
+				close(ctdb->recovery_lock_fd);
+				ctdb->recovery_lock_fd = -1;
+			}
+		}
+		ctdb->tunable.verify_recovery_lock = 0;
+		talloc_free(tmp_ctx);
+		return 0;
+	}
+
+	if (ctdb->recovery_lock_file == NULL) {
+		ctdb->recovery_lock_file = talloc_strdup(ctdb, reclockfile);
+		if (ctdb->recovery_lock_fd != -1) {
+			close(ctdb->recovery_lock_fd);
+			ctdb->recovery_lock_fd = -1;
+		}
+		talloc_free(tmp_ctx);
+		return 0;
+	}
+
+
+	if (!strcmp(reclockfile, ctdb->recovery_lock_file)) {
+		talloc_free(tmp_ctx);
+		return 0;
+	}
+
+	talloc_free(ctdb->recovery_lock_file);
+	ctdb->recovery_lock_file = talloc_strdup(ctdb, reclockfile);
+	ctdb->tunable.verify_recovery_lock = 0;
+	if (ctdb->recovery_lock_fd != -1) {
+		close(ctdb->recovery_lock_fd);
+		ctdb->recovery_lock_fd = -1;
+	}
+
+	talloc_free(tmp_ctx);
+	return 0;
+}
+		
 /*
   the main monitoring loop
  */
@@ -2346,7 +2642,6 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	int32_t debug_level;
 	int i, j, ret;
 	struct ctdb_recoverd *rec;
-	char c;
 
 	DEBUG(DEBUG_NOTICE,("monitor_cluster starting\n"));
 
@@ -2382,6 +2677,9 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 
 	/* register a message port for reloadnodes  */
 	ctdb_set_message_handler(ctdb, CTDB_SRVID_RELOAD_NODES, reload_nodes_handler, rec);
+
+	/* register a message port for performing a takeover run */
+	ctdb_set_message_handler(ctdb, CTDB_SRVID_TAKEOVER_RUN, ip_reallocate_handler, rec);
 
 again:
 	if (mem_ctx) {
@@ -2438,6 +2736,22 @@ again:
 		goto again;
 	}
 
+	/* get the current recovery lock file from the server */
+	if (update_recovery_lock_file(ctdb) != 0) {
+		DEBUG(DEBUG_ERR,("Failed to update the recovery lock file\n"));
+		goto again;
+	}
+
+	/* Make sure that if recovery lock verification becomes disabled when
+	   we close the file
+	*/
+        if (ctdb->tunable.verify_recovery_lock == 0) {
+		if (ctdb->recovery_lock_fd != -1) {
+			close(ctdb->recovery_lock_fd);
+			ctdb->recovery_lock_fd = -1;
+		}
+	}
+
 	pnn = ctdb_ctrl_getpnn(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE);
 	if (pnn == (uint32_t)-1) {
 		DEBUG(DEBUG_ERR,("Failed to get local pnn - retrying\n"));
@@ -2470,6 +2784,19 @@ again:
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to get recmaster from node %u\n", pnn));
 		goto again;
+	}
+
+	/* if we are not the recmaster we can safely ignore any ip reallocate requests */
+	if (rec->recmaster != pnn) {
+		if (rec->ip_reallocate_ctx != NULL) {
+			talloc_free(rec->ip_reallocate_ctx);
+			rec->ip_reallocate_ctx = NULL;
+			rec->reallocate_callers = NULL;
+		}
+	}
+	/* if there are takeovers requested, perform it and notify the waiters */
+	if (rec->reallocate_callers) {
+		process_ipreallocate_requests(ctdb, rec);
 	}
 
 	if (rec->recmaster == (uint32_t)-1) {
@@ -2662,21 +2989,15 @@ again:
 	}
 
 
-	/* we should have the reclock - check its not stale */
-	if (ctdb->recovery_lock_fd == -1) {
-		DEBUG(DEBUG_CRIT,("recovery master doesn't have the recovery lock\n"));
-		do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap, ctdb->pnn);
-		goto again;
+        if (ctdb->tunable.verify_recovery_lock != 0) {
+		/* we should have the reclock - check its not stale */
+		ret = check_recovery_lock(ctdb);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,("Failed check_recovery_lock. Force a recovery\n"));
+			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap, ctdb->pnn);
+			goto again;
+		}
 	}
-
-	if (pread(ctdb->recovery_lock_fd, &c, 1, 0) == -1) {
-		DEBUG(DEBUG_CRIT,("failed read from recovery_lock_fd - %s\n", strerror(errno)));
-		close(ctdb->recovery_lock_fd);
-		ctdb->recovery_lock_fd = -1;
-		do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap, ctdb->pnn);
-		goto again;
-	}
-
 
 	/* get the nodemap for all active remote nodes
 	 */
@@ -2933,7 +3254,9 @@ static void recd_sig_child_handler(struct event_context *ev,
 	while (pid != 0) {
 		pid = waitpid(-1, &status, WNOHANG);
 		if (pid == -1) {
-			DEBUG(DEBUG_ERR, (__location__ " waitpid() returned error. errno:%d\n", errno));
+			if (errno != ECHILD) {
+				DEBUG(DEBUG_ERR, (__location__ " waitpid() returned error. errno:%s(%d)\n", strerror(errno),errno));
+			}
 			return;
 		}
 		if (pid > 0) {

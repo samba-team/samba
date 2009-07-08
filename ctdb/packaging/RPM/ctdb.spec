@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.84
+Version: 1.0.86
 Release: 1
 Epoch: 0
 License: GNU GPL version 3
@@ -106,6 +106,7 @@ fi
 %{_sysconfdir}/ctdb/events.d/00.ctdb
 %{_sysconfdir}/ctdb/events.d/10.interface
 %{_sysconfdir}/ctdb/events.d/11.natgw
+%{_sysconfdir}/ctdb/events.d/11.routing
 %{_sysconfdir}/ctdb/events.d/20.multipathd
 %{_sysconfdir}/ctdb/events.d/31.clamd
 %{_sysconfdir}/ctdb/events.d/40.vsftpd
@@ -115,7 +116,6 @@ fi
 %{_sysconfdir}/ctdb/events.d/61.nfstickle
 %{_sysconfdir}/ctdb/events.d/70.iscsi
 %{_sysconfdir}/ctdb/events.d/91.lvs
-%{_sysconfdir}/ctdb/events.d/99.routing
 %{_sysconfdir}/ctdb/statd-callout
 %{_sbindir}/ctdbd
 %{_bindir}/ctdb
@@ -131,6 +131,32 @@ fi
 %{_libdir}/pkgconfig/ctdb.pc
 
 %changelog
+* Tue Jun 30 2009 : Version 1.0.86
+ - Do not access the reclock at all if VerifyRecoveryLock is zero, not even try to probe it.
+ - Allow setting the reclock file as "", which means that no reclock file at all should be used.
+ - Document that a reclock file is no longer required, but that it is dangerous.
+ - Add a control that can be used to set/clear/change the reclock file in the daemon during runtime.
+ - Update the recovery daemon to poll whether a reclock file should be sued and if so which file at runtime in each monitoring cycle.
+ - Automatically disable VerifyRecoveryLock everytime a user changes the location of the reclock file.
+ - do not allow the VerifyRecoveryLock to be set using ctdb setvar if there is no recovery lock file specified.
+ - Add two commands "ctdb getreclock" and "ctdb setreclock" to modify the reclock file.
+* Tue Jun 23 2009 : Version 1.0.85
+ - From William Jojo : Dont use getopt on AIX
+ - Make it possible to use "ctdb listnodes" also when the daemon is not running
+ - Provide machinereadable output to "ctdb listnodes"
+ - Dont list DELETED nodes in the ctdb listnodes output
+ - Try to avoid causing a recovery for the average case when adding/deleting/moving an ip
+ - When banning a node, drop the IPs on that node only and not all nodes.
+ - Add tests for NFS and CIFS tickles
+ - Rename 99.routing to 11.routing so it executes before NFS and LVS scripts
+ - Increase the default timeout before we deem an unresponsive recovery daemon hung and shutdown
+ - Reduce the reclock timout to 5 seconds
+ - Spawn a child process in the recovery daemon ot check the reclock file to
+   avoid blocking the process if the underlying filesystem is unresponsive
+ - fix for filedescriptor leak when a child process timesout
+ - Dont log errors if waitpid() returns -1
+ - Onnode updates by Martins
+ - Test and initscript cleanups from Martin S
 * Tue Jun 2 2009 : Version 1.0.84
  - Fix a bug in onnode that could not handle dead nodes
 * Tue Jun 2 2009 : Version 1.0.83

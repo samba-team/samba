@@ -3651,3 +3651,59 @@ int ctdb_ctrl_report_recd_lock_latency(struct ctdb_context *ctdb, struct timeval
 
 	return 0;
 }
+
+/*
+  get the name of the reclock file
+ */
+int ctdb_ctrl_getreclock(struct ctdb_context *ctdb, struct timeval timeout,
+			 uint32_t destnode, TALLOC_CTX *mem_ctx,
+			 const char **name)
+{
+	int ret;
+	int32_t res;
+	TDB_DATA data;
+
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_GET_RECLOCK_FILE, 0, tdb_null, 
+			   mem_ctx, &data, &res, &timeout, NULL);
+	if (ret != 0 || res != 0) {
+		return -1;
+	}
+
+	if (data.dsize == 0) {
+		*name = NULL;
+	} else {
+		*name = talloc_strdup(mem_ctx, discard_const(data.dptr));
+	}
+	talloc_free(data.dptr);
+
+	return 0;
+}
+
+/*
+  set the reclock filename for a node
+ */
+int ctdb_ctrl_setreclock(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, const char *reclock)
+{
+	int ret;
+	TDB_DATA data;
+	int32_t res;
+
+	if (reclock == NULL) {
+	        data.dsize = 0;
+		data.dptr  = NULL;
+	} else {
+	        data.dsize = strlen(reclock) + 1;
+		data.dptr  = discard_const(reclock);
+	}
+
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_SET_RECLOCK_FILE, 0, data, 
+			   NULL, NULL, &res, &timeout, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for setreclock failed\n"));
+		return -1;
+	}
+
+	return 0;
+}

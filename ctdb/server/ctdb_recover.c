@@ -531,7 +531,13 @@ static int set_recmode_destructor(struct ctdb_set_recmode_state *state)
 	double l = timeval_elapsed(&state->start_time);
 
 	ctdb_reclock_latency(state->ctdb, "daemon reclock", &state->ctdb->statistics.reclock.ctdbd, l);
-		
+
+	if (state->fd[0] != -1) {
+		state->fd[0] = -1;
+	}
+	if (state->fd[1] != -1) {
+		state->fd[1] = -1;
+	}
 	kill(state->child, SIGKILL);
 	return 0;
 }
@@ -645,6 +651,8 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 	CTDB_NO_MEMORY(ctdb, state);
 
 	state->start_time = timeval_current();
+	state->fd[0] = -1;
+	state->fd[1] = -1;
 
 	if (ctdb->tunable.verify_recovery_lock == 0) {
 		/* dont need to verify the reclock file */
@@ -693,16 +701,18 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 		_exit(0);
 	}
 	close(state->fd[1]);
+	state->fd[1] = -1;
 
 	talloc_set_destructor(state, set_recmode_destructor);
 
-	state->te = event_add_timed(ctdb->ev, state, timeval_current_ofs(15, 0),
+	state->te = event_add_timed(ctdb->ev, state, timeval_current_ofs(5, 0),
 				    ctdb_set_recmode_timeout, state);
 
 	state->fde = event_add_fd(ctdb->ev, state, state->fd[0],
 				EVENT_FD_READ|EVENT_FD_AUTOCLOSE,
 				set_recmode_handler,
 				(void *)state);
+
 	if (state->fde == NULL) {
 		talloc_free(state);
 		return -1;
@@ -731,7 +741,9 @@ bool ctdb_recovery_lock(struct ctdb_context *ctdb, bool keep)
 	}
 	if (ctdb->recovery_lock_fd != -1) {
 		close(ctdb->recovery_lock_fd);
+		ctdb->recovery_lock_fd = -1;
 	}
+
 	ctdb->recovery_lock_fd = open(ctdb->recovery_lock_file, O_RDWR|O_CREAT, 0600);
 	if (ctdb->recovery_lock_fd == -1) {
 		DEBUG(DEBUG_ERR,("ctdb_recovery_lock: Unable to open %s - (%s)\n", 

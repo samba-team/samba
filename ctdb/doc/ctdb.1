@@ -1,11 +1,11 @@
 .\"     Title: ctdb
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
-.\"      Date: 06/02/2009
+.\"      Date: 07/02/2009
 .\"    Manual: 
 .\"    Source: 
 .\"
-.TH "CTDB" "1" "06/02/2009" "" ""
+.TH "CTDB" "1" "07/02/2009" "" ""
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -403,6 +403,25 @@ CTDB version 1
 This command is used to clear all statistics counters in a node\.
 .PP
 Example: ctdb statisticsreset
+.SS "getreclock"
+.PP
+This command is used to show the filename of the reclock file that is used\.
+.PP
+Example output:
+.sp
+.RS 4
+.nf
+Reclock file:/gpfs/\.ctdb/shared
+      
+.fi
+.RE
+.SS "setreclock [filename]"
+.PP
+This command is used to modify, or clear, the file that is used as the reclock file at runtime\. When this command is used, the reclock file checks are disabled\. To re\-enable the checks the administrator needs to activate the "VerifyRecoveryLock" tunable using "ctdb setvar"\.
+.PP
+If run with no parameter this will remove the reclock file completely\. If run with a parameter the parameter specifies the new filename to use for the recovery lock\.
+.PP
+This command only affects the runtime settings of a ctdb node and will be lost when ctdb is restarted\. For persistent changes to the reclock file setting you must edit /etc/sysconfig/ctdb\.
 .SS "getdebug"
 .PP
 Get the current debug level for the node\. the debug level controls what information is written to the log file\.
@@ -461,6 +480,9 @@ This command will shutdown a specific CTDB daemon\.
 .SS "recover"
 .PP
 This command will trigger the recovery daemon to do a cluster recovery\.
+.SS "ipreallocate"
+.PP
+This command will force the recovery master to perform a full ip reallocation process and redistribute all ip addresses\. This is useful to "reset" the allocations back to its default state if they have been changed using the "moveip" command\. While a "recover" will also perform this reallocation, a recovery is much more hevyweight since it will also rebuild all the databases\.
 .SS "killtcp <srcip:port> <dstip:port>"
 .PP
 This command will kill the specified TCP connection by issuing a TCP RST to the srcip:port endpoint\. This is a command used by the ctdb eventscripts\.

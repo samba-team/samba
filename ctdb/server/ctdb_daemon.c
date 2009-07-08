@@ -1000,6 +1000,11 @@ int ctdb_daemon_send_message(struct ctdb_context *ctdb, uint32_t pnn,
 	struct ctdb_req_message *r;
 	int len;
 
+	if (ctdb->methods == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to send message. Transport is DOWN\n"));
+		return -1;
+	}
+
 	/* see if this is a message to ourselves */
 	if (pnn == ctdb->pnn) {
 		return ctdb_local_message(ctdb, srvid, data);

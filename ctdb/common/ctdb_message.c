@@ -52,8 +52,8 @@ void ctdb_request_message(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	struct ctdb_req_message *c = (struct ctdb_req_message *)hdr;
 	TDB_DATA data;
 
-	data.dptr = &c->data[0];
 	data.dsize = c->datalen;
+	data.dptr = talloc_memdup(c, &c->data[0], c->datalen);
 
 	ctdb_dispatch_message(ctdb, c->srvid, data);
 }

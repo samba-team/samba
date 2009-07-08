@@ -69,6 +69,11 @@ static void ctdb_send_error(struct ctdb_context *ctdb,
 	char *msg;
 	int msglen, len;
 
+	if (ctdb->methods == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to send error. Transport is DOWN\n"));
+		return;
+	}
+
 	va_start(ap, fmt);
 	msg = talloc_vasprintf(ctdb, fmt, ap);
 	if (msg == NULL) {
@@ -141,7 +146,12 @@ static void ctdb_send_dmaster_reply(struct ctdb_db_context *ctdb_db,
 	header->dmaster = new_dmaster;
 	ret = ctdb_ltdb_store(ctdb_db, key, header, data);
 	if (ret != 0) {
-		ctdb_fatal(ctdb, "ctdb_req_dmaster unable to update dmaster");
+		ctdb_fatal(ctdb, "ctdb_send_dmaster_reply unable to update dmaster");
+		return;
+	}
+
+	if (ctdb->methods == NULL) {
+		ctdb_fatal(ctdb, "ctdb_send_dmaster_reply cant update dmaster sicne transport is down");
 		return;
 	}
 
@@ -185,6 +195,11 @@ static void ctdb_call_send_dmaster(struct ctdb_db_context *ctdb_db,
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
 	int len;
 	uint32_t lmaster = ctdb_lmaster(ctdb, key);
+
+	if (ctdb->methods == NULL) {
+		ctdb_fatal(ctdb, "Failed ctdb_call_send_dmaster since transport is down");
+		return;
+	}
 
 	if (lmaster == ctdb->pnn) {
 		ctdb_send_dmaster_reply(ctdb_db, header, *key, *data, 
@@ -366,6 +381,12 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	struct ctdb_ltdb_header header;
 	struct ctdb_call *call;
 	struct ctdb_db_context *ctdb_db;
+
+	if (ctdb->methods == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed ctdb_request_call. Transport is DOWN\n"));
+		return;
+	}
+
 
 	ctdb_db = find_ctdb_db(ctdb, c->db_id);
 	if (!ctdb_db) {
@@ -663,6 +684,11 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 	struct ctdb_call_state *state;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
 
+	if (ctdb->methods == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed send packet. Transport is down\n"));
+		return NULL;
+	}
+
 	state = talloc_zero(ctdb_db, struct ctdb_call_state);
 	CTDB_NO_MEMORY_NULL(ctdb, state);
 	state->call = talloc(state, struct ctdb_call);
@@ -742,6 +768,11 @@ void ctdb_send_keepalive(struct ctdb_context *ctdb, uint32_t destnode)
 {
 	struct ctdb_req_keepalive *r;
 	
+	if (ctdb->methods == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to send keepalive. Transport is DOWN\n"));
+		return;
+	}
+
 	r = ctdb_transport_allocate(ctdb, ctdb, CTDB_REQ_KEEPALIVE,
 				    sizeof(struct ctdb_req_keepalive), 
 				    struct ctdb_req_keepalive);
