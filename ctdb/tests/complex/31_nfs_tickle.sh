@@ -57,23 +57,8 @@ try_command_on_node 0 $CTDB getvar MonitorInterval
 monitor_interval="${out#*= }"
 #echo "Monitor interval on node $test_node is $monitor_interval seconds."
 
-echo "Getting list of public IPs..."
-try_command_on_node 0 "$CTDB ip -n all | sed -e '1d'"
+select_test_node_and_ips
 
-# When selecting test_node we just want a node that has public IPs.
-# This will work and is economically semi-randomly.  :-)
-read x test_node <<<"$out"
-
-ips=""
-while read ip pnn ; do
-    if [ "$pnn" = "$test_node" ] ; then
-	ips="${ips}${ips:+ }${ip}"
-    fi
-done <<<"$out" # bashism to avoid problem setting variable in pipeline.
-
-echo "Selected node ${test_node} with IPs: $ips"
-
-test_ip="${ips%% *}"
 test_port=2049
 
 echo "Connecting to node ${test_node} on IP ${test_ip}:${test_port} with netcat..."

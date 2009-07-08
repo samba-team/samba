@@ -258,6 +258,27 @@ sanity_check_ips ()
     return 1
 }
 
+select_test_node_and_ips ()
+{
+    try_command_on_node 0 "$CTDB ip -n all | sed -e '1d'"
+
+    # When selecting test_node we just want a node that has public
+    # IPs.  This will work and is economically semi-random.  :-)
+    local x
+    read x test_node <<<"$out"
+
+    test_node_ips=""
+    local ip pnn
+    while read ip pnn ; do
+	if [ "$pnn" = "$test_node" ] ; then
+            test_node_ips="${test_node_ips}${test_node_ips:+ }${ip}"
+	fi
+    done <<<"$out" # bashism to avoid problem setting variable in pipeline.
+
+    echo "Selected node ${test_node} with IPs: ${test_node_ips}."
+    test_ip="${test_node_ips%% *}"
+}
+
 #######################################
 
 # Wait until either timeout expires or command succeeds.  The command
@@ -541,6 +562,19 @@ tcptickle_sniff_wait_show ()
     tcpdump_wait 1 "$tcptickle_reset"
 
     echo "GOOD: here are some TCP tickle packets:"
+    tcpdump_show
+}
+
+gratarp_sniff_start ()
+{
+    tcpdump_start "arp host ${test_ip}"
+}
+
+gratarp_sniff_wait_show ()
+{
+    tcpdump_wait 2
+
+    echo "GOOD: this should be the some gratuitous ARPs:"
     tcpdump_show
 }
 

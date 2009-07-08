@@ -51,23 +51,7 @@ cluster_is_healthy
 # Reset configuration
 ctdb_restart_when_done
 
-echo "Getting list of public IPs..."
-try_command_on_node 0 "$CTDB ip -n all | sed -e '1d'"
-
-# When selecting test_node we just want a node that has public IPs.
-# This will work and is economically semi-randomly.  :-)
-read x test_node <<<"$out"
-
-ips=""
-while read ip pnn ; do
-    if [ "$pnn" = "$test_node" ] ; then
-	ips="${ips}${ips:+ }${ip}"
-    fi
-done <<<"$out" # bashism to avoid problem setting variable in pipeline.
-
-echo "Selected node ${test_node} with IPs: $ips"
-
-test_ip="${ips%% *}"
+select_test_node_and_ips
 
 echo "Removing ${test_ip} from the local ARP table..."
 arp -d $test_ip >/dev/null 2>&1 || true
@@ -81,17 +65,13 @@ original_mac=$(arp -n $test_ip | awk '$2 == "ether" {print $3}')
 
 echo "MAC address is: ${original_mac}"
 
-filter="arp net ${test_ip}"
-tcpdump_start "$filter"
+gratarp_sniff_start
 
 echo "Disabling node $test_node"
 try_command_on_node 1 $CTDB disable -n $test_node
 onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status $test_node disabled
 
-tcpdump_wait 2
-
-echo "GOOD: this should be the gratuitous ARP and the reply:"
-tcpdump_show
+gratarp_sniff_wait_show
 
 echo "Getting MAC address associated with ${test_ip} again..."
 new_mac=$(arp -n $test_ip | awk '$2 == "ether" {print $3}')
