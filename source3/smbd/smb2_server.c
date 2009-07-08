@@ -1339,7 +1339,7 @@ static int smbd_smb2_request_next_vector(struct tstream_context *stream,
 
 		if (invalid) {
 			/* the caller should check this */
-			body_size = 0;
+			body_size = 2;
 		}
 
 		if ((body_size % 2) != 0) {
@@ -1376,7 +1376,7 @@ static int smbd_smb2_request_next_vector(struct tstream_context *stream,
 		 */
 		memcpy(body, hdr + SMB2_HDR_BODY, 2);
 		vector[0].iov_base = body + 2;
-		vector[0].iov_len = req->in.vector[idx].iov_len - 2;
+		vector[0].iov_len = body_size - 2;
 
 		vector[1] = req->in.vector[idx+1];
 
