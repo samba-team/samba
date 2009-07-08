@@ -876,6 +876,8 @@ bool get_dir_entry(TALLOC_CTX *ctx,
 		    mask_match_search(filename,mask,False) ||
 		    mangle_mask_match(conn,filename,mask)) {
 			char mname[13];
+			struct smb_filename *smb_fname = NULL;
+			NTSTATUS status;
 
 			if (!mangle_is_8_3(filename, False, conn->params)) {
 				if (!name_to_8_3(filename,mname,False,
@@ -905,51 +907,47 @@ bool get_dir_entry(TALLOC_CTX *ctx,
 				return False;
 			}
 
-			if (!VALID_STAT(sbuf)) {
-				struct smb_filename *smb_fname = NULL;
-				NTSTATUS status;
+			/* Create smb_fname with NULL stream_name. */
+			status = create_synthetic_smb_fname(ctx, pathreal,
+							    NULL, &sbuf,
+							    &smb_fname);
 
-				/* Create smb_fname with NULL stream_name. */
-				status =
-				    create_synthetic_smb_fname(ctx, pathreal,
-							       NULL, NULL,
-							       &smb_fname);
-				if (!NT_STATUS_IS_OK(status)) {
-					TALLOC_FREE(pathreal);
-					TALLOC_FREE(filename);
-					return NULL;
-				}
+			TALLOC_FREE(pathreal);
+			if (!NT_STATUS_IS_OK(status)) {
+				TALLOC_FREE(filename);
+				return false;
+			}
 
+			if (!VALID_STAT(smb_fname->st)) {
 				if ((SMB_VFS_STAT(conn, smb_fname)) != 0) {
 					DEBUG(5,("Couldn't stat 1 [%s]. Error "
-						 "= %s\n", pathreal,
+						 "= %s\n",
+						 smb_fname_str_dbg(smb_fname),
 						 strerror(errno)));
 					TALLOC_FREE(smb_fname);
-					TALLOC_FREE(pathreal);
 					TALLOC_FREE(filename);
 					continue;
 				}
-				sbuf = smb_fname->st;
-				TALLOC_FREE(smb_fname);
 			}
 
-			*mode = dos_mode(conn,pathreal,&sbuf);
+			*mode = dos_mode(conn, smb_fname);
 
 			if (!dir_check_ftype(conn,*mode,dirtype)) {
 				DEBUG(5,("[%s] attribs 0x%x didn't match 0x%x\n",filename,(unsigned int)*mode,(unsigned int)dirtype));
-				TALLOC_FREE(pathreal);
+				TALLOC_FREE(smb_fname);
 				TALLOC_FREE(filename);
 				continue;
 			}
 
-			*size = sbuf.st_ex_size;
-			*date = sbuf.st_ex_mtime;
+			*size = smb_fname->st.st_ex_size;
+			*date = smb_fname->st.st_ex_mtime;
 
 			if (ask_sharemode) {
 				struct timespec write_time_ts;
 				struct file_id fileid;
 
-				fileid = vfs_file_id_from_sbuf(conn, &sbuf);
+				fileid = vfs_file_id_from_sbuf(conn,
+							       &smb_fname->st);
 				get_file_infos(fileid, NULL, &write_time_ts);
 				if (!null_timespec(write_time_ts)) {
 					*date = write_time_ts;
@@ -959,7 +957,7 @@ bool get_dir_entry(TALLOC_CTX *ctx,
 			DEBUG(3,("get_dir_entry mask=[%s] found %s "
 				"fname=%s (%s)\n",
 				mask,
-				pathreal,
+				smb_fname_str_dbg(smb_fname),
 				dname,
 				filename));
 
@@ -969,7 +967,7 @@ bool get_dir_entry(TALLOC_CTX *ctx,
 			*pp_fname_out = filename;
 
 			DirCacheAdd(conn->dirptr->dir_hnd, dname, curoff);
-			TALLOC_FREE(pathreal);
+			TALLOC_FREE(smb_fname);
 		}
 
 		if (!found)

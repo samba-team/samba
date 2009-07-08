@@ -591,8 +591,7 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 	if (!posix_open) {
 		new_dos_attributes &= SAMBA_ATTRIBUTES_MASK;
 		if (file_existed) {
-			existing_dos_attributes = dos_mode(conn, fname,
-							   &smb_fname->st);
+			existing_dos_attributes = dos_mode(conn, smb_fname);
 		}
 	}
 

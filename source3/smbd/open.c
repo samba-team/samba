@@ -1567,8 +1567,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	if (!posix_open) {
 		new_dos_attributes &= SAMBA_ATTRIBUTES_MASK;
 		if (file_existed) {
-			existing_dos_attributes = dos_mode(conn, fname,
-							   &smb_fname->st);
+			existing_dos_attributes = dos_mode(conn, smb_fname);
 		}
 	}
 
@@ -2265,25 +2264,18 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 ****************************************************************************/
 
 NTSTATUS open_file_fchmod(struct smb_request *req, connection_struct *conn,
-			  const char *fname,
-			  SMB_STRUCT_STAT *psbuf, files_struct **result)
+			  struct smb_filename *smb_fname,
+			  files_struct **result)
 {
-	struct smb_filename *smb_fname = NULL;
 	files_struct *fsp = NULL;
 	NTSTATUS status;
 
-	if (!VALID_STAT(*psbuf)) {
+	if (!VALID_STAT(smb_fname->st)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	status = file_new(req, conn, &fsp);
 	if(!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	status = create_synthetic_smb_fname_split(talloc_tos(), fname, psbuf,
-						  &smb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
@@ -2303,10 +2295,7 @@ NTSTATUS open_file_fchmod(struct smb_request *req, connection_struct *conn,
 		NULL,					/* sd */
 		NULL,					/* ea_list */
 		&fsp,					/* result */
-		NULL);					/* psbuf */
-
-	*psbuf = smb_fname->st;
-	TALLOC_FREE(smb_fname);
+		NULL);					/* pinfo */
 
 	/*
 	 * This is not a user visible file open.

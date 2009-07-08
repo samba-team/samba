@@ -6237,9 +6237,10 @@ bool smbd_setup_mdns_registration(struct tevent_context *ev,
 mode_t unix_mode(connection_struct *conn, int dosmode,
 		 const struct smb_filename *smb_fname,
 		 const char *inherit_from_dir);
-uint32 dos_mode_msdfs(connection_struct *conn, const char *path, const SMB_STRUCT_STAT *sbuf);
+uint32 dos_mode_msdfs(connection_struct *conn,
+		      const struct smb_filename *smb_fname);
 int dos_attributes_to_stat_dos_flags(uint32_t dosmode);
-uint32 dos_mode(connection_struct *conn, const char *path, const SMB_STRUCT_STAT *sbuf);
+uint32 dos_mode(connection_struct *conn, const struct smb_filename *smb_fname);
 int file_set_dosmode(connection_struct *conn, struct smb_filename *smb_fname,
 		     uint32 dosmode, const char *parent_dir, bool newfile);
 int file_ntimes(connection_struct *conn, const struct smb_filename *smb_fname,
@@ -6596,8 +6597,8 @@ bool map_open_params_to_ntcreate(const char *fname, int deny_mode, int open_func
 				 uint32 *pcreate_disposition,
 				 uint32 *pcreate_options);
 NTSTATUS open_file_fchmod(struct smb_request *req, connection_struct *conn,
-			  const char *fname,
-			  SMB_STRUCT_STAT *psbuf, files_struct **result);
+			  struct smb_filename *smb_fname,
+			  files_struct **result);
 NTSTATUS close_file_fchmod(struct smb_request *req, files_struct *fsp);
 NTSTATUS create_directory(connection_struct *conn, struct smb_request *req,
 			  struct smb_filename *smb_dname);
@@ -6718,7 +6719,8 @@ NTSTATUS posix_fget_nt_acl(struct files_struct *fsp, uint32_t security_info,
 			   SEC_DESC **ppdesc);
 NTSTATUS posix_get_nt_acl(struct connection_struct *conn, const char *name,
 			  uint32_t security_info, SEC_DESC **ppdesc);
-int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_t gid);
+int try_chown(connection_struct *conn, struct smb_filename *smb_fname,
+	      uid_t uid, gid_t gid);
 NTSTATUS append_parent_acl(files_struct *fsp,
 				const SEC_DESC *pcsd,
 				SEC_DESC **pp_new_sd);

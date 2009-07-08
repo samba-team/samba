@@ -743,12 +743,22 @@ NTSTATUS smb_set_nt_acl_nfs4(files_struct *fsp,
 		}
 		if (((newUID != (uid_t)-1) && (sbuf.st_ex_uid != newUID)) ||
 		    ((newGID != (gid_t)-1) && (sbuf.st_ex_gid != newGID))) {
-			if(try_chown(fsp->conn, fsp->fsp_name, newUID, newGID)) {
+			struct smb_filename *smb_fname = NULL;
+			NTSTATUS status;
+
+			status = create_synthetic_smb_fname_split(talloc_tos(),
+			    fsp->fsp_name, NULL, &smb_fname);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+			if(try_chown(fsp->conn, smb_fname, newUID, newGID)) {
 				DEBUG(3,("chown %s, %u, %u failed. Error = %s.\n",
 					 fsp->fsp_name, (unsigned int)newUID, (unsigned int)newGID, 
 					 strerror(errno)));
+				TALLOC_FREE(smb_fname);
 				return map_nt_error_from_unix(errno);
 			}
+			TALLOC_FREE(smb_fname);
 
 			DEBUG(10,("chown %s, %u, %u succeeded.\n",
 				  fsp->fsp_name, (unsigned int)newUID, (unsigned int)newGID));

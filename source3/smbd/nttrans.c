@@ -620,7 +620,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	}
 
 	file_len = smb_fname->st.st_ex_size;
-	fattr = dos_mode(conn,fsp->fsp_name,&smb_fname->st);
+	fattr = dos_mode(conn, smb_fname);
 	if (fattr == 0) {
 		fattr = FILE_ATTRIBUTE_NORMAL;
 	}
@@ -704,7 +704,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	}
 
 	DEBUG(5,("reply_ntcreate_and_X: fnum = %d, open name = %s\n",
-		 fsp->fnum, fsp->fsp_name));
+		fsp->fnum, smb_fname_str_dbg(smb_fname)));
 
 	chain_reply(req);
  out:
@@ -1111,7 +1111,7 @@ static void call_nt_transact_create(connection_struct *conn,
 	}
 
 	file_len = smb_fname->st.st_ex_size;
-	fattr = dos_mode(conn, fsp->fsp_name, &smb_fname->st);
+	fattr = dos_mode(conn, smb_fname);
 	if (fattr == 0) {
 		fattr = FILE_ATTRIBUTE_NORMAL;
 	}
@@ -1194,7 +1194,8 @@ static void call_nt_transact_create(connection_struct *conn,
 		SIVAL(p,0,perms);
 	}
 
-	DEBUG(5,("call_nt_transact_create: open name = %s\n", fsp->fsp_name));
+	DEBUG(5,("call_nt_transact_create: open name = %s\n",
+		 smb_fname_str_dbg(smb_fname)));
 
 	/* Send the required number of replies */
 	send_nt_replies(conn, req, NT_STATUS_OK, params, param_len, *ppdata, 0);
@@ -1236,7 +1237,6 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 				struct smb_filename *smb_fname_dst,
 				uint32 attrs)
 {
-	char *oldname = NULL;
 	files_struct *fsp1,*fsp2;
 	uint32 fattr;
 	int info;
@@ -1255,13 +1255,8 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 		goto out;
 	}
 
-	status = get_full_smb_filename(ctx, smb_fname_src, &oldname);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-
 	/* Ensure attributes match. */
-	fattr = dos_mode(conn, oldname, &smb_fname_src->st);
+	fattr = dos_mode(conn, smb_fname_src);
 	if ((fattr & ~attrs) & (aHIDDEN | aSYSTEM)) {
 		status = NT_STATUS_NO_SUCH_FILE;
 		goto out;
@@ -1367,7 +1362,6 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 			smb_fname_str_dbg(smb_fname_dst)));
 	}
 
-	TALLOC_FREE(oldname);
 	return status;
 }
 

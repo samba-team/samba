@@ -1091,7 +1091,7 @@ void reply_getatr(struct smb_request *req)
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
 				&smb_fname,
-				&fname);
+				NULL);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 				reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
@@ -1110,7 +1110,7 @@ void reply_getatr(struct smb_request *req)
 			goto out;
 		}
 
-		mode = dos_mode(conn, fname, &smb_fname->st);
+		mode = dos_mode(conn, smb_fname);
 		size = smb_fname->st.st_ex_size;
 
 		if (ask_sharemode) {
@@ -1747,7 +1747,7 @@ void reply_open(struct smb_request *req)
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
 				&smb_fname,
-				&fname);
+				NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req,
@@ -1760,8 +1760,9 @@ void reply_open(struct smb_request *req)
 	}
 
 	if (!map_open_params_to_ntcreate(
-		    fname, deny_mode, OPENX_FILE_EXISTS_OPEN, &access_mask,
-		    &share_mode, &create_disposition, &create_options)) {
+		    smb_fname->base_name, deny_mode, OPENX_FILE_EXISTS_OPEN,
+		    &access_mask, &share_mode, &create_disposition,
+		    &create_options)) {
 		reply_nterror(req, NT_STATUS_DOS(ERRDOS, ERRbadaccess));
 		goto out;
 	}
@@ -1793,7 +1794,7 @@ void reply_open(struct smb_request *req)
 	}
 
 	size = smb_fname->st.st_ex_size;
-	fattr = dos_mode(conn,fsp->fsp_name,&smb_fname->st);
+	fattr = dos_mode(conn, smb_fname);
 
 	/* Deal with other possible opens having a modified
 	   write time. JRA. */
@@ -1916,7 +1917,7 @@ void reply_open_and_X(struct smb_request *req)
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
 				&smb_fname,
-				&fname);
+				NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req,
@@ -1929,7 +1930,7 @@ void reply_open_and_X(struct smb_request *req)
 	}
 
 	if (!map_open_params_to_ntcreate(
-		    fname, deny_mode, smb_ofun, &access_mask,
+		    smb_fname->base_name, deny_mode, smb_ofun, &access_mask,
 		    &share_mode, &create_disposition, &create_options)) {
 		reply_nterror(req, NT_STATUS_DOS(ERRDOS, ERRbadaccess));
 		goto out;
@@ -1980,7 +1981,7 @@ void reply_open_and_X(struct smb_request *req)
 		    SMB_VFS_GET_ALLOC_SIZE(conn, fsp, &smb_fname->st);
 	}
 
-	fattr = dos_mode(conn,fsp->fsp_name,&smb_fname->st);
+	fattr = dos_mode(conn, smb_fname);
 	mtime = convert_timespec_to_time_t(smb_fname->st.st_ex_mtime);
 	if (fattr & aDIR) {
 		close_file(req, fsp, ERROR_CLOSE);
@@ -2354,13 +2355,22 @@ void reply_ctemp(struct smb_request *req)
 static NTSTATUS can_rename(connection_struct *conn, files_struct *fsp,
 			   uint16 dirtype, SMB_STRUCT_STAT *pst)
 {
+	struct smb_filename *smb_fname = NULL;
+	NTSTATUS status;
 	uint32 fmode;
 
 	if (!CAN_WRITE(conn)) {
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
 	}
 
-	fmode = dos_mode(conn, fsp->fsp_name, pst);
+	status = create_synthetic_smb_fname_split(talloc_tos(), fsp->fsp_name,
+						  pst, &smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	fmode = dos_mode(conn, smb_fname);
+	TALLOC_FREE(smb_fname);
 	if ((fmode & ~dirtype) & (aHIDDEN | aSYSTEM)) {
 		return NT_STATUS_NO_SUCH_FILE;
 	}
@@ -2395,13 +2405,14 @@ static NTSTATUS do_unlink(connection_struct *conn,
 			struct smb_filename *smb_fname,
 			uint32 dirtype)
 {
-	char *fname = NULL;
 	uint32 fattr;
 	files_struct *fsp;
 	uint32 dirtype_orig = dirtype;
 	NTSTATUS status;
 
-	DEBUG(10,("do_unlink: %s, dirtype = %d\n", fname, dirtype ));
+	DEBUG(10,("do_unlink: %s, dirtype = %d\n",
+		  smb_fname_str_dbg(smb_fname),
+		  dirtype));
 
 	if (!CAN_WRITE(conn)) {
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
@@ -2411,12 +2422,7 @@ static NTSTATUS do_unlink(connection_struct *conn,
 		return map_nt_error_from_unix(errno);
 	}
 
-	status = get_full_smb_filename(smb_fname, smb_fname, &fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	fattr = dos_mode(conn, fname, &smb_fname->st);
-	TALLOC_FREE(fname);
+	fattr = dos_mode(conn, smb_fname);
 
 	if (dirtype & FILE_ATTRIBUTE_NORMAL) {
 		dirtype = aDIR|aARCH|aRONLY;
@@ -6578,7 +6584,6 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 			bool target_is_directory)
 {
 	struct smb_filename *smb_fname_dst_tmp = NULL;
-	char *fname_src = NULL;
 	SMB_OFF_T ret=-1;
 	files_struct *fsp1,*fsp2;
  	uint32 dosattrs;
@@ -6655,14 +6660,7 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 		goto out;
 	}
 
-	status = get_full_smb_filename(talloc_tos(), smb_fname_src, &fname_src);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-
-	dosattrs = dos_mode(conn, fname_src, &smb_fname_src->st);
-
-	TALLOC_FREE(fname_src);
+	dosattrs = dos_mode(conn, smb_fname_src);
 
 	if (SMB_VFS_STAT(conn, smb_fname_dst_tmp) == -1) {
 		ZERO_STRUCTP(&smb_fname_dst_tmp->st);
@@ -7739,6 +7737,8 @@ void reply_getattrE(struct smb_request *req)
 	int mode;
 	files_struct *fsp;
 	struct timespec create_ts;
+	struct smb_filename *smb_fname = NULL;
+	NTSTATUS status;
 
 	START_PROFILE(SMBgetattrE);
 
@@ -7763,7 +7763,16 @@ void reply_getattrE(struct smb_request *req)
 		return;
 	}
 
-	mode = dos_mode(conn,fsp->fsp_name,&sbuf);
+	status = create_synthetic_smb_fname_split(talloc_tos(), fsp->fsp_name,
+						  &sbuf, &smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+		END_PROFILE(SMBgetattrE);
+		return;
+	}
+
+	mode = dos_mode(conn, smb_fname);
+	TALLOC_FREE(smb_fname);
 
 	/*
 	 * Convert the times into dos times. Set create

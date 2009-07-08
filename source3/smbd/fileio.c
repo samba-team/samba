@@ -284,32 +284,28 @@ ssize_t write_file(struct smb_request *req,
 	}
 
 	if (!fsp->modified) {
-		SMB_STRUCT_STAT st;
+		struct smb_filename *smb_fname = NULL;
+		NTSTATUS status;
+
 		fsp->modified = True;
 
-		if (SMB_VFS_FSTAT(fsp, &st) == 0) {
+		status = create_synthetic_smb_fname_split(talloc_tos(),
+							  fsp->fsp_name, NULL,
+							  &smb_fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			errno = map_errno_from_nt_status(status);
+			return -1;
+		}
+
+		if (SMB_VFS_FSTAT(fsp, &smb_fname->st) == 0) {
 			int dosmode;
 			trigger_write_time_update(fsp);
-			dosmode = dos_mode(fsp->conn,fsp->fsp_name,&st);
+			dosmode = dos_mode(fsp->conn, smb_fname);
 			if ((lp_store_dos_attributes(SNUM(fsp->conn)) ||
 					MAP_ARCHIVE(fsp->conn)) &&
 					!IS_DOS_ARCHIVE(dosmode)) {
-				struct smb_filename *smb_fname = NULL;
-				NTSTATUS status;
-
-				status = create_synthetic_smb_fname_split(
-					    talloc_tos(), fsp->fsp_name, &st,
-					    &smb_fname);
-				if (!NT_STATUS_IS_OK(status)) {
-					errno =
-					    map_errno_from_nt_status(status);
-					return -1;
-				}
-
 				file_set_dosmode(fsp->conn, smb_fname,
 						dosmode | aARCH, NULL, false);
-				st = smb_fname->st;
-				TALLOC_FREE(smb_fname);
 			}
 
 			/*
@@ -318,10 +314,12 @@ ssize_t write_file(struct smb_request *req,
 			 */
 
 			if (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) && !wcp) {
-				setup_write_cache(fsp, st.st_ex_size);
+				setup_write_cache(fsp,
+						  smb_fname->st.st_ex_size);
 				wcp = fsp->wcp;
 			}
 		}
+		TALLOC_FREE(smb_fname);
 	}
 
 #ifdef WITH_PROFILE

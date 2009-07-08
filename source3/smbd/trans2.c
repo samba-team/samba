@@ -964,7 +964,7 @@ static void call_trans2open(connection_struct *conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
 				&smb_fname,
-				&fname);
+				NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req,
@@ -981,7 +981,8 @@ static void call_trans2open(connection_struct *conn,
 		goto out;
 	}
 
-	if (!map_open_params_to_ntcreate(fname, deny_mode, open_ofun,
+	if (!map_open_params_to_ntcreate(smb_fname->base_name, deny_mode,
+				open_ofun,
 				&access_mask,
 				&share_mode,
 				&create_disposition,
@@ -1047,7 +1048,7 @@ static void call_trans2open(connection_struct *conn,
 	}
 
 	size = get_file_size_stat(&smb_fname->st);
-	fattr = dos_mode(conn, fsp->fsp_name, &smb_fname->st);
+	fattr = dos_mode(conn, smb_fname);
 	mtime = convert_timespec_to_time_t(smb_fname->st.st_ex_mtime);
 	inode = smb_fname->st.st_ex_ino;
 	if (fattr & aDIR) {
@@ -1388,6 +1389,8 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 
 		if (got_match) {
 			bool isdots = (ISDOT(dname) || ISDOTDOT(dname));
+			struct smb_filename *smb_fname = NULL;
+			NTSTATUS status;
 
 			if (dont_descend && !isdots) {
 				TALLOC_FREE(fname);
@@ -1412,25 +1415,40 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 				return False;
 			}
 
+			/* A dirent from dptr_ReadDirName isn't a stream. */
+			status = create_synthetic_smb_fname(ctx, pathreal,
+							    NULL, &sbuf,
+							    &smb_fname);
+			if (!NT_STATUS_IS_OK(status)) {
+				TALLOC_FREE(fname);
+			}
+
 			if (INFO_LEVEL_IS_UNIX(info_level)) {
-				if (vfs_lstat_smb_fname(conn, pathreal,
-							&sbuf) != 0) {
-					DEBUG(5,("get_lanman2_dir_entry:Couldn't lstat [%s] (%s)\n",
-						pathreal,strerror(errno)));
+				if (SMB_VFS_LSTAT(conn, smb_fname) != 0) {
+					DEBUG(5,("get_lanman2_dir_entry: "
+						 "Couldn't lstat [%s] (%s)\n",
+						 smb_fname_str_dbg(smb_fname),
+						 strerror(errno)));
+					TALLOC_FREE(smb_fname);
 					TALLOC_FREE(pathreal);
 					TALLOC_FREE(fname);
 					continue;
 				}
-			} else if (!VALID_STAT(sbuf) &&
-				   vfs_stat_smb_fname(conn, pathreal,
-						      &sbuf) != 0) {
+			} else if (!VALID_STAT(smb_fname->st) &&
+				   SMB_VFS_STAT(conn, smb_fname) != 0) {
 				/* Needed to show the msdfs symlinks as
 				 * directories */
 
-				ms_dfs_link = check_msdfs_link(conn, pathreal, &sbuf);
+				ms_dfs_link =
+				    check_msdfs_link(conn,
+						     smb_fname->base_name,
+						     &smb_fname->st);
 				if (!ms_dfs_link) {
-					DEBUG(5,("get_lanman2_dir_entry:Couldn't stat [%s] (%s)\n",
-						pathreal,strerror(errno)));
+					DEBUG(5,("get_lanman2_dir_entry: "
+						 "Couldn't stat [%s] (%s)\n",
+						 smb_fname_str_dbg(smb_fname),
+						 strerror(errno)));
+					TALLOC_FREE(smb_fname);
 					TALLOC_FREE(pathreal);
 					TALLOC_FREE(fname);
 					continue;
@@ -1438,38 +1456,42 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			}
 
 			if (ms_dfs_link) {
-				mode = dos_mode_msdfs(conn,pathreal,&sbuf);
+				mode = dos_mode_msdfs(conn, smb_fname);
 			} else {
-				mode = dos_mode(conn,pathreal,&sbuf);
+				mode = dos_mode(conn, smb_fname);
 			}
 
 			if (!dir_check_ftype(conn,mode,dirtype)) {
 				DEBUG(5,("get_lanman2_dir_entry: [%s] attribs didn't match %x\n",fname,dirtype));
+				TALLOC_FREE(smb_fname);
 				TALLOC_FREE(pathreal);
 				TALLOC_FREE(fname);
 				continue;
 			}
 
 			if (!(mode & aDIR)) {
-				file_size = get_file_size_stat(&sbuf);
+				file_size = get_file_size_stat(&smb_fname->st);
 			}
-			allocation_size = SMB_VFS_GET_ALLOC_SIZE(conn,NULL,&sbuf);
+			allocation_size =
+			    SMB_VFS_GET_ALLOC_SIZE(conn, NULL, &smb_fname->st);
 
 			if (ask_sharemode) {
 				struct timespec write_time_ts;
 				struct file_id fileid;
 
 				ZERO_STRUCT(write_time_ts);
-				fileid = vfs_file_id_from_sbuf(conn, &sbuf);
+				fileid = vfs_file_id_from_sbuf(conn,
+							       &smb_fname->st);
 				get_file_infos(fileid, NULL, &write_time_ts);
 				if (!null_timespec(write_time_ts)) {
-					update_stat_ex_mtime(&sbuf, write_time_ts);
+					update_stat_ex_mtime(&smb_fname->st,
+							     write_time_ts);
 				}
 			}
 
-			mdate_ts = sbuf.st_ex_mtime;
-			adate_ts = sbuf.st_ex_atime;
-			create_date_ts = sbuf.st_ex_btime;
+			mdate_ts = smb_fname->st.st_ex_mtime;
+			adate_ts = smb_fname->st.st_ex_atime;
+			create_date_ts = smb_fname->st.st_ex_btime;
 
 			if (lp_dos_filetime_resolution(SNUM(conn))) {
 				dos_filetime_timespec(&create_date_ts);
@@ -1482,11 +1504,14 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			adate = convert_timespec_to_time_t(adate_ts);
 
 			DEBUG(5,("get_lanman2_dir_entry: found %s fname=%s\n",
-				pathreal,fname));
+				 smb_fname_str_dbg(smb_fname), fname));
 
 			found = True;
 
 			dptr_DirCacheAdd(conn->dirptr, dname, curr_dirpos);
+			sbuf = smb_fname->st;
+
+			TALLOC_FREE(smb_fname);
 		}
 
 		if (!found)
@@ -4137,16 +4162,16 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 	DEBUG(3,("call_trans2qfilepathinfo %s (fnum = %d) level=%d call=%d total_data=%d\n",
 		fname,fsp ? fsp->fnum : -1, info_level,tran_call,total_data));
 
-	p = strrchr_m(fname,'/');
+	p = strrchr_m(smb_fname->base_name,'/');
 	if (!p)
-		base_name = fname;
+		base_name = smb_fname->base_name;
 	else
 		base_name = p+1;
 
 	if (ms_dfs_link) {
-		mode = dos_mode_msdfs(conn,fname,&sbuf);
+		mode = dos_mode_msdfs(conn, smb_fname);
 	} else {
-		mode = dos_mode(conn,fname,&sbuf);
+		mode = dos_mode(conn, smb_fname);
 	}
 	if (!mode)
 		mode = FILE_ATTRIBUTE_NORMAL;
@@ -5072,9 +5097,7 @@ static NTSTATUS smb_set_file_dosmode(connection_struct *conn,
 	DEBUG(6,("smb_set_file_dosmode: dosmode: 0x%x\n", (unsigned int)dosmode));
 
 	/* check the mode isn't different, before changing it */
-	if ((dosmode != 0) && (dosmode != dos_mode(conn,
-						   smb_fname_base->base_name,
-						   &smb_fname_base->st))) {
+	if ((dosmode != 0) && (dosmode != dos_mode(conn, smb_fname_base))) {
 		DEBUG(10,("smb_set_file_dosmode: file %s : setting dos mode "
 			  "0x%x\n", smb_fname_str_dbg(smb_fname_base),
 			  (unsigned int)dosmode));
@@ -5226,8 +5249,7 @@ static NTSTATUS smb_set_file_disposition_info(connection_struct *conn,
 				const char *pdata,
 				int total_data,
 				files_struct *fsp,
-				const char *fname,
-				SMB_STRUCT_STAT *psbuf)
+				const struct smb_filename *smb_fname)
 {
 	NTSTATUS status = NT_STATUS_OK;
 	bool delete_on_close;
@@ -5242,11 +5264,11 @@ static NTSTATUS smb_set_file_disposition_info(connection_struct *conn,
 	}
 
 	delete_on_close = (CVAL(pdata,0) ? True : False);
-	dosmode = dos_mode(conn, fname, psbuf);
+	dosmode = dos_mode(conn, smb_fname);
 
 	DEBUG(10,("smb_set_file_disposition_info: file %s, dosmode = %u, "
 		"delete_on_close = %u\n",
-		fsp->fsp_name,
+		smb_fname_str_dbg(smb_fname),
 		(unsigned int)dosmode,
 		(unsigned int)delete_on_close ));
 
@@ -6748,10 +6770,8 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 				 struct smb_request *req,
 				const char *pdata,
 				int total_data,
-				const char *fname,
-				SMB_STRUCT_STAT *psbuf)
+				struct smb_filename *smb_fname)
 {
-	struct smb_filename *smb_fname = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	files_struct *fsp = NULL;
 	uint16 flags = 0;
@@ -6767,27 +6787,21 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 
 	flags = SVAL(pdata,0);
 
-	if (!VALID_STAT(*psbuf)) {
+	if (!VALID_STAT(smb_fname->st)) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
 	if ((flags == SMB_POSIX_UNLINK_DIRECTORY_TARGET) &&
-			!VALID_STAT_OF_DIR(*psbuf)) {
+			!VALID_STAT_OF_DIR(smb_fname->st)) {
 		return NT_STATUS_NOT_A_DIRECTORY;
 	}
 
 	DEBUG(10,("smb_posix_unlink: %s %s\n",
 		(flags == SMB_POSIX_UNLINK_DIRECTORY_TARGET) ? "directory" : "file",
-		fname));
+		smb_fname_str_dbg(smb_fname)));
 
-	if (VALID_STAT_OF_DIR(*psbuf)) {
+	if (VALID_STAT_OF_DIR(smb_fname->st)) {
 		create_options |= FILE_DIRECTORY_FILE;
-	}
-
-	status = create_synthetic_smb_fname_split(talloc_tos(), fname, psbuf,
-						  &smb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
 	}
 
         status = SMB_VFS_CREATE_FILE(
@@ -6807,9 +6821,6 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 		NULL,					/* ea_list */
 		&fsp,					/* result */
 		&info);					/* pinfo */
-
-	*psbuf = smb_fname->st;
-	TALLOC_FREE(smb_fname);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -6854,8 +6865,7 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 						&del,
 						1,
 						fsp,
-						fname,
-						psbuf);
+						smb_fname);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		close_file(req, fsp, NORMAL_CLOSE);
@@ -7133,8 +7143,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 						pdata,
 						total_data,
 						fsp,
-						fname,
-						&sbuf);
+						smb_fname);
 			break;
 		}
 
@@ -7270,8 +7279,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 			status = smb_posix_unlink(conn, req,
 						pdata,
 						total_data,
-						fname,
-						&sbuf);
+						smb_fname);
 			break;
 		}
 
