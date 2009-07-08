@@ -1415,8 +1415,7 @@ bool set_delete_on_close(files_struct *fsp, bool delete_on_close, const UNIX_USE
 	return True;
 }
 
-bool set_sticky_write_time(const struct file_id fileid,
-			   struct timespec write_time)
+bool set_sticky_write_time(struct file_id fileid, struct timespec write_time)
 {
 	struct share_mode_lock *lck;
 

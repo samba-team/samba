@@ -781,8 +781,7 @@ int file_ntimes(connection_struct *conn, const struct smb_filename *smb_fname,
  returned on all future write time queries and set on close.
 ******************************************************************/
 
-bool set_sticky_write_time_path(const struct file_id fileid,
-				const struct timespec mtime)
+bool set_sticky_write_time_path(struct file_id fileid, struct timespec mtime)
 {
 	if (null_timespec(mtime)) {
 		return true;
@@ -800,7 +799,7 @@ bool set_sticky_write_time_path(const struct file_id fileid,
  returned on all future write time queries and set on close.
 ******************************************************************/
 
-bool set_sticky_write_time_fsp(struct files_struct *fsp, const struct timespec mtime)
+bool set_sticky_write_time_fsp(struct files_struct *fsp, struct timespec mtime)
 {
 	fsp->write_time_forced = true;
 	TALLOC_FREE(fsp->update_write_time_event);
