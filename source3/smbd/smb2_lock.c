@@ -31,6 +31,7 @@ struct smbd_smb2_lock_element {
 static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 						 struct tevent_context *ev,
 						 struct smbd_smb2_request *smb2req,
+						 uint32_t in_smbpid,
 						 uint64_t in_file_id_volatile,
 						 uint16_t in_lock_count,
 						 struct smbd_smb2_lock_element *in_locks);
@@ -44,6 +45,7 @@ NTSTATUS smbd_smb2_request_process_lock(struct smbd_smb2_request *req)
 	const int i = req->current_idx;
 	size_t expected_body_size = 0x30;
 	size_t body_size;
+	uint32_t in_smbpid;
 	uint16_t in_lock_count;
 	uint64_t in_file_id_persistent;
 	uint64_t in_file_id_volatile;
@@ -63,6 +65,8 @@ NTSTATUS smbd_smb2_request_process_lock(struct smbd_smb2_request *req)
 	if (body_size != expected_body_size) {
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
+
+	in_smbpid			= IVAL(inhdr, SMB2_HDR_PID);
 
 	in_lock_count			= CVAL(inbody, 0x02);
 	/* 0x04 - 4 bytes reserved */
@@ -111,6 +115,7 @@ NTSTATUS smbd_smb2_request_process_lock(struct smbd_smb2_request *req)
 	subreq = smbd_smb2_lock_send(req,
 				     req->conn->smb2.event_ctx,
 				     req,
+				     in_smbpid,
 				     in_file_id_volatile,
 				     in_lock_count,
 				     in_locks);
@@ -175,6 +180,7 @@ struct smbd_smb2_lock_state {
 static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 						 struct tevent_context *ev,
 						 struct smbd_smb2_request *smb2req,
+						 uint32_t in_smbpid,
 						 uint64_t in_file_id_volatile,
 						 uint16_t in_lock_count,
 						 struct smbd_smb2_lock_element *in_locks)
