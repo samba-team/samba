@@ -1015,6 +1015,10 @@ done:
 	return werr;
 }
 
+/**
+ * create a subkey of a given key
+ */
+
 static WERROR regdb_delete_subkey(const char *key, const char *subkey)
 {
 	WERROR werr;
