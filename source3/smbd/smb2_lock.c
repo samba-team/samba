@@ -41,7 +41,7 @@ NTSTATUS smbd_smb2_request_process_lock(struct smbd_smb2_request *req)
 {
 	const uint8_t *inhdr;
 	const uint8_t *inbody;
-	int i = req->current_idx;
+	const int i = req->current_idx;
 	size_t expected_body_size = 0x30;
 	size_t body_size;
 	uint16_t in_lock_count;
@@ -50,6 +50,7 @@ NTSTATUS smbd_smb2_request_process_lock(struct smbd_smb2_request *req)
 	struct smbd_smb2_lock_element *in_locks;
 	struct tevent_req *subreq;
 	const uint8_t *lock_buffer;
+	uint16_t l;
 
 	inhdr = (const uint8_t *)req->in.vector[i+0].iov_base;
 	if (req->in.vector[i+1].iov_len != (expected_body_size & 0xFFFFFFFE)) {
@@ -64,7 +65,7 @@ NTSTATUS smbd_smb2_request_process_lock(struct smbd_smb2_request *req)
 	}
 
 	in_lock_count			= CVAL(inbody, 0x02);
-	/* 0x04 4 bytes reserved */
+	/* 0x04 - 4 bytes reserved */
 	in_file_id_persistent		= BVAL(inbody, 0x08);
 	in_file_id_volatile		= BVAL(inbody, 0x10);
 
@@ -88,19 +89,21 @@ NTSTATUS smbd_smb2_request_process_lock(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
 	}
 
-	i = 0;
+	l = 0;
 	lock_buffer = inbody + 0x18;
 
-	in_locks[i].offset	= BVAL(lock_buffer, 0x00);
-	in_locks[i].length	= BVAL(lock_buffer, 0x08);
-	in_locks[i].flags	= BVAL(lock_buffer, 0x10);
+	in_locks[l].offset	= BVAL(lock_buffer, 0x00);
+	in_locks[l].length	= BVAL(lock_buffer, 0x08);
+	in_locks[l].flags	= IVAL(lock_buffer, 0x10);
+	/* 0x14 - 4 reserved bytes */
 
 	lock_buffer = (const uint8_t *)req->in.vector[i+2].iov_base;
 
-	for (i=1; i < in_lock_count; i++) {
-		in_locks[i].offset	= BVAL(lock_buffer, 0x00);
-		in_locks[i].length	= BVAL(lock_buffer, 0x08);
-		in_locks[i].flags	= BVAL(lock_buffer, 0x10);
+	for (l=1; l < in_lock_count; l++) {
+		in_locks[l].offset	= BVAL(lock_buffer, 0x00);
+		in_locks[l].length	= BVAL(lock_buffer, 0x08);
+		in_locks[l].flags	= IVAL(lock_buffer, 0x10);
+		/* 0x14 - 4 reserved bytes */
 
 		lock_buffer += 0x18;
 	}
