@@ -1,11 +1,11 @@
 .\"     Title: ctdb
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
-.\"      Date: 07/02/2009
+.\"      Date: 07/09/2009
 .\"    Manual: 
 .\"    Source: 
 .\"
-.TH "CTDB" "1" "07/02/2009" "" ""
+.TH "CTDB" "1" "07/09/2009" "" ""
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -93,6 +93,8 @@ DISABLED \- This node has been administratively disabled\. This node is still fu
 UNHEALTHY \- A service provided by this node is malfunctioning and should be investigated\. The CTDB daemon itself is operational and participates in the cluster\. Its public IP address has been taken over by a different node and no services are currnetly being hosted\. All unhealthy nodes should be investigated and require an administrative action to rectify\.
 .PP
 BANNED \- This node failed too many recovery attempts and has been banned from participating in the cluster for a period of RecoveryBanPeriod seconds\. Any public IP address has been taken over by other nodes\. This node does not provide any services\. All banned nodes should be investigated and require an administrative action to rectify\. This node does not perticipate in the CTDB cluster but can still be communicated with\. I\.e\. ctdb commands can be sent to it\.
+.PP
+STOPPED \- A node that is stopped does not host any public ip addresses, nor is it part of the VNNMAP\. A stopped node can not become LVSMASTER, RECMASTER or NATGW\. This node does not perticipate in the CTDB cluster but can still be communicated with\. I\.e\. ctdb commands can be sent to it\.
 .RE
 .sp
 .it 1 an-trap
@@ -321,7 +323,7 @@ LVS is the mode where the entire CTDB/Samba cluster uses a single ip address for
 .PP
 This command shows which nodes in the cluster are currently active in the LVS configuration\. I\.e\. which nodes we are currently loadbalancing the single ip address across\.
 .PP
-LVS will by default only loadbalance across those nodes that are both LVS capable and also HEALTHY\. Except if all nodes are UNHEALTHY in which case LVS will loadbalance across all UNHEALTHY nodes as well\. LVS will never use nodes that are DISCONNECTED, BANNED or DISABLED\.
+LVS will by default only loadbalance across those nodes that are both LVS capable and also HEALTHY\. Except if all nodes are UNHEALTHY in which case LVS will loadbalance across all UNHEALTHY nodes as well\. LVS will never use nodes that are DISCONNECTED, STOPPED, BANNED or DISABLED\.
 .PP
 Example output:
 .sp
@@ -445,13 +447,12 @@ This command is used to administratively disable a node in the cluster\. A disab
 .SS "enable"
 .PP
 Re\-enable a node that has been administratively disabled\.
-.SS "ban <bantime|0>"
+.SS "stop"
 .PP
-Administratively ban a node for bantime seconds\. A bantime of 0 means that the node should be permanently banned\.
+This command is used to administratively STOP a node in the cluster\. A STOPPED node is connected to the cluster but will not host any public ip addresse, nor does it participate in the VNNMAP\. The difference between a DISABLED node and a STOPPED node is that a STOPPED node does not host any parts of the database which means that a recovery is required to stop/continue nodes\.
+.SS "continue"
 .PP
-A banned node does not participate in the cluster and does not host any records for the clustered TDB\. Its ip address has been taken over by an other node and no services are hosted\.
-.PP
-Nodes are automatically banned if they are the cause of too many cluster recoveries\.
+Re\-start a node that has been administratively stopped\.
 .SS "addip <public_ip/mask> <iface>"
 .PP
 This command is used to add a new public ip to a node during runtime\. This allows public addresses to be added to a cluster without having to restart the ctdb daemons\.
@@ -471,9 +472,6 @@ In order to manually override the "automatic" distribution of public ip addresse
 DeterministicIPs = 0
 .PP
 NoIPFailback = 1
-.SS "unban"
-.PP
-This command is used to unban a node that has either been administratively banned using the ban command or has been automatically banned by the recovery daemon\.
 .SS "shutdown"
 .PP
 This command will shutdown a specific CTDB daemon\.
@@ -553,6 +551,12 @@ Vacuum only deletes records where the local node is the lmaster\. To delete all 
 Example: ctdb vacuum
 .PP
 By default, this operation is issued from the 00\.ctdb event script every 5 minutes\.
+.SS "backupdb <database> <file>"
+.PP
+This command can be used to copy the entire content of a database out to a file\. This file can later be read back into ctdb using the restoredb command\. This is mainly useful for backing up persistent databases such as secrets\.tdb and similar\.
+.SS "restoredb <file>"
+.PP
+This command restores a persistent database that was previously backed up using backupdb\.
 .SH "DEBUGGING COMMANDS"
 .PP
 These commands are primarily used for CTDB development and testing and should not be used for normal administration\.
@@ -617,12 +621,16 @@ Thaw a previously frozen node\.
 .SS "eventscript <arguments>"
 .PP
 This is a debugging command\. This command can be used to manually invoke and run the eventscritps with arbitrary arguments\.
-.SS "backupdb <database> <file>"
+.SS "ban <bantime|0>"
 .PP
-This command can be used to copy the entire content of a database out to a file\. This file can later be read back into ctdb using the restoredb command\. This is mainly useful for backing up persistent databases such as secrets\.tdb and similar\.
-.SS "restoredb <file>"
+Administratively ban a node for bantime seconds\. A bantime of 0 means that the node should be permanently banned\.
 .PP
-This command restores a persistent database that was previously backed up using backupdb\.
+A banned node does not participate in the cluster and does not host any records for the clustered TDB\. Its ip address has been taken over by an other node and no services are hosted\.
+.PP
+Nodes are automatically banned if they are the cause of too many cluster recoveries\.
+.SS "unban"
+.PP
+This command is used to unban a node that has either been administratively banned using the ban command or has been automatically banned by the recovery daemon\.
 .SH "SEE ALSO"
 .PP
 ctdbd(1), onnode(1)

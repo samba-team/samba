@@ -39,6 +39,7 @@
 		<arg choice="opt">--single-public-ip=&lt;address&gt;</arg>
 		<arg choice="opt">--socket=&lt;filename&gt;</arg>
 		<arg choice="opt">--start-as-disabled</arg>
+		<arg choice="opt">--start-as-stopped</arg>
 		<arg choice="opt">--syslog</arg>
 		<arg choice="opt">--torture</arg>
 		<arg choice="opt">--transport=&lt;STRING&gt;</arg>
@@ -294,6 +295,24 @@
         </listitem>
       </varlistentry>
 
+      <varlistentry><term>--start-as-stopped</term>
+        <listitem>
+          <para>
+	  This makes the ctdb daemon to be STOPPED when it starts up.
+          </para>
+          <para>
+	  A node that is STOPPED does not host any public addresses. It is not part of the VNNMAP so it does act as an LMASTER. It also has all databases locked in recovery mode until restarted.
+          </para>
+          <para>
+	  To restart and activate a STOPPED node, the command "ctdb continue" is used.
+          </para>
+          <para>
+	  A node that is STOPPED will not host any services and will not be
+	  reachable/used by any clients.
+          </para>
+        </listitem>
+      </varlistentry>
+
       <varlistentry><term>--syslog</term>
         <listitem>
           <para>
@@ -497,6 +516,14 @@
       does not perticipate in the CTDB cluster but can still be communicated 
       with. I.e. ctdb commands can be sent to it.
     </para>
+
+    <para>
+      STOPPED - A node that is stopped does not host any public ip addresses,
+      nor is it part of the VNNMAP. A stopped node can not become LVSMASTER,
+      RECMASTER or NATGW.
+      This node does not perticipate in the CTDB cluster but can still be
+      communicated with. I.e. ctdb commands can be sent to it.
+    </para>
   </refsect1>
 
   <refsect1>
@@ -616,7 +643,7 @@ ctdb will try to reassign public IP addresses onto the new node as a way to dist
     all client access to the LVS address across this set of nodes. This set of nodes are all LVS capable nodes that are HEALTHY, or if no HEALTHY nodes exists
     all LVS capable nodes regardless of health status.
     LVS will however never loadbalance traffic to nodes that are BANNED,
-    DISABLED or DISCONNECTED. The "ctdb lvs" command is used to show
+    STOPPED, DISABLED or DISCONNECTED. The "ctdb lvs" command is used to show
     which nodes are currently load-balanced across.
     </para>
 
@@ -879,7 +906,7 @@ CTDB_CAPABILITY_RECMASTER=no
 
     <refsect2><title>Operation</title>
     <para>
-      When the NAT-GW fiunctionality is used, one of the nodes is elected
+      When the NAT-GW functionality is used, one of the nodes is elected
       to act as a NAT router for all the other nodes in the group when
       they need to originate traffic to the external public network.
     </para>

@@ -1,11 +1,11 @@
 .\"     Title: ctdbd
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
-.\"      Date: 06/25/2009
+.\"      Date: 07/09/2009
 .\"    Manual: 
 .\"    Source: 
 .\"
-.TH "CTDBD" "1" "06/25/2009" "" ""
+.TH "CTDBD" "1" "07/09/2009" "" ""
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -16,7 +16,7 @@ ctdbd - The CTDB cluster daemon
 .HP 6
 \fBctdbd\fR
 .HP 6
-\fBctdbd\fR [\-?\ \-\-help] [\-d\ \-\-debug=<INTEGER>] {\-\-dbdir=<directory>} {\-\-dbdir\-persistent=<directory>} [\-\-event\-script\-dir=<directory>] [\-i\ \-\-interactive] [\-\-listen=<address>] [\-\-logfile=<filename>] [\-\-lvs] {\-\-nlist=<filename>} [\-\-no\-lmaster] [\-\-no\-recmaster] [\-\-nosetsched] [\-\-public\-addresses=<filename>] [\-\-public\-interface=<interface>] {\-\-reclock=<filename>} [\-\-single\-public\-ip=<address>] [\-\-socket=<filename>] [\-\-start\-as\-disabled] [\-\-syslog] [\-\-torture] [\-\-transport=<STRING>] [\-\-usage]
+\fBctdbd\fR [\-?\ \-\-help] [\-d\ \-\-debug=<INTEGER>] {\-\-dbdir=<directory>} {\-\-dbdir\-persistent=<directory>} [\-\-event\-script\-dir=<directory>] [\-i\ \-\-interactive] [\-\-listen=<address>] [\-\-logfile=<filename>] [\-\-lvs] {\-\-nlist=<filename>} [\-\-no\-lmaster] [\-\-no\-recmaster] [\-\-nosetsched] [\-\-public\-addresses=<filename>] [\-\-public\-interface=<interface>] {\-\-reclock=<filename>} [\-\-single\-public\-ip=<address>] [\-\-socket=<filename>] [\-\-start\-as\-disabled] [\-\-start\-as\-stopped] [\-\-syslog] [\-\-torture] [\-\-transport=<STRING>] [\-\-usage]
 .SH "DESCRIPTION"
 .PP
 ctdbd is the main ctdb daemon\.
@@ -154,6 +154,17 @@ When used, the administrator must keep track of when nodes start and manually en
 A node that is DISABLED will not host any services and will not be reachable/used by any clients\.
 .RE
 .PP
+\-\-start\-as\-stopped
+.RS 4
+This makes the ctdb daemon to be STOPPED when it starts up\.
+.sp
+A node that is STOPPED does not host any public addresses\. It is not part of the VNNMAP so it does act as an LMASTER\. It also has all databases locked in recovery mode until restarted\.
+.sp
+To restart and activate a STOPPED node, the command "ctdb continue" is used\.
+.sp
+A node that is STOPPED will not host any services and will not be reachable/used by any clients\.
+.RE
+.PP
 \-\-syslog
 .RS 4
 Send all log messages to syslog instead of to the ctdb logfile\.
@@ -269,6 +280,8 @@ DISABLED \- This node has been administratively disabled\. This node is still fu
 UNHEALTHY \- A service provided by this node is malfunctioning and should be investigated\. The CTDB daemon itself is operational and participates in the cluster\. Its public IP address has been taken over by a different node and no services are currently being hosted\. All unhealthy nodes should be investigated and require an administrative action to rectify\.
 .PP
 BANNED \- This node failed too many recovery attempts and has been banned from participating in the cluster for a period of RecoveryBanPeriod seconds\. Any public IP address has been taken over by other nodes\. This node does not provide any services\. All banned nodes should be investigated and require an administrative action to rectify\. This node does not perticipate in the CTDB cluster but can still be communicated with\. I\.e\. ctdb commands can be sent to it\.
+.PP
+STOPPED \- A node that is stopped does not host any public ip addresses, nor is it part of the VNNMAP\. A stopped node can not become LVSMASTER, RECMASTER or NATGW\. This node does not perticipate in the CTDB cluster but can still be communicated with\. I\.e\. ctdb commands can be sent to it\.
 .SH "PUBLIC TUNABLES"
 .PP
 These are the public tuneables that can be used to control how ctdb behaves\.
@@ -346,7 +359,7 @@ LVS is a mode where CTDB presents one single IP address for the entire cluster\.
 .PP
 This is similar to using a layer\-4 loadbalancing switch but with some restrictions\.
 .PP
-In this mode the cluster select a set of nodes in the cluster and loadbalance all client access to the LVS address across this set of nodes\. This set of nodes are all LVS capable nodes that are HEALTHY, or if no HEALTHY nodes exists all LVS capable nodes regardless of health status\. LVS will however never loadbalance traffic to nodes that are BANNED, DISABLED or DISCONNECTED\. The "ctdb lvs" command is used to show which nodes are currently load\-balanced across\.
+In this mode the cluster select a set of nodes in the cluster and loadbalance all client access to the LVS address across this set of nodes\. This set of nodes are all LVS capable nodes that are HEALTHY, or if no HEALTHY nodes exists all LVS capable nodes regardless of health status\. LVS will however never loadbalance traffic to nodes that are BANNED, STOPPED, DISABLED or DISCONNECTED\. The "ctdb lvs" command is used to show which nodes are currently load\-balanced across\.
 .PP
 One of the these nodes are elected as the LVSMASTER\. This node receives all traffic from clients coming in to the LVS address and multiplexes it across the internal network to one of the nodes that LVS is using\. When responding to the client, that node will send the data back directly to the client, bypassing the LVSMASTER node\. The command "ctdb lvsmaster" will show which node is the current LVSMASTER\.
 .PP
@@ -488,7 +501,7 @@ Format of this parameter is IPADDRESS/NETMASK
 This is the list of all nodes that belong to the same NATGW group as this node\. The default is /etc/ctdb/natgw_nodes\.
 .SS "Operation"
 .PP
-When the NAT\-GW fiunctionality is used, one of the nodes is elected to act as a NAT router for all the other nodes in the group when they need to originate traffic to the external public network\.
+When the NAT\-GW functionality is used, one of the nodes is elected to act as a NAT router for all the other nodes in the group when they need to originate traffic to the external public network\.
 .PP
 The NAT\-GW node is assigned the CTDB_NATGW_PUBLIC_IP to the designated interface and the provided default route\. The NAT\-GW is configured to act as a router and to masquerade all traffic it receives from the internal private network and which is destined to the external network(s)\.
 .PP
