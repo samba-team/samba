@@ -529,7 +529,7 @@ NTTIME samdb_result_force_password_change(struct ldb_context *sam_ldb,
 /*
   pull a samr_Password structutre from a result set. 
 */
-struct samr_Password *samdb_result_hash(TALLOC_CTX *mem_ctx, struct ldb_message *msg, const char *attr)
+struct samr_Password *samdb_result_hash(TALLOC_CTX *mem_ctx, const struct ldb_message *msg, const char *attr)
 {
 	struct samr_Password *hash = NULL;
 	const struct ldb_val *val = ldb_msg_find_ldb_val(msg, attr);
@@ -543,7 +543,7 @@ struct samr_Password *samdb_result_hash(TALLOC_CTX *mem_ctx, struct ldb_message 
 /*
   pull an array of samr_Password structutres from a result set. 
 */
-uint_t samdb_result_hashes(TALLOC_CTX *mem_ctx, struct ldb_message *msg, 
+uint_t samdb_result_hashes(TALLOC_CTX *mem_ctx, const struct ldb_message *msg, 
 			   const char *attr, struct samr_Password **hashes)
 {
 	uint_t count = 0;
