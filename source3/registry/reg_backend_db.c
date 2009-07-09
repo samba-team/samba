@@ -934,6 +934,10 @@ bool regdb_store_keys(const char *key, struct regsubkey_ctr *ctr)
 	return regdb_store_keys_internal(regdb, key, ctr);
 }
 
+/**
+ * create a subkey of a given key
+ */
+
 struct regdb_create_subkey_context {
 	const char *key;
 	const char *subkey;
