@@ -492,10 +492,10 @@ static void get_create_timespec(const struct stat *pst, struct stat_ex *dst)
 /****************************************************************************
  If we update a timestamp in a stat_ex struct we may have to recalculate
  the birthtime. For now only implement this for write time, but we may
- also need to do it for mtime and ctime. JRA.
+ also need to do it for atime and ctime. JRA.
 ****************************************************************************/
 
-void update_stat_ex_writetime(struct stat_ex *dst,
+void update_stat_ex_mtime(struct stat_ex *dst,
 				struct timespec write_ts)
 {
 	dst->st_ex_mtime = write_ts;

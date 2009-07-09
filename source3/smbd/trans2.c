@@ -1463,7 +1463,7 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 				fileid = vfs_file_id_from_sbuf(conn, &sbuf);
 				get_file_infos(fileid, NULL, &write_time_ts);
 				if (!null_timespec(write_time_ts)) {
-					update_stat_ex_writetime(&sbuf, write_time_ts);
+					update_stat_ex_mtime(&sbuf, write_time_ts);
 				}
 			}
 
@@ -4258,7 +4258,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	}
 
 	if (!null_timespec(write_time_ts) && !INFO_LEVEL_IS_UNIX(info_level)) {
-		update_stat_ex_writetime(&sbuf, write_time_ts);
+		update_stat_ex_mtime(&sbuf, write_time_ts);
 	}
 
 	create_time_ts = sbuf.st_ex_btime;

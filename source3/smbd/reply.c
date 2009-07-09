@@ -1121,7 +1121,7 @@ void reply_getatr(struct smb_request *req)
 			fileid = vfs_file_id_from_sbuf(conn, &smb_fname->st);
 			get_file_infos(fileid, NULL, &write_time_ts);
 			if (!null_timespec(write_time_ts)) {
-				update_stat_ex_writetime(&smb_fname->st, write_time_ts);
+				update_stat_ex_mtime(&smb_fname->st, write_time_ts);
 			}
 		}
 
@@ -1803,7 +1803,7 @@ void reply_open(struct smb_request *req)
 		ZERO_STRUCT(write_time_ts);
 		get_file_infos(fsp->file_id, NULL, &write_time_ts);
 		if (!null_timespec(write_time_ts)) {
-			update_stat_ex_writetime(&smb_fname->st, write_time_ts);
+			update_stat_ex_mtime(&smb_fname->st, write_time_ts);
 		}
 	}
 

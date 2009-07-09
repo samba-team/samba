@@ -911,7 +911,7 @@ ssize_t sys_recv(int fd, void *buf, size_t count, int flags);
 ssize_t sys_recvfrom(int s, void *buf, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen);
 int sys_fcntl_ptr(int fd, int cmd, void *arg);
 int sys_fcntl_long(int fd, int cmd, long arg);
-void update_stat_ex_writetime(struct stat_ex *dst, struct timespec write_ts);
+void update_stat_ex_mtime(struct stat_ex *dst, struct timespec write_ts);
 int sys_stat(const char *fname,SMB_STRUCT_STAT *sbuf);
 int sys_fstat(int fd,SMB_STRUCT_STAT *sbuf);
 int sys_lstat(const char *fname,SMB_STRUCT_STAT *sbuf);

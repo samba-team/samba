@@ -657,7 +657,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	ZERO_STRUCT(write_time_ts);
 	get_file_infos(fsp->file_id, NULL, &write_time_ts);
 	if (!null_timespec(write_time_ts)) {
-		update_stat_ex_writetime(&smb_fname->st, write_time_ts);
+		update_stat_ex_mtime(&smb_fname->st, write_time_ts);
 	}
 
 	/* Create time. */
@@ -1148,7 +1148,7 @@ static void call_nt_transact_create(connection_struct *conn,
 	ZERO_STRUCT(write_time_ts);
 	get_file_infos(fsp->file_id, NULL, &write_time_ts);
 	if (!null_timespec(write_time_ts)) {
-		update_stat_ex_writetime(&smb_fname->st, write_time_ts);
+		update_stat_ex_mtime(&smb_fname->st, write_time_ts);
 	}
 
 	/* Create time. */
