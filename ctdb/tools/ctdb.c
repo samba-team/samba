@@ -503,17 +503,18 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 	}
 
 	if(options.machinereadable){
-		printf(":Node:IP:Disconnected:Banned:Disabled:Unhealthy:\n");
+		printf(":Node:IP:Disconnected:Banned:Disabled:Unhealthy:Stopped:\n");
 		for(i=0;i<nodemap->num;i++){
 			if (nodemap->nodes[i].flags & NODE_FLAGS_DELETED) {
 				continue;
 			}
-			printf(":%d:%s:%d:%d:%d:%d:\n", nodemap->nodes[i].pnn,
+			printf(":%d:%s:%d:%d:%d:%d:%d:\n", nodemap->nodes[i].pnn,
 				ctdb_addr_to_str(&nodemap->nodes[i].addr),
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_DISCONNECTED),
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_BANNED),
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_PERMANENTLY_DISABLED),
-			       !!(nodemap->nodes[i].flags&NODE_FLAGS_UNHEALTHY));
+			       !!(nodemap->nodes[i].flags&NODE_FLAGS_UNHEALTHY),
+			       !!(nodemap->nodes[i].flags&NODE_FLAGS_STOPPED));
 		}
 		return 0;
 	}
@@ -529,6 +530,7 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 			{ NODE_FLAGS_BANNED,                "BANNED" },
 			{ NODE_FLAGS_UNHEALTHY,             "UNHEALTHY" },
 			{ NODE_FLAGS_DELETED,               "DELETED" },
+			{ NODE_FLAGS_STOPPED,               "STOPPED" },
 		};
 		char *flags_str = NULL;
 		int j;
@@ -685,15 +687,17 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 
 	/* print the pruned list of nodes belonging to this natgw list */
 	for(i=0;i<nodemap->num;i++){
+		printf(":Node:IP:Disconnected:Banned:Disabled:Unhealthy:Stopped:\n");
 		if (nodemap->nodes[i].flags & NODE_FLAGS_DELETED) {
 			continue;
 		}
-		printf(":%d:%s:%d:%d:%d:%d:\n", nodemap->nodes[i].pnn,
+		printf(":%d:%s:%d:%d:%d:%d:%d\n", nodemap->nodes[i].pnn,
 			ctdb_addr_to_str(&nodemap->nodes[i].addr),
 		       !!(nodemap->nodes[i].flags&NODE_FLAGS_DISCONNECTED),
 		       !!(nodemap->nodes[i].flags&NODE_FLAGS_BANNED),
 		       !!(nodemap->nodes[i].flags&NODE_FLAGS_PERMANENTLY_DISABLED),
-		       !!(nodemap->nodes[i].flags&NODE_FLAGS_UNHEALTHY));
+		       !!(nodemap->nodes[i].flags&NODE_FLAGS_UNHEALTHY),
+		       !!(nodemap->nodes[i].flags&NODE_FLAGS_STOPPED));
 	}
 
 	return 0;
@@ -1642,6 +1646,73 @@ static int control_enable(struct ctdb_context *ctdb, int argc, const char **argv
 		}
 
 	} while (nodemap->nodes[options.pnn].flags & NODE_FLAGS_PERMANENTLY_DISABLED);
+	ret = control_ipreallocate(ctdb, argc, argv);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("IP Reallocate failed on node %u\n", options.pnn));
+		return ret;
+	}
+
+	return 0;
+}
+
+/*
+  stop a remote node
+ */
+static int control_stop(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+	struct ctdb_node_map *nodemap=NULL;
+
+	do {
+		ret = ctdb_ctrl_modflags(ctdb, TIMELIMIT(), options.pnn, NODE_FLAGS_STOPPED, 0);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, ("Unable to stop node %u\n", options.pnn));
+			return ret;
+		}
+
+		sleep(1);
+
+		/* read the nodemap and verify the change took effect */
+		if (ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap) != 0) {
+			DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
+			exit(10);
+		}
+
+	} while (!(nodemap->nodes[options.pnn].flags & NODE_FLAGS_STOPPED));
+	ret = control_ipreallocate(ctdb, argc, argv);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("IP Reallocate failed on node %u\n", options.pnn));
+		return ret;
+	}
+
+	return 0;
+}
+
+/*
+  restart a stopped remote node
+ */
+static int control_continue(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+
+	struct ctdb_node_map *nodemap=NULL;
+
+	do {
+		ret = ctdb_ctrl_modflags(ctdb, TIMELIMIT(), options.pnn, 0, NODE_FLAGS_STOPPED);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, ("Unable to restart node %u\n", options.pnn));
+			return ret;
+		}
+
+		sleep(1);
+
+		/* read the nodemap and verify the change took effect */
+		if (ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap) != 0) {
+			DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
+			exit(10);
+		}
+
+	} while (nodemap->nodes[options.pnn].flags & NODE_FLAGS_STOPPED);
 	ret = control_ipreallocate(ctdb, argc, argv);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("IP Reallocate failed on node %u\n", options.pnn));
@@ -3070,6 +3141,8 @@ static const struct {
 	{ "getpid",          control_getpid,            true,	false,  "get ctdbd process ID" },
 	{ "disable",         control_disable,           true,	false,  "disable a nodes public IP" },
 	{ "enable",          control_enable,            true,	false,  "enable a nodes public IP" },
+	{ "stop",            control_stop,              true,	false,  "stop a node" },
+	{ "continue",        control_continue,          true,	false,  "re-start a stopped node" },
 	{ "ban",             control_ban,               true,	false,  "ban a node from the cluster",          "<bantime|0>"},
 	{ "unban",           control_unban,             true,	false,  "unban a node from the cluster" },
 	{ "shutdown",        control_shutdown,          true,	false,  "shutdown ctdbd" },

@@ -197,8 +197,9 @@ struct ctdb_node {
 #define NODE_FLAGS_UNHEALTHY  		0x00000002 /* monitoring says node is unhealthy */
 #define NODE_FLAGS_PERMANENTLY_DISABLED	0x00000004 /* administrator has disabled node */
 #define NODE_FLAGS_BANNED		0x00000008 /* recovery daemon has banned the node */
-#define NODE_FLAGS_DISABLED		(NODE_FLAGS_UNHEALTHY|NODE_FLAGS_PERMANENTLY_DISABLED)
 #define NODE_FLAGS_DELETED		0x00000010 /* this node has been deleted */
+#define NODE_FLAGS_STOPPED		0x00000020 /* this node has been stopped */
+#define NODE_FLAGS_DISABLED		(NODE_FLAGS_UNHEALTHY|NODE_FLAGS_PERMANENTLY_DISABLED|NODE_FLAGS_STOPPED)
 #define NODE_FLAGS_INACTIVE		(NODE_FLAGS_DELETED|NODE_FLAGS_DISCONNECTED|NODE_FLAGS_BANNED)
 	uint32_t flags;
 
