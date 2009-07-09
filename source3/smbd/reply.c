@@ -5541,7 +5541,7 @@ void reply_rmdir(struct smb_request *req)
 				 req->flags2 & FLAGS2_DFS_PATHNAMES,
 				 directory,
 				 &smb_dname,
-				 &directory);
+				 NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
@@ -5552,7 +5552,12 @@ void reply_rmdir(struct smb_request *req)
 		goto out;
 	}
 
-	dptr_closepath(directory, req->smbpid);
+	if (is_ntfs_stream_smb_fname(smb_dname)) {
+		reply_nterror(req, NT_STATUS_NOT_A_DIRECTORY);
+		goto out;
+	}
+
+	dptr_closepath(smb_dname->base_name, req->smbpid);
 	status = rmdir_internals(ctx, conn, smb_dname);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
@@ -5561,7 +5566,7 @@ void reply_rmdir(struct smb_request *req)
 
 	reply_outbuf(req, 0, 0);
 
-	DEBUG( 3, ( "rmdir %s\n", directory ) );
+	DEBUG(3, ("rmdir %s\n", smb_fname_str_dbg(smb_dname)));
  out:
 	TALLOC_FREE(smb_dname);
 	END_PROFILE(SMBrmdir);
