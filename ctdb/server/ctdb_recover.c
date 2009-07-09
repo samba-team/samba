@@ -1155,3 +1155,19 @@ int32_t ctdb_control_set_recmaster(struct ctdb_context *ctdb, uint32_t opcode, T
 	ctdb->recovery_master = ((uint32_t *)(&indata.dptr[0]))[0];
 	return 0;
 }
+
+int32_t ctdb_control_stop_node(struct ctdb_context *ctdb)
+{
+	DEBUG(DEBUG_ERR,(__location__ " Stopping node\n"));
+	ctdb->nodes[ctdb->pnn]->flags |= NODE_FLAGS_STOPPED;
+
+	return 0;
+}
+
+int32_t ctdb_control_continue_node(struct ctdb_context *ctdb)
+{
+	DEBUG(DEBUG_ERR,(__location__ " Continue node\n"));
+	ctdb->nodes[ctdb->pnn]->flags &= ~NODE_FLAGS_STOPPED;
+
+	return 0;
+}

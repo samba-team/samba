@@ -3707,3 +3707,37 @@ int ctdb_ctrl_setreclock(struct ctdb_context *ctdb, struct timeval timeout, uint
 
 	return 0;
 }
+
+/*
+  stop a node
+ */
+int ctdb_ctrl_stop_node(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode)
+{
+	int ret;
+
+	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_STOP_NODE, 0, tdb_null, 
+			   ctdb, NULL, NULL, &timeout, NULL);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to stop node\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
+/*
+  continue a node
+ */
+int ctdb_ctrl_continue_node(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode)
+{
+	int ret;
+
+	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_CONTINUE_NODE, 0, tdb_null, 
+			   ctdb, NULL, NULL, &timeout, NULL);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to continue node\n"));
+		return -1;
+	}
+
+	return 0;
+}

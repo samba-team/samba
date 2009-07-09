@@ -199,8 +199,8 @@ struct ctdb_node {
 #define NODE_FLAGS_BANNED		0x00000008 /* recovery daemon has banned the node */
 #define NODE_FLAGS_DELETED		0x00000010 /* this node has been deleted */
 #define NODE_FLAGS_STOPPED		0x00000020 /* this node has been stopped */
-#define NODE_FLAGS_DISABLED		(NODE_FLAGS_UNHEALTHY|NODE_FLAGS_PERMANENTLY_DISABLED|NODE_FLAGS_STOPPED)
-#define NODE_FLAGS_INACTIVE		(NODE_FLAGS_DELETED|NODE_FLAGS_DISCONNECTED|NODE_FLAGS_BANNED)
+#define NODE_FLAGS_DISABLED		(NODE_FLAGS_UNHEALTHY|NODE_FLAGS_PERMANENTLY_DISABLED)
+#define NODE_FLAGS_INACTIVE		(NODE_FLAGS_DELETED|NODE_FLAGS_DISCONNECTED|NODE_FLAGS_BANNED|NODE_FLAGS_STOPPED)
 	uint32_t flags;
 
 	/* used by the dead node monitoring */
@@ -571,6 +571,8 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_RECD_RECLOCK_LATENCY    = 98,
 		    CTDB_CONTROL_GET_RECLOCK_FILE        = 99,
 		    CTDB_CONTROL_SET_RECLOCK_FILE        = 100,
+		    CTDB_CONTROL_STOP_NODE               = 101,
+		    CTDB_CONTROL_CONTINUE_NODE           = 102,
 };	
 
 /*
@@ -1442,5 +1444,8 @@ int32_t ctdb_control_get_event_script_status(struct ctdb_context *ctdb, TDB_DATA
 
 int ctdb_log_event_script_output(struct ctdb_context *ctdb, char *str, uint16_t len);
 int ctdb_ctrl_report_recd_lock_latency(struct ctdb_context *ctdb, struct timeval timeout, double latency);
+
+int32_t ctdb_control_stop_node(struct ctdb_context *ctdb);
+int32_t ctdb_control_continue_node(struct ctdb_context *ctdb);
 
 #endif

@@ -1537,7 +1537,6 @@ static int control_getpid(struct ctdb_context *ctdb, int argc, const char **argv
 static void ip_reallocate_handler(struct ctdb_context *ctdb, uint64_t srvid, 
 			     TDB_DATA data, void *private_data)
 {
-	printf("IP Reallocation completed\n");
 	exit(0);
 }
 
@@ -1663,12 +1662,12 @@ static int control_stop(struct ctdb_context *ctdb, int argc, const char **argv)
 	struct ctdb_node_map *nodemap=NULL;
 
 	do {
-		ret = ctdb_ctrl_modflags(ctdb, TIMELIMIT(), options.pnn, NODE_FLAGS_STOPPED, 0);
+		ret = ctdb_ctrl_stop_node(ctdb, TIMELIMIT(), options.pnn);
 		if (ret != 0) {
 			DEBUG(DEBUG_ERR, ("Unable to stop node %u\n", options.pnn));
 			return ret;
 		}
-
+	
 		sleep(1);
 
 		/* read the nodemap and verify the change took effect */
@@ -1697,12 +1696,12 @@ static int control_continue(struct ctdb_context *ctdb, int argc, const char **ar
 	struct ctdb_node_map *nodemap=NULL;
 
 	do {
-		ret = ctdb_ctrl_modflags(ctdb, TIMELIMIT(), options.pnn, 0, NODE_FLAGS_STOPPED);
+		ret = ctdb_ctrl_continue_node(ctdb, TIMELIMIT(), options.pnn);
 		if (ret != 0) {
-			DEBUG(DEBUG_ERR, ("Unable to restart node %u\n", options.pnn));
+			DEBUG(DEBUG_ERR, ("Unable to continue node %u\n", options.pnn));
 			return ret;
 		}
-
+	
 		sleep(1);
 
 		/* read the nodemap and verify the change took effect */
