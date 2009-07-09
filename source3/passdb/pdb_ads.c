@@ -2022,7 +2022,9 @@ static NTSTATUS pdb_ads_enum_trusteddoms(struct pdb_methods *m,
 					 uint32 *num_domains,
 					 struct trustdom_info ***domains)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	*num_domains = 0;
+	*domains = NULL;
+	return NT_STATUS_OK;
 }
 
 static void pdb_ads_init_methods(struct pdb_methods *m)
