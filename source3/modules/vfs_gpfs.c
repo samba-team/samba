@@ -445,6 +445,11 @@ static NTSTATUS gpfsacl_set_nt_acl_internal(files_struct *fsp, uint32 security_i
 
 	if (acl->acl_version&GPFS_ACL_VERSION_NFS4)
 	{
+		if ((psd->type&SEC_DESC_DACL_PROTECTED)) {
+			DEBUG(2, ("Rejecting unsupported ACL with DACL_PROTECTED bit set\n"));
+			return NT_STATUS_NOT_SUPPORTED;
+		}
+
 		result = smb_set_nt_acl_nfs4(
 			fsp, security_info_sent, psd,
 			gpfsacl_process_smbacl);
