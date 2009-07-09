@@ -258,6 +258,10 @@ char *rep_realpath(const char *path, char *resolved_path);
 int rep_lchown(const char *fname,uid_t uid,gid_t gid);
 #endif
 
+#ifdef HAVE_UNIX_H
+#include <unix.h>
+#endif
+
 #ifndef HAVE_SETLINEBUF
 #define setlinebuf rep_setlinebuf
 void rep_setlinebuf(FILE *);
