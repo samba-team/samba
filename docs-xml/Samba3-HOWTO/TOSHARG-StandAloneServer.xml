@@ -35,7 +35,7 @@ domain security, they remain a common installation.
 If all that is needed is a server for read-only files, or for
 printers alone, it may not make sense to effect a complex installation.
 For example, a drafting office needs to store old drawings and reference
-standards. Noone can write files to the server because it is legislatively
+standards. Nobody can write files to the server because it is legislatively
 important that all documents remain unaltered. A share-mode read-only standalone
 server is an ideal solution.
 </para>
