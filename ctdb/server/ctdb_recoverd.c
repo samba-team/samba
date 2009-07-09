@@ -2804,6 +2804,34 @@ again:
 		force_election(rec, pnn, nodemap);
 		goto again;
 	}
+
+
+	/* if the local daemon is STOPPED, we verify that the databases are
+	   also frozen and thet the recmode is set to active 
+	*/
+	if (nodemap->nodes[pnn].flags & NODE_FLAGS_STOPPED) {
+		ret = ctdb_ctrl_getrecmode(ctdb, mem_ctx, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, &ctdb->recovery_mode);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,(__location__ " Failed to read recmode from local node\n"));
+		}
+		if (ctdb->recovery_mode == CTDB_RECOVERY_NORMAL) {
+			DEBUG(DEBUG_ERR,("Node is stopped but recovery mode is not active. Activate recovery mode and lock databases\n"));
+
+			ret = ctdb_ctrl_freeze(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE);
+			if (ret != 0) {
+				DEBUG(DEBUG_ERR,(__location__ " Failed to freeze node due to node being STOPPED\n"));
+				goto again;
+			}
+			ret = ctdb_ctrl_setrecmode(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, CTDB_RECOVERY_ACTIVE);
+			if (ret != 0) {
+				DEBUG(DEBUG_ERR,(__location__ " Failed to activate recovery mode due to node being stopped\n"));
+
+				goto again;
+			}
+			goto again;
+		}
+	}
+
 	
 	/* check that we (recovery daemon) and the local ctdb daemon
 	   agrees on whether we are banned or not
