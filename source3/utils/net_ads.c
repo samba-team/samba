@@ -521,7 +521,7 @@ static int ads_user_info(struct net_context *c, int argc, const char **argv)
 		return net_ads_user_usage(c, argc, argv);
 	}
 
-	escaped_user = escape_ldap_string_alloc(argv[0]);
+	escaped_user = escape_ldap_string(talloc_tos(), argv[0]);
 
 	if (!escaped_user) {
 		d_fprintf(stderr, "ads_user_info: failed to escape user %s\n", argv[0]);
@@ -529,12 +529,12 @@ static int ads_user_info(struct net_context *c, int argc, const char **argv)
 	}
 
 	if (!ADS_ERR_OK(ads_startup(c, false, &ads))) {
-		SAFE_FREE(escaped_user);
+		TALLOC_FREE(escaped_user);
 		return -1;
 	}
 
 	if (asprintf(&searchstring, "(sAMAccountName=%s)", escaped_user) == -1) {
-		SAFE_FREE(escaped_user);
+		TALLOC_FREE(escaped_user);
 		return -1;
 	}
 	rc = ads_search(ads, &res, searchstring, attrs);
@@ -543,7 +543,7 @@ static int ads_user_info(struct net_context *c, int argc, const char **argv)
 	if (!ADS_ERR_OK(rc)) {
 		d_fprintf(stderr, "ads_search: %s\n", ads_errstr(rc));
 		ads_destroy(&ads);
-		SAFE_FREE(escaped_user);
+		TALLOC_FREE(escaped_user);
 		return -1;
 	}
 
@@ -563,7 +563,7 @@ static int ads_user_info(struct net_context *c, int argc, const char **argv)
 
 	ads_msgfree(ads, res);
 	ads_destroy(&ads);
-	SAFE_FREE(escaped_user);
+	TALLOC_FREE(escaped_user);
 	return 0;
 }
 

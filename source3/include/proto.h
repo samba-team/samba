@@ -554,7 +554,7 @@ void init_ldap_debugging(void);
 
 /* The following definitions come from lib/ldap_escape.c  */
 
-char *escape_ldap_string_alloc(const char *s);
+char *escape_ldap_string(TALLOC_CTX *mem_ctx, const char *s);
 char *escape_rdn_val_string_alloc(const char *s);
 
 /* The following definitions come from lib/module.c  */

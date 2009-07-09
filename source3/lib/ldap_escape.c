@@ -32,10 +32,10 @@
  * and to be free()ed by the caller.
  **/
 
-char *escape_ldap_string_alloc(const char *s)
+char *escape_ldap_string(TALLOC_CTX *mem_ctx, const char *s)
 {
 	size_t len = strlen(s)+1;
-	char *output = (char *)SMB_MALLOC(len);
+	char *output = talloc_array(mem_ctx, char, len);
 	const char *sub;
 	int i = 0;
 	char *p = output;
@@ -43,7 +43,7 @@ char *escape_ldap_string_alloc(const char *s)
 	if (output == NULL) {
 		return NULL;
 	}
-	
+
 	while (*s)
 	{
 		switch (*s)
@@ -64,14 +64,17 @@ char *escape_ldap_string_alloc(const char *s)
 			sub = NULL;
 			break;
 		}
-		
+
 		if (sub) {
+			char *tmp;
 			len = len + 3;
-			output = (char *)SMB_REALLOC(output, len);
-			if (!output) { 
+			tmp = talloc_realloc(mem_ctx, output, char, len);
+			if (tmp == NULL) {
+				TALLOC_FREE(output);
 				return NULL;
 			}
-			
+			output = tmp;
+
 			p = &output[i];
 			strncpy (p, sub, 3);
 			p += 3;
@@ -84,7 +87,7 @@ char *escape_ldap_string_alloc(const char *s)
 		}
 		s++;
 	}
-	
+
 	*p = '\0';
 	return output;
 }
@@ -101,7 +104,7 @@ char *escape_rdn_val_string_alloc(const char *s)
 	}
 
 	p = output;
-	
+
 	while (*s)
 	{
 		switch (*s)
@@ -122,10 +125,10 @@ char *escape_rdn_val_string_alloc(const char *s)
 			*p = *s;
 			p++;
 		}
-		
+
 		s++;
 	}
-	
+
 	*p = '\0';
 
 	/* resize the string to the actual final size */
