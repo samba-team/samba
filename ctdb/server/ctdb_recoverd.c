@@ -1660,8 +1660,18 @@ static bool ctdb_election_win(struct ctdb_recoverd *rec, struct election_message
 		return false;
 	}	
 
+	/* we cant win if we are stopped */
+	if (rec->node_flags & NODE_FLAGS_STOPPED) {
+		return false;
+	}	
+
 	/* we will automatically win if the other node is banned */
 	if (em->node_flags & NODE_FLAGS_BANNED) {
+		return true;
+	}
+
+	/* we will automatically win if the other node is banned */
+	if (em->node_flags & NODE_FLAGS_STOPPED) {
 		return true;
 	}
 
@@ -2831,7 +2841,14 @@ again:
 			goto again;
 		}
 	}
-
+	/* If the local node is stopped, verify we are not the recmaster 
+	   and yield this role if so
+	*/
+	if ((nodemap->nodes[pnn].flags & NODE_FLAGS_STOPPED) && (rec->recmaster == pnn)) {
+		DEBUG(DEBUG_ERR,("Local node is STOPPED. Yielding recmaster role\n"));
+		force_election(rec, pnn, nodemap);
+		goto again;
+	}
 	
 	/* check that we (recovery daemon) and the local ctdb daemon
 	   agrees on whether we are banned or not
