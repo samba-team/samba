@@ -371,6 +371,11 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 		DEBUG(DEBUG_INFO, ("This node is configured to start in DISABLED state\n"));
 		ctdb->nodes[i]->flags |= NODE_FLAGS_DISABLED;
 	}
+	/* do we start out in STOPPED mode? */
+	if (ctdb->start_as_stopped != 0) {
+		DEBUG(DEBUG_INFO, ("This node is configured to start in STOPPED state\n"));
+		ctdb->nodes[i]->flags |= NODE_FLAGS_STOPPED;
+	}
 	
 	if (listen(ctcp->listen_fd, 10) == -1) {
 		goto failed;

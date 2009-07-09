@@ -142,6 +142,11 @@ static int ctdb_add_node(struct ctdb_context *ctdb, char *nstr)
 			DEBUG(DEBUG_INFO, ("This node is configured to start in DISABLED state\n"));
 			node->flags |= NODE_FLAGS_DISABLED;
 		}
+		/* do we start out in STOPPED mode? */
+		if (ctdb->start_as_stopped != 0) {
+			DEBUG(DEBUG_INFO, ("This node is configured to start in STOPPED state\n"));
+			node->flags |= NODE_FLAGS_STOPPED;
+		}
 	}
 
 	ctdb->num_nodes++;

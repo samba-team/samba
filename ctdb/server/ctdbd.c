@@ -44,6 +44,7 @@ static struct {
 	int         no_setsched;
 	int         use_syslog;
 	int         start_as_disabled;
+	int         start_as_stopped;
 	int         no_lmaster;
 	int         no_recmaster;
 	int         lvs;
@@ -129,6 +130,7 @@ int main(int argc, const char *argv[])
 		{ "nosetsched", 0, POPT_ARG_NONE, &options.no_setsched, 0, "disable setscheduler SCHED_FIFO call", NULL },
 		{ "syslog", 0, POPT_ARG_NONE, &options.use_syslog, 0, "log messages to syslog", NULL },
 		{ "start-as-disabled", 0, POPT_ARG_NONE, &options.start_as_disabled, 0, "Node starts in disabled state", NULL },
+		{ "start-as-stopped", 0, POPT_ARG_NONE, &options.start_as_stopped, 0, "Node starts in stopped state", NULL },
 		{ "no-lmaster", 0, POPT_ARG_NONE, &options.no_lmaster, 0, "disable lmaster role on this node", NULL },
 		{ "no-recmaster", 0, POPT_ARG_NONE, &options.no_recmaster, 0, "disable recmaster role on this node", NULL },
 		{ "lvs", 0, POPT_ARG_NONE, &options.lvs, 0, "lvs is enabled on this node", NULL },
@@ -169,6 +171,7 @@ int main(int argc, const char *argv[])
 	ctdb = ctdb_cmdline_init(ev);
 
 	ctdb->start_as_disabled = options.start_as_disabled;
+	ctdb->start_as_stopped  = options.start_as_stopped;
 
 	script_log_level = options.script_log_level;
 

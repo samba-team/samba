@@ -102,6 +102,7 @@ build_ctdb_options () {
     maybe_set "-d"                       "$CTDB_DEBUGLEVEL"
     maybe_set "--notification-script"    "$CTDB_NOTIFY_SCRIPT"
     maybe_set "--start-as-disabled"      "$CTDB_START_AS_DISABLED"    "yes"
+    maybe_set "--start-as-stopped "      "$CTDB_START_AS_STOPPED"     "yes"
     maybe_set "--no-recmaster"           "$CTDB_CAPABILITY_RECMASTER" "no"
     maybe_set "--no-lmaster"             "$CTDB_CAPABILITY_LMASTER"   "no"
     maybe_set "--lvs --single-public-ip" "$CTDB_LVS_PUBLIC_IP"

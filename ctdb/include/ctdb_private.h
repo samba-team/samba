@@ -416,6 +416,7 @@ struct ctdb_context {
 	struct ctdb_monitor_state *monitor;
 	struct ctdb_log_state *log;
 	int start_as_disabled;
+	int start_as_stopped;
 	uint32_t event_script_timeouts; /* counting how many consecutive times an eventscript has timedout */
 	TALLOC_CTX *eventscripts_ctx; /* a context to hold data for the RUN_EVENTSCRIPTS control */
 	uint32_t *recd_ping_count;
