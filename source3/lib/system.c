@@ -404,7 +404,7 @@ static struct timespec get_ctimespec(const struct stat *pst)
  structure.
 ****************************************************************************/
 
-static struct timespec calc_create_time(const struct stat *st)
+static struct timespec calc_create_time_stat(const struct stat *st)
 {
 	struct timespec ret, ret1;
 	struct timespec c_time = get_ctimespec(st);
@@ -426,41 +426,85 @@ static struct timespec calc_create_time(const struct stat *st)
 }
 
 /****************************************************************************
+ Return the best approximation to a 'create time' under UNIX from a stat_ex
+ structure.
+****************************************************************************/
+
+static struct timespec calc_create_time_stat_ex(const struct stat_ex *st)
+{
+	struct timespec ret, ret1;
+	struct timespec c_time = st->st_ex_ctime;
+	struct timespec m_time = st->st_ex_mtime;
+	struct timespec a_time = st->st_ex_atime;
+
+	ret = timespec_compare(&c_time, &m_time) < 0 ? c_time : m_time;
+	ret1 = timespec_compare(&ret, &a_time) < 0 ? ret : a_time;
+
+	if(!null_timespec(ret1)) {
+		return ret1;
+	}
+
+	/*
+	 * One of ctime, mtime or atime was zero (probably atime).
+	 * Just return MIN(ctime, mtime).
+	 */
+	return ret;
+}
+
+/****************************************************************************
  Return the 'create time' from a stat struct if it exists (birthtime) or else
  use the best approximation.
 ****************************************************************************/
 
-static struct timespec get_create_timespec(const struct stat *pst)
+static void get_create_timespec(const struct stat *pst, struct stat_ex *dst)
 {
 	struct timespec ret;
 
 	if (S_ISDIR(pst->st_mode) && lp_fake_dir_create_times()) {
-		ret.tv_sec = 315493200L;          /* 1/1/1980 */
-		ret.tv_nsec = 0;
-		return ret;
+		dst->st_ex_btime.tv_sec = 315493200L;          /* 1/1/1980 */
+		dst->st_ex_btime.tv_nsec = 0;
 	}
 
+	dst->st_ex_calculated_birthtime = false;
+
 #if defined(HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC_TV_NSEC)
-	ret = pst->st_birthtimespec;
+	dst->st_ex_btime = pst->st_birthtimespec;
 #elif defined(HAVE_STRUCT_STAT_ST_BIRTHTIMENSEC)
-	ret.tv_sec = pst->st_birthtime;
-	ret.tv_nsec = pst->st_birthtimenspec;
+	dst->st_ex_btime.tv_sec = pst->st_birthtime;
+	dst->st_ex_btime.tv_nsec = pst->st_birthtimenspec;
 #elif defined(HAVE_STRUCT_STAT_ST_BIRTHTIME)
-	ret.tv_sec = pst->st_birthtime;
-	ret.tv_nsec = 0;
+	dst->st_ex_btime.tv_sec = pst->st_birthtime;
+	dst->st_ex_btime.tv_nsec = 0;
 #else
-	ret = calc_create_time(pst);
+	dst->st_ex_btime = calc_create_time_stat(pst);
+	dst->st_ex_calculated_birthtime = true;
 #endif
 
 	/* Deal with systems that don't initialize birthtime correctly.
 	 * Pointed out by SATOH Fumiyasu <fumiyas@osstech.jp>.
 	 */
 	if (null_timespec(ret)) {
-		ret = calc_create_time(pst);
+		dst->st_ex_btime = calc_create_time_stat(pst);
+		dst->st_ex_calculated_birthtime = true;
 	}
-	return ret;
 }
 
+/****************************************************************************
+ If we update a timestamp in a stat_ex struct we may have to recalculate
+ the birthtime. For now only implement this for write time, but we may
+ also need to do it for mtime and ctime. JRA.
+****************************************************************************/
+
+void update_stat_ex_writetime(struct stat_ex *dst,
+				struct timespec write_ts)
+{
+	dst->st_ex_mtime = write_ts;
+
+	/* We may have to recalculate btime. */
+	if (dst->st_ex_calculated_birthtime) {
+		dst->st_ex_btime = calc_create_time_stat_ex(dst);
+	}
+}
 
 static void init_stat_ex_from_stat (struct stat_ex *dst,
 				    const struct stat *src)
@@ -476,7 +520,7 @@ static void init_stat_ex_from_stat (struct stat_ex *dst,
 	dst->st_ex_atime = get_atimespec(src);
 	dst->st_ex_mtime = get_mtimespec(src);
 	dst->st_ex_ctime = get_ctimespec(src);
-	dst->st_ex_btime = get_create_timespec(src);
+	get_create_timespec(src, dst);
 	dst->st_ex_blksize = src->st_blksize;
 	dst->st_ex_blocks = src->st_blocks;
 

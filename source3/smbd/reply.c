@@ -1065,6 +1065,7 @@ void reply_getatr(struct smb_request *req)
 	const char *p;
 	NTSTATUS status;
 	TALLOC_CTX *ctx = talloc_tos();
+	bool ask_sharemode = lp_parm_bool(SNUM(conn), "smbd", "search ask sharemode", true);
 
 	START_PROFILE(SMBgetatr);
 
@@ -1111,6 +1112,19 @@ void reply_getatr(struct smb_request *req)
 
 		mode = dos_mode(conn, fname, &smb_fname->st);
 		size = smb_fname->st.st_ex_size;
+
+		if (ask_sharemode) {
+			struct timespec write_time_ts;
+			struct file_id fileid;
+
+			ZERO_STRUCT(write_time_ts);
+			fileid = vfs_file_id_from_sbuf(conn, &smb_fname->st);
+			get_file_infos(fileid, NULL, &write_time_ts);
+			if (!null_timespec(write_time_ts)) {
+				update_stat_ex_writetime(&smb_fname->st, write_time_ts);
+			}
+		}
+
 		mtime = convert_timespec_to_time_t(smb_fname->st.st_ex_mtime);
 		if (mode & aDIR) {
 			size = 0;
@@ -1707,6 +1721,7 @@ void reply_open(struct smb_request *req)
 	uint32 create_disposition;
 	uint32 create_options = 0;
 	NTSTATUS status;
+	bool ask_sharemode = lp_parm_bool(SNUM(conn), "smbd", "search ask sharemode", true);
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBopen);
@@ -1779,6 +1794,19 @@ void reply_open(struct smb_request *req)
 
 	size = smb_fname->st.st_ex_size;
 	fattr = dos_mode(conn,fsp->fsp_name,&smb_fname->st);
+
+	/* Deal with other possible opens having a modified
+	   write time. JRA. */
+	if (ask_sharemode) {
+		struct timespec write_time_ts;
+
+		ZERO_STRUCT(write_time_ts);
+		get_file_infos(fsp->file_id, NULL, &write_time_ts);
+		if (!null_timespec(write_time_ts)) {
+			update_stat_ex_writetime(&smb_fname->st, write_time_ts);
+		}
+	}
+
 	mtime = convert_timespec_to_time_t(smb_fname->st.st_ex_mtime);
 
 	if (fattr & aDIR) {

@@ -1455,20 +1455,21 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			}
 			allocation_size = SMB_VFS_GET_ALLOC_SIZE(conn,NULL,&sbuf);
 
-			mdate_ts = sbuf.st_ex_mtime;
-			adate_ts = sbuf.st_ex_atime;
-			create_date_ts = sbuf.st_ex_btime;
-
 			if (ask_sharemode) {
 				struct timespec write_time_ts;
 				struct file_id fileid;
 
+				ZERO_STRUCT(write_time_ts);
 				fileid = vfs_file_id_from_sbuf(conn, &sbuf);
 				get_file_infos(fileid, NULL, &write_time_ts);
 				if (!null_timespec(write_time_ts)) {
-					mdate_ts = write_time_ts;
+					update_stat_ex_writetime(&sbuf, write_time_ts);
 				}
 			}
+
+			mdate_ts = sbuf.st_ex_mtime;
+			adate_ts = sbuf.st_ex_atime;
+			create_date_ts = sbuf.st_ex_btime;
 
 			if (lp_dos_filetime_resolution(SNUM(conn))) {
 				dos_filetime_timespec(&create_date_ts);
@@ -4244,10 +4245,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	dstart = pdata;
 	dend = dstart + data_size - 1;
 
-	create_time_ts = sbuf.st_ex_btime;
-	mtime_ts = sbuf.st_ex_mtime;
-	atime_ts = sbuf.st_ex_atime;
-
 	allocation_size = SMB_VFS_GET_ALLOC_SIZE(conn,fsp,&sbuf);
 
 	if (!fsp) {
@@ -4261,8 +4258,12 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	}
 
 	if (!null_timespec(write_time_ts) && !INFO_LEVEL_IS_UNIX(info_level)) {
-		mtime_ts = write_time_ts;
+		update_stat_ex_writetime(&sbuf, write_time_ts);
 	}
+
+	create_time_ts = sbuf.st_ex_btime;
+	mtime_ts = sbuf.st_ex_mtime;
+	atime_ts = sbuf.st_ex_atime;
 
 	if (lp_dos_filetime_resolution(SNUM(conn))) {
 		dos_filetime_timespec(&create_time_ts);

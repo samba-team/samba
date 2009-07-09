@@ -460,6 +460,8 @@ struct stat_ex {
 	struct timespec st_ex_mtime;
 	struct timespec st_ex_ctime;
 	struct timespec st_ex_btime; /* birthtime */
+	/* Is birthtime real, or was it calculated ? */
+	bool		st_ex_calculated_birthtime;
 	blksize_t	st_ex_blksize;
 	blkcnt_t	st_ex_blocks;
 

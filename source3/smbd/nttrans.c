@@ -473,6 +473,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	struct timespec c_timespec;
 	struct timespec a_timespec;
 	struct timespec m_timespec;
+	struct timespec write_time_ts;
 	NTSTATUS status;
 	int oplock_request;
 	uint8_t oplock_granted = NO_OPLOCK_RETURN;
@@ -650,6 +651,14 @@ void reply_ntcreate_and_X(struct smb_request *req)
 		SIVAL(p,0,info);
 	}
 	p += 4;
+
+	/* Deal with other possible opens having a modified
+	   write time. JRA. */
+	ZERO_STRUCT(write_time_ts);
+	get_file_infos(fsp->file_id, NULL, &write_time_ts);
+	if (!null_timespec(write_time_ts)) {
+		update_stat_ex_writetime(&smb_fname->st, write_time_ts);
+	}
 
 	/* Create time. */
 	c_timespec = smb_fname->st.st_ex_btime;
@@ -908,6 +917,7 @@ static void call_nt_transact_create(connection_struct *conn,
 	struct timespec c_timespec;
 	struct timespec a_timespec;
 	struct timespec m_timespec;
+	struct timespec write_time_ts;
 	struct ea_list *ea_list = NULL;
 	NTSTATUS status;
 	size_t param_len;
@@ -1132,6 +1142,14 @@ static void call_nt_transact_create(connection_struct *conn,
 		SIVAL(p,0,info);
 	}
 	p += 8;
+
+	/* Deal with other possible opens having a modified
+	   write time. JRA. */
+	ZERO_STRUCT(write_time_ts);
+	get_file_infos(fsp->file_id, NULL, &write_time_ts);
+	if (!null_timespec(write_time_ts)) {
+		update_stat_ex_writetime(&smb_fname->st, write_time_ts);
+	}
 
 	/* Create time. */
 	c_timespec = smb_fname->st.st_ex_btime;
