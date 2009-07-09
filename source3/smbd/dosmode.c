@@ -448,8 +448,8 @@ static bool get_stat_dos_flags(connection_struct *conn,
 	if (S_ISDIR(smb_fname->st.st_ex_mode))
 		*dosmode |= aDIR;
 
-	*dosmode |= set_sparse_flag(smb_fname->st);
-	*dosmode |= set_link_read_only_flag(smb_fname->st);
+	*dosmode |= set_sparse_flag(&smb_fname->st);
+	*dosmode |= set_link_read_only_flag(&smb_fname->st);
 
 	return true;
 }
