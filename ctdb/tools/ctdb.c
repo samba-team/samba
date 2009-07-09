@@ -687,7 +687,6 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 
 	/* print the pruned list of nodes belonging to this natgw list */
 	for(i=0;i<nodemap->num;i++){
-		printf(":Node:IP:Disconnected:Banned:Disabled:Unhealthy:Stopped:\n");
 		if (nodemap->nodes[i].flags & NODE_FLAGS_DELETED) {
 			continue;
 		}
