@@ -725,16 +725,151 @@ done:
  do not currently exist
  ***********************************************************************/
 
+struct regdb_store_keys_context {
+	const char *key;
+	struct regsubkey_ctr *ctr;
+};
+
+static NTSTATUS regdb_store_keys_action(struct db_context *db,
+					void *private_data)
+{
+	struct regdb_store_keys_context *store_ctx;
+	WERROR werr;
+	int num_subkeys, i;
+	char *path = NULL;
+	struct regsubkey_ctr *subkeys = NULL, *old_subkeys = NULL;
+	char *oldkeyname = NULL;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
+
+	store_ctx = (struct regdb_store_keys_context *)private_data;
+
+	/*
+	 * Re-fetch the old keys inside the transaction
+	 */
+
+	werr = regsubkey_ctr_init(mem_ctx, &old_subkeys);
+	W_ERROR_NOT_OK_GOTO_DONE(werr);
+
+	regdb_fetch_keys_internal(db, store_ctx->key, old_subkeys);
+
+	/*
+	 * Make the store operation as safe as possible without transactions:
+	 *
+	 * (1) For each subkey removed from ctr compared with old_subkeys:
+	 *
+	 *     (a) First delete the value db entry.
+	 *
+	 *     (b) Next delete the secdesc db record.
+	 *
+	 *     (c) Then delete the subkey list entry.
+	 *
+	 * (2) Now write the list of subkeys of the parent key,
+	 *     deleting removed entries and adding new ones.
+	 *
+	 * (3) Finally create the subkey list entries for the added keys.
+	 *
+	 * This way if we crash half-way in between deleting the subkeys
+	 * and storing the parent's list of subkeys, no old data can pop up
+	 * out of the blue when re-adding keys later on.
+	 */
+
+	/* (1) delete removed keys' lists (values/secdesc/subkeys) */
+
+	num_subkeys = regsubkey_ctr_numkeys(old_subkeys);
+	for (i=0; i<num_subkeys; i++) {
+		oldkeyname = regsubkey_ctr_specific_key(old_subkeys, i);
+
+		if (regsubkey_ctr_key_exists(store_ctx->ctr, oldkeyname)) {
+			/*
+			 * It's still around, don't delete
+			 */
+			continue;
+		}
+
+		path = talloc_asprintf(mem_ctx, "%s/%s", store_ctx->key,
+				       oldkeyname);
+		if (!path) {
+			werr = WERR_NOMEM;
+			goto done;
+		}
+
+		werr = regdb_delete_key_lists(db, path);
+		W_ERROR_NOT_OK_GOTO_DONE(werr);
+
+		TALLOC_FREE(path);
+	}
+
+	TALLOC_FREE(old_subkeys);
+
+	/* (2) store the subkey list for the parent */
+
+	werr = regdb_store_keys_internal2(db, store_ctx->key, store_ctx->ctr);
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(0,("regdb_store_keys: Failed to store new subkey list "
+			 "for parent [%s]: %s\n", store_ctx->key,
+			 win_errstr(werr)));
+		goto done;
+	}
+
+	/* (3) now create records for any subkeys that don't already exist */
+
+	num_subkeys = regsubkey_ctr_numkeys(store_ctx->ctr);
+
+	if (num_subkeys == 0) {
+		werr = regsubkey_ctr_init(mem_ctx, &subkeys);
+		W_ERROR_NOT_OK_GOTO_DONE(werr);
+
+		werr = regdb_store_keys_internal2(db, store_ctx->key, subkeys);
+		if (!W_ERROR_IS_OK(werr)) {
+			DEBUG(0,("regdb_store_keys: Failed to store "
+				 "new record for key [%s]: %s\n",
+				 store_ctx->key, win_errstr(werr)));
+			goto done;
+		}
+		TALLOC_FREE(subkeys);
+	}
+
+	for (i=0; i<num_subkeys; i++) {
+		path = talloc_asprintf(mem_ctx, "%s/%s", store_ctx->key,
+				regsubkey_ctr_specific_key(store_ctx->ctr, i));
+		if (!path) {
+			werr = WERR_NOMEM;
+			goto done;
+		}
+		werr = regsubkey_ctr_init(mem_ctx, &subkeys);
+		W_ERROR_NOT_OK_GOTO_DONE(werr);
+
+		if (regdb_fetch_keys_internal(db, path, subkeys) == -1) {
+			/* create a record with 0 subkeys */
+			werr = regdb_store_keys_internal2(db, path, subkeys);
+			if (!W_ERROR_IS_OK(werr)) {
+				DEBUG(0,("regdb_store_keys: Failed to store "
+					 "new record for key [%s]: %s\n", path,
+					 win_errstr(werr)));
+				goto done;
+			}
+		}
+
+		TALLOC_FREE(subkeys);
+		TALLOC_FREE(path);
+	}
+
+	werr = WERR_OK;
+
+done:
+	talloc_free(mem_ctx);
+	return werror_to_ntstatus(werr);
+}
+
 static bool regdb_store_keys_internal(struct db_context *db, const char *key,
 				      struct regsubkey_ctr *ctr)
 {
 	int num_subkeys, old_num_subkeys, i;
-	char *path = NULL;
-	struct regsubkey_ctr *subkeys = NULL, *old_subkeys = NULL;
-	char *oldkeyname = NULL;
+	struct regsubkey_ctr *old_subkeys = NULL;
 	TALLOC_CTX *ctx = talloc_stackframe();
 	WERROR werr;
 	bool ret = false;
+	struct regdb_store_keys_context store_ctx;
 
 	if (!regdb_key_is_base_key(key) && !regdb_key_exists(db, key)) {
 		goto done;
@@ -779,143 +914,14 @@ static bool regdb_store_keys_internal(struct db_context *db, const char *key,
 
 	TALLOC_FREE(old_subkeys);
 
-	if (db->transaction_start(db) != 0) {
-		DEBUG(0, ("regdb_store_keys: transaction_start failed\n"));
-		goto done;
-	}
+	store_ctx.key = key;
+	store_ctx.ctr = ctr;
 
-	/*
-	 * Re-fetch the old keys inside the transaction
-	 */
+	werr = ntstatus_to_werror(dbwrap_trans_do(db,
+						  regdb_store_keys_action,
+						  &store_ctx));
 
-	werr = regsubkey_ctr_init(ctx, &old_subkeys);
-	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(0,("regdb_store_keys: talloc() failure!\n"));
-		goto cancel;
-	}
-
-	regdb_fetch_keys_internal(db, key, old_subkeys);
-
-	/*
-	 * Make the store operation as safe as possible without transactions:
-	 *
-	 * (1) For each subkey removed from ctr compared with old_subkeys:
-	 *
-	 *     (a) First delete the value db entry.
-	 *
-	 *     (b) Next delete the secdesc db record.
-	 *
-	 *     (c) Then delete the subkey list entry.
-	 *
-	 * (2) Now write the list of subkeys of the parent key,
-	 *     deleting removed entries and adding new ones.
-	 *
-	 * (3) Finally create the subkey list entries for the added keys.
-	 *
-	 * This way if we crash half-way in between deleting the subkeys
-	 * and storing the parent's list of subkeys, no old data can pop up
-	 * out of the blue when re-adding keys later on.
-	 */
-
-	/* (1) delete removed keys' lists (values/secdesc/subkeys) */
-
-	num_subkeys = regsubkey_ctr_numkeys(old_subkeys);
-	for (i=0; i<num_subkeys; i++) {
-		oldkeyname = regsubkey_ctr_specific_key(old_subkeys, i);
-
-		if (regsubkey_ctr_key_exists(ctr, oldkeyname)) {
-			/*
-			 * It's still around, don't delete
-			 */
-
-			continue;
-		}
-
-		path = talloc_asprintf(ctx, "%s/%s", key, oldkeyname);
-		if (!path) {
-			goto cancel;
-		}
-
-		werr = regdb_delete_key_lists(db, path);
-		W_ERROR_NOT_OK_GOTO(werr, cancel);
-
-		TALLOC_FREE(path);
-	}
-
-	TALLOC_FREE(old_subkeys);
-
-	/* (2) store the subkey list for the parent */
-
-	werr = regdb_store_keys_internal2(db, key, ctr);
-	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(0,("regdb_store_keys: Failed to store new subkey list "
-			 "for parent [%s]: %s\n", key, win_errstr(werr)));
-		goto cancel;
-	}
-
-	/* (3) now create records for any subkeys that don't already exist */
-
-	num_subkeys = regsubkey_ctr_numkeys(ctr);
-
-	if (num_subkeys == 0) {
-		werr = regsubkey_ctr_init(ctx, &subkeys);
-		if (!W_ERROR_IS_OK(werr)) {
-			DEBUG(0,("regdb_store_keys: talloc() failure!\n"));
-			goto cancel;
-		}
-
-		werr = regdb_store_keys_internal2(db, key, subkeys);
-		if (!W_ERROR_IS_OK(werr)) {
-			DEBUG(0,("regdb_store_keys: Failed to store "
-				 "new record for key [%s]: %s\n", key,
-				 win_errstr(werr)));
-			goto cancel;
-		}
-		TALLOC_FREE(subkeys);
-
-	}
-
-	for (i=0; i<num_subkeys; i++) {
-		path = talloc_asprintf(ctx, "%s/%s",
-					key,
-					regsubkey_ctr_specific_key(ctr, i));
-		if (!path) {
-			goto cancel;
-		}
-		werr = regsubkey_ctr_init(ctx, &subkeys);
-		if (!W_ERROR_IS_OK(werr)) {
-			DEBUG(0,("regdb_store_keys: talloc() failure!\n"));
-			goto cancel;
-		}
-
-		if (regdb_fetch_keys_internal(db, path, subkeys) == -1) {
-			/* create a record with 0 subkeys */
-			werr = regdb_store_keys_internal2(db, path, subkeys);
-			if (!W_ERROR_IS_OK(werr)) {
-				DEBUG(0,("regdb_store_keys: Failed to store "
-					 "new record for key [%s]: %s\n", path,
-					 win_errstr(werr)));
-				goto cancel;
-			}
-		}
-
-		TALLOC_FREE(subkeys);
-		TALLOC_FREE(path);
-	}
-
-	if (db->transaction_commit(db) != 0) {
-		DEBUG(0, ("regdb_store_keys: Could not commit transaction\n"));
-		goto done;
-	}
-
-	ret = true;
-	goto done;
-
-cancel:
-	ret = false;
-	if (db->transaction_cancel(db) != 0) {
-		smb_panic("regdb_store_keys: transaction_cancel failed\n");
-	}
+	ret = W_ERROR_IS_OK(werr);
 
 done:
 	TALLOC_FREE(ctx);
