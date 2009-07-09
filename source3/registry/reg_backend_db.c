@@ -934,11 +934,50 @@ bool regdb_store_keys(const char *key, struct regsubkey_ctr *ctr)
 	return regdb_store_keys_internal(regdb, key, ctr);
 }
 
+struct regdb_create_subkey_context {
+	const char *key;
+	const char *subkey;
+};
+
+static NTSTATUS regdb_create_subkey_action(struct db_context *db,
+					   void *private_data)
+{
+	WERROR werr;
+	struct regdb_create_subkey_context *create_ctx;
+	struct regsubkey_ctr *subkeys;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
+
+	create_ctx = (struct regdb_create_subkey_context *)private_data;
+
+	werr = regsubkey_ctr_init(mem_ctx, &subkeys);
+	W_ERROR_NOT_OK_GOTO_DONE(werr);
+
+	if (regdb_fetch_keys_internal(db, create_ctx->key, subkeys) < 0) {
+		werr = WERR_REG_IO_FAILURE;
+		goto done;
+	}
+
+	werr = regsubkey_ctr_addkey(subkeys, create_ctx->subkey);
+	W_ERROR_NOT_OK_GOTO_DONE(werr);
+
+	werr = regdb_store_keys_internal2(db, create_ctx->key, subkeys);
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(0, (__location__ " failed to store new subkey list for "
+			 "parent key %s: %s\n", create_ctx->key,
+			 win_errstr(werr)));
+	}
+
+done:
+	talloc_free(mem_ctx);
+	return werror_to_ntstatus(werr);
+}
+
 static WERROR regdb_create_subkey(const char *key, const char *subkey)
 {
 	WERROR werr;
 	struct regsubkey_ctr *subkeys;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
+	struct regdb_create_subkey_context create_ctx;
 
 	if (!regdb_key_is_base_key(key) && !regdb_key_exists(regdb, key)) {
 		werr = WERR_NOT_FOUND;
@@ -960,40 +999,12 @@ static WERROR regdb_create_subkey(const char *key, const char *subkey)
 
 	talloc_free(subkeys);
 
-	if (regdb->transaction_start(regdb) != 0) {
-		werr = WERR_REG_IO_FAILURE;
-		goto done;
-	}
+	create_ctx.key = key;
+	create_ctx.subkey = subkey;
 
-	werr = regsubkey_ctr_init(mem_ctx, &subkeys);
-	W_ERROR_NOT_OK_GOTO(werr, cancel);
-
-	if (regdb_fetch_keys_internal(regdb, key, subkeys) < 0) {
-		werr = WERR_REG_IO_FAILURE;
-		goto cancel;
-	}
-
-	werr = regsubkey_ctr_addkey(subkeys, subkey);
-	W_ERROR_NOT_OK_GOTO(werr, cancel);
-
-	werr = regdb_store_keys_internal2(regdb, key, subkeys);
-	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(0, (__location__ " failed to store new subkey list for "
-			 "parent key %s: %s\n", key, win_errstr(werr)));
-		goto cancel;
-	}
-
-	if (regdb->transaction_commit(regdb) != 0) {
-		werr = WERR_REG_IO_FAILURE;
-		DEBUG(0, (__location__ " failed to commit transaction\n"));
-	}
-
-	goto done;
-
-cancel:
-	if (regdb->transaction_cancel(regdb) != 0) {
-		smb_panic("regdb_create_subkey: transaction_cancel failed\n");
-	}
+	werr = ntstatus_to_werror(dbwrap_trans_do(regdb,
+						  regdb_create_subkey_action,
+						  &create_ctx));
 
 done:
 	talloc_free(mem_ctx);
