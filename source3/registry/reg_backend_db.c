@@ -1195,18 +1195,18 @@ static bool create_sorted_subkeys(const char *key, const char *sorted_keyname)
 
 	werr = regsubkey_ctr_init(talloc_tos(), &ctr);
 	if (!W_ERROR_IS_OK(werr)) {
-		goto fail;
+		goto commit;
 	}
 
 	res = regdb_fetch_keys_internal(regdb, key, ctr);
 	if (res == -1) {
-		goto fail;
+		goto commit;
 	}
 
 	num_subkeys = regsubkey_ctr_numkeys(ctr);
 	sorted_subkeys = talloc_array(ctr, char *, num_subkeys);
 	if (sorted_subkeys == NULL) {
-		goto fail;
+		goto commit;
 	}
 
 	len = 4 + 4*num_subkeys;
@@ -1215,7 +1215,7 @@ static bool create_sorted_subkeys(const char *key, const char *sorted_keyname)
 		sorted_subkeys[i] = talloc_strdup_upper(sorted_subkeys,
 					regsubkey_ctr_specific_key(ctr, i));
 		if (sorted_subkeys[i] == NULL) {
-			goto fail;
+			goto commit;
 		}
 		len += strlen(sorted_subkeys[i])+1;
 	}
@@ -1224,7 +1224,7 @@ static bool create_sorted_subkeys(const char *key, const char *sorted_keyname)
 
 	buf = talloc_array(ctr, char, len);
 	if (buf == NULL) {
-		goto fail;
+		goto commit;
 	}
 	p = buf + 4 + 4*num_subkeys;
 
@@ -1242,21 +1242,17 @@ static bool create_sorted_subkeys(const char *key, const char *sorted_keyname)
 		TDB_REPLACE);
 	if (!NT_STATUS_IS_OK(status)) {
 		/*
-		 * Don't use a "goto fail;" here, this would commit the broken
+		 * Don't use a "goto commit;" here, this would commit the broken
 		 * transaction. See below for an explanation.
 		 */
-		if (regdb->transaction_cancel(regdb) == -1) {
-			smb_panic("create_sorted_subkeys: transaction_cancel "
-				  "failed\n");
-		}
-		TALLOC_FREE(ctr);
-		return false;
+		goto cancel;
 	}
 
 	result = true;
- fail:
+
+commit:
 	/*
-	 * We only get here via the "goto fail" when we did not write anything
+	 * We only get here via the "goto commit" when we did not write anything
 	 * yet. Using transaction_commit even in a failure case is necessary
 	 * because this (disposable) call might be nested in other
 	 * transactions. Doing a cancel here would destroy the possibility of
@@ -1267,7 +1263,16 @@ static bool create_sorted_subkeys(const char *key, const char *sorted_keyname)
 			  "failed\n"));
 		result = false;
 	}
+	goto done;
 
+cancel:
+	if (regdb->transaction_cancel(regdb) == -1) {
+		smb_panic("create_sorted_subkeys: transaction_cancel "
+			  "failed\n");
+	}
+	result = false;
+
+done:
 	TALLOC_FREE(ctr);
 	return result;
 }
