@@ -242,6 +242,7 @@ trust account creation. This is a matter of the administrator's choice.
 
 <para>
 <indexterm><primary>/etc/passwd</primary></indexterm>
+<indexterm><primary></primary></indexterm>
 <indexterm><primary>useradd</primary></indexterm>
 <indexterm><primary>vipw</primary></indexterm>
 The first step in manually creating a Machine Trust Account is to manually
@@ -476,10 +477,14 @@ with the version of Windows.
 <indexterm><primary>privileges</primary></indexterm>
 <indexterm><primary>root</primary></indexterm>
 	When the user elects to make the client a domain member, Windows 200x prompts for
-	an account and password that has privileges to create  machine accounts in the domain.
-	A Samba administrator account (i.e., a Samba account that has <constant>root</constant> privileges on the
-	Samba server) must be entered here; the operation will fail if an ordinary user
-	account is given. 
+	an account and password that has privileges to create machine accounts in the domain.
+	</para>
+
+	<para>
+	A Samba administrator account (i.e., a Samba account that has <literal>root</literal> privileges on the
+	Samba server) must be entered here; the operation will fail if an ordinary user account is given.
+	The necessary privilege can be assured by creating a Samba SAM account for <literal>root</literal> or
+	by granting the <literal>SeMachineAccountPrivilege</literal> privilage to the user account.
 	</para>
 
 	<para>
@@ -539,6 +544,7 @@ with the version of Windows.
 	<title>Samba Client</title>
 
 	<para>
+<indexterm><primary></primary></indexterm>
 	Joining a Samba client to a domain is documented in <link linkend="domain-member-server">the next section</link>.
 	</para>
 </sect3>
@@ -626,6 +632,7 @@ and be fully trusted by it.
 </table>
 
 <para>
+<indexterm><primary></primary></indexterm>
 First, you must edit your &smb.conf; file to tell Samba it should now use domain security.
 </para>
 
@@ -927,7 +934,7 @@ and it may be detrimental.
 <para>
 <indexterm><primary>ADS</primary></indexterm>
 <indexterm><primary>SRV records</primary></indexterm>
-<indexterm><primary>DNS zone</primary></indexterm>
+<indexterm><primary>DNS zon</primary></indexterm>
 <indexterm><primary>KDC</primary></indexterm>
 <indexterm><primary>_kerberos.REALM.NAME</primary></indexterm>
 Microsoft ADS automatically create SRV records in the DNS zone 
@@ -1070,6 +1077,7 @@ error</errorname> when you try to join the realm.
 <indexterm><primary>Kerberos</primary></indexterm>
 <indexterm><primary>Create the Computer Account</primary></indexterm>
 <indexterm><primary>Testing Server Setup</primary></indexterm>
+<indexterm><primary></primary></indexterm>
 If all you want is Kerberos support in &smbclient;, then you can skip directly to <link
 linkend="ads-test-smbclient">Testing with &smbclient;</link> now.  <link
 linkend="ads-create-machine-account">Create the Computer Account</link> and <link
@@ -1148,7 +1156,7 @@ name, it may need to be quadrupled to pass through the shell escape and ldap esc
 	<listitem><para>
 	<indexterm><primary>kinit</primary></indexterm>
 	<indexterm><primary>rights</primary></indexterm>
-	You need to log in to the domain using <userinput>kinit
+	You need to login to the domain using <userinput>kinit
 	<replaceable>USERNAME</replaceable>@<replaceable>REALM</replaceable></userinput>.
 	<replaceable>USERNAME</replaceable> must be a user who has rights to add a machine to the domain.
 	</para></listitem></varlistentry>
@@ -1184,10 +1192,10 @@ folder under Users and Computers.
 <indexterm><primary>Windows 2000</primary></indexterm>
 <indexterm><primary>net</primary><secondary>use</secondary></indexterm>
 <indexterm><primary>DES-CBC-MD5</primary></indexterm>
-On a Windows 2000 client, try <userinput>net use * \\server\share</userinput>. You should
-be logged in with Kerberos without needing to know a password. If this fails, then run
+On a Windows 2000 client, try <userinput>net use * \\server\share</userinput>. It should be possible
+to login with Kerberos without needing to know a password. If this fails, then run
 <userinput>klist tickets</userinput>. Did you get a ticket for the server? Does it have
-an encryption type of DES-CBC-MD5? 
+an encryption type of DES-CBC-MD5?
 </para>
 
 <note><para>
@@ -1206,7 +1214,7 @@ Samba can use both DES-CBC-MD5 encryption as well as ARCFOUR-HMAC-MD5 encoding.
 <indexterm><primary>smbclient</primary></indexterm>
 <indexterm><primary>Kerberos</primary></indexterm>
 <indexterm><primary>Kerberos authentication</primary></indexterm>
-On your Samba server try to log in to a Windows 2000 server or your Samba
+On your Samba server try to login to a Windows 2000 server or your Samba
 server using &smbclient; and Kerberos. Use &smbclient; as usual, but
 specify the <option>-k</option> option to choose Kerberos authentication.
 </para>
