@@ -5913,15 +5913,13 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 					const char *pdata,
 					int total_data,
 					files_struct *fsp,
-					const char *fname,
-					SMB_STRUCT_STAT *psbuf)
+					struct smb_filename *smb_fname)
 {
-	struct smb_filename *smb_fname = NULL;
 	uint64_t allocation_size = 0;
 	NTSTATUS status = NT_STATUS_OK;
 	files_struct *new_fsp = NULL;
 
-	if (!VALID_STAT(*psbuf)) {
+	if (!VALID_STAT(smb_fname->st)) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
@@ -5939,20 +5937,22 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 	}
 #endif /* LARGE_SMB_OFF_T */
 
-	DEBUG(10,("smb_set_file_allocation_info: Set file allocation info for file %s to %.0f\n",
-			fname, (double)allocation_size ));
+	DEBUG(10,("smb_set_file_allocation_info: Set file allocation info for "
+		  "file %s to %.0f\n", smb_fname_str_dbg(smb_fname),
+		  (double)allocation_size));
 
 	if (allocation_size) {
 		allocation_size = smb_roundup(conn, allocation_size);
 	}
 
-	DEBUG(10,("smb_set_file_allocation_info: file %s : setting new allocation size to %.0f\n",
-			fname, (double)allocation_size ));
+	DEBUG(10,("smb_set_file_allocation_info: file %s : setting new "
+		  "allocation size to %.0f\n", smb_fname_str_dbg(smb_fname),
+		  (double)allocation_size));
 
 	if (fsp && fsp->fh->fd != -1) {
 		/* Open file handle. */
 		/* Only change if needed. */
-		if (allocation_size != get_file_size_stat(psbuf)) {
+		if (allocation_size != get_file_size_stat(&smb_fname->st)) {
 			if (vfs_allocate_file_space(fsp, allocation_size) == -1) {
 				return map_nt_error_from_unix(errno);
 			}
@@ -5967,14 +5967,7 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 	}
 
 	/* Pathname or stat or directory file. */
-
-	status = create_synthetic_smb_fname_split(talloc_tos(), fname, psbuf,
-						  &smb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-        status = SMB_VFS_CREATE_FILE(
+	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
 		0,					/* root_dir_fid */
@@ -5992,16 +5985,13 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 		&new_fsp,				/* result */
 		NULL);					/* pinfo */
 
-	*psbuf = smb_fname->st;
-	TALLOC_FREE(smb_fname);
-
 	if (!NT_STATUS_IS_OK(status)) {
 		/* NB. We check for open_was_deferred in the caller. */
 		return status;
 	}
 
 	/* Only change if needed. */
-	if (allocation_size != get_file_size_stat(psbuf)) {
+	if (allocation_size != get_file_size_stat(&smb_fname->st)) {
 		if (vfs_allocate_file_space(new_fsp, allocation_size) == -1) {
 			status = map_nt_error_from_unix(errno);
 			close_file(req, new_fsp, NORMAL_CLOSE);
@@ -7112,8 +7102,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 								pdata,
 								total_data,
 								fsp,
-								fname,
-								&sbuf);
+								smb_fname);
 			break;
 		}
 
