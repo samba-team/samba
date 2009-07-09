@@ -285,6 +285,7 @@ int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 {
 	struct ctdb_node_flag_change *c = (struct ctdb_node_flag_change *)indata.dptr;
 	struct ctdb_node *node;
+	uint32_t old_flags;
 	
 	if (c->pnn >= ctdb->num_nodes) {
 		DEBUG(DEBUG_ERR,(__location__ " Node %d is invalid, num_nodes :%d\n", c->pnn, ctdb->num_nodes));
@@ -292,9 +293,18 @@ int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 	}
 
 	node         = ctdb->nodes[c->pnn];
+	old_flags    = node->flags;
 	c->old_flags  = node->flags;
 	node->flags   = c->new_flags & ~NODE_FLAGS_DISCONNECTED;
 	node->flags  |= (c->old_flags & NODE_FLAGS_DISCONNECTED);
+
+	/* we dont let other nodes modify our STOPPED status */
+	if (c->pnn == ctdb->pnn) {
+		node->flags &= ~NODE_FLAGS_STOPPED;
+		if (old_flags & NODE_FLAGS_STOPPED) {
+			node->flags |= NODE_FLAGS_STOPPED;
+		}
+	}
 
 	if (node->flags == c->old_flags) {
 		DEBUG(DEBUG_INFO, ("Control modflags on node %u - Unchanged - flags 0x%x\n", c->pnn, node->flags));
