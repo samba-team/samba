@@ -115,8 +115,9 @@ bool gencache_set(const char *keystr, const char *value, time_t timeout)
 	TDB_DATA databuf;
 	char* valstr = NULL;
 
-	/* fail completely if get null pointers passed */
-	SMB_ASSERT(keystr && value);
+	if ((keystr == NULL) || (value == NULL)) {
+		return false;
+	}
 
 	if (!gencache_init()) return False;
 
@@ -149,8 +150,9 @@ bool gencache_del(const char *keystr)
 {
 	int ret;
 
-	/* fail completely if get null pointers passed */
-	SMB_ASSERT(keystr);
+	if (keystr == NULL) {
+		return false;
+	}
 
 	if (!gencache_init()) return False;	
 
@@ -180,8 +182,9 @@ bool gencache_get(const char *keystr, char **valstr, time_t *timeout)
 	time_t t;
 	char *endptr;
 
-	/* fail completely if get null pointers passed */
-	SMB_ASSERT(keystr);
+	if (keystr == NULL) {
+		return false;
+	}
 
 	if (!gencache_init()) {
 		return False;
@@ -256,8 +259,9 @@ bool gencache_get_data_blob(const char *keystr, DATA_BLOB *blob, bool *expired)
 	int buflen = 0, len = 0, blob_len = 0;
 	unsigned char *blob_buf = NULL;
 
-	/* fail completely if get null pointers passed */
-	SMB_ASSERT(keystr);
+	if (keystr == NULL) {
+		return false;
+	}
 
 	if (!gencache_init()) {
 		return False;
@@ -333,8 +337,9 @@ bool gencache_set_data_blob(const char *keystr, const DATA_BLOB *blob, time_t ti
 	unsigned char *buf = NULL;
 	int len = 0, buflen = 0;
 
-	/* fail completely if get null pointers passed */
-	SMB_ASSERT(keystr && blob);
+	if ((keystr == NULL) || (blob == NULL)) {
+		return false;
+	}
 
 	if (!gencache_init()) {
 		return False;
@@ -465,8 +470,9 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 {
 	struct gencache_iterate_state state;
 
-	/* fail completely if get null pointers passed */
-	SMB_ASSERT(fn && keystr_pattern);
+	if ((fn == NULL) || (keystr_pattern == NULL)) {
+		return;
+	}
 
 	if (!gencache_init()) return;
 
