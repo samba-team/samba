@@ -27,13 +27,45 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
 
+static NTSTATUS create_acl_blob(const struct security_descriptor *psd,
+			DATA_BLOB *pblob,
+			uint8_t hash[16]);
+
+#define HASH_SECURITY_INFO (OWNER_SECURITY_INFORMATION | \
+				GROUP_SECURITY_INFORMATION | \
+				DACL_SECURITY_INFORMATION | \
+				SACL_SECURITY_INFORMATION)
+
+/*******************************************************************
+ Hash a security descriptor.
+*******************************************************************/
+
+static NTSTATUS hash_sd(struct security_descriptor *psd,
+			uint8_t hash[16])
+{
+	DATA_BLOB blob;
+	struct MD5Context tctx;
+	NTSTATUS status;
+
+	memset(hash, '\0', 16);
+	status = create_acl_blob(psd, &blob, hash);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	MD5Init(&tctx);
+	MD5Update(&tctx, blob.data, blob.length);
+	MD5Final(hash, &tctx);
+	return NT_STATUS_OK;
+}
+
 /*******************************************************************
  Parse out a struct security_descriptor from a DATA_BLOB.
 *******************************************************************/
 
 static NTSTATUS parse_acl_blob(const DATA_BLOB *pblob,
 				uint32 security_info,
-				struct security_descriptor **ppdesc)
+				struct security_descriptor **ppdesc,
+				uint8_t hash[16])
 {
 	TALLOC_CTX *ctx = talloc_tos();
 	struct xattr_NTACL xacl;
@@ -64,6 +96,7 @@ static NTSTATUS parse_acl_blob(const DATA_BLOB *pblob,
 			? xacl.info.sd_hs->sd->dacl : NULL,
 			&sd_size);
 
+	memcpy(hash, xacl.info.sd_hs->hash, 16);
 	TALLOC_FREE(xacl.info.sd);
 
 	return (*ppdesc != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
@@ -131,7 +164,9 @@ static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
  Create a DATA_BLOB from a security descriptor.
 *******************************************************************/
 
-static NTSTATUS create_acl_blob(const struct security_descriptor *psd, DATA_BLOB *pblob)
+static NTSTATUS create_acl_blob(const struct security_descriptor *psd,
+			DATA_BLOB *pblob,
+			uint8_t hash[16])
 {
 	struct xattr_NTACL xacl;
 	struct security_descriptor_hash sd_hs;
@@ -144,7 +179,7 @@ static NTSTATUS create_acl_blob(const struct security_descriptor *psd, DATA_BLOB
 	xacl.version = 2;
 	xacl.info.sd_hs = &sd_hs;
 	xacl.info.sd_hs->sd = CONST_DISCARD(struct security_descriptor *, psd);
-	memset(&xacl.info.sd_hs->hash[0], '\0', 16);
+	memcpy(&xacl.info.sd_hs->hash[0], hash, 16);
 
 	ndr_err = ndr_push_struct_blob(
 			pblob, ctx, NULL, &xacl,
@@ -242,9 +277,11 @@ static NTSTATUS get_nt_acl_xattr_internal(vfs_handle_struct *handle,
 				        uint32 security_info,
 					struct security_descriptor **ppdesc)
 {
-	TALLOC_CTX *ctx = talloc_tos();
 	DATA_BLOB blob;
 	NTSTATUS status;
+	uint8_t hash[16];
+	uint8_t hash_tmp[16];
+	struct security_descriptor *pdesc_next = NULL;
 
 	if (fsp && name == NULL) {
 		name = fsp->fsp_name;
@@ -252,18 +289,73 @@ static NTSTATUS get_nt_acl_xattr_internal(vfs_handle_struct *handle,
 
 	DEBUG(10, ("get_nt_acl_xattr_internal: name=%s\n", name));
 
-	status = get_acl_blob(ctx, handle, fsp, name, &blob);
+	status = get_acl_blob(talloc_tos(), handle, fsp, name, &blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("get_acl_blob returned %s\n", nt_errstr(status)));
 		return status;
 	}
 
-	status = parse_acl_blob(&blob, security_info, ppdesc);
+	status = parse_acl_blob(&blob, security_info, ppdesc, &hash[0]);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("parse_acl_blob returned %s\n",
 				nt_errstr(status)));
 		return status;
 	}
+
+	/* If there was no stored hash, don't check. */
+	memset(&hash_tmp[0], '\0', 16);
+	if (memcmp(&hash[0], &hash_tmp[0], 16) == 0) {
+		/* No hash, goto return blob sd. */
+		goto out;
+	}
+
+	/* Get the full underlying sd, then hash. */
+	if (fsp) {
+		status = SMB_VFS_NEXT_FGET_NT_ACL(handle,
+				fsp,
+				HASH_SECURITY_INFO,
+				&pdesc_next);
+	} else {
+		status = SMB_VFS_NEXT_GET_NT_ACL(handle,
+				name,
+				HASH_SECURITY_INFO,
+				&pdesc_next);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	status = hash_sd(pdesc_next, hash_tmp);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	if (memcmp(&hash[0], &hash_tmp[0], 16) == 0) {
+		TALLOC_FREE(pdesc_next);
+		/* Hash matches, return blob sd. */
+		goto out;
+	}
+
+	/* Hash doesn't match, return underlying sd. */
+
+	if (!(security_info & OWNER_SECURITY_INFORMATION)) {
+		pdesc_next->owner_sid = NULL;
+	}
+	if (!(security_info & GROUP_SECURITY_INFORMATION)) {
+		pdesc_next->group_sid = NULL;
+	}
+	if (!(security_info & DACL_SECURITY_INFORMATION)) {
+		pdesc_next->dacl = NULL;
+	}
+	if (!(security_info & SACL_SECURITY_INFORMATION)) {
+		pdesc_next->sacl = NULL;
+	}
+
+	TALLOC_FREE(*ppdesc);
+	*ppdesc = pdesc_next;
+
+  out:
 
 	TALLOC_FREE(blob.data);
 	return status;
@@ -324,9 +416,11 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 	NTSTATUS status;
 	struct security_descriptor *parent_desc = NULL;
 	struct security_descriptor *psd = NULL;
+	struct security_descriptor *pdesc_next = NULL;
 	DATA_BLOB blob;
 	size_t size;
 	char *parent_name;
+	uint8_t hash[16];
 
 	if (!parent_dirname(ctx, fname, &parent_name, NULL)) {
 		return NT_STATUS_NO_MEMORY;
@@ -382,11 +476,9 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 			ret = SMB_VFS_FSTAT(fsp, &sbuf);
 		} else {
 			if (fsp && fsp->posix_open) {
-				ret = vfs_lstat_smb_fname(handle->conn, fname,
-							  &sbuf);
+				ret = vfs_lstat_smb_fname(handle->conn,fname, &sbuf);
 			} else {
-				ret = vfs_stat_smb_fname(handle->conn, fname,
-							 &sbuf);
+				ret = vfs_stat_smb_fname(handle->conn,fname, &sbuf);
 			}
 		}
 		if (ret == -1) {
@@ -403,7 +495,28 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 		}
 	}
 
-	status = create_acl_blob(psd, &blob);
+	/* Object exists. Read the current SD to get the hash. */
+	if (fsp) {
+		status = SMB_VFS_NEXT_FGET_NT_ACL(handle,
+				fsp,
+				HASH_SECURITY_INFO,
+				&pdesc_next);
+	} else {
+		status = SMB_VFS_NEXT_GET_NT_ACL(handle,
+				fname,
+				HASH_SECURITY_INFO,
+				&pdesc_next);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = hash_sd(pdesc_next, hash);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	status = create_acl_blob(psd, &blob, hash);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -429,6 +542,13 @@ static int open_acl_xattr(vfs_handle_struct *handle,
 	bool file_existed = true;
 	char *fname = NULL;
 	NTSTATUS status;
+
+	if (fsp->base_fsp) {
+		/* Stream open. Base filename open already did the ACL check. */
+		DEBUG(10,("open_acl_xattr: stream open on %s\n",
+			smb_fname_str_dbg(smb_fname) ));
+		return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
+	}
 
 	status = get_full_smb_filename(talloc_tos(), smb_fname,
 				       &fname);
@@ -497,23 +617,8 @@ static int mkdir_acl_xattr(vfs_handle_struct *handle, const char *path, mode_t m
 static NTSTATUS fget_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
         uint32 security_info, struct security_descriptor **ppdesc)
 {
-	NTSTATUS status = get_nt_acl_xattr_internal(handle, fsp,
+	return get_nt_acl_xattr_internal(handle, fsp,
 				NULL, security_info, ppdesc);
-	if (NT_STATUS_IS_OK(status)) {
-		if (DEBUGLEVEL >= 10) {
-			DEBUG(10,("fget_nt_acl_xattr: returning xattr sd for file %s\n",
-				fsp->fsp_name));
-			NDR_PRINT_DEBUG(security_descriptor, *ppdesc);
-		}
-		return NT_STATUS_OK;
-	}
-
-	DEBUG(10,("fget_nt_acl_xattr: failed to get xattr sd for file %s, Error %s\n",
-			fsp->fsp_name,
-			nt_errstr(status) ));
-
-	return SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp,
-			security_info, ppdesc);
 }
 
 /*********************************************************************
@@ -523,23 +628,8 @@ static NTSTATUS fget_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
 static NTSTATUS get_nt_acl_xattr(vfs_handle_struct *handle,
         const char *name, uint32 security_info, struct security_descriptor **ppdesc)
 {
-	NTSTATUS status = get_nt_acl_xattr_internal(handle, NULL,
+	return get_nt_acl_xattr_internal(handle, NULL,
 				name, security_info, ppdesc);
-	if (NT_STATUS_IS_OK(status)) {
-		if (DEBUGLEVEL >= 10) {
-			DEBUG(10,("get_nt_acl_xattr: returning xattr sd for file %s\n",
-				name));
-			NDR_PRINT_DEBUG(security_descriptor, *ppdesc);
-		}
-		return NT_STATUS_OK;
-	}
-
-	DEBUG(10,("get_nt_acl_xattr: failed to get xattr sd for file %s, Error %s\n",
-			name,
-			nt_errstr(status) ));
-
-	return SMB_VFS_NEXT_GET_NT_ACL(handle, name,
-			security_info, ppdesc);
 }
 
 /*********************************************************************
@@ -551,17 +641,14 @@ static NTSTATUS fset_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
 {
 	NTSTATUS status;
 	DATA_BLOB blob;
+	struct security_descriptor *pdesc_next = NULL;
+	uint8_t hash[16];
 
 	if (DEBUGLEVEL >= 10) {
 		DEBUG(10,("fset_nt_acl_xattr: incoming sd for file %s\n",
 			fsp->fsp_name));
 		NDR_PRINT_DEBUG(security_descriptor,
 			CONST_DISCARD(struct security_descriptor *,psd));
-	}
-
-	status = SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, security_info_sent, psd);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
 	}
 
 	/* Ensure owner and group are set. */
@@ -576,13 +663,9 @@ static NTSTATUS fset_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
 		}
 		if (fsp->is_directory || fsp->fh->fd == -1) {
 			if (fsp->posix_open) {
-				ret = vfs_lstat_smb_fname(fsp->conn,
-							  fsp->fsp_name,
-							  &sbuf);
+				ret = vfs_lstat_smb_fname(fsp->conn,fsp->fsp_name, &sbuf);
 			} else {
-				ret = vfs_stat_smb_fname(fsp->conn,
-							 fsp->fsp_name,
-							 &sbuf);
+				ret = vfs_stat_smb_fname(fsp->conn,fsp->fsp_name, &sbuf);
 			}
 		} else {
 			ret = SMB_VFS_FSTAT(fsp, &sbuf);
@@ -598,6 +681,26 @@ static NTSTATUS fset_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
 		nc_psd->group_sid = &group_sid;
 		security_info_sent |= (OWNER_SECURITY_INFORMATION|GROUP_SECURITY_INFORMATION);
 		psd = nc_psd;
+	}
+
+	status = SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, security_info_sent, psd);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* Get the full underlying sd, then hash. */
+	status = SMB_VFS_NEXT_FGET_NT_ACL(handle,
+				fsp,
+				HASH_SECURITY_INFO,
+				&pdesc_next);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = hash_sd(pdesc_next, hash);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 #if 0
@@ -624,7 +727,7 @@ static NTSTATUS fset_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
 		NDR_PRINT_DEBUG(security_descriptor,
 			CONST_DISCARD(struct security_descriptor *,psd));
 	}
-	create_acl_blob(psd, &blob);
+	create_acl_blob(psd, &blob, hash);
 	store_acl_blob_fsp(handle, fsp, &blob);
 
 	return NT_STATUS_OK;
