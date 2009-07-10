@@ -4455,6 +4455,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 				reply_nterror(
 					req,
 					NT_STATUS_NO_MEMORY);
+				return;
 			}
 			len = srvstr_push(dstart, req->flags2,
 					  pdata+4, mangled_name,
