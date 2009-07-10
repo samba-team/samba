@@ -593,15 +593,6 @@ NTSTATUS dup_file_fsp(struct smb_request *req, files_struct *from,
 }
 
 /**
- * Return a debug string using the debug_ctx().  This can only be called from
- * DEBUG() macros due to the debut_ctx().
- */
-const char *fsp_str_dbg(const struct files_struct *fsp)
-{
-	return smb_fname_str_dbg(fsp->fsp_name);
-}
-
-/**
  * The only way that the fsp->fsp_name field should ever be set.
  */
 NTSTATUS fsp_set_smb_fname(struct files_struct *fsp,

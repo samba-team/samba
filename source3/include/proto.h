@@ -6307,26 +6307,6 @@ int fsp_stat(files_struct *fsp, SMB_STRUCT_STAT *pst);
 
 /* The following definitions come from smbd/filename.c  */
 
-NTSTATUS get_full_smb_filename(TALLOC_CTX *ctx, const struct smb_filename *smb_fname,
-			      char **full_name);
-NTSTATUS create_synthetic_smb_fname(TALLOC_CTX *ctx, const char *base_name,
-				    const char *stream_name,
-				    const SMB_STRUCT_STAT *psbuf,
-				    struct smb_filename **smb_fname_out);
-NTSTATUS create_synthetic_smb_fname_split(TALLOC_CTX *ctx,
-					  const char *fname,
-					  const SMB_STRUCT_STAT *psbuf,
-					  struct smb_filename **smb_fname_out);
-int vfs_stat_smb_fname(struct connection_struct *conn, const char *fname,
-		       SMB_STRUCT_STAT *psbuf);
-int vfs_lstat_smb_fname(struct connection_struct *conn, const char *fname,
-			SMB_STRUCT_STAT *psbuf);
-const char *smb_fname_str_dbg(const struct smb_filename *smb_fname);
-NTSTATUS copy_smb_filename(TALLOC_CTX *ctx,
-			   const struct smb_filename *smb_fname_in,
-			   struct smb_filename **smb_fname_out);
-bool is_ntfs_stream_smb_fname(const struct smb_filename *smb_fname);
-bool is_ntfs_default_stream_smb_fname(const struct smb_filename *smb_fname);
 NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		      connection_struct *conn,
 		      const char *orig_path,
@@ -6342,6 +6322,26 @@ NTSTATUS filename_convert(TALLOC_CTX *mem_ctx,
 			const char *name_in,
 			struct smb_filename **pp_smb_fname,
 			char **pp_name);
+
+/* The following definitions come from smbd/filename_utils.c */
+
+NTSTATUS get_full_smb_filename(TALLOC_CTX *ctx, const struct smb_filename *smb_fname,
+			      char **full_name);
+NTSTATUS create_synthetic_smb_fname(TALLOC_CTX *ctx, const char *base_name,
+				    const char *stream_name,
+				    const SMB_STRUCT_STAT *psbuf,
+				    struct smb_filename **smb_fname_out);
+NTSTATUS create_synthetic_smb_fname_split(TALLOC_CTX *ctx,
+					  const char *fname,
+					  const SMB_STRUCT_STAT *psbuf,
+					  struct smb_filename **smb_fname_out);
+const char *smb_fname_str_dbg(const struct smb_filename *smb_fname);
+const char *fsp_str_dbg(const struct files_struct *fsp);
+NTSTATUS copy_smb_filename(TALLOC_CTX *ctx,
+			   const struct smb_filename *smb_fname_in,
+			   struct smb_filename **smb_fname_out);
+bool is_ntfs_stream_smb_fname(const struct smb_filename *smb_fname);
+bool is_ntfs_default_stream_smb_fname(const struct smb_filename *smb_fname);
 
 /* The following definitions come from smbd/files.c  */
 
@@ -6370,7 +6370,6 @@ files_struct *file_fsp(struct smb_request *req, uint16 fid);
 NTSTATUS dup_file_fsp(struct smb_request *req, files_struct *from,
 		      uint32 access_mask, uint32 share_access,
 		      uint32 create_options, files_struct *to);
-const char *fsp_str_dbg(const struct files_struct *fsp);
 NTSTATUS fsp_set_smb_fname(struct files_struct *fsp,
 			   const struct smb_filename *smb_fname_in);
 
@@ -7117,6 +7116,10 @@ char *vfs_readdirname(connection_struct *conn, void *p, SMB_STRUCT_STAT *sbuf);
 int vfs_ChDir(connection_struct *conn, const char *path);
 char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn);
 NTSTATUS check_reduced_name(connection_struct *conn, const char *fname);
+int vfs_stat_smb_fname(struct connection_struct *conn, const char *fname,
+		       SMB_STRUCT_STAT *psbuf);
+int vfs_lstat_smb_fname(struct connection_struct *conn, const char *fname,
+			SMB_STRUCT_STAT *psbuf);
 
 /* The following definitions come from torture/denytest.c  */
 
