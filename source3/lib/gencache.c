@@ -483,28 +483,3 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 	state.priv = data;
 	tdb_traverse(cache, gencache_iterate_fn, &state);
 }
-
-/********************************************************************
- lock a key
-********************************************************************/
-
-int gencache_lock_entry( const char *key )
-{
-	if (!gencache_init())
-		return -1;
-
-	return tdb_lock_bystring(cache, key);
-}
-
-/********************************************************************
- unlock a key
-********************************************************************/
-
-void gencache_unlock_entry( const char *key )
-{
-	if (!gencache_init())
-		return;
-
-	tdb_unlock_bystring(cache, key);
-	return;
-}

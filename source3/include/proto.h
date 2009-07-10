@@ -524,8 +524,6 @@ bool gencache_get_data_blob(const char *keystr, DATA_BLOB *blob, bool *expired);
 bool gencache_set_data_blob(const char *keystr, const DATA_BLOB *blob, time_t timeout);
 void gencache_iterate(void (*fn)(const char* key, const char *value, time_t timeout, void* dptr),
                       void* data, const char* keystr_pattern);
-int gencache_lock_entry( const char *key );
-void gencache_unlock_entry( const char *key );
 
 /* The following definitions come from lib/interface.c  */
 
