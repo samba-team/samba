@@ -3878,21 +3878,21 @@ static void call_trans2qpipeinfo(connection_struct *conn,
 	return;
 }
 
-static NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
-				      TALLOC_CTX *mem_ctx,
-				      uint16_t info_level,
-				      files_struct *fsp,
-				      const struct smb_filename *smb_fname,
-				      bool delete_pending,
-				      struct timespec write_time_ts,
-				      bool ms_dfs_link,
-				      struct ea_list *ea_list,
-				      int lock_data_count,
-				      char *lock_data,
-				      uint16_t flags2,
-				      unsigned int max_data_bytes,
-				      char **ppdata,
-				      unsigned int *pdata_size)
+NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
+			       TALLOC_CTX *mem_ctx,
+			       uint16_t info_level,
+			       files_struct *fsp,
+			       const struct smb_filename *smb_fname,
+			       bool delete_pending,
+			       struct timespec write_time_ts,
+			       bool ms_dfs_link,
+			       struct ea_list *ea_list,
+			       int lock_data_count,
+			       char *lock_data,
+			       uint16_t flags2,
+			       unsigned int max_data_bytes,
+			       char **ppdata,
+			       unsigned int *pdata_size)
 {
 	char *pdata = *ppdata;
 	char *dstart, *dend;
