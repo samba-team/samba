@@ -191,7 +191,6 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 	connection_struct *conn = smb2req->tcon->compat_conn;
 	files_struct *fsp;
 	int32_t timeout = -1;
-	uint8_t type = 0;
 	bool isunlock = false;
 	uint16_t i;
 	struct smbd_lock_element *locks;
