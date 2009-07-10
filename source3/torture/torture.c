@@ -5749,6 +5749,39 @@ static bool run_local_substitute(int dummy)
 	return ok;
 }
 
+static bool run_local_base64(int dummy)
+{
+	int i;
+	bool ret = true;
+
+	for (i=1; i<2000; i++) {
+		DATA_BLOB blob1, blob2;
+		char *b64;
+
+		blob1.data = talloc_array(talloc_tos(), uint8_t, i);
+		blob1.length = i;
+		generate_random_buffer(blob1.data, blob1.length);
+
+		b64 = base64_encode_data_blob(talloc_tos(), blob1);
+		if (b64 == NULL) {
+			d_fprintf(stderr, "base64_encode_data_blob failed "
+				  "for %d bytes\n", i);
+			ret = false;
+		}
+		blob2 = base64_decode_data_blob(b64);
+		TALLOC_FREE(b64);
+
+		if (data_blob_cmp(&blob1, &blob2)) {
+			d_fprintf(stderr, "data_blob_cmp failed for %d "
+				  "bytes\n", i);
+			ret = false;
+		}
+		TALLOC_FREE(blob1.data);
+		data_blob_free(&blob2);
+	}
+	return ret;
+}
+
 static bool run_local_gencache(int dummy)
 {
 	char *val;
@@ -6487,6 +6520,7 @@ static struct {
 	{ "STREAMERROR", run_streamerror },
 	{ "LOCAL-SUBSTITUTE", run_local_substitute, 0},
 	{ "LOCAL-GENCACHE", run_local_gencache, 0},
+	{ "LOCAL-BASE64", run_local_base64, 0},
 	{ "LOCAL-RBTREE", run_local_rbtree, 0},
 	{ "LOCAL-MEMCACHE", run_local_memcache, 0},
 	{ "LOCAL-STREAM-NAME", run_local_stream_name, 0},

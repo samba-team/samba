@@ -1932,7 +1932,7 @@ char *base64_encode_data_blob(TALLOC_CTX *mem_ctx, DATA_BLOB data)
 	result = TALLOC_ARRAY(mem_ctx, char, output_len); /* get us plenty of space */
 	SMB_ASSERT(result != NULL);
 
-	while (len-- && out_cnt < (data.length * 2) - 5) {
+	while (len--) {
 		int c = (unsigned char) *(data.data++);
 		bits += c;
 		char_count++;
