@@ -71,23 +71,32 @@ static struct fake_file_handle *init_fake_file_handle(enum FAKE_FILE_TYPE type)
  Does this name match a fake filename ?
 ****************************************************************************/
 
-enum FAKE_FILE_TYPE is_fake_file(const char *fname)
+enum FAKE_FILE_TYPE is_fake_file(const struct smb_filename *smb_fname)
 {
 #ifdef HAVE_SYS_QUOTAS
 	int i;
+	char *fname = NULL;
+	NTSTATUS status;
 #endif
 
-	if (!fname) {
+	if (!smb_fname) {
 		return FAKE_FILE_TYPE_NONE;
 	}
 
 #ifdef HAVE_SYS_QUOTAS
+	status = get_full_smb_filename(talloc_tos(), smb_fname, &fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return FAKE_FILE_TYPE_NONE;
+	}
+
 	for (i=0;fake_files[i].name!=NULL;i++) {
 		if (strncmp(fname,fake_files[i].name,strlen(fake_files[i].name))==0) {
 			DEBUG(5,("is_fake_file: [%s] is a fake file\n",fname));
+			TALLOC_FREE(fname);
 			return fake_files[i].type;
 		}
 	}
+	TALLOC_FREE(fname);
 #endif
 
 	return FAKE_FILE_TYPE_NONE;
@@ -101,7 +110,7 @@ enum FAKE_FILE_TYPE is_fake_file(const char *fname)
 NTSTATUS open_fake_file(struct smb_request *req, connection_struct *conn,
 				uint16_t current_vuid,
 				enum FAKE_FILE_TYPE fake_file_type,
-				const char *fname,
+				const struct smb_filename *smb_fname,
 				uint32 access_mask,
 				files_struct **result)
 {
@@ -112,7 +121,8 @@ NTSTATUS open_fake_file(struct smb_request *req, connection_struct *conn,
 	if (conn->server_info->utok.uid != 0) {
 		DEBUG(3, ("open_fake_file_shared: access_denied to "
 			  "service[%s] file[%s] user[%s]\n",
-			  lp_servicename(SNUM(conn)), fname,
+			  lp_servicename(SNUM(conn)),
+			  smb_fname_str_dbg(smb_fname),
 			  conn->server_info->unix_name));
 		return NT_STATUS_ACCESS_DENIED;
 
@@ -124,7 +134,8 @@ NTSTATUS open_fake_file(struct smb_request *req, connection_struct *conn,
 	}
 
 	DEBUG(5,("open_fake_file_shared: fname = %s, FID = %d, access_mask = 0x%x\n",
-		fname, fsp->fnum, (unsigned int)access_mask));
+		 smb_fname_str_dbg(smb_fname), fsp->fnum,
+		 (unsigned int)access_mask));
 
 	fsp->conn = conn;
 	fsp->fh->fd = -1;
@@ -132,8 +143,12 @@ NTSTATUS open_fake_file(struct smb_request *req, connection_struct *conn,
 	fsp->fh->pos = -1;
 	fsp->can_lock = False; /* Should this be true ? - No, JRA */
 	fsp->access_mask = access_mask;
-	string_set(&fsp->fsp_name,fname);
-	
+	status = fsp_set_smb_fname(fsp, smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		file_free(req, fsp);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	fsp->fake_file_handle = init_fake_file_handle(fake_file_type);
 	
 	if (fsp->fake_file_handle==NULL) {

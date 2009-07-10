@@ -3462,16 +3462,9 @@ NTSTATUS create_file_default(connection_struct *conn,
 	 */
 
 	if (is_ntfs_stream_smb_fname(smb_fname)) {
-		char *fname = NULL;
 		enum FAKE_FILE_TYPE fake_file_type;
 
-		status = get_full_smb_filename(talloc_tos(), smb_fname,
-					       &fname);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto fail;
-		}
-
-		fake_file_type = is_fake_file(fname);
+		fake_file_type = is_fake_file(smb_fname);
 
 		if (fake_file_type != FAKE_FILE_TYPE_NONE) {
 
@@ -3487,9 +3480,8 @@ NTSTATUS create_file_default(connection_struct *conn,
 			 * close it
 			 */
 			status = open_fake_file(req, conn, req->vuid,
-						fake_file_type, fname,
+						fake_file_type, smb_fname,
 						access_mask, &fsp);
-			TALLOC_FREE(fname);
 			if (!NT_STATUS_IS_OK(status)) {
 				goto fail;
 			}
@@ -3497,7 +3489,6 @@ NTSTATUS create_file_default(connection_struct *conn,
 			ZERO_STRUCT(smb_fname->st);
 			goto done;
 		}
-		TALLOC_FREE(fname);
 
 		if (!(conn->fs_capabilities & FILE_NAMED_STREAMS)) {
 			status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
