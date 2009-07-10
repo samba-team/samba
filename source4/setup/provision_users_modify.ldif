@@ -3,11 +3,11 @@ changetype: modify
 replace: description
 description: Default container for upgraded user accounts
 -
-replace: showInAdvancedViewOnly
-showInAdvancedViewOnly: FALSE
--
 replace: systemFlags
 systemFlags: -1946157056
 -
 replace: isCriticalSystemObject
 isCriticalSystemObject: TRUE
+-
+replace: showInAdvancedViewOnly
+showInAdvancedViewOnly: FALSE

@@ -15,7 +15,6 @@ sAMAccountName: ${NETBIOSNAME}$
 operatingSystem: Samba
 operatingSystemVersion: ${SAMBA_VERSION_STRING}
 dNSHostName: ${DNSNAME}
-isCriticalSystemObject: TRUE
 userPassword:: ${MACHINEPASS_B64}
 servicePrincipalName: HOST/${DNSNAME}
 servicePrincipalName: HOST/${NETBIOSNAME}
@@ -23,6 +22,7 @@ servicePrincipalName: HOST/${DNSNAME}/${REALM}
 servicePrincipalName: HOST/${NETBIOSNAME}/${REALM}
 servicePrincipalName: HOST/${DNSNAME}/${DOMAIN}
 servicePrincipalName: HOST/${NETBIOSNAME}/${DOMAIN}
+isCriticalSystemObject: TRUE
 
 #Provide a account for DNS keytab export
 dn: CN=dns,CN=Users,${DOMAINDN}
@@ -36,9 +36,8 @@ userAccountControl: 514
 accountExpires: 9223372036854775807
 sAMAccountName: dns
 servicePrincipalName: DNS/${DNSDOMAIN}
-isCriticalSystemObject: TRUE
 userPassword:: ${DNSPASS_B64}
-showInAdvancedViewOnly: TRUE
+isCriticalSystemObject: TRUE
 
 dn: ${SERVERDN}
 objectClass: top

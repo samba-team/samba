@@ -1,14 +1,3 @@
-dn: CN=Default Domain Policy,CN=System,${DOMAINDN}
-objectClass: top
-objectClass: leaf
-objectClass: domainPolicy
-isCriticalSystemObject: TRUE
-
-dn: CN=AppCategories,CN=Default Domain Policy,CN=System,${DOMAINDN}
-objectClass: top
-objectClass: classStore
-isCriticalSystemObject: TRUE
-
 dn: CN={${POLICYGUID}},CN=Policies,CN=System,${DOMAINDN}
 objectClass: top
 objectClass: container
