@@ -276,6 +276,30 @@ NTSTATUS copy_smb_filename(TALLOC_CTX *ctx,
 }
 
 /****************************************************************************
+ Simple check to determine if the filename is a stream.
+ ***************************************************************************/
+bool is_ntfs_stream_smb_fname(const struct smb_filename *smb_fname)
+{
+	if (lp_posix_pathnames()) {
+		return false;
+	}
+
+	return smb_fname->stream_name;
+}
+
+/****************************************************************************
+ Returns true if the filename's stream == "::$DATA"
+ ***************************************************************************/
+bool is_ntfs_default_stream_smb_fname(const struct smb_filename *smb_fname)
+{
+	if (!is_ntfs_stream_smb_fname(smb_fname)) {
+		return false;
+	}
+
+	return StrCaseCmp(smb_fname->stream_name, "::$DATA") == 0;
+}
+
+/****************************************************************************
 This routine is called to convert names from the dos namespace to unix
 namespace. It needs to handle any case conversions, mangling, format changes,
 streams etc.

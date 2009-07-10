@@ -6325,6 +6325,8 @@ const char *smb_fname_str_dbg(const struct smb_filename *smb_fname);
 NTSTATUS copy_smb_filename(TALLOC_CTX *ctx,
 			   const struct smb_filename *smb_fname_in,
 			   struct smb_filename **smb_fname_out);
+bool is_ntfs_stream_smb_fname(const struct smb_filename *smb_fname);
+bool is_ntfs_default_stream_smb_fname(const struct smb_filename *smb_fname);
 NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		      connection_struct *conn,
 		      const char *orig_path,
@@ -6548,8 +6550,6 @@ void send_nt_replies(connection_struct *conn,
 			struct smb_request *req, NTSTATUS nt_error,
 		     char *params, int paramsize,
 		     char *pdata, int datasize);
-bool is_ntfs_stream_smb_fname(const struct smb_filename *smb_fname);
-bool is_ntfs_default_stream_smb_fname(const struct smb_filename *smb_fname);
 void reply_ntcreate_and_X(struct smb_request *req);
 void reply_ntcancel(struct smb_request *req);
 void reply_ntrename(struct smb_request *req);
