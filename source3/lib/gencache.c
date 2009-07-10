@@ -31,7 +31,7 @@
 #define BLOB_TYPE "DATA_BLOB"
 #define BLOB_TYPE_LEN 9
 
-static TDB_CONTEXT *cache;
+static struct tdb_context *cache;
 
 /**
  * @file gencache.c
