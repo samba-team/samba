@@ -65,20 +65,25 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 		return NT_STATUS_TOO_MANY_OPENED_FILES;
 	}
 
-	fsp = SMB_MALLOC_P(files_struct);
+	/*
+	 * Make a child of the connection_struct as an fsp can't exist
+	 * indepenedent of a connection.
+	 */
+	fsp = talloc_zero(conn, struct files_struct);
 	if (!fsp) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ZERO_STRUCTP(fsp);
-
-	fsp->fh = SMB_MALLOC_P(struct fd_handle);
+	/*
+	 * This can't be a child of fsp because the file_handle can be ref'd
+	 * when doing a dos/fcb open, which will then share the file_handle
+	 * across multiple fsps.
+	 */
+	fsp->fh = talloc_zero(conn, struct fd_handle);
 	if (!fsp->fh) {
-		SAFE_FREE(fsp);
+		TALLOC_FREE(fsp);
 		return NT_STATUS_NO_MEMORY;
 	}
-
-	ZERO_STRUCTP(fsp->fh);
 
 	fsp->fh->ref_count = 1;
 	fsp->fh->fd = -1;
@@ -449,7 +454,7 @@ void file_free(struct smb_request *req, files_struct *fsp)
 	TALLOC_FREE(fsp->fake_file_handle);
 
 	if (fsp->fh->ref_count == 1) {
-		SAFE_FREE(fsp->fh);
+		TALLOC_FREE(fsp->fh);
 	} else {
 		fsp->fh->ref_count--;
 	}
@@ -495,7 +500,7 @@ void file_free(struct smb_request *req, files_struct *fsp)
 	   information */
 	ZERO_STRUCTP(fsp);
 
-	SAFE_FREE(fsp);
+	TALLOC_FREE(fsp);
 }
 
 /****************************************************************************
@@ -545,7 +550,7 @@ void dup_file_fsp(struct smb_request *req, files_struct *from,
 		      uint32 access_mask, uint32 share_access,
 		      uint32 create_options, files_struct *to)
 {
-	SAFE_FREE(to->fh);
+	TALLOC_FREE(to->fh);
 
 	to->fh = from->fh;
 	to->fh->ref_count++;
