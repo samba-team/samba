@@ -6365,9 +6365,12 @@ void file_sync_all(connection_struct *conn);
 void file_free(struct smb_request *req, files_struct *fsp);
 files_struct *file_fnum(uint16 fnum);
 files_struct *file_fsp(struct smb_request *req, uint16 fid);
-void dup_file_fsp(struct smb_request *req, files_struct *from,
+NTSTATUS dup_file_fsp(struct smb_request *req, files_struct *from,
 		      uint32 access_mask, uint32 share_access,
 		      uint32 create_options, files_struct *to);
+const char *fsp_str_dbg(const struct files_struct *fsp);
+NTSTATUS fsp_set_smb_fname(struct files_struct *fsp,
+			   const struct smb_filename *smb_fname_in);
 
 /* The following definitions come from smbd/ipc.c  */
 

@@ -188,7 +188,7 @@ bool schedule_aio_read_and_X(connection_struct *conn,
 
 	DEBUG(10,("schedule_aio_read_and_X: scheduled aio_read for file %s, "
 		  "offset %.0f, len = %u (mid = %u)\n",
-		  fsp->fsp_name, (double)startpos, (unsigned int)smb_maxcnt,
+		  fsp_str_dbg(fsp), (double)startpos, (unsigned int)smb_maxcnt,
 		  (unsigned int)aio_ex->req->mid ));
 
 	outstanding_aio_calls++;
@@ -241,7 +241,7 @@ bool schedule_aio_write_and_X(connection_struct *conn,
 		DEBUG(10,("schedule_aio_write_and_X: failed to schedule "
 			  "aio_write for file %s, offset %.0f, len = %u "
 			  "(mid = %u)\n",
-			  fsp->fsp_name, (double)startpos,
+			  fsp_str_dbg(fsp), (double)startpos,
 			  (unsigned int)numtowrite,
 			  (unsigned int)req->mid ));
 		return False;
@@ -300,14 +300,14 @@ bool schedule_aio_write_and_X(connection_struct *conn,
 					    "failed.");
 		}
 		DEBUG(10,("schedule_aio_write_and_X: scheduled aio_write "
-			  "behind for file %s\n", fsp->fsp_name ));
+			  "behind for file %s\n", fsp_str_dbg(fsp)));
 	}
 	outstanding_aio_calls++;
 
 	DEBUG(10,("schedule_aio_write_and_X: scheduled aio_write for file "
 		  "%s, offset %.0f, len = %u (mid = %u) "
 		  "outstanding_aio_calls = %d\n",
-		  fsp->fsp_name, (double)startpos, (unsigned int)numtowrite,
+		  fsp_str_dbg(fsp), (double)startpos, (unsigned int)numtowrite,
 		  (unsigned int)aio_ex->req->mid, outstanding_aio_calls ));
 
 	return True;
@@ -341,7 +341,7 @@ static int handle_aio_read_complete(struct aio_extra *aio_ex)
 
 		DEBUG( 3,( "handle_aio_read_complete: file %s nread == -1. "
 			   "Error = %s\n",
-			   aio_ex->fsp->fsp_name, strerror(errno) ));
+			   fsp_str_dbg(aio_ex->fsp), strerror(errno)));
 
 		ret = errno;
 		ERROR_NT(map_nt_error_from_unix(ret));
@@ -359,7 +359,7 @@ static int handle_aio_read_complete(struct aio_extra *aio_ex)
 
 		DEBUG( 3, ( "handle_aio_read_complete file %s max=%d "
 			    "nread=%d\n",
-			    aio_ex->fsp->fsp_name,
+			    fsp_str_dbg(aio_ex->fsp),
 			    (int)aio_ex->acb.aio_nbytes, (int)nread ) );
 
 	}
@@ -374,7 +374,7 @@ static int handle_aio_read_complete(struct aio_extra *aio_ex)
 
 	DEBUG(10,("handle_aio_read_complete: scheduled aio_read completed "
 		  "for file %s, offset %.0f, len = %u\n",
-		  aio_ex->fsp->fsp_name, (double)aio_ex->acb.aio_offset,
+		  fsp_str_dbg(aio_ex->fsp), (double)aio_ex->acb.aio_offset,
 		  (unsigned int)nread ));
 
 	return ret;
@@ -399,13 +399,13 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex)
 				DEBUG(5,("handle_aio_write_complete: "
 					 "aio_write_behind failed ! File %s "
 					 "is corrupt ! Error %s\n",
-					 fsp->fsp_name, strerror(errno) ));
+					 fsp_str_dbg(fsp), strerror(errno)));
 				ret = errno;
 			} else {
 				DEBUG(0,("handle_aio_write_complete: "
 					 "aio_write_behind failed ! File %s "
 					 "is corrupt ! Wanted %u bytes but "
-					 "only wrote %d\n", fsp->fsp_name,
+					 "only wrote %d\n", fsp_str_dbg(fsp),
 					 (unsigned int)numtowrite,
 					 (int)nwritten ));
 				ret = EIO;
@@ -413,7 +413,7 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex)
 		} else {
 			DEBUG(10,("handle_aio_write_complete: "
 				  "aio_write_behind completed for file %s\n",
-				  fsp->fsp_name ));
+				  fsp_str_dbg(fsp)));
 		}
 		return 0;
 	}
@@ -424,7 +424,7 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex)
 	if(nwritten == -1) {
 		DEBUG( 3,( "handle_aio_write: file %s wanted %u bytes. "
 			   "nwritten == %d. Error = %s\n",
-			   fsp->fsp_name, (unsigned int)numtowrite,
+			   fsp_str_dbg(fsp), (unsigned int)numtowrite,
 			   (int)nwritten, strerror(errno) ));
 
 		/* If errno is ECANCELED then don't return anything to the
@@ -456,7 +456,7 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex)
 				   ERRHRD, ERRdiskfull);
 			srv_set_message(outbuf,0,0,true);
                 	DEBUG(5,("handle_aio_write: sync_file for %s returned %s\n",
-				fsp->fsp_name, nt_errstr(status) ));
+				 fsp_str_dbg(fsp), nt_errstr(status)));
 		}
 
 		aio_ex->fsp->fh->pos = aio_ex->acb.aio_offset + nwritten;
@@ -472,7 +472,7 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex)
 
 	DEBUG(10,("handle_aio_write_complete: scheduled aio_write completed "
 		  "for file %s, offset %.0f, requested %u, written = %u\n",
-		  fsp->fsp_name, (double)aio_ex->acb.aio_offset,
+		  fsp_str_dbg(fsp), (double)aio_ex->acb.aio_offset,
 		  (unsigned int)numtowrite, (unsigned int)nwritten ));
 
 	return ret;
@@ -496,7 +496,7 @@ static bool handle_aio_completed(struct aio_extra *aio_ex, int *perr)
 	if (SMB_VFS_AIO_ERROR(aio_ex->fsp, &aio_ex->acb) == EINPROGRESS) {
 		DEBUG(10,( "handle_aio_completed: operation mid %u still in "
 			   "process for file %s\n",
-			   aio_ex->req->mid, aio_ex->fsp->fsp_name ));
+			   aio_ex->req->mid, fsp_str_dbg(aio_ex->fsp)));
 		return False;
 	}
 

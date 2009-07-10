@@ -452,7 +452,7 @@ typedef struct files_struct {
 	bool lockdb_clean;
 	bool initial_delete_on_close; /* Only set at NTCreateX if file was created. */
 	bool posix_open;
-	char *fsp_name;
+	struct smb_filename *fsp_name;
 
 	struct vfs_fsp_data *vfs_extension;
 	struct fake_file_handle *fake_file_handle;

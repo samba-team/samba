@@ -109,11 +109,11 @@ bool strict_lock_default(files_struct *fsp, struct lock_struct *plock)
 
 	if (strict_locking == Auto) {
 		if  (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) && (plock->lock_type == READ_LOCK || plock->lock_type == WRITE_LOCK)) {
-			DEBUG(10,("is_locked: optimisation - exclusive oplock on file %s\n", fsp->fsp_name ));
+			DEBUG(10,("is_locked: optimisation - exclusive oplock on file %s\n", fsp_str_dbg(fsp)));
 			ret = True;
 		} else if ((fsp->oplock_type == LEVEL_II_OPLOCK) &&
 			   (plock->lock_type == READ_LOCK)) {
-			DEBUG(10,("is_locked: optimisation - level II oplock on file %s\n", fsp->fsp_name ));
+			DEBUG(10,("is_locked: optimisation - level II oplock on file %s\n", fsp_str_dbg(fsp)));
 			ret = True;
 		} else {
 			struct byte_range_lock *br_lck = brl_get_locks_readonly(talloc_tos(), fsp);
@@ -149,7 +149,7 @@ bool strict_lock_default(files_struct *fsp, struct lock_struct *plock)
 			lock_flav_name(plock->lock_flav),
 			(double)plock->start, (double)plock->size,
 			ret ? "unlocked" : "locked",
-			plock->fnum, fsp->fsp_name ));
+			plock->fnum, fsp_str_dbg(fsp)));
 
 	return ret;
 }
@@ -259,7 +259,7 @@ struct byte_range_lock *do_lock(struct messaging_context *msg_ctx,
 		"blocking_lock=%s requested for fnum %d file %s\n",
 		lock_flav_name(lock_flav), lock_type_name(lock_type),
 		(double)offset, (double)count, blocking_lock ? "true" :
-		"false", fsp->fnum, fsp->fsp_name));
+		"false", fsp->fnum, fsp_str_dbg(fsp)));
 
 	br_lck = brl_get_locks(talloc_tos(), fsp);
 	if (!br_lck) {
@@ -308,7 +308,8 @@ NTSTATUS do_unlock(struct messaging_context *msg_ctx,
 	}
 	
 	DEBUG(10,("do_unlock: unlock start=%.0f len=%.0f requested for fnum %d file %s\n",
-		  (double)offset, (double)count, fsp->fnum, fsp->fsp_name ));
+		  (double)offset, (double)count, fsp->fnum,
+		  fsp_str_dbg(fsp)));
 
 	br_lck = brl_get_locks(talloc_tos(), fsp);
 	if (!br_lck) {
@@ -358,7 +359,8 @@ NTSTATUS do_lock_cancel(files_struct *fsp,
 	}
 
 	DEBUG(10,("do_lock_cancel: cancel start=%.0f len=%.0f requested for fnum %d file %s\n",
-		  (double)offset, (double)count, fsp->fnum, fsp->fsp_name ));
+		  (double)offset, (double)count, fsp->fnum,
+		  fsp_str_dbg(fsp)));
 
 	br_lck = brl_get_locks(talloc_tos(), fsp);
 	if (!br_lck) {
@@ -1311,7 +1313,7 @@ NTSTATUS can_set_delete_on_close(files_struct *fsp, bool delete_on_close,
 	    !lp_delete_readonly(SNUM(fsp->conn))) {
 		DEBUG(10,("can_set_delete_on_close: file %s delete on close "
 			  "flag set but file attribute is readonly.\n",
-			  fsp->fsp_name ));
+			  fsp_str_dbg(fsp)));
 		return NT_STATUS_CANNOT_DELETE;
 	}
 
@@ -1322,7 +1324,7 @@ NTSTATUS can_set_delete_on_close(files_struct *fsp, bool delete_on_close,
 	if (!CAN_WRITE(fsp->conn)) {
 		DEBUG(10,("can_set_delete_on_close: file %s delete on "
 			  "close flag set but write access denied on share.\n",
-			  fsp->fsp_name ));
+			  fsp_str_dbg(fsp)));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -1334,13 +1336,15 @@ NTSTATUS can_set_delete_on_close(files_struct *fsp, bool delete_on_close,
 	if (!(fsp->access_mask & DELETE_ACCESS)) {
 		DEBUG(10,("can_set_delete_on_close: file %s delete on "
 			  "close flag set but delete access denied.\n",
-			  fsp->fsp_name ));
+			  fsp_str_dbg(fsp)));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* Don't allow delete on close for non-empty directories. */
 	if (fsp->is_directory) {
-		return can_delete_directory(fsp->conn, fsp->fsp_name);
+		SMB_ASSERT(!is_ntfs_stream_smb_fname(fsp->fsp_name));
+		return can_delete_directory(fsp->conn,
+					    fsp->fsp_name->base_name);
 	}
 
 	return NT_STATUS_OK;
@@ -1422,7 +1426,7 @@ bool set_delete_on_close(files_struct *fsp, bool delete_on_close, const UNIX_USE
 	DEBUG(10,("set_delete_on_close: %s delete on close flag for "
 		  "fnum = %d, file %s\n",
 		  delete_on_close ? "Adding" : "Removing", fsp->fnum,
-		  fsp->fsp_name ));
+		  fsp_str_dbg(fsp)));
 
 	lck = get_share_mode_lock(talloc_tos(), fsp->file_id, NULL, NULL,
 				  NULL);
@@ -1443,7 +1447,8 @@ bool set_delete_on_close(files_struct *fsp, bool delete_on_close, const UNIX_USE
 	set_delete_on_close_lck(lck, delete_on_close, tok);
 
 	if (fsp->is_directory) {
-		send_stat_cache_delete_message(fsp->fsp_name);
+		SMB_ASSERT(!is_ntfs_stream_smb_fname(fsp->fsp_name));
+		send_stat_cache_delete_message(fsp->fsp_name->base_name);
 	}
 
 	TALLOC_FREE(lck);

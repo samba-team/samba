@@ -44,6 +44,7 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 {
 	int i;
 	files_struct *fsp;
+	NTSTATUS status;
 
 	/* we want to give out file handles differently on each new
 	   connection because of a common bug in MS clients where they try to
@@ -100,8 +101,18 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 	fsp->fnum = i + FILE_HANDLE_OFFSET;
 	SMB_ASSERT(fsp->fnum < 65536);
 
-	string_set(&fsp->fsp_name,"");
-	
+	/*
+	 * Create an smb_filename with "" for the base_name.  There are very
+	 * few NULL checks, so make sure it's initialized with something. to
+	 * be safe until an audit can be done.
+	 */
+	status = create_synthetic_smb_fname(fsp, "", NULL, NULL,
+					    &fsp->fsp_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(fsp);
+		TALLOC_FREE(fsp->fh);
+	}
+
 	DLIST_ADD(Files, fsp);
 
 	DEBUG(5,("allocated file structure %d, fnum = %d (%d used)\n",
@@ -241,8 +252,9 @@ void file_dump_open_table(void)
 	files_struct *fsp;
 
 	for (fsp=Files;fsp;fsp=fsp->next,count++) {
-		DEBUG(10,("Files[%d], fnum = %d, name %s, fd = %d, gen = %lu, fileid=%s\n",
-			count, fsp->fnum, fsp->fsp_name, fsp->fh->fd, (unsigned long)fsp->fh->gen_id,
+		DEBUG(10,("Files[%d], fnum = %d, name %s, fd = %d, gen = %lu, "
+			  "fileid=%s\n", count, fsp->fnum, fsp_str_dbg(fsp),
+			  fsp->fh->fd, (unsigned long)fsp->fh->gen_id,
 			  file_id_string_tos(&fsp->file_id)));
 	}
 }
@@ -288,8 +300,10 @@ files_struct *file_find_dif(struct file_id id, unsigned long gen_id)
 			if ((fsp->fh->fd == -1) &&
 			    (fsp->oplock_type != NO_OPLOCK) &&
 			    (fsp->oplock_type != FAKE_LEVEL_II_OPLOCK)) {
-				DEBUG(0,("file_find_dif: file %s file_id = %s, gen = %u \
-oplock_type = %u is a stat open with oplock type !\n", fsp->fsp_name, 
+				DEBUG(0,("file_find_dif: file %s file_id = "
+					 "%s, gen = %u oplock_type = %u is a "
+					 "stat open with oplock type !\n",
+					 fsp_str_dbg(fsp),
 					 file_id_string_tos(&fsp->file_id),
 					 (unsigned int)fsp->fh->gen_id,
 					 (unsigned int)fsp->oplock_type ));
@@ -390,10 +404,11 @@ bool file_find_subpath(files_struct *dir_fsp)
 {
 	files_struct *fsp;
 	size_t dlen;
-	char *d_fullname = talloc_asprintf(talloc_tos(),
-					"%s/%s",
-					dir_fsp->conn->connectpath,
-					dir_fsp->fsp_name);
+	char *d_fullname;
+
+	d_fullname = talloc_asprintf(talloc_tos(), "%s/%s",
+				     dir_fsp->conn->connectpath,
+				     dir_fsp->fsp_name->base_name);
 
 	if (!d_fullname) {
 		return false;
@@ -411,7 +426,7 @@ bool file_find_subpath(files_struct *dir_fsp)
 		d1_fullname = talloc_asprintf(talloc_tos(),
 					"%s/%s",
 					fsp->conn->connectpath,
-					fsp->fsp_name);
+					fsp->fsp_name->base_name);
 
 		if (strnequal(d_fullname, d1_fullname, dlen)) {
 			TALLOC_FREE(d_fullname);
@@ -448,8 +463,6 @@ void file_sync_all(connection_struct *conn)
 void file_free(struct smb_request *req, files_struct *fsp)
 {
 	DLIST_REMOVE(Files, fsp);
-
-	string_free(&fsp->fsp_name);
 
 	TALLOC_FREE(fsp->fake_file_handle);
 
@@ -500,6 +513,7 @@ void file_free(struct smb_request *req, files_struct *fsp)
 	   information */
 	ZERO_STRUCTP(fsp);
 
+	/* fsp->fsp_name is a talloc child and is free'd automatically. */
 	TALLOC_FREE(fsp);
 }
 
@@ -546,7 +560,7 @@ files_struct *file_fsp(struct smb_request *req, uint16 fid)
  Duplicate the file handle part for a DOS or FCB open.
 ****************************************************************************/
 
-void dup_file_fsp(struct smb_request *req, files_struct *from,
+NTSTATUS dup_file_fsp(struct smb_request *req, files_struct *from,
 		      uint32 access_mask, uint32 share_access,
 		      uint32 create_options, files_struct *to)
 {
@@ -575,5 +589,34 @@ void dup_file_fsp(struct smb_request *req, files_struct *from,
 	to->modified = from->modified;
 	to->is_directory = from->is_directory;
 	to->aio_write_behind = from->aio_write_behind;
-        string_set(&to->fsp_name,from->fsp_name);
+	return fsp_set_smb_fname(to, from->fsp_name);
+}
+
+/**
+ * Return a debug string using the debug_ctx().  This can only be called from
+ * DEBUG() macros due to the debut_ctx().
+ */
+const char *fsp_str_dbg(const struct files_struct *fsp)
+{
+	return smb_fname_str_dbg(fsp->fsp_name);
+}
+
+/**
+ * The only way that the fsp->fsp_name field should ever be set.
+ */
+NTSTATUS fsp_set_smb_fname(struct files_struct *fsp,
+			   const struct smb_filename *smb_fname_in)
+{
+	NTSTATUS status;
+	struct smb_filename *smb_fname_new;
+
+	status = copy_smb_filename(fsp, smb_fname_in, &smb_fname_new);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	TALLOC_FREE(fsp->fsp_name);
+	fsp->fsp_name = smb_fname_new;
+
+	return NT_STATUS_OK;
 }

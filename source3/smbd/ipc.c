@@ -454,7 +454,7 @@ static void api_fd_reply(connection_struct *conn, uint16 vuid,
 	}
 
 	DEBUG(3,("Got API command 0x%x on pipe \"%s\" (pnum %x)\n",
-		 subcommand, fsp->fsp_name, pnum));
+		 subcommand, fsp_str_dbg(fsp), pnum));
 
 	DEBUG(10, ("api_fd_reply: p:%p max_trans_reply: %d\n", fsp, mdrcnt));
 

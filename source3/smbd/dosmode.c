@@ -845,7 +845,7 @@ bool update_write_time(struct files_struct *fsp)
 	}
 
 	notify_fname(fsp->conn, NOTIFY_ACTION_MODIFIED,
-			FILE_NOTIFY_CHANGE_LAST_WRITE, fsp->fsp_name);
+		     FILE_NOTIFY_CHANGE_LAST_WRITE, fsp->fsp_name->base_name);
 
 	return true;
 }

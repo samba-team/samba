@@ -502,8 +502,9 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 		if (ea_list->ea.value.length == 0) {
 			/* Remove the attribute. */
 			if (fsp && (fsp->fh->fd != -1)) {
-				DEBUG(10,("set_ea: deleting ea name %s on file %s by file descriptor.\n",
-					unix_ea_name, fsp->fsp_name));
+				DEBUG(10,("set_ea: deleting ea name %s on "
+					  "file %s by file descriptor.\n",
+					  unix_ea_name, fsp_str_dbg(fsp)));
 				ret = SMB_VFS_FREMOVEXATTR(fsp, unix_ea_name);
 			} else {
 				DEBUG(10,("set_ea: deleting ea name %s on file %s.\n",
@@ -520,8 +521,9 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 #endif
 		} else {
 			if (fsp && (fsp->fh->fd != -1)) {
-				DEBUG(10,("set_ea: setting ea name %s on file %s by file descriptor.\n",
-					unix_ea_name, fsp->fsp_name));
+				DEBUG(10,("set_ea: setting ea name %s on file "
+					  "%s by file descriptor.\n",
+					  unix_ea_name, fsp_str_dbg(fsp)));
 				ret = SMB_VFS_FSETXATTR(fsp, unix_ea_name,
 							ea_list->ea.value.data, ea_list->ea.value.length, 0);
 			} else {
@@ -1148,7 +1150,8 @@ static void call_trans2open(connection_struct *conn,
 	SIVAL(params,20,inode);
 	SSVAL(params,24,0); /* Padding. */
 	if (flags & 8) {
-		uint32 ea_size = estimate_ea_size(conn, fsp, fsp->fsp_name);
+		uint32 ea_size = estimate_ea_size(conn, fsp,
+						  fsp->fsp_name->base_name);
 		SIVAL(params, 26, ea_size);
 	} else {
 		SIVAL(params, 26, 0);
@@ -4584,7 +4587,11 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 
 				if (S_ISDIR(sbuf.st_ex_mode)) {
 					if (fsp && fsp->is_directory) {
-						def_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, fsp->fsp_name, SMB_ACL_TYPE_DEFAULT);
+						def_acl =
+						    SMB_VFS_SYS_ACL_GET_FILE(
+							    conn,
+							    fsp->fsp_name->base_name,
+							    SMB_ACL_TYPE_DEFAULT);
 					} else {
 						def_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, fname, SMB_ACL_TYPE_DEFAULT);
 					}
@@ -4791,14 +4798,8 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			return;
 		}
 
-		fname = talloc_strdup(talloc_tos(),fsp->fsp_name);
-		if (!fname) {
-			reply_nterror(req, NT_STATUS_NO_MEMORY);
-			return;
-		}
-
-		status = create_synthetic_smb_fname_split(talloc_tos(), fname,
-							  NULL, &smb_fname);
+		status = copy_smb_filename(talloc_tos(), fsp->fsp_name,
+					   &smb_fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);
 			return;
@@ -5524,8 +5525,9 @@ static NTSTATUS smb_file_position_information(connection_struct *conn,
 	}
 #endif /* LARGE_SMB_OFF_T */
 
-	DEBUG(10,("smb_file_position_information: Set file position information for file %s to %.0f\n",
-		fsp->fsp_name, (double)position_information ));
+	DEBUG(10,("smb_file_position_information: Set file position "
+		  "information for file %s to %.0f\n", fsp_str_dbg(fsp),
+		  (double)position_information));
 	fsp->fh->position_information = position_information;
 	return NT_STATUS_OK;
 }
@@ -5736,8 +5738,8 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 
 		/* Create an smb_fname to call rename_internals_fsp() with. */
 		status = create_synthetic_smb_fname(talloc_tos(),
-						    fsp->base_fsp->fsp_name,
-						    newname, NULL, &smb_fname);
+		    fsp->base_fsp->fsp_name->base_name, newname, NULL,
+		    &smb_fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto out;
 		}
@@ -5754,7 +5756,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 
 		/* Create a char * to call rename_internals() with. */
 		base_name = talloc_asprintf(ctx, "%s%s",
-					   fsp->base_fsp->fsp_name,
+					   fsp->base_fsp->fsp_name->base_name,
 					   newname);
 		if (!base_name) {
 			status = NT_STATUS_NO_MEMORY;
@@ -5811,13 +5813,15 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 	}
 
 	if (fsp) {
-		DEBUG(10,("smb_file_rename_information: SMB_FILE_RENAME_INFORMATION (fnum %d) %s -> %s\n",
-			fsp->fnum, fsp->fsp_name, base_name ));
+		DEBUG(10,("smb_file_rename_information: "
+			  "SMB_FILE_RENAME_INFORMATION (fnum %d) %s -> %s\n",
+			  fsp->fnum, fsp_str_dbg(fsp), base_name));
 		status = rename_internals_fsp(conn, fsp, smb_fname, 0,
 					      overwrite);
 	} else {
-		DEBUG(10,("smb_file_rename_information: SMB_FILE_RENAME_INFORMATION %s -> %s\n",
-			fname, base_name ));
+		DEBUG(10,("smb_file_rename_information: "
+			  "SMB_FILE_RENAME_INFORMATION %s -> %s\n",
+			  fname, base_name));
 		status = rename_internals(ctx, conn, req, fname, base_name, 0,
 					overwrite, False, dest_has_wcard,
 					FILE_WRITE_ATTRIBUTES);
@@ -5872,7 +5876,7 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 	}
 
 	DEBUG(10,("smb_set_posix_acl: file %s num_file_acls = %u, num_def_acls = %u\n",
-		fname ? fname : fsp->fsp_name,
+		fname ? fname : fsp_str_dbg(fsp),
 		(unsigned int)num_file_acls,
 		(unsigned int)num_def_acls));
 
@@ -5959,7 +5963,7 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 
 	DEBUG(10,("smb_set_posix_lock: file %s, lock_type = %u,"
 			"lock_pid = %u, count = %.0f, offset = %.0f\n",
-		fsp->fsp_name,
+		fsp_str_dbg(fsp),
 		(unsigned int)lock_type,
 		(unsigned int)lock_pid,
 		(double)count,
@@ -7033,7 +7037,7 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 				  NULL);
 	if (lck == NULL) {
 		DEBUG(0, ("smb_posix_unlink: Could not get share mode "
-			"lock for file %s\n", fsp->fsp_name));
+			  "lock for file %s\n", fsp_str_dbg(fsp)));
 		close_file(req, fsp, NORMAL_CLOSE);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -7370,14 +7374,8 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 		}
 		info_level = SVAL(params,2);
 
-		fname = talloc_strdup(talloc_tos(),fsp->fsp_name);
-		if (!fname) {
-			reply_nterror(req, NT_STATUS_NO_MEMORY);
-			return;
-		}
-
-		status = create_synthetic_smb_fname_split(talloc_tos(), fname,
-							  NULL, &smb_fname);
+		status = copy_smb_filename(talloc_tos(), fsp->fsp_name,
+					   &smb_fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);
 			return;
@@ -7417,7 +7415,9 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 			if ((info_level == SMB_SET_FILE_DISPOSITION_INFO) && CVAL(pdata,0)) {
 				fsp->fh->private_options |= FILE_DELETE_ON_CLOSE;
 
-				DEBUG(3,("call_trans2setfilepathinfo: Cancelling print job (%s)\n", fsp->fsp_name ));
+				DEBUG(3,("call_trans2setfilepathinfo: "
+					 "Cancelling print job (%s)\n",
+					 fsp_str_dbg(fsp)));
 
 				SSVAL(params,0,0);
 				send_trans2_replies(conn, req, params, 2,

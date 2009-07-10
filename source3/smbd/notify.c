@@ -182,7 +182,7 @@ void change_notify_reply(connection_struct *conn,
 static void notify_callback(void *private_data, const struct notify_event *e)
 {
 	files_struct *fsp = (files_struct *)private_data;
-	DEBUG(10, ("notify_callback called for %s\n", fsp->fsp_name));
+	DEBUG(10, ("notify_callback called for %s\n", fsp_str_dbg(fsp)));
 	notify_fsp(fsp, e->action, e->path);
 }
 
@@ -200,8 +200,9 @@ NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	/* Do notify operations on the base_name. */
 	if (asprintf(&fullpath, "%s/%s", fsp->conn->connectpath,
-		     fsp->fsp_name) == -1) {
+		     fsp->fsp_name->base_name) == -1) {
 		DEBUG(0, ("asprintf failed\n"));
 		TALLOC_FREE(fsp->notify);
 		return NT_STATUS_NO_MEMORY;
@@ -236,7 +237,7 @@ NTSTATUS change_notify_add_request(struct smb_request *req,
 	struct smbd_server_connection *sconn = smbd_server_conn;
 
 	DEBUG(10, ("change_notify_add_request: Adding request for %s: "
-		   "max_param = %d\n", fsp->fsp_name, (int)max_param));
+		   "max_param = %d\n", fsp_str_dbg(fsp), (int)max_param));
 
 	if (!(request = talloc(NULL, struct notify_change_request))
 	    || !(map = talloc(request, struct notify_mid_map))) {

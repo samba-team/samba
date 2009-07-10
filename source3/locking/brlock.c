@@ -1196,7 +1196,7 @@ bool brl_locktest(struct byte_range_lock *br_lck,
 
 		DEBUG(10,("brl_locktest: posix start=%.0f len=%.0f %s for fnum %d file %s\n",
 			(double)start, (double)size, ret ? "locked" : "unlocked",
-			fsp->fnum, fsp->fsp_name ));
+			fsp->fnum, fsp_str_dbg(fsp)));
 
 		/* We need to return the inverse of is_posix_locked. */
 		ret = !ret;
@@ -1262,7 +1262,7 @@ NTSTATUS brl_lockquery(struct byte_range_lock *br_lck,
 
 		DEBUG(10,("brl_lockquery: posix start=%.0f len=%.0f %s for fnum %d file %s\n",
 			(double)*pstart, (double)*psize, ret ? "locked" : "unlocked",
-			fsp->fnum, fsp->fsp_name ));
+			fsp->fnum, fsp_str_dbg(fsp)));
 
 		if (ret) {
 			/* Hmmm. No clue what to set smbpid to - use -1. */

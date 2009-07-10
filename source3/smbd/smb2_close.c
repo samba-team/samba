@@ -121,7 +121,7 @@ static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
 	status = close_file(smbreq, fsp, NORMAL_CLOSE);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5,("smbd_smb2_close: close_file[%s]: %s\n",
-			fsp->fsp_name, nt_errstr(status)));
+			 fsp_str_dbg(fsp), nt_errstr(status)));
 		return status;
 	}
 

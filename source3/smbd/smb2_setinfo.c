@@ -209,7 +209,6 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 	case 0x01:/* SMB2_SETINFO_FILE */
 	{
 		uint16_t file_info_level;
-		struct smb_filename *smb_fname = NULL;
 		char *data;
 		int data_size;
 		int ret_size = 0;
@@ -221,15 +220,6 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 			file_info_level = 0xFF00 + in_file_info_class;
 		}
 
-		status = create_synthetic_smb_fname_split(state,
-							  fsp->fsp_name,
-							  NULL,
-							  &smb_fname);
-		if (!NT_STATUS_IS_OK(status)) {
-			tevent_req_nterror(req, status);
-			return tevent_req_post(req, ev);
-		}
-
 		if (fsp->is_directory || fsp->fh->fd == -1) {
 			/*
 			 * This is actually a SETFILEINFO on a directory
@@ -238,21 +228,20 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 			 */
 			if (INFO_LEVEL_IS_UNIX(file_info_level)) {
 				/* Always do lstat for UNIX calls. */
-				if (SMB_VFS_LSTAT(conn, smb_fname)) {
+				if (SMB_VFS_LSTAT(conn, fsp->fsp_name)) {
 					DEBUG(3,("smbd_smb2_setinfo_send: "
 						 "SMB_VFS_LSTAT of %s failed "
-						 "(%s)\n",
-						 smb_fname_str_dbg(smb_fname),
+						 "(%s)\n", fsp_str_dbg(fsp),
 						 strerror(errno)));
 					status = map_nt_error_from_unix(errno);
 					tevent_req_nterror(req, status);
 					return tevent_req_post(req, ev);
 				}
 			} else {
-				if (SMB_VFS_STAT(conn, smb_fname) != 0) {
+				if (SMB_VFS_STAT(conn, fsp->fsp_name) != 0) {
 					DEBUG(3,("smbd_smb2_setinfo_send: "
 						 "fileinfo of %s failed (%s)\n",
-						 smb_fname_str_dbg(smb_fname),
+						 fsp_str_dbg(fsp),
 						 strerror(errno)));
 					status = map_nt_error_from_unix(errno);
 					tevent_req_nterror(req, status);
@@ -270,7 +259,7 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 
 				DEBUG(3,("smbd_smb2_setinfo_send: "
 					 "Cancelling print job (%s)\n",
-					 fsp->fsp_name));
+					 fsp_str_dbg(fsp)));
 
 				tevent_req_done(req);
 				return tevent_req_post(req, ev);
@@ -284,7 +273,7 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 			 * Original code - this is an open file.
 			 */
 
-			if (SMB_VFS_FSTAT(fsp, &smb_fname->st) != 0) {
+			if (SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st) != 0) {
 				DEBUG(3,("smbd_smb2_setinfo_send: fstat "
 					 "of fnum %d failed (%s)\n", fsp->fnum,
 					 strerror(errno)));
@@ -307,7 +296,7 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 		status = smbd_do_setfilepathinfo(conn, smbreq, state,
 						 file_info_level,
 						 fsp,
-						 smb_fname,
+						 fsp->fsp_name,
 						 &data,
 						 data_size,
 						 &ret_size);

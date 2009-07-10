@@ -231,7 +231,7 @@ static struct tevent_req *smbd_smb2_notify_send(TALLOC_CTX *mem_ctx,
 
 		DEBUG(3,("smbd_smb2_notify_send: notify change "
 			 "called on %s, filter = %s, recursive = %d\n",
-			 fsp->fsp_name, filter_string, recursive));
+			 fsp_str_dbg(fsp), filter_string, recursive));
 
 		TALLOC_FREE(filter_string);
 	}

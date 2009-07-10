@@ -794,7 +794,7 @@ static NTSTATUS set_sd(files_struct *fsp, uint8 *data, uint32 sd_len,
 	security_acl_map_generic(psd->sacl, &file_generic_mapping);
 
 	if (DEBUGLEVEL >= 10) {
-		DEBUG(10,("set_sd for file %s\n", fsp->fsp_name ));
+		DEBUG(10,("set_sd for file %s\n", fsp_str_dbg(fsp)));
 		NDR_PRINT_DEBUG(security_descriptor, psd);
 	}
 
@@ -1523,7 +1523,7 @@ static void call_nt_transact_notify_change(connection_struct *conn,
 
 		DEBUG(3,("call_nt_transact_notify_change: notify change "
 			 "called on %s, filter = %s, recursive = %d\n",
-			 fsp->fsp_name, filter_string, recursive));
+			 fsp_str_dbg(fsp), filter_string, recursive));
 
 		TALLOC_FREE(filter_string);
 	}
@@ -1626,7 +1626,7 @@ static void call_nt_transact_rename(connection_struct *conn,
 	send_nt_replies(conn, req, NT_STATUS_OK, NULL, 0, NULL, 0);
 
 	DEBUG(3,("nt transact rename from = %s, to = %s ignored!\n",
-		 fsp->fsp_name, new_name));
+		 fsp_str_dbg(fsp), new_name));
 
 	return;
 }
@@ -1684,8 +1684,9 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 
 	security_info_wanted = IVAL(params,4);
 
-	DEBUG(3,("call_nt_transact_query_security_desc: file = %s, info_wanted = 0x%x\n", fsp->fsp_name,
-			(unsigned int)security_info_wanted ));
+	DEBUG(3,("call_nt_transact_query_security_desc: file = %s, "
+		 "info_wanted = 0x%x\n", fsp_str_dbg(fsp),
+		 (unsigned int)security_info_wanted));
 
 	params = nttrans_realloc(ppparams, 4);
 	if(params == NULL) {
@@ -1722,7 +1723,8 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 	DEBUG(3,("call_nt_transact_query_security_desc: sd_size = %lu.\n",(unsigned long)sd_size));
 
 	if (DEBUGLEVEL >= 10) {
-		DEBUG(10,("call_nt_transact_query_security_desc for file %s\n", fsp->fsp_name));
+		DEBUG(10,("call_nt_transact_query_security_desc for file %s\n",
+			  fsp_str_dbg(fsp)));
 		NDR_PRINT_DEBUG(security_descriptor, psd);
 	}
 
@@ -1796,8 +1798,8 @@ static void call_nt_transact_set_security_desc(connection_struct *conn,
 
 	security_info_sent = IVAL(params,4);
 
-	DEBUG(3,("call_nt_transact_set_security_desc: file = %s, sent 0x%x\n", fsp->fsp_name,
-		(unsigned int)security_info_sent ));
+	DEBUG(3,("call_nt_transact_set_security_desc: file = %s, sent 0x%x\n",
+		 fsp_str_dbg(fsp), (unsigned int)security_info_sent));
 
 	if (data_count == 0) {
 		reply_doserror(req, ERRDOS, ERRnoaccess);
@@ -2021,7 +2023,7 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 		cur_pdata+=12;
 
 		DEBUG(10,("FSCTL_GET_SHADOW_COPY_DATA: %u volumes for path[%s].\n",
-			shadow_data->num_volumes,fsp->fsp_name));
+			  shadow_data->num_volumes, fsp_str_dbg(fsp)));
 		if (labels && shadow_data->labels) {
 			for (i=0;i<shadow_data->num_volumes;i++) {
 				srvstr_push(pdata, req->flags2,

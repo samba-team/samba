@@ -74,7 +74,8 @@ const char *onefs_cb_record_str_dbg(const struct onefs_callback_record *r)
 	switch (r->state) {
 	case ONEFS_OPEN_FILE:
 		result = talloc_asprintf(dbg_ctx(), "cb record %llu for file "
-					 "%s", r->id, r->data.fsp->fsp_name);
+					 "%s", r->id,
+					 fsp_str_dbg(r->data.fsp));
 	case ONEFS_WAITING_FOR_OPLOCK:
 		result = talloc_asprintf(dbg_ctx(), "cb record %llu for "
 					 "pending mid %d", r->id,
@@ -299,7 +300,7 @@ static void oplock_break_to_none_handler(uint64_t id)
 	}
 
 	DEBUG(10, ("oplock_break_to_none_handler called for file %s\n",
-		   cb->data.fsp->fsp_name));
+		   cb->data.fsp_str_dbg(fsp)));
 
 	init_share_mode_entry(&sme, cb, FORCE_OPLOCK_BREAK_TO_NONE);
 	share_mode_entry_to_message(msg, &sme);
@@ -336,7 +337,7 @@ static void oplock_break_to_level_two_handler(uint64_t id)
 	}
 
 	DEBUG(10, ("oplock_break_to_level_two_handler called for file %s\n",
-		   cb->data.fsp->fsp_name));
+		   cb->data.fsp_str_dbg(fsp)));
 
 	init_share_mode_entry(&sme, cb, LEVEL_II_OPLOCK);
 	share_mode_entry_to_message(msg, &sme);
@@ -377,7 +378,7 @@ static void oplock_revoked_handler(uint64_t id)
 	SMB_ASSERT(fsp->oplock_timeout == NULL);
 
 	DEBUG(0,("Level 1 oplock break failed for file %s. Forcefully "
-		 "revoking oplock\n", fsp->fsp_name));
+		 "revoking oplock\n", fsp_str_dbg(fsp)));
 
 	global_client_failed_oplock_break = True;
 	remove_oplock(fsp);
@@ -501,7 +502,7 @@ static void onefs_release_kernel_oplock(struct kernel_oplocks *_ctx,
 	enum oplock_type oplock = onefs_samba_oplock_to_oplock(oplock_type);
 
 	DEBUG(10, ("onefs_release_kernel_oplock: Releasing %s to type %s\n",
-		   fsp->fsp_name, onefs_oplock_str(oplock)));
+		   fsp_str_dbg(fsp), onefs_oplock_str(oplock)));
 
 	if (fsp->fh->fd == -1) {
 		DEBUG(1, ("no fd\n"));

@@ -244,7 +244,6 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 		uint16_t file_info_level;
 		char *data = NULL;
 		unsigned int data_size = 0;
-		struct smb_filename *smb_fname = NULL;
 		bool delete_pending = false;
 		struct timespec write_time_ts;
 		struct file_id fileid;
@@ -271,15 +270,6 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 			break;
 		}
 
-		status = create_synthetic_smb_fname_split(state,
-							  fsp->fsp_name,
-							  NULL,
-							  &smb_fname);
-		if (!NT_STATUS_IS_OK(status)) {
-			tevent_req_nterror(req, status);
-			return tevent_req_post(req, ev);
-		}
-
 		if (fsp->fake_file_handle) {
 			/*
 			 * This is actually for the QUOTA_FAKE_FILE --metze
@@ -296,34 +286,34 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 
 			if (INFO_LEVEL_IS_UNIX(file_info_level)) {
 				/* Always do lstat for UNIX calls. */
-				if (SMB_VFS_LSTAT(conn, smb_fname)) {
+				if (SMB_VFS_LSTAT(conn, fsp->fsp_name)) {
 					DEBUG(3,("smbd_smb2_getinfo_send: "
 						 "SMB_VFS_LSTAT of %s failed "
-						 "(%s)\n",
-						 smb_fname_str_dbg(smb_fname),
+						 "(%s)\n", fsp_str_dbg(fsp),
 						 strerror(errno)));
 					status = map_nt_error_from_unix(errno);
 					tevent_req_nterror(req, status);
 					return tevent_req_post(req, ev);
 				}
-			} else if (SMB_VFS_STAT(conn, smb_fname)) {
+			} else if (SMB_VFS_STAT(conn, fsp->fsp_name)) {
 				DEBUG(3,("smbd_smb2_getinfo_send: "
 					 "SMB_VFS_STAT of %s failed (%s)\n",
-					 smb_fname_str_dbg(smb_fname),
+					 fsp_str_dbg(fsp),
 					 strerror(errno)));
 				status = map_nt_error_from_unix(errno);
 				tevent_req_nterror(req, status);
 				return tevent_req_post(req, ev);
 			}
 
-			fileid = vfs_file_id_from_sbuf(conn, &smb_fname->st);
+			fileid = vfs_file_id_from_sbuf(conn,
+						       &fsp->fsp_name->st);
 			get_file_infos(fileid, &delete_pending, &write_time_ts);
 		} else {
 			/*
 			 * Original code - this is an open file.
 			 */
 
-			if (SMB_VFS_FSTAT(fsp, &smb_fname->st) != 0) {
+			if (SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st) != 0) {
 				DEBUG(3, ("smbd_smb2_getinfo_send: "
 					  "fstat of fnum %d failed (%s)\n",
 					  fsp->fnum, strerror(errno)));
@@ -331,14 +321,15 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 				tevent_req_nterror(req, status);
 				return tevent_req_post(req, ev);
 			}
-			fileid = vfs_file_id_from_sbuf(conn, &smb_fname->st);
+			fileid = vfs_file_id_from_sbuf(conn,
+						       &fsp->fsp_name->st);
 			get_file_infos(fileid, &delete_pending, &write_time_ts);
 		}
 
 		status = smbd_do_qfilepathinfo(conn, state,
 					       file_info_level,
 					       fsp,
-					       smb_fname,
+					       fsp->fsp_name,
 					       delete_pending,
 					       write_time_ts,
 					       ms_dfs_link,

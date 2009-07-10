@@ -280,8 +280,9 @@ bool is_posix_locked(files_struct *fsp,
 	SMB_OFF_T count;
 	int posix_lock_type = map_posix_lock_type(fsp,*plock_type);
 
-	DEBUG(10,("is_posix_locked: File %s, offset = %.0f, count = %.0f, type = %s\n",
-		fsp->fsp_name, (double)*pu_offset, (double)*pu_count, posix_lock_type_name(*plock_type) ));
+	DEBUG(10,("is_posix_locked: File %s, offset = %.0f, count = %.0f, "
+		  "type = %s\n", fsp_str_dbg(fsp), (double)*pu_offset,
+		  (double)*pu_count,  posix_lock_type_name(*plock_type)));
 
 	/*
 	 * If the requested lock won't fit in the POSIX range, we will
@@ -424,7 +425,7 @@ static void increment_windows_lock_ref_count(files_struct *fsp)
 	TALLOC_FREE(rec);
 
 	DEBUG(10,("increment_windows_lock_ref_count for file now %s = %d\n",
-		  fsp->fsp_name, lock_ref_count ));
+		  fsp_str_dbg(fsp), lock_ref_count));
 }
 
 /****************************************************************************
@@ -460,7 +461,7 @@ void reduce_windows_lock_ref_count(files_struct *fsp, unsigned int dcount)
 	TALLOC_FREE(rec);
 
 	DEBUG(10,("reduce_windows_lock_ref_count for file now %s = %d\n",
-		  fsp->fsp_name, lock_ref_count ));
+		  fsp_str_dbg(fsp), lock_ref_count));
 }
 
 static void decrement_windows_lock_ref_count(files_struct *fsp)
@@ -492,7 +493,7 @@ static int get_windows_lock_ref_count(files_struct *fsp)
 	}
 
 	DEBUG(10,("get_windows_lock_count for file %s = %d\n",
-		  fsp->fsp_name, lock_ref_count ));
+		  fsp_str_dbg(fsp), lock_ref_count));
 
 	return lock_ref_count;
 }
@@ -518,7 +519,7 @@ static void delete_windows_lock_ref_count(files_struct *fsp)
 	TALLOC_FREE(rec);
 
 	DEBUG(10,("delete_windows_lock_ref_count for file %s\n",
-		  fsp->fsp_name));
+		  fsp_str_dbg(fsp)));
 }
 
 /****************************************************************************
@@ -555,7 +556,7 @@ static void add_fd_to_close_entry(files_struct *fsp)
 	TALLOC_FREE(rec);
 
 	DEBUG(10,("add_fd_to_close_entry: added fd %d file %s\n",
-		  fsp->fh->fd, fsp->fsp_name ));
+		  fsp->fh->fd, fsp_str_dbg(fsp)));
 }
 
 /****************************************************************************
@@ -945,8 +946,10 @@ bool set_posix_lock_windows_flavour(files_struct *fsp,
 	struct lock_list *llist = NULL;
 	struct lock_list *ll = NULL;
 
-	DEBUG(5,("set_posix_lock_windows_flavour: File %s, offset = %.0f, count = %.0f, type = %s\n",
-			fsp->fsp_name, (double)u_offset, (double)u_count, posix_lock_type_name(lock_type) ));
+	DEBUG(5,("set_posix_lock_windows_flavour: File %s, offset = %.0f, "
+		 "count = %.0f, type = %s\n", fsp_str_dbg(fsp),
+		 (double)u_offset, (double)u_count,
+		 posix_lock_type_name(lock_type)));
 
 	/*
 	 * If the requested lock won't fit in the POSIX range, we will
@@ -1079,8 +1082,9 @@ bool release_posix_lock_windows_flavour(files_struct *fsp,
 	struct lock_list *ulist = NULL;
 	struct lock_list *ul = NULL;
 
-	DEBUG(5,("release_posix_lock_windows_flavour: File %s, offset = %.0f, count = %.0f\n",
-		fsp->fsp_name, (double)u_offset, (double)u_count ));
+	DEBUG(5,("release_posix_lock_windows_flavour: File %s, offset = %.0f, "
+		 "count = %.0f\n", fsp_str_dbg(fsp),
+		 (double)u_offset, (double)u_count));
 
 	/* Remember the number of Windows locks we have on this dev/ino pair. */
 	decrement_windows_lock_ref_count(fsp);
@@ -1197,8 +1201,10 @@ bool set_posix_lock_posix_flavour(files_struct *fsp,
 	SMB_OFF_T count;
 	int posix_lock_type = map_posix_lock_type(fsp,lock_type);
 
-	DEBUG(5,("set_posix_lock_posix_flavour: File %s, offset = %.0f, count = %.0f, type = %s\n",
-			fsp->fsp_name, (double)u_offset, (double)u_count, posix_lock_type_name(lock_type) ));
+	DEBUG(5,("set_posix_lock_posix_flavour: File %s, offset = %.0f, count "
+		 "= %.0f, type = %s\n", fsp_str_dbg(fsp),
+		 (double)u_offset, (double)u_count,
+		 posix_lock_type_name(lock_type)));
 
 	/*
 	 * If the requested lock won't fit in the POSIX range, we will
@@ -1241,8 +1247,9 @@ bool release_posix_lock_posix_flavour(files_struct *fsp,
 	struct lock_list *ulist = NULL;
 	struct lock_list *ul = NULL;
 
-	DEBUG(5,("release_posix_lock_posix_flavour: File %s, offset = %.0f, count = %.0f\n",
-		fsp->fsp_name, (double)u_offset, (double)u_count ));
+	DEBUG(5,("release_posix_lock_posix_flavour: File %s, offset = %.0f, "
+		 "count = %.0f\n", fsp_str_dbg(fsp),
+		 (double)u_offset, (double)u_count));
 
 	/*
 	 * If the requested lock won't fit in the POSIX range, we will

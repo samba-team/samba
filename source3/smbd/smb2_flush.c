@@ -176,7 +176,7 @@ static struct tevent_req *smbd_smb2_flush_send(TALLOC_CTX *mem_ctx,
 	status = sync_file(smbreq->conn, fsp, true);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5,("smbd_smb2_flush: sync_file for %s returned %s\n",
-			fsp->fsp_name, nt_errstr(status)));
+			 fsp_str_dbg(fsp), nt_errstr(status)));
 		tevent_req_nterror(req, status);
 		return tevent_req_post(req, ev);
 	}

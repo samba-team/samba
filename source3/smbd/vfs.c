@@ -487,10 +487,12 @@ int vfs_allocate_file_space(files_struct *fsp, uint64_t len)
 	 * Actually try and commit the space on disk....
 	 */
 
-	DEBUG(10,("vfs_allocate_file_space: file %s, len %.0f\n", fsp->fsp_name, (double)len ));
+	DEBUG(10,("vfs_allocate_file_space: file %s, len %.0f\n",
+		  fsp_str_dbg(fsp), (double)len));
 
 	if (((SMB_OFF_T)len) < 0) {
-		DEBUG(0,("vfs_allocate_file_space: %s negative len requested.\n", fsp->fsp_name ));
+		DEBUG(0,("vfs_allocate_file_space: %s negative len "
+			 "requested.\n", fsp_str_dbg(fsp)));
 		errno = EINVAL;
 		return -1;
 	}
@@ -505,8 +507,9 @@ int vfs_allocate_file_space(files_struct *fsp, uint64_t len)
 	if (len < (uint64_t)st.st_ex_size) {
 		/* Shrink - use ftruncate. */
 
-		DEBUG(10,("vfs_allocate_file_space: file %s, shrink. Current size %.0f\n",
-				fsp->fsp_name, (double)st.st_ex_size ));
+		DEBUG(10,("vfs_allocate_file_space: file %s, shrink. Current "
+			  "size %.0f\n", fsp_str_dbg(fsp),
+			  (double)st.st_ex_size));
 
 		contend_level2_oplocks_begin(fsp, LEVEL2_CONTEND_ALLOC_SHRINK);
 
@@ -530,13 +533,16 @@ int vfs_allocate_file_space(files_struct *fsp, uint64_t len)
 
 	len -= st.st_ex_size;
 	len /= 1024; /* Len is now number of 1k blocks needed. */
-	space_avail = get_dfree_info(conn,fsp->fsp_name,False,&bsize,&dfree,&dsize);
+	space_avail = get_dfree_info(conn, fsp->fsp_name->base_name, false,
+				     &bsize, &dfree, &dsize);
 	if (space_avail == (uint64_t)-1) {
 		return -1;
 	}
 
-	DEBUG(10,("vfs_allocate_file_space: file %s, grow. Current size %.0f, needed blocks = %.0f, space avail = %.0f\n",
-			fsp->fsp_name, (double)st.st_ex_size, (double)len, (double)space_avail ));
+	DEBUG(10,("vfs_allocate_file_space: file %s, grow. Current size %.0f, "
+		  "needed blocks = %.0f, space avail = %.0f\n",
+		  fsp_str_dbg(fsp), (double)st.st_ex_size, (double)len,
+		  (double)space_avail));
 
 	if (len > space_avail) {
 		errno = ENOSPC;
@@ -558,14 +564,15 @@ int vfs_set_filelen(files_struct *fsp, SMB_OFF_T len)
 
 	contend_level2_oplocks_begin(fsp, LEVEL2_CONTEND_SET_FILE_LEN);
 
-	DEBUG(10,("vfs_set_filelen: ftruncate %s to len %.0f\n", fsp->fsp_name, (double)len));
+	DEBUG(10,("vfs_set_filelen: ftruncate %s to len %.0f\n",
+		  fsp_str_dbg(fsp), (double)len));
 	flush_write_cache(fsp, SIZECHANGE_FLUSH);
 	if ((ret = SMB_VFS_FTRUNCATE(fsp, len)) != -1) {
 		set_filelen_write_cache(fsp, len);
 		notify_fname(fsp->conn, NOTIFY_ACTION_MODIFIED,
 			     FILE_NOTIFY_CHANGE_SIZE
 			     | FILE_NOTIFY_CHANGE_ATTRIBUTES,
-			     fsp->fsp_name);
+			     fsp->fsp_name->base_name);
 	}
 
 	contend_level2_oplocks_end(fsp, LEVEL2_CONTEND_SET_FILE_LEN);
@@ -600,8 +607,10 @@ int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len)
 		return 0;
 	}
 
-	DEBUG(10,("vfs_fill_sparse: write zeros in file %s from len %.0f to len %.0f (%.0f bytes)\n",
-		fsp->fsp_name, (double)st.st_ex_size, (double)len, (double)(len - st.st_ex_size)));
+	DEBUG(10,("vfs_fill_sparse: write zeros in file %s from len %.0f to "
+		  "len %.0f (%.0f bytes)\n", fsp_str_dbg(fsp),
+		  (double)st.st_ex_size, (double)len,
+		  (double)(len - st.st_ex_size)));
 
 	contend_level2_oplocks_begin(fsp, LEVEL2_CONTEND_FILL_SPARSE);
 
@@ -625,8 +634,9 @@ int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len)
 
 		pwrite_ret = SMB_VFS_PWRITE(fsp, sparse_buf, curr_write_size, offset + total);
 		if (pwrite_ret == -1) {
-			DEBUG(10,("vfs_fill_sparse: SMB_VFS_PWRITE for file %s failed with error %s\n",
-				fsp->fsp_name, strerror(errno) ));
+			DEBUG(10,("vfs_fill_sparse: SMB_VFS_PWRITE for file "
+				  "%s failed with error %s\n",
+				  fsp_str_dbg(fsp), strerror(errno)));
 			ret = -1;
 			goto out;
 		}

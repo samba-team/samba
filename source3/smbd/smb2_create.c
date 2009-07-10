@@ -259,7 +259,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	files_struct *result;
 	int info;
 	SMB_STRUCT_STAT sbuf;
-	struct smb_filename *smb_fname = NULL;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smbd_smb2_create_state);
@@ -316,6 +315,8 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		}
 		info = FILE_WAS_CREATED;
 	} else {
+		struct smb_filename *smb_fname = NULL;
+
 		/* these are ignored for SMB2 */
 		in_create_options &= ~(0x10);/* NTCREATEX_OPTIONS_SYNC_ALERT */
 		in_create_options &= ~(0x20);/* NTCREATEX_OPTIONS_ASYNC_ALERT */
@@ -328,6 +329,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 					NULL);
 		if (!NT_STATUS_IS_OK(status)) {
 			tevent_req_nterror(req, status);
+			TALLOC_FREE(smb_fname);
 			goto out;
 		}
 
@@ -348,19 +350,11 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 					     &info);
 		if (!NT_STATUS_IS_OK(status)) {
 			tevent_req_nterror(req, status);
+			TALLOC_FREE(smb_fname);
 			goto out;
 		}
 		sbuf = smb_fname->st;
-	}
-
-	if (!smb_fname) {
-		status = create_synthetic_smb_fname_split(talloc_tos(),
-							  result->fsp_name,
-							  &sbuf, &smb_fname);
-		if (!NT_STATUS_IS_OK(status)) {
-			tevent_req_nterror(req, status);
-			goto out;
-		}
+		TALLOC_FREE(smb_fname);
 	}
 
 	smb2req->compat_chain_fsp = smbreq->chain_fsp;
@@ -379,7 +373,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	state->out_allocation_size	= sbuf.st_ex_blksize * sbuf.st_ex_blocks;
 	state->out_end_of_file		= sbuf.st_ex_size;
 	state->out_file_attributes	= dos_mode(result->conn,
-						   smb_fname);
+						   result->fsp_name);
 	if (state->out_file_attributes == 0) {
 		state->out_file_attributes = FILE_ATTRIBUTE_NORMAL;
 	}
@@ -387,7 +381,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 	tevent_req_done(req);
  out:
-	TALLOC_FREE(smb_fname);
 	return tevent_req_post(req, ev);
 }
 

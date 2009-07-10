@@ -212,7 +212,8 @@ static bool irix_set_kernel_oplock(struct kernel_oplocks *_ctx,
 			DEBUG(0,("irix_set_kernel_oplock: Unable to get "
 				 "kernel oplock on file %s, file_id %s "
 				 "gen_id = %ul. Error was %s\n", 
-				 fsp->fsp_name, file_id_string_tos(&fsp->file_id), 
+				 fsp_str_dbg(fsp),
+				 file_id_string_tos(&fsp->file_id),
 				 fsp->fh->gen_id,
 				 strerror(errno) ));
 		} else {
@@ -220,7 +221,7 @@ static bool irix_set_kernel_oplock(struct kernel_oplocks *_ctx,
 				 "file %s, fd = %d, file_id = %s, "
 				 "gen_id = %ul. Another process had the file "
 				 "open.\n",
-				 fsp->fsp_name, fsp->fh->fd,
+				 fsp_str_dbg(fsp), fsp->fh->fd,
 				 file_id_string_tos(&fsp->file_id),
 				 fsp->fh->gen_id ));
 		}
@@ -229,7 +230,7 @@ static bool irix_set_kernel_oplock(struct kernel_oplocks *_ctx,
 	
 	DEBUG(10,("irix_set_kernel_oplock: got kernel oplock on file %s, file_id = %s "
 		  "gen_id = %ul\n",
-		  fsp->fsp_name, file_id_string_tos(&fsp->file_id),
+		  fsp_str_dbg(fsp), file_id_string_tos(&fsp->file_id),
 		  fsp->fh->gen_id));
 
 	return True;
@@ -250,7 +251,8 @@ static void irix_release_kernel_oplock(struct kernel_oplocks *_ctx,
 		int state = sys_fcntl_long(fsp->fh->fd, F_OPLKACK, -1);
 		dbgtext("irix_release_kernel_oplock: file %s, file_id = %s"
 			"gen_id = %ul, has kernel oplock state "
-			"of %x.\n", fsp->fsp_name, file_id_string_tos(&fsp->file_id),
+			"of %x.\n", fsp_str_dbg(fsp),
+		        file_id_string_tos(&fsp->file_id),
                         fsp->fh->gen_id, state );
 	}
 
@@ -263,7 +265,8 @@ static void irix_release_kernel_oplock(struct kernel_oplocks *_ctx,
 				"removing kernel oplock on file " );
 			dbgtext("%s, file_id = %s gen_id = %ul. "
 				"Error was %s\n",
-				fsp->fsp_name, file_id_string_tos(&fsp->file_id),
+				fsp_str_dbg(fsp),
+			        file_id_string_tos(&fsp->file_id),
 				fsp->fh->gen_id,
 				strerror(errno) );
 		}

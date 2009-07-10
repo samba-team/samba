@@ -1812,7 +1812,8 @@ void reply_open(struct smb_request *req)
 	mtime = convert_timespec_to_time_t(smb_fname->st.st_ex_mtime);
 
 	if (fattr & aDIR) {
-		DEBUG(3,("attempt to open a directory %s\n",fsp->fsp_name));
+		DEBUG(3,("attempt to open a directory %s\n",
+			 fsp_str_dbg(fsp)));
 		close_file(req, fsp, ERROR_CLOSE);
 		reply_doserror(req, ERRDOS,ERRnoaccess);
 		goto out;
@@ -2313,9 +2314,9 @@ void reply_ctemp(struct smb_request *req)
 	SSVAL(req->outbuf,smb_vwv0,fsp->fnum);
 
 	/* the returned filename is relative to the directory */
-	s = strrchr_m(fsp->fsp_name, '/');
+	s = strrchr_m(fsp->fsp_name->base_name, '/');
 	if (!s) {
-		s = fsp->fsp_name;
+		s = fsp->fsp_name->base_name;
 	} else {
 		s++;
 	}
@@ -2341,8 +2342,8 @@ void reply_ctemp(struct smb_request *req)
 		      CVAL(req->outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
 	}
 
-	DEBUG( 2, ( "reply_ctemp: created temp file %s\n", fsp->fsp_name ) );
-	DEBUG( 3, ( "reply_ctemp %s fd=%d umode=0%o\n", fsp->fsp_name,
+	DEBUG(2, ("reply_ctemp: created temp file %s\n", fsp_str_dbg(fsp)));
+	DEBUG(3, ("reply_ctemp %s fd=%d umode=0%o\n", fsp_str_dbg(fsp),
 		    fsp->fh->fd, (unsigned int)smb_fname->st.st_ex_mode));
  out:
 	TALLOC_FREE(smb_fname);
@@ -2357,22 +2358,13 @@ void reply_ctemp(struct smb_request *req)
 static NTSTATUS can_rename(connection_struct *conn, files_struct *fsp,
 			   uint16 dirtype, SMB_STRUCT_STAT *pst)
 {
-	struct smb_filename *smb_fname = NULL;
-	NTSTATUS status;
 	uint32 fmode;
 
 	if (!CAN_WRITE(conn)) {
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
 	}
 
-	status = create_synthetic_smb_fname_split(talloc_tos(), fsp->fsp_name,
-						  pst, &smb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	fmode = dos_mode(conn, smb_fname);
-	TALLOC_FREE(smb_fname);
+	fmode = dos_mode(conn, fsp->fsp_name);
 	if ((fmode & ~dirtype) & (aHIDDEN | aSYSTEM)) {
 		return NT_STATUS_NO_SUCH_FILE;
 	}
@@ -2866,7 +2858,7 @@ static void sendfile_short_send(files_struct *fsp,
 	if (nread < headersize) {
 		DEBUG(0,("sendfile_short_send: sendfile failed to send "
 			"header for file %s (%s). Terminating\n",
-			fsp->fsp_name, strerror(errno) ));
+			fsp_str_dbg(fsp), strerror(errno)));
 		exit_server_cleanly("sendfile_short_send failed");
 	}
 
@@ -2880,7 +2872,7 @@ static void sendfile_short_send(files_struct *fsp,
 		}
 
 		DEBUG(0,("sendfile_short_send: filling truncated file %s "
-			"with zeros !\n", fsp->fsp_name));
+			"with zeros !\n", fsp_str_dbg(fsp)));
 
 		while (nread < smb_maxcnt) {
 			/*
@@ -2975,15 +2967,19 @@ static void send_file_readbraw(connection_struct *conn,
 				DEBUG(0,("send_file_readbraw: sendfile not available. Faking..\n"));
 
 				if (fake_sendfile(fsp, startpos, nread) == -1) {
-					DEBUG(0,("send_file_readbraw: fake_sendfile failed for file %s (%s).\n",
-						fsp->fsp_name, strerror(errno) ));
+					DEBUG(0,("send_file_readbraw: "
+						 "fake_sendfile failed for "
+						 "file %s (%s).\n",
+						 fsp_str_dbg(fsp),
+						 strerror(errno)));
 					exit_server_cleanly("send_file_readbraw fake_sendfile failed");
 				}
 				return;
 			}
 
-			DEBUG(0,("send_file_readbraw: sendfile failed for file %s (%s). Terminating\n",
-				fsp->fsp_name, strerror(errno) ));
+			DEBUG(0,("send_file_readbraw: sendfile failed for "
+				 "file %s (%s). Terminating\n",
+				 fsp_str_dbg(fsp), strerror(errno)));
 			exit_server_cleanly("send_file_readbraw sendfile failed");
 		} else if (sendfile_read == 0) {
 			/*
@@ -2995,7 +2991,7 @@ static void send_file_readbraw(connection_struct *conn,
 			 */
 			DEBUG(3, ("send_file_readbraw: sendfile sent zero "
 				  "bytes falling back to the normal read: "
-				  "%s\n", fsp->fsp_name));
+				  "%s\n", fsp_str_dbg(fsp)));
 			goto normal_readbraw;
 		}
 
@@ -3507,8 +3503,11 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 				nread = fake_sendfile(fsp, startpos,
 						      smb_maxcnt);
 				if (nread == -1) {
-					DEBUG(0,("send_file_readX: fake_sendfile failed for file %s (%s).\n",
-						fsp->fsp_name, strerror(errno) ));
+					DEBUG(0,("send_file_readX: "
+						 "fake_sendfile failed for "
+						 "file %s (%s).\n",
+						 fsp_str_dbg(fsp),
+						 strerror(errno)));
 					exit_server_cleanly("send_file_readX: fake_sendfile failed");
 				}
 				DEBUG( 3, ( "send_file_readX: fake_sendfile fnum=%d max=%d nread=%d\n",
@@ -3517,8 +3516,9 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 				goto strict_unlock;
 			}
 
-			DEBUG(0,("send_file_readX: sendfile failed for file %s (%s). Terminating\n",
-				fsp->fsp_name, strerror(errno) ));
+			DEBUG(0,("send_file_readX: sendfile failed for file "
+				 "%s (%s). Terminating\n", fsp_str_dbg(fsp),
+				 strerror(errno)));
 			exit_server_cleanly("send_file_readX sendfile failed");
 		} else if (nread == 0) {
 			/*
@@ -3530,7 +3530,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 			 */
 			DEBUG(3, ("send_file_readX: sendfile sent zero bytes "
 				  "falling back to the normal read: %s\n",
-				  fsp->fsp_name));
+				  fsp_str_dbg(fsp)));
 			goto normal_read;
 		}
 
@@ -3560,14 +3560,16 @@ normal_read:
 		/* Send out the header. */
 		if (write_data(smbd_server_fd(), (char *)headerbuf,
 			       sizeof(headerbuf)) != sizeof(headerbuf)) {
-			DEBUG(0,("send_file_readX: write_data failed for file %s (%s). Terminating\n",
-				fsp->fsp_name, strerror(errno) ));
+			DEBUG(0,("send_file_readX: write_data failed for file "
+				 "%s (%s). Terminating\n", fsp_str_dbg(fsp),
+				 strerror(errno)));
 			exit_server_cleanly("send_file_readX sendfile failed");
 		}
 		nread = fake_sendfile(fsp, startpos, smb_maxcnt);
 		if (nread == -1) {
-			DEBUG(0,("send_file_readX: fake_sendfile failed for file %s (%s).\n",
-				fsp->fsp_name, strerror(errno) ));
+			DEBUG(0,("send_file_readX: fake_sendfile failed for "
+				 "file %s (%s).\n", fsp_str_dbg(fsp),
+				 strerror(errno)));
 			exit_server_cleanly("send_file_readX: fake_sendfile failed");
 		}
 		goto strict_unlock;
@@ -3914,7 +3916,7 @@ void reply_writebraw(struct smb_request *req)
 	status = sync_file(conn, fsp, write_through);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5,("reply_writebraw: sync_file for %s returned %s\n",
-			fsp->fsp_name, nt_errstr(status) ));
+			 fsp_str_dbg(fsp), nt_errstr(status)));
 		reply_nterror(req, status);
 		error_to_writebrawerr(req);
 		goto strict_unlock;
@@ -4024,7 +4026,7 @@ void reply_writeunlock(struct smb_request *req)
 	status = sync_file(conn, fsp, False /* write through */);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5,("reply_writeunlock: sync_file for %s returned %s\n",
-			fsp->fsp_name, nt_errstr(status) ));
+			 fsp_str_dbg(fsp), nt_errstr(status)));
 		reply_nterror(req, status);
 		goto strict_unlock;
 	}
@@ -4158,7 +4160,7 @@ void reply_write(struct smb_request *req)
 	status = sync_file(conn, fsp, False);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5,("reply_write: sync_file for %s returned %s\n",
-			fsp->fsp_name, nt_errstr(status) ));
+			 fsp_str_dbg(fsp), nt_errstr(status)));
 		reply_nterror(req, status);
 		goto strict_unlock;
 	}
@@ -4441,7 +4443,7 @@ void reply_write_and_X(struct smb_request *req)
 	status = sync_file(conn, fsp, write_through);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5,("reply_write_and_X: sync_file for %s returned %s\n",
-			fsp->fsp_name, nt_errstr(status) ));
+			 fsp_str_dbg(fsp), nt_errstr(status)));
 		reply_nterror(req, status);
 		goto strict_unlock;
 	}
@@ -4577,7 +4579,7 @@ void reply_flush(struct smb_request *req)
 		NTSTATUS status = sync_file(conn, fsp, True);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(5,("reply_flush: sync_file for %s returned %s\n",
-				fsp->fsp_name, nt_errstr(status) ));
+				fsp_str_dbg(fsp), nt_errstr(status)));
 			reply_nterror(req, status);
 			END_PROFILE(SMBflush);
 			return;
@@ -4745,8 +4747,8 @@ void reply_writeclose(struct smb_request *req)
 	 */
 
 	if (numtowrite) {
-		DEBUG(3,("reply_writeclose: zero length write doesn't close file %s\n",
-			fsp->fsp_name ));
+		DEBUG(3,("reply_writeclose: zero length write doesn't close "
+			 "file %s\n", fsp_str_dbg(fsp)));
 		close_status = close_file(req, fsp, NORMAL_CLOSE);
 	}
 
@@ -5743,7 +5745,6 @@ static void rename_open_files(connection_struct *conn,
 {
 	files_struct *fsp;
 	bool did_rename = False;
-	char *fname_dst = NULL;
 	NTSTATUS status;
 
 	for(fsp = file_find_di_first(lck->id); fsp;
@@ -5757,17 +5758,13 @@ static void rename_open_files(connection_struct *conn,
 		}
 		DEBUG(10, ("rename_open_files: renaming file fnum %d "
 			   "(file_id %s) from %s -> %s\n", fsp->fnum,
-			   file_id_string_tos(&fsp->file_id), fsp->fsp_name,
+			   file_id_string_tos(&fsp->file_id), fsp_str_dbg(fsp),
 			   smb_fname_str_dbg(smb_fname_dst)));
 
-		status = get_full_smb_filename(talloc_tos(), smb_fname_dst,
-					       &fname_dst);
-		if (!NT_STATUS_IS_OK(status)) {
-			return;
+		status = fsp_set_smb_fname(fsp, smb_fname_dst);
+		if (NT_STATUS_IS_OK(status)) {
+			did_rename = True;
 		}
-		string_set(&fsp->fsp_name, fname_dst);
-		did_rename = True;
-		TALLOC_FREE(fname_dst);
 	}
 
 	if (!did_rename) {
@@ -5899,17 +5896,12 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	}
 
 	/* Make a copy of the src and dst smb_fname structs */
-	status = copy_smb_filename(ctx, smb_fname_dst_in, &smb_fname_dst);
+	status = copy_smb_filename(ctx, fsp->fsp_name, &smb_fname_src);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
 
-	/*
-	 * This will be replaced with copy_smb_filename() when fsp->fsp_name
-	 * is converted to store an smb_filename struct.
-	 */
-	status = create_synthetic_smb_fname_split(ctx, fsp->fsp_name, NULL,
-						  &smb_fname_src);
+	status = copy_smb_filename(ctx, smb_fname_dst_in, &smb_fname_dst);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
@@ -7273,7 +7265,7 @@ NTSTATUS smbd_do_locking(struct smb_request *req,
 			  (double)e->offset,
 			  (double)e->count,
 			  (unsigned int)e->smbpid,
-			  fsp->fsp_name));
+			  fsp_str_dbg(fsp)));
 
 		if (e->brltype != UNLOCK_LOCK) {
 			/* this can only happen with SMB2 */
@@ -7312,7 +7304,7 @@ NTSTATUS smbd_do_locking(struct smb_request *req,
 			  (double)e->offset,
 			  (double)e->count,
 			  (unsigned int)e->smbpid,
-			  fsp->fsp_name,
+			  fsp_str_dbg(fsp),
 			  (int)timeout));
 
 		if (type & LOCKING_ANDX_CANCEL_LOCK) {
@@ -7528,7 +7520,8 @@ void reply_lockingX(struct smb_request *req)
 			DEBUG(5,("reply_lockingX: Error : oplock break from "
 				 "client for fnum = %d (oplock=%d) and no "
 				 "oplock granted on this file (%s).\n",
-				 fsp->fnum, fsp->oplock_type, fsp->fsp_name));
+				 fsp->fnum, fsp->oplock_type,
+				 fsp_str_dbg(fsp)));
 
 			/* if this is a pure oplock break request then don't
 			 * send a reply */
@@ -7551,7 +7544,7 @@ void reply_lockingX(struct smb_request *req)
 
 		if (!result) {
 			DEBUG(0, ("reply_lockingX: error in removing "
-				  "oplock on file %s\n", fsp->fsp_name));
+				  "oplock on file %s\n", fsp_str_dbg(fsp)));
 			/* Hmmm. Is this panic justified? */
 			smb_panic("internal tdb error");
 		}
@@ -7708,7 +7701,6 @@ void reply_readbs(struct smb_request *req)
 void reply_setattrE(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
-	struct smb_filename *smb_fname = NULL;
 	struct smb_file_time ft;
 	files_struct *fsp;
 	NTSTATUS status;
@@ -7725,14 +7717,6 @@ void reply_setattrE(struct smb_request *req)
 
 	if(!fsp || (fsp->conn != conn)) {
 		reply_doserror(req, ERRDOS, ERRbadfid);
-		goto out;
-	}
-
-	/* XXX: Remove when fsp->fsp_name is converted to smb_filename. */
-	status = create_synthetic_smb_fname_split(talloc_tos(), fsp->fsp_name,
-						  NULL, &smb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
 		goto out;
 	}
 
@@ -7756,7 +7740,7 @@ void reply_setattrE(struct smb_request *req)
 
 	/* Ensure we have a valid stat struct for the source. */
 	if (fsp->fh->fd != -1) {
-		if (SMB_VFS_FSTAT(fsp, &smb_fname->st) == -1) {
+		if (SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st) == -1) {
 			status = map_nt_error_from_unix(errno);
 			reply_nterror(req, status);
 			goto out;
@@ -7765,9 +7749,9 @@ void reply_setattrE(struct smb_request *req)
 		int ret = -1;
 
 		if (fsp->posix_open) {
-			ret = SMB_VFS_LSTAT(conn, smb_fname);
+			ret = SMB_VFS_LSTAT(conn, fsp->fsp_name);
 		} else {
-			ret = SMB_VFS_STAT(conn, smb_fname);
+			ret = SMB_VFS_STAT(conn, fsp->fsp_name);
 		}
 		if (ret == -1) {
 			status = map_nt_error_from_unix(errno);
@@ -7776,7 +7760,7 @@ void reply_setattrE(struct smb_request *req)
 		}
 	}
 
-	status = smb_set_file_time(conn, fsp, smb_fname, &ft, true);
+	status = smb_set_file_time(conn, fsp, fsp->fsp_name, &ft, true);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_doserror(req, ERRDOS, ERRnoaccess);
 		goto out;
@@ -7836,8 +7820,6 @@ void reply_getattrE(struct smb_request *req)
 	int mode;
 	files_struct *fsp;
 	struct timespec create_ts;
-	struct smb_filename *smb_fname = NULL;
-	NTSTATUS status;
 
 	START_PROFILE(SMBgetattrE);
 
@@ -7862,16 +7844,9 @@ void reply_getattrE(struct smb_request *req)
 		return;
 	}
 
-	status = create_synthetic_smb_fname_split(talloc_tos(), fsp->fsp_name,
-						  &sbuf, &smb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
-		END_PROFILE(SMBgetattrE);
-		return;
-	}
+	fsp->fsp_name->st = sbuf;
 
-	mode = dos_mode(conn, smb_fname);
-	TALLOC_FREE(smb_fname);
+	mode = dos_mode(conn, fsp->fsp_name);
 
 	/*
 	 * Convert the times into dos times. Set create
