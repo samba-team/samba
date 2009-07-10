@@ -45,14 +45,6 @@ bool namecache_enable(void)
 		return False;
 	}
 
-	/* Init namecache by calling gencache initialisation */
-
-	if (!gencache_init()) {
-		DEBUG(2, ("namecache_enable: "
-			"Couldn't initialise namecache on top of gencache.\n"));
-		return False;
-	}
-
 	/* I leave it for now, though I don't think we really
 	 * need this (mimir, 27.09.2002) */
 	DEBUG(5, ("namecache_enable: enabling netbios namecache, timeout %d "
@@ -101,14 +93,6 @@ bool namecache_store(const char *name,
 	char *key, *value_string;
 	int i;
 	bool ret;
-
-	/*
-	 * we use gecache call to avoid annoying debug messages about
-	 * initialised namecache again and again...
-	 */
-	if (!gencache_init()) {
-		return False;
-	}
 
 	if (name_type > 255) {
 		return False; /* Don't store non-real name types. */
@@ -186,10 +170,6 @@ bool namecache_fetch(const char *name,
 		return False;
 	}
 
-	if (!gencache_init()) {
-		return False;
-	}
-
 	if (name_type > 255) {
 		return False; /* Don't fetch non-real name types. */
 	}
@@ -233,9 +213,6 @@ bool namecache_delete(const char *name, int name_type)
 	bool ret;
 	char *key;
 
-	if (!gencache_init())
-		return False;
-
 	if (name_type > 255) {
 		return False; /* Don't fetch non-real name types. */
 	}
@@ -274,10 +251,6 @@ static void flush_netbios_name(const char *key,
 
 void namecache_flush(void)
 {
-	if (!gencache_init()) {
-		return;
-	}
-
 	/*
 	 * iterate through each NBT cache's entry and flush it
 	 * by flush_netbios_name function
@@ -312,10 +285,6 @@ bool namecache_status_store(const char *keyname, int keyname_type,
 	time_t expiry;
 	bool ret;
 
-	if (!gencache_init()) {
-		return False;
-	}
-
 	key = namecache_status_record_key(keyname, keyname_type,
 			name_type, keyip);
 	if (!key)
@@ -347,9 +316,6 @@ bool namecache_status_fetch(const char *keyname,
 	char *key = NULL;
 	char *value = NULL;
 	time_t timeout;
-
-	if (!gencache_init())
-		return False;
 
 	key = namecache_status_record_key(keyname, keyname_type,
 			name_type, keyip);

@@ -171,12 +171,10 @@ static int net_cache_add(struct net_context *c, int argc, const char **argv)
 
 	if (gencache_set(keystr, datastr, timeout)) {
 		d_printf("New cache entry stored successfully.\n");
-		gencache_shutdown();
 		return 0;
 	}
 
 	d_fprintf(stderr, "Entry couldn't be added. Perhaps there's already such a key.\n");
-	gencache_shutdown();
 	return -1;
 }
 
@@ -275,7 +273,6 @@ static int net_cache_list(struct net_context *c, int argc, const char **argv)
 		return 0;
 	}
 	gencache_iterate(print_cache_entry, NULL, pattern);
-	gencache_shutdown();
 	return 0;
 }
 
@@ -297,7 +294,6 @@ static int net_cache_flush(struct net_context *c, int argc, const char **argv)
 		return 0;
 	}
 	gencache_iterate(delete_cache_entry, NULL, pattern);
-	gencache_shutdown();
 	return 0;
 }
 

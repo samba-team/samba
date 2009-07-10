@@ -170,7 +170,6 @@ NET_API_STATUS libnetapi_free(struct libnetapi_ctx *ctx)
 	gfree_charcnv();
 	gfree_interfaces();
 
-	gencache_shutdown();
 	secrets_shutdown();
 
 	TALLOC_FREE(ctx);

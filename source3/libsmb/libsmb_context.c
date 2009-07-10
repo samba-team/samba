@@ -123,7 +123,6 @@ SMBC_module_init(void * punused)
 static void
 SMBC_module_terminate(void)
 {
-    gencache_shutdown();
     secrets_shutdown();
     gfree_all();
     SMBC_initialized = false;

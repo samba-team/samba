@@ -76,9 +76,6 @@ bool saf_store( const char *domain, const char *servername )
 		return False;
 	}
 
-	if ( !gencache_init() )
-		return False;
-
 	key = saf_key( domain );
 	expire = time( NULL ) + lp_parm_int(-1, "saf","ttl", SAF_TTL);
 
@@ -108,9 +105,6 @@ bool saf_join_store( const char *domain, const char *servername )
 		return False;
 	}
 
-	if ( !gencache_init() )
-		return False;
-
 	key = saf_join_key( domain );
 	expire = time( NULL ) + lp_parm_int(-1, "saf","join ttl", SAFJOIN_TTL);
 
@@ -133,9 +127,6 @@ bool saf_delete( const char *domain )
 		DEBUG(2,("saf_delete: Refusing to delete empty domain\n"));
 		return False;
 	}
-
-	if ( !gencache_init() )
-		return False;
 
 	key = saf_join_key(domain);
 	ret = gencache_del(key);
@@ -170,9 +161,6 @@ char *saf_fetch( const char *domain )
 		DEBUG(2,("saf_fetch: Empty domain name!\n"));
 		return NULL;
 	}
-
-	if ( !gencache_init() )
-		return False;
 
 	key = saf_join_key( domain );
 

@@ -133,10 +133,6 @@ static NTSTATUS dsgetdcname_cache_delete(TALLOC_CTX *mem_ctx,
 {
 	char *key;
 
-	if (!gencache_init()) {
-		return NT_STATUS_INTERNAL_DB_ERROR;
-	}
-
 	key = dsgetdcname_cache_key(mem_ctx, domain_name);
 	if (!key) {
 		return NT_STATUS_NO_MEMORY;
@@ -159,10 +155,6 @@ static NTSTATUS dsgetdcname_cache_store(TALLOC_CTX *mem_ctx,
 	time_t expire_time;
 	char *key;
 	bool ret = false;
-
-	if (!gencache_init()) {
-		return NT_STATUS_INTERNAL_DB_ERROR;
-	}
 
 	key = dsgetdcname_cache_key(mem_ctx, domain_name);
 	if (!key) {
@@ -356,10 +348,6 @@ static NTSTATUS dsgetdcname_cache_fetch(TALLOC_CTX *mem_ctx,
 	struct netr_DsRGetDCNameInfo *info;
 	struct NETLOGON_SAM_LOGON_RESPONSE_EX r;
 	NTSTATUS status;
-
-	if (!gencache_init()) {
-		return NT_STATUS_INTERNAL_DB_ERROR;
-	}
 
 	key = dsgetdcname_cache_key(mem_ctx, domain_name);
 	if (!key) {

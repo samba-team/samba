@@ -49,7 +49,7 @@ static struct tdb_context *cache;
  *         false on failure
  **/
 
-bool gencache_init(void)
+static bool gencache_init(void)
 {
 	char* cache_fname = NULL;
 
@@ -75,25 +75,6 @@ bool gencache_init(void)
 		return False;
 	}
 	return True;
-}
-
-
-/**
- * Cache shutdown function. Closes opened cache tdb file.
- *
- * @return true on successful closing the cache or
- *         false on failure during cache shutdown
- **/
-
-bool gencache_shutdown(void)
-{
-	int ret;
-	/* tdb_close routine returns -1 on error */
-	if (!cache) return False;
-	DEBUG(5, ("Closing cache file\n"));
-	ret = tdb_close(cache);
-	cache = NULL;
-	return ret != -1;
 }
 
 

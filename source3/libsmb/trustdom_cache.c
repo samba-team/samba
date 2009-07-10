@@ -48,12 +48,6 @@
 
 bool trustdom_cache_enable(void)
 {
-	/* Init trustdom cache by calling gencache initialisation */
-	if (!gencache_init()) {
-		DEBUG(2, ("trustdomcache_enable: Couldn't initialise trustdom cache on top of gencache.\n"));
-		return False;
-	}
-
 	return True;
 }
 
@@ -68,12 +62,6 @@ bool trustdom_cache_enable(void)
 
 bool trustdom_cache_shutdown(void)
 {
-	/* Close trustdom cache by calling gencache shutdown */
-	if (!gencache_shutdown()) {
-		DEBUG(2, ("trustdomcache_shutdown: Couldn't shutdown trustdom cache on top of gencache.\n"));
-		return False;
-	}
-
 	return True;
 }
 
@@ -113,13 +101,6 @@ bool trustdom_cache_store(char* name, char* alt_name, const DOM_SID *sid,
 	char *key, *alt_key;
 	fstring sid_string;
 	bool ret;
-
-	/*
-	 * we use gecache call to avoid annoying debug messages
-	 * about initialised trustdom 
-	 */
-	if (!gencache_init())
-		return False;
 
 	DEBUG(5, ("trustdom_store: storing SID %s of domain %s\n",
 	          sid_string_dbg(sid), name));
@@ -165,10 +146,6 @@ bool trustdom_cache_fetch(const char* name, DOM_SID* sid)
 	char *key = NULL, *value = NULL;
 	time_t timeout;
 
-	/* init the cache */
-	if (!gencache_init())
-		return False;
-
 	/* exit now if null pointers were passed as they're required further */
 	if (!sid)
 		return False;
@@ -209,10 +186,6 @@ uint32 trustdom_cache_fetch_timestamp( void )
 	time_t timeout;
 	uint32 timestamp;
 
-	/* init the cache */
-	if (!gencache_init()) 
-		return False;
-
 	if (!gencache_get(TDOMTSKEY, &value, &timeout)) {
 		DEBUG(5, ("no timestamp for trusted domain cache located.\n"));
 		SAFE_FREE(value);
@@ -232,10 +205,6 @@ uint32 trustdom_cache_fetch_timestamp( void )
 bool trustdom_cache_store_timestamp( uint32 t, time_t timeout )
 {
 	fstring value;
-
-	/* init the cache */
-	if (!gencache_init()) 
-		return False;
 
 	fstr_sprintf(value, "%d", t );
 
@@ -267,9 +236,6 @@ static void flush_trustdom_name(const char* key, const char *value, time_t timeo
 
 void trustdom_cache_flush(void)
 {
-	if (!gencache_init())
-		return;
-
 	/* 
 	 * iterate through each TDOM cache's entry and flush it
 	 * by flush_trustdom_name function

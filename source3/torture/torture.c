@@ -5800,11 +5800,6 @@ static bool run_local_gencache(int dummy)
 	time_t tm;
 	DATA_BLOB blob;
 
-	if (!gencache_init()) {
-		d_printf("%s: gencache_init() failed\n", __location__);
-		return False;
-	}
-
 	if (!gencache_set("foo", "bar", time(NULL) + 1000)) {
 		d_printf("%s: gencache_set() failed\n", __location__);
 		return False;
@@ -5875,17 +5870,6 @@ static bool run_local_gencache(int dummy)
 	if (gencache_get_data_blob("foo", &blob, NULL)) {
 		d_printf("%s: gencache_get_data_blob() on deleted entry "
 			 "succeeded\n", __location__);
-		return False;
-	}
-
-	if (!gencache_shutdown()) {
-		d_printf("%s: gencache_shutdown() failed\n", __location__);
-		return False;
-	}
-
-	if (gencache_shutdown()) {
-		d_printf("%s: second gencache_shutdown() succeeded\n",
-			 __location__);
 		return False;
 	}
 
