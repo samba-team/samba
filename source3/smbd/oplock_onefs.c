@@ -60,29 +60,29 @@ struct onefs_callback_record {
 struct onefs_callback_record *callback_recs;
 
 /**
- * Convert a onefs_callback_record to a string.
+ * Convert a onefs_callback_record to a debug string using the dbg_ctx().
  */
-static char *onefs_callback_record_str_static(const struct onefs_callback_record *r)
+const char *onefs_cb_record_str_dbg(const struct onefs_callback_record *r)
 {
-	static fstring result;
+	char *result;
 
 	if (r == NULL) {
-		fstrcpy(result, "NULL callback record");
+		result = talloc_strdup(dbg_ctx(), "NULL callback record");
 		return result;
 	}
 
 	switch (r->state) {
 	case ONEFS_OPEN_FILE:
-		fstr_sprintf(result, "cb record %llu for file %s",
-			     r->id, r->data.fsp->fsp_name);
-		break;
+		result = talloc_asprintf(dbg_ctx(), "cb record %llu for file "
+					 "%s", r->id, r->data.fsp->fsp_name);
 	case ONEFS_WAITING_FOR_OPLOCK:
-		fstr_sprintf(result, "cb record %llu for pending mid %d",
-			     r->id, (int)r->data.mid);
+		result = talloc_asprintf(dbg_ctx(), "cb record %llu for "
+					 "pending mid %d", r->id,
+					 (int)r->data.mid);
 		break;
 	default:
-		fstr_sprintf(result, "cb record %llu unknown state %d",
-			     r->id, r->state);
+		result = talloc_asprintf(dbg_ctx(), "cb record %llu unknown "
+					 "state %d", r->id, r->state);
 		break;
 	}
 
@@ -102,7 +102,7 @@ static void debug_cb_records(const char *fn)
 	DEBUG(10, ("cb records (%s):\n", fn));
 
 	for (rec = callback_recs; rec; rec = rec->next) {
-		DEBUGADD(10, ("%s\n", onefs_callback_record_str_static(rec)));
+		DEBUGADD(10, ("%s\n", onefs_cb_record_dbg_str(rec)));
 	}
 }
 
@@ -127,7 +127,7 @@ static struct onefs_callback_record *onefs_find_cb(uint64_t id,
 	for (rec = callback_recs; rec; rec = rec->next) {
 		if (rec->id == id) {
 			DEBUG(10, ("found %s\n",
-				   onefs_callback_record_str_static(rec)));
+				   onefs_cb_record_dbg_str(rec)));
 			break;
 		}
 	}
@@ -139,7 +139,7 @@ static struct onefs_callback_record *onefs_find_cb(uint64_t id,
 
 	if (rec->state != expected_state) {
 		DEBUG(0, ("Expected cb type %d, got %s", expected_state,
-			  onefs_callback_record_str_static(rec)));
+			  onefs_cb_record_dbg_str(rec)));
 		SMB_ASSERT(0);
 		return NULL;
 	}
@@ -413,7 +413,7 @@ static void semlock_available_handler(uint64_t id)
 		char *msg;
 		if (asprintf(&msg, "Semlock available on an open that wasn't "
 			     "deferred: %s\n",
-			      onefs_callback_record_str_static(cb)) != -1) {
+			      onefs_cb_record_dbg_str(cb)) != -1) {
 			smb_panic(msg);
 		}
 		smb_panic("Semlock available on an open that wasn't "
@@ -457,7 +457,7 @@ static void semlock_async_failure_handler(uint64_t id)
 		char *msg;
 		if (asprintf(&msg, "Semlock failure on an open that wasn't "
 			     "deferred: %s\n",
-			      onefs_callback_record_str_static(cb)) != -1) {
+			      onefs_cb_record_dbg_str(cb)) != -1) {
 			smb_panic(msg);
 		}
 		smb_panic("Semlock failure on an open that wasn't deferred\n");
