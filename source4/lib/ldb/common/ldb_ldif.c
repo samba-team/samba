@@ -296,7 +296,7 @@ int ldb_ldif_write(struct ldb_context *ldb,
 			}
 		}
 		if (!ldb_changetypes[i].name) {
-			ldb_debug(ldb, LDB_DEBUG_ERROR, "Error: Invalid ldif changetype %d\n",
+			ldb_debug(ldb, LDB_DEBUG_ERROR, "Error: Invalid ldif changetype %d",
 				  ldif->changetype);
 			talloc_free(mem_ctx);
 			return -1;
@@ -561,7 +561,7 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 	
 	/* first line must be a dn */
 	if (ldb_attr_cmp(attr, "dn") != 0) {
-		ldb_debug(ldb, LDB_DEBUG_ERROR, "Error: First line of ldif must be a dn not '%s'\n", 
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "Error: First line of ldif must be a dn not '%s'",
 			  attr);
 		goto failed;
 	}
@@ -569,7 +569,7 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 	msg->dn = ldb_dn_from_ldb_val(msg, ldb, &value);
 
 	if ( ! ldb_dn_validate(msg->dn)) {
-		ldb_debug(ldb, LDB_DEBUG_ERROR, "Error: Unable to parse dn '%s'\n", 
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "Error: Unable to parse dn '%s'",
 			  (char *)value.data);
 		goto failed;
 	}
@@ -588,8 +588,8 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 				}
 			}
 			if (!ldb_changetypes[i].name) {
-				ldb_debug(ldb, LDB_DEBUG_ERROR, 
-					  "Error: Bad ldif changetype '%s'\n",(char *)value.data);
+				ldb_debug(ldb, LDB_DEBUG_ERROR,
+					  "Error: Bad ldif changetype '%s'",(char *)value.data);
 			}
 			flags = 0;
 			continue;
@@ -638,7 +638,7 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 			}
 			if (value.length == 0) {
 				ldb_debug(ldb, LDB_DEBUG_ERROR,
-					  "Error: Attribute value cannot be empty for attribute '%s'\n", el->name);
+					  "Error: Attribute value cannot be empty for attribute '%s'", el->name);
 				goto failed;
 			}
 			if (value.data != el->values[el->num_values].data) {

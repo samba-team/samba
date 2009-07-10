@@ -280,7 +280,7 @@ int ltdb_unpack_data(struct ldb_module *module,
 
 	if (remaining != 0) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR, 
-			  "Error: %d bytes unread in ltdb_unpack_data\n", remaining);
+			  "Error: %d bytes unread in ltdb_unpack_data", remaining);
 	}
 
 	return 0;

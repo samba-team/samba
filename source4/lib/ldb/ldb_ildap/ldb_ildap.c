@@ -790,7 +790,7 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 
 	status = ldap_connect(ildb->ldap, url);
 	if (!NT_STATUS_IS_OK(status)) {
-		ldb_debug(ldb, LDB_DEBUG_ERROR, "Failed to connect to ldap URL '%s' - %s\n",
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "Failed to connect to ldap URL '%s' - %s",
 			  url, ldap_errstr(ildb->ldap, module, status));
 		goto failed;
 	}
@@ -810,14 +810,14 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 			const char *password = cli_credentials_get_password(creds);
 			status = ldap_bind_simple(ildb->ldap, bind_dn, password);
 			if (!NT_STATUS_IS_OK(status)) {
-				ldb_debug(ldb, LDB_DEBUG_ERROR, "Failed to bind - %s\n",
+				ldb_debug(ldb, LDB_DEBUG_ERROR, "Failed to bind - %s",
 					  ldap_errstr(ildb->ldap, module, status));
 				goto failed;
 			}
 		} else {
 			status = ldap_bind_sasl(ildb->ldap, creds, lp_ctx);
 			if (!NT_STATUS_IS_OK(status)) {
-				ldb_debug(ldb, LDB_DEBUG_ERROR, "Failed to bind - %s\n",
+				ldb_debug(ldb, LDB_DEBUG_ERROR, "Failed to bind - %s",
 					  ldap_errstr(ildb->ldap, module, status));
 				goto failed;
 			}

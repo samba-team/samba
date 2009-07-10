@@ -1276,7 +1276,7 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 				   ldb_get_create_perms(ldb), ldb);
 	if (!ltdb->tdb) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR,
-			  "Unable to open tdb '%s'\n", path);
+			  "Unable to open tdb '%s'", path);
 		talloc_free(ltdb);
 		return -1;
 	}

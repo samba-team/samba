@@ -242,7 +242,7 @@ int ldb_next_remote_request(struct ldb_module *module, struct ldb_request *reque
 
 	default:
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "ldb_map: "
-			  "Invalid remote request!\n");
+			  "Invalid remote request!");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -503,14 +503,14 @@ struct ldb_dn *ldb_dn_map_local(struct ldb_module *module, void *mem_ctx, struct
 		case MAP_GENERATE:
 			ldb_debug(ldb, LDB_DEBUG_ERROR, "ldb_map: "
 				  "MAP_IGNORE/MAP_GENERATE attribute '%s' "
-				  "used in DN!\n", ldb_dn_get_component_name(dn, i));
+				  "used in DN!", ldb_dn_get_component_name(dn, i));
 			goto failed;
 
 		case MAP_CONVERT:
 			if (map->u.convert.convert_local == NULL) {
 				ldb_debug(ldb, LDB_DEBUG_ERROR, "ldb_map: "
 					  "'convert_local' not set for attribute '%s' "
-					  "used in DN!\n", ldb_dn_get_component_name(dn, i));
+					  "used in DN!", ldb_dn_get_component_name(dn, i));
 				goto failed;
 			}
 			/* fall through */
@@ -578,14 +578,14 @@ struct ldb_dn *ldb_dn_map_remote(struct ldb_module *module, void *mem_ctx, struc
 		case MAP_GENERATE:
 			ldb_debug(ldb, LDB_DEBUG_ERROR, "ldb_map: "
 				  "MAP_IGNORE/MAP_GENERATE attribute '%s' "
-				  "used in DN!\n", ldb_dn_get_component_name(dn, i));
+				  "used in DN!", ldb_dn_get_component_name(dn, i));
 			goto failed;
 
 		case MAP_CONVERT:
 			if (map->u.convert.convert_remote == NULL) {
 				ldb_debug(ldb, LDB_DEBUG_ERROR, "ldb_map: "
 					  "'convert_remote' not set for attribute '%s' "
-					  "used in DN!\n", ldb_dn_get_component_name(dn, i));
+					  "used in DN!", ldb_dn_get_component_name(dn, i));
 				goto failed;
 			}
 			/* fall through */
@@ -1007,7 +1007,7 @@ static int map_init_dns(struct ldb_module *module, struct ldb_map_context *data,
 	dn = ldb_dn_new_fmt(data, ldb, "%s=%s", MAP_DN_NAME, name);
 	if ( ! ldb_dn_validate(dn)) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "ldb_map: "
-			  "Failed to construct '%s' DN!\n", MAP_DN_NAME);
+			  "Failed to construct '%s' DN!", MAP_DN_NAME);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -1018,13 +1018,13 @@ static int map_init_dns(struct ldb_module *module, struct ldb_map_context *data,
 	}
 	if (res->count == 0) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "ldb_map: "
-			  "No results for '%s=%s'!\n", MAP_DN_NAME, name);
+			  "No results for '%s=%s'!", MAP_DN_NAME, name);
 		talloc_free(res);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 	if (res->count > 1) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "ldb_map: "
-			  "Too many results for '%s=%s'!\n", MAP_DN_NAME, name);
+			  "Too many results for '%s=%s'!", MAP_DN_NAME, name);
 		talloc_free(res);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}

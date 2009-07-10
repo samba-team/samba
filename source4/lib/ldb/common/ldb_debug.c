@@ -56,6 +56,7 @@ static void ldb_debug_stderr(void *context, enum ldb_debug_level level,
 {
 	if (level <= LDB_DEBUG_WARNING) {
 		vfprintf(stderr, fmt, ap);
+		fprintf(stderr, "\n");
 	}
 }
 

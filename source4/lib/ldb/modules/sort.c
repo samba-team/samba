@@ -339,7 +339,7 @@ static int server_sort_init(struct ldb_module *module)
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_WARNING,
 			"server_sort:"
-			"Unable to register control with rootdse!\n");
+			"Unable to register control with rootdse!");
 	}
 
 	return ldb_next_init(module);
