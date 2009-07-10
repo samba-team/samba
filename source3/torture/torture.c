@@ -5829,14 +5829,12 @@ static bool run_local_gencache(int dummy)
 	}
 
 	blob = data_blob_string_const_null("bar");
-	tm = time(NULL);
+	tm = time(NULL) + 60;
 
 	if (!gencache_set_data_blob("foo", &blob, tm)) {
 		d_printf("%s: gencache_set_data_blob() failed\n", __location__);
 		return False;
 	}
-
-	data_blob_free(&blob);
 
 	if (!gencache_get_data_blob("foo", &blob, NULL)) {
 		d_printf("%s: gencache_get_data_blob() failed\n", __location__);
