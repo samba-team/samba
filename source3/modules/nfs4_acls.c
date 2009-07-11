@@ -183,7 +183,8 @@ static int smbacl4_fGetFileOwner(files_struct *fsp, SMB_STRUCT_STAT *psbuf)
 	memset(psbuf, 0, sizeof(SMB_STRUCT_STAT));
 
 	if (fsp->is_directory || fsp->fh->fd == -1) {
-		return smbacl4_GetFileOwner(fsp->conn, fsp->fsp_name, psbuf);
+		return smbacl4_GetFileOwner(fsp->conn,
+					    fsp->fsp_name->base_name, psbuf);
 	}
 	if (SMB_VFS_FSTAT(fsp, psbuf) != 0)
 	{
@@ -327,7 +328,7 @@ NTSTATUS smb_fget_nt_acl_nfs4(files_struct *fsp,
 {
 	SMB_STRUCT_STAT sbuf;
 
-	DEBUG(10, ("smb_fget_nt_acl_nfs4 invoked for %s\n", fsp->fsp_name));
+	DEBUG(10, ("smb_fget_nt_acl_nfs4 invoked for %s\n", fsp_str_dbg(fsp)));
 
 	if (smbacl4_fGetFileOwner(fsp, &sbuf)) {
 		return map_nt_error_from_unix(errno);
@@ -717,7 +718,7 @@ NTSTATUS smb_set_nt_acl_nfs4(files_struct *fsp,
 	gid_t newGID = (gid_t)-1;
 	int saved_errno;
 
-	DEBUG(10, ("smb_set_nt_acl_nfs4 invoked for %s\n", fsp->fsp_name));
+	DEBUG(10, ("smb_set_nt_acl_nfs4 invoked for %s\n", fsp_str_dbg(fsp)));
 
 	if ((security_info_sent & (DACL_SECURITY_INFORMATION |
 		GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION)) == 0)
@@ -743,26 +744,23 @@ NTSTATUS smb_set_nt_acl_nfs4(files_struct *fsp,
 		}
 		if (((newUID != (uid_t)-1) && (sbuf.st_ex_uid != newUID)) ||
 		    ((newGID != (gid_t)-1) && (sbuf.st_ex_gid != newGID))) {
-			struct smb_filename *smb_fname = NULL;
-			NTSTATUS status;
 
-			status = create_synthetic_smb_fname_split(talloc_tos(),
-			    fsp->fsp_name, NULL, &smb_fname);
-			if (!NT_STATUS_IS_OK(status)) {
-				return status;
-			}
-			if(try_chown(fsp->conn, smb_fname, newUID, newGID)) {
-				DEBUG(3,("chown %s, %u, %u failed. Error = %s.\n",
-					 fsp->fsp_name, (unsigned int)newUID, (unsigned int)newGID, 
+			if(try_chown(fsp->conn, fsp->fsp_name, newUID,
+				     newGID)) {
+				DEBUG(3,("chown %s, %u, %u failed. Error = "
+					 "%s.\n", fsp_str_dbg(fsp),
+					 (unsigned int)newUID,
+					 (unsigned int)newGID,
 					 strerror(errno)));
-				TALLOC_FREE(smb_fname);
 				return map_nt_error_from_unix(errno);
 			}
-			TALLOC_FREE(smb_fname);
 
 			DEBUG(10,("chown %s, %u, %u succeeded.\n",
-				  fsp->fsp_name, (unsigned int)newUID, (unsigned int)newGID));
-			if (smbacl4_GetFileOwner(fsp->conn, fsp->fsp_name, &sbuf))
+				  fsp_str_dbg(fsp), (unsigned int)newUID,
+				  (unsigned int)newGID));
+			if (smbacl4_GetFileOwner(fsp->conn,
+						 fsp->fsp_name->base_name,
+						 &sbuf))
 				return map_nt_error_from_unix(errno);
 
 			/* If we successfully chowned, we know we must
@@ -777,7 +775,7 @@ NTSTATUS smb_set_nt_acl_nfs4(files_struct *fsp,
 		return NT_STATUS_OK;
 	}
 
-	theacl = smbacl4_win2nfs4(fsp->fsp_name, psd->dacl, &params,
+	theacl = smbacl4_win2nfs4(fsp->fsp_name->base_name, psd->dacl, &params,
 				  sbuf.st_ex_uid, sbuf.st_ex_gid);
 	if (!theacl)
 		return map_nt_error_from_unix(errno);

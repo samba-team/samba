@@ -336,11 +336,11 @@ static ssize_t smb_traffic_analyzer_read(vfs_handle_struct *handle, \
 	ssize_t result;
 
 	result = SMB_VFS_NEXT_READ(handle, fsp, data, n);
-	DEBUG(10, ("smb_traffic_analyzer_read: READ: %s\n", fsp->fsp_name ));
+	DEBUG(10, ("smb_traffic_analyzer_read: READ: %s\n", fsp_str_dbg(fsp)));
 
 	smb_traffic_analyzer_send_data(handle,
 			result,
-			fsp->fsp_name,
+			fsp->fsp_name->base_name,
 			false);
 	return result;
 }
@@ -353,11 +353,12 @@ static ssize_t smb_traffic_analyzer_pread(vfs_handle_struct *handle, \
 
 	result = SMB_VFS_NEXT_PREAD(handle, fsp, data, n, offset);
 
-	DEBUG(10, ("smb_traffic_analyzer_pread: PREAD: %s\n", fsp->fsp_name ));
+	DEBUG(10, ("smb_traffic_analyzer_pread: PREAD: %s\n",
+		   fsp_str_dbg(fsp)));
 
 	smb_traffic_analyzer_send_data(handle,
 			result,
-			fsp->fsp_name,
+			fsp->fsp_name->base_name,
 			false);
 
 	return result;
@@ -370,11 +371,12 @@ static ssize_t smb_traffic_analyzer_write(vfs_handle_struct *handle, \
 
 	result = SMB_VFS_NEXT_WRITE(handle, fsp, data, n);
 
-	DEBUG(10, ("smb_traffic_analyzer_write: WRITE: %s\n", fsp->fsp_name ));
+	DEBUG(10, ("smb_traffic_analyzer_write: WRITE: %s\n",
+		   fsp_str_dbg(fsp)));
 
 	smb_traffic_analyzer_send_data(handle,
 			result,
-			fsp->fsp_name,
+			fsp->fsp_name->base_name,
 			true);
 	return result;
 }
@@ -386,11 +388,11 @@ static ssize_t smb_traffic_analyzer_pwrite(vfs_handle_struct *handle, \
 
 	result = SMB_VFS_NEXT_PWRITE(handle, fsp, data, n, offset);
 
-	DEBUG(10, ("smb_traffic_analyzer_pwrite: PWRITE: %s\n", fsp->fsp_name ));
+	DEBUG(10, ("smb_traffic_analyzer_pwrite: PWRITE: %s\n", fsp_str_dbg(fsp)));
 
 	smb_traffic_analyzer_send_data(handle,
 			result,
-			fsp->fsp_name,
+			fsp->fsp_name->base_name,
 			true);
 	return result;
 }

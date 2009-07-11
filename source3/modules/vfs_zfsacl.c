@@ -145,14 +145,14 @@ static bool zfs_process_smbacl(files_struct *fsp, SMB4ACL_T *smbacl)
 	SMB_ASSERT(i == naces);
 
 	/* store acl */
-	if(acl(fsp->fsp_name, ACE_SETACL, naces, acebuf)) {
+	if(acl(fsp->fsp_name->base_name, ACE_SETACL, naces, acebuf)) {
 		if(errno == ENOSYS) {
 			DEBUG(9, ("acl(ACE_SETACL, %s): Operation is not "
 				  "supported on the filesystem where the file "
-				  "reside", fsp->fsp_name));
+				  "reside", fsp_str_dbg(fsp)));
 		} else {
-			DEBUG(9, ("acl(ACE_SETACL, %s): %s ", fsp->fsp_name,
-					strerror(errno)));
+			DEBUG(9, ("acl(ACE_SETACL, %s): %s ", fsp_str_dbg(fsp),
+				  strerror(errno)));
 		}
 		return 0;
 	}
@@ -180,7 +180,8 @@ static NTSTATUS zfsacl_fget_nt_acl(struct vfs_handle_struct *handle,
 	SMB4ACL_T *pacl;
 	NTSTATUS status;
 
-	status = zfs_get_nt_acl_common(fsp->fsp_name, security_info, &pacl);
+	status = zfs_get_nt_acl_common(fsp->fsp_name->base_name, security_info,
+				       &pacl);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

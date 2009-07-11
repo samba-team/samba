@@ -304,12 +304,12 @@ static int audit_fchmod(vfs_handle_struct *handle, files_struct *fsp, mode_t mod
 
 	if (lp_syslog() > 0) {
 		syslog(audit_syslog_priority(handle), "fchmod %s mode 0x%x %s%s\n",
-		       fsp->fsp_name, mode,
+		       fsp->fsp_name->base_name, mode,
 		       (result < 0) ? "failed: " : "",
 		       (result < 0) ? strerror(errno) : "");
 	}
 	DEBUG(1, ("vfs_extd_audit: fchmod %s mode 0x%x %s %s",
-	       fsp->fsp_name,  (unsigned int)mode,
+	       fsp_str_dbg(fsp), (unsigned int)mode,
 	       (result < 0) ? "failed: " : "",
 	       (result < 0) ? strerror(errno) : ""));
 
@@ -324,12 +324,12 @@ static int audit_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp, mode_t
 
 	if (lp_syslog() > 0) {
 		syslog(audit_syslog_priority(handle), "fchmod_acl %s mode 0x%x %s%s\n",
-		       fsp->fsp_name, mode,
+		       fsp->fsp_name->base_name, mode,
 		       (result < 0) ? "failed: " : "",
 		       (result < 0) ? strerror(errno) : "");
 	}
 	DEBUG(1, ("vfs_extd_audit: fchmod_acl %s mode 0x%x %s %s",
-	       fsp->fsp_name,  (unsigned int)mode,
+		fsp_str_dbg(fsp),  (unsigned int)mode,
 	       (result < 0) ? "failed: " : "",
 	       (result < 0) ? strerror(errno) : ""));
 

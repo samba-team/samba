@@ -273,7 +273,7 @@ static ssize_t tsmsm_aio_return(struct vfs_handle_struct *handle, struct files_s
 	if(result >= 0) {
 		notify_fname(handle->conn, NOTIFY_ACTION_MODIFIED,
 			     FILE_NOTIFY_CHANGE_ATTRIBUTES,
-			     fsp->fsp_name);
+			     fsp->fsp_name->base_name);
 	}
 
 	return result;
@@ -307,7 +307,7 @@ static ssize_t tsmsm_pread(struct vfs_handle_struct *handle, struct files_struct
 	    */
 		notify_fname(handle->conn, NOTIFY_ACTION_MODIFIED,
 			     FILE_NOTIFY_CHANGE_ATTRIBUTES,
-			     fsp->fsp_name);
+			     fsp->fsp_name->base_name);
 	}
 
 	return result;
@@ -325,7 +325,7 @@ static ssize_t tsmsm_pwrite(struct vfs_handle_struct *handle, struct files_struc
 	    */
 		notify_fname(handle->conn, NOTIFY_ACTION_MODIFIED,
 			     FILE_NOTIFY_CHANGE_ATTRIBUTES,
-			     fsp->fsp_name);
+			     fsp->fsp_name->base_name);
 	}
 
 	return result;

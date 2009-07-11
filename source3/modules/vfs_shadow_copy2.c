@@ -406,8 +406,8 @@ static int shadow_copy2_lstat(vfs_handle_struct *handle,
 static int shadow_copy2_fstat(vfs_handle_struct *handle, files_struct *fsp, SMB_STRUCT_STAT *sbuf)
 {
 	int ret = SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf);
-	if (ret == 0 && shadow_copy2_match_name(fsp->fsp_name)) {
-		convert_sbuf(handle, fsp->fsp_name, sbuf);
+	if (ret == 0 && shadow_copy2_match_name(fsp->fsp_name->base_name)) {
+		convert_sbuf(handle, fsp->fsp_name->base_name, sbuf);
 	}
 	return ret;
 }

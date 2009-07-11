@@ -201,23 +201,23 @@ SMB_ACL_T hpuxacl_sys_acl_get_fd(vfs_handle_struct *handle,
 	DEBUG(10, ("redirecting call of hpuxacl_sys_acl_get_fd to "
 		"hpuxacl_sys_acl_get_file (no facl syscall on HPUX).\n"));
 
-        return hpuxacl_sys_acl_get_file(handle, file_struct_p->fsp_name, 
-			SMB_ACL_TYPE_ACCESS);
+        return hpuxacl_sys_acl_get_file(handle,
+					file_struct_p->fsp_name->base_name,
+					SMB_ACL_TYPE_ACCESS);
 }
 
 
 int hpuxacl_sys_acl_set_file(vfs_handle_struct *handle,
-			     const char *name,
+			     struct smb_filename *smb_fname,
 			     SMB_ACL_TYPE_T type,
 			     SMB_ACL_T theacl)
 {
 	int ret = -1;
-	SMB_STRUCT_STAT s;
 	HPUX_ACL_T hpux_acl = NULL;
 	int count;
 	
 	DEBUG(10, ("hpuxacl_sys_acl_set_file called for file '%s'\n",
-		   name));
+		   smb_fname_str_dbg(smb_fname)));
 
 
 	if(hpux_acl_call_present() == False) {
@@ -248,11 +248,11 @@ int hpuxacl_sys_acl_set_file(vfs_handle_struct *handle,
 	 * that has _not_ been specified in "type" from the file first 
 	 * and concatenate it with the acl provided.
 	 */
-	if (vfs_stat_smb_fname(handle->conn, name, &s) != 0) {
+	if (SMB_VFS_STAT(handle->conn, smb_fname) != 0) {
 		DEBUG(10, ("Error in stat call: %s\n", strerror(errno)));
 		goto done;
 	}
-	if (S_ISDIR(s.st_ex_mode)) {
+	if (S_ISDIR(smb_fname->st.st_ex_mode)) {
 		HPUX_ACL_T other_acl; 
 		int other_count;
 		SMB_ACL_TYPE_T other_type;
@@ -261,7 +261,8 @@ int hpuxacl_sys_acl_set_file(vfs_handle_struct *handle,
 			? SMB_ACL_TYPE_DEFAULT
 			: SMB_ACL_TYPE_ACCESS;
 		DEBUGADD(10, ("getting acl from filesystem\n"));
-		if (!hpux_acl_get_file(name, &other_acl, &other_count)) {
+		if (!hpux_acl_get_file(smb_fname->base_name, &other_acl,
+				       &other_count)) {
 			DEBUG(10, ("error getting acl from directory\n"));
 			goto done;
 		}
@@ -289,7 +290,8 @@ int hpuxacl_sys_acl_set_file(vfs_handle_struct *handle,
 	}
 	DEBUG(10, ("resulting acl is valid.\n"));
 
-	ret = acl(CONST_DISCARD(char *, name), ACL_SET, count, hpux_acl);
+	ret = acl(CONST_DISCARD(char *, smb_fname->base_name), ACL_SET, count,
+		  hpux_acl);
 	if (ret != 0) {
 		DEBUG(0, ("ERROR calling acl: %s\n", strerror(errno)));
 	}

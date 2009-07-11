@@ -58,6 +58,13 @@ NTSTATUS print_fsp_open(struct smb_request *req, connection_struct *conn,
 		return NT_STATUS_ACCESS_DENIED;	/* No errno around here */
 	}
 
+	status = create_synthetic_smb_fname(fsp,
+	    print_job_fname(lp_const_servicename(SNUM(conn)), jobid), NULL,
+	    NULL, &fsp->fsp_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		pjob_delete(lp_const_servicename(SNUM(conn)), jobid);
+		return status;
+	}
 	/* setup a full fsp */
 	fsp->fh->fd = print_job_fd(lp_const_servicename(SNUM(conn)),jobid);
 	GetTimeOfDay(&fsp->open_time);
@@ -72,7 +79,6 @@ NTSTATUS print_fsp_open(struct smb_request *req, connection_struct *conn,
 	fsp->oplock_type = NO_OPLOCK;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	fsp->is_directory = False;
-	string_set(&fsp->fsp_name,print_job_fname(lp_const_servicename(SNUM(conn)),jobid));
 	fsp->wcp = NULL;
 	SMB_VFS_FSTAT(fsp, psbuf);
 	fsp->mode = psbuf->st_ex_mode;
@@ -98,7 +104,7 @@ void print_fsp_end(files_struct *fsp, enum file_close_type close_type)
 	}
 
 	if (fsp->fsp_name) {
-		string_free(&fsp->fsp_name);
+		TALLOC_FREE(fsp->fsp_name);
 	}
 
 	if (!rap_to_pjobid(fsp->rap_print_jobid, NULL, &jobid)) {

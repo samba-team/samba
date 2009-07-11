@@ -72,7 +72,7 @@ static bool prime_cache(
         DEBUG(module_debug,
             ("%s: doing readahead of %lld bytes at %lld for %s\n",
             MODULE, (long long)g_readsz, (long long)*last,
-            fsp->fsp_name));
+	    fsp_str_dbg(fsp)));
 
         nread = sys_pread(fsp->fh->fd, g_readbuf, g_readsz, *last);
         if (nread < 0) {

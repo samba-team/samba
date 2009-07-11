@@ -303,7 +303,7 @@ static NTSTATUS gpfsacl_fget_nt_acl(vfs_handle_struct *handle,
 	int	result;
 
 	*ppdesc = NULL;
-	result = gpfs_get_nfs4_acl(fsp->fsp_name, &pacl);
+	result = gpfs_get_nfs4_acl(fsp->fsp_name->base_name, &pacl);
 
 	if (result == 0)
 		return smb_fget_nt_acl_nfs4(fsp, security_info, ppdesc, pacl);
@@ -389,7 +389,7 @@ static bool gpfsacl_process_smbacl(files_struct *fsp, SMB4ACL_T *smbacl)
 				 "merge_writeappend", True)) {
 			DEBUG(2, ("vfs_gpfs.c: file [%s]: ACE contains "
 				  "WRITE^APPEND, setting WRITE|APPEND\n",
-				  fsp->fsp_name));
+				  fsp_str_dbg(fsp)));
 			gace->aceMask |= ACE4_MASK_WRITE|ACE4_MASK_APPEND;
 		}
 
@@ -423,7 +423,8 @@ static bool gpfsacl_process_smbacl(files_struct *fsp, SMB4ACL_T *smbacl)
 		gacl->acl_nace++;
 	}
 
-	ret = smbd_gpfs_putacl(fsp->fsp_name, GPFS_PUTACL_STRUCT | GPFS_ACL_SAMBA, gacl);
+	ret = smbd_gpfs_putacl(fsp->fsp_name->base_name,
+			       GPFS_PUTACL_STRUCT | GPFS_ACL_SAMBA, gacl);
 	if (ret != 0) {
 		DEBUG(8, ("gpfs_putacl failed with %s\n", strerror(errno)));
 		gpfs_dumpacl(8, gacl);
@@ -439,7 +440,7 @@ static NTSTATUS gpfsacl_set_nt_acl_internal(files_struct *fsp, uint32 security_i
 	struct gpfs_acl *acl;
 	NTSTATUS result = NT_STATUS_ACCESS_DENIED;
 
-	acl = gpfs_getacl_alloc(fsp->fsp_name, 0);
+	acl = gpfs_getacl_alloc(fsp->fsp_name->base_name, 0);
 	if (acl == NULL)
 		return result;
 
@@ -594,7 +595,8 @@ static SMB_ACL_T gpfsacl_sys_acl_get_file(vfs_handle_struct *handle,
 static SMB_ACL_T gpfsacl_sys_acl_get_fd(vfs_handle_struct *handle,
 					files_struct *fsp)
 {
-	return gpfsacl_get_posix_acl(fsp->fsp_name, GPFS_ACL_TYPE_ACCESS);
+	return gpfsacl_get_posix_acl(fsp->fsp_name->base_name,
+				     GPFS_ACL_TYPE_ACCESS);
 }
 
 static struct gpfs_acl *smb2gpfs_acl(const SMB_ACL_T pacl,
@@ -707,7 +709,8 @@ static int gpfsacl_sys_acl_set_fd(vfs_handle_struct *handle,
 				  files_struct *fsp,
 				  SMB_ACL_T theacl)
 {
-	return gpfsacl_sys_acl_set_file(handle, fsp->fsp_name, SMB_ACL_TYPE_ACCESS, theacl);
+	return gpfsacl_sys_acl_set_file(handle, fsp->fsp_name->base_name,
+					SMB_ACL_TYPE_ACCESS, theacl);
 }
 
 static int gpfsacl_sys_acl_delete_def_file(vfs_handle_struct *handle,
@@ -764,6 +767,8 @@ static int gpfsacl_emu_chmod(const char *path, mode_t mode)
 	int     i;
 	files_struct    fake_fsp; /* TODO: rationalize parametrization */
 	SMB4ACE_T       *smbace;
+	struct smb_filename *smb_fname = NULL;
+	NTSTATUS status;
 
 	DEBUG(10, ("gpfsacl_emu_chmod invoked for %s mode %o\n", path, mode));
 
@@ -833,11 +838,19 @@ static int gpfsacl_emu_chmod(const char *path, mode_t mode)
 
 	/* don't add complementary DENY ACEs here */
 	ZERO_STRUCT(fake_fsp);
-	fake_fsp.fsp_name = (char *)path; /* no file_new is needed here */
-
-	/* put the acl */
-	if (gpfsacl_process_smbacl(&fake_fsp, pacl) == False)
+	status = create_synthetic_smb_fname(talloc_tos(), path, NULL, NULL,
+					    &fake_fsp.fsp_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
 		return -1;
+	}
+	/* put the acl */
+	if (gpfsacl_process_smbacl(&fake_fsp, pacl) == False) {
+		TALLOC_FREE(fake_fsp.fsp_name);
+		return -1;
+	}
+
+	TALLOC_FREE(fake_fsp.fsp_name);
 	return 0; /* ok for [f]chmod */
 }
 
@@ -875,7 +888,7 @@ static int vfs_gpfs_fchmod(vfs_handle_struct *handle, files_struct *fsp, mode_t 
 			 return 0;
 		 }
 
-		 rc = gpfsacl_emu_chmod(fsp->fsp_name, mode);
+		 rc = gpfsacl_emu_chmod(fsp->fsp_name->base_name, mode);
 		 if (rc == 1)
 			 return SMB_VFS_NEXT_FCHMOD(handle, fsp, mode);
 		 return rc;
