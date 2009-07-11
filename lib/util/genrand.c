@@ -294,6 +294,7 @@ _PUBLIC_ uint32_t generate_random(void)
 _PUBLIC_ bool check_password_quality(const char *s)
 {
 	int has_digit=0, has_capital=0, has_lower=0, has_special=0, has_high=0;
+	char* reals = s;
 	while (*s) {
 		if (isdigit((unsigned char)*s)) {
 			has_digit |= 1;
@@ -310,7 +311,7 @@ _PUBLIC_ bool check_password_quality(const char *s)
 	}
 
 	return ((has_digit + has_lower + has_capital + has_special) >= 3
-		|| (has_high > strlen(s)/2));
+		|| (has_high > strlen(reals)/2));
 }
 
 /**
