@@ -6260,8 +6260,6 @@ void reply_dos_error(struct smb_request *req, uint8 eclass, uint32 ecode,
 void reply_both_error(struct smb_request *req, uint8 eclass, uint32 ecode,
 		      NTSTATUS status, int line, const char *file);
 void reply_openerror(struct smb_request *req, NTSTATUS status);
-void reply_unix_error(struct smb_request *req, uint8 defclass, uint32 defcode,
-			NTSTATUS defstatus, int line, const char *file);
 
 /* The following definitions come from smbd/fake_file.c  */
 

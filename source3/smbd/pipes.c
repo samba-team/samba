@@ -203,8 +203,14 @@ static void pipe_write_done(struct tevent_req *subreq)
 
 	status = np_write_recv(subreq, &nwritten);
 	TALLOC_FREE(subreq);
-	if ((nwritten == 0 && state->numtowrite != 0) || (nwritten < 0)) {
-		reply_unixerror(req, ERRDOS, ERRnoaccess);
+	if (nwritten < 0) {
+		reply_nterror(req, status);
+		goto send;
+	}
+
+	/* Looks bogus to me now. Needs to be removed ? JRA. */
+	if ((nwritten == 0 && state->numtowrite != 0)) {
+		reply_doserror(req, ERRDOS, ERRnoaccess);
 		goto send;
 	}
 
@@ -283,7 +289,7 @@ void reply_pipe_write_and_X(struct smb_request *req)
 			DEBUG(0,("reply_pipe_write_and_X: start of message "
 				 "set and not enough data sent.(%u)\n",
 				 (unsigned int)state->numtowrite ));
-			reply_unixerror(req, ERRDOS, ERRnoaccess);
+			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 			return;
 		}
 
@@ -313,8 +319,15 @@ static void pipe_write_andx_done(struct tevent_req *subreq)
 
 	status = np_write_recv(subreq, &nwritten);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status) || (nwritten != state->numtowrite)) {
-		reply_unixerror(req, ERRDOS,ERRnoaccess);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+		goto done;
+	}
+
+	/* Looks bogus to me now. Is this error message correct ? JRA. */
+	if (nwritten != state->numtowrite) {
+		reply_doserror(req, ERRDOS,ERRnoaccess);
 		goto done;
 	}
 

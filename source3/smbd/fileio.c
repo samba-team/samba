@@ -57,6 +57,7 @@ ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n)
 
 	/* you can't read from print files */
 	if (fsp->print_file) {
+		errno = EBADF;
 		return -1;
 	}
 

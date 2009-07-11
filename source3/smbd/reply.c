@@ -1106,7 +1106,7 @@ void reply_getatr(struct smb_request *req)
 			DEBUG(3,("reply_getatr: stat of %s failed (%s)\n",
 				 smb_fname_str_dbg(smb_fname),
 				 strerror(errno)));
-			reply_unixerror(req, ERRDOS,ERRbadfile);
+			reply_nterror(req,  map_nt_error_from_unix(errno));
 			goto out;
 		}
 
@@ -1220,7 +1220,7 @@ void reply_setatr(struct smb_request *req)
 	ft.mtime = convert_time_t_to_timespec(mtime);
 	status = smb_set_file_time(conn, NULL, smb_fname, &ft, true);
 	if (!NT_STATUS_IS_OK(status)) {
-		reply_unixerror(req, ERRDOS, ERRnoaccess);
+		reply_nterror(req, status);
 		goto out;
 	}
 
@@ -1232,7 +1232,7 @@ void reply_setatr(struct smb_request *req)
 
 		if (file_set_dosmode(conn, smb_fname, mode, NULL,
 				     false) != 0) {
-			reply_unixerror(req, ERRDOS, ERRnoaccess);
+			reply_nterror(req, map_nt_error_from_unix(errno));
 			goto out;
 		}
 	}
@@ -1258,7 +1258,7 @@ void reply_dskattr(struct smb_request *req)
 	START_PROFILE(SMBdskattr);
 
 	if (get_dfree_info(conn,".",True,&bsize,&dfree,&dsize) == (uint64_t)-1) {
-		reply_unixerror(req, ERRHRD, ERRgeneral);
+		reply_nterror(req, map_nt_error_from_unix(errno));
 		END_PROFILE(SMBdskattr);
 		return;
 	}
@@ -2271,7 +2271,7 @@ void reply_ctemp(struct smb_request *req)
 
 	tmpfd = mkstemp(smb_fname->base_name);
 	if (tmpfd == -1) {
-		reply_unixerror(req, ERRDOS, ERRnoaccess);
+		reply_nterror(req, map_nt_error_from_unix(errno));
 		goto out;
 	}
 
@@ -3269,7 +3269,7 @@ Returning short read of maximum allowed for compatibility with Windows 2000.\n",
 	nread = read_file(fsp,data,startpos,numtoread);
 
 	if (nread < 0) {
-		reply_unixerror(req, ERRDOS, ERRnoaccess);
+		reply_nterror(req, map_nt_error_from_unix(errno));
 		END_PROFILE(SMBlockread);
 		return;
 	}
@@ -3363,7 +3363,7 @@ Returning short read of maximum allowed for compatibility with Windows 2000.\n",
 		nread = read_file(fsp,data,startpos,numtoread);
 
 	if (nread < 0) {
-		reply_unixerror(req, ERRDOS,ERRnoaccess);
+		reply_nterror(req, map_nt_error_from_unix(errno));
 		goto strict_unlock;
 	}
 
@@ -3425,9 +3425,10 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 	SMB_STRUCT_STAT sbuf;
 	ssize_t nread = -1;
 	struct lock_struct lock;
+	int saved_errno = 0;
 
 	if(SMB_VFS_FSTAT(fsp, &sbuf) == -1) {
-		reply_unixerror(req, ERRDOS, ERRnoaccess);
+		reply_nterror(req, map_nt_error_from_unix(errno));
 		return;
 	}
 
@@ -3565,11 +3566,12 @@ nosendfile_read:
 	reply_outbuf(req, 12, smb_maxcnt);
 
 	nread = read_file(fsp, smb_buf(req->outbuf), startpos, smb_maxcnt);
+	saved_errno = errno;
 
 	SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
 
 	if (nread < 0) {
-		reply_unixerror(req, ERRDOS, ERRnoaccess);
+		reply_nterror(req, map_nt_error_from_unix(saved_errno));
 		return;
 	}
 
@@ -3810,7 +3812,7 @@ void reply_writebraw(struct smb_request *req)
 		(int)nwritten, (int)write_through));
 
 	if (nwritten < (ssize_t)numtowrite)  {
-		reply_unixerror(req, ERRHRD, ERRdiskfull);
+		reply_doserror(req, ERRHRD, ERRdiskfull);
 		error_to_writebrawerr(req);
 		goto strict_unlock;
 	}
@@ -3879,7 +3881,7 @@ void reply_writebraw(struct smb_request *req)
 		nwritten = write_file(req,fsp,buf+4,startpos+nwritten,numtowrite);
 		if (nwritten == -1) {
 			TALLOC_FREE(buf);
-			reply_unixerror(req, ERRHRD, ERRdiskfull);
+			reply_nterror(req, map_nt_error_from_unix(errno));
 			error_to_writebrawerr(req);
 			goto strict_unlock;
 		}
@@ -3958,6 +3960,7 @@ void reply_writeunlock(struct smb_request *req)
 	NTSTATUS status = NT_STATUS_OK;
 	files_struct *fsp;
 	struct lock_struct lock;
+	int saved_errno = 0;
 
 	START_PROFILE(SMBwriteunlock);
 
@@ -4003,6 +4006,7 @@ void reply_writeunlock(struct smb_request *req)
 		nwritten = 0;
 	} else {
 		nwritten = write_file(req,fsp,data,startpos,numtowrite);
+		saved_errno = errno;
 	}
 
 	status = sync_file(conn, fsp, False /* write through */);
@@ -4013,8 +4017,13 @@ void reply_writeunlock(struct smb_request *req)
 		goto strict_unlock;
 	}
 
-	if(((nwritten < numtowrite) && (numtowrite != 0))||(nwritten < 0)) {
-		reply_unixerror(req, ERRHRD, ERRdiskfull);
+	if(nwritten < 0) {
+		reply_nterror(req, map_nt_error_from_unix(saved_errno));
+		goto strict_unlock;
+	}
+
+	if((nwritten < numtowrite) && (numtowrite != 0)) {
+		reply_doserror(req, ERRHRD, ERRdiskfull);
 		goto strict_unlock;
 	}
 
@@ -4065,6 +4074,7 @@ void reply_write(struct smb_request *req)
 	files_struct *fsp;
 	struct lock_struct lock;
 	NTSTATUS status;
+	int saved_errno = 0;
 
 	START_PROFILE(SMBwrite);
 
@@ -4141,8 +4151,13 @@ void reply_write(struct smb_request *req)
 		goto strict_unlock;
 	}
 
-	if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0)) {
-		reply_unixerror(req, ERRHRD, ERRdiskfull);
+	if(nwritten < 0) {
+		reply_nterror(req, map_nt_error_from_unix(saved_errno));
+		goto strict_unlock;
+	}
+
+	if((nwritten == 0) && (numtowrite != 0)) {
+		reply_doserror(req, ERRHRD, ERRdiskfull);
 		goto strict_unlock;
 	}
 
@@ -4389,8 +4404,13 @@ void reply_write_and_X(struct smb_request *req)
 		nwritten = write_file(req,fsp,data,startpos,numtowrite);
 	}
 
-	if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0)) {
-		reply_unixerror(req, ERRHRD, ERRdiskfull);
+	if(nwritten < 0) {
+		reply_nterror(req, map_nt_error_from_unix(errno));
+		goto strict_unlock;
+	}
+
+	if((nwritten == 0) && (numtowrite != 0)) {
+		reply_doserror(req, ERRHRD, ERRdiskfull);
 		goto strict_unlock;
 	}
 
@@ -4484,8 +4504,8 @@ void reply_lseek(struct smb_request *req)
 				SMB_STRUCT_STAT sbuf;
 
 				if(SMB_VFS_FSTAT(fsp, &sbuf) == -1) {
-					reply_unixerror(req, ERRDOS,
-							ERRnoaccess);
+					reply_nterror(req,
+						map_nt_error_from_unix(errno));
 					END_PROFILE(SMBlseek);
 					return;
 				}
@@ -4497,7 +4517,7 @@ void reply_lseek(struct smb_request *req)
 		}
 
 		if(res == -1) {
-			reply_unixerror(req, ERRDOS, ERRnoaccess);
+			reply_nterror(req, map_nt_error_from_unix(errno));
 			END_PROFILE(SMBlseek);
 			return;
 		}
@@ -5197,7 +5217,7 @@ void reply_printwrite(struct smb_request *req)
 	data = (const char *)req->buf + 3;
 
 	if (write_file(req,fsp,data,-1,numtowrite) != numtowrite) {
-		reply_unixerror(req, ERRHRD, ERRdiskfull);
+		reply_nterror(req, map_nt_error_from_unix(errno));
 		END_PROFILE(SMBsplwr);
 		return;
 	}
@@ -6756,7 +6776,6 @@ void reply_copy(struct smb_request *req)
 	const char *p;
 	int count=0;
 	int error = ERRnoaccess;
-	int err = 0;
 	int tid2;
 	int ofun;
 	int flags;
@@ -7059,13 +7078,6 @@ void reply_copy(struct smb_request *req)
 	}
 
 	if (count == 0) {
-		if(err) {
-			/* Error on close... */
-			errno = err;
-			reply_unixerror(req, ERRHRD, ERRgeneral);
-			goto out;
-		}
-
 		reply_doserror(req, ERRDOS, error);
 		goto out;
 	}
@@ -7833,7 +7845,7 @@ void reply_getattrE(struct smb_request *req)
 
 	/* Do an fstat on this file */
 	if(fsp_stat(fsp, &sbuf)) {
-		reply_unixerror(req, ERRDOS, ERRnoaccess);
+		reply_nterror(req, map_nt_error_from_unix(errno));
 		END_PROFILE(SMBgetattrE);
 		return;
 	}

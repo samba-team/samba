@@ -2697,7 +2697,7 @@ static void call_trans2qfsinfo(connection_struct *conn,
 			uint64_t dfree,dsize,bsize,block_size,sectors_per_unit,bytes_per_sector;
 			data_len = 18;
 			if (get_dfree_info(conn,".",False,&bsize,&dfree,&dsize) == (uint64_t)-1) {
-				reply_unixerror(req, ERRHRD, ERRgeneral);
+				reply_nterror(req, map_nt_error_from_unix(errno));
 				return;
 			}
 
@@ -2818,7 +2818,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_ex_dev, (u
 			uint64_t dfree,dsize,bsize,block_size,sectors_per_unit,bytes_per_sector;
 			data_len = 24;
 			if (get_dfree_info(conn,".",False,&bsize,&dfree,&dsize) == (uint64_t)-1) {
-				reply_unixerror(req, ERRHRD, ERRgeneral);
+				reply_nterror(req, map_nt_error_from_unix(errno));
 				return;
 			}
 			block_size = lp_block_size(snum);
@@ -2851,7 +2851,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			uint64_t dfree,dsize,bsize,block_size,sectors_per_unit,bytes_per_sector;
 			data_len = 32;
 			if (get_dfree_info(conn,".",False,&bsize,&dfree,&dsize) == (uint64_t)-1) {
-				reply_unixerror(req, ERRHRD, ERRgeneral);
+				reply_nterror(req, map_nt_error_from_unix(errno));
 				return;
 			}
 			block_size = lp_block_size(snum);
@@ -3992,7 +3992,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 						 "(%s)\n",
 						 smb_fname_str_dbg(smb_fname),
 						 strerror(errno)));
-					reply_unixerror(req,ERRDOS,ERRbadpath);
+					reply_nterror(req,map_nt_error_from_unix(errno));
 					return;
 				}
 			} else if (SMB_VFS_STAT(conn, smb_fname)) {
@@ -4000,7 +4000,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 					 "SMB_VFS_STAT of %s failed (%s)\n",
 					 smb_fname_str_dbg(smb_fname),
 					 strerror(errno)));
-				reply_unixerror(req, ERRDOS, ERRbadpath);
+				reply_nterror(req, map_nt_error_from_unix(errno));
 				return;
 			}
 
@@ -4017,7 +4017,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			if (SMB_VFS_FSTAT(fsp, &smb_fname->st) != 0) {
 				DEBUG(3, ("fstat of fnum %d failed (%s)\n",
 					  fsp->fnum, strerror(errno)));
-				reply_unixerror(req, ERRDOS, ERRbadfid);
+				reply_nterror(req, map_nt_error_from_unix(errno));
 				return;
 			}
 			pos = fsp->fh->position_information;
@@ -4090,8 +4090,8 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 						 "(%s)\n",
 						 smb_fname_str_dbg(smb_fname_base),
 						 strerror(errno)));
+					reply_nterror(req,map_nt_error_from_unix(errno));
 					TALLOC_FREE(smb_fname_base);
-					reply_unixerror(req,ERRDOS,ERRbadpath);
 					return;
 				}
 			} else {
@@ -4101,8 +4101,8 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 						 "(%s)\n",
 						 smb_fname_str_dbg(smb_fname_base),
 						 strerror(errno)));
+					reply_nterror(req,map_nt_error_from_unix(errno));
 					TALLOC_FREE(smb_fname_base);
-					reply_unixerror(req,ERRDOS,ERRbadpath);
 					return;
 				}
 			}
@@ -4124,7 +4124,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 					 "SMB_VFS_LSTAT of %s failed (%s)\n",
 					 smb_fname_str_dbg(smb_fname),
 					 strerror(errno)));
-				reply_unixerror(req, ERRDOS, ERRbadpath);
+				reply_nterror(req,map_nt_error_from_unix(errno));
 				return;
 			}
 
@@ -4139,7 +4139,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 					 "SMB_VFS_STAT of %s failed (%s)\n",
 					 smb_fname_str_dbg(smb_fname),
 					 strerror(errno)));
-				reply_unixerror(req, ERRDOS, ERRbadpath);
+				reply_nterror(req,map_nt_error_from_unix(errno));
 				return;
 			}
 		}
@@ -4700,19 +4700,18 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 				DEBUG(10,("call_trans2qfilepathinfo: SMB_QUERY_FILE_UNIX_LINK\n"));
 #ifdef S_ISLNK
 				if(!S_ISLNK(sbuf.st_ex_mode)) {
-					reply_unixerror(req, ERRSRV,
+					reply_doserror(req, ERRSRV,
 							ERRbadlink);
 					return;
 				}
 #else
-				reply_unixerror(req, ERRDOS, ERRbadlink);
+				reply_doserror(req, ERRDOS, ERRbadlink);
 				return;
 #endif
 				len = SMB_VFS_READLINK(conn,fullpathname,
 						buffer, PATH_MAX);
 				if (len == -1) {
-					reply_unixerror(req, ERRDOS,
-							ERRnoaccess);
+					reply_nterror(req, map_nt_error_from_unix(errno));
 					return;
 				}
 				buffer[len] = 0;
@@ -6934,7 +6933,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 						 "(%s)\n",
 						 smb_fname_str_dbg(smb_fname),
 						 strerror(errno)));
-					reply_unixerror(req,ERRDOS,ERRbadpath);
+					reply_nterror(req, map_nt_error_from_unix(errno));
 					return;
 				}
 			} else {
@@ -6943,7 +6942,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 						 "fileinfo of %s failed (%s)\n",
 						 smb_fname_str_dbg(smb_fname),
 						 strerror(errno)));
-					reply_unixerror(req,ERRDOS,ERRbadpath);
+					reply_nterror(req, map_nt_error_from_unix(errno));
 					return;
 				}
 			}
@@ -6962,7 +6961,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 						    max_data_bytes);
 				return;
 			} else {
-				reply_unixerror(req, ERRDOS, ERRbadpath);
+				reply_doserror(req, ERRDOS, ERRbadpath);
 				return;
 			}
 		} else {
@@ -6977,7 +6976,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 				DEBUG(3,("call_trans2setfilepathinfo: fstat "
 					 "of fnum %d failed (%s)\n", fsp->fnum,
 					 strerror(errno)));
-				reply_unixerror(req, ERRDOS, ERRbadfid);
+				reply_nterror(req, map_nt_error_from_unix(errno));
 				return;
 			}
 		}
@@ -7027,7 +7026,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 				 "%s failed (%s)\n",
 				 smb_fname_str_dbg(smb_fname),
 				 strerror(errno)));
-			reply_unixerror(req, ERRDOS, ERRbadpath);
+			reply_nterror(req, map_nt_error_from_unix(errno));
 			return;
 		}
 	}
