@@ -2801,7 +2801,7 @@ static void async_callback(struct ctdb_client_control_state *state)
 	*/
 	if (state->state != CTDB_CONTROL_DONE) {
 		if ( !data->dont_log_errors) {
-			DEBUG(DEBUG_ERR,("Async operation failed with state %d\n opcode:%u", state->state, data->opcode));
+			DEBUG(DEBUG_ERR,("Async operation failed with state %d, opcode:%u\n", state->state, data->opcode));
 		}
 		data->fail_count++;
 		if (data->fail_callback) {
