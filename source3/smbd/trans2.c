@@ -3910,6 +3910,8 @@ static NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 	uint64_t file_size = 0;
 	uint64_t pos = 0;
 	uint64_t allocation_size = 0;
+	uint64_t file_index = 0;
+	uint32_t access_mask = 0;
 
 	sbuf = smb_fname->st;
 
@@ -4012,6 +4014,21 @@ static NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 	if (fsp && fsp->fh) {
 		pos = fsp->fh->position_information;
 	}
+
+	if (fsp) {
+		access_mask = fsp->access_mask;
+	} else {
+		/* GENERIC_EXECUTE mapping from Windows */
+		access_mask = 0x12019F;
+	}
+
+	/* This should be an index number - looks like
+	   dev/ino to me :-)
+
+	   I think this causes us to fail the IFSKIT
+	   BasicFileInformationTest. -tpot */
+	file_index =  ((sbuf.st_ex_ino) & UINT32_MAX); /* FileIndexLow */
+	file_index |= ((sbuf.st_ex_dev) & UINT32_MAX) << 32; /* FileIndexHigh */
 
 	switch (info_level) {
 		case SMB_INFO_STANDARD:
@@ -4218,26 +4235,15 @@ static NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			break;
 		}
 		case SMB_FILE_INTERNAL_INFORMATION:
-			/* This should be an index number - looks like
-			   dev/ino to me :-) 
-
-			   I think this causes us to fail the IFSKIT
-			   BasicFileInformationTest. -tpot */
 
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_INTERNAL_INFORMATION\n"));
-			SIVAL(pdata,0,sbuf.st_ex_ino); /* FileIndexLow */
-			SIVAL(pdata,4,sbuf.st_ex_dev); /* FileIndexHigh */
+			SBVAL(pdata, 0, file_index);
 			data_size = 8;
 			break;
 
 		case SMB_FILE_ACCESS_INFORMATION:
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_ACCESS_INFORMATION\n"));
-			if (fsp) {
-				SIVAL(pdata,0,fsp->access_mask);
-			} else {
-				/* GENERIC_EXECUTE mapping from Windows */
-				SIVAL(pdata,0,0x12019F);
-			}
+			SIVAL(pdata, 0, access_mask);
 			data_size = 4;
 			break;
 
