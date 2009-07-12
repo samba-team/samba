@@ -4938,6 +4938,15 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		break;
 	}
 
+	if ((info_level & 0xFF00) == 0xFF00) {
+		/*
+		 * We use levels that start with 0xFF00
+		 * internally to represent SMB2 specific levels
+		 */
+		reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+		return;
+	}
+
 	status = smbd_do_qfilepathinfo(conn, req, info_level,
 				       fsp, smb_fname,
 				       delete_pending, write_time_ts,
