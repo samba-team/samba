@@ -367,6 +367,69 @@ static unsigned int fill_ea_buffer(TALLOC_CTX *mem_ctx, char *pdata, unsigned in
 	return ret_data_size;
 }
 
+static NTSTATUS fill_ea_chained_buffer(TALLOC_CTX *mem_ctx,
+				       char *pdata,
+				       unsigned int total_data_size,
+				       unsigned int *ret_data_size,
+				       connection_struct *conn,
+				       struct ea_list *ea_list)
+{
+	uint8_t *p = (uint8_t *)pdata;
+	uint8_t *last_start = NULL;
+
+	*ret_data_size = 0;
+
+	if (!lp_ea_support(SNUM(conn))) {
+		return NT_STATUS_NO_EAS_ON_FILE;
+	}
+
+	for (; ea_list; ea_list = ea_list->next) {
+		size_t dos_namelen;
+		fstring dos_ea_name;
+		size_t this_size;
+
+		if (last_start) {
+			SIVAL(last_start, 0, PTR_DIFF(p, last_start));
+		}
+		last_start = p;
+
+		push_ascii_fstring(dos_ea_name, ea_list->ea.name);
+		dos_namelen = strlen(dos_ea_name);
+		if (dos_namelen > 255 || dos_namelen == 0) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+		if (ea_list->ea.value.length > 65535) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+
+		this_size = 0x08 + dos_namelen + 1 + ea_list->ea.value.length;
+
+		if (ea_list->next) {
+			size_t pad = 4 - (this_size % 4);
+			this_size += pad;
+		}
+
+		if (this_size > total_data_size) {
+			return NT_STATUS_INFO_LENGTH_MISMATCH;
+		}
+
+		/* We know we have room. */
+		SIVAL(p, 0x00, 0); /* next offset */
+		SCVAL(p, 0x04, ea_list->ea.flags);
+		SCVAL(p, 0x05, dos_namelen);
+		SSVAL(p, 0x06, ea_list->ea.value.length);
+		fstrcpy((char *)(p+0x08), dos_ea_name);
+		memcpy(p + 0x08 + dos_namelen + 1, ea_list->ea.value.data, ea_list->ea.value.length);
+
+		total_data_size -= this_size;
+		p += this_size;
+	}
+
+	*ret_data_size = PTR_DIFF(p, pdata);
+	DEBUG(10,("fill_ea_chained_buffer: data_size = %u\n", *ret_data_size));
+	return NT_STATUS_OK;
+}
+
 static unsigned int estimate_ea_size(connection_struct *conn, files_struct *fsp, const char *fname)
 {
 	size_t total_ea_len = 0;
@@ -4102,6 +4165,35 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			}
 
 			data_size = fill_ea_buffer(mem_ctx, pdata, data_size, conn, ea_list);
+			break;
+		}
+
+		case 0xFF0F:/*SMB2_INFO_QUERY_ALL_EAS*/
+		{
+			/* We have data_size bytes to put EA's into. */
+			size_t total_ea_len = 0;
+			struct ea_list *ea_file_list = NULL;
+
+			DEBUG(10,("smbd_do_qfilepathinfo: SMB2_INFO_QUERY_ALL_EAS\n"));
+
+			/*TODO: add filtering and index handling */
+
+			ea_file_list = get_ea_list_from_file(mem_ctx,
+							     conn, fsp,
+							     fname,
+							     &total_ea_len);
+			if (!ea_file_list) {
+				return NT_STATUS_NO_EAS_ON_FILE;
+			}
+
+			status = fill_ea_chained_buffer(mem_ctx,
+							pdata,
+							data_size,
+							&data_size,
+							conn, ea_file_list);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
 			break;
 		}
 
