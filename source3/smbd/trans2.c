@@ -4234,6 +4234,42 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			data_size = PTR_DIFF(pdata,(*ppdata));
 			break;
 		}
+
+		case 0xFF12:/*SMB2_FILE_ALL_INFORMATION*/
+		{
+			int len;
+			unsigned int ea_size = estimate_ea_size(conn, fsp, fname);
+			DEBUG(10,("smbd_do_qfilepathinfo: SMB2_FILE_ALL_INFORMATION\n"));
+			put_long_date_timespec(pdata+0x00,create_time_ts);
+			put_long_date_timespec(pdata+0x08,atime_ts);
+			put_long_date_timespec(pdata+0x10,mtime_ts); /* write time */
+			put_long_date_timespec(pdata+0x18,mtime_ts); /* change time */
+			SIVAL(pdata,	0x20, mode);
+			SIVAL(pdata,	0x24, 0); /* padding. */
+			SBVAL(pdata,	0x28, allocation_size);
+			SBVAL(pdata,	0x30, file_size);
+			SIVAL(pdata,	0x38, nlink);
+			SCVAL(pdata,	0x3C, delete_pending);
+			SCVAL(pdata,	0x3D, (mode&aDIR)?1:0);
+			SSVAL(pdata,	0x3E, 0); /* padding */
+			SBVAL(pdata,	0x40, file_index);
+			SIVAL(pdata,	0x48, ea_size);
+			SIVAL(pdata,	0x4C, access_mask);
+			SBVAL(pdata,	0x50, pos);
+			SIVAL(pdata,	0x58, mode); /*TODO: mode != mode fix this!!! */
+			SIVAL(pdata,	0x5C, 0); /* No alignment needed. */
+
+			pdata += 0x60;
+
+			len = srvstr_push(dstart, flags2,
+					  pdata+4, dos_fname,
+					  PTR_DIFF(dend, pdata+4),
+					  STR_UNICODE);
+			SIVAL(pdata,0,len);
+			pdata += 4 + len;
+			data_size = PTR_DIFF(pdata,(*ppdata));
+			break;
+		}
 		case SMB_FILE_INTERNAL_INFORMATION:
 
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_INTERNAL_INFORMATION\n"));
