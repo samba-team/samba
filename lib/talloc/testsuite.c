@@ -1107,6 +1107,12 @@ static bool test_pool(void)
 	return true;
 }
 
+static void test_reset(void)
+{
+	talloc_disable_null_tracking();
+	talloc_enable_null_tracking();
+}
+
 struct torture_context;
 bool torture_local_talloc(struct torture_context *tctx)
 {
@@ -1114,33 +1120,53 @@ bool torture_local_talloc(struct torture_context *tctx)
 
 	setlinebuf(stdout);
 
-	talloc_disable_null_tracking();
-	talloc_enable_null_tracking();
-
+	test_reset();
 	ret &= test_ref1();
+	test_reset();
 	ret &= test_ref2();
+	test_reset();
 	ret &= test_ref3();
+	test_reset();
 	ret &= test_ref4();
+	test_reset();
 	ret &= test_unlink1(); 
+	test_reset();
 	ret &= test_misc();
+	test_reset();
 	ret &= test_realloc();
+	test_reset();
 	ret &= test_realloc_child(); 
+	test_reset();
 	ret &= test_steal(); 
+	test_reset();
 	ret &= test_move(); 
+	test_reset();
 	ret &= test_unref_reparent();
+	test_reset();
 	ret &= test_realloc_fn(); 
+	test_reset();
 	ret &= test_type();
+	test_reset();
 	ret &= test_lifeless(); 
+	test_reset();
 	ret &= test_loop();
+	test_reset();
 	ret &= test_free_parent_deny_child(); 
+	test_reset();
 	ret &= test_talloc_ptrtype();
+	test_reset();
 	ret &= test_talloc_free_in_destructor();
+	test_reset();
 	ret &= test_pool();
 
 	if (ret) {
+		test_reset();
 		ret &= test_speed();
 	}
+	test_reset();
 	ret &= test_autofree();
+
+	test_reset();
 
 	return ret;
 }
