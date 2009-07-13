@@ -107,11 +107,6 @@ static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* If it's an IPC, pass off the pipe handler. */
-	if (IS_IPC(conn)) {
-		return NT_STATUS_NOT_IMPLEMENTED;
-	}
-
 	fsp = file_fsp(smbreq, (uint16_t)in_file_id_volatile);
 	if (fsp == NULL) {
 		return NT_STATUS_FILE_CLOSED;
