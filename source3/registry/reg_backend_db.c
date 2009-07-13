@@ -1174,39 +1174,55 @@ static int cmp_keynames(const void *p1, const void *p2)
 	return StrCaseCmp(*((char **)p1), *((char **)p2));
 }
 
-static bool create_sorted_subkeys(const char *key, const char *sorted_keyname)
+struct create_sorted_subkeys_context {
+	const char *key;
+	const char *sorted_keyname;
+};
+
+static NTSTATUS create_sorted_subkeys_action(struct db_context *db,
+					     void *private_data)
 {
 	char **sorted_subkeys;
 	struct regsubkey_ctr *ctr;
-	bool result = false;
 	NTSTATUS status;
 	char *buf;
 	char *p;
 	int i, res;
 	size_t len;
 	int num_subkeys;
-	WERROR werr;
+	struct create_sorted_subkeys_context *sorted_ctx;
 
-	if (regdb->transaction_start(regdb) != 0) {
-		DEBUG(0, ("create_sorted_subkeys: transaction_start "
-			  "failed\n"));
-		return false;
+	sorted_ctx = (struct create_sorted_subkeys_context *)private_data;
+
+	/*
+	 * In this function, we only treat failing of the actual write to
+	 * the db as a real error. All preliminary errors, at a stage when
+	 * nothing has been written to the DB yet are treated as success
+	 * to be committed (as an empty transaction).
+	 *
+	 * The reason is that this (disposable) call might be nested in other
+	 * transactions. Doing a cancel here would destroy the possibility of
+	 * a transaction_commit for transactions that we might be wrapped in.
+	 */
+
+	status = werror_to_ntstatus(regsubkey_ctr_init(talloc_tos(), &ctr));
+	if (!NT_STATUS_IS_OK(status)) {
+		/* don't treat this as an error */
+		status = NT_STATUS_OK;
+		goto done;
 	}
 
-	werr = regsubkey_ctr_init(talloc_tos(), &ctr);
-	if (!W_ERROR_IS_OK(werr)) {
-		goto commit;
-	}
-
-	res = regdb_fetch_keys_internal(regdb, key, ctr);
+	res = regdb_fetch_keys_internal(db, sorted_ctx->key, ctr);
 	if (res == -1) {
-		goto commit;
+		/* don't treat this as an error */
+		goto done;
 	}
 
 	num_subkeys = regsubkey_ctr_numkeys(ctr);
 	sorted_subkeys = talloc_array(ctr, char *, num_subkeys);
 	if (sorted_subkeys == NULL) {
-		goto commit;
+		/* don't treat this as an error */
+		goto done;
 	}
 
 	len = 4 + 4*num_subkeys;
@@ -1215,7 +1231,8 @@ static bool create_sorted_subkeys(const char *key, const char *sorted_keyname)
 		sorted_subkeys[i] = talloc_strdup_upper(sorted_subkeys,
 					regsubkey_ctr_specific_key(ctr, i));
 		if (sorted_subkeys[i] == NULL) {
-			goto commit;
+			/* don't treat this as an error */
+			goto done;
 		}
 		len += strlen(sorted_subkeys[i])+1;
 	}
@@ -1224,7 +1241,8 @@ static bool create_sorted_subkeys(const char *key, const char *sorted_keyname)
 
 	buf = talloc_array(ctr, char, len);
 	if (buf == NULL) {
-		goto commit;
+		/* don't treat this as an error */
+		goto done;
 	}
 	p = buf + 4 + 4*num_subkeys;
 
@@ -1238,43 +1256,28 @@ static bool create_sorted_subkeys(const char *key, const char *sorted_keyname)
 	}
 
 	status = dbwrap_store_bystring(
-		regdb, sorted_keyname, make_tdb_data((uint8_t *)buf, len),
+		db, sorted_ctx->sorted_keyname, make_tdb_data((uint8_t *)buf,
+		len),
 		TDB_REPLACE);
-	if (!NT_STATUS_IS_OK(status)) {
-		/*
-		 * Don't use a "goto commit;" here, this would commit the broken
-		 * transaction. See below for an explanation.
-		 */
-		goto cancel;
-	}
-
-	result = true;
-
-commit:
-	/*
-	 * We only get here via the "goto commit" when we did not write anything
-	 * yet. Using transaction_commit even in a failure case is necessary
-	 * because this (disposable) call might be nested in other
-	 * transactions. Doing a cancel here would destroy the possibility of
-	 * a transaction_commit for transactions that we might be wrapped in.
-	 */
-	if (regdb->transaction_commit(regdb) == -1) {
-		DEBUG(0, ("create_sorted_subkeys: transaction_commit "
-			  "failed\n"));
-		result = false;
-	}
-	goto done;
-
-cancel:
-	if (regdb->transaction_cancel(regdb) == -1) {
-		smb_panic("create_sorted_subkeys: transaction_cancel "
-			  "failed\n");
-	}
-	result = false;
 
 done:
-	TALLOC_FREE(ctr);
-	return result;
+	talloc_free(ctr);
+	return status;
+}
+
+static bool create_sorted_subkeys(const char *key, const char *sorted_keyname)
+{
+	NTSTATUS status;
+	struct create_sorted_subkeys_context sorted_ctx;
+
+	sorted_ctx.key = key;
+	sorted_ctx.sorted_keyname = sorted_keyname;
+
+	status = dbwrap_trans_do(regdb,
+				 create_sorted_subkeys_action,
+				 &sorted_ctx);
+
+	return NT_STATUS_IS_OK(status);
 }
 
 struct scan_subkey_state {
