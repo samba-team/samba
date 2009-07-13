@@ -1,20 +1,20 @@
-/* 
+/*
  *  Unix SMB/CIFS implementation.
  *  account policy storage
  *  Copyright (C) Jean François Micouleau      1998-2001.
  *  Copyright (C) Andrew Bartlett              2002
  *  Copyright (C) Guenther Deschner            2004-2005
- *  
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
@@ -39,51 +39,51 @@ struct ap_table {
 };
 
 static const struct ap_table account_policy_names[] = {
-	{AP_MIN_PASSWORD_LEN, "min password length", MINPASSWDLENGTH, 
-		"Minimal password length (default: 5)", 
+	{AP_MIN_PASSWORD_LEN, "min password length", MINPASSWDLENGTH,
+		"Minimal password length (default: 5)",
 		"sambaMinPwdLength" },
 
 	{AP_PASSWORD_HISTORY, "password history", 0,
-		"Length of Password History Entries (default: 0 => off)", 
+		"Length of Password History Entries (default: 0 => off)",
 		"sambaPwdHistoryLength" },
-		
+
 	{AP_USER_MUST_LOGON_TO_CHG_PASS, "user must logon to change password", 0,
 		"Force Users to logon for password change (default: 0 => off, 2 => on)",
 		"sambaLogonToChgPwd" },
-	
+
 	{AP_MAX_PASSWORD_AGE, "maximum password age", (uint32) -1,
-		"Maximum password age, in seconds (default: -1 => never expire passwords)", 
+		"Maximum password age, in seconds (default: -1 => never expire passwords)",
 		"sambaMaxPwdAge" },
-		
+
 	{AP_MIN_PASSWORD_AGE,"minimum password age", 0,
-		"Minimal password age, in seconds (default: 0 => allow immediate password change)", 
+		"Minimal password age, in seconds (default: 0 => allow immediate password change)",
 		"sambaMinPwdAge" },
-		
+
 	{AP_LOCK_ACCOUNT_DURATION, "lockout duration", 30,
 		"Lockout duration in minutes (default: 30, -1 => forever)",
 		"sambaLockoutDuration" },
-		
+
 	{AP_RESET_COUNT_TIME, "reset count minutes", 30,
-		"Reset time after lockout in minutes (default: 30)", 
+		"Reset time after lockout in minutes (default: 30)",
 		"sambaLockoutObservationWindow" },
-		
+
 	{AP_BAD_ATTEMPT_LOCKOUT, "bad lockout attempt", 0,
-		"Lockout users after bad logon attempts (default: 0 => off)", 
+		"Lockout users after bad logon attempts (default: 0 => off)",
 		"sambaLockoutThreshold" },
-		
+
 	{AP_TIME_TO_LOGOUT, "disconnect time", (uint32) -1,
-		"Disconnect Users outside logon hours (default: -1 => off, 0 => on)", 
-		"sambaForceLogoff" }, 
-		
+		"Disconnect Users outside logon hours (default: -1 => off, 0 => on)",
+		"sambaForceLogoff" },
+
 	{AP_REFUSE_MACHINE_PW_CHANGE, "refuse machine password change", 0,
 		"Allow Machine Password changes (default: 0 => off)",
 		"sambaRefuseMachinePwdChange" },
-		
+
 	{0, NULL, 0, "", NULL}
 };
 
 void account_policy_names_list(const char ***names, int *num_names)
-{	
+{
 	const char **nl;
 	int i, count;
 
@@ -175,7 +175,7 @@ bool account_policy_get_default(int account_policy, uint32 *val)
 			return True;
 		}
 	}
-	DEBUG(0,("no default for account_policy index %d found. This should never happen\n", 
+	DEBUG(0,("no default for account_policy index %d found. This should never happen\n",
 		account_policy));
 	return False;
 }
@@ -189,7 +189,7 @@ static bool account_policy_set_default_on_empty(int account_policy)
 
 	uint32 value;
 
-	if (!account_policy_get(account_policy, &value) && 
+	if (!account_policy_get(account_policy, &value) &&
 	    !account_policy_get_default(account_policy, &value)) {
 		return False;
 	}
@@ -299,7 +299,7 @@ bool init_account_policy(void)
 }
 
 /*****************************************************************************
-Get an account policy (from tdb) 
+Get an account policy (from tdb)
 *****************************************************************************/
 
 bool account_policy_get(int field, uint32 *value)
@@ -320,12 +320,12 @@ bool account_policy_get(int field, uint32 *value)
 		DEBUG(1, ("account_policy_get: Field %d is not a valid account policy type!  Cannot get, returning 0.\n", field));
 		return False;
 	}
-	
+
 	if (!dbwrap_fetch_uint32(db, name, &regval)) {
 		DEBUG(1, ("account_policy_get: tdb_fetch_uint32 failed for field %d (%s), returning 0\n", field, name));
 		return False;
 	}
-	
+
 	if (value) {
 		*value = regval;
 	}
@@ -336,7 +336,7 @@ bool account_policy_get(int field, uint32 *value)
 
 
 /****************************************************************************
-Set an account policy (in tdb) 
+Set an account policy (in tdb)
 ****************************************************************************/
 
 bool account_policy_set(int field, uint32 value)
@@ -362,12 +362,12 @@ bool account_policy_set(int field, uint32 value)
 	}
 
 	DEBUG(10,("account_policy_set: name: %s, value: %d\n", name, value));
-	
+
 	return True;
 }
 
 /****************************************************************************
-Set an account policy in the cache 
+Set an account policy in the cache
 ****************************************************************************/
 
 bool cache_account_policy_set(int field, uint32 value)
@@ -404,7 +404,7 @@ bool cache_account_policy_set(int field, uint32 value)
 }
 
 /*****************************************************************************
-Get an account policy from the cache 
+Get an account policy from the cache
 *****************************************************************************/
 
 bool cache_account_policy_get(int field, uint32 *value)
