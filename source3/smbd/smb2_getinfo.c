@@ -297,7 +297,7 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 			if (INFO_LEVEL_IS_UNIX(file_info_level)) {
 				/* Always do lstat for UNIX calls. */
 				if (SMB_VFS_LSTAT(conn, smb_fname)) {
-					DEBUG(3,("call_trans2qfilepathinfo: "
+					DEBUG(3,("smbd_smb2_getinfo_send: "
 						 "SMB_VFS_LSTAT of %s failed "
 						 "(%s)\n",
 						 smb_fname_str_dbg(smb_fname),
@@ -307,7 +307,7 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 					return tevent_req_post(req, ev);
 				}
 			} else if (SMB_VFS_STAT(conn, smb_fname)) {
-				DEBUG(3,("call_trans2qfilepathinfo: "
+				DEBUG(3,("smbd_smb2_getinfo_send: "
 					 "SMB_VFS_STAT of %s failed (%s)\n",
 					 smb_fname_str_dbg(smb_fname),
 					 strerror(errno)));
@@ -324,7 +324,8 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 			 */
 
 			if (SMB_VFS_FSTAT(fsp, &smb_fname->st) != 0) {
-				DEBUG(3, ("fstat of fnum %d failed (%s)\n",
+				DEBUG(3, ("smbd_smb2_getinfo_send: "
+					  "fstat of fnum %d failed (%s)\n",
 					  fsp->fnum, strerror(errno)));
 				status = map_nt_error_from_unix(errno);
 				tevent_req_nterror(req, status);
@@ -350,6 +351,9 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 					       &data_size);
 		if (!NT_STATUS_IS_OK(status)) {
 			SAFE_FREE(data);
+			if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_LEVEL)) {
+				status = NT_STATUS_INVALID_INFO_CLASS;
+			}
 			tevent_req_nterror(req, status);
 			return tevent_req_post(req, ev);
 		}
