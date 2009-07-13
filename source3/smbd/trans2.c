@@ -2687,14 +2687,14 @@ static void samba_extended_info_version(struct smb_extended_info *extended_info)
 		  "%s", samba_version_string());
 }
 
-static NTSTATUS smbd_do_qfsinfo(connection_struct *conn,
-				TALLOC_CTX *mem_ctx,
-				uint16_t info_level,
-				SMB_STRUCT_STAT st,
-				uint16_t flags2,
-				unsigned int max_data_bytes,
-				char **ppdata,
-				int *ret_data_len)
+NTSTATUS smbd_do_qfsinfo(connection_struct *conn,
+			 TALLOC_CTX *mem_ctx,
+			 uint16_t info_level,
+			 SMB_STRUCT_STAT st,
+			 uint16_t flags2,
+			 unsigned int max_data_bytes,
+			 char **ppdata,
+			 int *ret_data_len)
 {
 	char *pdata, *end_data;
 	int data_len = 0, len;

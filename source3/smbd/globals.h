@@ -210,6 +210,15 @@ NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
 				char **ppdata, int total_data,
 				int *ret_data_size);
 
+NTSTATUS smbd_do_qfsinfo(connection_struct *conn,
+			 TALLOC_CTX *mem_ctx,
+			 uint16_t info_level,
+			 SMB_STRUCT_STAT st,
+			 uint16_t flags2,
+			 unsigned int max_data_bytes,
+			 char **ppdata,
+			 int *ret_data_len);
+
 void smbd_server_connection_terminate_ex(struct smbd_server_connection *sconn,
 					 const char *reason,
 					 const char *location);
