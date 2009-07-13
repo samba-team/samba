@@ -1211,7 +1211,9 @@ size_t talloc_total_size(const void *ptr)
 
 	tc->flags |= TALLOC_FLAG_LOOP;
 
-	total = tc->size;
+	if (likely(tc->name != TALLOC_MAGIC_REFERENCE)) {
+		total = tc->size;
+	}
 	for (c=tc->child;c;c=c->next) {
 		total += talloc_total_size(TC_PTR_FROM_CHUNK(c));
 	}
