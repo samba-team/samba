@@ -78,9 +78,11 @@ struct smb2_request *smb2_request_init(struct smb2_transport *transport, uint16_
 	req = talloc(transport, struct smb2_request);
 	if (req == NULL) return NULL;
 
-	seqnum = transport->seqnum++;
-	if (seqnum == UINT64_MAX) {
-		seqnum = transport->seqnum++;
+	seqnum = transport->seqnum;
+	if (transport->credits.charge > 0) {
+		transport->seqnum += transport->credits.charge;
+	} else {
+		transport->seqnum += 1;
 	}
 
 	req->state     = SMB2_REQUEST_INIT;
@@ -131,7 +133,7 @@ struct smb2_request *smb2_request_init(struct smb2_transport *transport, uint16_
 
 	SIVAL(req->out.hdr, 0,				SMB2_MAGIC);
 	SSVAL(req->out.hdr, SMB2_HDR_LENGTH,		SMB2_HDR_BODY);
-	SSVAL(req->out.hdr, SMB2_HDR_EPOCH,		0);
+	SSVAL(req->out.hdr, SMB2_HDR_EPOCH,		transport->credits.charge);
 	SIVAL(req->out.hdr, SMB2_HDR_STATUS,		0);
 	SSVAL(req->out.hdr, SMB2_HDR_OPCODE,		opcode);
 	SSVAL(req->out.hdr, SMB2_HDR_CREDIT,		transport->credits.ask_num);

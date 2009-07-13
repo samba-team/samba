@@ -84,6 +84,7 @@ struct smb2_transport *smb2_transport_init(struct smbcli_socket *sock,
 
 	transport->socket = talloc_steal(transport, sock);
 	transport->options = *options;
+	transport->credits.charge = 0;
 	transport->credits.ask_num = 1;
 
 	/* setup the stream -> packet parser */
@@ -550,6 +551,12 @@ void smb2_transport_credits_ask_num(struct smb2_transport *transport,
 				    uint16_t ask_num)
 {
 	transport->credits.ask_num = ask_num;
+}
+
+void smb2_transport_credits_set_charge(struct smb2_transport *transport,
+				       uint16_t charge)
+{
+	transport->credits.charge = charge;
 }
 
 static void idle_handler(struct tevent_context *ev, 

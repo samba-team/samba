@@ -87,6 +87,7 @@ struct smb2_transport {
 	} compound;
 
 	struct {
+		uint16_t charge;
 		uint16_t ask_num;
 	} credits;
 
