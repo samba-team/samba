@@ -7055,14 +7055,14 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 	return close_file(req, fsp, NORMAL_CLOSE);
 }
 
-static NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
-					struct smb_request *req,
-					TALLOC_CTX *mem_ctx,
-					uint16_t info_level,
-					files_struct *fsp,
-					struct smb_filename *smb_fname,
-					char **ppdata, int total_data,
-					int *ret_data_size)
+NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
+				struct smb_request *req,
+				TALLOC_CTX *mem_ctx,
+				uint16_t info_level,
+				files_struct *fsp,
+				struct smb_filename *smb_fname,
+				char **ppdata, int total_data,
+				int *ret_data_size)
 {
 	char *pdata = *ppdata;
 	SMB_STRUCT_STAT sbuf;
