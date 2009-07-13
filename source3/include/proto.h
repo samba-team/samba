@@ -290,16 +290,16 @@ bool check_access(int sock, const char **allow_list, const char **deny_list);
 /* The following definitions come from lib/account_pol.c  */
 
 void account_policy_names_list(const char ***names, int *num_names);
-const char *decode_account_policy_name(int field);
-const char *get_account_policy_attr(int field);
-const char *account_policy_get_desc(int field);
-int account_policy_name_to_fieldnum(const char *name);
-bool account_policy_get_default(int account_policy, uint32 *val);
+const char *decode_account_policy_name(enum pdb_policy_type type);
+const char *get_account_policy_attr(enum pdb_policy_type type);
+const char *account_policy_get_desc(enum pdb_policy_type type);
+enum pdb_policy_type account_policy_name_to_typenum(const char *name);
+bool account_policy_get_default(enum pdb_policy_type type, uint32_t *val);
 bool init_account_policy(void);
-bool account_policy_get(int field, uint32 *value);
-bool account_policy_set(int field, uint32 value);
-bool cache_account_policy_set(int field, uint32 value);
-bool cache_account_policy_get(int field, uint32 *value);
+bool account_policy_get(enum pdb_policy_type type, uint32_t *value);
+bool account_policy_set(enum pdb_policy_type type, uint32_t value);
+bool cache_account_policy_set(enum pdb_policy_type type, uint32_t value);
+bool cache_account_policy_get(enum pdb_policy_type type, uint32_t *value);
 struct db_context *get_account_pol_db( void );
 
 /* The following definitions come from lib/adt_tree.c  */
@@ -4595,8 +4595,8 @@ NTSTATUS pdb_lookup_names(const DOM_SID *domain_sid,
 			  const char **names,
 			  uint32 *rids,
 			  enum lsa_SidType *attrs);
-bool pdb_get_account_policy(int policy_index, uint32 *value);
-bool pdb_set_account_policy(int policy_index, uint32 value);
+bool pdb_get_account_policy(enum pdb_policy_type type, uint32_t *value);
+bool pdb_set_account_policy(enum pdb_policy_type type, uint32_t value);
 bool pdb_get_seq_num(time_t *seq_num);
 bool pdb_uid_to_rid(uid_t uid, uint32 *rid);
 bool pdb_uid_to_sid(uid_t uid, DOM_SID *sid);

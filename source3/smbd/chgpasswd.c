@@ -1024,7 +1024,7 @@ static bool check_passwd_history(struct samu *sampass, const char *plaintext)
 	int i;
 	uint32 pwHisLen, curr_pwHisLen;
 
-	pdb_get_account_policy(AP_PASSWORD_HISTORY, &pwHisLen);
+	pdb_get_account_policy(PDB_POLICY_PASSWORD_HISTORY, &pwHisLen);
 	if (pwHisLen == 0) {
 		return False;
 	}
@@ -1107,7 +1107,7 @@ NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passw
 	 * denies machines to change the password. *
 	 * Should we deny also SRVTRUST and/or DOMSTRUST ? .SSS. */
 	if (pdb_get_acct_ctrl(hnd) & ACB_WSTRUST) {
-		if (pdb_get_account_policy(AP_REFUSE_MACHINE_PW_CHANGE, &refuse) && refuse) {
+		if (pdb_get_account_policy(PDB_POLICY_REFUSE_MACHINE_PW_CHANGE, &refuse) && refuse) {
 			DEBUG(1, ("Machine %s cannot change password now, "
 				  "denied by Refuse Machine Password Change policy\n",
 				  username));
@@ -1130,7 +1130,7 @@ NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passw
 		return NT_STATUS_ACCOUNT_RESTRICTION;
 	}
 
-	if (pdb_get_account_policy(AP_MIN_PASSWORD_LEN, &min_len) && (str_charnum(new_passwd) < min_len)) {
+	if (pdb_get_account_policy(PDB_POLICY_MIN_PASSWORD_LEN, &min_len) && (str_charnum(new_passwd) < min_len)) {
 		DEBUG(1, ("user %s cannot change password - password too short\n", 
 			  username));
 		DEBUGADD(1, (" account policy min password len = %d\n", min_len));

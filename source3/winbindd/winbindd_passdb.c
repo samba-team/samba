@@ -332,29 +332,29 @@ static NTSTATUS password_policy(struct winbindd_domain *domain,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!pdb_get_account_policy(AP_MIN_PASSWORD_LEN,
+	if (!pdb_get_account_policy(PDB_POLICY_MIN_PASSWORD_LEN,
 				    &account_policy_temp)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 	p->min_password_length = account_policy_temp;
 
-	if (!pdb_get_account_policy(AP_PASSWORD_HISTORY,
+	if (!pdb_get_account_policy(PDB_POLICY_PASSWORD_HISTORY,
 				    &account_policy_temp)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 	p->password_history_length = account_policy_temp;
 
-	if (!pdb_get_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS,
+	if (!pdb_get_account_policy(PDB_POLICY_USER_MUST_LOGON_TO_CHG_PASS,
 				    &p->password_properties)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (!pdb_get_account_policy(AP_MAX_PASSWORD_AGE, &account_policy_temp)) {
+	if (!pdb_get_account_policy(PDB_POLICY_MAX_PASSWORD_AGE, &account_policy_temp)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 	u_expire = account_policy_temp;
 
-	if (!pdb_get_account_policy(AP_MIN_PASSWORD_AGE, &account_policy_temp)) {
+	if (!pdb_get_account_policy(PDB_POLICY_MIN_PASSWORD_AGE, &account_policy_temp)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 	u_min_age = account_policy_temp;

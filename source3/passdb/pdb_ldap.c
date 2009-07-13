@@ -902,7 +902,7 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 
 	pwHistLen = 0;
 
-	pdb_get_account_policy(AP_PASSWORD_HISTORY, &pwHistLen);
+	pdb_get_account_policy(PDB_POLICY_PASSWORD_HISTORY, &pwHistLen);
 	if (pwHistLen > 0){
 		uint8 *pwhist = NULL;
 		int i;
@@ -1327,7 +1327,7 @@ static bool init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 		if (need_update(sampass, PDB_PWHISTORY)) {
 			char *pwstr = NULL;
 			uint32 pwHistLen = 0;
-			pdb_get_account_policy(AP_PASSWORD_HISTORY, &pwHistLen);
+			pdb_get_account_policy(PDB_POLICY_PASSWORD_HISTORY, &pwHistLen);
 
 			pwstr = SMB_MALLOC_ARRAY(char, 1024);
 			if (!pwstr) {
@@ -1404,7 +1404,7 @@ static bool init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 		uint16 badcount = pdb_get_bad_password_count(sampass);
 		time_t badtime = pdb_get_bad_password_time(sampass);
 		uint32 pol;
-		pdb_get_account_policy(AP_BAD_ATTEMPT_LOCKOUT, &pol);
+		pdb_get_account_policy(PDB_POLICY_BAD_ATTEMPT_LOCKOUT, &pol);
 
 		DEBUG(3, ("updating bad password fields, policy=%u, count=%u, time=%u\n",
 			(unsigned int)pol, (unsigned int)badcount, (unsigned int)badtime));
@@ -3762,7 +3762,7 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 }
 
 static NTSTATUS ldapsam_set_account_policy_in_ldap(struct pdb_methods *methods,
-						   int policy_index,
+						   enum pdb_policy_type type,
 						   uint32 value)
 {
 	NTSTATUS ntstatus = NT_STATUS_UNSUCCESSFUL;
@@ -3780,7 +3780,7 @@ static NTSTATUS ldapsam_set_account_policy_in_ldap(struct pdb_methods *methods,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	policy_attr = get_account_policy_attr(policy_index);
+	policy_attr = get_account_policy_attr(type);
 	if (policy_attr == NULL) {
 		DEBUG(0,("ldapsam_set_account_policy_in_ldap: invalid "
 			 "policy\n"));
@@ -3800,7 +3800,7 @@ static NTSTATUS ldapsam_set_account_policy_in_ldap(struct pdb_methods *methods,
 		return ntstatus;
 	}
 
-	if (!cache_account_policy_set(policy_index, value)) {
+	if (!cache_account_policy_set(type, value)) {
 		DEBUG(0,("ldapsam_set_account_policy_in_ldap: failed to "
 			 "update local tdb cache\n"));
 		return ntstatus;
@@ -3810,14 +3810,15 @@ static NTSTATUS ldapsam_set_account_policy_in_ldap(struct pdb_methods *methods,
 }
 
 static NTSTATUS ldapsam_set_account_policy(struct pdb_methods *methods,
-					   int policy_index, uint32 value)
+					   enum pdb_policy_type type,
+					   uint32_t value)
 {
-	return ldapsam_set_account_policy_in_ldap(methods, policy_index,
+	return ldapsam_set_account_policy_in_ldap(methods, type,
 						  value);
 }
 
 static NTSTATUS ldapsam_get_account_policy_from_ldap(struct pdb_methods *methods,
-						     int policy_index,
+						     enum pdb_policy_type type,
 						     uint32 *value)
 {
 	NTSTATUS ntstatus = NT_STATUS_UNSUCCESSFUL;
@@ -3839,10 +3840,10 @@ static NTSTATUS ldapsam_get_account_policy_from_ldap(struct pdb_methods *methods
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	policy_attr = get_account_policy_attr(policy_index);
+	policy_attr = get_account_policy_attr(type);
 	if (!policy_attr) {
 		DEBUG(0,("ldapsam_get_account_policy_from_ldap: invalid "
-			 "policy index: %d\n", policy_index));
+			 "policy index: %d\n", type));
 		return ntstatus;
 	}
 
@@ -3896,17 +3897,18 @@ out:
    Guenther
 */
 static NTSTATUS ldapsam_get_account_policy(struct pdb_methods *methods,
-					   int policy_index, uint32 *value)
+					   enum pdb_policy_type type,
+					   uint32_t *value)
 {
 	NTSTATUS ntstatus = NT_STATUS_UNSUCCESSFUL;
 
-	if (cache_account_policy_get(policy_index, value)) {
+	if (cache_account_policy_get(type, value)) {
 		DEBUG(11,("ldapsam_get_account_policy: got valid value from "
 			  "cache\n"));
 		return NT_STATUS_OK;
 	}
 
-	ntstatus = ldapsam_get_account_policy_from_ldap(methods, policy_index,
+	ntstatus = ldapsam_get_account_policy_from_ldap(methods, type,
 							value);
 	if (NT_STATUS_IS_OK(ntstatus)) {
 		goto update_cache;
@@ -3917,27 +3919,27 @@ static NTSTATUS ldapsam_get_account_policy(struct pdb_methods *methods,
 
 #if 0
 	/* should we automagically migrate old tdb value here ? */
-	if (account_policy_get(policy_index, value))
+	if (account_policy_get(type, value))
 		goto update_ldap;
 
 	DEBUG(10,("ldapsam_get_account_policy: no tdb for %d, trying "
-		  "default\n", policy_index));
+		  "default\n", type));
 #endif
 
-	if (!account_policy_get_default(policy_index, value)) {
+	if (!account_policy_get_default(type, value)) {
 		return ntstatus;
 	}
 
 /* update_ldap: */
 
- 	ntstatus = ldapsam_set_account_policy(methods, policy_index, *value);
+	ntstatus = ldapsam_set_account_policy(methods, type, *value);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		return ntstatus;
 	}
 
  update_cache:
 
-	if (!cache_account_policy_set(policy_index, *value)) {
+	if (!cache_account_policy_set(type, *value)) {
 		DEBUG(0,("ldapsam_get_account_policy: failed to update local "
 			 "tdb as a cache\n"));
 		return NT_STATUS_UNSUCCESSFUL;

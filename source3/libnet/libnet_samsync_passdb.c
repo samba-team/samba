@@ -676,21 +676,24 @@ static NTSTATUS fetch_domain_info(TALLOC_CTX *mem_ctx,
 	}
 
 
-	if (!pdb_set_account_policy(AP_PASSWORD_HISTORY,
+	if (!pdb_set_account_policy(PDB_POLICY_PASSWORD_HISTORY,
 				    r->password_history_length))
 		return nt_status;
 
-	if (!pdb_set_account_policy(AP_MIN_PASSWORD_LEN,
+	if (!pdb_set_account_policy(PDB_POLICY_MIN_PASSWORD_LEN,
 				    r->min_password_length))
 		return nt_status;
 
-	if (!pdb_set_account_policy(AP_MAX_PASSWORD_AGE, (uint32)u_max_age))
+	if (!pdb_set_account_policy(PDB_POLICY_MAX_PASSWORD_AGE,
+				    (uint32)u_max_age))
 		return nt_status;
 
-	if (!pdb_set_account_policy(AP_MIN_PASSWORD_AGE, (uint32)u_min_age))
+	if (!pdb_set_account_policy(PDB_POLICY_MIN_PASSWORD_AGE,
+				    (uint32)u_min_age))
 		return nt_status;
 
-	if (!pdb_set_account_policy(AP_TIME_TO_LOGOUT, (uint32)u_logout))
+	if (!pdb_set_account_policy(PDB_POLICY_TIME_TO_LOGOUT,
+				    (uint32)u_logout))
 		return nt_status;
 
 	if (lockstr) {
@@ -699,21 +702,23 @@ static NTSTATUS fetch_domain_info(TALLOC_CTX *mem_ctx,
 		u_lockoutreset = uint64s_nt_time_to_unix_abs(&lockstr->reset_count);
 		u_lockouttime = uint64s_nt_time_to_unix_abs((uint64_t *)&lockstr->lockout_duration);
 
-		if (!pdb_set_account_policy(AP_BAD_ATTEMPT_LOCKOUT,
+		if (!pdb_set_account_policy(PDB_POLICY_BAD_ATTEMPT_LOCKOUT,
 					    lockstr->bad_attempt_lockout))
 			return nt_status;
 
-		if (!pdb_set_account_policy(AP_RESET_COUNT_TIME, (uint32_t)u_lockoutreset/60))
+		if (!pdb_set_account_policy(PDB_POLICY_RESET_COUNT_TIME,
+					    (uint32_t)u_lockoutreset/60))
 			return nt_status;
 
 		if (u_lockouttime != -1)
 			u_lockouttime /= 60;
 
-		if (!pdb_set_account_policy(AP_LOCK_ACCOUNT_DURATION, (uint32_t)u_lockouttime))
+		if (!pdb_set_account_policy(PDB_POLICY_LOCK_ACCOUNT_DURATION,
+					    (uint32_t)u_lockouttime))
 			return nt_status;
 	}
 
-	if (!pdb_set_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS,
+	if (!pdb_set_account_policy(PDB_POLICY_USER_MUST_LOGON_TO_CHG_PASS,
 				    r->logon_to_chgpass))
 		return nt_status;
 

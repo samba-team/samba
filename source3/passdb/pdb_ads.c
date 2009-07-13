@@ -1706,16 +1706,18 @@ static NTSTATUS pdb_ads_lookup_names(struct pdb_methods *m,
 }
 
 static NTSTATUS pdb_ads_get_account_policy(struct pdb_methods *m,
-					   int policy_index, uint32 *value)
+					   enum pdb_policy_type type,
+					   uint32_t *value)
 {
-	return account_policy_get(policy_index, value)
+	return account_policy_get(type, value)
 		? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
 static NTSTATUS pdb_ads_set_account_policy(struct pdb_methods *m,
-					   int policy_index, uint32 value)
+					   enum pdb_policy_type type,
+					   uint32_t value)
 {
-	return account_policy_set(policy_index, value)
+	return account_policy_set(type, value)
 		? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
