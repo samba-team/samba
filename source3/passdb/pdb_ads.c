@@ -203,7 +203,7 @@ static NTSTATUS pdb_ads_init_sam_from_priv(struct pdb_methods *m,
 		pdb_set_pass_last_set_time(sam, tmp_time, PDB_SET);
 	}
 	if (pdb_ads_pull_time(entry, "accountExpires", &tmp_time)) {
-		pdb_set_pass_last_set_time(sam, tmp_time, PDB_SET);
+		pdb_set_kickoff_time(sam, tmp_time, PDB_SET);
 	}
 
 	str = tldap_talloc_single_attribute(entry, "displayName",
