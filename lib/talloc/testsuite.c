@@ -66,8 +66,8 @@ static double timeval_elapsed(struct timeval *tv)
 
 #define CHECK_SIZE(test, ptr, tsize) do { \
 	if (talloc_total_size(ptr) != (tsize)) { \
-		printf("failed: %s [\nwrong '%s' tree size: got %u  expected %u\n]\n", \
-		       test, #ptr, \
+		printf("failed: %s [\n%s: wrong '%s' tree size: got %u  expected %u\n]\n", \
+		       test, __location__, #ptr, \
 		       (unsigned)talloc_total_size(ptr), \
 		       (unsigned)tsize); \
 		talloc_report_full(ptr, stdout); \
@@ -77,8 +77,8 @@ static double timeval_elapsed(struct timeval *tv)
 
 #define CHECK_BLOCKS(test, ptr, tblocks) do { \
 	if (talloc_total_blocks(ptr) != (tblocks)) { \
-		printf("failed: %s [\nwrong '%s' tree blocks: got %u  expected %u\n]\n", \
-		       test, #ptr, \
+		printf("failed: %s [\n%s: wrong '%s' tree blocks: got %u  expected %u\n]\n", \
+		       test, __location__, #ptr, \
 		       (unsigned)talloc_total_blocks(ptr), \
 		       (unsigned)tblocks); \
 		talloc_report_full(ptr, stdout); \
@@ -88,8 +88,8 @@ static double timeval_elapsed(struct timeval *tv)
 
 #define CHECK_PARENT(test, ptr, parent) do { \
 	if (talloc_parent(ptr) != (parent)) { \
-		printf("failed: %s [\n'%s' has wrong parent: got %p  expected %p\n]\n", \
-		       test, #ptr, \
+		printf("failed: %s [\n%s: '%s' has wrong parent: got %p  expected %p\n]\n", \
+		       test, __location__, #ptr, \
 		       talloc_parent(ptr), \
 		       (parent)); \
 		talloc_report_full(ptr, stdout); \
