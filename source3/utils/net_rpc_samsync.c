@@ -493,17 +493,20 @@ int rpc_vampire_keytab(struct net_context *c, int argc, const char **argv)
 
 	if (!dc_info.is_ad) {
 		printf("DC is not running Active Directory\n");
-		return -1;
-	}
-
-	if (dc_info.is_mixed_mode) {
 		ret = run_rpc_command(c, cli, &ndr_table_netlogon.syntax_id,
 				      0,
 				      rpc_vampire_keytab_internals, argc, argv);
+		return -1;
 	} else {
 		ret = run_rpc_command(c, cli, &ndr_table_drsuapi.syntax_id,
 				      NET_FLAGS_SEAL,
 				      rpc_vampire_keytab_ds_internals, argc, argv);
+		if (ret != 0 && dc_info.is_mixed_mode) {
+			printf("Fallback to NT4 vampire on Mixed-Mode AD Domain\n");
+			ret = run_rpc_command(c, cli, &ndr_table_netlogon.syntax_id,
+					      0,
+					      rpc_vampire_keytab_internals, argc, argv);
+		}
 	}
 
 	return ret;
