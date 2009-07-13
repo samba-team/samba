@@ -1227,7 +1227,16 @@ size_t talloc_total_size(const void *ptr)
 size_t talloc_total_blocks(const void *ptr)
 {
 	size_t total = 0;
-	struct talloc_chunk *c, *tc = talloc_chunk_from_ptr(ptr);
+	struct talloc_chunk *c, *tc;
+
+	if (ptr == NULL) {
+		ptr = null_context;
+	}
+	if (ptr == NULL) {
+		return 0;
+	}
+
+	tc = talloc_chunk_from_ptr(ptr);
 
 	if (tc->flags & TALLOC_FLAG_LOOP) {
 		return 0;
@@ -1807,8 +1816,12 @@ size_t talloc_get_size(const void *context)
 {
 	struct talloc_chunk *tc;
 
-	if (context == NULL)
+	if (context == NULL) {
+		context = null_context;
+	}
+	if (context == NULL) {
 		return 0;
+	}
 
 	tc = talloc_chunk_from_ptr(context);
 
