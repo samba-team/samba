@@ -32,6 +32,7 @@
 #define BLOB_TYPE_LEN 9
 
 static struct tdb_context *cache;
+static struct tdb_context *cache_notrans;
 
 /**
  * @file gencache.c
@@ -52,6 +53,7 @@ static struct tdb_context *cache;
 static bool gencache_init(void)
 {
 	char* cache_fname = NULL;
+	int open_flags = O_RDWR|O_CREAT;
 
 	/* skip file open if it's already opened */
 	if (cache) return True;
@@ -60,11 +62,12 @@ static bool gencache_init(void)
 
 	DEBUG(5, ("Opening cache file at %s\n", cache_fname));
 
-	cache = tdb_open_log(cache_fname, 0, TDB_DEFAULT,
-	                     O_RDWR|O_CREAT, 0644);
+	cache = tdb_open_log(cache_fname, 0, TDB_DEFAULT, open_flags, 0644);
 
 	if (!cache && (errno == EACCES)) {
-		cache = tdb_open_log(cache_fname, 0, TDB_DEFAULT, O_RDONLY, 0644);
+		open_flags = O_RDONLY;
+		cache = tdb_open_log(cache_fname, 0, TDB_DEFAULT, open_flags,
+				     0644);
 		if (cache) {
 			DEBUG(5, ("gencache_init: Opening cache file %s read-only.\n", cache_fname));
 		}
@@ -74,9 +77,30 @@ static bool gencache_init(void)
 		DEBUG(5, ("Attempt to open gencache.tdb has failed.\n"));
 		return False;
 	}
+
+	cache_fname = lock_path("gencache_notrans.tdb");
+
+	DEBUG(5, ("Opening cache file at %s\n", cache_fname));
+
+	cache_notrans = tdb_open_log(cache_fname, 0, TDB_CLEAR_IF_FIRST,
+				     open_flags, 0644);
+	if (cache_notrans == NULL) {
+		DEBUG(5, ("Opening %s failed: %s\n", cache_fname,
+			  strerror(errno)));
+		tdb_close(cache);
+		return false;
+	}
+
 	return True;
 }
 
+static TDB_DATA last_stabilize_key(void)
+{
+	TDB_DATA result;
+	result.dptr = (uint8_t *)"@LAST_STABILIZED";
+	result.dsize = 17;
+	return result;
+}
 
 /**
  * Set an entry in the cache file. If there's no such
@@ -95,6 +119,13 @@ bool gencache_set(const char *keystr, const char *value, time_t timeout)
 	int ret;
 	TDB_DATA databuf;
 	char* valstr = NULL;
+	time_t last_stabilize;
+
+	if (tdb_data_cmp(string_term_tdb_data(keystr),
+			 last_stabilize_key()) == 0) {
+		DEBUG(10, ("Can't store %s as a key\n", keystr));
+		return false;
+	}
 
 	if ((keystr == NULL) || (value == NULL)) {
 		return false;
@@ -112,8 +143,30 @@ bool gencache_set(const char *keystr, const char *value, time_t timeout)
 		   (int)(timeout - time(NULL)), 
 		   timeout > time(NULL) ? "ahead" : "in the past"));
 
-	ret = tdb_store_bystring(cache, keystr, databuf, 0);
+	ret = tdb_store_bystring(cache_notrans, keystr, databuf, 0);
 	SAFE_FREE(valstr);
+
+	if (ret != 0) {
+		return false;
+	}
+
+	/*
+	 * Every 5 minutes, call gencache_stabilize() to not let grow
+	 * gencache_notrans.tdb too large.
+	 */
+
+	last_stabilize = 0;
+	databuf = tdb_fetch(cache_notrans, last_stabilize_key());
+	if ((databuf.dptr != NULL)
+	    && (databuf.dptr[databuf.dsize-1] == '\0')) {
+		last_stabilize = atoi((char *)databuf.dptr);
+		SAFE_FREE(databuf.dptr);
+	}
+	if ((last_stabilize
+	     + lp_parm_int(-1, "gencache", "stabilize_interval", 300))
+	    < time(NULL)) {
+		gencache_stabilize();
+	}
 
 	return ret == 0;
 }
@@ -129,7 +182,9 @@ bool gencache_set(const char *keystr, const char *value, time_t timeout)
 
 bool gencache_del(const char *keystr)
 {
-	int ret;
+	bool exists;
+	bool ret = false;
+	char *value;
 
 	if (keystr == NULL) {
 		return false;
@@ -138,11 +193,46 @@ bool gencache_del(const char *keystr)
 	if (!gencache_init()) return False;	
 
 	DEBUG(10, ("Deleting cache entry (key = %s)\n", keystr));
-	ret = tdb_delete_bystring(cache, keystr);
 
-	return ret == 0;
+	if (tdb_lock_bystring(cache_notrans, keystr) == -1) {
+		DEBUG(5, ("Could not lock key for %s\n", keystr));
+		return false;
+	}
+
+	/*
+	 * We delete an element by setting its timeout to 0. This way we don't
+	 * have to do a transaction on gencache.tdb every time we delete an
+	 * element.
+	 */
+
+	exists = gencache_get(keystr, &value, NULL);
+	if (exists) {
+		SAFE_FREE(value);
+		ret = gencache_set(keystr, "", 0);
+	}
+	tdb_unlock_bystring(cache_notrans, keystr);
+	return ret;
 }
 
+static bool gencache_pull_timeout(char *val, time_t *pres, char **pendptr)
+{
+	time_t res;
+	char *endptr;
+
+	res = strtol(val, &endptr, 10);
+
+	if ((endptr == NULL) || (*endptr != '/')) {
+		DEBUG(2, ("Invalid gencache data format: %s\n", val));
+		return false;
+	}
+	if (pres != NULL) {
+		*pres = res;
+	}
+	if (pendptr != NULL) {
+		*pendptr = endptr;
+	}
+	return true;
+}
 
 /**
  * Get existing entry from the cache file.
@@ -167,22 +257,29 @@ bool gencache_get(const char *keystr, char **valstr, time_t *timeout)
 		return false;
 	}
 
+	if (tdb_data_cmp(string_term_tdb_data(keystr),
+			 last_stabilize_key()) == 0) {
+		DEBUG(10, ("Can't get %s as a key\n", keystr));
+		return false;
+	}
+
 	if (!gencache_init()) {
 		return False;
 	}
 
-	databuf = tdb_fetch_bystring(cache, keystr);
+	databuf = tdb_fetch_bystring(cache_notrans, keystr);
 
 	if (databuf.dptr == NULL) {
-		DEBUG(10, ("Cache entry with key = %s couldn't be found\n",
+		databuf = tdb_fetch_bystring(cache, keystr);
+	}
+
+	if (databuf.dptr == NULL) {
+		DEBUG(10, ("Cache entry with key = %s couldn't be found \n",
 			   keystr));
 		return False;
 	}
 
-	t = strtol((const char *)databuf.dptr, &endptr, 10);
-
-	if ((endptr == NULL) || (*endptr != '/')) {
-		DEBUG(2, ("Invalid gencache data format: %s\n", databuf.dptr));
+	if (!gencache_pull_timeout((char *)databuf.dptr, &t, &endptr)) {
 		SAFE_FREE(databuf.dptr);
 		return False;
 	}
@@ -191,10 +288,21 @@ bool gencache_get(const char *keystr, char **valstr, time_t *timeout)
 		   "timeout = %s", t > time(NULL) ? "valid" :
 		   "expired", keystr, endptr+1, ctime(&t)));
 
+	if (t == 0) {
+		/* Deleted */
+		SAFE_FREE(databuf.dptr);
+		return False;
+	}
+
 	if (t <= time(NULL)) {
 
-		/* We're expired, delete the entry */
-		tdb_delete_bystring(cache, keystr);
+		/*
+		 * We're expired, delete the entry. We can't use gencache_del
+		 * here, because that uses gencache_get_data_blob for checking
+		 * the existence of a record. We know the thing exists and
+		 * directly store an empty value with 0 timeout.
+		 */
+		gencache_set(keystr, "", 0);
 
 		SAFE_FREE(databuf.dptr);
 		return False;
@@ -217,6 +325,137 @@ bool gencache_get(const char *keystr, char **valstr, time_t *timeout)
 
 	return True;
 } 
+
+struct stabilize_state {
+	bool written;
+	bool error;
+};
+static int stabilize_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA val,
+			void *priv);
+
+/**
+ * Stabilize gencache
+ *
+ * Migrate the clear-if-first gencache data to the stable,
+ * transaction-based gencache.tdb
+ */
+
+bool gencache_stabilize(void)
+{
+	struct stabilize_state state;
+	int res;
+	char *now;
+
+	if (!gencache_init()) {
+		return false;
+	}
+
+	res = tdb_transaction_start(cache);
+	if (res == -1) {
+		DEBUG(10, ("Could not start transaction on gencache.tdb: "
+			   "%s\n", tdb_errorstr(cache)));
+		return false;
+	}
+	res = tdb_transaction_start(cache_notrans);
+	if (res == -1) {
+		tdb_transaction_cancel(cache);
+		DEBUG(10, ("Could not start transaction on "
+			   "gencache_notrans.tdb: %s\n",
+			   tdb_errorstr(cache_notrans)));
+		return false;
+	}
+
+	state.error = false;
+	state.written = false;
+
+	res = tdb_traverse(cache_notrans, stabilize_fn, &state);
+	if ((res == -1) || state.error) {
+		if ((tdb_transaction_cancel(cache_notrans) == -1)
+		    || (tdb_transaction_cancel(cache) == -1)) {
+			smb_panic("tdb_transaction_cancel failed\n");
+		}
+		return false;
+	}
+
+	if (!state.written) {
+		if ((tdb_transaction_cancel(cache_notrans) == -1)
+		    || (tdb_transaction_cancel(cache) == -1)) {
+			smb_panic("tdb_transaction_cancel failed\n");
+		}
+		return true;
+	}
+
+	res = tdb_transaction_commit(cache);
+	if (res == -1) {
+		DEBUG(10, ("tdb_transaction_commit on gencache.tdb failed: "
+			   "%s\n", tdb_errorstr(cache)));
+		if (tdb_transaction_cancel(cache_notrans) == -1) {
+			smb_panic("tdb_transaction_cancel failed\n");
+		}
+		return false;
+	}
+
+	res = tdb_transaction_commit(cache_notrans);
+	if (res == -1) {
+		DEBUG(10, ("tdb_transaction_commit on gencache.tdb failed: "
+			   "%s\n", tdb_errorstr(cache)));
+		return false;
+	}
+
+	now = talloc_asprintf(talloc_tos(), "%d", (int)time(NULL));
+	if (now != NULL) {
+		tdb_store(cache_notrans, last_stabilize_key(),
+			  string_term_tdb_data(now), 0);
+		TALLOC_FREE(now);
+	}
+
+	return true;
+}
+
+static int stabilize_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA val,
+			void *priv)
+{
+	struct stabilize_state *state = (struct stabilize_state *)priv;
+	int res;
+	time_t timeout;
+
+	if (tdb_data_cmp(key, last_stabilize_key()) == 0) {
+		return 0;
+	}
+
+	if (!gencache_pull_timeout((char *)val.dptr, &timeout, NULL)) {
+		DEBUG(10, ("Ignoring invalid entry\n"));
+		return 0;
+	}
+	if ((timeout < time(NULL)) || (val.dsize == 0)) {
+		res = tdb_delete(cache, key);
+		if ((res == -1) && (tdb_error(cache) == TDB_ERR_NOEXIST)) {
+			res = 0;
+		} else {
+			state->written = true;
+		}
+	} else {
+		res = tdb_store(cache, key, val, 0);
+		if (res == 0) {
+			state->written = true;
+		}
+	}
+
+	if (res == -1) {
+		DEBUG(10, ("Transfer to gencache.tdb failed: %s\n",
+			   tdb_errorstr(cache)));
+		state->error = true;
+		return -1;
+	}
+
+	if (tdb_delete(cache_notrans, key) == -1) {
+		DEBUG(10, ("tdb_delete from gencache_notrans.tdb failed: "
+			   "%s\n", tdb_errorstr(cache_notrans)));
+		state->error = true;
+		return -1;
+	}
+	return 0;
+}
 
 /**
  * Get existing entry from the cache file.
@@ -387,6 +626,7 @@ struct gencache_iterate_state {
 		   void *priv);
 	const char *pattern;
 	void *priv;
+	bool in_persistent;
 };
 
 static int gencache_iterate_fn(struct tdb_context *tdb, TDB_DATA key,
@@ -401,6 +641,14 @@ static int gencache_iterate_fn(struct tdb_context *tdb, TDB_DATA key,
 	unsigned long u;
 	time_t timeout;
 	char *timeout_endp;
+
+	if (tdb_data_cmp(key, last_stabilize_key()) == 0) {
+		return 0;
+	}
+
+	if (state->in_persistent && tdb_exists(cache_notrans, key)) {
+		return 0;
+	}
 
 	if (key.dptr[key.dsize-1] == '\0') {
 		keystr = (char *)key.dptr;
@@ -462,5 +710,10 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 	state.fn = fn;
 	state.pattern = keystr_pattern;
 	state.priv = data;
+
+	state.in_persistent = false;
+	tdb_traverse(cache_notrans, gencache_iterate_fn, &state);
+
+	state.in_persistent = true;
 	tdb_traverse(cache, gencache_iterate_fn, &state);
 }

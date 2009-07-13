@@ -868,6 +868,7 @@ static void exit_server_common(enum server_exit_reason how,
 		if (am_parent) {
 			pidfile_unlink();
 		}
+		gencache_stabilize();
 	}
 
 	/* if we had any open SMB connections when we exited then we

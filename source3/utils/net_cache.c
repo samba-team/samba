@@ -297,6 +297,21 @@ static int net_cache_flush(struct net_context *c, int argc, const char **argv)
 	return 0;
 }
 
+static int net_cache_stabilize(struct net_context *c, int argc,
+			       const char **argv)
+{
+	if (c->display_usage) {
+		d_printf("Usage:\n"
+			 "net cache flush\n"
+			 "    Delete all cache entries.\n");
+		return 0;
+	}
+
+	if (!gencache_stabilize()) {
+		return -1;
+	}
+	return 0;
+}
 /**
  * Entry point to 'net cache' subfunctionality
  *
@@ -361,6 +376,14 @@ int net_cache(struct net_context *c, int argc, const char **argv)
 			"Delete all cache entries",
 			"net cache flush\n"
 			"  Delete all cache entries"
+		},
+		{
+			"stabilize",
+			net_cache_stabilize,
+			NET_TRANSPORT_LOCAL,
+			"Move transient cache content to stable storage",
+			"net cache stabilize\n"
+			"  Move transient cache content to stable storage"
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
