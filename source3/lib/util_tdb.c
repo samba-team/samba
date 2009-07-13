@@ -630,3 +630,22 @@ NTSTATUS map_nt_error_from_tdb(enum TDB_ERROR err)
 
 	return NT_STATUS_INTERNAL_ERROR;
 }
+
+int tdb_data_cmp(TDB_DATA t1, TDB_DATA t2)
+{
+	int ret;
+	if (t1.dptr == NULL && t2.dptr != NULL) {
+		return -1;
+	}
+	if (t1.dptr != NULL && t2.dptr == NULL) {
+		return 1;
+	}
+	if (t1.dptr == t2.dptr) {
+		return t1.dsize - t2.dsize;
+	}
+	ret = memcmp(t1.dptr, t2.dptr, MIN(t1.dsize, t2.dsize));
+	if (ret == 0) {
+		return t1.dsize - t2.dsize;
+	}
+	return ret;
+}

@@ -59,4 +59,6 @@ struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *mem_ctx,
 
 NTSTATUS map_nt_error_from_tdb(enum TDB_ERROR err);
 
+int tdb_data_cmp(TDB_DATA t1, TDB_DATA t2);
+
 #endif /* __TDBUTIL_H__ */
