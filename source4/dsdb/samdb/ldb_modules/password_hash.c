@@ -1026,6 +1026,7 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 	uint8_t zero16[16];
 	bool do_newer_keys = false;
 	bool do_cleartext = false;
+	int *domainFunctionality;
 
 	ZERO_STRUCT(zero16);
 	ZERO_STRUCT(names);
@@ -1064,10 +1065,10 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 					       _old_scb.sub.signature, SUPPLEMENTAL_CREDENTIALS_SIGNATURE);
 		}
 	}
+	/* Per MS-SAMR 3.1.1.8.11.6 we create AES keys if our domain functionality level is 2008 or higher */
+	domainFunctionality = talloc_get_type(ldb_get_opaque(ldb, "domainFunctionality"), int);
 
-	/* TODO: do the correct check for this, it maybe depends on the functional level? */
-	do_newer_keys = lp_parm_bool(ldb_get_opaque(ldb, "loadparm"),
-				     NULL, "password_hash", "create_aes_key", false);
+	do_newer_keys = *domainFunctionality && (*domainFunctionality >= DS_BEHAVIOR_WIN2008);
 
 	if (io->domain->store_cleartext &&
 	    (io->u.user_account_control & UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED)) {

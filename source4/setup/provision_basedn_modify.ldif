@@ -47,10 +47,10 @@ replace: serverState
 serverState: 1
 -
 replace: nTMixedDomain
-nTMixedDomain: 1
+nTMixedDomain: 0
 -
 replace: msDS-Behavior-Version
-msDS-Behavior-Version: 0
+msDS-Behavior-Version: ${DOMAIN_FUNCTIONALITY}
 -
 replace: ridManagerReference
 ridManagerReference: CN=RID Manager$,CN=System,${DOMAINDN}

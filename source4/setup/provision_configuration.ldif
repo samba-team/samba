@@ -6,7 +6,7 @@ objectClass: top
 objectClass: crossRefContainer
 cn: Partitions
 systemFlags: -2147483648
-msDS-Behavior-Version: 0
+msDS-Behavior-Version: ${FOREST_FUNCTIONALALITY}
 fSMORoleOwner: CN=NTDS Settings,${SERVERDN}
 
 dn: CN=Enterprise Configuration,CN=Partitions,${CONFIGDN}

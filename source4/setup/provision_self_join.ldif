@@ -13,7 +13,7 @@ primaryGroupID: 516
 accountExpires: 9223372036854775807
 sAMAccountName: ${NETBIOSNAME}$
 operatingSystem: Samba
-operatingSystemVersion: 4.0
+operatingSystemVersion: ${SAMBA_VERSION_STRING}
 dNSHostName: ${DNSNAME}
 isCriticalSystemObject: TRUE
 userPassword:: ${MACHINEPASS_B64}
@@ -57,7 +57,7 @@ options: 1
 systemFlags: 33554432
 dMDLocation: ${SCHEMADN}
 invocationId: ${INVOCATIONID}
-msDS-Behavior-Version: 2
+msDS-Behavior-Version: ${DOMAIN_CONTROLLER_FUNCTIONALITY}
 msDS-hasMasterNCs: ${CONFIGDN}
 msDS-hasMasterNCs: ${SCHEMADN}
 msDS-hasMasterNCs: ${DOMAINDN}

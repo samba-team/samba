@@ -362,5 +362,11 @@ void initglue(void)
 		return;
 
 	PyModule_AddObject(m, "version", PyString_FromString(SAMBA_VERSION_STRING));
+
+	PyModule_AddObject(m, "DS_BEHAVIOR_WIN2000", PyInt_FromLong(DS_BEHAVIOR_WIN2000));
+	PyModule_AddObject(m, "DS_BEHAVIOR_WIN2003_INTERIM", PyInt_FromLong(DS_BEHAVIOR_WIN2003_INTERIM));
+	PyModule_AddObject(m, "DS_BEHAVIOR_WIN2003", PyInt_FromLong(DS_BEHAVIOR_WIN2003));
+	PyModule_AddObject(m, "DS_BEHAVIOR_WIN2008", PyInt_FromLong(DS_BEHAVIOR_WIN2008));
+
 }
 
