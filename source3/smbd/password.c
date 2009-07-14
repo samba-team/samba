@@ -428,16 +428,16 @@ bool user_in_netgroup(struct smbd_server_connection *sconn,
 	if (innetgr(ngname, NULL, user, sconn->smb1.sessions.my_yp_domain)) {
 		DEBUG(5,("user_in_netgroup: Found\n"));
 		return true;
-	} else {
+	}
 
-		/*
-		 * Ok, innetgr is case sensitive. Try once more with lowercase
-		 * just in case. Attempt to fix #703. JRA.
-		 */
+	/*
+	 * Ok, innetgr is case sensitive. Try once more with lowercase
+	 * just in case. Attempt to fix #703. JRA.
+	 */
+	fstrcpy(lowercase_user, user);
+	strlower_m(lowercase_user);
 
-		fstrcpy(lowercase_user, user);
-		strlower_m(lowercase_user);
-
+	if (strcmp(user,lowercase_user) != 0) {
 		DEBUG(5,("looking for user %s of domain %s in netgroup %s\n",
 			lowercase_user,
 			sconn->smb1.sessions.my_yp_domain?
@@ -449,6 +449,9 @@ bool user_in_netgroup(struct smbd_server_connection *sconn,
 			DEBUG(5,("user_in_netgroup: Found\n"));
 			return true;
 		}
+	} else {
+		/* user name was already lower case! */
+		return false;
 	}
 #endif /* HAVE_NETGROUP */
 	return false;
