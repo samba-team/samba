@@ -99,6 +99,25 @@ static double timeval_elapsed(struct timeval *tv)
 	} \
 } while (0)
 
+static unsigned int test_abort_count;
+
+static void test_abort_fn(const char *reason)
+{
+	printf("# test_abort_fn(%s)\n", reason);
+	test_abort_count++;
+}
+
+static void test_abort_start(void)
+{
+	test_abort_count = 0;
+	talloc_set_abort_fn(test_abort_fn);
+}
+
+static void test_abort_stop(void)
+{
+	test_abort_count = 0;
+	talloc_set_abort_fn(NULL);
+}
 
 /*
   test references 
@@ -1109,6 +1128,7 @@ static bool test_pool(void)
 
 static void test_reset(void)
 {
+	test_abort_stop();
 	talloc_disable_null_tracking();
 	talloc_enable_null_tracking();
 }
