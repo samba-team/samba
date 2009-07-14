@@ -155,7 +155,6 @@ find_again:
 		return NULL;
 	}
 	conn->cnum = i;
-	conn->force_recheck_perm = false;
 	conn->force_group_gid = (gid_t)-1;
 
 	bitmap_set(sconn->smb1.tcons.bmap, i);

@@ -4296,7 +4296,6 @@ enum usershare_err parse_usershare_file(TALLOC_CTX *ctx,
 			char **pp_comment,
 			SEC_DESC **ppsd,
 			bool *pallow_guest);
-bool am_usershare(int iService);
 int load_usershare_service(const char *servicename);
 int load_usershare_shares(void);
 void gfree_loadparm(void);
@@ -7064,8 +7063,7 @@ void reply_transs2(struct smb_request *req);
 
 bool change_to_guest(void);
 void conn_clear_vuid_cache(connection_struct *conn, uint16_t vuid);
-bool change_to_user_force_recheck(connection_struct *conn, uint16 vuid,
-				  bool recheck, NTSTATUS *pstatus);
+bool change_to_user(connection_struct *conn, uint16 vuid);
 bool change_to_root_user(void);
 bool become_authenticated_pipe_user(pipes_struct *p);
 bool unbecome_authenticated_pipe_user(void);
@@ -7073,9 +7071,6 @@ void become_root(void);
 void unbecome_root(void);
 bool become_user(connection_struct *conn, uint16 vuid);
 bool unbecome_user(void);
-
-#define change_to_user(conn, vuid) \
-	change_to_user_force_recheck(conn, vuid, 0, NULL)
 
 /* The following definitions come from smbd/utmp.c  */
 

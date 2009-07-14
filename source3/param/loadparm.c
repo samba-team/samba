@@ -8741,6 +8741,17 @@ bool am_usershare(int iService)
 }
 
 /***************************************************************************
+Am I a usershare service?
+***************************************************************************/
+bool am_usershare(int iService)
+{
+	if (iService >= 0) {
+		return (ServicePtrs[iService]->usershare == USERSHARE_VALID);
+	}
+	return false;
+}
+
+/***************************************************************************
  Checks if a usershare entry has been modified since last load.
 ***************************************************************************/
 

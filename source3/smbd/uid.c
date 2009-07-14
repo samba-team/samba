@@ -82,17 +82,12 @@ static void free_conn_server_info_if_unused(connection_struct *conn)
 static bool check_user_ok(connection_struct *conn,
 			uint16_t vuid,
 			const struct auth_serversupplied_info *server_info,
-			int snum, bool recheck, NTSTATUS *pstatus)
+			int snum)
 {
 	bool valid_vuid = (vuid != UID_FIELD_INVALID);
 	unsigned int i;
 	bool readonly_share;
 	bool admin_user;
-	struct vuid_cache_entry *ent0;
-
-	if (pstatus) {
-		*pstatus = NT_STATUS_OK;
-	}
 
 	if (valid_vuid) {
 		struct vuid_cache_entry *ent;
@@ -101,27 +96,18 @@ static bool check_user_ok(connection_struct *conn,
 			ent = &conn->vuid_cache.array[i];
 			if (ent->vuid == vuid) {
 				free_conn_server_info_if_unused(conn);
-				ent0 = ent;
-				if (!recheck) {
-					conn->server_info = ent->server_info;
-					conn->read_only = ent->read_only;
-					conn->admin_user = ent->admin_user;
-					return(True);
-				} else {
-					break;
-				}
+				conn->server_info = ent->server_info;
+				conn->read_only = ent->read_only;
+				conn->admin_user = ent->admin_user;
+				return(True);
 			}
 		}
 	}
 
 	if (!user_ok_token(server_info->unix_name,
 			   pdb_get_domain(server_info->sam_account),
-			   server_info->ptok, snum)) {
-		if (pstatus) {
-			*pstatus = NT_STATUS_ACCESS_DENIED;
-		}
+			   server_info->ptok, snum))
 		return(False);
-	}
 
 	readonly_share = is_share_read_only_for_token(
 		server_info->unix_name,
@@ -142,9 +128,6 @@ static bool check_user_ok(connection_struct *conn,
 	if (!share_access_check(server_info->ptok, lp_servicename(snum),
 				readonly_share ?
 				FILE_READ_DATA : FILE_WRITE_DATA)) {
-		if (pstatus) {
-			*pstatus = NT_STATUS_ACCESS_DENIED;
-		}
 		return False;
 	}
 
@@ -154,26 +137,13 @@ static bool check_user_ok(connection_struct *conn,
 		NULL, server_info->ptok, lp_admin_users(snum));
 
 	if (valid_vuid) {
-		struct vuid_cache_entry *ent = NULL;
+		struct vuid_cache_entry *ent =
+			&conn->vuid_cache.array[conn->vuid_cache.next_entry];
 
-		if (!recheck || i == VUID_CACHE_SIZE) {
-			/* find a new entry and fill it. */
-			ent = &conn->vuid_cache.array[conn->vuid_cache.next_entry];
+		conn->vuid_cache.next_entry =
+			(conn->vuid_cache.next_entry + 1) % VUID_CACHE_SIZE;
 
-			conn->vuid_cache.next_entry =
-				(conn->vuid_cache.next_entry + 1) % VUID_CACHE_SIZE;
-
-			TALLOC_FREE(ent->server_info);
-		} else if (recheck && (i < VUID_CACHE_SIZE) && (ent0->vuid == vuid)) {
-			/* she perform forced recheck, replace the old one. */
-			ent = ent0;
-		} else {
-			/* must not happen */
-			DEBUG(0, ("check_user_ok: recheck %s\n", recheck ? "true" : "false"));
-			DEBUG(0, ("check_user_ok: vuid cache %d -- %d\n", i, VUID_CACHE_SIZE));
-			DEBUG(0, ("check_user_ok: vuid %d -- %d\n", ent0->vuid, vuid));
-			smb_panic("should not happen");
-		}
+		TALLOC_FREE(ent->server_info);
 
 		/*
 		 * If force_user was set, all server_info's are based on the same
@@ -185,9 +155,6 @@ static bool check_user_ok(connection_struct *conn,
 
 		if (ent->server_info == NULL) {
 			ent->vuid = UID_FIELD_INVALID;
-			if (pstatus) {
-				*pstatus = NT_STATUS_NO_MEMORY;
-			}
 			return false;
 		}
 
@@ -254,8 +221,7 @@ void conn_clear_vuid_cache(connection_struct *conn, uint16_t vuid)
  stack, but modify the current_user entries.
 ****************************************************************************/
 
-bool change_to_user_force_recheck(connection_struct *conn, uint16 vuid,
-				  bool recheck, NTSTATUS *pstatus)
+bool change_to_user(connection_struct *conn, uint16 vuid)
 {
 	const struct auth_serversupplied_info *server_info = NULL;
 	struct smbd_server_connection *sconn = smbd_server_conn;
@@ -269,9 +235,6 @@ bool change_to_user_force_recheck(connection_struct *conn, uint16 vuid,
 
 	if (!conn) {
 		DEBUG(2,("change_to_user: Connection not open\n"));
-		if (pstatus) {
-			*pstatus = NT_STATUS_INVALID_HANDLE;
-		}
 		return(False);
 	}
 
@@ -282,19 +245,17 @@ bool change_to_user_force_recheck(connection_struct *conn, uint16 vuid,
 	 * SMB's - this hurts performance - Badly.
 	 */
 
-	if (!recheck) {
-		if((lp_security() == SEC_SHARE) && (current_user.conn == conn) &&
-		   (current_user.ut.uid == conn->server_info->utok.uid)) {
-			DEBUG(4,("change_to_user: Skipping user change - already "
-				 "user\n"));
-			return(True);
-		} else if ((current_user.conn == conn) &&
-			   (vuser != NULL) && (current_user.vuid == vuid) &&
-			   (current_user.ut.uid == vuser->server_info->utok.uid)) {
-			DEBUG(4,("change_to_user: Skipping user change - already "
-				 "user\n"));
-			return(True);
-		}
+	if((lp_security() == SEC_SHARE) && (current_user.conn == conn) &&
+	   (current_user.ut.uid == conn->server_info->utok.uid)) {
+		DEBUG(4,("change_to_user: Skipping user change - already "
+			 "user\n"));
+		return(True);
+	} else if ((current_user.conn == conn) && 
+		   (vuser != NULL) && (current_user.vuid == vuid) &&
+		   (current_user.ut.uid == vuser->server_info->utok.uid)) {
+		DEBUG(4,("change_to_user: Skipping user change - already "
+			 "user\n"));
+		return(True);
 	}
 
 	snum = SNUM(conn);
@@ -305,13 +266,10 @@ bool change_to_user_force_recheck(connection_struct *conn, uint16 vuid,
 		/* Invalid vuid sent - even with security = share. */
 		DEBUG(2,("change_to_user: Invalid vuid %d used on "
 			 "share %s.\n",vuid, lp_servicename(snum) ));
-		if (pstatus) {
-			*pstatus = NT_STATUS_ACCESS_VIOLATION;
-		}
 		return false;
 	}
 
-	if (!check_user_ok(conn, vuid, server_info, snum, recheck, pstatus)) {
+	if (!check_user_ok(conn, vuid, server_info, snum)) {
 		DEBUG(2,("change_to_user: SMB user %s (unix user %s, vuid %d) "
 			 "not permitted access to share %s.\n",
 			 server_info->sanitized_username,
@@ -338,9 +296,6 @@ bool change_to_user_force_recheck(connection_struct *conn, uint16 vuid,
 	} else {
 		DEBUG(2,("change_to_user: Invalid vuid used %d in accessing "
 			 "share %s.\n",vuid, lp_servicename(snum) ));
-		if (pstatus) {
-			*pstatus = NT_STATUS_DOS(ERRSRV, ERRbaduid);
-		}
 		return False;
 	}
 
@@ -398,9 +353,6 @@ bool change_to_user_force_recheck(connection_struct *conn, uint16 vuid,
 	DEBUG(5,("change_to_user uid=(%d,%d) gid=(%d,%d)\n",
 		 (int)getuid(),(int)geteuid(),(int)getgid(),(int)getegid()));
 
-	if (pstatus) {
-		*pstatus = NT_STATUS_OK;
-	}
 	return(True);
 }
 
