@@ -2952,17 +2952,17 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			fsp.fnum = -1;
 
 			/* access check */
-			if (conn->server_info->utok.uid != 0) {
+			if (conn->server_info->utok.uid != sec_initial_uid()) {
 				DEBUG(0,("set_user_quota: access_denied "
 					 "service [%s] user [%s]\n",
 					 lp_servicename(SNUM(conn)),
 					 conn->server_info->unix_name));
-				return NT_STATUS_DOS(ERRDOS, ERRnoaccess);
+				return NT_STATUS_ACCESS_DENIED;
 			}
 
 			if (vfs_get_ntquota(&fsp, SMB_USER_FS_QUOTA_TYPE, NULL, &quotas)!=0) {
 				DEBUG(0,("vfs_get_ntquota() failed for service [%s]\n",lp_servicename(SNUM(conn))));
-				return NT_STATUS_DOS(ERRSRV, ERRerror);
+				return map_nt_error_from_unix(errno);
 			}
 
 			data_len = 48;
@@ -3446,12 +3446,12 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 				ZERO_STRUCT(quotas);
 
 				/* access check */
-				if ((conn->server_info->utok.uid != 0)
+				if ((conn->server_info->utok.uid != sec_initial_uid())
 				    ||!CAN_WRITE(conn)) {
 					DEBUG(0,("set_user_quota: access_denied service [%s] user [%s]\n",
 						 lp_servicename(SNUM(conn)),
 						 conn->server_info->unix_name));
-					reply_doserror(req, ERRSRV, ERRaccess);
+					reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 					return;
 				}
 
@@ -3520,7 +3520,7 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 				/* now set the quotas */
 				if (vfs_set_ntquota(fsp, SMB_USER_FS_QUOTA_TYPE, NULL, &quotas)!=0) {
 					DEBUG(0,("vfs_set_ntquota() failed for service [%s]\n",lp_servicename(SNUM(conn))));
-					reply_doserror(req, ERRSRV, ERRerror);
+					reply_nterror(req, map_nt_error_from_unix(errno));
 					return;
 				}
 
