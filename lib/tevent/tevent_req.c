@@ -109,6 +109,7 @@ struct tevent_req *_tevent_req_create(TALLOC_CTX *mem_ctx,
 		talloc_free(req);
 		return NULL;
 	}
+	memset(data, '\0', data_size);
 	talloc_set_name_const(data, type);
 
 	req->data = data;
