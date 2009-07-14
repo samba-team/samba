@@ -40,6 +40,7 @@ rpc.netlogon.*.DatabaseRedo
 rpc.netlogon.*.ServerGetTrustInfo
 samba4.rpc.samr.passwords.pwdlastset # Not provided by Samba 4 yet
 samba4.rpc.samr.users.privileges
+samba4.rpc.spoolss.printer # Not provided by Samba 4 yet
 base.charset.*.Testing partial surrogate
 .*net.api.delshare.*				# DelShare isn't implemented yet
 rap.*netservergetinfo
