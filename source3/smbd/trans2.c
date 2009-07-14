@@ -7277,7 +7277,7 @@ NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
 
 		case SMB_SET_POSIX_LOCK:
 		{
-			if (fsp) {
+			if (!fsp) {
 				return NT_STATUS_INVALID_LEVEL;
 			}
 			status = smb_set_posix_lock(conn, req,
