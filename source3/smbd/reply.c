@@ -2646,18 +2646,23 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 
 		while ((dname = ReadDirName(dir_hnd, &offset,
 					    &smb_fname->st))) {
+			TALLOC_CTX *frame = talloc_stackframe();
+
 			if (!is_visible_file(conn, fname_dir, dname,
 					     &smb_fname->st, true)) {
+				TALLOC_FREE(frame);
 				continue;
 			}
 
 			/* Quick check for "." and ".." */
 			if (ISDOT(dname) || ISDOTDOT(dname)) {
+				TALLOC_FREE(frame);
 				continue;
 			}
 
 			if(!mask_match(dname, fname_mask,
 				       conn->case_sensitive)) {
+				TALLOC_FREE(frame);
 				continue;
 			}
 
@@ -2669,23 +2674,28 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 			if (!smb_fname->base_name) {
 				TALLOC_FREE(dir_hnd);
 				status = NT_STATUS_NO_MEMORY;
+				TALLOC_FREE(frame);
 				goto out;
 			}
 
 			status = check_name(conn, smb_fname->base_name);
 			if (!NT_STATUS_IS_OK(status)) {
 				TALLOC_FREE(dir_hnd);
+				TALLOC_FREE(frame);
 				goto out;
 			}
 
 			status = do_unlink(conn, req, smb_fname, dirtype);
 			if (!NT_STATUS_IS_OK(status)) {
+				TALLOC_FREE(frame);
 				continue;
 			}
 
 			count++;
 			DEBUG(3,("unlink_internals: successful unlink [%s]\n",
 				 smb_fname->base_name));
+
+			TALLOC_FREE(frame);
 		}
 		TALLOC_FREE(dir_hnd);
 	}
