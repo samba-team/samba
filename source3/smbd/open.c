@@ -94,6 +94,7 @@ static NTSTATUS check_open_rights(struct connection_struct *conn,
 			"on %s: %s\n",
 			smb_fname_str_dbg(smb_fname),
 			nt_errstr(status)));
+		TALLOC_FREE(sd);
 		return status;
 	}
 
