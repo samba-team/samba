@@ -437,21 +437,21 @@ bool user_in_netgroup(struct smbd_server_connection *sconn,
 	fstrcpy(lowercase_user, user);
 	strlower_m(lowercase_user);
 
-	if (strcmp(user,lowercase_user) != 0) {
-		DEBUG(5,("looking for user %s of domain %s in netgroup %s\n",
-			lowercase_user,
-			sconn->smb1.sessions.my_yp_domain?
-			sconn->smb1.sessions.my_yp_domain:"(ANY)",
-			ngname));
-
-		if (innetgr(ngname, NULL, lowercase_user,
-			    sconn->smb1.sessions.my_yp_domain)) {
-			DEBUG(5,("user_in_netgroup: Found\n"));
-			return true;
-		}
-	} else {
+	if (strcmp(user,lowercase_user) == 0) {
 		/* user name was already lower case! */
 		return false;
+	}
+
+	DEBUG(5,("looking for user %s of domain %s in netgroup %s\n",
+		lowercase_user,
+		sconn->smb1.sessions.my_yp_domain?
+		sconn->smb1.sessions.my_yp_domain:"(ANY)",
+		ngname));
+
+	if (innetgr(ngname, NULL, lowercase_user,
+		    sconn->smb1.sessions.my_yp_domain)) {
+		DEBUG(5,("user_in_netgroup: Found\n"));
+		return true;
 	}
 #endif /* HAVE_NETGROUP */
 	return false;
