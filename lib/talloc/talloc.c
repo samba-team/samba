@@ -180,12 +180,15 @@ static inline struct talloc_chunk *talloc_chunk_from_ptr(const void *ptr)
 	if (unlikely((tc->flags & (TALLOC_FLAG_FREE | ~0xF)) != TALLOC_MAGIC)) { 
 		if ((tc->flags & (~0xF)) == TALLOC_MAGIC_V1) {
 			talloc_abort_magic_v1();
+			return NULL;
 		}
 
 		if (tc->flags & TALLOC_FLAG_FREE) {
 			talloc_abort_double_free();
+			return NULL;
 		} else {
 			talloc_abort_unknown_value();
+			return NULL;
 		}
 	}
 	return tc;
@@ -595,6 +598,7 @@ static inline int _talloc_free_internal(void *ptr)
 
 		if (*pool_object_count == 0) {
 			talloc_abort("Pool object count zero!");
+			return 0;
 		}
 
 		*pool_object_count -= 1;
