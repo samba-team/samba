@@ -1700,6 +1700,7 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 		char *utf8_password;
 		char *utf8_dn;
 		size_t converted_size;
+		int ret;
 
 		if (!ldap_state->is_nds_ldap) {
 
@@ -1731,14 +1732,31 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 		}
 
 		if ((ber_printf (ber, "{") < 0) ||
-		    (ber_printf (ber, "ts", LDAP_TAG_EXOP_MODIFY_PASSWD_ID, utf8_dn) < 0) ||
-		    (ber_printf (ber, "ts", LDAP_TAG_EXOP_MODIFY_PASSWD_NEW, utf8_password) < 0) ||
-		    (ber_printf (ber, "n}") < 0)) {
-			DEBUG(0,("ldapsam_modify_entry: ber_printf returns a value <0\n"));
-                       ber_free(ber,1);
-                       SAFE_FREE(utf8_dn);
-                       SAFE_FREE(utf8_password);
-                       return NT_STATUS_UNSUCCESSFUL;
+		    (ber_printf (ber, "ts", LDAP_TAG_EXOP_MODIFY_PASSWD_ID,
+				 utf8_dn) < 0)) {
+			DEBUG(0,("ldapsam_modify_entry: ber_printf returns a "
+				 "value <0\n"));
+			ber_free(ber,1);
+			SAFE_FREE(utf8_dn);
+			SAFE_FREE(utf8_password);
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
+		if ((utf8_password != NULL) && (*utf8_password != '\0')) {
+			ret = ber_printf(ber, "ts}",
+					 LDAP_TAG_EXOP_MODIFY_PASSWD_NEW,
+					 utf8_password);
+		} else {
+			ret = ber_printf(ber, "}");
+		}
+
+		if (ret < 0) {
+			DEBUG(0,("ldapsam_modify_entry: ber_printf returns a "
+				 "value <0\n"));
+			ber_free(ber,1);
+			SAFE_FREE(utf8_dn);
+			SAFE_FREE(utf8_password);
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 
 	        if ((rc = ber_flatten (ber, &bv))<0) {
