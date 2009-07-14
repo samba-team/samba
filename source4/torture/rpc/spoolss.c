@@ -75,20 +75,22 @@ struct test_spoolss_context {
 
 #define COMPARE_STRING_ARRAY(tctx, c,r,e)
 
-static bool test_OpenPrinter_server(struct torture_context *tctx, struct dcerpc_pipe *p, struct test_spoolss_context *ctx)
+static bool test_OpenPrinter_server(struct torture_context *tctx,
+				    struct dcerpc_pipe *p,
+				    struct policy_handle *server_handle)
 {
 	NTSTATUS status;
 	struct spoolss_OpenPrinter op;
 
-	op.in.printername	= talloc_asprintf(ctx, "\\\\%s", dcerpc_server_name(p));
+	op.in.printername	= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	op.in.datatype		= NULL;
 	op.in.devmode_ctr.devmode= NULL;
 	op.in.access_mask	= 0;
-	op.out.handle		= &ctx->server_handle;
+	op.out.handle		= server_handle;
 
 	torture_comment(tctx, "Testing OpenPrinter(%s)\n", op.in.printername);
 
-	status = dcerpc_spoolss_OpenPrinter(p, ctx, &op);
+	status = dcerpc_spoolss_OpenPrinter(p, tctx, &op);
 	torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_OpenPrinter failed");
 	torture_assert_werr_ok(tctx, op.out.result, "dcerpc_spoolss_OpenPrinter failed");
 
@@ -2087,7 +2089,7 @@ bool torture_rpc_spoolss(struct torture_context *torture)
 
 	ctx = talloc_zero(torture, struct test_spoolss_context);
 
-	ret &= test_OpenPrinter_server(torture, p, ctx);
+	ret &= test_OpenPrinter_server(torture, p, &ctx->server_handle);
 
 	ret &= test_GetPrinterData(torture, p, &ctx->server_handle, "W3SvcInstalled");
 	ret &= test_GetPrinterData(torture, p, &ctx->server_handle, "BeepEnabled");
