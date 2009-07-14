@@ -339,8 +339,7 @@ static NTSTATUS dsgetdcname_cache_fetch(TALLOC_CTX *mem_ctx,
 					struct GUID *domain_guid,
 					uint32_t flags,
 					const char *site_name,
-					struct netr_DsRGetDCNameInfo **info_p,
-					bool *expired)
+					struct netr_DsRGetDCNameInfo **info_p)
 {
 	char *key;
 	DATA_BLOB blob;
@@ -354,8 +353,8 @@ static NTSTATUS dsgetdcname_cache_fetch(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!gencache_get_data_blob(key, &blob, expired)) {
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	if (!gencache_get_data_blob(key, &blob, NULL)) {
+		return NT_STATUS_NOT_FOUND;
 	}
 
 	info = TALLOC_ZERO_P(mem_ctx, struct netr_DsRGetDCNameInfo);
@@ -410,11 +409,11 @@ static NTSTATUS dsgetdcname_cached(TALLOC_CTX *mem_ctx,
 				   struct netr_DsRGetDCNameInfo **info)
 {
 	NTSTATUS status;
-	bool expired = false;
 
 	status = dsgetdcname_cache_fetch(mem_ctx, domain_name, domain_guid,
-					 flags, site_name, info, &expired);
-	if (!NT_STATUS_IS_OK(status)) {
+					 flags, site_name, info);
+	if (!NT_STATUS_IS_OK(status)
+	    && !NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		DEBUG(10,("dsgetdcname_cached: cache fetch failed with: %s\n",
 			nt_errstr(status)));
 		return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
@@ -424,7 +423,7 @@ static NTSTATUS dsgetdcname_cached(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	if (expired) {
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		status = dsgetdcname_cache_refresh(mem_ctx, msg_ctx,
 						   domain_name,
 						   domain_guid, flags,
