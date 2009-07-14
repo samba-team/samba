@@ -2857,103 +2857,260 @@ bool cli_unlock64(struct cli_state *cli, uint16_t fnum, uint64_t offset, uint64_
  Get/unlock a POSIX lock on a file - internal function.
 ****************************************************************************/
 
-static bool cli_posix_lock_internal(struct cli_state *cli, uint16_t fnum,
-		uint64_t offset, uint64_t len, bool wait_lock, enum brl_type lock_type)
+struct posix_lock_state {
+        uint16_t setup;
+	uint8_t param[4];
+        uint8_t data[POSIX_LOCK_DATA_SIZE];
+};
+
+static void cli_posix_unlock_internal_done(struct tevent_req *subreq)
 {
-	unsigned int param_len = 4;
-	unsigned int data_len = POSIX_LOCK_DATA_SIZE;
-	uint16_t setup = TRANSACT2_SETFILEINFO;
-	char param[4];
-	unsigned char data[POSIX_LOCK_DATA_SIZE];
-	char *rparam=NULL, *rdata=NULL;
-	int saved_timeout = cli->timeout;
+	struct tevent_req *req = tevent_req_callback_data(
+					subreq, struct tevent_req);
+	struct posix_lock_state *state = tevent_req_data(req, struct posix_lock_state);
+	NTSTATUS status;
 
-	SSVAL(param,0,fnum);
-	SSVAL(param,2,SMB_SET_POSIX_LOCK);
+	status = cli_trans_recv(subreq, state, NULL, NULL, NULL, NULL, NULL, NULL);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	tevent_req_done(req);
+}
 
+static struct tevent_req *cli_posix_lock_internal_send(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct cli_state *cli,
+					uint16_t fnum,
+					uint64_t offset,
+					uint64_t len,
+					bool wait_lock,
+					enum brl_type lock_type)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct posix_lock_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state, struct posix_lock_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	/* Setup setup word. */
+	SSVAL(&state->setup, 0, TRANSACT2_SETFILEINFO);
+
+	/* Setup param array. */
+	SSVAL(&state->param, 0, fnum);
+	SSVAL(&state->param, 2, SMB_SET_POSIX_LOCK);
+
+	/* Setup data array. */
 	switch (lock_type) {
 		case READ_LOCK:
-			SSVAL(data, POSIX_LOCK_TYPE_OFFSET, POSIX_LOCK_TYPE_READ);
+			SSVAL(&state->data, POSIX_LOCK_TYPE_OFFSET,
+				POSIX_LOCK_TYPE_READ);
 			break;
 		case WRITE_LOCK:
-			SSVAL(data, POSIX_LOCK_TYPE_OFFSET, POSIX_LOCK_TYPE_WRITE);
+			SSVAL(&state->data, POSIX_LOCK_TYPE_OFFSET,
+				POSIX_LOCK_TYPE_WRITE);
 			break;
 		case UNLOCK_LOCK:
-			SSVAL(data, POSIX_LOCK_TYPE_OFFSET, POSIX_LOCK_TYPE_UNLOCK);
+			SSVAL(&state->data, POSIX_LOCK_TYPE_OFFSET,
+				POSIX_LOCK_TYPE_UNLOCK);
 			break;
 		default:
-			return False;
+			return NULL;
 	}
 
 	if (wait_lock) {
-		SSVAL(data, POSIX_LOCK_FLAGS_OFFSET, POSIX_LOCK_FLAG_WAIT);
-		cli->timeout = 0x7FFFFFFF;
+		SSVAL(&state->data, POSIX_LOCK_FLAGS_OFFSET,
+				POSIX_LOCK_FLAG_WAIT);
 	} else {
-		SSVAL(data, POSIX_LOCK_FLAGS_OFFSET, POSIX_LOCK_FLAG_NOWAIT);
+		SSVAL(state->data, POSIX_LOCK_FLAGS_OFFSET,
+				POSIX_LOCK_FLAG_NOWAIT);
 	}
 
-	SIVAL(data, POSIX_LOCK_PID_OFFSET, cli->pid);
-	SOFF_T(data, POSIX_LOCK_START_OFFSET, offset);
-	SOFF_T(data, POSIX_LOCK_LEN_OFFSET, len);
+	SIVAL(&state->data, POSIX_LOCK_PID_OFFSET, cli->pid);
+	SOFF_T(&state->data, POSIX_LOCK_START_OFFSET, offset);
+	SOFF_T(&state->data, POSIX_LOCK_LEN_OFFSET, len);
 
-	if (!cli_send_trans(cli, SMBtrans2,
-			NULL,                        /* name */
-			-1, 0,                          /* fid, flags */
-			&setup, 1, 0,                   /* setup, length, max */
-			param, param_len, 2,            /* param, length, max */
-			(char *)&data,  data_len, cli->max_xmit /* data, length, max */
-			)) {
-		cli->timeout = saved_timeout;
-		return False;
+	subreq = cli_trans_send(state,                  /* mem ctx. */
+				ev,                     /* event ctx. */
+				cli,                    /* cli_state. */
+				SMBtrans2,              /* cmd. */
+				NULL,                   /* pipe name. */
+				-1,                     /* fid. */
+				0,                      /* function. */
+				0,                      /* flags. */
+				&state->setup,          /* setup. */
+				1,                      /* num setup uint16_t words. */
+				0,                      /* max returned setup. */
+				state->param,           /* param. */
+				4,			/* num param. */
+				2,                      /* max returned param. */
+				state->data,            /* data. */
+				POSIX_LOCK_DATA_SIZE,   /* num data. */
+				0);                     /* max returned data. */
+
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
 	}
-
-	if (!cli_receive_trans(cli, SMBtrans2,
-				&rparam, &param_len,
-				&rdata, &data_len)) {
-		cli->timeout = saved_timeout;
-		SAFE_FREE(rdata);
-		SAFE_FREE(rparam);
-		return False;
-	}
-
-	cli->timeout = saved_timeout;
-
-	SAFE_FREE(rdata);
-	SAFE_FREE(rparam);
-
-	return True;
+	tevent_req_set_callback(subreq, cli_posix_unlock_internal_done, req);
+	return req;
 }
 
 /****************************************************************************
  POSIX Lock a file.
 ****************************************************************************/
 
-bool cli_posix_lock(struct cli_state *cli, uint16_t fnum,
+struct tevent_req *cli_posix_lock_send(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct cli_state *cli,
+					uint16_t fnum,
+					uint64_t offset,
+					uint64_t len,
+					bool wait_lock,
+					enum brl_type lock_type)
+{
+	return cli_posix_lock_internal_send(mem_ctx, ev, cli, fnum, offset, len,
+					wait_lock, lock_type);
+}
+
+NTSTATUS cli_posix_lock_recv(struct tevent_req *req)
+{
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_posix_lock(struct cli_state *cli, uint16_t fnum,
 			uint64_t offset, uint64_t len,
 			bool wait_lock, enum brl_type lock_type)
 {
-	if (lock_type != READ_LOCK && lock_type != WRITE_LOCK) {
-		return False;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status = NT_STATUS_OK;
+
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
 	}
-	return cli_posix_lock_internal(cli, fnum, offset, len, wait_lock, lock_type);
+
+	if (lock_type != READ_LOCK && lock_type != WRITE_LOCK) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	req = cli_posix_lock_send(frame,
+				ev,
+				cli,
+				fnum,
+				offset,
+				len,
+				wait_lock,
+				lock_type);
+	if (req == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
+	}
+
+	status = cli_posix_lock_recv(req);
+
+ fail:
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
 }
 
 /****************************************************************************
  POSIX Unlock a file.
 ****************************************************************************/
 
-bool cli_posix_unlock(struct cli_state *cli, uint16_t fnum, uint64_t offset, uint64_t len)
+struct tevent_req *cli_posix_unlock_send(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct cli_state *cli,
+					uint16_t fnum,
+					uint64_t offset,
+					uint64_t len)
 {
-	return cli_posix_lock_internal(cli, fnum, offset, len, False, UNLOCK_LOCK);
+	return cli_posix_lock_internal_send(mem_ctx, ev, cli, fnum, offset, len,
+					false, UNLOCK_LOCK);
 }
 
-/****************************************************************************
- POSIX Get any lock covering a file.
-****************************************************************************/
-
-bool cli_posix_getlock(struct cli_state *cli, uint16_t fnum, uint64_t *poffset, uint64_t *plen)
+NTSTATUS cli_posix_unlock_recv(struct tevent_req *req)
 {
-	return True;
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_posix_unlock(struct cli_state *cli, uint16_t fnum, uint64_t offset, uint64_t len)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status = NT_STATUS_OK;
+
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	req = cli_posix_unlock_send(frame,
+				ev,
+				cli,
+				fnum,
+				offset,
+				len);
+	if (req == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
+	}
+
+	status = cli_posix_unlock_recv(req);
+
+ fail:
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
 }
 
 /****************************************************************************

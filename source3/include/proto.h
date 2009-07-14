@@ -2516,11 +2516,26 @@ bool cli_unlock(struct cli_state *cli, uint16_t fnum, uint32_t offset, uint32_t 
 bool cli_lock64(struct cli_state *cli, uint16_t fnum,
 		uint64_t offset, uint64_t len, int timeout, enum brl_type lock_type);
 bool cli_unlock64(struct cli_state *cli, uint16_t fnum, uint64_t offset, uint64_t len);
-bool cli_posix_lock(struct cli_state *cli, uint16_t fnum,
+struct tevent_req *cli_posix_lock_send(TALLOC_CTX *mem_ctx,
+                                        struct event_context *ev,
+                                        struct cli_state *cli,
+                                        uint16_t fnum,
+                                        uint64_t offset,
+                                        uint64_t len,
+                                        bool wait_lock,
+                                        enum brl_type lock_type);
+NTSTATUS cli_posix_lock_recv(struct tevent_req *req);
+NTSTATUS cli_posix_lock(struct cli_state *cli, uint16_t fnum,
 			uint64_t offset, uint64_t len,
 			bool wait_lock, enum brl_type lock_type);
-bool cli_posix_unlock(struct cli_state *cli, uint16_t fnum, uint64_t offset, uint64_t len);
-bool cli_posix_getlock(struct cli_state *cli, uint16_t fnum, uint64_t *poffset, uint64_t *plen);
+struct tevent_req *cli_posix_unlock_send(TALLOC_CTX *mem_ctx,
+                                        struct event_context *ev,
+                                        struct cli_state *cli,
+                                        uint16_t fnum,
+                                        uint64_t offset,
+                                        uint64_t len);
+NTSTATUS cli_posix_unlock_recv(struct tevent_req *req);
+NTSTATUS cli_posix_unlock(struct cli_state *cli, uint16_t fnum, uint64_t offset, uint64_t len);
 struct tevent_req *cli_getattrE_send(TALLOC_CTX *mem_ctx,
 				struct event_context *ev,
 				struct cli_state *cli,

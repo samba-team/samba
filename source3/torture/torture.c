@@ -4295,6 +4295,18 @@ static bool run_simple_posix_open_test(int dummy)
 		goto out;
 	}
 
+	/* Do a POSIX lock/unlock. */
+	if (!NT_STATUS_IS_OK(cli_posix_lock(cli1, fnum1, 0, 100, true, WRITE_LOCK))) {
+		printf("POSIX lock failed\n");
+		goto out;
+	}
+
+	/* Punch a hole in the locked area. */
+	if (!NT_STATUS_IS_OK(cli_posix_unlock(cli1, fnum1, 10, 80))) {
+		printf("POSIX unlock failed\n");
+		goto out;
+	}
+
 	cli_close(cli1, fnum1);
 
 	/* Open the symlink for read - this should fail. A POSIX
