@@ -121,6 +121,7 @@ bool gencache_set_data_blob(const char *keystr, const DATA_BLOB *blob,
 	TDB_DATA databuf;
 	char* val;
 	time_t last_stabilize;
+	static int writecount;
 
 	if (tdb_data_cmp(string_term_tdb_data(keystr),
 			 last_stabilize_key()) == 0) {
@@ -163,6 +164,18 @@ bool gencache_set_data_blob(const char *keystr, const DATA_BLOB *blob,
 	}
 
 	/*
+	 * Every 100 writes within a single process, stabilize the cache with
+	 * a transaction. This is done to prevent a single transaction to
+	 * become huge and chew lots of memory.
+	 */
+	writecount += 1;
+	if (writecount > lp_parm_int(-1, "gencache", "stabilize_count", 100)) {
+		gencache_stabilize();
+		writecount = 0;
+		goto done;
+	}
+
+	/*
 	 * Every 5 minutes, call gencache_stabilize() to not let grow
 	 * gencache_notrans.tdb too large.
 	 */
@@ -180,6 +193,7 @@ bool gencache_set_data_blob(const char *keystr, const DATA_BLOB *blob,
 		gencache_stabilize();
 	}
 
+done:
 	return ret == 0;
 }
 
