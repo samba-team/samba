@@ -51,7 +51,7 @@ struct security_acl *make_sec_acl(TALLOC_CTX *ctx,
 	   positive number. */
 
 	if ((num_aces) && 
-            ((dst->aces = talloc_array(ctx, struct security_ace, num_aces)) 
+            ((dst->aces = talloc_array(dst, struct security_ace, num_aces))
              == NULL)) {
 		return NULL;
 	}
