@@ -7145,6 +7145,28 @@ static WERROR spoolss_addprinterex_level_2(pipes_struct *p,
 		return WERR_PRINTER_ALREADY_EXISTS;
 	}
 
+	/* validate printer info struct */
+	if (!info_ctr->info.info2->printername ||
+	    strlen(info_ctr->info.info2->printername) == 0) {
+		free_a_printer(&printer,2);
+		return WERR_INVALID_PRINTER_NAME;
+	}
+	if (!info_ctr->info.info2->portname ||
+	    strlen(info_ctr->info.info2->portname) == 0) {
+		free_a_printer(&printer,2);
+		return WERR_UNKNOWN_PORT;
+	}
+	if (!info_ctr->info.info2->drivername ||
+	    strlen(info_ctr->info.info2->drivername) == 0) {
+		free_a_printer(&printer,2);
+		return WERR_UNKNOWN_PRINTER_DRIVER;
+	}
+	if (!info_ctr->info.info2->printprocessor ||
+	    strlen(info_ctr->info.info2->printprocessor) == 0) {
+		free_a_printer(&printer,2);
+		return WERR_UNKNOWN_PRINTPROCESSOR;
+	}
+
 	/* FIXME!!!  smbd should check to see if the driver is installed before
 	   trying to add a printer like this  --jerry */
 
