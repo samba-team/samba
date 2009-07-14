@@ -167,12 +167,12 @@ done:
 	return result;
 }
 
-static NTSTATUS pdb_wbc_sam_get_account_policy(struct pdb_methods *methods, int policy_index, uint32 *value)
+static NTSTATUS pdb_wbc_sam_get_account_policy(struct pdb_methods *methods, enum pdb_policy_type type, uint32_t *value)
 {
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
-static NTSTATUS pdb_wbc_sam_set_account_policy(struct pdb_methods *methods, int policy_index, uint32 value)
+static NTSTATUS pdb_wbc_sam_set_account_policy(struct pdb_methods *methods, enum pdb_policy_type type, uint32_t value)
 {
 	return NT_STATUS_UNSUCCESSFUL;
 }
