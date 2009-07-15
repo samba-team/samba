@@ -856,6 +856,7 @@ void reply_tcon_and_X(struct smb_request *req)
 
 	END_PROFILE(SMBtconX);
 
+	req->tid = conn->cnum;
 	chain_reply(req);
 	return;
 }
@@ -2076,6 +2077,7 @@ void reply_ulogoffX(struct smb_request *req)
 	DEBUG( 3, ( "ulogoffX vuid=%d\n", req->vuid ) );
 
 	END_PROFILE(SMBulogoffX);
+	req->vuid = UID_FIELD_INVALID;
 	chain_reply(req);
 }
 
