@@ -244,7 +244,7 @@ change (krb5_auth_context auth_context,
     const char *pwd_reason;
     kadm5_config_params conf;
     void *kadm5_handle = NULL;
-    krb5_principal principal;
+    krb5_principal principal = NULL;
     krb5_data *pwd_data = NULL;
     char *tmp;
     ChangePasswdDataMS chpw;
@@ -416,6 +416,8 @@ change (krb5_auth_context auth_context,
 		"Password changed");
 out:
     free_ChangePasswdDataMS(&chpw);
+    if (principal != admin_principal)
+	krb5_free_principal(context, principal);
     if (admin)
 	free(admin);
     if (client)
