@@ -258,7 +258,8 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 	  one of the interfaces attached to this pipe endpoint.
 	*/
 	ep_description->transport = NCACN_NP;
-	ep_description->endpoint = talloc_reference(ep_description, p->pipe_name);
+	ep_description->endpoint = talloc_strdup(ep_description, p->pipe_name);
+	NT_STATUS_HAVE_NO_MEMORY(ep_description->endpoint);
 
 	/* The session info is refcount-increased in the 
 	 * dcesrv_endpoint_search_connect() function
