@@ -1109,7 +1109,7 @@ int main (int argc, char **argv)
 	/* account policy operations */
 	if ((checkparms & BIT_ACCPOLICY) && !(checkparms & ~(BIT_ACCPOLICY + BIT_ACCPOLVAL))) {
 		uint32 value;
-		int field = account_policy_name_to_fieldnum(account_policy);
+		enum pdb_policy_type field = account_policy_name_to_typenum(account_policy);
 		if (field == 0) {
 			const char **names;
 			int count;

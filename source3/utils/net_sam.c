@@ -452,7 +452,7 @@ static int net_sam_policy_set(struct net_context *c, int argc, const char **argv
 	const char *account_policy = NULL;
 	uint32 value = 0;
 	uint32 old_value = 0;
-	int field;
+	enum pdb_policy_type field;
 	char *endptr;
 
         if (argc != 2 || c->display_usage) {
@@ -462,7 +462,7 @@ static int net_sam_policy_set(struct net_context *c, int argc, const char **argv
         }
 
 	account_policy = argv[0];
-	field = account_policy_name_to_fieldnum(account_policy);
+	field = account_policy_name_to_typenum(account_policy);
 
 	if (strequal(argv[1], "forever") || strequal(argv[1], "never")
 	    || strequal(argv[1], "off")) {
@@ -519,7 +519,7 @@ static int net_sam_policy_show(struct net_context *c, int argc, const char **arg
 {
 	const char *account_policy = NULL;
         uint32 old_value;
-        int field;
+        enum pdb_policy_type field;
 
         if (argc != 1 || c->display_usage) {
                 d_fprintf(stderr, "usage: net sam policy show"
@@ -528,7 +528,7 @@ static int net_sam_policy_show(struct net_context *c, int argc, const char **arg
         }
 
 	account_policy = argv[0];
-        field = account_policy_name_to_fieldnum(account_policy);
+        field = account_policy_name_to_typenum(account_policy);
 
         if (field == 0) {
 		const char **names;
