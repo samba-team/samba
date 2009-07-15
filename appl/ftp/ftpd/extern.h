@@ -145,5 +145,6 @@ extern	char hostname[], remotehost[];
 extern	char proctitle[];
 extern	int usedefault;
 extern  char tmpline[];
+extern  int paranoid;
 
 #endif /* _EXTERN_H_ */
