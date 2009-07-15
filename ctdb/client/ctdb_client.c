@@ -815,7 +815,6 @@ struct ctdb_client_control_state *ctdb_control_send(struct ctdb_context *ctdb,
 	CTDB_NO_MEMORY_NULL(ctdb, c);
 	c->hdr.reqid        = state->reqid;
 	c->hdr.destnode     = destnode;
-	c->hdr.reqid        = state->reqid;
 	c->opcode           = opcode;
 	c->client_id        = 0;
 	c->flags            = flags;
