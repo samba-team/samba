@@ -307,3 +307,36 @@ NTSTATUS dbwrap_trans_delete_bystring(struct db_context *db, const char *key)
 {
 	return dbwrap_trans_delete(db, string_term_tdb_data(key));
 }
+
+/**
+ * Wrap db action(s) into a transaction.
+ */
+NTSTATUS dbwrap_trans_do(struct db_context *db,
+			 NTSTATUS (*action)(struct db_context *, void *),
+			 void *private_data)
+{
+	int res;
+	NTSTATUS status;
+
+	res = db->transaction_start(db);
+	if (res != 0) {
+		DEBUG(5, ("transaction_start failed\n"));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	status = action(db, private_data);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (db->transaction_cancel(db) != 0) {
+			smb_panic("Cancelling transaction failed");
+		}
+		return status;
+	}
+
+	res = db->transaction_commit(db);
+	if (res == 0) {
+		return NT_STATUS_OK;
+	}
+
+	DEBUG(2, ("transaction_commit failed\n"));
+	return NT_STATUS_INTERNAL_DB_CORRUPTION;
+}

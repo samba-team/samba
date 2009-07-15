@@ -454,6 +454,9 @@ NTSTATUS dbwrap_trans_store_uint32(struct db_context *db, const char *keystr,
 NTSTATUS dbwrap_trans_store_bystring(struct db_context *db, const char *key,
 				     TDB_DATA data, int flags);
 NTSTATUS dbwrap_trans_delete_bystring(struct db_context *db, const char *key);
+NTSTATUS dbwrap_trans_do(struct db_context *db,
+			 NTSTATUS (*action)(struct db_context *, void *),
+			 void *private_data);
 
 /* The following definitions come from lib/debug.c  */
 
