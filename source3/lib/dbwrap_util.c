@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    Utility functions for the dbwrap API
    Copyright (C) Volker Lendecke 2007
-   Copyrithg (C) Michael Adam 2009
+   Copyright (C) Michael Adam 2009
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
