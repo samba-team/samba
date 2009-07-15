@@ -1182,7 +1182,7 @@ static bool test_file_index(struct torture_context *tctx,
 			torture_comment(tctx,
 					"Not an error. Resuming using a file "
 					"index is an optional feature of the "
-					"protocol.");
+					"protocol.\n");
 			goto done;
 		}
 	}
