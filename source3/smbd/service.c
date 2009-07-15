@@ -630,6 +630,33 @@ static NTSTATUS create_connection_server_info(struct smbd_server_connection *sco
 	return NT_STATUS_ACCESS_DENIED;
 }
 
+#ifdef HAVE_INOTIFY
+static void share_perm_changed(struct sys_notify_context *ctx,
+				   void *ptr, struct notify_event *ev)
+{
+	connection_struct *conn = talloc_get_type_abort(ptr, connection_struct);
+	const char *service = NULL;
+	service = lp_servicename(SNUM(conn));
+	if (strequal(ev->path, service)) {
+		conn->force_recheck_perm = true;
+		DEBUG(0, ("share_perm_changed: set recheck flag for connection %x\n",
+		(unsigned int)conn));
+	}
+}
+
+struct notify_context {
+	struct db_context *db_recursive;
+	struct db_context *db_onelevel;
+	struct server_id server;
+	struct messaging_context *messaging_ctx;
+	struct notify_list *list;
+	struct notify_array *array;
+	int seqnum;
+	struct sys_notify_context *sys_notify_ctx;
+	TDB_DATA key;
+};
+#endif
+
 
 /****************************************************************************
   Make a connection, given the snum to connect to, and the vuser of the
@@ -867,11 +894,64 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	}
 
 	if ((!conn->printer) && (!conn->ipc)) {
+#ifdef HAVE_INOTIFY
+		struct sys_notify_context *sys_ctx = NULL;
+		struct notify_entry e;
+		struct inotify_watch_context *w = NULL;
+#endif
 		conn->notify_ctx = notify_init(conn, server_id_self(),
 					       smbd_messaging_context(),
 					       smbd_event_context(),
 					       conn);
+#ifdef HAVE_INOTIFY
+		/*
+		 * here is the start of monitoring share permissions change.
+		 * For usershares, we have to watch on both
+		 * get_dyn_STATDIR()/servicename and get_dyn_STATDIR()/share_info.tdb.
+		 * For shares in smb.conf, we just watch on
+		 * get_dyn_STATDIR()/share_info.tdb
+		 */
+		if (!conn->notify_ctx) {
+			DEBUG(1, ("change notify is not enabled??\n"));
+			goto nonotify;
+		}
+		sys_ctx = conn->notify_ctx->sys_notify_ctx;
+		if (!sys_ctx) {
+			DEBUG(1, ("change notify: out of memory!!\n"));
+			*pstatus = NT_STATUS_NO_MEMORY;
+			conn_free(sconn, conn);
+			return NULL;
+		}
+		ZERO_STRUCT(e);
+		if (am_usershare(SNUM(conn))) {
+			const char *usershare_path = lp_usershare_path();
+			/* This is usershare service. */
+			e.path = talloc_strdup(conn, usershare_path);
+		} else {
+			goto nonotify;
+			/* watch normal shares' permission? */
+		}
+		if (!e.path) {
+			DEBUG(1, ("setting up usershare notify: out of memory!\n"));
+			*pstatus = status;
+			conn_free(sconn, conn);
+			return NULL;
+		}
+		e.path_len = strlen(e.path);
+		e.filter = FILE_NOTIFY_CHANGE_FILE_CONTENT;
+		status = inotify_watch(sys_ctx, &e, share_perm_changed,
+			(void *)conn, (void *)&w);
+		if (NT_STATUS_IS_ERR(status)) {
+			DEBUG(1, ("add inotify for usershare permission failed!\n"));
+			*pstatus = status;
+			conn_free(sconn, conn);
+			return NULL;
+		}
+#endif
 	}
+#ifdef HAVE_INOTIFY
+nonotify:
+#endif
 
 /* ROOT Activities: */	
 	/*

@@ -550,6 +550,7 @@ typedef struct connection_struct {
 	unsigned cnum; /* an index passed over the wire */
 	struct share_params *params;
 	bool force_user;
+	bool force_recheck_perm;
 	struct vuid_cache vuid_cache;
 	struct dptr_struct *dirptr;
 	bool printer;
@@ -1398,6 +1399,11 @@ struct bitmap {
 #define FILE_NOTIFY_CHANGE_STREAM_NAME	0x00000200
 #define FILE_NOTIFY_CHANGE_STREAM_SIZE	0x00000400
 #define FILE_NOTIFY_CHANGE_STREAM_WRITE	0x00000800
+#define FILE_NOTIFY_CHANGE_FILE_CONTENT \
+	(FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME \
+	| FILE_NOTIFY_CHANGE_ATTRIBUTES | FILE_NOTIFY_CHANGE_SIZE \
+	| FILE_NOTIFY_CHANGE_CREATION | FILE_NOTIFY_CHANGE_EA \
+	| FILE_NOTIFY_CHANGE_SECURITY)
 
 #define FILE_NOTIFY_CHANGE_NAME \
 	(FILE_NOTIFY_CHANGE_FILE_NAME|FILE_NOTIFY_CHANGE_DIR_NAME)

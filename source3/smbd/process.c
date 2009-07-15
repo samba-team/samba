@@ -1286,7 +1286,6 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 			}
 		}
 	}
-
 	/* Does this call need to be run as the connected user? */
 	if (flags & AS_USER) {
 
@@ -1303,12 +1302,67 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 			}
 			return NULL;
 		}
+#ifdef HAVE_INOTIFY
+		if (conn->force_recheck_perm) {
+			int old;
+			int iService = -1;
+			const char *service = NULL;
+			NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+			conn->force_recheck_perm = false;
+			DEBUG(5, ("switch_message: rechecking permission for connection %x\n",
+				 (unsigned int)conn));
+			old = SNUM(conn);
+			service = lp_servicename(old);
+			conn->read_only = False;
+			if (lp_snum_ok(old) && am_usershare(old)) {
+				iService = load_usershare_service(service);
+				if (iService < 0 || old != iService) {
+					/* non-exist service */
+					DEBUG(5, ("switch_message: deleting connection %x\n",
+						 (unsigned int)conn));
+					DEBUG(5, ("snum %d, sname %s\n",
+						 old, service ? service : "NULL"));
+					delete_share_security(service);
+					set_current_service(NULL, 0, True);
+					close_cnum(smbd_server_conn, conn, conn->vuid);
+					lp_killservice(old);
+					reply_nterror(req, NT_STATUS_BAD_NETWORK_NAME);
+					return NULL;
+				}
 
+				/*
+				 * Don't have to reauthentication here, but
+				 * need to check share permissions.....
+				 * the vuid cache is a problem..
+				 */
+
+				if (!change_to_root_user()) {
+					smb_panic("cann't change to root user!\n");
+				}
+
+				if (!change_to_user_force_recheck(conn, session_tag,
+								True, &status)) {
+					reply_nterror(req, status);
+					remove_deferred_open_smb_message(req->mid);
+					return conn;
+				}
+			}
+		} else {
+			NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+			if (!change_to_user_force_recheck(conn, session_tag,
+							False, &status)) {
+				reply_nterror(req, status);
+				remove_deferred_open_smb_message(req->mid);
+				return conn;
+			}
+		}
+#else
 		if (!change_to_user(conn,session_tag)) {
 			reply_nterror(req, NT_STATUS_DOS(ERRSRV, ERRbaduid));
 			remove_deferred_open_smb_message(req->mid);
 			return conn;
 		}
+#endif
 
 		/* All NEED_WRITE and CAN_IPC flags must also have AS_USER. */
 
