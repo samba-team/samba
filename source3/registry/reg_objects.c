@@ -63,6 +63,29 @@ WERROR regsubkey_ctr_init(TALLOC_CTX *mem_ctx, struct regsubkey_ctr **ctr)
 	return WERR_OK;
 }
 
+/**
+ * re-initialize the list of subkeys (to the emtpy list)
+ * in an already allocated regsubkey_ctr
+ */
+
+WERROR regsubkey_ctr_reinit(struct regsubkey_ctr *ctr)
+{
+	if (ctr == NULL) {
+		return WERR_INVALID_PARAM;
+	}
+
+	talloc_free(ctr->subkeys_hash);
+	ctr->subkeys_hash = db_open_rbt(ctr);
+	W_ERROR_HAVE_NO_MEMORY(ctr->subkeys_hash);
+
+	TALLOC_FREE(ctr->subkeys);
+
+	ctr->num_subkeys = 0;
+	ctr->seqnum = 0;
+
+	return WERR_OK;
+}
+
 WERROR regsubkey_ctr_set_seqnum(struct regsubkey_ctr *ctr, int seqnum)
 {
 	if (ctr == NULL) {
