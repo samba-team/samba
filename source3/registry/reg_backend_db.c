@@ -29,8 +29,8 @@ static int regdb_refcount;
 
 static bool regdb_key_exists(struct db_context *db, const char *key);
 static bool regdb_key_is_base_key(const char *key);
-static int regdb_fetch_keys_internal(struct db_context *db, const char *key,
-				     struct regsubkey_ctr *ctr);
+static WERROR regdb_fetch_keys_internal(struct db_context *db, const char *key,
+					struct regsubkey_ctr *ctr);
 static bool regdb_store_keys_internal(struct db_context *db, const char *key,
 				      struct regsubkey_ctr *ctr);
 static int regdb_fetch_values_internal(struct db_context *db, const char* key,
@@ -182,7 +182,13 @@ static WERROR init_registry_key_internal(struct db_context *db,
 			goto fail;
 		}
 
-		regdb_fetch_keys_internal(db, base, subkeys);
+		werr = regdb_fetch_keys_internal(db, base, subkeys);
+		if (!W_ERROR_IS_OK(werr) &&
+		    !W_ERROR_EQUAL(werr, WERR_NOT_FOUND))
+		{
+			goto fail;
+		}
+
 		if (*subkeyname) {
 			werr = regsubkey_ctr_addkey(subkeys, subkeyname);
 			if (!W_ERROR_IS_OK(werr)) {
@@ -750,7 +756,12 @@ static NTSTATUS regdb_store_keys_action(struct db_context *db,
 	werr = regsubkey_ctr_init(mem_ctx, &old_subkeys);
 	W_ERROR_NOT_OK_GOTO_DONE(werr);
 
-	regdb_fetch_keys_internal(db, store_ctx->key, old_subkeys);
+	werr = regdb_fetch_keys_internal(db, store_ctx->key, old_subkeys);
+	if (!W_ERROR_IS_OK(werr) &&
+	    !W_ERROR_EQUAL(werr, WERR_NOT_FOUND))
+	{
+		goto done;
+	}
 
 	/*
 	 * Make the store operation as safe as possible without transactions:
@@ -839,7 +850,8 @@ static NTSTATUS regdb_store_keys_action(struct db_context *db,
 		werr = regsubkey_ctr_init(mem_ctx, &subkeys);
 		W_ERROR_NOT_OK_GOTO_DONE(werr);
 
-		if (regdb_fetch_keys_internal(db, path, subkeys) == -1) {
+		werr = regdb_fetch_keys_internal(db, path, subkeys);
+		if (!W_ERROR_IS_OK(werr)) {
 			/* create a record with 0 subkeys */
 			werr = regdb_store_keys_internal2(db, path, subkeys);
 			if (!W_ERROR_IS_OK(werr)) {
@@ -886,7 +898,12 @@ static bool regdb_store_keys_internal(struct db_context *db, const char *key,
 		goto done;
 	}
 
-	regdb_fetch_keys_internal(db, key, old_subkeys);
+	werr = regdb_fetch_keys_internal(db, key, old_subkeys);
+	if (!W_ERROR_IS_OK(werr) &&
+	    !W_ERROR_EQUAL(werr, WERR_NOT_FOUND))
+	{
+		goto done;
+	}
 
 	num_subkeys = regsubkey_ctr_numkeys(ctr);
 	old_num_subkeys = regsubkey_ctr_numkeys(old_subkeys);
@@ -956,10 +973,8 @@ static NTSTATUS regdb_create_subkey_action(struct db_context *db,
 	werr = regsubkey_ctr_init(mem_ctx, &subkeys);
 	W_ERROR_NOT_OK_GOTO_DONE(werr);
 
-	if (regdb_fetch_keys_internal(db, create_ctx->key, subkeys) < 0) {
-		werr = WERR_REG_IO_FAILURE;
-		goto done;
-	}
+	werr = regdb_fetch_keys_internal(db, create_ctx->key, subkeys);
+	W_ERROR_NOT_OK_GOTO_DONE(werr);
 
 	werr = regsubkey_ctr_addkey(subkeys, create_ctx->subkey);
 	W_ERROR_NOT_OK_GOTO_DONE(werr);
@@ -991,10 +1006,8 @@ static WERROR regdb_create_subkey(const char *key, const char *subkey)
 	werr = regsubkey_ctr_init(mem_ctx, &subkeys);
 	W_ERROR_NOT_OK_GOTO_DONE(werr);
 
-	if (regdb_fetch_keys_internal(regdb, key, subkeys) < 0) {
-		werr = WERR_REG_IO_FAILURE;
-		goto done;
-	}
+	werr = regdb_fetch_keys_internal(regdb, key, subkeys);
+	W_ERROR_NOT_OK_GOTO_DONE(werr);
 
 	if (regsubkey_ctr_key_exists(subkeys, subkey)) {
 		werr = WERR_OK;
@@ -1041,10 +1054,8 @@ static NTSTATUS regdb_delete_subkey_action(struct db_context *db,
 	werr = regsubkey_ctr_init(mem_ctx, &subkeys);
 	W_ERROR_NOT_OK_GOTO_DONE(werr);
 
-	if (regdb_fetch_keys_internal(db, delete_ctx->key, subkeys) < 0) {
-		werr = WERR_REG_IO_FAILURE;
-		goto done;
-	}
+	werr = regdb_fetch_keys_internal(db, delete_ctx->key, subkeys);
+	W_ERROR_NOT_OK_GOTO_DONE(werr);
 
 	werr = regsubkey_ctr_delkey(subkeys, delete_ctx->subkey);
 	W_ERROR_NOT_OK_GOTO_DONE(werr);
@@ -1187,7 +1198,7 @@ static NTSTATUS create_sorted_subkeys_action(struct db_context *db,
 	NTSTATUS status;
 	char *buf;
 	char *p;
-	int i, res;
+	int i;
 	size_t len;
 	int num_subkeys;
 	struct create_sorted_subkeys_context *sorted_ctx;
@@ -1212,9 +1223,12 @@ static NTSTATUS create_sorted_subkeys_action(struct db_context *db,
 		goto done;
 	}
 
-	res = regdb_fetch_keys_internal(db, sorted_ctx->key, ctr);
-	if (res == -1) {
+	status = werror_to_ntstatus(regdb_fetch_keys_internal(db,
+							      sorted_ctx->key,
+							      ctr));
+	if (!NT_STATUS_IS_OK(status)) {
 		/* don't treat this as an error */
+		status = NT_STATUS_OK;
 		goto done;
 	}
 
@@ -1423,36 +1437,36 @@ done:
  released by the caller.
  ***********************************************************************/
 
-static int regdb_fetch_keys_internal(struct db_context *db, const char *key,
-				     struct regsubkey_ctr *ctr)
+static WERROR regdb_fetch_keys_internal(struct db_context *db, const char *key,
+					struct regsubkey_ctr *ctr)
 {
 	WERROR werr;
-	uint32 num_items;
+	uint32_t num_items;
 	uint8 *buf;
 	uint32 buflen, len;
 	int i;
 	fstring subkeyname;
-	int ret = -1;
 	TALLOC_CTX *frame = talloc_stackframe();
 	TDB_DATA value;
 
 	DEBUG(11,("regdb_fetch_keys: Enter key => [%s]\n", key ? key : "NULL"));
 
+	frame = talloc_stackframe();
+
 	if (!regdb_key_exists(db, key)) {
+		DEBUG(10, ("key [%s] not found\n", key));
+		werr = WERR_NOT_FOUND;
 		goto done;
 	}
 
 	werr = regsubkey_ctr_set_seqnum(ctr, db->get_seqnum(db));
-	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
-	}
+	W_ERROR_NOT_OK_GOTO_DONE(werr);
 
 	value = regdb_fetch_key_internal(db, frame, key);
 
 	if (value.dptr == NULL) {
 		DEBUG(10, ("regdb_fetch_keys: no subkeys found for key [%s]\n",
 			   key));
-		ret = 0;
 		goto done;
 	}
 
@@ -1466,21 +1480,28 @@ static int regdb_fetch_keys_internal(struct db_context *db, const char *key,
 		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG(5, ("regdb_fetch_keys: regsubkey_ctr_addkey "
 				  "failed: %s\n", win_errstr(werr)));
+			num_items = 0;
 			goto done;
 		}
 	}
 
 	DEBUG(11,("regdb_fetch_keys: Exit [%d] items\n", num_items));
 
-	ret = num_items;
 done:
 	TALLOC_FREE(frame);
-	return ret;
+	return werr;
 }
 
 int regdb_fetch_keys(const char *key, struct regsubkey_ctr *ctr)
 {
-	return regdb_fetch_keys_internal(regdb, key, ctr);
+	WERROR werr;
+
+	werr = regdb_fetch_keys_internal(regdb, key, ctr);
+	if (!W_ERROR_IS_OK(werr)) {
+		return -1;
+	}
+
+	return regsubkey_ctr_numkeys(ctr);
 }
 
 /****************************************************************************
