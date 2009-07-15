@@ -113,7 +113,7 @@ static struct composite_context* libnet_RpcConnectSrv_send(struct libnet_context
 	}
 
 	if (r->level == LIBNET_RPC_CONNECT_SERVER_ADDRESS) {
-		b->target_hostname = talloc_reference(b, r->in.name);
+		b->target_hostname = talloc_strdup(b, r->in.name);
 		if (composite_nomem(b->target_hostname, c)) {
 			return c;
 		}

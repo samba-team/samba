@@ -1147,7 +1147,7 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 	if (r->in.netbios_name != NULL) {
 		netbios_name = r->in.netbios_name;
 	} else {
-		netbios_name = talloc_reference(tmp_mem, lp_netbios_name(ctx->lp_ctx));
+		netbios_name = talloc_strdup(tmp_mem, lp_netbios_name(ctx->lp_ctx));
 		if (!netbios_name) {
 			r->out.error_string = NULL;
 			talloc_free(tmp_mem);
