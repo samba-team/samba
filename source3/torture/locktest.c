@@ -341,9 +341,9 @@ static bool test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 	case OP_UNLOCK:
 		/* unset a lock */
 		for (server=0;server<NSERVERS;server++) {
-			ret[server] = cli_unlock64(cli[server][conn], 
+			ret[server] = NT_STATUS_IS_OK(cli_unlock64(cli[server][conn], 
 						   fnum[server][conn][f],
-						   start, len);
+						   start, len));
 			status[server] = cli_nt_error(cli[server][conn]);
 		}
 		if (showall || 

@@ -132,7 +132,7 @@ static bool try_unlock(struct cli_state *c, int fstype,
 
 	switch (fstype) {
 	case FSTYPE_SMB:
-		return cli_unlock(c, fd, start, len);
+		return NT_STATUS_IS_OK(cli_unlock(c, fd, start, len));
 
 	case FSTYPE_NFS:
 		lock.l_type = F_UNLCK;
