@@ -540,11 +540,13 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
                 if (lp_browseable(snum) && lp_snum_ok(snum) &&
                     is_enumeration_allowed(p, snum) &&
                     (all_shares || !is_hidden_share(snum)) ) {
-                        DEBUG(10, ("counting service %s\n", lp_servicename(snum)));
+                        DEBUG(10, ("counting service %s\n",
+				lp_servicename(snum) ? lp_servicename(snum) : "(null)"));
                         allowed[snum] = true;
                         num_entries++;
                 } else {
-                        DEBUG(10, ("NOT counting service %s\n", lp_servicename(snum)));
+                        DEBUG(10, ("NOT counting service %s\n",
+				lp_servicename(snum) ? lp_servicename(snum) : "(null)"));
                 }
         }
 

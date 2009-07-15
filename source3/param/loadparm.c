@@ -5142,6 +5142,9 @@ static char *lp_string(const char *s)
 #if 0
 	DEBUG(10, ("lp_string(%s)\n", s));
 #endif
+	if (!s) {
+		return NULL;
+	}
 
 	ret = talloc_sub_basic(ctx,
 			get_current_username(),
