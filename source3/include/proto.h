@@ -5676,32 +5676,16 @@ void prs_switch_type(prs_struct *ps, bool io);
 void prs_force_dynamic(prs_struct *ps);
 void prs_set_session_key(prs_struct *ps, const char sess_key[16]);
 bool prs_uint8(const char *name, prs_struct *ps, int depth, uint8 *data8);
-bool prs_pointer( const char *name, prs_struct *ps, int depth, 
-                 void *dta, size_t data_size,
-                 bool (*prs_fn)(const char*, prs_struct*, int, void*) );
 bool prs_uint16(const char *name, prs_struct *ps, int depth, uint16 *data16);
 bool prs_uint32(const char *name, prs_struct *ps, int depth, uint32 *data32);
 bool prs_int32(const char *name, prs_struct *ps, int depth, int32 *data32);
 bool prs_uint64(const char *name, prs_struct *ps, int depth, uint64 *data64);
-bool prs_ntstatus(const char *name, prs_struct *ps, int depth, NTSTATUS *status);
 bool prs_dcerpc_status(const char *name, prs_struct *ps, int depth, NTSTATUS *status);
-bool prs_werror(const char *name, prs_struct *ps, int depth, WERROR *status);
 bool prs_uint8s(bool charmode, const char *name, prs_struct *ps, int depth, uint8 *data8s, int len);
 bool prs_uint16s(bool charmode, const char *name, prs_struct *ps, int depth, uint16 *data16s, int len);
-bool prs_uint16uni(bool charmode, const char *name, prs_struct *ps, int depth, uint16 *data16s, int len);
 bool prs_uint32s(bool charmode, const char *name, prs_struct *ps, int depth, uint32 *data32s, int len);
 bool prs_unistr(const char *name, prs_struct *ps, int depth, UNISTR *str);
 bool prs_string(const char *name, prs_struct *ps, int depth, char *str, int max_buf_size);
-bool prs_string_alloc(const char *name, prs_struct *ps, int depth, const char **str);
-bool prs_uint16_pre(const char *name, prs_struct *ps, int depth, uint16 *data16, uint32 *offset);
-bool prs_uint16_post(const char *name, prs_struct *ps, int depth, uint16 *data16,
-				uint32 ptr_uint16, uint32 start_offset);
-bool prs_uint32_pre(const char *name, prs_struct *ps, int depth, uint32 *data32, uint32 *offset);
-bool prs_uint32_post(const char *name, prs_struct *ps, int depth, uint32 *data32,
-				uint32 ptr_uint32, uint32 data_size);
-int tdb_prs_store(TDB_CONTEXT *tdb, TDB_DATA kbuf, prs_struct *ps);
-int tdb_prs_fetch(TDB_CONTEXT *tdb, TDB_DATA kbuf, prs_struct *ps, TALLOC_CTX *mem_ctx);
-bool prs_hash1(prs_struct *ps, uint32 offset, int len);
 void schannel_encode(struct schannel_auth_struct *a, enum pipe_auth_level auth_level,
 		   enum schannel_direction direction,
 		   RPC_AUTH_SCHANNEL_CHK * verf,
