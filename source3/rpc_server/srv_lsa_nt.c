@@ -2431,17 +2431,21 @@ NTSTATUS _lsa_EnumAccountsWithUserRight(pipes_struct *p,
 	return NT_STATUS_OK;
 }
 
+/***************************************************************************
+ _lsa_Delete
+ ***************************************************************************/
+
+NTSTATUS _lsa_Delete(pipes_struct *p,
+		     struct lsa_Delete *r)
+{
+	return NT_STATUS_NOT_SUPPORTED;
+}
+
 /*
  * From here on the server routines are just dummy ones to make smbd link with
  * librpc/gen_ndr/srv_lsa.c. These routines are actually never called, we are
  * pulling the server stubs across one by one.
  */
-
-NTSTATUS _lsa_Delete(pipes_struct *p, struct lsa_Delete *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
 
 NTSTATUS _lsa_SetSecObj(pipes_struct *p, struct lsa_SetSecObj *r)
 {
