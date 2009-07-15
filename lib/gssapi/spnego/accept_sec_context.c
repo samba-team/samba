@@ -92,7 +92,6 @@ send_supported_mechs (OM_uint32 *minor_status,
 		      gss_buffer_t output_token)
 {
     NegotiationTokenWin nt;
-    OM_uint32 minor;
     size_t buf_len;
     gss_buffer_desc data;
     OM_uint32 ret;
