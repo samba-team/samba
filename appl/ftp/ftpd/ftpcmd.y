@@ -150,15 +150,26 @@ cmd
 		    memset ($3, 0, strlen($3));
 		    free($3);
 		}
+
 	| PORT SP host_port CRLF check_secure
 		{
 		    if ($5) {
-			usedefault = 0;
-			if (pdata >= 0) {
+			if (paranoid &&
+			    (data_dest->sa_family != AF_INET ||
+			     (ntohs(data_dest->sin_port) < IPPORT_RESERVED) ||
+			     memcmp(data_dest->sin_addr,
+				    &his_addr->sin_addr,
+				    sizeof(data_dest.sin_addr)) != 0)) {
+			    usedefault = 1;
+			    reply(500, "Illegal PORT range rejected.");			    
+			} else {
+			    usedefault = 0;
+			    if (pdata >= 0) {
 				close(pdata);
 				pdata = -1;
+			    }
+			    reply(200, "PORT command successful.");
 			}
-			reply(200, "PORT command successful.");
 		    }
 		}
 	| EPRT SP STRING CRLF check_secure

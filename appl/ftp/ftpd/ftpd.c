@@ -91,6 +91,7 @@ char	tmpline[10240];
 char	hostname[MaxHostNameLen];
 char	remotehost[MaxHostNameLen];
 static char ttyline[20];
+int     paranoid = 1;
 
 #define AUTH_PLAIN	(1 << 0) /* allow sending passwords */
 #define AUTH_OTP	(1 << 1) /* passwords are one-time */
@@ -2123,7 +2124,18 @@ eprt(char *str)
 		reply(500, "Bad port syntax in EPRT");
 		return;
 	}
+	if (port < IPPORT_RESERVED) {
+		reply(500, "Bad port in invalid range in EPRT");
+		return;
+	}
 	socket_set_port (data_dest, htons(port));
+
+	if (paranoid &&
+	    (data_dest->sa_family != his_addr->sa_family ||
+	     memcmp(socket_get_address(data_dest), socket_get_address(his_addr), socket_sockaddr_size(data_dest)) != 0))
+	{
+		reply(500, "Bad address in EPRT");
+	}
 	reply(200, "EPRT command successful.");
 }
 
