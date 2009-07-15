@@ -261,7 +261,7 @@ static bool close_printer_handle(pipes_struct *p, struct policy_handle *hnd)
  Delete a printer given a handle.
 ****************************************************************************/
 
-WERROR delete_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, const char *sharename )
+static WERROR delete_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, const char *sharename)
 {
 	char *cmd = lp_deleteprinter_cmd();
 	char *command = NULL;
@@ -5920,7 +5920,7 @@ static bool check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
 /****************************************************************************
 ****************************************************************************/
 
-WERROR add_port_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, const char *portname, const char *uri )
+static WERROR add_port_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, const char *portname, const char *uri)
 {
 	char *cmd = lp_addport_cmd();
 	char *command = NULL;
@@ -7316,7 +7316,7 @@ static WERROR fill_port_2(TALLOC_CTX *mem_ctx,
  wrapper around the enumer ports command
 ****************************************************************************/
 
-WERROR enumports_hook(TALLOC_CTX *ctx, int *count, char ***lines )
+static WERROR enumports_hook(TALLOC_CTX *ctx, int *count, char ***lines)
 {
 	char *cmd = lp_enumports_cmd();
 	char **qlines = NULL;

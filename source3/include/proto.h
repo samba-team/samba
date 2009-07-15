@@ -5906,7 +5906,6 @@ void copy_id26_to_sam_passwd(struct samu *to,
 
 /* The following definitions come from rpc_server/srv_spoolss_nt.c  */
 
-WERROR delete_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, const char *sharename );
 void do_drv_upgrade_printer(struct messaging_context *msg,
 			    void *private_data,
 			    uint32_t msg_type,
@@ -5995,9 +5994,7 @@ void construct_info_data(struct spoolss_Notify *info_data,
 			 int id);
 struct spoolss_DeviceMode *construct_dev_mode(TALLOC_CTX *mem_ctx,
 					      const char *servicename);
-WERROR add_port_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, const char *portname, const char *uri );
 bool add_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, NT_PRINTER_INFO_LEVEL *printer);
-WERROR enumports_hook(TALLOC_CTX *ctx, int *count, char ***lines );
 
 /* The following definitions come from rpc_server/srv_srvsvc_nt.c  */
 
