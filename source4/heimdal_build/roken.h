@@ -57,6 +57,14 @@
 #define HAVE_STRCASECMP
 #endif
 
+#ifndef HAVE_ASPRINTF
+#define HAVE_ASPRINTF
+#endif
+
+#ifndef HAVE_VASPRINTF
+#define HAVE_VASPRINTF
+#endif
+
 #ifndef HAVE_MKSTEMP
 #define HAVE_MKSTEMP
 #endif
