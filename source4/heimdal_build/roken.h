@@ -37,6 +37,10 @@
 #define HAVE_SETEUID 1
 #endif
 
+#ifndef HAVE_STRNLEN
+#define HAVE_STRNLEN
+#endif
+
 #ifndef HAVE_STRNDUP
 #define HAVE_STRNDUP
 #endif
