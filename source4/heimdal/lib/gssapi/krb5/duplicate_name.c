@@ -33,8 +33,6 @@
 
 #include "gsskrb5_locl.h"
 
-RCSID("$Id$");
-
 OM_uint32 _gsskrb5_duplicate_name (
             OM_uint32 * minor_status,
             const gss_name_t src_name,

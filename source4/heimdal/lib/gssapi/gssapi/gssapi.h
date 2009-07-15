@@ -768,42 +768,6 @@ gss_pseudo_random
 	 gss_buffer_t prf_out
 	);
 
-/*
- * AEAD support
- */
-
-OM_uint32 GSSAPI_LIB_FUNCTION
-gss_wrap_iov(OM_uint32 * /* minor_status */,
-	     gss_ctx_id_t /* context_handle */,
-	     int /* conf_req_flag */,
-	     gss_qop_t /* qop_req */,
-	     int * /* conf_state */,
-	     gss_iov_buffer_desc * /*iov */,
-	     int /* iov_count */);
-
-OM_uint32 GSSAPI_LIB_FUNCTION
-gss_unwrap_iov(OM_uint32 * /* minor_status */,
-	       gss_ctx_id_t /* context_handle */,
-	       int * /* conf_state */,
-	       gss_qop_t * /* qop_state */,
-	       gss_iov_buffer_desc * /* iov */,
-	       int /* iov_count */);
-    
-OM_uint32  GSSAPI_LIB_FUNCTION
-gss_wrap_iov_length(OM_uint32 * /* minor_status */,
-		    gss_ctx_id_t /* context_handle */,
-		    int /* conf_req_flag */,
-		    gss_qop_t /* qop_req */,
-		    int * /* conf_state */,
-		    gss_iov_buffer_desc * /* iov */,
-		    int /* iov_count */);
-
-OM_uint32 GSSAPI_LIB_FUNCTION
-gss_release_iov_buffer(OM_uint32 * /* minor_status */,
-		       gss_iov_buffer_desc * /* iov */,
-		       int /* iov_count */);
-
-
 OM_uint32
 gss_store_cred(OM_uint32         * /* minor_status */,
 	       gss_cred_id_t     /* input_cred_handle */,
@@ -897,6 +861,31 @@ gss_decapsulate_token(gss_buffer_t /* input_token */,
 		      gss_OID /* oid */,
 		      gss_buffer_t /* output_token */);
 
+
+
+/*
+ * AEAD support
+ */
+
+/*
+ * GSS_IOV
+ */
+
+OM_uint32 GSSAPI_LIB_FUNCTION
+gss_wrap_iov(OM_uint32 *, gss_ctx_id_t, int, gss_qop_t, int *,
+	     gss_iov_buffer_desc *, int);
+
+
+OM_uint32 GSSAPI_LIB_FUNCTION
+gss_unwrap_iov(OM_uint32 *, gss_ctx_id_t, int *, gss_qop_t *,
+	       gss_iov_buffer_desc *, int);
+
+OM_uint32 GSSAPI_LIB_FUNCTION
+gss_wrap_iov_length(OM_uint32 *, gss_ctx_id_t, int, gss_qop_t, int *,
+		    gss_iov_buffer_desc *, int);
+
+OM_uint32 GSSAPI_LIB_FUNCTION
+gss_release_iov_buffer(OM_uint32 *, gss_iov_buffer_desc *, int);
 
 
 #ifdef __cplusplus

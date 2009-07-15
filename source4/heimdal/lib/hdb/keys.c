@@ -34,8 +34,6 @@
 
 #include "hdb_locl.h"
 
-RCSID("$Id$");
-
 /*
  * free all the memory used by (len, keys)
  */

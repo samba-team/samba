@@ -678,6 +678,12 @@ kdc_check_flags(krb5_context context,
 	hdb_entry *client = &client_ex->entry;
 
 	/* check client */
+	if (client->flags.locked_out) {
+	    kdc_log(context, config, 0,
+		    "Client (%s) is locked out", client_name);
+	    return KRB5KDC_ERR_POLICY;
+	}
+
 	if (client->flags.invalid) {
 	    kdc_log(context, config, 0,
 		    "Client (%s) has invalid bit set", client_name);
@@ -727,6 +733,11 @@ kdc_check_flags(krb5_context context,
     if (server_ex != NULL) {
 	hdb_entry *server = &server_ex->entry;
 
+	if (server->flags.locked_out) {
+	    kdc_log(context, config, 0,
+		    "Client server locked out -- %s", server_name);
+	    return KRB5KDC_ERR_POLICY;
+	}
 	if (server->flags.invalid) {
 	    kdc_log(context, config, 0,
 		    "Server has invalid flag set -- %s", server_name);
@@ -883,6 +894,7 @@ _kdc_as_rep(krb5_context context,
     AS_REP rep;
     KDCOptions f = b->kdc_options;
     hdb_entry_ex *client = NULL, *server = NULL;
+    HDB *clientdb;
     krb5_enctype cetype, setype, sessionetype;
     krb5_data e_data;
     EncTicketPart et;
@@ -966,7 +978,7 @@ _kdc_as_rep(krb5_context context,
      */
 
     ret = _kdc_db_fetch(context, config, client_princ,
-			HDB_F_GET_CLIENT | flags, NULL, &client);
+			HDB_F_GET_CLIENT | flags, &clientdb, &client);
     if(ret){
 	kdc_log(context, config, 0, "UNKNOWN -- %s: %s", client_name,
 		krb5_get_err_text(context, ret));
@@ -1114,8 +1126,8 @@ _kdc_as_rep(krb5_context context,
 			    "No client key matching pa-data (%s) -- %s",
 			    estr, client_name);
 		free(estr);
-		
 		free_EncryptedData(&enc_data);
+
 		continue;
 	    }
 
@@ -1159,6 +1171,10 @@ _kdc_as_rep(krb5_context context,
 		e_text = "Failed to decrypt PA-DATA";
 
 		free_EncryptedData(&enc_data);
+
+		if (clientdb->hdb_auth_status)
+		    (clientdb->hdb_auth_status)(context, clientdb, client, HDB_AUTH_WRONG_PASSWORD);
+
 		ret = KRB5KDC_ERR_PREAUTH_FAILED;
 		continue;
 	    }
@@ -1322,6 +1338,10 @@ _kdc_as_rep(krb5_context context,
 		client_name);
 	goto out;
     }
+
+    if (clientdb->hdb_auth_status)
+	(clientdb->hdb_auth_status)(context, clientdb, client, 
+				    HDB_AUTH_SUCCESS);
 
     /*
      * Verify flags after the user been required to prove its identity

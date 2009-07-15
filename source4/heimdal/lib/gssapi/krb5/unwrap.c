@@ -33,8 +33,6 @@
 
 #include "gsskrb5_locl.h"
 
-RCSID("$Id$");
-
 static OM_uint32
 unwrap_des
            (OM_uint32 * minor_status,

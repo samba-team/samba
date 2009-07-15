@@ -33,8 +33,6 @@
 
 #include "hdb_locl.h"
 
-RCSID("$Id$");
-
 struct hdb_dbinfo {
     char *label;
     char *realm;

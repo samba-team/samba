@@ -36,8 +36,6 @@
 #define O_BINARY 0
 #endif
 
-RCSID("$Id$");
-
 struct hdb_master_key_data {
     krb5_keytab_entry keytab;
     krb5_crypto crypto;

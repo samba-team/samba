@@ -33,8 +33,6 @@
 
 #include "gsskrb5_locl.h"
 
-RCSID("$Id$");
-
 #if 0
 OM_uint32
 gss_krb5_copy_ccache(OM_uint32 *minor_status,
