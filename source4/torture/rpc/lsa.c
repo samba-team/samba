@@ -2632,13 +2632,6 @@ bool torture_rpc_lsa(struct torture_context *tctx)
 		if (!test_CreateSecret(p, tctx, handle)) {
 			ret = false;
 		}
-		if (!test_CreateTrustedDomain(p, tctx, handle)) {
-			ret = false;
-		}
-
-		if (!test_CreateTrustedDomainEx2(p, tctx, handle)) {
-			ret = false;
-		}
 
 		if (!test_EnumAccounts(p, tctx, handle)) {
 			ret = false;
@@ -2763,6 +2756,54 @@ struct torture_suite *torture_rpc_lsa_lookup_names(TALLOC_CTX *mem_ctx)
 						  &ndr_table_lsarpc);
 	torture_rpc_tcase_add_test(tcase, "LookupNames",
 				   testcase_LookupNames);
+
+	return suite;
+}
+
+static bool testcase_TrustedDomains(struct torture_context *tctx,
+				    struct dcerpc_pipe *p)
+{
+	bool ret = true;
+	struct policy_handle *handle;
+
+	if (!test_OpenPolicy(p, tctx)) {
+		ret = false;
+	}
+
+	if (!test_lsa_OpenPolicy2(p, tctx, &handle)) {
+		ret = false;
+	}
+
+	if (!handle) {
+		ret = false;
+	}
+
+	if (!test_CreateTrustedDomain(p, tctx, handle)) {
+		ret = false;
+	}
+
+	if (!test_CreateTrustedDomainEx2(p, tctx, handle)) {
+		ret = false;
+	}
+
+	if (!test_lsa_Close(p, tctx, handle)) {
+		ret = false;
+	}
+
+	return ret;
+}
+
+struct torture_suite *torture_rpc_lsa_trusted_domains(TALLOC_CTX *mem_ctx)
+{
+	struct torture_suite *suite;
+	struct torture_rpc_tcase *tcase;
+
+	suite = torture_suite_create(mem_ctx, "LSA-TRUSTED-DOMAINS");
+
+	tcase = torture_suite_add_rpc_iface_tcase(suite, "lsa",
+						  &ndr_table_lsarpc);
+	torture_rpc_tcase_add_test(tcase, "TrustedDomains",
+				   testcase_TrustedDomains);
 
 	return suite;
 }
