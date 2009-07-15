@@ -4105,7 +4105,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 	   I think this causes us to fail the IFSKIT
 	   BasicFileInformationTest. -tpot */
 	file_index =  ((sbuf.st_ex_ino) & UINT32_MAX); /* FileIndexLow */
-	file_index |= ((sbuf.st_ex_dev) & UINT32_MAX) << 32; /* FileIndexHigh */
+	file_index |= ((uint64_t)((sbuf.st_ex_dev) & UINT32_MAX)) << 32; /* FileIndexHigh */
 
 	switch (info_level) {
 		case SMB_INFO_STANDARD:
