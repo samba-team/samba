@@ -1474,6 +1474,9 @@ static WERROR regdb_fetch_keys_internal(struct db_context *db, const char *key,
 	buflen = value.dsize;
 	len = tdb_unpack( buf, buflen, "d", &num_items);
 
+	werr = regsubkey_ctr_reinit(ctr);
+	W_ERROR_NOT_OK_GOTO_DONE(werr);
+
 	for (i=0; i<num_items; i++) {
 		len += tdb_unpack(buf+len, buflen-len, "f", subkeyname);
 		werr = regsubkey_ctr_addkey(ctr, subkeyname);
