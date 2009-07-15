@@ -89,7 +89,7 @@ static int gensec_krb5_destroy(struct gensec_krb5_state *gensec_krb5_state)
 	return 0;
 }
 
-static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security)
+static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security, bool gssapi)
 {
 	krb5_error_code ret;
 	struct gensec_krb5_state *gensec_krb5_state;
@@ -115,7 +115,7 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security)
 	gensec_krb5_state->keyblock = NULL;
 	gensec_krb5_state->session_key = data_blob(NULL, 0);
 	gensec_krb5_state->pac = data_blob(NULL, 0);
-	gensec_krb5_state->gssapi = false;
+	gensec_krb5_state->gssapi = gssapi;
 
 	talloc_set_destructor(gensec_krb5_state, gensec_krb5_destroy); 
 
@@ -187,12 +187,12 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS gensec_krb5_server_start(struct gensec_security *gensec_security)
+static NTSTATUS gensec_krb5_common_server_start(struct gensec_security *gensec_security, bool gssapi)
 {
 	NTSTATUS nt_status;
 	struct gensec_krb5_state *gensec_krb5_state;
 
-	nt_status = gensec_krb5_start(gensec_security);
+	nt_status = gensec_krb5_start(gensec_security, gssapi);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
@@ -203,19 +203,17 @@ static NTSTATUS gensec_krb5_server_start(struct gensec_security *gensec_security
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS gensec_fake_gssapi_krb5_server_start(struct gensec_security *gensec_security)
+static NTSTATUS gensec_krb5_server_start(struct gensec_security *gensec_security)
 {
-	NTSTATUS nt_status = gensec_krb5_server_start(gensec_security);
-
-	if (NT_STATUS_IS_OK(nt_status)) {
-		struct gensec_krb5_state *gensec_krb5_state;
-		gensec_krb5_state = (struct gensec_krb5_state *)gensec_security->private_data;
-		gensec_krb5_state->gssapi = true;
-	}
-	return nt_status;
+	return gensec_krb5_common_server_start(gensec_security, false);
 }
 
-static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security)
+static NTSTATUS gensec_fake_gssapi_krb5_server_start(struct gensec_security *gensec_security)
+{
+	return gensec_krb5_common_server_start(gensec_security, true);
+}
+
+static NTSTATUS gensec_krb5_common_client_start(struct gensec_security *gensec_security, bool gssapi)
 {
 	struct gensec_krb5_state *gensec_krb5_state;
 	krb5_error_code ret;
@@ -240,7 +238,7 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 			
-	nt_status = gensec_krb5_start(gensec_security);
+	nt_status = gensec_krb5_start(gensec_security, gssapi);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
@@ -249,8 +247,16 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 	gensec_krb5_state->state_position = GENSEC_KRB5_CLIENT_START;
 	gensec_krb5_state->ap_req_options = AP_OPTS_USE_SUBKEY;
 
-	if (gensec_setting_bool(gensec_security->settings, "gensec_krb5", "mutual", true)) {
-		gensec_krb5_state->ap_req_options |= AP_OPTS_MUTUAL_REQUIRED;
+	if (gensec_krb5_state->gssapi) {
+		/* The Fake GSSAPI modal emulates Samba3, which does not do mutual authentication */
+		if (gensec_setting_bool(gensec_security->settings, "gensec_fake_gssapi_krb5", "mutual", false)) {
+			gensec_krb5_state->ap_req_options |= AP_OPTS_MUTUAL_REQUIRED;
+		}
+	} else {
+		/* The wrapping for KPASSWD (a user of the raw KRB5 API) should be mutually authenticated */
+		if (gensec_setting_bool(gensec_security->settings, "gensec_krb5", "mutual", true)) {
+			gensec_krb5_state->ap_req_options |= AP_OPTS_MUTUAL_REQUIRED;
+		}
 	}
 
 	principal = gensec_get_target_principal(gensec_security);
@@ -333,16 +339,14 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 	}
 }
 
+static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security)
+{
+	return gensec_krb5_common_client_start(gensec_security, false);
+}
+
 static NTSTATUS gensec_fake_gssapi_krb5_client_start(struct gensec_security *gensec_security)
 {
-	NTSTATUS nt_status = gensec_krb5_client_start(gensec_security);
-
-	if (NT_STATUS_IS_OK(nt_status)) {
-		struct gensec_krb5_state *gensec_krb5_state;
-		gensec_krb5_state = (struct gensec_krb5_state *)gensec_security->private_data;
-		gensec_krb5_state->gssapi = true;
-	}
-	return nt_status;
+	return gensec_krb5_common_client_start(gensec_security, true);
 }
 
 /**
