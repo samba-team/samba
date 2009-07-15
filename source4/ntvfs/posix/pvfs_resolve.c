@@ -796,7 +796,10 @@ NTSTATUS pvfs_resolve_parent(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 	(*name)->has_wildcard = false;
 	/* we can't get the correct 'original_name', but for the purposes
 	   of this call this is close enough */
-	(*name)->original_name = talloc_reference(*name, child->original_name);
+	(*name)->original_name = talloc_strdup(*name, child->original_name);
+	if ((*name)->original_name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	(*name)->stream_name = NULL;
 	(*name)->stream_id = 0;
 
