@@ -945,7 +945,7 @@ struct composite_context* libnet_UserList_send(struct libnet_context *ctx,
 	/* store the arguments in the state structure */
 	s->ctx          = ctx;
 	s->page_size    = r->in.page_size;
-	s->resume_index = (uint32_t)r->in.resume_index;
+	s->resume_index = r->in.resume_index;
 	s->domain_name  = talloc_strdup(c, r->in.domain_name);
 	s->monitor_fn   = monitor;
 
