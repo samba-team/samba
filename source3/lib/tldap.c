@@ -1618,7 +1618,7 @@ struct tevent_req *tldap_add_send(TALLOC_CTX *mem_ctx,
 
 static void tldap_add_done(struct tevent_req *subreq)
 {
-	return tldap_simple_done(subreq, TLDAP_RES_ADD);
+	tldap_simple_done(subreq, TLDAP_RES_ADD);
 }
 
 int tldap_add_recv(struct tevent_req *req)
@@ -1718,7 +1718,7 @@ struct tevent_req *tldap_modify_send(TALLOC_CTX *mem_ctx,
 
 static void tldap_modify_done(struct tevent_req *subreq)
 {
-	return tldap_simple_done(subreq, TLDAP_RES_MODIFY);
+	tldap_simple_done(subreq, TLDAP_RES_MODIFY);
 }
 
 int tldap_modify_recv(struct tevent_req *req)
@@ -1795,7 +1795,7 @@ struct tevent_req *tldap_delete_send(TALLOC_CTX *mem_ctx,
 
 static void tldap_delete_done(struct tevent_req *subreq)
 {
-	return tldap_simple_done(subreq, TLDAP_RES_DELETE);
+	tldap_simple_done(subreq, TLDAP_RES_DELETE);
 }
 
 int tldap_delete_recv(struct tevent_req *req)
