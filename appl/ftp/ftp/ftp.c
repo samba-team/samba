@@ -184,7 +184,7 @@ login (char *host)
 	printf("Authentication successful.\n\n");
     }
 
-    if (ruserpass (host, &ruserstr, &rpass, &racctstr) < 0) {
+    if (ruserpassword (host, &ruserstr, &rpass, &racctstr) < 0) {
 	code = -1;
 	return (0);
     }

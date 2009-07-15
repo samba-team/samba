@@ -74,6 +74,6 @@ char macbuf[4096];
 
 char username[32];
 
-/* these are set in ruserpass */
+/* these are set in ruserpassword */
 char myhostname[MaxHostNameLen];
 char *mydomain;

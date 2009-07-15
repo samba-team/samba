@@ -105,7 +105,7 @@ guess_domain (char *hostname_str, size_t sz)
 }
 
 int
-ruserpass(char *host, char **aname, char **apass, char **aacct)
+ruserpassword(char *host, char **aname, char **apass, char **aacct)
 {
     char *hdir, buf[BUFSIZ], *tmp;
     int t, i, c, usedefault = 0;
