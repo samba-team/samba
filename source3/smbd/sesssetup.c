@@ -1805,6 +1805,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 
 	SSVAL(req->outbuf,smb_uid,sess_vuid);
 	SSVAL(req->inbuf,smb_uid,sess_vuid);
+	req->vuid = sess_vuid;
 
 	if (!done_sesssetup)
 		max_send = MIN(max_send,smb_bufsize);
