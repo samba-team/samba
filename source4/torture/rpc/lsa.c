@@ -2611,13 +2611,6 @@ bool torture_rpc_lsa(struct torture_context *tctx)
 		if (!join) {
 			ret = false;
 		}
-		if (!test_LookupNames_wellknown(p, tctx, handle)) {
-			ret = false;
-		}
-
-		if (!test_LookupNames_bogus(p, tctx, handle)) {
-			ret = false;
-		}
 
 		if (!test_LookupSids_async(p, tctx, handle)) {
 			ret = false;
@@ -2725,6 +2718,14 @@ static bool testcase_LookupNames(struct torture_context *tctx,
 	}
 
 	if (!test_LookupNames3(p, tctx, handle, &tnames2, true)) {
+		ret = false;
+	}
+
+	if (!test_LookupNames_wellknown(p, tctx, handle)) {
+		ret = false;
+	}
+
+	if (!test_LookupNames_bogus(p, tctx, handle)) {
 		ret = false;
 	}
 
