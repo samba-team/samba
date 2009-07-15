@@ -21,11 +21,9 @@
 */
 
 #include "config.h"
-#include <stdio.h>
-#include <unistd.h>
-#include <fcntl.h>
 #include "err.h"
 #include "roken.h"
+#include "system/filesys.h"
 
 #ifndef HAVE_ERR
  void err(int eval, const char *format, ...)
