@@ -1083,7 +1083,7 @@ done:
 static bool test_file_index(struct torture_context *tctx,
 			    struct smb2_tree *tree)
 {
-	TALLOC_CTX *mem_ctx = talloc_new(mem_ctx);
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	const int num_files = 100;
 	int resume_index = 4;
 	int i;
@@ -1201,7 +1201,7 @@ done:
 static bool test_large_files(struct torture_context *tctx,
 			     struct smb2_tree *tree)
 {
-	TALLOC_CTX *mem_ctx = talloc_new(mem_ctx);
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	const int num_files = 2000;
 	int i, j = 1, retry_count = 0;
 	struct file_elem files[2000] = {};
