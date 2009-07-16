@@ -1529,7 +1529,9 @@ static bool test_QuerySecurity(struct dcerpc_pipe *p,
 	torture_comment(tctx, "\nTesting QuerySecurity\n");
 
 	r.in.handle = acct_handle;
-	r.in.sec_info = 7;
+	r.in.sec_info = SECINFO_OWNER |
+			SECINFO_GROUP |
+			SECINFO_DACL;
 	r.out.sdbuf = &sdbuf;
 
 	status = dcerpc_lsa_QuerySecurity(p, tctx, &r);
