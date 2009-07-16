@@ -2188,6 +2188,12 @@ NTSTATUS _lsa_DeleteObject(struct pipes_struct *p,
 			return status;
 		}
 		break;
+	case LSA_HANDLE_TRUST_TYPE:
+		if (!pdb_del_trusteddom_pw(info->name)) {
+			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		}
+		status = NT_STATUS_OK;
+		break;
 	default:
 		return NT_STATUS_INVALID_HANDLE;
 	}
