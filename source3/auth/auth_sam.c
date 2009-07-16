@@ -226,10 +226,10 @@ static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 
 	if (*workstation_list) {
 		bool invalid_ws = True;
-		char *tok;
+		char *tok = NULL;
 		const char *s = workstation_list;
+		char *machine_name = talloc_asprintf(mem_ctx, "%s$", user_info->wksta_name);
 
-		const char *machine_name = talloc_asprintf(mem_ctx, "%s$", user_info->wksta_name);
 		if (machine_name == NULL)
 			return NT_STATUS_NO_MEMORY;
 
@@ -251,6 +251,7 @@ static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 			TALLOC_FREE(tok);
 		}
 		TALLOC_FREE(tok);
+		TALLOC_FREE(machine_name);
 
 		if (invalid_ws)
 			return NT_STATUS_INVALID_WORKSTATION;
