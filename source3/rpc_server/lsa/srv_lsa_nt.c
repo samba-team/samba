@@ -1426,6 +1426,80 @@ NTSTATUS _lsa_OpenTrustedDomain(struct pipes_struct *p,
 }
 
 /***************************************************************************
+ _lsa_CreateTrustedDomainEx2
+ ***************************************************************************/
+
+NTSTATUS _lsa_CreateTrustedDomainEx2(struct pipes_struct *p,
+				     struct lsa_CreateTrustedDomainEx2 *r)
+{
+	struct lsa_info *policy;
+	NTSTATUS status;
+	uint32_t acc_granted;
+	struct security_descriptor *psd;
+	size_t sd_size;
+
+	if (!IS_DC) {
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	if (!find_policy_by_hnd(p, r->in.policy_handle, (void **)(void *)&policy)) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (!(policy->access & LSA_POLICY_TRUST_ADMIN)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (p->server_info->utok.uid != sec_initial_uid() &&
+	    !nt_token_check_domain_rid(p->server_info->security_token, DOMAIN_RID_ADMINS)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	/* Work out max allowed. */
+	map_max_allowed_access(p->server_info->security_token,
+			       &p->server_info->utok,
+			       &r->in.access_mask);
+
+	/* map the generic bits to the lsa policy ones */
+	se_map_generic(&r->in.access_mask, &lsa_account_mapping);
+
+	status = make_lsa_object_sd(p->mem_ctx, &psd, &sd_size,
+				    &lsa_trusted_domain_mapping,
+				    NULL, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = access_check_object(psd, p->server_info->security_token,
+				     SEC_PRIV_INVALID, SEC_PRIV_INVALID, 0,
+				     r->in.access_mask, &acc_granted,
+				     "_lsa_CreateTrustedDomainEx2");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (!pdb_set_trusteddom_pw(r->in.info->netbios_name.string,
+				   generate_random_str(p->mem_ctx, DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH),
+				   r->in.info->sid)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	status = create_lsa_policy_handle(p->mem_ctx, p,
+					  LSA_HANDLE_TRUST_TYPE,
+					  acc_granted,
+					  r->in.info->sid,
+					  r->in.info->netbios_name.string,
+					  psd,
+					  r->out.trustdom_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		pdb_del_trusteddom_pw(r->in.info->netbios_name.string);
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/***************************************************************************
  ***************************************************************************/
 
 NTSTATUS _lsa_CreateTrustedDomain(struct pipes_struct *p,
@@ -2650,13 +2724,6 @@ NTSTATUS _lsa_OpenTrustedDomainByName(struct pipes_struct *p,
 }
 
 NTSTATUS _lsa_TestCall(struct pipes_struct *p, struct lsa_TestCall *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _lsa_CreateTrustedDomainEx2(struct pipes_struct *p,
-				     struct lsa_CreateTrustedDomainEx2 *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
