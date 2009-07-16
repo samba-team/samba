@@ -1411,6 +1411,66 @@ NTSTATUS _lsa_Close(struct pipes_struct *p, struct lsa_Close *r)
 /***************************************************************************
  ***************************************************************************/
 
+static NTSTATUS lsa_lookup_trusted_domain_by_sid(TALLOC_CTX *mem_ctx,
+						 const struct dom_sid *sid,
+						 struct trustdom_info **info)
+{
+	NTSTATUS status;
+	uint32_t num_domains = 0;
+	struct trustdom_info **domains = NULL;
+	int i;
+
+	status = pdb_enum_trusteddoms(mem_ctx, &num_domains, &domains);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	for (i=0; i < num_domains; i++) {
+		if (dom_sid_equal(&domains[i]->sid, sid)) {
+			break;
+		}
+	}
+
+	if (i == num_domains) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	*info = domains[i];
+
+	return NT_STATUS_OK;
+}
+
+/***************************************************************************
+ ***************************************************************************/
+
+static NTSTATUS lsa_lookup_trusted_domain_by_name(TALLOC_CTX *mem_ctx,
+						  const char *netbios_domain_name,
+						  struct trustdom_info **info_p)
+{
+	struct dom_sid sid;
+	struct trustdom_info *info;
+
+	if (!pdb_get_trusteddom_pw(netbios_domain_name, NULL, &sid, NULL)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	info = talloc(mem_ctx, struct trustdom_info);
+	if (!info) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	info->name	= talloc_strdup(info, netbios_domain_name);
+	NT_STATUS_HAVE_NO_MEMORY(info->name);
+	info->sid	= sid;
+
+	*info_p = info;
+
+	return NT_STATUS_OK;
+}
+
+/***************************************************************************
+ ***************************************************************************/
+
 NTSTATUS _lsa_OpenSecret(struct pipes_struct *p, struct lsa_OpenSecret *r)
 {
 	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
