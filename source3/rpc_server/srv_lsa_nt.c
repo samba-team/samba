@@ -505,12 +505,54 @@ NTSTATUS _lsa_QueryInfoPolicy(pipes_struct *p,
 	const char *name;
 	DOM_SID *sid = NULL;
 	union lsa_PolicyInformation *info = NULL;
+	uint32_t acc_required = 0;
 
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&handle))
 		return NT_STATUS_INVALID_HANDLE;
 
 	if (handle->type != LSA_HANDLE_POLICY_TYPE) {
 		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	switch (r->in.level) {
+	case LSA_POLICY_INFO_AUDIT_LOG:
+	case LSA_POLICY_INFO_AUDIT_EVENTS:
+		acc_required = LSA_POLICY_VIEW_AUDIT_INFORMATION;
+		break;
+	case LSA_POLICY_INFO_DOMAIN:
+		acc_required = LSA_POLICY_VIEW_LOCAL_INFORMATION;
+		break;
+	case LSA_POLICY_INFO_PD:
+		acc_required = LSA_POLICY_GET_PRIVATE_INFORMATION;
+		break;
+	case LSA_POLICY_INFO_ACCOUNT_DOMAIN:
+		acc_required = LSA_POLICY_VIEW_LOCAL_INFORMATION;
+		break;
+	case LSA_POLICY_INFO_ROLE:
+	case LSA_POLICY_INFO_REPLICA:
+		acc_required = LSA_POLICY_VIEW_LOCAL_INFORMATION;
+		break;
+	case LSA_POLICY_INFO_QUOTA:
+		acc_required = LSA_POLICY_VIEW_LOCAL_INFORMATION;
+		break;
+	case LSA_POLICY_INFO_MOD:
+	case LSA_POLICY_INFO_AUDIT_FULL_SET:
+		/* according to MS-LSAD 3.1.4.4.3 */
+		return NT_STATUS_INVALID_PARAMETER;
+	case LSA_POLICY_INFO_AUDIT_FULL_QUERY:
+		acc_required = LSA_POLICY_VIEW_AUDIT_INFORMATION;
+		break;
+	case LSA_POLICY_INFO_DNS:
+	case LSA_POLICY_INFO_DNS_INT:
+	case LSA_POLICY_INFO_L_ACCOUNT_DOMAIN:
+		acc_required = LSA_POLICY_VIEW_LOCAL_INFORMATION;
+		break;
+	default:
+		break;
+	}
+
+	if (!(handle->access & acc_required)) {
+		/* return NT_STATUS_ACCESS_DENIED; */
 	}
 
 	info = TALLOC_ZERO_P(p->mem_ctx, union lsa_PolicyInformation);
