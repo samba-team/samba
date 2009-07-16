@@ -1917,6 +1917,51 @@ NTSTATUS _lsa_RemovePrivilegesFromAccount(pipes_struct *p,
 }
 
 /***************************************************************************
+ _lsa_LookupPrivName
+ ***************************************************************************/
+
+NTSTATUS _lsa_LookupPrivName(pipes_struct *p,
+			     struct lsa_LookupPrivName *r)
+{
+	struct lsa_info *info = NULL;
+	const char *name;
+	struct lsa_StringLarge *lsa_name;
+
+	/* find the connection policy handle. */
+	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info)) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (info->type != LSA_HANDLE_POLICY_TYPE) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (!(info->access & LSA_POLICY_VIEW_LOCAL_INFORMATION)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	name = luid_to_privilege_name((LUID *)r->in.luid);
+	if (!name) {
+		return NT_STATUS_NO_SUCH_PRIVILEGE;
+	}
+
+	lsa_name = TALLOC_ZERO_P(p->mem_ctx, struct lsa_StringLarge);
+	if (!lsa_name) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	lsa_name->string = talloc_strdup(lsa_name, name);
+	if (!lsa_name->string) {
+		TALLOC_FREE(lsa_name);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	*r->out.name = lsa_name;
+
+	return NT_STATUS_OK;
+}
+
+/***************************************************************************
  _lsa_QuerySecurity
  ***************************************************************************/
 
@@ -2364,12 +2409,6 @@ NTSTATUS _lsa_SetInformationTrustedDomain(pipes_struct *p, struct lsa_SetInforma
 }
 
 NTSTATUS _lsa_QuerySecret(pipes_struct *p, struct lsa_QuerySecret *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _lsa_LookupPrivName(pipes_struct *p, struct lsa_LookupPrivName *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
