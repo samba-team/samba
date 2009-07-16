@@ -1662,6 +1662,145 @@ NTSTATUS _lsa_DeleteTrustedDomain(struct pipes_struct *p,
 }
 
 /***************************************************************************
+ _lsa_QueryTrustedDomainInfo
+ ***************************************************************************/
+
+NTSTATUS _lsa_QueryTrustedDomainInfo(struct pipes_struct *p,
+				     struct lsa_QueryTrustedDomainInfo *r)
+{
+	NTSTATUS status;
+	struct lsa_info *handle;
+	union lsa_TrustedDomainInfo *info;
+	struct trustdom_info *trust_info;
+	uint32_t acc_required;
+
+	/* find the connection policy handle. */
+	if (!find_policy_by_hnd(p, r->in.trustdom_handle, (void **)(void *)&handle)) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (handle->type != LSA_HANDLE_TRUST_TYPE) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	switch (r->in.level) {
+	case LSA_TRUSTED_DOMAIN_INFO_NAME:
+		acc_required = LSA_TRUSTED_QUERY_DOMAIN_NAME;
+		break;
+	case LSA_TRUSTED_DOMAIN_INFO_CONTROLLERS:
+		acc_required = LSA_TRUSTED_QUERY_CONTROLLERS;
+		break;
+	case LSA_TRUSTED_DOMAIN_INFO_POSIX_OFFSET:
+		acc_required = LSA_TRUSTED_QUERY_POSIX;
+		break;
+	case LSA_TRUSTED_DOMAIN_INFO_PASSWORD:
+		acc_required = LSA_TRUSTED_QUERY_AUTH;
+		break;
+	case LSA_TRUSTED_DOMAIN_INFO_BASIC:
+		acc_required = LSA_TRUSTED_QUERY_DOMAIN_NAME;
+		break;
+	case LSA_TRUSTED_DOMAIN_INFO_INFO_EX:
+		acc_required = LSA_TRUSTED_QUERY_DOMAIN_NAME;
+		break;
+	case LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO:
+		acc_required = LSA_TRUSTED_QUERY_AUTH;
+		break;
+	case LSA_TRUSTED_DOMAIN_INFO_FULL_INFO:
+		acc_required = LSA_TRUSTED_QUERY_DOMAIN_NAME |
+			       LSA_TRUSTED_QUERY_POSIX |
+			       LSA_TRUSTED_QUERY_AUTH;
+		break;
+	case LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO_INTERNAL:
+		acc_required = LSA_TRUSTED_QUERY_AUTH;
+		break;
+	case LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_INTERNAL:
+		acc_required = LSA_TRUSTED_QUERY_DOMAIN_NAME |
+			       LSA_TRUSTED_QUERY_POSIX |
+			       LSA_TRUSTED_QUERY_AUTH;
+		break;
+	case LSA_TRUSTED_DOMAIN_INFO_INFO_EX2_INTERNAL:
+		acc_required = LSA_TRUSTED_QUERY_DOMAIN_NAME;
+		break;
+	case LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_2_INTERNAL:
+		acc_required = LSA_TRUSTED_QUERY_DOMAIN_NAME |
+			       LSA_TRUSTED_QUERY_POSIX |
+			       LSA_TRUSTED_QUERY_AUTH;
+		break;
+	case LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES:
+		acc_required = LSA_TRUSTED_QUERY_POSIX;
+		break;
+	default:
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (!(handle->access & acc_required)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	status = lsa_lookup_trusted_domain_by_sid(p->mem_ctx,
+						  &handle->sid,
+						  &trust_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	info = TALLOC_ZERO_P(p->mem_ctx, union lsa_TrustedDomainInfo);
+	if (!info) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	switch (r->in.level) {
+	case LSA_TRUSTED_DOMAIN_INFO_NAME:
+		init_lsa_StringLarge(&info->name.netbios_name, trust_info->name);
+		break;
+	case LSA_TRUSTED_DOMAIN_INFO_CONTROLLERS:
+		return NT_STATUS_INVALID_PARAMETER;
+	case LSA_TRUSTED_DOMAIN_INFO_POSIX_OFFSET:
+		break;
+	case LSA_TRUSTED_DOMAIN_INFO_PASSWORD:
+		return NT_STATUS_INVALID_INFO_CLASS;
+	case LSA_TRUSTED_DOMAIN_INFO_BASIC:
+		init_lsa_String(&info->info_basic.netbios_name, trust_info->name);
+		info->info_basic.sid = dom_sid_dup(info, &trust_info->sid);
+		if (!info->info_basic.sid) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		break;
+	case LSA_TRUSTED_DOMAIN_INFO_INFO_EX:
+		init_lsa_StringLarge(&info->info_ex.domain_name, trust_info->name);
+		init_lsa_StringLarge(&info->info_ex.netbios_name, trust_info->name);
+		info->info_ex.sid = dom_sid_dup(info, &trust_info->sid);
+		if (!info->info_ex.sid) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		info->info_ex.trust_direction = LSA_TRUST_DIRECTION_OUTBOUND;
+		info->info_ex.trust_type = LSA_TRUST_TYPE_DOWNLEVEL;
+		info->info_ex.trust_attributes = 0;
+		break;
+	case LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO:
+		return NT_STATUS_INVALID_INFO_CLASS;
+	case LSA_TRUSTED_DOMAIN_INFO_FULL_INFO:
+		break;
+	case LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO_INTERNAL:
+		return NT_STATUS_INVALID_INFO_CLASS;
+	case LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_INTERNAL:
+		return NT_STATUS_INVALID_INFO_CLASS;
+	case LSA_TRUSTED_DOMAIN_INFO_INFO_EX2_INTERNAL:
+		return NT_STATUS_INVALID_PARAMETER;
+	case LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_2_INTERNAL:
+		break;
+	case LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES:
+		break;
+	default:
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	*r->out.info = info;
+
+	return NT_STATUS_OK;
+}
+
+/***************************************************************************
  ***************************************************************************/
 
 NTSTATUS _lsa_CreateSecret(struct pipes_struct *p, struct lsa_CreateSecret *r)
@@ -2753,13 +2892,6 @@ NTSTATUS _lsa_GetQuotasForAccount(struct pipes_struct *p,
 
 NTSTATUS _lsa_SetQuotasForAccount(struct pipes_struct *p,
 				  struct lsa_SetQuotasForAccount *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _lsa_QueryTrustedDomainInfo(struct pipes_struct *p,
-				     struct lsa_QueryTrustedDomainInfo *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
