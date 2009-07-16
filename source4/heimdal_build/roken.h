@@ -97,6 +97,10 @@
 #define HAVE_INNETGR
 #endif
 
+#ifndef HAVE_INET_ATON
+#define HAVE_INET_ATON
+#endif
+
 /* we lie about having pidfile() so that NetBSD5 can compile. Nothing
    in the parts of heimdal we use actually uses pidfile(), and we
    don't use it in Samba, so this works, although its ugly */
