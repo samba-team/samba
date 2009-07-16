@@ -2735,7 +2735,7 @@ _PUBLIC_ void ndr_print_lsa_TrustDomInfoEnum(struct ndr_print *ndr, const char *
 		case LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_INTERNAL: val = "LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_INTERNAL"; break;
 		case LSA_TRUSTED_DOMAIN_INFO_INFO_EX2_INTERNAL: val = "LSA_TRUSTED_DOMAIN_INFO_INFO_EX2_INTERNAL"; break;
 		case LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_2_INTERNAL: val = "LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_2_INTERNAL"; break;
-		case LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRTYPION_TYPES: val = "LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRTYPION_TYPES"; break;
+		case LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES: val = "LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES"; break;
 	}
 	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
@@ -3662,7 +3662,7 @@ static enum ndr_err_code ndr_push_lsa_TrustedDomainInfo(struct ndr_push *ndr, in
 				NDR_CHECK(ndr_push_lsa_TrustDomainInfoFullInfo2Internal(ndr, NDR_SCALARS, &r->full_info2_internal));
 			break; }
 
-			case LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRTYPION_TYPES: {
+			case LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES: {
 				NDR_CHECK(ndr_push_lsa_TrustDomainInfoSupportedEncTypes(ndr, NDR_SCALARS, &r->enc_types));
 			break; }
 
@@ -3720,7 +3720,7 @@ static enum ndr_err_code ndr_push_lsa_TrustedDomainInfo(struct ndr_push *ndr, in
 				NDR_CHECK(ndr_push_lsa_TrustDomainInfoFullInfo2Internal(ndr, NDR_BUFFERS, &r->full_info2_internal));
 			break;
 
-			case LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRTYPION_TYPES:
+			case LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES:
 			break;
 
 			default:
@@ -3789,7 +3789,7 @@ static enum ndr_err_code ndr_pull_lsa_TrustedDomainInfo(struct ndr_pull *ndr, in
 				NDR_CHECK(ndr_pull_lsa_TrustDomainInfoFullInfo2Internal(ndr, NDR_SCALARS, &r->full_info2_internal));
 			break; }
 
-			case LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRTYPION_TYPES: {
+			case LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES: {
 				NDR_CHECK(ndr_pull_lsa_TrustDomainInfoSupportedEncTypes(ndr, NDR_SCALARS, &r->enc_types));
 			break; }
 
@@ -3846,7 +3846,7 @@ static enum ndr_err_code ndr_pull_lsa_TrustedDomainInfo(struct ndr_pull *ndr, in
 				NDR_CHECK(ndr_pull_lsa_TrustDomainInfoFullInfo2Internal(ndr, NDR_BUFFERS, &r->full_info2_internal));
 			break;
 
-			case LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRTYPION_TYPES:
+			case LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES:
 			break;
 
 			default:
@@ -3910,7 +3910,7 @@ _PUBLIC_ void ndr_print_lsa_TrustedDomainInfo(struct ndr_print *ndr, const char 
 			ndr_print_lsa_TrustDomainInfoFullInfo2Internal(ndr, "full_info2_internal", &r->full_info2_internal);
 		break;
 
-		case LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRTYPION_TYPES:
+		case LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES:
 			ndr_print_lsa_TrustDomainInfoSupportedEncTypes(ndr, "enc_types", &r->enc_types);
 		break;
 

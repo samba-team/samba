@@ -651,7 +651,7 @@ import "misc.idl", "security.idl";
 		LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_INTERNAL    = 10,
 		LSA_TRUSTED_DOMAIN_INFO_INFO_EX2_INTERNAL     = 11,
 		LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_2_INTERNAL  = 12,
-		LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRTYPION_TYPES = 13
+		LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES = 13
 	} lsa_TrustDomInfoEnum;
 
 	typedef [public,bitmap32bit] bitmap {
@@ -788,7 +788,7 @@ import "misc.idl", "security.idl";
 		        lsa_TrustDomainInfoInfoEx2Internal   info_ex2_internal;
 		[case(LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_2_INTERNAL)]
 		        lsa_TrustDomainInfoFullInfo2Internal     full_info2_internal;
-		[case(LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRTYPION_TYPES)]
+		[case(LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES)]
 		        lsa_TrustDomainInfoSupportedEncTypes enc_types;
 	} lsa_TrustedDomainInfo;
 

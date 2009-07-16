@@ -1378,7 +1378,7 @@ static NTSTATUS dcesrv_lsa_QueryTrustedDomainInfo(struct dcesrv_call_state *dce_
 			= samdb_result_uint(msg, "posixOffset", 0);					   
 		return fill_trust_domain_ex(mem_ctx, msg, &info->full_info2_internal.info.info_ex);
 		
-	case LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRTYPION_TYPES:
+	case LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES:
 		info->enc_types.enc_types
 			= samdb_result_uint(msg, "msDs-supportedEncryptionTypes", KERB_ENCTYPE_RC4_HMAC_MD5);
 		break;
