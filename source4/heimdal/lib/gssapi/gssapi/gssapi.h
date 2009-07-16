@@ -54,7 +54,13 @@
 #endif
 
 #ifndef GSSAPI_DEPRECATED
+#if defined(__GNUC__) && ((__GNUC__ > 3) || ((__GNUC__ == 3) && (__GNUC_MINOR__ >= 1 )))
 #define GSSAPI_DEPRECATED __attribute__((deprecated))
+#elif defined(_MSC_VER)
+#define GSSAPI_DEPRECATED __declspec(deprecated)
+#else
+#define GSSAPI_DEPRECATED
+#endif
 #endif
 
 /*
