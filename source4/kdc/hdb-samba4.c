@@ -154,7 +154,7 @@ static HDBFlags uf2HDBFlags(krb5_context context, int userAccountControl, enum h
 		flags.invalid = 1;
 	}
 
-/* UF_DONT_EXPIRE_PASSWD and UF_USE_DES_KEY_ONLY handled in LDB_message2entry() */
+/* UF_DONT_EXPIRE_PASSWD and UF_USE_DES_KEY_ONLY handled in hdb_samba4_message2entry() */
 
 /*
 	if (userAccountControl & UF_MNS_LOGON_ACCOUNT) {
@@ -193,7 +193,7 @@ static void hdb_ldb_free_entry(krb5_context context, hdb_entry_ex *entry_ex)
 	talloc_free(entry_ex->ctx);
 }
 
-static krb5_error_code LDB_message2entry_keys(krb5_context context,
+static krb5_error_code hdb_samba4_message2entry_keys(krb5_context context,
 					      struct smb_iconv_convenience *iconv_convenience,
 					      TALLOC_CTX *mem_ctx,
 					      struct ldb_message *msg,
@@ -283,22 +283,22 @@ static krb5_error_code LDB_message2entry_keys(krb5_context context,
 					       (ndr_pull_flags_fn_t)ndr_pull_package_PrimaryKerberosBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			ret = EINVAL;
-			krb5_set_error_message(context, ret, "LDB_message2entry_keys: could not parse package_PrimaryKerberosBlob");
-			krb5_warnx(context, "LDB_message2entry_keys: could not parse package_PrimaryKerberosBlob");
+			krb5_set_error_message(context, ret, "hdb_samba4_message2entry_keys: could not parse package_PrimaryKerberosBlob");
+			krb5_warnx(context, "hdb_samba4_message2entry_keys: could not parse package_PrimaryKerberosBlob");
 			goto out;
 		}
 
 		if (newer_keys && _pkb.version != 4) {
 			ret = EINVAL;
-			krb5_set_error_message(context, ret, "LDB_message2entry_keys: Primary:Kerberos-Newer-Keys not version 4");
-			krb5_warnx(context, "LDB_message2entry_keys: Primary:Kerberos-Newer-Keys not version 4");
+			krb5_set_error_message(context, ret, "hdb_samba4_message2entry_keys: Primary:Kerberos-Newer-Keys not version 4");
+			krb5_warnx(context, "hdb_samba4_message2entry_keys: Primary:Kerberos-Newer-Keys not version 4");
 			goto out;
 		}
 
 		if (!newer_keys && _pkb.version != 3) {
 			ret = EINVAL;
-			krb5_set_error_message(context, ret, "LDB_message2entry_keys: could not parse Primary:Kerberos not version 3");
-			krb5_warnx(context, "LDB_message2entry_keys: could not parse Primary:Kerberos not version 3");
+			krb5_set_error_message(context, ret, "hdb_samba4_message2entry_keys: could not parse Primary:Kerberos not version 3");
+			krb5_warnx(context, "hdb_samba4_message2entry_keys: could not parse Primary:Kerberos not version 3");
 			goto out;
 		}
 
@@ -484,7 +484,7 @@ out:
 /*
  * Construct an hdb_entry from a directory entry.
  */
-static krb5_error_code LDB_message2entry(krb5_context context, HDB *db, 
+static krb5_error_code hdb_samba4_message2entry(krb5_context context, HDB *db, 
 					 struct loadparm_context *lp_ctx, 
 					 TALLOC_CTX *mem_ctx, krb5_const_principal principal,
 					 enum hdb_ldb_ent_type ent_type,
@@ -511,7 +511,7 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 	
 	if (!samAccountName) {
 		ret = ENOENT;
-		krb5_set_error_message(context, ret, "LDB_message2entry: no samAccountName present");
+		krb5_set_error_message(context, ret, "hdb_samba4_message2entry: no samAccountName present");
 		goto out;
 	}
 
@@ -690,7 +690,7 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 	entry_ex->entry.generation = NULL;
 
 	/* Get keys from the db */
-	ret = LDB_message2entry_keys(context, p->iconv_convenience, p, msg, userAccountControl, entry_ex);
+	ret = hdb_samba4_message2entry_keys(context, p->iconv_convenience, p, msg, userAccountControl, entry_ex);
 	if (ret) {
 		/* Could be bougus data in the entry, or out of memory */
 		goto out;
@@ -731,7 +731,7 @@ out:
 /*
  * Construct an hdb_entry from a directory entry.
  */
-static krb5_error_code LDB_trust_message2entry(krb5_context context, HDB *db, 
+static krb5_error_code hdb_samba4_trust_message2entry(krb5_context context, HDB *db, 
 					       struct loadparm_context *lp_ctx,
 					       TALLOC_CTX *mem_ctx, krb5_const_principal principal,
 					       enum trust_direction direction,
@@ -909,7 +909,7 @@ out:
 
 }
 
-static krb5_error_code LDB_lookup_trust(krb5_context context, struct ldb_context *ldb_ctx, 					
+static krb5_error_code hdb_samba4_lookup_trust(krb5_context context, struct ldb_context *ldb_ctx, 					
 					TALLOC_CTX *mem_ctx,
 					const char *realm,
 					struct ldb_dn *realm_dn,
@@ -946,39 +946,39 @@ static krb5_error_code LDB_lookup_trust(krb5_context context, struct ldb_context
 	return 0;
 }
 
-static krb5_error_code LDB_open(krb5_context context, HDB *db, int flags, mode_t mode)
+static krb5_error_code hdb_samba4_open(krb5_context context, HDB *db, int flags, mode_t mode)
 {
 	if (db->hdb_master_key_set) {
 		krb5_error_code ret = HDB_ERR_NOENTRY;
-		krb5_warnx(context, "LDB_open: use of a master key incompatible with LDB\n");
-		krb5_set_error_message(context, ret, "LDB_open: use of a master key incompatible with LDB\n");
+		krb5_warnx(context, "hdb_samba4_open: use of a master key incompatible with LDB\n");
+		krb5_set_error_message(context, ret, "hdb_samba4_open: use of a master key incompatible with LDB\n");
 		return ret;
 	}		
 
 	return 0;
 }
 
-static krb5_error_code LDB_close(krb5_context context, HDB *db)
+static krb5_error_code hdb_samba4_close(krb5_context context, HDB *db)
 {
 	return 0;
 }
 
-static krb5_error_code LDB_lock(krb5_context context, HDB *db, int operation)
+static krb5_error_code hdb_samba4_lock(krb5_context context, HDB *db, int operation)
 {
 	return 0;
 }
 
-static krb5_error_code LDB_unlock(krb5_context context, HDB *db)
+static krb5_error_code hdb_samba4_unlock(krb5_context context, HDB *db)
 {
 	return 0;
 }
 
-static krb5_error_code LDB_rename(krb5_context context, HDB *db, const char *new_name)
+static krb5_error_code hdb_samba4_rename(krb5_context context, HDB *db, const char *new_name)
 {
 	return HDB_ERR_DB_INUSE;
 }
 
-static krb5_error_code LDB_fetch_client(krb5_context context, HDB *db, 
+static krb5_error_code hdb_samba4_fetch_client(krb5_context context, HDB *db, 
 					struct loadparm_context *lp_ctx, 
 					TALLOC_CTX *mem_ctx, 
 					krb5_const_principal principal,
@@ -1008,13 +1008,13 @@ static krb5_error_code LDB_fetch_client(krb5_context context, HDB *db,
 		return EINVAL;
 	}
 	
-	ret = LDB_message2entry(context, db, lp_ctx, mem_ctx, 
+	ret = hdb_samba4_message2entry(context, db, lp_ctx, mem_ctx, 
 				principal, HDB_SAMBA4_ENT_TYPE_CLIENT,
 				realm_dn, msg, entry_ex);
 	return ret;
 }
 
-static krb5_error_code LDB_fetch_krbtgt(krb5_context context, HDB *db, 
+static krb5_error_code hdb_samba4_fetch_krbtgt(krb5_context context, HDB *db, 
 					struct loadparm_context *lp_ctx, 
 					TALLOC_CTX *mem_ctx, 
 					krb5_const_principal principal,
@@ -1051,12 +1051,12 @@ static krb5_error_code LDB_fetch_krbtgt(krb5_context context, HDB *db,
 						       &msg, princ_attrs, 
 						       "(&(objectClass=user)(samAccountName=krbtgt))"); 
 		if (lret == LDB_ERR_NO_SUCH_OBJECT) {
-			krb5_warnx(context, "LDB_fetch: could not find own KRBTGT in DB!");
-			krb5_set_error_message(context, HDB_ERR_NOENTRY, "LDB_fetch: could not find own KRBTGT in DB!");
+			krb5_warnx(context, "hdb_samba4_fetch: could not find own KRBTGT in DB!");
+			krb5_set_error_message(context, HDB_ERR_NOENTRY, "hdb_samba4_fetch: could not find own KRBTGT in DB!");
 			return HDB_ERR_NOENTRY;
 		} else if (lret != LDB_SUCCESS) {
-			krb5_warnx(context, "LDB_fetch: could not find own KRBTGT in DB: %s", ldb_errstring(db->hdb_db));
-			krb5_set_error_message(context, HDB_ERR_NOENTRY, "LDB_fetch: could not find own KRBTGT in DB: %s", ldb_errstring(db->hdb_db));
+			krb5_warnx(context, "hdb_samba4_fetch: could not find own KRBTGT in DB: %s", ldb_errstring(db->hdb_db));
+			krb5_set_error_message(context, HDB_ERR_NOENTRY, "hdb_samba4_fetch: could not find own KRBTGT in DB: %s", ldb_errstring(db->hdb_db));
 			return HDB_ERR_NOENTRY;
 		}
 		
@@ -1077,16 +1077,16 @@ static krb5_error_code LDB_fetch_krbtgt(krb5_context context, HDB *db,
  		talloc_free(realm_fixed);
  		if (!alloc_principal->name.name_string.val[1]) {
 			ret = ENOMEM;
- 			krb5_set_error_message(context, ret, "LDB_fetch: strdup() failed!");
+ 			krb5_set_error_message(context, ret, "hdb_samba4_fetch: strdup() failed!");
  			return ret;
  		}
  		principal = alloc_principal;
 
-		ret = LDB_message2entry(context, db, lp_ctx, mem_ctx, 
+		ret = hdb_samba4_message2entry(context, db, lp_ctx, mem_ctx, 
 					principal, HDB_SAMBA4_ENT_TYPE_KRBTGT, 
 					realm_dn, msg, entry_ex);
 		if (ret != 0) {
-			krb5_warnx(context, "LDB_fetch: self krbtgt message2entry failed");	
+			krb5_warnx(context, "hdb_samba4_fetch: self krbtgt message2entry failed");	
 		}
 		return ret;
 
@@ -1109,21 +1109,21 @@ static krb5_error_code LDB_fetch_krbtgt(krb5_context context, HDB *db,
 
 		/* Trusted domains are under CN=system */
 		
-		ret = LDB_lookup_trust(context, (struct ldb_context *)db->hdb_db, 
+		ret = hdb_samba4_lookup_trust(context, (struct ldb_context *)db->hdb_db, 
 				       mem_ctx, 
 				       realm, realm_dn, &msg);
 		
 		if (ret != 0) {
-			krb5_warnx(context, "LDB_fetch: could not find principal in DB");
-			krb5_set_error_message(context, ret, "LDB_fetch: could not find principal in DB");
+			krb5_warnx(context, "hdb_samba4_fetch: could not find principal in DB");
+			krb5_set_error_message(context, ret, "hdb_samba4_fetch: could not find principal in DB");
 			return ret;
 		}
 		
-		ret = LDB_trust_message2entry(context, db, lp_ctx, mem_ctx, 
+		ret = hdb_samba4_trust_message2entry(context, db, lp_ctx, mem_ctx, 
 					      principal, direction, 
 					      realm_dn, msg, entry_ex);
 		if (ret != 0) {
-			krb5_warnx(context, "LDB_fetch: trust_message2entry failed");	
+			krb5_warnx(context, "hdb_samba4_fetch: trust_message2entry failed");	
 		}
 		return ret;
 
@@ -1134,7 +1134,7 @@ static krb5_error_code LDB_fetch_krbtgt(krb5_context context, HDB *db,
 
 }
 
-static krb5_error_code LDB_fetch_server(krb5_context context, HDB *db, 
+static krb5_error_code hdb_samba4_fetch_server(krb5_context context, HDB *db, 
 					struct loadparm_context *lp_ctx,
 					TALLOC_CTX *mem_ctx, 
 					krb5_const_principal principal,
@@ -1194,8 +1194,8 @@ static krb5_error_code LDB_fetch_server(krb5_context context, HDB *db,
 		ret = krb5_unparse_name_flags(context, principal,  KRB5_PRINCIPAL_UNPARSE_NO_REALM, &short_princ);
 		
 		if (ret != 0) {
-			krb5_set_error_message(context, ret, "LDB_lookup_principal: could not parse principal");
-			krb5_warnx(context, "LDB_lookup_principal: could not parse principal");
+			krb5_set_error_message(context, ret, "hdb_samba4_lookup_principal: could not parse principal");
+			krb5_warnx(context, "hdb_samba4_lookup_principal: could not parse principal");
 			return ret;
 		}
 		
@@ -1215,46 +1215,46 @@ static krb5_error_code LDB_fetch_server(krb5_context context, HDB *db,
 		}
 	}
 
-	ret = LDB_message2entry(context, db, lp_ctx, mem_ctx, 
+	ret = hdb_samba4_message2entry(context, db, lp_ctx, mem_ctx, 
 				principal, HDB_SAMBA4_ENT_TYPE_SERVER,
 				realm_dn, msg, entry_ex);
 	if (ret != 0) {
-		krb5_warnx(context, "LDB_fetch: message2entry failed");	
+		krb5_warnx(context, "hdb_samba4_fetch: message2entry failed");	
 	}
 
 	return ret;
 }
 			
-static krb5_error_code LDB_fetch(krb5_context context, HDB *db, 
+static krb5_error_code hdb_samba4_fetch(krb5_context context, HDB *db, 
 				 krb5_const_principal principal,
 				 unsigned flags,
 				 hdb_entry_ex *entry_ex)
 {
 	krb5_error_code ret = HDB_ERR_NOENTRY;
-	TALLOC_CTX *mem_ctx = talloc_named(db, 0, "LDB_fetch context");
+	TALLOC_CTX *mem_ctx = talloc_named(db, 0, "hdb_samba4_fetch context");
 	struct loadparm_context *lp_ctx = talloc_get_type(ldb_get_opaque(db->hdb_db, "loadparm"), struct loadparm_context);
 
 	if (!mem_ctx) {
 		ret = ENOMEM;
-		krb5_set_error_message(context, ret, "LDB_fetch: talloc_named() failed!");
+		krb5_set_error_message(context, ret, "hdb_samba4_fetch: talloc_named() failed!");
 		return ret;
 	}
 
 	if (flags & HDB_F_GET_CLIENT) {
-		ret = LDB_fetch_client(context, db, lp_ctx, mem_ctx, principal, flags, entry_ex);
+		ret = hdb_samba4_fetch_client(context, db, lp_ctx, mem_ctx, principal, flags, entry_ex);
 		if (ret != HDB_ERR_NOENTRY) goto done;
 	}
 	if (flags & HDB_F_GET_SERVER) {
 		/* krbtgt fits into this situation for trusted realms, and for resolving different versions of our own realm name */
-		ret = LDB_fetch_krbtgt(context, db, lp_ctx, mem_ctx, principal, flags, entry_ex);
+		ret = hdb_samba4_fetch_krbtgt(context, db, lp_ctx, mem_ctx, principal, flags, entry_ex);
 		if (ret != HDB_ERR_NOENTRY) goto done;
 
 		/* We return 'no entry' if it does not start with krbtgt/, so move to the common case quickly */
-		ret = LDB_fetch_server(context, db, lp_ctx, mem_ctx, principal, flags, entry_ex);
+		ret = hdb_samba4_fetch_server(context, db, lp_ctx, mem_ctx, principal, flags, entry_ex);
 		if (ret != HDB_ERR_NOENTRY) goto done;
 	}
 	if (flags & HDB_F_GET_KRBTGT) {
-		ret = LDB_fetch_krbtgt(context, db, lp_ctx, mem_ctx, principal, flags, entry_ex);
+		ret = hdb_samba4_fetch_krbtgt(context, db, lp_ctx, mem_ctx, principal, flags, entry_ex);
 		if (ret != HDB_ERR_NOENTRY) goto done;
 	}
 
@@ -1263,12 +1263,12 @@ done:
 	return ret;
 }
 
-static krb5_error_code LDB_store(krb5_context context, HDB *db, unsigned flags, hdb_entry_ex *entry)
+static krb5_error_code hdb_samba4_store(krb5_context context, HDB *db, unsigned flags, hdb_entry_ex *entry)
 {
 	return HDB_ERR_DB_INUSE;
 }
 
-static krb5_error_code LDB_remove(krb5_context context, HDB *db, krb5_const_principal principal)
+static krb5_error_code hdb_samba4_remove(krb5_context context, HDB *db, krb5_const_principal principal)
 {
 	return HDB_ERR_DB_INUSE;
 }
@@ -1282,7 +1282,7 @@ struct hdb_ldb_seq {
 	struct ldb_dn *realm_dn;
 };
 
-static krb5_error_code LDB_seq(krb5_context context, HDB *db, unsigned flags, hdb_entry_ex *entry)
+static krb5_error_code hdb_samba4_seq(krb5_context context, HDB *db, unsigned flags, hdb_entry_ex *entry)
 {
 	krb5_error_code ret;
 	struct hdb_ldb_seq *priv = (struct hdb_ldb_seq *)db->hdb_dbc;
@@ -1294,16 +1294,16 @@ static krb5_error_code LDB_seq(krb5_context context, HDB *db, unsigned flags, hd
 		return HDB_ERR_NOENTRY;
 	}
 
-	mem_ctx = talloc_named(priv, 0, "LDB_seq context");
+	mem_ctx = talloc_named(priv, 0, "hdb_samba4_seq context");
 
 	if (!mem_ctx) {
 		ret = ENOMEM;
-		krb5_set_error_message(context, ret, "LDB_seq: talloc_named() failed!");
+		krb5_set_error_message(context, ret, "hdb_samba4_seq: talloc_named() failed!");
 		return ret;
 	}
 
 	if (priv->index < priv->count) {
-		ret = LDB_message2entry(context, db, priv->lp_ctx, 
+		ret = hdb_samba4_message2entry(context, db, priv->lp_ctx, 
 					mem_ctx, 
 					NULL, HDB_SAMBA4_ENT_TYPE_ANY, 
 					priv->realm_dn, priv->msgs[priv->index++], entry);
@@ -1321,7 +1321,7 @@ static krb5_error_code LDB_seq(krb5_context context, HDB *db, unsigned flags, hd
 	return ret;
 }
 
-static krb5_error_code LDB_firstkey(krb5_context context, HDB *db, unsigned flags,
+static krb5_error_code hdb_samba4_firstkey(krb5_context context, HDB *db, unsigned flags,
 					hdb_entry_ex *entry)
 {
 	struct ldb_context *ldb_ctx = (struct ldb_context *)db->hdb_db;
@@ -1353,11 +1353,11 @@ static krb5_error_code LDB_firstkey(krb5_context context, HDB *db, unsigned flag
 	priv->realm_dn = ldb_get_default_basedn(ldb_ctx);
 	priv->count = 0;
 
-	mem_ctx = talloc_named(priv, 0, "LDB_firstkey context");
+	mem_ctx = talloc_named(priv, 0, "hdb_samba4_firstkey context");
 
 	if (!mem_ctx) {
 		ret = ENOMEM;
-		krb5_set_error_message(context, ret, "LDB_firstkey: talloc_named() failed!");
+		krb5_set_error_message(context, ret, "hdb_samba4_firstkey: talloc_named() failed!");
 		return ret;
 	}
 
@@ -1382,7 +1382,7 @@ static krb5_error_code LDB_firstkey(krb5_context context, HDB *db, unsigned flag
 
 	db->hdb_dbc = priv;
 
-	ret = LDB_seq(context, db, flags, entry);
+	ret = hdb_samba4_seq(context, db, flags, entry);
 
 	if (ret != 0) {
     		talloc_free(priv);
@@ -1393,13 +1393,13 @@ static krb5_error_code LDB_firstkey(krb5_context context, HDB *db, unsigned flag
 	return ret;
 }
 
-static krb5_error_code LDB_nextkey(krb5_context context, HDB *db, unsigned flags,
+static krb5_error_code hdb_samba4_nextkey(krb5_context context, HDB *db, unsigned flags,
 				   hdb_entry_ex *entry)
 {
-	return LDB_seq(context, db, flags, entry);
+	return hdb_samba4_seq(context, db, flags, entry);
 }
 
-static krb5_error_code LDB_destroy(krb5_context context, HDB *db)
+static krb5_error_code hdb_samba4_destroy(krb5_context context, HDB *db)
 {
 	talloc_free(db);
 	return 0;
@@ -1451,22 +1451,22 @@ NTSTATUS kdc_hdb_samba4_create(TALLOC_CTX *mem_ctx,
 	}
 
 	(*db)->hdb_dbc = NULL;
-	(*db)->hdb_open = LDB_open;
-	(*db)->hdb_close = LDB_close;
-	(*db)->hdb_fetch = LDB_fetch;
-	(*db)->hdb_store = LDB_store;
-	(*db)->hdb_remove = LDB_remove;
-	(*db)->hdb_firstkey = LDB_firstkey;
-	(*db)->hdb_nextkey = LDB_nextkey;
-	(*db)->hdb_lock = LDB_lock;
-	(*db)->hdb_unlock = LDB_unlock;
-	(*db)->hdb_rename = LDB_rename;
+	(*db)->hdb_open = hdb_samba4_open;
+	(*db)->hdb_close = hdb_samba4_close;
+	(*db)->hdb_fetch = hdb_samba4_fetch;
+	(*db)->hdb_store = hdb_samba4_store;
+	(*db)->hdb_remove = hdb_samba4_remove;
+	(*db)->hdb_firstkey = hdb_samba4_firstkey;
+	(*db)->hdb_nextkey = hdb_samba4_nextkey;
+	(*db)->hdb_lock = hdb_samba4_lock;
+	(*db)->hdb_unlock = hdb_samba4_unlock;
+	(*db)->hdb_rename = hdb_samba4_rename;
 	/* we don't implement these, as we are not a lockable database */
 	(*db)->hdb__get = NULL;
 	(*db)->hdb__put = NULL;
 	/* kadmin should not be used for deletes - use other tools instead */
 	(*db)->hdb__del = NULL;
-	(*db)->hdb_destroy = LDB_destroy;
+	(*db)->hdb_destroy = hdb_samba4_destroy;
 
 	(*db)->hdb_auth_status = NULL;
 	(*db)->hdb_check_constrained_delegation = NULL;
