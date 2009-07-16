@@ -2842,8 +2842,9 @@ struct torture_suite *torture_rpc_lsa_privileges(TALLOC_CTX *mem_ctx)
 
 	suite = torture_suite_create(mem_ctx, "LSA-PRIVILEGES");
 
-	tcase = torture_suite_add_rpc_iface_tcase(suite, "lsa",
-						  &ndr_table_lsarpc);
+	tcase = torture_suite_add_machine_workstation_rpc_iface_tcase(suite, "lsa",
+								      &ndr_table_lsarpc,
+								      TEST_MACHINENAME);
 	torture_rpc_tcase_add_test(tcase, "Privileges",
 				   testcase_Privileges);
 
