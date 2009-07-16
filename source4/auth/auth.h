@@ -23,6 +23,8 @@
 
 #include "librpc/gen_ndr/ndr_krb5pac.h"
 
+extern const char *krbtgt_attrs[];
+extern const char *server_attrs[];
 extern const char *user_attrs[];
 
 union netr_Validation;

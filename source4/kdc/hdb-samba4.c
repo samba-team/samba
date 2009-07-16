@@ -1044,11 +1044,10 @@ static krb5_error_code hdb_samba4_fetch_krbtgt(krb5_context context, HDB *db,
 
 		int lret;
 		char *realm_fixed;
-		const char * const *princ_attrs = user_attrs;
  		
 		lret = gendb_search_single_extended_dn(db->hdb_db, mem_ctx, 
 						       realm_dn, LDB_SCOPE_SUBTREE,
-						       &msg, princ_attrs, 
+						       &msg, krbtgt_attrs, 
 						       "(&(objectClass=user)(samAccountName=krbtgt))"); 
 		if (lret == LDB_ERR_NO_SUCH_OBJECT) {
 			krb5_warnx(context, "hdb_samba4_fetch: could not find own KRBTGT in DB!");
@@ -1134,17 +1133,16 @@ static krb5_error_code hdb_samba4_fetch_krbtgt(krb5_context context, HDB *db,
 
 }
 
-static krb5_error_code hdb_samba4_fetch_server(krb5_context context, HDB *db, 
-					struct loadparm_context *lp_ctx,
-					TALLOC_CTX *mem_ctx, 
-					krb5_const_principal principal,
-					unsigned flags,
-					hdb_entry_ex *entry_ex)
+static krb5_error_code hdb_samba4_lookup_server(krb5_context context, HDB *db, 
+						struct loadparm_context *lp_ctx,
+						TALLOC_CTX *mem_ctx, 
+						krb5_const_principal principal,
+						const char **attrs,
+						struct ldb_dn **realm_dn,
+						struct ldb_message **msg)
 {
 	krb5_error_code ret;
 	const char *realm;
-	struct ldb_message *msg = NULL;
-	struct ldb_dn *realm_dn;
 	if (principal->name.name_string.len >= 2) {
 		/* 'normal server' case */
 		int ldb_ret;
@@ -1164,7 +1162,7 @@ static krb5_error_code hdb_samba4_fetch_server(krb5_context context, HDB *db,
 		 * referral instead */
 		nt_status = crack_service_principal_name((struct ldb_context *)db->hdb_db,
 							 mem_ctx, principal_string, 
-							 &user_dn, &realm_dn);
+							 &user_dn, realm_dn);
 		free(principal_string);
 		
 		if (!NT_STATUS_IS_OK(nt_status)) {
@@ -1174,7 +1172,7 @@ static krb5_error_code hdb_samba4_fetch_server(krb5_context context, HDB *db,
 		ldb_ret = gendb_search_single_extended_dn((struct ldb_context *)db->hdb_db,
 							  mem_ctx, 
 							  user_dn, LDB_SCOPE_BASE,
-							  &msg, user_attrs,
+							  msg, attrs,
 							  "(objectClass=*)");
 		if (ldb_ret != LDB_SUCCESS) {
 			return HDB_ERR_NOENTRY;
@@ -1183,10 +1181,9 @@ static krb5_error_code hdb_samba4_fetch_server(krb5_context context, HDB *db,
 	} else {
 		int lret;
 		char *filter = NULL;
-		const char * const *princ_attrs = user_attrs;
 		char *short_princ;
 		/* server as client principal case, but we must not lookup userPrincipalNames */
-		realm_dn = ldb_get_default_basedn(db->hdb_db);
+		*realm_dn = ldb_get_default_basedn(db->hdb_db);
 		realm = krb5_principal_get_realm(context, principal);
 		
 		/* TODO: Check if it is our realm, otherwise give referall */
@@ -1200,8 +1197,8 @@ static krb5_error_code hdb_samba4_fetch_server(krb5_context context, HDB *db,
 		}
 		
 		lret = gendb_search_single_extended_dn(db->hdb_db, mem_ctx, 
-						       realm_dn, LDB_SCOPE_SUBTREE,
-						       &msg, princ_attrs, "(&(objectClass=user)(samAccountName=%s))", 
+						       *realm_dn, LDB_SCOPE_SUBTREE,
+						       msg, attrs, "(&(objectClass=user)(samAccountName=%s))", 
 						       ldb_binary_encode_string(mem_ctx, short_princ));
 		free(short_princ);
 		if (lret == LDB_ERR_NO_SUCH_OBJECT) {
@@ -1213,6 +1210,26 @@ static krb5_error_code hdb_samba4_fetch_server(krb5_context context, HDB *db,
 				  filter, ldb_errstring(db->hdb_db)));
 			return HDB_ERR_NOENTRY;
 		}
+	}
+
+	return 0;
+}
+
+static krb5_error_code hdb_samba4_fetch_server(krb5_context context, HDB *db, 
+					       struct loadparm_context *lp_ctx,
+					       TALLOC_CTX *mem_ctx, 
+					       krb5_const_principal principal,
+					       unsigned flags,
+					       hdb_entry_ex *entry_ex)
+{
+	krb5_error_code ret;
+	struct ldb_dn *realm_dn;
+	struct ldb_message *msg;
+
+	ret = hdb_samba4_lookup_server(context, db, lp_ctx, mem_ctx, principal, 
+				       server_attrs, &realm_dn, &msg);
+	if (ret != 0) {
+		return ret;
 	}
 
 	ret = hdb_samba4_message2entry(context, db, lp_ctx, mem_ctx, 

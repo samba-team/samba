@@ -32,25 +32,37 @@
 #include "param/param.h"
 #include "auth/auth_sam.h"
 
+#define KRBTGT_ATTRS \
+	/* required for the krb5 kdc */		\
+	"objectClass",				\
+	"sAMAccountName",			\
+	"userPrincipalName",			\
+	"servicePrincipalName",			\
+	"msDS-KeyVersionNumber",		\
+	"supplementalCredentials",		\
+						\
+	/* passwords */				\
+	"dBCSPwd",				\
+	"unicodePwd",				\
+						\
+	"userAccountControl",			\
+	"objectSid",				\
+						\
+	"pwdLastSet",				\
+	"accountExpires"			
+
+const char *krbtgt_attrs[] = {
+	KRBTGT_ATTRS
+};
+
+const char *server_attrs[] = {
+	KRBTGT_ATTRS
+};
+
 const char *user_attrs[] = {
-	/* required for the krb5 kdc */
-	"objectClass",
-	"sAMAccountName",
-	"userPrincipalName",
-	"servicePrincipalName",
-	"msDS-KeyVersionNumber",
-	"supplementalCredentials",
+	KRBTGT_ATTRS,
 
-	/* passwords */
-	"dBCSPwd", 
-	"unicodePwd",
-
-	"userAccountControl",
-
-	"pwdLastSet",
-	"accountExpires",
 	"logonHours",
-	"objectSid",
 
 	/* check 'allowed workstations' */
 	"userWorkstations",
