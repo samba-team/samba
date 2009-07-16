@@ -37,10 +37,14 @@ case $cmd in
 
      recovered)
 	MYPNN=`ctdb pnn | cut -d: -f2`
-	NATGWMASTER=`ctdb natgwlist | head -1`
-	NATGWIP=`ctdb natgwlist | tail --lines=+2 | head -1 | cut -d: -f3`
+	NATGWMASTER=`ctdb natgwlist | head -1 | sed -e "s/ .*//"`
+	NATGWIP=`ctdb natgwlist | head -1 | sed -e "s/^[^ ]* *//"`
 
 	CTDB_NATGW_PUBLIC_IP_HOST=`echo $CTDB_NATGW_PUBLIC_IP | sed -e "s/\/.*/\/32/"`
+	if [ "$NATGWMASTER" == "-1" ]; then
+		echo "There is not NATGW master node"
+		exit 1
+	fi
 
 	delete_all
 

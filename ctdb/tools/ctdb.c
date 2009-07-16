@@ -682,7 +682,7 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 	 */
 	for(i=0;i<nodemap->num;i++){
 		if (!(nodemap->nodes[i].flags & (NODE_FLAGS_DISCONNECTED|NODE_FLAGS_STOPPED|NODE_FLAGS_DELETED))) {
-			printf("%d\n", nodemap->nodes[i].pnn);
+			printf("%d %s\n", nodemap->nodes[i].pnn,ctdb_addr_to_str(&nodemap->nodes[i].addr));
 			break;
 		}
 	}
@@ -690,13 +690,13 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 	if (i == nodemap->num) {
 		for(i=0;i<nodemap->num;i++){
 			if (!(nodemap->nodes[i].flags & (NODE_FLAGS_DISCONNECTED|NODE_FLAGS_DELETED))) {
-				printf("%d\n", nodemap->nodes[i].pnn);
+				printf("%d %s\n", nodemap->nodes[i].pnn, ctdb_addr_to_str(&nodemap->nodes[i].addr));
 				break;
 			}
 		}
 		/* or if we still can not find any */
 		if (i == nodemap->num) {
-			printf("-1\n");
+			printf("-1 0.0.0.0\n");
 		}
 	}
 
