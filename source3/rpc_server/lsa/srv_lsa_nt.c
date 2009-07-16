@@ -1623,6 +1623,44 @@ NTSTATUS _lsa_CreateTrustedDomain(struct pipes_struct *p,
 }
 
 /***************************************************************************
+ _lsa_DeleteTrustedDomain
+ ***************************************************************************/
+
+NTSTATUS _lsa_DeleteTrustedDomain(struct pipes_struct *p,
+				  struct lsa_DeleteTrustedDomain *r)
+{
+	NTSTATUS status;
+	struct lsa_info *handle;
+	struct trustdom_info *info;
+
+	/* find the connection policy handle. */
+	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&handle)) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (handle->type != LSA_HANDLE_POLICY_TYPE) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (!(handle->access & LSA_POLICY_TRUST_ADMIN)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	status = lsa_lookup_trusted_domain_by_sid(p->mem_ctx,
+						  r->in.dom_sid,
+						  &info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (!pdb_del_trusteddom_pw(info->name)) {
+		return NT_STATUS_NO_TRUST_LSA_SECRET;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/***************************************************************************
  ***************************************************************************/
 
 NTSTATUS _lsa_CreateSecret(struct pipes_struct *p, struct lsa_CreateSecret *r)
@@ -2748,13 +2786,6 @@ NTSTATUS _lsa_QueryTrustedDomainInfoBySid(struct pipes_struct *p,
 
 NTSTATUS _lsa_SetTrustedDomainInfo(struct pipes_struct *p,
 				   struct lsa_SetTrustedDomainInfo *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _lsa_DeleteTrustedDomain(struct pipes_struct *p,
-				  struct lsa_DeleteTrustedDomain *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
