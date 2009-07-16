@@ -3268,8 +3268,7 @@ int ctdb_transaction_store(struct ctdb_transaction_handle *h,
 		/* the record doesn't exist - create one with us as dmaster.
 		   This is only safe because we are in a transaction and this
 		   is a persistent database */
-		header.dmaster = h->ctdb_db->ctdb->pnn;
-		header.rsn = 0;
+		ZERO_STRUCT(header);
 	} else if (ret != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to fetch record\n"));
 		talloc_free(tmp_ctx);
@@ -3283,6 +3282,7 @@ int ctdb_transaction_store(struct ctdb_transaction_handle *h,
 		return 0;
 	}
 
+	header.dmaster = h->ctdb_db->ctdb->pnn;
 	header.rsn++;
 
 	if (!h->in_replay) {
