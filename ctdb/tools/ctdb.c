@@ -677,9 +677,11 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 		i++;
 	}		
 
-	/* print the natgw master */
+	/* print the natgw master
+	 * we dont allow STOPPED or DELETED nodes to become the natgwmaster
+	 */
 	for(i=0;i<nodemap->num;i++){
-		if (!(nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED)) {
+		if (!(nodemap->nodes[i].flags & (NODE_FLAGS_DISCONNECTED|NODE_FLAGS_STOPPED|NODE_FLAGS_DELETED))) {
 			printf("%d\n", nodemap->nodes[i].pnn);
 			break;
 		}
