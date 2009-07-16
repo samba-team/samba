@@ -686,6 +686,19 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 			break;
 		}
 	}
+	/* unless all nodes are STOPPED, when we pick one anyway */
+	if (i == nodemap->num) {
+		for(i=0;i<nodemap->num;i++){
+			if (!(nodemap->nodes[i].flags & (NODE_FLAGS_DISCONNECTED|NODE_FLAGS_DELETED))) {
+				printf("%d\n", nodemap->nodes[i].pnn);
+				break;
+			}
+		}
+		/* or if we still can not find any */
+		if (i == nodemap->num) {
+			printf("-1\n");
+		}
+	}
 
 	/* print the pruned list of nodes belonging to this natgw list */
 	for(i=0;i<nodemap->num;i++){
