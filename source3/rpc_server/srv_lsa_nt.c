@@ -620,7 +620,8 @@ NTSTATUS _lsa_QueryInfoPolicy(pipes_struct *p,
 				break;
 		}
 		break;
-	case LSA_POLICY_INFO_DNS: {
+	case LSA_POLICY_INFO_DNS:
+	case LSA_POLICY_INFO_DNS_INT: {
 		struct pdb_domain_info *dominfo;
 
 		if ((pdb_capabilities() & PDB_CAP_ADS) == 0) {
@@ -656,6 +657,28 @@ NTSTATUS _lsa_QueryInfoPolicy(pipes_struct *p,
 	*r->out.info = info;
 
 	return status;
+}
+
+/***************************************************************************
+ _lsa_QueryInfoPolicy2
+ ***************************************************************************/
+
+NTSTATUS _lsa_QueryInfoPolicy2(pipes_struct *p,
+			       struct lsa_QueryInfoPolicy2 *r2)
+{
+	struct lsa_QueryInfoPolicy r;
+
+	if ((pdb_capabilities() & PDB_CAP_ADS) == 0) {
+		p->rng_fault_state = True;
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	ZERO_STRUCT(r);
+	r.in.handle = r2->in.handle;
+	r.in.level = r2->in.level;
+	r.out.info = r2->out.info;
+
+	return _lsa_QueryInfoPolicy(p, &r);
 }
 
 /***************************************************************************
@@ -2442,24 +2465,6 @@ NTSTATUS _lsa_RetrievePrivateData(pipes_struct *p, struct lsa_RetrievePrivateDat
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _lsa_QueryInfoPolicy2(pipes_struct *p,
-			       struct lsa_QueryInfoPolicy2 *r2)
-{
-	struct lsa_QueryInfoPolicy r;
-
-	if ((pdb_capabilities() & PDB_CAP_ADS) == 0) {
-		p->rng_fault_state = True;
-		return NT_STATUS_NOT_IMPLEMENTED;
-	}
-
-	ZERO_STRUCT(r);
-	r.in.handle = r2->in.handle;
-	r.in.level = r2->in.level;
-	r.out.info = r2->out.info;
-
-	return _lsa_QueryInfoPolicy(p, &r);
 }
 
 NTSTATUS _lsa_SetInfoPolicy2(pipes_struct *p, struct lsa_SetInfoPolicy2 *r)
