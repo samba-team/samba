@@ -1637,8 +1637,12 @@ NTSTATUS _lsa_GetUserName(pipes_struct *p,
 NTSTATUS _lsa_CreateAccount(pipes_struct *p,
 			    struct lsa_CreateAccount *r)
 {
+	NTSTATUS status;
 	struct lsa_info *handle;
 	struct lsa_info *info;
+	uint32_t acc_granted;
+	struct security_descriptor *psd;
+	uint32_t sd_size;
 
 	/* find the connection policy handle. */
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&handle))
@@ -1650,12 +1654,26 @@ NTSTATUS _lsa_CreateAccount(pipes_struct *p,
 
 	/* check if the user has enough rights */
 
-	/*
-	 * I don't know if it's the right one. not documented.
-	 * but guessed with rpcclient.
-	 */
-	if (!(handle->access & LSA_POLICY_CREATE_ACCOUNT))
+	if (!(handle->access & LSA_POLICY_CREATE_ACCOUNT)) {
 		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	/* map the generic bits to the lsa policy ones */
+	se_map_generic(&r->in.access_mask, &lsa_account_mapping);
+
+	status = make_lsa_object_sd(p->mem_ctx, &psd, &sd_size,
+				    &lsa_account_mapping,
+				    r->in.sid, LSA_POLICY_ALL_ACCESS);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+        status = access_check_object(psd, p->server_info->ptok,
+                NULL, 0, r->in.access_mask,
+                &acc_granted, "_lsa_CreateAccount");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	if ( is_privileged_sid( r->in.sid ) )
 		return NT_STATUS_OBJECT_NAME_COLLISION;
@@ -1668,7 +1686,7 @@ NTSTATUS _lsa_CreateAccount(pipes_struct *p,
 	}
 
 	info->sid = *r->in.sid;
-	info->access = r->in.access_mask;
+	info->access = acc_granted;
 	info->type = LSA_HANDLE_ACCOUNT_TYPE;
 
 	/* get a (unique) handle.  open a policy on it. */
