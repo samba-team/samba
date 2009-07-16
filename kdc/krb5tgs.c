@@ -805,17 +805,34 @@ tgs_make_reply(krb5_context context,
     et.flags.hw_authent  = tgt->flags.hw_authent;
     et.flags.anonymous   = tgt->flags.anonymous;
     et.flags.ok_as_delegate = server->entry.flags.ok_as_delegate;
-	
-    if (auth_data) {
-	/* XXX Check enc-authorization-data */
-	et.authorization_data = calloc(1, sizeof(*et.authorization_data));
-	if (et.authorization_data == NULL) {
-	    ret = ENOMEM;
-	    goto out;
-	}
-	ret = copy_AuthorizationData(auth_data, et.authorization_data);
+
+    if(rspac->length) {
+	/*
+	 * No not need to filter out the any PAC from the
+	 * auth_data since it's signed by the KDC.
+	 */
+	ret = _kdc_tkt_add_if_relevant_ad(context, &et,
+					  KRB5_AUTHDATA_WIN2K_PAC, rspac);
 	if (ret)
 	    goto out;
+    }
+	
+    if (auth_data) {
+	unsigned int i = 0;
+
+	/* XXX check authdata */
+	if (et.authorization_data == NULL) {
+	    ret = ENOMEM;
+	    krb5_set_error_message(context, ret, "malloc: out of memory");
+	    goto out;
+	}
+	for(i = 0; i < auth_data->len ; i++) {
+	    ret = add_AuthorizationData(et.authorization_data, &auth_data->val[i]);
+	    if (ret) {
+		krb5_set_error_message(context, ret, "malloc: out of memory");
+		goto out;
+	    }
+	}
 
 	/* Filter out type KRB5SignedPath */
 	ret = find_KRB5SignedPath(context, et.authorization_data, NULL);
@@ -830,18 +847,6 @@ tgs_make_reply(krb5_context context,
 		ad->len--;
 	    }
 	}
-    }
-
-    if(rspac->length) {
-	/*
-	 * No not need to filter out the any PAC from the
-	 * auth_data since it's signed by the KDC.
-	 */
-	ret = _kdc_tkt_add_if_relevant_ad(context, &et,
-					  KRB5_AUTHDATA_WIN2K_PAC,
-					  rspac);
-	if (ret)
-	    goto out;
     }
 
     ret = krb5_copy_keyblock_contents(context, sessionkey, &et.key);
