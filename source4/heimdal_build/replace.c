@@ -61,6 +61,7 @@
 #ifndef HAVE_FLOCK
  int flock(int fd, int op)
 {
+#undef flock
 	struct flock lock;
 	lock.l_whence = 0;
 	lock.l_start = 0;
