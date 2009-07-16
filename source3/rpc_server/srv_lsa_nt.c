@@ -1992,19 +1992,9 @@ NTSTATUS _lsa_QuerySecurity(pipes_struct *p,
 		return status;
 	}
 
-	switch (r->in.sec_info) {
-	case 1:
-		/* SD contains only the owner */
-		if((*r->out.sdbuf = make_sec_desc_buf(p->mem_ctx, sd_size, psd)) == NULL)
-			return NT_STATUS_NO_MEMORY;
-		break;
-	case 4:
-		/* SD contains only the ACL */
-		if((*r->out.sdbuf = make_sec_desc_buf(p->mem_ctx, sd_size, psd)) == NULL)
-			return NT_STATUS_NO_MEMORY;
-		break;
-	default:
-		return NT_STATUS_INVALID_LEVEL;
+	*r->out.sdbuf = make_sec_desc_buf(p->mem_ctx, sd_size, psd);
+	if (!*r->out.sdbuf) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	return status;
