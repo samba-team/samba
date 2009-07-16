@@ -2246,6 +2246,63 @@ NTSTATUS _lsa_LookupPrivValue(pipes_struct *p,
 	return NT_STATUS_OK;
 }
 
+/***************************************************************************
+ _lsa_EnumAccountsWithUserRight
+ ***************************************************************************/
+
+NTSTATUS _lsa_EnumAccountsWithUserRight(pipes_struct *p,
+					struct lsa_EnumAccountsWithUserRight *r)
+{
+	NTSTATUS status;
+	struct lsa_info *info = NULL;
+	struct dom_sid *sids = NULL;
+	int num_sids = 0;
+	uint32_t i;
+	SE_PRIV mask;
+
+	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info)) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (info->type != LSA_HANDLE_POLICY_TYPE) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (!(info->access & LSA_POLICY_LOOKUP_NAMES)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (!r->in.name || !r->in.name->string) {
+		return NT_STATUS_NO_SUCH_PRIVILEGE;
+	}
+
+	if (!se_priv_from_name(r->in.name->string, &mask)) {
+		return NT_STATUS_NO_SUCH_PRIVILEGE;
+	}
+
+	status = privilege_enum_sids(&mask, p->mem_ctx,
+				     &sids, &num_sids);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	r->out.sids->num_sids = num_sids;
+	r->out.sids->sids = talloc_array(p->mem_ctx, struct lsa_SidPtr,
+					 r->out.sids->num_sids);
+
+	for (i=0; i < r->out.sids->num_sids; i++) {
+		r->out.sids->sids[i].sid = sid_dup_talloc(r->out.sids->sids,
+							  &sids[i]);
+		if (!r->out.sids->sids[i].sid) {
+			TALLOC_FREE(r->out.sids->sids);
+			r->out.sids->num_sids = 0;
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
 /*
  * From here on the server routines are just dummy ones to make smbd link with
  * librpc/gen_ndr/srv_lsa.c. These routines are actually never called, we are
@@ -2313,12 +2370,6 @@ NTSTATUS _lsa_QuerySecret(pipes_struct *p, struct lsa_QuerySecret *r)
 }
 
 NTSTATUS _lsa_LookupPrivName(pipes_struct *p, struct lsa_LookupPrivName *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _lsa_EnumAccountsWithUserRight(pipes_struct *p, struct lsa_EnumAccountsWithUserRight *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
