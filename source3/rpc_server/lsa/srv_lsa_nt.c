@@ -1480,12 +1480,88 @@ NTSTATUS _lsa_OpenSecret(struct pipes_struct *p, struct lsa_OpenSecret *r)
 }
 
 /***************************************************************************
+ _lsa_OpenTrustedDomain_base
+ ***************************************************************************/
+
+static NTSTATUS _lsa_OpenTrustedDomain_base(struct pipes_struct *p,
+					    uint32_t access_mask,
+					    struct trustdom_info *info,
+					    struct policy_handle *handle)
+{
+	struct security_descriptor *psd = NULL;
+	size_t sd_size;
+	uint32_t acc_granted;
+	NTSTATUS status;
+
+	/* des_access is for the account here, not the policy
+	 * handle - so don't check against policy handle. */
+
+	/* Work out max allowed. */
+	map_max_allowed_access(p->server_info->security_token,
+			       &p->server_info->utok,
+			       &access_mask);
+
+	/* map the generic bits to the lsa account ones */
+	se_map_generic(&access_mask, &lsa_account_mapping);
+
+	/* get the generic lsa account SD until we store it */
+	status = make_lsa_object_sd(p->mem_ctx, &psd, &sd_size,
+				    &lsa_trusted_domain_mapping,
+				    NULL, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = access_check_object(psd, p->server_info->security_token,
+				     SEC_PRIV_INVALID, SEC_PRIV_INVALID, 0,
+				     access_mask, &acc_granted,
+				     "_lsa_OpenTrustedDomain");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = create_lsa_policy_handle(p->mem_ctx, p,
+					  LSA_HANDLE_TRUST_TYPE,
+					  acc_granted,
+					  &info->sid,
+					  info->name,
+					  psd,
+					  handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/***************************************************************************
+ _lsa_OpenTrustedDomain
  ***************************************************************************/
 
 NTSTATUS _lsa_OpenTrustedDomain(struct pipes_struct *p,
 				struct lsa_OpenTrustedDomain *r)
 {
-	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	struct lsa_info *handle = NULL;
+	struct trustdom_info *info;
+	NTSTATUS status;
+
+	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&handle)) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (handle->type != LSA_HANDLE_POLICY_TYPE) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	status = lsa_lookup_trusted_domain_by_sid(p->mem_ctx,
+						  r->in.sid,
+						  &info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return _lsa_OpenTrustedDomain_base(p, r->in.access_mask, info,
+					   r->out.trustdom_handle);
 }
 
 /***************************************************************************
