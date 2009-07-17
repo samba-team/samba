@@ -14464,7 +14464,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_OSVersion(struct ndr_pull *ndr, int 
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->major));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->minor));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->build));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->platform_id));
 		{
 			uint32_t _flags_save_string = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
@@ -14490,7 +14490,7 @@ _PUBLIC_ void ndr_print_spoolss_OSVersion(struct ndr_print *ndr, const char *nam
 	ndr_print_uint32(ndr, "major", r->major);
 	ndr_print_uint32(ndr, "minor", r->minor);
 	ndr_print_uint32(ndr, "build", r->build);
-	ndr_print_uint32(ndr, "unknown", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?2:r->unknown);
+	ndr_print_uint32(ndr, "platform_id", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?2:r->platform_id);
 	ndr_print_string(ndr, "extra_string", r->extra_string);
 	ndr->depth--;
 }
@@ -14520,8 +14520,11 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_OSVersionEx(struct ndr_push *ndr, in
 			}
 			ndr->flags = _flags_save_string;
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown2));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown3));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->service_pack_major));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->service_pack_minor));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->suite_mask));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->product_type));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->reserved));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -14536,7 +14539,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_OSVersionEx(struct ndr_pull *ndr, in
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->major));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->minor));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->build));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown1));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->platform_id));
 		{
 			uint32_t _flags_save_string = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
@@ -14548,8 +14551,11 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_OSVersionEx(struct ndr_pull *ndr, in
 			}
 			ndr->flags = _flags_save_string;
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown2));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown3));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->service_pack_major));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->service_pack_minor));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->suite_mask));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->product_type));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->reserved));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -14564,10 +14570,13 @@ _PUBLIC_ void ndr_print_spoolss_OSVersionEx(struct ndr_print *ndr, const char *n
 	ndr_print_uint32(ndr, "major", r->major);
 	ndr_print_uint32(ndr, "minor", r->minor);
 	ndr_print_uint32(ndr, "build", r->build);
-	ndr_print_uint32(ndr, "unknown1", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?2:r->unknown1);
+	ndr_print_uint32(ndr, "platform_id", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?2:r->platform_id);
 	ndr_print_string(ndr, "extra_string", r->extra_string);
-	ndr_print_uint32(ndr, "unknown2", r->unknown2);
-	ndr_print_uint32(ndr, "unknown3", r->unknown3);
+	ndr_print_uint16(ndr, "service_pack_major", r->service_pack_major);
+	ndr_print_uint16(ndr, "service_pack_minor", r->service_pack_minor);
+	ndr_print_uint16(ndr, "suite_mask", r->suite_mask);
+	ndr_print_uint8(ndr, "product_type", r->product_type);
+	ndr_print_uint8(ndr, "reserved", r->reserved);
 	ndr->depth--;
 }
 

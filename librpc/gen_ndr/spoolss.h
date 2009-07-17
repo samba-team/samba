@@ -1058,7 +1058,7 @@ struct spoolss_OSVersion {
 	uint32_t major;
 	uint32_t minor;
 	uint32_t build;
-	uint32_t unknown;/* [value(2)] */
+	uint32_t platform_id;/* [value(2)] */
 	const char * extra_string;/* [subcontext_size(256),subcontext(0),flag(LIBNDR_FLAG_STR_NULLTERM)] */
 }/* [gensize,public] */;
 
@@ -1067,10 +1067,13 @@ struct spoolss_OSVersionEx {
 	uint32_t major;
 	uint32_t minor;
 	uint32_t build;
-	uint32_t unknown1;/* [value(2)] */
+	uint32_t platform_id;/* [value(2)] */
 	const char * extra_string;/* [subcontext_size(256),subcontext(0),flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	uint32_t unknown2;
-	uint32_t unknown3;
+	uint16_t service_pack_major;
+	uint16_t service_pack_minor;
+	uint16_t suite_mask;
+	uint8_t product_type;
+	uint8_t reserved;
 }/* [gensize,public] */;
 
 union spoolss_PrinterData {
