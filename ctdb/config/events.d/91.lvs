@@ -48,7 +48,7 @@ case $cmd in
      releaseip)
 	;;
 
-     recovered)
+     recovered|stopped)
 	# kill off any tcp connections
 	ipvsadm -D -t $CTDB_LVS_PUBLIC_IP:0
 	ipvsadm -D -u $CTDB_LVS_PUBLIC_IP:0

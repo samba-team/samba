@@ -1156,10 +1156,58 @@ int32_t ctdb_control_set_recmaster(struct ctdb_context *ctdb, uint32_t opcode, T
 	return 0;
 }
 
-int32_t ctdb_control_stop_node(struct ctdb_context *ctdb)
+
+struct stop_node_callback_state {
+	struct ctdb_req_control *c;
+};
+
+/*
+  called when the 'stopped' event script has finished
+ */
+static void ctdb_stop_node_callback(struct ctdb_context *ctdb, int status, void *p)
 {
+	struct stop_node_callback_state *state = talloc_get_type(p, struct stop_node_callback_state);
+
+	if (status != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " stopped event script failed (status %d)\n", status));
+		ctdb->nodes[ctdb->pnn]->flags &= ~NODE_FLAGS_STOPPED;
+	}
+
+	ctdb_request_control_reply(ctdb, state->c, NULL, status, NULL);
+	talloc_free(state);
+}
+
+int32_t ctdb_control_stop_node(struct ctdb_context *ctdb, struct ctdb_req_control *c, bool *async_reply)
+{
+	int ret;
+	struct stop_node_callback_state *state;
+
 	DEBUG(DEBUG_INFO,(__location__ " Stopping node\n"));
+
+	state = talloc(ctdb, struct stop_node_callback_state);
+	CTDB_NO_MEMORY(ctdb, state);
+
+	state->c    = talloc_steal(state, c);
+
+	ctdb_disable_monitoring(ctdb);
+
+	ret = ctdb_event_script_callback(ctdb, 
+					 timeval_current_ofs(ctdb->tunable.script_timeout, 0),
+					 state, 
+					 ctdb_stop_node_callback, 
+					 state, "stopped");
+
+	if (ret != 0) {
+		ctdb_enable_monitoring(ctdb);
+
+		DEBUG(DEBUG_ERR,(__location__ " Failed to stop node\n"));
+		talloc_free(state);
+		return -1;
+	}
+
 	ctdb->nodes[ctdb->pnn]->flags |= NODE_FLAGS_STOPPED;
+
+	*async_reply = true;
 
 	return 0;
 }
