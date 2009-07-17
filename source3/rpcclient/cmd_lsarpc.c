@@ -1533,6 +1533,76 @@ static NTSTATUS cmd_lsa_query_secret(struct rpc_pipe_client *cli,
 	return status;
 }
 
+static NTSTATUS cmd_lsa_set_secret(struct rpc_pipe_client *cli,
+				   TALLOC_CTX *mem_ctx, int argc,
+				   const char **argv)
+{
+	NTSTATUS status;
+	struct policy_handle handle, sec_handle;
+	struct lsa_String name;
+	struct lsa_DATA_BUF new_val;
+	struct lsa_DATA_BUF old_val;
+	DATA_BLOB enc_key;
+	DATA_BLOB session_key;
+
+	if (argc < 3) {
+		printf("Usage: %s name secret\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	status = rpccli_lsa_open_policy2(cli, mem_ctx,
+					 true,
+					 SEC_FLAG_MAXIMUM_ALLOWED,
+					 &handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	init_lsa_String(&name, argv[1]);
+
+	status = rpccli_lsa_OpenSecret(cli, mem_ctx,
+				       &handle,
+				       name,
+				       SEC_FLAG_MAXIMUM_ALLOWED,
+				       &sec_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	ZERO_STRUCT(new_val);
+	ZERO_STRUCT(old_val);
+
+	status = cli_get_session_key(mem_ctx, cli, &session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	enc_key = sess_encrypt_string(argv[2], &session_key);
+
+	new_val.length = enc_key.length;
+	new_val.size = enc_key.length;
+	new_val.data = enc_key.data;
+
+	status = rpccli_lsa_SetSecret(cli, mem_ctx,
+				      &sec_handle,
+				      &new_val,
+				      NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+ done:
+	if (is_valid_policy_hnd(&sec_handle)) {
+		rpccli_lsa_Close(cli, mem_ctx, &sec_handle);
+	}
+	if (is_valid_policy_hnd(&handle)) {
+		rpccli_lsa_Close(cli, mem_ctx, &handle);
+	}
+
+	return status;
+}
+
+
 /* List of commands exported by this module */
 
 struct cmd_set lsarpc_commands[] = {
@@ -1563,6 +1633,7 @@ struct cmd_set lsarpc_commands[] = {
 	{ "createsecret",         RPC_RTYPE_NTSTATUS, cmd_lsa_create_secret, NULL, &ndr_table_lsarpc.syntax_id, NULL, "Create Secret", "" },
 	{ "deletesecret",         RPC_RTYPE_NTSTATUS, cmd_lsa_delete_secret, NULL, &ndr_table_lsarpc.syntax_id, NULL, "Delete Secret", "" },
 	{ "querysecret",          RPC_RTYPE_NTSTATUS, cmd_lsa_query_secret, NULL, &ndr_table_lsarpc.syntax_id, NULL, "Query Secret", "" },
+	{ "setsecret",            RPC_RTYPE_NTSTATUS, cmd_lsa_set_secret, NULL, &ndr_table_lsarpc.syntax_id, NULL, "Set Secret", "" },
 
 	{ NULL }
 };
