@@ -1683,7 +1683,10 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x28 */
-	[todo] WERROR spoolss_CreatePrinterIC(
+	WERROR spoolss_CreatePrinterIC(
+		[in,ref] policy_handle *handle,
+		[out,ref] policy_handle *gdi_handle,
+		[in,ref] spoolss_DevmodeContainer *devmode_ctr
 	);
 
 	/******************/
@@ -1693,7 +1696,8 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x2a */
-	[todo] WERROR spoolss_DeletePrinterIC(
+	WERROR spoolss_DeletePrinterIC(
+		[in,out,ref] policy_handle *gdi_handle
 	);
 
 	/******************/

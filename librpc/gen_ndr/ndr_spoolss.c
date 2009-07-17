@@ -23702,8 +23702,20 @@ _PUBLIC_ void ndr_print_spoolss_DeletePort(struct ndr_print *ndr, const char *na
 static enum ndr_err_code ndr_push_spoolss_CreatePrinterIC(struct ndr_push *ndr, int flags, const struct spoolss_CreatePrinterIC *r)
 {
 	if (flags & NDR_IN) {
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
+		if (r->in.devmode_ctr == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_spoolss_DevmodeContainer(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.devmode_ctr));
 	}
 	if (flags & NDR_OUT) {
+		if (r->out.gdi_handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->out.gdi_handle));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -23711,9 +23723,37 @@ static enum ndr_err_code ndr_push_spoolss_CreatePrinterIC(struct ndr_push *ndr, 
 
 static enum ndr_err_code ndr_pull_spoolss_CreatePrinterIC(struct ndr_pull *ndr, int flags, struct spoolss_CreatePrinterIC *r)
 {
+	TALLOC_CTX *_mem_save_handle_0;
+	TALLOC_CTX *_mem_save_gdi_handle_0;
+	TALLOC_CTX *_mem_save_devmode_ctr_0;
 	if (flags & NDR_IN) {
+		ZERO_STRUCT(r->out);
+
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.handle);
+		}
+		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.devmode_ctr);
+		}
+		_mem_save_devmode_ctr_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.devmode_ctr, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_spoolss_DevmodeContainer(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.devmode_ctr));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_devmode_ctr_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_PULL_ALLOC(ndr, r->out.gdi_handle);
+		ZERO_STRUCTP(r->out.gdi_handle);
 	}
 	if (flags & NDR_OUT) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.gdi_handle);
+		}
+		_mem_save_gdi_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.gdi_handle, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->out.gdi_handle));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_gdi_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -23729,11 +23769,23 @@ _PUBLIC_ void ndr_print_spoolss_CreatePrinterIC(struct ndr_print *ndr, const cha
 	if (flags & NDR_IN) {
 		ndr_print_struct(ndr, "in", "spoolss_CreatePrinterIC");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "handle", r->in.handle);
+		ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+		ndr->depth--;
+		ndr_print_ptr(ndr, "devmode_ctr", r->in.devmode_ctr);
+		ndr->depth++;
+		ndr_print_spoolss_DevmodeContainer(ndr, "devmode_ctr", r->in.devmode_ctr);
+		ndr->depth--;
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_CreatePrinterIC");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "gdi_handle", r->out.gdi_handle);
+		ndr->depth++;
+		ndr_print_policy_handle(ndr, "gdi_handle", r->out.gdi_handle);
+		ndr->depth--;
 		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
@@ -23784,8 +23836,16 @@ _PUBLIC_ void ndr_print_spoolss_PlayGDIScriptOnPrinterIC(struct ndr_print *ndr, 
 static enum ndr_err_code ndr_push_spoolss_DeletePrinterIC(struct ndr_push *ndr, int flags, const struct spoolss_DeletePrinterIC *r)
 {
 	if (flags & NDR_IN) {
+		if (r->in.gdi_handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.gdi_handle));
 	}
 	if (flags & NDR_OUT) {
+		if (r->out.gdi_handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->out.gdi_handle));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -23793,9 +23853,28 @@ static enum ndr_err_code ndr_push_spoolss_DeletePrinterIC(struct ndr_push *ndr, 
 
 static enum ndr_err_code ndr_pull_spoolss_DeletePrinterIC(struct ndr_pull *ndr, int flags, struct spoolss_DeletePrinterIC *r)
 {
+	TALLOC_CTX *_mem_save_gdi_handle_0;
 	if (flags & NDR_IN) {
+		ZERO_STRUCT(r->out);
+
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.gdi_handle);
+		}
+		_mem_save_gdi_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.gdi_handle, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.gdi_handle));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_gdi_handle_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_PULL_ALLOC(ndr, r->out.gdi_handle);
+		*r->out.gdi_handle = *r->in.gdi_handle;
 	}
 	if (flags & NDR_OUT) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.gdi_handle);
+		}
+		_mem_save_gdi_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.gdi_handle, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->out.gdi_handle));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_gdi_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -23811,11 +23890,19 @@ _PUBLIC_ void ndr_print_spoolss_DeletePrinterIC(struct ndr_print *ndr, const cha
 	if (flags & NDR_IN) {
 		ndr_print_struct(ndr, "in", "spoolss_DeletePrinterIC");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "gdi_handle", r->in.gdi_handle);
+		ndr->depth++;
+		ndr_print_policy_handle(ndr, "gdi_handle", r->in.gdi_handle);
+		ndr->depth--;
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_DeletePrinterIC");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "gdi_handle", r->out.gdi_handle);
+		ndr->depth++;
+		ndr_print_policy_handle(ndr, "gdi_handle", r->out.gdi_handle);
+		ndr->depth--;
 		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}

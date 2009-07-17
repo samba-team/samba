@@ -2516,6 +2516,12 @@ struct spoolss_DeletePort {
 
 struct spoolss_CreatePrinterIC {
 	struct {
+		struct policy_handle *handle;/* [ref] */
+		struct spoolss_DevmodeContainer *devmode_ctr;/* [ref] */
+	} in;
+
+	struct {
+		struct policy_handle *gdi_handle;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -2532,6 +2538,11 @@ struct spoolss_PlayGDIScriptOnPrinterIC {
 
 struct spoolss_DeletePrinterIC {
 	struct {
+		struct policy_handle *gdi_handle;/* [ref] */
+	} in;
+
+	struct {
+		struct policy_handle *gdi_handle;/* [ref] */
 		WERROR result;
 	} out;
 

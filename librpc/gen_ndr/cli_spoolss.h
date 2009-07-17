@@ -294,12 +294,16 @@ NTSTATUS rpccli_spoolss_DeletePort(struct rpc_pipe_client *cli,
 				   WERROR *werror);
 NTSTATUS rpccli_spoolss_CreatePrinterIC(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx,
+					struct policy_handle *handle /* [in] [ref] */,
+					struct policy_handle *gdi_handle /* [out] [ref] */,
+					struct spoolss_DevmodeContainer *devmode_ctr /* [in] [ref] */,
 					WERROR *werror);
 NTSTATUS rpccli_spoolss_PlayGDIScriptOnPrinterIC(struct rpc_pipe_client *cli,
 						 TALLOC_CTX *mem_ctx,
 						 WERROR *werror);
 NTSTATUS rpccli_spoolss_DeletePrinterIC(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx,
+					struct policy_handle *gdi_handle /* [in,out] [ref] */,
 					WERROR *werror);
 NTSTATUS rpccli_spoolss_AddPrinterConnection(struct rpc_pipe_client *cli,
 					     TALLOC_CTX *mem_ctx,
