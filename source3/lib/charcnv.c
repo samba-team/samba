@@ -753,7 +753,7 @@ size_t unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen)
 	size_t size;
 	smb_ucs2_t *buffer;
 
-	if (!push_ucs2_talloc(NULL, &buffer, src, &size)) {
+	if (!push_ucs2_talloc(talloc_tos(), &buffer, src, &size)) {
 		return (size_t)-1;
 	}
 
@@ -837,7 +837,7 @@ size_t unix_strlower(const char *src, size_t srclen, char *dest, size_t destlen)
 	size_t size;
 	smb_ucs2_t *buffer = NULL;
 
-	if (!convert_string_talloc(NULL, CH_UNIX, CH_UTF16LE, src, srclen,
+	if (!convert_string_talloc(talloc_tos(), CH_UNIX, CH_UTF16LE, src, srclen,
 				   (void **)(void *)&buffer, &size,
 				   True))
 	{
@@ -951,7 +951,7 @@ size_t push_ascii_nstring(void *dest, const char *src)
 	smb_ucs2_t *buffer;
 
 	conv_silent = True;
-	if (!push_ucs2_talloc(NULL, &buffer, src, &buffer_len)) {
+	if (!push_ucs2_talloc(talloc_tos(), &buffer, src, &buffer_len)) {
 		smb_panic("failed to create UCS2 buffer");
 	}
 
@@ -1268,7 +1268,7 @@ static size_t push_utf8(void *dest, const char *src, size_t dest_len, int flags)
 	}
 
 	if (flags & STR_UPPER) {
-		tmpbuf = strupper_talloc(NULL, src);
+		tmpbuf = strupper_talloc(talloc_tos(), src);
 		if (!tmpbuf) {
 			return (size_t)-1;
 		}
