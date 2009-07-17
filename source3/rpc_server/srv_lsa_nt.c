@@ -1304,11 +1304,21 @@ NTSTATUS _lsa_DeleteObject(pipes_struct *p,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	status = privilege_delete_account(&info->sid);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10,("_lsa_DeleteObject: privilege_delete_account gave: %s\n",
-			nt_errstr(status)));
+	switch (info->type) {
+	case LSA_HANDLE_ACCOUNT_TYPE:
+		status = privilege_delete_account(&info->sid);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10,("_lsa_DeleteObject: privilege_delete_account gave: %s\n",
+				nt_errstr(status)));
+			return status;
+		}
+		break;
+	default:
+		return NT_STATUS_INVALID_HANDLE;
 	}
+
+	close_policy_hnd(p, r->in.handle);
+	ZERO_STRUCTP(r->out.handle);
 
 	return status;
 }
