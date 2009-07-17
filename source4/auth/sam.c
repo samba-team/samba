@@ -4,6 +4,7 @@
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2001-2004
    Copyright (C) Gerald Carter                             2003
    Copyright (C) Stefan Metzmacher                         2005
+   Copyright (C) Matthias Dieter Wallnöfer                 2009
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -27,6 +28,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "libcli/security/security.h"
 #include "libcli/ldap/ldap.h"
+#include "../libcli/ldap/ldap_ndr.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "param/param.h"
@@ -264,7 +266,96 @@ _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-_PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_context *sam_ctx,
+/* This function tests if a SID structure "sids" contains the SID "sid" */
+static bool sids_contains_sid(const struct dom_sid **sids, const int num_sids,
+	const struct dom_sid *sid)
+{
+	int i;
+
+	for (i = 0; i < num_sids; i++) {
+		if (dom_sid_equal(sids[i], sid))
+			return true;
+	}
+	return false;
+}
+
+/*
+ * This function generates the transitive closure of a given SID "sid" (it
+ * basically expands nested groups of a SID).
+ * - If a SID is a user or a group we've always to consider the "memberOf"
+ *   attribute. If the SID isn't located in the "res_sids" structure yet, we've
+ *   to add it.
+ * - We also add each object's SID to "red_sids"
+ *
+ * In the beginning "res_sids" should reference to a NULL pointer.
+ */
+static NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
+	const struct dom_sid *sid, TALLOC_CTX *res_sids_ctx,
+	struct dom_sid ***res_sids, int *num_res_sids)
+{
+	const char * const attrs[] = { "memberOf", NULL };
+	int i, ret;
+	bool already_there;
+	struct ldb_dn *tmp_dn;
+	struct dom_sid *tmp_sid;
+	TALLOC_CTX *tmp_ctx;
+	struct ldb_message **res;
+	NTSTATUS status;
+
+	if (*res_sids == NULL) {
+		*num_res_sids = 0;
+	}
+
+	if (sid == NULL) {
+		return NT_STATUS_OK;
+	}
+
+	already_there = sids_contains_sid((const struct dom_sid**) *res_sids,
+		*num_res_sids, sid);
+	if (already_there) {
+		return NT_STATUS_OK;
+	}
+
+	tmp_sid = dom_sid_dup(res_sids_ctx, sid);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_sid);
+	*res_sids = talloc_realloc(res_sids_ctx, *res_sids, struct dom_sid *,
+		*num_res_sids + 1);
+	NT_STATUS_HAVE_NO_MEMORY(*res_sids);
+	(*res_sids)[*num_res_sids] = tmp_sid;
+	++(*num_res_sids);
+
+	tmp_ctx = talloc_new(sam_ctx);
+
+	ret = gendb_search(sam_ctx, tmp_ctx, NULL, &res, attrs,
+		"objectSid=%s", ldap_encode_ndr_dom_sid(tmp_ctx, sid));
+	if (ret != 1) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	for (i = 0; i < res[0]->elements[0].num_values; i++) {
+		tmp_dn = ldb_dn_from_ldb_val(tmp_ctx, sam_ctx,
+			&res[0]->elements[0].values[i]);
+		tmp_sid = samdb_search_dom_sid(sam_ctx, tmp_ctx, tmp_dn,
+			"objectSid", NULL);
+
+		status = authsam_expand_nested_groups(sam_ctx, tmp_sid,
+			res_sids_ctx, res_sids, num_res_sids);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(res);
+			talloc_free(tmp_ctx);
+			return status;
+		}
+	}
+
+	talloc_free(res);
+	talloc_free(tmp_ctx);
+
+	return NT_STATUS_OK;
+}
+
+_PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx,
+					   struct ldb_context *sam_ctx,
 					   const char *netbios_name,
 					   const char *domain_name,
 					   struct ldb_dn *domain_dn, 
@@ -272,6 +363,7 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_conte
 					   DATA_BLOB user_sess_key, DATA_BLOB lm_sess_key,
 					   struct auth_serversupplied_info **_server_info)
 {
+	NTSTATUS status;
 	struct auth_serversupplied_info *server_info;
 	int group_ret = 0;
 	/* find list of sids */
@@ -279,47 +371,21 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_conte
 	struct dom_sid *account_sid;
 	struct dom_sid *primary_group_sid;
 	const char *str;
-	int i;
 	uint_t rid;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);	
-	struct ldb_message_element *el;
 
 	server_info = talloc(tmp_ctx, struct auth_serversupplied_info);
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info, tmp_ctx);
-	
-	el = ldb_msg_find_element(msg, "memberOf");
-	if (el != NULL) {
-		group_ret = el->num_values;
-		groupSIDs = talloc_array(server_info, struct dom_sid *, group_ret);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(groupSIDs, tmp_ctx);
-	}
-
-	/* TODO Note: this is incomplete. We need to unroll some
-	 * nested groups, but not aliases */
-	for (i = 0; i < group_ret; i++) {
-		struct ldb_dn *dn;
-		const struct ldb_val *v;
-		enum ndr_err_code ndr_err;
-
-		dn = ldb_dn_from_ldb_val(tmp_ctx, sam_ctx, &el->values[i]);
-		if (dn == NULL) {
-			talloc_free(tmp_ctx);
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
-		v = ldb_dn_get_extended_component(dn, "SID");
-		groupSIDs[i] = talloc(groupSIDs, struct dom_sid);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(groupSIDs[i], tmp_ctx);
-
-		ndr_err = ndr_pull_struct_blob(v, groupSIDs[i], NULL, groupSIDs[i], 
-					       (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			talloc_free(tmp_ctx);
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
-	}
 
 	account_sid = samdb_result_dom_sid(server_info, msg, "objectSid");
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(account_sid, tmp_ctx);
+
+	status = authsam_expand_nested_groups(sam_ctx, account_sid, server_info,
+		&groupSIDs, &group_ret);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
+		return status;
+	}
 
 	primary_group_sid = dom_sid_dup(server_info, account_sid);
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(primary_group_sid, tmp_ctx);
