@@ -214,9 +214,15 @@ NTSTATUS rpccli_lsa_DeleteTrustedDomain(struct rpc_pipe_client *cli,
 					struct policy_handle *handle /* [in] [ref] */,
 					struct dom_sid2 *dom_sid /* [in] [ref] */);
 NTSTATUS rpccli_lsa_StorePrivateData(struct rpc_pipe_client *cli,
-				     TALLOC_CTX *mem_ctx);
+				     TALLOC_CTX *mem_ctx,
+				     struct policy_handle *handle /* [in] [ref] */,
+				     struct lsa_String *name /* [in] [ref] */,
+				     struct lsa_DATA_BUF *val /* [in] [unique] */);
 NTSTATUS rpccli_lsa_RetrievePrivateData(struct rpc_pipe_client *cli,
-					TALLOC_CTX *mem_ctx);
+					TALLOC_CTX *mem_ctx,
+					struct policy_handle *handle /* [in] [ref] */,
+					struct lsa_String *name /* [in] [ref] */,
+					struct lsa_DATA_BUF **val /* [in,out] [ref] */);
 NTSTATUS rpccli_lsa_OpenPolicy2(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
 				const char *system_name /* [in] [unique,charset(UTF16)] */,

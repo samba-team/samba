@@ -1333,6 +1333,12 @@ struct lsa_DeleteTrustedDomain {
 
 struct lsa_StorePrivateData {
 	struct {
+		struct policy_handle *handle;/* [ref] */
+		struct lsa_String *name;/* [ref] */
+		struct lsa_DATA_BUF *val;/* [unique] */
+	} in;
+
+	struct {
 		NTSTATUS result;
 	} out;
 
@@ -1341,6 +1347,13 @@ struct lsa_StorePrivateData {
 
 struct lsa_RetrievePrivateData {
 	struct {
+		struct policy_handle *handle;/* [ref] */
+		struct lsa_String *name;/* [ref] */
+		struct lsa_DATA_BUF **val;/* [ref] */
+	} in;
+
+	struct {
+		struct lsa_DATA_BUF **val;/* [ref] */
 		NTSTATUS result;
 	} out;
 

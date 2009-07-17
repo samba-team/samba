@@ -935,10 +935,18 @@ import "misc.idl", "security.idl";
 	);
 
 	/* Function:       0x2a */
-	[todo] NTSTATUS lsa_StorePrivateData();
-	/* Function:        0x2b */
-	[todo] NTSTATUS lsa_RetrievePrivateData();
+	NTSTATUS lsa_StorePrivateData(
+		[in]		policy_handle	*handle,
+		[in,ref]	lsa_String	*name,
+		[in,unique]	lsa_DATA_BUF	*val
+	);
 
+	/* Function:        0x2b */
+	NTSTATUS lsa_RetrievePrivateData(
+		[in]		policy_handle	*handle,
+		[in,ref]	lsa_String	*name,
+		[in,out,ref]	lsa_DATA_BUF	**val
+	);
 
 	/**********************/
 	/* Function:     0x2c */
