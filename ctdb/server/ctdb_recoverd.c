@@ -993,6 +993,8 @@ static void ctdb_election_timeout(struct event_context *ev, struct timed_event *
 {
 	struct ctdb_recoverd *rec = talloc_get_type(p, struct ctdb_recoverd);
 	rec->election_timeout = NULL;
+
+	DEBUG(DEBUG_WARNING,(__location__ " Election timed out\n"));
 }
 
 
@@ -1617,13 +1619,15 @@ static void ctdb_election_data(struct ctdb_recoverd *rec, struct election_messag
 
 	em->pnn = rec->ctdb->pnn;
 	em->priority_time = rec->priority_time;
-	em->node_flags = rec->node_flags;
 
 	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, rec, &nodemap);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " unable to get election data\n"));
 		return;
 	}
+
+	rec->node_flags = nodemap->nodes[ctdb->pnn].flags;
+	em->node_flags = rec->node_flags;
 
 	for (i=0;i<nodemap->num;i++) {
 		if (!(nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED)) {
@@ -1712,6 +1716,7 @@ static int send_election_request(struct ctdb_recoverd *rec, uint32_t pnn, bool u
 
 
 	/* send an election message to all active nodes */
+	DEBUG(DEBUG_INFO,(__location__ " Send election request to all active nodes\n"));
 	ctdb_send_message(ctdb, CTDB_BROADCAST_ALL, srvid, election_data);
 
 
@@ -1967,6 +1972,8 @@ static void force_election(struct ctdb_recoverd *rec, uint32_t pnn,
 {
 	int ret;
 	struct ctdb_context *ctdb = rec->ctdb;
+
+	DEBUG(DEBUG_INFO,(__location__ " Force an election\n"));
 
 	/* set all nodes to recovery mode to stop all internode traffic */
 	ret = set_recovery_mode(ctdb, nodemap, CTDB_RECOVERY_ACTIVE);
