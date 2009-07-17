@@ -1448,6 +1448,91 @@ static NTSTATUS cmd_lsa_delete_secret(struct rpc_pipe_client *cli,
 	return status;
 }
 
+static NTSTATUS cmd_lsa_query_secret(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx, int argc,
+				     const char **argv)
+{
+	NTSTATUS status;
+	struct policy_handle handle, sec_handle;
+	struct lsa_String name;
+	struct lsa_DATA_BUF_PTR new_val;
+	NTTIME new_mtime = 0;
+	struct lsa_DATA_BUF_PTR old_val;
+	NTTIME old_mtime = 0;
+	DATA_BLOB session_key;
+	DATA_BLOB new_blob = data_blob_null;
+	DATA_BLOB old_blob = data_blob_null;
+	char *new_secret, *old_secret;
+
+	if (argc < 2) {
+		printf("Usage: %s name\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	status = rpccli_lsa_open_policy2(cli, mem_ctx,
+					 true,
+					 SEC_FLAG_MAXIMUM_ALLOWED,
+					 &handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	init_lsa_String(&name, argv[1]);
+
+	status = rpccli_lsa_OpenSecret(cli, mem_ctx,
+				       &handle,
+				       name,
+				       SEC_FLAG_MAXIMUM_ALLOWED,
+				       &sec_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	ZERO_STRUCT(new_val);
+	ZERO_STRUCT(old_val);
+
+	status = rpccli_lsa_QuerySecret(cli, mem_ctx,
+					&sec_handle,
+					&new_val,
+					&new_mtime,
+					&old_val,
+					&old_mtime);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	status = cli_get_session_key(mem_ctx, cli, &session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	if (new_val.buf) {
+		new_blob = data_blob_const(new_val.buf->data, new_val.buf->length);
+	}
+	if (old_val.buf) {
+		old_blob = data_blob_const(old_val.buf->data, old_val.buf->length);
+	}
+
+	new_secret = sess_decrypt_string(mem_ctx, &new_blob, &session_key);
+	old_secret = sess_decrypt_string(mem_ctx, &old_blob, &session_key);
+	if (new_secret) {
+		d_printf("new secret: %s\n", new_secret);
+	}
+	if (old_secret) {
+		d_printf("old secret: %s\n", old_secret);
+	}
+
+ done:
+	if (is_valid_policy_hnd(&sec_handle)) {
+		rpccli_lsa_Close(cli, mem_ctx, &sec_handle);
+	}
+	if (is_valid_policy_hnd(&handle)) {
+		rpccli_lsa_Close(cli, mem_ctx, &handle);
+	}
+
+	return status;
+}
+
 /* List of commands exported by this module */
 
 struct cmd_set lsarpc_commands[] = {
@@ -1477,6 +1562,7 @@ struct cmd_set lsarpc_commands[] = {
 	{ "getusername",          RPC_RTYPE_NTSTATUS, cmd_lsa_get_username, NULL, &ndr_table_lsarpc.syntax_id, NULL, "Get username", "" },
 	{ "createsecret",         RPC_RTYPE_NTSTATUS, cmd_lsa_create_secret, NULL, &ndr_table_lsarpc.syntax_id, NULL, "Create Secret", "" },
 	{ "deletesecret",         RPC_RTYPE_NTSTATUS, cmd_lsa_delete_secret, NULL, &ndr_table_lsarpc.syntax_id, NULL, "Delete Secret", "" },
+	{ "querysecret",          RPC_RTYPE_NTSTATUS, cmd_lsa_query_secret, NULL, &ndr_table_lsarpc.syntax_id, NULL, "Query Secret", "" },
 
 	{ NULL }
 };
