@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.86
+Version: 1.0.87
 Release: 1
 Epoch: 0
 License: GNU GPL version 3
@@ -131,6 +131,30 @@ fi
 %{_libdir}/pkgconfig/ctdb.pc
 
 %changelog
+* Fri Jul 17 2009 : Version 1.0.87
+ - Add a new event "stopped" that is called when a node is stopped.
+ - Documentation of the STOPPED flag and the stop/continue commands
+ - Make it possible to start a node in STOPPED mode.
+ - Add a new node flag : STOPPED and commands "ctdb stop" "ctdb continue"
+   These commands are similar to "diasble/enable" but will also remove the node from the vnnmap, while disable only fails all ip addresses over.
+ - tests for NFS , CIFS by martins
+ - major updates to the init script by martins
+ - Send gratious arps with a 1.1 second stride instead of a 1 second stride to workaround interesting "features" of common linux stacks.
+ - Various test enhancements from martins:
+   - additional other tests
+   - add tests for grat arp generation, ping during failover, ssh and failover
+   - New/updated tcp tickle tests and supprot functions
+   - provide better debugging when a test fails
+   - make ctdbd restarts more reliable in the tests
+   - update the "wait bar" to  make the wait progress in tests more obvious
+   - various cleanups
+ - when dispatching a message to a handler, make the message a real talloc object so that we can reparent the object in the tallic hierarchy.
+ - document the ipreallocate command
+ - Updates to enable/disable to use the ipreallocate command to block until the following ipreallocation has completed.
+ - Update the main daemon and the tools to allow debug level to be a string instead of an integer.
+ - Update the sysconfig file to show using string literals instead of numeric values for the debuglevels used.
+ - If no debuglevel is specific, make "ctdb setdebug" show the available options.
+ - When trying to allocate network packets, add explicit checks if the network transport has been shutdown before trying and failing, to make log messages easier to read. Add this extra check and logging to every plave packets are allocated.
 * Tue Jun 30 2009 : Version 1.0.86
  - Do not access the reclock at all if VerifyRecoveryLock is zero, not even try to probe it.
  - Allow setting the reclock file as "", which means that no reclock file at all should be used.
