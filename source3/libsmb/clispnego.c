@@ -151,7 +151,7 @@ bool spnego_parse_negTokenInit(DATA_BLOB blob,
 	asn1_start_tag(data,ASN1_SEQUENCE(0));
 	for (i=0; asn1_tag_remaining(data) > 0 && i < ASN1_MAX_OIDS-1; i++) {
 		const char *oid_str = NULL;
-		asn1_read_OID(data,NULL,&oid_str);
+		asn1_read_OID(data,talloc_autofree_context(),&oid_str);
 		OIDs[i] = CONST_DISCARD(char *, oid_str);
 	}
 	OIDs[i] = NULL;
@@ -163,7 +163,7 @@ bool spnego_parse_negTokenInit(DATA_BLOB blob,
 		asn1_start_tag(data, ASN1_CONTEXT(3));
 		asn1_start_tag(data, ASN1_SEQUENCE(0));
 		asn1_start_tag(data, ASN1_CONTEXT(0));
-		asn1_read_GeneralString(data,NULL,principal);
+		asn1_read_GeneralString(data,talloc_autofree_context(),principal);
 		asn1_end_tag(data);
 		asn1_end_tag(data);
 		asn1_end_tag(data);
@@ -256,7 +256,7 @@ bool parse_negTokenTarg(DATA_BLOB blob, char *OIDs[ASN1_MAX_OIDS], DATA_BLOB *se
 	asn1_start_tag(data, ASN1_SEQUENCE(0));
 	for (i=0; asn1_tag_remaining(data) > 0 && i < ASN1_MAX_OIDS-1; i++) {
 		const char *oid_str = NULL;
-		asn1_read_OID(data,NULL,&oid_str);
+		asn1_read_OID(data,talloc_autofree_context(),&oid_str);
 		OIDs[i] = CONST_DISCARD(char *, oid_str);
 	}
 	OIDs[i] = NULL;
@@ -276,7 +276,7 @@ bool parse_negTokenTarg(DATA_BLOB blob, char *OIDs[ASN1_MAX_OIDS], DATA_BLOB *se
 	}
 
 	asn1_start_tag(data, ASN1_CONTEXT(2));
-	asn1_read_OctetString(data,NULL,secblob);
+	asn1_read_OctetString(data,talloc_autofree_context(),secblob);
 	asn1_end_tag(data);
 
 	asn1_end_tag(data);
@@ -436,13 +436,13 @@ bool spnego_parse_challenge(const DATA_BLOB blob,
 	asn1_end_tag(data);
 
 	asn1_start_tag(data,ASN1_CONTEXT(2));
-	asn1_read_OctetString(data, NULL, chal1);
+	asn1_read_OctetString(data, talloc_autofree_context(), chal1);
 	asn1_end_tag(data);
 
 	/* the second challenge is optional (XP doesn't send it) */
 	if (asn1_tag_remaining(data)) {
 		asn1_start_tag(data,ASN1_CONTEXT(3));
-		asn1_read_OctetString(data, NULL, chal2);
+		asn1_read_OctetString(data, talloc_autofree_context(), chal2);
 		asn1_end_tag(data);
 	}
 
@@ -505,7 +505,7 @@ bool spnego_parse_auth(DATA_BLOB blob, DATA_BLOB *auth)
 	asn1_start_tag(data, ASN1_CONTEXT(1));
 	asn1_start_tag(data, ASN1_SEQUENCE(0));
 	asn1_start_tag(data, ASN1_CONTEXT(2));
-	asn1_read_OctetString(data, NULL, auth);
+	asn1_read_OctetString(data, talloc_autofree_context(), auth);
 	asn1_end_tag(data);
 	asn1_end_tag(data);
 	asn1_end_tag(data);
@@ -609,7 +609,7 @@ bool spnego_parse_auth_response(DATA_BLOB blob, NTSTATUS nt_status,
 
 		if (asn1_tag_remaining(data)) {
 			asn1_start_tag(data,ASN1_CONTEXT(2));
-			asn1_read_OctetString(data, NULL, auth);
+			asn1_read_OctetString(data, talloc_autofree_context(), auth);
 			asn1_end_tag(data);
 		}
 	} else if (negResult == SPNEGO_NEG_RESULT_INCOMPLETE) {
@@ -623,7 +623,7 @@ bool spnego_parse_auth_response(DATA_BLOB blob, NTSTATUS nt_status,
 	if (asn1_tag_remaining(data)) {
 		DATA_BLOB mechList = data_blob_null;
 		asn1_start_tag(data, ASN1_CONTEXT(3));
-		asn1_read_OctetString(data, NULL, &mechList);
+		asn1_read_OctetString(data, talloc_autofree_context(), &mechList);
 		asn1_end_tag(data);
 		data_blob_free(&mechList);
 		DEBUG(5,("spnego_parse_auth_response received mechListMIC, "
