@@ -7244,7 +7244,7 @@ NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
 
 		case SMB_SET_FILE_UNIX_HLINK:
 		{
-			if (fsp || smb_fname == NULL) {
+			if (fsp) {
 				/* We must have a pathname for this. */
 				return NT_STATUS_INVALID_LEVEL;
 			}
