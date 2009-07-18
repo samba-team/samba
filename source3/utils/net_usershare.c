@@ -998,6 +998,7 @@ static int net_usershare_list(struct net_context *c, int argc,
 
 	pi.ctx = ctx;
 	pi.op = US_LIST_OP;
+	pi.c = c;
 
 	ret = process_share_list(info_fn, &pi);
 	talloc_destroy(ctx);
