@@ -1422,6 +1422,75 @@ static krb5_error_code hdb_samba4_destroy(krb5_context context, HDB *db)
 	return 0;
 }
 
+krb5_error_code hdb_samba4_check_constrained_delegation(krb5_context context, HDB *db, 
+							hdb_entry_ex *entry,
+							krb5_const_principal target_principal)
+{
+	struct ldb_context *ldb_ctx = (struct ldb_context *)db->hdb_db;
+	struct loadparm_context *lp_ctx = talloc_get_type(ldb_get_opaque(ldb_ctx, "loadparm"), 
+							  struct loadparm_context);
+	krb5_error_code ret;
+	krb5_principal enterprise_prinicpal = NULL;
+	struct ldb_dn *realm_dn;
+	struct ldb_message *msg;
+	struct dom_sid *orig_sid;
+	struct dom_sid *target_sid;
+	struct hdb_ldb_private *p = talloc_get_type(entry->ctx, struct hdb_ldb_private);
+	const char *delegation_check_attrs[] = {
+		"objectSid", NULL
+	};
+	
+	TALLOC_CTX *mem_ctx = talloc_named(db, 0, "hdb_samba4_check_constrained_delegation");
+
+	if (!mem_ctx) {
+		ret = ENOMEM;
+		krb5_set_error_message(context, ret, "hdb_samba4_fetch: talloc_named() failed!");
+		return ret;
+	}
+
+	if (target_principal->name.name_type == KRB5_NT_ENTERPRISE_PRINCIPAL) {
+		/* Need to reparse the enterprise principal to find the real target */
+		if (target_principal->name.name_string.len != 1) {
+			ret = KRB5_PARSE_MALFORMED;
+			krb5_set_error_message(context, ret, "hdb_samba4_check_constrained_delegation: request for delegation to enterprise principal with wrong (%d) number of components", 
+					       target_principal->name.name_string.len);   
+			talloc_free(mem_ctx);
+			return ret;
+		}
+		ret = krb5_parse_name(context, target_principal->name.name_string.val[0], 
+				      &enterprise_prinicpal);
+		if (ret) {
+			talloc_free(mem_ctx);
+			return ret;
+		}
+		target_principal = enterprise_prinicpal;
+	}
+
+	ret = hdb_samba4_lookup_server(context, db, lp_ctx, mem_ctx, target_principal, 
+				       delegation_check_attrs, &realm_dn, &msg);
+
+	krb5_free_principal(context, enterprise_prinicpal);
+
+	if (ret != 0) {
+		talloc_free(mem_ctx);
+		return ret;
+	}
+
+	orig_sid = samdb_result_dom_sid(mem_ctx, p->msg, "objectSid");
+	target_sid = samdb_result_dom_sid(mem_ctx, msg, "objectSid");
+
+	/* Allow delegation to the same principal, even if by a different
+	 * name.  The easy and safe way to prove this is by SID
+	 * comparison */
+	if (!(orig_sid && target_sid && dom_sid_equal(orig_sid, target_sid))) {
+		talloc_free(mem_ctx);
+		return KRB5KDC_ERR_BADOPTION;
+	}
+
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 /* This interface is to be called by the KDC, which is expecting Samba
  * calling conventions.  It is also called by a wrapper
  * (hdb_ldb_create) from the kpasswdd -> krb5 -> keytab_hdb -> hdb
@@ -1486,7 +1555,7 @@ NTSTATUS kdc_hdb_samba4_create(TALLOC_CTX *mem_ctx,
 	(*db)->hdb_destroy = hdb_samba4_destroy;
 
 	(*db)->hdb_auth_status = NULL;
-	(*db)->hdb_check_constrained_delegation = NULL;
+	(*db)->hdb_check_constrained_delegation = hdb_samba4_check_constrained_delegation;
 
 	return NT_STATUS_OK;
 }
