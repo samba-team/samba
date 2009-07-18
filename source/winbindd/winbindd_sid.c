@@ -93,6 +93,11 @@ void winbindd_lookupname(struct winbindd_cli_state *state)
 		*p = 0;
 		name_domain = state->request.data.name.name;
 		name_user = p+1;
+	} else if ((p = strchr(state->request.data.name.name, '@')) != NULL) {
+		/* upn */
+		name_domain = p + 1;
+		*p = 0;
+		name_user = state->request.data.name.name;
 	} else {
 		name_domain = state->request.data.name.dom_name;
 		name_user = state->request.data.name.name;
