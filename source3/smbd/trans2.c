@@ -4806,7 +4806,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 
 			/* We know this name is ok, it's already passed the checks. */
 
-		} else if(fsp && (fsp->is_directory || fsp->fh->fd == -1)) {
+		} else if(fsp->is_directory || fsp->fh->fd == -1) {
 			/*
 			 * This is actually a QFILEINFO on a directory
 			 * handle (returned from an NT SMB). NT5.0 seems
