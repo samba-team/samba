@@ -19,6 +19,7 @@ ctags:
 showflags::
 	@echo 'ldb will be compiled with flags:'
 	@echo '  CFLAGS = $(CFLAGS)'
+	@echo '  SHLD_FLAGS = $(SHLD_FLAGS)'
 	@echo '  LIBS = $(LIBS)'
 
 distclean::
