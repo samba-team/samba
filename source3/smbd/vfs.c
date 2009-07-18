@@ -45,7 +45,7 @@ static struct vfs_init_function_entry *vfs_find_backend_entry(const char *name)
 	struct vfs_init_function_entry *entry = backends;
 
 	DEBUG(10, ("vfs_find_backend_entry called for %s\n", name));
- 
+
 	while(entry) {
 		if (strcmp(entry->name, name)==0) return entry;
 		entry = entry->next;
@@ -116,7 +116,7 @@ bool vfs_init_custom(connection_struct *conn, const char *vfs_object)
 	int i;
 	vfs_handle_struct *handle;
 	const struct vfs_init_function_entry *entry;
-	
+
 	if (!conn||!vfs_object||!vfs_object[0]) {
 		DEBUG(0,("vfs_init_custon() called with NULL pointer or emtpy vfs_object!\n"));
 		return False;
@@ -316,7 +316,7 @@ bool smbd_vfs_init(connection_struct *conn)
 	const char **vfs_objects;
 	unsigned int i = 0;
 	int j = 0;
-	
+
 	/* Normal share - initialise with disk access functions */
 	vfs_init_default(conn);
 	vfs_objects = lp_vfs_objects(SNUM(conn));
@@ -324,7 +324,7 @@ bool smbd_vfs_init(connection_struct *conn)
 	/* Override VFS functions if 'vfs object' was not specified*/
 	if (!vfs_objects || !vfs_objects[0])
 		return True;
-	
+
 	for (i=0; vfs_objects[i] ;) {
 		i++;
 	}
