@@ -73,6 +73,8 @@ class Ldb(ldb.Ldb):
             self.set_modules_dir(modules_dir)
         elif default_ldb_modules_dir is not None:
             self.set_modules_dir(default_ldb_modules_dir)
+        elif lp is not None:
+            self.set_modules_dir(os.path.join(lp.get("modules dir"), "ldb"))
 
         if credentials is not None:
             self.set_credentials(credentials)
