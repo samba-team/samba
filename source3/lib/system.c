@@ -458,8 +458,6 @@ static struct timespec calc_create_time_stat_ex(const struct stat_ex *st)
 
 static void get_create_timespec(const struct stat *pst, struct stat_ex *dst)
 {
-	struct timespec ret;
-
 	if (S_ISDIR(pst->st_mode) && lp_fake_dir_create_times()) {
 		dst->st_ex_btime.tv_sec = 315493200L;          /* 1/1/1980 */
 		dst->st_ex_btime.tv_nsec = 0;
@@ -483,7 +481,7 @@ static void get_create_timespec(const struct stat *pst, struct stat_ex *dst)
 	/* Deal with systems that don't initialize birthtime correctly.
 	 * Pointed out by SATOH Fumiyasu <fumiyas@osstech.jp>.
 	 */
-	if (null_timespec(ret)) {
+	if (null_timespec(dst->st_ex_btime)) {
 		dst->st_ex_btime = calc_create_time_stat(pst);
 		dst->st_ex_calculated_birthtime = true;
 	}
