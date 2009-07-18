@@ -2015,11 +2015,6 @@ void smbd_process(void)
 	TALLOC_CTX *frame = talloc_stackframe();
 	char remaddr[INET6_ADDRSTRLEN];
 
-	smbd_server_conn = talloc_zero(smbd_event_context(), struct smbd_server_connection);
-	if (!smbd_server_conn) {
-		exit_server("failed to create smbd_server_connection");
-	}
-
 	if (lp_maxprotocol() == PROTOCOL_SMB2 &&
 	    lp_security() != SEC_SHARE) {
 		smbd_server_conn->allow_smb2 = true;
