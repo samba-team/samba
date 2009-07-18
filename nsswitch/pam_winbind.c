@@ -2298,9 +2298,12 @@ static char* winbind_upn_to_username(struct pwb_context *ctx,
 	}
 
 	name = talloc_strdup(ctx, upn);
+	if (!name) {
+		return NULL;
+	}
 	if ((p = strchr(name, '@')) != NULL) {
 		*p = 0;
-		domain = talloc_strdup(ctx, p + 1);
+		domain = p + 1;
 	}
 
 	/* Convert the UPN to a SID */
