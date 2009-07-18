@@ -4649,6 +4649,11 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			uint32 lock_pid;
 			enum brl_type lock_type;
 
+			/* We need an open file with a real fd for this. */
+			if (!fsp || fsp->is_directory || fsp->fh->fd == -1) {
+				return NT_STATUS_INVALID_LEVEL;
+			}
+
 			if (lock_data_count != POSIX_LOCK_DATA_SIZE) {
 				return NT_STATUS_INVALID_PARAMETER;
 			}
