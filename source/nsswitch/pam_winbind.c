@@ -2284,6 +2284,7 @@ static char* winbind_upn_to_username(struct pwb_context *ctx,
 	enum wbcSidType type;
 	char *domain;
 	char *name;
+	char *p;
 
 	/* This cannot work when the winbind separator = @ */
 
@@ -2292,9 +2293,19 @@ static char* winbind_upn_to_username(struct pwb_context *ctx,
 		return NULL;
 	}
 
+	name = talloc_strdup(ctx, upn);
+	if (!name) {
+		return NULL;
+	}
+
+	if ((p = strchr(name, '@')) != NULL) {
+		*p = 0;
+		domain = p + 1;
+	}
+
 	/* Convert the UPN to a SID */
 
-	wbc_status = wbcLookupName("", upn, &sid, &type);
+	wbc_status = wbcLookupName(domain, name, &sid, &type);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		return NULL;
 	}
