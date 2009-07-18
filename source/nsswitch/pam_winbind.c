@@ -1910,6 +1910,9 @@ static char* winbind_upn_to_username(struct pwb_context *ctx,
 	char *account_name;
 	int account_name_len;
 	char sep;
+	char *p;
+	char *name;
+	char *domain;
 
 	/* This cannot work when the winbind separator = @ */
 
@@ -1918,14 +1921,23 @@ static char* winbind_upn_to_username(struct pwb_context *ctx,
 		return NULL;
 	}
 
+	name = strdup(upn);
+	if (!name) {
+		return NULL;
+	}
+	if ((p = strchr(name, '@')) != NULL) {
+		*p = 0;
+		domain = p + 1;
+	}
+
 	/* Convert the UPN to a SID */
 
 	ZERO_STRUCT(req);
 	ZERO_STRUCT(resp);
 
-	strncpy(req.data.name.dom_name, "",
+	strncpy(req.data.name.dom_name, domain,
 		sizeof(req.data.name.dom_name) - 1);
-	strncpy(req.data.name.name, upn,
+	strncpy(req.data.name.name, name,
 		sizeof(req.data.name.name) - 1);
 	retval = pam_winbind_request_log(ctx, WINBINDD_LOOKUPNAME,
 					 &req, &resp, upn);
@@ -1947,6 +1959,7 @@ static char* winbind_upn_to_username(struct pwb_context *ctx,
 	account_name_len = asprintf(&account_name, "%s\\%s",
 				    resp.data.name.dom_name,
 				    resp.data.name.name);
+	SAFE_FREE(name);
 
 	return account_name;
 }
