@@ -309,7 +309,9 @@ static WERROR delete_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, const c
 		return WERR_BADFID; /* What to return here? */
 
 	/* go ahead and re-read the services immediately */
+	become_root();
 	reload_services(false);
+	unbecome_root();
 
 	if ( lp_servicenumber( sharename )  < 0 )
 		return WERR_ACCESS_DENIED;
@@ -6034,7 +6036,9 @@ bool add_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, NT_PRINTER_INFO_LEV
 	}
 
 	/* reload our services immediately */
+	become_root();
 	reload_services(false);
+	unbecome_root();
 
 	numlines = 0;
 	/* Get lines and convert them back to dos-codepage */
