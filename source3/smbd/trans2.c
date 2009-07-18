@@ -4088,7 +4088,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		file_size = get_file_size_stat(&sbuf);
 	}
 
-	if (fsp && fsp->fh) {
+	if (fsp) {
 		pos = fsp->fh->position_information;
 	}
 
