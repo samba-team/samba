@@ -1413,24 +1413,39 @@ bool open_any_socket_out(struct sockaddr_storage *addrs, int num_addrs,
 
 int open_udp_socket(const char *host, int port)
 {
-	int type = SOCK_DGRAM;
-	struct sockaddr_in sock_out;
+	struct sockaddr_storage ss;
 	int res;
-	struct in_addr addr;
 
-	addr = interpret_addr2(host);
+	if (!interpret_string_addr(&ss, host, 0)) {
+		DEBUG(10,("open_udp_socket: can't resolve name %s\n",
+			host));
+		return -1;
+	}
 
-	res = socket(PF_INET, type, 0);
+	res = socket(ss.ss_family, SOCK_DGRAM, 0);
 	if (res == -1) {
 		return -1;
 	}
 
-	memset((char *)&sock_out,'\0',sizeof(sock_out));
-	putip((char *)&sock_out.sin_addr,(char *)&addr);
-	sock_out.sin_port = htons(port);
-	sock_out.sin_family = PF_INET;
+#if defined(HAVE_IPV6)
+	if (ss.ss_family == AF_INET6) {
+		struct sockaddr_in6 *psa6;
+		psa6 = (struct sockaddr_in6 *)&ss;
+		psa6->sin6_port = htons(port);
+		if (psa6->sin6_scope_id == 0
+				&& IN6_IS_ADDR_LINKLOCAL(&psa6->sin6_addr)) {
+			setup_linklocal_scope_id(
+				(struct sockaddr *)&ss);
+		}
+	}
+#endif
+        if (ss.ss_family == AF_INET) {
+                struct sockaddr_in *psa;
+                psa = (struct sockaddr_in *)&ss;
+                psa->sin_port = htons(port);
+        }
 
-	if (sys_connect(res,(struct sockaddr *)&sock_out)) {
+	if (sys_connect(res,(struct sockaddr *)&ss)) {
 		close(res);
 		return -1;
 	}
