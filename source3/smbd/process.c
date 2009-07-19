@@ -1771,6 +1771,21 @@ void chain_reply(struct smb_request *req)
 	fixup_chain_error_packet(req);
 
  done:
+	/*
+	 * This scary statement intends to set the
+	 * FLAGS2_32_BIT_ERROR_CODES flg2 field in req->chain_outbuf
+	 * to the value req->outbuf carries
+	 */
+	SSVAL(req->chain_outbuf, smb_flg2,
+	      (SVAL(req->chain_outbuf, smb_flg2) & ~FLAGS2_32_BIT_ERROR_CODES)
+	      | (SVAL(req->outbuf, smb_flg2) & FLAGS2_32_BIT_ERROR_CODES));
+
+	/*
+	 * Transfer the error codes from the subrequest to the main one
+	 */
+	SSVAL(req->chain_outbuf, smb_rcls, SVAL(req->outbuf, smb_rcls));
+	SSVAL(req->chain_outbuf, smb_err, SVAL(req->outbuf, smb_err));
+
 	if (!smb_splice_chain(&req->chain_outbuf,
 			      CVAL(req->outbuf, smb_com),
 			      CVAL(req->outbuf, smb_wct),
