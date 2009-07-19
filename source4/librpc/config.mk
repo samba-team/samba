@@ -228,11 +228,6 @@ PUBLIC_DEPENDENCIES = LIBNDR
 
 NDR_SCERPC_OBJ_FILES = ../librpc/gen_ndr/ndr_scerpc.o
 
-[SUBSYSTEM::NDR_NTSVCS]
-PUBLIC_DEPENDENCIES = LIBNDR
-
-NDR_NTSVCS_OBJ_FILES = ../librpc/gen_ndr/ndr_ntsvcs.o
-
 [SUBSYSTEM::NDR_TRKWKS]
 PUBLIC_DEPENDENCIES = LIBNDR
 
@@ -320,7 +315,9 @@ NDR_STANDARD_OBJ_FILES = ../librpc/gen_ndr/ndr_echo.o \
 						 ../librpc/gen_ndr/ndr_svcctl.o \
 						 ../librpc/ndr/ndr_svcctl.o \
 						 ../librpc/gen_ndr/ndr_winreg.o \
-						 ../librpc/gen_ndr/ndr_initshutdown.o
+						 ../librpc/gen_ndr/ndr_initshutdown.o \
+						 ../librpc/gen_ndr/ndr_eventlog.o \
+						 ../librpc/gen_ndr/ndr_ntsvcs.o
 
 PC_FILES += $(librpcsrcdir)/ndr_standard.pc
 
@@ -337,7 +334,7 @@ PUBLIC_DEPENDENCIES = \
 	NDR_POLICYAGENT NDR_UNIXINFO NDR_SPOOLSS \
 	NDR_EPMAPPER NDR_DBGIDL NDR_DSSETUP NDR_MSGSVC NDR_WINS \
 	NDR_MGMT NDR_PROTECTED_STORAGE NDR_OXIDRESOLVER \
-	NDR_REMACT NDR_WZCSVC NDR_BROWSER NDR_W32TIME NDR_SCERPC NDR_NTSVCS \
+	NDR_REMACT NDR_WZCSVC NDR_BROWSER NDR_W32TIME NDR_SCERPC \
 	NDR_TRKWKS NDR_KEYSVC NDR_KRB5PAC NDR_XATTR NDR_SCHANNEL \
 	NDR_ROT NDR_DRSBLOBS NDR_NBT NDR_WINSREPL NDR_SECURITY \
 	NDR_DNSSERVER NDR_WINSTATION NDR_IRPC NDR_OPENDB \
@@ -531,7 +528,7 @@ PUBLIC_DEPENDENCIES = dcerpc NDR_SCERPC
 RPC_NDR_SCERPC_OBJ_FILES = ../librpc/gen_ndr/ndr_scerpc_c.o
 
 [SUBSYSTEM::RPC_NDR_NTSVCS]
-PUBLIC_DEPENDENCIES = dcerpc NDR_NTSVCS
+PUBLIC_DEPENDENCIES = dcerpc NDR_STANDARD
 
 RPC_NDR_NTSVCS_OBJ_FILES = ../librpc/gen_ndr/ndr_ntsvcs_c.o
 
