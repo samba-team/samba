@@ -19,7 +19,7 @@ PUBLIC_HEADERS += $(rpc_serversrcdir)/common/common.h
 [MODULE::dcerpc_rpcecho]
 INIT_FUNCTION = dcerpc_server_rpcecho_init
 SUBSYSTEM = dcerpc_server
-PRIVATE_DEPENDENCIES = NDR_ECHO LIBEVENTS
+PRIVATE_DEPENDENCIES = NDR_STANDARD LIBEVENTS
 # End MODULE dcerpc_rpcecho
 ################################################
 
@@ -99,7 +99,7 @@ SUBSYSTEM = dcerpc_server
 PRIVATE_DEPENDENCIES = \
 		SAMDB \
 		DCERPC_COMMON \
-		NDR_SAMR
+		NDR_STANDARD
 # End MODULE dcesrv_samr
 ################################################
 
@@ -128,7 +128,7 @@ SUBSYSTEM = dcerpc_server
 PRIVATE_DEPENDENCIES = \
 		DCERPC_COMMON \
 		SCHANNELDB \
-		NDR_NETLOGON \
+		NDR_STANDARD \
 		auth_sam \
 		LIBSAMBA-HOSTCONFIG
 # End MODULE dcerpc_netlogon
@@ -144,7 +144,7 @@ SUBSYSTEM = dcerpc_server
 PRIVATE_DEPENDENCIES = \
 		SAMDB \
 		DCERPC_COMMON \
-		NDR_LSA \
+		NDR_STANDARD \
 		LIBCLI_AUTH \
 		NDR_DSSETUP
 # End MODULE dcerpc_lsa
