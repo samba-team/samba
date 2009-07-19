@@ -102,7 +102,7 @@ static int commit_all(
 {
         struct commit_info *c;
 
-        if ((c = VFS_FETCH_FSP_EXTENSION(handle, fsp))) {
+        if ((c = (struct commit_info *)VFS_FETCH_FSP_EXTENSION(handle, fsp))) {
                 if (c->dbytes) {
                         DEBUG(module_debug,
                                 ("%s: flushing %lu dirty bytes\n",
@@ -122,7 +122,8 @@ static int commit(
 {
         struct commit_info *c;
 
-        if ((c = VFS_FETCH_FSP_EXTENSION(handle, fsp)) == NULL) {
+        if ((c = (struct commit_info *)VFS_FETCH_FSP_EXTENSION(handle, fsp))
+	    == NULL) {
 		return 0;
 	}
 
@@ -190,7 +191,8 @@ static int commit_open(
                                         MODULE, "eof mode", "none");
 
         if (dthresh > 0 || !strequal(eof_mode, "none")) {
-                c = VFS_ADD_FSP_EXTENSION(handle, fsp, struct commit_info, NULL);
+                c = (struct commit_info *)VFS_ADD_FSP_EXTENSION(
+			handle, fsp, struct commit_info, NULL);
                 /* Process main tunables */
                 if (c) {
                         c->dthresh = dthresh;
@@ -282,7 +284,8 @@ static int commit_ftruncate(
         result = SMB_VFS_NEXT_FTRUNCATE(handle, fsp, len);
         if (result == 0) {
 		struct commit_info *c;
-		if ((c = VFS_FETCH_FSP_EXTENSION(handle, fsp))) {
+		if ((c = (struct commit_info *)VFS_FETCH_FSP_EXTENSION(
+			     handle, fsp))) {
 			commit(handle, fsp, len, 0);
 			c->eof = len;
 		}
