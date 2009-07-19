@@ -549,7 +549,8 @@ static int shadow_copy2_rmdir(vfs_handle_struct *handle,  const char *fname)
         SHADOW2_NEXT(RMDIR, (handle, name), int, -1);
 }
 
-static int shadow_copy2_chflags(vfs_handle_struct *handle, const char *fname, int flags)
+static int shadow_copy2_chflags(vfs_handle_struct *handle, const char *fname,
+				unsigned int flags)
 {
         SHADOW2_NEXT(CHFLAGS, (handle, name, flags), int, -1);
 }

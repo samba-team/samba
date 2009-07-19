@@ -1102,7 +1102,8 @@ static NTSTATUS vfswrap_notify_watch(vfs_handle_struct *vfs_handle,
 	return NT_STATUS_OK;
 }
 
-static int vfswrap_chflags(vfs_handle_struct *handle, const char *path, int flags)
+static int vfswrap_chflags(vfs_handle_struct *handle, const char *path,
+			   unsigned int flags)
 {
 #ifdef HAVE_CHFLAGS
 	return chflags(path, flags);
@@ -1113,7 +1114,7 @@ static int vfswrap_chflags(vfs_handle_struct *handle, const char *path, int flag
 }
 
 static struct file_id vfswrap_file_id_create(struct vfs_handle_struct *handle,
-					     SMB_STRUCT_STAT *sbuf)
+					     const SMB_STRUCT_STAT *sbuf)
 {
 	struct file_id key;
 

@@ -561,7 +561,7 @@ static int smb_full_audit_statvfs(struct vfs_handle_struct *handle,
 	return result;
 }
 
-static int smb_full_audit_fs_capabilities(struct vfs_handle_struct *handle)
+static uint32_t smb_full_audit_fs_capabilities(struct vfs_handle_struct *handle)
 {
 	int result;
 
@@ -897,7 +897,7 @@ static int smb_full_audit_lstat(vfs_handle_struct *handle,
 	return result;    
 }
 
-static int smb_full_audit_get_alloc_size(vfs_handle_struct *handle,
+static uint64_t smb_full_audit_get_alloc_size(vfs_handle_struct *handle,
 		       files_struct *fsp, const SMB_STRUCT_STAT *sbuf)
 {
 	int result;
