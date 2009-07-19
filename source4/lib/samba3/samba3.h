@@ -22,7 +22,6 @@
 
 #include "librpc/gen_ndr/security.h"
 #include "librpc/gen_ndr/samr.h"
-#include "param/param.h"
 
 struct samr_Password *smbpasswd_gethexpwd(TALLOC_CTX *mem_ctx, const char *p);
 char *smbpasswd_sethexpwd(TALLOC_CTX *mem_ctx, struct samr_Password *pwd, uint16_t acb_info);

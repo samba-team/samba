@@ -1400,33 +1400,33 @@ static int setup_password_fields(struct setup_password_fields_io *io)
 		}
 
 		ret = setup_kerberos_keys(io);
-		if (ret != 0) {
+		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
 	}
 
 	ret = setup_nt_fields(io);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 
 	ret = setup_lm_fields(io);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 
 	ret = setup_supplemental_field(io);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 
 	ret = setup_last_set_field(io);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 
 	ret = setup_kvno_field(io);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 
@@ -1649,6 +1649,7 @@ static int get_domain_data_callback(struct ldb_request *req,
 		if (ret != LDB_SUCCESS) {
 			return ldb_module_done(ac->req, NULL, NULL, ret);
 		}
+		break;
 
 	case LDB_REPLY_REFERRAL:
 		/* ignore */

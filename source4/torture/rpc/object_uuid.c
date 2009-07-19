@@ -35,7 +35,6 @@ static bool test_random_uuid(struct torture_context *torture)
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p1, *p2;
-	struct rpc_request *req;
 	struct GUID uuid;
 	struct dssetup_DsRoleGetPrimaryDomainInformation r1;
 	struct lsa_GetUserName r2;

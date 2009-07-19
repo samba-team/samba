@@ -316,6 +316,7 @@ _PUBLIC_ WERROR reg_diff_load(const char *filename,
 	if (read(fd, &hdr, 4) != 4) {
 		DEBUG(0, ("Error reading registry patch file `%s'\n",
 			filename));
+		close(fd);
 		return WERR_GENERAL_FAILURE;
 	}
 

@@ -741,15 +741,15 @@ static int la_op_search_callback(struct ldb_request *req,
 			if (ret != LDB_SUCCESS) {
 				return ldb_module_done(ac->req, NULL, NULL, ret);
 			}
-			break;
-		case LDB_RENAME:
-			
+			return ret;
+
+		case LDB_RENAME:	
+			/* start the mod requests chain */
 			ret = la_do_mod_request(ac);
 			if (ret != LDB_SUCCESS) {
 				return ldb_module_done(ac->req, NULL, NULL,
 						       ret);
-			}
-	
+			}	
 			return ret;
 			
 		default:
@@ -759,7 +759,6 @@ static int la_op_search_callback(struct ldb_request *req,
 			return ldb_module_done(ac->req, NULL, NULL,
 						LDB_ERR_OPERATIONS_ERROR);
 		}
-		return LDB_SUCCESS;
 	}
 
 	talloc_free(ares);
