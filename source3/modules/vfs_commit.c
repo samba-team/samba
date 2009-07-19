@@ -231,7 +231,7 @@ static int commit_open(
 static ssize_t commit_write(
         vfs_handle_struct * handle,
         files_struct *      fsp,
-        void *              data,
+        const void *        data,
         size_t              count)
 {
         ssize_t ret;
@@ -249,7 +249,7 @@ static ssize_t commit_write(
 static ssize_t commit_pwrite(
         vfs_handle_struct * handle,
         files_struct *      fsp,
-        void *              data,
+        const void *        data,
         size_t              count,
 	SMB_OFF_T	    offset)
 {
