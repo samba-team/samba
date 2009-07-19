@@ -22,9 +22,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import getopt
 import optparse
-import os
 import sys
 
 # Find right directory when running from source tree
@@ -34,7 +32,6 @@ import samba
 from samba.credentials import DONT_USE_KERBEROS
 from samba.auth import system_session
 import samba.getopt as options
-from samba import param
 from samba.provision import provision, FILL_FULL, FILL_NT4SYNC, FILL_DRS, find_setup_dir
 
 # how do we make this case insensitive??
@@ -121,7 +118,6 @@ if not opts.interactive and (opts.realm is None or opts.domain is None):
 
 if opts.interactive:
 	from getpass import getpass
-	import readline
 	import socket
 	def ask(prompt, default=None):
 		if default is not None:
