@@ -29,6 +29,7 @@
 #include "libcli/security/security.h"
 #include "torture/torture.h"
 #include "auth/auth_sam_reply.h"
+#include "param/param.h"
 
 static bool torture_pac_self_check(struct torture_context *tctx)
 {
