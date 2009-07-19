@@ -82,7 +82,6 @@ NDR_WINSTATION_OBJ_FILES = $(gen_ndrsrcdir)/ndr_winstation.o
 [SUBSYSTEM::NDR_ECHO]
 PUBLIC_DEPENDENCIES = LIBNDR
 
-NDR_ECHO_OBJ_FILES = ../librpc/gen_ndr/ndr_echo.o
 
 [SUBSYSTEM::NDR_IRPC]
 PUBLIC_DEPENDENCIES = LIBNDR NDR_SECURITY NDR_NBT
@@ -113,18 +112,6 @@ NDR_EFS_OBJ_FILES = ../librpc/gen_ndr/ndr_efs.o
 PUBLIC_DEPENDENCIES = LIBNDR NDR_ORPC
 
 NDR_ROT_OBJ_FILES = ../librpc/gen_ndr/ndr_rot.o
-
-[SUBSYSTEM::NDR_LSA]
-PUBLIC_DEPENDENCIES = LIBNDR NDR_SECURITY
-
-NDR_LSA_OBJ_FILES = ../librpc/gen_ndr/ndr_lsa.o
-
-PUBLIC_HEADERS += ../librpc/gen_ndr/lsa.h
-
-[SUBSYSTEM::NDR_DFS]
-PUBLIC_DEPENDENCIES = LIBNDR
-
-NDR_DFS_OBJ_FILES = ../librpc/gen_ndr/ndr_dfs.o
 
 [SUBSYSTEM::NDR_FRSRPC]
 PUBLIC_DEPENDENCIES = LIBNDR
@@ -160,13 +147,6 @@ NDR_POLICYAGENT_OBJ_FILES = ../librpc/gen_ndr/ndr_policyagent.o
 PUBLIC_DEPENDENCIES = LIBNDR NDR_SECURITY
 
 NDR_UNIXINFO_OBJ_FILES = ../librpc/gen_ndr/ndr_unixinfo.o
-
-[SUBSYSTEM::NDR_SAMR]
-PUBLIC_DEPENDENCIES = LIBNDR NDR_SECURITY
-
-NDR_SAMR_OBJ_FILES = ../librpc/gen_ndr/ndr_samr.o
-
-PUBLIC_HEADERS += $(addprefix ../librpc/gen_ndr/, samr.h ndr_samr.h ndr_samr_c.h)
 
 [SUBSYSTEM::NDR_NFS4ACL]
 PUBLIC_DEPENDENCIES = LIBNDR NDR_SECURITY
@@ -296,13 +276,6 @@ PUBLIC_DEPENDENCIES = LIBNDR
 
 NDR_NTSVCS_OBJ_FILES = ../librpc/gen_ndr/ndr_ntsvcs.o
 
-[SUBSYSTEM::NDR_NETLOGON]
-PUBLIC_DEPENDENCIES = LIBNDR NDR_SECURITY
-
-NDR_NETLOGON_OBJ_FILES = ../librpc/gen_ndr/ndr_netlogon.o ../librpc/ndr/ndr_netlogon.o
-
-PUBLIC_HEADERS += ../librpc/gen_ndr/netlogon.h
-
 [SUBSYSTEM::NDR_TRKWKS]
 PUBLIC_DEPENDENCIES = LIBNDR
 
@@ -376,9 +349,18 @@ $(gen_ndrsrcdir)/tables.c: $(IDL_NDR_PARSE_H_FILES)
 
 [LIBRARY::NDR_STANDARD]
 PUBLIC_DEPENDENCIES = LIBNDR
-PRIVATE_DEPENDENCIES = NDR_ECHO NDR_LSA NDR_SAMR NDR_NETLOGON
+PRIVATE_DEPENDENCIES = NDR_SECURITY
+
+NDR_STANDARD_OBJ_FILES = ../librpc/gen_ndr/ndr_echo.o \
+						 ../librpc/gen_ndr/ndr_lsa.o \
+						 ../librpc/gen_ndr/ndr_samr.o \
+						 ../librpc/gen_ndr/ndr_netlogon.o \
+						 ../librpc/ndr/ndr_netlogon.o \
+						 ../librpc/gen_ndr/ndr_dfs.o
 
 PC_FILES += $(librpcsrcdir)/ndr_standard.pc
+
+PUBLIC_HEADERS += $(addprefix ../librpc/gen_ndr/, samr.h ndr_samr.h lsa.h netlogon.h)
 
 NDR_STANDARD_VERSION = 0.0.1
 NDR_STANDARD_SOVERSION = 0
@@ -387,7 +369,7 @@ NDR_STANDARD_SOVERSION = 0
 PUBLIC_DEPENDENCIES = \
 	NDR_STANDARD \
 	NDR_AUDIOSRV \
-	NDR_DSBACKUP NDR_EFS NDR_DFS NDR_DRSUAPI \
+	NDR_DSBACKUP NDR_EFS NDR_DRSUAPI \
 	NDR_POLICYAGENT NDR_UNIXINFO NDR_SPOOLSS NDR_WKSSVC NDR_SRVSVC NDR_ATSVC \
 	NDR_EVENTLOG NDR_EPMAPPER NDR_DBGIDL NDR_DSSETUP NDR_MSGSVC NDR_WINS \
 	NDR_WINREG NDR_MGMT NDR_PROTECTED_STORAGE NDR_OXIDRESOLVER \
@@ -431,7 +413,7 @@ PUBLIC_DEPENDENCIES = dcerpc NDR_STANDARD
 RPC_NDR_LSA_OBJ_FILES = ../librpc/gen_ndr/ndr_lsa_c.o
 
 [SUBSYSTEM::RPC_NDR_DFS]
-PUBLIC_DEPENDENCIES = dcerpc NDR_DFS
+PUBLIC_DEPENDENCIES = dcerpc NDR_STANDARD
 
 RPC_NDR_DFS_OBJ_FILES = ../librpc/gen_ndr/ndr_dfs_c.o
 
@@ -473,6 +455,8 @@ PC_FILES += $(librpcsrcdir)/dcerpc_samr.pc
 dcerpc_samr_VERSION = 0.0.1
 dcerpc_samr_SOVERSION = 0
 dcerpc_samr_OBJ_FILES = ../librpc/gen_ndr/ndr_samr_c.o
+
+PUBLIC_HEADERS += ../librpc/gen_ndr/ndr_samr_c.h
 
 [SUBSYSTEM::RPC_NDR_SPOOLSS]
 PUBLIC_DEPENDENCIES = dcerpc NDR_SPOOLSS
