@@ -5222,7 +5222,9 @@ static bool run_chain2(int dummy)
 	NTSTATUS status;
 
 	printf("starting chain2 test\n");
-	if (!torture_open_connection(&cli1, 0)) {
+	status = cli_start_connection(&cli1, global_myname(), host, NULL,
+				      port_to_use, Undefined, 0, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
 
