@@ -38,13 +38,12 @@ import registry
 import samba
 from auth import system_session
 from samba import version, Ldb, substitute_var, valid_netbios_name, check_all_substituted, \
-  DS_BEHAVIOR_WIN2000, DS_BEHAVIOR_WIN2003_INTERIM, DS_BEHAVIOR_WIN2003, DS_BEHAVIOR_WIN2008
+  DS_BEHAVIOR_WIN2008
 from samba.samdb import SamDB
 from samba.idmap import IDmapDB
 from samba.dcerpc import security
 import urllib
-from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError, \
-        timestring, CHANGETYPE_MODIFY, CHANGETYPE_NONE
+from ldb import SCOPE_SUBTREE, LdbError, timestring
 from ms_schema import read_ms_schema
 
 __docformat__ = "restructuredText"

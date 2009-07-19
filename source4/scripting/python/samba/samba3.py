@@ -502,7 +502,7 @@ TDBSAM_USER_PREFIX = "USER_"
 class LdapSam(object):
     """Samba 3 LDAP passdb backend reader."""
     def __init__(self, url):
-        self.ldap_url = ldap_url
+        self.ldap_url = url
 
 
 class TdbSam(TdbDatabase):
@@ -692,7 +692,7 @@ class ParamFile(object):
                (k, v) = l.split("=", 1) 
                self._sections[section][self._sanitize_name(k)] = v
             else:
-                raise Error("Unable to parser line %d: %r" % (i+1,l))
+                raise Exception("Unable to parser line %d: %r" % (i+1,l))
 
     def get(self, param, section=None):
         """Return the value of a parameter.

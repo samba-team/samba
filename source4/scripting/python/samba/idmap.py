@@ -23,8 +23,6 @@
 __docformat__ = "restructuredText"
 
 import samba
-import glue
-import ldb
 
 class IDmapDB(samba.Ldb):
     """The IDmap database."""

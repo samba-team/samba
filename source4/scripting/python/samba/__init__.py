@@ -42,7 +42,6 @@ else:
 
 
 import ldb
-import credentials
 import glue
 
 class Ldb(ldb.Ldb):
