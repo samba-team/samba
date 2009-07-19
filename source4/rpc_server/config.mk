@@ -69,7 +69,7 @@ $(eval $(call proto_header_template,$(rpc_serversrcdir)/srvsvc/proto.h,$(dcerpc_
 INIT_FUNCTION = dcerpc_server_wkssvc_init
 SUBSYSTEM = dcerpc_server
 PRIVATE_DEPENDENCIES = \
-		DCERPC_COMMON NDR_WKSSVC
+		DCERPC_COMMON NDR_STANDARD
 # End MODULE dcerpc_wkssvc
 ################################################
 
@@ -114,7 +114,7 @@ INIT_FUNCTION = dcerpc_server_winreg_init
 SUBSYSTEM = dcerpc_server
 OUTPUT_TYPE = MERGED_OBJ
 PRIVATE_DEPENDENCIES = \
-		registry NDR_WINREG
+		registry NDR_STANDARD
 # End MODULE dcerpc_winreg
 ################################################
 

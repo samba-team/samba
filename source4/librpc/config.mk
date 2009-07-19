@@ -79,10 +79,6 @@ PUBLIC_DEPENDENCIES = LIBNDR
 
 NDR_WINSTATION_OBJ_FILES = $(gen_ndrsrcdir)/ndr_winstation.o
 
-[SUBSYSTEM::NDR_ECHO]
-PUBLIC_DEPENDENCIES = LIBNDR
-
-
 [SUBSYSTEM::NDR_IRPC]
 PUBLIC_DEPENDENCIES = LIBNDR NDR_SECURITY NDR_NBT
 
@@ -162,35 +158,6 @@ NDR_SPOOLSS_OBJ_FILES = ../librpc/gen_ndr/ndr_spoolss.o
 
 NDR_SPOOLSS_BUF_OBJ_FILES = ../librpc/ndr/ndr_spoolss_buf.o
 
-[SUBSYSTEM::NDR_WKSSVC]
-PUBLIC_DEPENDENCIES = LIBNDR NDR_SRVSVC NDR_SECURITY
-
-NDR_WKSSVC_OBJ_FILES = ../librpc/gen_ndr/ndr_wkssvc.o
-
-[SUBSYSTEM::NDR_SRVSVC]
-PUBLIC_DEPENDENCIES = LIBNDR NDR_SVCCTL NDR_SECURITY
-
-NDR_SRVSVC_OBJ_FILES = ../librpc/gen_ndr/ndr_srvsvc.o
-
-[SUBSYSTEM::NDR_SVCCTL]
-PUBLIC_DEPENDENCIES = LIBNDR
-
-NDR_SVCCTL_OBJ_FILES = ../librpc/gen_ndr/ndr_svcctl.o ../librpc/ndr/ndr_svcctl.o
-
-PUBLIC_HEADERS += $(addprefix ../librpc/gen_ndr/, ndr_svcctl.h svcctl.h)
-
-[SUBSYSTEM::NDR_ATSVC]
-PUBLIC_DEPENDENCIES = LIBNDR
-
-NDR_ATSVC_OBJ_FILES = ../librpc/gen_ndr/ndr_atsvc.o
-
-PUBLIC_HEADERS += $(addprefix ../librpc/gen_ndr/, atsvc.h ndr_atsvc.h)
-
-[SUBSYSTEM::NDR_EVENTLOG]
-PUBLIC_DEPENDENCIES = LIBNDR NDR_STANDARD
-
-NDR_EVENTLOG_OBJ_FILES = ../librpc/gen_ndr/ndr_eventlog.o
-
 [SUBSYSTEM::NDR_EPMAPPER]
 PUBLIC_DEPENDENCIES = LIBNDR
 
@@ -215,16 +182,6 @@ NDR_MSGSVC_OBJ_FILES = ../librpc/gen_ndr/ndr_msgsvc.o
 PUBLIC_DEPENDENCIES = LIBNDR
 
 NDR_WINS_OBJ_FILES = $(gen_ndrsrcdir)/ndr_wins.o
-
-[SUBSYSTEM::NDR_WINREG]
-PUBLIC_DEPENDENCIES = LIBNDR NDR_INITSHUTDOWN NDR_SECURITY
-
-NDR_WINREG_OBJ_FILES = ../librpc/gen_ndr/ndr_winreg.o
-
-[SUBSYSTEM::NDR_INITSHUTDOWN]
-PUBLIC_DEPENDENCIES = LIBNDR
-
-NDR_INITSHUTDOWN_OBJ_FILES = ../librpc/gen_ndr/ndr_initshutdown.o
 
 [SUBSYSTEM::NDR_MGMT]
 PUBLIC_DEPENDENCIES = LIBNDR 
@@ -312,7 +269,7 @@ PUBLIC_DEPENDENCIES = LIBNDR NDR_NBT
 NDR_SCHANNEL_OBJ_FILES = $(gen_ndrsrcdir)/ndr_schannel.o
 
 [SUBSYSTEM::NDR_NBT]
-PUBLIC_DEPENDENCIES = LIBNDR NDR_NBT_BUF NDR_SVCCTL NDR_SECURITY NDR_STANDARD LIBCLI_NDR_NETLOGON
+PUBLIC_DEPENDENCIES = LIBNDR NDR_NBT_BUF NDR_SECURITY NDR_STANDARD LIBCLI_NDR_NETLOGON
 
 NDR_NBT_OBJ_FILES = ../librpc/gen_ndr/ndr_nbt.o
 
@@ -356,11 +313,18 @@ NDR_STANDARD_OBJ_FILES = ../librpc/gen_ndr/ndr_echo.o \
 						 ../librpc/gen_ndr/ndr_samr.o \
 						 ../librpc/gen_ndr/ndr_netlogon.o \
 						 ../librpc/ndr/ndr_netlogon.o \
-						 ../librpc/gen_ndr/ndr_dfs.o
+						 ../librpc/gen_ndr/ndr_dfs.o \
+						 ../librpc/gen_ndr/ndr_atsvc.o \
+						 ../librpc/gen_ndr/ndr_wkssvc.o \
+						 ../librpc/gen_ndr/ndr_srvsvc.o \
+						 ../librpc/gen_ndr/ndr_svcctl.o \
+						 ../librpc/ndr/ndr_svcctl.o \
+						 ../librpc/gen_ndr/ndr_winreg.o \
+						 ../librpc/gen_ndr/ndr_initshutdown.o
 
 PC_FILES += $(librpcsrcdir)/ndr_standard.pc
 
-PUBLIC_HEADERS += $(addprefix ../librpc/gen_ndr/, samr.h ndr_samr.h lsa.h netlogon.h)
+PUBLIC_HEADERS += $(addprefix ../librpc/gen_ndr/, samr.h ndr_samr.h lsa.h netlogon.h atsvc.h ndr_atsvc.h ndr_svcctl.h svcctl.h)
 
 NDR_STANDARD_VERSION = 0.0.1
 NDR_STANDARD_SOVERSION = 0
@@ -370,13 +334,13 @@ PUBLIC_DEPENDENCIES = \
 	NDR_STANDARD \
 	NDR_AUDIOSRV \
 	NDR_DSBACKUP NDR_EFS NDR_DRSUAPI \
-	NDR_POLICYAGENT NDR_UNIXINFO NDR_SPOOLSS NDR_WKSSVC NDR_SRVSVC NDR_ATSVC \
-	NDR_EVENTLOG NDR_EPMAPPER NDR_DBGIDL NDR_DSSETUP NDR_MSGSVC NDR_WINS \
-	NDR_WINREG NDR_MGMT NDR_PROTECTED_STORAGE NDR_OXIDRESOLVER \
+	NDR_POLICYAGENT NDR_UNIXINFO NDR_SPOOLSS \
+	NDR_EPMAPPER NDR_DBGIDL NDR_DSSETUP NDR_MSGSVC NDR_WINS \
+	NDR_MGMT NDR_PROTECTED_STORAGE NDR_OXIDRESOLVER \
 	NDR_REMACT NDR_WZCSVC NDR_BROWSER NDR_W32TIME NDR_SCERPC NDR_NTSVCS \
 	NDR_TRKWKS NDR_KEYSVC NDR_KRB5PAC NDR_XATTR NDR_SCHANNEL \
-	NDR_ROT NDR_DRSBLOBS NDR_SVCCTL NDR_NBT NDR_WINSREPL NDR_SECURITY \
-	NDR_INITSHUTDOWN NDR_DNSSERVER NDR_WINSTATION NDR_IRPC NDR_OPENDB \
+	NDR_ROT NDR_DRSBLOBS NDR_NBT NDR_WINSREPL NDR_SECURITY \
+	NDR_DNSSERVER NDR_WINSTATION NDR_IRPC NDR_OPENDB \
 	NDR_SASL_HELPERS NDR_NOTIFY NDR_WINBIND NDR_FRSRPC NDR_FRSAPI NDR_NFS4ACL NDR_NTP_SIGND \
 	NDR_DCOM NDR_WMI NDR_NAMED_PIPE_AUTH
 
@@ -464,7 +428,7 @@ PUBLIC_DEPENDENCIES = dcerpc NDR_SPOOLSS
 RPC_NDR_SPOOLSS_OBJ_FILES = ../librpc/gen_ndr/ndr_spoolss_c.o
 
 [SUBSYSTEM::RPC_NDR_WKSSVC]
-PUBLIC_DEPENDENCIES = dcerpc NDR_WKSSVC
+PUBLIC_DEPENDENCIES = dcerpc NDR_STANDARD
 
 RPC_NDR_WKSSVC_OBJ_FILES = ../librpc/gen_ndr/ndr_wkssvc_c.o
 
@@ -474,14 +438,14 @@ PUBLIC_DEPENDENCIES = dcerpc NDR_SRVSVC
 RPC_NDR_SRVSVC_OBJ_FILES = ../librpc/gen_ndr/ndr_srvsvc_c.o
 
 [SUBSYSTEM::RPC_NDR_SVCCTL]
-PUBLIC_DEPENDENCIES = dcerpc NDR_SVCCTL
+PUBLIC_DEPENDENCIES = dcerpc NDR_STANDARD
 
 RPC_NDR_SVCCTL_OBJ_FILES = ../librpc/gen_ndr/ndr_svcctl_c.o
 
 PUBLIC_HEADERS += ../librpc/gen_ndr/ndr_svcctl_c.h
 
 [LIBRARY::dcerpc_atsvc]
-PUBLIC_DEPENDENCIES = dcerpc NDR_ATSVC
+PUBLIC_DEPENDENCIES = dcerpc NDR_STANDARD
 
 dcerpc_atsvc_VERSION = 0.0.1
 dcerpc_atsvc_SOVERSION = 0
@@ -492,7 +456,7 @@ PC_FILES += $(librpcsrcdir)/dcerpc_atsvc.pc
 PUBLIC_HEADERS += ../librpc/gen_ndr/ndr_atsvc_c.h
 
 [SUBSYSTEM::RPC_NDR_EVENTLOG]
-PUBLIC_DEPENDENCIES = dcerpc NDR_EVENTLOG
+PUBLIC_DEPENDENCIES = dcerpc NDR_STANDARD
 
 RPC_NDR_EVENTLOG_OBJ_FILES = ../librpc/gen_ndr/ndr_eventlog_c.o
 
@@ -522,12 +486,12 @@ PUBLIC_DEPENDENCIES = dcerpc NDR_WINS
 RPC_NDR_WINS_OBJ_FILES = $(gen_ndrsrcdir)/ndr_wins_c.o
 
 [SUBSYSTEM::RPC_NDR_WINREG]
-PUBLIC_DEPENDENCIES = dcerpc NDR_WINREG
+PUBLIC_DEPENDENCIES = dcerpc NDR_STANDARD
 
 RPC_NDR_WINREG_OBJ_FILES = ../librpc/gen_ndr/ndr_winreg_c.o
 
 [SUBSYSTEM::RPC_NDR_INITSHUTDOWN]
-PUBLIC_DEPENDENCIES = dcerpc NDR_INITSHUTDOWN
+PUBLIC_DEPENDENCIES = dcerpc NDR_STANDARD
 
 RPC_NDR_INITSHUTDOWN_OBJ_FILES = ../librpc/gen_ndr/ndr_initshutdown_c.o
 
