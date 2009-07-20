@@ -2270,13 +2270,6 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 
 /* The following definitions come from libsmb/clidgram.c  */
 
-bool cli_send_mailslot(struct messaging_context *msg_ctx,
-		       bool unique, const char *mailslot,
-		       uint16 priority,
-		       char *buf, int len,
-		       const char *srcname, int src_type,
-		       const char *dstname, int dest_type,
-		       const struct sockaddr_storage *dest_ss);
 bool send_getdc_request(TALLOC_CTX *mem_ctx,
 			struct messaging_context *msg_ctx,
 			struct sockaddr_storage *dc_ss,
