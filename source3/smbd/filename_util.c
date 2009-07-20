@@ -29,6 +29,9 @@ NTSTATUS get_full_smb_filename(TALLOC_CTX *ctx,
 			       char **full_name)
 {
 	if (smb_fname->stream_name) {
+		/* stream_name must always be NULL if there is no stream. */
+		SMB_ASSERT(smb_fname->stream_name[0] != '\0');
+
 		*full_name = talloc_asprintf(ctx, "%s%s", smb_fname->base_name,
 					     smb_fname->stream_name);
 	} else {
@@ -134,6 +137,10 @@ NTSTATUS copy_smb_filename(TALLOC_CTX *ctx,
 			   const struct smb_filename *smb_fname_in,
 			   struct smb_filename **smb_fname_out)
 {
+	/* stream_name must always be NULL if there is no stream. */
+	if (smb_fname_in->stream_name) {
+		SMB_ASSERT(smb_fname_in->stream_name[0] != '\0');
+	}
 
 	*smb_fname_out = talloc_zero(ctx, struct smb_filename);
 	if (*smb_fname_out == NULL) {
@@ -174,6 +181,11 @@ NTSTATUS copy_smb_filename(TALLOC_CTX *ctx,
  ***************************************************************************/
 bool is_ntfs_stream_smb_fname(const struct smb_filename *smb_fname)
 {
+	/* stream_name must always be NULL if there is no stream. */
+	if (smb_fname->stream_name) {
+		SMB_ASSERT(smb_fname->stream_name[0] != '\0');
+	}
+
 	if (lp_posix_pathnames()) {
 		return false;
 	}
