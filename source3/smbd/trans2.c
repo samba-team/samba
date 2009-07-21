@@ -1046,12 +1046,10 @@ static void call_trans2open(connection_struct *conn,
 		goto out;
 	}
 
-	if (!map_open_params_to_ntcreate(smb_fname->base_name, deny_mode,
-				open_ofun,
-				&access_mask,
-				&share_mode,
-				&create_disposition,
-				&create_options)) {
+	if (!map_open_params_to_ntcreate(smb_fname, deny_mode, open_ofun,
+					 &access_mask, &share_mode,
+					 &create_disposition,
+					 &create_options)) {
 		reply_doserror(req, ERRDOS, ERRbadaccess);
 		goto out;
 	}

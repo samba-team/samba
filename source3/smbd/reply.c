@@ -1760,10 +1760,10 @@ void reply_open(struct smb_request *req)
 		goto out;
 	}
 
-	if (!map_open_params_to_ntcreate(
-		    smb_fname->base_name, deny_mode, OPENX_FILE_EXISTS_OPEN,
-		    &access_mask, &share_mode, &create_disposition,
-		    &create_options)) {
+	if (!map_open_params_to_ntcreate(smb_fname, deny_mode,
+					 OPENX_FILE_EXISTS_OPEN, &access_mask,
+					 &share_mode, &create_disposition,
+					 &create_options)) {
 		reply_nterror(req, NT_STATUS_DOS(ERRDOS, ERRbadaccess));
 		goto out;
 	}
@@ -1931,9 +1931,10 @@ void reply_open_and_X(struct smb_request *req)
 		goto out;
 	}
 
-	if (!map_open_params_to_ntcreate(
-		    smb_fname->base_name, deny_mode, smb_ofun, &access_mask,
-		    &share_mode, &create_disposition, &create_options)) {
+	if (!map_open_params_to_ntcreate(smb_fname, deny_mode, smb_ofun,
+					 &access_mask, &share_mode,
+					 &create_disposition,
+					 &create_options)) {
 		reply_nterror(req, NT_STATUS_DOS(ERRDOS, ERRbadaccess));
 		goto out;
 	}
@@ -6659,8 +6660,8 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 	if (!target_is_directory && count) {
 		new_create_disposition = FILE_OPEN;
 	} else {
-		if (!map_open_params_to_ntcreate(smb_fname_dst_tmp->base_name,
-						 0, ofun, NULL, NULL,
+		if (!map_open_params_to_ntcreate(smb_fname_dst_tmp, 0, ofun,
+						 NULL, NULL,
 						 &new_create_disposition,
 						 NULL)) {
 			status = NT_STATUS_INVALID_PARAMETER;
