@@ -106,7 +106,14 @@ interface frsapi
 
 	/****************/
 	/* Function 0x09 */
-	[todo] void FRSAPI_WRITER_COMMAND();
+	typedef [v1_enum] enum {
+		FRSAPI_WRITER_COMMAND_FREEZE	= 0x00000001,
+		FRSAPI_WRITER_COMMAND_THAW	= 0x00000002
+	} frsapi_WriterCommandsValues;
+
+	WERROR frsapi_WriterCommand(
+		[in] frsapi_WriterCommandsValues command
+	);
 
 	/****************/
 	/* Function 0x0a */
