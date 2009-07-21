@@ -179,50 +179,47 @@ int32 dbwrap_change_int32_atomic(struct db_context *db, const char *keystr,
 	return 0;
 }
 
+struct dbwrap_store_context {
+	TDB_DATA *key;
+	TDB_DATA *dbuf;
+	int flag;
+};
+
+static NTSTATUS dbwrap_store_action(struct db_context *db, void *private_data)
+{
+	struct db_record *rec = NULL;
+	NTSTATUS status;
+	struct dbwrap_store_context *store_ctx;
+
+	store_ctx = (struct dbwrap_store_context *)private_data;
+
+	rec = db->fetch_locked(db, talloc_tos(), *(store_ctx->key));
+	if (rec == NULL) {
+		DEBUG(5, ("fetch_locked failed\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = rec->store(rec, *(store_ctx->dbuf), store_ctx->flag);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(5, ("store returned %s\n", nt_errstr(status)));
+	}
+
+	TALLOC_FREE(rec);
+	return status;
+}
+
 NTSTATUS dbwrap_trans_store(struct db_context *db, TDB_DATA key, TDB_DATA dbuf,
 			    int flag)
 {
-	int res;
-	struct db_record *rec = NULL;
 	NTSTATUS status;
+	struct dbwrap_store_context store_ctx;
 
-	res = db->transaction_start(db);
-	if (res != 0) {
-		DEBUG(5, ("transaction_start failed\n"));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
+	store_ctx.key = &key;
+	store_ctx.dbuf = &dbuf;
+	store_ctx.flag = flag;
 
-	rec = db->fetch_locked(db, talloc_tos(), key);
-	if (rec == NULL) {
-		DEBUG(5, ("fetch_locked failed\n"));
-		status = NT_STATUS_NO_MEMORY;
-		goto cancel;
-	}
+	status = dbwrap_trans_do(db, dbwrap_store_action, &store_ctx);
 
-	status = rec->store(rec, dbuf, flag);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(5, ("store returned %s\n", nt_errstr(status)));
-		goto cancel;
-	}
-
-	TALLOC_FREE(rec);
-
-	res = db->transaction_commit(db);
-	if (res != 0) {
-		DEBUG(5, ("tdb_transaction_commit failed\n"));
-		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
-		TALLOC_FREE(rec);
-		return status;
-	}
-
-	return NT_STATUS_OK;
-
- cancel:
-	TALLOC_FREE(rec);
-
-	if (db->transaction_cancel(db) != 0) {
-		smb_panic("Cancelling transaction failed");
-	}
 	return status;
 }
 
