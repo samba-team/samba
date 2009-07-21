@@ -1317,8 +1317,7 @@ void reply_ntrename(struct smb_request *req)
 
 	if (req->wct < 4) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		END_PROFILE(SMBntrename);
-		return;
+		goto out;
 	}
 
 	attrs = SVAL(req->vwv+0, 0);
@@ -1329,14 +1328,12 @@ void reply_ntrename(struct smb_request *req)
 				       &status, &src_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
-		END_PROFILE(SMBntrename);
-		return;
+		goto out;
 	}
 
 	if (ms_has_wild(oldname)) {
 		reply_nterror(req, NT_STATUS_OBJECT_PATH_SYNTAX_BAD);
-		END_PROFILE(SMBntrename);
-		return;
+		goto out;
 	}
 
 	p++;
@@ -1344,55 +1341,85 @@ void reply_ntrename(struct smb_request *req)
 				       &status, &dest_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
-		END_PROFILE(SMBntrename);
-		return;
+		goto out;
 	}
 
-	status = filename_convert(ctx, conn,
-				req->flags2 & FLAGS2_DFS_PATHNAMES,
-				oldname,
-				&smb_fname_old,
-				&oldname);
-	if (!NT_STATUS_IS_OK(status)) {
-		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
-			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
-					ERRSRV, ERRbadpath);
-			END_PROFILE(SMBntrename);
-			return;
-		}
-		reply_nterror(req, status);
-		END_PROFILE(SMBntrename);
-		return;
-	}
-
-	status = filename_convert(ctx, conn,
-				req->flags2 & FLAGS2_DFS_PATHNAMES,
-				newname,
-				&smb_fname_new,
-				&newname);
-	if (!NT_STATUS_IS_OK(status)) {
-		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
-			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
-					ERRSRV, ERRbadpath);
-			END_PROFILE(SMBntrename);
-			return;
-		}
-		reply_nterror(req, status);
-		END_PROFILE(SMBntrename);
-		return;
-	}
-
-	/* The new name must begin with a ':' if the old name is a stream. */
-	if (is_ntfs_stream_smb_fname(smb_fname_old) && (newname[0] != ':')) {
+	/* The newname must begin with a ':' if the oldname contains a ':'. */
+	if (strchr_m(oldname, ':') && (newname[0] != ':')) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		END_PROFILE(SMBntrename);
-		return;
+		goto out;
 	}
 
-	DEBUG(3,("reply_ntrename : %s -> %s\n",oldname,newname));
+	/* rename_internals() calls unix_convert(), so don't call it here. */
+	if (rename_type != RENAME_FLAG_RENAME) {
+		status = filename_convert(ctx, conn,
+					  req->flags2 & FLAGS2_DFS_PATHNAMES,
+					  oldname,
+					  &smb_fname_old,
+					  NULL);
+		if (!NT_STATUS_IS_OK(status)) {
+			if (NT_STATUS_EQUAL(status,
+					    NT_STATUS_PATH_NOT_COVERED)) {
+				reply_botherror(req,
+						NT_STATUS_PATH_NOT_COVERED,
+						ERRSRV, ERRbadpath);
+				goto out;
+			}
+			reply_nterror(req, status);
+			goto out;
+		}
+
+		status = filename_convert(ctx, conn,
+					  req->flags2 & FLAGS2_DFS_PATHNAMES,
+					  newname,
+					  &smb_fname_new,
+					  NULL);
+		if (!NT_STATUS_IS_OK(status)) {
+			if (NT_STATUS_EQUAL(status,
+					    NT_STATUS_PATH_NOT_COVERED)) {
+				reply_botherror(req,
+					        NT_STATUS_PATH_NOT_COVERED,
+						ERRSRV, ERRbadpath);
+				goto out;
+			}
+			reply_nterror(req, status);
+			goto out;
+		}
+
+		DEBUG(3,("reply_ntrename: %s -> %s\n",
+			 smb_fname_str_dbg(smb_fname_old),
+			 smb_fname_str_dbg(smb_fname_new)));
+	}
 
 	switch(rename_type) {
 		case RENAME_FLAG_RENAME:
+			status = resolve_dfspath(ctx, conn,
+						 (req->flags2 &
+						     FLAGS2_DFS_PATHNAMES),
+						 oldname, &oldname);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(10,("resolve_dfspath failed for name %s "
+					  "with %s\n", oldname,
+					  nt_errstr(status)));
+				reply_nterror(req, status);
+				goto out;
+			}
+
+			status = resolve_dfspath(ctx, conn,
+						 (req->flags2 &
+						     FLAGS2_DFS_PATHNAMES),
+						 newname, &newname);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(10,("resolve_dfspath failed for name %s "
+					  "with %s\n", newname,
+					  nt_errstr(status)));
+				reply_nterror(req, status);
+				goto out;
+			}
+
+			DEBUG(3,("reply_ntrename: %s -> %s\n", oldname,
+				newname));
+
 			status = rename_internals(ctx, conn, req, oldname,
 					newname, attrs, False, src_has_wcard,
 					dest_has_wcard, DELETE_ACCESS);
@@ -1430,17 +1457,15 @@ void reply_ntrename(struct smb_request *req)
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->mid)) {
 			/* We have re-scheduled this call. */
-			END_PROFILE(SMBntrename);
-			return;
+			goto out;
 		}
 
 		reply_nterror(req, status);
-		END_PROFILE(SMBntrename);
-		return;
+		goto out;
 	}
 
 	reply_outbuf(req, 0, 0);
-
+ out:
 	END_PROFILE(SMBntrename);
 	return;
 }
