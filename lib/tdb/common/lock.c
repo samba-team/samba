@@ -328,7 +328,7 @@ int tdb_transaction_unlock(struct tdb_context *tdb)
 	if (tdb->global_lock.count) {
 		return 0;
 	}
-	if (tdb->transaction_lock_count > 0) {
+	if (tdb->transaction_lock_count > 1) {
 		tdb->transaction_lock_count--;
 		return 0;
 	}
