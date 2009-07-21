@@ -3994,7 +3994,8 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 	}
 
 	DEBUG(5,("smbd_do_qfilepathinfo: %s (fnum = %d) level=%d max_data=%u\n",
-		fname, fsp ? fsp->fnum : -1, info_level, max_data_bytes));
+		 smb_fname_str_dbg(smb_fname), fsp ? fsp->fnum : -1,
+		 info_level, max_data_bytes));
 
 	if (ms_dfs_link) {
 		mode = dos_mode_msdfs(conn, smb_fname);
@@ -5546,10 +5547,10 @@ static NTSTATUS smb_set_file_unix_link(connection_struct *conn,
 				       struct smb_request *req,
 				       const char *pdata,
 				       int total_data,
-				       const char *fname)
+				       const struct smb_filename *smb_fname)
 {
 	char *link_target = NULL;
-	const char *newname = fname;
+	const char *newname = smb_fname->base_name;
 	NTSTATUS status = NT_STATUS_OK;
 	TALLOC_CTX *ctx = talloc_tos();
 
@@ -5825,8 +5826,7 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 				const char *pdata,
 				int total_data,
 				files_struct *fsp,
-				const char *fname,
-				SMB_STRUCT_STAT *psbuf)
+				const struct smb_filename *smb_fname)
 {
 	uint16 posix_acl_version;
 	uint16 num_file_acls;
@@ -5861,18 +5861,20 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 	}
 
 	DEBUG(10,("smb_set_posix_acl: file %s num_file_acls = %u, num_def_acls = %u\n",
-		fname ? fname : fsp_str_dbg(fsp),
+		smb_fname ? smb_fname_str_dbg(smb_fname) : fsp_str_dbg(fsp),
 		(unsigned int)num_file_acls,
 		(unsigned int)num_def_acls));
 
-	if (valid_file_acls && !set_unix_posix_acl(conn, fsp, fname, num_file_acls,
-			pdata + SMB_POSIX_ACL_HEADER_SIZE)) {
+	if (valid_file_acls && !set_unix_posix_acl(conn, fsp,
+		smb_fname->base_name, num_file_acls,
+		pdata + SMB_POSIX_ACL_HEADER_SIZE)) {
 		return map_nt_error_from_unix(errno);
 	}
 
-	if (valid_def_acls && !set_unix_posix_default_acl(conn, fname, psbuf, num_def_acls,
-			pdata + SMB_POSIX_ACL_HEADER_SIZE +
-			(num_file_acls*SMB_POSIX_ACL_ENTRY_SIZE))) {
+	if (valid_def_acls && !set_unix_posix_default_acl(conn,
+		smb_fname->base_name, &smb_fname->st, num_def_acls,
+		pdata + SMB_POSIX_ACL_HEADER_SIZE +
+		(num_file_acls*SMB_POSIX_ACL_ENTRY_SIZE))) {
 		return map_nt_error_from_unix(errno);
 	}
 	return NT_STATUS_OK;
@@ -6640,11 +6642,9 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 				struct smb_request *req,
 				char **ppdata,
 				int total_data,
-				const char *fname,
-				SMB_STRUCT_STAT *psbuf,
+				struct smb_filename *smb_fname,
 				int *pdata_return_size)
 {
-	struct smb_filename *smb_fname;
 	NTSTATUS status = NT_STATUS_OK;
 	uint32 raw_unixmode = 0;
 	uint32 mod_unixmode = 0;
@@ -6661,7 +6661,8 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 	raw_unixmode = IVAL(pdata,8);
 	/* Next 4 bytes are not yet defined. */
 
-	status = unix_perms_from_wire(conn, psbuf, raw_unixmode, PERM_NEW_DIR, &unixmode);
+	status = unix_perms_from_wire(conn, &smb_fname->st, raw_unixmode,
+				      PERM_NEW_DIR, &unixmode);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -6669,13 +6670,7 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 	mod_unixmode = (uint32)unixmode | FILE_FLAG_POSIX_SEMANTICS;
 
 	DEBUG(10,("smb_posix_mkdir: file %s, mode 0%o\n",
-		fname, (unsigned int)unixmode ));
-
-	status = create_synthetic_smb_fname_split(talloc_tos(), fname, psbuf,
-						  &smb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+		  smb_fname_str_dbg(smb_fname), (unsigned int)unixmode));
 
         status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
@@ -6693,9 +6688,6 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 		NULL,					/* ea_list */
 		&fsp,					/* result */
 		&info);					/* pinfo */
-
-	*psbuf = smb_fname->st;
-	TALLOC_FREE(smb_fname);
 
         if (NT_STATUS_IS_OK(status)) {
                 close_file(req, fsp, NORMAL_CLOSE);
@@ -6727,12 +6719,14 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 		case SMB_QUERY_FILE_UNIX_BASIC:
 			SSVAL(pdata,8,SMB_QUERY_FILE_UNIX_BASIC);
 			SSVAL(pdata,10,0); /* Padding. */
-			store_file_unix_basic(conn, pdata + 12, fsp, psbuf);
+			store_file_unix_basic(conn, pdata + 12, fsp,
+					      &smb_fname->st);
 			break;
 		case SMB_QUERY_FILE_UNIX_INFO2:
 			SSVAL(pdata,8,SMB_QUERY_FILE_UNIX_INFO2);
 			SSVAL(pdata,10,0); /* Padding. */
-			store_file_unix_basic_info2(conn, pdata + 12, fsp, psbuf);
+			store_file_unix_basic_info2(conn, pdata + 12, fsp,
+						    &smb_fname->st);
 			break;
 		default:
 			SSVAL(pdata,8,SMB_NO_INFO_LEVEL_RETURNED);
@@ -6751,11 +6745,9 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 			       struct smb_request *req,
 				char **ppdata,
 				int total_data,
-				const char *fname,
-				SMB_STRUCT_STAT *psbuf,
+				struct smb_filename *smb_fname,
 				int *pdata_return_size)
 {
-	struct smb_filename *smb_fname = NULL;
 	bool extended_oplock_granted = False;
 	char *pdata = *ppdata;
 	uint32 flags = 0;
@@ -6788,8 +6780,7 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 		return smb_posix_mkdir(conn, req,
 					ppdata,
 					total_data,
-					fname,
-					psbuf,
+					smb_fname,
 					pdata_return_size);
 	}
 
@@ -6828,11 +6819,10 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 	raw_unixmode = IVAL(pdata,8);
 	/* Next 4 bytes are not yet defined. */
 
-	status = unix_perms_from_wire(conn,
-				psbuf,
-				raw_unixmode,
-				VALID_STAT(*psbuf) ? PERM_EXISTING_FILE : PERM_NEW_FILE,
-				&unixmode);
+	status = unix_perms_from_wire(conn, &smb_fname->st, raw_unixmode,
+				      (VALID_STAT(smb_fname->st) ?
+					  PERM_EXISTING_FILE : PERM_NEW_FILE),
+				      &unixmode);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -6851,15 +6841,9 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 	}
 
 	DEBUG(10,("smb_posix_open: file %s, smb_posix_flags = %u, mode 0%o\n",
-		fname,
+		smb_fname_str_dbg(smb_fname),
 		(unsigned int)wire_open_mode,
 		(unsigned int)unixmode ));
-
-	status = create_synthetic_smb_fname_split(talloc_tos(), fname, psbuf,
-						  &smb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
 
         status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
@@ -6878,9 +6862,6 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 		NULL,					/* ea_list */
 		&fsp,					/* result */
 		&info);					/* pinfo */
-
-	*psbuf = smb_fname->st;
-	TALLOC_FREE(smb_fname);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -6934,12 +6915,14 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 		case SMB_QUERY_FILE_UNIX_BASIC:
 			SSVAL(pdata,8,SMB_QUERY_FILE_UNIX_BASIC);
 			SSVAL(pdata,10,0); /* padding. */
-			store_file_unix_basic(conn, pdata + 12, fsp, psbuf);
+			store_file_unix_basic(conn, pdata + 12, fsp,
+					      &smb_fname->st);
 			break;
 		case SMB_QUERY_FILE_UNIX_INFO2:
 			SSVAL(pdata,8,SMB_QUERY_FILE_UNIX_INFO2);
 			SSVAL(pdata,10,0); /* padding. */
-			store_file_unix_basic_info2(conn, pdata + 12, fsp, psbuf);
+			store_file_unix_basic_info2(conn, pdata + 12, fsp,
+						    &smb_fname->st);
 			break;
 		default:
 			SSVAL(pdata,8,SMB_NO_INFO_LEVEL_RETURNED);
@@ -7073,15 +7056,11 @@ NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
 				int *ret_data_size)
 {
 	char *pdata = *ppdata;
-	SMB_STRUCT_STAT sbuf;
 	char *fname = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	int data_return_size = 0;
 
 	*ret_data_size = 0;
-
-	/* Set sbuf for use below. */
-	sbuf = smb_fname->st;
 
 	if (INFO_LEVEL_IS_UNIX(info_level) && !lp_unix_extensions()) {
 		return NT_STATUS_INVALID_LEVEL;
@@ -7100,8 +7079,9 @@ NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
 		return status;
 	}
 
-	DEBUG(3,("smbd_do_setfilepathinfo: %s (fnum %d) info_level=%d totdata=%d\n",
-		fname, fsp ? fsp->fnum : -1, info_level, total_data));
+	DEBUG(3,("smbd_do_setfilepathinfo: %s (fnum %d) info_level=%d "
+		 "totdata=%d\n", smb_fname_str_dbg(smb_fname),
+		 fsp ? fsp->fnum : -1, info_level, total_data));
 
 	switch (info_level) {
 
@@ -7232,7 +7212,7 @@ NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
 				return NT_STATUS_INVALID_LEVEL;
 			}
 			status = smb_set_file_unix_link(conn, req, pdata,
-							total_data, fname);
+							total_data, smb_fname);
 			break;
 		}
 
@@ -7263,8 +7243,7 @@ NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
 						pdata,
 						total_data,
 						fsp,
-						fname,
-						&sbuf);
+						smb_fname);
 			break;
 		}
 #endif
@@ -7289,8 +7268,7 @@ NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
 			status = smb_posix_open(conn, req,
 						ppdata,
 						total_data,
-						fname,
-						&sbuf,
+						smb_fname,
 						&data_return_size);
 			break;
 		}
