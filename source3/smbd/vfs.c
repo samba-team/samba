@@ -972,15 +972,28 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 
 #ifdef S_ISLNK
         if (!lp_symlinks(SNUM(conn))) {
-                SMB_STRUCT_STAT statbuf;
-                if ( (vfs_lstat_smb_fname(conn,fname,&statbuf) != -1) &&
-                                (S_ISLNK(statbuf.st_ex_mode)) ) {
+		struct smb_filename *smb_fname = NULL;
+		NTSTATUS status;
+
+		status = create_synthetic_smb_fname(talloc_tos(), fname, NULL,
+						    NULL, &smb_fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			if (free_resolved_name) {
+				SAFE_FREE(resolved_name);
+			}
+                        return status;
+		}
+
+		if ( (SMB_VFS_LSTAT(conn, smb_fname) != -1) &&
+                                (S_ISLNK(smb_fname->st.st_ex_mode)) ) {
 			if (free_resolved_name) {
 				SAFE_FREE(resolved_name);
 			}
                         DEBUG(3,("reduce_name: denied: file path name %s is a symlink\n",resolved_name));
+			TALLOC_FREE(smb_fname);
 			return NT_STATUS_ACCESS_DENIED;
                 }
+		TALLOC_FREE(smb_fname);
         }
 #endif
 
