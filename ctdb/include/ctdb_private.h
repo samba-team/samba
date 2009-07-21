@@ -155,6 +155,7 @@ struct ctdb_client {
 	uint32_t client_id;
 	pid_t pid;
 	struct ctdb_tcp_list *tcp_list;
+	uint32_t db_id;
 	uint32_t num_persistent_updates;
 };
 
@@ -439,6 +440,7 @@ struct ctdb_db_context {
 	uint32_t seqnum;
 	struct timed_event *te;
 	struct ctdb_traverse_local_handle *traverse;
+	bool transaction_active;
 };
 
 
