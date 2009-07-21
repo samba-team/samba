@@ -1340,6 +1340,7 @@ void reply_search(struct smb_request *req)
 	char *path = NULL;
 	const char *mask = NULL;
 	char *directory = NULL;
+	struct smb_filename *smb_fname = NULL;
 	char *fname = NULL;
 	SMB_OFF_T size;
 	uint32 mode;
@@ -1364,14 +1365,12 @@ void reply_search(struct smb_request *req)
 
 	if (req->wct < 2) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		END_PROFILE(SMBsearch);
-		return;
+		goto out;
 	}
 
 	if (lp_posix_pathnames()) {
 		reply_unknown_new(req, req->cmd);
-		END_PROFILE(SMBsearch);
-		return;
+		goto out;
 	}
 
 	/* If we were called as SMBffirst then we must expect close. */
@@ -1387,8 +1386,7 @@ void reply_search(struct smb_request *req)
 				       &nt_status, &mask_contains_wcard);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		reply_nterror(req, nt_status);
-		END_PROFILE(SMBsearch);
-		return;
+		goto out;
 	}
 
 	p++;
@@ -1398,8 +1396,6 @@ void reply_search(struct smb_request *req)
 	/* dirtype &= ~aDIR; */
 
 	if (status_len == 0) {
-		struct smb_filename *smb_fname = NULL;
-
 		nt_status = resolve_dfspath_wcard(ctx, conn,
 					  req->flags2 & FLAGS2_DFS_PATHNAMES,
 					  path,
@@ -1409,35 +1405,25 @@ void reply_search(struct smb_request *req)
 			if (NT_STATUS_EQUAL(nt_status,NT_STATUS_PATH_NOT_COVERED)) {
 				reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
 						ERRSRV, ERRbadpath);
-				END_PROFILE(SMBsearch);
-				return;
+				goto out;
 			}
 			reply_nterror(req, nt_status);
-			END_PROFILE(SMBsearch);
-			return;
+			goto out;
 		}
 
 		nt_status = unix_convert(ctx, conn, path, &smb_fname,
 					 UCF_ALLOW_WCARD_LCOMP);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			reply_nterror(req, nt_status);
-			END_PROFILE(SMBsearch);
-			return;
+			goto out;
 		}
 
-		nt_status = get_full_smb_filename(ctx, smb_fname, &directory);
-		TALLOC_FREE(smb_fname);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			reply_nterror(req, nt_status);
-			END_PROFILE(SMBsearch);
-			return;
-		}
+		directory = smb_fname->base_name;
 
 		nt_status = check_name(conn, directory);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			reply_nterror(req, nt_status);
-			END_PROFILE(SMBsearch);
-			return;
+			goto out;
 		}
 
 		p = strrchr_m(directory,'/');
@@ -1452,8 +1438,7 @@ void reply_search(struct smb_request *req)
 
 		if (!directory) {
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
-			END_PROFILE(SMBsearch);
-			return;
+			goto out;
 		}
 
 		memset((char *)status,'\0',21);
@@ -1470,8 +1455,7 @@ void reply_search(struct smb_request *req)
 					&conn->dirptr);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			reply_nterror(req, nt_status);
-			END_PROFILE(SMBsearch);
-			return;
+			goto out;
 		}
 		dptr_num = dptr_dnum(conn->dirptr);
 	} else {
@@ -1511,8 +1495,7 @@ void reply_search(struct smb_request *req)
 		if (!make_dir_struct(ctx,buf,"???????????",volume_label(SNUM(conn)),
 				0,aVOLID,0,!allow_long_path_components)) {
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
-			END_PROFILE(SMBsearch);
-			return;
+			goto out;
 		}
 		dptr_fill(buf+12,dptr_num);
 		if (dptr_zero(buf+12) && (status_len==0)) {
@@ -1524,8 +1507,7 @@ void reply_search(struct smb_request *req)
 				      data_blob_const(buf, sizeof(buf)))
 		    == -1) {
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
-			END_PROFILE(SMBsearch);
-			return;
+			goto out;
 		}
 	} else {
 		unsigned int i;
@@ -1564,8 +1546,7 @@ void reply_search(struct smb_request *req)
 						convert_timespec_to_time_t(date),
 						!allow_long_path_components)) {
 					reply_nterror(req, NT_STATUS_NO_MEMORY);
-					END_PROFILE(SMBsearch);
-					return;
+					goto out;
 				}
 				if (!dptr_fill(buf+12,dptr_num)) {
 					break;
@@ -1574,8 +1555,7 @@ void reply_search(struct smb_request *req)
 						      data_blob_const(buf, sizeof(buf)))
 				    == -1) {
 					reply_nterror(req, NT_STATUS_NO_MEMORY);
-					END_PROFILE(SMBsearch);
-					return;
+					goto out;
 				}
 				numentries++;
 			}
@@ -1602,8 +1582,7 @@ void reply_search(struct smb_request *req)
 
 	if ((numentries == 0) && !mask_contains_wcard) {
 		reply_botherror(req, STATUS_NO_MORE_FILES, ERRDOS, ERRnofiles);
-		END_PROFILE(SMBsearch);
-		return;
+		goto out;
 	}
 
 	SSVAL(req->outbuf,smb_vwv0,numentries);
@@ -1635,7 +1614,8 @@ void reply_search(struct smb_request *req)
 		dirtype,
 		numentries,
 		maxentries ));
-
+ out:
+	TALLOC_FREE(smb_fname);
 	END_PROFILE(SMBsearch);
 	return;
 }
@@ -5811,9 +5791,6 @@ static void notify_rename(connection_struct *conn, bool is_dir,
 {
 	char *parent_dir_src = NULL;
 	char *parent_dir_dst = NULL;
-	char *fname_src = NULL;
-	char *fname_dst = NULL;
-	NTSTATUS status;
 	uint32 mask;
 
 	mask = is_dir ? FILE_NOTIFY_CHANGE_DIR_NAME
@@ -5826,24 +5803,17 @@ static void notify_rename(connection_struct *conn, bool is_dir,
 		goto out;
 	}
 
-	status = get_full_smb_filename(talloc_tos(), smb_fname_src,
-				       &fname_src);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-	status = get_full_smb_filename(talloc_tos(), smb_fname_dst,
-				       &fname_dst);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-
 	if (strcmp(parent_dir_src, parent_dir_dst) == 0) {
-		notify_fname(conn, NOTIFY_ACTION_OLD_NAME, mask, fname_src);
-		notify_fname(conn, NOTIFY_ACTION_NEW_NAME, mask, fname_dst);
+		notify_fname(conn, NOTIFY_ACTION_OLD_NAME, mask,
+			     smb_fname_src->base_name);
+		notify_fname(conn, NOTIFY_ACTION_NEW_NAME, mask,
+			     smb_fname_dst->base_name);
 	}
 	else {
-		notify_fname(conn, NOTIFY_ACTION_REMOVED, mask, fname_src);
-		notify_fname(conn, NOTIFY_ACTION_ADDED, mask, fname_dst);
+		notify_fname(conn, NOTIFY_ACTION_REMOVED, mask,
+			     smb_fname_src->base_name);
+		notify_fname(conn, NOTIFY_ACTION_ADDED, mask,
+			     smb_fname_dst->base_name);
 	}
 
 	/* this is a strange one. w2k3 gives an additional event for
@@ -5853,13 +5823,11 @@ static void notify_rename(connection_struct *conn, bool is_dir,
 		notify_fname(conn, NOTIFY_ACTION_MODIFIED,
 			     FILE_NOTIFY_CHANGE_ATTRIBUTES
 			     |FILE_NOTIFY_CHANGE_CREATION,
-			     fname_dst);
+			     smb_fname_dst->base_name);
 	}
  out:
 	TALLOC_FREE(parent_dir_src);
 	TALLOC_FREE(parent_dir_dst);
-	TALLOC_FREE(fname_src);
-	TALLOC_FREE(fname_dst);
 }
 
 /****************************************************************************

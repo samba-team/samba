@@ -33,7 +33,6 @@ bool can_access_file_acl(struct connection_struct *conn,
 	NTSTATUS status;
 	uint32_t access_granted;
 	struct security_descriptor *secdesc = NULL;
-	char *fname = NULL;
 	bool ret;
 
 	if (conn->server_info->utok.uid == 0 || conn->admin_user) {
@@ -41,13 +40,7 @@ bool can_access_file_acl(struct connection_struct *conn,
 		return true;
 	}
 
-	status = get_full_smb_filename(talloc_tos(), smb_fname, &fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		ret = false;
-		goto out;
-	}
-
-	status = SMB_VFS_GET_NT_ACL(conn, fname,
+	status = SMB_VFS_GET_NT_ACL(conn, smb_fname->base_name,
 				    (OWNER_SECURITY_INFORMATION |
 				     GROUP_SECURITY_INFORMATION |
 				     DACL_SECURITY_INFORMATION),
@@ -62,7 +55,6 @@ bool can_access_file_acl(struct connection_struct *conn,
 				 access_mask, &access_granted);
 	ret = NT_STATUS_IS_OK(status);
  out:
-	TALLOC_FREE(fname);
 	TALLOC_FREE(secdesc);
 	return ret;
 }

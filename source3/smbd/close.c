@@ -47,10 +47,7 @@ static NTSTATUS check_magic(struct files_struct *fsp)
 
 	ctx = talloc_stackframe();
 
-	status = get_full_smb_filename(ctx, fsp->fsp_name, &fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
+	fname = fsp->fsp_name->base_name;
 
 	if (!(p = strrchr_m(fname,'/'))) {
 		p = fname;

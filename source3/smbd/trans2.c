@@ -471,17 +471,13 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 		const struct smb_filename *smb_fname, struct ea_list *ea_list)
 {
 	char *fname = NULL;
-	NTSTATUS status;
 
 	if (!lp_ea_support(SNUM(conn))) {
 		return NT_STATUS_EAS_NOT_SUPPORTED;
 	}
 
-	status = get_full_smb_filename(talloc_tos(), smb_fname,
-				       &fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	/* For now setting EAs on streams isn't supported. */
+	fname = smb_fname->base_name;
 
 	for (;ea_list; ea_list = ea_list->next) {
 		int ret;
@@ -2039,7 +2035,7 @@ static void call_trans2findfirst(connection_struct *conn,
 
 	if (total_params < 13) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return;
+		goto out;
 	}
 
 	dirtype = SVAL(params,0);
@@ -2077,12 +2073,12 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 			ask_sharemode = false;
 			if (!lp_unix_extensions()) {
 				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
-				return;
+				goto out;
 			}
 			break;
 		default:
 			reply_nterror(req, NT_STATUS_INVALID_LEVEL);
-			return;
+			goto out;
 	}
 
 	srvstr_get_path_wcard(ctx, params, req->flags2, &directory,
@@ -2090,7 +2086,7 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 			      STR_TERMINATE, &ntstatus, &mask_contains_wcard);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		reply_nterror(req, ntstatus);
-		return;
+		goto out;
 	}
 
 	ntstatus = resolve_dfspath_wcard(ctx, conn,
@@ -2102,32 +2098,27 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 		if (NT_STATUS_EQUAL(ntstatus,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
 					ERRSRV, ERRbadpath);
-			return;
+			goto out;
 		}
 		reply_nterror(req, ntstatus);
-		return;
+		goto out;
 	}
 
 	ntstatus = unix_convert(ctx, conn, directory, &smb_dname,
 				(UCF_SAVE_LCOMP | UCF_ALLOW_WCARD_LCOMP));
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		reply_nterror(req, ntstatus);
-		return;
+		goto out;
 	}
 
 	mask = smb_dname->original_lcomp;
 
-	ntstatus = get_full_smb_filename(ctx, smb_dname, &directory);
-	TALLOC_FREE(smb_dname);
-	if (!NT_STATUS_IS_OK(ntstatus)) {
-		reply_nterror(req, ntstatus);
-		return;
-	}
+	directory = smb_dname->base_name;
 
 	ntstatus = check_name(conn, directory);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		reply_nterror(req, ntstatus);
-		return;
+		goto out;
 	}
 
 	p = strrchr_m(directory,'/');
@@ -2137,14 +2128,14 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 			mask = talloc_strdup(ctx,"*");
 			if (!mask) {
 				reply_nterror(req, NT_STATUS_NO_MEMORY);
-				return;
+				goto out;
 			}
 			mask_contains_wcard = True;
 		}
 		directory = talloc_strdup(talloc_tos(), "./");
 		if (!directory) {
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
-			return;
+			goto out;
 		}
 	} else {
 		*p = 0;
@@ -2157,7 +2148,7 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 
 		if (total_data < 4) {
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			return;
+			goto out;
 		}
 
 		ea_size = IVAL(pdata,0);
@@ -2165,19 +2156,19 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 			DEBUG(4,("call_trans2findfirst: Rejecting EA request with incorrect \
 total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pdata,0) ));
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			return;
+			goto out;
 		}
 
 		if (!lp_ea_support(SNUM(conn))) {
 			reply_doserror(req, ERRDOS, ERReasnotsupported);
-			return;
+			goto out;
 		}
 
 		/* Pull out the list of names. */
 		ea_list = read_ea_name_list(ctx, pdata + 4, ea_size - 4);
 		if (!ea_list) {
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			return;
+			goto out;
 		}
 	}
 
@@ -2185,7 +2176,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		*ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
 	if(*ppdata == NULL ) {
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		return;
+		goto out;
 	}
 	pdata = *ppdata;
 	data_end = pdata + max_data_bytes + DIR_ENTRY_SAFETY_MARGIN - 1;
@@ -2194,7 +2185,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	*pparams = (char *)SMB_REALLOC(*pparams, 10);
 	if (*pparams == NULL) {
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		return;
+		goto out;
 	}
 	params = *pparams;
 
@@ -2213,7 +2204,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		reply_nterror(req, ntstatus);
-		return;
+		goto out;
 	}
 
 	dptr_num = dptr_dnum(conn->dirptr);
@@ -2296,11 +2287,11 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		dptr_close(&dptr_num);
 		if (Protocol < PROTOCOL_NT1) {
 			reply_doserror(req, ERRDOS, ERRnofiles);
-			return;
+			goto out;
 		} else {
 			reply_botherror(req, NT_STATUS_NO_SUCH_FILE,
 					ERRDOS, ERRbadfile);
-			return;
+			goto out;
 		}
 	}
 
@@ -2339,7 +2330,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		char mangled_name[13];
 		name_to_8_3(mask, mangled_name, True, conn->params);
 	}
-
+ out:
+	TALLOC_FREE(smb_dname);
 	return;
 }
 
@@ -5122,8 +5114,6 @@ NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 		const struct smb_filename *smb_fname_old,
 		const struct smb_filename *smb_fname_new)
 {
-	char *oldname = NULL;
-	char *newname = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 
 	/* source must already exist. */
@@ -5141,25 +5131,22 @@ NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
 
-	status = get_full_smb_filename(ctx, smb_fname_new, &newname);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-	status = get_full_smb_filename(ctx, smb_fname_old, &oldname);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
+	/* Setting a hardlink to/from a stream isn't currently supported. */
+	if (is_ntfs_stream_smb_fname(smb_fname_old) ||
+	    is_ntfs_stream_smb_fname(smb_fname_new)) {
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	DEBUG(10,("hardlink_internals: doing hard link %s -> %s\n", newname, oldname ));
+	DEBUG(10,("hardlink_internals: doing hard link %s -> %s\n",
+		  smb_fname_old->base_name, smb_fname_new->base_name));
 
-	if (SMB_VFS_LINK(conn,oldname,newname) != 0) {
+	if (SMB_VFS_LINK(conn, smb_fname_old->base_name,
+			 smb_fname_new->base_name) != 0) {
 		status = map_nt_error_from_unix(errno);
 		DEBUG(3,("hardlink_internals: Error %s hard link %s -> %s\n",
-				 nt_errstr(status), newname, oldname));
+			 nt_errstr(status), smb_fname_old->base_name,
+			 smb_fname_new->base_name));
 	}
- out:
-	TALLOC_FREE(newname);
-	TALLOC_FREE(oldname);
 	return status;
 }
 

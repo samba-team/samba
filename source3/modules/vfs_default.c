@@ -218,27 +218,17 @@ static int vfswrap_open(vfs_handle_struct *handle,
 			struct smb_filename *smb_fname,
 			files_struct *fsp, int flags, mode_t mode)
 {
-	int result;
-	NTSTATUS status;
-	char *fname = NULL;
+	int result = -1;
 
 	START_PROFILE(syscall_open);
 
-	/*
-	 * XXX: Should an error be returned if there is a stream rather than
-	 * trying to open a filename with a ':'?
-	 */
-	status = get_full_smb_filename(talloc_tos(), smb_fname,
-				       &fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
-		return -1;
+	if (smb_fname->stream_name) {
+		errno = ENOENT;
+		goto out;
 	}
 
-	result = sys_open(fname, flags, mode);
-
-	TALLOC_FREE(fname);
-
+	result = sys_open(smb_fname->base_name, flags, mode);
+ out:
 	END_PROFILE(syscall_open);
 	return result;
 }
@@ -562,23 +552,17 @@ static int vfswrap_fsync(vfs_handle_struct *handle, files_struct *fsp)
 static int vfswrap_stat(vfs_handle_struct *handle,
 			struct smb_filename *smb_fname)
 {
-	int result;
-	NTSTATUS status;
-	char *fname = NULL;
+	int result = -1;
 
 	START_PROFILE(syscall_stat);
 
-	status = get_full_smb_filename(talloc_tos(), smb_fname,
-				       &fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
-		return -1;
+	if (smb_fname->stream_name) {
+		errno = ENOENT;
+		goto out;
 	}
 
-	result = sys_stat(fname, &smb_fname->st);
-
-	TALLOC_FREE(fname);
-
+	result = sys_stat(smb_fname->base_name, &smb_fname->st);
+ out:
 	END_PROFILE(syscall_stat);
 	return result;
 }
@@ -596,23 +580,17 @@ static int vfswrap_fstat(vfs_handle_struct *handle, files_struct *fsp, SMB_STRUC
 static int vfswrap_lstat(vfs_handle_struct *handle,
 			 struct smb_filename *smb_fname)
 {
-	int result;
-	NTSTATUS status;
-	char *fname = NULL;
+	int result = -1;
 
 	START_PROFILE(syscall_lstat);
 
-	status = get_full_smb_filename(talloc_tos(), smb_fname,
-				       &fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
-		return -1;
+	if (smb_fname->stream_name) {
+		errno = ENOENT;
+		goto out;
 	}
 
-	result = sys_lstat(fname, &smb_fname->st);
-
-	TALLOC_FREE(fname);
-
+	result = sys_lstat(smb_fname->base_name, &smb_fname->st);
+ out:
 	END_PROFILE(syscall_lstat);
 	return result;
 }
