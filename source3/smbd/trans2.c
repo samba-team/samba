@@ -2682,7 +2682,6 @@ static void samba_extended_info_version(struct smb_extended_info *extended_info)
 NTSTATUS smbd_do_qfsinfo(connection_struct *conn,
 			 TALLOC_CTX *mem_ctx,
 			 uint16_t info_level,
-			 SMB_STRUCT_STAT st,
 			 uint16_t flags2,
 			 unsigned int max_data_bytes,
 			 char **ppdata,
@@ -2694,6 +2693,9 @@ NTSTATUS smbd_do_qfsinfo(connection_struct *conn,
 	int snum = SNUM(conn);
 	char *fstype = lp_fstype(SNUM(conn));
 	uint32 additional_flags = 0;
+	struct smb_filename *smb_fname_dot = NULL;
+	SMB_STRUCT_STAT st;
+	NTSTATUS status;
 
 	if (IS_IPC(conn)) {
 		if (info_level != SMB_QUERY_CIFS_UNIX_INFO) {
@@ -2705,6 +2707,21 @@ NTSTATUS smbd_do_qfsinfo(connection_struct *conn,
 	}
 
 	DEBUG(3,("smbd_do_qfsinfo: level = %d\n", info_level));
+
+	status = create_synthetic_smb_fname(talloc_tos(), ".", NULL, NULL,
+					    &smb_fname_dot);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if(SMB_VFS_STAT(conn, smb_fname_dot) != 0) {
+		DEBUG(2,("stat of . failed (%s)\n", strerror(errno)));
+		TALLOC_FREE(smb_fname_dot);
+		return map_nt_error_from_unix(errno);
+	}
+
+	st = smb_fname_dot->st;
+	TALLOC_FREE(smb_fname_dot);
 
 	*ppdata = (char *)SMB_REALLOC(
 		*ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
@@ -3228,7 +3245,6 @@ static void call_trans2qfsinfo(connection_struct *conn,
 	char *params = *pparams;
 	uint16_t info_level;
 	int data_len = 0;
-	SMB_STRUCT_STAT st;
 	NTSTATUS status;
 
 	if (total_params < 2) {
@@ -3251,14 +3267,8 @@ static void call_trans2qfsinfo(connection_struct *conn,
 
 	DEBUG(3,("call_trans2qfsinfo: level = %d\n", info_level));
 
-	if(vfs_stat_smb_fname(conn,".",&st)!=0) {
-		DEBUG(2,("call_trans2qfsinfo: stat of . failed (%s)\n", strerror(errno)));
-		reply_doserror(req, ERRSRV, ERRinvdevice);
-		return;
-	}
-
 	status = smbd_do_qfsinfo(conn, req,
-				 info_level, st,
+				 info_level,
 				 req->flags2,
 				 max_data_bytes,
 				 ppdata, &data_len);

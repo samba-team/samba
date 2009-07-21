@@ -367,22 +367,12 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 		char *data = NULL;
 		int data_size = 0;
 		NTSTATUS status;
-		SMB_STRUCT_STAT st;
 
 		/* the levels directly map to the passthru levels */
 		file_info_level = in_file_info_class + 1000;
 
-		if (vfs_stat_smb_fname(conn,".",&st)!=0) {
-			DEBUG(2,("call_trans2qfsinfo: stat of . failed (%s)\n",
-				strerror(errno)));
-			status = map_nt_error_from_unix(errno);
-			tevent_req_nterror(req, status);
-			return tevent_req_post(req, ev);
-		}
-
 		status = smbd_do_qfsinfo(conn, state,
 					 file_info_level,
-					 st,
 					 STR_UNICODE,
 					 in_output_buffer_length,
 					 &data,
