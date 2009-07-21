@@ -7,6 +7,7 @@ import "misc.idl";
   version(1.1),
   endpoint("ncacn_ip_tcp:", "ncalrpc:"),
   helpstring("File Replication Service"),
+  helper("../librpc/ndr/ndr_frsrpc.h"),
   pointer_default(unique)
 ] 
 interface frsrpc
@@ -304,14 +305,14 @@ interface frsrpc
 			[value(0xFFFFFFFF)] uint32 bop;
 	} frsrpc_CommPktChunkData;
 
-	typedef [flag(NDR_NOALIGN)] struct {
+	typedef [public,flag(NDR_NOALIGN)] struct {
 		frsrpc_CommPktChunkType type;
 		[subcontext(4),switch_is(type)] frsrpc_CommPktChunkData data;
 	} frsrpc_CommPktChunk;
 
-	typedef [gensize,flag(NDR_NOALIGN)] struct {
-		/* TODO: make this dynamic */
-		frsrpc_CommPktChunk chunks[9];
+	typedef [nopull,nopush,flag(NDR_NOALIGN)] struct {
+		uint32 num_chunks; /* this doesn't appear on the wire */
+		frsrpc_CommPktChunk chunks[num_chunks];
 	} frsrpc_CommPktChunkCtr;
 
 	typedef [v1_enum] enum {

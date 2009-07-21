@@ -112,7 +112,7 @@ NDR_ROT_OBJ_FILES = ../librpc/gen_ndr/ndr_rot.o
 [SUBSYSTEM::NDR_FRSRPC]
 PUBLIC_DEPENDENCIES = LIBNDR
 
-NDR_FRSRPC_OBJ_FILES = ../librpc/gen_ndr/ndr_frsrpc.o
+NDR_FRSRPC_OBJ_FILES = ../librpc/gen_ndr/ndr_frsrpc.o ../librpc/ndr/ndr_frsrpc.o
 
 [SUBSYSTEM::NDR_FRSAPI]
 PUBLIC_DEPENDENCIES = LIBNDR
