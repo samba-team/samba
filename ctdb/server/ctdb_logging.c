@@ -144,6 +144,7 @@ int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile, bool use_sy
 
 	if (use_syslog) {
 		do_debug_v = ctdb_syslog_log;
+		do_debug_add_v = ctdb_syslog_log;
 		ctdb->log->use_syslog = true;
 	} else if (logfile == NULL || strcmp(logfile, "-") == 0) {
 		do_debug_v = ctdb_logfile_log;
