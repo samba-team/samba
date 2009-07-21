@@ -1018,8 +1018,7 @@ NTSTATUS filename_convert(TALLOC_CTX *ctx,
 				connection_struct *conn,
 				bool dfs_path,
 				const char *name_in,
-				struct smb_filename **pp_smb_fname,
-				char **pp_name)
+				struct smb_filename **pp_smb_fname)
 {
 	NTSTATUS status;
 	char *fname = NULL;
@@ -1046,22 +1045,15 @@ NTSTATUS filename_convert(TALLOC_CTX *ctx,
 		return status;
 	}
 
-	status = get_full_smb_filename(ctx, *pp_smb_fname, &fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	status = check_name(conn, fname);
+	status = check_name(conn, (*pp_smb_fname)->base_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3,("filename_convert: check_name failed "
 			"for name %s with %s\n",
-			fname,
+			smb_fname_str_dbg(*pp_smb_fname),
 			nt_errstr(status) ));
+		TALLOC_FREE(*pp_smb_fname);
 		return status;
 	}
 
-	if (pp_name != NULL) {
-		*pp_name = fname;
-	}
 	return status;
 }
