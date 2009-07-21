@@ -109,6 +109,25 @@ static void ctdb_logfile_log(const char *format, va_list ap)
 	}
 }
 
+static void ctdb_logfile_log_add(const char *format, va_list ap)
+{
+	char *s = NULL;
+	int ret;
+
+	ret = vasprintf(&s, format, ap);
+	if (ret == -1) {
+		const char *errstr = "vasprintf failed\n";
+
+		write(log_state->fd, errstr, strlen(errstr));
+		return;
+	}
+
+	if (s) {
+		write(log_state->fd, s, strlen(s));
+		free(s);
+	}
+}
+
 /*
   choose the logfile location
 */
@@ -128,6 +147,7 @@ int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile, bool use_sy
 		ctdb->log->use_syslog = true;
 	} else if (logfile == NULL || strcmp(logfile, "-") == 0) {
 		do_debug_v = ctdb_logfile_log;
+		do_debug_add_v = ctdb_logfile_log_add;
 		ctdb->log->fd = 1;
 		/* also catch stderr of subcommands to stdout */
 		ret = dup2(1, 2);
@@ -137,6 +157,7 @@ int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile, bool use_sy
 		}
 	} else {
 		do_debug_v = ctdb_logfile_log;
+		do_debug_add_v = ctdb_logfile_log_add;
 
 		ctdb->log->fd = open(logfile, O_WRONLY|O_APPEND|O_CREAT, 0666);
 		if (ctdb->log->fd == -1) {
