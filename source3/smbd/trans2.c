@@ -4748,7 +4748,6 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 	uint16 info_level;
 	unsigned int data_size = 0;
 	unsigned int param_size = 2;
-	char *fname = NULL;
 	struct smb_filename *smb_fname = NULL;
 	bool delete_pending = False;
 	struct timespec write_time_ts;
@@ -4861,6 +4860,8 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 		}
 
 	} else {
+		char *fname = NULL;
+
 		/* qpathinfo */
 		if (total_params < 7) {
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -4889,7 +4890,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 					req->flags2 & FLAGS2_DFS_PATHNAMES,
 					fname,
 					&smb_fname,
-					&fname);
+					NULL);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 				reply_botherror(req,
@@ -4969,7 +4970,8 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 		} else if (!VALID_STAT(smb_fname->st) &&
 			   SMB_VFS_STAT(conn, smb_fname) &&
 			   (info_level != SMB_INFO_IS_NAME_VALID)) {
-			ms_dfs_link = check_msdfs_link(conn, fname,
+			ms_dfs_link = check_msdfs_link(conn,
+						       smb_fname->base_name,
 						       &smb_fname->st);
 
 			if (!ms_dfs_link) {
@@ -4991,8 +4993,9 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 		}
 	}
 
-	DEBUG(3,("call_trans2qfilepathinfo %s (fnum = %d) level=%d call=%d total_data=%d\n",
-		fname,fsp ? fsp->fnum : -1, info_level,tran_call,total_data));
+	DEBUG(3,("call_trans2qfilepathinfo %s (fnum = %d) level=%d call=%d "
+		 "total_data=%d\n", smb_fname_str_dbg(smb_fname),
+		 fsp ? fsp->fnum : -1, info_level,tran_call,total_data));
 
 	/* Pull out any data sent here before we realloc. */
 	switch (info_level) {
@@ -7348,7 +7351,6 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 	char *params = *pparams;
 	char *pdata = *ppdata;
 	uint16 info_level;
-	char *fname = NULL;
 	struct smb_filename *smb_fname = NULL;
 	files_struct *fsp = NULL;
 	NTSTATUS status = NT_STATUS_OK;
@@ -7443,6 +7445,8 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 			}
 		}
 	} else {
+		char *fname = NULL;
+
 		/* set path info */
 		if (total_params < 7) {
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -7462,7 +7466,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 					 req->flags2 & FLAGS2_DFS_PATHNAMES,
 					 fname,
 					 &smb_fname,
-					 &fname);
+					 NULL);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 				reply_botherror(req,
@@ -7493,8 +7497,9 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 		}
 	}
 
-	DEBUG(3,("call_trans2setfilepathinfo(%d) %s (fnum %d) info_level=%d totdata=%d\n",
-		tran_call, fname, fsp ? fsp->fnum : -1, info_level,total_data));
+	DEBUG(3,("call_trans2setfilepathinfo(%d) %s (fnum %d) info_level=%d "
+		 "totdata=%d\n", tran_call, smb_fname_str_dbg(smb_fname),
+		 fsp ? fsp->fnum : -1, info_level,total_data));
 
 	/* Realloc the parameter size */
 	*pparams = (char *)SMB_REALLOC(*pparams,2);
