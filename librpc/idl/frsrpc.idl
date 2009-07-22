@@ -358,7 +358,28 @@ interface frsrpc
 
 	/*****************/
 	/* Function 0x02 */
-	[todo] void FRSRPC_START_PROMOTION_PARENT();
+	typedef [v1_enum,flag(NDR_PAHEX)] enum {
+		FRSRPC_PARENT_AUTH_LEVEL_ENCRYPTED_KERBEROS	= 0x00000000,
+		FRSRPC_PARENT_AUTH_LEVEL_NO_AUTHENTICATION	= 0x00000001
+	} frsrpc_PartnerAuthLevel;
+
+	WERROR frsrpc_FrsStartPromotionParent(
+		[in,unique,string,charset(UTF16)] uint16 *parent_account,
+		[in,unique,string,charset(UTF16)] uint16 *parent_password,
+		[in,unique,string,charset(UTF16)] uint16 *replica_set_name,
+		[in,unique,string,charset(UTF16)] uint16 *replica_set_type,
+		[in,unique,string,charset(UTF16)] uint16 *connection_name,
+		[in,unique,string,charset(UTF16)] uint16 *partner_name,
+		[in,unique,string,charset(UTF16)] uint16 *partner_princ_name,
+		[in] frsrpc_PartnerAuthLevel partner_auth_level,
+		[in,value(16),range(16,16)] uint32 __ndr_guid_size,
+		[in,unique,subcontext(4),subcontext_size(16)]
+			GUID *connection_guid,
+		[in,unique,subcontext(4),subcontext_size(16)]
+			GUID *partner_guid,
+		[in,out,unique,subcontext(4),subcontext_size(16)]
+			GUID *parent_guid
+	);
 
 	/*****************/
 	/* Function 0x03 */
