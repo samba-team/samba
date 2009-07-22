@@ -1227,25 +1227,93 @@ interface netlogon
 		NETR_TRUST_FLAG_AES       = 0x00000100
 	} netr_TrustFlags;
 
+	typedef [bitmap32bit] bitmap {
+		NETR_WS_FLAG_HANDLES_INBOUND_TRUSTS = 0x00000001,
+		NETR_WS_FLAG_HANDLES_SPN_UPDATE     = 0x00000002
+	} netr_WorkstationFlags;
+
+	typedef [bitmap16bit] bitmap {
+		NETR_VER_SUITE_BACKOFFICE		= 0x0004,
+		NETR_VER_SUITE_BLADE			= 0x0400,
+		NETR_VER_SUITE_COMPUTE_SERVER		= 0x4000,
+		NETR_VER_SUITE_DATACENTER		= 0x0080,
+		NETR_VER_SUITE_ENTERPRISE		= 0x0002,
+		NETR_VER_SUITE_EMBEDDEDNT		= 0x0040,
+		NETR_VER_SUITE_PERSONAL			= 0x0200,
+		NETR_VER_SUITE_SINGLEUSERTS		= 0x0100,
+		NETR_VER_SUITE_SMALLBUSINESS		= 0x0001,
+		NETR_VER_SUITE_SMALLBUSINESS_RESTRICTED	= 0x0020,
+		NETR_VER_SUITE_STORAGE_SERVER		= 0x2000,
+		NETR_VER_SUITE_TERMINAL			= 0x0010,
+		NETR_VER_SUITE_WH_SERVER		= 0x8000
+	} netr_SuiteMask;
+
+	typedef [bitmap8bit] bitmap {
+		NETR_VER_NT_DOMAIN_CONTROLLER	= 0x02,
+		NETR_VER_NT_SERVER		= 0x03,
+		NETR_VER_NT_WORKSTATION		= 0x01
+	} netr_ProductType;
+
 	typedef struct {
-		netr_Blob blob;
-		[string,charset(UTF16)] uint16 *workstation_domain;
-		[string,charset(UTF16)] uint16 *workstation_site;
-		[string,charset(UTF16)] uint16 *unknown1;
-		[string,charset(UTF16)] uint16 *unknown2;
-		[string,charset(UTF16)] uint16 *unknown3;
-		[string,charset(UTF16)] uint16 *unknown4;
-		lsa_BinaryString blob2;
-		lsa_String product;
-		lsa_String unknown5;
-		lsa_String unknown6;
-		uint32 unknown7[4];
-	} netr_DomainQuery1;
+		uint32 policy_size;
+		[size_is(policy_size)] uint8 *policy;
+	} netr_LsaPolicyInformation;
+
+	typedef struct {
+		[value(284)] uint32 OSVersionInfoSize;
+		uint32 MajorVersion;
+		uint32 MinorVersion;
+		uint32 BuildNumber;
+		uint32 PlatformId;
+		[charset(UTF16)] uint16 CSDVersion[128];
+		uint16 ServicePackMajor;
+		uint16 ServicePackMinor;
+		netr_SuiteMask SuiteMask;
+		netr_ProductType ProductType;
+		uint8 Reserved;
+	} netr_OsVersionInfoEx;
+
+	typedef struct {
+		/* these first 3 values come from the fact windows
+		   actually encodes this structure as a UNICODE_STRING
+		   - see MS-NRPC section 2.2.1.3.9 */
+		/* 142 * 2 = 284 (length of structure "netr_OsVersionInfoEx") */
+		[value(142)] uint32 length;
+		[value(0)] uint32 dummy;
+		[value(142)] uint32 size;
+		netr_OsVersionInfoEx os;
+	} netr_OsVersion;
+
+	typedef struct {
+		/* value is 284 when info != os, otherwise 0 (for length and
+		   size) */
+		[value(os == NULL ? 0 : 284)] uint16 length;
+		[value(os == NULL ? 0 : 284)] uint16 size;
+		netr_OsVersion *os;
+	} netr_OsVersionContainer;
+
+	typedef struct {
+		netr_LsaPolicyInformation lsa_policy;
+		[string,charset(UTF16)] uint16 *dns_hostname;
+		[string,charset(UTF16)] uint16 *sitename;
+		[string,charset(UTF16)] uint16 *dummy1;
+		[string,charset(UTF16)] uint16 *dummy2;
+		[string,charset(UTF16)] uint16 *dummy3;
+		[string,charset(UTF16)] uint16 *dummy4;
+		netr_OsVersionContainer os_version;
+		lsa_String os_name;
+		lsa_String dummy_string3;
+		lsa_String dummy_string4;
+		netr_WorkstationFlags workstation_flags;
+		uint32 dummy_long2;
+		uint32 dummy_long3;
+		uint32 dummy_long4;
+	} netr_WorkstationInformation;
 
 	typedef union {
-		[case(1)] netr_DomainQuery1 *query1;
-		[case(2)] netr_DomainQuery1 *query1;
-	} netr_DomainQuery;
+		[case(1)] netr_WorkstationInformation *workstation_info;
+		[case(2)] netr_WorkstationInformation *lsa_policy_info;
+	} netr_WorkstationInfo;
 
 	typedef struct {
 		/* these first 3 values come from the fact windows
@@ -1268,64 +1336,62 @@ interface netlogon
 
 	typedef struct {
 		lsa_String domainname;
-		lsa_String fulldomainname;
-		lsa_String forest;
-		GUID        guid;
-		dom_sid2    *sid;
+		lsa_String dns_domainname;
+		lsa_String dns_forestname;
+		GUID domain_guid;
+		dom_sid2 *domain_sid;
 		netr_trust_extension_container trust_extension;
-		lsa_String dummystring[3];
-		uint32     dummy[4];
-	} netr_DomainTrustInfo;
+		lsa_String dummy_string2;
+		lsa_String dummy_string3;
+		lsa_String dummy_string4;
+		uint32 dummy_long1;
+		uint32 dummy_long2;
+		uint32 dummy_long3;
+		uint32 dummy_long4;
+	} netr_OneDomainInfo;
 
 	typedef struct {
-		uint32 policy_size;
-		[size_is(policy_size)] uint8 *policy;
-	} netr_LsaPolicyInfo;
-
-	typedef [public,bitmap32bit] bitmap {
-		NETR_WS_FLAG_HANDLES_INBOUND_TRUSTS = 0x00000001,
-		NETR_WS_FLAG_HANDLES_SPN_UPDATE     = 0x00000002
-	} netr_WorkstationFlags;
-
-	typedef struct {
-		netr_DomainTrustInfo domaininfo;
-		uint32 num_trusts;
-		[size_is(num_trusts)] netr_DomainTrustInfo *trusts;
-		netr_LsaPolicyInfo lsa_policy;
+		netr_OneDomainInfo primary_domain;
+		uint32 trusted_domain_count;
+		[size_is(trusted_domain_count)] netr_OneDomainInfo *trusted_domains;
+		netr_LsaPolicyInformation lsa_policy;
 		lsa_String dns_hostname;
-		lsa_String dummystring[3];
+		lsa_String dummy_string2;
+		lsa_String dummy_string3;
+		lsa_String dummy_string4;
 		netr_WorkstationFlags workstation_flags;
 		uint32 supported_enc_types;
-		uint32 dummy[2];
-	} netr_DomainInfo1;
+		uint32 dummy_long3;
+		uint32 dummy_long4;
+	} netr_DomainInformation;
 
 	typedef union {
-		[case(1)] netr_DomainInfo1 *info1;
-		[case(2)] netr_DomainInfo1 *info2;
+		[case(1)] netr_DomainInformation *domain_info;
+		[case(2)] netr_LsaPolicyInformation *lsa_policy_info;
 	} netr_DomainInfo;
 	
 	NTSTATUS netr_LogonGetDomainInfo(
-		[in]         [string,charset(UTF16)] uint16 server_name[],
+		[in]         [string,charset(UTF16)] uint16 *server_name,
 		[in,unique]  [string,charset(UTF16)] uint16 *computer_name,
 		[in,ref]     netr_Authenticator *credential,
 		[in,out,ref] netr_Authenticator *return_authenticator,
 		[in]	     uint32 level,
-		[in,switch_is(level)] netr_DomainQuery query,
+		[in,ref,switch_is(level)] netr_WorkstationInfo *query,
 		[out,ref,switch_is(level)] netr_DomainInfo *info
 		);
 
+	/*****************/
+	/* Function 0x1e */
 	typedef [flag(NDR_PAHEX)] struct {
 		uint8 data[512];
 		uint32 length;
 	} netr_CryptPassword;
 
-	/*****************/
-	/* Function 0x1e */
 	NTSTATUS netr_ServerPasswordSet2(
 		[in,unique] [string,charset(UTF16)] uint16 *server_name,
-		[in]  [string,charset(UTF16)] uint16 account_name[],
+		[in]  [string,charset(UTF16)] uint16 *account_name,
 		[in]  netr_SchannelType secure_channel_type,
-		[in]  [string,charset(UTF16)] uint16 computer_name[],
+		[in]  [string,charset(UTF16)] uint16 *computer_name,
 		[in,ref] netr_Authenticator *credential,
 		[out,ref] netr_Authenticator *return_authenticator,
 		[in,ref] netr_CryptPassword *new_password
