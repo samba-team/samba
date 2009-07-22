@@ -1,0 +1,83 @@
+#include "idl_types.h"
+
+import "misc.idl";
+
+[
+  uuid("897e2e5f-93f3-4376-9c9c-fd2277495c27"),
+  version(1.0),
+  endpoint("ncacn_ip_tcp:", "ncalrpc:"),
+  helpstring("File Replication Service DFS-R"),
+  pointer_default(unique)
+]
+interface frstrans
+{
+	/*****************/
+	/* Function 0x00 */
+	[todo] void FRSTRANS_CHECK_CONNECTIVITY();
+
+	/*****************/
+	/* Function 0x01 */
+	[todo] void FRSTRANS_ESTABLISH_CONNECTION();
+
+	/*****************/
+	/* Function 0x02 */
+	[todo] void FRSTRANS_ESTABLISH_SESSION();
+
+	/*****************/
+	/* Function 0x03 */
+	[todo] void FRSTRANS_REQUEST_UPDATES();
+
+	/*****************/
+	/* Function 0x04 */
+	[todo] void FRSTRANS_REQUEST_VERSION_VECTOR();
+
+	/*****************/
+	/* Function 0x05 */
+	[todo] void FRSTRANS_ASYNC_POLL();
+
+	/*****************/
+	/* Function 0x06 */
+	[todo] void FRSTRANS_REQUEST_RECORDS();
+
+	/*****************/
+	/* Function 0x07 */
+	[todo] void FRSTRANS_UPDATE_CANCEL();
+
+	/*****************/
+	/* Function 0x08 */
+	[todo] void FRSTRANS_RAW_GET_FILE_DATA();
+
+	/*****************/
+	/* Function 0x09 */
+	[todo] void FRSTRANS_RDC_GET_SIGNATURES();
+
+	/*****************/
+	/* Function 0x0a */
+	[todo] void FRSTRANS_RDC_PUSH_SOURCE_NEEDS();
+
+	/*****************/
+	/* Function 0x0b */
+	[todo] void FRSTRANS_RDC_GET_FILE_DATA();
+
+	/*****************/
+	/* Function 0x0c */
+	[todo] void FRSTRANS_RDC_CLOSE();
+
+	/*****************/
+	/* Function 0x0d */
+	[todo] void FRSTRANS_INITIALIZE_FILE_TRANSFER_ASYNC();
+
+	/*****************/
+	/* Function 0x0e */
+	[todo] void FRSTRANS_OPNUM_0E_NOT_USED_ON_THE_WIRE();
+
+	/* The following functions are new in Windows 2008 */
+
+	/*****************/
+	/* Function 0x0f */
+	[todo] void FRSTRANS_RAW_GET_FILE_DATA_ASYNC();
+
+	/*****************/
+	/* Function 0x10 */
+	[todo] void FRSTRANS_RDC_GET_FILE_DATA_ASYNC();
+}
