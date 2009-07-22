@@ -175,6 +175,8 @@ bool stat_cache_lookup(connection_struct *conn,
 	DATA_BLOB data_val;
 	char *name;
 	TALLOC_CTX *ctx = talloc_tos();
+	struct smb_filename *smb_fname = NULL;
+	NTSTATUS status;
 
 	*pp_dirpath = NULL;
 	*pp_start = *pp_name;
@@ -274,14 +276,25 @@ bool stat_cache_lookup(connection_struct *conn,
 		  "-> [%s]\n", chk_name, translated_path ));
 	DO_PROFILE_INC(statcache_hits);
 
-	if (vfs_stat_smb_fname(conn, translated_path, pst) != 0) {
+	status = create_synthetic_smb_fname(talloc_tos(), translated_path,
+					    NULL, NULL, &smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(chk_name);
+		TALLOC_FREE(translated_path);
+		return false;
+	}
+
+	if (SMB_VFS_STAT(conn, smb_fname) != 0) {
 		/* Discard this entry - it doesn't exist in the filesystem. */
 		memcache_delete(smbd_memcache(), STAT_CACHE,
 				data_blob_const(chk_name, strlen(chk_name)));
 		TALLOC_FREE(chk_name);
 		TALLOC_FREE(translated_path);
+		TALLOC_FREE(smb_fname);
 		return False;
 	}
+	*pst = smb_fname->st;
+	TALLOC_FREE(smb_fname);
 
 	if (!sizechanged) {
 		memcpy(*pp_name, translated_path,
