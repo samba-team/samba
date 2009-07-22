@@ -5,6 +5,7 @@
 
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004-2008
    Copyright (C) Stefan Metzmacher <metze@samba.org>  2005
+   Copyright (C) Matthias Dieter Wallnöfer            2009
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -1053,14 +1054,14 @@ static WERROR dcesrv_netr_DsRGetSiteName(struct dcesrv_call_state *dce_call, TAL
 
 
 /*
-  fill in a netr_DomainTrustInfo from a ldb search result
+  fill in a netr_OneDomainInfo from a ldb search result
 */
-static NTSTATUS fill_domain_trust_info(TALLOC_CTX *mem_ctx,
-				       struct loadparm_context *lp_ctx,
-				       struct ldb_context *sam_ctx,
-				       struct ldb_message *res,
-				       struct netr_DomainTrustInfo *info, 
-				       bool is_local, bool is_trust_list)
+static NTSTATUS fill_one_domain_info(TALLOC_CTX *mem_ctx,
+				     struct loadparm_context *lp_ctx,
+				     struct ldb_context *sam_ctx,
+				     struct ldb_message *res,
+				     struct netr_OneDomainInfo *info,
+				     bool is_local, bool is_trust_list)
 {
 	ZERO_STRUCTP(info);
 
@@ -1078,15 +1079,15 @@ static NTSTATUS fill_domain_trust_info(TALLOC_CTX *mem_ctx,
 
 	if (is_trust_list) {
 		/* MS-NRPC 3.5.4.3.9 - must be set to NULL for trust list */
-		info->forest.string = NULL;
+		info->dns_forestname.string = NULL;
 	} else {
 		char *p;
 		/* TODO: we need a common function for pulling the forest */
-		info->forest.string = ldb_dn_canonical_string(info, ldb_get_root_basedn(sam_ctx));
-		if (!info->forest.string) {
+		info->dns_forestname.string = ldb_dn_canonical_string(info, ldb_get_root_basedn(sam_ctx));
+		if (!info->dns_forestname.string) {
 			return NT_STATUS_NO_SUCH_DOMAIN;		
 		}
-		p = strchr(info->forest.string, '/');
+		p = strchr(info->dns_forestname.string, '/');
 		if (p) {
 			*p = '\0';
 		}
@@ -1094,14 +1095,14 @@ static NTSTATUS fill_domain_trust_info(TALLOC_CTX *mem_ctx,
 
 	if (is_local) {
 		info->domainname.string = lp_sam_name(lp_ctx);
-		info->fulldomainname.string = lp_realm(lp_ctx);
-		info->guid = samdb_result_guid(res, "objectGUID");
-		info->sid = samdb_result_dom_sid(mem_ctx, res, "objectSid");
+		info->dns_domainname.string = lp_realm(lp_ctx);
+		info->domain_guid = samdb_result_guid(res, "objectGUID");
+		info->domain_sid = samdb_result_dom_sid(mem_ctx, res, "objectSid");
 	} else {
 		info->domainname.string = samdb_result_string(res, "flatName", NULL);
-		info->fulldomainname.string = samdb_result_string(res, "trustPartner", NULL);
-		info->guid = samdb_result_guid(res, "objectGUID");
-		info->sid = samdb_result_dom_sid(mem_ctx, res, "securityIdentifier");
+		info->dns_domainname.string = samdb_result_string(res, "trustPartner", NULL);
+		info->domain_guid = samdb_result_guid(res, "objectGUID");
+		info->domain_sid = samdb_result_dom_sid(mem_ctx, res, "securityIdentifier");
 	}
 
 	return NT_STATUS_OK;
@@ -1114,84 +1115,212 @@ static NTSTATUS fill_domain_trust_info(TALLOC_CTX *mem_ctx,
   It has an important role in convaying details about the client, such
   as Operating System, Version, Service Pack etc.
 */
-static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-					struct netr_LogonGetDomainInfo *r)
+static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call,
+	TALLOC_CTX *mem_ctx, struct netr_LogonGetDomainInfo *r)
 {
-	const char * const attrs[] = { "objectSid", 
-				       "objectGUID", "flatName", "securityIdentifier",
-				       "trustPartner", NULL };
+	struct netlogon_creds_CredentialState *creds;
+	const char * const attrs[] = { "objectSid", "objectGUID", "flatName",
+		"securityIdentifier", "trustPartner", NULL };
+	const char *old_dns_hostname;
 	struct ldb_context *sam_ctx;
-	struct ldb_message **res1, **res2;
-	struct netr_DomainInfo1 *info1;
+	struct ldb_message **res1, **res2, *new_msg;
+	struct ldb_dn *workstation_dn;
+	struct netr_DomainInformation *domain_info;
+	struct netr_LsaPolicyInformation *lsa_policy_info;
+	struct netr_OsVersionInfoEx *os_version;
 	int ret1, ret2, i;
 	NTSTATUS status;
-
-	const char *local_domain;
 
 	status = dcesrv_netr_creds_server_step_check(dce_call,
 						     mem_ctx, 
 						     r->in.computer_name, 
 						     r->in.credential, 
 						     r->out.return_authenticator,
-						     NULL);
+						     &creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,(__location__ " Bad credentials - error\n"));
 	}
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, dce_call->conn->auth_state.session_info);
+	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx,
+		dce_call->conn->dce_ctx->lp_ctx,
+		system_session(mem_ctx, dce_call->conn->dce_ctx->lp_ctx));
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
 
-	/* we need to do two searches. The first will pull our primary
-	   domain and the second will pull any trusted domains. Our
-	   primary domain is also a "trusted" domain, so we need to
-	   put the primary domain into the lists of returned trusts as
-	   well */
-	ret1 = gendb_search_dn(sam_ctx, mem_ctx, samdb_base_dn(sam_ctx), &res1, attrs);
-	if (ret1 != 1) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
+	switch (r->in.level) {
+	case 1: /* Domain information */
 
-	/* try and find the domain */
-	local_domain = lp_sam_name(dce_call->conn->dce_ctx->lp_ctx);
+		workstation_dn = ldb_dn_new_fmt(mem_ctx, sam_ctx, "<SID=%s>",
+			dom_sid_string(mem_ctx, creds->sid));
+		NT_STATUS_HAVE_NO_MEMORY(workstation_dn);
 
-	ret2 = gendb_search(sam_ctx, mem_ctx, NULL, &res2, attrs, "(objectClass=trustedDomain)");
-	if (ret2 == -1) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
+		/* Gets the old DNS hostname */
+		old_dns_hostname = samdb_search_string_v(sam_ctx, mem_ctx,
+			workstation_dn,	"dNSHostName", "", NULL);
 
-	info1 = talloc(mem_ctx, struct netr_DomainInfo1);
-	NT_STATUS_HAVE_NO_MEMORY(info1);
+		/* Gets host informations and put them in our directory */
+		new_msg = ldb_msg_new(mem_ctx);
+		NT_STATUS_HAVE_NO_MEMORY(new_msg);
 
-	ZERO_STRUCTP(info1);
+		new_msg->dn = workstation_dn;
 
-	info1->num_trusts = ret2 + 1;
-	info1->trusts = talloc_array(mem_ctx, struct netr_DomainTrustInfo, 
-				       info1->num_trusts);
-	NT_STATUS_HAVE_NO_MEMORY(info1->trusts);
+		/* Deletes old OS version values */
+		samdb_msg_add_delete(sam_ctx, mem_ctx, new_msg,
+			"operatingSystemServicePack");
+		samdb_msg_add_delete(sam_ctx, mem_ctx, new_msg,
+			"operatingSystemVersion");
 
-	status = fill_domain_trust_info(mem_ctx, dce_call->conn->dce_ctx->lp_ctx, sam_ctx, res1[0], &info1->domaininfo, 
-					true, false);
-	NT_STATUS_NOT_OK_RETURN(status);
+		if (samdb_replace(sam_ctx, mem_ctx, new_msg) != LDB_SUCCESS) {
+			DEBUG(3,("Impossible to update samdb: %s\n",
+				ldb_errstring(sam_ctx)));
+		}
 
-	for (i=0;i<ret2;i++) {
-		status = fill_domain_trust_info(mem_ctx, dce_call->conn->dce_ctx->lp_ctx, sam_ctx, res2[i], &info1->trusts[i], 
-						false, true);
+		talloc_free(new_msg);
+
+		new_msg = ldb_msg_new(mem_ctx);
+		NT_STATUS_HAVE_NO_MEMORY(new_msg);
+
+		new_msg->dn = workstation_dn;
+
+		/* Sets the OS name */
+		samdb_msg_set_string(sam_ctx, mem_ctx, new_msg,
+			"operatingSystem",
+			r->in.query->workstation_info->os_name.string);
+
+		/*
+		 * Sets informations from "os_version". On a empty structure
+		 * the values are cleared.
+		 */
+		if (r->in.query->workstation_info->os_version.os != NULL) {
+			os_version = &r->in.query->workstation_info->os_version.os->os;
+
+			samdb_msg_set_string(sam_ctx, mem_ctx, new_msg,
+				"operatingSystemServicePack",
+				talloc_asprintf(mem_ctx, os_version->CSDVersion));
+
+			samdb_msg_set_string(sam_ctx, mem_ctx, new_msg,
+				"operatingSystemVersion",
+				talloc_asprintf(mem_ctx, "%d.%d (%d)",
+					os_version->MajorVersion,
+					os_version->MinorVersion,
+					os_version->BuildNumber
+				)
+			);
+		}
+
+		/*
+		 * Updates the "dNSHostname" and the "servicePrincipalName"s
+		 * since the client wishes that the server should handle this
+		 * for him ("NETR_WS_FLAG_HANDLES_SPN_UPDATE" not set).
+		 * See MS-NRPC section 3.5.4.3.9
+		 */
+		if ((r->in.query->workstation_info->workstation_flags
+			& NETR_WS_FLAG_HANDLES_SPN_UPDATE) == 0) {
+
+			samdb_msg_add_string(sam_ctx, mem_ctx, new_msg,
+				"dNSHostname",
+				r->in.query->workstation_info->dns_hostname);
+			samdb_msg_add_string(sam_ctx, mem_ctx, new_msg,
+				"servicePrincipalName",
+				talloc_asprintf(mem_ctx, "HOST/%s",
+				r->in.computer_name)
+			);
+			samdb_msg_add_string(sam_ctx, mem_ctx, new_msg,
+				"servicePrincipalName",
+				talloc_asprintf(mem_ctx, "HOST/%s",
+				r->in.query->workstation_info->dns_hostname)
+			);
+		}
+
+		if (samdb_replace(sam_ctx, mem_ctx, new_msg) != LDB_SUCCESS) {
+			DEBUG(3,("Impossible to update samdb: %s\n",
+				ldb_errstring(sam_ctx)));
+		}
+
+		talloc_free(new_msg);
+
+		/* Writes back the domain information */
+
+		/* We need to do two searches. The first will pull our primary
+		   domain and the second will pull any trusted domains. Our
+		   primary domain is also a "trusted" domain, so we need to
+		   put the primary domain into the lists of returned trusts as
+		   well. */
+		ret1 = gendb_search_dn(sam_ctx, mem_ctx, samdb_base_dn(sam_ctx),
+			&res1, attrs);
+		if (ret1 != 1) {
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		ret2 = gendb_search(sam_ctx, mem_ctx, NULL, &res2, attrs,
+			"(objectClass=trustedDomain)");
+		if (ret2 == -1) {
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		domain_info = talloc(mem_ctx, struct netr_DomainInformation);
+		NT_STATUS_HAVE_NO_MEMORY(domain_info);
+
+		ZERO_STRUCTP(domain_info);
+
+		/* Informations about the local and trusted domains */
+
+		status = fill_one_domain_info(mem_ctx,
+			dce_call->conn->dce_ctx->lp_ctx,
+			sam_ctx, res1[0], &domain_info->primary_domain,
+			true, false);
 		NT_STATUS_NOT_OK_RETURN(status);
+
+		domain_info->trusted_domain_count = ret2 + 1;
+		domain_info->trusted_domains = talloc_array(mem_ctx,
+			struct netr_OneDomainInfo,
+			domain_info->trusted_domain_count);
+		NT_STATUS_HAVE_NO_MEMORY(domain_info->trusted_domains);
+
+		for (i=0;i<ret2;i++) {
+			status = fill_one_domain_info(mem_ctx,
+				dce_call->conn->dce_ctx->lp_ctx,
+				sam_ctx, res2[i],
+				&domain_info->trusted_domains[i],
+				false, true);
+			NT_STATUS_NOT_OK_RETURN(status);
+		}
+
+		status = fill_one_domain_info(mem_ctx,
+			dce_call->conn->dce_ctx->lp_ctx, sam_ctx, res1[0],
+			&domain_info->trusted_domains[i], true, true);
+		NT_STATUS_NOT_OK_RETURN(status);
+
+		/* Other host domain informations */
+
+		lsa_policy_info = talloc(mem_ctx,
+			struct netr_LsaPolicyInformation);
+		NT_STATUS_HAVE_NO_MEMORY(lsa_policy_info);
+		ZERO_STRUCTP(lsa_policy_info);
+
+		domain_info->lsa_policy = *lsa_policy_info;
+
+		domain_info->dns_hostname.string = old_dns_hostname;
+		domain_info->workstation_flags =
+			r->in.query->workstation_info->workstation_flags;
+		domain_info->supported_enc_types = 0; /* w2008 gives this 0 */
+
+		r->out.info->domain_info = domain_info;
+	break;
+	case 2: /* LSA policy information - not used at the moment */
+		lsa_policy_info = talloc(mem_ctx,
+			struct netr_LsaPolicyInformation);
+		NT_STATUS_HAVE_NO_MEMORY(lsa_policy_info);
+		ZERO_STRUCTP(lsa_policy_info);
+
+		r->out.info->lsa_policy_info = lsa_policy_info;
+	break;
+	default:
+		return NT_STATUS_INVALID_LEVEL;
+	break;
 	}
-
-	status = fill_domain_trust_info(mem_ctx, dce_call->conn->dce_ctx->lp_ctx, sam_ctx, res1[0], &info1->trusts[i], 
-					true, true);
-	NT_STATUS_NOT_OK_RETURN(status);
-
-	info1->dns_hostname.string = lp_realm(dce_call->conn->dce_ctx->lp_ctx);
-	info1->workstation_flags = 
-		NETR_WS_FLAG_HANDLES_INBOUND_TRUSTS | NETR_WS_FLAG_HANDLES_SPN_UPDATE;
-	info1->supported_enc_types = 0; /* w2008 gives this 0 */
-
-	r->out.info->info1 = info1;
 
 	return NT_STATUS_OK;
 }
