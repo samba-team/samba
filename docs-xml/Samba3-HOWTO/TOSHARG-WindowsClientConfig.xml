@@ -13,7 +13,7 @@
 <para>
 <indexterm><primary>network difficulty</primary></indexterm>
 <indexterm><primary>network client</primary></indexterm>
-<indexterm><primary>client client instructions</primary></indexterm>
+<indexterm><primary>client instructions</primary></indexterm>
 Occasionally network administrators report difficulty getting Microsoft Windows clients to interoperate
 correctly with Samba servers. It seems that some folks just cannot accept the fact that the right way
 to configure an MS Windows network client is precisely as one would do when using MS Windows NT4 or 200x
@@ -141,7 +141,7 @@ that are in common use today. These are:
 			Many network administrators will want to use DHCP to configure all client TCP/IP
 			protocol stack settings. (For information on how to configure the ISC DHCP server
 			for Windows client support see <link linkend="DHCP">the DNS and DHCP Configuration Guide</link>,
-			<link linkend="DHCP">DHCP Server</link>.
+			<link linkend="DHCP">DHCP Server</link>).
 			</para>
 
 			<para>
@@ -245,7 +245,7 @@ that are in common use today. These are:
 <indexterm><primary>protocol stack settings</primary></indexterm>
 			Many network administrators will want to use DHCP to configure all client TCP/IP
 			protocol stack settings. (For information on how to configure the ISC DHCP server
-			for Windows client support, see, <link linkend="DHCP"></link>.
+			for Windows client support, see, <link linkend="DHCP"></link>).
 			</para>
 
 			<para>
@@ -339,7 +339,7 @@ that are in common use today. These are:
 			Many network administrators will want to use DHCP to configure all client TCP/IP
 			protocol stack settings. (For information on how to configure the ISC DHCP server
 			for Windows client support see <link linkend="DHCP">the DNS and DHCP Configuration Guide</link>,
-			<link linkend="DHCP">DHCP Server</link>. The default setting on Windows Me workstations is for DHCP-enabled operation
+			<link linkend="DHCP">DHCP Server</link>). The default setting on Windows Me workstations is for DHCP-enabled operation
 			(i.e., <guimenu>Obtain IP address automatically</guimenu> is enabled). See <link linkend="WME002"></link>.
 			<figure id="WME002"><title>IP Address.</title><imagefile>WME002</imagefile></figure>
 			</para>
