@@ -391,7 +391,7 @@ interface frsrpc
 
 	/*****************/
 	/* Function 0x03 */
-	[todo] void FRSRPC_NOP();
+	WERROR frsrpc_FrsNOP();
 
 	/*****************/
 	/* Function 0x04 */
