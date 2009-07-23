@@ -59,6 +59,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 	struct private_data *priv = talloc_get_type(ldb_module_get_private(module), struct private_data);
 	char **server_sasl;
 	const struct dsdb_schema *schema;
+	int *val;
 
 	ldb = ldb_module_get_ctx(module);
 	schema = dsdb_get_schema(ldb);
@@ -77,7 +78,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 		}
 	}
 
-	if (do_attribute(attrs, "supportedControl")) {
+	if (priv && do_attribute(attrs, "supportedControl")) {
  		int i;
 		for (i = 0; i < priv->num_controls; i++) {
 			char *control = talloc_strdup(msg, priv->controls[i]);
@@ -91,7 +92,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
  		}
  	}
 
-	if (do_attribute(attrs, "namingContexts")) {
+	if (priv && do_attribute(attrs, "namingContexts")) {
 		int i;
 		for (i = 0; i < priv->num_partitions; i++) {
 			struct ldb_dn *dn = priv->partitions[i];
@@ -201,9 +202,33 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 		}
 	}
 
-	if (schema && do_attribute_explicit(attrs, "vendorVersion")) {
+	if (do_attribute_explicit(attrs, "vendorVersion")) {
 		if (ldb_msg_add_fmt(msg, "vendorVersion", 
 				    "%s", SAMBA_VERSION_STRING) != 0) {
+			goto failed;
+		}
+	}
+
+	if (priv && do_attribute(attrs, "domainFunctionality")
+	    && (val = talloc_get_type(ldb_get_opaque(ldb, "domainFunctionality"), int))) {
+		if (ldb_msg_add_fmt(msg, "domainFunctionality", 
+				    "%d", *val) != 0) {
+			goto failed;
+		}
+	}
+
+	if (priv && do_attribute(attrs, "forestFunctionality")
+	    && (val = talloc_get_type(ldb_get_opaque(ldb, "forestFunctionality"), int))) {
+		if (ldb_msg_add_fmt(msg, "forestFunctionality", 
+				    "%d", *val) != 0) {
+			goto failed;
+		}
+	}
+
+	if (priv && do_attribute(attrs, "domainControllerFunctionality")
+	    && (val = talloc_get_type(ldb_get_opaque(ldb, "domainControllerFunctionality"), int))) {
+		if (ldb_msg_add_fmt(msg, "domainControllerFunctionality", 
+				    "%d", *val) != 0) {
 			goto failed;
 		}
 	}
@@ -394,12 +419,17 @@ static int rootdse_request(struct ldb_module *module, struct ldb_request *req)
 
 static int rootdse_init(struct ldb_module *module)
 {
+	int ret;
 	struct ldb_context *ldb;
+	struct ldb_result *res;
 	struct private_data *data;
+	const char *attrs[] = { "msDS-Behavior-Version", NULL };
+	const char *ds_attrs[] = { "dsServiceName", NULL };
+	TALLOC_CTX *mem_ctx;
 
 	ldb = ldb_module_get_ctx(module);
 
-	data = talloc(module, struct private_data);
+	data = talloc_zero(module, struct private_data);
 	if (data == NULL) {
 		return -1;
 	}
@@ -412,7 +442,107 @@ static int rootdse_init(struct ldb_module *module)
 
 	ldb_set_default_dns(ldb);
 
-	return ldb_next_init(module);
+	ret = ldb_next_init(module);
+
+	if (ret) {
+		return ret;
+	}
+
+	mem_ctx = talloc_new(data);
+	if (!mem_ctx) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/* Now that the partitions are set up, do a search for:
+	   - domainControllerFunctionality
+	   - domainFunctionality
+	   - forestFunctionality
+
+	   Then stuff these values into an opaque
+	*/
+	ret = ldb_search(ldb, mem_ctx, &res,
+			 ldb_get_default_basedn(ldb),
+			 LDB_SCOPE_BASE, attrs, NULL);
+	if (ret == LDB_SUCCESS && res->count == 1) {
+		int domain_behaviour_version
+			= ldb_msg_find_attr_as_int(res->msgs[0], 
+						   "msDS-Behavior-Version", -1);
+		if (domain_behaviour_version != -1) {
+			int *val = talloc(ldb, int);
+			if (!val) {
+				ldb_oom(ldb);
+				talloc_free(mem_ctx);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+			*val = domain_behaviour_version;
+			ret = ldb_set_opaque(ldb, "domainFunctionality", val);
+			if (ret != LDB_SUCCESS) {
+				talloc_free(mem_ctx);
+				return ret;
+			}
+		}
+	}
+
+	ret = ldb_search(ldb, mem_ctx, &res,
+			 samdb_partitions_dn(ldb, mem_ctx),
+			 LDB_SCOPE_BASE, attrs, NULL);
+	if (ret == LDB_SUCCESS && res->count == 1) {
+		int forest_behaviour_version
+			= ldb_msg_find_attr_as_int(res->msgs[0], 
+						   "msDS-Behavior-Version", -1);
+		if (forest_behaviour_version != -1) {
+			int *val = talloc(ldb, int);
+			if (!val) {
+				ldb_oom(ldb);
+				talloc_free(mem_ctx);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+			*val = forest_behaviour_version;
+			ret = ldb_set_opaque(ldb, "forestFunctionality", val);
+			if (ret != LDB_SUCCESS) {
+				talloc_free(mem_ctx);
+				return ret;
+			}
+		}
+	}
+
+	ret = ldb_search(ldb, mem_ctx, &res,
+			 ldb_dn_new(mem_ctx, ldb, ""),
+			 LDB_SCOPE_BASE, ds_attrs, NULL);
+	if (ret == LDB_SUCCESS && res->count == 1) {
+		struct ldb_dn *ds_dn
+			= ldb_msg_find_attr_as_dn(ldb, mem_ctx, res->msgs[0], 
+						  "dsServiceName");
+		if (ds_dn) {
+			ret = ldb_search(ldb, mem_ctx, &res, ds_dn, 
+					 LDB_SCOPE_BASE, attrs, NULL);
+			if (ret == LDB_SUCCESS && res->count == 1) {
+				int domain_controller_behaviour_version
+					= ldb_msg_find_attr_as_int(res->msgs[0], 
+								   "msDS-Behavior-Version", -1);
+				if (domain_controller_behaviour_version != -1) {
+					int *val = talloc(ldb, int);
+					if (!val) {
+						ldb_oom(ldb);
+						talloc_free(mem_ctx);
+					return LDB_ERR_OPERATIONS_ERROR;
+					}
+					*val = domain_controller_behaviour_version;
+					ret = ldb_set_opaque(ldb, 
+							     "domainControllerFunctionality", val);
+					if (ret != LDB_SUCCESS) {
+						talloc_free(mem_ctx);
+						return ret;
+					}
+				}
+			}
+		}
+	}
+
+	talloc_free(mem_ctx);
+	
+	return LDB_SUCCESS;
 }
 
 static int rootdse_modify(struct ldb_module *module, struct ldb_request *req)

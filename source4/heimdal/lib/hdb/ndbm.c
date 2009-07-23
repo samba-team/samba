@@ -33,8 +33,6 @@
 
 #include "hdb_locl.h"
 
-RCSID("$Id$");
-
 #if HAVE_NDBM
 
 #if defined(HAVE_GDBM_NDBM_H)
@@ -348,6 +346,7 @@ hdb_ndbm_create(krb5_context context, HDB **db,
     }
     (*db)->hdb_master_key_set = 0;
     (*db)->hdb_openp = 0;
+    (*db)->hdb_capability_flags = HDB_CAP_F_HANDLE_ENTERPRISE_PRINCIPAL;
     (*db)->hdb_open = NDBM_open;
     (*db)->hdb_close = NDBM_close;
     (*db)->hdb_fetch = _hdb_fetch;

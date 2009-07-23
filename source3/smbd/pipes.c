@@ -37,6 +37,7 @@ NTSTATUS open_np_file(struct smb_request *smb_req, const char *name,
 {
 	struct connection_struct *conn = smb_req->conn;
 	struct files_struct *fsp;
+	struct smb_filename *smb_fname = NULL;
 	NTSTATUS status;
 
 	status = file_new(smb_req, conn, &fsp);
@@ -50,7 +51,19 @@ NTSTATUS open_np_file(struct smb_request *smb_req, const char *name,
 	fsp->vuid = smb_req->vuid;
 	fsp->can_lock = false;
 	fsp->access_mask = FILE_READ_DATA | FILE_WRITE_DATA;
-	string_set(&fsp->fsp_name, name);
+
+	status = create_synthetic_smb_fname(talloc_tos(), name, NULL, NULL,
+					    &smb_fname);
+		if (!NT_STATUS_IS_OK(status)) {
+		file_free(smb_req, fsp);
+		return status;
+	}
+	status = fsp_set_smb_fname(fsp, smb_fname);
+	TALLOC_FREE(smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		file_free(smb_req, fsp);
+		return status;
+	}
 
 	status = np_open(NULL, name, conn->client_address,
 			 conn->server_info, &fsp->fake_file_handle);
@@ -179,7 +192,7 @@ void reply_pipe_write(struct smb_request *req)
 	data = req->buf + 3;
 
 	DEBUG(6, ("reply_pipe_write: %x name: %s len: %d\n", (int)fsp->fnum,
-		  fsp->fsp_name, (int)state->numtowrite));
+		  fsp_str_dbg(fsp), (int)state->numtowrite));
 
 	subreq = np_write_send(state, smbd_event_context(),
 			       fsp->fake_file_handle, data, state->numtowrite);
@@ -203,8 +216,14 @@ static void pipe_write_done(struct tevent_req *subreq)
 
 	status = np_write_recv(subreq, &nwritten);
 	TALLOC_FREE(subreq);
-	if ((nwritten == 0 && state->numtowrite != 0) || (nwritten < 0)) {
-		reply_unixerror(req, ERRDOS, ERRnoaccess);
+	if (nwritten < 0) {
+		reply_nterror(req, status);
+		goto send;
+	}
+
+	/* Looks bogus to me now. Needs to be removed ? JRA. */
+	if ((nwritten == 0 && state->numtowrite != 0)) {
+		reply_doserror(req, ERRDOS, ERRnoaccess);
 		goto send;
 	}
 
@@ -269,7 +288,7 @@ void reply_pipe_write_and_X(struct smb_request *req)
 		 == (PIPE_START_MESSAGE|PIPE_RAW_MODE));
 
 	DEBUG(6, ("reply_pipe_write_and_X: %x name: %s len: %d\n",
-		  (int)fsp->fnum, fsp->fsp_name, (int)state->numtowrite));
+		  (int)fsp->fnum, fsp_str_dbg(fsp), (int)state->numtowrite));
 
 	data = (uint8_t *)smb_base(req->inbuf) + smb_doff;
 
@@ -283,7 +302,7 @@ void reply_pipe_write_and_X(struct smb_request *req)
 			DEBUG(0,("reply_pipe_write_and_X: start of message "
 				 "set and not enough data sent.(%u)\n",
 				 (unsigned int)state->numtowrite ));
-			reply_unixerror(req, ERRDOS, ERRnoaccess);
+			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 			return;
 		}
 
@@ -313,8 +332,15 @@ static void pipe_write_andx_done(struct tevent_req *subreq)
 
 	status = np_write_recv(subreq, &nwritten);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status) || (nwritten != state->numtowrite)) {
-		reply_unixerror(req, ERRDOS,ERRnoaccess);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+		goto done;
+	}
+
+	/* Looks bogus to me now. Is this error message correct ? JRA. */
+	if (nwritten != state->numtowrite) {
+		reply_doserror(req, ERRDOS,ERRnoaccess);
 		goto done;
 	}
 

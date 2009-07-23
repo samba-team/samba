@@ -349,6 +349,9 @@ static const smb_socket_option socket_options[] = {
 #ifdef TCP_FASTACK
   {"TCP_FASTACK", IPPROTO_TCP, TCP_FASTACK, 0, OPT_INT},
 #endif
+#ifdef TCP_QUICKACK
+  {"TCP_QUICKACK", IPPROTO_TCP, TCP_QUICKACK, 0, OPT_BOOL},
+#endif
   {NULL,0,0,0,0}};
 
 /****************************************************************************

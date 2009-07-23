@@ -994,25 +994,25 @@ NTSTATUS pdb_lookup_names(const DOM_SID *domain_sid,
 }
 #endif
 
-bool pdb_get_account_policy(int policy_index, uint32 *value)
+bool pdb_get_account_policy(enum pdb_policy_type type, uint32_t *value)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
 	NTSTATUS status;
 
 	become_root();
-	status = pdb->get_account_policy(pdb, policy_index, value);
+	status = pdb->get_account_policy(pdb, type, value);
 	unbecome_root();
 
 	return NT_STATUS_IS_OK(status);	
 }
 
-bool pdb_set_account_policy(int policy_index, uint32 value)
+bool pdb_set_account_policy(enum pdb_policy_type type, uint32_t value)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
 	NTSTATUS status;
 
 	become_root();
-	status = pdb->set_account_policy(pdb, policy_index, value);
+	status = pdb->set_account_policy(pdb, type, value);
 	unbecome_root();
 
 	return NT_STATUS_IS_OK(status);
@@ -1174,14 +1174,14 @@ static NTSTATUS pdb_default_update_login_attempts (struct pdb_methods *methods, 
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS pdb_default_get_account_policy(struct pdb_methods *methods, int policy_index, uint32 *value)
+static NTSTATUS pdb_default_get_account_policy(struct pdb_methods *methods, enum pdb_policy_type type, uint32_t *value)
 {
-	return account_policy_get(policy_index, value) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+	return account_policy_get(type, value) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
-static NTSTATUS pdb_default_set_account_policy(struct pdb_methods *methods, int policy_index, uint32 value)
+static NTSTATUS pdb_default_set_account_policy(struct pdb_methods *methods, enum pdb_policy_type type, uint32_t value)
 {
-	return account_policy_set(policy_index, value) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+	return account_policy_set(type, value) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
 static NTSTATUS pdb_default_get_seq_num(struct pdb_methods *methods, time_t *seq_num)

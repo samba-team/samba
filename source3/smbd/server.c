@@ -94,6 +94,7 @@ static void smb_conf_updated(struct messaging_context *msg,
 {
 	DEBUG(10,("smb_conf_updated: Got message saying smb.conf was "
 		  "updated. Reloading.\n"));
+	change_to_root_user();
 	reload_services(False);
 }
 
@@ -868,6 +869,7 @@ static void exit_server_common(enum server_exit_reason how,
 		if (am_parent) {
 			pidfile_unlink();
 		}
+		gencache_stabilize();
 	}
 
 	/* if we had any open SMB connections when we exited then we

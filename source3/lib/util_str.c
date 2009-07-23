@@ -96,14 +96,14 @@ int StrCaseCmp(const char *s, const char *t)
 			return +1;
 	}
 
-	if (!push_ucs2_talloc(NULL, &buffer_s, ps, &size)) {
+	if (!push_ucs2_talloc(talloc_tos(), &buffer_s, ps, &size)) {
 		return strcmp(ps, pt);
 		/* Not quite the right answer, but finding the right one
 		   under this failure case is expensive, and it's pretty
 		   close */
 	}
 
-	if (!push_ucs2_talloc(NULL, &buffer_t, pt, &size)) {
+	if (!push_ucs2_talloc(talloc_tos(), &buffer_t, pt, &size)) {
 		TALLOC_FREE(buffer_s);
 		return strcmp(ps, pt);
 		/* Not quite the right answer, but finding the right one
@@ -157,14 +157,14 @@ int StrnCaseCmp(const char *s, const char *t, size_t len)
 		return 0;
 	}
 
-	if (!push_ucs2_talloc(NULL, &buffer_s, ps, &size)) {
+	if (!push_ucs2_talloc(talloc_tos(), &buffer_s, ps, &size)) {
 		return strncmp(ps, pt, len-n);
 		/* Not quite the right answer, but finding the right one
 		   under this failure case is expensive,
 		   and it's pretty close */
 	}
 
-	if (!push_ucs2_talloc(NULL, &buffer_t, pt, &size)) {
+	if (!push_ucs2_talloc(talloc_tos(), &buffer_t, pt, &size)) {
 		TALLOC_FREE(buffer_s);
 		return strncmp(ps, pt, len-n);
 		/* Not quite the right answer, but finding the right one
@@ -366,7 +366,7 @@ size_t str_charnum(const char *s)
 {
 	size_t ret, converted_size;
 	smb_ucs2_t *tmpbuf2 = NULL;
-	if (!push_ucs2_talloc(NULL, &tmpbuf2, s, &converted_size)) {
+	if (!push_ucs2_talloc(talloc_tos(), &tmpbuf2, s, &converted_size)) {
 		return 0;
 	}
 	ret = strlen_w(tmpbuf2);
@@ -384,7 +384,7 @@ size_t str_ascii_charnum(const char *s)
 {
 	size_t ret, converted_size;
 	char *tmpbuf2 = NULL;
-	if (!push_ascii_talloc(NULL, &tmpbuf2, s, &converted_size)) {
+	if (!push_ascii_talloc(talloc_tos(), &tmpbuf2, s, &converted_size)) {
 		return 0;
 	}
 	ret = strlen(tmpbuf2);
@@ -455,7 +455,7 @@ bool strhasupper(const char *s)
 	bool ret;
 	size_t converted_size;
 
-	if (!push_ucs2_talloc(NULL, &tmp, s, &converted_size)) {
+	if (!push_ucs2_talloc(talloc_tos(), &tmp, s, &converted_size)) {
 		return false;
 	}
 
@@ -480,7 +480,7 @@ bool strhaslower(const char *s)
 	bool ret;
 	size_t converted_size;
 
-	if (!push_ucs2_talloc(NULL, &tmp, s, &converted_size)) {
+	if (!push_ucs2_talloc(talloc_tos(), &tmp, s, &converted_size)) {
 		return false;
 	}
 
@@ -1177,7 +1177,7 @@ char *strchr_m(const char *src, char c)
 	s = src;
 #endif
 
-	if (!push_ucs2_talloc(NULL, &ws, s, &converted_size)) {
+	if (!push_ucs2_talloc(talloc_tos(), &ws, s, &converted_size)) {
 		/* Wrong answer, but what can we do... */
 		return strchr(src, c);
 	}
@@ -1187,7 +1187,7 @@ char *strchr_m(const char *src, char c)
 		return NULL;
 	}
 	*p = 0;
-	if (!pull_ucs2_talloc(NULL, &s2, ws, &converted_size)) {
+	if (!pull_ucs2_talloc(talloc_tos(), &s2, ws, &converted_size)) {
 		SAFE_FREE(ws);
 		/* Wrong answer, but what can we do... */
 		return strchr(src, c);
@@ -1248,7 +1248,7 @@ char *strrchr_m(const char *s, char c)
 		char *ret;
 		size_t converted_size;
 
-		if (!push_ucs2_talloc(NULL, &ws, s, &converted_size)) {
+		if (!push_ucs2_talloc(talloc_tos(), &ws, s, &converted_size)) {
 			/* Wrong answer, but what can we do. */
 			return strrchr(s, c);
 		}
@@ -1258,7 +1258,7 @@ char *strrchr_m(const char *s, char c)
 			return NULL;
 		}
 		*p = 0;
-		if (!pull_ucs2_talloc(NULL, &s2, ws, &converted_size)) {
+		if (!pull_ucs2_talloc(talloc_tos(), &s2, ws, &converted_size)) {
 			TALLOC_FREE(ws);
 			/* Wrong answer, but what can we do. */
 			return strrchr(s, c);
@@ -1283,7 +1283,7 @@ char *strnrchr_m(const char *s, char c, unsigned int n)
 	char *ret;
 	size_t converted_size;
 
-	if (!push_ucs2_talloc(NULL, &ws, s, &converted_size)) {
+	if (!push_ucs2_talloc(talloc_tos(), &ws, s, &converted_size)) {
 		/* Too hard to try and get right. */
 		return NULL;
 	}
@@ -1293,7 +1293,7 @@ char *strnrchr_m(const char *s, char c, unsigned int n)
 		return NULL;
 	}
 	*p = 0;
-	if (!pull_ucs2_talloc(NULL, &s2, ws, &converted_size)) {
+	if (!pull_ucs2_talloc(talloc_tos(), &s2, ws, &converted_size)) {
 		TALLOC_FREE(ws);
 		/* Too hard to try and get right. */
 		return NULL;
@@ -1352,12 +1352,12 @@ char *strstr_m(const char *src, const char *findstr)
 	s = src;
 #endif
 
-	if (!push_ucs2_talloc(NULL, &src_w, src, &converted_size)) {
+	if (!push_ucs2_talloc(talloc_tos(), &src_w, src, &converted_size)) {
 		DEBUG(0,("strstr_m: src malloc fail\n"));
 		return NULL;
 	}
 
-	if (!push_ucs2_talloc(NULL, &find_w, findstr, &converted_size)) {
+	if (!push_ucs2_talloc(talloc_tos(), &find_w, findstr, &converted_size)) {
 		TALLOC_FREE(src_w);
 		DEBUG(0,("strstr_m: find malloc fail\n"));
 		return NULL;
@@ -1372,7 +1372,7 @@ char *strstr_m(const char *src, const char *findstr)
 	}
 
 	*p = 0;
-	if (!pull_ucs2_talloc(NULL, &s2, src_w, &converted_size)) {
+	if (!pull_ucs2_talloc(talloc_tos(), &s2, src_w, &converted_size)) {
 		TALLOC_FREE(src_w);
 		TALLOC_FREE(find_w);
 		DEBUG(0,("strstr_m: dest malloc fail\n"));
@@ -1932,7 +1932,7 @@ char *base64_encode_data_blob(TALLOC_CTX *mem_ctx, DATA_BLOB data)
 	result = TALLOC_ARRAY(mem_ctx, char, output_len); /* get us plenty of space */
 	SMB_ASSERT(result != NULL);
 
-	while (len-- && out_cnt < (data.length * 2) - 5) {
+	while (len--) {
 		int c = (unsigned char) *(data.data++);
 		bits += c;
 		char_count++;

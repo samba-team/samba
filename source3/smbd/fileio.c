@@ -57,6 +57,7 @@ ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n)
 
 	/* you can't read from print files */
 	if (fsp->print_file) {
+		errno = EBADF;
 		return -1;
 	}
 
@@ -102,7 +103,7 @@ tryagain:
 	}
 
 	DEBUG(10,("read_file (%s): pos = %.0f, size = %lu, returned %lu\n",
-		fsp->fsp_name, (double)pos, (unsigned long)n, (long)ret ));
+		  fsp_str_dbg(fsp), (double)pos, (unsigned long)n, (long)ret));
 
 	fsp->fh->pos += ret;
 	fsp->fh->position_information = fsp->fh->pos;
@@ -135,7 +136,7 @@ static ssize_t real_write_file(struct smb_request *req,
 	}
 
 	DEBUG(10,("real_write_file (%s): pos = %.0f, size = %lu, returned %ld\n",
-		fsp->fsp_name, (double)pos, (unsigned long)n, (long)ret ));
+		  fsp_str_dbg(fsp), (double)pos, (unsigned long)n, (long)ret));
 
 	if (ret != -1) {
 		fsp->fh->pos += ret;
@@ -163,8 +164,9 @@ static int wcp_file_size_change(files_struct *fsp)
 	wcp->file_size = wcp->offset + wcp->data_size;
 	ret = SMB_VFS_FTRUNCATE(fsp, wcp->file_size);
 	if (ret == -1) {
-		DEBUG(0,("wcp_file_size_change (%s): ftruncate of size %.0f error %s\n",
-			fsp->fsp_name, (double)wcp->file_size, strerror(errno) ));
+		DEBUG(0,("wcp_file_size_change (%s): ftruncate of size %.0f "
+			 "error %s\n", fsp_str_dbg(fsp),
+			 (double)wcp->file_size, strerror(errno)));
 	}
 	return ret;
 }
@@ -178,7 +180,7 @@ static void update_write_time_handler(struct event_context *ctx,
 
 	/* Remove the timed event handler. */
 	TALLOC_FREE(fsp->update_write_time_event);
-	DEBUG(5, ("Update write time on %s\n", fsp->fsp_name));
+	DEBUG(5, ("Update write time on %s\n", fsp_str_dbg(fsp)));
 
 	/* change the write time if not already changed by someone else */
 	update_write_time(fsp);
@@ -243,7 +245,8 @@ void trigger_write_time_update_immediate(struct files_struct *fsp)
         }
 
 	TALLOC_FREE(fsp->update_write_time_event);
-	DEBUG(5, ("Update write time immediate on %s\n", fsp->fsp_name));
+	DEBUG(5, ("Update write time immediate on %s\n",
+		  fsp_str_dbg(fsp)));
 
 	fsp->update_write_time_triggered = true;
 
@@ -284,28 +287,17 @@ ssize_t write_file(struct smb_request *req,
 	}
 
 	if (!fsp->modified) {
-		struct smb_filename *smb_fname = NULL;
-		NTSTATUS status;
-
 		fsp->modified = True;
 
-		status = create_synthetic_smb_fname_split(talloc_tos(),
-							  fsp->fsp_name, NULL,
-							  &smb_fname);
-		if (!NT_STATUS_IS_OK(status)) {
-			errno = map_errno_from_nt_status(status);
-			return -1;
-		}
-
-		if (SMB_VFS_FSTAT(fsp, &smb_fname->st) == 0) {
+		if (SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st) == 0) {
 			int dosmode;
 			trigger_write_time_update(fsp);
-			dosmode = dos_mode(fsp->conn, smb_fname);
+			dosmode = dos_mode(fsp->conn, fsp->fsp_name);
 			if ((lp_store_dos_attributes(SNUM(fsp->conn)) ||
 					MAP_ARCHIVE(fsp->conn)) &&
 					!IS_DOS_ARCHIVE(dosmode)) {
-				file_set_dosmode(fsp->conn, smb_fname,
-						dosmode | aARCH, NULL, false);
+				file_set_dosmode(fsp->conn, fsp->fsp_name,
+						 dosmode | aARCH, NULL, false);
 			}
 
 			/*
@@ -315,11 +307,10 @@ ssize_t write_file(struct smb_request *req,
 
 			if (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) && !wcp) {
 				setup_write_cache(fsp,
-						  smb_fname->st.st_ex_size);
+						 fsp->fsp_name->st.st_ex_size);
 				wcp = fsp->wcp;
 			}
 		}
-		TALLOC_FREE(smb_fname);
 	}
 
 #ifdef WITH_PROFILE
@@ -381,8 +372,10 @@ nonop=%u allocated=%u active=%u direct=%u perfect=%u readhits=%u\n",
 		return total_written;
 	}
 
-	DEBUG(9,("write_file (%s)(fd=%d pos=%.0f size=%u) wcp->offset=%.0f wcp->data_size=%u\n",
-		fsp->fsp_name, fsp->fh->fd, (double)pos, (unsigned int)n, (double)wcp->offset, (unsigned int)wcp->data_size));
+	DEBUG(9,("write_file (%s)(fd=%d pos=%.0f size=%u) wcp->offset=%.0f "
+		 "wcp->data_size=%u\n", fsp_str_dbg(fsp), fsp->fh->fd,
+		 (double)pos, (unsigned int)n, (double)wcp->offset,
+		 (unsigned int)wcp->data_size));
 
 	fsp->fh->pos = pos + n;
 
@@ -827,7 +820,8 @@ void delete_write_cache(files_struct *fsp)
 	SAFE_FREE(wcp->data);
 	SAFE_FREE(fsp->wcp);
 
-	DEBUG(10,("delete_write_cache: File %s deleted write cache\n", fsp->fsp_name ));
+	DEBUG(10,("delete_write_cache: File %s deleted write cache\n",
+		  fsp_str_dbg(fsp)));
 }
 
 /****************************************************************************
@@ -870,7 +864,7 @@ static bool setup_write_cache(files_struct *fsp, SMB_OFF_T file_size)
 	allocated_write_caches++;
 
 	DEBUG(10,("setup_write_cache: File %s allocated write cache size %lu\n",
-		fsp->fsp_name, (unsigned long)wcp->alloc_size ));
+		  fsp_str_dbg(fsp), (unsigned long)wcp->alloc_size));
 
 	return True;
 }
@@ -887,7 +881,7 @@ void set_filelen_write_cache(files_struct *fsp, SMB_OFF_T file_size)
 			char *msg;
 			if (asprintf(&msg, "set_filelen_write_cache: size change "
 				 "on file %s with write cache size = %lu\n",
-				 fsp->fsp_name,
+				 fsp->fsp_name->base_name,
 				 (unsigned long)fsp->wcp->data_size) != -1) {
 				smb_panic(msg);
 			} else {
@@ -969,7 +963,13 @@ NTSTATUS sync_file(connection_struct *conn, files_struct *fsp, bool write_throug
 int fsp_stat(files_struct *fsp, SMB_STRUCT_STAT *pst)
 {
 	if (fsp->fh->fd == -1) {
-		return vfs_stat_smb_fname(fsp->conn, fsp->fsp_name, pst);
+		int ret;
+
+		ret = SMB_VFS_STAT(fsp->conn, fsp->fsp_name);
+		if (ret != -1) {
+			*pst = fsp->fsp_name->st;
+		}
+		return ret;
 	} else {
 		return SMB_VFS_FSTAT(fsp, pst);
 	}

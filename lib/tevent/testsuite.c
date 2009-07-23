@@ -66,7 +66,13 @@ static bool test_event_context(struct torture_context *test,
 	const char *backend = (const char *)test_data;
 	int alarm_count=0, info_count=0;
 	struct tevent_fd *fde;
-	struct signal_event *se1, *se2, *se3;
+#ifdef SA_RESTART
+	struct tevent_signal *se1 = NULL;
+#endif
+	struct tevent_signal *se2 = NULL;
+#ifdef SA_SIGINFO
+	struct tevent_signal *se3 = NULL;
+#endif
 	int finished=0;
 	struct timeval t;
 	char c = 0;
@@ -92,7 +98,9 @@ static bool test_event_context(struct torture_context *test,
 	event_add_timed(ev_ctx, ev_ctx, timeval_current_ofs(2,0), 
 			finished_handler, &finished);
 
+#ifdef SA_RESTART
 	se1 = event_add_signal(ev_ctx, ev_ctx, SIGALRM, SA_RESTART, count_handler, &alarm_count);
+#endif
 	se2 = event_add_signal(ev_ctx, ev_ctx, SIGALRM, SA_RESETHAND, count_handler, &alarm_count);
 #ifdef SA_SIGINFO
 	se3 = event_add_signal(ev_ctx, ev_ctx, SIGUSR1, SA_SIGINFO, count_handler, &info_count);
@@ -120,7 +128,9 @@ static bool test_event_context(struct torture_context *test,
 
 	torture_comment(test, "Got %.2f pipe events/sec\n", fde_count/timeval_elapsed(&t));
 
+#ifdef SA_RESTART
 	talloc_free(se1);
+#endif
 
 	torture_assert_int_equal(test, alarm_count, 1+fde_count, "alarm count mismatch");
 

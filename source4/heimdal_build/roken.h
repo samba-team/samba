@@ -37,6 +37,10 @@
 #define HAVE_SETEUID 1
 #endif
 
+#ifndef HAVE_STRNLEN
+#define HAVE_STRNLEN
+#endif
+
 #ifndef HAVE_STRNDUP
 #define HAVE_STRNDUP
 #endif
@@ -51,6 +55,14 @@
 
 #ifndef HAVE_STRCASECMP
 #define HAVE_STRCASECMP
+#endif
+
+#ifndef HAVE_ASPRINTF
+#define HAVE_ASPRINTF
+#endif
+
+#ifndef HAVE_VASPRINTF
+#define HAVE_VASPRINTF
 #endif
 
 #ifndef HAVE_MKSTEMP
@@ -83,6 +95,10 @@
 
 #ifndef HAVE_INNETGR
 #define HAVE_INNETGR
+#endif
+
+#ifndef HAVE_INET_ATON
+#define HAVE_INET_ATON
 #endif
 
 /* we lie about having pidfile() so that NetBSD5 can compile. Nothing

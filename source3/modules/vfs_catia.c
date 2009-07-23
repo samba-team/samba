@@ -103,7 +103,8 @@ static SMB_STRUCT_DIR *catia_opendir(vfs_handle_struct *handle,
 }
 
 static SMB_STRUCT_DIRENT *catia_readdir(vfs_handle_struct *handle,
-					SMB_STRUCT_DIR *dirp)
+					SMB_STRUCT_DIR *dirp,
+					SMB_STRUCT_STAT *sbuf)
 {
 	SMB_STRUCT_DIRENT *result = NULL;
 	SMB_STRUCT_DIRENT *newdirent = NULL;

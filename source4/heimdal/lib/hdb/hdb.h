@@ -54,7 +54,15 @@ enum hdb_lockop{ HDB_RLOCK, HDB_WLOCK };
 #define HDB_F_GET_ANY		28	/* fetch any of client,server,krbtgt */
 #define HDB_F_CANON		32	/* want canonicalition */
 
+/* hdb_capability_flags */
 #define HDB_CAP_F_HANDLE_ENTERPRISE_PRINCIPAL 1
+#define HDB_CAP_F_HANDLE_PASSWORDS	2
+#define HDB_CAP_F_PASSWORD_UPDATE_KEYS	4
+
+/* auth status values */
+#define HDB_AUTH_SUCCESS		0
+#define HDB_AUTH_WRONG_PASSWORD		1
+#define HDB_AUTH_INVALID_SIGNATURE	2
 
 /* key usage for master key */
 #define HDB_KU_MKEY	0x484442
@@ -184,6 +192,34 @@ typedef struct HDB{
      * point for the module.
      */
     krb5_error_code (*hdb_destroy)(krb5_context, struct HDB*);
+    /**
+     * Change password.
+     *
+     * Will update keys for the entry when given password.  The new
+     * keys must be written into the entry and and will then later be
+     * ->hdb_store() into the database. The backend will still perform
+     * all other operations, increasing the kvno, and update
+     * modification timestamp.
+     * 
+     * The backen need to call _kadm5_set_keys() and perform password
+     * quality checks.
+     */
+    krb5_error_code (*hdb_password)(krb5_context, struct HDB*, hdb_entry_ex*, const char *, int);
+
+    /**
+     * Auth feedback
+     *
+     * This is a feedback call that allows backends that provides
+     * lockout functionality to register failure and/or successes.
+     *
+     * In case the entry is locked out, the backend should set the
+     * hdb_entry.flags.locked-out flag.
+     */
+    krb5_error_code (*hdb_auth_status)(krb5_context, struct HDB *, hdb_entry_ex *, int);
+    /**
+     * Check is delegation is allowed.
+     */
+    krb5_error_code (*hdb_check_constrained_delegation)(krb5_context, struct HDB *, hdb_entry_ex *, krb5_const_principal);
 }HDB;
 
 #define HDB_INTERFACE_VERSION	5

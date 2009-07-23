@@ -336,7 +336,7 @@ int ldapsam_search_suffix_by_name(struct ldapsam_privates *ldap_state,
 					  const char **attr)
 {
 	char *filter = NULL;
-	char *escape_user = escape_ldap_string_alloc(user);
+	char *escape_user = escape_ldap_string(talloc_tos(), user);
 	int ret = -1;
 
 	if (!escape_user) {
@@ -350,7 +350,7 @@ int ldapsam_search_suffix_by_name(struct ldapsam_privates *ldap_state,
 	filter = talloc_asprintf(talloc_tos(), "(&%s%s)", "(uid=%u)",
 		get_objclass_filter(ldap_state->schema_ver));
 	if (!filter) {
-		SAFE_FREE(escape_user);
+		TALLOC_FREE(escape_user);
 		return LDAP_NO_MEMORY;
 	}
 	/*
@@ -360,7 +360,7 @@ int ldapsam_search_suffix_by_name(struct ldapsam_privates *ldap_state,
 
 	filter = talloc_all_string_sub(talloc_tos(),
 				filter, "%u", escape_user);
-	SAFE_FREE(escape_user);
+	TALLOC_FREE(escape_user);
 	if (!filter) {
 		return LDAP_NO_MEMORY;
 	}
@@ -902,7 +902,7 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 
 	pwHistLen = 0;
 
-	pdb_get_account_policy(AP_PASSWORD_HISTORY, &pwHistLen);
+	pdb_get_account_policy(PDB_POLICY_PASSWORD_HISTORY, &pwHistLen);
 	if (pwHistLen > 0){
 		uint8 *pwhist = NULL;
 		int i;
@@ -1327,7 +1327,7 @@ static bool init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 		if (need_update(sampass, PDB_PWHISTORY)) {
 			char *pwstr = NULL;
 			uint32 pwHistLen = 0;
-			pdb_get_account_policy(AP_PASSWORD_HISTORY, &pwHistLen);
+			pdb_get_account_policy(PDB_POLICY_PASSWORD_HISTORY, &pwHistLen);
 
 			pwstr = SMB_MALLOC_ARRAY(char, 1024);
 			if (!pwstr) {
@@ -1404,7 +1404,7 @@ static bool init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 		uint16 badcount = pdb_get_bad_password_count(sampass);
 		time_t badtime = pdb_get_bad_password_time(sampass);
 		uint32 pol;
-		pdb_get_account_policy(AP_BAD_ATTEMPT_LOCKOUT, &pol);
+		pdb_get_account_policy(PDB_POLICY_BAD_ATTEMPT_LOCKOUT, &pol);
 
 		DEBUG(3, ("updating bad password fields, policy=%u, count=%u, time=%u\n",
 			(unsigned int)pol, (unsigned int)badcount, (unsigned int)badtime));
@@ -1701,6 +1701,7 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 		char *utf8_password;
 		char *utf8_dn;
 		size_t converted_size;
+		int ret;
 
 		if (!ldap_state->is_nds_ldap) {
 
@@ -1732,14 +1733,31 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 		}
 
 		if ((ber_printf (ber, "{") < 0) ||
-		    (ber_printf (ber, "ts", LDAP_TAG_EXOP_MODIFY_PASSWD_ID, utf8_dn) < 0) ||
-		    (ber_printf (ber, "ts", LDAP_TAG_EXOP_MODIFY_PASSWD_NEW, utf8_password) < 0) ||
-		    (ber_printf (ber, "n}") < 0)) {
-			DEBUG(0,("ldapsam_modify_entry: ber_printf returns a value <0\n"));
-                       ber_free(ber,1);
-                       TALLOC_FREE(utf8_dn);
-                       TALLOC_FREE(utf8_password);
-                       return NT_STATUS_UNSUCCESSFUL;
+		    (ber_printf (ber, "ts", LDAP_TAG_EXOP_MODIFY_PASSWD_ID,
+				 utf8_dn) < 0)) {
+			DEBUG(0,("ldapsam_modify_entry: ber_printf returns a "
+				 "value <0\n"));
+			ber_free(ber,1);
+			TALLOC_FREE(utf8_dn);
+			TALLOC_FREE(utf8_password);
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
+		if ((utf8_password != NULL) && (*utf8_password != '\0')) {
+			ret = ber_printf(ber, "ts}",
+					 LDAP_TAG_EXOP_MODIFY_PASSWD_NEW,
+					 utf8_password);
+		} else {
+			ret = ber_printf(ber, "}");
+		}
+
+		if (ret < 0) {
+			DEBUG(0,("ldapsam_modify_entry: ber_printf returns a "
+				 "value <0\n"));
+			ber_free(ber,1);
+			TALLOC_FREE(utf8_dn);
+			TALLOC_FREE(utf8_password);
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 
 	        if ((rc = ber_flatten (ber, &bv))<0) {
@@ -2120,18 +2138,18 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, struct s
 	/* does the entry already exist but without a samba attributes?
 	   we need to return the samba attributes here */
 
-	escape_user = escape_ldap_string_alloc( username );
+	escape_user = escape_ldap_string(talloc_tos(), username);
 	filter = talloc_strdup(attr_list, "(uid=%u)");
 	if (!filter) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fn_exit;
 	}
 	filter = talloc_all_string_sub(attr_list, filter, "%u", escape_user);
+	TALLOC_FREE(escape_user);
 	if (!filter) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fn_exit;
 	}
-	SAFE_FREE(escape_user);
 
 	rc = smbldap_search_suffix(ldap_state->smbldap_state,
 				   filter, attr_list, &result);
@@ -2278,7 +2296,6 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, struct s
   fn_exit:
 
 	TALLOC_FREE(ctx);
-	SAFE_FREE(escape_user);
 	if (result) {
 		ldap_msgfree(result);
 	}
@@ -2528,7 +2545,7 @@ static NTSTATUS ldapsam_getgrnam(struct pdb_methods *methods, GROUP_MAP *map,
 				 const char *name)
 {
 	char *filter = NULL;
-	char *escape_name = escape_ldap_string_alloc(name);
+	char *escape_name = escape_ldap_string(talloc_tos(), name);
 	NTSTATUS status;
 
 	if (!escape_name) {
@@ -2540,11 +2557,11 @@ static NTSTATUS ldapsam_getgrnam(struct pdb_methods *methods, GROUP_MAP *map,
 		get_attr_key2string(groupmap_attr_list, LDAP_ATTR_DISPLAY_NAME), escape_name,
 		get_attr_key2string(groupmap_attr_list, LDAP_ATTR_CN),
 		escape_name) < 0) {
-		SAFE_FREE(escape_name);
+		TALLOC_FREE(escape_name);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	SAFE_FREE(escape_name);
+	TALLOC_FREE(escape_name);
 	status = ldapsam_getgroup(methods, filter, map);
 	SAFE_FREE(filter);
 	return status;
@@ -2665,20 +2682,19 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 		for (memberuid = values; *memberuid != NULL; memberuid += 1) {
 			char *escape_memberuid;
 
-			escape_memberuid = escape_ldap_string_alloc(*memberuid);
+			escape_memberuid = escape_ldap_string(talloc_tos(),
+							      *memberuid);
 			if (escape_memberuid == NULL) {
 				ret = NT_STATUS_NO_MEMORY;
 				goto done;
 			}
 
 			filter = talloc_asprintf_append_buffer(filter, "(uid=%s)", escape_memberuid);
+			TALLOC_FREE(escape_memberuid);
 			if (filter == NULL) {
-				SAFE_FREE(escape_memberuid);
 				ret = NT_STATUS_NO_MEMORY;
 				goto done;
 			}
-
-			SAFE_FREE(escape_memberuid);
 		}
 
 		filter = talloc_asprintf_append_buffer(filter, "))");
@@ -2812,7 +2828,7 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	escape_name = escape_ldap_string_alloc(pdb_get_username(user));
+	escape_name = escape_ldap_string(talloc_tos(), pdb_get_username(user));
 	if (escape_name == NULL)
 		return NT_STATUS_NO_MEMORY;
 
@@ -2950,7 +2966,7 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 
  done:
 
-	SAFE_FREE(escape_name);
+	TALLOC_FREE(escape_name);
 	return ret;
 }
 
@@ -3764,7 +3780,7 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 }
 
 static NTSTATUS ldapsam_set_account_policy_in_ldap(struct pdb_methods *methods,
-						   int policy_index,
+						   enum pdb_policy_type type,
 						   uint32 value)
 {
 	NTSTATUS ntstatus = NT_STATUS_UNSUCCESSFUL;
@@ -3782,7 +3798,7 @@ static NTSTATUS ldapsam_set_account_policy_in_ldap(struct pdb_methods *methods,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	policy_attr = get_account_policy_attr(policy_index);
+	policy_attr = get_account_policy_attr(type);
 	if (policy_attr == NULL) {
 		DEBUG(0,("ldapsam_set_account_policy_in_ldap: invalid "
 			 "policy\n"));
@@ -3802,7 +3818,7 @@ static NTSTATUS ldapsam_set_account_policy_in_ldap(struct pdb_methods *methods,
 		return ntstatus;
 	}
 
-	if (!cache_account_policy_set(policy_index, value)) {
+	if (!cache_account_policy_set(type, value)) {
 		DEBUG(0,("ldapsam_set_account_policy_in_ldap: failed to "
 			 "update local tdb cache\n"));
 		return ntstatus;
@@ -3812,14 +3828,15 @@ static NTSTATUS ldapsam_set_account_policy_in_ldap(struct pdb_methods *methods,
 }
 
 static NTSTATUS ldapsam_set_account_policy(struct pdb_methods *methods,
-					   int policy_index, uint32 value)
+					   enum pdb_policy_type type,
+					   uint32_t value)
 {
-	return ldapsam_set_account_policy_in_ldap(methods, policy_index,
+	return ldapsam_set_account_policy_in_ldap(methods, type,
 						  value);
 }
 
 static NTSTATUS ldapsam_get_account_policy_from_ldap(struct pdb_methods *methods,
-						     int policy_index,
+						     enum pdb_policy_type type,
 						     uint32 *value)
 {
 	NTSTATUS ntstatus = NT_STATUS_UNSUCCESSFUL;
@@ -3841,10 +3858,10 @@ static NTSTATUS ldapsam_get_account_policy_from_ldap(struct pdb_methods *methods
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	policy_attr = get_account_policy_attr(policy_index);
+	policy_attr = get_account_policy_attr(type);
 	if (!policy_attr) {
 		DEBUG(0,("ldapsam_get_account_policy_from_ldap: invalid "
-			 "policy index: %d\n", policy_index));
+			 "policy index: %d\n", type));
 		return ntstatus;
 	}
 
@@ -3898,17 +3915,18 @@ out:
    Guenther
 */
 static NTSTATUS ldapsam_get_account_policy(struct pdb_methods *methods,
-					   int policy_index, uint32 *value)
+					   enum pdb_policy_type type,
+					   uint32_t *value)
 {
 	NTSTATUS ntstatus = NT_STATUS_UNSUCCESSFUL;
 
-	if (cache_account_policy_get(policy_index, value)) {
+	if (cache_account_policy_get(type, value)) {
 		DEBUG(11,("ldapsam_get_account_policy: got valid value from "
 			  "cache\n"));
 		return NT_STATUS_OK;
 	}
 
-	ntstatus = ldapsam_get_account_policy_from_ldap(methods, policy_index,
+	ntstatus = ldapsam_get_account_policy_from_ldap(methods, type,
 							value);
 	if (NT_STATUS_IS_OK(ntstatus)) {
 		goto update_cache;
@@ -3919,27 +3937,27 @@ static NTSTATUS ldapsam_get_account_policy(struct pdb_methods *methods,
 
 #if 0
 	/* should we automagically migrate old tdb value here ? */
-	if (account_policy_get(policy_index, value))
+	if (account_policy_get(type, value))
 		goto update_ldap;
 
 	DEBUG(10,("ldapsam_get_account_policy: no tdb for %d, trying "
-		  "default\n", policy_index));
+		  "default\n", type));
 #endif
 
-	if (!account_policy_get_default(policy_index, value)) {
+	if (!account_policy_get_default(type, value)) {
 		return ntstatus;
 	}
 
 /* update_ldap: */
 
- 	ntstatus = ldapsam_set_account_policy(methods, policy_index, *value);
+	ntstatus = ldapsam_set_account_policy(methods, type, *value);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		return ntstatus;
 	}
 
  update_cache:
 
-	if (!cache_account_policy_set(policy_index, *value)) {
+	if (!cache_account_policy_set(type, *value)) {
 		DEBUG(0,("ldapsam_get_account_policy: failed to update local "
 			 "tdb as a cache\n"));
 		return NT_STATUS_UNSUCCESSFUL;
@@ -4185,14 +4203,14 @@ static char *get_ldap_filter(TALLOC_CTX *mem_ctx, const char *username)
 		goto done;
 	}
 
-	escaped = escape_ldap_string_alloc(username);
+	escaped = escape_ldap_string(talloc_tos(), username);
 	if (escaped == NULL) goto done;
 
 	result = talloc_string_sub(mem_ctx, filter, "%u", username);
 
  done:
 	SAFE_FREE(filter);
-	SAFE_FREE(escaped);
+	TALLOC_FREE(escaped);
 
 	return result;
 }
@@ -4994,10 +5012,10 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 		is_machine = True;
 	}
 
-	username = escape_ldap_string_alloc(name);
+	username = escape_ldap_string(talloc_tos(), name);
 	filter = talloc_asprintf(tmp_ctx, "(&(uid=%s)(objectClass=%s))",
 				 username, LDAP_OBJ_POSIXACCOUNT);
-	SAFE_FREE(username);
+	TALLOC_FREE(username);
 
 	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, NULL, &result);
 	if (rc != LDAP_SUCCESS) {
@@ -5270,10 +5288,10 @@ static NTSTATUS ldapsam_create_dom_group(struct pdb_methods *my_methods,
 	gid_t gid = -1;
 	int rc;
 
-	groupname = escape_ldap_string_alloc(name);
+	groupname = escape_ldap_string(talloc_tos(), name);
 	filter = talloc_asprintf(tmp_ctx, "(&(cn=%s)(objectClass=%s))",
 				 groupname, LDAP_OBJ_POSIXGROUP);
-	SAFE_FREE(groupname);
+	TALLOC_FREE(groupname);
 
 	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, NULL, &result);
 	if (rc != LDAP_SUCCESS) {
@@ -5702,7 +5720,8 @@ static NTSTATUS ldapsam_set_primary_group(struct pdb_methods *my_methods,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	escape_username = escape_ldap_string_alloc(pdb_get_username(sampass));
+	escape_username = escape_ldap_string(talloc_tos(),
+					     pdb_get_username(sampass));
 	if (escape_username== NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -5715,7 +5734,7 @@ static NTSTATUS ldapsam_set_primary_group(struct pdb_methods *my_methods,
 				 LDAP_OBJ_POSIXACCOUNT,
 				 LDAP_OBJ_SAMBASAMACCOUNT);
 
-	SAFE_FREE(escape_username);
+	TALLOC_FREE(escape_username);
 
 	if (filter == NULL) {
 		return NT_STATUS_NO_MEMORY;

@@ -34,8 +34,6 @@
 #include "hdb_locl.h"
 #include <der.h>
 
-RCSID("$Id$");
-
 krb5_error_code
 hdb_entry_check_mandatory(krb5_context context, const hdb_entry *ent)
 {

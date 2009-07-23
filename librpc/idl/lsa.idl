@@ -651,7 +651,7 @@ import "misc.idl", "security.idl";
 		LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_INTERNAL    = 10,
 		LSA_TRUSTED_DOMAIN_INFO_INFO_EX2_INTERNAL     = 11,
 		LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_2_INTERNAL  = 12,
-		LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRTYPION_TYPES = 13
+		LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES = 13
 	} lsa_TrustDomInfoEnum;
 
 	typedef [public,bitmap32bit] bitmap {
@@ -788,7 +788,7 @@ import "misc.idl", "security.idl";
 		        lsa_TrustDomainInfoInfoEx2Internal   info_ex2_internal;
 		[case(LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_2_INTERNAL)]
 		        lsa_TrustDomainInfoFullInfo2Internal     full_info2_internal;
-		[case(LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRTYPION_TYPES)]
+		[case(LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES)]
 		        lsa_TrustDomainInfoSupportedEncTypes enc_types;
 	} lsa_TrustedDomainInfo;
 
@@ -935,10 +935,18 @@ import "misc.idl", "security.idl";
 	);
 
 	/* Function:       0x2a */
-	[todo] NTSTATUS lsa_StorePrivateData();
-	/* Function:        0x2b */
-	[todo] NTSTATUS lsa_RetrievePrivateData();
+	NTSTATUS lsa_StorePrivateData(
+		[in]		policy_handle	*handle,
+		[in,ref]	lsa_String	*name,
+		[in,unique]	lsa_DATA_BUF	*val
+	);
 
+	/* Function:        0x2b */
+	NTSTATUS lsa_RetrievePrivateData(
+		[in]		policy_handle	*handle,
+		[in,ref]	lsa_String	*name,
+		[in,out,ref]	lsa_DATA_BUF	**val
+	);
 
 	/**********************/
 	/* Function:     0x2c */

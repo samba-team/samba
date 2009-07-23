@@ -445,7 +445,7 @@ enum lsa_TrustDomInfoEnum
 	LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_INTERNAL=10,
 	LSA_TRUSTED_DOMAIN_INFO_INFO_EX2_INTERNAL=11,
 	LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_2_INTERNAL=12,
-	LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRTYPION_TYPES=13
+	LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES=13
 }
 #else
  { __donnot_use_enum_lsa_TrustDomInfoEnum=0x7FFFFFFF}
@@ -461,7 +461,7 @@ enum lsa_TrustDomInfoEnum
 #define LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_INTERNAL ( 10 )
 #define LSA_TRUSTED_DOMAIN_INFO_INFO_EX2_INTERNAL ( 11 )
 #define LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_2_INTERNAL ( 12 )
-#define LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRTYPION_TYPES ( 13 )
+#define LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES ( 13 )
 #endif
 ;
 
@@ -603,7 +603,7 @@ union lsa_TrustedDomainInfo {
 	struct lsa_TrustDomainInfoFullInfoInternal full_info_internal;/* [case(LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_INTERNAL)] */
 	struct lsa_TrustDomainInfoInfoEx2Internal info_ex2_internal;/* [case(LSA_TRUSTED_DOMAIN_INFO_INFO_EX2_INTERNAL)] */
 	struct lsa_TrustDomainInfoFullInfo2Internal full_info2_internal;/* [case(LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_2_INTERNAL)] */
-	struct lsa_TrustDomainInfoSupportedEncTypes enc_types;/* [case(LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRTYPION_TYPES)] */
+	struct lsa_TrustDomainInfoSupportedEncTypes enc_types;/* [case(LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES)] */
 }/* [switch_type(lsa_TrustDomInfoEnum)] */;
 
 struct lsa_DATA_BUF_PTR {
@@ -1333,6 +1333,12 @@ struct lsa_DeleteTrustedDomain {
 
 struct lsa_StorePrivateData {
 	struct {
+		struct policy_handle *handle;/* [ref] */
+		struct lsa_String *name;/* [ref] */
+		struct lsa_DATA_BUF *val;/* [unique] */
+	} in;
+
+	struct {
 		NTSTATUS result;
 	} out;
 
@@ -1341,6 +1347,13 @@ struct lsa_StorePrivateData {
 
 struct lsa_RetrievePrivateData {
 	struct {
+		struct policy_handle *handle;/* [ref] */
+		struct lsa_String *name;/* [ref] */
+		struct lsa_DATA_BUF **val;/* [ref] */
+	} in;
+
+	struct {
+		struct lsa_DATA_BUF **val;/* [ref] */
 		NTSTATUS result;
 	} out;
 

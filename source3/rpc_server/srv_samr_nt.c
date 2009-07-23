@@ -236,8 +236,9 @@ done:
  Map any MAXIMUM_ALLOWED_ACCESS request to a valid access set.
 ********************************************************************/
 
-void map_max_allowed_access(const NT_USER_TOKEN *token,
-					uint32_t *pacc_requested)
+void map_max_allowed_access(const NT_USER_TOKEN *nt_token,
+			    const struct unix_user_token *unix_token,
+			    uint32_t *pacc_requested)
 {
 	if (!((*pacc_requested) & MAXIMUM_ALLOWED_ACCESS)) {
 		return;
@@ -248,15 +249,15 @@ void map_max_allowed_access(const NT_USER_TOKEN *token,
 	*pacc_requested = GENERIC_READ_ACCESS|GENERIC_EXECUTE_ACCESS;
 
 	/* root gets anything. */
-	if (geteuid() == sec_initial_uid()) {
+	if (unix_token->uid == sec_initial_uid()) {
 		*pacc_requested |= GENERIC_ALL_ACCESS;
 		return;
 	}
 
 	/* Full Access for 'BUILTIN\Administrators' and 'BUILTIN\Account Operators */
 
-	if (is_sid_in_token(token, &global_sid_Builtin_Administrators) ||
-			is_sid_in_token(token, &global_sid_Builtin_Account_Operators)) {
+	if (is_sid_in_token(nt_token, &global_sid_Builtin_Administrators) ||
+			is_sid_in_token(nt_token, &global_sid_Builtin_Account_Operators)) {
 		*pacc_requested |= GENERIC_ALL_ACCESS;
 		return;
 	}
@@ -266,7 +267,7 @@ void map_max_allowed_access(const NT_USER_TOKEN *token,
 		DOM_SID domadmin_sid;
 		sid_copy( &domadmin_sid, get_global_sam_sid() );
 		sid_append_rid( &domadmin_sid, DOMAIN_GROUP_RID_ADMINS );
-		if (is_sid_in_token(token, &domadmin_sid)) {
+		if (is_sid_in_token(nt_token, &domadmin_sid)) {
 			*pacc_requested |= GENERIC_ALL_ACCESS;
 			return;
 		}
@@ -550,7 +551,9 @@ NTSTATUS _samr_OpenDomain(pipes_struct *p,
 	}
 
 	/*check if access can be granted as requested by client. */
-	map_max_allowed_access(p->server_info->ptok, &des_access);
+	map_max_allowed_access(p->server_info->ptok,
+			       &p->server_info->utok,
+			       &des_access);
 
 	make_samr_object_sd( p->mem_ctx, &psd, &sd_size, &dom_generic_mapping, NULL, 0 );
 	se_map_generic( &des_access, &dom_generic_mapping );
@@ -636,9 +639,9 @@ NTSTATUS _samr_GetUserPwInfo(pipes_struct *p,
 	switch (sid_type) {
 		case SID_NAME_USER:
 			become_root();
-			pdb_get_account_policy(AP_MIN_PASSWORD_LEN,
+			pdb_get_account_policy(PDB_POLICY_MIN_PASSWORD_LEN,
 					       &min_password_length);
-			pdb_get_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS,
+			pdb_get_account_policy(PDB_POLICY_USER_MUST_LOGON_TO_CHG_PASS,
 					       &password_properties);
 			unbecome_root();
 
@@ -2076,19 +2079,19 @@ NTSTATUS _samr_ChangePasswordUser3(pipes_struct *p,
 
 		/* AS ROOT !!! */
 
-		pdb_get_account_policy(AP_MIN_PASSWORD_LEN, &tmp);
+		pdb_get_account_policy(PDB_POLICY_MIN_PASSWORD_LEN, &tmp);
 		dominfo->min_password_length = tmp;
 
-		pdb_get_account_policy(AP_PASSWORD_HISTORY, &tmp);
+		pdb_get_account_policy(PDB_POLICY_PASSWORD_HISTORY, &tmp);
 		dominfo->password_history_length = tmp;
 
-		pdb_get_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS,
+		pdb_get_account_policy(PDB_POLICY_USER_MUST_LOGON_TO_CHG_PASS,
 				       &dominfo->password_properties);
 
-		pdb_get_account_policy(AP_MAX_PASSWORD_AGE, &account_policy_temp);
+		pdb_get_account_policy(PDB_POLICY_MAX_PASSWORD_AGE, &account_policy_temp);
 		u_expire = account_policy_temp;
 
-		pdb_get_account_policy(AP_MIN_PASSWORD_AGE, &account_policy_temp);
+		pdb_get_account_policy(PDB_POLICY_MIN_PASSWORD_AGE, &account_policy_temp);
 		u_min_age = account_policy_temp;
 
 		/* !AS ROOT */
@@ -2260,8 +2263,9 @@ NTSTATUS _samr_OpenUser(pipes_struct *p,
 		return NT_STATUS_NO_SUCH_USER;
 
 	/* check if access can be granted as requested by client. */
-
-	map_max_allowed_access(p->server_info->ptok, &des_access);
+	map_max_allowed_access(p->server_info->ptok,
+			       &p->server_info->utok,
+			       &des_access);
 
 	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &usr_generic_mapping, &sid, SAMR_USR_RIGHTS_WRITE_PW);
 	se_map_generic(&des_access, &usr_generic_mapping);
@@ -3301,19 +3305,19 @@ static NTSTATUS query_dom_info_1(TALLOC_CTX *mem_ctx,
 
 	/* AS ROOT !!! */
 
-	pdb_get_account_policy(AP_MIN_PASSWORD_LEN, &account_policy_temp);
+	pdb_get_account_policy(PDB_POLICY_MIN_PASSWORD_LEN, &account_policy_temp);
 	r->min_password_length = account_policy_temp;
 
-	pdb_get_account_policy(AP_PASSWORD_HISTORY, &account_policy_temp);
+	pdb_get_account_policy(PDB_POLICY_PASSWORD_HISTORY, &account_policy_temp);
 	r->password_history_length = account_policy_temp;
 
-	pdb_get_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS,
+	pdb_get_account_policy(PDB_POLICY_USER_MUST_LOGON_TO_CHG_PASS,
 			       &r->password_properties);
 
-	pdb_get_account_policy(AP_MAX_PASSWORD_AGE, &account_policy_temp);
+	pdb_get_account_policy(PDB_POLICY_MAX_PASSWORD_AGE, &account_policy_temp);
 	u_expire = account_policy_temp;
 
-	pdb_get_account_policy(AP_MIN_PASSWORD_AGE, &account_policy_temp);
+	pdb_get_account_policy(PDB_POLICY_MIN_PASSWORD_AGE, &account_policy_temp);
 	u_min_age = account_policy_temp;
 
 	/* !AS ROOT */
@@ -3348,7 +3352,7 @@ static NTSTATUS query_dom_info_2(TALLOC_CTX *mem_ctx,
 	r->num_groups	= count_sam_groups(dinfo->disp_info);
 	r->num_aliases	= count_sam_aliases(dinfo->disp_info);
 
-	pdb_get_account_policy(AP_TIME_TO_LOGOUT, &u_logout);
+	pdb_get_account_policy(PDB_POLICY_TIME_TO_LOGOUT, &u_logout);
 
 	unix_to_nt_time_abs(&r->force_logoff_time, u_logout);
 
@@ -3385,7 +3389,7 @@ static NTSTATUS query_dom_info_3(TALLOC_CTX *mem_ctx,
 
 	{
 		uint32_t ul;
-		pdb_get_account_policy(AP_TIME_TO_LOGOUT, &ul);
+		pdb_get_account_policy(PDB_POLICY_TIME_TO_LOGOUT, &ul);
 		u_logout = (time_t)ul;
 	}
 
@@ -3502,16 +3506,16 @@ static NTSTATUS query_dom_info_11(TALLOC_CTX *mem_ctx,
 
 	become_root();
 
-	pdb_get_account_policy(AP_LOCK_ACCOUNT_DURATION, &account_policy_temp);
+	pdb_get_account_policy(PDB_POLICY_LOCK_ACCOUNT_DURATION, &account_policy_temp);
 	u_lock_duration = account_policy_temp;
 	if (u_lock_duration != -1) {
 		u_lock_duration *= 60;
 	}
 
-	pdb_get_account_policy(AP_RESET_COUNT_TIME, &account_policy_temp);
+	pdb_get_account_policy(PDB_POLICY_RESET_COUNT_TIME, &account_policy_temp);
 	u_reset_time = account_policy_temp * 60;
 
-	pdb_get_account_policy(AP_BAD_ATTEMPT_LOCKOUT, &account_policy_temp);
+	pdb_get_account_policy(PDB_POLICY_BAD_ATTEMPT_LOCKOUT, &account_policy_temp);
 	r->lockout_threshold = account_policy_temp;
 
 	/* !AS ROOT */
@@ -3537,16 +3541,16 @@ static NTSTATUS query_dom_info_12(TALLOC_CTX *mem_ctx,
 
 	/* AS ROOT !!! */
 
-	pdb_get_account_policy(AP_LOCK_ACCOUNT_DURATION, &account_policy_temp);
+	pdb_get_account_policy(PDB_POLICY_LOCK_ACCOUNT_DURATION, &account_policy_temp);
 	u_lock_duration = account_policy_temp;
 	if (u_lock_duration != -1) {
 		u_lock_duration *= 60;
 	}
 
-	pdb_get_account_policy(AP_RESET_COUNT_TIME, &account_policy_temp);
+	pdb_get_account_policy(PDB_POLICY_RESET_COUNT_TIME, &account_policy_temp);
 	u_reset_time = account_policy_temp * 60;
 
-	pdb_get_account_policy(AP_BAD_ATTEMPT_LOCKOUT, &account_policy_temp);
+	pdb_get_account_policy(PDB_POLICY_BAD_ATTEMPT_LOCKOUT, &account_policy_temp);
 	r->lockout_threshold = account_policy_temp;
 
 	/* !AS ROOT */
@@ -3834,7 +3838,9 @@ NTSTATUS _samr_CreateUser2(pipes_struct *p,
 
 	sid_compose(&sid, get_global_sam_sid(), *r->out.rid);
 
-	map_max_allowed_access(p->server_info->ptok, &des_access);
+	map_max_allowed_access(p->server_info->ptok,
+			       &p->server_info->utok,
+			       &des_access);
 
 	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &usr_generic_mapping,
 			    &sid, SAMR_USR_RIGHTS_WRITE_PW);
@@ -3914,7 +3920,9 @@ NTSTATUS _samr_Connect(pipes_struct *p,
 	   was observed from a win98 client trying to enumerate users (when configured
 	   user level access control on shares)   --jerry */
 
-	map_max_allowed_access(p->server_info->ptok, &des_access);
+	map_max_allowed_access(p->server_info->ptok,
+			       &p->server_info->utok,
+			       &des_access);
 
 	se_map_generic( &des_access, &sam_generic_mapping );
 
@@ -3974,7 +3982,9 @@ NTSTATUS _samr_Connect2(pipes_struct *p,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	map_max_allowed_access(p->server_info->ptok, &des_access);
+	map_max_allowed_access(p->server_info->ptok,
+			       &p->server_info->utok,
+			       &des_access);
 
 	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &sam_generic_mapping, NULL, 0);
 	se_map_generic(&des_access, &sam_generic_mapping);
@@ -4187,7 +4197,9 @@ NTSTATUS _samr_OpenAlias(pipes_struct *p,
 
 	/*check if access can be granted as requested by client. */
 
-	map_max_allowed_access(p->server_info->ptok, &des_access);
+	map_max_allowed_access(p->server_info->ptok,
+			       &p->server_info->utok,
+			       &des_access);
 
 	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &ali_generic_mapping, NULL, 0);
 	se_map_generic(&des_access,&ali_generic_mapping);
@@ -6193,9 +6205,9 @@ NTSTATUS _samr_GetDomPwInfo(pipes_struct *p,
 	}
 
 	become_root();
-	pdb_get_account_policy(AP_MIN_PASSWORD_LEN,
+	pdb_get_account_policy(PDB_POLICY_MIN_PASSWORD_LEN,
 			       &min_password_length);
-	pdb_get_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS,
+	pdb_get_account_policy(PDB_POLICY_USER_MUST_LOGON_TO_CHG_PASS,
 			       &password_properties);
 	unbecome_root();
 
@@ -6237,7 +6249,9 @@ NTSTATUS _samr_OpenGroup(pipes_struct *p,
 	}
 
 	/*check if access can be granted as requested by client. */
-	map_max_allowed_access(p->server_info->ptok, &des_access);
+	map_max_allowed_access(p->server_info->ptok,
+			       &p->server_info->utok,
+			       &des_access);
 
 	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &grp_generic_mapping, NULL, 0);
 	se_map_generic(&des_access,&grp_generic_mapping);
@@ -6362,14 +6376,14 @@ static NTSTATUS set_dom_info_1(TALLOC_CTX *mem_ctx,
 	u_expire = nt_time_to_unix_abs((NTTIME *)&r->max_password_age);
 	u_min_age = nt_time_to_unix_abs((NTTIME *)&r->min_password_age);
 
-	pdb_set_account_policy(AP_MIN_PASSWORD_LEN,
+	pdb_set_account_policy(PDB_POLICY_MIN_PASSWORD_LEN,
 			       (uint32_t)r->min_password_length);
-	pdb_set_account_policy(AP_PASSWORD_HISTORY,
+	pdb_set_account_policy(PDB_POLICY_PASSWORD_HISTORY,
 			       (uint32_t)r->password_history_length);
-	pdb_set_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS,
+	pdb_set_account_policy(PDB_POLICY_USER_MUST_LOGON_TO_CHG_PASS,
 			       (uint32_t)r->password_properties);
-	pdb_set_account_policy(AP_MAX_PASSWORD_AGE, (int)u_expire);
-	pdb_set_account_policy(AP_MIN_PASSWORD_AGE, (int)u_min_age);
+	pdb_set_account_policy(PDB_POLICY_MAX_PASSWORD_AGE, (int)u_expire);
+	pdb_set_account_policy(PDB_POLICY_MIN_PASSWORD_AGE, (int)u_min_age);
 
 	return NT_STATUS_OK;
 }
@@ -6384,7 +6398,7 @@ static NTSTATUS set_dom_info_3(TALLOC_CTX *mem_ctx,
 
 	u_logout = nt_time_to_unix_abs((NTTIME *)&r->force_logoff_time);
 
-	pdb_set_account_policy(AP_TIME_TO_LOGOUT, (int)u_logout);
+	pdb_set_account_policy(PDB_POLICY_TIME_TO_LOGOUT, (int)u_logout);
 
 	return NT_STATUS_OK;
 }
@@ -6404,9 +6418,9 @@ static NTSTATUS set_dom_info_12(TALLOC_CTX *mem_ctx,
 
 	u_reset_time = nt_time_to_unix_abs((NTTIME *)&r->lockout_window)/60;
 
-	pdb_set_account_policy(AP_LOCK_ACCOUNT_DURATION, (int)u_lock_duration);
-	pdb_set_account_policy(AP_RESET_COUNT_TIME, (int)u_reset_time);
-	pdb_set_account_policy(AP_BAD_ATTEMPT_LOCKOUT,
+	pdb_set_account_policy(PDB_POLICY_LOCK_ACCOUNT_DURATION, (int)u_lock_duration);
+	pdb_set_account_policy(PDB_POLICY_RESET_COUNT_TIME, (int)u_reset_time);
+	pdb_set_account_policy(PDB_POLICY_BAD_ATTEMPT_LOCKOUT,
 			       (uint32_t)r->lockout_threshold);
 
 	return NT_STATUS_OK;

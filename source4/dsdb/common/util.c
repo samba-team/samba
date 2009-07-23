@@ -31,7 +31,7 @@
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/gen_ndr/ndr_misc.h"
-#include "dsdb/common/flags.h"
+#include "../libds/common/flags.h"
 #include "dsdb/common/proto.h"
 #include "libcli/ldap/ldap_ndr.h"
 #include "param/param.h"
@@ -640,7 +640,7 @@ uint32_t samdb_result_acct_flags(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ct
 				 struct ldb_message *msg, struct ldb_dn *domain_dn)
 {
 	uint32_t userAccountControl = ldb_msg_find_attr_as_uint(msg, "userAccountControl", 0);
-	uint32_t acct_flags = samdb_uf2acb(userAccountControl); 
+	uint32_t acct_flags = ds_uf2acb(userAccountControl);
 	NTTIME must_change_time;
 	NTTIME now;
 
@@ -902,7 +902,7 @@ int samdb_msg_add_hashes(TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 int samdb_msg_add_acct_flags(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 			     const char *attr_name, uint32_t v)
 {
-	return samdb_msg_add_uint(sam_ldb, mem_ctx, msg, attr_name, samdb_acb2uf(v));
+	return samdb_msg_add_uint(sam_ldb, mem_ctx, msg, attr_name, ds_acb2uf(v));
 }
 
 /*

@@ -3,26 +3,38 @@
  */ 
 
 #include "mech_locl.h"
-RCSID("$Id$");
 
 /**
  * Encrypts or sign the data.
  *
+ * This is a more complicated version of gss_wrap(), it allows the
+ * caller to use AEAD data (signed header/trailer) and allow greater
+ * controll over where the encrypted data is placed.
+ *
  * The maximum packet size is gss_context_stream_sizes.max_msg_size.
  *
- * The caller needs provide the folloing buffers:
+ * The caller needs provide the folloing buffers when using in conf_req_flag=1 mode:
  *
  * - HEADER (of size gss_context_stream_sizes.header)
- *   SIGN_ONLY (optional, zero or more)
- *   DATA
- *   SIGN_ONLY (optional, zero or more)
- *   PADDING (of size gss_context_stream_sizes.blocksize)
+ *   { DATA or SIGN_ONLY } (optional, zero or more)
+ *   PADDING (of size gss_context_stream_sizes.blocksize, if zero padding is zero, can be omitted)
  *   TRAILER (of size gss_context_stream_sizes.trailer)
  *
  * - on DCE-RPC mode, the caller can skip PADDING and TRAILER if the
- *   DATA elements is padded to a block bountry.
+ *   DATA elements is padded to a block bountry and header is of at
+ *   least size gss_context_stream_sizes.header + gss_context_stream_sizes.trailer.
+ *
+ * HEADER, PADDING, TRAILER will be shrunken to the size required to transmit any of them too large.
  *
  * To generate gss_wrap() compatible packets, use: HEADER | DATA | PADDING | TRAILER
+ *
+ * When used in conf_req_flag=0,
+ *
+ * - HEADER (of size gss_context_stream_sizes.header)
+ *   { DATA or SIGN_ONLY } (optional, zero or more)
+ *   PADDING (of size gss_context_stream_sizes.blocksize, if zero padding is zero, can be omitted)
+ *   TRAILER (of size gss_context_stream_sizes.trailer)
+ *
  *
  * The input sizes of HEADER, PADDING and TRAILER can be fetched using gss_wrap_iov_length() or
  * gss_context_query_attributes().
@@ -65,6 +77,13 @@ gss_wrap_iov(OM_uint32 * minor_status,
 				iov, iov_count);
 }
 
+/**
+ * Decrypt or verifies the signature on the data.
+ *
+ *
+ * @ingroup gssapi
+ */
+
 OM_uint32 GSSAPI_LIB_FUNCTION
 gss_unwrap_iov(OM_uint32 *minor_status,
 	       gss_ctx_id_t context_handle,
@@ -99,7 +118,18 @@ gss_unwrap_iov(OM_uint32 *minor_status,
 				  iov, iov_count);
 }
 
-OM_uint32  GSSAPI_LIB_FUNCTION
+/**
+ * Update the length fields in iov buffer for the types:
+ * - GSS_IOV_BUFFER_TYPE_HEADER
+ * - GSS_IOV_BUFFER_TYPE_PADDING
+ * - GSS_IOV_BUFFER_TYPE_TRAILER
+ *
+ * Consider using gss_context_query_attributes() to fetch the data instead.
+ *
+ * @ingroup gssapi
+ */
+
+OM_uint32 GSSAPI_LIB_FUNCTION
 gss_wrap_iov_length(OM_uint32 * minor_status,
 		    gss_ctx_id_t context_handle,
 		    int conf_req_flag,
@@ -132,6 +162,13 @@ gss_wrap_iov_length(OM_uint32 * minor_status,
 				       iov, iov_count);
 }
 
+/**
+ * Free all buffer allocated by gss_wrap_iov() or gss_unwrap_iov() by
+ * looking at the GSS_IOV_BUFFER_TYPE_FLAG_ALLOCATED flag.
+ *
+ * @ingroup gssapi
+ */
+
 OM_uint32 GSSAPI_LIB_FUNCTION
 gss_release_iov_buffer(OM_uint32 *minor_status,
 		       gss_iov_buffer_desc *iov,
@@ -146,9 +183,10 @@ gss_release_iov_buffer(OM_uint32 *minor_status,
 	return GSS_S_CALL_INACCESSIBLE_READ;
 
     for (i = 0; i < iov_count; i++) {
-	if (iov[i].type & GSS_IOV_BUFFER_TYPE_FLAG_ALLOCATED)
+	if ((iov[i].type & GSS_IOV_BUFFER_TYPE_FLAG_ALLOCATED) == 0)
 	    continue;
 	gss_release_buffer(&junk, &iov[i].buffer);
+	iov[i].type &= ~GSS_IOV_BUFFER_TYPE_FLAG_ALLOCATED;
     }
     return GSS_S_COMPLETE;
 }
@@ -159,6 +197,8 @@ gss_release_iov_buffer(OM_uint32 *minor_status,
  * SSPI equivalent if this function is QueryContextAttributes.
  *
  * - GSS_C_ATTR_STREAM_SIZES data is a gss_context_stream_sizes.
+ *
+ * @ingroup gssapi
  */
 
 static gss_OID_desc gss_c_attr_stream_sizes_desc =

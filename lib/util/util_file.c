@@ -380,6 +380,7 @@ _PUBLIC_ bool file_save(const char *fname, const void *packet, size_t length)
 		return false;
 	}
 	if (write(fd, packet, length) != (size_t)length) {
+		close(fd);
 		return false;
 	}
 	close(fd);

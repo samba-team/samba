@@ -34,8 +34,6 @@
 #include "gsskrb5_locl.h"
 #include <gssapi_mech.h>
 
-RCSID("$Id$");
-
 /*
  * The implementation must reserve static storage for a
  * gss_OID_desc object containing the value

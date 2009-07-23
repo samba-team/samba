@@ -96,11 +96,17 @@ sub ParseOutputArgument($$$)
 		# structure, the user should be able to know the size beforehand 
 		# to allocate a structure of the right size.
 		my $env = GenerateFunctionInEnv($fn, "r.");
-		my $size_is = ParseExpr($e->{LEVELS}[$level]->{SIZE_IS}, $env, $e->{ORIGINAL});
-		if (has_property($e, "charset")) {
-		    $self->pidl("memcpy(CONST_DISCARD(char *, $e->{NAME}), r.out.$e->{NAME}, $size_is * sizeof(*$e->{NAME}));");
+		my $l = $e->{LEVELS}[$level];
+		unless (defined($l->{SIZE_IS})) {
+			error($e->{ORIGINAL}, "no size known for [out] array `$e->{NAME}'");
+			$self->pidl('#error No size known for [out] array `$e->{NAME}');
 		} else {
-		    $self->pidl("memcpy($e->{NAME}, r.out.$e->{NAME}, $size_is * sizeof(*$e->{NAME}));");
+			my $size_is = ParseExpr($l->{SIZE_IS}, $env, $e->{ORIGINAL});
+			if (has_property($e, "charset")) {
+				$self->pidl("memcpy(CONST_DISCARD(char *, $e->{NAME}), r.out.$e->{NAME}, $size_is * sizeof(*$e->{NAME}));");
+			} else {
+				$self->pidl("memcpy($e->{NAME}, r.out.$e->{NAME}, $size_is * sizeof(*$e->{NAME}));");
+			}
 		}
 	} else {
 		$self->pidl("*$e->{NAME} = *r.out.$e->{NAME};");

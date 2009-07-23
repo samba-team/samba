@@ -1311,7 +1311,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		uint32 major;
 		uint32 minor;
 		uint32 build;
-		[value(2)] uint32 unknown;
+		[value(2)] uint32 platform_id;
 		[subcontext(0),subcontext_size(256)] nstring extra_string;
 	} spoolss_OSVersion;
 
@@ -1320,10 +1320,13 @@ import "misc.idl", "security.idl", "winreg.idl";
 		uint32 major;
 		uint32 minor;
 		uint32 build;
-		[value(2)] uint32 unknown1;
+		[value(2)] uint32 platform_id;
 		[subcontext(0),subcontext_size(256)] nstring extra_string;
-		uint32 unknown2;/* service pack number? I saw 0 from w2k3 and 1 from winxp sp1*/
-		uint32 unknown3;/* hmm? w2k3: 131346(0x20112) winxp sp1: 503382272 0x1E010100 */
+		uint16 service_pack_major;
+		uint16 service_pack_minor;
+		uint16 suite_mask;
+		uint8 product_type;
+		uint8 reserved;
 	} spoolss_OSVersionEx;
 
 	typedef [nodiscriminant,public,gensize] union {
@@ -1683,7 +1686,10 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x28 */
-	[todo] WERROR spoolss_CreatePrinterIC(
+	WERROR spoolss_CreatePrinterIC(
+		[in,ref] policy_handle *handle,
+		[out,ref] policy_handle *gdi_handle,
+		[in,ref] spoolss_DevmodeContainer *devmode_ctr
 	);
 
 	/******************/
@@ -1693,7 +1699,8 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x2a */
-	[todo] WERROR spoolss_DeletePrinterIC(
+	WERROR spoolss_DeletePrinterIC(
+		[in,out,ref] policy_handle *gdi_handle
 	);
 
 	/******************/

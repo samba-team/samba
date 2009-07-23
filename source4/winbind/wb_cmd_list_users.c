@@ -33,7 +33,7 @@ struct cmd_list_users_state {
 
 	struct wbsrv_domain *domain;
 	char *domain_name;
-	uint resume_index;
+	uint32_t resume_index;
 	char *result;
 };
 

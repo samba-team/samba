@@ -42,7 +42,6 @@ else:
 
 
 import ldb
-import credentials
 import glue
 
 class Ldb(ldb.Ldb):
@@ -73,6 +72,8 @@ class Ldb(ldb.Ldb):
             self.set_modules_dir(modules_dir)
         elif default_ldb_modules_dir is not None:
             self.set_modules_dir(default_ldb_modules_dir)
+        elif lp is not None:
+            self.set_modules_dir(os.path.join(lp.get("modules dir"), "ldb"))
 
         if credentials is not None:
             self.set_credentials(credentials)
@@ -242,3 +243,8 @@ def valid_netbios_name(name):
     return True
 
 version = glue.version
+
+DS_BEHAVIOR_WIN2000 = glue.DS_BEHAVIOR_WIN2000
+DS_BEHAVIOR_WIN2003_INTERIM = glue.DS_BEHAVIOR_WIN2003_INTERIM
+DS_BEHAVIOR_WIN2003 = glue.DS_BEHAVIOR_WIN2003
+DS_BEHAVIOR_WIN2008 = glue.DS_BEHAVIOR_WIN2008

@@ -205,6 +205,22 @@ struct pdb_domain_info {
 	struct GUID guid;
 };
 
+/*
+ * Types of account policy.
+ */
+enum pdb_policy_type {
+	PDB_POLICY_MIN_PASSWORD_LEN = 1,
+	PDB_POLICY_PASSWORD_HISTORY = 2,
+	PDB_POLICY_USER_MUST_LOGON_TO_CHG_PASS	= 3,
+	PDB_POLICY_MAX_PASSWORD_AGE = 4,
+	PDB_POLICY_MIN_PASSWORD_AGE = 5,
+	PDB_POLICY_LOCK_ACCOUNT_DURATION = 6,
+	PDB_POLICY_RESET_COUNT_TIME = 7,
+	PDB_POLICY_BAD_ATTEMPT_LOCKOUT = 8,
+	PDB_POLICY_TIME_TO_LOGOUT = 9,
+	PDB_POLICY_REFUSE_MACHINE_PW_CHANGE = 10
+};
+
 #define PDB_CAP_STORE_RIDS	0x0001
 #define PDB_CAP_ADS		0x0002
 
@@ -351,10 +367,12 @@ struct pdb_methods
 				 enum lsa_SidType *attrs);
 
 	NTSTATUS (*get_account_policy)(struct pdb_methods *methods,
-				       int policy_index, uint32 *value);
+				       enum pdb_policy_type type,
+				       uint32_t *value);
 
 	NTSTATUS (*set_account_policy)(struct pdb_methods *methods,
-				       int policy_index, uint32 value);
+				       enum pdb_policy_type type,
+				       uint32_t value);
 
 	NTSTATUS (*get_seq_num)(struct pdb_methods *methods, time_t *seq_num);
 

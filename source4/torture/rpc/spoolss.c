@@ -26,6 +26,11 @@
 #include "torture/rpc/rpc.h"
 #include "librpc/gen_ndr/ndr_spoolss_c.h"
 
+#define TORTURE_WELLKNOWN_PRINTER	"torture_wkn_printer"
+#define TORTURE_PRINTER			"torture_printer"
+#define TORTURE_WELLKNOWN_PRINTER_EX	"torture_wkn_printer_ex"
+#define TORTURE_PRINTER_EX		"torture_printer_ex"
+
 struct test_spoolss_context {
 	/* print server handle */
 	struct policy_handle server_handle;
@@ -75,20 +80,22 @@ struct test_spoolss_context {
 
 #define COMPARE_STRING_ARRAY(tctx, c,r,e)
 
-static bool test_OpenPrinter_server(struct torture_context *tctx, struct dcerpc_pipe *p, struct test_spoolss_context *ctx)
+static bool test_OpenPrinter_server(struct torture_context *tctx,
+				    struct dcerpc_pipe *p,
+				    struct policy_handle *server_handle)
 {
 	NTSTATUS status;
 	struct spoolss_OpenPrinter op;
 
-	op.in.printername	= talloc_asprintf(ctx, "\\\\%s", dcerpc_server_name(p));
+	op.in.printername	= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	op.in.datatype		= NULL;
 	op.in.devmode_ctr.devmode= NULL;
 	op.in.access_mask	= 0;
-	op.out.handle		= &ctx->server_handle;
+	op.out.handle		= server_handle;
 
 	torture_comment(tctx, "Testing OpenPrinter(%s)\n", op.in.printername);
 
-	status = dcerpc_spoolss_OpenPrinter(p, ctx, &op);
+	status = dcerpc_spoolss_OpenPrinter(p, tctx, &op);
 	torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_OpenPrinter failed");
 	torture_assert_werr_ok(tctx, op.out.result, "dcerpc_spoolss_OpenPrinter failed");
 
@@ -808,6 +815,564 @@ static bool test_GetPrinter(struct torture_context *tctx,
 	}
 
 	return true;
+}
+
+static bool test_SetPrinter_errors(struct torture_context *tctx,
+				   struct dcerpc_pipe *p,
+				   struct policy_handle *handle)
+{
+	struct spoolss_SetPrinter r;
+	uint16_t levels[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+	int i;
+
+	struct spoolss_SetPrinterInfoCtr info_ctr;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	struct sec_desc_buf secdesc_ctr;
+
+	info_ctr.level = 0;
+	info_ctr.info.info0 = NULL;
+
+	ZERO_STRUCT(devmode_ctr);
+	ZERO_STRUCT(secdesc_ctr);
+
+	r.in.handle = handle;
+	r.in.info_ctr = &info_ctr;
+	r.in.devmode_ctr = &devmode_ctr;
+	r.in.secdesc_ctr = &secdesc_ctr;
+	r.in.command = 0;
+
+	torture_comment(tctx, "Testing SetPrinter all zero\n");
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_SetPrinter(p, tctx, &r),
+		"failed to call SetPrinter");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAM,
+		"failed to call SetPrinter");
+
+ again:
+	for (i=0; i < ARRAY_SIZE(levels); i++) {
+
+		struct spoolss_SetPrinterInfo0 info0;
+		struct spoolss_SetPrinterInfo1 info1;
+		struct spoolss_SetPrinterInfo2 info2;
+		struct spoolss_SetPrinterInfo3 info3;
+		struct spoolss_SetPrinterInfo4 info4;
+		struct spoolss_SetPrinterInfo5 info5;
+		struct spoolss_SetPrinterInfo6 info6;
+		struct spoolss_SetPrinterInfo7 info7;
+		struct spoolss_DeviceModeInfo info8;
+		struct spoolss_DeviceModeInfo info9;
+
+
+		info_ctr.level = levels[i];
+		switch (levels[i]) {
+		case 0:
+			ZERO_STRUCT(info0);
+			info_ctr.info.info0 = &info0;
+			break;
+		case 1:
+			ZERO_STRUCT(info1);
+			info_ctr.info.info1 = &info1;
+			break;
+		case 2:
+			ZERO_STRUCT(info2);
+			info_ctr.info.info2 = &info2;
+			break;
+		case 3:
+			ZERO_STRUCT(info3);
+			info_ctr.info.info3 = &info3;
+			break;
+		case 4:
+			ZERO_STRUCT(info4);
+			info_ctr.info.info4 = &info4;
+			break;
+		case 5:
+			ZERO_STRUCT(info5);
+			info_ctr.info.info5 = &info5;
+			break;
+		case 6:
+			ZERO_STRUCT(info6);
+			info_ctr.info.info6 = &info6;
+			break;
+		case 7:
+			ZERO_STRUCT(info7);
+			info_ctr.info.info7 = &info7;
+			break;
+		case 8:
+			ZERO_STRUCT(info8);
+			info_ctr.info.info8 = &info8;
+			break;
+		case 9:
+			ZERO_STRUCT(info9);
+			info_ctr.info.info9 = &info9;
+			break;
+		}
+
+		torture_comment(tctx, "Testing SetPrinter level %d, command %d\n",
+			info_ctr.level, r.in.command);
+
+		torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_SetPrinter(p, tctx, &r),
+			"failed to call SetPrinter");
+
+		switch (r.in.command) {
+		case SPOOLSS_PRINTER_CONTROL_UNPAUSE: /* 0 */
+			/* is ignored for all levels other then 0 */
+			if (info_ctr.level > 0) {
+				/* ignored then */
+				break;
+			}
+		case SPOOLSS_PRINTER_CONTROL_PAUSE: /* 1 */
+		case SPOOLSS_PRINTER_CONTROL_RESUME: /* 2 */
+		case SPOOLSS_PRINTER_CONTROL_PURGE: /* 3 */
+			if (info_ctr.level > 0) {
+				/* is invalid for all levels other then 0 */
+				torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PRINTER_COMMAND,
+					"unexpected error code returned");
+				continue;
+			} else {
+				torture_assert_werr_ok(tctx, r.out.result,
+					"failed to call SetPrinter with non 0 command");
+				continue;
+			}
+			break;
+
+		case SPOOLSS_PRINTER_CONTROL_SET_STATUS: /* 4 */
+			/* FIXME: gd needs further investigation */
+		default:
+			torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PRINTER_COMMAND,
+				"unexpected error code returned");
+			continue;
+		}
+
+		switch (info_ctr.level) {
+		case 1:
+			torture_assert_werr_equal(tctx, r.out.result, WERR_UNKNOWN_LEVEL,
+				"unexpected error code returned");
+			break;
+		case 2:
+			torture_assert_werr_equal(tctx, r.out.result, WERR_UNKNOWN_PRINTER_DRIVER,
+				"unexpected error code returned");
+			break;
+		case 3:
+		case 4:
+		case 5:
+		case 7:
+			torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAM,
+				"unexpected error code returned");
+			break;
+		case 9:
+			torture_assert_werr_equal(tctx, r.out.result, WERR_NOT_SUPPORTED,
+				"unexpected error code returned");
+			break;
+		default:
+			torture_assert_werr_ok(tctx, r.out.result,
+				"failed to call SetPrinter");
+			break;
+		}
+	}
+
+	if (r.in.command < 5) {
+		r.in.command++;
+		goto again;
+	}
+
+	return true;
+}
+
+static void clear_info2(struct spoolss_SetPrinterInfoCtr *r)
+{
+	if ((r->level == 2) && (r->info.info2)) {
+		r->info.info2->secdesc = NULL;
+		r->info.info2->devmode = NULL;
+	}
+}
+
+static bool test_PrinterInfo(struct torture_context *tctx,
+			     struct dcerpc_pipe *p,
+			     struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct spoolss_SetPrinter s;
+	struct spoolss_GetPrinter q;
+	struct spoolss_GetPrinter q0;
+	struct spoolss_SetPrinterInfoCtr info_ctr;
+	union spoolss_PrinterInfo info;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	struct sec_desc_buf secdesc_ctr;
+	uint32_t needed;
+	bool ret = true;
+	int i;
+
+	uint32_t status_list[] = {
+		/* these do not stick
+		PRINTER_STATUS_PAUSED,
+		PRINTER_STATUS_ERROR,
+		PRINTER_STATUS_PENDING_DELETION, */
+		PRINTER_STATUS_PAPER_JAM,
+		PRINTER_STATUS_PAPER_OUT,
+		PRINTER_STATUS_MANUAL_FEED,
+		PRINTER_STATUS_PAPER_PROBLEM,
+		PRINTER_STATUS_OFFLINE,
+		PRINTER_STATUS_IO_ACTIVE,
+		PRINTER_STATUS_BUSY,
+		PRINTER_STATUS_PRINTING,
+		PRINTER_STATUS_OUTPUT_BIN_FULL,
+		PRINTER_STATUS_NOT_AVAILABLE,
+		PRINTER_STATUS_WAITING,
+		PRINTER_STATUS_PROCESSING,
+		PRINTER_STATUS_INITIALIZING,
+		PRINTER_STATUS_WARMING_UP,
+		PRINTER_STATUS_TONER_LOW,
+		PRINTER_STATUS_NO_TONER,
+		PRINTER_STATUS_PAGE_PUNT,
+		PRINTER_STATUS_USER_INTERVENTION,
+		PRINTER_STATUS_OUT_OF_MEMORY,
+		PRINTER_STATUS_DOOR_OPEN,
+		PRINTER_STATUS_SERVER_UNKNOWN,
+		PRINTER_STATUS_POWER_SAVE,
+		/* these do not stick
+		0x02000000,
+		0x04000000,
+		0x08000000,
+		0x10000000,
+		0x20000000,
+		0x40000000,
+		0x80000000 */
+	};
+	uint32_t default_attribute = PRINTER_ATTRIBUTE_LOCAL;
+	uint32_t attribute_list[] = {
+		PRINTER_ATTRIBUTE_QUEUED,
+		/* fails with WERR_INVALID_DATATYPE:
+		PRINTER_ATTRIBUTE_DIRECT, */
+		/* does not stick
+		PRINTER_ATTRIBUTE_DEFAULT, */
+		PRINTER_ATTRIBUTE_SHARED,
+		/* does not stick
+		PRINTER_ATTRIBUTE_NETWORK, */
+		PRINTER_ATTRIBUTE_HIDDEN,
+		PRINTER_ATTRIBUTE_LOCAL,
+		PRINTER_ATTRIBUTE_ENABLE_DEVQ,
+		PRINTER_ATTRIBUTE_KEEPPRINTEDJOBS,
+		PRINTER_ATTRIBUTE_DO_COMPLETE_FIRST,
+		PRINTER_ATTRIBUTE_WORK_OFFLINE,
+		/* does not stick
+		PRINTER_ATTRIBUTE_ENABLE_BIDI, */
+		/* fails with WERR_INVALID_DATATYPE:
+		PRINTER_ATTRIBUTE_RAW_ONLY, */
+		/* these do not stick
+		PRINTER_ATTRIBUTE_PUBLISHED,
+		PRINTER_ATTRIBUTE_FAX,
+		PRINTER_ATTRIBUTE_TS,
+		0x00010000,
+		0x00020000,
+		0x00040000,
+		0x00080000,
+		0x00100000,
+		0x00200000,
+		0x00400000,
+		0x00800000,
+		0x01000000,
+		0x02000000,
+		0x04000000,
+		0x08000000,
+		0x10000000,
+		0x20000000,
+		0x40000000,
+		0x80000000 */
+	};
+
+	ZERO_STRUCT(devmode_ctr);
+	ZERO_STRUCT(secdesc_ctr);
+
+	s.in.handle = handle;
+	s.in.command = 0;
+	s.in.info_ctr = &info_ctr;
+	s.in.devmode_ctr = &devmode_ctr;
+	s.in.secdesc_ctr = &secdesc_ctr;
+
+	q.in.handle = handle;
+	q.out.info = &info;
+	q0 = q;
+
+#define TESTGETCALL(call, r) \
+		r.in.buffer = NULL; \
+		r.in.offered = 0;\
+		r.out.needed = &needed; \
+		status = dcerpc_spoolss_ ##call(p, tctx, &r); \
+		if (!NT_STATUS_IS_OK(status)) { \
+			torture_comment(tctx, #call " level %u failed - %s (%s)\n", \
+			       r.in.level, nt_errstr(status), __location__); \
+			ret = false; \
+			break; \
+		}\
+		if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {\
+			DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed); \
+			data_blob_clear(&blob); \
+			r.in.buffer = &blob; \
+			r.in.offered = needed; \
+		}\
+		status = dcerpc_spoolss_ ##call(p, tctx, &r); \
+		if (!NT_STATUS_IS_OK(status)) { \
+			torture_comment(tctx, #call " level %u failed - %s (%s)\n", \
+			       r.in.level, nt_errstr(status), __location__); \
+			ret = false; \
+			break; \
+		} \
+		if (!W_ERROR_IS_OK(r.out.result)) { \
+			torture_comment(tctx, #call " level %u failed - %s (%s)\n", \
+			       r.in.level, win_errstr(r.out.result), __location__); \
+			ret = false; \
+			break; \
+		}
+
+
+#define TESTSETCALL_EXP(call, r, err) \
+		clear_info2(&info_ctr);\
+		status = dcerpc_spoolss_ ##call(p, tctx, &r); \
+		if (!NT_STATUS_IS_OK(status)) { \
+			torture_comment(tctx, #call " level %u failed - %s (%s)\n", \
+			       r.in.info_ctr->level, nt_errstr(status), __location__); \
+			ret = false; \
+			break; \
+		} \
+		if (!W_ERROR_IS_OK(err)) { \
+			if (!W_ERROR_EQUAL(err, r.out.result)) { \
+				torture_comment(tctx, #call " level %u failed - %s, expected %s (%s)\n", \
+				       r.in.info_ctr->level, win_errstr(r.out.result), win_errstr(err), __location__); \
+				ret = false; \
+			} \
+			break; \
+		} \
+		if (!W_ERROR_IS_OK(r.out.result)) { \
+			torture_comment(tctx, #call " level %u failed - %s (%s)\n", \
+			       r.in.info_ctr->level, win_errstr(r.out.result), __location__); \
+			ret = false; \
+			break; \
+		}
+
+#define TESTSETCALL(call, r) \
+	TESTSETCALL_EXP(call, r, WERR_OK)
+
+#define STRING_EQUAL(s1, s2, field) \
+		if ((s1 && !s2) || (s2 && !s1) || strcmp(s1, s2)) { \
+			torture_comment(tctx, "Failed to set %s to '%s' (%s)\n", \
+			       #field, s2, __location__); \
+			ret = false; \
+			break; \
+		}
+
+#define MEM_EQUAL(s1, s2, length, field) \
+		if ((s1 && !s2) || (s2 && !s1) || memcmp(s1, s2, length)) { \
+			torture_comment(tctx, "Failed to set %s to '%s' (%s)\n", \
+			       #field, (const char *)s2, __location__); \
+			ret = false; \
+			break; \
+		}
+
+#define INT_EQUAL(i1, i2, field) \
+		if (i1 != i2) { \
+			torture_comment(tctx, "Failed to set %s to 0x%llx - got 0x%llx (%s)\n", \
+			       #field, (unsigned long long)i2, (unsigned long long)i1, __location__); \
+			ret = false; \
+			break; \
+		}
+
+#define TEST_PRINTERINFO_STRING_EXP_ERR(lvl1, field1, lvl2, field2, value, err) do { \
+		torture_comment(tctx, "field test %d/%s vs %d/%s\n", lvl1, #field1, lvl2, #field2); \
+		q.in.level = lvl1; \
+		TESTGETCALL(GetPrinter, q) \
+		info_ctr.level = lvl1; \
+		info_ctr.info.info ## lvl1 = (struct spoolss_SetPrinterInfo ## lvl1 *)&q.out.info->info ## lvl1; \
+		info_ctr.info.info ## lvl1->field1 = value;\
+		TESTSETCALL_EXP(SetPrinter, s, err) \
+		info_ctr.info.info ## lvl1->field1 = ""; \
+		TESTGETCALL(GetPrinter, q) \
+		info_ctr.info.info ## lvl1->field1 = value; \
+		STRING_EQUAL(info_ctr.info.info ## lvl1->field1, value, field1); \
+		q.in.level = lvl2; \
+		TESTGETCALL(GetPrinter, q) \
+		info_ctr.info.info ## lvl2 = (struct spoolss_SetPrinterInfo ## lvl2 *)&q.out.info->info ## lvl2; \
+		STRING_EQUAL(info_ctr.info.info ## lvl2->field2, value, field2); \
+	} while (0)
+
+#define TEST_PRINTERINFO_STRING(lvl1, field1, lvl2, field2, value) do { \
+	TEST_PRINTERINFO_STRING_EXP_ERR(lvl1, field1, lvl2, field2, value, WERR_OK); \
+	} while (0);
+
+#define TEST_PRINTERINFO_INT_EXP(lvl1, field1, lvl2, field2, value, exp_value) do { \
+		torture_comment(tctx, "field test %d/%s vs %d/%s\n", lvl1, #field1, lvl2, #field2); \
+		q.in.level = lvl1; \
+		TESTGETCALL(GetPrinter, q) \
+		info_ctr.level = lvl1; \
+		info_ctr.info.info ## lvl1 = (struct spoolss_SetPrinterInfo ## lvl1 *)&q.out.info->info ## lvl1; \
+		info_ctr.info.info ## lvl1->field1 = value; \
+		TESTSETCALL(SetPrinter, s) \
+		info_ctr.info.info ## lvl1->field1 = 0; \
+		TESTGETCALL(GetPrinter, q) \
+		info_ctr.info.info ## lvl1 = (struct spoolss_SetPrinterInfo ## lvl1 *)&q.out.info->info ## lvl1; \
+		INT_EQUAL(info_ctr.info.info ## lvl1->field1, exp_value, field1); \
+		q.in.level = lvl2; \
+		TESTGETCALL(GetPrinter, q) \
+		info_ctr.info.info ## lvl2 = (struct spoolss_SetPrinterInfo ## lvl2 *)&q.out.info->info ## lvl2; \
+		INT_EQUAL(info_ctr.info.info ## lvl2->field2, exp_value, field1); \
+	} while (0)
+
+#define TEST_PRINTERINFO_INT(lvl1, field1, lvl2, field2, value) do { \
+        TEST_PRINTERINFO_INT_EXP(lvl1, field1, lvl2, field2, value, value); \
+        } while (0)
+
+	q0.in.level = 0;
+	do { TESTGETCALL(GetPrinter, q0) } while (0);
+
+	TEST_PRINTERINFO_STRING(2, comment,  1, comment, "xx2-1 comment");
+	TEST_PRINTERINFO_STRING(2, comment,  2, comment, "xx2-2 comment");
+
+	/* level 0 printername does not stick */
+/*	TEST_PRINTERINFO_STRING(2, printername,  0, printername, "xx2-0 printer"); */
+	TEST_PRINTERINFO_STRING(2, printername,  1, name,	 "xx2-1 printer");
+	TEST_PRINTERINFO_STRING(2, printername,  2, printername, "xx2-2 printer");
+	TEST_PRINTERINFO_STRING(2, printername,  4, printername, "xx2-4 printer");
+	TEST_PRINTERINFO_STRING(2, printername,  5, printername, "xx2-5 printer");
+/*	TEST_PRINTERINFO_STRING(4, printername,  0, printername, "xx4-0 printer"); */
+	TEST_PRINTERINFO_STRING(4, printername,  1, name,	 "xx4-1 printer");
+	TEST_PRINTERINFO_STRING(4, printername,  2, printername, "xx4-2 printer");
+	TEST_PRINTERINFO_STRING(4, printername,  4, printername, "xx4-4 printer");
+	TEST_PRINTERINFO_STRING(4, printername,  5, printername, "xx4-5 printer");
+/*	TEST_PRINTERINFO_STRING(5, printername,  0, printername, "xx5-0 printer"); */
+	TEST_PRINTERINFO_STRING(5, printername,  1, name,	 "xx5-1 printer");
+	TEST_PRINTERINFO_STRING(5, printername,  2, printername, "xx5-2 printer");
+	TEST_PRINTERINFO_STRING(5, printername,  4, printername, "xx5-4 printer");
+	TEST_PRINTERINFO_STRING(5, printername,  5, printername, "xx5-5 printer");
+
+	/* servername can be set but does not stick
+	TEST_PRINTERINFO_STRING(2, servername,  0, servername, "xx2-0 servername");
+	TEST_PRINTERINFO_STRING(2, servername,  2, servername, "xx2-2 servername");
+	TEST_PRINTERINFO_STRING(2, servername,  4, servername, "xx2-4 servername");
+	*/
+
+	/* passing an invalid port will result in WERR_UNKNOWN_PORT */
+	TEST_PRINTERINFO_STRING_EXP_ERR(2, portname,  2, portname, "xx2-2 portname", WERR_UNKNOWN_PORT);
+	TEST_PRINTERINFO_STRING_EXP_ERR(2, portname,  5, portname, "xx2-5 portname", WERR_UNKNOWN_PORT);
+	TEST_PRINTERINFO_STRING_EXP_ERR(5, portname,  2, portname, "xx5-2 portname", WERR_UNKNOWN_PORT);
+	TEST_PRINTERINFO_STRING_EXP_ERR(5, portname,  5, portname, "xx5-5 portname", WERR_UNKNOWN_PORT);
+
+	TEST_PRINTERINFO_STRING(2, sharename,	2, sharename,	"xx2-2 sharename");
+	/* passing an invalid driver will result in WERR_UNKNOWN_PRINTER_DRIVER */
+	TEST_PRINTERINFO_STRING_EXP_ERR(2, drivername,	2, drivername,	"xx2-2 drivername", WERR_UNKNOWN_PRINTER_DRIVER);
+	TEST_PRINTERINFO_STRING(2, location,	2, location,	"xx2-2 location");
+	/* passing an invalid sepfile will result in WERR_INVALID_SEPARATOR_FILE */
+	TEST_PRINTERINFO_STRING_EXP_ERR(2, sepfile,	2, sepfile,	"xx2-2 sepfile", WERR_INVALID_SEPARATOR_FILE);
+	/* passing an invalid printprocessor will result in WERR_UNKNOWN_PRINTPROCESSOR */
+	TEST_PRINTERINFO_STRING_EXP_ERR(2, printprocessor, 2, printprocessor, "xx2-2 printprocessor", WERR_UNKNOWN_PRINTPROCESSOR);
+	TEST_PRINTERINFO_STRING(2, datatype,	2, datatype,	"xx2-2 datatype");
+	TEST_PRINTERINFO_STRING(2, parameters,	2, parameters,	"xx2-2 parameters");
+
+	for (i=0; i < ARRAY_SIZE(attribute_list); i++) {
+/*		TEST_PRINTERINFO_INT_EXP(2, attributes, 1, flags,
+			attribute_list[i],
+			(attribute_list[i] | default_attribute)
+			); */
+		TEST_PRINTERINFO_INT_EXP(2, attributes, 2, attributes,
+			attribute_list[i],
+			(attribute_list[i] | default_attribute)
+			);
+		TEST_PRINTERINFO_INT_EXP(2, attributes, 4, attributes,
+			attribute_list[i],
+			(attribute_list[i] | default_attribute)
+			);
+		TEST_PRINTERINFO_INT_EXP(2, attributes, 5, attributes,
+			attribute_list[i],
+			(attribute_list[i] | default_attribute)
+			);
+/*		TEST_PRINTERINFO_INT_EXP(4, attributes, 1, flags,
+			attribute_list[i],
+			(attribute_list[i] | default_attribute)
+			); */
+		TEST_PRINTERINFO_INT_EXP(4, attributes, 2, attributes,
+			attribute_list[i],
+			(attribute_list[i] | default_attribute)
+			);
+		TEST_PRINTERINFO_INT_EXP(4, attributes, 4, attributes,
+			attribute_list[i],
+			(attribute_list[i] | default_attribute)
+			);
+		TEST_PRINTERINFO_INT_EXP(4, attributes, 5, attributes,
+			attribute_list[i],
+			(attribute_list[i] | default_attribute)
+			);
+/*		TEST_PRINTERINFO_INT_EXP(5, attributes, 1, flags,
+			attribute_list[i],
+			(attribute_list[i] | default_attribute)
+			); */
+		TEST_PRINTERINFO_INT_EXP(5, attributes, 2, attributes,
+			attribute_list[i],
+			(attribute_list[i] | default_attribute)
+			);
+		TEST_PRINTERINFO_INT_EXP(5, attributes, 4, attributes,
+			attribute_list[i],
+			(attribute_list[i] | default_attribute)
+			);
+		TEST_PRINTERINFO_INT_EXP(5, attributes, 5, attributes,
+			attribute_list[i],
+			(attribute_list[i] | default_attribute)
+			);
+	}
+
+	for (i=0; i < ARRAY_SIZE(status_list); i++) {
+		/* level 2 sets do not stick
+		TEST_PRINTERINFO_INT(2, status,	0, status, status_list[i]);
+		TEST_PRINTERINFO_INT(2, status,	2, status, status_list[i]);
+		TEST_PRINTERINFO_INT(2, status,	6, status, status_list[i]); */
+		TEST_PRINTERINFO_INT(6, status,	0, status, status_list[i]);
+		TEST_PRINTERINFO_INT(6, status,	2, status, status_list[i]);
+		TEST_PRINTERINFO_INT(6, status,	6, status, status_list[i]);
+	}
+
+	/* priorities need to be between 0 and 99
+	   passing an invalid priority will result in WERR_INVALID_PRIORITY */
+	TEST_PRINTERINFO_INT(2, priority,	2, priority, 0);
+	TEST_PRINTERINFO_INT(2, priority,	2, priority, 1);
+	TEST_PRINTERINFO_INT(2, priority,	2, priority, 99);
+	/* TEST_PRINTERINFO_INT(2, priority,	2, priority, 100); */
+	TEST_PRINTERINFO_INT(2, defaultpriority,2, defaultpriority, 0);
+	TEST_PRINTERINFO_INT(2, defaultpriority,2, defaultpriority, 1);
+	TEST_PRINTERINFO_INT(2, defaultpriority,2, defaultpriority, 99);
+	/* TEST_PRINTERINFO_INT(2, defaultpriority,2, defaultpriority, 100); */
+
+	TEST_PRINTERINFO_INT(2, starttime,	2, starttime, __LINE__);
+	TEST_PRINTERINFO_INT(2, untiltime,	2, untiltime, __LINE__);
+
+	/* does not stick
+	TEST_PRINTERINFO_INT(2, cjobs,		2, cjobs, __LINE__);
+	TEST_PRINTERINFO_INT(2, averageppm,	2, averageppm, __LINE__); */
+
+	/* does not stick
+	TEST_PRINTERINFO_INT(5, device_not_selected_timeout, 5, device_not_selected_timeout, __LINE__);
+	TEST_PRINTERINFO_INT(5, transmission_retry_timeout, 5, transmission_retry_timeout, __LINE__); */
+
+	/* FIXME: gd also test devmode and secdesc behavior */
+
+	{
+		/* verify composition of level 1 description field */
+		const char *description;
+		const char *tmp;
+
+		q0.in.level = 1;
+		do { TESTGETCALL(GetPrinter, q0) } while (0);
+
+		description = talloc_strdup(tctx, q0.out.info->info1.description);
+
+		q0.in.level = 2;
+		do { TESTGETCALL(GetPrinter, q0) } while (0);
+
+		tmp = talloc_asprintf(tctx, "%s,%s,%s",
+			q0.out.info->info2.printername,
+			q0.out.info->info2.drivername,
+			q0.out.info->info2.location);
+
+		do { STRING_EQUAL(description, tmp, "description")} while (0);
+	}
+
+	return ret;
 }
 
 
@@ -1972,12 +2537,45 @@ static bool test_EnumPrinters_old(struct torture_context *tctx, struct dcerpc_pi
 	return ret;
 }
 
-#if 0
-static bool test_GetPrinterDriver2(struct dcerpc_pipe *p,
+static bool test_GetPrinterDriver(struct torture_context *tctx,
+				  struct dcerpc_pipe *p,
+				  struct policy_handle *handle,
+				  const char *driver_name)
+{
+	struct spoolss_GetPrinterDriver r;
+	uint32_t needed;
+
+	r.in.handle = handle;
+	r.in.architecture = "W32X86";
+	r.in.level = 1;
+	r.in.buffer = NULL;
+	r.in.offered = 0;
+	r.out.needed = &needed;
+
+	torture_comment(tctx, "Testing GetPrinterDriver level %d\n", r.in.level);
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_GetPrinterDriver(p, tctx, &r),
+		"failed to call GetPrinterDriver");
+	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+		DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
+		data_blob_clear(&blob);
+		r.in.buffer = &blob;
+		r.in.offered = needed;
+		torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_GetPrinterDriver(p, tctx, &r),
+			"failed to call GetPrinterDriver");
+	}
+
+	torture_assert_werr_ok(tctx, r.out.result,
+		"failed to call GetPrinterDriver");
+
+	return true;
+}
+
+static bool test_GetPrinterDriver2(struct torture_context *tctx,
+				   struct dcerpc_pipe *p,
 				   struct policy_handle *handle,
 				   const char *driver_name)
 {
-	NTSTATUS status;
 	struct spoolss_GetPrinterDriver2 r;
 	uint32_t needed;
 	uint32_t server_major_version;
@@ -1994,34 +2592,24 @@ static bool test_GetPrinterDriver2(struct dcerpc_pipe *p,
 	r.out.server_major_version = &server_major_version;
 	r.out.server_minor_version = &server_minor_version;
 
-	printf("Testing GetPrinterDriver2\n");
+	torture_comment(tctx, "Testing GetPrinterDriver2 level %d\n", r.in.level);
 
-	status = dcerpc_spoolss_GetPrinterDriver2(p, tctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("GetPrinterDriver2 failed - %s\n", nt_errstr(status));
-		return false;
-	}
-
+	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_GetPrinterDriver2(p, tctx, &r),
+		"failed to call GetPrinterDriver2");
 	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+		DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
+		data_blob_clear(&blob);
+		r.in.buffer = &blob;
 		r.in.offered = needed;
-		status = dcerpc_spoolss_GetPrinterDriver2(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_GetPrinterDriver2(p, tctx, &r),
+			"failed to call GetPrinterDriver2");
 	}
 
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("GetPrinterDriver2 failed - %s\n",
-		       nt_errstr(status));
-		return false;
-	}
-
-	if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("GetPrinterDriver2 failed - %s\n",
-		       win_errstr(r.out.result));
-		return false;
-	}
+	torture_assert_werr_ok(tctx, r.out.result,
+		"failed to call GetPrinterDriver2");
 
 	return true;
 }
-#endif
 
 static bool test_EnumPrinterDrivers_old(struct torture_context *tctx,
 					struct dcerpc_pipe *p)
@@ -2073,6 +2661,432 @@ static bool test_EnumPrinterDrivers_old(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_DeletePrinter(struct torture_context *tctx,
+			       struct dcerpc_pipe *p,
+			       struct policy_handle *handle)
+{
+	struct spoolss_DeletePrinter r;
+
+	torture_comment(tctx, "Testing DeletePrinter\n");
+
+	r.in.handle = handle;
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_DeletePrinter(p, tctx, &r),
+		"failed to delete printer");
+	torture_assert_werr_ok(tctx, r.out.result,
+		"failed to delete printer");
+
+	return true;
+}
+
+static bool test_EnumPrinters_findname(struct torture_context *tctx,
+				       struct dcerpc_pipe *p,
+				       uint32_t flags,
+				       uint32_t level,
+				       const char *name,
+				       bool *found)
+{
+	struct spoolss_EnumPrinters e;
+	uint32_t count;
+	union spoolss_PrinterInfo *info;
+	uint32_t needed;
+	int i;
+
+	*found = false;
+
+	e.in.flags = flags;
+	e.in.server = NULL;
+	e.in.level = level;
+	e.in.buffer = NULL;
+	e.in.offered = 0;
+	e.out.count = &count;
+	e.out.info = &info;
+	e.out.needed = &needed;
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_EnumPrinters(p, tctx, &e),
+		"failed to enum printers");
+
+	if (W_ERROR_EQUAL(e.out.result, WERR_INSUFFICIENT_BUFFER)) {
+		DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
+		data_blob_clear(&blob);
+		e.in.buffer = &blob;
+		e.in.offered = needed;
+
+		torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_EnumPrinters(p, tctx, &e),
+			"failed to enum printers");
+	}
+
+	torture_assert_werr_ok(tctx, e.out.result,
+		"failed to enum printers");
+
+	for (i=0; i < count; i++) {
+
+		const char *current = NULL;
+
+		switch (level) {
+		case 1:
+			current = info[i].info1.name;
+			break;
+		}
+
+		if (strequal(current, name)) {
+			*found = true;
+			break;
+		}
+	}
+
+	return true;
+}
+
+static bool test_AddPrinter_wellknown(struct torture_context *tctx,
+				      struct dcerpc_pipe *p,
+				      const char *printername,
+				      bool ex)
+{
+	WERROR result;
+	struct spoolss_AddPrinter r;
+	struct spoolss_AddPrinterEx rex;
+	struct spoolss_SetPrinterInfoCtr info_ctr;
+	struct spoolss_SetPrinterInfo1 info1;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	struct sec_desc_buf secdesc_ctr;
+	struct spoolss_UserLevelCtr userlevel_ctr;
+	struct policy_handle handle;
+	bool found = false;
+
+	ZERO_STRUCT(devmode_ctr);
+	ZERO_STRUCT(secdesc_ctr);
+	ZERO_STRUCT(userlevel_ctr);
+	ZERO_STRUCT(info1);
+
+	torture_comment(tctx, "Testing AddPrinter%s level 1\n", ex ? "Ex":"");
+
+	/* try to add printer to wellknown printer list (level 1) */
+
+	userlevel_ctr.level = 1;
+
+	info_ctr.info.info1 = &info1;
+	info_ctr.level = 1;
+
+	rex.in.server = NULL;
+	rex.in.info_ctr = &info_ctr;
+	rex.in.devmode_ctr = &devmode_ctr;
+	rex.in.secdesc_ctr = &secdesc_ctr;
+	rex.in.userlevel_ctr = &userlevel_ctr;
+	rex.out.handle = &handle;
+
+	r.in.server = NULL;
+	r.in.info_ctr = &info_ctr;
+	r.in.devmode_ctr = &devmode_ctr;
+	r.in.secdesc_ctr = &secdesc_ctr;
+	r.out.handle = &handle;
+
+	torture_assert_ntstatus_ok(tctx, ex ? dcerpc_spoolss_AddPrinterEx(p, tctx, &rex) :
+					      dcerpc_spoolss_AddPrinter(p, tctx, &r),
+		"failed to add printer");
+	result = ex ? rex.out.result : r.out.result;
+	torture_assert_werr_equal(tctx, result, WERR_INVALID_PRINTER_NAME,
+		"unexpected result code");
+
+	info1.name = printername;
+	info1.flags = PRINTER_ATTRIBUTE_SHARED;
+
+	torture_assert_ntstatus_ok(tctx, ex ? dcerpc_spoolss_AddPrinterEx(p, tctx, &rex) :
+					      dcerpc_spoolss_AddPrinter(p, tctx, &r),
+		"failed to add printer");
+	result = ex ? rex.out.result : r.out.result;
+	torture_assert_werr_equal(tctx, result, WERR_PRINTER_ALREADY_EXISTS,
+		"unexpected result code");
+
+	/* bizarre protocol, WERR_PRINTER_ALREADY_EXISTS means success here,
+	   better do a real check to see the printer is really there */
+
+	torture_assert(tctx, test_EnumPrinters_findname(tctx, p,
+							PRINTER_ENUM_NETWORK, 1,
+							printername,
+							&found),
+			"failed to enum printers");
+
+	torture_assert(tctx, found, "failed to find newly added printer");
+
+	info1.flags = 0;
+
+	torture_assert_ntstatus_ok(tctx, ex ? dcerpc_spoolss_AddPrinterEx(p, tctx, &rex) :
+					      dcerpc_spoolss_AddPrinter(p, tctx, &r),
+		"failed to add printer");
+	result = ex ? rex.out.result : r.out.result;
+	torture_assert_werr_equal(tctx, result, WERR_PRINTER_ALREADY_EXISTS,
+		"unexpected result code");
+
+	/* bizarre protocol, WERR_PRINTER_ALREADY_EXISTS means success here,
+	   better do a real check to see the printer has really been removed
+	   from the well known printer list */
+
+	found = false;
+
+	torture_assert(tctx, test_EnumPrinters_findname(tctx, p,
+							PRINTER_ENUM_NETWORK, 1,
+							printername,
+							&found),
+			"failed to enum printers");
+#if 0
+	torture_assert(tctx, !found, "printer still in well known printer list");
+#endif
+	return true;
+}
+
+static bool test_AddPrinter_normal(struct torture_context *tctx,
+				   struct dcerpc_pipe *p,
+				   struct policy_handle *handle_p,
+				   const char *printername,
+				   const char *drivername,
+				   const char *portname,
+				   bool ex)
+{
+	WERROR result;
+	struct spoolss_AddPrinter r;
+	struct spoolss_AddPrinterEx rex;
+	struct spoolss_SetPrinterInfoCtr info_ctr;
+	struct spoolss_SetPrinterInfo2 info2;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	struct sec_desc_buf secdesc_ctr;
+	struct spoolss_UserLevelCtr userlevel_ctr;
+	struct policy_handle handle;
+	bool found = false;
+
+	ZERO_STRUCT(devmode_ctr);
+	ZERO_STRUCT(secdesc_ctr);
+	ZERO_STRUCT(userlevel_ctr);
+
+	torture_comment(tctx, "Testing AddPrinter%s level 2\n", ex ? "Ex":"");
+
+	userlevel_ctr.level = 1;
+
+	rex.in.server = NULL;
+	rex.in.info_ctr = &info_ctr;
+	rex.in.devmode_ctr = &devmode_ctr;
+	rex.in.secdesc_ctr = &secdesc_ctr;
+	rex.in.userlevel_ctr = &userlevel_ctr;
+	rex.out.handle = &handle;
+
+	r.in.server = NULL;
+	r.in.info_ctr = &info_ctr;
+	r.in.devmode_ctr = &devmode_ctr;
+	r.in.secdesc_ctr = &secdesc_ctr;
+	r.out.handle = &handle;
+
+ again:
+
+	/* try to add printer to printer list (level 2) */
+
+	ZERO_STRUCT(info2);
+
+	info_ctr.info.info2 = &info2;
+	info_ctr.level = 2;
+
+	torture_assert_ntstatus_ok(tctx, ex ? dcerpc_spoolss_AddPrinterEx(p, tctx, &rex) :
+					      dcerpc_spoolss_AddPrinter(p, tctx, &r),
+		"failed to add printer");
+	result = ex ? rex.out.result : r.out.result;
+	torture_assert_werr_equal(tctx, result, WERR_INVALID_PRINTER_NAME,
+		"unexpected result code");
+
+	info2.printername = printername;
+
+	torture_assert_ntstatus_ok(tctx, ex ? dcerpc_spoolss_AddPrinterEx(p, tctx, &rex) :
+					      dcerpc_spoolss_AddPrinter(p, tctx, &r),
+		"failed to add printer");
+	result = ex ? rex.out.result : r.out.result;
+
+	if (W_ERROR_EQUAL(result, WERR_PRINTER_ALREADY_EXISTS)) {
+		struct policy_handle printer_handle;
+
+		torture_assert(tctx, call_OpenPrinterEx(tctx, p, printername, &printer_handle),
+			"failed to open printer handle");
+
+		torture_assert(tctx, test_DeletePrinter(tctx, p, &printer_handle),
+			"failed to delete printer");
+
+		torture_assert(tctx, test_ClosePrinter(tctx, p, &printer_handle),
+			"failed to close server handle");
+
+		goto again;
+	}
+
+	torture_assert_werr_equal(tctx, result, WERR_UNKNOWN_PORT,
+		"unexpected result code");
+
+	info2.portname = portname;
+
+	torture_assert_ntstatus_ok(tctx, ex ? dcerpc_spoolss_AddPrinterEx(p, tctx, &rex) :
+					      dcerpc_spoolss_AddPrinter(p, tctx, &r),
+		"failed to add printer");
+	result = ex ? rex.out.result : r.out.result;
+	torture_assert_werr_equal(tctx, result, WERR_UNKNOWN_PRINTER_DRIVER,
+		"unexpected result code");
+
+	info2.drivername = drivername;
+
+	torture_assert_ntstatus_ok(tctx, ex ? dcerpc_spoolss_AddPrinterEx(p, tctx, &rex) :
+					      dcerpc_spoolss_AddPrinter(p, tctx, &r),
+		"failed to add printer");
+	result = ex ? rex.out.result : r.out.result;
+	torture_assert_werr_equal(tctx, result, WERR_UNKNOWN_PRINTPROCESSOR,
+		"unexpected result code");
+
+	info2.printprocessor = "winprint";
+
+	torture_assert_ntstatus_ok(tctx, ex ? dcerpc_spoolss_AddPrinterEx(p, tctx, &rex) :
+					      dcerpc_spoolss_AddPrinter(p, tctx, &r),
+		"failed to add printer");
+	result = ex ? rex.out.result : r.out.result;
+	torture_assert_werr_ok(tctx, result,
+		"failed to add printer");
+
+	*handle_p = handle;
+
+	/* we are paranoid, really check if the printer is there now */
+
+	torture_assert(tctx, test_EnumPrinters_findname(tctx, p,
+							PRINTER_ENUM_LOCAL, 1,
+							printername,
+							&found),
+			"failed to enum printers");
+	torture_assert(tctx, found, "failed to find newly added printer");
+
+	torture_assert_ntstatus_ok(tctx, ex ? dcerpc_spoolss_AddPrinterEx(p, tctx, &rex) :
+					      dcerpc_spoolss_AddPrinter(p, tctx, &r),
+		"failed to add printer");
+	result = ex ? rex.out.result : r.out.result;
+	torture_assert_werr_equal(tctx, result, WERR_PRINTER_ALREADY_EXISTS,
+		"unexpected result code");
+
+	return true;
+}
+
+static bool test_AddPrinterEx(struct torture_context *tctx,
+			      struct dcerpc_pipe *p,
+			      struct policy_handle *handle_p,
+			      const char *printername,
+			      const char *drivername,
+			      const char *portname)
+{
+	bool ret = true;
+
+	if (!torture_setting_bool(tctx, "samba3", false)) {
+		if (!test_AddPrinter_wellknown(tctx, p, TORTURE_WELLKNOWN_PRINTER_EX, true)) {
+			torture_comment(tctx, "failed to add printer to well known list\n");
+			ret = false;
+		}
+	}
+
+	if (!test_AddPrinter_normal(tctx, p, handle_p,
+				    printername, drivername, portname,
+				    true)) {
+		torture_comment(tctx, "failed to add printer to printer list\n");
+		ret = false;
+	}
+
+	return ret;
+}
+
+static bool test_AddPrinter(struct torture_context *tctx,
+			    struct dcerpc_pipe *p,
+			    struct policy_handle *handle_p,
+			    const char *printername,
+			    const char *drivername,
+			    const char *portname)
+{
+	bool ret = true;
+
+	if (!torture_setting_bool(tctx, "samba3", false)) {
+		if (!test_AddPrinter_wellknown(tctx, p, TORTURE_WELLKNOWN_PRINTER, false)) {
+			torture_comment(tctx, "failed to add printer to well known list\n");
+			ret = false;
+		}
+	}
+
+	if (!test_AddPrinter_normal(tctx, p, handle_p,
+				    printername, drivername, portname,
+				    false)) {
+		torture_comment(tctx, "failed to add printer to printer list\n");
+		ret = false;
+	}
+
+	return ret;
+}
+
+static bool test_printer_info(struct torture_context *tctx,
+			      struct dcerpc_pipe *p,
+			      struct policy_handle *handle)
+{
+	bool ret = true;
+
+	if (!test_PrinterInfo(tctx, p, handle)) {
+		ret = false;
+	}
+
+	if (!test_SetPrinter_errors(tctx, p, handle)) {
+		ret = false;
+	}
+
+	return ret;
+}
+
+static bool test_printer(struct torture_context *tctx,
+			 struct dcerpc_pipe *p)
+{
+	bool ret = true;
+	struct policy_handle handle[2];
+	bool found = false;
+	const char *drivername = "Microsoft XPS Document Writer";
+	const char *portname = "LPT1:";
+
+	/* test printer created via AddPrinter */
+
+	if (!test_AddPrinter(tctx, p, &handle[0], TORTURE_PRINTER, drivername, portname)) {
+		return false;
+	}
+
+	if (!test_printer_info(tctx, p, &handle[0])) {
+		ret = false;
+	}
+
+	if (!test_DeletePrinter(tctx, p, &handle[0])) {
+		ret = false;
+	}
+
+	if (!test_EnumPrinters_findname(tctx, p, PRINTER_ENUM_LOCAL, 1,
+					TORTURE_PRINTER, &found)) {
+		ret = false;
+	}
+
+	torture_assert(tctx, !found, "deleted printer still there");
+
+	/* test printer created via AddPrinterEx */
+
+	if (!test_AddPrinterEx(tctx, p, &handle[1], TORTURE_PRINTER_EX, drivername, portname)) {
+		return false;
+	}
+
+	if (!test_printer_info(tctx, p, &handle[1])) {
+		ret = false;
+	}
+
+	if (!test_DeletePrinter(tctx, p, &handle[1])) {
+		ret = false;
+	}
+
+	if (!test_EnumPrinters_findname(tctx, p, PRINTER_ENUM_LOCAL, 1,
+					TORTURE_PRINTER_EX, &found)) {
+		ret = false;
+	}
+
+	torture_assert(tctx, !found, "deleted printer still there");
+
+	return ret;
+}
+
 bool torture_rpc_spoolss(struct torture_context *torture)
 {
 	NTSTATUS status;
@@ -2087,7 +3101,7 @@ bool torture_rpc_spoolss(struct torture_context *torture)
 
 	ctx = talloc_zero(torture, struct test_spoolss_context);
 
-	ret &= test_OpenPrinter_server(torture, p, ctx);
+	ret &= test_OpenPrinter_server(torture, p, &ctx->server_handle);
 
 	ret &= test_GetPrinterData(torture, p, &ctx->server_handle, "W3SvcInstalled");
 	ret &= test_GetPrinterData(torture, p, &ctx->server_handle, "BeepEnabled");
@@ -2128,4 +3142,16 @@ bool torture_rpc_spoolss(struct torture_context *torture)
 	ret &= test_EnumPrinterDrivers_old(torture, p);
 
 	return ret;
+}
+
+struct torture_suite *torture_rpc_spoolss_printer(TALLOC_CTX *mem_ctx)
+{
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "SPOOLSS-PRINTER");
+
+	struct torture_rpc_tcase *tcase = torture_suite_add_rpc_iface_tcase(suite,
+							"printer", &ndr_table_spoolss);
+
+	torture_rpc_tcase_add_test(tcase, "printer", test_printer);
+
+	return suite;
 }

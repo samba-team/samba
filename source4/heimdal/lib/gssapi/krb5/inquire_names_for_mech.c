@@ -33,9 +33,6 @@
 
 #include "gsskrb5_locl.h"
 
-RCSID("$Id$");
-
-
 static gss_OID *name_list[] = {
     &GSS_C_NT_HOSTBASED_SERVICE,
     &GSS_C_NT_USER_NAME,

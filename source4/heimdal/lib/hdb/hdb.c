@@ -33,7 +33,6 @@
 
 #include "krb5_locl.h"
 #include "hdb_locl.h"
-RCSID("$Id$");
 
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>

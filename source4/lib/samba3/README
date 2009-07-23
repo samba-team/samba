@@ -3,6 +3,3 @@ Samba3 import, migration and compatibility.
 
 For example, the first file in this directory (smbpasswd.c) handles
 portions of the smbpasswd file format.
-
-The other files in this directory support reading the various 
-TDB databases from Samba3.

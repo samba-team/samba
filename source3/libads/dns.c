@@ -754,10 +754,6 @@ bool sitename_store(const char *realm, const char *sitename)
 	bool ret = False;
 	char *key;
 
-	if (!gencache_init()) {
-		return False;
-	}
-
 	if (!realm || (strlen(realm) == 0)) {
 		DEBUG(0,("sitename_store: no realm\n"));
 		return False;
@@ -794,10 +790,6 @@ char *sitename_fetch(const char *realm)
 	bool ret = False;
 	const char *query_realm;
 	char *key;
-
-	if (!gencache_init()) {
-		return NULL;
-	}
 
 	if (!realm || (strlen(realm) == 0)) {
 		query_realm = lp_realm();

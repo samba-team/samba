@@ -88,7 +88,7 @@ time_t pdb_get_pass_can_change_time(const struct samu *sampass)
 	    pdb_get_init_flags(sampass, PDB_CANCHANGETIME) == PDB_CHANGED)
 		return sampass->pass_can_change_time;
 
-	if (!pdb_get_account_policy(AP_MIN_PASSWORD_AGE, &allow))
+	if (!pdb_get_account_policy(PDB_POLICY_MIN_PASSWORD_AGE, &allow))
 		allow = 0;
 
 	/* in normal cases, just calculate it from policy */
@@ -112,7 +112,7 @@ time_t pdb_get_pass_must_change_time(const struct samu *sampass)
 	if (sampass->acct_ctrl & ACB_PWNOEXP)
 		return get_time_t_max();
 
-	if (!pdb_get_account_policy(AP_MAX_PASSWORD_AGE, &expire)
+	if (!pdb_get_account_policy(PDB_POLICY_MAX_PASSWORD_AGE, &expire)
 	    || expire == (uint32)-1 || expire == 0) 
 		return get_time_t_max();
 
@@ -1013,7 +1013,7 @@ bool pdb_set_plaintext_passwd(struct samu *sampass, const char *plaintext)
 	if (pdb_get_acct_ctrl(sampass) & ACB_NORMAL) {
 		uchar *pwhistory;
 		uint32 pwHistLen;
-		pdb_get_account_policy(AP_PASSWORD_HISTORY, &pwHistLen);
+		pdb_get_account_policy(PDB_POLICY_PASSWORD_HISTORY, &pwHistLen);
 		if (pwHistLen != 0){
 			uint32 current_history_len;
 			/* We need to make sure we don't have a race condition here - the

@@ -1409,7 +1409,7 @@ int ltdb_index_del_value(struct ldb_module *module, const char *dn,
 		struct ldb_ldif ldif;
 
 		ldb_debug(ldb, LDB_DEBUG_ERROR,
-				"ERROR: dn %s not found in %s\n", dn,
+				"ERROR: dn %s not found in %s", dn,
 				ldb_dn_get_linearized(dn_key));
 		ldif.changetype = LDB_CHANGETYPE_NONE;
 		ldif.msg = msg;
@@ -1587,7 +1587,7 @@ static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *
 	key2 = ltdb_key(module, msg->dn);
 	if (key2.dptr == NULL) {
 		/* probably a corrupt record ... darn */
-		ldb_debug(ldb, LDB_DEBUG_ERROR, "Invalid DN in re_index: %s\n",
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "Invalid DN in re_index: %s",
 							ldb_dn_get_linearized(msg->dn));
 		talloc_free(msg);
 		return 0;
@@ -1609,7 +1609,7 @@ static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *
 		ret = ltdb_index_add0(module, dn, msg->elements, msg->num_elements);
 	} else {
 		ldb_debug(ldb, LDB_DEBUG_ERROR,
-			"Adding special ONE LEVEL index failed (%s)!\n",
+			"Adding special ONE LEVEL index failed (%s)!",
 			ldb_dn_get_linearized(msg->dn));
 	}
 

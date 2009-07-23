@@ -103,6 +103,7 @@ AC_CHECK_HEADERS(sys/time.h time.h)
 AC_CHECK_HEADERS(stdarg.h vararg.h)
 AC_CHECK_HEADERS(sys/mount.h mntent.h)
 AC_CHECK_HEADERS(stropts.h)
+AC_CHECK_HEADERS(unix.h)
 
 AC_CHECK_FUNCS(seteuid setresuid setegid setresgid chroot bzero strerror)
 AC_CHECK_FUNCS(vsyslog setlinebuf mktime ftruncate chsize rename)

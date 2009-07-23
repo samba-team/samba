@@ -33,8 +33,6 @@
 
 #include "gsskrb5_locl.h"
 
-RCSID("$Id$");
-
 HEIMDAL_MUTEX gssapi_keytab_mutex = HEIMDAL_MUTEX_INITIALIZER;
 krb5_keytab _gsskrb5_keytab;
 
@@ -519,10 +517,12 @@ gsskrb5_acceptor_start(OM_uint32 * minor_status,
 	    }
 
 	    /*
-	     * Samba style get some flags (but not DCE-STYLE)
+	     * Samba style get some flags (but not DCE-STYLE), use
+	     * ap_options to guess the mutual flag.
 	     */
-	    ctx->flags =
-		GSS_C_MUTUAL_FLAG | GSS_C_REPLAY_FLAG | GSS_C_SEQUENCE_FLAG;
+ 	    ctx->flags = GSS_C_REPLAY_FLAG | GSS_C_SEQUENCE_FLAG;
+	    if (ap_options & AP_OPTS_MUTUAL_REQUIRED)
+		ctx->flags |= GSS_C_MUTUAL_FLAG;
         }
     }
 

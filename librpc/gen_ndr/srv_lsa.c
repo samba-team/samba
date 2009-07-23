@@ -3366,6 +3366,8 @@ static bool api_lsa_RetrievePrivateData(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_RetrievePrivateData, r);
 	}
 
+	ZERO_STRUCT(r->out);
+	r->out.val = r->in.val;
 	r->out.result = _lsa_RetrievePrivateData(p, r);
 
 	if (p->rng_fault_state) {
@@ -6810,6 +6812,8 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 
 		case NDR_LSA_RETRIEVEPRIVATEDATA: {
 			struct lsa_RetrievePrivateData *r = (struct lsa_RetrievePrivateData *)_r;
+			ZERO_STRUCT(r->out);
+			r->out.val = r->in.val;
 			r->out.result = _lsa_RetrievePrivateData(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}

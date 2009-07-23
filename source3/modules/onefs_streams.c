@@ -376,7 +376,7 @@ int onefs_fstat(vfs_handle_struct *handle, struct files_struct *fsp,
 		}
 	}
 
-	onefs_adjust_stat_time(handle->conn, fsp->fsp_name, sbuf);
+	onefs_adjust_stat_time(handle->conn, fsp->fsp_name->base_name, sbuf);
 	return ret;
 }
 
@@ -600,7 +600,11 @@ static NTSTATUS walk_onefs_streams(connection_struct *conn, files_struct *fsp,
 
 	fake_fs.conn = conn;
 	fake_fs.fh = &fake_fh;
-	fake_fs.fsp_name = SMB_STRDUP(fname);
+	status = create_synthetic_smb_fname(talloc_tos(), fname, NULL, NULL,
+					    &fake_fs.fsp_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
 
 	/* Iterate over the streams in the ADS directory. */
 	while ((dp = SMB_VFS_READDIR(conn, dirp, NULL)) != NULL) {
@@ -667,7 +671,7 @@ out:
 		close(base_fd);
 	}
 
-	SAFE_FREE(fake_fs.fsp_name);
+	TALLOC_FREE(fake_fs.fsp_name);
 	return status;
 }
 

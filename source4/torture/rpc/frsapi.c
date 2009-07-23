@@ -114,15 +114,15 @@ static bool test_IsPathReplicated_err(struct torture_context *tctx,
 {
 	struct frsapi_IsPathReplicated r;
 	struct GUID guid;
-	uint32_t unknown1, unknown2, unknown3 = 0;
+	uint32_t replicated, primary, root;
 
 	ZERO_STRUCT(r);
 
 	r.in.path = path;
 	r.in.replica_set_type = type;
-	r.out.unknown1 = &unknown1;
-	r.out.unknown2 = &unknown2;
-	r.out.unknown3 = &unknown3;
+	r.out.replicated = &replicated;
+	r.out.primary = &primary;
+	r.out.root = &root;
 	r.out.replica_set_guid = &guid;
 
 	torture_assert_ntstatus_ok(tctx,
@@ -191,11 +191,11 @@ static bool test_ForceReplication(struct torture_context *tctx,
 
 	ZERO_STRUCT(r);
 
-	r.in.guid1 = NULL;
-	r.in.guid2 = NULL;
-	r.in.replica_set = talloc_asprintf(tctx, "%s",
-					   lp_realm(tctx->lp_ctx));
-	r.in.partner_name = dcerpc_server_name(p);
+	r.in.replica_set_guid = NULL;
+	r.in.connection_guid = NULL;
+	r.in.replica_set_name = talloc_asprintf(tctx, "%s",
+						lp_realm(tctx->lp_ctx));
+	r.in.partner_dns_name = dcerpc_server_name(p);
 
 	torture_assert_ntstatus_ok(tctx,
 		dcerpc_frsapi_ForceReplication(p, tctx, &r),

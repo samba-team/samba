@@ -25,7 +25,7 @@
 #include "lib/ldb/include/ldb_errors.h"
 #include "lib/ldb_wrap.h"
 #include "dsdb/samdb/samdb.h"
-#include "dsdb/common/flags.h"
+#include "../libds/common/flags.h"
 #include "librpc/gen_ndr/ndr_drsuapi_c.h"
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_misc.h"

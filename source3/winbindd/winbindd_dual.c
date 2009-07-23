@@ -179,10 +179,6 @@ int wb_child_request_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	if (tevent_req_is_unix_error(req, err)) {
 		return -1;
 	}
-	if (state->response->result != WINBINDD_OK) {
-		*err = EIO; /* EIO doesn't fit, but what would be better? */
-		return -1;
-	}
 	*presponse = talloc_move(mem_ctx, &state->response);
 	return 0;
 }

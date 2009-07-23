@@ -81,7 +81,7 @@ bool set_file_oplock(files_struct *fsp, int oplock_type)
 
 	DEBUG(5,("set_file_oplock: granted oplock on file %s, %s/%lu, "
 		    "tv_sec = %x, tv_usec = %x\n",
-		 fsp->fsp_name, file_id_string_tos(&fsp->file_id),
+		 fsp_str_dbg(fsp), file_id_string_tos(&fsp->file_id),
 		 fsp->fh->gen_id, (int)fsp->open_time.tv_sec,
 		 (int)fsp->open_time.tv_usec ));
 
@@ -158,14 +158,15 @@ bool remove_oplock(files_struct *fsp)
 				  NULL);
 	if (lck == NULL) {
 		DEBUG(0,("remove_oplock: failed to lock share entry for "
-			 "file %s\n", fsp->fsp_name ));
+			 "file %s\n", fsp_str_dbg(fsp)));
 		return False;
 	}
 	ret = remove_share_oplock(lck, fsp);
 	if (!ret) {
 		DEBUG(0,("remove_oplock: failed to remove share oplock for "
 			 "file %s fnum %d, %s\n",
-			 fsp->fsp_name, fsp->fnum, file_id_string_tos(&fsp->file_id)));
+			 fsp_str_dbg(fsp), fsp->fnum,
+			 file_id_string_tos(&fsp->file_id)));
 	}
 	release_file_oplock(fsp);
 	TALLOC_FREE(lck);
@@ -184,14 +185,15 @@ bool downgrade_oplock(files_struct *fsp)
 				  NULL);
 	if (lck == NULL) {
 		DEBUG(0,("downgrade_oplock: failed to lock share entry for "
-			 "file %s\n", fsp->fsp_name ));
+			 "file %s\n", fsp_str_dbg(fsp)));
 		return False;
 	}
 	ret = downgrade_share_oplock(lck, fsp);
 	if (!ret) {
 		DEBUG(0,("downgrade_oplock: failed to downgrade share oplock "
 			 "for file %s fnum %d, file_id %s\n",
-			 fsp->fsp_name, fsp->fnum, file_id_string_tos(&fsp->file_id)));
+			 fsp_str_dbg(fsp), fsp->fnum,
+			 file_id_string_tos(&fsp->file_id)));
 	}
 
 	downgrade_file_oplock(fsp);
@@ -294,7 +296,8 @@ static files_struct *initial_break_processing(struct file_id id, unsigned long f
 
 	if(fsp->oplock_type == NO_OPLOCK) {
 		if( DEBUGLVL( 3 ) ) {
-			dbgtext( "initial_break_processing: file %s ", fsp->fsp_name );
+			dbgtext( "initial_break_processing: file %s ",
+				 fsp_str_dbg(fsp));
 			dbgtext( "(file_id = %s gen_id = %lu) has no oplock.\n",
 				 file_id_string_tos(&id), fsp->fh->gen_id );
 			dbgtext( "Allowing break to succeed regardless.\n" );
@@ -314,7 +317,8 @@ static void oplock_timeout_handler(struct event_context *ctx,
 
 	/* Remove the timed event handler. */
 	TALLOC_FREE(fsp->oplock_timeout);
-	DEBUG(0, ("Oplock break failed for file %s -- replying anyway\n", fsp->fsp_name));
+	DEBUG(0, ("Oplock break failed for file %s -- replying anyway\n",
+		  fsp_str_dbg(fsp)));
 	global_client_failed_oplock_break = True;
 	remove_oplock(fsp);
 	reply_to_oplock_break_requests(fsp);
@@ -375,7 +379,7 @@ void break_level2_to_none_async(files_struct *fsp)
 
 	DEBUG(10,("process_oplock_async_level2_break_message: sending break "
 		  "to none message for fid %d, file %s\n", fsp->fnum,
-		  fsp->fsp_name));
+		  fsp_str_dbg(fsp)));
 
 	/* Now send a break to none message to our client. */
 	break_msg = new_break_smb_message(NULL, fsp, OPLOCKLEVEL_NONE);
@@ -506,7 +510,7 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 	    !EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
 		DEBUG(3, ("Already downgraded oplock on %s: %s\n",
 			  file_id_string_tos(&fsp->file_id),
-			  fsp->fsp_name));
+			  fsp_str_dbg(fsp)));
 		/* We just send the same message back. */
 		messaging_send_buf(msg_ctx, src, MSG_SMB_BREAK_RESPONSE,
 				   (uint8 *)data->data,
@@ -740,7 +744,7 @@ static void contend_level2_oplocks_begin_default(files_struct *fsp,
 				  NULL);
 	if (lck == NULL) {
 		DEBUG(0,("release_level_2_oplocks_on_change: failed to lock "
-			 "share mode entry for file %s.\n", fsp->fsp_name ));
+			 "share mode entry for file %s.\n", fsp_str_dbg(fsp)));
 		return;
 	}
 

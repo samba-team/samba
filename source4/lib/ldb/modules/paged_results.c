@@ -409,7 +409,7 @@ static int paged_request_init(struct ldb_module *module)
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_WARNING,
 			"paged_results:"
-			"Unable to register control with rootdse!\n");
+			"Unable to register control with rootdse!");
 	}
 
 	return ldb_next_init(module);

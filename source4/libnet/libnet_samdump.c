@@ -25,6 +25,7 @@
 #include "../lib/util/dlinklist.h"
 #include "samba3/samba3.h"
 #include "libcli/security/security.h"
+#include "param/param.h"
 
 
 struct samdump_secret {

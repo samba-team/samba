@@ -41,6 +41,16 @@ typedef intargfunc ssizeargfunc;
 #define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
 #endif
 
+static void PyErr_SetLdbError(PyObject *error, int ret, struct ldb_context *ldb_ctx)
+{
+	if (ret == LDB_ERR_PYTHON_EXCEPTION)
+		return; /* Python exception should already be set, just keep that */
+
+	PyErr_SetObject(error, 
+					Py_BuildValue(discard_const_p(char, "(i,s)"), ret, 
+				  ldb_ctx == NULL?ldb_strerror(ret):ldb_errstring(ldb_ctx)));
+}
+
 static PyObject *PyExc_LdbError;
 
 PyAPI_DATA(PyTypeObject) PyLdbMessage;

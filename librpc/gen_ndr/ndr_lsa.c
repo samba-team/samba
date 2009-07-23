@@ -2735,7 +2735,7 @@ _PUBLIC_ void ndr_print_lsa_TrustDomInfoEnum(struct ndr_print *ndr, const char *
 		case LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_INTERNAL: val = "LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_INTERNAL"; break;
 		case LSA_TRUSTED_DOMAIN_INFO_INFO_EX2_INTERNAL: val = "LSA_TRUSTED_DOMAIN_INFO_INFO_EX2_INTERNAL"; break;
 		case LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_2_INTERNAL: val = "LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_2_INTERNAL"; break;
-		case LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRTYPION_TYPES: val = "LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRTYPION_TYPES"; break;
+		case LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES: val = "LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES"; break;
 	}
 	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
@@ -3662,7 +3662,7 @@ static enum ndr_err_code ndr_push_lsa_TrustedDomainInfo(struct ndr_push *ndr, in
 				NDR_CHECK(ndr_push_lsa_TrustDomainInfoFullInfo2Internal(ndr, NDR_SCALARS, &r->full_info2_internal));
 			break; }
 
-			case LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRTYPION_TYPES: {
+			case LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES: {
 				NDR_CHECK(ndr_push_lsa_TrustDomainInfoSupportedEncTypes(ndr, NDR_SCALARS, &r->enc_types));
 			break; }
 
@@ -3720,7 +3720,7 @@ static enum ndr_err_code ndr_push_lsa_TrustedDomainInfo(struct ndr_push *ndr, in
 				NDR_CHECK(ndr_push_lsa_TrustDomainInfoFullInfo2Internal(ndr, NDR_BUFFERS, &r->full_info2_internal));
 			break;
 
-			case LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRTYPION_TYPES:
+			case LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES:
 			break;
 
 			default:
@@ -3789,7 +3789,7 @@ static enum ndr_err_code ndr_pull_lsa_TrustedDomainInfo(struct ndr_pull *ndr, in
 				NDR_CHECK(ndr_pull_lsa_TrustDomainInfoFullInfo2Internal(ndr, NDR_SCALARS, &r->full_info2_internal));
 			break; }
 
-			case LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRTYPION_TYPES: {
+			case LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES: {
 				NDR_CHECK(ndr_pull_lsa_TrustDomainInfoSupportedEncTypes(ndr, NDR_SCALARS, &r->enc_types));
 			break; }
 
@@ -3846,7 +3846,7 @@ static enum ndr_err_code ndr_pull_lsa_TrustedDomainInfo(struct ndr_pull *ndr, in
 				NDR_CHECK(ndr_pull_lsa_TrustDomainInfoFullInfo2Internal(ndr, NDR_BUFFERS, &r->full_info2_internal));
 			break;
 
-			case LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRTYPION_TYPES:
+			case LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES:
 			break;
 
 			default:
@@ -3910,7 +3910,7 @@ _PUBLIC_ void ndr_print_lsa_TrustedDomainInfo(struct ndr_print *ndr, const char 
 			ndr_print_lsa_TrustDomainInfoFullInfo2Internal(ndr, "full_info2_internal", &r->full_info2_internal);
 		break;
 
-		case LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRTYPION_TYPES:
+		case LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES:
 			ndr_print_lsa_TrustDomainInfoSupportedEncTypes(ndr, "enc_types", &r->enc_types);
 		break;
 
@@ -9225,6 +9225,18 @@ _PUBLIC_ void ndr_print_lsa_DeleteTrustedDomain(struct ndr_print *ndr, const cha
 static enum ndr_err_code ndr_push_lsa_StorePrivateData(struct ndr_push *ndr, int flags, const struct lsa_StorePrivateData *r)
 {
 	if (flags & NDR_IN) {
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
+		if (r->in.name == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.name));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.val));
+		if (r->in.val) {
+			NDR_CHECK(ndr_push_lsa_DATA_BUF(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.val));
+		}
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
@@ -9234,7 +9246,37 @@ static enum ndr_err_code ndr_push_lsa_StorePrivateData(struct ndr_push *ndr, int
 
 static enum ndr_err_code ndr_pull_lsa_StorePrivateData(struct ndr_pull *ndr, int flags, struct lsa_StorePrivateData *r)
 {
+	uint32_t _ptr_val;
+	TALLOC_CTX *_mem_save_handle_0;
+	TALLOC_CTX *_mem_save_name_0;
+	TALLOC_CTX *_mem_save_val_0;
 	if (flags & NDR_IN) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.handle);
+		}
+		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.name);
+		}
+		_mem_save_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.name, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.name));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_name_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_val));
+		if (_ptr_val) {
+			NDR_PULL_ALLOC(ndr, r->in.val);
+		} else {
+			r->in.val = NULL;
+		}
+		if (r->in.val) {
+			_mem_save_val_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->in.val, 0);
+			NDR_CHECK(ndr_pull_lsa_DATA_BUF(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.val));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_val_0, 0);
+		}
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
@@ -9252,6 +9294,20 @@ _PUBLIC_ void ndr_print_lsa_StorePrivateData(struct ndr_print *ndr, const char *
 	if (flags & NDR_IN) {
 		ndr_print_struct(ndr, "in", "lsa_StorePrivateData");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "handle", r->in.handle);
+		ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+		ndr->depth--;
+		ndr_print_ptr(ndr, "name", r->in.name);
+		ndr->depth++;
+		ndr_print_lsa_String(ndr, "name", r->in.name);
+		ndr->depth--;
+		ndr_print_ptr(ndr, "val", r->in.val);
+		ndr->depth++;
+		if (r->in.val) {
+			ndr_print_lsa_DATA_BUF(ndr, "val", r->in.val);
+		}
+		ndr->depth--;
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
@@ -9266,8 +9322,30 @@ _PUBLIC_ void ndr_print_lsa_StorePrivateData(struct ndr_print *ndr, const char *
 static enum ndr_err_code ndr_push_lsa_RetrievePrivateData(struct ndr_push *ndr, int flags, const struct lsa_RetrievePrivateData *r)
 {
 	if (flags & NDR_IN) {
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
+		if (r->in.name == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.name));
+		if (r->in.val == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->in.val));
+		if (*r->in.val) {
+			NDR_CHECK(ndr_push_lsa_DATA_BUF(ndr, NDR_SCALARS|NDR_BUFFERS, *r->in.val));
+		}
 	}
 	if (flags & NDR_OUT) {
+		if (r->out.val == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.val));
+		if (*r->out.val) {
+			NDR_CHECK(ndr_push_lsa_DATA_BUF(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.val));
+		}
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -9275,9 +9353,68 @@ static enum ndr_err_code ndr_push_lsa_RetrievePrivateData(struct ndr_push *ndr, 
 
 static enum ndr_err_code ndr_pull_lsa_RetrievePrivateData(struct ndr_pull *ndr, int flags, struct lsa_RetrievePrivateData *r)
 {
+	uint32_t _ptr_val;
+	TALLOC_CTX *_mem_save_handle_0;
+	TALLOC_CTX *_mem_save_name_0;
+	TALLOC_CTX *_mem_save_val_0;
+	TALLOC_CTX *_mem_save_val_1;
 	if (flags & NDR_IN) {
+		ZERO_STRUCT(r->out);
+
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.handle);
+		}
+		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.name);
+		}
+		_mem_save_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.name, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.name));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_name_0, LIBNDR_FLAG_REF_ALLOC);
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.val);
+		}
+		_mem_save_val_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.val, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_val));
+		if (_ptr_val) {
+			NDR_PULL_ALLOC(ndr, *r->in.val);
+		} else {
+			*r->in.val = NULL;
+		}
+		if (*r->in.val) {
+			_mem_save_val_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->in.val, 0);
+			NDR_CHECK(ndr_pull_lsa_DATA_BUF(ndr, NDR_SCALARS|NDR_BUFFERS, *r->in.val));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_val_1, 0);
+		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_val_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_PULL_ALLOC(ndr, r->out.val);
+		*r->out.val = *r->in.val;
 	}
 	if (flags & NDR_OUT) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.val);
+		}
+		_mem_save_val_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.val, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_val));
+		if (_ptr_val) {
+			NDR_PULL_ALLOC(ndr, *r->out.val);
+		} else {
+			*r->out.val = NULL;
+		}
+		if (*r->out.val) {
+			_mem_save_val_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->out.val, 0);
+			NDR_CHECK(ndr_pull_lsa_DATA_BUF(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.val));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_val_1, 0);
+		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_val_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -9293,11 +9430,37 @@ _PUBLIC_ void ndr_print_lsa_RetrievePrivateData(struct ndr_print *ndr, const cha
 	if (flags & NDR_IN) {
 		ndr_print_struct(ndr, "in", "lsa_RetrievePrivateData");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "handle", r->in.handle);
+		ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+		ndr->depth--;
+		ndr_print_ptr(ndr, "name", r->in.name);
+		ndr->depth++;
+		ndr_print_lsa_String(ndr, "name", r->in.name);
+		ndr->depth--;
+		ndr_print_ptr(ndr, "val", r->in.val);
+		ndr->depth++;
+		ndr_print_ptr(ndr, "val", *r->in.val);
+		ndr->depth++;
+		if (*r->in.val) {
+			ndr_print_lsa_DATA_BUF(ndr, "val", *r->in.val);
+		}
+		ndr->depth--;
+		ndr->depth--;
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "lsa_RetrievePrivateData");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "val", r->out.val);
+		ndr->depth++;
+		ndr_print_ptr(ndr, "val", *r->out.val);
+		ndr->depth++;
+		if (*r->out.val) {
+			ndr_print_lsa_DATA_BUF(ndr, "val", *r->out.val);
+		}
+		ndr->depth--;
+		ndr->depth--;
 		ndr_print_NTSTATUS(ndr, "result", r->out.result);
 		ndr->depth--;
 	}

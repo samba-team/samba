@@ -94,7 +94,7 @@ static struct db_record *db_tdb_fetch_locked(struct db_context *db,
 
 	/* Do not accidently allocate/deallocate w/o need when debug level is lower than needed */
 	if(DEBUGLEVEL >= 10) {
-		char *keystr = hex_encode_talloc(NULL, (unsigned char*)key.dptr, key.dsize);
+		char *keystr = hex_encode_talloc(talloc_tos(), (unsigned char*)key.dptr, key.dsize);
 		DEBUG(10, (DEBUGLEVEL > 10
 			   ? "Locking key %s\n" : "Locking key %.20s\n",
 			   keystr));

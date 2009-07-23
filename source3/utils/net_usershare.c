@@ -163,7 +163,7 @@ static int net_usershare_delete(struct net_context *c, int argc, const char **ar
 		d_fprintf(stderr, "net usershare delete: share name %s contains "
                         "invalid characters (any of %s)\n",
                         sharename, INVALID_SHARENAME_CHARS);
-		SAFE_FREE(sharename);
+		TALLOC_FREE(sharename);
 		return -1;
 	}
 
@@ -172,7 +172,7 @@ static int net_usershare_delete(struct net_context *c, int argc, const char **ar
 				lp_usershare_path(),
 				sharename);
 	if (!us_path) {
-		SAFE_FREE(sharename);
+		TALLOC_FREE(sharename);
 		return -1;
 	}
 
@@ -180,10 +180,10 @@ static int net_usershare_delete(struct net_context *c, int argc, const char **ar
 		d_fprintf(stderr, "net usershare delete: unable to remove usershare %s. "
 			"Error was %s\n",
                         us_path, strerror(errno));
-		SAFE_FREE(sharename);
+		TALLOC_FREE(sharename);
 		return -1;
 	}
-	SAFE_FREE(sharename);
+	TALLOC_FREE(sharename);
 	return 0;
 }
 
@@ -672,7 +672,6 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 		d_fprintf(stderr, "net usershare add: maximum number of allowed usershares (%d) reached\n",
 			lp_usershare_max_shares() );
 		TALLOC_FREE(ctx);
-		SAFE_FREE(sharename);
 		return -1;
 	}
 
@@ -681,7 +680,6 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
                         "invalid characters (any of %s)\n",
                         sharename, INVALID_SHARENAME_CHARS);
 		TALLOC_FREE(ctx);
-		SAFE_FREE(sharename);
 		return -1;
 	}
 
@@ -690,7 +688,6 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 		d_fprintf(stderr, "net usershare add: share name %s is already a valid system user name\n",
 			sharename );
 		TALLOC_FREE(ctx);
-		SAFE_FREE(sharename);
 		return -1;
 	}
 
@@ -698,7 +695,6 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 	full_path = get_basepath(ctx);
 	if (!full_path) {
 		TALLOC_FREE(ctx);
-		SAFE_FREE(sharename);
 		return -1;
 	}
 	full_path_tmp = talloc_asprintf(ctx,
@@ -706,7 +702,6 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 			full_path);
 	if (!full_path_tmp) {
 		TALLOC_FREE(ctx);
-		SAFE_FREE(sharename);
 		return -1;
 	}
 
@@ -715,7 +710,6 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 					sharename);
 	if (!full_path) {
 		TALLOC_FREE(ctx);
-		SAFE_FREE(sharename);
 		return -1;
 	}
 
@@ -724,7 +718,6 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 		d_fprintf(stderr,"net usershare add: path %s is not an absolute path.\n",
 			us_path);
 		TALLOC_FREE(ctx);
-		SAFE_FREE(sharename);
 		return -1;
 	}
 
@@ -734,7 +727,6 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 			"this is a directory. Error was %s\n",
 			us_path, strerror(errno) );
 		TALLOC_FREE(ctx);
-		SAFE_FREE(sharename);
 		return -1;
 	}
 
@@ -742,7 +734,6 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 		d_fprintf(stderr, "net usershare add: path %s is not a directory.\n",
 			us_path );
 		TALLOC_FREE(ctx);
-		SAFE_FREE(sharename);
 		return -1;
 	}
 
@@ -756,7 +747,6 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 			"\tto the [global] section of the smb.conf to allow this.\n",
 			us_path );
 		TALLOC_FREE(ctx);
-		SAFE_FREE(sharename);
 		return -1;
 	}
 
@@ -786,7 +776,6 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 			d_fprintf(stderr, "net usershare add: malformed acl %s (missing ':').\n",
 				pacl );
 			TALLOC_FREE(ctx);
-			SAFE_FREE(sharename);
 			return -1;
 		}
 
@@ -802,7 +791,6 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 					"(access control must be 'r', 'f', or 'd')\n",
 					pacl );
 				TALLOC_FREE(ctx);
-				SAFE_FREE(sharename);
 				return -1;
 		}
 
@@ -810,7 +798,6 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 			d_fprintf(stderr, "net usershare add: malformed terminating character for acl %s\n",
 				pacl );
 			TALLOC_FREE(ctx);
-			SAFE_FREE(sharename);
 			return -1;
 		}
 
@@ -818,7 +805,6 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 		if ((name = talloc_strndup(ctx, pacl, pcolon - pacl)) == NULL) {
 			d_fprintf(stderr, "talloc_strndup failed\n");
 			TALLOC_FREE(ctx);
-			SAFE_FREE(sharename);
 			return -1;
 		}
 		if (!string_to_sid(&sid, name)) {
@@ -833,7 +819,6 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 					d_fprintf(stderr, "\n");
 				}
 				TALLOC_FREE(ctx);
-				SAFE_FREE(sharename);
 				return -1;
 			}
 		}
@@ -854,7 +839,6 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 			"but the \"usershare allow guests\" parameter is not enabled "
 			"by this server.\n");
 		TALLOC_FREE(ctx);
-		SAFE_FREE(sharename);
 		return -1;
 	}
 
@@ -865,7 +849,6 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 		d_fprintf(stderr, "net usershare add: cannot create tmp file %s\n",
 				full_path_tmp );
 		TALLOC_FREE(ctx);
-		SAFE_FREE(sharename);
 		return -1;
 	}
 
@@ -874,7 +857,6 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 		d_fprintf(stderr, "net usershare add: cannot lstat tmp file %s\n",
 				full_path_tmp );
 		TALLOC_FREE(ctx);
-		SAFE_FREE(sharename);
 		return -1;
 	}
 
@@ -883,7 +865,6 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 		d_fprintf(stderr, "net usershare add: cannot fstat tmp file %s\n",
 				full_path_tmp );
 		TALLOC_FREE(ctx);
-		SAFE_FREE(sharename);
 		return -1;
 	}
 
@@ -891,7 +872,6 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 		d_fprintf(stderr, "net usershare add: tmp file %s is not a regular file ?\n",
 				full_path_tmp );
 		TALLOC_FREE(ctx);
-		SAFE_FREE(sharename);
 		return -1;
 	}
 
@@ -899,7 +879,6 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 		d_fprintf(stderr, "net usershare add: failed to fchmod tmp file %s to 0644n",
 				full_path_tmp );
 		TALLOC_FREE(ctx);
-		SAFE_FREE(sharename);
 		return -1;
 	}
 
@@ -915,7 +894,6 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 			(unsigned int)to_write, full_path_tmp, strerror(errno));
 		unlink(full_path_tmp);
 		TALLOC_FREE(ctx);
-		SAFE_FREE(sharename);
 		return -1;
 	}
 
@@ -926,7 +904,6 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 			sharename, strerror(errno));
 		TALLOC_FREE(ctx);
 		close(tmpfd);
-		SAFE_FREE(sharename);
 		return -1;
 	}
 
@@ -939,7 +916,6 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 		net_usershare_info(c, 1, my_argv);
 	}
 
-	SAFE_FREE(sharename);
 	TALLOC_FREE(ctx);
 	return 0;
 }
@@ -998,6 +974,7 @@ static int net_usershare_list(struct net_context *c, int argc,
 
 	pi.ctx = ctx;
 	pi.op = US_LIST_OP;
+	pi.c = c;
 
 	ret = process_share_list(info_fn, &pi);
 	talloc_destroy(ctx);

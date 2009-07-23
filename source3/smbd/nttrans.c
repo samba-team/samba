@@ -272,30 +272,6 @@ void send_nt_replies(connection_struct *conn,
 }
 
 /****************************************************************************
- Simple check to determine if the filename is a stream.
- ***************************************************************************/
-bool is_ntfs_stream_smb_fname(const struct smb_filename *smb_fname)
-{
-	if (lp_posix_pathnames()) {
-		return false;
-	}
-
-	return smb_fname->stream_name;
-}
-
-/****************************************************************************
- Returns true if the filename's stream == "::$DATA"
- ***************************************************************************/
-bool is_ntfs_default_stream_smb_fname(const struct smb_filename *smb_fname)
-{
-	if (!is_ntfs_stream_smb_fname(smb_fname)) {
-		return false;
-	}
-
-	return StrCaseCmp(smb_fname->stream_name, "::$DATA") == 0;
-}
-
-/****************************************************************************
  Reply to an NT create and X call on a pipe
 ****************************************************************************/
 
@@ -502,8 +478,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
-				&smb_fname,
-				NULL);
+				&smb_fname);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -794,7 +769,7 @@ static NTSTATUS set_sd(files_struct *fsp, uint8 *data, uint32 sd_len,
 	security_acl_map_generic(psd->sacl, &file_generic_mapping);
 
 	if (DEBUGLEVEL >= 10) {
-		DEBUG(10,("set_sd for file %s\n", fsp->fsp_name ));
+		DEBUG(10,("set_sd for file %s\n", fsp_str_dbg(fsp)));
 		NDR_PRINT_DEBUG(security_descriptor, psd);
 	}
 
@@ -992,8 +967,7 @@ static void call_nt_transact_create(connection_struct *conn,
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
-				&smb_fname,
-				NULL);
+				&smb_fname);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -1341,8 +1315,7 @@ void reply_ntrename(struct smb_request *req)
 
 	if (req->wct < 4) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		END_PROFILE(SMBntrename);
-		return;
+		goto out;
 	}
 
 	attrs = SVAL(req->vwv+0, 0);
@@ -1353,14 +1326,12 @@ void reply_ntrename(struct smb_request *req)
 				       &status, &src_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
-		END_PROFILE(SMBntrename);
-		return;
+		goto out;
 	}
 
 	if (ms_has_wild(oldname)) {
 		reply_nterror(req, NT_STATUS_OBJECT_PATH_SYNTAX_BAD);
-		END_PROFILE(SMBntrename);
-		return;
+		goto out;
 	}
 
 	p++;
@@ -1368,55 +1339,83 @@ void reply_ntrename(struct smb_request *req)
 				       &status, &dest_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
-		END_PROFILE(SMBntrename);
-		return;
+		goto out;
 	}
 
-	status = filename_convert(ctx, conn,
-				req->flags2 & FLAGS2_DFS_PATHNAMES,
-				oldname,
-				&smb_fname_old,
-				&oldname);
-	if (!NT_STATUS_IS_OK(status)) {
-		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
-			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
-					ERRSRV, ERRbadpath);
-			END_PROFILE(SMBntrename);
-			return;
-		}
-		reply_nterror(req, status);
-		END_PROFILE(SMBntrename);
-		return;
-	}
-
-	status = filename_convert(ctx, conn,
-				req->flags2 & FLAGS2_DFS_PATHNAMES,
-				newname,
-				&smb_fname_new,
-				&newname);
-	if (!NT_STATUS_IS_OK(status)) {
-		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
-			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
-					ERRSRV, ERRbadpath);
-			END_PROFILE(SMBntrename);
-			return;
-		}
-		reply_nterror(req, status);
-		END_PROFILE(SMBntrename);
-		return;
-	}
-
-	/* The new name must begin with a ':' if the old name is a stream. */
-	if (is_ntfs_stream_smb_fname(smb_fname_old) && (newname[0] != ':')) {
+	/* The newname must begin with a ':' if the oldname contains a ':'. */
+	if (strchr_m(oldname, ':') && (newname[0] != ':')) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		END_PROFILE(SMBntrename);
-		return;
+		goto out;
 	}
 
-	DEBUG(3,("reply_ntrename : %s -> %s\n",oldname,newname));
+	/* rename_internals() calls unix_convert(), so don't call it here. */
+	if (rename_type != RENAME_FLAG_RENAME) {
+		status = filename_convert(ctx, conn,
+					  req->flags2 & FLAGS2_DFS_PATHNAMES,
+					  oldname,
+					  &smb_fname_old);
+		if (!NT_STATUS_IS_OK(status)) {
+			if (NT_STATUS_EQUAL(status,
+					    NT_STATUS_PATH_NOT_COVERED)) {
+				reply_botherror(req,
+						NT_STATUS_PATH_NOT_COVERED,
+						ERRSRV, ERRbadpath);
+				goto out;
+			}
+			reply_nterror(req, status);
+			goto out;
+		}
+
+		status = filename_convert(ctx, conn,
+					  req->flags2 & FLAGS2_DFS_PATHNAMES,
+					  newname,
+					  &smb_fname_new);
+		if (!NT_STATUS_IS_OK(status)) {
+			if (NT_STATUS_EQUAL(status,
+					    NT_STATUS_PATH_NOT_COVERED)) {
+				reply_botherror(req,
+					        NT_STATUS_PATH_NOT_COVERED,
+						ERRSRV, ERRbadpath);
+				goto out;
+			}
+			reply_nterror(req, status);
+			goto out;
+		}
+
+		DEBUG(3,("reply_ntrename: %s -> %s\n",
+			 smb_fname_str_dbg(smb_fname_old),
+			 smb_fname_str_dbg(smb_fname_new)));
+	}
 
 	switch(rename_type) {
 		case RENAME_FLAG_RENAME:
+			status = resolve_dfspath(ctx, conn,
+						 (req->flags2 &
+						     FLAGS2_DFS_PATHNAMES),
+						 oldname, &oldname);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(10,("resolve_dfspath failed for name %s "
+					  "with %s\n", oldname,
+					  nt_errstr(status)));
+				reply_nterror(req, status);
+				goto out;
+			}
+
+			status = resolve_dfspath(ctx, conn,
+						 (req->flags2 &
+						     FLAGS2_DFS_PATHNAMES),
+						 newname, &newname);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(10,("resolve_dfspath failed for name %s "
+					  "with %s\n", newname,
+					  nt_errstr(status)));
+				reply_nterror(req, status);
+				goto out;
+			}
+
+			DEBUG(3,("reply_ntrename: %s -> %s\n", oldname,
+				newname));
+
 			status = rename_internals(ctx, conn, req, oldname,
 					newname, attrs, False, src_has_wcard,
 					dest_has_wcard, DELETE_ACCESS);
@@ -1454,17 +1453,15 @@ void reply_ntrename(struct smb_request *req)
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->mid)) {
 			/* We have re-scheduled this call. */
-			END_PROFILE(SMBntrename);
-			return;
+			goto out;
 		}
 
 		reply_nterror(req, status);
-		END_PROFILE(SMBntrename);
-		return;
+		goto out;
 	}
 
 	reply_outbuf(req, 0, 0);
-
+ out:
 	END_PROFILE(SMBntrename);
 	return;
 }
@@ -1523,7 +1520,7 @@ static void call_nt_transact_notify_change(connection_struct *conn,
 
 		DEBUG(3,("call_nt_transact_notify_change: notify change "
 			 "called on %s, filter = %s, recursive = %d\n",
-			 fsp->fsp_name, filter_string, recursive));
+			 fsp_str_dbg(fsp), filter_string, recursive));
 
 		TALLOC_FREE(filter_string);
 	}
@@ -1626,7 +1623,7 @@ static void call_nt_transact_rename(connection_struct *conn,
 	send_nt_replies(conn, req, NT_STATUS_OK, NULL, 0, NULL, 0);
 
 	DEBUG(3,("nt transact rename from = %s, to = %s ignored!\n",
-		 fsp->fsp_name, new_name));
+		 fsp_str_dbg(fsp), new_name));
 
 	return;
 }
@@ -1684,8 +1681,9 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 
 	security_info_wanted = IVAL(params,4);
 
-	DEBUG(3,("call_nt_transact_query_security_desc: file = %s, info_wanted = 0x%x\n", fsp->fsp_name,
-			(unsigned int)security_info_wanted ));
+	DEBUG(3,("call_nt_transact_query_security_desc: file = %s, "
+		 "info_wanted = 0x%x\n", fsp_str_dbg(fsp),
+		 (unsigned int)security_info_wanted));
 
 	params = nttrans_realloc(ppparams, 4);
 	if(params == NULL) {
@@ -1722,7 +1720,8 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 	DEBUG(3,("call_nt_transact_query_security_desc: sd_size = %lu.\n",(unsigned long)sd_size));
 
 	if (DEBUGLEVEL >= 10) {
-		DEBUG(10,("call_nt_transact_query_security_desc for file %s\n", fsp->fsp_name));
+		DEBUG(10,("call_nt_transact_query_security_desc for file %s\n",
+			  fsp_str_dbg(fsp)));
 		NDR_PRINT_DEBUG(security_descriptor, psd);
 	}
 
@@ -1796,8 +1795,8 @@ static void call_nt_transact_set_security_desc(connection_struct *conn,
 
 	security_info_sent = IVAL(params,4);
 
-	DEBUG(3,("call_nt_transact_set_security_desc: file = %s, sent 0x%x\n", fsp->fsp_name,
-		(unsigned int)security_info_sent ));
+	DEBUG(3,("call_nt_transact_set_security_desc: file = %s, sent 0x%x\n",
+		 fsp_str_dbg(fsp), (unsigned int)security_info_sent));
 
 	if (data_count == 0) {
 		reply_doserror(req, ERRDOS, ERRnoaccess);
@@ -2021,7 +2020,7 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 		cur_pdata+=12;
 
 		DEBUG(10,("FSCTL_GET_SHADOW_COPY_DATA: %u volumes for path[%s].\n",
-			shadow_data->num_volumes,fsp->fsp_name));
+			  shadow_data->num_volumes, fsp_str_dbg(fsp)));
 		if (labels && shadow_data->labels) {
 			for (i=0;i<shadow_data->num_volumes;i++) {
 				srvstr_push(pdata, req->flags2,

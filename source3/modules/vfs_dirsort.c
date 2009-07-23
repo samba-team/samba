@@ -113,7 +113,8 @@ static SMB_STRUCT_DIR *dirsort_opendir(vfs_handle_struct *handle,
 }
 
 static SMB_STRUCT_DIRENT *dirsort_readdir(vfs_handle_struct *handle,
-					  SMB_STRUCT_DIR *dirp)
+					  SMB_STRUCT_DIR *dirp,
+					  SMB_STRUCT_STAT *sbuf)
 {
 	struct dirsort_privates *data = NULL;
 	time_t current_mtime;

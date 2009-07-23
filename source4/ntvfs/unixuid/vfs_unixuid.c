@@ -310,9 +310,9 @@ static NTSTATUS unixuid_connect(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	ntvfs->private_data = priv;
 	priv->last_sec_ctx = NULL;
 	priv->last_token = NULL;
+	ntvfs->private_data = priv;
 
 	tevent_loop_set_nesting_hook(ntvfs->ctx->event_ctx, 
 				     unixuid_event_nesting_hook,

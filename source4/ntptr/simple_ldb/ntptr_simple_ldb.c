@@ -192,9 +192,12 @@ static WERROR sptr_GetPrintServerData(struct ntptr_GenericHandle *server, TALLOC
 		os_ex.major		= server_info->version_major;
 		os_ex.minor		= server_info->version_minor;
 		os_ex.build		= server_info->version_build;
-		os_ex.extra_string		= "";
-		os_ex.unknown2		= 0;
-		os_ex.unknown3		= 0;
+		os_ex.extra_string	= "";
+		os_ex.service_pack_major= 0;
+		os_ex.service_pack_minor= 0;
+		os_ex.suite_mask	= 0;
+		os_ex.product_type	= 0;
+		os_ex.reserved		= 0;
 
 		ndr_err = ndr_push_struct_blob(&blob, mem_ctx, lp_iconv_convenience(server->ntptr->lp_ctx), &os_ex, (ndr_push_flags_fn_t)ndr_push_spoolss_OSVersionEx);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {

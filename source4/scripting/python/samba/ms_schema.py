@@ -226,6 +226,7 @@ def __transform_entry(entry, objectClass):
     assert(cn)
     entry.insert(0, ["dn", "CN=%s,${SCHEMADN}" % cn])
     entry.insert(1, ["objectClass", ["top", objectClass]])
+    entry.insert(2, ["cn", cn])
     
     for l in entry:
         key = l[0].lower()

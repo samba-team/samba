@@ -32,8 +32,6 @@
 
 #include "gsskrb5_locl.h"
 
-RCSID("$Id$");
-
 static int
 oid_prefix_equal(gss_OID oid_enc, gss_OID prefix_enc, unsigned *suffix)
 {

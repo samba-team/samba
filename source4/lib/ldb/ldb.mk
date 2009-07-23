@@ -67,11 +67,8 @@ build-python:: ldb.$(SHLIBEXT)
 pyldb.o: $(ldbdir)/pyldb.c
 	$(CC) $(PICFLAG) -c $(ldbdir)/pyldb.c $(CFLAGS) `$(PYTHON_CONFIG) --cflags`
 
-pyldb_util.o: $(ldbdir)/pyldb_util.c
-	$(CC) $(PICFLAG) -c $(ldbdir)/pyldb_util.c $(CFLAGS) `$(PYTHON_CONFIG) --cflags`
-
-ldb.$(SHLIBEXT): pyldb.o pyldb_util.o
-	$(SHLD) $(SHLD_FLAGS) -o ldb.$(SHLIBEXT) pyldb.o pyldb_util.o $(LIB_FLAGS) `$(PYTHON_CONFIG) --ldflags`
+ldb.$(SHLIBEXT): pyldb.o 
+	$(SHLD) $(SHLD_FLAGS) -o ldb.$(SHLIBEXT) pyldb.o $(LIB_FLAGS) `$(PYTHON_CONFIG) --ldflags`
 
 install-python:: build-python
 	mkdir -p $(DESTDIR)`$(PYTHON) -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(1, prefix='$(prefix)')"`

@@ -33,8 +33,6 @@
 
 #include "gsskrb5_locl.h"
 
-RCSID("$Id$");
-
 void
 _gssapi_encap_length (size_t data_len,
 		      size_t *len,

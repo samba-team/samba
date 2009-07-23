@@ -33,8 +33,6 @@
 
 #include "gsskrb5_locl.h"
 
-RCSID("$Id$");
-
 OM_uint32 _gsskrb5_inquire_cred_by_mech (
     OM_uint32 * minor_status,
 	const gss_cred_id_t cred_handle,

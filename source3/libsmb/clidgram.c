@@ -25,7 +25,7 @@
  * cli_send_mailslot, send a mailslot for client code ...
  */
 
-bool cli_send_mailslot(struct messaging_context *msg_ctx,
+static bool cli_send_mailslot(struct messaging_context *msg_ctx,
 		       bool unique, const char *mailslot,
 		       uint16 priority,
 		       char *buf, int len,
@@ -309,4 +309,3 @@ bool receive_getdc_response(TALLOC_CTX *mem_ctx,
 
 	return True;
 }
-

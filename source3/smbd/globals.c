@@ -153,4 +153,9 @@ void smbd_init_globals(void)
 	ZERO_STRUCT(conn_ctx_stack);
 
 	ZERO_STRUCT(sec_ctx_stack);
+
+	smbd_server_conn = talloc_zero(smbd_event_context(), struct smbd_server_connection);
+	if (!smbd_server_conn) {
+		exit_server("failed to create smbd_server_connection");
+	}
 }

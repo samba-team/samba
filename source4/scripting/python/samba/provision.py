@@ -37,13 +37,13 @@ import param
 import registry
 import samba
 from auth import system_session
-from samba import Ldb, substitute_var, valid_netbios_name, check_all_substituted
+from samba import version, Ldb, substitute_var, valid_netbios_name, check_all_substituted, \
+  DS_BEHAVIOR_WIN2008
 from samba.samdb import SamDB
 from samba.idmap import IDmapDB
 from samba.dcerpc import security
 import urllib
-from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError, \
-        timestring, CHANGETYPE_MODIFY, CHANGETYPE_NONE
+from ldb import SCOPE_SUBTREE, LdbError, timestring
 from ms_schema import read_ms_schema
 
 __docformat__ = "restructuredText"
@@ -729,7 +729,7 @@ def setup_samdb_rootdse(samdb, setup_path, names):
 def setup_self_join(samdb, names,
                     machinepass, dnspass, 
                     domainsid, invocationid, setup_path,
-                    policyguid):
+                    policyguid, domainControllerFunctionality):
     """Join a host to its own domain."""
     assert isinstance(invocationid, str)
     setup_add_ldif(samdb, setup_path("provision_self_join.ldif"), { 
@@ -745,7 +745,9 @@ def setup_self_join(samdb, names,
               "DNSPASS_B64": b64encode(dnspass),
               "REALM": names.realm,
               "DOMAIN": names.domain,
-              "DNSDOMAIN": names.dnsdomain})
+              "DNSDOMAIN": names.dnsdomain,
+              "SAMBA_VERSION_STRING": version,
+              "DOMAIN_CONTROLLER_FUNCTIONALITY": str(domainControllerFunctionality)})
     setup_add_ldif(samdb, setup_path("provision_group_policy.ldif"), { 
               "POLICYGUID": policyguid,
               "DNSDOMAIN": names.dnsdomain,
@@ -765,6 +767,10 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
     :note: This will wipe the main SAM database file!
     """
 
+    domainFunctionality = DS_BEHAVIOR_WIN2008
+    forestFunctionality = DS_BEHAVIOR_WIN2008
+    domainControllerFunctionality = DS_BEHAVIOR_WIN2008
+
     erase = (fill != FILL_DRS)
 
     # Also wipes the database
@@ -780,6 +786,11 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
         return samdb
 
     message("Pre-loading the Samba 4 and AD schema")
+
+    samdb.set_opaque_integer("domainFunctionality", domainFunctionality)
+    samdb.set_opaque_integer("forestFunctionality", forestFunctionality)
+    samdb.set_opaque_integer("domainControllerFunctionality", domainControllerFunctionality)
+
     samdb.set_domain_sid(str(domainsid))
     if serverrole == "domain controller":
         samdb.set_invocation_id(invocationid)
@@ -818,6 +829,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
             "POLICYGUID": policyguid,
             "DOMAINDN": names.domaindn,
             "DOMAINGUID_MOD": domainguid_mod,
+            "DOMAIN_FUNCTIONALITY": str(domainFunctionality)
             })
 
         message("Adding configuration container (permitted to fail)")
@@ -864,7 +876,8 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
             "DOMAIN": names.domain,
             "SCHEMADN": names.schemadn,
             "DOMAINDN": names.domaindn,
-            "SERVERDN": names.serverdn
+            "SERVERDN": names.serverdn,
+            "FOREST_FUNCTIONALALITY": str(forestFunctionality)
             })
 
         message("Setting up display specifiers")
@@ -908,7 +921,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
                                 dnspass=dnspass,  
                                 machinepass=machinepass, 
                                 domainsid=domainsid, policyguid=policyguid,
-                                setup_path=setup_path)
+                                setup_path=setup_path, domainControllerFunctionality=domainControllerFunctionality)
 
     except:
         samdb.transaction_cancel()

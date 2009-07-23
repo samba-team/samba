@@ -20,7 +20,7 @@
 """Support for parsing Samba-related command-line options."""
 
 import optparse
-from credentials import Credentials, AUTO_USE_KERBEROS, DONT_USE_KERBEROS, MUST_USE_KERBEROS
+from credentials import Credentials, DONT_USE_KERBEROS, MUST_USE_KERBEROS
 from hostconfig import Hostconfig
 
 __docformat__ = "restructuredText"

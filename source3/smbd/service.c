@@ -182,8 +182,8 @@ bool set_current_service(connection_struct *conn, uint16 flags, bool do_chdir)
 	if (do_chdir &&
 	    vfs_ChDir(conn,conn->connectpath) != 0 &&
 	    vfs_ChDir(conn,conn->origpath) != 0) {
-		DEBUG(0,("chdir (%s) failed\n",
-			 conn->connectpath));
+                DEBUG(((errno!=EACCES)?0:3),("chdir (%s) failed, reason: %s\n",
+                         conn->connectpath, strerror(errno)));
 		return(False);
 	}
 

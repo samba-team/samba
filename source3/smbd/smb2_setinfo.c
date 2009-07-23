@@ -200,7 +200,123 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	tevent_req_nterror(req, NT_STATUS_NOT_IMPLEMENTED);
+	if (IS_IPC(conn)) {
+		tevent_req_nterror(req, NT_STATUS_NOT_SUPPORTED);
+		return tevent_req_post(req, ev);
+	}
+
+	switch (in_info_type) {
+	case 0x01:/* SMB2_SETINFO_FILE */
+	{
+		uint16_t file_info_level;
+		char *data;
+		int data_size;
+		int ret_size = 0;
+		NTSTATUS status;
+
+
+		file_info_level = in_file_info_class + 1000;
+		if (file_info_level == SMB_FILE_RENAME_INFORMATION) {
+			file_info_level = 0xFF00 + in_file_info_class;
+		}
+
+		if (fsp->is_directory || fsp->fh->fd == -1) {
+			/*
+			 * This is actually a SETFILEINFO on a directory
+			 * handle (returned from an NT SMB). NT5.0 seems
+			 * to do this call. JRA.
+			 */
+			if (INFO_LEVEL_IS_UNIX(file_info_level)) {
+				/* Always do lstat for UNIX calls. */
+				if (SMB_VFS_LSTAT(conn, fsp->fsp_name)) {
+					DEBUG(3,("smbd_smb2_setinfo_send: "
+						 "SMB_VFS_LSTAT of %s failed "
+						 "(%s)\n", fsp_str_dbg(fsp),
+						 strerror(errno)));
+					status = map_nt_error_from_unix(errno);
+					tevent_req_nterror(req, status);
+					return tevent_req_post(req, ev);
+				}
+			} else {
+				if (SMB_VFS_STAT(conn, fsp->fsp_name) != 0) {
+					DEBUG(3,("smbd_smb2_setinfo_send: "
+						 "fileinfo of %s failed (%s)\n",
+						 fsp_str_dbg(fsp),
+						 strerror(errno)));
+					status = map_nt_error_from_unix(errno);
+					tevent_req_nterror(req, status);
+					return tevent_req_post(req, ev);
+				}
+			}
+		} else if (fsp->print_file) {
+			/*
+			 * Doing a DELETE_ON_CLOSE should cancel a print job.
+			 */
+			if ((file_info_level == SMB_SET_FILE_DISPOSITION_INFO)
+			    && in_input_buffer.length >= 1
+			    && CVAL(in_input_buffer.data,0)) {
+				fsp->fh->private_options |= FILE_DELETE_ON_CLOSE;
+
+				DEBUG(3,("smbd_smb2_setinfo_send: "
+					 "Cancelling print job (%s)\n",
+					 fsp_str_dbg(fsp)));
+
+				tevent_req_done(req);
+				return tevent_req_post(req, ev);
+			} else {
+				tevent_req_nterror(req,
+					NT_STATUS_OBJECT_PATH_INVALID);
+				return tevent_req_post(req, ev);
+			}
+		} else {
+			/*
+			 * Original code - this is an open file.
+			 */
+
+			if (SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st) != 0) {
+				DEBUG(3,("smbd_smb2_setinfo_send: fstat "
+					 "of fnum %d failed (%s)\n", fsp->fnum,
+					 strerror(errno)));
+				status = map_nt_error_from_unix(errno);
+				tevent_req_nterror(req, status);
+				return tevent_req_post(req, ev);
+			}
+		}
+
+		data = NULL;
+		data_size = in_input_buffer.length;
+		if (data_size > 0) {
+			data = (char *)SMB_MALLOC_ARRAY(char, data_size);
+			if (tevent_req_nomem(data, req)) {
+
+			}
+			memcpy(data, in_input_buffer.data, data_size);
+		}
+
+		status = smbd_do_setfilepathinfo(conn, smbreq, state,
+						 file_info_level,
+						 fsp,
+						 fsp->fsp_name,
+						 &data,
+						 data_size,
+						 &ret_size);
+		SAFE_FREE(data);
+		if (!NT_STATUS_IS_OK(status)) {
+			if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_LEVEL)) {
+				status = NT_STATUS_INVALID_INFO_CLASS;
+			}
+			tevent_req_nterror(req, status);
+			return tevent_req_post(req, ev);
+		}
+		break;
+	}
+
+	default:
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_done(req);
 	return tevent_req_post(req, ev);
 }
 

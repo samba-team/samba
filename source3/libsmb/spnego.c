@@ -41,17 +41,18 @@ static bool read_negTokenInit(ASN1_DATA *asn1, negTokenInit_t *token)
 			asn1_start_tag(asn1, ASN1_CONTEXT(0));
 			asn1_start_tag(asn1, ASN1_SEQUENCE(0));
 
-			token->mechTypes = TALLOC_P(NULL, const char *);
+			token->mechTypes = TALLOC_P(talloc_autofree_context(), const char *);
 			for (i = 0; !asn1->has_error &&
 				     0 < asn1_tag_remaining(asn1); i++) {
 				const char *p_oid = NULL;
 				token->mechTypes = 
-					TALLOC_REALLOC_ARRAY(NULL, token->mechTypes, const char *, i + 2);
+					TALLOC_REALLOC_ARRAY(talloc_autofree_context(),
+						token->mechTypes, const char *, i + 2);
 				if (!token->mechTypes) {
 					asn1->has_error = True;
 					return False;
 				}
-				asn1_read_OID(asn1, NULL, &p_oid);
+				asn1_read_OID(asn1, talloc_autofree_context(), &p_oid);
 				token->mechTypes[i] = p_oid;
 			}
 			token->mechTypes[i] = NULL;
@@ -69,14 +70,15 @@ static bool read_negTokenInit(ASN1_DATA *asn1, negTokenInit_t *token)
                 /* Read mechToken */
 		case ASN1_CONTEXT(2):
 			asn1_start_tag(asn1, ASN1_CONTEXT(2));
-			asn1_read_OctetString(asn1, NULL, &token->mechToken);
+			asn1_read_OctetString(asn1,
+				talloc_autofree_context(), &token->mechToken);
 			asn1_end_tag(asn1);
 			break;
 		/* Read mecListMIC */
 		case ASN1_CONTEXT(3):
 			asn1_start_tag(asn1, ASN1_CONTEXT(3));
 			if (asn1->data[asn1->ofs] == ASN1_OCTET_STRING) {
-				asn1_read_OctetString(asn1, NULL,
+				asn1_read_OctetString(asn1, talloc_autofree_context(),
 						      &token->mechListMIC);
 			} else {
 				/* RFC 2478 says we have an Octet String here,
@@ -84,7 +86,8 @@ static bool read_negTokenInit(ASN1_DATA *asn1, negTokenInit_t *token)
 				char *mechListMIC;
 				asn1_push_tag(asn1, ASN1_SEQUENCE(0));
 				asn1_push_tag(asn1, ASN1_CONTEXT(0));
-				asn1_read_GeneralString(asn1, NULL, &mechListMIC);
+				asn1_read_GeneralString(asn1,
+					talloc_autofree_context(), &mechListMIC);
 				asn1_pop_tag(asn1);
 				asn1_pop_tag(asn1);
 
@@ -188,19 +191,21 @@ static bool read_negTokenTarg(ASN1_DATA *asn1, negTokenTarg_t *token)
 		case ASN1_CONTEXT(1): {
 			const char *mech = NULL;
 			asn1_start_tag(asn1, ASN1_CONTEXT(1));
-			asn1_read_OID(asn1, NULL, &mech);
+			asn1_read_OID(asn1, talloc_autofree_context(), &mech);
 			asn1_end_tag(asn1);
 			token->supportedMech = CONST_DISCARD(char *, mech);
 			}
 			break;
 		case ASN1_CONTEXT(2):
 			asn1_start_tag(asn1, ASN1_CONTEXT(2));
-			asn1_read_OctetString(asn1, NULL, &token->responseToken);
+			asn1_read_OctetString(asn1,
+				talloc_autofree_context(), &token->responseToken);
 			asn1_end_tag(asn1);
 			break;
 		case ASN1_CONTEXT(3):
 			asn1_start_tag(asn1, ASN1_CONTEXT(3));
-			asn1_read_OctetString(asn1, NULL, &token->mechListMIC);
+			asn1_read_OctetString(asn1,
+				talloc_autofree_context(), &token->mechListMIC);
 			asn1_end_tag(asn1);
 			break;
 		default:

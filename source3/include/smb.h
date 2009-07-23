@@ -452,7 +452,7 @@ typedef struct files_struct {
 	bool lockdb_clean;
 	bool initial_delete_on_close; /* Only set at NTCreateX if file was created. */
 	bool posix_open;
-	char *fsp_name;
+	struct smb_filename *fsp_name;
 
 	struct vfs_fsp_data *vfs_extension;
 	struct fake_file_handle *fake_file_handle;
@@ -832,20 +832,6 @@ struct pipe_open_rec {
 #define SALTED_MD5_HASH_LEN 16
 #define PW_HISTORY_ENTRY_LEN (PW_HISTORY_SALT_LEN+SALTED_MD5_HASH_LEN)
 #define MAX_PW_HISTORY_LEN 24
-
-/*
- * Flags for account policy.
- */
-#define AP_MIN_PASSWORD_LEN 		1
-#define AP_PASSWORD_HISTORY		2
-#define AP_USER_MUST_LOGON_TO_CHG_PASS	3
-#define AP_MAX_PASSWORD_AGE		4
-#define AP_MIN_PASSWORD_AGE		5
-#define AP_LOCK_ACCOUNT_DURATION	6
-#define AP_RESET_COUNT_TIME		7
-#define AP_BAD_ATTEMPT_LOCKOUT		8
-#define AP_TIME_TO_LOGOUT		9
-#define AP_REFUSE_MACHINE_PW_CHANGE	10
 
 /*
  * Flags for local user manipulation.

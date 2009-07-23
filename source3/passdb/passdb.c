@@ -1439,7 +1439,7 @@ static bool init_samu_from_buffer_v2(struct samu *sampass, uint8 *buf, uint32 bu
 	}
 
 	/* Change from V1 is addition of password history field. */
-	pdb_get_account_policy(AP_PASSWORD_HISTORY, &pwHistLen);
+	pdb_get_account_policy(PDB_POLICY_PASSWORD_HISTORY, &pwHistLen);
 	if (pwHistLen) {
 		uint8 *pw_hist = SMB_MALLOC_ARRAY(uint8, pwHistLen * PW_HISTORY_ENTRY_LEN);
 		if (!pw_hist) {
@@ -1674,7 +1674,7 @@ static bool init_samu_from_buffer_v3(struct samu *sampass, uint8 *buf, uint32 bu
 		}
 	}
 
-	pdb_get_account_policy(AP_PASSWORD_HISTORY, &pwHistLen);
+	pdb_get_account_policy(PDB_POLICY_PASSWORD_HISTORY, &pwHistLen);
 	if (pwHistLen) {
 		uint8 *pw_hist = (uint8 *)SMB_MALLOC(pwHistLen * PW_HISTORY_ENTRY_LEN);
 		if (!pw_hist) {
@@ -1879,7 +1879,7 @@ static uint32 init_buffer_from_samu_v3 (uint8 **buf, struct samu *sampass, bool 
 		nt_pw_len = 0;
 	}
 
-	pdb_get_account_policy(AP_PASSWORD_HISTORY, &pwHistLen);
+	pdb_get_account_policy(PDB_POLICY_PASSWORD_HISTORY, &pwHistLen);
 	nt_pw_hist =  pdb_get_pw_history(sampass, &nt_pw_hist_len);
 	if (pwHistLen && nt_pw_hist && nt_pw_hist_len) {
 		nt_pw_hist_len *= PW_HISTORY_ENTRY_LEN;
@@ -2085,7 +2085,7 @@ bool pdb_copy_sam_account(struct samu *dst, struct samu *src )
 }
 
 /*********************************************************************
- Update the bad password count checking the AP_RESET_COUNT_TIME 
+ Update the bad password count checking the PDB_POLICY_RESET_COUNT_TIME
 *********************************************************************/
 
 bool pdb_update_bad_password_count(struct samu *sampass, bool *updated)
@@ -2102,7 +2102,7 @@ bool pdb_update_bad_password_count(struct samu *sampass, bool *updated)
 	}
 
 	become_root();
-	res = pdb_get_account_policy(AP_RESET_COUNT_TIME, &resettime);
+	res = pdb_get_account_policy(PDB_POLICY_RESET_COUNT_TIME, &resettime);
 	unbecome_root();
 
 	if (!res) {
@@ -2131,7 +2131,7 @@ bool pdb_update_bad_password_count(struct samu *sampass, bool *updated)
 }
 
 /*********************************************************************
- Update the ACB_AUTOLOCK flag checking the AP_LOCK_ACCOUNT_DURATION 
+ Update the ACB_AUTOLOCK flag checking the PDB_POLICY_LOCK_ACCOUNT_DURATION
 *********************************************************************/
 
 bool pdb_update_autolock_flag(struct samu *sampass, bool *updated)
@@ -2147,7 +2147,7 @@ bool pdb_update_autolock_flag(struct samu *sampass, bool *updated)
 	}
 
 	become_root();
-	res = pdb_get_account_policy(AP_LOCK_ACCOUNT_DURATION, &duration);
+	res = pdb_get_account_policy(PDB_POLICY_LOCK_ACCOUNT_DURATION, &duration);
 	unbecome_root();
 
 	if (!res) {
@@ -2199,7 +2199,7 @@ bool pdb_increment_bad_password_count(struct samu *sampass)
 
 	/* Retrieve the account lockout policy */
 	become_root();
-	ret = pdb_get_account_policy(AP_BAD_ATTEMPT_LOCKOUT, &account_policy_lockout);
+	ret = pdb_get_account_policy(PDB_POLICY_BAD_ATTEMPT_LOCKOUT, &account_policy_lockout);
 	unbecome_root();
 	if ( !ret ) {
 		DEBUG(0, ("pdb_increment_bad_password_count: pdb_get_account_policy failed.\n"));

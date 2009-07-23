@@ -2006,12 +2006,17 @@ NTSTATUS rpccli_spoolss_DeletePort(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_spoolss_CreatePrinterIC(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx,
+					struct policy_handle *handle /* [in] [ref] */,
+					struct policy_handle *gdi_handle /* [out] [ref] */,
+					struct spoolss_DevmodeContainer *devmode_ctr /* [in] [ref] */,
 					WERROR *werror)
 {
 	struct spoolss_CreatePrinterIC r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.handle = handle;
+	r.in.devmode_ctr = devmode_ctr;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(spoolss_CreatePrinterIC, &r);
@@ -2036,6 +2041,7 @@ NTSTATUS rpccli_spoolss_CreatePrinterIC(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*gdi_handle = *r.out.gdi_handle;
 
 	/* Return result */
 	if (werror) {
@@ -2088,12 +2094,14 @@ NTSTATUS rpccli_spoolss_PlayGDIScriptOnPrinterIC(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_spoolss_DeletePrinterIC(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx,
+					struct policy_handle *gdi_handle /* [in,out] [ref] */,
 					WERROR *werror)
 {
 	struct spoolss_DeletePrinterIC r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.gdi_handle = gdi_handle;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(spoolss_DeletePrinterIC, &r);
@@ -2118,6 +2126,7 @@ NTSTATUS rpccli_spoolss_DeletePrinterIC(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*gdi_handle = *r.out.gdi_handle;
 
 	/* Return result */
 	if (werror) {

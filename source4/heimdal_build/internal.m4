@@ -46,6 +46,15 @@ dnl declarations will be correct). Phew!
 AC_CHECK_HEADERS([err.h], [],
 	[ cp heimdal/lib/roken/err.hin heimdal_build/err.h ])
 
+dnl Not all systems have ifaddrs.h, so we provide a replacement. Heimdal
+dnl unconditionally #includes <ifaddrs.h>, so we need to create an ifaddrs.h,
+dnl but we can't just have a static one because we don't want to use
+dnl it on systems that have a real ifaddrs.h. If the system has a real
+dnl ifaddrs.h. We don't use heimdal's lib/roken/ifaddrs.hin because
+dnl our libreplace would conflict with it.
+AC_CHECK_HEADERS([ifaddrs.h], [],
+	[ cp heimdal_build/ifaddrs.hin heimdal_build/ifaddrs.h ])
+
 AC_CHECK_HEADERS([				\
 	crypt.h					\
 	curses.h				\

@@ -26,7 +26,7 @@
 #include "rpc_server/samr/dcesrv_samr.h"
 #include "system/time.h"
 #include "../lib/crypto/crypto.h"
-#include "dsdb/common/flags.h"
+#include "../libds/common/flags.h"
 #include "libcli/ldap/ldap.h"
 #include "dsdb/samdb/samdb.h"
 #include "auth/auth.h"

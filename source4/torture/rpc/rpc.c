@@ -431,6 +431,8 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_suite(suite, torture_rpc_lsa_lookup_sids(suite));
 	torture_suite_add_suite(suite, torture_rpc_lsa_lookup_names(suite));
 	torture_suite_add_suite(suite, torture_rpc_lsa_secrets(suite));
+	torture_suite_add_suite(suite, torture_rpc_lsa_trusted_domains(suite));
+	torture_suite_add_suite(suite, torture_rpc_lsa_privileges(suite));
 	torture_suite_add_suite(suite, torture_rpc_echo(suite));
 	torture_suite_add_simple_test(suite, "DFS", torture_rpc_dfs);
 	torture_suite_add_suite(suite, torture_rpc_frsapi(suite));
@@ -444,6 +446,7 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_simple_test(suite, "SPOOLSS", torture_rpc_spoolss);
 	torture_suite_add_suite(suite, torture_rpc_spoolss_notify(suite));
 	torture_suite_add_suite(suite, torture_rpc_spoolss_win(suite));
+	torture_suite_add_suite(suite, torture_rpc_spoolss_printer(suite));
 	torture_suite_add_simple_test(suite, "SAMR", torture_rpc_samr);
 	torture_suite_add_simple_test(suite, "SAMR-USERS", torture_rpc_samr_users);
 	torture_suite_add_simple_test(suite, "SAMR-PASSWORDS", torture_rpc_samr_passwords);

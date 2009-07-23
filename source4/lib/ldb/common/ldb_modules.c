@@ -84,13 +84,13 @@ const char **ldb_modules_list_from_string(struct ldb_context *ldb, TALLOC_CTX *m
 	/* spaces not admitted */
 	modstr = ldb_modules_strdup_no_spaces(mem_ctx, string);
 	if ( ! modstr) {
-		ldb_debug(ldb, LDB_DEBUG_FATAL, "Out of Memory in ldb_modules_strdup_no_spaces()\n");
+		ldb_debug(ldb, LDB_DEBUG_FATAL, "Out of Memory in ldb_modules_strdup_no_spaces()");
 		return NULL;
 	}
 
 	modules = talloc_realloc(mem_ctx, modules, char *, 2);
 	if ( ! modules ) {
-		ldb_debug(ldb, LDB_DEBUG_FATAL, "Out of Memory in ldb_modules_list_from_string()\n");
+		ldb_debug(ldb, LDB_DEBUG_FATAL, "Out of Memory in ldb_modules_list_from_string()");
 		talloc_free(modstr);
 		return NULL;
 	}
@@ -106,7 +106,7 @@ const char **ldb_modules_list_from_string(struct ldb_context *ldb, TALLOC_CTX *m
 		i++;
 		modules = talloc_realloc(mem_ctx, modules, char *, i + 2);
 		if ( ! modules ) {
-			ldb_debug(ldb, LDB_DEBUG_FATAL, "Out of Memory in ldb_modules_list_from_string()\n");
+			ldb_debug(ldb, LDB_DEBUG_FATAL, "Out of Memory in ldb_modules_list_from_string()");
 			return NULL;
 		}
 
@@ -239,7 +239,7 @@ int ldb_connect_backend(struct ldb_context *ldb,
 
 	if (fn == NULL) {
 		ldb_debug(ldb, LDB_DEBUG_FATAL,
-			  "Unable to find backend for '%s'\n", url);
+			  "Unable to find backend for '%s'", url);
 		return LDB_ERR_OTHER;
 	}
 
@@ -247,7 +247,7 @@ int ldb_connect_backend(struct ldb_context *ldb,
 
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR,
-			  "Failed to connect to '%s'\n", url);
+			  "Failed to connect to '%s'", url);
 		return ret;
 	}
 	return ret;
@@ -304,18 +304,18 @@ static void *ldb_dso_load_symbol(struct ldb_context *ldb, const char *name,
 	path = talloc_asprintf(ldb, "%s/%s.%s", ldb->modules_dir, name, 
 			       SHLIBEXT);
 
-	ldb_debug(ldb, LDB_DEBUG_TRACE, "trying to load %s from %s\n", name, path);
+	ldb_debug(ldb, LDB_DEBUG_TRACE, "trying to load %s from %s", name, path);
 
 	handle = dlopen(path, RTLD_NOW);
 	if (handle == NULL) {
-		ldb_debug(ldb, LDB_DEBUG_WARNING, "unable to load %s from %s: %s\n", name, path, dlerror());
+		ldb_debug(ldb, LDB_DEBUG_WARNING, "unable to load %s from %s: %s", name, path, dlerror());
 		return NULL;
 	}
 
 	sym = (int (*)(void))dlsym(handle, symbol);
 
 	if (sym == NULL) {
-		ldb_debug(ldb, LDB_DEBUG_ERROR, "no symbol `%s' found in %s: %s\n", symbol, path, dlerror());
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "no symbol `%s' found in %s: %s", symbol, path, dlerror());
 		return NULL;
 	}
 
@@ -351,7 +351,7 @@ int ldb_load_modules_list(struct ldb_context *ldb, const char **module_list, str
 		}
 		
 		if (ops == NULL) {
-			ldb_debug(ldb, LDB_DEBUG_WARNING, "WARNING: Module [%s] not found\n", 
+			ldb_debug(ldb, LDB_DEBUG_WARNING, "WARNING: Module [%s] not found",
 				  module_list[i]);
 			continue;
 		}
@@ -382,7 +382,7 @@ int ldb_init_module_chain(struct ldb_context *ldb, struct ldb_module *module)
 	if (module) {
 		int ret = module->ops->init_context(module);
 		if (ret != LDB_SUCCESS) {
-			ldb_debug(ldb, LDB_DEBUG_FATAL, "module %s initialization failed\n", module->ops->name);
+			ldb_debug(ldb, LDB_DEBUG_FATAL, "module %s initialization failed", module->ops->name);
 			return ret;
 		}
 	}
@@ -428,7 +428,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 			ldb_debug(ldb, LDB_DEBUG_TRACE, "no modules required by the db");
 		} else if (ret != LDB_SUCCESS) {
-			ldb_debug(ldb, LDB_DEBUG_FATAL, "ldb error (%s) occurred searching for modules, bailing out\n", ldb_errstring(ldb));
+			ldb_debug(ldb, LDB_DEBUG_FATAL, "ldb error (%s) occurred searching for modules, bailing out", ldb_errstring(ldb));
 			talloc_free(mem_ctx);
 			return ret;
 		} else {
@@ -436,7 +436,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 			if (res->count == 0) {
 				ldb_debug(ldb, LDB_DEBUG_TRACE, "no modules required by the db");
 			} else if (res->count > 1) {
-				ldb_debug(ldb, LDB_DEBUG_FATAL, "Too many records found (%d), bailing out\n", res->count);
+				ldb_debug(ldb, LDB_DEBUG_FATAL, "Too many records found (%d), bailing out", res->count);
 				talloc_free(mem_ctx);
 				return -1;
 			} else {

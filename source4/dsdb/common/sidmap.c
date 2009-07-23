@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "system/passwd.h"
-#include "dsdb/common/flags.h"
+#include "../libds/common/flags.h"
 #include "dsdb/samdb/samdb.h"
 #include "auth/auth.h"
 #include "libcli/ldap/ldap_ndr.h"
@@ -583,7 +583,7 @@ NTSTATUS sidmap_allocated_sid_lookup(struct sidmap_context *sidmap,
 		struct passwd *pwd;
 		uid_t uid = rid - SIDMAP_LOCAL_USER_BASE;
 		atype = ATYPE_NORMAL_ACCOUNT;
-		*rtype = samdb_atype_map(atype);
+		*rtype = ds_atype_map(atype);
 
 		pwd = getpwuid(uid);
 		if (pwd == NULL) {
@@ -595,7 +595,7 @@ NTSTATUS sidmap_allocated_sid_lookup(struct sidmap_context *sidmap,
 		struct group *grp;
 		gid_t gid = rid - SIDMAP_LOCAL_GROUP_BASE;
 		atype = ATYPE_LOCAL_GROUP;
-		*rtype = samdb_atype_map(atype);
+		*rtype = ds_atype_map(atype);
 		grp = getgrgid(gid);
 		if (grp == NULL) {
 			*name = talloc_asprintf(mem_ctx, "gid%u", gid);

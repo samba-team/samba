@@ -104,7 +104,7 @@ struct tevent_req *_tevent_req_create(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	data = talloc_size(req, data_size);
+	data = talloc_zero_size(req, data_size);
 	if (data == NULL) {
 		talloc_free(req);
 		return NULL;

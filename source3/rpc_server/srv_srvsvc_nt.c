@@ -540,11 +540,13 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
                 if (lp_browseable(snum) && lp_snum_ok(snum) &&
                     is_enumeration_allowed(p, snum) &&
                     (all_shares || !is_hidden_share(snum)) ) {
-                        DEBUG(10, ("counting service %s\n", lp_servicename(snum)));
+                        DEBUG(10, ("counting service %s\n",
+				lp_servicename(snum) ? lp_servicename(snum) : "(null)"));
                         allowed[snum] = true;
                         num_entries++;
                 } else {
-                        DEBUG(10, ("NOT counting service %s\n", lp_servicename(snum)));
+                        DEBUG(10, ("NOT counting service %s\n",
+				lp_servicename(snum) ? lp_servicename(snum) : "(null)"));
                 }
         }
 
@@ -2070,8 +2072,7 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p,
 					conn,
 					false,
 					r->in.file,
-					&smb_fname,
-					NULL);
+					&smb_fname);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		werr = ntstatus_to_werror(nt_status);
 		goto error_exit;
@@ -2199,8 +2200,7 @@ WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p,
 					conn,
 					false,
 					r->in.file,
-					&smb_fname,
-					NULL);
+					&smb_fname);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		werr = ntstatus_to_werror(nt_status);
 		goto error_exit;

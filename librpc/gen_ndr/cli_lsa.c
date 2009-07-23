@@ -1796,12 +1796,18 @@ NTSTATUS rpccli_lsa_DeleteTrustedDomain(struct rpc_pipe_client *cli,
 }
 
 NTSTATUS rpccli_lsa_StorePrivateData(struct rpc_pipe_client *cli,
-				     TALLOC_CTX *mem_ctx)
+				     TALLOC_CTX *mem_ctx,
+				     struct policy_handle *handle /* [in] [ref] */,
+				     struct lsa_String *name /* [in] [ref] */,
+				     struct lsa_DATA_BUF *val /* [in] [unique] */)
 {
 	struct lsa_StorePrivateData r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.handle = handle;
+	r.in.name = name;
+	r.in.val = val;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(lsa_StorePrivateData, &r);
@@ -1832,12 +1838,18 @@ NTSTATUS rpccli_lsa_StorePrivateData(struct rpc_pipe_client *cli,
 }
 
 NTSTATUS rpccli_lsa_RetrievePrivateData(struct rpc_pipe_client *cli,
-					TALLOC_CTX *mem_ctx)
+					TALLOC_CTX *mem_ctx,
+					struct policy_handle *handle /* [in] [ref] */,
+					struct lsa_String *name /* [in] [ref] */,
+					struct lsa_DATA_BUF **val /* [in,out] [ref] */)
 {
 	struct lsa_RetrievePrivateData r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.handle = handle;
+	r.in.name = name;
+	r.in.val = val;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(lsa_RetrievePrivateData, &r);
@@ -1862,6 +1874,7 @@ NTSTATUS rpccli_lsa_RetrievePrivateData(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*val = *r.out.val;
 
 	/* Return result */
 	return r.out.result;

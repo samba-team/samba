@@ -92,12 +92,6 @@ send_supported_mechs (OM_uint32 *minor_status,
 		      gss_buffer_t output_token)
 {
     NegotiationTokenWin nt;
-    char hostname[MAXHOSTNAMELEN + 1], *p;
-    gss_buffer_desc name_buf;
-    gss_OID name_type;
-    gss_name_t target_princ;
-    gss_name_t canon_princ;
-    OM_uint32 minor;
     size_t buf_len;
     gss_buffer_desc data;
     OM_uint32 ret;
@@ -116,62 +110,9 @@ send_supported_mechs (OM_uint32 *minor_status,
 	return ret;
     }
 
-    memset(&target_princ, 0, sizeof(target_princ));
-    if (gethostname(hostname, sizeof(hostname) - 2) != 0) {
-	*minor_status = errno;
-	free_NegotiationTokenWin(&nt);
-	return GSS_S_FAILURE;
-    }
-    hostname[sizeof(hostname) - 1] = '\0';
-
-    /* Send the constructed SAM name for this host */
-    for (p = hostname; *p != '\0' && *p != '.'; p++) {
-	*p = toupper((unsigned char)*p);
-    }
-    *p++ = '$';
-    *p = '\0';
-
-    name_buf.length = strlen(hostname);
-    name_buf.value = hostname;
-
-    ret = gss_import_name(minor_status, &name_buf,
-			  GSS_C_NO_OID,
-			  &target_princ);
-    if (ret != GSS_S_COMPLETE) {
-	free_NegotiationTokenWin(&nt);
-	return ret;
-    }
-
-    name_buf.length = 0;
-    name_buf.value = NULL;
-
-    /* Canonicalize the name using the preferred mechanism */
-    ret = gss_canonicalize_name(minor_status,
-				target_princ,
-				GSS_C_NO_OID,
-				&canon_princ);
-    if (ret != GSS_S_COMPLETE) {
-	free_NegotiationTokenWin(&nt);
-	gss_release_name(&minor, &target_princ);
-	return ret;
-    }
-
-    ret = gss_display_name(minor_status, canon_princ,
-			   &name_buf, &name_type);
-    if (ret != GSS_S_COMPLETE) {
-	free_NegotiationTokenWin(&nt);
-	gss_release_name(&minor, &canon_princ);
-	gss_release_name(&minor, &target_princ);
-	return ret;
-    }
-
-    gss_release_name(&minor, &canon_princ);
-    gss_release_name(&minor, &target_princ);
-
     ALLOC(nt.u.negTokenInit.negHints, 1);
     if (nt.u.negTokenInit.negHints == NULL) {
 	*minor_status = ENOMEM;
-	gss_release_buffer(&minor, &name_buf);
 	free_NegotiationTokenWin(&nt);
 	return GSS_S_FAILURE;
     }
@@ -179,20 +120,19 @@ send_supported_mechs (OM_uint32 *minor_status,
     ALLOC(nt.u.negTokenInit.negHints->hintName, 1);
     if (nt.u.negTokenInit.negHints->hintName == NULL) {
 	*minor_status = ENOMEM;
-	gss_release_buffer(&minor, &name_buf);
 	free_NegotiationTokenWin(&nt);
 	return GSS_S_FAILURE;
     }
 
-    *(nt.u.negTokenInit.negHints->hintName) = name_buf.value;
-    name_buf.value = NULL;
+    *nt.u.negTokenInit.negHints->hintName = strdup("not_defined_in_RFC4178@please_ignore");
     nt.u.negTokenInit.negHints->hintAddress = NULL;
 
     ASN1_MALLOC_ENCODE(NegotiationTokenWin,
 		       data.value, data.length, &nt, &buf_len, ret);
     free_NegotiationTokenWin(&nt);
     if (ret) {
-	return ret;
+	*minor_status = ret;
+	return GSS_S_FAILURE;
     }
     if (data.length != buf_len)
 	abort();

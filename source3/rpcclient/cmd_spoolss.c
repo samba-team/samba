@@ -3430,6 +3430,48 @@ static WERROR cmd_spoolss_enum_monitors(struct rpc_pipe_client *cli,
 	return werror;
 }
 
+static WERROR cmd_spoolss_create_printer_ic(struct rpc_pipe_client *cli,
+					    TALLOC_CTX *mem_ctx, int argc,
+					    const char **argv)
+{
+	WERROR result;
+	NTSTATUS status;
+	struct policy_handle handle, gdi_handle;
+	const char *printername;
+	struct spoolss_DevmodeContainer devmode_ctr;
+
+	RPCCLIENT_PRINTERNAME(printername, cli, argv[1]);
+
+	result = rpccli_spoolss_openprinter_ex(cli, mem_ctx,
+					       printername,
+					       SEC_FLAG_MAXIMUM_ALLOWED,
+					       &handle);
+	if (!W_ERROR_IS_OK(result)) {
+		return result;
+	}
+
+	ZERO_STRUCT(devmode_ctr);
+
+	status = rpccli_spoolss_CreatePrinterIC(cli, mem_ctx,
+						&handle,
+						&gdi_handle,
+						&devmode_ctr,
+						&result);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+ done:
+	if (is_valid_policy_hnd(&gdi_handle)) {
+		rpccli_spoolss_DeletePrinterIC(cli, mem_ctx, &gdi_handle, NULL);
+	}
+	if (is_valid_policy_hnd(&handle)) {
+		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
+	}
+
+	return result;
+}
+
 /* List of commands exported by this module */
 struct cmd_set spoolss_commands[] = {
 
@@ -3469,6 +3511,7 @@ struct cmd_set spoolss_commands[] = {
 	{ "enumprocs",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_procs,         &ndr_table_spoolss.syntax_id, NULL, "Enumerate Print Processors",          "" },
 	{ "enumprocdatatypes",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_proc_data_types, &ndr_table_spoolss.syntax_id, NULL, "Enumerate Print Processor Data Types", "" },
 	{ "enummonitors",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_monitors,      &ndr_table_spoolss.syntax_id, NULL, "Enumerate Print Monitors", "" },
+	{ "createprinteric",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_create_printer_ic,  &ndr_table_spoolss.syntax_id, NULL, "Create Printer IC", "" },
 
 	{ NULL }
 };

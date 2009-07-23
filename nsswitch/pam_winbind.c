@@ -11,6 +11,8 @@
 */
 
 #include "pam_winbind.h"
+#define CONST_DISCARD(type,ptr) ((type)(void *)ptr)
+
 
 static int wbc_error_to_pam_error(wbcErr status)
 {
@@ -410,49 +412,51 @@ static int _pam_parse(const pam_handle_t *pamh,
 		config_file = PAM_WINBIND_CONFIG_FILE;
 	}
 
-	d = iniparser_load(config_file);
+	d = iniparser_load(CONST_DISCARD(char *, config_file));
 	if (d == NULL) {
 		goto config_from_pam;
 	}
 
-	if (iniparser_getboolean(d, "global:debug", false)) {
+	if (iniparser_getboolean(d, CONST_DISCARD(char *, "global:debug"), false)) {
 		ctrl |= WINBIND_DEBUG_ARG;
 	}
 
-	if (iniparser_getboolean(d, "global:debug_state", false)) {
+	if (iniparser_getboolean(d, CONST_DISCARD(char *, "global:debug_state"), false)) {
 		ctrl |= WINBIND_DEBUG_STATE;
 	}
 
-	if (iniparser_getboolean(d, "global:cached_login", false)) {
+	if (iniparser_getboolean(d, CONST_DISCARD(char *, "global:cached_login"), false)) {
 		ctrl |= WINBIND_CACHED_LOGIN;
 	}
 
-	if (iniparser_getboolean(d, "global:krb5_auth", false)) {
+	if (iniparser_getboolean(d, CONST_DISCARD(char *, "global:krb5_auth"), false)) {
 		ctrl |= WINBIND_KRB5_AUTH;
 	}
 
-	if (iniparser_getboolean(d, "global:silent", false)) {
+	if (iniparser_getboolean(d, CONST_DISCARD(char *, "global:silent"), false)) {
 		ctrl |= WINBIND_SILENT;
 	}
 
-	if (iniparser_getstr(d, "global:krb5_ccache_type") != NULL) {
+	if (iniparser_getstr(d, CONST_DISCARD(char *, "global:krb5_ccache_type")) != NULL) {
 		ctrl |= WINBIND_KRB5_CCACHE_TYPE;
 	}
 
-	if ((iniparser_getstr(d, "global:require-membership-of") != NULL) ||
-	    (iniparser_getstr(d, "global:require_membership_of") != NULL)) {
+	if ((iniparser_getstr(d, CONST_DISCARD(char *, "global:require-membership-of"))
+	     != NULL) ||
+	    (iniparser_getstr(d, CONST_DISCARD(char *, "global:require_membership_of"))
+	     != NULL)) {
 		ctrl |= WINBIND_REQUIRED_MEMBERSHIP;
 	}
 
-	if (iniparser_getboolean(d, "global:try_first_pass", false)) {
+	if (iniparser_getboolean(d, CONST_DISCARD(char *, "global:try_first_pass"), false)) {
 		ctrl |= WINBIND_TRY_FIRST_PASS_ARG;
 	}
 
-	if (iniparser_getint(d, "global:warn_pwd_expire", 0)) {
+	if (iniparser_getint(d, CONST_DISCARD(char *, "global:warn_pwd_expire"), 0)) {
 		ctrl |= WINBIND_WARN_PWD_EXPIRE;
 	}
 
-	if (iniparser_getboolean(d, "global:mkhomedir", false)) {
+	if (iniparser_getboolean(d, CONST_DISCARD(char *, "global:mkhomedir"), false)) {
 		ctrl |= WINBIND_MKHOMEDIR;
 	}
 
@@ -2284,6 +2288,7 @@ static char* winbind_upn_to_username(struct pwb_context *ctx,
 	enum wbcSidType type;
 	char *domain;
 	char *name;
+	char *p;
 
 	/* This cannot work when the winbind separator = @ */
 
@@ -2292,9 +2297,18 @@ static char* winbind_upn_to_username(struct pwb_context *ctx,
 		return NULL;
 	}
 
+	name = talloc_strdup(ctx, upn);
+	if (!name) {
+		return NULL;
+	}
+	if ((p = strchr(name, '@')) != NULL) {
+		*p = 0;
+		domain = p + 1;
+	}
+
 	/* Convert the UPN to a SID */
 
-	wbc_status = wbcLookupName("", upn, &sid, &type);
+	wbc_status = wbcLookupName(domain, name, &sid, &type);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		return NULL;
 	}

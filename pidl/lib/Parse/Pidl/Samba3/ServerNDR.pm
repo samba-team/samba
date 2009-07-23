@@ -11,7 +11,7 @@ use Exporter;
 @EXPORT_OK = qw(DeclLevel);
 
 use strict;
-use Parse::Pidl qw(warning fatal);
+use Parse::Pidl qw(warning error fatal);
 use Parse::Pidl::Typelist qw(mapTypeName scalar_is_reference);
 use Parse::Pidl::Util qw(ParseExpr has_property is_constant);
 use Parse::Pidl::NDR qw(GetNextLevel);
@@ -72,8 +72,13 @@ sub AllocOutVar($$$$$)
 	}
 
 	if ($l->{TYPE} eq "ARRAY") {
-		my $size = ParseExpr($l->{SIZE_IS}, $env, $e);
-		pidl "$name = talloc_zero_array($mem_ctx, " . DeclLevel($e, 1) . ", $size);";
+		unless(defined($l->{SIZE_IS})) {
+			error($e->{ORIGINAL}, "No size known for array `$e->{NAME}'");
+			pidl "#error No size known for array `$e->{NAME}'";
+		} else {
+			my $size = ParseExpr($l->{SIZE_IS}, $env, $e);
+			pidl "$name = talloc_zero_array($mem_ctx, " . DeclLevel($e, 1) . ", $size);";
+		}
 	} else {
 		pidl "$name = talloc_zero($mem_ctx, " . DeclLevel($e, 1) . ");";
 	}

@@ -94,6 +94,7 @@ static NTSTATUS check_open_rights(struct connection_struct *conn,
 			"on %s: %s\n",
 			smb_fname_str_dbg(smb_fname),
 			nt_errstr(status)));
+		TALLOC_FREE(sd);
 		return status;
 	}
 
@@ -218,13 +219,13 @@ void change_file_owner_to_parent(connection_struct *conn,
 	if (ret == -1) {
 		DEBUG(0,("change_file_owner_to_parent: failed to fchown "
 			 "file %s to parent directory uid %u. Error "
-			 "was %s\n", fsp->fsp_name,
+			 "was %s\n", fsp_str_dbg(fsp),
 			 (unsigned int)smb_fname_parent->st.st_ex_uid,
 			 strerror(errno) ));
 	}
 
 	DEBUG(10,("change_file_owner_to_parent: changed new file %s to "
-		  "parent directory uid %u.\n",	fsp->fsp_name,
+		  "parent directory uid %u.\n", fsp_str_dbg(fsp),
 		  (unsigned int)smb_fname_parent->st.st_ex_uid));
 
 	TALLOC_FREE(smb_fname_parent);
@@ -349,7 +350,6 @@ static NTSTATUS open_file(files_struct *fsp,
 			  uint32 access_mask, /* client requested access mask. */
 			  uint32 open_access_mask) /* what we're actually using in the open. */
 {
-	char *path = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	int accmode = (flags & O_ACCMODE);
 	int local_flags = flags;
@@ -434,7 +434,7 @@ static NTSTATUS open_file(files_struct *fsp,
 			 * wildcard characters are allowed in stream names
 			 * only test the basefilename
 			 */
-			wild = fsp->base_fsp->fsp_name;
+			wild = fsp->base_fsp->fsp_name->base_name;
 		} else {
 			wild = smb_fname->base_name;
 		}
@@ -614,15 +614,12 @@ static NTSTATUS open_file(files_struct *fsp,
 		       conn->case_sensitive)) {
 		fsp->aio_write_behind = True;
 	}
-
-	status = get_full_smb_filename(talloc_tos(), smb_fname,
-				       &path);
+	status = fsp_set_smb_fname(fsp, smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
+		fd_close(fsp);
+		errno = map_errno_from_nt_status(status);
 		return status;
 	}
-
-	string_set(&fsp->fsp_name, path);
-	TALLOC_FREE(path);
 
 	fsp->wcp = NULL; /* Write cache pointer. */
 
@@ -795,7 +792,8 @@ static void validate_my_share_entries(int num,
 		str = talloc_asprintf(talloc_tos(),
 			"validate_my_share_entries: "
 			"file %s, oplock_type = 0x%x, op_type = 0x%x\n",
-			 fsp->fsp_name, (unsigned int)fsp->oplock_type,
+			 fsp->fsp_name->base_name,
+			 (unsigned int)fsp->oplock_type,
 			 (unsigned int)share_entry->op_type );
 		smb_panic(str);
 	}
@@ -1029,7 +1027,7 @@ static bool delay_for_oplocks(struct share_mode_lock *lck,
 	}
 
 	DEBUG(10,("delay_for_oplocks: oplock type 0x%x on file %s\n",
-		fsp->oplock_type, fsp->fsp_name));
+		  fsp->oplock_type, fsp_str_dbg(fsp)));
 
 	/* No delay. */
 	return false;
@@ -1152,13 +1150,6 @@ NTSTATUS fcb_or_dos_open(struct smb_request *req,
 				     uint32 create_options)
 {
 	files_struct *fsp;
-	char *fname = NULL;
-	NTSTATUS status;
-
-	status = get_full_smb_filename(talloc_tos(), smb_fname, &fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
 
 	DEBUG(5,("fcb_or_dos_open: attempting old open semantics for "
 		 "file %s.\n", smb_fname_str_dbg(smb_fname)));
@@ -1168,7 +1159,7 @@ NTSTATUS fcb_or_dos_open(struct smb_request *req,
 
 		DEBUG(10,("fcb_or_dos_open: checking file %s, fd = %d, "
 			  "vuid = %u, file_pid = %u, private_options = 0x%x "
-			  "access_mask = 0x%x\n", fsp->fsp_name,
+			  "access_mask = 0x%x\n", fsp_str_dbg(fsp),
 			  fsp->fh->fd, (unsigned int)fsp->vuid,
 			  (unsigned int)fsp->file_pid,
 			  (unsigned int)fsp->fh->private_options,
@@ -1180,7 +1171,9 @@ NTSTATUS fcb_or_dos_open(struct smb_request *req,
 		    (fsp->fh->private_options & (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS |
 						 NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) &&
 		    (fsp->access_mask & FILE_WRITE_DATA) &&
-		    strequal(fsp->fsp_name, fname)) {
+		    strequal(fsp->fsp_name->base_name, smb_fname->base_name) &&
+		    strequal(fsp->fsp_name->stream_name,
+			     smb_fname->stream_name)) {
 			DEBUG(10,("fcb_or_dos_open: file match\n"));
 			break;
 		}
@@ -1198,17 +1191,16 @@ NTSTATUS fcb_or_dos_open(struct smb_request *req,
 	}
 
 	/* We need to duplicate this fsp. */
-	dup_file_fsp(req, fsp, access_mask, share_access,
-			create_options, fsp_to_dup_into);
-
-	return NT_STATUS_OK;
+	return dup_file_fsp(req, fsp, access_mask, share_access,
+			    create_options, fsp_to_dup_into);
 }
 
 /****************************************************************************
  Open a file with a share mode - old openX method - map into NTCreate.
 ****************************************************************************/
 
-bool map_open_params_to_ntcreate(const char *fname, int deny_mode, int open_func,
+bool map_open_params_to_ntcreate(const struct smb_filename *smb_fname,
+				 int deny_mode, int open_func,
 				 uint32 *paccess_mask,
 				 uint32 *pshare_mode,
 				 uint32 *pcreate_disposition,
@@ -1221,7 +1213,8 @@ bool map_open_params_to_ntcreate(const char *fname, int deny_mode, int open_func
 
 	DEBUG(10,("map_open_params_to_ntcreate: fname = %s, deny_mode = 0x%x, "
 		  "open_func = 0x%x\n",
-		  fname, (unsigned int)deny_mode, (unsigned int)open_func ));
+		  smb_fname_str_dbg(smb_fname), (unsigned int)deny_mode,
+		  (unsigned int)open_func ));
 
 	/* Create the NT compatible access_mask. */
 	switch (GET_OPENX_MODE(deny_mode)) {
@@ -1295,7 +1288,7 @@ bool map_open_params_to_ntcreate(const char *fname, int deny_mode, int open_func
 
 		case DENY_DOS:
 			create_options |= NTCREATEX_OPTIONS_PRIVATE_DENY_DOS;
-	                if (is_executable(fname)) {
+	                if (is_executable(smb_fname->base_name)) {
 				share_mode = FILE_SHARE_READ|FILE_SHARE_WRITE;
 			} else {
 				if (GET_OPENX_MODE(deny_mode) == DOS_OPEN_RDONLY) {
@@ -1320,7 +1313,7 @@ bool map_open_params_to_ntcreate(const char *fname, int deny_mode, int open_func
 	DEBUG(10,("map_open_params_to_ntcreate: file %s, access_mask = 0x%x, "
 		  "share_mode = 0x%x, create_disposition = 0x%x, "
 		  "create_options = 0x%x\n",
-		  fname,
+		  smb_fname_str_dbg(smb_fname),
 		  (unsigned int)access_mask,
 		  (unsigned int)share_mode,
 		  (unsigned int)create_disposition,
@@ -2611,8 +2604,10 @@ static NTSTATUS open_directory(connection_struct *conn,
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	fsp->is_directory = True;
 	fsp->posix_open = (file_attributes & FILE_FLAG_POSIX_SEMANTICS) ? True : False;
-
-	string_set(&fsp->fsp_name, smb_dname->base_name);
+	status = fsp_set_smb_fname(fsp, smb_dname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	mtimespec = smb_dname->st.st_ex_mtime;
 
@@ -2730,6 +2725,11 @@ void msg_file_was_renamed(struct messaging_context *msg,
 	bn_len = strlen(base_name);
 	stream_name = sharepath + sp_len + 1 + bn_len + 1;
 
+	/* stream_name must always be NULL if there is no stream. */
+	if (stream_name[0] == '\0') {
+		stream_name = NULL;
+	}
+
 	status = create_synthetic_smb_fname(talloc_tos(), base_name,
 					    stream_name, NULL, &smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2743,18 +2743,14 @@ void msg_file_was_renamed(struct messaging_context *msg,
 
 	for(fsp = file_find_di_first(id); fsp; fsp = file_find_di_next(fsp)) {
 		if (memcmp(fsp->conn->connectpath, sharepath, sp_len) == 0) {
-	                char *newname = NULL;
 
 			DEBUG(10,("msg_file_was_renamed: renaming file fnum %d from %s -> %s\n",
-				fsp->fnum, fsp->fsp_name,
+				fsp->fnum, fsp_str_dbg(fsp),
 				smb_fname_str_dbg(smb_fname)));
-			status = get_full_smb_filename(talloc_tos(),
-						       smb_fname, &newname);
+			status = fsp_set_smb_fname(fsp, smb_fname);
 			if (!NT_STATUS_IS_OK(status)) {
 				goto out;
 			}
-			string_set(&fsp->fsp_name, newname);
-			TALLOC_FREE(newname);
 		} else {
 			/* TODO. JRA. */
 			/* Now we have the complete path we can work out if this is
@@ -2765,7 +2761,7 @@ void msg_file_was_renamed(struct messaging_context *msg,
 				fsp->conn->connectpath,
 				sharepath,
 				fsp->fnum,
-				fsp->fsp_name,
+				fsp_str_dbg(fsp),
 				smb_fname_str_dbg(smb_fname)));
 		}
         }
@@ -2926,7 +2922,7 @@ NTSTATUS open_streams_for_delete(connection_struct *conn,
 		}
 
 		DEBUG(10, ("Closing stream # %d, %s\n", i,
-			   streams[i]->fsp_name));
+			   fsp_str_dbg(streams[i])));
 		close_file(NULL, streams[i], NORMAL_CLOSE);
 	}
 
@@ -3326,6 +3322,11 @@ NTSTATUS get_relative_fid_filename(connection_struct *conn,
 
 	dir_fsp = file_fsp(req, root_dir_fid);
 
+	if (is_ntfs_stream_smb_fname(dir_fsp->fsp_name)) {
+		status = NT_STATUS_INVALID_HANDLE;
+		goto out;
+	}
+
 	if (dir_fsp == NULL) {
 		status = NT_STATUS_INVALID_HANDLE;
 		goto out;
@@ -3354,7 +3355,7 @@ NTSTATUS get_relative_fid_filename(connection_struct *conn,
 		goto out;
 	}
 
-	if (ISDOT(dir_fsp->fsp_name)) {
+	if (ISDOT(dir_fsp->fsp_name->base_name)) {
 		/*
 		 * We're at the toplevel dir, the final file name
 		 * must not contain ./, as this is filtered out
@@ -3367,7 +3368,7 @@ NTSTATUS get_relative_fid_filename(connection_struct *conn,
 			goto out;
 		}
 	} else {
-		size_t dir_name_len = strlen(dir_fsp->fsp_name);
+		size_t dir_name_len = strlen(dir_fsp->fsp_name->base_name);
 
 		/*
 		 * Copy in the base directory name.
@@ -3379,7 +3380,7 @@ NTSTATUS get_relative_fid_filename(connection_struct *conn,
 			status = NT_STATUS_NO_MEMORY;
 			goto out;
 		}
-		memcpy(parent_fname, dir_fsp->fsp_name,
+		memcpy(parent_fname, dir_fsp->fsp_name->base_name,
 		    dir_name_len+1);
 
 		/*
@@ -3463,16 +3464,9 @@ NTSTATUS create_file_default(connection_struct *conn,
 	 */
 
 	if (is_ntfs_stream_smb_fname(smb_fname)) {
-		char *fname = NULL;
 		enum FAKE_FILE_TYPE fake_file_type;
 
-		status = get_full_smb_filename(talloc_tos(), smb_fname,
-					       &fname);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto fail;
-		}
-
-		fake_file_type = is_fake_file(fname);
+		fake_file_type = is_fake_file(smb_fname);
 
 		if (fake_file_type != FAKE_FILE_TYPE_NONE) {
 
@@ -3488,9 +3482,8 @@ NTSTATUS create_file_default(connection_struct *conn,
 			 * close it
 			 */
 			status = open_fake_file(req, conn, req->vuid,
-						fake_file_type, fname,
+						fake_file_type, smb_fname,
 						access_mask, &fsp);
-			TALLOC_FREE(fname);
 			if (!NT_STATUS_IS_OK(status)) {
 				goto fail;
 			}
@@ -3498,7 +3491,6 @@ NTSTATUS create_file_default(connection_struct *conn,
 			ZERO_STRUCT(smb_fname->st);
 			goto done;
 		}
-		TALLOC_FREE(fname);
 
 		if (!(conn->fs_capabilities & FILE_NAMED_STREAMS)) {
 			status = NT_STATUS_OBJECT_NAME_NOT_FOUND;

@@ -487,10 +487,12 @@ int vfs_allocate_file_space(files_struct *fsp, uint64_t len)
 	 * Actually try and commit the space on disk....
 	 */
 
-	DEBUG(10,("vfs_allocate_file_space: file %s, len %.0f\n", fsp->fsp_name, (double)len ));
+	DEBUG(10,("vfs_allocate_file_space: file %s, len %.0f\n",
+		  fsp_str_dbg(fsp), (double)len));
 
 	if (((SMB_OFF_T)len) < 0) {
-		DEBUG(0,("vfs_allocate_file_space: %s negative len requested.\n", fsp->fsp_name ));
+		DEBUG(0,("vfs_allocate_file_space: %s negative len "
+			 "requested.\n", fsp_str_dbg(fsp)));
 		errno = EINVAL;
 		return -1;
 	}
@@ -505,8 +507,9 @@ int vfs_allocate_file_space(files_struct *fsp, uint64_t len)
 	if (len < (uint64_t)st.st_ex_size) {
 		/* Shrink - use ftruncate. */
 
-		DEBUG(10,("vfs_allocate_file_space: file %s, shrink. Current size %.0f\n",
-				fsp->fsp_name, (double)st.st_ex_size ));
+		DEBUG(10,("vfs_allocate_file_space: file %s, shrink. Current "
+			  "size %.0f\n", fsp_str_dbg(fsp),
+			  (double)st.st_ex_size));
 
 		contend_level2_oplocks_begin(fsp, LEVEL2_CONTEND_ALLOC_SHRINK);
 
@@ -530,13 +533,16 @@ int vfs_allocate_file_space(files_struct *fsp, uint64_t len)
 
 	len -= st.st_ex_size;
 	len /= 1024; /* Len is now number of 1k blocks needed. */
-	space_avail = get_dfree_info(conn,fsp->fsp_name,False,&bsize,&dfree,&dsize);
+	space_avail = get_dfree_info(conn, fsp->fsp_name->base_name, false,
+				     &bsize, &dfree, &dsize);
 	if (space_avail == (uint64_t)-1) {
 		return -1;
 	}
 
-	DEBUG(10,("vfs_allocate_file_space: file %s, grow. Current size %.0f, needed blocks = %.0f, space avail = %.0f\n",
-			fsp->fsp_name, (double)st.st_ex_size, (double)len, (double)space_avail ));
+	DEBUG(10,("vfs_allocate_file_space: file %s, grow. Current size %.0f, "
+		  "needed blocks = %.0f, space avail = %.0f\n",
+		  fsp_str_dbg(fsp), (double)st.st_ex_size, (double)len,
+		  (double)space_avail));
 
 	if (len > space_avail) {
 		errno = ENOSPC;
@@ -558,14 +564,15 @@ int vfs_set_filelen(files_struct *fsp, SMB_OFF_T len)
 
 	contend_level2_oplocks_begin(fsp, LEVEL2_CONTEND_SET_FILE_LEN);
 
-	DEBUG(10,("vfs_set_filelen: ftruncate %s to len %.0f\n", fsp->fsp_name, (double)len));
+	DEBUG(10,("vfs_set_filelen: ftruncate %s to len %.0f\n",
+		  fsp_str_dbg(fsp), (double)len));
 	flush_write_cache(fsp, SIZECHANGE_FLUSH);
 	if ((ret = SMB_VFS_FTRUNCATE(fsp, len)) != -1) {
 		set_filelen_write_cache(fsp, len);
 		notify_fname(fsp->conn, NOTIFY_ACTION_MODIFIED,
 			     FILE_NOTIFY_CHANGE_SIZE
 			     | FILE_NOTIFY_CHANGE_ATTRIBUTES,
-			     fsp->fsp_name);
+			     fsp->fsp_name->base_name);
 	}
 
 	contend_level2_oplocks_end(fsp, LEVEL2_CONTEND_SET_FILE_LEN);
@@ -600,8 +607,10 @@ int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len)
 		return 0;
 	}
 
-	DEBUG(10,("vfs_fill_sparse: write zeros in file %s from len %.0f to len %.0f (%.0f bytes)\n",
-		fsp->fsp_name, (double)st.st_ex_size, (double)len, (double)(len - st.st_ex_size)));
+	DEBUG(10,("vfs_fill_sparse: write zeros in file %s from len %.0f to "
+		  "len %.0f (%.0f bytes)\n", fsp_str_dbg(fsp),
+		  (double)st.st_ex_size, (double)len,
+		  (double)(len - st.st_ex_size)));
 
 	contend_level2_oplocks_begin(fsp, LEVEL2_CONTEND_FILL_SPARSE);
 
@@ -625,8 +634,9 @@ int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len)
 
 		pwrite_ret = SMB_VFS_PWRITE(fsp, sparse_buf, curr_write_size, offset + total);
 		if (pwrite_ret == -1) {
-			DEBUG(10,("vfs_fill_sparse: SMB_VFS_PWRITE for file %s failed with error %s\n",
-				fsp->fsp_name, strerror(errno) ));
+			DEBUG(10,("vfs_fill_sparse: SMB_VFS_PWRITE for file "
+				  "%s failed with error %s\n",
+				  fsp_str_dbg(fsp), strerror(errno)));
 			ret = -1;
 			goto out;
 		}
@@ -962,15 +972,28 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 
 #ifdef S_ISLNK
         if (!lp_symlinks(SNUM(conn))) {
-                SMB_STRUCT_STAT statbuf;
-                if ( (vfs_lstat_smb_fname(conn,fname,&statbuf) != -1) &&
-                                (S_ISLNK(statbuf.st_ex_mode)) ) {
+		struct smb_filename *smb_fname = NULL;
+		NTSTATUS status;
+
+		status = create_synthetic_smb_fname(talloc_tos(), fname, NULL,
+						    NULL, &smb_fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			if (free_resolved_name) {
+				SAFE_FREE(resolved_name);
+			}
+                        return status;
+		}
+
+		if ( (SMB_VFS_LSTAT(conn, smb_fname) != -1) &&
+                                (S_ISLNK(smb_fname->st.st_ex_mode)) ) {
 			if (free_resolved_name) {
 				SAFE_FREE(resolved_name);
 			}
                         DEBUG(3,("reduce_name: denied: file path name %s is a symlink\n",resolved_name));
+			TALLOC_FREE(smb_fname);
 			return NT_STATUS_ACCESS_DENIED;
                 }
+		TALLOC_FREE(smb_fname);
         }
 #endif
 
@@ -980,3 +1003,58 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 	}
 	return NT_STATUS_OK;
 }
+
+/**
+ * XXX: This is temporary and there should be no callers of this once
+ * smb_filename is plumbed through all path based operations.
+ */
+int vfs_stat_smb_fname(struct connection_struct *conn, const char *fname,
+		       SMB_STRUCT_STAT *psbuf)
+{
+	struct smb_filename *smb_fname = NULL;
+	NTSTATUS status;
+	int ret;
+
+	status = create_synthetic_smb_fname_split(talloc_tos(), fname, NULL,
+						  &smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		return -1;
+	}
+
+	ret = SMB_VFS_STAT(conn, smb_fname);
+	if (ret != -1) {
+		*psbuf = smb_fname->st;
+	}
+
+	TALLOC_FREE(smb_fname);
+	return ret;
+}
+
+/**
+ * XXX: This is temporary and there should be no callers of this once
+ * smb_filename is plumbed through all path based operations.
+ */
+int vfs_lstat_smb_fname(struct connection_struct *conn, const char *fname,
+			SMB_STRUCT_STAT *psbuf)
+{
+	struct smb_filename *smb_fname = NULL;
+	NTSTATUS status;
+	int ret;
+
+	status = create_synthetic_smb_fname_split(talloc_tos(), fname, NULL,
+						  &smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		return -1;
+	}
+
+	ret = SMB_VFS_LSTAT(conn, smb_fname);
+	if (ret != -1) {
+		*psbuf = smb_fname->st;
+	}
+
+	TALLOC_FREE(smb_fname);
+	return ret;
+}
+

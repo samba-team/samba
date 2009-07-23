@@ -33,8 +33,6 @@
 
 #include "gsskrb5_locl.h"
 
-RCSID("$Id$");
-
 static HEIMDAL_MUTEX context_mutex = HEIMDAL_MUTEX_INITIALIZER;
 static int created_key;
 static HEIMDAL_thread_key context_key;

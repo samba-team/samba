@@ -29,7 +29,7 @@
 #include "system/time.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
-#include "dsdb/common/flags.h"
+#include "../libds/common/flags.h"
 #include "dsdb/samdb/samdb.h"
 #include "libcli/ldap/ldap_ndr.h"
 #include "libcli/security/security.h"
@@ -1360,7 +1360,7 @@ static NTSTATUS dcesrv_samr_CreateUser2(struct dcesrv_call_state *dce_call, TALL
 				  UF_INTERDOMAIN_TRUST_ACCOUNT | 
 				  UF_WORKSTATION_TRUST_ACCOUNT | 
 				  UF_SERVER_TRUST_ACCOUNT));
-	user_account_control |= samdb_acb2uf(r->in.acct_flags);
+	user_account_control |= ds_acb2uf(r->in.acct_flags);
 
 	talloc_free(msg);
 	msg = ldb_msg_new(mem_ctx);
@@ -1876,7 +1876,7 @@ static NTSTATUS dcesrv_samr_LookupNames(struct dcesrv_call_state *dce_call, TALL
 			continue;
 		}
 
-		rtype = samdb_atype_map(atype);
+		rtype = ds_atype_map(atype);
 		
 		if (rtype == SID_NAME_UNKNOWN) {
 			status = STATUS_SOME_UNMAPPED;
@@ -1962,7 +1962,7 @@ static NTSTATUS dcesrv_samr_LookupRids(struct dcesrv_call_state *dce_call, TALLO
 			continue;
 		}
 
-		ids[i] = samdb_atype_map(atype);
+		ids[i] = ds_atype_map(atype);
 		
 		if (ids[i] == SID_NAME_UNKNOWN) {
 			status = STATUS_SOME_UNMAPPED;

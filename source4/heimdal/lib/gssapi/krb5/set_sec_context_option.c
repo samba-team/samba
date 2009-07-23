@@ -36,8 +36,6 @@
 
 #include "gsskrb5_locl.h"
 
-RCSID("$Id$");
-
 static OM_uint32
 get_bool(OM_uint32 *minor_status,
 	 const gss_buffer_t value,

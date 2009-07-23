@@ -52,7 +52,13 @@
 #endif
 
 #ifndef KRB5_DEPRECATED
+#if defined(__GNUC__) && ((__GNUC__ > 3) || ((__GNUC__ == 3) && (__GNUC_MINOR__ >= 1 )))
 #define KRB5_DEPRECATED __attribute__((deprecated))
+#elif defined(_MSC_VER) && (_MSC_VER>1200) 
+#define KRB5_DEPRECATED __declspec(deprecated)
+#else
+#define KRB5_DEPRECATED
+#endif
 #endif
 
 /* simple constants */

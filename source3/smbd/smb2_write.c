@@ -272,14 +272,14 @@ static struct tevent_req *smbd_smb2_write_send(TALLOC_CTX *mem_ctx,
 
 	if (((nwritten == 0) && (in_data.length != 0)) || (nwritten < 0)) {
 		DEBUG(5,("smbd_smb2_write: write_file[%s] disk full\n",
-			fsp->fsp_name));
+			 fsp_str_dbg(fsp)));
 		SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
 		tevent_req_nterror(req, NT_STATUS_DISK_FULL);
 		return tevent_req_post(req, ev);
 	}
 
 	DEBUG(3,("smbd_smb2_write: fnum=[%d/%s] length=%d offset=%d wrote=%d\n",
-		fsp->fnum, fsp->fsp_name, (int)in_data.length,
+		fsp->fnum, fsp_str_dbg(fsp), (int)in_data.length,
 		(int)in_offset, (int)nwritten));
 
 	if (in_flags & 0x00000001) {
@@ -289,7 +289,7 @@ static struct tevent_req *smbd_smb2_write_send(TALLOC_CTX *mem_ctx,
 	status = sync_file(conn, fsp, write_through);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5,("smbd_smb2_write: sync_file for %s returned %s\n",
-			fsp->fsp_name, nt_errstr(status)));
+			fsp_str_dbg(fsp), nt_errstr(status)));
 		SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
 		tevent_req_nterror(req, status);
 		return tevent_req_post(req, ev);

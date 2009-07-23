@@ -219,7 +219,7 @@ static int lldb_search(struct lldb_context *lldb_ac)
 	}
 
 	if (req->controls != NULL) {
-		ldb_debug(ldb, LDB_DEBUG_WARNING, "Controls are not yet supported by ldb_ldap backend!\n");
+		ldb_debug(ldb, LDB_DEBUG_WARNING, "Controls are not yet supported by ldb_ldap backend!");
 	}
 
 	ldb_request_set_state(req, LDB_ASYNC_PENDING);
@@ -871,7 +871,7 @@ static int lldb_connect(struct ldb_context *ldb,
 
 	ret = ldap_initialize(&lldb->ldap, url);
 	if (ret != LDAP_SUCCESS) {
-		ldb_debug(ldb, LDB_DEBUG_FATAL, "ldap_initialize failed for URL '%s' - %s\n",
+		ldb_debug(ldb, LDB_DEBUG_FATAL, "ldap_initialize failed for URL '%s' - %s",
 			  url, ldap_err2string(ret));
 		goto failed;
 	}
@@ -880,7 +880,7 @@ static int lldb_connect(struct ldb_context *ldb,
 
 	ret = ldap_set_option(lldb->ldap, LDAP_OPT_PROTOCOL_VERSION, &version);
 	if (ret != LDAP_SUCCESS) {
-		ldb_debug(ldb, LDB_DEBUG_FATAL, "ldap_set_option failed - %s\n",
+		ldb_debug(ldb, LDB_DEBUG_FATAL, "ldap_set_option failed - %s",
 			  ldap_err2string(ret));
 		goto failed;
 	}

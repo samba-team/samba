@@ -619,7 +619,7 @@ void copy_id21_to_sam_passwd(const char *log_prefix,
 			uint32_t pwd_max_age = 0;
 			time_t now = time(NULL);
 
-			pdb_get_account_policy(AP_MAX_PASSWORD_AGE, &pwd_max_age);
+			pdb_get_account_policy(PDB_POLICY_MAX_PASSWORD_AGE, &pwd_max_age);
 
 			if (pwd_max_age == (uint32_t)-1 || pwd_max_age == 0) {
 				pwd_max_age = get_time_t_max();

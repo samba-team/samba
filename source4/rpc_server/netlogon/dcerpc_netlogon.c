@@ -27,7 +27,7 @@
 #include "auth/auth.h"
 #include "auth/auth_sam_reply.h"
 #include "dsdb/samdb/samdb.h"
-#include "dsdb/common/flags.h"
+#include "../libds/common/flags.h"
 #include "rpc_server/samr/proto.h"
 #include "../lib/util/util_ldb.h"
 #include "libcli/auth/libcli_auth.h"
@@ -151,8 +151,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 		}
 
 		/* pull the user attributes */
-		num_records = gendb_search((struct ldb_context *)sam_ctx,
-					   mem_ctx, NULL, &msgs,
+		num_records = gendb_search(sam_ctx, mem_ctx, NULL, &msgs,
 					   trust_dom_attrs,
 					   "(&(trustPartner=%s)(objectclass=trustedDomain))", 
 					   encoded_account);
@@ -184,8 +183,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 	}
 	
 	/* pull the user attributes */
-	num_records = gendb_search((struct ldb_context *)sam_ctx, mem_ctx,
-				   NULL, &msgs, attrs,
+	num_records = gendb_search(sam_ctx, mem_ctx, NULL, &msgs, attrs,
 				   "(&(sAMAccountName=%s)(objectclass=user))", 
 				   ldb_binary_encode_string(mem_ctx, account_name));
 
@@ -852,7 +850,7 @@ static WERROR dcesrv_netr_GetDcName(struct dcesrv_call_state *dce_call, TALLOC_C
 		       struct netr_GetDcName *r)
 {
 	const char * const attrs[] = { NULL };
-	void *sam_ctx;
+	struct ldb_context *sam_ctx;
 	struct ldb_message **res;
 	struct ldb_dn *domain_dn;
 	int ret;
@@ -865,13 +863,13 @@ static WERROR dcesrv_netr_GetDcName(struct dcesrv_call_state *dce_call, TALLOC_C
 		return WERR_DS_SERVICE_UNAVAILABLE;
 	}
 
-	domain_dn = samdb_domain_to_dn((struct ldb_context *)sam_ctx, mem_ctx,
+	domain_dn = samdb_domain_to_dn(sam_ctx, mem_ctx,
 				       r->in.domainname);
 	if (domain_dn == NULL) {
 		return WERR_DS_SERVICE_UNAVAILABLE;
 	}
 
-	ret = gendb_search_dn((struct ldb_context *)sam_ctx, mem_ctx,
+	ret = gendb_search_dn(sam_ctx, mem_ctx,
 			      domain_dn, &res, attrs);
 	if (ret != 1) {
 		return WERR_NO_SUCH_DOMAIN;
@@ -1401,7 +1399,7 @@ static WERROR dcesrv_netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce
 					      struct netr_DsrEnumerateDomainTrusts *r)
 {
 	struct netr_DomainTrustList *trusts;
-	void *sam_ctx;
+	struct ldb_context *sam_ctx;
 	int ret;
 	struct ldb_message **dom_res;
 	const char * const dom_attrs[] = { "objectSid", "objectGUID", NULL };
@@ -1413,7 +1411,7 @@ static WERROR dcesrv_netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce
 		return WERR_GENERAL_FAILURE;
 	}
 
-	ret = gendb_search_dn((struct ldb_context *)sam_ctx, mem_ctx, NULL,
+	ret = gendb_search_dn(sam_ctx, mem_ctx, NULL,
 			      &dom_res, dom_attrs);
 	if (ret == -1) {
 		return WERR_GENERAL_FAILURE;		

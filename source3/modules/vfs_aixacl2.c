@@ -162,7 +162,8 @@ static NTSTATUS aixjfs2_fget_nt_acl(vfs_handle_struct *handle,
 	bool	retryPosix = False;
 
 	*ppdesc = NULL;
-	result = aixjfs2_get_nfs4_acl(fsp->fsp_name, &pacl, &retryPosix);
+	result = aixjfs2_get_nfs4_acl(fsp->fsp_name->base_name, &pacl,
+				      &retryPosix);
 	if (retryPosix)
 	{
 		DEBUG(10, ("retrying with posix acl...\n"));
@@ -258,7 +259,7 @@ SMB_ACL_T aixjfs2_sys_acl_get_fd(vfs_handle_struct *handle,
         acl_type_t aixjfs2_type;
         aixjfs2_type.u64 = ACL_AIXC;
 
-	return aixjfs2_get_posix_acl(fsp->fsp_name, aixjfs2_type);
+	return aixjfs2_get_posix_acl(fsp->fsp_name->base_name, aixjfs2_type);
 }
 
 /*
@@ -304,7 +305,7 @@ static bool aixjfs2_process_smbacl(files_struct *fsp, SMB4ACL_T *smbacl)
 	int	rc;
 	acl_type_t	acltype;
 
-	DEBUG(10, ("jfs2_process_smbacl invoked on %s\n", fsp->fsp_name));
+	DEBUG(10, ("jfs2_process_smbacl invoked on %s\n", fsp_str_dbg(fsp)));
 
 	/* no need to be freed which is alloced with mem_ctx */
 	mem_ctx = talloc_tos();
@@ -353,7 +354,7 @@ static bool aixjfs2_process_smbacl(files_struct *fsp, SMB4ACL_T *smbacl)
 
 	/* won't set S_ISUID - the only one JFS2/NFS4 accepts */
 	rc = aclx_put(
-		fsp->fsp_name,
+		fsp->fsp_name->base_name,
 		SET_ACL, /* set only the ACL, not mode bits */
 		acltype, /* not a pointer !!! */
 		jfs2acl,
@@ -444,9 +445,10 @@ int aixjfs2_sys_acl_set_fd(vfs_handle_struct *handle,
 	acl_type_t	acl_type_info;
 	int	rc;
 
-	DEBUG(10, ("aixjfs2_sys_acl_set_fd invoked for %s", fsp->fsp_name));
+	DEBUG(10, ("aixjfs2_sys_acl_set_fd invoked for %s", fsp_str_dbg(fsp)));
 
-	rc = aixjfs2_query_acl_support(fsp->fsp_name, ACL_AIXC, &acl_type_info);
+	rc = aixjfs2_query_acl_support(fsp->fsp_name->base_name, ACL_AIXC,
+				       &acl_type_info);
 	if (rc) {
 		DEBUG(8, ("jfs2_set_nt_acl: AIXC support not found\n"));
 		return -1;
@@ -466,7 +468,7 @@ int aixjfs2_sys_acl_set_fd(vfs_handle_struct *handle,
 	);
 	if (rc) {
 		DEBUG(2, ("aclx_fput failed with %s for %s\n",
-			strerror(errno), fsp->fsp_name));
+			strerror(errno), fsp_str_dbg(fsp)));
 		return -1;
 	}
 

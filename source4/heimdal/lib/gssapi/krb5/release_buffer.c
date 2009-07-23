@@ -33,8 +33,6 @@
 
 #include "gsskrb5_locl.h"
 
-RCSID("$Id$");
-
 OM_uint32 _gsskrb5_release_buffer
            (OM_uint32 * minor_status,
             gss_buffer_t buffer

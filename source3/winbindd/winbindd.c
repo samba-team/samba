@@ -163,6 +163,8 @@ static void terminate(bool is_parent)
 
 	trustdom_cache_shutdown();
 
+	gencache_stabilize();
+
 #if 0
 	if (interactive) {
 		TALLOC_CTX *mem_ctx = talloc_init("end_description");

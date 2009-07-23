@@ -86,9 +86,6 @@ struct torture_context
 	/** Directory used for temporary test data */
 	const char *outputdir;
 	
-	/** Indentation level */
-	int level;
-
 	/** Event context */
 	struct tevent_context *ev;
 

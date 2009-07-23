@@ -484,7 +484,7 @@ struct composite_context *libnet_GroupList_send(struct libnet_context *ctx,
 	/* store the arguments in the state structure */
 	s->ctx          = ctx;
 	s->page_size    = io->in.page_size;
-	s->resume_index = (uint32_t)io->in.resume_index;
+	s->resume_index = io->in.resume_index;
 	s->domain_name  = talloc_strdup(c, io->in.domain_name);
 	s->monitor_fn   = monitor;
 

@@ -46,6 +46,15 @@
 	} */\
 	ldb = PyLdb_AsLdbContext(py_ldb);
 
+static void PyErr_SetLdbError(PyObject *error, int ret, struct ldb_context *ldb_ctx)
+{
+	if (ret == LDB_ERR_PYTHON_EXCEPTION)
+		return; /* Python exception should already be set, just keep that */
+
+	PyErr_SetObject(error, 
+					Py_BuildValue(discard_const_p(char, "(i,s)"), ret, 
+				  ldb_ctx == NULL?ldb_strerror(ret):ldb_errstring(ldb_ctx)));
+}
 
 static PyObject *py_ldb_get_exception(void)
 {
@@ -204,6 +213,63 @@ static PyObject *py_dsdb_set_ntds_invocation_id(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_dsdb_set_opaque_integer(PyObject *self, PyObject *args)
+{
+	PyObject *py_ldb;
+	int value;
+	int *old_val, *new_val;
+	char *py_opaque_name, *opaque_name_talloc;
+	struct ldb_context *ldb;
+	TALLOC_CTX *tmp_ctx;
+
+	if (!PyArg_ParseTuple(args, "Osi", &py_ldb, &py_opaque_name, &value))
+		return NULL;
+
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+
+	/* see if we have a cached copy */
+	old_val = (int *)ldb_get_opaque(ldb, 
+					py_opaque_name);
+
+	if (old_val) {
+		*old_val = value;
+		Py_RETURN_NONE;
+	} 
+
+	tmp_ctx = talloc_new(ldb);
+	if (tmp_ctx == NULL) {
+		goto failed;
+	}
+	
+	new_val = talloc(tmp_ctx, int);
+	if (!new_val) {
+		goto failed;
+	}
+	
+	opaque_name_talloc = talloc_strdup(tmp_ctx, py_opaque_name);
+	if (!opaque_name_talloc) {
+		goto failed;
+	}
+	
+	*new_val = value;
+
+	/* cache the domain_sid in the ldb */
+	if (ldb_set_opaque(ldb, opaque_name_talloc, new_val) != LDB_SUCCESS) {
+		goto failed;
+	}
+
+	talloc_steal(ldb, new_val);
+	talloc_steal(ldb, opaque_name_talloc);
+	talloc_free(tmp_ctx);
+
+	Py_RETURN_NONE;
+
+failed:
+	talloc_free(tmp_ctx);
+	PyErr_SetString(PyExc_RuntimeError, "Failed to set opaque integer into the ldb!\n");
+	return NULL;
+}
+
 static PyObject *py_dsdb_set_global_schema(PyObject *self, PyObject *args)
 {
 	PyObject *py_ldb;
@@ -284,6 +350,8 @@ static PyMethodDef py_misc_methods[] = {
 		"Register Samba-specific LDB modules and schemas." },
 	{ "dsdb_set_ntds_invocation_id", (PyCFunction)py_dsdb_set_ntds_invocation_id, METH_VARARGS,
 		NULL },
+	{ "dsdb_set_opaque_integer", (PyCFunction)py_dsdb_set_opaque_integer, METH_VARARGS,
+		NULL },
 	{ "dsdb_set_global_schema", (PyCFunction)py_dsdb_set_global_schema, METH_VARARGS,
 		NULL },
 	{ "dsdb_attach_schema_from_ldif", (PyCFunction)py_dsdb_attach_schema_from_ldif, METH_VARARGS,
@@ -303,5 +371,11 @@ void initglue(void)
 		return;
 
 	PyModule_AddObject(m, "version", PyString_FromString(SAMBA_VERSION_STRING));
+
+	PyModule_AddObject(m, "DS_BEHAVIOR_WIN2000", PyInt_FromLong(DS_BEHAVIOR_WIN2000));
+	PyModule_AddObject(m, "DS_BEHAVIOR_WIN2003_INTERIM", PyInt_FromLong(DS_BEHAVIOR_WIN2003_INTERIM));
+	PyModule_AddObject(m, "DS_BEHAVIOR_WIN2003", PyInt_FromLong(DS_BEHAVIOR_WIN2003));
+	PyModule_AddObject(m, "DS_BEHAVIOR_WIN2008", PyInt_FromLong(DS_BEHAVIOR_WIN2008));
+
 }
 

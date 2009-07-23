@@ -98,24 +98,31 @@ interface frsapi
 	WERROR frsapi_IsPathReplicated(
 		[in,unique] [string,charset(UTF16)] uint16 *path,
 		[in] frsapi_ReplicaSetType replica_set_type,
-		[out] uint32 *unknown1,
-		[out] uint32 *unknown2,
-		[out] uint32 *unknown3,
+		[out] uint32 *replicated,
+		[out] uint32 *primary,
+		[out] uint32 *root,
 		[out] GUID *replica_set_guid
 	);
 
 	/****************/
 	/* Function 0x09 */
-	[todo] void FRSAPI_WRITER_COMMAND();
+	typedef [v1_enum] enum {
+		FRSAPI_WRITER_COMMAND_FREEZE	= 0x00000001,
+		FRSAPI_WRITER_COMMAND_THAW	= 0x00000002
+	} frsapi_WriterCommandsValues;
+
+	WERROR frsapi_WriterCommand(
+		[in] frsapi_WriterCommandsValues command
+	);
 
 	/****************/
 	/* Function 0x0a */
 	/* not supported before w2k3 sp2 */
 	WERROR frsapi_ForceReplication(
-		[in,unique] GUID *guid1,
-		[in,unique] GUID *guid2,
-		[in,unique] [charset(UTF16),string] uint16 *replica_set,
-		[in,unique] [charset(UTF16),string] uint16 *partner_name
+		[in,unique] GUID *replica_set_guid,
+		[in,unique] GUID *connection_guid,
+		[in,unique] [charset(UTF16),string] uint16 *replica_set_name,
+		[in,unique] [charset(UTF16),string] uint16 *partner_dns_name
 	);
 
 }

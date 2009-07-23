@@ -8,11 +8,15 @@ cd $SRCDIR || exit 1
 
 echo "Installing setup templates"
 mkdir -p $SETUPDIR || exit 1
+mkdir -p $SETUPDIR/ad-schema || exit 1
+cp setup/ad-schema/*.txt $SETUPDIR/ad-schema || exit 1
+for p in enableaccount newuser provision provision-backend setexpiry setpassword
+do
+	chmod 0555 setup/$p
+	cp setup/$p $SETUPDIR || exit 1
+done
 cp setup/schema-map-* $SETUPDIR || exit 1
 cp setup/DB_CONFIG $SETUPDIR || exit 1
-cp setup/provision-backend $SETUPDIR || exit 1
-cp setup/provision $SETUPDIR || exit 1
-cp setup/newuser $SETUPDIR || exit 1
 cp setup/*.inf $SETUPDIR || exit 1
 cp setup/*.ldif $SETUPDIR || exit 1
 cp setup/*.reg $SETUPDIR || exit 1

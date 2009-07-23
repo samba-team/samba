@@ -33,8 +33,6 @@
 
 #include "gsskrb5_locl.h"
 
-RCSID("$Id$");
-
 static OM_uint32
 parse_krb5_name (OM_uint32 *minor_status,
 		 krb5_context context,

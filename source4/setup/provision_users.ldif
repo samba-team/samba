@@ -7,8 +7,8 @@ objectSid: ${DOMAINSID}-500
 adminCount: 1
 accountExpires: 9223372036854775807
 sAMAccountName: Administrator
-isCriticalSystemObject: TRUE
 userPassword:: ${ADMINPASS_B64}
+isCriticalSystemObject: TRUE
 
 dn: CN=Guest,CN=Users,${DOMAINDN}
 objectClass: user
@@ -45,8 +45,8 @@ adminCount: 1
 accountExpires: 9223372036854775807
 sAMAccountName: krbtgt
 servicePrincipalName: kadmin/changepw
-isCriticalSystemObject: TRUE
 userPassword:: ${KRBTGTPASS_B64}
+isCriticalSystemObject: TRUE
 
 dn: CN=Domain Computers,CN=Users,${DOMAINDN}
 objectClass: top
@@ -187,16 +187,6 @@ sAMAccountName: Event Log Readers
 groupType: -2147483644
 isCriticalSystemObject: TRUE
 
-dn: CN=IIS_IUSRS,CN=Users,${DOMAINDN}
-objectClass: top
-objectClass: group
-cn: IIS_IUSRS
-description: IIS_IUSRS
-objectSid: ${DOMAINSID}-568
-sAMAccountName: IIS_IUSRS
-groupType: -2147483644
-isCriticalSystemObject: TRUE
-
 dn: CN=Administrators,CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: group
@@ -210,7 +200,6 @@ adminCount: 1
 sAMAccountName: Administrators
 systemFlags: -1946157056
 groupType: -2147483643
-isCriticalSystemObject: TRUE
 privilege: SeSecurityPrivilege
 privilege: SeBackupPrivilege
 privilege: SeRestorePrivilege
@@ -235,6 +224,7 @@ privilege: SeEnableDelegationPrivilege
 privilege: SeInteractiveLogonRight
 privilege: SeNetworkLogonRight
 privilege: SeRemoteInteractiveLogonRight
+isCriticalSystemObject: TRUE
 
 dn: CN=Users,CN=Builtin,${DOMAINDN}
 objectClass: top
@@ -271,10 +261,10 @@ adminCount: 1
 sAMAccountName: Print Operators
 systemFlags: -1946157056
 groupType: -2147483643
-isCriticalSystemObject: TRUE
 privilege: SeLoadDriverPrivilege
 privilege: SeShutdownPrivilege
 privilege: SeInteractiveLogonRight
+isCriticalSystemObject: TRUE
 
 dn: CN=Backup Operators,CN=Builtin,${DOMAINDN}
 objectClass: top
@@ -286,11 +276,11 @@ adminCount: 1
 sAMAccountName: Backup Operators
 systemFlags: -1946157056
 groupType: -2147483643
-isCriticalSystemObject: TRUE
 privilege: SeBackupPrivilege
 privilege: SeRestorePrivilege
 privilege: SeShutdownPrivilege
 privilege: SeInteractiveLogonRight
+isCriticalSystemObject: TRUE
 
 dn: CN=Replicator,CN=Builtin,${DOMAINDN}
 objectClass: top
@@ -358,13 +348,13 @@ adminCount: 1
 sAMAccountName: Server Operators
 systemFlags: -1946157056
 groupType: -2147483643
-isCriticalSystemObject: TRUE
 privilege: SeBackupPrivilege
 privilege: SeSystemtimePrivilege
 privilege: SeRemoteShutdownPrivilege
 privilege: SeRestorePrivilege
 privilege: SeShutdownPrivilege
 privilege: SeInteractiveLogonRight
+isCriticalSystemObject: TRUE
 
 dn: CN=Account Operators,CN=Builtin,${DOMAINDN}
 objectClass: top
@@ -376,8 +366,8 @@ adminCount: 1
 sAMAccountName: Account Operators
 systemFlags: -1946157056
 groupType: -2147483643
-isCriticalSystemObject: TRUE
 privilege: SeInteractiveLogonRight
+isCriticalSystemObject: TRUE
 
 dn: CN=Pre-Windows 2000 Compatible Access,CN=Builtin,${DOMAINDN}
 objectClass: top
@@ -388,9 +378,9 @@ objectSid: S-1-5-32-554
 sAMAccountName: Pre-Windows 2000 Compatible Access
 systemFlags: -1946157056
 groupType: -2147483643
-isCriticalSystemObject: TRUE
 privilege: SeRemoteInteractiveLogonRight
 privilege: SeChangeNotifyPrivilege
+isCriticalSystemObject: TRUE
 
 dn: CN=Incoming Forest Trust Builders,CN=Builtin,${DOMAINDN}
 objectClass: top

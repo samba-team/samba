@@ -203,7 +203,7 @@ static NTSTATUS pdb_ads_init_sam_from_priv(struct pdb_methods *m,
 		pdb_set_pass_last_set_time(sam, tmp_time, PDB_SET);
 	}
 	if (pdb_ads_pull_time(entry, "accountExpires", &tmp_time)) {
-		pdb_set_pass_last_set_time(sam, tmp_time, PDB_SET);
+		pdb_set_kickoff_time(sam, tmp_time, PDB_SET);
 	}
 
 	str = tldap_talloc_single_attribute(entry, "displayName",
@@ -250,7 +250,7 @@ static NTSTATUS pdb_ads_init_sam_from_priv(struct pdb_methods *m,
 		DEBUG(10, ("Could not pull userAccountControl\n"));
 		goto fail;
 	}
-	pdb_set_acct_ctrl(sam, ads_uf2acb(n), PDB_SET);
+	pdb_set_acct_ctrl(sam, ds_uf2acb(n), PDB_SET);
 
 	if (tldap_get_single_valueblob(entry, "unicodePwd", &blob)) {
 		if (blob.length != NT_HASH_LEN) {
@@ -310,7 +310,7 @@ static bool pdb_ads_init_ads_from_sam(struct pdb_ads_state *state,
 
 	ret &= tldap_make_mod_fmt(
 		existing, mem_ctx, pnum_mods, pmods, "userAccountControl",
-		"%d", ads_acb2uf(pdb_get_acct_ctrl(sam)));
+		"%d", ds_acb2uf(pdb_get_acct_ctrl(sam)));
 
 	ret &= tldap_make_mod_fmt(
 		existing, mem_ctx, pnum_mods, pmods, "homeDirectory",
@@ -1682,7 +1682,7 @@ static NTSTATUS pdb_ads_lookup_rids(struct pdb_methods *m,
 			DEBUG(10, ("no samAccountType"));
 			continue;
 		}
-		lsa_attrs[i] = ads_atype_map(attr);
+		lsa_attrs[i] = ds_atype_map(attr);
 		num_mapped += 1;
 	}
 
@@ -1706,16 +1706,18 @@ static NTSTATUS pdb_ads_lookup_names(struct pdb_methods *m,
 }
 
 static NTSTATUS pdb_ads_get_account_policy(struct pdb_methods *m,
-					   int policy_index, uint32 *value)
+					   enum pdb_policy_type type,
+					   uint32_t *value)
 {
-	return account_policy_get(policy_index, value)
+	return account_policy_get(type, value)
 		? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
 static NTSTATUS pdb_ads_set_account_policy(struct pdb_methods *m,
-					   int policy_index, uint32 value)
+					   enum pdb_policy_type type,
+					   uint32_t value)
 {
-	return account_policy_set(policy_index, value)
+	return account_policy_set(type, value)
 		? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
@@ -2022,7 +2024,9 @@ static NTSTATUS pdb_ads_enum_trusteddoms(struct pdb_methods *m,
 					 uint32 *num_domains,
 					 struct trustdom_info ***domains)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	*num_domains = 0;
+	*domains = NULL;
+	return NT_STATUS_OK;
 }
 
 static void pdb_ads_init_methods(struct pdb_methods *m)
@@ -2111,7 +2115,7 @@ static void s3_tldap_debug(void *context, enum tldap_debug_level level,
 		samba_level = 2;
 		break;
 	case TLDAP_DEBUG_TRACE:
-		samba_level = 10;
+		samba_level = 11;
 		break;
 
 	};

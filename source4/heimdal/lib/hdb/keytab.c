@@ -35,8 +35,6 @@
 
 /* keytab backend for HDB databases */
 
-RCSID("$Id$");
-
 struct hdb_data {
     char *dbname;
     char *mkey;
@@ -123,61 +121,43 @@ hdb_get_name(krb5_context context,
     return 0;
 }
 
-static void
-set_config (krb5_context context,
-	    const krb5_config_binding *binding,
-	    const char **dbname,
-	    const char **mkey)
-{
-    *dbname = krb5_config_get_string(context, binding, "dbname", NULL);
-    *mkey   = krb5_config_get_string(context, binding, "mkey_file", NULL);
-}
-
 /*
  * try to figure out the database (`dbname') and master-key (`mkey')
  * that should be used for `principal'.
  */
 
-static void
+static krb5_error_code
 find_db (krb5_context context,
-	 const char **dbname,
-	 const char **mkey,
+	 char **dbname,
+	 char **mkey,
 	 krb5_const_principal principal)
 {
-    const krb5_config_binding *top_bind = NULL;
-    const krb5_config_binding *default_binding = NULL;
-    const krb5_config_binding *db;
     krb5_const_realm realm = krb5_principal_get_realm(context, principal);
+    krb5_error_code ret;
+    struct hdb_dbinfo *head, *dbinfo = NULL;
 
     *dbname = *mkey = NULL;
 
-    while ((db =
-	    krb5_config_get_next(context,
-				 NULL,
-				 &top_bind,
-				 krb5_config_list,
-				 "kdc",
-				 "database",
-				 NULL)) != NULL) {
-	const char *p;
-	
-	p = krb5_config_get_string (context, db, "realm", NULL);
-	if (p == NULL) {
-	    if(default_binding) {
-		krb5_warnx(context, "WARNING: more than one realm-less "
-			   "database specification");
-		krb5_warnx(context, "WARNING: using the first encountered");
-	    } else
-		default_binding = db;
-	} else if (strcmp (realm, p) == 0) {
-	    set_config (context, db, dbname, mkey);
+    ret = hdb_get_dbinfo(context, &head);
+    if (ret)
+	return ret;
+
+    while ((dbinfo = hdb_dbinfo_get_next(head, dbinfo)) != NULL) {
+	const char *p = hdb_dbinfo_get_realm(context, dbinfo);
+	if (p && strcmp (realm, p) == 0) {
+	    p = hdb_dbinfo_get_dbname(context, dbinfo);
+	    if (p)
+		*dbname = strdup(p);
+	    p = hdb_dbinfo_get_mkey_file(context, dbinfo);
+	    if (p)
+		*mkey = strdup(p);
 	    break;
 	}
     }
-    if (*dbname == NULL && default_binding != NULL)
-	set_config (context, default_binding, dbname, mkey);
+    hdb_free_dbinfo(context, &head);
     if (*dbname == NULL)
-	*dbname = HDB_DEFAULT_DB;
+	*dbname = strdup(HDB_DEFAULT_DB);
+    return 0;
 }
 
 /*
@@ -196,29 +176,35 @@ hdb_get_entry(krb5_context context,
     hdb_entry_ex ent;
     krb5_error_code ret;
     struct hdb_data *d = id->data;
-    int i;
-    HDB *db;
     const char *dbname = d->dbname;
     const char *mkey   = d->mkey;
+    char *fdbname = NULL, *fmkey = NULL;
+    HDB *db;
+    int i;
 
     memset(&ent, 0, sizeof(ent));
 
-    if (dbname == NULL)
-	find_db (context, &dbname, &mkey, principal);
+    if (dbname == NULL) {
+	ret = find_db(context, &fdbname, &fmkey, principal);
+	if (ret)
+	    return ret;
+	dbname = fdbname;
+	mkey = fmkey;
+    }
 
     ret = hdb_create (context, &db, dbname);
     if (ret)
-	return ret;
+	goto out2;
     ret = hdb_set_master_keyfile (context, db, mkey);
     if (ret) {
 	(*db->hdb_destroy)(context, db);
-	return ret;
+	goto out2;
     }
 	
     ret = (*db->hdb_open)(context, db, O_RDONLY, 0);
     if (ret) {
 	(*db->hdb_destroy)(context, db);
-	return ret;
+	goto out2;
     }
     ret = (*db->hdb_fetch)(context, db, principal,
 			   HDB_F_DECRYPT|
@@ -252,9 +238,12 @@ hdb_get_entry(krb5_context context,
 	}
     }
     hdb_free_entry(context, &ent);
-out:
+ out:
     (*db->hdb_close)(context, db);
     (*db->hdb_destroy)(context, db);
+ out2:
+    free(fdbname);
+    free(fmkey);
     return ret;
 }
 

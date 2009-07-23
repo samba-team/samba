@@ -136,33 +136,3 @@ void reply_openerror(struct smb_request *req, NTSTATUS status)
 		reply_nterror(req, status);
 	}
 }
-
-void reply_unix_error(struct smb_request *req, uint8 defclass, uint32 defcode,
-			NTSTATUS defstatus, int line, const char *file)
-{
-	int eclass=defclass;
-	int ecode=defcode;
-	NTSTATUS ntstatus = defstatus;
-	int i=0;
-
-	TALLOC_FREE(req->outbuf);
-	reply_outbuf(req, 0, 0);
-
-	if (errno != 0) {
-		DEBUG(3,("unix_error_packet: error string = %s\n",
-			strerror(errno)));
-
-		while (unix_dos_nt_errmap[i].dos_class != 0) {
-			if (unix_dos_nt_errmap[i].unix_error == errno) {
-				eclass = unix_dos_nt_errmap[i].dos_class;
-				ecode = unix_dos_nt_errmap[i].dos_code;
-				ntstatus = unix_dos_nt_errmap[i].nt_error;
-				break;
-			}
-			i++;
-		}
-	}
-
-	error_packet_set((char *)req->outbuf, eclass, ecode, ntstatus,
-		line, file);
-}

@@ -168,6 +168,56 @@ NTSTATUS smb2_signing_check_pdu(DATA_BLOB session_key,
 				const struct iovec *vector,
 				int count);
 
+struct smbd_lock_element {
+	uint32_t smbpid;
+	enum brl_type brltype;
+	uint64_t offset;
+	uint64_t count;
+};
+
+NTSTATUS smbd_do_locking(struct smb_request *req,
+			 files_struct *fsp,
+			 uint8_t type,
+			 int32_t timeout,
+			 uint16_t num_ulocks,
+			 struct smbd_lock_element *ulocks,
+			 uint16_t num_locks,
+			 struct smbd_lock_element *locks,
+			 bool *async);
+
+NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
+			       TALLOC_CTX *mem_ctx,
+			       uint16_t info_level,
+			       files_struct *fsp,
+			       const struct smb_filename *smb_fname,
+			       bool delete_pending,
+			       struct timespec write_time_ts,
+			       bool ms_dfs_link,
+			       struct ea_list *ea_list,
+			       int lock_data_count,
+			       char *lock_data,
+			       uint16_t flags2,
+			       unsigned int max_data_bytes,
+			       char **ppdata,
+			       unsigned int *pdata_size);
+
+NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
+				struct smb_request *req,
+				TALLOC_CTX *mem_ctx,
+				uint16_t info_level,
+				files_struct *fsp,
+				struct smb_filename *smb_fname,
+				char **ppdata, int total_data,
+				int *ret_data_size);
+
+NTSTATUS smbd_do_qfsinfo(connection_struct *conn,
+			 TALLOC_CTX *mem_ctx,
+			 uint16_t info_level,
+			 uint16_t flags2,
+			 unsigned int max_data_bytes,
+			 char **ppdata,
+			 int *ret_data_len);
+
 void smbd_server_connection_terminate_ex(struct smbd_server_connection *sconn,
 					 const char *reason,
 					 const char *location);

@@ -273,12 +273,15 @@ sub mapTypeName($)
 	my $dt;
 	$t = expandAlias($t);
 
-	unless ($dt or ($dt = getType($t))) {
+	if ($dt = getType($t)) {
+		return mapType($dt, $dt->{NAME});
+	} elsif (ref($t) eq "HASH" and defined($t->{NAME})) {
+		return mapType($t, $t->{NAME});
+	} else {
 		# Best guess
 		return "struct $t";
 	}
 
-	return mapType($dt, $dt->{NAME});
 }
 
 sub LoadIdl($;$)

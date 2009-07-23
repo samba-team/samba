@@ -47,7 +47,7 @@ static bool test_OpenPolicy(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	uint16_t system_name = '\\';
 
-	printf("\nTesting OpenPolicy\n");
+	torture_comment(tctx, "\nTesting OpenPolicy\n");
 
 	qos.len = 0;
 	qos.impersonation_level = 2;
@@ -70,10 +70,10 @@ static bool test_OpenPolicy(struct dcerpc_pipe *p,
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) ||
 		    NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED)) {
-			printf("not considering %s to be an error\n", nt_errstr(status));
+			torture_comment(tctx, "not considering %s to be an error\n", nt_errstr(status));
 			return true;
 		}
-		printf("OpenPolicy failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "OpenPolicy failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -90,7 +90,7 @@ bool test_lsa_OpenPolicy2(struct dcerpc_pipe *p,
 	struct lsa_OpenPolicy2 r;
 	NTSTATUS status;
 
-	printf("\nTesting OpenPolicy2\n");
+	torture_comment(tctx, "\nTesting OpenPolicy2\n");
 
 	*handle = talloc(tctx, struct policy_handle);
 	if (!*handle) {
@@ -118,12 +118,12 @@ bool test_lsa_OpenPolicy2(struct dcerpc_pipe *p,
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) ||
 		    NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED)) {
-			printf("not considering %s to be an error\n", nt_errstr(status));
+			torture_comment(tctx, "not considering %s to be an error\n", nt_errstr(status));
 			talloc_free(*handle);
 			*handle = NULL;
 			return true;
 		}
-		printf("OpenPolicy2 failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "OpenPolicy2 failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -161,7 +161,7 @@ static bool test_LookupNames(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	int i;
 
-	printf("\nTesting LookupNames with %d names\n", tnames->count);
+	torture_comment(tctx, "\nTesting LookupNames with %d names\n", tnames->count);
 
 	sids.count = 0;
 	sids.sids = NULL;
@@ -187,30 +187,30 @@ static bool test_LookupNames(struct dcerpc_pipe *p,
 	    NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
 		for (i=0;i< tnames->count;i++) {
 			if (i < count && sids.sids[i].sid_type == SID_NAME_UNKNOWN) {
-				printf("LookupName of %s was unmapped\n",
+				torture_comment(tctx, "LookupName of %s was unmapped\n",
 				       tnames->names[i].name.string);
 			} else if (i >=count) {
-				printf("LookupName of %s failed to return a result\n",
+				torture_comment(tctx, "LookupName of %s failed to return a result\n",
 				       tnames->names[i].name.string);
 			}
 		}
-		printf("LookupNames failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "LookupNames failed - %s\n", nt_errstr(status));
 		return false;
 	} else if (!NT_STATUS_IS_OK(status)) {
-		printf("LookupNames failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "LookupNames failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
 	for (i=0;i< tnames->count;i++) {
 		if (i < count && sids.sids[i].sid_type != tnames->names[i].sid_type) {
-			printf("LookupName of %s got unexpected name type: %s\n",
+			torture_comment(tctx, "LookupName of %s got unexpected name type: %s\n",
 			       tnames->names[i].name.string, sid_type_lookup(sids.sids[i].sid_type));
 		} else if (i >=count) {
-			printf("LookupName of %s failed to return a result\n",
+			torture_comment(tctx, "LookupName of %s failed to return a result\n",
 			       tnames->names[i].name.string);
 		}
 	}
-	printf("\n");
+	torture_comment(tctx, "\n");
 
 	return true;
 }
@@ -235,7 +235,7 @@ static bool test_LookupNames_bogus(struct dcerpc_pipe *p,
 	name[0].name.string = "NT AUTHORITY\\BOGUS";
 	name[1].name.string = NULL;
 
-	printf("\nTesting LookupNames with bogus names\n");
+	torture_comment(tctx, "\nTesting LookupNames with bogus names\n");
 
 	sids.count = 0;
 	sids.sids = NULL;
@@ -257,11 +257,11 @@ static bool test_LookupNames_bogus(struct dcerpc_pipe *p,
 
 	status = dcerpc_lsa_LookupNames(p, tctx, &r);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
-		printf("LookupNames failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "LookupNames failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
-	printf("\n");
+	torture_comment(tctx, "\n");
 
 	return true;
 }
@@ -274,7 +274,7 @@ static bool test_LookupNames_wellknown(struct dcerpc_pipe *p,
 	struct lsa_TransNameArray tnames;
 	bool ret = true;
 
-	printf("Testing LookupNames with well known names\n");
+	torture_comment(tctx, "Testing LookupNames with well known names\n");
 
 	tnames.names = &name;
 	tnames.count = 1;
@@ -330,7 +330,7 @@ static bool test_LookupNames2(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	int i;
 
-	printf("\nTesting LookupNames2 with %d names\n", tnames->count);
+	torture_comment(tctx, "\nTesting LookupNames2 with %d names\n", tnames->count);
 
 	sids.count = 0;
 	sids.sids = NULL;
@@ -354,7 +354,7 @@ static bool test_LookupNames2(struct dcerpc_pipe *p,
 
 	status = dcerpc_lsa_LookupNames2(p, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("LookupNames2 failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "LookupNames2 failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -366,7 +366,7 @@ static bool test_LookupNames2(struct dcerpc_pipe *p,
 		}
 	}
 
-	printf("\n");
+	torture_comment(tctx, "\n");
 
 	return true;
 }
@@ -386,7 +386,7 @@ static bool test_LookupNames3(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	int i;
 
-	printf("\nTesting LookupNames3 with %d names\n", tnames->count);
+	torture_comment(tctx, "\nTesting LookupNames3 with %d names\n", tnames->count);
 
 	sids.count = 0;
 	sids.sids = NULL;
@@ -410,7 +410,7 @@ static bool test_LookupNames3(struct dcerpc_pipe *p,
 
 	status = dcerpc_lsa_LookupNames3(p, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("LookupNames3 failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "LookupNames3 failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -422,7 +422,7 @@ static bool test_LookupNames3(struct dcerpc_pipe *p,
 		}
 	}
 
-	printf("\n");
+	torture_comment(tctx, "\n");
 
 	return true;
 }
@@ -440,7 +440,7 @@ static bool test_LookupNames4(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	int i;
 
-	printf("\nTesting LookupNames4 with %d names\n", tnames->count);
+	torture_comment(tctx, "\nTesting LookupNames4 with %d names\n", tnames->count);
 
 	sids.count = 0;
 	sids.sids = NULL;
@@ -463,7 +463,7 @@ static bool test_LookupNames4(struct dcerpc_pipe *p,
 
 	status = dcerpc_lsa_LookupNames4(p, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("LookupNames4 failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "LookupNames4 failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -475,7 +475,7 @@ static bool test_LookupNames4(struct dcerpc_pipe *p,
 		}
 	}
 
-	printf("\n");
+	torture_comment(tctx, "\n");
 
 	return true;
 }
@@ -492,7 +492,7 @@ static bool test_LookupSids(struct dcerpc_pipe *p,
 	uint32_t count = sids->num_sids;
 	NTSTATUS status;
 
-	printf("\nTesting LookupSids\n");
+	torture_comment(tctx, "\nTesting LookupSids\n");
 
 	names.count = 0;
 	names.names = NULL;
@@ -508,11 +508,11 @@ static bool test_LookupSids(struct dcerpc_pipe *p,
 
 	status = dcerpc_lsa_LookupSids(p, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("LookupSids failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "LookupSids failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
-	printf("\n");
+	torture_comment(tctx, "\n");
 
 	if (!test_LookupNames(p, tctx, handle, &names)) {
 		return false;
@@ -533,7 +533,7 @@ static bool test_LookupSids2(struct dcerpc_pipe *p,
 	uint32_t count = sids->num_sids;
 	NTSTATUS status;
 
-	printf("\nTesting LookupSids2\n");
+	torture_comment(tctx, "\nTesting LookupSids2\n");
 
 	names.count = 0;
 	names.names = NULL;
@@ -551,11 +551,11 @@ static bool test_LookupSids2(struct dcerpc_pipe *p,
 
 	status = dcerpc_lsa_LookupSids2(p, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("LookupSids2 failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "LookupSids2 failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
-	printf("\n");
+	torture_comment(tctx, "\n");
 
 	if (!test_LookupNames2(p, tctx, handle, &names, false)) {
 		return false;
@@ -578,7 +578,7 @@ static bool test_LookupSids3(struct dcerpc_pipe *p,
 	uint32_t count = sids->num_sids;
 	NTSTATUS status;
 
-	printf("\nTesting LookupSids3\n");
+	torture_comment(tctx, "\nTesting LookupSids3\n");
 
 	names.count = 0;
 	names.names = NULL;
@@ -597,15 +597,15 @@ static bool test_LookupSids3(struct dcerpc_pipe *p,
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) ||
 		    NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED)) {
-			printf("not considering %s to be an error\n", nt_errstr(status));
+			torture_comment(tctx, "not considering %s to be an error\n", nt_errstr(status));
 			return true;
 		}
-		printf("LookupSids3 failed - %s - not considered an error\n",
+		torture_comment(tctx, "LookupSids3 failed - %s - not considered an error\n",
 		       nt_errstr(status));
 		return false;
 	}
 
-	printf("\n");
+	torture_comment(tctx, "\n");
 
 	if (!test_LookupNames4(p, tctx, &names, false)) {
 		return false;
@@ -623,7 +623,7 @@ bool test_many_LookupSids(struct dcerpc_pipe *p,
 	struct lsa_SidArray sids;
 	int i;
 
-	printf("\nTesting LookupSids with lots of SIDs\n");
+	torture_comment(tctx, "\nTesting LookupSids with lots of SIDs\n");
 
 	sids.num_sids = 100;
 
@@ -654,11 +654,11 @@ bool test_many_LookupSids(struct dcerpc_pipe *p,
 
 		status = dcerpc_lsa_LookupSids(p, tctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("LookupSids failed - %s\n", nt_errstr(status));
+			torture_comment(tctx, "LookupSids failed - %s\n", nt_errstr(status));
 			return false;
 		}
 
-		printf("\n");
+		torture_comment(tctx, "\n");
 
 		if (!test_LookupNames(p, tctx, handle, &names)) {
 			return false;
@@ -672,7 +672,7 @@ bool test_many_LookupSids(struct dcerpc_pipe *p,
 		names.count = 0;
 		names.names = NULL;
 
-		printf("\nTesting LookupSids3\n");
+		torture_comment(tctx, "\nTesting LookupSids3\n");
 
 		r.in.sids = &sids;
 		r.in.names = &names;
@@ -688,10 +688,10 @@ bool test_many_LookupSids(struct dcerpc_pipe *p,
 		if (!NT_STATUS_IS_OK(status)) {
 			if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) ||
 			    NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED)) {
-				printf("not considering %s to be an error\n", nt_errstr(status));
+				torture_comment(tctx, "not considering %s to be an error\n", nt_errstr(status));
 				return true;
 			}
-			printf("LookupSids3 failed - %s\n",
+			torture_comment(tctx, "LookupSids3 failed - %s\n",
 			       nt_errstr(status));
 			return false;
 		}
@@ -700,7 +700,7 @@ bool test_many_LookupSids(struct dcerpc_pipe *p,
 		}
 	}
 
-	printf("\n");
+	torture_comment(tctx, "\n");
 
 
 
@@ -742,7 +742,7 @@ static bool test_LookupSids_async(struct dcerpc_pipe *p,
 	names = talloc_array(tctx, struct lsa_TransNameArray, num_async_requests);
 	r = talloc_array(tctx, struct lsa_LookupSids, num_async_requests);
 
-	printf("\nTesting %d async lookupsids request\n", num_async_requests);
+	torture_comment(tctx, "\nTesting %d async lookupsids request\n", num_async_requests);
 
 	req = talloc_array(tctx, struct rpc_request *, num_async_requests);
 
@@ -804,7 +804,7 @@ static bool test_LookupPrivValue(struct dcerpc_pipe *p,
 
 	status = dcerpc_lsa_LookupPrivValue(p, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("\nLookupPrivValue failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "\nLookupPrivValue failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -826,7 +826,7 @@ static bool test_LookupPrivName(struct dcerpc_pipe *p,
 
 	status = dcerpc_lsa_LookupPrivName(p, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("\nLookupPrivName failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "\nLookupPrivName failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -844,7 +844,7 @@ static bool test_RemovePrivilegesFromAccount(struct dcerpc_pipe *p,
 	struct lsa_PrivilegeSet privs;
 	bool ret = true;
 
-	printf("\nTesting RemovePrivilegesFromAccount\n");
+	torture_comment(tctx, "\nTesting RemovePrivilegesFromAccount\n");
 
 	r.in.handle = acct_handle;
 	r.in.remove_all = 0;
@@ -868,7 +868,7 @@ static bool test_RemovePrivilegesFromAccount(struct dcerpc_pipe *p,
 
 		status = dcerpc_lsa_LookupPrivName(p, tctx, &r_name);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("\nLookupPrivName failed - %s\n", nt_errstr(status));
+			torture_comment(tctx, "\nLookupPrivName failed - %s\n", nt_errstr(status));
 			return false;
 		}
 		/* Windows 2008 does not allow this to be removed */
@@ -876,7 +876,7 @@ static bool test_RemovePrivilegesFromAccount(struct dcerpc_pipe *p,
 			return ret;
 		}
 
-		printf("RemovePrivilegesFromAccount failed to remove %s - %s\n",
+		torture_comment(tctx, "RemovePrivilegesFromAccount failed to remove %s - %s\n",
 		       name->string,
 		       nt_errstr(status));
 		return false;
@@ -895,7 +895,7 @@ static bool test_AddPrivilegesToAccount(struct dcerpc_pipe *p,
 	struct lsa_PrivilegeSet privs;
 	bool ret = true;
 
-	printf("\nTesting AddPrivilegesToAccount\n");
+	torture_comment(tctx, "\nTesting AddPrivilegesToAccount\n");
 
 	r.in.handle = acct_handle;
 	r.in.privs = &privs;
@@ -908,7 +908,7 @@ static bool test_AddPrivilegesToAccount(struct dcerpc_pipe *p,
 
 	status = dcerpc_lsa_AddPrivilegesToAccount(p, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("AddPrivilegesToAccount failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "AddPrivilegesToAccount failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -925,14 +925,14 @@ static bool test_EnumPrivsAccount(struct dcerpc_pipe *p,
 	struct lsa_PrivilegeSet *privs = NULL;
 	bool ret = true;
 
-	printf("\nTesting EnumPrivsAccount\n");
+	torture_comment(tctx, "\nTesting EnumPrivsAccount\n");
 
 	r.in.handle = acct_handle;
 	r.out.privs = &privs;
 
 	status = dcerpc_lsa_EnumPrivsAccount(p, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("EnumPrivsAccount failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "EnumPrivsAccount failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -961,46 +961,46 @@ static bool test_GetSystemAccessAccount(struct dcerpc_pipe *p,
 	uint32_t access_mask;
 	struct lsa_GetSystemAccessAccount r;
 
-	printf("\nTesting GetSystemAccessAccount\n");
+	torture_comment(tctx, "\nTesting GetSystemAccessAccount\n");
 
 	r.in.handle = acct_handle;
 	r.out.access_mask = &access_mask;
 
 	status = dcerpc_lsa_GetSystemAccessAccount(p, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("GetSystemAccessAccount failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "GetSystemAccessAccount failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
 	if (r.out.access_mask != NULL) {
-		printf("Rights:");
+		torture_comment(tctx, "Rights:");
 		if (*(r.out.access_mask) & LSA_POLICY_MODE_INTERACTIVE)
-			printf(" LSA_POLICY_MODE_INTERACTIVE");
+			torture_comment(tctx, " LSA_POLICY_MODE_INTERACTIVE");
 		if (*(r.out.access_mask) & LSA_POLICY_MODE_NETWORK)
-			printf(" LSA_POLICY_MODE_NETWORK");
+			torture_comment(tctx, " LSA_POLICY_MODE_NETWORK");
 		if (*(r.out.access_mask) & LSA_POLICY_MODE_BATCH)
-			printf(" LSA_POLICY_MODE_BATCH");
+			torture_comment(tctx, " LSA_POLICY_MODE_BATCH");
 		if (*(r.out.access_mask) & LSA_POLICY_MODE_SERVICE)
-			printf(" LSA_POLICY_MODE_SERVICE");
+			torture_comment(tctx, " LSA_POLICY_MODE_SERVICE");
 		if (*(r.out.access_mask) & LSA_POLICY_MODE_PROXY)
-			printf(" LSA_POLICY_MODE_PROXY");
+			torture_comment(tctx, " LSA_POLICY_MODE_PROXY");
 		if (*(r.out.access_mask) & LSA_POLICY_MODE_DENY_INTERACTIVE)
-			printf(" LSA_POLICY_MODE_DENY_INTERACTIVE");
+			torture_comment(tctx, " LSA_POLICY_MODE_DENY_INTERACTIVE");
 		if (*(r.out.access_mask) & LSA_POLICY_MODE_DENY_NETWORK)
-			printf(" LSA_POLICY_MODE_DENY_NETWORK");
+			torture_comment(tctx, " LSA_POLICY_MODE_DENY_NETWORK");
 		if (*(r.out.access_mask) & LSA_POLICY_MODE_DENY_BATCH)
-			printf(" LSA_POLICY_MODE_DENY_BATCH");
+			torture_comment(tctx, " LSA_POLICY_MODE_DENY_BATCH");
 		if (*(r.out.access_mask) & LSA_POLICY_MODE_DENY_SERVICE)
-			printf(" LSA_POLICY_MODE_DENY_SERVICE");
+			torture_comment(tctx, " LSA_POLICY_MODE_DENY_SERVICE");
 		if (*(r.out.access_mask) & LSA_POLICY_MODE_REMOTE_INTERACTIVE)
-			printf(" LSA_POLICY_MODE_REMOTE_INTERACTIVE");
+			torture_comment(tctx, " LSA_POLICY_MODE_REMOTE_INTERACTIVE");
 		if (*(r.out.access_mask) & LSA_POLICY_MODE_DENY_REMOTE_INTERACTIVE)
-			printf(" LSA_POLICY_MODE_DENY_REMOTE_INTERACTIVE");
+			torture_comment(tctx, " LSA_POLICY_MODE_DENY_REMOTE_INTERACTIVE");
 		if (*(r.out.access_mask) & LSA_POLICY_MODE_ALL)
-			printf(" LSA_POLICY_MODE_ALL");
+			torture_comment(tctx, " LSA_POLICY_MODE_ALL");
 		if (*(r.out.access_mask) & LSA_POLICY_MODE_ALL_NT4)
-			printf(" LSA_POLICY_MODE_ALL_NT4");
-		printf("\n");
+			torture_comment(tctx, " LSA_POLICY_MODE_ALL_NT4");
+		torture_comment(tctx, "\n");
 	}
 
 	return true;
@@ -1013,12 +1013,12 @@ static bool test_Delete(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	struct lsa_Delete r;
 
-	printf("\nTesting Delete\n");
+	torture_comment(tctx, "\nTesting Delete\n");
 
 	r.in.handle = handle;
 	status = dcerpc_lsa_Delete(p, tctx, &r);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
-		printf("Delete should have failed NT_STATUS_NOT_SUPPORTED - %s\n", nt_errstr(status));
+		torture_comment(tctx, "Delete should have failed NT_STATUS_NOT_SUPPORTED - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -1032,13 +1032,13 @@ static bool test_DeleteObject(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	struct lsa_DeleteObject r;
 
-	printf("\nTesting DeleteObject\n");
+	torture_comment(tctx, "\nTesting DeleteObject\n");
 
 	r.in.handle = handle;
 	r.out.handle = handle;
 	status = dcerpc_lsa_DeleteObject(p, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("DeleteObject failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "DeleteObject failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -1057,7 +1057,7 @@ static bool test_CreateAccount(struct dcerpc_pipe *p,
 
 	newsid = dom_sid_parse_talloc(tctx, "S-1-5-12349876-4321-2854");
 
-	printf("\nTesting CreateAccount\n");
+	torture_comment(tctx, "\nTesting CreateAccount\n");
 
 	r.in.handle = handle;
 	r.in.sid = newsid;
@@ -1074,11 +1074,11 @@ static bool test_CreateAccount(struct dcerpc_pipe *p,
 
 		status = dcerpc_lsa_OpenAccount(p, tctx, &r_o);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("OpenAccount failed - %s\n", nt_errstr(status));
+			torture_comment(tctx, "OpenAccount failed - %s\n", nt_errstr(status));
 			return false;
 		}
 	} else if (!NT_STATUS_IS_OK(status)) {
-		printf("CreateAccount failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "CreateAccount failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -1109,7 +1109,7 @@ static bool test_DeleteTrustedDomain(struct dcerpc_pipe *p,
 
 	status = dcerpc_lsa_OpenTrustedDomainByName(p, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("OpenTrustedDomainByName failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "OpenTrustedDomainByName failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -1137,7 +1137,7 @@ static bool test_DeleteTrustedDomainBySid(struct dcerpc_pipe *p,
 
 	status = dcerpc_lsa_DeleteTrustedDomain(p, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("DeleteTrustedDomain failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "DeleteTrustedDomain failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -1183,7 +1183,7 @@ static bool test_CreateSecret(struct dcerpc_pipe *p,
 	secname[GLOBAL] = talloc_asprintf(tctx, "G$torturesecret-%u", (uint_t)random());
 
 	for (i=0; i< 2; i++) {
-		printf("\nTesting CreateSecret of %s\n", secname[i]);
+		torture_comment(tctx, "\nTesting CreateSecret of %s\n", secname[i]);
 
 		init_lsa_String(&r.in.name, secname[i]);
 
@@ -1193,7 +1193,7 @@ static bool test_CreateSecret(struct dcerpc_pipe *p,
 
 		status = dcerpc_lsa_CreateSecret(p, tctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("CreateSecret failed - %s\n", nt_errstr(status));
+			torture_comment(tctx, "CreateSecret failed - %s\n", nt_errstr(status));
 			return false;
 		}
 
@@ -1203,7 +1203,7 @@ static bool test_CreateSecret(struct dcerpc_pipe *p,
 
 		status = dcerpc_lsa_CreateSecret(p, tctx, &r);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
-			printf("CreateSecret should have failed OBJECT_NAME_COLLISION - %s\n", nt_errstr(status));
+			torture_comment(tctx, "CreateSecret should have failed OBJECT_NAME_COLLISION - %s\n", nt_errstr(status));
 			return false;
 		}
 
@@ -1212,17 +1212,17 @@ static bool test_CreateSecret(struct dcerpc_pipe *p,
 		r2.in.name = r.in.name;
 		r2.out.sec_handle = &sec_handle2;
 
-		printf("Testing OpenSecret\n");
+		torture_comment(tctx, "Testing OpenSecret\n");
 
 		status = dcerpc_lsa_OpenSecret(p, tctx, &r2);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("OpenSecret failed - %s\n", nt_errstr(status));
+			torture_comment(tctx, "OpenSecret failed - %s\n", nt_errstr(status));
 			return false;
 		}
 
 		status = dcerpc_fetch_session_key(p, &session_key);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("dcerpc_fetch_session_key failed - %s\n", nt_errstr(status));
+			torture_comment(tctx, "dcerpc_fetch_session_key failed - %s\n", nt_errstr(status));
 			return false;
 		}
 
@@ -1235,11 +1235,11 @@ static bool test_CreateSecret(struct dcerpc_pipe *p,
 		r3.in.new_val->length = enc_key.length;
 		r3.in.new_val->size = enc_key.length;
 
-		printf("Testing SetSecret\n");
+		torture_comment(tctx, "Testing SetSecret\n");
 
 		status = dcerpc_lsa_SetSecret(p, tctx, &r3);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("SetSecret failed - %s\n", nt_errstr(status));
+			torture_comment(tctx, "SetSecret failed - %s\n", nt_errstr(status));
 			return false;
 		}
 
@@ -1253,11 +1253,11 @@ static bool test_CreateSecret(struct dcerpc_pipe *p,
 		/* break the encrypted data */
 		enc_key.data[0]++;
 
-		printf("Testing SetSecret with broken key\n");
+		torture_comment(tctx, "Testing SetSecret with broken key\n");
 
 		status = dcerpc_lsa_SetSecret(p, tctx, &r3);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_UNKNOWN_REVISION)) {
-			printf("SetSecret should have failed UNKNOWN_REVISION - %s\n", nt_errstr(status));
+			torture_comment(tctx, "SetSecret should have failed UNKNOWN_REVISION - %s\n", nt_errstr(status));
 			ret = false;
 		}
 
@@ -1275,14 +1275,14 @@ static bool test_CreateSecret(struct dcerpc_pipe *p,
 
 		bufp1.buf = NULL;
 
-		printf("Testing QuerySecret\n");
+		torture_comment(tctx, "Testing QuerySecret\n");
 		status = dcerpc_lsa_QuerySecret(p, tctx, &r4);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("QuerySecret failed - %s\n", nt_errstr(status));
+			torture_comment(tctx, "QuerySecret failed - %s\n", nt_errstr(status));
 			ret = false;
 		} else {
 			if (r4.out.new_val == NULL || r4.out.new_val->buf == NULL) {
-				printf("No secret buffer returned\n");
+				torture_comment(tctx, "No secret buffer returned\n");
 				ret = false;
 			} else {
 				blob1.data = r4.out.new_val->buf->data;
@@ -1294,7 +1294,7 @@ static bool test_CreateSecret(struct dcerpc_pipe *p,
 							      &blob1, &session_key);
 
 				if (strcmp(secret1, secret2) != 0) {
-					printf("Returned secret (r4) '%s' doesn't match '%s'\n",
+					torture_comment(tctx, "Returned secret (r4) '%s' doesn't match '%s'\n",
 					       secret2, secret1);
 					ret = false;
 				}
@@ -1312,11 +1312,11 @@ static bool test_CreateSecret(struct dcerpc_pipe *p,
 
 
 		msleep(200);
-		printf("Testing SetSecret (existing value should move to old)\n");
+		torture_comment(tctx, "Testing SetSecret (existing value should move to old)\n");
 
 		status = dcerpc_lsa_SetSecret(p, tctx, &r5);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("SetSecret failed - %s\n", nt_errstr(status));
+			torture_comment(tctx, "SetSecret failed - %s\n", nt_errstr(status));
 			ret = false;
 		}
 
@@ -1337,14 +1337,14 @@ static bool test_CreateSecret(struct dcerpc_pipe *p,
 
 		status = dcerpc_lsa_QuerySecret(p, tctx, &r6);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("QuerySecret failed - %s\n", nt_errstr(status));
+			torture_comment(tctx, "QuerySecret failed - %s\n", nt_errstr(status));
 			ret = false;
 			secret4 = NULL;
 		} else {
 
 			if (r6.out.new_val->buf == NULL || r6.out.old_val->buf == NULL
 				|| r6.out.new_mtime == NULL || r6.out.old_mtime == NULL) {
-				printf("Both secret buffers and both times not returned\n");
+				torture_comment(tctx, "Both secret buffers and both times not returned\n");
 				ret = false;
 				secret4 = NULL;
 			} else {
@@ -1357,7 +1357,7 @@ static bool test_CreateSecret(struct dcerpc_pipe *p,
 							      &blob1, &session_key);
 
 				if (strcmp(secret3, secret4) != 0) {
-					printf("Returned NEW secret %s doesn't match %s\n", secret4, secret3);
+					torture_comment(tctx, "Returned NEW secret %s doesn't match %s\n", secret4, secret3);
 					ret = false;
 				}
 
@@ -1370,12 +1370,12 @@ static bool test_CreateSecret(struct dcerpc_pipe *p,
 							      &blob1, &session_key);
 
 				if (strcmp(secret1, secret2) != 0) {
-					printf("Returned OLD secret %s doesn't match %s\n", secret2, secret1);
+					torture_comment(tctx, "Returned OLD secret %s doesn't match %s\n", secret2, secret1);
 					ret = false;
 				}
 
 				if (*r6.out.new_mtime == *r6.out.old_mtime) {
-					printf("Returned secret (r6-%d) %s must not have same mtime for both secrets: %s != %s\n",
+					torture_comment(tctx, "Returned secret (r6-%d) %s must not have same mtime for both secrets: %s != %s\n",
 					       i,
 					       secname[i],
 					       nt_time_string(tctx, *r6.out.old_mtime),
@@ -1394,11 +1394,11 @@ static bool test_CreateSecret(struct dcerpc_pipe *p,
 		r7.in.old_val->size = enc_key.length;
 		r7.in.new_val = NULL;
 
-		printf("Testing SetSecret of old Secret only\n");
+		torture_comment(tctx, "Testing SetSecret of old Secret only\n");
 
 		status = dcerpc_lsa_SetSecret(p, tctx, &r7);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("SetSecret failed - %s\n", nt_errstr(status));
+			torture_comment(tctx, "SetSecret failed - %s\n", nt_errstr(status));
 			ret = false;
 		}
 
@@ -1416,20 +1416,20 @@ static bool test_CreateSecret(struct dcerpc_pipe *p,
 
 		status = dcerpc_lsa_QuerySecret(p, tctx, &r8);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("QuerySecret failed - %s\n", nt_errstr(status));
+			torture_comment(tctx, "QuerySecret failed - %s\n", nt_errstr(status));
 			ret = false;
 		} else {
 			if (!r8.out.new_val || !r8.out.old_val) {
-				printf("in/out pointers not returned, despite being set on in for QuerySecret\n");
+				torture_comment(tctx, "in/out pointers not returned, despite being set on in for QuerySecret\n");
 				ret = false;
 			} else if (r8.out.new_val->buf != NULL) {
-				printf("NEW secret buffer must not be returned after OLD set\n");
+				torture_comment(tctx, "NEW secret buffer must not be returned after OLD set\n");
 				ret = false;
 			} else if (r8.out.old_val->buf == NULL) {
-				printf("OLD secret buffer was not returned after OLD set\n");
+				torture_comment(tctx, "OLD secret buffer was not returned after OLD set\n");
 				ret = false;
 			} else if (r8.out.new_mtime == NULL || r8.out.old_mtime == NULL) {
-				printf("Both times not returned after OLD set\n");
+				torture_comment(tctx, "Both times not returned after OLD set\n");
 				ret = false;
 			} else {
 				blob1.data = r8.out.old_val->buf->data;
@@ -1441,12 +1441,12 @@ static bool test_CreateSecret(struct dcerpc_pipe *p,
 							      &blob1, &session_key);
 
 				if (strcmp(secret5, secret6) != 0) {
-					printf("Returned OLD secret %s doesn't match %s\n", secret5, secret6);
+					torture_comment(tctx, "Returned OLD secret %s doesn't match %s\n", secret5, secret6);
 					ret = false;
 				}
 
 				if (*r8.out.new_mtime != *r8.out.old_mtime) {
-					printf("Returned secret (r8) %s did not had same mtime for both secrets: %s != %s\n",
+					torture_comment(tctx, "Returned secret (r8) %s did not had same mtime for both secrets: %s != %s\n",
 					       secname[i],
 					       nt_time_string(tctx, *r8.out.old_mtime),
 					       nt_time_string(tctx, *r8.out.new_mtime));
@@ -1467,15 +1467,15 @@ static bool test_CreateSecret(struct dcerpc_pipe *p,
 		d_o.out.handle = &sec_handle2;
 		status = dcerpc_lsa_DeleteObject(p, tctx, &d_o);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
-			printf("Second delete expected INVALID_HANDLE - %s\n", nt_errstr(status));
+			torture_comment(tctx, "Second delete expected INVALID_HANDLE - %s\n", nt_errstr(status));
 			ret = false;
 		} else {
 
-			printf("Testing OpenSecret of just-deleted secret\n");
+			torture_comment(tctx, "Testing OpenSecret of just-deleted secret\n");
 
 			status = dcerpc_lsa_OpenSecret(p, tctx, &r2);
 			if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-				printf("OpenSecret expected OBJECT_NAME_NOT_FOUND - %s\n", nt_errstr(status));
+				torture_comment(tctx, "OpenSecret expected OBJECT_NAME_NOT_FOUND - %s\n", nt_errstr(status));
 				ret = false;
 			}
 		}
@@ -1495,7 +1495,7 @@ static bool test_EnumAccountRights(struct dcerpc_pipe *p,
 	struct lsa_EnumAccountRights r;
 	struct lsa_RightSet rights;
 
-	printf("\nTesting EnumAccountRights\n");
+	torture_comment(tctx, "\nTesting EnumAccountRights\n");
 
 	r.in.handle = acct_handle;
 	r.in.sid = sid;
@@ -1503,7 +1503,7 @@ static bool test_EnumAccountRights(struct dcerpc_pipe *p,
 
 	status = dcerpc_lsa_EnumAccountRights(p, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("EnumAccountRights of %s failed - %s\n",
+		torture_comment(tctx, "EnumAccountRights of %s failed - %s\n",
 		       dom_sid_string(tctx, sid), nt_errstr(status));
 		return false;
 	}
@@ -1522,19 +1522,21 @@ static bool test_QuerySecurity(struct dcerpc_pipe *p,
 	struct sec_desc_buf *sdbuf = NULL;
 
 	if (torture_setting_bool(tctx, "samba4", false)) {
-		printf("\nskipping QuerySecurity test against Samba4\n");
+		torture_comment(tctx, "\nskipping QuerySecurity test against Samba4\n");
 		return true;
 	}
 
-	printf("\nTesting QuerySecurity\n");
+	torture_comment(tctx, "\nTesting QuerySecurity\n");
 
 	r.in.handle = acct_handle;
-	r.in.sec_info = 7;
+	r.in.sec_info = SECINFO_OWNER |
+			SECINFO_GROUP |
+			SECINFO_DACL;
 	r.out.sdbuf = &sdbuf;
 
 	status = dcerpc_lsa_QuerySecurity(p, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("QuerySecurity failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "QuerySecurity failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -1550,7 +1552,7 @@ static bool test_OpenAccount(struct dcerpc_pipe *p,
 	struct lsa_OpenAccount r;
 	struct policy_handle acct_handle;
 
-	printf("\nTesting OpenAccount\n");
+	torture_comment(tctx, "\nTesting OpenAccount\n");
 
 	r.in.handle = handle;
 	r.in.sid = sid;
@@ -1559,7 +1561,7 @@ static bool test_OpenAccount(struct dcerpc_pipe *p,
 
 	status = dcerpc_lsa_OpenAccount(p, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("OpenAccount failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "OpenAccount failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -1589,7 +1591,7 @@ static bool test_EnumAccounts(struct dcerpc_pipe *p,
 	int i;
 	bool ret = true;
 
-	printf("\nTesting EnumAccounts\n");
+	torture_comment(tctx, "\nTesting EnumAccounts\n");
 
 	r.in.handle = handle;
 	r.in.resume_handle = &resume_handle;
@@ -1604,7 +1606,7 @@ static bool test_EnumAccounts(struct dcerpc_pipe *p,
 			break;
 		}
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("EnumAccounts failed - %s\n", nt_errstr(status));
+			torture_comment(tctx, "EnumAccounts failed - %s\n", nt_errstr(status));
 			return false;
 		}
 
@@ -1620,31 +1622,31 @@ static bool test_EnumAccounts(struct dcerpc_pipe *p,
 		 * be on schannel, or we would not be able to do the
 		 * rest */
 
-		printf("Testing all accounts\n");
+		torture_comment(tctx, "Testing all accounts\n");
 		for (i=0;i<sids1.num_sids;i++) {
 			ret &= test_OpenAccount(p, tctx, handle, sids1.sids[i].sid);
 			ret &= test_EnumAccountRights(p, tctx, handle, sids1.sids[i].sid);
 		}
-		printf("\n");
+		torture_comment(tctx, "\n");
 	}
 
 	if (sids1.num_sids < 3) {
 		return ret;
 	}
 
-	printf("Trying EnumAccounts partial listing (asking for 1 at 2)\n");
+	torture_comment(tctx, "Trying EnumAccounts partial listing (asking for 1 at 2)\n");
 	resume_handle = 2;
 	r.in.num_entries = 1;
 	r.out.sids = &sids2;
 
 	status = dcerpc_lsa_EnumAccounts(p, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("EnumAccounts failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "EnumAccounts failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
 	if (sids2.num_sids != 1) {
-		printf("Returned wrong number of entries (%d)\n", sids2.num_sids);
+		torture_comment(tctx, "Returned wrong number of entries (%d)\n", sids2.num_sids);
 		return false;
 	}
 
@@ -1664,7 +1666,7 @@ static bool test_LookupPrivDisplayName(struct dcerpc_pipe *p,
 	uint16_t returned_language_id = 0;
 	struct lsa_StringLarge *disp_name = NULL;
 
-	printf("\nTesting LookupPrivDisplayName(%s)\n", priv_name->string);
+	torture_comment(tctx, "\nTesting LookupPrivDisplayName(%s)\n", priv_name->string);
 
 	r.in.handle = handle;
 	r.in.name = priv_name;
@@ -1675,10 +1677,10 @@ static bool test_LookupPrivDisplayName(struct dcerpc_pipe *p,
 
 	status = dcerpc_lsa_LookupPrivDisplayName(p, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("LookupPrivDisplayName failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "LookupPrivDisplayName failed - %s\n", nt_errstr(status));
 		return false;
 	}
-	printf("%s -> \"%s\"  (language 0x%x/0x%x)\n",
+	torture_comment(tctx, "%s -> \"%s\"  (language 0x%x/0x%x)\n",
 	       priv_name->string, disp_name->string,
 	       r.in.language_id, *r.out.returned_language_id);
 
@@ -1696,7 +1698,7 @@ static bool test_EnumAccountsWithUserRight(struct dcerpc_pipe *p,
 
 	ZERO_STRUCT(sids);
 
-	printf("\nTesting EnumAccountsWithUserRight(%s)\n", priv_name->string);
+	torture_comment(tctx, "\nTesting EnumAccountsWithUserRight(%s)\n", priv_name->string);
 
 	r.in.handle = handle;
 	r.in.name = priv_name;
@@ -1710,7 +1712,7 @@ static bool test_EnumAccountsWithUserRight(struct dcerpc_pipe *p,
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("EnumAccountsWithUserRight failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "EnumAccountsWithUserRight failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -1729,7 +1731,7 @@ static bool test_EnumPrivs(struct dcerpc_pipe *p,
 	int i;
 	bool ret = true;
 
-	printf("\nTesting EnumPrivs\n");
+	torture_comment(tctx, "\nTesting EnumPrivs\n");
 
 	r.in.handle = handle;
 	r.in.resume_handle = &resume_handle;
@@ -1740,7 +1742,7 @@ static bool test_EnumPrivs(struct dcerpc_pipe *p,
 	resume_handle = 0;
 	status = dcerpc_lsa_EnumPrivs(p, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("EnumPrivs failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "EnumPrivs failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -1766,10 +1768,10 @@ static bool test_QueryForestTrustInformation(struct dcerpc_pipe *p,
 	struct lsa_String string;
 	struct lsa_ForestTrustInformation info, *info_ptr;
 
-	printf("\nTesting lsaRQueryForestTrustInformation\n");
+	torture_comment(tctx, "\nTesting lsaRQueryForestTrustInformation\n");
 
 	if (torture_setting_bool(tctx, "samba4", false)) {
-		printf("skipping QueryForestTrustInformation against Samba4\n");
+		torture_comment(tctx, "skipping QueryForestTrustInformation against Samba4\n");
 		return true;
 	}
 
@@ -1789,7 +1791,7 @@ static bool test_QueryForestTrustInformation(struct dcerpc_pipe *p,
 	status = dcerpc_lsa_lsaRQueryForestTrustInformation(p, tctx, &r);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("lsaRQueryForestTrustInformation of %s failed - %s\n", trusted_domain_name, nt_errstr(status));
+		torture_comment(tctx, "lsaRQueryForestTrustInformation of %s failed - %s\n", trusted_domain_name, nt_errstr(status));
 		ret = false;
 	}
 
@@ -1824,7 +1826,7 @@ static bool test_query_each_TrustDom(struct dcerpc_pipe *p,
 	int i,j;
 	bool ret = true;
 
-	printf("\nTesting OpenTrustedDomain, OpenTrustedDomainByName and QueryInfoTrustedDomain\n");
+	torture_comment(tctx, "\nTesting OpenTrustedDomain, OpenTrustedDomainByName and QueryInfoTrustedDomain\n");
 	for (i=0; i< domains->count; i++) {
 		struct lsa_OpenTrustedDomain trust;
 		struct lsa_OpenTrustedDomainByName trust_by_name;
@@ -1844,7 +1846,7 @@ static bool test_query_each_TrustDom(struct dcerpc_pipe *p,
 			status = dcerpc_lsa_OpenTrustedDomain(p, tctx, &trust);
 
 			if (!NT_STATUS_IS_OK(status)) {
-				printf("OpenTrustedDomain failed - %s\n", nt_errstr(status));
+				torture_comment(tctx, "OpenTrustedDomain failed - %s\n", nt_errstr(status));
 				return false;
 			}
 
@@ -1862,11 +1864,11 @@ static bool test_query_each_TrustDom(struct dcerpc_pipe *p,
 				q.out.info = &info;
 				status = dcerpc_lsa_QueryTrustedDomainInfo(p, tctx, &q);
 				if (!NT_STATUS_IS_OK(status) && ok[j]) {
-					printf("QueryTrustedDomainInfo level %d failed - %s\n",
+					torture_comment(tctx, "QueryTrustedDomainInfo level %d failed - %s\n",
 					       levels[j], nt_errstr(status));
 					ret = false;
 				} else if (NT_STATUS_IS_OK(status) && !ok[j]) {
-					printf("QueryTrustedDomainInfo level %d unexpectedly succeeded - %s\n",
+					torture_comment(tctx, "QueryTrustedDomainInfo level %d unexpectedly succeeded - %s\n",
 					       levels[j], nt_errstr(status));
 					ret = false;
 				}
@@ -1874,7 +1876,7 @@ static bool test_query_each_TrustDom(struct dcerpc_pipe *p,
 
 			status = dcerpc_lsa_CloseTrustedDomainEx(p, tctx, &c_trust);
 			if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
-				printf("Expected CloseTrustedDomainEx to return NT_STATUS_NOT_IMPLEMENTED, instead - %s\n", nt_errstr(status));
+				torture_comment(tctx, "Expected CloseTrustedDomainEx to return NT_STATUS_NOT_IMPLEMENTED, instead - %s\n", nt_errstr(status));
 				return false;
 			}
 
@@ -1883,7 +1885,7 @@ static bool test_query_each_TrustDom(struct dcerpc_pipe *p,
 
 			status = dcerpc_lsa_Close(p, tctx, &c);
 			if (!NT_STATUS_IS_OK(status)) {
-				printf("Close of trusted domain failed - %s\n", nt_errstr(status));
+				torture_comment(tctx, "Close of trusted domain failed - %s\n", nt_errstr(status));
 				return false;
 			}
 
@@ -1902,11 +1904,11 @@ static bool test_query_each_TrustDom(struct dcerpc_pipe *p,
 
 				status = dcerpc_lsa_QueryTrustedDomainInfoBySid(p, tctx, &q);
 				if (!NT_STATUS_IS_OK(status) && ok[j]) {
-					printf("QueryTrustedDomainInfoBySid level %d failed - %s\n",
+					torture_comment(tctx, "QueryTrustedDomainInfoBySid level %d failed - %s\n",
 					       levels[j], nt_errstr(status));
 					ret = false;
 				} else if (NT_STATUS_IS_OK(status) && !ok[j]) {
-					printf("QueryTrustedDomainInfoBySid level %d unexpectedly succeeded - %s\n",
+					torture_comment(tctx, "QueryTrustedDomainInfoBySid level %d unexpectedly succeeded - %s\n",
 					       levels[j], nt_errstr(status));
 					ret = false;
 				}
@@ -1921,7 +1923,7 @@ static bool test_query_each_TrustDom(struct dcerpc_pipe *p,
 		status = dcerpc_lsa_OpenTrustedDomainByName(p, tctx, &trust_by_name);
 
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("OpenTrustedDomainByName failed - %s\n", nt_errstr(status));
+			torture_comment(tctx, "OpenTrustedDomainByName failed - %s\n", nt_errstr(status));
 			return false;
 		}
 
@@ -1933,11 +1935,11 @@ static bool test_query_each_TrustDom(struct dcerpc_pipe *p,
 			q.out.info = &info;
 			status = dcerpc_lsa_QueryTrustedDomainInfo(p, tctx, &q);
 			if (!NT_STATUS_IS_OK(status) && ok[j]) {
-				printf("QueryTrustedDomainInfo level %d failed - %s\n",
+				torture_comment(tctx, "QueryTrustedDomainInfo level %d failed - %s\n",
 				       levels[j], nt_errstr(status));
 				ret = false;
 			} else if (NT_STATUS_IS_OK(status) && !ok[j]) {
-				printf("QueryTrustedDomainInfo level %d unexpectedly succeeded - %s\n",
+				torture_comment(tctx, "QueryTrustedDomainInfo level %d unexpectedly succeeded - %s\n",
 				       levels[j], nt_errstr(status));
 				ret = false;
 			}
@@ -1948,7 +1950,7 @@ static bool test_query_each_TrustDom(struct dcerpc_pipe *p,
 
 		status = dcerpc_lsa_Close(p, tctx, &c);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("Close of trusted domain failed - %s\n", nt_errstr(status));
+			torture_comment(tctx, "Close of trusted domain failed - %s\n", nt_errstr(status));
 			return false;
 		}
 
@@ -1965,11 +1967,11 @@ static bool test_query_each_TrustDom(struct dcerpc_pipe *p,
 			q.out.info          = &info;
 			status = dcerpc_lsa_QueryTrustedDomainInfoByName(p, tctx, &q);
 			if (!NT_STATUS_IS_OK(status) && ok[j]) {
-				printf("QueryTrustedDomainInfoByName level %d failed - %s\n",
+				torture_comment(tctx, "QueryTrustedDomainInfoByName level %d failed - %s\n",
 				       levels[j], nt_errstr(status));
 				ret = false;
 			} else if (NT_STATUS_IS_OK(status) && !ok[j]) {
-				printf("QueryTrustedDomainInfoByName level %d unexpectedly succeeded - %s\n",
+				torture_comment(tctx, "QueryTrustedDomainInfoByName level %d unexpectedly succeeded - %s\n",
 				       levels[j], nt_errstr(status));
 				ret = false;
 			}
@@ -1990,7 +1992,7 @@ static bool test_EnumTrustDom(struct dcerpc_pipe *p,
 	struct lsa_DomainListEx domains_ex;
 	bool ret = true;
 
-	printf("\nTesting EnumTrustDom\n");
+	torture_comment(tctx, "\nTesting EnumTrustDom\n");
 
 	r.in.handle = handle;
 	r.in.resume_handle = &resume_handle;
@@ -2002,11 +2004,11 @@ static bool test_EnumTrustDom(struct dcerpc_pipe *p,
 
 	if (NT_STATUS_IS_OK(enum_status)) {
 		if (domains.count == 0) {
-			printf("EnumTrustDom failed - should have returned 'NT_STATUS_NO_MORE_ENTRIES' for 0 trusted domains\n");
+			torture_comment(tctx, "EnumTrustDom failed - should have returned 'NT_STATUS_NO_MORE_ENTRIES' for 0 trusted domains\n");
 			return false;
 		}
 	} else if (!(NT_STATUS_EQUAL(enum_status, STATUS_MORE_ENTRIES) || NT_STATUS_EQUAL(enum_status, NT_STATUS_NO_MORE_ENTRIES))) {
-		printf("EnumTrustDom of zero size failed - %s\n", nt_errstr(enum_status));
+		torture_comment(tctx, "EnumTrustDom of zero size failed - %s\n", nt_errstr(enum_status));
 		return false;
 	}
 
@@ -2027,24 +2029,24 @@ static bool test_EnumTrustDom(struct dcerpc_pipe *p,
 			if (domains.count == 0) {
 				return true;
 			}
-			printf("EnumTrustDom failed - should have returned 0 trusted domains with 'NT_STATUS_NO_MORE_ENTRIES'\n");
+			torture_comment(tctx, "EnumTrustDom failed - should have returned 0 trusted domains with 'NT_STATUS_NO_MORE_ENTRIES'\n");
 			return false;
 		} else if (NT_STATUS_EQUAL(enum_status, STATUS_MORE_ENTRIES)) {
 			/* Windows 2003 gets this off by one on the first run */
 			if (r.out.domains->count < 3 || r.out.domains->count > 4) {
-				printf("EnumTrustDom didn't fill the buffer we "
+				torture_comment(tctx, "EnumTrustDom didn't fill the buffer we "
 				       "asked it to (got %d, expected %d / %d == %d entries)\n",
 				       r.out.domains->count, LSA_ENUM_TRUST_DOMAIN_MULTIPLIER * 3,
 				       LSA_ENUM_TRUST_DOMAIN_MULTIPLIER, r.in.max_size);
 				ret = false;
 			}
 		} else if (!NT_STATUS_IS_OK(enum_status)) {
-			printf("EnumTrustDom failed - %s\n", nt_errstr(enum_status));
+			torture_comment(tctx, "EnumTrustDom failed - %s\n", nt_errstr(enum_status));
 			return false;
 		}
 
 		if (domains.count == 0) {
-			printf("EnumTrustDom failed - should have returned 'NT_STATUS_NO_MORE_ENTRIES' for 0 trusted domains\n");
+			torture_comment(tctx, "EnumTrustDom failed - should have returned 'NT_STATUS_NO_MORE_ENTRIES' for 0 trusted domains\n");
 			return false;
 		}
 
@@ -2052,7 +2054,7 @@ static bool test_EnumTrustDom(struct dcerpc_pipe *p,
 
 	} while ((NT_STATUS_EQUAL(enum_status, STATUS_MORE_ENTRIES)));
 
-	printf("\nTesting EnumTrustedDomainsEx\n");
+	torture_comment(tctx, "\nTesting EnumTrustedDomainsEx\n");
 
 	r_ex.in.handle = handle;
 	r_ex.in.resume_handle = &resume_handle;
@@ -2063,7 +2065,7 @@ static bool test_EnumTrustDom(struct dcerpc_pipe *p,
 	enum_status = dcerpc_lsa_EnumTrustedDomainsEx(p, tctx, &r_ex);
 
 	if (!(NT_STATUS_EQUAL(enum_status, STATUS_MORE_ENTRIES) || NT_STATUS_EQUAL(enum_status, NT_STATUS_NO_MORE_ENTRIES))) {
-		printf("EnumTrustedDomainEx of zero size failed - %s\n", nt_errstr(enum_status));
+		torture_comment(tctx, "EnumTrustedDomainEx of zero size failed - %s\n", nt_errstr(enum_status));
 		return false;
 	}
 
@@ -2082,12 +2084,12 @@ static bool test_EnumTrustDom(struct dcerpc_pipe *p,
 			if (domains_ex.count == 0) {
 				return true;
 			}
-			printf("EnumTrustDomainsEx failed - should have returned 0 trusted domains with 'NT_STATUS_NO_MORE_ENTRIES'\n");
+			torture_comment(tctx, "EnumTrustDomainsEx failed - should have returned 0 trusted domains with 'NT_STATUS_NO_MORE_ENTRIES'\n");
 			return false;
 		} else if (NT_STATUS_EQUAL(enum_status, STATUS_MORE_ENTRIES)) {
 			/* Windows 2003 gets this off by one on the first run */
 			if (r_ex.out.domains->count < 3 || r_ex.out.domains->count > 4) {
-				printf("EnumTrustDom didn't fill the buffer we "
+				torture_comment(tctx, "EnumTrustDom didn't fill the buffer we "
 				       "asked it to (got %d, expected %d / %d == %d entries)\n",
 				       r_ex.out.domains->count,
 				       r_ex.in.max_size,
@@ -2095,12 +2097,12 @@ static bool test_EnumTrustDom(struct dcerpc_pipe *p,
 				       r_ex.in.max_size / LSA_ENUM_TRUST_DOMAIN_EX_MULTIPLIER);
 			}
 		} else if (!NT_STATUS_IS_OK(enum_status)) {
-			printf("EnumTrustedDomainEx failed - %s\n", nt_errstr(enum_status));
+			torture_comment(tctx, "EnumTrustedDomainEx failed - %s\n", nt_errstr(enum_status));
 			return false;
 		}
 
 		if (domains_ex.count == 0) {
-			printf("EnumTrustDomainEx failed - should have returned 'NT_STATUS_NO_MORE_ENTRIES' for 0 trusted domains\n");
+			torture_comment(tctx, "EnumTrustDomainEx failed - should have returned 'NT_STATUS_NO_MORE_ENTRIES' for 0 trusted domains\n");
 			return false;
 		}
 
@@ -2125,7 +2127,7 @@ static bool test_CreateTrustedDomain(struct dcerpc_pipe *p,
 	union lsa_TrustedDomainInfo *info = NULL;
 	int i;
 
-	printf("\nTesting CreateTrustedDomain for 12 domains\n");
+	torture_comment(tctx, "\nTesting CreateTrustedDomain for 12 domains\n");
 
 	if (!test_EnumTrustDom(p, tctx, handle)) {
 		ret = false;
@@ -2151,7 +2153,7 @@ static bool test_CreateTrustedDomain(struct dcerpc_pipe *p,
 			status = dcerpc_lsa_CreateTrustedDomain(p, tctx, &r);
 		}
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("CreateTrustedDomain failed - %s\n", nt_errstr(status));
+			torture_comment(tctx, "CreateTrustedDomain failed - %s\n", nt_errstr(status));
 			ret = false;
 		} else {
 
@@ -2160,28 +2162,28 @@ static bool test_CreateTrustedDomain(struct dcerpc_pipe *p,
 			q.out.info = &info;
 			status = dcerpc_lsa_QueryTrustedDomainInfo(p, tctx, &q);
 			if (!NT_STATUS_IS_OK(status)) {
-				printf("QueryTrustedDomainInfo level 1 failed - %s\n", nt_errstr(status));
+				torture_comment(tctx, "QueryTrustedDomainInfo level 1 failed - %s\n", nt_errstr(status));
 				ret = false;
 			} else if (!q.out.info) {
 				ret = false;
 			} else {
 				if (strcmp(info->info_ex.netbios_name.string, trustinfo.name.string) != 0) {
-					printf("QueryTrustedDomainInfo returned inconsistant short name: %s != %s\n",
+					torture_comment(tctx, "QueryTrustedDomainInfo returned inconsistant short name: %s != %s\n",
 					       info->info_ex.netbios_name.string, trustinfo.name.string);
 					ret = false;
 				}
 				if (info->info_ex.trust_type != LSA_TRUST_TYPE_DOWNLEVEL) {
-					printf("QueryTrustedDomainInfo of %s returned incorrect trust type %d != %d\n",
+					torture_comment(tctx, "QueryTrustedDomainInfo of %s returned incorrect trust type %d != %d\n",
 					       trust_name, info->info_ex.trust_type, LSA_TRUST_TYPE_DOWNLEVEL);
 					ret = false;
 				}
 				if (info->info_ex.trust_attributes != 0) {
-					printf("QueryTrustedDomainInfo of %s returned incorrect trust attributes %d != %d\n",
+					torture_comment(tctx, "QueryTrustedDomainInfo of %s returned incorrect trust attributes %d != %d\n",
 					       trust_name, info->info_ex.trust_attributes, 0);
 					ret = false;
 				}
 				if (info->info_ex.trust_direction != LSA_TRUST_DIRECTION_OUTBOUND) {
-					printf("QueryTrustedDomainInfo of %s returned incorrect trust direction %d != %d\n",
+					torture_comment(tctx, "QueryTrustedDomainInfo of %s returned incorrect trust direction %d != %d\n",
 					       trust_name, info->info_ex.trust_direction, LSA_TRUST_DIRECTION_OUTBOUND);
 					ret = false;
 				}
@@ -2222,11 +2224,11 @@ static bool test_CreateTrustedDomainEx2(struct dcerpc_pipe *p,
 	enum ndr_err_code ndr_err;
 	int i;
 
-	printf("\nTesting CreateTrustedDomainEx2 for 12 domains\n");
+	torture_comment(tctx, "\nTesting CreateTrustedDomainEx2 for 12 domains\n");
 
 	status = dcerpc_fetch_session_key(p, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("dcerpc_fetch_session_key failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "dcerpc_fetch_session_key failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -2263,7 +2265,7 @@ static bool test_CreateTrustedDomainEx2(struct dcerpc_pipe *p,
 		ndr_err = ndr_push_struct_blob(&auth_blob, tctx, lp_iconv_convenience(tctx->lp_ctx), &auth_struct,
 					       (ndr_push_flags_fn_t)ndr_push_trustDomainPasswords);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			printf("ndr_push_struct_blob of trustDomainPasswords structure failed");
+			torture_comment(tctx, "ndr_push_struct_blob of trustDomainPasswords structure failed");
 			ret = false;
 		}
 
@@ -2284,7 +2286,7 @@ static bool test_CreateTrustedDomainEx2(struct dcerpc_pipe *p,
 			status = dcerpc_lsa_CreateTrustedDomainEx2(p, tctx, &r);
 		}
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("CreateTrustedDomainEx failed2 - %s\n", nt_errstr(status));
+			torture_comment(tctx, "CreateTrustedDomainEx failed2 - %s\n", nt_errstr(status));
 			ret = false;
 		} else {
 
@@ -2293,29 +2295,29 @@ static bool test_CreateTrustedDomainEx2(struct dcerpc_pipe *p,
 			q.out.info = &info;
 			status = dcerpc_lsa_QueryTrustedDomainInfo(p, tctx, &q);
 			if (!NT_STATUS_IS_OK(status)) {
-				printf("QueryTrustedDomainInfo level 1 failed - %s\n", nt_errstr(status));
+				torture_comment(tctx, "QueryTrustedDomainInfo level 1 failed - %s\n", nt_errstr(status));
 				ret = false;
 			} else if (!q.out.info) {
-				printf("QueryTrustedDomainInfo level 1 failed to return an info pointer\n");
+				torture_comment(tctx, "QueryTrustedDomainInfo level 1 failed to return an info pointer\n");
 				ret = false;
 			} else {
 				if (strcmp(info->info_ex.netbios_name.string, trustinfo.netbios_name.string) != 0) {
-					printf("QueryTrustedDomainInfo returned inconsistant short name: %s != %s\n",
+					torture_comment(tctx, "QueryTrustedDomainInfo returned inconsistant short name: %s != %s\n",
 					       info->info_ex.netbios_name.string, trustinfo.netbios_name.string);
 					ret = false;
 				}
 				if (info->info_ex.trust_type != trustinfo.trust_type) {
-					printf("QueryTrustedDomainInfo of %s returned incorrect trust type %d != %d\n",
+					torture_comment(tctx, "QueryTrustedDomainInfo of %s returned incorrect trust type %d != %d\n",
 					       trust_name, info->info_ex.trust_type, trustinfo.trust_type);
 					ret = false;
 				}
 				if (info->info_ex.trust_attributes != LSA_TRUST_ATTRIBUTE_USES_RC4_ENCRYPTION) {
-					printf("QueryTrustedDomainInfo of %s returned incorrect trust attributes %d != %d\n",
+					torture_comment(tctx, "QueryTrustedDomainInfo of %s returned incorrect trust attributes %d != %d\n",
 					       trust_name, info->info_ex.trust_attributes, LSA_TRUST_ATTRIBUTE_USES_RC4_ENCRYPTION);
 					ret = false;
 				}
 				if (info->info_ex.trust_direction != trustinfo.trust_direction) {
-					printf("QueryTrustedDomainInfo of %s returned incorrect trust direction %d != %d\n",
+					torture_comment(tctx, "QueryTrustedDomainInfo of %s returned incorrect trust direction %d != %d\n",
 					       trust_name, info->info_ex.trust_direction, trustinfo.trust_direction);
 					ret = false;
 				}
@@ -2325,13 +2327,13 @@ static bool test_CreateTrustedDomainEx2(struct dcerpc_pipe *p,
 
 	/* now that we have some domains to look over, we can test the enum calls */
 	if (!test_EnumTrustDom(p, tctx, handle)) {
-		printf("test_EnumTrustDom failed\n");
+		torture_comment(tctx, "test_EnumTrustDom failed\n");
 		ret = false;
 	}
 
 	for (i=0; i<12; i++) {
 		if (!test_DeleteTrustedDomainBySid(p, tctx, handle, domsid[i])) {
-			printf("test_DeleteTrustedDomainBySid failed\n");
+			torture_comment(tctx, "test_DeleteTrustedDomainBySid failed\n");
 			ret = false;
 		}
 	}
@@ -2349,14 +2351,14 @@ static bool test_QueryDomainInfoPolicy(struct dcerpc_pipe *p,
 	int i;
 	bool ret = true;
 
-	printf("\nTesting QueryDomainInformationPolicy\n");
+	torture_comment(tctx, "\nTesting QueryDomainInformationPolicy\n");
 
 	for (i=2;i<4;i++) {
 		r.in.handle = handle;
 		r.in.level = i;
 		r.out.info = &info;
 
-		printf("\nTrying QueryDomainInformationPolicy level %d\n", i);
+		torture_comment(tctx, "\nTrying QueryDomainInformationPolicy level %d\n", i);
 
 		status = dcerpc_lsa_QueryDomainInformationPolicy(p, tctx, &r);
 
@@ -2364,7 +2366,7 @@ static bool test_QueryDomainInfoPolicy(struct dcerpc_pipe *p,
 		if (i == LSA_DOMAIN_INFO_POLICY_EFS && NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 			continue;
 		} else if (!NT_STATUS_IS_OK(status)) {
-			printf("QueryDomainInformationPolicy failed - %s\n", nt_errstr(status));
+			torture_comment(tctx, "QueryDomainInformationPolicy failed - %s\n", nt_errstr(status));
 			ret = false;
 			continue;
 		}
@@ -2386,9 +2388,9 @@ static bool test_QueryInfoPolicyCalls(	bool version2,
 	bool ret = true;
 
 	if (version2)
-		printf("\nTesting QueryInfoPolicy2\n");
+		torture_comment(tctx, "\nTesting QueryInfoPolicy2\n");
 	else
-		printf("\nTesting QueryInfoPolicy\n");
+		torture_comment(tctx, "\nTesting QueryInfoPolicy\n");
 
 	for (i=1;i<=14;i++) {
 		r.in.handle = handle;
@@ -2396,9 +2398,9 @@ static bool test_QueryInfoPolicyCalls(	bool version2,
 		r.out.info = &info;
 
 		if (version2)
-			printf("\nTrying QueryInfoPolicy2 level %d\n", i);
+			torture_comment(tctx, "\nTrying QueryInfoPolicy2 level %d\n", i);
 		else
-			printf("\nTrying QueryInfoPolicy level %d\n", i);
+			torture_comment(tctx, "\nTrying QueryInfoPolicy level %d\n", i);
 
 		if (version2)
 			/* We can perform the cast, because both types are
@@ -2413,7 +2415,7 @@ static bool test_QueryInfoPolicyCalls(	bool version2,
 		case LSA_POLICY_INFO_AUDIT_FULL_SET:
 		case LSA_POLICY_INFO_AUDIT_FULL_QUERY:
 			if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
-				printf("Server should have failed level %u: %s\n", i, nt_errstr(status));
+				torture_comment(tctx, "Server should have failed level %u: %s\n", i, nt_errstr(status));
 				ret = false;
 			}
 			break;
@@ -2430,9 +2432,9 @@ static bool test_QueryInfoPolicyCalls(	bool version2,
 		case LSA_POLICY_INFO_PD:
 			if (!NT_STATUS_IS_OK(status)) {
 				if (version2)
-					printf("QueryInfoPolicy2 failed - %s\n", nt_errstr(status));
+					torture_comment(tctx, "QueryInfoPolicy2 failed - %s\n", nt_errstr(status));
 				else
-					printf("QueryInfoPolicy failed - %s\n", nt_errstr(status));
+					torture_comment(tctx, "QueryInfoPolicy failed - %s\n", nt_errstr(status));
 				ret = false;
 			}
 			break;
@@ -2441,16 +2443,16 @@ static bool test_QueryInfoPolicyCalls(	bool version2,
 				/* Other levels not implemented yet */
 				if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS)) {
 					if (version2)
-						printf("QueryInfoPolicy2 failed - %s\n", nt_errstr(status));
+						torture_comment(tctx, "QueryInfoPolicy2 failed - %s\n", nt_errstr(status));
 					else
-						printf("QueryInfoPolicy failed - %s\n", nt_errstr(status));
+						torture_comment(tctx, "QueryInfoPolicy failed - %s\n", nt_errstr(status));
 					ret = false;
 				}
 			} else if (!NT_STATUS_IS_OK(status)) {
 				if (version2)
-					printf("QueryInfoPolicy2 failed - %s\n", nt_errstr(status));
+					torture_comment(tctx, "QueryInfoPolicy2 failed - %s\n", nt_errstr(status));
 				else
-					printf("QueryInfoPolicy failed - %s\n", nt_errstr(status));
+					torture_comment(tctx, "QueryInfoPolicy failed - %s\n", nt_errstr(status));
 				ret = false;
 			}
 			break;
@@ -2522,7 +2524,7 @@ static bool test_GetUserName(struct dcerpc_pipe *p,
 	struct lsa_String *authority_name_p = NULL;
 	struct lsa_String *account_name_p = NULL;
 
-	printf("\nTesting GetUserName\n");
+	torture_comment(tctx, "\nTesting GetUserName\n");
 
 	r.in.system_name	= "\\";
 	r.in.account_name	= &account_name_p;
@@ -2532,7 +2534,7 @@ static bool test_GetUserName(struct dcerpc_pipe *p,
 	status = dcerpc_lsa_GetUserName(p, tctx, &r);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("GetUserName failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "GetUserName failed - %s\n", nt_errstr(status));
 		ret = false;
 	}
 
@@ -2544,7 +2546,7 @@ static bool test_GetUserName(struct dcerpc_pipe *p,
 	status = dcerpc_lsa_GetUserName(p, tctx, &r);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("GetUserName failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "GetUserName failed - %s\n", nt_errstr(status));
 		ret = false;
 	}
 
@@ -2559,25 +2561,25 @@ bool test_lsa_Close(struct dcerpc_pipe *p,
 	struct lsa_Close r;
 	struct policy_handle handle2;
 
-	printf("\nTesting Close\n");
+	torture_comment(tctx, "\nTesting Close\n");
 
 	r.in.handle = handle;
 	r.out.handle = &handle2;
 
 	status = dcerpc_lsa_Close(p, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Close failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "Close failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
 	status = dcerpc_lsa_Close(p, tctx, &r);
 	/* its really a fault - we need a status code for rpc fault */
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
-		printf("Close failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "Close failed - %s\n", nt_errstr(status));
 		return false;
 	}
 
-	printf("\n");
+	torture_comment(tctx, "\n");
 
 	return true;
 }
@@ -2625,26 +2627,7 @@ bool torture_rpc_lsa(struct torture_context *tctx)
 			ret = false;
 		}
 
-		if (!test_CreateAccount(p, tctx, handle)) {
-			ret = false;
-		}
-
 		if (!test_CreateSecret(p, tctx, handle)) {
-			ret = false;
-		}
-		if (!test_CreateTrustedDomain(p, tctx, handle)) {
-			ret = false;
-		}
-
-		if (!test_CreateTrustedDomainEx2(p, tctx, handle)) {
-			ret = false;
-		}
-
-		if (!test_EnumAccounts(p, tctx, handle)) {
-			ret = false;
-		}
-
-		if (!test_EnumPrivs(p, tctx, handle)) {
 			ret = false;
 		}
 
@@ -2763,6 +2746,107 @@ struct torture_suite *torture_rpc_lsa_lookup_names(TALLOC_CTX *mem_ctx)
 						  &ndr_table_lsarpc);
 	torture_rpc_tcase_add_test(tcase, "LookupNames",
 				   testcase_LookupNames);
+
+	return suite;
+}
+
+static bool testcase_TrustedDomains(struct torture_context *tctx,
+				    struct dcerpc_pipe *p)
+{
+	bool ret = true;
+	struct policy_handle *handle;
+
+	if (!test_OpenPolicy(p, tctx)) {
+		ret = false;
+	}
+
+	if (!test_lsa_OpenPolicy2(p, tctx, &handle)) {
+		ret = false;
+	}
+
+	if (!handle) {
+		ret = false;
+	}
+
+	if (!test_CreateTrustedDomain(p, tctx, handle)) {
+		ret = false;
+	}
+
+	if (!test_CreateTrustedDomainEx2(p, tctx, handle)) {
+		ret = false;
+	}
+
+	if (!test_lsa_Close(p, tctx, handle)) {
+		ret = false;
+	}
+
+	return ret;
+}
+
+struct torture_suite *torture_rpc_lsa_trusted_domains(TALLOC_CTX *mem_ctx)
+{
+	struct torture_suite *suite;
+	struct torture_rpc_tcase *tcase;
+
+	suite = torture_suite_create(mem_ctx, "LSA-TRUSTED-DOMAINS");
+
+	tcase = torture_suite_add_rpc_iface_tcase(suite, "lsa",
+						  &ndr_table_lsarpc);
+	torture_rpc_tcase_add_test(tcase, "TrustedDomains",
+				   testcase_TrustedDomains);
+
+	return suite;
+}
+
+static bool testcase_Privileges(struct torture_context *tctx,
+				struct dcerpc_pipe *p)
+{
+	bool ret = true;
+	struct policy_handle *handle;
+
+	if (!test_OpenPolicy(p, tctx)) {
+		ret = false;
+	}
+
+	if (!test_lsa_OpenPolicy2(p, tctx, &handle)) {
+		ret = false;
+	}
+
+	if (!handle) {
+		ret = false;
+	}
+
+	if (!test_CreateAccount(p, tctx, handle)) {
+		ret = false;
+	}
+
+	if (!test_EnumAccounts(p, tctx, handle)) {
+		ret = false;
+	}
+
+	if (!test_EnumPrivs(p, tctx, handle)) {
+		ret = false;
+	}
+
+	if (!test_lsa_Close(p, tctx, handle)) {
+		ret = false;
+	}
+
+	return ret;
+}
+
+
+struct torture_suite *torture_rpc_lsa_privileges(TALLOC_CTX *mem_ctx)
+{
+	struct torture_suite *suite;
+	struct torture_rpc_tcase *tcase;
+
+	suite = torture_suite_create(mem_ctx, "LSA-PRIVILEGES");
+
+	tcase = torture_suite_add_rpc_iface_tcase(suite, "lsa",
+						  &ndr_table_lsarpc);
+	torture_rpc_tcase_add_test(tcase, "Privileges",
+				   testcase_Privileges);
 
 	return suite;
 }

@@ -85,7 +85,6 @@ typedef struct {
 PyObject *PyLdbTree_FromTree(struct ldb_parse_tree *);
 #define PyLdbTree_AsTree(pyobj) ((PyLdbTreeObject *)pyobj)->tree
 
-void PyErr_SetLdbError(PyObject *exctype, int ret, struct ldb_context *ldb_ctx);
 #define PyErr_LDB_ERROR_IS_ERR_RAISE(err,ret,ldb) \
 	if (ret != LDB_SUCCESS) { \
 		PyErr_SetLdbError(err, ret, ldb); \

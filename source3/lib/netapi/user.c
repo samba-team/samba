@@ -770,7 +770,7 @@ static uint32_t samr_acb_flags_to_netapi_flags(uint32_t acb)
 {
 	uint32_t fl = UF_SCRIPT; /* god knows why */
 
-	fl |= ads_acb2uf(acb);
+	fl |= ds_acb2uf(acb);
 
 	return fl;
 }

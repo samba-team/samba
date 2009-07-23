@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    Utility functions for the dbwrap API
    Copyright (C) Volker Lendecke 2007
+   Copyright (C) Michael Adam 2009
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -178,96 +179,77 @@ int32 dbwrap_change_int32_atomic(struct db_context *db, const char *keystr,
 	return 0;
 }
 
-NTSTATUS dbwrap_trans_store(struct db_context *db, TDB_DATA key, TDB_DATA dbuf,
-			    int flag)
+struct dbwrap_store_context {
+	TDB_DATA *key;
+	TDB_DATA *dbuf;
+	int flag;
+};
+
+static NTSTATUS dbwrap_store_action(struct db_context *db, void *private_data)
 {
-	int res;
 	struct db_record *rec = NULL;
 	NTSTATUS status;
+	struct dbwrap_store_context *store_ctx;
 
-	res = db->transaction_start(db);
-	if (res != 0) {
-		DEBUG(5, ("transaction_start failed\n"));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
+	store_ctx = (struct dbwrap_store_context *)private_data;
 
-	rec = db->fetch_locked(db, talloc_tos(), key);
+	rec = db->fetch_locked(db, talloc_tos(), *(store_ctx->key));
 	if (rec == NULL) {
 		DEBUG(5, ("fetch_locked failed\n"));
-		status = NT_STATUS_NO_MEMORY;
-		goto cancel;
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = rec->store(rec, dbuf, flag);
+	status = rec->store(rec, *(store_ctx->dbuf), store_ctx->flag);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("store returned %s\n", nt_errstr(status)));
-		goto cancel;
 	}
 
 	TALLOC_FREE(rec);
-
-	res = db->transaction_commit(db);
-	if (res != 0) {
-		DEBUG(5, ("tdb_transaction_commit failed\n"));
-		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
-		TALLOC_FREE(rec);
-		return status;
-	}
-
-	return NT_STATUS_OK;
-
- cancel:
-	TALLOC_FREE(rec);
-
-	if (db->transaction_cancel(db) != 0) {
-		smb_panic("Cancelling transaction failed");
-	}
 	return status;
 }
 
-NTSTATUS dbwrap_trans_delete(struct db_context *db, TDB_DATA key)
+NTSTATUS dbwrap_trans_store(struct db_context *db, TDB_DATA key, TDB_DATA dbuf,
+			    int flag)
 {
-	int res;
-	struct db_record *rec = NULL;
 	NTSTATUS status;
+	struct dbwrap_store_context store_ctx;
 
-	res = db->transaction_start(db);
-	if (res != 0) {
-		DEBUG(5, ("transaction_start failed\n"));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
+	store_ctx.key = &key;
+	store_ctx.dbuf = &dbuf;
+	store_ctx.flag = flag;
 
-	rec = db->fetch_locked(db, talloc_tos(), key);
+	status = dbwrap_trans_do(db, dbwrap_store_action, &store_ctx);
+
+	return status;
+}
+
+static NTSTATUS dbwrap_delete_action(struct db_context * db, void *private_data)
+{
+	NTSTATUS status;
+	struct db_record *rec;
+	TDB_DATA *key = (TDB_DATA *)private_data;
+
+	rec = db->fetch_locked(db, talloc_tos(), *key);
 	if (rec == NULL) {
 		DEBUG(5, ("fetch_locked failed\n"));
-		status = NT_STATUS_NO_MEMORY;
-		goto cancel;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	status = rec->delete_rec(rec);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("delete_rec returned %s\n", nt_errstr(status)));
-		goto cancel;
 	}
 
-	TALLOC_FREE(rec);
+	talloc_free(rec);
+	return  status;
+}
 
-	res = db->transaction_commit(db);
-	if (res != 0) {
-		DEBUG(5, ("tdb_transaction_commit failed\n"));
-		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
-		TALLOC_FREE(rec);
-		return status;		
-	}
+NTSTATUS dbwrap_trans_delete(struct db_context *db, TDB_DATA key)
+{
+	NTSTATUS status;
 
-	return NT_STATUS_OK;
+	status = dbwrap_trans_do(db, dbwrap_delete_action, &key);
 
- cancel:
-	TALLOC_FREE(rec);
-
-	if (db->transaction_cancel(db) != 0) {
-		smb_panic("Cancelling transaction failed");
-	}
 	return status;
 }
 
@@ -306,4 +288,87 @@ NTSTATUS dbwrap_trans_store_bystring(struct db_context *db, const char *key,
 NTSTATUS dbwrap_trans_delete_bystring(struct db_context *db, const char *key)
 {
 	return dbwrap_trans_delete(db, string_term_tdb_data(key));
+}
+
+/**
+ * Wrap db action(s) into a transaction.
+ */
+NTSTATUS dbwrap_trans_do(struct db_context *db,
+			 NTSTATUS (*action)(struct db_context *, void *),
+			 void *private_data)
+{
+	int res;
+	NTSTATUS status;
+
+	res = db->transaction_start(db);
+	if (res != 0) {
+		DEBUG(5, ("transaction_start failed\n"));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	status = action(db, private_data);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (db->transaction_cancel(db) != 0) {
+			smb_panic("Cancelling transaction failed");
+		}
+		return status;
+	}
+
+	res = db->transaction_commit(db);
+	if (res == 0) {
+		return NT_STATUS_OK;
+	}
+
+	DEBUG(2, ("transaction_commit failed\n"));
+	return NT_STATUS_INTERNAL_DB_CORRUPTION;
+}
+
+NTSTATUS dbwrap_delete_bystring_upper(struct db_context *db, const char *key)
+{
+	char *key_upper;
+	NTSTATUS status;
+
+	key_upper = talloc_strdup_upper(talloc_tos(), key);
+	if (key_upper == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = dbwrap_delete_bystring(db, key_upper);
+
+	talloc_free(key_upper);
+	return status;
+}
+
+NTSTATUS dbwrap_store_bystring_upper(struct db_context *db, const char *key,
+				     TDB_DATA data, int flags)
+{
+	char *key_upper;
+	NTSTATUS status;
+
+	key_upper = talloc_strdup_upper(talloc_tos(), key);
+	if (key_upper == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = dbwrap_store_bystring(db, key_upper, data, flags);
+
+	talloc_free(key_upper);
+	return status;
+}
+
+TDB_DATA dbwrap_fetch_bystring_upper(struct db_context *db, TALLOC_CTX *mem_ctx,
+				     const char *key)
+{
+	char *key_upper;
+	TDB_DATA result;
+
+	key_upper = talloc_strdup_upper(talloc_tos(), key);
+	if (key_upper == NULL) {
+		return make_tdb_data(NULL, 0);
+	}
+
+	result = dbwrap_fetch_bystring(db, mem_ctx, key_upper);
+
+	talloc_free(key_upper);
+	return result;
 }

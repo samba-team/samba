@@ -492,6 +492,7 @@ check_tgs_flags(krb5_context context,
 static krb5_error_code
 check_constrained_delegation(krb5_context context,
 			     krb5_kdc_configuration *config,
+			     HDB *clientdb,
 			     hdb_entry_ex *client,
 			     krb5_const_principal server)
 {
@@ -499,21 +500,32 @@ check_constrained_delegation(krb5_context context,
     krb5_error_code ret;
     int i;
 
-    ret = hdb_entry_get_ConstrainedDelegACL(&client->entry, &acl);
-    if (ret) {
-	krb5_clear_error_message(context);
-	return ret;
-    }
+    /* if client delegates to itself, that ok */
+    if (krb5_principal_compare(context, client->entry.principal, server) == TRUE)
+	return 0;
 
-    if (acl) {
-	for (i = 0; i < acl->len; i++) {
-	    if (krb5_principal_compare(context, server, &acl->val[i]) == TRUE)
-		return 0;
+    if (clientdb->hdb_check_constrained_delegation) {
+	ret = clientdb->hdb_check_constrained_delegation(context, clientdb, client, server);
+	if (ret == 0)
+	    return 0;
+    } else {
+	ret = hdb_entry_get_ConstrainedDelegACL(&client->entry, &acl);
+	if (ret) {
+	    krb5_clear_error_message(context);
+	    return ret;
 	}
+	
+	if (acl) {
+	    for (i = 0; i < acl->len; i++) {
+		if (krb5_principal_compare(context, server, &acl->val[i]) == TRUE)
+		    return 0;
+	    }
+	}
+	ret = KRB5KDC_ERR_BADOPTION;
     }
     kdc_log(context, config, 0,
 	    "Bad request for constrained delegation");
-    return KRB5KDC_ERR_BADOPTION;
+    return ret;
 }
 
 /*
@@ -793,17 +805,34 @@ tgs_make_reply(krb5_context context,
     et.flags.hw_authent  = tgt->flags.hw_authent;
     et.flags.anonymous   = tgt->flags.anonymous;
     et.flags.ok_as_delegate = server->entry.flags.ok_as_delegate;
-	
-    if (auth_data) {
-	/* XXX Check enc-authorization-data */
-	et.authorization_data = calloc(1, sizeof(*et.authorization_data));
-	if (et.authorization_data == NULL) {
-	    ret = ENOMEM;
-	    goto out;
-	}
-	ret = copy_AuthorizationData(auth_data, et.authorization_data);
+
+    if(rspac->length) {
+	/*
+	 * No not need to filter out the any PAC from the
+	 * auth_data since it's signed by the KDC.
+	 */
+	ret = _kdc_tkt_add_if_relevant_ad(context, &et,
+					  KRB5_AUTHDATA_WIN2K_PAC, rspac);
 	if (ret)
 	    goto out;
+    }
+	
+    if (auth_data) {
+	unsigned int i = 0;
+
+	/* XXX check authdata */
+	if (et.authorization_data == NULL) {
+	    ret = ENOMEM;
+	    krb5_set_error_message(context, ret, "malloc: out of memory");
+	    goto out;
+	}
+	for(i = 0; i < auth_data->len ; i++) {
+	    ret = add_AuthorizationData(et.authorization_data, &auth_data->val[i]);
+	    if (ret) {
+		krb5_set_error_message(context, ret, "malloc: out of memory");
+		goto out;
+	    }
+	}
 
 	/* Filter out type KRB5SignedPath */
 	ret = find_KRB5SignedPath(context, et.authorization_data, NULL);
@@ -818,18 +847,6 @@ tgs_make_reply(krb5_context context,
 		ad->len--;
 	    }
 	}
-    }
-
-    if(rspac->length) {
-	/*
-	 * No not need to filter out the any PAC from the
-	 * auth_data since it's signed by the KDC.
-	 */
-	ret = _kdc_tkt_add_if_relevant_ad(context, &et,
-					  KRB5_AUTHDATA_WIN2K_PAC,
-					  rspac);
-	if (ret)
-	    goto out;
     }
 
     ret = krb5_copy_keyblock_contents(context, sessionkey, &et.key);
@@ -1369,6 +1386,7 @@ tgs_build_reply(krb5_context context,
     krb5_principal client_principal = NULL;
     char *spn = NULL, *cpn = NULL;
     hdb_entry_ex *server = NULL, *client = NULL;
+    HDB *clientdb;
     krb5_realm ref_realm = NULL;
     EncTicketPart *tgt = &ticket->ticket;
     krb5_principals spp = NULL;
@@ -1531,7 +1549,7 @@ server_lookup:
     }
 
     ret = _kdc_db_fetch(context, config, cp, HDB_F_GET_CLIENT | HDB_F_CANON,
-			NULL, &client);
+			&clientdb, &client);
     if(ret) {
 	const char *krbtgt_realm;
 
@@ -1792,7 +1810,7 @@ server_lookup:
 	if (ret) {
 	    kdc_log(context, config, 0,
 		    "failed to decrypt ticket for "
-		    "constrained delegation from %s to %s ", spn, cpn);
+		    "constrained delegation from %s to %s ", cpn, spn);
 	    goto out;
 	}
 
@@ -1800,16 +1818,17 @@ server_lookup:
 	if (adtkt.flags.forwardable == 0) {
 	    kdc_log(context, config, 0,
 		    "Missing forwardable flag on ticket for "
-		    "constrained delegation from %s to %s ", spn, cpn);
+		    "constrained delegation from %s to %s ", cpn, spn);
 	    ret = KRB5KDC_ERR_BADOPTION;
 	    goto out;
 	}
 
-	ret = check_constrained_delegation(context, config, client, sp);
+	ret = check_constrained_delegation(context, config, clientdb, 
+					   client, sp);
 	if (ret) {
 	    kdc_log(context, config, 0,
 		    "constrained delegation from %s to %s not allowed",
-		    spn, cpn);
+		    cpn, spn);
 	    goto out;
 	}
 

@@ -3245,6 +3245,13 @@ static bool api_spoolss_CreatePrinterIC(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(spoolss_CreatePrinterIC, r);
 	}
 
+	ZERO_STRUCT(r->out);
+	r->out.gdi_handle = talloc_zero(r, struct policy_handle);
+	if (r->out.gdi_handle == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
 	r->out.result = _spoolss_CreatePrinterIC(p, r);
 
 	if (p->rng_fault_state) {
@@ -3391,6 +3398,8 @@ static bool api_spoolss_DeletePrinterIC(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(spoolss_DeletePrinterIC, r);
 	}
 
+	ZERO_STRUCT(r->out);
+	r->out.gdi_handle = r->in.gdi_handle;
 	r->out.result = _spoolss_DeletePrinterIC(p, r);
 
 	if (p->rng_fault_state) {
@@ -8068,6 +8077,12 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 
 		case NDR_SPOOLSS_CREATEPRINTERIC: {
 			struct spoolss_CreatePrinterIC *r = (struct spoolss_CreatePrinterIC *)_r;
+			ZERO_STRUCT(r->out);
+			r->out.gdi_handle = talloc_zero(mem_ctx, struct policy_handle);
+			if (r->out.gdi_handle == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
 			r->out.result = _spoolss_CreatePrinterIC(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
@@ -8080,6 +8095,8 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 
 		case NDR_SPOOLSS_DELETEPRINTERIC: {
 			struct spoolss_DeletePrinterIC *r = (struct spoolss_DeletePrinterIC *)_r;
+			ZERO_STRUCT(r->out);
+			r->out.gdi_handle = r->in.gdi_handle;
 			r->out.result = _spoolss_DeletePrinterIC(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}

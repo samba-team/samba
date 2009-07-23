@@ -1,33 +1,31 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
-   helper mapping functions for the SAMDB server
-   
+   helper mapping functions for the UF and ACB flags
+
    Copyright (C) Stefan (metze) Metzmacher 2002
    Copyright (C) Andrew Tridgell 2004
-  
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "includes.h"
 #include "librpc/gen_ndr/samr.h"
-#include "dsdb/common/flags.h"
-#include "lib/ldb/include/ldb.h"
-#include "dsdb/common/proto.h"
+#include "../libds/common/flags.h"
 
-/* 
-translated the ACB_CTRL Flags to UserFlags (userAccountControl) 
-*/ 
+/*
+translated the ACB_CTRL Flags to UserFlags (userAccountControl)
+*/
 /* mapping between ADS userAccountControl and SAMR acct_flags */
 static const struct {
 	uint32_t uf;
@@ -54,7 +52,7 @@ static const struct {
 	{ UF_NO_AUTH_DATA_REQUIRED, ACB_NO_AUTH_DATA_REQD }
 };
 
-uint32_t samdb_acb2uf(uint32_t acb)
+uint32_t ds_acb2uf(uint32_t acb)
 {
 	uint32_t i, ret = 0;
 	for (i=0;i<ARRAY_SIZE(acct_flags_map);i++) {
@@ -68,7 +66,7 @@ uint32_t samdb_acb2uf(uint32_t acb)
 /*
 translated the UserFlags (userAccountControl) to ACB_CTRL Flags
 */
-uint32_t samdb_uf2acb(uint32_t uf)
+uint32_t ds_uf2acb(uint32_t uf)
 {
 	uint32_t i;
 	uint32_t ret = 0;
@@ -80,13 +78,13 @@ uint32_t samdb_uf2acb(uint32_t uf)
 	return ret;
 }
 
-/* 
+/*
 get the accountType from the UserFlags
 */
-uint32_t samdb_uf2atype(uint32_t uf)
+uint32_t ds_uf2atype(uint32_t uf)
 {
 	uint32_t atype = 0x00000000;
-		
+
 	if (uf & UF_NORMAL_ACCOUNT)			atype = ATYPE_NORMAL_ACCOUNT;
 	else if (uf & UF_TEMP_DUPLICATE_ACCOUNT)	atype = ATYPE_NORMAL_ACCOUNT;
 	else if (uf & UF_SERVER_TRUST_ACCOUNT)		atype = ATYPE_WORKSTATION_TRUST;
@@ -94,15 +92,15 @@ uint32_t samdb_uf2atype(uint32_t uf)
 	else if (uf & UF_INTERDOMAIN_TRUST_ACCOUNT)	atype = ATYPE_INTERDOMAIN_TRUST;
 
 	return atype;
-} 
+}
 
-/* 
+/*
 get the accountType from the groupType
 */
-uint32_t samdb_gtype2atype(uint32_t gtype)
+uint32_t ds_gtype2atype(uint32_t gtype)
 {
 	uint32_t atype = 0x00000000;
-	
+
 	switch(gtype) {
 		case GTYPE_SECURITY_BUILTIN_LOCAL_GROUP:
 			atype = ATYPE_SECURITY_LOCAL_GROUP;
@@ -113,7 +111,7 @@ uint32_t samdb_gtype2atype(uint32_t gtype)
 		case GTYPE_SECURITY_GLOBAL_GROUP:
 			atype = ATYPE_SECURITY_GLOBAL_GROUP;
 			break;
-	
+
 		case GTYPE_DISTRIBUTION_GLOBAL_GROUP:
 			atype = ATYPE_DISTRIBUTION_GLOBAL_GROUP;
 			break;
@@ -129,7 +127,7 @@ uint32_t samdb_gtype2atype(uint32_t gtype)
 }
 
 /* turn a sAMAccountType into a SID_NAME_USE */
-enum lsa_SidType samdb_atype_map(uint32_t atype)
+enum lsa_SidType ds_atype_map(uint32_t atype)
 {
 	switch (atype & 0xF0000000) {
 	case ATYPE_GLOBAL_GROUP:

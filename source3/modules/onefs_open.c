@@ -81,7 +81,6 @@ static NTSTATUS onefs_open_file(files_struct *fsp,
 				struct security_descriptor *sd,
 				int *granted_oplock)
 {
-	char *path = NULL;
 	struct smb_filename *smb_fname_onefs = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	int accmode = (flags & O_ACCMODE);
@@ -157,7 +156,7 @@ static NTSTATUS onefs_open_file(files_struct *fsp,
 		 * wildcard characters are allowed in stream names
 		 * only test the basefilename
 		 */
-		wild = fsp->base_fsp->fsp_name;
+		wild = fsp->base_fsp->fsp_name->base_name;
 	} else {
 		wild = smb_fname->base_name;
 	}
@@ -323,14 +322,12 @@ static NTSTATUS onefs_open_file(files_struct *fsp,
 		fsp->aio_write_behind = True;
 	}
 
-	status = get_full_smb_filename(talloc_tos(), smb_fname,
-				       &path);
+	status = fsp_set_smb_fname(fsp, smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
+		fd_close(fsp);
+		errno = map_errno_from_nt_status(status);
 		return status;
 	}
-
-	string_set(&fsp->fsp_name, path);
-	TALLOC_FREE(path);
 
 	fsp->wcp = NULL; /* Write cache pointer. */
 
@@ -1592,7 +1589,12 @@ static NTSTATUS onefs_open_directory(connection_struct *conn,
 	fsp->is_directory = True;
 	fsp->posix_open = posix_open;
 
-	string_set(&fsp->fsp_name, smb_dname->base_name);
+	status = fsp_set_smb_fname(fsp, smb_dname);
+	if (!NT_STATUS_IS_OK(status)) {
+		fd_close(fsp);
+		file_free(req, fsp);
+		return status;
+	}
 
 	mtimespec = smb_dname->st.st_ex_mtime;
 

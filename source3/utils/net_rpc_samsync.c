@@ -379,8 +379,8 @@ NTSTATUS rpc_vampire_keytab_internals(struct net_context *c,
 	ctx->cli		= pipe_hnd;
 	ctx->ops		= &libnet_samsync_keytab_ops;
 	ctx->domain_name	= domain_name;
-	ctx->username		= get_cmdline_auth_info_username(c->auth_info);
-	ctx->password		= get_cmdline_auth_info_password(c->auth_info);
+	ctx->username		= c->opt_user_name;
+	ctx->password		= c->opt_password;
 
 	ctx->force_full_replication = c->opt_force_full_repl ? true : false;
 	ctx->clean_old_entries = c->opt_clean_old_entries ? true : false;
@@ -493,17 +493,20 @@ int rpc_vampire_keytab(struct net_context *c, int argc, const char **argv)
 
 	if (!dc_info.is_ad) {
 		printf("DC is not running Active Directory\n");
-		return -1;
-	}
-
-	if (dc_info.is_mixed_mode) {
 		ret = run_rpc_command(c, cli, &ndr_table_netlogon.syntax_id,
 				      0,
 				      rpc_vampire_keytab_internals, argc, argv);
+		return -1;
 	} else {
 		ret = run_rpc_command(c, cli, &ndr_table_drsuapi.syntax_id,
 				      NET_FLAGS_SEAL,
 				      rpc_vampire_keytab_ds_internals, argc, argv);
+		if (ret != 0 && dc_info.is_mixed_mode) {
+			printf("Fallback to NT4 vampire on Mixed-Mode AD Domain\n");
+			ret = run_rpc_command(c, cli, &ndr_table_netlogon.syntax_id,
+					      0,
+					      rpc_vampire_keytab_internals, argc, argv);
+		}
 	}
 
 	return ret;

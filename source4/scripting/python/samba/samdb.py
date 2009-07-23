@@ -231,6 +231,14 @@ userPassword:: %s
         """
         glue.dsdb_set_ntds_invocation_id(self, invocation_id)
 
+    def set_opaque_integer(self, name, value):
+        """Set an integer as an opaque (a flag or other value) value on the database
+        
+        :param name: The name for the opaque value
+        :param value: The integer value
+        """
+        glue.dsdb_set_opaque_integer(self, name, value)
+
     def setexpiry(self, user, expiry_seconds, noexpiry):
         """Set the account expiry for a user
         

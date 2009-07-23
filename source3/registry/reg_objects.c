@@ -63,6 +63,29 @@ WERROR regsubkey_ctr_init(TALLOC_CTX *mem_ctx, struct regsubkey_ctr **ctr)
 	return WERR_OK;
 }
 
+/**
+ * re-initialize the list of subkeys (to the emtpy list)
+ * in an already allocated regsubkey_ctr
+ */
+
+WERROR regsubkey_ctr_reinit(struct regsubkey_ctr *ctr)
+{
+	if (ctr == NULL) {
+		return WERR_INVALID_PARAM;
+	}
+
+	talloc_free(ctr->subkeys_hash);
+	ctr->subkeys_hash = db_open_rbt(ctr);
+	W_ERROR_HAVE_NO_MEMORY(ctr->subkeys_hash);
+
+	TALLOC_FREE(ctr->subkeys);
+
+	ctr->num_subkeys = 0;
+	ctr->seqnum = 0;
+
+	return WERR_OK;
+}
+
 WERROR regsubkey_ctr_set_seqnum(struct regsubkey_ctr *ctr, int seqnum)
 {
 	if (ctr == NULL) {
@@ -89,7 +112,7 @@ static WERROR regsubkey_ctr_hash_keyname(struct regsubkey_ctr *ctr,
 {
 	WERROR werr;
 
-	werr = ntstatus_to_werror(dbwrap_store_bystring(ctr->subkeys_hash,
+	werr = ntstatus_to_werror(dbwrap_store_bystring_upper(ctr->subkeys_hash,
 						keyname,
 						make_tdb_data((uint8 *)&idx,
 							      sizeof(idx)),
@@ -107,7 +130,7 @@ static WERROR regsubkey_ctr_unhash_keyname(struct regsubkey_ctr *ctr,
 {
 	WERROR werr;
 
-	werr = ntstatus_to_werror(dbwrap_delete_bystring(ctr->subkeys_hash,
+	werr = ntstatus_to_werror(dbwrap_delete_bystring_upper(ctr->subkeys_hash,
 				  keyname));
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(1, ("error unhashing key '%s' in container: %s\n",
@@ -127,7 +150,7 @@ static WERROR regsubkey_ctr_index_for_keyname(struct regsubkey_ctr *ctr,
 		return WERR_INVALID_PARAM;
 	}
 
-	data = dbwrap_fetch_bystring(ctr->subkeys_hash, ctr, keyname);
+	data = dbwrap_fetch_bystring_upper(ctr->subkeys_hash, ctr, keyname);
 	if (data.dptr == NULL) {
 		return WERR_NOT_FOUND;
 	}

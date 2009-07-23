@@ -33,8 +33,6 @@
 
 #include "gsskrb5_locl.h"
 
-RCSID("$Id$");
-
 /*
  * Return initiator subkey, or if that doesn't exists, the subkey.
  */
@@ -540,7 +538,7 @@ OM_uint32 _gsskrb5_wrap
 
   if (ctx->more_flags & IS_CFX)
       return _gssapi_wrap_cfx (minor_status, ctx, context, conf_req_flag,
-			       qop_req, input_message_buffer, conf_state,
+			       input_message_buffer, conf_state,
 			       output_message_buffer);
 
   HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);

@@ -202,7 +202,7 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 		"expiry time (%u sec. %u usec) (+%d msec) for fnum = %d, name = %s\n",
 		(unsigned int)blr->expire_time.tv_sec,
 		(unsigned int)blr->expire_time.tv_usec, lock_timeout,
-		blr->fsp->fnum, blr->fsp->fsp_name ));
+		blr->fsp->fnum, fsp_str_dbg(blr->fsp)));
 
 	return True;
 }
@@ -418,8 +418,9 @@ static bool process_lockingX(struct blocking_lock_record *blr)
 		 * Success - we got all the locks.
 		 */
 
-		DEBUG(3,("process_lockingX file = %s, fnum=%d type=%d num_locks=%d\n",
-			 fsp->fsp_name, fsp->fnum, (unsigned int)locktype, num_locks) );
+		DEBUG(3,("process_lockingX file = %s, fnum=%d type=%d "
+			 "num_locks=%d\n", fsp_str_dbg(fsp), fsp->fnum,
+			 (unsigned int)locktype, num_locks));
 
 		reply_lockingX_success(blr);
 		return True;
@@ -442,7 +443,7 @@ static bool process_lockingX(struct blocking_lock_record *blr)
 
 	DEBUG(10,("process_lockingX: only got %d locks of %d needed for file %s, fnum = %d. \
 Waiting....\n", 
-		  blr->lock_num, num_locks, fsp->fsp_name, fsp->fnum));
+		 blr->lock_num, num_locks, fsp_str_dbg(fsp), fsp->fnum));
 
 	return False;
 }
@@ -533,7 +534,7 @@ void cancel_pending_lock_requests_by_fid(files_struct *fsp, struct byte_range_lo
 
 		DEBUG(10, ("remove_pending_lock_requests_by_fid - removing "
 			   "request type %d for file %s fnum = %d\n",
-			   blr->req->cmd, fsp->fsp_name, fsp->fnum));
+			   blr->req->cmd, fsp_str_dbg(fsp), fsp->fnum));
 
 		blr_cancelled = blocking_lock_cancel(fsp,
 				     blr->lock_pid,
@@ -583,7 +584,7 @@ void remove_pending_lock_requests_by_mid(int mid)
 		if (br_lck) {
 			DEBUG(10, ("remove_pending_lock_requests_by_mid - "
 				   "removing request type %d for file %s fnum "
-				   "= %d\n", blr->req->cmd, fsp->fsp_name,
+				   "= %d\n", blr->req->cmd, fsp_str_dbg(fsp),
 				   fsp->fnum ));
 
 			brl_lock_cancel(br_lck,
@@ -703,7 +704,7 @@ void process_blocking_lock_queue(void)
 				DEBUG(5,("process_blocking_lock_queue: "
 					 "pending lock fnum = %d for file %s "
 					 "timed out.\n", blr->fsp->fnum,
-					 blr->fsp->fsp_name ));
+					 fsp_str_dbg(blr->fsp)));
 
 				brl_lock_cancel(br_lck,
 					blr->lock_pid,

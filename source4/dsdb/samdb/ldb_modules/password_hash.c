@@ -42,7 +42,7 @@
 #include "auth/kerberos/kerberos.h"
 #include "system/time.h"
 #include "dsdb/samdb/samdb.h"
-#include "dsdb/common/flags.h"
+#include "../libds/common/flags.h"
 #include "dsdb/samdb/ldb_modules/password_modules.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
@@ -1026,6 +1026,7 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 	uint8_t zero16[16];
 	bool do_newer_keys = false;
 	bool do_cleartext = false;
+	int *domainFunctionality;
 
 	ZERO_STRUCT(zero16);
 	ZERO_STRUCT(names);
@@ -1064,10 +1065,10 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 					       _old_scb.sub.signature, SUPPLEMENTAL_CREDENTIALS_SIGNATURE);
 		}
 	}
+	/* Per MS-SAMR 3.1.1.8.11.6 we create AES keys if our domain functionality level is 2008 or higher */
+	domainFunctionality = talloc_get_type(ldb_get_opaque(ldb, "domainFunctionality"), int);
 
-	/* TODO: do the correct check for this, it maybe depends on the functional level? */
-	do_newer_keys = lp_parm_bool(ldb_get_opaque(ldb, "loadparm"),
-				     NULL, "password_hash", "create_aes_key", false);
+	do_newer_keys = *domainFunctionality && (*domainFunctionality >= DS_BEHAVIOR_WIN2008);
 
 	if (io->domain->store_cleartext &&
 	    (io->u.user_account_control & UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED)) {
@@ -1399,33 +1400,33 @@ static int setup_password_fields(struct setup_password_fields_io *io)
 		}
 
 		ret = setup_kerberos_keys(io);
-		if (ret != 0) {
+		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
 	}
 
 	ret = setup_nt_fields(io);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 
 	ret = setup_lm_fields(io);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 
 	ret = setup_supplemental_field(io);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 
 	ret = setup_last_set_field(io);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 
 	ret = setup_kvno_field(io);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 
@@ -1648,6 +1649,7 @@ static int get_domain_data_callback(struct ldb_request *req,
 		if (ret != LDB_SUCCESS) {
 			return ldb_module_done(ac->req, NULL, NULL, ret);
 		}
+		break;
 
 	case LDB_REPLY_REFERRAL:
 		/* ignore */

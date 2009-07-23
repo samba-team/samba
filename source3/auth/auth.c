@@ -82,7 +82,6 @@ static void get_ntlm_challenge(struct auth_context *auth_context,
 	DATA_BLOB challenge = data_blob_null;
 	const char *challenge_set_by = NULL;
 	auth_methods *auth_method;
-	TALLOC_CTX *mem_ctx;
 
 	if (auth_context->challenge.length) {
 		DEBUG(5, ("get_ntlm_challenge (auth subsystem): returning previous challenge by module %s (normal)\n", 
@@ -106,12 +105,8 @@ static void get_ntlm_challenge(struct auth_context *auth_context,
 			continue;
 		}
 
-		mem_ctx = talloc_init("auth_get_challenge for module %s", auth_method->name);
-		if (!mem_ctx) {
-			smb_panic("talloc_init() failed!");
-		}
-
-		challenge = auth_method->get_chal(auth_context, &auth_method->private_data, mem_ctx);
+		challenge = auth_method->get_chal(auth_context, &auth_method->private_data,
+					auth_context->mem_ctx);
 		if (!challenge.length) {
 			DEBUG(3, ("auth_get_challenge: getting challenge from authentication method %s FAILED.\n", 
 				  auth_method->name));
@@ -121,7 +116,6 @@ static void get_ntlm_challenge(struct auth_context *auth_context,
 			challenge_set_by = auth_method->name;
 			auth_context->challenge_set_method = auth_method;
 		}
-		talloc_destroy(mem_ctx);
 	}
 
 	if (!challenge_set_by) {

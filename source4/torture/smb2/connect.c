@@ -200,6 +200,8 @@ bool torture_smb2_connect(struct torture_context *torture)
 		return false;
 	}
 
+	smb2_util_unlink(tree, "test9.dat");
+
 	h1 = torture_smb2_createfile(tree, "test9.dat");
 	h2 = torture_smb2_createfile(tree, "test9.dat");
 	status = torture_smb2_write(torture, tree, h1);

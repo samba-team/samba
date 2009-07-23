@@ -290,16 +290,16 @@ bool check_access(int sock, const char **allow_list, const char **deny_list);
 /* The following definitions come from lib/account_pol.c  */
 
 void account_policy_names_list(const char ***names, int *num_names);
-const char *decode_account_policy_name(int field);
-const char *get_account_policy_attr(int field);
-const char *account_policy_get_desc(int field);
-int account_policy_name_to_fieldnum(const char *name);
-bool account_policy_get_default(int account_policy, uint32 *val);
+const char *decode_account_policy_name(enum pdb_policy_type type);
+const char *get_account_policy_attr(enum pdb_policy_type type);
+const char *account_policy_get_desc(enum pdb_policy_type type);
+enum pdb_policy_type account_policy_name_to_typenum(const char *name);
+bool account_policy_get_default(enum pdb_policy_type type, uint32_t *val);
 bool init_account_policy(void);
-bool account_policy_get(int field, uint32 *value);
-bool account_policy_set(int field, uint32 value);
-bool cache_account_policy_set(int field, uint32 value);
-bool cache_account_policy_get(int field, uint32 *value);
+bool account_policy_get(enum pdb_policy_type type, uint32_t *value);
+bool account_policy_set(enum pdb_policy_type type, uint32_t value);
+bool cache_account_policy_set(enum pdb_policy_type type, uint32_t value);
+bool cache_account_policy_get(enum pdb_policy_type type, uint32_t *value);
 struct db_context *get_account_pol_db( void );
 
 /* The following definitions come from lib/adt_tree.c  */
@@ -454,6 +454,14 @@ NTSTATUS dbwrap_trans_store_uint32(struct db_context *db, const char *keystr,
 NTSTATUS dbwrap_trans_store_bystring(struct db_context *db, const char *key,
 				     TDB_DATA data, int flags);
 NTSTATUS dbwrap_trans_delete_bystring(struct db_context *db, const char *key);
+NTSTATUS dbwrap_trans_do(struct db_context *db,
+			 NTSTATUS (*action)(struct db_context *, void *),
+			 void *private_data);
+NTSTATUS dbwrap_delete_bystring_upper(struct db_context *db, const char *key);
+NTSTATUS dbwrap_store_bystring_upper(struct db_context *db, const char *key,
+				     TDB_DATA data, int flags);
+TDB_DATA dbwrap_fetch_bystring_upper(struct db_context *db, TALLOC_CTX *mem_ctx,
+				     const char *key);
 
 /* The following definitions come from lib/debug.c  */
 
@@ -515,17 +523,15 @@ void pull_file_id_24(char *buf, struct file_id *id);
 
 /* The following definitions come from lib/gencache.c  */
 
-bool gencache_init(void);
-bool gencache_shutdown(void);
 bool gencache_set(const char *keystr, const char *value, time_t timeout);
 bool gencache_del(const char *keystr);
 bool gencache_get(const char *keystr, char **valstr, time_t *timeout);
-bool gencache_get_data_blob(const char *keystr, DATA_BLOB *blob, bool *expired);
+bool gencache_get_data_blob(const char *keystr, DATA_BLOB *blob,
+			    time_t *timeout);
+bool gencache_stabilize(void);
 bool gencache_set_data_blob(const char *keystr, const DATA_BLOB *blob, time_t timeout);
 void gencache_iterate(void (*fn)(const char* key, const char *value, time_t timeout, void* dptr),
                       void* data, const char* keystr_pattern);
-int gencache_lock_entry( const char *key );
-void gencache_unlock_entry( const char *key );
 
 /* The following definitions come from lib/interface.c  */
 
@@ -554,7 +560,7 @@ void init_ldap_debugging(void);
 
 /* The following definitions come from lib/ldap_escape.c  */
 
-char *escape_ldap_string_alloc(const char *s);
+char *escape_ldap_string(TALLOC_CTX *mem_ctx, const char *s);
 char *escape_rdn_val_string_alloc(const char *s);
 
 /* The following definitions come from lib/module.c  */
@@ -1678,13 +1684,6 @@ ADS_STRUCT *ads_init(const char *realm,
 		     const char *ldap_server);
 void ads_destroy(ADS_STRUCT **ads);
 
-/* The following definitions come from libads/ads_utils.c  */
-
-uint32 ads_acb2uf(uint32 acb);
-uint32 ads_uf2acb(uint32 uf);
-uint32 ads_uf2atype(uint32 uf);
-uint32 ads_gtype2atype(uint32 gtype);
-enum lsa_SidType ads_atype_map(uint32 atype);
 const char *ads_get_ldap_server_name(ADS_STRUCT *ads);
 
 /* The following definitions come from libads/authdata.c  */
@@ -2271,13 +2270,6 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 
 /* The following definitions come from libsmb/clidgram.c  */
 
-bool cli_send_mailslot(struct messaging_context *msg_ctx,
-		       bool unique, const char *mailslot,
-		       uint16 priority,
-		       char *buf, int len,
-		       const char *srcname, int src_type,
-		       const char *dstname, int dest_type,
-		       const struct sockaddr_storage *dest_ss);
 bool send_getdc_request(TALLOC_CTX *mem_ctx,
 			struct messaging_context *msg_ctx,
 			struct sockaddr_storage *dc_ss,
@@ -2519,15 +2511,44 @@ NTSTATUS cli_locktype(struct cli_state *cli, uint16_t fnum,
 		      int timeout, unsigned char locktype);
 bool cli_lock(struct cli_state *cli, uint16_t fnum,
 	      uint32_t offset, uint32_t len, int timeout, enum brl_type lock_type);
-bool cli_unlock(struct cli_state *cli, uint16_t fnum, uint32_t offset, uint32_t len);
+struct tevent_req *cli_unlock_send(TALLOC_CTX *mem_ctx,
+                                struct event_context *ev,
+                                struct cli_state *cli,
+                                uint16_t fnum,
+                                uint64_t offset,
+                                uint64_t len);
+NTSTATUS cli_unlock_recv(struct tevent_req *req);
+NTSTATUS cli_unlock(struct cli_state *cli, uint16_t fnum, uint32_t offset, uint32_t len);
 bool cli_lock64(struct cli_state *cli, uint16_t fnum,
 		uint64_t offset, uint64_t len, int timeout, enum brl_type lock_type);
-bool cli_unlock64(struct cli_state *cli, uint16_t fnum, uint64_t offset, uint64_t len);
-bool cli_posix_lock(struct cli_state *cli, uint16_t fnum,
+struct tevent_req *cli_unlock64_send(TALLOC_CTX *mem_ctx,
+                                struct event_context *ev,
+                                struct cli_state *cli,
+                                uint16_t fnum,
+                                uint64_t offset,
+                                uint64_t len);
+NTSTATUS cli_unlock64_recv(struct tevent_req *req);
+NTSTATUS cli_unlock64(struct cli_state *cli, uint16_t fnum, uint64_t offset, uint64_t len);
+struct tevent_req *cli_posix_lock_send(TALLOC_CTX *mem_ctx,
+                                        struct event_context *ev,
+                                        struct cli_state *cli,
+                                        uint16_t fnum,
+                                        uint64_t offset,
+                                        uint64_t len,
+                                        bool wait_lock,
+                                        enum brl_type lock_type);
+NTSTATUS cli_posix_lock_recv(struct tevent_req *req);
+NTSTATUS cli_posix_lock(struct cli_state *cli, uint16_t fnum,
 			uint64_t offset, uint64_t len,
 			bool wait_lock, enum brl_type lock_type);
-bool cli_posix_unlock(struct cli_state *cli, uint16_t fnum, uint64_t offset, uint64_t len);
-bool cli_posix_getlock(struct cli_state *cli, uint16_t fnum, uint64_t *poffset, uint64_t *plen);
+struct tevent_req *cli_posix_unlock_send(TALLOC_CTX *mem_ctx,
+                                        struct event_context *ev,
+                                        struct cli_state *cli,
+                                        uint16_t fnum,
+                                        uint64_t offset,
+                                        uint64_t len);
+NTSTATUS cli_posix_unlock_recv(struct tevent_req *req);
+NTSTATUS cli_posix_unlock(struct cli_state *cli, uint16_t fnum, uint64_t offset, uint64_t len);
 struct tevent_req *cli_getattrE_send(TALLOC_CTX *mem_ctx,
 				struct event_context *ev,
 				struct cli_state *cli,
@@ -4587,8 +4608,8 @@ NTSTATUS pdb_lookup_names(const DOM_SID *domain_sid,
 			  const char **names,
 			  uint32 *rids,
 			  enum lsa_SidType *attrs);
-bool pdb_get_account_policy(int policy_index, uint32 *value);
-bool pdb_set_account_policy(int policy_index, uint32 value);
+bool pdb_get_account_policy(enum pdb_policy_type type, uint32_t *value);
+bool pdb_set_account_policy(enum pdb_policy_type type, uint32_t value);
 bool pdb_get_seq_num(time_t *seq_num);
 bool pdb_uid_to_rid(uid_t uid, uint32 *rid);
 bool pdb_uid_to_sid(uid_t uid, DOM_SID *sid);
@@ -5083,6 +5104,7 @@ WERROR registry_init_smbconf(const char *keyname);
 /* The following definitions come from registry/reg_objects.c  */
 
 WERROR regsubkey_ctr_init(TALLOC_CTX *mem_ctx, struct regsubkey_ctr **ctr);
+WERROR regsubkey_ctr_reinit(struct regsubkey_ctr *ctr);
 WERROR regsubkey_ctr_set_seqnum(struct regsubkey_ctr *ctr, int seqnum);
 int regsubkey_ctr_get_seqnum(struct regsubkey_ctr *ctr);
 WERROR regsubkey_ctr_addkey( struct regsubkey_ctr *ctr, const char *keyname );
@@ -5647,32 +5669,16 @@ void prs_switch_type(prs_struct *ps, bool io);
 void prs_force_dynamic(prs_struct *ps);
 void prs_set_session_key(prs_struct *ps, const char sess_key[16]);
 bool prs_uint8(const char *name, prs_struct *ps, int depth, uint8 *data8);
-bool prs_pointer( const char *name, prs_struct *ps, int depth, 
-                 void *dta, size_t data_size,
-                 bool (*prs_fn)(const char*, prs_struct*, int, void*) );
 bool prs_uint16(const char *name, prs_struct *ps, int depth, uint16 *data16);
 bool prs_uint32(const char *name, prs_struct *ps, int depth, uint32 *data32);
 bool prs_int32(const char *name, prs_struct *ps, int depth, int32 *data32);
 bool prs_uint64(const char *name, prs_struct *ps, int depth, uint64 *data64);
-bool prs_ntstatus(const char *name, prs_struct *ps, int depth, NTSTATUS *status);
 bool prs_dcerpc_status(const char *name, prs_struct *ps, int depth, NTSTATUS *status);
-bool prs_werror(const char *name, prs_struct *ps, int depth, WERROR *status);
 bool prs_uint8s(bool charmode, const char *name, prs_struct *ps, int depth, uint8 *data8s, int len);
 bool prs_uint16s(bool charmode, const char *name, prs_struct *ps, int depth, uint16 *data16s, int len);
-bool prs_uint16uni(bool charmode, const char *name, prs_struct *ps, int depth, uint16 *data16s, int len);
 bool prs_uint32s(bool charmode, const char *name, prs_struct *ps, int depth, uint32 *data32s, int len);
 bool prs_unistr(const char *name, prs_struct *ps, int depth, UNISTR *str);
 bool prs_string(const char *name, prs_struct *ps, int depth, char *str, int max_buf_size);
-bool prs_string_alloc(const char *name, prs_struct *ps, int depth, const char **str);
-bool prs_uint16_pre(const char *name, prs_struct *ps, int depth, uint16 *data16, uint32 *offset);
-bool prs_uint16_post(const char *name, prs_struct *ps, int depth, uint16 *data16,
-				uint32 ptr_uint16, uint32 start_offset);
-bool prs_uint32_pre(const char *name, prs_struct *ps, int depth, uint32 *data32, uint32 *offset);
-bool prs_uint32_post(const char *name, prs_struct *ps, int depth, uint32 *data32,
-				uint32 ptr_uint32, uint32 data_size);
-int tdb_prs_store(TDB_CONTEXT *tdb, TDB_DATA kbuf, prs_struct *ps);
-int tdb_prs_fetch(TDB_CONTEXT *tdb, TDB_DATA kbuf, prs_struct *ps, TALLOC_CTX *mem_ctx);
-bool prs_hash1(prs_struct *ps, uint32 offset, int len);
 void schannel_encode(struct schannel_auth_struct *a, enum pipe_auth_level auth_level,
 		   enum schannel_direction direction,
 		   RPC_AUTH_SCHANNEL_CHK * verf,
@@ -5877,7 +5883,6 @@ void copy_id26_to_sam_passwd(struct samu *to,
 
 /* The following definitions come from rpc_server/srv_spoolss_nt.c  */
 
-WERROR delete_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, const char *sharename );
 void do_drv_upgrade_printer(struct messaging_context *msg,
 			    void *private_data,
 			    uint32_t msg_type,
@@ -5966,9 +5971,7 @@ void construct_info_data(struct spoolss_Notify *info_data,
 			 int id);
 struct spoolss_DeviceMode *construct_dev_mode(TALLOC_CTX *mem_ctx,
 					      const char *servicename);
-WERROR add_port_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, const char *portname, const char *uri );
 bool add_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, NT_PRINTER_INFO_LEVEL *printer);
-WERROR enumports_hook(TALLOC_CTX *ctx, int *count, char ***lines );
 
 /* The following definitions come from rpc_server/srv_srvsvc_nt.c  */
 
@@ -6260,16 +6263,14 @@ void reply_dos_error(struct smb_request *req, uint8 eclass, uint32 ecode,
 void reply_both_error(struct smb_request *req, uint8 eclass, uint32 ecode,
 		      NTSTATUS status, int line, const char *file);
 void reply_openerror(struct smb_request *req, NTSTATUS status);
-void reply_unix_error(struct smb_request *req, uint8 defclass, uint32 defcode,
-			NTSTATUS defstatus, int line, const char *file);
 
 /* The following definitions come from smbd/fake_file.c  */
 
-enum FAKE_FILE_TYPE is_fake_file(const char *fname);
+enum FAKE_FILE_TYPE is_fake_file(const struct smb_filename *smb_fname);
 NTSTATUS open_fake_file(struct smb_request *req, connection_struct *conn,
 				uint16_t current_vuid,
 				enum FAKE_FILE_TYPE fake_file_type,
-				const char *fname,
+				const struct smb_filename *smb_fname,
 				uint32 access_mask,
 				files_struct **result);
 NTSTATUS close_fake_file(struct smb_request *req, files_struct *fsp);
@@ -6306,24 +6307,6 @@ int fsp_stat(files_struct *fsp, SMB_STRUCT_STAT *pst);
 
 /* The following definitions come from smbd/filename.c  */
 
-NTSTATUS get_full_smb_filename(TALLOC_CTX *ctx, const struct smb_filename *smb_fname,
-			      char **full_name);
-NTSTATUS create_synthetic_smb_fname(TALLOC_CTX *ctx, const char *base_name,
-				    const char *stream_name,
-				    const SMB_STRUCT_STAT *psbuf,
-				    struct smb_filename **smb_fname_out);
-NTSTATUS create_synthetic_smb_fname_split(TALLOC_CTX *ctx,
-					  const char *fname,
-					  const SMB_STRUCT_STAT *psbuf,
-					  struct smb_filename **smb_fname_out);
-int vfs_stat_smb_fname(struct connection_struct *conn, const char *fname,
-		       SMB_STRUCT_STAT *psbuf);
-int vfs_lstat_smb_fname(struct connection_struct *conn, const char *fname,
-			SMB_STRUCT_STAT *psbuf);
-const char *smb_fname_str_dbg(const struct smb_filename *smb_fname);
-NTSTATUS copy_smb_filename(TALLOC_CTX *ctx,
-			   const struct smb_filename *smb_fname_in,
-			   struct smb_filename **smb_fname_out);
 NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		      connection_struct *conn,
 		      const char *orig_path,
@@ -6337,8 +6320,27 @@ NTSTATUS filename_convert(TALLOC_CTX *mem_ctx,
 			connection_struct *conn,
 			bool dfs_path,
 			const char *name_in,
-			struct smb_filename **pp_smb_fname,
-			char **pp_name);
+			struct smb_filename **pp_smb_fname);
+
+/* The following definitions come from smbd/filename_utils.c */
+
+NTSTATUS get_full_smb_filename(TALLOC_CTX *ctx, const struct smb_filename *smb_fname,
+			      char **full_name);
+NTSTATUS create_synthetic_smb_fname(TALLOC_CTX *ctx, const char *base_name,
+				    const char *stream_name,
+				    const SMB_STRUCT_STAT *psbuf,
+				    struct smb_filename **smb_fname_out);
+NTSTATUS create_synthetic_smb_fname_split(TALLOC_CTX *ctx,
+					  const char *fname,
+					  const SMB_STRUCT_STAT *psbuf,
+					  struct smb_filename **smb_fname_out);
+const char *smb_fname_str_dbg(const struct smb_filename *smb_fname);
+const char *fsp_str_dbg(const struct files_struct *fsp);
+NTSTATUS copy_smb_filename(TALLOC_CTX *ctx,
+			   const struct smb_filename *smb_fname_in,
+			   struct smb_filename **smb_fname_out);
+bool is_ntfs_stream_smb_fname(const struct smb_filename *smb_fname);
+bool is_ntfs_default_stream_smb_fname(const struct smb_filename *smb_fname);
 
 /* The following definitions come from smbd/files.c  */
 
@@ -6364,9 +6366,11 @@ void file_sync_all(connection_struct *conn);
 void file_free(struct smb_request *req, files_struct *fsp);
 files_struct *file_fnum(uint16 fnum);
 files_struct *file_fsp(struct smb_request *req, uint16 fid);
-void dup_file_fsp(struct smb_request *req, files_struct *from,
+NTSTATUS dup_file_fsp(struct smb_request *req, files_struct *from,
 		      uint32 access_mask, uint32 share_access,
 		      uint32 create_options, files_struct *to);
+NTSTATUS fsp_set_smb_fname(struct files_struct *fsp,
+			   const struct smb_filename *smb_fname_in);
 
 /* The following definitions come from smbd/ipc.c  */
 
@@ -6544,8 +6548,6 @@ void send_nt_replies(connection_struct *conn,
 			struct smb_request *req, NTSTATUS nt_error,
 		     char *params, int paramsize,
 		     char *pdata, int datasize);
-bool is_ntfs_stream_smb_fname(const struct smb_filename *smb_fname);
-bool is_ntfs_default_stream_smb_fname(const struct smb_filename *smb_fname);
 void reply_ntcreate_and_X(struct smb_request *req);
 void reply_ntcancel(struct smb_request *req);
 void reply_ntrename(struct smb_request *req);
@@ -6586,7 +6588,8 @@ NTSTATUS fcb_or_dos_open(struct smb_request *req,
 			 uint32 access_mask,
 			 uint32 share_access,
 			 uint32 create_options);
-bool map_open_params_to_ntcreate(const char *fname, int deny_mode, int open_func,
+bool map_open_params_to_ntcreate(const struct smb_filename *smb_fname,
+				 int deny_mode, int open_func,
 				 uint32 *paccess_mask,
 				 uint32 *pshare_mode,
 				 uint32 *pcreate_disposition,
@@ -7113,6 +7116,10 @@ char *vfs_readdirname(connection_struct *conn, void *p, SMB_STRUCT_STAT *sbuf);
 int vfs_ChDir(connection_struct *conn, const char *path);
 char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn);
 NTSTATUS check_reduced_name(connection_struct *conn, const char *fname);
+int vfs_stat_smb_fname(struct connection_struct *conn, const char *fname,
+		       SMB_STRUCT_STAT *psbuf);
+int vfs_lstat_smb_fname(struct connection_struct *conn, const char *fname,
+			SMB_STRUCT_STAT *psbuf);
 
 /* The following definitions come from torture/denytest.c  */
 
@@ -7262,6 +7269,16 @@ NTSTATUS access_check_object( SEC_DESC *psd, NT_USER_TOKEN *token,
 				SE_PRIV *rights, uint32 rights_mask,
 				uint32 des_access, uint32 *acc_granted,
 				const char *debug);
-void map_max_allowed_access(const NT_USER_TOKEN *token,
-				uint32_t *pacc_requested);
+void map_max_allowed_access(const NT_USER_TOKEN *nt_token,
+			    const struct unix_user_token *unix_token,
+			    uint32_t *pacc_requested);
+
+/* The following definitions come from ../libds/common/flag_mapping.c  */
+
+uint32_t ds_acb2uf(uint32_t acb);
+uint32_t ds_uf2acb(uint32_t uf);
+uint32_t ds_uf2atype(uint32_t uf);
+uint32_t ds_gtype2atype(uint32_t gtype);
+enum lsa_SidType ds_atype_map(uint32_t atype);
+
 #endif /*  _PROTO_H_  */

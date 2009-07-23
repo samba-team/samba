@@ -53,7 +53,9 @@ static SMB_STRUCT_DIR *cap_opendir(vfs_handle_struct *handle, const char *fname,
 	return SMB_VFS_NEXT_OPENDIR(handle, capname, mask, attr);
 }
 
-static SMB_STRUCT_DIRENT *cap_readdir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp)
+static SMB_STRUCT_DIRENT *cap_readdir(vfs_handle_struct *handle,
+				      SMB_STRUCT_DIR *dirp,
+				      SMB_STRUCT_STAT *sbuf)
 {
 	SMB_STRUCT_DIRENT *result;
 	SMB_STRUCT_DIRENT *newdirent;
@@ -334,7 +336,8 @@ static int cap_ntimes(vfs_handle_struct *handle,
 }
 
 
-static bool cap_symlink(vfs_handle_struct *handle, const char *oldpath, const char *newpath)
+static int cap_symlink(vfs_handle_struct *handle, const char *oldpath,
+		       const char *newpath)
 {
 	char *capold = capencode(talloc_tos(), oldpath);
 	char *capnew = capencode(talloc_tos(), newpath);
@@ -346,7 +349,8 @@ static bool cap_symlink(vfs_handle_struct *handle, const char *oldpath, const ch
 	return SMB_VFS_NEXT_SYMLINK(handle, capold, capnew);
 }
 
-static bool cap_readlink(vfs_handle_struct *handle, const char *path, char *buf, size_t bufsiz)
+static int cap_readlink(vfs_handle_struct *handle, const char *path,
+			char *buf, size_t bufsiz)
 {
 	char *cappath = capencode(talloc_tos(), path);
 

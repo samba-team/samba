@@ -60,29 +60,30 @@ struct onefs_callback_record {
 struct onefs_callback_record *callback_recs;
 
 /**
- * Convert a onefs_callback_record to a string.
+ * Convert a onefs_callback_record to a debug string using the dbg_ctx().
  */
-static char *onefs_callback_record_str_static(const struct onefs_callback_record *r)
+const char *onefs_cb_record_str_dbg(const struct onefs_callback_record *r)
 {
-	static fstring result;
+	char *result;
 
 	if (r == NULL) {
-		fstrcpy(result, "NULL callback record");
+		result = talloc_strdup(dbg_ctx(), "NULL callback record");
 		return result;
 	}
 
 	switch (r->state) {
 	case ONEFS_OPEN_FILE:
-		fstr_sprintf(result, "cb record %llu for file %s",
-			     r->id, r->data.fsp->fsp_name);
-		break;
+		result = talloc_asprintf(dbg_ctx(), "cb record %llu for file "
+					 "%s", r->id,
+					 fsp_str_dbg(r->data.fsp));
 	case ONEFS_WAITING_FOR_OPLOCK:
-		fstr_sprintf(result, "cb record %llu for pending mid %d",
-			     r->id, (int)r->data.mid);
+		result = talloc_asprintf(dbg_ctx(), "cb record %llu for "
+					 "pending mid %d", r->id,
+					 (int)r->data.mid);
 		break;
 	default:
-		fstr_sprintf(result, "cb record %llu unknown state %d",
-			     r->id, r->state);
+		result = talloc_asprintf(dbg_ctx(), "cb record %llu unknown "
+					 "state %d", r->id, r->state);
 		break;
 	}
 
@@ -102,7 +103,7 @@ static void debug_cb_records(const char *fn)
 	DEBUG(10, ("cb records (%s):\n", fn));
 
 	for (rec = callback_recs; rec; rec = rec->next) {
-		DEBUGADD(10, ("%s\n", onefs_callback_record_str_static(rec)));
+		DEBUGADD(10, ("%s\n", onefs_cb_record_dbg_str(rec)));
 	}
 }
 
@@ -127,7 +128,7 @@ static struct onefs_callback_record *onefs_find_cb(uint64_t id,
 	for (rec = callback_recs; rec; rec = rec->next) {
 		if (rec->id == id) {
 			DEBUG(10, ("found %s\n",
-				   onefs_callback_record_str_static(rec)));
+				   onefs_cb_record_dbg_str(rec)));
 			break;
 		}
 	}
@@ -139,7 +140,7 @@ static struct onefs_callback_record *onefs_find_cb(uint64_t id,
 
 	if (rec->state != expected_state) {
 		DEBUG(0, ("Expected cb type %d, got %s", expected_state,
-			  onefs_callback_record_str_static(rec)));
+			  onefs_cb_record_dbg_str(rec)));
 		SMB_ASSERT(0);
 		return NULL;
 	}
@@ -299,7 +300,7 @@ static void oplock_break_to_none_handler(uint64_t id)
 	}
 
 	DEBUG(10, ("oplock_break_to_none_handler called for file %s\n",
-		   cb->data.fsp->fsp_name));
+		   cb->data.fsp_str_dbg(fsp)));
 
 	init_share_mode_entry(&sme, cb, FORCE_OPLOCK_BREAK_TO_NONE);
 	share_mode_entry_to_message(msg, &sme);
@@ -336,7 +337,7 @@ static void oplock_break_to_level_two_handler(uint64_t id)
 	}
 
 	DEBUG(10, ("oplock_break_to_level_two_handler called for file %s\n",
-		   cb->data.fsp->fsp_name));
+		   cb->data.fsp_str_dbg(fsp)));
 
 	init_share_mode_entry(&sme, cb, LEVEL_II_OPLOCK);
 	share_mode_entry_to_message(msg, &sme);
@@ -377,7 +378,7 @@ static void oplock_revoked_handler(uint64_t id)
 	SMB_ASSERT(fsp->oplock_timeout == NULL);
 
 	DEBUG(0,("Level 1 oplock break failed for file %s. Forcefully "
-		 "revoking oplock\n", fsp->fsp_name));
+		 "revoking oplock\n", fsp_str_dbg(fsp)));
 
 	global_client_failed_oplock_break = True;
 	remove_oplock(fsp);
@@ -413,7 +414,7 @@ static void semlock_available_handler(uint64_t id)
 		char *msg;
 		if (asprintf(&msg, "Semlock available on an open that wasn't "
 			     "deferred: %s\n",
-			      onefs_callback_record_str_static(cb)) != -1) {
+			      onefs_cb_record_dbg_str(cb)) != -1) {
 			smb_panic(msg);
 		}
 		smb_panic("Semlock available on an open that wasn't "
@@ -457,7 +458,7 @@ static void semlock_async_failure_handler(uint64_t id)
 		char *msg;
 		if (asprintf(&msg, "Semlock failure on an open that wasn't "
 			     "deferred: %s\n",
-			      onefs_callback_record_str_static(cb)) != -1) {
+			      onefs_cb_record_dbg_str(cb)) != -1) {
 			smb_panic(msg);
 		}
 		smb_panic("Semlock failure on an open that wasn't deferred\n");
@@ -501,7 +502,7 @@ static void onefs_release_kernel_oplock(struct kernel_oplocks *_ctx,
 	enum oplock_type oplock = onefs_samba_oplock_to_oplock(oplock_type);
 
 	DEBUG(10, ("onefs_release_kernel_oplock: Releasing %s to type %s\n",
-		   fsp->fsp_name, onefs_oplock_str(oplock)));
+		   fsp_str_dbg(fsp), onefs_oplock_str(oplock)));
 
 	if (fsp->fh->fd == -1) {
 		DEBUG(1, ("no fd\n"));

@@ -33,8 +33,6 @@
 
 #include "gsskrb5_locl.h"
 
-RCSID("$Id$");
-
 #define DEFAULT_JITTER_WINDOW 20
 
 struct gss_msg_order {

@@ -233,7 +233,177 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	tevent_req_nterror(req, NT_STATUS_NOT_IMPLEMENTED);
+	if (IS_IPC(conn)) {
+		tevent_req_nterror(req, NT_STATUS_NOT_SUPPORTED);
+		return tevent_req_post(req, ev);
+	}
+
+	switch (in_info_type) {
+	case 0x01:/* SMB2_GETINFO_FILE */
+	{
+		uint16_t file_info_level;
+		char *data = NULL;
+		unsigned int data_size = 0;
+		bool delete_pending = false;
+		struct timespec write_time_ts;
+		struct file_id fileid;
+		struct ea_list *ea_list = NULL;
+		int lock_data_count = 0;
+		char *lock_data = NULL;
+		bool ms_dfs_link = false;
+		NTSTATUS status;
+
+		ZERO_STRUCT(write_time_ts);
+
+		switch (in_file_info_class) {
+		case 0x0F:/* RAW_FILEINFO_SMB2_ALL_EAS */
+			file_info_level = 0xFF00 | in_file_info_class;
+			break;
+
+		case 0x12:/* RAW_FILEINFO_SMB2_ALL_INFORMATION */
+			file_info_level = 0xFF00 | in_file_info_class;
+			break;
+
+		default:
+			/* the levels directly map to the passthru levels */
+			file_info_level = in_file_info_class + 1000;
+			break;
+		}
+
+		if (fsp->fake_file_handle) {
+			/*
+			 * This is actually for the QUOTA_FAKE_FILE --metze
+			 */
+
+			/* We know this name is ok, it's already passed the checks. */
+
+		} else if (fsp && (fsp->is_directory || fsp->fh->fd == -1)) {
+			/*
+			 * This is actually a QFILEINFO on a directory
+			 * handle (returned from an NT SMB). NT5.0 seems
+			 * to do this call. JRA.
+			 */
+
+			if (INFO_LEVEL_IS_UNIX(file_info_level)) {
+				/* Always do lstat for UNIX calls. */
+				if (SMB_VFS_LSTAT(conn, fsp->fsp_name)) {
+					DEBUG(3,("smbd_smb2_getinfo_send: "
+						 "SMB_VFS_LSTAT of %s failed "
+						 "(%s)\n", fsp_str_dbg(fsp),
+						 strerror(errno)));
+					status = map_nt_error_from_unix(errno);
+					tevent_req_nterror(req, status);
+					return tevent_req_post(req, ev);
+				}
+			} else if (SMB_VFS_STAT(conn, fsp->fsp_name)) {
+				DEBUG(3,("smbd_smb2_getinfo_send: "
+					 "SMB_VFS_STAT of %s failed (%s)\n",
+					 fsp_str_dbg(fsp),
+					 strerror(errno)));
+				status = map_nt_error_from_unix(errno);
+				tevent_req_nterror(req, status);
+				return tevent_req_post(req, ev);
+			}
+
+			fileid = vfs_file_id_from_sbuf(conn,
+						       &fsp->fsp_name->st);
+			get_file_infos(fileid, &delete_pending, &write_time_ts);
+		} else {
+			/*
+			 * Original code - this is an open file.
+			 */
+
+			if (SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st) != 0) {
+				DEBUG(3, ("smbd_smb2_getinfo_send: "
+					  "fstat of fnum %d failed (%s)\n",
+					  fsp->fnum, strerror(errno)));
+				status = map_nt_error_from_unix(errno);
+				tevent_req_nterror(req, status);
+				return tevent_req_post(req, ev);
+			}
+			fileid = vfs_file_id_from_sbuf(conn,
+						       &fsp->fsp_name->st);
+			get_file_infos(fileid, &delete_pending, &write_time_ts);
+		}
+
+		status = smbd_do_qfilepathinfo(conn, state,
+					       file_info_level,
+					       fsp,
+					       fsp->fsp_name,
+					       delete_pending,
+					       write_time_ts,
+					       ms_dfs_link,
+					       ea_list,
+					       lock_data_count,
+					       lock_data,
+					       STR_UNICODE,
+					       in_output_buffer_length,
+					       &data,
+					       &data_size);
+		if (!NT_STATUS_IS_OK(status)) {
+			SAFE_FREE(data);
+			if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_LEVEL)) {
+				status = NT_STATUS_INVALID_INFO_CLASS;
+			}
+			tevent_req_nterror(req, status);
+			return tevent_req_post(req, ev);
+		}
+		if (data_size > 0) {
+			state->out_output_buffer = data_blob_talloc(state,
+								    data,
+								    data_size);
+			SAFE_FREE(data);
+			if (tevent_req_nomem(state->out_output_buffer.data, req)) {
+				return tevent_req_post(req, ev);
+			}
+		}
+		SAFE_FREE(data);
+		break;
+	}
+
+	case 0x02:/* SMB2_GETINFO_FS */
+	{
+		uint16_t file_info_level;
+		char *data = NULL;
+		int data_size = 0;
+		NTSTATUS status;
+
+		/* the levels directly map to the passthru levels */
+		file_info_level = in_file_info_class + 1000;
+
+		status = smbd_do_qfsinfo(conn, state,
+					 file_info_level,
+					 STR_UNICODE,
+					 in_output_buffer_length,
+					 &data,
+					 &data_size);
+		if (!NT_STATUS_IS_OK(status)) {
+			SAFE_FREE(data);
+			if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_LEVEL)) {
+				status = NT_STATUS_INVALID_INFO_CLASS;
+			}
+			tevent_req_nterror(req, status);
+			return tevent_req_post(req, ev);
+		}
+		if (data_size > 0) {
+			state->out_output_buffer = data_blob_talloc(state,
+								    data,
+								    data_size);
+			SAFE_FREE(data);
+			if (tevent_req_nomem(state->out_output_buffer.data, req)) {
+				return tevent_req_post(req, ev);
+			}
+		}
+		SAFE_FREE(data);
+		break;
+	}
+
+	default:
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_done(req);
 	return tevent_req_post(req, ev);
 }
 

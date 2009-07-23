@@ -1,6 +1,7 @@
 /*
 * CIFS user-space helper.
 * Copyright (C) Igor Mammedov (niallain@gmail.com) 2007
+* Copyright (C) Jeff Layton (jlayton@redhat.com) 2009
 *
 * Used by /sbin/request-key for handling
 * cifs upcall for kerberos authorization of access to share and
@@ -38,6 +39,54 @@ typedef enum _secType {
 } secType_t;
 
 /*
+ * given a process ID, get the value of the KRB5CCNAME environment variable
+ * in the context of that process. On error, just return NULL.
+ */
+static char *
+get_krb5_ccname(pid_t pid)
+{
+	int fd;
+	ssize_t len, left;
+
+	/*
+	 * FIXME: sysconf for ARG_MAX instead? Kernel seems to be limited to a
+	 * page however, so it may not matter.
+	 */
+	char buf[4096];
+	char *p, *value = NULL;
+	
+	buf[4095] = '\0';
+	snprintf(buf, 4095, "/proc/%d/environ", pid);
+	fd = open(buf, O_RDONLY);
+	if (fd < 0)
+		return NULL;
+
+	/* FIXME: don't assume that we get it all in the first read? */
+	len = read(fd, buf, 4096);
+	close(fd);
+	if (len < 0)
+		return NULL;
+
+	left = len;
+	p = buf;
+
+	/* can't have valid KRB5CCNAME if there are < 13 bytes left */
+	while (left > 12) {
+		if (strncmp("KRB5CCNAME=", p, 11)) {
+			p += strnlen(p, left);
+			++p;
+			left = buf + len - p;
+			continue;
+		}
+		p += 11;
+		left -= 11;
+		value = SMB_STRNDUP(p, left);
+		break;
+	}
+	return value;
+}
+
+/*
  * Prepares AP-REQ data for mechToken and gets session key
  * Uses credentials from cache. It will not ask for password
  * you should receive credentials for yuor name manually using
@@ -58,15 +107,15 @@ typedef enum _secType {
  * ret: 0 - success, others - failure
 */
 static int
-handle_krb5_mech(const char *oid, const char *principal,
-		     DATA_BLOB * secblob, DATA_BLOB * sess_key)
+handle_krb5_mech(const char *oid, const char *principal, DATA_BLOB *secblob,
+		 DATA_BLOB *sess_key, const char *ccname)
 {
 	int retval;
 	DATA_BLOB tkt, tkt_wrapped;
 
 	/* get a kerberos ticket for the service and extract the session key */
-	retval = cli_krb5_get_ticket(principal, 0,
-				     &tkt, sess_key, 0, NULL, NULL);
+	retval = cli_krb5_get_ticket(principal, 0, &tkt, sess_key, 0, ccname,
+				     NULL);
 
 	if (retval)
 		return retval;
@@ -88,11 +137,12 @@ handle_krb5_mech(const char *oid, const char *principal,
 #define DKD_HAVE_IPV4		8
 #define DKD_HAVE_IPV6		16
 #define DKD_HAVE_UID		32
+#define DKD_HAVE_PID		64
 #define DKD_MUSTHAVE_SET (DKD_HAVE_HOSTNAME|DKD_HAVE_VERSION|DKD_HAVE_SEC)
 
 static int
-decode_key_description(const char *desc, int *ver, secType_t * sec,
-			   char **hostname, uid_t * uid)
+decode_key_description(const char *desc, int *ver, secType_t *sec,
+			   char **hostname, uid_t *uid, pid_t *pid)
 {
 	int retval = 0;
 	char *pos;
@@ -117,6 +167,16 @@ decode_key_description(const char *desc, int *ver, secType_t * sec,
 			/* BB: do we need it if we have hostname already? */
 		} else if (strncmp(tkn, "ipv6=", 5) == 0) {
 			/* BB: do we need it if we have hostname already? */
+		} else if (strncmp(tkn, "pid=", 4) == 0) {
+			errno = 0;
+			*pid = strtol(tkn + 4, NULL, 0);
+			if (errno != 0) {
+				syslog(LOG_WARNING, "Invalid pid format: %s",
+				       strerror(errno));
+				return 1;
+			} else {
+				retval |= DKD_HAVE_PID;
+			}
 		} else if (strncmp(tkn, "sec=", 4) == 0) {
 			if (strncmp(tkn + 4, "krb5", 4) == 0) {
 				retval |= DKD_HAVE_SEC;
@@ -224,9 +284,10 @@ int main(const int argc, char *const argv[])
 	size_t datalen;
 	long rc = 1;
 	uid_t uid = 0;
+	pid_t pid = 0;
 	int kernel_upcall_version = 0;
 	int c, use_cifs_service_prefix = 0;
-	char *buf, *hostname = NULL;
+	char *buf, *ccname = NULL, *hostname = NULL;
 	const char *oid;
 
 	openlog(prog, 0, LOG_DAEMON);
@@ -278,7 +339,7 @@ int main(const int argc, char *const argv[])
 	}
 
 	rc = decode_key_description(buf, &kernel_upcall_version, &sectype,
-				    &hostname, &uid);
+				    &hostname, &uid, &pid);
 	if ((rc & DKD_MUSTHAVE_SET) != DKD_MUSTHAVE_SET) {
 		syslog(LOG_WARNING,
 		       "unable to get from description necessary params");
@@ -296,6 +357,9 @@ int main(const int argc, char *const argv[])
 		goto out;
 	}
 
+	if (rc & DKD_HAVE_PID)
+		ccname = get_krb5_ccname(pid);
+
 	if (rc & DKD_HAVE_UID) {
 		rc = setuid(uid);
 		if (rc == -1) {
@@ -303,9 +367,6 @@ int main(const int argc, char *const argv[])
 			goto out;
 		}
 	}
-
-	/* BB: someday upcall SPNEGO blob could be checked here to decide
-	 * what mech to use */
 
 	// do mech specific authorization
 	switch (sectype) {
@@ -333,7 +394,8 @@ int main(const int argc, char *const argv[])
 			else
 				oid = OID_KERBEROS5;
 
-			rc = handle_krb5_mech(oid, princ, &secblob, &sess_key);
+			rc = handle_krb5_mech(oid, princ, &secblob, &sess_key,
+					      ccname);
 			SAFE_FREE(princ);
 			break;
 		}
@@ -385,6 +447,7 @@ out:
 		keyctl_negate(key, 1, KEY_REQKEY_DEFL_DEFAULT);
 	data_blob_free(&secblob);
 	data_blob_free(&sess_key);
+	SAFE_FREE(ccname);
 	SAFE_FREE(hostname);
 	SAFE_FREE(keydata);
 	return rc;

@@ -58,11 +58,11 @@ struct libnet_GroupList {
 	struct {
 		const char *domain_name;
 		int page_size;
-		uint resume_index;
+		uint32_t resume_index;
 	} in;
 	struct {
 		int count;
-		uint resume_index;
+		uint32_t resume_index;
 		
 		struct grouplist {
 			const char *sid;

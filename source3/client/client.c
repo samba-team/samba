@@ -2605,7 +2605,7 @@ static int cmd_lock(void)
 
 	len = (uint64_t)strtol(buf, (char **)NULL, 16);
 
-	if (!cli_posix_lock(cli, fnum, start, len, true, lock_type)) {
+	if (!NT_STATUS_IS_OK(cli_posix_lock(cli, fnum, start, len, true, lock_type))) {
 		d_printf("lock failed %d: %s\n", fnum, cli_errstr(cli));
 	}
 
@@ -2639,7 +2639,7 @@ static int cmd_unlock(void)
 
 	len = (uint64_t)strtol(buf, (char **)NULL, 16);
 
-	if (!cli_posix_unlock(cli, fnum, start, len)) {
+	if (!NT_STATUS_IS_OK(cli_posix_unlock(cli, fnum, start, len))) {
 		d_printf("unlock failed %d: %s\n", fnum, cli_errstr(cli));
 	}
 

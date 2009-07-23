@@ -33,8 +33,6 @@
 
 #include "gsskrb5_locl.h"
 
-RCSID("$Id$");
-
 static const char *
 calling_error(OM_uint32 v)
 {

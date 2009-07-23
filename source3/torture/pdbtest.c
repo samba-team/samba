@@ -288,7 +288,7 @@ int main(int argc, char **argv)
 	pdb_set_homedir(out, "\\\\torture\\home", PDB_SET);
 	pdb_set_logon_script(out, "torture_script.cmd", PDB_SET);
 
-	pdb_get_account_policy(AP_PASSWORD_HISTORY, &history);
+	pdb_get_account_policy(PDB_POLICY_PASSWORD_HISTORY, &history);
 	if (history * PW_HISTORY_ENTRY_LEN < NT_HASH_LEN) {
 		buf = (uint8 *)TALLOC(ctx, NT_HASH_LEN);
 	} else {
@@ -311,8 +311,8 @@ int main(int argc, char **argv)
 	}
 	pdb_set_pw_history(out, buf, history, PDB_SET);
 
-	pdb_get_account_policy(AP_MAX_PASSWORD_AGE, &expire);
-	pdb_get_account_policy(AP_MIN_PASSWORD_AGE, &min_age);
+	pdb_get_account_policy(PDB_POLICY_MAX_PASSWORD_AGE, &expire);
+	pdb_get_account_policy(PDB_POLICY_MIN_PASSWORD_AGE, &min_age);
 	pdb_set_pass_last_set_time(out, time(NULL), PDB_SET);
 	
 	if (expire == 0 || expire == (uint32)-1) {

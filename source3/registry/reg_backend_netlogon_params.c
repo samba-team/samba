@@ -35,7 +35,7 @@ static int netlogon_params_fetch_values(const char *key, struct regval_ctr *regv
 {
 	uint32 dwValue;
 
-	if (!pdb_get_account_policy(AP_REFUSE_MACHINE_PW_CHANGE, &dwValue)) {
+	if (!pdb_get_account_policy(PDB_POLICY_REFUSE_MACHINE_PW_CHANGE, &dwValue)) {
 		dwValue = 0;
 	}
 
