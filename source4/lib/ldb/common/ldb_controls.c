@@ -555,6 +555,60 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, void *me
 			continue;
 		}
 
+		if (strncmp(control_strings[i], "show_deactivated_link:", 22) == 0) {
+			const char *p;
+			int crit, ret;
+
+			p = &(control_strings[i][22]);
+			ret = sscanf(p, "%d", &crit);
+			if ((ret != 1) || (crit < 0) || (crit > 1)) {
+				error_string = talloc_asprintf(mem_ctx, "invalid show_deactivated_link control syntax\n");
+				error_string = talloc_asprintf_append(error_string, " syntax: crit(b)\n");
+				error_string = talloc_asprintf_append(error_string, "   note: b = boolean");
+				ldb_set_errstring(ldb, error_string);
+				talloc_free(error_string);
+				return NULL;
+			}
+
+			ctrl[i] = talloc(ctrl, struct ldb_control);
+			if (!ctrl[i]) {
+				ldb_oom(ldb);
+				return NULL;
+			}
+			ctrl[i]->oid = LDB_CONTROL_SHOW_DEACTIVATED_LINK_OID;
+			ctrl[i]->critical = crit;
+			ctrl[i]->data = NULL;
+
+			continue;
+		}
+
+		if (strncmp(control_strings[i], "show_recycled:", 14) == 0) {
+			const char *p;
+			int crit, ret;
+
+			p = &(control_strings[i][14]);
+			ret = sscanf(p, "%d", &crit);
+			if ((ret != 1) || (crit < 0) || (crit > 1)) {
+				error_string = talloc_asprintf(mem_ctx, "invalid show_recycled control syntax\n");
+				error_string = talloc_asprintf_append(error_string, " syntax: crit(b)\n");
+				error_string = talloc_asprintf_append(error_string, "   note: b = boolean");
+				ldb_set_errstring(ldb, error_string);
+				talloc_free(error_string);
+				return NULL;
+			}
+
+			ctrl[i] = talloc(ctrl, struct ldb_control);
+			if (!ctrl[i]) {
+				ldb_oom(ldb);
+				return NULL;
+			}
+			ctrl[i]->oid = LDB_CONTROL_SHOW_RECYCLED_OID;
+			ctrl[i]->critical = crit;
+			ctrl[i]->data = NULL;
+
+			continue;
+		}
+
 		if (strncmp(control_strings[i], "permissive_modify:", 18) == 0) {
 			const char *p;
 			int crit, ret;
