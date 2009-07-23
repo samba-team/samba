@@ -354,7 +354,15 @@ interface frsrpc
 
 	/*****************/
 	/* Function 0x01 */
-	[todo] void FRSRPC_VERIFY_PROMOTION_PARENT();
+	/* this function always return WERR_CALL_NOT_IMPLEMENTED */
+	WERROR frsrpc_FrsVerifyPromotionParent(
+		[in,unique,string,charset(UTF16)] uint16 *parent_account,
+		[in,unique,string,charset(UTF16)] uint16 *parent_password,
+		[in,unique,string,charset(UTF16)] uint16 *replica_set_name,
+		[in,unique,string,charset(UTF16)] uint16 *replica_set_type,
+		[in] frsrpc_PartnerAuthLevel partner_auth_level,
+		[in] uint32 __ndr_guid_size
+	);
 
 	/*****************/
 	/* Function 0x02 */
