@@ -1061,7 +1061,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			return nt_status;
 		}
 
-		if (unwrapped_out.length) {
+		if (unwrapped_out.length || mech_list_mic.length) {
 			/* compose reply */
 			spnego_out.type = SPNEGO_NEG_TOKEN_TARG;
 			spnego_out.negTokenTarg.negResult = SPNEGO_NONE_RESULT;
