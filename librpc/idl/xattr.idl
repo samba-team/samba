@@ -123,14 +123,25 @@ interface xattr
 
 	const char *XATTR_NTACL_NAME = "security.NTACL";
 
+	const int XATTR_SD_HASH_SIZE = 64;
+	const int XATTR_SD_HASH_TYPE_NONE = 0x0;
+	const int XATTR_SD_HASH_TYPE_SHA256 = 0x1;
+
 	typedef [public] struct {
 		security_descriptor *sd;
 		uint8 hash[16];
-	} security_descriptor_hash;
+	} security_descriptor_hash_v2; /* Hash never used in this version. */
+
+	typedef [public] struct {
+		security_descriptor *sd;
+		uint16 hash_type;
+		uint8 hash[XATTR_SD_HASH_SIZE]; /* 64 bytes hash. */
+	} security_descriptor_hash_v3;
 
 	typedef [switch_type(uint16)] union {
 		[case(1)] security_descriptor *sd;
-		[case(2)] security_descriptor_hash *sd_hs;
+		[case(2)] security_descriptor_hash_v2 *sd_hs2;
+		[case(3)] security_descriptor_hash_v3 *sd_hs3;
 	} xattr_NTACL_Info;
 
 	typedef [public] struct {

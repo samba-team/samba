@@ -23,13 +23,15 @@
 #include "includes.h"
 #include "librpc/gen_ndr/xattr.h"
 #include "librpc/gen_ndr/ndr_xattr.h"
+#include "../lib/crypto/crypto.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
 
 static NTSTATUS create_acl_blob(const struct security_descriptor *psd,
 			DATA_BLOB *pblob,
-			uint8_t hash[16]);
+			uint16_t hash_type,
+			uint8_t hash[XATTR_SD_HASH_SIZE]);
 
 #define HASH_SECURITY_INFO (OWNER_SECURITY_INFORMATION | \
 				GROUP_SECURITY_INFORMATION | \
@@ -40,21 +42,23 @@ static NTSTATUS create_acl_blob(const struct security_descriptor *psd,
  Hash a security descriptor.
 *******************************************************************/
 
-static NTSTATUS hash_sd(struct security_descriptor *psd,
-			uint8_t hash[16])
+static NTSTATUS hash_sd_sha256(struct security_descriptor *psd,
+			uint8_t hash[XATTR_SD_HASH_SIZE])
 {
 	DATA_BLOB blob;
-	struct MD5Context tctx;
+	SHA256_CTX tctx;
 	NTSTATUS status;
 
-	memset(hash, '\0', 16);
-	status = create_acl_blob(psd, &blob, hash);
+	memset(hash, '\0', XATTR_SD_HASH_SIZE);
+	status = create_acl_blob(psd, &blob, XATTR_SD_HASH_TYPE_SHA256, hash);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	MD5Init(&tctx);
-	MD5Update(&tctx, blob.data, blob.length);
-	MD5Final(hash, &tctx);
+
+	SHA256_Init(&tctx);
+	SHA256_Update(&tctx, blob.data, blob.length);
+	SHA256_Final(hash, &tctx);
+
 	return NT_STATUS_OK;
 }
 
@@ -63,9 +67,9 @@ static NTSTATUS hash_sd(struct security_descriptor *psd,
 *******************************************************************/
 
 static NTSTATUS parse_acl_blob(const DATA_BLOB *pblob,
-				uint32 security_info,
 				struct security_descriptor **ppdesc,
-				uint8_t hash[16])
+				uint16_t *p_hash_type,
+				uint8_t hash[XATTR_SD_HASH_SIZE])
 {
 	TALLOC_CTX *ctx = talloc_tos();
 	struct xattr_NTACL xacl;
@@ -81,22 +85,35 @@ static NTSTATUS parse_acl_blob(const DATA_BLOB *pblob,
 		return ndr_map_error2ntstatus(ndr_err);;
 	}
 
-	if (xacl.version != 2) {
-		return NT_STATUS_REVISION_MISMATCH;
+	switch (xacl.version) {
+		case 2:
+			*ppdesc = make_sec_desc(ctx, SEC_DESC_REVISION,
+					xacl.info.sd_hs2->sd->type | SEC_DESC_SELF_RELATIVE,
+					xacl.info.sd_hs2->sd->owner_sid,
+					xacl.info.sd_hs2->sd->group_sid,
+					xacl.info.sd_hs2->sd->sacl,
+					xacl.info.sd_hs2->sd->dacl,
+					&sd_size);
+			/* No hash - null out. */
+			*p_hash_type = XATTR_SD_HASH_TYPE_NONE;
+			memset(hash, '\0', XATTR_SD_HASH_SIZE);
+			break;
+		case 3:
+			*ppdesc = make_sec_desc(ctx, SEC_DESC_REVISION,
+					xacl.info.sd_hs3->sd->type | SEC_DESC_SELF_RELATIVE,
+					xacl.info.sd_hs3->sd->owner_sid,
+					xacl.info.sd_hs3->sd->group_sid,
+					xacl.info.sd_hs3->sd->sacl,
+					xacl.info.sd_hs3->sd->dacl,
+					&sd_size);
+			*p_hash_type = xacl.info.sd_hs3->hash_type;
+			/* Current version 3. */
+			memcpy(hash, xacl.info.sd_hs3->hash, XATTR_SD_HASH_SIZE);
+			break;
+		default:
+			return NT_STATUS_REVISION_MISMATCH;
 	}
 
-	*ppdesc = make_sec_desc(ctx, SEC_DESC_REVISION, xacl.info.sd_hs->sd->type | SEC_DESC_SELF_RELATIVE,
-			(security_info & OWNER_SECURITY_INFORMATION)
-			? xacl.info.sd_hs->sd->owner_sid : NULL,
-			(security_info & GROUP_SECURITY_INFORMATION)
-			? xacl.info.sd_hs->sd->group_sid : NULL,
-			(security_info & SACL_SECURITY_INFORMATION)
-			? xacl.info.sd_hs->sd->sacl : NULL,
-			(security_info & DACL_SECURITY_INFORMATION)
-			? xacl.info.sd_hs->sd->dacl : NULL,
-			&sd_size);
-
-	memcpy(hash, xacl.info.sd_hs->hash, 16);
 	TALLOC_FREE(xacl.info.sd);
 
 	return (*ppdesc != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
@@ -166,20 +183,22 @@ static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 
 static NTSTATUS create_acl_blob(const struct security_descriptor *psd,
 			DATA_BLOB *pblob,
-			uint8_t hash[16])
+			uint16_t hash_type,
+			uint8_t hash[XATTR_SD_HASH_SIZE])
 {
 	struct xattr_NTACL xacl;
-	struct security_descriptor_hash sd_hs;
+	struct security_descriptor_hash_v3 sd_hs3;
 	enum ndr_err_code ndr_err;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	ZERO_STRUCT(xacl);
-	ZERO_STRUCT(sd_hs);
+	ZERO_STRUCT(sd_hs3);
 
-	xacl.version = 2;
-	xacl.info.sd_hs = &sd_hs;
-	xacl.info.sd_hs->sd = CONST_DISCARD(struct security_descriptor *, psd);
-	memcpy(&xacl.info.sd_hs->hash[0], hash, 16);
+	xacl.version = 3;
+	xacl.info.sd_hs3 = &sd_hs3;
+	xacl.info.sd_hs3->sd = CONST_DISCARD(struct security_descriptor *, psd);
+	xacl.info.sd_hs3->hash_type = hash_type;
+	memcpy(&xacl.info.sd_hs3->hash[0], hash, XATTR_SD_HASH_SIZE);
 
 	ndr_err = ndr_push_struct_blob(
 			pblob, ctx, NULL, &xacl,
@@ -274,13 +293,14 @@ static NTSTATUS store_acl_blob_pathname(vfs_handle_struct *handle,
 static NTSTATUS get_nt_acl_xattr_internal(vfs_handle_struct *handle,
 					files_struct *fsp,
 					const char *name,
-				        uint32 security_info,
+				        uint32_t security_info,
 					struct security_descriptor **ppdesc)
 {
 	DATA_BLOB blob;
 	NTSTATUS status;
-	uint8_t hash[16];
-	uint8_t hash_tmp[16];
+	uint16_t hash_type;
+	uint8_t hash[XATTR_SD_HASH_SIZE];
+	uint8_t hash_tmp[XATTR_SD_HASH_SIZE];
 	struct security_descriptor *pdesc_next = NULL;
 
 	if (fsp && name == NULL) {
@@ -295,18 +315,23 @@ static NTSTATUS get_nt_acl_xattr_internal(vfs_handle_struct *handle,
 		return status;
 	}
 
-	status = parse_acl_blob(&blob, security_info, ppdesc, &hash[0]);
+	status = parse_acl_blob(&blob, ppdesc,
+				&hash_type, &hash[0]);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("parse_acl_blob returned %s\n",
 				nt_errstr(status)));
 		return status;
 	}
 
-	/* If there was no stored hash, don't check. */
-	memset(&hash_tmp[0], '\0', 16);
-	if (memcmp(&hash[0], &hash_tmp[0], 16) == 0) {
-		/* No hash, goto return blob sd. */
-		goto out;
+	/* Ensure the hash type is one we know. */
+	switch (hash_type) {
+		case XATTR_SD_HASH_TYPE_NONE:
+			/* No hash, goto return blob sd. */
+			goto out;
+		case XATTR_SD_HASH_TYPE_SHA256:
+			break;
+		default:
+			return NT_STATUS_REVISION_MISMATCH;
 	}
 
 	/* Get the full underlying sd, then hash. */
@@ -326,12 +351,12 @@ static NTSTATUS get_nt_acl_xattr_internal(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	status = hash_sd(pdesc_next, hash_tmp);
+	status = hash_sd_sha256(pdesc_next, hash_tmp);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
 
-	if (memcmp(&hash[0], &hash_tmp[0], 16) == 0) {
+	if (memcmp(&hash[0], &hash_tmp[0], XATTR_SD_HASH_SIZE) == 0) {
 		TALLOC_FREE(pdesc_next);
 		/* Hash matches, return blob sd. */
 		goto out;
@@ -356,6 +381,19 @@ static NTSTATUS get_nt_acl_xattr_internal(vfs_handle_struct *handle,
 	*ppdesc = pdesc_next;
 
   out:
+
+	if (!(security_info & OWNER_SECURITY_INFORMATION)) {
+		(*ppdesc)->owner_sid = NULL;
+	}
+	if (!(security_info & GROUP_SECURITY_INFORMATION)) {
+		(*ppdesc)->group_sid = NULL;
+	}
+	if (!(security_info & DACL_SECURITY_INFORMATION)) {
+		(*ppdesc)->dacl = NULL;
+	}
+	if (!(security_info & SACL_SECURITY_INFORMATION)) {
+		(*ppdesc)->sacl = NULL;
+	}
 
 	TALLOC_FREE(blob.data);
 	return status;
@@ -420,7 +458,7 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 	DATA_BLOB blob;
 	size_t size;
 	char *parent_name;
-	uint8_t hash[16];
+	uint8_t hash[XATTR_SD_HASH_SIZE];
 
 	if (!parent_dirname(ctx, smb_fname->base_name, &parent_name, NULL)) {
 		return NT_STATUS_NO_MEMORY;
@@ -511,11 +549,11 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 		return status;
 	}
 
-	status = hash_sd(pdesc_next, hash);
+	status = hash_sd_sha256(pdesc_next, hash);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	status = create_acl_blob(psd, &blob, hash);
+	status = create_acl_blob(psd, &blob, XATTR_SD_HASH_TYPE_SHA256, hash);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -630,7 +668,7 @@ static int mkdir_acl_xattr(vfs_handle_struct *handle, const char *path, mode_t m
 *********************************************************************/
 
 static NTSTATUS fget_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
-        uint32 security_info, struct security_descriptor **ppdesc)
+        uint32_t security_info, struct security_descriptor **ppdesc)
 {
 	return get_nt_acl_xattr_internal(handle, fsp,
 				NULL, security_info, ppdesc);
@@ -641,7 +679,7 @@ static NTSTATUS fget_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
 *********************************************************************/
 
 static NTSTATUS get_nt_acl_xattr(vfs_handle_struct *handle,
-        const char *name, uint32 security_info, struct security_descriptor **ppdesc)
+        const char *name, uint32_t security_info, struct security_descriptor **ppdesc)
 {
 	return get_nt_acl_xattr_internal(handle, NULL,
 				name, security_info, ppdesc);
@@ -652,12 +690,12 @@ static NTSTATUS get_nt_acl_xattr(vfs_handle_struct *handle,
 *********************************************************************/
 
 static NTSTATUS fset_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
-        uint32 security_info_sent, const struct security_descriptor *psd)
+        uint32_t security_info_sent, const struct security_descriptor *psd)
 {
 	NTSTATUS status;
 	DATA_BLOB blob;
 	struct security_descriptor *pdesc_next = NULL;
-	uint8_t hash[16];
+	uint8_t hash[XATTR_SD_HASH_SIZE];
 
 	if (DEBUGLEVEL >= 10) {
 		DEBUG(10,("fset_nt_acl_xattr: incoming sd for file %s\n",
@@ -712,7 +750,7 @@ static NTSTATUS fset_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
 		return status;
 	}
 
-	status = hash_sd(pdesc_next, hash);
+	status = hash_sd_sha256(pdesc_next, hash);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -741,7 +779,7 @@ static NTSTATUS fset_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
 		NDR_PRINT_DEBUG(security_descriptor,
 			CONST_DISCARD(struct security_descriptor *,psd));
 	}
-	create_acl_blob(psd, &blob, hash);
+	create_acl_blob(psd, &blob, XATTR_SD_HASH_TYPE_SHA256, hash);
 	store_acl_blob_fsp(handle, fsp, &blob);
 
 	return NT_STATUS_OK;

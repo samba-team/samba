@@ -156,15 +156,15 @@ static NTSTATUS parse_acl_blob(const DATA_BLOB *pblob,
 		return NT_STATUS_REVISION_MISMATCH;
 	}
 
-	*ppdesc = make_sec_desc(ctx, SEC_DESC_REVISION, xacl.info.sd_hs->sd->type | SEC_DESC_SELF_RELATIVE,
+	*ppdesc = make_sec_desc(ctx, SEC_DESC_REVISION, xacl.info.sd_hs2->sd->type | SEC_DESC_SELF_RELATIVE,
 			(security_info & OWNER_SECURITY_INFORMATION)
-			? xacl.info.sd_hs->sd->owner_sid : NULL,
+			? xacl.info.sd_hs2->sd->owner_sid : NULL,
 			(security_info & GROUP_SECURITY_INFORMATION)
-			? xacl.info.sd_hs->sd->group_sid : NULL,
+			? xacl.info.sd_hs2->sd->group_sid : NULL,
 			(security_info & SACL_SECURITY_INFORMATION)
-			? xacl.info.sd_hs->sd->sacl : NULL,
+			? xacl.info.sd_hs2->sd->sacl : NULL,
 			(security_info & DACL_SECURITY_INFORMATION)
-			? xacl.info.sd_hs->sd->dacl : NULL,
+			? xacl.info.sd_hs2->sd->dacl : NULL,
 			&sd_size);
 
 	TALLOC_FREE(xacl.info.sd);
@@ -237,17 +237,17 @@ static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 static NTSTATUS create_acl_blob(const struct security_descriptor *psd, DATA_BLOB *pblob)
 {
 	struct xattr_NTACL xacl;
-	struct security_descriptor_hash sd_hs;
+	struct security_descriptor_hash_v2 sd_hs2;
 	enum ndr_err_code ndr_err;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	ZERO_STRUCT(xacl);
-	ZERO_STRUCT(sd_hs);
+	ZERO_STRUCT(sd_hs2);
 
 	xacl.version = 2;
-	xacl.info.sd_hs = &sd_hs;
-	xacl.info.sd_hs->sd = CONST_DISCARD(struct security_descriptor *, psd);
-	memset(&xacl.info.sd_hs->hash[0], '\0', 16);
+	xacl.info.sd_hs2 = &sd_hs2;
+	xacl.info.sd_hs2->sd = CONST_DISCARD(struct security_descriptor *, psd);
+	memset(&xacl.info.sd_hs2->hash[0], '\0', 16);
 
 	ndr_err = ndr_push_struct_blob(
 			pblob, ctx, NULL, &xacl,

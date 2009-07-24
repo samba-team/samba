@@ -17,6 +17,9 @@
 #define XATTR_MAX_STREAM_SIZE	( 0x4000 )
 #define XATTR_MAX_STREAM_SIZE_TDB	( 0x100000 )
 #define XATTR_NTACL_NAME	( "security.NTACL" )
+#define XATTR_SD_HASH_SIZE	( 64 )
+#define XATTR_SD_HASH_TYPE_NONE	( 0x0 )
+#define XATTR_SD_HASH_TYPE_SHA256	( 0x1 )
 struct xattr_DosInfo1 {
 	uint32_t attrib;
 	uint32_t ea_size;
@@ -75,14 +78,21 @@ struct xattr_DosStreams {
 	struct xattr_DosStream *streams;/* [unique,size_is(num_streams)] */
 }/* [public] */;
 
-struct security_descriptor_hash {
+struct security_descriptor_hash_v2 {
 	struct security_descriptor *sd;/* [unique] */
 	uint8_t hash[16];
 }/* [public] */;
 
+struct security_descriptor_hash_v3 {
+	struct security_descriptor *sd;/* [unique] */
+	uint16_t hash_type;
+	uint8_t *hash;
+}/* [public] */;
+
 union xattr_NTACL_Info {
 	struct security_descriptor *sd;/* [unique,case] */
-	struct security_descriptor_hash *sd_hs;/* [unique,case(2)] */
+	struct security_descriptor_hash_v2 *sd_hs2;/* [unique,case(2)] */
+	struct security_descriptor_hash_v3 *sd_hs3;/* [unique,case(3)] */
 }/* [switch_type(uint16)] */;
 
 struct xattr_NTACL {
