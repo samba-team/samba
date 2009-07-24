@@ -6137,16 +6137,14 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			connection_struct *conn,
 			struct smb_request *req,
-			const char *name_in,
-			const char *newname_in,
+			struct smb_filename *smb_fname_src,
+			struct smb_filename *smb_fname_dst,
 			uint32 attrs,
 			bool replace_if_exists,
 			bool src_has_wild,
 			bool dest_has_wild,
 			uint32_t access_mask)
 {
-	struct smb_filename *smb_fname_src = NULL;
-	struct smb_filename *smb_fname_dst = NULL;
 	char *fname_src_dir = NULL;
 	char *fname_src_mask = NULL;
 	int count=0;
@@ -6156,19 +6154,6 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	long offset = 0;
 	int create_options = 0;
 	bool posix_pathnames = lp_posix_pathnames();
-
-	status = unix_convert(ctx, conn, name_in, &smb_fname_src,
-			      src_has_wild ? UCF_ALLOW_WCARD_LCOMP : 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-
-	status = unix_convert(ctx, conn, newname_in, &smb_fname_dst,
-			      (UCF_SAVE_LCOMP |
-			       (dest_has_wild ? UCF_ALLOW_WCARD_LCOMP : 0)));
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
 
 	/*
 	 * Split the old name into directory and last component
@@ -6470,8 +6455,6 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	}
 
  out:
-	TALLOC_FREE(smb_fname_src);
-	TALLOC_FREE(smb_fname_dst);
 	TALLOC_FREE(fname_src_dir);
 	TALLOC_FREE(fname_src_mask);
 	return status;
@@ -6492,13 +6475,14 @@ void reply_mv(struct smb_request *req)
 	bool src_has_wcard = False;
 	bool dest_has_wcard = False;
 	TALLOC_CTX *ctx = talloc_tos();
+	struct smb_filename *smb_fname_src = NULL;
+	struct smb_filename *smb_fname_dst = NULL;
 
 	START_PROFILE(SMBmv);
 
 	if (req->wct < 1) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		END_PROFILE(SMBmv);
-		return;
+		goto out;
 	}
 
 	attrs = SVAL(req->vwv+0, 0);
@@ -6508,69 +6492,71 @@ void reply_mv(struct smb_request *req)
 				       &status, &src_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
-		END_PROFILE(SMBmv);
-		return;
+		goto out;
 	}
 	p++;
 	p += srvstr_get_path_req_wcard(ctx, req, &newname, p, STR_TERMINATE,
 				       &status, &dest_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
-		END_PROFILE(SMBmv);
-		return;
+		goto out;
 	}
 
-	status = resolve_dfspath_wcard(ctx, conn,
-				       req->flags2 & FLAGS2_DFS_PATHNAMES,
-				       name,
-				       &name,
-				       &src_has_wcard);
+	status = filename_convert(ctx,
+				  conn,
+				  req->flags2 & FLAGS2_DFS_PATHNAMES,
+				  name,
+				  UCF_ALLOW_WCARD_LCOMP,
+				  &src_has_wcard,
+				  &smb_fname_src);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
 					ERRSRV, ERRbadpath);
-			END_PROFILE(SMBmv);
-			return;
+			goto out;
 		}
 		reply_nterror(req, status);
-		END_PROFILE(SMBmv);
-		return;
+		goto out;
 	}
 
-	status = resolve_dfspath_wcard(ctx, conn,
-				       req->flags2 & FLAGS2_DFS_PATHNAMES,
-				       newname,
-				       &newname,
-				       &dest_has_wcard);
+	status = filename_convert(ctx,
+				  conn,
+				  req->flags2 & FLAGS2_DFS_PATHNAMES,
+				  newname,
+				  UCF_ALLOW_WCARD_LCOMP | UCF_SAVE_LCOMP,
+				  &dest_has_wcard,
+				  &smb_fname_dst);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
 					ERRSRV, ERRbadpath);
-			END_PROFILE(SMBmv);
-			return;
+			goto out;
 		}
 		reply_nterror(req, status);
-		END_PROFILE(SMBmv);
-		return;
+		goto out;
 	}
 
-	DEBUG(3,("reply_mv : %s -> %s\n",name,newname));
+	DEBUG(3,("reply_mv : %s -> %s\n", smb_fname_str_dbg(smb_fname_src),
+		 smb_fname_str_dbg(smb_fname_dst)));
 
-	status = rename_internals(ctx, conn, req, name, newname, attrs, False,
-				  src_has_wcard, dest_has_wcard, DELETE_ACCESS);
+	status = rename_internals(ctx, conn, req, smb_fname_src, smb_fname_dst,
+				  attrs, False, src_has_wcard, dest_has_wcard,
+				  DELETE_ACCESS);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->mid)) {
 			/* We have re-scheduled this call. */
-			END_PROFILE(SMBmv);
-			return;
+			goto out;
 		}
 		reply_nterror(req, status);
-		END_PROFILE(SMBmv);
-		return;
+		goto out;
 	}
 
 	reply_outbuf(req, 0, 0);
-
+ out:
+	TALLOC_FREE(smb_fname_src);
+	TALLOC_FREE(smb_fname_dst);
 	END_PROFILE(SMBmv);
 	return;
 }

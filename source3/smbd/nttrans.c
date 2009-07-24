@@ -1312,6 +1312,8 @@ void reply_ntrename(struct smb_request *req)
 	bool src_has_wcard = False;
 	bool dest_has_wcard = False;
 	uint32 attrs;
+	uint32_t ucf_flags_src = 0;
+	uint32_t ucf_flags_dst = 0;
 	uint16 rename_type;
 	TALLOC_CTX *ctx = talloc_tos();
 
@@ -1352,91 +1354,72 @@ void reply_ntrename(struct smb_request *req)
 		goto out;
 	}
 
-	/* rename_internals() calls unix_convert(), so don't call it here. */
-	if (rename_type != RENAME_FLAG_RENAME) {
-		status = filename_convert(ctx, conn,
-					  req->flags2 & FLAGS2_DFS_PATHNAMES,
-					  oldname,
-					  0,
-					  NULL,
-					  &smb_fname_old);
-		if (!NT_STATUS_IS_OK(status)) {
-			if (NT_STATUS_EQUAL(status,
-					    NT_STATUS_PATH_NOT_COVERED)) {
-				reply_botherror(req,
-						NT_STATUS_PATH_NOT_COVERED,
-						ERRSRV, ERRbadpath);
-				goto out;
-			}
-			reply_nterror(req, status);
-			goto out;
-		}
-
-		status = filename_convert(ctx, conn,
-					  req->flags2 & FLAGS2_DFS_PATHNAMES,
-					  newname,
-					  0,
-					  NULL,
-					  &smb_fname_new);
-		if (!NT_STATUS_IS_OK(status)) {
-			if (NT_STATUS_EQUAL(status,
-					    NT_STATUS_PATH_NOT_COVERED)) {
-				reply_botherror(req,
-					        NT_STATUS_PATH_NOT_COVERED,
-						ERRSRV, ERRbadpath);
-				goto out;
-			}
-			reply_nterror(req, status);
-			goto out;
-		}
-
-		DEBUG(3,("reply_ntrename: %s -> %s\n",
-			 smb_fname_str_dbg(smb_fname_old),
-			 smb_fname_str_dbg(smb_fname_new)));
+	/*
+	 * If this is a rename operation, allow wildcards and save the
+	 * destination's last component.
+	 */
+	if (rename_type == RENAME_FLAG_RENAME) {
+		ucf_flags_src = UCF_ALLOW_WCARD_LCOMP;
+		ucf_flags_dst = UCF_ALLOW_WCARD_LCOMP | UCF_SAVE_LCOMP;
 	}
+
+	/* rename_internals() calls unix_convert(), so don't call it here. */
+	status = filename_convert(ctx, conn,
+				  req->flags2 & FLAGS2_DFS_PATHNAMES,
+				  oldname,
+				  ucf_flags_src,
+				  NULL,
+				  &smb_fname_old);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status,
+				    NT_STATUS_PATH_NOT_COVERED)) {
+			reply_botherror(req,
+					NT_STATUS_PATH_NOT_COVERED,
+					ERRSRV, ERRbadpath);
+			goto out;
+		}
+		reply_nterror(req, status);
+		goto out;
+	}
+
+	status = filename_convert(ctx, conn,
+				  req->flags2 & FLAGS2_DFS_PATHNAMES,
+				  newname,
+				  ucf_flags_dst,
+				  &dest_has_wcard,
+				  &smb_fname_new);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status,
+				    NT_STATUS_PATH_NOT_COVERED)) {
+			reply_botherror(req,
+				        NT_STATUS_PATH_NOT_COVERED,
+					ERRSRV, ERRbadpath);
+			goto out;
+		}
+		reply_nterror(req, status);
+		goto out;
+	}
+
+	DEBUG(3,("reply_ntrename: %s -> %s\n",
+		 smb_fname_str_dbg(smb_fname_old),
+		 smb_fname_str_dbg(smb_fname_new)));
 
 	switch(rename_type) {
 		case RENAME_FLAG_RENAME:
-			status = resolve_dfspath(ctx, conn,
-						 (req->flags2 &
-						     FLAGS2_DFS_PATHNAMES),
-						 oldname, &oldname);
-			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(10,("resolve_dfspath failed for name %s "
-					  "with %s\n", oldname,
-					  nt_errstr(status)));
-				reply_nterror(req, status);
-				goto out;
-			}
-
-			status = resolve_dfspath(ctx, conn,
-						 (req->flags2 &
-						     FLAGS2_DFS_PATHNAMES),
-						 newname, &newname);
-			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(10,("resolve_dfspath failed for name %s "
-					  "with %s\n", newname,
-					  nt_errstr(status)));
-				reply_nterror(req, status);
-				goto out;
-			}
-
-			DEBUG(3,("reply_ntrename: %s -> %s\n", oldname,
-				newname));
-
-			status = rename_internals(ctx, conn, req, oldname,
-					newname, attrs, False, src_has_wcard,
-					dest_has_wcard, DELETE_ACCESS);
+			status = rename_internals(ctx, conn, req,
+						  smb_fname_old, smb_fname_new,
+						  attrs, False, src_has_wcard,
+						  dest_has_wcard,
+						  DELETE_ACCESS);
 			break;
 		case RENAME_FLAG_HARD_LINK:
 			if (src_has_wcard || dest_has_wcard) {
 				/* No wildcards. */
 				status = NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
 			} else {
-				status = hardlink_internals(ctx,
-						conn,
-						smb_fname_old,
-						smb_fname_new);
+				status = hardlink_internals(ctx, conn,
+							    smb_fname_old,
+							    smb_fname_new);
 			}
 			break;
 		case RENAME_FLAG_COPY:

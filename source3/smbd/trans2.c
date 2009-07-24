@@ -5683,14 +5683,13 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 					    const char *pdata,
 					    int total_data,
 					    files_struct *fsp,
-					    const char *fname)
+					    struct smb_filename *smb_fname_src)
 {
 	bool overwrite;
 	uint32 root_fid;
 	uint32 len;
 	char *newname = NULL;
-	char *base_name = NULL;
-	struct smb_filename *smb_fname = NULL;
+	struct smb_filename *smb_fname_dst = NULL;
 	bool dest_has_wcard = False;
 	NTSTATUS status = NT_STATUS_OK;
 	char *p;
@@ -5741,7 +5740,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		/* Create an smb_fname to call rename_internals_fsp() with. */
 		status = create_synthetic_smb_fname(talloc_tos(),
 		    fsp->base_fsp->fsp_name->base_name, newname, NULL,
-		    &smb_fname);
+		    &smb_fname_dst);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto out;
 		}
@@ -5750,28 +5749,31 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		 * Set the original last component, since
 		 * rename_internals_fsp() requires it.
 		 */
-		smb_fname->original_lcomp = talloc_strdup(smb_fname, newname);
-		if (smb_fname->original_lcomp == NULL) {
+		smb_fname_dst->original_lcomp = talloc_strdup(smb_fname_dst,
+							      newname);
+		if (smb_fname_dst->original_lcomp == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			goto out;
 		}
 
-		/* Create a char * to call rename_internals() with. */
-		base_name = talloc_asprintf(ctx, "%s%s",
-					   fsp->base_fsp->fsp_name->base_name,
-					   newname);
-		if (!base_name) {
-			status = NT_STATUS_NO_MEMORY;
-			goto out;
-		}
 	} else {
+		/*
+		 * Build up an smb_fname_dst based on the filename passed in.
+		 * We basically just strip off the last component, and put on
+		 * the newname instead.
+		 */
+		char *base_name = NULL;
+
 		/* newname must *not* be a stream name. */
 		if (newname[0] == ':') {
 			return NT_STATUS_NOT_SUPPORTED;
 		}
 
-		/* Create the base directory. */
-		base_name = talloc_strdup(ctx, fname);
+		/*
+		 * Strip off the last component (filename) of the path passed
+		 * in.
+		 */
+		base_name = talloc_strdup(ctx, smb_fname_src->base_name);
 		if (!base_name) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -5792,8 +5794,10 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		status = unix_convert(ctx, conn, base_name, &smb_fname,
-				      UCF_SAVE_LCOMP);
+		status = unix_convert(ctx, conn, base_name, &smb_fname_dst,
+				      (UCF_SAVE_LCOMP |
+					  (dest_has_wcard ?
+					      UCF_ALLOW_WCARD_LCOMP : 0)));
 
 		/* If an error we expect this to be
 		 * NT_STATUS_OBJECT_PATH_NOT_FOUND */
@@ -5804,32 +5808,35 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 				goto out;
 			}
 			/* Create an smb_fname to call rename_internals_fsp() */
-			status = create_synthetic_smb_fname(talloc_tos(),
+			status = create_synthetic_smb_fname(ctx,
 							    base_name, NULL,
-							    NULL, &smb_fname);
+							    NULL,
+							    &smb_fname_dst);
 			if (!NT_STATUS_IS_OK(status)) {
 				goto out;
 			}
 		}
-
 	}
 
 	if (fsp) {
 		DEBUG(10,("smb_file_rename_information: "
 			  "SMB_FILE_RENAME_INFORMATION (fnum %d) %s -> %s\n",
-			  fsp->fnum, fsp_str_dbg(fsp), base_name));
-		status = rename_internals_fsp(conn, fsp, smb_fname, 0,
+			  fsp->fnum, fsp_str_dbg(fsp),
+			  smb_fname_str_dbg(smb_fname_dst)));
+		status = rename_internals_fsp(conn, fsp, smb_fname_dst, 0,
 					      overwrite);
 	} else {
 		DEBUG(10,("smb_file_rename_information: "
 			  "SMB_FILE_RENAME_INFORMATION %s -> %s\n",
-			  fname, base_name));
-		status = rename_internals(ctx, conn, req, fname, base_name, 0,
-					overwrite, False, dest_has_wcard,
-					FILE_WRITE_ATTRIBUTES);
+			  smb_fname_str_dbg(smb_fname_src),
+			  smb_fname_str_dbg(smb_fname_dst)));
+		status = rename_internals(ctx, conn, req, smb_fname_src,
+					  smb_fname_dst, 0, overwrite, false,
+					  dest_has_wcard,
+					  FILE_WRITE_ATTRIBUTES);
 	}
  out:
-	TALLOC_FREE(smb_fname);
+	TALLOC_FREE(smb_fname_dst);
 	return status;
 }
 
@@ -7072,7 +7079,6 @@ NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
 				int *ret_data_size)
 {
 	char *pdata = *ppdata;
-	char *fname = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	int data_return_size = 0;
 
@@ -7088,11 +7094,6 @@ NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
 		if (info_level != SMB_POSIX_PATH_OPEN) {
 			return NT_STATUS_DOS(ERRSRV, ERRaccess);
 		}
-	}
-
-	status = get_full_smb_filename(mem_ctx, smb_fname, &fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
 	}
 
 	DEBUG(3,("smbd_do_setfilepathinfo: %s (fnum %d) info_level=%d "
@@ -7248,7 +7249,7 @@ NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
 		{
 			status = smb_file_rename_information(conn, req,
 							     pdata, total_data,
-							     fsp, fname);
+							     fsp, smb_fname);
 			break;
 		}
 
