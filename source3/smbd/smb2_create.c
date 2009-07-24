@@ -141,16 +141,16 @@ static void smbd_smb2_request_create_done(struct tevent_req *subreq)
 	uint8_t *outhdr;
 	DATA_BLOB outbody;
 	DATA_BLOB outdyn;
-	uint8_t out_oplock_level;
-	uint32_t out_create_action;
-	NTTIME out_creation_time;
-	NTTIME out_last_access_time;
-	NTTIME out_last_write_time;
-	NTTIME out_change_time;
-	uint64_t out_allocation_size;
-	uint64_t out_end_of_file;
-	uint32_t out_file_attributes;
-	uint64_t out_file_id_volatile;
+	uint8_t out_oplock_level = 0;
+	uint32_t out_create_action = 0;
+	NTTIME out_creation_time = 0;
+	NTTIME out_last_access_time = 0;
+	NTTIME out_last_write_time = 0;
+	NTTIME out_change_time = 0;
+	uint64_t out_allocation_size = 0;
+	uint64_t out_end_of_file = 0;
+	uint32_t out_file_attributes = 0;
+	uint64_t out_file_id_volatile = 0;
 	NTSTATUS status;
 	NTSTATUS error; /* transport error */
 

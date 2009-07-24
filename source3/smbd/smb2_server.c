@@ -1523,7 +1523,7 @@ static void smbd_smb2_request_incoming(struct tevent_req *subreq)
 	struct smbd_server_connection *conn = tevent_req_callback_data(subreq,
 					      struct smbd_server_connection);
 	NTSTATUS status;
-	struct smbd_smb2_request *req;
+	struct smbd_smb2_request *req = NULL;
 
 	status = smbd_smb2_request_read_recv(subreq, conn, &req);
 	TALLOC_FREE(subreq);

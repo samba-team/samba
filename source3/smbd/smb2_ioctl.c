@@ -126,7 +126,7 @@ static void smbd_smb2_request_ioctl_done(struct tevent_req *subreq)
 	uint64_t in_file_id_volatile;
 	uint32_t out_input_offset;
 	uint32_t out_output_offset;
-	DATA_BLOB out_output_buffer;
+	DATA_BLOB out_output_buffer = data_blob_null;
 	NTSTATUS status;
 	NTSTATUS error; /* transport error */
 

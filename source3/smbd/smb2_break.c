@@ -92,7 +92,7 @@ static void smbd_smb2_request_oplock_break_done(struct tevent_req *subreq)
 	int i = req->current_idx;
 	uint64_t in_file_id_persistent;
 	uint64_t in_file_id_volatile;
-	uint8_t out_oplock_level;
+	uint8_t out_oplock_level = 0;
 	DATA_BLOB outbody;
 	NTSTATUS status;
 	NTSTATUS error; /* transport error */

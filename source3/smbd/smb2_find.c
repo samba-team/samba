@@ -137,7 +137,7 @@ static void smbd_smb2_request_find_done(struct tevent_req *subreq)
 	DATA_BLOB outbody;
 	DATA_BLOB outdyn;
 	uint16_t out_output_buffer_offset;
-	DATA_BLOB out_output_buffer;
+	DATA_BLOB out_output_buffer = data_blob_null;
 	NTSTATUS status;
 	NTSTATUS error; /* transport error */
 

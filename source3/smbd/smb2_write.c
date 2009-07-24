@@ -124,7 +124,7 @@ static void smbd_smb2_request_write_done(struct tevent_req *subreq)
 	uint8_t *outhdr;
 	DATA_BLOB outbody;
 	DATA_BLOB outdyn;
-	uint32_t out_count;
+	uint32_t out_count = 0;
 	NTSTATUS status;
 	NTSTATUS error; /* transport error */
 

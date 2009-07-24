@@ -76,7 +76,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	size_t c;
 	uint16_t security_mode;
 	uint16_t dialect_count;
-	uint16_t dialect;
+	uint16_t dialect = 0;
 	uint32_t capabilities;
 
 /* TODO: drop the connection with INVALI_PARAMETER */
