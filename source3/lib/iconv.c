@@ -3,17 +3,17 @@
    minimal iconv implementation
    Copyright (C) Andrew Tridgell 2001
    Copyright (C) Jelmer Vernooij 2002,2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -172,7 +172,7 @@ size_t smb_iconv(smb_iconv_t cd,
 	while (*inbytesleft > 0) {
 		bufp = cvtbuf;
 		bufsize = sizeof(cvtbuf);
-		
+
 		if (cd->pull(cd->cd_pull, 
 			     inbuf, inbytesleft, &bufp, &bufsize) == -1
 		    && errno != E2BIG) return -1;
@@ -202,7 +202,7 @@ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 {
 	smb_iconv_t ret;
 	struct charset_functions *from, *to;
-	
+
 	lazy_initialize_iconv();
 	from = charsets;
 	to = charsets;
@@ -226,7 +226,7 @@ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 	/* check if we have a builtin function for this conversion */
 	from = find_charset_functions(fromcode);
 	if(from)ret->pull = from->pull;
-	
+
 	to = find_charset_functions(tocode);
 	if(to)ret->push = to->push;
 
@@ -248,7 +248,7 @@ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 			ret->push = sys_iconv;
 	}
 #endif
-	
+
 	/* check if there is a module available that can do this conversion */
 	if (!ret->pull && NT_STATUS_IS_OK(smb_probe_module("charset", fromcode))) {
 		if(!(from = find_charset_functions(fromcode)))
@@ -346,7 +346,7 @@ static size_t ascii_pull(void *cd, const char **inbuf, size_t *inbytesleft,
 		errno = E2BIG;
 		return -1;
 	}
-	
+
 	return 0;
 }
 
@@ -373,7 +373,7 @@ static size_t ascii_push(void *cd, const char **inbuf, size_t *inbytesleft,
 		errno = E2BIG;
 		return -1;
 	}
-	
+
 	return ir_count;
 }
 
@@ -400,7 +400,7 @@ static size_t latin1_push(void *cd, const char **inbuf, size_t *inbytesleft,
 		errno = E2BIG;
 		return -1;
 	}
-	
+
 	return ir_count;
 }
 
@@ -425,7 +425,7 @@ static size_t ucs2hex_pull(void *cd, const char **inbuf, size_t *inbytesleft,
 			errno = EINVAL;
 			return -1;
 		}
-		
+
 		if (sscanf(&(*inbuf)[1], "%04x", &v) != 1) {
 			errno = EILSEQ;
 			return -1;
@@ -443,7 +443,7 @@ static size_t ucs2hex_pull(void *cd, const char **inbuf, size_t *inbytesleft,
 		errno = E2BIG;
 		return -1;
 	}
-	
+
 	return 0;
 }
 
@@ -484,7 +484,7 @@ static size_t ucs2hex_push(void *cd, const char **inbuf, size_t *inbytesleft,
 		errno = E2BIG;
 		return -1;
 	}
-	
+
 	return 0;
 }
 
@@ -713,7 +713,7 @@ static size_t utf8_push(void *cd, const char **inbuf, size_t *inbytesleft,
 			c[0] = 0xe0 | (codepoint >> 12);
 			c[1] = 0x80 | ((codepoint >> 6) & 0x3f);
 			c[2] = 0x80 | (codepoint & 0x3f);
-			
+
 			in_left  -= 2;
 			out_left -= 3;
 			uc  += 2;
@@ -732,7 +732,7 @@ static size_t utf8_push(void *cd, const char **inbuf, size_t *inbytesleft,
 		}
 		codepoint = 0x10000 + (uc[2] | ((uc[3] & 0x3)<<8) | 
 				       (uc[0]<<10) | ((uc[1] & 0x3)<<18));
-		
+
 		if (out_left < 4) {
 			errno = E2BIG;
 			goto error;
@@ -741,7 +741,7 @@ static size_t utf8_push(void *cd, const char **inbuf, size_t *inbytesleft,
 		c[1] = 0x80 | ((codepoint >> 12) & 0x3f);
 		c[2] = 0x80 | ((codepoint >> 6) & 0x3f);
 		c[3] = 0x80 | (codepoint & 0x3f);
-		
+
 		in_left  -= 4;
 		out_left -= 4;
 		uc       += 4;
@@ -762,7 +762,7 @@ static size_t utf8_push(void *cd, const char **inbuf, size_t *inbytesleft,
 	*outbytesleft = out_left;
 	*inbuf  = (char *)uc;
 	*outbuf = (char *)c;
-	
+
 	return 0;
 
 error:
