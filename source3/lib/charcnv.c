@@ -54,14 +54,30 @@ static bool initialized;
  **/
 static const char *charset_name(charset_t ch)
 {
-	const char *ret = NULL;
+	const char *ret;
 
-	if (ch == CH_UTF16LE) ret = "UTF-16LE";
-	else if (ch == CH_UTF16BE) ret = "UTF-16BE";
-	else if (ch == CH_UNIX) ret = lp_unix_charset();
-	else if (ch == CH_DOS) ret = lp_dos_charset();
-	else if (ch == CH_DISPLAY) ret = lp_display_charset();
-	else if (ch == CH_UTF8) ret = "UTF8";
+	switch (ch) {
+	case CH_UTF16LE:
+		ret = "UTF-16LE";
+		break;
+	case CH_UTF16BE:
+		ret = "UTF-16BE";
+		break;
+	case CH_UNIX:
+		ret = lp_unix_charset();
+		break;
+	case CH_DOS:
+		ret = lp_dos_charset();
+		break;
+	case CH_DISPLAY:
+		ret = lp_display_charset();
+		break;
+	case CH_UTF8:
+		ret = "UTF8";
+		break;
+	default:
+		ret = NULL;
+	}
 
 #if defined(HAVE_NL_LANGINFO) && defined(CODESET)
 	if (ret && !strcmp(ret, "LOCALE")) {
