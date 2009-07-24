@@ -86,7 +86,7 @@ struct security_descriptor_hash_v2 {
 struct security_descriptor_hash_v3 {
 	struct security_descriptor *sd;/* [unique] */
 	uint16_t hash_type;
-	uint8_t *hash;
+	uint8_t hash[64];
 }/* [public] */;
 
 union xattr_NTACL_Info {

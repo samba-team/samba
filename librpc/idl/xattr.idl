@@ -135,7 +135,7 @@ interface xattr
 	typedef [public] struct {
 		security_descriptor *sd;
 		uint16 hash_type;
-		uint8 hash[XATTR_SD_HASH_SIZE]; /* 64 bytes hash. */
+		uint8 hash[64]; /* 64 bytes hash. */
 	} security_descriptor_hash_v3;
 
 	typedef [switch_type(uint16)] union {

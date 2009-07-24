@@ -606,7 +606,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_security_descriptor_hash_v3(struct ndr_push 
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->sd));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->hash_type));
-		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->hash, XATTR_SD_HASH_SIZE));
+		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->hash, 64));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->sd) {
@@ -629,8 +629,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_security_descriptor_hash_v3(struct ndr_pull 
 			r->sd = NULL;
 		}
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->hash_type));
-		NDR_PULL_ALLOC_N(ndr, r->hash, XATTR_SD_HASH_SIZE);
-		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->hash, XATTR_SD_HASH_SIZE));
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->hash, 64));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->sd) {
@@ -654,7 +653,7 @@ _PUBLIC_ void ndr_print_security_descriptor_hash_v3(struct ndr_print *ndr, const
 	}
 	ndr->depth--;
 	ndr_print_uint16(ndr, "hash_type", r->hash_type);
-	ndr_print_array_uint8(ndr, "hash", r->hash, XATTR_SD_HASH_SIZE);
+	ndr_print_array_uint8(ndr, "hash", r->hash, 64);
 	ndr->depth--;
 }
 
