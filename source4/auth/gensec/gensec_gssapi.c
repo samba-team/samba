@@ -38,6 +38,7 @@
 #include "auth/session_proto.h"
 #include <gssapi/gssapi.h>
 #include <gssapi/gssapi_krb5.h>
+#include <gssapi/gssapi_spnego.h>
 #include "auth/gensec/gensec_gssapi.h"
 
 static size_t gensec_gssapi_max_input_size(struct gensec_security *gensec_security);
@@ -206,8 +207,16 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 		gensec_gssapi_state->want_flags |= GSS_C_DCE_STYLE;
 	}
 
-	gensec_gssapi_state->gss_oid = GSS_C_NULL_OID;
-	
+	switch (gensec_security->ops->auth_type) {
+	case DCERPC_AUTH_TYPE_SPNEGO:
+		gensec_gssapi_state->gss_oid = gss_mech_spnego;
+		break;
+	case DCERPC_AUTH_TYPE_KRB5:
+	default:
+		gensec_gssapi_state->gss_oid = gss_mech_krb5;
+		break;
+	}
+
 	send_to_kdc.func = smb_krb5_send_and_recv_func;
 	send_to_kdc.ptr = gensec_security->event_ctx;
 
@@ -335,8 +344,6 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 	}
 
 	gensec_gssapi_state = talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
-
-	gensec_gssapi_state->gss_oid = gss_mech_krb5;
 
 	principal = gensec_get_target_principal(gensec_security);
 	if (principal && lp_client_use_spnego_principal(gensec_security->settings->lp_ctx)) {
