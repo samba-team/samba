@@ -3982,7 +3982,6 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 	time_t create_time, mtime, atime;
 	SMB_STRUCT_STAT sbuf;
 	char *p;
-	char *fname;
 	char *base_name;
 	char *dos_fname;
 	int mode;
@@ -3998,11 +3997,6 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 
 	if (INFO_LEVEL_IS_UNIX(info_level) && !lp_unix_extensions()) {
 		return NT_STATUS_INVALID_LEVEL;
-	}
-
-	status = get_full_smb_filename(mem_ctx, smb_fname, &fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
 	}
 
 	DEBUG(5,("smbd_do_qfilepathinfo: %s (fnum = %d) level=%d max_data=%u\n",
@@ -4070,10 +4064,18 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 	} else {
 		dos_fname = talloc_asprintf(mem_ctx,
 				"\\%s",
-				fname);
+				smb_fname->base_name);
 		if (!dos_fname) {
 			return NT_STATUS_NO_MEMORY;
 		}
+		if (is_ntfs_stream_smb_fname(smb_fname)) {
+			dos_fname = talloc_asprintf(dos_fname, "%s",
+						    smb_fname->stream_name);
+			if (!dos_fname) {
+				return NT_STATUS_NO_MEMORY;
+			}
+		}
+
 		string_replace(dos_fname, '/', '\\');
 	}
 
@@ -4126,7 +4128,9 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 
 		case SMB_INFO_QUERY_EA_SIZE:
 		{
-			unsigned int ea_size = estimate_ea_size(conn, fsp, fname);
+			unsigned int ea_size =
+			    estimate_ea_size(conn, fsp,
+					     smb_fname->base_name);
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB_INFO_QUERY_EA_SIZE\n"));
 			data_size = 26;
 			srv_put_dos_date2(pdata,0,create_time);
@@ -4156,7 +4160,10 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB_INFO_QUERY_EAS_FROM_LIST\n"));
 
-			ea_file_list = get_ea_list_from_file(mem_ctx, conn, fsp, fname, &total_ea_len);
+			ea_file_list =
+			    get_ea_list_from_file(mem_ctx, conn, fsp,
+						  smb_fname->base_name,
+						  &total_ea_len);
 			ea_list = ea_list_union(ea_list, ea_file_list, &total_ea_len);
 
 			if (!ea_list || (total_ea_len > data_size)) {
@@ -4176,7 +4183,9 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB_INFO_QUERY_ALL_EAS\n"));
 
-			ea_list = get_ea_list_from_file(mem_ctx, conn, fsp, fname, &total_ea_len);
+			ea_list = get_ea_list_from_file(mem_ctx, conn, fsp,
+							smb_fname->base_name,
+							&total_ea_len);
 			if (!ea_list || (total_ea_len > data_size)) {
 				data_size = 4;
 				SIVAL(pdata,0,4);   /* EA List Length must be set to 4 if no EA's. */
@@ -4197,10 +4206,10 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 
 			/*TODO: add filtering and index handling */
 
-			ea_file_list = get_ea_list_from_file(mem_ctx,
-							     conn, fsp,
-							     fname,
-							     &total_ea_len);
+			ea_file_list =
+			    get_ea_list_from_file(mem_ctx, conn, fsp,
+						  smb_fname->base_name,
+						  &total_ea_len);
 			if (!ea_file_list) {
 				return NT_STATUS_NO_EAS_ON_FILE;
 			}
@@ -4257,7 +4266,8 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		case SMB_FILE_EA_INFORMATION:
 		case SMB_QUERY_FILE_EA_INFO:
 		{
-			unsigned int ea_size = estimate_ea_size(conn, fsp, fname);
+			unsigned int ea_size =
+			    estimate_ea_size(conn, fsp,	smb_fname->base_name);
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_EA_INFORMATION\n"));
 			data_size = 4;
 			SIVAL(pdata,0,ea_size);
@@ -4318,7 +4328,8 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		case SMB_FILE_ALL_INFORMATION:
 		{
 			int len;
-			unsigned int ea_size = estimate_ea_size(conn, fsp, fname);
+			unsigned int ea_size =
+			    estimate_ea_size(conn, fsp, smb_fname->base_name);
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_ALL_INFORMATION\n"));
 			put_long_date_timespec(pdata,create_time_ts);
 			put_long_date_timespec(pdata+8,atime_ts);
@@ -4349,7 +4360,8 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		case 0xFF12:/*SMB2_FILE_ALL_INFORMATION*/
 		{
 			int len;
-			unsigned int ea_size = estimate_ea_size(conn, fsp, fname);
+			unsigned int ea_size =
+			    estimate_ea_size(conn, fsp, smb_fname->base_name);
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB2_FILE_ALL_INFORMATION\n"));
 			put_long_date_timespec(pdata+0x00,create_time_ts);
 			put_long_date_timespec(pdata+0x08,atime_ts);
@@ -4445,8 +4457,12 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			DEBUG(10,("smbd_do_qfilepathinfo: "
 				  "SMB_FILE_STREAM_INFORMATION\n"));
 
+			if (is_ntfs_stream_smb_fname(smb_fname)) {
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+
 			status = SMB_VFS_STREAMINFO(
-				conn, fsp, fname, talloc_tos(),
+				conn, fsp, smb_fname->base_name, talloc_tos(),
 				&num_streams, &streams);
 
 			if (!NT_STATUS_IS_OK(status)) {
@@ -4551,8 +4567,9 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 #else
 				return NT_STATUS_DOS(ERRDOS, ERRbadlink);
 #endif
-				len = SMB_VFS_READLINK(conn,fname,
-						buffer, PATH_MAX);
+				len = SMB_VFS_READLINK(conn,
+						       smb_fname->base_name,
+						       buffer, PATH_MAX);
 				if (len == -1) {
 					return map_nt_error_from_unix(errno);
 				}
@@ -4578,12 +4595,17 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 				if (fsp && !fsp->is_directory && (fsp->fh->fd != -1)) {
 					file_acl = SMB_VFS_SYS_ACL_GET_FD(fsp);
 				} else {
-					file_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, fname, SMB_ACL_TYPE_ACCESS);
+					file_acl =
+					    SMB_VFS_SYS_ACL_GET_FILE(conn,
+						smb_fname->base_name,
+						SMB_ACL_TYPE_ACCESS);
 				}
 
 				if (file_acl == NULL && no_acl_syscall_error(errno)) {
-					DEBUG(5,("smbd_do_qfilepathinfo: ACLs not implemented on filesystem containing %s\n",
-						fname ));
+					DEBUG(5,("smbd_do_qfilepathinfo: ACLs "
+						 "not implemented on "
+						 "filesystem containing %s\n",
+						 smb_fname->base_name));
 					return NT_STATUS_NOT_IMPLEMENTED;
 				}
 
@@ -4595,7 +4617,11 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 							    fsp->fsp_name->base_name,
 							    SMB_ACL_TYPE_DEFAULT);
 					} else {
-						def_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, fname, SMB_ACL_TYPE_DEFAULT);
+						def_acl =
+						    SMB_VFS_SYS_ACL_GET_FILE(
+							    conn,
+							    smb_fname->base_name,
+							    SMB_ACL_TYPE_DEFAULT);
 					}
 					def_acl = free_empty_sys_acl(conn, def_acl);
 				}

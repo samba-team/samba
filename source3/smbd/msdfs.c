@@ -525,7 +525,6 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 	char *q = NULL;
 	NTSTATUS status;
 	struct smb_filename *smb_fname = NULL;
-	char *localpath = NULL;
 	char *canon_dfspath = NULL; /* Canonicalized dfs path. (only '/'
 				  components). */
 
@@ -547,26 +546,29 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 	status = unix_convert(ctx, conn, pdp->reqpath, &smb_fname,
 			      search_flag ? UCF_ALLOW_WCARD_LCOMP : 0);
 
-	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status,
-					NT_STATUS_OBJECT_PATH_NOT_FOUND)) {
-		return status;
-	}
-
-	status = get_full_smb_filename(ctx, smb_fname, &localpath);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(smb_fname);
-		return status;
-	}
+		if (!NT_STATUS_EQUAL(status,
+				     NT_STATUS_OBJECT_PATH_NOT_FOUND)) {
+			return status;
+		}
 
-	TALLOC_FREE(smb_fname);
+		/* Create an smb_fname to use below. */
+		status = create_synthetic_smb_fname(ctx, pdp->reqpath, NULL,
+						    NULL, &smb_fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
 
 	/* Optimization - check if we can redirect the whole path. */
 
-	if (is_msdfs_link_internal(ctx, conn, localpath, pp_targetpath, NULL)) {
+	if (is_msdfs_link_internal(ctx, conn, smb_fname->base_name,
+				   pp_targetpath, NULL)) {
 		if (search_flag) {
 			DEBUG(6,("dfs_path_lookup (FindFirst) No redirection "
 				 "for dfs link %s.\n", dfspath));
-			return NT_STATUS_OK;
+			status = NT_STATUS_OK;
+			goto out;
 		}
 
 		DEBUG(6,("dfs_path_lookup: %s resolves to a "
@@ -576,7 +578,8 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 		if (consumedcntp) {
 			*consumedcntp = strlen(dfspath);
 		}
-		return NT_STATUS_PATH_NOT_COVERED;
+		status = NT_STATUS_PATH_NOT_COVERED;
+		goto out;
 	}
 
 	/* Prepare to test only for '/' components in the given path,
@@ -585,7 +588,8 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 
 	canon_dfspath = talloc_strdup(ctx, dfspath);
 	if (!canon_dfspath) {
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
 	}
 	if (!pdp->posix_path) {
 		string_replace(canon_dfspath, '\\', '/');
@@ -607,7 +611,7 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 	 * DFS path. If we hit a DFS link then we're done.
 	 */
 
-	p = strrchr_m(localpath, '/');
+	p = strrchr_m(smb_fname->base_name, '/');
 	if (consumedcntp) {
 		q = strrchr_m(canon_dfspath, '/');
 	}
@@ -619,9 +623,11 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 		}
 
 		if (is_msdfs_link_internal(ctx, conn,
-					localpath, pp_targetpath, NULL)) {
+					   smb_fname->base_name, pp_targetpath,
+					   NULL)) {
 			DEBUG(4, ("dfs_path_lookup: Redirecting %s because "
-				"parent %s is dfs link\n", dfspath, localpath));
+				  "parent %s is dfs link\n", dfspath,
+				  smb_fname_str_dbg(smb_fname)));
 
 			if (consumedcntp) {
 				*consumedcntp = strlen(canon_dfspath);
@@ -631,11 +637,12 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 					*consumedcntp));
 			}
 
-			return NT_STATUS_PATH_NOT_COVERED;
+			status = NT_STATUS_PATH_NOT_COVERED;
+			goto out;
 		}
 
 		/* Step back on the filesystem. */
-		p = strrchr_m(localpath, '/');
+		p = strrchr_m(smb_fname->base_name, '/');
 
 		if (consumedcntp) {
 			/* And in the canonicalized dfs path. */
@@ -643,7 +650,10 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 		}
 	}
 
-	return NT_STATUS_OK;
+	status = NT_STATUS_OK;
+ out:
+	TALLOC_FREE(smb_fname);
+	return status;
 }
 
 /*****************************************************************
