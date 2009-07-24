@@ -754,6 +754,7 @@ static void winbind_client_request_read(struct tevent_req *req)
 	int err;
 
 	ret = wb_req_read_recv(req, state, &state->request, &err);
+	TALLOC_FREE(req);
 	if (ret == -1) {
 		DEBUG(2, ("Could not read client request: %s\n",
 			  strerror(err)));
