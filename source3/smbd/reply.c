@@ -994,6 +994,8 @@ void reply_checkpath(struct smb_request *req)
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				name,
+				0,
+				NULL,
 				&smb_fname);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1090,6 +1092,8 @@ void reply_getatr(struct smb_request *req)
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
+				0,
+				NULL,
 				&smb_fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -1191,6 +1195,8 @@ void reply_setatr(struct smb_request *req)
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
+				0,
+				NULL,
 				&smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -1724,6 +1730,8 @@ void reply_open(struct smb_request *req)
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
+				0,
+				NULL,
 				&smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -1894,6 +1902,8 @@ void reply_open_and_X(struct smb_request *req)
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
+				0,
+				NULL,
 				&smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -2103,6 +2113,8 @@ void reply_mknew(struct smb_request *req)
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
+				0,
+				NULL,
 				&smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -2235,6 +2247,8 @@ void reply_ctemp(struct smb_request *req)
 	status = filename_convert(ctx, conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
+				0,
+				NULL,
 				&smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -5240,6 +5254,8 @@ void reply_mkdir(struct smb_request *req)
 	status = filename_convert(ctx, conn,
 				 req->flags2 & FLAGS2_DFS_PATHNAMES,
 				 directory,
+				 0,
+				 NULL,
 				 &smb_dname);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
@@ -5547,6 +5563,8 @@ void reply_rmdir(struct smb_request *req)
 	status = filename_convert(ctx, conn,
 				 req->flags2 & FLAGS2_DFS_PATHNAMES,
 				 directory,
+				 0,
+				 NULL,
 				 &smb_dname);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {

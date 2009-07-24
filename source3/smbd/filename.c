@@ -1027,14 +1027,30 @@ static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
-/****************************************************************************
- Go through all the steps to validate a filename.
-****************************************************************************/
-
+/**
+ * Go through all the steps to validate a filename.
+ *
+ * @param ctx		talloc_ctx to allocate memory with.
+ * @param conn		connection struct for vfs calls.
+ * @param dfs_path	Whether this path requires dfs resolution.
+ * @param name_in	The unconverted name.
+ * @param ucf_flags	flags to pass through to unix_convert().
+ *			UCF_ALLOW_WCARD_LCOMP will be stripped out if
+ *			p_cont_wcard == NULL or is false.
+ * @param p_cont_wcard	If not NULL, will be set to true if the dfs path
+ *			resolution detects a wildcard.
+ * @param pp_smb_fname	The final converted name will be allocated if the
+ *			return is NT_STATUS_OK.
+ *
+ * @return NT_STATUS_OK if all operations completed succesfully, appropriate
+ * 	   error otherwise.
+ */
 NTSTATUS filename_convert(TALLOC_CTX *ctx,
 				connection_struct *conn,
 				bool dfs_path,
 				const char *name_in,
+				uint32_t ucf_flags,
+				bool *ppath_contains_wcard,
 				struct smb_filename **pp_smb_fname)
 {
 	NTSTATUS status;
@@ -1042,10 +1058,11 @@ NTSTATUS filename_convert(TALLOC_CTX *ctx,
 
 	*pp_smb_fname = NULL;
 
-	status = resolve_dfspath(ctx, conn,
+	status = resolve_dfspath_wcard(ctx, conn,
 				dfs_path,
 				name_in,
-				&fname);
+				&fname,
+				ppath_contains_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("filename_convert: resolve_dfspath failed "
 			"for name %s with %s\n",
@@ -1053,7 +1070,17 @@ NTSTATUS filename_convert(TALLOC_CTX *ctx,
 			nt_errstr(status) ));
 		return status;
 	}
-	status = unix_convert(ctx, conn, fname, pp_smb_fname, 0);
+
+	/*
+	 * Strip out the UCF_ALLOW_WCARD_LCOMP if the path doesn't contain a
+	 * wildcard.
+	 */
+	if (ppath_contains_wcard != NULL && !*ppath_contains_wcard &&
+	    ucf_flags & UCF_ALLOW_WCARD_LCOMP) {
+		ucf_flags &= ~UCF_ALLOW_WCARD_LCOMP;
+	}
+
+	status = unix_convert(ctx, conn, fname, pp_smb_fname, ucf_flags);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("filename_convert: unix_convert failed "
 			"for name %s with %s\n",

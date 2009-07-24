@@ -478,6 +478,8 @@ void reply_ntcreate_and_X(struct smb_request *req)
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
+				0,
+				NULL,
 				&smb_fname);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -967,6 +969,8 @@ static void call_nt_transact_create(connection_struct *conn,
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
+				0,
+				NULL,
 				&smb_fname);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1353,6 +1357,8 @@ void reply_ntrename(struct smb_request *req)
 		status = filename_convert(ctx, conn,
 					  req->flags2 & FLAGS2_DFS_PATHNAMES,
 					  oldname,
+					  0,
+					  NULL,
 					  &smb_fname_old);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (NT_STATUS_EQUAL(status,
@@ -1369,6 +1375,8 @@ void reply_ntrename(struct smb_request *req)
 		status = filename_convert(ctx, conn,
 					  req->flags2 & FLAGS2_DFS_PATHNAMES,
 					  newname,
+					  0,
+					  NULL,
 					  &smb_fname_new);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (NT_STATUS_EQUAL(status,

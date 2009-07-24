@@ -6320,6 +6320,8 @@ NTSTATUS filename_convert(TALLOC_CTX *mem_ctx,
 			connection_struct *conn,
 			bool dfs_path,
 			const char *name_in,
+			uint32_t ucf_flags,
+			bool *ppath_contains_wcard,
 			struct smb_filename **pp_smb_fname);
 
 /* The following definitions come from smbd/filename_utils.c */

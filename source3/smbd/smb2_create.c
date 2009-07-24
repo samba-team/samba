@@ -325,6 +325,8 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 					smbreq->conn,
 					smbreq->flags2 & FLAGS2_DFS_PATHNAMES,
 					in_name,
+					0,
+					NULL,
 					&smb_fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			tevent_req_nterror(req, status);

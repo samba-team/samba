@@ -1718,40 +1718,9 @@ struct junction_map *enum_msdfs_links(TALLOC_CTX *ctx, size_t *p_num_jn)
 }
 
 /******************************************************************************
- Core function to resolve a dfs pathname.
-******************************************************************************/
-
-NTSTATUS resolve_dfspath(TALLOC_CTX *ctx,
-			connection_struct *conn,
-			bool dfs_pathnames,
-			const char *name_in,
-			char **pp_name_out)
-{
-	NTSTATUS status = NT_STATUS_OK;
-	bool dummy;
-	if (dfs_pathnames) {
-		status = dfs_redirect(ctx,
-					conn,
-					name_in,
-					False,
-					pp_name_out,
-					&dummy);
-	} else {
-		/*
-		 * Cheat and just return a copy of the in ptr.
-		 * Once srvstr_get_path() uses talloc it'll
-		 * be a talloced ptr anyway.
-		 */
-		*pp_name_out = CONST_DISCARD(char *,name_in);
-	}
-	return status;
-}
-
-/******************************************************************************
- Core function to resolve a dfs pathname possibly containing a wildcard.
- This function is identical to the above except for the bool param to
- dfs_redirect but I need this to be separate so it's really clear when
- we're allowing wildcards and when we're not. JRA.
+ Core function to resolve a dfs pathname possibly containing a wildcard.  If
+ ppath_contains_wcard != NULL, it will be set to true if a wildcard is
+ detected during dfs resolution.
 ******************************************************************************/
 
 NTSTATUS resolve_dfspath_wcard(TALLOC_CTX *ctx,
@@ -1761,14 +1730,20 @@ NTSTATUS resolve_dfspath_wcard(TALLOC_CTX *ctx,
 				char **pp_name_out,
 				bool *ppath_contains_wcard)
 {
+	bool path_contains_wcard;
 	NTSTATUS status = NT_STATUS_OK;
+
 	if (dfs_pathnames) {
 		status = dfs_redirect(ctx,
 					conn,
 					name_in,
 					True,
 					pp_name_out,
-					ppath_contains_wcard);
+					&path_contains_wcard);
+
+		if (NT_STATUS_IS_OK(status) && ppath_contains_wcard != NULL) {
+			*ppath_contains_wcard = path_contains_wcard;
+		}
 	} else {
 		/*
 		 * Cheat and just return a copy of the in ptr.
