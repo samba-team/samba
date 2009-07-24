@@ -85,7 +85,7 @@ NTSTATUS smb2_signing_check_pdu(DATA_BLOB session_key,
 	uint64_t session_id;
 	struct HMACSHA256Context m;
 	uint8_t res[SHA256_DIGEST_LENGTH];
-	static const uint8_t zero_sig[16];
+	static const uint8_t zero_sig[16] = { 0, };
 	int i;
 
 	if (count < 2) {
