@@ -206,16 +206,15 @@ static int prealloc_ftruncate(vfs_handle_struct * handle,
 	return ret;
 }
 
-static vfs_op_tuple prealloc_op_tuples[] = {
-	{SMB_VFS_OP(prealloc_open), SMB_VFS_OP_OPEN, SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(prealloc_ftruncate), SMB_VFS_OP_FTRUNCATE, SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(prealloc_connect), SMB_VFS_OP_CONNECT, SMB_VFS_LAYER_TRANSPARENT},
-	{NULL,	SMB_VFS_OP_NOOP, SMB_VFS_LAYER_NOOP}
+static struct vfs_fn_pointers prealloc_fns = {
+	.open = prealloc_open,
+	.ftruncate = prealloc_ftruncate,
+	.connect = prealloc_connect,
 };
 
 NTSTATUS vfs_prealloc_init(void);
 NTSTATUS vfs_prealloc_init(void)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION,
-		MODULE, prealloc_op_tuples);
+				MODULE, &prealloc_fns);
 }

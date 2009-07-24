@@ -600,11 +600,6 @@ static int shadow_copy2_lsetxattr(struct vfs_handle_struct *handle, const char *
 static int shadow_copy2_chmod_acl(vfs_handle_struct *handle,
 			   const char *fname, mode_t mode)
 {
-        /* If the underlying VFS doesn't have ACL support... */
-        if (!handle->vfs_next.ops.chmod_acl) {
-                errno = ENOSYS;
-                return -1;
-        }
         SHADOW2_NEXT(CHMOD_ACL, (handle, name, mode), int, -1);
 }
 
@@ -674,54 +669,37 @@ static int shadow_copy2_get_shadow_copy2_data(vfs_handle_struct *handle,
 	return 0;
 }
 
-/* VFS operations structure */
-
-static vfs_op_tuple shadow_copy2_ops[] = {
-        {SMB_VFS_OP(shadow_copy2_opendir),  SMB_VFS_OP_OPENDIR,  SMB_VFS_LAYER_TRANSPARENT},
-
-	/* directory operations */
-        {SMB_VFS_OP(shadow_copy2_mkdir),       SMB_VFS_OP_MKDIR,       SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(shadow_copy2_rmdir),       SMB_VFS_OP_RMDIR,       SMB_VFS_LAYER_TRANSPARENT},
-
-	/* xattr and flags operations */
-        {SMB_VFS_OP(shadow_copy2_chflags),     SMB_VFS_OP_CHFLAGS,     SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(shadow_copy2_getxattr),    SMB_VFS_OP_GETXATTR,    SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(shadow_copy2_lgetxattr),   SMB_VFS_OP_LGETXATTR,   SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(shadow_copy2_listxattr),   SMB_VFS_OP_LISTXATTR,   SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(shadow_copy2_removexattr), SMB_VFS_OP_REMOVEXATTR, SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(shadow_copy2_lremovexattr),SMB_VFS_OP_LREMOVEXATTR,SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(shadow_copy2_setxattr),    SMB_VFS_OP_SETXATTR,    SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(shadow_copy2_lsetxattr),   SMB_VFS_OP_LSETXATTR,   SMB_VFS_LAYER_TRANSPARENT},
-
-        /* File operations */
-        {SMB_VFS_OP(shadow_copy2_open),       SMB_VFS_OP_OPEN,     SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(shadow_copy2_rename),     SMB_VFS_OP_RENAME,   SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(shadow_copy2_stat),       SMB_VFS_OP_STAT,     SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(shadow_copy2_lstat),      SMB_VFS_OP_LSTAT,    SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(shadow_copy2_fstat),      SMB_VFS_OP_FSTAT,    SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(shadow_copy2_unlink),     SMB_VFS_OP_UNLINK,   SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(shadow_copy2_chmod),      SMB_VFS_OP_CHMOD,    SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(shadow_copy2_chown),      SMB_VFS_OP_CHOWN,    SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(shadow_copy2_chdir),      SMB_VFS_OP_CHDIR,    SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(shadow_copy2_ntimes),     SMB_VFS_OP_NTIMES,   SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(shadow_copy2_symlink),    SMB_VFS_OP_SYMLINK,  SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(shadow_copy2_readlink),   SMB_VFS_OP_READLINK, SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(shadow_copy2_link),       SMB_VFS_OP_LINK,     SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(shadow_copy2_mknod),      SMB_VFS_OP_MKNOD,    SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(shadow_copy2_realpath),   SMB_VFS_OP_REALPATH, SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(shadow_copy2_connectpath), SMB_VFS_OP_CONNECTPATH, SMB_VFS_LAYER_OPAQUE},
-
-        /* NT File ACL operations */
-        {SMB_VFS_OP(shadow_copy2_get_nt_acl), SMB_VFS_OP_GET_NT_ACL, SMB_VFS_LAYER_TRANSPARENT},
-
-        /* POSIX ACL operations */
-        {SMB_VFS_OP(shadow_copy2_chmod_acl), SMB_VFS_OP_CHMOD_ACL, SMB_VFS_LAYER_TRANSPARENT},
-
-	/* special shadown copy op */
-	{SMB_VFS_OP(shadow_copy2_get_shadow_copy2_data), 
-	 SMB_VFS_OP_GET_SHADOW_COPY_DATA,SMB_VFS_LAYER_OPAQUE},
-
-	{SMB_VFS_OP(NULL), SMB_VFS_OP_NOOP, SMB_VFS_LAYER_NOOP}
+static struct vfs_fn_pointers vfs_shadow_copy2_fns = {
+        .opendir = shadow_copy2_opendir,
+        .mkdir = shadow_copy2_mkdir,
+        .rmdir = shadow_copy2_rmdir,
+        .chflags = shadow_copy2_chflags,
+        .getxattr = shadow_copy2_getxattr,
+        .lgetxattr = shadow_copy2_lgetxattr,
+        .listxattr = shadow_copy2_listxattr,
+        .removexattr = shadow_copy2_removexattr,
+        .lremovexattr = shadow_copy2_lremovexattr,
+        .setxattr = shadow_copy2_setxattr,
+        .lsetxattr = shadow_copy2_lsetxattr,
+        .open = shadow_copy2_open,
+        .rename = shadow_copy2_rename,
+        .stat = shadow_copy2_stat,
+        .lstat = shadow_copy2_lstat,
+        .fstat = shadow_copy2_fstat,
+        .unlink = shadow_copy2_unlink,
+        .chmod = shadow_copy2_chmod,
+        .chown = shadow_copy2_chown,
+        .chdir = shadow_copy2_chdir,
+        .ntimes = shadow_copy2_ntimes,
+        .symlink = shadow_copy2_symlink,
+        .vfs_readlink = shadow_copy2_readlink,
+        .link = shadow_copy2_link,
+        .mknod = shadow_copy2_mknod,
+        .realpath = shadow_copy2_realpath,
+        .connectpath = shadow_copy2_connectpath,
+        .get_nt_acl = shadow_copy2_get_nt_acl,
+        .chmod_acl = shadow_copy2_chmod_acl,
+	.get_shadow_copy_data = shadow_copy2_get_shadow_copy2_data,
 };
 
 NTSTATUS vfs_shadow_copy2_init(void);
@@ -729,7 +707,8 @@ NTSTATUS vfs_shadow_copy2_init(void)
 {
 	NTSTATUS ret;
 
-	ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "shadow_copy2", shadow_copy2_ops);
+	ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "shadow_copy2",
+			       &vfs_shadow_copy2_fns);
 
 	if (!NT_STATUS_IS_OK(ret))
 		return ret;

@@ -362,38 +362,21 @@ static uint32_t tsmsm_fs_capabilities(struct vfs_handle_struct *handle)
 	return SMB_VFS_NEXT_FS_CAPABILITIES(handle) | FILE_SUPPORTS_REMOTE_STORAGE | FILE_SUPPORTS_REPARSE_POINTS;
 }
 
-static vfs_op_tuple vfs_tsmsm_ops[] = {
-
-	/* Disk operations */
-
-	{SMB_VFS_OP(tsmsm_connect),	SMB_VFS_OP_CONNECT,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(tsmsm_fs_capabilities),	SMB_VFS_OP_FS_CAPABILITIES,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(tsmsm_aio_force),	SMB_VFS_OP_AIO_FORCE,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(tsmsm_aio_return),	SMB_VFS_OP_AIO_RETURN,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(tsmsm_pread),	SMB_VFS_OP_PREAD,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(tsmsm_pwrite),	SMB_VFS_OP_PWRITE,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(tsmsm_sendfile),	SMB_VFS_OP_SENDFILE,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(tsmsm_is_offline),	SMB_VFS_OP_IS_OFFLINE,
-	 SMB_VFS_LAYER_OPAQUE},
-	{SMB_VFS_OP(tsmsm_set_offline),	SMB_VFS_OP_SET_OFFLINE,
-	 SMB_VFS_LAYER_OPAQUE},
-
-	/* Finish VFS operations definition */
-
-	{SMB_VFS_OP(NULL),		SMB_VFS_OP_NOOP,
-	 SMB_VFS_LAYER_NOOP}
+static struct vfs_fn_pointers tsmsm_fns = {
+	.connect = tsmsm_connect,
+	.fs_capabilities = tsmsm_fs_capabilities,
+	.aio_force = tsmsm_aio_force,
+	.aio_return = tsmsm_aio_return,
+	.pread = tsmsm_pread,
+	.pwrite = tsmsm_pwrite,
+	.sendfile = tsmsm_sendfile,
+	.is_offline = tsmsm_is_offline,
+	.set_offline = tsmsm_set_offline,
 };
 
 NTSTATUS vfs_tsmsm_init(void);
 NTSTATUS vfs_tsmsm_init(void)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION,
-				"tsmsm", vfs_tsmsm_ops);
+				"tsmsm", &vfs_fns);
 }

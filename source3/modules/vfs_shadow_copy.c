@@ -118,7 +118,9 @@ static SMB_STRUCT_DIR *shadow_copy_opendir(vfs_handle_struct *handle, const char
 	return((SMB_STRUCT_DIR *)dirp);
 }
 
-static SMB_STRUCT_DIRENT *shadow_copy_readdir(vfs_handle_struct *handle, SMB_STRUCT_DIR *_dirp)
+static SMB_STRUCT_DIRENT *shadow_copy_readdir(vfs_handle_struct *handle,
+					      SMB_STRUCT_DIR *_dirp,
+					      SMB_STRUCT_STAT *sbuf)
 {
 	shadow_copy_Dir *dirp = (shadow_copy_Dir *)_dirp;
 
@@ -212,25 +214,21 @@ static int shadow_copy_get_shadow_copy_data(vfs_handle_struct *handle, files_str
 	return 0;
 }
 
-/* VFS operations structure */
-
-static vfs_op_tuple shadow_copy_ops[] = {
-	{SMB_VFS_OP(shadow_copy_opendir),		SMB_VFS_OP_OPENDIR,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(shadow_copy_readdir),		SMB_VFS_OP_READDIR,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(shadow_copy_seekdir),		SMB_VFS_OP_SEEKDIR,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(shadow_copy_telldir),		SMB_VFS_OP_TELLDIR,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(shadow_copy_rewinddir),		SMB_VFS_OP_REWINDDIR,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(shadow_copy_closedir),		SMB_VFS_OP_CLOSEDIR,		SMB_VFS_LAYER_TRANSPARENT},
-
-	{SMB_VFS_OP(shadow_copy_get_shadow_copy_data),	SMB_VFS_OP_GET_SHADOW_COPY_DATA,SMB_VFS_LAYER_OPAQUE},
-
-	{SMB_VFS_OP(NULL),				SMB_VFS_OP_NOOP,		SMB_VFS_LAYER_NOOP}
+static struct vfs_fn_pointers vfs_shadow_copy_fns = {
+	.opendir = shadow_copy_opendir,
+	.readdir = shadow_copy_readdir,
+	.seekdir = shadow_copy_seekdir,
+	.telldir = shadow_copy_telldir,
+	.rewind_dir = shadow_copy_rewinddir,
+	.closedir = shadow_copy_closedir,
+	.get_shadow_copy_data = shadow_copy_get_shadow_copy_data,
 };
 
 NTSTATUS vfs_shadow_copy_init(void);
 NTSTATUS vfs_shadow_copy_init(void)
 {
-	NTSTATUS ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "shadow_copy", shadow_copy_ops);
+	NTSTATUS ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION,
+					"shadow_copy", &vfs_shadow_copy_fns);
 
 	if (!NT_STATUS_IS_OK(ret))
 		return ret;

@@ -880,29 +880,19 @@ static uint32_t streams_depot_fs_capabilities(struct vfs_handle_struct *handle)
 	return SMB_VFS_NEXT_FS_CAPABILITIES(handle) | FILE_NAMED_STREAMS;
 }
 
-/* VFS operations structure */
-
-static vfs_op_tuple streams_depot_ops[] = {
-	{SMB_VFS_OP(streams_depot_fs_capabilities), SMB_VFS_OP_FS_CAPABILITIES,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(streams_depot_open), SMB_VFS_OP_OPEN,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(streams_depot_stat), SMB_VFS_OP_STAT,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(streams_depot_lstat), SMB_VFS_OP_LSTAT,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(streams_depot_unlink), SMB_VFS_OP_UNLINK,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(streams_depot_rename), SMB_VFS_OP_RENAME,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(streams_depot_streaminfo), SMB_VFS_OP_STREAMINFO,
-	 SMB_VFS_LAYER_OPAQUE},
-	{SMB_VFS_OP(NULL), SMB_VFS_OP_NOOP, SMB_VFS_LAYER_NOOP}
+static struct vfs_fn_pointers vfs_streams_depot_fns = {
+	.fs_capabilities = streams_depot_fs_capabilities,
+	.open = streams_depot_open,
+	.stat = streams_depot_stat,
+	.lstat = streams_depot_lstat,
+	.unlink = streams_depot_unlink,
+	.rename = streams_depot_rename,
+	.streaminfo = streams_depot_streaminfo,
 };
 
 NTSTATUS vfs_streams_depot_init(void);
 NTSTATUS vfs_streams_depot_init(void)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "streams_depot",
-				streams_depot_ops);
+				&vfs_streams_depot_fns);
 }

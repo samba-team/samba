@@ -484,51 +484,20 @@ int aixjfs2_sys_acl_delete_def_file(vfs_handle_struct *handle,
 	return 0;
 }
 
-
-/* VFS operations structure */
-
-static vfs_op_tuple aixjfs2_ops[] =
-{
-	{SMB_VFS_OP(aixjfs2_fget_nt_acl),
-	SMB_VFS_OP_FGET_NT_ACL,
-	SMB_VFS_LAYER_TRANSPARENT},
-
-	{SMB_VFS_OP(aixjfs2_get_nt_acl),
-	SMB_VFS_OP_GET_NT_ACL,
-	SMB_VFS_LAYER_TRANSPARENT},
-
-	{SMB_VFS_OP(aixjfs2_fset_nt_acl),
-	SMB_VFS_OP_FSET_NT_ACL,
-	SMB_VFS_LAYER_TRANSPARENT},
-
-	{SMB_VFS_OP(aixjfs2_sys_acl_get_file),
-	SMB_VFS_OP_SYS_ACL_GET_FILE,
-	SMB_VFS_LAYER_TRANSPARENT},
-
-	{SMB_VFS_OP(aixjfs2_sys_acl_get_fd),
-	SMB_VFS_OP_SYS_ACL_GET_FD,
-	SMB_VFS_LAYER_TRANSPARENT},
-
-	{SMB_VFS_OP(aixjfs2_sys_acl_set_file),
-	SMB_VFS_OP_SYS_ACL_SET_FILE,
-	SMB_VFS_LAYER_TRANSPARENT},
-
-	{SMB_VFS_OP(aixjfs2_sys_acl_set_fd),
-	SMB_VFS_OP_SYS_ACL_SET_FD,
-	SMB_VFS_LAYER_TRANSPARENT},
-
-	{SMB_VFS_OP(aixjfs2_sys_acl_delete_def_file),
-	SMB_VFS_OP_SYS_ACL_DELETE_DEF_FILE,
-	SMB_VFS_LAYER_TRANSPARENT},
-
-	{SMB_VFS_OP(NULL),
-	SMB_VFS_OP_NOOP,
-	SMB_VFS_LAYER_NOOP}
-};
+static struct vfs_fn_pointers vfs_aixacl2_fns = {
+	.fget_nt_acl = aixjfs2_fget_nt_acl,
+	.get_nt_acl = aixjfs2_get_nt_acl,
+	.fset_nt_acl = aixjfs2_fset_nt_acl,
+	.sys_acl_get_file = aixjfs2_sys_acl_get_file,
+	.sys_acl_get_fd = aixjfs2_sys_acl_get_fd,
+	.sys_acl_set_file = aixjfs2_sys_acl_set_file,
+	.sys_acl_set_fd = aixjfs2_sys_acl_set_fd,
+	.sys_acl_delete_def_file = aixjfs2_sys_acl_delete_def_file
+}
 
 NTSTATUS vfs_aixacl2_init(void);
 NTSTATUS vfs_aixacl2_init(void)
 {
         return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, AIXACL2_MODULE_NAME,
-                                aixjfs2_ops);
+				&vfs_aixacl2_fns);
 }

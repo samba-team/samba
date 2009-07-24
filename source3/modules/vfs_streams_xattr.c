@@ -1011,37 +1011,23 @@ static int streams_xattr_ftruncate(struct vfs_handle_struct *handle,
 	return 0;
 }
 
-/* VFS operations structure */
-
-static vfs_op_tuple streams_xattr_ops[] = {
-	{SMB_VFS_OP(streams_xattr_fs_capabilities), SMB_VFS_OP_FS_CAPABILITIES,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(streams_xattr_open), SMB_VFS_OP_OPEN,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(streams_xattr_stat), SMB_VFS_OP_STAT,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(streams_xattr_fstat), SMB_VFS_OP_FSTAT,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(streams_xattr_lstat), SMB_VFS_OP_LSTAT,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(streams_xattr_pread), SMB_VFS_OP_PREAD,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(streams_xattr_pwrite), SMB_VFS_OP_PWRITE,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(streams_xattr_unlink), SMB_VFS_OP_UNLINK,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(streams_xattr_rename), SMB_VFS_OP_RENAME,
-	 SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(streams_xattr_ftruncate),  SMB_VFS_OP_FTRUNCATE,
-         SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(streams_xattr_streaminfo), SMB_VFS_OP_STREAMINFO,
-	 SMB_VFS_LAYER_OPAQUE},
-	{SMB_VFS_OP(NULL), SMB_VFS_OP_NOOP, SMB_VFS_LAYER_NOOP}
+static struct vfs_fn_pointers vfs_streams_xattr_fns = {
+	.fs_capabilities = streams_xattr_fs_capabilities,
+	.open = streams_xattr_open,
+	.stat = streams_xattr_stat,
+	.fstat = streams_xattr_fstat,
+	.lstat = streams_xattr_lstat,
+	.pread = streams_xattr_pread,
+	.pwrite = streams_xattr_pwrite,
+	.unlink = streams_xattr_unlink,
+	.rename = streams_xattr_rename,
+        .ftruncate = streams_xattr_ftruncate,
+	.streaminfo = streams_xattr_streaminfo,
 };
 
 NTSTATUS vfs_streams_xattr_init(void);
 NTSTATUS vfs_streams_xattr_init(void)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "streams_xattr",
-				streams_xattr_ops);
+				&vfs_streams_xattr_fns);
 }

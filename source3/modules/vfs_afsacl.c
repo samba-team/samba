@@ -1068,23 +1068,16 @@ static int afsacl_connect(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_CONNECT(handle, service, user);
 }
 
-/* VFS operations structure */
-
-static vfs_op_tuple afsacl_ops[] = {	
-	{SMB_VFS_OP(afsacl_connect), SMB_VFS_OP_CONNECT,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(afsacl_fget_nt_acl), SMB_VFS_OP_FGET_NT_ACL,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(afsacl_get_nt_acl), SMB_VFS_OP_GET_NT_ACL,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(afsacl_fset_nt_acl), SMB_VFS_OP_FSET_NT_ACL,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(NULL), SMB_VFS_OP_NOOP, SMB_VFS_LAYER_NOOP}
+static struct vfs_fn_pointers vfs_afsacl_fns = {
+	.connect_fn = afsacl_connect,
+	.fget_nt_acl = afsacl_fget_nt_acl,
+	.get_nt_acl = afsacl_get_nt_acl,
+	.fset_nt_acl = afsacl_fset_nt_acl
 };
 
 NTSTATUS vfs_afsacl_init(void);
 NTSTATUS vfs_afsacl_init(void)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "afsacl",
-				afsacl_ops);
+				&vfs_afsacl_fns);
 }

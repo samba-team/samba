@@ -774,6 +774,17 @@ static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
 	return status;
 }
 
+NTSTATUS smb_vfs_call_brl_lock_windows(struct vfs_handle_struct *handle,
+				       struct byte_range_lock *br_lck,
+				       struct lock_struct *plock,
+				       bool blocking_lock,
+				       struct blocking_lock_record *blr)
+{
+	VFS_FIND(brl_lock_windows);
+	return handle->fns->brl_lock_windows(handle, br_lck, plock,
+					     blocking_lock, blr);
+}
+
 /****************************************************************************
  Lock a range of bytes.
 ****************************************************************************/
@@ -1116,6 +1127,15 @@ static bool brl_unlock_posix(struct messaging_context *msg_ctx,
 	return True;
 }
 
+bool smb_vfs_call_brl_unlock_windows(struct vfs_handle_struct *handle,
+				     struct messaging_context *msg_ctx,
+				     struct byte_range_lock *br_lck,
+				     const struct lock_struct *plock)
+{
+	VFS_FIND(brl_unlock_windows);
+	return handle->fns->brl_unlock_windows(handle, msg_ctx, br_lck, plock);
+}
+
 /****************************************************************************
  Unlock a range of bytes.
 ****************************************************************************/
@@ -1272,6 +1292,16 @@ NTSTATUS brl_lockquery(struct byte_range_lock *br_lck,
         }
 
 	return NT_STATUS_OK;
+}
+
+
+bool smb_vfs_call_brl_cancel_windows(struct vfs_handle_struct *handle,
+				     struct byte_range_lock *br_lck,
+				     struct lock_struct *plock,
+				     struct blocking_lock_record *blr)
+{
+	VFS_FIND(brl_cancel_windows);
+	return handle->fns->brl_cancel_windows(handle, br_lck, plock, blr);
 }
 
 /****************************************************************************

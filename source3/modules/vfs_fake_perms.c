@@ -62,17 +62,14 @@ static int fake_perms_fstat(vfs_handle_struct *handle, files_struct *fsp, SMB_ST
 	return ret;
 }
 
-/* VFS operations structure */
-
-static vfs_op_tuple fake_perms_ops[] = {	
-	{SMB_VFS_OP(fake_perms_stat),	SMB_VFS_OP_STAT,	SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(fake_perms_fstat),	SMB_VFS_OP_FSTAT,	SMB_VFS_LAYER_TRANSPARENT},
-
-	{SMB_VFS_OP(NULL),		SMB_VFS_OP_NOOP,	SMB_VFS_LAYER_NOOP}
+static struct vfs_fn_pointers vfs_fake_perms_fns = {
+	.stat = fake_perms_stat,
+	.fstat = fake_perms_fstat
 };
 
 NTSTATUS vfs_fake_perms_init(void);
 NTSTATUS vfs_fake_perms_init(void)
 {
-	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "fake_perms", fake_perms_ops);
+	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "fake_perms",
+				&vfs_fake_perms_fns);
 }

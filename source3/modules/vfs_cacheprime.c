@@ -168,18 +168,11 @@ static ssize_t cprime_pread(
         return SMB_VFS_NEXT_PREAD(handle, fsp, data, count, offset);
 }
 
-static vfs_op_tuple cprime_ops [] =
-{
-        {SMB_VFS_OP(cprime_sendfile),
-                SMB_VFS_OP_SENDFILE, SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(cprime_pread),
-                SMB_VFS_OP_PREAD, SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(cprime_read),
-                SMB_VFS_OP_READ, SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(cprime_connect),
-                SMB_VFS_OP_CONNECT,  SMB_VFS_LAYER_TRANSPARENT},
-
-        {SMB_VFS_OP(NULL), SMB_VFS_OP_NOOP, SMB_VFS_LAYER_NOOP}
+static struct vfs_fn_pointers vfs_cacheprime_fns = {
+        .sendfile = cprime_sendfile,
+        .pread = cprime_pread,
+        .vfs_read = cprime_read,
+        .connect_fn = cprime_connect,
 };
 
 /* -------------------------------------------------------------------------
@@ -190,7 +183,8 @@ static vfs_op_tuple cprime_ops [] =
 NTSTATUS vfs_cacheprime_init(void);
 NTSTATUS vfs_cacheprime_init(void)
 {
-    return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, MODULE, cprime_ops);
+	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, MODULE,
+				&vfs_cacheprime_fns);
 }
 
 /* vim: set sw=4 ts=4 tw=79 et: */

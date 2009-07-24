@@ -1057,90 +1057,27 @@ static int vfs_gpfs_lstat(struct vfs_handle_struct *handle,
 	return 0;
 }
 
-/* VFS operations structure */
-
-static vfs_op_tuple gpfs_op_tuples[] = {
-
-	{ SMB_VFS_OP(vfs_gpfs_kernel_flock), 
-	  SMB_VFS_OP_KERNEL_FLOCK,
-	  SMB_VFS_LAYER_OPAQUE },
-
-        { SMB_VFS_OP(vfs_gpfs_setlease), 
-	  SMB_VFS_OP_LINUX_SETLEASE,
-	  SMB_VFS_LAYER_OPAQUE },
-
-        { SMB_VFS_OP(vfs_gpfs_get_real_filename),
-	  SMB_VFS_OP_GET_REAL_FILENAME,
-	  SMB_VFS_LAYER_OPAQUE },
-
-        { SMB_VFS_OP(gpfsacl_fget_nt_acl), 
-	  SMB_VFS_OP_FGET_NT_ACL,
-	  SMB_VFS_LAYER_TRANSPARENT },
-
-        { SMB_VFS_OP(gpfsacl_get_nt_acl), 
-	  SMB_VFS_OP_GET_NT_ACL,
-	  SMB_VFS_LAYER_TRANSPARENT },
-
-        { SMB_VFS_OP(gpfsacl_fset_nt_acl), 
-	  SMB_VFS_OP_FSET_NT_ACL,
-	  SMB_VFS_LAYER_TRANSPARENT },
-
-        { SMB_VFS_OP(gpfsacl_sys_acl_get_file), 
-	  SMB_VFS_OP_SYS_ACL_GET_FILE,
-	  SMB_VFS_LAYER_TRANSPARENT },
-
-        { SMB_VFS_OP(gpfsacl_sys_acl_get_fd), 
-	  SMB_VFS_OP_SYS_ACL_GET_FD,
-	  SMB_VFS_LAYER_TRANSPARENT },
-
-        { SMB_VFS_OP(gpfsacl_sys_acl_set_file), 
-	  SMB_VFS_OP_SYS_ACL_SET_FILE,
-	  SMB_VFS_LAYER_TRANSPARENT },
-
-        { SMB_VFS_OP(gpfsacl_sys_acl_set_fd), 
-	  SMB_VFS_OP_SYS_ACL_SET_FD,
-	  SMB_VFS_LAYER_TRANSPARENT },
-
-        { SMB_VFS_OP(gpfsacl_sys_acl_delete_def_file),
-	  SMB_VFS_OP_SYS_ACL_DELETE_DEF_FILE,
-	  SMB_VFS_LAYER_TRANSPARENT },
-
-        { SMB_VFS_OP(vfs_gpfs_chmod), 
-	  SMB_VFS_OP_CHMOD,
-	  SMB_VFS_LAYER_TRANSPARENT },
-
-        { SMB_VFS_OP(vfs_gpfs_fchmod), 
-	  SMB_VFS_OP_FCHMOD,
-	  SMB_VFS_LAYER_TRANSPARENT },
-
-        { SMB_VFS_OP(vfs_gpfs_close),
-	  SMB_VFS_OP_CLOSE,
-	  SMB_VFS_LAYER_TRANSPARENT },
-
-        { SMB_VFS_OP(gpfs_set_xattr),
-          SMB_VFS_OP_SETXATTR,
-          SMB_VFS_LAYER_TRANSPARENT },
-
-        { SMB_VFS_OP(gpfs_get_xattr),
-          SMB_VFS_OP_GETXATTR,
-          SMB_VFS_LAYER_TRANSPARENT },
-
-        { SMB_VFS_OP(vfs_gpfs_stat),
-          SMB_VFS_OP_STAT,
-          SMB_VFS_LAYER_TRANSPARENT },
-
-        { SMB_VFS_OP(vfs_gpfs_fstat),
-          SMB_VFS_OP_FSTAT,
-          SMB_VFS_LAYER_TRANSPARENT },
-
-        { SMB_VFS_OP(vfs_gpfs_lstat),
-          SMB_VFS_OP_LSTAT,
-          SMB_VFS_LAYER_TRANSPARENT },
-
-        { SMB_VFS_OP(NULL), SMB_VFS_OP_NOOP, SMB_VFS_LAYER_NOOP }
-
+static struct vfs_fn_pointers vfs_gpfs_fns = {
+	.kernel_flock = vfs_gpfs_kernel_flock,
+        .setlease = vfs_gpfs_setlease,
+        .get_real_filename = vfs_gpfs_get_real_filename,
+        .fget_nt_acl = gpfsacl_fget_nt_acl,
+        .get_nt_acl = gpfsacl_get_nt_acl,
+        .fset_nt_acl = gpfsacl_fset_nt_acl,
+        .sys_acl_get_file = gpfsacl_sys_acl_get_file,
+        .sys_acl_get_fd = gpfsacl_sys_acl_get_fd,
+        .sys_acl_set_file = gpfsacl_sys_acl_set_file,
+        .sys_acl_set_fd = gpfsacl_sys_acl_set_fd,
+        .sys_acl_delete_def_file = gpfsacl_sys_acl_delete_def_file,
+        .chmod = vfs_gpfs_chmod,
+        .fchmod = vfs_gpfs_fchmod,
+        .close_fn = vfs_gpfs_close,
+        .set_xattr = gpfs_set_xattr,
+        .get_xattr = gpfs_get_xattr,
+        .stat = vfs_gpfs_stat,
+        .fstat = vfs_gpfs_fstat,
+        .lstat = vfs_gpfs_lstat,
 };
-
 
 NTSTATUS vfs_gpfs_init(void);
 NTSTATUS vfs_gpfs_init(void)
@@ -1148,5 +1085,5 @@ NTSTATUS vfs_gpfs_init(void)
 	init_gpfs();
 
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "gpfs",
-				gpfs_op_tuples);
+				&vfs_gpfs_fns);
 }

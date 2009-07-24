@@ -294,28 +294,20 @@ static int commit_ftruncate(
         return result;
 }
 
-static vfs_op_tuple commit_ops [] =
-{
-        {SMB_VFS_OP(commit_open),
-                SMB_VFS_OP_OPEN, SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(commit_close),
-                SMB_VFS_OP_CLOSE, SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(commit_write),
-                SMB_VFS_OP_WRITE, SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(commit_pwrite),
-                SMB_VFS_OP_PWRITE, SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(commit_connect),
-                SMB_VFS_OP_CONNECT,  SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(commit_ftruncate),
-                SMB_VFS_OP_FTRUNCATE,  SMB_VFS_LAYER_TRANSPARENT},
-
-        {SMB_VFS_OP(NULL), SMB_VFS_OP_NOOP, SMB_VFS_LAYER_NOOP}
+static struct vfs_fn_pointers vfs_commit_fns = {
+        .open = commit_open,
+        .close_fn = commit_close,
+        .write = commit_write,
+        .pwrite = commit_pwrite,
+        .connect_fn = commit_connect,
+        .ftruncate = commit_ftruncate
 };
 
 NTSTATUS vfs_commit_init(void);
 NTSTATUS vfs_commit_init(void)
 {
-	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, MODULE, commit_ops);
+	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, MODULE,
+				&vfs_commit_fns);
 }
 
 

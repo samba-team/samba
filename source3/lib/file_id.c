@@ -22,14 +22,6 @@
 #include "includes.h"
 
 /*
-  generate a file_id from a stat structure
- */
-struct file_id vfs_file_id_from_sbuf(connection_struct *conn, const SMB_STRUCT_STAT *sbuf)
-{
-	return SMB_VFS_FILE_ID_CREATE(conn, sbuf);
-}
-
-/*
   return True if two file_id structures are equal
  */
 bool file_id_equal(const struct file_id *id1, const struct file_id *id2)

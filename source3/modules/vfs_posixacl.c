@@ -361,36 +361,17 @@ static acl_t smb_acl_to_posix(const struct smb_acl_t *acl)
 
 /* VFS operations structure */
 
-static vfs_op_tuple posixacl_op_tuples[] = {
-	/* Disk operations */
-  {SMB_VFS_OP(posixacl_sys_acl_get_file),
-   SMB_VFS_OP_SYS_ACL_GET_FILE,
-   SMB_VFS_LAYER_TRANSPARENT},
-
-  {SMB_VFS_OP(posixacl_sys_acl_get_fd),
-   SMB_VFS_OP_SYS_ACL_GET_FD,
-   SMB_VFS_LAYER_TRANSPARENT},
-
-  {SMB_VFS_OP(posixacl_sys_acl_set_file),
-   SMB_VFS_OP_SYS_ACL_SET_FILE,
-   SMB_VFS_LAYER_TRANSPARENT},
-
-  {SMB_VFS_OP(posixacl_sys_acl_set_fd),
-   SMB_VFS_OP_SYS_ACL_SET_FD,
-   SMB_VFS_LAYER_TRANSPARENT},
-
-  {SMB_VFS_OP(posixacl_sys_acl_delete_def_file),
-   SMB_VFS_OP_SYS_ACL_DELETE_DEF_FILE,
-   SMB_VFS_LAYER_TRANSPARENT},
-
-  {SMB_VFS_OP(NULL),
-   SMB_VFS_OP_NOOP,
-   SMB_VFS_LAYER_NOOP}
+static struct vfs_fn_pointers posixacl_fns = {
+	.sys_acl_get_file = posixacl_sys_acl_get_file,
+	.sys_acl_get_fd = posixacl_sys_acl_get_fd,
+	.sys_acl_set_file = posixacl_sys_acl_set_file,
+	.sys_acl_set_fd = posixacl_sys_acl_set_fd,
+	.sys_acl_delete_def_file = posixacl_sys_acl_delete_def_file,
 };
 
 NTSTATUS vfs_posixacl_init(void);
 NTSTATUS vfs_posixacl_init(void)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "posixacl",
-				posixacl_op_tuples);
+				&posixacl_fns);
 }

@@ -937,32 +937,21 @@ static int sys_acl_set_fd_tdb(vfs_handle_struct *handle,
 	return 0;
 }
 
-/* VFS operations structure */
-
-static vfs_op_tuple skel_op_tuples[] =
-{
-	{SMB_VFS_OP(connect_acl_tdb), SMB_VFS_OP_CONNECT,  SMB_VFS_LAYER_TRANSPARENT},
-
-	{SMB_VFS_OP(mkdir_acl_tdb), SMB_VFS_OP_MKDIR, SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(rmdir_acl_tdb), SMB_VFS_OP_RMDIR, SMB_VFS_LAYER_TRANSPARENT},
-
-	{SMB_VFS_OP(open_acl_tdb),  SMB_VFS_OP_OPEN,  SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(unlink_acl_tdb), SMB_VFS_OP_UNLINK, SMB_VFS_LAYER_TRANSPARENT},
-
-        /* NT File ACL operations */
-
-	{SMB_VFS_OP(fget_nt_acl_tdb),SMB_VFS_OP_FGET_NT_ACL,SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(get_nt_acl_tdb), SMB_VFS_OP_GET_NT_ACL, SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(fset_nt_acl_tdb),SMB_VFS_OP_FSET_NT_ACL,SMB_VFS_LAYER_TRANSPARENT},
-
-	/* POSIX ACL operations. */
-	{SMB_VFS_OP(sys_acl_set_file_tdb), SMB_VFS_OP_SYS_ACL_SET_FILE, SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(sys_acl_set_fd_tdb), SMB_VFS_OP_SYS_ACL_SET_FD, SMB_VFS_LAYER_TRANSPARENT},
-
-	{SMB_VFS_OP(NULL), SMB_VFS_OP_NOOP, SMB_VFS_LAYER_NOOP}
+static struct vfs_fn_pointers vfs_acl_tdb_fns = {
+	.connect_fn = connect_acl_tdb,
+	.mkdir = mkdir_acl_tdb,
+	.open = open_acl_tdb,
+	.unlink = unlink_acl_tdb,
+	.rmdir = rmdir_acl_tdb,
+	.fget_nt_acl = fget_nt_acl_tdb,
+	.get_nt_acl = get_nt_acl_tdb,
+	.fset_nt_acl = fset_nt_acl_tdb,
+	.sys_acl_set_file = sys_acl_set_file_tdb,
+	.sys_acl_set_fd = sys_acl_set_fd_tdb
 };
 
 NTSTATUS vfs_acl_tdb_init(void)
 {
-	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "acl_tdb", skel_op_tuples);
+	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "acl_tdb",
+				&vfs_acl_tdb_fns);
 }

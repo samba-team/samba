@@ -723,26 +723,17 @@ static int aio_fork_error_fn(struct vfs_handle_struct *handle,
 	return child->retval.ret_errno;
 }
 
-/* VFS operations structure */
-
-static vfs_op_tuple aio_fork_ops[] = {
-	{SMB_VFS_OP(aio_fork_read),	SMB_VFS_OP_AIO_READ,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(aio_fork_write),	SMB_VFS_OP_AIO_WRITE,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(aio_fork_return_fn), SMB_VFS_OP_AIO_RETURN,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(aio_fork_cancel),	SMB_VFS_OP_AIO_CANCEL,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(aio_fork_error_fn),	SMB_VFS_OP_AIO_ERROR,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(NULL),		SMB_VFS_OP_NOOP,
-	 SMB_VFS_LAYER_NOOP}
+static struct vfs_fn_pointers vfs_aio_fork_fns = {
+	.aio_read = aio_fork_read,
+	.aio_write = aio_fork_write,
+	.aio_return_fn = aio_fork_return_fn,
+	.aio_cancel = aio_fork_cancel,
+	.aio_error_fn = aio_fork_error_fn,
 };
 
 NTSTATUS vfs_aio_fork_init(void);
 NTSTATUS vfs_aio_fork_init(void)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION,
-				"aio_fork", aio_fork_ops);
+				"aio_fork", &vfs_aio_fork_fns);
 }

@@ -36,18 +36,6 @@ static void recycle_disconnect(vfs_handle_struct *handle);
 static int recycle_unlink(vfs_handle_struct *handle,
 			  const struct smb_filename *smb_fname);
 
-static vfs_op_tuple recycle_ops[] = {
-
-	/* Disk operations */
-	{SMB_VFS_OP(recycle_connect),	SMB_VFS_OP_CONNECT,	SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(recycle_disconnect),	SMB_VFS_OP_DISCONNECT,	SMB_VFS_LAYER_TRANSPARENT},
-
-	/* File operations */
-	{SMB_VFS_OP(recycle_unlink),	SMB_VFS_OP_UNLINK,	SMB_VFS_LAYER_TRANSPARENT},
-
-	{SMB_VFS_OP(NULL),		SMB_VFS_OP_NOOP,	SMB_VFS_LAYER_NOOP}
-};
-
 static int recycle_connect(vfs_handle_struct *handle, const char *service, const char *user)
 {
 	DEBUG(10,("recycle_connect() connect to service[%s] as user[%s].\n",
@@ -665,10 +653,17 @@ done:
 	return rc;
 }
 
+static struct vfs_fn_pointers vfs_recycle_fns = {
+	.connect_fn = recycle_connect,
+	.disconnect = recycle_disconnect,
+	.unlink = recycle_unlink
+};
+
 NTSTATUS vfs_recycle_init(void);
 NTSTATUS vfs_recycle_init(void)
 {
-	NTSTATUS ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "recycle", recycle_ops);
+	NTSTATUS ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "recycle",
+					&vfs_recycle_fns);
 
 	if (!NT_STATUS_IS_OK(ret))
 		return ret;

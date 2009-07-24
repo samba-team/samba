@@ -560,8 +560,6 @@ typedef struct connection_struct {
 	char *connectpath;
 	char *origpath;
 
-	struct vfs_ops vfs;                   /* Filesystem operations */
-	struct vfs_ops vfs_opaque;			/* OPAQUE Filesystem operations */
 	struct vfs_handle_struct *vfs_handles;		/* for the new plugins */
 
 	/*

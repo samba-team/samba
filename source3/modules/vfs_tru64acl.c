@@ -466,38 +466,19 @@ static SMB_ACL_PERM_T tru64_permset_to_smb(const acl_perm_t tru64_permset)
 
 /* VFS operations structure */
 
-static vfs_op_tuple tru64acl_op_tuples[] = {
-	/* Disk operations */
-  {SMB_VFS_OP(tru64acl_sys_acl_get_file),
-   SMB_VFS_OP_SYS_ACL_GET_FILE,
-   SMB_VFS_LAYER_TRANSPARENT},
-
-  {SMB_VFS_OP(tru64acl_sys_acl_get_fd),
-   SMB_VFS_OP_SYS_ACL_GET_FD,
-   SMB_VFS_LAYER_TRANSPARENT},
-
-  {SMB_VFS_OP(tru64acl_sys_acl_set_file),
-   SMB_VFS_OP_SYS_ACL_SET_FILE,
-   SMB_VFS_LAYER_TRANSPARENT},
-
-  {SMB_VFS_OP(tru64acl_sys_acl_set_fd),
-   SMB_VFS_OP_SYS_ACL_SET_FD,
-   SMB_VFS_LAYER_TRANSPARENT},
-
-  {SMB_VFS_OP(tru64acl_sys_acl_delete_def_file),
-   SMB_VFS_OP_SYS_ACL_DELETE_DEF_FILE,
-   SMB_VFS_LAYER_TRANSPARENT},
-
-  {SMB_VFS_OP(NULL),
-   SMB_VFS_OP_NOOP,
-   SMB_VFS_LAYER_NOOP}
+static struct vfs_fn_pointers tru64acl_fns = {
+	.sys_acl_get_file = tru64acl_sys_acl_get_file,
+	.sys_acl_get_fd = tru64acl_sys_acl_get_fd,
+	.sys_acl_set_file = tru64acl_sys_acl_set_file,
+	.sys_acl_set_fd = tru64acl_sys_acl_set_fd,
+	.sys_acl_delete_def_file = tru64acl_sys_acl_delete_def_file,
 };
 
 NTSTATUS vfs_tru64acl_init(void);
 NTSTATUS vfs_tru64acl_init(void)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "tru64acl",
-				tru64acl_op_tuples);
+				&tru64acl_fns);
 }
 
 /* ENTE */

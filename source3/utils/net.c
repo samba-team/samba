@@ -678,7 +678,6 @@ static struct functable net_func[] = {
 		{ 0, 0, 0, 0}
 	};
 
-
 	zero_sockaddr(&c->opt_dest_ip);
 
 	load_case_tables();

@@ -401,10 +401,6 @@ static int cap_chmod_acl(vfs_handle_struct *handle, const char *path, mode_t mod
 	char *cappath = capencode(talloc_tos(), path);
 
 	/* If the underlying VFS doesn't have ACL support... */
-	if (!handle->vfs_next.ops.chmod_acl) {
-		errno = ENOSYS;
-		return -1;
-	}
 	if (!cappath) {
 		errno = ENOMEM;
 		return -1;
@@ -573,67 +569,49 @@ static int cap_fsetxattr(vfs_handle_struct *handle, struct files_struct *fsp, co
         return SMB_VFS_NEXT_FSETXATTR(handle, fsp, cappath, value, size, flags);
 }
 
-/* VFS operations structure */
-
-static vfs_op_tuple cap_op_tuples[] = {
-
-	/* Disk operations */
-
-	{SMB_VFS_OP(cap_disk_free),			SMB_VFS_OP_DISK_FREE,		SMB_VFS_LAYER_TRANSPARENT},
-
-	/* Directory operations */
-
-	{SMB_VFS_OP(cap_opendir),			SMB_VFS_OP_OPENDIR,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(cap_readdir),			SMB_VFS_OP_READDIR,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(cap_mkdir),			SMB_VFS_OP_MKDIR,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(cap_rmdir),			SMB_VFS_OP_RMDIR,		SMB_VFS_LAYER_TRANSPARENT},
-
-	/* File operations */
-
-	{SMB_VFS_OP(cap_open),				SMB_VFS_OP_OPEN,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(cap_rename),			SMB_VFS_OP_RENAME,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(cap_stat),				SMB_VFS_OP_STAT,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(cap_lstat),			SMB_VFS_OP_LSTAT,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(cap_unlink),			SMB_VFS_OP_UNLINK,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(cap_chmod),			SMB_VFS_OP_CHMOD,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(cap_chown),			SMB_VFS_OP_CHOWN,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(cap_lchown),		SMB_VFS_OP_LCHOWN,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(cap_chdir),			SMB_VFS_OP_CHDIR,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(cap_ntimes),			SMB_VFS_OP_NTIMES,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(cap_symlink),			SMB_VFS_OP_SYMLINK,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(cap_readlink),			SMB_VFS_OP_READLINK,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(cap_link),				SMB_VFS_OP_LINK,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(cap_mknod),			SMB_VFS_OP_MKNOD,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(cap_realpath),			SMB_VFS_OP_REALPATH,		SMB_VFS_LAYER_TRANSPARENT},
-
-	/* POSIX ACL operations */
-
-	{SMB_VFS_OP(cap_chmod_acl),			SMB_VFS_OP_CHMOD_ACL,		SMB_VFS_LAYER_TRANSPARENT},
-
-	{SMB_VFS_OP(cap_sys_acl_get_file),		SMB_VFS_OP_SYS_ACL_GET_FILE,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(cap_sys_acl_set_file),		SMB_VFS_OP_SYS_ACL_SET_FILE,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(cap_sys_acl_delete_def_file),	SMB_VFS_OP_SYS_ACL_DELETE_DEF_FILE,	SMB_VFS_LAYER_TRANSPARENT},
-
-	/* EA operations. */
-	{SMB_VFS_OP(cap_getxattr),			SMB_VFS_OP_GETXATTR,			SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(cap_lgetxattr),			SMB_VFS_OP_LGETXATTR,			SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(cap_fgetxattr),			SMB_VFS_OP_FGETXATTR,			SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(cap_listxattr),			SMB_VFS_OP_LISTXATTR,			SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(cap_llistxattr),			SMB_VFS_OP_LLISTXATTR,			SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(cap_removexattr),			SMB_VFS_OP_REMOVEXATTR,			SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(cap_lremovexattr),			SMB_VFS_OP_LREMOVEXATTR,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(cap_fremovexattr),			SMB_VFS_OP_FREMOVEXATTR,		SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(cap_setxattr),			SMB_VFS_OP_SETXATTR,			SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(cap_lsetxattr),			SMB_VFS_OP_LSETXATTR,			SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(cap_fsetxattr),			SMB_VFS_OP_FSETXATTR,			SMB_VFS_LAYER_TRANSPARENT},
-
-	{NULL,						SMB_VFS_OP_NOOP,			SMB_VFS_LAYER_NOOP}
+static struct vfs_fn_pointers vfs_cap_fns = {
+	.disk_free = cap_disk_free,
+	.opendir = cap_opendir,
+	.readdir = cap_readdir,
+	.mkdir = cap_mkdir,
+	.rmdir = cap_rmdir,
+	.open = cap_open,
+	.rename = cap_rename,
+	.stat = cap_stat,
+	.lstat = cap_lstat,
+	.unlink = cap_unlink,
+	.chmod = cap_chmod,
+	.chown = cap_chown,
+	.lchown = cap_lchown,
+	.chdir = cap_chdir,
+	.ntimes = cap_ntimes,
+	.symlink = cap_symlink,
+	.vfs_readlink = cap_readlink,
+	.link = cap_link,
+	.mknod = cap_mknod,
+	.realpath = cap_realpath,
+	.chmod_acl = cap_chmod_acl,
+	.sys_acl_get_file = cap_sys_acl_get_file,
+	.sys_acl_set_file = cap_sys_acl_set_file,
+	.sys_acl_delete_def_file = cap_sys_acl_delete_def_file,
+	.getxattr = cap_getxattr,
+	.lgetxattr = cap_lgetxattr,
+	.fgetxattr = cap_fgetxattr,
+	.listxattr = cap_listxattr,
+	.llistxattr = cap_llistxattr,
+	.removexattr = cap_removexattr,
+	.lremovexattr = cap_lremovexattr,
+	.fremovexattr = cap_fremovexattr,
+	.setxattr = cap_setxattr,
+	.lsetxattr = cap_lsetxattr,
+	.fsetxattr = cap_fsetxattr
 };
 
 NTSTATUS vfs_cap_init(void);
 NTSTATUS vfs_cap_init(void)
 {
-	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "cap", cap_op_tuples);
+	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "cap",
+				&vfs_cap_fns);
 }
 
 /* For CAP functions */

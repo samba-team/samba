@@ -200,30 +200,24 @@ static int syncops_close(vfs_handle_struct *handle, files_struct *fsp)
 }
 
 
-/* VFS operations structure */
-
-static vfs_op_tuple syncops_ops[] = {
-	/* directory operations */
-        {SMB_VFS_OP(syncops_mkdir),       SMB_VFS_OP_MKDIR,       SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(syncops_rmdir),       SMB_VFS_OP_RMDIR,       SMB_VFS_LAYER_TRANSPARENT},
-
-        /* File operations */
-        {SMB_VFS_OP(syncops_open),       SMB_VFS_OP_OPEN,     SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(syncops_rename),     SMB_VFS_OP_RENAME,   SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(syncops_unlink),     SMB_VFS_OP_UNLINK,   SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(syncops_symlink),    SMB_VFS_OP_SYMLINK,  SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(syncops_link),       SMB_VFS_OP_LINK,     SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(syncops_mknod),      SMB_VFS_OP_MKNOD,    SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(syncops_close), 	 SMB_VFS_OP_CLOSE,    SMB_VFS_LAYER_TRANSPARENT},
-
-	{SMB_VFS_OP(NULL), SMB_VFS_OP_NOOP, SMB_VFS_LAYER_NOOP}
+static struct vfs_fn_pointers vfs_syncops_fns = {
+        .mkdir = syncops_mkdir,
+        .rmdir = syncops_rmdir,
+        .open = syncops_open,
+        .rename = syncops_rename,
+        .unlink = syncops_unlink,
+        .symlink = syncops_symlink,
+        .link = syncops_link,
+        .mknod = syncops_mknod,
+	.close_fn = syncops_close,
 };
 
 NTSTATUS vfs_syncops_init(void)
 {
 	NTSTATUS ret;
 
-	ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "syncops", syncops_ops);
+	ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "syncops",
+			       &vfs_syncops_fns);
 
 	if (!NT_STATUS_IS_OK(ret))
 		return ret;

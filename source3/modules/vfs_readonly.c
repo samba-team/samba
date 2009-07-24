@@ -95,16 +95,13 @@ static int readonly_connect(vfs_handle_struct *handle,
 }
 
 
-/* VFS operations structure */
-
-static vfs_op_tuple readonly_op_tuples[] = {
-	/* Disk operations */
-  {SMB_VFS_OP(readonly_connect),	SMB_VFS_OP_CONNECT, SMB_VFS_LAYER_TRANSPARENT},
-  {SMB_VFS_OP(NULL),   		SMB_VFS_OP_NOOP,    SMB_VFS_LAYER_NOOP}
+static struct vfs_fn_pointers vfs_readonly_fns = {
+	.connect_fn = readonly_connect
 };
 
 NTSTATUS vfs_readonly_init(void);
 NTSTATUS vfs_readonly_init(void)
 {
-  return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, MODULE_NAME, readonly_op_tuples);
+  return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, MODULE_NAME,
+			  &vfs_readonly_fns);
 }

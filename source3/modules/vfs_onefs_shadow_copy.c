@@ -651,111 +651,48 @@ onefs_shadow_copy_set_offline(struct vfs_handle_struct *handle,
 
 /* VFS operations structure */
 
-static vfs_op_tuple onefs_shadow_copy_ops[] = {
-
-	/* Disk operations */
-
-	{SMB_VFS_OP(onefs_shadow_copy_disk_free), SMB_VFS_OP_DISK_FREE,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(onefs_shadow_copy_get_shadow_copy_data),
-	 SMB_VFS_OP_GET_SHADOW_COPY_DATA, SMB_VFS_LAYER_OPAQUE},
-	{SMB_VFS_OP(onefs_shadow_copy_statvfs), SMB_VFS_OP_STATVFS,
-	 SMB_VFS_LAYER_TRANSPARENT},
-
-	/* Directory operations */
-
-	{SMB_VFS_OP(onefs_shadow_copy_opendir), SMB_VFS_OP_OPENDIR,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(onefs_shadow_copy_mkdir), SMB_VFS_OP_MKDIR,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(onefs_shadow_copy_rmdir), SMB_VFS_OP_RMDIR,
-	 SMB_VFS_LAYER_TRANSPARENT},
-
-	/* File operations */
-
-	{SMB_VFS_OP(onefs_shadow_copy_open), SMB_VFS_OP_OPEN,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(onefs_shadow_copy_create_file), SMB_VFS_OP_CREATE_FILE,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(onefs_shadow_copy_rename), SMB_VFS_OP_RENAME,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(onefs_shadow_copy_stat), SMB_VFS_OP_STAT,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(onefs_shadow_copy_stat), SMB_VFS_OP_STAT,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(onefs_shadow_copy_lstat), SMB_VFS_OP_LSTAT,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(onefs_shadow_copy_unlink), SMB_VFS_OP_UNLINK,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(onefs_shadow_copy_chmod), SMB_VFS_OP_CHMOD,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(onefs_shadow_copy_chown), SMB_VFS_OP_CHOWN,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(onefs_shadow_copy_lchown), SMB_VFS_OP_LCHOWN,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(onefs_shadow_copy_chdir), SMB_VFS_OP_CHDIR,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(onefs_shadow_copy_ntimes), SMB_VFS_OP_NTIMES,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(onefs_shadow_copy_symlink), SMB_VFS_OP_SYMLINK,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(onefs_shadow_copy_readlink), SMB_VFS_OP_READLINK,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(onefs_shadow_copy_link), SMB_VFS_OP_LINK,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(onefs_shadow_copy_mknod), SMB_VFS_OP_MKNOD,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(onefs_shadow_copy_realpath), SMB_VFS_OP_REALPATH,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(onefs_shadow_copy_chflags), SMB_VFS_OP_CHFLAGS,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(onefs_shadow_copy_streaminfo), SMB_VFS_OP_STREAMINFO,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(onefs_shadow_copy_get_real_filename),
-	 SMB_VFS_OP_GET_REAL_FILENAME, SMB_VFS_LAYER_TRANSPARENT},
-
-	/* NT File ACL operations */
-
-	{SMB_VFS_OP(onefs_shadow_copy_get_nt_acl), SMB_VFS_OP_GET_NT_ACL,
-	 SMB_VFS_LAYER_TRANSPARENT},
-
-	/* POSIX ACL operations */
-
-	{SMB_VFS_OP(onefs_shadow_copy_chmod_acl), SMB_VFS_OP_CHMOD_ACL,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(onefs_shadow_copy_sys_acl_get_file),
-	 SMB_VFS_OP_SYS_ACL_GET_FILE, SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(onefs_shadow_copy_sys_acl_set_file),
-	 SMB_VFS_OP_SYS_ACL_SET_FILE, SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(onefs_shadow_copy_sys_acl_delete_def_file),
-	 SMB_VFS_OP_SYS_ACL_DELETE_DEF_FILE, SMB_VFS_LAYER_TRANSPARENT},
-
-        /* EA operations. */
-
-	{SMB_VFS_OP(onefs_shadow_copy_getxattr), SMB_VFS_OP_GETXATTR,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(onefs_shadow_copy_lgetxattr), SMB_VFS_OP_LGETXATTR,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(onefs_shadow_copy_listxattr), SMB_VFS_OP_LISTXATTR,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(onefs_shadow_copy_llistxattr), SMB_VFS_OP_LLISTXATTR,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(onefs_shadow_copy_removexattr), SMB_VFS_OP_REMOVEXATTR,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(onefs_shadow_copy_lremovexattr), SMB_VFS_OP_LREMOVEXATTR,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(onefs_shadow_copy_setxattr), SMB_VFS_OP_SETXATTR,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(onefs_shadow_copy_lsetxattr), SMB_VFS_OP_LSETXATTR,
-	 SMB_VFS_LAYER_TRANSPARENT},
-
-	/* offline operations */
-	{SMB_VFS_OP(onefs_shadow_copy_is_offline), SMB_VFS_OP_IS_OFFLINE,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(onefs_shadow_copy_set_offline), SMB_VFS_OP_SET_OFFLINE,
-	 SMB_VFS_LAYER_TRANSPARENT},
-
-	{SMB_VFS_OP(NULL), SMB_VFS_OP_NOOP, SMB_VFS_LAYER_NOOP}
+static struct vfs_fn_pointers onefs_shadow_copy_fns = {
+	.disk_free = onefs_shadow_copy_disk_free,
+	.get_shadow_copy_data = onefs_shadow_copy_get_shadow_copy_data,
+	.statvfs = onefs_shadow_copy_statvfs,
+	.opendir = onefs_shadow_copy_opendir,
+	.mkdir = onefs_shadow_copy_mkdir,
+	.rmdir = onefs_shadow_copy_rmdir,
+	.open = onefs_shadow_copy_open,
+	.create_file = onefs_shadow_copy_create_file,
+	.rename = onefs_shadow_copy_rename,
+	.stat = onefs_shadow_copy_stat,
+	.stat = onefs_shadow_copy_stat,
+	.lstat = onefs_shadow_copy_lstat,
+	.unlink = onefs_shadow_copy_unlink,
+	.chmod = onefs_shadow_copy_chmod,
+	.chown = onefs_shadow_copy_chown,
+	.lchown = onefs_shadow_copy_lchown,
+	.chdir = onefs_shadow_copy_chdir,
+	.ntimes = onefs_shadow_copy_ntimes,
+	.symlink = onefs_shadow_copy_symlink,
+	.readlink = onefs_shadow_copy_readlink,
+	.link = onefs_shadow_copy_link,
+	.mknod = onefs_shadow_copy_mknod,
+	.realpath = onefs_shadow_copy_realpath,
+	.chflags = onefs_shadow_copy_chflags,
+	.streaminfo = onefs_shadow_copy_streaminfo,
+	.get_real_filename = onefs_shadow_copy_get_real_filename,
+	.get_nt_acl = onefs_shadow_copy_get_nt_acl,
+	.chmod_acl = onefs_shadow_copy_chmod_acl,
+	.sys_acl_get_file = onefs_shadow_copy_sys_acl_get_file,
+	.sys_acl_set_file = onefs_shadow_copy_sys_acl_set_file,
+	.sys_acl_delete_def_file = onefs_shadow_copy_sys_acl_delete_def_file,
+	.getxattr = onefs_shadow_copy_getxattr,
+	.lgetxattr = onefs_shadow_copy_lgetxattr,
+	.listxattr = onefs_shadow_copy_listxattr,
+	.llistxattr = onefs_shadow_copy_llistxattr,
+	.removexattr = onefs_shadow_copy_removexattr,
+	.lremovexattr = onefs_shadow_copy_lremovexattr,
+	.setxattr = onefs_shadow_copy_setxattr,
+	.lsetxattr = onefs_shadow_copy_lsetxattr,
+	.is_offline = onefs_shadow_copy_is_offline,
+	.set_offline = onefs_shadow_copy_set_offline,
 };
 
 NTSTATUS vfs_shadow_copy_init(void)
@@ -764,7 +701,7 @@ NTSTATUS vfs_shadow_copy_init(void)
 
 	ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION,
 			       "onefs_shadow_copy",
-			       onefs_shadow_copy_ops);
+			       &onefs_shadow_copy_fns);
 
 	if (!NT_STATUS_IS_OK(ret))
 		return ret;

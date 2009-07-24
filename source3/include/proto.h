@@ -7086,7 +7086,8 @@ void sys_utmp_claim(const char *username, const char *hostname,
 
 /* The following definitions come from smbd/vfs.c  */
 
-NTSTATUS smb_register_vfs(int version, const char *name, const vfs_op_tuple *vfs_op_tuples);
+NTSTATUS smb_register_vfs(int version, const char *name,
+			  const struct vfs_fn_pointers *fns);
 bool vfs_init_custom(connection_struct *conn, const char *vfs_object);
 void *vfs_add_fsp_extension_notype(vfs_handle_struct *handle,
 				   files_struct *fsp, size_t ext_size,

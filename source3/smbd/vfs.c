@@ -32,8 +32,8 @@ static_decl_vfs;
 
 struct vfs_init_function_entry {
 	char *name;
-	const vfs_op_tuple *vfs_op_tuples;
 	struct vfs_init_function_entry *prev, *next;
+	const struct vfs_fn_pointers *fns;
 };
 
 /****************************************************************************
@@ -54,7 +54,8 @@ static struct vfs_init_function_entry *vfs_find_backend_entry(const char *name)
 	return NULL;
 }
 
-NTSTATUS smb_register_vfs(int version, const char *name, const vfs_op_tuple *vfs_op_tuples)
+NTSTATUS smb_register_vfs(int version, const char *name,
+			  const struct vfs_fn_pointers *fns)
 {
 	struct vfs_init_function_entry *entry = backends;
 
@@ -67,7 +68,7 @@ NTSTATUS smb_register_vfs(int version, const char *name, const vfs_op_tuple *vfs
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
   	}
 
-	if (!name || !name[0] || !vfs_op_tuples) {
+	if (!name || !name[0]) {
 		DEBUG(0,("smb_register_vfs() called with NULL pointer or empty name!\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -79,7 +80,7 @@ NTSTATUS smb_register_vfs(int version, const char *name, const vfs_op_tuple *vfs
 
 	entry = SMB_XMALLOC_P(struct vfs_init_function_entry);
 	entry->name = smb_xstrdup(name);
-	entry->vfs_op_tuples = vfs_op_tuples;
+	entry->fns = fns;
 
 	DLIST_ADD(backends, entry);
 	DEBUG(5, ("Successfully added vfs backend '%s'\n", name));
@@ -100,20 +101,11 @@ static void vfs_init_default(connection_struct *conn)
   initialise custom vfs hooks
  ****************************************************************************/
 
-static inline void vfs_set_operation(struct vfs_ops * vfs, vfs_op_type which,
-				struct vfs_handle_struct * handle, void * op)
-{
-	((struct vfs_handle_struct **)&vfs->handles)[which] = handle;
-	((void **)(void *)&vfs->ops)[which] = op;
-}
-
 bool vfs_init_custom(connection_struct *conn, const char *vfs_object)
 {
-	const vfs_op_tuple *ops;
 	char *module_path = NULL;
 	char *module_name = NULL;
 	char *module_param = NULL, *p;
-	int i;
 	vfs_handle_struct *handle;
 	const struct vfs_init_function_entry *entry;
 
@@ -183,36 +175,18 @@ bool vfs_init_custom(connection_struct *conn, const char *vfs_object)
 	}
 
 	DEBUGADD(5,("Successfully loaded vfs module [%s] with the new modules system\n", vfs_object));
-	if ((ops = entry->vfs_op_tuples) == NULL) {
-		DEBUG(0, ("entry->vfs_op_tuples==NULL for [%s] failed\n", vfs_object));
-		goto fail;
-	}
 
 	handle = TALLOC_ZERO_P(conn, vfs_handle_struct);
 	if (!handle) {
 		DEBUG(0,("TALLOC_ZERO() failed!\n"));
 		goto fail;
 	}
-	memcpy(&handle->vfs_next, &conn->vfs, sizeof(struct vfs_ops));
 	handle->conn = conn;
+	handle->fns = entry->fns;
 	if (module_param) {
 		handle->param = talloc_strdup(conn, module_param);
 	}
 	DLIST_ADD(conn->vfs_handles, handle);
-
- 	for(i=0; ops[i].op != NULL; i++) {
-		DEBUG(5, ("Checking operation #%d (type %d, layer %d)\n", i, ops[i].type, ops[i].layer));
-		if(ops[i].layer == SMB_VFS_LAYER_OPAQUE) {
-			/* If this operation was already made opaque by different module, it
-			 * will be overridden here.
-			 */
-			DEBUGADD(5, ("Making operation type %d opaque [module %s]\n", ops[i].type, vfs_object));
-			vfs_set_operation(&conn->vfs_opaque, ops[i].type, handle, ops[i].op);
-		}
-		/* Change current VFS disposition*/
-		DEBUGADD(5, ("Accepting operation type %d from module %s\n", ops[i].type, vfs_object));
-		vfs_set_operation(&conn->vfs, ops[i].type, handle, ops[i].op);
-	}
 
 	SAFE_FREE(module_path);
 	SAFE_FREE(module_name);
@@ -1058,3 +1032,835 @@ int vfs_lstat_smb_fname(struct connection_struct *conn, const char *fname,
 	return ret;
 }
 
+/*
+  generate a file_id from a stat structure
+ */
+struct file_id vfs_file_id_from_sbuf(connection_struct *conn, const SMB_STRUCT_STAT *sbuf)
+{
+	return SMB_VFS_FILE_ID_CREATE(conn, sbuf);
+}
+
+int smb_vfs_call_connect(struct vfs_handle_struct *handle,
+			 const char *service, const char *user)
+{
+	VFS_FIND(connect_fn);
+	return handle->fns->connect_fn(handle, service, user);
+}
+
+void smb_vfs_call_disconnect(struct vfs_handle_struct *handle)
+{
+	VFS_FIND(disconnect);
+	return handle->fns->disconnect(handle);
+}
+
+uint64_t smb_vfs_call_disk_free(struct vfs_handle_struct *handle,
+				const char *path, bool small_query,
+				uint64_t *bsize, uint64_t *dfree,
+				uint64_t *dsize)
+{
+	VFS_FIND(disk_free);
+	return handle->fns->disk_free(handle, path, small_query, bsize, dfree,
+				      dsize);
+}
+
+int smb_vfs_call_get_quota(struct vfs_handle_struct *handle,
+			   enum SMB_QUOTA_TYPE qtype, unid_t id,
+			   SMB_DISK_QUOTA *qt)
+{
+	VFS_FIND(get_quota);
+	return handle->fns->get_quota(handle, qtype, id, qt);
+}
+
+int smb_vfs_call_set_quota(struct vfs_handle_struct *handle,
+			   enum SMB_QUOTA_TYPE qtype, unid_t id,
+			   SMB_DISK_QUOTA *qt)
+{
+	VFS_FIND(set_quota);
+	return handle->fns->set_quota(handle, qtype, id, qt);
+}
+
+int smb_vfs_call_get_shadow_copy_data(struct vfs_handle_struct *handle,
+				      struct files_struct *fsp,
+				      SHADOW_COPY_DATA *shadow_copy_data,
+				      bool labels)
+{
+	VFS_FIND(get_shadow_copy_data);
+	return handle->fns->get_shadow_copy_data(handle, fsp, shadow_copy_data,
+						 labels);
+}
+int smb_vfs_call_statvfs(struct vfs_handle_struct *handle, const char *path,
+			 struct vfs_statvfs_struct *statbuf)
+{
+	VFS_FIND(statvfs);
+	return handle->fns->statvfs(handle, path, statbuf);
+}
+
+uint32_t smb_vfs_call_fs_capabilities(struct vfs_handle_struct *handle)
+{
+	VFS_FIND(fs_capabilities);
+	return handle->fns->fs_capabilities(handle);
+}
+
+SMB_STRUCT_DIR *smb_vfs_call_opendir(struct vfs_handle_struct *handle,
+				     const char *fname, const char *mask,
+				     uint32 attributes)
+{
+	VFS_FIND(opendir);
+	return handle->fns->opendir(handle, fname, mask, attributes);
+}
+
+SMB_STRUCT_DIRENT *smb_vfs_call_readdir(struct vfs_handle_struct *handle,
+					      SMB_STRUCT_DIR *dirp,
+					      SMB_STRUCT_STAT *sbuf)
+{
+	VFS_FIND(readdir);
+	return handle->fns->readdir(handle, dirp, sbuf);
+}
+
+void smb_vfs_call_seekdir(struct vfs_handle_struct *handle,
+			  SMB_STRUCT_DIR *dirp, long offset)
+{
+	VFS_FIND(seekdir);
+	return handle->fns->seekdir(handle, dirp, offset);
+}
+
+long smb_vfs_call_telldir(struct vfs_handle_struct *handle,
+			  SMB_STRUCT_DIR *dirp)
+{
+	VFS_FIND(telldir);
+	return handle->fns->telldir(handle, dirp);
+}
+
+void smb_vfs_call_rewind_dir(struct vfs_handle_struct *handle,
+			     SMB_STRUCT_DIR *dirp)
+{
+	VFS_FIND(rewind_dir);
+	return handle->fns->rewind_dir(handle, dirp);
+}
+
+int smb_vfs_call_mkdir(struct vfs_handle_struct *handle, const char *path,
+		       mode_t mode)
+{
+	VFS_FIND(mkdir);
+	return handle->fns->mkdir(handle, path, mode);
+}
+
+int smb_vfs_call_rmdir(struct vfs_handle_struct *handle, const char *path)
+{
+	VFS_FIND(rmdir);
+	return handle->fns->rmdir(handle, path);
+}
+
+int smb_vfs_call_closedir(struct vfs_handle_struct *handle,
+			  SMB_STRUCT_DIR *dir)
+{
+	VFS_FIND(closedir);
+	return handle->fns->closedir(handle, dir);
+}
+
+void smb_vfs_call_init_search_op(struct vfs_handle_struct *handle,
+				 SMB_STRUCT_DIR *dirp)
+{
+	VFS_FIND(init_search_op);
+	return handle->fns->init_search_op(handle, dirp);
+}
+
+int smb_vfs_call_open(struct vfs_handle_struct *handle,
+		      struct smb_filename *smb_fname, struct files_struct *fsp,
+		      int flags, mode_t mode)
+{
+	VFS_FIND(open);
+	return handle->fns->open(handle, smb_fname, fsp, flags, mode);
+}
+
+NTSTATUS smb_vfs_call_create_file(struct vfs_handle_struct *handle,
+				  struct smb_request *req,
+				  uint16_t root_dir_fid,
+				  struct smb_filename *smb_fname,
+				  uint32_t access_mask,
+				  uint32_t share_access,
+				  uint32_t create_disposition,
+				  uint32_t create_options,
+				  uint32_t file_attributes,
+				  uint32_t oplock_request,
+				  uint64_t allocation_size,
+				  struct security_descriptor *sd,
+				  struct ea_list *ea_list,
+				  files_struct **result,
+				  int *pinfo)
+{
+	VFS_FIND(create_file);
+	return handle->fns->create_file(
+		handle, req, root_dir_fid, smb_fname, access_mask,
+		share_access, create_disposition, create_options,
+		file_attributes, oplock_request, allocation_size, sd, ea_list,
+		result, pinfo);
+}
+
+int smb_vfs_call_close_fn(struct vfs_handle_struct *handle,
+			  struct files_struct *fsp)
+{
+	VFS_FIND(close_fn);
+	return handle->fns->close_fn(handle, fsp);
+}
+
+ssize_t smb_vfs_call_vfs_read(struct vfs_handle_struct *handle,
+			      struct files_struct *fsp, void *data, size_t n)
+{
+	VFS_FIND(vfs_read);
+	return handle->fns->vfs_read(handle, fsp, data, n);
+}
+
+ssize_t smb_vfs_call_pread(struct vfs_handle_struct *handle,
+			   struct files_struct *fsp, void *data, size_t n,
+			   SMB_OFF_T offset)
+{
+	VFS_FIND(pread);
+	return handle->fns->pread(handle, fsp, data, n, offset);
+}
+
+ssize_t smb_vfs_call_write(struct vfs_handle_struct *handle,
+			   struct files_struct *fsp, const void *data,
+			   size_t n)
+{
+	VFS_FIND(write);
+	return handle->fns->write(handle, fsp, data, n);
+}
+
+ssize_t smb_vfs_call_pwrite(struct vfs_handle_struct *handle,
+			    struct files_struct *fsp, const void *data,
+			    size_t n, SMB_OFF_T offset)
+{
+	VFS_FIND(pwrite);
+	return handle->fns->pwrite(handle, fsp, data, n, offset);
+}
+
+SMB_OFF_T smb_vfs_call_lseek(struct vfs_handle_struct *handle,
+			     struct files_struct *fsp, SMB_OFF_T offset,
+			     int whence)
+{
+	VFS_FIND(lseek);
+	return handle->fns->lseek(handle, fsp, offset, whence);
+}
+
+ssize_t smb_vfs_call_sendfile(struct vfs_handle_struct *handle, int tofd,
+			      files_struct *fromfsp, const DATA_BLOB *header,
+			      SMB_OFF_T offset, size_t count)
+{
+	VFS_FIND(sendfile);
+	return handle->fns->sendfile(handle, tofd, fromfsp, header, offset,
+				     count);
+}
+
+ssize_t smb_vfs_call_recvfile(struct vfs_handle_struct *handle, int fromfd,
+			      files_struct *tofsp, SMB_OFF_T offset,
+			      size_t count)
+{
+	VFS_FIND(recvfile);
+	return handle->fns->recvfile(handle, fromfd, tofsp, offset, count);
+}
+
+int smb_vfs_call_rename(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname_src,
+			const struct smb_filename *smb_fname_dst)
+{
+	VFS_FIND(rename);
+	return handle->fns->rename(handle, smb_fname_src, smb_fname_dst);
+}
+
+int smb_vfs_call_fsync(struct vfs_handle_struct *handle,
+		       struct files_struct *fsp)
+{
+	VFS_FIND(fsync);
+	return handle->fns->fsync(handle, fsp);
+}
+
+int smb_vfs_call_stat(struct vfs_handle_struct *handle,
+		      struct smb_filename *smb_fname)
+{
+	VFS_FIND(stat);
+	return handle->fns->stat(handle, smb_fname);
+}
+
+int smb_vfs_call_fstat(struct vfs_handle_struct *handle,
+		       struct files_struct *fsp, SMB_STRUCT_STAT *sbuf)
+{
+	VFS_FIND(fstat);
+	return handle->fns->fstat(handle, fsp, sbuf);
+}
+
+int smb_vfs_call_lstat(struct vfs_handle_struct *handle,
+		       struct smb_filename *smb_filename)
+{
+	VFS_FIND(lstat);
+	return handle->fns->lstat(handle, smb_filename);
+}
+
+uint64_t smb_vfs_call_get_alloc_size(struct vfs_handle_struct *handle,
+				     struct files_struct *fsp,
+				     const SMB_STRUCT_STAT *sbuf)
+{
+	VFS_FIND(get_alloc_size);
+	return handle->fns->get_alloc_size(handle, fsp, sbuf);
+}
+
+int smb_vfs_call_unlink(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname)
+{
+	VFS_FIND(unlink);
+	return handle->fns->unlink(handle, smb_fname);
+}
+
+int smb_vfs_call_chmod(struct vfs_handle_struct *handle, const char *path,
+		       mode_t mode)
+{
+	VFS_FIND(chmod);
+	return handle->fns->chmod(handle, path, mode);
+}
+
+int smb_vfs_call_fchmod(struct vfs_handle_struct *handle,
+			struct files_struct *fsp, mode_t mode)
+{
+	VFS_FIND(fchmod);
+	return handle->fns->fchmod(handle, fsp, mode);
+}
+
+int smb_vfs_call_chown(struct vfs_handle_struct *handle, const char *path,
+		       uid_t uid, gid_t gid)
+{
+	VFS_FIND(chown);
+	return handle->fns->chown(handle, path, uid, gid);
+}
+
+int smb_vfs_call_fchown(struct vfs_handle_struct *handle,
+			struct files_struct *fsp, uid_t uid, gid_t gid)
+{
+	VFS_FIND(fchown);
+	return handle->fns->fchown(handle, fsp, uid, gid);
+}
+
+int smb_vfs_call_lchown(struct vfs_handle_struct *handle, const char *path,
+			uid_t uid, gid_t gid)
+{
+	VFS_FIND(lchown);
+	return handle->fns->lchown(handle, path, uid, gid);
+}
+
+int smb_vfs_call_chdir(struct vfs_handle_struct *handle, const char *path)
+{
+	VFS_FIND(chdir);
+	return handle->fns->chdir(handle, path);
+}
+
+char *smb_vfs_call_getwd(struct vfs_handle_struct *handle, char *buf)
+{
+	VFS_FIND(getwd);
+	return handle->fns->getwd(handle, buf);
+}
+
+int smb_vfs_call_ntimes(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			struct smb_file_time *ft)
+{
+	VFS_FIND(ntimes);
+	return handle->fns->ntimes(handle, smb_fname, ft);
+}
+
+int smb_vfs_call_ftruncate(struct vfs_handle_struct *handle,
+			   struct files_struct *fsp, SMB_OFF_T offset)
+{
+	VFS_FIND(ftruncate);
+	return handle->fns->ftruncate(handle, fsp, offset);
+}
+
+int smb_vfs_call_kernel_flock(struct vfs_handle_struct *handle,
+			      struct files_struct *fsp, uint32 share_mode)
+{
+	VFS_FIND(kernel_flock);
+	return handle->fns->kernel_flock(handle, fsp, share_mode);
+}
+
+int smb_vfs_call_linux_setlease(struct vfs_handle_struct *handle,
+				struct files_struct *fsp, int leasetype)
+{
+	VFS_FIND(linux_setlease);
+	return handle->fns->linux_setlease(handle, fsp, leasetype);
+}
+
+int smb_vfs_call_symlink(struct vfs_handle_struct *handle, const char *oldpath,
+			 const char *newpath)
+{
+	VFS_FIND(symlink);
+	return handle->fns->symlink(handle, oldpath, newpath);
+}
+
+int smb_vfs_call_vfs_readlink(struct vfs_handle_struct *handle,
+			      const char *path, char *buf, size_t bufsiz)
+{
+	VFS_FIND(vfs_readlink);
+	return handle->fns->vfs_readlink(handle, path, buf, bufsiz);
+}
+
+int smb_vfs_call_link(struct vfs_handle_struct *handle, const char *oldpath,
+		      const char *newpath)
+{
+	VFS_FIND(link);
+	return handle->fns->link(handle, oldpath, newpath);
+}
+
+int smb_vfs_call_mknod(struct vfs_handle_struct *handle, const char *path,
+		       mode_t mode, SMB_DEV_T dev)
+{
+	VFS_FIND(mknod);
+	return handle->fns->mknod(handle, path, mode, dev);
+}
+
+char *smb_vfs_call_realpath(struct vfs_handle_struct *handle,
+			    const char *path, char *resolved_path)
+{
+	VFS_FIND(realpath);
+	return handle->fns->realpath(handle, path, resolved_path);
+}
+
+NTSTATUS smb_vfs_call_notify_watch(struct vfs_handle_struct *handle,
+				   struct sys_notify_context *ctx,
+				   struct notify_entry *e,
+				   void (*callback)(struct sys_notify_context *ctx,
+						    void *private_data,
+						    struct notify_event *ev),
+				   void *private_data, void *handle_p)
+{
+	VFS_FIND(notify_watch);
+	return handle->fns->notify_watch(handle, ctx, e, callback,
+					 private_data, handle_p);
+}
+
+int smb_vfs_call_chflags(struct vfs_handle_struct *handle, const char *path,
+			 unsigned int flags)
+{
+	VFS_FIND(chflags);
+	return handle->fns->chflags(handle, path, flags);
+}
+
+struct file_id smb_vfs_call_file_id_create(struct vfs_handle_struct *handle,
+					   const SMB_STRUCT_STAT *sbuf)
+{
+	VFS_FIND(file_id_create);
+	return handle->fns->file_id_create(handle, sbuf);
+}
+
+NTSTATUS smb_vfs_call_streaminfo(struct vfs_handle_struct *handle,
+				 struct files_struct *fsp,
+				 const char *fname,
+				 TALLOC_CTX *mem_ctx,
+				 unsigned int *num_streams,
+				 struct stream_struct **streams)
+{
+	VFS_FIND(streaminfo);
+	return handle->fns->streaminfo(handle, fsp, fname, mem_ctx,
+				       num_streams, streams);
+}
+
+int smb_vfs_call_get_real_filename(struct vfs_handle_struct *handle,
+				   const char *path, const char *name,
+				   TALLOC_CTX *mem_ctx, char **found_name)
+{
+	VFS_FIND(get_real_filename);
+	return handle->fns->get_real_filename(handle, path, name, mem_ctx,
+					      found_name);
+}
+
+const char *smb_vfs_call_connectpath(struct vfs_handle_struct *handle,
+				     const char *filename)
+{
+	VFS_FIND(connectpath);
+	return handle->fns->connectpath(handle, filename);
+}
+
+bool smb_vfs_call_strict_lock(struct vfs_handle_struct *handle,
+			      struct files_struct *fsp,
+			      struct lock_struct *plock)
+{
+	VFS_FIND(strict_lock);
+	return handle->fns->strict_lock(handle, fsp, plock);
+}
+
+void smb_vfs_call_strict_unlock(struct vfs_handle_struct *handle,
+				struct files_struct *fsp,
+				struct lock_struct *plock)
+{
+	VFS_FIND(strict_unlock);
+	return handle->fns->strict_unlock(handle, fsp, plock);
+}
+
+NTSTATUS smb_vfs_call_fget_nt_acl(struct vfs_handle_struct *handle,
+				  struct files_struct *fsp,
+				  uint32 security_info,
+				  struct security_descriptor **ppdesc)
+{
+	VFS_FIND(fget_nt_acl);
+	return handle->fns->fget_nt_acl(handle, fsp, security_info,
+					ppdesc);
+}
+
+NTSTATUS smb_vfs_call_get_nt_acl(struct vfs_handle_struct *handle,
+				 const char *name,
+				 uint32 security_info,
+				 struct security_descriptor **ppdesc)
+{
+	VFS_FIND(get_nt_acl);
+	return handle->fns->get_nt_acl(handle, name, security_info, ppdesc);
+}
+
+NTSTATUS smb_vfs_call_fset_nt_acl(struct vfs_handle_struct *handle,
+				  struct files_struct *fsp,
+				  uint32 security_info_sent,
+				  const struct security_descriptor *psd)
+{
+	VFS_FIND(fset_nt_acl);
+	return handle->fns->fset_nt_acl(handle, fsp, security_info_sent, psd);
+}
+
+int smb_vfs_call_chmod_acl(struct vfs_handle_struct *handle, const char *name,
+			   mode_t mode)
+{
+	VFS_FIND(chmod_acl);
+	return handle->fns->chmod_acl(handle, name, mode);
+}
+
+int smb_vfs_call_fchmod_acl(struct vfs_handle_struct *handle,
+			    struct files_struct *fsp, mode_t mode)
+{
+	VFS_FIND(fchmod_acl);
+	return handle->fns->fchmod_acl(handle, fsp, mode);
+}
+
+int smb_vfs_call_sys_acl_get_entry(struct vfs_handle_struct *handle,
+				   SMB_ACL_T theacl, int entry_id,
+				   SMB_ACL_ENTRY_T *entry_p)
+{
+	VFS_FIND(sys_acl_get_entry);
+	return handle->fns->sys_acl_get_entry(handle, theacl, entry_id,
+					      entry_p);
+}
+
+int smb_vfs_call_sys_acl_get_tag_type(struct vfs_handle_struct *handle,
+				      SMB_ACL_ENTRY_T entry_d,
+				      SMB_ACL_TAG_T *tag_type_p)
+{
+	VFS_FIND(sys_acl_get_tag_type);
+	return handle->fns->sys_acl_get_tag_type(handle, entry_d, tag_type_p);
+}
+
+int smb_vfs_call_sys_acl_get_permset(struct vfs_handle_struct *handle,
+				     SMB_ACL_ENTRY_T entry_d,
+				     SMB_ACL_PERMSET_T *permset_p)
+{
+	VFS_FIND(sys_acl_get_permset);
+	return handle->fns->sys_acl_get_permset(handle, entry_d, permset_p);
+}
+
+void * smb_vfs_call_sys_acl_get_qualifier(struct vfs_handle_struct *handle,
+					  SMB_ACL_ENTRY_T entry_d)
+{
+	VFS_FIND(sys_acl_get_qualifier);
+	return handle->fns->sys_acl_get_qualifier(handle, entry_d);
+}
+
+SMB_ACL_T smb_vfs_call_sys_acl_get_file(struct vfs_handle_struct *handle,
+					const char *path_p,
+					SMB_ACL_TYPE_T type)
+{
+	VFS_FIND(sys_acl_get_file);
+	return handle->fns->sys_acl_get_file(handle, path_p, type);
+}
+
+SMB_ACL_T smb_vfs_call_sys_acl_get_fd(struct vfs_handle_struct *handle,
+				      struct files_struct *fsp)
+{
+	VFS_FIND(sys_acl_get_fd);
+	return handle->fns->sys_acl_get_fd(handle, fsp);
+}
+
+int smb_vfs_call_sys_acl_clear_perms(struct vfs_handle_struct *handle,
+				     SMB_ACL_PERMSET_T permset)
+{
+	VFS_FIND(sys_acl_clear_perms);
+	return handle->fns->sys_acl_clear_perms(handle, permset);
+}
+
+int smb_vfs_call_sys_acl_add_perm(struct vfs_handle_struct *handle,
+				  SMB_ACL_PERMSET_T permset,
+				  SMB_ACL_PERM_T perm)
+{
+	VFS_FIND(sys_acl_add_perm);
+	return handle->fns->sys_acl_add_perm(handle, permset, perm);
+}
+
+char * smb_vfs_call_sys_acl_to_text(struct vfs_handle_struct *handle,
+				    SMB_ACL_T theacl, ssize_t *plen)
+{
+	VFS_FIND(sys_acl_to_text);
+	return handle->fns->sys_acl_to_text(handle, theacl, plen);
+}
+
+SMB_ACL_T smb_vfs_call_sys_acl_init(struct vfs_handle_struct *handle,
+				    int count)
+{
+	VFS_FIND(sys_acl_init);
+	return handle->fns->sys_acl_init(handle, count);
+}
+
+int smb_vfs_call_sys_acl_create_entry(struct vfs_handle_struct *handle,
+				      SMB_ACL_T *pacl, SMB_ACL_ENTRY_T *pentry)
+{
+	VFS_FIND(sys_acl_create_entry);
+	return handle->fns->sys_acl_create_entry(handle, pacl, pentry);
+}
+
+int smb_vfs_call_sys_acl_set_tag_type(struct vfs_handle_struct *handle,
+				      SMB_ACL_ENTRY_T entry,
+				      SMB_ACL_TAG_T tagtype)
+{
+	VFS_FIND(sys_acl_set_tag_type);
+	return handle->fns->sys_acl_set_tag_type(handle, entry, tagtype);
+}
+
+int smb_vfs_call_sys_acl_set_qualifier(struct vfs_handle_struct *handle,
+				       SMB_ACL_ENTRY_T entry, void *qual)
+{
+	VFS_FIND(sys_acl_set_qualifier);
+	return handle->fns->sys_acl_set_qualifier(handle, entry, qual);
+}
+
+int smb_vfs_call_sys_acl_set_permset(struct vfs_handle_struct *handle,
+				     SMB_ACL_ENTRY_T entry,
+				     SMB_ACL_PERMSET_T permset)
+{
+	VFS_FIND(sys_acl_set_permset);
+	return handle->fns->sys_acl_set_permset(handle, entry, permset);
+}
+
+int smb_vfs_call_sys_acl_valid(struct vfs_handle_struct *handle,
+			       SMB_ACL_T theacl)
+{
+	VFS_FIND(sys_acl_valid);
+	return handle->fns->sys_acl_valid(handle, theacl);
+}
+
+int smb_vfs_call_sys_acl_set_file(struct vfs_handle_struct *handle,
+				  const char *name, SMB_ACL_TYPE_T acltype,
+				  SMB_ACL_T theacl)
+{
+	VFS_FIND(sys_acl_set_file);
+	return handle->fns->sys_acl_set_file(handle, name, acltype, theacl);
+}
+
+int smb_vfs_call_sys_acl_set_fd(struct vfs_handle_struct *handle,
+				struct files_struct *fsp, SMB_ACL_T theacl)
+{
+	VFS_FIND(sys_acl_set_fd);
+	return handle->fns->sys_acl_set_fd(handle, fsp, theacl);
+}
+
+int smb_vfs_call_sys_acl_delete_def_file(struct vfs_handle_struct *handle,
+					 const char *path)
+{
+	VFS_FIND(sys_acl_delete_def_file);
+	return handle->fns->sys_acl_delete_def_file(handle, path);
+}
+
+int smb_vfs_call_sys_acl_get_perm(struct vfs_handle_struct *handle,
+				  SMB_ACL_PERMSET_T permset,
+				  SMB_ACL_PERM_T perm)
+{
+	VFS_FIND(sys_acl_get_perm);
+	return handle->fns->sys_acl_get_perm(handle, permset, perm);
+}
+
+int smb_vfs_call_sys_acl_free_text(struct vfs_handle_struct *handle,
+				   char *text)
+{
+	VFS_FIND(sys_acl_free_text);
+	return handle->fns->sys_acl_free_text(handle, text);
+}
+
+int smb_vfs_call_sys_acl_free_acl(struct vfs_handle_struct *handle,
+				  SMB_ACL_T posix_acl)
+{
+	VFS_FIND(sys_acl_free_acl);
+	return handle->fns->sys_acl_free_acl(handle, posix_acl);
+}
+
+int smb_vfs_call_sys_acl_free_qualifier(struct vfs_handle_struct *handle,
+					void *qualifier, SMB_ACL_TAG_T tagtype)
+{
+	VFS_FIND(sys_acl_free_qualifier);
+	return handle->fns->sys_acl_free_qualifier(handle, qualifier, tagtype);
+}
+
+ssize_t smb_vfs_call_getxattr(struct vfs_handle_struct *handle,
+			      const char *path, const char *name, void *value,
+			      size_t size)
+{
+	VFS_FIND(getxattr);
+	return handle->fns->getxattr(handle, path, name, value, size);
+}
+
+ssize_t smb_vfs_call_lgetxattr(struct vfs_handle_struct *handle,
+			       const char *path, const char *name, void *value,
+			       size_t size)
+{
+	VFS_FIND(lgetxattr);
+	return handle->fns->lgetxattr(handle, path, name, value, size);
+}
+
+ssize_t smb_vfs_call_fgetxattr(struct vfs_handle_struct *handle,
+			       struct files_struct *fsp, const char *name,
+			       void *value, size_t size)
+{
+	VFS_FIND(fgetxattr);
+	return handle->fns->fgetxattr(handle, fsp, name, value, size);
+}
+
+ssize_t smb_vfs_call_listxattr(struct vfs_handle_struct *handle,
+			       const char *path, char *list, size_t size)
+{
+	VFS_FIND(listxattr);
+	return handle->fns->listxattr(handle, path, list, size);
+}
+
+ssize_t smb_vfs_call_llistxattr(struct vfs_handle_struct *handle,
+				const char *path, char *list, size_t size)
+{
+	VFS_FIND(llistxattr);
+	return handle->fns->llistxattr(handle, path, list, size);
+}
+
+ssize_t smb_vfs_call_flistxattr(struct vfs_handle_struct *handle,
+				struct files_struct *fsp, char *list,
+				size_t size)
+{
+	VFS_FIND(flistxattr);
+	return handle->fns->flistxattr(handle, fsp, list, size);
+}
+
+int smb_vfs_call_removexattr(struct vfs_handle_struct *handle,
+			     const char *path, const char *name)
+{
+	VFS_FIND(removexattr);
+	return handle->fns->removexattr(handle, path, name);
+}
+
+int smb_vfs_call_lremovexattr(struct vfs_handle_struct *handle,
+			      const char *path, const char *name)
+{
+	VFS_FIND(lremovexattr);
+	return handle->fns->lremovexattr(handle, path, name);
+}
+
+int smb_vfs_call_fremovexattr(struct vfs_handle_struct *handle,
+			      struct files_struct *fsp, const char *name)
+{
+	VFS_FIND(fremovexattr);
+	return handle->fns->fremovexattr(handle, fsp, name);
+}
+
+int smb_vfs_call_setxattr(struct vfs_handle_struct *handle, const char *path,
+			  const char *name, const void *value, size_t size,
+			  int flags)
+{
+	VFS_FIND(setxattr);
+	return handle->fns->setxattr(handle, path, name, value, size, flags);
+}
+
+int smb_vfs_call_lsetxattr(struct vfs_handle_struct *handle, const char *path,
+			   const char *name, const void *value, size_t size,
+			   int flags)
+{
+	VFS_FIND(lsetxattr);
+	return handle->fns->lsetxattr(handle, path, name, value, size, flags);
+}
+
+int smb_vfs_call_fsetxattr(struct vfs_handle_struct *handle,
+			   struct files_struct *fsp, const char *name,
+			   const void *value, size_t size, int flags)
+{
+	VFS_FIND(fsetxattr);
+	return handle->fns->fsetxattr(handle, fsp, name, value, size, flags);
+}
+
+int smb_vfs_call_aio_read(struct vfs_handle_struct *handle,
+			  struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
+{
+	VFS_FIND(aio_read);
+	return handle->fns->aio_read(handle, fsp, aiocb);
+}
+
+int smb_vfs_call_aio_write(struct vfs_handle_struct *handle,
+			   struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
+{
+	VFS_FIND(aio_write);
+	return handle->fns->aio_write(handle, fsp, aiocb);
+}
+
+ssize_t smb_vfs_call_aio_return_fn(struct vfs_handle_struct *handle,
+				   struct files_struct *fsp,
+				   SMB_STRUCT_AIOCB *aiocb)
+{
+	VFS_FIND(aio_return_fn);
+	return handle->fns->aio_return_fn(handle, fsp, aiocb);
+}
+
+int smb_vfs_call_aio_cancel(struct vfs_handle_struct *handle,
+			    struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
+{
+	VFS_FIND(aio_cancel);
+	return handle->fns->aio_cancel(handle, fsp, aiocb);
+}
+
+int smb_vfs_call_aio_error_fn(struct vfs_handle_struct *handle,
+			      struct files_struct *fsp,
+			      SMB_STRUCT_AIOCB *aiocb)
+{
+	VFS_FIND(aio_error_fn);
+	return handle->fns->aio_error_fn(handle, fsp, aiocb);
+}
+
+int smb_vfs_call_aio_fsync(struct vfs_handle_struct *handle,
+			   struct files_struct *fsp, int op,
+			   SMB_STRUCT_AIOCB *aiocb)
+{
+	VFS_FIND(aio_fsync);
+	return handle->fns->aio_fsync(handle, fsp, op, aiocb);
+}
+
+int smb_vfs_call_aio_suspend(struct vfs_handle_struct *handle,
+			     struct files_struct *fsp,
+			     const SMB_STRUCT_AIOCB * const aiocb[], int n,
+			     const struct timespec *timeout)
+{
+	VFS_FIND(aio_suspend);
+	return handle->fns->aio_suspend(handle, fsp, aiocb, n, timeout);
+}
+
+bool smb_vfs_call_aio_force(struct vfs_handle_struct *handle,
+			    struct files_struct *fsp)
+{
+	VFS_FIND(aio_force);
+	return handle->fns->aio_force(handle, fsp);
+}
+
+bool smb_vfs_call_is_offline(struct vfs_handle_struct *handle,
+			     const char *path, SMB_STRUCT_STAT *sbuf)
+{
+	VFS_FIND(is_offline);
+	return handle->fns->is_offline(handle, path, sbuf);
+}
+
+int smb_vfs_call_set_offline(struct vfs_handle_struct *handle,
+			     const char *path)
+{
+	VFS_FIND(set_offline);
+	return handle->fns->set_offline(handle, path);
+}

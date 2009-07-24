@@ -421,28 +421,19 @@ exit_lchown:
 	return ret;
 }
 
-static vfs_op_tuple atalk_ops[] = {
-    
-	/* Directory operations */
-
-	{SMB_VFS_OP(atalk_opendir),	 	SMB_VFS_OP_OPENDIR, 	SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(atalk_rmdir), 		SMB_VFS_OP_RMDIR, 	SMB_VFS_LAYER_TRANSPARENT},
-
-	/* File operations */
-
-	{SMB_VFS_OP(atalk_rename), 		SMB_VFS_OP_RENAME, 	SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(atalk_unlink), 		SMB_VFS_OP_UNLINK, 	SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(atalk_chmod), 		SMB_VFS_OP_CHMOD, 	SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(atalk_chown),		SMB_VFS_OP_CHOWN,	SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(atalk_lchown),		SMB_VFS_OP_LCHOWN,	SMB_VFS_LAYER_TRANSPARENT},
-	
-	/* Finish VFS operations definition */
-	
-	{SMB_VFS_OP(NULL), 			SMB_VFS_OP_NOOP, 	SMB_VFS_LAYER_NOOP}
+static struct vfs_fn_pointers vfs_netatalk_fns = {
+	.opendir = atalk_opendir,
+	.rmdir = atalk_rmdir,
+	.rename = atalk_rename,
+	.unlink = atalk_unlink,
+	.chmod = atalk_chmod,
+	.chown = atalk_chown,
+	.lchown = atalk_lchown,
 };
 
 NTSTATUS vfs_netatalk_init(void);
 NTSTATUS vfs_netatalk_init(void)
 {
-	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "netatalk", atalk_ops);
+	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "netatalk",
+				&vfs_netatalk_fns);
 }

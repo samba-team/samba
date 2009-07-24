@@ -440,18 +440,13 @@ static int preopen_open(vfs_handle_struct *handle,
 	return res;
 }
 
-/* VFS operations structure */
-
-static vfs_op_tuple preopen_ops[] = {
-	{SMB_VFS_OP(preopen_open),	SMB_VFS_OP_OPEN,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(NULL),		SMB_VFS_OP_NOOP,
-	 SMB_VFS_LAYER_NOOP}
+static struct vfs_fn_pointers vfs_preopen_fns = {
+	.open = preopen_open
 };
 
 NTSTATUS vfs_preopen_init(void);
 NTSTATUS vfs_preopen_init(void)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION,
-				"preopen", preopen_ops);
+				"preopen", &vfs_preopen_fns);
 }

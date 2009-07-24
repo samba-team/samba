@@ -270,7 +270,7 @@ parse_ace(struct cli_state *ipc_cli,
 	uint32_t mask;
 	const struct perm_value *v;
         struct perm_value {
-                const char *perm;
+                const char perm[7];
                 uint32 mask;
         };
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -283,14 +283,14 @@ parse_ace(struct cli_state *ipc_cli,
                 { "D", 0x00010000 },
                 { "P", 0x00040000 },
                 { "O", 0x00080000 },
-                { NULL, 0 },
+                { "", 0 },
         };
         
         static const struct perm_value standard_values[] = {
                 { "READ",   0x001200a9 },
                 { "CHANGE", 0x001301bf },
                 { "FULL",   0x001f01ff },
-                { NULL, 0 },
+                { "", 0 },
         };
         
         

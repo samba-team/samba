@@ -337,45 +337,23 @@ static int catia_chdir(vfs_handle_struct *handle,
         return SMB_VFS_NEXT_CHDIR(handle, name);
 }
 
-/* VFS operations structure */
-
-static vfs_op_tuple catia_op_tuples[] = {
-
-        /* Directory operations */
-
-        {SMB_VFS_OP(catia_opendir), SMB_VFS_OP_OPENDIR,
-SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(catia_readdir), SMB_VFS_OP_READDIR,
-SMB_VFS_LAYER_TRANSPARENT},
-
-        /* File operations */
-
-        {SMB_VFS_OP(catia_open), SMB_VFS_OP_OPEN,
-SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(catia_rename),                      SMB_VFS_OP_RENAME,
-        SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(catia_stat), SMB_VFS_OP_STAT,
-SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(catia_lstat),                       SMB_VFS_OP_LSTAT,
-SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(catia_unlink),                      SMB_VFS_OP_UNLINK,
-        SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(catia_chmod),                       SMB_VFS_OP_CHMOD,
-SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(catia_chown),                       SMB_VFS_OP_CHOWN,
-SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(catia_lchown),                      SMB_VFS_OP_LCHOWN,
-SMB_VFS_LAYER_TRANSPARENT},
-        {SMB_VFS_OP(catia_chdir),                       SMB_VFS_OP_CHDIR,
-SMB_VFS_LAYER_TRANSPARENT},
-
-        {NULL,                                          SMB_VFS_OP_NOOP,
-SMB_VFS_LAYER_NOOP}
+static struct vfs_fn_pointers vfs_catia_fns = {
+        .opendir = catia_opendir,
+        .readdir = catia_readdir,
+        .open = catia_open,
+        .rename = catia_rename,
+        .stat = catia_stat,
+        .lstat = catia_lstat,
+        .unlink = catia_unlink,
+        .chmod = catia_chmod,
+        .chown = catia_chown,
+        .lchown = catia_lchown,
+        .chdir = catia_chdir,
 };
 
 NTSTATUS vfs_catia_init(void);
 NTSTATUS vfs_catia_init(void)
 {
         return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "catia",
-catia_op_tuples);
+				&vfs_catia_fns);
 }

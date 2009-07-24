@@ -199,17 +199,13 @@ static int expand_msdfs_readlink(struct vfs_handle_struct *handle,
 	return strlen(buf);
 }
 
-/* VFS operations structure */
-
-static vfs_op_tuple expand_msdfs_ops[] = {
-	{SMB_VFS_OP(expand_msdfs_readlink), SMB_VFS_OP_READLINK,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(NULL), SMB_VFS_OP_NOOP, SMB_VFS_LAYER_NOOP}
+static struct vfs_fn_pointers vfs_expand_msdfs_fns = {
+	.vfs_readlink = expand_msdfs_readlink
 };
 
 NTSTATUS vfs_expand_msdfs_init(void);
 NTSTATUS vfs_expand_msdfs_init(void)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "expand_msdfs",
-				expand_msdfs_ops);
+				&vfs_expand_msdfs_fns);
 }

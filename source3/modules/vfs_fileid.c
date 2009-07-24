@@ -243,33 +243,10 @@ static struct file_id fileid_file_id_create(struct vfs_handle_struct *handle,
 	return id;
 }
 
-static vfs_op_tuple fileid_ops[] = {
-
-	/* Disk operations */
-	{
-		SMB_VFS_OP(fileid_connect),
-		SMB_VFS_OP_CONNECT,
-		SMB_VFS_LAYER_TRANSPARENT
-	},
-	{
-		SMB_VFS_OP(fileid_disconnect),
-		SMB_VFS_OP_DISCONNECT,
-		SMB_VFS_LAYER_TRANSPARENT
-	},
-
-	/* File operations */
-	{
-		SMB_VFS_OP(fileid_file_id_create),
-		SMB_VFS_OP_FILE_ID_CREATE,
-		SMB_VFS_LAYER_OPAQUE
-	},
-
-	/* End marker */
-	{
-		SMB_VFS_OP(NULL),
-		SMB_VFS_OP_NOOP,
-		SMB_VFS_LAYER_NOOP
-	}
+static struct vfs_fn_pointers vfs_fileid_fns = {
+	.connect_fn = fileid_connect,
+	.disconnect = fileid_disconnect,
+	.file_id_create = fileid_file_id_create
 };
 
 NTSTATUS vfs_fileid_init(void);
@@ -277,7 +254,8 @@ NTSTATUS vfs_fileid_init(void)
 {
 	NTSTATUS ret;
 
-	ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "fileid", fileid_ops);
+	ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "fileid",
+			       &vfs_fileid_fns);
 	if (!NT_STATUS_IS_OK(ret)) {
 		return ret;
 	}

@@ -397,29 +397,21 @@ static ssize_t smb_traffic_analyzer_pwrite(vfs_handle_struct *handle, \
 	return result;
 }
 
-/* VFS operations we use */
-
-static vfs_op_tuple smb_traffic_analyzer_tuples[] = {
-
-        {SMB_VFS_OP(smb_traffic_analyzer_connect), SMB_VFS_OP_CONNECT,
-         SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_traffic_analyzer_read),	SMB_VFS_OP_READ,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_traffic_analyzer_pread), SMB_VFS_OP_PREAD,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_traffic_analyzer_write), SMB_VFS_OP_WRITE,
-	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_traffic_analyzer_pwrite), SMB_VFS_OP_PWRITE,
-	 SMB_VFS_LAYER_LOGGER},
-       	{SMB_VFS_OP(NULL),SMB_VFS_OP_NOOP,SMB_VFS_LAYER_NOOP}
+static struct vfs_fn_pointers vfs_smb_traffic_analyzer_fns = {
+        .connect_fn = smb_traffic_analyzer_connect,
+	.vfs_read = smb_traffic_analyzer_read,
+	.pread = smb_traffic_analyzer_pread,
+	.write = smb_traffic_analyzer_write,
+	.pwrite = smb_traffic_analyzer_pwrite,
 };
 
 /* Module initialization */
 
 NTSTATUS vfs_smb_traffic_analyzer_init(void)
 {
-	NTSTATUS ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION, \
-		"smb_traffic_analyzer",	smb_traffic_analyzer_tuples);
+	NTSTATUS ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION,
+					"smb_traffic_analyzer",
+					&vfs_smb_traffic_analyzer_fns);
 
 	if (!NT_STATUS_IS_OK(ret)) {
 		return ret;

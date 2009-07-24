@@ -1150,37 +1150,18 @@ static bool hpux_acl_check(HPUX_ACL_T hpux_acl, int count)
 
 /* VFS operations structure */
 
-static vfs_op_tuple hpuxacl_op_tuples[] = {
-	/* Disk operations */
-	{SMB_VFS_OP(hpuxacl_sys_acl_get_file),
-	 SMB_VFS_OP_SYS_ACL_GET_FILE,
-	 SMB_VFS_LAYER_TRANSPARENT},
-
-	{SMB_VFS_OP(hpuxacl_sys_acl_get_fd),
-	 SMB_VFS_OP_SYS_ACL_GET_FD,
-	 SMB_VFS_LAYER_TRANSPARENT},
-
-	{SMB_VFS_OP(hpuxacl_sys_acl_set_file),
-	 SMB_VFS_OP_SYS_ACL_SET_FILE,
-	 SMB_VFS_LAYER_TRANSPARENT},
-
-	{SMB_VFS_OP(hpuxacl_sys_acl_set_fd),
-	 SMB_VFS_OP_SYS_ACL_SET_FD,
-	 SMB_VFS_LAYER_TRANSPARENT},
-
-	{SMB_VFS_OP(hpuxacl_sys_acl_delete_def_file),
-	 SMB_VFS_OP_SYS_ACL_DELETE_DEF_FILE,
-	 SMB_VFS_LAYER_TRANSPARENT},
-
-	{SMB_VFS_OP(NULL),
-	 SMB_VFS_OP_NOOP,
-	 SMB_VFS_LAYER_NOOP}
+static struct vfs_fn_pointers hpuxacl_fns = {
+	.sys_acl_get_file = hpuxacl_sys_acl_get_file,
+	.sys_acl_get_fd = hpuxacl_sys_acl_get_fd,
+	.sys_acl_set_file = hpuxacl_sys_acl_set_file,
+	.sys_acl_set_fd = hpuxacl_sys_acl_set_fd,
+	.sys_acl_delete_def_file = hpuxacl_sys_acl_delete_def_file,
 };
 
 NTSTATUS vfs_hpuxacl_init(void)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "hpuxacl",
-				hpuxacl_op_tuples);
+				&hpuxacl_fns);
 }
 
 /* ENTE */

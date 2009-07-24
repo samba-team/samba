@@ -793,27 +793,19 @@ static int sys_acl_set_fd_xattr(vfs_handle_struct *handle,
 	return ret;
 }
 
-/* VFS operations structure */
 
-static vfs_op_tuple skel_op_tuples[] =
-{
-	{SMB_VFS_OP(mkdir_acl_xattr), SMB_VFS_OP_MKDIR, SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(open_acl_xattr),  SMB_VFS_OP_OPEN,  SMB_VFS_LAYER_TRANSPARENT},
-
-        /* NT File ACL operations */
-
-	{SMB_VFS_OP(fget_nt_acl_xattr),SMB_VFS_OP_FGET_NT_ACL,SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(get_nt_acl_xattr), SMB_VFS_OP_GET_NT_ACL, SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(fset_nt_acl_xattr),SMB_VFS_OP_FSET_NT_ACL,SMB_VFS_LAYER_TRANSPARENT},
-
-	/* POSIX ACL operations. */
-	{SMB_VFS_OP(sys_acl_set_file_xattr), SMB_VFS_OP_SYS_ACL_SET_FILE, SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(sys_acl_set_fd_xattr), SMB_VFS_OP_SYS_ACL_SET_FD, SMB_VFS_LAYER_TRANSPARENT},
-
-	{SMB_VFS_OP(NULL), SMB_VFS_OP_NOOP, SMB_VFS_LAYER_NOOP}
+static struct vfs_fn_pointers vfs_acl_xattr_fns = {
+	.mkdir = mkdir_acl_xattr,
+	.open = open_acl_xattr,
+	.fget_nt_acl = fget_nt_acl_xattr,
+	.get_nt_acl = get_nt_acl_xattr,
+	.fset_nt_acl = fset_nt_acl_xattr,
+	.sys_acl_set_file = sys_acl_set_file_xattr,
+	.sys_acl_set_fd = sys_acl_set_fd_xattr
 };
 
 NTSTATUS vfs_acl_xattr_init(void)
 {
-	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "acl_xattr", skel_op_tuples);
+	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "acl_xattr",
+				&vfs_acl_xattr_fns);
 }

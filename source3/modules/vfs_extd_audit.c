@@ -336,39 +336,26 @@ static int audit_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp, mode_t
 	return result;
 }
 
-/* VFS operations */
-static vfs_op_tuple audit_op_tuples[] = {
-
-	/* Disk operations */
-
-	{SMB_VFS_OP(audit_connect), 	SMB_VFS_OP_CONNECT, 	SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(audit_disconnect), 	SMB_VFS_OP_DISCONNECT, 	SMB_VFS_LAYER_LOGGER},
-
-	/* Directory operations */
-
-	{SMB_VFS_OP(audit_opendir), 	SMB_VFS_OP_OPENDIR, 	SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(audit_mkdir), 		SMB_VFS_OP_MKDIR, 	SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(audit_rmdir), 		SMB_VFS_OP_RMDIR, 	SMB_VFS_LAYER_LOGGER},
-
-	/* File operations */
-
-	{SMB_VFS_OP(audit_open), 		SMB_VFS_OP_OPEN, 	SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(audit_close), 		SMB_VFS_OP_CLOSE, 	SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(audit_rename), 		SMB_VFS_OP_RENAME, 	SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(audit_unlink), 		SMB_VFS_OP_UNLINK, 	SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(audit_chmod), 		SMB_VFS_OP_CHMOD, 	SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(audit_fchmod), 		SMB_VFS_OP_FCHMOD, 	SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(audit_chmod_acl), 	SMB_VFS_OP_CHMOD_ACL, 	SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(audit_fchmod_acl), 	SMB_VFS_OP_FCHMOD_ACL, 	SMB_VFS_LAYER_LOGGER},
-
-	/* Finish VFS operations definition */
-
-	{SMB_VFS_OP(NULL), 			SMB_VFS_OP_NOOP, 	SMB_VFS_LAYER_NOOP}
+static struct vfs_fn_pointers vfs_extd_audit_fns = {
+	.connect_fn = audit_connect,
+	.disconnect = audit_disconnect,
+	.opendir = audit_opendir,
+	.mkdir = audit_mkdir,
+	.rmdir = audit_rmdir,
+	.open = audit_open,
+	.close_fn = audit_close,
+	.rename = audit_rename,
+	.unlink = audit_unlink,
+	.chmod = audit_chmod,
+	.fchmod = audit_fchmod,
+	.chmod_acl = audit_chmod_acl,
+	.fchmod_acl = audit_fchmod_acl,
 };
 
 NTSTATUS vfs_extd_audit_init(void)
 {
-	NTSTATUS ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "extd_audit", audit_op_tuples);
+	NTSTATUS ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION,
+					"extd_audit", &vfs_extd_audit_fns);
 	
 	if (!NT_STATUS_IS_OK(ret))
 		return ret;

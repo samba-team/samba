@@ -741,37 +741,23 @@ static int xattr_tdb_connect(vfs_handle_struct *handle, const char *service,
 	return 0;
 }
 
-/* VFS operations structure */
-
-static const vfs_op_tuple xattr_tdb_ops[] = {
-	{SMB_VFS_OP(xattr_tdb_getxattr), SMB_VFS_OP_GETXATTR,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(xattr_tdb_fgetxattr), SMB_VFS_OP_FGETXATTR,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(xattr_tdb_setxattr), SMB_VFS_OP_SETXATTR,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(xattr_tdb_fsetxattr), SMB_VFS_OP_FSETXATTR,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(xattr_tdb_listxattr), SMB_VFS_OP_LISTXATTR,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(xattr_tdb_flistxattr), SMB_VFS_OP_FLISTXATTR,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(xattr_tdb_removexattr), SMB_VFS_OP_REMOVEXATTR,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(xattr_tdb_fremovexattr), SMB_VFS_OP_FREMOVEXATTR,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(xattr_tdb_unlink), SMB_VFS_OP_UNLINK,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(xattr_tdb_rmdir), SMB_VFS_OP_RMDIR,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(xattr_tdb_connect), SMB_VFS_OP_CONNECT,
-	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(NULL), SMB_VFS_OP_NOOP, SMB_VFS_LAYER_NOOP}
+static struct vfs_fn_pointers vfs_xattr_tdb_fns = {
+	.getxattr = xattr_tdb_getxattr,
+	.fgetxattr = xattr_tdb_fgetxattr,
+	.setxattr = xattr_tdb_setxattr,
+	.fsetxattr = xattr_tdb_fsetxattr,
+	.listxattr = xattr_tdb_listxattr,
+	.flistxattr = xattr_tdb_flistxattr,
+	.removexattr = xattr_tdb_removexattr,
+	.fremovexattr = xattr_tdb_fremovexattr,
+	.unlink = xattr_tdb_unlink,
+	.rmdir = xattr_tdb_rmdir,
+	.connect_fn = xattr_tdb_connect,
 };
 
 NTSTATUS vfs_xattr_tdb_init(void);
 NTSTATUS vfs_xattr_tdb_init(void)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "xattr_tdb",
-				xattr_tdb_ops);
+				&vfs_xattr_tdb_fns);
 }

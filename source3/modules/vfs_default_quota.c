@@ -214,17 +214,14 @@ static int default_quota_set_quota(vfs_handle_struct *handle, enum SMB_QUOTA_TYP
 	return ret;
 }
 
-/* VFS operations structure */
-
-static vfs_op_tuple default_quota_ops[] = {	
-	{SMB_VFS_OP(default_quota_get_quota),	SMB_VFS_OP_GET_QUOTA,	SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(default_quota_set_quota),	SMB_VFS_OP_SET_QUOTA,	SMB_VFS_LAYER_TRANSPARENT},
-
-	{SMB_VFS_OP(NULL),			SMB_VFS_OP_NOOP,	SMB_VFS_LAYER_NOOP}
+static struct vfs_fn_pointers vfs_default_quota_fns = {
+	.get_quota = default_quota_get_quota,
+	.set_quota = default_quota_set_quota
 };
 
 NTSTATUS vfs_default_quota_init(void);
 NTSTATUS vfs_default_quota_init(void)
 {
-	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, DEFAULT_QUOTA_NAME, default_quota_ops);
+	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, DEFAULT_QUOTA_NAME,
+				&vfs_default_quota_fns);
 }

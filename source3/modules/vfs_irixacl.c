@@ -66,38 +66,19 @@ int irixacl_sys_acl_delete_def_file(vfs_handle_struct *handle,
 
 /* VFS operations structure */
 
-static vfs_op_tuple irixacl_op_tuples[] = {
-	/* Disk operations */
-  {SMB_VFS_OP(irixacl_sys_acl_get_file),
-   SMB_VFS_OP_SYS_ACL_GET_FILE,
-   SMB_VFS_LAYER_TRANSPARENT},
-
-  {SMB_VFS_OP(irixacl_sys_acl_get_fd),
-   SMB_VFS_OP_SYS_ACL_GET_FD,
-   SMB_VFS_LAYER_TRANSPARENT},
-
-  {SMB_VFS_OP(irixacl_sys_acl_set_file),
-   SMB_VFS_OP_SYS_ACL_SET_FILE,
-   SMB_VFS_LAYER_TRANSPARENT},
-
-  {SMB_VFS_OP(irixacl_sys_acl_set_fd),
-   SMB_VFS_OP_SYS_ACL_SET_FD,
-   SMB_VFS_LAYER_TRANSPARENT},
-
-  {SMB_VFS_OP(irixacl_sys_acl_delete_def_file),
-   SMB_VFS_OP_SYS_ACL_DELETE_DEF_FILE,
-   SMB_VFS_LAYER_TRANSPARENT},
-
-  {SMB_VFS_OP(NULL),
-   SMB_VFS_OP_NOOP,
-   SMB_VFS_LAYER_NOOP}
+static struct vfs_fn_pointers irixacl_fns = {
+	.sys_acl_get_file = irixacl_sys_acl_get_file,
+	.sys_acl_get_fd = irixacl_sys_acl_get_fd,
+	.sys_acl_set_file = irixacl_sys_acl_set_file,
+	.sys_acl_set_fd = irixacl_sys_acl_set_fd,
+	.sys_acl_delete_def_file = irixacl_sys_acl_delete_def_file,
 };
 
 NTSTATUS vfs_irixacl_init(void);
 NTSTATUS vfs_irixacl_init(void)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "irixacl",
-				irixacl_op_tuples);
+				&irixacl_fns);
 }
 
 /* ENTE */
