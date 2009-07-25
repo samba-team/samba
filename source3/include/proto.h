@@ -7284,4 +7284,31 @@ uint32_t ds_uf2atype(uint32_t uf);
 uint32_t ds_gtype2atype(uint32_t gtype);
 enum lsa_SidType ds_atype_map(uint32_t atype);
 
+/* The following definitions come from modules/vfs_acl_xattr.c */
+NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
+			vfs_handle_struct *handle,
+			files_struct *fsp,
+			const char *name,
+			DATA_BLOB *pblob);
+NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
+			files_struct *fsp,
+			DATA_BLOB *pblob);
+NTSTATUS store_acl_blob_pathname(vfs_handle_struct *handle,
+			const char *fname,
+			DATA_BLOB *pblob);
+
+/* The following definitions come from modules/vfs_acl_common.c */
+int open_acl_common(vfs_handle_struct *handle,
+			struct smb_filename *smb_fname,
+			files_struct *fsp,
+			int flags,
+			mode_t mode);
+int mkdir_acl_common(vfs_handle_struct *handle, const char *path, mode_t mode);
+NTSTATUS fget_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
+	uint32_t security_info, struct security_descriptor **ppdesc);
+NTSTATUS get_nt_acl_common(vfs_handle_struct *handle,
+	const char *name, uint32_t security_info, struct security_descriptor **ppdesc);
+NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
+	uint32_t security_info_sent, const struct security_descriptor *psd);
+
 #endif /*  _PROTO_H_  */
