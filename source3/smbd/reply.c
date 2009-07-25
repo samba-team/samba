@@ -1402,11 +1402,12 @@ void reply_search(struct smb_request *req)
 	/* dirtype &= ~aDIR; */
 
 	if (status_len == 0) {
-		nt_status = resolve_dfspath_wcard(ctx, conn,
-					  req->flags2 & FLAGS2_DFS_PATHNAMES,
-					  path,
-					  &path,
-					  &mask_contains_wcard);
+		nt_status = filename_convert(ctx, conn,
+					     req->flags2 & FLAGS2_DFS_PATHNAMES,
+					     path,
+					     UCF_ALWAYS_ALLOW_WCARD_LCOMP,
+					     &mask_contains_wcard,
+					     &smb_fname);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			if (NT_STATUS_EQUAL(nt_status,NT_STATUS_PATH_NOT_COVERED)) {
 				reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
@@ -1417,20 +1418,7 @@ void reply_search(struct smb_request *req)
 			goto out;
 		}
 
-		nt_status = unix_convert(ctx, conn, path, &smb_fname,
-					 UCF_ALLOW_WCARD_LCOMP);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			reply_nterror(req, nt_status);
-			goto out;
-		}
-
 		directory = smb_fname->base_name;
-
-		nt_status = check_name(conn, directory);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			reply_nterror(req, nt_status);
-			goto out;
-		}
 
 		p = strrchr_m(directory,'/');
 		if ((p != NULL) && (*directory != '/')) {
@@ -2516,20 +2504,14 @@ static NTSTATUS do_unlink(connection_struct *conn,
 ****************************************************************************/
 
 NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
-			  uint32 dirtype, const char *name_in, bool has_wild)
+			  uint32 dirtype, struct smb_filename *smb_fname,
+			  bool has_wild)
 {
-	struct smb_filename *smb_fname = NULL;
 	char *fname_dir = NULL;
 	char *fname_mask = NULL;
 	int count=0;
 	NTSTATUS status = NT_STATUS_OK;
 	TALLOC_CTX *ctx = talloc_tos();
-
-	status = unix_convert(ctx, conn, name_in, &smb_fname,
-			      has_wild ? UCF_ALLOW_WCARD_LCOMP : 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
 
 	/* Split up the directory from the filename/mask. */
 	status = split_fname_dir_mask(ctx, smb_fname->base_name,
@@ -2687,7 +2669,6 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 	}
 
  out:
-	TALLOC_FREE(smb_fname);
 	TALLOC_FREE(fname_dir);
 	TALLOC_FREE(fname_mask);
 	return status;
@@ -2701,6 +2682,7 @@ void reply_unlink(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
 	char *name = NULL;
+	struct smb_filename *smb_fname = NULL;
 	uint32 dirtype;
 	NTSTATUS status;
 	bool path_contains_wcard = False;
@@ -2710,8 +2692,7 @@ void reply_unlink(struct smb_request *req)
 
 	if (req->wct < 1) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		END_PROFILE(SMBunlink);
-		return;
+		goto out;
 	}
 
 	dirtype = SVAL(req->vwv+0, 0);
@@ -2721,45 +2702,42 @@ void reply_unlink(struct smb_request *req)
 				  &path_contains_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
-		END_PROFILE(SMBunlink);
-		return;
+		goto out;
 	}
 
-	status = resolve_dfspath_wcard(ctx, conn,
-				       req->flags2 & FLAGS2_DFS_PATHNAMES,
-				       name,
-				       &name,
-				       &path_contains_wcard);
+	status = filename_convert(ctx, conn,
+				  req->flags2 & FLAGS2_DFS_PATHNAMES,
+				  name,
+				  UCF_COND_ALLOW_WCARD_LCOMP,
+				  &path_contains_wcard,
+				  &smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
 					ERRSRV, ERRbadpath);
-			END_PROFILE(SMBunlink);
-			return;
+			goto out;
 		}
 		reply_nterror(req, status);
-		END_PROFILE(SMBunlink);
-		return;
+		goto out;
 	}
 
-	DEBUG(3,("reply_unlink : %s\n",name));
+	DEBUG(3,("reply_unlink : %s\n", smb_fname_str_dbg(smb_fname)));
 
-	status = unlink_internals(conn, req, dirtype, name,
+	status = unlink_internals(conn, req, dirtype, smb_fname,
 				  path_contains_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->mid)) {
 			/* We have re-scheduled this call. */
-			END_PROFILE(SMBunlink);
-			return;
+			goto out;
 		}
 		reply_nterror(req, status);
-		END_PROFILE(SMBunlink);
-		return;
+		goto out;
 	}
 
 	reply_outbuf(req, 0, 0);
+ out:
+	TALLOC_FREE(smb_fname);
 	END_PROFILE(SMBunlink);
-
 	return;
 }
 
@@ -6506,7 +6484,7 @@ void reply_mv(struct smb_request *req)
 				  conn,
 				  req->flags2 & FLAGS2_DFS_PATHNAMES,
 				  name,
-				  UCF_ALLOW_WCARD_LCOMP,
+				  UCF_COND_ALLOW_WCARD_LCOMP,
 				  &src_has_wcard,
 				  &smb_fname_src);
 
@@ -6524,7 +6502,7 @@ void reply_mv(struct smb_request *req)
 				  conn,
 				  req->flags2 & FLAGS2_DFS_PATHNAMES,
 				  newname,
-				  UCF_ALLOW_WCARD_LCOMP | UCF_SAVE_LCOMP,
+				  UCF_COND_ALLOW_WCARD_LCOMP | UCF_SAVE_LCOMP,
 				  &dest_has_wcard,
 				  &smb_fname_dst);
 
@@ -6787,11 +6765,12 @@ void reply_copy(struct smb_request *req)
 		goto out;
 	}
 
-	status = resolve_dfspath_wcard(ctx, conn,
-				       req->flags2 & FLAGS2_DFS_PATHNAMES,
-				       fname_src,
-				       &fname_src,
-				       &source_has_wild);
+	status = filename_convert(ctx, conn,
+				  req->flags2 & FLAGS2_DFS_PATHNAMES,
+				  fname_src,
+				  UCF_COND_ALLOW_WCARD_LCOMP,
+				  &source_has_wild,
+				  &smb_fname_src);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
@@ -6802,31 +6781,18 @@ void reply_copy(struct smb_request *req)
 		goto out;
 	}
 
-	status = resolve_dfspath_wcard(ctx, conn,
-				       req->flags2 & FLAGS2_DFS_PATHNAMES,
-				       fname_dst,
-				       &fname_dst,
-				       &dest_has_wild);
+	status = filename_convert(ctx, conn,
+				  req->flags2 & FLAGS2_DFS_PATHNAMES,
+				  fname_dst,
+				  UCF_COND_ALLOW_WCARD_LCOMP,
+				  &dest_has_wild,
+				  &smb_fname_dst);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
 					ERRSRV, ERRbadpath);
 			goto out;
 		}
-		reply_nterror(req, status);
-		goto out;
-	}
-
-	status = unix_convert(ctx, conn, fname_src, &smb_fname_src,
-			      source_has_wild ? UCF_ALLOW_WCARD_LCOMP : 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
-		goto out;
-	}
-
-	status = unix_convert(ctx, conn, fname_dst, &smb_fname_dst,
-			      dest_has_wild ? UCF_ALLOW_WCARD_LCOMP : 0);
-	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		goto out;
 	}

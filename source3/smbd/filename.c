@@ -98,8 +98,8 @@ processing whilst resolving.
 If the UCF_SAVE_LCOMP flag is passed in, then the unmodified last component
 of the pathname is set in smb_filename->original_lcomp.
 
-If UCF_ALLOW_WCARD_LCOMP is passed in, then a MS wildcard was detected and
-should be allowed in the last component of the path only.
+If UCF_ALWAYS_ALLOW_WCARD_LCOMP is passed in, then a MS wildcard was detected
+and should be allowed in the last component of the path only.
 
 If the orig_path was a stream, smb_filename->base_name will point to the base
 filename, and smb_filename->stream_name will point to the stream name.  If
@@ -124,7 +124,8 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	bool component_was_mangled = False;
 	bool name_has_wildcard = False;
 	bool posix_pathnames = false;
-	bool allow_wcard_last_component = ucf_flags & UCF_ALLOW_WCARD_LCOMP;
+	bool allow_wcard_last_component =
+	    (ucf_flags & UCF_ALWAYS_ALLOW_WCARD_LCOMP);
 	bool save_last_component = ucf_flags & UCF_SAVE_LCOMP;
 	NTSTATUS status;
 	int ret = -1;
@@ -1035,8 +1036,9 @@ static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
  * @param dfs_path	Whether this path requires dfs resolution.
  * @param name_in	The unconverted name.
  * @param ucf_flags	flags to pass through to unix_convert().
- *			UCF_ALLOW_WCARD_LCOMP will be stripped out if
- *			p_cont_wcard == NULL or is false.
+ *			UCF_ALWAYS_ALLOW_WCARD_LCOMP will be OR'd in if
+ *			p_cont_wcard != NULL and is true and
+ *			UCF_COND_ALLOW_WCARD_LCOMP.
  * @param p_cont_wcard	If not NULL, will be set to true if the dfs path
  *			resolution detects a wildcard.
  * @param pp_smb_fname	The final converted name will be allocated if the
@@ -1072,12 +1074,12 @@ NTSTATUS filename_convert(TALLOC_CTX *ctx,
 	}
 
 	/*
-	 * Strip out the UCF_ALLOW_WCARD_LCOMP if the path doesn't contain a
-	 * wildcard.
+	 * If the caller conditionally allows wildcard lookups, only add the
+	 * always allow if the path actually does contain a wildcard.
 	 */
-	if (ppath_contains_wcard != NULL && !*ppath_contains_wcard &&
-	    ucf_flags & UCF_ALLOW_WCARD_LCOMP) {
-		ucf_flags &= ~UCF_ALLOW_WCARD_LCOMP;
+	if (ucf_flags & UCF_COND_ALLOW_WCARD_LCOMP &&
+	    ppath_contains_wcard != NULL && *ppath_contains_wcard) {
+		ucf_flags |= UCF_ALWAYS_ALLOW_WCARD_LCOMP;
 	}
 
 	status = unix_convert(ctx, conn, fname, pp_smb_fname, ucf_flags);

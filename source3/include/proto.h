@@ -6846,7 +6846,8 @@ void reply_ulogoffX(struct smb_request *req);
 void reply_mknew(struct smb_request *req);
 void reply_ctemp(struct smb_request *req);
 NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
-			  uint32 dirtype, const char *name_in, bool has_wild);
+			  uint32 dirtype, struct smb_filename *smb_fname,
+			  bool has_wild);
 void reply_unlink(struct smb_request *req);
 void reply_readbraw(struct smb_request *req);
 void reply_lockread(struct smb_request *req);

@@ -1900,7 +1900,8 @@ struct smb_file_time {
  * unix_convert_flags
  */
 #define UCF_SAVE_LCOMP			0x00000001
-#define UCF_ALLOW_WCARD_LCOMP		0x00000002
+#define UCF_ALWAYS_ALLOW_WCARD_LCOMP	0x00000002
+#define UCF_COND_ALLOW_WCARD_LCOMP	0x00000004
 
 /*
  * smb_filename

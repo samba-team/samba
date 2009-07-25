@@ -544,7 +544,7 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 	 */
 
 	status = unix_convert(ctx, conn, pdp->reqpath, &smb_fname,
-			      search_flag ? UCF_ALLOW_WCARD_LCOMP : 0);
+			      search_flag ? UCF_ALWAYS_ALLOW_WCARD_LCOMP : 0);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (!NT_STATUS_EQUAL(status,

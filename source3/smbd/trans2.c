@@ -2091,11 +2091,13 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 		goto out;
 	}
 
-	ntstatus = resolve_dfspath_wcard(ctx, conn,
-			req->flags2 & FLAGS2_DFS_PATHNAMES,
-			directory,
-			&directory,
-			&mask_contains_wcard);
+	ntstatus = filename_convert(ctx, conn,
+				    req->flags2 & FLAGS2_DFS_PATHNAMES,
+				    directory,
+				    (UCF_SAVE_LCOMP |
+					UCF_ALWAYS_ALLOW_WCARD_LCOMP),
+				    &mask_contains_wcard,
+				    &smb_dname);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		if (NT_STATUS_EQUAL(ntstatus,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
@@ -2106,22 +2108,9 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 		goto out;
 	}
 
-	ntstatus = unix_convert(ctx, conn, directory, &smb_dname,
-				(UCF_SAVE_LCOMP | UCF_ALLOW_WCARD_LCOMP));
-	if (!NT_STATUS_IS_OK(ntstatus)) {
-		reply_nterror(req, ntstatus);
-		goto out;
-	}
-
 	mask = smb_dname->original_lcomp;
 
 	directory = smb_dname->base_name;
-
-	ntstatus = check_name(conn, directory);
-	if (!NT_STATUS_IS_OK(ntstatus)) {
-		reply_nterror(req, ntstatus);
-		goto out;
-	}
 
 	p = strrchr_m(directory,'/');
 	if(p == NULL) {
@@ -5823,7 +5812,8 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		status = unix_convert(ctx, conn, base_name, &smb_fname_dst,
 				      (UCF_SAVE_LCOMP |
 					  (dest_has_wcard ?
-					      UCF_ALLOW_WCARD_LCOMP : 0)));
+					      UCF_ALWAYS_ALLOW_WCARD_LCOMP :
+					      0)));
 
 		/* If an error we expect this to be
 		 * NT_STATUS_OBJECT_PATH_NOT_FOUND */

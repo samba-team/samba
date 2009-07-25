@@ -5145,6 +5145,24 @@ bool printer_driver_files_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info )
 	return in_use;
 }
 
+static NTSTATUS driver_unlink_internals(connection_struct *conn,
+					const char *name)
+{
+	struct smb_filename *smb_fname = NULL;
+	NTSTATUS status;
+
+	status = create_synthetic_smb_fname(talloc_tos(), name, NULL, NULL,
+	    &smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = unlink_internals(conn, NULL, 0, smb_fname, false);
+
+	TALLOC_FREE(smb_fname);
+	return status;
+}
+
 /****************************************************************************
   Actually delete the driver files.  Make sure that
   printer_driver_files_in_use() return False before calling
@@ -5197,7 +5215,7 @@ static bool delete_driver_files(struct pipes_struct *rpc_pipe,
 		if ( (s = strchr( &info_3->driverpath[1], '\\' )) != NULL ) {
 			file = s;
 			DEBUG(10,("deleting driverfile [%s]\n", s));
-			unlink_internals(conn, NULL, 0, file, False);
+			driver_unlink_internals(conn, file);
 		}
 	}
 
@@ -5205,7 +5223,7 @@ static bool delete_driver_files(struct pipes_struct *rpc_pipe,
 		if ( (s = strchr( &info_3->configfile[1], '\\' )) != NULL ) {
 			file = s;
 			DEBUG(10,("deleting configfile [%s]\n", s));
-			unlink_internals(conn, NULL, 0, file, False);
+			driver_unlink_internals(conn, file);
 		}
 	}
 
@@ -5213,7 +5231,7 @@ static bool delete_driver_files(struct pipes_struct *rpc_pipe,
 		if ( (s = strchr( &info_3->datafile[1], '\\' )) != NULL ) {
 			file = s;
 			DEBUG(10,("deleting datafile [%s]\n", s));
-			unlink_internals(conn, NULL, 0, file, False);
+			driver_unlink_internals(conn, file);
 		}
 	}
 
@@ -5221,7 +5239,7 @@ static bool delete_driver_files(struct pipes_struct *rpc_pipe,
 		if ( (s = strchr( &info_3->helpfile[1], '\\' )) != NULL ) {
 			file = s;
 			DEBUG(10,("deleting helpfile [%s]\n", s));
-			unlink_internals(conn, NULL, 0, file, False);
+			driver_unlink_internals(conn, file);
 		}
 	}
 
@@ -5236,7 +5254,7 @@ static bool delete_driver_files(struct pipes_struct *rpc_pipe,
 			if ( (p = strchr( info_3->dependentfiles[i]+1, '\\' )) != NULL ) {
 				file = p;
 				DEBUG(10,("deleting dependent file [%s]\n", file));
-				unlink_internals(conn, NULL, 0, file, False);
+				driver_unlink_internals(conn, file);
 			}
 
 			i++;
