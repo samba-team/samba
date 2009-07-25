@@ -1051,7 +1051,7 @@ int smb_vfs_call_connect(struct vfs_handle_struct *handle,
 void smb_vfs_call_disconnect(struct vfs_handle_struct *handle)
 {
 	VFS_FIND(disconnect);
-	return handle->fns->disconnect(handle);
+	handle->fns->disconnect(handle);
 }
 
 uint64_t smb_vfs_call_disk_free(struct vfs_handle_struct *handle,
@@ -1122,7 +1122,7 @@ void smb_vfs_call_seekdir(struct vfs_handle_struct *handle,
 			  SMB_STRUCT_DIR *dirp, long offset)
 {
 	VFS_FIND(seekdir);
-	return handle->fns->seekdir(handle, dirp, offset);
+	handle->fns->seekdir(handle, dirp, offset);
 }
 
 long smb_vfs_call_telldir(struct vfs_handle_struct *handle,
@@ -1136,7 +1136,7 @@ void smb_vfs_call_rewind_dir(struct vfs_handle_struct *handle,
 			     SMB_STRUCT_DIR *dirp)
 {
 	VFS_FIND(rewind_dir);
-	return handle->fns->rewind_dir(handle, dirp);
+	handle->fns->rewind_dir(handle, dirp);
 }
 
 int smb_vfs_call_mkdir(struct vfs_handle_struct *handle, const char *path,
@@ -1163,7 +1163,7 @@ void smb_vfs_call_init_search_op(struct vfs_handle_struct *handle,
 				 SMB_STRUCT_DIR *dirp)
 {
 	VFS_FIND(init_search_op);
-	return handle->fns->init_search_op(handle, dirp);
+	handle->fns->init_search_op(handle, dirp);
 }
 
 int smb_vfs_call_open(struct vfs_handle_struct *handle,
@@ -1491,7 +1491,7 @@ void smb_vfs_call_strict_unlock(struct vfs_handle_struct *handle,
 				struct lock_struct *plock)
 {
 	VFS_FIND(strict_unlock);
-	return handle->fns->strict_unlock(handle, fsp, plock);
+	handle->fns->strict_unlock(handle, fsp, plock);
 }
 
 NTSTATUS smb_vfs_call_fget_nt_acl(struct vfs_handle_struct *handle,
