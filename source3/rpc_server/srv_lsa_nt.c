@@ -1642,7 +1642,7 @@ NTSTATUS _lsa_CreateAccount(pipes_struct *p,
 	struct lsa_info *info;
 	uint32_t acc_granted;
 	struct security_descriptor *psd;
-	uint32_t sd_size;
+	size_t sd_size;
 
 	/* find the connection policy handle. */
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&handle))
