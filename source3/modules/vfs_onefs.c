@@ -108,7 +108,7 @@ static uint64_t onefs_get_alloc_size(struct vfs_handle_struct *handle,
 }
 
 static struct file_id onefs_file_id_create(struct vfs_handle_struct *handle,
-					     SMB_STRUCT_STAT *sbuf)
+					   const SMB_STRUCT_STAT *sbuf)
 {
 	struct file_id key;
 
@@ -247,19 +247,19 @@ static uint32_t onefs_fs_capabilities(struct vfs_handle_struct *handle)
 }
 
 static struct vfs_fn_pointers onefs_fns = {
-	.connect = onefs_connect,
+	.connect_fn = onefs_connect,
 	.fs_capabilities = onefs_fs_capabilities,
 	.opendir = onefs_opendir,
 	.readdir = onefs_readdir,
 	.seekdir = onefs_seekdir,
 	.telldir = onefs_telldir,
-	.rewinddir = onefs_rewinddir,
+	.rewind_dir = onefs_rewinddir,
 	.mkdir = onefs_mkdir,
 	.closedir = onefs_closedir,
 	.init_search_op = onefs_init_search_op,
 	.open = onefs_open,
 	.create_file = onefs_create_file,
-	.close = onefs_close,
+	.close_fn = onefs_close,
 	.sendfile = onefs_sendfile,
 	.recvfile = onefs_recvfile,
 	.rename = onefs_rename,

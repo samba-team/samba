@@ -397,7 +397,7 @@ onefs_shadow_copy_ntimes(vfs_handle_struct *handle,
 /**
  * XXX: macro-ize
  */
-static bool
+static int
 onefs_shadow_copy_symlink(vfs_handle_struct *handle,
     const char *oldpath, const char *newpath)
 {
@@ -671,7 +671,7 @@ static struct vfs_fn_pointers onefs_shadow_copy_fns = {
 	.chdir = onefs_shadow_copy_chdir,
 	.ntimes = onefs_shadow_copy_ntimes,
 	.symlink = onefs_shadow_copy_symlink,
-	.readlink = onefs_shadow_copy_readlink,
+	.vfs_readlink = onefs_shadow_copy_readlink,
 	.link = onefs_shadow_copy_link,
 	.mknod = onefs_shadow_copy_mknod,
 	.realpath = onefs_shadow_copy_realpath,

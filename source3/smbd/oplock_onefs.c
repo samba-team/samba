@@ -67,22 +67,22 @@ const char *onefs_cb_record_str_dbg(const struct onefs_callback_record *r)
 	char *result;
 
 	if (r == NULL) {
-		result = talloc_strdup(dbg_ctx(), "NULL callback record");
+		result = talloc_strdup(debug_ctx(), "NULL callback record");
 		return result;
 	}
 
 	switch (r->state) {
 	case ONEFS_OPEN_FILE:
-		result = talloc_asprintf(dbg_ctx(), "cb record %llu for file "
-					 "%s", r->id,
+		result = talloc_asprintf(debug_ctx(), "cb record %llu for "
+					 "file %s", r->id,
 					 fsp_str_dbg(r->data.fsp));
 	case ONEFS_WAITING_FOR_OPLOCK:
-		result = talloc_asprintf(dbg_ctx(), "cb record %llu for "
+		result = talloc_asprintf(debug_ctx(), "cb record %llu for "
 					 "pending mid %d", r->id,
 					 (int)r->data.mid);
 		break;
 	default:
-		result = talloc_asprintf(dbg_ctx(), "cb record %llu unknown "
+		result = talloc_asprintf(debug_ctx(), "cb record %llu unknown "
 					 "state %d", r->id, r->state);
 		break;
 	}
@@ -103,7 +103,7 @@ static void debug_cb_records(const char *fn)
 	DEBUG(10, ("cb records (%s):\n", fn));
 
 	for (rec = callback_recs; rec; rec = rec->next) {
-		DEBUGADD(10, ("%s\n", onefs_cb_record_dbg_str(rec)));
+		DEBUGADD(10, ("%s\n", onefs_cb_record_str_dbg(rec)));
 	}
 }
 
@@ -128,7 +128,7 @@ static struct onefs_callback_record *onefs_find_cb(uint64_t id,
 	for (rec = callback_recs; rec; rec = rec->next) {
 		if (rec->id == id) {
 			DEBUG(10, ("found %s\n",
-				   onefs_cb_record_dbg_str(rec)));
+				   onefs_cb_record_str_dbg(rec)));
 			break;
 		}
 	}
@@ -140,7 +140,7 @@ static struct onefs_callback_record *onefs_find_cb(uint64_t id,
 
 	if (rec->state != expected_state) {
 		DEBUG(0, ("Expected cb type %d, got %s", expected_state,
-			  onefs_cb_record_dbg_str(rec)));
+			  onefs_cb_record_str_dbg(rec)));
 		SMB_ASSERT(0);
 		return NULL;
 	}
@@ -300,7 +300,7 @@ static void oplock_break_to_none_handler(uint64_t id)
 	}
 
 	DEBUG(10, ("oplock_break_to_none_handler called for file %s\n",
-		   cb->data.fsp_str_dbg(fsp)));
+		   fsp_str_dbg(cb->data.fsp)));
 
 	init_share_mode_entry(&sme, cb, FORCE_OPLOCK_BREAK_TO_NONE);
 	share_mode_entry_to_message(msg, &sme);
@@ -337,7 +337,7 @@ static void oplock_break_to_level_two_handler(uint64_t id)
 	}
 
 	DEBUG(10, ("oplock_break_to_level_two_handler called for file %s\n",
-		   cb->data.fsp_str_dbg(fsp)));
+		   fsp_str_dbg(cb->data.fsp)));
 
 	init_share_mode_entry(&sme, cb, LEVEL_II_OPLOCK);
 	share_mode_entry_to_message(msg, &sme);
@@ -414,7 +414,7 @@ static void semlock_available_handler(uint64_t id)
 		char *msg;
 		if (asprintf(&msg, "Semlock available on an open that wasn't "
 			     "deferred: %s\n",
-			      onefs_cb_record_dbg_str(cb)) != -1) {
+			      onefs_cb_record_str_dbg(cb)) != -1) {
 			smb_panic(msg);
 		}
 		smb_panic("Semlock available on an open that wasn't "
@@ -458,7 +458,7 @@ static void semlock_async_failure_handler(uint64_t id)
 		char *msg;
 		if (asprintf(&msg, "Semlock failure on an open that wasn't "
 			     "deferred: %s\n",
-			      onefs_cb_record_dbg_str(cb)) != -1) {
+			      onefs_cb_record_str_dbg(cb)) != -1) {
 			smb_panic(msg);
 		}
 		smb_panic("Semlock failure on an open that wasn't deferred\n");

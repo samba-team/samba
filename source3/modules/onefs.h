@@ -126,13 +126,13 @@ NTSTATUS onefs_get_nt_acl(vfs_handle_struct *handle, const char* name,
 			  uint32 security_info, SEC_DESC **ppdesc);
 
 NTSTATUS onefs_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-			   uint32 security_info_sent, SEC_DESC *psd);
+			   uint32 security_info_sent, const SEC_DESC *psd);
 
 /*
  * Utility functions
  */
 struct ifs_security_descriptor;
-NTSTATUS onefs_samba_sd_to_sd(uint32_t security_info_sent, SEC_DESC *psd,
+NTSTATUS onefs_samba_sd_to_sd(uint32_t security_info_sent, const SEC_DESC *psd,
 			      struct ifs_security_descriptor *sd, int snum,
 			      uint32_t *security_info_effective);
 

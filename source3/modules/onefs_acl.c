@@ -819,7 +819,7 @@ onefs_get_nt_acl(vfs_handle_struct *handle, const char* name,
  *
  * @return NTSTATUS_OK if successful
  */
-NTSTATUS onefs_samba_sd_to_sd(uint32_t security_info_sent, SEC_DESC *psd,
+NTSTATUS onefs_samba_sd_to_sd(uint32_t security_info_sent, const SEC_DESC *psd,
 			      struct ifs_security_descriptor *sd, int snum,
 			      uint32_t *security_info_effective)
 {
@@ -905,7 +905,7 @@ NTSTATUS onefs_samba_sd_to_sd(uint32_t security_info_sent, SEC_DESC *psd,
  */
 NTSTATUS
 onefs_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-		  uint32_t sec_info_sent, SEC_DESC *psd)
+		  uint32_t sec_info_sent, const SEC_DESC *psd)
 {
 	struct ifs_security_descriptor sd = {};
 	int fd = -1;
