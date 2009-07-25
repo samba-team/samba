@@ -137,7 +137,7 @@ int solarisacl_sys_acl_set_file(vfs_handle_struct *handle,
 				SMB_ACL_T theacl)
 {
 	int ret = -1;
-	struct stat s;
+	struct stat_ex s;
 	SOLARIS_ACL_T solaris_acl = NULL;
 	int count;
 	
@@ -169,7 +169,7 @@ int solarisacl_sys_acl_set_file(vfs_handle_struct *handle,
 		DEBUG(10, ("Error in stat call: %s\n", strerror(errno)));
 		goto done;
 	}
-	if (S_ISDIR(s.st_mode)) {
+	if (S_ISDIR(s.st_ex_mode)) {
 		SOLARIS_ACL_T other_acl; 
 		int other_count;
 		SMB_ACL_TYPE_T other_type;
