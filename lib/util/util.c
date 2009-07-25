@@ -265,14 +265,12 @@ static void _dump_data(int level, const uint8_t *buf, int len,
 		       bool omit_zero_bytes)
 {
 	int i=0;
-	const uint8_t empty[16];
+	static const uint8_t empty[16] = { 0, };
 	bool skipped = false;
 
 	if (len<=0) return;
 
 	if (!DEBUGLVL(level)) return;
-
-	memset(&empty, '\0', 16);
 
 	for (i=0;i<len;) {
 
