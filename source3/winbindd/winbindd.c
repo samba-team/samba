@@ -664,6 +664,7 @@ static void winbind_client_response_written(struct tevent_req *req)
 	}
 
 	TALLOC_FREE(state->mem_ctx);
+	state->response = NULL;
 
 	req = wb_req_read_send(state, winbind_event_context(), state->sock,
 			       WINBINDD_MAX_EXTRA_DATA);
@@ -816,7 +817,7 @@ static bool remove_idle_client(void)
 	int nidle = 0;
 
 	for (state = winbindd_client_list(); state; state = state->next) {
-		if (state->response->result != WINBINDD_PENDING &&
+		if (state->response == NULL &&
 		    !state->getpwent_state && !state->getgrent_state) {
 			nidle++;
 			if (!last_access || state->last_access < last_access) {
