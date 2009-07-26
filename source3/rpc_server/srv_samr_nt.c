@@ -5694,12 +5694,12 @@ NTSTATUS _samr_DeleteUser(pipes_struct *p,
 
 	TALLOC_FREE(sam_pass);
 
+	force_flush_samr_cache(&uinfo->sid);
+
 	if (!close_policy_hnd(p, r->in.user_handle))
 		return NT_STATUS_OBJECT_NAME_INVALID;
 
 	ZERO_STRUCTP(r->out.user_handle);
-
-	force_flush_samr_cache(&uinfo->sid);
 
 	return NT_STATUS_OK;
 }
