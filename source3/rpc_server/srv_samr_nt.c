@@ -5747,10 +5747,10 @@ NTSTATUS _samr_DeleteDomainGroup(pipes_struct *p,
 		return status;
 	}
 
+	force_flush_samr_cache(&ginfo->sid);
+
 	if (!close_policy_hnd(p, r->in.group_handle))
 		return NT_STATUS_OBJECT_NAME_INVALID;
-
-	force_flush_samr_cache(&ginfo->sid);
 
 	return NT_STATUS_OK;
 }
@@ -5799,10 +5799,10 @@ NTSTATUS _samr_DeleteDomAlias(pipes_struct *p,
 	if ( !NT_STATUS_IS_OK(status))
 		return status;
 
+	force_flush_samr_cache(&ainfo->sid);
+
 	if (!close_policy_hnd(p, r->in.alias_handle))
 		return NT_STATUS_OBJECT_NAME_INVALID;
-
-	force_flush_samr_cache(&ainfo->sid);
 
 	return NT_STATUS_OK;
 }
