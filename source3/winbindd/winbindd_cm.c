@@ -356,7 +356,7 @@ void set_domain_offline(struct winbindd_domain *domain)
 		return;
 	}
 
-	/* If we're in statup mode, check again in 10 seconds, not in
+	/* If we're in startup mode, check again in 10 seconds, not in
 	   lp_winbind_reconnect_delay() seconds (which is 30 seconds by default). */
 
 	calc_new_online_timeout_check(domain);
