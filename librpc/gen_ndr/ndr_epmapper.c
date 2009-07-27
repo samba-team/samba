@@ -2056,10 +2056,10 @@ static enum ndr_err_code ndr_pull_epm_Lookup(struct ndr_pull *ndr, int flags, st
 		NDR_PULL_ALLOC_N(ndr, r->out.entries, ndr_get_array_size(ndr, &r->out.entries));
 		_mem_save_entries_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.entries, 0);
-		for (cntr_entries_0 = 0; cntr_entries_0 < *r->out.num_ents; cntr_entries_0++) {
+		for (cntr_entries_0 = 0; cntr_entries_0 < ndr_get_array_length(ndr, &r->out.entries); cntr_entries_0++) {
 			NDR_CHECK(ndr_pull_epm_entry_t(ndr, NDR_SCALARS, &r->out.entries[cntr_entries_0]));
 		}
-		for (cntr_entries_0 = 0; cntr_entries_0 < *r->out.num_ents; cntr_entries_0++) {
+		for (cntr_entries_0 = 0; cntr_entries_0 < ndr_get_array_length(ndr, &r->out.entries); cntr_entries_0++) {
 			NDR_CHECK(ndr_pull_epm_entry_t(ndr, NDR_BUFFERS, &r->out.entries[cntr_entries_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_entries_0, 0);
@@ -2247,10 +2247,10 @@ _PUBLIC_ enum ndr_err_code ndr_pull_epm_Map(struct ndr_pull *ndr, int flags, str
 		NDR_PULL_ALLOC_N(ndr, r->out.towers, ndr_get_array_size(ndr, &r->out.towers));
 		_mem_save_towers_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.towers, 0);
-		for (cntr_towers_0 = 0; cntr_towers_0 < *r->out.num_towers; cntr_towers_0++) {
+		for (cntr_towers_0 = 0; cntr_towers_0 < ndr_get_array_length(ndr, &r->out.towers); cntr_towers_0++) {
 			NDR_CHECK(ndr_pull_epm_twr_p_t(ndr, NDR_SCALARS, &r->out.towers[cntr_towers_0]));
 		}
-		for (cntr_towers_0 = 0; cntr_towers_0 < *r->out.num_towers; cntr_towers_0++) {
+		for (cntr_towers_0 = 0; cntr_towers_0 < ndr_get_array_length(ndr, &r->out.towers); cntr_towers_0++) {
 			NDR_CHECK(ndr_pull_epm_twr_p_t(ndr, NDR_BUFFERS, &r->out.towers[cntr_towers_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_towers_0, 0);

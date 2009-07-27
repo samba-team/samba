@@ -426,7 +426,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_BinaryString(struct ndr_pull *ndr, int n
 			NDR_PULL_ALLOC_N(ndr, r->array, ndr_get_array_size(ndr, &r->array));
 			_mem_save_array_1 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->array, 0);
-			for (cntr_array_1 = 0; cntr_array_1 < r->length / 2; cntr_array_1++) {
+			for (cntr_array_1 = 0; cntr_array_1 < ndr_get_array_length(ndr, &r->array); cntr_array_1++) {
 				NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->array[cntr_array_1]));
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_array_1, 0);

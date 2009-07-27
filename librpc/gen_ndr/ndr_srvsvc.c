@@ -11633,7 +11633,7 @@ static enum ndr_err_code ndr_pull_srvsvc_NetDiskInfo(struct ndr_pull *ndr, int n
 			NDR_PULL_ALLOC_N(ndr, r->disks, ndr_get_array_size(ndr, &r->disks));
 			_mem_save_disks_1 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->disks, 0);
-			for (cntr_disks_1 = 0; cntr_disks_1 < r->count; cntr_disks_1++) {
+			for (cntr_disks_1 = 0; cntr_disks_1 < ndr_get_array_length(ndr, &r->disks); cntr_disks_1++) {
 				NDR_CHECK(ndr_pull_srvsvc_NetDiskInfo0(ndr, NDR_SCALARS, &r->disks[cntr_disks_1]));
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_disks_1, 0);

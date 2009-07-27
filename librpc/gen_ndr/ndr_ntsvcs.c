@@ -626,7 +626,7 @@ static enum ndr_err_code ndr_pull_PNP_GetDeviceList(struct ndr_pull *ndr, int fl
 		}
 		_mem_save_buffer_1 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.buffer, 0);
-		for (cntr_buffer_1 = 0; cntr_buffer_1 < *r->out.length; cntr_buffer_1++) {
+		for (cntr_buffer_1 = 0; cntr_buffer_1 < ndr_get_array_length(ndr, &r->out.buffer); cntr_buffer_1++) {
 			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.buffer[cntr_buffer_1]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_buffer_1, 0);

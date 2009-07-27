@@ -7306,10 +7306,10 @@ _PUBLIC_ enum ndr_err_code ndr_pull_samr_LookupNames(struct ndr_pull *ndr, int f
 		NDR_PULL_ALLOC_N(ndr, r->in.names, ndr_get_array_size(ndr, &r->in.names));
 		_mem_save_names_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.names, 0);
-		for (cntr_names_0 = 0; cntr_names_0 < r->in.num_names; cntr_names_0++) {
+		for (cntr_names_0 = 0; cntr_names_0 < ndr_get_array_length(ndr, &r->in.names); cntr_names_0++) {
 			NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->in.names[cntr_names_0]));
 		}
-		for (cntr_names_0 = 0; cntr_names_0 < r->in.num_names; cntr_names_0++) {
+		for (cntr_names_0 = 0; cntr_names_0 < ndr_get_array_length(ndr, &r->in.names); cntr_names_0++) {
 			NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->in.names[cntr_names_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_names_0, 0);
@@ -7448,7 +7448,7 @@ static enum ndr_err_code ndr_pull_samr_LookupRids(struct ndr_pull *ndr, int flag
 		NDR_PULL_ALLOC_N(ndr, r->in.rids, ndr_get_array_size(ndr, &r->in.rids));
 		_mem_save_rids_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.rids, 0);
-		for (cntr_rids_0 = 0; cntr_rids_0 < r->in.num_rids; cntr_rids_0++) {
+		for (cntr_rids_0 = 0; cntr_rids_0 < ndr_get_array_length(ndr, &r->in.rids); cntr_rids_0++) {
 			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.rids[cntr_rids_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_rids_0, 0);
