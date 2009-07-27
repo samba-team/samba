@@ -46,10 +46,10 @@ if test x"$libreplacedir" = "x"; then
 	AC_MSG_ERROR([cannot find libreplace in $libreplacepaths])
 fi
 
-LIBREPLACEOBJ="replace.o"
+LIBREPLACEOBJ="$libreplacedir/replace.o"
 AC_SUBST(LIBREPLACEOBJ)
 
-LIBREPLACEOBJ="${LIBREPLACEOBJ} snprintf.o"
+LIBREPLACEOBJ="${LIBREPLACEOBJ} $libreplacedir/snprintf.o"
 
 AC_TYPE_SIGNAL
 AC_TYPE_UID_T
