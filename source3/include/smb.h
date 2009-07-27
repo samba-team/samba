@@ -659,6 +659,8 @@ struct smb_request {
 	 * state information for async smb handling
 	 */
 	void *async_priv;
+
+	bool done;
 };
 
 /* Defines for the sent_oplock_break field above. */
