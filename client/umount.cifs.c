@@ -146,9 +146,11 @@ static int remove_from_mtab(char * mountpoint)
 	FILE * org_fd;
 	FILE * new_fd;
 	struct mntent * mount_entry;
+	struct stat statbuf;
 
-	/* Do we need to check if it is a symlink to e.g. /proc/mounts
-	in which case we probably do not want to update it? */
+	/* If it is a symlink, e.g. to /proc/mounts, no need to update it. */
+	if ((lstat(MOUNTED, &statbuf) == 0) && (S_ISLNK(statbuf.st_mode)))
+		return 0;
 
 	/* Do we first need to check if it is writable? */ 
 
@@ -162,7 +164,6 @@ static int remove_from_mtab(char * mountpoint)
 		printf("attempting to remove from mtab\n");
 
 	org_fd = setmntent(MOUNTED, "r");
-
 	if(org_fd == NULL) {
 		printf("Can not open %s\n",MOUNTED);
 		unlock_mtab();
