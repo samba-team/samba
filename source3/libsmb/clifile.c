@@ -4098,13 +4098,15 @@ static void cli_ctemp_done(struct tevent_req *subreq)
 	uint8_t *bytes = NULL;
 
 	status = cli_smb_recv(subreq, 1, &wcnt, &vwv, &num_bytes, &bytes);
-	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(subreq);
 		tevent_req_nterror(req, status);
 		return;
 	}
 
 	state->fnum = SVAL(vwv+0, 0);
+
+	TALLOC_FREE(subreq);
 
 	/* From W2K3, the result is just the ASCII name */
 	if (num_bytes < 2) {
