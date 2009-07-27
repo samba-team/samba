@@ -126,7 +126,38 @@ interface frstrans
 
 	/*****************/
 	/* Function 0x05 */
-	[todo] void FRSTRANS_ASYNC_POLL();
+	typedef struct {
+		GUID machine_guid;
+		uint32 year;
+		uint32 month;
+		uint32 day_of_week;
+		uint32 day;
+		uint32 hour;
+		uint32 minute;
+		uint32 second;
+		uint32 milli_seconds;
+	} frstrans_EpoqueVector;
+
+	typedef struct {
+		hyper vv_generation;
+		uint32 version_vector_count;
+		[size_is(version_vector_count)]
+			frstrans_VersionVector *version_vector;
+		uint32 epoque_vector_count;
+		[size_is(epoque_vector_count)]
+			frstrans_EpoqueVector *epoque_vector;
+	} frstrans_AsyncVersionVectorResponse;
+
+	typedef struct {
+		uint32 sequence_number;
+		WERROR status;
+		frstrans_AsyncVersionVectorResponse response;
+	} frstrans_AsyncResponseContext;
+
+	WERROR frstrans_AsyncPoll(
+		[in] GUID connection_guid,
+		[out,ref] frstrans_AsyncResponseContext *response
+	);
 
 	/*****************/
 	/* Function 0x06 */
