@@ -488,7 +488,7 @@ sub provision_raw_prepare($$$$$$$)
 	$ctx->{kdc_ipv4} = $kdc_ipv4;
 
 	$ctx->{server_loglevel} = 1;
-	$ctx->{username} = "administrator";
+	$ctx->{username} = "Administrator";
 	$ctx->{domain} = "SAMBADOMAIN";
 	$ctx->{realm} = "SAMBA.EXAMPLE.COM";
 	$ctx->{dnsname} = "samba.example.com";
