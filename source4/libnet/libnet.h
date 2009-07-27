@@ -75,4 +75,5 @@ struct libnet_context {
 #include "libnet/libnet_share.h"
 #include "libnet/libnet_lookup.h"
 #include "libnet/libnet_domain.h"
+#include "libnet/libnet_export_keytab.h"
 #include "libnet/libnet_proto.h"

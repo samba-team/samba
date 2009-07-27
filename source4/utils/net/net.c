@@ -104,11 +104,11 @@ static const struct net_functable net_functable[] = {
 	{"time", "get remote server's time\n", net_time, net_time_usage},
 	{"join", "join a domain\n", net_join, net_join_usage},
 	{"samdump", "dump the sam of a domain\n", net_samdump, net_samdump_usage},
+	{"export", "dump the sam of this domain\n", net_export, net_export_usage},
 	{"vampire", "join and syncronise an AD domain onto the local server\n", net_vampire, net_vampire_usage},
 	{"samsync", "synchronise into the local ldb the sam of an NT4 domain\n", net_samsync_ldb, net_samsync_ldb_usage},
 	{"user", "manage user accounts\n", net_user, net_user_usage},
-	{"machinepw", "Get a machine password out of our SAM\n", net_machinepw,
-	 net_machinepw_usage},
+	{"machinepw", "Get a machine password out of our SAM\n", net_machinepw, net_machinepw_usage},
 	{NULL, NULL, NULL, NULL}
 };
 
