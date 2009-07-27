@@ -1,4 +1,85 @@
                    =============================
+                   Release Notes for Samba 3.3.7
+			  July, 29  2009
+                   =============================
+
+
+This is the latest bugfix release of the Samba 3.3 series.
+
+Major enhancements in Samba 3.3.7 include:
+
+   o
+
+
+######################################################################
+Changes
+#######
+
+
+Changes since 3.3.6:
+--------------------
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 6421: Fix POSIX read-only open on read-only shares.
+    * BUG 6476: Fix smbd zombies in memory when using [x]inetd.
+    * BUG 6487: Add missing DFS call in trans2 mkdir call.
+    * BUG 6520: Fix time stamps when "unix extensions = yes".
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 6253: Use correct value for password expiry calculation in
+      pam_winbind.
+    * BUG 6340: Fix segfault when cleartext trustdom pwd could not be retrieved.
+    * BUG 6451: Use right access bits in net/libnetapi user rename.
+    * BUG 6484: Fix _lsa_LookupNames2() server implementation which always
+      returned a NULL sid_array.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 6497: Fix configure error.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 6498: Add workaround for MS KB932762.
+
+
+o   Jim McDonough <jmcd@samba.org>
+    * BUG 6481: Don't require "Modify property" perms to unjoin.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 6526: Let parent_dirname() correctly return toplevel filenames.
+
+
+o   Bo Yang <boyang@samba.org>
+    * BUG 6560: Fix handling of UPN.
+
+
+######################################################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 3.3 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 3.3.6
 			  June, 23  2009
                    =============================
@@ -45,8 +126,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
 
 
                    =============================
