@@ -1,10 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   KDC structures
-
-   Copyright (C) Andrew Tridgell	2005
-   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2009
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,18 +17,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-struct hdb_samba4_context {
-	struct tevent_context *ev_ctx;
-	struct loadparm_context *lp_ctx;
+struct libnet_export_keytab {
+	struct {
+		const char *keytab_name;
+	} in;
+	struct {
+		const char *error_string;
+	} out;
 };
 
-extern struct hdb_method hdb_samba4;
-
-struct hdb_samba4_private {
-	struct ldb_context *samdb;
-	struct smb_iconv_convenience *iconv_convenience;
-	struct loadparm_context *lp_ctx;
-	struct ldb_message *msg;
-	struct ldb_dn *realm_dn;
-	hdb_entry_ex *entry_ex;
-};

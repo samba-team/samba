@@ -34,13 +34,13 @@
 struct krb5_dh_moduli;
 struct _krb5_krb_auth_data;
 
-krb5_error_code	samba_kdc_plugin_init(krb5_context context, void **ptr) 
+static krb5_error_code	samba_kdc_plugin_init(krb5_context context, void **ptr) 
 {
 	*ptr = NULL;
 	return 0;
 }
 
-void	samba_kdc_plugin_fini(void *ptr) 
+static void	samba_kdc_plugin_fini(void *ptr) 
 {
 	return;
 }
@@ -104,10 +104,10 @@ static krb5_error_code make_pac(krb5_context context,
 }
 
 /* Given the right private pointer from hdb_samba4, get a PAC from the attached ldb messages */
-krb5_error_code samba_kdc_get_pac(void *priv,
-				  krb5_context context, 
-				  struct hdb_entry_ex *client,
-				  krb5_pac *pac)
+static krb5_error_code samba_kdc_get_pac(void *priv,
+					 krb5_context context, 
+					 struct hdb_entry_ex *client,
+					 krb5_pac *pac)
 {
 	krb5_error_code ret;
 	NTSTATUS nt_status;
@@ -149,10 +149,10 @@ krb5_error_code samba_kdc_get_pac(void *priv,
 
 /* Resign (and reform, including possibly new groups) a PAC */
 
-krb5_error_code samba_kdc_reget_pac(void *priv, krb5_context context,
-				const krb5_principal client_principal,
-				struct hdb_entry_ex *client,  
-				struct hdb_entry_ex *server, krb5_pac *pac)
+static krb5_error_code samba_kdc_reget_pac(void *priv, krb5_context context,
+					   const krb5_principal client_principal,
+					   struct hdb_entry_ex *client,  
+					   struct hdb_entry_ex *server, krb5_pac *pac)
 {
 	krb5_error_code ret;
 
@@ -230,13 +230,13 @@ static void samba_kdc_build_edata_reply(TALLOC_CTX *tmp_ctx, krb5_data *e_data,
  * the account_ok routine in auth/auth_sam.c for consistancy */
 
 
-krb5_error_code samba_kdc_check_client_access(void *priv, 
-					      krb5_context context, 
-					      krb5_kdc_configuration *config,
-					      hdb_entry_ex *client_ex, const char *client_name,
-					      hdb_entry_ex *server_ex, const char *server_name,
-					      KDC_REQ *req,
-					      krb5_data *e_data)
+static krb5_error_code samba_kdc_check_client_access(void *priv, 
+						     krb5_context context, 
+						     krb5_kdc_configuration *config,
+						     hdb_entry_ex *client_ex, const char *client_name,
+						     hdb_entry_ex *server_ex, const char *server_name,
+						     KDC_REQ *req,
+						     krb5_data *e_data)
 {
 	krb5_error_code ret;
 	NTSTATUS nt_status;
@@ -313,4 +313,13 @@ krb5_error_code samba_kdc_check_client_access(void *priv,
 
 	return ret;
 }
+
+struct krb5plugin_windc_ftable windc_plugin_table = {
+	.minor_version = KRB5_WINDC_PLUGING_MINOR,
+	.init = samba_kdc_plugin_init,
+	.fini = samba_kdc_plugin_fini,
+	.pac_generate = samba_kdc_get_pac,
+	.pac_verify = samba_kdc_reget_pac,
+	.client_access = samba_kdc_check_client_access,
+};
 

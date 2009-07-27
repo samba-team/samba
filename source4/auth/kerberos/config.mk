@@ -12,7 +12,8 @@ KERBEROS_OBJ_FILES = $(addprefix $(authsrcdir)/kerberos/, \
 	kerberos_heimdal.o \
 	kerberos_pac.o \
 	gssapi_parse.o \
-	krb5_init_context.o)
+	krb5_init_context.o \
+	keytab_copy.o)
 
 $(eval $(call proto_header_template,$(authsrcdir)/kerberos/proto.h,$(KERBEROS_OBJ_FILES:.o=.c)))
 

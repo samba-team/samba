@@ -21,7 +21,8 @@ net_OBJ_FILES = $(addprefix $(utilssrcdir)/net/,  \
 		net_time.o \
 		net_join.o \
 		net_vampire.o \
-		net_user.o)
+		net_user.o \
+		net_export_keytab.o)
 
 
 $(eval $(call proto_header_template,$(utilssrcdir)/net/net_proto.h,$(net_OBJ_FILES:.o=.c)))

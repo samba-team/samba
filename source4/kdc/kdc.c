@@ -550,15 +550,6 @@ static NTSTATUS kdc_startup_interfaces(struct kdc_server *kdc, struct loadparm_c
 	return NT_STATUS_OK;
 }
 
-static struct krb5plugin_windc_ftable windc_plugin_table = {
-	.minor_version = KRB5_WINDC_PLUGING_MINOR,
-	.init = samba_kdc_plugin_init,
-	.fini = samba_kdc_plugin_fini,
-	.pac_generate = samba_kdc_get_pac,
-	.pac_verify = samba_kdc_reget_pac,
-	.client_access = samba_kdc_check_client_access,
-};
-
 
 static NTSTATUS kdc_check_generic_kerberos(struct irpc_message *msg, 
 				 struct kdc_check_generic_kerberos *r)

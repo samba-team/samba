@@ -25,7 +25,7 @@
 #include <hdb.h>
 #include <kdc.h>
 #include <krb5/windc_plugin.h>
-#include "kdc/pac_glue.h"
+#include "kdc/pac-glue.h"
 #include "kdc/hdb-samba4.h"
 
 struct kdc_server;

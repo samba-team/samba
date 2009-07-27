@@ -1,11 +1,10 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   KDC structures
+   KDC Server startup
 
-   Copyright (C) Andrew Tridgell	2005
-   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
-   
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005-2009
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
@@ -20,18 +19,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-struct hdb_samba4_context {
-	struct tevent_context *ev_ctx;
-	struct loadparm_context *lp_ctx;
-};
+#ifndef __KDC_PAC_GLUE_H__
+#define __KDC_PAC_GLUE_H__
 
-extern struct hdb_method hdb_samba4;
+#include "kdc/pac-glue_proto.h"
 
-struct hdb_samba4_private {
-	struct ldb_context *samdb;
-	struct smb_iconv_convenience *iconv_convenience;
-	struct loadparm_context *lp_ctx;
-	struct ldb_message *msg;
-	struct ldb_dn *realm_dn;
-	hdb_entry_ex *entry_ex;
-};
+extern struct krb5plugin_windc_ftable windc_plugin_table;
+
+#endif /* __KDC_PAC_GLUE_H__ */
+
