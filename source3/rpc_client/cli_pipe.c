@@ -2284,39 +2284,6 @@ NTSTATUS rpc_api_pipe_req_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS rpc_api_pipe_req(TALLOC_CTX *mem_ctx, struct rpc_pipe_client *cli,
-			uint8 op_num,
-			prs_struct *in_data,
-			prs_struct *out_data)
-{
-	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
-	struct tevent_req *req;
-	NTSTATUS status = NT_STATUS_OK;
-
-	ev = event_context_init(frame);
-	if (ev == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
-	}
-
-	req = rpc_api_pipe_req_send(frame, ev, cli, op_num, in_data);
-	if (req == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
-	}
-
-	if (!tevent_req_poll(req, ev)) {
-		status = map_nt_error_from_unix(errno);
-		goto fail;
-	}
-
-	status = rpc_api_pipe_req_recv(req, mem_ctx, out_data);
- fail:
-	TALLOC_FREE(frame);
-	return status;
-}
-
 #if 0
 /****************************************************************************
  Set the handle state.

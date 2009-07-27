@@ -4,6 +4,7 @@
    libndr interface
 
    Copyright (C) Jelmer Vernooij 2006
+   Copyright (C) Volker Lendecke 2009
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,59 +22,109 @@
 
 #include "includes.h"
 
-
-NTSTATUS cli_do_rpc_ndr(struct rpc_pipe_client *cli,
-			TALLOC_CTX *mem_ctx,
-			const struct ndr_interface_table *table,
-			uint32_t opnum, void *r)
-{
-	prs_struct q_ps, r_ps;
+struct cli_do_rpc_ndr_state {
 	const struct ndr_interface_call *call;
-	struct ndr_pull *pull;
-	DATA_BLOB blob;
+	prs_struct q_ps, r_ps;
+	void *r;
+};
+
+static void cli_do_rpc_ndr_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_do_rpc_ndr_send(TALLOC_CTX *mem_ctx,
+				       struct tevent_context *ev,
+				       struct rpc_pipe_client *cli,
+				       const struct ndr_interface_table *table,
+				       uint32_t opnum,
+				       void *r)
+{
+	struct tevent_req *req, *subreq;
+	struct cli_do_rpc_ndr_state *state;
 	struct ndr_push *push;
-	NTSTATUS status;
+	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
+	bool ret;
 
-	SMB_ASSERT(ndr_syntax_id_equal(&table->syntax_id,
-				       &cli->abstract_syntax));
-	SMB_ASSERT(table->num_calls > opnum);
-
-	call = &table->calls[opnum];
-
-	push = ndr_push_init_ctx(mem_ctx, NULL);
-	if (!push) {
-		return NT_STATUS_NO_MEMORY;
+	req = tevent_req_create(mem_ctx, &state,
+				struct cli_do_rpc_ndr_state);
+	if (req == NULL) {
+		return NULL;
 	}
 
-	ndr_err = call->ndr_push(push, NDR_IN, r);
+	if (!ndr_syntax_id_equal(&table->syntax_id, &cli->abstract_syntax)
+	    || (opnum >= table->num_calls)) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
+	}
+
+	state->r = r;
+	state->call = &table->calls[opnum];
+
+	push = ndr_push_init_ctx(talloc_tos(), NULL);
+	if (tevent_req_nomem(push, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	ndr_err = state->call->ndr_push(push, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return ndr_map_error2ntstatus(ndr_err);
+		tevent_req_nterror(req, ndr_map_error2ntstatus(ndr_err));
+		TALLOC_FREE(push);
+		return tevent_req_post(req, ev);
 	}
 
 	blob = ndr_push_blob(push);
+	ret = prs_init_data_blob(&state->q_ps, &blob, state);
+	TALLOC_FREE(push);
 
-	if (!prs_init_data_blob(&q_ps, &blob, mem_ctx)) {
-		return NT_STATUS_NO_MEMORY;
+	if (!ret) {
+		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+		return tevent_req_post(req, ev);
 	}
 
-	talloc_free(push);
+	subreq = rpc_api_pipe_req_send(state, ev, cli, opnum, &state->q_ps);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_do_rpc_ndr_done, req);
+	return req;
+}
 
-	status = rpc_api_pipe_req(mem_ctx, cli, opnum, &q_ps, &r_ps);
+static void cli_do_rpc_ndr_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_do_rpc_ndr_state *state = tevent_req_data(
+		req, struct cli_do_rpc_ndr_state);
+	NTSTATUS status;
 
-	prs_mem_free( &q_ps );
-
+	status = rpc_api_pipe_req_recv(subreq, state, &state->r_ps);
+	TALLOC_FREE(subreq);
+	prs_mem_free(&state->q_ps);
 	if (!NT_STATUS_IS_OK(status)) {
-		prs_mem_free( &r_ps );
+		tevent_req_nterror(req, status);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_do_rpc_ndr_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx)
+{
+	struct cli_do_rpc_ndr_state *state = tevent_req_data(
+		req, struct cli_do_rpc_ndr_state);
+	struct ndr_pull *pull;
+	enum ndr_err_code ndr_err;
+	NTSTATUS status;
+	DATA_BLOB blob;
+	bool ret;
+
+	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
 
-	if (!prs_data_blob(&r_ps, &blob, mem_ctx)) {
-		prs_mem_free( &r_ps );
+	ret = prs_data_blob(&state->r_ps, &blob, talloc_tos());
+	prs_mem_free(&state->r_ps);
+	if (!ret) {
 		return NT_STATUS_NO_MEMORY;
 	}
-
-	prs_mem_free( &r_ps );
 
 	pull = ndr_pull_init_blob(&blob, mem_ctx, NULL);
 	if (pull == NULL) {
@@ -82,12 +133,45 @@ NTSTATUS cli_do_rpc_ndr(struct rpc_pipe_client *cli,
 
 	/* have the ndr parser alloc memory for us */
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-	ndr_err = call->ndr_pull(pull, NDR_OUT, r);
-	talloc_free(pull);
+	ndr_err = state->call->ndr_pull(pull, NDR_OUT, state->r);
+	TALLOC_FREE(pull);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_do_rpc_ndr(struct rpc_pipe_client *cli,
+			TALLOC_CTX *mem_ctx,
+			const struct ndr_interface_table *table,
+			uint32_t opnum, void *r)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_OK;
+
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	req = cli_do_rpc_ndr_send(frame, ev, cli, table, opnum, r);
+	if (req == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	if (!tevent_req_poll(req, ev)) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
+	}
+
+	status = cli_do_rpc_ndr_recv(req, mem_ctx);
+ fail:
+	TALLOC_FREE(frame);
+	return status;
 }

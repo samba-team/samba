@@ -5262,10 +5262,6 @@ struct tevent_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
 					 prs_struct *req_data);
 NTSTATUS rpc_api_pipe_req_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			       prs_struct *reply_pdu);
-NTSTATUS rpc_api_pipe_req(TALLOC_CTX *mem_ctx, struct rpc_pipe_client *cli,
-			uint8 op_num,
-			prs_struct *in_data,
-			prs_struct *out_data);
 struct tevent_req *rpc_pipe_bind_send(TALLOC_CTX *mem_ctx,
 				      struct event_context *ev,
 				      struct rpc_pipe_client *cli,
@@ -5615,6 +5611,13 @@ void init_samr_CryptPassword(const char *pwd,
 
 /* The following definitions come from rpc_client/ndr.c  */
 
+struct tevent_req *cli_do_rpc_ndr_send(TALLOC_CTX *mem_ctx,
+				       struct tevent_context *ev,
+				       struct rpc_pipe_client *cli,
+				       const struct ndr_interface_table *table,
+				       uint32_t opnum,
+				       void *r);
+NTSTATUS cli_do_rpc_ndr_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx);
 NTSTATUS cli_do_rpc_ndr(struct rpc_pipe_client *cli,
 			TALLOC_CTX *mem_ctx,
 			const struct ndr_interface_table *table,
