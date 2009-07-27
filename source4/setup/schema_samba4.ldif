@@ -124,6 +124,7 @@
 dn: cn=privilege,${SCHEMADN}
 objectClass: top
 objectClass: attributeSchema
+cn: privilege
 lDAPDisplayName: privilege
 isSingleValued: FALSE
 systemFlags: 17
@@ -217,6 +218,7 @@ oMSyntax: 20
 dn: CN=Samba4-Local-Domain,${SCHEMADN}
 objectClass: top
 objectClass: classSchema
+cn: Samba4-Local-Domain
 subClassOf: top
 governsID: 1.3.6.1.4.1.7165.4.2.2
 rDNAttID: cn
@@ -238,6 +240,7 @@ defaultObjectCategory: CN=Samba4-Local-Domain,${SCHEMADN}
 dn: CN=Samba4Top,${SCHEMADN}
 objectClass: top
 objectClass: classSchema
+cn: Samba4Top
 subClassOf: top
 governsID: 1.3.6.1.4.1.7165.4.2.1
 mayContain: msDS-ObjectReferenceBL
@@ -339,6 +342,7 @@ defaultObjectCategory: CN=Samba4Top,${SCHEMADN}
 dn: CN=Samba4TopExtra,${SCHEMADN}
 objectClass: top
 objectClass: classSchema
+cn: Samba4TopExtra
 subClassOf: top
 governsID: 1.3.6.1.4.1.7165.4.2.3
 rDNAttID: cn
