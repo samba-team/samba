@@ -1069,6 +1069,10 @@ sub ParseElementPullLevel
 		my $counter = "cntr_$e->{NAME}_$l->{LEVEL_INDEX}";
 		my $array_name = $var_name;
 
+		if ($l->{IS_VARYING}) {
+			$length = "ndr_get_array_length($ndr, " . get_pointer_to($var_name) .")";
+		}
+
 		$var_name = get_array_element($var_name, $counter);
 
 		$self->ParseMemCtxPullStart($e, $l, $ndr, $array_name);
