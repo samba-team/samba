@@ -104,7 +104,25 @@ interface frstrans
 
 	/*****************/
 	/* Function 0x04 */
-	[todo] void FRSTRANS_REQUEST_VERSION_VECTOR();
+	typedef enum {
+		FRSTRANS_VERSION_REQUEST_NORNAL_SYNC	= 0x0000,
+		FRSTRANS_VERSION_REQUEST_SLOW_SYNC	= 0x0001,
+		FRSTRANS_VERSION_REQUEST_SLAVE_SYNC	= 0x0002
+	} frstrans_VersionRequestType;
+
+	typedef enum {
+		FRSTRANS_VERSION_CHANGE_NOTIFY	= 0x0000,
+		FRSTRANS_VERSION_CHANGE_ALL	= 0x0002
+	} frstrans_VersionChangeType;
+
+	WERROR frstrans_RequestVersionVector(
+		[in] uint32 sequence_number,
+		[in] GUID connection_guid,
+		[in] GUID content_set_guid,
+		[in,range(0,2)] frstrans_VersionRequestType request_type,
+		[in,range(0,2)] frstrans_VersionChangeType change_type,
+		[in] hyper vv_generation
+	);
 
 	/*****************/
 	/* Function 0x05 */
