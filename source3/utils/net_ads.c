@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "utils/net.h"
 #include "librpc/gen_ndr/ndr_krb5pac.h"
+#include "nsswitch/libwbclient/wbclient.h"
 
 #ifdef HAVE_ADS
 
@@ -518,43 +519,83 @@ static int ads_user_add(struct net_context *c, int argc, const char **argv)
 
 static int ads_user_info(struct net_context *c, int argc, const char **argv)
 {
-	ADS_STRUCT *ads;
+	ADS_STRUCT *ads = NULL;
 	ADS_STATUS rc;
-	LDAPMessage *res;
-	const char *attrs[] = {"memberOf", NULL};
+	LDAPMessage *res = NULL;
+	TALLOC_CTX *frame;
+	int ret = 0;
+	wbcErr wbc_status;
+	const char *attrs[] = {"memberOf", "primaryGroupID", NULL};
 	char *searchstring=NULL;
 	char **grouplist;
+	char *primary_group;
 	char *escaped_user;
+	DOM_SID primary_group_sid;
+	uint32_t group_rid;
+	enum SID_NAME_USE type;
 
 	if (argc < 1 || c->display_usage) {
 		return net_ads_user_usage(c, argc, argv);
 	}
 
-	escaped_user = escape_ldap_string(talloc_tos(), argv[0]);
+	frame = talloc_new(talloc_tos());
+	if (frame == NULL) {
+		return -1;
+	}
 
+	escaped_user = escape_ldap_string(frame, argv[0]);
 	if (!escaped_user) {
 		d_fprintf(stderr, "ads_user_info: failed to escape user %s\n", argv[0]);
 		return -1;
 	}
 
 	if (!ADS_ERR_OK(ads_startup(c, false, &ads))) {
-		TALLOC_FREE(escaped_user);
-		return -1;
+		ret = -1;
+		goto error;
 	}
 
 	if (asprintf(&searchstring, "(sAMAccountName=%s)", escaped_user) == -1) {
-		TALLOC_FREE(escaped_user);
-		return -1;
+		ret =-1;
+		goto error;
 	}
 	rc = ads_search(ads, &res, searchstring, attrs);
 	SAFE_FREE(searchstring);
 
 	if (!ADS_ERR_OK(rc)) {
 		d_fprintf(stderr, "ads_search: %s\n", ads_errstr(rc));
-		ads_destroy(&ads);
-		TALLOC_FREE(escaped_user);
-		return -1;
+		ret = -1;
+		goto error;
 	}
+
+	if (!ads_pull_uint32(ads, res, "primaryGroupID", &group_rid)) {
+		d_fprintf(stderr, "ads_pull_uint32 failed\n");
+		ret = -1;
+		goto error;
+	}
+
+	rc = ads_domain_sid(ads, &primary_group_sid);
+	if (!ADS_ERR_OK(rc)) {
+		d_fprintf(stderr, "ads_domain_sid: %s\n", ads_errstr(rc));
+		ret = -1;
+		goto error;
+	}
+
+	sid_append_rid(&primary_group_sid, group_rid);
+
+	wbc_status = wbcLookupSid((struct wbcDomainSid *)&primary_group_sid,
+				  NULL, /* don't look up domain */
+				  &primary_group,
+				  (enum wbcSidType *) &type);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "wbcLookupSid: %s\n",
+			  wbcErrorString(wbc_status));
+		ret = -1;
+		goto error;
+	}
+
+	d_printf("%s\n", primary_group);
+
+	wbcFreeMemory(primary_group);
 
 	grouplist = ldap_get_values((LDAP *)ads->ldap.ld,
 				    (LDAPMessage *)res, "memberOf");
@@ -570,10 +611,11 @@ static int ads_user_info(struct net_context *c, int argc, const char **argv)
 		ldap_value_free(grouplist);
 	}
 
-	ads_msgfree(ads, res);
-	ads_destroy(&ads);
-	TALLOC_FREE(escaped_user);
-	return 0;
+error:
+	if (res) ads_msgfree(ads, res);
+	if (ads) ads_destroy(&ads);
+	TALLOC_FREE(frame);
+	return ret;
 }
 
 static int ads_user_delete(struct net_context *c, int argc, const char **argv)
