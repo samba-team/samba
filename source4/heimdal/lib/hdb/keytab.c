@@ -37,7 +37,14 @@
 
 struct hdb_data {
     char *dbname;
-    char *mkey;
+    char *mkey;   
+};
+
+struct hdb_cursor {
+    HDB *db;
+    hdb_entry_ex hdb_entry;
+    bool first, next;
+    int key_idx;
 };
 
 /*
@@ -247,6 +254,140 @@ hdb_get_entry(krb5_context context,
     return ret;
 }
 
+/*
+ * find the keytab entry in `id' for `principal, kvno, enctype' and return
+ * it in `entry'.  return 0 or an error code
+ */
+
+static krb5_error_code
+hdb_start_seq_get(krb5_context context,
+		  krb5_keytab id,
+		  krb5_kt_cursor *cursor)
+{
+    krb5_error_code ret;
+    struct hdb_cursor *c;
+    struct hdb_data *d = id->data;
+    const char *dbname = d->dbname;
+    const char *mkey   = d->mkey;
+    HDB *db;
+   
+    if (dbname == NULL) {
+	/* We don't support enumerating without being told what backend to enumerate on */
+  	ret = KRB5_KT_NOTFOUND;
+	return ret;
+    }
+
+    ret = hdb_create (context, &db, dbname);
+    if (ret)
+	return ret;
+    ret = hdb_set_master_keyfile (context, db, mkey);
+    if (ret) {
+	(*db->hdb_destroy)(context, db);
+	return ret;
+    }
+	
+    ret = (*db->hdb_open)(context, db, O_RDONLY, 0);
+    if (ret) {
+	(*db->hdb_destroy)(context, db);
+	return ret;
+    }
+
+    cursor->data = c = malloc (sizeof(*c));
+    if(c == NULL){
+	(*db->hdb_close)(context, db);
+	(*db->hdb_destroy)(context, db);
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
+	return ENOMEM;
+    }
+
+    c->db = db;
+    c->first = true;
+    c->next = true;
+    c->key_idx = 0;
+
+    cursor->data = c;
+    return ret;
+}
+
+static int hdb_next_entry(krb5_context context,
+	       krb5_keytab id,
+	       krb5_keytab_entry *entry,
+	       krb5_kt_cursor *cursor) 
+{
+	struct hdb_cursor *c = cursor->data;
+	krb5_error_code ret;
+
+	if (c->first) {
+		c->first = false;
+		ret = (c->db->hdb_firstkey)(context, c->db, 
+					    HDB_F_DECRYPT|
+					    HDB_F_GET_CLIENT|HDB_F_GET_SERVER|HDB_F_GET_KRBTGT,
+					    &c->hdb_entry);
+		if (ret == HDB_ERR_NOENTRY) {
+			return KRB5_KT_END;
+		} else if (ret) {
+			return ret;
+		}
+
+		if (c->hdb_entry.entry.keys.len == 0) {
+			hdb_free_entry(context, &c->hdb_entry);
+		} else {
+			c->next = false;
+		}
+	} 
+
+	while (c->next) {
+		ret = (c->db->hdb_nextkey)(context, c->db, 
+					   HDB_F_DECRYPT|
+					   HDB_F_GET_CLIENT|HDB_F_GET_SERVER|HDB_F_GET_KRBTGT,
+					   &c->hdb_entry);
+		if (ret == HDB_ERR_NOENTRY) {
+			return KRB5_KT_END;
+		} else if (ret) {
+			return ret;
+		}
+		if (c->hdb_entry.entry.keys.len == 0) {
+			/* If no keys on this entry, try again */
+			hdb_free_entry(context, &c->hdb_entry);
+		} else {
+			/* We have an entry, set the flag */
+			c->next = false;
+		}
+	};
+
+	/* return next enc type (keytabs are one slot per key, while hdb is one record per principal */
+	krb5_copy_principal(context, 
+			    c->hdb_entry.entry.principal, 
+			    &entry->principal);
+	entry->vno = c->hdb_entry.entry.kvno;
+	krb5_copy_keyblock_contents(context,
+				    &c->hdb_entry.entry.keys.val[c->key_idx].key,
+				    &entry->keyblock);
+	c->key_idx++;
+
+	/* Once we get to the end of the list, signal that we want the next entry */
+	if (c->key_idx == c->hdb_entry.entry.keys.len) {
+		hdb_free_entry(context, &c->hdb_entry);
+		c->next = true;
+		c->key_idx = 0;
+	}
+	return 0;
+}
+
+
+static int hdb_end_seq_get(krb5_context context,
+			   krb5_keytab id,
+			   krb5_kt_cursor *cursor) {
+	struct hdb_cursor *c = cursor->data;
+	(c->db->hdb_close)(context, c->db);
+	(c->db->hdb_destroy)(context, c->db);
+	if (!c->next) {
+		hdb_free_entry(context, &c->hdb_entry);
+	}
+	free(c);
+	return 0;
+}
+
 krb5_kt_ops hdb_kt_ops = {
     "HDB",
     hdb_resolve,
@@ -254,9 +395,9 @@ krb5_kt_ops hdb_kt_ops = {
     hdb_close,
     NULL,		/* destroy */
     hdb_get_entry,
-    NULL,		/* start_seq_get */
-    NULL,		/* next_entry */
-    NULL,		/* end_seq_get */
+    hdb_start_seq_get,
+    hdb_next_entry,
+    hdb_end_seq_get,
     NULL,		/* add */
     NULL		/* remove */
 };
