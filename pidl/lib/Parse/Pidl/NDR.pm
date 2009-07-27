@@ -142,6 +142,13 @@ sub GetElementLevelTable($$)
 		$is_fixed = 1 if (not $is_conformant and Parse::Pidl::Util::is_constant($size));
 		$is_inline = 1 if (not $is_conformant and not Parse::Pidl::Util::is_constant($size));
 
+		if ($i == 0 and $is_fixed and has_property($e, "string")) {
+			$is_fixed = 0;
+			$is_varying = 1;
+			$is_string = 1;
+			delete($e->{PROPERTIES}->{string});
+		}
+
 		push (@$order, {
 			TYPE => "ARRAY",
 			SIZE_IS => $size,

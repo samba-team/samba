@@ -326,7 +326,7 @@ sub ParseArrayPullHeader($$$$$$)
 
 	if ($l->{IS_CONFORMANT}) {
 		$length = $size = "ndr_get_array_size($ndr, " . get_pointer_to($var_name) . ")";
-	} elsif ($l->{IS_ZERO_TERMINATED}) { # Noheader arrays
+	} elsif ($l->{IS_ZERO_TERMINATED} and $l->{SIZE_IS} == 0 and $l->{LENGTH_IS} == 0) { # Noheader arrays
 		$length = $size = "ndr_get_string_size($ndr, sizeof(*$var_name))";
 	} else {
 		$length = $size = ParseExprExt($l->{SIZE_IS}, $env, $e->{ORIGINAL},
