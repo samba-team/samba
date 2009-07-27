@@ -40,7 +40,10 @@ interface frstrans
 
 	/*****************/
 	/* Function 0x02 */
-	[todo] void FRSTRANS_ESTABLISH_SESSION();
+	WERROR frstrans_EstablishSession(
+		[in] GUID connection_guid,
+		[in] GUID content_set_guid
+	);
 
 	/*****************/
 	/* Function 0x03 */
