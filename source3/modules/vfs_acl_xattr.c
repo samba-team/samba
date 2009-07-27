@@ -28,11 +28,14 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
 
+/* Pull in the common functions. */
+#include "modules/vfs_acl_common.c"
+
 /*******************************************************************
  Pull a security descriptor into a DATA_BLOB from a xattr.
 *******************************************************************/
 
-NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
+static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 			vfs_handle_struct *handle,
 			files_struct *fsp,
 			const char *name,
@@ -90,7 +93,7 @@ NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
  Store a DATA_BLOB into an xattr given an fsp pointer.
 *******************************************************************/
 
-NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
+static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
 				files_struct *fsp,
 				DATA_BLOB *pblob)
 {
@@ -128,7 +131,7 @@ NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
  Store a DATA_BLOB into an xattr given a pathname.
 *******************************************************************/
 
-NTSTATUS store_acl_blob_pathname(vfs_handle_struct *handle,
+static NTSTATUS store_acl_blob_pathname(vfs_handle_struct *handle,
 					const char *fname,
 					DATA_BLOB *pblob)
 {

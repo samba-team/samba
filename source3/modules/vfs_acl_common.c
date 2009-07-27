@@ -1,5 +1,6 @@
 /*
  * Store Windows ACLs in data store - common functions.
+ * #included into modules/vfs_acl_xattr.c and modules/vfs_acl_tdb.c
  *
  * Copyright (C) Volker Lendecke, 2008
  * Copyright (C) Jeremy Allison, 2009
@@ -18,20 +19,24 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-/* NOTE: This is an experimental module, not yet finished. JRA. */
-
-#include "includes.h"
-#include "librpc/gen_ndr/xattr.h"
-#include "librpc/gen_ndr/ndr_xattr.h"
-#include "../lib/crypto/crypto.h"
-
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_VFS
-
 static NTSTATUS create_acl_blob(const struct security_descriptor *psd,
 			DATA_BLOB *pblob,
 			uint16_t hash_type,
 			uint8_t hash[XATTR_SD_HASH_SIZE]);
+
+static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
+			vfs_handle_struct *handle,
+			files_struct *fsp,
+			const char *name,
+			DATA_BLOB *pblob);
+
+static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
+			files_struct *fsp,
+			DATA_BLOB *pblob);
+
+static NTSTATUS store_acl_blob_pathname(vfs_handle_struct *handle,
+			const char *fname,
+			DATA_BLOB *pblob);
 
 #define HASH_SECURITY_INFO (OWNER_SECURITY_INFORMATION | \
 				GROUP_SECURITY_INFORMATION | \
@@ -438,7 +443,7 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
  Check ACL on open. For new files inherit from parent directory.
 *********************************************************************/
 
-int open_acl_common(vfs_handle_struct *handle,
+static int open_acl_common(vfs_handle_struct *handle,
 			struct smb_filename *smb_fname,
 			files_struct *fsp,
 			int flags,
@@ -509,7 +514,7 @@ int open_acl_common(vfs_handle_struct *handle,
 	return fsp->fh->fd;
 }
 
-int mkdir_acl_common(vfs_handle_struct *handle, const char *path, mode_t mode)
+static int mkdir_acl_common(vfs_handle_struct *handle, const char *path, mode_t mode)
 {
 	struct smb_filename *smb_fname = NULL;
 	int ret = SMB_VFS_NEXT_MKDIR(handle, path, mode);
@@ -536,7 +541,7 @@ int mkdir_acl_common(vfs_handle_struct *handle, const char *path, mode_t mode)
  Fetch a security descriptor given an fsp.
 *********************************************************************/
 
-NTSTATUS fget_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
+static NTSTATUS fget_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
         uint32_t security_info, struct security_descriptor **ppdesc)
 {
 	return get_nt_acl_internal(handle, fsp,
@@ -547,7 +552,7 @@ NTSTATUS fget_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
  Fetch a security descriptor given a pathname.
 *********************************************************************/
 
-NTSTATUS get_nt_acl_common(vfs_handle_struct *handle,
+static NTSTATUS get_nt_acl_common(vfs_handle_struct *handle,
         const char *name, uint32_t security_info, struct security_descriptor **ppdesc)
 {
 	return get_nt_acl_internal(handle, NULL,
@@ -558,7 +563,7 @@ NTSTATUS get_nt_acl_common(vfs_handle_struct *handle,
  Store a security descriptor given an fsp.
 *********************************************************************/
 
-NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
+static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
         uint32_t security_info_sent, const struct security_descriptor *psd)
 {
 	NTSTATUS status;
