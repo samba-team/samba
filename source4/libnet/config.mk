@@ -1,5 +1,5 @@
 [SUBSYSTEM::LIBSAMBA-NET]
-PUBLIC_DEPENDENCIES = CREDENTIALS dcerpc dcerpc_samr RPC_NDR_LSA RPC_NDR_SRVSVC RPC_NDR_DRSUAPI LIBCLI_COMPOSITE LIBCLI_RESOLVE LIBCLI_FINDDCS LIBCLI_CLDAP LIBCLI_FINDDCS gensec_schannel LIBCLI_AUTH LIBNDR SMBPASSWD PROVISION LIBCLI_SAMSYNC HDB_SAMBA4
+PUBLIC_DEPENDENCIES = CREDENTIALS dcerpc dcerpc_samr RPC_NDR_LSA RPC_NDR_SRVSVC RPC_NDR_DRSUAPI LIBCLI_COMPOSITE LIBCLI_RESOLVE LIBCLI_FINDDCS LIBCLI_CLDAP LIBCLI_FINDDCS gensec_schannel LIBCLI_AUTH LIBNDR SMBPASSWD PROVISION LIBCLI_SAMSYNC
 
 LIBSAMBA-NET_OBJ_FILES = $(addprefix $(libnetsrcdir)/, \
 	libnet.o libnet_passwd.o libnet_time.o libnet_rpc.o \
@@ -7,7 +7,7 @@ LIBSAMBA-NET_OBJ_FILES = $(addprefix $(libnetsrcdir)/, \
 	libnet_vampire.o libnet_samdump.o libnet_samdump_keytab.o \
 	libnet_samsync_ldb.o libnet_user.o libnet_group.o libnet_share.o \
 	libnet_lookup.o libnet_domain.o userinfo.o groupinfo.o userman.o \
-	groupman.o prereq_domain.o libnet_samsync.o libnet_export_keytab.o)
+	groupman.o prereq_domain.o libnet_samsync.o)
 
 $(eval $(call proto_header_template,$(libnetsrcdir)/libnet_proto.h,$(LIBSAMBA-NET_OBJ_FILES:.o=.c)))
 
