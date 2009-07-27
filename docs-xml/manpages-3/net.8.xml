@@ -1705,7 +1705,7 @@ Joins a computer into a domain. This command supports the following additional p
 </itemizedlist>
 
 <para>
-Note that you also need to use standard net paramters to connect and authenticate to the remote machine that you want to join. These additional parameters include: -S computer and -U user.
+Note that you also need to use standard net parameters to connect and authenticate to the remote machine that you want to join. These additional parameters include: -S computer and -U user.
 </para>
 <para>
 	Example:
@@ -1735,7 +1735,7 @@ Unjoins a computer from a domain. This command supports the following additional
 </itemizedlist>
 
 <para>
-Note that you also need to use standard net paramters to connect and authenticate to the remote machine that you want to unjoin. These additional parameters include: -S computer and -U user.
+Note that you also need to use standard net parameters to connect and authenticate to the remote machine that you want to unjoin. These additional parameters include: -S computer and -U user.
 </para>
 <para>
 	Example:
@@ -1767,7 +1767,7 @@ Renames a computer that is joined to a domain. This command supports the followi
 </itemizedlist>
 
 <para>
-Note that you also need to use standard net paramters to connect and authenticate to the remote machine that you want to rename in the domain. These additional parameters include: -S computer and -U user.
+Note that you also need to use standard net parameters to connect and authenticate to the remote machine that you want to rename in the domain. These additional parameters include: -S computer and -U user.
 </para>
 <para>
 	Example:
