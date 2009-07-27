@@ -47,7 +47,60 @@ interface frstrans
 
 	/*****************/
 	/* Function 0x03 */
-	[todo] void FRSTRANS_REQUEST_UPDATES();
+	typedef enum {
+		FRSTRANS_UPDATE_REQUEST_ALL		= 0x0000,
+		FRSTRANS_UPDATE_REQUEST_TOMBSTONES	= 0x0001,
+		FRSTRANS_UPDATE_REQUEST_LIVE		= 0x0002
+	} frstrans_UpdateRequestType;
+
+	typedef enum {
+		FRSTRANS_UPDATE_STATUS_DONE		= 0x0002,
+		FRSTRANS_UPDATE_STATUS_MORE		= 0x0003
+	} frstrans_UpdateStatus;
+
+	typedef struct {
+		GUID db_guid;
+		hyper low;
+		hyper high;
+	} frstrans_VersionVector;
+
+	typedef [flag(NDR_PAHEX)] struct {
+		boolean32 present;
+		boolean32 name_conflict;
+		uint32 attributes;
+		NTTIME fence;
+		NTTIME clock;
+		NTTIME create_time;
+		GUID content_set_guid;
+		uint8 sha1_hash[20];
+		uint8 rdc_similarity[16];
+		GUID uid_db_guid;
+		hyper uid_version;
+		GUID gsvn_db_guid;
+		hyper gsvn_version;
+		GUID parent_db_guid;
+		hyper parent_version;
+		[string,charset(UTF16)] uint16 name[261];
+		uint32 flags;
+	} frstrans_Update;
+
+	WERROR frstrans_RequestUpdates(
+		[in] GUID connection_guid,
+		[in] GUID content_set_guid,
+		[in,range(0,256)] uint32 credits_available,
+		[in,range(0,1)] boolean32 hash_requested,
+		[in,range(0,2)]
+			frstrans_UpdateRequestType update_request_type,
+		[in] uint32 version_vector_diff_count,
+		[in,size_is(version_vector_diff_count)]
+			frstrans_VersionVector *version_vector_diff,
+		[out,ref,size_is(credits_available),length_is(*update_count)]
+			frstrans_Update *frs_update,
+		[out,ref] uint32 *update_count,
+		[out,ref] frstrans_UpdateStatus *update_status,
+		[out,ref] GUID *gvsn_db_guid,
+		[out,ref] hyper *gvsn_version
+	);
 
 	/*****************/
 	/* Function 0x04 */
