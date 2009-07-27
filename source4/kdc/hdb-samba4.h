@@ -21,8 +21,12 @@
 */
 
 extern TALLOC_CTX *hdb_samba4_mem_ctx;
-extern struct tevent_context *hdb_samba4_ev_ctx;
-extern struct loadparm_context *hdb_samba4_lp_ctx;
+
+struct hdb_samba4_context {
+	struct tevent_context *ev_ctx;
+	struct loadparm_context *lp_ctx;
+};
+
 extern struct hdb_method hdb_samba4;
 
 struct hdb_samba4_private {

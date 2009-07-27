@@ -729,15 +729,20 @@ static void kdc_task_init(struct task_server *task)
 				       kdc->smb_krb5_context->krb5_context, 
 				       &kdc->config->db[0]);
 	if (!NT_STATUS_IS_OK(status)) {
-		task_server_terminate(task, "kdc: hdb_ldb_create (setup KDC database) failed");
+		task_server_terminate(task, "kdc: hdb_samba4_create_kdc (setup KDC database) failed");
 		return; 
 	}
 
-	/* Register hdb-samba4 hooks */
+	/* Register hdb-samba4 hooks for use as a keytab */
 
-	hdb_samba4_mem_ctx = kdc->smb_krb5_context;
-	hdb_samba4_ev_ctx = task->event_ctx;
-	hdb_samba4_lp_ctx = task->lp_ctx;
+	kdc->hdb_samba4_context = talloc(kdc, struct hdb_samba4_context);
+	if (!kdc->hdb_samba4_context) {
+		task_server_terminate(task, "kdc: out of memory");
+		return; 
+	}
+
+	kdc->hdb_samba4_context->ev_ctx = task->event_ctx;
+	kdc->hdb_samba4_context->lp_ctx = task->lp_ctx;
 
 	ret = krb5_plugin_register(kdc->smb_krb5_context->krb5_context, 
 				   PLUGIN_TYPE_DATA, "hdb",

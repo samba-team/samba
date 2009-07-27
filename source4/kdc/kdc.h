@@ -47,6 +47,7 @@ struct kdc_server {
 	struct task_server *task;
 	krb5_kdc_configuration *config;
 	struct smb_krb5_context *smb_krb5_context;
+	struct hdb_samba4_context *hdb_samba4_context;
 };
 
 
