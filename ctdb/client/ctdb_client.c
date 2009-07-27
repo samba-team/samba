@@ -3741,3 +3741,26 @@ int ctdb_ctrl_continue_node(struct ctdb_context *ctdb, struct timeval timeout, u
 
 	return 0;
 }
+
+/*
+  set the natgw state for a node
+ */
+int ctdb_ctrl_setnatgwstate(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t natgwstate)
+{
+	int ret;
+	TDB_DATA data;
+	int32_t res;
+
+	data.dsize = sizeof(natgwstate);
+	data.dptr  = (uint8_t *)&natgwstate;
+
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_SET_NATGWSTATE, 0, data, 
+			   NULL, NULL, &res, &timeout, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for setnatgwstate failed\n"));
+		return -1;
+	}
+
+	return 0;
+}
