@@ -103,7 +103,7 @@ static krb5_error_code make_pac(krb5_context context,
 	return ret;
 }
 
-/* Given the right private pointer from hdb_ldb, get a PAC from the attached ldb messages */
+/* Given the right private pointer from hdb_samba4, get a PAC from the attached ldb messages */
 krb5_error_code samba_kdc_get_pac(void *priv,
 				  krb5_context context, 
 				  struct hdb_entry_ex *client,
@@ -112,7 +112,7 @@ krb5_error_code samba_kdc_get_pac(void *priv,
 	krb5_error_code ret;
 	NTSTATUS nt_status;
 	struct auth_serversupplied_info *server_info;
-	struct hdb_ldb_private *p = talloc_get_type(client->ctx, struct hdb_ldb_private);
+	struct hdb_samba4_private *p = talloc_get_type(client->ctx, struct hdb_samba4_private);
 	TALLOC_CTX *mem_ctx = talloc_named(p, 0, "samba_get_pac context");
 	unsigned int userAccountControl;
 
@@ -158,7 +158,7 @@ krb5_error_code samba_kdc_reget_pac(void *priv, krb5_context context,
 
 	unsigned int userAccountControl;
 
-	struct hdb_ldb_private *p = talloc_get_type(server->ctx, struct hdb_ldb_private);
+	struct hdb_samba4_private *p = talloc_get_type(server->ctx, struct hdb_samba4_private);
 
 	struct auth_serversupplied_info *server_info_out;
 
@@ -241,14 +241,14 @@ krb5_error_code samba_kdc_check_client_access(void *priv,
 	krb5_error_code ret;
 	NTSTATUS nt_status;
 	TALLOC_CTX *tmp_ctx;
-	struct hdb_ldb_private *p;
+	struct hdb_samba4_private *p;
 	char *workstation = NULL;
 	HostAddresses *addresses = req->req_body.addresses;
 	int i;
 	bool password_change;
 
 	tmp_ctx = talloc_new(client_ex->ctx);
-	p = talloc_get_type(client_ex->ctx, struct hdb_ldb_private);
+	p = talloc_get_type(client_ex->ctx, struct hdb_samba4_private);
 
 	if (!tmp_ctx) {
 		return ENOMEM;

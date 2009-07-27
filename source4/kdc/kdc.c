@@ -43,9 +43,9 @@
 
 /* Disgusting hack to get a mem_ctx and lp_ctx into the hdb plugin, when 
  * used as a keytab */
-TALLOC_CTX *kdc_mem_ctx;
-struct tevent_context *kdc_ev_ctx;
-struct loadparm_context *kdc_lp_ctx;
+TALLOC_CTX *hdb_samba4_mem_ctx;
+struct tevent_context *hdb_samba4_ev_ctx;
+struct loadparm_context *hdb_samba4_lp_ctx;
 
 /* hold all the info needed to send a reply */
 struct kdc_reply {
@@ -659,14 +659,6 @@ static NTSTATUS kdc_check_generic_kerberos(struct irpc_message *msg,
 }
 
 
-static struct hdb_method hdb_samba4 = {
-	.interface_version = HDB_INTERFACE_VERSION,
-	.prefix = "samba4", /* Only used in the hdb-backed keytab code
-			     * for a keytab of 'samba4:', to find
-			     * kpasswd's key in the main DB */
-	.create = hdb_samba4_create
-};
-
 /*
   startup the kdc task
 */
@@ -733,16 +725,20 @@ static void kdc_task_init(struct task_server *task)
 	}
 	kdc->config->num_db = 1;
 		
-	status = kdc_hdb_samba4_create(kdc, task->event_ctx, task->lp_ctx, 
-				    kdc->smb_krb5_context->krb5_context, 
-				    &kdc->config->db[0], NULL);
+	status = hdb_samba4_create_kdc(kdc, task->event_ctx, task->lp_ctx, 
+				       kdc->smb_krb5_context->krb5_context, 
+				       &kdc->config->db[0]);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, "kdc: hdb_ldb_create (setup KDC database) failed");
 		return; 
 	}
 
-
 	/* Register hdb-samba4 hooks */
+
+	hdb_samba4_mem_ctx = kdc->smb_krb5_context;
+	hdb_samba4_ev_ctx = task->event_ctx;
+	hdb_samba4_lp_ctx = task->lp_ctx;
+
 	ret = krb5_plugin_register(kdc->smb_krb5_context->krb5_context, 
 				   PLUGIN_TYPE_DATA, "hdb",
 				   &hdb_samba4);
@@ -767,10 +763,6 @@ static void kdc_task_init(struct task_server *task)
 	}
 
 	krb5_kdc_windc_init(kdc->smb_krb5_context->krb5_context);
-
-	kdc_mem_ctx = kdc->smb_krb5_context;
-	kdc_ev_ctx = task->event_ctx;
-	kdc_lp_ctx = task->lp_ctx;
 
 	/* start listening on the configured network interfaces */
 	status = kdc_startup_interfaces(kdc, task->lp_ctx, ifaces);

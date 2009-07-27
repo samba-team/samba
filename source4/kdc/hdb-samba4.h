@@ -20,33 +20,16 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "system/kerberos.h"
-#include "auth/kerberos/kerberos.h"
-#include <hdb.h>
-#include <kdc.h>
-#include <krb5/windc_plugin.h>
-#include "kdc/pac_glue.h"
-#include "kdc/hdb-samba4.h"
+extern TALLOC_CTX *hdb_samba4_mem_ctx;
+extern struct tevent_context *hdb_samba4_ev_ctx;
+extern struct loadparm_context *hdb_samba4_lp_ctx;
+extern struct hdb_method hdb_samba4;
 
-struct kdc_server;
-struct socket_address;
-
-
-bool kpasswdd_process(struct kdc_server *kdc,
-		      TALLOC_CTX *mem_ctx, 
-		      DATA_BLOB *input, 
-		      DATA_BLOB *reply,
-		      struct socket_address *peer_addr, 
-		      struct socket_address *my_addr,
-		      int datagram_reply);
-
-/*
-  top level context structure for the kdc server
-*/
-struct kdc_server {
-	struct task_server *task;
-	krb5_kdc_configuration *config;
-	struct smb_krb5_context *smb_krb5_context;
+struct hdb_samba4_private {
+	struct ldb_context *samdb;
+	struct smb_iconv_convenience *iconv_convenience;
+	struct loadparm_context *lp_ctx;
+	struct ldb_message *msg;
+	struct ldb_dn *realm_dn;
+	hdb_entry_ex *entry_ex;
 };
-
-

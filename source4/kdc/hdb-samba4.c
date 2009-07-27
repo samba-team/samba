@@ -53,7 +53,7 @@
 #include "kdc/kdc.h"
 #include "../lib/crypto/md4.h"
 
-enum hdb_ldb_ent_type 
+enum hdb_samba4_ent_type 
 { HDB_SAMBA4_ENT_TYPE_CLIENT, HDB_SAMBA4_ENT_TYPE_SERVER, 
   HDB_SAMBA4_ENT_TYPE_KRBTGT, HDB_SAMBA4_ENT_TYPE_TRUST, HDB_SAMBA4_ENT_TYPE_ANY };
 
@@ -93,7 +93,7 @@ static KerberosTime ldb_msg_find_krb5time_ldap_time(struct ldb_message *msg, con
     return timegm(&tm);
 }
 
-static HDBFlags uf2HDBFlags(krb5_context context, int userAccountControl, enum hdb_ldb_ent_type ent_type) 
+static HDBFlags uf2HDBFlags(krb5_context context, int userAccountControl, enum hdb_samba4_ent_type ent_type) 
 {
 	HDBFlags flags = int2HDBFlags(0);
 
@@ -181,14 +181,14 @@ static HDBFlags uf2HDBFlags(krb5_context context, int userAccountControl, enum h
 	return flags;
 }
 
-static int hdb_ldb_destructor(struct hdb_ldb_private *p)
+static int hdb_samba4_destructor(struct hdb_samba4_private *p)
 {
     hdb_entry_ex *entry_ex = p->entry_ex;
     free_hdb_entry(&entry_ex->entry);
     return 0;
 }
 
-static void hdb_ldb_free_entry(krb5_context context, hdb_entry_ex *entry_ex)
+static void hdb_samba4_free_entry(krb5_context context, hdb_entry_ex *entry_ex)
 {
 	talloc_free(entry_ex->ctx);
 }
@@ -487,7 +487,7 @@ out:
 static krb5_error_code hdb_samba4_message2entry(krb5_context context, HDB *db, 
 					 struct loadparm_context *lp_ctx, 
 					 TALLOC_CTX *mem_ctx, krb5_const_principal principal,
-					 enum hdb_ldb_ent_type ent_type,
+					 enum hdb_samba4_ent_type ent_type,
 					 struct ldb_dn *realm_dn,
 					 struct ldb_message *msg,
 					 hdb_entry_ex *entry_ex)
@@ -498,7 +498,7 @@ static krb5_error_code hdb_samba4_message2entry(krb5_context context, HDB *db,
 	krb5_boolean is_computer = FALSE;
 	char *realm = strupper_talloc(mem_ctx, lp_realm(lp_ctx));
 
-	struct hdb_ldb_private *p;
+	struct hdb_samba4_private *p;
 	NTTIME acct_expiry;
 	NTSTATUS status;
 
@@ -529,7 +529,7 @@ static krb5_error_code hdb_samba4_message2entry(krb5_context context, HDB *db,
 		goto out;
 	}
 			
-	p = talloc(mem_ctx, struct hdb_ldb_private);
+	p = talloc(mem_ctx, struct hdb_samba4_private);
 	if (!p) {
 		ret = ENOMEM;
 		goto out;
@@ -544,10 +544,10 @@ static krb5_error_code hdb_samba4_message2entry(krb5_context context, HDB *db,
 		goto out;
 	}
 
-	talloc_set_destructor(p, hdb_ldb_destructor);
+	talloc_set_destructor(p, hdb_samba4_destructor);
 
 	entry_ex->ctx = p;
-	entry_ex->free_entry = hdb_ldb_free_entry;
+	entry_ex->free_entry = hdb_samba4_free_entry;
 
 	userAccountControl = ldb_msg_find_attr_as_uint(msg, "userAccountControl", 0);
 
@@ -746,12 +746,12 @@ static krb5_error_code hdb_samba4_trust_message2entry(krb5_context context, HDB 
 	struct samr_Password password_hash;
 	const struct ldb_val *password_val;
 	struct trustAuthInOutBlob password_blob;
-	struct hdb_ldb_private *p;
+	struct hdb_samba4_private *p;
 
 	enum ndr_err_code ndr_err;
 	int i, ret, trust_direction_flags;
 
-	p = talloc(mem_ctx, struct hdb_ldb_private);
+	p = talloc(mem_ctx, struct hdb_samba4_private);
 	if (!p) {
 		ret = ENOMEM;
 		goto out;
@@ -762,10 +762,10 @@ static krb5_error_code hdb_samba4_trust_message2entry(krb5_context context, HDB 
 	p->lp_ctx = lp_ctx;
 	p->realm_dn = realm_dn;
 
-	talloc_set_destructor(p, hdb_ldb_destructor);
+	talloc_set_destructor(p, hdb_samba4_destructor);
 
 	entry_ex->ctx = p;
-	entry_ex->free_entry = hdb_ldb_free_entry;
+	entry_ex->free_entry = hdb_samba4_free_entry;
 
 	/* use 'whenCreated' */
 	entry_ex->entry.created_by.time = ldb_msg_find_krb5time_ldap_time(msg, "whenCreated", 0);
@@ -1290,7 +1290,7 @@ static krb5_error_code hdb_samba4_remove(krb5_context context, HDB *db, krb5_con
 	return HDB_ERR_DB_INUSE;
 }
 
-struct hdb_ldb_seq {
+struct hdb_samba4_seq {
 	struct ldb_context *ctx;
 	struct loadparm_context *lp_ctx;
 	int index;
@@ -1302,7 +1302,7 @@ struct hdb_ldb_seq {
 static krb5_error_code hdb_samba4_seq(krb5_context context, HDB *db, unsigned flags, hdb_entry_ex *entry)
 {
 	krb5_error_code ret;
-	struct hdb_ldb_seq *priv = (struct hdb_ldb_seq *)db->hdb_dbc;
+	struct hdb_samba4_seq *priv = (struct hdb_samba4_seq *)db->hdb_dbc;
 	TALLOC_CTX *mem_ctx;
 	hdb_entry_ex entry_ex;
 	memset(&entry_ex, '\0', sizeof(entry_ex));
@@ -1344,7 +1344,7 @@ static krb5_error_code hdb_samba4_firstkey(krb5_context context, HDB *db, unsign
 	struct ldb_context *ldb_ctx = (struct ldb_context *)db->hdb_db;
 	struct loadparm_context *lp_ctx = talloc_get_type(ldb_get_opaque(ldb_ctx, "loadparm"), 
 							  struct loadparm_context);
-	struct hdb_ldb_seq *priv = (struct hdb_ldb_seq *)db->hdb_dbc;
+	struct hdb_samba4_seq *priv = (struct hdb_samba4_seq *)db->hdb_dbc;
 	char *realm;
 	struct ldb_result *res = NULL;
 	krb5_error_code ret;
@@ -1356,7 +1356,7 @@ static krb5_error_code hdb_samba4_firstkey(krb5_context context, HDB *db, unsign
 		db->hdb_dbc = NULL;
 	}
 
-	priv = (struct hdb_ldb_seq *) talloc(db, struct hdb_ldb_seq);
+	priv = (struct hdb_samba4_seq *) talloc(db, struct hdb_samba4_seq);
 	if (!priv) {
 		ret = ENOMEM;
 		krb5_set_error_message(context, ret, "talloc: out of memory");
@@ -1435,7 +1435,7 @@ krb5_error_code hdb_samba4_check_constrained_delegation(krb5_context context, HD
 	struct ldb_message *msg;
 	struct dom_sid *orig_sid;
 	struct dom_sid *target_sid;
-	struct hdb_ldb_private *p = talloc_get_type(entry->ctx, struct hdb_ldb_private);
+	struct hdb_samba4_private *p = talloc_get_type(entry->ctx, struct hdb_samba4_private);
 	const char *delegation_check_attrs[] = {
 		"objectSid", NULL
 	};
@@ -1491,15 +1491,15 @@ krb5_error_code hdb_samba4_check_constrained_delegation(krb5_context context, HD
 	return ret;
 }
 
-/* This interface is to be called by the KDC, which is expecting Samba
+/* This interface is to be called by the KDC and libnet_keytab_dump, which is expecting Samba
  * calling conventions.  It is also called by a wrapper
- * (hdb_ldb_create) from the kpasswdd -> krb5 -> keytab_hdb -> hdb
+ * (hdb_samba4_create) from the kpasswdd -> krb5 -> keytab_hdb -> hdb
  * code */
 
-NTSTATUS kdc_hdb_samba4_create(TALLOC_CTX *mem_ctx, 
-			    struct tevent_context *ev_ctx, 
-			    struct loadparm_context *lp_ctx,
-			    krb5_context context, struct HDB **db, const char *arg)
+NTSTATUS hdb_samba4_create_kdc(TALLOC_CTX *mem_ctx, 
+			      struct tevent_context *ev_ctx, 
+			      struct loadparm_context *lp_ctx,
+			      krb5_context context, struct HDB **db)
 {
 	NTSTATUS nt_status;
 	struct auth_session_info *session_info;
@@ -1532,7 +1532,7 @@ NTSTATUS kdc_hdb_samba4_create(TALLOC_CTX *mem_ctx,
 	/* Setup the link to LDB */
 	(*db)->hdb_db = samdb_connect(*db, ev_ctx, lp_ctx, session_info);
 	if ((*db)->hdb_db == NULL) {
-		DEBUG(1, ("hdb_ldb_create: Cannot open samdb for KDC backend!"));
+		DEBUG(1, ("hdb_samba4_create: Cannot open samdb for KDC backend!"));
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
@@ -1560,15 +1560,25 @@ NTSTATUS kdc_hdb_samba4_create(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-krb5_error_code hdb_samba4_create(krb5_context context, struct HDB **db, const char *arg)
+static krb5_error_code hdb_samba4_create(krb5_context context, struct HDB **db, const char *arg)
 {
 	NTSTATUS nt_status;
 	/* The global kdc_mem_ctx and kdc_lp_ctx, Disgusting, ugly hack, but it means one less private hook */
-	nt_status = kdc_hdb_samba4_create(kdc_mem_ctx, kdc_ev_ctx, kdc_lp_ctx,
-					  context, db, arg);
+	nt_status = hdb_samba4_create_kdc(hdb_samba4_mem_ctx, hdb_samba4_ev_ctx, hdb_samba4_lp_ctx,
+					  context, db);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return 0;
 	}
 	return EINVAL;
 }
+
+/* Only used in the hdb-backed keytab code
+ * for a keytab of 'samba4:', to find
+ * kpasswd's key in the main DB, and to
+ * copy all the keys into a file (libnet_keytab_export) */
+struct hdb_method hdb_samba4 = {
+	.interface_version = HDB_INTERFACE_VERSION,
+	.prefix = "samba4", 
+	.create = hdb_samba4_create
+};
