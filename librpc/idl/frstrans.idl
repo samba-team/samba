@@ -20,7 +20,23 @@ interface frstrans
 
 	/*****************/
 	/* Function 0x01 */
-	[todo] void FRSTRANS_ESTABLISH_CONNECTION();
+	typedef [v1_enum,flag(NDR_PAHEX)] enum {
+		FRSTRANS_PROTOCOL_VERSION_W2K3R2		= 0x00050000,
+		FRSTRANS_PROTOCOL_VERSION_LONGHORN_SERVER	= 0x00050002
+	} frstrans_ProtocolVersion;
+
+	typedef [bitmap32bit] bitmap {
+		FRSTRANS_TRANSPORT_SUPPORTS_RDC_SIMILARITY	= 0x00000001
+	} frstrans_TransportFlags;
+
+	WERROR frstrans_EstablishConnection(
+		[in] GUID replica_set_guid,
+		[in] GUID connection_guid,
+		[in] frstrans_ProtocolVersion downstream_protocol_version,
+		[in] frstrans_TransportFlags downstream_flags,
+		[out,ref] frstrans_ProtocolVersion *upstream_protocol_version,
+		[out,ref] frstrans_TransportFlags *upstream_flags
+	);
 
 	/*****************/
 	/* Function 0x02 */
