@@ -381,6 +381,7 @@ void init_smb_request(struct smb_request *req,
 	req->conn = conn_find(sconn,req->tid);
 	req->chain_fsp = NULL;
 	req->chain_outbuf = NULL;
+	req->done = false;
 	smb_init_perfcount_data(&req->pcd);
 
 	/* Ensure we have at least wct words and 2 bytes of bcc. */
@@ -1403,6 +1404,11 @@ static void construct_reply(char *inbuf, int size, size_t unread_bytes,
 		req->unread_bytes = 0;
 	}
 
+	if (req->done) {
+		TALLOC_FREE(req);
+		return;
+	}
+
 	if (req->outbuf == NULL) {
 		return;
 	}
@@ -1669,8 +1675,8 @@ void chain_reply(struct smb_request *req)
 			exit_server_cleanly("chain_reply: srv_send_smb "
 					    "failed.");
 		}
-		TALLOC_FREE(req);
-
+		TALLOC_FREE(req->chain_outbuf);
+		req->done = true;
 		return;
 	}
 
@@ -1807,7 +1813,8 @@ void chain_reply(struct smb_request *req)
 			  &req->pcd)) {
 		exit_server_cleanly("construct_reply: srv_send_smb failed.");
 	}
-	TALLOC_FREE(req);
+	TALLOC_FREE(req->chain_outbuf);
+	req->done = true;
 }
 
 /****************************************************************************
