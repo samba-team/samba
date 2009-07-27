@@ -13,7 +13,10 @@ interface frstrans
 {
 	/*****************/
 	/* Function 0x00 */
-	[todo] void FRSTRANS_CHECK_CONNECTIVITY();
+	WERROR frstrans_CheckConnectivity(
+		[in] GUID replica_set_guid,
+		[in] GUID connection_guid
+	);
 
 	/*****************/
 	/* Function 0x01 */
