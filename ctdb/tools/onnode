@@ -131,10 +131,10 @@ get_nodes_with_status ()
     local bits
     case "$status" in
 	healthy)
-	    bits="0:0:0:0"
+	    bits="0:0:0:0:0"
 	    ;;
 	connected)
-	    bits="0:[0-1]:[0-1]:[0-1]"
+	    bits="0:[0-1]:[0-1]:[0-1]:[0-1]"
 	    ;;
 	*)
 	    invalid_nodespec
