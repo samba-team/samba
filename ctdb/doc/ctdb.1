@@ -1,11 +1,11 @@
 .\"     Title: ctdb
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
-.\"      Date: 07/09/2009
+.\"      Date: 07/28/2009
 .\"    Manual: 
 .\"    Source: 
 .\"
-.TH "CTDB" "1" "07/09/2009" "" ""
+.TH "CTDB" "1" "07/28/2009" "" ""
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -340,7 +340,9 @@ This command shows the capabilities of the current node\. Please see manpage for
 .PP
 RECMASTER and LMASTER capabilities are primarily used when CTDBD is used to create a cluster spanning across WAN links\. In which case ctdbd acts as a WAN accelerator\.
 .PP
-LVS capabile means that the node is participating in LVS, a mode where the entire CTDB cluster uses one single ip address for the entire cluster instead of using public ip address failover\. This is an alternative to using a loadbalancing layer\-4 switch\.
+LVS capability means that the node is participating in LVS, a mode where the entire CTDB cluster uses one single ip address for the entire cluster instead of using public ip address failover\. This is an alternative to using a loadbalancing layer\-4 switch\.
+.PP
+NATGW capability means that the node participates in a NATGW group\. This flag can be modified using "ctdb setnatgwstate {on|off}"
 .PP
 Example output:
 .sp
@@ -349,6 +351,7 @@ Example output:
 RECMASTER: YES
 LMASTER: YES
 LVS: NO
+NATGW: NO
       
 .fi
 .RE

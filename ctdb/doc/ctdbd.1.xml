@@ -924,6 +924,44 @@ CTDB_CAPABILITY_RECMASTER=no
       This is implemented in the 11.natgw eventscript. Please see the
       eventscript for further information.
     </para>
+    </refsect2>
+
+    <refsect2><title>Activating NATGW without forcing a cluster restart</title>
+    <para>
+      Normally you would update the configuration and restart the nodes to activate NATGW. It is however also possible to manually start NATGW without restarting CTDB, but it does require a recovery.
+    </para>
+    <para>
+      To activate NATGW functionality on a cluster without restarting the actual nodes you can use the following process :
+    </para>
+    <variablelist>
+      <varlistentry><term>Activating NATGW on a running system</term>
+        <listitem>
+          <para>
+            Configure NATGW as described above on all nodes.
+          </para>
+        </listitem>
+        <listitem>
+          <para>
+            Run "echo 3 > /proc/sys/net/ipv4/conf/all/arp_ignore" on all nodes.
+          </para>
+        </listitem>
+        <listitem>
+          <para>
+            Run "echo 2 > /proc/sys/net/ipv4/conf/all/arp_announce" on all nodes.
+          </para>
+        </listitem>
+        <listitem>
+          <para>
+            Run "ctdb setnatgwstate on" on all nodes.
+          </para>
+        </listitem>
+        <listitem>
+          <para>
+            Force a recovery by running "ctdb recover".
+          </para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
 
     </refsect2>
 
