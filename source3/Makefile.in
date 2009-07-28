@@ -1138,6 +1138,11 @@ WINBINDD_OBJ1 = \
 		winbindd/winbindd_ads.o   \
 		winbindd/winbindd_passdb.o \
 		winbindd/winbindd_dual.o  \
+		winbindd/winbindd_dual_ndr.o  \
+		winbindd/winbindd_dual_srv.o  \
+		librpc/gen_ndr/cli_wbint.o \
+		librpc/gen_ndr/srv_wbint.o \
+		librpc/gen_ndr/ndr_wbint.o \
 		winbindd/winbindd_async.o \
 		winbindd/winbindd_creds.o \
 		winbindd/winbindd_cred_cache.o \
@@ -1322,7 +1327,8 @@ samba3-idl::
 	 srcdir="$(srcdir)" ../librpc/build_idl.sh ../librpc/idl/*.idl
 	@PIDL_OUTPUTDIR="librpc/gen_ndr" PIDL_ARGS="$(PIDL_ARGS)" CPP="$(CPP)" PIDL="../pidl/pidl" \
 	 srcdir="$(srcdir)" $(srcdir)/script/build_idl.sh \
-	 	librpc/idl/messaging.idl librpc/idl/libnetapi.idl librpc/idl/notify.idl
+		librpc/idl/messaging.idl librpc/idl/libnetapi.idl librpc/idl/notify.idl \
+		librpc/idl/wbint.idl
 
 #####################################################################
 

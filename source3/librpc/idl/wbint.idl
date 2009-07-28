@@ -1,0 +1,14 @@
+[
+    uuid("bf09192c-ed60-4928-9dff-d0d7bcb03ed8"),
+    endpoint("ncalrpc:"),
+    pointer_default(unique),
+    version(1.0),
+    helpstring("winbind parent-child protocol")
+]
+interface wbint
+{
+    void wbint_Ping(
+	[in] uint32 in_data,
+	[out] uint32 *out_data
+	);
+}

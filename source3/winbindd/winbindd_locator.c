@@ -165,6 +165,10 @@ static const struct winbindd_child_dispatch_table locator_dispatch_table[] = {
 		.struct_cmd	= WINBINDD_DSGETDCNAME,
 		.struct_fn	= dual_dsgetdcname,
 	},{
+		.name		= "NDRCMD",
+		.struct_cmd	= WINBINDD_DUAL_NDRCMD,
+		.struct_fn	= winbindd_dual_ndrcmd,
+	},{
 		.name		= NULL,
 	}
 };

@@ -330,6 +330,7 @@ void winbind_msg_dump_domain_list(struct messaging_context *msg_ctx,
 				  struct server_id server_id,
 				  DATA_BLOB *data);
 bool winbindd_reinit_after_fork(const char *logfilename);
+struct winbindd_domain *wb_child_domain(void);
 
 /* The following definitions come from winbindd/winbindd_group.c  */
 
@@ -593,5 +594,10 @@ NTSTATUS wb_ping_recv(struct tevent_req *req,
 
 enum winbindd_result winbindd_dual_ping(struct winbindd_domain *domain,
 					struct winbindd_cli_state *state);
+
+struct rpc_pipe_client *wbint_rpccli_create(TALLOC_CTX *mem_ctx,
+					    struct winbindd_child *child);
+enum winbindd_result winbindd_dual_ndrcmd(struct winbindd_domain *domain,
+					  struct winbindd_cli_state *state);
 
 #endif /*  _WINBINDD_PROTO_H_  */
