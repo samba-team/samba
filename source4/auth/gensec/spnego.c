@@ -1029,7 +1029,8 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 						  spnego.negTokenTarg.responseToken, 
 						  &unwrapped_out);
 
-			if (NT_STATUS_IS_OK(nt_status)) {
+			if (NT_STATUS_IS_OK(nt_status)
+			    && spnego.negTokenTarg.negResult != SPNEGO_ACCEPT_COMPLETED) {
 				new_spnego = gensec_have_feature(spnego_state->sub_sec_security,
 								 GENSEC_FEATURE_NEW_SPNEGO);
 			}
