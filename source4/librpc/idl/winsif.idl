@@ -283,10 +283,17 @@ import "nbt.idl";
 		[out,ref] winsif_BrowserNames *names
 	);
 
-
 	/*****************/
 	/* Function 0x12 */
-	void WinsGetDbRecsByName();
+	WERROR winsif_WinsGetDbRecsByName(
+		[in,unique] winsif_Address *owner_address,
+		[in] boolean32 search_backward,
+		[in,unique] wrepl_nbt_name *name,
+		[in,value(name?16:0),range(0,16)] uint32 name_len,
+		[in] uint32 num_records_desired,
+		[in] boolean32 only_statics,
+		[out,ref] winsif_Records *records
+	);
 
 	/*****************/
 	/* Function 0x13 */
