@@ -399,6 +399,7 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_conte
 
 NTSTATUS sam_get_results_principal(struct ldb_context *sam_ctx,
 				   TALLOC_CTX *mem_ctx, const char *principal,
+				   const char **attrs,
 				   struct ldb_dn **domain_dn,
 				   struct ldb_message **msg)
 {			   
@@ -411,7 +412,8 @@ NTSTATUS sam_get_results_principal(struct ldb_context *sam_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	nt_status = crack_user_principal_name(sam_ctx, tmp_ctx, principal, &user_dn, domain_dn);
+	nt_status = crack_user_principal_name(sam_ctx, tmp_ctx, principal, 
+					      &user_dn, domain_dn);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
 		return nt_status;
@@ -419,7 +421,7 @@ NTSTATUS sam_get_results_principal(struct ldb_context *sam_ctx,
 	
 	/* pull the user attributes */
 	ret = gendb_search_single_extended_dn(sam_ctx, tmp_ctx, user_dn, LDB_SCOPE_BASE,
-					      msg, user_attrs, "(objectClass=*)");
+					      msg, attrs, "(objectClass=*)");
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;

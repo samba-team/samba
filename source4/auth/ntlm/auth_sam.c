@@ -330,7 +330,7 @@ NTSTATUS authsam_get_server_info_principal(TALLOC_CTX *mem_ctx,
 	}
 
 	nt_status = sam_get_results_principal(sam_ctx, tmp_ctx, principal, 
-					      &domain_dn, &msg);
+					      user_attrs, &domain_dn, &msg);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}

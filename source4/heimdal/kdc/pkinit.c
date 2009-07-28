@@ -1613,11 +1613,12 @@ match_ms_upn_san(krb5_context context,
 		 krb5_kdc_configuration *config,
 		 hx509_context hx509ctx,
 		 hx509_cert client_cert,
-		 krb5_const_principal match)
+		 HDB *clientdb,
+		 hdb_entry_ex *client)
 {
     hx509_octet_string_list list;
     krb5_principal principal = NULL;
-    int ret, found = 0;
+    int ret;
     MS_UPN_SAN upn;
     size_t size;
 
@@ -1651,32 +1652,32 @@ match_ms_upn_san(krb5_context context,
 	goto out;
     }
 
-    /*
-     * This is very wrong, but will do for now, should really and a
-     * plugin to the windc layer to very this ACL.
-    */
-    strupr(principal->realm);
-
-    if (krb5_principal_compare(context, principal, match) == TRUE)
-	found = 1;
+    if (clientdb->hdb_check_pkinit_ms_upn_match) {
+	ret = clientdb->hdb_check_pkinit_ms_upn_match(context, clientdb, client, principal);
+    } else {
+	    
+	/*
+	 * This is very wrong, but will do for a fallback
+	 */
+	strupr(principal->realm);
+	    
+	if (krb5_principal_compare(context, principal, client->entry.principal) == FALSE)
+	    ret = KRB5_KDC_ERR_CLIENT_NAME_MISMATCH;
+    }
 
 out:
     if (principal)
 	krb5_free_principal(context, principal);
     hx509_free_octet_string_list(&list);
-    if (ret)
-	return ret;
 
-    if (!found)
-	return KRB5_KDC_ERR_CLIENT_NAME_MISMATCH;
-
-    return 0;
+    return ret;
 }
 
 krb5_error_code
 _kdc_pk_check_client(krb5_context context,
 		     krb5_kdc_configuration *config,
-		     const hdb_entry_ex *client,
+		     HDB *clientdb,
+		     hdb_entry_ex *client,
 		     pk_client_params *cp,
 		     char **subject_name)
 {
@@ -1745,7 +1746,8 @@ _kdc_pk_check_client(krb5_context context,
 	ret = match_ms_upn_san(context, config,
 			       kdc_identity->hx509ctx,
 			       cp->cert,
-			       client->entry.principal);
+			       clientdb, 
+			       client);
 	if (ret == 0) {
 	    kdc_log(context, config, 5,
 		    "Found matching MS UPN SAN in certificate");

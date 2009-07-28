@@ -978,17 +978,16 @@ static krb5_error_code hdb_samba4_rename(krb5_context context, HDB *db, const ch
 	return HDB_ERR_DB_INUSE;
 }
 
-static krb5_error_code hdb_samba4_fetch_client(krb5_context context, HDB *db, 
-					struct loadparm_context *lp_ctx, 
-					TALLOC_CTX *mem_ctx, 
-					krb5_const_principal principal,
-					unsigned flags,
-					hdb_entry_ex *entry_ex) {
+static krb5_error_code hdb_samba4_lookup_client(krb5_context context, HDB *db, 
+						struct loadparm_context *lp_ctx, 
+						TALLOC_CTX *mem_ctx, 
+						krb5_const_principal principal,
+						const char **attrs,
+						struct ldb_dn **realm_dn, 
+						struct ldb_message **msg) {
 	NTSTATUS nt_status;
 	char *principal_string;
-	struct ldb_dn *realm_dn;
 	krb5_error_code ret;
-	struct ldb_message *msg = NULL;
 
 	ret = krb5_unparse_name(context, principal, &principal_string);
 	
@@ -997,8 +996,8 @@ static krb5_error_code hdb_samba4_fetch_client(krb5_context context, HDB *db,
 	}
 	
 	nt_status = sam_get_results_principal((struct ldb_context *)db->hdb_db,
-					      mem_ctx, principal_string, 
-					      &realm_dn, &msg);
+					      mem_ctx, principal_string, attrs, 
+					      realm_dn, msg);
 	free(principal_string);
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER)) {
 		return HDB_ERR_NOENTRY;
@@ -1008,9 +1007,29 @@ static krb5_error_code hdb_samba4_fetch_client(krb5_context context, HDB *db,
 		return EINVAL;
 	}
 	
+	return ret;
+}
+
+static krb5_error_code hdb_samba4_fetch_client(krb5_context context, HDB *db, 
+					       struct loadparm_context *lp_ctx, 
+					       TALLOC_CTX *mem_ctx, 
+					       krb5_const_principal principal,
+					       unsigned flags,
+					       hdb_entry_ex *entry_ex) {
+	struct ldb_dn *realm_dn;
+	krb5_error_code ret;
+	struct ldb_message *msg = NULL;
+
+	ret = hdb_samba4_lookup_client(context, db, lp_ctx, 
+				       mem_ctx, principal, user_attrs, 
+				       &realm_dn, &msg);
+	if (ret != 0) {
+		return ret;
+	}
+	
 	ret = hdb_samba4_message2entry(context, db, lp_ctx, mem_ctx, 
-				principal, HDB_SAMBA4_ENT_TYPE_CLIENT,
-				realm_dn, msg, entry_ex);
+				       principal, HDB_SAMBA4_ENT_TYPE_CLIENT,
+				       realm_dn, msg, entry_ex);
 	return ret;
 }
 
@@ -1422,6 +1441,11 @@ static krb5_error_code hdb_samba4_destroy(krb5_context context, HDB *db)
 	return 0;
 }
 
+
+/* Check if a given entry may delegate to this target principal
+ *
+ * This is currently a very nasty hack - allowing only delegation to itself. 
+ */
 krb5_error_code hdb_samba4_check_constrained_delegation(krb5_context context, HDB *db, 
 							hdb_entry_ex *entry,
 							krb5_const_principal target_principal)
@@ -1485,6 +1509,60 @@ krb5_error_code hdb_samba4_check_constrained_delegation(krb5_context context, HD
 	if (!(orig_sid && target_sid && dom_sid_equal(orig_sid, target_sid))) {
 		talloc_free(mem_ctx);
 		return KRB5KDC_ERR_BADOPTION;
+	}
+
+	talloc_free(mem_ctx);
+	return ret;
+}
+
+/* Certificates printed by a the Certificate Authority might have a
+ * slightly different form of the user principal name to that in the
+ * database.  Allow a mismatch where they both refer to the same
+ * SID */
+
+krb5_error_code hdb_samba4_check_pkinit_ms_upn_match(krb5_context context, HDB *db, 
+						     hdb_entry_ex *entry,
+						     krb5_const_principal certificate_principal)
+{
+	struct ldb_context *ldb_ctx = (struct ldb_context *)db->hdb_db;
+	struct loadparm_context *lp_ctx = talloc_get_type(ldb_get_opaque(ldb_ctx, "loadparm"), 
+							  struct loadparm_context);
+	krb5_error_code ret;
+	struct ldb_dn *realm_dn;
+	struct ldb_message *msg;
+	struct dom_sid *orig_sid;
+	struct dom_sid *target_sid;
+	struct hdb_samba4_private *p = talloc_get_type(entry->ctx, struct hdb_samba4_private);
+	const char *ms_upn_check_attrs[] = {
+		"objectSid", NULL
+	};
+	
+	TALLOC_CTX *mem_ctx = talloc_named(db, 0, "hdb_samba4_check_constrained_delegation");
+
+	if (!mem_ctx) {
+		ret = ENOMEM;
+		krb5_set_error_message(context, ret, "hdb_samba4_fetch: talloc_named() failed!");
+		return ret;
+	}
+
+	ret = hdb_samba4_lookup_client(context, db, lp_ctx, 
+				       mem_ctx, certificate_principal,
+				       ms_upn_check_attrs, &realm_dn, &msg);
+	
+	if (ret != 0) {
+		talloc_free(mem_ctx);
+		return ret;
+	}
+
+	orig_sid = samdb_result_dom_sid(mem_ctx, p->msg, "objectSid");
+	target_sid = samdb_result_dom_sid(mem_ctx, msg, "objectSid");
+
+	/* Consider these to be the same principal, even if by a different
+	 * name.  The easy and safe way to prove this is by SID
+	 * comparison */
+	if (!(orig_sid && target_sid && dom_sid_equal(orig_sid, target_sid))) {
+		talloc_free(mem_ctx);
+		return KRB5_KDC_ERR_CLIENT_NAME_MISMATCH;
 	}
 
 	talloc_free(mem_ctx);
@@ -1556,6 +1634,7 @@ NTSTATUS hdb_samba4_create_kdc(TALLOC_CTX *mem_ctx,
 
 	(*db)->hdb_auth_status = NULL;
 	(*db)->hdb_check_constrained_delegation = hdb_samba4_check_constrained_delegation;
+	(*db)->hdb_check_pkinit_ms_upn_match = hdb_samba4_check_pkinit_ms_upn_match;
 
 	return NT_STATUS_OK;
 }
