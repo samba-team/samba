@@ -615,8 +615,8 @@ SMBC_opendir_ctx(SMBCCTX *context,
                          */
 			if (!srv &&
                             !is_ipaddress(server) &&
-			    (resolve_name(server, &rem_ss, 0x1d) ||   /* LMB */
-                             resolve_name(server, &rem_ss, 0x1b) )) { /* DMB */
+			    (resolve_name(server, &rem_ss, 0x1d, false) ||   /* LMB */
+                             resolve_name(server, &rem_ss, 0x1b, false) )) { /* DMB */
 
 				fstring buserver;
 
@@ -675,7 +675,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
 					return NULL;
 				}
 			} else if (srv ||
-                                   (resolve_name(server, &rem_ss, 0x20))) {
+                                   (resolve_name(server, &rem_ss, 0x20, false))) {
 
                                 /*
                                  * If we hadn't found the server, get one now

@@ -192,29 +192,42 @@ static bool ads_try_connect(ADS_STRUCT *ads, const char *server, bool gc)
 {
 	char *srv;
 	struct NETLOGON_SAM_LOGON_RESPONSE_EX cldap_reply;
-	TALLOC_CTX *mem_ctx = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
 	bool ret = false;
 
 	if (!server || !*server) {
+		TALLOC_FREE(frame);
 		return False;
 	}
 
-	DEBUG(5,("ads_try_connect: sending CLDAP request to %s (realm: %s)\n", 
-		server, ads->server.realm));
+	if (!is_ipaddress(server)) {
+		struct sockaddr_storage ss;
+		char addr[INET6_ADDRSTRLEN];
 
-	mem_ctx = talloc_init("ads_try_connect");
-	if (!mem_ctx) {
-		DEBUG(0,("out of memory\n"));
+		if (!resolve_name(server, &ss, 0x20, true)) {
+			DEBUG(5,("ads_try_connect: unable to resolve name %s\n",
+				server ));
+			TALLOC_FREE(frame);
+			return false;
+		}
+		print_sockaddr(addr, sizeof(addr), &ss);
+		srv = talloc_strdup(frame, addr);
+	} else {
+		/* this copes with inet_ntoa brokenness */
+		srv = talloc_strdup(frame, server);
+	}
+
+	if (!srv) {
+		TALLOC_FREE(frame);
 		return false;
 	}
 
-	/* this copes with inet_ntoa brokenness */
-
-	srv = SMB_STRDUP(server);
+	DEBUG(5,("ads_try_connect: sending CLDAP request to %s (realm: %s)\n", 
+		srv, ads->server.realm));
 
 	ZERO_STRUCT( cldap_reply );
 
-	if ( !ads_cldap_netlogon_5(mem_ctx, srv, ads->server.realm, &cldap_reply ) ) {
+	if ( !ads_cldap_netlogon_5(frame, srv, ads->server.realm, &cldap_reply ) ) {
 		DEBUG(3,("ads_try_connect: CLDAP request %s failed.\n", srv));
 		ret = false;
 		goto out;
@@ -267,10 +280,10 @@ static bool ads_try_connect(ADS_STRUCT *ads, const char *server, bool gc)
 	sitename_store( cldap_reply.dns_domain, cldap_reply.client_site);
 
 	ret = true;
- out:
-	SAFE_FREE(srv);
-	TALLOC_FREE(mem_ctx);
 
+ out:
+
+	TALLOC_FREE(frame);
 	return ret;
 }
 

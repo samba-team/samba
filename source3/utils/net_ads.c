@@ -1655,7 +1655,7 @@ static int net_ads_printer_publish(struct net_context *c, int argc, const char *
 
 	/* Get printer data from SPOOLSS */
 
-	resolve_name(servername, &server_ss, 0x20);
+	resolve_name(servername, &server_ss, 0x20, false);
 
 	nt_status = cli_full_connection(&cli, global_myname(), servername,
 					&server_ss, 0,

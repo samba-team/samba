@@ -439,12 +439,12 @@ static int addr_compare(const struct sockaddr *ss1,
 	int num_interfaces = iface_count();
 	int i;
 
-	/* Sort IPv6 addresses first. */
+	/* Sort IPv4 addresses first. */
 	if (ss1->sa_family != ss2->sa_family) {
 		if (ss2->sa_family == AF_INET) {
-			return -1;
-		} else {
 			return 1;
+		} else {
+			return -1;
 		}
 	}
 
@@ -599,6 +599,38 @@ static int remove_duplicate_addrs2(struct ip_service *iplist, int count )
 	}
 
 	return count;
+}
+
+static bool prioritize_ipv4_list(struct ip_service *iplist, int count)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct ip_service *iplist_new = TALLOC_ARRAY(frame, struct ip_service, count);
+	int i, j;
+
+	if (iplist_new == NULL) {
+		TALLOC_FREE(frame);
+		return false;
+	}
+
+	j = 0;
+
+	/* Copy IPv4 first. */
+	for (i = 0; i < count; i++) {
+		if (iplist[i].ss.ss_family == AF_INET) {
+			iplist_new[j++] = iplist[i];
+		}
+	}
+
+	/* Copy IPv6. */
+	for (i = 0; i < count; i++) {
+		if (iplist[i].ss.ss_family != AF_INET) {
+			iplist_new[j++] = iplist[i];
+		}
+	}
+
+	memcpy(iplist, iplist_new, sizeof(struct ip_service)*count);
+	TALLOC_FREE(frame);
+	return true;
 }
 
 /****************************************************************************
@@ -1664,7 +1696,8 @@ NTSTATUS internal_resolve_name(const char *name,
 
 bool resolve_name(const char *name,
 		struct sockaddr_storage *return_ss,
-		int name_type)
+		int name_type,
+		bool prefer_ipv4)
 {
 	struct ip_service *ss_list = NULL;
 	char *sitename = NULL;
@@ -1680,6 +1713,19 @@ bool resolve_name(const char *name,
 						  &ss_list, &count,
 						  lp_name_resolve_order()))) {
 		int i;
+
+		if (prefer_ipv4) {
+			for (i=0; i<count; i++) {
+				if (!is_zero_addr((struct sockaddr *)&ss_list[i].ss) &&
+						!is_broadcast_addr((struct sockaddr *)&ss_list[i].ss) &&
+						(ss_list[i].ss.ss_family == AF_INET)) {
+					*return_ss = ss_list[i].ss;
+					SAFE_FREE(ss_list);
+					SAFE_FREE(sitename);
+					return True;
+				}
+			}
+		}
 
 		/* only return valid addresses for TCP connections */
 		for (i=0; i<count; i++) {
@@ -2056,7 +2102,7 @@ static NTSTATUS get_dc_list(const char *domain,
 
 		/* explicit lookup; resolve_name() will
 		 * handle names & IP addresses */
-		if (resolve_name( name, &name_ss, 0x20 )) {
+		if (resolve_name( name, &name_ss, 0x20, true )) {
 			char addr[INET6_ADDRSTRLEN];
 			print_sockaddr(addr,
 					sizeof(addr),
@@ -2084,6 +2130,13 @@ static NTSTATUS get_dc_list(const char *domain,
 	if (local_count) {
 		local_count = remove_duplicate_addrs2(return_iplist,
 				local_count );
+	}
+
+	/* For DC's we always prioritize IPv4 due to W2K3 not
+	 * supporting LDAP, KRB5 or CLDAP over IPv6. */
+
+	if (local_count && return_iplist) {
+		prioritize_ipv4_list(return_iplist, local_count);
 	}
 
 	if ( DEBUGLEVEL >= 4 ) {

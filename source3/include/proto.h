@@ -3132,7 +3132,8 @@ NTSTATUS internal_resolve_name(const char *name,
 				const char *resolve_order);
 bool resolve_name(const char *name,
 		struct sockaddr_storage *return_ss,
-		int name_type);
+		int name_type,
+		bool prefer_ipv4);
 NTSTATUS resolve_name_list(TALLOC_CTX *ctx,
 		const char *name,
 		int name_type,

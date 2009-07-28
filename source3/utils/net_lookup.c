@@ -53,7 +53,7 @@ static int net_lookup_host(struct net_context *c, int argc, const char **argv)
 		sscanf(++p,"%x",&name_type);
 	}
 
-	if (!resolve_name(name, &ss, name_type)) {
+	if (!resolve_name(name, &ss, name_type, false)) {
 		/* we deliberately use DEBUG() here to send it to stderr
 		   so scripts aren't mucked up */
 		DEBUG(0,("Didn't find %s#%02x\n", name, name_type));
@@ -72,7 +72,7 @@ static void print_ldap_srvlist(struct dns_rr_srv *dclist, int numdcs )
 	int i;
 
 	for ( i=0; i<numdcs; i++ ) {
-		if (resolve_name(dclist[i].hostname, &ss, 0x20) ) {
+		if (resolve_name(dclist[i].hostname, &ss, 0x20, true) ) {
 			char addr[INET6_ADDRSTRLEN];
 			print_sockaddr(addr, sizeof(addr), &ss);
 #ifdef HAVE_IPV6

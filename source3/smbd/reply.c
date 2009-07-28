@@ -466,7 +466,7 @@ static bool netbios_session_retarget(const char *name, int name_type)
 		sscanf(p, "%x", &retarget_type);
 	}
 
-	ret = resolve_name(retarget, &retarget_addr, retarget_type);
+	ret = resolve_name(retarget, &retarget_addr, retarget_type, false);
 	if (!ret) {
 		DEBUG(10, ("could not resolve %s\n", retarget));
 		goto fail;

@@ -2579,7 +2579,7 @@ static bool spoolss_connect_to_client(struct rpc_pipe_client **pp_pipe,
 	struct sockaddr_storage rm_addr;
 
 	if ( is_zero_addr((struct sockaddr *)client_ss) ) {
-		if ( !resolve_name( remote_machine, &rm_addr, 0x20) ) {
+		if ( !resolve_name( remote_machine, &rm_addr, 0x20, false) ) {
 			DEBUG(2,("spoolss_connect_to_client: Can't resolve address for %s\n", remote_machine));
 			return false;
 		}

@@ -679,7 +679,7 @@ static bool get_dc_name_via_netlogon(struct winbindd_domain *domain,
 
 	DEBUG(10,("rpccli_netr_GetAnyDCName returned %s\n", dcname));
 
-	if (!resolve_name(dcname, dc_ss, 0x20)) {
+	if (!resolve_name(dcname, dc_ss, 0x20, true)) {
 		return False;
 	}
 
@@ -1467,7 +1467,7 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 
 		if (*domain->dcname 
 			&& NT_STATUS_IS_OK(check_negative_conn_cache( domain->name, domain->dcname))
-			&& (resolve_name(domain->dcname, &domain->dcaddr, 0x20)))
+			&& (resolve_name(domain->dcname, &domain->dcaddr, 0x20, true)))
 		{
 			struct sockaddr_storage *addrs = NULL;
 			int num_addrs = 0;

@@ -393,7 +393,7 @@ bool net_find_server(struct net_context *c,
 		}
 	} else if (*server_name) {
 		/* resolve the IP address */
-		if (!resolve_name(*server_name, server_ss, 0x20))  {
+		if (!resolve_name(*server_name, server_ss, 0x20, false))  {
 			DEBUG(1,("Unable to resolve server name\n"));
 			return false;
 		}
@@ -420,8 +420,8 @@ bool net_find_server(struct net_context *c,
 		struct sockaddr_storage msbrow_ss;
 		char addr[INET6_ADDRSTRLEN];
 
-		/*  if (!resolve_name(MSBROWSE, &msbrow_ip, 1)) */
-		if (!resolve_name(d, &msbrow_ss, 0x1B))  {
+		/*  if (!resolve_name(MSBROWSE, &msbrow_ip, 1, false)) */
+		if (!resolve_name(d, &msbrow_ss, 0x1B, false))  {
 			DEBUG(1,("Unable to resolve domain browser via name lookup\n"));
 			return false;
 		}
@@ -431,7 +431,7 @@ bool net_find_server(struct net_context *c,
 	} else if (flags & NET_FLAGS_MASTER) {
 		struct sockaddr_storage brow_ss;
 		char addr[INET6_ADDRSTRLEN];
-		if (!resolve_name(d, &brow_ss, 0x1D))  {
+		if (!resolve_name(d, &brow_ss, 0x1D, false))  {
 				/* go looking for workgroups */
 			DEBUG(1,("Unable to resolve master browser via name lookup\n"));
 			return false;

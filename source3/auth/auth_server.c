@@ -60,7 +60,7 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 		}
 		strupper_m(desthost);
 
-		if(!resolve_name( desthost, &dest_ss, 0x20)) {
+		if(!resolve_name( desthost, &dest_ss, 0x20, false)) {
 			DEBUG(1,("server_cryptkey: Can't resolve address for %s\n",desthost));
 			continue;
 		}

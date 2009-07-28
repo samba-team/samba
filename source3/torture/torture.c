@@ -5633,7 +5633,7 @@ static bool run_tldap(int dummy)
 	struct tevent_req *req;
 	char *basedn;
 
-	if (!resolve_name(host, &addr, 0)) {
+	if (!resolve_name(host, &addr, 0, false)) {
 		d_printf("could not find host %s\n", host);
 		return false;
 	}

@@ -37,7 +37,7 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 
 	*err_str = NULL;
 
-	if(!resolve_name( remote_machine, &ss, 0x20)) {
+	if(!resolve_name( remote_machine, &ss, 0x20, false)) {
 		if (asprintf(err_str, "Unable to find an IP address for machine "
 			 "%s.\n", remote_machine) == -1) {
 			*err_str = NULL;
