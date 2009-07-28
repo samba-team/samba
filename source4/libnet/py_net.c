@@ -27,10 +27,15 @@
 /* FIXME: This prototype should be in param/pyparam.h */
 struct loadparm_context *py_default_loadparm_context(TALLOC_CTX *mem_ctx);
 
-static struct libnet_context *py_net_ctx(PyObject *obj, struct tevent_context *ev)
+static struct libnet_context *py_net_ctx(PyObject *obj, struct tevent_context *ev, struct cli_credentials *creds)
 {
-	/* FIXME: Use obj */
-	return libnet_context_init(ev, py_default_loadparm_context(NULL));
+/* FIXME: Use obj */
+	struct libnet_context *libnet;
+	libnet = libnet_context_init(ev, py_default_loadparm_context(NULL));
+	if (!libnet) {
+		return NULL;
+	}
+	libnet->credentials = creds;
 }
 
 static PyObject *py_net_join(PyObject *cls, PyObject *args, PyObject *kwargs)
@@ -41,11 +46,13 @@ static PyObject *py_net_join(PyObject *cls, PyObject *args, PyObject *kwargs)
 	TALLOC_CTX *mem_ctx;
 	struct tevent_context *ev;
 	struct libnet_context *libnet_ctx;
-	const char *kwnames[] = { "domain_name", "netbios_name", "join_type", "level", NULL };
+	struct cli_credentials *creds;
+	PyObject *py_creds;	
+	const char *kwnames[] = { "domain_name", "netbios_name", "join_type", "level", "credentials", NULL };
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "ssii:Join", discard_const_p(char *, kwnames), 
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "ssiiO:Join", discard_const_p(char *, kwnames), 
 					 &r.in.domain_name, &r.in.netbios_name, 
-					 &r.in.join_type, &r.in.level))
+					 &r.in.join_type, &r.in.level, &py_creds))
 		return NULL;
 
 	/* FIXME: we really need to get a context from the caller or we may end
@@ -53,7 +60,13 @@ static PyObject *py_net_join(PyObject *cls, PyObject *args, PyObject *kwargs)
 	ev = s4_event_context_init(NULL);
 	mem_ctx = talloc_new(ev);
 
-	libnet_ctx = py_net_ctx(cls, ev);
+	creds = cli_credentials_from_py_object(py_creds);
+	if (creds == NULL) {
+		PyErr_SetString(PyExc_TypeError, "Expected credentials object");
+		return NULL;
+	}
+
+	libnet_ctx = py_net_ctx(cls, ev, creds);
 
 	status = libnet_Join(libnet_ctx, mem_ctx, &r);
 	if (NT_STATUS_IS_ERR(status)) {
