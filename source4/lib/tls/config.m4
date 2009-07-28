@@ -11,7 +11,7 @@ AS_HELP_STRING([--enable-gnutls],[Turn on gnutls support (default=yes)]),
 
 
 if test x$use_gnutls = xauto && pkg-config --exists gnutls; then
-	SMB_EXT_LIB_FROM_PKGCONFIG(GNUTLS, gnutls < 2.6.0, 
+	SMB_EXT_LIB_FROM_PKGCONFIG(GNUTLS, gnutls >= 1.4.0, 
 							   [use_gnutls=yes], 
 							   [use_gnutls=no])
 fi
