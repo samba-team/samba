@@ -20,6 +20,7 @@
 #include "includes.h"
 #include <Python.h>
 #include "libnet.h"
+#include "auth/credentials/pycredentials.h"
 #include "libcli/security/security.h"
 #include "lib/events/events.h"
 #include "param/param.h"
@@ -35,7 +36,8 @@ static struct libnet_context *py_net_ctx(PyObject *obj, struct tevent_context *e
 	if (!libnet) {
 		return NULL;
 	}
-	libnet->credentials = creds;
+	libnet->cred = creds;
+	return libnet;
 }
 
 static PyObject *py_net_join(PyObject *cls, PyObject *args, PyObject *kwargs)
