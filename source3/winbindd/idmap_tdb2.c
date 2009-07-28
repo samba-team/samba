@@ -432,6 +432,55 @@ failed:
 	return ret;
 }
 
+struct idmap_tdb2_set_mapping_context {
+	const char *ksidstr;
+	const char *kidstr;
+};
+
+static NTSTATUS idmap_tdb2_set_mapping_action(struct db_context *db,
+					      void *private_data)
+{
+	TDB_DATA data;
+	NTSTATUS ret;
+	struct idmap_tdb2_set_mapping_context *state;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+
+	DEBUG(10, ("Storing %s <-> %s map\n", state->ksidstr, state->kidstr));
+
+	state = (struct idmap_tdb2_set_mapping_context *)private_data;
+
+	/* check wheter sid mapping is already present in db */
+	data = dbwrap_fetch_bystring(db, tmp_ctx, state->ksidstr);
+	if (data.dptr) {
+		ret = NT_STATUS_OBJECT_NAME_COLLISION;
+		goto done;
+	}
+
+	ret = dbwrap_store_bystring(db, state->ksidstr,
+				    string_term_tdb_data(state->kidstr),
+				    TDB_INSERT);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0, ("Error storing SID -> ID: %s\n", nt_errstr(ret)));
+		goto done;
+	}
+
+	ret = dbwrap_store_bystring(db, state->kidstr,
+				    string_term_tdb_data(state->ksidstr),
+				    TDB_INSERT);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0, ("Error storing ID -> SID: %s\n", nt_errstr(ret)));
+		/* try to remove the previous stored SID -> ID map */
+		dbwrap_delete_bystring(db, state->ksidstr);
+		goto done;
+	}
+
+	DEBUG(10,("Stored %s <-> %s\n", state->ksidstr, state->kidstr));
+
+done:
+	talloc_free(tmp_ctx);
+	return ret;
+}
+
 
 /*
   run a script to perform a mapping
@@ -771,14 +820,13 @@ done:
 /*
   set a mapping. 
 */
+
 static NTSTATUS idmap_tdb2_set_mapping(struct idmap_domain *dom, const struct id_map *map)
 {
 	struct idmap_tdb2_context *ctx;
 	NTSTATUS ret;
-	TDB_DATA data;
 	char *ksidstr, *kidstr;
-	int res;
-	bool started_transaction = false;
+	struct idmap_tdb2_set_mapping_context state;
 
 	if (!map || !map->sid) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -817,55 +865,13 @@ static NTSTATUS idmap_tdb2_set_mapping(struct idmap_domain *dom, const struct id
 		goto done;
 	}
 
-	DEBUG(10, ("Storing %s <-> %s map\n", ksidstr, kidstr));
+	state.ksidstr = ksidstr;
+	state.kidstr = kidstr;
 
-	res = idmap_tdb2->transaction_start(idmap_tdb2);
-	if (res != 0) {
-		DEBUG(1,(__location__ " Failed to start transaction\n"));
-		ret = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
-
-	started_transaction = true;
-	
-	/* check wheter sid mapping is already present in db */
-	data = dbwrap_fetch_bystring(idmap_tdb2, ksidstr, ksidstr);
-	if (data.dptr) {
-		ret = NT_STATUS_OBJECT_NAME_COLLISION;
-		goto done;
-	}
-
-	ret = dbwrap_store_bystring(idmap_tdb2, ksidstr, string_term_tdb_data(kidstr),
-				  TDB_INSERT);
-	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(0, ("Error storing SID -> ID: %s\n", nt_errstr(ret)));
-		goto done;
-	}
-	ret = dbwrap_store_bystring(idmap_tdb2, kidstr, string_term_tdb_data(ksidstr),
-				  TDB_INSERT);
-	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(0, ("Error storing ID -> SID: %s\n", nt_errstr(ret)));
-		/* try to remove the previous stored SID -> ID map */
-		dbwrap_delete_bystring(idmap_tdb2, ksidstr);
-		goto done;
-	}
-
-	started_transaction = false;
-
-	res = idmap_tdb2->transaction_commit(idmap_tdb2);
-	if (res != 0) {
-		DEBUG(1,(__location__ " Failed to commit transaction\n"));
-		ret = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
-
-	DEBUG(10,("Stored %s <-> %s\n", ksidstr, kidstr));
-	ret = NT_STATUS_OK;
+	ret = dbwrap_trans_do(idmap_tdb2, idmap_tdb2_set_mapping_action,
+			      &state);
 
 done:
-	if (started_transaction) {
-		idmap_tdb2->transaction_cancel(idmap_tdb2);
-	}
 	talloc_free(ksidstr);
 	talloc_free(kidstr);
 	return ret;
