@@ -146,7 +146,7 @@ static int ctdb_repack_tdb(struct tdb_context *tdb, TALLOC_CTX *mem_ctx)
 
 static int ctdb_repack_db(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx)
 {
-	uint32_t repack_limit = 10000;   /* should be made tunable */
+	uint32_t repack_limit = ctdb_db->ctdb->tunable.repack_limit;
 	const char *name = ctdb_db->db_name;
 	int size = tdb_freelist_size(ctdb_db->ltdb->tdb);
 

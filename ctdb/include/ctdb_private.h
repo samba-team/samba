@@ -110,6 +110,7 @@ struct ctdb_tunable {
 	uint32_t verify_recovery_lock;
 	uint32_t vacuum_default_interval;
 	uint32_t vacuum_max_run_time;
+	uint32_t repack_limit;
 };
 
 /*
