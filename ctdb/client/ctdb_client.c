@@ -3764,3 +3764,49 @@ int ctdb_ctrl_setnatgwstate(struct ctdb_context *ctdb, struct timeval timeout, u
 
 	return 0;
 }
+
+/*
+  set the lmaster role for a node
+ */
+int ctdb_ctrl_setlmasterrole(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t lmasterrole)
+{
+	int ret;
+	TDB_DATA data;
+	int32_t res;
+
+	data.dsize = sizeof(lmasterrole);
+	data.dptr  = (uint8_t *)&lmasterrole;
+
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_SET_LMASTERROLE, 0, data, 
+			   NULL, NULL, &res, &timeout, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for setlmasterrole failed\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
+/*
+  set the recmaster role for a node
+ */
+int ctdb_ctrl_setrecmasterrole(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t recmasterrole)
+{
+	int ret;
+	TDB_DATA data;
+	int32_t res;
+
+	data.dsize = sizeof(recmasterrole);
+	data.dptr  = (uint8_t *)&recmasterrole;
+
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_SET_RECMASTERROLE, 0, data, 
+			   NULL, NULL, &res, &timeout, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for setrecmasterrole failed\n"));
+		return -1;
+	}
+
+	return 0;
+}

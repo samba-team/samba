@@ -483,6 +483,32 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return 0;
 	}
 
+	case CTDB_CONTROL_SET_LMASTERROLE: {
+		uint32_t lmasterrole;
+
+		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));		
+		lmasterrole = *(uint32_t *)indata.dptr;
+		if (lmasterrole == 0) {
+			ctdb->capabilities &= ~CTDB_CAP_LMASTER;
+		} else {
+			ctdb->capabilities |= CTDB_CAP_LMASTER;
+		}
+		return 0;
+	}
+
+	case CTDB_CONTROL_SET_RECMASTERROLE: {
+		uint32_t recmasterrole;
+
+		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));		
+		recmasterrole = *(uint32_t *)indata.dptr;
+		if (recmasterrole == 0) {
+			ctdb->capabilities &= ~CTDB_CAP_RECMASTER;
+		} else {
+			ctdb->capabilities |= CTDB_CAP_RECMASTER;
+		}
+		return 0;
+	}
+
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;

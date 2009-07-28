@@ -472,15 +472,10 @@ RecoveryBanPeriod   = 300
       </para>
 
       <para>
-      LVS capability means that the node is participating in LVS, a mode
+      LVS capabile means that the node is participating in LVS, a mode
       where the entire CTDB cluster uses one single ip address for the
       entire cluster instead of using public ip address failover.
       This is an alternative to using a loadbalancing layer-4 switch.
-      </para>
-
-      <para>
-      NATGW capability means that the node participates in a NATGW group.
-      This flag can be modified using "ctdb setnatgwstate {on|off}"
       </para>
 
       <para>
@@ -490,7 +485,6 @@ RecoveryBanPeriod   = 300
 RECMASTER: YES
 LMASTER: YES
 LVS: NO
-NATGW: NO
       </screen>
 
     </refsect2>

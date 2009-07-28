@@ -576,6 +576,8 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_STOP_NODE               = 101,
 		    CTDB_CONTROL_CONTINUE_NODE           = 102,
 		    CTDB_CONTROL_SET_NATGWSTATE          = 103,
+		    CTDB_CONTROL_SET_LMASTERROLE         = 104,
+		    CTDB_CONTROL_SET_RECMASTERROLE       = 105,
 };	
 
 /*

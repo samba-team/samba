@@ -1,11 +1,11 @@
 .\"     Title: ctdbd
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
-.\"      Date: 07/28/2009
+.\"      Date: 07/09/2009
 .\"    Manual: 
 .\"    Source: 
 .\"
-.TH "CTDBD" "1" "07/28/2009" "" ""
+.TH "CTDBD" "1" "07/09/2009" "" ""
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -508,20 +508,6 @@ The NAT\-GW node is assigned the CTDB_NATGW_PUBLIC_IP to the designated interfac
 All other nodes in the group are configured with a default route of metric 10 pointing to the designated NAT GW node\.
 .PP
 This is implemented in the 11\.natgw eventscript\. Please see the eventscript for further information\.
-.SS "Activating NATGW without forcing a cluster restart"
-.PP
-Normally you would update the configuration and restart the nodes to activate NATGW\. It is however also possible to manually start NATGW without restarting CTDB, but it does require a recovery\.
-.PP
-To activate NATGW functionality on a cluster without restarting the actual nodes you can use the following process :
-.PP
-Activating NATGW on a running system
-.RS 4
-Configure NATGW as described above on all nodes\.
-Run "echo 3 > /proc/sys/net/ipv4/conf/all/arp_ignore" on all nodes\.
-Run "echo 2 > /proc/sys/net/ipv4/conf/all/arp_announce" on all nodes\.
-Run "ctdb setnatgwstate on" on all nodes\.
-Force a recovery by running "ctdb recover"\.
-.RE
 .SH "CLAMAV DAEMON"
 .PP
 CTDB has support to manage the popular anti\-virus daemon ClamAV\. This support is implemented through the eventscript : /etc/ctdb/events\.d/31\.clamd\.

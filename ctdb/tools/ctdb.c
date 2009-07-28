@@ -2428,7 +2428,7 @@ static int control_setreclock(struct ctdb_context *ctdb, int argc, const char **
 }
 
 /*
-  set the natgw state ot on/off
+  set the natgw state on/off
  */
 static int control_setnatgwstate(struct ctdb_context *ctdb, int argc, const char **argv)
 {
@@ -2450,6 +2450,64 @@ static int control_setnatgwstate(struct ctdb_context *ctdb, int argc, const char
 	ret = ctdb_ctrl_setnatgwstate(ctdb, TIMELIMIT(), options.pnn, natgwstate);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("Unable to set the natgw state for node %u\n", options.pnn));
+		return ret;
+	}
+
+	return 0;
+}
+
+/*
+  set the lmaster role on/off
+ */
+static int control_setlmasterrole(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+	uint32_t lmasterrole;
+
+	if (argc == 0) {
+		usage();
+	}
+
+	if (!strcmp(argv[0], "on")) {
+		lmasterrole = 1;
+	} else if (!strcmp(argv[0], "off")) {
+		lmasterrole = 0;
+	} else {
+		usage();
+	}
+
+	ret = ctdb_ctrl_setlmasterrole(ctdb, TIMELIMIT(), options.pnn, lmasterrole);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to set the lmaster role for node %u\n", options.pnn));
+		return ret;
+	}
+
+	return 0;
+}
+
+/*
+  set the recmaster role on/off
+ */
+static int control_setrecmasterrole(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+	uint32_t recmasterrole;
+
+	if (argc == 0) {
+		usage();
+	}
+
+	if (!strcmp(argv[0], "on")) {
+		recmasterrole = 1;
+	} else if (!strcmp(argv[0], "off")) {
+		recmasterrole = 0;
+	} else {
+		usage();
+	}
+
+	ret = ctdb_ctrl_setrecmasterrole(ctdb, TIMELIMIT(), options.pnn, recmasterrole);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to set the recmaster role for node %u\n", options.pnn));
 		return ret;
 	}
 
@@ -3222,6 +3280,8 @@ static const struct {
 	{ "getreclock",       control_getreclock,	false,	false, "Show the reclock file of a node"},
 	{ "setreclock",       control_setreclock,	false,	false, "Set/clear the reclock file of a node", "[filename]"},
 	{ "setnatgwstate",    control_setnatgwstate,	false,	false, "Set NATGW state to on/off", "{on|off}"},
+	{ "setlmasterrole",   control_setlmasterrole,	false,	false, "Set LMASTER role to on/off", "{on|off}"},
+	{ "setrecmasterrole", control_setrecmasterrole,	false,	false, "Set RECMASTER role to on/off", "{on|off}"},
 };
 
 /*
