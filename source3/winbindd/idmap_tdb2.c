@@ -193,15 +193,70 @@ static NTSTATUS idmap_tdb2_alloc_init(const char *params)
 /*
   Allocate a new id. 
 */
-static NTSTATUS idmap_tdb2_allocate_id(struct unixid *xid)
-{
-	bool ret;
+
+struct idmap_tdb2_allocate_id_context {
 	const char *hwmkey;
 	const char *hwmtype;
 	uint32_t high_hwm;
 	uint32_t hwm;
-	int res;
+};
+
+static NTSTATUS idmap_tdb2_allocate_id_action(struct db_context *db,
+					      void *private_data)
+{
+	NTSTATUS ret;
+	uint32_t res;
+	struct idmap_tdb2_allocate_id_context *state;
+	uint32_t hwm;
+
+	state = (struct idmap_tdb2_allocate_id_context *)private_data;
+
+	hwm = dbwrap_fetch_int32(db, state->hwmkey);
+	if (hwm == -1) {
+		ret = NT_STATUS_INTERNAL_DB_ERROR;
+		goto done;
+	}
+
+	/* check it is in the range */
+	if (hwm > state->high_hwm) {
+		DEBUG(1, ("Fatal Error: %s range full!! (max: %lu)\n",
+			  state->hwmtype, (unsigned long)state->high_hwm));
+		ret = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* fetch a new id and increment it */
+	res = dbwrap_change_uint32_atomic(db, state->hwmkey, &hwm, 1);
+	if (res == -1) {
+		DEBUG(1, ("Fatal error while fetching a new %s value\n!",
+			  state->hwmtype));
+		ret = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* recheck it is in the range */
+	if (hwm > state->high_hwm) {
+		DEBUG(1, ("Fatal Error: %s range full!! (max: %lu)\n",
+			  state->hwmtype, (unsigned long)state->high_hwm));
+		ret = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	ret = NT_STATUS_OK;
+	state->hwm = hwm;
+
+done:
+	return ret;
+}
+
+static NTSTATUS idmap_tdb2_allocate_id(struct unixid *xid)
+{
+	const char *hwmkey;
+	const char *hwmtype;
+	uint32_t high_hwm;
+	uint32_t hwm;
 	NTSTATUS status;
+	struct idmap_tdb2_allocate_id_context state;
 
 	status = idmap_tdb2_open_db();
 	NT_STATUS_NOT_OK_RETURN(status);
@@ -226,51 +281,22 @@ static NTSTATUS idmap_tdb2_allocate_id(struct unixid *xid)
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	res = idmap_tdb2->transaction_start(idmap_tdb2);
-	if (res != 0) {
-		DEBUG(1,(__location__ " Failed to start transaction\n"));
-		return NT_STATUS_UNSUCCESSFUL;
+	state.hwm = hwm;
+	state.high_hwm = high_hwm;
+	state.hwmtype = hwmtype;
+	state.hwmkey = hwmkey;
+
+	status = dbwrap_trans_do(idmap_tdb2, idmap_tdb2_allocate_id_action,
+				 &state);
+
+	if (NT_STATUS_IS_OK(status)) {
+		xid->id = state.hwm;
+		DEBUG(10,("New %s = %d\n", hwmtype, hwm));
+	} else {
+		DEBUG(1, ("Error allocating a new %s\n", hwmtype));
 	}
 
-	if ((hwm = dbwrap_fetch_int32(idmap_tdb2, hwmkey)) == -1) {
-		idmap_tdb2->transaction_cancel(idmap_tdb2);
-		return NT_STATUS_INTERNAL_DB_ERROR;
-	}
-
-	/* check it is in the range */
-	if (hwm > high_hwm) {
-		DEBUG(1, ("Fatal Error: %s range full!! (max: %lu)\n", 
-			  hwmtype, (unsigned long)high_hwm));
-		idmap_tdb2->transaction_cancel(idmap_tdb2);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	/* fetch a new id and increment it */
-	ret = dbwrap_change_uint32_atomic(idmap_tdb2, hwmkey, &hwm, 1);
-	if (ret == -1) {
-		DEBUG(1, ("Fatal error while fetching a new %s value\n!", hwmtype));
-		idmap_tdb2->transaction_cancel(idmap_tdb2);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	/* recheck it is in the range */
-	if (hwm > high_hwm) {
-		DEBUG(1, ("Fatal Error: %s range full!! (max: %lu)\n", 
-			  hwmtype, (unsigned long)high_hwm));
-		idmap_tdb2->transaction_cancel(idmap_tdb2);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	res = idmap_tdb2->transaction_commit(idmap_tdb2);
-	if (res != 0) {
-		DEBUG(1,(__location__ " Failed to commit transaction\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	
-	xid->id = hwm;
-	DEBUG(10,("New %s = %d\n", hwmtype, hwm));
-
-	return NT_STATUS_OK;
+	return status;
 }
 
 /*
