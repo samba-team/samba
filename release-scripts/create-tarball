@@ -197,6 +197,14 @@ function main
 
     pushd ../samba-${version}
 
+    # Remove RFCs as they are non-free content (with a strict interpretation of
+    # the DFSG)
+
+    if [ -d source4 ]; then
+	echo "Removing RFCs"
+	find source4/ -name "rfc*.txt" -exec rm -f {} \;
+    fi
+
     packaging/bin/update-pkginfo ${version} 1 ""
 
     buildDocs
