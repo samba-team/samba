@@ -33,6 +33,8 @@ case $cmd in
 	echo 3 > /proc/sys/net/ipv4/conf/all/arp_ignore
 	# do not send out arp requests from loopback addresses
 	echo 2 > /proc/sys/net/ipv4/conf/all/arp_announce
+	# update capabilities to show we are using natgw
+	ctdb setnatgwstate on
 	;;
 
      recovered)
