@@ -45,7 +45,129 @@ struct ctdb_vacuum_handle {
 	struct ctdb_vacuum_child_context *child_ctx;
 };
 
+
 static void ctdb_vacuum_event(struct event_context *ev, struct timed_event *te, struct timeval t, void *private_data);
+
+struct traverse_state {
+	bool error;
+	struct tdb_context *dest_db;
+};
+
+/*
+  traverse function for repacking
+ */
+static int repack_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *private)
+{
+	struct traverse_state *state = (struct traverse_state *)private;
+	if (tdb_store(state->dest_db, key, data, TDB_INSERT) != 0) {
+		state->error = true;
+		return -1;
+	}
+	return 0;
+}
+
+/*
+  repack a tdb
+ */
+static int ctdb_repack_tdb(struct tdb_context *tdb, TALLOC_CTX *mem_ctx)
+{
+	struct tdb_context *tmp_db;
+	struct traverse_state *state;
+
+	state = talloc(mem_ctx, struct traverse_state);
+	if (!state) {
+		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
+		return -1;
+	}
+
+	if (tdb_transaction_start(tdb) != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to start transaction\n"));
+		return -1;
+	}
+
+	tmp_db = tdb_open("tmpdb", tdb_hash_size(tdb), TDB_INTERNAL, O_RDWR|O_CREAT, 0);
+	if (tmp_db == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to create tmp_db\n"));
+		tdb_transaction_cancel(tdb);
+		return -1;
+	}
+
+	state->error = false;
+	state->dest_db = tmp_db;
+
+	if (tdb_traverse_read(tdb, repack_traverse, state) == -1) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to traverse copying out\n"));
+		tdb_transaction_cancel(tdb);
+		tdb_close(tmp_db);
+		return -1;		
+	}
+
+	if (state->error) {
+		DEBUG(DEBUG_ERR,(__location__ " Error during traversal\n"));
+		tdb_transaction_cancel(tdb);
+		tdb_close(tmp_db);
+		return -1;
+	}
+
+	if (tdb_wipe_all(tdb) != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to wipe database\n"));
+		tdb_transaction_cancel(tdb);
+		tdb_close(tmp_db);
+		return -1;
+	}
+
+	state->error = false;
+	state->dest_db = tdb;
+
+	if (tdb_traverse_read(tmp_db, repack_traverse, state) == -1) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to traverse copying back\n"));
+		tdb_transaction_cancel(tdb);
+		tdb_close(tmp_db);
+		return -1;		
+	}
+
+	if (state->error) {
+		DEBUG(DEBUG_ERR,(__location__ " Error during second traversal\n"));
+		tdb_transaction_cancel(tdb);
+		tdb_close(tmp_db);
+		return -1;
+	}
+
+	tdb_close(tmp_db);
+
+	if (tdb_transaction_commit(tdb) != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to commit\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
+
+static int ctdb_repack_db(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx)
+{
+	uint32_t repack_limit = 10000;   /* should be made tunable */
+	const char *name = ctdb_db->db_name;
+	int size = tdb_freelist_size(ctdb_db->ltdb->tdb);
+
+	if (size == -1) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to get freelist size for '%s'\n", name));
+		return -1;
+	}
+
+	if (size <= repack_limit) {
+		return 0;
+	}
+
+	DEBUG(DEBUG_ERR,("Repacking %s with %u freelist entries\n", name, size));
+
+	if (ctdb_repack_tdb(ctdb_db->ltdb->tdb, mem_ctx) != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to repack '%s'\n", name));
+		return -1;
+	}
+
+	return 0;
+}
 
 static int vacuum_child_destructor(struct ctdb_vacuum_child_context *child_ctx)
 {
@@ -162,7 +284,10 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
 		char cc = 0;
 		close(child_ctx->fd[0]);
 
-		DEBUG(DEBUG_ERR,("Child process doing vacuuming stuff on db %s\n", ctdb_db->db_name));
+		/* 
+		 * repack the db; next patch will include vacuuming here
+		 */
+		cc = ctdb_repack_db(ctdb_db, child_ctx);
 
 		write(child_ctx->fd[1], &cc, 1);
 		_exit(0);
