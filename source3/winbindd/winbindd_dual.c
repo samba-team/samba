@@ -386,7 +386,6 @@ struct winbindd_async_request {
 	void *private_data;
 };
 
-static bool fork_domain_child(struct winbindd_child *child);
 static void async_request_done(struct tevent_req *req);
 
 void async_request(TALLOC_CTX *mem_ctx, struct winbindd_child *child,
