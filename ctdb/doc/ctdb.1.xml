@@ -701,6 +701,35 @@ Reclock file:/gpfs/.ctdb/shared
       </para>
     </refsect2>
 
+    <refsect2><title>setlmasterrole &lt;on|off&gt;</title>
+      <para>
+	This command is used ot enable/disable the LMASTER capability for a node at runtime. This capability determines whether or not a node can be used as an LMASTER for records in the database. A node that does not have the LMASTER capability will not show up in the vnnmap.
+      </para>
+
+      <para>
+	Nodes will by default have this capability, but it can be stripped off nodes by the setting in the sysconfig file or by using this command.
+      </para>
+      <para>
+	Once this setting has been enabled/disabled, you need to perform a recovery for it to take effect.
+      </para>
+      <para>
+	See also "ctdb getcapabilities"
+      </para>
+    </refsect2>
+
+    <refsect2><title>setrecmasterrole &lt;on|off&gt;</title>
+      <para>
+	This command is used ot enable/disable the RECMASTER capability for a node at runtime. This capability determines whether or not a node can be used as an RECMASTER for the cluster. A node that does not have the RECMASTER capability can not win a recmaster election. A node that already is the recmaster for the cluster when the capability is stripped off the node will remain the recmaster until the next cluster election.
+      </para>
+
+      <para>
+	Nodes will by default have this capability, but it can be stripped off nodes by the setting in the sysconfig file or by using this command.
+      </para>
+      <para>
+	See also "ctdb getcapabilities"
+      </para>
+    </refsect2>
+
     <refsect2><title>killtcp &lt;srcip:port&gt; &lt;dstip:port&gt;</title>
       <para>
         This command will kill the specified TCP connection by issuing a

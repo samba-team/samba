@@ -1,11 +1,11 @@
 .\"     Title: ctdb
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
-.\"      Date: 07/09/2009
+.\"      Date: 07/28/2009
 .\"    Manual: 
 .\"    Source: 
 .\"
-.TH "CTDB" "1" "07/09/2009" "" ""
+.TH "CTDB" "1" "07/28/2009" "" ""
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -481,6 +481,22 @@ This command will trigger the recovery daemon to do a cluster recovery\.
 .SS "ipreallocate"
 .PP
 This command will force the recovery master to perform a full ip reallocation process and redistribute all ip addresses\. This is useful to "reset" the allocations back to its default state if they have been changed using the "moveip" command\. While a "recover" will also perform this reallocation, a recovery is much more hevyweight since it will also rebuild all the databases\.
+.SS "setlmasterrole <on|off>"
+.PP
+This command is used ot enable/disable the LMASTER capability for a node at runtime\. This capability determines whether or not a node can be used as an LMASTER for records in the database\. A node that does not have the LMASTER capability will not show up in the vnnmap\.
+.PP
+Nodes will by default have this capability, but it can be stripped off nodes by the setting in the sysconfig file or by using this command\.
+.PP
+Once this setting has been enabled/disabled, you need to perform a recovery for it to take effect\.
+.PP
+See also "ctdb getcapabilities"
+.SS "setrecmasterrole <on|off>"
+.PP
+This command is used ot enable/disable the RECMASTER capability for a node at runtime\. This capability determines whether or not a node can be used as an RECMASTER for the cluster\. A node that does not have the RECMASTER capability can not win a recmaster election\. A node that already is the recmaster for the cluster when the capability is stripped off the node will remain the recmaster until the next cluster election\.
+.PP
+Nodes will by default have this capability, but it can be stripped off nodes by the setting in the sysconfig file or by using this command\.
+.PP
+See also "ctdb getcapabilities"
 .SS "killtcp <srcip:port> <dstip:port>"
 .PP
 This command will kill the specified TCP connection by issuing a TCP RST to the srcip:port endpoint\. This is a command used by the ctdb eventscripts\.
