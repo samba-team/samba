@@ -1679,8 +1679,7 @@ static int control_stop(struct ctdb_context *ctdb, int argc, const char **argv)
 	do {
 		ret = ctdb_ctrl_stop_node(ctdb, TIMELIMIT(), options.pnn);
 		if (ret != 0) {
-			DEBUG(DEBUG_ERR, ("Unable to stop node %u\n", options.pnn));
-			return ret;
+			DEBUG(DEBUG_ERR, ("Unable to stop node %u   try again\n", options.pnn));
 		}
 	
 		sleep(1);
