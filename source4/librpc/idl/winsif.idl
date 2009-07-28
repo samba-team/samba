@@ -1,27 +1,100 @@
+#include "idl_types.h"
+
+import "nbt.idl";
+
 [
 	uuid("45f52c28-7f9f-101a-b52b-08002b2efabe"),
 	version(1.0),
-	helpstring("WINS Administration Interface1")
+	helpstring("WINS Administration Interface1"),
+	pointer_default(unique)
 ] interface winsif
 {
+	/*****************/
+	/* Function 0x00 */
 	void WinsRecordAction();
+
+	/*****************/
+	/* Function 0x01 */
 	void WinsStatus();
+
+	/*****************/
+	/* Function 0x02 */
 	void WinsTrigger();
+
+	/*****************/
+	/* Function 0x03 */
 	void WinsDoStaticInit();
+
+	/*****************/
+	/* Function 0x04 */
 	void WinsDoScavenging();
+
+	/*****************/
+	/* Function 0x05 */
 	void WinsGetDbRecs();
+
+	/*****************/
+	/* Function 0x06 */
 	void WinsTerm();
+
+	/*****************/
+	/* Function 0x07 */
 	void WinsBackup();
+
+	/*****************/
+	/* Function 0x08 */
 	void WinsDelDbRecs();
+
+	/*****************/
+	/* Function 0x09 */
 	void WinsPullRange();
+
+	/*****************/
+	/* Function 0x0A */
 	void WinsSetPriorityClass();
+
+	/*****************/
+	/* Function 0x0B */
 	void WinsResetCounters();
+
+	/*****************/
+	/* Function 0x0C */
 	void WinsWorkerThreadUpdate();
+
+	/*****************/
+	/* Function 0x0D */
 	void WinsGetNameAndAdd();
+
+	/*****************/
+	/* Function 0x0E */
 	void WinsGetBrowserNames_Old();
+
+	/*****************/
+	/* Function 0x0F */
 	void WinsDeleteWins();
+
+	/*****************/
+	/* Function 0x10 */
 	void WinsSetFlags();
+
+	/*****************/
+	/* Function 0x11 */
+	void WinsGetBrowserNames();
+
+
+	/*****************/
+	/* Function 0x12 */
 	void WinsGetDbRecsByName();
+
+	/*****************/
+	/* Function 0x13 */
+	void WinsStatusNew();
+
+	/*****************/
+	/* Function 0x14 */
 	void WinsStatusWHdl();
+
+	/*****************/
+	/* Function 0x15 */
 	void WinsDoScanvenging2();
 }
