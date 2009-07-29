@@ -67,7 +67,82 @@ import "nbt.idl";
 
 	/*****************/
 	/* Function 0x01 */
-	void WinsStatus();
+	typedef struct {
+		winsif_Address address;
+		hyper version_number;
+	} winsif_AddressVersionMap;
+
+	typedef enum {
+		WINSIF_PRIORITY_NORMAL	= 0x0000,
+		WINSIF_PRIORITY_HIGH	= 0x0001
+	} winsif_PriorityClass;
+
+	typedef struct {
+		winsif_Address address;
+		uint32 num_replications;
+		uint32 num_communication_failures;
+	} winsif_ReplCounter;
+
+	typedef struct {
+		uint32 num_unique_registrations;
+		uint32 num_group_registrations;
+		uint32 num_queries;
+		uint32 num_successful_queries;
+		uint32 num_failed_queries;
+		uint32 num_unique_refreshes;
+		uint32 num_group_refreshes;
+		uint32 num_releases;
+		uint32 num_successful_releases;
+		uint32 num_failed_releases;
+		uint32 num_unique_conflicts;
+		uint32 num_group_conflicts;
+	} winsif_StatCounters;
+
+	typedef struct {
+		time_t wins_start_time;
+		time_t last_periodic_scavenging;
+		time_t last_triggered_scavenging;
+		time_t last_tombstone_scavenging;
+		time_t last_verification_scavenging;
+		time_t last_periodic_pull_replication;
+		time_t last_triggered_pull_replication;
+		time_t ignore_last_ntrepl;
+		time_t ignore_last_actrepl;
+		time_t last_init_db;
+		time_t counter_reset;
+	} winsif_StatTimeStamps;
+
+	typedef struct {
+		winsif_StatCounters counters;
+		winsif_StatTimeStamps time_stamps;
+		uint32 num_partners;
+		[size_is(num_partners)] winsif_ReplCounter *partners;
+	} winsif_Stat;
+
+	typedef struct {
+		uint32 num_owners;
+		winsif_AddressVersionMap address_version_maps[25];
+		hyper my_max_version_number;
+		uint32 refresh_interval;
+		uint32 tombstone_interval;
+		uint32 tombstone_timeout;
+		uint32 verify_interval;
+		winsif_PriorityClass prioritiy_class;
+		uint32 num_worker_threads;
+		winsif_Stat stat;
+	} winsif_Results;
+
+	typedef enum {
+		WINSIF_STATUS_CMD_ADDRESS_VERSION_MAP	= 0x0000,
+		WINSIF_STATUS_CMD_CONFIG		= 0x0001,
+		WINSIF_STATUS_CMD_STAT			= 0x0002,
+		WINSIF_STATUS_CMD_ALL_MAPS		= 0x0003
+	} winsif_StatusCmd;
+
+	WERROR winsif_WinsStatus(
+		[in] winsif_StatusCmd cmd,
+		[in,out,ref] winsif_Results *results
+	);
 
 	/*****************/
 	/* Function 0x02 */
