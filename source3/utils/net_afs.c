@@ -22,10 +22,10 @@
 
 int net_afs_usage(struct net_context *c, int argc, const char **argv)
 {
-	d_printf("  net afs key filename\n"
-		 "\tImports a OpenAFS KeyFile into our secrets.tdb\n\n");
-	d_printf("  net afs impersonate <user> <cell>\n"
-		 "\tCreates a token for user@cell\n\n");
+	d_printf(_("  net afs key filename\n"
+		 "\tImports a OpenAFS KeyFile into our secrets.tdb\n\n"));
+	d_printf(_("  net afs impersonate <user> <cell>\n"
+		 "\tCreates a token for user@cell\n\n"));
 	return -1;
 }
 
@@ -35,27 +35,27 @@ int net_afs_key(struct net_context *c, int argc, const char **argv)
 	struct afs_keyfile keyfile;
 
 	if (argc != 2) {
-		d_printf("usage: 'net afs key <keyfile> cell'\n");
+		d_printf(_("usage: 'net afs key <keyfile> cell'\n"));
 		return -1;
 	}
 
 	if (!secrets_init()) {
-		d_fprintf(stderr, "Could not open secrets.tdb\n");
+		d_fprintf(stderr, _("Could not open secrets.tdb\n"));
 		return -1;
 	}
 
 	if ((fd = open(argv[0], O_RDONLY, 0)) < 0) {
-		d_fprintf(stderr, "Could not open %s\n", argv[0]);
+		d_fprintf(stderr, _("Could not open %s\n", argv[0]));
 		return -1;
 	}
 
 	if (read(fd, &keyfile, sizeof(keyfile)) != sizeof(keyfile)) {
-		d_fprintf(stderr, "Could not read keyfile\n");
+		d_fprintf(stderr, _("Could not read keyfile\n"));
 		return -1;
 	}
 
 	if (!secrets_store_afs_keyfile(argv[1], &keyfile)) {
-		d_fprintf(stderr, "Could not write keyfile to secrets.tdb\n");
+		d_fprintf(stderr, _("Could not write keyfile to secrets.tdb\n"));
 		return -1;
 	}
 
@@ -68,23 +68,23 @@ int net_afs_impersonate(struct net_context *c, int argc,
 	char *token;
 
 	if (argc != 2) {
-		fprintf(stderr, "Usage: net afs impersonate <user> <cell>\n");
+		fprintf(stderr, _("Usage: net afs impersonate <user> <cell>\n"));
 	        exit(1);
 	}
 
 	token = afs_createtoken_str(argv[0], argv[1]);
 
 	if (token == NULL) {
-		fprintf(stderr, "Could not create token\n");
+		fprintf(stderr, _("Could not create token\n"));
 	        exit(1);
 	}
 
 	if (!afs_settoken_str(token)) {
-		fprintf(stderr, "Could not set token into kernel\n");
+		fprintf(stderr, _("Could not set token into kernel\n"));
 	        exit(1);
 	}
 
-	printf("Success: %s@%s\n", argv[0], argv[1]);
+	printf(_("Success: %s@%s\n"), argv[0], argv[1]);
 	return 0;
 }
 
@@ -95,17 +95,17 @@ int net_afs(struct net_context *c, int argc, const char **argv)
 			"key",
 			net_afs_key,
 			NET_TRANSPORT_LOCAL,
-			"Import an OpenAFS keyfile",
-			"net afs key <filename>\n"
-			"    Import kefile from <filename>."
+			N_("Import an OpenAFS keyfile"),
+			N_("net afs key <filename>\n"
+			   "    Import kefile from <filename>.")
 		},
 		{
 			"impersonate",
 			net_afs_impersonate,
 			NET_TRANSPORT_LOCAL,
-			"Get a user token",
-			"net afs impersonate <user> <cell>\n"
-			"    Create token for user@cell"
+			N_("Get a user token"),
+			N_("net afs impersonate <user> <cell>\n"
+			   "    Create token for user@cell")
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
