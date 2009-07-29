@@ -50,17 +50,6 @@ extern bool AllowDebugChange;
 #endif
 
 /***********************************************************************/
-/* Beginning of internationalization section.  Translatable constants  */
-/* should be kept in this area and referenced in the rest of the code. */
-/*                                                                     */
-/* No functions, outside of Samba or LSB (Linux Standards Base) should */
-/* be used (if possible).                                              */
-/***********************************************************************/
-
-#define YES_STRING              "Yes"
-#define NO_STRING               "No"
-
-/***********************************************************************/
 /* end of internationalization section                                 */
 /***********************************************************************/
 
@@ -111,20 +100,22 @@ static int net_changesecretpw(struct net_context *c, int argc,
 			set_line_buffering(stderr);
 		}
 
-		trust_pw = get_pass("Enter machine password: ", c->opt_stdin);
+		trust_pw = get_pass(_("Enter machine password: "), c->opt_stdin);
 
 		if (!secrets_store_machine_password(trust_pw, lp_workgroup(), sec_channel_type)) {
-			    d_fprintf(stderr, "Unable to write the machine account password in the secrets database");
+			    d_fprintf(stderr,
+				      _("Unable to write the machine account password in the secrets database"));
 			    return 1;
 		}
 		else {
-		    d_printf("Modified trust account password in secrets database\n");
+		    d_printf(_("Modified trust account password in secrets database\n"));
 		}
 	}
 	else {
-		d_printf("Machine account password change requires the -f flag.\n");
-		d_printf("Do NOT use this function unless you know what it does!\n");
-		d_printf("This function will change the ADS Domain member machine account password in the secrets.tdb file!\n");
+		d_printf(_("Machine account password change requires the -f flag.\n"
+			   "Do NOT use this function unless you know what it does!\n"
+		           "This function will change the ADS Domain member "
+			   "machine account password in the secrets.tdb file!\n"));
 	}
 
         return 0;
@@ -155,7 +146,9 @@ static int net_getlocalsid(struct net_context *c, int argc, const char **argv)
 	   panic when we can't. */
 
 	if (!secrets_init()) {
-		d_fprintf(stderr, "Unable to open secrets.tdb.  Can't fetch domain SID for name: %s\n", name);
+		d_fprintf(stderr,
+			  _("Unable to open secrets.tdb.  Can't fetch domain "
+			    "SID for name: %s\n"), name);
 		return 1;
 	}
 
@@ -167,7 +160,7 @@ static int net_getlocalsid(struct net_context *c, int argc, const char **argv)
 		return 1;
 	}
 	sid_to_fstring(sid_str, &sid);
-	d_printf("SID for domain %s is: %s\n", name, sid_str);
+	d_printf(_("SID for domain %s is: %s\n"), name, sid_str);
 	return 0;
 }
 
@@ -179,7 +172,7 @@ static int net_setlocalsid(struct net_context *c, int argc, const char **argv)
 	     || (strncmp(argv[0], "S-1-5-21-", strlen("S-1-5-21-")) != 0)
 	     || (!string_to_sid(&sid, argv[0]))
 	     || (sid.num_auths != 4)) {
-		d_printf("usage: net setlocalsid S-1-5-21-x-y-z\n");
+		d_printf(_("usage: net setlocalsid S-1-5-21-x-y-z\n"));
 		return 1;
 	}
 
@@ -199,7 +192,7 @@ static int net_setdomainsid(struct net_context *c, int argc, const char **argv)
 	     || (strncmp(argv[0], "S-1-5-21-", strlen("S-1-5-21-")) != 0)
 	     || (!string_to_sid(&sid, argv[0]))
 	     || (sid.num_auths != 4)) {
-		d_printf("usage: net setdomainsid S-1-5-21-x-y-z\n");
+		d_printf(_("usage: net setdomainsid S-1-5-21-x-y-z\n"));
 		return 1;
 	}
 
@@ -217,7 +210,7 @@ static int net_getdomainsid(struct net_context *c, int argc, const char **argv)
 	fstring sid_str;
 
 	if (argc > 0) {
-		d_printf("usage: net getdomainsid\n");
+		d_printf(_("usage: net getdomainsid\n"));
 		return 1;
 	}
 
@@ -232,8 +225,9 @@ static int net_getdomainsid(struct net_context *c, int argc, const char **argv)
 	   panic when we can't. */
 
 	if (!secrets_init()) {
-		d_fprintf(stderr, "Unable to open secrets.tdb.  Can't fetch domain"
-				  "SID for name: %s\n", get_global_sam_name());
+		d_fprintf(stderr, _("Unable to open secrets.tdb.  Can't fetch "
+				    "domain SID for name: %s\n"),
+			  get_global_sam_name());
 		return 1;
 	}
 
@@ -241,19 +235,20 @@ static int net_getdomainsid(struct net_context *c, int argc, const char **argv)
 	get_global_sam_sid();
 
 	if (!secrets_fetch_domain_sid(global_myname(), &domain_sid)) {
-		d_fprintf(stderr, "Could not fetch local SID\n");
+		d_fprintf(stderr, _("Could not fetch local SID\n"));
 		return 1;
 	}
 	sid_to_fstring(sid_str, &domain_sid);
-	d_printf("SID for local machine %s is: %s\n", global_myname(), sid_str);
+	d_printf(_("SID for local machine %s is: %s\n"),
+		 global_myname(), sid_str);
 
 	if (!secrets_fetch_domain_sid(c->opt_workgroup, &domain_sid)) {
-		d_fprintf(stderr, "Could not fetch domain SID\n");
+		d_fprintf(stderr, _("Could not fetch domain SID\n"));
 		return 1;
 	}
 
 	sid_to_fstring(sid_str, &domain_sid);
-	d_printf("SID for domain %s is: %s\n", c->opt_workgroup, sid_str);
+	d_printf(_("SID for domain %s is: %s\n"), c->opt_workgroup, sid_str);
 
 	return 0;
 }
@@ -265,7 +260,7 @@ static bool search_maxrid(struct pdb_search *search, const char *type,
 	uint32 i, num_entries;
 
 	if (search == NULL) {
-		d_fprintf(stderr, "get_maxrid: Could not search %s\n", type);
+		d_fprintf(stderr, _("get_maxrid: Could not search %s\n"), type);
 		return false;
 	}
 
@@ -299,16 +294,16 @@ static int net_maxrid(struct net_context *c, int argc, const char **argv)
 	uint32 rid;
 
 	if (argc != 0) {
-	        DEBUG(0, ("usage: net maxrid\n"));
+	        d_fprintf(stderr, _("usage: net maxrid\n"));
 		return 1;
 	}
 
 	if ((rid = get_maxrid()) == 0) {
-		DEBUG(0, ("can't get current maximum rid\n"));
+		d_fprintf(stderr, _("can't get current maximum rid\n"));
 		return 1;
 	}
 
-	d_printf("Currently used maximum rid: %d\n", rid);
+	d_printf(_("Currently used maximum rid: %d\n"), rid);
 
 	return 0;
 }
@@ -319,25 +314,25 @@ static struct functable net_func[] = {
 		"rpc",
 		net_rpc,
 		NET_TRANSPORT_RPC,
-		"Run functions using RPC transport",
-		"  Use 'net help rpc' to get more extensive information about "
-		"'net rpc' commands."
+		N_("Run functions using RPC transport"),
+		N_("  Use 'net help rpc' to get more extensive information "
+		   "about 'net rpc' commands.")
 	},
 	{
 		"rap",
 		net_rap,
 		NET_TRANSPORT_RAP,
-		"Run functions using RAP transport",
-		"  Use 'net help rap' to get more extensive information about "
-		"'net rap' commands."
+		N_("Run functions using RAP transport"),
+		N_("  Use 'net help rap' to get more extensive information "
+		   "about 'net rap' commands.")
 	},
 	{
 		"ads",
 		net_ads,
 		NET_TRANSPORT_ADS,
-		"Run functions using ADS transport",
-		"  Use 'net help ads' to get more extensive information about "
-		"'net ads' commands."
+		N_("Run functions using ADS transport"),
+		N_("  Use 'net help ads' to get more extensive information "
+		   "about 'net ads' commands.")
 	},
 
 	/* eventually these should auto-choose the transport ... */
@@ -345,275 +340,275 @@ static struct functable net_func[] = {
 		"file",
 		net_file,
 		NET_TRANSPORT_RPC | NET_TRANSPORT_RAP,
-		"Functions on remote opened files",
-		"  Use 'net help file' to get more information about 'net "
-		"file' commands."
+		N_("Functions on remote opened files"),
+		N_("  Use 'net help file' to get more information about 'net "
+		   "file' commands.")
 	},
 	{
 		"share",
 		net_share,
 		NET_TRANSPORT_RPC | NET_TRANSPORT_RAP,
-		"Functions on shares",
-		"  Use 'net help share' to get more information about 'net "
-		"share' commands."
+		N_("Functions on shares"),
+		N_("  Use 'net help share' to get more information about 'net "
+		   "share' commands.")
 	},
 	{
 		"session",
 		net_rap_session,
 		NET_TRANSPORT_RAP,
-		"Manage sessions",
-		"  Use 'net help session' to get more information about 'net "
-		"session' commands."
+		N_("Manage sessions"),
+		N_("  Use 'net help session' to get more information about "
+		   "'net session' commands.")
 	},
 	{
 		"server",
 		net_rap_server,
 		NET_TRANSPORT_RAP,
-		"List servers in workgroup",
-		"  Use 'net help server' to get more information about 'net "
-		"server' commands."
+		N_("List servers in workgroup"),
+		N_("  Use 'net help server' to get more information about 'net "
+		   "server' commands.")
 	},
 	{
 		"domain",
 		net_rap_domain,
 		NET_TRANSPORT_RAP,
-		"List domains/workgroups on network",
-		"  Use 'net help domain' to get more information about 'net "
-		"domain' commands."
+		N_("List domains/workgroups on network"),
+		N_("  Use 'net help domain' to get more information about 'net "
+		   "domain' commands.")
 	},
 	{
 		"printq",
 		net_rap_printq,
 		NET_TRANSPORT_RAP,
-		"Modify printer queue",
-		"  Use 'net help printq' to get more information about 'net "
-		"printq' commands."
+		N_("Modify printer queue"),
+		N_("  Use 'net help printq' to get more information about 'net "
+		   "printq' commands.")
 	},
 	{
 		"user",
 		net_user,
 		NET_TRANSPORT_ADS | NET_TRANSPORT_RPC | NET_TRANSPORT_RAP,
-		"Manage users",
-		"  Use 'net help user' to get more information about 'net "
-		"user' commands."
+		N_("Manage users"),
+		N_("  Use 'net help user' to get more information about 'net "
+		   "user' commands.")
 	},
 	{
 		"group",
 		net_group,
 		NET_TRANSPORT_ADS | NET_TRANSPORT_RPC | NET_TRANSPORT_RAP,
-		"Manage groups",
-		"  Use 'net help group' to get more information about 'net "
-		"group' commands."
+		N_("Manage groups"),
+		N_("  Use 'net help group' to get more information about 'net "
+		   "group' commands.")
 	},
 	{
 		"groupmap",
 		net_groupmap,
 		NET_TRANSPORT_LOCAL,
-		"Manage group mappings",
-		"  Use 'net help groupmap' to get more information about 'net "
-		"groupmap' commands."
+		N_("Manage group mappings"),
+		N_("  Use 'net help groupmap' to get more information about "
+		   "'net groupmap' commands.")
 	},
 	{
 		"sam",
 		net_sam,
 		NET_TRANSPORT_LOCAL,
-		"Functions on the SAM database",
-		"  Use 'net help sam' to get more information about 'net sam' "
-		"commands."
+		N_("Functions on the SAM database"),
+		N_("  Use 'net help sam' to get more information about 'net "
+		   "sam' commands.")
 	},
 	{
 		"validate",
 		net_rap_validate,
 		NET_TRANSPORT_RAP,
-		"Validate username and password",
-		"  Use 'net help validate' to get more information about 'net "
-		"validate' commands."
+		N_("Validate username and password"),
+		N_("  Use 'net help validate' to get more information about "
+		   "'net validate' commands.")
 	},
 	{
 		"groupmember",
 		net_rap_groupmember,
 		NET_TRANSPORT_RAP,
-		"Modify group memberships",
-		"  Use 'net help groupmember' to get more information about "
-		"'net groupmember' commands."
+		N_("Modify group memberships"),
+		N_("  Use 'net help groupmember' to get more information about "
+		   "'net groupmember' commands.")
 	},
 	{	"admin",
 		net_rap_admin,
 		NET_TRANSPORT_RAP,
-		"Execute remote command on a remote OS/2 server",
-		"  Use 'net help admin' to get more information about 'net "
-		"admin' commands."
+		N_("Execute remote command on a remote OS/2 server"),
+		N_("  Use 'net help admin' to get more information about 'net "
+		   "admin' commands.")
 	},
 	{	"service",
 		net_rap_service,
 		NET_TRANSPORT_RAP,
-		"List/modify running services",
-		"  Use 'net help service' to get more information about 'net "
-		"service' commands."
+		N_("List/modify running services"),
+		N_("  Use 'net help service' to get more information about "
+		   "'net service' commands.")
 	},
 	{
 		"password",
 		net_rap_password,
 		NET_TRANSPORT_RAP,
-		"Change user password on target server",
-		"  Use 'net help password' to get more information about 'net "
-		"password' commands."
+		N_("Change user password on target server"),
+		N_("  Use 'net help password' to get more information about "
+		   "'net password' commands.")
 	},
 	{	"changetrustpw",
 		net_changetrustpw,
 		NET_TRANSPORT_ADS | NET_TRANSPORT_RPC,
-		"Change the trust password",
-		"  Use 'net help changetrustpw' to get more information about "
-		"'net changetrustpw'."
+		N_("Change the trust password"),
+		N_("  Use 'net help changetrustpw' to get more information "
+		   "about 'net changetrustpw'.")
 	},
 	{	"changesecretpw",
 		net_changesecretpw,
 		NET_TRANSPORT_LOCAL,
-		"Change the secret password",
-		"  net [options] changesecretpw\n"
-		"    Change the ADS domain member machine account password in "
-		"secrets.tdb.\n"
-		"    Do NOT use this function unless you know what it does.\n"
-		"    Requires the -f flag to work."
+		N_("Change the secret password"),
+		N_("  net [options] changesecretpw\n"
+		   "    Change the ADS domain member machine account password "
+		   "in secrets.tdb.\n"
+		   "    Do NOT use this function unless you know what it does.\n"
+		   "    Requires the -f flag to work.")
 	},
 	{	"time",
 		net_time,
 		NET_TRANSPORT_LOCAL,
-		"Show/set time",
-		"  Use 'net help time' to get more information about 'net "
-		"time' commands."
+		N_("Show/set time"),
+		N_("  Use 'net help time' to get more information about 'net "
+		   "time' commands.")
 	},
 	{	"lookup",
 		net_lookup,
 		NET_TRANSPORT_LOCAL,
-		"Look up host names/IP addresses",
-		"  Use 'net help lookup' to get more information about 'net "
-		"lookup' commands."
+		N_("Look up host names/IP addresses"),
+		N_("  Use 'net help lookup' to get more information about 'net "
+		   "lookup' commands.")
 	},
 	{	"join",
 		net_join,
 		NET_TRANSPORT_ADS | NET_TRANSPORT_RPC,
-		"Join a domain/AD",
-		"  Use 'net help join' to get more information about 'net "
-		"join'."
+		N_("Join a domain/AD"),
+		N_("  Use 'net help join' to get more information about 'net "
+		   "join'.")
 	},
 	{	"dom",
 		net_dom,
 		NET_TRANSPORT_LOCAL,
-		"Join/unjoin (remote) machines to/from a domain/AD",
-		"  Use 'net help dom' to get more information about 'net dom' "
-		"commands."
+		N_("Join/unjoin (remote) machines to/from a domain/AD"),
+		N_("  Use 'net help dom' to get more information about 'net "
+		   "dom' commands.")
 	},
 	{	"cache",
 		net_cache,
 		NET_TRANSPORT_LOCAL,
-		"Operate on the cache tdb file",
-		"  Use 'net help cache' to get more information about 'net "
-		"cache' commands."
+		N_("Operate on the cache tdb file"),
+		N_("  Use 'net help cache' to get more information about 'net "
+		   "cache' commands.")
 	},
 	{	"getlocalsid",
 		net_getlocalsid,
 		NET_TRANSPORT_LOCAL,
-		"Get the SID for the local domain",
-		"  net getlocalsid"
+		N_("Get the SID for the local domain"),
+		N_("  net getlocalsid")
 	},
 	{	"setlocalsid",
 		net_setlocalsid,
 		NET_TRANSPORT_LOCAL,
-		"Set the SID for the local domain",
-		"  net setlocalsid S-1-5-21-x-y-z"
+		N_("Set the SID for the local domain"),
+		N_("  net setlocalsid S-1-5-21-x-y-z")
 	},
 	{	"setdomainsid",
 		net_setdomainsid,
 		NET_TRANSPORT_LOCAL,
-		"Set domain SID on member servers",
-		"  net setdomainsid S-1-5-21-x-y-z"
+		N_("Set domain SID on member servers"),
+		N_("  net setdomainsid S-1-5-21-x-y-z")
 	},
 	{	"getdomainsid",
 		net_getdomainsid,
 		NET_TRANSPORT_LOCAL,
-		"Get domain SID on member servers",
-		"  net getdomainsid"
+		N_("Get domain SID on member servers"),
+		N_("  net getdomainsid")
 	},
 	{	"maxrid",
 		net_maxrid,
 		NET_TRANSPORT_LOCAL,
-		"Display the maximul RID currently used",
-		"  net maxrid"
+		N_("Display the maximul RID currently used"),
+		N_("  net maxrid")
 	},
 	{	"idmap",
 		net_idmap,
 		NET_TRANSPORT_LOCAL,
-		"IDmap functions",
-		"  Use 'net help idmap to get more information about 'net "
-		"idmap' commands."
+		N_("IDmap functions"),
+		N_("  Use 'net help idmap to get more information about 'net "
+		  "idmap' commands.")
 	},
 	{	"status",
 		net_status,
 		NET_TRANSPORT_LOCAL,
-		"Display server status",
-		"  Use 'net help status' to get more information about 'net "
-		"status' commands."
+		N_("Display server status"),
+		N_("  Use 'net help status' to get more information about 'net "
+		   "status' commands.")
 	},
 	{	"usershare",
 		net_usershare,
 		NET_TRANSPORT_LOCAL,
-		"Manage user-modifiable shares",
-		"  Use 'net help usershare to get more information about 'net "
-		"usershare' commands."
+		N_("Manage user-modifiable shares"),
+		N_("  Use 'net help usershare to get more information about "
+		   "'net usershare' commands.")
 	},
 	{	"usersidlist",
 		net_usersidlist,
 		NET_TRANSPORT_RPC,
-		"Display list of all users with SID",
-		"  Use 'net help usersidlist' to get more information about "
-		"'net usersidlist'."
+		N_("Display list of all users with SID"),
+		N_("  Use 'net help usersidlist' to get more information about "
+		   "'net usersidlist'.")
 	},
 	{	"conf",
 		net_conf,
 		NET_TRANSPORT_LOCAL,
-		"Manage Samba registry based configuration",
-		"  Use 'net help conf' to get more information about 'net "
-		"conf' commands."
+		N_("Manage Samba registry based configuration"),
+		N_("  Use 'net help conf' to get more information about 'net "
+		   "conf' commands.")
 	},
 	{	"registry",
 		net_registry,
 		NET_TRANSPORT_LOCAL,
-		"Manage the Samba registry",
-		"  Use 'net help registry' to get more information about 'net "
-		"registry' commands."
+		N_("Manage the Samba registry"),
+		N_("  Use 'net help registry' to get more information about "
+		   "'net registry' commands.")
 	},
 	{	"lua",
 		net_lua,
 		NET_TRANSPORT_LOCAL,
-		"Open a lua interpreter",
-		"  Use 'net help lua' to get more information about 'net "
-		"lua' commands."
+		N_("Open a lua interpreter"),
+		N_("  Use 'net help lua' to get more information about 'net "
+		   "lua' commands.")
 	},
 	{	"eventlog",
 		net_eventlog,
 		NET_TRANSPORT_LOCAL,
-		"Process Win32 *.evt eventlog files",
-		"  Use 'net help eventlog' to get more information about 'net "
-		"eventlog' commands."
+		N_("Process Win32 *.evt eventlog files"),
+		N_("  Use 'net help eventlog' to get more information about "
+		   "'net eventlog' commands.")
 	},
 
 #ifdef WITH_FAKE_KASERVER
 	{	"afs",
 		net_afs,
 		NET_TRANSPORT_LOCAL,
-		"Manage AFS tokens",
-		"  Use 'net help afs' to get more information about 'net afs' "
-		"commands."
+		N_("Manage AFS tokens"),
+		N_("  Use 'net help afs' to get more information about 'net "
+		   "afs' commands.")
 	},
 #endif
 
 	{	"help",
 		net_help,
 		NET_TRANSPORT_LOCAL,
-		"Print usage information",
-		"  Use 'net help help' to list usage information for 'net' "
-		"commands."
+		N_("Print usage information"),
+		N_("  Use 'net help help' to list usage information for 'net' "
+		   "commands.")
 	},
 	{NULL, NULL, 0, NULL, NULL}
 };
@@ -641,7 +636,7 @@ static struct functable net_func[] = {
 		{"port",	'p', POPT_ARG_INT,    &c->opt_port},
 		{"myname",	'n', POPT_ARG_STRING, &c->opt_requester_name},
 		{"server",	'S', POPT_ARG_STRING, &c->opt_host},
-		{"encrypt",	'e', POPT_ARG_NONE,   NULL, 'e', "Encrypt SMB transport (UNIX extended servers only)" },
+		{"encrypt",	'e', POPT_ARG_NONE,   NULL, 'e', N_("Encrypt SMB transport (UNIX extended servers only)") },
 		{"container",	'c', POPT_ARG_STRING, &c->opt_container},
 		{"comment",	'C', POPT_ARG_STRING, &c->opt_comment},
 		{"maxusers",	'M', POPT_ARG_INT,    &c->opt_maxusers},
@@ -682,6 +677,10 @@ static struct functable net_func[] = {
 
 	load_case_tables();
 
+	setlocale(LC_ALL, "");
+	bindtextdomain(MODULE_NAME, dyn_LOCALEDIR);
+	textdomain(MODULE_NAME);
+
 	/* set default debug level to 0 regardless of what smb.conf sets */
 	DEBUGLEVEL_CLASS[DBGC_ALL] = 0;
 	dbf = x_stderr;
@@ -701,7 +700,7 @@ static struct functable net_func[] = {
 		case 'I':
 			if (!interpret_string_addr(&c->opt_dest_ip,
 						poptGetOptArg(pc), 0)) {
-				d_fprintf(stderr, "\nInvalid ip address specified\n");
+				d_fprintf(stderr, _("\nInvalid ip address specified\n"));
 			} else {
 				c->opt_have_ip = true;
 			}
@@ -716,7 +715,7 @@ static struct functable net_func[] = {
 			}
 			break;
 		default:
-			d_fprintf(stderr, "\nInvalid option %s: %s\n",
+			d_fprintf(stderr, _("\nInvalid option %s: %s\n"),
 				 poptBadOption(pc, 0), poptStrerror(opt));
 			net_help(c, argc, argv);
 			exit(1);
