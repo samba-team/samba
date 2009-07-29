@@ -297,7 +297,23 @@ import "nbt.idl";
 
 	/*****************/
 	/* Function 0x13 */
-	void WinsStatusNew();
+	typedef struct {
+		uint32 num_owners;
+		[size_is(num_owners)] winsif_AddressVersionMap *address_version_maps;
+		hyper my_max_version_number;
+		uint32 refresh_interval;
+		uint32 tombstone_interval;
+		uint32 tombstone_timeout;
+		uint32 verify_interval;
+		winsif_PriorityClass prioritiy_class;
+		uint32 num_worker_threads;
+		winsif_Stat stat;
+	} winsif_ResultsNew;
+
+	WERROR winsif_WinsStatusNew(
+		[in] winsif_StatusCmd cmd,
+		[out,ref] winsif_ResultsNew *results
+	);
 
 	/*****************/
 	/* Function 0x14 */
