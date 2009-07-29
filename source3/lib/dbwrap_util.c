@@ -190,30 +190,40 @@ NTSTATUS dbwrap_trans_change_uint32_atomic(struct db_context *db,
  * return old value in *oldval.
  * store *oldval + change_val to db.
  */
-NTSTATUS dbwrap_change_int32_atomic(struct db_context *db, const char *keystr,
-				    int32_t *oldval, int32_t change_val)
+
+struct dbwrap_change_int32_atomic_context {
+	const char *keystr;
+	int32_t *oldval;
+	int32_t change_val;
+};
+
+static NTSTATUS dbwrap_change_int32_atomic_action(struct db_context *db,
+						  void *private_data)
 {
 	struct db_record *rec;
 	int32_t val = -1;
 	TDB_DATA data;
 	NTSTATUS ret;
+	struct dbwrap_change_int32_atomic_context *state;
 
-	rec = db->fetch_locked(db, NULL, string_term_tdb_data(keystr));
+	state = (struct dbwrap_change_int32_atomic_context *)private_data;
+
+	rec = db->fetch_locked(db, NULL, string_term_tdb_data(state->keystr));
 	if (!rec) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	if (rec->value.dptr == NULL) {
-		val = *oldval;
+		val = *(state->oldval);
 	} else if (rec->value.dsize == sizeof(val)) {
 		val = IVAL(rec->value.dptr, 0);
-		*oldval = val;
+		*(state->oldval) = val;
 	} else {
 		ret = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
-	val += change_val;
+	val += state->change_val;
 
 	data.dsize = sizeof(val);
 	data.dptr = (uint8 *)&val;
@@ -222,6 +232,21 @@ NTSTATUS dbwrap_change_int32_atomic(struct db_context *db, const char *keystr,
 
 done:
 	TALLOC_FREE(rec);
+	return ret;
+}
+
+NTSTATUS dbwrap_change_int32_atomic(struct db_context *db, const char *keystr,
+				    int32_t *oldval, int32_t change_val)
+{
+	NTSTATUS ret;
+	struct dbwrap_change_int32_atomic_context state;
+
+	state.keystr = keystr;
+	state.oldval = oldval;
+	state.change_val = change_val;
+
+	ret = dbwrap_change_int32_atomic_action(db, &state);
+
 	return ret;
 }
 
