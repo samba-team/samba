@@ -18,7 +18,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: i18n_swat \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2009-07-29 23:26+0200\n"
+"POT-Creation-Date: 2009-07-29 23:59+0200\n"
 "PO-Revision-Date: 2000-02-08 14:45+0100\n"
 "Last-Translator: François Le Lay <fanch@tuxfamily.org>\n"
 "Language-Team: (Samba Team) <samba-technical@samba.org>\n"
@@ -1831,12 +1831,12 @@ msgid ""
 "\n"
 msgstr ""
 
-#: ../utils/net_ads.c:2046 ../utils/net_ads.c:2107 ../utils/net_ads.c:2171
+#: ../utils/net_ads.c:2046 ../utils/net_ads.c:2107 ../utils/net_ads.c:2171 ../utils/net_ads_gpo.c:250
 #, c-format
 msgid "search failed: %s\n"
 msgstr ""
 
-#: ../utils/net_ads.c:2051 ../utils/net_ads.c:2176
+#: ../utils/net_ads.c:2051 ../utils/net_ads.c:2176 ../utils/net_ads_gpo.c:256
 #, c-format
 msgid ""
 "Got %d replies\n"
@@ -2221,4 +2221,437 @@ msgstr ""
 
 #: ../utils/net_ads.c:2627
 msgid "ADS support not compiled in\n"
+msgstr ""
+
+#: ../utils/net_ads_gpo.c:40
+msgid ""
+"Usage:\n"
+"net ads gpo refresh <username|machinename>\n"
+"  Lists all GPOs assigned to an account and downloads them\n"
+"    username\tUser to refresh GPOs for\n"
+"    machinename\tMachine to refresh GPOs for\n"
+msgstr ""
+
+#: ../utils/net_ads_gpo.c:56
+#, c-format
+msgid "failed to connect AD server: %s\n"
+msgstr ""
+
+#: ../utils/net_ads_gpo.c:62
+#, c-format
+msgid "failed to find samaccount for %s\n"
+msgstr ""
+
+#: ../utils/net_ads_gpo.c:70
+#, c-format
+msgid ""
+"\n"
+"%s: '%s' has dn: '%s'\n"
+"\n"
+msgstr ""
+
+#: ../utils/net_ads_gpo.c:71 ../utils/net_ads_gpo.c:328
+#, fuzzy
+msgid "machine"
+msgstr " Machine distante : "
+
+#: ../utils/net_ads_gpo.c:71 ../utils/net_ads_gpo.c:328
+#, fuzzy
+msgid "user"
+msgstr "Utilisateur"
+
+#: ../utils/net_ads_gpo.c:74
+msgid "* fetching token "
+msgstr ""
+
+#: ../utils/net_ads_gpo.c:82 ../utils/net_ads_gpo.c:90 ../utils/net_ads_gpo.c:102 ../utils/net_ads_gpo.c:113 ../utils/net_ads_gpo.c:158
+#, c-format
+msgid "failed: %s\n"
+msgstr ""
+
+#: ../utils/net_ads_gpo.c:85 ../utils/net_ads_gpo.c:94 ../utils/net_ads_gpo.c:105 ../utils/net_ads_gpo.c:118 ../utils/net_ads_gpo.c:163
+msgid "finished\n"
+msgstr ""
+
+#: ../utils/net_ads_gpo.c:87
+msgid "* fetching GPO List "
+msgstr ""
+
+#: ../utils/net_ads_gpo.c:96
+msgid "* Refreshing Group Policy Data "
+msgstr ""
+
+#: ../utils/net_ads_gpo.c:107
+msgid "* storing GPO list to registry "
+msgstr ""
+
+#: ../utils/net_ads_gpo.c:122
+msgid "* dumping GPO list\n"
+msgstr ""
+
+#: ../utils/net_ads_gpo.c:151
+msgid "* re-reading GPO list from registry "
+msgstr ""
+
+#: ../utils/net_ads_gpo.c:167
+msgid "* dumping GPO list from registry\n"
+msgstr ""
+
+#: ../utils/net_ads_gpo.c:226
+msgid ""
+"Usage:\n"
+"net ads gpo listall\n"
+"    List all GPOs on the DC\n"
+msgstr ""
+
+#: ../utils/net_ads_gpo.c:270
+#, fuzzy, c-format
+msgid "ads_parse_gpo failed: %s\n"
+msgstr "Gestion des mots de passe"
+
+#: ../utils/net_ads_gpo.c:300
+msgid ""
+"Usage:\n"
+"net ads gpo list <username|machinename>\n"
+"  Lists all GPOs for machine/user\n"
+"    username\tUser to list GPOs for\n"
+"    machinename\tMachine to list GPOs for\n"
+msgstr ""
+
+#: ../utils/net_ads_gpo.c:327
+#, c-format
+msgid "%s: '%s' has dn: '%s'\n"
+msgstr ""
+
+#: ../utils/net_ads_gpo.c:451
+msgid ""
+"Usage:\n"
+"net ads gpo linkget <container>\n"
+"  Lists gPLink of a containter\n"
+"    container\tContainer to get link for\n"
+msgstr ""
+
+#: ../utils/net_ads_gpo.c:470
+#, c-format
+msgid "get link for %s failed: %s\n"
+msgstr ""
+
+#: ../utils/net_ads_gpo.c:492
+msgid ""
+"Usage:\n"
+"net ads gpo linkadd <linkdn> <gpodn> [options]\n"
+"  Link a container to a GPO\n"
+"    linkdn\tContainer to link to a GPO\n"
+"    gpodn\tGPO to link container to\n"
+msgstr ""
+
+#: ../utils/net_ads_gpo.c:497
+msgid ""
+"note: DNs must be provided properly escaped.\n"
+"See RFC 4514 for details\n"
+msgstr ""
+
+#: ../utils/net_ads_gpo.c:518
+#, c-format
+msgid "link add failed: %s\n"
+msgstr ""
+
+#: ../utils/net_ads_gpo.c:579
+msgid ""
+"Usage:\n"
+"net ads gpo getgpo <gpo>\n"
+"  List speciefied GPO\n"
+"    gpo\t\tGPO to list\n"
+msgstr ""
+
+#: ../utils/net_ads_gpo.c:603
+#, c-format
+msgid "get gpo for [%s] failed: %s\n"
+msgstr ""
+
+#: ../utils/net_ads_gpo.c:634
+msgid "List specified GPO"
+msgstr ""
+
+#: ../utils/net_ads_gpo.c:635
+msgid ""
+"net ads gpo getgpo\n"
+"    List specified GPO"
+msgstr ""
+
+#: ../utils/net_ads_gpo.c:642
+msgid "Link a container to a GPO"
+msgstr ""
+
+#: ../utils/net_ads_gpo.c:643
+msgid ""
+"net ads gpo linkadd\n"
+"    Link a container to a GPO"
+msgstr ""
+
+#: ../utils/net_ads_gpo.c:660
+msgid "Lists gPLink of containter"
+msgstr ""
+
+#: ../utils/net_ads_gpo.c:661
+msgid ""
+"net ads gpo linkget\n"
+"    Lists gPLink of containter"
+msgstr ""
+
+#: ../utils/net_ads_gpo.c:668
+msgid "Lists all GPOs for machine/user"
+msgstr ""
+
+#: ../utils/net_ads_gpo.c:669
+msgid ""
+"net ads gpo list\n"
+"    Lists all GPOs for machine/user"
+msgstr ""
+
+#: ../utils/net_ads_gpo.c:676
+msgid "Lists all GPOs on a DC"
+msgstr ""
+
+#: ../utils/net_ads_gpo.c:677
+msgid ""
+"net ads gpo listall\n"
+"    Lists all GPOs on a DC"
+msgstr ""
+
+#: ../utils/net_ads_gpo.c:684
+msgid "Lists all GPOs assigned to an account and downloads them"
+msgstr ""
+
+#: ../utils/net_ads_gpo.c:686
+msgid ""
+"net ads gpo refresh\n"
+"    Lists all GPOs assigned to an account and downloads them"
+msgstr ""
+
+#: ../utils/net_afs.c:25
+msgid ""
+"  net afs key filename\n"
+"\tImports a OpenAFS KeyFile into our secrets.tdb\n"
+"\n"
+msgstr ""
+
+#: ../utils/net_afs.c:27
+msgid ""
+"  net afs impersonate <user> <cell>\n"
+"\tCreates a token for user@cell\n"
+"\n"
+msgstr ""
+
+#: ../utils/net_afs.c:38
+msgid "usage: 'net afs key <keyfile> cell'\n"
+msgstr ""
+
+#: ../utils/net_afs.c:43
+msgid "Could not open secrets.tdb\n"
+msgstr ""
+
+#: ../utils/net_afs.c:48
+#, c-format
+msgid "Could not open %s\n"
+msgstr ""
+
+#: ../utils/net_afs.c:53
+msgid "Could not read keyfile\n"
+msgstr ""
+
+#: ../utils/net_afs.c:58
+msgid "Could not write keyfile to secrets.tdb\n"
+msgstr ""
+
+#: ../utils/net_afs.c:71
+#, c-format
+msgid "Usage: net afs impersonate <user> <cell>\n"
+msgstr ""
+
+#: ../utils/net_afs.c:78
+#, c-format
+msgid "Could not create token\n"
+msgstr ""
+
+#: ../utils/net_afs.c:83
+#, c-format
+msgid "Could not set token into kernel\n"
+msgstr ""
+
+#: ../utils/net_afs.c:87
+#, c-format
+msgid "Success: %s@%s\n"
+msgstr ""
+
+#: ../utils/net_afs.c:98
+msgid "Import an OpenAFS keyfile"
+msgstr ""
+
+#: ../utils/net_afs.c:99
+msgid ""
+"net afs key <filename>\n"
+"    Import kefile from <filename>."
+msgstr ""
+
+#: ../utils/net_afs.c:106
+msgid "Get a user token"
+msgstr ""
+
+#: ../utils/net_afs.c:107
+msgid ""
+"net afs impersonate <user> <cell>\n"
+"    Create token for user@cell"
+msgstr ""
+
+#: ../utils/net_cache.c:74
+#, c-format
+msgid "Key: %s\t Timeout: %s\t Value: %s  %s\n"
+msgstr ""
+
+#: ../utils/net_cache.c:75
+msgid "(expired)"
+msgstr ""
+
+#: ../utils/net_cache.c:84
+#, c-format
+msgid "Couldn't delete entry! key = %s\n"
+msgstr ""
+
+#: ../utils/net_cache.c:158
+msgid ""
+"\n"
+"Usage:\n"
+"net cache add <key string> <data string> <timeout>\n"
+msgstr ""
+
+#: ../utils/net_cache.c:170
+msgid "Invalid timeout argument.\n"
+msgstr ""
+
+#: ../utils/net_cache.c:175
+msgid "New cache entry stored successfully.\n"
+msgstr ""
+
+#: ../utils/net_cache.c:179
+msgid "Entry couldn't be added. Perhaps there's already such a key.\n"
+msgstr ""
+
+#: ../utils/net_cache.c:195
+msgid ""
+"\n"
+"Usage: net cache del <key string>\n"
+msgstr ""
+
+#: ../utils/net_cache.c:200
+msgid "Entry deleted.\n"
+msgstr ""
+
+#: ../utils/net_cache.c:204
+msgid "Couldn't delete specified entry\n"
+msgstr ""
+
+#: ../utils/net_cache.c:223
+msgid ""
+"\n"
+"Usage: net cache get <key>\n"
+msgstr ""
+
+#: ../utils/net_cache.c:233
+msgid "Failed to find entry\n"
+msgstr ""
+
+#: ../utils/net_cache.c:250
+msgid "Usage: net cache search <pattern>\n"
+msgstr ""
+
+#: ../utils/net_cache.c:272
+msgid ""
+"Usage:\n"
+"net cache list\n"
+"    List all cache entries.\n"
+msgstr ""
+
+#: ../utils/net_cache.c:293 ../utils/net_cache.c:306
+msgid ""
+"Usage:\n"
+"net cache flush\n"
+"    Delete all cache entries.\n"
+msgstr ""
+
+#: ../utils/net_cache.c:331
+msgid "Add new cache entry"
+msgstr ""
+
+#: ../utils/net_cache.c:332
+msgid ""
+"net cache add <key string> <data string> <timeout>\n"
+"  Add new cache entry.\n"
+"    key string\tKey string to add cache data under.\n"
+"    data string\tData to store under given key.\n"
+"    timeout\tTimeout for cache data."
+msgstr ""
+
+#: ../utils/net_cache.c:342
+msgid "Delete existing cache entry by key"
+msgstr ""
+
+#: ../utils/net_cache.c:343
+msgid ""
+"net cache del <key string>\n"
+"  Delete existing cache entry by key.\n"
+"    key string\tKey string to delete."
+msgstr ""
+
+#: ../utils/net_cache.c:351
+msgid "Get cache entry by key"
+msgstr ""
+
+#: ../utils/net_cache.c:352
+msgid ""
+"net cache get <key string>\n"
+"  Get cache entry by key.\n"
+"    key string\tKey string to look up cache entry for."
+msgstr ""
+
+#: ../utils/net_cache.c:361
+msgid "Search entry by pattern"
+msgstr ""
+
+#: ../utils/net_cache.c:362
+msgid ""
+"net cache search <pattern>\n"
+"  Search entry by pattern.\n"
+"    pattern\tPattern to search for in cache."
+msgstr ""
+
+#: ../utils/net_cache.c:370
+msgid "List all cache entries"
+msgstr ""
+
+#: ../utils/net_cache.c:371
+msgid ""
+"net cache list\n"
+"  List all cache entries"
+msgstr ""
+
+#: ../utils/net_cache.c:378
+#, fuzzy
+msgid "Delete all cache entries"
+msgstr "Supprimer Imprimante"
+
+#: ../utils/net_cache.c:379
+msgid ""
+"net cache flush\n"
+"  Delete all cache entries"
+msgstr ""
+
+#: ../utils/net_cache.c:386
+msgid "Move transient cache content to stable storage"
+msgstr ""
+
+#: ../utils/net_cache.c:387
+msgid ""
+"net cache stabilize\n"
+"  Move transient cache content to stable storage"
 msgstr ""
