@@ -225,7 +225,7 @@ static NTSTATUS idmap_tdb2_allocate_id_action(struct db_context *db,
 	}
 
 	/* fetch a new id and increment it */
-	ret = dbwrap_change_uint32_atomic(db, state->hwmkey, &hwm, 1);
+	ret = dbwrap_trans_change_uint32_atomic(db, state->hwmkey, &hwm, 1);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(1, ("Fatal error while fetching a new %s value\n!",
 			  state->hwmtype));
