@@ -531,6 +531,7 @@ static NTSTATUS idmap_tdb_set_hwm(struct unixid *xid)
 	const char *hwmtype;
 	uint32_t hwm;
 	uint32_t high_hwm;
+	NTSTATUS ret;
 
 	/* Get current high water mark */
 	switch (xid->type) {
@@ -553,17 +554,15 @@ static NTSTATUS idmap_tdb_set_hwm(struct unixid *xid)
 
 	hwm = xid->id;
 
-	if ((hwm = dbwrap_store_uint32(idmap_alloc_db, hwmkey, hwm)) == -1) {
-		return NT_STATUS_INTERNAL_DB_ERROR;
-	}
-
 	/* Warn if it is out of range */
 	if (hwm >= high_hwm) {
 		DEBUG(0, ("Warning: %s range full!! (max: %lu)\n", 
 			  hwmtype, (unsigned long)high_hwm));
 	}
 
-	return NT_STATUS_OK;
+	ret = dbwrap_trans_store_uint32(idmap_alloc_db, hwmkey, hwm);
+
+	return ret;
 }
 
 /**********************************
