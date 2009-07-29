@@ -1084,7 +1084,8 @@ static bool tdbsam_new_rid(struct pdb_methods *methods, uint32 *prid)
 		return false;
 	}
 
-	status = dbwrap_change_uint32_atomic(db_sam, NEXT_RID_STRING, &rid, 1);
+	status = dbwrap_trans_change_uint32_atomic(db_sam, NEXT_RID_STRING,
+						   &rid, 1);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("tdbsam_new_rid: Failed to increase %s: %s\n",
 			NEXT_RID_STRING, nt_errstr(status)));
