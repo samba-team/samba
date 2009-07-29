@@ -875,7 +875,6 @@ static int transaction_setup_recovery(struct tdb_context *tdb,
 int tdb_transaction_prepare_commit(struct tdb_context *tdb)
 {	
 	const struct tdb_methods *methods;
-	int i;
 
 	if (tdb->transaction == NULL) {
 		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_transaction_prepare_commit: no transaction\n"));
