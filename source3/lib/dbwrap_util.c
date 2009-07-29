@@ -250,6 +250,23 @@ NTSTATUS dbwrap_change_int32_atomic(struct db_context *db, const char *keystr,
 	return ret;
 }
 
+NTSTATUS dbwrap_trans_change_int32_atomic(struct db_context *db,
+					  const char *keystr,
+					  int32_t *oldval,
+					  int32_t change_val)
+{
+	NTSTATUS ret;
+	struct dbwrap_change_int32_atomic_context state;
+
+	state.keystr = keystr;
+	state.oldval = oldval;
+	state.change_val = change_val;
+
+	ret = dbwrap_trans_do(db, dbwrap_change_int32_atomic_action, &state);
+
+	return ret;
+}
+
 struct dbwrap_store_context {
 	TDB_DATA *key;
 	TDB_DATA *dbuf;
