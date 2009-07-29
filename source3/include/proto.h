@@ -1333,6 +1333,9 @@ bool is_broadcast_addr(const struct sockaddr *pss);
 bool interpret_string_addr(struct sockaddr_storage *pss,
 		const char *str,
 		int flags);
+bool interpret_string_addr_prefer_ipv4(struct sockaddr_storage *pss,
+		const char *str,
+		int flags);
 bool is_loopback_ip_v4(struct in_addr ip);
 bool is_loopback_addr(const struct sockaddr *pss);
 bool is_zero_addr(const struct sockaddr *pss);

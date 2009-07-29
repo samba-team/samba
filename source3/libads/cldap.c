@@ -44,7 +44,7 @@ bool ads_cldap_netlogon(TALLOC_CTX *mem_ctx,
 	int ret;
 	struct tsocket_address *dest_addr;
 
-	if (!interpret_string_addr(&ss, server, 0)) {
+	if (!interpret_string_addr_prefer_ipv4(&ss, server, 0)) {
 		DEBUG(2,("Failed to resolve[%s] into an address for cldap\n",
 			server));
 		return false;

@@ -613,7 +613,8 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 		/* If we don't have an IP list for a name, lookup it up */
 
 		if (!dcs[i].ss_s) {
-			interpret_string_addr(&r->ss, dcs[i].hostname, 0);
+			interpret_string_addr_prefer_ipv4(&r->ss,
+						dcs[i].hostname, 0);
 			i++;
 			j = 0;
 		} else {
@@ -973,7 +974,7 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 		ip_list.ss = dclist[i].ss;
 		ip_list.port = 0;
 
-		if (!interpret_string_addr(&ss, dclist[i].hostname, AI_NUMERICHOST)) {
+		if (!interpret_string_addr_prefer_ipv4(&ss, dclist[i].hostname, AI_NUMERICHOST)) {
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 

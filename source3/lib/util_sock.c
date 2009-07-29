@@ -23,12 +23,14 @@
 
 /*******************************************************************
  Map a text hostname or IP address (IPv4 or IPv6) into a
- struct sockaddr_storage.
+ struct sockaddr_storage. Takes a flag which allows it to
+ prefer an IPv4 address (needed for DC's).
 ******************************************************************/
 
-bool interpret_string_addr(struct sockaddr_storage *pss,
+static bool interpret_string_addr_pref(struct sockaddr_storage *pss,
 		const char *str,
-		int flags)
+		int flags,
+		bool prefer_ipv4)
 {
 	struct addrinfo *res = NULL;
 #if defined(HAVE_IPV6)
@@ -60,8 +62,24 @@ bool interpret_string_addr(struct sockaddr_storage *pss,
 	if (!res) {
 		return false;
 	}
-	/* Copy the first sockaddr. */
-	memcpy(pss, res->ai_addr, res->ai_addrlen);
+
+	if (prefer_ipv4) {
+		struct addrinfo *p;
+
+		for (p = res; p; p = p->ai_next) {
+			if (p->ai_family == AF_INET) {
+				memcpy(pss, p->ai_addr, p->ai_addrlen);
+				break;
+			}
+		}
+		if (p == NULL) {
+			/* Copy the first sockaddr. */
+			memcpy(pss, res->ai_addr, res->ai_addrlen);
+		}
+	} else {
+		/* Copy the first sockaddr. */
+		memcpy(pss, res->ai_addr, res->ai_addrlen);
+	}
 
 #if defined(HAVE_IPV6)
 	if (pss->ss_family == AF_INET6 && scope_id) {
@@ -75,6 +93,36 @@ bool interpret_string_addr(struct sockaddr_storage *pss,
 
 	freeaddrinfo(res);
 	return true;
+}
+
+/*******************************************************************
+ Map a text hostname or IP address (IPv4 or IPv6) into a
+ struct sockaddr_storage. Address agnostic version.
+******************************************************************/
+
+bool interpret_string_addr(struct sockaddr_storage *pss,
+		const char *str,
+		int flags)
+{
+	return interpret_string_addr_pref(pss,
+					str,
+					flags,
+					false);
+}
+
+/*******************************************************************
+ Map a text hostname or IP address (IPv4 or IPv6) into a
+ struct sockaddr_storage. Version that prefers IPv4.
+******************************************************************/
+
+bool interpret_string_addr_prefer_ipv4(struct sockaddr_storage *pss,
+		const char *str,
+		int flags)
+{
+	return interpret_string_addr_pref(pss,
+					str,
+					flags,
+					true);
 }
 
 /*******************************************************************
