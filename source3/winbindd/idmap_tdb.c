@@ -296,7 +296,7 @@ static NTSTATUS idmap_tdb_open_db(TALLOC_CTX *memctx,
 
 		if (!idmap_tdb_upgrade(db)) {
 			db->transaction_cancel(db);
-			DEBUG(0, ("Unable to open idmap database, it's in an old formati, and upgrade failed!\n"));
+			DEBUG(0, ("Unable to open idmap database, it's in an old format, and upgrade failed!\n"));
 			ret = NT_STATUS_INTERNAL_DB_ERROR;
 			goto done;
 		}
