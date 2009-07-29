@@ -34,10 +34,7 @@ int net_join_usage(struct net_context *c, int argc, const char **argv)
 
 int net_join(struct net_context *c, int argc, const char **argv)
 {
-	if (argc < 1)
-		return net_join_usage(c, argc, argv);
-
-	if (StrCaseCmp(argv[0], "HELP") == 0) {
+	if ((argc > 0) && (StrCaseCmp(argv[0], "HELP") == 0)) {
 		net_join_usage(c, argc, argv);
 		return 0;
 	}
