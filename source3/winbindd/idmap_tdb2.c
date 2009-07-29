@@ -704,7 +704,8 @@ static NTSTATUS idmap_tdb2_sid_to_id(struct idmap_tdb2_context *ctx, struct id_m
 	/* Check if sid is present in database */
 	data = dbwrap_fetch_bystring(idmap_tdb2, tmp_ctx, keystr);
 	if (!data.dptr) {
-		fstring idstr;
+		char *idstr;
+		struct idmap_tdb2_set_mapping_context store_state;
 
 		DEBUG(10,(__location__ " Record %s not found\n", keystr));
 
@@ -719,14 +720,19 @@ static NTSTATUS idmap_tdb2_sid_to_id(struct idmap_tdb2_context *ctx, struct id_m
 			goto done;
 		}
 
-		snprintf(idstr, sizeof(idstr), "%cID %lu", 
-			 map->xid.type == ID_TYPE_UID?'U':'G',
-			 (unsigned long)map->xid.id);
-		/* store both forward and reverse mappings */
-		dbwrap_store_bystring(idmap_tdb2, keystr, string_term_tdb_data(idstr),
-				    TDB_REPLACE);
-		dbwrap_store_bystring(idmap_tdb2, idstr, string_term_tdb_data(keystr),
-				    TDB_REPLACE);
+		idstr = talloc_asprintf(tmp_ctx, "%cID %lu",
+					map->xid.type == ID_TYPE_UID?'U':'G',
+					(unsigned long)map->xid.id);
+		if (idstr == NULL) {
+			ret = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		store_state.ksidstr = keystr;
+		store_state.kidstr = idstr;
+
+		ret = dbwrap_trans_do(idmap_tdb2, idmap_tdb2_set_mapping_action,
+				      &store_state);
 		goto done;
 	}
 
