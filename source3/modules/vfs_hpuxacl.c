@@ -208,17 +208,23 @@ SMB_ACL_T hpuxacl_sys_acl_get_fd(vfs_handle_struct *handle,
 
 
 int hpuxacl_sys_acl_set_file(vfs_handle_struct *handle,
-			     struct smb_filename *smb_fname,
+			     const char *name,
 			     SMB_ACL_TYPE_T type,
 			     SMB_ACL_T theacl)
 {
 	int ret = -1;
 	HPUX_ACL_T hpux_acl = NULL;
 	int count;
+	struct smb_filename *smb_fname = NULL;
 	
 	DEBUG(10, ("hpuxacl_sys_acl_set_file called for file '%s'\n",
-		   smb_fname_str_dbg(smb_fname)));
+		   name));
 
+	status = create_synthetic_smb_fname(talloc_tos(), name, NULL, NULL,
+					    &smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 
 	if(hpux_acl_call_present() == False) {
 		/* Looks like we don't have the acl() system call on HPUX. 
@@ -299,6 +305,7 @@ int hpuxacl_sys_acl_set_file(vfs_handle_struct *handle,
  done:
 	DEBUG(10, ("hpuxacl_sys_acl_set_file %s.\n",
 		   ((ret != 0) ? "failed" : "succeeded")));
+	TALLOC_FREE(smb_fname);
 	SAFE_FREE(hpux_acl);
 	return ret;
 }
@@ -327,8 +334,9 @@ int hpuxacl_sys_acl_set_fd(vfs_handle_struct *handle,
 	DEBUG(10, ("redirecting call of hpuxacl_sys_acl_set_fd to "
 		"hpuxacl_sys_acl_set_file (no facl syscall on HPUX)\n"));
 
-        return hpuxacl_sys_acl_set_file(handle, file_struct_p->fsp_name,
-			SMB_ACL_TYPE_ACCESS, theacl);
+        return hpuxacl_sys_acl_set_file(handle,
+					file_struct_p->fsp_name->base_name,
+					SMB_ACL_TYPE_ACCESS, theacl);
 }
 
 
