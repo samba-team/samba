@@ -156,8 +156,8 @@ NTSTATUS dbwrap_change_int32_atomic(struct db_context *db, const char *keystr,
 	TDB_DATA data;
 	NTSTATUS ret;
 
-	if (!(rec = db->fetch_locked(db, NULL,
-				     string_term_tdb_data(keystr)))) {
+	rec = db->fetch_locked(db, NULL, string_term_tdb_data(keystr));
+	if (!rec) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
