@@ -1379,8 +1379,12 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 				DEBUG(10,("trusted_domains: Skipping external trusted domain "
 					  "%s because it is outside of our primary domain\n",
 					  trusts.array[i].netbios_name));
-				continue;				
+				continue;
 			}
+
+			/* We must check that the SID of each trusted domain
+			 * was returned to work around a bug in Windows:
+			 * http://support.microsoft.com/kb/922832 */
 
 			(*names)[ret_count] = CONST_DISCARD(char *, trusts.array[i].netbios_name);
 			(*alt_names)[ret_count] = CONST_DISCARD(char *, trusts.array[i].dns_name);

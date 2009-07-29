@@ -322,13 +322,8 @@ static void trustdom_recv(void *private_data, bool success)
 			*q = '\0';
 
 		if (!string_to_sid(&sid, sidstr)) {
-			/* Allow NULL sid for sibling domains */
-			if ( strcmp(sidstr,"S-0-0") == 0) {
-				sid_copy( &sid, &global_sid_NULL);
-			} else {
-				DEBUG(0, ("Got invalid trustdom response\n"));
-				break;
-			}
+			DEBUG(0, ("Got invalid trustdom response\n"));
+			break;
 		}
 
 		/* use the real alt_name if we have one, else pass in NULL */
