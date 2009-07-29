@@ -11,7 +11,59 @@ import "nbt.idl";
 {
 	/*****************/
 	/* Function 0x00 */
-	void WinsRecordAction();
+	typedef struct {
+		uint8 type;
+		uint32 length;
+		ipv4address addr;
+	} winsif_Address;
+
+	typedef enum {
+		WINSIF_ACTION_INSERT	= 0x0000,
+		WINSIF_ACTION_DELETE	= 0x0001,
+		WINSIF_ACTION_RELEASE	= 0x0002,
+		WINSIF_ACTION_MODIFY	= 0x0003,
+		WINSIF_ACTION_QUERY	= 0x0004
+	} winsif_Action;
+
+	typedef enum {
+		WINSIF_RECORD_UNIQUE_NAME	= 0x0000,
+		WINSIF_RECORD_GROUP_NAME	= 0x0001,
+		WINSIF_RECORD_SGROUP_NAME	= 0x0002,
+		WINSIF_RECORD_MHOMED_NAME	= 0x0003
+	} winsif_RecordType;
+
+	typedef [enum8bit] enum {
+		WINSIF_NODE_B	= 0x00,
+		WINSIF_NODE_P	= 0x01,
+		WINSIF_NODE_H	= 0x03
+	} winsif_NodeType;
+
+	typedef [v1_enum] enum {
+		WINSIF_RECORD_ACTIVE	= 0x00000000,
+		WINSIF_RECORD_RELEASED	= 0x00000001,
+		WINSIF_RECORD_TOMBSTONE	= 0x00000002,
+		WINSIF_RECORD_DELETED	= 0x00000003
+	} winsif_RecordState;
+
+	typedef struct {
+		winsif_Action cmd;
+		wrepl_nbt_name *name;
+		[value(name?16:0)] uint32 name_len;
+		winsif_RecordType record_type;
+		uint32 num_of_addresses;
+		[size_is(num_of_addresses)] winsif_Address *addresses;
+		winsif_Address address;
+		hyper version_number;
+		winsif_NodeType node_type;
+		ipv4address owner_address;
+		winsif_RecordState record_state;
+		boolean32 is_static;
+		time_t expire_time;
+	} winsif_RecordAction;
+
+	WERROR winsif_WinsRecordAction(
+		[in,out,ref] winsif_RecordAction **record_action
+	);
 
 	/*****************/
 	/* Function 0x01 */
