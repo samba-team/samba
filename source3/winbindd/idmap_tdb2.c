@@ -632,7 +632,8 @@ static NTSTATUS idmap_tdb2_id_to_sid(struct idmap_tdb2_context *ctx, struct id_m
 	data = dbwrap_fetch_bystring(idmap_tdb2, keystr, keystr);
 
 	if (!data.dptr) {
-		fstring sidstr;
+		char *sidstr;
+		struct idmap_tdb2_set_mapping_context store_state;
 
 		DEBUG(10,("Record %s not found\n", keystr));
 		if (idmap_tdb2_state.idmap_script == NULL) {
@@ -647,15 +648,17 @@ static NTSTATUS idmap_tdb2_id_to_sid(struct idmap_tdb2_context *ctx, struct id_m
 			goto done;
 		}
 
-		if (sid_to_fstring(sidstr, map->sid)) {
-			/* both forward and reverse mappings */
-			dbwrap_store_bystring(idmap_tdb2, keystr,
-					    string_term_tdb_data(sidstr), 
-					    TDB_REPLACE);
-			dbwrap_store_bystring(idmap_tdb2, sidstr,
-					    string_term_tdb_data(keystr), 
-					    TDB_REPLACE);
+		sidstr = sid_string_talloc(keystr, map->sid);
+		if (!sidstr) {
+			ret = NT_STATUS_NO_MEMORY;
+			goto done;
 		}
+
+		store_state.ksidstr = sidstr;
+		store_state.kidstr = keystr;
+
+		ret = dbwrap_trans_do(idmap_tdb2, idmap_tdb2_set_mapping_action,
+				      &store_state);
 		goto done;
 	}
 		
